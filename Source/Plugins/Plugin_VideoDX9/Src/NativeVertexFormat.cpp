@@ -143,14 +143,11 @@ void D3DVertexFormat::Initialize(const PortableVertexDeclaration &_vtx_decl)
 		}
 	}
 
-	if (_vtx_decl.posmtx_offset != -1)
-	{
-		elems[elem_idx].Offset = _vtx_decl.posmtx_offset;
-		elems[elem_idx].Usage = D3DDECLUSAGE_BLENDINDICES;
-		elems[elem_idx].Type = D3DDECLTYPE_D3DCOLOR;
-		elems[elem_idx].UsageIndex = 0;
-		++elem_idx;
-	}
+	elems[elem_idx].Offset = _vtx_decl.posmtx_offset;
+	elems[elem_idx].Usage = D3DDECLUSAGE_BLENDINDICES;
+	elems[elem_idx].Type = D3DDECLTYPE_D3DCOLOR;
+	elems[elem_idx].UsageIndex = 0;
+	++elem_idx;
 
 	// End marker
 	elems[elem_idx].Stream = 0xff;

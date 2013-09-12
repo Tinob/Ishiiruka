@@ -93,6 +93,11 @@ void LOADERDECL PosMtx_Write()
 	DataWrite<u8>(0);
 }
 
+void LOADERDECL PosMtxDisabled_Write()
+{
+	DataWrite<u32>(0);
+}
+
 void LOADERDECL UpdateBoundingBoxPrepare() 
 {
 	if (!PixelEngine::bbox_active)
@@ -478,13 +483,14 @@ void VertexLoader::CompileVertexTranslator()
 	if (m_VtxDesc.PosMatIdx)
 	{
 		WriteCall(PosMtx_Write);
-		vtx_decl.posmtx_offset = nat_offset;
-		nat_offset += 4;
 	}
 	else
 	{
-		vtx_decl.posmtx_offset = -1;
+		WriteCall(PosMtxDisabled_Write);
 	}
+
+	vtx_decl.posmtx_offset = nat_offset;
+	nat_offset += 4;
 
 	native_stride = nat_offset;
 	vtx_decl.stride = native_stride;

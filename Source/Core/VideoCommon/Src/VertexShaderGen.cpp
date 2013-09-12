@@ -18,7 +18,7 @@
 #include "VideoConfig.h"
 
 static char text[16768];
-
+static const char *texOffsetMemberSelector[]   = {"x", "y", "z", "w"};
 template<class T>
 static void DefineVSOutputStructMember(T& object, API_TYPE api_type, const char* type, const char* name, int var_index, const char* semantic, int semantic_index = -1)
 {
@@ -105,6 +105,7 @@ static inline void GenerateVertexShader(T& out, u32 components, API_TYPE api_typ
 	DeclareUniform(out, api_type, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_NORMALMATRICES, "float4", I_NORMALMATRICES"[32]");
 	DeclareUniform(out, api_type, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_POSTTRANSFORMMATRICES, "float4", I_POSTTRANSFORMMATRICES"[64]");
 	DeclareUniform(out, api_type, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_DEPTHPARAMS, "float4", I_DEPTHPARAMS);
+	DeclareUniform(out, api_type, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_PLOFFSETPARAMS, "float4", I_PLOFFSETPARAMS"[13]");
 
 	if (g_ActiveConfig.backend_info.bSupportsGLSLUBO)
 		out.Write("};\n");
@@ -118,8 +119,7 @@ static inline void GenerateVertexShader(T& out, u32 components, API_TYPE api_typ
 	if(api_type == API_OPENGL)
 	{
 		out.Write("ATTRIN float4 rawpos; // ATTR%d,\n", SHADER_POSITION_ATTRIB);
-		if (components & VB_HAS_POSMTXIDX)
-			out.Write("ATTRIN float fposmtx; // ATTR%d,\n", SHADER_POSMTX_ATTRIB);
+		out.Write("ATTRIN float4 fposmtx; // ATTR%d,\n", SHADER_POSMTX_ATTRIB);
 		if (components & VB_HAS_NRM0)
 			out.Write("ATTRIN float3 rawnorm0; // ATTR%d,\n", SHADER_NORM0_ATTRIB);
 		if (components & VB_HAS_NRM1)
@@ -188,28 +188,26 @@ static inline void GenerateVertexShader(T& out, u32 components, API_TYPE api_typ
 			if ((components & (VB_HAS_UV0<<i)) || hastexmtx)
 				out.Write("  float%d tex%d : TEXCOORD%d,\n", hastexmtx ? 3 : 2, i, i);
 		}
-		if (components & VB_HAS_POSMTXIDX)
-			out.Write("  float4 blend_indices : BLENDINDICES,\n");
+		out.Write("  float4 blend_indices : BLENDINDICES,\n");
 		out.Write("  float4 rawpos : POSITION) {\n");
 	}
 	out.Write("VS_OUTPUT o;\n");
-
+	if (api_type & API_D3D9)
+	{
+		out.Write("int4 indices = D3DCOLORtoUBYTE4(blend_indices);\n");		
+	}
+	else if (api_type == API_D3D11)
+	{
+		out.Write("int4 indices = int4(blend_indices * 255.0f);\n");		
+	}
+	else
+	{
+		out.Write("int4 indices = int4(fposmtx);\n");		
+	}
+	out.Write("int posmtx = indices.x;\n");
 	// transforms
 	if (components & VB_HAS_POSMTXIDX)
-	{
-		if (api_type & API_D3D9)
-		{
-			out.Write("int4 indices = D3DCOLORtoUBYTE4(blend_indices);\n");
-			out.Write("int posmtx = indices.x;\n");
-		}
-		else if (api_type == API_D3D11)
-		{
-			out.Write("int posmtx = blend_indices.x * 255.0f;\n");
-		}
-		else
-		{
-			out.Write("int posmtx = int(fposmtx);\n");
-		}
+	{	
 
 		if (is_writing_shadercode && DriverDetails::HasBug(DriverDetails::BUG_NODYNUBOACCESS))
 		{
@@ -250,7 +248,11 @@ static inline void GenerateVertexShader(T& out, u32 components, API_TYPE api_typ
 
 
 	out.Write("o.pos = float4(dot(" I_PROJECTION"[0], pos), dot(" I_PROJECTION"[1], pos), dot(" I_PROJECTION"[2], pos), dot(" I_PROJECTION"[3], pos));\n");
-
+	if (api_type & API_D3D9)
+	{
+		//Write Pos offset for Point/Line Rendering
+		out.Write("o.pos.xy = o.pos.xy + "I_PLOFFSETPARAMS"[indices.z].xy * o.pos.w;\n");
+	}
 	out.Write("float4 mat, lacc;\n"
 			"float3 ldir, h;\n"
 			"float dist, dist2, attn;\n");
@@ -481,12 +483,16 @@ static inline void GenerateVertexShader(T& out, u32 components, API_TYPE api_typ
 		//trying to get the correct semantic while not using glDepthRange
 		//seems to get rather complicated
 	}
-
 	if (api_type & API_D3D9)
 	{
 		// D3D9 is addressing pixel centers instead of pixel boundaries in clip space.
 		// Thus we need to offset the final position by half a pixel
-		out.Write("o.pos = o.pos + float4(" I_DEPTHPARAMS".z, " I_DEPTHPARAMS".w, 0.f, 0.f);\n");
+		out.Write("o.pos.xy = o.pos.xy + " I_DEPTHPARAMS".zw;\n");
+		// Write Texture Offsets for Point/Line Rendering
+		for (unsigned int i = 0; i < xfregs.numTexGen.numTexGens; ++i)
+		{
+			out.Write("o.tex%d.xy = o.tex%d.xy + ("I_PLOFFSETPARAMS"[indices.w].zw * "I_PLOFFSETPARAMS"[indices.y + %d].%s );\n", i, i, ((i / 4) + 1), texOffsetMemberSelector[i % 4]);
+		}
 	}
 
 	if(api_type == API_OPENGL)

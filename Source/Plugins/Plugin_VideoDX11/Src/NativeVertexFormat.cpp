@@ -113,14 +113,11 @@ void D3DVertexFormat::Initialize(const PortableVertexDeclaration &_vtx_decl)
 		}
 	}
 
-	if (_vtx_decl.posmtx_offset != -1)
-	{
-		m_elems[m_num_elems].SemanticName = "BLENDINDICES";
-		m_elems[m_num_elems].AlignedByteOffset = _vtx_decl.posmtx_offset;
-		m_elems[m_num_elems].Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-		m_elems[m_num_elems].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-		++m_num_elems;
-	}
+	m_elems[m_num_elems].SemanticName = "BLENDINDICES";
+	m_elems[m_num_elems].AlignedByteOffset = _vtx_decl.posmtx_offset;
+	m_elems[m_num_elems].Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	m_elems[m_num_elems].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+	++m_num_elems;
 }
 
 void D3DVertexFormat::SetupVertexPointers()
