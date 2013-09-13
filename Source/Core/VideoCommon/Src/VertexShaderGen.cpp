@@ -119,7 +119,7 @@ static inline void GenerateVertexShader(T& out, u32 components, API_TYPE api_typ
 	if(api_type == API_OPENGL)
 	{
 		out.Write("ATTRIN float4 rawpos; // ATTR%d,\n", SHADER_POSITION_ATTRIB);
-		out.Write("ATTRIN float4 fposmtx; // ATTR%d,\n", SHADER_POSMTX_ATTRIB);
+		out.Write("ATTRIN float fposmtx; // ATTR%d,\n", SHADER_POSMTX_ATTRIB);
 		if (components & VB_HAS_NRM0)
 			out.Write("ATTRIN float3 rawnorm0; // ATTR%d,\n", SHADER_NORM0_ATTRIB);
 		if (components & VB_HAS_NRM1)
@@ -196,18 +196,21 @@ static inline void GenerateVertexShader(T& out, u32 components, API_TYPE api_typ
 	{
 		out.Write("int4 indices = D3DCOLORtoUBYTE4(blend_indices);\n");		
 	}
-	else if (api_type == API_D3D11)
-	{
-		out.Write("int4 indices = int4(blend_indices * 255.0f);\n");		
-	}
-	else
-	{
-		out.Write("int4 indices = int4(fposmtx);\n");		
-	}
-	out.Write("int posmtx = indices.x;\n");
 	// transforms
 	if (components & VB_HAS_POSMTXIDX)
-	{	
+	{
+		if (api_type & API_D3D9)
+		{
+			out.Write("int posmtx = indices.x;\n");
+		}
+		else if (api_type == API_D3D11)
+		{
+			out.Write("int posmtx = blend_indices.x * 255.0f;\n");
+		}
+		else
+		{
+			out.Write("int posmtx = int(fposmtx);\n");
+		}
 
 		if (is_writing_shadercode && DriverDetails::HasBug(DriverDetails::BUG_NODYNUBOACCESS))
 		{
