@@ -484,13 +484,16 @@ void VertexLoader::CompileVertexTranslator()
 	{
 		WriteCall(PosMtx_Write);
 	}
-	else
+	else if (g_ActiveConfig.backend_info.bNeedBlendIndices)
 	{
 		WriteCall(PosMtxDisabled_Write);
 	}
 
-	vtx_decl.posmtx_offset = nat_offset;
-	nat_offset += 4;
+	if (m_VtxDesc.PosMatIdx ||  g_ActiveConfig.backend_info.bNeedBlendIndices)
+	{
+		vtx_decl.posmtx_offset = nat_offset;
+		nat_offset += 4;
+	}
 
 	native_stride = nat_offset;
 	vtx_decl.stride = native_stride;
