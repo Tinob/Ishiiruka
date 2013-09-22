@@ -20,7 +20,7 @@ bool s_BackendInitialized = false;
 volatile u32 s_swapRequested = false;
 u32 s_efbAccessRequested = false;
 volatile u32 s_FifoShuttingDown = false;
-
+volatile u32 s_EFB_PCache_Frame = 0;
 std::condition_variable s_perf_query_cond;
 std::mutex s_perf_query_lock;
 static volatile bool s_perf_query_requested;
@@ -74,6 +74,7 @@ void VideoFifo_CheckSwapRequest()
 		{
 			EFBRectangle rc;
 			g_renderer->Swap(s_beginFieldArgs.xfbAddr, s_beginFieldArgs.field, s_beginFieldArgs.fbWidth, s_beginFieldArgs.fbHeight,rc);
+			Common::AtomicIncrement(s_EFB_PCache_Frame);
 			Common::AtomicStoreRelease(s_swapRequested, false);
 		}
 	}
@@ -147,29 +148,78 @@ void VideoFifo_CheckEFBAccess()
 	}
 }
 
+VideoBackendHardware::VideoBackendHardware()
+{
+	// TODO: Make this values configurable
+	// Scale aplied to reduce peek cache size
+	m_EFB_PCache_Divisor = 3;
+	// Lifespam of the cache values in frames
+	m_EFB_PCache_Life = 3;
+	m_EFB_PCache_Width = EFB_WIDTH >> m_EFB_PCache_Divisor;
+	m_EFB_PCache_Height = EFB_HEIGHT >> m_EFB_PCache_Divisor;
+	m_EFB_PCache_Size = m_EFB_PCache_Width * m_EFB_PCache_Height;
+	m_EFB_PCache = new EFBPeekCacheElement[m_EFB_PCache_Size];	
+}
+VideoBackendHardware::~VideoBackendHardware()
+{
+	if (m_EFB_PCache)
+	{
+		delete [] m_EFB_PCache;
+	}
+}
+
 u32 VideoBackendHardware::Video_AccessEFB(EFBAccessType type, u32 x, u32 y, u32 InputData)
 {
 	if (s_BackendInitialized)
 	{
-		s_accessEFBArgs.type = type;
-		s_accessEFBArgs.x = x;
-		s_accessEFBArgs.y = y;
-		s_accessEFBArgs.Data = InputData;
-
-		Common::AtomicStoreRelease(s_efbAccessRequested, true);
-
-		if (SConfig::GetInstance().m_LocalCoreStartupParameter.bCPUThread)
+		u32 efb_p_cache_stride = (y >> m_EFB_PCache_Divisor) * m_EFB_PCache_Width + (x >> m_EFB_PCache_Divisor);
+		if (type == POKE_COLOR || type == POKE_Z 
+			|| (type == PEEK_COLOR && m_EFB_PCache[efb_p_cache_stride].ColorFrame < s_EFB_PCache_Frame)
+			|| (type == PEEK_Z && m_EFB_PCache[efb_p_cache_stride].DepthFrame < s_EFB_PCache_Frame)
+			)
 		{
-			while (Common::AtomicLoadAcquire(s_efbAccessRequested) && !s_FifoShuttingDown)
-				//Common::SleepCurrentThread(1);
-				Common::YieldCPU();
+			// In peek scenario we have a invalid cache so get the current values
+			s_accessEFBArgs.type = type;
+			s_accessEFBArgs.x = x;
+			s_accessEFBArgs.y = y;
+			s_accessEFBArgs.Data = InputData;
+
+			Common::AtomicStoreRelease(s_efbAccessRequested, true);
+
+			if (SConfig::GetInstance().m_LocalCoreStartupParameter.bCPUThread)
+			{
+				while (Common::AtomicLoadAcquire(s_efbAccessRequested) && !s_FifoShuttingDown)
+					//Common::SleepCurrentThread(1);
+					Common::YieldCPU();
+			}
+			else
+				VideoFifo_CheckEFBAccess();
+
+			if (type == PEEK_COLOR)
+			{
+				m_EFB_PCache[efb_p_cache_stride].ColorValue = s_AccessEFBResult;
+				m_EFB_PCache[efb_p_cache_stride].ColorFrame = s_EFB_PCache_Frame + m_EFB_PCache_Life;
+			}
+			else if(type == PEEK_Z)
+			{
+				m_EFB_PCache[efb_p_cache_stride].DepthValue = s_AccessEFBResult;
+				m_EFB_PCache[efb_p_cache_stride].DepthFrame = s_EFB_PCache_Frame + m_EFB_PCache_Life;
+			}
 		}
 		else
-			VideoFifo_CheckEFBAccess();
-
-		return s_AccessEFBResult;
+		{
+			// values are cached and valid so use them
+			if (type == PEEK_COLOR)
+			{
+				s_AccessEFBResult = m_EFB_PCache[efb_p_cache_stride].ColorValue;
+			}
+			else
+			{
+				s_AccessEFBResult = m_EFB_PCache[efb_p_cache_stride].DepthValue;
+			}
+		}
+		return s_AccessEFBResult;		
 	}
-
 	return 0;
 }
 
@@ -223,6 +273,8 @@ void VideoBackendHardware::InitializeShared()
 	memset(&s_accessEFBArgs, 0, sizeof(s_accessEFBArgs));
 	s_AccessEFBResult = 0;
 	m_invalid = false;
+	memset(m_EFB_PCache, 0 , m_EFB_PCache_Size * sizeof(EFBPeekCacheElement));
+	s_EFB_PCache_Frame = 1;
 }
 
 // Run from the CPU thread

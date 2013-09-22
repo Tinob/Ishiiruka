@@ -123,6 +123,7 @@ void Renderer::RenderToXFB(u32 xfbAddr, u32 fbWidth, u32 fbHeight, const EFBRect
 		// XXX: Without the VI, how would we know what kind of field this is? So
 		// just use progressive.
 		g_renderer->Swap(xfbAddr, FIELD_PROGRESSIVE, fbWidth, fbHeight,sourceRc,Gamma);
+		Common::AtomicIncrement(s_EFB_PCache_Frame);
 		Common::AtomicStoreRelease(s_swapRequested, false);
 	}
 }

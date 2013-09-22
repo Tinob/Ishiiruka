@@ -15,6 +15,13 @@ typedef void (*writeFn16)(const u16,const u32);
 typedef void (*writeFn32)(const u32,const u32);
 typedef void (*readFn16)(u16&, const u32);
 
+typedef struct _EFBPeekCacheElement
+{
+	u32 ColorValue;
+	u32 DepthValue;
+	u32 ColorFrame;
+	u32 DepthFrame;	
+}EFBPeekCacheElement;
 
 enum FieldType
 {
@@ -173,10 +180,16 @@ class VideoBackendHardware : public VideoBackend
 	void DoState(PointerWrap &p);
 	
 	bool m_invalid;
-	
-public:
+	u32 m_EFB_PCache_Width;
+	u32 m_EFB_PCache_Height;
+	u32 m_EFB_PCache_Size;	
+	u32 m_EFB_PCache_Divisor;
+	u32 m_EFB_PCache_Life;
+	EFBPeekCacheElement* m_EFB_PCache;
+public:	
 	 void CheckInvalidState();
-
+	 VideoBackendHardware();
+	 ~VideoBackendHardware();
 protected:
 	void InitializeShared();
 	void InvalidState();
