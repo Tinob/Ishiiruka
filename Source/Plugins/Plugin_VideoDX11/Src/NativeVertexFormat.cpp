@@ -112,9 +112,9 @@ void D3DVertexFormat::Initialize(const PortableVertexDeclaration &_vtx_decl)
 			++m_num_elems;
 		}
 	}
-
+	
 	if (_vtx_decl.posmtx_offset != -1)
-	{
+ 	{
 		m_elems[m_num_elems].SemanticName = "BLENDINDICES";
 		m_elems[m_num_elems].AlignedByteOffset = _vtx_decl.posmtx_offset;
 		m_elems[m_num_elems].Format = DXGI_FORMAT_R8G8B8A8_UNORM;

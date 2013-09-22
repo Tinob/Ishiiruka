@@ -1315,8 +1315,7 @@ void Renderer::SetDitherMode()
 
 void Renderer::SetLineWidth()
 {
-	// We can't change line width in D3D unless we use ID3DXLine
-	float fratio = xfregs.viewport.wd != 0 ? Renderer::EFBToScaledXf(1.f) : 1.0f;
+	float fratio = Renderer::EFBToScaledXf(1.f);
 	float psize = bpmem.lineptwidth.pointsize * fratio / 6.0f;
 	psize = psize > 0 ? psize : 1.0f;
 	if (psize > m_fMaxPointSize)
@@ -1325,7 +1324,7 @@ void Renderer::SetLineWidth()
 	}
 	D3D::SetRenderState(D3DRS_POINTSIZE, *((DWORD*)&psize));
 	D3D::SetRenderState(D3DRS_POINTSIZE_MIN, *((DWORD*)&psize));
-	D3D::SetRenderState(D3DRS_POINTSIZE_MAX, *((DWORD*)&psize));
+	D3D::SetRenderState(D3DRS_POINTSIZE_MAX, *((DWORD*)&psize));	
 }
 
 void Renderer::SetSamplerState(int stage, int texindex)

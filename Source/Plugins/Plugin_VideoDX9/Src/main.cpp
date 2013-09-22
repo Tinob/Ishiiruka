@@ -111,6 +111,7 @@ void InitBackendInfo()
 	g_Config.backend_info.bSupportsFormatReinterpretation = true;
 	g_Config.backend_info.bSupportsPixelLighting = C_PLIGHTS + 40 <= maxConstants && C_PMATERIALS + 4 <= maxConstants;
 	g_Config.backend_info.bSupportsEarlyZ = false;
+	g_Config.backend_info.bNeedBlendIndices = true;
 
 	// adapters
 	g_Config.backend_info.Adapters.clear();

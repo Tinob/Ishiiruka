@@ -158,6 +158,7 @@ struct VideoConfig
 		bool bSupportsSeparateAlphaFunction;
 		bool bSupportsGLSLUBO; // needed by PixelShaderGen, so must stay in VideoCommon
 		bool bSupportsEarlyZ; // needed by PixelShaderGen, so must stay in VideoCommon
+		bool bNeedBlendIndices; // needed by PixelShaderGen, so must stay in VideoCommon
 	} backend_info;
 
 	// Utility
