@@ -222,7 +222,7 @@ void VertexLoader::CompileVertexTranslator()
 		PanicAlert("Trying to recompile a vertex translator");
 
 	m_compiledCode = GetCodePtr();
-	ABI_EmitPrologue(4);
+	ABI_PushAllCalleeSavedRegsAndAdjustStack();
 
 	// Start loop here
 	const u8 *loop_start = GetCodePtr();
@@ -508,7 +508,8 @@ void VertexLoader::CompileVertexTranslator()
 #endif
 
 	J_CC(CC_NZ, loop_start, true);
-	ABI_EmitEpilogue(4);
+	ABI_PopAllCalleeSavedRegsAndAdjustStack();
+	RET();
 #endif
 	m_NativeFmt->Initialize(vtx_decl);
 }
