@@ -1,7 +1,9 @@
-package org.dolphinemu.dolphinemu;
+package org.dolphinemu.dolphinemu.emulation;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
@@ -11,6 +13,9 @@ import android.preference.PreferenceManager;
 import android.util.DisplayMetrics;
 import android.view.*;
 import android.view.WindowManager.LayoutParams;
+
+import org.dolphinemu.dolphinemu.NativeLibrary;
+import org.dolphinemu.dolphinemu.R;
 import org.dolphinemu.dolphinemu.settings.InputConfigFragment;
 import org.dolphinemu.dolphinemu.settings.VideoSettingsFragment;
 
@@ -82,6 +87,7 @@ public final class EmulationActivity extends Activity
 	public void onStop()
 	{
 		super.onStop();
+
 		if (Running)
 			NativeLibrary.StopEmulation();
 	}
@@ -90,6 +96,7 @@ public final class EmulationActivity extends Activity
 	public void onPause()
 	{
 		super.onPause();
+
 		if (Running)
 			NativeLibrary.PauseEmulation();
 	}
@@ -98,8 +105,21 @@ public final class EmulationActivity extends Activity
 	public void onResume()
 	{
 		super.onResume();
+
 		if (Running)
 			NativeLibrary.UnPauseEmulation();
+	}
+	
+	@Override
+	public void onDestroy()
+	{
+		super.onDestroy();
+
+		if (Running)
+		{
+			NativeLibrary.StopEmulation();
+			Running = false;
+		}
 	}
 	
 	@Override
@@ -189,6 +209,27 @@ public final class EmulationActivity extends Activity
 			case R.id.loadSlot5:
 				NativeLibrary.LoadState(4);
 				return true;
+
+			case R.id.exitEmulation:
+			{
+				// Create a confirmation method for quitting the current emulation instance.
+				AlertDialog.Builder builder = new AlertDialog.Builder(this);
+				builder.setTitle(getString(R.string.overlay_exit_emulation));
+				builder.setMessage(R.string.overlay_exit_emulation_confirm);
+				builder.setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, int which)
+					{
+						finish();
+					}
+				});
+				builder.setNegativeButton(R.string.no, new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, int which)
+					{
+						// Do nothing. Just makes the No button appear.
+					}
+				});
+				builder.show();
+			}
 
 			default:
 				return super.onMenuItemSelected(itemId, item);
