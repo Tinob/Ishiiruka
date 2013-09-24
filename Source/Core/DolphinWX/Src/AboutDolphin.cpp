@@ -6,7 +6,6 @@
 #include "AboutDolphin.h"
 #include "WxUtils.h"
 #include "../resources/dolphin_logo.cpp"
-#include "scmrev.h"
 
 AboutDolphin::AboutDolphin(wxWindow *parent, wxWindowID id,
 		const wxString &title, const wxPoint &position,
@@ -46,10 +45,9 @@ AboutDolphin::AboutDolphin(wxWindow *parent, wxWindowID id,
 				"\n"
 				"We are not affiliated with Nintendo in any way.\n"
 				"Gamecube and Wii are trademarks of Nintendo.\n"
-				"The emulator is for educational purposes only\n"
-				"and should not be used to play games you do\n"
-				"not legally own."),
-		SCM_DESC_STR, SCM_BRANCH_STR, SCM_REV_STR, __DATE__, __TIME__);
+				"The emulator should not be used to play games\n"
+				"you do not legally own."),
+		scm_desc_str, scm_branch_str, scm_rev_git_str, __DATE__, __TIME__);
 
 	wxStaticText* const Message = new wxStaticText(this, wxID_ANY, Text);
 	Message->Wrap(GetSize().GetWidth());
