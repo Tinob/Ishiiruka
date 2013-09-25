@@ -646,12 +646,6 @@ public:
 	void ABI_PushAllCalleeSavedRegsAndAdjustStack();
 	void ABI_PopAllCalleeSavedRegsAndAdjustStack();
 
-	// A function that doesn't know anything about it's surroundings, should
-	// be surrounded by these to establish a safe environment, where it can roam free.
-	// An example is a backpatch injected function.
-	void ABI_PushAllCallerSavedRegsAndAdjustStack();
-	void ABI_PopAllCallerSavedRegsAndAdjustStack();
-
 	unsigned int ABI_GetAlignedFrameSize(unsigned int frameSize, bool noProlog = false);
 	void ABI_AlignStack(unsigned int frameSize, bool noProlog = false);
 	void ABI_RestoreStack(unsigned int frameSize, bool noProlog = false);
@@ -696,6 +690,9 @@ public:
 	#define CallCdeclFunction6_I(a,b,c,d,e,f,g) ___CallCdeclImport6(&__imp_##a,b,c,d,e,f,g)
 
 	#define DECLARE_IMPORT(x) extern "C" void *__imp_##x
+
+	void PushRegistersAndAlignStack(u32 mask);
+	void PopRegistersAndAlignStack(u32 mask);
 
 #endif
 };  // class XEmitter

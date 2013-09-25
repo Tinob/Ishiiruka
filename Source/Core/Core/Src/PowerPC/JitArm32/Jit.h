@@ -67,7 +67,7 @@ private:
 
 	void PrintDebug(UGeckoInstruction inst, u32 level);
 
-	void Helper_UpdateCR1(ARMReg value);	
+	void Helper_UpdateCR1(ARMReg fpscr, ARMReg temp);	
 
 	void SetFPException(ARMReg Reg, u32 Exception);
 public:
@@ -159,6 +159,7 @@ public:
 	void arith(UGeckoInstruction _inst);
 
 	void addex(UGeckoInstruction _inst);
+	void subfic(UGeckoInstruction _inst);
 	void cntlzwx(UGeckoInstruction _inst);
 	void cmp (UGeckoInstruction _inst);
 	void cmpi(UGeckoInstruction _inst);
@@ -209,9 +210,15 @@ public:
 	void fmrx(UGeckoInstruction _inst);
 	void fmaddsx(UGeckoInstruction _inst);
 	void fmaddx(UGeckoInstruction _inst);
+	void fctiwx(UGeckoInstruction _inst);
 	void fctiwzx(UGeckoInstruction _inst);
 	void fcmpo(UGeckoInstruction _inst);
 	void fcmpu(UGeckoInstruction _inst);
+	void fnmaddx(UGeckoInstruction _inst);
+	void fnmaddsx(UGeckoInstruction _inst);
+	void fresx(UGeckoInstruction _inst);
+	void fselx(UGeckoInstruction _inst);
+	void frsqrtex(UGeckoInstruction _inst);
 
 	// Floating point loadStore
 	void lfXX(UGeckoInstruction _inst);
@@ -220,6 +227,8 @@ public:
 
 	// Paired Singles
 	void ps_add(UGeckoInstruction _inst);
+	void ps_div(UGeckoInstruction _inst);
+	void ps_res(UGeckoInstruction _inst);
 	void ps_sum0(UGeckoInstruction _inst);
 	void ps_sum1(UGeckoInstruction _inst);
 	void ps_madd(UGeckoInstruction _inst);
@@ -242,11 +251,16 @@ public:
 	void ps_nabs(UGeckoInstruction _inst);
 	void ps_rsqrte(UGeckoInstruction _inst);
 	void ps_sel(UGeckoInstruction _inst);
+	void ps_cmpu0(UGeckoInstruction _inst);
+	void ps_cmpu1(UGeckoInstruction _inst);
+	void ps_cmpo0(UGeckoInstruction _inst);
+	void ps_cmpo1(UGeckoInstruction _inst);
 
 	// LoadStore paired
 	void psq_l(UGeckoInstruction _inst);
+	void psq_lx(UGeckoInstruction _inst);
 	void psq_st(UGeckoInstruction _inst);
-
+	void psq_stx(UGeckoInstruction _inst);
 };
 
 #endif // _JIT64_H
