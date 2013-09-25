@@ -66,7 +66,7 @@ float tcScale[8];
 static float s_bbox_vertex_buffer[3];
 static u8 *s_bbox_pCurBufferPointer_orig;
 
-static const float fractionTable[32] = {
+const float fractionTable[32] = {
 	1.0f / (1U << 0), 1.0f / (1U << 1), 1.0f / (1U << 2), 1.0f / (1U << 3),
 	1.0f / (1U << 4), 1.0f / (1U << 5), 1.0f / (1U << 6), 1.0f / (1U << 7),
 	1.0f / (1U << 8), 1.0f / (1U << 9), 1.0f / (1U << 10), 1.0f / (1U << 11),

@@ -35,7 +35,7 @@ __forceinline float FracAdjust(T val)
 	//auto const U16FRAC = 1.f / (1u << 15);
 
 	// TODO: is this right?
-	return val / float(1u << (sizeof(T) * 8 - std::numeric_limits<T>::is_signed - 1));
+	return val * fractionTable[sizeof(T) * 8 - std::numeric_limits<T>::is_signed - 1];
 }
 
 template <>

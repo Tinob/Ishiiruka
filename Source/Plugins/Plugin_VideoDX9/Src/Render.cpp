@@ -271,25 +271,6 @@ bool Renderer::CheckForResize()
 	return false;
 }
 
-void Renderer::SetScissorRect(const TargetRectangle& rc)
-{
-	D3D::dev->SetScissorRect(rc.AsRECT());
-}
-
-void Renderer::SetColorMask()
-{
-	// Only enable alpha channel if it's supported by the current EFB format
-	DWORD color_mask = 0;
-	if (bpmem.alpha_test.TestResult() != AlphaTest::FAIL)
-	{
-		if (bpmem.blendmode.alphaupdate && (bpmem.zcontrol.pixel_format == PIXELFMT_RGBA6_Z24))
-			color_mask = D3DCOLORWRITEENABLE_ALPHA;
-		if (bpmem.blendmode.colorupdate)
-			color_mask |= D3DCOLORWRITEENABLE_RED | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_BLUE;
-	}
-	D3D::SetRenderState(D3DRS_COLORWRITEENABLE, color_mask);
-}
-
 // This function allows the CPU to directly access the EFB.
 // There are EFB peeks (which will read the color or depth of a pixel)
 // and EFB pokes (which will change the color or depth of a pixel).
@@ -309,15 +290,6 @@ u32 Renderer::AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data)
 	if (!g_ActiveConfig.bEFBAccessEnable)
 		return 0;
 
-	if (type == POKE_Z)
-	{
-		static bool alert_only_once = true;
-		if (!alert_only_once) return 0;
-		PanicAlert("EFB: Poke Z not implemented (tried to poke z value %#x at (%d,%d))", poke_data, x, y);
-		alert_only_once = false;
-		return 0;
-	}
-
 	// if depth textures aren't supported by the hardware, just return
 	if (type == PEEK_Z)
 		if (FramebufferManager::GetEFBDepthTexture() == NULL)
@@ -334,7 +306,7 @@ u32 Renderer::AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data)
 		pBufferRT = FramebufferManager::GetEFBDepthReadSurface();
 		pSystemBuf = FramebufferManager::GetEFBDepthOffScreenRTSurface();
 	}
-	else //if(type == PEEK_COLOR || type == POKE_COLOR)
+	else //(type == PEEK_COLOR || type == POKE_COLOR)
 	{
 		pEFBSurf = FramebufferManager::GetEFBColorRTSurface();
 		pBufferRT = FramebufferManager::GetEFBColorReadSurface();
@@ -364,10 +336,6 @@ u32 Renderer::AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data)
 	RectToLock.top = targetPixelRc.top;	
 	if (type == PEEK_Z)
 	{
-		// TODO: why is D3DFMT_D24X8 singled out here? why not D3DFMT_D24X4S4/D24S8/D24FS8/D32/D16/D15S1 too, or none of them?
-		if (FramebufferManager::GetEFBDepthRTSurfaceFormat() == D3DFMT_D24X8)
-			return 0;
-
 		RECT PixelRect;
 		PixelRect.bottom = 4;
 		PixelRect.left = 0;
@@ -479,7 +447,7 @@ u32 Renderer::AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data)
 		else if(alpha_read_mode.ReadMode == 1) return (ret | 0xFF000000); // GX_READ_FF
 		else return (ret & 0x00FFFFFF); // GX_READ_00
 	}
-	else //if(type == POKE_COLOR)
+	else if(type == POKE_COLOR)
 	{
 		// TODO: Speed this up by batching pokes?
 		ResetAPIState();
@@ -491,90 +459,25 @@ u32 Renderer::AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data)
 		RestoreAPIState();
 		return 0;
 	}
-}
-
-// Viewport correction:
-// Say you want a viewport at (ix, iy) with size (iw, ih),
-// but your viewport must be clamped at (ax, ay) with size (aw, ah).
-// Just multiply the projection matrix with the following to get the same
-// effect:
-// [   (iw/aw)         0     0    ((iw - 2*(ax-ix)) / aw - 1)   ]
-// [         0   (ih/ah)     0   ((-ih + 2*(ay-iy)) / ah + 1)   ]
-// [         0         0     1                              0   ]
-// [         0         0     0                              1   ]
-static void ViewportCorrectionMatrix(Matrix44& result,
-	float ix, float iy, float iw, float ih, // Intended viewport (x, y, width, height)
-	float ax, float ay, float aw, float ah) // Actual viewport (x, y, width, height)
-{
-	Matrix44::LoadIdentity(result);
-	if (aw == 0.f || ah == 0.f)
-		return;
-	result.data[4*0+0] = iw / aw;
-	result.data[4*0+3] = (iw - 2.f * (ax - ix)) / aw - 1.f;
-	result.data[4*1+1] = ih / ah;
-	result.data[4*1+3] = (-ih + 2.f * (ay - iy)) / ah + 1.f;
-}
-
-// Called from VertexShaderManager
-void Renderer::UpdateViewport(Matrix44& vpCorrection)
-{
-	// reversed gxsetviewport(xorig, yorig, width, height, nearz, farz)
-	// [0] = width/2
-	// [1] = height/2
-	// [2] = 16777215 * (farz - nearz)
-	// [3] = xorig + width/2 + 342
-	// [4] = yorig + height/2 + 342
-	// [5] = 16777215 * farz
-
-	int scissorXOff = bpmem.scissorOffset.x * 2;
-	int scissorYOff = bpmem.scissorOffset.y * 2;
-
-	// TODO: ceil, floor or just cast to int?
-	int intendedX = EFBToScaledX((int)ceil(xfregs.viewport.xOrig - xfregs.viewport.wd - scissorXOff));
-	int intendedY = EFBToScaledY((int)ceil(xfregs.viewport.yOrig + xfregs.viewport.ht - scissorYOff));
-	int intendedWd = EFBToScaledX((int)ceil(2.0f * xfregs.viewport.wd));
-	int intendedHt = EFBToScaledY((int)ceil(-2.0f * xfregs.viewport.ht));
-	if (intendedWd < 0)
+	else //(type == POKE_Z)
 	{
-		intendedX += intendedWd;
-		intendedWd = -intendedWd;
-	}
-	if (intendedHt < 0)
-	{
-		intendedY += intendedHt;
-		intendedHt = -intendedHt;
-	}
-
-	// In D3D, the viewport rectangle must fit within the render target.
-	int X = intendedX;
-	if (X < 0)
-		X = 0;
-	int Y = intendedY;
-	if (Y < 0)
-		Y = 0;
-	int Wd = intendedWd;
-	if (X + Wd > GetTargetWidth())
-		Wd = GetTargetWidth() - X;
-	int Ht = intendedHt;
-	if (Y + Ht > GetTargetHeight())
-		Ht = GetTargetHeight() - Y;
-
-	// If GX viewport is off the render target, we must clamp our viewport
-	// within the bounds. Use the correction matrix to compensate.
-	ViewportCorrectionMatrix(vpCorrection,
-		(float)intendedX, (float)intendedY, (float)intendedWd, (float)intendedHt,
-		(float)X, (float)Y, (float)Wd, (float)Ht);
-
-	D3DVIEWPORT9 vp;
-	vp.X = X;
-	vp.Y = Y;
-	vp.Width = Wd;
-	vp.Height = Ht;
-
-	// Some games set invalids values for z min and z max so fix them to the max an min alowed and let the shaders do this work
-	vp.MinZ = 0.0f; // (xfregs.viewport.farZ - xfregs.viewport.zRange) / 16777216.0f;
-	vp.MaxZ = 1.0f; // xfregs.viewport.farZ / 16777216.0f;
-	D3D::dev->SetViewport(&vp);
+		ResetAPIState();
+		D3D::ChangeRenderState(D3DRS_COLORWRITEENABLE, 0);
+		D3D::ChangeRenderState(D3DRS_ZENABLE, TRUE);
+		D3D::ChangeRenderState(D3DRS_ZWRITEENABLE, TRUE);
+		D3D::ChangeRenderState(D3DRS_ZFUNC, D3DCMP_ALWAYS);
+		D3DVIEWPORT9 vp;
+		vp.X = RectToLock.left;
+		vp.Y = RectToLock.top;
+		vp.Width  = RectToLock.right - RectToLock.left;
+		vp.Height = RectToLock.bottom - RectToLock.top;
+		vp.MinZ = 0.0;
+		vp.MaxZ = 1.0;
+		D3D::dev->SetViewport(&vp);
+		D3D::drawClearQuad(0, (poke_data & 0xFFFFFF) / float(0xFFFFFF), PixelShaderCache::GetClearProgram(), VertexShaderCache::GetClearVertexShader());
+		RestoreAPIState();
+		return 0;
+	}	
 }
 
 void Renderer::ClearScreen(const EFBRectangle& rc, bool colorEnable, bool alphaEnable, bool zEnable, u32 color, u32 z)
@@ -594,11 +497,7 @@ void Renderer::ClearScreen(const EFBRectangle& rc, bool colorEnable, bool alphaE
 		D3D::ChangeRenderState(D3DRS_ZENABLE, TRUE);
 		D3D::ChangeRenderState(D3DRS_ZWRITEENABLE, TRUE);
 		D3D::ChangeRenderState(D3DRS_ZFUNC, D3DCMP_ALWAYS);
-	}
-	else
-	{
-		D3D::ChangeRenderState(D3DRS_ZENABLE, FALSE);
-	}
+	}	
 
 	// Update the viewport for clearing the target EFB rect
 	TargetRectangle targetRc = ConvertEFBRectangle(rc);
@@ -649,85 +548,6 @@ void Renderer::ReinterpretPixelData(unsigned int convtype)
 	g_renderer->RestoreAPIState();
 }
 
-void Renderer::SetBlendMode(bool forceUpdate)
-{
-	// Our render target always uses an alpha channel, so we need to override the blend functions to assume a destination alpha of 1 if the render target isn't supposed to have an alpha channel
-	// Example: D3DBLEND_DESTALPHA needs to be D3DBLEND_ONE since the result without an alpha channel is assumed to always be 1.
-	bool target_has_alpha = bpmem.zcontrol.pixel_format == PIXELFMT_RGBA6_Z24;
-	//bDstAlphaPass is taken into account because the ability to disable alpha composition is
-	//really useful for debugging shader and blending errors
-	bool use_DstAlpha = !g_ActiveConfig.bDstAlphaPass && bpmem.dstalpha.enable && bpmem.blendmode.alphaupdate && target_has_alpha;
-	bool use_DualSource = use_DstAlpha && g_ActiveConfig.backend_info.bSupportsDualSourceBlend;
-	const D3DBLEND d3dSrcFactors[8] =
-	{
-		D3DBLEND_ZERO,
-		D3DBLEND_ONE,
-		D3DBLEND_DESTCOLOR,
-		D3DBLEND_INVDESTCOLOR,
-		(use_DualSource) ? D3DBLEND_SRCCOLOR2 : D3DBLEND_SRCALPHA,
-		(use_DualSource) ? D3DBLEND_INVSRCCOLOR2 : D3DBLEND_INVSRCALPHA,
-		(target_has_alpha) ? D3DBLEND_DESTALPHA : D3DBLEND_ONE,
-		(target_has_alpha) ? D3DBLEND_INVDESTALPHA : D3DBLEND_ZERO
-	};
-	const D3DBLEND d3dDestFactors[8] =
-	{
-		D3DBLEND_ZERO,
-		D3DBLEND_ONE,
-		D3DBLEND_SRCCOLOR,
-		D3DBLEND_INVSRCCOLOR,
-		(use_DualSource) ? D3DBLEND_SRCCOLOR2 : D3DBLEND_SRCALPHA,
-		(use_DualSource) ? D3DBLEND_INVSRCCOLOR2 : D3DBLEND_INVSRCALPHA,
-		(target_has_alpha) ? D3DBLEND_DESTALPHA : D3DBLEND_ONE,
-		(target_has_alpha) ? D3DBLEND_INVDESTALPHA : D3DBLEND_ZERO
-	};
-
-	if (bpmem.blendmode.logicopenable && !forceUpdate)
-	{
-		D3D::SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE , false);
-		return;
-	}
-
-	bool blend_enable = bpmem.blendmode.subtract || bpmem.blendmode.blendenable;
-	D3D::SetRenderState(D3DRS_ALPHABLENDENABLE, blend_enable);
-	D3D::SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, blend_enable && g_ActiveConfig.backend_info.bSupportsSeparateAlphaFunction);
-	if (blend_enable)
-	{
-		D3DBLENDOP op = D3DBLENDOP_ADD;
-		u32 srcidx = bpmem.blendmode.srcfactor;
-		u32 dstidx = bpmem.blendmode.dstfactor;
-		if (bpmem.blendmode.subtract)
-		{
-			op = D3DBLENDOP_REVSUBTRACT;
-			srcidx = GX_BL_ONE;
-			dstidx = GX_BL_ONE;
-		}
-		D3D::SetRenderState(D3DRS_BLENDOP, op);
-		D3D::SetRenderState(D3DRS_SRCBLEND, d3dSrcFactors[srcidx]);
-		D3D::SetRenderState(D3DRS_DESTBLEND, d3dDestFactors[dstidx]);
-		if (g_ActiveConfig.backend_info.bSupportsSeparateAlphaFunction)
-		{
-			if (use_DualSource)
-			{			
-				op = D3DBLENDOP_ADD;
-				srcidx = GX_BL_ONE;
-				dstidx = GX_BL_ZERO;
-			}
-			else
-			{
-				// we can't use D3DBLEND_DESTCOLOR or D3DBLEND_INVDESTCOLOR for source in alpha channel so use their alpha equivalent instead
-				if (srcidx == GX_BL_DSTCLR) srcidx = GX_BL_DSTALPHA;
-				if (srcidx == GX_BL_INVDSTCLR) srcidx = GX_BL_INVDSTALPHA;
-				// we can't use D3DBLEND_SRCCOLOR or D3DBLEND_INVSRCCOLOR for destination in alpha channel so use their alpha equivalent instead
-				if (dstidx == GX_BL_SRCCLR) dstidx = GX_BL_SRCALPHA;
-				if (dstidx == GX_BL_INVSRCCLR) dstidx = GX_BL_INVSRCALPHA;
-			}
-			D3D::SetRenderState(D3DRS_BLENDOPALPHA, op);
-			D3D::SetRenderState(D3DRS_SRCBLENDALPHA, d3dSrcFactors[srcidx]);
-			D3D::SetRenderState(D3DRS_DESTBLENDALPHA, d3dDestFactors[dstidx]);
-		}		
-	}	
-}
-
 bool Renderer::SaveScreenshot(const std::string &filename, const TargetRectangle &dst_rect)
 {
 	HRESULT hr = D3D::dev->GetRenderTargetData(D3D::GetBackBufferSurface(),ScreenShootMEMSurface);
@@ -772,8 +592,28 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 
 	ResetAPIState();
 
-	if(g_ActiveConfig.bAnaglyphStereo)
-	{
+	// Prepare to copy the XFBs to our backbuffer
+	D3D::dev->SetDepthStencilSurface(NULL);
+	D3D::dev->SetRenderTarget(0, D3D::GetBackBufferSurface());
+
+	UpdateDrawRectangle(s_backbuffer_width, s_backbuffer_height);
+	D3DVIEWPORT9 vp;
+	int X = GetTargetRectangle().left;
+	int Y = GetTargetRectangle().top;
+	int Width  = GetTargetRectangle().right - GetTargetRectangle().left;
+	int Height = GetTargetRectangle().bottom - GetTargetRectangle().top;
+
+	// Sanity check
+	if (X < 0) X = 0;
+	if (Y < 0) Y = 0;
+	if (X > s_backbuffer_width) X = s_backbuffer_width;
+	if (Y > s_backbuffer_height) Y = s_backbuffer_height;
+	if (Width < 0) Width = 0;
+	if (Height < 0) Height = 0;
+	if (Width > (s_backbuffer_width - X)) Width = s_backbuffer_width - X;
+	if (Height > (s_backbuffer_height - Y)) Height = s_backbuffer_height - Y;
+	// Clear full target screen (edges, borders etc)
+	if(g_ActiveConfig.bAnaglyphStereo) {
 		static bool RightFrame = false;
 		if(RightFrame)
 		{
@@ -791,17 +631,6 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 			VertexShaderManager::RotateView(0.0001f * g_ActiveConfig.iAnaglyphFocalAngle,0.0f);
 			RightFrame = true;
 		}
-	}
-
-	// Prepare to copy the XFBs to our backbuffer
-	D3D::dev->SetDepthStencilSurface(NULL);
-	D3D::dev->SetRenderTarget(0, D3D::GetBackBufferSurface());
-
-	UpdateDrawRectangle(s_backbuffer_width, s_backbuffer_height);
-	D3DVIEWPORT9 vp;
-
-	// Clear full target screen (edges, borders etc)
-	if(g_ActiveConfig.bAnaglyphStereo) {
 		// use a clear quad to keep old red or blue/green data
 		vp.X = 0;
 		vp.Y = 0;
@@ -815,22 +644,7 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 	else
 	{
 		D3D::dev->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0, 0, 0), 1.0f, 0);
-	}
-
-	int X = GetTargetRectangle().left;
-	int Y = GetTargetRectangle().top;
-	int Width  = GetTargetRectangle().right - GetTargetRectangle().left;
-	int Height = GetTargetRectangle().bottom - GetTargetRectangle().top;
-
-	// Sanity check
-	if (X < 0) X = 0;
-	if (Y < 0) Y = 0;
-	if (X > s_backbuffer_width) X = s_backbuffer_width;
-	if (Y > s_backbuffer_height) Y = s_backbuffer_height;
-	if (Width < 0) Width = 0;
-	if (Height < 0) Height = 0;
-	if (Width > (s_backbuffer_width - X)) Width = s_backbuffer_width - X;
-	if (Height > (s_backbuffer_height - Y)) Height = s_backbuffer_height - Y;
+	}	
 
 	vp.X = X;
 	vp.Y = Y;
@@ -1104,11 +918,123 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 	RestoreAPIState();
 
 	D3D::dev->SetRenderTarget(0, FramebufferManager::GetEFBColorRTSurface());
-	D3D::dev->SetDepthStencilSurface(FramebufferManager::GetEFBDepthRTSurface());
-	VertexShaderManager::SetViewportChanged();
+	D3D::dev->SetDepthStencilSurface(FramebufferManager::GetEFBDepthRTSurface());	
 
 	Core::Callback_VideoCopiedToXFB(XFBWrited || (g_ActiveConfig.bUseXFB && g_ActiveConfig.bUseRealXFB));
 	XFBWrited = false;
+}
+
+// ALWAYS call RestoreAPIState for each ResetAPIState call you're doing
+void Renderer::ResetAPIState()
+{
+	D3D::SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID);
+	D3D::SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
+	D3D::SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+	D3D::SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+	D3D::SetRenderState(D3DRS_ZENABLE, FALSE);
+	D3D::SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
+	DWORD color_mask = D3DCOLORWRITEENABLE_ALPHA | D3DCOLORWRITEENABLE_RED | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_BLUE;
+	D3D::SetRenderState(D3DRS_COLORWRITEENABLE, color_mask);
+}
+
+void Renderer::RestoreAPIState()
+{
+	// Gets us back into a more game-like state.
+	D3D::SetRenderState(D3DRS_FILLMODE, g_ActiveConfig.bWireFrame ? D3DFILL_WIREFRAME : D3DFILL_SOLID);
+	D3D::SetRenderState(D3DRS_SCISSORTESTENABLE, TRUE);
+	VertexShaderManager::SetViewportChanged();
+	BPFunctions::SetScissor();
+	if (bpmem.zmode.testenable) {
+		D3D::SetRenderState(D3DRS_ZENABLE, TRUE);
+		if (bpmem.zmode.updateenable)
+			D3D::SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
+	}
+	SetColorMask();
+	SetLogicOpMode();
+	SetGenerationMode();
+}
+
+// Viewport correction:
+// Say you want a viewport at (ix, iy) with size (iw, ih),
+// but your viewport must be clamped at (ax, ay) with size (aw, ah).
+// Just multiply the projection matrix with the following to get the same
+// effect:
+// [   (iw/aw)         0     0    ((iw - 2*(ax-ix)) / aw - 1)   ]
+// [         0   (ih/ah)     0   ((-ih + 2*(ay-iy)) / ah + 1)   ]
+// [         0         0     1                              0   ]
+// [         0         0     0                              1   ]
+static void ViewportCorrectionMatrix(Matrix44& result,
+	float ix, float iy, float iw, float ih, // Intended viewport (x, y, width, height)
+	float ax, float ay, float aw, float ah) // Actual viewport (x, y, width, height)
+{
+	Matrix44::LoadIdentity(result);
+	if (aw == 0.f || ah == 0.f)
+		return;
+	result.data[4*0+0] = iw / aw;
+	result.data[4*0+3] = (iw - 2.f * (ax - ix)) / aw - 1.f;
+	result.data[4*1+1] = ih / ah;
+	result.data[4*1+3] = (-ih + 2.f * (ay - iy)) / ah + 1.f;
+}
+// Called from VertexShaderManager
+void Renderer::UpdateViewport(Matrix44& vpCorrection)
+{
+	// reversed gxsetviewport(xorig, yorig, width, height, nearz, farz)
+	// [0] = width/2
+	// [1] = height/2
+	// [2] = 16777215 * (farz - nearz)
+	// [3] = xorig + width/2 + 342
+	// [4] = yorig + height/2 + 342
+	// [5] = 16777215 * farz
+
+	int scissorXOff = bpmem.scissorOffset.x * 2;
+	int scissorYOff = bpmem.scissorOffset.y * 2;
+
+	// TODO: ceil, floor or just cast to int?
+	int intendedX = EFBToScaledX((int)ceil(xfregs.viewport.xOrig - xfregs.viewport.wd - scissorXOff));
+	int intendedY = EFBToScaledY((int)ceil(xfregs.viewport.yOrig + xfregs.viewport.ht - scissorYOff));
+	int intendedWd = EFBToScaledX((int)ceil(2.0f * xfregs.viewport.wd));
+	int intendedHt = EFBToScaledY((int)ceil(-2.0f * xfregs.viewport.ht));
+	if (intendedWd < 0)
+	{
+		intendedX += intendedWd;
+		intendedWd = -intendedWd;
+	}
+	if (intendedHt < 0)
+	{
+		intendedY += intendedHt;
+		intendedHt = -intendedHt;
+	}
+
+	// In D3D, the viewport rectangle must fit within the render target.
+	int X = intendedX;
+	if (X < 0)
+		X = 0;
+	int Y = intendedY;
+	if (Y < 0)
+		Y = 0;
+	int Wd = intendedWd;
+	if (X + Wd > GetTargetWidth())
+		Wd = GetTargetWidth() - X;
+	int Ht = intendedHt;
+	if (Y + Ht > GetTargetHeight())
+		Ht = GetTargetHeight() - Y;
+
+	// If GX viewport is off the render target, we must clamp our viewport
+	// within the bounds. Use the correction matrix to compensate.
+	ViewportCorrectionMatrix(vpCorrection,
+		(float)intendedX, (float)intendedY, (float)intendedWd, (float)intendedHt,
+		(float)X, (float)Y, (float)Wd, (float)Ht);
+
+	D3DVIEWPORT9 vp;
+	vp.X = X;
+	vp.Y = Y;
+	vp.Width = Wd;
+	vp.Height = Ht;
+
+	// Some games set invalids values for z min and z max so fix them to the max an min alowed and let the shaders do this work
+	vp.MinZ = 0.0f; // (xfregs.viewport.farZ - xfregs.viewport.zRange) / 16777216.0f;
+	vp.MaxZ = 1.0f; // xfregs.viewport.farZ / 16777216.0f;
+	D3D::dev->SetViewport(&vp);
 }
 
 void Renderer::ApplyState(bool bUseDstAlpha)
@@ -1140,39 +1066,104 @@ void Renderer::RestoreState()
 		D3D::RefreshRenderState(D3DRS_ZWRITEENABLE);
 		D3D::RefreshRenderState(D3DRS_ZFUNC);
 	}
-	// TODO: Enable this code. Caused glitches for me however (neobrain)
-	//	for (unsigned int i = 0; i < 8; ++i)
-	//		D3D::dev->SetTexture(i, NULL);
 }
 
-// ALWAYS call RestoreAPIState for each ResetAPIState call you're doing
-void Renderer::ResetAPIState()
+void Renderer::SetScissorRect(const TargetRectangle& rc)
 {
-	D3D::SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID);
-	D3D::SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
-	D3D::SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
-	D3D::SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-	D3D::SetRenderState(D3DRS_ZENABLE, FALSE);
-	D3D::SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
-	DWORD color_mask = D3DCOLORWRITEENABLE_ALPHA | D3DCOLORWRITEENABLE_RED | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_BLUE;
+	D3D::dev->SetScissorRect(rc.AsRECT());
+}
+
+void Renderer::SetColorMask()
+{
+	// Only enable alpha channel if it's supported by the current EFB format
+	DWORD color_mask = 0;
+	if (bpmem.alpha_test.TestResult() != AlphaTest::FAIL)
+	{
+		if (bpmem.blendmode.alphaupdate && (bpmem.zcontrol.pixel_format == PIXELFMT_RGBA6_Z24))
+			color_mask = D3DCOLORWRITEENABLE_ALPHA;
+		if (bpmem.blendmode.colorupdate)
+			color_mask |= D3DCOLORWRITEENABLE_RED | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_BLUE;
+	}
 	D3D::SetRenderState(D3DRS_COLORWRITEENABLE, color_mask);
 }
 
-void Renderer::RestoreAPIState()
+void Renderer::SetBlendMode(bool forceUpdate)
 {
-	// Gets us back into a more game-like state.
-	D3D::SetRenderState(D3DRS_FILLMODE, g_ActiveConfig.bWireFrame ? D3DFILL_WIREFRAME : D3DFILL_SOLID);
-	D3D::SetRenderState(D3DRS_SCISSORTESTENABLE, TRUE);
-	VertexShaderManager::SetViewportChanged();
-	BPFunctions::SetScissor();
-	if (bpmem.zmode.testenable) {
-		D3D::SetRenderState(D3DRS_ZENABLE, TRUE);
-		if (bpmem.zmode.updateenable)
-			D3D::SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
+	// Our render target always uses an alpha channel, so we need to override the blend functions to assume a destination alpha of 1 if the render target isn't supposed to have an alpha channel
+	// Example: D3DBLEND_DESTALPHA needs to be D3DBLEND_ONE since the result without an alpha channel is assumed to always be 1.
+	bool target_has_alpha = bpmem.zcontrol.pixel_format == PIXELFMT_RGBA6_Z24;
+	//bDstAlphaPass is taken into account because the ability to disable alpha composition is
+	//really useful for debugging shader and blending errors
+	bool use_DstAlpha = !g_ActiveConfig.bDstAlphaPass && bpmem.dstalpha.enable && bpmem.blendmode.alphaupdate && target_has_alpha;
+	bool use_DualSource = use_DstAlpha && g_ActiveConfig.backend_info.bSupportsDualSourceBlend;
+	const D3DBLEND d3dSrcFactors[8] =
+	{
+		D3DBLEND_ZERO,
+		D3DBLEND_ONE,
+		D3DBLEND_DESTCOLOR,
+		D3DBLEND_INVDESTCOLOR,
+		(use_DualSource) ? D3DBLEND_SRCCOLOR2 : D3DBLEND_SRCALPHA,
+		(use_DualSource) ? D3DBLEND_INVSRCCOLOR2 : D3DBLEND_INVSRCALPHA,
+		(target_has_alpha) ? D3DBLEND_DESTALPHA : D3DBLEND_ONE,
+		(target_has_alpha) ? D3DBLEND_INVDESTALPHA : D3DBLEND_ZERO
+	};
+	const D3DBLEND d3dDestFactors[8] =
+	{
+		D3DBLEND_ZERO,
+		D3DBLEND_ONE,
+		D3DBLEND_SRCCOLOR,
+		D3DBLEND_INVSRCCOLOR,
+		(use_DualSource) ? D3DBLEND_SRCCOLOR2 : D3DBLEND_SRCALPHA,
+		(use_DualSource) ? D3DBLEND_INVSRCCOLOR2 : D3DBLEND_INVSRCALPHA,
+		(target_has_alpha) ? D3DBLEND_DESTALPHA : D3DBLEND_ONE,
+		(target_has_alpha) ? D3DBLEND_INVDESTALPHA : D3DBLEND_ZERO
+	};
+
+	if (bpmem.blendmode.logicopenable && !forceUpdate)
+	{
+		D3D::SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE , false);
+		return;
 	}
-	SetColorMask();
-	SetLogicOpMode();
-	SetGenerationMode();
+
+	bool blend_enable = bpmem.blendmode.subtract || bpmem.blendmode.blendenable;
+	D3D::SetRenderState(D3DRS_ALPHABLENDENABLE, blend_enable);
+	D3D::SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, blend_enable && g_ActiveConfig.backend_info.bSupportsSeparateAlphaFunction);
+	if (blend_enable)
+	{
+		D3DBLENDOP op = D3DBLENDOP_ADD;
+		u32 srcidx = bpmem.blendmode.srcfactor;
+		u32 dstidx = bpmem.blendmode.dstfactor;
+		if (bpmem.blendmode.subtract)
+		{
+			op = D3DBLENDOP_REVSUBTRACT;
+			srcidx = GX_BL_ONE;
+			dstidx = GX_BL_ONE;
+		}
+		D3D::SetRenderState(D3DRS_BLENDOP, op);
+		D3D::SetRenderState(D3DRS_SRCBLEND, d3dSrcFactors[srcidx]);
+		D3D::SetRenderState(D3DRS_DESTBLEND, d3dDestFactors[dstidx]);
+		if (g_ActiveConfig.backend_info.bSupportsSeparateAlphaFunction)
+		{
+			if (use_DualSource)
+			{			
+				op = D3DBLENDOP_ADD;
+				srcidx = GX_BL_ONE;
+				dstidx = GX_BL_ZERO;
+			}
+			else
+			{
+				// we can't use D3DBLEND_DESTCOLOR or D3DBLEND_INVDESTCOLOR for source in alpha channel so use their alpha equivalent instead
+				if (srcidx == GX_BL_DSTCLR) srcidx = GX_BL_DSTALPHA;
+				if (srcidx == GX_BL_INVDSTCLR) srcidx = GX_BL_INVDSTALPHA;
+				// we can't use D3DBLEND_SRCCOLOR or D3DBLEND_INVSRCCOLOR for destination in alpha channel so use their alpha equivalent instead
+				if (dstidx == GX_BL_SRCCLR) dstidx = GX_BL_SRCALPHA;
+				if (dstidx == GX_BL_INVSRCCLR) dstidx = GX_BL_INVSRCALPHA;
+			}
+			D3D::SetRenderState(D3DRS_BLENDOPALPHA, op);
+			D3D::SetRenderState(D3DRS_SRCBLENDALPHA, d3dSrcFactors[srcidx]);
+			D3D::SetRenderState(D3DRS_DESTBLENDALPHA, d3dDestFactors[dstidx]);
+		}		
+	}	
 }
 
 void Renderer::SetGenerationMode()
@@ -1326,6 +1317,11 @@ void Renderer::SetLineWidth()
 	D3D::SetRenderState(D3DRS_POINTSIZE_MAX, *((DWORD*)&psize));	
 }
 
+void Renderer::SetInterlacingMode()
+{
+	// TODO
+}
+
 void Renderer::SetSamplerState(int stage, int texindex)
 {
 	const D3DTEXTUREFILTERTYPE d3dMipFilters[4] =
@@ -1375,11 +1371,6 @@ void Renderer::SetSamplerState(int stage, int texindex)
 	float lodbias = (s32)tm0.lod_bias / 32.0f;
 	D3D::SetSamplerState(stage, D3DSAMP_MIPMAPLODBIAS, *(DWORD*)&lodbias);
 	D3D::SetSamplerState(stage, D3DSAMP_MAXMIPLEVEL, tm1.min_lod >> 4);
-}
-
-void Renderer::SetInterlacingMode()
-{
-	// TODO
 }
 
 }  // namespace DX9

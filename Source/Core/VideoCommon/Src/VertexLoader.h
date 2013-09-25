@@ -18,7 +18,7 @@
 #include "NativeVertexFormat.h"
 
 #include "x64Emitter.h"
-
+extern const float fractionTable[];
 class VertexLoaderUID
 {
 	u32 vid[5];
