@@ -63,9 +63,9 @@ void VideoConfig::Load(const char *ini_file)
 	iniFile.Get("Settings", "DumpFrames", &bDumpFrames, 0);
 	iniFile.Get("Settings", "FreeLook", &bFreeLook, 0);
 	iniFile.Get("Settings", "UseFFV1", &bUseFFV1, 0);
-	iniFile.Get("Settings", "AnaglyphStereo", &bAnaglyphStereo, false);
-	iniFile.Get("Settings", "AnaglyphStereoSeparation", &iAnaglyphStereoSeparation, 200);
-	iniFile.Get("Settings", "AnaglyphFocalAngle", &iAnaglyphFocalAngle, 0);
+	iniFile.Get("Settings", "Stereo3D", &i3DStereo, 0);
+	iniFile.Get("Settings", "Stereo3DSeparation", &i3DStereoSeparation, 200);
+	iniFile.Get("Settings", "Stereo3DFocalAngle", &i3DStereoFocalAngle, 0);
 	iniFile.Get("Settings", "EnablePixelLighting", &bEnablePixelLighting, 0);
 	iniFile.Get("Settings", "HackedBufferUpload", &bHackedBufferUpload, 0);
 	iniFile.Get("Settings", "FastDepthCalc", &bFastDepthCalc, true);
@@ -150,9 +150,9 @@ void VideoConfig::GameIniLoad(const char* default_ini_file, const char* local_in
 	CHECK_SETTING("Video_Settings", "SafeTextureCacheColorSamples", iSafeTextureCache_ColorSamples);
 	CHECK_SETTING("Video_Settings", "DLOptimize", iCompileDLsLevel);
 	CHECK_SETTING("Video_Settings", "HiresTextures", bHiresTextures);
-	CHECK_SETTING("Video_Settings", "AnaglyphStereo", bAnaglyphStereo);
-	CHECK_SETTING("Video_Settings", "AnaglyphStereoSeparation", iAnaglyphStereoSeparation);
-	CHECK_SETTING("Video_Settings", "AnaglyphFocalAngle", iAnaglyphFocalAngle);
+	CHECK_SETTING("Video_Settings", "Stereo3D", i3DStereo);
+	CHECK_SETTING("Video_Settings", "Stereo3DSeparation", i3DStereoSeparation);
+	CHECK_SETTING("Video_Settings", "Stereo3DAngle", i3DStereoFocalAngle);
 	CHECK_SETTING("Video_Settings", "EnablePixelLighting", bEnablePixelLighting);
 	CHECK_SETTING("Video_Settings", "HackedBufferUpload", bHackedBufferUpload);
 	CHECK_SETTING("Video_Settings", "FastDepthCalc", bFastDepthCalc);
@@ -251,9 +251,9 @@ void VideoConfig::Save(const char *ini_file)
 	iniFile.Set("Settings", "DumpFrames", bDumpFrames);
 	iniFile.Set("Settings", "FreeLook", bFreeLook);
 	iniFile.Set("Settings", "UseFFV1", bUseFFV1);
-	iniFile.Set("Settings", "AnaglyphStereo", bAnaglyphStereo);
-	iniFile.Set("Settings", "AnaglyphStereoSeparation", iAnaglyphStereoSeparation);
-	iniFile.Set("Settings", "AnaglyphFocalAngle", iAnaglyphFocalAngle);
+	iniFile.Set("Settings", "Stereo3D", i3DStereo);
+	iniFile.Set("Settings", "Stereo3DSeparation", i3DStereoSeparation);
+	iniFile.Set("Settings", "Stereo3DFocalAngle", i3DStereoFocalAngle);
 	iniFile.Set("Settings", "EnablePixelLighting", bEnablePixelLighting);
 	iniFile.Set("Settings", "HackedBufferUpload", bHackedBufferUpload);
 	iniFile.Set("Settings", "FastDepthCalc", bFastDepthCalc);

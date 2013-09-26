@@ -613,29 +613,55 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 	if (Width > (s_backbuffer_width - X)) Width = s_backbuffer_width - X;
 	if (Height > (s_backbuffer_height - Y)) Height = s_backbuffer_height - Y;
 	// Clear full target screen (edges, borders etc)
-	if(g_ActiveConfig.bAnaglyphStereo) {
-		static bool RightFrame = false;
+	if(g_ActiveConfig.i3DStereo) {
+		static bool RightFrame = false;		
 		if(RightFrame)
 		{
-			D3D::SetRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_BLUE | D3DCOLORWRITEENABLE_GREEN);
+			if (g_ActiveConfig.i3DStereo == STEREO3D_ANAGLYPH)
+			{
+				D3D::SetRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_BLUE | D3DCOLORWRITEENABLE_GREEN);
+			}
+			else if (g_ActiveConfig.i3DStereo == STEREO3D_TOPBOTTOM)
+			{
+				Y =  (Y / 2) + (s_backbuffer_height / 2);
+				Height = Height / 2;				
+			}
+			else
+			{
+				X = X / 2 + (s_backbuffer_width / 2);
+				Width = Width / 2;				
+			}
 			VertexShaderManager::ResetView();
-			VertexShaderManager::TranslateView(-0.001f * g_ActiveConfig.iAnaglyphStereoSeparation,0.0f);
-			VertexShaderManager::RotateView(-0.0001f *g_ActiveConfig.iAnaglyphFocalAngle,0.0f);
+			VertexShaderManager::TranslateView(-0.001f * g_ActiveConfig.i3DStereoSeparation,0.0f);
+			VertexShaderManager::RotateView(-0.0001f *g_ActiveConfig.i3DStereoFocalAngle,0.0f);
 			RightFrame = false;
 		}
 		else
 		{
-			D3D::SetRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_RED);
+			if (g_ActiveConfig.i3DStereo == STEREO3D_ANAGLYPH)
+			{
+				D3D::SetRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_RED);
+			}
+			else if (g_ActiveConfig.i3DStereo == STEREO3D_TOPBOTTOM)
+			{
+				Y =  Y / 2;
+				Height = Height / 2;
+			}
+			else
+			{
+				X = X / 2;
+				Width = Width / 2;
+			}
 			VertexShaderManager::ResetView();
-			VertexShaderManager::TranslateView(0.001f *g_ActiveConfig.iAnaglyphStereoSeparation,0.0f);
-			VertexShaderManager::RotateView(0.0001f * g_ActiveConfig.iAnaglyphFocalAngle,0.0f);
+			VertexShaderManager::TranslateView(0.001f *g_ActiveConfig.i3DStereoSeparation,0.0f);
+			VertexShaderManager::RotateView(0.0001f * g_ActiveConfig.i3DStereoFocalAngle,0.0f);
 			RightFrame = true;
 		}
 		// use a clear quad to keep old red or blue/green data
-		vp.X = 0;
-		vp.Y = 0;
-		vp.Width  = s_backbuffer_width;
-		vp.Height = s_backbuffer_height;
+		vp.X = X;
+		vp.Y = Y;
+		vp.Width  = Width;
+		vp.Height = Height;
 		vp.MinZ = 0.0f;
 		vp.MaxZ = 1.0f;
 		D3D::dev->SetViewport(&vp);
@@ -723,11 +749,11 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 	D3D::RefreshSamplerState(0, D3DSAMP_MINFILTER);
 	D3D::RefreshSamplerState(0, D3DSAMP_MAGFILTER);
 
-	if(g_ActiveConfig.bAnaglyphStereo)
+	if(g_ActiveConfig.i3DStereo == STEREO3D_ANAGLYPH)
 	{
 		DWORD color_mask = D3DCOLORWRITEENABLE_ALPHA | D3DCOLORWRITEENABLE_RED | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_BLUE;
 		D3D::SetRenderState(D3DRS_COLORWRITEENABLE, color_mask);
-	}
+	}	
 
 	vp.X = 0;
 	vp.Y = 0;

@@ -43,6 +43,13 @@ enum EFBScale {
 	SCALE_4X,
 };
 
+enum Stereo3DMode {
+	STEREO3D_NONE = 0,
+	STEREO3D_ANAGLYPH = 1,
+	STEREO3D_TOPBOTTOM = 2,
+	STEREO3D_SYDEBYSIDE = 3
+};
+
 class IniFile;
 
 // NEVER inherit from this class.
@@ -100,9 +107,9 @@ struct VideoConfig
 	bool bDumpFrames;
 	bool bUseFFV1;
 	bool bFreeLook;
-	bool bAnaglyphStereo;
-	int iAnaglyphStereoSeparation;
-	int iAnaglyphFocalAngle;
+	int i3DStereo; // 0: disabled, 1: Anaglyph, 2: Top/Bottom
+	int i3DStereoSeparation;
+	int i3DStereoFocalAngle;
 	bool b3DVision;
 
 	// Hacks
