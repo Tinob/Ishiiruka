@@ -15,7 +15,6 @@
 // Official SVN repository and contact information can be found at
 // http://code.google.com/p/dolphin-emu/
 #include "Common.h"
-#include "Thunk.h"
 
 #include "../../Core.h"
 #include "../PowerPC.h"
@@ -36,6 +35,19 @@ void JitArm::mtspr(UGeckoInstruction inst)
 
 	switch (iIndex)
 	{
+
+	case SPR_DMAU:
+
+	case SPR_SPRG0:
+	case SPR_SPRG1:
+	case SPR_SPRG2:
+	case SPR_SPRG3:
+
+	case SPR_SRR0:
+	case SPR_SRR1:
+		// These are safe to do the easy way, see the bottom of this function.
+		break;
+
 	case SPR_LR:
 	case SPR_CTR:
 	case SPR_XER:

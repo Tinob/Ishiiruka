@@ -1,8 +1,13 @@
+/**
+ * Copyright 2013 Dolphin Emulator Project
+ * Licensed under GPLv2
+ * Refer to the license.txt file included.
+ */
+
 package org.dolphinemu.dolphinemu.emulation;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -39,7 +44,7 @@ public final class EmulationActivity extends Activity
 
 		// Retrieve screen dimensions.
 		DisplayMetrics displayMetrics = new DisplayMetrics();
-		WindowManager wm = (WindowManager) getApplicationContext().getSystemService(Context.WINDOW_SERVICE); // the results will be higher than using the activity context object or the getWindowManager() shortcut
+		WindowManager wm = getWindowManager();
 		wm.getDefaultDisplay().getMetrics(displayMetrics);
 		this.screenHeight = displayMetrics.heightPixels;
 		this.screenWidth = displayMetrics.widthPixels;
@@ -67,11 +72,11 @@ public final class EmulationActivity extends Activity
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
 		if (prefs.getString("gpuPref", "Software Rendering").equals("OGL")
 				&& VideoSettingsFragment.SupportsGLES3()
+				&& VideoSettingsFragment.m_GLVendor != null
 				&& VideoSettingsFragment.m_GLVendor.equals("Qualcomm"))
 			NativeLibrary.SetDimensions((int)screenHeight, (int)screenWidth);
 		else
 			NativeLibrary.SetDimensions((int)screenWidth, (int)screenHeight);
-
 		NativeLibrary.SetFilename(gameToEmulate.getStringExtra("SelectedGame"));
 		Running = true;
 
@@ -229,6 +234,7 @@ public final class EmulationActivity extends Activity
 					}
 				});
 				builder.show();
+				return true;
 			}
 
 			default:

@@ -27,11 +27,12 @@ public final class VideoSettingsFragment extends PreferenceFragment
 	public static String m_GLVersion;
 	public static String m_GLVendor;
 	public static String m_GLRenderer;
+	public static String m_GLExtensions;
 	private Activity m_activity;
 
 	/**
-	 * Class which provides a means to check various
-	 * info about the OpenGL ES support for a device.
+	 * Class which provides a means to retrieve various
+	 * info about the OpenGL ES support/features within a device.
 	 */
 	public static final class VersionCheck
 	{
@@ -104,6 +105,16 @@ public final class VideoSettingsFragment extends PreferenceFragment
 			return mGL.glGetString(GL10.GL_RENDERER);
 		}
 
+		/**
+		 * Gets the extension that the device supports
+		 *
+		 * @return String containing the extensions
+		 */
+		public String getExtensions()
+		{
+			return mGL.glGetString(GL10.GL_EXTENSIONS);
+		}
+
 		private EGLConfig chooseConfig()
 		{
 			int[] attribList = new int[] {
@@ -139,11 +150,12 @@ public final class VideoSettingsFragment extends PreferenceFragment
 		m_GLVersion = mbuffer.getVersion();
 		m_GLVendor = mbuffer.getVendor();
 		m_GLRenderer = mbuffer.getRenderer();
+		m_GLExtensions = mbuffer.getExtensions();
 
 		boolean mSupportsGLES3 = false;
 
 		// Check for OpenGL ES 3 support (General case).
-		if (m_GLVersion != null && (m_GLVersion.contains("OpenGL ES 3.0") || m_GLVersion.equals("OpenGL ES 3.0")))
+		if (m_GLVersion != null && m_GLVersion.contains("OpenGL ES 3.0"))
 			mSupportsGLES3 = true;
 
 		// Checking for OpenGL ES 3 support for certain Qualcomm devices.
@@ -169,6 +181,22 @@ public final class VideoSettingsFragment extends PreferenceFragment
 				if (mVersion >= 14.0f)
 					mSupportsGLES3 = true;
 			}
+		}
+		if (!mSupportsGLES3 &&
+				m_GLVendor != null && m_GLVendor.equals("NVIDIA Corporation") &&
+				m_GLRenderer != null && m_GLRenderer.equals("NVIDIA Tegra") &&
+				m_GLExtensions != null && m_GLExtensions.contains("GL_OES_depth24"))
+		{
+			// Is a Tegra 4 since it supports 24bit depth
+			mSupportsGLES3 = true;
+		}
+		if (!mSupportsGLES3 &&
+				m_GLVendor == null &&
+				m_GLRenderer == null &&
+				m_GLExtensions == null)
+		{
+			// Couldn't get information. Give them the benefit of the doubt
+			mSupportsGLES3 = true;
 		}
 		return mSupportsGLES3;
 	}
@@ -266,6 +294,6 @@ public final class VideoSettingsFragment extends PreferenceFragment
 		super.onDestroy();
 
 		// When the fragment is done being used, save the settings to the Dolphin ini file.
-		UserPreferences.SaveConfigToDolphinIni(m_activity);
+		UserPreferences.SavePrefsToIni(m_activity);
 	}
 }

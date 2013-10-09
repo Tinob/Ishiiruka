@@ -13,9 +13,9 @@
     <string name="supports_gles3">サポートのOpenGL ES 3</string>
     
     <!-- Folder Browser -->
-    <string name="current_dir">現在のディレクトリ： </string>
+    <string name="current_dir">現在のディレクトリ： %1$s</string>
     <string name="parent_directory">親ディレクトリ</string>
-    <string name="file_size">ファイルサイズ: </string>
+    <string name="file_size">ファイルサイズ: %1$s</string>
     
     <!-- Game List Activity -->
     <string name="clear_game_list">クリア</string>
@@ -26,7 +26,7 @@
     <string name="about">について</string>
 
     <!-- Game List Fragment -->
-    <string name="file_clicked">クリックされたファイル： </string>
+    <string name="file_clicked">クリックされたファイル： %1$s</string>
 
     <!-- Emulation Window Overlay -->
     <string name="overlay_savestate">ステートセーブ</string>
@@ -78,7 +78,7 @@
     <string name="fastmem_desc">メモリアクセスのために潜在的に危険な最適化を使用して。</string>
     <string name="video_settings">ビデオ</string>
     <string name="software_renderer">Software Renderer</string>
-    <string name="opengl_es3">OpenGL ES 3</string>
+    <string name="opengl_es3">OpenGL ES</string>
     <string name="video_backend">ビデオレンダラ</string>
     <string name="video_backend_to_use">使用するビデオレンダラー</string>
     <string name="show_fps">FPSを表示</string>

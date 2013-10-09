@@ -50,7 +50,7 @@ void Jit64::lfs(UGeckoInstruction inst)
 	}
 	s32 offset = (s32)(s16)inst.SIMM_16;
 
-	SafeLoadToEAX(gpr.R(a), 32, offset, RegistersInUse(), false);
+	SafeLoadToReg(EAX, gpr.R(a), 32, offset, RegistersInUse(), false);
 
 	MEMCHECK_START
 	
@@ -161,7 +161,7 @@ void Jit64::stfd(UGeckoInstruction inst)
 
 	u32 mem_mask = Memory::ADDR_MASK_HW_ACCESS;
 	if (Core::g_CoreStartupParameter.bMMU ||
-		Core::g_CoreStartupParameter.iTLBHack) {
+		Core::g_CoreStartupParameter.bTLBHack) {
 			mem_mask |= Memory::ADDR_MASK_MEM1;
 	}
 #ifdef ENABLE_MEM_CHECK
@@ -209,6 +209,7 @@ void Jit64::stfd(UGeckoInstruction inst)
 	MOVD_xmm(R(EAX), XMM0);
 	SafeWriteRegToReg(EAX, ABI_PARAM1, 32, 0, RegistersInUse() | (1 << (16 + XMM0)));
 
+	MOVAPD(XMM0, fpr.R(s));
 	MOVD_xmm(R(EAX), XMM0);
 	LEA(32, ABI_PARAM1, MDisp(gpr.R(a).GetSimpleReg(), offset));
 	SafeWriteRegToReg(EAX, ABI_PARAM1, 32, 4, RegistersInUse());
@@ -338,7 +339,7 @@ void Jit64::lfsx(UGeckoInstruction inst)
 
 		MEMCHECK_END
 	} else {
-		SafeLoadToEAX(R(EAX), 32, 0, RegistersInUse(), false);
+		SafeLoadToReg(EAX, R(EAX), 32, 0, RegistersInUse(), false);
 
 		MEMCHECK_START
 

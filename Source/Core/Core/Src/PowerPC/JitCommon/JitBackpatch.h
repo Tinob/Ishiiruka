@@ -8,7 +8,6 @@
 #include "Common.h"
 #include "x64Emitter.h"
 #include "x64Analyzer.h"
-#include "Thunk.h"
 
 // meh.
 #if defined(_WIN32)
@@ -68,7 +67,7 @@
 		#define CTX_R15 __r15
 		#define CTX_RIP __rip
 	#elif defined(_M_IX86)
-		typedef x86_thread_state_t SContext;
+		typedef x86_thread_state32_t SContext;
 		#define CTX_EAX __eax
 		#define CTX_EBX __ebx
 		#define CTX_ECX __ecx
@@ -234,8 +233,6 @@ public:
 
 	const u8 *GetReadTrampoline(const InstructionInfo &info, u32 registersInUse);
 	const u8 *GetWriteTrampoline(const InstructionInfo &info, u32 registersInUse);
-private:
-	ThunkManager thunks;
 };
 
 #endif

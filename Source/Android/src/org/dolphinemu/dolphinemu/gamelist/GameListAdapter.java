@@ -12,6 +12,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
+import android.widget.ListView;
 import android.widget.TextView;
 
 import java.util.List;
@@ -25,16 +26,24 @@ import org.dolphinemu.dolphinemu.R;
  */
 public final class GameListAdapter extends ArrayAdapter<GameListItem>
 {
-	private final Context c;
+	private final Context context;
 	private final int id;
 	private final List<GameListItem>items;
 
-	public GameListAdapter(Context context, int textViewResourceId, List<GameListItem> objects)
+	/**
+	 * Constructor
+	 * 
+	 * @param context    The current {@link Context}.
+	 * @param resourceId The resource ID for a layout file containing a layout to use when instantiating views.
+	 * @param objects    The objects to represent in the {@link ListView}.
+	 */
+	public GameListAdapter(Context context, int resourceId, List<GameListItem> objects)
 	{
-		super(context, textViewResourceId, objects);
-		c = context;
-		id = textViewResourceId;
-		items = objects;
+		super(context, resourceId, objects);
+
+		this.context = context;
+		this.id = resourceId;
+		this.items = objects;
 	}
 
 	@Override
@@ -49,7 +58,7 @@ public final class GameListAdapter extends ArrayAdapter<GameListItem>
 		View v = convertView;
 		if (v == null)
 		{
-			LayoutInflater vi = (LayoutInflater)c.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+			LayoutInflater vi = LayoutInflater.from(context);
 			v = vi.inflate(id, parent, false);
 		}
 
@@ -69,8 +78,8 @@ public final class GameListAdapter extends ArrayAdapter<GameListItem>
 			if (icon != null)
 			{
 				icon.setImageBitmap(item.getImage());
-				icon.getLayoutParams().width = (int) ((860 / c.getResources().getDisplayMetrics().density) + 0.5);
-				icon.getLayoutParams().height = (int)((340 / c.getResources().getDisplayMetrics().density) + 0.5);
+				icon.getLayoutParams().width = (int) ((860 / context.getResources().getDisplayMetrics().density) + 0.5);
+				icon.getLayoutParams().height = (int)((340 / context.getResources().getDisplayMetrics().density) + 0.5);
 			}
 		}
 

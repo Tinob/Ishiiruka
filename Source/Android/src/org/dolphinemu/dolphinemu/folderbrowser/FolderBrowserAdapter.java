@@ -14,6 +14,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
+import android.widget.ListView;
 import android.widget.TextView;
 
 import org.dolphinemu.dolphinemu.R;
@@ -22,20 +23,28 @@ import org.dolphinemu.dolphinemu.R;
  * The {@link ArrayAdapter} that backs the file browser.
  * <p>
  * This is responsible for correctly handling the display
- * of the items for the UI.
+ * of the items for the {@link FolderBrowser} UI.
  */
 public final class FolderBrowserAdapter extends ArrayAdapter<FolderBrowserItem>
 {
-	private final Context c;
+	private final Context context;
 	private final int id;
 	private final List<FolderBrowserItem> items;
 
-	public FolderBrowserAdapter(Context context, int textViewResourceId, List<FolderBrowserItem> objects)
+	/**
+	 * Constructor
+	 * 
+	 * @param context    The current {@link Context}.
+	 * @param resourceId The resource ID for a layout file containing a layout to use when instantiating views.
+	 * @param objects    The objects to represent in the {@link ListView}.
+	 */
+	public FolderBrowserAdapter(Context context, int resourceId, List<FolderBrowserItem> objects)
 	{
-		super(context, textViewResourceId, objects);
-		c = context;
-		id = textViewResourceId;
-		items = objects;
+		super(context, resourceId, objects);
+
+		this.context = context;
+		this.id = resourceId;
+		this.items = objects;
 	}
 
 	@Override
@@ -50,7 +59,7 @@ public final class FolderBrowserAdapter extends ArrayAdapter<FolderBrowserItem>
 		View v = convertView;
 		if (v == null)
 		{
-			LayoutInflater vi = (LayoutInflater) c.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+			LayoutInflater vi = LayoutInflater.from(context);
 			v = vi.inflate(id, parent, false);
 		}
 
@@ -69,7 +78,7 @@ public final class FolderBrowserAdapter extends ArrayAdapter<FolderBrowserItem>
 			if(subtitle != null)
 			{
 				// Remove the subtitle for all folders, except for the parent directory folder.
-				if (item.isDirectory() && !item.getSubtitle().equals(c.getResources().getString(R.string.parent_directory)))
+				if (item.isDirectory() && !item.getSubtitle().equals(context.getString(R.string.parent_directory)))
 				{
 					subtitle.setVisibility(View.GONE);
 				}

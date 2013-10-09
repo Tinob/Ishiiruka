@@ -17,7 +17,7 @@ import org.dolphinemu.dolphinemu.settings.UserPreferences;
 import java.io.*;
 
 /**
- * The main activity of this emulator.
+ * The main activity of this emulator front-end.
  */
 public final class DolphinEmulator extends Activity 
 {
@@ -51,7 +51,6 @@ public final class DolphinEmulator extends Activity
 		}
 	}
 
-	/** Called when the activity is first created. */
 	@Override
 	public void onCreate(Bundle savedInstanceState)
 	{
@@ -84,7 +83,7 @@ public final class DolphinEmulator extends Activity
 
 			// Load the configuration keys set in the Dolphin ini and gfx ini files
 			// into the application's shared preferences.
-			UserPreferences.LoadDolphinConfigToPrefs(this);
+			UserPreferences.LoadIniToPrefs(this);
 		}
 	}
 }
