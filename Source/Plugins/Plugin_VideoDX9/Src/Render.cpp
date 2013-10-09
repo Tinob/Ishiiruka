@@ -57,7 +57,7 @@ static bool IS_AMD;
 static float m_fMaxPointSize;
 static bool s_vsync;
 static char *st;
-
+static bool s_b3D_RightFrame = false;
 static LPDIRECT3DSURFACE9 ScreenShootMEMSurface = NULL;
 
 
@@ -613,9 +613,9 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 	if (Width > (s_backbuffer_width - X)) Width = s_backbuffer_width - X;
 	if (Height > (s_backbuffer_height - Y)) Height = s_backbuffer_height - Y;
 	// Clear full target screen (edges, borders etc)
-	if(g_ActiveConfig.i3DStereo) {
-		static bool RightFrame = false;		
-		if(RightFrame)
+	if(g_ActiveConfig.i3DStereo) {		
+		VertexShaderManager::ResetView();
+		if(s_b3D_RightFrame)
 		{
 			if (g_ActiveConfig.i3DStereo == STEREO3D_ANAGLYPH)
 			{
@@ -630,11 +630,9 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 			{
 				X = X / 2 + (s_backbuffer_width / 2);
 				Width = Width / 2;				
-			}
-			VertexShaderManager::ResetView();
+			}			
 			VertexShaderManager::TranslateView(-0.001f * g_ActiveConfig.i3DStereoSeparation,0.0f);
 			VertexShaderManager::RotateView(-0.0001f *g_ActiveConfig.i3DStereoFocalAngle,0.0f);
-			RightFrame = false;
 		}
 		else
 		{
@@ -652,11 +650,10 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 				X = X / 2;
 				Width = Width / 2;
 			}
-			VertexShaderManager::ResetView();
 			VertexShaderManager::TranslateView(0.001f *g_ActiveConfig.i3DStereoSeparation,0.0f);
 			VertexShaderManager::RotateView(0.0001f * g_ActiveConfig.i3DStereoFocalAngle,0.0f);
-			RightFrame = true;
 		}
+		s_b3D_RightFrame = !s_b3D_RightFrame;
 		// use a clear quad to keep old red or blue/green data
 		vp.X = X;
 		vp.Y = Y;
