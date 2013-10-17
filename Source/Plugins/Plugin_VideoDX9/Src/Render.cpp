@@ -174,13 +174,29 @@ Renderer::Renderer()
 	vp.Height = s_target_height;
 	D3D::dev->SetViewport(&vp);
 	D3D::dev->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(0,0,0), 1.0f, 0);
-	D3D::BeginFrame();
-	D3D::SetRenderState(D3DRS_SCISSORTESTENABLE, true);
 	D3D::dev->CreateOffscreenPlainSurface(s_backbuffer_width,s_backbuffer_height, D3DFMT_X8R8G8B8, D3DPOOL_SYSTEMMEM, &ScreenShootMEMSurface, NULL );
-	D3D::SetRenderState(D3DRS_POINTSCALEENABLE,false);
+	D3D::BeginFrame();
+	// Initial state setup
+	D3D::SetRenderState(D3DRS_SCISSORTESTENABLE, TRUE);
+	D3D::SetRenderState(D3DRS_FILLMODE, g_ActiveConfig.bWireFrame ? D3DFILL_WIREFRAME : D3DFILL_SOLID);	
+	D3D::SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+	D3D::SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+	D3D::SetRenderState(D3DRS_ZENABLE, FALSE);
+	D3D::SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
+	D3D::SetRenderState(D3DRS_ZFUNC, D3DCMP_ALWAYS);
+	D3D::SetRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_ALPHA | D3DCOLORWRITEENABLE_RED | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_BLUE);	
+	D3D::SetRenderState(D3DRS_POINTSCALEENABLE, FALSE);	
 	m_fMaxPointSize = D3D::GetCaps().MaxPointSize;
 	// Handle VSync on/off 
 	s_vsync = g_ActiveConfig.IsVSync();
+	m_bColorMaskChanged = false;
+	m_bBlendModeChanged = false;
+	m_bScissorRectChanged = false;	
+	m_bGenerationModeChanged = false;
+	m_bDepthModeChanged = false;
+	m_bLogicOpModeChanged = false;
+	m_bLineWidthChanged = false;
+	
 }
 
 Renderer::~Renderer()
@@ -951,30 +967,26 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 void Renderer::ResetAPIState()
 {
 	D3D::SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID);
-	D3D::SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
-	D3D::SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+	D3D::ChangeRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
+	D3D::ChangeRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
 	D3D::SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
 	D3D::SetRenderState(D3DRS_ZENABLE, FALSE);
 	D3D::SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
-	DWORD color_mask = D3DCOLORWRITEENABLE_ALPHA | D3DCOLORWRITEENABLE_RED | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_BLUE;
-	D3D::SetRenderState(D3DRS_COLORWRITEENABLE, color_mask);
+	D3D::ChangeRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_ALPHA | D3DCOLORWRITEENABLE_RED | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_BLUE);
 }
 
 void Renderer::RestoreAPIState()
 {
 	// Gets us back into a more game-like state.
 	D3D::SetRenderState(D3DRS_FILLMODE, g_ActiveConfig.bWireFrame ? D3DFILL_WIREFRAME : D3DFILL_SOLID);
-	D3D::SetRenderState(D3DRS_SCISSORTESTENABLE, TRUE);
+	D3D::RefreshRenderState(D3DRS_SCISSORTESTENABLE);
+	D3D::RefreshRenderState(D3DRS_CULLMODE);
+	D3D::RefreshRenderState(D3DRS_COLORWRITEENABLE);
 	VertexShaderManager::SetViewportChanged();
-	BPFunctions::SetScissor();
-	if (bpmem.zmode.testenable) {
-		D3D::SetRenderState(D3DRS_ZENABLE, TRUE);
-		if (bpmem.zmode.updateenable)
-			D3D::SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
-	}
-	SetColorMask();
-	SetLogicOpMode();
-	SetGenerationMode();
+	m_bScissorRectChanged = true;
+	m_bDepthModeChanged = true;
+	m_bLogicOpModeChanged = true;
+	
 }
 
 // Viewport correction:
@@ -1062,6 +1074,41 @@ void Renderer::UpdateViewport(Matrix44& vpCorrection)
 
 void Renderer::ApplyState(bool bUseDstAlpha)
 {
+	if(m_bGenerationModeChanged)
+	{
+		_SetGenerationMode();
+	}
+	
+	if(m_bDepthModeChanged)
+	{
+		_SetDepthMode();
+	}
+
+	if(m_bColorMaskChanged)
+	{
+		_SetColorMask();
+	}
+
+	if(m_bLogicOpModeChanged)
+	{
+		_SetLogicOpMode();
+	}
+
+	if (m_bBlendModeChanged)
+	{
+		_SetBlendMode(false);
+	}
+
+	if(m_bScissorRectChanged)
+	{
+		_SetScissorRect();
+	}
+
+	if(m_bLineWidthChanged)
+	{
+		_SetLineWidth();
+	}
+
 	if (bUseDstAlpha)
 	{
 		// If we get here we are sure that we are using dst alpha pass. (bpmem.dstalpha.enable)
@@ -1091,13 +1138,26 @@ void Renderer::RestoreState()
 	}
 }
 
+void Renderer::_SetScissorRect()
+{
+	m_bScissorRectChanged = false;
+	D3D::dev->SetScissorRect(m_ScissorRect.AsRECT());
+}
+
 void Renderer::SetScissorRect(const TargetRectangle& rc)
 {
-	D3D::dev->SetScissorRect(rc.AsRECT());
+	m_ScissorRect = rc;
+	m_bScissorRectChanged = true;
 }
 
 void Renderer::SetColorMask()
 {
+	m_bColorMaskChanged = true;
+}
+
+void Renderer::_SetColorMask()
+{
+	m_bColorMaskChanged = false;
 	// Only enable alpha channel if it's supported by the current EFB format
 	DWORD color_mask = 0;
 	if (bpmem.alpha_test.TestResult() != AlphaTest::FAIL)
@@ -1109,9 +1169,21 @@ void Renderer::SetColorMask()
 	}
 	D3D::SetRenderState(D3DRS_COLORWRITEENABLE, color_mask);
 }
-
 void Renderer::SetBlendMode(bool forceUpdate)
 {
+	if (forceUpdate)
+	{
+		_SetBlendMode(forceUpdate);
+	}
+	else
+	{
+		m_bBlendModeChanged = true;
+	}
+}
+
+void Renderer::_SetBlendMode(bool forceUpdate)
+{
+	m_bBlendModeChanged = false;
 	// Our render target always uses an alpha channel, so we need to override the blend functions to assume a destination alpha of 1 if the render target isn't supposed to have an alpha channel
 	// Example: D3DBLEND_DESTALPHA needs to be D3DBLEND_ONE since the result without an alpha channel is assumed to always be 1.
 	bool target_has_alpha = bpmem.zcontrol.pixel_format == PIXELFMT_RGBA6_Z24;
@@ -1191,6 +1263,12 @@ void Renderer::SetBlendMode(bool forceUpdate)
 
 void Renderer::SetGenerationMode()
 {
+	m_bGenerationModeChanged = true;
+}
+
+void Renderer::_SetGenerationMode()
+{
+	m_bGenerationModeChanged = false;
 	const D3DCULL d3dCullModes[4] =
 	{
 		D3DCULL_NONE,
@@ -1204,6 +1282,12 @@ void Renderer::SetGenerationMode()
 
 void Renderer::SetDepthMode()
 {
+	m_bDepthModeChanged = true;
+}
+
+void Renderer::_SetDepthMode()
+{
+	m_bDepthModeChanged = false;
 	const D3DCMPFUNC d3dCmpFuncs[8] =
 	{
 		D3DCMP_NEVER,
@@ -1216,22 +1300,28 @@ void Renderer::SetDepthMode()
 		D3DCMP_ALWAYS
 	};
 
+	D3D::SetRenderState(D3DRS_ZENABLE, bpmem.zmode.testenable);
 	if (bpmem.zmode.testenable)
-	{
-		D3D::SetRenderState(D3DRS_ZENABLE, TRUE);
+	{		
 		D3D::SetRenderState(D3DRS_ZWRITEENABLE, bpmem.zmode.updateenable);
 		D3D::SetRenderState(D3DRS_ZFUNC, d3dCmpFuncs[bpmem.zmode.func]);
 	}
 	else
 	{
-		// if the test is disabled write is disabled too
-		D3D::SetRenderState(D3DRS_ZENABLE, FALSE);
+		// if the test is disabled write is disabled too		
 		D3D::SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
+		D3D::SetRenderState(D3DRS_ZFUNC, D3DCMP_ALWAYS);
 	}
 }
 
 void Renderer::SetLogicOpMode()
 {
+	m_bLogicOpModeChanged = true;
+}
+
+void Renderer::_SetLogicOpMode()
+{
+	m_bLogicOpModeChanged = false;
 	// D3D9 doesn't support logic blending, so this is a huge hack
 
 	//		0	0x00
@@ -1308,7 +1398,7 @@ void Renderer::SetLogicOpMode()
 		D3DBLEND_ONE
 	};
 
-	if (bpmem.blendmode.logicopenable)
+	if (bpmem.blendmode.logicopenable && !(bpmem.blendmode.subtract || bpmem.blendmode.blendenable))
 	{
 		D3D::SetRenderState(D3DRS_ALPHABLENDENABLE, true);
 		D3D::SetRenderState(D3DRS_BLENDOP, d3dLogicOpop[bpmem.blendmode.logicmode]);
@@ -1317,17 +1407,24 @@ void Renderer::SetLogicOpMode()
 	}
 	else
 	{
-		SetBlendMode(true);
+		_SetBlendMode(true);
 	}
 }
 
 void Renderer::SetDitherMode()
 {
-	D3D::SetRenderState(D3DRS_DITHERENABLE, bpmem.blendmode.dither);
+	// No way to emulate this properly and teorically we don't need it because
+	// we alway use full color precision
 }
 
 void Renderer::SetLineWidth()
 {
+	m_bLineWidthChanged = true;
+}
+
+void Renderer::_SetLineWidth()
+{
+	m_bLineWidthChanged = false;
 	float fratio = Renderer::EFBToScaledXf(1.f);
 	float psize = bpmem.lineptwidth.pointsize * fratio / 6.0f;
 	psize = psize > 0 ? psize : 1.0f;
@@ -1337,7 +1434,7 @@ void Renderer::SetLineWidth()
 	}
 	D3D::SetRenderState(D3DRS_POINTSIZE, *((DWORD*)&psize));
 	D3D::SetRenderState(D3DRS_POINTSIZE_MIN, *((DWORD*)&psize));
-	D3D::SetRenderState(D3DRS_POINTSIZE_MAX, *((DWORD*)&psize));	
+	D3D::SetRenderState(D3DRS_POINTSIZE_MAX, *((DWORD*)&psize));
 }
 
 void Renderer::SetInterlacingMode()

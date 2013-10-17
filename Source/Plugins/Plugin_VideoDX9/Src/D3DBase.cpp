@@ -710,7 +710,7 @@ void RefreshRenderState(D3DRENDERSTATETYPE State)
 
 void SetRenderState(D3DRENDERSTATETYPE State, DWORD Value)
 {
-	if (m_RenderStates[State] != Value || !m_RenderStatesSet[State])
+	if (m_RenderStates[State] != Value || !m_RenderStatesSet[State] || m_RenderStatesChanged[State])
 	{
 		m_RenderStates[State] = Value;
 		m_RenderStatesSet[State] = true;
@@ -721,8 +721,13 @@ void SetRenderState(D3DRENDERSTATETYPE State, DWORD Value)
 
 void ChangeRenderState(D3DRENDERSTATETYPE State, DWORD Value)
 {
-	if (m_RenderStates[State] != Value || !m_RenderStatesSet[State])
+	if (m_RenderStates[State] != Value || !m_RenderStatesSet[State] || m_RenderStatesChanged[State])
 	{
+		if (!m_RenderStatesSet[State])
+		{
+			m_RenderStates[State] = Value;
+			m_RenderStatesSet[State] = true;
+		}
 		m_RenderStatesChanged[State] = m_RenderStatesSet[State];
 		dev->SetRenderState(State, Value);
 	}
@@ -754,8 +759,13 @@ void RefreshTextureStageState(DWORD Stage, D3DTEXTURESTAGESTATETYPE Type)
 
 void ChangeTextureStageState(DWORD Stage, D3DTEXTURESTAGESTATETYPE Type, DWORD Value)
 {
-	if (m_TextureStageStates[Stage][Type] != Value || !m_TextureStageStatesSet[Stage][Type])
+	if (m_TextureStageStates[Stage][Type] != Value || !m_TextureStageStatesSet[Stage][Type] || m_TextureStageStatesChanged[Stage][Type])
 	{
+		if(!m_TextureStageStatesSet[Stage][Type])
+		{
+			m_TextureStageStates[Stage][Type] = Value;
+			m_TextureStageStatesSet[Stage][Type]=true;
+		}
 		m_TextureStageStatesChanged[Stage][Type] = m_TextureStageStatesSet[Stage][Type];
 		dev->SetTextureStageState(Stage, Type, Value);
 	}
@@ -787,8 +797,13 @@ void RefreshSamplerState(DWORD Sampler, D3DSAMPLERSTATETYPE Type)
 
 void ChangeSamplerState(DWORD Sampler, D3DSAMPLERSTATETYPE Type, DWORD Value)
 {
-	if (m_SamplerStates[Sampler][Type] != Value || !m_SamplerStatesSet[Sampler][Type])
+	if (m_SamplerStates[Sampler][Type] != Value || !m_SamplerStatesSet[Sampler][Type] || m_SamplerStatesChanged[Sampler][Type])
 	{
+		if(!m_SamplerStatesSet[Sampler][Type])
+		{
+			m_SamplerStates[Sampler][Type] = Value;
+			m_SamplerStatesSet[Sampler][Type] = true;
+		}
 		m_SamplerStatesChanged[Sampler][Type] = m_SamplerStatesSet[Sampler][Type];
 		dev->SetSamplerState(Sampler, Type, Value);
 	}

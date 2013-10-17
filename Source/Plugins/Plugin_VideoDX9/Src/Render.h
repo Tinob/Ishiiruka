@@ -9,6 +9,23 @@ namespace DX9
 
 class Renderer : public ::Renderer
 {
+private:
+	bool m_bColorMaskChanged;
+	bool m_bBlendModeChanged;
+	bool m_bScissorRectChanged;
+	TargetRectangle m_ScissorRect;
+	bool m_bGenerationModeChanged;
+	bool m_bDepthModeChanged;
+	bool m_bLogicOpModeChanged;
+	bool m_bLineWidthChanged;
+
+	void _SetColorMask();
+	void _SetBlendMode(bool forceUpdate);
+	void _SetScissorRect();
+	void _SetGenerationMode();
+	void _SetDepthMode();
+	void _SetLogicOpMode();	
+	void _SetLineWidth();
 public:
 	Renderer();
 	~Renderer();

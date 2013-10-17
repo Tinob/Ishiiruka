@@ -643,6 +643,7 @@ void VertexManager::vFlush()
 
 	// set global constants
 	VertexShaderManager::SetConstants();
+	g_renderer->ApplyState(false);
 	if ((m_line_index_len && m_line_emulation_required) || (m_point_index_len && m_point_emulation_required))
 	{
 		// if we use emulation setup the offsets for the vertex shaders

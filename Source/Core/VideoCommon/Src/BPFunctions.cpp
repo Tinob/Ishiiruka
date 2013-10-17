@@ -47,10 +47,9 @@ void SetScissor()
 	if (rc.left > rc.right) rc.right = rc.left;
 	if (rc.top > rc.bottom) rc.bottom = rc.top;
 
-	TargetRectangle trc = g_renderer->ConvertEFBRectangle(rc);
+	TargetRectangle trc = g_renderer->ConvertEFBRectangle(rc);	
 	g_renderer->SetScissorRect(trc);
-
-	UpdateViewportWithCorrection();
+	VertexShaderManager::SetViewportChanged();
 }
 
 void SetLineWidth()
@@ -233,12 +232,6 @@ bool GetConfig(const int &type)
 u8 *GetPointer(const u32 &address)
 {
 	return Memory::GetPointer(address);
-}
-
-// Never used. All backends call SetSamplerState in VertexManager::Flush
-void SetTextureMode(const BPCmd &bp)
-{
-	g_renderer->SetSamplerState(bp.address & 3, (bp.address & 0xE0) == 0xA0);
 }
 
 void SetInterlacingMode(const BPCmd &bp)

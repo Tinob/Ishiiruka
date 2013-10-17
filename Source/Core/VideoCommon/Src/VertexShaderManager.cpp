@@ -35,6 +35,8 @@ static Matrix33 s_viewRotationMatrix;
 static Matrix33 s_viewInvRotationMatrix;
 static float s_fViewTranslationVector[3];
 static float s_fViewRotation[2];
+const float U8_NORMALIZATION_COEF = 1 / 255.0f;
+const float U24_NORMALIZATION_COEF = 1 / 16777215.0f;
 
 void UpdateViewport(Matrix44& vpCorrection);
 
@@ -195,7 +197,7 @@ void VertexShaderManager::SetConstants()
 {
 	if (g_ActiveConfig.backend_info.APIType == API_OPENGL && !g_ActiveConfig.backend_info.bSupportsGLSLUBO)
 		Dirty();
-
+	
 	if (nTransformMatricesChanged[0] >= 0)
 	{
 		int startn = nTransformMatricesChanged[0] / 4;
@@ -229,16 +231,14 @@ void VertexShaderManager::SetConstants()
 		int istart = nLightsChanged[0] / 0x10;
 		int iend = (nLightsChanged[1] + 15) / 0x10;
 		const float* xfmemptr = (const float*)&xfmem[0x10 * istart + XFMEM_LIGHTS];
-
 		for (int i = istart; i < iend; ++i)
 		{
 			u32 color = *(const u32*)(xfmemptr + 3);
-			float NormalizationCoef = 1 / 255.0f;
 			SetVSConstant4f(C_LIGHTS + 5 * i,
-				((color >> 24) & 0xFF) * NormalizationCoef,
-				((color >> 16) & 0xFF) * NormalizationCoef,
-				((color >> 8)  & 0xFF) * NormalizationCoef,
-				((color)       & 0xFF) * NormalizationCoef);
+				((color >> 24) & 0xFF) * U8_NORMALIZATION_COEF,
+				((color >> 16) & 0xFF) * U8_NORMALIZATION_COEF,
+				((color >> 8)  & 0xFF) * U8_NORMALIZATION_COEF,
+				((color)       & 0xFF) * U8_NORMALIZATION_COEF);
 			xfmemptr += 4;
 
 			for (int j = 0; j < 4; ++j, xfmemptr += 3)
@@ -264,18 +264,15 @@ void VertexShaderManager::SetConstants()
 	if (nMaterialsChanged)
 	{
 		float GC_ALIGNED16(material[4]);
-		float NormalizationCoef = 1 / 255.0f;
-
 		for (int i = 0; i < 2; ++i)
 		{
 			if (nMaterialsChanged & (1 << i))
 			{
 				u32 data = *(xfregs.ambColor + i);
-
-				material[0] = ((data >> 24) & 0xFF) * NormalizationCoef;
-				material[1] = ((data >> 16) & 0xFF) * NormalizationCoef;
-				material[2] = ((data >>  8) & 0xFF) * NormalizationCoef;
-				material[3] = ( data        & 0xFF) * NormalizationCoef;
+				material[0] = ((data >> 24) & 0xFF) * U8_NORMALIZATION_COEF;
+				material[1] = ((data >> 16) & 0xFF) * U8_NORMALIZATION_COEF;
+				material[2] = ((data >>  8) & 0xFF) * U8_NORMALIZATION_COEF;
+				material[3] = ( data        & 0xFF) * U8_NORMALIZATION_COEF;
 
 				SetVSConstant4fv(C_MATERIALS + i, material);
 			}
@@ -286,11 +283,10 @@ void VertexShaderManager::SetConstants()
 			if (nMaterialsChanged & (1 << (i + 2)))
 			{
 				u32 data = *(xfregs.matColor + i);
-
-				material[0] = ((data >> 24) & 0xFF) * NormalizationCoef;
-				material[1] = ((data >> 16) & 0xFF) * NormalizationCoef;
-				material[2] = ((data >>  8) & 0xFF) * NormalizationCoef;
-				material[3] = ( data        & 0xFF) * NormalizationCoef;
+				material[0] = ((data >> 24) & 0xFF) * U8_NORMALIZATION_COEF;
+				material[1] = ((data >> 16) & 0xFF) * U8_NORMALIZATION_COEF;
+				material[2] = ((data >>  8) & 0xFF) * U8_NORMALIZATION_COEF;
+				material[3] = ( data        & 0xFF) * U8_NORMALIZATION_COEF;
 
 				SetVSConstant4fv(C_MATERIALS + i + 2, material);
 			}
@@ -343,8 +339,8 @@ void VertexShaderManager::SetConstants()
 	{
 		bViewportChanged = false;
 		SetVSConstant4f(C_DEPTHPARAMS,
-						xfregs.viewport.farZ / 16777216.0f,
-						xfregs.viewport.zRange / 16777216.0f,
+						xfregs.viewport.farZ * U24_NORMALIZATION_COEF,
+						xfregs.viewport.zRange * U24_NORMALIZATION_COEF,
 						-1.f / (float)g_renderer->EFBToScaledX((int)ceil(2.0f * xfregs.viewport.wd)),
 						1.f / (float)g_renderer->EFBToScaledY((int)ceil(-2.0f * xfregs.viewport.ht)));
 		// This is so implementation-dependent that we can't have it here.
