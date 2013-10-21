@@ -57,18 +57,49 @@ const s_svar PSVar_Loc[] = { {I_COLORS, C_COLORS, 4 },
 						};
 
 #pragma pack(1)
+
+struct stage_hash_data
+{
+	// Align Everything to 32 bits words to speed up things
+	u32 cc : 24;
+	u32 pad0 : 8;
+	u32 ac : 24;
+	u32 pad1 : 8;
+		
+	u32 tevorders_texmap : 3;
+	u32 tevorders_texcoord : 3;
+	u32 tevorders_enable : 1;
+	u32 tevorders_colorchan : 3;
+	u32 hasindstage : 1;
+	u32 tevind : 21;		
+		
+	// TODO: Clean up the swapXY mess
+	u32 tevksel_swap1a : 2;
+	u32 tevksel_swap2a : 2;
+	u32 tevksel_swap1b : 2;
+	u32 tevksel_swap2b : 2;
+	u32 tevksel_swap1c : 2;
+	u32 tevksel_swap2c : 2;
+	u32 tevksel_swap1d : 2;
+	u32 tevksel_swap2d : 2;
+	u32 tevksel_kc : 5;
+	u32 tevksel_ka : 5;
+	u32 pad2 : 6;
+};
+
 struct pixel_shader_uid_data
 {
-	// TODO: Optimize field order for easy access!
+	u32 NumValues() const { return sizeof(pixel_shader_uid_data) - (sizeof(stage_hash_data) * (16 - (genMode_numtevstages + 1))); }
+	u32 StartValue() const { return pixel_lighting ? 0 : sizeof(LightingUidData); }
 
-	u32 num_values; // TODO: Shouldn't be a u32
-	u32 NumValues() const { return num_values; }
+	// TODO: Optimize field order for easy access!
+	LightingUidData lighting;	
 
 	u32 components : 23;
 	u32 dstAlphaMode : 2;
 	u32 Pretest : 2;
 	u32 nIndirectStagesUsed : 4;
-	u32 pad0 : 1;
+	u32 pixel_lighting : 1;
 
 	u32 genMode_numtexgens : 4;
 	u32 genMode_numtevstages : 4;
@@ -97,6 +128,8 @@ struct pixel_shader_uid_data
 	u32 tevindref_bi4 : 3;
 	u32 tevindref_bc4 : 3;
 
+	stage_hash_data stagehash[16];
+
 	inline void SetTevindrefValues(int index, u32 texcoord, u32 texmap)
 	{
 		if (index == 0) { tevindref_bc0 = texcoord; tevindref_bi0 = texmap; }
@@ -111,47 +144,13 @@ struct pixel_shader_uid_data
 		else if (index == 2) { tevindref_bi2 = texmap; }
 		else if (index == 3) { tevindref_bi4 = texmap; }
 	}
-
-	struct {
-		// TODO: Can save a lot space by removing the padding bits
-		u32 cc : 24;
-		u32 ac : 24;
-
-		u32 tevorders_texmap : 3;
-		u32 tevorders_texcoord : 3;
-		u32 tevorders_enable : 1;
-		u32 tevorders_colorchan : 3;
-		u32 pad1 : 6;
-
-		// TODO: Clean up the swapXY mess
-		u32 hasindstage : 1;
-		u32 tevind : 21;
-		u32 tevksel_swap1a : 2;
-		u32 tevksel_swap2a : 2;
-		u32 tevksel_swap1b : 2;
-		u32 tevksel_swap2b : 2;
-		u32 pad2 : 2;
-
-		u32 tevksel_swap1c : 2;
-		u32 tevksel_swap2c : 2;
-		u32 tevksel_swap1d : 2;
-		u32 tevksel_swap2d : 2;
-		u32 tevksel_kc : 5;
-		u32 tevksel_ka : 5;
-		u32 pad3 : 14;
-	} stagehash[16];
-
-	// TODO: I think we're fine without an enablePixelLighting field, should probably double check, though..
-	LightingUidData lighting;
 };
 #pragma pack()
 
 typedef ShaderUid<pixel_shader_uid_data> PixelShaderUid;
-typedef ShaderCode PixelShaderCode; // TODO: Obsolete
-typedef ShaderConstantProfile PixelShaderConstantProfile; // TODO: Obsolete
 
-void GeneratePixelShaderCode(PixelShaderCode& object, DSTALPHA_MODE dstAlphaMode, API_TYPE ApiType, u32 components);
+void GeneratePixelShaderCode(ShaderCode& object, DSTALPHA_MODE dstAlphaMode, API_TYPE ApiType, u32 components);
 void GetPixelShaderUid(PixelShaderUid& object, DSTALPHA_MODE dstAlphaMode, API_TYPE ApiType, u32 components);
-void GetPixelShaderConstantProfile(PixelShaderConstantProfile& object, DSTALPHA_MODE dstAlphaMode, API_TYPE ApiType, u32 components);
+void GetPixelShaderConstantProfile(ShaderConstantProfile& object, DSTALPHA_MODE dstAlphaMode, API_TYPE ApiType, u32 components);
 
 #endif // GCOGL_PIXELSHADER_H

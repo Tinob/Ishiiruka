@@ -28,6 +28,7 @@
 /**
  * Common uid data used for shader generators that use lighting calculations.
  */
+#pragma pack(1)
 struct LightingUidData
 {
 	u32 matsource : 4; // 4x1 bit
@@ -35,79 +36,82 @@ struct LightingUidData
 	u32 ambsource : 4; // 4x1 bit
 	u32 diffusefunc : 8; // 4x2 bits
 	u32 attnfunc : 8; // 4x2 bits
+	u32 pad0 : 4;
 	u32 light_mask : 32; // 4x8 bits
 };
+#pragma pack()
 
-
-template<class T>
+template<class T, bool Write_Code>
 static void GenerateLightShader(T& object, LightingUidData& uid_data, int index, int litchan_index, const char* lightsName, int coloralpha)
 {
 	const LitChannel& chan = (litchan_index > 1) ? xfregs.alpha[litchan_index-2] : xfregs.color[litchan_index];
-	const char* swizzle = "xyzw";
-	if (coloralpha == 1)
-		swizzle = "xyz";
-	else if (coloralpha == 2)
-		swizzle = "w";
-
 	uid_data.attnfunc |= chan.attnfunc << (2*litchan_index);
 	uid_data.diffusefunc |= chan.diffusefunc << (2*litchan_index);
-	if (!(chan.attnfunc & 1))
+	if (Write_Code)
 	{
-		// atten disabled
-		switch (chan.diffusefunc)
+		const char* swizzle = "xyzw";
+		if (coloralpha == 1)
+			swizzle = "xyz";
+		else if (coloralpha == 2)
+			swizzle = "w";
+		if (!(chan.attnfunc & 1))
 		{
-			case LIGHTDIF_NONE:
-				object.Write("lacc.%s += " LIGHT_COL";\n", swizzle, LIGHT_COL_PARAMS(lightsName, index, swizzle));
-				break;
-			case LIGHTDIF_SIGN:
-			case LIGHTDIF_CLAMP:
-				object.Write("ldir = normalize(" LIGHT_POS".xyz - pos.xyz);\n", LIGHT_POS_PARAMS(lightsName, index));
-				object.Write("lacc.%s += %sdot(ldir, _norm0)) * " LIGHT_COL";\n",
-					swizzle, chan.diffusefunc != LIGHTDIF_SIGN ? "max(0.0f," :"(", LIGHT_COL_PARAMS(lightsName, index, swizzle));
-				break;
-			default: _assert_(0);
+			// atten disabled
+			switch (chan.diffusefunc)
+			{
+				case LIGHTDIF_NONE:
+					object.Write("lacc.%s += " LIGHT_COL";\n", swizzle, LIGHT_COL_PARAMS(lightsName, index, swizzle));
+					break;
+				case LIGHTDIF_SIGN:
+				case LIGHTDIF_CLAMP:
+					object.Write("ldir = normalize(" LIGHT_POS".xyz - pos.xyz);\n", LIGHT_POS_PARAMS(lightsName, index));
+					object.Write("lacc.%s += %sdot(ldir, _norm0)) * " LIGHT_COL";\n",
+						swizzle, chan.diffusefunc != LIGHTDIF_SIGN ? "max(0.0f," :"(", LIGHT_COL_PARAMS(lightsName, index, swizzle));
+					break;
+				default: _assert_(0);
+			}
 		}
-	}
-	else // spec and spot
-	{
-		if (chan.attnfunc == 3)
-		{ // spot
-			object.Write("ldir = " LIGHT_POS".xyz - pos.xyz;\n", LIGHT_POS_PARAMS(lightsName, index));
-			object.Write("dist2 = dot(ldir, ldir);\n"
-						"dist = sqrt(dist2);\n"
-						"ldir = ldir / dist;\n"
-						"attn = max(0.0f, dot(ldir, " LIGHT_DIR".xyz));\n",
-						LIGHT_DIR_PARAMS(lightsName, index));
-			// attn*attn may overflow
-			object.Write("attn = max(0.0f, " LIGHT_COSATT".x + " LIGHT_COSATT".y*attn + " LIGHT_COSATT".z*attn*attn) / dot(" LIGHT_DISTATT".xyz, float3(1.0f,dist,dist2));\n",
-						LIGHT_COSATT_PARAMS(lightsName, index), LIGHT_COSATT_PARAMS(lightsName, index), LIGHT_COSATT_PARAMS(lightsName, index), LIGHT_DISTATT_PARAMS(lightsName, index));
-		}
-		else if (chan.attnfunc == 1)
-		{ // specular
-			object.Write("ldir = normalize(" LIGHT_POS".xyz);\n", LIGHT_POS_PARAMS(lightsName, index));
-			object.Write("attn = (dot(_norm0,ldir) >= 0.0f) ? max(0.0f, dot(_norm0, " LIGHT_DIR".xyz)) : 0.0f;\n", LIGHT_DIR_PARAMS(lightsName, index));
-			// attn*attn may overflow
-			object.Write("attn = max(0.0f, " LIGHT_COSATT".x + " LIGHT_COSATT".y*attn + " LIGHT_COSATT".z*attn*attn) / (" LIGHT_DISTATT".x + " LIGHT_DISTATT".y*attn + " LIGHT_DISTATT".z*attn*attn);\n",
-						LIGHT_COSATT_PARAMS(lightsName, index), LIGHT_COSATT_PARAMS(lightsName, index), LIGHT_COSATT_PARAMS(lightsName, index),
-						LIGHT_DISTATT_PARAMS(lightsName, index), LIGHT_DISTATT_PARAMS(lightsName, index), LIGHT_DISTATT_PARAMS(lightsName, index));
-		}
+		else // spec and spot
+		{
+			if (chan.attnfunc == 3)
+			{ // spot
+				object.Write("ldir = " LIGHT_POS".xyz - pos.xyz;\n", LIGHT_POS_PARAMS(lightsName, index));
+				object.Write("dist2 = dot(ldir, ldir);\n"
+							"dist = sqrt(dist2);\n"
+							"ldir = ldir / dist;\n"
+							"attn = max(0.0f, dot(ldir, " LIGHT_DIR".xyz));\n",
+							LIGHT_DIR_PARAMS(lightsName, index));
+				// attn*attn may overflow
+				object.Write("attn = max(0.0f, " LIGHT_COSATT".x + " LIGHT_COSATT".y*attn + " LIGHT_COSATT".z*attn*attn) / dot(" LIGHT_DISTATT".xyz, float3(1.0f,dist,dist2));\n",
+							LIGHT_COSATT_PARAMS(lightsName, index), LIGHT_COSATT_PARAMS(lightsName, index), LIGHT_COSATT_PARAMS(lightsName, index), LIGHT_DISTATT_PARAMS(lightsName, index));
+			}
+			else if (chan.attnfunc == 1)
+			{ // specular
+				object.Write("ldir = normalize(" LIGHT_POS".xyz);\n", LIGHT_POS_PARAMS(lightsName, index));
+				object.Write("attn = (dot(_norm0,ldir) >= 0.0f) ? max(0.0f, dot(_norm0, " LIGHT_DIR".xyz)) : 0.0f;\n", LIGHT_DIR_PARAMS(lightsName, index));
+				// attn*attn may overflow
+				object.Write("attn = max(0.0f, " LIGHT_COSATT".x + " LIGHT_COSATT".y*attn + " LIGHT_COSATT".z*attn*attn) / (" LIGHT_DISTATT".x + " LIGHT_DISTATT".y*attn + " LIGHT_DISTATT".z*attn*attn);\n",
+							LIGHT_COSATT_PARAMS(lightsName, index), LIGHT_COSATT_PARAMS(lightsName, index), LIGHT_COSATT_PARAMS(lightsName, index),
+							LIGHT_DISTATT_PARAMS(lightsName, index), LIGHT_DISTATT_PARAMS(lightsName, index), LIGHT_DISTATT_PARAMS(lightsName, index));
+			}
 
-		switch (chan.diffusefunc)
-		{
-			case LIGHTDIF_NONE:
-				object.Write("lacc.%s += attn * " LIGHT_COL";\n", swizzle, LIGHT_COL_PARAMS(lightsName, index, swizzle));
-				break;
-			case LIGHTDIF_SIGN:
-			case LIGHTDIF_CLAMP:
-				object.Write("lacc.%s += attn * %sdot(ldir, _norm0)) * " LIGHT_COL";\n",
-					swizzle,
-					chan.diffusefunc != LIGHTDIF_SIGN ? "max(0.0f," :"(",
-					LIGHT_COL_PARAMS(lightsName, index, swizzle));
-				break;
-			default: _assert_(0);
+			switch (chan.diffusefunc)
+			{
+				case LIGHTDIF_NONE:
+					object.Write("lacc.%s += attn * " LIGHT_COL";\n", swizzle, LIGHT_COL_PARAMS(lightsName, index, swizzle));
+					break;
+				case LIGHTDIF_SIGN:
+				case LIGHTDIF_CLAMP:
+					object.Write("lacc.%s += attn * %sdot(ldir, _norm0)) * " LIGHT_COL";\n",
+						swizzle,
+						chan.diffusefunc != LIGHTDIF_SIGN ? "max(0.0f," :"(",
+						LIGHT_COL_PARAMS(lightsName, index, swizzle));
+					break;
+				default: _assert_(0);
+			}
 		}
+		object.Write("\n");
 	}
-	object.Write("\n");
 }
 
 // vertex shader
@@ -115,95 +119,106 @@ static void GenerateLightShader(T& object, LightingUidData& uid_data, int index,
 // materials name is I_MATERIALS in vs and I_PMATERIALS in ps
 // inColorName is color in vs and colors_ in ps
 // dest is o.colors_ in vs and colors_ in ps
-template<class T>
+template<class T, bool Write_Code>
 static void GenerateLightingShader(T& object, LightingUidData& uid_data, int components, const char* materialsName, const char* lightsName, const char* inColorName, const char* dest)
 {
 	for (unsigned int j = 0; j < xfregs.numChan.numColorChans; j++)
 	{
 		const LitChannel& color = xfregs.color[j];
 		const LitChannel& alpha = xfregs.alpha[j];
-
-		object.Write("{\n");
-
 		uid_data.matsource |= xfregs.color[j].matsource << j;
-		if (color.matsource) // from vertex
+		if (Write_Code)
 		{
-			if (components & (VB_HAS_COL0 << j))
-				object.Write("mat = %s%d;\n", inColorName, j);
-			else if (components & VB_HAS_COL0)
-				object.Write("mat = %s0;\n", inColorName);
-			else
-				object.Write("mat = float4(1.0f, 1.0f, 1.0f, 1.0f);\n");
-		}
-		else // from color
-		{
-			object.Write("mat = %s[%d];\n", materialsName, j+2);
-		}
+			object.Write("{\n");
+			if (color.matsource) // from vertex
+			{
+				if (components & (VB_HAS_COL0 << j))
+					object.Write("mat = %s%d;\n", inColorName, j);
+				else if (components & VB_HAS_COL0)
+					object.Write("mat = %s0;\n", inColorName);
+				else
+					object.Write("mat = float4(1.0f, 1.0f, 1.0f, 1.0f);\n");
+			}
+			else // from color
+			{
+				object.Write("mat = %s[%d];\n", materialsName, j+2);
+			}
+		}		
 
 		uid_data.enablelighting |= xfregs.color[j].enablelighting << j;
 		if (color.enablelighting)
 		{
 			uid_data.ambsource |= xfregs.color[j].ambsource << j;
-			if (color.ambsource) // from vertex
+			if (Write_Code)
 			{
-				if (components & (VB_HAS_COL0<<j) )
-					object.Write("lacc = %s%d;\n", inColorName, j);
-				else if (components & VB_HAS_COL0 )
-					object.Write("lacc = %s0;\n", inColorName);
-				else
-					// TODO: this isn't verified. Here we want to read the ambient from the vertex,
-					// but the vertex itself has no color. So we don't know which value to read.
-					// Returing 1.0 is the same as disabled lightning, so this could be fine
-					object.Write("lacc = float4(1.0f, 1.0f, 1.0f, 1.0f);\n");
-			}
-			else // from color
-			{
-				object.Write("lacc = %s[%d];\n", materialsName, j);
-			}
+				if (color.ambsource) // from vertex
+				{
+					if (components & (VB_HAS_COL0<<j) )
+						object.Write("lacc = %s%d;\n", inColorName, j);
+					else if (components & VB_HAS_COL0 )
+						object.Write("lacc = %s0;\n", inColorName);
+					else
+						// TODO: this isn't verified. Here we want to read the ambient from the vertex,
+						// but the vertex itself has no color. So we don't know which value to read.
+						// Returing 1.0 is the same as disabled lightning, so this could be fine
+						object.Write("lacc = float4(1.0f, 1.0f, 1.0f, 1.0f);\n");
+				}
+				else // from color
+				{
+					object.Write("lacc = %s[%d];\n", materialsName, j);
+				}
+			}			
 		}
-		else
+		else if (Write_Code)
 		{
 			object.Write("lacc = float4(1.0f, 1.0f, 1.0f, 1.0f);\n");
 		}
 
 		// check if alpha is different
 		uid_data.matsource |= xfregs.alpha[j].matsource << (j+2);
-		if (alpha.matsource != color.matsource)
+		if (Write_Code)
 		{
-			if (alpha.matsource) // from vertex
+			if (alpha.matsource != color.matsource)
 			{
-				if (components & (VB_HAS_COL0<<j))
-					object.Write("mat.w = %s%d.w;\n", inColorName, j);
-				else if (components & VB_HAS_COL0)
-					object.Write("mat.w = %s0.w;\n", inColorName);
-				else object.Write("mat.w = 1.0f;\n");
-			}
-			else // from color
-			{
-				object.Write("mat.w = %s[%d].w;\n", materialsName, j+2);
+				if (alpha.matsource) // from vertex
+				{
+					if (components & (VB_HAS_COL0<<j))
+						object.Write("mat.w = %s%d.w;\n", inColorName, j);
+					else if (components & VB_HAS_COL0)
+						object.Write("mat.w = %s0.w;\n", inColorName);
+					else object.Write("mat.w = 1.0f;\n");
+				}
+				else // from color
+				{
+					object.Write("mat.w = %s[%d].w;\n", materialsName, j+2);
+				}
 			}
 		}
+		
 
 		uid_data.enablelighting |= xfregs.alpha[j].enablelighting << (j+2);
 		if (alpha.enablelighting)
 		{
 			uid_data.ambsource |= xfregs.alpha[j].ambsource << (j+2);
-			if (alpha.ambsource) // from vertex
+			if (Write_Code)
 			{
-				if (components & (VB_HAS_COL0<<j) )
-					object.Write("lacc.w = %s%d.w;\n", inColorName, j);
-				else if (components & VB_HAS_COL0 )
-					object.Write("lacc.w = %s0.w;\n", inColorName);
-				else
-					// TODO: The same for alpha: We want to read from vertex, but the vertex has no color
-					object.Write("lacc.w = 1.0f;\n");
-			}
-			else // from color
-			{
-				object.Write("lacc.w = %s[%d].w;\n", materialsName, j);
-			}
+				if (alpha.ambsource) // from vertex
+				{
+					if (components & (VB_HAS_COL0<<j) )
+						object.Write("lacc.w = %s%d.w;\n", inColorName, j);
+					else if (components & VB_HAS_COL0 )
+						object.Write("lacc.w = %s0.w;\n", inColorName);
+					else
+						// TODO: The same for alpha: We want to read from vertex, but the vertex has no color
+						object.Write("lacc.w = 1.0f;\n");
+				}
+				else // from color
+				{
+					object.Write("lacc.w = %s[%d].w;\n", materialsName, j);
+				}
+			} 			
 		}
-		else
+		else if (Write_Code)
 		{
 			object.Write("lacc.w = 1.0f;\n");
 		}
@@ -227,7 +242,7 @@ static void GenerateLightingShader(T& object, LightingUidData& uid_data, int com
 					{
 						if (mask & (1<<i))
 						{
-							GenerateLightShader<T>(object, uid_data, i, j, lightsName, 3);
+							GenerateLightShader<T, Write_Code>(object, uid_data, i, j, lightsName, 3);
 						}
 					}
 				}
@@ -237,9 +252,9 @@ static void GenerateLightingShader(T& object, LightingUidData& uid_data, int com
 			for (int i = 0; i < 8; ++i)
 			{
 				if (!(mask&(1<<i)) && (color.GetFullLightMask() & (1<<i)))
-					GenerateLightShader<T>(object, uid_data, i, j, lightsName, 1);
+					GenerateLightShader<T, Write_Code>(object, uid_data, i, j, lightsName, 1);
 				if (!(mask&(1<<i)) && (alpha.GetFullLightMask() & (1<<i)))
-					GenerateLightShader<T>(object, uid_data, i, j+2, lightsName, 2);
+					GenerateLightShader<T, Write_Code>(object, uid_data, i, j+2, lightsName, 2);
 			}
 		}
 		else if (color.enablelighting || alpha.enablelighting)
@@ -253,11 +268,14 @@ static void GenerateLightingShader(T& object, LightingUidData& uid_data, int com
 			for (int i = 0; i < 8; ++i)
 			{
 				if (workingchannel.GetFullLightMask() & (1<<i))
-					GenerateLightShader<T>(object, uid_data, i, lit_index, lightsName, coloralpha);
+					GenerateLightShader<T, Write_Code>(object, uid_data, i, lit_index, lightsName, coloralpha);
 			}
 		}
-		object.Write("%s%d = mat * clamp(lacc, 0.0f, 1.0f);\n", dest, j);
-		object.Write("}\n");
+		if (Write_Code)
+		{
+			object.Write("%s%d = mat * clamp(lacc, 0.0f, 1.0f);\n", dest, j);
+			object.Write("}\n");
+		}		
 	}
 }
 

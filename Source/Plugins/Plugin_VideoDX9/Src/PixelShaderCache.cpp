@@ -32,7 +32,7 @@ namespace DX9
 PixelShaderCache::PSCache PixelShaderCache::PixelShaders;
 const PixelShaderCache::PSCacheEntry *PixelShaderCache::last_entry;
 PixelShaderUid PixelShaderCache::last_uid;
-UidChecker<PixelShaderUid,PixelShaderCode> PixelShaderCache::pixel_uid_checker;
+UidChecker<PixelShaderUid,ShaderCode> PixelShaderCache::pixel_uid_checker;
 
 static LinearDiskCache<PixelShaderUid, u8> g_ps_disk_cache;
 static std::set<u32> unique_shaders;
@@ -304,24 +304,24 @@ void PixelShaderCache::Shutdown()
 				&& (copyMatrixType == 0 || s_CopyProgram[copyMatrixType][depthType][ssaaMode] != s_CopyProgram[copyMatrixType-1][depthType][ssaaMode]))
 					s_CopyProgram[copyMatrixType][depthType][ssaaMode]->Release();
 
-				for(int copyMatrixType = 0; copyMatrixType < NUM_COPY_TYPES; copyMatrixType++)
-					for(int depthType = 0; depthType < NUM_DEPTH_CONVERSION_TYPES; depthType++)
-						for(int ssaaMode = 0; ssaaMode < MAX_SSAA_SHADERS; ssaaMode++)
-							s_CopyProgram[copyMatrixType][depthType][ssaaMode] = NULL;
+	for(int copyMatrixType = 0; copyMatrixType < NUM_COPY_TYPES; copyMatrixType++)
+		for(int depthType = 0; depthType < NUM_DEPTH_CONVERSION_TYPES; depthType++)
+			for(int ssaaMode = 0; ssaaMode < MAX_SSAA_SHADERS; ssaaMode++)
+				s_CopyProgram[copyMatrixType][depthType][ssaaMode] = NULL;
 
-				if (s_ClearProgram) s_ClearProgram->Release();
-				s_ClearProgram = NULL;
-				if (s_rgb8_to_rgba6) s_rgb8_to_rgba6->Release();
-				s_rgb8_to_rgba6 = NULL;
-				if (s_rgba6_to_rgb8) s_rgba6_to_rgb8->Release();
-				s_rgba6_to_rgb8 = NULL;
+	if (s_ClearProgram) s_ClearProgram->Release();
+	s_ClearProgram = NULL;
+	if (s_rgb8_to_rgba6) s_rgb8_to_rgba6->Release();
+	s_rgb8_to_rgba6 = NULL;
+	if (s_rgba6_to_rgb8) s_rgba6_to_rgb8->Release();
+	s_rgba6_to_rgb8 = NULL;
 
 
-				Clear();
-				g_ps_disk_cache.Sync();
-				g_ps_disk_cache.Close();
+	Clear();
+	g_ps_disk_cache.Sync();
+	g_ps_disk_cache.Close();
 
-				unique_shaders.clear();
+	unique_shaders.clear();
 }
 
 bool PixelShaderCache::SetShader(DSTALPHA_MODE dstAlphaMode, u32 components)
@@ -331,7 +331,7 @@ bool PixelShaderCache::SetShader(DSTALPHA_MODE dstAlphaMode, u32 components)
 	GetPixelShaderUid(uid, dstAlphaMode, API_D3D9, components);
 	if (g_ActiveConfig.bEnableShaderDebugging)
 	{
-		PixelShaderCode code;
+		ShaderCode code;
 		GeneratePixelShaderCode(code, dstAlphaMode, API_D3D9, components);
 		pixel_uid_checker.AddToIndexAndCheck(code, uid, "Pixel", "p");
 	}
@@ -363,7 +363,7 @@ bool PixelShaderCache::SetShader(DSTALPHA_MODE dstAlphaMode, u32 components)
 
 
 	// Need to compile a new shader
-	PixelShaderCode code;
+	ShaderCode code;
 	GeneratePixelShaderCode(code, dstAlphaMode, api, components);
 
 	if (g_ActiveConfig.bEnableShaderDebugging)

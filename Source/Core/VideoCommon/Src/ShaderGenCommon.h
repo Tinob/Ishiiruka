@@ -83,30 +83,30 @@ public:
 	ShaderUid()
 	{
 		// TODO: Move to Shadergen => can be optimized out
-		memset(values, 0, sizeof(values));
+		memset(values, 0, sizeof(uid_data));
 	}
 
 	bool operator == (const ShaderUid& obj) const
 	{
-		return memcmp(this->values, obj.values, data.NumValues() * sizeof(*values)) == 0;
+		return memcmp(this->values + data.StartValue(), obj.values + data.StartValue(), data.NumValues() * sizeof(*values)) == 0;
 	}
 
 	bool operator != (const ShaderUid& obj) const
 	{
-		return memcmp(this->values, obj.values, data.NumValues() * sizeof(*values)) != 0;
+		return memcmp(this->values + data.StartValue(), obj.values + data.StartValue(), data.NumValues() * sizeof(*values)) != 0;
 	}
 
 	// determines the storage order inside STL containers
 	bool operator < (const ShaderUid& obj) const
 	{
-		return memcmp(this->values, obj.values, data.NumValues() * sizeof(*values)) < 0;
+		return memcmp(this->values + data.StartValue(), obj.values + data.StartValue(), data.NumValues() * sizeof(*values)) < 0;
 	}
 
 	template<class T>
 	inline T& GetUidData() { return data; }
 
 	const uid_data& GetUidData() const { return data; }
-	size_t GetUidDataSize() const { return sizeof(values); }
+	size_t GetUidDataSize() const { return sizeof(uid_data); }
 
 private:
 	union

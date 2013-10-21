@@ -72,7 +72,7 @@ const s_svar VSVar_Loc[] = {  {I_POSNORMALMATRIX, C_POSNORMALMATRIX, 6 },
 struct vertex_shader_uid_data
 {
 	u32 NumValues() const { return sizeof(vertex_shader_uid_data); }
-
+	u32 StartValue() const { return 0; }
 	u32 components : 23;
 	u32 numTexGens : 4;
 	u32 numColorChans : 2;
@@ -100,10 +100,9 @@ struct vertex_shader_uid_data
 #pragma pack()
 
 typedef ShaderUid<vertex_shader_uid_data> VertexShaderUid;
-typedef ShaderCode VertexShaderCode; // TODO: Obsolete..
 
 void GetVertexShaderUid(VertexShaderUid& object, u32 components, API_TYPE api_type);
-void GenerateVertexShaderCode(VertexShaderCode& object, u32 components, API_TYPE api_type);
+void GenerateVertexShaderCode(ShaderCode& object, u32 components, API_TYPE api_type);
 void GenerateVSOutputStructForGS(ShaderCode& object, u32 components, API_TYPE api_type);
 
 #endif // GCOGL_VERTEXSHADER_H
