@@ -200,7 +200,7 @@ static inline void GenerateVertexShader(T& out, u32 components, API_TYPE api_typ
 			}
 			else if (api_type == API_D3D11)
 			{
-				out.Write("int posmtx = blend_indices.x * 255.0f;\n");
+				out.Write("int posmtx = blend_indices.x * 255.0;\n");
 			}
 			else
 			{
@@ -232,7 +232,7 @@ static inline void GenerateVertexShader(T& out, u32 components, API_TYPE api_typ
 		}
 		else
 		{
-			out.Write("float4 pos = float4(dot(" I_POSNORMALMATRIX"[0], rawpos), dot(" I_POSNORMALMATRIX"[1], rawpos), dot(" I_POSNORMALMATRIX"[2], rawpos), 1.0f);\n");
+			out.Write("float4 pos = float4(dot(" I_POSNORMALMATRIX"[0], rawpos), dot(" I_POSNORMALMATRIX"[1], rawpos), dot(" I_POSNORMALMATRIX"[2], rawpos), 1.0);\n");
 			if (components & VB_HAS_NRM0)
 				out.Write("float3 _norm0 = normalize(float3(dot(" I_POSNORMALMATRIX"[3].xyz, rawnorm0), dot(" I_POSNORMALMATRIX"[4].xyz, rawnorm0), dot(" I_POSNORMALMATRIX"[5].xyz, rawnorm0)));\n");
 			if (components & VB_HAS_NRM1)
@@ -242,14 +242,14 @@ static inline void GenerateVertexShader(T& out, u32 components, API_TYPE api_typ
 		}
 
 		if (!(components & VB_HAS_NRM0))
-			out.Write("float3 _norm0 = float3(0.0f, 0.0f, 0.0f);\n");
+			out.Write("float3 _norm0 = float3(0.0, 0.0, 0.0);\n");
 
 
 		out.Write("o.pos = float4(dot(" I_PROJECTION"[0], pos), dot(" I_PROJECTION"[1], pos), dot(" I_PROJECTION"[2], pos), dot(" I_PROJECTION"[3], pos));\n");
 		if (api_type & API_D3D9)
 		{
 			//Write Pos offset for Point/Line Rendering
-			out.Write("o.pos.xy = o.pos.xy + "I_PLOFFSETPARAMS"[indices.z].xy * o.pos.w;\n");
+			out.Write("o.pos.xy = o.pos.xy + " I_PLOFFSETPARAMS"[indices.z].xy * o.pos.w;\n");
 		}
 		out.Write("float4 mat, lacc;\n"
 				"float3 ldir, h;\n"
@@ -259,7 +259,7 @@ static inline void GenerateVertexShader(T& out, u32 components, API_TYPE api_typ
 			if (components & VB_HAS_COL0)
 				out.Write("o.colors_0 = color0;\n");
 			else
-				out.Write("o.colors_0 = float4(1.0f, 1.0f, 1.0f, 1.0f);\n");
+				out.Write("o.colors_0 = float4(1.0, 1.0, 1.0, 1.0);\n");
 		}
 	}
 
@@ -283,7 +283,7 @@ static inline void GenerateVertexShader(T& out, u32 components, API_TYPE api_typ
 				out.Write("o.colors_1 = o.colors_0;\n");
 		}
 		// transform texcoords
-		out.Write("float4 coord = float4(0.0f, 0.0f, 1.0f, 1.0f);\n");
+		out.Write("float4 coord = float4(0.0, 0.0, 1.0, 1.0);\n");
 	}
 
 	
@@ -294,7 +294,7 @@ static inline void GenerateVertexShader(T& out, u32 components, API_TYPE api_typ
 		if (Write_Code)
 		{
 			out.Write("{\n");
-			out.Write("coord = float4(0.0f, 0.0f, 1.0f, 1.0f);\n");		
+			out.Write("coord = float4(0.0, 0.0, 1.0, 1.0);\n");		
 			switch (texinfo.sourcerow)
 			{
 			case XF_SRCGEOM_INROW:
@@ -305,7 +305,7 @@ static inline void GenerateVertexShader(T& out, u32 components, API_TYPE api_typ
 				if (components & VB_HAS_NRM0)
 				{
 					_assert_( texinfo.inputform == XF_TEXINPUT_ABC1 );
-					out.Write("coord = float4(rawnorm0.xyz, 1.0f);\n");
+					out.Write("coord = float4(rawnorm0.xyz, 1.0);\n");
 				}
 				break;
 			case XF_SRCCOLORS_INROW:
@@ -315,20 +315,20 @@ static inline void GenerateVertexShader(T& out, u32 components, API_TYPE api_typ
 				if (components & VB_HAS_NRM1)
 				{
 					_assert_( texinfo.inputform == XF_TEXINPUT_ABC1 );
-					out.Write("coord = float4(rawnorm1.xyz, 1.0f);\n");
+					out.Write("coord = float4(rawnorm1.xyz, 1.0);\n");
 				}
 				break;
 			case XF_SRCBINORMAL_B_INROW:
 				if (components & VB_HAS_NRM2)
 				{
 					_assert_( texinfo.inputform == XF_TEXINPUT_ABC1 );
-					out.Write("coord = float4(rawnorm2.xyz, 1.0f);\n");
+					out.Write("coord = float4(rawnorm2.xyz, 1.0);\n");
 				}
 				break;
 			default:
 				_assert_(texinfo.sourcerow <= XF_SRCTEX7_INROW);
 				if (components & (VB_HAS_UV0<<(texinfo.sourcerow - XF_SRCTEX0_INROW)) )
-					out.Write("coord = float4(tex%d.x, tex%d.y, 1.0f, 1.0f);\n", texinfo.sourcerow - XF_SRCTEX0_INROW, texinfo.sourcerow - XF_SRCTEX0_INROW);
+					out.Write("coord = float4(tex%d.x, tex%d.y, 1.0, 1.0);\n", texinfo.sourcerow - XF_SRCTEX0_INROW, texinfo.sourcerow - XF_SRCTEX0_INROW);
 				break;
 			}
 		}		
@@ -347,7 +347,7 @@ static inline void GenerateVertexShader(T& out, u32 components, API_TYPE api_typ
 					if (Write_Code)
 					{
 						out.Write("ldir = normalize(" LIGHT_POS".xyz - pos.xyz);\n", LIGHT_POS_PARAMS(I_LIGHTS, texinfo.embosslightshift));
-						out.Write("o.tex%d.xyz = o.tex%d.xyz + float3(dot(ldir, _norm1), dot(ldir, _norm2), 0.0f);\n", i, texinfo.embosssourceshift);
+						out.Write("o.tex%d.xyz = o.tex%d.xyz + float3(dot(ldir, _norm1), dot(ldir, _norm2), 0.0);\n", i, texinfo.embosssourceshift);
 					}					
 				}
 				else
@@ -418,7 +418,7 @@ static inline void GenerateVertexShader(T& out, u32 components, API_TYPE api_typ
 
 				// multiply by postmatrix
 				if (Write_Code)
-					out.Write("o.tex%d.xyz = float3(dot(P0.xy, o.tex%d.xy) + P0.z + P0.w, dot(P1.xy, o.tex%d.xy) + P1.z + P1.w, 0.0f);\n", i, i, i);
+					out.Write("o.tex%d.xyz = float3(dot(P0.xy, o.tex%d.xy) + P0.z + P0.w, dot(P1.xy, o.tex%d.xy) + P1.z + P1.w, 0.0);\n", i, i, i);
 			}
 			else
 			{
@@ -485,14 +485,14 @@ static inline void GenerateVertexShader(T& out, u32 components, API_TYPE api_typ
 		{
 			// this results in a scale from -1..0 to -1..1 after perspective
 			// divide
-			out.Write("o.pos.z = o.pos.w + o.pos.z * 2.0f;\n");
+			out.Write("o.pos.z = o.pos.w + o.pos.z * 2.0;\n");
 
 			// Sonic Unleashed puts its final rendering at the near or
 			// far plane of the viewing frustrum(actually box, they use
 			// orthogonal projection for that), and we end up putting it
 			// just beyond, and the rendering gets clipped away. (The
 			// primitive gets dropped)
-			out.Write("o.pos.z = o.pos.z * 1048575.0f/1048576.0f;\n");
+			out.Write("o.pos.z = o.pos.z * 1048575.0/1048576.0;\n");
 
 			// the next steps of the OGL pipeline are:
 			// (x_c,y_c,z_c,w_c) = o.pos  //switch to OGL spec terminology
@@ -512,7 +512,7 @@ static inline void GenerateVertexShader(T& out, u32 components, API_TYPE api_typ
 			// Write Texture Offsets for Point/Line Rendering
 			for (unsigned int i = 0; i < xfregs.numTexGen.numTexGens; ++i)
 			{
-				out.Write("o.tex%d.xy = o.tex%d.xy + ("I_PLOFFSETPARAMS"[indices.w].zw * "I_PLOFFSETPARAMS"[indices.y + %d].%s );\n", i, i, ((i / 4) + 1), texOffsetMemberSelector[i % 4]);
+				out.Write("o.tex%d.xy = o.tex%d.xy + (" I_PLOFFSETPARAMS"[indices.w].zw * " I_PLOFFSETPARAMS"[indices.y + %d].%s );\n", i, i, ((i / 4) + 1), texOffsetMemberSelector[i % 4]);
 			}
 		}
 
@@ -530,7 +530,7 @@ static inline void GenerateVertexShader(T& out, u32 components, API_TYPE api_typ
 					if(i < xfregs.numTexGen.numTexGens)
 						out.Write(" uv%d_2.xyz =  o.tex%d;\n", i, i);
 					else
-						out.Write(" uv%d_2.xyz =  float3(0.0f, 0.0f, 0.0f);\n", i);
+						out.Write(" uv%d_2.xyz =  float3(0.0, 0.0, 0.0);\n", i);
 				}
 				out.Write("  clipPos_2 = o.clipPos;\n");
 				if(g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting)
