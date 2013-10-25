@@ -107,6 +107,19 @@
 		#define CTX_R15 gregs[REG_R15]
 		#define CTX_RIP gregs[REG_RIP]
 	#elif defined(_M_IX86)
+		#ifdef ANDROID
+		#include <asm/sigcontext.h>
+		typedef sigcontext SContext;
+		#define CTX_EAX eax
+		#define CTX_EBX ebx
+		#define CTX_ECX ecx
+		#define CTX_EDX edx
+		#define CTX_EDI edi
+		#define CTX_ESI esi
+		#define CTX_EBP ebp
+		#define CTX_ESP esp
+		#define CTX_EIP eip
+		#else
 		#include <ucontext.h>
 		typedef mcontext_t SContext;
 		#define CTX_EAX gregs[REG_EAX]
@@ -118,12 +131,13 @@
 		#define CTX_EBP gregs[REG_EBP]
 		#define CTX_ESP gregs[REG_ESP]
 		#define CTX_EIP gregs[REG_EIP]
+		#endif
 	#elif defined(_M_ARM)
 		// Add others if required.
 		typedef struct sigcontext SContext;
 		#define CTX_PC  arm_pc
 	#else
-		#error No context definition for OS
+		#warning No context definition for OS
 	#endif
 #elif defined(__NetBSD__)
 	#include <ucontext.h>

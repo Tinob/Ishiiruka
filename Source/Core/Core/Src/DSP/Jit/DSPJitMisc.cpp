@@ -2,11 +2,9 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include "../DSPIntUtil.h"
 #include "../DSPEmitter.h"
-#include "DSPJitUtil.h"
-#include "x64Emitter.h"
-#include "x64ABI.h"
+#include "../DSPIntUtil.h"
+
 using namespace Gen;
 
 // MRR $D, $S

@@ -10,9 +10,6 @@
 #include "DSPHost.h"
 #include "DSPInterpreter.h"
 #include "DSPAnalyzer.h"
-#include "Jit/DSPJitUtil.h"
-#include "x64Emitter.h"
-#include "x64ABI.h"
 
 #define MAX_BLOCK_SIZE 250
 #define DSP_IDLE_SKIP_CYCLES 0x1000

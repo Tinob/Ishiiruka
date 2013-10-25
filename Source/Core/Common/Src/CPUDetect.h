@@ -42,6 +42,9 @@ struct CPUInfo
 	bool bSSE4A;
 	bool bAVX;
 	bool bAES;
+	// FXSAVE/FXRSTOR
+	bool bFXSR;
+	bool bDAZ;
 	bool bLAHFSAHF64;
 	bool bLongMode;
 

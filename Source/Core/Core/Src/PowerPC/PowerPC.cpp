@@ -2,8 +2,6 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include <float.h>
-
 #include "Common.h"
 #include "Atomic.h"
 #include "MathUtil.h"
@@ -120,7 +118,6 @@ void Init(int cpu_core)
 	memset(ppcState.mojs, 0, sizeof(ppcState.mojs));
 	memset(ppcState.sr, 0, sizeof(ppcState.sr));
 	ppcState.DebugCount = 0;
-	ppcState.dtlb_last = 0;
 	ppcState.dtlb_last = 0;
 	memset(ppcState.dtlb_va, 0, sizeof(ppcState.dtlb_va));
 	memset(ppcState.dtlb_pa, 0, sizeof(ppcState.dtlb_pa));

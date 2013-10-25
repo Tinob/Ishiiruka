@@ -76,9 +76,11 @@ static void __cpuid(int info[4], int x)
 #define _XCR_XFEATURE_ENABLED_MASK 0
 static unsigned long long _xgetbv(unsigned int index)
 {
+#ifndef _M_GENERIC
 	unsigned int eax, edx;
 	__asm__ __volatile__("xgetbv" : "=a"(eax), "=d"(edx) : "c"(index));
 	return ((unsigned long long)edx << 32) | eax;
+#endif
 }
 
 #endif
@@ -124,7 +126,7 @@ void CPUInfo::Detect()
 	// boot modern OS:es anyway.
 	int cpu_id[4];
 	memset(cpu_string, 0, sizeof(cpu_string));
-	
+
 	// Detect CPU's CPUID capabilities, and grab cpu string
 	__cpuid(cpu_id, 0x00000000);
 	u32 max_std_fn = cpu_id[0];  // EAX
@@ -159,6 +161,28 @@ void CPUInfo::Detect()
 		if ((cpu_id[2] >> 19) & 1) bSSE4_1 = true;
 		if ((cpu_id[2] >> 20) & 1) bSSE4_2 = true;
 		if ((cpu_id[2] >> 25) & 1) bAES = true;
+
+		if ((cpu_id[3] >> 24) & 1)
+		{
+			// We can use FXSAVE.
+			bFXSR = true;
+
+			GC_ALIGNED16(u8 fx_state[512]);
+			memset(fx_state, 0, sizeof(fx_state));
+#ifdef _WIN32
+			#ifdef _M_IX86
+				_fxsave(fx_state);
+			#elif defined (_M_X64)
+				_fxsave64(fx_state);
+			#endif
+#else
+			__asm__("fxsave %0" : "=m" (fx_state));
+#endif		
+
+			// lowest byte of MXCSR_MASK
+			if ((fx_state[0x1C] >> 6) & 1)
+				bDAZ = true;
+		}
 
 		// AVX support requires 3 separate checks:
 		//  - Is the AVX bit set in CPUID?

@@ -7,15 +7,6 @@
 
 #include "Common.h"
 
-#include "../PowerPC.h"
-#include "../../Core.h"
-#include "../../ConfigManager.h"
-#include "../../HW/GPFifo.h"
-#include "../../HW/Memmap.h"
-#include "../PPCTables.h"
-#include "x64Emitter.h"
-#include "x64ABI.h"
-
 #include "Jit.h"
 #include "JitAsm.h"
 #include "JitRegCache.h"
@@ -208,12 +199,12 @@ void Jit64::lXXx(UGeckoInstruction inst)
 	}
 
 	gpr.Lock(a, b, d);
-	gpr.BindToRegister(d, false, true);
+	gpr.BindToRegister(d, js.memcheck, true);
 	SafeLoadToReg(gpr.RX(d), opAddress, accessSize, 0, RegistersInUse(), signExtend);
 
 	if (update && js.memcheck && !zeroOffset)
 	{
-		gpr.BindToRegister(a, false, true);
+		gpr.BindToRegister(a, true, true);
 		MEMCHECK_START
 		MOV(32, gpr.R(a), opAddress);
 		MEMCHECK_END

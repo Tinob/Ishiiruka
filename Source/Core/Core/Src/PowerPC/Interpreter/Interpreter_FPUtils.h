@@ -5,7 +5,6 @@
 #ifndef _INTERPRETER_FPUTILS_H
 #define _INTERPRETER_FPUTILS_H
 
-#include "../../Core.h"
 #include "Interpreter.h"
 #include "MathUtil.h"
 
@@ -70,28 +69,13 @@ inline void UpdateFPSCR()
 
 inline double ForceSingle(double _x)
 {
-	//if (FPSCR.RN != 0)
-	//	PanicAlert("RN = %d at %x", (int)FPSCR.RN, PC);
-	if (FPSCR.NI)
-		_x = FlushToZeroAsFloat(_x);
-
-	double x = static_cast<float>(_x);
-
-	return x;
+	// rounding and flush-to-zero is now done automatically after setting it in SetSIMDMode()
+	return static_cast<float>(_x);
 }
 
 inline double ForceDouble(double d)
 {
-	//if (FPSCR.RN != 0)
-	//	PanicAlert("RN = %d at %x", (int)FPSCR.RN, PC);
-
-	//if (FPSCR.NI)
-	//{
-	//	IntDouble x; x.d = d;
-		//if ((x.i & DOUBLE_EXP) == 0)
-		//	x.i &= DOUBLE_SIGN;  // turn into signed zero
-	//	return x.d;
-	//}
+	// rounding and flush-to-zero is now done automatically after setting it in SetSIMDMode()
 	return d;
 }
 

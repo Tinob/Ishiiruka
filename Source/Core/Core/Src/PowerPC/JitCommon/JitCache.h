@@ -27,8 +27,8 @@
 #define JIT_ICACHE_EXRAM_BIT 0x10000000
 #define JIT_ICACHE_VMEM_BIT 0x20000000
 // this corresponds to opcode 5 which is invalid in PowerPC
-#define JIT_ICACHE_INVALID_BYTE 0x14
-#define JIT_ICACHE_INVALID_WORD 0x14141414
+#define JIT_ICACHE_INVALID_BYTE 0x80
+#define JIT_ICACHE_INVALID_WORD 0x80808080
 
 struct JitBlock
 {
@@ -39,16 +39,13 @@ struct JitBlock
 	u32 exitAddress[2];  // 0xFFFFFFFF == unknown
 
 	u32 originalAddress;
-	u32 originalFirstOpcode; //to be able to restore
 	u32 codeSize; 
 	u32 originalSize;
 	int runCount;  // for profiling.
-	int blockNum;
 	int flags;
 
 	bool invalid;
 	bool linkStatus[2];
-	bool ContainsAddress(u32 em_address);
 
 #ifdef _WIN32
 	// we don't really need to save start and stop
@@ -74,12 +71,10 @@ class JitBaseBlockCache
 	std::multimap<u32, int> links_to;
 	std::map<std::pair<u32,u32>, u32> block_map; // (end_addr, start_addr) -> number
 	std::bitset<0x20000000 / 32> valid_block;
-#ifdef JIT_UNLIMITED_ICACHE
-	u8 *iCache;
-	u8 *iCacheEx;
-	u8 *iCacheVMEM;
-#endif
-	int MAX_NUM_BLOCKS;
+	enum
+	{
+		MAX_NUM_BLOCKS = 65536*2
+	};
 
 	bool RangeIntersect(int s1, int e1, int s2, int e2) const;
 	void LinkBlockExits(int i);
@@ -93,10 +88,7 @@ class JitBaseBlockCache
 public:
 	JitBaseBlockCache() :
 		blockCodePointers(0), blocks(0), num_blocks(0),
-#ifdef JIT_UNLIMITED_ICACHE	
-		iCache(0), iCacheEx(0), iCacheVMEM(0), 
-#endif
-		MAX_NUM_BLOCKS(0) { }
+		iCache(0), iCacheEx(0), iCacheVMEM(0) {}
 	int AllocateBlock(u32 em_address);
 	void FinalizeBlock(int block_num, bool block_link, const u8 *code_ptr);
 
@@ -112,20 +104,14 @@ public:
 	JitBlock *GetBlock(int block_num);
 	int GetNumBlocks() const;
 	const u8 **GetCodePointers();
-#ifdef JIT_UNLIMITED_ICACHE
-	u8 *GetICache();
-	u8 *GetICacheEx();
-	u8 *GetICacheVMEM();
-#endif
+	u8 *iCache;
+	u8 *iCacheEx;
+	u8 *iCacheVMEM;
+
+	u32* GetICachePtr(u32 addr);
 
 	// Fast way to get a block. Only works on the first ppc instruction of a block.
 	int GetBlockNumberFromStartAddress(u32 em_address);
-
-	// slower, but can get numbers from within blocks, not just the first instruction.
-	// WARNING! WILL NOT WORK WITH INLINING ENABLED (not yet a feature but will be soon)
-	// Returns a list of block numbers - only one block can start at a particular address, but they CAN overlap.
-	// This one is slow so should only be used for one-shots from the debugger UI, not for anything during runtime.
-	void GetBlockNumbersFromAddress(u32 em_address, std::vector<int> *block_numbers);
 
 	u32 GetOriginalFirstOp(int block_num);
 	CompiledCode GetCompiledCodeFromBlock(int block_num);

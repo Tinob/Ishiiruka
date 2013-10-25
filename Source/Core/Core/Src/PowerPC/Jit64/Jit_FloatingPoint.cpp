@@ -4,11 +4,6 @@
 
 #include "Common.h"
 
-#include "../../Core.h"
-#include "../PowerPC.h"
-#include "../PPCTables.h"
-#include "x64Emitter.h"
-
 #include "Jit.h"
 #include "JitRegCache.h"
 #include "CPUDetect.h"
@@ -17,7 +12,7 @@ const u64 GC_ALIGNED16(psSignBits2[2]) = {0x8000000000000000ULL, 0x8000000000000
 const u64 GC_ALIGNED16(psAbsMask2[2])  = {0x7FFFFFFFFFFFFFFFULL, 0x7FFFFFFFFFFFFFFFULL};
 const double GC_ALIGNED16(psOneOne2[2]) = {1.0, 1.0};
 
-void Jit64::fp_tri_op(int d, int a, int b, bool reversible, bool dupe, void (XEmitter::*op)(Gen::X64Reg, Gen::OpArg))
+void Jit64::fp_tri_op(int d, int a, int b, bool reversible, bool single, void (XEmitter::*op)(Gen::X64Reg, Gen::OpArg))
 {
 	fpr.Lock(d, a, b);
 	if (d == a)
@@ -35,7 +30,7 @@ void Jit64::fp_tri_op(int d, int a, int b, bool reversible, bool dupe, void (XEm
 		else
 		{
 			MOVSD(XMM0, fpr.R(b));
-			fpr.BindToRegister(d, !dupe);
+			fpr.BindToRegister(d, !single);
 			MOVSD(fpr.RX(d), fpr.R(a));
 			(this->*op)(fpr.RX(d), Gen::R(XMM0));
 		}
@@ -43,11 +38,11 @@ void Jit64::fp_tri_op(int d, int a, int b, bool reversible, bool dupe, void (XEm
 	else
 	{
 		// Sources different from d, can use rather quick solution
-		fpr.BindToRegister(d, !dupe);
+		fpr.BindToRegister(d, !single);
 		MOVSD(fpr.RX(d), fpr.R(a));
 		(this->*op)(fpr.RX(d), fpr.R(b));
 	}
-	if (dupe)
+	if (single)
 	{
 		ForceSinglePrecisionS(fpr.RX(d));
 		if (cpu_info.bSSE3)
@@ -67,7 +62,7 @@ void Jit64::fp_tri_op(int d, int a, int b, bool reversible, bool dupe, void (XEm
 
 static const double one_const = 1.0f;
 
-void Jit64::fp_arith_s(UGeckoInstruction inst)
+void Jit64::fp_arith(UGeckoInstruction inst)
 {
 	INSTRUCTION_START
 	JITDISABLE(bJITFloatingPointOff)
@@ -99,15 +94,15 @@ void Jit64::fp_arith_s(UGeckoInstruction inst)
 		Default(inst); return;
 	}
 
-	bool dupe = inst.OPCD == 59;
+	bool single = inst.OPCD == 59;
 	switch (inst.SUBOP5)
 	{
-	case 18: fp_tri_op(inst.FD, inst.FA, inst.FB, false, dupe, &XEmitter::DIVSD); break; //div
-	case 20: fp_tri_op(inst.FD, inst.FA, inst.FB, false, dupe, &XEmitter::SUBSD); break; //sub
-	case 21: fp_tri_op(inst.FD, inst.FA, inst.FB, true,  dupe, &XEmitter::ADDSD); break; //add
-	case 25: fp_tri_op(inst.FD, inst.FA, inst.FC, true, dupe, &XEmitter::MULSD); break; //mul
+	case 18: fp_tri_op(inst.FD, inst.FA, inst.FB, false, single, &XEmitter::DIVSD); break; //div
+	case 20: fp_tri_op(inst.FD, inst.FA, inst.FB, false, single, &XEmitter::SUBSD); break; //sub
+	case 21: fp_tri_op(inst.FD, inst.FA, inst.FB, true,  single, &XEmitter::ADDSD); break; //add
+	case 25: fp_tri_op(inst.FD, inst.FA, inst.FC, true, single, &XEmitter::MULSD); break; //mul
 	default:
-		_assert_msg_(DYNA_REC, 0, "fp_arith_s WTF!!!");
+		_assert_msg_(DYNA_REC, 0, "fp_arith WTF!!!");
 	}
 }
 

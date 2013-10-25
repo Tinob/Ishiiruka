@@ -7,14 +7,10 @@
 
 // Multiplier and product register control
 
-#include "../DSPIntUtil.h"
-#include "../DSPEmitter.h"
 #include "../DSPAnalyzer.h"
-#ifdef _M_X64
-#include "DSPJitUtil.h"
-#endif
-#include "x64Emitter.h"
-#include "x64ABI.h"
+#include "../DSPEmitter.h"
+#include "../DSPIntUtil.h"
+
 using namespace Gen;
 
 // Returns s64 in RAX

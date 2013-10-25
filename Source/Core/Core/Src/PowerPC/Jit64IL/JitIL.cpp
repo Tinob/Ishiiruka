@@ -5,20 +5,9 @@
 #include <map>
 
 #include "Common.h"
-#include "x64Emitter.h"
-#include "x64ABI.h"
 #include "../../HLE/HLE.h"
-#include "../../Core.h"
 #include "../../PatchEngine.h"
-#include "../../CoreTiming.h"
-#include "../../ConfigManager.h"
-#include "../PowerPC.h"
 #include "../Profiler.h"
-#include "../PPCTables.h"
-#include "../PPCAnalyst.h"
-#include "../../HW/Memmap.h"
-#include "../../HW/GPFifo.h"
-#include "../JitCommon/JitCache.h"
 #include "JitIL.h"
 #include "JitILAsm.h"
 #include "JitIL_Tables.h"
@@ -149,6 +138,10 @@ ps_adds1
 #else
 #include <memory>
 #include <stdint.h>
+#include <x86intrin.h>
+
+#if defined(__clang__)
+#if !__has_builtin(__builtin_ia32_rdtsc)
 static inline uint64_t __rdtsc()
 {
 	uint32_t lo, hi;
@@ -168,6 +161,8 @@ static inline uint64_t __rdtsc()
 #endif
 	return (uint64_t)hi << 32 | lo;
 }
+#endif
+#endif
 #endif
 
 namespace JitILProfiler
