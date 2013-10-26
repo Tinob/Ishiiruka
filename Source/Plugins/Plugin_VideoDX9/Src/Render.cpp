@@ -933,7 +933,8 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 		D3D::dev->SetRenderTarget(0, FramebufferManager::GetEFBColorRTSurface());
 		D3D::dev->SetDepthStencilSurface(FramebufferManager::GetEFBDepthRTSurface());
 		D3D::dev->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(0,0,0), 1.0f, 0);
-		SetLineWidth();
+		m_bLineWidthChanged = true;
+		BPFunctions::SetScissor();
 	}
 
 	if (XFBWrited)
