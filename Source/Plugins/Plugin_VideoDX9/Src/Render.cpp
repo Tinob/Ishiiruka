@@ -473,7 +473,7 @@ u32 Renderer::AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data)
 			(float)RectToLock.right  * 2.f / (float)Renderer::GetTargetWidth()  - 1.f,
 			- (float)RectToLock.bottom * 2.f / (float)Renderer::GetTargetHeight() + 1.f);
 		RestoreAPIState();
-		return 0;
+		return poke_data;
 	}
 	else //(type == POKE_Z)
 	{
@@ -492,7 +492,7 @@ u32 Renderer::AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data)
 		D3D::dev->SetViewport(&vp);
 		D3D::drawClearQuad(0, (poke_data & 0xFFFFFF) / float(0xFFFFFF), PixelShaderCache::GetClearProgram(), VertexShaderCache::GetClearVertexShader());
 		RestoreAPIState();
-		return 0;
+		return poke_data;
 	}	
 }
 

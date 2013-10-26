@@ -276,7 +276,7 @@ static inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, API_T
 	unsigned int numTexgen = bpmem.genMode.numtexgens;
 
 	const bool forced_early_z = g_ActiveConfig.backend_info.bSupportsEarlyZ && bpmem.UseEarlyDepthTest() && (g_ActiveConfig.bFastDepthCalc || bpmem.alpha_test.TestResult() == AlphaTest::UNDETERMINED);
-	const bool per_pixel_depth = (bpmem.ztex2.op != ZTEXTURE_DISABLE && bpmem.UseLateDepthTest()) || (!g_ActiveConfig.bFastDepthCalc && bpmem.zmode.testenable && !forced_early_z);
+	const bool per_pixel_depth = (bpmem.ztex2.op != ZTEXTURE_DISABLE && bpmem.UseLateDepthTest()) || (!g_ActiveConfig.bFastDepthCalc && bpmem.zmode.testenable && !forced_early_z && dstAlphaMode != DSTALPHA_NULL);
 
 	uid_data.dstAlphaMode = dstAlphaMode;
 	uid_data.genMode_numindstages = bpmem.genMode.numindstages;
@@ -466,7 +466,19 @@ static inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, API_T
 				out.Write("\tfloat4 clipPos = float4(0.0, 0.0, 0.0, 0.0);");
 			}
 		}
+		if (dstAlphaMode == DSTALPHA_NULL)
+		{
+			out.Write("ocol0 = float4(0.0, 0.0, 0.0, 0.0);\n");
+			out.Write("}\n");
+			if (text[sizeof(text) - 1] != 0x7C)
+				PanicAlert("PixelShader generator - buffer too small, canary has been eaten!");
 
+#ifndef ANDROID
+			uselocale(old_locale); // restore locale
+			freelocale(locale);
+#endif
+			return;
+		}
 		out.Write("  float4 c0 = " I_COLORS "[1], c1 = " I_COLORS "[2], c2 = " I_COLORS "[3], prev = " I_COLORS "[0], textemp = float4(0.0,0.0,0.0,0.0), rastemp = float4(0.0,0.0,0.0,0.0), konsttemp = float4(0.0,0.0,0.0,0.0);\n"
 				"  float3 comp16 = float3(1.0,255.0,0.0), comp24 = float3(1.0,255.0,255.0*255.0);\n"
 				"  float alphabump=0.0;\n"

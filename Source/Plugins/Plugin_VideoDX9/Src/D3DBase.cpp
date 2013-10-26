@@ -728,7 +728,7 @@ void ChangeRenderState(D3DRENDERSTATETYPE State, DWORD Value)
 			m_RenderStates[State] = Value;
 			m_RenderStatesSet[State] = true;
 		}
-		m_RenderStatesChanged[State] = m_RenderStatesSet[State];
+		m_RenderStatesChanged[State] = m_RenderStatesSet[State] && m_RenderStates[State] != Value;
 		dev->SetRenderState(State, Value);
 	}
 	else
@@ -739,7 +739,7 @@ void ChangeRenderState(D3DRENDERSTATETYPE State, DWORD Value)
 
 void SetTextureStageState(DWORD Stage, D3DTEXTURESTAGESTATETYPE Type, DWORD Value)
 {
-	if (m_TextureStageStates[Stage][Type] != Value || !m_TextureStageStatesSet[Stage][Type])
+	if (m_TextureStageStates[Stage][Type] != Value || !m_TextureStageStatesSet[Stage][Type] || m_TextureStageStatesChanged[Stage][Type])
 	{
 		m_TextureStageStates[Stage][Type] = Value;
 		m_TextureStageStatesSet[Stage][Type]=true;
@@ -766,7 +766,7 @@ void ChangeTextureStageState(DWORD Stage, D3DTEXTURESTAGESTATETYPE Type, DWORD V
 			m_TextureStageStates[Stage][Type] = Value;
 			m_TextureStageStatesSet[Stage][Type]=true;
 		}
-		m_TextureStageStatesChanged[Stage][Type] = m_TextureStageStatesSet[Stage][Type];
+		m_TextureStageStatesChanged[Stage][Type] = m_TextureStageStatesSet[Stage][Type] && m_TextureStageStates[Stage][Type] != Value;
 		dev->SetTextureStageState(Stage, Type, Value);
 	}
 	else
@@ -777,7 +777,7 @@ void ChangeTextureStageState(DWORD Stage, D3DTEXTURESTAGESTATETYPE Type, DWORD V
 
 void SetSamplerState(DWORD Sampler, D3DSAMPLERSTATETYPE Type, DWORD Value)
 {
-	if (m_SamplerStates[Sampler][Type] != Value || !m_SamplerStatesSet[Sampler][Type])
+	if (m_SamplerStates[Sampler][Type] != Value || !m_SamplerStatesSet[Sampler][Type] || m_SamplerStatesChanged[Sampler][Type])
 	{
 		m_SamplerStates[Sampler][Type] = Value;
 		m_SamplerStatesSet[Sampler][Type] = true;
@@ -804,7 +804,7 @@ void ChangeSamplerState(DWORD Sampler, D3DSAMPLERSTATETYPE Type, DWORD Value)
 			m_SamplerStates[Sampler][Type] = Value;
 			m_SamplerStatesSet[Sampler][Type] = true;
 		}
-		m_SamplerStatesChanged[Sampler][Type] = m_SamplerStatesSet[Sampler][Type];
+		m_SamplerStatesChanged[Sampler][Type] = m_SamplerStatesSet[Sampler][Type] && m_SamplerStates[Sampler][Type] != Value;
 		dev->SetSamplerState(Sampler, Type, Value);
 	}
 	else
@@ -824,7 +824,7 @@ void RefreshVertexDeclaration()
 
 void SetVertexDeclaration(LPDIRECT3DVERTEXDECLARATION9 decl)
 {
-	if (decl != m_VtxDecl)
+	if (decl != m_VtxDecl  || m_VtxDeclChanged)
 	{
 		dev->SetVertexDeclaration(decl);
 		m_VtxDecl = decl;
@@ -834,7 +834,7 @@ void SetVertexDeclaration(LPDIRECT3DVERTEXDECLARATION9 decl)
 
 void ChangeVertexDeclaration(LPDIRECT3DVERTEXDECLARATION9 decl)
 {
-	if (decl != m_VtxDecl) {
+	if (decl != m_VtxDecl || m_VtxDeclChanged) {
 		dev->SetVertexDeclaration(decl);
 		m_VtxDeclChanged = true;
 	}
@@ -842,7 +842,7 @@ void ChangeVertexDeclaration(LPDIRECT3DVERTEXDECLARATION9 decl)
 
 void ChangeVertexShader(LPDIRECT3DVERTEXSHADER9 shader)
 {
-	if (shader != m_VertexShader)
+	if (shader != m_VertexShader || m_VertexShaderChanged)
 	{
 		dev->SetVertexShader(shader);
 		m_VertexShaderChanged = true;
@@ -860,7 +860,7 @@ void RefreshVertexShader()
 
 void SetVertexShader(LPDIRECT3DVERTEXSHADER9 shader)
 {
-	if (shader != m_VertexShader)
+	if (shader != m_VertexShader  || m_VertexShaderChanged)
 	{
 		dev->SetVertexShader(shader);
 		m_VertexShader = shader;
@@ -879,7 +879,7 @@ void RefreshPixelShader()
 
 void SetPixelShader(LPDIRECT3DPIXELSHADER9 shader)
 {
-	if (shader != m_PixelShader)
+	if (shader != m_PixelShader || m_PixelShaderChanged)
 	{
 		dev->SetPixelShader(shader);
 		m_PixelShader = shader;
@@ -889,7 +889,7 @@ void SetPixelShader(LPDIRECT3DPIXELSHADER9 shader)
 
 void ChangePixelShader(LPDIRECT3DPIXELSHADER9 shader)
 {
-	if (shader != m_PixelShader)
+	if (shader != m_PixelShader  || m_PixelShaderChanged)
 	{
 		dev->SetPixelShader(shader);
 		m_PixelShaderChanged = true;
@@ -900,7 +900,7 @@ void SetStreamSource(UINT StreamNumber,IDirect3DVertexBuffer9* pStreamData,UINT 
 {
 	if (m_stream_sources[StreamNumber].OffsetInBytes != OffsetInBytes
 		|| m_stream_sources[StreamNumber].pStreamData != pStreamData
-		|| m_stream_sources[StreamNumber].Stride != Stride)
+		|| m_stream_sources[StreamNumber].Stride != Stride || m_stream_sources_Changed[StreamNumber])
 	{
 		m_stream_sources[StreamNumber].OffsetInBytes = OffsetInBytes;
 		m_stream_sources[StreamNumber].pStreamData = pStreamData;
@@ -914,7 +914,7 @@ void ChangeStreamSource(UINT StreamNumber,IDirect3DVertexBuffer9* pStreamData,UI
 {
 	if (m_stream_sources[StreamNumber].OffsetInBytes != OffsetInBytes
 		|| m_stream_sources[StreamNumber].pStreamData != pStreamData
-		|| m_stream_sources[StreamNumber].Stride != Stride)
+		|| m_stream_sources[StreamNumber].Stride != Stride || m_stream_sources_Changed[StreamNumber])
 	{
 		dev->SetStreamSource(StreamNumber, pStreamData, OffsetInBytes, Stride);
 		m_stream_sources_Changed[StreamNumber] = true;
@@ -937,7 +937,7 @@ void RefreshStreamSource(UINT StreamNumber)
 
 void SetIndices(LPDIRECT3DINDEXBUFFER9 pIndexData)
 {
-	if(pIndexData != m_index_buffer)
+	if(pIndexData != m_index_buffer || m_index_buffer_Changed)
 	{
 		m_index_buffer = pIndexData;
 		dev->SetIndices(pIndexData);
@@ -947,7 +947,7 @@ void SetIndices(LPDIRECT3DINDEXBUFFER9 pIndexData)
 
 void ChangeIndices(LPDIRECT3DINDEXBUFFER9 pIndexData)
 {
-	if(pIndexData != m_index_buffer)
+	if(pIndexData != m_index_buffer  || m_index_buffer_Changed)
 	{
 		dev->SetIndices(pIndexData);
 		m_index_buffer_Changed = true;

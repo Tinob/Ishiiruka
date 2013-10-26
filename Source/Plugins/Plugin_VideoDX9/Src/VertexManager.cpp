@@ -650,27 +650,49 @@ void VertexManager::vFlush()
 		SetPLRasterOffsets();
 	}	
 	PixelShaderManager::SetConstants(g_nativeVertexFmt->m_components);	
-	bool useDstAlpha = !g_ActiveConfig.bDstAlphaPass && bpmem.dstalpha.enable && bpmem.blendmode.alphaupdate &&
+	const bool useDstAlpha = !g_ActiveConfig.bDstAlphaPass && bpmem.dstalpha.enable && bpmem.blendmode.alphaupdate &&
 		bpmem.zcontrol.pixel_format == PIXELFMT_RGBA6_Z24;
-	bool useDualSource = useDstAlpha && g_ActiveConfig.backend_info.bSupportsDualSourceBlend;
-	DSTALPHA_MODE AlphaMode = useDualSource ? DSTALPHA_DUAL_SOURCE_BLEND : DSTALPHA_NONE;	
+	const bool useDualSource = useDstAlpha && g_ActiveConfig.backend_info.bSupportsDualSourceBlend;
+	const bool forced_early_z = bpmem.UseEarlyDepthTest() && bpmem.zmode.updateenable && bpmem.alpha_test.TestResult() == AlphaTest::UNDETERMINED;
+	DSTALPHA_MODE AlphaMode = forced_early_z ? DSTALPHA_NULL :( useDualSource ? DSTALPHA_DUAL_SOURCE_BLEND : DSTALPHA_NONE);
 
-	if (!PixelShaderCache::SetShader(AlphaMode ,g_nativeVertexFmt->m_components))
-	{
-		GFX_DEBUGGER_PAUSE_LOG_AT(NEXT_ERROR,true,{printf("Fail to set pixel shader\n");});
-		goto shader_fail;
-	}
 	if (!VertexShaderCache::SetShader(g_nativeVertexFmt->m_components))
 	{
 		GFX_DEBUGGER_PAUSE_LOG_AT(NEXT_ERROR,true,{printf("Fail to set vertex shader\n");});
 		goto shader_fail;
 
 	}
+	if (!PixelShaderCache::SetShader(AlphaMode ,g_nativeVertexFmt->m_components))
+	{
+		GFX_DEBUGGER_PAUSE_LOG_AT(NEXT_ERROR,true,{printf("Fail to set pixel shader\n");});
+		goto shader_fail;
+	}
+	
 	PrepareDrawBuffers();
+	if(forced_early_z)
+	{
+		D3D::ChangeRenderState(D3DRS_COLORWRITEENABLE, 0);
+	}
 	g_nativeVertexFmt->SetupVertexPointers();
-	g_perf_query->EnableQuery(bpmem.zcontrol.early_ztest ? PQG_ZCOMP_ZCOMPLOC : PQG_ZCOMP);
+	g_perf_query->EnableQuery(forced_early_z ? PQG_ZCOMP_ZCOMPLOC : PQG_ZCOMP);
 	Draw();
-	g_perf_query->DisableQuery(bpmem.zcontrol.early_ztest ? PQG_ZCOMP_ZCOMPLOC : PQG_ZCOMP);
+	g_perf_query->DisableQuery(forced_early_z ? PQG_ZCOMP_ZCOMPLOC : PQG_ZCOMP);
+	if (forced_early_z)
+	{
+		D3D::RefreshRenderState(D3DRS_COLORWRITEENABLE);
+		D3D::ChangeRenderState(D3DRS_ZWRITEENABLE, FALSE);
+		D3D::ChangeRenderState(D3DRS_ZFUNC, D3DCMP_EQUAL);
+		AlphaMode = useDualSource ? DSTALPHA_DUAL_SOURCE_BLEND : DSTALPHA_NONE;
+		if (!PixelShaderCache::SetShader(AlphaMode ,g_nativeVertexFmt->m_components))
+		{
+			GFX_DEBUGGER_PAUSE_LOG_AT(NEXT_ERROR,true,{printf("Fail to set pixel shader\n");});
+			goto shader_fail;
+		}
+		Draw();
+		D3D::RefreshRenderState(D3DRS_ZWRITEENABLE);
+		D3D::RefreshRenderState(D3DRS_ZFUNC);
+	}
+
 	if (useDstAlpha && !useDualSource)
 	{
 		if (!PixelShaderCache::SetShader(DSTALPHA_ALPHA_PASS, g_nativeVertexFmt->m_components))

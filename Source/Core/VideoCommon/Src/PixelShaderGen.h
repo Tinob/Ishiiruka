@@ -40,7 +40,8 @@ enum DSTALPHA_MODE
 {
 	DSTALPHA_NONE, // Render normally, without destination alpha
 	DSTALPHA_ALPHA_PASS, // Render normally first, then render again for alpha
-	DSTALPHA_DUAL_SOURCE_BLEND // Use dual-source blending
+	DSTALPHA_DUAL_SOURCE_BLEND, // Use dual-source blending,
+	DSTALPHA_NULL, // Null Rendering
 };
 
 // Annoying sure, can be removed once we get up to GLSL ~1.3
