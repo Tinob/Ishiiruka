@@ -6,8 +6,8 @@
 #define _WII_SAVE_CRYPTED
 
 #include "StringUtil.h"
-#include "Crypto/aes.h"
 #include "Crypto/tools.h"
+#include <polarssl/aes.h>
 #include "polarssl/md5.h"
 
 // --- this is used for encrypted Wii save files
@@ -36,7 +36,7 @@ private:
 	void ScanForFiles(std::string savDir, std::vector<std::string>&FilesList, u32 *_numFiles, u32 *_sizeFiles);
 
 
-	AES_KEY m_AES_KEY;
+	aes_context m_AES_ctx;
 	u8 SD_IV[0x10];
 	std::vector<std::string> FilesList;
 

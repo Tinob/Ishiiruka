@@ -31,12 +31,6 @@
     <ClCompile Include="Src\ConsoleListener.cpp">
       <Filter>Logging</Filter>
     </ClCompile>
-    <ClCompile Include="Src\Crypto\aes_cbc.cpp">
-      <Filter>Crypto</Filter>
-    </ClCompile>
-    <ClCompile Include="Src\Crypto\aes_core.cpp">
-      <Filter>Crypto</Filter>
-    </ClCompile>
     <ClCompile Include="Src\Crypto\bn.cpp">
       <Filter>Crypto</Filter>
     </ClCompile>
