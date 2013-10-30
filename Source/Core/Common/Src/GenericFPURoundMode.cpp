@@ -26,7 +26,7 @@ namespace FPURoundMode
 	void SetPrecisionMode(u32 mode)
 	{
 	}
-	void SetSIMDMode(u32 mode)
+	void SetSIMDMode(u32 roundingMode, u32 nonIEEEMode)
 	{
 	}
 	void SaveSIMDState()
