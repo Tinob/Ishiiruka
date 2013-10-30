@@ -32,4 +32,4 @@ elseif(ANDROID)
 				Src/ControllerInterface/Android/Android.cpp)
 endif()
 
-add_dolphin_library(inputcommon "${SRCS}" "")
+add_library(inputcommon ${SRCS})
