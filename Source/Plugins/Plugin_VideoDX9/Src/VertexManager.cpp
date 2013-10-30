@@ -675,9 +675,9 @@ void VertexManager::vFlush()
 		D3D::ChangeRenderState(D3DRS_COLORWRITEENABLE, 0);
 	}
 	g_nativeVertexFmt->SetupVertexPointers();
-	g_perf_query->EnableQuery(forced_early_z ? PQG_ZCOMP_ZCOMPLOC : PQG_ZCOMP);
+	g_perf_query->EnableQuery(bpmem.zcontrol.early_ztest ? PQG_ZCOMP_ZCOMPLOC : PQG_ZCOMP);
 	Draw();
-	g_perf_query->DisableQuery(forced_early_z ? PQG_ZCOMP_ZCOMPLOC : PQG_ZCOMP);
+	g_perf_query->DisableQuery(bpmem.zcontrol.early_ztest ? PQG_ZCOMP_ZCOMPLOC : PQG_ZCOMP);
 	if (forced_early_z)
 	{
 		D3D::RefreshRenderState(D3DRS_COLORWRITEENABLE);
