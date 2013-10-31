@@ -66,10 +66,10 @@ bool cInterfaceGLX::Create(void *&window_handle)
 	// attributes for a single buffered visual in RGBA format with at least
 	// 8 bits per color
 	int attrListDbl[] = {
-		GLX_RGBA
+		GLX_RGBA,
 		GLX_RED_SIZE, 8,
 		GLX_GREEN_SIZE, 8,
-		GLX_BLUE_SIZE, 8
+		GLX_BLUE_SIZE, 8,
 		None };
 
 	int attrListDefault[] = {
