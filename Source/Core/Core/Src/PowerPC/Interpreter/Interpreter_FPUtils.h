@@ -5,6 +5,7 @@
 #ifndef _INTERPRETER_FPUTILS_H
 #define _INTERPRETER_FPUTILS_H
 
+#include "CPUDetect.h"
 #include "Interpreter.h"
 #include "MathUtil.h"
 
@@ -69,13 +70,22 @@ inline void UpdateFPSCR()
 
 inline double ForceSingle(double _x)
 {
-	// rounding and flush-to-zero is now done automatically after setting it in SetSIMDMode()
-	return static_cast<float>(_x);
+	// convert to float...
+	float x = _x;
+	if (!cpu_info.bFlushToZero && FPSCR.NI)
+	{
+		x = FlushToZero(x);
+	}
+	// ...and back to double:
+	return x;
 }
 
 inline double ForceDouble(double d)
 {
-	// rounding and flush-to-zero is now done automatically after setting it in SetSIMDMode()
+	if (!cpu_info.bFlushToZero && FPSCR.NI)
+	{
+		d = FlushToZero(d);
+	}
 	return d;
 }
 
