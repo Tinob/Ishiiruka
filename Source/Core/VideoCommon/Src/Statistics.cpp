@@ -66,7 +66,7 @@ char *Statistics::ToString(char *ptr)
 	// TODO : at some point text1 just becomes too huge and overflows, we can't even read the added stuff
 	// since it gets added at the far bottom of the screen anyway (actually outside the rendering window)
 	// we should really reset the list instead of using substr
-	if (text1.size() + ptr - p > 8170)
+	if (text1.size() + ptr - p > 8170 && (8170 - (ptr - p)) > 0)
 		text1 = text1.substr(0, 8170 - (ptr - p));
 
 	ptr+=sprintf(ptr,"%s",text1.c_str());

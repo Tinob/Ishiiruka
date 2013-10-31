@@ -348,11 +348,11 @@ void Renderer::DrawDebugText()
 	}
 
 	// Render a shadow
-	g_renderer->RenderText(final_cyan.c_str(), 21, 21, 0xDD000000);
-	g_renderer->RenderText(final_yellow.c_str(), 21, 21, 0xDD000000);
+	g_renderer->RenderText(final_cyan.c_str(), 2, 21, 0xDD000000);
+	g_renderer->RenderText(final_yellow.c_str(), 2, 21, 0xDD000000);
 	//and then the text
-	g_renderer->RenderText(final_cyan.c_str(), 20, 20, 0xFF00FFFF);
-	g_renderer->RenderText(final_yellow.c_str(), 20, 20, 0xFFFFFF00);
+	g_renderer->RenderText(final_cyan.c_str(), 1, 20, 0xFF00FFFF);
+	g_renderer->RenderText(final_yellow.c_str(), 1, 20, 0xFFFFFF00);
 }
 
 // TODO: remove

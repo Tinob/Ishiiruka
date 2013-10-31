@@ -316,7 +316,7 @@ int CD3DFont::Shutdown()
 	return S_OK;
 }
 
-int CD3DFont::DrawTextScaled(float x, float y, float size, float spacing, u32 dwColor, const char* strText)
+int CD3DFont::DrawTextScaled(float x, float y, float size, float spacing, u32 dwColor, const char* strText, float scalex, float scaley)
 {
 	if (!m_pVB)
 		return 0;
@@ -324,8 +324,6 @@ int CD3DFont::DrawTextScaled(float x, float y, float size, float spacing, u32 dw
 	UINT stride = sizeof(FONT2DVERTEX);
 	UINT bufoffset = 0;
 
-	float scalex = 1 / (float)D3D::GetBackBufferWidth() * 2.f;
-	float scaley = 1 / (float)D3D::GetBackBufferHeight() * 2.f;
 	float sizeratio = size / (float)m_LineHeight;
 
 	// translate starting positions

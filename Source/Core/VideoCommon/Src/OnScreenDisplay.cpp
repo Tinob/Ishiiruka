@@ -39,7 +39,7 @@ void DrawMessages()
 	if(!SConfig::GetInstance().m_LocalCoreStartupParameter.bOnScreenDisplayMessages)
 		return;
 
-	int left = 25, top = 15;
+	int left = 1, top = 15;
 	auto it = s_msgList.begin();
 	while (it != s_msgList.end())
 	{

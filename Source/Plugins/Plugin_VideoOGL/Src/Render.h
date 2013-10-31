@@ -7,7 +7,7 @@
 namespace OGL
 {
 
-void ClearEFBCache();
+
 
 enum GLSL_VERSION {
 	GLSL_130,

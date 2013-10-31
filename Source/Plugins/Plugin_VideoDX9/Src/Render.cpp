@@ -211,7 +211,8 @@ Renderer::~Renderer()
 
 void Renderer::RenderText(const char *text, int left, int top, u32 color)
 {
-	D3D::font.DrawTextScaled((float)left, (float)top, 20, 20, 0.0f, color, text);
+	TargetRectangle trc = GetTargetRectangle();
+	D3D::font.DrawTextScaled((float)(trc.left + left), (float)(trc.top + top), 20, 20, 0.0f, color, text);
 }
 
 TargetRectangle Renderer::ConvertEFBRectangle(const EFBRectangle& rc)
@@ -614,21 +615,12 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 
 	UpdateDrawRectangle(s_backbuffer_width, s_backbuffer_height);
 	D3DVIEWPORT9 vp;
-	int X = GetTargetRectangle().left;
-	int Y = GetTargetRectangle().top;
-	int Width  = GetTargetRectangle().right - GetTargetRectangle().left;
-	int Height = GetTargetRectangle().bottom - GetTargetRectangle().top;
-
-	// Sanity check
-	if (X < 0) X = 0;
-	if (Y < 0) Y = 0;
-	if (X > s_backbuffer_width) X = s_backbuffer_width;
-	if (Y > s_backbuffer_height) Y = s_backbuffer_height;
-	if (Width < 0) Width = 0;
-	if (Height < 0) Height = 0;
-	if (Width > (s_backbuffer_width - X)) Width = s_backbuffer_width - X;
-	if (Height > (s_backbuffer_height - Y)) Height = s_backbuffer_height - Y;
-	// Clear full target screen (edges, borders etc)
+	const TargetRectangle Tr = GetTargetRectangle();
+	int X = Tr.left;
+	int Y = Tr.top;
+	int Width  = Tr.right - Tr.left;
+	int Height = Tr.bottom - Tr.top;
+	
 	if(g_ActiveConfig.i3DStereo) {		
 		VertexShaderManager::ResetView();
 		if(s_b3D_RightFrame)
@@ -669,20 +661,7 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 			VertexShaderManager::TranslateView(0.001f *g_ActiveConfig.i3DStereoSeparation,0.0f);
 			VertexShaderManager::RotateView(0.0001f * g_ActiveConfig.i3DStereoFocalAngle,0.0f);
 		}
-		s_b3D_RightFrame = !s_b3D_RightFrame;
-		// use a clear quad to keep old red or blue/green data
-		vp.X = X;
-		vp.Y = Y;
-		vp.Width  = Width;
-		vp.Height = Height;
-		vp.MinZ = 0.0f;
-		vp.MaxZ = 1.0f;
-		D3D::dev->SetViewport(&vp);
-		D3D::drawClearQuad(0, 1.0, PixelShaderCache::GetClearProgram(), VertexShaderCache::GetClearVertexShader());
-	}
-	else
-	{
-		D3D::dev->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0, 0, 0), 1.0f, 0);
+		s_b3D_RightFrame = !s_b3D_RightFrame;		
 	}	
 
 	vp.X = X;
@@ -766,12 +745,16 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 	{
 		DWORD color_mask = D3DCOLORWRITEENABLE_ALPHA | D3DCOLORWRITEENABLE_RED | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_BLUE;
 		D3D::SetRenderState(D3DRS_COLORWRITEENABLE, color_mask);
-	}	
+	}
+	X = Tr.left;
+	Y = Tr.top;
+	Width  = Tr.right - Tr.left;
+	Height = Tr.bottom - Tr.top;
 
-	vp.X = 0;
-	vp.Y = 0;
-	vp.Width  = s_backbuffer_width;
-	vp.Height = s_backbuffer_height;
+	vp.X = X;
+	vp.Y = Y;
+	vp.Width = Width;
+	vp.Height = Height;
 	vp.MinZ = 0.0f;
 	vp.MaxZ = 1.0f;
 	D3D::dev->SetViewport(&vp);
@@ -845,21 +828,21 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 	{
 		char fps[20];
 		StringCchPrintfA(fps, 20, "FPS: %d\n", s_fps);
-		D3D::font.DrawTextScaled(0, 0, 20, 20, 0.0f, 0xFF00FFFF, fps);
+		D3D::font.DrawTextScaled(X, Y, 20, 20, 0.0f, 0xFF00FFFF, fps);
 	}
 
 	if (SConfig::GetInstance().m_ShowLag)
 	{
 		char lag[10];
 		StringCchPrintfA(lag, 10, "Lag: %llu\n", Movie::g_currentLagCount);
-		D3D::font.DrawTextScaled(0, 18, 20, 20, 0.0f, 0xFF00FFFF, lag);
+		D3D::font.DrawTextScaled(X, Y + 18, 20, 20, 0.0f, 0xFF00FFFF, lag);
 	}
 
 	if (g_ActiveConfig.bShowInputDisplay)
 	{
 		char inputDisplay[1000];
 		StringCchPrintfA(inputDisplay, 1000, Movie::GetInputDisplay().c_str());
-		D3D::font.DrawTextScaled(0, 36, 20, 20, 0.0f, 0xFF00FFFF, inputDisplay);
+		D3D::font.DrawTextScaled(X, Y + 36, 20, 20, 0.0f, 0xFF00FFFF, inputDisplay);
 	}
 
 	Renderer::DrawDebugText();
@@ -867,12 +850,12 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 	if (g_ActiveConfig.bOverlayStats)
 	{
 		Statistics::ToString(st);
-		D3D::font.DrawTextScaled(0, 36, 20, 20, 0.0f, 0xFF00FFFF, st);
+		D3D::font.DrawTextScaled(X , Y + 36, 20, 20, 0.0f, 0xFF00FFFF, st);
 	}
 	else if (g_ActiveConfig.bOverlayProjStats)
 	{
 		Statistics::ToStringProj(st);
-		D3D::font.DrawTextScaled(0, 36, 20, 20, 0.0f, 0xFF00FFFF, st);
+		D3D::font.DrawTextScaled(X, Y + 36, 20, 20, 0.0f, 0xFF00FFFF, st);
 	}
 
 	OSD::DrawMessages();

@@ -75,8 +75,7 @@ bool cInterfaceWGL::Create(void *&window_handle)
 		sizeof(PIXELFORMATDESCRIPTOR),  // Size Of This Pixel Format Descriptor
 		1,                              // Version Number
 		PFD_DRAW_TO_WINDOW |            // Format Must Support Window
-			PFD_SUPPORT_OPENGL |        // Format Must Support OpenGL
-			PFD_DOUBLEBUFFER,           // Must Support Double Buffering
+		PFD_SUPPORT_OPENGL |            // Format Must Support OpenGL
 		PFD_TYPE_RGBA,                  // Request An RGBA Format
 		32,                             // Select Our Color Depth
 		0, 0, 0, 0, 0, 0,               // Color Bits Ignored
@@ -84,8 +83,8 @@ bool cInterfaceWGL::Create(void *&window_handle)
 		0,                              // Shift Bit Ignored
 		0,                              // No Accumulation Buffer
 		0, 0, 0, 0,                     // Accumulation Bits Ignored
-		24,                             // 24Bit Z-Buffer (Depth Buffer)  
-		8,                              // 8bit Stencil Buffer
+		0,                              // Z-Buffer (Depth Buffer)  
+		0,                              // Stencil Buffer
 		0,                              // No Auxiliary Buffer
 		PFD_MAIN_PLANE,                 // Main Drawing Layer
 		0,                              // Reserved

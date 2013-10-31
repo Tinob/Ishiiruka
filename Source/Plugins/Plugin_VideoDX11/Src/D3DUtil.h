@@ -42,7 +42,7 @@ namespace D3D
 		int DrawTextScaled(float x, float y,
 							float size,
 							float spacing, u32 dwColor,
-							const char* strText);
+							const char* strText,float scalex, float scaley);
 	};
 
 	extern CD3DFont font;

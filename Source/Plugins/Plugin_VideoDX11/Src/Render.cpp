@@ -256,7 +256,15 @@ Renderer::~Renderer()
 
 void Renderer::RenderText(const char *text, int left, int top, u32 color)
 {
-	D3D::font.DrawTextScaled((float)left, (float)top, 20.f, 0.0f, color, text);
+	TargetRectangle trc = GetTargetRectangle();	
+	const int nBackbufferWidth = trc.right - trc.left;
+	const int nBackbufferHeight = trc.bottom - trc.top;
+
+	float scalex = 1 / (float)nBackbufferWidth * 2.f;
+	float scaley = 1 / (float)nBackbufferHeight * 2.f;
+	
+
+	D3D::font.DrawTextScaled((float)left, (float)top, 20.f, 0.0f, color, text, scalex, scaley);
 }
 
 TargetRectangle Renderer::ConvertEFBRectangle(const EFBRectangle& rc)
@@ -802,27 +810,16 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 
 	// Prepare to copy the XFBs to our backbuffer
 	UpdateDrawRectangle(s_backbuffer_width, s_backbuffer_height);
-
-	int X = GetTargetRectangle().left;
-	int Y = GetTargetRectangle().top;
-	int Width  = GetTargetRectangle().right - GetTargetRectangle().left;
-	int Height = GetTargetRectangle().bottom - GetTargetRectangle().top;
-
-	// TODO: Redundant checks...
-	if (X < 0) X = 0;
-	if (Y < 0) Y = 0;
-	if (X > s_backbuffer_width) X = s_backbuffer_width;
-	if (Y > s_backbuffer_height) Y = s_backbuffer_height;
-	if (Width < 0) Width = 0;
-	if (Height < 0) Height = 0;
-	if (Width > (s_backbuffer_width - X)) Width = s_backbuffer_width - X;
-	if (Height > (s_backbuffer_height - Y)) Height = s_backbuffer_height - Y;
+	const TargetRectangle Tr = GetTargetRectangle();
+	int X = Tr.left;
+	int Y = Tr.top;
+	int Width  = Tr.right - Tr.left;
+	int Height = Tr.bottom - Tr.top;
+	float scalex = 1 / (float)Width * 2.f;
+	float scaley = 1 / (float)Height * 2.f;
 	D3D11_VIEWPORT vp = CD3D11_VIEWPORT((float)X, (float)Y, (float)Width, (float)Height);
 	D3D::context->RSSetViewports(1, &vp);
 	D3D::context->OMSetRenderTargets(1, &D3D::GetBackBuffer()->GetRTV(), NULL);
-
-	float ClearColor[4] = { 0.f, 0.f, 0.f, 1.f };
-	D3D::context->ClearRenderTargetView(D3D::GetBackBuffer()->GetRTV(), ClearColor);
 
 	// activate linear filtering for the buffer copies
 	D3D::SetLinearCopySampler();
@@ -963,21 +960,21 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 	{
 		char fps[20];
 		StringCchPrintfA(fps, 20, "FPS: %d\n", s_fps);
-		D3D::font.DrawTextScaled(0, 0, 20, 0.0f, 0xFF00FFFF, fps);
+		D3D::font.DrawTextScaled(0, 0, 20, 0.0f, 0xFF00FFFF, fps, scalex, scaley);
 	}
 
 	if (SConfig::GetInstance().m_ShowLag)
 	{
 		char lag[10];
 		StringCchPrintfA(lag, 10, "Lag: %llu\n", Movie::g_currentLagCount);
-		D3D::font.DrawTextScaled(0, 18, 20, 0.0f, 0xFF00FFFF, lag);
+		D3D::font.DrawTextScaled(0, 18, 20, 0.0f, 0xFF00FFFF, lag, scalex, scaley);
 	}
 
 	if (g_ActiveConfig.bShowInputDisplay)
 	{
 		char inputDisplay[1000];
 		StringCchPrintfA(inputDisplay, 1000, Movie::GetInputDisplay().c_str());
-		D3D::font.DrawTextScaled(0, 36, 20, 0.0f, 0xFF00FFFF, inputDisplay);
+		D3D::font.DrawTextScaled(0, 36, 20, 0.0f, 0xFF00FFFF, inputDisplay, scalex, scaley);
 	}
 	Renderer::DrawDebugText();
 
@@ -985,13 +982,13 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 	{
 		char buf[32768];
 		Statistics::ToString(buf);
-		D3D::font.DrawTextScaled(0, 36, 20, 0.0f, 0xFF00FFFF, buf);
+		D3D::font.DrawTextScaled(0, 36, 20, 0.0f, 0xFF00FFFF, buf, scalex, scaley);
 	}
 	else if (g_ActiveConfig.bOverlayProjStats)
 	{
 		char buf[32768];
 		Statistics::ToStringProj(buf);
-		D3D::font.DrawTextScaled(0, 36, 20, 0.0f, 0xFF00FFFF, buf);
+		D3D::font.DrawTextScaled(0, 36, 20, 0.0f, 0xFF00FFFF, buf, scalex, scaley);
 	}
 
 	OSD::DrawMessages();
