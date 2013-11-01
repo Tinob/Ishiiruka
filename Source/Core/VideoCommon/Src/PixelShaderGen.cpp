@@ -275,7 +275,7 @@ static inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, API_T
 	unsigned int numStages = bpmem.genMode.numtevstages + 1;
 	unsigned int numTexgen = bpmem.genMode.numtexgens;
 
-	const bool forced_early_z = g_ActiveConfig.backend_info.bSupportsEarlyZ && bpmem.UseEarlyDepthTest() && (g_ActiveConfig.bFastDepthCalc || bpmem.alpha_test.TestResult() == AlphaTest::UNDETERMINED);
+	const bool forced_early_z = g_ActiveConfig.backend_info.bSupportsEarlyZ && bpmem.UseEarlyDepthTest();
 	const bool per_pixel_depth = (bpmem.ztex2.op != ZTEXTURE_DISABLE && bpmem.UseLateDepthTest()) || (!g_ActiveConfig.bFastDepthCalc && bpmem.zmode.testenable && !forced_early_z && dstAlphaMode != DSTALPHA_NULL);
 
 	uid_data.dstAlphaMode = dstAlphaMode;
@@ -394,14 +394,6 @@ static inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, API_T
 				// It just allows it, but it seems that all drivers do.
 				out.Write("layout(early_fragment_tests) in;\n");
 			}
-			else if (bpmem.UseEarlyDepthTest() && (g_ActiveConfig.bFastDepthCalc || bpmem.alpha_test.TestResult() == AlphaTest::UNDETERMINED))
-			{
-				static bool warn_once = true;
-				if (warn_once)
-					WARN_LOG(VIDEO, "Early z test enabled but not possible to emulate with current configuration. Make sure to use the D3D11 or OpenGL backend and enable fast depth calculations. If this message still shows up your hardware isn't able to emulate the feature properly (a GPU which supports D3D 11.0 / OGL 4.2 is required).");
-				warn_once = false;
-			}
-
 			out.Write("void main()\n{\n");
 		}
 		else
@@ -410,14 +402,6 @@ static inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, API_T
 			{
 				out.Write("[earlydepthstencil]\n");
 			}
-			else if (bpmem.UseEarlyDepthTest() && (g_ActiveConfig.bFastDepthCalc || bpmem.alpha_test.TestResult() == AlphaTest::UNDETERMINED))
-			{
-				static bool warn_once = true;
-				if (warn_once)
-					WARN_LOG(VIDEO, "Early z test enabled but not possible to emulate with current configuration. Make sure to use the D3D11 or OpenGL backend and enable fast depth calculations. If this message still shows up your hardware isn't able to emulate the feature properly (a GPU which supports D3D 11.0 / OGL 4.2 is required).");
-				warn_once = false;
-			}
-
 			out.Write("void main(\n");
 			if(ApiType != API_D3D11)
 			{
@@ -691,7 +675,7 @@ static inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, API_T
 
 	// NOTE: Fragment may not be discarded if alpha test always fails and early depth test is enabled 
 	// (in this case we need to write a depth value if depth test passes regardless of the alpha testing result)
-	if (Pretest == AlphaTest::UNDETERMINED || (Pretest == AlphaTest::FAIL && bpmem.UseLateDepthTest()))
+	if (Pretest != AlphaTest::PASS)
 		WriteAlphaTest<T, Write_Code>(out, uid_data, ApiType, dstAlphaMode, per_pixel_depth);
 
 
@@ -1330,6 +1314,7 @@ static inline void WriteAlphaTest(T& out, pixel_shader_uid_data& uid_data, API_T
 	uid_data.alpha_test_comp0 = bpmem.alpha_test.comp0;
 	uid_data.alpha_test_comp1 = bpmem.alpha_test.comp1;
 	uid_data.alpha_test_logic = bpmem.alpha_test.logic;
+	uid_data.alpha_test_use_zcomploc_hack = bpmem.UseEarlyDepthTest() && bpmem.zmode.updateenable && !g_ActiveConfig.backend_info.bSupportsEarlyZ;
 	if (Write_Code)
 	{
 		// using discard then return works the same in cg and dx9 but not in dx11
@@ -1364,15 +1349,13 @@ static inline void WriteAlphaTest(T& out, pixel_shader_uid_data& uid_data, API_T
 
 		// OpenGL 4.2 has a flag which allows the driver to still update the depth buffer 
 		// if alpha test fails. The driver doesn't have to, but I assume they all do because
-		// it's the much faster code path for the GPU.
-		uid_data.alpha_test_use_zcomploc_hack = bpmem.UseEarlyDepthTest() && bpmem.zmode.updateenable && !g_ActiveConfig.backend_info.bSupportsEarlyZ;
+		// it's the much faster code path for the GPU.		
 		if (!uid_data.alpha_test_use_zcomploc_hack)
 		{
 			out.Write("\t\tdiscard;\n");
 			if (ApiType != API_D3D11)
 				out.Write("\t\treturn;\n");
 		}
-
 		out.Write("}\n");
 	}
 }
