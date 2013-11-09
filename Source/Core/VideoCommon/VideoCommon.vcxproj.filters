@@ -123,6 +123,8 @@
     <ClCompile Include="Src\x64DLCache.cpp">
       <Filter>Vertex Loading</Filter>
     </ClCompile>
+    <ClCompile Include="Src\DriverDetails.cpp" />
+    <ClCompile Include="Src\stdafx.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Src\CommandProcessor.h" />
@@ -260,6 +262,8 @@
     <ClInclude Include="Src\ShaderGenCommon.h">
       <Filter>Shader Generators</Filter>
     </ClInclude>
+    <ClInclude Include="Src\DriverDetails.h" />
+    <ClInclude Include="Src\stdafx.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="CMakeLists.txt" />

@@ -70,7 +70,6 @@
     <ClInclude Include="Src\MsgHandler.h" />
     <ClInclude Include="Src\NandPaths.h" />
     <ClInclude Include="Src\SDCardUtil.h" />
-    <ClInclude Include="Src\Setup.h" />
     <ClInclude Include="Src\stdafx.h" />
     <ClInclude Include="Src\StdThread.h" />
     <ClInclude Include="Src\StringUtil.h" />
@@ -89,12 +88,6 @@
     <ClInclude Include="Src\ConsoleListener.h">
       <Filter>Logging</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Crypto\aes.h">
-      <Filter>Crypto</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Crypto\aes_locl.h">
-      <Filter>Crypto</Filter>
-    </ClInclude>
     <ClInclude Include="Src\Crypto\tools.h">
       <Filter>Crypto</Filter>
     </ClInclude>
@@ -102,9 +95,7 @@
     <ClInclude Include="Src\StdConditionVariable.h" />
     <ClInclude Include="Src\SettingsHandler.h" />
     <ClInclude Include="Src\x64ABI.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="CMakeLists.txt" />
+    <ClInclude Include="Src\FPURoundMode.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Crypto">
@@ -113,5 +104,8 @@
     <Filter Include="Logging">
       <UniqueIdentifier>{f078f36e-a0ff-4cd0-95f8-476100d68e68}</UniqueIdentifier>
     </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="CMakeLists.txt" />
   </ItemGroup>
 </Project>

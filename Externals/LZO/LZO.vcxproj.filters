@@ -25,6 +25,9 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="CMakeLists.txt" />
+    <None Include="README.LZO" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="CMakeLists.txt" />
   </ItemGroup>
 </Project>

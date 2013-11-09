@@ -108,7 +108,7 @@ void GFXDebuggerBase::DumpPixelShader(const char* path)
 	}
 
 	File::CreateEmptyFile(filename);
-	File::WriteStringToFile(true, output, filename);
+	File::WriteStringToFile(output, filename);
 }
 
 void GFXDebuggerBase::DumpVertexShader(const char* path)

@@ -105,4 +105,17 @@
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="LICENSE" />
+    <None Include="README" />
+    <None Include="src\miniupnpc.def">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="VERSION" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="apiversions.txt" />
+    <Text Include="Changelog.txt" />
+    <Text Include="CMakeLists.txt" />
+  </ItemGroup>
 </Project>

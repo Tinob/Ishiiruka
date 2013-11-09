@@ -38,7 +38,7 @@ void ProfilerDump(u64 count)
 	if (pFile)
 	{
 		fprintf(pFile.GetHandle(), "Number of DSP steps: %llu\n\n", count);
-		for (int i=0; i<PROFILE_MAP_SIZE;i++)
+		for (int i = 0; i<PROFILE_MAP_SIZE; i++)
 		{
 			if (g_profileMap[i] > 0)
 			{
@@ -47,5 +47,9 @@ void ProfilerDump(u64 count)
 		}
 	}
 }
+
+#elif defined(_MSC_VER)
+
+namespace { char SilenceLNK4221; };
 
 #endif

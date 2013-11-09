@@ -146,6 +146,12 @@ void JitArm::bx(UGeckoInstruction inst)
 		//	JMP(Asm::testExceptions, true);
 		// make idle loops go faster
 		js.downcountAmount += 8;
+		MOVI2R(R14, (u32)&CoreTiming::Idle);
+		BL(R14);
+		MOVI2R(R14, js.compilerPC);
+		STR(R14, R9, PPCSTATE_OFF(pc));
+		MOVI2R(R14, (u32)asm_routines.testExceptions);
+		B(R14);
 	}
 	WriteExit(destination, 0);
 }

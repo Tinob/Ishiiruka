@@ -83,7 +83,7 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="CMakeLists.txt" />
+    <None Include="ChangeLog" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header Files">
@@ -92,5 +92,8 @@
     <Filter Include="Source Files">
       <UniqueIdentifier>{58aaeb81-b6bc-4175-94c7-baa2db0b1827}</UniqueIdentifier>
     </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="CMakeLists.txt" />
   </ItemGroup>
 </Project>

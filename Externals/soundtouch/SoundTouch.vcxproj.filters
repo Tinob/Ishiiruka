@@ -57,4 +57,7 @@
     <ClInclude Include="BPMDetect.h" />
     <ClInclude Include="cpu_detect.h" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="CMakeLists.txt" />
+  </ItemGroup>
 </Project>

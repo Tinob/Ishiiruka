@@ -3,7 +3,6 @@
 // Refer to the license.txt file included.
 
 #include "WbfsBlob.h"
-#include "FileUtil.h"
 
 namespace DiscIO
 {

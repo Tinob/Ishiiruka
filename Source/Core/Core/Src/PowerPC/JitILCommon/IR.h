@@ -150,7 +150,7 @@ enum Opcode {
 
 	IdleBranch,	   // branch operation belonging to idle loop
 	ShortIdleLoop, // Idle loop seen in homebrew like wii mahjong,
-		       // just a branch
+	// just a branch
 
 	// used for exception checking, at least until someone
 	// has a better idea of integrating it
@@ -182,8 +182,8 @@ unsigned inline isICmp(Inst i) {
 }
 
 unsigned inline isFResult(Inst i) {
-	return getOpcode(i) > FResult_Start && 
-	       getOpcode(i) < FResult_End;
+	return getOpcode(i) > FResult_Start &&
+		getOpcode(i) < FResult_End;
 }
 
 InstLoc inline getOp1(InstLoc i) {
@@ -206,9 +206,9 @@ class IRBuilder {
 private:
 	InstLoc EmitZeroOp(unsigned Opcode, unsigned extra);
 	InstLoc EmitUOp(unsigned OpCode, InstLoc Op1,
-			unsigned extra = 0);
+		unsigned extra = 0);
 	InstLoc EmitBiOp(unsigned OpCode, InstLoc Op1, InstLoc Op2,
-			 unsigned extra = 0);
+		unsigned extra = 0);
 
 	InstLoc FoldAdd(InstLoc Op1, InstLoc Op2);
 	InstLoc FoldSub(InstLoc Op1, InstLoc Op2);
@@ -231,9 +231,9 @@ private:
 
 	InstLoc FoldZeroOp(unsigned Opcode, unsigned extra);
 	InstLoc FoldUOp(unsigned OpCode, InstLoc Op1,
-			unsigned extra = 0);
+		unsigned extra = 0);
 	InstLoc FoldBiOp(unsigned OpCode, InstLoc Op1, InstLoc Op2,
-			 unsigned extra = 0);
+		unsigned extra = 0);
 
 	unsigned ComputeKnownZeroBits(InstLoc I) const;
 
@@ -406,7 +406,7 @@ public:
 	}
 	InstLoc EmitRFIExit() {
 		return FoldZeroOp(RFIExit, 0);
-	}		
+	}
 	InstLoc EmitShortIdleLoop(InstLoc pc) {
 		return FoldUOp(ShortIdleLoop, pc);
 	}
@@ -529,11 +529,11 @@ public:
 		return FoldZeroOp(Int3, 0);
 	}
 
-	void StartBackPass() { curReadPtr = &InstList[InstList.size()]; }
-	void StartForwardPass() { curReadPtr = &InstList[0]; }
+	void StartBackPass() { curReadPtr = InstList.data() + InstList.size(); }
+	void StartForwardPass() { curReadPtr = InstList.data(); }
 	InstLoc ReadForward() { return curReadPtr++; }
 	InstLoc ReadBackward() { return --curReadPtr; }
-	InstLoc getFirstInst() { return &InstList[0]; }
+	InstLoc getFirstInst() { return InstList.data(); }
 	unsigned int getNumInsts() { return (unsigned int)InstList.size(); }
 	unsigned int ReadInst(InstLoc I) { return *I; }
 	unsigned int GetImmValue(InstLoc I) const;

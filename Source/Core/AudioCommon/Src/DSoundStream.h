@@ -9,6 +9,7 @@
 #include "Thread.h"
 
 #ifdef _WIN32
+#include <Windows.h>
 #include <mmsystem.h>
 #include <dsound.h>
 
@@ -58,7 +59,7 @@ public:
 	{}
 
 	virtual ~DSound() {}
- 
+
 	virtual bool Start();
 	virtual void SoundLoop();
 	virtual void SetVolume(int volume);
