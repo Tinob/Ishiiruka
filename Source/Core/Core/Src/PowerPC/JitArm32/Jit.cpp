@@ -37,7 +37,7 @@
 using namespace ArmGen;
 using namespace PowerPC;
 
-static int CODE_SIZE = 1024*1024*32;
+static int CODE_SIZE = 1024 * 1024 * 32;
 namespace CPUCompare
 {
 	extern u32 m_BlockStart;
@@ -54,7 +54,7 @@ void JitArm::Init()
 	jo.optimizeGatherPipe = true;
 }
 
-void JitArm::ClearCache() 
+void JitArm::ClearCache()
 {
 	ClearCodeSpace();
 	blocks.Clear();
@@ -93,7 +93,7 @@ void JitArm::HLEFunction(UGeckoInstruction _inst)
 	fpr.Flush();
 	MOVI2R(R0, js.compilerPC);
 	MOVI2R(R1, _inst.hex);
-	QuickCallFunction(R14, (void*)&HLE::Execute); 
+	QuickCallFunction(R14, (void*)&HLE::Execute);
 	ARMReg rA = gpr.GetReg();
 	LDR(rA, R9, PPCSTATE_OFF(npc));
 	WriteExitDestInR(rA);
@@ -144,7 +144,7 @@ void JitArm::DoDownCount()
 	ARMReg rB = gpr.GetReg();
 	MOVI2R(rA, (u32)&CoreTiming::downcount);
 	LDR(rB, rA);
-	if(js.downcountAmount < 255) // We can enlarge this if we used rotations
+	if (js.downcountAmount < 255) // We can enlarge this if we used rotations
 	{
 		SUBS(rB, rB, js.downcountAmount);
 		STR(rB, rA);
@@ -158,7 +158,7 @@ void JitArm::DoDownCount()
 	}
 	gpr.Unlock(rA, rB);
 }
-void JitArm::WriteExitDestInR(ARMReg Reg) 
+void JitArm::WriteExitDestInR(ARMReg Reg)
 {
 	STR(Reg, R9, PPCSTATE_OFF(pc));
 	Cleanup();
@@ -167,7 +167,7 @@ void JitArm::WriteExitDestInR(ARMReg Reg)
 	B(Reg);
 	gpr.Unlock(Reg);
 }
-void JitArm::WriteRfiExitDestInR(ARMReg Reg) 
+void JitArm::WriteRfiExitDestInR(ARMReg Reg)
 {
 	STR(Reg, R9, PPCSTATE_OFF(pc));
 	Cleanup();
@@ -190,27 +190,27 @@ void JitArm::WriteExit(u32 destination, int exit_num)
 {
 	Cleanup();
 
-	DoDownCount(); 
+	DoDownCount();
 	//If nobody has taken care of this yet (this can be removed when all branches are done)
 	JitBlock *b = js.curBlock;
 	b->exitAddress[exit_num] = destination;
 	b->exitPtrs[exit_num] = GetWritableCodePtr();
-	
+
 	// Link opportunity!
 	int block = blocks.GetBlockNumberFromStartAddress(destination);
-	if (block >= 0 && jo.enableBlocklink) 
+	if (block >= 0 && jo.enableBlocklink)
 	{
 		// It exists! Joy of joy!
 		B(blocks.GetBlock(block)->checkedEntry);
 		b->linkStatus[exit_num] = true;
 	}
-	else 
+	else
 	{
 		ARMReg A = gpr.GetReg(false);
 		MOVI2R(A, destination);
 		STR(A, R9, PPCSTATE_OFF(pc));
 		MOVI2R(A, (u32)asm_routines.dispatcher);
-		B(A);	
+		B(A);
 	}
 }
 
@@ -247,37 +247,37 @@ void JitArm::Trace()
 		sprintf(reg, "f%02d: %016x ", i, riPS0(i));
 		strncat(fregs, reg, 750);
 	}
-#endif	
+#endif
 
-	DEBUG_LOG(DYNA_REC, "JITARM PC: %08x SRR0: %08x SRR1: %08x CRfast: %02x%02x%02x%02x%02x%02x%02x%02x FPSCR: %08x MSR: %08x LR: %08x %s %s", 
-		PC, SRR0, SRR1, PowerPC::ppcState.cr_fast[0], PowerPC::ppcState.cr_fast[1], PowerPC::ppcState.cr_fast[2], PowerPC::ppcState.cr_fast[3], 
-		PowerPC::ppcState.cr_fast[4], PowerPC::ppcState.cr_fast[5], PowerPC::ppcState.cr_fast[6], PowerPC::ppcState.cr_fast[7], PowerPC::ppcState.fpscr, 
+	DEBUG_LOG(DYNA_REC, "JITARM PC: %08x SRR0: %08x SRR1: %08x CRfast: %02x%02x%02x%02x%02x%02x%02x%02x FPSCR: %08x MSR: %08x LR: %08x %s %s",
+		PC, SRR0, SRR1, PowerPC::ppcState.cr_fast[0], PowerPC::ppcState.cr_fast[1], PowerPC::ppcState.cr_fast[2], PowerPC::ppcState.cr_fast[3],
+		PowerPC::ppcState.cr_fast[4], PowerPC::ppcState.cr_fast[5], PowerPC::ppcState.cr_fast[6], PowerPC::ppcState.cr_fast[7], PowerPC::ppcState.fpscr,
 		PowerPC::ppcState.msr, PowerPC::ppcState.spr[8], regs, fregs);
 }
 
 void JitArm::PrintDebug(UGeckoInstruction inst, u32 level)
 {
 	if (level > 0)
-	printf("Start: %08x OP '%s' Info\n", (u32)GetCodePtr(),  PPCTables::GetInstructionName(inst));
+		printf("Start: %08x OP '%s' Info\n", (u32)GetCodePtr(), PPCTables::GetInstructionName(inst));
 	if (level > 1)
 	{
 		GekkoOPInfo* Info = GetOpInfo(inst.hex);
 		printf("\tOuts\n");
 		if (Info->flags & FL_OUT_A)
 			printf("\t-OUT_A: %x\n", inst.RA);
-		if(Info->flags & FL_OUT_D)
+		if (Info->flags & FL_OUT_D)
 			printf("\t-OUT_D: %x\n", inst.RD);
 		printf("\tIns\n");
 		// A, AO, B, C, S
-		if(Info->flags & FL_IN_A)
+		if (Info->flags & FL_IN_A)
 			printf("\t-IN_A: %x\n", inst.RA);
-		if(Info->flags & FL_IN_A0)
+		if (Info->flags & FL_IN_A0)
 			printf("\t-IN_A0: %x\n", inst.RA);
-		if(Info->flags & FL_IN_B)
+		if (Info->flags & FL_IN_B)
 			printf("\t-IN_B: %x\n", inst.RB);
-		if(Info->flags & FL_IN_C)
+		if (Info->flags & FL_IN_C)
 			printf("\t-IN_C: %x\n", inst.RC);
-		if(Info->flags & FL_IN_S)
+		if (Info->flags & FL_IN_S)
 			printf("\t-IN_S: %x\n", inst.RS);
 	}
 }
@@ -354,10 +354,29 @@ const u8* JitArm::DoJit(u32 em_address, PPCAnalyst::CodeBuffer *code_buf, JitBlo
 	}
 	PPCAnalyst::CodeOp *ops = code_buf->codebuffer;
 
-	const u8 *start = GetCodePtr(); 
+	const u8 *start = GetCodePtr();
 	b->checkedEntry = start;
 	b->runCount = 0;
 
+	BKPT(1);
+	NEONXEmitter emit(this);
+#if 1
+	emit.VNEG(I_8, D15, D15);
+	emit.VNEG(I_16, D15, D15);
+	emit.VNEG(I_32, D15, D15);
+	emit.VNEG(F_32, Q15, Q15);
+
+#elif 0
+	emit.VTRN(I_8, D31, D31);
+	emit.VTRN(I_8, Q15, Q15);
+	emit.VTRN(I_16, D31, D31);
+	emit.VTRN(I_16, Q15, Q15);
+	emit.VTRN(I_32, D31, D31);
+	emit.VTRN(I_32, Q15, Q15);
+#else
+	emit.VSWP(D31, D31);
+	emit.VSWP(Q15, Q15);
+#endif
 	// Downcount flag check, Only valid for linked blocks
 	{
 		SetCC(CC_MI);
@@ -372,7 +391,7 @@ const u8* JitArm::DoJit(u32 em_address, PPCAnalyst::CodeBuffer *code_buf, JitBlo
 	const u8 *normalEntry = GetCodePtr();
 	b->normalEntry = normalEntry;
 
-	if(ImHereDebug)
+	if (ImHereDebug)
 		QuickCallFunction(R14, (void *)&ImHere); //Used to get a trace of the last few blocks before a crash, sometimes VERY useful
 
 	if (js.fpa.any)
@@ -389,7 +408,7 @@ const u8* JitArm::DoJit(u32 em_address, PPCAnalyst::CodeBuffer *code_buf, JitBlo
 		MOVI2R(A, (u32)asm_routines.fpException);
 		B(A);
 		SetCC();
-		gpr.Unlock(A, C);	
+		gpr.Unlock(A, C);
 	}
 	// Conditionally add profiling code.
 	if (Profiler::g_ProfileBlocks) {
@@ -398,7 +417,7 @@ const u8* JitArm::DoJit(u32 em_address, PPCAnalyst::CodeBuffer *code_buf, JitBlo
 		MOVI2R(rA, (u32)&b->runCount); // Load in to register
 		LDR(rB, rA); // Load the actual value in to R11.
 		ADD(rB, rB, 1); // Add one to the value
-		STR(rB, rA); // Now store it back in the memory location 
+		STR(rB, rA); // Now store it back in the memory location
 		// get start tic
 		PROFILER_QUERY_PERFORMANCE_COUNTER(&b->ticStart);
 		gpr.Unlock(rA, rB);
@@ -476,29 +495,29 @@ const u8* JitArm::DoJit(u32 em_address, PPCAnalyst::CodeBuffer *code_buf, JitBlo
 		}
 		if (!ops[i].skip)
 		{
-				PrintDebug(ops[i].inst, 0);
-				if (js.memcheck && (opinfo->flags & FL_USE_FPU))
-				{
-					// Don't do this yet
-					BKPT(0x7777);
-				}
-				JitArmTables::CompileInstruction(ops[i]);
-				fpr.Flush();
-				if (js.memcheck && (opinfo->flags & FL_LOADSTORE))
-				{
-					// Don't do this yet
-					BKPT(0x666);
-				}
+			PrintDebug(ops[i].inst, 0);
+			if (js.memcheck && (opinfo->flags & FL_USE_FPU))
+			{
+				// Don't do this yet
+				BKPT(0x7777);
+			}
+			JitArmTables::CompileInstruction(ops[i]);
+			fpr.Flush();
+			if (js.memcheck && (opinfo->flags & FL_LOADSTORE))
+			{
+				// Don't do this yet
+				BKPT(0x666);
+			}
 		}
 	}
 	if (memory_exception)
 		BKPT(0x500);
-	if	(broken_block)
+	if (broken_block)
 	{
 		printf("Broken Block going to 0x%08x\n", nextPC);
 		WriteExit(nextPC, 0);
 	}
-	
+
 	b->flags = js.block_flags;
 	b->codeSize = (u32)(GetCodePtr() - normalEntry);
 	b->originalSize = size;
