@@ -114,14 +114,14 @@ void CPUInfo::Detect()
 	OS64bit = (f64 == TRUE) ? true : false;
 #endif
 #endif
-	
+
 	// Set obvious defaults, for extra safety
 	if (Mode64bit) {
 		bSSE = true;
 		bSSE2 = true;
 		bLongMode = true;
 	}
-	
+
 	// Assume CPU supports the CPUID instruction. Those that don't can barely
 	// boot modern OS:es anyway.
 	int cpu_id[4];
@@ -141,10 +141,10 @@ void CPUInfo::Detect()
 		vendor = VENDOR_AMD;
 	else
 		vendor = VENDOR_OTHER;
-	
+
 	// Set reasonable default brand string even if brand string not available.
 	strcpy(brand_string, cpu_string);
-	
+
 	// Detect family and other misc stuff.
 	bool ht = false;
 	HTT = ht;
@@ -161,33 +161,6 @@ void CPUInfo::Detect()
 		if ((cpu_id[2] >> 19) & 1) bSSE4_1 = true;
 		if ((cpu_id[2] >> 20) & 1) bSSE4_2 = true;
 		if ((cpu_id[2] >> 25) & 1) bAES = true;
-		// To check DAZ support, we first need to check FXSAVE support.
-		if ((cpu_id[3] >> 24) & 1)
-		{
-			// We can use FXSAVE.
-			bFXSR = true;
-
-			GC_ALIGNED16(u8 fx_state[512]);
-			memset(fx_state, 0, sizeof(fx_state));
-#ifdef _WIN32
-			#ifdef _M_IX86
-				_fxsave(fx_state);
-			#elif defined (_M_X64)
-				_fxsave64(fx_state);
-			#endif
-#else
-			__asm__("fxsave %0" : "=m" (fx_state));
-#endif		
-
-			// lowest byte of MXCSR_MASK
-			if ((fx_state[0x1C] >> 6) & 1)
-			{
-				// On x86, the FTZ field (supported since SSE1) only flushes denormal _outputs_ to zero,
-				// now that we checked DAZ support (flushing denormal _inputs_ to zero),
-				// we can set our generic flag.
-				bFlushToZero = true;
-			}
-		}
 
 		// AVX support requires 3 separate checks:
 		//  - Is the AVX bit set in CPUID?
@@ -196,7 +169,11 @@ void CPUInfo::Detect()
 		if (((cpu_id[2] >> 28) & 1) && ((cpu_id[2] >> 27) & 1))
 		{
 			if ((_xgetbv(_XCR_XFEATURE_ENABLED_MASK) & 0x6) == 0x6)
+			{
 				bAVX = true;
+				if ((cpu_id[2] >> 12) & 1)
+					bFMA = true;
+			}
 		}
 	}
 	if (max_ex_fn >= 0x80000004) {
@@ -216,7 +193,7 @@ void CPUInfo::Detect()
 	}
 
 	num_cores = (logical_cpu_count == 0) ? 1 : logical_cpu_count;
-	
+
 	if (max_ex_fn >= 0x80000008) {
 		// Get number of cores. This is a bit complicated. Following AMD manual here.
 		__cpuid(cpu_id, 0x80000008);
@@ -237,7 +214,7 @@ void CPUInfo::Detect()
 			// Use AMD's new method.
 			num_cores = (cpu_id[2] & 0xFF) + 1;
 		}
-	} 
+	}
 }
 
 // Turn the cpu info into a string we can show
@@ -252,6 +229,7 @@ std::string CPUInfo::Summarize()
 	if (bSSE4_2) sum += ", SSE4.2";
 	if (HTT) sum += ", HTT";
 	if (bAVX) sum += ", AVX";
+	if (bFMA) sum += ", FMA";
 	if (bAES) sum += ", AES";
 	if (bLongMode) sum += ", 64-bit support";
 	return sum;

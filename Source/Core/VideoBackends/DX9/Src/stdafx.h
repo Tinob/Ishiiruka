@@ -10,3 +10,4 @@
 
 #include <tchar.h>
 #include <windows.h> 
+#include <algorithm>

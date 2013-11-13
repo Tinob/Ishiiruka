@@ -37,7 +37,7 @@
 using namespace ArmGen;
 using namespace PowerPC;
 
-static int CODE_SIZE = 1024 * 1024 * 32;
+static int CODE_SIZE = 1024*1024*32;
 namespace CPUCompare
 {
 	extern u32 m_BlockStart;
@@ -144,7 +144,7 @@ void JitArm::DoDownCount()
 	ARMReg rB = gpr.GetReg();
 	MOVI2R(rA, (u32)&CoreTiming::downcount);
 	LDR(rB, rA);
-	if (js.downcountAmount < 255) // We can enlarge this if we used rotations
+	if(js.downcountAmount < 255) // We can enlarge this if we used rotations
 	{
 		SUBS(rB, rB, js.downcountAmount);
 		STR(rB, rA);
@@ -258,26 +258,26 @@ void JitArm::Trace()
 void JitArm::PrintDebug(UGeckoInstruction inst, u32 level)
 {
 	if (level > 0)
-		printf("Start: %08x OP '%s' Info\n", (u32)GetCodePtr(), PPCTables::GetInstructionName(inst));
+	printf("Start: %08x OP '%s' Info\n", (u32)GetCodePtr(),  PPCTables::GetInstructionName(inst));
 	if (level > 1)
 	{
 		GekkoOPInfo* Info = GetOpInfo(inst.hex);
 		printf("\tOuts\n");
 		if (Info->flags & FL_OUT_A)
 			printf("\t-OUT_A: %x\n", inst.RA);
-		if (Info->flags & FL_OUT_D)
+		if(Info->flags & FL_OUT_D)
 			printf("\t-OUT_D: %x\n", inst.RD);
 		printf("\tIns\n");
 		// A, AO, B, C, S
-		if (Info->flags & FL_IN_A)
+		if(Info->flags & FL_IN_A)
 			printf("\t-IN_A: %x\n", inst.RA);
-		if (Info->flags & FL_IN_A0)
+		if(Info->flags & FL_IN_A0)
 			printf("\t-IN_A0: %x\n", inst.RA);
-		if (Info->flags & FL_IN_B)
+		if(Info->flags & FL_IN_B)
 			printf("\t-IN_B: %x\n", inst.RB);
-		if (Info->flags & FL_IN_C)
+		if(Info->flags & FL_IN_C)
 			printf("\t-IN_C: %x\n", inst.RC);
-		if (Info->flags & FL_IN_S)
+		if(Info->flags & FL_IN_S)
 			printf("\t-IN_S: %x\n", inst.RS);
 	}
 }
@@ -358,25 +358,6 @@ const u8* JitArm::DoJit(u32 em_address, PPCAnalyst::CodeBuffer *code_buf, JitBlo
 	b->checkedEntry = start;
 	b->runCount = 0;
 
-	BKPT(1);
-	NEONXEmitter emit(this);
-#if 1
-	emit.VNEG(I_8, D15, D15);
-	emit.VNEG(I_16, D15, D15);
-	emit.VNEG(I_32, D15, D15);
-	emit.VNEG(F_32, Q15, Q15);
-
-#elif 0
-	emit.VTRN(I_8, D31, D31);
-	emit.VTRN(I_8, Q15, Q15);
-	emit.VTRN(I_16, D31, D31);
-	emit.VTRN(I_16, Q15, Q15);
-	emit.VTRN(I_32, D31, D31);
-	emit.VTRN(I_32, Q15, Q15);
-#else
-	emit.VSWP(D31, D31);
-	emit.VSWP(Q15, Q15);
-#endif
 	// Downcount flag check, Only valid for linked blocks
 	{
 		SetCC(CC_MI);
@@ -391,7 +372,7 @@ const u8* JitArm::DoJit(u32 em_address, PPCAnalyst::CodeBuffer *code_buf, JitBlo
 	const u8 *normalEntry = GetCodePtr();
 	b->normalEntry = normalEntry;
 
-	if (ImHereDebug)
+	if(ImHereDebug)
 		QuickCallFunction(R14, (void *)&ImHere); //Used to get a trace of the last few blocks before a crash, sometimes VERY useful
 
 	if (js.fpa.any)
@@ -495,24 +476,24 @@ const u8* JitArm::DoJit(u32 em_address, PPCAnalyst::CodeBuffer *code_buf, JitBlo
 		}
 		if (!ops[i].skip)
 		{
-			PrintDebug(ops[i].inst, 0);
-			if (js.memcheck && (opinfo->flags & FL_USE_FPU))
-			{
-				// Don't do this yet
-				BKPT(0x7777);
-			}
-			JitArmTables::CompileInstruction(ops[i]);
-			fpr.Flush();
-			if (js.memcheck && (opinfo->flags & FL_LOADSTORE))
-			{
-				// Don't do this yet
-				BKPT(0x666);
-			}
+				PrintDebug(ops[i].inst, 0);
+				if (js.memcheck && (opinfo->flags & FL_USE_FPU))
+				{
+					// Don't do this yet
+					BKPT(0x7777);
+				}
+				JitArmTables::CompileInstruction(ops[i]);
+				fpr.Flush();
+				if (js.memcheck && (opinfo->flags & FL_LOADSTORE))
+				{
+					// Don't do this yet
+					BKPT(0x666);
+				}
 		}
 	}
 	if (memory_exception)
 		BKPT(0x500);
-	if (broken_block)
+	if	(broken_block)
 	{
 		printf("Broken Block going to 0x%08x\n", nextPC);
 		WriteExit(nextPC, 0);

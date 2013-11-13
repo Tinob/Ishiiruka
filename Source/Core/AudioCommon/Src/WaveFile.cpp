@@ -5,6 +5,7 @@
 #include "Common.h"
 #include "WaveFile.h"
 #include "../../Core/Src/ConfigManager.h"
+#include <cinttypes>
 
 enum {BUF_SIZE = 32*1024};
 
@@ -63,7 +64,7 @@ bool WaveFileWriter::Start(const char *filename, unsigned int HLESampleRate)
 
 	// We are now at offset 44
 	if (file.Tell() != 44)
-		PanicAlert("Wrong offset: %lld", (long long)file.Tell());
+		PanicAlert("Wrong offset: %" PRId64, (long long)file.Tell());
 
 	return true;
 }

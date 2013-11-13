@@ -8,7 +8,7 @@
 #include "HW/ProcessorInterface.h"
 #include "IniFile.h"
 #include "../WxUtils.h"
-
+#include <cinttypes>
 // F-zero 80005e60 wtf??
 
 extern const char* GetGPRName(unsigned int index);

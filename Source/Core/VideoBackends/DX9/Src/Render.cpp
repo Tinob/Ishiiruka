@@ -4,7 +4,7 @@
 
 #include <list>
 #include <d3dx9.h>
-
+#include <cinttypes>
 #include "StringUtil.h"
 #include "Common.h"
 #include "Atomic.h"
@@ -834,7 +834,7 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 	if (SConfig::GetInstance().m_ShowLag)
 	{
 		char lag[10];
-		StringCchPrintfA(lag, 10, "Lag: %llu\n", Movie::g_currentLagCount);
+		StringCchPrintfA(lag, 10, "Lag: %" PRIu64 "\n", Movie::g_currentLagCount);
 		D3D::font.DrawTextScaled(X, Y + 18, 20, 20, 0.0f, 0xFF00FFFF, lag);
 	}
 

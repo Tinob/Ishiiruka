@@ -173,7 +173,7 @@ public:
 
 	Operand2(ARMReg base, ShiftType type, u8 shift)// For IMM shifted register
 	{
-		if (shift == 32) shift = 0;
+		if(shift == 32) shift = 0;
 		switch (type)
 		{
 		case ST_LSL:
@@ -210,7 +210,7 @@ public:
 	}
 	u32 GetData()
 	{
-		switch (Type)
+		switch(Type)
 		{
 		case TYPE_IMM:
 			return Imm12Mod(); // This'll need to be changed later
@@ -276,7 +276,7 @@ public:
 	u32 Imm16()
 	{
 		_assert_msg_(DYNA_REC, (Type == TYPE_IMM), "Imm16 not IMM");
-		return ((Value & 0xF000) << 4) | (Value & 0x0FFF);
+		return ( (Value & 0xF000) << 4) | (Value & 0x0FFF);
 	}
 	u32 Imm16Low()
 	{
@@ -285,7 +285,7 @@ public:
 	u32 Imm16High() // Returns high 16bits
 	{
 		_assert_msg_(DYNA_REC, (Type == TYPE_IMM), "Imm16 not IMM");
-		return (((Value >> 16) & 0xF000) << 4) | ((Value >> 16) & 0x0FFF);
+		return ( ((Value >> 16) & 0xF000) << 4) | ((Value >> 16) & 0x0FFF);
 	}
 	u32 Imm24()
 	{
@@ -378,7 +378,7 @@ private:
 	void WriteInstruction(u32 op, ARMReg Rd, ARMReg Rn, Operand2 Rm, bool SetFlags = false);
 
 protected:
-	inline void Write32(u32 value) { *(u32*)code = value; code += 4; }
+	inline void Write32(u32 value) {*(u32*)code = value; code+=4;}
 
 public:
 	ARMXEmitter() : code(0), startcode(0), lastCacheFlushEnd(0) {
@@ -433,8 +433,8 @@ public:
 	FixupBranch BL_CC(CCFlags Cond);
 	void SetJumpTarget(FixupBranch const &branch);
 
-	void B(const void *fnptr);
-	void B(ARMReg src);
+	void B (const void *fnptr);
+	void B (ARMReg src);
 	void BL(const void *fnptr);
 	void BL(ARMReg src);
 	bool BLInRange(const void *fnptr);
@@ -443,44 +443,44 @@ public:
 	void POP(const int num, ...);
 
 	// New Data Ops
-	void AND(ARMReg Rd, ARMReg Rn, Operand2 Rm);
+	void AND (ARMReg Rd, ARMReg Rn, Operand2 Rm);
 	void ANDS(ARMReg Rd, ARMReg Rn, Operand2 Rm);
-	void EOR(ARMReg dest, ARMReg src, Operand2 op2);
+	void EOR (ARMReg dest, ARMReg src, Operand2 op2);
 	void EORS(ARMReg dest, ARMReg src, Operand2 op2);
-	void SUB(ARMReg dest, ARMReg src, Operand2 op2);
+	void SUB (ARMReg dest, ARMReg src, Operand2 op2);
 	void SUBS(ARMReg dest, ARMReg src, Operand2 op2);
-	void RSB(ARMReg dest, ARMReg src, Operand2 op2);
+	void RSB (ARMReg dest, ARMReg src, Operand2 op2);
 	void RSBS(ARMReg dest, ARMReg src, Operand2 op2);
-	void ADD(ARMReg dest, ARMReg src, Operand2 op2);
+	void ADD (ARMReg dest, ARMReg src, Operand2 op2);
 	void ADDS(ARMReg dest, ARMReg src, Operand2 op2);
-	void ADC(ARMReg dest, ARMReg src, Operand2 op2);
+	void ADC (ARMReg dest, ARMReg src, Operand2 op2);
 	void ADCS(ARMReg dest, ARMReg src, Operand2 op2);
-	void LSL(ARMReg dest, ARMReg src, Operand2 op2);
+	void LSL (ARMReg dest, ARMReg src, Operand2 op2);
 	void LSLS(ARMReg dest, ARMReg src, Operand2 op2);
-	void LSR(ARMReg dest, ARMReg src, Operand2 op2);
+	void LSR (ARMReg dest, ARMReg src, Operand2 op2);
 	void LSRS(ARMReg dest, ARMReg src, Operand2 op2);
-	void ASR(ARMReg dest, ARMReg src, Operand2 op2);
+	void ASR (ARMReg dest, ARMReg src, Operand2 op2);
 	void ASRS(ARMReg dest, ARMReg src, Operand2 op2);
-	void SBC(ARMReg dest, ARMReg src, Operand2 op2);
+	void SBC (ARMReg dest, ARMReg src, Operand2 op2);
 	void SBCS(ARMReg dest, ARMReg src, Operand2 op2);
 	void RBIT(ARMReg dest, ARMReg src);
-	void REV(ARMReg dest, ARMReg src);
-	void REV16(ARMReg dest, ARMReg src);
-	void RSC(ARMReg dest, ARMReg src, Operand2 op2);
+	void REV (ARMReg dest, ARMReg src);
+	void REV16 (ARMReg dest, ARMReg src);
+	void RSC (ARMReg dest, ARMReg src, Operand2 op2);
 	void RSCS(ARMReg dest, ARMReg src, Operand2 op2);
-	void TST(ARMReg src, Operand2 op2);
-	void TEQ(ARMReg src, Operand2 op2);
-	void CMP(ARMReg src, Operand2 op2);
-	void CMN(ARMReg src, Operand2 op2);
-	void ORR(ARMReg dest, ARMReg src, Operand2 op2);
+	void TST (             ARMReg src, Operand2 op2);
+	void TEQ (             ARMReg src, Operand2 op2);
+	void CMP (             ARMReg src, Operand2 op2);
+	void CMN (             ARMReg src, Operand2 op2);
+	void ORR (ARMReg dest, ARMReg src, Operand2 op2);
 	void ORRS(ARMReg dest, ARMReg src, Operand2 op2);
-	void MOV(ARMReg dest, Operand2 op2);
-	void MOVS(ARMReg dest, Operand2 op2);
-	void BIC(ARMReg dest, ARMReg src, Operand2 op2);   // BIC = ANDN
+	void MOV (ARMReg dest,             Operand2 op2);
+	void MOVS(ARMReg dest,             Operand2 op2);
+	void BIC (ARMReg dest, ARMReg src, Operand2 op2);   // BIC = ANDN
 	void BICS(ARMReg dest, ARMReg src, Operand2 op2);
-	void MVN(ARMReg dest, Operand2 op2);
-	void MVNS(ARMReg dest, Operand2 op2);
-	void MOVW(ARMReg dest, Operand2 op2);
+	void MVN (ARMReg dest,             Operand2 op2);
+	void MVNS(ARMReg dest,             Operand2 op2);
+	void MOVW(ARMReg dest,             Operand2 op2);
 	void MOVT(ARMReg dest, Operand2 op2, bool TopBits = false);
 
 	// UDIV and SDIV are only available on CPUs that have
@@ -488,8 +488,8 @@ public:
 	void UDIV(ARMReg dest, ARMReg dividend, ARMReg divisor);
 	void SDIV(ARMReg dest, ARMReg dividend, ARMReg divisor);
 
-	void MUL(ARMReg dest, ARMReg src, ARMReg op2);
-	void MULS(ARMReg dest, ARMReg src, ARMReg op2);
+	void MUL (ARMReg dest,	ARMReg src, ARMReg op2);
+	void MULS(ARMReg dest,	ARMReg src, ARMReg op2);
 
 	void UMULL(ARMReg destLo, ARMReg destHi, ARMReg rn, ARMReg rm);
 	void UMULLS(ARMReg destLo, ARMReg destHi, ARMReg rn, ARMReg rm);
@@ -507,19 +507,19 @@ public:
 
 	// Using just MSR here messes with our defines on the PPC side of stuff (when this code was in dolphin...)
 	// Just need to put an underscore here, bit annoying.
-	void _MSR(bool nzcvq, bool g, Operand2 op2);
-	void _MSR(bool nzcvq, bool g, ARMReg src);
-	void MRS(ARMReg dest);
+	void _MSR (bool nzcvq, bool g, Operand2 op2);
+	void _MSR (bool nzcvq, bool g, ARMReg src);
+	void MRS  (ARMReg dest);
 
 	// Memory load/store operations
-	void LDR(ARMReg dest, ARMReg base, Operand2 op2 = 0, bool RegAdd = true);
-	void LDRB(ARMReg dest, ARMReg base, Operand2 op2 = 0, bool RegAdd = true);
-	void LDRH(ARMReg dest, ARMReg base, Operand2 op2 = 0, bool RegAdd = true);
+	void LDR  (ARMReg dest, ARMReg base, Operand2 op2 = 0, bool RegAdd = true);
+	void LDRB (ARMReg dest, ARMReg base, Operand2 op2 = 0, bool RegAdd = true);
+	void LDRH (ARMReg dest, ARMReg base, Operand2 op2 = 0, bool RegAdd = true);
 	void LDRSB(ARMReg dest, ARMReg base, Operand2 op2 = 0, bool RegAdd = true);
 	void LDRSH(ARMReg dest, ARMReg base, Operand2 op2 = 0, bool RegAdd = true);
-	void STR(ARMReg result, ARMReg base, Operand2 op2 = 0, bool RegAdd = true);
-	void STRB(ARMReg result, ARMReg base, Operand2 op2 = 0, bool RegAdd = true);
-	void STRH(ARMReg result, ARMReg base, Operand2 op2 = 0, bool RegAdd = true);
+	void STR  (ARMReg result, ARMReg base, Operand2 op2 = 0, bool RegAdd = true);
+	void STRB (ARMReg result, ARMReg base, Operand2 op2 = 0, bool RegAdd = true);
+	void STRH (ARMReg result, ARMReg base, Operand2 op2 = 0, bool RegAdd = true);
 
 	void STMFD(ARMReg dest, bool WriteBack, const int Regnum, ...);
 	void LDMFD(ARMReg dest, bool WriteBack, const int Regnum, ...);
@@ -528,7 +528,7 @@ public:
 	void LDREX(ARMReg dest, ARMReg base);
 	// result contains the result if the instruction managed to store the value
 	void STREX(ARMReg result, ARMReg base, ARMReg op);
-	void DMB();
+	void DMB ();
 	void SVC(Operand2 op);
 
 	// NEON and ASIMD instructions
@@ -538,7 +538,7 @@ public:
 
 	// VFP Only
 	void VLDR(ARMReg Dest, ARMReg Base, s16 offset);
-	void VSTR(ARMReg Src, ARMReg Base, s16 offset);
+	void VSTR(ARMReg Src,  ARMReg Base, s16 offset);
 	void VCMP(ARMReg Vd, ARMReg Vm);
 	void VCMPE(ARMReg Vd, ARMReg Vm);
 	// Compares against zero
@@ -613,7 +613,7 @@ private:
 
 	void VREVX(u32 size, u32 Size, ARMReg Vd, ARMReg Vm);
 
-public:
+public:		
 	NEONXEmitter(ARMXEmitter *emit)
 		: _emit(emit)
 	{}

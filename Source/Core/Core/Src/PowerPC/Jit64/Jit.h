@@ -62,30 +62,30 @@ public:
 	Jit64() : code_buffer(32000) {}
 	~Jit64() {}
 
-	void Init();
-	void Shutdown();
+	void Init() override;
+	void Shutdown() override;
 
 	// Jit!
 
-	void Jit(u32 em_address);
+	void Jit(u32 em_address) override;
 	const u8* DoJit(u32 em_address, PPCAnalyst::CodeBuffer *code_buffer, JitBlock *b);
 
 	u32 RegistersInUse();
 
-	JitBlockCache *GetBlockCache() { return &blocks; }
+	JitBlockCache *GetBlockCache() override { return &blocks; }
 
 	void Trace();
 
-	void ClearCache();
+	void ClearCache() override;
 
 	const u8 *GetDispatcher() {
 		return asm_routines.dispatcher;
 	}
-	const CommonAsmRoutines *GetAsmRoutines() {
+	const CommonAsmRoutines *GetAsmRoutines() override {
 		return &asm_routines;
 	}
 
-	const char *GetName() {
+	const char *GetName() override {
 #ifdef _M_X64
 		return "JIT64";
 #else
@@ -94,8 +94,8 @@ public:
 	}
 	// Run!
 
-	void Run();
-	void SingleStep();
+	void Run() override;
+	void SingleStep() override;
 
 	// Utilities for use by opcodes
 
@@ -119,7 +119,7 @@ public:
 	void tri_op(int d, int a, int b, bool reversible, void (XEmitter::*op)(Gen::X64Reg, Gen::OpArg));
 	typedef u32 (*Operation)(u32 a, u32 b);
 	void regimmop(int d, int a, bool binary, u32 value, Operation doop, void (XEmitter::*op)(int, const Gen::OpArg&, const Gen::OpArg&), bool Rc = false, bool carry = false);
-	void fp_tri_op(int d, int a, int b, bool reversible, bool dupe, void (XEmitter::*op)(Gen::X64Reg, Gen::OpArg));
+	void fp_tri_op(int d, int a, int b, bool reversible, bool dupe, void (XEmitter::*op_2)(Gen::X64Reg, Gen::OpArg), void (XEmitter::*op_3)(Gen::X64Reg, Gen::X64Reg, Gen::OpArg));
 
 	// OPCODES
 	void unknown_instruction(UGeckoInstruction _inst);
@@ -182,7 +182,7 @@ public:
 	void ps_sum(UGeckoInstruction inst);
 	void ps_muls(UGeckoInstruction inst);
 
-	void fp_arith(UGeckoInstruction inst);
+	void fp_arith_s(UGeckoInstruction inst);
 	void frsqrtex(UGeckoInstruction inst);
 
 	void fcmpx(UGeckoInstruction inst);
@@ -223,7 +223,7 @@ public:
 	void twx(UGeckoInstruction inst);
 
 	void lXXx(UGeckoInstruction inst);
-	
+
 	void stXx(UGeckoInstruction inst);
 
 	void lmw(UGeckoInstruction inst);

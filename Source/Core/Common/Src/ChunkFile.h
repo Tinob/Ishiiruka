@@ -90,10 +90,10 @@ public:
 		case MODE_WRITE:
 		case MODE_MEASURE:
 		case MODE_VERIFY:
-			for (auto itr = x.begin(); itr != x.end(); ++itr)
+			for (auto& elem : x)
 			{
-				Do(itr->first);
-				Do(itr->second);
+				Do(elem.first);
+				Do(elem.second);
 			}
 			break;
 		}
@@ -134,8 +134,8 @@ public:
 		Do(size);
 		x.resize(size);
 
-		for (auto itr = x.begin(); itr != x.end(); ++itr)
-			Do(*itr);
+		for (auto& elem : x)
+			Do(elem);
 	}
 
 	template <typename T>
@@ -180,7 +180,6 @@ public:
 	void Do(T& x)
 	{
 		static_assert(IsTriviallyCopyable(T), "Only sane for trivially copyable types");
-
 		DoVoid((void*)&x, sizeof(x));
 	}
 
@@ -194,10 +193,12 @@ public:
 	void DoPointer(T*& x, T* const base)
 	{
 		// pointers can be more than 2^31 apart, but you're using this function wrong if you need that much range
-		s32 offset = x - base;
+		ptrdiff_t offset = x - base;
 		Do(offset);
 		if (mode == MODE_READ)
+		{
 			x = base + offset;
+		}
 	}
 
 	// Let's pretend std::list doesn't exist!
@@ -321,7 +322,7 @@ public:
 
 		if (!File::Exists(_rFilename))
 			return false;
-				
+
 		// Check file size
 		const u64 fileSize = File::GetSize(_rFilename);
 		static const u64 headerSize = sizeof(SChunkHeader);
@@ -374,7 +375,7 @@ public:
 		u8* ptr = &buffer[0];
 		PointerWrap p(&ptr, PointerWrap::MODE_READ);
 		_class.DoState(p);
-		
+
 		INFO_LOG(COMMON, "ChunkReader: Done loading %s" , _rFilename.c_str());
 		return true;
 	}

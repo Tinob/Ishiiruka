@@ -573,15 +573,14 @@ void VertexManager::vFlush()
 			u32 texindex = i >> 2;
 			g_renderer->SetSamplerState(stage, texindex);
 			FourTexUnits &tex = bpmem.tex[texindex];
-			bool from_tmem = tex.texImage1[stage].image_type != 0;
 			TextureCache::TCacheEntryBase* tentry = TextureCache::Load(i, 
 				(tex.texImage3[stage].image_base/* & 0x1FFFFF*/) << 5,
 				tex.texImage0[stage].width + 1, tex.texImage0[stage].height + 1,
 				tex.texImage0[stage].format, tex.texTlut[stage].tmem_offset<<9, 
 				tex.texTlut[stage].tlut_format,
-				(tex.texMode0[stage].min_filter & 3),
+				(tex.texMode0[stage].min_filter & 3) != 0,
 				(tex.texMode1[stage].max_lod + 0xf) / 0x10,
-				from_tmem);
+				tex.texImage1[stage].image_type != 0);
 
 			if (tentry)
 			{

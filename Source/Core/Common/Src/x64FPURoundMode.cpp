@@ -4,7 +4,6 @@
 
 #include "Common.h"
 #include "FPURoundMode.h"
-#include "CPUDetect.h"
 
 #ifndef _WIN32
 static const unsigned short FPU_ROUND_NEAR = 0 << 10;
@@ -15,11 +14,8 @@ static const unsigned short FPU_ROUND_MASK = 3 << 10;
 #include <xmmintrin.h>
 #endif
 
-// OR-mask for disabling FPU exceptions (bits 7-12 in the MXCSR register)
-const u32 EXCEPTION_MASK = 0x1F80;
-// Denormals-Are-Zero (non-IEEE mode: denormal inputs are set to +/- 0)
+const u32 MASKS = 0x1F80;  // mask away the interrupts.
 const u32 DAZ = 0x40;
-// Flush-To-Zero (non-IEEE mode: denormal outputs are set to +/- 0)
 const u32 FTZ = 0x8000;
 
 namespace FPURoundMode
@@ -34,7 +30,7 @@ namespace FPURoundMode
 		#ifdef _M_IX86
 			// This shouldn't really be needed anymore since we use SSE
 		#ifdef _WIN32
-			const int table[4] = 
+			const int table[4] =
 			{
 				_RC_NEAR,
 				_RC_CHOP,
@@ -43,7 +39,7 @@ namespace FPURoundMode
 			};
 			_set_controlfp(_MCW_RC, table[mode]);
 		#else
-			const unsigned short table[4] = 
+			const unsigned short table[4] =
 			{
 				FPU_ROUND_NEAR,
 				FPU_ROUND_CHOP,
@@ -83,28 +79,16 @@ namespace FPURoundMode
 			//but still - set any useful sse options here
 		#endif
 	}
-
-	void SetSIMDMode(u32 roundingMode, u32 nonIEEEMode)
+	void SetSIMDMode(u32 mode)
 	{
-		// lookup table for FPSCR.RN-to-MXCSR.RC translation
-		static const u32 roundingModeLUT[4] =
+		static const u32 ssetable[4] =
 		{
-			(0 << 13) | EXCEPTION_MASK, // nearest
-			(3 << 13) | EXCEPTION_MASK, // -inf
-			(2 << 13) | EXCEPTION_MASK, // +inf
-			(1 << 13) | EXCEPTION_MASK, // zero
+			(0 << 13) | MASKS,
+			(3 << 13) | MASKS,
+			(2 << 13) | MASKS,
+			(1 << 13) | MASKS,
 		};
-		u32 csr = roundingModeLUT[roundingMode];
-
-		static const u32 denormalLUT[2] =
-		{
-			FTZ,       // flush-to-zero only
-			FTZ | DAZ, // flush-to-zero and denormals-are-zero (may not be supported)
-		};
-		if (nonIEEEMode)
-		{
-			csr |= denormalLUT[cpu_info.bFlushToZero];
-		}
+		u32 csr = ssetable[mode];
 		_mm_setcsr(csr);
 	}
 

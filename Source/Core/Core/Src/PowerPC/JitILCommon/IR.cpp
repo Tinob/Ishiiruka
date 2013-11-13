@@ -81,34 +81,34 @@ JIT for misc remaining FP instructions
 JIT for bcctrx
 Misc optimizations for FP instructions
 Inter-block dead register elimination; this seems likely to have large
-performance benefits, although I'm not completely sure.
+	performance benefits, although I'm not completely sure.
 Inter-block inlining; also likely to have large performance benefits.
-The tricky parts are deciding which blocks to inline, and that the
-IR can't really deal with branches whose destination is in the
-the middle of a generated block.
+	The tricky parts are deciding which blocks to inline, and that the
+	IR can't really deal with branches whose destination is in the
+	the middle of a generated block.
 Specialized slw/srw/sraw; I think there are some tricks that could
-have a non-trivial effect, and there are significantly shorter
-implementations for 64-bit involving abusing 64-bit shifts.
+	have a non-trivial effect, and there are significantly shorter
+	implementations for 64-bit involving abusing 64-bit shifts.
 64-bit compat (it should only be a few tweaks to register allocation and
-the load/store code)
+	the load/store code)
 Scheduling to reduce register pressure: PowerPC	compilers like to push
-uses far away from definitions, but it's rather unfriendly to modern
-x86 processors, which are short on registers and extremely good at
-instruction reordering.
+	uses far away from definitions, but it's rather unfriendly to modern
+	x86 processors, which are short on registers and extremely good at
+	instruction reordering.
 Common subexpression elimination
 Optimize load/store of sum using complex addressing (partially implemented)
 Loop optimizations (loop-carried registers, LICM)
 Code refactoring/cleanup
 Investigate performance of the JIT itself; this doesn't affect
-framerates significantly, but it does take a visible amount
-of time for a complicated piece of code like a video decoder
-to compile.
+	framerates significantly, but it does take a visible amount
+	of time for a complicated piece of code like a video decoder
+	to compile.
 Fix profiled loads/stores to work safely.  On 32-bit, one solution is to
-use a spare segment register, and expand the backpatch solution
-to work in all the relevant situations.  On 64-bit, the existing
-fast memory solution should basically work.  An alternative
-would be to figure out a heuristic for what loads actually
-vary their "type", and special-case them.
+	use a spare segment register, and expand the backpatch solution
+	to work in all the relevant situations.  On 64-bit, the existing
+	fast memory solution should basically work.  An alternative
+	would be to figure out a heuristic for what loads actually
+	vary their "type", and special-case them.
 
 */
 
@@ -118,6 +118,7 @@ vary their "type", and special-case them.
 
 #include <algorithm>
 #include <memory>
+#include <cinttypes>
 #include <ctime>
 #include <set>
 #include "IR.h"
@@ -212,28 +213,28 @@ unsigned IRBuilder::ComputeKnownZeroBits(InstLoc I) const {
 		return 0xFFFFFF00;
 	case Or:
 		return ComputeKnownZeroBits(getOp1(I)) &
-			ComputeKnownZeroBits(getOp2(I));
+		       ComputeKnownZeroBits(getOp2(I));
 	case And:
 		return ComputeKnownZeroBits(getOp1(I)) |
-			ComputeKnownZeroBits(getOp2(I));
+		       ComputeKnownZeroBits(getOp2(I));
 	case Shl:
 		if (isImm(*getOp2(I))) {
 			unsigned samt = GetImmValue(getOp2(I)) & 31;
 			return (ComputeKnownZeroBits(getOp1(I)) << samt) |
-				~(-1U << samt);
+			        ~(-1U << samt);
 		}
 		return 0;
 	case Shrl:
 		if (isImm(*getOp2(I))) {
 			unsigned samt = GetImmValue(getOp2(I)) & 31;
 			return (ComputeKnownZeroBits(getOp1(I)) >> samt) |
-				~(-1U >> samt);
+			        ~(-1U >> samt);
 		}
 		return 0;
 	case Rol:
 		if (isImm(*getOp2(I))) {
 			return _rotl(ComputeKnownZeroBits(getOp1(I)),
-				GetImmValue(getOp2(I)));
+			             GetImmValue(getOp2(I)));
 		}
 	default:
 		return 0;
@@ -332,14 +333,12 @@ InstLoc IRBuilder::FoldUOp(unsigned Opcode, InstLoc Op1, unsigned extra) {
 		if (getOpcode(*Op1) >= FDMul && getOpcode(*Op1) <= FDSub) {
 			InstLoc OOp1 = getOp1(Op1), OOp2 = getOp2(Op1);
 			if (getOpcode(*OOp1) == DupSingleToMReg &&
-				getOpcode(*OOp2) == DupSingleToMReg) {
+			    getOpcode(*OOp2) == DupSingleToMReg) {
 				if (getOpcode(*Op1) == FDMul) {
 					return FoldBiOp(FSMul, getOp1(OOp1), getOp2(OOp2));
-				}
-				else if (getOpcode(*Op1) == FDAdd) {
+				} else if (getOpcode(*Op1) == FDAdd) {
 					return FoldBiOp(FSAdd, getOp1(OOp1), getOp2(OOp2));
-				}
-				else if (getOpcode(*Op1) == FDSub) {
+				} else if (getOpcode(*Op1) == FDSub) {
 					return FoldBiOp(FSSub, getOp1(OOp1), getOp2(OOp2));
 				}
 			}
@@ -420,11 +419,9 @@ InstLoc IRBuilder::FoldAdd(InstLoc Op1, InstLoc Op2) {
 		if (!isSameValue(w, y)) {
 			if (isSameValue(w, z)) {
 				std::swap(y, z);
-			}
-			else if (isSameValue(y, x)) {
+			} else if (isSameValue(y, x)) {
 				std::swap(w, x);
-			}
-			else if (isSameValue(x, z)) {
+			} else if (isSameValue(x, z)) {
 				std::swap(y, z);
 				std::swap(w, x);
 			}
@@ -532,11 +529,9 @@ InstLoc IRBuilder::FoldSub(InstLoc Op1, InstLoc Op2) {
 		if (!isSameValue(w, y)) {
 			if (isSameValue(w, z)) {
 				std::swap(y, z);
-			}
-			else if (isSameValue(y, x)) {
+			} else if (isSameValue(y, x)) {
 				std::swap(w, x);
-			}
-			else if (isSameValue(x, z)) {
+			} else if (isSameValue(x, z)) {
 				std::swap(y, z);
 				std::swap(w, x);
 			}
@@ -666,10 +661,9 @@ InstLoc IRBuilder::FoldAnd(InstLoc Op1, InstLoc Op2) {
 		if (GetImmValue(Op2) == -1U) return Op1;
 		if (getOpcode(*Op1) == And && isImm(*getOp2(Op1))) {
 			unsigned RHS = GetImmValue(Op2) &
-				GetImmValue(getOp2(Op1));
+				       GetImmValue(getOp2(Op1));
 			return FoldAnd(getOp1(Op1), EmitIntConst(RHS));
-		}
-		else if (getOpcode(*Op1) == Rol && isImm(*getOp2(Op1))) {
+		} else if (getOpcode(*Op1) == Rol && isImm(*getOp2(Op1))) {
 			unsigned shiftMask1 = -1U << (GetImmValue(getOp2(Op1)) & 31);
 			if (GetImmValue(Op2) == shiftMask1)
 				return FoldShl(getOp1(Op1), getOp2(Op1));
@@ -751,7 +745,7 @@ InstLoc IRBuilder::FoldOr(InstLoc Op1, InstLoc Op2) {
 		if (GetImmValue(Op2) == -1U) return EmitIntConst(-1U);
 		if (getOpcode(*Op1) == Or && isImm(*getOp2(Op1))) {
 			unsigned RHS = GetImmValue(Op2) |
-				GetImmValue(getOp2(Op1));
+				       GetImmValue(getOp2(Op1));
 			return FoldOr(getOp1(Op1), EmitIntConst(RHS));
 		}
 
@@ -790,7 +784,7 @@ InstLoc IRBuilder::FoldXor(InstLoc Op1, InstLoc Op2) {
 		}
 		if (getOpcode(*Op1) == Xor && isImm(*getOp2(Op1))) {
 			unsigned RHS = GetImmValue(Op2) ^
-				GetImmValue(getOp2(Op1));
+				       GetImmValue(getOp2(Op1));
 			return FoldXor(getOp1(Op1), EmitIntConst(RHS));
 		}
 	}
@@ -836,7 +830,7 @@ InstLoc IRBuilder::FoldRol(InstLoc Op1, InstLoc Op2) {
 	if (isImm(*Op2)) {
 		if (isImm(*Op1))
 			return EmitIntConst(_rotl(GetImmValue(Op1),
-			GetImmValue(Op2)));
+					          GetImmValue(Op2)));
 		if (!(GetImmValue(Op2) & 31)) return Op1;
 	}
 	return EmitBiOp(Rol, Op1, Op2);
@@ -849,38 +843,38 @@ InstLoc IRBuilder::FoldBranchCond(InstLoc Op1, InstLoc Op2) {
 		return 0;
 	}
 	if (getOpcode(*Op1) == And &&
-		isImm(*getOp2(Op1)) &&
-		getOpcode(*getOp1(Op1)) == ICmpCRSigned) {
+	    isImm(*getOp2(Op1)) &&
+	    getOpcode(*getOp1(Op1)) == ICmpCRSigned) {
 		unsigned branchValue = GetImmValue(getOp2(Op1));
 		if (branchValue == 2)
 			return FoldBranchCond(EmitICmpEq(getOp1(getOp1(Op1)),
-			getOp2(getOp1(Op1))), Op2);
+					      getOp2(getOp1(Op1))), Op2);
 		if (branchValue == 4)
 			return FoldBranchCond(EmitICmpSgt(getOp1(getOp1(Op1)),
-			getOp2(getOp1(Op1))), Op2);
+					      getOp2(getOp1(Op1))), Op2);
 		if (branchValue == 8)
 			return FoldBranchCond(EmitICmpSlt(getOp1(getOp1(Op1)),
-			getOp2(getOp1(Op1))), Op2);
+					      getOp2(getOp1(Op1))), Op2);
 	}
 	if (getOpcode(*Op1) == Xor &&
-		isImm(*getOp2(Op1))) {
+	    isImm(*getOp2(Op1))) {
 		InstLoc XOp1 = getOp1(Op1);
 		unsigned branchValue = GetImmValue(getOp2(Op1));
 		if (getOpcode(*XOp1) == And &&
-			isImm(*getOp2(XOp1)) &&
-			getOpcode(*getOp1(XOp1)) == ICmpCRSigned) {
+		    isImm(*getOp2(XOp1)) &&
+		    getOpcode(*getOp1(XOp1)) == ICmpCRSigned) {
 			unsigned innerBranchValue =
 				GetImmValue(getOp2(XOp1));
 			if (branchValue == innerBranchValue) {
 				if (branchValue == 2)
 					return FoldBranchCond(EmitICmpNe(getOp1(getOp1(XOp1)),
-					getOp2(getOp1(XOp1))), Op2);
+						      getOp2(getOp1(XOp1))), Op2);
 				if (branchValue == 4)
 					return FoldBranchCond(EmitICmpSle(getOp1(getOp1(XOp1)),
-					getOp2(getOp1(XOp1))), Op2);
+						      getOp2(getOp1(XOp1))), Op2);
 				if (branchValue == 8)
 					return FoldBranchCond(EmitICmpSge(getOp1(getOp1(XOp1)),
-					getOp2(getOp1(XOp1))), Op2);
+						      getOp2(getOp1(XOp1))), Op2);
 			}
 		}
 	}
@@ -920,19 +914,19 @@ InstLoc IRBuilder::FoldICmp(unsigned Opcode, InstLoc Op1, InstLoc Op2) {
 				break;
 			case ICmpSgt:
 				result = (signed)GetImmValue(Op1) >
-					(signed)GetImmValue(Op2);
+					 (signed)GetImmValue(Op2);
 				break;
 			case ICmpSlt:
 				result = (signed)GetImmValue(Op1) <
-					(signed)GetImmValue(Op2);
+					 (signed)GetImmValue(Op2);
 				break;
 			case ICmpSge:
 				result = (signed)GetImmValue(Op1) >=
-					(signed)GetImmValue(Op2);
+					 (signed)GetImmValue(Op2);
 				break;
 			case ICmpSle:
 				result = (signed)GetImmValue(Op1) <=
-					(signed)GetImmValue(Op2);
+					 (signed)GetImmValue(Op2);
 				break;
 			}
 			return EmitIntConst(result);
@@ -967,8 +961,8 @@ InstLoc IRBuilder::FoldICmpCRSigned(InstLoc Op1, InstLoc Op2) {
 	if (isImm(*Op1)) {
 		if (isImm(*Op2)) {
 			int c1 = (int)GetImmValue(Op1),
-				c2 = (int)GetImmValue(Op2),
-				result;
+			    c2 = (int)GetImmValue(Op2),
+			    result;
 			if (c1 == c2)
 				result = 2;
 			else if (c1 > c2)
@@ -985,8 +979,8 @@ InstLoc IRBuilder::FoldICmpCRUnsigned(InstLoc Op1, InstLoc Op2) {
 	if (isImm(*Op1)) {
 		if (isImm(*Op2)) {
 			unsigned int c1 = GetImmValue(Op1),
-				c2 = GetImmValue(Op2),
-				result;
+			             c2 = GetImmValue(Op2),
+			             result;
 			if (c1 == c2)
 				result = 2;
 			else if (c1 > c2)
@@ -1031,27 +1025,27 @@ InstLoc IRBuilder::FoldDoubleBiOp(unsigned Opcode, InstLoc Op1, InstLoc Op2) {
 
 InstLoc IRBuilder::FoldBiOp(unsigned Opcode, InstLoc Op1, InstLoc Op2, unsigned extra) {
 	switch (Opcode) {
-	case Add: return FoldAdd(Op1, Op2);
-	case Sub: return FoldSub(Op1, Op2);
-	case Mul: return FoldMul(Op1, Op2);
-	case MulHighUnsigned: return FoldMulHighUnsigned(Op1, Op2);
-	case And: return FoldAnd(Op1, Op2);
-	case Or: return FoldOr(Op1, Op2);
-	case Xor: return FoldXor(Op1, Op2);
-	case Shl: return FoldShl(Op1, Op2);
-	case Shrl: return FoldShrl(Op1, Op2);
-	case Rol: return FoldRol(Op1, Op2);
-	case BranchCond: return FoldBranchCond(Op1, Op2);
-	case IdleBranch: return FoldIdleBranch(Op1, Op2);
-	case ICmpEq: case ICmpNe:
-	case ICmpUgt: case ICmpUlt: case ICmpUge: case ICmpUle:
-	case ICmpSgt: case ICmpSlt: case ICmpSge: case ICmpSle:
-		return FoldICmp(Opcode, Op1, Op2);
-	case ICmpCRSigned: return FoldICmpCRSigned(Op1, Op2);
-	case ICmpCRUnsigned: return FoldICmpCRUnsigned(Op1, Op2);
-	case InterpreterFallback: return FoldInterpreterFallback(Op1, Op2);
-	case FDMul: case FDAdd: case FDSub: return FoldDoubleBiOp(Opcode, Op1, Op2);
-	default: return EmitBiOp(Opcode, Op1, Op2, extra);
+		case Add: return FoldAdd(Op1, Op2);
+		case Sub: return FoldSub(Op1, Op2);
+		case Mul: return FoldMul(Op1, Op2);
+		case MulHighUnsigned: return FoldMulHighUnsigned(Op1, Op2);
+		case And: return FoldAnd(Op1, Op2);
+		case Or: return FoldOr(Op1, Op2);
+		case Xor: return FoldXor(Op1, Op2);
+		case Shl: return FoldShl(Op1, Op2);
+		case Shrl: return FoldShrl(Op1, Op2);
+		case Rol: return FoldRol(Op1, Op2);
+		case BranchCond: return FoldBranchCond(Op1, Op2);
+		case IdleBranch: return FoldIdleBranch(Op1, Op2);
+		case ICmpEq: case ICmpNe:
+		case ICmpUgt: case ICmpUlt: case ICmpUge: case ICmpUle:
+		case ICmpSgt: case ICmpSlt: case ICmpSge: case ICmpSle:
+			return FoldICmp(Opcode, Op1, Op2);
+		case ICmpCRSigned: return FoldICmpCRSigned(Op1, Op2);
+		case ICmpCRUnsigned: return FoldICmpCRUnsigned(Op1, Op2);
+		case InterpreterFallback: return FoldInterpreterFallback(Op1, Op2);
+		case FDMul: case FDAdd: case FDSub: return FoldDoubleBiOp(Opcode, Op1, Op2);
+		default: return EmitBiOp(Opcode, Op1, Op2, extra);
 	}
 }
 
@@ -1128,9 +1122,9 @@ unsigned IRBuilder::getNumberOfOperands(InstLoc I) const {
 		numberOfOperands[CInt16] = 0;
 		numberOfOperands[CInt32] = 0;
 
-		static unsigned ZeroOp[] = { LoadCR, LoadLink, LoadMSR, LoadGReg, LoadCTR, InterpreterBranch, LoadCarry, RFIExit, LoadFReg, LoadFRegDENToZero, LoadGQR, Int3, };
-		static unsigned UOp[] = { StoreLink, BranchUncond, StoreCR, StoreMSR, StoreFPRF, StoreGReg, StoreCTR, Load8, Load16, Load32, SExt16, SExt8, Cntlzw, Not, StoreCarry, SystemCall, ShortIdleLoop, LoadSingle, LoadDouble, LoadPaired, StoreFReg, DupSingleToMReg, DupSingleToPacked, ExpandPackedToMReg, CompactMRegToPacked, FSNeg, FSRSqrt, FDNeg, FPDup0, FPDup1, FPNeg, DoubleToSingle, StoreGQR, StoreSRR, };
-		static unsigned BiOp[] = { BranchCond, IdleBranch, And, Xor, Sub, Or, Add, Mul, Rol, Shl, Shrl, Sarl, ICmpEq, ICmpNe, ICmpUgt, ICmpUlt, ICmpSgt, ICmpSlt, ICmpSge, ICmpSle, Store8, Store16, Store32, ICmpCRSigned, ICmpCRUnsigned, InterpreterFallback, StoreSingle, StoreDouble, StorePaired, InsertDoubleInMReg, FSMul, FSAdd, FSSub, FDMul, FDAdd, FDSub, FPAdd, FPMul, FPSub, FPMerge00, FPMerge01, FPMerge10, FPMerge11, FDCmpCR, };
+		static unsigned ZeroOp[] = {LoadCR, LoadLink, LoadMSR, LoadGReg, LoadCTR, InterpreterBranch, LoadCarry, RFIExit, LoadFReg, LoadFRegDENToZero, LoadGQR, Int3, };
+		static unsigned UOp[] = {StoreLink, BranchUncond, StoreCR, StoreMSR, StoreFPRF, StoreGReg, StoreCTR, Load8, Load16, Load32, SExt16, SExt8, Cntlzw, Not, StoreCarry, SystemCall, ShortIdleLoop, LoadSingle, LoadDouble, LoadPaired, StoreFReg, DupSingleToMReg, DupSingleToPacked, ExpandPackedToMReg, CompactMRegToPacked, FSNeg, FSRSqrt, FDNeg, FPDup0, FPDup1, FPNeg, DoubleToSingle, StoreGQR, StoreSRR, };
+		static unsigned BiOp[] = {BranchCond, IdleBranch, And, Xor, Sub, Or, Add, Mul, Rol, Shl, Shrl, Sarl, ICmpEq, ICmpNe, ICmpUgt, ICmpUlt, ICmpSgt, ICmpSlt, ICmpSge, ICmpSle, Store8, Store16, Store32, ICmpCRSigned, ICmpCRUnsigned, InterpreterFallback, StoreSingle, StoreDouble, StorePaired, InsertDoubleInMReg, FSMul, FSAdd, FSSub, FDMul, FDAdd, FDSub, FPAdd, FPMul, FPSub, FPMerge00, FPMerge01, FPMerge10, FPMerge11, FDCmpCR, };
 		for (auto& op : ZeroOp) {
 			numberOfOperands[op] = 0;
 		}
@@ -1157,14 +1151,14 @@ void IRBuilder::simplifyCommutative(unsigned Opcode, InstLoc& Op1, InstLoc& Op2)
 
 	// Is this associative?
 	switch (Opcode) {
-	case Add:
-	case Mul:
-	case And:
-	case Or:
-	case Xor:
-		break;
-	default:
-		return;
+		case Add:
+		case Mul:
+		case And:
+		case Or:
+		case Xor:
+			break;
+		default:
+			return;
 	}
 
 	// (V op C1) op C2 => V + (C1 + C2)
@@ -1188,16 +1182,16 @@ void IRBuilder::simplifyCommutative(unsigned Opcode, InstLoc& Op1, InstLoc& Op2)
 	// ((w op x) op (y op z)) => (((w op x) op y) op z)
 	/*
 	if (getOpcode(*Op1) == Opcode && getOpcode(*Op2) == Opcode) {
-	// Sort the operands where the complexities will be descending order.
-	std::pair<unsigned, InstLoc> ops[4];
-	ops[0] = std::make_pair(getComplexity(getOp1(Op1)), getOp1(Op1));
-	ops[1] = std::make_pair(getComplexity(getOp2(Op1)), getOp2(Op1));
-	ops[2] = std::make_pair(getComplexity(getOp1(Op2)), getOp1(Op2));
-	ops[3] = std::make_pair(getComplexity(getOp2(Op2)), getOp2(Op2));
-	std::sort(ops, ops + 4, std::greater<std::pair<unsigned, InstLoc> >());
+		// Sort the operands where the complexities will be descending order.
+		std::pair<unsigned, InstLoc> ops[4];
+		ops[0] = std::make_pair(getComplexity(getOp1(Op1)), getOp1(Op1));
+		ops[1] = std::make_pair(getComplexity(getOp2(Op1)), getOp2(Op1));
+		ops[2] = std::make_pair(getComplexity(getOp1(Op2)), getOp1(Op2));
+		ops[3] = std::make_pair(getComplexity(getOp2(Op2)), getOp2(Op2));
+		std::sort(ops, ops + 4, std::greater<std::pair<unsigned, InstLoc> >());
 
-	Op1 = FoldBiOp(Opcode, FoldBiOp(Opcode, ops[0].second, ops[1].second), ops[2].second);
-	Op2 = ops[3].second;
+		Op1 = FoldBiOp(Opcode, FoldBiOp(Opcode, ops[0].second, ops[1].second), ops[2].second);
+		Op2 = ops[3].second;
 	}
 	*/
 }
@@ -1230,7 +1224,7 @@ struct Writer
 	virtual ~Writer() {}
 };
 
-static std::auto_ptr<Writer> writer;
+static std::unique_ptr<Writer> writer;
 
 static const std::string opcodeNames[] = {
 	"Nop", "LoadGReg", "LoadLink", "LoadCR", "LoadCarry", "LoadCTR",
@@ -1282,11 +1276,11 @@ void IRBuilder::WriteToFile(u64 codeHash) {
 	_assert_(sizeof(opcodeNames) / sizeof(opcodeNames[0]) == Int3 + 1);
 
 	if (!writer.get()) {
-		writer = std::auto_ptr<Writer>(new Writer);
+		writer = std::unique_ptr<Writer>(new Writer);
 	}
 
 	FILE* const file = writer->file.GetHandle();
-	fprintf(file, "\ncode hash:%016llx\n", codeHash);
+	fprintf(file, "\ncode hash:%016" PRIx64 "\n", codeHash);
 
 	const InstLoc lastCurReadPtr = curReadPtr;
 	StartForwardPass();
@@ -1314,8 +1308,7 @@ void IRBuilder::WriteToFile(u64 codeHash) {
 			const IREmitter::InstLoc inst = getOp1(I);
 			if (isImm(*inst)) {
 				fprintf(file, " 0x%08x", GetImmValue(inst));
-			}
-			else {
+			} else {
 				fprintf(file, " %10u", i - (unsigned int)(I - inst));
 			}
 		}
@@ -1325,8 +1318,7 @@ void IRBuilder::WriteToFile(u64 codeHash) {
 			const IREmitter::InstLoc inst = getOp2(I);
 			if (isImm(*inst)) {
 				fprintf(file, " 0x%08x", GetImmValue(inst));
-			}
-			else {
+			} else {
 				fprintf(file, " %10u", i - (unsigned int)(I - inst));
 			}
 		}

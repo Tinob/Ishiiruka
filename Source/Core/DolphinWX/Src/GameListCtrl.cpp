@@ -10,7 +10,7 @@
 
 #include <algorithm>
 #include <memory>
-
+#include <cinttypes>
 #include "FileSearch.h"
 #include "StringUtil.h"
 #include "ConfigManager.h"
@@ -383,7 +383,7 @@ wxString NiceSizeFormat(u64 _size)
 	auto const value = (_size + unit_size / 2) / unit_size;
 	auto const frac = (_size % unit_size * 10 + unit_size / 2) / unit_size % 10;
 
-	return StrToWxStr(StringFromFormat("%llu.%llu %s", value, frac, unit_symbols[unit]));
+	return StrToWxStr(StringFromFormat("%" PRIu64 ".%" PRIu64 " %s", value, frac, unit_symbols[unit]));
 }
 
 void CGameListCtrl::InsertItemInReportView(long _Index)

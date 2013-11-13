@@ -108,7 +108,7 @@ IVolume* CreateVolumeFromDirectory(const std::string& _rDirectory, bool _bIsWii,
 {
 	if (CVolumeDirectory::IsValidDirectory(_rDirectory))
 		return new CVolumeDirectory(_rDirectory, _bIsWii, _rApploader, _rDOL);
-	
+
 	return NULL;
 }
 
@@ -154,7 +154,7 @@ static IVolume* CreateVolumeFromCryptedWiiImage(IBlobReader& _rReader, u32 _Part
 		std::vector<SPartition> PartitionsVec;
 	};
 	SPartitionGroup PartitionGroup[4];
-	
+
 	// read all partitions
 	for (u32 x = 0; x < 4; x++)
 	{
@@ -192,7 +192,7 @@ static IVolume* CreateVolumeFromCryptedWiiImage(IBlobReader& _rReader, u32 _Part
 			{
 				usingKoreanKey = true;
 			}
-			
+
 			aes_context AES_ctx;
 			aes_setkey_dec(&AES_ctx, (usingKoreanKey ? g_MasterKeyK : g_MasterKey), 128);
 

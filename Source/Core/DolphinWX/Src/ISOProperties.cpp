@@ -22,7 +22,7 @@
 #include "GeckoCodeDiag.h"
 #include "ConfigManager.h"
 #include "StringUtil.h"
-
+#include <cinttypes>
 #include "../resources/isoprop_file.xpm"
 #include "../resources/isoprop_folder.xpm"
 #include "../resources/isoprop_disc.xpm"
@@ -118,7 +118,7 @@ CISOProperties::CISOProperties(const std::string fileName, wxWindow* parent, wxW
 		u8 _tTitleID[8];
 		if(OpenISO->GetTitleID(_tTitleID))
 		{
-			snprintf(tmp, 17, "%016llx", Common::swap64(_tTitleID));
+			snprintf(tmp, 17, "%016" PRIx64, Common::swap64(_tTitleID));
 			_iniFilename = tmp;
 		}
 	}
