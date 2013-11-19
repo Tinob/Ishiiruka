@@ -9,6 +9,9 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#ifndef _WIN64
+#define PSAPI_VERSION 1
+#endif
 #include <psapi.h>
 #else
 #include <errno.h>
