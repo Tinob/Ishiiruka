@@ -102,10 +102,19 @@ inline u64 _rotr64(u64 x, unsigned int shift){
 	#define vscprintf _vscprintf
 
 // Locale Cross-Compatibility
-	#define locale_t _locale_t
-	#define freelocale _free_locale
-	#define newlocale(mask, locale, base) _create_locale(mask, locale)
+	struct d_locale_t
+	{
+		u32 Mask;
+		const char* Locale;
+		d_locale_t(u32 mask, const char* locale)
+		{
+			Mask = mask;
+			Locale = locale;
+		}
+	};
+	typedef d_locale_t* locale_t;
 
+	#define newlocale(mask, locale, base) new d_locale_t(mask, locale)
 	#define LC_GLOBAL_LOCALE	((locale_t)-1)
 	#define LC_ALL_MASK			LC_ALL
 	#define LC_COLLATE_MASK		LC_COLLATE
@@ -113,6 +122,13 @@ inline u64 _rotr64(u64 x, unsigned int shift){
 	#define LC_MONETARY_MASK	LC_MONETARY
 	#define LC_NUMERIC_MASK		LC_NUMERIC
 	#define LC_TIME_MASK		LC_TIME
+	inline void  freelocale(locale_t l)
+	{
+		if (l != LC_GLOBAL_LOCALE && l != NULL)
+		{
+			delete l;
+		}
+	}
 
 	inline locale_t uselocale(locale_t new_locale)
 	{
@@ -120,7 +136,9 @@ inline u64 _rotr64(u64 x, unsigned int shift){
 		bool bIsPerThread = (_configthreadlocale(0) == _ENABLE_PER_THREAD_LOCALE);
 
 		// Retrieve the current thread-specific locale
-		locale_t old_locale = bIsPerThread ? _get_current_locale() : LC_GLOBAL_LOCALE;
+		locale_t old_locale = NULL;
+		if (new_locale != LC_GLOBAL_LOCALE && new_locale != NULL)
+			old_locale = bIsPerThread ? new d_locale_t(new_locale->Mask, setlocale(new_locale->Mask, NULL)) : LC_GLOBAL_LOCALE;
 
 		if(new_locale == LC_GLOBAL_LOCALE)
 		{
@@ -131,10 +149,7 @@ inline u64 _rotr64(u64 x, unsigned int shift){
 		{
 			// Configure the thread to set the locale only for this thread
 			_configthreadlocale(_ENABLE_PER_THREAD_LOCALE);
-
-			// Set all locale categories
-			for(int i = LC_MIN; i <= LC_MAX; i++)
-				setlocale(i, new_locale->locinfo->lc_category[i].locale);
+			setlocale(new_locale->Mask, new_locale->Locale);
 		}
 
 		return old_locale;
