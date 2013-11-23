@@ -114,7 +114,7 @@ X64Reg RegCache::GetFreeXReg()
 	}
 	//Still no dice? Die!
 	_assert_msg_(DYNA_REC, 0, "Regcache ran out of regs");
-	return (X64Reg)-1;
+	return (X64Reg) -1;
 }
 
 void RegCache::SaveState()
@@ -362,7 +362,7 @@ void FPURegCache::StoreFromRegister(int i)
 	}
 	else
 	{
-		//	_assert_msg_(DYNA_REC,0,"already stored");
+	//	_assert_msg_(DYNA_REC,0,"already stored");
 	}
 }
 
@@ -394,7 +394,7 @@ void RegCache::Flush(FlushMode mode)
 			}
 			else
 			{
-				_assert_msg_(DYNA_REC, 0, "Jit64 - Flush unhandled case, reg %i PC: %08x", i, PC);
+				_assert_msg_(DYNA_REC,0,"Jit64 - Flush unhandled case, reg %i PC: %08x", i, PC);
 			}
 		}
 	}

@@ -36,8 +36,7 @@ namespace DriverDetails
 		{VENDOR_MESA,      DRIVER_R600,         BUG_BROKENUBO,           900,  913, true},
 		{VENDOR_MESA,      DRIVER_I965,         BUG_BROKENUBO,           900,  920, true},
 		{VENDOR_ATI,       DRIVER_ATI,          BUG_BROKENHACKEDBUFFER, -1.0, -1.0, true},
-		{VENDOR_MESA,      DRIVER_NOUVEAU,      BUG_BROKENHACKEDBUFFER, -1.0, -1.0, true},
-		{VENDOR_ATI,       DRIVER_ATI,          BUG_BROKENPINNEDMEMORY, -1.0, -1.0, true}
+		{VENDOR_MESA,      DRIVER_NOUVEAU,      BUG_BROKENHACKEDBUFFER, -1.0, -1.0, true}		
 	};
 
 	std::map<Bug, BugInfo> m_bugs;

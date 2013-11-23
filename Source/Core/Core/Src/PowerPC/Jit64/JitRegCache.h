@@ -68,10 +68,10 @@ public:
 	virtual void Start(PPCAnalyst::BlockRegStats &stats) = 0;
 
 	void DiscardRegContentsIfCached(int preg);
-	void SetEmitter(XEmitter *emitter) { emit = emitter; }
+	void SetEmitter(XEmitter *emitter) {emit = emitter;}
 
 	void FlushR(X64Reg reg);
-	void FlushR(X64Reg reg, X64Reg reg2) { FlushR(reg); FlushR(reg2); }
+	void FlushR(X64Reg reg, X64Reg reg2) {FlushR(reg); FlushR(reg2);}
 	void FlushLockX(X64Reg reg) {
 		FlushR(reg);
 		LockX(reg);
@@ -81,7 +81,7 @@ public:
 		LockX(reg1); LockX(reg2);
 	}
 	virtual void Flush(FlushMode mode);
-	virtual void Flush(PPCAnalyst::CodeOp *op) { Flush(FLUSH_ALL); }
+	virtual void Flush(PPCAnalyst::CodeOp *op) {Flush(FLUSH_ALL);}
 	int SanityCheck() const;
 	void KillImmediate(int preg, bool doLoad, bool makeDirty);
 
@@ -90,7 +90,7 @@ public:
 	virtual void BindToRegister(int preg, bool doLoad = true, bool makeDirty = true) = 0;
 	virtual void StoreFromRegister(int preg) = 0;
 
-	const OpArg &R(int preg) const { return regs[preg].location; }
+	const OpArg &R(int preg) const {return regs[preg].location;}
 	X64Reg RX(int preg) const
 	{
 		if (IsBound(preg))
@@ -101,8 +101,8 @@ public:
 	virtual OpArg GetDefaultLocation(int reg) const = 0;
 
 	// Register locking.
-	void Lock(int p1, int p2 = 0xff, int p3 = 0xff, int p4 = 0xff);
-	void LockX(int x1, int x2 = 0xff, int x3 = 0xff, int x4 = 0xff);
+	void Lock(int p1, int p2=0xff, int p3=0xff, int p4=0xff);
+	void LockX(int x1, int x2=0xff, int x3=0xff, int x4=0xff);
 	void UnlockAll();
 	void UnlockAllX();
 

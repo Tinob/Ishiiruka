@@ -8,14 +8,14 @@
 #include "JitRegCache.h"
 #include "CPUDetect.h"
 
-static const u64 GC_ALIGNED16(psSignBits2[2]) = { 0x8000000000000000ULL, 0x8000000000000000ULL };
-static const u64 GC_ALIGNED16(psAbsMask2[2]) = { 0x7FFFFFFFFFFFFFFFULL, 0x7FFFFFFFFFFFFFFFULL };
-static const double GC_ALIGNED16(psOneOne2[2]) = { 1.0, 1.0 };
+static const u64 GC_ALIGNED16(psSignBits2[2]) = {0x8000000000000000ULL, 0x8000000000000000ULL};
+static const u64 GC_ALIGNED16(psAbsMask2[2])  = {0x7FFFFFFFFFFFFFFFULL, 0x7FFFFFFFFFFFFFFFULL};
+static const double GC_ALIGNED16(psOneOne2[2]) = {1.0, 1.0};
 static const double one_const = 1.0f;
 
 void Jit64::fp_tri_op(int d, int a, int b, bool reversible, bool single,
-	void (XEmitter::*op_2)(Gen::X64Reg, Gen::OpArg),
-	void (XEmitter::*op_3)(Gen::X64Reg, Gen::X64Reg, Gen::OpArg))
+		      void (XEmitter::*op_2)(Gen::X64Reg, Gen::OpArg),
+		      void (XEmitter::*op_3)(Gen::X64Reg, Gen::X64Reg, Gen::OpArg))
 {
 	if (!cpu_info.bAVX)
 	{
@@ -88,7 +88,7 @@ void Jit64::fp_tri_op(int d, int a, int b, bool reversible, bool single,
 void Jit64::fp_arith(UGeckoInstruction inst)
 {
 	INSTRUCTION_START
-		JITDISABLE(bJITFloatingPointOff)
+	JITDISABLE(bJITFloatingPointOff)
 	if (inst.Rc) {
 		Default(inst); return;
 	}
@@ -103,8 +103,8 @@ void Jit64::fp_arith(UGeckoInstruction inst)
 	{
 	case 18: fp_tri_op(inst.FD, inst.FA, inst.FB, false, single, &XEmitter::DIVSD, &XEmitter::VDIVSD); break; //div
 	case 20: fp_tri_op(inst.FD, inst.FA, inst.FB, false, single, &XEmitter::SUBSD, &XEmitter::VSUBSD); break; //sub
-	case 21: fp_tri_op(inst.FD, inst.FA, inst.FB, true, single, &XEmitter::ADDSD, &XEmitter::VADDSD); break; //add
-	case 25: fp_tri_op(inst.FD, inst.FA, inst.FC, true, single, &XEmitter::MULSD, &XEmitter::VMULSD); break; //mul
+	case 21: fp_tri_op(inst.FD, inst.FA, inst.FB, true,  single, &XEmitter::ADDSD, &XEmitter::VADDSD); break; //add
+	case 25: fp_tri_op(inst.FD, inst.FA, inst.FC, true,  single, &XEmitter::MULSD, &XEmitter::VMULSD); break; //mul
 	default:
 		_assert_msg_(DYNA_REC, 0, "fp_arith WTF!!!");
 	}
@@ -180,8 +180,7 @@ void Jit64::fmaddXX(UGeckoInstruction inst)
 	if (single_precision) {
 		ForceSinglePrecisionS(XMM0);
 		MOVDDUP(fpr.RX(d), R(XMM0));
-	}
-	else {
+	} else {
 		MOVSD(fpr.RX(d), R(XMM0));
 	}
 	// SMB checks flags after this op. Let's lie.
@@ -258,11 +257,11 @@ void Jit64::fcmpx(UGeckoInstruction inst)
 	}
 
 	//bool ordered = inst.SUBOP10 == 32;
-	int a = inst.FA;
-	int b = inst.FB;
-	int crf = inst.CRFD;
+	int a	= inst.FA;
+	int b	= inst.FB;
+	int crf	= inst.CRFD;
 
-	fpr.Lock(a, b);
+	fpr.Lock(a,b);
 	fpr.BindToRegister(b, true);
 
 	// Are we masking sNaN invalid floating point exceptions? If not this could crash if we don't handle the exception?
@@ -274,11 +273,11 @@ void Jit64::fcmpx(UGeckoInstruction inst)
 	if (a != b)
 	{
 		// if B > A, goto Lesser's jump target
-		pLesser = J_CC(CC_A);
+		pLesser  = J_CC(CC_A);
 	}
 
 	// if (B != B) or (A != A), goto NaN's jump target
-	pNaN = J_CC(CC_P);
+	pNaN    	 = J_CC(CC_P);
 
 	if (a != b)
 	{
