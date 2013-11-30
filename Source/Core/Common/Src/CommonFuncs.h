@@ -102,7 +102,7 @@ inline u64 _rotr64(u64 x, unsigned int shift){
 	#define vscprintf _vscprintf
 
 // Locale Cross-Compatibility
-	struct d_locale_t
+	struct d_locale_t : localeinfo_struct
 	{
 		u32 Mask;
 		const char* Locale;
@@ -110,7 +110,27 @@ inline u64 _rotr64(u64 x, unsigned int shift){
 		{
 			Mask = mask;
 			Locale = locale;
+			m_innerlocale = _create_locale(mask, locale);
+			if (m_innerlocale)
+			{
+				locinfo = m_innerlocale->locinfo;
+				mbcinfo = m_innerlocale->mbcinfo;
+			}
+			else
+			{
+				locinfo = NULL;
+				mbcinfo = NULL;
+			}
 		}
+		~d_locale_t()
+		{
+			if (m_innerlocale)
+			{
+				_free_locale(m_innerlocale);
+			}			
+		}
+	private:
+		_locale_t m_innerlocale;		
 	};
 	typedef d_locale_t* locale_t;
 
@@ -151,7 +171,6 @@ inline u64 _rotr64(u64 x, unsigned int shift){
 			_configthreadlocale(_ENABLE_PER_THREAD_LOCALE);
 			setlocale(new_locale->Mask, new_locale->Locale);
 		}
-
 		return old_locale;
 	}
 
