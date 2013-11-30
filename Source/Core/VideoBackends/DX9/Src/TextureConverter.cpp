@@ -32,6 +32,7 @@ struct TransformBuffer
 	LPDIRECT3DSURFACE9 ReadSurface;
 	int Width;
 	int Height;
+	u32 hits;
 };
 const u32 NUM_TRANSFORM_BUFFERS = 16;
 static TransformBuffer TrnBuffers[NUM_TRANSFORM_BUFFERS];
@@ -213,7 +214,18 @@ void EncodeToRamUsingShader(LPDIRECT3DPIXELSHADER9 shader, LPDIRECT3DTEXTURE9 sr
 		if (WorkingBuffers < NUM_TRANSFORM_BUFFERS)
 			WorkingBuffers++;
 		if (index >= WorkingBuffers)
-			index--;
+		{
+			index = 0;
+			u32 hits = TrnBuffers[index].hits;
+			for (u32 i = 0; i < WorkingBuffers; i++)
+			{
+				if (TrnBuffers[index].hits < hits)
+				{
+					index = i;
+					hits = TrnBuffers[index].hits;					
+				}
+			}
+		}			
 		if (TrnBuffers[index].RenderSurface != NULL)
 		{
 			TrnBuffers[index].RenderSurface->Release();
@@ -229,12 +241,17 @@ void EncodeToRamUsingShader(LPDIRECT3DPIXELSHADER9 shader, LPDIRECT3DTEXTURE9 sr
 			TrnBuffers[index].FBTexture->Release();
 			TrnBuffers[index].FBTexture = NULL;
 		}
+		TrnBuffers[index].hits = 0;
 		TrnBuffers[index].Width = dstWidth;
 		TrnBuffers[index].Height = dstHeight;
 		D3D::dev->CreateTexture(dstWidth, dstHeight, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8,
 		                                 D3DPOOL_DEFAULT, &TrnBuffers[index].FBTexture, NULL);
 		TrnBuffers[index].FBTexture->GetSurfaceLevel(0,&TrnBuffers[index].RenderSurface);
 		D3D::dev->CreateOffscreenPlainSurface(dstWidth, dstHeight, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &TrnBuffers[index].ReadSurface, NULL );
+	}
+	else
+	{
+		TrnBuffers[index].hits++;
 	}
 
 	s_texConvReadSurface = TrnBuffers[index].ReadSurface;
@@ -283,20 +300,25 @@ void EncodeToRamUsingShader(LPDIRECT3DPIXELSHADER9 shader, LPDIRECT3DTEXTURE9 sr
 	D3DLOCKED_RECT drect;
 	hr = s_texConvReadSurface->LockRect(&drect, &DstRect, D3DLOCK_READONLY);
 
-	int srcRowsPerBlockRow = readStride / (dstWidth*4); // 4 bytes per pixel
-
-	int readLoops = dstHeight / srcRowsPerBlockRow;
-	const u8 *Source = (const u8*)drect.pBits;
-	for (int i = 0; i < readLoops; i++)
+	u8* Source = (u8*)drect.pBits;
+	int dstStride = dstWidth * 4;// 4 bytes per pixel
+	int writeStride = bpmem.copyMipMapStrideChannels * 32;
+	int dstSize = dstStride * dstHeight;
+	int readHeight = readStride / dstStride; 
+	int readLoops = dstHeight / readHeight;
+	if (writeStride != readStride && readLoops > 1 && toTexture)
 	{
-		for (int j = 0; j < srcRowsPerBlockRow; ++j)
+		for (int i = 0; i < readLoops; i++)
 		{
-			memcpy(destAddr + j*dstWidth*4, Source, dstWidth*4);
-			Source += drect.Pitch;
+			memcpy(destAddr, Source, readStride);
+			Source += readStride;
+			destAddr += writeStride;
 		}
-		destAddr += bpmem.copyMipMapStrideChannels*32;
 	}
-	
+	else
+	{
+		memcpy(destAddr, Source, dstSize);
+	}
 	hr = s_texConvReadSurface->UnlockRect();
 }
 
