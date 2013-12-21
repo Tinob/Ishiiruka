@@ -267,7 +267,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="CMakeLists.txt" />
-    <None Include="..\..\..\Data\User\OpenCL\TextureDecoder.cl">
+    <None Include="..\..\..\Data\Sys\OpenCL\TextureDecoder.cl">
       <Filter>Decoding\OpenCL</Filter>
     </None>
   </ItemGroup>

@@ -21,11 +21,6 @@
 #endif
 #endif
 
-#if defined(__APPLE__)
-static const char* ram_temp_file = "/tmp/gc_mem.tmp";
-#elif !defined(_WIN32) // non OSX unixes
-static const char* ram_temp_file = "/dev/shm/gc_mem.tmp";
-#endif
 #ifdef ANDROID
 #define ASHMEM_DEVICE "/dev/ashmem"
 
@@ -62,12 +57,22 @@ void MemArena::GrabLowMemSpace(size_t size)
 		return;
 	}
 #else
-	mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
-	fd = open(ram_temp_file, O_RDWR | O_CREAT, mode);
-	unlink(ram_temp_file);
+	char fn[64];
+	for (int i = 0; i < 10000; i++)
+	{
+		sprintf(fn, "dolphinmem.%d", i);
+		fd = shm_open(fn, O_RDWR | O_CREAT | O_EXCL, 0600);
+		if (fd != -1)
+			break;
+		if (errno != EEXIST)
+		{
+			ERROR_LOG(MEMMAP, "shm_open failed: %s", strerror(errno));
+			return;
+		}
+	}
+	shm_unlink(fn);
 	if (ftruncate(fd, size) < 0)
 		ERROR_LOG(MEMMAP, "Failed to allocate low memory space");
-	return;
 #endif
 }
 
@@ -96,7 +101,7 @@ void *MemArena::CreateView(s64 offset, size_t size, void *base)
 
 	if (retval == MAP_FAILED)
 	{
-		NOTICE_LOG(MEMMAP, "mmap on %s failed", ram_temp_file);
+		NOTICE_LOG(MEMMAP, "mmap failed");
 		return nullptr;
 	}
 	else
@@ -164,10 +169,10 @@ u8* MemArena::Find4GBBase()
 
 // yeah, this could also be done in like two bitwise ops...
 #define SKIP(a_flags, b_flags) \
-	if (!(a_flags & MV_WII_ONLY) && (b_flags & MV_WII_ONLY)) \
-		continue; \
-	if (!(a_flags & MV_FAKE_VMEM) && (b_flags & MV_FAKE_VMEM)) \
-		continue; \
+if (!(a_flags & MV_WII_ONLY) && (b_flags & MV_WII_ONLY)) \
+	continue; \
+if (!(a_flags & MV_FAKE_VMEM) && (b_flags & MV_FAKE_VMEM)) \
+	continue; \
 
 
 static bool Memory_TryBase(u8 *base, const MemoryView *views, int num_views, u32 flags, MemArena *arena) {
@@ -191,7 +196,8 @@ static bool Memory_TryBase(u8 *base, const MemoryView *views, int num_views, u32
 		SKIP(flags, views[i].flags);
 		if (views[i].flags & MV_MIRROR_PREVIOUS) {
 			position = last_position;
-		} else {
+		}
+		else {
 			*(views[i].out_ptr_low) = (u8*)arena->CreateView(position, views[i].size);
 			if (!*views[i].out_ptr_low)
 				goto bail;
@@ -203,7 +209,8 @@ static bool Memory_TryBase(u8 *base, const MemoryView *views, int num_views, u32
 		if (views[i].flags & MV_MIRROR_PREVIOUS) {
 			// No need to create multiple identical views.
 			*views[i].out_ptr = *views[i - 1].out_ptr;
-		} else {
+		}
+		else {
 			*views[i].out_ptr = (u8*)arena->CreateView(
 				position, views[i].size, base + (views[i].virtual_address & 0x3FFFFFFF));
 			if (!*views[i].out_ptr)
@@ -218,7 +225,7 @@ static bool Memory_TryBase(u8 *base, const MemoryView *views, int num_views, u32
 
 bail:
 	// Argh! ERROR! Free what we grabbed so far so we can try again.
-	MemoryMap_Shutdown(views, i+1, flags, arena);
+	MemoryMap_Shutdown(views, i + 1, flags, arena);
 	return false;
 }
 
@@ -287,7 +294,7 @@ void MemoryMap_Shutdown(const MemoryView *views, int num_views, u32 flags, MemAr
 	for (int i = 0; i < num_views; i++)
 	{
 		const MemoryView* view = &views[i];
-		u8** outptrs[2] = {view->out_ptr_low, view->out_ptr};
+		u8** outptrs[2] = { view->out_ptr_low, view->out_ptr };
 		for (auto outptr : outptrs)
 		{
 			if (outptr && *outptr && !freeset.count(*outptr))

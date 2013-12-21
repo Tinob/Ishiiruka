@@ -147,7 +147,7 @@
     <ClInclude Include="Src\XFStructs.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\..\Data\User\OpenCL\TextureDecoder.cl" />
+    <None Include="..\..\..\Data\Sys\OpenCL\TextureDecoder.cl" />
     <None Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
