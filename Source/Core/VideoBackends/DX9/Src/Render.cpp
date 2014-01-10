@@ -304,9 +304,6 @@ bool Renderer::CheckForResize()
 //	- GX_PokeZMode (TODO)
 u32 Renderer::AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data)
 {
-	if (!g_ActiveConfig.bEFBAccessEnable)
-		return 0;
-
 	// if depth textures aren't supported by the hardware, just return
 	if (type == PEEK_Z)
 		if (FramebufferManager::GetEFBDepthTexture() == NULL)
@@ -422,7 +419,6 @@ u32 Renderer::AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data)
 		if(bpmem.zcontrol.pixel_format == PIXELFMT_RGB565_Z16) {
 			z >>= 8;
 		}
-
 		return z;
 	}
 	else if(type == PEEK_COLOR)
@@ -951,26 +947,25 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 void Renderer::ResetAPIState()
 {
 	D3D::SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID);
-	D3D::ChangeRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
-	D3D::ChangeRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+	D3D::SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
+	D3D::SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
 	D3D::SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
 	D3D::SetRenderState(D3DRS_ZENABLE, FALSE);
 	D3D::SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
-	D3D::ChangeRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_ALPHA | D3DCOLORWRITEENABLE_RED | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_BLUE);
+	D3D::SetRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_ALPHA | D3DCOLORWRITEENABLE_RED | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_BLUE);
 }
 
 void Renderer::RestoreAPIState()
 {
 	// Gets us back into a more game-like state.
 	D3D::SetRenderState(D3DRS_FILLMODE, g_ActiveConfig.bWireFrame ? D3DFILL_WIREFRAME : D3DFILL_SOLID);
-	D3D::RefreshRenderState(D3DRS_SCISSORTESTENABLE);
-	D3D::RefreshRenderState(D3DRS_CULLMODE);
-	D3D::RefreshRenderState(D3DRS_COLORWRITEENABLE);
+	D3D::SetRenderState(D3DRS_SCISSORTESTENABLE, true);	
 	VertexShaderManager::SetViewportChanged();
+	m_bColorMaskChanged = true;
+	m_bGenerationModeChanged = true;
 	m_bScissorRectChanged = true;
 	m_bDepthModeChanged = true;
 	m_bLogicOpModeChanged = true;
-	
 }
 
 // Viewport correction:
@@ -1198,7 +1193,7 @@ void Renderer::_SetBlendMode(bool forceUpdate)
 		(target_has_alpha) ? D3DBLEND_INVDESTALPHA : D3DBLEND_ZERO
 	};
 
-	if (bpmem.blendmode.logicopenable && !forceUpdate)
+	if (bpmem.blendmode.logicopenable)
 	{
 		D3D::SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE , false);
 		return;
@@ -1260,7 +1255,6 @@ void Renderer::_SetGenerationMode()
 		D3DCULL_CW,
 		D3DCULL_CCW
 	};
-
 	D3D::SetRenderState(D3DRS_CULLMODE, d3dCullModes[bpmem.genMode.cullmode]);
 }
 
@@ -1382,7 +1376,7 @@ void Renderer::_SetLogicOpMode()
 		D3DBLEND_ONE
 	};
 
-	if (bpmem.blendmode.logicopenable && !(bpmem.blendmode.subtract || bpmem.blendmode.blendenable))
+	if (bpmem.blendmode.logicopenable)
 	{
 		D3D::SetRenderState(D3DRS_ALPHABLENDENABLE, true);
 		D3D::SetRenderState(D3DRS_BLENDOP, d3dLogicOpop[bpmem.blendmode.logicmode]);
@@ -1391,7 +1385,7 @@ void Renderer::_SetLogicOpMode()
 	}
 	else
 	{
-		_SetBlendMode(true);
+		_SetBlendMode(false);
 	}
 }
 

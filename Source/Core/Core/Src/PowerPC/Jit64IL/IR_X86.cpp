@@ -25,7 +25,7 @@ The register allocation is linear scan allocation.
 #endif
 
 #include "JitIL.h"
-#include "../../../../Common/Src/CPUDetect.h"
+#include "../../../Common/Src/CPUDetect.h"
 #include "MathUtil.h"
 #include "HW/ProcessorInterface.h"
 

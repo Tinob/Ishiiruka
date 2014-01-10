@@ -168,7 +168,7 @@ VideoBackendHardware::~VideoBackendHardware()
 
 u32 VideoBackendHardware::Video_AccessEFB(EFBAccessType type, u32 x, u32 y, u32 InputData)
 {
-	if (s_BackendInitialized)
+	if (s_BackendInitialized && g_ActiveConfig.bEFBAccessEnable)
 	{
 		u32 efb_p_cache_stride = (y >> m_EFB_PCache_Divisor) * m_EFB_PCache_Width + (x >> m_EFB_PCache_Divisor);
 		if (type == POKE_COLOR || type == POKE_Z 
@@ -243,6 +243,10 @@ void VideoFifo_CheckPerfQueryRequest()
 
 u32 VideoBackendHardware::Video_GetQueryResult(PerfQueryType type)
 {
+	if (!g_perf_query->ShouldEmulate())
+	{
+		return 0;
+	}
 	// TODO: Is this check sane?
 	if (!g_perf_query->IsFlushed())
 	{

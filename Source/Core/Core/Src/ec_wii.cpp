@@ -128,7 +128,7 @@ void get_shared_secret(u8* shared_secret_out, u8* remote_public_key, u8* NG_priv
 		NG_priv = default_NG_priv;
 	}
 
-	// required point_mul in Source/Core/Common/Src/Crypto/ec.cpp
+	// required point_mul in Source/Core/Common/Crypto/ec.cpp
 	// to be made non-static
 
 	point_mul(shared_secret_out, NG_priv, remote_public_key);

@@ -897,9 +897,6 @@ void Renderer::SetColorMask()
 //	- GX_PokeZMode (TODO)
 u32 Renderer::AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data)
 {
-	if (!g_ActiveConfig.bEFBAccessEnable)
-		return 0;
-
 	// Get the rectangular target region containing the EFB pixel
 	EFBRectangle efbPixelRc;
 	efbPixelRc.left = x;

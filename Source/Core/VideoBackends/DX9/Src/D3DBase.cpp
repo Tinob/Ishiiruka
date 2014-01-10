@@ -59,17 +59,17 @@ const int MaxRenderStates = 210 + 46;
 const int MaxTextureTypes = 33;
 const int MaxSamplerSize = 13;
 const int MaxSamplerTypes = 15;
-static bool m_RenderStatesSet[MaxRenderStates];
-static DWORD m_RenderStates[MaxRenderStates];
-static bool m_RenderStatesChanged[MaxRenderStates];
+static std::vector<bool> m_RenderStatesSet(MaxRenderStates);
+static std::vector<DWORD> m_RenderStates(MaxRenderStates);
+static std::vector<bool> m_RenderStatesChanged(MaxRenderStates);
 
-static DWORD m_TextureStageStates[MaxTextureStages][MaxTextureTypes];
-static bool m_TextureStageStatesSet[MaxTextureStages][MaxTextureTypes];
-static bool m_TextureStageStatesChanged[MaxTextureStages][MaxTextureTypes];
+static std::vector<DWORD> m_TextureStageStates(MaxTextureStages * MaxTextureTypes);
+static std::vector<bool> m_TextureStageStatesSet(MaxTextureStages * MaxTextureTypes);
+static std::vector<bool> m_TextureStageStatesChanged(MaxTextureStages * MaxTextureTypes);
 
-static DWORD m_SamplerStates[MaxSamplerSize][MaxSamplerTypes];
-static bool m_SamplerStatesSet[MaxSamplerSize][MaxSamplerTypes];
-static bool m_SamplerStatesChanged[MaxSamplerSize][MaxSamplerTypes];
+static std::vector<DWORD> m_SamplerStates(MaxSamplerSize * MaxSamplerTypes);
+static std::vector<bool> m_SamplerStatesSet(MaxSamplerSize * MaxSamplerTypes);
+static std::vector<bool> m_SamplerStatesChanged(MaxSamplerSize * MaxSamplerTypes);
 
 static LPDIRECT3DBASETEXTURE9 m_Textures[16];
 static LPDIRECT3DVERTEXDECLARATION9 m_VtxDecl;
@@ -85,7 +85,7 @@ struct StreamSourceDescriptor
 	UINT Stride;
 };
 static StreamSourceDescriptor m_stream_sources[MaxStreamSources];
-static bool m_stream_sources_Changed[MaxStreamSources];
+static std::vector<bool> m_stream_sources_Changed(MaxStreamSources);
 static LPDIRECT3DINDEXBUFFER9 m_index_buffer;
 static bool m_index_buffer_Changed;
 
@@ -444,12 +444,14 @@ HRESULT Create(int adapter, HWND wnd, int _resolution, int aa_mode, bool auto_de
 	SetRenderState(D3DRS_ZENABLE, D3DZB_TRUE );
 	SetRenderState(D3DRS_FILLMODE, g_Config.bWireFrame ? D3DFILL_WIREFRAME : D3DFILL_SOLID);
 	memset(m_Textures, 0, sizeof(m_Textures));
-	memset(m_TextureStageStatesSet, 0, sizeof(m_TextureStageStatesSet));
-	memset(m_RenderStatesSet, 0, sizeof(m_RenderStatesSet));
-	memset(m_SamplerStatesSet, 0, sizeof(m_SamplerStatesSet));
-	memset(m_TextureStageStatesChanged, 0, sizeof(m_TextureStageStatesChanged));
-	memset(m_RenderStatesChanged, 0, sizeof(m_RenderStatesChanged));
-	memset(m_SamplerStatesChanged, 0, sizeof(m_SamplerStatesChanged));
+	m_TextureStageStatesSet.assign(MaxTextureStages * MaxTextureTypes, false);
+	m_TextureStageStatesChanged.assign(MaxTextureStages * MaxTextureTypes, false);
+	m_RenderStates.assign(MaxRenderStates, 0);
+	m_RenderStatesSet.assign(MaxRenderStates, false);
+	m_RenderStatesChanged.assign(MaxRenderStates, false);
+	m_SamplerStatesSet.assign(MaxSamplerSize * MaxSamplerTypes, false);
+	m_SamplerStatesChanged.assign(MaxSamplerSize * MaxSamplerTypes, false);
+	
 	m_VtxDecl = NULL;
 	m_PixelShader = NULL;
 	m_VertexShader = NULL;
@@ -460,7 +462,7 @@ HRESULT Create(int adapter, HWND wnd, int _resolution, int aa_mode, bool auto_de
 	m_VtxDeclChanged = false;
 	m_PixelShaderChanged = false;
 	m_VertexShaderChanged = false;
-	memset(m_stream_sources_Changed, 0 , sizeof(m_stream_sources_Changed));
+	m_stream_sources_Changed.assign(MaxStreamSources, false);
 	m_index_buffer_Changed = false;
 	// Device state would normally be set here
 	return S_OK;
@@ -662,8 +664,9 @@ void ApplyCachedState()
 	{
 		for (int type = 0; type < MaxSamplerTypes; type++)
 		{
-			if(m_SamplerStatesSet[sampler][type])
-				dev->SetSamplerState(sampler, (D3DSAMPLERSTATETYPE)type, m_SamplerStates[sampler][type]);
+			u32 index = sampler * MaxSamplerSize + type;
+			if(m_SamplerStatesSet[index])
+				dev->SetSamplerState(sampler, (D3DSAMPLERSTATETYPE)type, m_SamplerStates[index]);
 		}
 	}
 
@@ -676,8 +679,8 @@ void ApplyCachedState()
 	// We don't bother restoring these so let's just wipe the state copy
 	// so no stale state is around.
 	memset(m_Textures, 0, sizeof(m_Textures));
-	memset(m_TextureStageStatesSet, 0, sizeof(m_TextureStageStatesSet));
-	memset(m_TextureStageStatesChanged, 0, sizeof(m_TextureStageStatesChanged));
+	m_TextureStageStatesSet.assign(MaxTextureStages * MaxTextureTypes, false);
+	m_TextureStageStatesChanged.assign(MaxTextureStages * MaxTextureTypes, false);
 	m_VtxDecl = NULL;
 	m_PixelShader = NULL;
 	m_VertexShader = NULL;
@@ -686,7 +689,7 @@ void ApplyCachedState()
 	m_VtxDeclChanged = false;
 	m_PixelShaderChanged = false;
 	m_VertexShaderChanged = false;
-	memset(m_stream_sources_Changed, 0 , sizeof(m_stream_sources_Changed));
+	m_stream_sources_Changed.assign(MaxStreamSources, false);
 	m_index_buffer_Changed = false;
 }
 
@@ -721,7 +724,7 @@ void SetRenderState(D3DRENDERSTATETYPE State, DWORD Value)
 
 void ChangeRenderState(D3DRENDERSTATETYPE State, DWORD Value)
 {
-	if (m_RenderStates[State] != Value || !m_RenderStatesSet[State] || m_RenderStatesChanged[State])
+	if (!m_RenderStatesSet[State] || m_RenderStates[State] != Value || m_RenderStatesChanged[State])
 	{
 		if (!m_RenderStatesSet[State])
 		{
@@ -731,85 +734,79 @@ void ChangeRenderState(D3DRENDERSTATETYPE State, DWORD Value)
 		m_RenderStatesChanged[State] = m_RenderStatesSet[State] && m_RenderStates[State] != Value;
 		dev->SetRenderState(State, Value);
 	}
-	else
-	{
-		m_RenderStatesChanged[State] = false;
-	}
 }
 
 void SetTextureStageState(DWORD Stage, D3DTEXTURESTAGESTATETYPE Type, DWORD Value)
 {
-	if (m_TextureStageStates[Stage][Type] != Value || !m_TextureStageStatesSet[Stage][Type] || m_TextureStageStatesChanged[Stage][Type])
+	u32 index = Stage * MaxTextureStages + Type;
+	if (m_TextureStageStates[index] != Value || !m_TextureStageStatesSet[index] || m_TextureStageStatesChanged[index])
 	{
-		m_TextureStageStates[Stage][Type] = Value;
-		m_TextureStageStatesSet[Stage][Type]=true;
-		m_TextureStageStatesChanged[Stage][Type]=false;
+		m_TextureStageStates[index] = Value;
+		m_TextureStageStatesSet[index] = true;
+		m_TextureStageStatesChanged[index] = false;
 		dev->SetTextureStageState(Stage, Type, Value);
 	}
 }
 
 void RefreshTextureStageState(DWORD Stage, D3DTEXTURESTAGESTATETYPE Type)
 {
-	if(m_TextureStageStatesSet[Stage][Type] && m_TextureStageStatesChanged[Stage][Type])
+	u32 index = Stage * MaxTextureStages + Type;
+	if(m_TextureStageStatesSet[index] && m_TextureStageStatesChanged[index])
 	{
-		dev->SetTextureStageState(Stage, Type, m_TextureStageStates[Stage][Type]);
-		m_TextureStageStatesChanged[Stage][Type] = false;
+		dev->SetTextureStageState(Stage, Type, m_TextureStageStates[index]);
+		m_TextureStageStatesChanged[index] = false;
 	}
 }
 
 void ChangeTextureStageState(DWORD Stage, D3DTEXTURESTAGESTATETYPE Type, DWORD Value)
 {
-	if (m_TextureStageStates[Stage][Type] != Value || !m_TextureStageStatesSet[Stage][Type] || m_TextureStageStatesChanged[Stage][Type])
+	u32 index = Stage * MaxTextureStages + Type;
+	if (m_TextureStageStates[index] != Value || !m_TextureStageStatesSet[index] || m_TextureStageStatesChanged[index])
 	{
-		if(!m_TextureStageStatesSet[Stage][Type])
+		if(!m_TextureStageStatesSet[index])
 		{
-			m_TextureStageStates[Stage][Type] = Value;
-			m_TextureStageStatesSet[Stage][Type]=true;
+			m_TextureStageStates[index] = Value;
+			m_TextureStageStatesSet[index]=true;
 		}
-		m_TextureStageStatesChanged[Stage][Type] = m_TextureStageStatesSet[Stage][Type] && m_TextureStageStates[Stage][Type] != Value;
+		m_TextureStageStatesChanged[index] = m_TextureStageStatesSet[index] && m_TextureStageStates[index] != Value;
 		dev->SetTextureStageState(Stage, Type, Value);
-	}
-	else
-	{
-		m_TextureStageStatesChanged[Stage][Type] = false;
 	}
 }
 
 void SetSamplerState(DWORD Sampler, D3DSAMPLERSTATETYPE Type, DWORD Value)
 {
-	if (m_SamplerStates[Sampler][Type] != Value || !m_SamplerStatesSet[Sampler][Type] || m_SamplerStatesChanged[Sampler][Type])
+	u32 index = Sampler * MaxSamplerSize + Type;
+	if (m_SamplerStates[index] != Value || !m_SamplerStatesSet[index] || m_SamplerStatesChanged[index])
 	{
-		m_SamplerStates[Sampler][Type] = Value;
-		m_SamplerStatesSet[Sampler][Type] = true;
-		m_SamplerStatesChanged[Sampler][Type] = false;
+		m_SamplerStates[index] = Value;
+		m_SamplerStatesSet[index] = true;
+		m_SamplerStatesChanged[index] = false;
 		dev->SetSamplerState(Sampler, Type, Value);
 	}
 }
 
 void RefreshSamplerState(DWORD Sampler, D3DSAMPLERSTATETYPE Type)
 {
-	if(m_SamplerStatesSet[Sampler][Type] && m_SamplerStatesChanged[Sampler][Type])
+	u32 index = Sampler * MaxSamplerSize + Type;
+	if(m_SamplerStatesSet[index] && m_SamplerStatesChanged[index])
 	{
-		dev->SetSamplerState(Sampler, Type, m_SamplerStates[Sampler][Type]);
-		m_SamplerStatesChanged[Sampler][Type] = false;
+		dev->SetSamplerState(Sampler, Type, m_SamplerStates[index]);
+		m_SamplerStatesChanged[index] = false;
 	}
 }
 
 void ChangeSamplerState(DWORD Sampler, D3DSAMPLERSTATETYPE Type, DWORD Value)
 {
-	if (m_SamplerStates[Sampler][Type] != Value || !m_SamplerStatesSet[Sampler][Type] || m_SamplerStatesChanged[Sampler][Type])
+	u32 index = Sampler * MaxSamplerSize + Type;
+	if (m_SamplerStates[index] != Value || !m_SamplerStatesSet[index] || m_SamplerStatesChanged[index])
 	{
-		if(!m_SamplerStatesSet[Sampler][Type])
+		if(!m_SamplerStatesSet[index])
 		{
-			m_SamplerStates[Sampler][Type] = Value;
-			m_SamplerStatesSet[Sampler][Type] = true;
+			m_SamplerStates[index] = Value;
+			m_SamplerStatesSet[index] = true;
 		}
-		m_SamplerStatesChanged[Sampler][Type] = m_SamplerStatesSet[Sampler][Type] && m_SamplerStates[Sampler][Type] != Value;
+		m_SamplerStatesChanged[index] = m_SamplerStatesSet[index] && m_SamplerStates[index] != Value;
 		dev->SetSamplerState(Sampler, Type, Value);
-	}
-	else
-	{
-		m_SamplerStatesChanged[Sampler][Type] = false;
 	}
 }
 
@@ -889,6 +886,7 @@ void SetPixelShader(LPDIRECT3DPIXELSHADER9 shader)
 
 void ChangePixelShader(LPDIRECT3DPIXELSHADER9 shader)
 {
+	dev->SetPixelShader(shader);
 	if (shader != m_PixelShader  || m_PixelShaderChanged)
 	{
 		dev->SetPixelShader(shader);
@@ -919,7 +917,6 @@ void ChangeStreamSource(UINT StreamNumber,IDirect3DVertexBuffer9* pStreamData,UI
 		dev->SetStreamSource(StreamNumber, pStreamData, OffsetInBytes, Stride);
 		m_stream_sources_Changed[StreamNumber] = true;
 	}
-	
 }
 
 void RefreshStreamSource(UINT StreamNumber)
