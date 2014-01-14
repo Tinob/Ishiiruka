@@ -12,8 +12,8 @@
 #include "IniFile.h"
 #include "LogManager.h"
 
-#include "../Core/Core.h"
-#include "../Core/ConfigManager.h"
+#include "../../Core/Src/Core.h"
+#include "../../Core/Src/ConfigManager.h"
 #include "FileSystemGCWii.h"
 #include "VolumeCreator.h"
 
