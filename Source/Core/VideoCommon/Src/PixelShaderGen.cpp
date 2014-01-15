@@ -289,7 +289,7 @@ static inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, API_T
 			numStages, numTexgen, bpmem.genMode.numindstages);
 		out.Write("#define F_P_U8(x) (round((x) * 255.0) / 255.0)\n");
 		out.Write("#define CHK_O_U8(x) (frac(((x) + " C_1024_BY_255 ") * (255.0/256.0)) * (256.0/255.0))\n");
-		out.Write("#define CHK_O_U24(x) (frac((x) * (16777215.0/16777216.0)) * (16777216.0/16777215.0))\n");	
+		//out.Write("#define CHK_O_U24(x) (frac((x) * (16777215.0/16777216.0)) * (16777216.0/16777215.0))\n");	
 		// Fastmod implementation with the restriction that "y" must be always positive
 		out.Write("float fastmod( float x, float y )\n");
 		out.Write("{\n");
@@ -665,6 +665,7 @@ static inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, API_T
 		// emulation of unsigned 8 overflow when casting if needed
 		if(RegisterStates[0].AlphaNeedOverflowControl || RegisterStates[0].ColorNeedOverflowControl)
 			out.Write("\tprev = CHK_O_U8(prev);\n");
+		out.Write("\tprev = F_P_U8(prev);\n");
 	}	
 
 	AlphaTest::TEST_RESULT Pretest = bpmem.alpha_test.TestResult();
@@ -720,8 +721,8 @@ static inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, API_T
 		{
 			out.Write("zCoord = dot(" I_ZBIAS"[0].xyzw, tex_t.xyzw) + " I_ZBIAS "[1].w %s;\n",
 									(bpmem.ztex2.op == ZTEXTURE_ADD) ? "+ zCoord" : "");
-			// U24 overflow emulation
-			out.Write("zCoord = CHK_O_U24(zCoord);\n");		
+			// U24 overflow emulation disabled because problems caused by float rounding
+			//out.Write("zCoord = CHK_O_U24(zCoord);\n");		
 		}
 		
 	}
@@ -1160,7 +1161,7 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, AP
 	if (Write_Code)
 	{
 		out.Write("// color combine\n");
-		out.Write("%s = F_P_U8(clamp(", tevCOutputTable[cc.dest]);
+		out.Write("%s = clamp(", tevCOutputTable[cc.dest]);
 		// combine the color channel
 		if (cc.bias != TevBias_COMPARE) // if not compare
 		{
@@ -1200,19 +1201,17 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, AP
 		}
 		if (cc.clamp)
 		{
-			out.Write(",0.0,1.0)");
+			out.Write(",0.0,1.0);\n");
 		}
 		else
 		{
-			out.Write(", -" C_1024_BY_255 ", " C_1023_BY_255 ")");
+			out.Write(", -" C_1024_BY_255 ", " C_1023_BY_255 ");\n");
 		}
-		out.Write(");\n");
-
 		RegisterStates[ac.dest].AlphaNeedOverflowControl = (ac.clamp == 0);
 		RegisterStates[ac.dest].AuxStored = false;
 
 		out.Write("// alpha combine\n");
-		out.Write("%s = F_P_U8(clamp(", tevAOutputTable[ac.dest]);	
+		out.Write("%s = clamp(", tevAOutputTable[ac.dest]);	
 
 		if (ac.bias != TevBias_COMPARE) // if not compare
 		{
@@ -1252,13 +1251,12 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, AP
 		}
 		if (ac.clamp)
 		{
-			out.Write(",0.0,1.0)");
+			out.Write(",0.0,1.0);\n\n");
 		}
 		else
 		{
-			out.Write(", -" C_1024_BY_255 ", " C_1023_BY_255 ")");
-		}
-		out.Write(");\n\n");
+			out.Write(", -" C_1024_BY_255 ", " C_1023_BY_255 ");\n\n");
+		}		
 		out.Write("// TEV done\n");
 	}
 }
@@ -1278,14 +1276,14 @@ void SampleTexture(T& out, const char *texcoords, const char *texswap, int texma
 
 static const char *tevAlphaFuncsTable[] =
 {
-	"(false)",									// NEVER
-	"(prev.a <= %s - (0.25/255.0))",			// LESS
-	"(abs( prev.a - %s ) < (0.5/255.0))",		// EQUAL
-	"(prev.a < %s + (0.25/255.0))",			// LEQUAL
-	"(prev.a >= %s + (0.25/255.0))",			// GREATER
-	"(abs( prev.a - %s ) >= (0.5/255.0))",	// NEQUAL
-	"(prev.a > %s - (0.25/255.0))",			// GEQUAL
-	"(true)"									// ALWAYS
+	"(false)",				// NEVER
+	"(prev.a < %s)",		// LESS
+	"(prev.a == %s)",		// EQUAL
+	"(prev.a <= %s)",		// LEQUAL
+	"(prev.a > %s)",		// GREATER
+	"(prev.a != %s)",		// NEQUAL
+	"(prev.a >= %s)",		// GEQUAL
+	"(true)"				// ALWAYS
 };
 
 static const char *tevAlphaFunclogicTable[] =

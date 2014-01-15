@@ -70,7 +70,7 @@ void PixelShaderManager::Shutdown()
 
 }
 
-void PixelShaderManager::SetConstants(u32 components)
+void PixelShaderManager::SetConstants()
 {
 	if (g_ActiveConfig.backend_info.APIType == API_OPENGL && !g_ActiveConfig.backend_info.bSupportsGLSLUBO)
 		Dirty();

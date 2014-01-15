@@ -103,6 +103,6 @@ typedef ShaderUid<vertex_shader_uid_data> VertexShaderUid;
 
 void GetVertexShaderUid(VertexShaderUid& object, u32 components, API_TYPE api_type);
 void GenerateVertexShaderCode(ShaderCode& object, u32 components, API_TYPE api_type);
-void GenerateVSOutputStructForGS(ShaderCode& object, u32 components, API_TYPE api_type);
+void GenerateVSOutputStructForGS(ShaderCode& object, API_TYPE api_type);
 
 #endif // GCOGL_VERTEXSHADER_H

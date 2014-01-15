@@ -649,7 +649,7 @@ void VertexManager::vFlush()
 		SetPLRasterOffsets();
 	}	
 	g_Config.backend_info.bSupportsEarlyZ = !g_ActiveConfig.bFastDepthCalc;
-	PixelShaderManager::SetConstants(g_nativeVertexFmt->m_components);	
+	PixelShaderManager::SetConstants();
 	const bool useDstAlpha = !g_ActiveConfig.bDstAlphaPass && bpmem.dstalpha.enable && bpmem.blendmode.alphaupdate &&
 		bpmem.zcontrol.pixel_format == PIXELFMT_RGBA6_Z24;
 	const bool useDualSource = useDstAlpha && g_ActiveConfig.backend_info.bSupportsDualSourceBlend;
