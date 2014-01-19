@@ -26,9 +26,9 @@ public:
 	// returns numprimitives
 	static u32 GetNumVerts() {return index;}
 
-	static u32 GetTriangleindexLen() {return (u32)(Tptr - BASETptr);}
-	static u32 GetLineindexLen() {return (u32)(Lptr - BASELptr);}
-	static u32 GetPointindexLen() {return (u32)(Pptr - BASEPptr);}
+	static u32 GetTriangleindexLen() {return (u32)(s_Triangle_Current - s_Triangle_Base);}
+	static u32 GetLineindexLen() {return (u32)(s_Line_Current - s_Line_Base);}
+	static u32 GetPointindexLen() {return (u32)(s_Point_Current - s_Point_Base);}
 	
 	static u32 GetRemainingIndices();
 /*
@@ -54,14 +54,14 @@ private:
 	// Points
 	static void AddPoints(u32 numVerts);
 
-	template <bool pr> static void WriteTriangle(u32 index1, u32 index2, u32 index3);
+	template <bool pr> static u16* WriteTriangle(u16 *ptr, u32 index1, u32 index2, u32 index3);
 
-	static u16 *Tptr;
-	static u16 *BASETptr;
-	static u16 *Lptr;
-	static u16 *BASELptr;
-	static u16 *Pptr;
-	static u16 *BASEPptr;
+	static u16 *s_Triangle_Current;
+	static u16 *s_Triangle_Base;
+	static u16 *s_Line_Current;
+	static u16 *s_Line_Base;
+	static u16 *s_Point_Current;
+	static u16 *s_Point_Base;
 	// TODO: redundant variables
 	static u32 numT;
 	static u32 numL;
