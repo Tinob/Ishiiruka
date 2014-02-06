@@ -19,8 +19,8 @@
 
 static char text[16768];
 static const char *texOffsetMemberSelector[]   = {"x", "y", "z", "w"};
-template<class T>
-static void DefineVSOutputStructMember(T& object, API_TYPE api_type, const char* type, const char* name, int var_index, const char* semantic, int semantic_index = -1)
+template<class T, API_TYPE api_type>
+void DefineVSOutputStructMember(T& object, const char* type, const char* name, int var_index, const char* semantic, int semantic_index = -1)
 {
 	object.Write("  %s %s", type, name);
 	if (var_index != -1)
@@ -37,23 +37,23 @@ static void DefineVSOutputStructMember(T& object, API_TYPE api_type, const char*
 	}
 }
 
-template<class T>
-static inline void GenerateVSOutputStruct(T& object, API_TYPE api_type)
+template<class T, API_TYPE api_type>
+inline void GenerateVSOutputStruct(T& object)
 {
 	object.Write("struct VS_OUTPUT {\n");
-	DefineVSOutputStructMember(object, api_type, "float4", "pos", -1, "POSITION");
-	DefineVSOutputStructMember(object, api_type, "float4", "colors_", 0, "COLOR", 0);
-	DefineVSOutputStructMember(object, api_type, "float4", "colors_", 1, "COLOR", 1);
+	DefineVSOutputStructMember<T, api_type>(object, "float4", "pos", -1, "POSITION");
+	DefineVSOutputStructMember<T, api_type>(object, "float4", "colors_", 0, "COLOR", 0);
+	DefineVSOutputStructMember<T, api_type>(object, "float4", "colors_", 1, "COLOR", 1);
 
 	if (xfregs.numTexGen.numTexGens < 7)
 	{
 		for (unsigned int i = 0; i < xfregs.numTexGen.numTexGens; ++i)
-			DefineVSOutputStructMember(object, api_type, "float3", "tex", i, "TEXCOORD", i);
+			DefineVSOutputStructMember<T, api_type>(object, "float3", "tex", i, "TEXCOORD", i);
 
-		DefineVSOutputStructMember(object, api_type, "float4", "clipPos", -1, "TEXCOORD", xfregs.numTexGen.numTexGens);
+		DefineVSOutputStructMember<T, api_type>(object, "float4", "clipPos", -1, "TEXCOORD", xfregs.numTexGen.numTexGens);
 
 		if(g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting)
-			DefineVSOutputStructMember(object, api_type, "float4", "Normal", -1, "TEXCOORD", xfregs.numTexGen.numTexGens + 1);
+			DefineVSOutputStructMember<T, api_type>(object, "float4", "Normal", -1, "TEXCOORD", xfregs.numTexGen.numTexGens + 1);
 	}
 	else
 	{
@@ -61,13 +61,13 @@ static inline void GenerateVSOutputStruct(T& object, API_TYPE api_type)
 		bool ppl = g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting;
 		int num_texcoords = ppl ? 8 : xfregs.numTexGen.numTexGens;
 		for (int i = 0; i < num_texcoords; ++i)
-			DefineVSOutputStructMember(object, api_type, (ppl || i < 4) ? "float4" : "float3", "tex", i, "TEXCOORD", i);
+			DefineVSOutputStructMember<T, api_type>(object, (ppl || i < 4) ? "float4" : "float3", "tex", i, "TEXCOORD", i);
 	}
 	object.Write("};\n");
 }
 
-template<class T, bool Write_Code>
-static inline void GenerateVertexShader(T& out, u32 components, API_TYPE api_type)
+template<class T, bool Write_Code, API_TYPE api_type>
+inline void GenerateVertexShader(T& out, u32 components)
 {
 	// Non-uid template parameters will write to the dummy data (=> gets optimized out)
 	vertex_shader_uid_data dummy_data;
@@ -96,21 +96,21 @@ static inline void GenerateVertexShader(T& out, u32 components, API_TYPE api_typ
 		if (g_ActiveConfig.backend_info.bSupportsGLSLUBO)
 			out.Write("layout(std140) uniform VSBlock {\n");
 
-		DeclareUniform(out, api_type, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_POSNORMALMATRIX, "float4", I_POSNORMALMATRIX"[6]");
-		DeclareUniform(out, api_type, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_PROJECTION, "float4", I_PROJECTION"[4]");
-		DeclareUniform(out, api_type, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_MATERIALS, "float4", I_MATERIALS"[4]");
-		DeclareUniform(out, api_type, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_LIGHTS,  "float4", I_LIGHTS"[40]");
-		DeclareUniform(out, api_type, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_TEXMATRICES, "float4", I_TEXMATRICES"[24]");
-		DeclareUniform(out, api_type, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_TRANSFORMMATRICES, "float4", I_TRANSFORMMATRICES"[64]");
-		DeclareUniform(out, api_type, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_NORMALMATRICES, "float4", I_NORMALMATRICES"[32]");
-		DeclareUniform(out, api_type, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_POSTTRANSFORMMATRICES, "float4", I_POSTTRANSFORMMATRICES"[64]");
-		DeclareUniform(out, api_type, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_DEPTHPARAMS, "float4", I_DEPTHPARAMS);
-		DeclareUniform(out, api_type, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_PLOFFSETPARAMS, "float4", I_PLOFFSETPARAMS"[13]");
+		DeclareUniform<T, api_type>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_POSNORMALMATRIX, "float4", I_POSNORMALMATRIX"[6]");
+		DeclareUniform<T, api_type>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_PROJECTION, "float4", I_PROJECTION"[4]");
+		DeclareUniform<T, api_type>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_MATERIALS, "float4", I_MATERIALS"[4]");
+		DeclareUniform<T, api_type>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_LIGHTS, "float4", I_LIGHTS"[40]");
+		DeclareUniform<T, api_type>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_TEXMATRICES, "float4", I_TEXMATRICES"[24]");
+		DeclareUniform<T, api_type>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_TRANSFORMMATRICES, "float4", I_TRANSFORMMATRICES"[64]");
+		DeclareUniform<T, api_type>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_NORMALMATRICES, "float4", I_NORMALMATRICES"[32]");
+		DeclareUniform<T, api_type>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_POSTTRANSFORMMATRICES, "float4", I_POSTTRANSFORMMATRICES"[64]");
+		DeclareUniform<T, api_type>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_DEPTHPARAMS, "float4", I_DEPTHPARAMS);
+		DeclareUniform<T, api_type>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_PLOFFSETPARAMS, "float4", I_PLOFFSETPARAMS"[13]");
 
 		if (g_ActiveConfig.backend_info.bSupportsGLSLUBO)
 			out.Write("};\n");
 
-		GenerateVSOutputStruct(out, api_type);
+		GenerateVSOutputStruct<T, api_type>(out);
 		if(api_type == API_OPENGL)
 		{
 			out.Write("ATTRIN float4 rawpos; // ATTR%d,\n", SHADER_POSITION_ATTRIB);
@@ -563,17 +563,47 @@ static inline void GenerateVertexShader(T& out, u32 components, API_TYPE api_typ
 	}
 }
 
-void GetVertexShaderUid(VertexShaderUid& object, u32 components, API_TYPE api_type)
+void GetVertexShaderUidD3D9(VertexShaderUid& object, u32 components)
 {
-	GenerateVertexShader<VertexShaderUid, false>(object, components, api_type);
+	GenerateVertexShader<VertexShaderUid, false, API_D3D9>(object, components);
 }
 
-void GenerateVertexShaderCode(ShaderCode& object, u32 components, API_TYPE api_type)
+void GenerateVertexShaderCodeD3D9(ShaderCode& object, u32 components)
 {
-	GenerateVertexShader<ShaderCode, true>(object, components, api_type);
+	GenerateVertexShader<ShaderCode, true, API_D3D9>(object, components);
 }
 
-void GenerateVSOutputStructForGS(ShaderCode& object, API_TYPE api_type)
+void GenerateVSOutputStructForGSD3D9(ShaderCode& object)
 {
-	GenerateVSOutputStruct<ShaderCode>(object, api_type);
+	GenerateVSOutputStruct<ShaderCode, API_D3D9>(object);
+}
+
+void GetVertexShaderUidD3D11(VertexShaderUid& object, u32 components)
+{
+	GenerateVertexShader<VertexShaderUid, false, API_D3D11>(object, components);
+}
+
+void GenerateVertexShaderCodeD3D11(ShaderCode& object, u32 components)
+{
+	GenerateVertexShader<ShaderCode, true, API_D3D11>(object, components);
+}
+
+void GenerateVSOutputStructForGSD3D11(ShaderCode& object)
+{
+	GenerateVSOutputStruct<ShaderCode, API_D3D11>(object);
+}
+
+void GetVertexShaderUidGL(VertexShaderUid& object, u32 components)
+{
+	GenerateVertexShader<VertexShaderUid, false, API_OPENGL>(object, components);
+}
+
+void GenerateVertexShaderCodeGL(ShaderCode& object, u32 components)
+{
+	GenerateVertexShader<ShaderCode, true, API_OPENGL>(object, components);
+}
+
+void GenerateVSOutputStructForGSGL(ShaderCode& object)
+{
+	GenerateVSOutputStruct<ShaderCode, API_OPENGL>(object);
 }

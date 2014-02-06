@@ -164,17 +164,17 @@ private:
 	std::vector<bool> constant_usage; // TODO: Is vector<bool> appropriate here?
 };
 
-template<class T>
-static inline void WriteRegister(T& object, API_TYPE ApiType, const char *prefix, const u32 num)
+template<class T, API_TYPE api_type>
+static inline void WriteRegister(T& object, const char *prefix, const u32 num)
 {
-	if (ApiType == API_OPENGL)
+	if (api_type == API_OPENGL)
 		return; // Nothing to do here
 
 	object.Write(" : register(%s%d)", prefix, num);
 }
 
-template<class T>
-static inline void WriteLocation(T& object, API_TYPE ApiType, bool using_ubos)
+template<class T , API_TYPE api_type>
+static inline void WriteLocation(T& object, bool using_ubos)
 {
 	if (using_ubos)
 		return;
@@ -182,12 +182,12 @@ static inline void WriteLocation(T& object, API_TYPE ApiType, bool using_ubos)
 	object.Write("uniform ");
 }
 
-template<class T>
-static inline void DeclareUniform(T& object, API_TYPE api_type, bool using_ubos, const u32 num, const char* type, const char* name)
+template<class T, API_TYPE api_type>
+static inline void DeclareUniform(T& object, bool using_ubos, const u32 num, const char* type, const char* name)
 {
-	WriteLocation(object, api_type, using_ubos);
+	WriteLocation<T, api_type>(object, using_ubos);
 	object.Write("%s %s ", type, name);
-	WriteRegister(object, api_type, "c", num);
+	WriteRegister<T, api_type>(object, "c", num);
 	object.Write(";\n");
 }
 

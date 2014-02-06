@@ -200,11 +200,11 @@ void VertexShaderCache::Shutdown()
 bool VertexShaderCache::SetShader(u32 components)
 {
 	VertexShaderUid uid;
-	GetVertexShaderUid(uid, components, API_D3D11);
+	GetVertexShaderUidD3D11(uid, components);
 	if (g_ActiveConfig.bEnableShaderDebugging)
 	{
 		ShaderCode code;
-		GenerateVertexShaderCode(code, components, API_D3D11);
+		GenerateVertexShaderCodeD3D11(code, components);
 		vertex_uid_checker.AddToIndexAndCheck(code, uid, "Vertex", "v");
 	}
 
@@ -230,7 +230,7 @@ bool VertexShaderCache::SetShader(u32 components)
 	}
 
 	ShaderCode code;
-	GenerateVertexShaderCode(code, components, API_D3D11);
+	GenerateVertexShaderCodeD3D11(code, components);
 
 	D3DBlob* pbytecode = NULL;
 	D3D::CompileVertexShader(code.GetBuffer(), (int)strlen(code.GetBuffer()), &pbytecode);

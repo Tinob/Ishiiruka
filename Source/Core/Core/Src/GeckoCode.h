@@ -14,37 +14,37 @@
 namespace Gecko
 {
 
-	class GeckoCode
+class GeckoCode
+{
+public:
+
+	GeckoCode() : enabled(false) {}
+
+	struct Code
 	{
-	public:
+		Code() : address(0), data(0) {}
 
-		GeckoCode() : enabled(false) {}
+		u32 address, data;
 
-		struct Code
-		{
-			Code() : address(0), data(0) {}
+		std::string original_line;
 
-			u32 address, data;
-
-			std::string original_line;
-
-			u32 GetAddress() const;
-		};
-
-		std::vector<Code>	codes;
-		std::string		name, creator;
-		std::vector<std::string>	notes;
-
-		bool enabled;
-		bool user_defined;
-
-		bool Compare(GeckoCode compare) const;
-		bool Exist(u32 address, u32 data);
+		u32 GetAddress() const;
 	};
 
-	void SetActiveCodes(const std::vector<GeckoCode>& gcodes);
-	bool RunActiveCodes();
-	void RunCodeHandler();
+	std::vector<Code> codes;
+	std::string name, creator;
+	std::vector<std::string> notes;
+
+	bool enabled;
+	bool user_defined;
+
+	bool Compare(GeckoCode compare) const;
+	bool Exist(u32 address, u32 data);
+};
+
+void SetActiveCodes(const std::vector<GeckoCode>& gcodes);
+bool RunActiveCodes();
+void RunCodeHandler();
 
 }	// namespace Gecko
 

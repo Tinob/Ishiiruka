@@ -245,13 +245,13 @@ struct RegisterState
 
 static char text[16384];
 
-template<class T, bool Write_Code> static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, API_TYPE ApiType, RegisterState RegisterStates[4], const char swapModeTable[4][5]);
-template<class T, bool Write_Code> static inline void SampleTexture(T& out, const char *texcoords, const char *texswap, int texmap, API_TYPE ApiType);
-template<class T, bool Write_Code> static inline void WriteAlphaTest(T& out, pixel_shader_uid_data& uid_data, API_TYPE ApiType,DSTALPHA_MODE dstAlphaMode, bool per_pixel_depth);
-template<class T, bool Write_Code> static inline void WriteFog(T& out, pixel_shader_uid_data& uid_data);
+template<class T, bool Write_Code, API_TYPE ApiType> inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, RegisterState RegisterStates[4], const char swapModeTable[4][5]);
+template<class T, bool Write_Code, API_TYPE ApiType> inline void SampleTexture(T& out, const char *texcoords, const char *texswap, int texmap);
+template<class T, bool Write_Code, API_TYPE ApiType> inline void WriteAlphaTest(T& out, pixel_shader_uid_data& uid_data, DSTALPHA_MODE dstAlphaMode, bool per_pixel_depth);
+template<class T, bool Write_Code> inline void WriteFog(T& out, pixel_shader_uid_data& uid_data);
 
-template<class T, bool Write_Code>
-static inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, API_TYPE ApiType, u32 components)
+template<class T, bool Write_Code, API_TYPE ApiType>
+inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 components)
 {
 	// Non-uid template parameters will write to the dummy data (=> gets optimized out)
 	pixel_shader_uid_data dummy_data;
@@ -323,19 +323,19 @@ static inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, API_T
 		if (g_ActiveConfig.backend_info.bSupportsGLSLUBO)
 			out.Write("layout(std140) uniform PSBlock {\n");
 
-		DeclareUniform(out, ApiType, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_COLORS, "float4", I_COLORS "[4]");
-		DeclareUniform(out, ApiType, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_KCOLORS, "float4", I_KCOLORS "[4]");
-		DeclareUniform(out, ApiType, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_ALPHA, "float4", I_ALPHA);
-		DeclareUniform(out, ApiType, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_TEXDIMS, "float4", I_TEXDIMS "[8]");
-		DeclareUniform(out, ApiType, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_ZBIAS, "float4", I_ZBIAS "[2]");
-		DeclareUniform(out, ApiType, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_INDTEXSCALE, "float4", I_INDTEXSCALE "[2]");
-		DeclareUniform(out, ApiType, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_INDTEXMTX, "float4", I_INDTEXMTX "[6]");
-		DeclareUniform(out, ApiType, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_FOG, "float4", I_FOG "[3]");
+		DeclareUniform<T, ApiType>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_COLORS, "float4", I_COLORS "[4]");
+		DeclareUniform<T, ApiType>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_KCOLORS, "float4", I_KCOLORS "[4]");
+		DeclareUniform<T, ApiType>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_ALPHA, "float4", I_ALPHA);
+		DeclareUniform<T, ApiType>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_TEXDIMS, "float4", I_TEXDIMS "[8]");
+		DeclareUniform<T, ApiType>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_ZBIAS, "float4", I_ZBIAS "[2]");
+		DeclareUniform<T, ApiType>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_INDTEXSCALE, "float4", I_INDTEXSCALE "[2]");
+		DeclareUniform<T, ApiType>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_INDTEXMTX, "float4", I_INDTEXMTX "[6]");
+		DeclareUniform<T, ApiType>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_FOG, "float4", I_FOG "[3]");
 
 		if (g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting)
 		{
-			DeclareUniform(out, ApiType, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_PLIGHTS, "float4", I_PLIGHTS "[40]");
-			DeclareUniform(out, ApiType, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_PMATERIALS, "float4", I_PMATERIALS "[4]");
+			DeclareUniform<T, ApiType>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_PLIGHTS, "float4", I_PLIGHTS "[40]");
+			DeclareUniform<T, ApiType>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_PMATERIALS, "float4", I_PMATERIALS "[4]");
 		}
 
 		if (g_ActiveConfig.backend_info.bSupportsGLSLUBO)
@@ -612,7 +612,7 @@ static inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, API_T
 			{
 				out.Write("float3 indtex%d = ", i);
 			}
-			SampleTexture<T, Write_Code>(out, "t_coord", "abg", texmap, ApiType);
+			SampleTexture<T, Write_Code, ApiType>(out, "t_coord", "abg", texmap);
 		}
 	}
 
@@ -640,7 +640,7 @@ static inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, API_T
 	}
 
 	for (unsigned int i = 0; i < numStages; i++)
-		WriteStage<T, Write_Code>(out, uid_data, i, ApiType, RegisterStates, swapModeTable); // build the equation for this stage
+		WriteStage<T, Write_Code, ApiType>(out, uid_data, i, RegisterStates, swapModeTable); // build the equation for this stage
 
 	bool enable_pl = g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting;
 	uid_data.pixel_lighting = enable_pl;
@@ -667,7 +667,7 @@ static inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, API_T
 		// emulation of unsigned 8 overflow when casting if needed
 		if(RegisterStates[0].AlphaNeedOverflowControl || RegisterStates[0].ColorNeedOverflowControl)
 			out.Write("\tprev = CHK_O_U8(prev);\n");
-		out.Write("\tprev = F_P_U8(prev);\n");
+		//out.Write("\tprev = F_P_U8(prev);\n");
 	}	
 
 	AlphaTest::TEST_RESULT Pretest = bpmem.alpha_test.TestResult();
@@ -676,7 +676,7 @@ static inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, API_T
 	// NOTE: Fragment may not be discarded if alpha test always fails and early depth test is enabled 
 	// (in this case we need to write a depth value if depth test passes regardless of the alpha testing result)
 	if (Pretest != AlphaTest::PASS)
-		WriteAlphaTest<T, Write_Code>(out, uid_data, ApiType, dstAlphaMode, per_pixel_depth);
+		WriteAlphaTest<T, Write_Code, ApiType>(out, uid_data, dstAlphaMode, per_pixel_depth);
 
 
 	// D3D9 doesn't support readback of depth in pixel shader, so we always have to calculate it again.
@@ -824,8 +824,8 @@ static const char *TEVCMPAlphaOPTable[16] =
 	"   %s.a + (abs(%s.a - %s.a) < (0.5/255.0) ? %s.a : 0.0)"//#define TEVCMP_A8_EQ 15
 };
 
-template<class T, bool Write_Code>
-static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, API_TYPE ApiType, RegisterState RegisterStates[4], const char swapModeTable[4][5])
+template<class T, bool Write_Code, API_TYPE ApiType>
+static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, RegisterState RegisterStates[4], const char swapModeTable[4][5])
 {
 	int texcoord = bpmem.tevorders[n/2].getTexCoord(n&1);
 	bool bHasTexCoord = (u32)texcoord < bpmem.genMode.numtexgens;
@@ -1022,7 +1022,7 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, AP
 		if (Write_Code)
 			out.Write("tex_t = ");
 
-		SampleTexture<T, Write_Code>(out, "tevcoord", texswap, texmap, ApiType);
+		SampleTexture<T, Write_Code, ApiType>(out, "tevcoord", texswap, texmap);
 	}
 	else if (Write_Code)
 	{
@@ -1163,7 +1163,7 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, AP
 	if (Write_Code)
 	{
 		out.Write("// color combine\n");
-		out.Write("%s = clamp(", tevCOutputTable[cc.dest]);
+		out.Write("%s = F_P_U8(clamp(", tevCOutputTable[cc.dest]);
 		// combine the color channel
 		if (cc.bias != TevBias_COMPARE) // if not compare
 		{
@@ -1203,17 +1203,17 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, AP
 		}
 		if (cc.clamp)
 		{
-			out.Write(",0.0,1.0);\n");
+			out.Write(",0.0,1.0));\n");
 		}
 		else
 		{
-			out.Write(", -" C_1024_BY_255 ", " C_1023_BY_255 ");\n");
+			out.Write(", -" C_1024_BY_255 ", " C_1023_BY_255 "));\n");
 		}
 		RegisterStates[ac.dest].AlphaNeedOverflowControl = (ac.clamp == 0);
 		RegisterStates[ac.dest].AuxStored = false;
 
 		out.Write("// alpha combine\n");
-		out.Write("%s = clamp(", tevAOutputTable[ac.dest]);	
+		out.Write("%s = F_P_U8(clamp(", tevAOutputTable[ac.dest]);	
 
 		if (ac.bias != TevBias_COMPARE) // if not compare
 		{
@@ -1253,18 +1253,18 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, AP
 		}
 		if (ac.clamp)
 		{
-			out.Write(",0.0,1.0);\n\n");
+			out.Write(",0.0,1.0));\n\n");
 		}
 		else
 		{
-			out.Write(", -" C_1024_BY_255 ", " C_1023_BY_255 ");\n\n");
+			out.Write(", -" C_1024_BY_255 ", " C_1023_BY_255 "));\n\n");
 		}		
 		out.Write("// TEV done\n");
 	}
 }
 
-template<class T, bool Write_Code>
-void SampleTexture(T& out, const char *texcoords, const char *texswap, int texmap, API_TYPE ApiType)
+template<class T, bool Write_Code, API_TYPE ApiType>
+void SampleTexture(T& out, const char *texcoords, const char *texswap, int texmap)
 {
 	out.SetConstantsUsed(C_TEXDIMS+texmap,C_TEXDIMS+texmap);
 	if(Write_Code)
@@ -1278,14 +1278,14 @@ void SampleTexture(T& out, const char *texcoords, const char *texswap, int texma
 
 static const char *tevAlphaFuncsTable[] =
 {
-	"(false)",				// NEVER
-	"(prev.a < %s)",		// LESS
-	"(prev.a == %s)",		// EQUAL
-	"(prev.a <= %s)",		// LEQUAL
-	"(prev.a > %s)",		// GREATER
-	"(prev.a != %s)",		// NEQUAL
-	"(prev.a >= %s)",		// GEQUAL
-	"(true)"				// ALWAYS
+	"(false)",									// NEVER
+	"(prev.a <= %s - (0.25/255.0))",			// LESS
+	"(abs( prev.a - %s ) < (0.5/255.0))",		// EQUAL
+	"(prev.a < %s + (0.25/255.0))",			// LEQUAL
+	"(prev.a >= %s + (0.25/255.0))",			// GREATER
+	"(abs( prev.a - %s ) >= (0.5/255.0))",	// NEQUAL
+	"(prev.a > %s - (0.25/255.0))",			// GEQUAL
+	"(true)"									// ALWAYS
 };
 
 static const char *tevAlphaFunclogicTable[] =
@@ -1296,8 +1296,8 @@ static const char *tevAlphaFunclogicTable[] =
 	" == "  // xnor
 };
 
-template<class T, bool Write_Code>
-static inline void WriteAlphaTest(T& out, pixel_shader_uid_data& uid_data, API_TYPE ApiType, DSTALPHA_MODE dstAlphaMode, bool per_pixel_depth)
+template<class T, bool Write_Code, API_TYPE ApiType>
+static inline void WriteAlphaTest(T& out, pixel_shader_uid_data& uid_data, DSTALPHA_MODE dstAlphaMode, bool per_pixel_depth)
 {
 	static const char *alphaRef[2] =
 	{
@@ -1423,18 +1423,54 @@ static inline void WriteFog(T& out, pixel_shader_uid_data& uid_data)
 	
 }
 
-void GetPixelShaderUid(PixelShaderUid& object, DSTALPHA_MODE dstAlphaMode, API_TYPE ApiType, u32 components)
+void GetPixelShaderUidD3D9(PixelShaderUid& object, DSTALPHA_MODE dstAlphaMode, u32 components)
 {
-	GeneratePixelShader<PixelShaderUid, false>(object, dstAlphaMode, ApiType, components);
+	GeneratePixelShader<PixelShaderUid, false, API_D3D9>(object, dstAlphaMode, components);
 }
 
-void GeneratePixelShaderCode(ShaderCode& object, DSTALPHA_MODE dstAlphaMode, API_TYPE ApiType, u32 components)
+void GeneratePixelShaderCodeD3D9(ShaderCode& object, DSTALPHA_MODE dstAlphaMode, u32 components)
 {
-	GeneratePixelShader<ShaderCode, true>(object, dstAlphaMode, ApiType, components);
+	GeneratePixelShader<ShaderCode, true, API_D3D9>(object, dstAlphaMode, components);
 }
 
-void GetPixelShaderConstantProfile(ShaderConstantProfile& object, DSTALPHA_MODE dstAlphaMode, API_TYPE ApiType, u32 components)
+void GetPixelShaderConstantProfileD3D9(ShaderConstantProfile& object, DSTALPHA_MODE dstAlphaMode, u32 components)
 {
-	GeneratePixelShader<ShaderConstantProfile, false>(object, dstAlphaMode, ApiType, components);
+	GeneratePixelShader<ShaderConstantProfile, false, API_D3D9>(object, dstAlphaMode, components);
 }
+
+void GeneratePixelShaderCodeD3D9SM2(ShaderCode& object, DSTALPHA_MODE dstAlphaMode, u32 components)
+{
+	GeneratePixelShader<ShaderCode, true, API_D3D9_SM20>(object, dstAlphaMode, components);
+}
+
+void GetPixelShaderUidD3D11(PixelShaderUid& object, DSTALPHA_MODE dstAlphaMode, u32 components)
+{
+	GeneratePixelShader<PixelShaderUid, false, API_D3D11>(object, dstAlphaMode, components);
+}
+
+void GeneratePixelShaderCodeD3D11(ShaderCode& object, DSTALPHA_MODE dstAlphaMode, u32 components)
+{
+	GeneratePixelShader<ShaderCode, true, API_D3D11>(object, dstAlphaMode, components);
+}
+
+void GetPixelShaderConstantProfileD3D11(ShaderConstantProfile& object, DSTALPHA_MODE dstAlphaMode, u32 components)
+{
+	GeneratePixelShader<ShaderConstantProfile, false, API_D3D11>(object, dstAlphaMode, components);
+}
+
+void GetPixelShaderUidGL(PixelShaderUid& object, DSTALPHA_MODE dstAlphaMode, u32 components)
+{
+	GeneratePixelShader<PixelShaderUid, false, API_OPENGL>(object, dstAlphaMode, components);
+}
+
+void GeneratePixelShaderCodeGL(ShaderCode& object, DSTALPHA_MODE dstAlphaMode, u32 components)
+{
+	GeneratePixelShader<ShaderCode, true, API_OPENGL>(object, dstAlphaMode, components);
+}
+
+void GetPixelShaderConstantProfileGL(ShaderConstantProfile& object, DSTALPHA_MODE dstAlphaMode, u32 components)
+{
+	GeneratePixelShader<ShaderConstantProfile, false, API_OPENGL>(object, dstAlphaMode, components);
+}
+
 

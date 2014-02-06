@@ -13,6 +13,12 @@
 
 namespace MathUtil
 {
+	template<class T>
+	inline void Clamp(T& val, const T& min, const T& max)
+	{
+		val = (val < min) ? min : val;
+		val = (val > max) ? max : val;
+	}
 
 static const u64 DOUBLE_SIGN = 0x8000000000000000ULL,
 	DOUBLE_EXP  = 0x7FF0000000000000ULL,

@@ -453,11 +453,11 @@ void PixelShaderCache::Shutdown()
 bool PixelShaderCache::SetShader(DSTALPHA_MODE dstAlphaMode, u32 components)
 {
 	PixelShaderUid uid;
-	GetPixelShaderUid(uid, dstAlphaMode, API_D3D11, components);
+	GetPixelShaderUidD3D11(uid, dstAlphaMode, components);
 	if (g_ActiveConfig.bEnableShaderDebugging)
 	{
 		ShaderCode code;
-		GeneratePixelShaderCode(code, dstAlphaMode, API_D3D11, components);
+		GeneratePixelShaderCodeD3D11(code, dstAlphaMode, components);
 		pixel_uid_checker.AddToIndexAndCheck(code, uid, "Pixel", "p");
 	}
 
@@ -487,7 +487,7 @@ bool PixelShaderCache::SetShader(DSTALPHA_MODE dstAlphaMode, u32 components)
 
 	// Need to compile a new shader
 	ShaderCode code;
-	GeneratePixelShaderCode(code, dstAlphaMode, API_D3D11, components);
+	GeneratePixelShaderCodeD3D11(code, dstAlphaMode, components);
 
 	D3DBlob* pbytecode;
 	if (!D3D::CompilePixelShader(code.GetBuffer(), (unsigned int)strlen(code.GetBuffer()), &pbytecode))

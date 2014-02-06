@@ -8,6 +8,7 @@
 #include "DSPHost.h"
 #include "DSPHWInterface.h"
 #include "DSPInterpreter.h"
+#include "MathUtil.h"
 
 // The hardware adpcm decoder :)
 static s16 ADPCM_Step(u32& _rSamplePos)
@@ -37,10 +38,7 @@ static s16 ADPCM_Step(u32& _rSamplePos)
 	int val = (scale * temp) + ((0x400 + coef1 * (s16)g_dsp.ifx_regs[DSP_YN1] + coef2 * (s16)g_dsp.ifx_regs[DSP_YN2]) >> 11);
 
 	// Clamp values.
-	if (val > 0x7FFF)
-		val = 0x7FFF;
-	else if (val < -0x7FFF)
-		val = -0x7FFF;
+	MathUtil::Clamp(val, -0x7FFF, 0x7FFF);
 
 	g_dsp.ifx_regs[DSP_YN2] = g_dsp.ifx_regs[DSP_YN1];
 	g_dsp.ifx_regs[DSP_YN1] = val;

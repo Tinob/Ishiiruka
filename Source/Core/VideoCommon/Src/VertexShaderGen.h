@@ -101,8 +101,22 @@ struct vertex_shader_uid_data
 
 typedef ShaderUid<vertex_shader_uid_data> VertexShaderUid;
 
-void GetVertexShaderUid(VertexShaderUid& object, u32 components, API_TYPE api_type);
-void GenerateVertexShaderCode(ShaderCode& object, u32 components, API_TYPE api_type);
-void GenerateVSOutputStructForGS(ShaderCode& object, API_TYPE api_type);
+void GetVertexShaderUidD3D9(VertexShaderUid& object, u32 components);
+
+void GenerateVertexShaderCodeD3D9(ShaderCode& object, u32 components);
+
+void GenerateVSOutputStructForGSD3D9(ShaderCode& object);
+
+void GetVertexShaderUidD3D11(VertexShaderUid& object, u32 components);
+
+void GenerateVertexShaderCodeD3D11(ShaderCode& object, u32 components);
+
+void GenerateVSOutputStructForGSD3D11(ShaderCode& object);
+
+void GetVertexShaderUidGL(VertexShaderUid& object, u32 components);
+
+void GenerateVertexShaderCodeGL(ShaderCode& object, u32 components);
+
+void GenerateVSOutputStructForGSGL(ShaderCode& object);
 
 #endif // GCOGL_VERTEXSHADER_H
