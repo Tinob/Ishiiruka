@@ -407,7 +407,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 				out.Write("  out float4 ocol0 : COLOR0,%s%s\n  in float4 rawpos : %s,\n",
 					dstAlphaMode == DSTALPHA_DUAL_SOURCE_BLEND ? "\n  out float4 ocol1 : COLOR1," : "",
 					per_pixel_depth ? "\n  out float depth : DEPTH," : "",
-					ApiType & API_D3D9_SM20 ? "POSITION" : "VPOS");
+					ApiType == API_D3D9_SM20 ? "POSITION" : "VPOS");
 			}
 			else
 			{
@@ -667,7 +667,6 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 		// emulation of unsigned 8 overflow when casting if needed
 		if(RegisterStates[0].AlphaNeedOverflowControl || RegisterStates[0].ColorNeedOverflowControl)
 			out.Write("\tprev = CHK_O_U8(prev);\n");
-		//out.Write("\tprev = F_P_U8(prev);\n");
 	}	
 
 	AlphaTest::TEST_RESULT Pretest = bpmem.alpha_test.TestResult();
