@@ -824,21 +824,21 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 	{
 		char fps[20];
 		StringCchPrintfA(fps, 20, "FPS: %d\n", s_fps);
-		D3D::font.DrawTextScaled(X, Y, 20, 20, 0.0f, 0xFF00FFFF, fps);
+		D3D::font.DrawTextScaled(float(X), float(Y), 20.0f, 20.0f, 0.0f, 0xFF00FFFF, fps);
 	}
 
 	if (SConfig::GetInstance().m_ShowLag)
 	{
 		char lag[10];
 		StringCchPrintfA(lag, 10, "Lag: %" PRIu64 "\n", Movie::g_currentLagCount);
-		D3D::font.DrawTextScaled(X, Y + 18, 20, 20, 0.0f, 0xFF00FFFF, lag);
+		D3D::font.DrawTextScaled(float(X), float(Y + 18), 20.0f, 20.0f, 0.0f, 0xFF00FFFF, lag);
 	}
 
 	if (g_ActiveConfig.bShowInputDisplay)
 	{
 		char inputDisplay[1000];
 		StringCchPrintfA(inputDisplay, 1000, Movie::GetInputDisplay().c_str());
-		D3D::font.DrawTextScaled(X, Y + 36, 20, 20, 0.0f, 0xFF00FFFF, inputDisplay);
+		D3D::font.DrawTextScaled(float(X), float(Y + 36), 20.0f, 20.0f, 0.0f, 0xFF00FFFF, inputDisplay);
 	}
 
 	Renderer::DrawDebugText();
@@ -846,12 +846,12 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 	if (g_ActiveConfig.bOverlayStats)
 	{
 		Statistics::ToString(st);
-		D3D::font.DrawTextScaled(X , Y + 36, 20, 20, 0.0f, 0xFF00FFFF, st);
+		D3D::font.DrawTextScaled(float(X), float(Y + 36), 20.0f, 20.0f, 0.0f, 0xFF00FFFF, st);
 	}
 	else if (g_ActiveConfig.bOverlayProjStats)
 	{
 		Statistics::ToStringProj(st);
-		D3D::font.DrawTextScaled(X, Y + 36, 20, 20, 0.0f, 0xFF00FFFF, st);
+		D3D::font.DrawTextScaled(float(X), float(Y + 36), 20.0f, 20.0f, 0.0f, 0xFF00FFFF, st);
 	}
 
 	OSD::DrawMessages();
