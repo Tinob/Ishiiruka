@@ -36,7 +36,7 @@ static Matrix33 s_viewInvRotationMatrix;
 static float s_fViewTranslationVector[3];
 static float s_fViewRotation[2];
 const float U8_NORMALIZATION_COEF = 1 / 255.0f;
-const float U24_NORMALIZATION_COEF = 1 / 16777215.0f;
+const float U24_NORMALIZATION_COEF = 1 / 16777216.0f;
 
 void UpdateViewport(Matrix44& vpCorrection);
 

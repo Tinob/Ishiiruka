@@ -137,7 +137,7 @@ inline void GenerateVertexShader(T& out, u32 components)
 			// Let's set up attributes
 			if (xfregs.numTexGen.numTexGens < 7)
 			{
-				for (int i = 0; i < 8; ++i)
+				for (int i = 0; i < xfregs.numTexGen.numTexGens; ++i)
 					out.Write("VARYOUT  float3 uv%d_2;\n", i);
 				out.Write("VARYOUT   float4 clipPos_2;\n");
 				if (g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting)

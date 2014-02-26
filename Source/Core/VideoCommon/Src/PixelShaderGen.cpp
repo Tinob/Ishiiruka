@@ -372,7 +372,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 				// wpos is in w of first 4 texcoords
 				if (g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting)
 				{
-					for (u32 i = 0; i < numTexgen; ++i)
+					for (u32 i = 0; i < 8; ++i)
 					{
 						out.Write("VARYIN float4 uv%d_2;\n", i);
 					}
@@ -437,7 +437,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 				// wpos is in w of first 4 texcoords
 				if(g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting)
 				{
-					for (u32 i = 0; i < numTexgen; ++i)
+					for (u32 i = 0; i < 8; ++i)
 						out.Write(",\n  in float4 uv%d : TEXCOORD%d", i, i);
 				}
 				else
