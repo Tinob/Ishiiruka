@@ -58,7 +58,7 @@ bool CBoot::EmulatedBS2_GC()
 	Memory::Write_U32(0x10000006, 0x8000002C);	// Console type - DevKit  (retail ID == 0x00000003) see yagcd 4.2.1.1.2
 
 	Memory::Write_U32(SConfig::GetInstance().m_LocalCoreStartupParameter.bNTSC
-						 ? 0 : 1, 0x800000CC);	// fake the VI Init of the IPL (yagcd 4.2.1.4)
+		? 0 : 1, 0x800000CC);	// fake the VI Init of the IPL (yagcd 4.2.1.4)
 
 	Memory::Write_U32(0x01000000, 0x800000d0);	// ARAM Size. 16MB main + 4/16/32MB external (retail consoles have no external ARAM)
 
@@ -78,8 +78,8 @@ bool CBoot::EmulatedBS2_GC()
 	// Load Apploader to Memory - The apploader is hardcoded to begin at 0x2440 on the disc,
 	// but the size can differ between discs. Compare with yagcd chap 13.
 	u32 iAppLoaderOffset = 0x2440;
-	u32 iAppLoaderEntry	= VolumeHandler::Read32(iAppLoaderOffset + 0x10);
-	u32 iAppLoaderSize	= VolumeHandler::Read32(iAppLoaderOffset + 0x14) + VolumeHandler::Read32(iAppLoaderOffset + 0x18);
+	u32 iAppLoaderEntry = VolumeHandler::Read32(iAppLoaderOffset + 0x10);
+	u32 iAppLoaderSize = VolumeHandler::Read32(iAppLoaderOffset + 0x14) + VolumeHandler::Read32(iAppLoaderOffset + 0x18);
 	if ((iAppLoaderEntry == (u32)-1) || (iAppLoaderSize == (u32)-1))
 	{
 		INFO_LOG(BOOT, "GC BS2: Not running apploader!");
@@ -131,14 +131,14 @@ bool CBoot::EmulatedBS2_GC()
 
 		RunFunction(iAppLoaderMain);
 
-		u32 iRamAddress	= Memory::ReadUnchecked_U32(0x81300004);
-		u32 iLength		= Memory::ReadUnchecked_U32(0x81300008);
-		u32 iDVDOffset	= Memory::ReadUnchecked_U32(0x8130000c);
+		u32 iRamAddress = Memory::ReadUnchecked_U32(0x81300004);
+		u32 iLength = Memory::ReadUnchecked_U32(0x81300008);
+		u32 iDVDOffset = Memory::ReadUnchecked_U32(0x8130000c);
 
 		INFO_LOG(MASTER_LOG, "DVDRead: offset: %08x   memOffset: %08x   length: %i", iDVDOffset, iRamAddress, iLength);
 		DVDInterface::DVDRead(iDVDOffset, iRamAddress, iLength);
 
-	} while(PowerPC::ppcState.gpr[3] != 0x00);
+	} while (PowerPC::ppcState.gpr[3] != 0x00);
 
 	// iAppLoaderClose
 	DEBUG_LOG(MASTER_LOG, "call iAppLoaderClose");
@@ -158,56 +158,28 @@ bool CBoot::EmulatedBS2_GC()
 	return true;
 }
 
-bool CBoot::SetupWiiMemory(unsigned int _CountryCode)
+bool CBoot::SetupWiiMemory(IVolume::ECountry country)
 {
-	INFO_LOG(BOOT, "Setup Wii Memory...");
-
-	// Write the 256 byte setting.txt to memory.
-	std::string settings_Filename(Common::GetTitleDataPath(TITLEID_SYSMENU) + WII_SETTING);
-	std::string area, model, code, video, game;
-
-
-	switch((DiscIO::IVolume::ECountry)_CountryCode)
-	{
-	case DiscIO::IVolume::COUNTRY_KOREA:
-		area = "KOR";
-		video = "NTSC";
-		game = "KR";
-		code = "LKH";
-		break;
-	case DiscIO::IVolume::COUNTRY_TAIWAN:
-		// TODO: Determine if Taiwan have their own specific settings.
-	case DiscIO::IVolume::COUNTRY_JAPAN:
-		area = "JPN";
-		video = "NTSC";
-		game = "JP";
-		code = "LJ";
-		break;
-	case DiscIO::IVolume::COUNTRY_USA:
-		area = "USA";
-		video = "NTSC";
-		game = "US";
-		code = "LU";
-		break;
-	case DiscIO::IVolume::COUNTRY_EUROPE:
-		area = "EUR";
-		video = "PAL";
-		game = "EU";
-		code = "LE";
-		break;
-	default:
-		// PanicAlertT("SetupWiiMem: Unknown country. Wii boot process will be switched to European settings.");
-		area = "EUR";
-		video = "PAL";
-		game = "EU";
-		code = "LE";
-		break;
-	}
-
-	model = "RVL-001(" + area + ")";
+	static const CountrySetting SETTING_EUROPE = { "EUR", "PAL", "EU", "LE" };
+	static const std::map<IVolume::ECountry, const CountrySetting> country_settings = {
+		{ IVolume::COUNTRY_EUROPE, SETTING_EUROPE },
+		{ IVolume::COUNTRY_USA, { "USA", "NTSC", "US", "LU" } },
+		{ IVolume::COUNTRY_JAPAN, { "JPN", "NTSC", "JP", "LJ" } },
+		{ IVolume::COUNTRY_KOREA, { "KOR", "NTSC", "KR", "LKH" } },
+		//TODO: Determine if Taiwan have their own specific settings.
+		//      Also determine if there are other specific settings
+		//      for other countries.
+		{ IVolume::COUNTRY_TAIWAN, { "JPN", "NTSC", "JP", "LJ" } }
+	};
+	auto entryPos = country_settings.find(country);
+	const CountrySetting& country_setting =
+		(entryPos != country_settings.end()) ?
+		entryPos->second :
+		SETTING_EUROPE; //Default to EUROPE
 
 	SettingsHandler gen;
-	std::string serno = "";
+	std::string serno;
+	std::string settings_Filename(Common::GetTitleDataPath(TITLEID_SYSMENU) + WII_SETTING);
 	if (File::Exists(settings_Filename))
 	{
 		File::IOFile settingsFileHandle(settings_Filename, "rb");
@@ -230,28 +202,30 @@ bool CBoot::SetupWiiMemory(unsigned int _CountryCode)
 		INFO_LOG(BOOT, "Using serial number: %s", serno.c_str());
 	}
 
-	gen.AddSetting("AREA", area.c_str());
-	gen.AddSetting("MODEL", model.c_str());
+	std::string model = "RVL-001(" + country_setting.area + ")";
+	gen.AddSetting("AREA", country_setting.area);
+	gen.AddSetting("MODEL", model);
 	gen.AddSetting("DVD", "0");
 	gen.AddSetting("MPCH", "0x7FFE");
-	gen.AddSetting("CODE", code.c_str());
-	gen.AddSetting("SERNO", serno.c_str());
-	gen.AddSetting("VIDEO", video.c_str());
-	gen.AddSetting("GAME", game.c_str());
-
+	gen.AddSetting("CODE", country_setting.code);
+	gen.AddSetting("SERNO", serno);
+	gen.AddSetting("VIDEO", country_setting.video);
+	gen.AddSetting("GAME", country_setting.game);
 
 	File::CreateFullPath(settings_Filename);
-
 	{
 		File::IOFile settingsFileHandle(settings_Filename, "wb");
 
 		if (!settingsFileHandle.WriteBytes(gen.GetData(), SettingsHandler::SETTINGS_SIZE))
 		{
-			PanicAlertT("SetupWiiMem: Cant create setting file");
+			PanicAlertT("SetupWiiMemory: Cant create setting.txt file");
 			return false;
 		}
+		// Write the 256 byte setting.txt to memory.
 		Memory::WriteBigEData(gen.GetData(), 0x3800, SettingsHandler::SETTINGS_SIZE);
 	}
+
+	INFO_LOG(BOOT, "Setup Wii Memory...");
 
 	/*
 	Set hardcoded global variables to Wii memory. These are partly collected from
@@ -277,12 +251,12 @@ bool CBoot::SetupWiiMemory(unsigned int _CountryCode)
 	Memory::Write_U32(0x8179b500, 0x000000f4);		// __start
 	Memory::Write_U32(0x0e7be2c0, 0x000000f8);		// Bus speed
 	Memory::Write_U32(0x2B73A840, 0x000000fc);		// CPU speed
-	Memory::Write_U16(0x0000,     0x000030e6);		// Console type
+	Memory::Write_U16(0x0000, 0x000030e6);		// Console type
 	Memory::Write_U32(0x00000000, 0x000030c0);		// EXI
 	Memory::Write_U32(0x00000000, 0x000030c4);		// EXI
 	Memory::Write_U32(0x00000000, 0x000030dc);		// Time
 	Memory::Write_U32(0x00000000, 0x000030d8);		// Time
-	Memory::Write_U16(0x8201,     0x000030e6);		// Dev console / debug capable
+	Memory::Write_U16(0x8201, 0x000030e6);		// Dev console / debug capable
 	Memory::Write_U32(0x00000000, 0x000030f0);		// Apploader
 	Memory::Write_U32(0x01800000, 0x00003100);		// BAT
 	Memory::Write_U32(0x01800000, 0x00003104);		// BAT
@@ -299,7 +273,7 @@ bool CBoot::SetupWiiMemory(unsigned int _CountryCode)
 	// 40 is copied from 88 after running apploader
 	Memory::Write_U32(0x00090204, 0x00003140);		// IOS revision (IOS9, v2.4)
 	Memory::Write_U32(0x00062507, 0x00003144);		// IOS date in USA format (June 25, 2007)
-	Memory::Write_U16(0x0113,     0x0000315e);		// Apploader
+	Memory::Write_U16(0x0113, 0x0000315e);		// Apploader
 	Memory::Write_U32(0x0000FF16, 0x00003158);		// DDR ram vendor code
 	Memory::Write_U32(0x00000000, 0x00003160);		// Init semaphore (sysmenu waits for this to clear)
 	Memory::Write_U32(0x00090204, 0x00003188);		// Expected IOS revision
@@ -347,9 +321,9 @@ bool CBoot::EmulatedBS2_Wii()
 		UReg_MSR& m_MSR = ((UReg_MSR&)PowerPC::ppcState.msr);
 		m_MSR.FP = 1;
 
-		Memory::Write_U32(0x4c000064,	0x80000300);	// write default DFI Handler:		rfi
-		Memory::Write_U32(0x4c000064,	0x80000800);	// write default FPU Handler:		rfi
-		Memory::Write_U32(0x4c000064,	0x80000C00);	// write default Syscall Handler:	rfi
+		Memory::Write_U32(0x4c000064, 0x80000300);	// write default DFI Handler:		rfi
+		Memory::Write_U32(0x4c000064, 0x80000800);	// write default FPU Handler:		rfi
+		Memory::Write_U32(0x4c000064, 0x80000C00);	// write default Syscall Handler:	rfi
 
 		HLE::Patch(0x81300000, "OSReport");				// HLE OSReport for Apploader
 
@@ -375,9 +349,9 @@ bool CBoot::EmulatedBS2_Wii()
 		PowerPC::ppcState.gpr[4] = iAppLoaderFuncAddr + 4;
 		PowerPC::ppcState.gpr[5] = iAppLoaderFuncAddr + 8;
 		RunFunction(iAppLoaderEntry);
-		u32 iAppLoaderInit = Memory::ReadUnchecked_U32(iAppLoaderFuncAddr+0);
-		u32 iAppLoaderMain = Memory::ReadUnchecked_U32(iAppLoaderFuncAddr+4);
-		u32 iAppLoaderClose = Memory::ReadUnchecked_U32(iAppLoaderFuncAddr+8);
+		u32 iAppLoaderInit = Memory::ReadUnchecked_U32(iAppLoaderFuncAddr + 0);
+		u32 iAppLoaderMain = Memory::ReadUnchecked_U32(iAppLoaderFuncAddr + 4);
+		u32 iAppLoaderClose = Memory::ReadUnchecked_U32(iAppLoaderFuncAddr + 8);
 
 		// iAppLoaderInit
 		DEBUG_LOG(BOOT, "Run iAppLoaderInit");
@@ -398,13 +372,13 @@ bool CBoot::EmulatedBS2_Wii()
 
 			RunFunction(iAppLoaderMain);
 
-			u32 iRamAddress	= Memory::ReadUnchecked_U32(0x81300004);
-			u32 iLength		= Memory::ReadUnchecked_U32(0x81300008);
-			u32 iDVDOffset	= Memory::ReadUnchecked_U32(0x8130000c) << 2;
+			u32 iRamAddress = Memory::ReadUnchecked_U32(0x81300004);
+			u32 iLength = Memory::ReadUnchecked_U32(0x81300008);
+			u32 iDVDOffset = Memory::ReadUnchecked_U32(0x8130000c) << 2;
 
 			INFO_LOG(BOOT, "DVDRead: offset: %08x   memOffset: %08x   length: %i", iDVDOffset, iRamAddress, iLength);
 			DVDInterface::DVDRead(iDVDOffset, iRamAddress, iLength);
-		} while(PowerPC::ppcState.gpr[3] != 0x00);
+		} while (PowerPC::ppcState.gpr[3] != 0x00);
 
 		// iAppLoaderClose
 		DEBUG_LOG(BOOT, "Run iAppLoaderClose");

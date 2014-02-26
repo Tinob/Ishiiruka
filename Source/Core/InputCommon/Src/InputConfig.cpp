@@ -42,9 +42,9 @@ bool InputPlugin::LoadConfig(bool isGC)
 		game_ini.Load(File::GetUserPath(D_GAMESETTINGS_IDX) + SConfig::GetInstance().m_LocalCoreStartupParameter.GetUniqueID() + ".ini", true);
 		for (int i = 0; i < 4; i++)
 		{
-			if (game_ini.Exists("Controls", (type + "Profile" + num[i]).c_str()))
+			if (game_ini.Exists("Controls", (type + "Profile" + num[i])))
 			{
-				game_ini.Get("Controls", (type + "Profile" + num[i]).c_str(), &profile[i]);
+				game_ini.Get("Controls", (type + "Profile" + num[i]), &profile[i]);
 				if (File::Exists(File::GetUserPath(D_CONFIG_IDX) + path + profile[i] + ".ini"))
 					useProfile[i] = true;
 				else
@@ -72,7 +72,7 @@ bool InputPlugin::LoadConfig(bool isGC)
 			}
 			else
 			{
-				(*i)->LoadConfig(inifile.GetOrCreateSection((*i)->GetName().c_str()));
+				(*i)->LoadConfig(inifile.GetOrCreateSection((*i)->GetName()));
 			}
 
 			// update refs
@@ -98,7 +98,7 @@ void InputPlugin::SaveConfig()
 	std::vector< ControllerEmu* >::const_iterator i = controllers.begin(),
 		e = controllers.end();
 	for ( ; i!=e; ++i )
-		(*i)->SaveConfig(inifile.GetOrCreateSection((*i)->GetName().c_str()));
+		(*i)->SaveConfig(inifile.GetOrCreateSection((*i)->GetName()));
 
 	inifile.Save(ini_filename);
 }

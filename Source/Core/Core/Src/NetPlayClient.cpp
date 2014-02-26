@@ -68,7 +68,7 @@ NetPlayClient::NetPlayClient(const std::string& address, const u16 port, NetPlay
 	is_connected = false;
 
 	// why is false successful? documentation says true is
-	if (0 == m_socket.Connect(port, address, 5))
+	if (m_socket.Connect(port, address, 5) == sf::Socket::Done)
 	{
 		// send connect message
 		sf::Packet spac;
@@ -126,7 +126,9 @@ NetPlayClient::NetPlayClient(const std::string& address, const u16 port, NetPlay
 		}
 	}
 	else
+	{
 		PanicAlertT("Failed to Connect!");
+	}
 
 }
 

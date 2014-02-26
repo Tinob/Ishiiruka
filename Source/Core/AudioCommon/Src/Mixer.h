@@ -2,16 +2,19 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _MIXER_H_
-#define _MIXER_H_
+#pragma once
 
 #include "WaveFile.h"
 #include "StdMutex.h"
 
 // 16 bit Stereo
-#define MAX_SAMPLES			(1024 * 8)
+#define MAX_SAMPLES			(1024 * 2) // 64ms
 #define INDEX_MASK			(MAX_SAMPLES * 2 - 1)
-#define RESERVED_SAMPLES	(256)
+
+#define LOW_WATERMARK			1280 // 40 ms
+#define MAX_FREQ_SHIFT			200 // per 32000 Hz
+#define CONTROL_FACTOR			0.2 // in freq_shift per fifo size offset
+#define CONTROL_AVG			32
 
 class CMixer {
 
@@ -25,7 +28,7 @@ public:
 		, m_logAudio(0)
 		, m_indexW(0)
 		, m_indexR(0)
-		, m_AIplaying(true)
+		, m_numLeftI(0.0f)
 	{
 		// AyuanX: The internal (Core & DSP) sample rate is fixed at 32KHz
 		// So when AI/DAC sample rate differs than 32KHz, we have to do re-sampling
@@ -39,29 +42,29 @@ public:
 	virtual ~CMixer() {}
 
 	// Called from audio threads
-	virtual unsigned int Mix(short* samples, unsigned int numSamples);
+	virtual unsigned int Mix(short* samples, unsigned int numSamples, bool consider_framelimit = true);
 	virtual void Premix(short * /*samples*/, unsigned int /*numSamples*/) {}
-	unsigned int GetNumSamples();
 
 	// Called from main thread
 	virtual void PushSamples(const short* samples, unsigned int num_samples);
-	unsigned int GetSampleRate() {return m_sampleRate;}
+	unsigned int GetSampleRate() const { return m_sampleRate; }
 
-	void SetThrottle(bool use) { m_throttle = use;}
+	void SetThrottle(bool use) { m_throttle = use; }
 
 	// TODO: do we need this
-	bool IsHLEReady() { return m_HLEready;}
-	void SetHLEReady(bool ready) { m_HLEready = ready;}
+	bool IsHLEReady() const { return m_HLEready; }
+	void SetHLEReady(bool ready) { m_HLEready = ready; }
 	// ---------------------
 
 
 	virtual void StartLogAudio(const char *filename) {
-		if (! m_logAudio) {
+		if (!m_logAudio) {
 			m_logAudio = true;
 			g_wave_writer.Start(filename, GetSampleRate());
 			g_wave_writer.SetSkipSilence(false);
 			NOTICE_LOG(DSPHLE, "Starting Audio logging");
-		} else {
+		}
+		else {
 			WARN_LOG(DSPHLE, "Audio logging has already been started");
 		}
 	}
@@ -71,7 +74,8 @@ public:
 			m_logAudio = false;
 			g_wave_writer.Stop();
 			NOTICE_LOG(DSPHLE, "Stopping Audio logging");
-		} else {
+		}
+		else {
 			WARN_LOG(DSPHLE, "Audio logging has already been stopped");
 		}
 	}
@@ -99,12 +103,10 @@ protected:
 	volatile u32 m_indexW;
 	volatile u32 m_indexR;
 
-	bool m_AIplaying;
 	std::mutex m_csMixing;
+	float m_numLeftI;
 
 	volatile float m_speed; // Current rate of the emulation (1.0 = 100% speed)
 private:
 
 };
-
-#endif // _MIXER_H_

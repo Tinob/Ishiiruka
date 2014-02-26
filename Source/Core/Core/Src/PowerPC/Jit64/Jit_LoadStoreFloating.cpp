@@ -80,7 +80,9 @@ void Jit64::lfd(UGeckoInstruction inst)
 	fpr.Lock(d);
 	fpr.BindToRegister(d, true);
 	X64Reg xd = fpr.RX(d);
-	if (cpu_info.bSSSE3) {
+	
+	if (cpu_info.bSSSE3)
+	{
 #ifdef _M_X64
 		MOVQ_xmm(XMM0, MComplex(RBX, ABI_PARAM1, SCALE_1, offset));
 #else

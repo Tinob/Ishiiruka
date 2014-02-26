@@ -917,13 +917,13 @@ void CFrame::LoadIniPerspectives()
 			continue;
 
 		_Section = StringFromFormat("P - %s", Tmp.Name.c_str());
-		ini.Get(_Section.c_str(), "Perspective", &_Perspective,
+		ini.Get(_Section, "Perspective", &_Perspective,
 				"layout2|"
 				"name=Pane 0;caption=Pane 0;state=768;dir=5;prop=100000;|"
 				"name=Pane 1;caption=Pane 1;state=31458108;dir=4;prop=100000;|"
 				"dock_size(5,0,0)=22|dock_size(4,0,0)=333|");
-		ini.Get(_Section.c_str(), "Width", &_Width, "70,25");
-		ini.Get(_Section.c_str(), "Height", &_Height, "80,80");
+		ini.Get(_Section, "Width", &_Width, "70,25");
+		ini.Get(_Section, "Height", &_Height, "80,80");
 
 		Tmp.Perspective = StrToWxStr(_Perspective);
 
@@ -988,14 +988,14 @@ void CFrame::SaveIniPerspectives()
 		STmp += Perspectives[i].Name + ",";
 	}
 	STmp = STmp.substr(0, STmp.length()-1);
-	ini.Set("Perspectives", "Perspectives", STmp.c_str());
+	ini.Set("Perspectives", "Perspectives", STmp);
 	ini.Set("Perspectives", "Active", ActivePerspective);
 
 	// Save the perspectives
 	for (u32 i = 0; i < Perspectives.size(); i++)
 	{
 		std::string _Section = "P - " + Perspectives[i].Name;
-		ini.Set(_Section.c_str(), "Perspective", WxStrToStr(Perspectives[i].Perspective));
+		ini.Set(_Section, "Perspective", WxStrToStr(Perspectives[i].Perspective));
 
 		std::string SWidth = "", SHeight = "";
 		for (u32 j = 0; j < Perspectives[i].Width.size(); j++)
@@ -1007,8 +1007,8 @@ void CFrame::SaveIniPerspectives()
 		SWidth = SWidth.substr(0, SWidth.length()-1);
 		SHeight = SHeight.substr(0, SHeight.length()-1);
 
-		ini.Set(_Section.c_str(), "Width", SWidth.c_str());
-		ini.Set(_Section.c_str(), "Height", SHeight.c_str());
+		ini.Set(_Section, "Width", SWidth);
+		ini.Set(_Section, "Height", SHeight);
 	}
 
 	ini.Save(File::GetUserPath(F_DEBUGGERCONFIG_IDX));

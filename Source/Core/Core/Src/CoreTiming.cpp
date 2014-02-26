@@ -469,7 +469,7 @@ std::string GetScheduledEventsSummary()
 		if (!name)
 			name = "[unknown]";
 
-		text += StringFromFormat("%s : %i %08x%08x\n", event_types[ptr->type].name, ptr->time, ptr->userdata >> 32, ptr->userdata);
+		text += StringFromFormat("%s : %" PRIi64 " %016" PRIx64 "\n", name, ptr->time, ptr->userdata);
 		ptr = ptr->next;
 	}
 	return text;

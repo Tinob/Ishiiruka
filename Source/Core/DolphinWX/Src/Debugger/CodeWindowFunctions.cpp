@@ -121,7 +121,7 @@ void CCodeWindow::Save()
 	// Save notebook affiliations
 	std::string _Section = "P - " + Parent->Perspectives[Parent->ActivePerspective].Name;
 	for (int i = 0; i <= IDM_CODEWINDOW - IDM_LOGWINDOW; i++)
-		ini.Set(_Section.c_str(), SettingName[i], iNbAffiliation[i]);
+		ini.Set(_Section, SettingName[i], iNbAffiliation[i]);
 
 	// Save floating setting
 	for (int i = IDM_LOGWINDOW_PARENT; i <= IDM_CODEWINDOW_PARENT; i++)
