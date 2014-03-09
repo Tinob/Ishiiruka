@@ -9,6 +9,7 @@ set(SRCS	Src/BPFunctions.cpp
 			Src/FPSCounter.cpp
 			Src/FramebufferManagerBase.cpp
 			Src/HiresTextures.cpp
+			Src/DDSLoader.cpp
 			Src/ImageWrite.cpp
 			Src/IndexGenerator.cpp
 			Src/MainBase.cpp

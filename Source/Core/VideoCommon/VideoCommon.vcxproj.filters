@@ -125,6 +125,9 @@
     </ClCompile>
     <ClCompile Include="Src\DriverDetails.cpp" />
     <ClCompile Include="Src\stdafx.cpp" />
+    <ClCompile Include="Src\DDSLoader.cpp">
+      <Filter>Util</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Src\CommandProcessor.h" />
@@ -264,6 +267,9 @@
     </ClInclude>
     <ClInclude Include="Src\DriverDetails.h" />
     <ClInclude Include="Src\stdafx.h" />
+    <ClInclude Include="Src\DDSLoader.h">
+      <Filter>Util</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="CMakeLists.txt" />

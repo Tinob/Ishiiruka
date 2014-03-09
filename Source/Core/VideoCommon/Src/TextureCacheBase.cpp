@@ -16,7 +16,7 @@
 #include "HW/Memmap.h"
 
 // ugly
-extern int frameCount;
+extern s32 frameCount;
 
 enum
 {
@@ -25,7 +25,7 @@ enum
 
 TextureCache *g_texture_cache;
 GC_ALIGNED16(u8 *TextureCache::temp) = NULL;
-unsigned int TextureCache::temp_size;
+u32 TextureCache::temp_size;
 
 TextureCache::TexCache TextureCache::textures;
 
@@ -151,7 +151,7 @@ void TextureCache::InvalidateRange(u32 start_address, u32 size)
 		tcend = textures.end();
 	while (iter != tcend)
 	{
-		const int rangePosition = iter->second->IntersectsMemoryRange(start_address, size);
+		const s32 rangePosition = iter->second->IntersectsMemoryRange(start_address, size);
 		if (0 == rangePosition)
 		{
 			delete iter->second;
@@ -175,7 +175,7 @@ void TextureCache::MakeRangeDynamic(u32 start_address, u32 size)
 
 	for (; iter != tcend; ++iter)
 	{
-		const int rangePosition = iter->second->IntersectsMemoryRange(start_address, size);
+		const s32 rangePosition = iter->second->IntersectsMemoryRange(start_address, size);
 		if (0 == rangePosition)
 		{
 			iter->second->SetHashes(TEXHASH_INVALID);
@@ -193,7 +193,7 @@ bool TextureCache::Find(u32 start_address, u64 hash)
 	return false;
 }
 
-int TextureCache::TCacheEntryBase::IntersectsMemoryRange(u32 range_address, u32 range_size) const
+s32 TextureCache::TCacheEntryBase::IntersectsMemoryRange(u32 range_address, u32 range_size) const
 {
 	if (addr + size_in_bytes < range_address)
 		return -1;
@@ -224,7 +224,7 @@ void TextureCache::ClearRenderTargets()
 	}
 }
 
-bool TextureCache::CheckForCustomTextureLODs(u64 tex_hash, int texformat, unsigned int levels)
+bool TextureCache::CheckForCustomTextureLODs(u64 tex_hash, s32 texformat, u32 levels)
 {
 	if (levels == 1)
 		return false;
@@ -235,7 +235,7 @@ bool TextureCache::CheckForCustomTextureLODs(u64 tex_hash, int texformat, unsign
 
 	sprintf(texBasePathTemp, "%s_%08x_%i", SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID.c_str(), (u32) (tex_hash & 0x00000000FFFFFFFFLL), texformat);
 
-	for (unsigned int level = 1; level < levels; ++level)
+	for (u32 level = 1; level < levels; ++level)
 	{
 		sprintf(texPathTemp, "%s_mip%i", texBasePathTemp, level);
 		if (!HiresTextures::HiresTexExists(texPathTemp))
@@ -249,20 +249,19 @@ bool TextureCache::CheckForCustomTextureLODs(u64 tex_hash, int texformat, unsign
 	return true;
 }
 
-PC_TexFormat TextureCache::LoadCustomTexture(u64 tex_hash, int texformat, unsigned int level, unsigned int& width, unsigned int& height)
+PC_TexFormat TextureCache::LoadCustomTexture(u64 tex_hash, s32 texformat, u32 level, u32& width, u32& height, u32 &nummipsinbuffer)
 {
 	char texPathTemp[MAX_PATH];
-	unsigned int newWidth = 0;
-	unsigned int newHeight = 0;
+	u32 newWidth = 0;
+	u32 newHeight = 0;
 	u32 tex_hash_u32 = tex_hash & 0x00000000FFFFFFFFLL;
-
 	if (level == 0)
 		sprintf(texPathTemp, "%s_%08x_%i", SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID.c_str(), tex_hash_u32, texformat);
 	else
 		sprintf(texPathTemp, "%s_%08x_%i_mip%i", SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID.c_str(), tex_hash_u32, texformat, level);
 
-	unsigned int required_size = 0;
-	PC_TexFormat ret = HiresTextures::GetHiresTex(texPathTemp, &newWidth, &newHeight, &required_size, texformat, temp_size, temp);
+	u32 required_size = 0;
+	PC_TexFormat ret = HiresTextures::GetHiresTex(texPathTemp, &newWidth, &newHeight, &required_size, &nummipsinbuffer, texformat, temp_size, temp);
 	if (ret == PC_TEX_FMT_NONE && temp_size < required_size)
 	{
 		// Allocate more memory and try again
@@ -270,7 +269,7 @@ PC_TexFormat TextureCache::LoadCustomTexture(u64 tex_hash, int texformat, unsign
 		temp_size = required_size;
 		FreeAlignedMemory(temp);
 		temp = (u8*)AllocateAlignedMemory(temp_size, 16);
-		ret = HiresTextures::GetHiresTex(texPathTemp, &newWidth, &newHeight, &required_size, texformat, temp_size, temp);
+		ret = HiresTextures::GetHiresTex(texPathTemp, &newWidth, &newHeight, &required_size, &nummipsinbuffer, texformat, temp_size, temp);
 	}
 
 	if (ret != PC_TEX_FMT_NONE)
@@ -287,7 +286,7 @@ PC_TexFormat TextureCache::LoadCustomTexture(u64 tex_hash, int texformat, unsign
 	return ret;
 }
 
-void TextureCache::DumpTexture(TCacheEntryBase* entry, unsigned int level)
+void TextureCache::DumpTexture(TCacheEntryBase* entry, u32 level)
 {
 	char szTemp[MAX_PATH];
 	std::string szDir = File::GetUserPath(D_DUMPTEXTURES_IDX) +
@@ -322,7 +321,7 @@ static u32 CalculateLevelSize(u32 level_0_size, u32 level)
 }
 
 // Used by TextureCache::Load
-static TextureCache::TCacheEntryBase* ReturnEntry(unsigned int stage, TextureCache::TCacheEntryBase* entry)
+static TextureCache::TCacheEntryBase* ReturnEntry(u32 stage, TextureCache::TCacheEntryBase* entry)
 {
 	entry->frameCount = frameCount;
 	entry->Bind(stage);
@@ -332,21 +331,21 @@ static TextureCache::TCacheEntryBase* ReturnEntry(unsigned int stage, TextureCac
 	return entry;
 }
 
-TextureCache::TCacheEntryBase* TextureCache::Load(unsigned int const stage,
-	u32 const address, unsigned int width, unsigned int height, int const texformat,
-	unsigned int const tlutaddr, int const tlutfmt, bool const use_mipmaps, unsigned int maxlevel, bool const from_tmem)
+TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
+	u32 const address, u32 width, u32 height, s32 const texformat,
+	u32 const tlutaddr, s32 const tlutfmt, bool const use_mipmaps, u32 maxlevel, bool const from_tmem)
 {
 	if (0 == address)
 		return NULL;
 
 	// TexelSizeInNibbles(format) * width * height / 16;
-	const unsigned int bsw = TexDecoder_GetBlockWidthInTexels(texformat) - 1;
-	const unsigned int bsh = TexDecoder_GetBlockHeightInTexels(texformat) - 1;
+	const u32 bsw = TexDecoder_GetBlockWidthInTexels(texformat) - 1;
+	const u32 bsh = TexDecoder_GetBlockHeightInTexels(texformat) - 1;
 
-	unsigned int expandedWidth  = (width  + bsw) & (~bsw);
-	unsigned int expandedHeight = (height + bsh) & (~bsh);
-	const unsigned int nativeW = width;
-	const unsigned int nativeH = height;
+	u32 expandedWidth  = (width  + bsw) & (~bsw);
+	u32 expandedHeight = (height + bsh) & (~bsh);
+	const u32 nativeW = width;
+	const u32 nativeH = height;
 
 	u32 texID = address;
 	// Hash assigned to texcache entry (also used to generate filenames used for texture dumping and custom texture lookup)
@@ -439,11 +438,14 @@ TextureCache::TCacheEntryBase* TextureCache::Load(unsigned int const stage,
 	}
 
 	bool using_custom_texture = false;
-
+	u32 nummipsinbuffer = 0;
 	if (g_ActiveConfig.bHiresTextures)
 	{
 		// This function may modify width/height.
-		pcfmt = LoadCustomTexture(tex_hash, texformat, 0, width, height);
+		pcfmt = LoadCustomTexture(tex_hash, texformat, 0, width, height, nummipsinbuffer);
+		// disable mipmap loading from the same file
+		// until a good code cleanup
+		nummipsinbuffer = 0;
 		if (pcfmt != PC_TEX_FMT_NONE)
 		{
 			if (expandedWidth != width || expandedHeight != height)
@@ -474,7 +476,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(unsigned int const stage,
 	}
 
 	u32 texLevels = use_mipmaps ? (maxlevel + 1) : 1;
-	const bool using_custom_lods = using_custom_texture && CheckForCustomTextureLODs(tex_hash, texformat, texLevels);
+	const bool using_custom_lods = using_custom_texture && (nummipsinbuffer > 0  || CheckForCustomTextureLODs(tex_hash, texformat, texLevels));
 	// Only load native mips if their dimensions fit to our virtual texture dimensions
 	const bool use_native_mips = use_mipmaps && !using_custom_lods && (width == nativeW && height == nativeH);
 	texLevels = (use_native_mips || using_custom_lods) ? texLevels : 1; // TODO: Should be forced to 1 for non-pow2 textures (e.g. efb copies with automatically adjusted IR)
@@ -552,12 +554,19 @@ TextureCache::TCacheEntryBase* TextureCache::Load(unsigned int const stage,
 		}
 		else if (using_custom_lods)
 		{
+			if (nummipsinbuffer > 0)
+			{
+				texLevels = min(texLevels, nummipsinbuffer);
+			}
 			for (; level != texLevels; ++level)
 			{
-				unsigned int mip_width = CalculateLevelSize(width, level);
-				unsigned int mip_height = CalculateLevelSize(height, level);
-
-				LoadCustomTexture(tex_hash, texformat, level, mip_width, mip_height);
+				u32 mip_width = CalculateLevelSize(width, level);
+				u32 mip_height = CalculateLevelSize(height, level);
+				if (nummipsinbuffer == 0)
+				{
+					u32 nmips = 0;
+					LoadCustomTexture(tex_hash, texformat, level, mip_width, mip_height, nmips);
+				}
 				entry->Load(mip_width, mip_height, mip_width, level);
 			}
 		}
@@ -569,7 +578,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(unsigned int const stage,
 	return ReturnEntry(stage, entry);
 }
 
-void TextureCache::CopyRenderTargetToTexture(u32 dstAddr, unsigned int dstFormat, unsigned int srcFormat,
+void TextureCache::CopyRenderTargetToTexture(u32 dstAddr, u32 dstFormat, u32 srcFormat,
 	const EFBRectangle& srcRect, bool isIntensity, bool scaleByHalf)
 {
 	// Emulation methods:
@@ -619,7 +628,7 @@ void TextureCache::CopyRenderTargetToTexture(u32 dstAddr, unsigned int dstFormat
 	float *const ColorMask = colmat + 20;
 	ColorMask[0] = ColorMask[1] = ColorMask[2] = ColorMask[3] = 255.0f;
 	ColorMask[4] = ColorMask[5] = ColorMask[6] = ColorMask[7] = 1.0f / 255.0f;
-	unsigned int cbufid = -1;
+	u32 cbufid = -1;
 	bool efbHasAlpha = bpmem.zcontrol.pixel_format == PIXELFMT_RGBA6_Z24;
 
 	if (srcFormat == PIXELFMT_Z24)
@@ -848,11 +857,11 @@ void TextureCache::CopyRenderTargetToTexture(u32 dstAddr, unsigned int dstFormat
 		}
 	}
 
-	const unsigned int tex_w = scaleByHalf ? srcRect.GetWidth()/2 : srcRect.GetWidth();
-	const unsigned int tex_h = scaleByHalf ? srcRect.GetHeight()/2 : srcRect.GetHeight();
+	const u32 tex_w = scaleByHalf ? srcRect.GetWidth()/2 : srcRect.GetWidth();
+	const u32 tex_h = scaleByHalf ? srcRect.GetHeight()/2 : srcRect.GetHeight();
 
-	unsigned int scaled_tex_w = g_ActiveConfig.bCopyEFBScaled ? Renderer::EFBToScaledX(tex_w) : tex_w;
-	unsigned int scaled_tex_h = g_ActiveConfig.bCopyEFBScaled ? Renderer::EFBToScaledY(tex_h) : tex_h;
+	u32 scaled_tex_w = g_ActiveConfig.bCopyEFBScaled ? Renderer::EFBToScaledX(tex_w) : tex_w;
+	u32 scaled_tex_h = g_ActiveConfig.bCopyEFBScaled ? Renderer::EFBToScaledY(tex_h) : tex_h;
 
 
 	TCacheEntryBase *entry = textures[dstAddr];

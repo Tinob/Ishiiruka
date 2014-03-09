@@ -192,6 +192,21 @@ TextureCache::TCacheEntryBase* TextureCache::CreateTexture(unsigned int width,
 			gl_iformat = GL_RGB;
 			gl_type = GL_UNSIGNED_SHORT_5_6_5;
 			break;
+		case PC_TEX_FMT_DXT1:
+			gl_format = 0;
+			gl_iformat = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
+			gl_type = 0;
+			break;
+		case PC_TEX_FMT_DXT3:
+			gl_format = 0;
+			gl_iformat = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+			gl_type = 0;
+			break;
+		case PC_TEX_FMT_DXT5:
+			gl_format = 0;
+			gl_iformat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+			gl_type = 0;
+			break;
 		}
 	}
 
@@ -228,9 +243,21 @@ void TextureCache::TCacheEntry::Load(unsigned int width, unsigned int height,
 	{
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, m_tex_levels - 1);
 	}
-
-	if (pcfmt != PC_TEX_FMT_DXT1)
+	switch (pcfmt)
 	{
+	case PC_TEX_FMT_DXT1:
+		glCompressedTexImage2D(GL_TEXTURE_2D, level, GL_COMPRESSED_RGBA_S3TC_DXT1_EXT,
+			width, height, 0, ((width + 3) >> 2) * ((height + 3) >> 2) * 8, temp);
+		break;
+	case PC_TEX_FMT_DXT3:
+		glCompressedTexImage2D(GL_TEXTURE_2D, level, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT,
+			width, height, 0, ((width + 3) >> 2) * ((height + 3) >> 2) * 16, temp);
+		break;
+	case PC_TEX_FMT_DXT5:
+		glCompressedTexImage2D(GL_TEXTURE_2D, level, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,
+			width, height, 0, ((width + 3) >> 2) * ((height + 3) >> 2) * 16, temp);
+		break;
+	default:
 		if (expanded_width != width)
 			glPixelStorei(GL_UNPACK_ROW_LENGTH, expanded_width);
 
@@ -238,12 +265,7 @@ void TextureCache::TCacheEntry::Load(unsigned int width, unsigned int height,
 
 		if (expanded_width != width)
 			glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-	}
-	else
-	{
-		PanicAlert("PC_TEX_FMT_DXT1 support disabled");
-		//glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_S3TC_DXT1_EXT,
-			//width, height, 0, expanded_width * expanded_height/2, temp);
+		break;
 	}
 	GL_REPORT_ERRORD();
 }

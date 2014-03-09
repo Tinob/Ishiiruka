@@ -257,7 +257,11 @@ LPDIRECT3DTEXTURE9 CreateTexture2D(const u8* buffer, const int width, const int 
 		}
 		break;
 	case D3DFMT_DXT1:
-		memcpy(Lock.pBits,buffer,((width+3)/4)*((height+3)/4)*8);
+		memcpy(Lock.pBits, buffer, ((width + 3) >> 2)*((height + 3) >> 2) * 8);
+		break;
+	case D3DFMT_DXT3:
+	case D3DFMT_DXT5:
+		memcpy(Lock.pBits, buffer, ((width + 3) >> 2)*((height + 3) >> 2) * 16);
 		break;
 	default:
 		PanicAlert("D3D: Invalid texture format %i", fmt);
@@ -274,7 +278,6 @@ LPDIRECT3DTEXTURE9 CreateOnlyTexture2D(const int width, const int height, D3DFOR
 	bool bExpand = false;
 	HRESULT hr;
 	// TODO(ector): Allow mipmaps for non-pow textures on newer cards?
-	// TODO(ector): Use the game-specified mipmaps?
 	if (!isPow2)
 		hr = dev->CreateTexture(width, height, 1, 0, fmt, D3DPOOL_MANAGED, &pTexture, NULL);
 	else
@@ -395,7 +398,11 @@ void ReplaceTexture2D(LPDIRECT3DTEXTURE9 pTexture, const u8* buffer, const int w
 		}
 		break;
 	case D3DFMT_DXT1:
-		memcpy(Lock.pBits,buffer,((width+3)/4)*((height+3)/4)*8);
+		memcpy(Lock.pBits, buffer, ((width + 3) >> 2)*((height + 3) >> 2) * 8);
+		break;
+	case D3DFMT_DXT3:
+	case D3DFMT_DXT5:
+		memcpy(Lock.pBits, buffer, ((width + 3) >> 2)*((height + 3) >> 2) * 16);
 		break;
 	}
 	pTexture->UnlockRect(level); 

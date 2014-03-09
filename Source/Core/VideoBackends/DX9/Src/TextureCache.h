@@ -30,22 +30,22 @@ private:
 		TCacheEntry(LPDIRECT3DTEXTURE9 _tex) : texture(_tex) {}
 		~TCacheEntry();
 
-		void Load(unsigned int width, unsigned int height,
-			unsigned int expanded_width, unsigned int levels);
+		void Load(u32 width, u32 height,
+			u32 expanded_width, u32 levels);
 
-		void FromRenderTarget(u32 dstAddr, unsigned int dstFormat,
-			unsigned int srcFormat, const EFBRectangle& srcRect,
-			bool isIntensity, bool scaleByHalf, unsigned int cbufid,
+		void FromRenderTarget(u32 dstAddr, u32 dstFormat,
+			u32 srcFormat, const EFBRectangle& srcRect,
+			bool isIntensity, bool scaleByHalf, u32 cbufid,
 			const float *colmat);
 
-		void Bind(unsigned int stage);
-		bool Save(const char filename[], unsigned int level);
+		void Bind(u32 stage);
+		bool Save(const char filename[], u32 level);
 	};
 
-	TCacheEntryBase* CreateTexture(unsigned int width, unsigned int height,
-		unsigned int expanded_width, unsigned int tex_levels, PC_TexFormat pcfmt);
+	TCacheEntryBase* CreateTexture(u32 width, u32 height,
+		u32 expanded_width, u32 tex_levels, PC_TexFormat pcfmt);
 
-	TCacheEntryBase* CreateRenderTargetTexture(unsigned int scaled_tex_w, unsigned int scaled_tex_h);
+	TCacheEntryBase* CreateRenderTargetTexture(u32 scaled_tex_w, u32 scaled_tex_h);
 };
 
 }

@@ -55,6 +55,42 @@ TextureCache::TCacheEntryBase* TextureCache::CreateTexture(unsigned int width,
 	unsigned int height, unsigned int expanded_width,
 	unsigned int tex_levels, PC_TexFormat pcfmt)
 {
+	DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	switch (pcfmt)
+	{
+	case PC_TEX_FMT_BGRA32:
+		format = DXGI_FORMAT_B8G8R8A8_UNORM;
+		break;
+	case PC_TEX_FMT_RGBA32:
+		format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		break;
+	case PC_TEX_FMT_I4_AS_I8:
+		format = DXGI_FORMAT_R8_UNORM;
+		break;
+	case PC_TEX_FMT_IA4_AS_IA8:
+		format = DXGI_FORMAT_R8G8_UNORM;
+		break;
+	case PC_TEX_FMT_I8:
+		format = DXGI_FORMAT_R8_UNORM;
+		break;
+	case PC_TEX_FMT_IA8:
+		format = DXGI_FORMAT_R8G8_UNORM;
+		break;
+	case PC_TEX_FMT_RGB565:
+		format = DXGI_FORMAT_B5G6R5_UNORM;
+		break;
+	case PC_TEX_FMT_DXT1:
+		format = DXGI_FORMAT_BC1_UNORM;
+		break;
+	case PC_TEX_FMT_DXT3:
+		format = DXGI_FORMAT_BC2_UNORM;
+		break;
+	case PC_TEX_FMT_DXT5:
+		format = DXGI_FORMAT_BC3_UNORM;
+		break;
+	default:
+		break;
+	}
 	D3D11_USAGE usage = D3D11_USAGE_DEFAULT;
 	D3D11_CPU_ACCESS_FLAG cpu_access = (D3D11_CPU_ACCESS_FLAG)0;
 	D3D11_SUBRESOURCE_DATA srdata, *data = NULL;
@@ -70,7 +106,8 @@ TextureCache::TCacheEntryBase* TextureCache::CreateTexture(unsigned int width,
 		data = &srdata;
 	}
 
-	const D3D11_TEXTURE2D_DESC texdesc = CD3D11_TEXTURE2D_DESC(DXGI_FORMAT_R8G8B8A8_UNORM,
+
+	const D3D11_TEXTURE2D_DESC texdesc = CD3D11_TEXTURE2D_DESC(format,
 		width, height, 1, tex_levels, D3D11_BIND_SHADER_RESOURCE, usage, cpu_access);
 
 	ID3D11Texture2D *pTexture;

@@ -139,7 +139,11 @@ void GetShaders(std::vector<std::string> &shaders)
 void InitBackendInfo()
 {
 	g_Config.backend_info.APIType = API_OPENGL;
+#ifdef USE_GLES3
 	g_Config.backend_info.bUseRGBATextures = true;
+#else
+	g_Config.backend_info.bUseRGBATextures = false;
+#endif
 	g_Config.backend_info.bUseMinimalMipCount = false;
 	g_Config.backend_info.bSupports3DVision = false;
 	//g_Config.backend_info.bSupportsDualSourceBlend = true; // is gpu dependent and must be set in renderer

@@ -30,7 +30,7 @@
 #include "TextureConverter.h"
 #include "Debugger.h"
 
-extern int frameCount;
+extern s32 frameCount;
 
 namespace DX9
 {
@@ -40,12 +40,12 @@ TextureCache::TCacheEntry::~TCacheEntry()
 	texture->Release();
 }
 
-void TextureCache::TCacheEntry::Bind(unsigned int stage)
+void TextureCache::TCacheEntry::Bind(u32 stage)
 {
 	D3D::SetTexture(stage, texture);
 }
 
-bool TextureCache::TCacheEntry::Save(const char filename[], unsigned int level)
+bool TextureCache::TCacheEntry::Save(const char filename[], u32 level)
 {
 	IDirect3DSurface9* surface;
 	HRESULT hr = texture->GetSurfaceLevel(level, &surface);
@@ -58,15 +58,15 @@ bool TextureCache::TCacheEntry::Save(const char filename[], unsigned int level)
 	return SUCCEEDED(hr);
 }
 
-void TextureCache::TCacheEntry::Load(unsigned int width, unsigned int height,
-	unsigned int expanded_width, unsigned int level)
+void TextureCache::TCacheEntry::Load(u32 width, u32 height,
+	u32 expanded_width, u32 level)
 {
 	D3D::ReplaceTexture2D(texture, temp, width, height, expanded_width, d3d_fmt, swap_r_b, level);
 }
 
-void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, unsigned int dstFormat,
-	unsigned int srcFormat, const EFBRectangle& srcRect,
-	bool isIntensity, bool scaleByHalf, unsigned int cbufid,
+void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, u32 dstFormat,
+	u32 srcFormat, const EFBRectangle& srcRect,
+	bool isIntensity, bool scaleByHalf, u32 cbufid,
 	const float *colmat)
 {
 	g_renderer->ResetAPIState(); // reset any game specific settings
@@ -126,7 +126,7 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, unsigned int dstFo
 		}
 
 		D3DFORMAT bformat = FramebufferManager::GetEFBDepthRTSurfaceFormat();
-		int SSAAMode = g_ActiveConfig.iMultisampleMode;
+		s32 SSAAMode = g_ActiveConfig.iMultisampleMode;
 
 		D3D::drawShadedTexQuad(read_texture, &sourcerect, 
 			Renderer::GetTargetWidth(), Renderer::GetTargetHeight(),
@@ -140,7 +140,7 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, unsigned int dstFo
 
 	if (!g_ActiveConfig.bCopyEFBToTexture)
 	{
-		int encoded_size = TextureConverter::EncodeToRamFromTexture(
+		s32 encoded_size = TextureConverter::EncodeToRamFromTexture(
 					addr,
 					read_texture,
 					Renderer::GetTargetWidth(), 
@@ -172,8 +172,8 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, unsigned int dstFo
 	g_renderer->RestoreAPIState();
 }
 
-TextureCache::TCacheEntryBase* TextureCache::CreateTexture(unsigned int width, unsigned int height,
-	unsigned int expanded_width, unsigned int tex_levels, PC_TexFormat pcfmt)
+TextureCache::TCacheEntryBase* TextureCache::CreateTexture(u32 width, u32 height,
+	u32 expanded_width, u32 tex_levels, PC_TexFormat pcfmt)
 {
 	D3DFORMAT d3d_fmt;
 	bool swap_r_b = false;
@@ -211,6 +211,10 @@ TextureCache::TCacheEntryBase* TextureCache::CreateTexture(unsigned int width, u
 
 	case PC_TEX_FMT_DXT1:
 		d3d_fmt = D3DFMT_DXT1;
+	case PC_TEX_FMT_DXT3:
+		d3d_fmt = D3DFMT_DXT3;
+	case PC_TEX_FMT_DXT5:
+		d3d_fmt = D3DFMT_DXT5;
 		break;
 	}
 
@@ -224,7 +228,7 @@ TextureCache::TCacheEntryBase* TextureCache::CreateTexture(unsigned int width, u
 }
 
 TextureCache::TCacheEntryBase* TextureCache::CreateRenderTargetTexture(
-	unsigned int scaled_tex_w, unsigned int scaled_tex_h)
+	u32 scaled_tex_w, u32 scaled_tex_h)
 {
 	LPDIRECT3DTEXTURE9 texture;
 	D3D::dev->CreateTexture(scaled_tex_w, scaled_tex_h, 1, D3DUSAGE_RENDERTARGET,

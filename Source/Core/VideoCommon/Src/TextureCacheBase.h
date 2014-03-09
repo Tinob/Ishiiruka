@@ -38,15 +38,15 @@ public:
 		u32 format;
 		enum TexCacheEntryType type;
 
-		unsigned int num_mipmaps;
-		unsigned int native_width, native_height; // Texture dimensions from the GameCube's point of view
-		unsigned int virtual_width, virtual_height; // Texture dimensions from OUR point of view - for hires textures or scaled EFB copies
+		u32 num_mipmaps;
+		u32 native_width, native_height; // Texture dimensions from the GameCube's point of view
+		u32 virtual_width, virtual_height; // Texture dimensions from OUR point of view - for hires textures or scaled EFB copies
 
 		// used to delete textures which haven't been used for TEXTURE_KILL_THRESHOLD frames
-		int frameCount;
+		s32 frameCount;
 
 
-		void SetGeneralParameters(u32 _addr, u32 _size, u32 _format, unsigned int _num_mipmaps)
+		void SetGeneralParameters(u32 _addr, u32 _size, u32 _format, u32 _num_mipmaps)
 		{
 			addr = _addr;
 			size_in_bytes = _size;
@@ -54,7 +54,7 @@ public:
 			num_mipmaps = _num_mipmaps;
 		}
 
-		void SetDimensions(unsigned int _native_width, unsigned int _native_height, unsigned int _virtual_width, unsigned int _virtual_height)
+		void SetDimensions(u32 _native_width, u32 _native_height, u32 _virtual_width, u32 _virtual_height)
 		{
 			native_width = _native_width;
 			native_height = _native_height;
@@ -71,17 +71,17 @@ public:
 
 		virtual ~TCacheEntryBase();
 
-		virtual void Bind(unsigned int stage) = 0;
-		virtual bool Save(const char filename[], unsigned int level) = 0;
+		virtual void Bind(u32 stage) = 0;
+		virtual bool Save(const char filename[], u32 level) = 0;
 
-		virtual void Load(unsigned int width, unsigned int height,
-			unsigned int expanded_width, unsigned int level) = 0;
-		virtual void FromRenderTarget(u32 dstAddr, unsigned int dstFormat,
-			unsigned int srcFormat, const EFBRectangle& srcRect,
-			bool isIntensity, bool scaleByHalf, unsigned int cbufid,
+		virtual void Load(u32 width, u32 height,
+			u32 expanded_width, u32 level) = 0;
+		virtual void FromRenderTarget(u32 dstAddr, u32 dstFormat,
+			u32 srcFormat, const EFBRectangle& srcRect,
+			bool isIntensity, bool scaleByHalf, u32 cbufid,
 			const float *colmat) = 0;
 
-		int IntersectsMemoryRange(u32 range_address, u32 range_size) const;
+		s32 IntersectsMemoryRange(u32 range_address, u32 range_size) const;
 
 		bool IsEfbCopy() { return (type == TCET_EC_VRAM || type == TCET_EC_DYNAMIC); }
 	};
@@ -97,13 +97,13 @@ public:
 	static void ClearRenderTargets();	// currently only used by OGL
 	static bool Find(u32 start_address, u64 hash);
 
-	virtual TCacheEntryBase* CreateTexture(unsigned int width, unsigned int height,
-		unsigned int expanded_width, unsigned int tex_levels, PC_TexFormat pcfmt) = 0;
-	virtual TCacheEntryBase* CreateRenderTargetTexture(unsigned int scaled_tex_w, unsigned int scaled_tex_h) = 0;
+	virtual TCacheEntryBase* CreateTexture(u32 width, u32 height,
+		u32 expanded_width, u32 tex_levels, PC_TexFormat pcfmt) = 0;
+	virtual TCacheEntryBase* CreateRenderTargetTexture(u32 scaled_tex_w, u32 scaled_tex_h) = 0;
 
-	static TCacheEntryBase* Load(unsigned int stage, u32 address, unsigned int width, unsigned int height,
-		int format, unsigned int tlutaddr, int tlutfmt, bool use_mipmaps, unsigned int maxlevel, bool from_tmem);
-	static void CopyRenderTargetToTexture(u32 dstAddr, unsigned int dstFormat, unsigned int srcFormat,
+	static TCacheEntryBase* Load(u32 stage, u32 address, u32 width, u32 height,
+		s32 format, u32 tlutaddr, s32 tlutfmt, bool use_mipmaps, u32 maxlevel, bool from_tmem);
+	static void CopyRenderTargetToTexture(u32 dstAddr, u32 dstFormat, u32 srcFormat,
 		const EFBRectangle& srcRect, bool isIntensity, bool scaleByHalf);
 
 	static void RequestInvalidateTextureCache();
@@ -112,12 +112,12 @@ protected:
 	TextureCache();
 
 	static  GC_ALIGNED16(u8 *temp);
-	static unsigned int temp_size;
+	static u32 temp_size;
 
 private:
-	static bool CheckForCustomTextureLODs(u64 tex_hash, int texformat, unsigned int levels);
-	static PC_TexFormat LoadCustomTexture(u64 tex_hash, int texformat, unsigned int level, unsigned int& width, unsigned int& height);
-	static void DumpTexture(TCacheEntryBase* entry, unsigned int level);
+	static bool CheckForCustomTextureLODs(u64 tex_hash, s32 texformat, u32 levels);
+	static PC_TexFormat LoadCustomTexture(u64 tex_hash, s32 texformat, u32 level, u32& width, u32& height, u32 &nummipsinbuffer);
+	static void DumpTexture(TCacheEntryBase* entry, u32 level);
 
 	typedef std::map<u32, TCacheEntryBase*> TexCache;
 
@@ -126,11 +126,11 @@ private:
 	// Backup configuration values
 	static struct BackupConfig
 	{
-		int s_colorsamples;
+		s32 s_colorsamples;
 		bool s_copy_efb_to_texture;
 		bool s_copy_efb_scaled;
 		bool s_copy_efb;
-		int s_efb_scale;
+		s32 s_efb_scale;
 		bool s_texfmt_overlay;
 		bool s_texfmt_overlay_center;
 		bool s_hires_textures;
