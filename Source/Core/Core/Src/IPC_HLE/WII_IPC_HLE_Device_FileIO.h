@@ -38,6 +38,13 @@ private:
 
 	enum
 	{
+		WII_SEEK_SET = 0,
+		WII_SEEK_CUR = 1,
+		WII_SEEK_END = 2
+	};
+
+	enum
+	{
 		ISFS_FUNCNULL				= 0,
 		ISFS_FUNCGETSTAT,
 		ISFS_FUNCREADDIR,
