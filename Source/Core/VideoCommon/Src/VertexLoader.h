@@ -18,6 +18,13 @@
 #include "NativeVertexFormat.h"
 
 #include "x64Emitter.h"
+
+#ifndef _M_GENERIC
+#ifndef __APPLE__
+#define USE_VERTEX_LOADER_JIT
+#endif
+#endif
+
 extern const float fractionTable[];
 class VertexLoaderUID
 {

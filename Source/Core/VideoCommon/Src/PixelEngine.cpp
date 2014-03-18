@@ -204,46 +204,16 @@ void Read16(u16& _uReturnValue, const u32 _iAddress)
 		break;
 
 	case PE_BBOX_LEFT:
-	{
-		// Left must be even and 606px max
-		_uReturnValue = std::min((u16) 606, bbox[0]) & ~1;
-
-		INFO_LOG(PIXELENGINE, "R: BBOX_LEFT   = %i", _uReturnValue);
-		bbox_active = false;
-		break;
-	}
-
 	case PE_BBOX_RIGHT:
-	{
-		// Right must be odd and 607px max
-		_uReturnValue = std::min((u16) 607, bbox[1]) | 1;
-
-		INFO_LOG(PIXELENGINE, "R: BBOX_RIGHT  = %i", _uReturnValue);
-		bbox_active = false;
-		break;
-	}
-
 	case PE_BBOX_TOP:
-	{
-		// Top must be even and 478px max
-		_uReturnValue = std::min((u16) 478, bbox[2]) & ~1;
-
-		INFO_LOG(PIXELENGINE, "R: BBOX_TOP    = %i", _uReturnValue);
-		bbox_active = false;
-		break;
-	}
-
 	case PE_BBOX_BOTTOM:
 	{
-		// Bottom must be odd and 479px max
-		_uReturnValue = std::min((u16) 479, bbox[3]) | 1;
-
-		INFO_LOG(PIXELENGINE, "R: BBOX_BOTTOM = %i", _uReturnValue);
+		_uReturnValue = bbox[(_iAddress >> 1) & 3];
 		bbox_active = false;
 		break;
 	}
 
-	// NOTE(neobrain): only PE_PERF_ZCOMP_OUTPUT is implemented in D3D11, but the other values shouldn't be contradictionary to the value of that register (i.e. INPUT registers should always be greater or equal to their corresponding OUTPUT registers).
+	// NOTE(neobrain): only PE_PERF_ZCOMP_OUTPUT is implemented, but the other values shouldn't be contradictionary to the value of that register (i.e. INPUT registers should always be greater or equal to their corresponding OUTPUT registers).
 	case PE_PERF_ZCOMP_INPUT_ZCOMPLOC_L:
 		_uReturnValue = g_video_backend->Video_GetQueryResult(PQ_ZCOMP_INPUT_ZCOMPLOC) & 0xFFFF;
 		break;
@@ -281,8 +251,7 @@ void Read16(u16& _uReturnValue, const u32 _iAddress)
 		// The amount of remaining goop is determined by checking how many pixels reach the blending stage.
 		// Once this register falls below a particular value (around 0x90), the game regards the challenge finished.
 		// In very old builds, Dolphin only returned 0. That caused the challenge to be immediately finished without any goop being cleaned (the timer just didn't even start counting from 3:00:00).
-		// Later builds returned 1 for the high register. That caused the timer to actually count down, but made the challenge unbeatable because the game always thought you didn't clear any goop at all.
-		// Note that currently this functionality is only implemented in the D3D11 backend.
+		// Later builds returned 1 for the high register. That caused the timer to actually count down, but made the challenge unbeatable because the game always thought you didn't clear any goop at all.		
 		_uReturnValue = g_video_backend->Video_GetQueryResult(PQ_BLEND_INPUT) & 0xFFFF;
 		break;
 
