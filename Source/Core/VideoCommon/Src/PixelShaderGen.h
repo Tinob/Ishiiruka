@@ -28,7 +28,7 @@
 #define C_TEXDIMS		(C_ALPHA + 1)			// 9
 #define C_ZBIAS			(C_TEXDIMS + 8)			//17
 #define C_INDTEXSCALE	(C_ZBIAS + 2)			//19
-#define C_INDTEXMTX		(C_INDTEXSCALE + 2)		//21
+#define C_INDTEXMTX		(C_INDTEXSCALE + 4)		//21
 #define C_FOG			(C_INDTEXMTX + 6)		//27
 
 #define C_PLIGHTS		(C_FOG + 3)
@@ -154,20 +154,14 @@ void GetPixelShaderUidD3D9(PixelShaderUid& object, DSTALPHA_MODE dstAlphaMode, u
 
 void GeneratePixelShaderCodeD3D9(ShaderCode& object, DSTALPHA_MODE dstAlphaMode, u32 components);
 
-void GetPixelShaderConstantProfileD3D9(ShaderConstantProfile& object, DSTALPHA_MODE dstAlphaMode, u32 components);
-
 void GeneratePixelShaderCodeD3D9SM2(ShaderCode& object, DSTALPHA_MODE dstAlphaMode, u32 components);
 
 void GetPixelShaderUidD3D11(PixelShaderUid& object, DSTALPHA_MODE dstAlphaMode, u32 components);
 
 void GeneratePixelShaderCodeD3D11(ShaderCode& object, DSTALPHA_MODE dstAlphaMode, u32 components);
 
-void GetPixelShaderConstantProfileD3D11(ShaderConstantProfile& object, DSTALPHA_MODE dstAlphaMode, u32 components);
-
 void GetPixelShaderUidGL(PixelShaderUid& object, DSTALPHA_MODE dstAlphaMode, u32 components);
 
 void GeneratePixelShaderCodeGL(ShaderCode& object, DSTALPHA_MODE dstAlphaMode, u32 components);
-
-void GetPixelShaderConstantProfileGL(ShaderConstantProfile& object, DSTALPHA_MODE dstAlphaMode, u32 components);
 
 #endif // GCOGL_PIXELSHADER_H

@@ -58,11 +58,6 @@ public:
 	void SetBuffer(char* buffer) { }
 
 	/*
-	 * Tells us that a specific constant range (including last_index) is being used by the shader
-	 */
-	inline void SetConstantsUsed(unsigned int first_index, unsigned int last_index) {}
-
-	/*
 	 * Returns a pointer to an internally stored object of the uid_data type.
 	 * @warning since most child classes use the default implementation you shouldn't access this directly without adding precautions against NULL access (e.g. via adding a dummy structure, cf. the vertex/pixel shader generators)
 	 */
@@ -138,30 +133,6 @@ public:
 private:
 	const char* buf;
 	char* write_ptr;
-};
-
-/**
- * Generates a shader constant profile which can be used to query which constants are used in a shader
- */
-class ShaderConstantProfile : public ShaderGeneratorInterface
-{
-public:
-	ShaderConstantProfile(int num_constants) { constant_usage.resize(num_constants); }
-
-	inline void SetConstantsUsed(unsigned int first_index, unsigned int last_index)
-	{
-		for (unsigned int i = first_index; i < last_index+1; ++i)
-			constant_usage[i] = true;
-	}
-
-	inline bool ConstantIsUsed(unsigned int index)
-	{
-		// TODO: Not ready for usage yet
-		return true;
-//		return constant_usage[index];
-	}
-private:
-	std::vector<bool> constant_usage; // TODO: Is vector<bool> appropriate here?
 };
 
 template<class T, API_TYPE api_type>

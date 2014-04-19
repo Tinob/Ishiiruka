@@ -28,6 +28,8 @@ static u32 lastAlpha;
 static u32 lastTexDims[8]; // width | height << 16 | wrap_s << 28 | wrap_t << 30
 static u32 lastZBias;
 static int nMaterialsChanged;
+const float U8_NORM_COEF = 1 / 255.0f;
+const float U24_NORM_COEF = 1 / 16777216.0f;
 
 inline void SetPSConstant4f(unsigned int const_number, float f1, float f2, float f3, float f4)
 {
@@ -105,7 +107,7 @@ void PixelShaderManager::SetConstants()
 
     if (s_bAlphaChanged)
 	{
-		SetPSConstant4f(C_ALPHA, (lastAlpha&0xff)/255.0f, ((lastAlpha>>8)&0xff)/255.0f, 0, ((lastAlpha>>16)&0xff)/255.0f);
+		SetPSConstant4f(C_ALPHA, (lastAlpha & 0xff)*U8_NORM_COEF, ((lastAlpha >> 8) & 0xff)*U8_NORM_COEF, 0, ((lastAlpha >> 16) & 0xff)*U8_NORM_COEF);
 		s_bAlphaChanged = false;
     }
 
@@ -149,29 +151,41 @@ void PixelShaderManager::SetConstants()
 	// indirect incoming texture scales
 	if (s_nIndTexScaleChanged)
 	{
-		// set as two sets of vec4s, each containing S and T of two ind stages.
-		float f[8];
+		// set as 4 sets of vec4s, each containing S and T.
+		float f[16];
 
         if (s_nIndTexScaleChanged & 0x03)
 		{
-			for (u32 i = 0; i < 2; ++i)
-			{
-                f[2 * i] = bpmem.texscale[0].getScaleS(i & 1);
-                f[2 * i + 1] = bpmem.texscale[0].getScaleT(i & 1);
-                PRIM_LOG("tex indscale%d: %f %f\n", i, f[2 * i], f[2 * i + 1]);
-            }
-			SetPSConstant4fv(C_INDTEXSCALE, f);
+			float scaleS = bpmem.texscale[0].getScaleS(0);
+			float scaleT = bpmem.texscale[0].getScaleS(0);
+			f[0] = scaleS - 1.0f;
+			f[1] = scaleT - 1.0f;
+			f[2] = 1.0f / scaleS;
+			f[3] = 1.0f / scaleT;
+			scaleS = bpmem.texscale[0].getScaleS(1);
+			scaleT = bpmem.texscale[0].getScaleS(1);
+			f[4] = scaleS - 1.0f;
+			f[5] = scaleT - 1.0f;
+			f[6] = 1.0f / scaleS;
+			f[7] = 1.0f / scaleT;
+			SetMultiPSConstant4fv(C_INDTEXSCALE, 2, f);
         }
 
 		if (s_nIndTexScaleChanged & 0x0c)
 		{
-            for (u32 i = 2; i < 4; ++i)
-			{
-                f[2 * i] = bpmem.texscale[1].getScaleS(i & 1);
-                f[2 * i + 1] = bpmem.texscale[1].getScaleT(i & 1);
-                PRIM_LOG("tex indscale%d: %f %f\n", i, f[2 * i], f[2 * i + 1]);
-            }
-			SetPSConstant4fv(C_INDTEXSCALE+1, &f[4]);
+			float scaleS = bpmem.texscale[1].getScaleS(0);
+			float scaleT = bpmem.texscale[1].getScaleS(0);
+			f[8] = scaleS - 1.0f;
+			f[9] = scaleT - 1.0f;
+			f[10] = 1.0f / scaleS;
+			f[11] = 1.0f / scaleT;
+			scaleS = bpmem.texscale[1].getScaleS(1);
+			scaleT = bpmem.texscale[1].getScaleS(1);
+			f[12] = scaleS - 1.0f;
+			f[13] = scaleT - 1.0f;
+			f[14] = 1.0f / scaleS;
+			f[15] = 1.0f / scaleT;
+			SetMultiPSConstant4fv(C_INDTEXSCALE + 2, 2, &f[8]);
         }
 		s_nIndTexScaleChanged = 0;
     }
@@ -185,26 +199,34 @@ void PixelShaderManager::SetConstants()
                 int scale = ((u32)bpmem.indmtx[i].col0.s0 << 0) |
 					        ((u32)bpmem.indmtx[i].col1.s1 << 2) |
 					        ((u32)bpmem.indmtx[i].col2.s2 << 4);
-                float fscale = powf(2.0f, (float)(scale - 17)) / 1024.0f;
-
-                // xyz - static matrix
-                // TODO w - dynamic matrix scale / 256...... somehow / 4 works better
-                // rev 2972 - now using / 256.... verify that this works
+				scale = scale - 17;
+				float fscale = 1.0f;
+				if (scale > 0)
+				{
+					scale = 1 << scale;
+					fscale *= (float)scale;
+				}
+				else if (scale < 0)
+				{
+					scale = -scale;
+					scale = 1 << scale;
+					fscale = fscale / (float)scale;
+				}
 				SetPSConstant4f(C_INDTEXMTX + 2 * i,
-					bpmem.indmtx[i].col0.ma * fscale,
-					bpmem.indmtx[i].col1.mc * fscale,
-					bpmem.indmtx[i].col2.me * fscale,
-					fscale * 4.0f);
+					bpmem.indmtx[i].col0.ma,
+					bpmem.indmtx[i].col1.mc,
+					bpmem.indmtx[i].col2.me,
+					fscale);
 				SetPSConstant4f(C_INDTEXMTX + 2 * i + 1,
-					bpmem.indmtx[i].col0.mb * fscale,
-					bpmem.indmtx[i].col1.md * fscale,
-					bpmem.indmtx[i].col2.mf * fscale,
-					fscale * 4.0f);
+					bpmem.indmtx[i].col0.mb,
+					bpmem.indmtx[i].col1.md,
+					bpmem.indmtx[i].col2.mf,
+					fscale);
 
                 PRIM_LOG("indmtx%d: scale=%f, mat=(%f %f %f; %f %f %f)\n",
-                	i, 1024.0f*fscale,
-                	bpmem.indmtx[i].col0.ma * fscale, bpmem.indmtx[i].col1.mc * fscale, bpmem.indmtx[i].col2.me * fscale,
-                	bpmem.indmtx[i].col0.mb * fscale, bpmem.indmtx[i].col1.md * fscale, bpmem.indmtx[i].col2.mf * fscale);
+                	i, fscale,
+                	bpmem.indmtx[i].col0.ma, bpmem.indmtx[i].col1.mc, bpmem.indmtx[i].col2.me,
+                	bpmem.indmtx[i].col0.mb, bpmem.indmtx[i].col1.md, bpmem.indmtx[i].col2.mf);
 
 				s_nIndTexMtxChanged &= ~(1 << i);
 			}
@@ -213,7 +235,7 @@ void PixelShaderManager::SetConstants()
 
     if (s_bFogColorChanged)
 	{
-		SetPSConstant4f(C_FOG, bpmem.fog.color.r / 255.0f, bpmem.fog.color.g / 255.0f, bpmem.fog.color.b / 255.0f, 0);
+		SetPSConstant4f(C_FOG, bpmem.fog.color.r * U8_NORM_COEF, bpmem.fog.color.g * U8_NORM_COEF, bpmem.fog.color.b * U8_NORM_COEF, 0);
 		s_bFogColorChanged = false;
     }
 
@@ -269,12 +291,11 @@ void PixelShaderManager::SetConstants()
 			for (int i = istart; i < iend; ++i)
 			{
 				u32 color = *(const u32*)(xfmemptr + 3);
-				float NormalizationCoef = 1 / 255.0f;
 				SetPSConstant4f(C_PLIGHTS + 5 * i,
-					((color >> 24) & 0xFF) * NormalizationCoef,
-					((color >> 16) & 0xFF) * NormalizationCoef,
-					((color >> 8)  & 0xFF) * NormalizationCoef,
-					((color)       & 0xFF) * NormalizationCoef);
+					((color >> 24) & 0xFF) * U8_NORM_COEF,
+					((color >> 16) & 0xFF) * U8_NORM_COEF,
+					((color >> 8) & 0xFF) * U8_NORM_COEF,
+					((color)& 0xFF) * U8_NORM_COEF);
 				xfmemptr += 4;
 
 				for (int j = 0; j < 4; ++j, xfmemptr += 3)
@@ -300,18 +321,16 @@ void PixelShaderManager::SetConstants()
 		if (nMaterialsChanged)
 		{
 			float GC_ALIGNED16(material[4]);
-			float NormalizationCoef = 1 / 255.0f;
-
 			for (int i = 0; i < 2; ++i)
 			{
 				if (nMaterialsChanged & (1 << i))
 				{
 					u32 data = *(xfregs.ambColor + i);
 
-					material[0] = ((data >> 24) & 0xFF) * NormalizationCoef;
-					material[1] = ((data >> 16) & 0xFF) * NormalizationCoef;
-					material[2] = ((data >>  8) & 0xFF) * NormalizationCoef;
-					material[3] = ( data        & 0xFF) * NormalizationCoef;
+					material[0] = ((data >> 24) & 0xFF) * U8_NORM_COEF;
+					material[1] = ((data >> 16) & 0xFF) * U8_NORM_COEF;
+					material[2] = ((data >> 8) & 0xFF) * U8_NORM_COEF;
+					material[3] = (data & 0xFF) * U8_NORM_COEF;
 
 					SetPSConstant4fv(C_PMATERIALS + i, material);
 				}
@@ -323,10 +342,10 @@ void PixelShaderManager::SetConstants()
 				{
 					u32 data = *(xfregs.matColor + i);
 
-					material[0] = ((data >> 24) & 0xFF) * NormalizationCoef;
-					material[1] = ((data >> 16) & 0xFF) * NormalizationCoef;
-					material[2] = ((data >>  8) & 0xFF) * NormalizationCoef;
-					material[3] = ( data        & 0xFF) * NormalizationCoef;
+					material[0] = ((data >> 24) & 0xFF) * U8_NORM_COEF;
+					material[1] = ((data >> 16) & 0xFF) * U8_NORM_COEF;
+					material[2] = ((data >> 8) & 0xFF) * U8_NORM_COEF;
+					material[3] = (data & 0xFF) * U8_NORM_COEF;
 
 					SetPSConstant4fv(C_PMATERIALS + i + 2, material);
 				}
@@ -365,15 +384,15 @@ void PixelShaderManager::SetColorChanged(int type, int num, bool high)
 	{
 		int r = bpmem.tevregs[num].low.a;
 		int a = bpmem.tevregs[num].low.b;
-		pf[0] = (float)r * (1.0f / 255.0f);
-		pf[3] = (float)a * (1.0f / 255.0f);
+		pf[0] = (float)r * U8_NORM_COEF;
+		pf[3] = (float)a * U8_NORM_COEF;
 	}
 	else
 	{
 		int b = bpmem.tevregs[num].high.a;
 		int g = bpmem.tevregs[num].high.b;
-		pf[1] = (float)g * (1.0f / 255.0f);
-		pf[2] = (float)b * (1.0f / 255.0f);
+		pf[1] = (float)g * U8_NORM_COEF;
+		pf[2] = (float)b * U8_NORM_COEF;
 	}
 
 	s_nColorsChanged[type] |= 1 << num;

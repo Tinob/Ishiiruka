@@ -282,10 +282,17 @@ struct TevStageCombiner
 			u32 clamp : 1;
 
 			u32 shift : 2;
-			u32 dest : 2;  //1,2,3
-
+			u32 dest : 2;  //1,2,3			
 		};
 		u32 hex;
+		bool UsedAsInput(u32 val)
+		{
+			return a == val || b == val || c == val || d == val;
+		}
+		bool UsedAs8bitInput(u32 val)
+		{
+			return a == val || b == val || c == val;
+		}
 	};
 	union AlphaCombiner
 	{
@@ -303,9 +310,17 @@ struct TevStageCombiner
 			u32 clamp : 1;
 
 			u32 shift : 2;
-			u32 dest : 2;  //1,2,3
+			u32 dest : 2;  //1,2,3			
 		};
 		u32 hex;
+		bool UsedAsInput(u32 val)
+		{
+			return a == val || b == val || c == val || d == val;
+		}
+		bool UsedAs8bitInput(u32 val)
+		{
+			return a == val || b == val || c == val;
+		}
 	};
 
 	ColorCombiner colorC;
@@ -413,8 +428,8 @@ union TEXSCALE
 	};
 	u32 hex;
 
-	float getScaleS(int i){return 1.0f/(float)(1<<(i?ss1:ss0));}
-	float getScaleT(int i){return 1.0f/(float)(1<<(i?ts1:ts0));}
+	float getScaleS(int i){return (float)(1<<(i?ss1:ss0));}
+	float getScaleT(int i){return (float)(1<<(i?ts1:ts0));}
 };
 
 union RAS1_IREF

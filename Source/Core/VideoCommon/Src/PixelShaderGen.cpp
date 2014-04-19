@@ -208,33 +208,8 @@ static const char *tevRasTable[] =
 
 static const char *tevCOutputTable[]  = { "prev.rgb", "c0.rgb", "c1.rgb", "c2.rgb" };
 static const char *tevAOutputTable[]  = { "prev.a", "c0.a", "c1.a", "c2.a" };
-static const char *tevIndAlphaSel[]   = {"", "x", "y", "z"};
-static const char *tevIndAlphaScale[] = {"(1.0/8.0)", "(1.0/32.0)", "(1.0/16.0)", "(1.0/8.0)"};
-static const char *tevIndAlphaNormFactor[] = 
-{
-	"(8.0/255.0)",	// 5 bits
-	"(32.0/255.0)",	// 3 bits
-	"(16.0/255.0)",	// 4 bits
-	"(8.0/255.0)"		// 5 bits
-};
-static const char *tevIndBiasField[]  = {"", "x", "y", "xy", "z", "xz", "yz", "xyz"}; // indexed by bias
-static const char *tevIndBiasAdd[]    = {"-128.0", "1.0", "1.0", "1.0" }; // indexed by fmt
-static const char *tevIndWrapStart[]  = {"0.0", "256.0", "128.0", "64.0", "32.0", "16.0", "0.001f" };
-static const char *tevIndFmtScale[]   = 
-{
-	"255.0",					// 8 bits
-	"((255.0*8.0)/256.0)",	// 5 bits 
-	"((255.0*16.0)/256.0)",	// 4 bits
-	"((255.0*32.0)/256.0)"	// 3 bits
-};
 
-static const char *tevIndFmtNormFactor[]   = 
-{
-	"",					// 8 bits
-	"(256.0/8.0)",	// 5 bits 
-	"(256.0/16.0)",	// 4 bits
-	"(256.0/32.0)"	// 3 bits
-};
+// Register States
 
 struct RegisterState
 {
@@ -243,9 +218,22 @@ struct RegisterState
 	bool AuxStored;
 };
 
+inline void InitializeRegisterState(RegisterState *RegisterStates)
+{
+	RegisterStates[0].AlphaNeedOverflowControl = false;
+	RegisterStates[0].ColorNeedOverflowControl = false;
+	RegisterStates[0].AuxStored = false;
+	for (int i = 1; i < 4; i++)
+	{
+		RegisterStates[i].AlphaNeedOverflowControl = true;
+		RegisterStates[i].ColorNeedOverflowControl = true;
+		RegisterStates[i].AuxStored = false;
+	}
+}
+
 static char text[16384];
 
-template<class T, bool Write_Code, API_TYPE ApiType> inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, RegisterState RegisterStates[4], const char swapModeTable[4][5]);
+template<class T, bool Write_Code, API_TYPE ApiType> inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, RegisterState * const RegisterStates, const char swapModeTable[4][5]);
 template<class T, bool Write_Code, API_TYPE ApiType> inline void SampleTexture(T& out, const char *texcoords, const char *texswap, int texmap);
 template<class T, bool Write_Code, API_TYPE ApiType> inline void WriteAlphaTest(T& out, pixel_shader_uid_data& uid_data, DSTALPHA_MODE dstAlphaMode, bool per_pixel_depth);
 template<class T, bool Write_Code> inline void WriteFog(T& out, pixel_shader_uid_data& uid_data);
@@ -289,11 +277,12 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 			numStages, numTexgen, bpmem.genMode.numindstages);
 		out.Write("#define F_P_U8(x) (round((x) * 255.0) / 255.0)\n");
 		out.Write("#define CHK_O_U8(x) (frac(((x) + " C_1024_BY_255 ") * (255.0/256.0)) * (256.0/255.0))\n");
-		//out.Write("#define CHK_O_U24(x) (frac((x) * (16777215.0/16777216.0)) * (16777216.0/16777215.0))\n");	
+		out.Write("#define INT_MUL(x, y, z) trunc(((x) - ((z) < 1 && (x) < 0 ? (y) : (0.0))) * (z));\n");
+		out.Write("#define INT_SUBMUL(x, y, z) trunc(((x) - ((x) < 0 ? (y) : (0.0))) * (z));\n");
 		// Fastmod implementation with the restriction that "y" must be always positive
 		out.Write("float fastmod( float x, float y )\n");
 		out.Write("{\n");
-		out.Write("\ty = sign(x) * y;\n");
+		out.Write("\ty = sign(x) * y + 0.0000001f;\n");
 		out.Write("\treturn frac(x/y)*y;\n");
 		out.Write("}\n");		
 
@@ -464,7 +453,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 		}
 		out.Write("  float4 c0 = " I_COLORS "[1], c1 = " I_COLORS "[2], c2 = " I_COLORS "[3], prev = " I_COLORS "[0], tex_t = float4(0.0,0.0,0.0,0.0), ras_t = float4(0.0,0.0,0.0,0.0), konst_t = float4(0.0,0.0,0.0,0.0);\n"
 				"  float3 comp16 = float3(1.0,255.0,0.0), comp24 = float3(1.0,255.0,255.0*255.0);\n"
-				"  float a_bump=0.0;\n"
+				"  float a_bump=0.0, indtevtranstemp=0.0;\n"
 				"  float3 tevcoord=float3(0.0, 0.0, 0.0);\n"
 				"  float2 wrappedcoord=float2(0.0,0.0), t_coord=float2(0.0,0.0);\n"
 				"  float4 cc0=float4(0.0,0.0,0.0,0.0), cc1=float4(0.0,0.0,0.0,0.0);\n"
@@ -536,8 +525,6 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 					"\tfloat3 ldir, h;\n"
 					"\tfloat dist, dist2, attn;\n");
 		}
-		out.SetConstantsUsed(C_PLIGHTS, C_PLIGHTS+39); // TODO: Can be optimized further
-		out.SetConstantsUsed(C_PMATERIALS, C_PMATERIALS+3);
 		uid_data.components = components;
 		GenerateLightingShader<T, Write_Code>(out, uid_data.lighting, components, I_PMATERIALS, I_PLIGHTS, "colors_", "colors_");
 	}
@@ -558,7 +545,6 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 	}
 	else
 	{
-		out.SetConstantsUsed(C_TEXDIMS, C_TEXDIMS+numTexgen-1);
 		for (unsigned int i = 0; i < numTexgen; ++i)
 		{
 			// optional perspective divides
@@ -570,7 +556,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 					out.Write("\tif (uv%d.z != 0.0)", i);
 					out.Write("\t\tuv%d.xy = uv%d.xy / uv%d.z;\n", i, i, i);
 				}
-				out.Write("uv%d.xy = uv%d.xy * " I_TEXDIMS"[%d].zw;\n", i, i, i);
+				out.Write("uv%d.xy = round(128.0 * uv%d.xy * " I_TEXDIMS"[%d].zw);\n", i, i, i);
 			}
 		}
 	}
@@ -597,10 +583,9 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 			uid_data.SetTevindrefValues(i, texcoord, texmap);
 			if (texcoord < numTexgen)
 			{
-				out.SetConstantsUsed(C_INDTEXSCALE+i/2,C_INDTEXSCALE+i/2);
 				if (Write_Code)
 				{
-					out.Write("\tt_coord = uv%d.xy * " I_INDTEXSCALE "[%d].%s;\n", texcoord, i/2, (i&1)?"zw":"xy");
+					out.Write("\tt_coord = INT_SUBMUL(uv%d.xy, " I_INDTEXSCALE "[%d].xy, " I_INDTEXSCALE "[%d].zw);\n", texcoord, i , i);
 				}				
 			}
 			else if (Write_Code)
@@ -611,21 +596,16 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 			if (Write_Code)
 			{
 				out.Write("float3 indtex%d = ", i);
+				SampleTexture<T, Write_Code, ApiType>(out, "(round(t_coord) * (1.0/128.0))", "abg", texmap);
+				out.Write("indtex%d = round(indtex%d * 255.0f);\n", i, i);
 			}
-			SampleTexture<T, Write_Code, ApiType>(out, "t_coord", "abg", texmap);
+			
 		}
 	}
 
 	RegisterState RegisterStates[4];
-	RegisterStates[0].AlphaNeedOverflowControl = false;
-	RegisterStates[0].ColorNeedOverflowControl = false;
-	RegisterStates[0].AuxStored = false;
-	for(int i = 1; i < 4; i++)
-	{
-		RegisterStates[i].AlphaNeedOverflowControl = true;
-		RegisterStates[i].ColorNeedOverflowControl = true;
-		RegisterStates[i].AuxStored = false;
-	}
+	RegisterState &outRegister = RegisterStates[0];
+	InitializeRegisterState(RegisterStates);
 
 	// Uid fields for BuildSwapModeTable are set in WriteStage
 	char swapModeTable[4][5];
@@ -651,21 +631,25 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 		{
 			// The results of the last texenv stage are put onto the screen,
 			// regardless of the used destination register
-			if(bpmem.combiners[numStages - 1].colorC.dest != 0)
+			u32 colorCdest = bpmem.combiners[numStages - 1].colorC.dest;
+			if (colorCdest != 0)
 			{
-				bool retrieveFromAuxRegister = !RegisterStates[bpmem.combiners[numStages - 1].colorC.dest].ColorNeedOverflowControl && RegisterStates[bpmem.combiners[numStages - 1].colorC.dest].AuxStored;
-				out.Write("\tprev.rgb = %s%s;\n", retrieveFromAuxRegister ? "c" : "" , tevCOutputTable[bpmem.combiners[numStages - 1].colorC.dest]);
-				RegisterStates[0].ColorNeedOverflowControl = RegisterStates[bpmem.combiners[numStages - 1].colorC.dest].ColorNeedOverflowControl;
+				RegisterState &CCdestRegState = RegisterStates[colorCdest];
+				bool retrieveFromAuxRegister = !CCdestRegState.ColorNeedOverflowControl && CCdestRegState.AuxStored;
+				out.Write("\tprev.rgb = %s%s;\n", retrieveFromAuxRegister ? "c" : "", tevCOutputTable[colorCdest]);
+				outRegister.ColorNeedOverflowControl = CCdestRegState.ColorNeedOverflowControl;
 			}
-			if(bpmem.combiners[numStages - 1].alphaC.dest != 0)
+			u32 alphaCdest = bpmem.combiners[numStages - 1].alphaC.dest;
+			if (alphaCdest != 0)
 			{
-				bool retrieveFromAuxRegister = !RegisterStates[bpmem.combiners[numStages - 1].alphaC.dest].AlphaNeedOverflowControl && RegisterStates[bpmem.combiners[numStages - 1].alphaC.dest].AuxStored;
-				out.Write("\tprev.a = %s%s;\n", retrieveFromAuxRegister ? "c" : "" , tevAOutputTable[bpmem.combiners[numStages - 1].alphaC.dest]);
-				RegisterStates[0].AlphaNeedOverflowControl = RegisterStates[bpmem.combiners[numStages - 1].alphaC.dest].AlphaNeedOverflowControl;
+				RegisterState &ACdestRegState = RegisterStates[alphaCdest];
+				bool retrieveFromAuxRegister = !ACdestRegState.AlphaNeedOverflowControl && ACdestRegState.AuxStored;
+				out.Write("\tprev.a = %s%s;\n", retrieveFromAuxRegister ? "c" : "", tevAOutputTable[alphaCdest]);
+				outRegister.AlphaNeedOverflowControl = ACdestRegState.AlphaNeedOverflowControl;
 			}
 		}
 		// emulation of unsigned 8 overflow when casting if needed
-		if(RegisterStates[0].AlphaNeedOverflowControl || RegisterStates[0].ColorNeedOverflowControl)
+		if (outRegister.AlphaNeedOverflowControl || outRegister.ColorNeedOverflowControl)
 			out.Write("\tprev = CHK_O_U8(prev);\n");
 	}	
 
@@ -690,7 +674,6 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 	}
 	else
 	{
-		out.SetConstantsUsed(C_ZBIAS+1, C_ZBIAS+1);
 		// the screen space depth value = far z + (clip z / clip w) * z range
 		if (Write_Code)
 		{
@@ -717,7 +700,6 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 	if (bpmem.ztex2.op != ZTEXTURE_DISABLE && !skip_ztexture)
 	{
 		// use the texture input of the last texture stage (tex_t), hopefully this has been read and is in correct format...
-		out.SetConstantsUsed(C_ZBIAS, C_ZBIAS+1);
 		if (Write_Code)
 		{
 			out.Write("zCoord = dot(" I_ZBIAS"[0].xyzw, tex_t.xyzw) + " I_ZBIAS "[1].w %s;\n",
@@ -733,7 +715,6 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 
 	if (dstAlphaMode == DSTALPHA_ALPHA_PASS)
 	{
-		out.SetConstantsUsed(C_ALPHA, C_ALPHA);
 		if (Write_Code)
 			out.Write("\tocol0 = float4(prev.rgb, " I_ALPHA ".a);\n");
 	}
@@ -747,7 +728,6 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 	// Use dual-source color blending to perform dst alpha in a single pass
 	if (dstAlphaMode == DSTALPHA_DUAL_SOURCE_BLEND)
 	{
-		out.SetConstantsUsed(C_ALPHA, C_ALPHA);
 		if (Write_Code)
 		{
 			if(ApiType & API_D3D9)
@@ -824,7 +804,7 @@ static const char *TEVCMPAlphaOPTable[16] =
 };
 
 template<class T, bool Write_Code, API_TYPE ApiType>
-static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, RegisterState RegisterStates[4], const char swapModeTable[4][5])
+static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, RegisterState * const RegisterStates, const char swapModeTable[4][5])
 {
 	int texcoord = bpmem.tevorders[n/2].getTexCoord(n&1);
 	bool bHasTexCoord = (u32)texcoord < bpmem.genMode.numtexgens;
@@ -850,7 +830,7 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, Re
 			if (bpmem.tevind[n].bs != ITBA_OFF)
 			{
 				// lest explain a little what is done here
-				// a_bump is taked from the remaining upper bits that are not taked for indirect texturing
+				// a_bump is taked from the upper bits that are not taked for indirect texturing
 				// if all the bits are used for indirect texturing then only the upper 5 bits are used for a_bump
 				// so to do this bit masking is used for example 
 				// a_bump = x & 0xE0; for 3 bits
@@ -860,93 +840,114 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, Re
 				// and in newer hardware is slower than using pure float operations
 				// so we have to emulate it
 				// the exact formula for float masking emulation of the upper bits of a number is: 
-				// having x as the integer number to mask stored in a float
+				// having x as the number to mask stored in a float
 				// nb as the number of bits to mask
 				// and n the (wordlen - nb) in this case (8 - nb)
-				// then result = floor((x + 0.5) / (2^n)) * (2^n)
-				// so for 3 bit this will be n = 5  result = floor((x + 0.5) / 32.0) * 32.0;
+				// then result = floor(x * (255.0f/(2^n))) * ((2^n) / 255.0f)
+				// so for nb = 3 bit this will be n = 5  result = floor(x * (255.0/32.0)) * (32.0/255.0f);
 				// to optimize a litle al the coeficient are precalculated to avoid slowing thigs more than needed
-				out.Write("a_bump = floor((indtex%d.%s * 255.0 + 0.5) * %s) * %s;\n",
+
+				static const char *tevIndAlphaSel[] = { "", "x", "y", "z" };
+				static const char *tevIndAlphaScale[] = { "(1.0/8.0)", "(1.0/32.0)", "(1.0/16.0)", "(1.0/8.0)" };
+				static const char *tevIndAlphaNormFactor[] =
+				{
+					"(8.0/255.0)",	// 5 bits
+					"(32.0/255.0)",	// 3 bits
+					"(16.0/255.0)",	// 4 bits
+					"(8.0/255.0)"	// 5 bits
+				};
+
+				out.Write("a_bump = floor(indtex%d.%s * %s) * %s;\n",
 					bpmem.tevind[n].bt,
 					tevIndAlphaSel[bpmem.tevind[n].bs],					
 					tevIndAlphaScale[bpmem.tevind[n].fmt],
 					tevIndAlphaNormFactor[bpmem.tevind[n].fmt]);
-			
 			}
+
+			static const char *tevIndFmtScale[] =
+			{
+				"(1.0/256.0)",	// 8 bits (& 0xFF)
+				"(1.0/32.0)",	// 5 bits (& 0x1F)
+				"(1.0/16.0)",	// 4 bits (& 0x0F)
+				"(1.0/8.0)"		// 3 bits (& 0x07)
+			};
+
+			static const char *tevIndFmtNormFactor[] =
+			{
+				"256.0",// 8 bits
+				"32.0",	// 5 bits
+				"16.0",	// 4 bits
+				"8.0"	// 3 bits
+			};
+
 			// format
-			if (bpmem.tevind[n].fmt)
-			{
-				// to mask the lower bits the formula is:
-				// having x as the integer number to mask stored in a float
-				// nb as the number of bits to mask
-				// and n the (wordlen - nb) in this case (8 - nb)
-				// then result = frac(x * (2^n) / 256.0) * (256.0/(2^n))
-				// for 3 bits n = 5 then result = frac(x * 32.0 / 256.0) * (256.0/32.0)
-				out.Write("float3 indtevcrd%d = frac(indtex%d * %s) * %s;\n", n, bpmem.tevind[n].bt, tevIndFmtScale[bpmem.tevind[n].fmt], tevIndFmtNormFactor[bpmem.tevind[n].fmt]);
-			}
-			else
-			{
-				// if we take all the bits is just a multiplication
-				out.Write("float3 indtevcrd%d = indtex%d  * %s;\n", n, bpmem.tevind[n].bt, tevIndFmtScale[bpmem.tevind[n].fmt]);
-			}
+			// to mask the lower bits the formula is:
+			// having x as number to mask stored in a float
+			// nb as the number of bits to mask			
+			// then result = frac(x * 255.0 / (2^nb) * (2^nb)
+			// for 3 bits result = frac(x * 255.0 / 8.0) * 8.0
+			out.Write("float3 indtevcrd%d = round(frac(indtex%d * %s) * %s);\n",
+				n,
+				bpmem.tevind[n].bt,
+				tevIndFmtScale[bpmem.tevind[n].fmt],
+				tevIndFmtNormFactor[bpmem.tevind[n].fmt]);
+
+			static const char *tevIndBiasField[] = { "", "x", "y", "xy", "z", "xz", "yz", "xyz" }; // indexed by bias
+			static const char *tevIndBiasAdd[] = { "-128.0", "1.0", "1.0", "1.0" }; // indexed by fmt
 			// bias
 			if (bpmem.tevind[n].bias != ITB_NONE )
 				out.Write("indtevcrd%d.%s += %s;\n", n, tevIndBiasField[bpmem.tevind[n].bias], tevIndBiasAdd[bpmem.tevind[n].fmt]);
-		}
-		
-
-		// multiply by offset matrix and scale
-		if (bpmem.tevind[n].mid != 0)
-		{
-			if (bpmem.tevind[n].mid <= 3)
+			
+			// multiply by offset matrix and scale
+			if (bpmem.tevind[n].mid != 0)
 			{
-				int mtxidx = 2*(bpmem.tevind[n].mid-1);
-				out.SetConstantsUsed(C_INDTEXMTX+mtxidx, C_INDTEXMTX+mtxidx);
-				if (Write_Code)
+				if (bpmem.tevind[n].mid <= 3)
+				{
+					int mtxidx = 2 * (bpmem.tevind[n].mid - 1);
 					out.Write("float2 indtevtrans%d = float2(dot(" I_INDTEXMTX "[%d].xyz, indtevcrd%d), dot(" I_INDTEXMTX "[%d].xyz, indtevcrd%d));\n",
-							n, mtxidx, n, mtxidx+1, n);
-			}
-			else if (bpmem.tevind[n].mid <= 7 && bHasTexCoord)
-			{ // s matrix
-				_assert_(bpmem.tevind[n].mid >= 5);
-				int mtxidx = 2*(bpmem.tevind[n].mid-5);
-				out.SetConstantsUsed(C_INDTEXMTX+mtxidx, C_INDTEXMTX+mtxidx);
-				if (Write_Code)
+							n, mtxidx, n, mtxidx + 1, n);
+					out.Write("indtevtrans%d =  INT_SUBMUL(indtevtrans%d, 7.0, (1.0/8.0));\n", n, n);
+					out.Write("indtevtranstemp =  (1.0/" I_INDTEXMTX "[%d].w) - 1.0;\n", mtxidx);
+					out.Write("indtevtrans%d =  INT_MUL(indtevtrans%d, indtevtranstemp, " I_INDTEXMTX "[%d].w);\n", n, n, mtxidx);
+				}
+				else if (bpmem.tevind[n].mid <= 7 && bHasTexCoord)
+				{ // s matrix
+					_assert_(bpmem.tevind[n].mid >= 5);
+					int mtxidx = 2 * (bpmem.tevind[n].mid - 5);
 					out.Write("float2 indtevtrans%d = " I_INDTEXMTX "[%d].ww * uv%d.xy * indtevcrd%d.xx;\n", n, mtxidx, texcoord, n);
-			}
-			else if (bpmem.tevind[n].mid <= 11 && bHasTexCoord)
-			{ // t matrix
-				_assert_(bpmem.tevind[n].mid >= 9);
-				int mtxidx = 2*(bpmem.tevind[n].mid-9);
-				out.SetConstantsUsed(C_INDTEXMTX+mtxidx, C_INDTEXMTX+mtxidx);
-				if (Write_Code)
+					out.Write("indtevtrans%d =  INT_SUBMUL(indtevtrans%d, 255.0, (1.0/256.0));\n", n, n);
+					out.Write("indtevtranstemp =  (1.0/" I_INDTEXMTX "[%d].w) - 1.0;\n", mtxidx);
+					out.Write("indtevtrans%d =  INT_MUL(indtevtrans%d, indtevtranstemp, " I_INDTEXMTX "[%d].w);\n", n, n, mtxidx);
+				}
+				else if (bpmem.tevind[n].mid <= 11 && bHasTexCoord)
+				{ // t matrix
+					_assert_(bpmem.tevind[n].mid >= 9);
+					int mtxidx = 2 * (bpmem.tevind[n].mid - 9);
 					out.Write("float2 indtevtrans%d = " I_INDTEXMTX "[%d].ww * uv%d.xy * indtevcrd%d.yy;\n", n, mtxidx, texcoord, n);
+					out.Write("indtevtrans%d =  INT_SUBMUL(indtevtrans%d, 255.0, (1.0/256.0));\n", n, n);
+					out.Write("indtevtranstemp =  (1.0/" I_INDTEXMTX "[%d].w) - 1.0;\n", mtxidx);
+					out.Write("indtevtrans%d =  INT_MUL(indtevtrans%d, indtevtranstemp, " I_INDTEXMTX "[%d].w);\n", n, n, mtxidx);
+				}
+				else
+				{
+					out.Write("float2 indtevtrans%d = float2(0.0, 0.0);\n", n);
+				}
 			}
 			else
 			{
-				if (Write_Code)
-					out.Write("float2 indtevtrans%d = float2(0.0, 0.0);\n", n);
-			}
-		}
-		else
-		{
-			if (Write_Code)
 				out.Write("float2 indtevtrans%d = float2(0.0, 0.0);\n", n);
-		}
-
-		// ---------
-		// Wrapping
-		// ---------
-
-		// wrap S
-		if (Write_Code)
-		{
+			}
+			// ---------
+			// Wrapping
+			// ---------
+			static const char *tevIndWrapStart[] = { "0.0", "(256.0*128.0)", "(128.0*128.0)", "(64.0*128.0)", "(32.0*128.0)", "(16.0*128.0)", "1.0" };
+			// wrap S
 			if (bpmem.tevind[n].sw == ITW_OFF)
 				out.Write("wrappedcoord.x = uv%d.x;\n", texcoord);
 			else if (bpmem.tevind[n].sw == ITW_0)
 				out.Write("wrappedcoord.x = 0.0;\n");
 			else
-				out.Write("wrappedcoord.x = fastmod( uv%d.x, %s );\n", texcoord, tevIndWrapStart[bpmem.tevind[n].sw]);
+				out.Write("wrappedcoord.x = fastmod(uv%d.x, %s);\n", texcoord, tevIndWrapStart[bpmem.tevind[n].sw]);
 
 			// wrap T
 			if (bpmem.tevind[n].tw == ITW_OFF)
@@ -954,13 +955,13 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, Re
 			else if (bpmem.tevind[n].tw == ITW_0)
 				out.Write("wrappedcoord.y = 0.0;\n");
 			else
-				out.Write("wrappedcoord.y = fastmod( uv%d.y, %s );\n", texcoord, tevIndWrapStart[bpmem.tevind[n].tw]);
+				out.Write("wrappedcoord.y = fastmod(uv%d.y, %s);\n", texcoord, tevIndWrapStart[bpmem.tevind[n].tw]);
 
 			if (bpmem.tevind[n].fb_addprev) // add previous tevcoord
 				out.Write("tevcoord.xy += wrappedcoord + indtevtrans%d;\n", n);
 			else
 				out.Write("tevcoord.xy = wrappedcoord + indtevtrans%d;\n", n);
-		}		
+		}
 	}
 
 	TevStageCombiner::ColorCombiner &cc = bpmem.combiners[n].colorC;
@@ -969,12 +970,7 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, Re
 	uid_data.stagehash[n].cc = cc.hex & 0xFFFFFF;
 	uid_data.stagehash[n].ac = ac.hex & 0xFFFFF0; // Storing rswap and tswap later
 
-	if(cc.a == TEVCOLORARG_RASA || cc.a == TEVCOLORARG_RASC
-		|| cc.b == TEVCOLORARG_RASA || cc.b == TEVCOLORARG_RASC
-		|| cc.c == TEVCOLORARG_RASA || cc.c == TEVCOLORARG_RASC
-		|| cc.d == TEVCOLORARG_RASA || cc.d == TEVCOLORARG_RASC
-		|| ac.a == TEVALPHAARG_RASA || ac.b == TEVALPHAARG_RASA
-		|| ac.c == TEVALPHAARG_RASA || ac.d == TEVALPHAARG_RASA)
+	if(cc.UsedAsInput(TEVCOLORARG_RASA) || cc.UsedAsInput(TEVCOLORARG_RASC) || ac.UsedAsInput(TEVALPHAARG_RASA))
 	{
 		const int i = bpmem.combiners[n].alphaC.rswap;
 		uid_data.stagehash[n].ac |= bpmem.combiners[n].alphaC.rswap;
@@ -1021,7 +1017,7 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, Re
 		if (Write_Code)
 			out.Write("tex_t = ");
 
-		SampleTexture<T, Write_Code, ApiType>(out, "tevcoord", texswap, texmap);
+		SampleTexture<T, Write_Code, ApiType>(out, "(round(tevcoord) * (1.0/128.0))", texswap, texmap);
 	}
 	else if (Write_Code)
 	{
@@ -1029,8 +1025,7 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, Re
 	}
 
 
-	if (cc.a == TEVCOLORARG_KONST || cc.b == TEVCOLORARG_KONST || cc.c == TEVCOLORARG_KONST || cc.d == TEVCOLORARG_KONST
-		|| ac.a == TEVALPHAARG_KONST || ac.b == TEVALPHAARG_KONST || ac.c == TEVALPHAARG_KONST || ac.d == TEVALPHAARG_KONST)
+	if (cc.UsedAsInput(TEVCOLORARG_KONST) || ac.UsedAsInput(TEVALPHAARG_KONST))
 	{
 		int kc = bpmem.tevksel[n / 2].getKC(n & 1);
 		int ka = bpmem.tevksel[n / 2].getKA(n & 1);
@@ -1048,18 +1043,12 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, Re
 				out.Write("ckonst_t = konst_t;\n");
 			}
 		}
-
-		if (kc > 7)
-			out.SetConstantsUsed(C_KCOLORS+((kc-0xc)%4),C_KCOLORS+((kc-0xc)%4));
-		if (ka > 7)
-			out.SetConstantsUsed(C_KCOLORS+((ka-0xc)%4),C_KCOLORS+((ka-0xc)%4));
 	}
 	if (Write_Code)
 	{
-		if(cc.a == TEVCOLORARG_CPREV || cc.a == TEVCOLORARG_APREV
-			|| cc.b == TEVCOLORARG_CPREV || cc.b == TEVCOLORARG_APREV
-			|| cc.c == TEVCOLORARG_CPREV || cc.c == TEVCOLORARG_APREV
-			|| ac.a == TEVALPHAARG_APREV || ac.b == TEVALPHAARG_APREV || ac.c == TEVALPHAARG_APREV)
+		if(cc.UsedAs8bitInput(TEVCOLORARG_CPREV) 
+			|| cc.UsedAs8bitInput(TEVCOLORARG_APREV)
+			|| ac.UsedAs8bitInput(TEVALPHAARG_APREV))
 		{
 			if(RegisterStates[0].AlphaNeedOverflowControl || RegisterStates[0].ColorNeedOverflowControl)
 			{
@@ -1073,17 +1062,11 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, Re
 			}
 			RegisterStates[0].AuxStored = true;
 		}
-	}
-
-	if(cc.a == TEVCOLORARG_C0 || cc.a == TEVCOLORARG_A0
-	|| cc.b == TEVCOLORARG_C0 || cc.b == TEVCOLORARG_A0
-	|| cc.c == TEVCOLORARG_C0 || cc.c == TEVCOLORARG_A0
-	|| ac.a == TEVALPHAARG_A0 || ac.b == TEVALPHAARG_A0 || ac.c == TEVALPHAARG_A0)
-	{
-		out.SetConstantsUsed(C_COLORS+1,C_COLORS+1);
-		if (Write_Code)
+		if (cc.UsedAs8bitInput(TEVCOLORARG_C0) 
+			|| cc.UsedAs8bitInput(TEVCOLORARG_A0)
+			|| ac.UsedAs8bitInput(TEVALPHAARG_A0))
 		{
-			if(RegisterStates[1].AlphaNeedOverflowControl || RegisterStates[1].ColorNeedOverflowControl)
+			if (RegisterStates[1].AlphaNeedOverflowControl || RegisterStates[1].ColorNeedOverflowControl)
 			{
 				out.Write("cc0 = CHK_O_U8(c0);\n");
 				RegisterStates[1].AlphaNeedOverflowControl = false;
@@ -1095,17 +1078,11 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, Re
 			}
 			RegisterStates[1].AuxStored = true;
 		}
-	}
-
-	if(cc.a == TEVCOLORARG_C1 || cc.a == TEVCOLORARG_A1
-	|| cc.b == TEVCOLORARG_C1 || cc.b == TEVCOLORARG_A1
-	|| cc.c == TEVCOLORARG_C1 || cc.c == TEVCOLORARG_A1
-	|| ac.a == TEVALPHAARG_A1 || ac.b == TEVALPHAARG_A1 || ac.c == TEVALPHAARG_A1)
-	{
-		out.SetConstantsUsed(C_COLORS+2,C_COLORS+2);
-		if (Write_Code)
+		if (cc.UsedAs8bitInput(TEVCOLORARG_C1)
+			|| cc.UsedAs8bitInput(TEVCOLORARG_A1)
+			|| ac.UsedAs8bitInput(TEVALPHAARG_A1))
 		{
-			if(RegisterStates[2].AlphaNeedOverflowControl || RegisterStates[2].ColorNeedOverflowControl)
+			if (RegisterStates[2].AlphaNeedOverflowControl || RegisterStates[2].ColorNeedOverflowControl)
 			{
 				out.Write("cc1 = CHK_O_U8(c1);\n");
 				RegisterStates[2].AlphaNeedOverflowControl = false;
@@ -1115,52 +1092,32 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, Re
 			{
 				out.Write("cc1 = c1;\n");
 			}
-			RegisterStates[2].AuxStored = true;
+			RegisterStates[2].AuxStored = true;			
 		}
-	}
 
-	if(cc.a == TEVCOLORARG_C2 || cc.a == TEVCOLORARG_A2
-	|| cc.b == TEVCOLORARG_C2 || cc.b == TEVCOLORARG_A2
-	|| cc.c == TEVCOLORARG_C2 || cc.c == TEVCOLORARG_A2
-	|| ac.a == TEVALPHAARG_A2 || ac.b == TEVALPHAARG_A2 || ac.c == TEVALPHAARG_A2)
-	{
-		out.SetConstantsUsed(C_COLORS+3,C_COLORS+3);
-		if (Write_Code)
+		if (cc.UsedAs8bitInput(TEVCOLORARG_C2)
+			|| cc.UsedAs8bitInput(TEVCOLORARG_A2)
+			|| ac.UsedAs8bitInput(TEVALPHAARG_A2))
 		{
-			if(RegisterStates[3].AlphaNeedOverflowControl || RegisterStates[3].ColorNeedOverflowControl)
+			if (Write_Code)
 			{
-				out.Write("cc2 = CHK_O_U8(c2);\n");
-				RegisterStates[3].AlphaNeedOverflowControl = false;
-				RegisterStates[3].ColorNeedOverflowControl = false;
+				if (RegisterStates[3].AlphaNeedOverflowControl || RegisterStates[3].ColorNeedOverflowControl)
+				{
+					out.Write("cc2 = CHK_O_U8(c2);\n");
+					RegisterStates[3].AlphaNeedOverflowControl = false;
+					RegisterStates[3].ColorNeedOverflowControl = false;
+				}
+				else
+				{
+					out.Write("cc2 = c2;\n");
+				}
+				RegisterStates[3].AuxStored = true;
 			}
-			else
-			{
-				out.Write("cc2 = c2;\n");
-			}
-			RegisterStates[3].AuxStored = true;
 		}
-	}
 
-	RegisterStates[cc.dest].ColorNeedOverflowControl = (cc.clamp == 0);
-	RegisterStates[cc.dest].AuxStored = false;
+		RegisterStates[cc.dest].ColorNeedOverflowControl = (cc.clamp == 0);
+		RegisterStates[cc.dest].AuxStored = false;
 
-	if (cc.d == TEVCOLORARG_C0 || cc.d == TEVCOLORARG_A0 || ac.d == TEVALPHAARG_A0)
-		out.SetConstantsUsed(C_COLORS+1,C_COLORS+1);
-
-	if (cc.d == TEVCOLORARG_C1 || cc.d == TEVCOLORARG_A1 || ac.d == TEVALPHAARG_A1)
-		out.SetConstantsUsed(C_COLORS+2,C_COLORS+2);
-
-	if (cc.d == TEVCOLORARG_C2 || cc.d == TEVCOLORARG_A2 || ac.d == TEVALPHAARG_A2)
-		out.SetConstantsUsed(C_COLORS+3,C_COLORS+3);
-
-	if (cc.dest >= GX_TEVREG0 && cc.dest <= GX_TEVREG2)
-		out.SetConstantsUsed(C_COLORS+cc.dest, C_COLORS+cc.dest);
-
-	if (ac.dest >= GX_TEVREG0 && ac.dest <= GX_TEVREG2)
-		out.SetConstantsUsed(C_COLORS+ac.dest, C_COLORS+ac.dest);
-
-	if (Write_Code)
-	{
 		out.Write("// color combine\n");
 		out.Write("%s = F_P_U8(clamp(", tevCOutputTable[cc.dest]);
 		// combine the color channel
@@ -1170,7 +1127,7 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, Re
 			if (cc.shift > TEVSCALE_1)
 				out.Write("%s*(", tevScaleTable[cc.shift]);
 
-			if(!(cc.d == TEVCOLORARG_ZERO && cc.op == TEVOP_ADD))
+			if (!(cc.d == TEVCOLORARG_ZERO && cc.op == TEVOP_ADD))
 				out.Write("%s%s", tevCInputTable[cc.d], tevOpTable[cc.op]);
 
 			if (cc.a == cc.b)
@@ -1193,12 +1150,12 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, Re
 		}
 		else
 		{
-			int cmp = (cc.shift<<1)|cc.op|8; // comparemode stored here
+			int cmp = (cc.shift << 1) | cc.op | 8; // comparemode stored here
 			out.Write(TEVCMPColorOPTable[cmp],//lookup the function from the op table
-					tevCInputTable[cc.d],
-					tevCInputTable[cc.a + 16],
-					tevCInputTable[cc.b + 16],
-					tevCInputTable[cc.c + 16]);
+				tevCInputTable[cc.d],
+				tevCInputTable[cc.a + 16],
+				tevCInputTable[cc.b + 16],
+				tevCInputTable[cc.c + 16]);
 		}
 		if (cc.clamp)
 		{
@@ -1212,7 +1169,7 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, Re
 		RegisterStates[ac.dest].AuxStored = false;
 
 		out.Write("// alpha combine\n");
-		out.Write("%s = F_P_U8(clamp(", tevAOutputTable[ac.dest]);	
+		out.Write("%s = F_P_U8(clamp(", tevAOutputTable[ac.dest]);
 
 		if (ac.bias != TevBias_COMPARE) // if not compare
 		{
@@ -1220,7 +1177,7 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, Re
 			if (ac.shift > TEVSCALE_1)
 				out.Write("%s*(", tevScaleTable[ac.shift]);
 
-			if(!(ac.d == TEVALPHAARG_ZERO && ac.op == TEVOP_ADD))
+			if (!(ac.d == TEVALPHAARG_ZERO && ac.op == TEVOP_ADD))
 				out.Write("%s.a%s", tevAInputTable[ac.d], tevOpTable[ac.op]);
 
 			if (ac.a == ac.b)
@@ -1234,21 +1191,20 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, Re
 			else
 				out.Write("lerp(%s.a, %s.a, %s.a)", tevAInputTable[ac.a + 8], tevAInputTable[ac.b + 8], tevAInputTable[ac.c + 8]);
 
-			out.Write("%s",tevBiasTable[ac.bias]);
+			out.Write("%s", tevBiasTable[ac.bias]);
 
 			if (ac.shift>0)
 				out.Write(")");
-
 		}
 		else
 		{
 			//compare alpha combiner goes here
-			int cmp = (ac.shift<<1)|ac.op|8; // comparemode stored here
+			int cmp = (ac.shift << 1) | ac.op | 8; // comparemode stored here
 			out.Write(TEVCMPAlphaOPTable[cmp],
-					tevAInputTable[ac.d],
-					tevAInputTable[ac.a + 8],
-					tevAInputTable[ac.b + 8],
-					tevAInputTable[ac.c + 8]);
+				tevAInputTable[ac.d],
+				tevAInputTable[ac.a + 8],
+				tevAInputTable[ac.b + 8],
+				tevAInputTable[ac.c + 8]);
 		}
 		if (ac.clamp)
 		{
@@ -1257,7 +1213,7 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, Re
 		else
 		{
 			out.Write(", -" C_1024_BY_255 ", " C_1023_BY_255 "));\n\n");
-		}		
+		}
 		out.Write("// TEV done\n");
 	}
 }
@@ -1265,7 +1221,6 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, Re
 template<class T, bool Write_Code, API_TYPE ApiType>
 void SampleTexture(T& out, const char *texcoords, const char *texswap, int texmap)
 {
-	out.SetConstantsUsed(C_TEXDIMS+texmap,C_TEXDIMS+texmap);
 	if(Write_Code)
 	{
 		if (ApiType == API_D3D11)
@@ -1303,8 +1258,6 @@ static inline void WriteAlphaTest(T& out, pixel_shader_uid_data& uid_data, DSTAL
 		I_ALPHA".r",
 		I_ALPHA".g"
 	};
-
-	out.SetConstantsUsed(C_ALPHA, C_ALPHA);
 
 	uid_data.alpha_test_comp0 = bpmem.alpha_test.comp0;
 	uid_data.alpha_test_comp1 = bpmem.alpha_test.comp1;
@@ -1377,7 +1330,6 @@ static inline void WriteFog(T& out, pixel_shader_uid_data& uid_data)
 	uid_data.fog_proj = bpmem.fog.c_proj_fsel.proj;
 	uid_data.fog_RangeBaseEnabled = bpmem.fogRange.Base.Enabled;
 
-	out.SetConstantsUsed(C_FOG, C_FOG+1);
 	if (Write_Code)
 	{
 		if (bpmem.fog.c_proj_fsel.proj == 0)
@@ -1399,7 +1351,6 @@ static inline void WriteFog(T& out, pixel_shader_uid_data& uid_data)
 	
 		if (bpmem.fogRange.Base.Enabled)
 		{
-			out.SetConstantsUsed(C_FOG+2, C_FOG+2);
 			out.Write("\tfloat x_adjust = (2.0 * (clipPos.x / " I_FOG "[2].y)) - 1.0 - " I_FOG "[2].x;\n");
 			out.Write("\tx_adjust = sqrt(x_adjust * x_adjust + " I_FOG "[2].z * " I_FOG "[2].z) / " I_FOG "[2].z;\n");
 			out.Write("\tze *= x_adjust;\n");
@@ -1432,11 +1383,6 @@ void GeneratePixelShaderCodeD3D9(ShaderCode& object, DSTALPHA_MODE dstAlphaMode,
 	GeneratePixelShader<ShaderCode, true, API_D3D9>(object, dstAlphaMode, components);
 }
 
-void GetPixelShaderConstantProfileD3D9(ShaderConstantProfile& object, DSTALPHA_MODE dstAlphaMode, u32 components)
-{
-	GeneratePixelShader<ShaderConstantProfile, false, API_D3D9>(object, dstAlphaMode, components);
-}
-
 void GeneratePixelShaderCodeD3D9SM2(ShaderCode& object, DSTALPHA_MODE dstAlphaMode, u32 components)
 {
 	GeneratePixelShader<ShaderCode, true, API_D3D9_SM20>(object, dstAlphaMode, components);
@@ -1452,11 +1398,6 @@ void GeneratePixelShaderCodeD3D11(ShaderCode& object, DSTALPHA_MODE dstAlphaMode
 	GeneratePixelShader<ShaderCode, true, API_D3D11>(object, dstAlphaMode, components);
 }
 
-void GetPixelShaderConstantProfileD3D11(ShaderConstantProfile& object, DSTALPHA_MODE dstAlphaMode, u32 components)
-{
-	GeneratePixelShader<ShaderConstantProfile, false, API_D3D11>(object, dstAlphaMode, components);
-}
-
 void GetPixelShaderUidGL(PixelShaderUid& object, DSTALPHA_MODE dstAlphaMode, u32 components)
 {
 	GeneratePixelShader<PixelShaderUid, false, API_OPENGL>(object, dstAlphaMode, components);
@@ -1466,10 +1407,4 @@ void GeneratePixelShaderCodeGL(ShaderCode& object, DSTALPHA_MODE dstAlphaMode, u
 {
 	GeneratePixelShader<ShaderCode, true, API_OPENGL>(object, dstAlphaMode, components);
 }
-
-void GetPixelShaderConstantProfileGL(ShaderConstantProfile& object, DSTALPHA_MODE dstAlphaMode, u32 components)
-{
-	GeneratePixelShader<ShaderConstantProfile, false, API_OPENGL>(object, dstAlphaMode, components);
-}
-
 
