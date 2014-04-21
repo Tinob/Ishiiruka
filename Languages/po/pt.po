@@ -34,7 +34,7 @@ msgstr "Jogo: "
 msgid "! NOT"
 msgstr "! NÃO"
 
-#: Source/Core/Core/Src/HW/GCMemcard.cpp:58
+#: Source/Core/Core/HW/GCMemcard.cpp:58
 #, c-format
 msgid ""
 "\"%s\" does not exist.\n"
@@ -43,7 +43,7 @@ msgstr ""
 "\"%s\" Inexistente.\n"
 " Criar um novo cartão de memória de 16MB?"
 
-#: Source/Core/Core/Src/CoreParameter.cpp:144
+#: Source/Core/Core/CoreParameter.cpp:144
 #, c-format
 msgid "\"%s\" is an invalid GCM/ISO file, or is not a GC/Wii ISO."
 msgstr "\"%s\" Ficheiro GCM/ISO inválido, ou não é um ISO de GC/Wii."
@@ -79,21 +79,21 @@ msgstr "%s já existe, substituir?"
 msgid "%s failed to be scrubbed. Probably the image is corrupt."
 msgstr "%s falha ao ficar scrubbed. Provavelmente a imagem está corrompida."
 
-#: Source/Core/Core/Src/HW/GCMemcard.cpp:83
+#: Source/Core/Core/HW/GCMemcard.cpp:83
 #, c-format
 msgid ""
 "%s failed to load as a memorycard \n"
 " Card file size is invalid (0x%x bytes)"
 msgstr ""
 
-#: Source/Core/Core/Src/HW/GCMemcard.cpp:98
+#: Source/Core/Core/HW/GCMemcard.cpp:98
 #, c-format
 msgid ""
 "%s failed to load as a memorycard \n"
 " Card size is invalid (0x%x bytes)"
 msgstr ""
 
-#: Source/Core/Core/Src/HW/GCMemcard.cpp:78
+#: Source/Core/Core/HW/GCMemcard.cpp:78
 #, c-format
 msgid ""
 "%s failed to load as a memorycard \n"
@@ -105,7 +105,7 @@ msgstr ""
 msgid "%s failed to open"
 msgstr "%s falha ao abrir"
 
-#: Source/Core/Core/Src/x64MemTools.cpp:182
+#: Source/Core/Core/x64MemTools.cpp:182
 #, c-format
 msgid "%s failed: kr=%x"
 msgstr ""
@@ -450,7 +450,7 @@ msgstr ""
 msgid "Action"
 msgstr "Acção"
 
-#: Source/Core/Core/Src/ARDecrypt.cpp:469
+#: Source/Core/Core/ARDecrypt.cpp:469
 #, c-format
 msgid ""
 "Action Replay Code Decryption Error:\n"
@@ -465,7 +465,7 @@ msgstr ""
 "Culprit Code:\n"
 "%s"
 
-#: Source/Core/Core/Src/ActionReplay.cpp:657
+#: Source/Core/Core/ActionReplay.cpp:657
 #, c-format
 msgid ""
 "Action Replay Error: Invalid size (%08x : address = %08x) in Add Code (%s)"
@@ -473,7 +473,7 @@ msgstr ""
 "Erro Action Replay: Tamanho Inválido (%08x : address = %08x) em Adição de "
 "Código (%s)"
 
-#: Source/Core/Core/Src/ActionReplay.cpp:745
+#: Source/Core/Core/ActionReplay.cpp:745
 #, c-format
 msgid ""
 "Action Replay Error: Invalid size (%08x : address = %08x) in Fill and Slide "
@@ -482,7 +482,7 @@ msgstr ""
 "Erro Action Replay: Tamanho inválido (%08x : address = %08x) em "
 "Preenchimento e Slide (%s)"
 
-#: Source/Core/Core/Src/ActionReplay.cpp:537
+#: Source/Core/Core/ActionReplay.cpp:537
 #, c-format
 msgid ""
 "Action Replay Error: Invalid size (%08x : address = %08x) in Ram Write And "
@@ -491,7 +491,7 @@ msgstr ""
 "Erro Action Replay: Tamanho inválido (%08x : address = %08x) em Escrita e "
 "Preenchimento Ram (%s)"
 
-#: Source/Core/Core/Src/ActionReplay.cpp:597
+#: Source/Core/Core/ActionReplay.cpp:597
 #, c-format
 msgid ""
 "Action Replay Error: Invalid size (%08x : address = %08x) in Write To "
@@ -500,39 +500,39 @@ msgstr ""
 "Erro Action Replay: Tamanho inválido (%08x : address = %08x) em Escrita para "
 "Ponteiro (%s)"
 
-#: Source/Core/Core/Src/ActionReplay.cpp:792
+#: Source/Core/Core/ActionReplay.cpp:792
 #, c-format
 msgid "Action Replay Error: Invalid value (%08x) in Memory Copy (%s)"
 msgstr "Erro Action Replay: Valor inválido (%08x) em cópia de memória (%s)"
 
-#: Source/Core/Core/Src/ActionReplay.cpp:672
+#: Source/Core/Core/ActionReplay.cpp:672
 #, c-format
 msgid ""
 "Action Replay Error: Master Code and Write To CCXXXXXX not implemented (%s)\n"
 "Master codes are not needed. Do not use master codes."
 msgstr ""
 
-#: Source/Core/Core/Src/ActionReplay.cpp:184
+#: Source/Core/Core/ActionReplay.cpp:184
 #, c-format
 msgid "Action Replay Error: invalid AR code line: %s"
 msgstr "Erro Action Replay: linha de código AR inválida: %s"
 
-#: Source/Core/Core/Src/ActionReplay.cpp:862
+#: Source/Core/Core/ActionReplay.cpp:862
 #, c-format
 msgid "Action Replay: Conditional Code: Invalid Size %08x (%s)"
 msgstr "Action Replay:Código Condicional: Tamanho Inválido %08x (%s)"
 
-#: Source/Core/Core/Src/ActionReplay.cpp:935
+#: Source/Core/Core/ActionReplay.cpp:935
 #, c-format
 msgid "Action Replay: Invalid Normal Code Type %08x (%s)"
 msgstr "Action Replay: Tipo de código normal inválido %08x (%s)"
 
-#: Source/Core/Core/Src/ActionReplay.cpp:886
+#: Source/Core/Core/ActionReplay.cpp:886
 #, c-format
 msgid "Action Replay: Normal Code %i: Invalid subtype %08x (%s)"
 msgstr "Action Replay: Código normal %i: Subtipo inválido %08x (%s)"
 
-#: Source/Core/Core/Src/ActionReplay.cpp:828
+#: Source/Core/Core/ActionReplay.cpp:828
 #, c-format
 msgid "Action Replay: Normal Code 0: Invalid Subtype %08x (%s)"
 msgstr "Action Replay: Código Normal 0: Subtipo Inválido %08x (%s)"
@@ -650,7 +650,7 @@ msgstr "Todos os ficheiros (*.*)|*.*"
 msgid "Analyze"
 msgstr "Analisar"
 
-#: Source/Core/InputCommon/Src/ControllerEmu.cpp:286
+#: Source/Core/InputCommon/ControllerEmu.cpp:286
 msgid "Angle"
 msgstr "Ângulo"
 
@@ -785,12 +785,12 @@ msgstr "Definições Backend"
 msgid "Backend:"
 msgstr "Backend:"
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/WiimoteEmu.cpp:309
-#: Source/Core/Core/Src/HW/GCPadEmu.cpp:82
+#: Source/Core/Core/HW/WiimoteEmu/WiimoteEmu.cpp:309
+#: Source/Core/Core/HW/GCPadEmu.cpp:82
 msgid "Background Input"
 msgstr "Introdução em segundo plano"
 
-#: Source/Core/InputCommon/Src/ControllerEmu.cpp:267
+#: Source/Core/InputCommon/ControllerEmu.cpp:267
 msgid "Backward"
 msgstr "Retroceder"
 
@@ -815,7 +815,7 @@ msgstr "Detalhes de Banner"
 msgid "Banner:"
 msgstr "Banner:"
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/Attachment/Guitar.cpp:61
+#: Source/Core/Core/HW/WiimoteEmu/Attachment/Guitar.cpp:61
 msgid "Bar"
 msgstr "Barra"
 
@@ -827,11 +827,11 @@ msgstr "Básico"
 msgid "Basic Settings"
 msgstr "Definições Básicas"
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/Attachment/Drums.cpp:26
+#: Source/Core/Core/HW/WiimoteEmu/Attachment/Drums.cpp:26
 msgid "Bass"
 msgstr "Baixo"
 
-#: Source/Core/Core/Src/HW/GCMemcard.cpp:174
+#: Source/Core/Core/HW/GCMemcard.cpp:174
 msgid "Block Allocation Table checksum failed"
 msgstr "Verificação da Tabela de Atribuição de Blocos falhou"
 
@@ -839,15 +839,15 @@ msgstr "Verificação da Tabela de Atribuição de Blocos falhou"
 msgid "Blocks"
 msgstr "Blocos"
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/Attachment/Drums.cpp:25
+#: Source/Core/Core/HW/WiimoteEmu/Attachment/Drums.cpp:25
 msgid "Blue"
 msgstr "Azul"
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/Attachment/Turntable.cpp:28
+#: Source/Core/Core/HW/WiimoteEmu/Attachment/Turntable.cpp:28
 msgid "Blue Left"
 msgstr "Azul esquerda"
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/Attachment/Turntable.cpp:29
+#: Source/Core/Core/HW/WiimoteEmu/Attachment/Turntable.cpp:29
 msgid "Blue Right"
 msgstr "Azul Direita"
 
@@ -885,7 +885,7 @@ msgstr "Procurar por pasta de destino"
 msgid "Buffer:"
 msgstr "Buffer:"
 
-#: Source/Core/Core/Src/HW/GCPadEmu.cpp:58
+#: Source/Core/Core/HW/GCPadEmu.cpp:58
 #: Source/Core/DolphinWX/Src/UDPConfigDiag.cpp:23
 #: Source/Core/DolphinWX/Src/TASInputDlg.cpp:108
 msgid "Buttons"
@@ -905,7 +905,7 @@ msgstr ""
 msgid "C Stick"
 msgstr "C Stick"
 
-#: Source/Core/Core/Src/HW/GCPadEmu.cpp:64
+#: Source/Core/Core/HW/GCPadEmu.cpp:64
 msgid "C-Stick"
 msgstr "C-Stick"
 
@@ -937,13 +937,13 @@ msgstr ""
 "\n"
 "Em caso de dúvida, mantenha esta opção desactivada."
 
-#: Source/Core/Core/Src/IPC_HLE/WII_IPC_HLE_Device_usb.cpp:1848
+#: Source/Core/Core/IPC_HLE/WII_IPC_HLE_Device_usb.cpp:1848
 #, c-format
 msgid "Can't find WiiMote by connection handle %02x"
 msgstr ""
 
-#: Source/Core/Core/Src/HW/DVDInterface.cpp:672
-#: Source/Core/Core/Src/HW/DVDInterface.cpp:682
+#: Source/Core/Core/HW/DVDInterface.cpp:672
+#: Source/Core/Core/HW/DVDInterface.cpp:682
 msgid "Can't read from DVD_Plugin - DVD-Interface: Fatal Error"
 msgstr ""
 
@@ -959,7 +959,7 @@ msgstr "Cancelar"
 msgid "Cannot open %s"
 msgstr "Impossível abrir %s"
 
-#: Source/Core/Core/Src/CoreTiming.cpp:128
+#: Source/Core/Core/CoreTiming.cpp:128
 msgid "Cannot unregister events with events pending"
 msgstr "Impossível retirar registo de eventos quando há eventos pendentes"
 
@@ -987,7 +987,7 @@ msgstr "Caps Lock"
 msgid "Catalan"
 msgstr "Catalão"
 
-#: Source/Core/InputCommon/Src/ControllerEmu.cpp:299
+#: Source/Core/InputCommon/ControllerEmu.cpp:299
 msgid "Center"
 msgstr "Centro"
 
@@ -1097,11 +1097,11 @@ msgstr ""
 msgid "Choose the folder to extract to"
 msgstr "Escolha a pasta para extrair"
 
-#: Source/Core/InputCommon/Src/ControllerEmu.cpp:285
+#: Source/Core/InputCommon/ControllerEmu.cpp:285
 msgid "Circle Stick"
 msgstr "Stick circular"
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/Attachment/Classic.cpp:56
+#: Source/Core/Core/HW/WiimoteEmu/Attachment/Classic.cpp:56
 msgid "Classic"
 msgstr "Clássico"
 
@@ -1112,7 +1112,7 @@ msgstr "Clássico"
 msgid "Clear"
 msgstr "Limpar"
 
-#: Source/Core/Core/Src/NetPlayServer.cpp:230
+#: Source/Core/Core/NetPlayServer.cpp:230
 msgid ""
 "Client disconnect while game is running!! NetPlay is disabled. You must "
 "manually stop the game."
@@ -1252,7 +1252,7 @@ msgstr "Controlo"
 msgid "Convert to GCI"
 msgstr "Converter para GCI"
 
-#: Source/Core/Core/Src/CoreParameter.cpp:384
+#: Source/Core/Core/CoreParameter.cpp:384
 msgid "Copy failed"
 msgstr "Cópia Falhou"
 
@@ -1275,7 +1275,7 @@ msgstr "Não foi possível criar %s"
 msgid "Could not initialize backend %s."
 msgstr "Não foi possível iniciar o backend %s."
 
-#: Source/Core/Core/Src/CoreParameter.cpp:139
+#: Source/Core/Core/CoreParameter.cpp:139
 #, c-format
 msgid ""
 "Could not read \"%s\".  There is no disc in the drive, or it is not a GC/Wii "
@@ -1286,7 +1286,7 @@ msgstr ""
 "de GC/Wii.  Tenha atenção que discos de jogos originais Gamecube ou Wii não "
 "serão lidos na maioria das unidades de DVD."
 
-#: Source/Core/Core/Src/CoreParameter.cpp:294
+#: Source/Core/Core/CoreParameter.cpp:294
 #, c-format
 msgid "Could not recognize ISO file %s"
 msgstr "Não foi possível reconhecer ficheiro ISO %s"
@@ -1296,7 +1296,7 @@ msgstr "Não foi possível reconhecer ficheiro ISO %s"
 msgid "Could not save %s"
 msgstr "Não foi possível guardar %s"
 
-#: Source/Core/Core/Src/HW/EXI_DeviceMemoryCard.cpp:119
+#: Source/Core/Core/HW/EXI_DeviceMemoryCard.cpp:119
 #, c-format
 msgid ""
 "Could not write memory card file %s.\n"
@@ -1313,7 +1313,7 @@ msgstr ""
 msgid "Couldn't find open command for extension 'ini'!"
 msgstr "Não foi possível encontrar comando aberto para a extensão 'ini'!"
 
-#: Source/Core/Core/Src/BootManager.cpp:158
+#: Source/Core/Core/BootManager.cpp:158
 msgid ""
 "Couldn't init the core.\n"
 "Check your configuration."
@@ -1362,7 +1362,7 @@ msgstr ""
 "\n"
 "em caso de dúvida, mantenha esta opção desactivada."
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/Attachment/Turntable.cpp:52
+#: Source/Core/Core/HW/WiimoteEmu/Attachment/Turntable.cpp:52
 msgid "Crossfade"
 msgstr "Desvanecimento cruzado"
 
@@ -1391,7 +1391,7 @@ msgstr "Checo"
 msgid "D"
 msgstr ""
 
-#: Source/Core/Core/Src/HW/GCPadEmu.cpp:76
+#: Source/Core/Core/HW/GCPadEmu.cpp:76
 msgid "D-Pad"
 msgstr "D-Pad"
 
@@ -1428,11 +1428,11 @@ msgstr ""
 msgid "DVD Root:"
 msgstr "Raiz de DVD:"
 
-#: Source/Core/Core/Src/IPC_HLE/WII_IPC_HLE_Device_DI.cpp:226
+#: Source/Core/Core/IPC_HLE/WII_IPC_HLE_Device_DI.cpp:226
 msgid "DVDLowRead - Fatal Error: failed to read from volume"
 msgstr ""
 
-#: Source/Core/Core/Src/IPC_HLE/WII_IPC_HLE_Device_DI.cpp:320
+#: Source/Core/Core/IPC_HLE/WII_IPC_HLE_Device_DI.cpp:320
 msgid "DVDLowUnencryptedRead - Fatal Error: failed to read from volume"
 msgstr ""
 
@@ -1453,11 +1453,11 @@ msgstr "Data:"
 msgid "Datel MaxDrive/Pro files(*.sav)"
 msgstr "Datel MaxDrive/Pro files(*.sav)"
 
-#: Source/Core/InputCommon/Src/ControllerEmu.cpp:230
-#: Source/Core/InputCommon/Src/ControllerEmu.cpp:247
-#: Source/Core/InputCommon/Src/ControllerEmu.cpp:255
-#: Source/Core/InputCommon/Src/ControllerEmu.cpp:269
-#: Source/Core/InputCommon/Src/ControllerEmu.cpp:284
+#: Source/Core/InputCommon/ControllerEmu.cpp:230
+#: Source/Core/InputCommon/ControllerEmu.cpp:247
+#: Source/Core/InputCommon/ControllerEmu.cpp:255
+#: Source/Core/InputCommon/ControllerEmu.cpp:269
+#: Source/Core/InputCommon/ControllerEmu.cpp:284
 msgid "Dead Zone"
 msgstr "Zona morta"
 
@@ -1524,8 +1524,8 @@ msgstr "Descrição"
 msgid "Detect"
 msgstr "Detectar"
 
-#: Source/Core/Core/Src/IPC_HLE/WII_IPC_HLE_Device_DI.cpp:220
-#: Source/Core/Core/Src/IPC_HLE/WII_IPC_HLE_Device_DI.cpp:315
+#: Source/Core/Core/IPC_HLE/WII_IPC_HLE_Device_DI.cpp:220
+#: Source/Core/Core/IPC_HLE/WII_IPC_HLE_Device_DI.cpp:315
 msgid ""
 "Detected attempt to read more data from the DVD than fit inside the out "
 "buffer. Clamp."
@@ -1543,7 +1543,7 @@ msgstr "Dispositivo"
 msgid "Device Settings"
 msgstr "Definições de Dispositivo"
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/Attachment/Turntable.cpp:49
+#: Source/Core/Core/HW/WiimoteEmu/Attachment/Turntable.cpp:49
 msgid "Dial"
 msgstr "Marcação"
 
@@ -1555,7 +1555,7 @@ msgstr "Direct3D11"
 msgid "Direct3D9"
 msgstr "Direct3D9"
 
-#: Source/Core/Core/Src/HW/GCMemcard.cpp:155
+#: Source/Core/Core/HW/GCMemcard.cpp:155
 msgid ""
 "Directory checksum failed\n"
 " and Directory backup checksum failed"
@@ -1754,7 +1754,7 @@ msgid ""
 "= Compatible)"
 msgstr ""
 
-#: Source/Core/InputCommon/Src/ControllerEmu.cpp:263
+#: Source/Core/InputCommon/ControllerEmu.cpp:263
 #: Source/Core/DolphinWX/Src/WXInputBase.cpp:45
 msgid "Down"
 msgstr "Baixo"
@@ -1768,7 +1768,7 @@ msgstr "Download de Códigos (Base de dados WiiRD)"
 msgid "Downloaded %lu codes. (added %lu)"
 msgstr "Descarregados %lu códigos. (adicionados %lu)"
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/Attachment/Drums.cpp:35
+#: Source/Core/Core/HW/WiimoteEmu/Attachment/Drums.cpp:35
 msgid "Drums"
 msgstr "Tambores"
 
@@ -1837,7 +1837,7 @@ msgstr "S&air"
 msgid "EFB Copies"
 msgstr "Cópias EFB"
 
-#: Source/Core/Core/Src/HW/BBA-TAP/TAP_Win32.cpp:210
+#: Source/Core/Core/HW/BBA-TAP/TAP_Win32.cpp:210
 #, c-format
 msgid ""
 "ERROR: This version of Dolphin requires a TAP-Win32 driver that is at least "
@@ -1883,7 +1883,7 @@ msgstr "Editar perspectiva actual"
 msgid "Edit..."
 msgstr "Editar..."
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/Attachment/Turntable.cpp:48
+#: Source/Core/Core/HW/WiimoteEmu/Attachment/Turntable.cpp:48
 msgid "Effect"
 msgstr "Efeito"
 
@@ -1891,7 +1891,7 @@ msgstr "Efeito"
 msgid "Embedded Frame Buffer"
 msgstr "Frame Buffer Embutido"
 
-#: Source/Core/Core/Src/Core.cpp:191
+#: Source/Core/Core/Core.cpp:191
 msgid "Emu Thread already running"
 msgstr "Thread de Emulador já em execução"
 
@@ -2169,7 +2169,7 @@ msgid ""
 "Aborting savestate load..."
 msgstr ""
 
-#: Source/Core/Core/Src/HW/EXI_DeviceIPL.cpp:329
+#: Source/Core/Core/HW/EXI_DeviceIPL.cpp:329
 #, c-format
 msgid ""
 "Error: Trying to access %s fonts but they are not loaded. Games may not show "
@@ -2182,11 +2182,11 @@ msgstr ""
 msgid "Escape"
 msgstr "Escape"
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/Attachment/Turntable.cpp:30
+#: Source/Core/Core/HW/WiimoteEmu/Attachment/Turntable.cpp:30
 msgid "Euphoria"
 msgstr "Euphoria"
 
-#: Source/Core/Core/Src/ArmMemTools.cpp:78
+#: Source/Core/Core/ArmMemTools.cpp:78
 #, c-format
 msgid "Exception handler - access below memory space. %08llx%08llx"
 msgstr ""
@@ -2241,7 +2241,7 @@ msgstr "A exportação falhou"
 msgid "Export save as..."
 msgstr "Exportar guardar como..."
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/WiimoteEmu.cpp:288
+#: Source/Core/Core/HW/WiimoteEmu/WiimoteEmu.cpp:288
 msgid "Extension"
 msgstr "Extensão"
 
@@ -2314,7 +2314,7 @@ msgstr "FRANÇA"
 msgid "FST Size:"
 msgstr "Tamanho FST:"
 
-#: Source/Core/Core/Src/NetPlayClient.cpp:127
+#: Source/Core/Core/NetPlayClient.cpp:127
 msgid "Failed to Connect!"
 msgstr "A Conexão Falhou!"
 
@@ -2327,7 +2327,7 @@ msgstr "Falha ao descarregar códigos"
 msgid "Failed to extract to %s!"
 msgstr "Falha ao extrair para %s!"
 
-#: Source/Core/Core/Src/DSP/DSPCore.cpp:66
+#: Source/Core/Core/DSP/DSPCore.cpp:66
 #, c-format
 msgid ""
 "Failed to load DSP ROM:\t%s\n"
@@ -2349,21 +2349,21 @@ msgstr ""
 "Poderá utilizar o motor DSP HLE que não necessita de depósitos ROM.\n"
 "(Escolha-o através do separador \"Áudio\" na janela de configuração.)"
 
-#: Source/Core/Core/Src/HW/WiimoteReal/IOWin.cpp:108
-#: Source/Core/Core/Src/HW/WiimoteReal/IOWin.cpp:131
+#: Source/Core/Core/HW/WiimoteReal/IOWin.cpp:108
+#: Source/Core/Core/HW/WiimoteReal/IOWin.cpp:131
 msgid ""
 "Failed to load bthprops.cpl! Connecting real Wiimotes won't work and Dolphin "
 "might crash unexpectedly!"
 msgstr ""
 
-#: Source/Core/Core/Src/HW/WiimoteReal/IOWin.cpp:90
-#: Source/Core/Core/Src/HW/WiimoteReal/IOWin.cpp:101
+#: Source/Core/Core/HW/WiimoteReal/IOWin.cpp:90
+#: Source/Core/Core/HW/WiimoteReal/IOWin.cpp:101
 msgid ""
 "Failed to load hid.dll! Connecting real Wiimotes won't work and Dolphin "
 "might crash unexpectedly!"
 msgstr ""
 
-#: Source/Core/Core/Src/Movie.cpp:785
+#: Source/Core/Core/Movie.cpp:785
 #, c-format
 msgid "Failed to read %s"
 msgstr ""
@@ -2376,7 +2376,7 @@ msgstr "Falha ao ler banner.bin"
 msgid "Failed to read bk header"
 msgstr ""
 
-#: Source/Core/Core/Src/HW/GCMemcard.cpp:211
+#: Source/Core/Core/HW/GCMemcard.cpp:211
 #, c-format
 msgid ""
 "Failed to read block %d of the save data\n"
@@ -2384,7 +2384,7 @@ msgid ""
 "FilePosition:%llx"
 msgstr ""
 
-#: Source/Core/Core/Src/HW/GCMemcard.cpp:136
+#: Source/Core/Core/HW/GCMemcard.cpp:136
 msgid ""
 "Failed to read block allocation table backup correctly\n"
 "(0x8000-0x9FFF)"
@@ -2393,7 +2393,7 @@ msgstr ""
 "atribuídos\n"
 "(0x8000-0x9FFF)"
 
-#: Source/Core/Core/Src/HW/GCMemcard.cpp:130
+#: Source/Core/Core/HW/GCMemcard.cpp:130
 msgid ""
 "Failed to read block allocation table correctly\n"
 "(0x6000-0x7FFF)"
@@ -2411,7 +2411,7 @@ msgstr "Falha ao ler dados do ficheiro %d"
 msgid "Failed to read data from file: %s"
 msgstr ""
 
-#: Source/Core/Core/Src/HW/GCMemcard.cpp:124
+#: Source/Core/Core/HW/GCMemcard.cpp:124
 msgid ""
 "Failed to read directory backup correctly\n"
 "(0x4000-0x5FFF)"
@@ -2419,7 +2419,7 @@ msgstr ""
 "Falha ao ler correctamente a pasta com cópia de segurança\n"
 "(0x4000-0x5FFF)"
 
-#: Source/Core/Core/Src/HW/GCMemcard.cpp:118
+#: Source/Core/Core/HW/GCMemcard.cpp:118
 msgid ""
 "Failed to read directory correctly\n"
 "(0x2000-0x3FFF)"
@@ -2431,7 +2431,7 @@ msgstr ""
 msgid "Failed to read header"
 msgstr "Falha ao ler cabeçalho"
 
-#: Source/Core/Core/Src/HW/GCMemcard.cpp:107
+#: Source/Core/Core/HW/GCMemcard.cpp:107
 msgid ""
 "Failed to read header correctly\n"
 "(0x0000-0x1FFF)"
@@ -2448,7 +2448,7 @@ msgstr ""
 msgid "Failed to read unique ID from disc image"
 msgstr "Falha ao ler ID único da imagem do disco"
 
-#: Source/Core/Core/Src/IPC_HLE/WII_IPC_HLE_Device_usb.cpp:74
+#: Source/Core/Core/IPC_HLE/WII_IPC_HLE_Device_usb.cpp:74
 msgid "Failed to write BT.DINF to SYSCONF"
 msgstr "Falha ao escrever BT.DINF para SYSCONF"
 
@@ -2482,7 +2482,7 @@ msgstr ""
 msgid "Fast version of the MMU.  Does not work for every game."
 msgstr "Versão rápida do MMU.  Não funciona em todos os jogos."
 
-#: Source/Core/Core/Src/Movie.cpp:1042
+#: Source/Core/Core/Movie.cpp:1042
 #, c-format
 msgid ""
 "Fatal desync. Aborting playback. (Error in PlayWiimote: %u != %u, byte %u.)%s"
@@ -2512,7 +2512,7 @@ msgstr ""
 "O ficheiro não pôde ser aberto\n"
 "ou não tem uma extensão válida"
 
-#: Source/Core/Core/Src/HW/GCMemcard.cpp:72
+#: Source/Core/Core/HW/GCMemcard.cpp:72
 #, c-format
 msgid ""
 "File has the extension \"%s\"\n"
@@ -2529,7 +2529,7 @@ msgstr "Ficheiros não são reconhecidos como sendo de cartão de memória"
 msgid "File not compressed"
 msgstr "Ficheiro não comprimido"
 
-#: Source/Core/Core/Src/IPC_HLE/WII_IPC_HLE_Device_FileIO.cpp:142
+#: Source/Core/Core/IPC_HLE/WII_IPC_HLE_Device_FileIO.cpp:142
 #, c-format
 msgid "FileIO: Unknown open mode : 0x%02x"
 msgstr "FileIO: Modo aberto desconhecido : 0x%02x"
@@ -2609,7 +2609,7 @@ msgstr ""
 "Se deixar desactivada, o dolphin utiliza a NTSC-U como padrão e "
 "automaticamente activa esta definição quando um jogo Japonês é jogado."
 
-#: Source/Core/Core/Src/HW/GCMemcard.cpp:62
+#: Source/Core/Core/HW/GCMemcard.cpp:62
 msgid ""
 "Format as ascii (NTSC\\PAL)?\n"
 "Choose no for sjis (NTSC-J)"
@@ -2617,7 +2617,7 @@ msgstr ""
 "Formatar como ascii (NTSC\\PAL)?\n"
 "Escolha não para sjis (NTSC-J)"
 
-#: Source/Core/InputCommon/Src/ControllerEmu.cpp:266
+#: Source/Core/InputCommon/ControllerEmu.cpp:266
 msgid "Forward"
 msgstr "Frente"
 
@@ -2682,7 +2682,7 @@ msgstr "Vista Livre"
 msgid "French"
 msgstr "Francês"
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/Attachment/Guitar.cpp:42
+#: Source/Core/Core/HW/WiimoteEmu/Attachment/Guitar.cpp:42
 msgid "Frets"
 msgstr "Trastes"
 
@@ -2715,11 +2715,11 @@ msgstr ""
 msgid "Game ID:"
 msgstr "ID do Jogo:"
 
-#: Source/Core/Core/Src/NetPlayClient.cpp:418
+#: Source/Core/Core/NetPlayClient.cpp:418
 msgid "Game is already running!"
 msgstr "O jogo já está a correr!"
 
-#: Source/Core/Core/Src/NetPlayClient.cpp:592
+#: Source/Core/Core/NetPlayClient.cpp:592
 msgid "Game isn't running!"
 msgstr "O jogo não está a correr!"
 
@@ -2761,7 +2761,7 @@ msgstr "Definições de Comando Gamecube"
 msgid "Gecko Codes"
 msgstr "Códigos Gecko"
 
-#: Source/Core/Core/Src/GeckoCode.cpp:246
+#: Source/Core/Core/GeckoCode.cpp:246
 #, c-format
 msgid ""
 "GeckoCode failed to run (CT%i CST%i) (%s)\n"
@@ -2786,7 +2786,7 @@ msgstr "Definições Gerais"
 msgid "German"
 msgstr "Alemão"
 
-#: Source/Core/Core/Src/ActionReplay.cpp:439
+#: Source/Core/Core/ActionReplay.cpp:439
 #, c-format
 msgid "GetARCode: Index is greater than ar code list size %lu"
 msgstr "GetARCode: Index é maior que o tamanho da lista de código %lu"
@@ -2818,19 +2818,19 @@ msgstr ""
 msgid "Greek"
 msgstr "Grego"
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/Attachment/Drums.cpp:26
+#: Source/Core/Core/HW/WiimoteEmu/Attachment/Drums.cpp:26
 msgid "Green"
 msgstr "Verde"
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/Attachment/Turntable.cpp:28
+#: Source/Core/Core/HW/WiimoteEmu/Attachment/Turntable.cpp:28
 msgid "Green Left"
 msgstr "Verde Esquerda"
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/Attachment/Turntable.cpp:29
+#: Source/Core/Core/HW/WiimoteEmu/Attachment/Turntable.cpp:29
 msgid "Green Right"
 msgstr "Verde Direita"
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/Attachment/Guitar.cpp:39
+#: Source/Core/Core/HW/WiimoteEmu/Attachment/Guitar.cpp:39
 msgid "Guitar"
 msgstr "Guitarra"
 
@@ -2838,7 +2838,7 @@ msgstr "Guitarra"
 msgid "Hacks"
 msgstr "Hacks"
 
-#: Source/Core/Core/Src/HW/GCMemcard.cpp:146
+#: Source/Core/Core/HW/GCMemcard.cpp:146
 msgid "Header checksum failed"
 msgstr "Verificação de Cabeçalho falhou"
 
@@ -2846,7 +2846,7 @@ msgstr "Verificação de Cabeçalho falhou"
 msgid "Hebrew"
 msgstr "Hebraico"
 
-#: Source/Core/InputCommon/Src/ControllerEmu.cpp:301
+#: Source/Core/InputCommon/ControllerEmu.cpp:301
 msgid "Height"
 msgstr "Altura"
 
@@ -2882,7 +2882,7 @@ msgstr ""
 "\n"
 "Sayonara!\n"
 
-#: Source/Core/InputCommon/Src/ControllerEmu.cpp:297
+#: Source/Core/InputCommon/ControllerEmu.cpp:297
 msgid "Hide"
 msgstr "Esconder"
 
@@ -2926,14 +2926,14 @@ msgstr "Húngaro"
 msgid "Hybrid Wiimote"
 msgstr "Wiimote Hibrido"
 
-#: Source/Core/Core/Src/IPC_HLE/WII_IPC_HLE_Device_es.cpp:644
+#: Source/Core/Core/IPC_HLE/WII_IPC_HLE_Device_es.cpp:644
 #, c-format
 msgid "IOCTL_ES_GETVIEWS: Tried to get data from an unknown ticket: %08x/%08x"
 msgstr ""
 "IOCTL_ES_GETVIEWS:Tentativa de obter dados de um ticket desconhecido: %08x/"
 "%08x"
 
-#: Source/Core/Core/Src/IPC_HLE/WII_IPC_HLE_Device_es.cpp:905
+#: Source/Core/Core/IPC_HLE/WII_IPC_HLE_Device_es.cpp:905
 #, c-format
 msgid ""
 "IOCTL_ES_LAUNCH: Game tried to reload an IOS or a title that is not "
@@ -2942,7 +2942,7 @@ msgid ""
 " Dolphin will likely hang now."
 msgstr ""
 
-#: Source/Core/Core/Src/IPC_HLE/WII_IPC_HLE_Device_es.cpp:413
+#: Source/Core/Core/IPC_HLE/WII_IPC_HLE_Device_es.cpp:413
 msgid "IOCTL_ES_READCONTENT - bad destination"
 msgstr "IOCTL_ES_READCONTENT - destino inválido"
 
@@ -2950,7 +2950,7 @@ msgstr "IOCTL_ES_READCONTENT - destino inválido"
 msgid "IPL Settings"
 msgstr "Definições IPL"
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/WiimoteEmu.cpp:273
+#: Source/Core/Core/HW/WiimoteEmu/WiimoteEmu.cpp:273
 msgid "IR"
 msgstr "IV"
 
@@ -3093,8 +3093,8 @@ msgstr "Instalar WAD"
 msgid "Install to Wii Menu"
 msgstr "Instalar para o Menu Wii"
 
-#: Source/Core/Core/Src/x64MemTools.cpp:288
-#: Source/Core/Core/Src/x64MemTools.cpp:357
+#: Source/Core/Core/x64MemTools.cpp:288
+#: Source/Core/Core/x64MemTools.cpp:357
 msgid ""
 "InstallExceptionHandler called, but this platform does not yet support it."
 msgstr ""
@@ -3131,11 +3131,11 @@ msgstr "Iinterface"
 msgid "Interface Settings"
 msgstr "Definições de interface"
 
-#: Source/Core/Core/Src/State.cpp:269
+#: Source/Core/Core/State.cpp:269
 msgid "Internal LZO Error - compression failed"
 msgstr "Erro interno de LZO - compressão falhou"
 
-#: Source/Core/Core/Src/State.cpp:393
+#: Source/Core/Core/State.cpp:393
 #, c-format
 msgid ""
 "Internal LZO Error - decompression failed (%d) (%li, %li) \n"
@@ -3144,7 +3144,7 @@ msgstr ""
 "Erro interno de LZO - a descompressão falhou (%d) (%li, %li) \n"
 "Tente carregar o estado novamente"
 
-#: Source/Core/Core/Src/State.cpp:530
+#: Source/Core/Core/State.cpp:530
 msgid "Internal LZO Error - lzo_init() failed"
 msgstr "Erro interno de LZO - lzo_init() falhou"
 
@@ -3173,12 +3173,12 @@ msgstr "Valor inválido!"
 msgid "Invalid bat.map or dir entry"
 msgstr "bat.map inválido ou entrada de pasta"
 
-#: Source/Core/Core/Src/CoreTiming.cpp:556
+#: Source/Core/Core/CoreTiming.cpp:556
 #, c-format
 msgid "Invalid event type %i"
 msgstr "Tipo de evento inválido %i"
 
-#: Source/Core/Core/Src/HW/DVDInterface.cpp:309
+#: Source/Core/Core/HW/DVDInterface.cpp:309
 msgid "Invalid file"
 msgstr "Ficheiro inválido"
 
@@ -3193,7 +3193,7 @@ msgstr ""
 "%s\n"
 " Poderá ter que refazer o depósito deste jogo."
 
-#: Source/Core/Core/Src/Movie.cpp:728
+#: Source/Core/Core/Movie.cpp:728
 msgid "Invalid recording file"
 msgstr "Ficheiro de Gravação inválido"
 
@@ -3209,7 +3209,7 @@ msgstr ""
 msgid "Invalid search string (only even string lengths supported)"
 msgstr ""
 
-#: Source/Core/Core/Src/Core.cpp:530
+#: Source/Core/Core/Core.cpp:530
 msgid "Invalid state"
 msgstr "Estado Inválido"
 
@@ -3261,7 +3261,7 @@ msgid "Korean"
 msgstr "Coreano"
 
 #. i18n:  Left
-#: Source/Core/Core/Src/HW/GCPadEmu.cpp:44
+#: Source/Core/Core/HW/GCPadEmu.cpp:44
 msgid "L"
 msgstr "L"
 
@@ -3270,7 +3270,7 @@ msgid "L Button"
 msgstr "Botão L"
 
 #. i18n:  Left-Analog
-#: Source/Core/Core/Src/HW/GCPadEmu.cpp:48
+#: Source/Core/Core/HW/GCPadEmu.cpp:48
 msgid "L-Analog"
 msgstr "L-Analógico"
 
@@ -3287,12 +3287,12 @@ msgstr ""
 msgid "Latency:"
 msgstr ""
 
-#: Source/Core/InputCommon/Src/ControllerEmu.cpp:264
+#: Source/Core/InputCommon/ControllerEmu.cpp:264
 #: Source/Core/DolphinWX/Src/WXInputBase.cpp:42
 msgid "Left"
 msgstr "Esquerda"
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/Attachment/Classic.cpp:64
+#: Source/Core/Core/HW/WiimoteEmu/Attachment/Classic.cpp:64
 msgid "Left Stick"
 msgstr "Stick Esquerdo"
 
@@ -3474,7 +3474,7 @@ msgstr "Saídas de Gerador de Relatórios"
 msgid "Logging"
 msgstr "Relatório em execução"
 
-#: Source/Core/Core/Src/NetPlayClient.cpp:323
+#: Source/Core/Core/NetPlayClient.cpp:323
 msgid "Lost connection to server!"
 msgstr "A ligação ao servidor perdeu-se!"
 
@@ -3500,7 +3500,7 @@ msgstr "MMU Hack de velocidade"
 msgid "MadCatz Gameshark files(*.gcs)"
 msgstr "ficheiros MadCatz Gameshark(*.gcs)"
 
-#: Source/Core/Core/Src/HW/GCPadEmu.cpp:63
+#: Source/Core/Core/HW/GCPadEmu.cpp:63
 #: Source/Core/DolphinWX/Src/TASInputDlg.cpp:38
 msgid "Main Stick"
 msgstr "Stick Principal"
@@ -3552,7 +3552,7 @@ msgstr ""
 "Gestor de Cartões de memória AVISO-Faça cópias de segurança antes de "
 "utilizar, deve estar corrigido mas também pode danificar!"
 
-#: Source/Core/Core/Src/CoreParameter.cpp:376
+#: Source/Core/Core/CoreParameter.cpp:376
 #, c-format
 msgid ""
 "Memory Card filename in Slot %c is incorrect\n"
@@ -3569,7 +3569,7 @@ msgstr ""
 "%s\n"
 "Quer fazer uma cópia do ficheiro antigo para esta nova localização?\n"
 
-#: Source/Core/Core/Src/HW/GCMemcard.cpp:112
+#: Source/Core/Core/HW/GCMemcard.cpp:112
 msgid "Memorycard filesize does not match the header size"
 msgstr ""
 
@@ -3594,8 +3594,8 @@ msgstr "Diversos"
 msgid "Misc Settings"
 msgstr "Configurações Diversas"
 
-#: Source/Core/InputCommon/Src/ControllerEmu.cpp:227
-#: Source/Core/InputCommon/Src/ControllerEmu.cpp:282
+#: Source/Core/InputCommon/ControllerEmu.cpp:227
+#: Source/Core/InputCommon/ControllerEmu.cpp:282
 msgid "Modifier"
 msgstr "Modificador"
 
@@ -3615,12 +3615,12 @@ msgstr ""
 msgid "Monospaced font"
 msgstr "Tipo de letra monoespaçada"
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/WiimoteEmu.cpp:296
+#: Source/Core/Core/HW/WiimoteEmu/WiimoteEmu.cpp:296
 msgid "Motion Plus"
 msgstr "Motion Plus"
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/WiimoteEmu.cpp:300
-#: Source/Core/Core/Src/HW/GCPadEmu.cpp:73
+#: Source/Core/Core/HW/WiimoteEmu/WiimoteEmu.cpp:300
+#: Source/Core/Core/HW/GCPadEmu.cpp:73
 msgid "Motor"
 msgstr "Motor"
 
@@ -3782,7 +3782,7 @@ msgstr "Sem País (SDK)"
 msgid "No ISOs or WADS found"
 msgstr "Nenhum ISO ou WAD encontrado"
 
-#: Source/Core/Core/Src/ConfigManager.h:17
+#: Source/Core/Core/ConfigManager.h:17
 msgid "No audio output"
 msgstr "Sem saída de áudio"
 
@@ -3872,7 +3872,7 @@ msgstr "Num Lock"
 msgid "Number Of Codes: "
 msgstr "Número De Códigos"
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/Attachment/Nunchuk.cpp:35
+#: Source/Core/Core/HW/WiimoteEmu/Attachment/Nunchuk.cpp:35
 #: Source/Core/DolphinWX/Src/UDPConfigDiag.cpp:26
 msgid "Nunchuk"
 msgstr "Nunchuk"
@@ -3959,12 +3959,12 @@ msgstr ""
 msgid "Opens the user specified overrides in an external text editor."
 msgstr ""
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/WiimoteEmu.cpp:308
-#: Source/Core/Core/Src/HW/GCPadEmu.cpp:81
+#: Source/Core/Core/HW/WiimoteEmu/WiimoteEmu.cpp:308
+#: Source/Core/Core/HW/GCPadEmu.cpp:81
 msgid "Options"
 msgstr "Opções"
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/Attachment/Drums.cpp:26
+#: Source/Core/Core/HW/WiimoteEmu/Attachment/Drums.cpp:26
 msgid "Orange"
 msgstr "Laranja"
 
@@ -3980,7 +3980,7 @@ msgstr ""
 msgid "Other"
 msgstr "Outro"
 
-#: Source/Core/Core/Src/NetPlayClient.cpp:259
+#: Source/Core/Core/NetPlayClient.cpp:259
 msgid ""
 "Other client disconnected while game is running!! NetPlay is disabled. You "
 "manually stop the game."
@@ -3996,7 +3996,7 @@ msgstr "Destino"
 msgid "P&lay Recording..."
 msgstr "R&eproduzir Gravação..."
 
-#: Source/Core/Core/Src/HW/GCPad.cpp:18
+#: Source/Core/Core/HW/GCPad.cpp:18
 msgid "Pad"
 msgstr "Comando"
 
@@ -4004,7 +4004,7 @@ msgstr "Comando"
 msgid "Pad "
 msgstr "Comando"
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/Attachment/Drums.cpp:38
+#: Source/Core/Core/HW/WiimoteEmu/Attachment/Drums.cpp:38
 msgid "Pads"
 msgstr "Comandos"
 
@@ -4141,17 +4141,17 @@ msgstr "Português (Brasileiro)"
 msgid "Post-Processing Effect:"
 msgstr "Efeito de Pós-Processamento"
 
-#: Source/Core/Core/Src/Movie.cpp:932
+#: Source/Core/Core/Movie.cpp:932
 #, c-format
 msgid "Premature movie end in PlayController. %u + 8 > %u"
 msgstr ""
 
-#: Source/Core/Core/Src/Movie.cpp:1051
+#: Source/Core/Core/Movie.cpp:1051
 #, c-format
 msgid "Premature movie end in PlayWiimote. %u + %d > %u"
 msgstr ""
 
-#: Source/Core/Core/Src/Movie.cpp:1028
+#: Source/Core/Core/Movie.cpp:1028
 #, c-format
 msgid "Premature movie end in PlayWiimote. %u > %u"
 msgstr ""
@@ -4198,7 +4198,7 @@ msgid "Quit"
 msgstr "Sair"
 
 #. i18n:  Right
-#: Source/Core/Core/Src/HW/GCPadEmu.cpp:46
+#: Source/Core/Core/HW/GCPadEmu.cpp:46
 msgid "R"
 msgstr "R"
 
@@ -4207,7 +4207,7 @@ msgid "R Button"
 msgstr "Botão R"
 
 #. i18n:  Right-Analog
-#: Source/Core/Core/Src/HW/GCPadEmu.cpp:50
+#: Source/Core/Core/HW/GCPadEmu.cpp:50
 msgid "R-Analog"
 msgstr "R-Analógico"
 
@@ -4219,7 +4219,7 @@ msgstr "RAM"
 msgid "RUSSIA"
 msgstr "RUSSIA"
 
-#: Source/Core/InputCommon/Src/ControllerEmu.cpp:229
+#: Source/Core/InputCommon/ControllerEmu.cpp:229
 msgid "Radius"
 msgstr ""
 
@@ -4266,15 +4266,15 @@ msgstr "Informação de Gravação"
 msgid "Recording Options"
 msgstr "Opções de Gravação"
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/Attachment/Drums.cpp:25
+#: Source/Core/Core/HW/WiimoteEmu/Attachment/Drums.cpp:25
 msgid "Red"
 msgstr "Vermelho"
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/Attachment/Turntable.cpp:28
+#: Source/Core/Core/HW/WiimoteEmu/Attachment/Turntable.cpp:28
 msgid "Red Left"
 msgstr "Vermelho Esquerda"
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/Attachment/Turntable.cpp:29
+#: Source/Core/Core/HW/WiimoteEmu/Attachment/Turntable.cpp:29
 msgid "Red Right"
 msgstr "Vermelho Direita"
 
@@ -4345,17 +4345,17 @@ msgstr "Return"
 msgid "Revision:"
 msgstr "Revisão:"
 
-#: Source/Core/InputCommon/Src/ControllerEmu.cpp:265
+#: Source/Core/InputCommon/ControllerEmu.cpp:265
 #: Source/Core/DolphinWX/Src/WXInputBase.cpp:44
 msgid "Right"
 msgstr "Direita"
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/Attachment/Classic.cpp:65
+#: Source/Core/Core/HW/WiimoteEmu/Attachment/Classic.cpp:65
 msgid "Right Stick"
 msgstr "Stick Direito"
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/WiimoteEmu.cpp:299
-#: Source/Core/Core/Src/HW/GCPadEmu.cpp:72
+#: Source/Core/Core/HW/WiimoteEmu/WiimoteEmu.cpp:299
+#: Source/Core/Core/HW/GCPadEmu.cpp:72
 msgid "Rumble"
 msgstr "Vibração"
 
@@ -4455,7 +4455,7 @@ msgstr "Guardar perspectiva actual"
 msgid "Save decompressed GCM/ISO"
 msgstr "Jogo guardado descomprimido GCM/ISO"
 
-#: Source/Core/Core/Src/Movie.cpp:794
+#: Source/Core/Core/Movie.cpp:794
 #, c-format
 msgid "Savestate movie %s is corrupted, movie recording stopping..."
 msgstr "O filme de Savestate  %s está corrupto, gravação de filme a parar..."
@@ -4577,7 +4577,7 @@ msgstr ""
 "da sua proporção.\n"
 "Em caso de dúvida, seleccione Automático."
 
-#: Source/Core/InputCommon/Src/InputConfig.cpp:49
+#: Source/Core/InputCommon/InputConfig.cpp:49
 msgid "Selected controller profile does not exist"
 msgstr ""
 
@@ -4653,7 +4653,7 @@ msgstr "Definir como ISO &padrão"
 msgid "Set as default Memcard %c"
 msgstr "Definir como cartão de memória padrão %c"
 
-#: Source/Core/Core/Src/ActionReplay.cpp:450
+#: Source/Core/Core/ActionReplay.cpp:450
 #, c-format
 msgid "SetARCode_IsActive: Index is greater than ar code list size %lu"
 msgstr "SetARCode_IsActive:O Index é maior que a lista de códigos ar %lu"
@@ -4668,11 +4668,11 @@ msgstr ""
 msgid "Settings..."
 msgstr "Definições..."
 
-#: Source/Core/Core/Src/Boot/Boot_BS2Emu.cpp:252
+#: Source/Core/Core/Boot/Boot_BS2Emu.cpp:252
 msgid "SetupWiiMem: Cant create setting file"
 msgstr ""
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/WiimoteEmu.cpp:282
+#: Source/Core/Core/HW/WiimoteEmu/WiimoteEmu.cpp:282
 msgid "Shake"
 msgstr "Abanar"
 
@@ -4851,7 +4851,7 @@ msgstr ""
 "\n"
 "Em caso de dúvida, mantenha esta opção desactivada."
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/WiimoteEmu.cpp:310
+#: Source/Core/Core/HW/WiimoteEmu/WiimoteEmu.cpp:310
 msgid "Sideways Wiimote"
 msgstr "Wiimote na horizontal"
 
@@ -4979,7 +4979,7 @@ msgstr ""
 msgid "Speed up Disc Transfer Rate"
 msgstr "Aumente a taxa de transferência do disco"
 
-#: Source/Core/InputCommon/Src/ControllerEmu.cpp:231
+#: Source/Core/InputCommon/ControllerEmu.cpp:231
 msgid "Square Stick"
 msgstr "Stick quadrado"
 
@@ -4987,7 +4987,7 @@ msgstr "Stick quadrado"
 msgid "Standard Controller"
 msgstr "Comando padrão"
 
-#: Source/Core/Core/Src/HW/GCPadEmu.cpp:37
+#: Source/Core/Core/HW/GCPadEmu.cpp:37
 #: Source/Core/DolphinWX/Src/WXInputBase.cpp:25
 #: Source/Core/DolphinWX/Src/NetWindow.cpp:343
 msgid "Start"
@@ -5017,7 +5017,7 @@ msgstr "Estados Guardados"
 msgid "Steering Wheel"
 msgstr ""
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/Attachment/Guitar.cpp:57
+#: Source/Core/Core/HW/WiimoteEmu/Attachment/Guitar.cpp:57
 msgid "Stick"
 msgstr "Stick"
 
@@ -5045,7 +5045,7 @@ msgstr ""
 msgid "Stretch to Window"
 msgstr "Ajustar à janela"
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/Attachment/Guitar.cpp:47
+#: Source/Core/Core/HW/WiimoteEmu/Attachment/Guitar.cpp:47
 msgid "Strum"
 msgstr "Strum"
 
@@ -5066,7 +5066,7 @@ msgstr "Sucesso na importação de ficheiros de jogo guardado"
 msgid "Swedish"
 msgstr ""
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/WiimoteEmu.cpp:276
+#: Source/Core/Core/HW/WiimoteEmu/WiimoteEmu.cpp:276
 msgid "Swing"
 msgstr "Balanço"
 
@@ -5102,11 +5102,11 @@ msgstr "Tab"
 msgid "Tab split"
 msgstr "Tab divisão"
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/Attachment/Turntable.cpp:41
+#: Source/Core/Core/HW/WiimoteEmu/Attachment/Turntable.cpp:41
 msgid "Table Left"
 msgstr "Table Esquerda"
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/Attachment/Turntable.cpp:42
+#: Source/Core/Core/HW/WiimoteEmu/Attachment/Turntable.cpp:42
 msgid "Table Right"
 msgstr "Table Direita"
 
@@ -5136,11 +5136,11 @@ msgstr "Cache de Textura"
 msgid "Texture Format Overlay"
 msgstr "Formato da textura"
 
-#: Source/Core/Core/Src/CoreParameter.cpp:228
+#: Source/Core/Core/CoreParameter.cpp:228
 msgid "The WAD has been installed successfully"
 msgstr "O WAD foi instalado correctamente"
 
-#: Source/Core/Core/Src/ActionReplay.cpp:185
+#: Source/Core/Core/ActionReplay.cpp:185
 msgid "The address is invalid"
 msgstr "O caminho é inválido"
 
@@ -5179,7 +5179,7 @@ msgstr ""
 "O ficheiro %s já estava aberto, o cabeçalho do ficheiro não poderá ser "
 "escrito."
 
-#: Source/Core/Core/Src/Boot/Boot.cpp:320
+#: Source/Core/Core/Boot/Boot.cpp:320
 #, c-format
 msgid "The file you specified (%s) does not exist"
 msgstr "O ficheiro que especificou (%s) não existe"
@@ -5217,28 +5217,28 @@ msgstr ""
 "O idioma seleccionado não é suportado pelo seu sistema. A repor padrão do "
 "sistema."
 
-#: Source/Core/Core/Src/NetPlayClient.cpp:93
+#: Source/Core/Core/NetPlayClient.cpp:93
 msgid "The server and client's NetPlay versions are incompatible!"
 msgstr "O servidor e a versão NetPlay do cliente são incompatíveis"
 
-#: Source/Core/Core/Src/NetPlayClient.cpp:90
+#: Source/Core/Core/NetPlayClient.cpp:90
 msgid "The server is full!"
 msgstr "O servidor está cheio!"
 
-#: Source/Core/Core/Src/NetPlayClient.cpp:96
+#: Source/Core/Core/NetPlayClient.cpp:96
 msgid "The server responded: the game is currently running!"
 msgstr "O servidor respondeu: O jogo está a correr neste momento!"
 
-#: Source/Core/Core/Src/NetPlayClient.cpp:99
+#: Source/Core/Core/NetPlayClient.cpp:99
 msgid "The server sent an unknown error message!"
 msgstr "O servidor enviou uma mensagem de erro desconhecida!"
 
-#: Source/Core/Core/Src/CoreParameter.cpp:121
+#: Source/Core/Core/CoreParameter.cpp:121
 #, c-format
 msgid "The specified file \"%s\" does not exist"
 msgstr "O ficheiro especificado \"%s\" não existe"
 
-#: Source/Core/Core/Src/ActionReplay.cpp:186
+#: Source/Core/Core/ActionReplay.cpp:186
 msgid "The value is invalid"
 msgstr "O valor é inválido"
 
@@ -5246,7 +5246,7 @@ msgstr "O valor é inválido"
 msgid "Theme:"
 msgstr "Tema:"
 
-#: Source/Core/Core/Src/IPC_HLE/WII_IPC_HLE_Device_es.cpp:588
+#: Source/Core/Core/IPC_HLE/WII_IPC_HLE_Device_es.cpp:588
 msgid ""
 "There must be a ticket for 00000001/00000002. Your NAND dump is probably "
 "incomplete."
@@ -5262,7 +5262,7 @@ msgstr ""
 "Estas definições substituem as definições raiz do Dolphin .\n"
 "Indeterminado significa que o jogo usa as definições do Dolphin."
 
-#: Source/Core/Core/Src/ActionReplay.cpp:345
+#: Source/Core/Core/ActionReplay.cpp:345
 msgid ""
 "This action replay simulator does not support codes that modify Action "
 "Replay itself."
@@ -5310,12 +5310,12 @@ msgstr ""
 msgid "This will let you Manually Edit the INI config file"
 msgstr "Isto permite a edição manual do ficheiro de configuração INI"
 
-#: Source/Core/InputCommon/Src/ControllerEmu.cpp:237
-#: Source/Core/InputCommon/Src/ControllerEmu.cpp:242
+#: Source/Core/InputCommon/ControllerEmu.cpp:237
+#: Source/Core/InputCommon/ControllerEmu.cpp:242
 msgid "Threshold"
 msgstr "Limite"
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/WiimoteEmu.cpp:279
+#: Source/Core/Core/HW/WiimoteEmu/WiimoteEmu.cpp:279
 msgid "Tilt"
 msgstr "Tilt"
 
@@ -5363,11 +5363,11 @@ msgstr "Topo"
 msgid "Traditional Chinese"
 msgstr "Chinês Tradicional"
 
-#: Source/Core/Core/Src/Boot/Boot.cpp:414
+#: Source/Core/Core/Boot/Boot.cpp:414
 msgid "Tried to load an unknown file type."
 msgstr "Tentou carregar um tipo de ficheiro desconhecido."
 
-#: Source/Core/Core/Src/HW/GCPadEmu.cpp:67
+#: Source/Core/Core/HW/GCPadEmu.cpp:67
 msgid "Triggers"
 msgstr "Gatilhos"
 
@@ -5375,7 +5375,7 @@ msgstr "Gatilhos"
 msgid "Trying to read from invalid SYSCONF"
 msgstr "Tentativa de leitura inválida de SYSCONF"
 
-#: Source/Core/Core/Src/IPC_HLE/WII_IPC_HLE_Device_usb.cpp:31
+#: Source/Core/Core/IPC_HLE/WII_IPC_HLE_Device_usb.cpp:31
 msgid ""
 "Trying to read from invalid SYSCONF\n"
 "Wiimote bt ids are not available"
@@ -5387,7 +5387,7 @@ msgstr ""
 msgid "Turkish"
 msgstr "Turco"
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/Attachment/Turntable.cpp:33
+#: Source/Core/Core/HW/WiimoteEmu/Attachment/Turntable.cpp:33
 msgid "Turntable"
 msgstr "Rotação"
 
@@ -5399,7 +5399,7 @@ msgstr "Tipo"
 msgid "UDP Port:"
 msgstr "Porta UDP:"
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/WiimoteEmu.cpp:270
+#: Source/Core/Core/HW/WiimoteEmu/WiimoteEmu.cpp:270
 #: Source/Core/DolphinWX/Src/UDPConfigDiag.cpp:12
 msgid "UDP Wiimote"
 msgstr "UDP Wiimote"
@@ -5455,12 +5455,12 @@ msgstr ""
 msgid "Unknown"
 msgstr "Desconhecido"
 
-#: Source/Core/Core/Src/HW/DVDInterface.cpp:968
+#: Source/Core/Core/HW/DVDInterface.cpp:968
 #, c-format
 msgid "Unknown DVD command %08x - fatal error"
 msgstr "Comando de DVD desconhecido %08x - Erro fatal"
 
-#: Source/Core/Core/Src/IPC_HLE/WII_IPC_HLE_Device_DI.cpp:444
+#: Source/Core/Core/IPC_HLE/WII_IPC_HLE_Device_DI.cpp:444
 #, c-format
 msgid "Unknown command 0x%08x"
 msgstr "Comando desconhecido 0x%08x"
@@ -5470,19 +5470,19 @@ msgstr "Comando desconhecido 0x%08x"
 msgid "Unknown entry type %i in SYSCONF (%s@%x)!"
 msgstr "Tipo de entrada desconhecida %i em SYSCONF (%s@%x)!"
 
-#: Source/Core/Core/Src/NetPlayClient.cpp:296
+#: Source/Core/Core/NetPlayClient.cpp:296
 #, c-format
 msgid "Unknown message received with id : %d"
 msgstr "Mensagem desconhecida recebida com a id : %d"
 
-#: Source/Core/Core/Src/NetPlayServer.cpp:394
+#: Source/Core/Core/NetPlayServer.cpp:394
 #, c-format
 msgid "Unknown message with id:%d received from player:%d Kicking player!"
 msgstr ""
 "Mensagem desconhecida com a id:%d recebida pelo jogador:%d Excluindo o "
 "jogador!"
 
-#: Source/Core/InputCommon/Src/ControllerEmu.cpp:262
+#: Source/Core/InputCommon/ControllerEmu.cpp:262
 #: Source/Core/DolphinWX/Src/WXInputBase.cpp:43
 msgid "Up"
 msgstr "Cima"
@@ -5492,7 +5492,7 @@ msgstr "Cima"
 msgid "Update"
 msgstr "Actualizar"
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/WiimoteEmu.cpp:311
+#: Source/Core/Core/HW/WiimoteEmu/WiimoteEmu.cpp:311
 msgid "Upright Wiimote"
 msgstr "Wiimote na vertical"
 
@@ -5630,15 +5630,15 @@ msgstr ""
 msgid "Warning"
 msgstr "Aviso"
 
-#: Source/Core/Core/Src/Boot/Boot.cpp:279
+#: Source/Core/Core/Boot/Boot.cpp:279
 msgid "Warning - starting DOL in wrong console mode!"
 msgstr "Aviso - a começar DOL  em modo errado de consola!"
 
-#: Source/Core/Core/Src/Boot/Boot.cpp:329
+#: Source/Core/Core/Boot/Boot.cpp:329
 msgid "Warning - starting ELF in wrong console mode!"
 msgstr "Aviso - A iniciar um  ELF em modo errado de consola!"
 
-#: Source/Core/Core/Src/Boot/Boot.cpp:209
+#: Source/Core/Core/Boot/Boot.cpp:209
 msgid "Warning - starting ISO in wrong console mode!"
 msgstr "Aviso - A iniciar um ISO em modo errado de consola!"
 
@@ -5667,7 +5667,7 @@ msgstr ""
 "e tem o mesmo nome que um ficheiro no seu cartão de memória\n"
 "Continuar?"
 
-#: Source/Core/Core/Src/Movie.cpp:837
+#: Source/Core/Core/Movie.cpp:837
 #, c-format
 msgid ""
 "Warning: You loaded a save that's after the end of the current movie. (byte "
@@ -5675,7 +5675,7 @@ msgid ""
 "load this state with read-only mode off."
 msgstr ""
 
-#: Source/Core/Core/Src/Movie.cpp:854
+#: Source/Core/Core/Movie.cpp:854
 #, c-format
 msgid ""
 "Warning: You loaded a save whose movie mismatches on byte %d (0x%X). You "
@@ -5683,7 +5683,7 @@ msgid ""
 "only mode off. Otherwise you'll probably get a desync."
 msgstr ""
 
-#: Source/Core/Core/Src/Movie.cpp:864
+#: Source/Core/Core/Movie.cpp:864
 #, c-format
 msgid ""
 "Warning: You loaded a save whose movie mismatches on frame %d. You should "
@@ -5707,7 +5707,7 @@ msgstr ""
 msgid "WaveFileWriter - file not open."
 msgstr "WaveFileWriter - ficheiro não aberto."
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/Attachment/Guitar.cpp:60
+#: Source/Core/Core/HW/WiimoteEmu/Attachment/Guitar.cpp:60
 msgid "Whammy"
 msgstr "Whammy"
 
@@ -5715,7 +5715,7 @@ msgstr "Whammy"
 msgid "Widescreen Hack"
 msgstr "Hack de Ecrã Panorâmico"
 
-#: Source/Core/InputCommon/Src/ControllerEmu.cpp:300
+#: Source/Core/InputCommon/ControllerEmu.cpp:300
 msgid "Width"
 msgstr "Largura"
 
@@ -5739,7 +5739,7 @@ msgstr "Ficheiros de jogo guardado Wii (*.bin)|*.bin"
 msgid "WiiWAD: Could not read from file"
 msgstr "WiiWAD: Não foi possível ler do ficheiro"
 
-#: Source/Core/Core/Src/HW/Wiimote.cpp:20
+#: Source/Core/Core/HW/Wiimote.cpp:20
 #: Source/Core/DolphinWX/Src/FrameTools.cpp:472
 msgid "Wiimote"
 msgstr "Wiimote"
@@ -5827,18 +5827,18 @@ msgstr "Criação de master voice do XAudio2 falhou: %#X"
 msgid "XF reg"
 msgstr ""
 
-#: Source/Core/Core/Src/HW/WiimoteEmu/Attachment/Drums.cpp:25
+#: Source/Core/Core/HW/WiimoteEmu/Attachment/Drums.cpp:25
 msgid "Yellow"
 msgstr "Amarelo"
 
-#: Source/Core/Core/Src/DSP/DSPCore.cpp:120
+#: Source/Core/Core/DSP/DSPCore.cpp:120
 msgid ""
 "You are using a free DSP ROM made by the Dolphin Team.\n"
 "All Wii games will work correctly, and most GC games should also work fine, "
 "but the GBA/IPL/CARD UCodes will not work.\n"
 msgstr ""
 
-#: Source/Core/Core/Src/DSP/DSPCore.cpp:116
+#: Source/Core/Core/DSP/DSPCore.cpp:116
 msgid ""
 "You are using an old free DSP ROM made by the Dolphin Team.\n"
 "Only games using the Zelda UCode will work correctly.\n"
@@ -5868,14 +5868,14 @@ msgstr "Tem que introduzir um nome de perfil válido."
 msgid "You must restart Dolphin in order for the change to take effect."
 msgstr "Tem que reiniciar o Dolphin para que as alterações sejam efectuadas"
 
-#: Source/Core/Core/Src/DSP/DSPCore.cpp:109
+#: Source/Core/Core/DSP/DSPCore.cpp:109
 msgid ""
 "Your DSP ROMs have incorrect hashes.\n"
 "Would you like to stop now to fix the problem?\n"
 "If you select \"No\", audio might be garbled."
 msgstr ""
 
-#: Source/Core/Core/Src/CoreParameter.cpp:177
+#: Source/Core/Core/CoreParameter.cpp:177
 msgid ""
 "Your GCM/ISO file seems to be invalid (invalid country).\n"
 "Continue with PAL region?"
@@ -5898,11 +5898,11 @@ msgstr ""
 msgid "ZTP hack"
 msgstr "ZTP hack"
 
-#: Source/Core/Core/Src/ActionReplay.cpp:377
+#: Source/Core/Core/ActionReplay.cpp:377
 msgid "Zero 3 code not supported"
 msgstr "Código Zero 3 não é suportado"
 
-#: Source/Core/Core/Src/ActionReplay.cpp:398
+#: Source/Core/Core/ActionReplay.cpp:398
 #, c-format
 msgid "Zero code unknown to dolphin: %08x"
 msgstr "Código Zero desconhecido para o Dolphin: %08x"
@@ -5966,7 +5966,7 @@ msgstr ""
 msgid "apploader (.img)"
 msgstr "apploader (.img)"
 
-#: Source/Core/Core/Src/PowerPC/JitInterface.cpp:272
+#: Source/Core/Core/PowerPC/JitInterface.cpp:272
 #, c-format
 msgid "iCacheJIT: Reading Opcode from %x. Please report."
 msgstr "iCacheJIT: A ler Opcode de %x. Por favor reportar."
@@ -5975,12 +5975,12 @@ msgstr "iCacheJIT: A ler Opcode de %x. Por favor reportar."
 msgid "s"
 msgstr "s"
 
-#: Source/Core/Core/Src/x64MemTools.cpp:242
+#: Source/Core/Core/x64MemTools.cpp:242
 #, c-format
 msgid "unknown flavor %d (expected %d)"
 msgstr ""
 
-#: Source/Core/Core/Src/x64MemTools.cpp:236
+#: Source/Core/Core/x64MemTools.cpp:236
 msgid "unknown message received"
 msgstr "mensagem desconhecida recebida"
 

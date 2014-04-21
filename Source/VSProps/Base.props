@@ -10,7 +10,6 @@
     <BinaryOutputDir>$(BinaryRootDir)$(Platform)\</BinaryOutputDir>
     <ExternalsDir>$(SolutionDir)..\Externals\</ExternalsDir>
     <CoreDir>$(SolutionDir)Core\</CoreDir>
-    <PluginDir>$(SolutionDir)Plugins\</PluginDir>
   </PropertyGroup>
   <PropertyGroup>
     <!--
@@ -31,18 +30,7 @@
       Order matters! (first hit, first use).
         Note: Directory containing source file being compiled is always searched first.
       -->
-      <AdditionalIncludeDirectories>$(CoreDir)AudioCommon\Src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>$(CoreDir)Common\Src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>$(CoreDir)Core\Src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>$(CoreDir)DiscIO\Src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>$(CoreDir)DolphinWX\Src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>$(CoreDir)InputCommon\Src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>$(CoreDir)VideoBackends\DX9\Src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>$(CoreDir)VideoBackends\DX11\Src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>$(CoreDir)VideoBackends\OGL\Src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>$(CoreDir)VideoBackends\Software\Src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>$(CoreDir)VideoCommon\Src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-
+      <AdditionalIncludeDirectories>$(CoreDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>$(ExternalsDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>$(ExternalsDir)Bochs_disasm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>$(ExternalsDir)CLRun\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>

@@ -12,7 +12,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="force_rebuild.h" />
-    <ClInclude Include="Src\scmrev.h" />
+    <ClInclude Include="scmrev.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{69F00340-5C3D-449F-9A80-958435C6CF06}</ProjectGuid>

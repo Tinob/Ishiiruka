@@ -20,6 +20,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Src\DSPTool.cpp" />
+    <ClCompile Include="DSPTool.cpp" />
   </ItemGroup>
 </Project>

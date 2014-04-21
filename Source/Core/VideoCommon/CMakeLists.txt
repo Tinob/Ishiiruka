@@ -1,65 +1,65 @@
-set(SRCS	Src/BPFunctions.cpp
-			Src/BPMemory.cpp
-			Src/BPStructs.cpp
-			Src/CPMemory.cpp
-			Src/CommandProcessor.cpp
-			Src/Debugger.cpp
-			Src/DriverDetails.cpp
-			Src/Fifo.cpp
-			Src/FPSCounter.cpp
-			Src/FramebufferManagerBase.cpp
-			Src/HiresTextures.cpp
-			Src/DDSLoader.cpp
-			Src/ImageWrite.cpp
-			Src/IndexGenerator.cpp
-			Src/MainBase.cpp
-			Src/OnScreenDisplay.cpp
-			Src/OpcodeDecoding.cpp
-			Src/OpenCL.cpp
-			Src/OpenCL/OCLTextureDecoder.cpp
-			Src/PerfQueryBase.cpp
-			Src/PixelEngine.cpp
-			Src/PixelShaderGen.cpp
-			Src/PixelShaderManager.cpp
-			Src/RenderBase.cpp
-			Src/Statistics.cpp
-			Src/TextureCacheBase.cpp
-			Src/TextureConversionShader.cpp
-			Src/VertexLoader.cpp
-			Src/VertexLoaderManager.cpp
-			Src/VertexLoader_Color.cpp
-			Src/VertexLoader_Normal.cpp
-			Src/VertexLoader_Position.cpp
-			Src/VertexLoader_TextCoord.cpp
-			Src/VertexManagerBase.cpp
-			Src/VertexShaderGen.cpp
-			Src/VertexShaderManager.cpp
-			Src/VideoBackendBase.cpp
-			Src/VideoConfig.cpp
-			Src/VideoState.cpp
-			Src/XFMemory.cpp
-			Src/XFStructs.cpp
-			Src/memcpy_amd.cpp)
+set(SRCS	BPFunctions.cpp
+			BPMemory.cpp
+			BPStructs.cpp
+			CPMemory.cpp
+			CommandProcessor.cpp
+			Debugger.cpp
+			DriverDetails.cpp
+			Fifo.cpp
+			FPSCounter.cpp
+			FramebufferManagerBase.cpp
+			HiresTextures.cpp
+			DDSLoader.cpp
+			ImageWrite.cpp
+			IndexGenerator.cpp
+			MainBase.cpp
+			OnScreenDisplay.cpp
+			OpcodeDecoding.cpp
+			OpenCL.cpp
+			OpenCL/OCLTextureDecoder.cpp
+			PerfQueryBase.cpp
+			PixelEngine.cpp
+			PixelShaderGen.cpp
+			PixelShaderManager.cpp
+			RenderBase.cpp
+			Statistics.cpp
+			TextureCacheBase.cpp
+			TextureConversionShader.cpp
+			VertexLoader.cpp
+			VertexLoaderManager.cpp
+			VertexLoader_Color.cpp
+			VertexLoader_Normal.cpp
+			VertexLoader_Position.cpp
+			VertexLoader_TextCoord.cpp
+			VertexManagerBase.cpp
+			VertexShaderGen.cpp
+			VertexShaderManager.cpp
+			VideoBackendBase.cpp
+			VideoConfig.cpp
+			VideoState.cpp
+			XFMemory.cpp
+			XFStructs.cpp
+			memcpy_amd.cpp)
 
 set(LIBS core)
 
 if(NOT _M_GENERIC)
-	set(SRCS ${SRCS}	Src/x64TextureDecoder.cpp
-						Src/x64DLCache.cpp)
+	set(SRCS ${SRCS}	x64TextureDecoder.cpp
+						x64DLCache.cpp)
 else()
-	set(SRCS ${SRCS}	Src/GenericTextureDecoder.cpp
-						Src/GenericDLCache.cpp)
+	set(SRCS ${SRCS}	GenericTextureDecoder.cpp
+						GenericDLCache.cpp)
 endif()
 if(NOT ${CL} STREQUAL CL-NOTFOUND)
 	list(APPEND LIBS ${CL})
 endif()
 
 if(wxWidgets_FOUND AND WIN32)
-	set(SRCS ${SRCS} Src/EmuWindow.cpp)
+	set(SRCS ${SRCS} EmuWindow.cpp)
 endif()
 
 if(LIBAV_FOUND OR WIN32)
-	set(SRCS ${SRCS} Src/AVIDump.cpp)
+	set(SRCS ${SRCS} AVIDump.cpp)
 endif()
 
 add_library(videocommon STATIC ${SRCS})
