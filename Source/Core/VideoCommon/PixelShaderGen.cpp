@@ -209,6 +209,33 @@ static const char *tevRasTable[] =
 static const char *tevCOutputTable[]  = { "prev.rgb", "c0.rgb", "c1.rgb", "c2.rgb" };
 static const char *tevAOutputTable[]  = { "prev.a", "c0.a", "c1.a", "c2.a" };
 
+static const char* headerUtil = "#define F_P_U8(x) (round((x) * 255.0) / 255.0)\n"
+"#define CHK_O_U8(x) (frac(((x) + " C_1024_BY_255 ") * (255.0/256.0)) * (256.0/255.0))\n"
+"float2 INT_MUL( float2 x, float y, float z )\n"
+"{\n"
+"\tx.x = (x.x - ((z < 1.0 && x.x < 0.0) ? y : 0.0)) * z;\n"
+"\tx.y = (x.y - ((z < 1.0 && x.y < 0.0) ? y : 0.0)) * z;\n"
+"\treturn trunc(x);\n"
+"}\n"
+"float2 INT_SUBMUL( float2 x, float y, float z )\n"
+"{\n"
+"\tx.x = (x.x - ((x.x < 0.0) ? y : 0.0)) * z;\n"
+"\tx.y = (x.y - ((x.y < 0.0) ? y : 0.0)) * z;\n"
+"\treturn trunc(x);\n"
+"}\n"
+"float2 INT_SUBMUL( float2 x, float2 y, float2 z )\n"
+"{\n"
+"\tx.x = (x.x - ((x.x < 0.0) ? y.x : 0.0)) * z.x;\n"
+"\tx.y = (x.y - ((x.y < 0.0) ? y.y : 0.0)) * z.y;\n"
+"\treturn trunc(x);\n"
+"}\n"
+// Fastmod implementation with the restriction that "y" must be always positive
+"float fastmod( float x, float y )\n"
+"{\n"
+"\ty = sign(x) * y + 0.0000001f;\n"
+"\treturn frac(x/y)*y;\n"
+"}\n";
+
 // Register States
 
 struct RegisterState
@@ -275,16 +302,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 		out.Write("//Pixel Shader for TEV stages\n");
 		out.Write("//%i TEV stages, %i texgens, %i IND stages\n",
 			numStages, numTexgen, bpmem.genMode.numindstages);
-		out.Write("#define F_P_U8(x) (round((x) * 255.0) / 255.0)\n");
-		out.Write("#define CHK_O_U8(x) (frac(((x) + " C_1024_BY_255 ") * (255.0/256.0)) * (256.0/255.0))\n");
-		out.Write("#define INT_MUL(x, y, z) trunc(((x) - ((z) < 1 && (x) < 0 ? (y) : (0.0))) * (z));\n");
-		out.Write("#define INT_SUBMUL(x, y, z) trunc(((x) - ((x) < 0 ? (y) : (0.0))) * (z));\n");
-		// Fastmod implementation with the restriction that "y" must be always positive
-		out.Write("float fastmod( float x, float y )\n");
-		out.Write("{\n");
-		out.Write("\ty = sign(x) * y + 0.0000001f;\n");
-		out.Write("\treturn frac(x/y)*y;\n");
-		out.Write("}\n");		
+		out.Write(headerUtil);
 
 		if (ApiType == API_OPENGL)
 		{

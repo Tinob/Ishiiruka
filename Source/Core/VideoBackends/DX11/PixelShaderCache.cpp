@@ -548,18 +548,18 @@ static const unsigned int ps_constant_offset_table[] = {
 	32,								// C_ALPHA, 4
 	36, 40, 44, 48, 52, 56, 60, 64,	// C_TEXDIMS, 32
 	68, 72,							// C_ZBIAS, 8
-	76, 80,							// C_INDTEXSCALE, 8
-	84, 88, 92, 96, 100, 104,		// C_INDTEXMTX, 24
-	108, 112, 116,					// C_FOG, 12
-	120, 124, 128, 132, 136,		// C_PLIGHTS0, 20
-	140, 144, 148, 152, 156,		// C_PLIGHTS1, 20
-	160, 164, 168, 172,	176,		// C_PLIGHTS2, 20
-	180, 184, 188, 192, 196,		// C_PLIGHTS3, 20		
-	200, 204, 208, 212, 216,		// C_PLIGHTS4, 20
-	220, 224, 228, 232, 236,		// C_PLIGHTS5, 20
-	240, 244, 248, 252,	256,		// C_PLIGHTS6, 20
-	260, 264, 268, 272, 276,		// C_PLIGHTS7, 20
-	280, 284, 288, 292				// C_PMATERIALS, 16	
+	76, 80, 84, 88,					// C_INDTEXSCALE, 16
+	92, 96, 100, 104, 108, 112,		// C_INDTEXMTX, 24
+	116, 120, 124,					// C_FOG, 12
+	128, 132, 136, 140, 144,		// C_PLIGHTS0, 20
+	148, 152, 156, 160, 164,		// C_PLIGHTS1, 20
+	168, 172, 176, 180,	184,		// C_PLIGHTS2, 20
+	188, 192, 196, 200, 204,		// C_PLIGHTS3, 20		
+	208, 212, 216, 220, 224,		// C_PLIGHTS4, 20
+	228, 232, 236, 240, 244,		// C_PLIGHTS5, 20
+	248, 252, 256, 260,	264,		// C_PLIGHTS6, 20
+	268, 272, 276, 280, 284,		// C_PLIGHTS7, 20
+	288, 292, 296, 300				// C_PMATERIALS, 16	
 };
 void Renderer::SetPSConstant4f(unsigned int const_number, float f1, float f2, float f3, float f4)
 {
