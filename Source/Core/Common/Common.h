@@ -17,6 +17,7 @@ extern const char *scm_desc_str;
 extern const char *scm_branch_str;
 extern const char *scm_rev_str;
 extern const char *scm_rev_git_str;
+extern const char *scm_rev_cache_str;
 extern const char *netplay_dolphin_ver;
 
 // Force enable logging in the right modes. For some reason, something had changed
