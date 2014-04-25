@@ -20,7 +20,7 @@ extern s32 frameCount;
 
 enum
 {
-	TEXTURE_KILL_THRESHOLD = 200,
+	TEXTURE_KILL_THRESHOLD = 12000,
 };
 
 TextureCache *g_texture_cache;
@@ -391,7 +391,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 	// e.g. 64x64 with 7 LODs would have the mipmap chain 64x64,32x32,16x16,8x8,4x4,2x2,1x1,1x1, so we limit the mipmap count to 6 there
 	while (g_ActiveConfig.backend_info.bUseMinimalMipCount && max(expandedWidth, expandedHeight) >> maxlevel == 0)
 		--maxlevel;
-
+	u32 texLevels = use_mipmaps ? (maxlevel + 1) : 1;
 	TCacheEntryBase *entry = textures[texID];
 	if (entry)
 	{
@@ -413,7 +413,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 
 		// 2. b) For normal textures, all texture parameters need to match
 		if (address == entry->addr && tex_hash == entry->hash && full_format == entry->format &&
-			entry->num_mipmaps > maxlevel && entry->native_width == nativeW && entry->native_height == nativeH)
+			entry->num_mipmaps == texLevels && entry->native_width == nativeW && entry->native_height == nativeH)
 		{
 			return ReturnEntry(stage, entry);
 		}
@@ -424,7 +424,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 		// TODO: Don't we need to force texture decoding to RGBA8 for dynamic EFB copies?
 		// TODO: Actually, it should be enough if the internal texture format matches...
 		if ((entry->type == TCET_NORMAL && width == entry->virtual_width && height == entry->virtual_height
-			&& full_format == entry->format && entry->num_mipmaps > maxlevel)
+			&& full_format == entry->format && entry->num_mipmaps == texLevels)
 			|| (entry->type == TCET_EC_DYNAMIC && entry->native_width == width && entry->native_height == height))
 		{
 			// reuse the texture
@@ -474,8 +474,6 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 			pcfmt = TexDecoder_DecodeRGBA8FromTmem(temp, src_data, src_data_gb, expandedWidth, expandedHeight);
 		}
 	}
-
-	u32 texLevels = use_mipmaps ? (maxlevel + 1) : 1;
 	const bool using_custom_lods = using_custom_texture && (nummipsinbuffer > 0  || CheckForCustomTextureLODs(tex_hash, texformat, texLevels));
 	// Only load native mips if their dimensions fit to our virtual texture dimensions
 	const bool use_native_mips = use_mipmaps && !using_custom_lods && (width == nativeW && height == nativeH);
