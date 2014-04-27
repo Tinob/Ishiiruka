@@ -148,10 +148,10 @@ LPDIRECT3DTEXTURE9 CreateTexture2D(const u8* buffer, const int width, const int 
 	}
 
 	HRESULT hr;
-	if (levels > 0)
+	//if (levels > 0)
 		hr = dev->CreateTexture(width, height, levels, 0, fmt, D3DPOOL_MANAGED, &pTexture, NULL);
-	else
-		hr = dev->CreateTexture(width, height, 0, D3DUSAGE_AUTOGENMIPMAP, fmt, D3DPOOL_MANAGED, &pTexture, NULL);
+	//else
+		//hr = dev->CreateTexture(width, height, 0, D3DUSAGE_AUTOGENMIPMAP, fmt, D3DPOOL_MANAGED, &pTexture, NULL);
 
 	if (FAILED(hr))
 		return 0;
