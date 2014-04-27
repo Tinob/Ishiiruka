@@ -20,7 +20,7 @@ extern s32 frameCount;
 
 enum
 {
-	TEXTURE_KILL_THRESHOLD = 12000,
+	TEXTURE_KILL_THRESHOLD = 1200,
 };
 
 TextureCache *g_texture_cache;
@@ -249,7 +249,7 @@ bool TextureCache::CheckForCustomTextureLODs(u64 tex_hash, s32 texformat, u32 le
 	return true;
 }
 
-PC_TexFormat TextureCache::LoadCustomTexture(u64 tex_hash, s32 texformat, u32 level, u32& width, u32& height, u32 &nummipsinbuffer)
+PC_TexFormat TextureCache::LoadCustomTexture(u64 tex_hash, s32 texformat, u32 level, u32& width, u32& height, u32 &nummipsinbuffer, bool rgbaonly)
 {
 	char texPathTemp[MAX_PATH];
 	u32 newWidth = 0;
@@ -261,7 +261,7 @@ PC_TexFormat TextureCache::LoadCustomTexture(u64 tex_hash, s32 texformat, u32 le
 		sprintf(texPathTemp, "%s_%08x_%i_mip%i", SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID.c_str(), tex_hash_u32, texformat, level);
 
 	u32 required_size = 0;
-	PC_TexFormat ret = HiresTextures::GetHiresTex(texPathTemp, &newWidth, &newHeight, &required_size, &nummipsinbuffer, texformat, temp_size, temp);
+	PC_TexFormat ret = HiresTextures::GetHiresTex(texPathTemp, &newWidth, &newHeight, &required_size, &nummipsinbuffer, texformat, temp_size, temp, rgbaonly);
 	if (ret == PC_TEX_FMT_NONE && temp_size < required_size)
 	{
 		// Allocate more memory and try again
@@ -269,7 +269,7 @@ PC_TexFormat TextureCache::LoadCustomTexture(u64 tex_hash, s32 texformat, u32 le
 		temp_size = required_size;
 		FreeAlignedMemory(temp);
 		temp = (u8*)AllocateAlignedMemory(temp_size, 16);
-		ret = HiresTextures::GetHiresTex(texPathTemp, &newWidth, &newHeight, &required_size, &nummipsinbuffer, texformat, temp_size, temp);
+		ret = HiresTextures::GetHiresTex(texPathTemp, &newWidth, &newHeight, &required_size, &nummipsinbuffer, texformat, temp_size, temp, rgbaonly);
 	}
 
 	if (ret != PC_TEX_FMT_NONE)
@@ -413,7 +413,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 
 		// 2. b) For normal textures, all texture parameters need to match
 		if (address == entry->addr && tex_hash == entry->hash && full_format == entry->format &&
-			entry->num_mipmaps == texLevels && entry->native_width == nativeW && entry->native_height == nativeH)
+			entry->num_mipmaps >= texLevels && entry->native_width == nativeW && entry->native_height == nativeH)
 		{
 			return ReturnEntry(stage, entry);
 		}
@@ -424,7 +424,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 		// TODO: Don't we need to force texture decoding to RGBA8 for dynamic EFB copies?
 		// TODO: Actually, it should be enough if the internal texture format matches...
 		if ((entry->type == TCET_NORMAL && width == entry->virtual_width && height == entry->virtual_height
-			&& full_format == entry->format && entry->num_mipmaps == texLevels)
+			&& full_format == entry->format && entry->num_mipmaps >= texLevels)
 			|| (entry->type == TCET_EC_DYNAMIC && entry->native_width == width && entry->native_height == height))
 		{
 			// reuse the texture
@@ -442,7 +442,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 	if (g_ActiveConfig.bHiresTextures)
 	{
 		// This function may modify width/height.
-		pcfmt = LoadCustomTexture(tex_hash, texformat, 0, width, height, nummipsinbuffer);
+		pcfmt = LoadCustomTexture(tex_hash, texformat, 0, width, height, nummipsinbuffer, g_ActiveConfig.backend_info.bUseRGBATextures);
 		// disable mipmap loading from the same file
 		// until a good code cleanup
 		nummipsinbuffer = 0;
@@ -563,7 +563,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 				if (nummipsinbuffer == 0)
 				{
 					u32 nmips = 0;
-					LoadCustomTexture(tex_hash, texformat, level, mip_width, mip_height, nmips);
+					LoadCustomTexture(tex_hash, texformat, level, mip_width, mip_height, nmips, g_ActiveConfig.backend_info.bUseRGBATextures);
 				}
 				entry->Load(mip_width, mip_height, mip_width, level);
 			}

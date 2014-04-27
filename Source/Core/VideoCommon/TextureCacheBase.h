@@ -116,7 +116,7 @@ protected:
 
 private:
 	static bool CheckForCustomTextureLODs(u64 tex_hash, s32 texformat, u32 levels);
-	static PC_TexFormat LoadCustomTexture(u64 tex_hash, s32 texformat, u32 level, u32& width, u32& height, u32 &nummipsinbuffer);
+	static PC_TexFormat LoadCustomTexture(u64 tex_hash, s32 texformat, u32 level, u32& width, u32& height, u32 &nummipsinbuffer, bool rgbaonly);
 	static void DumpTexture(TCacheEntryBase* entry, u32 level);
 
 	typedef std::map<u32, TCacheEntryBase*> TexCache;

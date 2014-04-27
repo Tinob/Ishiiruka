@@ -150,7 +150,7 @@ inline PC_TexFormat LoadImageFromFile_DDS(LoadImageInfo &ImgInfo)
 	return returnTex;
 }
 
-PC_TexFormat GetHiresTex(const char *fileName, u32 *pWidth, u32 *pHeight, u32 *required_size, u32 *numMips , s32 texformat, u32 data_size, u8 *dst)
+PC_TexFormat GetHiresTex(const char *fileName, u32 *pWidth, u32 *pHeight, u32 *required_size, u32 *numMips , s32 texformat, u32 data_size, u8 *dst, bool rgbaonly)
 {
 	std::string key(fileName);
 	auto iter = textureMap.find(key);
@@ -166,6 +166,7 @@ PC_TexFormat GetHiresTex(const char *fileName, u32 *pWidth, u32 *pHeight, u32 *r
 	imgInfo.required_size = required_size;
 	imgInfo.nummipmaps = numMips;
 	PC_TexFormat returnTex = PC_TEX_FMT_NONE;
+	texformat = rgbaonly ? GX_TF_RGBA8 : texformat;
 	switch (texformat)
 	{
 	case GX_TF_I4:
