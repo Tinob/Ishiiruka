@@ -338,11 +338,19 @@ void VertexShaderManager::SetConstants()
 	if (bViewportChanged)
 	{
 		bViewportChanged = false;
+		// The console GPU places the pixel center at 7/12 unless antialiasing
+		// is enabled, while D3D11 and OpenGL place it at 0.5, D3D9 at 0.0. See the comment
+		// in VertexShaderGen.cpp for details.
+		// NOTE: If we ever emulate antialiasing, the sample locations set by
+		// BP registers 0x01-0x04 need to be considered here.
+		const float pixel_center_correction = ((g_ActiveConfig.backend_info.APIType & API_D3D9) ? 0.0f : 0.5f) - 7.0f / 12.0f;
+		const float pixel_size_x = 2.f / Renderer::EFBToScaledXf(2.f * xfregs.viewport.wd);
+		const float pixel_size_y = 2.f / Renderer::EFBToScaledXf(2.f * xfregs.viewport.ht);
 		SetVSConstant4f(C_DEPTHPARAMS,
 						xfregs.viewport.farZ * U24_NORM_COEF,
 						xfregs.viewport.zRange * U24_NORM_COEF,
-						-1.f / (float)g_renderer->EFBToScaledX((int)ceil(2.0f * xfregs.viewport.wd)),
-						1.f / (float)g_renderer->EFBToScaledY((int)ceil(-2.0f * xfregs.viewport.ht)));
+						pixel_center_correction * pixel_size_x,
+						pixel_center_correction * pixel_size_y);
 		// This is so implementation-dependent that we can't have it here.
 		UpdateViewport(s_viewportCorrection);
 		bProjectionChanged = true;

@@ -2,7 +2,7 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include <math.h>
+#include <cmath>
 #include <locale.h>
 #ifdef __APPLE__
 	#include <xlocale.h>
@@ -13,7 +13,7 @@
 #include "VideoCommon/BPMemory.h"
 #include "VideoCommon/CPMemory.h"
 #include "VideoCommon/DriverDetails.h"
-#include "LightingShaderGen.h"
+#include "VideoCommon/LightingShaderGen.h"
 #include "VideoCommon/VertexShaderGen.h"
 #include "VideoCommon/VideoConfig.h"
 
@@ -497,11 +497,17 @@ inline void GenerateVertexShader(T& out, u32 components)
 			//trying to get the correct semantic while not using glDepthRange
 			//seems to get rather complicated
 		}
+		
+		// The console GPU places the pixel center at 7/12 in screen space unless
+		// antialiasing is enabled, while D3D11 and OpenGL place it at 0.5, and D3D9 at 0. This results
+		// in some primitives being placed one pixel too far to the bottom-right,
+		// which in turn can be critical if it happens for clear quads.
+		// Hence, we compensate for this pixel center difference so that primitives
+		// get rasterized correctly.
+		out.Write("o.pos.xy = o.pos.xy + " I_DEPTHPARAMS".zw;\n");
+
 		if (api_type & API_D3D9)
 		{
-			// D3D9 is addressing pixel centers instead of pixel boundaries in clip space.
-			// Thus we need to offset the final position by half a pixel
-			out.Write("o.pos.xy = o.pos.xy + " I_DEPTHPARAMS".zw;\n");
 			// Write Texture Offsets for Point/Line Rendering
 			for (unsigned int i = 0; i < xfregs.numTexGen.numTexGens; ++i)
 			{
