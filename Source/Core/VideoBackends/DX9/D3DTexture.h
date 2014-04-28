@@ -11,11 +11,10 @@ namespace DX9
 
 namespace D3D
 {
-	LPDIRECT3DTEXTURE9 CreateTexture2D(const u8* buffer, const int width, const int height, const int pitch, D3DFORMAT fmt = D3DFMT_A8R8G8B8, bool swap_r_b = false, int levels = 1);
-	void ReplaceTexture2D(LPDIRECT3DTEXTURE9 pTexture, const u8* buffer, const int width, const int height, const int pitch, D3DFORMAT fmt, bool swap_r_b, int level = 0);
-	LPDIRECT3DTEXTURE9 CreateRenderTarget(const int width, const int height);
-	LPDIRECT3DSURFACE9 CreateDepthStencilSurface(const int width, const int height);
-	LPDIRECT3DTEXTURE9 CreateOnlyTexture2D(const int width, const int height, D3DFORMAT fmt);
+	LPDIRECT3DTEXTURE9 CreateTexture2D(const u8* buffer, const s32 width, const s32 height, const s32 pitch, D3DFORMAT fmt = D3DFMT_A8R8G8B8, bool swap_r_b = false, s32 levels = 1);
+	void ReplaceTexture2D(LPDIRECT3DTEXTURE9 pTexture, const u8* buffer, const s32 width, const s32 height, const s32 pitch, D3DFORMAT fmt, bool swap_r_b, s32 level = 0);
+	LPDIRECT3DTEXTURE9 CreateRenderTarget(const s32 width, const s32 height);
+	LPDIRECT3DSURFACE9 CreateDepthStencilSurface(const s32 width, const s32 height);
 }
 
 }  //  namespace DX9

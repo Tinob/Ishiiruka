@@ -185,10 +185,16 @@ TextureCache::TCacheEntryBase* TextureCache::CreateTexture(u32 width, u32 height
 		break;
 
 	case PC_TEX_FMT_RGBA32:
-		d3d_fmt = D3DFMT_A8R8G8B8;
-		swap_r_b = true;
+		if (g_Config.backend_info.bSupportsRGBATextures)
+		{
+			d3d_fmt = D3DFMT_A8B8G8R8;
+		}
+		else
+		{
+			d3d_fmt = D3DFMT_A8R8G8B8;
+			swap_r_b = true;
+		}
 		break;
-
 	case PC_TEX_FMT_RGB565:
 		d3d_fmt = D3DFMT_R5G6B5;
 		break;

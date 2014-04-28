@@ -86,6 +86,7 @@ void InitBackendInfo()
 	const int maxConstants = (shaderModel < 3) ? 32 : ((shaderModel < 4) ? 224 : 65536);
 	g_Config.backend_info.APIType = shaderModel < 3 ? API_D3D9_SM20 : API_D3D9_SM30;
 	g_Config.backend_info.bUseRGBATextures = false;
+	g_Config.backend_info.bSupportsRGBATextures = D3D::CheckTextureSupport(0, D3DFMT_A8B8G8R8);
 	g_Config.backend_info.bUseMinimalMipCount = true;
 	g_Config.backend_info.bSupports3DVision = true;
 	g_Config.backend_info.bSupportsPrimitiveRestart = false; // D3D9 does not support primitive restart

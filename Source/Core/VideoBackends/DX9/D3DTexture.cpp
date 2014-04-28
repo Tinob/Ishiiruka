@@ -20,19 +20,19 @@ namespace DX9
 namespace D3D
 {
 
-void ConvertRGBA_BGRA_SSE2(u32 *dst, const int dstPitch, u32 *pIn, const int width, const int height, const int pitch)
+void ConvertRGBA_BGRA_SSE2(u32 *dst, const s32 dstPitch, u32 *pIn, const s32 width, const s32 height, const s32 pitch)
 {
 	// Converts RGBA to BGRA:
 	// TODO: this would be totally unnecessary if we just change the TextureDecoder_RGBA to decode
 	// to BGRA instead.
-	for (int y = 0; y < height; y++, pIn += pitch)
+	for (s32 y = 0; y < height; y++, pIn += pitch)
 	{
 		u8 *pIn8 = (u8 *)pIn;
 		u8 *pBits = (u8 *)((u8*)dst + (y * dstPitch));
 
 		// Batch up loads/stores into 16 byte chunks to use SSE2 efficiently:
-		int sse2blocks = (width * 4) / 16;
-		int sse2remainder = (width * 4) & 15;
+		s32 sse2blocks = (width * 4) / 16;
+		s32 sse2remainder = (width * 4) & 15;
 
 		// Do conversions in batches of 16 bytes:
 		if (sse2blocks > 0)
@@ -76,7 +76,7 @@ void ConvertRGBA_BGRA_SSE2(u32 *dst, const int dstPitch, u32 *pIn, const int wid
 		// be included into the last 16 byte chunk:
 		if (sse2remainder > 0)
 		{
-			for (int x = (sse2blocks * 16); x < (width * 4); x += 4)
+			for (s32 x = (sse2blocks * 16); x < (width * 4); x += 4)
 			{
 				pBits[x + 0] = pIn8[x + 2];
 				pBits[x + 1] = pIn8[x + 1];
@@ -90,10 +90,10 @@ void ConvertRGBA_BGRA_SSE2(u32 *dst, const int dstPitch, u32 *pIn, const int wid
 	_mm_mfence();
 }
 
-void ConvertRGBA_BGRA_SSSE3(u32 *dst, const int dstPitch, u32 *pIn, const int width, const int height, const int pitch)
+void ConvertRGBA_BGRA_SSSE3(u32 *dst, const s32 dstPitch, u32 *pIn, const s32 width, const s32 height, const s32 pitch)
 {
 	__m128i mask = _mm_set_epi8(15, 12, 13, 14, 11, 8, 9, 10, 7, 4, 5, 6, 3, 0, 1, 2);
-	for (int y = 0; y < height; y++, pIn += pitch)
+	for (s32 y = 0; y < height; y++, pIn += pitch)
 	{
 		u8 *pIn8 = (u8 *)pIn;
 		u8 *pBits = (u8 *)((u8*)dst + (y * dstPitch));
@@ -109,7 +109,7 @@ void ConvertRGBA_BGRA_SSSE3(u32 *dst, const int dstPitch, u32 *pIn, const int wi
 			__m128i *dst128 = (__m128i *)pBits;
 
 			// Increment by 16 bytes at a time:
-			for (int i = 0; i < ssse3blocks; ++i, ++dst128, ++src128)
+			for (s32 i = 0; i < ssse3blocks; ++i, ++dst128, ++src128)
 			{
 				_mm_storeu_si128(dst128, _mm_shuffle_epi8(_mm_loadu_si128(src128), mask));
 			}
@@ -119,7 +119,7 @@ void ConvertRGBA_BGRA_SSSE3(u32 *dst, const int dstPitch, u32 *pIn, const int wi
 		// be included into the last 16 byte chunk:
 		if (ssse3remainder > 0)
 		{
-			for (int x = (ssse3blocks * 16); x < (width * 4); x += 4)
+			for (s32 x = (ssse3blocks * 16); x < (width * 4); x += 4)
 			{
 				pBits[x + 0] = pIn8[x + 2];
 				pBits[x + 1] = pIn8[x + 1];
@@ -133,278 +133,139 @@ void ConvertRGBA_BGRA_SSSE3(u32 *dst, const int dstPitch, u32 *pIn, const int wi
 	_mm_mfence();
 }
 
-LPDIRECT3DTEXTURE9 CreateTexture2D(const u8* buffer, const int width, const int height, const int pitch, D3DFORMAT fmt, bool swap_r_b, int levels)
+inline void CopyTextureData(u8 *pDst, const u8 *pSrc, const s32 width, const s32 height, const s32 srcpitch, const s32 dstpitch, const s32 pixelsize)
 {
-	u32* pBuffer = (u32*)buffer;
-	LPDIRECT3DTEXTURE9 pTexture;
-
-	// crazy bitmagic, sorry :)
-	bool isPow2 = !((width&(width-1)) || (height&(height-1)));
-	bool bExpand = false;
-
-	if (fmt == D3DFMT_A8P8) {
-		fmt = D3DFMT_A8L8;
-		bExpand = true;
+	const s32 rowsize = width * pixelsize;
+	if (srcpitch == dstpitch && srcpitch == rowsize)
+	{
+		memcpy(pDst, pSrc, rowsize * height);
 	}
+	else
+	{
+		for (int y = 0; y < height; y++)
+		{
+			memcpy(pDst, pSrc, rowsize);
+			pSrc += srcpitch;
+			pDst += dstpitch;
+		}
+	}
+}
 
-	HRESULT hr;
-	//if (levels > 0)
-		hr = dev->CreateTexture(width, height, levels, 0, fmt, D3DPOOL_MANAGED, &pTexture, NULL);
-	//else
-		//hr = dev->CreateTexture(width, height, 0, D3DUSAGE_AUTOGENMIPMAP, fmt, D3DPOOL_MANAGED, &pTexture, NULL);
+inline void ExpandI8Data(u8 *pDst, const u8 *pSrc, const s32 width, const s32 height, const s32 srcpitch, const s32 dstpitch)
+{
+	for (int y = 0; y < height; y++)
+	{
+		for (int i = 0; i < width * 2; i += 2) 
+		{
+			u8 data = pSrc[i >> 1];
+			pDst[i] = data;
+			pDst[i + 1] = data;
+		}
+		pSrc += srcpitch;
+		pDst += dstpitch;
+	}
+}
 
-	if (FAILED(hr))
-		return 0;
-	int level = 0;
-	D3DLOCKED_RECT Lock;
-	pTexture->LockRect(level, &Lock, NULL, 0);
-	switch (fmt) 
+inline void CopyCompressedTextureData(u8 *pDst, const u8 *pSrc, const s32 width, const s32 height, D3DFORMAT fmt,  const s32 dstpitch)
+{
+	s32 numBlocksWide = (width + 3) >> 2;
+	s32 numBlocksHigh = (height + 3) >> 2;
+	s32 numBytesPerBlock = (fmt == D3DFMT_DXT1 ? 8 : 16);
+	s32 rowBytes = numBlocksWide * numBytesPerBlock;
+	s32 numRows = numBlocksHigh;
+	if (rowBytes == dstpitch)
+	{
+		memcpy(pDst, pSrc, rowBytes * numRows);
+	}
+	else
+	{
+		u8* pDestBits = pDst;
+		const u8* pSrcBits = pSrc;
+		// Copy stride line by line   
+		for (s32 h = 0; h < numRows; h++)
+		{
+			memcpy(pDestBits, pSrcBits, rowBytes);
+			pDestBits += dstpitch;
+			pSrcBits += rowBytes;
+		}
+	}
+}
+
+inline void LoadDataToRect(D3DLOCKED_RECT &Lock, const u8* buffer, const int width, const int height, const int pitch, D3DFORMAT fmt, const bool swap_r_b)
+{
+	s32 pixelsize = 0;
+	switch (fmt)
 	{
 	case D3DFMT_L8:
 	case D3DFMT_A8:
 	case D3DFMT_A4L4:
-		{
-			const u8 *pIn = buffer;
-			for (int y = 0; y < height; y++)
-			{
-				u8* pBits = ((u8*)Lock.pBits + (y * Lock.Pitch));
-				memcpy(pBits, pIn, width);
-				pIn += pitch;
-			}
-		}
-		break;
+		pixelsize = 1;
+	break;
 	case D3DFMT_R5G6B5:
-		{
-			const u16 *pIn = (u16*)buffer;
-			for (int y = 0; y < height; y++)
-			{
-				u16* pBits = (u16*)((u8*)Lock.pBits + (y * Lock.Pitch));
-				memcpy(pBits, pIn, width * 2);
-				pIn += pitch;
-			}
-		}
-		break;
+		pixelsize = 2;
+	break;
+	case D3DFMT_A8P8:
+		ExpandI8Data((u8*)Lock.pBits, buffer, width, height, pitch, Lock.Pitch);
+	break;
 	case D3DFMT_A8L8:
-		{
-			if (bExpand) { // I8
-				const u8 *pIn = buffer;
-				// TODO(XK): Find a better way that does not involve either unpacking
-				//           or downsampling (i.e. A4L4)
-				for (int y = 0; y < height; y++)
-				{
-					u8* pBits = ((u8*)Lock.pBits + (y * Lock.Pitch));
-					for(int i = 0; i < width * 2; i += 2) {
-						pBits[i] = pIn[i / 2];
-						pBits[i + 1] = pIn[i / 2];
-					}
-					pIn += pitch;
-				}
-			} else { // IA8
-				const u16 *pIn = (u16*)buffer;
-
-				for (int y = 0; y < height; y++)
-				{
-					u16* pBits = (u16*)((u8*)Lock.pBits + (y * Lock.Pitch));
-					memcpy(pBits, pIn, width * 2);
-					pIn += pitch;
-				}
-			}
-		}
-		break;
+		pixelsize = 2;
+	break;
 	case D3DFMT_A8R8G8B8:
-		{
-			if(pitch * 4 == Lock.Pitch && !swap_r_b)
-			{
-				memcpy(Lock.pBits,buffer,Lock.Pitch*height);
+		if (!swap_r_b) {
+			pixelsize = 4;
+		}
+		else {
+	#if _M_SSE >= 0x301
+			// Uses SSSE3 intrinsics to optimize RGBA -> BGRA swizzle:
+			if (cpu_info.bSSSE3) {
+				ConvertRGBA_BGRA_SSSE3((u32 *)Lock.pBits, Lock.Pitch, (u32*)buffer, width, height, pitch);
 			}
 			else
+	#endif
+				// Uses SSE2 intrinsics to optimize RGBA -> BGRA swizzle:
 			{
-				u32* pIn = pBuffer;
-				if (!swap_r_b) {
-					for (int y = 0; y < height; y++)
-					{
-						u32 *pBits = (u32*)((u8*)Lock.pBits + (y * Lock.Pitch));
-						memcpy(pBits, pIn, width * 4);
-						pIn += pitch;
-					}
-				} else {
-#if _M_SSE >= 0x301
-					// Uses SSSE3 intrinsics to optimize RGBA -> BGRA swizzle:
-					if (cpu_info.bSSSE3) {
-						ConvertRGBA_BGRA_SSSE3((u32 *)Lock.pBits, Lock.Pitch, pIn, width, height, pitch);
-					} else
-#endif
-					// Uses SSE2 intrinsics to optimize RGBA -> BGRA swizzle:
-					{
-						ConvertRGBA_BGRA_SSE2((u32 *)Lock.pBits, Lock.Pitch, pIn, width, height, pitch);
-					}
-#if 0
-					for (int y = 0; y < height; y++)
-					{
-						u8 *pIn8 = (u8 *)pIn;
-						u8 *pBits = (u8 *)((u8*)Lock.pBits + (y * Lock.Pitch));
-						for (int x = 0; x < width * 4; x += 4) {
-							pBits[x + 0] = pIn8[x + 2];
-							pBits[x + 1] = pIn8[x + 1];
-							pBits[x + 2] = pIn8[x + 0];
-							pBits[x + 3] = pIn8[x + 3];
-						}
-						pIn += pitch;
-					}
-#endif
-				}
+				ConvertRGBA_BGRA_SSE2((u32 *)Lock.pBits, Lock.Pitch, (u32*)buffer, width, height, pitch);
 			}
 		}
-		break;
+	break;
 	case D3DFMT_DXT1:
-		memcpy(Lock.pBits, buffer, ((width + 3) >> 2)*((height + 3) >> 2) * 8);
-		break;
 	case D3DFMT_DXT3:
 	case D3DFMT_DXT5:
-		memcpy(Lock.pBits, buffer, ((width + 3) >> 2)*((height + 3) >> 2) * 16);
-		break;
+		CopyCompressedTextureData((u8*)Lock.pBits, buffer, width, height, fmt, Lock.Pitch);
+	break;
 	default:
 		PanicAlert("D3D: Invalid texture format %i", fmt);
 	}
-	pTexture->UnlockRect(level); 
-	return pTexture;
+	if (pixelsize > 0)
+	{
+		CopyTextureData((u8*)Lock.pBits, buffer, width, height, pitch * pixelsize, Lock.Pitch, pixelsize);
+	}
 }
 
-LPDIRECT3DTEXTURE9 CreateOnlyTexture2D(const int width, const int height, D3DFORMAT fmt)
+LPDIRECT3DTEXTURE9 CreateTexture2D(const u8* buffer, const int width, const int height, const int pitch, D3DFORMAT fmt, bool swap_r_b, int levels)
 {
 	LPDIRECT3DTEXTURE9 pTexture;
-	// crazy bitmagic, sorry :)
-	bool isPow2 = !((width&(width-1)) || (height&(height-1)));
-	bool bExpand = false;
-	HRESULT hr;
-	// TODO(ector): Allow mipmaps for non-pow textures on newer cards?
-	if (!isPow2)
-		hr = dev->CreateTexture(width, height, 1, 0, fmt, D3DPOOL_MANAGED, &pTexture, NULL);
-	else
-		hr = dev->CreateTexture(width, height, 0, D3DUSAGE_AUTOGENMIPMAP, fmt, D3DPOOL_MANAGED, &pTexture, NULL);
-
-	if (FAILED(hr))
+	D3DFORMAT cfmt = fmt;
+	if (fmt == D3DFMT_A8P8) {
+		cfmt = D3DFMT_A8L8;
+	}
+	if (FAILED(dev->CreateTexture(width, height, levels, 0, cfmt, D3DPOOL_MANAGED, &pTexture, NULL)))
+	{
 		return 0;
+	}
+	int level = 0;
+	D3DLOCKED_RECT Lock;
+	pTexture->LockRect(level, &Lock, NULL, 0);
+	LoadDataToRect(Lock, buffer, width, height, pitch, fmt, swap_r_b);
+	pTexture->UnlockRect(level); 
 	return pTexture;
 }
 
 void ReplaceTexture2D(LPDIRECT3DTEXTURE9 pTexture, const u8* buffer, const int width, const int height, const int pitch, D3DFORMAT fmt, bool swap_r_b, int level)
 {
-	u32* pBuffer = (u32*)buffer;
 	D3DLOCKED_RECT Lock;
 	pTexture->LockRect(level, &Lock, NULL, 0);
-	u32* pIn = pBuffer;
-
-	bool bExpand = false;
-
-	if (fmt == D3DFMT_A8P8) {
-		fmt = D3DFMT_A8L8;
-		bExpand = true;
-	}
-	switch (fmt) 
-	{
-	case D3DFMT_A8R8G8B8:
-		if(pitch * 4 == Lock.Pitch && !swap_r_b)
-		{
-			memcpy(Lock.pBits, pBuffer, Lock.Pitch*height);
-		}
-		else if (!swap_r_b)
-		{
-			for (int y = 0; y < height; y++)
-			{
-				u32 *pBits = (u32*)((u8*)Lock.pBits + (y * Lock.Pitch));
-				memcpy(pBits, pIn, width * 4);
-				pIn += pitch;
-			}
-		}
-		else
-		{
-#if _M_SSE >= 0x301
-			// Uses SSSE3 intrinsics to optimize RGBA -> BGRA swizzle:
-			if (cpu_info.bSSSE3) {
-				ConvertRGBA_BGRA_SSSE3((u32 *)Lock.pBits, Lock.Pitch, pIn, width, height, pitch);
-			} else
-#endif
-			// Uses SSE2 intrinsics to optimize RGBA -> BGRA swizzle:
-			{
-				ConvertRGBA_BGRA_SSE2((u32 *)Lock.pBits, Lock.Pitch, pIn, width, height, pitch);
-			}
-#if 0
-			for (int y = 0; y < height; y++)
-			{
-				u8 *pIn8 = (u8 *)pIn;
-				u8 *pBits = (u8 *)((u8*)Lock.pBits + (y * Lock.Pitch));
-				for (int x = 0; x < width * 4; x += 4)
-				{
-					pBits[x + 0] = pIn8[x + 2];
-					pBits[x + 1] = pIn8[x + 1];
-					pBits[x + 2] = pIn8[x + 0];
-					pBits[x + 3] = pIn8[x + 3];
-				}
-				pIn += pitch;
-			}
-#endif
-		}
-		break;
-	case D3DFMT_L8:
-	case D3DFMT_A8:
-	case D3DFMT_A4L4:
-		{
-			const u8 *pIn = buffer;
-			for (int y = 0; y < height; y++)
-			{
-				u8* pBits = ((u8*)Lock.pBits + (y * Lock.Pitch));
-				memcpy(pBits, pIn, width);
-				pIn += pitch;
-			}
-		}
-		break;
-	case D3DFMT_R5G6B5:
-		{
-			const u16 *pIn = (u16*)buffer;
-			for (int y = 0; y < height; y++)
-			{
-				u16* pBits = (u16*)((u8*)Lock.pBits + (y * Lock.Pitch));
-				memcpy(pBits, pIn, width * 2);
-				pIn += pitch;
-			}
-		}
-		break;
-	case D3DFMT_A8L8:
-		{
-			if (bExpand) { // I8
-				const u8 *pIn = buffer;
-				// TODO(XK): Find a better way that does not involve either unpacking
-				//           or downsampling (i.e. A4L4)
-				for (int y = 0; y < height; y++)
-				{
-					u8* pBits = ((u8*)Lock.pBits + (y * Lock.Pitch));
-					for(int i = 0; i < width * 2; i += 2) {
-						pBits[i] = pIn[i / 2];
-						pBits[i + 1] = pIn[i / 2];
-					}
-					pIn += pitch;
-				}
-			} else { // IA8
-				const u16 *pIn = (u16*)buffer;
-
-				for (int y = 0; y < height; y++)
-				{
-					u16* pBits = (u16*)((u8*)Lock.pBits + (y * Lock.Pitch));
-					memcpy(pBits, pIn, width * 2);
-					pIn += pitch;
-				}
-			}
-		}
-		break;
-	case D3DFMT_DXT1:
-		memcpy(Lock.pBits, buffer, ((width + 3) >> 2)*((height + 3) >> 2) * 8);
-		break;
-	case D3DFMT_DXT3:
-	case D3DFMT_DXT5:
-		memcpy(Lock.pBits, buffer, ((width + 3) >> 2)*((height + 3) >> 2) * 16);
-		break;
-	}
+	LoadDataToRect(Lock, buffer, width, height, pitch, fmt, swap_r_b);
 	pTexture->UnlockRect(level); 
 }
 
