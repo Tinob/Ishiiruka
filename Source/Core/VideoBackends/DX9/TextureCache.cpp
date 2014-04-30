@@ -175,61 +175,26 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, u32 dstFormat,
 TextureCache::TCacheEntryBase* TextureCache::CreateTexture(u32 width, u32 height,
 	u32 expanded_width, u32 tex_levels, PC_TexFormat pcfmt)
 {
-	D3DFORMAT d3d_fmt;
-	bool swap_r_b = false;
-
-	switch (pcfmt)
+	static const D3DFORMAT PC_TexFormat_To_D3DFORMAT[11]
 	{
-	case PC_TEX_FMT_BGRA32:
-		d3d_fmt = D3DFMT_A8R8G8B8;
-		break;
-
-	case PC_TEX_FMT_RGBA32:
-		if (g_Config.backend_info.bSupportsRGBATextures)
-		{
-			d3d_fmt = D3DFMT_A8B8G8R8;
-		}
-		else
-		{
-			d3d_fmt = D3DFMT_A8R8G8B8;
-			swap_r_b = true;
-		}
-		break;
-	case PC_TEX_FMT_RGB565:
-		d3d_fmt = D3DFMT_R5G6B5;
-		break;
-
-	case PC_TEX_FMT_IA4_AS_IA8:
-		d3d_fmt = D3DFMT_A8L8;
-		break;
-
-	case PC_TEX_FMT_I8:
-	case PC_TEX_FMT_I4_AS_I8:
-		// A hack which means the format is a packed
-		// 8-bit intensity texture. It is unpacked
-		// to A8L8 in D3DTexture.cpp
-		d3d_fmt = D3DFMT_A8P8;
-		break;
-
-	case PC_TEX_FMT_IA8:
-		d3d_fmt = D3DFMT_A8L8;
-		break;
-
-	case PC_TEX_FMT_DXT1:
-		d3d_fmt = D3DFMT_DXT1;
-	case PC_TEX_FMT_DXT3:
-		d3d_fmt = D3DFMT_DXT3;
-	case PC_TEX_FMT_DXT5:
-		d3d_fmt = D3DFMT_DXT5;
-		break;
-	}
-
+		D3DFMT_UNKNOWN,//PC_TEX_FMT_NONE
+		D3DFMT_A8R8G8B8,//PC_TEX_FMT_BGRA32
+		D3DFMT_A8B8G8R8,//PC_TEX_FMT_RGBA32
+		D3DFMT_A8P8,//PC_TEX_FMT_I4_AS_I8 A hack which means the format is a packed 8-bit intensity texture. It is unpacked to A8L8 in D3DTexture.cpp
+		D3DFMT_A8L8,//PC_TEX_FMT_IA4_AS_IA8
+		D3DFMT_A8P8,//PC_TEX_FMT_I8
+		D3DFMT_A8L8,//PC_TEX_FMT_IA8
+		D3DFMT_R5G6B5,//PC_TEX_FMT_RGB565
+		D3DFMT_DXT1,//PC_TEX_FMT_DXT1
+		D3DFMT_DXT3,//PC_TEX_FMT_DXT3
+		D3DFMT_DXT5,//PC_TEX_FMT_DXT5
+	};
+	// if no rgba support so swap is needed
+	bool swap_r_b = !g_ActiveConfig.backend_info.bSupportsRGBATextures && pcfmt == PC_TEX_FMT_RGBA32;
+	D3DFORMAT d3d_fmt = swap_r_b ? D3DFMT_A8R8G8B8 : PC_TexFormat_To_D3DFORMAT[pcfmt];
 	TCacheEntry* entry = new TCacheEntry(D3D::CreateTexture2D(temp, width, height, expanded_width, d3d_fmt, swap_r_b, tex_levels));
 	entry->swap_r_b = swap_r_b;
 	entry->d3d_fmt = d3d_fmt;
-	
-	entry->Load(width, height, expanded_width, 0);
-
 	return entry;
 }
 

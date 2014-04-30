@@ -133,19 +133,22 @@ inline PC_TexFormat LoadImageFromFile_DDS(LoadImageInfo &ImgInfo)
 {
 	PC_TexFormat returnTex = PC_TEX_FMT_NONE;
 	DDSLoader::DDSCompression ddsc = DDSLoader::DDS::Load_Image(ImgInfo.Path, ImgInfo.pWidth, ImgInfo.pHeight, ImgInfo.dst, ImgInfo.data_size, ImgInfo.required_size, ImgInfo.nummipmaps);
-	switch (ddsc)
+	if (ddsc != DDSLoader::DDSCompression::DDSC_NONE)
 	{
-	case DDSLoader::DDSC_DXT1:
-		returnTex = PC_TEX_FMT_DXT1;
-		break;
-	case DDSLoader::DDSC_DXT3:
-		returnTex = PC_TEX_FMT_DXT3;
-		break;
-	case DDSLoader::DDSC_DXT5:
-		returnTex = PC_TEX_FMT_DXT5;
-		break;
-	default:
-		break;
+		switch (ddsc)
+		{
+		case DDSLoader::DDSC_DXT1:
+			returnTex = PC_TEX_FMT_DXT1;
+			break;
+		case DDSLoader::DDSC_DXT3:
+			returnTex = PC_TEX_FMT_DXT3;
+			break;
+		case DDSLoader::DDSC_DXT5:
+			returnTex = PC_TEX_FMT_DXT5;
+			break;
+		default:
+			break;
+		}
 	}
 	return returnTex;
 }
@@ -165,28 +168,7 @@ PC_TexFormat GetHiresTex(const char *fileName, u32 *pWidth, u32 *pHeight, u32 *r
 	imgInfo.pWidth = pWidth;
 	imgInfo.required_size = required_size;
 	imgInfo.nummipmaps = numMips;
-	PC_TexFormat returnTex = PC_TEX_FMT_NONE;
-	texformat = rgbaonly ? GX_TF_RGBA8 : texformat;
-	switch (texformat)
-	{
-	case GX_TF_I4:
-	case GX_TF_I8:
-		imgInfo.desiredTex = PC_TEX_FMT_I8;
-		imgInfo.forcedchannels = SOIL_LOAD_L;
-		imgInfo.formatBPP = 1;
-		break;
-	case GX_TF_IA4:
-	case GX_TF_IA8:
-		imgInfo.desiredTex = PC_TEX_FMT_IA8;
-		imgInfo.forcedchannels = SOIL_LOAD_LA;
-		imgInfo.formatBPP = 2;
-		break;
-	default:
-		imgInfo.desiredTex = PC_TEX_FMT_RGBA32;
-		imgInfo.forcedchannels = SOIL_LOAD_RGBA;
-		imgInfo.formatBPP = 4;
-		break;
-	}
+	PC_TexFormat returnTex = PC_TEX_FMT_NONE;	
 	std::string ddscode(".dds");
 	std::string cddscode(".DDS");
 	if (iter->second.second.compare(ddscode) == 0 || iter->second.second.compare(cddscode) == 0)
@@ -197,6 +179,27 @@ PC_TexFormat GetHiresTex(const char *fileName, u32 *pWidth, u32 *pHeight, u32 *r
 	
 	if (returnTex == PC_TEX_FMT_NONE && *required_size == data_size)
 	{
+		texformat = rgbaonly ? GX_TF_RGBA8 : texformat;
+		switch (texformat)
+		{
+		case GX_TF_I4:
+		case GX_TF_I8:
+			imgInfo.desiredTex = PC_TEX_FMT_I8;
+			imgInfo.forcedchannels = SOIL_LOAD_L;
+			imgInfo.formatBPP = 1;
+			break;
+		case GX_TF_IA4:
+		case GX_TF_IA8:
+			imgInfo.desiredTex = PC_TEX_FMT_IA8;
+			imgInfo.forcedchannels = SOIL_LOAD_LA;
+			imgInfo.formatBPP = 2;
+			break;
+		default:
+			imgInfo.desiredTex = PC_TEX_FMT_RGBA32;
+			imgInfo.forcedchannels = SOIL_LOAD_RGBA;
+			imgInfo.formatBPP = 4;
+			break;
+		}
 		returnTex = LoadImageFromFile_Soil(imgInfo);
 	}
 

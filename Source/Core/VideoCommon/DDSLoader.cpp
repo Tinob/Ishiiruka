@@ -196,19 +196,16 @@ DDSCompression DDS::Load_Image(const char *filename, u32 *width, u32 *height, u8
 	{
 	case FOURCC_DXT1:
 		// DXT1's compression ratio is 8:1
-		Result = DDSC_DXT1;
 		factor = 2;
 		block_size = 8;
 		break;
 	case FOURCC_DXT3:
 		// DXT3's compression ratio is 4:1
-		Result = DDSC_DXT3;
 		factor = 4;
 		block_size = 16;
 		break;
 	case FOURCC_DXT5:
 		// DXT5's compression ratio is 4:1
-		Result = DDSC_DXT5;
 		factor = 4;
 		block_size = 16;
 		break;
@@ -222,7 +219,6 @@ DDSCompression DDS::Load_Image(const char *filename, u32 *width, u32 *height, u8
 	// How big will the buffer need to be to load all of the pixel data 
 	// including mip-maps?
 	//
-
 	if (ddsd.dwLinearSize == 0)
 	{
 		// Buffer size is not preset so calculate it
@@ -246,7 +242,8 @@ DDSCompression DDS::Load_Image(const char *filename, u32 *width, u32 *height, u8
 
 	// Close the file
 	fclose(pFile);
-
+	u32 FourCC = ddsd.ddpfPixelFormat.dwFourCC;
+	Result = (FourCC == FOURCC_DXT1) ? DDSC_DXT1 : ((FourCC == FOURCC_DXT3) ? DDSC_DXT3 : DDSC_DXT5);
 	*width = ddsd.dwWidth;
 	*height = ddsd.dwHeight;
 	*mipmapcount = ddsd.dwMipMapCount;

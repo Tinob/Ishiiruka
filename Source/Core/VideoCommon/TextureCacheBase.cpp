@@ -276,10 +276,6 @@ PC_TexFormat TextureCache::LoadCustomTexture(u64 tex_hash, s32 texformat, u32 le
 	{
 		if (level > 0 && (newWidth != width || newHeight != height))
 			ERROR_LOG(VIDEO, "Invalid custom texture size %dx%d for texture %s. This mipmap layer _must_ be %dx%d.", newWidth, newHeight, texPathTemp, width, height);
-		if (newWidth * height != newHeight * width)
-			ERROR_LOG(VIDEO, "Invalid custom texture size %dx%d for texture %s. The aspect differs from the native size %dx%d.", newWidth, newHeight, texPathTemp, width, height);
-		if (newWidth % width || newHeight % height)
-			WARN_LOG(VIDEO, "Invalid custom texture size %dx%d for texture %s. Please use an integer upscaling factor based on the native size %dx%d.", newWidth, newHeight, texPathTemp, width, height);
 		width = newWidth;
 		height = newHeight;
 	}
