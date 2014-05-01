@@ -21,7 +21,7 @@ private:
 	struct TCacheEntry : TCacheEntryBase
 	{
 		D3DTexture2D *const texture;
-
+		DXGI_FORMAT DXGI_format;
 		D3D11_USAGE usage;
 
 		TCacheEntry(D3DTexture2D *_tex) : texture(_tex) {}

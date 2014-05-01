@@ -48,7 +48,7 @@ bool TextureCache::TCacheEntry::Save(const char filename[], unsigned int level)
 void TextureCache::TCacheEntry::Load(unsigned int width, unsigned int height,
 	unsigned int expanded_width, unsigned int level)
 {
-	D3D::ReplaceRGBATexture2D(texture->GetTex(), TextureCache::temp, width, height, expanded_width, level, usage);
+	D3D::ReplaceRGBATexture2D(texture->GetTex(), TextureCache::temp, width, height, expanded_width, level, usage, DXGI_format);
 }
 
 TextureCache::TCacheEntryBase* TextureCache::CreateTexture(unsigned int width,
@@ -99,10 +99,18 @@ TextureCache::TCacheEntryBase* TextureCache::CreateTexture(unsigned int width,
 	{
 		usage = D3D11_USAGE_DYNAMIC;
 		cpu_access = D3D11_CPU_ACCESS_WRITE;
-
 		srdata.pSysMem = TextureCache::temp;
-		srdata.SysMemPitch = 4 * expanded_width;
-
+		if (format == DXGI_FORMAT_BC1_UNORM || format == DXGI_FORMAT_BC2_UNORM || format == DXGI_FORMAT_BC3_UNORM)
+		{
+			s32 numBlocksWide = (expanded_width + 3) >> 2;
+			s32 numBytesPerBlock = (format == DXGI_FORMAT_BC1_UNORM ? 8 : 16);
+			s32 rowBytes = numBlocksWide * numBytesPerBlock;
+			srdata.SysMemPitch = rowBytes;
+		}
+		else
+		{
+			srdata.SysMemPitch = 4 * expanded_width;
+		}
 		data = &srdata;
 	}
 
@@ -116,7 +124,7 @@ TextureCache::TCacheEntryBase* TextureCache::CreateTexture(unsigned int width,
 
 	TCacheEntry* const entry = new TCacheEntry(new D3DTexture2D(pTexture, D3D11_BIND_SHADER_RESOURCE));
 	entry->usage = usage;
-
+	entry->DXGI_format = format;
 	// TODO: better debug names
 	D3D::SetDebugObjectName((ID3D11DeviceChild*)entry->texture->GetTex(), "a texture of the TextureCache");
 	D3D::SetDebugObjectName((ID3D11DeviceChild*)entry->texture->GetSRV(), "shader resource view of a texture of the TextureCache");	

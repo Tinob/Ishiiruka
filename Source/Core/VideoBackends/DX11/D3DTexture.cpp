@@ -11,27 +11,81 @@ namespace DX11
 namespace D3D
 {
 
-void ReplaceRGBATexture2D(ID3D11Texture2D* pTexture, const u8* buffer, unsigned int width, unsigned int height, unsigned int pitch, unsigned int level, D3D11_USAGE usage)
+inline void CopyTextureData(u8 *pDst, const u8 *pSrc, const s32 width, const s32 height, const s32 srcpitch, const s32 dstpitch, const s32 pixelsize)
+{
+	const s32 rowsize = width * pixelsize;
+	if (srcpitch == dstpitch && srcpitch == rowsize)
+	{
+		memcpy(pDst, pSrc, rowsize * height);
+	}
+	else
+	{
+		for (int y = 0; y < height; y++)
+		{
+			memcpy(pDst, pSrc, rowsize);
+			pSrc += srcpitch;
+			pDst += dstpitch;
+		}
+	}
+}
+
+inline void CopyCompressedTextureData(u8 *pDst, const u8 *pSrc, const s32 width, const s32 height, DXGI_FORMAT fmt, const s32 dstpitch)
+{
+	s32 numBlocksWide = (width + 3) >> 2;
+	s32 numBlocksHigh = (height + 3) >> 2;
+	s32 numBytesPerBlock = (fmt == DXGI_FORMAT_BC1_UNORM ? 8 : 16);
+	s32 rowBytes = numBlocksWide * numBytesPerBlock;
+	s32 numRows = numBlocksHigh;
+	if (rowBytes == dstpitch)
+	{
+		memcpy(pDst, pSrc, rowBytes * numRows);
+	}
+	else
+	{
+		u8* pDestBits = pDst;
+		const u8* pSrcBits = pSrc;
+		// Copy stride line by line   
+		for (s32 h = 0; h < numRows; h++)
+		{
+			memcpy(pDestBits, pSrcBits, rowBytes);
+			pDestBits += dstpitch;
+			pSrcBits += rowBytes;
+		}
+	}
+}
+
+
+void ReplaceRGBATexture2D(ID3D11Texture2D* pTexture, const u8* buffer, unsigned int width, unsigned int height, unsigned int pitch, unsigned int level, D3D11_USAGE usage, DXGI_FORMAT fmt)
 {
 	if (usage == D3D11_USAGE_DYNAMIC || usage == D3D11_USAGE_STAGING)
 	{
 		D3D11_MAPPED_SUBRESOURCE map;
 		D3D::context->Map(pTexture, level, D3D11_MAP_WRITE_DISCARD, 0, &map);
-		if (4 * pitch == map.RowPitch)
+		if (fmt == DXGI_FORMAT_BC1_UNORM || fmt == DXGI_FORMAT_BC2_UNORM || fmt == DXGI_FORMAT_BC3_UNORM)
 		{
-			memcpy(map.pData, buffer, map.RowPitch * height);
+			CopyCompressedTextureData((u8*)map.pData, buffer, width, height, fmt, map.RowPitch);
 		}
 		else
 		{
-			for (unsigned int y = 0; y < height; ++y)
-				memcpy((u8*)map.pData + y * map.RowPitch, (u32*)buffer + y * pitch, 4 * pitch);
+			CopyTextureData((u8*)map.pData, buffer, width, height, 4 * pitch, map.RowPitch, 4);
 		}
 		D3D::context->Unmap(pTexture, level);
 	}
 	else
 	{
 		D3D11_BOX dest_region = CD3D11_BOX(0, 0, 0, width, height, 1);
-		D3D::context->UpdateSubresource(pTexture, level, &dest_region, buffer, 4*pitch, 4*pitch*height);
+		if (fmt == DXGI_FORMAT_BC1_UNORM || fmt == DXGI_FORMAT_BC2_UNORM || fmt == DXGI_FORMAT_BC3_UNORM)
+		{
+			s32 numBlocksWide = (width + 3) >> 2;
+			s32 numBytesPerBlock = (fmt == DXGI_FORMAT_BC1_UNORM ? 8 : 16);
+			s32 rowBytes = numBlocksWide * numBytesPerBlock;			
+			D3D::context->UpdateSubresource(pTexture, level, &dest_region, buffer, rowBytes, 0);
+		}
+		else
+		{
+			D3D11_BOX dest_region = CD3D11_BOX(0, 0, 0, width, height, 1);
+			D3D::context->UpdateSubresource(pTexture, level, &dest_region, buffer, 4 * pitch, 4 * pitch*height);
+		}
 	}
 }
 
