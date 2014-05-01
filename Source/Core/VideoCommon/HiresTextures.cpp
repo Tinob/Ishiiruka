@@ -182,12 +182,6 @@ PC_TexFormat GetHiresTex(const char *fileName, u32 *pWidth, u32 *pHeight, u32 *r
 		texformat = rgbaonly ? GX_TF_RGBA8 : texformat;
 		switch (texformat)
 		{
-		case GX_TF_I4:
-		case GX_TF_I8:
-			imgInfo.desiredTex = PC_TEX_FMT_I8;
-			imgInfo.forcedchannels = SOIL_LOAD_L;
-			imgInfo.formatBPP = 1;
-			break;
 		case GX_TF_IA4:
 		case GX_TF_IA8:
 			imgInfo.desiredTex = PC_TEX_FMT_IA8;
