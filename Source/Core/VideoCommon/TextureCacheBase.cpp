@@ -275,7 +275,15 @@ PC_TexFormat TextureCache::LoadCustomTexture(u64 tex_hash, s32 texformat, u32 le
 	if (ret != PC_TEX_FMT_NONE)
 	{
 		if (level > 0 && (newWidth != width || newHeight != height))
+		{
 			ERROR_LOG(VIDEO, "Invalid custom texture size %dx%d for texture %s. This mipmap layer _must_ be %dx%d.", newWidth, newHeight, texPathTemp, width, height);
+			return PC_TEX_FMT_NONE;
+		}
+		if ((ret == PC_TEX_FMT_DXT1 || ret == PC_TEX_FMT_DXT3 || ret == PC_TEX_FMT_DXT5) && ((newWidth % 4 != 0) || (newHeight % 4 != 0)))
+		{
+			ERROR_LOG(VIDEO, "Invalid custom texture size %dx%d for compressed texture %s. Size must be multiple of 4.", newWidth, newHeight, texPathTemp, width, height);
+			return PC_TEX_FMT_NONE;
+		}
 		width = newWidth;
 		height = newHeight;
 	}
