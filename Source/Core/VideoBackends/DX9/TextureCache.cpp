@@ -61,7 +61,7 @@ bool TextureCache::TCacheEntry::Save(const char filename[], u32 level)
 void TextureCache::TCacheEntry::Load(u32 width, u32 height,
 	u32 expanded_width, u32 level)
 {
-	D3D::ReplaceTexture2D(texture, temp, width, height, expanded_width, d3d_fmt, swap_r_b, level);
+	D3D::ReplaceTexture2D(texture, TextureCache::bufferstart, width, height, expanded_width, d3d_fmt, swap_r_b, level);
 }
 
 void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, u32 dstFormat,
@@ -192,7 +192,7 @@ TextureCache::TCacheEntryBase* TextureCache::CreateTexture(u32 width, u32 height
 	// if no rgba support so swap is needed
 	bool swap_r_b = !g_ActiveConfig.backend_info.bSupportsRGBATextures && pcfmt == PC_TEX_FMT_RGBA32;
 	D3DFORMAT d3d_fmt = swap_r_b ? D3DFMT_A8R8G8B8 : PC_TexFormat_To_D3DFORMAT[pcfmt];
-	TCacheEntry* entry = new TCacheEntry(D3D::CreateTexture2D(temp, width, height, expanded_width, d3d_fmt, swap_r_b, tex_levels));
+	TCacheEntry* entry = new TCacheEntry(D3D::CreateTexture2D(TextureCache::bufferstart, width, height, expanded_width, d3d_fmt, swap_r_b, tex_levels));
 	entry->swap_r_b = swap_r_b;
 	entry->d3d_fmt = d3d_fmt;
 	return entry;

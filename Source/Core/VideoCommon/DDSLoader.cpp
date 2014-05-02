@@ -1,7 +1,5 @@
 #include "DDSLoader.h"
 #include "Common/Common.h"
-namespace DDSLoader
-{
 #define MAKEFOURCC(ch0, ch1, ch2, ch3)                              \
 	((DWORD)(BYTE)(ch0) | ((DWORD)(BYTE)(ch1) << 8) |   \
 	((DWORD)(BYTE)(ch2) << 16) | ((DWORD)(BYTE)(ch3) << 24 ))
@@ -143,7 +141,7 @@ typedef struct _DDSHeader {
 	u32      dwTextureStage;
 } DDSHeader;
 
-DDSCompression DDS::Load_Image(const char *filename, u32 *width, u32 *height, u8* dst, u32 dstsize, u32 *requiredsize, u32* mipmapcount)
+DDSCompression DDSLoader::Load_Image(const char *filename, u32 *width, u32 *height, u8* dst, u32 dstsize, u32 *requiredsize, u32* mipmapcount)
 {
 	DDSCompression Result = DDSC_NONE;
 	if (NULL == dst)
@@ -183,6 +181,12 @@ DDSCompression DDS::Load_Image(const char *filename, u32 *width, u32 *height, u8
 		return Result;
 	}
 	if (ddsd.ddpfPixelFormat.dwSize != 32)
+	{
+		fclose(pFile);
+		return Result;
+	}
+	// Support only block aligned files
+	if ((ddsd.dwWidth % 4) != 0 || (ddsd.dwHeight % 4) != 0)
 	{
 		fclose(pFile);
 		return Result;
@@ -249,4 +253,3 @@ DDSCompression DDS::Load_Image(const char *filename, u32 *width, u32 *height, u8
 	*mipmapcount = ddsd.dwMipMapCount;
 	return Result;
 }
-};

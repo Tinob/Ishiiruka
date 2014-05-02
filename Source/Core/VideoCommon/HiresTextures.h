@@ -12,8 +12,8 @@
 namespace HiresTextures
 {
 void Init(const char *gameCode);
-bool HiresTexExists(const char *filename);
-PC_TexFormat GetHiresTex(const char *fileName, u32 *pWidth, u32 *pHeight, u32 *required_size, u32 *numMips, s32 texformat, u32 data_size, u8 *dst, bool rgbaonly);
+bool HiresTexExists(u64 Key);
+PC_TexFormat GetHiresTex(u64 Key, u32 *pWidth, u32 *pHeight, u32 *required_size, u32 *numMips, s32 texformat, u32 data_size, u8 *dst, bool rgbaonly);
 
 };
 

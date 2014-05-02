@@ -13,16 +13,18 @@
 #include "Common/FileSearch.h"
 #include "Common/StringUtil.h"
 #include "DDSLoader.h"
+#include <iostream>
+#include <unordered_map>
 
 namespace HiresTextures
 {
 	
-	std::map<std::string, std::pair<std::string, std::string>> textureMap;
-
+	std::unordered_map<u64, std::pair<std::string, std::string>> textureMap;
+	u32 texturecount;
 void Init(const char *gameCode)
 {
 	textureMap.clear();
-
+	texturecount = 0;
 	CFileSearch::XStringVector Directories;
 	//Directories.push_back(File::GetUserPath(D_HIRESTEXTURES_IDX));
 	char szDir[MAX_PATH];
@@ -66,8 +68,7 @@ void Init(const char *gameCode)
 	Extensions.push_back("*.JPG");
 	CFileSearch FileSearch(Extensions, Directories);
 	const CFileSearch::XStringVector& rFilenames = FileSearch.GetFileNames();
-	char code[MAX_PATH];
-	sprintf(code, "%s_", gameCode);
+	std::string code(gameCode);
 
 	if (rFilenames.size() > 0)
 	{
@@ -77,17 +78,42 @@ void Init(const char *gameCode)
 			std::string Extension;			
 			SplitPath(rFilenames[i], NULL, &FileName, &Extension);
 			std::pair<std::string, std::string> Pair(rFilenames[i], Extension);
-
-			if (FileName.substr(0, strlen(code)).compare(code) == 0 && textureMap.find(FileName) == textureMap.end())
-				textureMap.insert(std::map<std::string, std::pair<std::string, std::string>>::value_type(FileName, Pair));
+			std::vector<std::string> nameparts;
+			std::istringstream issfilename(FileName);
+			std::string nameitem;
+			while (std::getline(issfilename, nameitem, '_')) {
+				nameparts.push_back(nameitem);
+			}
+			if (nameparts.size() >= 3)
+			{
+				u32 hash = 0;
+				u32 format = 0;
+				u32 mip = 0;
+				sscanf(nameparts[1].c_str(), "%x", &hash);
+				sscanf(nameparts[2].c_str(), "%i", &format);
+				if (nameparts.size() > 3)
+				{
+					sscanf(nameparts[2].substr(3, std::string::npos).c_str(), "%i", &format);
+				}
+				u64 key = ((u64)hash) | (((u64)format) << 32) | (((u64)mip) << 48);
+				if (nameparts[0].compare(code) == 0 && textureMap.find(key) == textureMap.end())
+				{
+					texturecount++;
+					textureMap.insert(std::map<u64, std::pair<std::string, std::string>>::value_type(key, Pair));
+				}
+			}
+			
 		}
 	}
 }
 
-bool HiresTexExists(const char* filename)
+bool HiresTexExists(u64 key)
 {
-	std::string key(filename);
-	return textureMap.find(key) != textureMap.end();
+	if (texturecount > 0)
+	{
+		return textureMap.find(key) != textureMap.end();
+	}
+	return false;
 }
 
 struct LoadImageInfo
@@ -132,18 +158,18 @@ inline PC_TexFormat LoadImageFromFile_Soil(LoadImageInfo &ImgInfo)
 inline PC_TexFormat LoadImageFromFile_DDS(LoadImageInfo &ImgInfo)
 {
 	PC_TexFormat returnTex = PC_TEX_FMT_NONE;
-	DDSLoader::DDSCompression ddsc = DDSLoader::DDS::Load_Image(ImgInfo.Path, ImgInfo.pWidth, ImgInfo.pHeight, ImgInfo.dst, ImgInfo.data_size, ImgInfo.required_size, ImgInfo.nummipmaps);
-	if (ddsc != DDSLoader::DDSCompression::DDSC_NONE)
+	DDSCompression ddsc = DDSLoader::Load_Image(ImgInfo.Path, ImgInfo.pWidth, ImgInfo.pHeight, ImgInfo.dst, ImgInfo.data_size, ImgInfo.required_size, ImgInfo.nummipmaps);
+	if (ddsc != DDSCompression::DDSC_NONE)
 	{
 		switch (ddsc)
 		{
-		case DDSLoader::DDSC_DXT1:
+		case DDSC_DXT1:
 			returnTex = PC_TEX_FMT_DXT1;
 			break;
-		case DDSLoader::DDSC_DXT3:
+		case DDSC_DXT3:
 			returnTex = PC_TEX_FMT_DXT3;
 			break;
-		case DDSLoader::DDSC_DXT5:
+		case DDSC_DXT5:
 			returnTex = PC_TEX_FMT_DXT5;
 			break;
 		default:
@@ -153,9 +179,12 @@ inline PC_TexFormat LoadImageFromFile_DDS(LoadImageInfo &ImgInfo)
 	return returnTex;
 }
 
-PC_TexFormat GetHiresTex(const char *fileName, u32 *pWidth, u32 *pHeight, u32 *required_size, u32 *numMips , s32 texformat, u32 data_size, u8 *dst, bool rgbaonly)
+PC_TexFormat GetHiresTex(u64 key, u32 *pWidth, u32 *pHeight, u32 *required_size, u32 *numMips, s32 texformat, u32 data_size, u8 *dst, bool rgbaonly)
 {
-	std::string key(fileName);
+	if (texturecount == 0)
+	{
+		return PC_TEX_FMT_NONE;
+	}
 	auto iter = textureMap.find(key);
 	if (iter == textureMap.end())
 		return PC_TEX_FMT_NONE;
@@ -176,8 +205,7 @@ PC_TexFormat GetHiresTex(const char *fileName, u32 *pWidth, u32 *pHeight, u32 *r
 		// We have a dds, try to load compressed data
 		returnTex = LoadImageFromFile_DDS(imgInfo);
 	}
-	
-	if (returnTex == PC_TEX_FMT_NONE && *required_size == data_size)
+	else
 	{
 		texformat = rgbaonly ? GX_TF_RGBA8 : texformat;
 		switch (texformat)
@@ -196,7 +224,6 @@ PC_TexFormat GetHiresTex(const char *fileName, u32 *pWidth, u32 *pHeight, u32 *r
 		}
 		returnTex = LoadImageFromFile_Soil(imgInfo);
 	}
-
 	if (returnTex == PC_TEX_FMT_NONE)
 	{
 		ERROR_LOG(VIDEO, "Custom texture %s failed to load", imgInfo.Path);

@@ -112,6 +112,7 @@ protected:
 	TextureCache();
 
 	static  GC_ALIGNED16(u8 *temp);
+	static  GC_ALIGNED16(u8 *bufferstart);
 	static u32 temp_size;
 
 private:

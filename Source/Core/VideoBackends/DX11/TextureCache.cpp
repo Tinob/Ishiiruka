@@ -48,7 +48,7 @@ bool TextureCache::TCacheEntry::Save(const char filename[], unsigned int level)
 void TextureCache::TCacheEntry::Load(unsigned int width, unsigned int height,
 	unsigned int expanded_width, unsigned int level)
 {
-	D3D::ReplaceRGBATexture2D(texture->GetTex(), TextureCache::temp, width, height, expanded_width, level, usage, DXGI_format);
+	D3D::ReplaceRGBATexture2D(texture->GetTex(), TextureCache::bufferstart, width, height, expanded_width, level, usage, DXGI_format);
 }
 
 TextureCache::TCacheEntryBase* TextureCache::CreateTexture(unsigned int width,
@@ -99,7 +99,7 @@ TextureCache::TCacheEntryBase* TextureCache::CreateTexture(unsigned int width,
 	{
 		usage = D3D11_USAGE_DYNAMIC;
 		cpu_access = D3D11_CPU_ACCESS_WRITE;
-		srdata.pSysMem = TextureCache::temp;
+		srdata.pSysMem = TextureCache::bufferstart;
 		if (format == DXGI_FORMAT_BC1_UNORM || format == DXGI_FORMAT_BC2_UNORM || format == DXGI_FORMAT_BC3_UNORM)
 		{
 			s32 numBlocksWide = (expanded_width + 3) >> 2;

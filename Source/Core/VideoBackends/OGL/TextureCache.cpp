@@ -247,21 +247,21 @@ void TextureCache::TCacheEntry::Load(unsigned int width, unsigned int height,
 	{
 	case PC_TEX_FMT_DXT1:
 		glCompressedTexImage2D(GL_TEXTURE_2D, level, GL_COMPRESSED_RGBA_S3TC_DXT1_EXT,
-			width, height, 0, ((width + 3) >> 2) * ((height + 3) >> 2) * 8, temp);
+			width, height, 0, ((width + 3) >> 2) * ((height + 3) >> 2) * 8, TextureCache::bufferstart);
 		break;
 	case PC_TEX_FMT_DXT3:
 		glCompressedTexImage2D(GL_TEXTURE_2D, level, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT,
-			width, height, 0, ((width + 3) >> 2) * ((height + 3) >> 2) * 16, temp);
+			width, height, 0, ((width + 3) >> 2) * ((height + 3) >> 2) * 16, TextureCache::bufferstart);
 		break;
 	case PC_TEX_FMT_DXT5:
 		glCompressedTexImage2D(GL_TEXTURE_2D, level, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,
-			width, height, 0, ((width + 3) >> 2) * ((height + 3) >> 2) * 16, temp);
+			width, height, 0, ((width + 3) >> 2) * ((height + 3) >> 2) * 16, TextureCache::bufferstart);
 		break;
 	default:
 		if (expanded_width != width)
 			glPixelStorei(GL_UNPACK_ROW_LENGTH, expanded_width);
 
-		glTexImage2D(GL_TEXTURE_2D, level, gl_iformat, width, height, 0, gl_format, gl_type, temp);
+		glTexImage2D(GL_TEXTURE_2D, level, gl_iformat, width, height, 0, gl_format, gl_type, TextureCache::bufferstart);
 
 		if (expanded_width != width)
 			glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
