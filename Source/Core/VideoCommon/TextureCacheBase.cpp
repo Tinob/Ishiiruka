@@ -11,6 +11,7 @@
 #include "Common/FileUtil.h"
 
 #include "VideoCommon/TextureCacheBase.h"
+#include "VideoCommon/TextureUtil.h"
 #include "VideoCommon/Debugger.h"
 #include "Core/ConfigManager.h"
 #include "Core/HW/Memmap.h"
@@ -27,6 +28,7 @@ TextureCache *g_texture_cache;
 GC_ALIGNED16(u8 *TextureCache::temp) = NULL;
 GC_ALIGNED16(u8 *TextureCache::bufferstart) = NULL;
 u32 TextureCache::temp_size;
+TextureCache::TCacheEntryBase* TextureCache::stagemap[8];
 
 TextureCache::TexCache TextureCache::textures;
 
@@ -316,34 +318,10 @@ static TextureCache::TCacheEntryBase* ReturnEntry(u32 stage, TextureCache::TCach
 {
 	entry->frameCount = frameCount;
 	entry->Bind(stage);
-
+	TextureCache::stagemap[stage] = entry;
 	GFX_DEBUGGER_PAUSE_AT(NEXT_TEXTURE_CHANGE, true);
 
 	return entry;
-}
-
-s32 GetTextureSizeInBytes(u32 width, u32 height, PC_TexFormat fmt)
-{
-	static const s32 formatSize[11]
-	{
-			0,//PC_TEX_FMT_NONE
-			4,//PC_TEX_FMT_BGRA32
-			4,//PC_TEX_FMT_RGBA32
-			1,//PC_TEX_FMT_I4_AS_I8 A hack which means the format is a packed 8-bit intensity texture. It is unpacked to A8L8 in D3DTexture.cpp
-			2,//PC_TEX_FMT_IA4_AS_IA8
-			1,//PC_TEX_FMT_I8
-			2,//PC_TEX_FMT_IA8
-			2,//PC_TEX_FMT_RGB565
-			8,//PC_TEX_FMT_DXT1
-			16,//PC_TEX_FMT_DXT3
-			16,//PC_TEX_FMT_DXT5
-	};
-	if (fmt == PC_TEX_FMT_DXT1 || fmt == PC_TEX_FMT_DXT3 || fmt == PC_TEX_FMT_DXT5 )
-	{
-		width = (width + 3) >> 2;
-		height = (height + 3) >> 2;
-	}
-	return width * height * formatSize[fmt];
 }
 
 TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
@@ -508,6 +486,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 		// Currently, we might try to reuse a texture which appears to have more levels than actual, maybe..
 		entry->num_mipmaps = texLevels;
 		entry->type = TCET_NORMAL;
+		entry->pcformat = pcfmt;
 
 		GFX_DEBUGGER_PAUSE_AT(NEXT_NEW_TEXTURE, true);
 	}
@@ -569,7 +548,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 			if (nummipsinbuffer > 0)
 			{
 				texLevels = min(texLevels, nummipsinbuffer);
-				TextureCache::bufferstart += GetTextureSizeInBytes(width, height, pcfmt);
+				TextureCache::bufferstart += TextureUtil::GetTextureSizeInBytes(width, height, pcfmt);
 			}
 			for (; level != texLevels; ++level)
 			{
@@ -583,7 +562,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 				entry->Load(mip_width, mip_height, mip_width, level);
 				if (nummipsinbuffer > 0)
 				{
-					TextureCache::bufferstart += GetTextureSizeInBytes(mip_width, mip_height, pcfmt);
+					TextureCache::bufferstart += TextureUtil::GetTextureSizeInBytes(mip_width, mip_height, pcfmt);
 				}
 			}
 		}

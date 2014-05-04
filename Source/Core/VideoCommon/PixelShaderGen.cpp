@@ -16,7 +16,7 @@
 #include "VideoCommon/BPMemory.h"
 #include "VideoCommon/VideoConfig.h"
 #include "VideoCommon/NativeVertexFormat.h"
-
+#include "VideoCommon/TextureCacheBase.h"
 
 //   old tev->pixelshader notes
 //
@@ -296,7 +296,17 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 	uid_data.genMode_numindstages = bpmem.genMode.numindstages;
 	uid_data.genMode_numtevstages = bpmem.genMode.numtevstages;
 	uid_data.genMode_numtexgens = bpmem.genMode.numtexgens;
-	
+	if (ApiType == API_D3D11)
+	{
+		uid_data.tex_pcformat.samp0 = TextureCache::getStagePCelementCount(0);
+		uid_data.tex_pcformat.samp1 = TextureCache::getStagePCelementCount(1);
+		uid_data.tex_pcformat.samp2 = TextureCache::getStagePCelementCount(2);
+		uid_data.tex_pcformat.samp3 = TextureCache::getStagePCelementCount(3);
+		uid_data.tex_pcformat.samp4 = TextureCache::getStagePCelementCount(4);
+		uid_data.tex_pcformat.samp5 = TextureCache::getStagePCelementCount(5);
+		uid_data.tex_pcformat.samp6 = TextureCache::getStagePCelementCount(6);
+		uid_data.tex_pcformat.samp7 = TextureCache::getStagePCelementCount(7);
+	}
 	if (Write_Code)
 	{
 		out.Write("//Pixel Shader for TEV stages\n");
@@ -1242,7 +1252,25 @@ void SampleTexture(T& out, const char *texcoords, const char *texswap, int texma
 	if(Write_Code)
 	{
 		if (ApiType == API_D3D11)
-			out.Write("Tex%d.Sample(samp%d,%s.xy * " I_TEXDIMS"[%d].xy).%s;\n", texmap,texmap, texcoords, texmap, texswap);
+		{
+			char * texfmtswp = NULL;
+			switch (TextureCache::stagemap[texmap]->pcformat)
+			{
+			case PC_TEX_FMT_I4_AS_I8:
+			case PC_TEX_FMT_I8:
+				texfmtswp = "rrrr";
+				break;
+			case PC_TEX_FMT_IA4_AS_IA8:
+			case PC_TEX_FMT_IA8:
+				texfmtswp = "rrrg";
+				break;
+				break;
+			default:
+				texfmtswp = "rgba";
+				break;
+			}
+			out.Write("(Tex%d.Sample(samp%d,%s.xy * " I_TEXDIMS"[%d].xy).%s).%s;\n", texmap, texmap, texcoords, texmap, texfmtswp, texswap);
+		}
 		else
 			out.Write("%s(samp%d,%s.xy * " I_TEXDIMS"[%d].xy).%s;\n", ApiType == API_OPENGL ? "texture" : "tex2D", texmap, texcoords, texmap, texswap);
 	}

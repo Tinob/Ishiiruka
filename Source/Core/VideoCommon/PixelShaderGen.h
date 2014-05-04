@@ -88,6 +88,18 @@ struct stage_hash_data
 	u32 pad2 : 6;
 };
 
+struct tex_stage_pc_format
+{
+	u32 samp0 : 4;
+	u32 samp1 : 4;
+	u32 samp2 : 4;
+	u32 samp3 : 4;
+	u32 samp4 : 4;
+	u32 samp5 : 4;
+	u32 samp6 : 4;
+	u32 samp7 : 4;
+};
+
 struct pixel_shader_uid_data
 {
 	u32 NumValues() const { return sizeof(pixel_shader_uid_data) - (sizeof(stage_hash_data) * (16 - (genMode_numtevstages + 1))); }
@@ -128,7 +140,7 @@ struct pixel_shader_uid_data
 	u32 tevindref_bc3 : 3;
 	u32 tevindref_bi4 : 3;
 	u32 tevindref_bc4 : 3;
-
+	tex_stage_pc_format tex_pcformat;
 	stage_hash_data stagehash[16];
 
 	inline void SetTevindrefValues(int index, u32 texcoord, u32 texmap)

@@ -55,6 +55,7 @@ const char* PixelShaderVersionString();
 const char* GeometryShaderVersionString();
 const char* VertexShaderVersionString();
 bool BGRATexturesSupported();
+bool BGRA565TexturesSupported();
 
 unsigned int GetMaxTextureSize();
 

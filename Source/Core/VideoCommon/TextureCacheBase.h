@@ -25,7 +25,6 @@ public:
 		TCET_EC_VRAM,		// EFB copy which sits in VRAM and is ready to be used
 		TCET_EC_DYNAMIC,	// EFB copy which sits in RAM and needs to be decoded before being used
 	};
-
 	struct TCacheEntryBase
 	{
 #define TEXHASH_INVALID 0
@@ -36,6 +35,7 @@ public:
 		u64 hash;
 		//u32 pal_hash;
 		u32 format;
+		PC_TexFormat pcformat;
 		enum TexCacheEntryType type;
 
 		u32 num_mipmaps;
@@ -86,6 +86,26 @@ public:
 		bool IsEfbCopy() { return (type == TCET_EC_VRAM || type == TCET_EC_DYNAMIC); }
 	};
 
+	static TCacheEntryBase* stagemap[8];
+	static u32 getStagePCelementCount(u32 stage)
+	{
+		if (stagemap[stage] != NULL)
+		{
+			if (stagemap[stage]->pcformat == PC_TEX_FMT_I4_AS_I8 || stagemap[stage]->pcformat == PC_TEX_FMT_I8)
+			{
+				return 1;
+			}
+			else if (stagemap[stage]->pcformat == PC_TEX_FMT_IA4_AS_IA8 || stagemap[stage]->pcformat == PC_TEX_FMT_IA8)
+			{
+				return 2;
+			}
+			else
+			{
+				return 4;
+			}
+		}
+		return 0;
+	}
 	virtual ~TextureCache(); // needs virtual for DX11 dtor
 
 	static void OnConfigChanged(VideoConfig& config);
@@ -114,7 +134,6 @@ protected:
 	static  GC_ALIGNED16(u8 *temp);
 	static  GC_ALIGNED16(u8 *bufferstart);
 	static u32 temp_size;
-
 private:
 	static bool CheckForCustomTextureLODs(u64 tex_hash, s32 texformat, u32 levels);
 	static PC_TexFormat LoadCustomTexture(u64 tex_hash, s32 texformat, u32 level, u32& width, u32& height, u32 &nummipsinbuffer, bool rgbaonly);

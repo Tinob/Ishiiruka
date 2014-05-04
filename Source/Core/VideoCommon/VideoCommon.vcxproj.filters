@@ -128,6 +128,9 @@
     <ClCompile Include="DDSLoader.cpp">
       <Filter>Util</Filter>
     </ClCompile>
+    <ClCompile Include="TextureUtil.cpp">
+      <Filter>Util</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommandProcessor.h" />
@@ -268,6 +271,9 @@
     <ClInclude Include="DriverDetails.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="DDSLoader.h">
+      <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureUtil.h">
       <Filter>Util</Filter>
     </ClInclude>
   </ItemGroup>

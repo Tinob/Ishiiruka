@@ -46,6 +46,7 @@ HWND hWnd;
 std::vector<DXGI_SAMPLE_DESC> aa_modes; // supported AA modes of the current adapter
 
 bool bgra_textures_supported;
+bool bgra565_textures_supported;
 
 #define NUM_SUPPORTED_FEATURE_LEVELS 3
 const D3D_FEATURE_LEVEL supported_feature_levels[NUM_SUPPORTED_FEATURE_LEVELS] = {
@@ -389,6 +390,8 @@ HRESULT Create(HWND wnd)
 	UINT format_support;
 	device->CheckFormatSupport(DXGI_FORMAT_B8G8R8A8_UNORM, &format_support);
 	bgra_textures_supported = (format_support & D3D11_FORMAT_SUPPORT_TEXTURE2D) != 0;
+	device->CheckFormatSupport(DXGI_FORMAT_B5G6R5_UNORM, &format_support);
+	bgra565_textures_supported = (format_support & D3D11_FORMAT_SUPPORT_TEXTURE2D) != 0;
 
 	stateman = new StateManager;
 	return S_OK;
@@ -447,6 +450,7 @@ unsigned int GetBackBufferWidth() { return xres; }
 unsigned int GetBackBufferHeight() { return yres; }
 
 bool BGRATexturesSupported() { return bgra_textures_supported; }
+bool BGRA565TexturesSupported() { return bgra565_textures_supported; }
 
 // Returns the maximum width/height of a texture. This value only depends upon the feature level in DX11
 unsigned int GetMaxTextureSize()

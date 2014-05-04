@@ -1,7 +1,7 @@
 // Copyright 2013 Dolphin Emulator Project
 // Licensed under GPLv2
 // Refer to the license.txt file included.
-
+#include "VideoCommon/TextureUtil.h"
 #include "D3DBase.h"
 #include "D3DTexture.h"
 
@@ -10,82 +10,103 @@ namespace DX11
 
 namespace D3D
 {
-
-inline void CopyTextureData(u8 *pDst, const u8 *pSrc, const s32 width, const s32 height, const s32 srcpitch, const s32 dstpitch, const s32 pixelsize)
+inline void LoadDataMap(ID3D11Texture2D* pTexture, const u8* buffer, const s32 level, s32 width, s32 height, s32 pitch, DXGI_FORMAT fmt, bool swap_rb, bool convert_rgb565)
 {
-	const s32 rowsize = width * pixelsize;
-	if (srcpitch == dstpitch && srcpitch == rowsize)
+	D3D11_MAPPED_SUBRESOURCE map;
+	D3D::context->Map(pTexture, level, D3D11_MAP_WRITE_DISCARD, 0, &map);
+	s32 pixelsize = 0;
+	switch (fmt)
 	{
-		memcpy(pDst, pSrc, rowsize * height);
-	}
-	else
-	{
-		for (int y = 0; y < height; y++)
+	case DXGI_FORMAT_R8_UNORM:
+		pixelsize = 1;
+		break;
+	case DXGI_FORMAT_B5G6R5_UNORM:		
+	case DXGI_FORMAT_R8G8_UNORM:
+		pixelsize = 2;
+		break;
+	case DXGI_FORMAT_B8G8R8A8_UNORM:
+	case DXGI_FORMAT_R8G8B8A8_UNORM:
+		if (convert_rgb565)
 		{
-			memcpy(pDst, pSrc, rowsize);
-			pSrc += srcpitch;
-			pDst += dstpitch;
+			if (fmt == DXGI_FORMAT_B8G8R8A8_UNORM)
+			{
+				TextureUtil::ConvertRGBA565_BGRA((u32 *)map.pData, map.RowPitch >> 2, (u16*)buffer, width, height, pitch);
+			}
+			else
+			{
+				TextureUtil::ConvertRGBA565_BGRA((u32 *)map.pData, map.RowPitch >> 2, (u16*)buffer, width, height, pitch);
+			}
 		}
+		else if (swap_rb)
+		{
+			TextureUtil::ConvertRGBA_BGRA((u32 *)map.pData, map.RowPitch, (u32*)buffer, width, height, pitch);
+		}
+		else
+		{
+			pixelsize = 4;
+		}
+		break;
+	case DXGI_FORMAT_BC1_UNORM:
+	case DXGI_FORMAT_BC2_UNORM:
+	case DXGI_FORMAT_BC3_UNORM:
+		TextureUtil::CopyCompressedTextureData((u8*)map.pData, buffer, width, height, fmt == DXGI_FORMAT_BC1_UNORM ? 8 : 16, map.RowPitch);
+		break;
+	default:
+		PanicAlert("D3D: Invalid texture format %i", fmt);
+	}
+	if (pixelsize > 0)
+	{
+		TextureUtil::CopyTextureData((u8*)map.pData, buffer, width, height, pitch * pixelsize, map.RowPitch, pixelsize);
+	}
+	D3D::context->Unmap(pTexture, level);
+}
+
+inline void LoadDataResource(ID3D11Texture2D* pTexture, const u8* buffer, const s32 level, s32 width, s32 height, s32 pitch, DXGI_FORMAT fmt, bool swap_rb)
+{
+	D3D11_BOX dest_region = CD3D11_BOX(0, 0, 0, width, height, 1);
+	s32 pixelsize = 0;
+	switch (fmt)
+	{
+	case DXGI_FORMAT_R8_UNORM:
+		pixelsize = 1;
+		break;
+	case DXGI_FORMAT_B5G6R5_UNORM:
+	case DXGI_FORMAT_R8G8_UNORM:
+		pixelsize = 2;
+		break;
+	case DXGI_FORMAT_B8G8R8A8_UNORM:		
+	case DXGI_FORMAT_R8G8B8A8_UNORM:
+		pixelsize = 4;
+		if (swap_rb)
+		{
+			TextureUtil::ConvertRGBA_BGRA((u32 *)buffer, pitch * 4, (u32*)buffer, width, height, pitch);
+		}
+		break;
+	case DXGI_FORMAT_BC1_UNORM:
+	case DXGI_FORMAT_BC2_UNORM:
+	case DXGI_FORMAT_BC3_UNORM:
+		pitch = (pitch + 3) >> 2;
+		pixelsize = (fmt == DXGI_FORMAT_BC1_UNORM ? 8 : 16);
+		height = 0;
+		break;
+	default:
+		PanicAlert("D3D: Invalid texture format %i", fmt);
+	}
+	if (pixelsize > 0)
+	{
+		D3D::context->UpdateSubresource(pTexture, level, &dest_region, buffer, pixelsize * pitch, pixelsize * pitch * height);
 	}
 }
 
-inline void CopyCompressedTextureData(u8 *pDst, const u8 *pSrc, const s32 width, const s32 height, DXGI_FORMAT fmt, const s32 dstpitch)
-{
-	s32 numBlocksWide = (width + 3) >> 2;
-	s32 numBlocksHigh = (height + 3) >> 2;
-	s32 numBytesPerBlock = (fmt == DXGI_FORMAT_BC1_UNORM ? 8 : 16);
-	s32 rowBytes = numBlocksWide * numBytesPerBlock;
-	s32 numRows = numBlocksHigh;
-	if (rowBytes == dstpitch)
-	{
-		memcpy(pDst, pSrc, rowBytes * numRows);
-	}
-	else
-	{
-		u8* pDestBits = pDst;
-		const u8* pSrcBits = pSrc;
-		// Copy stride line by line   
-		for (s32 h = 0; h < numRows; h++)
-		{
-			memcpy(pDestBits, pSrcBits, rowBytes);
-			pDestBits += dstpitch;
-			pSrcBits += rowBytes;
-		}
-	}
-}
-
-
-void ReplaceRGBATexture2D(ID3D11Texture2D* pTexture, const u8* buffer, unsigned int width, unsigned int height, unsigned int pitch, unsigned int level, D3D11_USAGE usage, DXGI_FORMAT fmt)
+void ReplaceTexture2D(ID3D11Texture2D* pTexture, const u8* buffer, unsigned int width, unsigned int height, unsigned int pitch, unsigned int level, D3D11_USAGE usage, DXGI_FORMAT fmt, bool swap_rb, bool convert_rgb565)
 {
 	if (usage == D3D11_USAGE_DYNAMIC || usage == D3D11_USAGE_STAGING)
 	{
-		D3D11_MAPPED_SUBRESOURCE map;
-		D3D::context->Map(pTexture, level, D3D11_MAP_WRITE_DISCARD, 0, &map);
-		if (fmt == DXGI_FORMAT_BC1_UNORM || fmt == DXGI_FORMAT_BC2_UNORM || fmt == DXGI_FORMAT_BC3_UNORM)
-		{
-			CopyCompressedTextureData((u8*)map.pData, buffer, width, height, fmt, map.RowPitch);
-		}
-		else
-		{
-			CopyTextureData((u8*)map.pData, buffer, width, height, 4 * pitch, map.RowPitch, 4);
-		}
-		D3D::context->Unmap(pTexture, level);
+		LoadDataMap(pTexture, buffer, level, width, height, pitch, fmt, swap_rb, convert_rgb565);
 	}
 	else
 	{
-		D3D11_BOX dest_region = CD3D11_BOX(0, 0, 0, width, height, 1);
-		if (fmt == DXGI_FORMAT_BC1_UNORM || fmt == DXGI_FORMAT_BC2_UNORM || fmt == DXGI_FORMAT_BC3_UNORM)
-		{
-			s32 numBlocksWide = (width + 3) >> 2;
-			s32 numBytesPerBlock = (fmt == DXGI_FORMAT_BC1_UNORM ? 8 : 16);
-			s32 rowBytes = numBlocksWide * numBytesPerBlock;			
-			D3D::context->UpdateSubresource(pTexture, level, &dest_region, buffer, rowBytes, 0);
-		}
-		else
-		{
-			D3D11_BOX dest_region = CD3D11_BOX(0, 0, 0, width, height, 1);
-			D3D::context->UpdateSubresource(pTexture, level, &dest_region, buffer, 4 * pitch, 4 * pitch*height);
-		}
+		LoadDataResource(pTexture, buffer, level, width, height, pitch, fmt, swap_rb);
 	}
 }
 

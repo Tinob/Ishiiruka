@@ -77,6 +77,7 @@
     </ClCompile>
     <ClCompile Include="TextureCacheBase.cpp" />
     <ClCompile Include="TextureConversionShader.cpp" />
+    <ClCompile Include="TextureUtil.cpp" />
     <ClCompile Include="VertexLoader.cpp" />
     <ClCompile Include="VertexLoaderManager.cpp" />
     <ClCompile Include="VertexLoader_Color.cpp" />
@@ -132,6 +133,7 @@
     <ClInclude Include="TextureCacheBase.h" />
     <ClInclude Include="TextureConversionShader.h" />
     <ClInclude Include="TextureDecoder.h" />
+    <ClInclude Include="TextureUtil.h" />
     <ClInclude Include="VertexLoader.h" />
     <ClInclude Include="VertexLoaderManager.h" />
     <ClInclude Include="VertexLoader_Color.h" />

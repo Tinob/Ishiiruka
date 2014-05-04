@@ -48,70 +48,48 @@ bool TextureCache::TCacheEntry::Save(const char filename[], unsigned int level)
 void TextureCache::TCacheEntry::Load(unsigned int width, unsigned int height,
 	unsigned int expanded_width, unsigned int level)
 {
-	D3D::ReplaceRGBATexture2D(texture->GetTex(), TextureCache::bufferstart, width, height, expanded_width, level, usage, DXGI_format);
+	D3D::ReplaceTexture2D(texture->GetTex(), TextureCache::bufferstart, width, height, expanded_width, level, usage, DXGI_format, swap_rg, convertrgb565);
 }
 
 TextureCache::TCacheEntryBase* TextureCache::CreateTexture(unsigned int width,
 	unsigned int height, unsigned int expanded_width,
 	unsigned int tex_levels, PC_TexFormat pcfmt)
 {
-	DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	switch (pcfmt)
+	bool swaprg = false;
+	bool convertrgb565 = false;
+	static const DXGI_FORMAT PC_TexFormat_To_DXGIFORMAT[11]
 	{
-	case PC_TEX_FMT_BGRA32:
-		format = DXGI_FORMAT_B8G8R8A8_UNORM;
-		break;
-	case PC_TEX_FMT_RGBA32:
+		DXGI_FORMAT_UNKNOWN,//PC_TEX_FMT_NONE
+		DXGI_FORMAT_B8G8R8A8_UNORM,//PC_TEX_FMT_BGRA32
+		DXGI_FORMAT_R8G8B8A8_UNORM,//PC_TEX_FMT_RGBA32
+		DXGI_FORMAT_R8_UNORM,//PC_TEX_FMT_I4_AS_I8
+		DXGI_FORMAT_R8G8_UNORM,//PC_TEX_FMT_IA4_AS_IA8
+		DXGI_FORMAT_R8_UNORM,//PC_TEX_FMT_I8
+		DXGI_FORMAT_R8G8_UNORM,//PC_TEX_FMT_IA8
+		DXGI_FORMAT_B5G6R5_UNORM,//PC_TEX_FMT_RGB565
+		DXGI_FORMAT_BC1_UNORM,//PC_TEX_FMT_DXT1
+		DXGI_FORMAT_BC2_UNORM,//PC_TEX_FMT_DXT3
+		DXGI_FORMAT_BC3_UNORM,//PC_TEX_FMT_DXT5
+	};
+	DXGI_FORMAT format = PC_TexFormat_To_DXGIFORMAT[pcfmt];	
+	bool bgrasupported = D3D::BGRATexturesSupported();
+	if (format == DXGI_FORMAT_B8G8R8A8_UNORM && !bgrasupported)
+	{
+		swaprg = true;
 		format = DXGI_FORMAT_R8G8B8A8_UNORM;
-		break;
-	case PC_TEX_FMT_I4_AS_I8:
-		format = DXGI_FORMAT_R8_UNORM;
-		break;
-	case PC_TEX_FMT_IA4_AS_IA8:
-		format = DXGI_FORMAT_R8G8_UNORM;
-		break;
-	case PC_TEX_FMT_I8:
-		format = DXGI_FORMAT_R8_UNORM;
-		break;
-	case PC_TEX_FMT_IA8:
-		format = DXGI_FORMAT_R8G8_UNORM;
-		break;
-	case PC_TEX_FMT_RGB565:
-		format = DXGI_FORMAT_B5G6R5_UNORM;
-		break;
-	case PC_TEX_FMT_DXT1:
-		format = DXGI_FORMAT_BC1_UNORM;
-		break;
-	case PC_TEX_FMT_DXT3:
-		format = DXGI_FORMAT_BC2_UNORM;
-		break;
-	case PC_TEX_FMT_DXT5:
-		format = DXGI_FORMAT_BC3_UNORM;
-		break;
-	default:
-		break;
+	}
+	if (format == DXGI_FORMAT_B5G6R5_UNORM && !D3D::BGRA565TexturesSupported())
+	{
+		convertrgb565 = true;
+		format = bgrasupported ? DXGI_FORMAT_B8G8R8A8_UNORM : DXGI_FORMAT_R8G8B8A8_UNORM;
 	}
 	D3D11_USAGE usage = D3D11_USAGE_DEFAULT;
-	D3D11_CPU_ACCESS_FLAG cpu_access = (D3D11_CPU_ACCESS_FLAG)0;
-	D3D11_SUBRESOURCE_DATA srdata, *data = NULL;
+	D3D11_CPU_ACCESS_FLAG cpu_access = (D3D11_CPU_ACCESS_FLAG)0;	
 
-	if (tex_levels == 1)
+	if (tex_levels == 1 || format == DXGI_FORMAT_B5G6R5_UNORM)
 	{
 		usage = D3D11_USAGE_DYNAMIC;
 		cpu_access = D3D11_CPU_ACCESS_WRITE;
-		srdata.pSysMem = TextureCache::bufferstart;
-		if (format == DXGI_FORMAT_BC1_UNORM || format == DXGI_FORMAT_BC2_UNORM || format == DXGI_FORMAT_BC3_UNORM)
-		{
-			s32 numBlocksWide = (expanded_width + 3) >> 2;
-			s32 numBytesPerBlock = (format == DXGI_FORMAT_BC1_UNORM ? 8 : 16);
-			s32 rowBytes = numBlocksWide * numBytesPerBlock;
-			srdata.SysMemPitch = rowBytes;
-		}
-		else
-		{
-			srdata.SysMemPitch = 4 * expanded_width;
-		}
-		data = &srdata;
 	}
 
 
@@ -119,20 +97,21 @@ TextureCache::TCacheEntryBase* TextureCache::CreateTexture(unsigned int width,
 		width, height, 1, tex_levels, D3D11_BIND_SHADER_RESOURCE, usage, cpu_access);
 
 	ID3D11Texture2D *pTexture;
-	const HRESULT hr = D3D::device->CreateTexture2D(&texdesc, data, &pTexture);
+	const HRESULT hr = D3D::device->CreateTexture2D(&texdesc, NULL, &pTexture);
 	CHECK(SUCCEEDED(hr), "Create texture of the TextureCache");
 
 	TCacheEntry* const entry = new TCacheEntry(new D3DTexture2D(pTexture, D3D11_BIND_SHADER_RESOURCE));
 	entry->usage = usage;
 	entry->DXGI_format = format;
+	entry->swap_rg = swaprg;
+	entry->convertrgb565 = convertrgb565;
 	// TODO: better debug names
 	D3D::SetDebugObjectName((ID3D11DeviceChild*)entry->texture->GetTex(), "a texture of the TextureCache");
 	D3D::SetDebugObjectName((ID3D11DeviceChild*)entry->texture->GetSRV(), "shader resource view of a texture of the TextureCache");	
 
 	SAFE_RELEASE(pTexture);
 	
-	if (tex_levels != 1)
-		entry->Load(width, height, expanded_width, 0);
+	entry->Load(width, height, expanded_width, 0);
 
 	return entry;
 }
