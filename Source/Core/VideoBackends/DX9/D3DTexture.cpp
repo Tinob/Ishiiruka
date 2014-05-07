@@ -44,7 +44,7 @@ inline void LoadDataToRect(LPDIRECT3DTEXTURE9 pTexture, const u8* buffer, const 
 	case D3DFMT_DXT1:
 	case D3DFMT_DXT3:
 	case D3DFMT_DXT5:
-		TextureUtil::CopyCompressedTextureData((u8*)Lock.pBits, buffer, pitch, height, fmt == D3DFMT_DXT1 ? 8 : 16, Lock.Pitch);
+		TextureUtil::CopyCompressedTextureData((u8*)Lock.pBits, buffer, width, height, pitch, fmt == D3DFMT_DXT1 ? 8 : 16, Lock.Pitch);
 	break;
 	default:
 		PanicAlert("D3D: Invalid texture format %i", fmt);

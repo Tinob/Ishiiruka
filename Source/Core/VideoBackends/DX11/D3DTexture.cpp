@@ -49,7 +49,7 @@ inline void LoadDataMap(ID3D11Texture2D* pTexture, const u8* buffer, const s32 l
 	case DXGI_FORMAT_BC1_UNORM:
 	case DXGI_FORMAT_BC2_UNORM:
 	case DXGI_FORMAT_BC3_UNORM:
-		TextureUtil::CopyCompressedTextureData((u8*)map.pData, buffer, pitch, height, fmt == DXGI_FORMAT_BC1_UNORM ? 8 : 16, map.RowPitch);
+		TextureUtil::CopyCompressedTextureData((u8*)map.pData, buffer, width, height, pitch, fmt == DXGI_FORMAT_BC1_UNORM ? 8 : 16, map.RowPitch);
 		break;
 	default:
 		PanicAlert("D3D: Invalid texture format %i", fmt);

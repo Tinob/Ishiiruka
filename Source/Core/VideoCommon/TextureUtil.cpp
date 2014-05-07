@@ -212,13 +212,15 @@ namespace TextureUtil
 		}
 	}
 
-	void CopyCompressedTextureData(u8 *pDst, const u8 *pSrc, const s32 srcpitch, const s32 height, s32 numBytesPerBlock, const s32 dstpitch)
+	void CopyCompressedTextureData(u8 *pDst, const u8 *pSrc, const s32 width, const s32 height, const s32 dstPitch, s32 numBytesPerBlock, const s32 dstpitch)
 	{
-		s32 numBlocksWide = (srcpitch + 3) >> 2;
+		s32 numBlocksStride = (dstPitch + 3) >> 2;
+		s32 numBlocksWide = (width + 3) >> 2;
 		s32 numBlocksHigh = (height + 3) >> 2;
+		s32 stridebytes = numBlocksStride * numBytesPerBlock;
 		s32 rowBytes = numBlocksWide * numBytesPerBlock;
 		s32 numRows = numBlocksHigh;
-		if (rowBytes == dstpitch)
+		if (rowBytes == dstpitch && rowBytes == stridebytes)
 		{
 			memcpy(pDst, pSrc, rowBytes * numRows);
 		}
@@ -231,7 +233,7 @@ namespace TextureUtil
 			{
 				memcpy(pDestBits, pSrcBits, rowBytes);
 				pDestBits += dstpitch;
-				pSrcBits += rowBytes;
+				pSrcBits += stridebytes;
 			}
 		}
 	}
