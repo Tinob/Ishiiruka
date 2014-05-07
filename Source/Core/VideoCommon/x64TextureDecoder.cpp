@@ -715,22 +715,6 @@ inline void DXT1ToDXT3Block(DXT3Block* dst, const DXT1Block* src)
 			idx = idx << 2;
 			mask = mask << 4;
 		}
-		/*result.alpha.alpha0 = result.color.idx0 == 3 ? 0 : result.alpha.alpha0;
-		result.alpha.alpha1 = result.color.idx1 == 3 ? 0 : result.alpha.alpha1;
-		result.alpha.alpha2 = result.color.idx2 == 3 ? 0 : result.alpha.alpha2;
-		result.alpha.alpha3 = result.color.idx3 == 3 ? 0 : result.alpha.alpha3;
-		result.alpha.alpha4 = result.color.idx4 == 3 ? 0 : result.alpha.alpha4;
-		result.alpha.alpha5 = result.color.idx5 == 3 ? 0 : result.alpha.alpha5;
-		result.alpha.alpha6 = result.color.idx6 == 3 ? 0 : result.alpha.alpha6;
-		result.alpha.alpha7 = result.color.idx7 == 3 ? 0 : result.alpha.alpha7;
-		result.alpha.alpha8 = result.color.idx8 == 3 ? 0 : result.alpha.alpha8;
-		result.alpha.alpha9 = result.color.idx9 == 3 ? 0 : result.alpha.alpha9;
-		result.alpha.alphaA = result.color.idxA == 3 ? 0 : result.alpha.alphaA;
-		result.alpha.alphaB = result.color.idxB == 3 ? 0 : result.alpha.alphaB;
-		result.alpha.alphaC = result.color.idxC == 3 ? 0 : result.alpha.alphaC;
-		result.alpha.alphaD = result.color.idxD == 3 ? 0 : result.alpha.alphaD;
-		result.alpha.alphaE = result.color.idxE == 3 ? 0 : result.alpha.alphaE;
-		result.alpha.alphaF = result.color.idxF == 3 ? 0 : result.alpha.alphaF;*/
 	}
 	*dst = result;
 }
