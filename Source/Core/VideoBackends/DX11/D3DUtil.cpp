@@ -212,7 +212,7 @@ int CD3DFont::Init()
 	// possible optimization: store the converted data in a buffer and fill the texture on creation.
 	//							That way, we can use a static texture
 	ID3D11Texture2D* buftex;
-	D3D11_TEXTURE2D_DESC texdesc = CD3D11_TEXTURE2D_DESC(DXGI_FORMAT_R8G8B8A8_UNORM, m_dwTexWidth, m_dwTexHeight,
+	D3D11_TEXTURE2D_DESC texdesc = CD3D11_TEXTURE2D_DESC(D3D::GetBaseBufferFormat(), m_dwTexWidth, m_dwTexHeight,
 										1, 1, D3D11_BIND_SHADER_RESOURCE, D3D11_USAGE_DYNAMIC,
 										D3D11_CPU_ACCESS_WRITE);
 	hr = device->CreateTexture2D(&texdesc, NULL, &buftex);

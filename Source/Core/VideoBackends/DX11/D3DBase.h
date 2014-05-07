@@ -54,6 +54,7 @@ D3DTexture2D* &GetBackBuffer();
 const char* PixelShaderVersionString();
 const char* GeometryShaderVersionString();
 const char* VertexShaderVersionString();
+DXGI_FORMAT GetBaseBufferFormat();
 bool BGRATexturesSupported();
 bool BGRA565TexturesSupported();
 

@@ -190,7 +190,7 @@ TextureCache::TCacheEntryBase* TextureCache::CreateTexture(u32 width, u32 height
 		D3DFMT_DXT5,//PC_TEX_FMT_DXT5
 	};
 	// if no rgba support so swap is needed
-	bool swap_r_b = !g_ActiveConfig.backend_info.bSupportsRGBATextures && pcfmt == PC_TEX_FMT_RGBA32;
+	bool swap_r_b = !g_ActiveConfig.backend_info.bSupportedFormats[PC_TEX_FMT_RGBA32] && pcfmt == PC_TEX_FMT_RGBA32;
 	D3DFORMAT d3d_fmt = swap_r_b ? D3DFMT_A8R8G8B8 : PC_TexFormat_To_D3DFORMAT[pcfmt];
 	TCacheEntry* entry = new TCacheEntry(D3D::CreateTexture2D(TextureCache::bufferstart, width, height, expanded_width, d3d_fmt, swap_r_b, tex_levels));
 	entry->swap_r_b = swap_r_b;

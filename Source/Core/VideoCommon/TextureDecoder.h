@@ -73,10 +73,12 @@ enum PC_TexFormat
 };
 
 PC_TexFormat TexDecoder_Decode(u8 *dst, const u8 *src, s32 width, s32 height, s32 texformat, s32 tlutaddr, s32 tlutfmt,bool rgbaOnly = false);
-PC_TexFormat GetPC_TexFormat(s32 texformat, s32 tlutfmt);
+PC_TexFormat GetPC_TexFormat(s32 texformat, s32 tlutfmt, s32 width, s32 height);
 void TexDecoder_DecodeTexel(u8 *dst, const u8 *src, s32 s, s32 t, s32 imageWidth, s32 texformat, s32 tlutaddr, s32 tlutfmt);
 void TexDecoder_DecodeTexelRGBA8FromTmem(u8 *dst, const u8 *src_ar, const u8* src_gb, s32 s, s32 t, s32 imageWidth);
-PC_TexFormat TexDecoder_DecodeRGBA8FromTmem(u8* dst, const u8 *src_ar, const u8 *src_gb, s32 width, s32 height);
+void TexDecoder_DecodeTexelBGRA8FromTmem(u8 *dst, const u8 *src_ar, const u8* src_gb, s32 s, s32 t, s32 imageWidth);
+PC_TexFormat TexDecoder_DecodeRGBA8FromTmem(u32* dst, const u8 *src_ar, const u8 *src_gb, s32 width, s32 height);
+PC_TexFormat TexDecoder_DecodeBGRA8FromTmem(u32* dst, const u8 *src_ar, const u8 *src_gb, s32 width, s32 height);
 void TexDecoder_SetTexFmtOverlayOptions(bool enable, bool center);
 
 #endif

@@ -35,7 +35,7 @@ int d3d_dll_ref = 0;
 
 namespace D3D
 {
-
+DXGI_FORMAT DXGI_BaseFormat = DXGI_FORMAT_B8G8R8A8_UNORM;
 ID3D11Device* device = NULL;
 ID3D11DeviceContext* context = NULL;
 IDXGISwapChain* swapchain = NULL;
@@ -232,7 +232,7 @@ std::vector<DXGI_SAMPLE_DESC> EnumAAModes(IDXGIAdapter* adapter)
 		for (int samples = 0; samples < D3D11_MAX_MULTISAMPLE_SAMPLE_COUNT; ++samples)
 		{
 			UINT quality_levels = 0;
-			device->CheckMultisampleQualityLevels(DXGI_FORMAT_R8G8B8A8_UNORM, samples, &quality_levels);
+			device->CheckMultisampleQualityLevels(GetBaseBufferFormat(), samples, &quality_levels);
 			if (quality_levels > 0) {
 				DXGI_SAMPLE_DESC desc;
 				desc.Count = samples;
@@ -325,11 +325,16 @@ HRESULT Create(HWND wnd)
 	memset(&mode_desc, 0, sizeof(mode_desc));
 	mode_desc.Width = xres;
 	mode_desc.Height = yres;
-	mode_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	mode_desc.Format = DXGI_BaseFormat;
 	mode_desc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
 	hr = output->FindClosestMatchingMode(&mode_desc, &swap_chain_desc.BufferDesc, NULL);
-	if (FAILED(hr)) MessageBox(wnd, _T("Failed to find a supported video mode"), _T("Dolphin Direct3D 11 backend"), MB_OK | MB_ICONERROR);
-
+	if (FAILED(hr))
+	{
+		DXGI_BaseFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+		mode_desc.Format = DXGI_BaseFormat;
+		hr = output->FindClosestMatchingMode(&mode_desc, &swap_chain_desc.BufferDesc, NULL);
+		if (FAILED(hr)) MessageBox(wnd, _T("Failed to find a supported video mode"), _T("Dolphin Direct3D 11 backend"), MB_OK | MB_ICONERROR);
+	}
 	// forcing buffer resolution to xres and yres.. TODO: The new video mode might not actually be supported!
 	swap_chain_desc.BufferDesc.Width = xres;
 	swap_chain_desc.BufferDesc.Height = yres;
@@ -392,7 +397,8 @@ HRESULT Create(HWND wnd)
 	bgra_textures_supported = (format_support & D3D11_FORMAT_SUPPORT_TEXTURE2D) != 0;
 	device->CheckFormatSupport(DXGI_FORMAT_B5G6R5_UNORM, &format_support);
 	bgra565_textures_supported = (format_support & D3D11_FORMAT_SUPPORT_TEXTURE2D) != 0;
-
+	g_ActiveConfig.backend_info.bSupportedFormats[1] = D3D::BGRATexturesSupported();
+	g_ActiveConfig.backend_info.bSupportedFormats[7] = D3D::BGRA565TexturesSupported();
 	stateman = new StateManager;
 	return S_OK;
 }
@@ -451,6 +457,7 @@ unsigned int GetBackBufferHeight() { return yres; }
 
 bool BGRATexturesSupported() { return bgra_textures_supported; }
 bool BGRA565TexturesSupported() { return bgra565_textures_supported; }
+DXGI_FORMAT GetBaseBufferFormat(){ return DXGI_BaseFormat; }
 
 // Returns the maximum width/height of a texture. This value only depends upon the feature level in DX11
 unsigned int GetMaxTextureSize()
@@ -486,7 +493,7 @@ void Reset()
 	GetClientRect(hWnd, &client);
 	xres = client.right - client.left;
 	yres = client.bottom - client.top;
-	D3D::swapchain->ResizeBuffers(1, xres, yres, DXGI_FORMAT_R8G8B8A8_UNORM, 0);
+	D3D::swapchain->ResizeBuffers(1, xres, yres, GetBaseBufferFormat(), 0);
 
 	// recreate back buffer texture
 	ID3D11Texture2D* buf;

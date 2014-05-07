@@ -139,11 +139,16 @@ void GetShaders(std::vector<std::string> &shaders)
 void InitBackendInfo()
 {
 	g_Config.backend_info.APIType = API_OPENGL;
-#ifdef USE_GLES3
-	g_Config.backend_info.bUseRGBATextures = true;
-#else
-	g_Config.backend_info.bUseRGBATextures = false;
-#endif
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_BGRA32] = true;
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_RGBA32] = true;
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_I4_AS_I8] = true;
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_IA4_AS_IA8] = true;
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_I8] = true;
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_IA8] = true;
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_RGB565] = true;
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT1] = true;
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT3] = true;
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT5] = true;
 	g_Config.backend_info.bUseMinimalMipCount = false;
 	g_Config.backend_info.bSupports3DVision = false;
 	//g_Config.backend_info.bSupportsDualSourceBlend = true; // is gpu dependent and must be set in renderer

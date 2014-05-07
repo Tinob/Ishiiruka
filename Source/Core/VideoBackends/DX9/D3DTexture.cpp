@@ -44,7 +44,7 @@ inline void LoadDataToRect(LPDIRECT3DTEXTURE9 pTexture, const u8* buffer, const 
 	case D3DFMT_DXT1:
 	case D3DFMT_DXT3:
 	case D3DFMT_DXT5:
-		TextureUtil::CopyCompressedTextureData((u8*)Lock.pBits, buffer, width, height, fmt == D3DFMT_DXT1 ? 8 : 16, Lock.Pitch);
+		TextureUtil::CopyCompressedTextureData((u8*)Lock.pBits, buffer, pitch, height, fmt == D3DFMT_DXT1 ? 8 : 16, Lock.Pitch);
 	break;
 	default:
 		PanicAlert("D3D: Invalid texture format %i", fmt);
@@ -56,7 +56,7 @@ inline void LoadDataToRect(LPDIRECT3DTEXTURE9 pTexture, const u8* buffer, const 
 	pTexture->UnlockRect(level);
 }
 
-LPDIRECT3DTEXTURE9 CreateTexture2D(const u8* buffer, const int width, const int height, const int pitch, D3DFORMAT fmt, bool swap_r_b, int levels)
+LPDIRECT3DTEXTURE9 CreateTexture2D(const u8* buffer, const s32 width, const s32 height, const s32 pitch, D3DFORMAT fmt, bool swap_r_b, s32 levels)
 {
 	LPDIRECT3DTEXTURE9 pTexture;
 	D3DFORMAT cfmt = fmt;
@@ -71,7 +71,7 @@ LPDIRECT3DTEXTURE9 CreateTexture2D(const u8* buffer, const int width, const int 
 	return pTexture;
 }
 
-void ReplaceTexture2D(LPDIRECT3DTEXTURE9 pTexture, const u8* buffer, const int width, const int height, const int pitch, D3DFORMAT fmt, bool swap_r_b, int level)
+void ReplaceTexture2D(LPDIRECT3DTEXTURE9 pTexture, const u8* buffer, const s32 width, const s32 height, const int pitch, D3DFORMAT fmt, bool swap_r_b, s32 level)
 {
 	LoadDataToRect(pTexture, buffer, width, height, pitch, fmt, swap_r_b, level);
 }

@@ -14,11 +14,14 @@
 #include "VideoCommon/LookUpTables.h"
 
 #include <cmath>
+#define DISABLE_OPENMP
 
+#ifndef DISABLE_OPENMP
 #ifdef _OPENMP
 #include <omp.h>
 #elif defined __GNUC__
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
+#endif
 #endif
 
 #if _M_SSE >= 0x401
@@ -243,15 +246,6 @@ static inline u32 decodeIA8Swapped(u16 val)
 	s32 i = val >> 8;
 	return i | (i<<8) | (i<<16) | (a<<24);
 }
-
-
-
-struct DXTBlock
-{
-	u16 color1;
-	u16 color2;
-	u8 lines[4];
-};
 
 //inline void decodebytesC4(u32 *dst, const u8 *src, s32 numbytes, s32 tlutaddr, s32 tlutfmt)
 inline void decodebytesC4_5A3_To_BGRA32(u32 *dst, const u8 *src, s32 tlutaddr)
@@ -520,6 +514,70 @@ inline void decodebytesARGB8_4ToRgba(u32 *dst, const u16 *src, const u16 * src2)
 #endif
 }
 
+
+struct DXT1Block
+{
+	u16 color1;
+	u16 color2;
+	union {
+		struct
+		{
+			u32 idx0 : 2;
+			u32 idx1 : 2;
+			u32 idx2 : 2;
+			u32 idx3 : 2;
+			u32 idx4 : 2;
+			u32 idx5 : 2;
+			u32 idx6 : 2;
+			u32 idx7 : 2;
+			u32 idx8 : 2;
+			u32 idx9 : 2;
+			u32 idxA : 2;
+			u32 idxB : 2;
+			u32 idxC : 2;
+			u32 idxD : 2;
+			u32 idxE : 2;
+			u32 idxF : 2;
+		};
+		u8 lines[4];
+		u32 indices;
+	};
+};
+
+struct DXT3AlphaBlock
+{
+	union
+	{
+		struct
+		{
+			u32 alpha0 : 4;
+			u32 alpha1 : 4;
+			u32 alpha2 : 4;
+			u32 alpha3 : 4;
+			u32 alpha4 : 4;
+			u32 alpha5 : 4;
+			u32 alpha6 : 4;
+			u32 alpha7 : 4;
+			u32 alpha8 : 4;
+			u32 alpha9 : 4;
+			u32 alphaA : 4;
+			u32 alphaB : 4;
+			u32 alphaC : 4;
+			u32 alphaD : 4;
+			u32 alphaE : 4;
+			u32 alphaF : 4;
+		};
+		u16 row[4];
+		u64 alpha;
+	};
+};
+
+struct DXT3Block
+{
+	DXT3AlphaBlock alpha;
+	DXT1Block color;
+};
+
 inline u32 makecol(s32 r, s32 g, s32 b, s32 a)
 {
 	return (a << 24)|(r << 16)|(g << 8)|b;
@@ -530,7 +588,7 @@ inline u32 makeRGBA(s32 r, s32 g, s32 b, s32 a)
 	return (a<<24)|(b<<16)|(g<<8)|r;
 }
 
-void decodeDXTBlock(u32 *dst, const DXTBlock *src, s32 pitch)
+void decodeDXTBlock(u32 *dst, const DXT1Block *src, s32 pitch)
 {
 	// S3TC Decoder (Note: GCN decodes differently from PC so we can't use native support)
 	// Needs more speed.
@@ -573,7 +631,7 @@ void decodeDXTBlock(u32 *dst, const DXTBlock *src, s32 pitch)
 	}
 }
 
-void decodeDXTBlockRGBA(u32 *dst, const DXTBlock *src, s32 pitch)
+void decodeDXTBlockRGBA(u32 *dst, const DXT1Block *src, s32 pitch)
 {
 	// S3TC Decoder (Note: GCN decodes differently from PC so we can't use native support)
 	// Needs more speed.
@@ -631,6 +689,52 @@ static void copyDXTBlock(u8* dst, const u8* src)
 }
 #endif
 
+inline void DXT1ToDXT3Block(DXT3Block* dst, const DXT1Block* src)
+{
+	DXT3Block result;
+	result.color = *src;
+	result.color.color1 = Common::swap16(result.color.color1);
+	result.color.color2 = Common::swap16(result.color.color2);
+	// A bit of trickiness here: the row are in the same order
+	// between the two formats, but the ordering within the rows
+	// is reversed.
+	result.color.indices = ((result.color.indices >> 4) & 0x0F0F0F0F) | ((result.color.indices << 4) & 0xF0F0F0F0);
+	result.color.indices = ((result.color.indices >> 2) & 0x33333333) | ((result.color.indices << 2) & 0xCCCCCCCC);
+	u64 fullmask = 0xFFFFFFFFFFFFFFFFu;
+	result.alpha.alpha = fullmask;
+	if (result.color.color1 <= result.color.color2)
+	{
+		u32 idx = 0x3u;
+		u64 mask = 0xFu;
+		for (s32 i = 0; i < 16; i++)
+		{
+			bool transparent = ((result.color.indices & idx) == idx);
+			u64 localmask = !mask;
+			localmask = transparent ? localmask : fullmask;
+			result.alpha.alpha &= localmask;
+			idx = idx << 2;
+			mask = mask << 4;
+		}
+		/*result.alpha.alpha0 = result.color.idx0 == 3 ? 0 : result.alpha.alpha0;
+		result.alpha.alpha1 = result.color.idx1 == 3 ? 0 : result.alpha.alpha1;
+		result.alpha.alpha2 = result.color.idx2 == 3 ? 0 : result.alpha.alpha2;
+		result.alpha.alpha3 = result.color.idx3 == 3 ? 0 : result.alpha.alpha3;
+		result.alpha.alpha4 = result.color.idx4 == 3 ? 0 : result.alpha.alpha4;
+		result.alpha.alpha5 = result.color.idx5 == 3 ? 0 : result.alpha.alpha5;
+		result.alpha.alpha6 = result.color.idx6 == 3 ? 0 : result.alpha.alpha6;
+		result.alpha.alpha7 = result.color.idx7 == 3 ? 0 : result.alpha.alpha7;
+		result.alpha.alpha8 = result.color.idx8 == 3 ? 0 : result.alpha.alpha8;
+		result.alpha.alpha9 = result.color.idx9 == 3 ? 0 : result.alpha.alpha9;
+		result.alpha.alphaA = result.color.idxA == 3 ? 0 : result.alpha.alphaA;
+		result.alpha.alphaB = result.color.idxB == 3 ? 0 : result.alpha.alphaB;
+		result.alpha.alphaC = result.color.idxC == 3 ? 0 : result.alpha.alphaC;
+		result.alpha.alphaD = result.color.idxD == 3 ? 0 : result.alpha.alphaD;
+		result.alpha.alphaE = result.color.idxE == 3 ? 0 : result.alpha.alphaE;
+		result.alpha.alphaF = result.color.idxF == 3 ? 0 : result.alpha.alphaF;*/
+	}
+	*dst = result;
+}
+
 static PC_TexFormat GetPCFormatFromTLUTFormat(s32 tlutfmt)
 {
 	switch (tlutfmt)
@@ -643,7 +747,7 @@ static PC_TexFormat GetPCFormatFromTLUTFormat(s32 tlutfmt)
 	return PC_TEX_FMT_NONE; // Error
 }
 
-PC_TexFormat GetPC_TexFormat(s32 texformat, s32 tlutfmt)
+PC_TexFormat GetPC_TexFormat(s32 texformat, s32 tlutfmt, s32 width, s32 height)
 {
 	switch (texformat)
 	{
@@ -669,6 +773,11 @@ PC_TexFormat GetPC_TexFormat(s32 texformat, s32 tlutfmt)
 		return PC_TEX_FMT_BGRA32;
 	case GX_TF_CMPR:  // speed critical
 		// The metroid games use this format almost exclusively.
+		if (((width % 4) == 0) && ((height % 4) == 0))
+		{
+			return PC_TEX_FMT_DXT3;
+		}
+		else
 		{
 			return PC_TEX_FMT_BGRA32;
 		}
@@ -677,7 +786,7 @@ PC_TexFormat GetPC_TexFormat(s32 texformat, s32 tlutfmt)
 	// The "copy" texture formats, too?
 	return PC_TEX_FMT_NONE;
 }
-
+#ifndef DISABLE_OPENMP
 inline void SetOpenMPThreadCount(s32 width, s32 height)
 {
 #ifdef _OPENMP
@@ -693,15 +802,16 @@ inline void SetOpenMPThreadCount(s32 width, s32 height)
 	}
 #endif
 }
-
+#endif
 //switch endianness, unswizzle
 //TODO: to save memory, don't blindly convert everything to argb8888
 //also ARGB order needs to be swapped later, to accommodate modern hardware better
 //need to add DXT support too
 PC_TexFormat TexDecoder_Decode_real(u8 *dst, const u8 *src, s32 width, s32 height, s32 texformat, s32 tlutaddr, s32 tlutfmt)
 {
+#ifndef DISABLE_OPENMP
 	SetOpenMPThreadCount(width, height);
-
+#endif
 	const s32 Wsteps4 = (width + 3) / 4;
 	const s32 Wsteps8 = (width + 7) / 8;
 
@@ -711,7 +821,9 @@ PC_TexFormat TexDecoder_Decode_real(u8 *dst, const u8 *src, s32 width, s32 heigh
 		if (tlutfmt == 2)
 		{
 			// Special decoding is required for TLUT format 5A3
+#ifndef DISABLE_OPENMP
 			#pragma omp parallel for
+#endif
 			for (s32 y = 0; y < height; y += 8)
 				for (s32 x = 0, yStep = (y / 8) * Wsteps8; x < width; x += 8, yStep++)
 					for (s32 iy = 0, xStep = yStep * 8; iy < 8; iy++, xStep++)
@@ -719,7 +831,9 @@ PC_TexFormat TexDecoder_Decode_real(u8 *dst, const u8 *src, s32 width, s32 heigh
 		}
 		else
 		{
-			#pragma omp parallel for
+#ifndef DISABLE_OPENMP
+#pragma omp parallel for
+#endif
 			for (s32 y = 0; y < height; y += 8)
 				for (s32 x = 0, yStep = (y / 8) * Wsteps8; x < width; x += 8, yStep++)
 					for (s32 iy = 0, xStep = yStep * 8; iy < 8; iy++, xStep++)
@@ -728,7 +842,9 @@ PC_TexFormat TexDecoder_Decode_real(u8 *dst, const u8 *src, s32 width, s32 heigh
 		return GetPCFormatFromTLUTFormat(tlutfmt);
 	case GX_TF_I4:
 		{
-			#pragma omp parallel for
+#ifndef DISABLE_OPENMP
+#pragma omp parallel for
+#endif
 			for (s32 y = 0; y < height; y += 8)
 				for (s32 x = 0, yStep = (y / 8) * Wsteps8; x < width; x += 8, yStep++)
 					for (s32 iy = 0, xStep = yStep * 8 ; iy < 8; iy++,xStep++)
@@ -742,7 +858,9 @@ PC_TexFormat TexDecoder_Decode_real(u8 *dst, const u8 *src, s32 width, s32 heigh
 	   return PC_TEX_FMT_I4_AS_I8;
 	case GX_TF_I8:  // speed critical
 		{
-			#pragma omp parallel for
+#ifndef DISABLE_OPENMP
+#pragma omp parallel for
+#endif
 			for (s32 y = 0; y < height; y += 4)
 				for (s32 x = 0, yStep = (y / 4) * Wsteps8; x < width; x += 8, yStep++)
 					for (s32 iy = 0, xStep = 4 * yStep; iy < 4; iy++, xStep++)
@@ -755,7 +873,9 @@ PC_TexFormat TexDecoder_Decode_real(u8 *dst, const u8 *src, s32 width, s32 heigh
 		if (tlutfmt == 2)
 		{
 			// Special decoding is required for TLUT format 5A3
-			#pragma omp parallel for
+#ifndef DISABLE_OPENMP
+#pragma omp parallel for
+#endif
 			for (s32 y = 0; y < height; y += 4)
 				for (s32 x = 0, yStep = (y / 4) * Wsteps8; x < width; x += 8, yStep++)
 					for (s32 iy = 0, xStep = 4 * yStep; iy < 4; iy++, xStep++)
@@ -767,7 +887,9 @@ PC_TexFormat TexDecoder_Decode_real(u8 *dst, const u8 *src, s32 width, s32 heigh
 #if _M_SSE >= 0x301
 
 			if (cpu_info.bSSSE3) {
-				#pragma omp parallel for
+#ifndef DISABLE_OPENMP
+#pragma omp parallel for
+#endif
 				for (s32 y = 0; y < height; y += 4)
 					for (s32 x = 0, yStep = (y / 4) * Wsteps8; x < width; x += 8, yStep++)
 						for (s32 iy = 0, xStep = 4 * yStep; iy < 4; iy++, xStep++)
@@ -775,7 +897,9 @@ PC_TexFormat TexDecoder_Decode_real(u8 *dst, const u8 *src, s32 width, s32 heigh
 			} else
 #endif
 			{
-				#pragma omp parallel for
+#ifndef DISABLE_OPENMP
+#pragma omp parallel for
+#endif
 				for (s32 y = 0; y < height; y += 4)
 					for (s32 x = 0, yStep = (y / 4) * Wsteps8; x < width; x += 8, yStep++)
 						for (s32 iy = 0, xStep = 4 * yStep; iy < 4; iy++, xStep++)
@@ -785,7 +909,9 @@ PC_TexFormat TexDecoder_Decode_real(u8 *dst, const u8 *src, s32 width, s32 heigh
 		return GetPCFormatFromTLUTFormat(tlutfmt);
 	case GX_TF_IA4:
 		{
-			#pragma omp parallel for
+#ifndef DISABLE_OPENMP
+#pragma omp parallel for
+#endif
 			for (s32 y = 0; y < height; y += 4)
 				for (s32 x = 0, yStep = (y / 4) * Wsteps8; x < width; x += 8, yStep++)
 					for (s32 iy = 0, xStep = 4 * yStep; iy < 4; iy++, xStep++)
@@ -794,7 +920,9 @@ PC_TexFormat TexDecoder_Decode_real(u8 *dst, const u8 *src, s32 width, s32 heigh
 		return PC_TEX_FMT_IA4_AS_IA8;
 	case GX_TF_IA8:
 		{
-			#pragma omp parallel for
+#ifndef DISABLE_OPENMP
+#pragma omp parallel for
+#endif
 			for (s32 y = 0; y < height; y += 4)
 				for (s32 x = 0, yStep = (y / 4) * Wsteps4; x < width; x += 4, yStep++)
 					for (s32 iy = 0, xStep = yStep * 4; iy < 4; iy++, xStep++)
@@ -811,7 +939,9 @@ PC_TexFormat TexDecoder_Decode_real(u8 *dst, const u8 *src, s32 width, s32 heigh
 		if (tlutfmt == 2)
 		{
 			// Special decoding is required for TLUT format 5A3
-			#pragma omp parallel for
+#ifndef DISABLE_OPENMP
+#pragma omp parallel for
+#endif
 			for (s32 y = 0; y < height; y += 4)
 				for (s32 x = 0, yStep = (y / 4) * Wsteps4; x < width; x += 4, yStep++)
 					for (s32 iy = 0, xStep = 4 * yStep; iy < 4; iy++, xStep++)
@@ -819,7 +949,9 @@ PC_TexFormat TexDecoder_Decode_real(u8 *dst, const u8 *src, s32 width, s32 heigh
 		}
 		else
 		{
-			#pragma omp parallel for
+#ifndef DISABLE_OPENMP
+#pragma omp parallel for
+#endif
 			for (s32 y = 0; y < height; y += 4)
 				for (s32 x = 0, yStep = (y / 4) * Wsteps4; x < width; x += 4, yStep++)
 					for (s32 iy = 0, xStep = 4 * yStep; iy < 4; iy++, xStep++)
@@ -828,7 +960,9 @@ PC_TexFormat TexDecoder_Decode_real(u8 *dst, const u8 *src, s32 width, s32 heigh
 		return GetPCFormatFromTLUTFormat(tlutfmt);
 	case GX_TF_RGB565:
 		{
-			#pragma omp parallel for
+#ifndef DISABLE_OPENMP
+#pragma omp parallel for
+#endif
 			for (s32 y = 0; y < height; y += 4)
 				for (s32 x = 0, yStep = (y / 4) * Wsteps4; x < width; x += 4, yStep++)
 					for (s32 iy = 0, xStep = 4 * yStep; iy < 4; iy++, xStep++)
@@ -842,7 +976,9 @@ PC_TexFormat TexDecoder_Decode_real(u8 *dst, const u8 *src, s32 width, s32 heigh
 		return PC_TEX_FMT_RGB565;
 	case GX_TF_RGB5A3:
 		{
-			#pragma omp parallel for
+#ifndef DISABLE_OPENMP
+#pragma omp parallel for
+#endif
 			for (s32 y = 0; y < height; y += 4)
 				for (s32 x = 0, yStep = (y / 4) * Wsteps4; x < width; x += 4, yStep++)
 					for (s32 iy = 0, xStep = 4 * yStep; iy < 4; iy++, xStep++)
@@ -856,7 +992,9 @@ PC_TexFormat TexDecoder_Decode_real(u8 *dst, const u8 *src, s32 width, s32 heigh
 #if _M_SSE >= 0x301
 
 			if (cpu_info.bSSSE3) {
-				#pragma omp parallel for
+#ifndef DISABLE_OPENMP
+#pragma omp parallel for
+#endif
 				for (s32 y = 0; y < height; y += 4) {
 					__m128i* p = (__m128i*)(src + y * width * 4);
 					for (s32 x = 0; x < width; x += 4) {
@@ -898,7 +1036,9 @@ PC_TexFormat TexDecoder_Decode_real(u8 *dst, const u8 *src, s32 width, s32 heigh
 #endif
 
 			{
-				#pragma omp parallel for
+#ifndef DISABLE_OPENMP
+#pragma omp parallel for
+#endif
 				for (s32 y = 0; y < height; y += 4)
 					for (s32 x = 0, yStep = (y / 4) * Wsteps4; x < width; x += 4, yStep++)
 					{
@@ -912,45 +1052,60 @@ PC_TexFormat TexDecoder_Decode_real(u8 *dst, const u8 *src, s32 width, s32 heigh
 	case GX_TF_CMPR:  // speed critical
 		// The metroid games use this format almost exclusively.
 		{
-#if 0   // TODO - currently does not handle transparency correctly and causes problems when texture dimensions are not multiples of 8
-			// 11111111 22222222 55555555 66666666
-			// 33333333 44444444 77777777 88888888
-			for (s32 y = 0; y < height; y += 8)
+			if ((width % 4) == 0 && (height % 4) == 0)
 			{
-				for (s32 x = 0; x < width; x += 8)
-				{
-					copyDXTBlock(dst+(y/2)*width+x*2, src);
-					src += 8;
-					copyDXTBlock(dst+(y/2)*width+x*2+8, src);
-					src += 8;
-					copyDXTBlock(dst+(y/2+2)*width+x*2, src);
-					src += 8;
-					copyDXTBlock(dst+(y/2+2)*width+x*2+8, src);
-					src += 8;
-				}
-			}
-			return PC_TEX_FMT_DXT1;
-#else
-			#pragma omp parallel for
-			for (s32 y = 0; y < height; y += 8)
-			{
-				for (s32 x = 0, yStep = (y / 8) * Wsteps8; x < width; x += 8, yStep++)
-				{
-					const u8* src2 = src + 4 * sizeof(DXTBlock) * yStep; 
-					decodeDXTBlock((u32*)dst + y * width + x, (DXTBlock*)src2, width);
-										src2 += sizeof(DXTBlock);
-					decodeDXTBlock((u32*)dst + y * width + x + 4, (DXTBlock*)src2, width);
-										src2 += sizeof(DXTBlock);
-					decodeDXTBlock((u32*)dst + (y + 4) * width + x, (DXTBlock*)src2, width);
-										src2 += sizeof(DXTBlock);
-					decodeDXTBlock((u32*)dst + (y + 4) * width + x + 4, (DXTBlock*)src2, width);										
-				}
-			}
+				// 11111111 22222222 55555555 66666666
+				// 33333333 44444444 77777777 88888888
+				DXT3Block* bdst = (DXT3Block*)dst;
+				const DXT1Block* bsrc = (DXT1Block*)src;
+				s32 bheight = height >> 2;
+				s32 bwidth = width >> 2;
+#ifndef DISABLE_OPENMP
+#pragma omp parallel for
 #endif
-			return PC_TEX_FMT_BGRA32;
+				for (s32 y = 0; y < bheight; y += 2)
+				{
+					s32 yStep = y * bwidth;
+					const DXT1Block* src2 = bsrc + yStep;
+					DXT3Block* line1 = bdst + yStep;
+					DXT3Block* line2 = line1 + bwidth;
+					for (s32 x = 0; x < bwidth; x += 2)
+					{
+						DXT1ToDXT3Block(line1++, src2++);
+						DXT1ToDXT3Block(line1++, src2++);
+						DXT1ToDXT3Block(line2++, src2++);
+						DXT1ToDXT3Block(line2++, src2++);
+					}
+				}
+				return PC_TEX_FMT_DXT3;
+			}
+			else
+			{
+#ifndef DISABLE_OPENMP
+#pragma omp parallel for
+#endif
+				for (s32 y = 0; y < height; y += 8)
+				{
+					u32* line1 = (u32*)dst + y * width;
+					u32* line2 = (u32*)dst + (y + 4) * width;
+					s32 yStep = (y >> 1) * Wsteps8;
+					const DXT1Block* src2 = ((DXT1Block*)src) + yStep;
+					for (s32 x = 0; x < width; x += 8)
+					{	
+						decodeDXTBlock(line1, src2++, width);
+						line1 += 4;
+						decodeDXTBlock(line1, src2++, width);
+						line1 += 4;
+						decodeDXTBlock(line2, src2++, width);
+						line2 += 4;
+						decodeDXTBlock(line2, src2++, width);
+						line2 += 4;
+					}
+				}
+				return PC_TEX_FMT_BGRA32;
+			}
 		}
 	}
-
 	// The "copy" texture formats, too?
 	return PC_TEX_FMT_NONE;
 }
@@ -967,8 +1122,9 @@ PC_TexFormat TexDecoder_Decode_real(u8 *dst, const u8 *src, s32 width, s32 heigh
 
 PC_TexFormat TexDecoder_Decode_RGBA(u32 * dst, const u8 * src, s32 width, s32 height, s32 texformat, s32 tlutaddr, s32 tlutfmt)
 {
+#ifndef DISABLE_OPENMP
 	SetOpenMPThreadCount(width, height);
-
+#endif
 	const s32 Wsteps4 = (width + 3) / 4;
 	const s32 Wsteps8 = (width + 7) / 8;
 
@@ -978,7 +1134,9 @@ PC_TexFormat TexDecoder_Decode_RGBA(u32 * dst, const u8 * src, s32 width, s32 he
 		if (tlutfmt == 2)
 		{
 			// Special decoding is required for TLUT format 5A3
-			#pragma omp parallel for
+#ifndef DISABLE_OPENMP
+#pragma omp parallel for
+#endif
 			for (s32 y = 0; y < height; y += 8)
 				for (s32 x = 0, yStep = (y / 8) * Wsteps8; x < width; x += 8,yStep++)
 					for (s32 iy = 0, xStep =  8 * yStep; iy < 8; iy++,xStep++)
@@ -986,7 +1144,9 @@ PC_TexFormat TexDecoder_Decode_RGBA(u32 * dst, const u8 * src, s32 width, s32 he
 		}
 		else if(tlutfmt == 0)
 		{
-			#pragma omp parallel for
+#ifndef DISABLE_OPENMP
+#pragma omp parallel for
+#endif
 			for (s32 y = 0; y < height; y += 8)
 				for (s32 x = 0, yStep = (y / 8) * Wsteps8; x < width; x += 8,yStep++)
 					for (s32 iy = 0, xStep =  8 * yStep; iy < 8; iy++,xStep++)
@@ -995,7 +1155,9 @@ PC_TexFormat TexDecoder_Decode_RGBA(u32 * dst, const u8 * src, s32 width, s32 he
 		}
 		else
 		{
-			#pragma omp parallel for
+#ifndef DISABLE_OPENMP
+#pragma omp parallel for
+#endif
 			for (s32 y = 0; y < height; y += 8)
 				for (s32 x = 0, yStep = (y / 8) * Wsteps8; x < width; x += 8,yStep++)
 					for (s32 iy = 0, xStep =  8 * yStep; iy < 8; iy++,xStep++)
@@ -1014,7 +1176,9 @@ PC_TexFormat TexDecoder_Decode_RGBA(u32 * dst, const u8 * src, s32 width, s32 he
 				const __m128i maskB3A2 = _mm_set_epi8(11,11,11,11,3,3,3,3,10,10,10,10,2,2,2,2);
 				const __m128i maskD5C4 = _mm_set_epi8(13,13,13,13,5,5,5,5,12,12,12,12,4,4,4,4);
 				const __m128i maskF7E6 = _mm_set_epi8(15,15,15,15,7,7,7,7,14,14,14,14,6,6,6,6);
-				#pragma omp parallel for
+#ifndef DISABLE_OPENMP
+#pragma omp parallel for
+#endif
 				for (s32 y = 0; y < height; y += 8)
 					for (s32 x = 0, yStep = (y / 8) * Wsteps8; x < width; x += 8,yStep++)
 						for (s32 iy = 0, xStep =  4 * yStep; iy < 8; iy += 2,xStep++)
@@ -1049,7 +1213,9 @@ PC_TexFormat TexDecoder_Decode_RGBA(u32 * dst, const u8 * src, s32 width, s32 he
 			// JSD optimized with SSE2 intrinsics.
 			// Produces a ~76% speed improvement over reference C implementation.
 			{
-				#pragma omp parallel for
+#ifndef DISABLE_OPENMP
+#pragma omp parallel for
+#endif
 				for (s32 y = 0; y < height; y += 8)
 					for (s32 x = 0, yStep = (y / 8) * Wsteps8 ; x < width; x += 8, yStep++)
 						for (s32 iy = 0, xStep = 4 * yStep; iy < 8; iy += 2, xStep++)
@@ -1121,7 +1287,9 @@ PC_TexFormat TexDecoder_Decode_RGBA(u32 * dst, const u8 * src, s32 width, s32 he
 			// Produces a ~10% speed improvement over SSE2 implementation
 			if (cpu_info.bSSSE3)
 			{
-				#pragma omp parallel for
+#ifndef DISABLE_OPENMP
+#pragma omp parallel for
+#endif
 				for (s32 y = 0; y < height; y += 4)
 					for (s32 x = 0, yStep = (y / 4) * Wsteps8; x < width; x += 8,yStep++)
 						for (s32 iy = 0, xStep = 4 * yStep; iy < 4; ++iy, xStep++)
@@ -1146,7 +1314,9 @@ PC_TexFormat TexDecoder_Decode_RGBA(u32 * dst, const u8 * src, s32 width, s32 he
 			// JSD optimized with SSE2 intrinsics.
 			// Produces an ~86% speed improvement over reference C implementation.
 			{
-				#pragma omp parallel for
+#ifndef DISABLE_OPENMP
+#pragma omp parallel for
+#endif
 				for (s32 y = 0; y < height; y += 4)
 					for (s32 x = 0, yStep = (y / 4) * Wsteps8; x < width; x += 8,yStep++)
 					{
@@ -1233,7 +1403,9 @@ PC_TexFormat TexDecoder_Decode_RGBA(u32 * dst, const u8 * src, s32 width, s32 he
 		if (tlutfmt == 2)
 		{
 			// Special decoding is required for TLUT format 5A3
-			#pragma omp parallel for
+#ifndef DISABLE_OPENMP
+#pragma omp parallel for
+#endif
 			for (s32 y = 0; y < height; y += 4)
 				for (s32 x = 0, yStep = (y / 4) * Wsteps8; x < width; x += 8, yStep++)
 					for (s32 iy = 0, xStep = 4 * yStep; iy < 4; iy++, xStep++)
@@ -1241,7 +1413,9 @@ PC_TexFormat TexDecoder_Decode_RGBA(u32 * dst, const u8 * src, s32 width, s32 he
 		}
 		else if(tlutfmt == 0)
 		{
-			#pragma omp parallel for
+#ifndef DISABLE_OPENMP
+#pragma omp parallel for
+#endif
 			for (s32 y = 0; y < height; y += 4)
 					for (s32 x = 0, yStep = (y / 4) * Wsteps8; x < width; x += 8, yStep++)
 						for (s32 iy = 0, xStep = 4 * yStep; iy < 4; iy++, xStep++)
@@ -1250,7 +1424,9 @@ PC_TexFormat TexDecoder_Decode_RGBA(u32 * dst, const u8 * src, s32 width, s32 he
 		}
 		else
 		{
-			#pragma omp parallel for
+#ifndef DISABLE_OPENMP
+#pragma omp parallel for
+#endif
 			for (s32 y = 0; y < height; y += 4)
 					for (s32 x = 0, yStep = (y / 4) * Wsteps8; x < width; x += 8, yStep++)
 						for (s32 iy = 0, xStep = 4 * yStep; iy < 4; iy++, xStep++)
@@ -1260,7 +1436,9 @@ PC_TexFormat TexDecoder_Decode_RGBA(u32 * dst, const u8 * src, s32 width, s32 he
 		break;
 	case GX_TF_IA4:
 		{
-			#pragma omp parallel for
+#ifndef DISABLE_OPENMP
+#pragma omp parallel for
+#endif
 			for (s32 y = 0; y < height; y += 4)
 					for (s32 x = 0, yStep = (y / 4) * Wsteps8; x < width; x += 8, yStep++)
 						for (s32 iy = 0, xStep = 4 * yStep; iy < 4; iy++, xStep++)
@@ -1274,7 +1452,9 @@ PC_TexFormat TexDecoder_Decode_RGBA(u32 * dst, const u8 * src, s32 width, s32 he
 			// Produces an ~50% speed improvement over SSE2 implementation.
 			if (cpu_info.bSSSE3)
 			{
-				#pragma omp parallel for
+#ifndef DISABLE_OPENMP
+#pragma omp parallel for
+#endif
 				for (s32 y = 0; y < height; y += 4)
 					for (s32 x = 0, yStep = (y / 4) * Wsteps4; x < width; x += 4, yStep++)
 						for (s32 iy = 0, xStep = 4 * yStep; iy < 4; iy++, xStep++)
@@ -1295,7 +1475,9 @@ PC_TexFormat TexDecoder_Decode_RGBA(u32 * dst, const u8 * src, s32 width, s32 he
 				const __m128i kMask_x0f = _mm_set_epi32(0x00000000L, 0x00000000L, 0x00ff00ffL, 0x00ff00ffL);
 				const __m128i kMask_xf000 = _mm_set_epi32(0xff000000L, 0xff000000L, 0xff000000L, 0xff000000L);
 				const __m128i kMask_x0fff = _mm_set_epi32(0x00ffffffL, 0x00ffffffL, 0x00ffffffL, 0x00ffffffL);
-				#pragma omp parallel for
+#ifndef DISABLE_OPENMP
+#pragma omp parallel for
+#endif
 				for (s32 y = 0; y < height; y += 4)
 					for (s32 x = 0, yStep = (y / 4) * Wsteps4; x < width; x += 4, yStep++)
 						for (s32 iy = 0, xStep = 4 * yStep; iy < 4; iy++, xStep++)
@@ -1345,7 +1527,9 @@ PC_TexFormat TexDecoder_Decode_RGBA(u32 * dst, const u8 * src, s32 width, s32 he
 		if (tlutfmt == 2)
 		{
 			// Special decoding is required for TLUT format 5A3
-			#pragma omp parallel for
+#ifndef DISABLE_OPENMP
+#pragma omp parallel for
+#endif
 			for (s32 y = 0; y < height; y += 4)
 				for (s32 x = 0, yStep = (y / 4) * Wsteps4; x < width; x += 4, yStep++)
 					for (s32 iy = 0, xStep = 4 * yStep; iy < 4; iy++, xStep++)
@@ -1353,7 +1537,9 @@ PC_TexFormat TexDecoder_Decode_RGBA(u32 * dst, const u8 * src, s32 width, s32 he
 		}
 		else if (tlutfmt == 0)
 		{
-			#pragma omp parallel for
+#ifndef DISABLE_OPENMP
+#pragma omp parallel for
+#endif
 			for (s32 y = 0; y < height; y += 4)
 				for (s32 x = 0, yStep = (y / 4) * Wsteps4; x < width; x += 4, yStep++)
 					for (s32 iy = 0, xStep = 4 * yStep; iy < 4; iy++, xStep++)
@@ -1361,7 +1547,9 @@ PC_TexFormat TexDecoder_Decode_RGBA(u32 * dst, const u8 * src, s32 width, s32 he
 		}
 		else
 		{
-			#pragma omp parallel for
+#ifndef DISABLE_OPENMP
+#pragma omp parallel for
+#endif
 			for (s32 y = 0; y < height; y += 4)
 				for (s32 x = 0, yStep = (y / 4) * Wsteps4; x < width; x += 4, yStep++)
 					for (s32 iy = 0, xStep = 4 * yStep; iy < 4; iy++, xStep++)
@@ -1377,7 +1565,9 @@ PC_TexFormat TexDecoder_Decode_RGBA(u32 * dst, const u8 * src, s32 width, s32 he
 			const __m128i kMaskG1 = _mm_set1_epi32(0x00000300);
 			const __m128i kMaskB0 = _mm_set1_epi32(0x00F80000);
 			const __m128i kAlpha  = _mm_set1_epi32(0xFF000000);
-			#pragma omp parallel for
+#ifndef DISABLE_OPENMP
+#pragma omp parallel for
+#endif
 			for (s32 y = 0; y < height; y += 4)
 				for (s32 x = 0, yStep = (y / 4) * Wsteps4; x < width; x += 4, yStep++)
 					for (s32 iy = 0, xStep = 4 * yStep; iy < 4; iy++, xStep++)
@@ -1454,7 +1644,9 @@ PC_TexFormat TexDecoder_Decode_RGBA(u32 * dst, const u8 * src, s32 width, s32 he
 			// Produces a ~10% speed improvement over SSE2 implementation
 			if (cpu_info.bSSSE3)
 			{
-				#pragma omp parallel for
+#ifndef DISABLE_OPENMP
+#pragma omp parallel for
+#endif
 				for (s32 y = 0; y < height; y += 4)
 					for (s32 x = 0, yStep = (y / 4) * Wsteps4; x < width; x += 4, yStep++)
 						for (s32 iy = 0, xStep = 4 * yStep; iy < 4; iy++, xStep++)
@@ -1546,7 +1738,9 @@ PC_TexFormat TexDecoder_Decode_RGBA(u32 * dst, const u8 * src, s32 width, s32 he
 			// JSD optimized with SSE2 intrinsics (2 in 4 cases)
 			// Produces a ~25% speed improvement over reference C implementation.
 			{
-				#pragma omp parallel for
+#ifndef DISABLE_OPENMP
+#pragma omp parallel for
+#endif
 				for (s32 y = 0; y < height; y += 4)
 					for (s32 x = 0, yStep = (y / 4) * Wsteps4; x < width; x += 4, yStep++)
 						for (s32 iy = 0, xStep = 4 * yStep; iy < 4; iy++, xStep++)
@@ -1660,7 +1854,9 @@ PC_TexFormat TexDecoder_Decode_RGBA(u32 * dst, const u8 * src, s32 width, s32 he
 			// Produces a ~30% speed improvement over SSE2 implementation
 			if (cpu_info.bSSSE3)
 			{
-				#pragma omp parallel for
+#ifndef DISABLE_OPENMP
+#pragma omp parallel for
+#endif
 				for (s32 y = 0; y < height; y += 4)
 					for (s32 x = 0, yStep = (y / 4) * Wsteps4; x < width; x += 4, yStep++)
 					{
@@ -1691,7 +1887,9 @@ PC_TexFormat TexDecoder_Decode_RGBA(u32 * dst, const u8 * src, s32 width, s32 he
 			// JSD optimized with SSE2 intrinsics
 			// Produces a ~68% speed improvement over reference C implementation.
 			{
-				#pragma omp parallel for
+#ifndef DISABLE_OPENMP
+#pragma omp parallel for
+#endif
 				for (s32 y = 0; y < height; y += 4)
 					for (s32 x = 0, yStep = (y / 4) * Wsteps4; x < width; x += 4, yStep++)
 					{
@@ -1795,7 +1993,9 @@ PC_TexFormat TexDecoder_Decode_RGBA(u32 * dst, const u8 * src, s32 width, s32 he
 			// Produces a ~50% improvement for x86 and a ~40% improvement for x64 in speed over reference C implementation.
 			// The x64 compiled reference C code is faster than the x86 compiled reference C code, but the SSE2 is
 			// faster than both.
-			#pragma omp parallel for
+#ifndef DISABLE_OPENMP
+#pragma omp parallel for
+#endif
 			for (s32 y = 0; y < height; y += 8)
 			{
 				for (s32 x = 0, yStep = (y / 8) * Wsteps8; x < width; x += 8,yStep++)
@@ -1818,7 +2018,7 @@ PC_TexFormat TexDecoder_Decode_RGBA(u32 * dst, const u8 * src, s32 width, s32 he
 						const __m128i allFFs128 = _mm_cmpeq_epi32(_mm_setzero_si128(), _mm_setzero_si128());
 
 						// Load 128 bits, i.e. two DXTBlocks (64-bits each)
-						const __m128i dxt = _mm_loadu_si128((__m128i *)(src + sizeof(struct DXTBlock) * 2 * xStep));
+						const __m128i dxt = _mm_loadu_si128((__m128i *)(src + sizeof(struct DXT1Block) * 2 * xStep));
 
 						// Copy the 2-bit indices from each DXT block:
 						GC_ALIGNED16( u32 dxttmp[4] );
@@ -2370,7 +2570,7 @@ void TexDecoder_DecodeTexel(u8 *dst, const u8 *src, s32 s, s32 t, s32 imageWidth
 
 			u32 offset = (base + blkOff) << 3;
 
-			const DXTBlock* dxtBlock = (const DXTBlock*)(src + offset);
+			const DXT1Block* dxtBlock = (const DXT1Block*)(src + offset);
 
 			u16 c1 = Common::swap16(dxtBlock->color1);
 			u16 c2 = Common::swap16(dxtBlock->color2);
@@ -2443,17 +2643,72 @@ void TexDecoder_DecodeTexelRGBA8FromTmem(u8 *dst, const u8 *src_ar, const u8* sr
 	dst[2] = val_addr_gb[1]; // B
 }
 
-PC_TexFormat TexDecoder_DecodeRGBA8FromTmem(u8* dst, const u8 *src_ar, const u8 *src_gb, s32 width, s32 height)
+void TexDecoder_DecodeTexelBGRA8FromTmem(u8 *dst, const u8 *src_ar, const u8* src_gb, s32 s, s32 t, s32 imageWidth)
 {
-	// TODO for someone who cares: Make this less slow!
+	u16 sBlk = s >> 2;
+	u16 tBlk = t >> 2;
+	u16 widthBlks = (imageWidth >> 2) + 1; // TODO: Looks wrong. Shouldn't this be ((imageWidth-1)>>2)+1 ?
+	u32 base_ar = (tBlk * widthBlks + sBlk) << 4;
+	u32 base_gb = (tBlk * widthBlks + sBlk) << 4;
+	u16 blkS = s & 3;
+	u16 blkT = t & 3;
+	u32 blk_off = (blkT << 2) + blkS;
+
+	u32 offset_ar = (base_ar + blk_off) << 1;
+	u32 offset_gb = (base_gb + blk_off) << 1;
+	const u8* val_addr_ar = src_ar + offset_ar;
+	const u8* val_addr_gb = src_gb + offset_gb;
+
+	dst[3] = val_addr_ar[0]; // A
+	dst[2] = val_addr_ar[1]; // R
+	dst[1] = val_addr_gb[0]; // G
+	dst[0] = val_addr_gb[1]; // B
+}
+
+PC_TexFormat TexDecoder_DecodeRGBA8FromTmem(u32* dst, const u8 *src_ar, const u8 *src_gb, s32 width, s32 height)
+{
+	u32 widthBlks = ((width - 1) >> 2) + 1;
 	for (s32 y = 0; y < height; ++y)
+	{
 		for (s32 x = 0; x < width; ++x)
 		{
-			TexDecoder_DecodeTexelRGBA8FromTmem(dst, src_ar, src_gb, x, y, width-1);
-			dst += 4;
+			u32 sBlk = x >> 2;
+			u32 tBlk = (y >> 2) * widthBlks;
+			u32 offset = (tBlk + sBlk) << 4;
+			sBlk = x & 3;
+			tBlk = (y & 3) << 2;
+			offset = (offset + tBlk + sBlk) << 1;
+			const u8* val_addr_ar = src_ar + offset;
+			const u8* val_addr_gb = src_gb + offset;
+			u32 result = ((val_addr_ar[0]) << 24) | ((val_addr_gb[1]) << 16) | ((val_addr_gb[0]) << 8) | val_addr_ar[1];
+			*dst = result;
+			dst++;
 		}
-
+	}
 	return PC_TEX_FMT_RGBA32;
+}
+
+PC_TexFormat TexDecoder_DecodeBGRA8FromTmem(u32* dst, const u8 *src_ar, const u8 *src_gb, s32 width, s32 height)
+{
+	u32 widthBlks = ((width - 1) >> 2) + 1;
+	for (s32 y = 0; y < height; ++y)
+	{
+		for (s32 x = 0; x < width; ++x)
+		{
+			u32 sBlk = x >> 2;
+			u32 tBlk = (y >> 2) * widthBlks;
+			u32 offset = (tBlk + sBlk) << 4;
+			sBlk = x & 3;
+			tBlk = (y & 3) << 2;
+			offset = (offset + tBlk + sBlk) << 1;
+			const u8* val_addr_ar = src_ar + offset;
+			const u8* val_addr_gb = src_gb + offset;
+			u32 result = ((val_addr_ar[0]) << 24) | ((val_addr_ar[1]) << 16) | ((val_addr_gb[0]) << 8) | val_addr_gb[1];
+			*dst = result;
+			dst ++;
+		}
+	}
+	return PC_TEX_FMT_BGRA32;
 }
 
 const char* texfmt[] = {

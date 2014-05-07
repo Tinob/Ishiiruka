@@ -451,7 +451,6 @@ HRESULT Create(int adapter, HWND wnd, int _resolution, int aa_mode, bool auto_de
 	m_RenderStatesChanged.assign(MaxRenderStates, false);
 	m_SamplerStatesSet.assign(MaxSamplerSize * MaxSamplerTypes, false);
 	m_SamplerStatesChanged.assign(MaxSamplerSize * MaxSamplerTypes, false);
-	
 	m_VtxDecl = NULL;
 	m_PixelShader = NULL;
 	m_VertexShader = NULL;

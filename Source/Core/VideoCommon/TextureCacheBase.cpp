@@ -432,10 +432,12 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 
 	bool using_custom_texture = false;
 	u32 nummipsinbuffer = 0;
+	pcfmt = GetPC_TexFormat(texformat, tlutfmt, width, height);
+	bool bUseRGBATextures = pcfmt != PC_TEX_FMT_RGBA32 && !g_ActiveConfig.backend_info.bSupportedFormats[pcfmt];
 	if (g_ActiveConfig.bHiresTextures)
 	{
 		// This function may modify width/height.
-		pcfmt = LoadCustomTexture(tex_hash, texformat, 0, width, height, nummipsinbuffer, g_ActiveConfig.backend_info.bUseRGBATextures);
+		pcfmt = LoadCustomTexture(tex_hash, texformat, 0, width, height, nummipsinbuffer, bUseRGBATextures);
 		if (pcfmt != PC_TEX_FMT_NONE)
 		{
 			if (expandedWidth != width || expandedHeight != height)
@@ -456,12 +458,19 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 		if (!(texformat == GX_TF_RGBA8 && from_tmem))
 		{
 			pcfmt = TexDecoder_Decode(temp, src_data, expandedWidth,
-						expandedHeight, texformat, tlutaddr, tlutfmt, g_ActiveConfig.backend_info.bUseRGBATextures);
+				expandedHeight, texformat, tlutaddr, tlutfmt, bUseRGBATextures);
 		}
 		else
 		{
 			u8* src_data_gb = &texMem[bpmem.tex[stage/4].texImage2[stage%4].tmem_odd * TMEM_LINE_SIZE];
-			pcfmt = TexDecoder_DecodeRGBA8FromTmem(temp, src_data, src_data_gb, expandedWidth, expandedHeight);
+			if (g_ActiveConfig.backend_info.bSupportedFormats[PC_TEX_FMT_RGBA32])
+			{
+				pcfmt = TexDecoder_DecodeRGBA8FromTmem((u32*)temp, src_data, src_data_gb, expandedWidth, expandedHeight);
+			}
+			else
+			{
+				pcfmt = TexDecoder_DecodeBGRA8FromTmem((u32*)temp, src_data, src_data_gb, expandedWidth, expandedHeight);
+			}
 		}
 	}
 	const bool using_custom_lods = using_custom_texture && (nummipsinbuffer > 0  || CheckForCustomTextureLODs(tex_hash, texformat, texLevels));
@@ -480,10 +489,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 		// e.g. if our texture cache entry got too many mipmap levels we can limit the number of used levels by setting the appropriate render states
 		// Thus, we don't update this member for every Load, but just whenever the texture gets recreated
 		// TODO: D3D9 doesn't support min_lod. We should add a workaround for that here!
-		
-		// TODO: This is the wrong value. We should be storing the number of levels our actual texture has.
-		// But that will currently make the above "existing entry" tests fail as "texLevels" is not calculated until after.
-		// Currently, we might try to reuse a texture which appears to have more levels than actual, maybe..
+
 		entry->num_mipmaps = texLevels;
 		entry->type = TCET_NORMAL;
 		entry->pcformat = pcfmt;
@@ -534,7 +540,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 				const u8*& mip_src_data = from_tmem
 					? ((level % 2) ? ptr_odd : ptr_even)
 					: src_data;
-				TexDecoder_Decode(temp, mip_src_data, expanded_mip_width, expanded_mip_height, texformat, tlutaddr, tlutfmt, g_ActiveConfig.backend_info.bUseRGBATextures);
+				TexDecoder_Decode(temp, mip_src_data, expanded_mip_width, expanded_mip_height, texformat, tlutaddr, tlutfmt, bUseRGBATextures);
 				mip_src_data += TexDecoder_GetTextureSizeInBytes(expanded_mip_width, expanded_mip_height, texformat);
 				
 				entry->Load(mip_width, mip_height, expanded_mip_width, level);
@@ -557,7 +563,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 				if (nummipsinbuffer == 0)
 				{
 					u32 nmips = 0;
-					LoadCustomTexture(tex_hash, texformat, level, mip_width, mip_height, nmips, g_ActiveConfig.backend_info.bUseRGBATextures);
+					LoadCustomTexture(tex_hash, texformat, level, mip_width, mip_height, nmips, bUseRGBATextures);
 				}
 				entry->Load(mip_width, mip_height, mip_width, level);
 				if (nummipsinbuffer > 0)

@@ -243,30 +243,45 @@ void TextureCache::TCacheEntry::Load(unsigned int width, unsigned int height,
 	{
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, m_tex_levels - 1);
 	}
+	
+	u32 blocksize = (pcfmt == PC_TEX_FMT_DXT1) ? 8u : 16u;
 	switch (pcfmt)
 	{
-	case PC_TEX_FMT_DXT1:
-		glCompressedTexImage2D(GL_TEXTURE_2D, level, GL_COMPRESSED_RGBA_S3TC_DXT1_EXT,
-			width, height, 0, ((width + 3) >> 2) * ((height + 3) >> 2) * 8, TextureCache::bufferstart);
-		break;
+	case PC_TEX_FMT_DXT1:		
 	case PC_TEX_FMT_DXT3:
-		glCompressedTexImage2D(GL_TEXTURE_2D, level, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT,
-			width, height, 0, ((width + 3) >> 2) * ((height + 3) >> 2) * 16, TextureCache::bufferstart);
-		break;
 	case PC_TEX_FMT_DXT5:
-		glCompressedTexImage2D(GL_TEXTURE_2D, level, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,
-			width, height, 0, ((width + 3) >> 2) * ((height + 3) >> 2) * 16, TextureCache::bufferstart);
+	{
+		if (expanded_width != width)
+		{
+			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+			glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_WIDTH, 4);
+			glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_HEIGHT, 4);
+			glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_DEPTH, 1);
+			glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_SIZE, blocksize);
+			glPixelStorei(GL_UNPACK_ROW_LENGTH, expanded_width);
+		}
+		glCompressedTexImage2D(GL_TEXTURE_2D, level, gl_iformat,
+			width, height, 0, ((width + 3) >> 2) * ((height + 3) >> 2) * blocksize, TextureCache::bufferstart);
+		if (expanded_width != width)
+		{
+			glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+			glPixelStorei(GL_UNPACK_ALIGNMENT, 0);
+			glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_WIDTH, 0);
+			glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_HEIGHT, 0);
+			glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_DEPTH, 0);
+			glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_SIZE, 0);
+		}
+	}
 		break;
 	default:
 		if (expanded_width != width)
 			glPixelStorei(GL_UNPACK_ROW_LENGTH, expanded_width);
-
 		glTexImage2D(GL_TEXTURE_2D, level, gl_iformat, width, height, 0, gl_format, gl_type, TextureCache::bufferstart);
-
 		if (expanded_width != width)
 			glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 		break;
 	}
+	
 	GL_REPORT_ERRORD();
 }
 
