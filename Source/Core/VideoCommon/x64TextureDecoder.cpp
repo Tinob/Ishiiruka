@@ -183,14 +183,14 @@ s32 TexDecoder_GetPaletteSize(s32 format)
 	}
 }
 
-static inline u32 decodeIA8(u16 val)
+inline u32 decodeIA8(u16 val)
 {
 	s32 a = val >> 8;
 	s32 i = val & 0xFF;
 	return (a << 24) | (i << 16) | (i << 8) | i;
 }
 
-static inline u32 decode5A3(u16 val)
+inline u32 decode5A3(u16 val)
 {
 	s32 r,g,b,a;
 	if ((val & 0x8000))
@@ -210,7 +210,7 @@ static inline u32 decode5A3(u16 val)
 	return (a << 24) | (r << 16) | (g << 8) | b;
 }
 
-static inline u32 decode5A3RGBA(u16 val)
+inline u32 decode5A3RGBA(u16 val)
 {
 	s32 r,g,b,a;
 	if ((val&0x8000))
@@ -230,7 +230,7 @@ static inline u32 decode5A3RGBA(u16 val)
 	return r | (g<<8) | (b << 16) | (a << 24);
 }
 
-static inline u32 decode565RGBA(u16 val)
+inline u32 decode565RGBA(u16 val)
 {
 	s32 r,g,b,a;
 	r=Convert5To8((val>>11) & 0x1f);
@@ -240,7 +240,7 @@ static inline u32 decode565RGBA(u16 val)
 	return  r | (g<<8) | (b << 16) | (a << 24);
 }
 
-static inline u32 decodeIA8Swapped(u16 val)
+inline u32 decodeIA8Swapped(u16 val)
 {
 	s32 a = val & 0xFF;
 	s32 i = val >> 8;
@@ -303,7 +303,6 @@ inline void decodebytesC4RGB565_To_RGBA(u32* dst, const u8* src, s32 tlutaddr)
 	}
 }
 
-//inline void decodebytesC8(u32 *dst, const u8 *src, s32 numbytes, s32 tlutaddr, s32 tlutfmt)
 inline void decodebytesC8_5A3_To_BGRA32(u32 *dst, const u8 *src, s32 tlutaddr)
 { 
 	u16 *tlut = (u16*)(texMem + tlutaddr);
@@ -453,44 +452,28 @@ inline void decodebytesIA4RGBA(u32 *dst, const u8 *src)
 
 inline void decodebytesRGB5A3(u32 *dst, const u16 *src)
 {
-#if 0
-	for (s32 x = 0; x < 4; x++)
-		dst[x] = decode5A3(Common::swap16(src[x]));
-#else
 	dst[0] = decode5A3(Common::swap16(src[0]));
 	dst[1] = decode5A3(Common::swap16(src[1]));
 	dst[2] = decode5A3(Common::swap16(src[2]));
 	dst[3] = decode5A3(Common::swap16(src[3]));
-#endif
 }
 
 inline void decodebytesRGB5A3rgba(u32 *dst, const u16 *src)
 {
-#if 0
-	for (s32 x = 0; x < 4; x++)
-		dst[x] = decode5A3RGBA(Common::swap16(src[x]));
-#else
 	dst[0] = decode5A3RGBA(Common::swap16(src[0]));
 	dst[1] = decode5A3RGBA(Common::swap16(src[1]));
 	dst[2] = decode5A3RGBA(Common::swap16(src[2]));
 	dst[3] = decode5A3RGBA(Common::swap16(src[3]));
-#endif
 }
 
 // This one is used by many video formats. It'd therefore be good if it was fast.
 // Needs more speed.
 inline void decodebytesARGB8_4(u32 *dst, const u16 *src, const u16 *src2)
 {
-#if 0
-	for (s32 x = 0; x < 4; x++)
-		dst[x] = Common::swap32((src2[x] << 16) | src[x]);
-#else
 	dst[0] = Common::swap32((src2[0] << 16) | src[0]);
 	dst[1] = Common::swap32((src2[1] << 16) | src[1]);
 	dst[2] = Common::swap32((src2[2] << 16) | src[2]);
 	dst[3] = Common::swap32((src2[3] << 16) | src[3]);
-#endif
-
 	// This can probably be done in a few SSE pack/unpack instructions + pshufb
 	// some unpack instruction x2:
 	// ABABABABABABABAB 1212121212121212 ->
@@ -502,16 +485,10 @@ inline void decodebytesARGB8_4(u32 *dst, const u16 *src, const u16 *src2)
 
 inline void decodebytesARGB8_4ToRgba(u32 *dst, const u16 *src, const u16 * src2)
 {
-#if 0
-	for (s32 x = 0; x < 4; x++) {
-		dst[x] =  ((src[x] & 0xFF) << 24) | ((src[x] & 0xFF00)>>8)  | (src2[x] << 8);
-	}
-#else
 	dst[0] =  ((src[0] & 0xFF) << 24) | ((src[0] & 0xFF00)>>8)  | (src2[0] << 8);
 	dst[1] =  ((src[1] & 0xFF) << 24) | ((src[1] & 0xFF00)>>8)  | (src2[1] << 8);
 	dst[2] =  ((src[2] & 0xFF) << 24) | ((src[2] & 0xFF00)>>8)  | (src2[2] << 8);
 	dst[3] =  ((src[3] & 0xFF) << 24) | ((src[3] & 0xFF00)>>8)  | (src2[3] << 8);
-#endif
 }
 
 
@@ -709,7 +686,7 @@ inline void DXT1ToDXT3Block(DXT3Block* dst, const DXT1Block* src)
 		for (s32 i = 0; i < 16; i++)
 		{
 			bool transparent = ((result.color.indices & idx) == idx);
-			u64 localmask = !mask;
+			u64 localmask = ~mask;
 			localmask = transparent ? localmask : fullmask;
 			result.alpha.alpha &= localmask;
 			idx = idx << 2;
@@ -775,7 +752,7 @@ inline void SetOpenMPThreadCount(s32 width, s32 height)
 {
 #ifdef _OPENMP
 	// Don't use multithreading in small Textures
-	if (g_ActiveConfig.bOMPDecoder && width > 127 && height > 127)
+	if (g_ActiveConfig.bOMPDecoder && width > 256 && height > 256)
 	{
 		// don't span to many threads they will kill the rest of the emu :)
 		omp_set_num_threads((omp_get_num_procs() + 2) / 3);
@@ -788,9 +765,6 @@ inline void SetOpenMPThreadCount(s32 width, s32 height)
 }
 #endif
 //switch endianness, unswizzle
-//TODO: to save memory, don't blindly convert everything to argb8888
-//also ARGB order needs to be swapped later, to accommodate modern hardware better
-//need to add DXT support too
 PC_TexFormat TexDecoder_Decode_real(u8 *dst, const u8 *src, s32 width, s32 height, s32 texformat, s32 tlutaddr, s32 tlutfmt)
 {
 #ifndef DISABLE_OPENMP
@@ -1038,6 +1012,7 @@ PC_TexFormat TexDecoder_Decode_real(u8 *dst, const u8 *src, s32 width, s32 heigh
 		{
 			if ((width % 4) == 0 && (height % 4) == 0)
 			{
+				// Transfor dxt1 to dxt3 to allow compatibility and minimize space
 				// 11111111 22222222 55555555 66666666
 				// 33333333 44444444 77777777 88888888
 				DXT3Block* bdst = (DXT3Block*)dst;
