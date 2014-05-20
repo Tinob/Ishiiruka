@@ -708,7 +708,7 @@ static PC_TexFormat GetPCFormatFromTLUTFormat(s32 tlutfmt)
 	return PC_TEX_FMT_NONE; // Error
 }
 
-PC_TexFormat GetPC_TexFormat(s32 texformat, s32 tlutfmt, s32 width, s32 height)
+PC_TexFormat GetPC_TexFormat(s32 texformat, s32 tlutfmt, bool compressed_supported)
 {
 	switch (texformat)
 	{
@@ -734,7 +734,7 @@ PC_TexFormat GetPC_TexFormat(s32 texformat, s32 tlutfmt, s32 width, s32 height)
 		return PC_TEX_FMT_BGRA32;
 	case GX_TF_CMPR:  // speed critical
 		// The metroid games use this format almost exclusively.
-		if (((width % 4) == 0) && ((height % 4) == 0))
+		if (compressed_supported)
 		{
 			return PC_TEX_FMT_DXT3;
 		}
@@ -765,7 +765,7 @@ inline void SetOpenMPThreadCount(s32 width, s32 height)
 }
 #endif
 //switch endianness, unswizzle
-PC_TexFormat TexDecoder_Decode_real(u8 *dst, const u8 *src, s32 width, s32 height, s32 texformat, s32 tlutaddr, s32 tlutfmt)
+PC_TexFormat TexDecoder_Decode_real(u8 *dst, const u8 *src, s32 width, s32 height, s32 texformat, s32 tlutaddr, s32 tlutfmt, bool compressed_supported)
 {
 #ifndef DISABLE_OPENMP
 	SetOpenMPThreadCount(width, height);
@@ -1010,7 +1010,7 @@ PC_TexFormat TexDecoder_Decode_real(u8 *dst, const u8 *src, s32 width, s32 heigh
 	case GX_TF_CMPR:  // speed critical
 		// The metroid games use this format almost exclusively.
 		{
-			if ((width % 4) == 0 && (height % 4) == 0)
+			if (compressed_supported)
 			{
 				// Transfor dxt1 to dxt3 to allow compatibility and minimize space
 				// 11111111 22222222 55555555 66666666
@@ -2196,7 +2196,7 @@ void TexDecoder_SetTexFmtOverlayOptions(bool enable, bool center)
 	TexFmt_Overlay_Center = center;
 }
 
-PC_TexFormat TexDecoder_Decode(u8 *dst, const u8 *src, s32 width, s32 height, s32 texformat, s32 tlutaddr, s32 tlutfmt,bool rgbaOnly)
+PC_TexFormat TexDecoder_Decode(u8 *dst, const u8 *src, s32 width, s32 height, s32 texformat, s32 tlutaddr, s32 tlutfmt, bool rgbaOnly, bool compressed_supported)
 {
 	PC_TexFormat retval = TexDecoder_Decode_OpenCL(dst, src,
 		width, height, texformat, tlutaddr, tlutfmt, rgbaOnly);
@@ -2208,7 +2208,7 @@ PC_TexFormat TexDecoder_Decode(u8 *dst, const u8 *src, s32 width, s32 height, s3
 		}
 		else
 		{
-			retval = TexDecoder_Decode_real(dst, src, width, height, texformat, tlutaddr, tlutfmt);
+			retval = TexDecoder_Decode_real(dst, src, width, height, texformat, tlutaddr, tlutfmt, compressed_supported);
 		}
 		
 	}

@@ -334,7 +334,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 	// TexelSizeInNibbles(format) * width * height / 16;
 	const u32 bsw = TexDecoder_GetBlockWidthInTexels(texformat) - 1;
 	const u32 bsh = TexDecoder_GetBlockHeightInTexels(texformat) - 1;
-
+	const bool compressed_supported = ((width % 4) == 0) && ((height % 4) == 0);
 	u32 expandedWidth  = (width  + bsw) & (~bsw);
 	u32 expandedHeight = (height + bsh) & (~bsh);
 	const u32 nativeW = width;
@@ -432,7 +432,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 
 	bool using_custom_texture = false;
 	u32 nummipsinbuffer = 0;
-	pcfmt = GetPC_TexFormat(texformat, tlutfmt, width, height);
+	pcfmt = GetPC_TexFormat(texformat, tlutfmt, compressed_supported);
 	bool bUseRGBATextures = pcfmt != PC_TEX_FMT_RGBA32 && !g_ActiveConfig.backend_info.bSupportedFormats[pcfmt];
 	if (g_ActiveConfig.bHiresTextures)
 	{
@@ -452,13 +452,13 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 			using_custom_texture = true;
 		}
 	}
-
+	
 	if (!using_custom_texture)
 	{
 		if (!(texformat == GX_TF_RGBA8 && from_tmem))
 		{
 			pcfmt = TexDecoder_Decode(temp, src_data, expandedWidth,
-				expandedHeight, texformat, tlutaddr, tlutfmt, bUseRGBATextures);
+				expandedHeight, texformat, tlutaddr, tlutfmt, bUseRGBATextures, compressed_supported);
 		}
 		else
 		{
@@ -540,7 +540,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 				const u8*& mip_src_data = from_tmem
 					? ((level % 2) ? ptr_odd : ptr_even)
 					: src_data;
-				TexDecoder_Decode(temp, mip_src_data, expanded_mip_width, expanded_mip_height, texformat, tlutaddr, tlutfmt, bUseRGBATextures);
+				TexDecoder_Decode(temp, mip_src_data, expanded_mip_width, expanded_mip_height, texformat, tlutaddr, tlutfmt, bUseRGBATextures, compressed_supported);
 				mip_src_data += TexDecoder_GetTextureSizeInBytes(expanded_mip_width, expanded_mip_height, texformat);
 				
 				entry->Load(mip_width, mip_height, expanded_mip_width, level);
