@@ -28,8 +28,8 @@
 #define C_TEXDIMS		(C_ALPHA + 1)			// 9
 #define C_ZBIAS			(C_TEXDIMS + 8)			//17
 #define C_INDTEXSCALE	(C_ZBIAS + 2)			//19
-#define C_INDTEXMTX		(C_INDTEXSCALE + 4)		//21
-#define C_FOG			(C_INDTEXMTX + 6)		//27
+#define C_INDTEXMTX		(C_INDTEXSCALE + 4)		//23
+#define C_FOG			(C_INDTEXMTX + 6)		//29
 
 #define C_PLIGHTS		(C_FOG + 3)
 #define C_PMATERIALS	(C_PLIGHTS + 40)
@@ -50,7 +50,7 @@ const s_svar PSVar_Loc[] = { {I_COLORS, C_COLORS, 4 },
 						{I_ALPHA, C_ALPHA, 1 },
 						{I_TEXDIMS, C_TEXDIMS, 8 },
 						{I_ZBIAS , C_ZBIAS, 2  },
-						{I_INDTEXSCALE , C_INDTEXSCALE, 2  },
+						{I_INDTEXSCALE , C_INDTEXSCALE, 4  },
 						{I_INDTEXMTX, C_INDTEXMTX, 6 },
 						{I_FOG, C_FOG, 3 },
 						{I_PLIGHTS, C_PLIGHTS, 40 },

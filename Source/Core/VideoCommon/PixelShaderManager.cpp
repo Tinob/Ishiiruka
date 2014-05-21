@@ -107,7 +107,7 @@ void PixelShaderManager::SetConstants()
 
     if (s_bAlphaChanged)
 	{
-		SetPSConstant4f(C_ALPHA, (lastAlpha & 0xff)*U8_NORM_COEF, ((lastAlpha >> 8) & 0xff)*U8_NORM_COEF, 0, ((lastAlpha >> 16) & 0xff)*U8_NORM_COEF);
+		SetPSConstant4f(C_ALPHA, ((float)(lastAlpha & 0xff)), ((float)((lastAlpha >> 8) & 0xff)), 0.0f, ((float)((lastAlpha >> 16) & 0xff)));
 		s_bAlphaChanged = false;
     }
 
@@ -213,14 +213,14 @@ void PixelShaderManager::SetConstants()
 					fscale = fscale / (float)scale;
 				}
 				SetPSConstant4f(C_INDTEXMTX + 2 * i,
-					bpmem.indmtx[i].col0.ma,
-					bpmem.indmtx[i].col1.mc,
-					bpmem.indmtx[i].col2.me,
+					(float)bpmem.indmtx[i].col0.ma,
+					(float)bpmem.indmtx[i].col1.mc,
+					(float)bpmem.indmtx[i].col2.me,
 					fscale);
 				SetPSConstant4f(C_INDTEXMTX + 2 * i + 1,
-					bpmem.indmtx[i].col0.mb,
-					bpmem.indmtx[i].col1.md,
-					bpmem.indmtx[i].col2.mf,
+					(float)bpmem.indmtx[i].col0.mb,
+					(float)bpmem.indmtx[i].col1.md,
+					(float)bpmem.indmtx[i].col2.mf,
 					fscale);
 
                 PRIM_LOG("indmtx%d: scale=%f, mat=(%f %f %f; %f %f %f)\n",
@@ -235,7 +235,7 @@ void PixelShaderManager::SetConstants()
 
     if (s_bFogColorChanged)
 	{
-		SetPSConstant4f(C_FOG, bpmem.fog.color.r * U8_NORM_COEF, bpmem.fog.color.g * U8_NORM_COEF, bpmem.fog.color.b * U8_NORM_COEF, 0);
+		SetPSConstant4f(C_FOG, (float)bpmem.fog.color.r, (float)bpmem.fog.color.g, (float)bpmem.fog.color.b, 0.0f);
 		s_bFogColorChanged = false;
     }
 
@@ -246,7 +246,7 @@ void PixelShaderManager::SetConstants()
 			//downscale magnitude to 0.24 bits
 			float b = (float)bpmem.fog.b_magnitude / 0xFFFFFF;
 
-			float b_shf = (float)(1 << bpmem.fog.b_shift);
+			float b_shf = (1.0f / (float)(1 << bpmem.fog.b_shift));
 			SetPSConstant4f(C_FOG + 1, bpmem.fog.a.GetA(), b, bpmem.fog.c_proj_fsel.GetC(), b_shf);
 		}
 		else
@@ -295,7 +295,7 @@ void PixelShaderManager::SetConstants()
 					((color >> 24) & 0xFF) * U8_NORM_COEF,
 					((color >> 16) & 0xFF) * U8_NORM_COEF,
 					((color >> 8) & 0xFF) * U8_NORM_COEF,
-					((color)& 0xFF) * U8_NORM_COEF);
+					((color)& 0xFF)* U8_NORM_COEF);
 				xfmemptr += 4;
 
 				for (int j = 0; j < 4; ++j, xfmemptr += 3)
@@ -384,15 +384,15 @@ void PixelShaderManager::SetColorChanged(int type, int num, bool high)
 	{
 		int r = bpmem.tevregs[num].low.a;
 		int a = bpmem.tevregs[num].low.b;
-		pf[0] = (float)r * U8_NORM_COEF;
-		pf[3] = (float)a * U8_NORM_COEF;
+		pf[0] = (float)r;
+		pf[3] = (float)a;
 	}
 	else
 	{
 		int b = bpmem.tevregs[num].high.a;
 		int g = bpmem.tevregs[num].high.b;
-		pf[1] = (float)g * U8_NORM_COEF;
-		pf[2] = (float)b * U8_NORM_COEF;
+		pf[1] = (float)g;
+		pf[2] = (float)b;
 	}
 
 	s_nColorsChanged[type] |= 1 << num;
