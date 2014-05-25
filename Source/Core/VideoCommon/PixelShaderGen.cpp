@@ -1005,8 +1005,8 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, co
 	if (Write_Code)
 	{
 		out.Write("tevin_a = %s(float4(%s,%s));\n", TevOverflowState[cc.a] || TevOverflowState[AInputSourceMap[ac.a]] ? "CHK_O_U8" : "", tevCInputTable[cc.a], tevAInputTable[ac.a]);
-		out.Write("tevin_b = %s(float4(%s,%s));\n", TevOverflowState[cc.a] || TevOverflowState[AInputSourceMap[ac.a]] ? "CHK_O_U8" : "", tevCInputTable[cc.b], tevAInputTable[ac.b]);
-		out.Write("tevin_c = %s(float4(%s,%s));\n", TevOverflowState[cc.a] || TevOverflowState[AInputSourceMap[ac.a]] ? "CHK_O_U8" : "", tevCInputTable[cc.c], tevAInputTable[ac.c]);
+		out.Write("tevin_b = %s(float4(%s,%s));\n", TevOverflowState[cc.b] || TevOverflowState[AInputSourceMap[ac.b]] ? "CHK_O_U8" : "", tevCInputTable[cc.b], tevAInputTable[ac.b]);
+		out.Write("tevin_c = %s(float4(%s,%s));\n", TevOverflowState[cc.c] || TevOverflowState[AInputSourceMap[ac.c]] ? "CHK_O_U8" : "", tevCInputTable[cc.c], tevAInputTable[ac.c]);
 		
 		bool normalize_c_rgb = cc.c != TEVCOLORARG_ZERO &&  cc.bias != TevBias_COMPARE;
 		bool normalize_c_a = ac.c != TEVALPHAARG_ZERO &&  ac.bias != TevBias_COMPARE;
@@ -1043,14 +1043,14 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, co
 			//table with the color compare operations
 			const char *TEVCMPColorOPTable[] =
 			{
-				"((tevin_a.r > tevin_b.r) ? tevin_c.rgb : float3(0.0,0.0,0.0))", // TEVCMP_R8_GT
-				"((tevin_a.r == tevin_b.r) ? tevin_c.rgb : float3(0.0,0.0,0.0))", // TEVCMP_R8_EQ
-				"((dot(tevin_a.rgb, comp16) >  dot(tevin_b.rgb, comp16)) ? tevin_c.rgb : float3(0.0,0.0,0.0))", // TEVCMP_GR16_GT
-				"((dot(tevin_a.rgb, comp16) == dot(tevin_b.rgb, comp16)) ? tevin_c.rgb : float3(0.0,0.0,0.0))", // TEVCMP_GR16_EQ
-				"((dot(tevin_a.rgb, comp24) >  dot(tevin_b.rgb, comp24)) ? tevin_c.rgb : float3(0.0,0.0,0.0))", // TEVCMP_BGR24_GT
-				"((dot(tevin_a.rgb, comp24) == dot(tevin_b.rgb, comp24)) ? tevin_c.rgb : float3(0.0,0.0,0.0))", // TEVCMP_BGR24_EQ
-				"(max(sign(tevin_a.rgb - tevin_b.rgb), float3(0.0,0.0,0.0)) * tevin_c.rgb)", // TEVCMP_RGB8_GT
-				"((float3(1.0,1.0,1.0) - sign(abs(tevin_a.rgb - tevin_b.rgb))) * tevin_c.rgb)" // TEVCMP_RGB8_EQ
+				"((tevin_a.r >= (tevin_b.r + 0.5)) ? tevin_c.rgb : float3(0.0,0.0,0.0))", // TEVCMP_R8_GT
+				"((abs(tevin_a.r - tevin_b.r) < 0.5) ? tevin_c.rgb : float3(0.0,0.0,0.0))", // TEVCMP_R8_EQ
+				"((dot(tevin_a.rgb, comp16) >=  (dot(tevin_b.rgb, comp16) + 0.5)) ? tevin_c.rgb : float3(0.0,0.0,0.0))", // TEVCMP_GR16_GT
+				"((abs(dot(tevin_a.rgb, comp16) - dot(tevin_b.rgb, comp16)) < 0.5) ? tevin_c.rgb : float3(0.0,0.0,0.0))", // TEVCMP_GR16_EQ
+				"((dot(tevin_a.rgb, comp24) >=  (dot(tevin_b.rgb, comp24) + 0.5)) ? tevin_c.rgb : float3(0.0,0.0,0.0))", // TEVCMP_BGR24_GT
+				"((abs(dot(tevin_a.rgb, comp24) - dot(tevin_b.rgb, comp24)) < 0.5) ? tevin_c.rgb : float3(0.0,0.0,0.0))", // TEVCMP_BGR24_EQ
+				"(max(sign(tevin_a.rgb - tevin_b.rgb - 0.5), float3(0.0,0.0,0.0)) * tevin_c.rgb)", // TEVCMP_RGB8_GT
+				"((float3(1.0,1.0,1.0) - max(sign(abs(tevin_a.rgb - tevin_b.rgb) - 0.5),float3(0.0,0.0,0.0))) * tevin_c.rgb)" // TEVCMP_RGB8_EQ
 			};
 			int cmp = (cc.shift << 1) | cc.op; // comparemode stored here
 			out.Write(" tevin_d.rgb + ");
@@ -1078,14 +1078,14 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, co
 			//table with the alpha compare operations
 			static const char *TEVCMPAlphaOPTable[] =
 			{
-				"((tevin_a.r > tevin_b.r) ? tevin_c.a : 0.0)", // TEVCMP_R8_GT
-				"((tevin_a.r == tevin_b.r) ? tevin_c.a : 0.0", // TEVCMP_R8_EQ
-				"((dot(tevin_a.rgb, comp16) >  dot(tevin_b.rgb, comp16)) ? tevin_c.a : 0.0)", // TEVCMP_GR16_GT
-				"((dot(tevin_a.rgb, comp16) == dot(tevin_b.rgb, comp16)) ? tevin_c.a : 0.0)", // TEVCMP_GR16_EQ
-				"((dot(tevin_a.rgb, comp24) >  dot(tevin_b.rgb, comp24)) ? tevin_c.a : 0.0)", // TEVCMP_BGR24_GT
-				"((dot(tevin_a.rgb, comp24) == dot(tevin_b.rgb, comp24)) ? tevin_c.a : 0.0)", // TEVCMP_BGR24_EQ
-				"((tevin_a.a >  tevin_b.a) ? tevin_c.a : 0.0)", // TEVCMP_A8_GT
-				"((tevin_a.a == tevin_b.a) ? tevin_c.a : 0.0)" // TEVCMP_A8_EQ
+				"((tevin_a.r >= (tevin_b.r + 0.5)) ? tevin_c.a : 0.0)", // TEVCMP_R8_GT
+				"((abs(tevin_a.r - tevin_b.r) < 0.5) ? tevin_c.a : 0.0)", // TEVCMP_R8_EQ
+				"((dot(tevin_a.rgb, comp16) >=  (dot(tevin_b.rgb, comp16) + 0.5)) ? tevin_c.a : 0.0)", // TEVCMP_GR16_GT
+				"((abs(dot(tevin_a.rgb, comp16) - dot(tevin_b.rgb, comp16)) < 0.5) ? tevin_c.a : 0.0)", // TEVCMP_GR16_EQ
+				"((dot(tevin_a.rgb, comp24) >=  (dot(tevin_b.rgb, comp24) + 0.5)) ? tevin_c.a : 0.0)", // TEVCMP_BGR24_GT
+				"((abs(dot(tevin_a.rgb, comp24) - dot(tevin_b.rgb, comp24)) < 0.5) ? tevin_c.a : 0.0)", // TEVCMP_BGR24_EQ
+				"((tevin_a.a >= (tevin_b.a + 0.5)) ? tevin_c.a : 0.0)", // TEVCMP_A8_GT
+				"((abs(tevin_a.a - tevin_b.a) < 0.5) ? tevin_c.a : 0.0)", // TEVCMP_A8_EQ
 			};
 			//compare alpha combiner goes here
 			int cmp = (ac.shift << 1) | ac.op; // comparemode stored here
