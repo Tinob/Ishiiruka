@@ -5,7 +5,7 @@
 #include <cmath>
 #include <locale.h>
 #ifdef __APPLE__
-	#include <xlocale.h>
+#include <xlocale.h>
 #endif
 
 #include "VideoCommon/NativeVertexFormat.h"
@@ -18,7 +18,7 @@
 #include "VideoCommon/VideoConfig.h"
 
 static char text[16768];
-static const char *texOffsetMemberSelector[]   = {"x", "y", "z", "w"};
+static const char *texOffsetMemberSelector[] = { "x", "y", "z", "w" };
 template<class T, API_TYPE api_type>
 void DefineVSOutputStructMember(T& object, const char* type, const char* name, int var_index, const char* semantic, int semantic_index = -1)
 {
@@ -38,7 +38,7 @@ void DefineVSOutputStructMember(T& object, const char* type, const char* name, i
 }
 
 template<class T, API_TYPE api_type>
-inline void GenerateVSOutputStruct(T& object)
+inline void GenerateVSOutputStruct(T& object, bool enable_pl)
 {
 	object.Write("struct VS_OUTPUT {\n");
 	DefineVSOutputStructMember<T, api_type>(object, "float4", "pos", -1, "POSITION");
@@ -52,16 +52,15 @@ inline void GenerateVSOutputStruct(T& object)
 
 		DefineVSOutputStructMember<T, api_type>(object, "float4", "clipPos", -1, "TEXCOORD", xfregs.numTexGen.numTexGens);
 
-		if(g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting)
+		if (enable_pl)
 			DefineVSOutputStructMember<T, api_type>(object, "float4", "Normal", -1, "TEXCOORD", xfregs.numTexGen.numTexGens + 1);
 	}
 	else
 	{
 		// Store clip position in the w component of first 4 texcoords
-		bool ppl = g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting;
-		int num_texcoords = ppl ? 8 : xfregs.numTexGen.numTexGens;
+		int num_texcoords = enable_pl ? 8 : xfregs.numTexGen.numTexGens;
 		for (int i = 0; i < num_texcoords; ++i)
-			DefineVSOutputStructMember<T, api_type>(object, (ppl || i < 4) ? "float4" : "float3", "tex", i, "TEXCOORD", i);
+			DefineVSOutputStructMember<T, api_type>(object, (enable_pl || i < 4) ? "float4" : "float3", "tex", i, "TEXCOORD", i);
 	}
 	object.Write("};\n");
 }
@@ -72,25 +71,33 @@ inline void GenerateVertexShader(T& out, u32 components)
 	// Non-uid template parameters will write to the dummy data (=> gets optimized out)
 	vertex_shader_uid_data dummy_data;
 	vertex_shader_uid_data& uid_data = (&out.template GetUidData<vertex_shader_uid_data>() != NULL)
-											? out.template GetUidData<vertex_shader_uid_data>() : dummy_data;
-	#ifndef ANDROID
+		? out.template GetUidData<vertex_shader_uid_data>() : dummy_data;
+#ifndef ANDROID
 	locale_t locale;
 	locale_t old_locale;
-	#endif
+#endif
 	_assert_(bpmem.genMode.numtexgens == xfregs.numTexGen.numTexGens);
 	_assert_(bpmem.genMode.numcolchans == xfregs.numChan.numColorChans);
 	uid_data.numTexGens = xfregs.numTexGen.numTexGens;
 	uid_data.components = components;
-	uid_data.pixel_lighting = (g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting);
+	bool lightingEnabled = xfregs.numChan.numColorChans > 0;
+	bool enable_pl = g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting && lightingEnabled;
+	bool needLightShader = lightingEnabled && !enable_pl;
+	for (unsigned int i = 0; i < xfregs.numTexGen.numTexGens; ++i)
+	{
+		TexMtxInfo& texinfo = xfregs.texMtxInfo[i];
+		needLightShader = needLightShader || texinfo.texgentype == XF_TEXGEN_COLOR_STRGBC0 || texinfo.texgentype == XF_TEXGEN_COLOR_STRGBC1;
+	}
+	uid_data.pixel_lighting = enable_pl;
 	uid_data.numColorChans = xfregs.numChan.numColorChans;
 
 	if (Write_Code)
 	{
 		out.SetBuffer(text);
-	#ifndef ANDROID	
+#ifndef ANDROID	
 		locale = newlocale(LC_NUMERIC_MASK, "C", NULL); // New locale for compilation
 		old_locale = uselocale(locale); // Apply the locale for this thread		
-	#endif
+#endif
 		text[sizeof(text) - 1] = 0x7C;  // canary
 		// uniforms
 		if (g_ActiveConfig.backend_info.bSupportsGLSLUBO)
@@ -110,8 +117,8 @@ inline void GenerateVertexShader(T& out, u32 components)
 		if (g_ActiveConfig.backend_info.bSupportsGLSLUBO)
 			out.Write("};\n");
 
-		GenerateVSOutputStruct<T, api_type>(out);
-		if(api_type == API_OPENGL)
+		GenerateVSOutputStruct<T, api_type>(out, enable_pl);
+		if (api_type == API_OPENGL)
 		{
 			out.Write("ATTRIN float4 rawpos; // ATTR%d,\n", SHADER_POSITION_ATTRIB);
 			out.Write("ATTRIN float fposmtx; // ATTR%d,\n", SHADER_POSMTX_ATTRIB);
@@ -129,8 +136,8 @@ inline void GenerateVertexShader(T& out, u32 components)
 
 			for (int i = 0; i < 8; ++i)
 			{
-				u32 hastexmtx = (components & (VB_HAS_TEXMTXIDX0<<i));
-				if ((components & (VB_HAS_UV0<<i)) || hastexmtx)
+				u32 hastexmtx = (components & (VB_HAS_TEXMTXIDX0 << i));
+				if ((components & (VB_HAS_UV0 << i)) || hastexmtx)
 					out.Write("ATTRIN float%d tex%d; // ATTR%d,\n", hastexmtx ? 3 : 2, i, SHADER_TEXTURE0_ATTRIB + i);
 			}
 
@@ -140,13 +147,13 @@ inline void GenerateVertexShader(T& out, u32 components)
 				for (int i = 0; i < 8; ++i)
 					out.Write("VARYOUT  float3 uv%d_2;\n", i);
 				out.Write("VARYOUT   float4 clipPos_2;\n");
-				if (g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting)
+				if (enable_pl)
 					out.Write("VARYOUT   float4 Normal_2;\n");
 			}
 			else
 			{
 				// wpos is in w of first 4 texcoords
-				if (g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting)
+				if (enable_pl)
 				{
 					for (int i = 0; i < 8; ++i)
 						out.Write("VARYOUT   float4 uv%d_2;\n", i);
@@ -154,7 +161,7 @@ inline void GenerateVertexShader(T& out, u32 components)
 				else
 				{
 					for (unsigned int i = 0; i < xfregs.numTexGen.numTexGens; ++i)
-						out.Write("VARYOUT   float%d uv%d_2;\n", i < 4 ? 4 : 3 , i);
+						out.Write("VARYOUT   float%d uv%d_2;\n", i < 4 ? 4 : 3, i);
 				}
 			}
 			out.Write("VARYOUT   float4 colors_02;\n");
@@ -179,8 +186,8 @@ inline void GenerateVertexShader(T& out, u32 components)
 				out.Write("  float4 color1 : COLOR1,\n");
 			for (int i = 0; i < 8; ++i)
 			{
-				u32 hastexmtx = (components & (VB_HAS_TEXMTXIDX0<<i));
-				if ((components & (VB_HAS_UV0<<i)) || hastexmtx)
+				u32 hastexmtx = (components & (VB_HAS_TEXMTXIDX0 << i));
+				if ((components & (VB_HAS_UV0 << i)) || hastexmtx)
 					out.Write("  float%d tex%d : TEXCOORD%d,\n", hastexmtx ? 3 : 2, i, i);
 			}
 			out.Write("  float4 blend_indices : BLENDINDICES,\n");
@@ -189,7 +196,7 @@ inline void GenerateVertexShader(T& out, u32 components)
 		out.Write("VS_OUTPUT o;\n");
 		if (api_type & API_D3D9)
 		{
-			out.Write("int4 indices = D3DCOLORtoUBYTE4(blend_indices);\n");		
+			out.Write("int4 indices = D3DCOLORtoUBYTE4(blend_indices);\n");
 		}
 		// transforms
 		if (components & VB_HAS_POSMTXIDX)
@@ -207,7 +214,7 @@ inline void GenerateVertexShader(T& out, u32 components)
 				out.Write("int posmtx = int(fposmtx);\n");
 			}
 
-			if ((DriverDetails::HasBug(DriverDetails::BUG_NODYNUBOACCESS) && !DriverDetails::HasBug(DriverDetails::BUG_ANNIHILATEDUBOS)) )
+			if ((DriverDetails::HasBug(DriverDetails::BUG_NODYNUBOACCESS) && !DriverDetails::HasBug(DriverDetails::BUG_ANNIHILATEDUBOS)))
 			{
 				// This'll cause issues, but  it can't be helped
 				out.Write("float4 pos = float4(dot(" I_TRANSFORMMATRICES"[0], rawpos), dot(" I_TRANSFORMMATRICES"[1], rawpos), dot(" I_TRANSFORMMATRICES"[2], rawpos), 1);\n");
@@ -251,31 +258,39 @@ inline void GenerateVertexShader(T& out, u32 components)
 			//Write Pos offset for Point/Line Rendering
 			out.Write("o.pos.xy = o.pos.xy + " I_PLOFFSETPARAMS"[indices.z].xy * o.pos.w;\n");
 		}
-		out.Write("float4 mat, lacc;\n"
+		if (needLightShader)
+		{
+			out.Write("float4 mat, lacc;\n"
 				"float3 ldir, h;\n"
 				"float dist, dist2, attn;\n");
-		if (xfregs.numChan.numColorChans == 0)
+		}
+		if (!lightingEnabled)
 		{
 			if (components & VB_HAS_COL0)
 				out.Write("o.colors_0 = color0;\n");
 			else
 				out.Write("o.colors_0 = float4(1.0, 1.0, 1.0, 1.0);\n");
+
+			if (components & VB_HAS_COL1)
+				out.Write("o.colors_1 = color1;\n");
+			else
+				out.Write("o.colors_1 = o.colors_0;\n");
 		}
 	}
-
-	GenerateLightingShader<T, Write_Code>(out, uid_data.lighting, components, I_MATERIALS, I_LIGHTS, "color", "o.colors_");
+	if (needLightShader)
+		GenerateLightingShader<T, Write_Code>(out, uid_data.lighting, components, I_MATERIALS, I_LIGHTS, "color", "o.colors_");
 
 	// special case if only pos and tex coord 0 and tex coord input is AB11
 	// donko - this has caused problems in some games. removed for now.
 	bool texGenSpecialCase = false;
 	/*bool texGenSpecialCase =
-		((g_VtxDesc.Hex & 0x60600L) == g_VtxDesc.Hex) && // only pos and tex coord 0
-		(g_VtxDesc.Tex0Coord != NOT_PRESENT) &&
-		(xfregs.texcoords[0].texmtxinfo.inputform == XF_TEXINPUT_AB11);
-		*/
-	if(Write_Code)
+	((g_VtxDesc.Hex & 0x60600L) == g_VtxDesc.Hex) && // only pos and tex coord 0
+	(g_VtxDesc.Tex0Coord != NOT_PRESENT) &&
+	(xfregs.texcoords[0].texmtxinfo.inputform == XF_TEXINPUT_AB11);
+	*/
+	if (Write_Code)
 	{
-		if (xfregs.numChan.numColorChans < 2)
+		if (xfregs.numChan.numColorChans < 2 && needLightShader)
 		{
 			if (components & VB_HAS_COL1)
 				out.Write("o.colors_1 = color1;\n");
@@ -286,7 +301,7 @@ inline void GenerateVertexShader(T& out, u32 components)
 		out.Write("float4 coord = float4(0.0, 0.0, 1.0, 1.0);\n");
 	}
 
-	
+
 	for (unsigned int i = 0; i < xfregs.numTexGen.numTexGens; ++i)
 	{
 		TexMtxInfo& texinfo = xfregs.texMtxInfo[i];
@@ -294,105 +309,105 @@ inline void GenerateVertexShader(T& out, u32 components)
 		if (Write_Code)
 		{
 			out.Write("{\n");
-			out.Write("coord = float4(0.0, 0.0, 1.0, 1.0);\n");		
+			out.Write("coord = float4(0.0, 0.0, 1.0, 1.0);\n");
 			switch (texinfo.sourcerow)
 			{
 			case XF_SRCGEOM_INROW:
-				_assert_( texinfo.inputform == XF_TEXINPUT_ABC1 );
+				_assert_(texinfo.inputform == XF_TEXINPUT_ABC1);
 				out.Write("coord = rawpos;\n"); // pos.w is 1
 				break;
 			case XF_SRCNORMAL_INROW:
 				if (components & VB_HAS_NRM0)
 				{
-					_assert_( texinfo.inputform == XF_TEXINPUT_ABC1 );
+					_assert_(texinfo.inputform == XF_TEXINPUT_ABC1);
 					out.Write("coord = float4(rawnorm0.xyz, 1.0);\n");
 				}
 				break;
 			case XF_SRCCOLORS_INROW:
-				_assert_( texinfo.texgentype == XF_TEXGEN_COLOR_STRGBC0 || texinfo.texgentype == XF_TEXGEN_COLOR_STRGBC1 );
+				_assert_(texinfo.texgentype == XF_TEXGEN_COLOR_STRGBC0 || texinfo.texgentype == XF_TEXGEN_COLOR_STRGBC1);
 				break;
 			case XF_SRCBINORMAL_T_INROW:
 				if (components & VB_HAS_NRM1)
 				{
-					_assert_( texinfo.inputform == XF_TEXINPUT_ABC1 );
+					_assert_(texinfo.inputform == XF_TEXINPUT_ABC1);
 					out.Write("coord = float4(rawnorm1.xyz, 1.0);\n");
 				}
 				break;
 			case XF_SRCBINORMAL_B_INROW:
 				if (components & VB_HAS_NRM2)
 				{
-					_assert_( texinfo.inputform == XF_TEXINPUT_ABC1 );
+					_assert_(texinfo.inputform == XF_TEXINPUT_ABC1);
 					out.Write("coord = float4(rawnorm2.xyz, 1.0);\n");
 				}
 				break;
 			default:
 				_assert_(texinfo.sourcerow <= XF_SRCTEX7_INROW);
-				if (components & (VB_HAS_UV0<<(texinfo.sourcerow - XF_SRCTEX0_INROW)) )
+				if (components & (VB_HAS_UV0 << (texinfo.sourcerow - XF_SRCTEX0_INROW)))
 					out.Write("coord = float4(tex%d.x, tex%d.y, 1.0, 1.0);\n", texinfo.sourcerow - XF_SRCTEX0_INROW, texinfo.sourcerow - XF_SRCTEX0_INROW);
 				break;
 			}
-		}		
+		}
 
 		// first transformation
 		uid_data.texMtxInfo[i].texgentype = xfregs.texMtxInfo[i].texgentype;
 		switch (texinfo.texgentype)
 		{
-			case XF_TEXGEN_EMBOSS_MAP: // calculate tex coords into bump map
+		case XF_TEXGEN_EMBOSS_MAP: // calculate tex coords into bump map
 
-				if (components & (VB_HAS_NRM1|VB_HAS_NRM2))
+			if (components & (VB_HAS_NRM1 | VB_HAS_NRM2))
+			{
+				// transform the light dir into tangent space
+				uid_data.texMtxInfo[i].embosslightshift = xfregs.texMtxInfo[i].embosslightshift;
+				uid_data.texMtxInfo[i].embosssourceshift = xfregs.texMtxInfo[i].embosssourceshift;
+				if (Write_Code)
 				{
-					// transform the light dir into tangent space
-					uid_data.texMtxInfo[i].embosslightshift = xfregs.texMtxInfo[i].embosslightshift;
-					uid_data.texMtxInfo[i].embosssourceshift = xfregs.texMtxInfo[i].embosssourceshift;
-					if (Write_Code)
-					{
-						out.Write("ldir = normalize(" LIGHT_POS".xyz - pos.xyz);\n", LIGHT_POS_PARAMS(I_LIGHTS, texinfo.embosslightshift));
-						out.Write("o.tex%d.xyz = o.tex%d.xyz + float3(dot(ldir, _norm1), dot(ldir, _norm2), 0.0);\n", i, texinfo.embosssourceshift);
-					}					
+					out.Write("float3 eldir = normalize(" LIGHT_POS".xyz - pos.xyz);\n", LIGHT_POS_PARAMS(I_LIGHTS, texinfo.embosslightshift));
+					out.Write("o.tex%d.xyz = o.tex%d.xyz + float3(dot(eldir, _norm1), dot(eldir, _norm2), 0.0);\n", i, texinfo.embosssourceshift);
+				}
+			}
+			else
+			{
+				_assert_(0); // should have normals
+				uid_data.texMtxInfo[i].embosssourceshift = xfregs.texMtxInfo[i].embosssourceshift;
+				if (Write_Code)
+				{
+					out.Write("o.tex%d.xyz = o.tex%d.xyz;\n", i, texinfo.embosssourceshift);
+				}
+			}
+
+			break;
+		case XF_TEXGEN_COLOR_STRGBC0:
+			_assert_(texinfo.sourcerow == XF_SRCCOLORS_INROW);
+			if (Write_Code)
+				out.Write("o.tex%d.xyz = float3(o.colors_0.x, o.colors_0.y, 1);\n", i);
+			break;
+		case XF_TEXGEN_COLOR_STRGBC1:
+			_assert_(texinfo.sourcerow == XF_SRCCOLORS_INROW);
+			if (Write_Code)
+				out.Write("o.tex%d.xyz = float3(o.colors_1.x, o.colors_1.y, 1);\n", i);
+			break;
+		case XF_TEXGEN_REGULAR:
+		default:
+			uid_data.texMtxInfo_n_projection |= xfregs.texMtxInfo[i].projection << i;
+			if (Write_Code)
+			{
+				if (components & (VB_HAS_TEXMTXIDX0 << i))
+				{
+					out.Write("int tmp = int(tex%d.z);\n", i);
+					if (texinfo.projection == XF_TEXPROJ_STQ)
+						out.Write("o.tex%d.xyz = float3(dot(coord, " I_TRANSFORMMATRICES"[tmp]), dot(coord, " I_TRANSFORMMATRICES"[tmp+1]), dot(coord, " I_TRANSFORMMATRICES"[tmp+2]));\n", i);
+					else
+						out.Write("o.tex%d.xyz = float3(dot(coord, " I_TRANSFORMMATRICES"[tmp]), dot(coord, " I_TRANSFORMMATRICES"[tmp+1]), 1);\n", i);
 				}
 				else
 				{
-					_assert_(0); // should have normals
-					uid_data.texMtxInfo[i].embosssourceshift = xfregs.texMtxInfo[i].embosssourceshift;
-					if (Write_Code)
-					{
-						out.Write("o.tex%d.xyz = o.tex%d.xyz;\n", i, texinfo.embosssourceshift);
-					}
-				}
-
-				break;
-			case XF_TEXGEN_COLOR_STRGBC0:
-				_assert_(texinfo.sourcerow == XF_SRCCOLORS_INROW);
-				if (Write_Code)
-					out.Write("o.tex%d.xyz = float3(o.colors_0.x, o.colors_0.y, 1);\n", i);
-				break;
-			case XF_TEXGEN_COLOR_STRGBC1:
-				_assert_(texinfo.sourcerow == XF_SRCCOLORS_INROW);
-				if (Write_Code)
-					out.Write("o.tex%d.xyz = float3(o.colors_1.x, o.colors_1.y, 1);\n", i);
-				break;
-			case XF_TEXGEN_REGULAR:
-			default:
-				uid_data.texMtxInfo_n_projection |= xfregs.texMtxInfo[i].projection << i;
-				if (Write_Code)
-				{
-					if (components & (VB_HAS_TEXMTXIDX0<<i))
-					{
-						out.Write("int tmp = int(tex%d.z);\n", i);
-						if (texinfo.projection == XF_TEXPROJ_STQ)
-							out.Write("o.tex%d.xyz = float3(dot(coord, " I_TRANSFORMMATRICES"[tmp]), dot(coord, " I_TRANSFORMMATRICES"[tmp+1]), dot(coord, " I_TRANSFORMMATRICES"[tmp+2]));\n", i);
-						else
-							out.Write("o.tex%d.xyz = float3(dot(coord, " I_TRANSFORMMATRICES"[tmp]), dot(coord, " I_TRANSFORMMATRICES"[tmp+1]), 1);\n", i);
-					}
+					if (texinfo.projection == XF_TEXPROJ_STQ)
+						out.Write("o.tex%d.xyz = float3(dot(coord, " I_TEXMATRICES"[%d]), dot(coord, " I_TEXMATRICES"[%d]), dot(coord, " I_TEXMATRICES"[%d]));\n", i, 3 * i, 3 * i + 1, 3 * i + 2);
 					else
-					{
-						if (texinfo.projection == XF_TEXPROJ_STQ)
-							out.Write("o.tex%d.xyz = float3(dot(coord, " I_TEXMATRICES"[%d]), dot(coord, " I_TEXMATRICES"[%d]), dot(coord, " I_TEXMATRICES"[%d]));\n", i, 3*i, 3*i+1, 3*i+2);
-						else
-							out.Write("o.tex%d.xyz = float3(dot(coord, " I_TEXMATRICES"[%d]), dot(coord, " I_TEXMATRICES"[%d]), 1);\n", i, 3*i, 3*i+1);
-					}
+						out.Write("o.tex%d.xyz = float3(dot(coord, " I_TEXMATRICES"[%d]), dot(coord, " I_TEXMATRICES"[%d]), 1);\n", i, 3 * i, 3 * i + 1);
 				}
-				break;
+			}
+			break;
 		}
 
 		uid_data.dualTexTrans_enabled = xfregs.dualTexTrans.enabled;
@@ -408,7 +423,7 @@ inline void GenerateVertexShader(T& out, u32 components)
 				out.Write("float4 P0 = " I_POSTTRANSFORMMATRICES"[%d];\n"
 					"float4 P1 = " I_POSTTRANSFORMMATRICES"[%d];\n"
 					"float4 P2 = " I_POSTTRANSFORMMATRICES"[%d];\n",
-					postidx&0x3f, (postidx+1)&0x3f, (postidx+2)&0x3f);
+					postidx & 0x3f, (postidx + 1) & 0x3f, (postidx + 2) & 0x3f);
 			}
 			if (texGenSpecialCase)
 			{
@@ -451,7 +466,7 @@ inline void GenerateVertexShader(T& out, u32 components)
 			out.Write("o.tex3.w = o.pos.w;\n");
 		}
 
-		if(g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting)
+		if (enable_pl)
 		{
 			if (xfregs.numTexGen.numTexGens < 7)
 			{
@@ -470,9 +485,13 @@ inline void GenerateVertexShader(T& out, u32 components)
 
 			if (components & VB_HAS_COL0)
 				out.Write("o.colors_0 = color0;\n");
+			else
+				out.Write("o.colors_0 = float4(1.0, 1.0, 1.0, 1.0);\n");
 
 			if (components & VB_HAS_COL1)
 				out.Write("o.colors_1 = color1;\n");
+			else
+				out.Write("o.colors_1 = o.colors_0;\n");
 		}
 
 		//write the true depth value, if the game uses depth textures pixel shaders will override with the correct values
@@ -497,7 +516,7 @@ inline void GenerateVertexShader(T& out, u32 components)
 			//trying to get the correct semantic while not using glDepthRange
 			//seems to get rather complicated
 		}
-		
+
 		// The console GPU places the pixel center at 7/12 in screen space unless
 		// antialiasing is enabled, while D3D11 and OpenGL place it at 0.5, and D3D9 at 0. This results
 		// in some primitives being placed one pixel too far to the bottom-right,
@@ -515,7 +534,7 @@ inline void GenerateVertexShader(T& out, u32 components)
 			}
 		}
 
-		if(api_type == API_OPENGL)
+		if (api_type == API_OPENGL)
 		{
 			// Bit ugly here
 			// TODO: Make pretty
@@ -526,19 +545,19 @@ inline void GenerateVertexShader(T& out, u32 components)
 			{
 				for (unsigned int i = 0; i < 8; ++i)
 				{
-					if(i < xfregs.numTexGen.numTexGens)
+					if (i < xfregs.numTexGen.numTexGens)
 						out.Write(" uv%d_2.xyz =  o.tex%d;\n", i, i);
 					else
 						out.Write(" uv%d_2.xyz =  float3(0.0, 0.0, 0.0);\n", i);
 				}
 				out.Write("  clipPos_2 = o.clipPos;\n");
-				if(g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting)
+				if (enable_pl)
 					out.Write("  Normal_2 = o.Normal;\n");
 			}
 			else
 			{
 				// clip position is in w of first 4 texcoords
-				if (g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting)
+				if (enable_pl)
 				{
 					for (int i = 0; i < 8; ++i)
 						out.Write(" uv%d_2 = o.tex%d;\n", i, i);
@@ -546,7 +565,7 @@ inline void GenerateVertexShader(T& out, u32 components)
 				else
 				{
 					for (unsigned int i = 0; i < xfregs.numTexGen.numTexGens; ++i)
-						out.Write("  uv%d_2%s = o.tex%d;\n", i, i < 4 ? ".xyzw" : ".xyz" , i);
+						out.Write("  uv%d_2%s = o.tex%d;\n", i, i < 4 ? ".xyzw" : ".xyz", i);
 				}
 			}
 			out.Write("colors_02 = o.colors_0;\n");
@@ -562,10 +581,10 @@ inline void GenerateVertexShader(T& out, u32 components)
 		if (text[sizeof(text) - 1] != 0x7C)
 			PanicAlert("VertexShader generator - buffer too small, canary has been eaten!");
 
-		#ifndef ANDROID
+#ifndef ANDROID
 		uselocale(old_locale); // restore locale
 		freelocale(locale);
-		#endif		
+#endif		
 	}
 }
 
@@ -581,7 +600,7 @@ void GenerateVertexShaderCodeD3D9(ShaderCode& object, u32 components)
 
 void GenerateVSOutputStructForGSD3D9(ShaderCode& object)
 {
-	GenerateVSOutputStruct<ShaderCode, API_D3D9>(object);
+	GenerateVSOutputStruct<ShaderCode, API_D3D9>(object, g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting && xfregs.numChan.numColorChans > 0);
 }
 
 void GetVertexShaderUidD3D11(VertexShaderUid& object, u32 components)
@@ -596,7 +615,7 @@ void GenerateVertexShaderCodeD3D11(ShaderCode& object, u32 components)
 
 void GenerateVSOutputStructForGSD3D11(ShaderCode& object)
 {
-	GenerateVSOutputStruct<ShaderCode, API_D3D11>(object);
+	GenerateVSOutputStruct<ShaderCode, API_D3D11>(object, g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting && xfregs.numChan.numColorChans > 0);
 }
 
 void GetVertexShaderUidGL(VertexShaderUid& object, u32 components)
@@ -611,5 +630,5 @@ void GenerateVertexShaderCodeGL(ShaderCode& object, u32 components)
 
 void GenerateVSOutputStructForGSGL(ShaderCode& object)
 {
-	GenerateVSOutputStruct<ShaderCode, API_OPENGL>(object);
+	GenerateVSOutputStruct<ShaderCode, API_OPENGL>(object, g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting && xfregs.numChan.numColorChans > 0);
 }

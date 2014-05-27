@@ -30,7 +30,7 @@
 // Tev Source States
 enum tevSources
 {
-	CPREV  = 0,
+	CPREV = 0,
 	APREV = 1,
 	C0 = 2,
 	A0 = 3,
@@ -205,7 +205,7 @@ static const char *tevRasTable[] =
 //static const char *tevTexFunc[] = { "tex2D", "texRECT" };
 
 static const char *tevCOutputTable[] = { "prev.rgb", "c0.rgb", "c1.rgb", "c2.rgb" };
-static const tevSources tevCOutputSourceMap[] = { tevSources::CPREV , tevSources::C0, tevSources::C1, tevSources::C2 };
+static const tevSources tevCOutputSourceMap[] = { tevSources::CPREV, tevSources::C0, tevSources::C1, tevSources::C2 };
 static const char *tevAOutputTable[] = { "prev.a", "c0.a", "c1.a", "c2.a" };
 static const tevSources tevAOutputSourceMap[] = { tevSources::APREV, tevSources::A0, tevSources::A1, tevSources::A2 };
 
@@ -225,7 +225,7 @@ static const char* headerUtil = "float4 CHK_O_U8(float4 x)\n{\nreturn frac(((x) 
 "return trunc(x);\n"
 "}\n"
 // Fastmod implementation with the restriction that "y" must be always greater than 0
-"float fastmod( float x, float y )\n"
+"float fastmod(float x, float y)\n"
 "{\n"
 "y = sign(x) * y;\n"
 "return frac(x/y)*y;\n"
@@ -256,7 +256,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 		locale = newlocale(LC_NUMERIC_MASK, "C", NULL); // New locale for compilation
 		old_locale = uselocale(locale); // Apply the locale for this thread			
 #endif
-		text[sizeof(text)-1] = 0x7C;  // canary
+		text[sizeof(text) - 1] = 0x7C;  // canary
 	}
 
 	unsigned int numStages = bpmem.genMode.numtevstages + 1;
@@ -264,7 +264,8 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 
 	const bool forced_early_z = g_ActiveConfig.backend_info.bSupportsEarlyZ && bpmem.UseEarlyDepthTest();
 	const bool per_pixel_depth = (bpmem.ztex2.op != ZTEXTURE_DISABLE && bpmem.UseLateDepthTest()) || (!g_ActiveConfig.bFastDepthCalc && bpmem.zmode.testenable && !forced_early_z && dstAlphaMode != DSTALPHA_NULL);
-	bool enable_pl = g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting;
+	bool lightingEnabled = xfregs.numChan.numColorChans > 0;
+	bool enable_pl = g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting && lightingEnabled;
 	uid_data.pixel_lighting = enable_pl;
 	uid_data.dstAlphaMode = dstAlphaMode;
 	uid_data.genMode_numindstages = bpmem.genMode.numindstages;
@@ -445,7 +446,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 		{
 			out.Write("ocol0 = float4(0.0,0.0,0.0,0.0);\n");
 			out.Write("}\n");
-			if (text[sizeof(text)-1] != 0x7C)
+			if (text[sizeof(text) - 1] != 0x7C)
 				PanicAlert("PixelShader generator - buffer too small, canary has been eaten!");
 
 #ifndef ANDROID
@@ -507,7 +508,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 			}
 		}
 	}
-	
+
 	if (enable_pl)
 	{
 		if (Write_Code)
@@ -531,7 +532,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 			}
 		}
 		uid_data.components = components;
-		GenerateLightingShader<T, Write_Code>(out, uid_data.lighting, components, I_PMATERIALS, I_PLIGHTS, "colors_", "colors_");		
+		GenerateLightingShader<T, Write_Code>(out, uid_data.lighting, components, I_PMATERIALS, I_PLIGHTS, "colors_", "colors_");
 	}
 	if (Write_Code)
 	{
@@ -590,7 +591,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 			{
 				if (texcoord < numTexgen)
 				{
-					out.Write("t_coord = BSHR(uv%d.xy, " I_INDTEXSCALE "[%d].xy, " I_INDTEXSCALE "[%d].zw);\n", texcoord, i, i);				
+					out.Write("t_coord = BSHR(uv%d.xy, " I_INDTEXSCALE "[%d].xy, " I_INDTEXSCALE "[%d].zw);\n", texcoord, i, i);
 				}
 				else
 				{
@@ -628,14 +629,14 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 			if (colorCdest != 0)
 			{
 				out.Write("prev.rgb = %s;\n", tevCOutputTable[colorCdest]);
-			}			
+			}
 			if (alphaCdest != 0)
 			{
 				out.Write("prev.a = %s;\n", tevAOutputTable[alphaCdest]);
 			}
 		}
 		// emulation of unsigned 8 overflow
-		if(TevOverflowState[tevCOutputSourceMap[colorCdest]] || TevOverflowState[tevAOutputSourceMap[alphaCdest]])
+		if (TevOverflowState[tevCOutputSourceMap[colorCdest]] || TevOverflowState[tevAOutputSourceMap[alphaCdest]])
 			out.Write("prev = CHK_O_U8(prev);\n");
 	}
 
@@ -688,7 +689,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 		// use the texture input of the last texture stage (tex_t), hopefully this has been read and is in correct format...
 		if (Write_Code)
 		{
-			out.Write("zCoord = dot(" I_ZBIAS"[0].xyzw, tex_t.xyzw) + " I_ZBIAS "[1].w %s;\n",
+			out.Write("zCoord = dot(" I_ZBIAS"[0].xyzw, tex_t.xyzw * (1.0/255.0)) + " I_ZBIAS "[1].w %s;\n",
 				(bpmem.ztex2.op == ZTEXTURE_ADD) ? "+ zCoord" : "");
 			// U24 overflow emulation disabled because problems caused by float rounding
 			//out.Write("zCoord = CHK_O_U24(zCoord);\n");		
@@ -735,7 +736,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 	if (Write_Code)
 	{
 		out.Write("}\n");
-		if (text[sizeof(text)-1] != 0x7C)
+		if (text[sizeof(text) - 1] != 0x7C)
 			PanicAlert("PixelShader generator - buffer too small, canary has been eaten!");
 
 #ifndef ANDROID
@@ -842,7 +843,7 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, co
 					n,
 					bpmem.tevind[n].bt);
 			}
-			
+
 
 			static const char *tevIndBiasField[] = { "", "x", "y", "xy", "z", "xz", "yz", "xyz" }; // indexed by bias
 			static const char *tevIndBiasAdd[] = { "-128.0", "1.0", "1.0", "1.0" }; // indexed by fmt
@@ -1007,7 +1008,7 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, co
 		out.Write("tin_a = %s(float4(%s,%s));\n", TevOverflowState[cc.a] || TevOverflowState[AInputSourceMap[ac.a]] ? "CHK_O_U8" : "", tevCInputTable[cc.a], tevAInputTable[ac.a]);
 		out.Write("tin_b = %s(float4(%s,%s));\n", TevOverflowState[cc.b] || TevOverflowState[AInputSourceMap[ac.b]] ? "CHK_O_U8" : "", tevCInputTable[cc.b], tevAInputTable[ac.b]);
 		out.Write("tin_c = %s(float4(%s,%s));\n", TevOverflowState[cc.c] || TevOverflowState[AInputSourceMap[ac.c]] ? "CHK_O_U8" : "", tevCInputTable[cc.c], tevAInputTable[ac.c]);
-		
+
 		bool normalize_c_rgb = cc.c != TEVCOLORARG_ZERO &&  cc.bias != TevBias_COMPARE;
 		bool normalize_c_a = ac.c != TEVALPHAARG_ZERO &&  ac.bias != TevBias_COMPARE;
 		if (normalize_c_rgb && normalize_c_a)
@@ -1022,7 +1023,7 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, co
 		{
 			out.Write("tin_c.a = tin_c.a+trunc(tin_c.a*(1.0/128.0));\n");
 		}
-		
+
 		if (!(cc.d == TEVCOLORARG_ZERO && cc.op == TEVOP_ADD && !(cc.shift & 3)) || !(ac.d == TEVALPHAARG_ZERO && ac.op == TEVOP_ADD && !(ac.shift & 3)))
 		{
 			out.Write("tin_d = float4(%s,%s);\n", tevCInputTable[cc.d], tevAInputTable[ac.d]);
@@ -1031,7 +1032,7 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, co
 		TevOverflowState[tevAOutputSourceMap[ac.dest]] = !ac.clamp;
 
 		out.Write("// color combine\n");
-		out.Write("%s = round(clamp(", tevCOutputTable[cc.dest]);		
+		out.Write("%s = round(clamp(", tevCOutputTable[cc.dest]);
 		// combine the color channel
 		if (cc.bias != TevBias_COMPARE) // if not compare
 		{
@@ -1054,7 +1055,7 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, co
 		}
 
 		out.Write("// alpha combine\n");
-		out.Write("%s = round(clamp(", tevAOutputTable[ac.dest]);		
+		out.Write("%s = round(clamp(", tevAOutputTable[ac.dest]);
 		if (ac.bias != TevBias_COMPARE) // if not compare
 		{
 			// 8 is used because alpha stage don't have ONE input so a number outside range is used
@@ -1198,13 +1199,13 @@ static inline void WriteTevCompare(T& out, int components, int cmp)
 		"((abs(dot(tin_a.rgb, c16) - dot(tin_b.rgb, c16)) < 0.5) ? tin_c%s : %s)", // TEVCMP_GR16_EQ
 		"((dot(tin_a.rgb, c24) >=  (dot(tin_b.rgb, c24) + 0.5)) ? tin_c%s : %s)", // TEVCMP_BGR24_GT
 		"((abs(dot(tin_a.rgb, c24) - dot(tin_b.rgb, c24)) < 0.5) ? tin_c%s : %s)", // TEVCMP_BGR24_EQ
-		
+
 		"(max(sign(tin_a.rgb - tin_b.rgb - 0.5), float3(0.0,0.0,0.0)) * tin_c.rgb)", // TEVCMP_RGB8_GT
 		"((float3(1.0,1.0,1.0) - max(sign(abs(tin_a.rgb - tin_b.rgb) - 0.5),float3(0.0,0.0,0.0))) * tin_c.rgb)", // TEVCMP_RGB8_EQ
-		
+
 		"((tin_a.a >= (tin_b.a + 0.5)) ? tin_c.a : 0.0)", // TEVCMP_A8_GT
 		"((abs(tin_a.a - tin_b.a) < 0.5) ? tin_c.a : 0.0)", // TEVCMP_A8_EQ
-		
+
 		"(max(sign(tin_a - tin_b - 0.5), float4(0.0,0.0,0.0,0.0)) * tin_c)", // TEVCMP_RGBA8_GT
 		"((float4(1.0,1.0,1.0,1.0) - max(sign(abs(tin_a - tin_b) - 0.5),float3(0.0,0.0,0.0,0.0))) * tin_c)" // TEVCMP_RGBA8_EQ
 	};
