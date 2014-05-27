@@ -86,49 +86,49 @@ void PixelShaderManager::SetConstants()
 			{
 				if ((s_nColorsChanged[i] & (1 << j)))
 				{
-					SetPSConstant4fv(baseind+j, &lastRGBAfull[i][j][0]);
-					s_nColorsChanged[i] &= ~(1<<j);
+					SetPSConstant4fv(baseind + j, &lastRGBAfull[i][j][0]);
+					s_nColorsChanged[i] &= ~(1 << j);
 				}
 			}
 		}
 	}
 
-    if (s_nTexDimsChanged)
+	if (s_nTexDimsChanged)
 	{
 		for (int i = 0; i < 8; ++i)
 		{
-            if ((s_nTexDimsChanged & (1<<i)))
+			if ((s_nTexDimsChanged & (1 << i)))
 			{
 				SetPSTextureDims(i);
-				s_nTexDimsChanged &= ~(1<<i);
+				s_nTexDimsChanged &= ~(1 << i);
 			}
-        }
-    }
+		}
+	}
 
-    if (s_bAlphaChanged)
+	if (s_bAlphaChanged)
 	{
 		SetPSConstant4f(C_ALPHA, ((float)(lastAlpha & 0xff)), ((float)((lastAlpha >> 8) & 0xff)), 0.0f, ((float)((lastAlpha >> 16) & 0xff)));
 		s_bAlphaChanged = false;
-    }
+	}
 
 	if (s_bZTextureTypeChanged)
 	{
 		float ftemp[4];
 		switch (bpmem.ztex2.type)
 		{
-			 case 0:
-				// 8 bits
-				ftemp[0] = 0; ftemp[1] = 0; ftemp[2] = 0; ftemp[3] = 255.0f/16777215.0f;
-				break;
-			case 1:
-				// 16 bits
-				ftemp[0] = 255.0f/16777215.0f; ftemp[1] = 0; ftemp[2] = 0; ftemp[3] = 65280.0f/16777215.0f;
-				break;
-			case 2:
-				// 24 bits
-				ftemp[0] = 16711680.0f/16777215.0f; ftemp[1] = 65280.0f/16777215.0f; ftemp[2] = 255.0f/16777215.0f; ftemp[3] = 0;
-                break;
-        }
+		case 0:
+			// 8 bits
+			ftemp[0] = 0; ftemp[1] = 0; ftemp[2] = 0; ftemp[3] = 255.0f / 16777215.0f;
+			break;
+		case 1:
+			// 16 bits
+			ftemp[0] = 255.0f / 16777215.0f; ftemp[1] = 0; ftemp[2] = 0; ftemp[3] = 65280.0f / 16777215.0f;
+			break;
+		case 2:
+			// 24 bits
+			ftemp[0] = 16711680.0f / 16777215.0f; ftemp[1] = 65280.0f / 16777215.0f; ftemp[2] = 255.0f / 16777215.0f; ftemp[3] = 0;
+			break;
+		}
 		SetPSConstant4fv(C_ZBIAS, ftemp);
 		s_bZTextureTypeChanged = false;
 	}
@@ -144,7 +144,7 @@ void PixelShaderManager::SetConstants()
 		// [5] = 16777215 * farz
 
 		//ERROR_LOG("pixel=%x,%x, bias=%x\n", bpmem.zcontrol.pixel_format, bpmem.ztex2.type, lastZBias);
-		SetPSConstant4f(C_ZBIAS+1, xfregs.viewport.farZ / 16777216.0f, xfregs.viewport.zRange / 16777216.0f, 0, (float)(lastZBias)/16777215.0f);
+		SetPSConstant4f(C_ZBIAS + 1, xfregs.viewport.farZ / 16777216.0f, xfregs.viewport.zRange / 16777216.0f, 0, (float)(lastZBias) / 16777215.0f);
 		s_bZBiasChanged = s_bDepthRangeChanged = false;
 	}
 
@@ -154,94 +154,82 @@ void PixelShaderManager::SetConstants()
 		// set as 4 sets of vec4s, each containing S and T.
 		float f[16];
 
-        if (s_nIndTexScaleChanged & 0x03)
+		if (s_nIndTexScaleChanged & 0x03)
 		{
 			float scaleS = bpmem.texscale[0].getScaleS(0);
-			float scaleT = bpmem.texscale[0].getScaleS(0);
+			float scaleT = bpmem.texscale[0].getScaleT(0);
 			f[0] = scaleS - 1.0f;
 			f[1] = scaleT - 1.0f;
 			f[2] = 1.0f / scaleS;
 			f[3] = 1.0f / scaleT;
 			scaleS = bpmem.texscale[0].getScaleS(1);
-			scaleT = bpmem.texscale[0].getScaleS(1);
+			scaleT = bpmem.texscale[0].getScaleT(1);
 			f[4] = scaleS - 1.0f;
 			f[5] = scaleT - 1.0f;
 			f[6] = 1.0f / scaleS;
 			f[7] = 1.0f / scaleT;
 			SetMultiPSConstant4fv(C_INDTEXSCALE, 2, f);
-        }
+		}
 
 		if (s_nIndTexScaleChanged & 0x0c)
 		{
 			float scaleS = bpmem.texscale[1].getScaleS(0);
-			float scaleT = bpmem.texscale[1].getScaleS(0);
+			float scaleT = bpmem.texscale[1].getScaleT(0);
 			f[8] = scaleS - 1.0f;
 			f[9] = scaleT - 1.0f;
 			f[10] = 1.0f / scaleS;
 			f[11] = 1.0f / scaleT;
 			scaleS = bpmem.texscale[1].getScaleS(1);
-			scaleT = bpmem.texscale[1].getScaleS(1);
+			scaleT = bpmem.texscale[1].getScaleT(1);
 			f[12] = scaleS - 1.0f;
 			f[13] = scaleT - 1.0f;
 			f[14] = 1.0f / scaleS;
 			f[15] = 1.0f / scaleT;
 			SetMultiPSConstant4fv(C_INDTEXSCALE + 2, 2, &f[8]);
-        }
+		}
 		s_nIndTexScaleChanged = 0;
-    }
+	}
 
 	if (s_nIndTexMtxChanged)
 	{
 		for (int i = 0; i < 3; ++i)
 		{
-            if (s_nIndTexMtxChanged & (1 << i))
+			if (s_nIndTexMtxChanged & (1 << i))
 			{
-                int scale = ((u32)bpmem.indmtx[i].col0.s0 << 0) |
-					        ((u32)bpmem.indmtx[i].col1.s1 << 2) |
-					        ((u32)bpmem.indmtx[i].col2.s2 << 4);
+				int scale = ((u32)bpmem.indmtx[i].col0.s0 << 0) |
+					((u32)bpmem.indmtx[i].col1.s1 << 2) |
+					((u32)bpmem.indmtx[i].col2.s2 << 4);
 				scale = scale - 17;
-				float fscale = 1.0f;
-				if (scale > 0)
-				{
-					scale = 1 << scale;
-					fscale *= (float)scale;
-				}
-				else if (scale < 0)
-				{
-					scale = -scale;
-					scale = 1 << scale;
-					fscale = fscale / (float)scale;
-				}
 				SetPSConstant4f(C_INDTEXMTX + 2 * i,
 					(float)bpmem.indmtx[i].col0.ma,
 					(float)bpmem.indmtx[i].col1.mc,
 					(float)bpmem.indmtx[i].col2.me,
-					fscale);
+					(float)scale);
 				SetPSConstant4f(C_INDTEXMTX + 2 * i + 1,
 					(float)bpmem.indmtx[i].col0.mb,
 					(float)bpmem.indmtx[i].col1.md,
 					(float)bpmem.indmtx[i].col2.mf,
-					fscale);
+					(float)scale);
 
-                PRIM_LOG("indmtx%d: scale=%f, mat=(%f %f %f; %f %f %f)\n",
-                	i, fscale,
-                	bpmem.indmtx[i].col0.ma, bpmem.indmtx[i].col1.mc, bpmem.indmtx[i].col2.me,
-                	bpmem.indmtx[i].col0.mb, bpmem.indmtx[i].col1.md, bpmem.indmtx[i].col2.mf);
+				PRIM_LOG("indmtx%d: scale=%f, mat=(%f %f %f; %f %f %f)\n",
+					i, scale,
+					bpmem.indmtx[i].col0.ma, bpmem.indmtx[i].col1.mc, bpmem.indmtx[i].col2.me,
+					bpmem.indmtx[i].col0.mb, bpmem.indmtx[i].col1.md, bpmem.indmtx[i].col2.mf);
 
 				s_nIndTexMtxChanged &= ~(1 << i);
 			}
-        }
-    }
+		}
+	}
 
-    if (s_bFogColorChanged)
+	if (s_bFogColorChanged)
 	{
 		SetPSConstant4f(C_FOG, (float)bpmem.fog.color.r, (float)bpmem.fog.color.g, (float)bpmem.fog.color.b, 0.0f);
 		s_bFogColorChanged = false;
-    }
+	}
 
-    if (s_bFogParamChanged)
+	if (s_bFogParamChanged)
 	{
-		if(!g_ActiveConfig.bDisableFog)
+		if (!g_ActiveConfig.bDisableFog)
 		{
 			//downscale magnitude to 0.24 bits
 			float b = (float)bpmem.fog.b_magnitude / 0xFFFFFF;
@@ -252,12 +240,12 @@ void PixelShaderManager::SetConstants()
 		else
 			SetPSConstant4f(C_FOG + 1, 0.0, 1.0, 0.0, 1.0);
 
-        s_bFogParamChanged = false;
-    }
+		s_bFogParamChanged = false;
+	}
 
 	if (s_bFogRangeAdjustChanged)
 	{
-		if(!g_ActiveConfig.bDisableFog && bpmem.fogRange.Base.Enabled == 1)
+		if (!g_ActiveConfig.bDisableFog && bpmem.fogRange.Base.Enabled == 1)
 		{
 			//bpmem.fogRange.Base.Center : center of the viewport in x axis. observation: bpmem.fogRange.Base.Center = realcenter + 342;
 			int center = ((u32)bpmem.fogRange.Base.Center) - 342;
@@ -269,7 +257,7 @@ void PixelShaderManager::SetConstants()
 			// they always seems to be larger than 256 so my theory is :
 			// they are the coefficients from the center to the border of the screen
 			// so to simplify I use the hi coefficient as K in the shader taking 256 as the scale
-			SetPSConstant4f(C_FOG + 2, ScreenSpaceCenter, (float)Renderer::EFBToScaledX((int)(2.0f * xfregs.viewport.wd)), bpmem.fogRange.K[4].HI / 256.0f,0.0f);
+			SetPSConstant4f(C_FOG + 2, ScreenSpaceCenter, (float)Renderer::EFBToScaledX((int)(2.0f * xfregs.viewport.wd)), bpmem.fogRange.K[4].HI / 256.0f, 0.0f);
 		}
 		else
 		{
@@ -306,11 +294,11 @@ void PixelShaderManager::SetConstants()
 						fabs(xfmemptr[2]) < 0.00001f)
 					{
 						// dist attenuation, make sure not equal to 0!!!
-						SetPSConstant4f(C_PLIGHTS+5*i+j+1, 0.00001f, xfmemptr[1], xfmemptr[2], 0);
+						SetPSConstant4f(C_PLIGHTS + 5 * i + j + 1, 0.00001f, xfmemptr[1], xfmemptr[2], 0);
 					}
 					else
 					{
-						SetPSConstant4fv(C_PLIGHTS+5*i+j+1, xfmemptr);
+						SetPSConstant4fv(C_PLIGHTS + 5 * i + j + 1, xfmemptr);
 					}
 				}
 			}
@@ -396,7 +384,7 @@ void PixelShaderManager::SetColorChanged(int type, int num, bool high)
 	}
 
 	s_nColorsChanged[type] |= 1 << num;
-	PRIM_LOG("pixel %scolor%d: %f %f %f %f\n", type?"k":"", num, pf[0], pf[1], pf[2], pf[3]);
+	PRIM_LOG("pixel %scolor%d: %f %f %f %f\n", type ? "k" : "", num, pf[0], pf[1], pf[2], pf[3]);
 }
 
 void PixelShaderManager::SetAlpha(const AlphaTest& alpha)
@@ -479,7 +467,7 @@ void PixelShaderManager::SetFogRangeAdjustChanged()
 
 void PixelShaderManager::SetColorMatrix(const float* pmatrix)
 {
-	SetMultiPSConstant4fv(C_COLORMATRIX,7,pmatrix);
+	SetMultiPSConstant4fv(C_COLORMATRIX, 7, pmatrix);
 	s_nColorsChanged[0] = s_nColorsChanged[1] = 15;
 }
 
@@ -487,10 +475,10 @@ void PixelShaderManager::InvalidateXFRange(int start, int end)
 {
 	if (start < XFMEM_LIGHTS_END && end > XFMEM_LIGHTS)
 	{
-		int _start = start < XFMEM_LIGHTS ? XFMEM_LIGHTS : start-XFMEM_LIGHTS;
-		int _end = end < XFMEM_LIGHTS_END ? end-XFMEM_LIGHTS : XFMEM_LIGHTS_END-XFMEM_LIGHTS;
+		int _start = start < XFMEM_LIGHTS ? XFMEM_LIGHTS : start - XFMEM_LIGHTS;
+		int _end = end < XFMEM_LIGHTS_END ? end - XFMEM_LIGHTS : XFMEM_LIGHTS_END - XFMEM_LIGHTS;
 
-		if (nLightsChanged[0] == -1 )
+		if (nLightsChanged[0] == -1)
 		{
 			nLightsChanged[0] = _start;
 			nLightsChanged[1] = _end;
@@ -505,7 +493,7 @@ void PixelShaderManager::InvalidateXFRange(int start, int end)
 
 void PixelShaderManager::SetMaterialColorChanged(int index)
 {
-	nMaterialsChanged  |= (1 << index);
+	nMaterialsChanged |= (1 << index);
 }
 
 void PixelShaderManager::DoState(PointerWrap &p)
