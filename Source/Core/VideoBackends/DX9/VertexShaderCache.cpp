@@ -1,9 +1,6 @@
 // Copyright 2013 Dolphin Emulator Project
 // Licensed under GPLv2
 // Refer to the license.txt file included.
-
-#include <map>
-
 #include "Common/Common.h"
 #include "Common/FileUtil.h"
 #include "Common/LinearDiskCache.h"

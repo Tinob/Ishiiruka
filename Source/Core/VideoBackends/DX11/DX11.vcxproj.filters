@@ -123,6 +123,9 @@
     <ClInclude Include="PerfQuery.h">
       <Filter>Render</Filter>
     </ClInclude>
+    <ClInclude Include="D3DWrapDeviceContext.h">
+      <Filter>D3D</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="D3D">

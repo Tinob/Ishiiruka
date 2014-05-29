@@ -23,8 +23,9 @@ public:
 	D3DVertexFormat() : m_num_elems(0), m_vs_bytecode(NULL), m_layout(NULL) {}
 	~D3DVertexFormat() { SAFE_RELEASE(m_vs_bytecode); SAFE_RELEASE(m_layout); }
 
-	void Initialize(const PortableVertexDeclaration &_vtx_decl);
-	void SetupVertexPointers();
+	void Initialize(const PortableVertexDeclaration &_vtx_decl) override;
+	void SetupVertexPointers() override;
+	bool Equal(NativeVertexFormat const &) const override;
 };
 
 NativeVertexFormat* VertexManager::CreateNativeVertexFormat()
@@ -138,6 +139,12 @@ void D3DVertexFormat::SetupVertexPointers()
 		DX11::D3D::SetDebugObjectName((ID3D11DeviceChild*)m_layout, "input layout used to emulate the GX pipeline");
 	}
 	DX11::D3D::context->IASetInputLayout(m_layout);
+}
+
+bool D3DVertexFormat::Equal(NativeVertexFormat const& other) const
+{
+	D3DVertexFormat const & d3dvf = static_cast<D3DVertexFormat const &>(other);
+	return d3dvf.m_num_elems == m_num_elems && memcmp(m_elems, d3dvf.m_elems, sizeof(D3D11_INPUT_ELEMENT_DESC)*m_num_elems) == 0;
 }
 
 } // namespace DX11

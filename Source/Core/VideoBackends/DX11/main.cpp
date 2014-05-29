@@ -99,7 +99,8 @@ void InitBackendInfo()
 	g_Config.backend_info.bSupportsDualSourceBlend = true;
 	g_Config.backend_info.bSupportsFormatReinterpretation = true;
 	g_Config.backend_info.bSupportsPixelLighting = true;
-	g_Config.backend_info.bSupportsPrimitiveRestart = true;
+	// not worth the effort, less efficient index generation, too much reset ratio over real primitives
+	g_Config.backend_info.bSupportsPrimitiveRestart = false;
 	g_Config.backend_info.bNeedBlendIndices = false;
 	IDXGIFactory* factory;
 	IDXGIAdapter* ad;
