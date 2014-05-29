@@ -4,13 +4,12 @@
 
 #ifndef _VERTEXSHADERCACHE_H
 #define _VERTEXSHADERCACHE_H
-
+#include <unordered_map>
 #include "VideoCommon/VertexShaderGen.h"
-
 #include "D3DBase.h"
 #include "D3DBlob.h"
 
-#include <map>
+
 
 namespace DX11 {
 
@@ -54,7 +53,7 @@ private:
 			SAFE_RELEASE(bytecode);
 		}
 	};
-	typedef std::map<VertexShaderUid, VSCacheEntry> VSCache;
+	typedef std::unordered_map<VertexShaderUid, VSCacheEntry, VertexShaderUid::ShaderUidHasher> VSCache;
 	
 	static VSCache vshaders;
 	static const VSCacheEntry* last_entry;

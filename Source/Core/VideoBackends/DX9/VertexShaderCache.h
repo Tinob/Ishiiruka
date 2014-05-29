@@ -6,7 +6,7 @@
 
 #include "D3DBase.h"
 
-#include <map>
+#include <unordered_map>
 #include <string>
 
 #include "D3DBase.h"
@@ -33,7 +33,7 @@ private:
 		}
 	};
 
-	typedef std::map<VertexShaderUid, VSCacheEntry> VSCache;
+	typedef std::unordered_map<VertexShaderUid, VSCacheEntry, VertexShaderUid::ShaderUidHasher> VSCache;
 
 	static VSCache vshaders;
 	static const VSCacheEntry *last_entry;

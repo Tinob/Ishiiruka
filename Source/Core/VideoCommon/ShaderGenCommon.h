@@ -25,6 +25,7 @@
 #include <algorithm>
 
 #include "Common/CommonTypes.h"
+#include "Common/Hash.h"
 #include "VideoCommon/VideoCommon.h"
 
 /**
@@ -102,7 +103,13 @@ public:
 
 	const uid_data& GetUidData() const { return data; }
 	size_t GetUidDataSize() const { return sizeof(uid_data); }
-
+	struct ShaderUidHasher
+	{
+		std::size_t operator()(const ShaderUid<uid_data>& k) const
+		{
+			return (std::size_t)HashAdler32(k.values, k.data.NumValues());
+		}
+	};
 private:
 	union
 	{
@@ -110,6 +117,8 @@ private:
 		u8 values[sizeof(uid_data)];
 	};
 };
+
+
 
 class ShaderCode : public ShaderGeneratorInterface
 {

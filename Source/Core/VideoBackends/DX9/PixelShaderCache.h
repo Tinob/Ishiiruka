@@ -8,7 +8,7 @@
 #include "Common/LinearDiskCache.h"
 #include "D3DBase.h"
 
-#include <map>
+#include <unordered_map>
 
 #include "VideoCommon/PixelShaderGen.h"
 #include "VideoCommon/VertexShaderGen.h"
@@ -39,7 +39,7 @@ private:
 		}
 	};
 
-	typedef std::map<PixelShaderUid, PSCacheEntry> PSCache;
+	typedef std::unordered_map<PixelShaderUid, PSCacheEntry, PixelShaderUid::ShaderUidHasher> PSCache;
 
 	static PSCache PixelShaders;
 	static const PSCacheEntry *last_entry;
