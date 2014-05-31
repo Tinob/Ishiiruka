@@ -212,16 +212,10 @@ static const tevSources tevAOutputSourceMap[] = { tevSources::APREV, tevSources:
 static const char* headerUtil = "float4 CHK_O_U8(float4 x)\n{\nreturn frac(((x) + 1024.0) * (1.0/256.0)) * 256.0;\n}\n"
 "float2 BSH(float2 x, float2 n)\n"
 "{\n"
-"float2 z = exp2(n);\n"
+"float2 z = exp2(-n);\n"
 "float2 y = (1.0f / z) - 1.0;\n"
 "x.x = (x.x - ((z.x < 1.0 && x.x < 0.0) ? y.x : 0.0)) * z.x;\n"
 "x.y = (x.y - ((z.y < 1.0 && x.y < 0.0) ? y.y : 0.0)) * z.y;\n"
-"return trunc(x);\n"
-"}\n"
-"float2 BSHR(float2 x, float2 y, float2 z)\n"
-"{\n"
-"x.x = (x.x - ((x.x < 0.0) ? y.x : 0.0)) * z.x;\n"
-"x.y = (x.y - ((x.y < 0.0) ? y.y : 0.0)) * z.y;\n"
 "return trunc(x);\n"
 "}\n"
 // Fastmod implementation with the restriction that "y" must be always greater than 0
@@ -321,7 +315,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 		DeclareUniform<T, ApiType>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_ALPHA, "float4", I_ALPHA);
 		DeclareUniform<T, ApiType>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_TEXDIMS, "float4", I_TEXDIMS "[8]");
 		DeclareUniform<T, ApiType>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_ZBIAS, "float4", I_ZBIAS "[2]");
-		DeclareUniform<T, ApiType>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_INDTEXSCALE, "float4", I_INDTEXSCALE "[4]");
+		DeclareUniform<T, ApiType>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_INDTEXSCALE, "float4", I_INDTEXSCALE "[2]");
 		DeclareUniform<T, ApiType>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_INDTEXMTX, "float4", I_INDTEXMTX "[6]");
 		DeclareUniform<T, ApiType>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_FOG, "float4", I_FOG "[3]");
 
@@ -591,14 +585,14 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 			{
 				if (texcoord < numTexgen)
 				{
-					out.Write("t_coord = BSHR(uv%d.xy, " I_INDTEXSCALE "[%d].xy, " I_INDTEXSCALE "[%d].zw);\n", texcoord, i, i);
+					out.Write("t_coord = BSH(uv%d.xy , " I_INDTEXSCALE"[%d].%s);\n", texcoord, i / 2, (i & 1) ? "zw" : "xy");
 				}
 				else
 				{
 					out.Write("t_coord = float2(0.0,0.0);\n");
 				}
 				out.Write("float3 indtex%d = ", i);
-				SampleTexture<T, Write_Code, ApiType>(out, "(round(t_coord) * (1.0/128.0))", "abg", texmap);
+				SampleTexture<T, Write_Code, ApiType>(out, "(t_coord/128.0)", "abg", texmap);
 			}
 		}
 	}
@@ -751,7 +745,7 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, co
 {
 	int texcoord = bpmem.tevorders[n / 2].getTexCoord(n & 1);
 	bool bHasTexCoord = (u32)texcoord < bpmem.genMode.numtexgens;
-	bool bHasIndStage = bpmem.tevind[n].IsActive() && bpmem.tevind[n].bt < bpmem.genMode.numindstages;
+	bool bHasIndStage = bpmem.tevind[n].bt < bpmem.genMode.numindstages;
 	// HACK to handle cases where the tex gen is not enabled
 	if (!bHasTexCoord)
 		texcoord = 0;
@@ -800,70 +794,70 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, co
 					"8.0"	// 5 bits
 				};
 
-				out.Write("a_bump = floor(indtex%d.%s * %s) * %s;\n",
+				out.Write("a_bump = trunc(indtex%d.%s * %s) * %s;\n",
 					bpmem.tevind[n].bt,
 					tevIndAlphaSel[bpmem.tevind[n].bs],
 					tevIndAlphaScale[bpmem.tevind[n].fmt],
 					tevIndAlphaNormFactor[bpmem.tevind[n].fmt]);
 			}
 
-			static const char *tevIndFmtScale[] =
-			{
-				"(1.0/256.0)",	// 8 bits (& 0xFF)
-				"(1.0/32.0)",	// 5 bits (& 0x1F)
-				"(1.0/16.0)",	// 4 bits (& 0x0F)
-				"(1.0/8.0)"		// 3 bits (& 0x07)
-			};
-
-			static const char *tevIndFmtNormFactor[] =
-			{
-				"256.0",// 8 bits
-				"32.0",	// 5 bits
-				"16.0",	// 4 bits
-				"8.0"	// 3 bits
-			};
-
-			// format
-			// to mask the lower bits the formula is:
-			// having x as number to mask stored in a float
-			// nb as the number of bits to mask			
-			// then result = frac(x * 255.0 / (2^nb) * (2^nb)
-			// for 3 bits result = frac(x * 255.0 / 8.0) * 8.0
-			if (bpmem.tevind[n].fmt > 0)
-			{
-				out.Write("float3 indtevcrd%d = round(frac(indtex%d * %s) * %s);\n",
-					n,
-					bpmem.tevind[n].bt,
-					tevIndFmtScale[bpmem.tevind[n].fmt],
-					tevIndFmtNormFactor[bpmem.tevind[n].fmt]);
-			}
-			else
-			{
-				out.Write("float3 indtevcrd%d = indtex%d;\n",
-					n,
-					bpmem.tevind[n].bt);
-			}
-
-
-			static const char *tevIndBiasField[] = { "", "x", "y", "xy", "z", "xz", "yz", "xyz" }; // indexed by bias
-			static const char *tevIndBiasAdd[] = { "-128.0", "1.0", "1.0", "1.0" }; // indexed by fmt
-			// bias
-			if (bpmem.tevind[n].bias == ITB_S || bpmem.tevind[n].bias == ITB_T || bpmem.tevind[n].bias == ITB_U)
-				out.Write("indtevcrd%d.%s += %s;\n", n, tevIndBiasField[bpmem.tevind[n].bias], tevIndBiasAdd[bpmem.tevind[n].fmt]);
-			else if (bpmem.tevind[n].bias == ITB_ST || bpmem.tevind[n].bias == ITB_SU || bpmem.tevind[n].bias == ITB_TU)
-				out.Write("indtevcrd%d.%s += float2(%s, %s);\n", n, tevIndBiasField[bpmem.tevind[n].bias], tevIndBiasAdd[bpmem.tevind[n].fmt], tevIndBiasAdd[bpmem.tevind[n].fmt]);
-			else if (bpmem.tevind[n].bias == ITB_STU)
-				out.Write("indtevcrd%d.%s += float3(%s, %s, %s);\n", n, tevIndBiasField[bpmem.tevind[n].bias], tevIndBiasAdd[bpmem.tevind[n].fmt], tevIndBiasAdd[bpmem.tevind[n].fmt], tevIndBiasAdd[bpmem.tevind[n].fmt]);
-
-			// multiply by offset matrix and scale
 			if (bpmem.tevind[n].mid != 0)
 			{
+				static const char *tevIndFmtScale[] =
+				{
+					"(1.0/256.0)",	// 8 bits (& 0xFF)
+					"(1.0/32.0)",	// 5 bits (& 0x1F)
+					"(1.0/16.0)",	// 4 bits (& 0x0F)
+					"(1.0/8.0)"		// 3 bits (& 0x07)
+				};
+
+				static const char *tevIndFmtNormFactor[] =
+				{
+					"256.0",// 8 bits
+					"32.0",	// 5 bits
+					"16.0",	// 4 bits
+					"8.0"	// 3 bits
+				};
+
+				// format
+				// to mask the lower bits the formula is:
+				// having x as number to mask stored in a float
+				// nb as the number of bits to mask			
+				// then result = frac(x * 255.0 / (2^nb) * (2^nb)
+				// for 3 bits result = frac(x * 255.0 / 8.0) * 8.0
+				if (bpmem.tevind[n].fmt > 0)
+				{
+					out.Write("float3 indtevcrd%d = round(frac(indtex%d * %s) * %s);\n",
+						n,
+						bpmem.tevind[n].bt,
+						tevIndFmtScale[bpmem.tevind[n].fmt],
+						tevIndFmtNormFactor[bpmem.tevind[n].fmt]);
+				}
+				else
+				{
+					out.Write("float3 indtevcrd%d = indtex%d;\n",
+						n,
+						bpmem.tevind[n].bt);
+				}
+
+
+				static const char *tevIndBiasField[] = { "", "x", "y", "xy", "z", "xz", "yz", "xyz" }; // indexed by bias
+				static const char *tevIndBiasAdd[] = { "-128.0", "1.0", "1.0", "1.0" }; // indexed by fmt
+				// bias
+				if (bpmem.tevind[n].bias == ITB_S || bpmem.tevind[n].bias == ITB_T || bpmem.tevind[n].bias == ITB_U)
+					out.Write("indtevcrd%d.%s += %s;\n", n, tevIndBiasField[bpmem.tevind[n].bias], tevIndBiasAdd[bpmem.tevind[n].fmt]);
+				else if (bpmem.tevind[n].bias == ITB_ST || bpmem.tevind[n].bias == ITB_SU || bpmem.tevind[n].bias == ITB_TU)
+					out.Write("indtevcrd%d.%s += float2(%s, %s);\n", n, tevIndBiasField[bpmem.tevind[n].bias], tevIndBiasAdd[bpmem.tevind[n].fmt], tevIndBiasAdd[bpmem.tevind[n].fmt]);
+				else if (bpmem.tevind[n].bias == ITB_STU)
+					out.Write("indtevcrd%d.%s += float3(%s, %s, %s);\n", n, tevIndBiasField[bpmem.tevind[n].bias], tevIndBiasAdd[bpmem.tevind[n].fmt], tevIndBiasAdd[bpmem.tevind[n].fmt], tevIndBiasAdd[bpmem.tevind[n].fmt]);
+				
+				// multiply by offset matrix and scale
 				if (bpmem.tevind[n].mid <= 3)
 				{
 					int mtxidx = 2 * (bpmem.tevind[n].mid - 1);
-					out.Write("float2 indtevtrans%d = float2(dot(" I_INDTEXMTX "[%d].xyz, indtevcrd%d), dot(" I_INDTEXMTX "[%d].xyz, indtevcrd%d));\n",
+					out.Write("float2 indtevtrans%d = round(float2(dot(" I_INDTEXMTX "[%d].xyz, indtevcrd%d), dot(" I_INDTEXMTX "[%d].xyz, indtevcrd%d)));\n",
 						n, mtxidx, n, mtxidx + 1, n);
-					out.Write("indtevtrans%d = BSHR(indtevtrans%d, float2(7.0,7.0), float2(1.0,1.0)/8.0);\n", n, n);
+					out.Write("indtevtrans%d = BSH(indtevtrans%d, float2(3.0,3.0));\n", n, n);
 					out.Write("indtevtrans%d = BSH(indtevtrans%d, " I_INDTEXMTX "[%d].ww);\n", n, n, mtxidx);
 				}
 				else if (bpmem.tevind[n].mid <= 7 && bHasTexCoord)
@@ -871,7 +865,7 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, co
 					_assert_(bpmem.tevind[n].mid >= 5);
 					int mtxidx = 2 * (bpmem.tevind[n].mid - 5);
 					out.Write("float2 indtevtrans%d = uv%d.xy * indtevcrd%d.xx;\n", n, texcoord, n);
-					out.Write("indtevtrans%d = BSHR(indtevtrans%d, float2(255.0,255.0), float2(1.0,1.0)/256.0);\n", n, n);
+					out.Write("indtevtrans%d = BSH(indtevtrans%d, float2(8.0,8.0));\n", n, n);
 					out.Write("indtevtrans%d = BSH(indtevtrans%d, " I_INDTEXMTX "[%d].ww);\n", n, n, mtxidx);
 				}
 				else if (bpmem.tevind[n].mid <= 11 && bHasTexCoord)
@@ -879,7 +873,7 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, co
 					_assert_(bpmem.tevind[n].mid >= 9);
 					int mtxidx = 2 * (bpmem.tevind[n].mid - 9);
 					out.Write("float2 indtevtrans%d = uv%d.xy * indtevcrd%d.yy;\n", n, texcoord, n);
-					out.Write("indtevtrans%d = BSHR(indtevtrans%d, float2(255.0,255.0), float2(1.0,1.0)/256.0);\n", n, n);
+					out.Write("indtevtrans%d = BSH(indtevtrans%d, float2(8.0,8.0));\n", n, n);
 					out.Write("indtevtrans%d = BSH(indtevtrans%d, " I_INDTEXMTX "[%d].ww);\n", n, n, mtxidx);
 				}
 				else

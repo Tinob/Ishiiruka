@@ -386,7 +386,7 @@ struct TevStageCombiner
 			u32 unused : 11;
 		};
 
-		bool IsActive() { return (hex & 0x17fe00) != 0; }
+		bool IsActive() { return bs != ITBA_OFF || mid != 0; }
 	};
 
 	union TwoTevStageOrders
@@ -427,9 +427,6 @@ union TEXSCALE
 		u32 rid : 8;
 	};
 	u32 hex;
-
-	float getScaleS(int i){return (float)(1<<(i?ss1:ss0));}
-	float getScaleT(int i){return (float)(1<<(i?ts1:ts0));}
 };
 
 union RAS1_IREF

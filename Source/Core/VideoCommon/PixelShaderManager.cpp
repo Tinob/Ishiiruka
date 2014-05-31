@@ -151,41 +151,25 @@ void PixelShaderManager::SetConstants()
 	// indirect incoming texture scales
 	if (s_nIndTexScaleChanged)
 	{
-		// set as 4 sets of vec4s, each containing S and T.
-		float f[16];
+		// set as two sets of vec4s, each containing S and T of two ind stages.
+		float f[8];
 
 		if (s_nIndTexScaleChanged & 0x03)
 		{
-			float scaleS = bpmem.texscale[0].getScaleS(0);
-			float scaleT = bpmem.texscale[0].getScaleT(0);
-			f[0] = scaleS - 1.0f;
-			f[1] = scaleT - 1.0f;
-			f[2] = 1.0f / scaleS;
-			f[3] = 1.0f / scaleT;
-			scaleS = bpmem.texscale[0].getScaleS(1);
-			scaleT = bpmem.texscale[0].getScaleT(1);
-			f[4] = scaleS - 1.0f;
-			f[5] = scaleT - 1.0f;
-			f[6] = 1.0f / scaleS;
-			f[7] = 1.0f / scaleT;
-			SetMultiPSConstant4fv(C_INDTEXSCALE, 2, f);
+			f[0] = (float)bpmem.texscale[0].ss0;
+			f[1] = (float)bpmem.texscale[0].ts0;
+			f[2] = (float)bpmem.texscale[0].ss1;
+			f[3] = (float)bpmem.texscale[0].ts1;
+			SetPSConstant4fv(C_INDTEXSCALE, f);
 		}
 
 		if (s_nIndTexScaleChanged & 0x0c)
 		{
-			float scaleS = bpmem.texscale[1].getScaleS(0);
-			float scaleT = bpmem.texscale[1].getScaleT(0);
-			f[8] = scaleS - 1.0f;
-			f[9] = scaleT - 1.0f;
-			f[10] = 1.0f / scaleS;
-			f[11] = 1.0f / scaleT;
-			scaleS = bpmem.texscale[1].getScaleS(1);
-			scaleT = bpmem.texscale[1].getScaleT(1);
-			f[12] = scaleS - 1.0f;
-			f[13] = scaleT - 1.0f;
-			f[14] = 1.0f / scaleS;
-			f[15] = 1.0f / scaleT;
-			SetMultiPSConstant4fv(C_INDTEXSCALE + 2, 2, &f[8]);
+			f[4] = (float)bpmem.texscale[1].ss0;
+			f[5] = (float)bpmem.texscale[1].ts0;
+			f[6] = (float)bpmem.texscale[1].ss1;
+			f[7] = (float)bpmem.texscale[1].ts1;
+			SetPSConstant4fv(C_INDTEXSCALE + 1, &f[4]);
 		}
 		s_nIndTexScaleChanged = 0;
 	}
@@ -199,7 +183,7 @@ void PixelShaderManager::SetConstants()
 				int scale = ((u32)bpmem.indmtx[i].col0.s0 << 0) |
 					((u32)bpmem.indmtx[i].col1.s1 << 2) |
 					((u32)bpmem.indmtx[i].col2.s2 << 4);
-				scale = scale - 17;
+				scale = 17 - scale;
 				SetPSConstant4f(C_INDTEXMTX + 2 * i,
 					(float)bpmem.indmtx[i].col0.ma,
 					(float)bpmem.indmtx[i].col1.mc,
@@ -294,11 +278,13 @@ void PixelShaderManager::SetConstants()
 						fabs(xfmemptr[2]) < 0.00001f)
 					{
 						// dist attenuation, make sure not equal to 0!!!
-						SetPSConstant4f(C_PLIGHTS + 5 * i + j + 1, 0.00001f, xfmemptr[1], xfmemptr[2], 0);
+						SetPSConstant4f(C_PLIGHTS + 5 * i + j + 1, 0.00001f, xfmemptr[1], xfmemptr[2], 0.0f);
 					}
 					else
 					{
-						SetPSConstant4fv(C_PLIGHTS + 5 * i + j + 1, xfmemptr);
+						float len = xfmemptr[0] * xfmemptr[0] + xfmemptr[1] * xfmemptr[1] + xfmemptr[2] * xfmemptr[2];
+						len = sqrtf(len);
+						SetPSConstant4f(C_PLIGHTS + 5 * i + j + 1, xfmemptr[0] * len, xfmemptr[1] * len, xfmemptr[2] * len, 0.0f);
 					}
 				}
 			}
