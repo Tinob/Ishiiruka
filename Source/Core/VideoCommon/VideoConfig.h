@@ -41,6 +41,8 @@ enum EFBScale {
 	SCALE_2_5X,
 	SCALE_3X,
 	SCALE_4X,
+	SCALE_5X,
+	SCALE_6X,
 };
 
 enum Stereo3DMode {

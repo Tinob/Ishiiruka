@@ -201,6 +201,14 @@ bool Renderer::CalculateTargetSize(unsigned int framebuffer_width, unsigned int 
 			efb_scale_numeratorX = efb_scale_numeratorY = 4;
 			efb_scale_denominatorX = efb_scale_denominatorY = 1;
 			break;
+		case 8: // 5x
+			efb_scale_numeratorX = efb_scale_numeratorY = 5;
+			efb_scale_denominatorX = efb_scale_denominatorY = 1;
+			break;
+		case 9: // 6x
+			efb_scale_numeratorX = efb_scale_numeratorY = 6;
+			efb_scale_denominatorX = efb_scale_denominatorY = 1;
+			break;
 
 		default: // fractional & integral handled later
 			break;
@@ -289,6 +297,12 @@ void Renderer::DrawDebugText()
 		break;
 	case SCALE_4X:
 		res_text = "4x";
+		break;
+	case SCALE_5X:
+		res_text = "5x";
+		break;
+	case SCALE_6X:
+		res_text = "6x";
 		break;
 	}
 
