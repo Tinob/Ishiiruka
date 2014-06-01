@@ -25,7 +25,6 @@ public:
 	~D3DVertexFormat();
 	void Initialize(const PortableVertexDeclaration &_vtx_decl) override;
 	void SetupVertexPointers() override;
-	bool Equal(NativeVertexFormat const &) const override;
 	D3DVERTEXELEMENT9 m_elements[32];
 	int m_num_elements;
 };
@@ -164,12 +163,6 @@ void D3DVertexFormat::SetupVertexPointers()
 		DX9::D3D::SetVertexDeclaration(d3d_decl);
 	else
 		ERROR_LOG(VIDEO, "Invalid D3D decl");
-}
-
-bool D3DVertexFormat::Equal(NativeVertexFormat const& other) const
-{
-	D3DVertexFormat const & d3dvf = static_cast<D3DVertexFormat const &>(other);
-	return d3dvf.m_num_elements == m_num_elements && memcmp(m_elements, d3dvf.m_elements, sizeof(D3DVERTEXELEMENT9)*m_num_elements) == 0;
 }
 
 } // namespace DX9

@@ -21,7 +21,6 @@ namespace OGL
 
 		void Initialize(const PortableVertexDeclaration &_vtx_decl) override;
 		void SetupVertexPointers() override;
-		bool Equal(NativeVertexFormat const &) const override;
 		
 		GLuint VAO;
 	};

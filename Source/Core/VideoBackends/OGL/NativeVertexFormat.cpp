@@ -96,8 +96,5 @@ void GLVertexFormat::Initialize(const PortableVertexDeclaration &_vtx_decl)
 void GLVertexFormat::SetupVertexPointers() {
 }
 
-bool GLVertexFormat::Equal(NativeVertexFormat const &) const {
-	return false;
-}
 
 }

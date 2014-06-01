@@ -850,10 +850,7 @@ int VertexLoader::SetupRunVertices(int vtx_attr_group, int primitive, int const 
 	// Flush if our vertex format is different from the currently set.
 	if(g_nativeVertexFmt != nullptr && g_nativeVertexFmt != m_NativeFmt)
 	{
-		if (!g_nativeVertexFmt->Equal(*m_NativeFmt))
-		{
-			VertexManager::Flush();
-		}
+		VertexManager::Flush();
 	}
 	g_nativeVertexFmt = m_NativeFmt;
 
