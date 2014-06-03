@@ -2,16 +2,14 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _LOGMANAGER_H_
-#define _LOGMANAGER_H_
+#pragma once
 
-#include "Common/Log.h"
-#include "Common/StringUtil.h"
-#include "Common/Thread.h"
-#include "Common/FileUtil.h"
-
+#include <cstdarg>
+#include <fstream>
 #include <set>
-#include <string.h>
+
+#include "Common/Common.h"
+#include "Common/StdMutex.h"
 
 #define MAX_MESSAGES 8000
 #define MAX_MSGLEN  1024
@@ -31,7 +29,7 @@ class FileLogListener : public LogListener
 public:
 	FileLogListener(const char *filename);
 
-	void Log(LogTypes::LOG_LEVELS, const char *msg);
+	void Log(LogTypes::LOG_LEVELS, const char *msg) override;
 
 	bool IsValid() { return !m_logfile.fail(); }
 	bool IsEnabled() const { return m_enable; }
@@ -48,7 +46,7 @@ private:
 class DebuggerLogListener : public LogListener
 {
 public:
-	void Log(LogTypes::LOG_LEVELS, const char *msg);
+	void Log(LogTypes::LOG_LEVELS, const char *msg) override;
 };
 
 class LogContainer
@@ -67,9 +65,9 @@ public:
 	bool IsEnabled() const { return m_enable; }
 	void SetEnable(bool enable) { m_enable = enable; }
 
-	LogTypes::LOG_LEVELS GetLevel() const { return m_level;	}
+	LogTypes::LOG_LEVELS GetLevel() const { return m_level; }
 
-	void SetLevel(LogTypes::LOG_LEVELS level) {	m_level = level; }
+	void SetLevel(LogTypes::LOG_LEVELS level) { m_level = level; }
 
 	bool HasListeners() const { return !m_listeners.empty(); }
 
@@ -97,7 +95,7 @@ private:
 	~LogManager();
 public:
 
-	static u32 GetMaxLevel() { return MAX_LOGLEVEL;	}
+	static u32 GetMaxLevel() { return MAX_LOGLEVEL; }
 
 	void Log(LogTypes::LOG_LEVELS level, LogTypes::LOG_TYPE type,
 			 const char *file, int line, const char *fmt, va_list args);
@@ -165,5 +163,3 @@ public:
 	static void Init();
 	static void Shutdown();
 };
-
-#endif // _LOGMANAGER_H_

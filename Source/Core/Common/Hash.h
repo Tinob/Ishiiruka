@@ -2,9 +2,9 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
+#pragma once
 
-#ifndef _HASH_H_
-#define _HASH_H_
+#include <cstddef>
 
 #include "Common/Common.h"
 
@@ -17,4 +17,3 @@ u64 GetHashHiresTexture(const u8 *src, int len, u32 samples);
 u64 GetMurmurHash3(const u8 *src, int len, u32 samples);
 u64 GetHash64(const u8 *src, int len, u32 samples);
 void SetHash64Function(bool useHiresTextures);
-#endif // _HASH_H_

@@ -5,13 +5,11 @@
 
 // This header contains type definitions that are shared between the Dolphin core and
 // other parts of the code. Any definitions that are only used by the core should be
-// placed in "Common/Common.h" instead.
+// placed in "Common.h" instead.
 
-#ifndef _COMMONTYPES_H_
-#define _COMMONTYPES_H_
+#pragma once
 
 #include <cstdint>
-#include <cstddef>
 
 #ifdef _WIN32
 
@@ -47,5 +45,3 @@ typedef int64_t s64;
 #define LONG int
 
 #endif // _WIN32
-
-#endif // _COMMONTYPES_H_

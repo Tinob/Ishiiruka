@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="org.dolphinemu.dolphinemu"
-    android:versionCode="12"
-    android:versionName="0.12"
+    android:versionCode="13"
+    android:versionName="0.13"
     android:installLocation="auto">
 
     <uses-sdk
         android:minSdkVersion="14"
-        android:targetSdkVersion="18" />
+        android:targetSdkVersion="19" />
 
     <uses-feature android:glEsVersion="0x00020000" />
 
@@ -33,14 +33,27 @@
             </intent-filter>
         </activity>
 
-        <activity android:name="org.dolphinemu.dolphinemu.gamelist.GameListActivity" />
+        <activity
+            android:name="org.dolphinemu.dolphinemu.about.AboutActivity"
+            android:theme="@android:style/Theme.Holo.Light" />
 
-        <activity android:name="org.dolphinemu.dolphinemu.emulation.EmulationActivity"
-                  android:screenOrientation="landscape" />
+        <activity
+            android:name="org.dolphinemu.dolphinemu.gamelist.GameListActivity"
+            android:theme="@android:style/Theme.Holo.Light" />
+
+        <activity
+            android:name="org.dolphinemu.dolphinemu.emulation.EmulationActivity"
+            android:screenOrientation="landscape" />
+
+        <activity
+            android:name="org.dolphinemu.dolphinemu.settings.input.overlayconfig.OverlayConfigActivity"
+            android:screenOrientation="landscape"
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen"/>
 
         <activity
             android:name="org.dolphinemu.dolphinemu.settings.PrefsActivity"
-            android:label="@string/settings" />
+            android:label="@string/settings"
+            android:theme="@android:style/Theme.Holo.Light" />
 
     </application>
 

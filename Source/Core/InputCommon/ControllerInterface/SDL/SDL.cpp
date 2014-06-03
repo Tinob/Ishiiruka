@@ -1,10 +1,13 @@
+// Copyright 2014 Dolphin Emulator Project
+// Licensed under GPLv2
+// Refer to the license.txt file included.
 
-#include "SDL.h"
-#include "Common/StringUtil.h"
-
+#include <algorithm>
 #include <map>
 #include <sstream>
-#include <algorithm>
+
+#include "Common/StringUtil.h"
+#include "InputCommon/ControllerInterface/SDL/SDL.h"
 
 #ifdef _WIN32
 #pragma comment(lib, "SDL2.lib")
@@ -28,12 +31,12 @@ void Init( std::vector<Core::Device*>& devices )
 {
 	// this is used to number the joysticks
 	// multiple joysticks with the same name shall get unique ids starting at 0
-	std::map<std::string, int>	name_counts;
+	std::map<std::string, int> name_counts;
 
 	if (SDL_Init( SDL_INIT_FLAGS ) >= 0)
 	{
 		// joysticks
-		for(int i = 0; i < SDL_NumJoysticks(); ++i)
+		for (int i = 0; i < SDL_NumJoysticks(); ++i)
 		{
 			SDL_Joystick* dev = SDL_JoystickOpen(i);
 			if (dev)
@@ -64,17 +67,27 @@ Joystick::Joystick(SDL_Joystick* const joystick, const int sdl_index, const unsi
 	std::string lcasename = GetName();
 	std::transform(lcasename.begin(), lcasename.end(), lcasename.begin(), tolower);
 
-	if ((std::string::npos != lcasename.find("xbox 360"))
-		&& (10 == SDL_JoystickNumButtons(joystick))
-		&& (5 == SDL_JoystickNumAxes(joystick))
-		&& (1 == SDL_JoystickNumHats(joystick))
-		&& (0 == SDL_JoystickNumBalls(joystick))
-		)
+	if ((std::string::npos != lcasename.find("xbox 360")) &&
+	    (10 == SDL_JoystickNumButtons(joystick)) &&
+	    (5 == SDL_JoystickNumAxes(joystick)) &&
+	    (1 == SDL_JoystickNumHats(joystick)) &&
+	    (0 == SDL_JoystickNumBalls(joystick)))
 	{
 		// this device won't be used
 		return;
 	}
 #endif
+
+	if (SDL_JoystickNumButtons(joystick) > 255 ||
+	    SDL_JoystickNumAxes(joystick) > 255 ||
+	    SDL_JoystickNumHats(joystick) > 255 ||
+	    SDL_JoystickNumBalls(joystick) > 255)
+	{
+		// This device is invalid, don't use it
+		// Some crazy devices(HP webcam 2100) end up as HID devices
+		// SDL tries parsing these as joysticks
+		return;
+	}
 
 	// get buttons
 	for (u8 i = 0; i != SDL_JoystickNumButtons(m_joystick); ++i)
@@ -154,12 +167,13 @@ Joystick::~Joystick()
 	{
 		// stop/destroy all effects
 		SDL_HapticStopAll(m_haptic);
-		std::list<EffectIDState>::iterator
-			i = m_state_out.begin(),
-			e = m_state_out.end();
-		for ( ; i != e; ++i)
-			if (i->id != -1)
-				SDL_HapticDestroyEffect(m_haptic, i->id);
+		for (auto &i : m_state_out)
+		{
+			if (i.id != -1)
+			{
+				SDL_HapticDestroyEffect(m_haptic, i.id);
+			}
+		}
 		// close haptic first
 		SDL_HapticClose(m_haptic);
 	}
@@ -210,7 +224,7 @@ void Joystick::ConstantEffect::SetState(ControlState state)
 	}
 
 	const Sint16 old = m_effect.effect.constant.level;
-	m_effect.effect.constant.level = state * 0x7FFF;
+	m_effect.effect.constant.level = (Sint16)(state * 0x7FFF);
 	if (old != m_effect.effect.constant.level)
 		m_effect.changed = true;
 }
@@ -228,7 +242,7 @@ void Joystick::RampEffect::SetState(ControlState state)
 	}
 
 	const Sint16 old = m_effect.effect.ramp.start;
-	m_effect.effect.ramp.start = state * 0x7FFF;
+	m_effect.effect.ramp.start = (Sint16)(state * 0x7FFF);
 	if (old != m_effect.effect.ramp.start)
 		m_effect.changed = true;
 }
@@ -247,7 +261,7 @@ void Joystick::SineEffect::SetState(ControlState state)
 
 	const Sint16 old = m_effect.effect.periodic.magnitude;
 	m_effect.effect.periodic.period = 5;
-	m_effect.effect.periodic.magnitude = state * 0x5000;
+	m_effect.effect.periodic.magnitude = (Sint16)(state * 0x5000);
 	m_effect.effect.periodic.attack_length = 0;
 	m_effect.effect.periodic.fade_length = 500;
 
@@ -293,7 +307,7 @@ void Joystick::TriangleEffect::SetState(ControlState state)
 
 	const Sint16 old = m_effect.effect.periodic.magnitude;
 	m_effect.effect.periodic.period = 5;
-	m_effect.effect.periodic.magnitude = state * 0x5000;
+	m_effect.effect.periodic.magnitude = (Sint16)(state * 0x5000);
 	m_effect.effect.periodic.attack_length = 0;
 	m_effect.effect.periodic.fade_length = 100;
 
@@ -313,34 +327,35 @@ bool Joystick::UpdateInput()
 bool Joystick::UpdateOutput()
 {
 #ifdef USE_SDL_HAPTIC
-	std::list<EffectIDState>::iterator
-		i = m_state_out.begin(),
-		e = m_state_out.end();
-	for ( ; i != e; ++i)
+	for (auto &i : m_state_out)
 	{
-		if (i->changed)	// if SetState was called on this output
+		if (i.changed) // if SetState was called on this output
 		{
-			if (-1 == i->id)	// effect isn't currently uploaded
+			if (-1 == i.id) // effect isn't currently uploaded
 			{
-				if (i->effect.type)		// if outputstate is >0  this would be true
-					if ((i->id = SDL_HapticNewEffect( m_haptic, &i->effect )) > -1)	// upload the effect
-						SDL_HapticRunEffect(m_haptic, i->id, 1);	// run the effect
-			}
-			else	// effect is already uploaded
-			{
-				if (i->effect.type)	// if ouputstate >0
+				if (i.effect.type) // if outputstate is >0  this would be true
 				{
-					SDL_HapticUpdateEffect(m_haptic, i->id, &i->effect);	// update the effect
+					if ((i.id = SDL_HapticNewEffect(m_haptic, &i.effect)) > -1) // upload the effect
+					{
+						SDL_HapticRunEffect(m_haptic, i.id, 1); // run the effect
+					}
+				}
+			}
+			else // effect is already uploaded
+			{
+				if (i.effect.type) // if ouputstate >0
+				{
+					SDL_HapticUpdateEffect(m_haptic, i.id, &i.effect); // update the effect
 				}
 				else
 				{
-					SDL_HapticStopEffect(m_haptic, i->id);	// else, stop and remove the effect
-					SDL_HapticDestroyEffect(m_haptic, i->id);
-					i->id = -1;	// mark it as not uploaded
+					SDL_HapticStopEffect(m_haptic, i.id); // else, stop and remove the effect
+					SDL_HapticDestroyEffect(m_haptic, i.id);
+					i.id = -1; // mark it as not uploaded
 				}
 			}
 
-			i->changed = false;
+			i.changed = false;
 		}
 	}
 #endif

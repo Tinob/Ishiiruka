@@ -2,83 +2,88 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef __FRAME_H_
-#define __FRAME_H_
+#pragma once
 
-#include <wx/wx.h> // wxWidgets
-#include <wx/busyinfo.h>
-#include <wx/mstream.h>
-#include <wx/listctrl.h>
-#include <wx/artprov.h>
-#include <wx/aui/aui.h>
-#include <wx/tooltip.h>
+#include <cstddef>
+#include <mutex>
 #include <string>
 #include <vector>
+#include <wx/bitmap.h>
+#include <wx/chartype.h>
+#include <wx/defs.h>
+#include <wx/event.h>
+#include <wx/frame.h>
+#include <wx/gdicmn.h>
+#include <wx/image.h>
+#include <wx/mstream.h>
+#include <wx/panel.h>
+#include <wx/string.h>
+#include <wx/toplevel.h>
+#include <wx/windowid.h>
 
-#ifdef __APPLE__
-#include <Cocoa/Cocoa.h>
-#endif
+#include "Common/CommonTypes.h"
+#include "Common/Event.h"
+#include "DolphinWX/Globals.h"
+#include "InputCommon/GCPadStatus.h"
 
-#include "Common/CDUtils.h"
-#include "Debugger/CodeWindow.h"
-#include "LogWindow.h"
-#include "LogConfigWindow.h"
-#include "TASInputDlg.h"
-#include "Core/Movie.h"
 #if defined(HAVE_X11) && HAVE_X11
-#include "X11Utils.h"
+#include "DolphinWX/X11Utils.h"
 #endif
-
-// A shortcut to access the bitmaps
-#define wxGetBitmapFromMemory(name) _wxGetBitmapFromMemory(name, sizeof(name))
-static inline wxBitmap _wxGetBitmapFromMemory(const unsigned char* data, int length)
-{
-	wxMemoryInputStream is(data, length);
-	return(wxBitmap(wxImage(is, wxBITMAP_TYPE_ANY, -1), -1));
-}
 
 // Class declarations
 class CGameListCtrl;
-class GameListItem;
+class CCodeWindow;
 class CLogWindow;
 class FifoPlayerDlg;
+class LogConfigWindow;
 class NetPlaySetupDiag;
+class TASInputDlg;
 class wxCheatsWindow;
+
+class wxAuiManager;
+class wxAuiManagerEvent;
+class wxAuiNotebook;
+class wxAuiNotebookEvent;
+class wxAuiToolBar;
+class wxAuiToolBarEvent;
+class wxListEvent;
+class wxMenuItem;
+class wxWindow;
 
 // The CPanel class to receive MSWWindowProc messages from the video backend.
 class CPanel : public wxPanel
 {
-	public:
-		CPanel(
-			wxWindow* parent,
-			wxWindowID id = wxID_ANY
-			);
+public:
+	CPanel(
+		wxWindow* parent,
+		wxWindowID id = wxID_ANY
+		);
 
-	private:
-		DECLARE_EVENT_TABLE();
+private:
+	DECLARE_EVENT_TABLE();
 
-		#ifdef _WIN32
-			// Receive WndProc messages
-			WXLRESULT MSWWindowProc(WXUINT nMsg, WXWPARAM wParam, WXLPARAM lParam);
-		#endif
+#ifdef _WIN32
+	// Receive WndProc messages
+	WXLRESULT MSWWindowProc(WXUINT nMsg, WXWPARAM wParam, WXLPARAM lParam);
+#endif
 };
 
 class CRenderFrame : public wxFrame
 {
-	public:
-		CRenderFrame(wxFrame* parent,
-			wxWindowID id = wxID_ANY,
-			const wxString& title = wxT("Dolphin"),
-			const wxPoint& pos = wxDefaultPosition,
-			const wxSize& size = wxDefaultSize,
-			long style = wxDEFAULT_FRAME_STYLE | wxNO_FULL_REPAINT_ON_RESIZE);
+public:
+	CRenderFrame(wxFrame* parent,
+		wxWindowID id = wxID_ANY,
+		const wxString& title = "Dolphin",
+		const wxPoint& pos = wxDefaultPosition,
+		const wxSize& size = wxDefaultSize,
+		long style = wxDEFAULT_FRAME_STYLE | wxNO_FULL_REPAINT_ON_RESIZE);
 
-	private:
-		void OnDropFiles(wxDropFilesEvent& event);
-		#ifdef _WIN32
-			// Receive WndProc messages
-			WXLRESULT MSWWindowProc(WXUINT nMsg, WXWPARAM wParam, WXLPARAM lParam);
-		#endif
+private:
+	void OnDropFiles(wxDropFilesEvent& event);
+#ifdef _WIN32
+	// Receive WndProc messages
+	WXLRESULT MSWWindowProc(WXUINT nMsg, WXWPARAM wParam, WXLPARAM lParam);
+#endif
 
 };
 
@@ -87,7 +92,7 @@ class CFrame : public CRenderFrame
 public:
 	CFrame(wxFrame* parent,
 		wxWindowID id = wxID_ANY,
-		const wxString& title = wxT("Dolphin"),
+		const wxString& title = "Dolphin",
 		const wxPoint& pos = wxDefaultPosition,
 		const wxSize& size = wxDefaultSize,
 		bool _UseDebugger = false,
@@ -99,13 +104,13 @@ public:
 
 	void* GetRenderHandle()
 	{
-		#ifdef _WIN32
-			return (void *)m_RenderParent->GetHandle();
-		#elif defined(HAVE_X11) && HAVE_X11
-			return (void *)X11Utils::XWindowFromHandle(m_RenderParent->GetHandle());
-		#else
-			return m_RenderParent;
-		#endif
+#ifdef _WIN32
+		return (void *)m_RenderParent->GetHandle();
+#elif defined(HAVE_X11) && HAVE_X11
+		return (void *)X11Utils::XWindowFromHandle(m_RenderParent->GetHandle());
+#else
+		return m_RenderParent;
+#endif
 	}
 
 	// These have to be public
@@ -122,7 +127,6 @@ public:
 	void UpdateGameList();
 	void ToggleLogWindow(bool bShow);
 	void ToggleLogConfigWindow(bool bShow);
-	void ToggleConsole(bool bShow);
 	void PostEvent(wxCommandEvent& event);
 	void StatusBarMessage(const char * Text, ...);
 	void ClearStatusBar();
@@ -133,8 +137,8 @@ public:
 	void OnRenderParentMove(wxMoveEvent& event);
 	bool RendererHasFocus();
 	void DoFullscreen(bool bF);
-	void ToggleDisplayMode (bool bFullscreen);
-	void UpdateWiiMenuChoice(wxMenuItem *WiiMenuItem=NULL);
+	void ToggleDisplayMode(bool bFullscreen);
+	void UpdateWiiMenuChoice(wxMenuItem *WiiMenuItem = nullptr);
 	static void ConnectWiimote(int wm_idx, bool connect);
 
 	const CGameListCtrl *GetGameListCtrl() const;
@@ -164,7 +168,7 @@ public:
 		std::vector<int> Width, Height;
 	};
 	std::vector<SPerspectives> Perspectives;
-	u32 ActivePerspective;	
+	u32 ActivePerspective;
 
 private:
 	CGameListCtrl* m_GameListCtrl;
@@ -233,15 +237,14 @@ private:
 	void ResetToolbarStyle();
 	void TogglePaneStyle(bool On, int EventId);
 	void ToggleNotebookStyle(bool On, long Style);
-	void ResizeConsole();
 	// Float window
 	void DoUnfloatPage(int Id);
 	void OnFloatingPageClosed(wxCloseEvent& event);
 	void OnFloatingPageSize(wxSizeEvent& event);
 	void DoFloatNotebookPage(wxWindowID Id);
 	wxFrame * CreateParentFrame(wxWindowID Id = wxID_ANY,
-			const wxString& title = wxT(""),
-			wxWindow * = NULL);
+		const wxString& title = "",
+		wxWindow * = nullptr);
 	wxString AuiFullscreen, AuiCurrent;
 	void AddPane();
 	void UpdateCurrentPerspective();
@@ -250,10 +253,10 @@ private:
 	void OnPaneClose(wxAuiManagerEvent& evt);
 	void ReloadPanes();
 	void DoLoadPerspective();
-	void OnDropDownToolbarSelect(wxCommandEvent& event);		
+	void OnDropDownToolbarSelect(wxCommandEvent& event);
 	void OnDropDownSettingsToolbar(wxAuiToolBarEvent& event);
 	void OnDropDownToolbarItem(wxAuiToolBarEvent& event);
-	void OnSelectPerspective(wxCommandEvent& event);		
+	void OnSelectPerspective(wxCommandEvent& event);
 
 #ifdef _WIN32
 	// Override window proc for tricks like screensaver disabling
@@ -284,7 +287,7 @@ private:
 	void OnChangeDisc(wxCommandEvent& event);
 	void OnScreenshot(wxCommandEvent& event);
 	void OnActive(wxActivateEvent& event);
-	void OnClose(wxCloseEvent &event);	
+	void OnClose(wxCloseEvent &event);
 	void OnLoadState(wxCommandEvent& event);
 	void OnSaveState(wxCommandEvent& event);
 	void OnLoadStateFromFile(wxCommandEvent& event);
@@ -352,6 +355,3 @@ void OnAfterLoadCallback();
 // For TASInputDlg
 void TASManipFunction(SPADStatus *PadStatus, int controllerID);
 bool TASInputHasFocus();
-
-#endif  // __FRAME_H_
-

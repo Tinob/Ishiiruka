@@ -2,24 +2,25 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include "GeckoCodeConfig.h"
+#include <sstream>
+#include <string>
+#include <vector>
 
 #include "Common/StringUtil.h"
 
-#include <vector>
-#include <string>
-#include <sstream>
+#include "Core/GeckoCodeConfig.h"
 
 namespace Gecko
 {
 
 void LoadCodes(const IniFile& globalIni, const IniFile& localIni, std::vector<GeckoCode>& gcodes)
 {
-	const IniFile* inis[] = { &globalIni, &localIni };
-	for (size_t i = 0; i < ArraySize(inis); ++i)
+	const IniFile* inis[2] = { &globalIni, &localIni };
+
+	for (const IniFile* ini : inis)
 	{
 		std::vector<std::string> lines;
-		inis[i]->GetLines("Gecko", lines, false);
+		ini->GetLines("Gecko", &lines, false);
 
 		GeckoCode gcode;
 
@@ -28,23 +29,23 @@ void LoadCodes(const IniFile& globalIni, const IniFile& localIni, std::vector<Ge
 			if (line.empty())
 				continue;
 
-			std::istringstream	ss(line);
+			std::istringstream ss(line);
 
 			switch ((line)[0])
 			{
 
 				// enabled or disabled code
-			case '+':
+			case '+' :
 				ss.seekg(1);
-			case '$':
+			case '$' :
 				if (gcode.name.size())
 					gcodes.push_back(gcode);
 				gcode = GeckoCode();
-				gcode.enabled = (1 == ss.tellg());	// silly
-				gcode.user_defined = i == 1;
+				gcode.enabled = (1 == ss.tellg());  // silly
+				gcode.user_defined = (ini == &localIni);
 				ss.seekg(1, std::ios_base::cur);
 				// read the code name
-				std::getline(ss, gcode.name, '[');	// stop at [ character (beginning of contributor name)
+				std::getline(ss, gcode.name, '[');  // stop at [ character (beginning of contributor name)
 				gcode.name = StripSpaces(gcode.name);
 				// read the code creator name
 				std::getline(ss, gcode.creator, ']');
@@ -56,7 +57,7 @@ void LoadCodes(const IniFile& globalIni, const IniFile& localIni, std::vector<Ge
 				break;
 
 				// either part of the code, or an option choice
-			default:
+			default :
 			{
 				GeckoCode::Code new_code;
 				// TODO: support options
@@ -71,19 +72,25 @@ void LoadCodes(const IniFile& globalIni, const IniFile& localIni, std::vector<Ge
 
 		// add the last code
 		if (gcode.name.size())
+		{
 			gcodes.push_back(gcode);
+		}
 
-		inis[i]->GetLines("Gecko_Enabled", lines, false);
+		ini->GetLines("Gecko_Enabled", &lines, false);
 
-		for (auto line : lines)
+		for (const std::string& line : lines)
 		{
 			if (line.size() == 0 || line[0] != '$')
+			{
 				continue;
+			}
 			std::string name = line.substr(1);
-			for (auto& ogcode : gcodes)
+			for (GeckoCode& ogcode : gcodes)
 			{
 				if (ogcode.name == name)
+				{
 					ogcode.enabled = true;
+				}
 			}
 		}
 	}

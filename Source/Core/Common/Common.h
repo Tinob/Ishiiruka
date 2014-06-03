@@ -2,22 +2,25 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _COMMON_H_
-#define _COMMON_H_
+#pragma once
 
 // DO NOT EVER INCLUDE <windows.h> directly _or indirectly_ from this file
 // since it slows down the build a lot.
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+
+#ifndef __has_feature
+#define __has_feature(x) 0
+#endif
 
 // SVN version number
 extern const char *scm_desc_str;
 extern const char *scm_branch_str;
 extern const char *scm_rev_str;
-extern const char *scm_rev_git_str;
 extern const char *scm_rev_cache_str;
+extern const char *scm_rev_git_str;
 extern const char *netplay_dolphin_ver;
 
 // Force enable logging in the right modes. For some reason, something had changed
@@ -25,6 +28,14 @@ extern const char *netplay_dolphin_ver;
 #if defined(_DEBUG) || defined(DEBUGFAST)
 #undef LOGGING
 #define LOGGING 1
+#endif
+
+#if defined(__GNUC__) || __clang__
+// Disable "unused function" warnings for the ones manually marked as such.
+#define UNUSED __attribute__((unused))
+#else
+// Not sure MSVC even checks this...
+#define UNUSED
 #endif
 
 #define STACKALIGN
@@ -46,10 +57,6 @@ private:
 	NonCopyable& operator=(NonCopyable& other);
 };
 #endif
-
-#include "Common/Log.h"
-#include "Common/CommonTypes.h"
-#include "MsgHandler.h"
 
 #ifdef __APPLE__
 // The Darwin ABI requires that stack frames be aligned to 16-byte boundaries.
@@ -100,24 +107,10 @@ private:
 #endif
 
 // Windows compatibility
-#define _M_64BIT defined(_LP64) || defined(_WIN64)
 #ifndef _WIN32
 #include <limits.h>
 #define MAX_PATH PATH_MAX
-#ifdef __x86_64__
-#define _M_X64 1
-#endif
-#ifdef __i386__
-#define _M_IX86 1
-#endif
-#ifdef __arm__
-#define _M_ARM 1
-#define _M_GENERIC 1
-#endif
-#ifdef __mips__
-#define _M_MIPS 1
-#define _M_GENERIC 1
-#endif
+
 #define __forceinline inline __attribute__((always_inline))
 #define GC_ALIGNED16(x) __attribute__((aligned(16))) x
 #define GC_ALIGNED32(x) __attribute__((aligned(32))) x
@@ -174,6 +167,7 @@ enum EMUSTATE_CHANGE
 	EMUSTATE_CHANGE_STOP
 };
 
-#include "Common/CommonFuncs.h"
-
-#endif // _COMMON_H_
+#include "Common/CommonTypes.h" // IWYU pragma: export
+#include "Common/CommonFuncs.h" // IWYU pragma: export // NOLINT
+#include "Common/Log.h" // IWYU pragma: export
+#include "Common/MsgHandler.h" // IWYU pragma: export

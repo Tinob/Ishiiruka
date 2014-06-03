@@ -86,7 +86,7 @@ inline int iround(float x)
 {
 	int t;
 
-#if defined(_WIN32) && !defined(_M_X64)
+#if defined(_WIN32) && !defined(_M_X86_64)
 	__asm
 	{
 		fld  x

@@ -14,6 +14,7 @@
 #include "Core/HW/Memmap.h"
 #include "Core/Core.h"
 #include "Core/CoreTiming.h"
+#include "Common/FPURoundMode.h"
 
 volatile bool g_bSkipCurrentFrame = false;
 extern u8* g_pVideoData;

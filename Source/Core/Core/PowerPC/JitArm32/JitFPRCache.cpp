@@ -1,22 +1,9 @@
-// Copyright (C) 2003 Dolphin Project.
+// Copyright 2014 Dolphin Emulator Project
+// Licensed under GPLv2
+// Refer to the license.txt file included.
 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, version 2.0.
-
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License 2.0 for more details.
-
-// A copy of the GPL 2.0 should have been included with the program.
-// If not, see http://www.gnu.org/licenses/
-
-// Official SVN repository and contact information can be found at
-// http://code.google.com/p/dolphin-emu/
-
-#include "Jit.h"
-#include "JitFPRCache.h"
+#include "Core/PowerPC/JitArm32/Jit.h"
+#include "Core/PowerPC/JitArm32/JitFPRCache.h"
 
 ArmFPRCache::ArmFPRCache()
 {
@@ -29,14 +16,14 @@ void ArmFPRCache::Init(ARMXEmitter *emitter)
 	ARMReg *PPCRegs = GetPPCAllocationOrder(NUMPPCREG);
 	ARMReg *Regs = GetAllocationOrder(NUMARMREG);
 
-	for(u8 a = 0; a < NUMPPCREG; ++a)
+	for (u8 a = 0; a < NUMPPCREG; ++a)
 	{
 		ArmCRegs[a].PPCReg = 33;
 		ArmCRegs[a].Reg = PPCRegs[a];
 		ArmCRegs[a].LastLoad = 0;
 		ArmCRegs[a].PS1 = false;
 	}
-	for(u8 a = 0; a < NUMARMREG; ++a)
+	for (u8 a = 0; a < NUMARMREG; ++a)
 	{
 		ArmRegs[a].Reg = Regs[a];
 		ArmRegs[a].free = true;
@@ -74,8 +61,8 @@ ARMReg *ArmFPRCache::GetAllocationOrder(int &count)
 
 ARMReg ArmFPRCache::GetReg(bool AutoLock)
 {
-	for(u8 a = 0; a < NUMARMREG; ++a)
-		if(ArmRegs[a].free)
+	for (u8 a = 0; a < NUMARMREG; ++a)
+		if (ArmRegs[a].free)
 		{
 			// Alright, this one is free
 			if (AutoLock)
@@ -88,9 +75,9 @@ ARMReg ArmFPRCache::GetReg(bool AutoLock)
 }
 void ArmFPRCache::Unlock(ARMReg V0)
 {
-	for(u8 RegNum = 0; RegNum < NUMARMREG; ++RegNum)
+	for (u8 RegNum = 0; RegNum < NUMARMREG; ++RegNum)
 	{
-		if(ArmRegs[RegNum].Reg == V0)
+		if (ArmRegs[RegNum].Reg == V0)
 		{
 			_assert_msg_(_DYNA_REC, !ArmRegs[RegNum].free, "This register is already unlocked");
 			ArmRegs[RegNum].free = true;
@@ -101,7 +88,7 @@ u32 ArmFPRCache::GetLeastUsedRegister(bool increment)
 {
 	u32 HighestUsed = 0;
 	u8 lastRegIndex = 0;
-	for(u8 a = 0; a < NUMPPCREG; ++a){
+	for (u8 a = 0; a < NUMPPCREG; ++a){
 		if (increment)
 			++ArmCRegs[a].LastLoad;
 		if (ArmCRegs[a].LastLoad > HighestUsed)

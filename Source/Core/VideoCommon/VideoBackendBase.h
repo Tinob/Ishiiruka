@@ -11,9 +11,7 @@
 #include "Common/ChunkFile.h"
 #include "VideoCommon/PerfQueryBase.h"
 
-typedef void (*writeFn16)(const u16,const u32);
-typedef void (*writeFn32)(const u32,const u32);
-typedef void (*readFn16)(u16&, const u32);
+namespace MMIO { class Mapping; }
 
 typedef struct _EFBPeekCacheElement
 {
@@ -118,11 +116,8 @@ public:
 	virtual bool Video_IsHiWatermarkActive() = 0;
 	virtual void Video_AbortFrame() = 0;
 
-	virtual readFn16  Video_CPRead16() = 0;
-	virtual writeFn16 Video_CPWrite16() = 0;
-	virtual readFn16  Video_PERead16() = 0;
-	virtual writeFn16 Video_PEWrite16() = 0;
-	virtual writeFn32 Video_PEWrite32() = 0;
+	// Registers MMIO handlers for the CommandProcessor registers.
+	virtual void RegisterCPMMIO(MMIO::Mapping* mmio, u32 base) = 0;
 
 	static void PopulateList();
 	static void ClearList();
@@ -170,11 +165,8 @@ class VideoBackendHardware : public VideoBackend
 	bool Video_IsHiWatermarkActive();
 	void Video_AbortFrame();
 
-	readFn16  Video_CPRead16();
-	writeFn16 Video_CPWrite16();
-	readFn16  Video_PERead16();
-	writeFn16 Video_PEWrite16();
-	writeFn32 Video_PEWrite32();
+	// Registers MMIO handlers for the CommandProcessor registers.
+	void RegisterCPMMIO(MMIO::Mapping* mmio, u32 base) override;
 
 	void PauseAndLock(bool doLock, bool unpauseOnUnlock=true);
 	void DoState(PointerWrap &p);

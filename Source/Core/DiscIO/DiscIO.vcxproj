@@ -99,13 +99,13 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Externals\polarssl\visualc\PolarSSL.vcxproj">
-      <Project>{46CF2D25-6A36-4189-B59C-E4815388E554}</Project>
+      <Project>{bdb6578b-0691-4e80-a46c-df21639fd3b8}</Project>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Externals\zlib\zlib.vcxproj">
-      <Project>{3E1339F5-9311-4122-9442-369702E8FCAD}</Project>
+      <Project>{ff213b23-2c26-4214-9f88-85271e557e87}</Project>
     </ProjectReference>
     <ProjectReference Include="..\Common\Common.vcxproj">
-      <Project>{C87A4178-44F6-49B2-B7AA-C79AF1B8C534}</Project>
+      <Project>{2e6c348c-c75c-4d94-8d1e-9c1fcbf3efe4}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

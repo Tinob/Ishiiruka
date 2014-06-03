@@ -2,13 +2,13 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _WII_SAVE_CRYPTED
-#define _WII_SAVE_CRYPTED
+#pragma once
 
-#include "Common/StringUtil.h"
-#include "Common/Crypto/tools.h"
+#include <string>
+#include <vector>
 #include <polarssl/aes.h>
-#include "polarssl/md5.h"
+
+#include "Common/CommonTypes.h"
 
 // --- this is used for encrypted Wii save files
 
@@ -27,14 +27,13 @@ private:
 	void ReadBKHDR();
 	void WriteHDR();
 	void WriteBKHDR();
-	void Extract(){;}
+	void Extract(){ ; }
 	void ImportWiiSaveFiles();
 	void ExportWiiSaveFiles(); // To data.bin
 	void do_sig();
 	void make_ec_cert(u8 *cert, u8 *sig, char *signer, char *name, u8 *priv, u32 key_id);
 	bool getPaths(bool forExport = false);
 	void ScanForFiles(std::string savDir, std::vector<std::string>&FilesList, u32 *_numFiles, u32 *_sizeFiles);
-
 
 	aes_context m_AES_ctx;
 	u8 SD_IV[0x10];
@@ -45,7 +44,7 @@ private:
 	std::string WiiTitlePath;
 
 	u8  IV[0x10];
-	
+
 	u32 //_bannerSize,
 		_numberOfFiles,
 		_sizeOfFiles,
@@ -61,19 +60,19 @@ private:
 		HDR_SZ = 0x20,
 		ICON_SZ = 0x1200,
 		BNR_SZ = 0x60a0,
-		FULL_BNR_MIN = 0x72a0,	// BNR_SZ + 1*ICON_SZ
-		FULL_BNR_MAX = 0xF0A0,	// BNR_SZ + 8*ICON_SZ
-		HEADER_SZ = 0xF0C0,		// HDR_SZ + FULL_BNR_MAX
-		BK_LISTED_SZ = 0x70,	// Size before rounding to nearest block
-		BK_SZ  = 0x80,
+		FULL_BNR_MIN = 0x72a0, // BNR_SZ + 1*ICON_SZ
+		FULL_BNR_MAX = 0xF0A0, // BNR_SZ + 8*ICON_SZ
+		HEADER_SZ = 0xF0C0, // HDR_SZ + FULL_BNR_MAX
+		BK_LISTED_SZ = 0x70,   // Size before rounding to nearest block
+		BK_SZ = 0x80,
 		FILE_HDR_SZ = 0x80,
 
 		SIG_SZ = 0x40,
 		NG_CERT_SZ = 0x180,
 		AP_CERT_SZ = 0x180,
-		FULL_CERT_SZ =  0x3C0,	// SIG_SZ +	NG_CERT_SZ + AP_CERT_SZ + 0x80?
+		FULL_CERT_SZ = 0x3C0,  // SIG_SZ + NG_CERT_SZ + AP_CERT_SZ + 0x80?
 
-		BK_HDR_MAGIC   = 0x426B0001,
+		BK_HDR_MAGIC = 0x426B0001,
 		FILE_HDR_MAGIC = 0x03adf17e
 	};
 
@@ -98,8 +97,8 @@ private:
 	struct BK_Header // Not encrypted
 	{
 		u32 size;   // 0x00000070
-//		u16 magic;  // 'Bk'
-//		u16 magic2; // or version (0x0001)
+		// u16 magic;  // 'Bk'
+		// u16 magic2; // or version (0x0001)
 		u32 magic;  // 0x426B0001
 		u32 NGid;
 		u32 numberOfFiles;
@@ -126,5 +125,3 @@ private:
 	};
 #pragma pack(pop)
 };
-
-#endif

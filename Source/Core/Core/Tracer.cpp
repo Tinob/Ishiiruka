@@ -2,14 +2,13 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include <stdlib.h>
+#include <cstdlib>
 
 #include "Common/Common.h"
-#include "Tracer.h"
 #include "Common/FileUtil.h"
 
 #include "Core/Host.h"
-
+#include "Core/Tracer.h"
 #include "Core/PowerPC/PowerPC.h"
 
 namespace Core {

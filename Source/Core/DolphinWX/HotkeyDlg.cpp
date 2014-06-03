@@ -2,19 +2,40 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
+#include <cstddef>
+#include <wx/app.h>
+#include <wx/button.h>
+#include <wx/chartype.h>
+#include <wx/defs.h>
+#include <wx/dialog.h>
+#include <wx/event.h>
+#include <wx/font.h>
+#include <wx/gbsizer.h>
+#include <wx/gdicmn.h>
 #include <wx/notebook.h>
+#include <wx/panel.h>
+#include <wx/setup.h>
+#include <wx/sizer.h>
+#include <wx/stattext.h>
+#include <wx/string.h>
+#include <wx/timer.h>
+#include <wx/translation.h>
+#include <wx/windowid.h>
 
-#include "HotkeyDlg.h"
 #include "Core/ConfigManager.h"
+#include "Core/CoreParameter.h"
+#include "DolphinWX/HotkeyDlg.h"
+#include "DolphinWX/WXInputBase.h"
 
-BEGIN_EVENT_TABLE(HotkeyConfigDialog,wxDialog)
-	EVT_COMMAND_RANGE(0, NUM_HOTKEYS - 1,
-			wxEVT_COMMAND_BUTTON_CLICKED, HotkeyConfigDialog::OnButtonClick)
-	EVT_TIMER(wxID_ANY, HotkeyConfigDialog::OnButtonTimer)
+class wxWindow;
+
+BEGIN_EVENT_TABLE(HotkeyConfigDialog, wxDialog)
+EVT_COMMAND_RANGE(0, NUM_HOTKEYS - 1, wxEVT_BUTTON, HotkeyConfigDialog::OnButtonClick)
+EVT_TIMER(wxID_ANY, HotkeyConfigDialog::OnButtonTimer)
 END_EVENT_TABLE()
 
 HotkeyConfigDialog::HotkeyConfigDialog(wxWindow *parent, wxWindowID id, const wxString &title,
-		const wxPoint &position, const wxSize& size, long style)
+const wxPoint &position, const wxSize& size, long style)
 : wxDialog(parent, id, title, position, size, style)
 {
 	CreateHotkeyGUIControls();
@@ -23,7 +44,7 @@ HotkeyConfigDialog::HotkeyConfigDialog(wxWindow *parent, wxWindowID id, const wx
 	m_ButtonMappingTimer = new wxTimer(this, wxID_ANY);
 	g_Pressed = 0;
 	g_Modkey = 0;
-	ClickedButton = NULL;
+	ClickedButton = nullptr;
 	GetButtonWaitingID = 0;
 	GetButtonWaitingTimer = 0;
 #endif
@@ -47,13 +68,13 @@ void HotkeyConfigDialog::EndGetButtons(void)
 	m_ButtonMappingTimer->Stop();
 	GetButtonWaitingTimer = 0;
 	GetButtonWaitingID = 0;
-	ClickedButton = NULL;
+	ClickedButton = nullptr;
 	SetEscapeId(wxID_ANY);
 }
 
 void HotkeyConfigDialog::OnKeyDown(wxKeyEvent& event)
 {
-	if(ClickedButton != NULL)
+	if (ClickedButton != nullptr)
 	{
 		// Save the key
 		g_Pressed = event.GetKeyCode();
@@ -72,9 +93,29 @@ void HotkeyConfigDialog::OnKeyDown(wxKeyEvent& event)
 		}
 		else
 		{
+			// Check if the hotkey combination was already applied to another button
+			// and unapply it if necessary.
+			for (wxButton* btn : m_Button_Hotkeys)
+			{
+				// We compare against this to see if we have a duplicate bind attempt.
+				wxString existingHotkey = btn->GetLabel();
+
+				wxString tentativeModKey = InputCommon::WXKeymodToString(g_Modkey);
+				wxString tentativePressedKey = InputCommon::WXKeyToString(g_Pressed);
+				wxString tentativeHotkey(tentativeModKey + tentativePressedKey);
+
+				// Found a button that already has this binding. Unbind it.
+				if (tentativeHotkey == existingHotkey)
+				{
+					SaveButtonMapping(btn->GetId(), -1, 0);
+					SetButtonText(btn->GetId(), wxString());
+				}
+			}
+
+			// Proceed to apply the binding to the selected button.
 			SetButtonText(ClickedButton->GetId(),
-					InputCommon::WXKeyToString(g_Pressed),
-					InputCommon::WXKeymodToString(g_Modkey));
+				InputCommon::WXKeyToString(g_Pressed),
+				InputCommon::WXKeymodToString(g_Modkey));
 			SaveButtonMapping(ClickedButton->GetId(), g_Pressed, g_Modkey);
 		}
 		EndGetButtons();
@@ -94,9 +135,9 @@ void HotkeyConfigDialog::DoGetButtons(int _GetId)
 	const int TimesPerSecond = 40; // How often to run the check
 
 	// If the Id has changed or the timer is not running we should start one
-	if( GetButtonWaitingID != _GetId || !m_ButtonMappingTimer->IsRunning() )
+	if (GetButtonWaitingID != _GetId || !m_ButtonMappingTimer->IsRunning())
 	{
-		if(m_ButtonMappingTimer->IsRunning())
+		if (m_ButtonMappingTimer->IsRunning())
 			m_ButtonMappingTimer->Stop();
 
 		// Save the button Id
@@ -104,9 +145,9 @@ void HotkeyConfigDialog::DoGetButtons(int _GetId)
 		GetButtonWaitingTimer = 0;
 
 		// Start the timer
-		#if wxUSE_TIMER
+#if wxUSE_TIMER
 		m_ButtonMappingTimer->Start(1000 / TimesPerSecond);
-		#endif
+#endif
 	}
 
 	// Process results
@@ -119,7 +160,7 @@ void HotkeyConfigDialog::DoGetButtons(int _GetId)
 		// Current time
 		int TmpTime = Seconds - (GetButtonWaitingTimer / TimesPerSecond);
 		// Update text
-		SetButtonText(_GetId, wxString::Format(wxT("[ %d ]"), TmpTime));
+		SetButtonText(_GetId, wxString::Format("[ %d ]", TmpTime));
 	}
 
 	// Time's up
@@ -191,6 +232,7 @@ void HotkeyConfigDialog::CreateHotkeyGUIControls(void)
 		_("Toggle Aspect Ratio"),
 		_("Toggle EFB Copies"),
 		_("Toggle Fog"),
+		_("Toggle Frame limit"),
 		_("Increase Frame limit"),
 		_("Decrease Frame limit"),
 
@@ -232,18 +274,18 @@ void HotkeyConfigDialog::CreateHotkeyGUIControls(void)
 		_("Load State"),
 	};
 
-	const int page_breaks[3] = {HK_OPEN, HK_LOAD_STATE_SLOT_1, NUM_HOTKEYS};
+	const int page_breaks[3] = { HK_OPEN, HK_LOAD_STATE_SLOT_1, NUM_HOTKEYS };
 
 	// Configuration controls sizes
-	wxSize size(100,20);
+	wxSize size(100, 20);
 	// A small type font
 	wxFont m_SmallFont(7, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
 
-	wxNotebook *Notebook = new wxNotebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
+	wxNotebook *Notebook = new wxNotebook(this, wxID_ANY);
 
 	for (int j = 0; j < 2; j++)
 	{
-		wxPanel *Page = new wxPanel(Notebook, wxID_ANY, wxDefaultPosition, wxDefaultSize);
+		wxPanel *Page = new wxPanel(Notebook, wxID_ANY);
 		Notebook->AddPage(Page, pageNames[j]);
 
 		wxGridBagSizer *sHotkeys = new wxGridBagSizer();
@@ -255,34 +297,33 @@ void HotkeyConfigDialog::CreateHotkeyGUIControls(void)
 			wxStaticText *StaticTextHeader = new wxStaticText(Page, wxID_ANY, _("Action"));
 			HeaderSizer->Add(StaticTextHeader, 1, wxALL, 2);
 			StaticTextHeader = new wxStaticText(Page, wxID_ANY, _("Key"), wxDefaultPosition, size);
-			HeaderSizer->Add(StaticTextHeader, 0, wxALL, 2);	
+			HeaderSizer->Add(StaticTextHeader, 0, wxALL, 2);
 			sHotkeys->Add(HeaderSizer, wxGBPosition(0, i), wxDefaultSpan, wxEXPAND | wxLEFT, (i > 0) ? 30 : 1);
 		}
 
-		int column_break = (page_breaks[j+1] + page_breaks[j] + 1) / 2;
-		
-		for (int i = page_breaks[j]; i < page_breaks[j+1]; i++)
+		int column_break = (page_breaks[j + 1] + page_breaks[j] + 1) / 2;
+
+		for (int i = page_breaks[j]; i < page_breaks[j + 1]; i++)
 		{
 			// Text for the action
 			wxStaticText *stHotkeys = new wxStaticText(Page, wxID_ANY, hkText[i]);
 
 			// Key selection button
-			m_Button_Hotkeys[i] = new wxButton(Page, i, wxEmptyString,
-					wxDefaultPosition, size);
+			m_Button_Hotkeys[i] = new wxButton(Page, i, wxEmptyString, wxDefaultPosition, size);
 			m_Button_Hotkeys[i]->SetFont(m_SmallFont);
 			m_Button_Hotkeys[i]->SetToolTip(_("Left click to detect hotkeys.\nEnter space to clear."));
 			SetButtonText(i,
-					InputCommon::WXKeyToString(SConfig::GetInstance().m_LocalCoreStartupParameter.iHotkey[i]),
-					InputCommon::WXKeymodToString(
-						SConfig::GetInstance().m_LocalCoreStartupParameter.iHotkeyModifier[i]));
+				InputCommon::WXKeyToString(SConfig::GetInstance().m_LocalCoreStartupParameter.iHotkey[i]),
+				InputCommon::WXKeymodToString(
+				SConfig::GetInstance().m_LocalCoreStartupParameter.iHotkeyModifier[i]));
 
 			wxBoxSizer *sHotkey = new wxBoxSizer(wxHORIZONTAL);
 			sHotkey->Add(stHotkeys, 1, wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL | wxALL, 2);
 			sHotkey->Add(m_Button_Hotkeys[i], 0, wxALL, 2);
 			sHotkeys->Add(sHotkey,
-					wxGBPosition((i < column_break) ? i - page_breaks[j] + 1 : i - column_break + 1,
-						(i < column_break) ? 0 : 1),
-					wxDefaultSpan, wxEXPAND | wxLEFT, (i < column_break) ? 1 : 30);
+				wxGBPosition((i < column_break) ? i - page_breaks[j] + 1 : i - column_break + 1,
+				(i < column_break) ? 0 : 1),
+				wxDefaultSpan, wxEXPAND | wxLEFT, (i < column_break) ? 1 : 30);
 		}
 
 		wxStaticBoxSizer *sHotkeyBox = new wxStaticBoxSizer(wxVERTICAL, Page, _("Hotkeys"));

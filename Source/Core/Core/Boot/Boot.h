@@ -2,13 +2,12 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _BOOT_H
-#define _BOOT_H
+#pragma once
 
 #include <cstdlib>
 #include <string>
 
-#include "../CoreParameter.h"
+#include "Core/CoreParameter.h"
 
 #include "DiscIO/Volume.h"
 using DiscIO::IVolume;
@@ -26,29 +25,29 @@ class CBoot
 public:
 
 	static bool BootUp();
-	static bool IsElfWii(const char *filename);
+	static bool IsElfWii(const std::string& filename);
 
 	// Tries to find a map file for the current game by looking first in the
 	// local user directory, then in the shared user directory.
 	//
-	// If existing_map_file is not NULL and a map file exists, it is set to the
+	// If existing_map_file is not nullptr and a map file exists, it is set to the
 	// path to the existing map file.
 	//
-	// If writable_map_file is not NULL, it is set to the path to where a map
+	// If writable_map_file is not nullptr, it is set to the path to where a map
 	// file should be saved.
 	//
 	// Returns true if a map file exists, false if none could be found.
 	static bool FindMapFile(std::string* existing_map_file,
-		std::string* writable_map_file);
+	                        std::string* writable_map_file);
 
 private:
 	static void RunFunction(u32 _iAddr);
 
-	static void UpdateDebugger_MapLoaded(const char* _gameID = NULL);
+	static void UpdateDebugger_MapLoaded();
 
 	static bool LoadMapFromFilename();
-	static bool Boot_ELF(const char *filename);
-	static bool Boot_WiiWAD(const char *filename);
+	static bool Boot_ELF(const std::string& filename);
+	static bool Boot_WiiWAD(const std::string& filename);
 
 	static bool EmulatedBS2_GC();
 	static bool EmulatedBS2_Wii();
@@ -58,5 +57,3 @@ private:
 
 	static bool SetupWiiMemory(IVolume::ECountry country);
 };
-
-#endif

@@ -2,25 +2,25 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _DSOUNDSTREAM_H_
-#define _DSOUNDSTREAM_H_
+#pragma once
 
 #include "AudioCommon/SoundStream.h"
-#include "Common/Thread.h"
+#include "Common/Event.h"
+#include "Common/StdThread.h"
 
 #ifdef _WIN32
 #include <Windows.h>
 #include <mmsystem.h>
 #include <dsound.h>
 
-#define BUFSIZE (1024 * 8 * 4)
+#define BUFSIZE (256 * 8 * 4)
 #endif
 
-class DSound : public SoundStream
+class DSound final : public SoundStream
 {
 #ifdef _WIN32
 	std::thread thread;
-	Common::Event soundSyncEvent;
+	HANDLE soundSyncEvent;
 	void  *hWnd;
 
 	IDirectSound8* ds;
@@ -48,7 +48,7 @@ class DSound : public SoundStream
 	bool WriteDataToBuffer(DWORD dwOffset, char* soundData, DWORD dwSoundBytes);
 
 public:
-	DSound(CMixer *mixer, void *_hWnd = NULL)
+	DSound(CMixer *mixer, void *_hWnd)
 		: SoundStream(mixer)
 		, bufferSize(0)
 		, currentPos(0)
@@ -66,15 +66,11 @@ public:
 	virtual void Stop();
 	virtual void Clear(bool mute);
 	static bool isValid() { return true; }
-	virtual bool usesMixer() const { return true; }
-	virtual void Update();
 
 #else
 public:
-	DSound(CMixer *mixer, void *hWnd = NULL)
+	DSound(CMixer *mixer, void *_hWnd)
 		: SoundStream(mixer)
 	{}
 #endif
 };
-
-#endif //_DSOUNDSTREAM_H_

@@ -21,5 +21,4 @@ set(SRCS	BannerLoader.cpp
 			VolumeWiiCrypted.cpp
 			WiiWad.cpp)
 
-add_library(discio STATIC ${SRCS})
-target_link_libraries(discio common)
+add_dolphin_library(discio "${SRCS}" "")

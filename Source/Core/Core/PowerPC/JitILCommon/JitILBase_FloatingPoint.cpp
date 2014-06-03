@@ -3,20 +3,25 @@
 // Refer to the license.txt file included.
 
 #include "Common/Common.h"
-#include "JitILBase.h"
+#include "Core/PowerPC/JitILCommon/JitILBase.h"
 
 void JitILBase::fp_arith_s(UGeckoInstruction inst)
 {
 	INSTRUCTION_START
 	JITDISABLE(bJITFloatingPointOff)
-	if (inst.Rc || (inst.SUBOP5 != 25 && inst.SUBOP5 != 20 &&
-	                inst.SUBOP5 != 21 && inst.SUBOP5 != 26)) {
-		Default(inst); return;
+	if (inst.Rc || (inst.SUBOP5 != 25 && inst.SUBOP5 != 20 && inst.SUBOP5 != 21))
+	{
+		FallBackToInterpreter(inst);
+		return;
 	}
+
 	// Only the interpreter has "proper" support for (some) FP flags
-	if (inst.SUBOP5 == 25 && Core::g_CoreStartupParameter.bEnableFPRF) {
-		Default(inst); return;
+	if (inst.SUBOP5 == 25 && Core::g_CoreStartupParameter.bEnableFPRF)
+	{
+		FallBackToInterpreter(inst);
+		return;
 	}
+
 	IREmitter::InstLoc val = ibuild.EmitLoadFReg(inst.FA);
 	switch (inst.SUBOP5)
 	{
@@ -28,12 +33,6 @@ void JitILBase::fp_arith_s(UGeckoInstruction inst)
 		break;
 	case 25: //mul
 		val = ibuild.EmitFDMul(val, ibuild.EmitLoadFReg(inst.FC));
-		break;
-	case 26: //rsqrte
-		val = ibuild.EmitLoadFReg(inst.FB);
-		val = ibuild.EmitDoubleToSingle(val);
-		val = ibuild.EmitFSRSqrt(val);
-		val = ibuild.EmitDupSingleToMReg(val);
 		break;
 	default:
 		_assert_msg_(DYNA_REC, 0, "fp_arith_s WTF!!!");
@@ -52,13 +51,19 @@ void JitILBase::fmaddXX(UGeckoInstruction inst)
 {
 	INSTRUCTION_START
 	JITDISABLE(bJITFloatingPointOff)
-	if (inst.Rc) {
-		Default(inst); return;
+	if (inst.Rc)
+	{
+		FallBackToInterpreter(inst);
+		return;
 	}
+
 	// Only the interpreter has "proper" support for (some) FP flags
-	if (inst.SUBOP5 == 29 && Core::g_CoreStartupParameter.bEnableFPRF) {
-		Default(inst); return;
+	if (inst.SUBOP5 == 29 && Core::g_CoreStartupParameter.bEnableFPRF)
+	{
+		FallBackToInterpreter(inst);
+		return;
 	}
+
 	IREmitter::InstLoc val = ibuild.EmitLoadFReg(inst.FA);
 	val = ibuild.EmitFDMul(val, ibuild.EmitLoadFReg(inst.FC));
 	if (inst.SUBOP5 & 1)
@@ -80,9 +85,13 @@ void JitILBase::fmrx(UGeckoInstruction inst)
 {
 	INSTRUCTION_START
 	JITDISABLE(bJITFloatingPointOff)
-	if (inst.Rc) {
-		Default(inst); return;
+
+	if (inst.Rc)
+	{
+		FallBackToInterpreter(inst);
+		return;
 	}
+
 	IREmitter::InstLoc val = ibuild.EmitLoadFReg(inst.FB);
 	val = ibuild.EmitInsertDoubleInMReg(val, ibuild.EmitLoadFReg(inst.FD));
 	ibuild.EmitStoreFReg(val, inst.FD);
@@ -105,7 +114,8 @@ void JitILBase::fsign(UGeckoInstruction inst)
 {
 	INSTRUCTION_START
 	JITDISABLE(bJITFloatingPointOff)
-	Default(inst);
+
+	FallBackToInterpreter(inst);
 	return;
 
 	// TODO

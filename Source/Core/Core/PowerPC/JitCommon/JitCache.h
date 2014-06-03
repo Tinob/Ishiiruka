@@ -2,15 +2,14 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _JITCACHE_H
-#define _JITCACHE_H
+#pragma once
 
 #include <bitset>
 #include <map>
 #include <vector>
 
-#include "../Gekko.h"
-#include "../PPCAnalyst.h"
+#include "Core/PowerPC/Gekko.h"
+#include "Core/PowerPC/PPCAnalyst.h"
 
 // Define this in order to get VTune profile support for the Jit generated code.
 // Add the VTune include/lib directories to the project directories to get this to build.
@@ -35,24 +34,26 @@ struct JitBlock
 	const u8 *checkedEntry;
 	const u8 *normalEntry;
 
-	u8 *exitPtrs[2];     // to be able to rewrite the exit jum
-	u32 exitAddress[2];  // 0xFFFFFFFF == unknown
-
 	u32 originalAddress;
 	u32 codeSize;
 	u32 originalSize;
 	int runCount;  // for profiling.
-	int flags;
 
 	bool invalid;
-	bool linkStatus[2];
+
+	struct LinkData {
+		u8 *exitPtrs;    // to be able to rewrite the exit jum
+		u32 exitAddress;
+		bool linkStatus; // is it already linked?
+	};
+	std::vector<LinkData> linkData;
 
 #ifdef _WIN32
 	// we don't really need to save start and stop
 	// TODO (mb2): ticStart and ticStop -> "local var" mean "in block" ... low priority ;)
-	u64 ticStart;		// for profiling - time.
-	u64 ticStop;		// for profiling - time.
-	u64 ticCounter;	// for profiling - time.
+	u64 ticStart;   // for profiling - time.
+	u64 ticStop;    // for profiling - time.
+	u64 ticCounter; // for profiling - time.
 #endif
 
 #ifdef USE_VTUNE
@@ -70,10 +71,11 @@ class JitBaseBlockCache
 	int num_blocks;
 	std::multimap<u32, int> links_to;
 	std::map<std::pair<u32,u32>, u32> block_map; // (end_addr, start_addr) -> number
-	std::bitset<0x20000000 / 32> valid_block;
+	std::vector<bool> valid_block;
 	enum
 	{
-		MAX_NUM_BLOCKS = 65536*2
+		MAX_NUM_BLOCKS = 65536*2,
+		VALID_BLOCK_MASK_SIZE = 0x20000000 / 32,
 	};
 
 	bool RangeIntersect(int s1, int e1, int s2, int e2) const;
@@ -87,8 +89,8 @@ class JitBaseBlockCache
 
 public:
 	JitBaseBlockCache() :
-		blockCodePointers(0), blocks(0), num_blocks(0),
-		iCache(0), iCacheEx(0), iCacheVMEM(0) {}
+		blockCodePointers(nullptr), blocks(nullptr), num_blocks(0),
+		iCache(nullptr), iCacheEx(nullptr), iCacheVMEM(nullptr) {}
 	int AllocateBlock(u32 em_address);
 	void FinalizeBlock(int block_num, bool block_link, const u8 *code_ptr);
 
@@ -131,4 +133,3 @@ private:
 	void WriteLinkBlock(u8* location, const u8* address) override;
 	void WriteDestroyBlock(const u8* location, u32 address) override;
 };
-#endif

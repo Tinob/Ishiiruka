@@ -282,9 +282,7 @@ void PixelShaderManager::SetConstants()
 					}
 					else
 					{
-						float len = xfmemptr[0] * xfmemptr[0] + xfmemptr[1] * xfmemptr[1] + xfmemptr[2] * xfmemptr[2];
-						len = sqrtf(len);
-						SetPSConstant4f(C_PLIGHTS + 5 * i + j + 1, xfmemptr[0] * len, xfmemptr[1] * len, xfmemptr[2] * len, 0.0f);
+						SetPSConstant4fv(C_PLIGHTS + 5 * i + j + 1, xfmemptr);
 					}
 				}
 			}

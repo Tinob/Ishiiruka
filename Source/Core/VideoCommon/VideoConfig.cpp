@@ -296,5 +296,5 @@ void VideoConfig::Save(const char *ini_file)
 
 bool VideoConfig::IsVSync()
 {
-	return Core::isTabPressed ? false : bVSync;
+	return bVSync && !Core::GetIsFramelimiterTempDisabled();
 }

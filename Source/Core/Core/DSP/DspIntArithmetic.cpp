@@ -4,9 +4,9 @@
 //
 // Additional copyrights go to Duddie and Tratax (c) 2004
 
-#include "DSPInterpreter.h"
-#include "DSPIntCCUtil.h"
-#include "DSPIntUtil.h"
+#include "Core/DSP/DSPIntCCUtil.h"
+#include "Core/DSP/DSPInterpreter.h"
+#include "Core/DSP/DSPIntUtil.h"
 
 // Arithmetic and accumulator control.
 
@@ -125,18 +125,18 @@ void cmp(const UDSPInstruction opc)
 }
 
 // CMPAR $acS axR.h
-// 1100 0001 xxxx xxxx
+// 110r s001 xxxx xxxx
 // Compares accumulator $acS with accumulator axR.h.
 // Not described by Duddie's doc - at least not as a separate instruction.
 //
 // flags out: x-xx xxxx
 void cmpar(const UDSPInstruction opc)
 {
-	u8 rreg = ((opc >> 12) & 0x1) + DSP_REG_AXH0;
+	u8 rreg = (opc >> 12) & 0x1;
 	u8 sreg = (opc >> 11) & 0x1;
 
 	s64 sr = dsp_get_long_acc(sreg);
-	s64 rr = (s16)g_dsp.r.ax[rreg-DSP_REG_AXH0].h;
+	s64 rr = (s16)g_dsp.r.ax[rreg].h;
 	rr <<= 16;
 	s64 res = dsp_convert_long_acc(sr - rr);
 
@@ -370,7 +370,7 @@ void addr(const UDSPInstruction opc)
 
 	s64 acc = dsp_get_long_acc(dreg);
 	s64 ax = 0;
-	switch(sreg) {
+	switch (sreg) {
 	case DSP_REG_AXL0:
 	case DSP_REG_AXL1:
 		ax = (s16)g_dsp.r.ax[sreg-DSP_REG_AXL0].l;
@@ -569,7 +569,7 @@ void subr(const UDSPInstruction opc)
 
 	s64 acc = dsp_get_long_acc(dreg);
 	s64 ax = 0;
-	switch(sreg) {
+	switch (sreg) {
 	case DSP_REG_AXL0:
 	case DSP_REG_AXL1:
 		ax = (s16)g_dsp.r.ax[sreg-DSP_REG_AXL0].l;
@@ -745,7 +745,7 @@ void movr(const UDSPInstruction opc)
 	u8 sreg = ((opc >> 9) & 0x3) + DSP_REG_AXL0;
 
 	s64 ax = 0;
-	switch(sreg)
+	switch (sreg)
 	{
 	case DSP_REG_AXL0:
 	case DSP_REG_AXL1:
@@ -832,7 +832,7 @@ void lsr16(const UDSPInstruction opc)
 	u8 areg = (opc >> 8) & 0x1;
 
 	u64 acc = dsp_get_long_acc(areg);
-	acc &= 0x000000FFFFFFFFFFULL; 	// Lop off the extraneous sign extension our 64-bit fake accum causes
+	acc &= 0x000000FFFFFFFFFFULL; // Lop off the extraneous sign extension our 64-bit fake accum causes
 	acc >>= 16;
 
 	zeroWriteBackLog();
@@ -887,7 +887,7 @@ void lsr(const UDSPInstruction opc)
 	u8 rreg = (opc >> 8) & 0x01;
 	u16 shift;
 	u64 acc = dsp_get_long_acc(rreg);
-	acc &= 0x000000FFFFFFFFFFULL; 	// Lop off the extraneous sign extension our 64-bit fake accum causes
+	acc &= 0x000000FFFFFFFFFFULL; // Lop off the extraneous sign extension our 64-bit fake accum causes
 
 	if ((opc & 0x3f) == 0)
 		shift = 0;

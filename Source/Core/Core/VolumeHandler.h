@@ -6,10 +6,10 @@
 // Disc volume handler. It's here because Wii discs can consist of multiple volumes.
 // GC discs are seen as one big volume.
 
-#ifndef _VOLUMEHANDLER_H_
-#define _VOLUMEHANDLER_H_
+#pragma once
 
 #include <string>
+
 #include "Common/CommonTypes.h"
 #include "DiscIO/Volume.h"
 
@@ -31,5 +31,3 @@ DiscIO::IVolume *GetVolume();
 void EjectVolume();
 
 } // end of namespace VolumeHandler
-
-#endif

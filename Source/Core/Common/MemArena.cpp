@@ -2,20 +2,23 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
+#include <cstddef>
+#include <cstdlib>
 #include <set>
+#include <string>
 
-#include "Common/MemoryUtil.h"
-#include "MemArena.h"
+#include "Common/Common.h"
+#include "Common/MemArena.h"
 #include "Common/StringUtil.h"
 
 #ifdef _WIN32
 #include <windows.h>
 #else
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
 #include <cerrno>
 #include <cstring>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/mman.h>
 #ifdef ANDROID
 #include <sys/ioctl.h>
 #include <linux/ashmem.h>
@@ -33,7 +36,7 @@ int AshmemCreateFileMapping(const char *name, size_t size)
 		return fd;
 
 	// We don't really care if we can't set the name, it is optional
-	ret = ioctl(fd, ASHMEM_SET_NAME, name);
+	ioctl(fd, ASHMEM_SET_NAME, name);
 
 	ret = ioctl(fd, ASHMEM_SET_SIZE, size);
 	if (ret < 0)
@@ -49,7 +52,7 @@ int AshmemCreateFileMapping(const char *name, size_t size)
 void MemArena::GrabLowMemSpace(size_t size)
 {
 #ifdef _WIN32
-	hMemoryMapping = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, (DWORD)(size), NULL);
+	hMemoryMapping = CreateFileMapping(INVALID_HANDLE_VALUE, nullptr, PAGE_READWRITE, 0, (DWORD)(size), nullptr);
 #elif defined(ANDROID)
 	fd = AshmemCreateFileMapping("Dolphin-emu", size);
 	if (fd < 0)
@@ -126,7 +129,7 @@ void MemArena::ReleaseView(void* view, size_t size)
 
 u8* MemArena::Find4GBBase()
 {
-#ifdef _M_X64
+#if _ARCH_64
 #ifdef _WIN32
 	// 64 bit
 	u8* base = (u8*)VirtualAlloc(0, 0xE1000000, MEM_RESERVE, PAGE_READWRITE);
@@ -172,9 +175,9 @@ u8* MemArena::Find4GBBase()
 // yeah, this could also be done in like two bitwise ops...
 #define SKIP(a_flags, b_flags) \
 	if (!(a_flags & MV_WII_ONLY) && (b_flags & MV_WII_ONLY)) \
-	continue; \
+		continue; \
 	if (!(a_flags & MV_FAKE_VMEM) && (b_flags & MV_FAKE_VMEM)) \
-	continue; \
+		continue; \
 
 
 static bool Memory_TryBase(u8 *base, const MemoryView *views, int num_views, u32 flags, MemArena *arena) {
@@ -187,9 +190,9 @@ static bool Memory_TryBase(u8 *base, const MemoryView *views, int num_views, u32
 	for (int i = 0; i < num_views; i++)
 	{
 		if (views[i].out_ptr_low)
-			*views[i].out_ptr_low = 0;
+			*views[i].out_ptr_low = nullptr;
 		if (views[i].out_ptr)
-			*views[i].out_ptr = 0;
+			*views[i].out_ptr = nullptr;
 	}
 
 	int i;
@@ -198,21 +201,19 @@ static bool Memory_TryBase(u8 *base, const MemoryView *views, int num_views, u32
 		SKIP(flags, views[i].flags);
 		if (views[i].flags & MV_MIRROR_PREVIOUS) {
 			position = last_position;
-		}
-		else {
+		} else {
 			*(views[i].out_ptr_low) = (u8*)arena->CreateView(position, views[i].size);
 			if (!*views[i].out_ptr_low)
 				goto bail;
 		}
-#ifdef _M_X64
+#if _ARCH_64
 		*views[i].out_ptr = (u8*)arena->CreateView(
 			position, views[i].size, base + views[i].virtual_address);
 #else
 		if (views[i].flags & MV_MIRROR_PREVIOUS) {
 			// No need to create multiple identical views.
 			*views[i].out_ptr = *views[i - 1].out_ptr;
-		}
-		else {
+		} else {
 			*views[i].out_ptr = (u8*)arena->CreateView(
 				position, views[i].size, base + (views[i].virtual_address & 0x3FFFFFFF));
 			if (!*views[i].out_ptr)
@@ -227,7 +228,7 @@ static bool Memory_TryBase(u8 *base, const MemoryView *views, int num_views, u32
 
 bail:
 	// Argh! ERROR! Free what we grabbed so far so we can try again.
-	MemoryMap_Shutdown(views, i + 1, flags, arena);
+	MemoryMap_Shutdown(views, i+1, flags, arena);
 	return false;
 }
 
@@ -246,7 +247,7 @@ u8 *MemoryMap_Setup(const MemoryView *views, int num_views, u32 flags, MemArena 
 	arena->GrabLowMemSpace(total_mem);
 
 	// Now, create views in high memory where there's plenty of space.
-#ifdef _M_X64
+#if _ARCH_64
 	u8 *base = MemArena::Find4GBBase();
 	// This really shouldn't fail - in 64-bit, there will always be enough
 	// address space.
@@ -254,13 +255,13 @@ u8 *MemoryMap_Setup(const MemoryView *views, int num_views, u32 flags, MemArena 
 	{
 		PanicAlert("MemoryMap_Setup: Failed finding a memory base.");
 		exit(0);
-		return 0;
+		return nullptr;
 	}
 #else
 #ifdef _WIN32
 	// Try a whole range of possible bases. Return once we got a valid one.
 	u32 max_base_addr = 0x7FFF0000 - 0x31000000;
-	u8 *base = NULL;
+	u8 *base = nullptr;
 
 	for (u32 base_addr = 0x40000; base_addr < max_base_addr; base_addr += 0x40000)
 	{
@@ -296,14 +297,14 @@ void MemoryMap_Shutdown(const MemoryView *views, int num_views, u32 flags, MemAr
 	for (int i = 0; i < num_views; i++)
 	{
 		const MemoryView* view = &views[i];
-		u8** outptrs[2] = { view->out_ptr_low, view->out_ptr };
+		u8** outptrs[2] = {view->out_ptr_low, view->out_ptr};
 		for (auto outptr : outptrs)
 		{
 			if (outptr && *outptr && !freeset.count(*outptr))
 			{
 				arena->ReleaseView(*outptr, view->size);
 				freeset.insert(*outptr);
-				*outptr = NULL;
+				*outptr = nullptr;
 			}
 		}
 	}

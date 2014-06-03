@@ -2,16 +2,26 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include "DiscIO/NANDContentLoader.h"
-
-#include <algorithm>
-#include <cctype>
+#include <cstddef>
+#include <cstdio>
+#include <cstring>
+#include <functional>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 #include <polarssl/aes.h>
-#include "Common/MathUtil.h"
+
+#include "Common/Common.h"
 #include "Common/FileUtil.h"
 #include "Common/Log.h"
-#include "DiscIO/WiiWad.h"
+#include "Common/MathUtil.h"
+#include "Common/NandPaths.h"
 #include "Common/StringUtil.h"
+
+#include "DiscIO/NANDContentLoader.h"
+#include "DiscIO/Volume.h"
+#include "DiscIO/WiiWad.h"
 
 namespace DiscIO
 {
@@ -92,7 +102,7 @@ public:
 
 	virtual ~CNANDContentLoader();
 
-	bool IsValid() const override	{ return m_Valid; }
+	bool IsValid() const override { return m_Valid; }
 	void RemoveTitle(void) const override;
 	u64 GetTitleID() const override  { return m_TitleID; }
 	u16 GetIosVersion() const override { return m_IosVersion; }
@@ -147,7 +157,7 @@ CNANDContentLoader::CNANDContentLoader(const std::string& _rName)
 	, m_IosVersion(0x09)
 	, m_BootIndex(-1)
 	, m_TIKSize(0)
-	, m_TIK(NULL)
+	, m_TIK(nullptr)
 {
 	m_Valid = Initialize(_rName);
 }
@@ -162,7 +172,7 @@ CNANDContentLoader::~CNANDContentLoader()
 	if (m_TIK)
 	{
 		delete []m_TIK;
-		m_TIK = NULL;
+		m_TIK = nullptr;
 	}
 }
 
@@ -175,7 +185,7 @@ const SNANDContent* CNANDContentLoader::GetContentByIndex(int _Index) const
 			return &Content;
 		}
 	}
-	return NULL;
+	return nullptr;
 }
 
 bool CNANDContentLoader::Initialize(const std::string& _rName)
@@ -184,8 +194,8 @@ bool CNANDContentLoader::Initialize(const std::string& _rName)
 		return false;
 	m_Path = _rName;
 	WiiWAD Wad(_rName);
-	u8* pDataApp = NULL;
-	u8* pTMD = NULL;
+	u8* pDataApp = nullptr;
+	u8* pTMD = nullptr;
 	u8 DecryptTitleKey[16];
 	u8 IV[16];
 	if (Wad.IsValid())
@@ -262,7 +272,7 @@ bool CNANDContentLoader::Initialize(const std::string& _rName)
 			continue;
 		}
 
-		rContent.m_pData = NULL;
+		rContent.m_pData = nullptr;
 
 		if (rContent.m_Type & 0x8000)  // shared app
 		{
@@ -315,11 +325,9 @@ CNANDContentManager CNANDContentManager::m_Instance;
 
 CNANDContentManager::~CNANDContentManager()
 {
-	CNANDContentMap::iterator itr = m_Map.begin();
-	while (itr != m_Map.end())
+	for (auto& entry : m_Map)
 	{
-		delete itr->second;
-		++itr;
+		delete entry.second;
 	}
 	m_Map.clear();
 }
@@ -328,7 +336,7 @@ const INANDContentLoader& CNANDContentManager::GetNANDLoader(const std::string& 
 {
 	CNANDContentMap::iterator lb = m_Map.lower_bound(_rName);
 
-	if(lb == m_Map.end() || (m_Map.key_comp()(_rName, lb->first)))
+	if (lb == m_Map.end() || (m_Map.key_comp()(_rName, lb->first)))
 	{
 		m_Map.insert(lb, CNANDContentMap::value_type(_rName, new CNANDContentLoader(_rName)));
 	}
@@ -359,14 +367,14 @@ bool CNANDContentManager::RemoveTitle(u64 _titleID)
 void CNANDContentLoader::RemoveTitle() const
 {
 	INFO_LOG(DISCIO, "RemoveTitle %08x/%08x", (u32)(m_TitleID >> 32), (u32)m_TitleID);
-	if(IsValid())
+	if (IsValid())
 	{
 		// remove tmd?
 		for (u32 i = 0; i < m_numEntries; i++)
 		{
-			char szFilename[1024];
 			if (!(m_Content[i].m_Type & 0x8000)) // skip shared apps
 			{
+				char szFilename[1024];
 				sprintf(szFilename, "%s%08x.app", Common::GetTitleContentPath(m_TitleID).c_str(), m_Content[i].m_ContentID);
 				INFO_LOG(DISCIO, "Delete %s", szFilename);
 				File::Delete(szFilename);

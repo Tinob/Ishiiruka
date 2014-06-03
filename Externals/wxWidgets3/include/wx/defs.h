@@ -3502,7 +3502,7 @@ typedef const void* WXWidget;
 
 #if defined _M_IX86
     #pragma comment(linker, WX_CC_MANIFEST("x86"))
-#elif defined _M_X64
+#elif defined _M_X86_64
     #pragma comment(linker, WX_CC_MANIFEST("amd64"))
 #elif defined _M_IA64
     #pragma comment(linker, WX_CC_MANIFEST("ia64"))

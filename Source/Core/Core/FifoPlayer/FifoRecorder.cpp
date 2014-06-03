@@ -2,10 +2,12 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
+#include <algorithm>
+
+#include "Common/Thread.h"
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
-#include "FifoRecorder.h"
-#include "Common/Thread.h"
+#include "Core/FifoPlayer/FifoRecorder.h"
 #include "Core/HW/Memmap.h"
 
 static FifoRecorder instance;
@@ -18,13 +20,13 @@ FifoRecorder::FifoRecorder() :
 	m_WasRecording(false),
 	m_RequestedRecordingEnd(false),
 	m_RecordFramesRemaining(0),
-	m_FinishedCb(NULL),
-	m_File(NULL),
+	m_FinishedCb(nullptr),
+	m_File(nullptr),
 	m_SkipNextData(true),
 	m_SkipFutureData(true),
 	m_FrameEnded(false),
-	m_Ram(NULL),
-	m_ExRam(NULL)
+	m_Ram(nullptr),
+	m_ExRam(nullptr)
 {
 }
 

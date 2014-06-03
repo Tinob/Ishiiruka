@@ -2,14 +2,21 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include "Common/CommonTypes.h"
+#include <cstddef>
+#include <string>
+#include <vector>
+
 #include "Common/ColorUtil.h"
-#include "BannerLoaderGC.h"
+#include "Common/Common.h"
+
+#include "DiscIO/BannerLoaderGC.h"
+#include "DiscIO/Filesystem.h"
+#include "DiscIO/Volume.h"
 
 namespace DiscIO
 {
 CBannerLoaderGC::CBannerLoaderGC(DiscIO::IFileSystem& _rFileSystem, DiscIO::IVolume* volume)
-	: m_pBannerFile(NULL)
+	: m_pBannerFile(nullptr)
 	, m_IsValid(false)
 	, m_country(volume->GetCountry())
 {
@@ -38,7 +45,7 @@ CBannerLoaderGC::~CBannerLoaderGC()
 	if (m_pBannerFile)
 	{
 		delete [] m_pBannerFile;
-		m_pBannerFile = NULL;
+		m_pBannerFile = nullptr;
 	}
 }
 

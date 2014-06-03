@@ -2,8 +2,7 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _CPU_H
-#define _CPU_H
+#pragma once
 
 #include "Common/Common.h"
 
@@ -29,7 +28,7 @@ public:
 	static void Reset();
 
 	// StepOpcode (Steps one Opcode)
-	static void StepOpcode(Common::Event *event = 0);
+	static void StepOpcode(Common::Event *event = nullptr);
 
 	// one step only
 	static void SingleStep();
@@ -51,6 +50,3 @@ public:
 	// the return value is whether the cpu was unpaused before the call.
 	static bool PauseAndLock(bool doLock, bool unpauseOnUnlock=true);
 };
-
-#endif
-

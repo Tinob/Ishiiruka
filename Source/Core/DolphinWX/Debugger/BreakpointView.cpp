@@ -2,15 +2,27 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include <wx/wx.h>
+#include <cstddef>
+#include <cstdio>
 
-#include "BreakpointView.h"
-#include "DebuggerUIUtil.h"
-#include "Core/Debugger/Debugger_SymbolMap.h"
-#include "Core/PowerPC/PPCSymbolDB.h"
+#include <wx/chartype.h>
+#include <wx/defs.h>
+#include <wx/gdicmn.h>
+#include <wx/listbase.h>
+#include <wx/listctrl.h>
+#include <wx/string.h>
+#include <wx/windowid.h>
+
+#include "Common/BreakPoints.h"
+#include "Common/CommonTypes.h"
 #include "Core/PowerPC/PowerPC.h"
-#include "Core/HW/Memmap.h"
-#include "../WxUtils.h"
+#include "Core/PowerPC/PPCSymbolDB.h"
+#include "DolphinWX/WxUtils.h"
+#include "DolphinWX/Debugger/BreakpointView.h"
+#include "DolphinWX/Debugger/DebuggerUIUtil.h"
+
+class wxWindow;
+struct Symbol;
 
 CBreakPointView::CBreakPointView(wxWindow* parent, const wxWindowID id)
 	: wxListCtrl(parent, id, wxDefaultPosition, wxDefaultSize,
@@ -24,17 +36,16 @@ void CBreakPointView::Update()
 {
 	ClearAll();
 
-	InsertColumn(0, wxT("Active"));
-	InsertColumn(1, wxT("Type"));
-	InsertColumn(2, wxT("Function"));
-	InsertColumn(3, wxT("Address"));
-	InsertColumn(4, wxT("Flags"));
+	InsertColumn(0, _("Active"));
+	InsertColumn(1, _("Type"));
+	InsertColumn(2, _("Function"));
+	InsertColumn(3, _("Address"));
+	InsertColumn(4, _("Flags"));
 
 	char szBuffer[64];
 	const BreakPoints::TBreakPoints& rBreakPoints = PowerPC::breakpoints.GetBreakPoints();
-	for (size_t i = 0; i < rBreakPoints.size(); i++)
+	for (const auto& rBP : rBreakPoints)
 	{
-		const TBreakPoint& rBP = rBreakPoints[i];
 		if (!rBP.bTemporary)
 		{
 			wxString temp;
@@ -42,14 +53,14 @@ void CBreakPointView::Update()
 			int Item = InsertItem(0, temp);
 			temp = StrToWxStr("BP");
 			SetItem(Item, 1, temp);
-			
+
 			Symbol *symbol = g_symbolDB.GetSymbolFromAddr(rBP.iAddress);
 			if (symbol)
 			{
 				temp = StrToWxStr(g_symbolDB.GetDescription(rBP.iAddress));
 				SetItem(Item, 2, temp);
 			}
-			
+
 			sprintf(szBuffer, "%08x", rBP.iAddress);
 			temp = StrToWxStr(szBuffer);
 			SetItem(Item, 3, temp);
@@ -59,10 +70,8 @@ void CBreakPointView::Update()
 	}
 
 	const MemChecks::TMemChecks& rMemChecks = PowerPC::memchecks.GetMemChecks();
-	for (size_t i = 0; i < rMemChecks.size(); i++)
+	for (const auto& rMemCheck : rMemChecks)
 	{
-		const TMemCheck& rMemCheck = rMemChecks[i];
-
 		wxString temp;
 		temp = StrToWxStr((rMemCheck.Break || rMemCheck.Log) ? "on" : " ");
 		int Item = InsertItem(0, temp);

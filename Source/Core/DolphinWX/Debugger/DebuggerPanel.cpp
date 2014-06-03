@@ -2,16 +2,32 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include "Common/IniFile.h"
-#include "DebuggerPanel.h"
-#include "Common/FileUtil.h"
-#include "../../Core/ConfigManager.h"
+#include <cstddef>
+#include <string>
+#include <wx/button.h>
+#include <wx/chartype.h>
+#include <wx/choice.h>
+#include <wx/defs.h>
+#include <wx/event.h>
+#include <wx/gdicmn.h>
+#include <wx/msgdlg.h>
+#include <wx/panel.h>
+#include <wx/sizer.h>
+#include <wx/string.h>
+#include <wx/textctrl.h>
+#include <wx/translation.h>
+#include <wx/validate.h>
+#include <wx/windowid.h>
 
-#include "VideoCommon/VideoConfig.h"
+#include "Common/FileUtil.h"
+#include "Common/IniFile.h"
+#include "Core/ConfigManager.h"
+#include "Core/CoreParameter.h"
+#include "DolphinWX/Debugger/DebuggerPanel.h"
+#include "VideoCommon/Debugger.h"
 #include "VideoCommon/TextureCacheBase.h"
-#include "VideoCommon/PixelShaderGen.h"
-#include "VideoCommon/VertexShaderGen.h"
-#include "VideoCommon/NativeVertexFormat.h"
+
+class wxWindow;
 
 BEGIN_EVENT_TABLE(GFXDebuggerPanel, wxPanel)
 	EVT_CLOSE(GFXDebuggerPanel::OnClose)
@@ -46,7 +62,7 @@ GFXDebuggerPanel::GFXDebuggerPanel(wxWindow *parent, wxWindowID id, const wxPoin
 
 GFXDebuggerPanel::~GFXDebuggerPanel()
 {
-	g_pdebugger = NULL;
+	g_pdebugger = nullptr;
 	GFXDebuggerPauseFlag = false;
 }
 
@@ -67,9 +83,10 @@ void GFXDebuggerPanel::SaveSettings() const
 	// weird values, perhaps because of some conflict with the rendering window
 
 	// TODO: get the screen resolution and make limits from that
-	if (GetPosition().x < 1000 && GetPosition().y < 1000
-							   && GetSize().GetWidth() < 1000 
-							   && GetSize().GetHeight() < 1000)
+	if (GetPosition().x < 1000 &&
+	    GetPosition().y < 1000 &&
+	    GetSize().GetWidth() < 1000 &&
+	    GetSize().GetHeight() < 1000)
 	{
 		file.Set("VideoWindow", "x", GetPosition().x);
 		file.Set("VideoWindow", "y", GetPosition().y);
@@ -104,26 +121,26 @@ static PauseEventMap* pauseEventMap;
 void GFXDebuggerPanel::CreateGUIControls()
 {
 	static PauseEventMap map[] = {
-		{NEXT_FRAME,				_("Frame")},
-		{NEXT_FLUSH,				_("Flush")},
+		{NEXT_FRAME,                _("Frame")},
+		{NEXT_FLUSH,                _("Flush")},
 
-		{NEXT_PIXEL_SHADER_CHANGE,	_("Pixel Shader")},
-		{NEXT_VERTEX_SHADER_CHANGE,	_("Vertex Shader")},
-		{NEXT_TEXTURE_CHANGE,		_("Texture")},
-		{NEXT_NEW_TEXTURE,			_("New Texture")},
+		{NEXT_PIXEL_SHADER_CHANGE,  _("Pixel Shader")},
+		{NEXT_VERTEX_SHADER_CHANGE, _("Vertex Shader")},
+		{NEXT_TEXTURE_CHANGE,       _("Texture")},
+		{NEXT_NEW_TEXTURE,          _("New Texture")},
 
-		{NEXT_XFB_CMD,				_("XFB Cmd")},
-		{NEXT_EFB_CMD,				_("EFB Cmd")},
+		{NEXT_XFB_CMD,              _("XFB Cmd")},
+		{NEXT_EFB_CMD,              _("EFB Cmd")},
 
-		{NEXT_MATRIX_CMD,			_("Matrix Cmd")},
-		{NEXT_VERTEX_CMD,			_("Vertex Cmd")},
-		{NEXT_TEXTURE_CMD,			_("Texture Cmd")},
-		{NEXT_LIGHT_CMD,			_("Light Cmd")},
-		{NEXT_FOG_CMD,				_("Fog Cmd")},
+		{NEXT_MATRIX_CMD,           _("Matrix Cmd")},
+		{NEXT_VERTEX_CMD,           _("Vertex Cmd")},
+		{NEXT_TEXTURE_CMD,          _("Texture Cmd")},
+		{NEXT_LIGHT_CMD,            _("Light Cmd")},
+		{NEXT_FOG_CMD,              _("Fog Cmd")},
 
-		{NEXT_SET_TLUT,				_("TLUT Cmd")},
+		{NEXT_SET_TLUT,             _("TLUT Cmd")},
 
-		{NEXT_ERROR,				_("Error")}
+		{NEXT_ERROR,                _("Error")}
 	};
 	pauseEventMap = map;
 	const int numPauseEventMap = sizeof(map)/sizeof(PauseEventMap);
@@ -136,9 +153,9 @@ void GFXDebuggerPanel::CreateGUIControls()
 	m_pButtonPauseAtNextFrame = new wxButton(this, ID_PAUSE_AT_NEXT_FRAME, _("Go to Next Frame"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _("Next Frame"));
 	m_pButtonCont = new wxButton(this, ID_CONT, _("Continue"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _("Continue"));
 
-	m_pCount = new wxTextCtrl(this, ID_COUNT, wxT("1"), wxDefaultPosition, wxSize(50,25), wxTE_RIGHT, wxDefaultValidator, _("Count"));
+	m_pCount = new wxTextCtrl(this, ID_COUNT, "1", wxDefaultPosition, wxSize(50,25), wxTE_RIGHT, wxDefaultValidator, _("Count"));
 
-	m_pPauseAtList = new wxChoice(this, ID_PAUSE_AT_LIST, wxDefaultPosition, wxSize(100,25), 0, NULL,0,wxDefaultValidator, _("PauseAtList"));
+	m_pPauseAtList = new wxChoice(this, ID_PAUSE_AT_LIST, wxDefaultPosition, wxSize(100,25), 0, nullptr,0,wxDefaultValidator, _("PauseAtList"));
 	for (int i=0; i<numPauseEventMap; i++)
 	{
 		m_pPauseAtList->Append(pauseEventMap[i].ListStr);
@@ -152,7 +169,7 @@ void GFXDebuggerPanel::CreateGUIControls()
 	m_pButtonClearVertexShaderCache = new wxButton(this, ID_CLEAR_VERTEX_SHADER_CACHE, _("Clear V Shaders"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _("Clear V Shaders"));
 	m_pButtonClearPixelShaderCache = new wxButton(this, ID_CLEAR_PIXEL_SHADER_CACHE, _("Clear P Shaders"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _("Clear P Shaders"));
 
-	m_pDumpList = new wxChoice(this, ID_DUMP_LIST, wxDefaultPosition, wxSize(120,25), 0, NULL, 0 ,wxDefaultValidator, _("DumpList"));
+	m_pDumpList = new wxChoice(this, ID_DUMP_LIST, wxDefaultPosition, wxSize(120,25), 0, nullptr, 0 ,wxDefaultValidator, _("DumpList"));
 	m_pDumpList->Insert(_("Pixel Shader"),0);
 	m_pDumpList->Append(_("Vertex Shader"));
 	m_pDumpList->Append(_("Pixel Shader Constants"));

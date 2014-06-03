@@ -2,46 +2,61 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-// Include
+#include <cstdio>
+#include <string>
+#include <vector>
+#include <wx/bitmap.h>
+#include <wx/chartype.h>
+#include <wx/defs.h>
+#include <wx/event.h>
+#include <wx/gdicmn.h>
+#include <wx/image.h>
+#include <wx/listbox.h>
+#include <wx/menu.h>
+#include <wx/menuitem.h>
+#include <wx/panel.h>
+#include <wx/sizer.h>
+#include <wx/string.h>
+#include <wx/textctrl.h>
+#include <wx/textdlg.h>
+#include <wx/thread.h>
+#include <wx/translation.h>
+#include <wx/window.h>
+#include <wx/windowid.h>
+#include <wx/aui/auibar.h>
+
+#include "Common/BreakPoints.h"
 #include "Common/Common.h"
-
-#include <wx/wx.h>
-
-#include "Core/Host.h"
-
-#include "RegisterWindow.h"
-#include "BreakpointWindow.h"
-#include "MemoryWindow.h"
-#include "JitWindow.h"
-
-#include "CodeWindow.h"
-#include "CodeView.h"
-
-#include "../WxUtils.h"
-#include "Common/FileUtil.h"
+#include "Common/StringUtil.h"
+#include "Common/SymbolDB.h"
 #include "Core/Core.h"
-#include "Core/HW/Memmap.h"
-#include "Core/HLE/HLE.h"
-#include "Core/Boot/Boot.h"
-#include "Common/LogManager.h"
-#include "Core/HW/CPU.h"
-#include "Core/PowerPC/PowerPC.h"
-#include "Core/PowerPC/JitInterface.h"
-#include "Core/Debugger/PPCDebugInterface.h"
+#include "Core/CoreParameter.h"
+#include "Core/Host.h"
 #include "Core/Debugger/Debugger_SymbolMap.h"
-#include "Core/PowerPC/PPCAnalyst.h"
-#include "Core/PowerPC/Profiler.h"
+#include "Core/Debugger/PPCDebugInterface.h"
+#include "Core/HW/CPU.h"
+#include "Core/HW/Memmap.h"
+#include "Core/PowerPC/Gekko.h"
+#include "Core/PowerPC/JitInterface.h"
+#include "Core/PowerPC/PowerPC.h"
 #include "Core/PowerPC/PPCSymbolDB.h"
-#include "Core/PowerPC/SignatureDB.h"
 #include "Core/PowerPC/PPCTables.h"
-
-#include "Core/ConfigManager.h"
+#include "DolphinWX/Frame.h"
+#include "DolphinWX/Globals.h"
+#include "DolphinWX/WxUtils.h"
+#include "DolphinWX/Debugger/BreakpointWindow.h"
+#include "DolphinWX/Debugger/CodeView.h"
+#include "DolphinWX/Debugger/CodeWindow.h"
+#include "DolphinWX/Debugger/DebuggerUIUtil.h"
+#include "DolphinWX/Debugger/RegisterWindow.h"
 
 extern "C"  // Bitmaps
 {
-	#include "../resources/toolbar_add_memorycheck.c"
-	#include "../resources/toolbar_add_breakpoint.c"
+	#include "DolphinWX/resources/toolbar_add_memorycheck.c" // NOLINT
+	#include "DolphinWX/resources/toolbar_add_breakpoint.c" // NOLINT
 }
+
+class DebugInterface;
 
 // -------
 // Main
@@ -60,12 +75,12 @@ BEGIN_EVENT_TABLE(CCodeWindow, wxPanel)
 	EVT_TEXT(IDM_ADDRBOX, CCodeWindow::OnAddrBoxChange)
 
 	// Other
-	EVT_LISTBOX(ID_SYMBOLLIST,			CCodeWindow::OnSymbolListChange)
-	EVT_LISTBOX(ID_CALLSTACKLIST,		CCodeWindow::OnCallstackListChange)
-	EVT_LISTBOX(ID_CALLERSLIST,			CCodeWindow::OnCallersListChange)
-	EVT_LISTBOX(ID_CALLSLIST,			CCodeWindow::OnCallsListChange)
+	EVT_LISTBOX(ID_SYMBOLLIST,    CCodeWindow::OnSymbolListChange)
+	EVT_LISTBOX(ID_CALLSTACKLIST, CCodeWindow::OnCallstackListChange)
+	EVT_LISTBOX(ID_CALLERSLIST,   CCodeWindow::OnCallersListChange)
+	EVT_LISTBOX(ID_CALLSLIST,     CCodeWindow::OnCallsListChange)
 
-	EVT_HOST_COMMAND(wxID_ANY,			CCodeWindow::OnHostMessage)
+	EVT_HOST_COMMAND(wxID_ANY,    CCodeWindow::OnHostMessage)
 
 END_EVENT_TABLE()
 
@@ -74,13 +89,13 @@ CCodeWindow::CCodeWindow(const SCoreStartupParameter& _LocalCoreStartupParameter
 	wxWindowID id, const wxPoint& position, const wxSize& size, long style, const wxString& name)
 	: wxPanel((wxWindow*)parent, id, position, size, style, name)
 	, Parent(parent)
-	, m_RegisterWindow(NULL)
-	, m_BreakpointWindow(NULL)
-	, m_MemoryWindow(NULL)
-	, m_JitWindow(NULL)
-	, m_SoundWindow(NULL)
-	, m_VideoWindow(NULL)
-	, codeview(NULL)
+	, m_RegisterWindow(nullptr)
+	, m_BreakpointWindow(nullptr)
+	, m_MemoryWindow(nullptr)
+	, m_JitWindow(nullptr)
+	, m_SoundWindow(nullptr)
+	, m_VideoWindow(nullptr)
+	, codeview(nullptr)
 {
 	InitBitmaps();
 
@@ -96,11 +111,11 @@ CCodeWindow::CCodeWindow(const SCoreStartupParameter& _LocalCoreStartupParameter
 	sizerLeft->Add(callstack = new wxListBox(this, ID_CALLSTACKLIST,
 				wxDefaultPosition, wxSize(90, 100)), 0, wxEXPAND);
 	sizerLeft->Add(symbols = new wxListBox(this, ID_SYMBOLLIST,
-				wxDefaultPosition, wxSize(90, 100), 0, NULL, wxLB_SORT), 1, wxEXPAND);
+				wxDefaultPosition, wxSize(90, 100), 0, nullptr, wxLB_SORT), 1, wxEXPAND);
 	sizerLeft->Add(calls = new wxListBox(this, ID_CALLSLIST, wxDefaultPosition,
-				wxSize(90, 100), 0, NULL, wxLB_SORT), 0, wxEXPAND);
+				wxSize(90, 100), 0, nullptr, wxLB_SORT), 0, wxEXPAND);
 	sizerLeft->Add(callers = new wxListBox(this, ID_CALLERSLIST, wxDefaultPosition,
-				wxSize(90, 100), 0, NULL, wxLB_SORT), 0, wxEXPAND);
+				wxSize(90, 100), 0, nullptr, wxLB_SORT), 0, wxEXPAND);
 
 	SetSizer(sizerBig);
 
@@ -297,9 +312,9 @@ void CCodeWindow::UpdateLists()
 	if (!symbol)
 		return;
 
-	for (int i = 0; i < (int)symbol->callers.size(); i++)
+	for (auto& call : symbol->callers)
 	{
-		u32 caller_addr = symbol->callers[i].callAddress;
+		u32 caller_addr = call.callAddress;
 		Symbol *caller_symbol = g_symbolDB.GetSymbolFromAddr(caller_addr);
 		if (caller_symbol)
 		{
@@ -310,9 +325,9 @@ void CCodeWindow::UpdateLists()
 	}
 
 	calls->Clear();
-	for (int i = 0; i < (int)symbol->calls.size(); i++)
+	for (auto& call : symbol->calls)
 	{
-		u32 call_addr = symbol->calls[i].function;
+		u32 call_addr = call.function;
 		Symbol *call_symbol = g_symbolDB.GetSymbolFromAddr(call_addr);
 		if (call_symbol)
 		{
@@ -333,10 +348,10 @@ void CCodeWindow::UpdateCallstack()
 
 	bool ret = Dolphin_Debugger::GetCallstack(stack);
 
-	for (size_t i = 0; i < stack.size(); i++)
+	for (auto& frame : stack)
 	{
-		int idx = callstack->Append(StrToWxStr(stack[i].Name));
-		callstack->SetClientData(idx, (void*)(u64)stack[i].vAddress);
+		int idx = callstack->Append(StrToWxStr(frame.Name));
+		callstack->SetClientData(idx, (void*)(u64)frame.vAddress);
 	}
 
 	if (!ret)
@@ -349,20 +364,20 @@ void CCodeWindow::CreateMenu(const SCoreStartupParameter& _LocalCoreStartupParam
 	// CPU Mode
 	wxMenu* pCoreMenu = new wxMenu;
 
-	wxMenuItem* interpreter = pCoreMenu->Append(IDM_INTERPRETER, _("&Interpreter core"), 
-		StrToWxStr("This is necessary to get break points"
+	wxMenuItem* interpreter = pCoreMenu->Append(IDM_INTERPRETER, _("&Interpreter core"),
+		_("This is necessary to get break points"
 		" and stepping to work as explained in the Developer Documentation. But it can be very"
-		" slow, perhaps slower than 1 fps."), 
+		" slow, perhaps slower than 1 fps."),
 		wxITEM_CHECK);
 	interpreter->Check(_LocalCoreStartupParameter.iCPUCore == 0);
 	pCoreMenu->AppendSeparator();
 
 	pCoreMenu->Append(IDM_JITBLOCKLINKING, _("&JIT Block Linking off"),
-		_("Provide safer execution by not linking the JIT blocks."), 
+		_("Provide safer execution by not linking the JIT blocks."),
 		wxITEM_CHECK);
 
 	pCoreMenu->Append(IDM_JITNOBLOCKCACHE, _("&Disable JIT Cache"),
-		_("Avoid any involuntary JIT cache clearing, this may prevent Zelda TP from crashing.\n[This option must be selected before a game is started.]"), 
+		_("Avoid any involuntary JIT cache clearing, this may prevent Zelda TP from crashing.\n[This option must be selected before a game is started.]"),
 		wxITEM_CHECK);
 	pCoreMenu->Append(IDM_CLEARCODECACHE, _("&Clear JIT cache"));
 
@@ -413,21 +428,21 @@ void CCodeWindow::CreateMenu(const SCoreStartupParameter& _LocalCoreStartupParam
 void CCodeWindow::CreateMenuOptions(wxMenu* pMenu)
 {
 	wxMenuItem* boottopause = pMenu->Append(IDM_BOOTTOPAUSE, _("Boot to pause"),
-		_("Start the game directly instead of booting to pause"), 
+		_("Start the game directly instead of booting to pause"),
 		wxITEM_CHECK);
 	boottopause->Check(bBootToPause);
 
-	wxMenuItem* automaticstart = pMenu->Append(IDM_AUTOMATICSTART, _("&Automatic start"), 
-		StrToWxStr(
+	wxMenuItem* automaticstart = pMenu->Append(IDM_AUTOMATICSTART, _("&Automatic start"),
+		_(
 		"Automatically load the Default ISO when Dolphin starts, or the last game you loaded,"
 		" if you have not given it an elf file with the --elf command line. [This can be"
 		" convenient if you are bug-testing with a certain game and want to rebuild"
 		" and retry it several times, either with changes to Dolphin or if you are"
-		" developing a homebrew game.]"), 
+		" developing a homebrew game.]"),
 		wxITEM_CHECK);
 	automaticstart->Check(bAutomaticStart);
 
-	pMenu->Append(IDM_FONTPICKER, _("&Font..."), wxEmptyString, wxITEM_NORMAL);
+	pMenu->Append(IDM_FONTPICKER, _("&Font..."));
 }
 
 // CPU Mode and JIT Menu
@@ -481,7 +496,7 @@ void CCodeWindow::OnCPUMode(wxCommandEvent& event)
 
 	// Clear the JIT cache to enable these changes
 	JitInterface::ClearCache();
-	
+
 	// Update
 	UpdateButtonStates();
 }
@@ -500,8 +515,7 @@ void CCodeWindow::OnJitMenu(wxCommandEvent& event)
 
 		case IDM_SEARCHINSTRUCTION:
 		{
-			wxString str;
-			str = wxGetTextFromUser(_T(""), wxT("Op?"), wxEmptyString, this);
+			wxString str = wxGetTextFromUser("", _("Op?"), wxEmptyString, this);
 			for (u32 addr = 0x80000000; addr < 0x80100000; addr += 4)
 			{
 				const char *name = PPCTables::GetInstructionName(Memory::ReadUnchecked_U32(addr));
@@ -553,8 +567,8 @@ void CCodeWindow::InitBitmaps()
 	m_Bitmaps[Toolbar_SetPC] = wxGetBitmapFromMemory(toolbar_add_memcheck_png);
 
 	// scale to 24x24 for toolbar
-	for (size_t n = 0; n < ToolbarDebugBitmapMax; n++)
-		m_Bitmaps[n] = wxBitmap(m_Bitmaps[n].ConvertToImage().Scale(24, 24));
+	for (auto& bitmap : m_Bitmaps)
+		bitmap = wxBitmap(bitmap.ConvertToImage().Scale(24, 24));
 }
 
 void CCodeWindow::PopulateToolbar(wxAuiToolBar* toolBar)
@@ -563,14 +577,14 @@ void CCodeWindow::PopulateToolbar(wxAuiToolBar* toolBar)
 		h = m_Bitmaps[0].GetHeight();
 
 	toolBar->SetToolBitmapSize(wxSize(w, h));
-	toolBar->AddTool(IDM_STEP,		_("Step"),			m_Bitmaps[Toolbar_Step]);
-	toolBar->AddTool(IDM_STEPOVER,	_("Step Over"),		m_Bitmaps[Toolbar_StepOver]);
-	toolBar->AddTool(IDM_SKIP,		_("Skip"),			m_Bitmaps[Toolbar_Skip]);
+	toolBar->AddTool(IDM_STEP,     _("Step"),      m_Bitmaps[Toolbar_Step]);
+	toolBar->AddTool(IDM_STEPOVER, _("Step Over"), m_Bitmaps[Toolbar_StepOver]);
+	toolBar->AddTool(IDM_SKIP,     _("Skip"),      m_Bitmaps[Toolbar_Skip]);
 	toolBar->AddSeparator();
-	toolBar->AddTool(IDM_GOTOPC,		_("Show PC"),		m_Bitmaps[Toolbar_GotoPC]);
-	toolBar->AddTool(IDM_SETPC,		_("Set PC"),		m_Bitmaps[Toolbar_SetPC]);
+	toolBar->AddTool(IDM_GOTOPC,   _("Show PC"),   m_Bitmaps[Toolbar_GotoPC]);
+	toolBar->AddTool(IDM_SETPC,    _("Set PC"),    m_Bitmaps[Toolbar_SetPC]);
 	toolBar->AddSeparator();
-	toolBar->AddControl(new wxTextCtrl(toolBar, IDM_ADDRBOX, _T("")));
+	toolBar->AddControl(new wxTextCtrl(toolBar, IDM_ADDRBOX, ""));
 
 	toolBar->Realize();
 }
@@ -597,7 +611,8 @@ void CCodeWindow::UpdateButtonStates()
 	wxAuiToolBar* ToolBar = GetToolBar();
 
 	// Toolbar
-	if (!ToolBar) return;
+	if (!ToolBar)
+		return;
 
 	if (!Initialized)
 	{
@@ -619,8 +634,7 @@ void CCodeWindow::UpdateButtonStates()
 	}
 
 	ToolBar->EnableTool(IDM_STEP, Initialized && Stepping);
-
-	if (ToolBar) ToolBar->Realize();
+	ToolBar->Realize();
 
 	// Menu bar
 	// ------------------

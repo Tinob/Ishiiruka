@@ -2,18 +2,15 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _NAND_CONTENT_LOADER_H
-#define _NAND_CONTENT_LOADER_H
+#pragma once
 
+#include <cstddef>
+#include <map>
 #include <string>
 #include <vector>
-#include <map>
 
 #include "Common/Common.h"
-#include "DiscIO/Blob.h"
 #include "DiscIO/Volume.h"
-#include "Common/NandPaths.h"
-#include "Common/FileUtil.h"
 
 namespace DiscIO
 {
@@ -59,10 +56,10 @@ public:
 
 	enum
 	{
-		TMD_VIEW_SIZE = 0x58,
-		TMD_HEADER_SIZE = 0x1e4,
+		TMD_VIEW_SIZE       = 0x58,
+		TMD_HEADER_SIZE     = 0x1E4,
 		CONTENT_HEADER_SIZE = 0x24,
-		TICKET_SIZE = 0x2A4
+		TICKET_SIZE         = 0x2A4
 	};
 };
 
@@ -153,5 +150,3 @@ private:
 };
 
 }
-
-#endif

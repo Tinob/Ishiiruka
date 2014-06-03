@@ -2,33 +2,40 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef __ISOPROPERTIES_h__
-#define __ISOPROPERTIES_h__
+#pragma once
 
-#include <wx/wx.h>
-#include <wx/sizer.h>
-#include <wx/filepicker.h>
-#include <wx/statbmp.h>
-#include <wx/imaglist.h>
-#include <wx/fontmap.h>
-#include <wx/treectrl.h>
-#include <wx/gbsizer.h>
-#include <wx/notebook.h>
-#include <wx/mimetype.h>
+#include <cstddef>
+#include <set>
 #include <string>
+#include <vector>
+#include <wx/arrstr.h>
+#include <wx/dialog.h>
+#include <wx/event.h>
+#include <wx/gdicmn.h>
+#include <wx/string.h>
+#include <wx/toplevel.h>
+#include <wx/translation.h>
+#include <wx/treebase.h>
+#include <wx/windowid.h>
 
-#include "ISOFile.h"
-#include "DiscIO/Filesystem.h"
 #include "Common/IniFile.h"
-#include "Core/PatchEngine.h"
-#include "Core/ActionReplay.h"
-#include "GeckoCodeDiag.h"
+
+class GameListItem;
+class wxButton;
+class wxCheckBox;
+class wxCheckListBox;
+class wxChoice;
+class wxStaticBitmap;
+class wxTextCtrl;
+class wxTreeCtrl;
+class wxWindow;
+namespace DiscIO { struct SFileInfo; }
+namespace Gecko { class CodeConfigPanel; }
 
 struct PHackData
 {
 	bool PHackSZNear;
 	bool PHackSZFar;
-	bool PHackExP;
 	std::string PHZNear;
 	std::string PHZFar;
 };
@@ -37,12 +44,12 @@ class CISOProperties : public wxDialog
 {
 public:
 	CISOProperties(const std::string fileName,
-			wxWindow* parent,
-			wxWindowID id = 1,
-			const wxString& title = _("Properties"),
-			const wxPoint& pos = wxDefaultPosition,
-			const wxSize& size = wxDefaultSize,
-			long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER);
+		wxWindow* parent,
+		wxWindowID id = 1,
+		const wxString& title = _("Properties"),
+		const wxPoint& pos = wxDefaultPosition,
+		const wxSize& size = wxDefaultSize,
+		long style = wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER);
 	virtual ~CISOProperties();
 
 	bool bRefreshList;
@@ -61,7 +68,7 @@ private:
 	// Wii
 	wxCheckBox *EnableWideScreen;
 	// Video
-	wxCheckBox *UseZTPSpeedupHack, *PHackEnable, *UseBBox;
+	wxCheckBox *PHackEnable, *UseBBox;
 	wxButton *PHSettings;
 
 	wxArrayString arrayStringFor_EmuState;
@@ -88,6 +95,8 @@ private:
 	wxTextCtrl *m_Revision;
 	wxTextCtrl *m_Date;
 	wxTextCtrl *m_FST;
+	wxTextCtrl *m_MD5Sum;
+	wxButton   *m_MD5SumCompute;
 	wxArrayString arrayStringFor_Lang;
 	wxChoice *m_Lang;
 	wxTextCtrl *m_ShortName;
@@ -123,7 +132,6 @@ private:
 		ID_MERGEBLOCKS,
 		ID_AUDIO_DSP_HLE,
 		ID_USE_BBOX,
-		ID_ZTP_SPEEDUP,
 		ID_PHACKENABLE,
 		ID_PHSETTINGS,
 		ID_ENABLEPROGRESSIVESCAN,
@@ -148,6 +156,8 @@ private:
 		ID_REVISION,
 		ID_DATE,
 		ID_FST,
+		ID_MD5SUM,
+		ID_MD5SUMCOMPUTE,
 		ID_VERSION,
 		ID_LANG,
 		ID_SHORTNAME,
@@ -170,6 +180,7 @@ private:
 	void OnClose(wxCloseEvent& event);
 	void OnCloseClick(wxCommandEvent& event);
 	void OnEditConfig(wxCommandEvent& event);
+	void OnComputeMD5Sum(wxCommandEvent& event);
 	void OnShowDefaultConfig(wxCommandEvent& event);
 	void ListSelectionChanged(wxCommandEvent& event);
 	void PatchButtonClicked(wxCommandEvent& event);
@@ -191,11 +202,11 @@ private:
 	typedef std::vector<const DiscIO::SFileInfo *>::iterator fileIter;
 
 	size_t CreateDirectoryTree(wxTreeItemId& parent,
-			std::vector<const DiscIO::SFileInfo*> fileInfos,
-			const size_t _FirstIndex, 
-			const size_t _LastIndex);
+		std::vector<const DiscIO::SFileInfo*> fileInfos,
+		const size_t _FirstIndex,
+		const size_t _LastIndex);
 	void ExportDir(const char* _rFullPath, const char* _rExportFilename,
-			const int partitionNum = 0);
+		const int partitionNum = 0);
 
 	IniFile GameIniDefault;
 	IniFile GameIniLocal;
@@ -215,4 +226,3 @@ private:
 	void SetCheckboxValueFromGameini(const char* section, const char* key, wxCheckBox* checkbox);
 	void SaveGameIniValueFrom3StateCheckbox(const char* section, const char* key, wxCheckBox* checkbox);
 };
-#endif

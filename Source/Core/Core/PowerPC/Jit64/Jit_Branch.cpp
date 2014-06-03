@@ -4,9 +4,9 @@
 
 #include "Common/Common.h"
 
-#include "Jit.h"
-#include "JitRegCache.h"
-#include "JitAsm.h"
+#include "Core/PowerPC/Jit64/Jit.h"
+#include "Core/PowerPC/Jit64/JitAsm.h"
+#include "Core/PowerPC/Jit64/JitRegCache.h"
 
 // The branches are known good, or at least reasonably good.
 // No need for a disable-mechanism.
@@ -86,12 +86,12 @@ void Jit64::bx(UGeckoInstruction inst)
 	if (destination == js.compilerPC)
 	{
 		//PanicAlert("Idle loop detected at %08x", destination);
-		//	CALL(ProtectFunction(&CoreTiming::Idle, 0));
-		//	JMP(Asm::testExceptions, true);
+		// CALL(ProtectFunction(&CoreTiming::Idle, 0));
+		// JMP(Asm::testExceptions, true);
 		// make idle loops go faster
 		js.downcountAmount += 8;
 	}
-	WriteExit(destination, 0);
+	WriteExit(destination);
 }
 
 // TODO - optimize to hell and beyond
@@ -103,7 +103,6 @@ void Jit64::bcx(UGeckoInstruction inst)
 	JITDISABLE(bJITBranchOff)
 
 	// USES_CR
-	_assert_msg_(DYNA_REC, js.isLastInstruction, "bcx not last instruction of block");
 
 	gpr.Flush(FLUSH_ALL);
 	fpr.Flush(FLUSH_ALL);
@@ -132,17 +131,19 @@ void Jit64::bcx(UGeckoInstruction inst)
 		MOV(32, M(&LR), Imm32(js.compilerPC + 4));
 
 	u32 destination;
-	if(inst.AA)
+	if (inst.AA)
 		destination = SignExt16(inst.BD << 2);
 	else
 		destination = js.compilerPC + SignExt16(inst.BD << 2);
-	WriteExit(destination, 0);
+	WriteExit(destination);
 
 	if ((inst.BO & BO_DONT_CHECK_CONDITION) == 0)
 		SetJumpTarget( pConditionDontBranch );
 	if ((inst.BO & BO_DONT_DECREMENT_FLAG) == 0)
 		SetJumpTarget( pCTRDontBranch );
-	WriteExit(js.compilerPC + 4, 1);
+
+	if (!analyzer.HasOption(PPCAnalyst::PPCAnalyzer::OPTION_CONDITIONAL_CONTINUE))
+		WriteExit(js.compilerPC + 4);
 }
 
 void Jit64::bcctrx(UGeckoInstruction inst)
@@ -163,7 +164,7 @@ void Jit64::bcctrx(UGeckoInstruction inst)
 		//NPC = CTR & 0xfffffffc;
 		MOV(32, R(EAX), M(&CTR));
 		if (inst.LK_3)
-			MOV(32, M(&LR), Imm32(js.compilerPC + 4)); //	LR = PC + 4;
+			MOV(32, M(&LR), Imm32(js.compilerPC + 4)); // LR = PC + 4;
 		AND(32, R(EAX), Imm32(0xFFFFFFFC));
 		WriteExitDestInEAX();
 	}
@@ -186,11 +187,13 @@ void Jit64::bcctrx(UGeckoInstruction inst)
 		AND(32, R(EAX), Imm32(0xFFFFFFFC));
 		//MOV(32, M(&PC), R(EAX)); => Already done in WriteExitDestInEAX()
 		if (inst.LK_3)
-			MOV(32, M(&LR), Imm32(js.compilerPC + 4)); //	LR = PC + 4;
+			MOV(32, M(&LR), Imm32(js.compilerPC + 4)); // LR = PC + 4;
 		WriteExitDestInEAX();
 		// Would really like to continue the block here, but it ends. TODO.
 		SetJumpTarget(b);
-		WriteExit(js.compilerPC + 4, 1);
+
+		if (!analyzer.HasOption(PPCAnalyst::PPCAnalyzer::OPTION_CONDITIONAL_CONTINUE))
+			WriteExit(js.compilerPC + 4);
 	}
 }
 
@@ -198,13 +201,6 @@ void Jit64::bclrx(UGeckoInstruction inst)
 {
 	INSTRUCTION_START
 	JITDISABLE(bJITBranchOff)
-
-	if (!js.isLastInstruction &&
-		(inst.BO & (1 << 4)) && (inst.BO & (1 << 2))) {
-		if (inst.LK)
-			MOV(32, M(&LR), Imm32(js.compilerPC + 4));
-		return;
-	}
 
 	gpr.Flush(FLUSH_ALL);
 	fpr.Flush(FLUSH_ALL);
@@ -245,5 +241,7 @@ void Jit64::bclrx(UGeckoInstruction inst)
 		SetJumpTarget( pConditionDontBranch );
 	if ((inst.BO & BO_DONT_DECREMENT_FLAG) == 0)
 		SetJumpTarget( pCTRDontBranch );
-	WriteExit(js.compilerPC + 4, 1);
+
+	if (!analyzer.HasOption(PPCAnalyst::PPCAnalyzer::OPTION_CONDITIONAL_CONTINUE))
+		WriteExit(js.compilerPC + 4);
 }

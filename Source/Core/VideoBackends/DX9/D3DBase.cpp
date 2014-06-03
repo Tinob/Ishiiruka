@@ -504,11 +504,11 @@ bool FixTextureSize(int& width, int& height)
 	}
 	if (caps.TextureCaps & D3DPTEXTURECAPS_SQUAREONLY)
 	{
-		width = height = max(width, height);
+		width = height = std::max(width, height);
 	}
 
-	width = min(width, (int)caps.MaxTextureWidth);
-	height = min(height, (int)caps.MaxTextureHeight);
+	width = std::min(width, (int)caps.MaxTextureWidth);
+	height = std::min(height, (int)caps.MaxTextureHeight);
 
 	return (width != oldw) || (height != oldh);
 }

@@ -1,8 +1,12 @@
-#include "InputCommon/UDPWrapper.h"
+// Copyright 2013 Dolphin Emulator Project
+// Licensed under GPLv2
+// Refer to the license.txt file included.
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+
+#include "InputCommon/UDPWrapper.h"
 
 const std::string DefaultPort(const int index)
 {
@@ -14,7 +18,7 @@ const std::string DefaultPort(const int index)
 
 UDPWrapper::UDPWrapper(int indx, const char* const _name) :
 	ControllerEmu::ControlGroup(_name,GROUP_TYPE_UDPWII),
-	inst(NULL), index(indx),
+	inst(nullptr), index(indx),
 	updIR(false),updAccel(false),
 	updButt(false),udpEn(false)
 	, port(DefaultPort(indx))
@@ -29,13 +33,13 @@ void UDPWrapper::LoadConfig(IniFile::Section *sec, const std::string& defdev, co
 	std::string group( base + name ); group += "/";
 
 	int _updAccel,_updIR,_updButt,_udpEn,_updNun,_updNunAccel;
-	sec->Get((group + "Enable"),&_udpEn, 0);
-	sec->Get((group + "Port"), &port, DefaultPort(index));
-	sec->Get((group + "Update_Accel"), &_updAccel, 1);
-	sec->Get((group + "Update_IR"), &_updIR, 1);
-	sec->Get((group + "Update_Butt"), &_updButt, 1);
-	sec->Get((group + "Update_Nunchuk"), &_updNun, 1);
-	sec->Get((group + "Update_NunchukAccel"), &_updNunAccel, 0);
+	sec->Get(group + "Enable",&_udpEn, 0);
+	sec->Get(group + "Port", &port, DefaultPort(index));
+	sec->Get(group + "Update_Accel", &_updAccel, 1);
+	sec->Get(group + "Update_IR", &_updIR, 1);
+	sec->Get(group + "Update_Butt", &_updButt, 1);
+	sec->Get(group + "Update_Nunchuk", &_updNun, 1);
+	sec->Get(group + "Update_NunchukAccel", &_updNunAccel, 0);
 
 	udpEn=(_udpEn>0);
 	updAccel=(_updAccel>0);
@@ -52,25 +56,25 @@ void UDPWrapper::SaveConfig(IniFile::Section *sec, const std::string& defdev, co
 {
 	ControlGroup::SaveConfig(sec,defdev,base);
 	std::string group( base + name ); group += "/";
-	sec->Set((group + "Enable"), (int)udpEn, 0);
-	sec->Set((group + "Port"), port, DefaultPort(index));
-	sec->Set((group + "Update_Accel"), (int)updAccel, 1);
-	sec->Set((group + "Update_IR"), (int)updIR, 1);
-	sec->Set((group + "Update_Butt"), (int)updButt, 1);
-	sec->Set((group + "Update_Nunchuk"), (int)updNun, 1);
-	sec->Set((group + "Update_NunchukAccel"), (int)updNunAccel, 0);
+	sec->Set(group + "Enable", (int)udpEn, 0);
+	sec->Set(group + "Port", port, DefaultPort(index));
+	sec->Set(group + "Update_Accel", (int)updAccel, 1);
+	sec->Set(group + "Update_IR", (int)updIR, 1);
+	sec->Set(group + "Update_Butt", (int)updButt, 1);
+	sec->Set(group + "Update_Nunchuk", (int)updNun, 1);
+	sec->Set(group + "Update_NunchukAccel", (int)updNunAccel, 0);
 }
 
 
 void UDPWrapper::Refresh()
 {
-	bool udpAEn=(inst!=NULL);
-	if (udpEn&&udpAEn)
+	bool udpAEn=(inst!=nullptr);
+	if (udpEn && udpAEn)
 	{
-		if (strcmp(inst->getPort(),port.c_str()))
+		if (inst->getPort() == port)
 		{
 			delete inst;
-			inst = new UDPWiimote(port.c_str(), "Dolphin-Emu", index); //TODO: Changeable display name
+			inst = new UDPWiimote(port, "Dolphin-Emu", index); //TODO: Changeable display name
 		}
 		return;
 	}
@@ -78,11 +82,11 @@ void UDPWrapper::Refresh()
 	{
 		if (inst)
 			delete inst;
-		inst=NULL;
+		inst = nullptr;
 		return;
 	}
 	//else
-	inst = new UDPWiimote(port.c_str(), "Dolphin-Emu", index);
+	inst = new UDPWiimote(port, "Dolphin-Emu", index);
 }
 
 UDPWrapper::~UDPWrapper()

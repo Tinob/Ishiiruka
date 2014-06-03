@@ -1,16 +1,23 @@
-#include "UDPConfigDiag.h"
+#include <string>
+#include <wx/checkbox.h>
+#include <wx/defs.h>
+#include <wx/dialog.h>
+#include <wx/event.h>
+#include <wx/gdicmn.h>
+#include <wx/sizer.h>
+#include <wx/stattext.h>
+#include <wx/textctrl.h>
+#include <wx/translation.h>
+
+#include "DolphinWX/UDPConfigDiag.h"
+#include "DolphinWX/WxUtils.h"
 #include "InputCommon/UDPWrapper.h"
 
-#include "Common/Common.h"
-#include "InputCommon/ControllerEmu.h"
-#include "Common/IniFile.h"
-#include "DolphinWX\WxUtils.h"
-
-#include <string>
+class wxWindow;
 
 UDPConfigDiag::UDPConfigDiag(wxWindow * const parent, UDPWrapper * _wrp) :
-	wxDialog(parent, -1, _("UDP Wiimote"), wxDefaultPosition, wxDefaultSize),
-	wrp(_wrp)
+wxDialog(parent, -1, _("UDP Wiimote")),
+wrp(_wrp)
 {
 	wxBoxSizer *const outer_sizer = new wxBoxSizer(wxVERTICAL);
 	wxBoxSizer *const sizer1 = new wxBoxSizer(wxVERTICAL);
@@ -31,13 +38,13 @@ UDPConfigDiag::UDPConfigDiag(wxWindow * const parent, UDPWrapper * _wrp) :
 	port_tbox = new wxTextCtrl(this, wxID_ANY, StrToWxStr(wrp->port));
 	port_sizer->Add(port_tbox, 1, wxLEFT | wxEXPAND, 5);
 
-	enable->Bind(wxEVT_COMMAND_CHECKBOX_CLICKED, &UDPConfigDiag::ChangeState, this);
-	butt->Bind(wxEVT_COMMAND_CHECKBOX_CLICKED, &UDPConfigDiag::ChangeUpdateFlags, this);
-	accel->Bind(wxEVT_COMMAND_CHECKBOX_CLICKED, &UDPConfigDiag::ChangeUpdateFlags, this);
-	point->Bind(wxEVT_COMMAND_CHECKBOX_CLICKED, &UDPConfigDiag::ChangeUpdateFlags, this);
-	nun->Bind(wxEVT_COMMAND_CHECKBOX_CLICKED, &UDPConfigDiag::ChangeUpdateFlags, this);
-	nunaccel->Bind(wxEVT_COMMAND_CHECKBOX_CLICKED, &UDPConfigDiag::ChangeUpdateFlags, this);
-	port_tbox->Bind(wxEVT_COMMAND_TEXT_UPDATED, &UDPConfigDiag::ChangeState, this);
+	enable->Bind(wxEVT_CHECKBOX, &UDPConfigDiag::ChangeState, this);
+	butt->Bind(wxEVT_CHECKBOX, &UDPConfigDiag::ChangeUpdateFlags, this);
+	accel->Bind(wxEVT_CHECKBOX, &UDPConfigDiag::ChangeUpdateFlags, this);
+	point->Bind(wxEVT_CHECKBOX, &UDPConfigDiag::ChangeUpdateFlags, this);
+	nun->Bind(wxEVT_CHECKBOX, &UDPConfigDiag::ChangeUpdateFlags, this);
+	nunaccel->Bind(wxEVT_CHECKBOX, &UDPConfigDiag::ChangeUpdateFlags, this);
+	port_tbox->Bind(wxEVT_TEXT, &UDPConfigDiag::ChangeState, this);
 
 	enable->SetValue(wrp->udpEn);
 	butt->SetValue(wrp->updButt);
@@ -45,9 +52,9 @@ UDPConfigDiag::UDPConfigDiag(wxWindow * const parent, UDPWrapper * _wrp) :
 	point->SetValue(wrp->updIR);
 	nun->SetValue(wrp->updNun);
 	nunaccel->SetValue(wrp->updNunAccel);
-	
+
 	sizer1->Add(enable, 1, wxALL | wxEXPAND, 5);
-	sizer1->Add(port_sizer, 1, wxBOTTOM | wxLEFT| wxRIGHT | wxEXPAND, 5);
+	sizer1->Add(port_sizer, 1, wxBOTTOM | wxLEFT | wxRIGHT | wxEXPAND, 5);
 
 	sizer2->Add(butt, 1, wxALL | wxEXPAND, 5);
 	sizer2->Add(accel, 1, wxALL | wxEXPAND, 5);
@@ -64,11 +71,11 @@ UDPConfigDiag::UDPConfigDiag(wxWindow * const parent, UDPWrapper * _wrp) :
 
 void UDPConfigDiag::ChangeUpdateFlags(wxCommandEvent & WXUNUSED(event))
 {
-	wrp->updAccel=accel->GetValue();
-	wrp->updButt=butt->GetValue();
-	wrp->updIR=point->GetValue();
-	wrp->updNun=nun->GetValue();
-	wrp->updNunAccel=nunaccel->GetValue();
+	wrp->updAccel = accel->GetValue();
+	wrp->updButt = butt->GetValue();
+	wrp->updIR = point->GetValue();
+	wrp->updNun = nun->GetValue();
+	wrp->updNunAccel = nunaccel->GetValue();
 }
 
 void UDPConfigDiag::ChangeState(wxCommandEvent & WXUNUSED(event))

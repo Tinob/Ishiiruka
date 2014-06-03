@@ -2,8 +2,7 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _CONSOLELISTENER_H
-#define _CONSOLELISTENER_H
+#pragma once
 
 #include "Common/LogManager.h"
 
@@ -27,7 +26,7 @@ public:
 #ifdef _WIN32
 	COORD GetCoordinates(int BytesRead, int BufferWidth);
 #endif
-	void Log(LogTypes::LOG_LEVELS, const char *Text);
+	void Log(LogTypes::LOG_LEVELS, const char *Text) override;
 	void ClearScreen(bool Cursor = true);
 
 private:
@@ -37,5 +36,3 @@ private:
 #endif
 	bool bUseColor;
 };
-
-#endif  // _CONSOLELISTENER_H

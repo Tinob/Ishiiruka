@@ -2,20 +2,43 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include "ARCodeAddEdit.h"
+#include <cstddef>
+#include <cstdlib>
+#include <string>
+#include <vector>
+#include <wx/chartype.h>
+#include <wx/defs.h>
+#include <wx/dialog.h>
+#include <wx/event.h>
+#include <wx/gbsizer.h>
+#include <wx/gdicmn.h>
+#include <wx/sizer.h>
+#include <wx/spinbutt.h>
+#include <wx/stattext.h>
+#include <wx/string.h>
+#include <wx/textctrl.h>
+#include <wx/translation.h>
+#include <wx/windowid.h>
+
+#include "Common/Common.h"
+#include "Common/StringUtil.h"
+#include "Core/ActionReplay.h"
 #include "Core/ARDecrypt.h"
-#include "DolphinWX\WxUtils.h"
+#include "DolphinWX/ARCodeAddEdit.h"
+#include "DolphinWX/WxUtils.h"
+
+class wxWindow;
 
 extern std::vector<ActionReplay::ARCode> arCodes;
 
 BEGIN_EVENT_TABLE(CARCodeAddEdit, wxDialog)
-	EVT_BUTTON(wxID_OK, CARCodeAddEdit::SaveCheatData)
-	EVT_SPIN(ID_ENTRY_SELECT, CARCodeAddEdit::ChangeEntry)
+EVT_BUTTON(wxID_OK, CARCodeAddEdit::SaveCheatData)
+EVT_SPIN(ID_ENTRY_SELECT, CARCodeAddEdit::ChangeEntry)
 END_EVENT_TABLE()
 
 CARCodeAddEdit::CARCodeAddEdit(int _selection, wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& position, const wxSize& size, long style)
-	: wxDialog(parent, id, title, position, size, style)
-	, selection(_selection)
+: wxDialog(parent, id, title, position, size, style)
+, selection(_selection)
 {
 	ActionReplay::ARCode tempEntries;
 	wxString currentName = _("Insert name here..");
@@ -34,24 +57,24 @@ CARCodeAddEdit::CARCodeAddEdit(int _selection, wxWindow* parent, wxWindowID id, 
 	wxStaticBoxSizer* sbEntry = new wxStaticBoxSizer(wxVERTICAL, this, _("Cheat Code"));
 	wxGridBagSizer* sgEntry = new wxGridBagSizer(0, 0);
 
-	wxStaticText* EditCheatNameText = new wxStaticText(this, ID_EDITCHEAT_NAME_TEXT, _("Name:"), wxDefaultPosition, wxDefaultSize);
-	EditCheatName = new wxTextCtrl(this, ID_EDITCHEAT_NAME, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
+	wxStaticText* EditCheatNameText = new wxStaticText(this, ID_EDITCHEAT_NAME_TEXT, _("Name:"));
+	EditCheatName = new wxTextCtrl(this, ID_EDITCHEAT_NAME, wxEmptyString);
 	EditCheatName->SetValue(currentName);
-	EntrySelection = new wxSpinButton(this, ID_ENTRY_SELECT, wxDefaultPosition, wxDefaultSize, wxVERTICAL);
-	EntrySelection->SetRange(1, ((int)arCodes.size()) > 0 ? (int)arCodes.size() : 1); 
+	EntrySelection = new wxSpinButton(this, ID_ENTRY_SELECT);
+	EntrySelection->SetRange(1, ((int)arCodes.size()) > 0 ? (int)arCodes.size() : 1);
 	EntrySelection->SetValue((int)(arCodes.size() - selection));
 	EditCheatCode = new wxTextCtrl(this, ID_EDITCHEAT_CODE, wxEmptyString, wxDefaultPosition, wxSize(300, 100), wxTE_MULTILINE);
 	UpdateTextCtrl(tempEntries);
 
-	sgEntry->Add(EditCheatNameText, wxGBPosition(0, 0), wxGBSpan(1, 1), wxALIGN_CENTER|wxALL, 5);
-	sgEntry->Add(EditCheatName,		wxGBPosition(0, 1), wxGBSpan(1, 1), wxEXPAND|wxALL, 5);
-	sgEntry->Add(EntrySelection,	wxGBPosition(0, 2), wxGBSpan(2, 1), wxEXPAND|wxALL, 5);
-	sgEntry->Add(EditCheatCode,		wxGBPosition(1, 0), wxGBSpan(1, 2), wxEXPAND|wxALL, 5);
+	sgEntry->Add(EditCheatNameText, wxGBPosition(0, 0), wxGBSpan(1, 1), wxALIGN_CENTER | wxALL, 5);
+	sgEntry->Add(EditCheatName, wxGBPosition(0, 1), wxGBSpan(1, 1), wxEXPAND | wxALL, 5);
+	sgEntry->Add(EntrySelection, wxGBPosition(0, 2), wxGBSpan(2, 1), wxEXPAND | wxALL, 5);
+	sgEntry->Add(EditCheatCode, wxGBPosition(1, 0), wxGBSpan(1, 2), wxEXPAND | wxALL, 5);
 	sgEntry->AddGrowableCol(1);
 	sgEntry->AddGrowableRow(1);
-	sbEntry->Add(sgEntry, 1, wxEXPAND|wxALL);
+	sbEntry->Add(sgEntry, 1, wxEXPAND | wxALL);
 
-	sEditCheat->Add(sbEntry, 1, wxEXPAND|wxALL, 5);
+	sEditCheat->Add(sbEntry, 1, wxEXPAND | wxALL, 5);
 	sEditCheat->Add(CreateButtonSizer(wxOK | wxCANCEL), 0, wxEXPAND | wxALL, 5);
 
 	SetSizerAndFit(sEditCheat);
@@ -65,7 +88,7 @@ void CARCodeAddEdit::ChangeEntry(wxSpinEvent& event)
 	UpdateTextCtrl(currentCode);
 }
 
-void CARCodeAddEdit::SaveCheatData(wxCommandEvent& WXUNUSED (event))
+void CARCodeAddEdit::SaveCheatData(wxCommandEvent& WXUNUSED(event))
 {
 	std::vector<ActionReplay::AREntry> decryptedLines;
 	std::vector<std::string> encryptedLines;
@@ -74,7 +97,7 @@ void CARCodeAddEdit::SaveCheatData(wxCommandEvent& WXUNUSED (event))
 	std::vector<std::string> userInputLines;
 	SplitString(WxStrToStr(EditCheatCode->GetValue()), '\n', userInputLines);
 
-	for (size_t i = 0;  i < userInputLines.size();  i++)
+	for (size_t i = 0; i < userInputLines.size(); i++)
 	{
 		// Make sure to ignore unneeded whitespace characters.
 		std::string line_str = StripSpaces(userInputLines[i]);
@@ -89,8 +112,8 @@ void CARCodeAddEdit::SaveCheatData(wxCommandEvent& WXUNUSED (event))
 		if (pieces.size() == 2 && pieces[0].size() == 8 && pieces[1].size() == 8)
 		{
 			// Decrypted code line.
-			u32 addr = strtoul(pieces[0].c_str(), NULL, 16);
-			u32 value = strtoul(pieces[1].c_str(), NULL, 16);
+			u32 addr = std::stoul(pieces[0], nullptr, 16);
+			u32 value = std::stoul(pieces[1], nullptr, 16);
 
 			decryptedLines.push_back(ActionReplay::AREntry(addr, value));
 			continue;
@@ -109,8 +132,8 @@ void CARCodeAddEdit::SaveCheatData(wxCommandEvent& WXUNUSED (event))
 
 		// If the above-mentioned conditions weren't met, then something went wrong.
 		if (!PanicYesNoT("Unable to parse line %u of the entered AR code as a valid "
-						"encrypted or decrypted code.  Make sure you typed it correctly.\n"
-						"Would you like to ignore this line and continue parsing?", (unsigned) (i + 1)))
+			"encrypted or decrypted code.  Make sure you typed it correctly.\n"
+			"Would you like to ignore this line and continue parsing?", (unsigned)(i + 1)))
 		{
 			return;
 		}
@@ -158,8 +181,8 @@ void CARCodeAddEdit::UpdateTextCtrl(ActionReplay::ARCode arCode)
 
 	if (arCode.name != "")
 	{
-		for (u32 i = 0; i < arCode.ops.size(); i++)
-			EditCheatCode->AppendText(wxString::Format(wxT("%08X %08X\n"), arCode.ops.at(i).cmd_addr, arCode.ops.at(i).value));
+		for (auto& op : arCode.ops)
+			EditCheatCode->AppendText(wxString::Format("%08X %08X\n", op.cmd_addr, op.value));
 	}
 	else
 	{

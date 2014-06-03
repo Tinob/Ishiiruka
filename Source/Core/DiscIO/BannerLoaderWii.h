@@ -2,13 +2,19 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _BANNER_LOADER_WII_H_
-#define _BANNER_LOADER_WII_H_
+#pragma once
 
+#include <string>
+#include <vector>
+
+#include "Common/CommonTypes.h"
 #include "DiscIO/BannerLoader.h"
 
 namespace DiscIO
 {
+
+class IVolume;
+
 class CBannerLoaderWii
 	: public IBannerLoader
 {
@@ -18,20 +24,20 @@ class CBannerLoaderWii
 
 		virtual ~CBannerLoaderWii();
 
-		virtual bool IsValid();
+		virtual bool IsValid() override;
 
-		virtual std::vector<u32> GetBanner(int* pWidth, int* pHeight);
+		virtual std::vector<u32> GetBanner(int* pWidth, int* pHeight) override;
 
-		virtual std::vector<std::string> GetNames();
-		virtual std::string GetCompany();
-		virtual std::vector<std::string> GetDescriptions();
+		virtual std::vector<std::string> GetNames() override;
+		virtual std::string GetCompany() override;
+		virtual std::vector<std::string> GetDescriptions() override;
 
 	private:
 
 		enum
 		{
 			TEXTURE_SIZE = 192 * 64 * 2,
-			ICON_SIZE = 48 * 48 * 2,
+			ICON_SIZE    = 48 * 48 * 2,
 			COMMENT_SIZE = 32
 		};
 
@@ -61,7 +67,5 @@ class CBannerLoaderWii
 
 		bool GetStringFromComments(const CommentIndex index, std::string& s);
 };
+
 } // namespace
-
-#endif
-

@@ -5,25 +5,28 @@
 #ifdef _WIN32
 #include <io.h>
 #include <windows.h>
-#else
-#include <unistd.h>
 #endif
 
+#include <algorithm>
 #include <cinttypes>
+#include <cstdio>
+#include <cstring>
+#include <string>
+#include <zlib.h>
 
-#include "DiscIO/CompressedBlob.h"
-#include "DiscScrubber.h"
+#include "Common/Common.h"
 #include "Common/FileUtil.h"
 #include "Common/Hash.h"
+#include "DiscIO/Blob.h"
+#include "DiscIO/CompressedBlob.h"
+#include "DiscIO/DiscScrubber.h"
 
-#include "zlib.h"
 
 namespace DiscIO
 {
 
-CompressedBlobReader::CompressedBlobReader(const char *filename)
+CompressedBlobReader::CompressedBlobReader(const std::string& filename) : file_name(filename)
 {
-	file_name = filename;
 	m_file.Open(filename, "rb");
 	file_size = File::GetSize(filename);
 	m_file.ReadArray(&header, 1);
@@ -47,12 +50,12 @@ CompressedBlobReader::CompressedBlobReader(const char *filename)
 	memset(zlib_buffer, 0, zlib_buffer_size);
 }
 
-CompressedBlobReader* CompressedBlobReader::Create(const char* filename)
+CompressedBlobReader* CompressedBlobReader::Create(const std::string& filename)
 {
 	if (IsCompressedBlob(filename))
 		return new CompressedBlobReader(filename);
 	else
-		return 0;
+		return nullptr;
 }
 
 CompressedBlobReader::~CompressedBlobReader()
@@ -104,7 +107,7 @@ void CompressedBlobReader::GetBlock(u64 block_num, u8 *out_ptr)
 		PanicAlert("Hash of block %" PRIu64 " is %08x instead of %08x.\n"
 		           "Your ISO, %s, is corrupt.",
 		           block_num, block_hash, hashes[block_num],
-				   file_name.c_str());
+		           file_name.c_str());
 
 	if (uncompressed)
 	{
@@ -137,14 +140,14 @@ void CompressedBlobReader::GetBlock(u64 block_num, u8 *out_ptr)
 	}
 }
 
-bool CompressFileToBlob(const char* infile, const char* outfile, u32 sub_type,
+bool CompressFileToBlob(const std::string& infile, const std::string& outfile, u32 sub_type,
 						int block_size, CompressCB callback, void* arg)
 {
 	bool scrubbing = false;
 
 	if (IsCompressedBlob(infile))
 	{
-		PanicAlertT("%s is already compressed! Cannot compress it further.", infile);
+		PanicAlertT("%s is already compressed! Cannot compress it further.", infile.c_str());
 		return false;
 	}
 
@@ -152,7 +155,7 @@ bool CompressFileToBlob(const char* infile, const char* outfile, u32 sub_type,
 	{
 		if (!DiscScrubber::SetupScrub(infile, block_size))
 		{
-			PanicAlertT("%s failed to be scrubbed. Probably the image is corrupt.", infile);
+			PanicAlertT("%s failed to be scrubbed. Probably the image is corrupt.", infile.c_str());
 			return false;
 		}
 
@@ -190,7 +193,7 @@ bool CompressFileToBlob(const char* infile, const char* outfile, u32 sub_type,
 	u64 position = 0;
 	int num_compressed = 0;
 	int num_stored = 0;
-	int progress_monitor = max<int>(1, header.num_blocks / 1000);
+	int progress_monitor = std::max<int>(1, header.num_blocks / 1000);
 
 	for (u32 i = 0; i < header.num_blocks; i++)
 	{
@@ -275,7 +278,7 @@ cleanup:
 	return true;
 }
 
-bool DecompressBlobToFile(const char* infile, const char* outfile, CompressCB callback, void* arg)
+bool DecompressBlobToFile(const std::string& infile, const std::string& outfile, CompressCB callback, void* arg)
 {
 	if (!IsCompressedBlob(infile))
 	{
@@ -296,7 +299,7 @@ bool DecompressBlobToFile(const char* infile, const char* outfile, CompressCB ca
 
 	const CompressedBlobHeader &header = reader->GetHeader();
 	u8* buffer = new u8[header.block_size];
-	int progress_monitor = max<int>(1, header.num_blocks / 100);
+	int progress_monitor = std::max<int>(1, header.num_blocks / 100);
 
 	for (u64 i = 0; i < header.num_blocks; i++)
 	{
@@ -317,7 +320,7 @@ bool DecompressBlobToFile(const char* infile, const char* outfile, CompressCB ca
 	return true;
 }
 
-bool IsCompressedBlob(const char* filename)
+bool IsCompressedBlob(const std::string& filename)
 {
 	File::IOFile f(filename, "rb");
 

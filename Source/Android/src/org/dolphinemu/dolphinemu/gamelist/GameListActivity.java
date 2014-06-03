@@ -9,27 +9,31 @@ package org.dolphinemu.dolphinemu.gamelist;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Fragment;
-import android.app.FragmentManager;
+import android.app.FragmentTransaction;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.widget.DrawerLayout;
-import android.view.*;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
+import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.dolphinemu.dolphinemu.AboutFragment;
 import org.dolphinemu.dolphinemu.NativeLibrary;
 import org.dolphinemu.dolphinemu.R;
+import org.dolphinemu.dolphinemu.about.AboutActivity;
 import org.dolphinemu.dolphinemu.folderbrowser.FolderBrowser;
 import org.dolphinemu.dolphinemu.settings.PrefsActivity;
 import org.dolphinemu.dolphinemu.sidemenu.SideMenuAdapter;
 import org.dolphinemu.dolphinemu.sidemenu.SideMenuItem;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * The activity that implements all of the functions
@@ -39,7 +43,6 @@ public final class GameListActivity extends Activity
 		implements GameListFragment.OnGameListZeroListener
 {
 	private int mCurFragmentNum = 0;
-	private Fragment mCurFragment;
 
 	private ActionBarDrawerToggle mDrawerToggle;
 	private DrawerLayout mDrawerLayout;
@@ -100,10 +103,32 @@ public final class GameListActivity extends Activity
 		};
 		mDrawerLayout.setDrawerListener(mDrawerToggle);
 
-		// Display the game list fragment.
-		mCurFragment = new GameListFragment();
-		FragmentManager fragmentManager = getFragmentManager();
-		fragmentManager.beginTransaction().replace(R.id.content_frame, mCurFragment).commit();
+		// Display the game list fragment on activity creation,
+		// but only if no previous states have been saved. 
+		if (savedInstanceState == null)
+		{
+			final GameListFragment gameList = new GameListFragment();
+			FragmentTransaction ft = getFragmentManager().beginTransaction();
+			ft.replace(R.id.content_frame, gameList);
+			ft.commit();
+		}
+		
+
+		// Create an alert telling them that their phone sucks
+		if (Build.CPU_ABI.contains("arm") && !NativeLibrary.SupportsNEON())
+		{
+			AlertDialog.Builder builder = new AlertDialog.Builder(this);
+			builder.setTitle(R.string.device_compat_warning);
+			builder.setMessage(R.string.device_compat_warning_msg);
+			builder.setPositiveButton(R.string.yes, null);
+			builder.setNegativeButton(R.string.no, new DialogInterface.OnClickListener() {
+				public void onClick(DialogInterface dialog, int which)
+				{
+					finish();
+				}
+			});
+			builder.show();
+		}
 	}
 
 	/**
@@ -127,9 +152,10 @@ public final class GameListActivity extends Activity
 					setTitle(R.string.app_name);
 
 				mCurFragmentNum = 0;
-				mCurFragment = new GameListFragment();
-				FragmentManager fragmentManager = getFragmentManager();
-				fragmentManager.beginTransaction().replace(R.id.content_frame, mCurFragment).commit();
+				final GameListFragment gameList = new GameListFragment();
+				FragmentTransaction ft = getFragmentManager().beginTransaction();
+				ft.replace(R.id.content_frame, gameList);
+				ft.commit();
 				invalidateOptionsMenu();
 			}
 			break;
@@ -137,9 +163,11 @@ public final class GameListActivity extends Activity
 			case 1: // Folder Browser
 			{
 				mCurFragmentNum = 1;
-				mCurFragment = new FolderBrowser();
-				FragmentManager fragmentManager = getFragmentManager();
-				fragmentManager.beginTransaction().replace(R.id.content_frame, mCurFragment).commit();
+				final FolderBrowser folderBrowser = new FolderBrowser();
+				FragmentTransaction ft = getFragmentManager().beginTransaction();
+				ft.replace(R.id.content_frame, folderBrowser);
+				ft.addToBackStack(null);
+				ft.commit();
 				invalidateOptionsMenu();
 			}
 			break;
@@ -153,11 +181,8 @@ public final class GameListActivity extends Activity
 
 			case 3: // About
 			{
-				mCurFragmentNum = 3;
-				mCurFragment = new AboutFragment();
-				FragmentManager fragmentManager = getFragmentManager();
-				fragmentManager.beginTransaction().replace(R.id.content_frame, mCurFragment).commit();
-				invalidateOptionsMenu();
+				Intent intent = new Intent(this, AboutActivity.class);
+				startActivity(intent);
 			}
 			break;
 
@@ -228,7 +253,8 @@ public final class GameListActivity extends Activity
 			AlertDialog.Builder builder = new AlertDialog.Builder(this);
 			builder.setTitle(R.string.clear_game_list);
 			builder.setMessage(getString(R.string.clear_game_list_confirm));
-			builder.setPositiveButton(R.string.yes, new DialogInterface.OnClickListener(){
+			builder.setNegativeButton(R.string.no, null);
+			builder.setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
 				public void onClick(DialogInterface dialog, int which)
 				{
 					String directories = NativeLibrary.GetConfig("Dolphin.ini", "General", "GCMPathes", "0");
@@ -243,13 +269,7 @@ public final class GameListActivity extends Activity
 					NativeLibrary.SetConfig("Dolphin.ini", "General", "GCMPathes", "0");
 
 					// Now finally, clear the game list.
-					((GameListFragment) mCurFragment).clearGameList();
-				}
-			});
-			builder.setNegativeButton(R.string.no, new DialogInterface.OnClickListener() {
-				public void onClick(DialogInterface dialog, int which)
-				{
-					// Do nothing. This just make "No" appear.
+					((GameListFragment) getFragmentManager().findFragmentById(R.id.content_frame)).clearGameList();
 				}
 			});
 
@@ -258,7 +278,23 @@ public final class GameListActivity extends Activity
 
 		return super.onOptionsItemSelected(item);
 	}
-	
+
+	@Override
+	public void onSaveInstanceState(Bundle outState)
+	{
+		super.onSaveInstanceState(outState);
+
+		outState.putInt("currentFragmentNum", mCurFragmentNum);
+	}
+
+	@Override
+	public void onRestoreInstanceState(Bundle savedInstanceState)
+	{
+		super.onRestoreInstanceState(savedInstanceState);
+
+		mCurFragmentNum = savedInstanceState.getInt("currentFragmentNum");
+	}
+
 	@Override
 	public void onBackPressed()
 	{

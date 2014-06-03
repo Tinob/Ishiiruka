@@ -2,12 +2,12 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _JITASMCOMMON_H
-#define _JITASMCOMMON_H
+#pragma once
 
-#include "Jit_Util.h"
+#include "Core/PowerPC/JitCommon/Jit_Util.h"
 
-class CommonAsmRoutinesBase  {
+class CommonAsmRoutinesBase
+{
 public:
 
 	const u8 *fifoDirectWrite8;
@@ -23,8 +23,6 @@ public:
 	const u8 *dispatcherNoCheck;
 	const u8 *dispatcherPcInEAX;
 
-	const u8 *fpException;
-	const u8 *testExceptions;
 	const u8 *testExternalExceptions;
 	const u8 *dispatchPcInEAX;
 	const u8 *doTiming;
@@ -65,5 +63,3 @@ public:
 	void GenFifoFloatWrite();
 
 };
-
-#endif

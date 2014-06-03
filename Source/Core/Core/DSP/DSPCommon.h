@@ -2,10 +2,8 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef __DSPCOMMON_H
-#define __DSPCOMMON_H
+#pragma once
 
 #include "Common/CommonTypes.h"
-typedef u16 UDSPInstruction;
 
-#endif
+typedef u16 UDSPInstruction;

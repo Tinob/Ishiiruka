@@ -2,8 +2,7 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _X64ANALYZER_H_
-#define _X64ANALYZER_H_
+#pragma once
 
 #include "Common/CommonTypes.h"
 
@@ -18,6 +17,7 @@ struct InstructionInfo
 	bool signExtend;
 	bool hasImmediate;
 	bool isMemoryWrite;
+	bool byteSwap;
 	u64 immediate;
 	s32 displacement;
 };
@@ -40,5 +40,3 @@ enum AccessType
 };
 
 bool DisassembleMov(const unsigned char *codePtr, InstructionInfo *info);
-
-#endif // _X64ANALYZER_H_

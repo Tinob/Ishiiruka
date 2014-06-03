@@ -1,30 +1,19 @@
-// Copyright (C) 2003 Dolphin Project.
+// Copyright 2014 Dolphin Emulator Project
+// Licensed under GPLv2
+// Refer to the license.txt file included.
 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, version 2.0.
+#include "Common/ArmEmitter.h"
+#include "Common/Common.h"
 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License 2.0 for more details.
+#include "Core/Core.h"
+#include "Core/CoreTiming.h"
+#include "Core/PowerPC/PowerPC.h"
+#include "Core/PowerPC/PPCTables.h"
 
-// A copy of the GPL 2.0 should have been included with the program.
-// If not, see http://www.gnu.org/licenses/
+#include "Core/PowerPC/JitArm32/Jit.h"
+#include "Core/PowerPC/JitArm32/JitAsm.h"
+#include "Core/PowerPC/JitArm32/JitRegCache.h"
 
-// Official SVN repository and contact information can be found at
-// http://code.google.com/p/dolphin-emu/
-#include "Common.h"
-
-#include "../../Core.h"
-#include "../PowerPC.h"
-#include "../../CoreTiming.h"
-#include "../PPCTables.h"
-#include "ArmEmitter.h"
-
-#include "Jit.h"
-#include "JitRegCache.h"
-#include "JitAsm.h"
 extern u32 Helper_Mask(u8 mb, u8 me);
 
 // Assumes that Sign and Zero flags were set by the last operation. Preserves all flags and registers.
@@ -120,7 +109,11 @@ void JitArm::subfic(UGeckoInstruction inst)
 {
 	INSTRUCTION_START
 	JITDISABLE(bJITIntegerOff)
-	Default(inst); return;
+
+	// FIXME
+	FallBackToInterpreter(inst);
+	return;
+
 	int a = inst.RA, d = inst.RD;
 
 	int imm = inst.SIMM_16;
@@ -290,7 +283,7 @@ void JitArm::arith(UGeckoInstruction inst)
 		break;
 
 		case 31: // addcx, addx, subfx
-			switch(inst.SUBOP10)
+			switch (inst.SUBOP10)
 			{
 				case 24: // slwx
 				case 28: // andx
@@ -316,7 +309,8 @@ void JitArm::arith(UGeckoInstruction inst)
 					Rc = inst.Rc;
 				break;
 
-				case 10: // addcx
+				case 10:  // addcx
+				case 522: // addcox
 					carry = true;
 				case 40: // subfx
 					isUnsigned = true;
@@ -339,15 +333,16 @@ void JitArm::arith(UGeckoInstruction inst)
 			}
 		break;
 		default:
-			WARN_LOG(DYNA_REC, "Unkown OPCD %d with arith function", inst.OPCD);
-			Default(inst); return;
+			WARN_LOG(DYNA_REC, "Unknown OPCD %d with arith function", inst.OPCD);
+			FallBackToInterpreter(inst);
+			return;
 		break;
 	}
 	if (isImm[0] && isImm[1]) // Immediate propagation
 	{
 		bool hasCarry = false;
 		u32 dest = d;
-		switch(inst.OPCD)
+		switch (inst.OPCD)
 		{
 			case 7:
 				gpr.SetImmediate(d, Mul(Imm[0], Imm[1]));
@@ -378,7 +373,7 @@ void JitArm::arith(UGeckoInstruction inst)
 				dest = a;
 			break;
 			case 31: // addcx, addx, subfx
-				switch(inst.SUBOP10)
+				switch (inst.SUBOP10)
 				{
 					case 24:
 						gpr.SetImmediate(a, Imm[0] << Imm[1]);
@@ -445,7 +440,7 @@ void JitArm::arith(UGeckoInstruction inst)
 		return;
 	}
 	// One or the other isn't a IMM
-	switch(inst.OPCD)
+	switch (inst.OPCD)
 	{
 		case 7:
 		{
@@ -517,7 +512,7 @@ void JitArm::arith(UGeckoInstruction inst)
 		}
 		break;
 		case 31:
-			switch(inst.SUBOP10)
+			switch (inst.SUBOP10)
 			{
 				case 24:
 					RA = gpr.R(a);
@@ -626,7 +621,11 @@ void JitArm::addex(UGeckoInstruction inst)
 	INSTRUCTION_START
 	JITDISABLE(bJITIntegerOff)
 	u32 a = inst.RA, b = inst.RB, d = inst.RD;
-	Default(inst); return;
+
+	// FIXME
+	FallBackToInterpreter(inst);
+	return;
+
 	ARMReg RA = gpr.R(a);
 	ARMReg RB = gpr.R(b);
 	ARMReg RD = gpr.R(d);
@@ -957,7 +956,7 @@ void JitArm::twx(UGeckoInstruction inst)
 
 	gpr.Flush();
 	fpr.Flush();
-	
+
 	ARMReg RA = gpr.GetReg();
 	ARMReg RB = gpr.GetReg();
 	MOV(RA, inst.TO);
@@ -1003,9 +1002,9 @@ void JitArm::twx(UGeckoInstruction inst)
 	SetJumpTarget(take3);
 	SetJumpTarget(take4);
 	SetJumpTarget(take5);
-	
+
 	LDR(RA, R9, PPCSTATE_OFF(Exceptions));
-	MOVI2R(RB, EXCEPTION_PROGRAM); // XXX: Can be optimized	
+	MOVI2R(RB, EXCEPTION_PROGRAM); // XXX: Can be optimized
 	ORR(RA, RA, RB);
 	STR(RA, R9, PPCSTATE_OFF(Exceptions));
 	WriteExceptionExit();
@@ -1015,7 +1014,9 @@ void JitArm::twx(UGeckoInstruction inst)
 	SetJumpTarget(exit3);
 	SetJumpTarget(exit4);
 	SetJumpTarget(exit5);
-	WriteExit(js.compilerPC + 4, 1);
+
+	if (!analyzer.HasOption(PPCAnalyst::PPCAnalyzer::OPTION_CONDITIONAL_CONTINUE))
+		WriteExit(js.compilerPC + 4);
 
 	gpr.Unlock(RA, RB);
 }

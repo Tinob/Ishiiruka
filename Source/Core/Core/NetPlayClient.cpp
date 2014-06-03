@@ -2,30 +2,26 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include "NetPlayClient.h"
-
-// for wiimote
-#include "HW/WiimoteReal/WiimoteReal.h"
-#include "IPC_HLE/WII_IPC_HLE_Device_usb.h"
-#include "IPC_HLE/WII_IPC_HLE_WiiMote.h"
-// for gcpad
-#include "HW/SI.h"
-#include "HW/SI_DeviceGCController.h"
-#include "HW/SI_DeviceGCSteeringWheel.h"
-#include "HW/SI_DeviceDanceMat.h"
-// for gctime
-#include "HW/EXI_DeviceIPL.h"
-// for wiimote/ OSD messages
-#include "Core/Core.h"
 #include "Core/ConfigManager.h"
+#include "Core/Core.h"
 #include "Core/Movie.h"
-#include "HW/WiimoteEmu/WiimoteEmu.h"
+#include "Core/NetPlayClient.h"
+#include "Core/HW/EXI_DeviceIPL.h"
+#include "Core/HW/SI.h"
+#include "Core/HW/SI_DeviceDanceMat.h"
+#include "Core/HW/SI_DeviceGCController.h"
+#include "Core/HW/SI_DeviceGCSteeringWheel.h"
+#include "Core/HW/WiimoteEmu/WiimoteEmu.h"
+#include "Core/HW/WiimoteReal/WiimoteReal.h"
+#include "Core/IPC_HLE/WII_IPC_HLE_Device_usb.h"
+#include "Core/IPC_HLE/WII_IPC_HLE_WiiMote.h"
+
 
 std::mutex crit_netplay_client;
-static NetPlayClient * netplay_client = NULL;
+static NetPlayClient * netplay_client = nullptr;
 NetSettings g_NetPlaySettings;
 
-#define RPT_SIZE_HACK	(1 << 16)
+#define RPT_SIZE_HACK  (1 << 16)
 
 NetPad::NetPad()
 {
@@ -67,7 +63,6 @@ NetPlayClient::NetPlayClient(const std::string& address, const u16 port, NetPlay
 
 	is_connected = false;
 
-	// why is false successful? documentation says true is
 	if (m_socket.Connect(port, address, 5) == sf::Socket::Done)
 	{
 		// send connect message
@@ -122,14 +117,13 @@ NetPlayClient::NetPlayClient(const std::string& address, const u16 port, NetPlay
 			is_connected = true;
 
 			m_selector.Add(m_socket);
-			m_thread = std::thread(std::mem_fun(&NetPlayClient::ThreadFunc), this);
+			m_thread = std::thread(std::mem_fn(&NetPlayClient::ThreadFunc), this);
 		}
 	}
 	else
 	{
 		PanicAlertT("Failed to Connect!");
 	}
-
 }
 
 // called from ---NETPLAY--- thread
@@ -190,8 +184,10 @@ unsigned int NetPlayClient::OnData(sf::Packet& packet)
 
 	case NP_MSG_PAD_MAPPING :
 		{
-			for (PadMapping i = 0; i < 4; i++)
-				packet >> m_pad_map[i];
+			for (PadMapping& mapping : m_pad_map)
+			{
+				packet >> mapping;
+			}
 
 			UpdateDevices();
 
@@ -201,8 +197,10 @@ unsigned int NetPlayClient::OnData(sf::Packet& packet)
 
 	case NP_MSG_WIIMOTE_MAPPING :
 		{
-			for (PadMapping i = 0; i < 4; i++)
-				packet >> m_wiimote_map[i];
+			for (PadMapping& mapping : m_wiimote_map)
+			{
+				packet >> mapping;
+			}
 
 			m_dialog->Update();
 		}
@@ -765,15 +763,19 @@ void NetPlayClient::Stop()
 	if (m_is_running == false)
 		return;
 	bool isPadMapped = false;
-	for (unsigned int i = 0; i < 4; ++i)
+	for (PadMapping mapping : m_pad_map)
 	{
-		if (m_pad_map[i] == m_local_player->pid)
+		if (mapping == m_local_player->pid)
+		{
 			isPadMapped = true;
+		}
 	}
-	for (unsigned int i = 0; i < 4; ++i)
+	for (PadMapping mapping : m_wiimote_map)
 	{
-		if (m_wiimote_map[i] == m_local_player->pid)
+		if (mapping == m_local_player->pid)
+		{
 			isPadMapped = true;
+		}
 	}
 	// tell the server to stop if we have a pad mapped in game.
 	if (isPadMapped)
@@ -881,7 +883,7 @@ u32 CEXIIPL::NetPlay_GetGCTime()
 	std::lock_guard<std::mutex> lk(crit_netplay_client);
 
 	if (netplay_client)
-		return NETPLAY_INITIAL_GCTIME;	// watev
+		return NETPLAY_INITIAL_GCTIME; // watev
 	else
 		return 0;
 }
@@ -910,7 +912,7 @@ u8 CSIDevice_DanceMat::NetPlay_InGamePadToLocalPad(u8 numPAD)
 
 bool NetPlay::IsNetPlayRunning()
 {
-	return netplay_client != NULL;
+	return netplay_client != nullptr;
 }
 
 void NetPlay_Enable(NetPlayClient* const np)
@@ -922,5 +924,5 @@ void NetPlay_Enable(NetPlayClient* const np)
 void NetPlay_Disable()
 {
 	std::lock_guard<std::mutex> lk(crit_netplay_client);
-	netplay_client = NULL;
+	netplay_client = nullptr;
 }

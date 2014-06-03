@@ -5,12 +5,13 @@
 // This audio backend uses XAudio2 via XAUDIO2_DLL
 // It works on Windows 8+, where it is included as an OS component.
 // This backend is always compiled, but only available if running on Win8+
-#ifndef HAVE_DXSDK
-#pragma once
 
+#pragma once
+#ifndef HAVE_DXSDK
 #include <memory>
-#include "Common/Thread.h"
+
 #include "AudioCommon/SoundStream.h"
+#include "Common/Event.h"
 
 #ifdef _WIN32
 
@@ -20,7 +21,7 @@ struct IXAudio2MasteringVoice;
 
 #endif
 
-class XAudio2 : public SoundStream
+class XAudio2 final : public SoundStream
 {
 #ifdef _WIN32
 
@@ -59,7 +60,6 @@ public:
 	virtual void Update();
 	virtual void Clear(bool mute);
 	virtual void SetVolume(int volume);
-	virtual bool usesMixer() const { return true; }
 
 	static bool isValid() { return InitLibrary(); }
 

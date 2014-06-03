@@ -6,7 +6,7 @@
 #pragma warning(disable:4146)  // unary minus operator applied to unsigned type, result still unsigned
 #endif
 
-#include "JitILBase.h"
+#include "Core/PowerPC/JitILCommon/JitILBase.h"
 
 static void ComputeRC(IREmitter::IRBuilder& ibuild, IREmitter::InstLoc val)
 {
@@ -78,7 +78,7 @@ void JitILBase::reg_imm(UGeckoInstruction inst)
 			ComputeRC(ibuild, val);
 		break;
 	default:
-		Default(inst);
+		FallBackToInterpreter(inst);
 		break;
 	}
 }
@@ -123,7 +123,7 @@ void JitILBase::boolX(UGeckoInstruction inst)
 	INSTRUCTION_START
 	JITDISABLE(bJITIntegerOff)
 
-	IREmitter::InstLoc a = NULL;
+	IREmitter::InstLoc a = nullptr;
 	IREmitter::InstLoc s = ibuild.EmitLoadGReg(inst.RS);
 	IREmitter::InstLoc b = ibuild.EmitLoadGReg(inst.RB);
 
@@ -303,7 +303,9 @@ void JitILBase::mulhwux(UGeckoInstruction inst)
 // skipped some of the special handling in here - if we get crashes, let the interpreter handle this op
 void JitILBase::divwux(UGeckoInstruction inst)
 {
-	Default(inst); return;
+	FallBackToInterpreter(inst);
+	return;
+
 #if 0
 	int a = inst.RA, b = inst.RB, d = inst.RD;
 	gpr.FlushLockX(EDX);
@@ -501,16 +503,18 @@ void JitILBase::srawix(UGeckoInstruction inst)
 {
 	INSTRUCTION_START
 	JITDISABLE(bJITIntegerOff)
-	IREmitter::InstLoc val = ibuild.EmitLoadGReg(inst.RS), test;
-	val = ibuild.EmitSarl(val, ibuild.EmitIntConst(inst.SH));
-	ibuild.EmitStoreGReg(val, inst.RA);
+	// Shift right by two
+	IREmitter::InstLoc input = ibuild.EmitLoadGReg(inst.RS);
+	IREmitter::InstLoc output = ibuild.EmitSarl(input, ibuild.EmitIntConst(inst.SH));
+	ibuild.EmitStoreGReg(output, inst.RA);
+	// Check whether the input is negative and any bits got shifted out.
 	unsigned int mask = -1u << inst.SH;
-	test = ibuild.EmitOr(val, ibuild.EmitIntConst(mask & 0x7FFFFFFF));
+	IREmitter::InstLoc test = ibuild.EmitOr(input, ibuild.EmitIntConst(mask & 0x7FFFFFFF));
 	test = ibuild.EmitICmpUgt(test, ibuild.EmitIntConst(mask));
 
 	ibuild.EmitStoreCarry(test);
 	if (inst.Rc)
-		ComputeRC(ibuild, val);
+		ComputeRC(ibuild, output);
 }
 
 // count leading zeroes

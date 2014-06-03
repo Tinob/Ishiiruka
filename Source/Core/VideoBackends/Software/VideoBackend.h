@@ -46,11 +46,7 @@ class VideoSoftware : public VideoBackend
 	bool Video_IsPossibleWaitingSetDrawDone();
 	void Video_AbortFrame();
 
-	readFn16  Video_CPRead16();
-	writeFn16 Video_CPWrite16();
-	readFn16  Video_PERead16();
-	writeFn16 Video_PEWrite16();
-	writeFn32 Video_PEWrite32();
+	void RegisterCPMMIO(MMIO::Mapping* mmio, u32 base) override;
 
 	void UpdateFPSDisplay(const char*);
 	unsigned int PeekMessages();

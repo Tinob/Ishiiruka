@@ -1,13 +1,16 @@
 // Most of the code in this file was shamelessly ripped from libcdio With minor adjustments
 
+#include <algorithm>
+#include <cstdlib>
+#include <string>
+#include <vector>
+
 #include "Common/CDUtils.h"
 #include "Common/Common.h"
 #include "Common/StringUtil.h"
 
-#include <memory> // for std::unique_ptr
 #ifdef _WIN32
 #include <windows.h>
-#include "Common/StringUtil.h"
 #elif __APPLE__
 #include <CoreFoundation/CoreFoundation.h>
 #include <IOKit/IOBSD.h>
@@ -19,6 +22,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
+#include <unistd.h>
 #endif // WIN32
 
 #ifdef __linux__
@@ -37,7 +41,7 @@ std::vector<std::string> cdio_get_devices()
 {
 	std::vector<std::string> drives;
 
-	const DWORD buffsize = GetLogicalDriveStrings(0, NULL);
+	const DWORD buffsize = GetLogicalDriveStrings(0, nullptr);
 	std::vector<TCHAR> buff(buffsize);
 	if (GetLogicalDriveStrings(buffsize, buff.data()) == buffsize - 1)
 	{
@@ -47,7 +51,7 @@ std::vector<std::string> cdio_get_devices()
 			if (is_cdrom(drive))
 			{
 				std::string str(TStrToUTF8(drive));
-				str.pop_back();	// we don't want the final backslash
+				str.pop_back(); // we don't want the final backslash
 				drives.push_back(std::move(str));
 			}
 
@@ -68,23 +72,23 @@ std::vector<std::string> cdio_get_devices()
 	CFMutableDictionaryRef classes_to_match;
 	std::vector<std::string> drives;
 
-	kern_result = IOMasterPort(MACH_PORT_NULL, &master_port);
+	kern_result = IOMasterPort( MACH_PORT_NULL, &master_port );
 	if (kern_result != KERN_SUCCESS)
-		return(drives);
+		return( drives );
 
-	classes_to_match = IOServiceMatching(kIOCDMediaClass);
-	if (classes_to_match == NULL)
-		return(drives);
+	classes_to_match = IOServiceMatching( kIOCDMediaClass );
+	if (classes_to_match == nullptr)
+		return( drives );
 
-	CFDictionarySetValue(classes_to_match,
-		CFSTR(kIOMediaEjectableKey), kCFBooleanTrue);
+	CFDictionarySetValue( classes_to_match,
+		CFSTR(kIOMediaEjectableKey), kCFBooleanTrue );
 
-	kern_result = IOServiceGetMatchingServices(master_port,
-		classes_to_match, &media_iterator);
+	kern_result = IOServiceGetMatchingServices( master_port,
+		classes_to_match, &media_iterator );
 	if (kern_result != KERN_SUCCESS)
-		return(drives);
+		return( drives );
 
-	next_media = IOIteratorNext(media_iterator);
+	next_media = IOIteratorNext( media_iterator );
 	if (next_media != 0)
 	{
 		char psz_buf[0x32];
@@ -94,38 +98,38 @@ std::vector<std::string> cdio_get_devices()
 		do
 		{
 			str_bsd_path =
-				IORegistryEntryCreateCFProperty(next_media,
-				CFSTR(kIOBSDNameKey), kCFAllocatorDefault,
-				0);
-			if (str_bsd_path == NULL)
+				IORegistryEntryCreateCFProperty( next_media,
+					CFSTR( kIOBSDNameKey ), kCFAllocatorDefault,
+					0 );
+			if (str_bsd_path == nullptr)
 			{
-				IOObjectRelease(next_media);
+				IOObjectRelease( next_media );
 				continue;
 			}
 
 			// Below, by appending 'r' to the BSD node name, we indicate
 			// a raw disk. Raw disks receive I/O requests directly and
 			// don't go through a buffer cache.
-			snprintf(psz_buf, sizeof(psz_buf), "%s%c", _PATH_DEV, 'r');
-			dev_path_length = strlen(psz_buf);
+			snprintf( psz_buf, sizeof(psz_buf), "%s%c", _PATH_DEV, 'r' );
+			dev_path_length = strlen( psz_buf );
 
-			if (CFStringGetCString((CFStringRef)str_bsd_path,
+			if (CFStringGetCString( (CFStringRef)str_bsd_path,
 				(char*)&psz_buf + dev_path_length,
-				sizeof(psz_buf)-dev_path_length,
+				sizeof(psz_buf) - dev_path_length,
 				kCFStringEncodingASCII))
 			{
-				if (psz_buf != NULL)
+				if (psz_buf != nullptr)
 				{
 					std::string str = psz_buf;
 					drives.push_back(str);
 				}
 			}
-			CFRelease(str_bsd_path);
-			IOObjectRelease(next_media);
+			CFRelease( str_bsd_path );
+			IOObjectRelease( next_media );
 
-		} while ((next_media = IOIteratorNext(media_iterator)) != 0);
+		} while (( next_media = IOIteratorNext( media_iterator ) ) != 0);
 	}
-	IOObjectRelease(media_iterator);
+	IOObjectRelease( media_iterator );
 	return drives;
 }
 #else
@@ -136,19 +140,19 @@ static struct
 	unsigned int num_min;
 	unsigned int num_max;
 } checklist[] =
-{
+	{
 #ifdef __linux__
-	{ "/dev/cdrom", 0, 0 },
-	{ "/dev/dvd", 0, 0 },
-	{ "/dev/hd%c", 'a', 'z' },
-	{ "/dev/scd%d", 0, 27 },
-	{ "/dev/sr%d", 0, 27 },
+		{ "/dev/cdrom", 0, 0 },
+		{ "/dev/dvd", 0, 0 },
+		{ "/dev/hd%c", 'a', 'z' },
+		{ "/dev/scd%d", 0, 27 },
+		{ "/dev/sr%d", 0, 27 },
 #else
-	{ "/dev/acd%d", 0, 27 },
-	{ "/dev/cd%d", 0, 27 },
+		{ "/dev/acd%d", 0, 27 },
+		{ "/dev/cd%d", 0, 27 },
 #endif
-	{ NULL, 0, 0 }
-};
+		{ nullptr, 0, 0 }
+	};
 
 // Returns true if a device is a block or char device and not a symbolic link
 bool is_device(const std::string& source_name)
@@ -168,9 +172,9 @@ static bool is_cdrom(const std::string& drive, char *mnttype)
 	if (!is_device(drive))
 		return(false);
 
-	bool is_cd = false;
+	bool is_cd=false;
 	// If it does exist, verify that it is a cdrom/dvd drive
-	int cdfd = open(drive.c_str(), (O_RDONLY | O_NONBLOCK), 0);
+	int cdfd = open(drive.c_str(), (O_RDONLY|O_NONBLOCK), 0);
 	if (cdfd >= 0)
 	{
 #ifdef __linux__
@@ -183,7 +187,7 @@ static bool is_cdrom(const std::string& drive, char *mnttype)
 }
 
 // Returns a pointer to an array of strings with the device names
-std::vector<std::string> cdio_get_devices()
+std::vector<std::string> cdio_get_devices ()
 {
 	std::vector<std::string> drives;
 	// Scan the system for DVD/CD-ROM drives.
@@ -192,7 +196,7 @@ std::vector<std::string> cdio_get_devices()
 		for (unsigned int j = checklist[i].num_min; j <= checklist[i].num_max; ++j)
 		{
 			std::string drive = StringFromFormat(checklist[i].format, j);
-			if ((is_cdrom(drive.c_str(), NULL)) > 0)
+			if (is_cdrom(drive, nullptr))
 			{
 				drives.push_back(std::move(drive));
 			}
@@ -216,5 +220,10 @@ bool cdio_is_cdrom(std::string device)
 #endif
 
 	std::vector<std::string> devices = cdio_get_devices();
-	return std::find(devices.begin(), devices.end(), device) != devices.end();;
+	for (const std::string& d : devices)
+	{
+		if (d == device)
+			return true;
+	}
+	return false;
 }

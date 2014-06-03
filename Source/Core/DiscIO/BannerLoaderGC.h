@@ -2,15 +2,23 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _BANNER_LOADER_GC_H_
-#define _BANNER_LOADER_GC_H_
+#pragma once
+
+#include <cstring>
+#include <string>
+#include <vector>
+
+#include "Common/CommonTypes.h"
 
 #include "DiscIO/BannerLoader.h"
-#include "VolumeGC.h"
-#include "Common/StringUtil.h"
+#include "DiscIO/Volume.h"
+#include "DiscIO/VolumeGC.h"
 
 namespace DiscIO
 {
+
+class IFileSystem;
+
 class CBannerLoaderGC
 	: public IBannerLoader
 {
@@ -18,13 +26,13 @@ class CBannerLoaderGC
 		CBannerLoaderGC(DiscIO::IFileSystem& _rFileSystem, DiscIO::IVolume* volume);
 		virtual ~CBannerLoaderGC();
 
-		virtual bool IsValid();
+		virtual bool IsValid() override;
 
-		virtual std::vector<u32> GetBanner(int* pWidth, int* pHeight);
+		virtual std::vector<u32> GetBanner(int* pWidth, int* pHeight) override;
 
-		virtual std::vector<std::string> GetNames();
-		virtual std::string GetCompany();
-		virtual std::vector<std::string> GetDescriptions();
+		virtual std::vector<std::string> GetNames() override;
+		virtual std::string GetCompany() override;
+		virtual std::vector<std::string> GetDescriptions() override;
 
 	private:
 		enum
@@ -81,6 +89,3 @@ class CBannerLoaderGC
 };
 
 } // namespace
-
-#endif
-

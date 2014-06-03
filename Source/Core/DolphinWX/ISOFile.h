@@ -2,14 +2,13 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef __ISOFILE_H_
-#define __ISOFILE_H_
+#pragma once
 
-#include <vector>
 #include <string>
+#include <vector>
 
+#include "Common/Common.h"
 #include "DiscIO/Volume.h"
-#include "DiscIO/VolumeCreator.h"
 
 #if defined(HAVE_WX) && HAVE_WX
 #include <wx/image.h>
@@ -22,26 +21,26 @@ public:
 	GameListItem(const std::string& _rFileName);
 	~GameListItem();
 
-	bool IsValid() const {return m_Valid;}
-	const std::string& GetFileName() const {return m_FileName;}
+	bool IsValid() const { return m_Valid; }
+	const std::string& GetFileName() const { return m_FileName; }
 	std::string GetBannerName(int index) const;
 	std::string GetVolumeName(int index) const;
 	std::string GetName(int index) const;
 	std::string GetCompany() const;
 	std::string GetDescription(int index = 0) const;
 	int GetRevision() const { return m_Revision; }
-	const std::string& GetUniqueID() const {return m_UniqueID;}
+	const std::string& GetUniqueID() const { return m_UniqueID; }
 	const std::string GetWiiFSPath() const;
-	DiscIO::IVolume::ECountry GetCountry() const {return m_Country;}
-	int GetPlatform() const {return m_Platform;}
+	DiscIO::IVolume::ECountry GetCountry() const { return m_Country; }
+	int GetPlatform() const { return m_Platform; }
 	const std::string& GetIssues() const { return m_issues; }
 	int GetEmuState() const { return m_emu_state; }
-	bool IsCompressed() const {return m_BlobCompressed;}
-	u64 GetFileSize() const {return m_FileSize;}
-	u64 GetVolumeSize() const {return m_VolumeSize;}
-	bool IsDiscTwo() const {return m_IsDiscTwo;}
+	bool IsCompressed() const { return m_BlobCompressed; }
+	u64 GetFileSize() const { return m_FileSize; }
+	u64 GetVolumeSize() const { return m_VolumeSize; }
+	bool IsDiscTwo() const { return m_IsDiscTwo; }
 #if defined(HAVE_WX) && HAVE_WX
-	const wxBitmap& GetBitmap() const {return m_Bitmap;}
+	const wxBitmap& GetBitmap() const { return m_Bitmap; }
 #endif
 
 	void DoState(PointerWrap &p);
@@ -91,6 +90,3 @@ private:
 
 	std::string CreateCacheFilename();
 };
-
-
-#endif

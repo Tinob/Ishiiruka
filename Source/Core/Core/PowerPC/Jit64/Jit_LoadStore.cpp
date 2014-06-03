@@ -7,9 +7,9 @@
 
 #include "Common/Common.h"
 
-#include "Jit.h"
-#include "JitAsm.h"
-#include "JitRegCache.h"
+#include "Core/PowerPC/Jit64/Jit.h"
+#include "Core/PowerPC/Jit64/JitAsm.h"
+#include "Core/PowerPC/Jit64/JitRegCache.h"
 
 void Jit64::lXXx(UGeckoInstruction inst)
 {
@@ -20,11 +20,20 @@ void Jit64::lXXx(UGeckoInstruction inst)
 
 	// Skip disabled JIT instructions
 	if (Core::g_CoreStartupParameter.bJITLoadStorelbzxOff && (inst.OPCD == 31) && (inst.SUBOP10 == 87))
-	{ Default(inst); return; }
+	{
+		FallBackToInterpreter(inst);
+		return;
+	}
 	if (Core::g_CoreStartupParameter.bJITLoadStorelXzOff && ((inst.OPCD == 34) || (inst.OPCD == 40) || (inst.OPCD == 32)))
-	{ Default(inst); return; }
+	{
+		FallBackToInterpreter(inst);
+		return;
+	}
 	if (Core::g_CoreStartupParameter.bJITLoadStorelwzOff && (inst.OPCD == 32))
-	{ Default(inst); return; }
+	{
+		FallBackToInterpreter(inst);
+		return;
+	}
 
 	// Determine memory access size and sign extend
 	int accessSize = 0;
@@ -167,14 +176,14 @@ void Jit64::lXXx(UGeckoInstruction inst)
 		{
 			u32 val = (u32)gpr.R(a).offset + (s32)inst.SIMM_16;
 			opAddress = Imm32(val);
-			if (update && !js.memcheck)
+			if (update)
 				gpr.SetImmediate32(a, val);
 		}
 		else if ((inst.OPCD == 31) && gpr.R(a).IsImm() && gpr.R(b).IsImm() && !js.memcheck)
 		{
 			u32 val = (u32)gpr.R(a).offset + (u32)gpr.R(b).offset;
 			opAddress = Imm32(val);
-			if (update && !js.memcheck)
+			if (update)
 				gpr.SetImmediate32(a, val);
 		}
 		else
@@ -225,7 +234,8 @@ void Jit64::dcbst(UGeckoInstruction inst)
 	// dcbt = 0x7c00022c
 	if ((Memory::ReadUnchecked_U32(js.compilerPC - 4) & 0x7c00022c) != 0x7c00022c)
 	{
-		Default(inst); return;
+		FallBackToInterpreter(inst);
+		return;
 	}
 }
 
@@ -235,14 +245,16 @@ void Jit64::dcbz(UGeckoInstruction inst)
 	INSTRUCTION_START
 	JITDISABLE(bJITLoadStoreOff)
 
-	Default(inst); return;
+	// FIXME
+	FallBackToInterpreter(inst);
+	return;
 
 	MOV(32, R(EAX), gpr.R(inst.RB));
 	if (inst.RA)
 		ADD(32, R(EAX), gpr.R(inst.RA));
 	AND(32, R(EAX), Imm32(~31));
-	XORPD(XMM0, R(XMM0));
-#ifdef _M_X64
+	PXOR(XMM0, R(XMM0));
+#if _M_X86_64
 	MOVAPS(MComplex(EBX, EAX, SCALE_1, 0), XMM0);
 	MOVAPS(MComplex(EBX, EAX, SCALE_1, 16), XMM0);
 #else
@@ -302,8 +314,7 @@ void Jit64::stX(UGeckoInstruction inst)
 			else if (Memory::IsRAMAddress(addr))
 			{
 				MOV(32, R(EAX), gpr.R(s));
-				BSWAP(accessSize, EAX);
-				WriteToConstRamAddress(accessSize, R(EAX), addr);
+				WriteToConstRamAddress(accessSize, EAX, addr, true);
 				if (update)
 					gpr.SetImmediate32(a, addr);
 				return;
@@ -332,10 +343,10 @@ void Jit64::stX(UGeckoInstruction inst)
 			gpr.FlushLockX(ABI_PARAM1);
 			MOV(32, R(ABI_PARAM1), gpr.R(a));
 			MOV(32, R(EAX), gpr.R(s));
-			BSWAP(32, EAX);
-#ifdef _M_X64
-			MOV(accessSize, MComplex(RBX, ABI_PARAM1, SCALE_1, (u32)offset), R(EAX));
+#if _M_X86_64
+			SwapAndStore(accessSize, MComplex(RBX, ABI_PARAM1, SCALE_1, (u32)offset), EAX);
 #else
+			BSWAP(32, EAX);
 			AND(32, R(ABI_PARAM1), Imm32(Memory::MEMVIEW32_MASK));
 			MOV(accessSize, MDisp(ABI_PARAM1, (u32)Memory::base + (u32)offset), R(EAX));
 #endif
@@ -351,14 +362,13 @@ void Jit64::stX(UGeckoInstruction inst)
 		}
 
 		/* // TODO - figure out why Beyond Good and Evil hates this
-		#if defined(_WIN32) && defined(_M_X64)
+		#if defined(_WIN32) && _M_X86_64
 		if (accessSize == 32 && !update)
 		{
 		// Fast and daring - requires 64-bit
 		MOV(32, R(EAX), gpr.R(s));
 		gpr.BindToRegister(a, true, false);
-		BSWAP(32, EAX);
-		MOV(accessSize, MComplex(RBX, gpr.RX(a), SCALE_1, (u32)offset), R(EAX));
+		SwapAndStore(32, MComplex(RBX, gpr.RX(a), SCALE_1, (u32)offset), EAX);
 		return;
 		}
 		#endif*/
@@ -398,7 +408,7 @@ void Jit64::stXx(UGeckoInstruction inst)
 	int a = inst.RA, b = inst.RB, s = inst.RS;
 	if (!a || a == s || a == b)
 	{
-		Default(inst);
+		FallBackToInterpreter(inst);
 		return;
 	}
 	gpr.Lock(a, b, s);
@@ -437,21 +447,21 @@ void Jit64::lmw(UGeckoInstruction inst)
 	INSTRUCTION_START
 	JITDISABLE(bJITLoadStoreOff)
 
-#ifdef _M_X64
+#if _M_X86_64
 	gpr.FlushLockX(ECX);
 	MOV(32, R(EAX), Imm32((u32)(s32)inst.SIMM_16));
 	if (inst.RA)
 		ADD(32, R(EAX), gpr.R(inst.RA));
 	for (int i = inst.RD; i < 32; i++)
 	{
-		MOV(32, R(ECX), MComplex(EBX, EAX, SCALE_1, (i - inst.RD) * 4));
-		BSWAP(32, ECX);
+		LoadAndSwap(32, ECX, MComplex(EBX, EAX, SCALE_1, (i - inst.RD) * 4));
 		gpr.BindToRegister(i, false, true);
 		MOV(32, gpr.R(i), R(ECX));
 	}
 	gpr.UnlockAllX();
 #else
-	Default(inst); return;
+	FallBackToInterpreter(inst);
+	return;
 #endif
 }
 
@@ -460,7 +470,7 @@ void Jit64::stmw(UGeckoInstruction inst)
 	INSTRUCTION_START
 	JITDISABLE(bJITLoadStoreOff)
 
-#ifdef _M_X64
+#if _M_X86_64
 	gpr.FlushLockX(ECX);
 	MOV(32, R(EAX), Imm32((u32)(s32)inst.SIMM_16));
 	if (inst.RA)
@@ -468,17 +478,17 @@ void Jit64::stmw(UGeckoInstruction inst)
 	for (int i = inst.RD; i < 32; i++)
 	{
 		MOV(32, R(ECX), gpr.R(i));
-		BSWAP(32, ECX);
-		MOV(32, MComplex(EBX, EAX, SCALE_1, (i - inst.RD) * 4), R(ECX));
+		SwapAndStore(32, MComplex(EBX, EAX, SCALE_1, (i - inst.RD) * 4), ECX);
 	}
 	gpr.UnlockAllX();
 #else
-	Default(inst); return;
+	FallBackToInterpreter(inst);
+	return;
 #endif
 }
 
 void Jit64::icbi(UGeckoInstruction inst)
 {
-	Default(inst);
-	WriteExit(js.compilerPC + 4, 0);
+	FallBackToInterpreter(inst);
+	WriteExit(js.compilerPC + 4);
 }

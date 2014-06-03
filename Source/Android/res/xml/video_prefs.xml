@@ -28,6 +28,11 @@
             android:summary="@string/anisotropic_filtering_descrip"
             android:title="@string/anisotropic_filtering"/>
 
+        <ListPreference
+            android:key="postProcessingShader"
+            android:summary="@string/postprocessing_shader_descrip"
+            android:title="@string/postprocessing_shader"/>
+
         <CheckBoxPreference
             android:defaultValue="true"
             android:key="scaledEFBCopy"
@@ -108,12 +113,6 @@
 
             <CheckBoxPreference
                 android:defaultValue="false"
-                android:key="cacheDisplayLists"
-                android:summary="@string/cache_display_lists_descrip"
-                android:title="@string/cache_display_lists"/>
-
-            <CheckBoxPreference
-                android:defaultValue="false"
                 android:key="disableDestinationAlpha"
                 android:summary="@string/disable_destination_alpha_descrip"
                 android:title="@string/disable_destination_alpha"/>
@@ -136,10 +135,4 @@
        android:key="showFPS"
        android:summary="@string/show_fps_descrip"
        android:title="@string/show_fps"/>
-    <!--
-    <CheckBoxPreference
-        android:defaultValue="true"
-        android:key="drawOnscreenControls"
-        android:title="@string/draw_onscreen_controls"/>
-        -->
 </PreferenceScreen>

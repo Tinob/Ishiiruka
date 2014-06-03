@@ -2,50 +2,47 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef __GECKOCODE_h__
-#define __GECKOCODE_h__
+#pragma once
+
+#include <map>
+#include <string>
+#include <vector>
 
 #include "Common/Common.h"
-
-#include <vector>
-#include <string>
-#include <map>
 
 namespace Gecko
 {
 
-class GeckoCode
-{
-public:
-
-	GeckoCode() : enabled(false) {}
-
-	struct Code
+	class GeckoCode
 	{
-		Code() : address(0), data(0) {}
+	public:
 
-		u32 address, data;
+		GeckoCode() : enabled(false) {}
 
-		std::string original_line;
+		struct Code
+		{
+			Code() : address(0), data(0) {}
 
-		u32 GetAddress() const;
+			u32 address, data;
+
+			std::string original_line;
+
+			u32 GetAddress() const;
+		};
+
+		std::vector<Code> codes;
+		std::string name, creator;
+		std::vector<std::string> notes;
+
+		bool enabled;
+		bool user_defined;
+
+		bool Compare(GeckoCode compare) const;
+		bool Exist(u32 address, u32 data);
 	};
 
-	std::vector<Code> codes;
-	std::string name, creator;
-	std::vector<std::string> notes;
+	void SetActiveCodes(const std::vector<GeckoCode>& gcodes);
+	bool RunActiveCodes();
+	void RunCodeHandler();
 
-	bool enabled;
-	bool user_defined;
-
-	bool Compare(GeckoCode compare) const;
-	bool Exist(u32 address, u32 data);
-};
-
-void SetActiveCodes(const std::vector<GeckoCode>& gcodes);
-bool RunActiveCodes();
-void RunCodeHandler();
-
-}	// namespace Gecko
-
-#endif
+} // namespace Gecko

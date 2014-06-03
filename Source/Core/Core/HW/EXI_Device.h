@@ -2,11 +2,10 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _EXIDEVICE_H
-#define _EXIDEVICE_H
+#pragma once
 
-#include "Common/CommonTypes.h"
 #include "Common/ChunkFile.h"
+#include "Common/CommonTypes.h"
 
 enum TEXIDevices
 {
@@ -41,7 +40,7 @@ public:
 	virtual void SetCS(int) {}
 	virtual void DoState(PointerWrap&) {}
 	virtual void PauseAndLock(bool doLock, bool unpauseOnUnlock=true) {}
-	virtual IEXIDevice* FindDevice(TEXIDevices device_type, int customIndex=-1) { return (device_type == m_deviceType) ? this : NULL; }
+	virtual IEXIDevice* FindDevice(TEXIDevices device_type, int customIndex=-1) { return (device_type == m_deviceType) ? this : nullptr; }
 
 	// Update
 	virtual void Update() {}
@@ -56,5 +55,3 @@ public:
 };
 
 extern IEXIDevice* EXIDevice_Create(const TEXIDevices device_type, const int channel_num);
-
-#endif

@@ -305,28 +305,10 @@ void VideoSoftware::Video_AbortFrame(void)
 {
 }
 
-readFn16 VideoSoftware::Video_CPRead16()
+void VideoSoftware::RegisterCPMMIO(MMIO::Mapping* mmio, u32 base)
 {
-	return SWCommandProcessor::Read16;
+	SWCommandProcessor::RegisterMMIO(mmio, base);
 }
-writeFn16 VideoSoftware::Video_CPWrite16()
-{
-	return SWCommandProcessor::Write16;
-}
-
-readFn16  VideoSoftware::Video_PERead16()
-{
-	return SWPixelEngine::Read16;
-}
-writeFn16 VideoSoftware::Video_PEWrite16()
-{
-	return SWPixelEngine::Write16;
-}
-writeFn32 VideoSoftware::Video_PEWrite32()
-{
-	return SWPixelEngine::Write32;
-}
-
 
 // Draw messages on top of the screen
 unsigned int VideoSoftware::PeekMessages()

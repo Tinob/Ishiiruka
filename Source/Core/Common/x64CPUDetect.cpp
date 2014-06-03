@@ -2,8 +2,11 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include <memory.h>
+#include <cstring>
+#include <string>
+
 #include "Common/Common.h"
+#include "Common/CPUDetect.h"
 
 #ifdef _WIN32
 #define _interlockedbittestandset workaround_ms_header_bug_platform_sdk6_set
@@ -85,10 +88,6 @@ static unsigned long long _xgetbv(unsigned int index)
 
 #endif
 
-#include "Common/Common.h"
-#include "Common/CPUDetect.h"
-#include "Common/StringUtil.h"
-
 CPUInfo cpu_info;
 
 CPUInfo::CPUInfo() {
@@ -99,16 +98,16 @@ CPUInfo::CPUInfo() {
 void CPUInfo::Detect()
 {
 	memset(this, 0, sizeof(*this));
-#ifdef _M_IX86
+#if _M_X86_32
 	Mode64bit = false;
-#elif defined (_M_X64)
+#elif _M_X86_64
 	Mode64bit = true;
 	OS64bit = true;
 #endif
 	num_cores = 1;
 
 #ifdef _WIN32
-#ifdef _M_IX86
+#if _M_X86_32
 	BOOL f64 = false;
 	IsWow64Process(GetCurrentProcess(), &f64);
 	OS64bit = (f64 == TRUE) ? true : false;
@@ -160,6 +159,7 @@ void CPUInfo::Detect()
 		if ((cpu_id[2] >> 9)  & 1) bSSSE3 = true;
 		if ((cpu_id[2] >> 19) & 1) bSSE4_1 = true;
 		if ((cpu_id[2] >> 20) & 1) bSSE4_2 = true;
+		if ((cpu_id[2] >> 22) & 1) bMOVBE = true;
 		if ((cpu_id[2] >> 25) & 1) bAES = true;
 
 		// To check DAZ support, we first need to check FXSAVE support.
@@ -171,9 +171,9 @@ void CPUInfo::Detect()
 			GC_ALIGNED16(u8 fx_state[512]);
 			memset(fx_state, 0, sizeof(fx_state));
 #ifdef _WIN32
-#ifdef _M_IX86
+#if _M_X86_32
 			_fxsave(fx_state);
-#elif defined (_M_X64)
+#elif _M_X86_64
 			_fxsave64(fx_state);
 #endif
 #else
@@ -264,6 +264,7 @@ std::string CPUInfo::Summarize()
 	if (bAVX) sum += ", AVX";
 	if (bFMA) sum += ", FMA";
 	if (bAES) sum += ", AES";
+	if (bMOVBE) sum += ", MOVBE";
 	if (bLongMode) sum += ", 64-bit support";
 	return sum;
 }

@@ -7,12 +7,13 @@
 //  * Copyright (c) 2004-2006 Milan Cutka
 //  * based on mplayer HRTF plugin by ylai
 
+#include <cmath>
+#include <cstdlib>
 #include <functional>
-#include <vector>
-#include <math.h>
-#include <stdlib.h>
 #include <string.h>
-#include "DPL2Decoder.h"
+#include <vector>
+
+#include "AudioCommon/DPL2Decoder.h"
 #include "Common/MathUtil.h"
 
 #ifndef M_PI
@@ -122,8 +123,8 @@ float* design_fir(unsigned int *n, float* fc, float opt)
 	float fc1;                               // Cutoff frequencies
 
 	// Sanity check
-	if(*n==0) return NULL;
-	MathUtil::Clamp(fc[0], float(0.001), float(1));
+	if (*n==0) return nullptr;
+	MathUtil::Clamp(&fc[0],float(0.001),float(1));
 
 	float *w=(float*)calloc(sizeof(float),*n);
 
@@ -187,7 +188,7 @@ void done(void)
 	{
 		free(filter_coefs_lfe);
 	}
-	filter_coefs_lfe = NULL;
+	filter_coefs_lfe = nullptr;
 }
 
 float* calc_coefficients_125Hz_lowpass(int rate)
@@ -377,5 +378,5 @@ void dpl2reset()
 {
 	olddelay = -1;
 	oldfreq = 0;
-	filter_coefs_lfe = NULL;
+	filter_coefs_lfe = nullptr;
 }

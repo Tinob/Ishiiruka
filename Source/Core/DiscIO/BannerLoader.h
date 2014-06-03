@@ -2,16 +2,19 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _BANNER_LOADER_H_
-#define _BANNER_LOADER_H_
+#pragma once
 
-#include <vector>
 #include <string>
+#include <vector>
 
-#include "DiscIO/Filesystem.h"
+#include "Common/CommonTypes.h"
 
 namespace DiscIO
 {
+
+class IFileSystem;
+class IVolume;
+
 class IBannerLoader
 {
 	public:
@@ -34,7 +37,5 @@ class IBannerLoader
 };
 
 IBannerLoader* CreateBannerLoader(DiscIO::IFileSystem& _rFileSystem, DiscIO::IVolume *pVolume);
-} // namespace
 
-#endif
-
+}  // namespace DiscIO

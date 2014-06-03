@@ -40,6 +40,21 @@ public final class DolphinEmulator extends Activity
 		}
 	}
 
+	private void CopyAssetFolder(String assetFolder, String outputFolder)
+	{
+		try
+		{
+			for (String file : getAssets().list(assetFolder))
+			{
+				CopyAsset(assetFolder + File.separator + file, outputFolder + File.separator + file);
+			}
+		}
+		catch (IOException e)
+		{
+			Log.e("DolphinEmulator", "Failed to copy asset folder: " + assetFolder, e);
+		}
+	}
+
 	private void copyFile(InputStream in, OutputStream out) throws IOException
 	{
 		byte[] buffer = new byte[1024];
@@ -69,21 +84,28 @@ public final class DolphinEmulator extends Activity
 			if(!file.exists())
 			{
 				NativeLibrary.CreateUserFolders();
-				CopyAsset("ButtonA.png",     BaseDir + File.separator + "ButtonA.png");
-				CopyAsset("ButtonB.png",     BaseDir + File.separator + "ButtonB.png");
-				CopyAsset("ButtonStart.png", BaseDir + File.separator + "ButtonStart.png");
-				CopyAsset("NoBanner.png",    BaseDir + File.separator + "NoBanner.png");
-				CopyAsset("GCPadNew.ini",    ConfigDir + File.separator + "GCPadNew.ini");
 				CopyAsset("Dolphin.ini",     ConfigDir + File.separator + "Dolphin.ini");
 				CopyAsset("dsp_coef.bin",    GCDir + File.separator + "dsp_coef.bin");
 				CopyAsset("dsp_rom.bin",     GCDir + File.separator + "dsp_rom.bin");
 				CopyAsset("font_ansi.bin",   GCDir + File.separator + "font_ansi.bin");
 				CopyAsset("font_sjis.bin",   GCDir + File.separator + "font_sjis.bin");
+				CopyAssetFolder("Shaders", BaseDir + File.separator + "Shaders");
 			}
+
+			// Always copy over the GCPad config in case of change or corruption.
+			// Not a user configurable file.
+			CopyAsset("GCPadNew.ini",    ConfigDir + File.separator + "GCPadNew.ini");
 
 			// Load the configuration keys set in the Dolphin ini and gfx ini files
 			// into the application's shared preferences.
 			UserPreferences.LoadIniToPrefs(this);
 		}
+	}
+
+	@Override
+	protected void onRestart()
+	{
+		super.onRestart();
+		finish(); // If we are ever returning to this activity then we are exiting.
 	}
 }

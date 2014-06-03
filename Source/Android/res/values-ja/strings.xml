@@ -11,6 +11,23 @@
     <!-- About Fragment -->
     <string name="build_revision">ビルドのバージョン</string>
     <string name="supports_gles3">サポートのOpenGL ES 3</string>
+    <string name="supports_neon">サポートのNEON</string>
+    <string name="general">一般</string>
+    <string name="cpu">CPU</string>
+    <string name="gles_two">GLES 2</string>
+    <string name="gles_three">GLES 3</string>
+    <string name="desktop_gl">OpenGL</string>
+
+    <!-- About Menu - CPU Info -->
+    <string name="cpu_abi_one">CPU ABI 1</string>
+    <string name="cpu_abi_two">CPU ABI 2</string>
+    <string name="cpu_info">CPU情報</string>
+    <string name="cpu_type">CPUタイプ</string>
+    <string name="cpu_features">CPUの命令セットと機能</string>
+    <string name="num_cores">CPUコア</string>
+    <string name="cpu_implementer">CPUの実装</string>
+    <string name="cpu_hardware">ハードウェア</string>
+    <string name="unknown_part_num">不明 (%1$d)。 我々はそれを文書化することができますので、この番号を報告してください。 </string>
 
     <!-- Folder Browser -->
     <string name="current_dir">現在のディレクトリ： %1$s</string>
@@ -25,10 +42,18 @@
     <string name="settings">設定</string>
     <string name="about">について</string>
 
+    <!-- Game List Activity - Device Compatibility AlertDialog -->
+    <string name="device_compat_warning">デバイスの互換性の警告</string>
+    <string name="device_compat_warning_msg">この電話は、NEON拡張をサポートしていません。 おそらくDolphinを実行することはできません。\nあなたはとにかくそれを実行してみますか？</string>
+    <string name="device_gles3compat_warning_msg">デバイスはOpenGLES3のビデオドライバのバグがあります。\nあなたはとにかくそれを使用してみたいのですか？</string>
+
     <!-- Game List Fragment -->
     <string name="file_clicked">クリックされたファイル： %1$s</string>
 
     <!-- Emulation Window Overlay -->
+    <string name="enable_input_overlay">入力オーバーレイを有効</string>
+    <string name="disable_input_overlay">入力オーバーレイを無効</string>
+    <string name="overlay_screenshot">スクリーンショットを撮る</string>
     <string name="overlay_savestate">ステートセーブ</string>
     <string name="overlay_loadstate">ステートロード</string>
     <string name="overlay_exit_emulation">終了</string>
@@ -41,8 +66,23 @@
 
     <!-- Input Config Fragment -->
     <string name="input_settings">入力</string>
+    <string name="input_overlay_layout">入力オーバーレイレイアウト</string>
+    <string name="input_overlay_layout_desc">入力オーバーレイのためのボタンのレイアウト。</string>
+    <string name="gamecube_bindings">ゲームキューブコントローラの入力バインディング</string>
+    <string name="controller_0">コントローラ1</string>
+    <string name="controller_1">コントローラ2</string>
+    <string name="controller_2">コントローラ3</string>
+    <string name="controller_3">コントローラ4</string>
+    <string name="enable_controller">コントローラを有効</string>
+    <string name="wiimote_bindings">Wiiリモコンの入力バインディング</string>
+    <string name="wiimote_1">Wiiリモコン1</string>
+    <string name="wiimote_2">Wiiリモコン2</string>
+    <string name="wiimote_3">Wiiリモコン3</string>
+    <string name="wiimote_4">Wiiリモコン4</string>
+    <string name="enable_wiimote">Wiiリモコンを有効</string>
     <string name="input_binding">入力バインディング</string>
     <string name="input_binding_descrip">%1$sにバインドするための入力を移動または押してください。</string>
+    <!-- Gamecube buttons (May be shared with Wiimote stuff too) -->
     <string name="button_a">Aボタン</string>
     <string name="button_b">Bボタン</string>
     <string name="button_start">スタートボタン</string>
@@ -63,6 +103,29 @@
     <string name="c_stick_right">C-スティック: →</string>
     <string name="trigger_left">左のトリガー</string>
     <string name="trigger_right">右のトリガー</string>
+    <!-- Wiimote (+ extension) only buttons -->
+    <string name="button_one">ボタン1</string>
+    <string name="button_two">ボタン2</string>
+    <string name="button_plus">ボタン+</string>
+    <string name="button_minus">ボタン-</string>
+    <string name="button_home">ホームボタン</string>
+    <string name="ir_up">IR ↑</string>
+    <string name="ir_down">IR ↓</string>
+    <string name="ir_left">IR ←</string>
+    <string name="ir_right">IR →</string>
+    <string name="ir_forward">IR前方</string>
+    <string name="ir_backward">IR後方</string>
+    <string name="swing_up">スイング ↑</string>
+    <string name="swing_down">スイング ↓</string>
+    <string name="swing_left">スイング ←</string>
+    <string name="swing_right">スイング →</string>
+    <string name="tilt_forward">前方を傾</string>
+    <string name="tilt_backward">後方を傾</string>
+    <string name="tilt_left">左を傾</string>
+    <string name="tilt_right">右を傾</string>
+    <string name="shake_x">Xを振る</string>
+    <string name="shake_y">Yを振る</string>
+    <string name="shake_z">Zを振る</string>
 
     <!-- CPU Preference Fragment -->
     <string name="interpreter">Interpreter</string>
@@ -86,7 +149,6 @@
     <string name="video_backend_desc">%s</string>
     <string name="show_fps">FPSを表示</string>
     <string name="show_fps_descrip">エミュレーション速度の指標として、画面左上に毎秒レンダリングされた フレーム数を表示します。</string>
-    <string name="draw_onscreen_controls">画面上のコントロールを描画</string>
 
     <string name="enhancements">画質向上の設定</string>
     <string name="internal_resolution">内部解像度の変更</string>
@@ -95,6 +157,8 @@
     <string name="FSAA_descrip">3Dグラフィックスをラスタライズによって生じるエイリアシングの量が減少。 レンダリングされた画像はあまりギザギザになります。 抽選でエミュレーション速度を下げます。問題を引き起こす可能性があります。</string>
     <string name="anisotropic_filtering">異方性フィルタリング</string>
     <string name="anisotropic_filtering_descrip">異方性フィルタリングを適用します。 奥行きのあるテクスチャをより精細に描画することが出来ます。 特定のゲームでは描画バグの原因になることがあります。</string>
+    <string name="postprocessing_shader">ポストプロセッシングシェーダー</string>
+    <string name="postprocessing_shader_descrip">フレーム終了後の後処理効果を適用する。</string>
     <string name="scaled_efb_copy">Scaled EFB Copy</string>
     <string name="scaled_efb_copy_descrip">テクスチャエフェクトを表示するために作成されたテクスチャの品質を著しく向上させます。 特に高解像度出力時に効果が大きく出ます。 動作速度は少々低下し、まれに描画バグの原因にもなることもあります。</string>
     <string name="per_pixel_lighting">Per-Pixel Lighting</string>
@@ -125,8 +189,6 @@
     <string name="external_frame_buffer_descrip">XFBをエミュレート方法を決定。</string>
     <string name="external_frame_buffer_virtual">バーチャル</string>
     <string name="external_frame_buffer_real">実機</string>
-    <string name="cache_display_lists">Cache Display Lists</string>
-    <string name="cache_display_lists_descrip">ディスプレイリストをキャッシュすることによりエミュレーション速度を向上。</string>
     <string name="disable_destination_alpha">Disable Destination Alpha</string>
     <string name="disable_destination_alpha_descrip">多くのタイトルで画面効果に使用されている、アルファ透過処理をスキップ 。</string>
     <string name="fast_depth_calculation">高速奥行き計算</string>

@@ -3,24 +3,27 @@
 // Refer to the license.txt file included.
 
 #include <cmath>
-#include "Common/Common.h"
-#include "HLE_OS.h"
 
-#include "Core/PowerPC/PowerPC.h"
-#include "Core/HW/Memmap.h"
-#include "Core/Host.h"
-#include "Core/IPC_HLE/WII_IPC_HLE_Device_DI.h"
+#include "Common/Common.h"
+#include "Common/CommonPaths.h"
+
 #include "Core/ConfigManager.h"
-#include "DiscIO/VolumeCreator.h"
-#include "DiscIO/Filesystem.h"
+#include "Core/Host.h"
 #include "Core/Boot/Boot_DOL.h"
+#include "Core/HLE/HLE.h"
+#include "Core/HLE/HLE_OS.h"
+#include "Core/HW/Memmap.h"
+#include "Core/IPC_HLE/WII_IPC_HLE_Device_DI.h"
 #include "Core/IPC_HLE/WII_IPC_HLE_Device_usb.h"
-#include "HLE.h"
+#include "Core/PowerPC/PowerPC.h"
 #include "Core/PowerPC/PPCAnalyst.h"
 #include "Core/PowerPC/PPCCache.h"
-#include "Core/PowerPC/SignatureDB.h"
 #include "Core/PowerPC/PPCSymbolDB.h"
-#include "Common/CommonPaths.h"
+#include "Core/PowerPC/SignatureDB.h"
+
+#include "DiscIO/Filesystem.h"
+#include "DiscIO/VolumeCreator.h"
+
 #include "VideoCommon/TextureCacheBase.h"
 
 namespace HLE_Misc
@@ -68,7 +71,7 @@ void ExecuteDOL(u8* dolFile, u32 fileSize)
 		g_symbolDB.Clear();
 		PPCAnalyst::FindFunctions(0x80004000, 0x811fffff, &g_symbolDB);
 		SignatureDB db;
-		if (db.Load((File::GetSysDirectory() + TOTALDB).c_str()))
+		if (db.Load(File::GetSysDirectory() + TOTALDB))
 		{
 			db.Apply(&g_symbolDB);
 			HLE::PatchFunctions();
@@ -124,17 +127,17 @@ void ExecuteDOL(u8* dolFile, u32 fileSize)
 
 void LoadDOLFromDisc(std::string dol)
 {
-	DiscIO::IVolume* pVolume = DiscIO::CreateVolumeFromFilename(SConfig::GetInstance().m_LastFilename.c_str());
+	DiscIO::IVolume* pVolume = DiscIO::CreateVolumeFromFilename(SConfig::GetInstance().m_LastFilename);
 	DiscIO::IFileSystem* pFileSystem = DiscIO::CreateFileSystem(pVolume);
 
 	if (dol.length() > 1 && dol.compare(0, 1, "/") == 0)
 		dol = dol.substr(1);
 
-	u32 fileSize = (u32) pFileSystem->GetFileSize(dol.c_str());
+	u32 fileSize = (u32) pFileSystem->GetFileSize(dol);
 	u8* dolFile = new u8[fileSize];
 	if (fileSize > 0)
 	{
-		pFileSystem->ReadFile(dol.c_str(), dolFile, fileSize);
+		pFileSystem->ReadFile(dol, dolFile, fileSize);
 		ExecuteDOL(dolFile, fileSize);
 	}
 	delete[] dolFile;
@@ -142,7 +145,7 @@ void LoadDOLFromDisc(std::string dol)
 
 void LoadBootDOLFromDisc()
 {
-	DiscIO::IVolume* pVolume = DiscIO::CreateVolumeFromFilename(SConfig::GetInstance().m_LastFilename.c_str());
+	DiscIO::IVolume* pVolume = DiscIO::CreateVolumeFromFilename(SConfig::GetInstance().m_LastFilename);
 	DiscIO::IFileSystem* pFileSystem = DiscIO::CreateFileSystem(pVolume);
 	u32 fileSize = pFileSystem->GetBootDOLSize();
 	u8* dolFile = new u8[fileSize];
@@ -156,7 +159,7 @@ void LoadBootDOLFromDisc()
 
 u32 GetDolFileSize(std::string dol)
 {
-	DiscIO::IVolume* pVolume = DiscIO::CreateVolumeFromFilename(SConfig::GetInstance().m_LastFilename.c_str());
+	DiscIO::IVolume* pVolume = DiscIO::CreateVolumeFromFilename(SConfig::GetInstance().m_LastFilename);
 	DiscIO::IFileSystem* pFileSystem = DiscIO::CreateFileSystem(pVolume);
 
 	std::string dolFile;
@@ -166,7 +169,7 @@ u32 GetDolFileSize(std::string dol)
 	else
 		dolFile = dol;
 
-	return (u32)pFileSystem->GetFileSize(dolFile.c_str());
+	return (u32)pFileSystem->GetFileSize(dolFile);
 }
 
 u16 GetIOSVersion()
@@ -265,7 +268,7 @@ void HLEGeckoCodehandler()
 	{
 		return;
 	}
-	else if(existing - magic > 5)
+	else if (existing - magic > 5)
 	{
 		existing = magic;
 	}

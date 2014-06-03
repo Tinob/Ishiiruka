@@ -2,31 +2,34 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef __CHEATSWINDOW_H__
-#define __CHEATSWINDOW_H__
+#pragma once
 
-#include <wx/wx.h>
-#include <wx/sizer.h>
-#include <wx/filepicker.h>
-#include <wx/statbmp.h>
-#include <wx/imaglist.h>
-#include <wx/treectrl.h>
-#include <wx/gbsizer.h>
-#include <wx/textctrl.h>
-#include <wx/notebook.h>
-#include <wx/mimetype.h>
-#include <wx/colour.h>
-#include <wx/listbox.h>
-
+#include <cstddef>
 #include <string>
 #include <vector>
+#include <wx/arrstr.h>
+#include <wx/dialog.h>
+#include <wx/panel.h>
 
-#include "Core/ActionReplay.h"
-
-#include "GeckoCodeDiag.h"
-
-#include "DiscIO/Filesystem.h"
+#include "Common/CommonTypes.h"
 #include "Common/IniFile.h"
+
+class wxButton;
+class wxCheckBox;
+class wxCheckListBox;
+class wxChoice;
+class wxCloseEvent;
+class wxCommandEvent;
+class wxEvent;
+class wxListBox;
+class wxNotebook;
+class wxRadioButton;
+class wxStaticBox;
+class wxStaticText;
+class wxTextCtrl;
+class wxWindow;
+
+namespace Gecko { class CodeConfigPanel; }
 
 class CreateCodeDialog : public wxDialog
 {
@@ -61,13 +64,13 @@ protected:
 		u32 old_value;
 	};
 
-	std::vector<CheatSearchResult>	search_results;
+	std::vector<CheatSearchResult> search_results;
 	unsigned int search_type_size;
 
 	wxChoice* search_type;
-	wxListBox*	lbox_search_results;
+	wxListBox* lbox_search_results;
 	wxStaticText* label_results_count;
-	wxTextCtrl*	textctrl_value_x;
+	wxTextCtrl* textctrl_value_x;
 	wxButton *btnInitScan, *btnNextScan;
 
 	struct
@@ -93,71 +96,68 @@ class wxCheatsWindow : public wxDialog
 {
 	friend class CreateCodeDialog;
 
-	public:
-		wxCheatsWindow(wxWindow* const parent);
-		~wxCheatsWindow();
-		void UpdateGUI();
+public:
+	wxCheatsWindow(wxWindow* const parent);
+	~wxCheatsWindow();
+	void UpdateGUI();
 
-	protected:
+protected:
 
-		struct ARCodeIndex {
-			u32 uiIndex;
-			size_t index;
-		};
+	struct ARCodeIndex {
+		u32 uiIndex;
+		size_t index;
+	};
 
-		// --- GUI Controls ---
-		wxButton* button_apply;
-		wxNotebook *m_Notebook_Main;
+	// --- GUI Controls ---
+	wxButton* button_apply;
+	wxNotebook *m_Notebook_Main;
 
-		wxPanel *m_Tab_Cheats;
-		wxPanel *m_Tab_Log;
+	wxPanel *m_Tab_Cheats;
+	wxPanel *m_Tab_Log;
 
-		wxCheckBox *m_CheckBox_LogAR;
+	wxCheckBox *m_CheckBox_LogAR;
 
-		wxStaticText *m_Label_Codename;
-		wxStaticText *m_Label_NumCodes;
+	wxStaticText *m_Label_Codename;
+	wxStaticText *m_Label_NumCodes;
 
-		wxCheckListBox *m_CheckListBox_CheatsList;
+	wxCheckListBox *m_CheckListBox_CheatsList;
 
-		wxTextCtrl *m_TextCtrl_Log;
+	wxTextCtrl *m_TextCtrl_Log;
 
-		wxListBox *m_ListBox_CodesList;
+	wxListBox *m_ListBox_CodesList;
 
-		wxStaticBox *m_GroupBox_Info;
+	wxStaticBox *m_GroupBox_Info;
 
-		wxArrayString m_CheatStringList;
+	wxArrayString m_CheatStringList;
 
-		std::vector<ARCodeIndex> indexList;
+	std::vector<ARCodeIndex> indexList;
 
-		Gecko::CodeConfigPanel *m_geckocode_panel;
-		IniFile m_gameini_default;
-		IniFile m_gameini_local;
-		std::string m_gameini_local_path;
+	Gecko::CodeConfigPanel *m_geckocode_panel;
+	IniFile m_gameini_default;
+	IniFile m_gameini_local;
+	std::string m_gameini_local_path;
 
-		void Init_ChildControls();
+	void Init_ChildControls();
 
-		void Load_ARCodes();
-		void Load_GeckoCodes();
+	void Load_ARCodes();
+	void Load_GeckoCodes();
 
-		// --- Wx Events Handlers ---
+	// --- Wx Events Handlers ---
 
-		// $ Close Button
-		void OnEvent_ButtonClose_Press(wxCommandEvent& event);
-		void OnEvent_Close(wxCloseEvent& ev);
+	// $ Close Button
+	void OnEvent_ButtonClose_Press(wxCommandEvent& event);
+	void OnEvent_Close(wxCloseEvent& ev);
 
-		// $ Cheats List
-		void OnEvent_CheatsList_ItemSelected(wxCommandEvent& event);
-		void OnEvent_CheatsList_ItemToggled(wxCommandEvent& event);
+	// $ Cheats List
+	void OnEvent_CheatsList_ItemSelected(wxCommandEvent& event);
+	void OnEvent_CheatsList_ItemToggled(wxCommandEvent& event);
 
-		// $ Apply Changes Button
-		void OnEvent_ApplyChanges_Press(wxCommandEvent& event);
+	// $ Apply Changes Button
+	void OnEvent_ApplyChanges_Press(wxCommandEvent& event);
 
-		// $ Update Log Button
-		void OnEvent_ButtonUpdateLog_Press(wxCommandEvent& event);
+	// $ Update Log Button
+	void OnEvent_ButtonUpdateLog_Press(wxCommandEvent& event);
 
-		// $ Enable Logging Checkbox
-		void OnEvent_CheckBoxEnableLogging_StateChange(wxCommandEvent& event);
+	// $ Enable Logging Checkbox
+	void OnEvent_CheckBoxEnableLogging_StateChange(wxCommandEvent& event);
 };
-
-#endif
-

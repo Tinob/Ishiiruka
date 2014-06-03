@@ -1,30 +1,17 @@
-// Copyright (C) 2003 Dolphin Project.
+// Copyright 2014 Dolphin Emulator Project
+// Licensed under GPLv2
+// Refer to the license.txt file included.
 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, version 2.0.
+#include "Common/ArmEmitter.h"
+#include "Common/Common.h"
 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License 2.0 for more details.
-
-// A copy of the GPL 2.0 should have been included with the program.
-// If not, see http://www.gnu.org/licenses/
-
-// Official SVN repository and contact information can be found at
-// http://code.google.com/p/dolphin-emu/
-#include "Common.h"
-
-#include "../../Core.h"
-#include "../PowerPC.h"
-#include "../../CoreTiming.h"
-#include "../PPCTables.h"
-#include "ArmEmitter.h"
-
-#include "Jit.h"
-#include "JitRegCache.h"
-#include "JitAsm.h"
+#include "Core/Core.h"
+#include "Core/CoreTiming.h"
+#include "Core/PowerPC/PowerPC.h"
+#include "Core/PowerPC/PPCTables.h"
+#include "Core/PowerPC/JitArm32/Jit.h"
+#include "Core/PowerPC/JitArm32/JitAsm.h"
+#include "Core/PowerPC/JitArm32/JitRegCache.h"
 
 // The branches are known good, or at least reasonably good.
 // No need for a disable-mechanism.
@@ -66,9 +53,9 @@ void JitArm::rfi(UGeckoInstruction inst)
 	gpr.Flush();
 	fpr.Flush();
 
- 	// See Interpreter rfi for details
+	// See Interpreter rfi for details
 	const u32 mask = 0x87C0FFFF;
-		const u32 clearMSR13 = 0xFFFBFFFF; // Mask used to clear the bit MSR[13]
+	const u32 clearMSR13 = 0xFFFBFFFF; // Mask used to clear the bit MSR[13]
 	// MSR = ((MSR & ~mask) | (SRR1 & mask)) & clearMSR13;
 	// R0 = MSR location
 	// R1 = MSR contents
@@ -134,27 +121,26 @@ void JitArm::bx(UGeckoInstruction inst)
 		destination = SignExt26(inst.LI << 2);
 	else
 		destination = js.compilerPC + SignExt26(inst.LI << 2);
-	#ifdef ACID_TEST
-		if (inst.LK)
-		{
-			MOV(R14, 0);
-			STRB(R14, R9, PPCSTATE_OFF(cr_fast[0]));
-		}
-	#endif
- 	if (destination == js.compilerPC)
+#ifdef ACID_TEST
+	if (inst.LK)
 	{
- 		//PanicAlert("Idle loop detected at %08x", destination);
-		//	CALL(ProtectFunction(&CoreTiming::Idle, 0));
-		//	JMP(Asm::testExceptions, true);
+		MOV(R14, 0);
+		STRB(R14, R9, PPCSTATE_OFF(cr_fast[0]));
+	}
+#endif
+	if (destination == js.compilerPC)
+	{
+		//PanicAlert("Idle loop detected at %08x", destination);
+		// CALL(ProtectFunction(&CoreTiming::Idle, 0));
+		// JMP(Asm::testExceptions, true);
 		// make idle loops go faster
 		MOVI2R(R14, (u32)&CoreTiming::Idle);
 		BL(R14);
 		MOVI2R(R14, js.compilerPC);
 		STR(R14, R9, PPCSTATE_OFF(pc));
-		MOVI2R(R14, (u32)asm_routines.testExceptions);
-		B(R14);
+		WriteExceptionExit();
 	}
-	WriteExit(destination, 0);
+	WriteExit(destination);
 }
 
 void JitArm::bcx(UGeckoInstruction inst)
@@ -162,7 +148,6 @@ void JitArm::bcx(UGeckoInstruction inst)
 	INSTRUCTION_START
 	JITDISABLE(bJITBranchOff)
 	// USES_CR
-	_assert_msg_(DYNA_REC, js.isLastInstruction, "bcx not last instruction of block");
 
 	gpr.Flush();
 	fpr.Flush();
@@ -205,18 +190,19 @@ void JitArm::bcx(UGeckoInstruction inst)
 	gpr.Unlock(rA, rB);
 
 	u32 destination;
-	if(inst.AA)
+	if (inst.AA)
 		destination = SignExt16(inst.BD << 2);
 	else
 		destination = js.compilerPC + SignExt16(inst.BD << 2);
-	WriteExit(destination, 0);
+	WriteExit(destination);
 
 	if ((inst.BO & BO_DONT_CHECK_CONDITION) == 0)
 		SetJumpTarget( pConditionDontBranch );
 	if ((inst.BO & BO_DONT_DECREMENT_FLAG) == 0)
 		SetJumpTarget( pCTRDontBranch );
 
-	WriteExit(js.compilerPC + 4, 1);
+	if (!analyzer.HasOption(PPCAnalyst::PPCAnalyzer::OPTION_CONDITIONAL_CONTINUE))
+		WriteExit(js.compilerPC + 4);
 }
 void JitArm::bcctrx(UGeckoInstruction inst)
 {
@@ -236,7 +222,7 @@ void JitArm::bcctrx(UGeckoInstruction inst)
 		//NPC = CTR & 0xfffffffc;
 		ARMReg rA = gpr.GetReg();
 
-		if(inst.LK_3)
+		if (inst.LK_3)
 		{
 			u32 Jumpto = js.compilerPC + 4;
 			MOVI2R(rA, Jumpto);
@@ -278,25 +264,16 @@ void JitArm::bcctrx(UGeckoInstruction inst)
 		WriteExitDestInR(rA);
 
 		SetJumpTarget(b);
-		WriteExit(js.compilerPC + 4, 1);
+
+		if (!analyzer.HasOption(PPCAnalyst::PPCAnalyzer::OPTION_CONDITIONAL_CONTINUE))
+			WriteExit(js.compilerPC + 4);
 	}
 }
 void JitArm::bclrx(UGeckoInstruction inst)
 {
 	INSTRUCTION_START
 	JITDISABLE(bJITBranchOff)
-	if (!js.isLastInstruction &&
-		(inst.BO & (1 << 4)) && (inst.BO & (1 << 2))) {
-		if (inst.LK)
-		{
-			ARMReg rA = gpr.GetReg(false);
-			u32 Jumpto = js.compilerPC + 4;
-			MOVI2R(rA, Jumpto);
-			STR(rA, R9, PPCSTATE_OFF(spr[SPR_LR]));
-			// ARMABI_MOVI2M((u32)&LR, js.compilerPC + 4);
-		}
-		return;
-	}
+
 	gpr.Flush();
 	fpr.Flush();
 
@@ -355,5 +332,7 @@ void JitArm::bclrx(UGeckoInstruction inst)
 		SetJumpTarget( pConditionDontBranch );
 	if ((inst.BO & BO_DONT_DECREMENT_FLAG) == 0)
 		SetJumpTarget( pCTRDontBranch );
-	WriteExit(js.compilerPC + 4, 1);
+
+	if (!analyzer.HasOption(PPCAnalyst::PPCAnalyzer::OPTION_CONDITIONAL_CONTINUE))
+		WriteExit(js.compilerPC + 4);
 }

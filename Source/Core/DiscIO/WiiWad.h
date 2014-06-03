@@ -2,19 +2,16 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _WII_WAD_H
-#define _WII_WAD_H
+#pragma once
 
 #include <string>
-#include <vector>
-#include <map>
 
 #include "Common/CommonTypes.h"
-#include "DiscIO/Blob.h"
-#include "DiscIO/Volume.h"
 
 namespace DiscIO
 {
+
+class IBlobReader;
 
 class WiiWAD
 {
@@ -60,6 +57,3 @@ private:
 };
 
 }
-
-#endif
-

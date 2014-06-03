@@ -2,29 +2,37 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
+
+#include "AudioCommon/AlsaSoundStream.h"
+#include "AudioCommon/AOSoundStream.h"
 #include "AudioCommon/AudioCommon.h"
-#include "Common/FileUtil.h"
+#include "AudioCommon/CoreAudioSoundStream.h"
+#include "AudioCommon/DSoundStream.h"
 #include "AudioCommon/Mixer.h"
-#include "NullSoundStream.h"
-#include "DSoundStream.h"
-#include "XAudio2_7Stream.h"
-#include "XAudio2Stream.h"
-#include "AOSoundStream.h"
-#include "AlsaSoundStream.h"
-#include "CoreAudioSoundStream.h"
-#include "OpenALStream.h"
-#include "PulseAudioStream.h"
-#include "OpenSLESStream.h"
-#include "Core/Movie.h"
+#include "AudioCommon/NullSoundStream.h"
+#include "AudioCommon/OpenALStream.h"
+#include "AudioCommon/OpenSLESStream.h"
+#include "AudioCommon/PulseAudioStream.h"
+#include "AudioCommon/XAudio2_7Stream.h"
+#include "AudioCommon/XAudio2Stream.h"
+
+#include "Common/FileUtil.h"
+
 #include "Core/ConfigManager.h"
+#include "Core/Movie.h"
 
 // This shouldn't be a global, at least not here.
 SoundStream *soundStream = nullptr;
 
-namespace AudioCommon 
+namespace AudioCommon
 {
-	SoundStream *InitSoundStream(CMixer *mixer, void *hWnd)
+	SoundStream *InitSoundStream(void *hWnd)
 	{
+		unsigned int AISampleRate, DACSampleRate;
+		AudioInterface::Callback_GetSampleRate(AISampleRate, DACSampleRate);
+		delete soundStream;
+		CMixer *mixer = new CMixer(AISampleRate, DACSampleRate, 48000);
+
 		// TODO: possible memleak with mixer
 
 		std::string backend = SConfig::GetInstance().sBackend;
@@ -39,12 +47,10 @@ namespace AudioCommon
 #ifndef HAVE_DXSDK
 			if (XAudio2::isValid())
 				soundStream = new XAudio2(mixer);
-			else  if (XAudio2_7::isValid())
-				soundStream = new XAudio2_7(mixer);
-#else
-			if (XAudio2_7::isValid())
-				soundStream = new XAudio2_7(mixer);
+			else 
 #endif
+				if (XAudio2_7::isValid())
+				soundStream = new XAudio2_7(mixer);
 		}
 		else if (backend == BACKEND_AOSOUND     && AOSound::isValid())
 			soundStream = new AOSound(mixer);
@@ -73,7 +79,7 @@ namespace AudioCommon
 				{
 					std::string audio_file_name = File::GetUserPath(D_DUMPAUDIO_IDX) + "audiodump.wav";
 					File::CreateFullPath(audio_file_name);
-					mixer->StartLogAudio(audio_file_name.c_str());
+					mixer->StartLogAudio(audio_file_name);
 				}
 
 				return soundStream;
@@ -114,8 +120,8 @@ namespace AudioCommon
 		if (DSound::isValid())
 			backends.push_back(BACKEND_DIRECTSOUND);
 		if (XAudio2_7::isValid() 
-#ifndef HAVE_DXSDK 
-			|| XAudio2::isValid() 
+#ifndef HAVE_DXSDK
+			|| XAudio2::isValid()
 #endif
 			)
 			backends.push_back(BACKEND_XAUDIO2);
@@ -132,15 +138,6 @@ namespace AudioCommon
 		if (OpenSLESStream::isValid())
 			backends.push_back(BACKEND_OPENSLES);
 		return backends;
-	}
-
-	bool UseJIT()
-	{
-		if (!Movie::IsDSPHLE() && Movie::IsPlayingInput() && Movie::IsConfigSaved())
-		{
-			return true;
-		}
-		return SConfig::GetInstance().m_EnableJIT;
 	}
 
 	void PauseAndLock(bool doLock, bool unpauseOnUnlock)
@@ -168,5 +165,26 @@ namespace AudioCommon
 			soundStream->GetMixer()->SetThrottle(SConfig::GetInstance().m_Framelimit == 2);
 			soundStream->SetVolume(SConfig::GetInstance().m_Volume);
 		}
+	}
+
+	void ClearAudioBuffer(bool mute)
+	{
+		if (soundStream)
+			soundStream->Clear(mute);
+	}
+
+	void SendAIBuffer(short *samples, unsigned int num_samples)
+	{
+		if (!soundStream)
+			return;
+
+		CMixer* pMixer = soundStream->GetMixer();
+
+		if (pMixer && samples)
+		{
+			pMixer->PushSamples(samples, num_samples);
+		}
+
+		soundStream->Update();
 	}
 }

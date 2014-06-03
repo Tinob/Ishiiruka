@@ -14,7 +14,7 @@
 #include "Common/MathUtil.h"
 #include "VideoCommon/VideoBackendBase.h"
 
-#if defined(_MSC_VER) && !defined(__x86_64__) && !defined(_M_X64)
+#if defined(_MSC_VER) && !defined(__x86_64__) && !defined(_M_X86_64)
 void * memcpy_amd(void *dest, const void *src, size_t n);
 unsigned char memcmp_mmx(const void* src1, const void* src2, int cmpsize);
 #define memcpy_gc memcpy_amd

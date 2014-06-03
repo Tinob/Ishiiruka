@@ -1,23 +1,11 @@
-// Copyright (C) 2003 Dolphin Project.
+// Copyright 2014 Dolphin Emulator Project
+// Licensed under GPLv2
+// Refer to the license.txt file included.
 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, version 2.0.
-
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License 2.0 for more details.
-
-// A copy of the GPL 2.0 should have been included with the program.
-// If not, see http://www.gnu.org/licenses/
-
-// Official SVN repository and contact information can be found at
-// http://code.google.com/p/dolphin-emu/
-
-#include "Common.h"
-#include "CPUDetect.h"
-#include "FileUtil.h"
+#include "Common/Common.h"
+#include "Common/CPUDetect.h"
+#include "Common/FileUtil.h"
+#include "Common/StringUtil.h"
 
 // Only Linux platforms have /proc/cpuinfo
 #if !defined(BLACKBERRY) && !defined(IOS) && !defined(__SYMBIAN32__)
@@ -26,7 +14,7 @@ const char procfile[] = "/proc/cpuinfo";
 char *GetCPUString()
 {
 	const char marker[] = "Hardware\t: ";
-	char *cpu_string = 0;
+	char *cpu_string = nullptr;
 	// Count the number of processor lines in /proc/cpuinfo
 	char buf[1024];
 
@@ -50,7 +38,7 @@ char *GetCPUString()
 unsigned char GetCPUImplementer()
 {
 	const char marker[] = "CPU implementer\t: ";
-	char *implementer_string = 0;
+	char *implementer_string = nullptr;
 	unsigned char implementer = 0;
 	char buf[1024];
 
@@ -77,7 +65,7 @@ unsigned char GetCPUImplementer()
 unsigned short GetCPUPart()
 {
 	const char marker[] = "CPU part\t: ";
-	char *part_string = 0;
+	char *part_string = nullptr;
 	unsigned short part = 0;
 	char buf[1024];
 
@@ -117,11 +105,11 @@ bool CheckCPUFeature(const char *feature)
 			continue;
 		char *featurestring = buf + sizeof(marker) - 1;
 		char *token = strtok(featurestring, " ");
-		while (token != NULL)
+		while (token != nullptr)
 		{
 			if (strstr(token, feature))
 				return true;
-			token = strtok(NULL, " ");
+			token = strtok(nullptr, " ");
 		}
 	}
 
@@ -279,7 +267,6 @@ std::string CPUInfo::Summarize()
 
 	return sum;
 }
-
 
 bool CPUInfo::IsUnsafe()
 {

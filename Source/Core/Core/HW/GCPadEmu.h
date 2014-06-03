@@ -2,8 +2,7 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _CONEMU_GCPAD_H_
-#define _CONEMU_GCPAD_H_
+#pragma once
 
 #include <string>
 
@@ -26,16 +25,14 @@ public:
 
 private:
 
-	Buttons*				m_buttons;
-	AnalogStick*			m_main_stick;
-	AnalogStick*			m_c_stick;
-	Buttons*				m_dpad;
-	MixedTriggers*			m_triggers;
-	ControlGroup*			m_rumble;
-	ControlGroup*			m_options;
+	Buttons*       m_buttons;
+	AnalogStick*   m_main_stick;
+	AnalogStick*   m_c_stick;
+	Buttons*       m_dpad;
+	MixedTriggers* m_triggers;
+	ControlGroup*  m_rumble;
+	ControlGroup*  m_options;
 
-	const unsigned int		m_index;
+	const unsigned int m_index;
 
 };
-
-#endif

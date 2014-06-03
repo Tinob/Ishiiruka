@@ -2,15 +2,14 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include "Common/Atomic.h"
-#include "AudioCommon/Mixer.h"
 #include "AudioCommon/AudioCommon.h"
+#include "AudioCommon/Mixer.h"
+#include "Common/Atomic.h"
 #include "Common/CPUDetect.h"
-#include "Core/Host.h"
 #include "Core/ConfigManager.h"
-#include "Core/HW/VideoInterface.h"
-
+#include "Core/Core.h"
 #include "Core/HW/AudioInterface.h"
+#include "Core/HW/VideoInterface.h"
 
 // UGLINESS
 #include "Core/PowerPC/PowerPC.h"
@@ -47,7 +46,7 @@ unsigned int CMixer::Mix(short* samples, unsigned int numSamples, bool consider_
 	u32 indexW = Common::AtomicLoad(m_indexW);
 
 	float numLeft = ((indexW - indexR) & INDEX_MASK) / 2;
-	m_numLeftI = (numLeft + m_numLeftI*(CONTROL_AVG - 1)) / CONTROL_AVG;
+	m_numLeftI = (numLeft + m_numLeftI*(CONTROL_AVG-1)) / CONTROL_AVG;
 	float offset = (m_numLeftI - LOW_WATERMARK) * CONTROL_FACTOR;
 	if (offset > MAX_FREQ_SHIFT) offset = MAX_FREQ_SHIFT;
 	if (offset < -MAX_FREQ_SHIFT) offset = -MAX_FREQ_SHIFT;
@@ -64,22 +63,22 @@ unsigned int CMixer::Mix(short* samples, unsigned int numSamples, bool consider_
 	}
 
 	static u32 frac = 0;
-	const u32 ratio = (u32)(65536.0f * aid_sample_rate / (float)m_sampleRate);
+	const u32 ratio = (u32)( 65536.0f * aid_sample_rate / (float)m_sampleRate );
 
 	if (ratio > 0x10000)
 		ERROR_LOG(AUDIO, "ratio out of range");
 
-	for (; currentSample < numSamples * 2 && ((indexW - indexR) & INDEX_MASK) > 2; currentSample += 2) {
+	for (; currentSample < numSamples*2 && ((indexW-indexR) & INDEX_MASK) > 2; currentSample+=2) {
 		u32 indexR2 = indexR + 2; //next sample
 
 		s16 l1 = Common::swap16(m_buffer[indexR & INDEX_MASK]); //current
 		s16 l2 = Common::swap16(m_buffer[indexR2 & INDEX_MASK]); //next
-		int sampleL = ((l1 << 16) + (l2 - l1) * (u16)frac) >> 16;
-		samples[currentSample + 1] = sampleL;
+		int sampleL = ((l1 << 16) + (l2 - l1) * (u16)frac)  >> 16;
+		samples[currentSample+1] = sampleL;
 
 		s16 r1 = Common::swap16(m_buffer[(indexR + 1) & INDEX_MASK]); //current
 		s16 r2 = Common::swap16(m_buffer[(indexR2 + 1) & INDEX_MASK]); //next
-		int sampleR = ((r1 << 16) + (r2 - r1) * (u16)frac) >> 16;
+		int sampleR = ((r1 << 16) + (r2 - r1) * (u16)frac)  >> 16;
 		samples[currentSample] = sampleR;
 
 		frac += ratio;
@@ -91,17 +90,14 @@ unsigned int CMixer::Mix(short* samples, unsigned int numSamples, bool consider_
 	unsigned short s[2];
 	s[0] = Common::swap16(m_buffer[(indexR - 1) & INDEX_MASK]);
 	s[1] = Common::swap16(m_buffer[(indexR - 2) & INDEX_MASK]);
-	for (; currentSample < numSamples * 2; currentSample += 2)
+	for (; currentSample < numSamples*2; currentSample+=2)
 	{
 		samples[currentSample] = s[0];
-		samples[currentSample + 1] = s[1];
+		samples[currentSample+1] = s[1];
 	}
 
 	// Flush cached variable
 	Common::AtomicStore(m_indexR, indexR);
-
-	// Add the DSPHLE sound, re-sampling is done inside
-	Premix(samples, numSamples);
 
 	// Add the DTK Music
 	// Re-sampling is done inside
@@ -128,7 +124,7 @@ void CMixer::PushSamples(const short *samples, unsigned int num_samples)
 			if (*PowerPC::GetStatePtr() != PowerPC::CPU_RUNNING || soundStream->IsMuted())
 				break;
 			// Shortcut key for Throttle Skipping
-			if (Host_GetKeyState('\t'))
+			if (Core::GetIsFramelimiterTempDisabled())
 				break;
 			SLEEP(1);
 			soundStream->Update();
@@ -158,3 +154,4 @@ void CMixer::PushSamples(const short *samples, unsigned int num_samples)
 
 	return;
 }
+

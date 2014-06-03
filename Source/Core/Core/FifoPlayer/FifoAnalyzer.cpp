@@ -2,13 +2,12 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include "FifoAnalyzer.h"
-
 #include "Core/Core.h"
+#include "Core/FifoPlayer/FifoAnalyzer.h"
 
 #include "VideoCommon/VertexLoader.h"
-#include "VideoCommon/VertexLoader_Position.h"
 #include "VideoCommon/VertexLoader_Normal.h"
+#include "VideoCommon/VertexLoader_Position.h"
 #include "VideoCommon/VertexLoader_TextCoord.h"
 
 namespace FifoAnalyzer
@@ -190,12 +189,12 @@ void CalculateVertexElementSizes(int sizes[], int vatIndex, const CPMemory &cpMe
 		case DIRECT:
 			switch (colComp[i])
 			{
-			case FORMAT_16B_565:	size = 2; break;
-			case FORMAT_24B_888:	size = 3; break;
-			case FORMAT_32B_888x:	size = 4; break;
-			case FORMAT_16B_4444:	size = 2; break;
-			case FORMAT_24B_6666:	size = 3; break;
-			case FORMAT_32B_8888:	size = 4; break;
+			case FORMAT_16B_565:  size = 2; break;
+			case FORMAT_24B_888:  size = 3; break;
+			case FORMAT_32B_888x: size = 4; break;
+			case FORMAT_16B_4444: size = 2; break;
+			case FORMAT_24B_6666: size = 3; break;
+			case FORMAT_32B_8888: size = 4; break;
 			default: _assert_(0); break;
 			}
 			break;

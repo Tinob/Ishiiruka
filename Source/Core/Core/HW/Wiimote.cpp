@@ -4,15 +4,14 @@
 
 #include "Common/Common.h"
 
-#include "Wiimote.h"
-#include "WiimoteReal/WiimoteReal.h"
-#include "WiimoteEmu/WiimoteEmu.h"
-#include "Core/Movie.h"
 #include "Core/ConfigManager.h"
-
-#include "InputCommon/ControllerInterface/ControllerInterface.h"
+#include "Core/Movie.h"
+#include "Core/HW/Wiimote.h"
+#include "Core/HW/WiimoteEmu/WiimoteEmu.h"
+#include "Core/HW/WiimoteReal/WiimoteReal.h"
 
 #include "InputCommon/InputConfig.h"
+#include "InputCommon/ControllerInterface/ControllerInterface.h"
 
 namespace Wiimote
 {
@@ -25,11 +24,10 @@ InputPlugin *GetPlugin()
 
 void Shutdown()
 {
-	std::vector<ControllerEmu*>::const_iterator
-		i = g_plugin.controllers.begin(),
-		e = g_plugin.controllers.end();
-	for ( ; i!=e; ++i )
-		delete *i;
+	for (const ControllerEmu* i : g_plugin.controllers)
+	{
+		delete i;
+	}
 	g_plugin.controllers.clear();
 
 	WiimoteReal::Stop();

@@ -8,22 +8,21 @@
 #include "Common/Common.h"
 #include "Common/CPUDetect.h"
 
-#include "Jit.h"
-#include "JitAsm.h"
-#include "JitRegCache.h"
-
-// pshufb todo: MOVQ
-const u8 GC_ALIGNED16(bswapShuffle1x4[16]) = {3, 2, 1, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
-const u8 GC_ALIGNED16(bswapShuffle2x4[16]) = {3, 2, 1, 0, 7, 6, 5, 4, 8, 9, 10, 11, 12, 13, 14, 15};
-const u8 GC_ALIGNED16(bswapShuffle1x8[16]) = {7, 6, 5, 4, 3, 2, 1, 0, 8, 9, 10, 11, 12, 13, 14, 15};
-const u8 GC_ALIGNED16(bswapShuffle1x8Dupe[16]) = {7, 6, 5, 4, 3, 2, 1, 0, 7, 6, 5, 4, 3, 2, 1, 0};
-const u8 GC_ALIGNED16(bswapShuffle2x8[16]) = {7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8};
+#include "Core/PowerPC/Jit64/Jit.h"
+#include "Core/PowerPC/Jit64/JitAsm.h"
+#include "Core/PowerPC/Jit64/JitRegCache.h"
 
 namespace {
 
+// pshufb todo: MOVQ
+const u8 GC_ALIGNED16(bswapShuffle1x4[16]) = {3, 2, 1, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+const u8 GC_ALIGNED16(bswapShuffle1x8[16]) = {7, 6, 5, 4, 3, 2, 1, 0, 8, 9, 10, 11, 12, 13, 14, 15};
+const u8 GC_ALIGNED16(bswapShuffle1x8Dupe[16]) = {7, 6, 5, 4, 3, 2, 1, 0, 7, 6, 5, 4, 3, 2, 1, 0};
+
 u64 GC_ALIGNED16(temp64);
-u32 GC_ALIGNED16(temp32);
+
 }
+
 // TODO: Add peephole optimizations for multiple consecutive lfd/lfs/stfd/stfs since they are so common,
 // and pshufb could help a lot.
 // Also add hacks for things like lfs/stfs the same reg consecutively, that is, simple memory moves.
@@ -37,20 +36,19 @@ void Jit64::lfs(UGeckoInstruction inst)
 	int a = inst.RA;
 	if (!a)
 	{
-		Default(inst);
+		FallBackToInterpreter(inst);
 		return;
 	}
+
 	s32 offset = (s32)(s16)inst.SIMM_16;
 
 	SafeLoadToReg(EAX, gpr.R(a), 32, offset, RegistersInUse(), false);
 
 	MEMCHECK_START
 
-	MOV(32, M(&temp32), R(EAX));
 	fpr.Lock(d);
 	fpr.BindToRegister(d, false);
-	CVTSS2SD(fpr.RX(d), M(&temp32));
-	MOVDDUP(fpr.RX(d), fpr.R(d));
+	ConvertSingleToDouble(fpr.RX(d), EAX, true);
 
 	MEMCHECK_END
 
@@ -63,15 +61,20 @@ void Jit64::lfd(UGeckoInstruction inst)
 	INSTRUCTION_START
 	JITDISABLE(bJITLoadStoreFloatingOff)
 
-	if (js.memcheck) { Default(inst); return; }
+	if (js.memcheck)
+	{
+		FallBackToInterpreter(inst);
+		return;
+	}
 
 	int d = inst.RD;
 	int a = inst.RA;
 	if (!a)
 	{
-		Default(inst);
+		FallBackToInterpreter(inst);
 		return;
 	}
+
 	s32 offset = (s32)(s16)inst.SIMM_16;
 	gpr.FlushLockX(ABI_PARAM1);
 	gpr.Lock(a);
@@ -80,10 +83,10 @@ void Jit64::lfd(UGeckoInstruction inst)
 	fpr.Lock(d);
 	fpr.BindToRegister(d, true);
 	X64Reg xd = fpr.RX(d);
-	
+
 	if (cpu_info.bSSSE3)
 	{
-#ifdef _M_X64
+#if _M_X86_64
 		MOVQ_xmm(XMM0, MComplex(RBX, ABI_PARAM1, SCALE_1, offset));
 #else
 		AND(32, R(ABI_PARAM1), Imm32(Memory::MEMVIEW32_MASK));
@@ -92,9 +95,8 @@ void Jit64::lfd(UGeckoInstruction inst)
 		PSHUFB(XMM0, M((void *)bswapShuffle1x8Dupe));
 		MOVSD(xd, R(XMM0));
 	} else {
-#ifdef _M_X64
-		MOV(64, R(EAX), MComplex(RBX, ABI_PARAM1, SCALE_1, offset));
-		BSWAP(64, EAX);
+#if _M_X86_64
+		LoadAndSwap(64, EAX, MComplex(RBX, ABI_PARAM1, SCALE_1, offset));
 		MOV(64, M(&temp64), R(EAX));
 
 		MEMCHECK_START
@@ -118,20 +120,9 @@ void Jit64::lfd(UGeckoInstruction inst)
 		MOVSD(xd, R(XMM0));
 
 		MEMCHECK_END
-#if 0
-		// Alternate implementation; possibly faster
-		AND(32, R(ABI_PARAM1), Imm32(Memory::MEMVIEW32_MASK));
-		MOVQ_xmm(XMM0, MDisp(ABI_PARAM1, (u32)Memory::base + offset));
-		PSHUFLW(XMM0, R(XMM0), 0x1B);
-		PSRLW(XMM0, 8);
-		MOVSD(xd, R(XMM0));
-		MOVQ_xmm(XMM0, MDisp(ABI_PARAM1, (u32)Memory::base + offset));
-		PSHUFLW(XMM0, R(XMM0), 0x1B);
-		PSLLW(XMM0, 8);
-		POR(xd, R(XMM0));
-#endif
 #endif
 	}
+
 	gpr.UnlockAll();
 	gpr.UnlockAllX();
 	fpr.UnlockAll();
@@ -143,13 +134,17 @@ void Jit64::stfd(UGeckoInstruction inst)
 	INSTRUCTION_START
 	JITDISABLE(bJITLoadStoreFloatingOff)
 
-	if (js.memcheck) { Default(inst); return; }
+	if (js.memcheck)
+	{
+		FallBackToInterpreter(inst);
+		return;
+	}
 
 	int s = inst.RS;
 	int a = inst.RA;
 	if (!a)
 	{
-		Default(inst);
+		FallBackToInterpreter(inst);
 		return;
 	}
 
@@ -179,7 +174,7 @@ void Jit64::stfd(UGeckoInstruction inst)
 	if (cpu_info.bSSSE3) {
 		MOVAPD(XMM0, fpr.R(s));
 		PSHUFB(XMM0, M((void*)bswapShuffle1x8));
-#ifdef _M_X64
+#if _M_X86_64
 		MOVQ_xmm(MComplex(RBX, ABI_PARAM1, SCALE_1, 0), XMM0);
 #else
 		AND(32, R(ECX), Imm32(Memory::MEMVIEW32_MASK));
@@ -232,10 +227,15 @@ void Jit64::stfs(UGeckoInstruction inst)
 	int s = inst.RS;
 	int a = inst.RA;
 	s32 offset = (s32)(s16)inst.SIMM_16;
-	if (!a || update) {
-		Default(inst);
+
+	if (!a || update)
+	{
+		FallBackToInterpreter(inst);
 		return;
 	}
+
+	fpr.BindToRegister(s, true, false);
+	ConvertDoubleToSingle(XMM0, fpr.RX(s));
 
 	if (gpr.R(a).IsImm())
 	{
@@ -243,7 +243,6 @@ void Jit64::stfs(UGeckoInstruction inst)
 		if (Memory::IsRAMAddress(addr))
 		{
 			if (cpu_info.bSSSE3) {
-				CVTSD2SS(XMM0, fpr.R(s));
 				PSHUFB(XMM0, M((void *)bswapShuffle1x4));
 				WriteFloatToConstRamAddress(XMM0, addr);
 				return;
@@ -252,7 +251,6 @@ void Jit64::stfs(UGeckoInstruction inst)
 		else if (addr == 0xCC008000)
 		{
 			// Float directly to write gather pipe! Fun!
-			CVTSD2SS(XMM0, fpr.R(s));
 			CALL((void*)asm_routines.fifoDirectWriteFloat);
 			// TODO
 			js.fifoBytesThisBlock += 4;
@@ -262,7 +260,6 @@ void Jit64::stfs(UGeckoInstruction inst)
 
 	gpr.FlushLockX(ABI_PARAM1, ABI_PARAM2);
 	gpr.Lock(a);
-	fpr.Lock(s);
 	MOV(32, R(ABI_PARAM2), gpr.R(a));
 	ADD(32, R(ABI_PARAM2), Imm32(offset));
 	if (update && offset)
@@ -277,7 +274,6 @@ void Jit64::stfs(UGeckoInstruction inst)
 
 		MEMCHECK_END
 	}
-	CVTSD2SS(XMM0, fpr.R(s));
 	SafeWriteFloatToReg(XMM0, ABI_PARAM2, RegistersInUse());
 	gpr.UnlockAll();
 	gpr.UnlockAllX();
@@ -292,11 +288,14 @@ void Jit64::stfsx(UGeckoInstruction inst)
 
 	// We can take a shortcut here - it's not likely that a hardware access would use this instruction.
 	gpr.FlushLockX(ABI_PARAM1);
-	fpr.Lock(inst.RS);
 	MOV(32, R(ABI_PARAM1), gpr.R(inst.RB));
 	if (inst.RA)
 		ADD(32, R(ABI_PARAM1), gpr.R(inst.RA));
-	CVTSD2SS(XMM0, fpr.R(inst.RS));
+
+	int s = inst.RS;
+	fpr.Lock(s);
+	fpr.BindToRegister(s, true, false);
+	ConvertDoubleToSingle(XMM0, fpr.RX(s));
 	MOVD_xmm(R(EAX), XMM0);
 	SafeWriteRegToReg(EAX, ABI_PARAM1, 32, 0, RegistersInUse());
 
@@ -315,33 +314,24 @@ void Jit64::lfsx(UGeckoInstruction inst)
 	{
 		ADD(32, R(EAX), gpr.R(inst.RA));
 	}
+	fpr.Lock(inst.RS);
+	fpr.BindToRegister(inst.RS, false);
+	X64Reg s = fpr.RX(inst.RS);
 	if (cpu_info.bSSSE3 && !js.memcheck) {
-		fpr.Lock(inst.RS);
-		fpr.BindToRegister(inst.RS, false, true);
-		X64Reg r = fpr.R(inst.RS).GetSimpleReg();
-#ifdef _M_IX86
+#if _M_X86_32
 		AND(32, R(EAX), Imm32(Memory::MEMVIEW32_MASK));
-		MOVD_xmm(r, MDisp(EAX, (u32)Memory::base));
+		MOVD_xmm(XMM0, MDisp(EAX, (u32)Memory::base));
 #else
-		MOVD_xmm(r, MComplex(RBX, EAX, SCALE_1, 0));
+		MOVD_xmm(XMM0, MComplex(RBX, EAX, SCALE_1, 0));
 #endif
-		MEMCHECK_START
-
-		PSHUFB(r, M((void *)bswapShuffle1x4));
-		CVTSS2SD(r, R(r));
-		MOVDDUP(r, R(r));
-
-		MEMCHECK_END
+		PSHUFB(XMM0, M((void *)bswapShuffle1x4));
+		ConvertSingleToDouble(s, XMM0);
 	} else {
 		SafeLoadToReg(EAX, R(EAX), 32, 0, RegistersInUse(), false);
 
 		MEMCHECK_START
 
-		MOV(32, M(&temp32), R(EAX));
-		CVTSS2SD(XMM0, M(&temp32));
-		fpr.Lock(inst.RS);
-		fpr.BindToRegister(inst.RS, false, true);
-		MOVDDUP(fpr.R(inst.RS).GetSimpleReg(), R(XMM0));
+		ConvertSingleToDouble(s, EAX, true);
 
 		MEMCHECK_END
 	}

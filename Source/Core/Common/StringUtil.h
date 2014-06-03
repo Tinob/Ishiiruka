@@ -2,15 +2,14 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _STRINGUTIL_H_
-#define _STRINGUTIL_H_
+#pragma once
 
-#include <stdarg.h>
-
-#include <vector>
-#include <string>
-#include <sstream>
+#include <cstdarg>
+#include <cstddef>
 #include <iomanip>
+#include <sstream>
+#include <string>
+#include <vector>
 
 #include "Common/Common.h"
 
@@ -18,7 +17,7 @@ std::string StringFromFormat(const char* format, ...)
 #if !defined _WIN32
 // On compilers that support function attributes, this gives StringFromFormat
 // the same errors and warnings that printf would give.
-__attribute__((__format__(printf, 1, 2)))
+ __attribute__ ((__format__(printf, 1, 2)))
 #endif
 ;
 
@@ -77,7 +76,7 @@ static bool TryParse(const std::string &str, N *const output)
 }
 
 // TODO: kill this
-bool AsciiToHex(const char* _szValue, u32& result);
+bool AsciiToHex(const std::string& _szValue, u32& result);
 
 std::string TabsToSpaces(int tab_size, const std::string &in);
 
@@ -114,5 +113,3 @@ inline std::string UTF8ToTStr(const std::string& str)
 #endif
 
 #endif
-
-#endif // _STRINGUTIL_H_

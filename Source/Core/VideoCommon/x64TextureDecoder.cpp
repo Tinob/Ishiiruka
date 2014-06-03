@@ -2215,8 +2215,8 @@ PC_TexFormat TexDecoder_Decode(u8 *dst, const u8 *src, s32 width, s32 height, s3
 	if ((!TexFmt_Overlay_Enable)|| (retval == PC_TEX_FMT_NONE))
 		return retval;
 
-	s32 w = min(width, 40);
-	s32 h = min(height, 10);
+	s32 w = std::min(width, 40);
+	s32 h = std::min(height, 10);
 
 	s32 xoff = (width - w) >> 1;
 	s32 yoff = (height - h) >> 1;

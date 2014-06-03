@@ -2,12 +2,11 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _SOUNDSTREAM_H_
-#define _SOUNDSTREAM_H_
+#pragma once
 
-#include "Common/Common.h"
 #include "AudioCommon/Mixer.h"
 #include "AudioCommon/WaveFile.h"
+#include "Common/Common.h"
 
 class SoundStream
 {
@@ -33,7 +32,7 @@ public:
 	virtual void Stop() {}
 	virtual void Update() {}
 	virtual void Clear(bool mute) { m_muted = mute; }
-	bool IsMuted() { return m_muted; }
+	bool IsMuted() const { return m_muted; }
 	virtual void StartLogAudio(const char *filename) {
 		if (! m_logAudio) {
 			m_logAudio = true;
@@ -55,5 +54,3 @@ public:
 		}
 	}
 };
-
-#endif // _SOUNDSTREAM_H_

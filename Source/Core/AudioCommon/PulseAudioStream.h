@@ -2,8 +2,7 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _PULSE_AUDIO_STREAM_H
-#define _PULSE_AUDIO_STREAM_H
+#pragma once
 
 #if defined(HAVE_PULSEAUDIO) && HAVE_PULSEAUDIO
 #include <pulse/pulseaudio.h>
@@ -11,32 +10,29 @@
 
 #include <atomic>
 
-#include "Common/Common.h"
 #include "AudioCommon/SoundStream.h"
-
+#include "Common/Common.h"
 #include "Common/Thread.h"
 
-class PulseAudio : public SoundStream
+class PulseAudio final : public SoundStream
 {
 #if defined(HAVE_PULSEAUDIO) && HAVE_PULSEAUDIO
 public:
 	PulseAudio(CMixer *mixer);
 
-	virtual bool Start();
-	virtual void Stop();
+	virtual bool Start() override;
+	virtual void Stop() override;
 
-	static bool isValid() { return true; }
+	static bool isValid() {return true;}
 
-	virtual bool usesMixer() const { return true; }
-
-	virtual void Update();
+	virtual void Update() override;
 
 	void StateCallback(pa_context *c);
 	void WriteCallback(pa_stream *s, size_t length);
 	void UnderflowCallback(pa_stream *s);
 
 private:
-	virtual void SoundLoop();
+	virtual void SoundLoop() override;
 
 	bool PulseInit();
 	void PulseShutdown();
@@ -61,5 +57,3 @@ public:
 	PulseAudio(CMixer *mixer) : SoundStream(mixer) {}
 #endif
 };
-
-#endif

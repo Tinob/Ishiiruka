@@ -2,22 +2,21 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _NETPLAY_SERVER_H
-#define _NETPLAY_SERVER_H
+#pragma once
+
+#include <functional>
+#include <map>
+#include <queue>
+#include <sstream>
+
+#include <SFML/Network.hpp>
 
 #include "Common/Common.h"
 #include "Common/CommonTypes.h"
 #include "Common/Thread.h"
 #include "Common/Timer.h"
 
-#include <SFML/Network.hpp>
-
 #include "Core/NetPlayProto.h"
-
-#include <functional>
-#include <map>
-#include <queue>
-#include <sstream>
 
 class NetPlayServer
 {
@@ -52,11 +51,11 @@ private:
 	class Client
 	{
 	public:
-		PlayerId		pid;
-		std::string		name;
-		std::string		revision;
+		PlayerId    pid;
+		std::string name;
+		std::string revision;
 
-		sf::SocketTCP	socket;
+		sf::SocketTCP socket;
 		u32 ping;
 		u32 current_game;
 	};
@@ -72,15 +71,15 @@ private:
 
 	bool            m_is_running;
 	bool            m_do_loop;
-	Common::Timer	m_ping_timer;
-	u32		m_ping_key;
+	Common::Timer   m_ping_timer;
+	u32             m_ping_key;
 	bool            m_update_pings;
-	u32		m_current_game;
-	unsigned int	m_target_buffer_size;
+	u32             m_current_game;
+	unsigned int    m_target_buffer_size;
 	PadMapping      m_pad_map[4];
 	PadMapping      m_wiimote_map[4];
 
-	std::map<sf::SocketTCP, Client>	m_players;
+	std::map<sf::SocketTCP, Client> m_players;
 
 	struct
 	{
@@ -111,5 +110,3 @@ private:
 	static std::thread m_upnp_thread;
 #endif
 };
-
-#endif

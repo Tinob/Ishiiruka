@@ -2,18 +2,43 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef __CONFIG_MAIN_h__
-#define __CONFIG_MAIN_h__
+#pragma once
 
-#include <wx/wx.h>
-#include <wx/gbsizer.h>
-#include <wx/spinbutt.h>
-#include <wx/notebook.h>
-#include <wx/filepicker.h>
-#include "Core/ConfigManager.h"
+#include <cstdio>
+#include <string>
+
+#include <wx/arrstr.h>
+#include <wx/defs.h>
+#include <wx/dialog.h>
+#include <wx/event.h>
+#include <wx/gdicmn.h>
+#include <wx/string.h>
+#include <wx/translation.h>
+#include <wx/windowid.h>
+
+#include "Common/CommonTypes.h"
 #if defined(HAVE_XRANDR) && HAVE_XRANDR
-#include "X11Utils.h"
+#include "DolphinWX/X11Utils.h"
 #endif
+
+class wxBoxSizer;
+class wxButton;
+class wxCheckBox;
+class wxChoice;
+class wxDirPickerCtrl;
+class wxFileDirPickerEvent;
+class wxFilePickerCtrl;
+class wxGridBagSizer;
+class wxListBox;
+class wxNotebook;
+class wxPanel;
+class wxRadioBox;
+class wxSlider;
+class wxSpinCtrl;
+class wxSpinEvent;
+class wxStaticBoxSizer;
+class wxStaticText;
+class wxWindow;
 
 class CConfigMain : public wxDialog
 {
@@ -122,9 +147,8 @@ private:
 	wxCheckBox* SkipIdle;
 	wxCheckBox* EnableCheats;
 	wxChoice* Framelimit;
-	
+
 	// Advanced
-	wxCheckBox* EnableOpenCL;
 	wxRadioBox* CPUEngine;
 	wxCheckBox* DSPThread;
 	wxCheckBox* _NTSCJ;
@@ -137,13 +161,13 @@ private:
 	// Audio
 	wxBoxSizer* sAudioPage; // GC settings
 	wxRadioBox* DSPEngine;
-	wxSlider*	VolumeSlider;
+	wxSlider*   VolumeSlider;
 	wxStaticText* VolumeText;
-	wxCheckBox*	DumpAudio;
-	wxCheckBox*	DPL2Decoder;
+	wxCheckBox* DumpAudio;
+	wxCheckBox* DPL2Decoder;
 	wxArrayString wxArrayBackends;
-	wxChoice*	BackendSelection;
-	wxSpinCtrl*	Latency;
+	wxChoice*   BackendSelection;
+	wxSpinCtrl* Latency;
 
 	// Interface
 	wxCheckBox* ConfirmStop;
@@ -247,7 +271,7 @@ private:
 	void AddRemoveISOPaths(wxCommandEvent& event);
 	void DefaultISOChanged(wxFileDirPickerEvent& event);
 	void DVDRootChanged(wxFileDirPickerEvent& event);
-	void ApploaderPathChanged(wxFileDirPickerEvent& WXUNUSED (event));
+	void ApploaderPathChanged(wxFileDirPickerEvent& WXUNUSED(event));
 	void NANDRootChanged(wxFileDirPickerEvent& event);
 
 private:
@@ -255,4 +279,3 @@ private:
 
 	static bool SupportsVolumeChanges(std::string backend);
 };
-#endif

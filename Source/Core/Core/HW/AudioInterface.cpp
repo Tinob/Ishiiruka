@@ -53,15 +53,15 @@ This file mainly deals with the [Drive I/F], however [AIDFR] controls
 #include "Common/Common.h"
 #include "Common/MathUtil.h"
 
-#include "StreamADPCM.h"
-#include "AudioInterface.h"
-
-#include "CPU.h"
-#include "ProcessorInterface.h"
-#include "DVDInterface.h"
-#include "../PowerPC/PowerPC.h"
-#include "../CoreTiming.h"
-#include "SystemTimers.h"
+#include "Core/CoreTiming.h"
+#include "Core/HW/AudioInterface.h"
+#include "Core/HW/CPU.h"
+#include "Core/HW/DVDInterface.h"
+#include "Core/HW/MMIO.h"
+#include "Core/HW/ProcessorInterface.h"
+#include "Core/HW/StreamADPCM.h"
+#include "Core/HW/SystemTimers.h"
+#include "Core/PowerPC/PowerPC.h"
 
 namespace AudioInterface
 {
@@ -69,10 +69,10 @@ namespace AudioInterface
 // Internal hardware addresses
 enum
 {
-	AI_CONTROL_REGISTER		= 0x6C00,
-	AI_VOLUME_REGISTER		= 0x6C04,
-	AI_SAMPLE_COUNTER		= 0x6C08,
-	AI_INTERRUPT_TIMING		= 0x6C0C,
+	AI_CONTROL_REGISTER = 0x6C00,
+	AI_VOLUME_REGISTER  = 0x6C04,
+	AI_SAMPLE_COUNTER   = 0x6C08,
+	AI_INTERRUPT_TIMING = 0x6C0C,
 };
 
 enum
@@ -91,15 +91,15 @@ union AICR
 	AICR(u32 _hex) { hex = _hex;}
 	struct
 	{
-		u32 PSTAT		: 1;  // sample counter/playback enable
-		u32 AISFR		: 1;  // AIS Frequency (0=32khz 1=48khz)
-		u32 AIINTMSK	: 1;  // 0=interrupt masked 1=interrupt enabled
-		u32 AIINT		: 1;  // audio interrupt status
-		u32 AIINTVLD	: 1;  // This bit controls whether AIINT is affected by the Interrupt Timing register
-                              // matching the sample counter. Once set, AIINT will hold its last value
-		u32 SCRESET		: 1;  // write to reset counter
-		u32 AIDFR		: 1;  // AID Frequency (0=48khz 1=32khz)
-		u32				:25;
+		u32 PSTAT    : 1;  // sample counter/playback enable
+		u32 AISFR    : 1;  // AIS Frequency (0=32khz 1=48khz)
+		u32 AIINTMSK : 1;  // 0=interrupt masked 1=interrupt enabled
+		u32 AIINT    : 1;  // audio interrupt status
+		u32 AIINTVLD : 1;  // This bit controls whether AIINT is affected by the Interrupt Timing register
+		                      // matching the sample counter. Once set, AIINT will hold its last value
+		u32 SCRESET  : 1;  // write to reset counter
+		u32 AIDFR    : 1;  // AID Frequency (0=48khz 1=32khz)
+		u32          :25;
 	};
 	u32 hex;
 };
@@ -110,9 +110,9 @@ union AIVR
 	AIVR() { hex = 0;}
 	struct
 	{
-		u32 left		: 8;
-		u32 right		: 8;
-		u32				:16;
+		u32 left  : 8;
+		u32 right : 8;
+		u32       :16;
 	};
 	u32 hex;
 };
@@ -154,7 +154,7 @@ void Init()
 	m_Control.hex = 0;
 	m_Control.AISFR = AIS_48KHz;
 	m_Volume.hex = 0;
-	m_SampleCounter	= 0;
+	m_SampleCounter = 0;
 	m_InterruptTiming = 0;
 
 	g_LastCPUTime = 0;
@@ -170,43 +170,12 @@ void Shutdown()
 {
 }
 
-void Read32(u32& _rReturnValue, const u32 _Address)
+void RegisterMMIO(MMIO::Mapping* mmio, u32 base)
 {
-	switch (_Address & 0xFFFF)
-	{
-	case AI_CONTROL_REGISTER:
-		_rReturnValue = m_Control.hex;
-		break;
-
-	case AI_VOLUME_REGISTER:
-		_rReturnValue = m_Volume.hex;
-		break;
-
-	case AI_SAMPLE_COUNTER:
-		Update(0, 0);
-		_rReturnValue = m_SampleCounter;
-		break;
-
-	case AI_INTERRUPT_TIMING:
-		_rReturnValue = m_InterruptTiming;
-		break;
-
-	default:
-		ERROR_LOG(AUDIO_INTERFACE, "Unknown read 0x%08x", _Address);
-		_dbg_assert_msg_(AUDIO_INTERFACE, 0, "AudioInterface - Read from 0x%08x", _Address);
-		_rReturnValue = 0;
-		return;
-	}
-	DEBUG_LOG(AUDIO_INTERFACE, "r32 %08x %08x", _Address, _rReturnValue);
-}
-
-void Write32(const u32 _Value, const u32 _Address)
-{
-	switch (_Address & 0xFFFF)
-	{
-	case AI_CONTROL_REGISTER:
-		{
-			AICR tmpAICtrl(_Value);
+	mmio->Register(base | AI_CONTROL_REGISTER,
+		MMIO::DirectRead<u32>(&m_Control.hex),
+		MMIO::ComplexWrite<u32>([](u32, u32 val) {
+			AICR tmpAICtrl(val);
 
 			m_Control.AIINTMSK = tmpAICtrl.AIINTMSK;
 			m_Control.AIINTVLD = tmpAICtrl.AIINTVLD;
@@ -260,32 +229,30 @@ void Write32(const u32 _Value, const u32 _Address)
 			}
 
 			UpdateInterrupts();
-		}
-		break;
+		})
+	);
 
-	case AI_VOLUME_REGISTER:
-		m_Volume.hex = _Value;
-		DEBUG_LOG(AUDIO_INTERFACE,  "Set volume: left(%02x) right(%02x)", m_Volume.left, m_Volume.right);
-		break;
+	mmio->Register(base | AI_VOLUME_REGISTER,
+		MMIO::DirectRead<u32>(&m_Volume.hex),
+		MMIO::DirectWrite<u32>(&m_Volume.hex)
+	);
 
-	case AI_SAMPLE_COUNTER:
-		// Why was this commented out? Does something do this?
-		_dbg_assert_msg_(AUDIO_INTERFACE, 0, "AIS - sample counter is read only");
-		m_SampleCounter = _Value;
-		break;
+	mmio->Register(base | AI_SAMPLE_COUNTER,
+		MMIO::ComplexRead<u32>([](u32) {
+			Update(0, 0);
+			return m_SampleCounter;
+		}),
+		MMIO::DirectWrite<u32>(&m_SampleCounter)
+	);
 
-	case AI_INTERRUPT_TIMING:
-		m_InterruptTiming = _Value;
-		CoreTiming::RemoveEvent(et_AI);
-		CoreTiming::ScheduleEvent(((int)GetAIPeriod() / 2), et_AI);
-		DEBUG_LOG(AUDIO_INTERFACE, "Set interrupt: %08x samples", m_InterruptTiming);
-		break;
-
-	default:
-		ERROR_LOG(AUDIO_INTERFACE, "Unknown write %08x @ %08x", _Value, _Address);
-		_dbg_assert_msg_(AUDIO_INTERFACE,0,"AIS - Write %08x to %08x", _Value, _Address);
-		break;
-	}
+	mmio->Register(base | AI_INTERRUPT_TIMING,
+		MMIO::DirectRead<u32>(&m_InterruptTiming),
+		MMIO::ComplexWrite<u32>([](u32, u32 val) {
+			m_InterruptTiming = val;
+			CoreTiming::RemoveEvent(et_AI);
+			CoreTiming::ScheduleEvent(((int)GetAIPeriod() / 2), et_AI);
+		})
+	);
 }
 
 static void UpdateInterrupts()
@@ -339,11 +306,11 @@ unsigned int Callback_GetStreaming(short* _pDestBuffer, unsigned int _numSamples
 				if (i % 3)
 				{
 					pcm_l = (((pcm_l + (int)pcm[pos*2]) / 2  * lvolume) >> 8) + (int)(*_pDestBuffer);
-					MathUtil::Clamp(pcm_l, -32767, 32767);
+					MathUtil::Clamp(&pcm_l, -32767, 32767);
 					*_pDestBuffer++ = pcm_l;
 
 					pcm_r = (((pcm_r + (int)pcm[pos*2+1]) / 2 * rvolume) >> 8) + (int)(*_pDestBuffer);
-					MathUtil::Clamp(pcm_r, -32767, 32767);
+					MathUtil::Clamp(&pcm_r, -32767, 32767);
 					*_pDestBuffer++ = pcm_r;
 				}
 				pcm_l = pcm[pos*2];
@@ -364,7 +331,7 @@ unsigned int Callback_GetStreaming(short* _pDestBuffer, unsigned int _numSamples
 				{
 					frac &= 0xffff;
 
-					l1 = l2;		   //current
+					l1 = l2;           //current
 					l2 = pcm[pos * 2]; //next
 				}
 
@@ -373,11 +340,11 @@ unsigned int Callback_GetStreaming(short* _pDestBuffer, unsigned int _numSamples
 
 
 				pcm_l = (pcm_l * lvolume >> 8) + (int)(*_pDestBuffer);
-				MathUtil::Clamp(pcm_l, -32767, 32767);
+				MathUtil::Clamp(&pcm_l, -32767, 32767);
 				*_pDestBuffer++ = pcm_l;
 
 				pcm_r = (pcm_r * lvolume >> 8) + (int)(*_pDestBuffer);
-				MathUtil::Clamp(pcm_r, -32767, 32767);
+				MathUtil::Clamp(&pcm_r, -32767, 32767);
 				*_pDestBuffer++ = pcm_r;
 
 				frac += ratio;
@@ -387,11 +354,11 @@ unsigned int Callback_GetStreaming(short* _pDestBuffer, unsigned int _numSamples
 			else //1:1 no resampling
 			{
 				pcm_l = (((int)pcm[pos*2] * lvolume) >> 8) + (int)(*_pDestBuffer);
-				MathUtil::Clamp(pcm_l, -32767, 32767);
+				MathUtil::Clamp(&pcm_l, -32767, 32767);
 				*_pDestBuffer++ = pcm_l;
 
 				pcm_r = (((int)pcm[pos*2+1] * rvolume) >> 8) + (int)(*_pDestBuffer);
-				MathUtil::Clamp(pcm_r, -32767, 32767);
+				MathUtil::Clamp(&pcm_r, -32767, 32767);
 				*_pDestBuffer++ = pcm_r;
 
 				pos++;

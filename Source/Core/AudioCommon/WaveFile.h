@@ -12,9 +12,9 @@
 // If Stop is not called when it destructs, the destructor will call Stop().
 // ---------------------------------------------------------------------------------
 
-#ifndef _WAVEFILE_H_
-#define _WAVEFILE_H_
+#pragma once
 
+#include <string>
 #include "Common/FileUtil.h"
 
 class WaveFileWriter
@@ -32,14 +32,12 @@ public:
 	WaveFileWriter();
 	~WaveFileWriter();
 
-	bool Start(const char *filename, unsigned int HLESampleRate);
+	bool Start(const std::string& filename, unsigned int HLESampleRate);
 	void Stop();
 
 	void SetSkipSilence(bool skip) { skip_silence = skip; }
 
 	void AddStereoSamples(const short *sample_data, u32 count);
 	void AddStereoSamplesBE(const short *sample_data, u32 count);  // big endian
-	u32 GetAudioSize() { return audio_size; }
+	u32 GetAudioSize() const { return audio_size; }
 };
-
-#endif  // _WAVEFILE_H_

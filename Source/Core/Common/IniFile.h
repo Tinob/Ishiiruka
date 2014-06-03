@@ -4,11 +4,12 @@
 
 #pragma once
 
+#include <cstring>
 #include <map>
 #include <string>
-#include <set>
 #include <vector>
 
+#include "Common/CommonTypes.h"
 #include "Common/StringUtil.h"
 
 struct CaseInsensitiveStringCompare
@@ -65,7 +66,7 @@ public:
 		bool Get(const std::string& key, bool* value, bool defaultValue = false);
 		bool Get(const std::string& key, float* value, float defaultValue = false);
 		bool Get(const std::string& key, double* value, double defaultValue = false);
-		bool Get(const std::string& key, std::vector<std::string>& values);
+		bool Get(const std::string& key, std::vector<std::string>* values);
 
 		bool operator < (const Section& other) const {
 			return name < other.name;
@@ -81,12 +82,12 @@ public:
 	};
 
 	/**
-	* Loads sections and keys.
-	* @param filename filename of the ini file which should be loaded
-	* @param keep_current_data If true, "extends" the currently loaded list of sections and keys with the loaded data (and replaces existing entries). If false, existing data will be erased.
-	* @warning Using any other operations than "Get*" and "Exists" is untested and will behave unexpectedly
-	* @todo This really is just a hack to support having two levels of gameinis (defaults and user-specified) and should eventually be replaced with a less stupid system.
-	*/
+	 * Loads sections and keys.
+	 * @param filename filename of the ini file which should be loaded
+	 * @param keep_current_data If true, "extends" the currently loaded list of sections and keys with the loaded data (and replaces existing entries). If false, existing data will be erased.
+	 * @warning Using any other operations than "Get*" and "Exists" is untested and will behave unexpectedly
+	 * @todo This really is just a hack to support having two levels of gameinis (defaults and user-specified) and should eventually be replaced with a less stupid system.
+	 */
 	bool Load(const std::string& filename, bool keep_current_data = false);
 
 	bool Save(const std::string& filename);
@@ -115,7 +116,7 @@ public:
 	bool Get(const std::string& sectionName, const std::string& key, int* value, int defaultValue = 0);
 	bool Get(const std::string& sectionName, const std::string& key, u32* value, u32 defaultValue = 0);
 	bool Get(const std::string& sectionName, const std::string& key, bool* value, bool defaultValue = false);
-	bool Get(const std::string& sectionName, const std::string& key, std::vector<std::string>& values);
+	bool Get(const std::string& sectionName, const std::string& key, std::vector<std::string>* values);
 	bool Get(const std::string& sectionName, const std::string& key, std::string* value, const std::string& defaultValue = NULL_STRING);
 
 	template<typename T> bool GetIfExists(const std::string& sectionName, const std::string& key, T value)
@@ -125,10 +126,10 @@ public:
 		return false;
 	}
 
-	bool GetKeys(const std::string& sectionName, std::vector<std::string>& keys) const;
+	bool GetKeys(const std::string& sectionName, std::vector<std::string>* keys) const;
 
-	void SetLines(const std::string& sectionName, const std::vector<std::string> &lines);
-	bool GetLines(const std::string& sectionName, std::vector<std::string>& lines, const bool remove_comments = true) const;
+	void SetLines(const std::string& sectionName, const std::vector<std::string>& lines);
+	bool GetLines(const std::string& sectionName, std::vector<std::string>* lines, const bool remove_comments = true) const;
 
 	bool DeleteKey(const std::string& sectionName, const std::string& key);
 	bool DeleteSection(const std::string& sectionName);

@@ -2,8 +2,7 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _COREAUDIO_SOUND_STREAM_H
-#define _COREAUDIO_SOUND_STREAM_H
+#pragma once
 
 #ifdef __APPLE__
 #include <AudioUnit/AudioUnit.h>
@@ -11,7 +10,7 @@
 
 #include "AudioCommon/SoundStream.h"
 
-class CoreAudioSound : public SoundStream
+class CoreAudioSound final : public SoundStream
 {
 #ifdef __APPLE__
 public:
@@ -26,15 +25,12 @@ public:
 	static bool isValid() {
 		return true;
 	}
-	virtual bool usesMixer() const {
-		return true;
-	}
 
 	virtual void Update();
 
 private:
 	AudioUnit audioUnit;
-    int m_volume;
+	int m_volume;
 
 	static OSStatus callback(void *inRefCon,
 		AudioUnitRenderActionFlags *ioActionFlags,
@@ -46,5 +42,3 @@ public:
 	CoreAudioSound(CMixer *mixer) : SoundStream(mixer) {}
 #endif
 };
-
-#endif

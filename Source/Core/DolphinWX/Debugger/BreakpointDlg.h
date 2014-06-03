@@ -2,19 +2,19 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef __BREAKPOINTDLG_h__
-#define __BREAKPOINTDLG_h__
+#pragma once
 
-
-#include <wx/wx.h>
+#include <wx/dialog.h>
+#include <wx/event.h>
 
 class CBreakPointWindow;
+class wxTextCtrl;
 
 class BreakPointDlg : public wxDialog
 {
 public:
 	BreakPointDlg(CBreakPointWindow *_Parent);
-	
+
 private:
 	CBreakPointWindow *Parent;
 	wxTextCtrl *m_pEditAddress;
@@ -23,5 +23,3 @@ private:
 
 	DECLARE_EVENT_TABLE();
 };
-
-#endif

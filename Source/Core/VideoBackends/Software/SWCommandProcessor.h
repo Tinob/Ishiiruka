@@ -2,12 +2,12 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _COMMANDPROCESSOR_H_
-#define _COMMANDPROCESSOR_H_
+#pragma once
 
 #include "Common/Common.h"
 
 class PointerWrap;
+namespace MMIO { class Mapping; }
 
 extern volatile bool g_bSkipCurrentFrame;
 extern u8* g_pVideoData;
@@ -123,14 +123,10 @@ namespace SWCommandProcessor
 	void Shutdown();
 	void DoState(PointerWrap &p);
 
+	void RegisterMMIO(MMIO::Mapping* mmio, u32 base);
+
 	bool RunBuffer();
 	void RunGpu();
-
-	// Read
-	void Read16(u16& _rReturnValue, const u32 _Address);
-	void Write16(const u16 _Data, const u32 _Address);
-	void Read32(u32& _rReturnValue, const u32 _Address);
-	void Write32(const u32 _Data, const u32 _Address);
 
 	// for CGPFIFO
 	void GatherPipeBursted();
@@ -140,6 +136,3 @@ namespace SWCommandProcessor
 	void SetRendering(bool enabled);
 
 } // end of namespace SWCommandProcessor
-
-
-#endif

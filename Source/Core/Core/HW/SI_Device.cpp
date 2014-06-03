@@ -2,12 +2,12 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include "SI_Device.h"
-#include "SI_DeviceGCController.h"
-#include "SI_DeviceGCSteeringWheel.h"
-#include "SI_DeviceDanceMat.h"
-#include "SI_DeviceGBA.h"
-#include "SI_DeviceAMBaseboard.h"
+#include "Core/HW/SI_Device.h"
+#include "Core/HW/SI_DeviceAMBaseboard.h"
+#include "Core/HW/SI_DeviceDanceMat.h"
+#include "Core/HW/SI_DeviceGBA.h"
+#include "Core/HW/SI_DeviceGCController.h"
+#include "Core/HW/SI_DeviceGCSteeringWheel.h"
 
 
 // --- interface ISIDevice ---
@@ -18,7 +18,7 @@ int ISIDevice::RunBuffer(u8* _pBuffer, int _iLength)
 
 	char szTemp[256] = "";
 	int num = 0;
-	while(num < _iLength)
+	while (num < _iLength)
 	{
 		char szTemp2[128] = "";
 		sprintf(szTemp2, "0x%02x ", _pBuffer[num^3]);

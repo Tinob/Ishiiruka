@@ -2,39 +2,61 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include <vector>
+#include <cstdarg>
+#include <cstdio>
+#include <cstring>
+#include <mutex>
 #include <string>
+#include <utility>
+#include <wx/app.h>
+#include <wx/buffer.h>
+#include <wx/chartype.h>
+#include <wx/cmdline.h>
+#include <wx/defs.h>
+#include <wx/event.h>
+#include <wx/gdicmn.h>
+#include <wx/image.h>
+#include <wx/imagpng.h>
+#include <wx/intl.h>
+#include <wx/language.h>
+#include <wx/msgdlg.h>
+#include <wx/setup.h>
+#include <wx/string.h>
+#include <wx/thread.h>
+#include <wx/timer.h>
+#include <wx/translation.h>
+#include <wx/utils.h>
+#include <wx/window.h>
 
 #include "Common/Common.h"
 #include "Common/CommonPaths.h"
+#include "Common/CPUDetect.h"
+#include "Common/FileUtil.h"
+#include "Common/IniFile.h"
+#include "Common/LogManager.h"
+#include "Common/Thread.h"
+
+#include "Core/ConfigManager.h"
+#include "Core/CoreParameter.h"
+#include "Core/Movie.h"
+#include "Core/HW/Wiimote.h"
+
+#include "DolphinWX/Frame.h"
+#include "DolphinWX/Globals.h"
+#include "DolphinWX/Main.h"
+#include "DolphinWX/WxUtils.h"
+#include "DolphinWX/Debugger/CodeWindow.h"
+#include "DolphinWX/Debugger/JitWindow.h"
+
+#include "VideoCommon/VideoBackendBase.h"
 
 #if defined HAVE_X11 && HAVE_X11
 #include <X11/Xlib.h>
 #endif
 
-#include "Common/CPUDetect.h"
-#include "Common/IniFile.h"
-#include "Common/FileUtil.h"
-
-#include "Core/Host.h" // Core
-#include "Core/HW/Wiimote.h"
-
-#include "DolphinWX\WxUtils.h"
-#include "Globals.h" // Local
-#include "Main.h"
-#include "Core/ConfigManager.h"
-#include "Debugger/CodeWindow.h"
-#include "Debugger/JitWindow.h"
-#include "Common/ExtendedTrace.h"
-#include "Core/BootManager.h"
-#include "Frame.h"
-
-#include "VideoCommon/VideoBackendBase.h"
-
-#include <wx/intl.h>
-
 #ifdef _WIN32
 #include <shellapi.h>
+#include "Common/ExtendedTrace.h"
 
 #ifndef SM_XVIRTUALSCREEN
 #define SM_XVIRTUALSCREEN 76
@@ -55,6 +77,8 @@
 #import <AppKit/AppKit.h>
 #endif
 
+class wxFrame;
+
 // Nvidia drivers >= v302 will check if the application exports a global
 // variable named NvOptimusEnablement to know if it should run the app in high
 // performance graphics mode or using the IGP.
@@ -70,16 +94,15 @@ extern "C" {
 IMPLEMENT_APP(DolphinApp)
 
 BEGIN_EVENT_TABLE(DolphinApp, wxApp)
-	EVT_TIMER(wxID_ANY, DolphinApp::AfterInit)
-	EVT_QUERY_END_SESSION(DolphinApp::OnEndSession)
-	EVT_END_SESSION(DolphinApp::OnEndSession)
+EVT_TIMER(wxID_ANY, DolphinApp::AfterInit)
+EVT_QUERY_END_SESSION(DolphinApp::OnEndSession)
+EVT_END_SESSION(DolphinApp::OnEndSession)
 END_EVENT_TABLE()
 
-#include <wx/stdpaths.h>
 bool wxMsgAlert(const char*, const char*, bool, int);
 std::string wxStringTranslator(const char *);
 
-CFrame* main_frame = NULL;
+CFrame* main_frame = nullptr;
 
 #ifdef WIN32
 //Has no error handling.
@@ -95,7 +118,7 @@ LONG WINAPI MyUnhandledExceptionFilter(LPEXCEPTION_POINTERS e) {
 	//dumpCurrentDate(file);
 	etfprintf(file.GetHandle(), "Unhandled Exception\n  Code: 0x%08X\n",
 		e->ExceptionRecord->ExceptionCode);
-#ifndef _M_X64
+#if _M_X86_32
 	STACKTRACE2(file.GetHandle(), e->ContextRecord->Eip, e->ContextRecord->Esp, e->ContextRecord->Ebp);
 #else
 	STACKTRACE2(file.GetHandle(), e->ContextRecord->Rip, e->ContextRecord->Rsp, e->ContextRecord->Rbp);
@@ -112,11 +135,11 @@ bool DolphinApp::Initialize(int& c, wxChar **v)
 {
 #if defined HAVE_X11 && HAVE_X11
 	XInitThreads();
-#endif 
+#endif
 	return wxApp::Initialize(c, v);
 }
 
-// The `main program' equivalent that creates the main window and return the main frame 
+// The `main program' equivalent that creates the main window and return the main frame
 
 bool DolphinApp::OnInit()
 {
@@ -181,7 +204,7 @@ bool DolphinApp::OnInit()
 			wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL
 		},
 		{
-			wxCMD_LINE_NONE, NULL, NULL, NULL, wxCMD_LINE_VAL_NONE, 0
+			wxCMD_LINE_NONE, nullptr, nullptr, nullptr, wxCMD_LINE_VAL_NONE, 0
 		}
 	};
 
@@ -190,30 +213,22 @@ bool DolphinApp::OnInit()
 	if (parser.Parse() != 0)
 	{
 		return false;
-	} 
+	}
 
-	UseDebugger = parser.Found(wxT("debugger"));
-	UseLogger = parser.Found(wxT("logger"));
-	LoadFile = parser.Found(wxT("exec"), &FileToLoad);
-	BatchMode = parser.Found(wxT("batch"));
-	selectVideoBackend = parser.Found(wxT("video_backend"),
-		&videoBackendName);
-	selectAudioEmulation = parser.Found(wxT("audio_emulation"),
-		&audioEmulationName);
-	playMovie = parser.Found(wxT("movie"), &movieFile);
+	UseDebugger = parser.Found("debugger");
+	UseLogger = parser.Found("logger");
+	LoadFile = parser.Found("exec", &FileToLoad);
+	BatchMode = parser.Found("batch");
+	selectVideoBackend = parser.Found("video_backend", &videoBackendName);
+	selectAudioEmulation = parser.Found("audio_emulation", &audioEmulationName);
+	playMovie = parser.Found("movie", &movieFile);
 
-	if (parser.Found(wxT("user"), &userPath))
+	if (parser.Found("user", &userPath))
 	{
 		File::CreateFullPath(WxStrToStr(userPath) + DIR_SEP);
 		File::GetUserPath(D_USER_IDX, userPath.ToStdString() + DIR_SEP);
 	}
 #endif // wxUSE_CMDLINE_PARSER
-
-#if defined _DEBUG && defined _WIN32
-	int tmpflag = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG);
-	tmpflag |= _CRTDBG_DELAY_FREE_MEM_DF;
-	_CrtSetDbgFlag(tmpflag);
-#endif
 
 	// Register message box and translation handlers
 	RegisterMsgAlertHandler(&wxMsgAlert);
@@ -229,11 +244,11 @@ bool DolphinApp::OnInit()
 
 #ifndef _M_ARM
 	// TODO: if First Boot
-	if (!cpu_info.bSSE2) 
+	if (!cpu_info.bSSE2)
 	{
 		PanicAlertT("Hi,\n\nDolphin requires that your CPU has support for SSE2 extensions.\n"
-				"Unfortunately your CPU does not support them, so Dolphin will not run.\n\n"
-				"Sayonara!\n");
+			"Unfortunately your CPU does not support them, so Dolphin will not run.\n\n"
+			"Sayonara!\n");
 		return false;
 	}
 #endif
@@ -241,17 +256,17 @@ bool DolphinApp::OnInit()
 	if (floor(NSAppKitVersionNumber) < NSAppKitVersionNumber10_7)
 	{
 		PanicAlertT("Hi,\n\nDolphin requires Mac OS X 10.7 or greater.\n"
-				"Unfortunately you're running an old version of OS X.\n"
-				"The last Dolphin version to support OS X 10.6 is Dolphin 3.5\n"
-				"Please upgrade to 10.7 or greater to use the newest Dolphin version.\n\n"
-				"Sayonara!\n");
+			"Unfortunately you're running an old version of OS X.\n"
+			"The last Dolphin version to support OS X 10.6 is Dolphin 3.5\n"
+			"Please upgrade to 10.7 or greater to use the newest Dolphin version.\n\n"
+			"Sayonara!\n");
 		return false;
 	}
 #endif
 
 	// Copy initial Wii NAND data from Sys to User.
 	File::CopyDir(File::GetSysDirectory() + WII_USER_DIR DIR_SEP,
-	              File::GetUserPath(D_WIIUSER_IDX));
+		File::GetUserPath(D_WIIUSER_IDX));
 
 	File::CreateFullPath(File::GetUserPath(D_USER_IDX));
 	File::CreateFullPath(File::GetUserPath(D_CACHE_IDX));
@@ -266,7 +281,6 @@ bool DolphinApp::OnInit()
 	File::CreateFullPath(File::GetUserPath(D_HIRESTEXTURES_IDX));
 	File::CreateFullPath(File::GetUserPath(D_MAILLOGS_IDX));
 	File::CreateFullPath(File::GetUserPath(D_MAPS_IDX));
-	File::CreateFullPath(File::GetUserPath(D_OPENCL_IDX));
 	File::CreateFullPath(File::GetUserPath(D_SCREENSHOTS_IDX));
 	File::CreateFullPath(File::GetUserPath(D_SHADERS_IDX));
 	File::CreateFullPath(File::GetUserPath(D_STATESAVES_IDX));
@@ -279,7 +293,7 @@ bool DolphinApp::OnInit()
 
 	if (selectVideoBackend && videoBackendName != wxEmptyString)
 		SConfig::GetInstance().m_LocalCoreStartupParameter.m_strVideoBackend =
-			WxStrToStr(videoBackendName);
+		WxStrToStr(videoBackendName);
 
 	if (selectAudioEmulation)
 	{
@@ -305,11 +319,11 @@ bool DolphinApp::OnInit()
 	if (File::Exists("www.dolphin-emulator.com.txt"))
 	{
 		File::Delete("www.dolphin-emulator.com.txt");
-		MessageBox(NULL,
-				   L"This version of Dolphin was downloaded from a website stealing money from developers of the emulator. Please "
-				   L"download Dolphin from the official website instead: http://dolphin-emu.org/",
-				   L"Unofficial version detected", MB_OK | MB_ICONWARNING);
-		ShellExecute(NULL, L"open", L"http://dolphin-emu.org/?ref=badver", NULL, NULL, SW_SHOWDEFAULT);
+		MessageBox(nullptr,
+			L"This version of Dolphin was downloaded from a website stealing money from developers of the emulator. Please "
+			L"download Dolphin from the official website instead: http://dolphin-emu.org/",
+			L"Unofficial version detected", MB_OK | MB_ICONWARNING);
+		ShellExecute(nullptr, L"open", L"http://dolphin-emu.org/?ref=badver", nullptr, nullptr, SW_SHOWDEFAULT);
 		exit(0);
 	}
 #endif
@@ -320,8 +334,8 @@ bool DolphinApp::OnInit()
 	// Out of desktop check
 	int leftPos = GetSystemMetrics(SM_XVIRTUALSCREEN);
 	int topPos = GetSystemMetrics(SM_YVIRTUALSCREEN);
-	int width =  GetSystemMetrics(SM_CXVIRTUALSCREEN);
-	int height = GetSystemMetrics(SM_CYVIRTUALSCREEN);	
+	int width = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+	int height = GetSystemMetrics(SM_CYVIRTUALSCREEN);
 	if ((leftPos + width) < (x + w) || leftPos > x || (topPos + height) < (y + h) || topPos > y)
 		x = y = wxDefaultCoord;
 #elif defined __APPLE__
@@ -329,10 +343,10 @@ bool DolphinApp::OnInit()
 		y = wxDefaultCoord;
 #endif
 
-	main_frame = new CFrame((wxFrame*)NULL, wxID_ANY,
-				StrToWxStr(scm_rev_str),
-				wxPoint(x, y), wxSize(w, h),
-				UseDebugger, BatchMode, UseLogger);
+	main_frame = new CFrame((wxFrame*)nullptr, wxID_ANY,
+		StrToWxStr(scm_rev_str),
+		wxPoint(x, y), wxSize(w, h),
+		UseDebugger, BatchMode, UseLogger);
 	SetTopWindow(main_frame);
 	main_frame->SetMinSize(wxSize(400, 300));
 
@@ -350,21 +364,21 @@ void DolphinApp::MacOpenFile(const wxString &fileName)
 	FileToLoad = fileName;
 	LoadFile = true;
 
-	if (m_afterinit == NULL)
+	if (m_afterinit == nullptr)
 		main_frame->BootGame(WxStrToStr(FileToLoad));
 }
 
 void DolphinApp::AfterInit(wxTimerEvent& WXUNUSED(event))
 {
 	delete m_afterinit;
-	m_afterinit = NULL;
+	m_afterinit = nullptr;
 
 	if (!BatchMode)
 		main_frame->UpdateGameList();
 
 	if (playMovie && movieFile != wxEmptyString)
 	{
-		if (Movie::PlayInput(movieFile.char_str()))
+		if (Movie::PlayInput(WxStrToStr(movieFile)))
 		{
 			if (LoadFile && FileToLoad != wxEmptyString)
 			{
@@ -402,7 +416,7 @@ void DolphinApp::InitLanguageSupport()
 	ini.Get("Interface", "Language", &language, wxLANGUAGE_DEFAULT);
 
 	// Load language if possible, fall back to system default otherwise
-	if(wxLocale::IsAvailable(language))
+	if (wxLocale::IsAvailable(language))
 	{
 		m_locale = new wxLocale(language);
 
@@ -410,9 +424,9 @@ void DolphinApp::InitLanguageSupport()
 		m_locale->AddCatalogLookupPathPrefix(StrToWxStr(File::GetExeDirectory() + DIR_SEP "Languages"));
 #endif
 
-		m_locale->AddCatalog(wxT("dolphin-emu"));
+		m_locale->AddCatalog("dolphin-emu");
 
-		if(!m_locale->IsOk())
+		if (!m_locale->IsOk())
 		{
 			PanicAlertT("Error loading selected language. Falling back to system default.");
 			delete m_locale;
@@ -456,7 +470,7 @@ void DolphinApp::OnFatalException()
 // ------------
 // Talk to GUI
 
-void Host_SysMessage(const char *fmt, ...) 
+void Host_SysMessage(const char *fmt, ...)
 {
 	va_list list;
 	char msg[512];
@@ -465,7 +479,7 @@ void Host_SysMessage(const char *fmt, ...)
 	vsprintf(msg, fmt, list);
 	va_end(list);
 
-	if (msg[strlen(msg)-1] == '\n') msg[strlen(msg)-1] = 0;
+	if (msg[strlen(msg) - 1] == '\n') msg[strlen(msg) - 1] = 0;
 	//wxMessageBox(StrToWxStr(msg));
 	PanicAlert("%s", msg);
 }
@@ -476,12 +490,12 @@ bool wxMsgAlert(const char* caption, const char* text, bool yes_no, int /*Style*
 	if (wxIsMainThread())
 #endif
 		return wxYES == wxMessageBox(StrToWxStr(text), StrToWxStr(caption),
-				(yes_no) ? wxYES_NO : wxOK, wxGetActiveWindow());
+		(yes_no) ? wxYES_NO : wxOK, wxGetActiveWindow());
 #ifdef __WXGTK__
 	else
 	{
 		wxCommandEvent event(wxEVT_HOST_COMMAND, IDM_PANIC);
-		event.SetString(StrToWxStr(caption) + wxT(":") + StrToWxStr(text));
+		event.SetString(StrToWxStr(caption) + ":" + StrToWxStr(text));
 		event.SetInt(yes_no);
 		main_frame->GetEventHandler()->AddPendingEvent(event);
 		main_frame->panic_event.Wait();
@@ -516,7 +530,7 @@ void* Host_GetInstance()
 #else
 void* Host_GetInstance()
 {
-	return NULL;
+	return nullptr;
 }
 #endif
 
@@ -580,7 +594,7 @@ void Host_UpdateMainFrame()
 	}
 }
 
-void Host_UpdateTitle(const char* title)
+void Host_UpdateTitle(const std::string& title)
 {
 	wxCommandEvent event(wxEVT_HOST_COMMAND, IDM_UPDATETITLE);
 	event.SetString(StrToWxStr(title));
@@ -596,25 +610,6 @@ void Host_UpdateBreakPointView()
 	{
 		main_frame->g_pCodeWindow->GetEventHandler()->AddPendingEvent(event);
 	}
-}
-
-bool Host_GetKeyState(int keycode)
-{
-#ifdef _WIN32
-	return (0 != GetAsyncKeyState(keycode));
-#elif defined __WXGTK__
-	std::unique_lock<std::recursive_mutex> lk(main_frame->keystate_lock, std::try_to_lock);
-	if (!lk.owns_lock())
-		return false;
-
-	bool key_pressed;
-	if (!wxIsMainThread()) wxMutexGuiEnter();
-	key_pressed = wxGetKeyState(wxKeyCode(keycode));
-	if (!wxIsMainThread()) wxMutexGuiLeave();
-	return key_pressed;
-#else
-	return wxGetKeyState(wxKeyCode(keycode));
-#endif
 }
 
 void Host_GetRenderWindowSize(int& x, int& y, int& width, int& height)
@@ -646,11 +641,11 @@ void Host_SetStartupDebuggingParameters()
 	StartUp.bEnableDebugging = main_frame->g_pCodeWindow ? true : false; // RUNNING_DEBUG
 }
 
-void Host_UpdateStatusBar(const char* _pText, int Field)
+void Host_UpdateStatusBar(const std::string& text, int Field)
 {
 	wxCommandEvent event(wxEVT_HOST_COMMAND, IDM_UPDATESTATUSBAR);
 	// Set the event string
-	event.SetString(StrToWxStr(_pText));
+	event.SetString(StrToWxStr(text));
 	// Update statusbar field
 	event.SetInt(Field);
 	// Post message
@@ -666,7 +661,7 @@ void Host_SetWiiMoteConnectionState(int _State)
 
 	wxCommandEvent event(wxEVT_HOST_COMMAND, IDM_UPDATESTATUSBAR);
 
-	switch(_State)
+	switch (_State)
 	{
 	case 0: event.SetString(_("Not connected")); break;
 	case 1: event.SetString(_("Connecting...")); break;
