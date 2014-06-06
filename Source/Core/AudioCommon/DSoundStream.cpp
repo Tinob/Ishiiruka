@@ -12,6 +12,7 @@
 #include "Common/StdThread.h"
 #include "Common/Thread.h"
 
+
 bool DSound::CreateBuffer()
 {
 	PCMWAVEFORMAT pcmwf;
@@ -29,7 +30,7 @@ bool DSound::CreateBuffer()
 
 	// Fill out DSound buffer description.
 	dsbdesc.dwSize  = sizeof(DSBUFFERDESC);
-	dsbdesc.dwFlags = DSBCAPS_GETCURRENTPOSITION2 | DSBCAPS_CTRLVOLUME | DSBCAPS_GLOBALFOCUS | DSBCAPS_CTRLPOSITIONNOTIFY;
+	dsbdesc.dwFlags = DSBCAPS_GETCURRENTPOSITION2 | DSBCAPS_CTRLVOLUME | DSBCAPS_GLOBALFOCUS;
 	dsbdesc.dwBufferBytes = bufferSize = BUFSIZE;
 	dsbdesc.lpwfxFormat = (WAVEFORMATEX *)&pcmwf;
 	dsbdesc.guid3DAlgorithm = DS3DALG_DEFAULT;
@@ -39,20 +40,6 @@ bool DSound::CreateBuffer()
 	{
 		dsBuffer->SetCurrentPosition(0);
 		dsBuffer->SetVolume(m_volume);
-
-		soundSyncEvent = CreateEvent(NULL, TRUE, FALSE, TEXT("DSound Buffer Notification"));
-
-		IDirectSoundNotify *dsnotify;
-		dsBuffer->QueryInterface(IID_IDirectSoundNotify, (void**)&dsnotify);
-		DSBPOSITIONNOTIFY notify_positions[3];
-		for (unsigned i = 0; i < ARRAYSIZE(notify_positions); ++i)
-		{
-			notify_positions[i].dwOffset = i * (BUFSIZE / ARRAYSIZE(notify_positions));
-			notify_positions[i].hEventNotify = soundSyncEvent;
-		}
-		dsnotify->SetNotificationPositions(ARRAYSIZE(notify_positions), notify_positions);
-		dsnotify->Release();
-
 		return true;
 	}
 	else
@@ -117,7 +104,7 @@ void DSound::SoundLoop()
 			WriteDataToBuffer(lastPos, (char*)realtimeBuffer, numBytesToRender);
 			lastPos = ModBufferSize(lastPos + numBytesToRender);
 		}
-		WaitForSingleObject(soundSyncEvent, INFINITE);
+		soundSyncEvent.Wait();
 	}
 }
 
@@ -139,6 +126,11 @@ bool DSound::Start()
 	dsBuffer->Unlock(p1, num1, 0, 0);
 	thread = std::thread(std::mem_fn(&DSound::SoundLoop), this);
 	return true;
+}
+
+void DSound::Update()
+{
+	soundSyncEvent.Set();
 }
 
 void DSound::SetVolume(int volume)
@@ -171,12 +163,11 @@ void DSound::Stop()
 {
 	threadData = 1;
 	// kick the thread if it's waiting
-	SetEvent(soundSyncEvent);
+	soundSyncEvent.Set();
 
 	thread.join();
 	dsBuffer->Stop();
 	dsBuffer->Release();
 	ds->Release();
-	CloseHandle(soundSyncEvent);
 }
 

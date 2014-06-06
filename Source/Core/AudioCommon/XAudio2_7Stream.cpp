@@ -28,14 +28,13 @@ struct StreamingVoiceContext2_7 : public IXAudio2VoiceCallback
 {
 private:
 	CMixer* const m_mixer;
-	Common::Event& m_sound_sync_event;
 	IXAudio2SourceVoice* m_source_voice;
 	std::unique_ptr<BYTE[]> xaudio_buffer;
 
 	void SubmitBuffer(PBYTE buf_data);
 
 public:
-	StreamingVoiceContext2_7(IXAudio2 *pXAudio2, CMixer *pMixer, Common::Event& pSyncEvent);
+	StreamingVoiceContext2_7(IXAudio2 *pXAudio2, CMixer *pMixer);
 
 	~StreamingVoiceContext2_7();
 
@@ -69,9 +68,8 @@ void StreamingVoiceContext2_7::SubmitBuffer(PBYTE buf_data)
 	m_source_voice->SubmitSourceBuffer(&buf);
 }
 
-StreamingVoiceContext2_7::StreamingVoiceContext2_7(IXAudio2 *pXAudio2, CMixer *pMixer, Common::Event& pSyncEvent)
+StreamingVoiceContext2_7::StreamingVoiceContext2_7(IXAudio2 *pXAudio2, CMixer *pMixer)
 	: m_mixer(pMixer)
-	, m_sound_sync_event(pSyncEvent)
 	, xaudio_buffer(new BYTE[NUM_BUFFERS * BUFFER_SIZE_BYTES]())
 {
 	WAVEFORMATEXTENSIBLE wfx = {};
@@ -177,7 +175,7 @@ bool XAudio2_7::Start()
 
 	// callback doesn't seem to run on a specific cpu anyways
 	IXAudio2* xaudptr;
-	if (FAILED(hr = XAudio2Create(&xaudptr, 0, XAUDIO2_DEFAULT_PROCESSOR)))
+	if (FAILED(hr = XAudio2Create(&xaudptr, 0, XAUDIO2_ANY_PROCESSOR)))
 	{
 		PanicAlertT("XAudio2_7 init failed: %#X", hr);
 		Stop();
@@ -198,7 +196,7 @@ bool XAudio2_7::Start()
 	m_mastering_voice->SetVolume(m_volume);
 
 	m_voice_context = std::unique_ptr<StreamingVoiceContext2_7>
-		(new StreamingVoiceContext2_7(m_xaudio2.get(), m_mixer, m_sound_sync_event));
+		(new StreamingVoiceContext2_7(m_xaudio2.get(), m_mixer));
 
 	return true;
 }
