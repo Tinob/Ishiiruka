@@ -5,6 +5,9 @@ set(SRCS
 	FIFOSampleBuffer.cpp
 	FIRFilter.cpp
 	mmx_optimized.cpp
+	InterpolateCubic.cpp
+	InterpolateLinear.cpp
+	InterpolateShannon.cpp
 	PeakFinder.cpp
 	RateTransposer.cpp
 	SoundTouch.cpp

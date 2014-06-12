@@ -44,13 +44,13 @@ public:
 
 	// Called from audio threads
 	virtual unsigned int Mix(short* samples, unsigned int numSamples, bool consider_framelimit = true);
+	u32 AvailableSamples();
 
 	// Called from main thread
 	virtual void PushSamples(const short* samples, unsigned int num_samples);
 	unsigned int GetSampleRate() const {return m_sampleRate;}
 
 	void SetThrottle(bool use) { m_throttle = use;}
-
 
 	virtual void StartLogAudio(const std::string& filename)
 	{
@@ -82,7 +82,6 @@ public:
 	}
 
 	std::mutex& MixerCritical() { return m_csMixing; }
-
 	float GetCurrentSpeed() const { return m_speed; }
 	void UpdateSpeed(volatile float val) { m_speed = val; }
 

@@ -18,6 +18,10 @@
 #include <tmmintrin.h>
 #endif
 
+u32 CMixer::AvailableSamples()
+{
+	return ((m_indexW - m_indexR) & INDEX_MASK) / 2;
+}
 // Executed from sound stream thread
 unsigned int CMixer::Mix(short* samples, unsigned int numSamples, bool consider_framelimit)
 {
@@ -46,6 +50,7 @@ unsigned int CMixer::Mix(short* samples, unsigned int numSamples, bool consider_
 	u32 indexW = Common::AtomicLoad(m_indexW);
 
 	float numLeft = ((indexW - indexR) & INDEX_MASK) / 2;
+	numSamples = numSamples > numLeft || numSamples == 0 ? numLeft : numSamples;
 	m_numLeftI = (numLeft + m_numLeftI*(CONTROL_AVG-1)) / CONTROL_AVG;
 	float offset = (m_numLeftI - LOW_WATERMARK) * CONTROL_FACTOR;
 	if (offset > MAX_FREQ_SHIFT) offset = MAX_FREQ_SHIFT;

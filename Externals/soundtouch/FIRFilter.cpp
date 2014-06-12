@@ -11,7 +11,7 @@
 ///
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Last changed  : $Date: 2013-06-12 15:24:44 +0000 (Wed, 12 Jun 2013) $
+// Last changed  : $Date: 2013-06-12 18:24:44 +0300 (Wed, 12 Jun 2013) $
 // File revision : $Revision: 4 $
 //
 // $Id: FIRFilter.cpp 171 2013-06-12 15:24:44Z oparviai $
@@ -170,7 +170,7 @@ uint FIRFilter::evaluateFilterMono(SAMPLETYPE *dest, const SAMPLETYPE *src, uint
 uint FIRFilter::evaluateFilterMulti(SAMPLETYPE *dest, const SAMPLETYPE *src, uint numSamples, uint numChannels) const
 {
     uint i, j, end, c;
-    LONG_SAMPLETYPE *sum=(LONG_SAMPLETYPE*)malloc(numChannels*sizeof(*sum));
+    LONG_SAMPLETYPE *sum=(LONG_SAMPLETYPE*)alloca(numChannels*sizeof(*sum));
 #ifdef SOUNDTOUCH_FLOAT_SAMPLES
     // when using floating point samples, use a scaler instead of a divider
     // because division is much slower operation than multiplying.
@@ -217,7 +217,6 @@ uint FIRFilter::evaluateFilterMulti(SAMPLETYPE *dest, const SAMPLETYPE *src, uin
             sum[c] = 0;
         }
     }
-    free(sum);
     return numSamples - length;
 }
 

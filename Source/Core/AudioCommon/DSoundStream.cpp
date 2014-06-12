@@ -7,11 +7,7 @@
 
 #include <windows.h>
 
-#include "AudioCommon/AudioCommon.h"
 #include "AudioCommon/DSoundStream.h"
-#include "Common/StdThread.h"
-#include "Common/Thread.h"
-
 
 bool DSound::CreateBuffer()
 {
@@ -31,7 +27,7 @@ bool DSound::CreateBuffer()
 	// Fill out DSound buffer description.
 	dsbdesc.dwSize  = sizeof(DSBUFFERDESC);
 	dsbdesc.dwFlags = DSBCAPS_GETCURRENTPOSITION2 | DSBCAPS_CTRLVOLUME | DSBCAPS_GLOBALFOCUS;
-	dsbdesc.dwBufferBytes = bufferSize = BUFSIZE;
+	dsbdesc.dwBufferBytes = bufferSize = SOUND_FRAME_SIZE * SOUND_SAMPLES_STEREO * SOUND_BUFFER_COUNT * sizeof(s16);
 	dsbdesc.lpwfxFormat = (WAVEFORMATEX *)&pcmwf;
 	dsbdesc.guid3DAlgorithm = DS3DALG_DEFAULT;
 
@@ -82,30 +78,31 @@ bool DSound::WriteDataToBuffer(DWORD dwOffset,                  // Our own write
 	return false;
 }
 
-// The audio thread.
-void DSound::SoundLoop()
-{
-	Common::SetCurrentThreadName("Audio thread - dsound");
 
+void DSound::InitializeSoundLoop()
+{
 	currentPos = 0;
 	lastPos = 0;
 	dsBuffer->Play(0, 0, DSBPLAY_LOOPING);
+}
 
-	while (!threadData)
-	{
-		// No blocking inside the csection
-		dsBuffer->GetCurrentPosition((DWORD*)&currentPos, 0);
-		int numBytesToRender = FIX128(ModBufferSize(currentPos - lastPos));
-		if (numBytesToRender >= 256)
-		{
-			if (numBytesToRender > sizeof(realtimeBuffer))
-				PanicAlert("soundThread: too big render call");
-			m_mixer->Mix(realtimeBuffer, numBytesToRender / 4);
-			WriteDataToBuffer(lastPos, (char*)realtimeBuffer, numBytesToRender);
-			lastPos = ModBufferSize(lastPos + numBytesToRender);
-		}
-		soundSyncEvent.Wait();
-	}
+s32 DSound::SamplesNeeded()
+{
+	dsBuffer->GetCurrentPosition((DWORD*)&currentPos, 0);
+	s32 numBytesToRender = FIX128(ModBufferSize(currentPos - lastPos));
+	return numBytesToRender / 4;
+}
+
+void DSound::WriteSamples(s16 *src, s32 numsamples)
+{
+	s32 numBytesToRender = numsamples * 4;
+	WriteDataToBuffer(lastPos, (char*)src, numBytesToRender);
+	lastPos = ModBufferSize(lastPos + numBytesToRender);
+}
+
+bool DSound::SupportSurroundOutput()
+{
+	return false;
 }
 
 bool DSound::Start()
@@ -124,13 +121,7 @@ bool DSound::Start()
 	dsBuffer->Lock(0, bufferSize, (void* *)&p1, &num1, 0, 0, DSBLOCK_ENTIREBUFFER);
 	memset(p1, 0, num1);
 	dsBuffer->Unlock(p1, num1, 0, 0);
-	thread = std::thread(std::mem_fn(&DSound::SoundLoop), this);
-	return true;
-}
-
-void DSound::Update()
-{
-	soundSyncEvent.Set();
+	return SoundStream::Start();
 }
 
 void DSound::SetVolume(int volume)
@@ -144,8 +135,7 @@ void DSound::SetVolume(int volume)
 
 void DSound::Clear(bool mute)
 {
-	m_muted = mute;
-
+	SoundStream::Clear(mute);
 	if (dsBuffer != nullptr)
 	{
 		if (m_muted)
@@ -161,11 +151,7 @@ void DSound::Clear(bool mute)
 
 void DSound::Stop()
 {
-	threadData = 1;
-	// kick the thread if it's waiting
-	soundSyncEvent.Set();
-
-	thread.join();
+	SoundStream::Stop();
 	dsBuffer->Stop();
 	dsBuffer->Release();
 	ds->Release();

@@ -29,7 +29,11 @@ struct IXAudio2MasteringVoice;
 class XAudio2_7 final : public SoundStream
 {
 #ifdef _WIN32
-
+protected:
+	virtual void InitializeSoundLoop() override;
+	virtual s32 SamplesNeeded() override;
+	virtual void WriteSamples(s16 *src, s32 numsamples) override;
+	virtual bool SupportSurroundOutput() override;
 private:
 	static void ReleaseIXAudio2(IXAudio2 *ptr);
 
@@ -53,6 +57,7 @@ private:
 	static HMODULE m_xaudio2_dll;
 
 	static bool InitLibrary();
+	u32 samplesize;
 
 public:
 	XAudio2_7(CMixer *mixer);

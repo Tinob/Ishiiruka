@@ -8,10 +8,10 @@
 ///
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Last changed  : $Date: 2013-06-12 15:24:44 +0000 (Wed, 12 Jun 2013) $
+// Last changed  : $Date: 2014-01-07 20:24:28 +0200 (Tue, 07 Jan 2014) $
 // File revision : $Revision: 3 $
 //
-// $Id: STTypes.h 171 2013-06-12 15:24:44Z oparviai $
+// $Id: STTypes.h 183 2014-01-07 18:24:28Z oparviai $
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -57,13 +57,17 @@ typedef unsigned long   ulong;
 #if (defined(__GNUC__) && !defined(ANDROID))
     // In GCC, include soundtouch_config.h made by config scritps.
     // Skip this in Android compilation that uses GCC but without configure scripts.
-    //#include "soundtouch_config.h"
+    #include "soundtouch_config.h"
 #endif
 
 #ifndef _WINDEF_
     // if these aren't defined already by Windows headers, define now
 
-    typedef int BOOL;
+#if defined(__APPLE__)
+   typedef signed char BOOL;
+#else
+   typedef int BOOL;
+#endif 
 
     #define FALSE   0
     #define TRUE    1
@@ -75,8 +79,8 @@ namespace soundtouch
 {
     /// Activate these undef's to overrule the possible sampletype 
     /// setting inherited from some other header file:
-    #undef SOUNDTOUCH_INTEGER_SAMPLES
-    #undef SOUNDTOUCH_FLOAT_SAMPLES
+    //#undef SOUNDTOUCH_INTEGER_SAMPLES
+    //#undef SOUNDTOUCH_FLOAT_SAMPLES
 
     /// If following flag is defined, always uses multichannel processing 
     /// routines also for mono and stero sound. This is for routine testing 
@@ -113,7 +117,7 @@ namespace soundtouch
      
     #endif
 
-    #if (_M_IX86 || __i386__ || __x86_64__ || _M_X86_64)
+    #if (_M_IX86 || __i386__ || __x86_64__ || _M_X64)
         /// Define this to allow X86-specific assembler/intrinsic optimizations. 
         /// Notice that library contains also usual C++ versions of each of these
         /// these routines, so if you're having difficulties getting the optimized 
@@ -174,7 +178,7 @@ namespace soundtouch
 };
 
 // define ST_NO_EXCEPTION_HANDLING switch to disable throwing std exceptions:
-   #define ST_NO_EXCEPTION_HANDLING    1
+// #define ST_NO_EXCEPTION_HANDLING    1
 #ifdef ST_NO_EXCEPTION_HANDLING
     // Exceptions disabled. Throw asserts instead if enabled.
     #include <assert.h>

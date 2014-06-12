@@ -20,6 +20,7 @@
 
 #include "Core/ConfigManager.h"
 #include "Core/Movie.h"
+#include "Core/HW/AudioInterface.h"
 
 // This shouldn't be a global, at least not here.
 SoundStream *soundStream = nullptr;
@@ -158,6 +159,7 @@ namespace AudioCommon
 			}
 		}
 	}
+	
 	void UpdateSoundStream()
 	{
 		if (soundStream)

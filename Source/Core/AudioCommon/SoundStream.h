@@ -7,11 +7,25 @@
 #include "AudioCommon/Mixer.h"
 #include "AudioCommon/WaveFile.h"
 #include "Common/Common.h"
+#include "Common/Thread.h"
+
+
+#define SOUND_FRAME_SIZE 2048
+#define SOUND_SAMPLES_STEREO 2
+#define SOUND_SAMPLES_SURROUND 6
+#define SOUND_STEREO_FRAME_SIZE SOUND_FRAME_SIZE * SOUND_SAMPLES_STEREO
+#define SOUND_SURROUND_FRAME_SIZE SOUND_FRAME_SIZE * SOUND_SAMPLES_SURROUND
+#define SOUND_STEREO_FRAME_SIZE_BYTES SOUND_STEREO_FRAME_SIZE * sizeof(s16)
+#define SOUND_SURROUND_FRAME_SIZE_BYTES SOUND_SURROUND_FRAME_SIZE * sizeof(s16)
+
+#define SOUND_MAX_FRAME_SIZE SOUND_FRAME_SIZE * SOUND_SAMPLES_SURROUND
+#define SOUND_MAX_FRAME_SIZE_BYTES SOUND_MAX_FRAME_SIZE * sizeof(s16)
+#define SOUND_BUFFER_COUNT 4
 
 class SoundStream
 {
 protected:
-
+	bool m_enablesoundloop;
 	CMixer *m_mixer;
 	// We set this to shut down the sound thread.
 	// 0=keep playing, 1=stop playing NOW.
@@ -19,38 +33,25 @@ protected:
 	bool m_logAudio;
 	WaveFileWriter g_wave_writer;
 	bool m_muted;
-
+	std::thread thread;
+	void SoundLoop();
+	virtual void InitializeSoundLoop() {}
+	virtual s32 SamplesNeeded(){ return 0; }
+	virtual void WriteSamples(s16 *src, s32 numsamples){}
+	virtual bool SupportSurroundOutput(){ return false; };
 public:
-	SoundStream(CMixer *mixer) : m_mixer(mixer), threadData(0), m_logAudio(false), m_muted(false) {}
-	virtual ~SoundStream() { delete m_mixer; }
+	SoundStream(CMixer *mixer);
+	~SoundStream();
 
 	static  bool isValid() { return false; }
 	virtual CMixer *GetMixer() const { return m_mixer; }
-	virtual bool Start() { return false; }
-	virtual void SetVolume(int) {}
-	virtual void SoundLoop() {}
-	virtual void Stop() {}
-	virtual void Update() {}
-	virtual void Clear(bool mute) { m_muted = mute; }
+	virtual bool Start();
+	virtual void SetVolume(int) {}	
+	virtual void Stop();
+	virtual void Clear(bool mute);
+	virtual void Update() {};
 	bool IsMuted() const { return m_muted; }
-	virtual void StartLogAudio(const char *filename) {
-		if (! m_logAudio) {
-			m_logAudio = true;
-			g_wave_writer.Start(filename, m_mixer->GetSampleRate());
-			g_wave_writer.SetSkipSilence(false);
-			NOTICE_LOG(DSPHLE, "Starting Audio logging");
-		} else {
-			WARN_LOG(DSPHLE, "Audio logging already started");
-		}
-	}
+	virtual void StartLogAudio(const char *filename);
 
-	virtual void StopLogAudio() {
-		if (m_logAudio) {
-			m_logAudio = false;
-			g_wave_writer.Stop();
-			NOTICE_LOG(DSPHLE, "Stopping Audio logging");
-		} else {
-			WARN_LOG(DSPHLE, "Audio logging already stopped");
-		}
-	}
+	virtual void StopLogAudio();
 };

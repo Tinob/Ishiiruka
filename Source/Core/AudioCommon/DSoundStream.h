@@ -5,22 +5,16 @@
 #pragma once
 
 #include "AudioCommon/SoundStream.h"
-#include "Common/Event.h"
-#include "Common/StdThread.h"
 
 #ifdef _WIN32
 #include <Windows.h>
 #include <mmsystem.h>
 #include <dsound.h>
-
-#define BUFSIZE (1024 * 8 * 4)
 #endif
 
 class DSound final : public SoundStream
 {
 #ifdef _WIN32
-	std::thread thread;
-	Common::Event soundSyncEvent;
 	void  *hWnd;
 
 	IDirectSound8* ds;
@@ -32,7 +26,6 @@ class DSound final : public SoundStream
 	// playback position
 	int currentPos;
 	int lastPos;
-	short realtimeBuffer[BUFSIZE / sizeof(short)];
 
 	inline int FIX128(int x)
 	{
@@ -46,7 +39,11 @@ class DSound final : public SoundStream
 
 	bool CreateBuffer();
 	bool WriteDataToBuffer(DWORD dwOffset, char* soundData, DWORD dwSoundBytes);
-
+protected:
+	virtual void InitializeSoundLoop() override;
+	virtual s32 SamplesNeeded() override;
+	virtual void WriteSamples(s16 *src, s32 numsamples) override;
+	virtual bool SupportSurroundOutput() override;
 public:
 	DSound(CMixer *mixer, void *_hWnd)
 		: SoundStream(mixer)
@@ -60,13 +57,11 @@ public:
 
 	virtual ~DSound() {}
 
-	virtual bool Start();
-	virtual void SoundLoop();
-	virtual void SetVolume(int volume);
-	virtual void Stop();
-	virtual void Clear(bool mute);
+	virtual bool Start()  override;
+	virtual void SetVolume(int volume)  override;
+	virtual void Stop()  override;
+	virtual void Clear(bool mute)  override;
 	static bool isValid() { return true; }
-	virtual void Update();
 
 #else
 public:

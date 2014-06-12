@@ -5,12 +5,6 @@
 #pragma once
 
 #include "AudioCommon/SoundStream.h"
-#include "Common/Event.h"
-#include "Common/StdThread.h"
-#include "Core/Core.h"
-#include "Core/HW/AudioInterface.h"
-#include "Core/HW/SystemTimers.h"
-
 #if defined HAVE_OPENAL && HAVE_OPENAL
 #ifdef _WIN32
 #include <OpenAL/include/al.h>
@@ -24,53 +18,38 @@
 #include <AL/alc.h>
 #include <AL/alext.h>
 #endif
-
-#include <soundtouch/SoundTouch.h>
-#include <soundtouch/STTypes.h>
-
-// 16 bit Stereo
-#define SFX_MAX_SOURCE          1
-#define OAL_MAX_BUFFERS         32
-#define OAL_MAX_SAMPLES         256
-#define STEREO_CHANNELS         2
-#define SURROUND_CHANNELS       6   // number of channels in surround mode
-#define SIZE_SHORT              2
-#define SIZE_FLOAT              4   // size of a float in bytes
-#define FRAME_STEREO_SHORT      STEREO_CHANNELS * SIZE_SHORT
-#define FRAME_STEREO_FLOAT      STEREO_CHANNELS * SIZE_FLOAT
-#define FRAME_SURROUND_FLOAT    SURROUND_CHANNELS * SIZE_FLOAT
 #endif
 
 class OpenALStream final : public SoundStream
 {
 #if defined HAVE_OPENAL && HAVE_OPENAL
+protected:
+	virtual void InitializeSoundLoop() override;
+	virtual s32 SamplesNeeded() override;
+	virtual void WriteSamples(s16 *src, s32 numsamples) override;
+	virtual bool SupportSurroundOutput() override;
 public:
 	OpenALStream(CMixer *mixer, void *hWnd = nullptr)
 		: SoundStream(mixer)
 		, uiSource(0)
 	{}
 
-	virtual ~OpenALStream() {}
+	~OpenALStream() {}
 
 	virtual bool Start() override;
-	virtual void SoundLoop() override;
 	virtual void SetVolume(int volume) override;
 	virtual void Stop() override;
 	virtual void Clear(bool mute) override;
 	static bool isValid() { return true; }
-	virtual void Update() override;
 
 private:
-	std::thread thread;
-	Common::Event soundSyncEvent;
-
-	short realtimeBuffer[OAL_MAX_SAMPLES * STEREO_CHANNELS];
-	soundtouch::SAMPLETYPE sampleBuffer[OAL_MAX_SAMPLES * SURROUND_CHANNELS * OAL_MAX_BUFFERS];
-	ALuint uiBuffers[OAL_MAX_BUFFERS];
+	ALuint uiBuffers[SOUND_BUFFER_COUNT + 32];
 	ALuint uiSource;
 	ALfloat fVolume;
-
 	u8 numBuffers;
+	u32 ulFrequency;
+	ALenum format;
+	u32 samplesize;
 #else
 public:
 	OpenALStream(CMixer *mixer)

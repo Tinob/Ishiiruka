@@ -491,13 +491,7 @@ void UpdateAudioDMA()
 			g_audioDMA.BlocksLeft = g_audioDMA.AudioDMAControl.NumBlocks;
 			g_audioDMA.ReadAddress = g_audioDMA.SourceAddress;
 		}
-	}
-	else
-	{
-		// Send silence. Yeah, it's a bit of a waste to sample rate convert
-		// silence.  or hm. Maybe we shouldn't do this :)
-		AudioCommon::SendAIBuffer(0, AudioInterface::GetAIDSampleRate());
-	}
+	}	
 }
 
 void Do_ARAM_DMA()

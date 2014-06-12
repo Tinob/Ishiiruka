@@ -41,10 +41,10 @@
 ///
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Last changed  : $Date: 2013-06-12 15:24:44 +0000 (Wed, 12 Jun 2013) $
+// Last changed  : $Date: 2014-01-05 23:40:22 +0200 (Sun, 05 Jan 2014) $
 // File revision : $Revision: 4 $
 //
-// $Id: SoundTouch.cpp 171 2013-06-12 15:24:44Z oparviai $
+// $Id: SoundTouch.cpp 177 2014-01-05 21:40:22Z oparviai $
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -97,7 +97,7 @@ SoundTouch::SoundTouch()
 {
     // Initialize rate transposer and tempo changer instances
 
-    pRateTransposer = RateTransposer::newInstance();
+    pRateTransposer = new RateTransposer();
     pTDStretch = TDStretch::newInstance();
 
     setOutPipe(pTDStretch);
@@ -255,7 +255,7 @@ void SoundTouch::calcEffectiveRateAndTempo()
             tempoOut = pTDStretch->getOutput();
             tempoOut->moveSamples(*output);
             // move samples in pitch transposer's store buffer to tempo changer's input
-            pTDStretch->moveSamples(*pRateTransposer->getStore());
+            // deprecated : pTDStretch->moveSamples(*pRateTransposer->getStore());
 
             output = pTDStretch;
         }
@@ -303,7 +303,6 @@ void SoundTouch::putSamples(const SAMPLETYPE *samples, uint nSamples)
     }
 
     // Transpose the rate of the new samples if necessary
-    /* Bypass the nominal setting - can introduce a click in sound when tempo/pitch control crosses the nominal value...
     if (rate == 1.0f) 
     {
         // The rate value is same as the original, simply evaluate the tempo changer. 
@@ -315,8 +314,7 @@ void SoundTouch::putSamples(const SAMPLETYPE *samples, uint nSamples)
             pTDStretch->moveSamples(*pRateTransposer);
         }
         pTDStretch->putSamples(samples, nSamples);
-    } 
-    */
+    }
 #ifndef SOUNDTOUCH_PREVENT_CLICK_AT_RATE_CROSSOVER
     else if (rate <= 1.0f) 
     {
@@ -348,7 +346,7 @@ void SoundTouch::flush()
     int i;
     int nUnprocessed;
     int nOut;
-    SAMPLETYPE *buff=(SAMPLETYPE*)malloc(64*channels*sizeof(SAMPLETYPE));
+    SAMPLETYPE *buff=(SAMPLETYPE*)alloca(64*channels*sizeof(SAMPLETYPE));
 
     // check how many samples still await processing, and scale
     // that by tempo & rate to get expected output sample count
@@ -383,7 +381,6 @@ void SoundTouch::flush()
     pTDStretch->clearInput();
     // yet leave the 'tempoChanger' output intouched as that's where the
     // flushed samples are!
-    free(buff);
 }
 
 

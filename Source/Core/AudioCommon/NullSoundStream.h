@@ -22,7 +22,6 @@ public:
 	virtual ~NullSound() {}
 
 	virtual bool Start() override;
-	virtual void SoundLoop() override;
 	virtual void SetVolume(int volume) override;
 	virtual void Stop() override;
 	virtual void Clear(bool mute) override;
