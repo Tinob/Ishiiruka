@@ -54,6 +54,10 @@ TextureCache::TextureCache()
 	SetHash64Function(g_ActiveConfig.bHiresTextures || g_ActiveConfig.bDumpTextures);
 
 	invalidate_texture_cache_requested = false;
+	for (u32 i = 0; i < 8; i++)
+	{
+		stagemap[i] = nullptr;
+	}
 }
 
 void TextureCache::RequestInvalidateTextureCache()
