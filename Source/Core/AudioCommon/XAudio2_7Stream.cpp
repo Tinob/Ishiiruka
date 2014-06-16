@@ -22,7 +22,6 @@
 #endif
 
 #ifdef HAVE_DXSDK_JUNE_2010
-
 #include <XAudio2.h>
 struct StreamingVoiceContext2_7 : public IXAudio2VoiceCallback
 {
@@ -91,9 +90,9 @@ StreamingVoiceContext2_7::StreamingVoiceContext2_7(IXAudio2 *pXAudio2, CMixer *p
 		PanicAlertT("XAudio2_7 CreateSourceVoice failed: %#X", hr);
 		return;
 	}
-
 	m_source_voice->Start();
 	// Initialize the filling loop with the first buffer
+	memset(m_xaudio_buffer.get(), 0, SOUND_BUFFER_COUNT * (m_useSurround ? SOUND_SURROUND_FRAME_SIZE_BYTES : SOUND_STEREO_FRAME_SIZE_BYTES));
 	m_NextBuffer = 0;
 	// start buffers with silence
 	for (int i = 0; i != SOUND_BUFFER_COUNT; ++i)

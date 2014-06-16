@@ -240,6 +240,7 @@ void SConfig::SaveSettings()
 	ini.Set("Core", "EnableCheats",     m_LocalCoreStartupParameter.bEnableCheats);
 	ini.Set("Core", "SelectedLanguage", m_LocalCoreStartupParameter.SelectedLanguage);
 	ini.Set("Core", "DPL2Decoder",      m_LocalCoreStartupParameter.bDPL2Decoder);
+	ini.Set("Core", "TimeStretching",	m_LocalCoreStartupParameter.bTimeStretching);
 	ini.Set("Core", "Latency",          m_LocalCoreStartupParameter.iLatency);
 	ini.Set("Core", "MemcardAPath",     m_strMemoryCardA);
 	ini.Set("Core", "MemcardBPath",     m_strMemoryCardB);
@@ -396,6 +397,7 @@ void SConfig::LoadSettings()
 		ini.Get("Core", "EnableCheats",      &m_LocalCoreStartupParameter.bEnableCheats, false);
 		ini.Get("Core", "SelectedLanguage",  &m_LocalCoreStartupParameter.SelectedLanguage, 0);
 		ini.Get("Core", "DPL2Decoder",       &m_LocalCoreStartupParameter.bDPL2Decoder, false);
+		ini.Get("Core", "TimeStretching",	 &m_LocalCoreStartupParameter.bTimeStretching, false);
 		ini.Get("Core", "Latency",           &m_LocalCoreStartupParameter.iLatency, 2);
 		ini.Get("Core", "MemcardAPath",      &m_strMemoryCardA);
 		ini.Get("Core", "MemcardBPath",      &m_strMemoryCardB);

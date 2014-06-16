@@ -90,6 +90,7 @@ private:
 		ID_ENABLE_THROTTLE,
 		ID_DUMP_AUDIO,
 		ID_DPL2DECODER,
+		ID_TIMESTRETCHING,
 		ID_LATENCY,
 		ID_BACKEND,
 		ID_VOLUME,
@@ -165,6 +166,7 @@ private:
 	wxStaticText* VolumeText;
 	wxCheckBox* DumpAudio;
 	wxCheckBox* DPL2Decoder;
+	wxCheckBox* TimeStretching;
 	wxArrayString wxArrayBackends;
 	wxChoice*   BackendSelection;
 	wxSpinCtrl* Latency;

@@ -130,6 +130,7 @@ struct SCoreStartupParameter
 	bool bEnableMemcardSaving;
 
 	bool bDPL2Decoder;
+	bool bTimeStretching;
 	int iLatency;
 
 	bool bRunCompareServer;

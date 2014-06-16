@@ -148,6 +148,7 @@ EVT_CHECKBOX(ID_DSPTHREAD, CConfigMain::AudioSettingsChanged)
 EVT_CHECKBOX(ID_ENABLE_THROTTLE, CConfigMain::AudioSettingsChanged)
 EVT_CHECKBOX(ID_DUMP_AUDIO, CConfigMain::AudioSettingsChanged)
 EVT_CHECKBOX(ID_DPL2DECODER, CConfigMain::AudioSettingsChanged)
+EVT_CHECKBOX(ID_TIMESTRETCHING, CConfigMain::AudioSettingsChanged)
 EVT_CHOICE(ID_BACKEND, CConfigMain::AudioSettingsChanged)
 EVT_SLIDER(ID_VOLUME, CConfigMain::AudioSettingsChanged)
 
@@ -243,6 +244,7 @@ void CConfigMain::UpdateGUI()
 		DSPEngine->Disable();
 		DSPThread->Disable();
 		DPL2Decoder->Disable();
+		TimeStretching->Disable();
 		Latency->Disable();
 
 		// Disable stuff on GamecubePage
@@ -376,10 +378,10 @@ void CConfigMain::InitializeGUIValues()
 	VolumeSlider->SetValue(SConfig::GetInstance().m_Volume);
 	VolumeText->SetLabel(wxString::Format("%d %%", SConfig::GetInstance().m_Volume));
 	DSPThread->SetValue(startup_params.bDSPThread);
+	TimeStretching->SetValue(startup_params.bTimeStretching);
 	DumpAudio->SetValue(SConfig::GetInstance().m_DumpAudio ? true : false);
-	DPL2Decoder->Enable(true);
 	DPL2Decoder->SetValue(startup_params.bDPL2Decoder);
-	Latency->Enable(std::string(SConfig::GetInstance().sBackend) == BACKEND_OPENAL);
+	TimeStretching->SetValue(startup_params.bTimeStretching);
 	Latency->SetValue(startup_params.iLatency);
 	// add backends to the list
 	AddAudioBackends();
@@ -534,10 +536,10 @@ void CConfigMain::InitializeGUITooltips()
 #if defined(__APPLE__)
 	DPL2Decoder->SetToolTip(_("Enables Dolby Pro Logic II emulation using 5.1 surround. Not available on OSX."));
 #else
-	DPL2Decoder->SetToolTip(_("Enables Dolby Pro Logic II emulation using 5.1 surround. OpenAL backend only."));
+	DPL2Decoder->SetToolTip(_("Enables Dolby Pro Logic II emulation using 5.1 surround."));
 #endif
-
-	Latency->SetToolTip(_("Sets the latency (in ms).  Higher values may reduce audio crackling. OpenAL backend only."));
+	TimeStretching->SetToolTip(_("Enables Sound Stretching to avoid crackling. It will introduce some latency."));
+	Latency->SetToolTip(_("Sets the latency (in ms).  Higher values may reduce audio crackling."));
 }
 
 void CConfigMain::CreateGUIControls()
@@ -656,6 +658,7 @@ void CConfigMain::CreateGUIControls()
 	DSPThread = new wxCheckBox(AudioPage, ID_DSPTHREAD, _("DSPLLE on Separate Thread"));
 	DumpAudio = new wxCheckBox(AudioPage, ID_DUMP_AUDIO, _("Dump Audio"));
 	DPL2Decoder = new wxCheckBox(AudioPage, ID_DPL2DECODER, _("Dolby Pro Logic II decoder"));
+	TimeStretching = new wxCheckBox(AudioPage, ID_TIMESTRETCHING, _("Time Stretching"));
 	VolumeSlider = new wxSlider(AudioPage, ID_VOLUME, 0, 1, 100, wxDefaultPosition, wxDefaultSize, wxSL_VERTICAL | wxSL_INVERSE);
 	VolumeText = new wxStaticText(AudioPage, wxID_ANY, "");
 	BackendSelection = new wxChoice(AudioPage, ID_BACKEND, wxDefaultPosition, wxDefaultSize, wxArrayBackends, 0, wxDefaultValidator, wxEmptyString);
@@ -668,6 +671,7 @@ void CConfigMain::CreateGUIControls()
 		Latency->Disable();
 		BackendSelection->Disable();
 		DPL2Decoder->Disable();
+		TimeStretching->Disable();
 	}
 
 	// Create sizer and add items to dialog
@@ -676,6 +680,7 @@ void CConfigMain::CreateGUIControls()
 	sbAudioSettings->Add(DSPThread, 0, wxALL, 5);
 	sbAudioSettings->Add(DumpAudio, 0, wxALL, 5);
 	sbAudioSettings->Add(DPL2Decoder, 0, wxALL, 5);
+	sbAudioSettings->Add(TimeStretching, 0, wxALL, 5);
 
 	wxStaticBoxSizer *sbVolume = new wxStaticBoxSizer(wxVERTICAL, AudioPage, _("Volume"));
 	sbVolume->Add(VolumeSlider, 1, wxLEFT | wxRIGHT, 13);
@@ -964,10 +969,12 @@ void CConfigMain::AudioSettingsChanged(wxCommandEvent& event)
 		SConfig::GetInstance().m_LocalCoreStartupParameter.bDPL2Decoder = DPL2Decoder->IsChecked();
 		break;
 
+	case ID_TIMESTRETCHING:
+		SConfig::GetInstance().m_LocalCoreStartupParameter.bTimeStretching = TimeStretching->IsChecked();
+		break;
+
 	case ID_BACKEND:
-		VolumeSlider->Enable(SupportsVolumeChanges(WxStrToStr(BackendSelection->GetStringSelection())));
-		Latency->Enable(WxStrToStr(BackendSelection->GetStringSelection()) == BACKEND_OPENAL);
-		DPL2Decoder->Enable(WxStrToStr(BackendSelection->GetStringSelection()) == BACKEND_OPENAL);
+		VolumeSlider->Enable(SupportsVolumeChanges(WxStrToStr(BackendSelection->GetStringSelection())));		
 		// Don't save the translated BACKEND_NULLSOUND string
 		SConfig::GetInstance().sBackend = BackendSelection->GetSelection() ?
 			WxStrToStr(BackendSelection->GetStringSelection()) : BACKEND_NULLSOUND;
