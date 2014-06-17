@@ -316,7 +316,7 @@ void SoundTouch::putSamples(const SAMPLETYPE *samples, uint nSamples)
         pTDStretch->putSamples(samples, nSamples);
     }
 #ifndef SOUNDTOUCH_PREVENT_CLICK_AT_RATE_CROSSOVER
-    else if (rate <= 1.0f) 
+    else if (rate < 1.0f) 
     {
         // transpose the rate down, output the transposed sound to tempo changer buffer
         assert(output == pTDStretch);

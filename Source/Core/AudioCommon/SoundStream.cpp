@@ -73,6 +73,26 @@ void SoundStream::Stop()
 	m_soundTouch.clear();
 }
 
+const float shortToFloat = 1.0f / 32768.0f;
+
+inline void s16ToFloat(float* dst, const s16* src, s32 count)
+{
+	for (s32 i = 0; i < count; i++)
+	{
+		float fvalue = (float)src[i];
+		fvalue = fvalue * shortToFloat;
+		dst[i] = fvalue;
+	}
+}
+
+inline void floatTos16(s16* dst, const float* src, s32 count)
+{
+	for (s32 i = 0; i < count; i++)
+	{
+		dst[i] = (short)(src[i] * 32767.0f);
+	}
+}
+
 // The audio thread.
 void SoundStream::SoundLoop()
 {
@@ -85,8 +105,7 @@ void SoundStream::SoundLoop()
 	memset(dpl2buffer, 0, SOUND_MAX_FRAME_SIZE * sizeof(soundtouch::SAMPLETYPE));
 	GC_ALIGNED16(soundtouch::SAMPLETYPE samplebuffer[SOUND_MAX_FRAME_SIZE]);
 	memset(samplebuffer, 0, SOUND_MAX_FRAME_SIZE * sizeof(soundtouch::SAMPLETYPE));
-	s32 channelmultiplier = surroundSupported ? SOUND_SAMPLES_SURROUND : SOUND_SAMPLES_STEREO;
-	const float shortToFloat = 1.0f / 32768.0f;
+	s32 channelmultiplier = surroundSupported ? SOUND_SAMPLES_SURROUND : SOUND_SAMPLES_STEREO;	
 	if (Core::g_CoreStartupParameter.bTimeStretching)
 	{
 		float ratemultiplier = 1.0f;
@@ -100,30 +119,25 @@ void SoundStream::SoundLoop()
 			int numsamples = m_mixer->AvailableSamples();
 			if (numsamples > 128)
 			{
-				numsamples = m_mixer->Mix(realtimeBuffer, numsamples);
 				float rate = m_mixer->GetCurrentSpeed();
 				if (rate <= 0)
 				{
 					rate = 1.0f;
 				}
+				numsamples = m_mixer->Mix(realtimeBuffer, numsamples);				
 				rate *= ratemultiplier;
 				rate = rate < 0.6f ? 0.6f : rate;
 				rate = roundf(rate * 32.0f) / 32.0f;
 				m_soundTouch.setTempo(rate);
-				for (s32 i = 0; i < numsamples * SOUND_SAMPLES_STEREO; i++)
-				{
-					float fvalue = (float)realtimeBuffer[i];
-					fvalue = fvalue * shortToFloat;
-					samplebuffer[i] = fvalue;
-				}
+				s16ToFloat(samplebuffer, realtimeBuffer, numsamples * SOUND_SAMPLES_STEREO);
 				m_soundTouch.putSamples(samplebuffer, numsamples);
 			}
-			numsamples = SamplesNeeded();
-			u32 availablesamples = m_soundTouch.numSamples();
-			ratemultiplier = std::fmaxf(std::fminf((float)availablesamples / (numsamples * 1.2f), 2.0f), 0.5f);
-			if (numsamples >= SOUND_FRAME_SIZE && availablesamples > 0)
+			s32 samplesneeded = SamplesNeeded();
+			s32 availablesamples = m_soundTouch.numSamples();
+			if (samplesneeded >= SOUND_FRAME_SIZE && availablesamples > 0)
 			{
-				numsamples = std::min(numsamples, SOUND_FRAME_SIZE);
+				ratemultiplier = std::fmaxf(std::fminf((float)availablesamples / (samplesneeded * 1.2f), 2.0f), 0.5f);
+				numsamples = std::min(samplesneeded, SOUND_FRAME_SIZE);
 				if (surroundSupported)
 				{
 					numsamples = m_soundTouch.receiveSamples(dpl2buffer, numsamples);
@@ -133,50 +147,39 @@ void SoundStream::SoundLoop()
 				{
 					numsamples = m_soundTouch.receiveSamples(samplebuffer, numsamples);
 				}
-				for (s32 i = 0; i < numsamples * channelmultiplier; i++)
-				{
-					realtimeBuffer[i] = (short)(samplebuffer[i] * 32767.0f);
-				}
+				floatTos16(realtimeBuffer, samplebuffer, numsamples * channelmultiplier);
 				WriteSamples(realtimeBuffer, numsamples);
+				samplesneeded -= numsamples;
 			}
-			Common::YieldCPU();
+			else 
+			{
+				Common::YieldCPU();
+			}
 		}
 	}
 	else
 	{
 		while (!threadData)
 		{
-			int neededsamples = SamplesNeeded();
-			int availablesamples = m_mixer->AvailableSamples();
+			s32 neededsamples = SamplesNeeded();
 			if (neededsamples >= SOUND_FRAME_SIZE)
 			{
 				neededsamples = std::min(neededsamples, SOUND_FRAME_SIZE);
-				int numsamples = std::min(neededsamples, availablesamples);
-				if (numsamples == 0)
-				{
-					memset(realtimeBuffer, 0, neededsamples *  SOUND_SAMPLES_STEREO * sizeof(s16));
-				}
-				else
-				{
-					numsamples = m_mixer->Mix(realtimeBuffer, numsamples);
-				}
+				s32 availablesamples = m_mixer->AvailableSamples();
+				s32 numsamples = std::min(neededsamples, availablesamples);
+				numsamples = m_mixer->Mix(realtimeBuffer, numsamples);
 				if (surroundSupported)
 				{
-					for (s32 i = 0; i < numsamples * SOUND_SAMPLES_STEREO; i++)
-					{
-						float fvalue = (float)realtimeBuffer[i];
-						fvalue = fvalue * shortToFloat;
-						dpl2buffer[i] = fvalue;
-					}
+					s16ToFloat(dpl2buffer, realtimeBuffer, numsamples * SOUND_SAMPLES_STEREO);
 					dpl2decode(dpl2buffer, numsamples, samplebuffer);
-					for (s32 i = 0; i < numsamples * channelmultiplier; i++)
-					{
-						realtimeBuffer[i] = (short)(samplebuffer[i] * 32767.0f);
-					}
+					floatTos16(realtimeBuffer, samplebuffer, numsamples * channelmultiplier);
 				}
 				WriteSamples(realtimeBuffer, numsamples);
 			}
-			Common::YieldCPU();
+			else
+			{
+				Common::YieldCPU();
+			}
 		}
 	}
 }
