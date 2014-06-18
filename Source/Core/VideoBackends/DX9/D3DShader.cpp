@@ -31,7 +31,7 @@ bool CompileVertexShader(const char *code, int len, u8 **bytecode, int *bytecode
 	LPD3DXBUFFER shaderBuffer = NULL;
 	LPD3DXBUFFER errorBuffer = NULL;
 	HRESULT hr = PD3DXCompileShader(code, len, 0, 0, "main", D3D::VertexShaderVersionString(),
-						           0, &shaderBuffer, &errorBuffer, 0);
+		D3DXSHADER_SKIPVALIDATION, &shaderBuffer, &errorBuffer, 0);
 	if (FAILED(hr))
 	{
 		static int num_failures = 0;
@@ -86,7 +86,7 @@ bool CompilePixelShader(const char *code, int len, u8 **bytecode, int *bytecodel
 	// For some reason, I had this kind of errors : "Shader uses texture addressing operations
 	// in a dependency chain that is too complex for the target shader model (ps_2_0) to handle."
 	HRESULT hr = PD3DXCompileShader(code, len, 0, 0, "main", D3D::PixelShaderVersionString(), 
-				 		           0, &shaderBuffer, &errorBuffer, 0);
+		D3DXSHADER_SKIPVALIDATION, &shaderBuffer, &errorBuffer, 0);
 
 	if (FAILED(hr))
 	{

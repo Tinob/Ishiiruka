@@ -75,7 +75,8 @@ bool cInterfaceWGL::Create(void *&window_handle)
 		sizeof(PIXELFORMATDESCRIPTOR),  // Size Of This Pixel Format Descriptor
 		1,                              // Version Number
 		PFD_DRAW_TO_WINDOW |            // Format Must Support Window
-		PFD_SUPPORT_OPENGL |            // Format Must Support OpenGL
+		PFD_SUPPORT_OPENGL |			// Format Must Support OpenGL
+		PFD_DOUBLEBUFFER,				// Must Support Double Buffering
 		PFD_TYPE_RGBA,                  // Request An RGBA Format
 		32,                             // Select Our Color Depth
 		0, 0, 0, 0, 0, 0,               // Color Bits Ignored

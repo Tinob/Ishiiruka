@@ -153,7 +153,7 @@ bool CompilePixelShader(const char* code, unsigned int len, D3DBlob** blob,
 #if defined(_DEBUG) || defined(DEBUGFAST)
 	UINT flags = D3D10_SHADER_DEBUG|D3D10_SHADER_WARNINGS_ARE_ERRORS;
 #else
-	UINT flags = D3D10_SHADER_OPTIMIZATION_LEVEL3;
+	UINT flags = D3D10_SHADER_OPTIMIZATION_LEVEL3 | D3D10_SHADER_SKIP_VALIDATION;
 #endif
 	HRESULT hr = PD3DX11CompileFromMemory(code, len, NULL, pDefines, NULL, "main", D3D::PixelShaderVersionString(),
 							flags, 0, NULL, &shaderBuffer, &errorBuffer, NULL);
