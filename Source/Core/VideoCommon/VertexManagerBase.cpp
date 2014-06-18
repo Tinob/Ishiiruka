@@ -81,6 +81,7 @@ u32 VertexManager::GetRemainingIndices(int primitive)
 		switch (primitive)
 		{
 		case GX_DRAW_QUADS:
+		case GX_DRAW_QUADS_2:
 			return (MAXIBUFFERSIZE - IndexGenerator::GetTriangleindexLen()) / 5 * 4;
 		case GX_DRAW_TRIANGLES:
 			return (MAXIBUFFERSIZE - IndexGenerator::GetTriangleindexLen()) / 4 * 3;
@@ -106,6 +107,7 @@ u32 VertexManager::GetRemainingIndices(int primitive)
 		switch (primitive)
 		{
 		case GX_DRAW_QUADS:
+		case GX_DRAW_QUADS_2:
 			return (MAXIBUFFERSIZE - IndexGenerator::GetTriangleindexLen()) / 6 * 4;
 		case GX_DRAW_TRIANGLES:
 			return (MAXIBUFFERSIZE - IndexGenerator::GetTriangleindexLen());

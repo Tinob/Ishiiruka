@@ -25,6 +25,7 @@
 
 //these are defined 1/8th of their real values and without their top bit
 #define GX_DRAW_QUADS               0x0   // 0x80
+#define GX_DRAW_QUADS_2             0x1   // 0x88
 #define GX_DRAW_TRIANGLES           0x2   // 0x90
 #define GX_DRAW_TRIANGLE_STRIP      0x3   // 0x98
 #define GX_DRAW_TRIANGLE_FAN        0x4   // 0xA0

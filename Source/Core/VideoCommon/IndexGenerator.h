@@ -46,6 +46,7 @@ private:
 	template <bool pr> static void AddStrip(u32 numVerts);
 	template <bool pr> static void AddFan(u32 numVerts);
 	template <bool pr> static void AddQuads(u32 numVerts);
+	template <bool pr> static void AddQuads_nonstandard(u32 numVerts);
 
 	// Lines
 	static void AddLineList(u32 numVerts);
