@@ -26,8 +26,8 @@ class XAudio2 final : public SoundStream
 #ifdef _WIN32
 protected:
 	virtual void InitializeSoundLoop() override;
-	virtual s32 SamplesNeeded() override;
-	virtual void WriteSamples(s16 *src, s32 numsamples) override;
+	virtual u32 SamplesNeeded() override;
+	virtual void WriteSamples(s16 *src, u32 numsamples) override;
 	virtual bool SupportSurroundOutput() override;
 private:
 	class Releaser

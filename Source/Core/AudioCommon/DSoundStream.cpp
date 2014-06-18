@@ -86,16 +86,16 @@ void DSound::InitializeSoundLoop()
 	dsBuffer->Play(0, 0, DSBPLAY_LOOPING);
 }
 
-s32 DSound::SamplesNeeded()
+u32 DSound::SamplesNeeded()
 {
 	dsBuffer->GetCurrentPosition((DWORD*)&currentPos, 0);
-	s32 numBytesToRender = FIX128(ModBufferSize(currentPos - lastPos));
+	u32 numBytesToRender = FIX128(ModBufferSize(currentPos - lastPos));
 	return numBytesToRender / 4;
 }
 
-void DSound::WriteSamples(s16 *src, s32 numsamples)
+void DSound::WriteSamples(s16 *src, u32 numsamples)
 {
-	s32 numBytesToRender = numsamples * 4;
+	u32 numBytesToRender = numsamples * 4;
 	WriteDataToBuffer(lastPos, (char*)src, numBytesToRender);
 	lastPos = ModBufferSize(lastPos + numBytesToRender);
 }

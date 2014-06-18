@@ -10,9 +10,9 @@
 #include "Common/Thread.h"
 
 
-#define SOUND_FRAME_SIZE 2048
-#define SOUND_SAMPLES_STEREO 2
-#define SOUND_SAMPLES_SURROUND 6
+#define SOUND_FRAME_SIZE 2048u
+#define SOUND_SAMPLES_STEREO 2u
+#define SOUND_SAMPLES_SURROUND 6u
 #define SOUND_STEREO_FRAME_SIZE (SOUND_FRAME_SIZE * SOUND_SAMPLES_STEREO)
 #define SOUND_SURROUND_FRAME_SIZE (SOUND_FRAME_SIZE * SOUND_SAMPLES_SURROUND)
 #define SOUND_STEREO_FRAME_SIZE_BYTES (SOUND_STEREO_FRAME_SIZE * sizeof(s16))
@@ -20,7 +20,7 @@
 
 #define SOUND_MAX_FRAME_SIZE (SOUND_FRAME_SIZE * SOUND_SAMPLES_SURROUND)
 #define SOUND_MAX_FRAME_SIZE_BYTES (SOUND_MAX_FRAME_SIZE * sizeof(s16))
-#define SOUND_BUFFER_COUNT 6
+#define SOUND_BUFFER_COUNT 6u
 
 class SoundStream
 {
@@ -36,8 +36,8 @@ protected:
 	std::thread thread;
 	void SoundLoop();
 	virtual void InitializeSoundLoop() {}
-	virtual s32 SamplesNeeded(){ return 0; }
-	virtual void WriteSamples(s16 *src, s32 numsamples){}
+	virtual u32 SamplesNeeded(){ return 0; }
+	virtual void WriteSamples(s16 *src, u32 numsamples){}
 	virtual bool SupportSurroundOutput(){ return false; };
 public:
 	SoundStream(CMixer *mixer);

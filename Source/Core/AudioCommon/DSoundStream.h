@@ -41,8 +41,8 @@ class DSound final : public SoundStream
 	bool WriteDataToBuffer(DWORD dwOffset, char* soundData, DWORD dwSoundBytes);
 protected:
 	virtual void InitializeSoundLoop() override;
-	virtual s32 SamplesNeeded() override;
-	virtual void WriteSamples(s16 *src, s32 numsamples) override;
+	virtual u32 SamplesNeeded() override;
+	virtual void WriteSamples(s16 *src, u32 numsamples) override;
 	virtual bool SupportSurroundOutput() override;
 public:
 	DSound(CMixer *mixer, void *_hWnd)

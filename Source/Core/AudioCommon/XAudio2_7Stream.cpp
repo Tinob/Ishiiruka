@@ -43,7 +43,7 @@ public:
 
 	void StreamingVoiceContext2_7::Stop();
 	void StreamingVoiceContext2_7::Play();
-	void StreamingVoiceContext2_7::WriteFrame(s16* src, s32 numsamples);
+	void StreamingVoiceContext2_7::WriteFrame(s16* src, u32 numsamples);
 	bool StreamingVoiceContext2_7::BufferReady();
 	STDMETHOD_(void, OnVoiceError) (THIS_ void* pBufferContext, HRESULT Error) {}
 	STDMETHOD_(void, OnVoiceProcessingPassStart) (UINT32) {}
@@ -131,7 +131,7 @@ void StreamingVoiceContext2_7::OnBufferEnd(void* context)
 	m_bufferReady[index] = 1;
 }
 
-void StreamingVoiceContext2_7::WriteFrame(s16* src, s32 numsamples)
+void StreamingVoiceContext2_7::WriteFrame(s16* src, u32 numsamples)
 {
 	memcpy(m_bufferAddress[m_NextBuffer], src, numsamples * m_samplesizeinBytes);
 	SubmitBuffer(m_NextBuffer, numsamples * m_samplesizeinBytes);
@@ -213,12 +213,12 @@ void XAudio2_7::InitializeSoundLoop()
 {
 
 }
-s32 XAudio2_7::SamplesNeeded()
+u32 XAudio2_7::SamplesNeeded()
 {
 	return m_voice_context->BufferReady() ? SOUND_FRAME_SIZE : 0;
 }
 
-void XAudio2_7::WriteSamples(s16 *src, s32 numsamples)
+void XAudio2_7::WriteSamples(s16 *src, u32 numsamples)
 {
 	m_voice_context->WriteFrame(src, numsamples);
 }

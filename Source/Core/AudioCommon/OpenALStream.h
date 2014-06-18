@@ -25,8 +25,8 @@ class OpenALStream final : public SoundStream
 #if defined HAVE_OPENAL && HAVE_OPENAL
 protected:
 	virtual void InitializeSoundLoop() override;
-	virtual s32 SamplesNeeded() override;
-	virtual void WriteSamples(s16 *src, s32 numsamples) override;
+	virtual u32 SamplesNeeded() override;
+	virtual void WriteSamples(s16 *src, u32 numsamples) override;
 	virtual bool SupportSurroundOutput() override;
 public:
 	OpenALStream(CMixer *mixer, void *hWnd = nullptr)

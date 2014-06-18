@@ -124,16 +124,16 @@ void OpenALStream::InitializeSoundLoop()
 	alSourcePlay(uiSource);
 }
 
-s32 OpenALStream::SamplesNeeded()
+u32 OpenALStream::SamplesNeeded()
 {
 	ALint iBuffersProcessed = 0;
 	alGetSourcei(uiSource, AL_BUFFERS_PROCESSED, &iBuffersProcessed);
 	if (iBuffersProcessed <= 0)
 		return 0;
-	return iBuffersProcessed * SOUND_FRAME_SIZE;
+	return (u32)(iBuffersProcessed * SOUND_FRAME_SIZE);
 }
 
-void OpenALStream::WriteSamples(s16 *src, s32 numsamples)
+void OpenALStream::WriteSamples(s16 *src, u32 numsamples)
 {
 	ALuint buffer = 0;
 	alSourceUnqueueBuffers(uiSource, 1, &buffer);
