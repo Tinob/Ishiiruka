@@ -67,7 +67,7 @@ void StreamingVoiceContext2_7::SubmitBuffer(u32 index, u32 sizeinbytes)
 }
 
 StreamingVoiceContext2_7::StreamingVoiceContext2_7(IXAudio2 *pXAudio2, CMixer *pMixer, bool useSurround)
-: m_mixer(pMixer), m_useSurround(useSurround), m_xaudio_buffer(new BYTE[SOUND_BUFFER_COUNT * (m_useSurround ? SOUND_SURROUND_FRAME_SIZE_BYTES : SOUND_STEREO_FRAME_SIZE_BYTES)])
+	: m_mixer(pMixer), m_useSurround(useSurround), m_xaudio_buffer(new BYTE[SOUND_BUFFER_COUNT * (useSurround ? SOUND_SURROUND_FRAME_SIZE_BYTES : SOUND_STEREO_FRAME_SIZE_BYTES)])
 {
 	WAVEFORMATEXTENSIBLE wfx = {};
 	m_framesizeinbytes = m_useSurround ? SOUND_SURROUND_FRAME_SIZE_BYTES : SOUND_STEREO_FRAME_SIZE_BYTES;
@@ -91,13 +91,14 @@ StreamingVoiceContext2_7::StreamingVoiceContext2_7(IXAudio2 *pXAudio2, CMixer *p
 		return;
 	}
 	m_source_voice->Start();
+	BYTE* buff = m_xaudio_buffer.get();
 	// Initialize the filling loop with the first buffer
-	memset(m_xaudio_buffer.get(), 0, SOUND_BUFFER_COUNT * (m_useSurround ? SOUND_SURROUND_FRAME_SIZE_BYTES : SOUND_STEREO_FRAME_SIZE_BYTES));
+	memset(buff, 0, SOUND_BUFFER_COUNT * m_framesizeinbytes);
 	m_NextBuffer = 0;
 	// start buffers with silence
 	for (int i = 0; i != SOUND_BUFFER_COUNT; ++i)
 	{
-		m_bufferAddress[i] = m_xaudio_buffer.get() + (i * m_framesizeinbytes);
+		m_bufferAddress[i] = buff + (i * m_framesizeinbytes);
 		SubmitBuffer(i, m_framesizeinbytes);
 	}
 }

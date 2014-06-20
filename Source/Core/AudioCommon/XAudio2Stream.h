@@ -43,8 +43,6 @@ private:
 	std::unique_ptr<IXAudio2, Releaser> m_xaudio2;
 	std::unique_ptr<StreamingVoiceContext> m_voice_context;
 	IXAudio2MasteringVoice *m_mastering_voice;
-
-	Common::Event m_sound_sync_event;
 	float m_volume;
 
 	const bool m_cleanup_com;
