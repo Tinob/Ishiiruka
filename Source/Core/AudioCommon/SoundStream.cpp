@@ -74,7 +74,7 @@ void SoundStream::Stop()
 }
 
 const float shortToFloat = 1.0f / 32768.0f;
-
+#ifdef _M_ARM
 inline void s16ToFloat(float* dst, const s16* src, u32 count)
 {
 	for (u32 i = 0; i < count; i++)
@@ -89,9 +89,61 @@ inline void floatTos16(s16* dst, const float* src, u32 count)
 {
 	for (u32 i = 0; i < count; i++)
 	{
-		dst[i] = (short)(src[i] * 32767.0f);
+		dst[i] = (short)(std::fminf(std::fmaxf(src[i] * 32767.0f, -32768.0f), 32767.0f));
 	}
 }
+#else
+inline void s16ToFloat(float* dst, const s16* src, u32 count)
+{
+	__m128 factor = _mm_set1_ps(shortToFloat);
+	__m128i zero = _mm_setzero_si128();
+	const __m128i* source = (__m128i*)src;
+	const __m128i* end = (__m128i*)(src + count);
+	while (source < end)
+	{
+		__m128i x = _mm_load_si128(source);
+		__m128i mask = _mm_cmplt_epi16(x, zero);
+		__m128i xlo = _mm_unpacklo_epi16(x, mask);
+		__m128i xhi = _mm_unpackhi_epi16(x, mask);
+		__m128 ylo = _mm_cvtepi32_ps(xlo);
+		__m128 yhi = _mm_cvtepi32_ps(xhi);
+		ylo = _mm_mul_ps(ylo, factor);
+		yhi = _mm_mul_ps(yhi, factor);
+		_mm_store_ps(dst, ylo);
+		dst += 4;
+		_mm_store_ps(dst, yhi);
+		dst += 4;
+		source++;
+	}
+}
+
+inline void floatTos16(s16* dst, const float* src, u32 count)
+{
+	__m128 factor = _mm_set1_ps(32768.0f);
+	__m128i* destination = (__m128i*)dst;
+	__m128i* end = (__m128i*)(dst + count);
+	while (destination < end)
+	{
+		__m128 ylo = _mm_load_ps(src);
+		src += 4;
+		__m128 yhi = _mm_load_ps(src);
+		src += 4;
+		ylo = _mm_mul_ps(ylo, factor);
+		yhi = _mm_mul_ps(yhi, factor);
+		__m128i xlo = _mm_cvtps_epi32(ylo);
+		__m128i xhi = _mm_cvtps_epi32(yhi);
+		xlo = _mm_packs_epi32(xlo, xhi);
+		_mm_store_si128(destination, xlo);
+		destination++;
+	}
+}
+#endif 
+
+
+
+GC_ALIGNED16(static short realtimeBuffer[SOUND_MAX_FRAME_SIZE]);
+GC_ALIGNED16(static soundtouch::SAMPLETYPE dpl2buffer[SOUND_MAX_FRAME_SIZE]);
+GC_ALIGNED16(static soundtouch::SAMPLETYPE samplebuffer[SOUND_MAX_FRAME_SIZE]);
 
 // The audio thread.
 void SoundStream::SoundLoop()
@@ -99,11 +151,8 @@ void SoundStream::SoundLoop()
 	Common::SetCurrentThreadName("Audio thread");
 	InitializeSoundLoop();	
 	bool surroundSupported = SupportSurroundOutput() && Core::g_CoreStartupParameter.bDPL2Decoder;
-	GC_ALIGNED16(short realtimeBuffer[SOUND_MAX_FRAME_SIZE]);
 	memset(realtimeBuffer, 0, SOUND_MAX_FRAME_SIZE * sizeof(u16));
-	GC_ALIGNED16(soundtouch::SAMPLETYPE dpl2buffer[SOUND_MAX_FRAME_SIZE]);
 	memset(dpl2buffer, 0, SOUND_MAX_FRAME_SIZE * sizeof(soundtouch::SAMPLETYPE));
-	GC_ALIGNED16(soundtouch::SAMPLETYPE samplebuffer[SOUND_MAX_FRAME_SIZE]);
 	memset(samplebuffer, 0, SOUND_MAX_FRAME_SIZE * sizeof(soundtouch::SAMPLETYPE));
 	u32 channelmultiplier = surroundSupported ? SOUND_SAMPLES_SURROUND : SOUND_SAMPLES_STEREO;	
 	if (Core::g_CoreStartupParameter.bTimeStretching)
@@ -117,7 +166,8 @@ void SoundStream::SoundLoop()
 		m_soundTouch.setSetting(SETTING_USE_AA_FILTER, 1);
 		while (!threadData)
 		{
-			u32 numsamples = m_mixer->AvailableSamples();
+			u32 availablesamples = m_mixer->AvailableSamples();
+			u32 numsamples = availablesamples & (~(0xF));			
 			if (numsamples > 128)
 			{
 				float rate = m_mixer->GetCurrentSpeed();
@@ -134,7 +184,7 @@ void SoundStream::SoundLoop()
 				m_soundTouch.putSamples(samplebuffer, numsamples);
 			}
 			u32 samplesneeded = SamplesNeeded();
-			u32 availablesamples = m_soundTouch.numSamples();
+			availablesamples = m_soundTouch.numSamples();
 			if (samplesneeded >= SOUND_FRAME_SIZE && availablesamples > 0)
 			{
 				ratemultiplier = std::fmaxf(std::fminf((float)availablesamples / (float)samplesneeded, 1.1f), 0.9f);
@@ -162,7 +212,7 @@ void SoundStream::SoundLoop()
 		while (!threadData)
 		{
 			u32 neededsamples = std::min(SamplesNeeded(), SOUND_FRAME_SIZE);
-			u32 availablesamples = m_mixer->AvailableSamples();
+			u32 availablesamples = m_mixer->AvailableSamples() & (~(0xF));
 			if (neededsamples == SOUND_FRAME_SIZE && availablesamples > 0)
 			{
 				u32 numsamples = std::min(availablesamples, neededsamples);
