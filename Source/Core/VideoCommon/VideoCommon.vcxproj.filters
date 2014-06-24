@@ -276,6 +276,9 @@
     <ClInclude Include="TextureUtil.h">
       <Filter>Util</Filter>
     </ClInclude>
+    <ClInclude Include="VertexLoadingSSE.h">
+      <Filter>Vertex Loading</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="CMakeLists.txt" />
