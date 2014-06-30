@@ -164,7 +164,8 @@ bool VideoBackend::Initialize(void *&window_handle)
 	g_Config.VerifyValidity();
 	// as only some driver/hardware configurations support dual source blending only enable it if is 
 	// configured by user
-	g_Config.backend_info.bSupportsDualSourceBlend &= g_Config.bForceDualSourceBlend;
+	bool isAMDATI = D3D::IsATIDevice();
+	g_Config.backend_info.bSupportsDualSourceBlend = (g_Config.backend_info.bSupportsDualSourceBlend || g_Config.bForceDualSourceBlend) && isAMDATI;
 	UpdateActiveConfig();
 
 	window_handle = (void*)EmuWindow::Create((HWND)window_handle, GetModuleHandle(0), _T("Loading - Please wait."));
