@@ -198,7 +198,7 @@ static const char *tevRasTable[] =
 	"float4(0.0,0.0,0.0,0.0)", //3
 	"float4(0.0,0.0,0.0,0.0)", //4
 	"float4(a_bump,a_bump,a_bump,a_bump)", // use bump alpha
-	"round(float4(a_bump,a_bump,a_bump,a_bump)*(255.0/248))", //normalized
+	"round(float4(a_bump,a_bump,a_bump,a_bump)*(255.0/248.0))", //normalized
 	"float4(0.0,0.0,0.0,0.0)", // zero
 };
 
