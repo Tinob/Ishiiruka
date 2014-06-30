@@ -1000,14 +1000,14 @@ void VertexLoader::AppendToString(std::string *dest) const
 		"Inv",
 	};
 
-	dest->append(StringFromFormat("%ib skin: %i P: %i %s-%s ",
+	dest->append(StringFromFormat("%ib P_mtx%i_%i_%s_%s_",
 		m_VertexSize, m_VtxDesc.PosMatIdx,
 		m_VtxAttr.PosElements ? 3 : 2, posMode[m_VtxDesc.Position], posFormats[m_VtxAttr.PosFormat]));
 
 	if (m_VtxDesc.Normal)
 	{
-		dest->append(StringFromFormat("Nrm: %i %s-%s ",
-			m_VtxAttr.NormalElements, posMode[m_VtxDesc.Normal], posFormats[m_VtxAttr.NormalFormat]));
+		dest->append(StringFromFormat("Nrm_%i_%i_%s_%s_",
+			m_VtxAttr.NormalElements, m_VtxAttr.NormalIndex3, posMode[m_VtxDesc.Normal], posFormats[m_VtxAttr.NormalFormat]));
 	}
 
 	u32 color_mode[2] = {m_VtxDesc.Color0, m_VtxDesc.Color1};
@@ -1015,19 +1015,23 @@ void VertexLoader::AppendToString(std::string *dest) const
 	{
 		if (color_mode[i])
 		{
-			dest->append(StringFromFormat("C%i: %i %s-%s ", i, m_VtxAttr.color[i].Elements, posMode[color_mode[i]], colorFormat[m_VtxAttr.color[i].Comp]));
+			dest->append(StringFromFormat("C%i_%i_%s_%s_", i, m_VtxAttr.color[i].Elements, posMode[color_mode[i]], colorFormat[m_VtxAttr.color[i].Comp]));
 		}
 	}
 	u32 tex_mode[8] = {
 		m_VtxDesc.Tex0Coord, m_VtxDesc.Tex1Coord, m_VtxDesc.Tex2Coord, m_VtxDesc.Tex3Coord, 
 		m_VtxDesc.Tex4Coord, m_VtxDesc.Tex5Coord, m_VtxDesc.Tex6Coord, m_VtxDesc.Tex7Coord
 	};
+	u32 tex_mtxidx[8] = {
+		m_VtxDesc.Tex0MatIdx, m_VtxDesc.Tex1MatIdx, m_VtxDesc.Tex2MatIdx, m_VtxDesc.Tex3MatIdx,
+		m_VtxDesc.Tex4MatIdx, m_VtxDesc.Tex5MatIdx, m_VtxDesc.Tex6MatIdx, m_VtxDesc.Tex7MatIdx
+	};
 	for (int i = 0; i < 8; i++)
 	{
 		if (tex_mode[i])
 		{
-			dest->append(StringFromFormat("T%i: %i %s-%s ",
-				i, m_VtxAttr.texCoord[i].Elements, posMode[tex_mode[i]], posFormats[m_VtxAttr.texCoord[i].Format]));
+			dest->append(StringFromFormat("T%i_mtx%i_%i_%s_%s_",
+				i, tex_mtxidx[i], m_VtxAttr.texCoord[i].Elements, posMode[tex_mode[i]], posFormats[m_VtxAttr.texCoord[i].Format]));
 		}
 	}
 	dest->append(StringFromFormat(" - %i v\n", m_numLoadedVertices));
