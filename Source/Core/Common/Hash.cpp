@@ -224,26 +224,60 @@ u64 GetMurmurHash3(const u8 *src, int len, u32 samples)
 	return h1;
 }
 
-
 // CRC32 hash using the SSE4.2 instruction
 u64 GetCRC32(const u8 *src, int len, u32 samples)
 {
 #if _M_SSE >= 0x402
-	u64 h = len;
+	const u8 * data = (const u8*)src;
+	const int nblocks = len / 16;
 	u32 Step = (len / 8);
-	const u64 *data = (const u64 *)src;
-	const u64 *end = data + Step;
 	if (samples == 0) samples = std::max(Step, 1u);
 	Step = Step / samples;
 	if (Step < 1) Step = 1;
-	while (data < end)
+	u64 h = 0xFFFFFFFFu;
+	//----------
+	// body
+
+	const u64 * blocks = (const u64 *)(data);
+
+	for (int i = 0; i < nblocks; i += Step)
 	{
-		h = _mm_crc32_u64(h, data[0]);
-		data += Step;
+		u64 k1 = getblock(blocks, i * 2 + 0);
+		u64 k2 = getblock(blocks, i * 2 + 1);
+		h = _mm_crc32_u64(h, k1);
+		h = _mm_crc32_u64(h, k2);
 	}
 
-	const u8 *data2 = (const u8*)end;
-	return _mm_crc32_u64(h, u64(data2[0]));
+	//----------
+	// tail
+
+	const u64 *tail = blocks + nblocks * 16;
+	u32 remaining = len & 15;
+	u64 k = 0;
+	if (remaining >= 8)
+	{
+		k = *tail;
+		h = _mm_crc32_u64(h, k);
+		remaining -= 8;
+		tail += 1;
+	}
+	if (remaining > 0)
+	{
+		k = 0;
+		switch (len & 15)
+		{
+		case  7: k |= u64(tail[6]) << 48;
+		case  6: k |= u64(tail[5]) << 40;
+		case  5: k |= u64(tail[4]) << 32;
+		case  4: k |= u64(tail[3]) << 24;
+		case  3: k |= u64(tail[2]) << 16;
+		case  2: k |= u64(tail[1]) << 8;
+		case  1: k |= u64(tail[0]) << 0;
+			h = _mm_crc32_u64(h, k);
+		};
+	}
+	h = h | (u64(len) << 32);
+	return h;
 #else
 	return 0;
 #endif
@@ -505,7 +539,8 @@ void SetHash64Function(bool useHiresTextures)
 		ptrHashFunction = &GetHashHiresTexture;
 	}
 #if _M_SSE >= 0x402
-	else if (cpu_info.bSSE4_2 && !useHiresTextures) // sse crc32 version
+	// sse4.2 crc32 version used only on intel, in amd is slower than murmurhash3
+	else if (cpu_info.vendor == VENDOR_INTEL && cpu_info.bSSE4_2) 
 	{
 		ptrHashFunction = &GetCRC32;
 	}
