@@ -1,9 +1,7 @@
 // Copyright 2013 Dolphin Emulator Project
 // Licensed under GPLv2
 // Refer to the license.txt file included.
-
-#ifndef _VERTEXLOADERMANAGER_H
-#define _VERTEXLOADERMANAGER_H
+#pragma once
 
 #include "Common/Common.h"
 #include <string>
@@ -24,5 +22,3 @@ namespace VertexLoaderManager
 };
 
 void RecomputeCachedArraybases();
-
-#endif  // _VERTEXLOADERMANAGER_H

@@ -8,7 +8,7 @@
 #include "VideoCommon/VideoCommon.h"
 #include "Common/Hash.h"
 #include "Common/MemoryUtil.h"
-#include "VideoCommon\DataReader.h"
+#include "VideoCommon/DataReader.h"
 #include "VideoCommon/Statistics.h"
 #include "VideoCommon/OpcodeDecoding.h"   // For the GX_ constants.
 #include "Core/HW/Memmap.h"
