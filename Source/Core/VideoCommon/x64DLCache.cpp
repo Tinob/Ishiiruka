@@ -334,7 +334,7 @@ u32 AnalyzeAndRunDisplayList(u32 address, u32 size, CachedDisplayList *dl)
 
 			// draw primitives 
 			default:
-				if (cmd_byte & 0x80)
+				if ((cmd_byte & 0xC0) == 0x80)
 				{
 					// load vertices (use computed vertex size from FifoCommandRunnable above)
 					u16 numVertices = DataReadU16();
@@ -521,7 +521,7 @@ void CompileAndRunDisplayList(u32 address, u32 size, CachedDisplayList *dl)
 
 				// draw primitives 
 			default:
-				if (cmd_byte & 0x80)
+				if ((cmd_byte & 0xC0) == 0x80)
 				{
 					// load vertices (use computed vertex size from FifoCommandRunnable above)
 					u16 numVertices = DataReadU16();

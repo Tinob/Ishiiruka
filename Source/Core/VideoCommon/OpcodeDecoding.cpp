@@ -11,31 +11,26 @@
 // Note that it IS NOT GENERALLY POSSIBLE to precompile display lists! You can compile them as they are
 // while interpreting them, and hope that the vertex format doesn't change, though, if you do it right
 // when they are called. The reason is that the vertex format affects the sizes of the vertices.
-
 #include "Common/Common.h"
-#include "VideoCommon/VideoCommon.h"
-#include "VideoCommon/OpcodeDecoding.h"
-#include "VideoCommon/CommandProcessor.h"
 #include "Common/CPUDetect.h"
 #include "Core/Core.h"
 #include "Core/Host.h"
-#include "Core/HW/Memmap.h"
 #include "Core/FifoPlayer/FifoRecorder.h"
-
-#include "VideoCommon/VertexLoaderManager.h"
-
-#include "VideoCommon/Statistics.h"
-
-#include "VideoCommon/XFMemory.h"
-#include "VideoCommon/CPMemory.h"
+#include "Core/HW/Memmap.h"
 #include "VideoCommon/BPMemory.h"
-
-#include "VideoCommon/Fifo.h"
+#include "VideoCommon/CommandProcessor.h"
+#include "VideoCommon/CPMemory.h"
 #include "VideoCommon/DataReader.h"
-
-#include "OpenCL.h"
-#include "OpenCL/OCLTextureDecoder.h"
+#include "VideoCommon/Fifo.h"
+#include "VideoCommon/OpcodeDecoding.h"
+#include "VideoCommon/OpenCL.h"
+#include "VideoCommon/OpenCL/OCLTextureDecoder.h"
+#include "VideoCommon/Statistics.h"
+#include "VideoCommon/VertexLoaderManager.h"
+#include "VideoCommon/VideoCommon.h"
 #include "VideoCommon/VideoConfig.h"
+#include "VideoCommon/XFMemory.h"
+
 
 u8* g_pVideoData = 0;
 bool g_bRecordFifoData = false;
@@ -216,7 +211,7 @@ u32 FifoCommandRunnable(u32 &command_size)
 		break;
 
 	default:
-		if (cmd_byte & 0x80)
+		if ((cmd_byte & 0xC0) == 0x80)
 		{
 			// check if we can read the header
 			if (buffer_size >= 3)
@@ -361,7 +356,7 @@ static void Decode()
 
 	// draw primitives 
 	default:
-		if (cmd_byte & 0x80)
+		if ((cmd_byte & 0xC0) == 0x80)
 		{
 			// load vertices (use computed vertex size from FifoCommandRunnable above)
 			u16 numVertices = DataReadU16();
@@ -449,7 +444,7 @@ static void DecodeSemiNop()
 
 	// draw primitives 
 	default:
-		if (cmd_byte & 0x80)
+		if ((cmd_byte & 0xC0) == 0x80)
 		{
 			// load vertices (use computed vertex size from FifoCommandRunnable above)
 			u16 numVertices = DataReadU16();
