@@ -198,7 +198,7 @@ static const char *tevRasTable[] =
 	"float4(0.0,0.0,0.0,0.0)", //3
 	"float4(0.0,0.0,0.0,0.0)", //4
 	"float4(a_bump,a_bump,a_bump,a_bump)", // use bump alpha
-	"round(float4(a_bump,a_bump,a_bump,a_bump)*(255.0/248.0))", //normalized
+	"float4(1.0,1.0,1.0,1.0)*(a_bump+trunc(a_bump/32.0))", //normalized
 	"float4(0.0,0.0,0.0,0.0)", // zero
 };
 
@@ -218,10 +218,10 @@ static const char* headerUtil = "float4 CHK_O_U8(float4 x)\n{\nreturn frac(((x) 
 "x.y = (x.y - ((z.y < 1.0 && x.y < 0.0) ? y.y : 0.0)) * z.y;\n"
 "return trunc(x);\n"
 "}\n"
-// Fastmod implementation with the restriction that "y" must be always greater than 0
-"float fastmod(float x, float y)\n"
+// remainder implementation with the restriction that "y" must be always greater than 0
+"float remainder(float x, float y)\n"
 "{\n"
-"y = sign(x) * y;\n"
+"y = (x < 0.0) ? (-y) : y;\n"
 "return frac(x/y)*y;\n"
 "}\n";
 
@@ -895,7 +895,7 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, co
 			else if (bpmem.tevind[n].sw == ITW_0)
 				out.Write("wrappedcoord.x = 0.0;\n");
 			else
-				out.Write("wrappedcoord.x = fastmod(uv%d.x, %s);\n", texcoord, tevIndWrapStart[bpmem.tevind[n].sw]);
+				out.Write("wrappedcoord.x = remainder(uv%d.x, %s);\n", texcoord, tevIndWrapStart[bpmem.tevind[n].sw]);
 
 			// wrap T
 			if (bpmem.tevind[n].tw == ITW_OFF)
@@ -903,7 +903,7 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, co
 			else if (bpmem.tevind[n].tw == ITW_0)
 				out.Write("wrappedcoord.y = 0.0;\n");
 			else
-				out.Write("wrappedcoord.y = fastmod(uv%d.y, %s);\n", texcoord, tevIndWrapStart[bpmem.tevind[n].tw]);
+				out.Write("wrappedcoord.y = remainder(uv%d.y, %s);\n", texcoord, tevIndWrapStart[bpmem.tevind[n].tw]);
 
 			if (bpmem.tevind[n].fb_addprev) // add previous tevcoord
 				out.Write("tevcoord.xy += wrappedcoord + indtevtrans%d;\n", n);
