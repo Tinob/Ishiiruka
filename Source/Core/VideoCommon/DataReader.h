@@ -2,8 +2,7 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _DATAREADER_H
-#define _DATAREADER_H
+#pragma once
 
 #include "VideoCommon/VertexManagerBase.h"
 
@@ -138,5 +137,3 @@ __forceinline void DataWrite(T data)
 	*(T*)VertexManager::s_pCurBufferPointer = data;
 	VertexManager::s_pCurBufferPointer += sizeof(T);
 }
-
-#endif
