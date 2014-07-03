@@ -137,6 +137,7 @@
     <ClInclude Include="VertexLoader.h" />
     <ClInclude Include="VertexLoaderManager.h" />
     <ClInclude Include="VertexLoader_Color.h" />
+    <ClInclude Include="VertexLoader_ColorFuncs.h" />
     <ClInclude Include="VertexLoader_Normal.h" />
     <ClInclude Include="VertexLoader_Position.h" />
     <ClInclude Include="VertexLoader_TextCoord.h" />

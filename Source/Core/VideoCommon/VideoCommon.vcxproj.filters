@@ -279,6 +279,9 @@
     <ClInclude Include="VertexLoadingSSE.h">
       <Filter>Vertex Loading</Filter>
     </ClInclude>
+    <ClInclude Include="VertexLoader_ColorFuncs.h">
+      <Filter>Vertex Loading</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="CMakeLists.txt" />

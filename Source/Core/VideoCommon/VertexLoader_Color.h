@@ -1,7 +1,7 @@
 // Copyright 2013 Dolphin Emulator Project
 // Licensed under GPLv2
 // Refer to the license.txt file included.
-
+#include "VideoCommon/VertexLoader.h"
 #pragma once
 
 void LOADERDECL Color_ReadDirect_24b_888();
