@@ -174,6 +174,7 @@ void BPWritten(const BPCmd& bp)
 	case BPMEM_RAS1_SS0: // Index Texture Coordinate Scale 0
 		if (bp.changes)
 			PixelShaderManager::SetIndTexScaleChanged(0x03);
+		break;
 	case BPMEM_RAS1_SS1: // Index Texture Coordinate Scale 1
 		if (bp.changes)
 			PixelShaderManager::SetIndTexScaleChanged(0x0c);
