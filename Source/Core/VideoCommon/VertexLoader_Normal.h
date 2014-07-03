@@ -3,10 +3,8 @@
 // Refer to the license.txt file included.
 
 #pragma once
-
 #include "Common/Common.h"
-#include "Common/CommonTypes.h"
-
+#include "VideoCommon/VertexLoader.h"
 class VertexLoader_Normal
 {
 public:
@@ -70,4 +68,5 @@ private:
 	};
 
 	static Set m_Table[NUM_NRM_TYPE][NUM_NRM_INDICES][NUM_NRM_ELEMENTS][NUM_NRM_FORMAT];
+	static bool Initialized;
 };
