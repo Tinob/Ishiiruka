@@ -285,6 +285,9 @@
     <ClInclude Include="VertexLoader_NormalFuncs.h">
       <Filter>Vertex Loading</Filter>
     </ClInclude>
+    <ClInclude Include="VertexLoader_PositionFuncs.h">
+      <Filter>Vertex Loading</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="CMakeLists.txt" />

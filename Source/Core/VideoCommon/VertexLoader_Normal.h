@@ -13,12 +13,10 @@ public:
 	static void Init(void);
 
 	// GetSize
-	static unsigned int GetSize(unsigned int _type, unsigned int _format,
-		unsigned int _elements, unsigned int _index3);
+	static u32 GetSize(u32 _type, u32 _format, u32 _elements, u32 _index3);
 
 	// GetFunction
-	static TPipelineFunction GetFunction(unsigned int _type,
-		unsigned int _format, unsigned int _elements, unsigned int _index3);
+	static TPipelineFunction GetFunction(u32 _type, u32 _format, u32 _elements, u32 _index3);
 
 private:
 	enum ENormalType

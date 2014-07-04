@@ -2,6 +2,8 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 #pragma once
+#include "Common/Common.h"
+#include "VideoCommon/VertexLoader.h"
 
 class VertexLoader_Position {
 public:
@@ -10,8 +12,10 @@ public:
 	static void Init(void);
 
 	// GetSize
-	static unsigned int GetSize(unsigned int _type, unsigned int _format, unsigned int _elements);
+	static unsigned int GetSize(u32 _type, u32 _format, u32 _elements);
 
 	// GetFunction
-	static TPipelineFunction GetFunction(unsigned int _type, unsigned int _format, unsigned int _elements);
+	static TPipelineFunction GetFunction(u32 _type, u32 _format, u32 _elements);
+private:
+	static bool Initialized;
 };

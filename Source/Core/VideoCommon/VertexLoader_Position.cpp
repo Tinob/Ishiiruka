@@ -1,19 +1,9 @@
 // Copyright 2013 Dolphin Emulator Project
 // Licensed under GPLv2
 // Refer to the license.txt file included.
-
-#include <limits>
-
-#include "Common/Common.h"
-#include "Common/CPUDetect.h"
 #include "VideoCommon/VideoCommon.h"
-#include "VideoCommon/VertexLoader.h"
 #include "VideoCommon/VertexLoader_Position.h"
-#include "VideoCommon/VertexManagerBase.h"
-#include "VideoCommon/VertexLoadingSSE.h"
-
-extern float posScale;
-extern TVtxAttr *pVtxAttr;
+#include "VideoCommon/VertexLoader_PositionFuncs.h"
 
 // Thoughts on the implementation of a vertex loader compiler.
 // s_pCurBufferPointer should definitely be in a register.
@@ -28,7 +18,7 @@ MOVZX(32, R(EBX), MOffset(ESI, 1));
 MOVZX(32, R(ECX), MOffset(ESI, 2));
 MOVD(XMM0, R(EAX));
 MOVD(XMM1, R(EBX));
-MOVD(XMM2, R(ECX));                   
+MOVD(XMM2, R(ECX));
 CVTDQ2PS(XMM0, XMM0);
 CVTDQ2PS(XMM1, XMM1);
 CVTDQ2PS(XMM2, XMM2);
@@ -59,49 +49,22 @@ CVTDQ2PS(XMM0, XMM0);
 MULPS(XMM0, XMM7);
 MOVUPS(MOffset(EDI, 0), XMM0);
 
-									 */
+*/
 
-template <typename T>
-float PosScale(T val)
-{
-	return val * posScale;
-}
+bool VertexLoader_Position::Initialized = false;
 
-template <>
-float PosScale(float val)
-{
-	return val;
-}
 
 template <typename T, int N>
 void LOADERDECL Pos_ReadDirect()
 {
-	static_assert(N <= 3, "N > 3 is not sane!");
-
-	for (int i = 0; i < 3; ++i)
-		DataWrite(i<N ? PosScale(DataRead<T>()) : 0.f);
-
+	_Pos_ReadDirect<T, N>()
 	LOG_VTX();
-}
-
-template <typename T>
-__forceinline u8* IndexedDataPosition()
-{
-	auto const index = DataRead<T>();
-	return cached_arraybases[ARRAY_POSITION] + (index * arraystrides[ARRAY_POSITION]);
 }
 
 template <typename I, typename T, int N>
 void LOADERDECL Pos_ReadIndex()
 {
-	static_assert(!std::numeric_limits<I>::is_signed, "Only unsigned I is sane!");
-	static_assert(N <= 3, "N > 3 is not sane!");
-
-	auto const data = reinterpret_cast<const T*>(IndexedDataPosition<I>());
-
-	for (int i = 0; i < 3; ++i)
-		DataWrite(i<N ? PosScale(Common::FromBigEndian(data[i])) : 0.f);
-
+	_Pos_ReadIndex<I,T,N>();
 	LOG_VTX();	
 }
 
@@ -109,34 +72,14 @@ void LOADERDECL Pos_ReadIndex()
 template <typename I, bool three>
 void LOADERDECL Pos_ReadIndex_Float_SSSE3()
 {
-	const __m128i* pData = (const __m128i*)IndexedDataPosition<I>();
-	if (three)
-	{
-		Float3ToFloat3sse3((__m128i*)VertexManager::s_pCurBufferPointer, pData);
-	}
-	else
-	{
-		Float2ToFloat3sse3((__m128i*)VertexManager::s_pCurBufferPointer, pData);
-	}
-	VertexManager::s_pCurBufferPointer += sizeof(float) * 3;
+	_Pos_ReadIndex_Float_SSSE3<I, three>();
 	LOG_VTX();
 }
 
 template <bool three>
 void LOADERDECL Pos_ReadDirect_Float_SSSE3()
 {
-	const __m128i* pData = (const __m128i*)DataGetPosition();
-	if (three)
-	{
-		DataSkip(sizeof(float) * 3);
-		Float3ToFloat3sse3((__m128i*)VertexManager::s_pCurBufferPointer, pData);
-	}
-	else
-	{
-		DataSkip(sizeof(float) * 2);
-		Float2ToFloat3sse3((__m128i*)VertexManager::s_pCurBufferPointer, pData);
-	}
-	VertexManager::s_pCurBufferPointer += sizeof(float) * 3;
+	_Pos_ReadDirect_Float_SSSE3<three>();
 	LOG_VTX();
 }
 #endif
@@ -145,66 +88,28 @@ void LOADERDECL Pos_ReadDirect_Float_SSSE3()
 template <typename I, bool Signed>
 void LOADERDECL Pos_ReadIndex_16x2_SSE4()
 {
-	const s32 Data = *((const s32*)IndexedDataPosition<I>());
-	if (Signed)
-	{
-		Short2ToFloat3sse4((float*)VertexManager::s_pCurBufferPointer, Data, &posScale);
-	}
-	else
-	{
-		UShort2ToFloat3sse4((float*)VertexManager::s_pCurBufferPointer, Data, &posScale);
-	}
-	VertexManager::s_pCurBufferPointer += sizeof(float) * 3;
+	_Pos_ReadIndex_16x2_SSE4<I, Signed>();
 	LOG_VTX();
 }
 
 template <typename I, bool Signed>
 void LOADERDECL Pos_ReadIndex_16x3_SSE4()
 {
-	const __m128i* pData = (const __m128i*)IndexedDataPosition<I>();
-	if (Signed)
-	{
-		Short3ToFloat3sse4((float*)VertexManager::s_pCurBufferPointer, pData, &posScale);
-	}
-	else
-	{
-		UShort3ToFloat3sse4((float*)VertexManager::s_pCurBufferPointer, pData, &posScale);
-	}
-	VertexManager::s_pCurBufferPointer += sizeof(float) * 3;
+	_Pos_ReadIndex_16x3_SSE4<I, Signed>();
 	LOG_VTX();
 }
 
 template <bool Signed>
 void LOADERDECL Pos_ReadDirect_16x2_SSE4()
 {
-	const s32 Data = *((const s32*)DataGetPosition());
-	DataSkip(sizeof(s16) * 2);
-	if (Signed)
-	{
-		Short2ToFloat3sse4((float*)VertexManager::s_pCurBufferPointer, Data, &posScale);
-	}
-	else
-	{
-		UShort2ToFloat3sse4((float*)VertexManager::s_pCurBufferPointer, Data, &posScale);
-	}
-	VertexManager::s_pCurBufferPointer += sizeof(float) * 3;
+	_Pos_ReadDirect_16x2_SSE4<Signed>();
 	LOG_VTX();
 }
 
 template <bool Signed>
 void LOADERDECL Pos_ReadDirect_16x3_SSE4()
 {
-	const __m128i* pData = (const __m128i*)DataGetPosition();
-	DataSkip(sizeof(s16) * 3);
-	if (Signed)
-	{
-		Short3ToFloat3sse4((float*)VertexManager::s_pCurBufferPointer, pData, &posScale);
-	}
-	else
-	{
-		UShort3ToFloat3sse4((float*)VertexManager::s_pCurBufferPointer, pData, &posScale);
-	}
-	VertexManager::s_pCurBufferPointer += sizeof(float) * 3;
+	_Pos_ReadDirect_16x3_SSE4<Signed>();
 	LOG_VTX();
 }
 #endif
@@ -258,7 +163,11 @@ static int tableReadPositionVertexSize[4][8][2] = {
 
 void VertexLoader_Position::Init(void)
 {
-
+	if (Initialized)
+	{
+		return;
+	}
+	Initialized = true;
 #if _M_SSE >= 0x301
 
 	if (cpu_info.bSSSE3)
@@ -293,12 +202,12 @@ void VertexLoader_Position::Init(void)
 #endif
 }
 
-unsigned int VertexLoader_Position::GetSize(unsigned int _type, unsigned int _format, unsigned int _elements)
+u32 VertexLoader_Position::GetSize(u32 _type, u32 _format, u32 _elements)
 {
 	return tableReadPositionVertexSize[_type][_format][_elements];
 }
 
-TPipelineFunction VertexLoader_Position::GetFunction(unsigned int _type, unsigned int _format, unsigned int _elements)
+TPipelineFunction VertexLoader_Position::GetFunction(u32 _type, u32 _format, u32 _elements)
 {
 	return tableReadPosition[_type][_format][_elements];
 }

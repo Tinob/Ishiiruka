@@ -141,6 +141,7 @@
     <ClInclude Include="VertexLoader_Normal.h" />
     <ClInclude Include="VertexLoader_NormalFuncs.h" />
     <ClInclude Include="VertexLoader_Position.h" />
+    <ClInclude Include="VertexLoader_PositionFuncs.h" />
     <ClInclude Include="VertexLoader_TextCoord.h" />
     <ClInclude Include="VertexLoadingSSE.h" />
     <ClInclude Include="VertexManagerBase.h" />
