@@ -2,104 +2,38 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include "Common/Common.h"
-#include "Common/CPUDetect.h"
-#include "VideoCommon/VideoCommon.h"
-#include "VideoCommon/VertexLoader.h"
 #include "VideoCommon/VertexLoader_TextCoord.h"
-#include "VideoCommon/VertexManagerBase.h"
-#include "VideoCommon/VertexLoadingSSE.h"
+#include "VideoCommon/VertexLoader_TextCoordFuncs.h"
 
-template <int N>
-void LOG_TEX();
-
-template <>
-__forceinline void LOG_TEX<1>()
-{
-	// warning: mapping buffer should be disabled to use this
-	// PRIM_LOG("tex: %f, ", ((float*)VertexManager::s_pCurBufferPointer)[-1]);
-}
-
-template <>
-__forceinline void LOG_TEX<2>()
-{
-	// warning: mapping buffer should be disabled to use this
-	// PRIM_LOG("tex: %f %f, ", ((float*)VertexManager::s_pCurBufferPointer)[-2], ((float*)VertexManager::s_pCurBufferPointer)[-1]);
-}
-
-extern int tcIndex;
-extern float tcScale[8];
+bool VertexLoader_TextCoord::Initialized = false;
 
 void LOADERDECL TexCoord_Read_Dummy()
 {
 	tcIndex++;
 }
 
-template <typename T>
-float TCScale(T val)
-{
-	return val * tcScale[tcIndex];
-}
-
-template <>
-float TCScale(float val)
-{
-	return val;
-}
-
-template <typename T, int N>
+template <typename T, s32 N>
 void LOADERDECL TexCoord_ReadDirect()
 {
-	for (int i = 0; i != N; ++i)
-		DataWrite(TCScale(DataRead<T>()));
-
-	LOG_TEX<N>();
-
-	++tcIndex;
+	_TexCoord_ReadDirect<T, N>();
 }
 
-template <typename T>
-__forceinline u8* IndexedDataPosition()
-{
-	auto const index = DataRead<T>();
-	return cached_arraybases[ARRAY_TEXCOORD0 + tcIndex] + (index * arraystrides[ARRAY_TEXCOORD0 + tcIndex]);
-}
-
-template <typename I, typename T, int N>
+template <typename I, typename T, s32 N>
 void LOADERDECL TexCoord_ReadIndex()
 {
-	static_assert(!std::numeric_limits<I>::is_signed, "Only unsigned I is sane!");
-	
-	auto const data = reinterpret_cast<const T*>(IndexedDataPosition<I>());
-
-	for (int i = 0; i != N; ++i)
-		DataWrite(TCScale(Common::FromBigEndian(data[i])));
-
-	LOG_TEX<N>();
-	++tcIndex;
+	_TexCoord_ReadIndex<I, T, N>();
 }
 
 #if _M_SSE >= 0x301
 template <typename I>
 void LOADERDECL TexCoord_ReadIndex_Float2_SSSE3()
 {
-	static_assert(!std::numeric_limits<I>::is_signed, "Only unsigned I is sane!");
-
-	const __m128i *pData = (const __m128i *)IndexedDataPosition<I>();
-	Float2ToFloat2sse3((__m128i *)VertexManager::s_pCurBufferPointer, pData);
-	VertexManager::s_pCurBufferPointer += sizeof(float) * 2;
-	LOG_TEX<2>();
-	++tcIndex;
+	_TexCoord_ReadIndex_Float2_SSSE3<I>();
 }
 
 void LOADERDECL TexCoord_ReadDirect_Float2_SSSE3()
 {
-	const __m128i *pData = (const __m128i *)DataGetPosition();
-	Float2ToFloat2sse3((__m128i *)VertexManager::s_pCurBufferPointer, pData);
-	VertexManager::s_pCurBufferPointer += sizeof(float) * 2;
-	DataSkip(sizeof(float) * 2);
-	LOG_TEX<2>();
-	++tcIndex;
+	_TexCoord_ReadDirect_Float2_SSSE3();
 }
 
 #endif
@@ -108,38 +42,13 @@ void LOADERDECL TexCoord_ReadDirect_Float2_SSSE3()
 template <typename I, bool Signed>
 void LOADERDECL TexCoord_ReadIndex_16x2_SSE4()
 {
-	static_assert(!std::numeric_limits<I>::is_signed, "Only unsigned I is sane!");
-	// Heavy in ZWW
-	const s32 Data = *((const s32*)IndexedDataPosition<I>());
-	if (Signed)
-	{
-		Short2ToFloat2sse4((__m64*)VertexManager::s_pCurBufferPointer, Data, &tcScale[tcIndex]);
-	}
-	else
-	{
-		UShort2ToFloat2sse4((__m64*)VertexManager::s_pCurBufferPointer, Data, &tcScale[tcIndex]);
-	}
-	VertexManager::s_pCurBufferPointer += sizeof(float) * 2;
-	LOG_TEX<2>();
-	++tcIndex;
+	_TexCoord_ReadIndex_16x2_SSE4<I, Signed>();
 }
 
 template <bool Signed>
 void LOADERDECL TexCoord_ReadDirect_16x2_SSE4()
 {
-	const s32 Data = *((const s32*)DataGetPosition());
-	if (Signed)
-	{
-		Short2ToFloat2sse4((__m64*)VertexManager::s_pCurBufferPointer, Data, &tcScale[tcIndex]);
-	}
-	else
-	{
-		UShort2ToFloat2sse4((__m64*)VertexManager::s_pCurBufferPointer, Data, &tcScale[tcIndex]);
-	}
-	VertexManager::s_pCurBufferPointer += sizeof(float) * 2;
-	DataSkip(sizeof(s32));
-	LOG_TEX<2>();
-	++tcIndex;
+	_TexCoord_ReadDirect_16x2_SSE4<Signed>();
 }
 #endif
 
@@ -174,7 +83,7 @@ static TPipelineFunction tableReadTexCoord[4][8][2] = {
 	},
 };
 
-static int tableReadTexCoordVertexSize[4][8][2] = {
+static s32 tableReadTexCoordVertexSize[4][8][2] = {
 	{
 		{0, 0,}, {0, 0,}, {0, 0,}, {0, 0,}, {0, 0,},
 	},
@@ -191,7 +100,11 @@ static int tableReadTexCoordVertexSize[4][8][2] = {
 
 void VertexLoader_TextCoord::Init(void)
 {
-
+	if (Initialized)
+	{
+		return;
+	}
+	Initialized = true;
 #if _M_SSE >= 0x301
 
 	if (cpu_info.bSSSE3)
@@ -219,12 +132,12 @@ void VertexLoader_TextCoord::Init(void)
 
 }
 
-unsigned int VertexLoader_TextCoord::GetSize(unsigned int _type, unsigned int _format, unsigned int _elements)
+u32 VertexLoader_TextCoord::GetSize(u32 _type, u32 _format, u32 _elements)
 {
 	return tableReadTexCoordVertexSize[_type][_format][_elements];
 }
 
-TPipelineFunction VertexLoader_TextCoord::GetFunction(unsigned int _type, unsigned int _format, unsigned int _elements)
+TPipelineFunction VertexLoader_TextCoord::GetFunction(u32 _type, u32 _format, u32 _elements)
 {
 	return tableReadTexCoord[_type][_format][_elements];
 }

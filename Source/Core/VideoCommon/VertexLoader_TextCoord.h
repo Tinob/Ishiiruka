@@ -3,8 +3,8 @@
 // Refer to the license.txt file included.
 
 #pragma once
-
-#include "VideoCommon/NativeVertexFormat.h"
+#include "Common/Common.h"
+#include "VideoCommon/VertexLoader.h"
 
 class VertexLoader_TextCoord
 {
@@ -14,12 +14,14 @@ public:
 	static void Init(void);
 
 	// GetSize
-	static unsigned int GetSize(unsigned int _type, unsigned int _format, unsigned int _elements);
+	static u32 GetSize(u32 _type, u32 _format, u32 _elements);
 
 	// GetFunction
-	static TPipelineFunction GetFunction(unsigned int _type, unsigned int _format, unsigned int _elements);
+	static TPipelineFunction GetFunction(u32 _type, u32 _format, u32 _elements);
 
 	// GetDummyFunction
 	// It is important to synchronize tcIndex.
 	static TPipelineFunction GetDummyFunction();
+private:
+	static bool Initialized;
 };
