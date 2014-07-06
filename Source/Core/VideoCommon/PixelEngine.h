@@ -2,12 +2,11 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _PIXELENGINE_H
-#define _PIXELENGINE_H
+#pragma once
 
 #include "Common/CommonTypes.h"
 class PointerWrap;
-
+namespace MMIO { class Mapping; }
 // internal hardware addresses
 enum
 {
@@ -70,5 +69,3 @@ extern u16 bbox[4];
 extern bool bbox_active;
 
 } // end of namespace PixelEngine
-
-#endif

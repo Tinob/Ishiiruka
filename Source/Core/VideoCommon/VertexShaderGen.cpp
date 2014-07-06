@@ -121,7 +121,8 @@ inline void GenerateVertexShader(T& out, u32 components)
 		if (api_type == API_OPENGL)
 		{
 			out.Write("ATTRIN float4 rawpos; // ATTR%d,\n", SHADER_POSITION_ATTRIB);
-			out.Write("ATTRIN float fposmtx; // ATTR%d,\n", SHADER_POSMTX_ATTRIB);
+			if (components & VB_HAS_POSMTXIDX)
+				out.Write("ATTRIN float fposmtx; // ATTR%d,\n", SHADER_POSMTX_ATTRIB);
 			if (components & VB_HAS_NRM0)
 				out.Write("ATTRIN float3 rawnorm0; // ATTR%d,\n", SHADER_NORM0_ATTRIB);
 			if (components & VB_HAS_NRM1)
@@ -190,7 +191,9 @@ inline void GenerateVertexShader(T& out, u32 components)
 				if ((components & (VB_HAS_UV0 << i)) || hastexmtx)
 					out.Write("  float%d tex%d : TEXCOORD%d,\n", hastexmtx ? 3 : 2, i, i);
 			}
-			out.Write("  float4 blend_indices : BLENDINDICES,\n");
+			if (components & VB_HAS_POSMTXIDX || api_type & API_D3D9)
+				out.Write("  float4 blend_indices : BLENDINDICES,\n");
+
 			out.Write("  float4 rawpos : POSITION) {\n");
 		}
 		out.Write("VS_OUTPUT o;\n");

@@ -11,12 +11,11 @@
 #include <string>
 
 #include "Common/Common.h"
+#include "Common/x64Emitter.h"
 
 #include "VideoCommon/CPMemory.h"
 #include "VideoCommon/DataReader.h"
 #include "VideoCommon/NativeVertexFormat.h"
-
-#include "Common/x64Emitter.h"
 
 #ifndef _M_GENERIC
 #ifndef __APPLE__
@@ -79,9 +78,9 @@ private:
 	{
 		size_t h = -1;
 
-		for (unsigned int i = 0; i < sizeof(vid) / sizeof(vid[0]); ++i)
+		for (auto word : vid)
 		{
-			h = h * 137 + vid[i];
+			h = h * 137 + word;
 		}
 
 		return h;
@@ -127,11 +126,15 @@ private:
 	NativeVertexFormat *m_NativeFmt;
 	int native_stride;
 
+#ifdef USE_VERTEX_LOADER_JIT
+	const u8 *m_compiledCode;
+#else
 	// Pipeline. To be JIT compiled in the future.
 	TPipelineFunction m_PipelineStages[64];  // TODO - figure out real max. it's lower.
 	int m_numPipelineStages;
+#endif
 
-	const u8 *m_compiledCode;
+	
 
 	int m_numLoadedVertices;
 

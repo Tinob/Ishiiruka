@@ -42,6 +42,15 @@ inline GLuint VarToGL(VarType t)
 	return lookup[t];
 }
 
+inline void SetPointer(u32 attrib, u32 stride, const AttributeFormat &format)
+{
+	if (format.enable)
+	{
+		glEnableVertexAttribArray(attrib);
+		glVertexAttribPointer(attrib, format.components, VarToGL(format.type), true, stride, (u8*)nullptr + format.offset);
+	}
+}
+
 void GLVertexFormat::Initialize(const PortableVertexDeclaration &_vtx_decl)
 {
 	this->vtx_decl = _vtx_decl;
@@ -60,36 +69,25 @@ void GLVertexFormat::Initialize(const PortableVertexDeclaration &_vtx_decl)
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vm->m_index_buffers);
 	glBindBuffer(GL_ARRAY_BUFFER, vm->m_vertex_buffers);
 
-	glEnableVertexAttribArray(SHADER_POSITION_ATTRIB);
-	glVertexAttribPointer(SHADER_POSITION_ATTRIB, 3, GL_FLOAT, GL_FALSE, vtx_decl.stride, (u8*)NULL);
+	SetPointer(SHADER_POSITION_ATTRIB, vertex_stride, vtx_decl.position);
 	
 	for (int i = 0; i < 3; i++) {
-		if (vtx_decl.num_normals > i) {
-			glEnableVertexAttribArray(SHADER_NORM0_ATTRIB+i);
-			glVertexAttribPointer(SHADER_NORM0_ATTRIB+i, vtx_decl.normal_gl_size, VarToGL(vtx_decl.normal_gl_type), GL_TRUE, vtx_decl.stride, (u8*)NULL + vtx_decl.normal_offset[i]);
-		}
+		SetPointer(SHADER_NORM0_ATTRIB + i, vertex_stride, vtx_decl.normals[i]);
 	}
 
 	for (int i = 0; i < 2; i++) {
-		if (vtx_decl.color_offset[i] != -1) {
-			glEnableVertexAttribArray(SHADER_COLOR0_ATTRIB+i);
-			glVertexAttribPointer(SHADER_COLOR0_ATTRIB+i, 4, GL_UNSIGNED_BYTE, GL_TRUE, vtx_decl.stride, (u8*)NULL + vtx_decl.color_offset[i]);
-		}
+		SetPointer(SHADER_COLOR0_ATTRIB + i, vertex_stride, vtx_decl.colors[i]);
 	}
 
 	for (int i = 0; i < 8; i++) {
-		if (vtx_decl.texcoord_offset[i] != -1) {
-			glEnableVertexAttribArray(SHADER_TEXTURE0_ATTRIB+i);
-			glVertexAttribPointer(SHADER_TEXTURE0_ATTRIB+i, vtx_decl.texcoord_size[i], VarToGL(vtx_decl.texcoord_gl_type[i]),
-				GL_FALSE, vtx_decl.stride, (u8*)NULL + vtx_decl.texcoord_offset[i]);
-		}
+		SetPointer(SHADER_TEXTURE0_ATTRIB + i, vertex_stride, vtx_decl.texcoords[i]);
 	}
 
-	if (vtx_decl.posmtx_offset != -1) {
+	if (vtx_decl.posmtx.enable) {
 		glEnableVertexAttribArray(SHADER_POSMTX_ATTRIB);
-		glVertexAttribPointer(SHADER_POSMTX_ATTRIB, 4, GL_UNSIGNED_BYTE, GL_FALSE, vtx_decl.stride, (u8*)NULL + vtx_decl.posmtx_offset);
+		glVertexAttribPointer(SHADER_POSMTX_ATTRIB, 4, GL_UNSIGNED_BYTE, GL_FALSE, vtx_decl.stride, (u8*)NULL + vtx_decl.posmtx.offset);
 	}
-
+	
 	vm->m_last_vao = VAO;
 }
 

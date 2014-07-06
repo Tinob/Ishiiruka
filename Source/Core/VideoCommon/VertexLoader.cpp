@@ -2,30 +2,29 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include <assert.h>
-
 #include "Common/Common.h"
-#include "VideoCommon/VideoCommon.h"
-#include "VideoCommon/VideoConfig.h"
 #include "Common/MemoryUtil.h"
 #include "Common/StringUtil.h"
-#include "Common/x64Emitter.h"
 #include "Common/x64ABI.h"
-#include "VideoCommon/PixelEngine.h"
+#include "Common/x64Emitter.h"
+
 #include "Core/Host.h"
 
-#include "VideoCommon/LookUpTables.h"
-#include "VideoCommon/Statistics.h"
-#include "VideoCommon/VertexLoaderManager.h"
-#include "VideoCommon/VertexLoader.h"
 #include "VideoCommon/BPMemory.h"
-#include "VideoCommon\DataReader.h"
-#include "VideoCommon/VertexManagerBase.h"
-
-#include "VideoCommon/VertexLoader_Position.h"
+#include "VideoCommon/DataReader.h"
+#include "VideoCommon/IndexGenerator.h"
+#include "VideoCommon/LookUpTables.h"
+#include "VideoCommon/PixelEngine.h"
+#include "VideoCommon/Statistics.h"
+#include "VideoCommon/VertexLoader.h"
+#include "VideoCommon/VertexLoader_Color.h"
 #include "VideoCommon/VertexLoader_Normal.h"
-#include "VertexLoader_Color.h"
+#include "VideoCommon/VertexLoader_Position.h"
 #include "VideoCommon/VertexLoader_TextCoord.h"
+#include "VideoCommon/VertexLoaderManager.h"
+#include "VideoCommon/VertexManagerBase.h"
+#include "VideoCommon/VideoCommon.h"
+#include "VideoCommon/VideoConfig.h"
 
 //BBox
 #include "VideoCommon/XFMemory.h"
@@ -469,7 +468,7 @@ VertexLoader::VertexLoader(const TVtxDesc &vtx_desc, const VAT &vtx_attr)
 	m_compiledCode = NULL;
 	m_numLoadedVertices = 0;
 	m_VertexSize = 0;
-	m_numPipelineStages = 0;
+	
 	m_NativeFmt = 0;
 	loop_counter = 0;
 	VertexLoader_Normal::Init();
@@ -484,6 +483,7 @@ VertexLoader::VertexLoader(const TVtxDesc &vtx_desc, const VAT &vtx_attr)
 	CompileVertexTranslator();
 	WriteProtect();
 	#else
+	m_numPipelineStages = 0;
 	CompileVertexTranslator();
 	#endif
 
@@ -530,6 +530,9 @@ void VertexLoader::CompileVertexTranslator()
 		WriteSetVariable(32, &s_texmtxwrite, Imm32(0));
 		WriteSetVariable(32, &s_texmtxread, Imm32(0));
 	}
+#else
+	// Reset pipeline
+	m_numPipelineStages = 0;
 #endif
 
 	// Colors
@@ -543,8 +546,7 @@ void VertexLoader::CompileVertexTranslator()
 		m_VtxDesc.Tex4Coord, m_VtxDesc.Tex5Coord, m_VtxDesc.Tex6Coord, (const u32)((m_VtxDesc.Hex >> 31) & 3)
 	};
 	
-	// Reset pipeline
-	m_numPipelineStages = 0;
+	
 
 	u32 components = 0;
 
@@ -552,12 +554,6 @@ void VertexLoader::CompileVertexTranslator()
 	int nat_offset = 0;
 	PortableVertexDeclaration vtx_decl;
 	memset(&vtx_decl, 0, sizeof(vtx_decl));
-	for (int i = 0; i < 8; i++)
-	{
-		vtx_decl.texcoord_offset[i] = -1;
-	}
-
-	// m_VBVertexStride for texmtx and posmtx is computed later when writing.
 	
 	// Position Matrix Index
 	if (m_VtxDesc.PosMatIdx)
@@ -589,9 +585,12 @@ void VertexLoader::CompileVertexTranslator()
 	}
 	m_VertexSize += VertexLoader_Position::GetSize(m_VtxDesc.Position, m_VtxAttr.PosFormat, m_VtxAttr.PosElements);
 	nat_offset += 12;
+	vtx_decl.position.components = 3;
+	vtx_decl.position.enable = true;
+	vtx_decl.position.offset = 0;
+	vtx_decl.position.type = VAR_FLOAT;
 
 	// Normals
-	vtx_decl.num_normals = 0;
 	if (m_VtxDesc.Normal != NOT_PRESENT)
 	{
 		m_VertexSize += VertexLoader_Normal::GetSize(m_VtxDesc.Normal,
@@ -609,41 +608,25 @@ void VertexLoader::CompileVertexTranslator()
 		}
 		WriteCall(pFunc);
 
-		vtx_decl.num_normals = vtx_attr.NormalElements ? 3 : 1;
-		vtx_decl.normal_offset[0] = -1;
-		vtx_decl.normal_offset[1] = -1;
-		vtx_decl.normal_offset[2] = -1;
-		vtx_decl.normal_gl_type = VAR_FLOAT;
-		vtx_decl.normal_gl_size = 3;
-		vtx_decl.normal_offset[0] = nat_offset;
-		nat_offset += 12;
-
-		if (vtx_attr.NormalElements)
+		for (int i = 0; i < (vtx_attr.NormalElements ? 3 : 1); i++)
 		{
-			vtx_decl.normal_offset[1] = nat_offset;
-			nat_offset += 12;
-			vtx_decl.normal_offset[2] = nat_offset;
+			vtx_decl.normals[i].components = 3;
+			vtx_decl.normals[i].enable = true;
+			vtx_decl.normals[i].offset = nat_offset;
+			vtx_decl.normals[i].type = VAR_FLOAT;
 			nat_offset += 12;
 		}
 
-		int numNormals = (m_VtxAttr.NormalElements == 1) ? NRM_THREE : NRM_ONE;
 		components |= VB_HAS_NRM0;
-
-		if (numNormals == NRM_THREE)
+		if (m_VtxAttr.NormalElements == 1)
 			components |= VB_HAS_NRM1 | VB_HAS_NRM2;
 	}
 
-	vtx_decl.color_gl_type = VAR_UNSIGNED_BYTE;
-	vtx_decl.color_offset[0] = -1;
-	vtx_decl.color_offset[1] = -1;
 	for (int i = 0; i < 2; i++)
 	{
-		components |= VB_HAS_COL0 << i;
 		switch (col[i])
 		{
-		case NOT_PRESENT: 
-			components &= ~(VB_HAS_COL0 << i);
-			vtx_decl.color_offset[i] = -1;
+		case NOT_PRESENT:
 			break;
 		case DIRECT:
 			switch (m_VtxAttr.color[i].Comp)
@@ -687,23 +670,21 @@ void VertexLoader::CompileVertexTranslator()
 		// Common for the three bottom cases
 		if (col[i] != NOT_PRESENT)
 		{
-			vtx_decl.color_offset[i] = nat_offset;
+			components |= VB_HAS_COL0 << i;
+			vtx_decl.colors[i].components = 4;
+			vtx_decl.colors[i].type = VAR_UNSIGNED_BYTE;
+			vtx_decl.colors[i].offset = nat_offset;
+			vtx_decl.colors[i].enable = true;
 			nat_offset += 4;
 		}
 	}
 
-	// Texture matrix indices (remove if corresponding texture coordinate isn't enabled)
 	for (int i = 0; i < 8; i++)
 	{
-		vtx_decl.texcoord_offset[i] = -1;
 		const int format = m_VtxAttr.texCoord[i].Format;
 		const int elements = m_VtxAttr.texCoord[i].Elements;
 
-		if (tc[i] == NOT_PRESENT)
-		{
-			components &= ~(VB_HAS_UV0 << i);
-		}
-		else
+		if (tc[i] != NOT_PRESENT)
 		{
 			_assert_msg_(VIDEO, DIRECT <= tc[i] && tc[i] <= INDEX16, "Invalid texture coordinates!\n(tc[i] = %d)", tc[i]);
 			_assert_msg_(VIDEO, FORMAT_UBYTE <= format && format <= FORMAT_FLOAT, "Invalid texture coordinates format!\n(format = %d)", format);
@@ -716,21 +697,20 @@ void VertexLoader::CompileVertexTranslator()
 
 		if (components & (VB_HAS_TEXMTXIDX0 << i))
 		{
+			vtx_decl.texcoords[i].enable = true;
+			vtx_decl.texcoords[i].offset = nat_offset;
+			vtx_decl.texcoords[i].type = VAR_FLOAT;
 			if (tc[i] != NOT_PRESENT)
 			{
 				// if texmtx is included, texcoord will always be 3 floats, z will be the texmtx index
-				vtx_decl.texcoord_offset[i] = nat_offset;
-				vtx_decl.texcoord_gl_type[i] = VAR_FLOAT;
-				vtx_decl.texcoord_size[i] = 3;
+				vtx_decl.texcoords[i].components = 3;
 				nat_offset += 12;
 				WriteCall(m_VtxAttr.texCoord[i].Elements ? TexMtx_Write_Float : TexMtx_Write_Float2);
 			}
 			else
 			{
 				components |= VB_HAS_UV0 << i; // have to include since using now
-				vtx_decl.texcoord_offset[i] = nat_offset;
-				vtx_decl.texcoord_gl_type[i] = VAR_FLOAT;
-				vtx_decl.texcoord_size[i] = 4;
+				vtx_decl.texcoords[i].components = 4;
 				nat_offset += 16; // still include the texture coordinate, but this time as 6 + 2 bytes
 				WriteCall(TexMtx_Write_Float4);
 			}
@@ -739,16 +719,16 @@ void VertexLoader::CompileVertexTranslator()
 		{
 			if (tc[i] != NOT_PRESENT)
 			{
-				vtx_decl.texcoord_offset[i] = nat_offset;
-				vtx_decl.texcoord_gl_type[i] = VAR_FLOAT;
-				vtx_decl.texcoord_size[i] = vtx_attr.texCoord[i].Elements ? 2 : 1;
+				vtx_decl.texcoords[i].enable = true;
+				vtx_decl.texcoords[i].offset = nat_offset;
+				vtx_decl.texcoords[i].type = VAR_FLOAT;
+				vtx_decl.texcoords[i].components = vtx_attr.texCoord[i].Elements ? 2 : 1;
 				nat_offset += 4 * (vtx_attr.texCoord[i].Elements ? 2 : 1);
 			}
 		}
-
 		if (tc[i] == NOT_PRESENT)
 		{
-			// if there's more tex coords later, have to write a dummy call 
+			// if there's more tex coords later, have to write a dummy call
 			int j = i + 1;
 			for (; j < 8; ++j)
 			{
@@ -778,7 +758,10 @@ void VertexLoader::CompileVertexTranslator()
 
 	if (m_VtxDesc.PosMatIdx ||  g_ActiveConfig.backend_info.bNeedBlendIndices)
 	{
-		vtx_decl.posmtx_offset = nat_offset;
+		vtx_decl.posmtx.components = 4;
+		vtx_decl.posmtx.enable = true;
+		vtx_decl.posmtx.offset = nat_offset;
+		vtx_decl.posmtx.type = VAR_UNSIGNED_BYTE;
 		nat_offset += 4;
 	}
 

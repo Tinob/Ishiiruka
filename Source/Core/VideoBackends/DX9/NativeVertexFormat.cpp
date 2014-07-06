@@ -25,7 +25,7 @@ public:
 	~D3DVertexFormat();
 	void Initialize(const PortableVertexDeclaration &_vtx_decl) override;
 	void SetupVertexPointers() override;
-	D3DVERTEXELEMENT9 m_elements[32];
+	D3DVERTEXELEMENT9 m_elements[16];
 	int m_num_elements;
 };
 
@@ -59,27 +59,26 @@ D3DDECLTYPE VarToD3D(VarType t, int size)
 	if (t < 0 || t > 4) {
 		PanicAlert("VarToD3D: Invalid VarType %i", t);
 	}
-	static const D3DDECLTYPE lookup1[5] = {
-		D3DDECLTYPE_UNUSED, D3DDECLTYPE_UNUSED, D3DDECLTYPE_UNUSED, D3DDECLTYPE_UNUSED, D3DDECLTYPE_FLOAT1,
-	};
-	static const D3DDECLTYPE lookup2[5] = {
-		D3DDECLTYPE_UNUSED, D3DDECLTYPE_UNUSED, D3DDECLTYPE_USHORT2N, D3DDECLTYPE_SHORT2N, D3DDECLTYPE_FLOAT2,
-	};
-	static const D3DDECLTYPE lookup3[5] = {
-		D3DDECLTYPE_UNUSED, D3DDECLTYPE_UNUSED, D3DDECLTYPE_UNUSED, D3DDECLTYPE_UNUSED, D3DDECLTYPE_FLOAT3,
-	};
 	// Sadly, D3D9 has no SBYTE4N. D3D10 does, though.
-	static const D3DDECLTYPE lookup4[5] = {
-		D3DDECLTYPE_UBYTE4N, D3DDECLTYPE_UNUSED, D3DDECLTYPE_USHORT4N, D3DDECLTYPE_SHORT4N, D3DDECLTYPE_FLOAT4,
+	static const D3DDECLTYPE lookup[4][5] = 
+	{
+		{
+			D3DDECLTYPE_UNUSED, D3DDECLTYPE_UNUSED, D3DDECLTYPE_UNUSED, D3DDECLTYPE_UNUSED, D3DDECLTYPE_FLOAT1
+		},
+		{
+			D3DDECLTYPE_UNUSED, D3DDECLTYPE_UNUSED, D3DDECLTYPE_USHORT2N, D3DDECLTYPE_SHORT2N, D3DDECLTYPE_FLOAT2
+		},
+		{
+			D3DDECLTYPE_UNUSED, D3DDECLTYPE_UNUSED, D3DDECLTYPE_UNUSED, D3DDECLTYPE_UNUSED, D3DDECLTYPE_FLOAT3
+		},
+		{
+			D3DDECLTYPE_UBYTE4N, D3DDECLTYPE_UNUSED, D3DDECLTYPE_USHORT4N, D3DDECLTYPE_SHORT4N, D3DDECLTYPE_FLOAT4
+		} 
 	};
 	D3DDECLTYPE retval = D3DDECLTYPE_UNUSED;
-	switch (size)
+	if (size < 5)
 	{
-	case 1: retval = lookup1[t]; break;
-	case 2: retval = lookup2[t]; break;
-	case 3: retval = lookup3[t]; break;
-	case 4: retval = lookup4[t]; break;
-	default: break;
+		retval = lookup[size - 1][t];
 	}
 	if (retval == D3DDECLTYPE_UNUSED) {
 		PanicAlert("VarToD3D: Invalid type/size combo %i , %i", (int)t, size);
@@ -94,20 +93,24 @@ void D3DVertexFormat::Initialize(const PortableVertexDeclaration &_vtx_decl)
 
 	// There's only one stream and it's 0, so the above memset takes care of that - no need to set Stream.
 	// Same for method.
-	
-	// So, here we go. First position:
+	const AttributeFormat* format = &_vtx_decl.position;
 	int elem_idx = 0;
-	m_elements[elem_idx].Offset = 0;  // Positions are always first, at position 0. Always float3.
-	m_elements[elem_idx].Type = D3DDECLTYPE_FLOAT3;
-	m_elements[elem_idx].Usage = D3DDECLUSAGE_POSITION;
-	++elem_idx;
+	if (format->enable)
+	{
+		// So, here we go. First position:		
+		m_elements[elem_idx].Offset = 0;  // Positions are always first, at position 0. Always float3.
+		m_elements[elem_idx].Type = D3DDECLTYPE_FLOAT3;
+		m_elements[elem_idx].Usage = D3DDECLUSAGE_POSITION;
+		++elem_idx;
+	}
 
 	for (int i = 0; i < 3; i++)
 	{
-		if (_vtx_decl.normal_offset[i] > 0) 
+		format = &_vtx_decl.normals[i];
+		if (format->enable)
 		{
-			m_elements[elem_idx].Offset = _vtx_decl.normal_offset[i];
-			m_elements[elem_idx].Type = VarToD3D(_vtx_decl.normal_gl_type, _vtx_decl.normal_gl_size);
+			m_elements[elem_idx].Offset = format->offset;
+			m_elements[elem_idx].Type = VarToD3D(format->type, format->components);
 			m_elements[elem_idx].Usage = D3DDECLUSAGE_NORMAL;
 			m_elements[elem_idx].UsageIndex = i;
 			++elem_idx;
@@ -116,10 +119,11 @@ void D3DVertexFormat::Initialize(const PortableVertexDeclaration &_vtx_decl)
 
 	for (int i = 0; i < 2; i++)
 	{
-		if (_vtx_decl.color_offset[i] > 0) 
+		format = &_vtx_decl.colors[i];
+		if (format->enable)
 		{
-			m_elements[elem_idx].Offset = _vtx_decl.color_offset[i];
-			m_elements[elem_idx].Type = VarToD3D(_vtx_decl.color_gl_type, 4);
+			m_elements[elem_idx].Offset = format->offset;
+			m_elements[elem_idx].Type = VarToD3D(format->type, 4);
 			m_elements[elem_idx].Usage = D3DDECLUSAGE_COLOR;
 			m_elements[elem_idx].UsageIndex = i;
 			++elem_idx;
@@ -128,17 +132,18 @@ void D3DVertexFormat::Initialize(const PortableVertexDeclaration &_vtx_decl)
 
 	for (int i = 0; i < 8; i++)
 	{
-		if (_vtx_decl.texcoord_offset[i] > 0)
+		format = &_vtx_decl.texcoords[i];
+		if (format->enable)
 		{
-			m_elements[elem_idx].Offset = _vtx_decl.texcoord_offset[i];
-			m_elements[elem_idx].Type = VarToD3D(_vtx_decl.texcoord_gl_type[i], _vtx_decl.texcoord_size[i]);
+			m_elements[elem_idx].Offset = format->offset;
+			m_elements[elem_idx].Type = VarToD3D(format->type, format->components);
 			m_elements[elem_idx].Usage = D3DDECLUSAGE_TEXCOORD;
 			m_elements[elem_idx].UsageIndex = i;
 			++elem_idx;
 		}
 	}
 
-	m_elements[elem_idx].Offset = _vtx_decl.posmtx_offset;
+	m_elements[elem_idx].Offset = _vtx_decl.posmtx.offset;
 	m_elements[elem_idx].Usage = D3DDECLUSAGE_BLENDINDICES;
 	m_elements[elem_idx].Type = D3DDECLTYPE_D3DCOLOR;
 	m_elements[elem_idx].UsageIndex = 0;
