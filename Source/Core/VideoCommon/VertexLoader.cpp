@@ -469,7 +469,6 @@ VertexLoader::VertexLoader(const TVtxDesc &vtx_desc, const VAT &vtx_attr)
 	m_numLoadedVertices = 0;
 	m_VertexSize = 0;
 	
-	m_NativeFmt = 0;
 	loop_counter = 0;
 	VertexLoader_Normal::Init();
 	VertexLoader_Position::Init();
@@ -494,9 +493,6 @@ VertexLoader::~VertexLoader()
 	#ifdef USE_VERTEX_LOADER_JIT
 	FreeCodeSpace();
 	#endif
-	if (g_nativeVertexFmt == m_NativeFmt)
-		g_nativeVertexFmt = nullptr;
-	delete m_NativeFmt;
 }
 
 void VertexLoader::CompileVertexTranslator()
@@ -750,16 +746,15 @@ void VertexLoader::CompileVertexTranslator()
 	if (m_VtxDesc.PosMatIdx)
 	{
 		WriteCall(PosMtx_Write);
+		vtx_decl.posmtx.enable = true;
 	}
 	else if (g_ActiveConfig.backend_info.bNeedBlendIndices)
 	{
 		WriteCall(PosMtxDisabled_Write);
 	}
-
-	if (m_VtxDesc.PosMatIdx ||  g_ActiveConfig.backend_info.bNeedBlendIndices)
+	if (m_VtxDesc.PosMatIdx || g_ActiveConfig.backend_info.bNeedBlendIndices)
 	{
 		vtx_decl.posmtx.components = 4;
-		vtx_decl.posmtx.enable = true;
 		vtx_decl.posmtx.offset = nat_offset;
 		vtx_decl.posmtx.type = VAR_UNSIGNED_BYTE;
 		nat_offset += 4;
@@ -781,9 +776,7 @@ void VertexLoader::CompileVertexTranslator()
 	ABI_PopAllCalleeSavedRegsAndAdjustStack();
 	RET();
 #endif
-	m_NativeFmt = g_vertex_manager->CreateNativeVertexFormat();
-	m_NativeFmt->m_components = components;
-	m_NativeFmt->Initialize(vtx_decl);
+	m_NativeFmt = VertexLoaderManager::GetNativeVertexFormat(vtx_decl, components);
 }
 
 void VertexLoader::WriteCall(TPipelineFunction func)

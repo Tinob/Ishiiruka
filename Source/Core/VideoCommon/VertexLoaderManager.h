@@ -2,9 +2,10 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 #pragma once
-
-#include "Common/Common.h"
 #include <string>
+#include "Common/Common.h"
+#include "VideoCommon/NativeVertexFormat.h"
+
 
 namespace VertexLoaderManager
 {
@@ -19,6 +20,8 @@ namespace VertexLoaderManager
 
 	// For debugging
 	void AppendListToString(std::string *dest);
+
+	NativeVertexFormat* GetNativeVertexFormat(const PortableVertexDeclaration& format, u32 components);
 };
 
 void RecomputeCachedArraybases();

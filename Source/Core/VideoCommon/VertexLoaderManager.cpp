@@ -3,16 +3,17 @@
 // Refer to the license.txt file included.
 
 #include <algorithm>
+#include <memory>
 #include <unordered_map>
 #include <vector>
 
-#include "VideoCommon/VideoCommon.h"
-#include "VideoCommon/Statistics.h"
+#include "Core/HW/Memmap.h"
 
-#include "VideoCommon/VertexShaderManager.h"
+#include "VideoCommon/Statistics.h"
 #include "VideoCommon/VertexLoader.h"
 #include "VideoCommon/VertexLoaderManager.h"
-#include "Core/HW/Memmap.h"
+#include "VideoCommon/VertexShaderManager.h"
+#include "VideoCommon/VideoCommon.h"
 
 static int s_attr_dirty;  // bitfield
 
@@ -33,28 +34,31 @@ struct hash<VertexLoaderUID>
 }
 
 typedef std::unordered_map<VertexLoaderUID, VertexLoader*> VertexLoaderMap;
+typedef std::map<PortableVertexDeclaration, std::unique_ptr<NativeVertexFormat>> NativeVertexLoaderMap;
 
 namespace VertexLoaderManager
 {
 
 static VertexLoaderMap g_VertexLoaderMap;
+static NativeVertexLoaderMap s_native_vertex_map;
 // TODO - change into array of pointers. Keep a map of all seen so far.
 
 void Init()
 {
 	MarkAllDirty();
-	for (int i = 0; i < 8; i++)
-		g_VertexLoaders[i] = NULL;
+	for (VertexLoader*& vertexLoader : g_VertexLoaders)
+		vertexLoader = nullptr;
 	RecomputeCachedArraybases();
 }
 
 void Shutdown()
 {
-	for (VertexLoaderMap::iterator iter = g_VertexLoaderMap.begin(); iter != g_VertexLoaderMap.end(); ++iter)
+	for (auto& p : g_VertexLoaderMap)
 	{
-		delete iter->second;
+		delete p.second;
 	}
 	g_VertexLoaderMap.clear();
+	s_native_vertex_map.clear();
 }
 
 namespace
@@ -96,7 +100,7 @@ void MarkAllDirty()
 	s_attr_dirty = 0xff;
 }
 
-static void RefreshLoader(int vtx_attr_group)
+static VertexLoader* RefreshLoader(int vtx_attr_group)
 {
 	if ((s_attr_dirty >> vtx_attr_group) & 1)
 	{
@@ -116,6 +120,7 @@ static void RefreshLoader(int vtx_attr_group)
 		}
 	}
 	s_attr_dirty &= ~(1 << vtx_attr_group);
+	return g_VertexLoaders[vtx_attr_group];
 }
 
 void RunVertices(int vtx_attr_group, int primitive, int count)
@@ -123,22 +128,32 @@ void RunVertices(int vtx_attr_group, int primitive, int count)
 	if (!count)
 		return;
 
-	RefreshLoader(vtx_attr_group);
-	g_VertexLoaders[vtx_attr_group]->RunVertices(vtx_attr_group, primitive, count);
+	RefreshLoader(vtx_attr_group)->RunVertices(vtx_attr_group, primitive, count);
 }
 
 void RunCompiledVertices(int vtx_attr_group, int primitive, int count, u8* Data)
 {
 	if (!count || !Data)
 		return;
-	RefreshLoader(vtx_attr_group);
-	g_VertexLoaders[vtx_attr_group]->RunCompiledVertices(vtx_attr_group, primitive, count,Data);
+	RefreshLoader(vtx_attr_group)->RunCompiledVertices(vtx_attr_group, primitive, count, Data);
 }
 
 int GetVertexSize(int vtx_attr_group)
 {
-	RefreshLoader(vtx_attr_group);
-	return g_VertexLoaders[vtx_attr_group]->GetVertexSize();
+	return RefreshLoader(vtx_attr_group)->GetVertexSize();
+}
+
+NativeVertexFormat* GetNativeVertexFormat(const PortableVertexDeclaration& format, u32 components)
+{
+	auto& native = s_native_vertex_map[format];
+	if (!native)
+	{
+		auto raw_pointer = g_vertex_manager->CreateNativeVertexFormat();
+		native = std::unique_ptr<NativeVertexFormat>(raw_pointer);
+		native->m_components = components;
+		native->Initialize(format);
+	}
+	return native.get();
 }
 
 }  // namespace
