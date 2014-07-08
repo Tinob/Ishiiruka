@@ -13,9 +13,9 @@ namespace
 template <typename T, int N>
 struct Normal_Direct
 {
-	static void LOADERDECL function()
+	static void LOADERDECL function(TPipelineState &pipelinestate)
 	{
-		_Normal_Direct<T, N>();
+		_Normal_Direct<T, N>(pipelinestate);
 	}
 	static const int size = sizeof(T) * N * 3;
 };
@@ -23,9 +23,9 @@ struct Normal_Direct
 template <typename I, typename T, int N>
 struct Normal_Index
 {
-	static void LOADERDECL function()
+	static void LOADERDECL function(TPipelineState &pipelinestate)
 	{
-		_Normal_Index_Offset<I, T, N, 0>();
+		_Normal_Index_Offset<I, T, N, 0>(pipelinestate);
 	}
 
 	static const int size = sizeof(I);
@@ -34,11 +34,11 @@ struct Normal_Index
 template <typename I, typename T>
 struct Normal_Index_Indices3
 {
-	static void LOADERDECL function()
+	static void LOADERDECL function(TPipelineState &pipelinestate)
 	{
-		_Normal_Index_Offset<I, T, 1, 0>();
-		_Normal_Index_Offset<I, T, 1, 1>();
-		_Normal_Index_Offset<I, T, 1, 2>();
+		_Normal_Index_Offset<I, T, 1, 0>(pipelinestate);
+		_Normal_Index_Offset<I, T, 1, 1>(pipelinestate);
+		_Normal_Index_Offset<I, T, 1, 2>(pipelinestate);
 	}
 
 	static const int size = sizeof(I) * 3;
@@ -48,9 +48,9 @@ struct Normal_Index_Indices3
 template <int N>
 struct Normal_Direct_FLOAT_SSSE3
 {
-	static void LOADERDECL function()
+	static void LOADERDECL function(TPipelineState &pipelinestate)
 	{
-		_Normal_Direct_FLOAT_SSSE3<N>();
+		_Normal_Direct_FLOAT_SSSE3<N>(pipelinestate);
 	}
 	static const int size = sizeof(float) * N * 3;
 };
@@ -58,9 +58,9 @@ struct Normal_Direct_FLOAT_SSSE3
 template <typename I, int N>
 struct Normal_Index_FLOAT_SSSE3
 {
-	static void LOADERDECL function()
+	static void LOADERDECL function(TPipelineState &pipelinestate)
 	{
-		_Normal_Index_FLOAT_SSSE3<I, N>();
+		_Normal_Index_FLOAT_SSSE3<I, N>(pipelinestate);
 	}
 
 	static const int size = sizeof(I);
@@ -69,9 +69,9 @@ struct Normal_Index_FLOAT_SSSE3
 template <typename I>
 struct Normal_Index3_FLOAT_SSSE3
 {
-	static void LOADERDECL function()
+	static void LOADERDECL function(TPipelineState &pipelinestate)
 	{
-		_Normal_Index3_FLOAT_SSSE3<I>();
+		_Normal_Index3_FLOAT_SSSE3<I>(pipelinestate);
 	}
 	static const int size = sizeof(I) * 3;
 };
@@ -82,9 +82,9 @@ struct Normal_Index3_FLOAT_SSSE3
 template <int N>
 struct Normal_Direct_S16_SSSE4
 {
-	static void LOADERDECL function()
+	static void LOADERDECL function(TPipelineState &pipelinestate)
 	{
-		_Normal_Direct_S16_SSSE4<N>();
+		_Normal_Direct_S16_SSSE4<N>(pipelinestate);
 	}
 
 	static const int size = sizeof(s16) * N * 3;
@@ -93,9 +93,9 @@ struct Normal_Direct_S16_SSSE4
 template <int N>
 struct Normal_Direct_U16_SSSE4
 {
-	static void LOADERDECL function()
+	static void LOADERDECL function(TPipelineState &pipelinestate)
 	{
-		_Normal_Direct_U16_SSSE4<N>();
+		_Normal_Direct_U16_SSSE4<N>(pipelinestate);
 	}
 
 	static const int size = sizeof(u16) * N * 3;
@@ -104,9 +104,9 @@ struct Normal_Direct_U16_SSSE4
 template <typename I, int N>
 struct Normal_Index_S16_SSE4
 {
-	static void LOADERDECL function()
+	static void LOADERDECL function(TPipelineState &pipelinestate)
 	{
-		_Normal_Index_S16_SSE4<I, N>();
+		_Normal_Index_S16_SSE4<I, N>(pipelinestate);
 	}
 
 	static const int size = sizeof(I);
@@ -115,9 +115,9 @@ struct Normal_Index_S16_SSE4
 template <typename I, int N>
 struct Normal_Index_U16_SSE4
 {
-	static void LOADERDECL function()
+	static void LOADERDECL function(TPipelineState &pipelinestate)
 	{
-		_Normal_Index_U16_SSE4<I, N>();
+		_Normal_Index_U16_SSE4<I, N>(pipelinestate);
 	}
 
 	static const int size = sizeof(I);
@@ -126,9 +126,9 @@ struct Normal_Index_U16_SSE4
 template <typename I>
 struct Normal_Index3_S16_SSE4
 {
-	static void LOADERDECL function()
+	static void LOADERDECL function(TPipelineState &pipelinestate)
 	{
-		_Normal_Index3_S16_SSE4<I>();
+		_Normal_Index3_S16_SSE4<I>(pipelinestate);
 	}
 
 	static const int size = sizeof(I) * 3;
@@ -137,9 +137,9 @@ struct Normal_Index3_S16_SSE4
 template <typename I>
 struct Normal_Index3_U16_SSE4
 {
-	static void LOADERDECL function()
+	static void LOADERDECL function(TPipelineState &pipelinestate)
 	{
-		_Normal_Index3_U16_SSE4<I>();
+		_Normal_Index3_U16_SSE4<I>(pipelinestate);
 	}
 
 	static const int size = sizeof(I) * 3;

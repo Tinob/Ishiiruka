@@ -17,12 +17,6 @@
 #include "VideoCommon/DataReader.h"
 #include "VideoCommon/NativeVertexFormat.h"
 
-#ifndef _M_GENERIC
-#ifndef __APPLE__
-#define USE_VERTEX_LOADER_JIT
-#endif
-#endif
-
 extern const float fractionTable[];
 class VertexLoaderUID
 {
@@ -87,12 +81,7 @@ private:
 	}
 };
 
-// ARMTODO: This should be done in a better way
-#ifndef _M_GENERIC
-class VertexLoader : public Gen::X64CodeBlock
-#else
 class VertexLoader
-#endif
 {
 public:
 	VertexLoader(const TVtxDesc &vtx_desc, const VAT &vtx_attr);
@@ -109,6 +98,7 @@ public:
 	int GetNumLoadedVerts() const { return m_numLoadedVertices; }
 
 private:
+	TPipelineState PipelineState;
 	enum
 	{
 		NRM_ZERO = 0,
@@ -126,15 +116,8 @@ private:
 	NativeVertexFormat *m_NativeFmt;
 	int native_stride;
 
-#ifdef USE_VERTEX_LOADER_JIT
-	const u8 *m_compiledCode;
-#else
-	// Pipeline. To be JIT compiled in the future.
-	TPipelineFunction m_PipelineStages[64];  // TODO - figure out real max. it's lower.
-	int m_numPipelineStages;
-#endif
-
-	
+	TPipelineFunction m_PipelineStages[32];
+	int m_numPipelineStages;	
 
 	int m_numLoadedVertices;
 
@@ -144,9 +127,4 @@ private:
 	void ConvertVertices(int count);
 
 	void WriteCall(TPipelineFunction);
-
-#ifndef _M_GENERIC
-	void WriteGetVariable(int bits, Gen::OpArg dest, void *address);
-	void WriteSetVariable(int bits, void *address, Gen::OpArg dest);
-#endif
 };

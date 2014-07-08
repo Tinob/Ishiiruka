@@ -7,143 +7,140 @@
 #include "VideoCommon/VertexLoader.h"
 #include "VideoCommon/VertexLoadingSSE.h"
 
-extern float posScale;
-extern TVtxAttr *pVtxAttr;
-
 template <typename T>
-float PosScale(T val)
+float PosScale(TPipelineState &pipelinestate, T val)
 {
-	return val * posScale;
+	return val * pipelinestate.posScale;
 }
 
 template <>
-float PosScale(float val)
+float PosScale(TPipelineState &pipelinestate, float val)
 {
 	return val;
 }
 
 template <typename T>
-__forceinline u8* IndexedDataPosition()
+__forceinline u8* IndexedDataPosition(TPipelineState &pipelinestate)
 {
-	auto const index = DataRead<T>();
+	auto const index = pipelinestate.Read<T>();
 	return cached_arraybases[ARRAY_POSITION] + (index * arraystrides[ARRAY_POSITION]);
 }
 
 template <typename T, int N>
-__forceinline void _Pos_ReadDirect()
+__forceinline void _Pos_ReadDirect(TPipelineState &pipelinestate)
 {
 	static_assert(N <= 3, "N > 3 is not sane!");
 
 	for (int i = 0; i < 3; ++i)
-		DataWrite(i<N ? PosScale(DataRead<T>()) : 0.f);
+		pipelinestate.Write(i<N ? PosScale(pipelinestate, pipelinestate.Read<T>()) : 0.f);
 }
 
 template <typename I, typename T, int N>
-__forceinline void _Pos_ReadIndex()
+__forceinline void _Pos_ReadIndex(TPipelineState &pipelinestate)
 {
 	static_assert(!std::numeric_limits<I>::is_signed, "Only unsigned I is sane!");
 	static_assert(N <= 3, "N > 3 is not sane!");
 
-	auto const data = reinterpret_cast<const T*>(IndexedDataPosition<I>());
+	auto const data = reinterpret_cast<const T*>(IndexedDataPosition<I>(pipelinestate));
 
 	for (int i = 0; i < 3; ++i)
-		DataWrite(i<N ? PosScale(Common::FromBigEndian(data[i])) : 0.f);
+		pipelinestate.Write(i<N ? PosScale(pipelinestate, Common::FromBigEndian(data[i])) : 0.f);
 }
 
 #if _M_SSE >= 0x301
 template <typename I, bool three>
-__forceinline void _Pos_ReadIndex_Float_SSSE3()
+__forceinline void _Pos_ReadIndex_Float_SSSE3(TPipelineState &pipelinestate)
 {
-	const __m128i* pData = (const __m128i*)IndexedDataPosition<I>();
+	const __m128i* pData = (const __m128i*)IndexedDataPosition<I>(pipelinestate);
 	if (three)
 	{
-		Float3ToFloat3sse3((__m128i*)VertexManager::s_pCurBufferPointer, pData);
+		Float3ToFloat3sse3((__m128i*)pipelinestate.GetWritePosition(), pData);
 	}
 	else
 	{
-		Float2ToFloat3sse3((__m128i*)VertexManager::s_pCurBufferPointer, pData);
+		Float2ToFloat3sse3((__m128i*)pipelinestate.GetWritePosition(), pData);
 	}
-	VertexManager::s_pCurBufferPointer += sizeof(float) * 3;
+	pipelinestate.WriteSkip(sizeof(float) * 3);
 }
 
 template <bool three>
-__forceinline void _Pos_ReadDirect_Float_SSSE3()
+__forceinline void _Pos_ReadDirect_Float_SSSE3(TPipelineState &pipelinestate)
 {
-	const __m128i* pData = (const __m128i*)DataGetPosition();
+	const __m128i* pData = (const __m128i*)pipelinestate.GetReadPosition();
 	if (three)
 	{
-		DataSkip(sizeof(float) * 3);
-		Float3ToFloat3sse3((__m128i*)VertexManager::s_pCurBufferPointer, pData);
+		pipelinestate.ReadSkip(sizeof(float) * 3);
+		Float3ToFloat3sse3((__m128i*)pipelinestate.GetWritePosition(), pData);
 	}
 	else
 	{
-		DataSkip(sizeof(float) * 2);
-		Float2ToFloat3sse3((__m128i*)VertexManager::s_pCurBufferPointer, pData);
+		pipelinestate.ReadSkip(sizeof(float) * 2);
+		Float2ToFloat3sse3((__m128i*)pipelinestate.GetWritePosition(), pData);
 	}
-	VertexManager::s_pCurBufferPointer += sizeof(float) * 3;
+	pipelinestate.WriteSkip(sizeof(float) * 3);
 }
 #endif
 
 #if _M_SSE >= 0x401
 template <typename I, bool Signed>
-__forceinline void _Pos_ReadIndex_16x2_SSE4()
+__forceinline void _Pos_ReadIndex_16x2_SSE4(TPipelineState &pipelinestate)
 {
-	const s32 Data = *((const s32*)IndexedDataPosition<I>());
+	const s32 Data = *((const s32*)IndexedDataPosition<I>(pipelinestate));
 	if (Signed)
 	{
-		Short2ToFloat3sse4((float*)VertexManager::s_pCurBufferPointer, Data, &posScale);
+		Short2ToFloat3sse4((float*)pipelinestate.GetWritePosition(), Data, &pipelinestate.posScale);
 	}
 	else
 	{
-		UShort2ToFloat3sse4((float*)VertexManager::s_pCurBufferPointer, Data, &posScale);
+		UShort2ToFloat3sse4((float*)pipelinestate.GetWritePosition(), Data, &pipelinestate.posScale);
 	}
-	VertexManager::s_pCurBufferPointer += sizeof(float) * 3;
+	pipelinestate.WriteSkip(sizeof(float) * 3);
 }
 
 template <typename I, bool Signed>
-__forceinline void _Pos_ReadIndex_16x3_SSE4()
+__forceinline void _Pos_ReadIndex_16x3_SSE4(TPipelineState &pipelinestate)
 {
-	const __m128i* pData = (const __m128i*)IndexedDataPosition<I>();
+	const __m128i* pData = (const __m128i*)IndexedDataPosition<I>(pipelinestate);
 	if (Signed)
 	{
-		Short3ToFloat3sse4((float*)VertexManager::s_pCurBufferPointer, pData, &posScale);
+		Short3ToFloat3sse4((float*)pipelinestate.GetWritePosition(), pData, &pipelinestate.posScale);
 	}
 	else
 	{
-		UShort3ToFloat3sse4((float*)VertexManager::s_pCurBufferPointer, pData, &posScale);
+		UShort3ToFloat3sse4((float*)pipelinestate.GetWritePosition(), pData, &pipelinestate.posScale);
 	}
-	VertexManager::s_pCurBufferPointer += sizeof(float) * 3;
+	pipelinestate.WriteSkip(sizeof(float) * 3);
 }
 
 template <bool Signed>
-__forceinline void _Pos_ReadDirect_16x2_SSE4()
+__forceinline void _Pos_ReadDirect_16x2_SSE4(TPipelineState &pipelinestate)
 {
-	const s32 Data = *((const s32*)DataGetPosition());
-	DataSkip(sizeof(s16) * 2);
+	const s32 Data = *((const s32*)pipelinestate.GetReadPosition());
+	pipelinestate.ReadSkip(sizeof(s16) * 2);
 	if (Signed)
 	{
-		Short2ToFloat3sse4((float*)VertexManager::s_pCurBufferPointer, Data, &posScale);
+		Short2ToFloat3sse4((float*)pipelinestate.GetWritePosition(), Data, &pipelinestate.posScale);
 	}
 	else
 	{
-		UShort2ToFloat3sse4((float*)VertexManager::s_pCurBufferPointer, Data, &posScale);
+		UShort2ToFloat3sse4((float*)pipelinestate.GetWritePosition(), Data, &pipelinestate.posScale);
 	}
-	VertexManager::s_pCurBufferPointer += sizeof(float) * 3;
+	pipelinestate.WriteSkip(sizeof(float) * 3);
 }
 
 template <bool Signed>
-__forceinline void _Pos_ReadDirect_16x3_SSE4()
+__forceinline void _Pos_ReadDirect_16x3_SSE4(TPipelineState &pipelinestate)
 {
-	const __m128i* pData = (const __m128i*)DataGetPosition();
-	DataSkip(sizeof(s16) * 3);
+	const __m128i* pData = (const __m128i*)pipelinestate.GetReadPosition();
+	pipelinestate.ReadSkip(sizeof(s16) * 3);
 	if (Signed)
 	{
-		Short3ToFloat3sse4((float*)VertexManager::s_pCurBufferPointer, pData, &posScale);
+		Short3ToFloat3sse4((float*)pipelinestate.GetWritePosition(), pData, &pipelinestate.posScale);
 	}
 	else
 	{
-		UShort3ToFloat3sse4((float*)VertexManager::s_pCurBufferPointer, pData, &posScale);
+		UShort3ToFloat3sse4((float*)pipelinestate.GetWritePosition(), pData, &pipelinestate.posScale);
 	}
-	VertexManager::s_pCurBufferPointer += sizeof(float) * 3;
+	pipelinestate.WriteSkip(sizeof(float) * 3);
 }
 #endif

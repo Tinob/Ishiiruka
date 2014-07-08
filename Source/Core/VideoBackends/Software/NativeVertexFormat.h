@@ -7,14 +7,7 @@
 
 #include "Vec3.h"
 #include "Common/ChunkFile.h"
-
-#ifdef WIN32
-#define LOADERDECL __cdecl
-#else
-#define LOADERDECL
-#endif
-
-typedef void (LOADERDECL *TPipelineFunction)();
+#include "VideoCommon/NativeVertexFormat.h"
 
 struct Vec4
 {

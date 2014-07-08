@@ -19,6 +19,8 @@ class SWVertexLoader
 
 	VAT* m_CurrentVat;
 
+	TPipelineState PipelineState;
+
 	TPipelineFunction m_positionLoader;
 	TPipelineFunction m_normalLoader;
 	TPipelineFunction m_colorLoader[2];

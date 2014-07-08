@@ -7,48 +7,48 @@
 
 bool VertexLoader_TextCoord::Initialized = false;
 
-void LOADERDECL TexCoord_Read_Dummy()
+void LOADERDECL TexCoord_Read_Dummy(TPipelineState &pipelinestate)
 {
-	tcIndex++;
+	pipelinestate.tcIndex++;
 }
 
 template <typename T, s32 N>
-void LOADERDECL TexCoord_ReadDirect()
+void LOADERDECL TexCoord_ReadDirect(TPipelineState &pipelinestate)
 {
-	_TexCoord_ReadDirect<T, N>();
+	_TexCoord_ReadDirect<T, N>(pipelinestate);
 }
 
 template <typename I, typename T, s32 N>
-void LOADERDECL TexCoord_ReadIndex()
+void LOADERDECL TexCoord_ReadIndex(TPipelineState &pipelinestate)
 {
-	_TexCoord_ReadIndex<I, T, N>();
+	_TexCoord_ReadIndex<I, T, N>(pipelinestate);
 }
 
 #if _M_SSE >= 0x301
 template <typename I>
-void LOADERDECL TexCoord_ReadIndex_Float2_SSSE3()
+void LOADERDECL TexCoord_ReadIndex_Float2_SSSE3(TPipelineState &pipelinestate)
 {
-	_TexCoord_ReadIndex_Float2_SSSE3<I>();
+	_TexCoord_ReadIndex_Float2_SSSE3<I>(pipelinestate);
 }
 
-void LOADERDECL TexCoord_ReadDirect_Float2_SSSE3()
+void LOADERDECL TexCoord_ReadDirect_Float2_SSSE3(TPipelineState &pipelinestate)
 {
-	_TexCoord_ReadDirect_Float2_SSSE3();
+	_TexCoord_ReadDirect_Float2_SSSE3(pipelinestate);
 }
 
 #endif
 
 #if _M_SSE >= 0x401
 template <typename I, bool Signed>
-void LOADERDECL TexCoord_ReadIndex_16x2_SSE4()
+void LOADERDECL TexCoord_ReadIndex_16x2_SSE4(TPipelineState &pipelinestate)
 {
-	_TexCoord_ReadIndex_16x2_SSE4<I, Signed>();
+	_TexCoord_ReadIndex_16x2_SSE4<I, Signed>(pipelinestate);
 }
 
 template <bool Signed>
-void LOADERDECL TexCoord_ReadDirect_16x2_SSE4()
+void LOADERDECL TexCoord_ReadDirect_16x2_SSE4(TPipelineState &pipelinestate)
 {
-	_TexCoord_ReadDirect_16x2_SSE4<Signed>();
+	_TexCoord_ReadDirect_16x2_SSE4<Signed>(pipelinestate);
 }
 #endif
 

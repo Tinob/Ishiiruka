@@ -55,61 +55,61 @@ bool VertexLoader_Position::Initialized = false;
 
 
 template <typename T, int N>
-void LOADERDECL Pos_ReadDirect()
+void LOADERDECL Pos_ReadDirect(TPipelineState &pipelinestate)
 {
-	_Pos_ReadDirect<T, N>()
+	_Pos_ReadDirect<T, N>(pipelinestate)
 	LOG_VTX();
 }
 
 template <typename I, typename T, int N>
-void LOADERDECL Pos_ReadIndex()
+void LOADERDECL Pos_ReadIndex(TPipelineState &pipelinestate)
 {
-	_Pos_ReadIndex<I,T,N>();
+	_Pos_ReadIndex<I, T, N>(pipelinestate);
 	LOG_VTX();	
 }
 
 #if _M_SSE >= 0x301
 template <typename I, bool three>
-void LOADERDECL Pos_ReadIndex_Float_SSSE3()
+void LOADERDECL Pos_ReadIndex_Float_SSSE3(TPipelineState &pipelinestate)
 {
-	_Pos_ReadIndex_Float_SSSE3<I, three>();
+	_Pos_ReadIndex_Float_SSSE3<I, three>(pipelinestate);
 	LOG_VTX();
 }
 
 template <bool three>
-void LOADERDECL Pos_ReadDirect_Float_SSSE3()
+void LOADERDECL Pos_ReadDirect_Float_SSSE3(TPipelineState &pipelinestate)
 {
-	_Pos_ReadDirect_Float_SSSE3<three>();
+	_Pos_ReadDirect_Float_SSSE3<three>(pipelinestate);
 	LOG_VTX();
 }
 #endif
 
 #if _M_SSE >= 0x401
 template <typename I, bool Signed>
-void LOADERDECL Pos_ReadIndex_16x2_SSE4()
+void LOADERDECL Pos_ReadIndex_16x2_SSE4(TPipelineState &pipelinestate)
 {
-	_Pos_ReadIndex_16x2_SSE4<I, Signed>();
+	_Pos_ReadIndex_16x2_SSE4<I, Signed>(pipelinestate);
 	LOG_VTX();
 }
 
 template <typename I, bool Signed>
-void LOADERDECL Pos_ReadIndex_16x3_SSE4()
+void LOADERDECL Pos_ReadIndex_16x3_SSE4(TPipelineState &pipelinestate)
 {
-	_Pos_ReadIndex_16x3_SSE4<I, Signed>();
+	_Pos_ReadIndex_16x3_SSE4<I, Signed>(pipelinestate);
 	LOG_VTX();
 }
 
 template <bool Signed>
-void LOADERDECL Pos_ReadDirect_16x2_SSE4()
+void LOADERDECL Pos_ReadDirect_16x2_SSE4(TPipelineState &pipelinestate)
 {
-	_Pos_ReadDirect_16x2_SSE4<Signed>();
+	_Pos_ReadDirect_16x2_SSE4<Signed>(pipelinestate);
 	LOG_VTX();
 }
 
 template <bool Signed>
-void LOADERDECL Pos_ReadDirect_16x3_SSE4()
+void LOADERDECL Pos_ReadDirect_16x3_SSE4(TPipelineState &pipelinestate)
 {
-	_Pos_ReadDirect_16x3_SSE4<Signed>();
+	_Pos_ReadDirect_16x3_SSE4<Signed>(pipelinestate);
 	LOG_VTX();
 }
 #endif

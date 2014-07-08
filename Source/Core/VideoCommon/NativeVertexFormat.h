@@ -5,6 +5,7 @@
 #pragma once
 
 #include "Common/Common.h"
+#include "VideoCommon/DataReader.h"
 
 // m_components
 enum
@@ -47,7 +48,47 @@ enum
 #define LOADERDECL
 #endif
 
-typedef void (LOADERDECL *TPipelineFunction)();
+class TPipelineState : public DataReader, public DataWriter
+{
+public:
+	TPipelineState(const u8* source, u8* destination) : DataReader(source), DataWriter(destination)
+	{
+		Clear();
+	};
+	TPipelineState() : DataReader(), DataWriter(){ Clear(); };
+	void Initialize(const u8* source, u8* destination)
+	{ 
+		DataReader::SetReadPosition(source); 
+		DataWriter::SetWritePosition(destination);
+	}
+	void Clear()
+	{
+		curposmtx = 0;
+		memset(curtexmtx, 0, sizeof(curtexmtx));
+		texmtxwrite = 0;
+		texmtxread = 0;
+		tcIndex = 0;
+		colIndex = 0;
+		colElements[0] = 0;
+		colElements[1] = 0;
+		posScale = 0.0;
+		memset(tcScale, 0, sizeof(tcScale));
+		count = 0;;
+	}
+	float posScale;
+	float tcScale[8];
+	s32 count;
+	u8 colIndex;
+	u8 tcIndex;	
+	u8 curposmtx;	
+	u8 texmtxwrite;
+	u8 texmtxread;
+	u8 padding;
+	u8 colElements[2];
+	u8 curtexmtx[8];
+};
+
+typedef void (LOADERDECL *TPipelineFunction)(TPipelineState &pipelinestate);
 
 enum VarType
 {

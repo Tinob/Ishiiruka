@@ -131,9 +131,93 @@ __forceinline u8* DataGetPosition()
 	return g_pVideoData;
 }
 
-template <typename T>
-__forceinline void DataWrite(T data)
+
+class DataReader
 {
-	*(T*)VertexManager::s_pCurBufferPointer = data;
-	VertexManager::s_pCurBufferPointer += sizeof(T);
-}
+public:
+	inline DataReader(const u8 *source) : Rbuffer(source) {}
+	inline DataReader() : Rbuffer(nullptr) {}	
+	__forceinline void ReadSkip(u32 skip)
+	{
+		Rbuffer += skip;
+	}
+
+	template <typename T> __forceinline T Peek(int _uOffset)
+	{
+		auto const result = Common::FromBigEndian(*reinterpret_cast<const T*>(Rbuffer + _uOffset));
+		return result;
+	}
+	
+	template <typename T> __forceinline T Peek()
+	{
+		auto const result = Common::FromBigEndian(*reinterpret_cast<const T*>(Rbuffer));
+		return result;
+	}
+
+	template <typename T> __forceinline T PeekUnswapped(int _uOffset)
+	{
+		auto const result = *reinterpret_cast<const T*>(Rbuffer + _uOffset);
+		return result;
+	}
+
+	template <typename T> __forceinline T PeekUnswapped()
+	{
+		auto const result = *reinterpret_cast<const T*>(Rbuffer);
+		return result;
+	}
+
+	template <typename T> __forceinline T Read()
+	{
+		auto const result = Peek<T>();
+		ReadSkip(sizeof(T));
+		return result;
+	}
+
+	template <typename T> __forceinline T ReadUnswapped()
+	{
+		auto const result = PeekUnswapped<T>();
+		ReadSkip(sizeof(T));
+		return result;
+	}
+
+	__forceinline const u8* GetReadPosition()
+	{
+		return Rbuffer;
+	}
+	
+	__forceinline void SetReadPosition(const u8 *source)
+	{ 
+		Rbuffer = source; 
+	}
+private:
+	const u8 *Rbuffer;
+};
+
+class DataWriter
+{
+public:
+	inline DataWriter(u8 *destination) : Wbuffer(destination) {}
+	inline DataWriter() : Wbuffer(nullptr) {}
+	__forceinline void WriteSkip(u32 skip)
+	{
+		Wbuffer += skip;
+	}
+
+	template <typename T> __forceinline void Write(T data)
+	{
+		*((T*)Wbuffer) = data;
+		WriteSkip(sizeof(T));
+	}
+
+	__forceinline u8* GetWritePosition()
+	{
+		return Wbuffer;
+	}
+	
+	__forceinline void SetWritePosition(u8 *destination)
+	{ 
+		Wbuffer = destination; 
+	}
+private:
+	u8 *Wbuffer;
+};

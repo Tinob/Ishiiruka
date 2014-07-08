@@ -29,31 +29,12 @@
 //BBox
 #include "VideoCommon/XFMemory.h"
 
-#define COMPILED_CODE_SIZE 4096
-
 NativeVertexFormat *g_nativeVertexFmt;
 
 #ifndef _WIN32
 	#undef inline
 	#define inline
 #endif
-
-// Matrix components are first in GC format but later in PC format - we need to store it temporarily
-// when decoding each vertex.
-static u8 s_curposmtx = MatrixIndexA.PosNormalMtxIdx;
-static u8 s_curtexmtx[8];
-static int s_texmtxwrite = 0;
-static int s_texmtxread = 0;
-
-static int loop_counter;
-
-// Vertex loaders read these. Although the scale ones should be baked into the shader.
-int tcIndex;
-int colIndex;
-TVtxAttr* pVtxAttr;
-int colElements[2];
-float posScale;
-float tcScale[8];
 
 // bbox variables
 // bbox must read vertex position, so convert it to this buffer
@@ -81,36 +62,33 @@ const float fractionTable[32] = {
 	1.0f / (1U << 28), 1.0f / (1U << 29), 1.0f / (1U << 30), 1.0f / (1U << 31),
 };
 
-using namespace Gen;
-
-void LOADERDECL PosMtx_ReadDirect_UByte()
+void LOADERDECL PosMtx_ReadDirect_UByte(TPipelineState &pipelinestate)
 {
-	s_curposmtx = DataReadU8() & 0x3f;
-	PRIM_LOG("posmtx: %d, ", s_curposmtx);
+	pipelinestate.curposmtx = pipelinestate.Read<u8>() & 0x3f;
 }
 
-void LOADERDECL PosMtx_Write()
+void LOADERDECL PosMtx_Write(TPipelineState &pipelinestate)
 {
-	DataWrite<u8>(s_curposmtx);
-	DataWrite<u8>(0);
-	DataWrite<u8>(0);
-	DataWrite<u8>(0);
+	pipelinestate.Write<u8>(pipelinestate.curposmtx);
+	pipelinestate.Write<u8>(0);
+	pipelinestate.Write<u8>(0);
+	pipelinestate.Write<u8>(0);
 }
 
-void LOADERDECL PosMtxDisabled_Write()
+void LOADERDECL PosMtxDisabled_Write(TPipelineState &pipelinestate)
 {
-	DataWrite<u32>(0);
+	pipelinestate.Write<u32>(0);
 }
 
-void LOADERDECL UpdateBoundingBoxPrepare()
+void LOADERDECL UpdateBoundingBoxPrepare(TPipelineState &pipelinestate)
 {
 	if (!PixelEngine::bbox_active)
 		return;
 
 	// set our buffer as videodata buffer, so we will get a copy of the vertex positions
 	// this is a big hack, but so we can use the same converting function then without bbox
-	s_bbox_pCurBufferPointer_orig = VertexManager::s_pCurBufferPointer;
-	VertexManager::s_pCurBufferPointer = (u8*)s_bbox_vertex_buffer;
+	s_bbox_pCurBufferPointer_orig = pipelinestate.GetWritePosition();
+	pipelinestate.SetWritePosition((u8*)s_bbox_vertex_buffer);
 }
 
 inline bool UpdateBoundingBoxVars()
@@ -199,17 +177,17 @@ inline bool UpdateBoundingBoxVars()
 	}
 }
 
-void LOADERDECL UpdateBoundingBox()
+void LOADERDECL UpdateBoundingBox(TPipelineState &pipelinestate)
 {
 	if (!PixelEngine::bbox_active)
 		return;
 
 	// Reset videodata pointer
-	VertexManager::s_pCurBufferPointer = s_bbox_pCurBufferPointer_orig;
+	pipelinestate.SetWritePosition(s_bbox_pCurBufferPointer_orig);
 
 	// Copy vertex pointers
-	memcpy(VertexManager::s_pCurBufferPointer, s_bbox_vertex_buffer, 12);
-	VertexManager::s_pCurBufferPointer += 12;
+	memcpy(pipelinestate.GetWritePosition(), s_bbox_vertex_buffer, 12);
+	pipelinestate.WriteSkip(12);
 
 	// We must transform the just loaded point by the current world and projection matrix - in software
 	float transformed[3];
@@ -218,7 +196,7 @@ void LOADERDECL UpdateBoundingBox()
 	// We need to get the raw projection values for the bounding box calculation
 	// to work properly. That means, no projection hacks!
 	const float * const orig_point = s_bbox_vertex_buffer;
-	const float * const world_matrix = (float*)xfmem + s_curposmtx * 4;
+	const float * const world_matrix = (float*)xfmem + pipelinestate.curposmtx * 4;
 	const float * const proj_matrix = xfregs.projection.rawProjection;
 
 	// Transform by world matrix
@@ -436,101 +414,57 @@ void LOADERDECL UpdateBoundingBox()
 	PixelEngine::bbox[3] = (bottom > PixelEngine::bbox[3]) ? bottom : PixelEngine::bbox[3];
 }
 
-void LOADERDECL TexMtx_ReadDirect_UByte()
+void LOADERDECL TexMtx_ReadDirect_UByte(TPipelineState &pipelinestate)
 {
-	s_curtexmtx[s_texmtxread] = DataReadU8() & 0x3f;
-	PRIM_LOG("texmtx%d: %d, ", s_texmtxread, s_curtexmtx[s_texmtxread]);
-	s_texmtxread++;
+	pipelinestate.curtexmtx[pipelinestate.texmtxread] = pipelinestate.Read<u8>() & 0x3f;	
+	pipelinestate.texmtxread++;
 }
 
-void LOADERDECL TexMtx_Write_Float()
+void LOADERDECL TexMtx_Write_Float(TPipelineState &pipelinestate)
 {
-	DataWrite(float(s_curtexmtx[s_texmtxwrite++]));
+	pipelinestate.Write(float(pipelinestate.curtexmtx[pipelinestate.texmtxwrite++]));
 }
 
-void LOADERDECL TexMtx_Write_Float2()
+void LOADERDECL TexMtx_Write_Float2(TPipelineState &pipelinestate)
 {
-	DataWrite(0.f);
-	DataWrite(float(s_curtexmtx[s_texmtxwrite++]));
+	pipelinestate.Write(0.f);
+	pipelinestate.Write(float(pipelinestate.curtexmtx[pipelinestate.texmtxwrite++]));
 }
 
-void LOADERDECL TexMtx_Write_Float4()
+void LOADERDECL TexMtx_Write_Float4(TPipelineState &pipelinestate)
 {
-	DataWrite(0.f);
-	DataWrite(0.f);
-	DataWrite(float(s_curtexmtx[s_texmtxwrite++]));
+	pipelinestate.Write(0.f);
+	pipelinestate.Write(0.f);
+	pipelinestate.Write(float(pipelinestate.curtexmtx[pipelinestate.texmtxwrite++]));
 	// Just to fill out with 0.
-	DataWrite(0.f);
+	pipelinestate.Write(0.f);
 }
 
-VertexLoader::VertexLoader(const TVtxDesc &vtx_desc, const VAT &vtx_attr) 
+VertexLoader::VertexLoader(const TVtxDesc &vtx_desc, const VAT &vtx_attr) : PipelineState()
 {
-	m_compiledCode = NULL;
 	m_numLoadedVertices = 0;
 	m_VertexSize = 0;
 	
-	loop_counter = 0;
 	VertexLoader_Normal::Init();
 	VertexLoader_Position::Init();
 	VertexLoader_TextCoord::Init();
 
 	m_VtxDesc = vtx_desc;
 	SetVAT(vtx_attr.g0.Hex, vtx_attr.g1.Hex, vtx_attr.g2.Hex);
-
-	#ifdef USE_VERTEX_LOADER_JIT
-	AllocCodeSpace(COMPILED_CODE_SIZE);
-	CompileVertexTranslator();
-	WriteProtect();
-	#else
 	m_numPipelineStages = 0;
 	CompileVertexTranslator();
-	#endif
-
 }
 
 VertexLoader::~VertexLoader() 
 {
-	#ifdef USE_VERTEX_LOADER_JIT
-	FreeCodeSpace();
-	#endif
+	
 }
 
 void VertexLoader::CompileVertexTranslator()
 {
 	m_VertexSize = 0;
-	const TVtxAttr &vtx_attr = m_VtxAttr;
-
-#ifdef USE_VERTEX_LOADER_JIT
-	if (m_compiledCode)
-		PanicAlert("Trying to recompile a vertex translator");
-
-	m_compiledCode = GetCodePtr();
-	ABI_PushAllCalleeSavedRegsAndAdjustStack();
-
-	// Start loop here
-	const u8 *loop_start = GetCodePtr();
-
-	// Reset component counters if present in vertex format only.
-	if (m_VtxDesc.Tex0Coord || m_VtxDesc.Tex1Coord || m_VtxDesc.Tex2Coord || m_VtxDesc.Tex3Coord ||
-		m_VtxDesc.Tex4Coord || m_VtxDesc.Tex5Coord || m_VtxDesc.Tex6Coord || m_VtxDesc.Tex7Coord)
-	{
-		WriteSetVariable(32, &tcIndex, Imm32(0));
-	}
-	if (m_VtxDesc.Color0 || m_VtxDesc.Color1)
-	{
-		WriteSetVariable(32, &colIndex, Imm32(0));
-	}
-	if (m_VtxDesc.Tex0MatIdx || m_VtxDesc.Tex1MatIdx || m_VtxDesc.Tex2MatIdx || m_VtxDesc.Tex3MatIdx ||
-		m_VtxDesc.Tex4MatIdx || m_VtxDesc.Tex5MatIdx || m_VtxDesc.Tex6MatIdx || m_VtxDesc.Tex7MatIdx)
-	{
-		WriteSetVariable(32, &s_texmtxwrite, Imm32(0));
-		WriteSetVariable(32, &s_texmtxread, Imm32(0));
-	}
-#else
 	// Reset pipeline
 	m_numPipelineStages = 0;
-#endif
-
 	// Colors
 	const u32 col[2] = {m_VtxDesc.Color0, m_VtxDesc.Color1};
 	// TextureCoord
@@ -541,8 +475,6 @@ void VertexLoader::CompileVertexTranslator()
 		m_VtxDesc.Tex0Coord, m_VtxDesc.Tex1Coord, m_VtxDesc.Tex2Coord, m_VtxDesc.Tex3Coord,
 		m_VtxDesc.Tex4Coord, m_VtxDesc.Tex5Coord, m_VtxDesc.Tex6Coord, (const u32)((m_VtxDesc.Hex >> 31) & 3)
 	};
-	
-	
 
 	u32 components = 0;
 
@@ -604,7 +536,7 @@ void VertexLoader::CompileVertexTranslator()
 		}
 		WriteCall(pFunc);
 
-		for (int i = 0; i < (vtx_attr.NormalElements ? 3 : 1); i++)
+		for (int i = 0; i < (m_VtxAttr.NormalElements ? 3 : 1); i++)
 		{
 			vtx_decl.normals[i].components = 3;
 			vtx_decl.normals[i].enable = true;
@@ -718,8 +650,8 @@ void VertexLoader::CompileVertexTranslator()
 				vtx_decl.texcoords[i].enable = true;
 				vtx_decl.texcoords[i].offset = nat_offset;
 				vtx_decl.texcoords[i].type = VAR_FLOAT;
-				vtx_decl.texcoords[i].components = vtx_attr.texCoord[i].Elements ? 2 : 1;
-				nat_offset += 4 * (vtx_attr.texCoord[i].Elements ? 2 : 1);
+				vtx_decl.texcoords[i].components = m_VtxAttr.texCoord[i].Elements ? 2 : 1;
+				nat_offset += 4 * (m_VtxAttr.texCoord[i].Elements ? 2 : 1);
 			}
 		}
 		if (tc[i] == NOT_PRESENT)
@@ -762,62 +694,13 @@ void VertexLoader::CompileVertexTranslator()
 
 	native_stride = nat_offset;
 	vtx_decl.stride = native_stride;
-
-#ifdef USE_VERTEX_LOADER_JIT
-	// End loop here
-#ifdef _M_X86_64
-	MOV(64, R(RAX), Imm64((u64)&loop_counter));
-	SUB(32, MatR(RAX), Imm8(1));
-#else
-	SUB(32, M(&loop_counter), Imm8(1));
-#endif
-
-	J_CC(CC_NZ, loop_start, true);
-	ABI_PopAllCalleeSavedRegsAndAdjustStack();
-	RET();
-#endif
 	m_NativeFmt = VertexLoaderManager::GetNativeVertexFormat(vtx_decl, components);
 }
 
 void VertexLoader::WriteCall(TPipelineFunction func)
 {
-#ifdef USE_VERTEX_LOADER_JIT
-#ifdef _M_X86_64
-	MOV(64, R(RAX), Imm64((u64)func));
-	CALLptr(R(RAX));
-#else
-	CALL((void*)func);
-#endif
-#else
 	m_PipelineStages[m_numPipelineStages++] = func;
-#endif
 }
-// ARMTODO: This should be done in a better way
-#ifndef _M_GENERIC
-void VertexLoader::WriteGetVariable(int bits, OpArg dest, void *address)
-{
-#ifdef USE_VERTEX_LOADER_JIT
-#ifdef _M_X86_64
-	MOV(64, R(RAX), Imm64((u64)address));
-	MOV(bits, dest, MatR(RAX));
-#else
-	MOV(bits, dest, M(address));
-#endif
-#endif
-}
-
-void VertexLoader::WriteSetVariable(int bits, void *address, OpArg value)
-{
-#ifdef USE_VERTEX_LOADER_JIT
-#ifdef _M_X86_64
-	MOV(64, R(RAX), Imm64((u64)address));
-	MOV(bits, MatR(RAX), value);
-#else
-	MOV(bits, M(address), value);
-#endif
-#endif
-}
-#endif
 
 int VertexLoader::SetupRunVertices(int vtx_attr_group, int primitive, int const count)
 {
@@ -830,13 +713,6 @@ int VertexLoader::SetupRunVertices(int vtx_attr_group, int primitive, int const 
 	}
 	g_nativeVertexFmt = m_NativeFmt;
 
-	if (bpmem.genMode.cullmode == 3 && primitive < 5)
-	{
-		// if cull mode is none, ignore triangles and quads
-		DataSkip(count * m_VertexSize);
-		return 0;
-	}
-
 	// Load position and texcoord scale factors.
 	m_VtxAttr.PosFrac				= g_VtxAttr[vtx_attr_group].g0.PosFrac;
 	m_VtxAttr.texCoord[0].Frac		= g_VtxAttr[vtx_attr_group].g0.Tex0Frac;
@@ -847,14 +723,12 @@ int VertexLoader::SetupRunVertices(int vtx_attr_group, int primitive, int const 
 	m_VtxAttr.texCoord[5].Frac		= g_VtxAttr[vtx_attr_group].g2.Tex5Frac;
 	m_VtxAttr.texCoord[6].Frac		= g_VtxAttr[vtx_attr_group].g2.Tex6Frac;
 	m_VtxAttr.texCoord[7].Frac		= g_VtxAttr[vtx_attr_group].g2.Tex7Frac;
-
-	pVtxAttr = &m_VtxAttr;
-	posScale = fractionTable[m_VtxAttr.PosFrac];
+	PipelineState.posScale = fractionTable[m_VtxAttr.PosFrac];
 	if (m_NativeFmt->m_components & VB_HAS_UVALL)
 		for (int i = 0; i < 8; i++)
-			tcScale[i] = fractionTable[m_VtxAttr.texCoord[i].Frac];
+			PipelineState.tcScale[i] = fractionTable[m_VtxAttr.texCoord[i].Frac];
 	for (int i = 0; i < 2; i++)
-		colElements[i] = m_VtxAttr.color[i].Elements;
+		PipelineState.colElements[i] = m_VtxAttr.color[i].Elements;
 	// Prepare bounding box
 	s_bbox_primitive = primitive;
 	s_bbox_currPoint = 0;
@@ -873,23 +747,17 @@ void VertexLoader::RunVertices(int vtx_attr_group, int primitive, int const coun
 
 void VertexLoader::ConvertVertices ( int count )
 {
-#ifdef USE_VERTEX_LOADER_JIT
-	if (count > 0)
-	{
-		loop_counter = count;
-		((void (*)())(void*)m_compiledCode)();
-	}
-#else
+	PipelineState.Initialize(DataGetPosition() , VertexManager::s_pCurBufferPointer);
+	VertexManager::s_pCurBufferPointer += native_stride * count;
+	DataSkip(count * m_VertexSize);
 	for (int s = 0; s < count; s++)
 	{
-		tcIndex = 0;
-		colIndex = 0;
-		s_texmtxwrite = s_texmtxread = 0;
+		PipelineState.tcIndex = 0;
+		PipelineState.colIndex = 0;
+		PipelineState.texmtxwrite = PipelineState.texmtxread = 0;
 		for (int i = 0; i < m_numPipelineStages; i++)
-			m_PipelineStages[i]();
-		PRIM_LOG("\n");
+			m_PipelineStages[i](PipelineState);
 	}
-#endif
 }
 
 void VertexLoader::RunCompiledVertices(int vtx_attr_group, int primitive, int const count, u8* Data)
