@@ -91,9 +91,9 @@ void Init(const char *gameCode)
 				u32 mip = 0;
 				sscanf(nameparts[1].c_str(), "%x", &hash);
 				sscanf(nameparts[2].c_str(), "%i", &format);
-				if (nameparts.size() > 3)
+				if (nameparts.size() > 3 && nameparts[3].size() > 3)
 				{
-					sscanf(nameparts[2].substr(3, std::string::npos).c_str(), "%i", &format);
+					sscanf(nameparts[3].substr(3, std::string::npos).c_str(), "%i", &mip);
 				}
 				u64 key = ((u64)hash) | (((u64)format) << 32) | (((u64)mip) << 48);
 				if (nameparts[0].compare(code) == 0 && textureMap.find(key) == textureMap.end())
