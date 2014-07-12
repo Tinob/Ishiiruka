@@ -27,13 +27,30 @@ public:
 	{
 	}
 
-	void InitFromCurrentState(int vtx_attr_group)
+	void InitFromCurrentState(s32 vtx_attr_group)
 	{
-		vid[0] = g_VtxDesc.Hex & 0xFFFFFFFF;
-		vid[1] = g_VtxDesc.Hex >> 32;
-		vid[2] = g_VtxAttr[vtx_attr_group].g0.Hex & ~VAT_0_FRACBITS;
-		vid[3] = g_VtxAttr[vtx_attr_group].g1.Hex & ~VAT_1_FRACBITS;
-		vid[4] = g_VtxAttr[vtx_attr_group].g2.Hex & ~VAT_2_FRACBITS;
+		u32 fullmask = 0xFFFFFFFFu;
+		vid[0] = g_VtxDesc.Hex & fullmask;
+		vid[1] = (g_VtxDesc.Hex >> 32) & 1;// only the first bit is used
+		// Disable unused components		
+		u32 mask = ~VAT_0_FRACBITS;
+		mask &= g_VtxDesc.Color0 ? fullmask : ~VAT_0_COL0BITS;
+		mask &= g_VtxDesc.Color1 ? fullmask : ~VAT_0_COL1BITS;
+		mask &= g_VtxDesc.Normal ? fullmask : ~VAT_0_NRMBITS;
+		mask &= g_VtxDesc.Tex0Coord || g_VtxDesc.Tex0MatIdx ? fullmask : ~VAT_0_TEX0BITS;
+		vid[2] = g_VtxAttr[vtx_attr_group].g0.Hex & mask;
+		mask = ~VAT_1_FRACBITS;
+		mask &= g_VtxDesc.Tex1Coord || g_VtxDesc.Tex1MatIdx ? fullmask : ~VAT_1_TEX1BITS;
+		mask &= g_VtxDesc.Tex2Coord || g_VtxDesc.Tex2MatIdx ? fullmask : ~VAT_1_TEX2BITS;
+		mask &= g_VtxDesc.Tex3Coord || g_VtxDesc.Tex3MatIdx ? fullmask : ~VAT_1_TEX3BITS;
+		mask &= g_VtxDesc.Tex4Coord || g_VtxDesc.Tex4MatIdx ? fullmask : ~VAT_1_TEX4BITS;
+		vid[3] = g_VtxAttr[vtx_attr_group].g1.Hex & mask;
+		mask = ~VAT_2_FRACBITS;
+		mask &= g_VtxDesc.Tex4Coord || g_VtxDesc.Tex4MatIdx ? fullmask : ~VAT_2_TEX4BITS;
+		mask &= g_VtxDesc.Tex5Coord || g_VtxDesc.Tex5MatIdx ? fullmask : ~VAT_2_TEX5BITS;
+		mask &= g_VtxDesc.Tex6Coord || g_VtxDesc.Tex6MatIdx ? fullmask : ~VAT_2_TEX6BITS;
+		mask &= g_VtxDesc.Tex7Coord || g_VtxDesc.Tex7MatIdx ? fullmask : ~VAT_2_TEX7BITS;
+		vid[4] = g_VtxAttr[vtx_attr_group].g2.Hex & mask;
 		hash = CalculateHash();
 	}
 
