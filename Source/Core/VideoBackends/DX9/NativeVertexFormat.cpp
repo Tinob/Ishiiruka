@@ -38,7 +38,7 @@ void DX9::VertexManager::GetElements(NativeVertexFormat* format, D3DVERTEXELEMEN
 {
 #if defined(_DEBUG) || defined(DEBUGFAST)
 	*elems = ((D3DVertexFormat*)format)->m_elements;
-	*num = ((D3DVertexFormat*)format)->num_elements;
+	*num = ((D3DVertexFormat*)format)->m_num_elements;
 #else
 	*elems = NULL;
 	*num = 0;
