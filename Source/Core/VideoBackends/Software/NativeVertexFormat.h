@@ -1,9 +1,9 @@
 // Copyright 2013 Dolphin Emulator Project
 // Licensed under GPLv2
 // Refer to the license.txt file included.
+// Modified for Ishiiruka by Tino
 
-#ifndef _NATIVEVERTEXFORMAT_H
-#define _NATIVEVERTEXFORMAT_H
+#pragma once
 
 #include "Vec3.h"
 #include "Common/ChunkFile.h"
@@ -86,5 +86,3 @@ struct OutputVertexData
 	}
 
 };
-
-#endif
