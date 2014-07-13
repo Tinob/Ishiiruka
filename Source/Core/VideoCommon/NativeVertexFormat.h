@@ -1,6 +1,7 @@
 // Copyright 2013 Dolphin Emulator Project
 // Licensed under GPLv2
 // Refer to the license.txt file included.
+// Modified for Ishiiruka by Tino
 
 #pragma once
 
@@ -57,8 +58,8 @@ public:
 	};
 	TPipelineState() : DataReader(), DataWriter(){ Clear(); };
 	void Initialize(const u8* source, u8* destination)
-	{ 
-		DataReader::SetReadPosition(source); 
+	{
+		DataReader::SetReadPosition(source);
 		DataWriter::SetWritePosition(destination);
 	}
 	void Clear()
@@ -79,8 +80,8 @@ public:
 	float tcScale[8];
 	s32 count;
 	u8 colIndex;
-	u8 tcIndex;	
-	u8 curposmtx;	
+	u8 tcIndex;
+	u8 curposmtx;
 	u8 texmtxwrite;
 	u8 texmtxread;
 	u8 padding;
@@ -88,7 +89,7 @@ public:
 	u8 curtexmtx[8];
 };
 
-typedef void (LOADERDECL *TPipelineFunction)(TPipelineState &pipelinestate);
+typedef void (LOADERDECL *TPipelineFunction)();
 
 enum VarType
 {
@@ -120,7 +121,7 @@ struct PortableVertexDeclaration
 	{
 		return memcmp(this, &b, sizeof(PortableVertexDeclaration)) < 0;
 	}
-	
+
 	inline bool operator==(const PortableVertexDeclaration& b) const
 	{
 		return memcmp(this, &b, sizeof(PortableVertexDeclaration)) == 0;

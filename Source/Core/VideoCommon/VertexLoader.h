@@ -18,6 +18,7 @@
 #include "VideoCommon/NativeVertexFormat.h"
 
 extern const float fractionTable[];
+extern TPipelineState g_PipelineState;
 class VertexLoaderUID
 {
 	u32 vid[5];
@@ -114,8 +115,7 @@ public:
 	void AppendToString(std::string *dest) const;
 	int GetNumLoadedVerts() const { return m_numLoadedVertices; }
 
-private:
-	TPipelineState PipelineState;
+private:	
 	enum
 	{
 		NRM_ZERO = 0,

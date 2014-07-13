@@ -30,7 +30,7 @@
 #include "VideoCommon/XFMemory.h"
 
 NativeVertexFormat *g_nativeVertexFmt;
-
+TPipelineState g_PipelineState;
 #ifndef _WIN32
 	#undef inline
 	#define inline
@@ -62,33 +62,33 @@ const float fractionTable[32] = {
 	1.0f / (1U << 28), 1.0f / (1U << 29), 1.0f / (1U << 30), 1.0f / (1U << 31),
 };
 
-void LOADERDECL PosMtx_ReadDirect_UByte(TPipelineState &pipelinestate)
+void LOADERDECL PosMtx_ReadDirect_UByte()
 {
-	pipelinestate.curposmtx = pipelinestate.Read<u8>() & 0x3f;
+	g_PipelineState.curposmtx = g_PipelineState.Read<u8>() & 0x3f;
 }
 
-void LOADERDECL PosMtx_Write(TPipelineState &pipelinestate)
+void LOADERDECL PosMtx_Write()
 {
-	pipelinestate.Write<u8>(pipelinestate.curposmtx);
-	pipelinestate.Write<u8>(0);
-	pipelinestate.Write<u8>(0);
-	pipelinestate.Write<u8>(0);
+	g_PipelineState.Write<u8>(g_PipelineState.curposmtx);
+	g_PipelineState.Write<u8>(0);
+	g_PipelineState.Write<u8>(0);
+	g_PipelineState.Write<u8>(0);
 }
 
-void LOADERDECL PosMtxDisabled_Write(TPipelineState &pipelinestate)
+void LOADERDECL PosMtxDisabled_Write()
 {
-	pipelinestate.Write<u32>(0);
+	g_PipelineState.Write<u32>(0);
 }
 
-void LOADERDECL UpdateBoundingBoxPrepare(TPipelineState &pipelinestate)
+void LOADERDECL UpdateBoundingBoxPrepare()
 {
 	if (!PixelEngine::bbox_active)
 		return;
 
 	// set our buffer as videodata buffer, so we will get a copy of the vertex positions
 	// this is a big hack, but so we can use the same converting function then without bbox
-	s_bbox_pCurBufferPointer_orig = pipelinestate.GetWritePosition();
-	pipelinestate.SetWritePosition((u8*)s_bbox_vertex_buffer);
+	s_bbox_pCurBufferPointer_orig = g_PipelineState.GetWritePosition();
+	g_PipelineState.SetWritePosition((u8*)s_bbox_vertex_buffer);
 }
 
 inline bool UpdateBoundingBoxVars()
@@ -177,17 +177,17 @@ inline bool UpdateBoundingBoxVars()
 	}
 }
 
-void LOADERDECL UpdateBoundingBox(TPipelineState &pipelinestate)
+void LOADERDECL UpdateBoundingBox()
 {
 	if (!PixelEngine::bbox_active)
 		return;
 
 	// Reset videodata pointer
-	pipelinestate.SetWritePosition(s_bbox_pCurBufferPointer_orig);
+	g_PipelineState.SetWritePosition(s_bbox_pCurBufferPointer_orig);
 
 	// Copy vertex pointers
-	memcpy(pipelinestate.GetWritePosition(), s_bbox_vertex_buffer, 12);
-	pipelinestate.WriteSkip(12);
+	memcpy(g_PipelineState.GetWritePosition(), s_bbox_vertex_buffer, 12);
+	g_PipelineState.WriteSkip(12);
 
 	// We must transform the just loaded point by the current world and projection matrix - in software
 	float transformed[3];
@@ -196,7 +196,7 @@ void LOADERDECL UpdateBoundingBox(TPipelineState &pipelinestate)
 	// We need to get the raw projection values for the bounding box calculation
 	// to work properly. That means, no projection hacks!
 	const float * const orig_point = s_bbox_vertex_buffer;
-	const float * const world_matrix = (float*)xfmem + pipelinestate.curposmtx * 4;
+	const float * const world_matrix = (float*)xfmem + g_PipelineState.curposmtx * 4;
 	const float * const proj_matrix = xfregs.projection.rawProjection;
 
 	// Transform by world matrix
@@ -414,33 +414,33 @@ void LOADERDECL UpdateBoundingBox(TPipelineState &pipelinestate)
 	PixelEngine::bbox[3] = (bottom > PixelEngine::bbox[3]) ? bottom : PixelEngine::bbox[3];
 }
 
-void LOADERDECL TexMtx_ReadDirect_UByte(TPipelineState &pipelinestate)
+void LOADERDECL TexMtx_ReadDirect_UByte()
 {
-	pipelinestate.curtexmtx[pipelinestate.texmtxread] = pipelinestate.Read<u8>() & 0x3f;	
-	pipelinestate.texmtxread++;
+	g_PipelineState.curtexmtx[g_PipelineState.texmtxread] = g_PipelineState.Read<u8>() & 0x3f;	
+	g_PipelineState.texmtxread++;
 }
 
-void LOADERDECL TexMtx_Write_Float(TPipelineState &pipelinestate)
+void LOADERDECL TexMtx_Write_Float()
 {
-	pipelinestate.Write(float(pipelinestate.curtexmtx[pipelinestate.texmtxwrite++]));
+	g_PipelineState.Write(float(g_PipelineState.curtexmtx[g_PipelineState.texmtxwrite++]));
 }
 
-void LOADERDECL TexMtx_Write_Float2(TPipelineState &pipelinestate)
+void LOADERDECL TexMtx_Write_Float2()
 {
-	pipelinestate.Write(0.f);
-	pipelinestate.Write(float(pipelinestate.curtexmtx[pipelinestate.texmtxwrite++]));
+	g_PipelineState.Write(0.f);
+	g_PipelineState.Write(float(g_PipelineState.curtexmtx[g_PipelineState.texmtxwrite++]));
 }
 
-void LOADERDECL TexMtx_Write_Float4(TPipelineState &pipelinestate)
+void LOADERDECL TexMtx_Write_Float4()
 {
-	pipelinestate.Write(0.f);
-	pipelinestate.Write(0.f);
-	pipelinestate.Write(float(pipelinestate.curtexmtx[pipelinestate.texmtxwrite++]));
+	g_PipelineState.Write(0.f);
+	g_PipelineState.Write(0.f);
+	g_PipelineState.Write(float(g_PipelineState.curtexmtx[g_PipelineState.texmtxwrite++]));
 	// Just to fill out with 0.
-	pipelinestate.Write(0.f);
+	g_PipelineState.Write(0.f);
 }
 
-VertexLoader::VertexLoader(const TVtxDesc &vtx_desc, const VAT &vtx_attr) : PipelineState()
+VertexLoader::VertexLoader(const TVtxDesc &vtx_desc, const VAT &vtx_attr)
 {
 	m_numLoadedVertices = 0;
 	m_VertexSize = 0;
@@ -723,12 +723,12 @@ int VertexLoader::SetupRunVertices(int vtx_attr_group, int primitive, int const 
 	m_VtxAttr.texCoord[5].Frac		= g_VtxAttr[vtx_attr_group].g2.Tex5Frac;
 	m_VtxAttr.texCoord[6].Frac		= g_VtxAttr[vtx_attr_group].g2.Tex6Frac;
 	m_VtxAttr.texCoord[7].Frac		= g_VtxAttr[vtx_attr_group].g2.Tex7Frac;
-	PipelineState.posScale = fractionTable[m_VtxAttr.PosFrac];
+	g_PipelineState.posScale = fractionTable[m_VtxAttr.PosFrac];
 	if (m_NativeFmt->m_components & VB_HAS_UVALL)
 		for (int i = 0; i < 8; i++)
-			PipelineState.tcScale[i] = fractionTable[m_VtxAttr.texCoord[i].Frac];
+			g_PipelineState.tcScale[i] = fractionTable[m_VtxAttr.texCoord[i].Frac];
 	for (int i = 0; i < 2; i++)
-		PipelineState.colElements[i] = m_VtxAttr.color[i].Elements;
+		g_PipelineState.colElements[i] = m_VtxAttr.color[i].Elements;
 	// Prepare bounding box
 	s_bbox_primitive = primitive;
 	s_bbox_currPoint = 0;
@@ -747,16 +747,16 @@ void VertexLoader::RunVertices(int vtx_attr_group, int primitive, int const coun
 
 void VertexLoader::ConvertVertices ( int count )
 {
-	PipelineState.Initialize(DataGetPosition() , VertexManager::s_pCurBufferPointer);
+	g_PipelineState.Initialize(DataGetPosition() , VertexManager::s_pCurBufferPointer);
 	VertexManager::s_pCurBufferPointer += native_stride * count;
 	DataSkip(count * m_VertexSize);
 	for (int s = 0; s < count; s++)
 	{
-		PipelineState.tcIndex = 0;
-		PipelineState.colIndex = 0;
-		PipelineState.texmtxwrite = PipelineState.texmtxread = 0;
+		g_PipelineState.tcIndex = 0;
+		g_PipelineState.colIndex = 0;
+		g_PipelineState.texmtxwrite = g_PipelineState.texmtxread = 0;
 		for (int i = 0; i < m_numPipelineStages; i++)
-			m_PipelineStages[i](PipelineState);
+			m_PipelineStages[i]();
 	}
 }
 

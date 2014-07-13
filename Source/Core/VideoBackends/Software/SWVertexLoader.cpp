@@ -21,8 +21,7 @@
 
 SWVertexLoader::SWVertexLoader() :
 	m_VertexSize(0),
-	m_NumAttributeLoaders(0),
-	PipelineState()
+	m_NumAttributeLoaders(0)
  {
 	VertexLoader_Normal::Init();
 	VertexLoader_Position::Init();
@@ -41,15 +40,15 @@ void SWVertexLoader::SetFormat(u8 attributeIndex, u8 primitiveType)
 {
 	m_CurrentVat = &g_VtxAttr[attributeIndex];
 
-	PipelineState.posScale = 1.0f / float(1 << m_CurrentVat->g0.PosFrac);
-	PipelineState.tcScale[0] = 1.0f / float(1 << m_CurrentVat->g0.Tex0Frac);
-	PipelineState.tcScale[1] = 1.0f / float(1 << m_CurrentVat->g1.Tex1Frac);
-	PipelineState.tcScale[2] = 1.0f / float(1 << m_CurrentVat->g1.Tex2Frac);
-	PipelineState.tcScale[3] = 1.0f / float(1 << m_CurrentVat->g1.Tex3Frac);
-	PipelineState.tcScale[4] = 1.0f / float(1 << m_CurrentVat->g2.Tex4Frac);
-	PipelineState.tcScale[5] = 1.0f / float(1 << m_CurrentVat->g2.Tex5Frac);
-	PipelineState.tcScale[6] = 1.0f / float(1 << m_CurrentVat->g2.Tex6Frac);
-	PipelineState.tcScale[7] = 1.0f / float(1 << m_CurrentVat->g2.Tex7Frac);
+	g_PipelineState.posScale = 1.0f / float(1 << m_CurrentVat->g0.PosFrac);
+	g_PipelineState.tcScale[0] = 1.0f / float(1 << m_CurrentVat->g0.Tex0Frac);
+	g_PipelineState.tcScale[1] = 1.0f / float(1 << m_CurrentVat->g1.Tex1Frac);
+	g_PipelineState.tcScale[2] = 1.0f / float(1 << m_CurrentVat->g1.Tex2Frac);
+	g_PipelineState.tcScale[3] = 1.0f / float(1 << m_CurrentVat->g1.Tex3Frac);
+	g_PipelineState.tcScale[4] = 1.0f / float(1 << m_CurrentVat->g2.Tex4Frac);
+	g_PipelineState.tcScale[5] = 1.0f / float(1 << m_CurrentVat->g2.Tex5Frac);
+	g_PipelineState.tcScale[6] = 1.0f / float(1 << m_CurrentVat->g2.Tex6Frac);
+	g_PipelineState.tcScale[7] = 1.0f / float(1 << m_CurrentVat->g2.Tex7Frac);
 
 	//TexMtx
 	const u32 tmDesc[8] = {
@@ -59,8 +58,8 @@ void SWVertexLoader::SetFormat(u8 attributeIndex, u8 primitiveType)
 
 	// Colors
 	const u32 colDesc[2] = {g_VtxDesc.Color0, g_VtxDesc.Color1};
-	PipelineState.colElements[0] = m_CurrentVat->g0.Color0Elements;
-	PipelineState.colElements[1] = m_CurrentVat->g0.Color1Elements;
+	g_PipelineState.colElements[0] = m_CurrentVat->g0.Color0Elements;
+	g_PipelineState.colElements[1] = m_CurrentVat->g0.Color1Elements;
 	const u32 colComp[2] = {m_CurrentVat->g0.Color0Comp, m_CurrentVat->g0.Color1Comp};
 
 	// TextureCoord
@@ -244,7 +243,7 @@ void SWVertexLoader::SetFormat(u8 attributeIndex, u8 primitiveType)
 
 void SWVertexLoader::LoadVertex()
 {
-	PipelineState.SetReadPosition(DataGetPosition());
+	g_PipelineState.SetReadPosition(DataGetPosition());
 	DataSkip(m_VertexSize);
 	for (int i = 0; i < m_NumAttributeLoaders; i++)
 		m_AttributeLoaders[i].loader(this, &m_Vertex, m_AttributeLoaders[i].index);
@@ -287,22 +286,22 @@ void SWVertexLoader::LoadTexMtx(SWVertexLoader *vertexLoader, InputVertexData *v
 
 void SWVertexLoader::LoadPosition(SWVertexLoader *vertexLoader, InputVertexData *vertex, u8 unused)
 {
-	vertexLoader->PipelineState.SetWritePosition((u8*)&vertex->position);
-	vertexLoader->m_positionLoader(vertexLoader->PipelineState);
+	g_PipelineState.SetWritePosition((u8*)&vertex->position);
+	vertexLoader->m_positionLoader();
 }
 
 void SWVertexLoader::LoadNormal(SWVertexLoader *vertexLoader, InputVertexData *vertex, u8 unused)
 {
-	vertexLoader->PipelineState.SetWritePosition((u8*)&vertex->normal);
-	vertexLoader->m_normalLoader(vertexLoader->PipelineState);
+	g_PipelineState.SetWritePosition((u8*)&vertex->normal);
+	vertexLoader->m_normalLoader();
 }
 
 void SWVertexLoader::LoadColor(SWVertexLoader *vertexLoader, InputVertexData *vertex, u8 index)
 {
 	u32 color;
-	vertexLoader->PipelineState.SetWritePosition((u8*)&color);
-	vertexLoader->PipelineState.colIndex = index;
-	vertexLoader->m_colorLoader[index](vertexLoader->PipelineState);
+	g_PipelineState.SetWritePosition((u8*)&color);
+	g_PipelineState.colIndex = index;
+	vertexLoader->m_colorLoader[index]();
 
 	// rgba -> abgr
 	*(u32*)vertex->color[index] = Common::swap32(color);
@@ -310,9 +309,9 @@ void SWVertexLoader::LoadColor(SWVertexLoader *vertexLoader, InputVertexData *ve
 
 void SWVertexLoader::LoadTexCoord(SWVertexLoader *vertexLoader, InputVertexData *vertex, u8 index)
 {
-	vertexLoader->PipelineState.SetWritePosition((u8*)&vertex->texCoords[index]);
-	vertexLoader->PipelineState.tcIndex = index;
-	vertexLoader->m_texCoordLoader[index](vertexLoader->PipelineState);
+	g_PipelineState.SetWritePosition((u8*)&vertex->texCoords[index]);
+	g_PipelineState.tcIndex = index;
+	vertexLoader->m_texCoordLoader[index]();
 }
 
 void SWVertexLoader::DoState(PointerWrap &p)

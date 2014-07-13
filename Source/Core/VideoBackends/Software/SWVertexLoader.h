@@ -2,8 +2,7 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _VERTEXLOADER_H_
-#define _VERTEXLOADER_H_
+#pragma once
 
 #include "Common/Common.h"
 
@@ -19,8 +18,6 @@ class SWVertexLoader
 
 	VAT* m_CurrentVat;
 
-	TPipelineState PipelineState;
-
 	TPipelineFunction m_positionLoader;
 	TPipelineFunction m_normalLoader;
 	TPipelineFunction m_colorLoader[2];
@@ -28,15 +25,15 @@ class SWVertexLoader
 
 	InputVertexData m_Vertex;
 
-	typedef void (*AttributeLoader)(SWVertexLoader*, InputVertexData*, u8);
+	typedef void(*AttributeLoader)(SWVertexLoader*, InputVertexData*, u8);
 	struct AttrLoaderCall
 	{
 		AttributeLoader loader;
 		u8 index;
 	};
-	AttrLoaderCall m_AttributeLoaders[1+8+1+1+2+8];
+	AttrLoaderCall m_AttributeLoaders[1 + 8 + 1 + 1 + 2 + 8];
 	int m_NumAttributeLoaders;
-	void AddAttributeLoader(AttributeLoader loader, u8 index=0);
+	void AddAttributeLoader(AttributeLoader loader, u8 index = 0);
 
 	// attribute loader functions
 	static void LoadPosMtx(SWVertexLoader *vertexLoader, InputVertexData *vertex, u8 unused);
@@ -61,5 +58,3 @@ public:
 	void LoadVertex();
 	void DoState(PointerWrap &p);
 };
-
-#endif
