@@ -82,6 +82,7 @@
     <ClCompile Include="VertexLoaderManager.cpp" />
     <ClCompile Include="VertexLoader_BBox.cpp" />
     <ClCompile Include="VertexLoader_Color.cpp" />
+    <ClCompile Include="VertexLoader_Mtx.cpp" />
     <ClCompile Include="VertexLoader_Normal.cpp" />
     <ClCompile Include="VertexLoader_Position.cpp" />
     <ClCompile Include="VertexLoader_TextCoord.cpp" />
@@ -140,6 +141,7 @@
     <ClInclude Include="VertexLoader_BBox.h" />
     <ClInclude Include="VertexLoader_Color.h" />
     <ClInclude Include="VertexLoader_ColorFuncs.h" />
+    <ClInclude Include="VertexLoader_Mtx.h" />
     <ClInclude Include="VertexLoader_Normal.h" />
     <ClInclude Include="VertexLoader_NormalFuncs.h" />
     <ClInclude Include="VertexLoader_Position.h" />

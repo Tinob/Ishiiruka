@@ -134,6 +134,9 @@
     <ClCompile Include="VertexLoader_BBox.cpp">
       <Filter>Vertex Loading</Filter>
     </ClCompile>
+    <ClCompile Include="VertexLoader_Mtx.cpp">
+      <Filter>Vertex Loading</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommandProcessor.h" />
@@ -295,6 +298,9 @@
       <Filter>Vertex Loading</Filter>
     </ClInclude>
     <ClInclude Include="VertexLoader_BBox.h">
+      <Filter>Vertex Loading</Filter>
+    </ClInclude>
+    <ClInclude Include="VertexLoader_Mtx.h">
       <Filter>Vertex Loading</Filter>
     </ClInclude>
   </ItemGroup>
