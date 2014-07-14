@@ -9,7 +9,7 @@
 template <int iSSE>
 void P_mtx0_3_I16_s16_Nrm_0_0_I16_s16_C0_1_I16_8888_T0_mtx0_1_I16_s16_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -56,7 +56,7 @@ void P_mtx0_3_I16_s16_Nrm_0_0_I16_s16_C0_1_I16_8888_T0_mtx0_1_I16_s16_(VertexLoa
 template <int iSSE>
 void P_mtx0_3_I16_flt_Nrm_0_0_I16_s16_C0_1_I16_8888_T0_mtx0_1_I16_s16_T1_mtx0_1_I16_s16_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while (loopcount)
 	{
@@ -113,7 +113,7 @@ void P_mtx0_3_I16_flt_Nrm_0_0_I16_s16_C0_1_I16_8888_T0_mtx0_1_I16_s16_T1_mtx0_1_
 template <int iSSE>
 void P_mtx0_3_I16_flt_Nrm_0_0_I16_s16_C0_1_I16_8888_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while (loopcount)
 	{
@@ -150,7 +150,7 @@ void P_mtx0_3_I16_flt_Nrm_0_0_I16_s16_C0_1_I16_8888_(VertexLoader *loader)
 template <int iSSE>
 void P_mtx0_3_I16_s16_C0_1_I16_8888_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while (loopcount)
 	{
@@ -177,7 +177,7 @@ void P_mtx0_3_I16_s16_C0_1_I16_8888_(VertexLoader *loader)
 template <int iSSE>
 void P_mtx0_3_I16_s16_Nrm_0_0_I16_s16_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -213,7 +213,7 @@ void P_mtx0_3_I16_s16_Nrm_0_0_I16_s16_(VertexLoader *loader)
 template <int iSSE>
 void P_mtx1_3_I16_s16_Nrm_0_0_I16_s16_C0_1_I16_8888_T0_mtx0_1_I16_s16_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -264,7 +264,7 @@ void P_mtx1_3_I16_s16_Nrm_0_0_I16_s16_C0_1_I16_8888_T0_mtx0_1_I16_s16_(VertexLoa
 template <int iSSE>
 void P_mtx0_3_I16_s16_Nrm_0_0_I16_s16_T0_mtx0_1_I16_s16_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -310,7 +310,7 @@ void P_mtx0_3_I16_s16_Nrm_0_0_I16_s16_T0_mtx0_1_I16_s16_(VertexLoader *loader)
 template <int iSSE>
 void P_mtx0_3_I8_s8_T0_mtx0_1_I8_s8_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -328,7 +328,7 @@ void P_mtx0_3_I8_s8_T0_mtx0_1_I8_s8_(VertexLoader *loader)
 template <int iSSE>
 void P_mtx1_3_I16_s16_Nrm_0_0_I16_s16_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -368,7 +368,7 @@ void P_mtx1_3_I16_s16_Nrm_0_0_I16_s16_(VertexLoader *loader)
 template <int iSSE>
 void P_mtx0_3_Dir_flt_Nrm_0_0_Dir_flt_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -404,7 +404,7 @@ void P_mtx0_3_Dir_flt_Nrm_0_0_Dir_flt_(VertexLoader *loader)
 template <int iSSE>
 void P_mtx0_3_Dir_flt_T0_mtx0_1_Dir_flt_T1_mtx0_1_Dir_flt_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -450,7 +450,7 @@ void P_mtx0_3_Dir_flt_T0_mtx0_1_Dir_flt_T1_mtx0_1_Dir_flt_(VertexLoader *loader)
 template <int iSSE>
 void P_mtx0_3_I16_flt_Nrm_0_0_I16_s16_C0_1_I16_8888_T0_mtx0_1_I16_s16_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -497,7 +497,7 @@ void P_mtx0_3_I16_flt_Nrm_0_0_I16_s16_C0_1_I16_8888_T0_mtx0_1_I16_s16_(VertexLoa
 template <int iSSE>
 void P_mtx0_3_I16_flt_C0_1_I16_8888_T0_mtx0_1_I16_s16_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -534,7 +534,7 @@ void P_mtx0_3_I16_flt_C0_1_I16_8888_T0_mtx0_1_I16_s16_(VertexLoader *loader)
 template <int iSSE>
 void P_mtx0_3_I16_flt_Nrm_0_0_I16_s16_T0_mtx0_1_I16_s16_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -580,7 +580,7 @@ void P_mtx0_3_I16_flt_Nrm_0_0_I16_s16_T0_mtx0_1_I16_s16_(VertexLoader *loader)
 template <int iSSE>
 void P_mtx1_3_I16_s16_Nrm_0_0_I16_s16_C0_1_I16_8888_T0_mtx0_1_I16_s16_T1_mtx1_1_Inv_flt_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -637,7 +637,7 @@ void P_mtx1_3_I16_s16_Nrm_0_0_I16_s16_C0_1_I16_8888_T0_mtx0_1_I16_s16_T1_mtx1_1_
 template <int iSSE>
 void P_mtx0_3_I16_s16_Nrm_0_0_I16_s16_C0_1_I16_8888_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -674,7 +674,7 @@ void P_mtx0_3_I16_s16_Nrm_0_0_I16_s16_C0_1_I16_8888_(VertexLoader *loader)
 template <int iSSE>
 void P_mtx0_3_I16_s16_C0_1_I16_8888_T0_mtx0_1_I16_s16_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -711,7 +711,7 @@ void P_mtx0_3_I16_s16_C0_1_I16_8888_T0_mtx0_1_I16_s16_(VertexLoader *loader)
 template <int iSSE>
 void P_mtx0_3_Dir_flt_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -737,7 +737,7 @@ void P_mtx0_3_Dir_flt_(VertexLoader *loader)
 template <int iSSE>
 void P_mtx0_3_Dir_flt_T0_mtx0_1_Dir_flt_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -773,7 +773,7 @@ void P_mtx0_3_Dir_flt_T0_mtx0_1_Dir_flt_(VertexLoader *loader)
 template <int iSSE>
 void P_mtx1_3_I16_s16_Nrm_0_0_I16_s16_C0_1_I16_8888_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -814,7 +814,7 @@ void P_mtx1_3_I16_s16_Nrm_0_0_I16_s16_C0_1_I16_8888_(VertexLoader *loader)
 template <int iSSE>
 void P_mtx0_3_Dir_flt_C0_1_Dir_8888_T0_mtx0_1_Dir_u16_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -851,7 +851,7 @@ void P_mtx0_3_Dir_flt_C0_1_Dir_8888_T0_mtx0_1_Dir_u16_(VertexLoader *loader)
 template <int iSSE>
 void P_mtx1_3_I16_s16_Nrm_0_0_I16_s16_T0_mtx0_1_I16_s16_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -901,7 +901,7 @@ void P_mtx1_3_I16_s16_Nrm_0_0_I16_s16_T0_mtx0_1_I16_s16_(VertexLoader *loader)
 template <int iSSE>
 void P_mtx0_3_Dir_flt_C0_1_Dir_8888_T0_mtx0_1_I16_flt_T1_mtx0_1_I16_flt_T2_mtx0_1_I16_flt_T3_mtx0_1_I16_flt_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -968,7 +968,7 @@ void P_mtx0_3_Dir_flt_C0_1_Dir_8888_T0_mtx0_1_I16_flt_T1_mtx0_1_I16_flt_T2_mtx0_
 template <int iSSE>
 void P_mtx1_3_I16_s16_Nrm_0_0_I16_s16_C0_1_I16_8888_T0_mtx1_1_I16_s16_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -1022,7 +1022,7 @@ void P_mtx1_3_I16_s16_Nrm_0_0_I16_s16_C0_1_I16_8888_T0_mtx1_1_I16_s16_(VertexLoa
 template <int iSSE>
 void P_mtx1_3_I16_s16_Nrm_0_0_I16_s16_C0_1_I16_8888_T0_mtx0_1_I16_s16_T1_mtx1_1_Inv_flt_T2_mtx1_1_Inv_flt_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -1085,7 +1085,7 @@ void P_mtx1_3_I16_s16_Nrm_0_0_I16_s16_C0_1_I16_8888_T0_mtx0_1_I16_s16_T1_mtx1_1_
 template <int iSSE>
 void P_mtx0_2_Dir_flt_T0_mtx0_1_Dir_flt_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -1121,7 +1121,7 @@ void P_mtx0_2_Dir_flt_T0_mtx0_1_Dir_flt_(VertexLoader *loader)
 template <int iSSE>
 void P_mtx0_3_Dir_flt_T0_mtx0_1_I8_flt_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -1157,7 +1157,7 @@ void P_mtx0_3_Dir_flt_T0_mtx0_1_I8_flt_(VertexLoader *loader)
 template <int iSSE>
 void P_mtx1_3_I16_s16_Nrm_0_0_I16_s16_C0_1_I16_8888_T0_mtx1_1_I16_s16_T1_mtx1_1_Inv_flt_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -1217,7 +1217,7 @@ void P_mtx1_3_I16_s16_Nrm_0_0_I16_s16_C0_1_I16_8888_T0_mtx1_1_I16_s16_T1_mtx1_1_
 template <int iSSE>
 void P_mtx0_3_Dir_flt_C0_1_Dir_8888_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -1244,7 +1244,7 @@ void P_mtx0_3_Dir_flt_C0_1_Dir_8888_(VertexLoader *loader)
 template <int iSSE>
 void P_mtx0_2_Dir_flt_C0_1_Dir_8888_T0_mtx0_1_Dir_flt_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -1281,7 +1281,7 @@ void P_mtx0_2_Dir_flt_C0_1_Dir_8888_T0_mtx0_1_Dir_flt_(VertexLoader *loader)
 template <int iSSE>
 void P_mtx1_3_I16_s16_Nrm_0_0_I16_s16_C0_1_I16_8888_T0_mtx0_1_I16_s16_T2_mtx1_1_Inv_flt_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -1338,7 +1338,7 @@ void P_mtx1_3_I16_s16_Nrm_0_0_I16_s16_C0_1_I16_8888_T0_mtx0_1_I16_s16_T2_mtx1_1_
 template <int iSSE>
 void P_mtx0_3_Dir_flt_C0_1_Dir_8888_T0_mtx0_1_Dir_flt_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -1375,7 +1375,7 @@ void P_mtx0_3_Dir_flt_C0_1_Dir_8888_T0_mtx0_1_Dir_flt_(VertexLoader *loader)
 template <int iSSE>
 void P_mtx0_3_I16_flt_Nrm_0_0_I16_s16_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -1411,7 +1411,7 @@ void P_mtx0_3_I16_flt_Nrm_0_0_I16_s16_(VertexLoader *loader)
 template <int iSSE>
 void P_mtx0_2_Dir_u16_T0_mtx0_1_Dir_u8_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -1438,7 +1438,7 @@ void P_mtx0_2_Dir_u16_T0_mtx0_1_Dir_u8_(VertexLoader *loader)
 template <int iSSE>
 void P_mtx0_2_Dir_u16_T0_mtx0_1_Dir_flt_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -1474,7 +1474,7 @@ void P_mtx0_2_Dir_u16_T0_mtx0_1_Dir_flt_(VertexLoader *loader)
 template <int iSSE>
 void P_mtx1_3_I16_s16_Nrm_0_0_I16_s16_T0_mtx0_1_I16_s16_T1_mtx1_1_Inv_flt_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -1530,7 +1530,7 @@ void P_mtx1_3_I16_s16_Nrm_0_0_I16_s16_T0_mtx0_1_I16_s16_T1_mtx1_1_Inv_flt_(Verte
 template <int iSSE>
 void P_mtx0_2_Dir_u16_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -1556,7 +1556,7 @@ void P_mtx0_2_Dir_u16_(VertexLoader *loader)
 template <int iSSE>
 void P_mtx0_2_Dir_flt_C0_1_Dir_8888_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -1583,7 +1583,7 @@ void P_mtx0_2_Dir_flt_C0_1_Dir_8888_(VertexLoader *loader)
 template <int iSSE>
 void P_mtx0_2_Dir_flt_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -1609,7 +1609,7 @@ void P_mtx0_2_Dir_flt_(VertexLoader *loader)
 template <int iSSE>
 void P_mtx0_3_I16_s16_Nrm_0_0_I16_s16_C0_1_I16_8888_T0_mtx0_1_I16_s16_T1_mtx0_1_I16_s16_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -1666,7 +1666,7 @@ void P_mtx0_3_I16_s16_Nrm_0_0_I16_s16_C0_1_I16_8888_T0_mtx0_1_I16_s16_T1_mtx0_1_
 template <int iSSE>
 void P_mtx0_2_Dir_flt_C0_1_Dir_8888_T0_mtx0_1_Dir_s16_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -1703,7 +1703,7 @@ void P_mtx0_2_Dir_flt_C0_1_Dir_8888_T0_mtx0_1_Dir_s16_(VertexLoader *loader)
 template <int iSSE>
 void P_mtx0_3_Dir_flt_C0_1_Dir_8888_T0_mtx0_1_Dir_s16_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -1740,7 +1740,7 @@ void P_mtx0_3_Dir_flt_C0_1_Dir_8888_T0_mtx0_1_Dir_s16_(VertexLoader *loader)
 template <int iSSE>
 void P_mtx0_2_Dir_u16_T0_mtx0_1_Dir_flt_T1_mtx0_1_Dir_flt_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -1786,7 +1786,7 @@ void P_mtx0_2_Dir_u16_T0_mtx0_1_Dir_flt_T1_mtx0_1_Dir_flt_(VertexLoader *loader)
 template <int iSSE>
 void P_mtx0_2_Dir_flt_C0_1_Dir_8888_T0_mtx0_1_Dir_flt_T1_mtx0_1_Dir_flt_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{
@@ -1833,7 +1833,7 @@ void P_mtx0_2_Dir_flt_C0_1_Dir_8888_T0_mtx0_1_Dir_flt_T1_mtx0_1_Dir_flt_(VertexL
 template <int iSSE>
 void P_mtx0_3_Dir_s16_C0_1_Dir_8888_(VertexLoader *loader)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
+	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	while(loopcount)
 	{

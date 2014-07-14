@@ -19,6 +19,8 @@
 // Compiled loaders
 #include "VideoCommon/G_RMGP01_pvt.h"
 #include "VideoCommon/G_R5WEA4_pvt.h"
+#include "VideoCommon/G_GZ2P01_pvt.h"
+#include "VideoCommon/G_GMSE01_pvt.h"
 
 static int s_attr_dirty;  // bitfield
 
@@ -44,6 +46,7 @@ typedef std::map<PortableVertexDeclaration, std::unique_ptr<NativeVertexFormat>>
 
 namespace VertexLoaderManager
 {
+	static bool s_PrecompiledLoadersInitialized = false;
 	static PrecompiledVertexLoaderMap g_PrecompiledVertexLoaderMap;
 	static VertexLoaderMap g_VertexLoaderMap;
 	static NativeVertexLoaderMap s_native_vertex_map;
@@ -105,7 +108,7 @@ namespace VertexLoaderManager
 		header.append("class G_");
 		header.append(gamename);
 		header.append("_pvt\n{\npublic:\n");
-		header.append("static void Initialize(std::map<size_t, TCompiledLoaderFunction> &pvlmap);\n");
+		header.append("static void Initialize(std::map<u64, TCompiledLoaderFunction> &pvlmap);\n");
 		header.append("};\n");
 		std::ofstream headerfile(filename);
 		headerfile << header;
@@ -128,7 +131,7 @@ namespace VertexLoaderManager
 		}
 		sourcecode.append("\nvoid G_");
 		sourcecode.append(gamename);
-		sourcecode.append("_pvt::Initialize(std::map<size_t, TCompiledLoaderFunction> &pvlmap)\n{\n");
+		sourcecode.append("_pvt::Initialize(std::map<u64, TCompiledLoaderFunction> &pvlmap)\n{\n");
 		for (std::vector<codeentry>::const_iterator iter = entries.begin(); iter != entries.end(); ++iter)
 		{
 			sourcecode.append("\t// num_verts= ");
@@ -194,8 +197,14 @@ namespace VertexLoaderManager
 		for (VertexLoader*& vertexLoader : g_VertexLoaders)
 			vertexLoader = nullptr;
 		RecomputeCachedArraybases();
-		G_RMGP01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
-		G_R5WEA4_pvt::Initialize(g_PrecompiledVertexLoaderMap);
+		if (!s_PrecompiledLoadersInitialized)
+		{
+			G_RMGP01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
+			G_R5WEA4_pvt::Initialize(g_PrecompiledVertexLoaderMap);
+			G_GZ2P01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
+			G_GMSE01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
+			s_PrecompiledLoadersInitialized = true;
+		}
 	}
 
 	void Shutdown()

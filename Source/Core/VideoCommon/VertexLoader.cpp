@@ -496,7 +496,7 @@ void VertexLoader::DumpCode(std::string *dest) const
 	dest->append("template <int iSSE>\nvoid ");
 	GetName(dest);
 	dest->append("(VertexLoader *loader)\n{\n");
-	dest->append("\tTPipelineState &pipelinestate = g_PipelineState;\n");
+	dest->append("\tTPipelineState pipelinestate = g_PipelineState;\n");
 	dest->append("\tu32 loopcount = pipelinestate.count;\n\twhile(loopcount)\n\t{\n");
 	dest->append("\tpipelinestate.tcIndex = 0;\n"
 		"\tpipelinestate.colIndex = 0;\n"
