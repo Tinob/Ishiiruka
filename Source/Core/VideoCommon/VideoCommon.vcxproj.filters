@@ -137,7 +137,10 @@
     <ClCompile Include="VertexLoader_Mtx.cpp">
       <Filter>Vertex Loading</Filter>
     </ClCompile>
-    <ClCompile Include="G_sRMGP01_pvt.cpp">
+    <ClCompile Include="G_R5WEA4_pvt.cpp">
+      <Filter>Vertex Loading\Compiled Loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="G_RMGP01_pvt.cpp">
       <Filter>Vertex Loading\Compiled Loaders</Filter>
     </ClCompile>
   </ItemGroup>
@@ -307,6 +310,9 @@
       <Filter>Vertex Loading</Filter>
     </ClInclude>
     <ClInclude Include="G_RMGP01_pvt.h">
+      <Filter>Vertex Loading\Compiled Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="G_R5WEA4_pvt.h">
       <Filter>Vertex Loading\Compiled Loaders</Filter>
     </ClInclude>
   </ItemGroup>

@@ -22,7 +22,8 @@ extern TPipelineState g_PipelineState;
 class VertexLoaderUID
 {
 	u32 vid[5];
-	size_t hash;
+	u64 hash;
+	size_t platformhash;
 public:
 	VertexLoaderUID()
 	{
@@ -53,6 +54,18 @@ public:
 		mask &= g_VtxDesc.Tex7Coord || g_VtxDesc.Tex7MatIdx ? fullmask : ~VAT_2_TEX7BITS;
 		vid[4] = g_VtxAttr[vtx_attr_group].g2.Hex & mask;
 		hash = CalculateHash();
+		if (sizeof(size_t) >= sizeof(u64))
+		{
+			platformhash = (size_t)hash;
+		}
+		else
+		{
+			size_t mask = 0;
+			mask = ~mask;
+			platformhash = (size_t)(hash & mask);
+			u32 sl = sizeof(size_t) * 8;
+			platformhash = platformhash ^ (size_t)((hash >> sl) && mask);
+		}
 	}
 
 	bool operator < (const VertexLoaderUID &other) const
@@ -79,9 +92,14 @@ public:
 		return hash == rh.hash && std::equal(vid, vid + sizeof(vid) / sizeof(vid[0]), rh.vid);
 	}
 
-	size_t GetHash() const
+	u64 GetHash() const
 	{
 		return hash;
+	}
+
+	size_t GetplatformHash() const
+	{
+		return platformhash;
 	}
 
 	u32 GetElement(u32 idx) const
@@ -91,15 +109,14 @@ public:
 
 private:
 
-	size_t CalculateHash()
+	u64 CalculateHash()
 	{
-		size_t h = -1;
+		u64 h = -1;
 
 		for (auto word : vid)
 		{
 			h = h * 137 + word;
-		}
-
+		}		
 		return h;
 	}
 };

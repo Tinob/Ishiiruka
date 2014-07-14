@@ -1858,7 +1858,7 @@ void P_mtx0_3_Dir_s16_C0_1_Dir_8888_(VertexLoader *loader)
 	}
 }
 
-void G_RMGP01_pvt::Initialize(std::map<size_t, TCompiledLoaderFunction> &pvlmap)
+void G_RMGP01_pvt::Initialize(std::map<u64, TCompiledLoaderFunction> &pvlmap)
 {
 	// num_verts= 796831388
 #if _M_SSE >= 0x401

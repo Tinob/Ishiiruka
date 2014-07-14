@@ -18,6 +18,7 @@
 #include "VideoCommon/VideoConfig.h"
 // Compiled loaders
 #include "VideoCommon/G_RMGP01_pvt.h"
+#include "VideoCommon/G_R5WEA4_pvt.h"
 
 static int s_attr_dirty;  // bitfield
 
@@ -31,13 +32,13 @@ namespace std
 	{
 		size_t operator()(const VertexLoaderUID& uid) const
 		{
-			return uid.GetHash();
+			return uid.GetplatformHash();
 		}
 	};
 
 }
 
-typedef std::map<size_t, TCompiledLoaderFunction> PrecompiledVertexLoaderMap;
+typedef std::map<u64, TCompiledLoaderFunction> PrecompiledVertexLoaderMap;
 typedef std::unordered_map<VertexLoaderUID, VertexLoader*> VertexLoaderMap;
 typedef std::map<PortableVertexDeclaration, std::unique_ptr<NativeVertexFormat>> NativeVertexLoaderMap;
 
@@ -109,7 +110,7 @@ namespace VertexLoaderManager
 		std::ofstream headerfile(filename);
 		headerfile << header;
 		headerfile.close();
-		sprintf(filename, "%sG_s%s_pvt.cpp", dumpfolder, gamename);
+		sprintf(filename, "%sG_%s_pvt.cpp", dumpfolder, gamename);
 		sort(entries.begin(), entries.end());
 		std::string sourcecode;
 		sourcecode.append("#include \"VideoCommon/G_");
@@ -194,6 +195,7 @@ namespace VertexLoaderManager
 			vertexLoader = nullptr;
 		RecomputeCachedArraybases();
 		G_RMGP01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
+		G_R5WEA4_pvt::Initialize(g_PrecompiledVertexLoaderMap);
 	}
 
 	void Shutdown()
