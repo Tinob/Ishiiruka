@@ -104,6 +104,7 @@ struct VideoConfig
 
 	// Utility
 	bool bDumpTextures;
+	bool bDumpVertexLoaders;
 	bool bHiresTextures;
 	bool bDumpEFBTarget;
 	bool bDumpFrames;

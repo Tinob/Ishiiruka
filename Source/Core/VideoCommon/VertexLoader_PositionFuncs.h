@@ -1,20 +1,20 @@
 // Copyright 2013 Dolphin Emulator Project
 // Licensed under GPLv2
 // Refer to the license.txt file included.
-
+// Added for Ishiiruka by Tino
 #include "Common/Common.h"
 #include "Common/CPUDetect.h"
 #include "VideoCommon/VertexLoader.h"
 #include "VideoCommon/VertexLoadingSSE.h"
 
 template <typename T>
-float PosScale(TPipelineState &pipelinestate, T val)
+__forceinline float PosScale(TPipelineState &pipelinestate, T val)
 {
 	return val * pipelinestate.posScale;
 }
 
 template <>
-float PosScale(TPipelineState &pipelinestate, float val)
+__forceinline float PosScale(TPipelineState &pipelinestate, float val)
 {
 	return val;
 }

@@ -47,3 +47,46 @@ void LOADERDECL Vertexloader_Mtx::TexMtx_Write_Float4()
 	// Just to fill out with 0.
 	g_PipelineState.Write(0.f);
 }
+
+void Vertexloader_Mtx::PosMtx_ReadDirect_UByteSTR(std::string *dest)
+{
+	dest->append("\tpipelinestate.curposmtx = pipelinestate.Read<u8>() & 0x3f;\n");
+}
+
+void Vertexloader_Mtx::PosMtx_WriteSTR(std::string *dest)
+{
+	dest->append("\tpipelinestate.Write<u8>(pipelinestate.curposmtx);\n"
+		"\tpipelinestate.Write<u8>(0);\n"
+		"\tpipelinestate.Write<u8>(0);\n"
+		"\tpipelinestate.Write<u8>(0);\n");
+}
+
+void Vertexloader_Mtx::PosMtxDisabled_WriteSTR(std::string *dest)
+{
+	dest->append("\tpipelinestate.Write<u32>(0);\n");
+}
+
+void Vertexloader_Mtx::TexMtx_ReadDirect_UByteSTR(std::string *dest)
+{
+	dest->append("\tpipelinestate.curtexmtx[pipelinestate.texmtxread] = pipelinestate.Read<u8>() & 0x3f;\n"
+		"\tpipelinestate.texmtxread++;\n");
+}
+
+void Vertexloader_Mtx::TexMtx_Write_FloatSTR(std::string *dest)
+{
+	dest->append("\tpipelinestate.Write(float(pipelinestate.curtexmtx[pipelinestate.texmtxwrite++]));\n");
+}
+
+void Vertexloader_Mtx::TexMtx_Write_Float2STR(std::string *dest)
+{
+	dest->append("\tpipelinestate.Write(0.f);\n"
+		"\tpipelinestate.Write(float(pipelinestate.curtexmtx[pipelinestate.texmtxwrite++]));\n");
+}
+
+void Vertexloader_Mtx::TexMtx_Write_Float4STR(std::string *dest)
+{
+	dest->append("\tpipelinestate.Write(0.f);\n"
+		"\tpipelinestate.Write(0.f); \n"
+		"\tpipelinestate.Write(float(pipelinestate.curtexmtx[pipelinestate.texmtxwrite++])); \n"
+		"\tpipelinestate.Write(0.f); \n");
+}

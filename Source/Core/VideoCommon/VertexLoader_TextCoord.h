@@ -1,7 +1,7 @@
 // Copyright 2013 Dolphin Emulator Project
 // Licensed under GPLv2
 // Refer to the license.txt file included.
-
+// Modified for Ishiiruka by Tino
 #pragma once
 #include "Common/Common.h"
 #include "VideoCommon/VertexLoader.h"
@@ -19,9 +19,13 @@ public:
 	// GetFunction
 	static TPipelineFunction GetFunction(u32 _type, u32 _format, u32 _elements);
 
+	// GetFunction
+	static void GetFunctionSTR(std::string *dest, u32 _type, u32 _format, u32 _elements);
+
 	// GetDummyFunction
 	// It is important to synchronize tcIndex.
 	static TPipelineFunction GetDummyFunction();
+	static void GetDummyFunctionSTR(std::string *dest);
 private:
 	static bool Initialized;
 };

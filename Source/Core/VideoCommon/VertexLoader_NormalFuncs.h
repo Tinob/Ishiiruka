@@ -1,3 +1,7 @@
+// Copyright 2013 Dolphin Emulator Project
+// Licensed under GPLv2
+// Refer to the license.txt file included.
+// Added for Ishiiruka by Tino
 #include "Common/Common.h"
 #include "Common/CPUDetect.h"
 #include "VideoCommon/VertexLoader.h"
@@ -62,6 +66,14 @@ __forceinline void _Normal_Index_Offset(TPipelineState &pipelinestate)
 
 	auto const data = reinterpret_cast<const T*>(IndexedNormalPosition<I, T, Offset>(pipelinestate));
 	ReadIndirect<T, N * 3>(pipelinestate, data);
+}
+
+template <typename I, typename T>
+__forceinline void _Normal_Index_Offset3(TPipelineState &pipelinestate)
+{
+	_Normal_Index_Offset<I, T, 1, 0>(pipelinestate);
+	_Normal_Index_Offset<I, T, 1, 1>(pipelinestate);
+	_Normal_Index_Offset<I, T, 1, 2>(pipelinestate);
 }
 
 #if _M_SSE >= 0x301

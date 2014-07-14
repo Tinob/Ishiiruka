@@ -1,7 +1,7 @@
 // Copyright 2013 Dolphin Emulator Project
 // Licensed under GPLv2
 // Refer to the license.txt file included.
-
+// Modified for Ishiiruka By Tino
 #pragma once
 
 // Top vertex loaders
@@ -24,7 +24,7 @@ class VertexLoaderUID
 	u32 vid[5];
 	size_t hash;
 public:
-	VertexLoaderUID() 
+	VertexLoaderUID()
 	{
 	}
 
@@ -84,6 +84,11 @@ public:
 		return hash;
 	}
 
+	u32 GetElement(u32 idx) const
+	{
+		return vid[idx];
+	}
+
 private:
 
 	size_t CalculateHash()
@@ -99,23 +104,32 @@ private:
 	}
 };
 
+class VertexLoader;
+
+typedef void (LOADERDECL *TCompiledLoaderFunction)(VertexLoader *loader);
+
 class VertexLoader
 {
 public:
-	VertexLoader(const TVtxDesc &vtx_desc, const VAT &vtx_attr);
+	VertexLoader(const TVtxDesc &vtx_desc, const VAT &vtx_attr, TCompiledLoaderFunction precompiledFunction);
 	~VertexLoader();
 
-	int GetVertexSize() const {return m_VertexSize;}
-	
-	int SetupRunVertices(int vtx_attr_group, int primitive, int const count);
-	void RunVertices(int vtx_attr_group, int primitive, int count);
-	void RunCompiledVertices(int vtx_attr_group, int primitive, int count, u8* Data);
+	s32 GetVertexSize() const { return m_VertexSize; }
+
+	int SetupRunVertices(s32 vtx_attr_group, s32 primitive, s32 const count);
+	void RunVertices(s32 vtx_attr_group, s32 primitive, s32 count);
+	void RunCompiledVertices(s32 vtx_attr_group, s32 primitive, s32 count, u8* Data);
 
 	// For debugging / profiling
 	void AppendToString(std::string *dest) const;
-	int GetNumLoadedVerts() const { return m_numLoadedVertices; }
+	void GetName(std::string *dest) const;
+	void DumpCode(std::string *dest) const;
 
-private:	
+	u64 GetNumLoadedVerts() const { return m_numLoadedVertices; }
+	bool IsPrecompiled();
+private:
+	bool m_Isprecompiled;
+	TCompiledLoaderFunction m_CompiledFunction;
 	enum
 	{
 		NRM_ZERO = 0,
@@ -123,7 +137,7 @@ private:
 		NRM_THREE = 3,
 	};
 
-	int m_VertexSize;      // number of bytes of a raw GC vertex. Computed by CompileVertexTranslator.
+	s32 m_VertexSize;      // number of bytes of a raw GC vertex. Computed by CompileVertexTranslator.
 
 	// GC vertex format
 	TVtxAttr m_VtxAttr;  // VAT decoded into easy format
@@ -131,17 +145,17 @@ private:
 
 	// PC vertex format
 	NativeVertexFormat *m_NativeFmt;
-	int native_stride;
+	s32 native_stride;
 
 	TPipelineFunction m_PipelineStages[32];
-	int m_numPipelineStages;	
+	s32 m_numPipelineStages;
 
-	int m_numLoadedVertices;
+	u64 m_numLoadedVertices;
 
 	void SetVAT(u32 _group0, u32 _group1, u32 _group2);
 
 	void CompileVertexTranslator();
-	void ConvertVertices(int count);
+	static void LOADERDECL ConvertVertices(VertexLoader *loader);
 
 	void WriteCall(TPipelineFunction);
 };

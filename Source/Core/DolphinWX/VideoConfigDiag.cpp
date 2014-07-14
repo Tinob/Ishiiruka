@@ -110,6 +110,7 @@ wxString xfb_desc = wxTRANSLATE("Disable any XFB emulation.\nSpeeds up emulation
 wxString xfb_virtual_desc = wxTRANSLATE("Emulate XFBs using GPU texture objects.\nFixes many games which don't work without XFB emulation while not being as slow as real XFB emulation. However, it may still fail for a lot of other games (especially homebrew applications).\n\nIf unsure, leave this checked.");
 wxString xfb_real_desc = wxTRANSLATE("Emulate XFBs accurately.\nSlows down emulation a lot and prohibits high-resolution rendering but is necessary to emulate a number of games properly.\n\nIf unsure, check virtual XFB emulation instead.");
 wxString dump_textures_desc = wxTRANSLATE("Dump decoded game textures to User/Dump/Textures/<game_id>/\n\nIf unsure, leave this unchecked.");
+wxString dump_VertexTranslators_desc = wxTRANSLATE("Dump Vertex translator code to User/Dump/\n\nIf unsure, leave this unchecked.");
 wxString load_hires_textures_desc = wxTRANSLATE("Load custom textures from User/Load/Textures/<game_id>/\n\nIf unsure, leave this unchecked.");
 wxString dump_efb_desc = wxTRANSLATE("Dump the contents of EFB copies to User/Dump/Textures/\n\nIf unsure, leave this unchecked.");
 wxString dump_frames_desc = wxTRANSLATE("Dump all rendered frames to an AVI file in User/Dump/Frames/\n\nIf unsure, leave this unchecked.");
@@ -541,6 +542,7 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title, con
 	wxGridSizer* const szr_utility = new wxGridSizer(2, 5, 5);
 
 	szr_utility->Add(CreateCheckBox(page_advanced, _("Dump Textures"), wxGetTranslation(dump_textures_desc), vconfig.bDumpTextures));
+	szr_utility->Add(CreateCheckBox(page_advanced, _("Dump Vertex Loaders"), wxGetTranslation(dump_VertexTranslators_desc), vconfig.bDumpVertexLoaders));
 	szr_utility->Add(CreateCheckBox(page_advanced, _("Load Custom Textures"), wxGetTranslation(load_hires_textures_desc), vconfig.bHiresTextures));
 	szr_utility->Add(CreateCheckBox(page_advanced, _("Dump EFB Target"), wxGetTranslation(dump_efb_desc), vconfig.bDumpEFBTarget));
 	szr_utility->Add(CreateCheckBox(page_advanced, _("Dump Frames"), wxGetTranslation(dump_frames_desc), vconfig.bDumpFrames));

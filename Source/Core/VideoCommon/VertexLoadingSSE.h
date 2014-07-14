@@ -1,7 +1,8 @@
 // Copyright 2013 Dolphin Emulator Project
 // Licensed under GPLv2
 // Refer to the license.txt file included.
-
+// Added for Ishiiruka by Tino
+#pragma once
 #include "Common/Common.h"
 #if _M_SSE >= 0x401
 #include <smmintrin.h>

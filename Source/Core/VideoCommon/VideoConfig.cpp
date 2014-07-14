@@ -61,6 +61,7 @@ void VideoConfig::Load(const char *ini_file)
 	iniFile.Get("Settings", "ShowEFBCopyRegions", &bShowEFBCopyRegions, false);
 	iniFile.Get("Settings", "DLOptimize", &iCompileDLsLevel, 0);
 	iniFile.Get("Settings", "DumpTextures", &bDumpTextures, 0);
+	iniFile.Get("Settings", "DumpVertexLoader", &bDumpVertexLoaders, 0);
 	iniFile.Get("Settings", "HiresTextures", &bHiresTextures, 0);
 	iniFile.Get("Settings", "DumpEFBTarget", &bDumpEFBTarget, 0);
 	iniFile.Get("Settings", "DumpFrames", &bDumpFrames, 0);
@@ -249,6 +250,7 @@ void VideoConfig::Save(const char *ini_file)
 	iniFile.Set("Settings", "DLOptimize", iCompileDLsLevel);
 	iniFile.Set("Settings", "Show", iCompileDLsLevel);
 	iniFile.Set("Settings", "DumpTextures", bDumpTextures);
+	iniFile.Set("Settings", "DumpVertexLoader", bDumpVertexLoaders);
 	iniFile.Set("Settings", "HiresTextures", bHiresTextures);
 	iniFile.Set("Settings", "DumpEFBTarget", bDumpEFBTarget);
 	iniFile.Set("Settings", "DumpFrames", bDumpFrames);
