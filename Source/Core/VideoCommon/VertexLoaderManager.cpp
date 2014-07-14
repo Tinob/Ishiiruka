@@ -16,6 +16,8 @@
 #include "VideoCommon/VertexShaderManager.h"
 #include "VideoCommon/VideoCommon.h"
 #include "VideoCommon/VideoConfig.h"
+// Compiled loaders
+#include "VideoCommon/G_RMGP01_pvt.h"
 
 static int s_attr_dirty;  // bitfield
 
@@ -191,6 +193,7 @@ namespace VertexLoaderManager
 		for (VertexLoader*& vertexLoader : g_VertexLoaders)
 			vertexLoader = nullptr;
 		RecomputeCachedArraybases();
+		G_RMGP01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
 	}
 
 	void Shutdown()

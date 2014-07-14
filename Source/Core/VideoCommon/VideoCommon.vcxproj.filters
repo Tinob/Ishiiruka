@@ -137,6 +137,9 @@
     <ClCompile Include="VertexLoader_Mtx.cpp">
       <Filter>Vertex Loading</Filter>
     </ClCompile>
+    <ClCompile Include="G_sRMGP01_pvt.cpp">
+      <Filter>Vertex Loading\Compiled Loaders</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommandProcessor.h" />
@@ -303,6 +306,9 @@
     <ClInclude Include="VertexLoader_Mtx.h">
       <Filter>Vertex Loading</Filter>
     </ClInclude>
+    <ClInclude Include="G_RMGP01_pvt.h">
+      <Filter>Vertex Loading\Compiled Loaders</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="CMakeLists.txt" />
@@ -334,6 +340,9 @@
     </Filter>
     <Filter Include="Decoding\OpenCL">
       <UniqueIdentifier>{e2a527a2-ccc8-4ab8-a93e-dd2628c0f3b6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Vertex Loading\Compiled Loaders">
+      <UniqueIdentifier>{288bb1f8-2147-4014-8c42-f1e2a0bf997a}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>
