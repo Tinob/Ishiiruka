@@ -2,6 +2,10 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
+#include <cinttypes>
+
+#include "AudioCommon/AudioCommon.h"
+
 #include "Common/ChunkFile.h"
 #include "Common/Common.h"
 #include "Common/Thread.h"
@@ -19,8 +23,8 @@
 #include "Core/HW/SystemTimers.h"
 #include "Core/PowerPC/PowerPC.h"
 
-// A Gamecube disc can be read at somewhere between
-// 2 and 3MB/sec, depending on the location on disk.  Wii disks
+// A GameCube disc can be read at somewhere between
+// 2 and 3MB/sec, depending on the location on disk. Wii disks
 // not yet tested.
 static const u32 DISC_TRANSFER_RATE_GC = 3 * 1024 * 1024;
 
@@ -37,24 +41,24 @@ namespace DVDInterface
 // internal hardware addresses
 enum
 {
-	DI_STATUS_REGISTER       = 0x00,
-	DI_COVER_REGISTER        = 0x04,
-	DI_COMMAND_0             = 0x08,
-	DI_COMMAND_1             = 0x0C,
-	DI_COMMAND_2             = 0x10,
-	DI_DMA_ADDRESS_REGISTER  = 0x14,
-	DI_DMA_LENGTH_REGISTER   = 0x18,
-	DI_DMA_CONTROL_REGISTER  = 0x1C,
+	DI_STATUS_REGISTER = 0x00,
+	DI_COVER_REGISTER = 0x04,
+	DI_COMMAND_0 = 0x08,
+	DI_COMMAND_1 = 0x0C,
+	DI_COMMAND_2 = 0x10,
+	DI_DMA_ADDRESS_REGISTER = 0x14,
+	DI_DMA_LENGTH_REGISTER = 0x18,
+	DI_DMA_CONTROL_REGISTER = 0x1C,
 	DI_IMMEDIATE_DATA_BUFFER = 0x20,
-	DI_CONFIG_REGISTER       = 0x24
+	DI_CONFIG_REGISTER = 0x24
 };
 
 
 // DVD IntteruptTypes
 enum DI_InterruptType
 {
-	INT_DEINT  = 0,
-	INT_TCINT  = 1,
+	INT_DEINT = 0,
+	INT_TCINT = 1,
 	INT_BRKINT = 2,
 	INT_CVRINT = 3,
 };
@@ -62,10 +66,10 @@ enum DI_InterruptType
 // debug commands which may be ORd
 enum
 {
-	STOP_DRIVE  = 0,
+	STOP_DRIVE = 0,
 	START_DRIVE = 0x100,
 	ACCEPT_COPY = 0x4000,
-	DISC_CHECK  = 0x8000,
+	DISC_CHECK = 0x8000,
 };
 
 // DI Status Register
@@ -74,17 +78,17 @@ union UDISR
 	u32 Hex;
 	struct
 	{
-		u32 BREAK      :  1; // Stop the Device + Interrupt
-		u32 DEINITMASK :  1; // Access Device Error Int Mask
-		u32 DEINT      :  1; // Access Device Error Int
-		u32 TCINTMASK  :  1; // Transfer Complete Int Mask
-		u32 TCINT      :  1; // Transfer Complete Int
-		u32 BRKINTMASK :  1;
-		u32 BRKINT     :  1; // w 1: clear brkint
-		u32            : 25;
+		u32 BREAK : 1; // Stop the Device + Interrupt
+		u32 DEINITMASK : 1; // Access Device Error Int Mask
+		u32 DEINT : 1; // Access Device Error Int
+		u32 TCINTMASK : 1; // Transfer Complete Int Mask
+		u32 TCINT : 1; // Transfer Complete Int
+		u32 BRKINTMASK : 1;
+		u32 BRKINT : 1; // w 1: clear brkint
+	u32: 25;
 	};
-	UDISR() {Hex = 0;}
-	UDISR(u32 _hex) {Hex = _hex;}
+	UDISR() { Hex = 0; }
+	UDISR(u32 _hex) { Hex = _hex; }
 };
 
 // DI Cover Register
@@ -93,13 +97,13 @@ union UDICVR
 	u32 Hex;
 	struct
 	{
-		u32 CVR        :  1; // 0: Cover closed  1: Cover open
-		u32 CVRINTMASK :  1; // 1: Interrupt enabled
-		u32 CVRINT     :  1; // r 1: Interrupt requested w 1: Interrupt clear
-		u32            : 29;
+		u32 CVR : 1; // 0: Cover closed 1: Cover open
+		u32 CVRINTMASK : 1; // 1: Interrupt enabled
+		u32 CVRINT : 1; // r 1: Interrupt requested w 1: Interrupt clear
+	u32: 29;
 	};
-	UDICVR() {Hex = 0;}
-	UDICVR(u32 _hex) {Hex = _hex;}
+	UDICVR() { Hex = 0; }
+	UDICVR(u32 _hex) { Hex = _hex; }
 };
 
 union UDICMDBUF
@@ -121,12 +125,12 @@ union UDIMAR
 	struct
 	{
 		u32 Zerobits : 5; // Must be zero (32byte aligned)
-		u32          : 27;
+	u32: 27;
 	};
 	struct
 	{
 		u32 Address : 26;
-		u32         : 6;
+	u32: 6;
 	};
 };
 
@@ -137,12 +141,12 @@ union UDILENGTH
 	struct
 	{
 		u32 Zerobits : 5; // Must be zero (32byte aligned)
-		u32          : 27;
+	u32: 27;
 	};
 	struct
 	{
 		u32 Length : 26;
-		u32        : 6;
+	u32: 6;
 	};
 };
 
@@ -152,10 +156,10 @@ union UDICR
 	u32 Hex;
 	struct
 	{
-		u32 TSTART : 1; // w:1 start   r:0 ready
-		u32 DMA    : 1; // 1: DMA Mode    0: Immediate Mode (can only do Access Register Command)
-		u32 RW     : 1; // 0: Read Command (DVD to Memory)  1: Write Command (Memory to DVD)
-		u32        : 29;
+		u32 TSTART : 1; // w:1 start r:0 ready
+		u32 DMA : 1; // 1: DMA Mode 0: Immediate Mode (can only do Access Register Command)
+		u32 RW : 1; // 0: Read Command (DVD to Memory) 1: Write Command (Memory to DVD)
+	u32: 29;
 	};
 };
 
@@ -178,23 +182,23 @@ union UDICFG
 	struct
 	{
 		u32 CONFIG : 8;
-		u32        : 24;
+	u32: 24;
 	};
-	UDICFG() {Hex = 0;}
-	UDICFG(u32 _hex) {Hex = _hex;}
+	UDICFG() { Hex = 0; }
+	UDICFG(u32 _hex) { Hex = _hex; }
 };
 
 
 // STATE_TO_SAVE
 // hardware registers
-static UDISR     m_DISR;
-static UDICVR    m_DICVR;
+static UDISR m_DISR;
+static UDICVR m_DICVR;
 static UDICMDBUF m_DICMDBUF[3];
-static UDIMAR    m_DIMAR;
+static UDIMAR m_DIMAR;
 static UDILENGTH m_DILENGTH;
-static UDICR     m_DICR;
+static UDICR m_DICR;
 static UDIIMMBUF m_DIIMMBUF;
-static UDICFG    m_DICFG;
+static UDICFG m_DICFG;
 
 static u32 LoopStart;
 static u32 AudioPos;
@@ -202,20 +206,17 @@ static u32 CurrentStart;
 static u32 LoopLength;
 static u32 CurrentLength;
 
-u32  g_ErrorCode = 0;
+u32 g_ErrorCode = 0;
 bool g_bDiscInside = false;
 bool g_bStream = false;
-int  tc = 0;
+int tc = 0;
+int dtk = 0;
 
 static u64 g_last_read_offset;
 static u64 g_last_read_time;
 
 // GC-AM only
 static unsigned char media_buffer[0x40];
-
-// Needed because data and streaming audio access needs to be managed by the "drive"
-// (both requests can happen at the same time, audio takes precedence)
-static std::mutex dvdread_section;
 
 static int ejectDisc;
 static int insertDisc;
@@ -260,19 +261,76 @@ void TransferComplete(u64 userdata, int cyclesLate)
 		FinishExecuteRead();
 }
 
+void ReadDTKSamples(u64 userdata, int cyclesLate)
+{
+	static const int NUM_SAMPLES = 48000 / 1000 * 7; // 7ms of 48kHz samples
+	short tempPCM[NUM_SAMPLES * 2];
+	unsigned samples_processed = 0;
+	do
+	{
+		if (AudioPos >= CurrentStart + CurrentLength)
+		{
+			AudioPos = LoopStart;
+			CurrentStart = LoopStart;
+			CurrentLength = LoopLength;
+			NGCADPCM::InitFilter();
+			AudioInterface::GenerateAISInterrupt();
+
+			// If there isn't any audio to stream, stop streaming.
+			if (AudioPos >= CurrentStart + CurrentLength)
+			{
+				g_bStream = false;
+				return;
+			}
+
+			break;
+		}
+
+		u8 tempADPCM[NGCADPCM::ONE_BLOCK_SIZE];
+		// TODO: What if we can't read from AudioPos?
+		VolumeHandler::ReadToPtr(tempADPCM, AudioPos, sizeof(tempADPCM));
+		AudioPos += sizeof(tempADPCM);
+		NGCADPCM::DecodeBlock(tempPCM + samples_processed * 2, tempADPCM);
+		samples_processed += NGCADPCM::SAMPLES_PER_BLOCK;
+	} while (samples_processed < NUM_SAMPLES);
+	for (unsigned i = 0; i < samples_processed * 2; ++i)
+	{
+		// TODO: Fix the mixer so it can accept non-byte-swapped samples.
+		tempPCM[i] = Common::swap16(tempPCM[i]);
+	}
+	soundStream->GetMixer()->PushStreamingSamples(tempPCM, samples_processed);
+	int ticks_to_dtk = int(SystemTimers::GetTicksPerSecond() * u64(samples_processed) / 48000);
+	CoreTiming::ScheduleEvent(ticks_to_dtk - cyclesLate, dtk);
+}
+
+void StartDTKStreaming()
+{
+	// We wait 100ms before we actually start streaming to try to simulate
+	// seek time. Not completely accurate, but better than starting the
+	// stream instantly.
+	g_bStream = true;
+	CoreTiming::ScheduleEvent(SystemTimers::GetTicksPerSecond() / 10, dtk);
+}
+
+void StopDTKStreaming()
+{
+	g_bStream = false;
+	CoreTiming::RemoveAllEvents(dtk);
+}
+
 void Init()
 {
-	m_DISR.Hex        = 0;
-	m_DICVR.Hex       = 0;
+	m_DISR.Hex = 0;
+	m_DICVR.Hex = 0;
 	m_DICMDBUF[0].Hex = 0;
 	m_DICMDBUF[1].Hex = 0;
 	m_DICMDBUF[2].Hex = 0;
-	m_DIMAR.Hex       = 0;
-	m_DILENGTH.Hex    = 0;
-	m_DICR.Hex        = 0;
-	m_DIIMMBUF.Hex    = 0;
-	m_DICFG.Hex       = 0;
-	m_DICFG.CONFIG    = 1; // Disable bootrom descrambler
+	m_DIMAR.Hex = 0;
+	m_DILENGTH.Hex = 0;
+	m_DICR.Hex = 0;
+	m_DIIMMBUF.Hex = 0;
+	m_DICFG.Hex = 0;
+	m_DICFG.CONFIG = 1; // Disable bootrom descrambler
 
 	AudioPos = 0;
 	LoopStart = 0;
@@ -286,6 +344,7 @@ void Init()
 	insertDisc = CoreTiming::RegisterEvent("InsertDisc", InsertDiscCallback);
 
 	tc = CoreTiming::RegisterEvent("TransferComplete", TransferComplete);
+	dtk = CoreTiming::RegisterEvent("StreamingTimer", ReadDTKSamples);
 }
 
 void Shutdown()
@@ -367,55 +426,7 @@ void ClearCoverInterrupt()
 
 bool DVDRead(u32 _iDVDOffset, u32 _iRamAddress, u32 _iLength)
 {
-	// We won't need the crit sec when DTK streaming has been rewritten correctly.
-	std::lock_guard<std::mutex> lk(dvdread_section);
 	return VolumeHandler::ReadToPtr(Memory::GetPointer(_iRamAddress), _iDVDOffset, _iLength);
-}
-
-bool DVDReadADPCM(u8* _pDestBuffer, u32 _iNumSamples)
-{
-	_iNumSamples &= ~31;
-
-	if (AudioPos == 0)
-	{
-		memset(_pDestBuffer, 0, _iNumSamples); // probably __AI_SRC_INIT :P
-	}
-	else
-	{
-		std::lock_guard<std::mutex> lk(dvdread_section);
-		VolumeHandler::ReadToPtr(_pDestBuffer, AudioPos, _iNumSamples);
-	}
-
-	// loop check
-	if (g_bStream)
-	{
-		AudioPos += _iNumSamples;
-
-		if (AudioPos >= CurrentStart + CurrentLength)
-		{
-			if (LoopStart == 0)
-			{
-				AudioPos = 0;
-				CurrentStart = 0;
-				CurrentLength = 0;
-			}
-			else
-			{
-				AudioPos = LoopStart;
-				CurrentStart = LoopStart;
-				CurrentLength = LoopLength;
-			}
-			NGCADPCM::InitFilter();
-			AudioInterface::GenerateAISInterrupt();
-		}
-
-		//WARN_LOG(DVDINTERFACE,"ReadADPCM");
-		return true;
-	}
-	else
-	{
-		return false;
-	}
 }
 
 void RegisterMMIO(MMIO::Mapping* mmio, u32 base)
@@ -423,51 +434,51 @@ void RegisterMMIO(MMIO::Mapping* mmio, u32 base)
 	mmio->Register(base | DI_STATUS_REGISTER,
 		MMIO::DirectRead<u32>(&m_DISR.Hex),
 		MMIO::ComplexWrite<u32>([](u32, u32 val) {
-			UDISR tmpStatusReg(val);
+		UDISR tmpStatusReg(val);
 
-			m_DISR.DEINITMASK = tmpStatusReg.DEINITMASK;
-			m_DISR.TCINTMASK  = tmpStatusReg.TCINTMASK;
-			m_DISR.BRKINTMASK = tmpStatusReg.BRKINTMASK;
-			m_DISR.BREAK      = tmpStatusReg.BREAK;
+		m_DISR.DEINITMASK = tmpStatusReg.DEINITMASK;
+		m_DISR.TCINTMASK = tmpStatusReg.TCINTMASK;
+		m_DISR.BRKINTMASK = tmpStatusReg.BRKINTMASK;
+		m_DISR.BREAK = tmpStatusReg.BREAK;
 
-			if (tmpStatusReg.DEINT)
-				m_DISR.DEINT = 0;
+		if (tmpStatusReg.DEINT)
+			m_DISR.DEINT = 0;
 
-			if (tmpStatusReg.TCINT)
-				m_DISR.TCINT = 0;
+		if (tmpStatusReg.TCINT)
+			m_DISR.TCINT = 0;
 
-			if (tmpStatusReg.BRKINT)
-				m_DISR.BRKINT = 0;
+		if (tmpStatusReg.BRKINT)
+			m_DISR.BRKINT = 0;
 
-			if (m_DISR.BREAK)
-			{
-				_dbg_assert_(DVDINTERFACE, 0);
-			}
+		if (m_DISR.BREAK)
+		{
+			_dbg_assert_(DVDINTERFACE, 0);
+		}
 
-			UpdateInterrupts();
-		})
-	);
+		UpdateInterrupts();
+	})
+		);
 
 	mmio->Register(base | DI_COVER_REGISTER,
 		MMIO::DirectRead<u32>(&m_DICVR.Hex),
 		MMIO::ComplexWrite<u32>([](u32, u32 val) {
-			UDICVR tmpCoverReg(val);
+		UDICVR tmpCoverReg(val);
 
-			m_DICVR.CVRINTMASK = tmpCoverReg.CVRINTMASK;
+		m_DICVR.CVRINTMASK = tmpCoverReg.CVRINTMASK;
 
-			if (tmpCoverReg.CVRINT)
-				m_DICVR.CVRINT = 0;
+		if (tmpCoverReg.CVRINT)
+			m_DICVR.CVRINT = 0;
 
-			UpdateInterrupts();
-		})
-	);
+		UpdateInterrupts();
+	})
+		);
 
 	// Command registers are very similar and we can register them with a
 	// simple loop.
 	for (int i = 0; i < 3; ++i)
 		mmio->Register(base | (DI_COMMAND_0 + 4 * i),
-			MMIO::DirectRead<u32>(&m_DICMDBUF[i].Hex),
-			MMIO::DirectWrite<u32>(&m_DICMDBUF[i].Hex)
+		MMIO::DirectRead<u32>(&m_DICMDBUF[i].Hex),
+		MMIO::DirectWrite<u32>(&m_DICMDBUF[i].Hex)
 		);
 
 	// DMA related registers. Mostly direct accesses (+ masking for writes to
@@ -476,40 +487,40 @@ void RegisterMMIO(MMIO::Mapping* mmio, u32 base)
 	mmio->Register(base | DI_DMA_ADDRESS_REGISTER,
 		MMIO::DirectRead<u32>(&m_DIMAR.Hex),
 		MMIO::DirectWrite<u32>(&m_DIMAR.Hex, ~0xFC00001F)
-	);
+		);
 	mmio->Register(base | DI_DMA_LENGTH_REGISTER,
 		MMIO::DirectRead<u32>(&m_DILENGTH.Hex),
 		MMIO::DirectWrite<u32>(&m_DILENGTH.Hex, ~0x1F)
-	);
+		);
 	mmio->Register(base | DI_DMA_CONTROL_REGISTER,
 		MMIO::DirectRead<u32>(&m_DICR.Hex),
 		MMIO::ComplexWrite<u32>([](u32, u32 val) {
-			m_DICR.Hex = val & 7;
-			if (m_DICR.TSTART)
-			{
-				ExecuteCommand();
-			}
-		})
-	);
+		m_DICR.Hex = val & 7;
+		if (m_DICR.TSTART)
+		{
+			ExecuteCommand();
+		}
+	})
+		);
 
 	mmio->Register(base | DI_IMMEDIATE_DATA_BUFFER,
 		MMIO::DirectRead<u32>(&m_DIIMMBUF.Hex),
 		MMIO::DirectWrite<u32>(&m_DIIMMBUF.Hex)
-	);
+		);
 
 	// DI config register is read only.
 	mmio->Register(base | DI_CONFIG_REGISTER,
 		MMIO::DirectRead<u32>(&m_DICFG.Hex),
 		MMIO::InvalidWrite<u32>()
-	);
+		);
 }
 
 void UpdateInterrupts()
 {
-	if ((m_DISR.DEINT   & m_DISR.DEINITMASK) ||
-	    (m_DISR.TCINT   & m_DISR.TCINTMASK)  ||
-	    (m_DISR.BRKINT  & m_DISR.BRKINTMASK) ||
-	    (m_DICVR.CVRINT & m_DICVR.CVRINTMASK))
+	if ((m_DISR.DEINT & m_DISR.DEINITMASK) ||
+		(m_DISR.TCINT & m_DISR.TCINTMASK) ||
+		(m_DISR.BRKINT & m_DISR.BRKINTMASK) ||
+		(m_DICVR.CVRINT & m_DICVR.CVRINTMASK))
 	{
 		ProcessorInterface::SetInterrupt(ProcessorInterface::INT_CAUSE_DI, true);
 	}
@@ -526,9 +537,9 @@ void GenerateDIInterrupt(DI_InterruptType _DVDInterrupt)
 {
 	switch (_DVDInterrupt)
 	{
-	case INT_DEINT:  m_DISR.DEINT   = 1; break;
-	case INT_TCINT:  m_DISR.TCINT   = 1; break;
-	case INT_BRKINT: m_DISR.BRKINT  = 1; break;
+	case INT_DEINT: m_DISR.DEINT = 1; break;
+	case INT_TCINT: m_DISR.TCINT = 1; break;
+	case INT_BRKINT: m_DISR.BRKINT = 1; break;
 	case INT_CVRINT: m_DICVR.CVRINT = 1; break;
 	}
 
@@ -539,8 +550,8 @@ void ExecuteCommand()
 {
 	// _dbg_assert_(DVDINTERFACE, _DICR.RW == 0); // only DVD to Memory
 	int GCAM = ((SConfig::GetInstance().m_SIDevice[0] == SIDEVICE_AM_BASEBOARD) &&
-	            (SConfig::GetInstance().m_EXIDevice[2] == EXIDEVICE_AM_BASEBOARD))
-	           ? 1 : 0;
+		(SConfig::GetInstance().m_EXIDevice[2] == EXIDEVICE_AM_BASEBOARD))
+		? 1 : 0;
 
 	if (GCAM)
 	{
@@ -584,163 +595,163 @@ void ExecuteCommand()
 		}
 		break;
 
-	// "Set Extension"...not sure what it does
+		// "Set Extension"...not sure what it does
 	case 0x55:
 		INFO_LOG(DVDINTERFACE, "SetExtension");
 		break;
 
-	// DMA Read from Disc
+		// DMA Read from Disc
 	case 0xA8:
 		if (g_bDiscInside)
 		{
 			switch (m_DICMDBUF[0].CMDBYTE3)
 			{
 			case 0x00: // Read Sector
+			{
+				u32 iDVDOffset = m_DICMDBUF[1].Hex << 2;
+
+				DEBUG_LOG(DVDINTERFACE, "Read: DVDOffset=%08x, DMABuffer=%08x, SrcLength=%08x, DMALength=%08x",
+					iDVDOffset, m_DIMAR.Address, m_DICMDBUF[2].Hex, m_DILENGTH.Length);
+				_dbg_assert_(DVDINTERFACE, m_DICMDBUF[2].Hex == m_DILENGTH.Length);
+
+				if (GCAM)
 				{
-					u32 iDVDOffset = m_DICMDBUF[1].Hex << 2;
-
-					DEBUG_LOG(DVDINTERFACE, "Read: DVDOffset=%08x, DMABuffer=%08x, SrcLength=%08x, DMALength=%08x",
-						iDVDOffset, m_DIMAR.Address, m_DICMDBUF[2].Hex, m_DILENGTH.Length);
-					_dbg_assert_(DVDINTERFACE, m_DICMDBUF[2].Hex == m_DILENGTH.Length);
-
-					if (GCAM)
+					if (iDVDOffset & 0x80000000) // read request to hardware buffer
 					{
-						if (iDVDOffset & 0x80000000) // read request to hardware buffer
+						u32 len = m_DILENGTH.Length / 4;
+						switch (iDVDOffset)
 						{
-							u32 len = m_DILENGTH.Length / 4;
-							switch (iDVDOffset)
-							{
-							case 0x80000000:
-								ERROR_LOG(DVDINTERFACE, "GC-AM: READ MEDIA BOARD STATUS (80000000)");
-								for (u32 i = 0; i < len; i++)
-									Memory::Write_U32(0, m_DIMAR.Address + i * 4);
-								break;
-							case 0x80000040:
-								ERROR_LOG(DVDINTERFACE, "GC-AM: READ MEDIA BOARD STATUS (2) (80000040)");
-								for (u32 i = 0; i < len; i++)
-									Memory::Write_U32(~0, m_DIMAR.Address + i * 4);
-								Memory::Write_U32(0x00000020, m_DIMAR.Address); // DIMM SIZE, LE
-								Memory::Write_U32(0x4743414D, m_DIMAR.Address + 4); // GCAM signature
-								break;
-							case 0x80000120:
-								ERROR_LOG(DVDINTERFACE, "GC-AM: READ FIRMWARE STATUS (80000120)");
-								for (u32 i = 0; i < len; i++)
-									Memory::Write_U32(0x01010101, m_DIMAR.Address + i * 4);
-								break;
-							case 0x80000140:
-								ERROR_LOG(DVDINTERFACE, "GC-AM: READ FIRMWARE STATUS (80000140)");
-								for (u32 i = 0; i < len; i++)
-									Memory::Write_U32(0x01010101, m_DIMAR.Address + i * 4);
-								break;
-							case 0x84000020:
-								ERROR_LOG(DVDINTERFACE, "GC-AM: READ MEDIA BOARD STATUS (1) (84000020)");
-								for (u32 i = 0; i < len; i++)
-									Memory::Write_U32(0x00000000, m_DIMAR.Address + i * 4);
-								break;
-							default:
-								ERROR_LOG(DVDINTERFACE, "GC-AM: UNKNOWN MEDIA BOARD LOCATION %x", iDVDOffset);
-								break;
-							}
+						case 0x80000000:
+							ERROR_LOG(DVDINTERFACE, "GC-AM: READ MEDIA BOARD STATUS (80000000)");
+							for (u32 i = 0; i < len; i++)
+								Memory::Write_U32(0, m_DIMAR.Address + i * 4);
+							break;
+						case 0x80000040:
+							ERROR_LOG(DVDINTERFACE, "GC-AM: READ MEDIA BOARD STATUS (2) (80000040)");
+							for (u32 i = 0; i < len; i++)
+								Memory::Write_U32(~0, m_DIMAR.Address + i * 4);
+							Memory::Write_U32(0x00000020, m_DIMAR.Address); // DIMM SIZE, LE
+							Memory::Write_U32(0x4743414D, m_DIMAR.Address + 4); // GCAM signature
+							break;
+						case 0x80000120:
+							ERROR_LOG(DVDINTERFACE, "GC-AM: READ FIRMWARE STATUS (80000120)");
+							for (u32 i = 0; i < len; i++)
+								Memory::Write_U32(0x01010101, m_DIMAR.Address + i * 4);
+							break;
+						case 0x80000140:
+							ERROR_LOG(DVDINTERFACE, "GC-AM: READ FIRMWARE STATUS (80000140)");
+							for (u32 i = 0; i < len; i++)
+								Memory::Write_U32(0x01010101, m_DIMAR.Address + i * 4);
+							break;
+						case 0x84000020:
+							ERROR_LOG(DVDINTERFACE, "GC-AM: READ MEDIA BOARD STATUS (1) (84000020)");
+							for (u32 i = 0; i < len; i++)
+								Memory::Write_U32(0x00000000, m_DIMAR.Address + i * 4);
+							break;
+						default:
+							ERROR_LOG(DVDINTERFACE, "GC-AM: UNKNOWN MEDIA BOARD LOCATION %x", iDVDOffset);
 							break;
 						}
-						else if ((iDVDOffset == 0x1f900000) || (iDVDOffset == 0x1f900020))
-						{
-							ERROR_LOG(DVDINTERFACE, "GC-AM: READ MEDIA BOARD COMM AREA (1f900020)");
-							memcpy(Memory::GetPointer(m_DIMAR.Address), media_buffer + iDVDOffset - 0x1f900000, m_DILENGTH.Length);
-							for (u32 i = 0; i < m_DILENGTH.Length; i += 4)
-								ERROR_LOG(DVDINTERFACE, "GC-AM: %08x", Memory::Read_U32(m_DIMAR.Address + i));
-							break;
-						}
+						break;
 					}
-
-					u64 ticksUntilTC = 0;
-
-					// The drive buffers 1MB (?) of data after every read request;
-					// if a read request is covered by this buffer (or if it's
-					// faster to wait for the data to be buffered), the drive
-					// doesn't seek; it returns buffered data.  Data can be
-					// transferred from the buffer at up to 16MB/sec.
-					//
-					// If the drive has to seek, the time this takes varies a lot.
-					// A short seek is around 50ms; a long seek is around 150ms.
-					// However, the time isn't purely dependent on the distance; the
-					// pattern of previous seeks seems to matter in a way I'm
-					// not sure how to explain.
-					//
-					// Metroid Prime is a good example of a game that's sensitive to
-					// all of these details; if there isn't enough latency in the
-					// right places, doors open too quickly, and if there's too
-					// much latency in the wrong places, the video before the
-					// save-file select screen lags.
-					//
-					// For now, just use a very rough approximation: 50ms seek
-					// and 3MB/sec for reads outside 1MB, acceleated reads
-					// within 1MB.  We can refine this if someone comes up
-					// with a more complete model for seek times.
-
-					u64 cur_time = CoreTiming::GetTicks();
-					// Number of ticks it takes to seek and read directly from the disk.
-					u64 disk_read_duration = m_DILENGTH.Length *
-						(SystemTimers::GetTicksPerSecond() / DISC_TRANSFER_RATE_GC) +
-						SystemTimers::GetTicksPerSecond() / 1000 * DISC_ACCESS_TIME_MS;
-
-					if (iDVDOffset + m_DILENGTH.Length - g_last_read_offset > 1024 * 1024)
+					else if ((iDVDOffset == 0x1f900000) || (iDVDOffset == 0x1f900020))
 					{
-						// No buffer; just use the simple seek time + read time.
-						DEBUG_LOG(DVDINTERFACE, "Seeking %lld bytes", s64(g_last_read_offset) - s64(iDVDOffset));
-						ticksUntilTC = disk_read_duration;
-						g_last_read_time = cur_time + ticksUntilTC;
+						ERROR_LOG(DVDINTERFACE, "GC-AM: READ MEDIA BOARD COMM AREA (1f900020)");
+						memcpy(Memory::GetPointer(m_DIMAR.Address), media_buffer + iDVDOffset - 0x1f900000, m_DILENGTH.Length);
+						for (u32 i = 0; i < m_DILENGTH.Length; i += 4)
+							ERROR_LOG(DVDINTERFACE, "GC-AM: %08x", Memory::Read_U32(m_DIMAR.Address + i));
+						break;
+					}
+				}
+
+				u64 ticksUntilTC = 0;
+
+				// The drive buffers 1MB (?) of data after every read request;
+				// if a read request is covered by this buffer (or if it's
+				// faster to wait for the data to be buffered), the drive
+				// doesn't seek; it returns buffered data. Data can be
+				// transferred from the buffer at up to 16MB/sec.
+				//
+				// If the drive has to seek, the time this takes varies a lot.
+				// A short seek is around 50ms; a long seek is around 150ms.
+				// However, the time isn't purely dependent on the distance; the
+				// pattern of previous seeks seems to matter in a way I'm
+				// not sure how to explain.
+				//
+				// Metroid Prime is a good example of a game that's sensitive to
+				// all of these details; if there isn't enough latency in the
+				// right places, doors open too quickly, and if there's too
+				// much latency in the wrong places, the video before the
+				// save-file select screen lags.
+				//
+				// For now, just use a very rough approximation: 50ms seek
+				// and 3MB/sec for reads outside 1MB, acceleated reads
+				// within 1MB. We can refine this if someone comes up
+				// with a more complete model for seek times.
+
+				u64 cur_time = CoreTiming::GetTicks();
+				// Number of ticks it takes to seek and read directly from the disk.
+				u64 disk_read_duration = m_DILENGTH.Length *
+					(SystemTimers::GetTicksPerSecond() / DISC_TRANSFER_RATE_GC) +
+					SystemTimers::GetTicksPerSecond() / 1000 * DISC_ACCESS_TIME_MS;
+
+				if (iDVDOffset + m_DILENGTH.Length - g_last_read_offset > 1024 * 1024)
+				{
+					// No buffer; just use the simple seek time + read time.
+					DEBUG_LOG(DVDINTERFACE, "Seeking %" PRId64 " bytes", s64(g_last_read_offset) - s64(iDVDOffset));
+					ticksUntilTC = disk_read_duration;
+					g_last_read_time = cur_time + ticksUntilTC;
+				}
+				else
+				{
+					// Possibly buffered; use the buffer if it saves time.
+					// It's not proven that the buffer actually behaves like this, but
+					// it appears to be a decent approximation.
+
+					// Time at which the buffer will contain the data we need.
+					u64 buffer_fill_time = (iDVDOffset + m_DILENGTH.Length - g_last_read_offset) *
+						(SystemTimers::GetTicksPerSecond() / DISC_TRANSFER_RATE_GC) +
+						g_last_read_time;
+					// Number of ticks it takes to transfer the data from the buffer to memory.
+					u64 buffer_read_duration = m_DILENGTH.Length *
+						(SystemTimers::GetTicksPerSecond() / BUFFER_TRANSFER_RATE_GC);
+
+					if (cur_time > buffer_fill_time)
+					{
+						DEBUG_LOG(DVDINTERFACE, "Fast buffer read at %" PRId64, s64(iDVDOffset));
+						ticksUntilTC = buffer_read_duration;
+						g_last_read_time = buffer_fill_time;
+					}
+					else if (cur_time + disk_read_duration > buffer_fill_time)
+					{
+						DEBUG_LOG(DVDINTERFACE, "Slow buffer read at %" PRId64, s64(iDVDOffset));
+						ticksUntilTC = std::max(buffer_fill_time - cur_time, buffer_read_duration);
+						g_last_read_time = buffer_fill_time;
 					}
 					else
 					{
-						// Possibly buffered; use the buffer if it saves time.
-						// It's not proven that the buffer actually behaves like this, but
-						// it appears to be a decent approximation.
-
-						// Time at which the buffer will contain the data we need.
-						u64 buffer_fill_time = (iDVDOffset + m_DILENGTH.Length - g_last_read_offset) *
-							(SystemTimers::GetTicksPerSecond() / DISC_TRANSFER_RATE_GC) +
-							g_last_read_time;
-						// Number of ticks it takes to transfer the data from the buffer to memory.
-						u64 buffer_read_duration = m_DILENGTH.Length *
-							(SystemTimers::GetTicksPerSecond() / BUFFER_TRANSFER_RATE_GC);
-
-						if (cur_time > buffer_fill_time)
-						{
-							DEBUG_LOG(DVDINTERFACE, "Fast buffer read at %lld", s64(iDVDOffset));
-							ticksUntilTC = buffer_read_duration;
-							g_last_read_time = buffer_fill_time;
-						}
-						else if (cur_time + disk_read_duration > buffer_fill_time)
-						{
-							DEBUG_LOG(DVDINTERFACE, "Slow buffer read at %lld", s64(iDVDOffset));
-							ticksUntilTC = std::max(buffer_fill_time - cur_time, buffer_read_duration);
-							g_last_read_time = buffer_fill_time;
-						}
-						else
-						{
-							DEBUG_LOG(DVDINTERFACE, "Short seek %lld bytes", s64(g_last_read_offset) - s64(iDVDOffset));
-							ticksUntilTC = disk_read_duration;
-							g_last_read_time = cur_time + ticksUntilTC;
-						}
+						DEBUG_LOG(DVDINTERFACE, "Short seek %" PRId64 " bytes", s64(g_last_read_offset) - s64(iDVDOffset));
+						ticksUntilTC = disk_read_duration;
+						g_last_read_time = cur_time + ticksUntilTC;
 					}
-					g_last_read_offset = (iDVDOffset + m_DILENGTH.Length - 2048) & ~2047;
+				}
+				g_last_read_offset = (iDVDOffset + m_DILENGTH.Length - 2048) & ~2047;
 
-					if (SConfig::GetInstance().m_LocalCoreStartupParameter.bFastDiscSpeed)
-					{
-						// Make sure fast disc speed performs "instant" reads; in addition
-						// to being used to speed up games, fast disc speed is used as a
-						// workaround for crashes in certain games, including Star Wars
-						// Rogue Leader.
-						FinishExecuteRead();
-						return;
-					}
-
-					CoreTiming::ScheduleEvent((int)ticksUntilTC, tc);
-
-					// Early return; we'll finish executing the command in FinishExecuteRead.
+				if (SConfig::GetInstance().m_LocalCoreStartupParameter.bFastDiscSpeed)
+				{
+					// Make sure fast disc speed performs "instant" reads; in addition
+					// to being used to speed up games, fast disc speed is used as a
+					// workaround for crashes in certain games, including Star Wars
+					// Rogue Leader.
+					FinishExecuteRead();
 					return;
 				}
+
+				CoreTiming::ScheduleEvent((int)ticksUntilTC, tc);
+
+				// Early return; we'll finish executing the command in FinishExecuteRead.
+				return;
+			}
 				break;
 
 			case 0x40: // Read DiscID
@@ -768,7 +779,7 @@ void ExecuteCommand()
 		}
 		break;
 
-	// GC-AM
+		// GC-AM
 	case 0xAA:
 		if (GCAM)
 		{
@@ -779,7 +790,7 @@ void ExecuteCommand()
 			/*
 			if (iDVDOffset == 0x84800000)
 			{
-				ERROR_LOG(DVDINTERFACE, "Firmware upload");
+			ERROR_LOG(DVDINTERFACE, "Firmware upload");
 			}
 			else*/
 			if ((offset < 0) || ((offset + len) > 0x40) || len > 0x40)
@@ -817,7 +828,7 @@ void ExecuteCommand()
 		}
 		break;
 
-	// Seek (immediate)
+		// Seek (immediate)
 	case DVDLowSeek:
 		if (!GCAM)
 		{
@@ -830,7 +841,7 @@ void ExecuteCommand()
 			media_buffer[0] = media_buffer[0x20]; // ID
 			media_buffer[2] = media_buffer[0x22];
 			media_buffer[3] = media_buffer[0x23] | 0x80;
-			int cmd = (media_buffer[0x23]<<8)|media_buffer[0x22];
+			int cmd = (media_buffer[0x23] << 8) | media_buffer[0x22];
 			ERROR_LOG(DVDINTERFACE, "GC-AM: execute buffer, cmd=%04x", cmd);
 			switch (cmd)
 			{
@@ -841,31 +852,31 @@ void ExecuteCommand()
 				media_buffer[7] = 0x20; // DIMM Size
 				break;
 			case 0x100:
+			{
+				// urgh
+				static int percentage = 0;
+				static int status = 0;
+				percentage++;
+				if (percentage > 100)
 				{
-					// urgh
-					static int percentage = 0;
-					static int status = 0;
-					percentage++;
-					if (percentage > 100)
-					{
-						status++;
-						percentage = 0;
-					}
-					media_buffer[4] = status;
-					/* status:
-					0 - "Initializing media board. Please wait.."
-					1 - "Checking network. Please wait..."
-					2 - "Found a system disc. Insert a game disc"
-					3 - "Testing a game program. %d%%"
-					4 - "Loading a game program. %d%%"
-					5  - go
-					6  - error xx
-					*/
-					media_buffer[8] = percentage;
-					media_buffer[4] = 0x05;
-					media_buffer[8] = 0x64;
-					break;
+					status++;
+					percentage = 0;
 				}
+				media_buffer[4] = status;
+				/* status:
+				0 - "Initializing media board. Please wait.."
+				1 - "Checking network. Please wait..."
+				2 - "Found a system disc. Insert a game disc"
+				3 - "Testing a game program. %d%%"
+				4 - "Loading a game program. %d%%"
+				5 - go
+				6 - error xx
+				*/
+				media_buffer[8] = percentage;
+				media_buffer[4] = 0x05;
+				media_buffer[8] = 0x64;
+				break;
+			}
 			case 0x101:
 				media_buffer[4] = 3; // version
 				media_buffer[5] = 3;
@@ -876,12 +887,12 @@ void ExecuteCommand()
 				media_buffer[18] = 0xFF;
 				media_buffer[19] = 0xFF;
 				break;
-			case 0x102:  // get error code
+			case 0x102: // get error code
 				media_buffer[4] = 1; // 0: download incomplete (31), 1: corrupted, other error 1
 				media_buffer[5] = 0;
 				break;
 			case 0x103:
-				memcpy(media_buffer + 4, "A89E27A50364511", 15);  // serial
+				memcpy(media_buffer + 4, "A89E27A50364511", 15); // serial
 				break;
 #if 0
 			case 0x301: // unknown
@@ -903,134 +914,135 @@ void ExecuteCommand()
 		DEBUG_LOG(DVDINTERFACE, "DVDLowOffset: ignoring...");
 		break;
 
-	// Request Error Code
+		// Request Error Code
 	case DVDLowRequestError:
 		ERROR_LOG(DVDINTERFACE, "Requesting error... (0x%08x)", g_ErrorCode);
 		m_DIIMMBUF.Hex = g_ErrorCode;
 		break;
 
-	// Audio Stream (Immediate)
-	// m_DICMDBUF[0].CMDBYTE1 = Subcommand
-	// m_DICMDBUF[1].Hex << 2 = Offset on disc
-	// m_DICMDBUF[2].Hex      = Length of the stream
+		// Audio Stream (Immediate)
+		// m_DICMDBUF[0].CMDBYTE1 = Subcommand
+		// m_DICMDBUF[1].Hex << 2 = Offset on disc
+		// m_DICMDBUF[2].Hex = Length of the stream
 	case 0xE1:
+	{
+		u32 pos = m_DICMDBUF[1].Hex << 2;
+		u32 length = m_DICMDBUF[2].Hex;
+
+		// Start playing
+		if (!g_bStream && m_DICMDBUF[0].CMDBYTE1 == 0 && pos != 0 && length != 0)
 		{
-			u32 pos = m_DICMDBUF[1].Hex << 2;
-			u32 length = m_DICMDBUF[2].Hex;
-
-			// Start playing
-			if (!g_bStream && m_DICMDBUF[0].CMDBYTE1 == 0 && pos != 0 && length != 0)
-			{
-				AudioPos = pos;
-				CurrentStart = pos;
-				CurrentLength = length;
-				NGCADPCM::InitFilter();
-				g_bStream = true;
-			}
-
-			LoopStart = pos;
-			LoopLength = length;
-			g_bStream = (m_DICMDBUF[0].CMDBYTE1 == 0); // This command can start/stop the stream
-
-			// Stop stream
-			if (m_DICMDBUF[0].CMDBYTE1 == 1)
-			{
-				AudioPos = 0;
-				LoopStart = 0;
-				LoopLength = 0;
-				CurrentStart = 0;
-				CurrentLength = 0;
-			}
-
-			WARN_LOG(DVDINTERFACE, "(Audio) Stream subcmd = %08x offset = %08x length=%08x",
-				m_DICMDBUF[0].Hex, m_DICMDBUF[1].Hex << 2, m_DICMDBUF[2].Hex);
+			AudioPos = pos;
+			CurrentStart = pos;
+			CurrentLength = length;
+			NGCADPCM::InitFilter();
+			StartDTKStreaming();
 		}
+
+		LoopStart = pos;
+		LoopLength = length;
+
+		// Stop stream
+		if (m_DICMDBUF[0].CMDBYTE1 == 1)
+		{
+			AudioPos = 0;
+			LoopStart = 0;
+			LoopLength = 0;
+			CurrentStart = 0;
+			CurrentLength = 0;
+			if (g_bStream)
+				StopDTKStreaming();
+		}
+
+		WARN_LOG(DVDINTERFACE, "(Audio) Stream subcmd = %08x offset = %08x length=%08x",
+			m_DICMDBUF[0].Hex, m_DICMDBUF[1].Hex << 2, m_DICMDBUF[2].Hex);
+	}
 		break;
 
-	// Request Audio Status (Immediate)
+		// Request Audio Status (Immediate)
 	case 0xE2:
+	{
+		switch (m_DICMDBUF[0].CMDBYTE1)
 		{
-			switch (m_DICMDBUF[0].CMDBYTE1)
-			{
-			case 0x00: // Returns streaming status
-				m_DIIMMBUF.Hex = (AudioPos == 0) ? 0 : 1;
-				break;
-			case 0x01: // Returns the current offset
-				if (g_bStream)
-					m_DIIMMBUF.Hex = (AudioPos - CurrentStart) >> 2;
-				else
-					m_DIIMMBUF.Hex = 0;
-				break;
-			case 0x02: // Returns the start offset
-				if (g_bStream)
-					m_DIIMMBUF.Hex = CurrentStart >> 2;
-				else
-					m_DIIMMBUF.Hex = 0;
-				break;
-			case 0x03: // Returns the total length
-				if (g_bStream)
-					m_DIIMMBUF.Hex = CurrentLength;
-				else
-					m_DIIMMBUF.Hex = 0;
-				break;
-			default:
-				WARN_LOG(DVDINTERFACE, "(Audio): Subcommand: %02x  Request Audio status %s", m_DICMDBUF[0].CMDBYTE1, g_bStream? "on":"off");
-				break;
-			}
+		case 0x00: // Returns streaming status
+			m_DIIMMBUF.Hex = (AudioPos == 0) ? 0 : 1;
+			break;
+		case 0x01: // Returns the current offset
+			if (g_bStream)
+				m_DIIMMBUF.Hex = (AudioPos - CurrentStart) >> 2;
+			else
+				m_DIIMMBUF.Hex = 0;
+			break;
+		case 0x02: // Returns the start offset
+			if (g_bStream)
+				m_DIIMMBUF.Hex = CurrentStart >> 2;
+			else
+				m_DIIMMBUF.Hex = 0;
+			break;
+		case 0x03: // Returns the total length
+			if (g_bStream)
+				m_DIIMMBUF.Hex = CurrentLength;
+			else
+				m_DIIMMBUF.Hex = 0;
+			break;
+		default:
+			WARN_LOG(DVDINTERFACE, "(Audio): Subcommand: %02x Request Audio status %s", m_DICMDBUF[0].CMDBYTE1, g_bStream ? "on" : "off");
+			break;
 		}
+	}
 		break;
 
 	case DVDLowStopMotor:
 		DEBUG_LOG(DVDINTERFACE, "Stop motor");
 		break;
 
-	// DVD Audio Enable/Disable (Immediate)
+		// DVD Audio Enable/Disable (Immediate)
 	case DVDLowAudioBufferConfig:
 		if (m_DICMDBUF[0].CMDBYTE1 == 1)
 		{
-			g_bStream = true;
+			// TODO: What is this actually supposed to do?
 			WARN_LOG(DVDINTERFACE, "(Audio): Audio enabled");
 		}
 		else
 		{
-			g_bStream = false;
+			// TODO: What is this actually supposed to do?
 			WARN_LOG(DVDINTERFACE, "(Audio): Audio disabled");
 		}
 		break;
 
-	// yet another command we prolly don't care about
+		// yet another command we prolly don't care about
 	case 0xEE:
 		DEBUG_LOG(DVDINTERFACE, "SetStatus - Unimplemented");
 		break;
 
-	// Debug commands; see yagcd. We don't really care
-	// NOTE: commands to stream data will send...a raw data stream
-	// This will appear as unknown commands, unless the check is re-instated to catch such data.
+		// Debug commands; see yagcd. We don't really care
+		// NOTE: commands to stream data will send...a raw data stream
+		// This will appear as unknown commands, unless the check is re-instated to catch such data.
 	case 0xFE:
 		INFO_LOG(DVDINTERFACE, "Unsupported DVD Drive debug command 0x%08x", m_DICMDBUF[0].Hex);
 		break;
 
-	// Unlock Commands. 1: "MATSHITA" 2: "DVD-GAME"
-	// Just for fun
+		// Unlock Commands. 1: "MATSHITA" 2: "DVD-GAME"
+		// Just for fun
 	case 0xFF:
+	{
+		if (m_DICMDBUF[0].Hex == 0xFF014D41 &&
+			m_DICMDBUF[1].Hex == 0x54534849 &&
+			m_DICMDBUF[2].Hex == 0x54410200)
 		{
-			if (m_DICMDBUF[0].Hex == 0xFF014D41 &&
-			    m_DICMDBUF[1].Hex == 0x54534849 &&
-			    m_DICMDBUF[2].Hex == 0x54410200)
-			{
-				INFO_LOG(DVDINTERFACE, "Unlock test 1 passed");
-			}
-			else if (m_DICMDBUF[0].Hex == 0xFF004456 &&
-			         m_DICMDBUF[1].Hex == 0x442D4741 &&
-			         m_DICMDBUF[2].Hex == 0x4D450300)
-			{
-				INFO_LOG(DVDINTERFACE, "Unlock test 2 passed");
-			}
-			else
-			{
-				INFO_LOG(DVDINTERFACE, "Unlock test failed");
-			}
+			INFO_LOG(DVDINTERFACE, "Unlock test 1 passed");
 		}
+		else if (m_DICMDBUF[0].Hex == 0xFF004456 &&
+			m_DICMDBUF[1].Hex == 0x442D4741 &&
+			m_DICMDBUF[2].Hex == 0x4D450300)
+		{
+			INFO_LOG(DVDINTERFACE, "Unlock test 2 passed");
+		}
+		else
+		{
+			INFO_LOG(DVDINTERFACE, "Unlock test failed");
+		}
+	}
 		break;
 
 	default:
@@ -1062,4 +1074,4 @@ void FinishExecuteRead()
 	g_ErrorCode = 0;
 }
 
-}  // namespace
+} // namespace
