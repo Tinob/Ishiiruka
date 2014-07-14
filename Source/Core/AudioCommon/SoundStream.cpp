@@ -7,15 +7,11 @@
 #include "AudioCommon/SoundStream.h"
 #include "AudioCommon/DPL2Decoder.h"
 #include "Common/StdThread.h"
-#include "Common/Thread.h"
-#include "Common/Event.h"
 #include "Core/Core.h"
 #include "Core/HW/AudioInterface.h"
 #include "Core/HW/SystemTimers.h"
 #include <soundtouch/SoundTouch.h>
 #include <soundtouch/STTypes.h>
-
-soundtouch::SoundTouch m_soundTouch;
 
 SoundStream::SoundStream(CMixer *mixer) : m_mixer(mixer), threadData(0), m_logAudio(false), m_muted(false), m_enablesoundloop(true)
 {
@@ -53,8 +49,7 @@ bool SoundStream::Start()
 { 
 	if (m_enablesoundloop)
 	{
-		
-		dpl2reset();
+		DPL2Reset();
 		thread = std::thread(std::mem_fn(&SoundStream::SoundLoop), this);
 	}
 	return true;
@@ -63,14 +58,12 @@ bool SoundStream::Start()
 void SoundStream::Clear(bool mute)
 {
 	m_muted = mute;
-	m_soundTouch.clear();	
 }
 
 void SoundStream::Stop()
 {
 	threadData = 1;
 	thread.join();
-	m_soundTouch.clear();
 }
 
 const float shortToFloat = 1.0f / 32768.0f;
@@ -158,12 +151,13 @@ void SoundStream::SoundLoop()
 	if (Core::g_CoreStartupParameter.bTimeStretching)
 	{
 		float ratemultiplier = 1.0f;
-		m_soundTouch.setChannels(2);
-		m_soundTouch.setSampleRate(m_mixer->GetSampleRate());
-		m_soundTouch.setTempo(1.0);
-		m_soundTouch.setSetting(SETTING_SEQUENCE_MS, 35);
-		m_soundTouch.setSetting(SETTING_USE_QUICKSEEK, 0);
-		m_soundTouch.setSetting(SETTING_USE_AA_FILTER, 1);
+		soundtouch::SoundTouch sTouch;
+		sTouch.setChannels(2);
+		sTouch.setSampleRate(m_mixer->GetSampleRate());
+		sTouch.setTempo(1.0);
+		sTouch.setSetting(SETTING_SEQUENCE_MS, 35);
+		sTouch.setSetting(SETTING_USE_QUICKSEEK, 0);
+		sTouch.setSetting(SETTING_USE_AA_FILTER, 1);
 		while (!threadData)
 		{
 			u32 availablesamples = m_mixer->AvailableSamples();
@@ -179,31 +173,31 @@ void SoundStream::SoundLoop()
 				rate *= ratemultiplier;
 				rate = rate < 0.5f ? 0.5f : rate;
 				rate = roundf(rate * 32.0f) / 32.0f;
-				m_soundTouch.setTempo(rate);
+				sTouch.setTempo(rate);
 				s16ToFloat(samplebuffer, realtimeBuffer, numsamples * SOUND_SAMPLES_STEREO);
-				m_soundTouch.putSamples(samplebuffer, numsamples);
+				sTouch.putSamples(samplebuffer, numsamples);
 			}
 			u32 samplesneeded = SamplesNeeded();
-			availablesamples = m_soundTouch.numSamples();
+			availablesamples = sTouch.numSamples();
 			if (samplesneeded >= SOUND_FRAME_SIZE && availablesamples > 0)
 			{
 				ratemultiplier = std::fmaxf(std::fminf((float)availablesamples / (float)samplesneeded, 1.1f), 0.9f);
 				numsamples = std::min(samplesneeded, SOUND_FRAME_SIZE);
 				if (surroundSupported)
 				{
-					numsamples = m_soundTouch.receiveSamples(dpl2buffer, numsamples);
-					dpl2decode(dpl2buffer, numsamples, samplebuffer);
+					numsamples = sTouch.receiveSamples(dpl2buffer, numsamples);
+					DPL2Decode(dpl2buffer, numsamples, samplebuffer);
 				}
 				else
 				{
-					numsamples = m_soundTouch.receiveSamples(samplebuffer, numsamples);
+					numsamples = sTouch.receiveSamples(samplebuffer, numsamples);
 				}
 				floatTos16(realtimeBuffer, samplebuffer, numsamples * channelmultiplier);
 				WriteSamples(realtimeBuffer, numsamples);
 			}
 			else 
 			{
-				Common::YieldCPU();
+				Common::SleepCurrentThread(1);
 			}
 		}
 	}
@@ -220,14 +214,14 @@ void SoundStream::SoundLoop()
 				if (surroundSupported)
 				{
 					s16ToFloat(dpl2buffer, realtimeBuffer, numsamples * SOUND_SAMPLES_STEREO);
-					dpl2decode(dpl2buffer, numsamples, samplebuffer);
+					DPL2Decode(dpl2buffer, numsamples, samplebuffer);
 					floatTos16(realtimeBuffer, samplebuffer, numsamples * channelmultiplier);
 				}
 				WriteSamples(realtimeBuffer, numsamples);
 			}
 			else
 			{
-				Common::YieldCPU();
+				Common::SleepCurrentThread(1);
 			}
 		}
 	}
