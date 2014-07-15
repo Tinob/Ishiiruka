@@ -61,6 +61,7 @@
     <ClCompile Include="G_GZ2P01_pvt.cpp" />
     <ClCompile Include="G_R5WEA4_pvt.cpp" />
     <ClCompile Include="G_RMGP01_pvt.cpp" />
+    <ClCompile Include="G_SF8E01_pvt.cpp" />
     <ClCompile Include="HiresTextures.cpp" />
     <ClCompile Include="ImageWrite.cpp" />
     <ClCompile Include="IndexGenerator.cpp" />
@@ -121,6 +122,7 @@
     <ClInclude Include="G_GZ2P01_pvt.h" />
     <ClInclude Include="G_R5WEA4_pvt.h" />
     <ClInclude Include="G_RMGP01_pvt.h" />
+    <ClInclude Include="G_SF8E01_pvt.h" />
     <ClInclude Include="HiresTextures.h" />
     <ClInclude Include="ImageWrite.h" />
     <ClInclude Include="IndexGenerator.h" />

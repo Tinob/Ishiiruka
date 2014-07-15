@@ -149,6 +149,9 @@
     <ClCompile Include="G_GMSE01_pvt.cpp">
       <Filter>Vertex Loading\Compiled Loaders</Filter>
     </ClCompile>
+    <ClCompile Include="G_SF8E01_pvt.cpp">
+      <Filter>Vertex Loading\Compiled Loaders</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommandProcessor.h" />
@@ -325,6 +328,9 @@
       <Filter>Vertex Loading\Compiled Loaders</Filter>
     </ClInclude>
     <ClInclude Include="G_GMSE01_pvt.h">
+      <Filter>Vertex Loading\Compiled Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="G_SF8E01_pvt.h">
       <Filter>Vertex Loading\Compiled Loaders</Filter>
     </ClInclude>
   </ItemGroup>

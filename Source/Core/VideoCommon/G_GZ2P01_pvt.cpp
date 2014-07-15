@@ -373,7 +373,7 @@ void P_mtx0_3_I16_s16_T0_mtx0_1_I16_s16_(VertexLoader *loader)
 	else
 #endif
 	{
-		_Pos_ReadIndex<u16, s16, 2>(pipelinestate);
+		_Pos_ReadIndex<u16, s16, 3>(pipelinestate);
 	}
 	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox();
 #if _M_SSE >= 0x401

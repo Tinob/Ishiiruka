@@ -21,6 +21,7 @@
 #include "VideoCommon/G_R5WEA4_pvt.h"
 #include "VideoCommon/G_GZ2P01_pvt.h"
 #include "VideoCommon/G_GMSE01_pvt.h"
+#include "VideoCommon/G_SF8E01_pvt.h"
 
 static int s_attr_dirty;  // bitfield
 
@@ -203,6 +204,7 @@ namespace VertexLoaderManager
 			G_R5WEA4_pvt::Initialize(g_PrecompiledVertexLoaderMap);
 			G_GZ2P01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
 			G_GMSE01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
+			G_SF8E01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
 			s_PrecompiledLoadersInitialized = true;
 		}
 	}
