@@ -948,7 +948,7 @@ void P_mtx0_3_Dir_flt_T0_mtx0_1_Dir_u8_(VertexLoader *loader)
 	}
 }
 
-void G_SMNP01_pvt::Initialize(std::map<size_t, TCompiledLoaderFunction> &pvlmap)
+void G_SMNP01_pvt::Initialize(std::map<u64, TCompiledLoaderFunction> &pvlmap)
 {
 	// num_verts= 105404
 #if _M_SSE >= 0x401

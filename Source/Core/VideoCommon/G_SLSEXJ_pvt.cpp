@@ -679,7 +679,7 @@ void P_mtx0_3_I8_s16_Nrm_0_0_I8_s8_T0_mtx0_1_I8_s16_(VertexLoader *loader)
 	}
 }
 
-void G_SLSEXJ_pvt::Initialize(std::map<size_t, TCompiledLoaderFunction> &pvlmap)
+void G_SLSEXJ_pvt::Initialize(std::map<u64, TCompiledLoaderFunction> &pvlmap)
 {
 	// num_verts= 2838176
 #if _M_SSE >= 0x401
