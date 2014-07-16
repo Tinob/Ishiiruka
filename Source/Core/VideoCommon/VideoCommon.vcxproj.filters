@@ -173,6 +173,18 @@
     <ClCompile Include="G_WILETL_pvt.cpp">
       <Filter>Vertex Loading\Compiled Loaders</Filter>
     </ClCompile>
+    <ClCompile Include="G_GKYE01_pvt.cpp">
+      <Filter>Vertex Loading\Compiled Loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="G_RSBE01_pvt.cpp">
+      <Filter>Vertex Loading\Compiled Loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="G_GLME01_pvt.cpp">
+      <Filter>Vertex Loading\Compiled Loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="G_GZLE01_pvt.cpp">
+      <Filter>Vertex Loading\Compiled Loaders</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommandProcessor.h" />
@@ -373,6 +385,18 @@
       <Filter>Vertex Loading\Compiled Loaders</Filter>
     </ClInclude>
     <ClInclude Include="G_WILETL_pvt.h">
+      <Filter>Vertex Loading\Compiled Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="G_GKYE01_pvt.h">
+      <Filter>Vertex Loading\Compiled Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="G_RSBE01_pvt.h">
+      <Filter>Vertex Loading\Compiled Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="G_GLME01_pvt.h">
+      <Filter>Vertex Loading\Compiled Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="G_GZLE01_pvt.h">
       <Filter>Vertex Loading\Compiled Loaders</Filter>
     </ClInclude>
   </ItemGroup>
