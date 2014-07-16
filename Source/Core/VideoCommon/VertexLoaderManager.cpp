@@ -17,11 +17,18 @@
 #include "VideoCommon/VideoCommon.h"
 #include "VideoCommon/VideoConfig.h"
 // Compiled loaders
-#include "VideoCommon/G_RMGP01_pvt.h"
-#include "VideoCommon/G_R5WEA4_pvt.h"
-#include "VideoCommon/G_GZ2P01_pvt.h"
+#include "VideoCommon/G_GBVE41_pvt.h"
 #include "VideoCommon/G_GMSE01_pvt.h"
+#include "VideoCommon/G_GZ2P01_pvt.h"
+#include "VideoCommon/G_R5WEA4_pvt.h"
+#include "VideoCommon/G_RMCE01_pvt.h"
+#include "VideoCommon/G_RMGP01_pvt.h"
+#include "VideoCommon/G_RZTP01_pvt.h"
 #include "VideoCommon/G_SF8E01_pvt.h"
+#include "VideoCommon/G_SLSEXJ_pvt.h"
+#include "VideoCommon/G_SMNP01_pvt.h"
+#include "VideoCommon/G_SX4P01_pvt.h"
+#include "VideoCommon/G_WILETL_pvt.h"
 
 static int s_attr_dirty;  // bitfield
 
@@ -29,7 +36,6 @@ static VertexLoader *g_VertexLoaders[8];
 
 namespace std
 {
-
 	template <>
 	struct hash<VertexLoaderUID>
 	{
@@ -200,11 +206,18 @@ namespace VertexLoaderManager
 		RecomputeCachedArraybases();
 		if (!s_PrecompiledLoadersInitialized)
 		{
-			G_RMGP01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
-			G_R5WEA4_pvt::Initialize(g_PrecompiledVertexLoaderMap);
-			G_GZ2P01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
+			G_GBVE41_pvt::Initialize(g_PrecompiledVertexLoaderMap);
 			G_GMSE01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
+			G_GZ2P01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
+			G_R5WEA4_pvt::Initialize(g_PrecompiledVertexLoaderMap);
+			G_RMCE01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
+			G_RMGP01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
+			G_RZTP01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
 			G_SF8E01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
+			G_SLSEXJ_pvt::Initialize(g_PrecompiledVertexLoaderMap);
+			G_SMNP01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
+			G_SX4P01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
+			G_WILETL_pvt::Initialize(g_PrecompiledVertexLoaderMap);
 			s_PrecompiledLoadersInitialized = true;
 		}
 	}

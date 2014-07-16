@@ -7,7 +7,7 @@
 #include "VideoCommon/XFMemory.h"
 // bbox variables
 // bbox must read vertex position, so convert it to this buffer
-static float s_bbox_vertex_buffer[3];
+static float s_bbox_vertex_buffer[4];
 static u8 *s_bbox_pCurBufferPointer_orig;
 static int s_bbox_primitive;
 static struct Point
@@ -20,15 +20,20 @@ static u8 s_bbox_currPoint;
 static u8 s_bbox_loadedPoints;
 static const u8 s_bbox_primitivePoints[8] = { 3, 0, 3, 3, 3, 2, 2, 1 };
 
-void LOADERDECL VertexLoader_BBox::UpdateBoundingBoxPrepare()
+void VertexLoader_BBox::UpdateBoundingBoxPrepare(TPipelineState &pipelinestate)
 {
 	if (!PixelEngine::bbox_active)
 		return;
 
 	// set our buffer as videodata buffer, so we will get a copy of the vertex positions
 	// this is a big hack, but so we can use the same converting function then without bbox
-	s_bbox_pCurBufferPointer_orig = g_PipelineState.GetWritePosition();
-	g_PipelineState.SetWritePosition((u8*)s_bbox_vertex_buffer);
+	s_bbox_pCurBufferPointer_orig = pipelinestate.GetWritePosition();
+	pipelinestate.SetWritePosition((u8*)s_bbox_vertex_buffer);
+}
+
+void LOADERDECL VertexLoader_BBox::UpdateBoundingBoxPrepare()
+{
+	UpdateBoundingBoxPrepare(g_PipelineState);
 }
 
 inline bool UpdateBoundingBoxVars()
@@ -117,17 +122,17 @@ inline bool UpdateBoundingBoxVars()
 	}
 }
 
-void LOADERDECL VertexLoader_BBox::UpdateBoundingBox()
+void LOADERDECL VertexLoader_BBox::UpdateBoundingBox(TPipelineState &pipelinestate)
 {
 	if (!PixelEngine::bbox_active)
 		return;
 
 	// Reset videodata pointer
-	g_PipelineState.SetWritePosition(s_bbox_pCurBufferPointer_orig);
+	pipelinestate.SetWritePosition(s_bbox_pCurBufferPointer_orig);
 
 	// Copy vertex pointers
-	memcpy(g_PipelineState.GetWritePosition(), s_bbox_vertex_buffer, 12);
-	g_PipelineState.WriteSkip(12);
+	memcpy(pipelinestate.GetWritePosition(), s_bbox_vertex_buffer, 12);
+	pipelinestate.WriteSkip(12);
 
 	// We must transform the just loaded point by the current world and projection matrix - in software
 	float transformed[3];
@@ -136,7 +141,7 @@ void LOADERDECL VertexLoader_BBox::UpdateBoundingBox()
 	// We need to get the raw projection values for the bounding box calculation
 	// to work properly. That means, no projection hacks!
 	const float * const orig_point = s_bbox_vertex_buffer;
-	const float * const world_matrix = (float*)xfmem + g_PipelineState.curposmtx * 4;
+	const float * const world_matrix = (float*)xfmem + pipelinestate.curposmtx * 4;
 	const float * const proj_matrix = xfregs.projection.rawProjection;
 
 	// Transform by world matrix
@@ -352,6 +357,11 @@ void LOADERDECL VertexLoader_BBox::UpdateBoundingBox()
 	PixelEngine::bbox[1] = (right  > PixelEngine::bbox[1]) ? right : PixelEngine::bbox[1];
 	PixelEngine::bbox[2] = (top    < PixelEngine::bbox[2]) ? top : PixelEngine::bbox[2];
 	PixelEngine::bbox[3] = (bottom > PixelEngine::bbox[3]) ? bottom : PixelEngine::bbox[3];
+}
+
+void LOADERDECL VertexLoader_BBox::UpdateBoundingBox()
+{
+	UpdateBoundingBox(g_PipelineState);
 }
 
 void VertexLoader_BBox::SetPrimitive(s32 primitive)

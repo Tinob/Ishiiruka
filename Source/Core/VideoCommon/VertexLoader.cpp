@@ -348,6 +348,12 @@ int VertexLoader::SetupRunVertices(int vtx_attr_group, int primitive, int const 
 
 void VertexLoader::RunVertices(int vtx_attr_group, int primitive, int const count)
 {
+	if (bpmem.genMode.cullmode == 3 && primitive < 5)
+	{
+		// if cull mode is none, ignore triangles and quads
+		DataSkip(count * m_VertexSize);
+		return;
+	}
 	auto const new_count = SetupRunVertices(vtx_attr_group, primitive, count);
 	g_PipelineState.Initialize(DataGetPosition(), VertexManager::s_pCurBufferPointer);
 	VertexManager::s_pCurBufferPointer += native_stride * new_count;
@@ -376,6 +382,12 @@ void LOADERDECL VertexLoader::ConvertVertices(VertexLoader *loader)
 
 void VertexLoader::RunCompiledVertices(int vtx_attr_group, int primitive, int const count, u8* Data)
 {
+	if (bpmem.genMode.cullmode == 3 && primitive < 5)
+	{
+		// if cull mode is none, ignore triangles and quads
+		DataSkip(count * m_VertexSize);
+		return;
+	}
 	auto const new_count = SetupRunVertices(vtx_attr_group, primitive, count);
 	g_PipelineState.Initialize(Data, VertexManager::s_pCurBufferPointer);
 	VertexManager::s_pCurBufferPointer += native_stride * new_count;
@@ -523,9 +535,9 @@ void VertexLoader::DumpCode(std::string *dest) const
 	if (m_VtxDesc.Tex7MatIdx) { components |= VB_HAS_TEXMTXIDX7; Vertexloader_Mtx::TexMtx_ReadDirect_UByteSTR(dest); }
 
 	// Write vertex position loader
-	dest->append("\tif(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare();\n");
+	dest->append("\tif(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare(pipelinestate);\n");
 	VertexLoader_Position::GetFunctionSTR(dest, m_VtxDesc.Position, m_VtxAttr.PosFormat, m_VtxAttr.PosElements);
-	dest->append("\tif(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox();\n");
+	dest->append("\tif(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox(pipelinestate);\n");
 
 	// Normals
 	if (m_VtxDesc.Normal != NOT_PRESENT)

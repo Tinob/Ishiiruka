@@ -142,7 +142,7 @@ public:
 		Rbuffer += skip;
 	}
 
-	template <typename T> __forceinline T Peek(int _uOffset)
+	template <typename T> __forceinline T Peek(s32 _uOffset)
 	{
 		auto const result = Common::FromBigEndian(*reinterpret_cast<const T*>(Rbuffer + _uOffset));
 		return result;
@@ -154,7 +154,7 @@ public:
 		return result;
 	}
 
-	template <typename T> __forceinline T PeekUnswapped(int _uOffset)
+	template <typename T> __forceinline T PeekUnswapped(s32 _uOffset)
 	{
 		auto const result = *reinterpret_cast<const T*>(Rbuffer + _uOffset);
 		return result;

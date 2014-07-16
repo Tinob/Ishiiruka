@@ -19,7 +19,7 @@ void P_mtx1_3_I16_flt_Nrm_0_0_I16_s16_T0_mtx0_1_I16_s16_T1_mtx1_1_Inv_flt_(Verte
 	pipelinestate.curposmtx = pipelinestate.Read<u8>() & 0x3f;
 	pipelinestate.curtexmtx[pipelinestate.texmtxread] = pipelinestate.Read<u8>() & 0x3f;
 	pipelinestate.texmtxread++;
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare();
+	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare(pipelinestate);
 #if _M_SSE >= 0x301
 	if (iSSE >= 0x301)
 	{
@@ -30,7 +30,7 @@ void P_mtx1_3_I16_flt_Nrm_0_0_I16_s16_T0_mtx0_1_I16_s16_T1_mtx1_1_Inv_flt_(Verte
 	{
 		_Pos_ReadIndex<u16, float, 3>(pipelinestate);
 	}
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox();
+	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox(pipelinestate);
 #if _M_SSE >= 0x401
 	if(iSSE >= 0x401)
 	{
@@ -72,7 +72,7 @@ void P_mtx0_2_I16_flt_T0_mtx0_1_Dir_flt_(VertexLoader *loader)
 	pipelinestate.tcIndex = 0;
 	pipelinestate.colIndex = 0;
 	pipelinestate.texmtxwrite = pipelinestate.texmtxread = 0; 
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare();
+	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare(pipelinestate);
 #if _M_SSE >= 0x301
 	if (iSSE >= 0x301)
 	{
@@ -83,7 +83,7 @@ void P_mtx0_2_I16_flt_T0_mtx0_1_Dir_flt_(VertexLoader *loader)
 	{
 		_Pos_ReadIndex<u16, float, 2>(pipelinestate);
 	}
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox();
+	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox(pipelinestate);
 #if _M_SSE >= 0x301
 	if (iSSE >= 0x301)
 	{
@@ -109,7 +109,7 @@ void P_mtx1_3_I16_flt_Nrm_0_0_I16_s16_T0_mtx0_1_I16_s16_(VertexLoader *loader)
 	pipelinestate.colIndex = 0;
 	pipelinestate.texmtxwrite = pipelinestate.texmtxread = 0; 
 	pipelinestate.curposmtx = pipelinestate.Read<u8>() & 0x3f;
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare();
+	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare(pipelinestate);
 #if _M_SSE >= 0x301
 	if (iSSE >= 0x301)
 	{
@@ -120,7 +120,7 @@ void P_mtx1_3_I16_flt_Nrm_0_0_I16_s16_T0_mtx0_1_I16_s16_(VertexLoader *loader)
 	{
 		_Pos_ReadIndex<u16, float, 3>(pipelinestate);
 	}
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox();
+	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox(pipelinestate);
 #if _M_SSE >= 0x401
 	if(iSSE >= 0x401)
 	{
@@ -158,7 +158,7 @@ void P_mtx0_3_Dir_flt_T0_mtx0_1_Dir_s16_(VertexLoader *loader)
 	pipelinestate.tcIndex = 0;
 	pipelinestate.colIndex = 0;
 	pipelinestate.texmtxwrite = pipelinestate.texmtxread = 0; 
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare();
+	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare(pipelinestate);
 #if _M_SSE >= 0x301
 	if (iSSE >= 0x301)
 	{
@@ -169,7 +169,7 @@ void P_mtx0_3_Dir_flt_T0_mtx0_1_Dir_s16_(VertexLoader *loader)
 	{
 		_Pos_ReadDirect<float, 3>(pipelinestate);
 	}
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox();
+	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox(pipelinestate);
 #if _M_SSE >= 0x401
 	if (iSSE >= 0x401)
 	{
@@ -194,7 +194,7 @@ void P_mtx0_2_I16_flt_(VertexLoader *loader)
 	pipelinestate.tcIndex = 0;
 	pipelinestate.colIndex = 0;
 	pipelinestate.texmtxwrite = pipelinestate.texmtxread = 0; 
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare();
+	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare(pipelinestate);
 #if _M_SSE >= 0x301
 	if (iSSE >= 0x301)
 	{
@@ -205,7 +205,7 @@ void P_mtx0_2_I16_flt_(VertexLoader *loader)
 	{
 		_Pos_ReadIndex<u16, float, 2>(pipelinestate);
 	}
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox();
+	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox(pipelinestate);
 	pipelinestate.Write<u32>(0);
 	--loopcount;
 	}
@@ -220,7 +220,7 @@ void P_mtx0_3_I8_flt_(VertexLoader *loader)
 	pipelinestate.tcIndex = 0;
 	pipelinestate.colIndex = 0;
 	pipelinestate.texmtxwrite = pipelinestate.texmtxread = 0; 
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare();
+	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare(pipelinestate);
 #if _M_SSE >= 0x301
 	if (iSSE >= 0x301)
 	{
@@ -231,7 +231,7 @@ void P_mtx0_3_I8_flt_(VertexLoader *loader)
 	{
 		_Pos_ReadIndex<u8, float, 3>(pipelinestate);
 	}
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox();
+	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox(pipelinestate);
 	pipelinestate.Write<u32>(0);
 	--loopcount;
 	}
@@ -246,7 +246,7 @@ void P_mtx0_3_I16_flt_C0_1_I16_8888_(VertexLoader *loader)
 	pipelinestate.tcIndex = 0;
 	pipelinestate.colIndex = 0;
 	pipelinestate.texmtxwrite = pipelinestate.texmtxread = 0; 
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare();
+	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare(pipelinestate);
 #if _M_SSE >= 0x301
 	if (iSSE >= 0x301)
 	{
@@ -257,7 +257,7 @@ void P_mtx0_3_I16_flt_C0_1_I16_8888_(VertexLoader *loader)
 	{
 		_Pos_ReadIndex<u16, float, 3>(pipelinestate);
 	}
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox();
+	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox(pipelinestate);
 	Color_ReadIndex_32b_8888<u16>(pipelinestate);
 	pipelinestate.Write<u32>(0);
 	--loopcount;
@@ -273,7 +273,7 @@ void P_mtx0_3_I16_flt_Nrm_0_0_I16_s8_T0_mtx0_1_I16_flt_(VertexLoader *loader)
 	pipelinestate.tcIndex = 0;
 	pipelinestate.colIndex = 0;
 	pipelinestate.texmtxwrite = pipelinestate.texmtxread = 0; 
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare();
+	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare(pipelinestate);
 #if _M_SSE >= 0x301
 	if (iSSE >= 0x301)
 	{
@@ -284,7 +284,7 @@ void P_mtx0_3_I16_flt_Nrm_0_0_I16_s8_T0_mtx0_1_I16_flt_(VertexLoader *loader)
 	{
 		_Pos_ReadIndex<u16, float, 3>(pipelinestate);
 	}
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox();
+	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox(pipelinestate);
 	_Normal_Index_Offset<u16, s8, 1, 0>(pipelinestate);
 #if _M_SSE >= 0x301
 	if (iSSE >= 0x301)
@@ -310,7 +310,7 @@ void P_mtx0_3_I16_flt_T0_mtx0_1_I16_s16_(VertexLoader *loader)
 	pipelinestate.tcIndex = 0;
 	pipelinestate.colIndex = 0;
 	pipelinestate.texmtxwrite = pipelinestate.texmtxread = 0; 
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare();
+	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare(pipelinestate);
 #if _M_SSE >= 0x301
 	if (iSSE >= 0x301)
 	{
@@ -321,7 +321,7 @@ void P_mtx0_3_I16_flt_T0_mtx0_1_I16_s16_(VertexLoader *loader)
 	{
 		_Pos_ReadIndex<u16, float, 3>(pipelinestate);
 	}
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox();
+	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox(pipelinestate);
 #if _M_SSE >= 0x401
 	if (iSSE >= 0x401)
 	{
@@ -346,9 +346,9 @@ void P_mtx0_2_Dir_s8_T0_mtx0_1_Dir_s8_(VertexLoader *loader)
 	pipelinestate.tcIndex = 0;
 	pipelinestate.colIndex = 0;
 	pipelinestate.texmtxwrite = pipelinestate.texmtxread = 0; 
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare();
+	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare(pipelinestate);
 	_Pos_ReadDirect<s8, 2>(pipelinestate);
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox();
+	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox(pipelinestate);
 	_TexCoord_ReadDirect<s8, 2>(pipelinestate);
 	pipelinestate.Write<u32>(0);
 	--loopcount;
@@ -364,7 +364,7 @@ void P_mtx0_3_I16_s16_T0_mtx0_1_I16_s16_(VertexLoader *loader)
 	pipelinestate.tcIndex = 0;
 	pipelinestate.colIndex = 0;
 	pipelinestate.texmtxwrite = pipelinestate.texmtxread = 0; 
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare();
+	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare(pipelinestate);
 #if _M_SSE >= 0x401
 	if (iSSE >= 0x401)
 	{
@@ -375,7 +375,7 @@ void P_mtx0_3_I16_s16_T0_mtx0_1_I16_s16_(VertexLoader *loader)
 	{
 		_Pos_ReadIndex<u16, s16, 3>(pipelinestate);
 	}
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox();
+	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox(pipelinestate);
 #if _M_SSE >= 0x401
 	if (iSSE >= 0x401)
 	{
@@ -400,7 +400,7 @@ void P_mtx0_3_I8_flt_T0_mtx0_1_Dir_s8_(VertexLoader *loader)
 	pipelinestate.tcIndex = 0;
 	pipelinestate.colIndex = 0;
 	pipelinestate.texmtxwrite = pipelinestate.texmtxread = 0; 
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare();
+	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare(pipelinestate);
 #if _M_SSE >= 0x301
 	if (iSSE >= 0x301)
 	{
@@ -411,7 +411,7 @@ void P_mtx0_3_I8_flt_T0_mtx0_1_Dir_s8_(VertexLoader *loader)
 	{
 		_Pos_ReadIndex<u8, float, 3>(pipelinestate);
 	}
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox();
+	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox(pipelinestate);
 	_TexCoord_ReadDirect<s8, 2>(pipelinestate);
 	pipelinestate.Write<u32>(0);
 	--loopcount;
@@ -427,7 +427,7 @@ void P_mtx0_3_Dir_s16_(VertexLoader *loader)
 	pipelinestate.tcIndex = 0;
 	pipelinestate.colIndex = 0;
 	pipelinestate.texmtxwrite = pipelinestate.texmtxread = 0; 
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare();
+	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare(pipelinestate);
 #if _M_SSE >= 0x401
 	if (iSSE >= 0x401)
 	{
@@ -438,7 +438,7 @@ void P_mtx0_3_Dir_s16_(VertexLoader *loader)
 	{
 		_Pos_ReadDirect<s16, 3>(pipelinestate);
 	}
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox();
+	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox(pipelinestate);
 	pipelinestate.Write<u32>(0);
 	--loopcount;
 	}
@@ -453,7 +453,7 @@ void P_mtx0_3_Dir_s16_T0_mtx0_1_Dir_s8_(VertexLoader *loader)
 	pipelinestate.tcIndex = 0;
 	pipelinestate.colIndex = 0;
 	pipelinestate.texmtxwrite = pipelinestate.texmtxread = 0; 
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare();
+	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare(pipelinestate);
 #if _M_SSE >= 0x401
 	if (iSSE >= 0x401)
 	{
@@ -464,7 +464,7 @@ void P_mtx0_3_Dir_s16_T0_mtx0_1_Dir_s8_(VertexLoader *loader)
 	{
 		_Pos_ReadDirect<s16, 3>(pipelinestate);
 	}
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox();
+	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox(pipelinestate);
 	_TexCoord_ReadDirect<s8, 2>(pipelinestate);
 	pipelinestate.Write<u32>(0);
 	--loopcount;

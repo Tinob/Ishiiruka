@@ -72,9 +72,9 @@ public:
 		colIndex = 0;
 		colElements[0] = 0;
 		colElements[1] = 0;
-		posScale = 0.0;
+		posScale = 0.0f;
 		memset(tcScale, 0, sizeof(tcScale));
-		count = 0;;
+		count = 0;
 	}
 	float posScale;
 	float tcScale[8];

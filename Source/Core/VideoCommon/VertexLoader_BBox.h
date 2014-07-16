@@ -10,5 +10,7 @@ class VertexLoader_BBox
 public:
 	static void LOADERDECL UpdateBoundingBoxPrepare();
 	static void LOADERDECL UpdateBoundingBox();
+	static void UpdateBoundingBoxPrepare(TPipelineState &pipelinestate);
+	static void UpdateBoundingBox(TPipelineState &pipelinestate);
 	static void SetPrimitive(s32 primitive);
 };
