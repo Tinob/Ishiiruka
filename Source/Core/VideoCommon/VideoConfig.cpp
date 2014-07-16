@@ -35,7 +35,7 @@ VideoConfig::VideoConfig()
 	backend_info.APIType = API_NONE;
 	for (s32 i = 0; i < 16; i++)
 	{
-		backend_info.bSupportedFormats[16] = false;
+		backend_info.bSupportedFormats[i] = false;
 	}
 	backend_info.bUseMinimalMipCount = false;
 	backend_info.bSupports3DVision = false;
