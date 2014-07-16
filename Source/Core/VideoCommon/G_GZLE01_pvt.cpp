@@ -922,7 +922,7 @@ void P_mtx0_3_Dir_s8_T0_mtx0_1_Dir_u8_(VertexLoader *loader)
 	}
 }
 
-void G_GZLE01_pvt::Initialize(std::map<size_t, TCompiledLoaderFunction> &pvlmap)
+void G_GZLE01_pvt::Initialize(std::map<u64, TCompiledLoaderFunction> &pvlmap)
 {
 	// num_verts= 371602133
 #if _M_SSE >= 0x401
