@@ -410,7 +410,9 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 
 		// 2. b) For normal textures, all texture parameters need to match
 		if (address == entry->addr && tex_hash == entry->hash && full_format == entry->format &&
-			entry->num_mipmaps >= texLevels && entry->native_width == nativeW && entry->native_height == nativeH)
+			// If we are using custom textures the number of levels will shure not be correct
+			// so ingnore it and reuse the texture
+			(entry->num_mipmaps >= texLevels || entry->custom_texture) && entry->native_width == nativeW && entry->native_height == nativeH)
 		{
 			return ReturnEntry(stage, entry);
 		}
@@ -509,7 +511,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 	entry->SetGeneralParameters(address, texture_size, full_format, entry->num_mipmaps);
 	entry->SetDimensions(nativeW, nativeH, width, height);
 	entry->hash = tex_hash;
-	
+	entry->custom_texture = using_custom_texture;
 	if (entry->IsEfbCopy() && !g_ActiveConfig.bCopyEFBToTexture)
 		entry->type = TCET_EC_DYNAMIC;
 	else

@@ -44,7 +44,7 @@ public:
 
 		// used to delete textures which haven't been used for TEXTURE_KILL_THRESHOLD frames
 		s32 frameCount;
-
+		bool custom_texture;
 
 		void SetGeneralParameters(u32 _addr, u32 _size, u32 _format, u32 _num_mipmaps)
 		{
