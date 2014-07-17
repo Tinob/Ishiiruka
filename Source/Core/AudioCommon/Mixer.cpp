@@ -1,6 +1,7 @@
 // Copyright 2013 Dolphin Emulator Project
 // Licensed under GPLv2
 // Refer to the license.txt file included.
+// Modified For Ishiiruka By Tino
 
 #include "AudioCommon/AudioCommon.h"
 #include "AudioCommon/Mixer.h"
@@ -51,38 +52,42 @@ unsigned int CMixer::MixerFifo::Mix(short* samples, unsigned int numSamples, boo
 		aid_sample_rate = aid_sample_rate * (framelimit - 1) * 5 / VideoInterface::TargetRefreshRate;
 	}
 
-	static u32 frac = 0;
 	const u32 ratio = (u32)(65536.0f * aid_sample_rate / (float)m_mixer->m_sampleRate);
 
-	if (ratio > 0x10000)
-		ERROR_LOG(AUDIO, "ratio out of range");
+	s32 lvolume = m_LVolume;
+	s32 rvolume = m_RVolume;
 
+	// TODO: consider a higher-quality resampling algorithm.
 	for (; currentSample < numSamples * 2 && ((indexW - indexR) & INDEX_MASK) > 2; currentSample += 2) {
 		u32 indexR2 = indexR + 2; //next sample
 
 		s16 l1 = Common::swap16(m_buffer[indexR & INDEX_MASK]); //current
 		s16 l2 = Common::swap16(m_buffer[indexR2 & INDEX_MASK]); //next
-		int sampleL = ((l1 << 16) + (l2 - l1) * (u16)frac) >> 16;
+		int sampleL = ((l1 << 16) + (l2 - l1) * (u16)m_frac) >> 16;
+		sampleL = (sampleL * lvolume) >> 8;
 		sampleL += samples[currentSample + 1];
 		MathUtil::Clamp(&sampleL, -32767, 32767);
 		samples[currentSample + 1] = sampleL;
 
 		s16 r1 = Common::swap16(m_buffer[(indexR + 1) & INDEX_MASK]); //current
 		s16 r2 = Common::swap16(m_buffer[(indexR2 + 1) & INDEX_MASK]); //next
-		int sampleR = ((r1 << 16) + (r2 - r1) * (u16)frac) >> 16;
+		int sampleR = ((r1 << 16) + (r2 - r1) * (u16)m_frac) >> 16;
+		sampleR = (sampleR * rvolume) >> 8;
 		sampleR += samples[currentSample];
 		MathUtil::Clamp(&sampleR, -32767, 32767);
 		samples[currentSample] = sampleR;
 
-		frac += ratio;
-		indexR += 2 * (u16)(frac >> 16);
-		frac &= 0xffff;
+		m_frac += ratio;
+		indexR += 2 * (u16)(m_frac >> 16);
+		m_frac &= 0xffff;
 	}
 
 	// Padding
 	short s[2];
 	s[0] = Common::swap16(m_buffer[(indexR - 1) & INDEX_MASK]);
 	s[1] = Common::swap16(m_buffer[(indexR - 2) & INDEX_MASK]);
+	s[0] = (s[0] * rvolume) >> 8;
+	s[1] = (s[1] * lvolume) >> 8;
 	for (; currentSample < numSamples * 2; currentSample += 2)
 	{
 		int sampleR = s[0] + samples[currentSample];
@@ -97,6 +102,16 @@ unsigned int CMixer::MixerFifo::Mix(short* samples, unsigned int numSamples, boo
 	Common::AtomicStore(m_indexR, indexR);
 
 	return numSamples;
+}
+
+u32 CMixer::MixerFifo::AvailableSamples()
+{
+	return ((m_indexW - m_indexR) & INDEX_MASK) / 2;
+}
+
+u32 CMixer::AvailableSamples()
+{
+	return std::max(m_dma_mixer.AvailableSamples(), m_streaming_mixer.AvailableSamples());
 }
 
 unsigned int CMixer::Mix(short* samples, unsigned int num_samples, bool consider_framelimit)
@@ -119,16 +134,6 @@ unsigned int CMixer::Mix(short* samples, unsigned int num_samples, bool consider
 	if (m_logAudio)
 		g_wave_writer.AddStereoSamples(samples, num_samples);
 	return num_samples;
-}
-
-u32 CMixer::MixerFifo::AvailableSamples()
-{
-	return ((m_indexW - m_indexR) & INDEX_MASK) / 2;
-}
-
-u32 CMixer::AvailableSamples()
-{
-	return std::max(m_dma_mixer.AvailableSamples(), m_streaming_mixer.AvailableSamples());
 }
 
 void CMixer::MixerFifo::PushSamples(const short *samples, unsigned int num_samples)
@@ -185,4 +190,15 @@ void CMixer::PushSamples(const short *samples, unsigned int num_samples)
 void CMixer::PushStreamingSamples(const short *samples, unsigned int num_samples)
 {
 	m_streaming_mixer.PushSamples(samples, num_samples);
+}
+
+void CMixer::SetStreamingVolume(unsigned int lvolume, unsigned int rvolume)
+{
+	m_streaming_mixer.SetVolume(lvolume, rvolume);
+}
+
+void CMixer::MixerFifo::SetVolume(unsigned int lvolume, unsigned int rvolume)
+{
+	m_LVolume = lvolume + (lvolume >> 7);
+	m_RVolume = rvolume + (rvolume >> 7);
 }

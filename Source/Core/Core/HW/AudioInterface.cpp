@@ -50,12 +50,15 @@ relating to AID happens in DSP.cpp. It's kinda just bad hardware design.
 TODO maybe the files should be merged?
 */
 
+#include "AudioCommon/AudioCommon.h"
+
 #include "Common/Common.h"
 #include "Common/MathUtil.h"
 
 #include "Core/CoreTiming.h"
 #include "Core/HW/AudioInterface.h"
 #include "Core/HW/CPU.h"
+#include "Core/HW/DVDInterface.h"
 #include "Core/HW/MMIO.h"
 #include "Core/HW/ProcessorInterface.h"
 #include "Core/HW/SystemTimers.h"
@@ -143,8 +146,7 @@ void DoState(PointerWrap &p)
 static void GenerateAudioInterrupt();
 static void UpdateInterrupts();
 static void IncreaseSampleCount(const u32 _uAmount);
-void ReadStreamBlock(s16* _pPCM);
-u64 GetAIPeriod();
+static u64 GetAIPeriod();
 int et_AI;
 
 void Init()
@@ -203,6 +205,9 @@ void RegisterMMIO(MMIO::Mapping* mmio, u32 base)
 			m_Control.PSTAT = tmpAICtrl.PSTAT;
 			g_LastCPUTime = CoreTiming::GetTicks();
 
+			// Tell Drive Interface to start/stop streaming
+			DVDInterface::g_bStream = tmpAICtrl.PSTAT;
+
 			CoreTiming::RemoveEvent(et_AI);
 			CoreTiming::ScheduleEvent(((int)GetAIPeriod() / 2), et_AI);
 		}
@@ -229,7 +234,10 @@ void RegisterMMIO(MMIO::Mapping* mmio, u32 base)
 
 	mmio->Register(base | AI_VOLUME_REGISTER,
 		MMIO::DirectRead<u32>(&m_Volume.hex),
-		MMIO::DirectWrite<u32>(&m_Volume.hex)
+		MMIO::ComplexWrite<u32>([](u32, u32 val) {
+		m_Volume.hex = val;
+		soundStream->GetMixer()->SetStreamingVolume(m_Volume.left, m_Volume.right);
+	})
 		);
 
 	mmio->Register(base | AI_SAMPLE_COUNTER,

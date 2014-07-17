@@ -1,7 +1,7 @@
 // Copyright 2013 Dolphin Emulator Project
 // Licensed under GPLv2
 // Refer to the license.txt file included.
-
+// Modified For Ishiiruka By Tino
 #pragma once
 
 #include <string>
@@ -10,13 +10,13 @@
 #include "Common/StdMutex.h"
 
 // 16 bit Stereo
-#define MAX_SAMPLES     (1024 * 2) // 64ms
-#define INDEX_MASK      (MAX_SAMPLES * 2 - 1)
+#define MAX_SAMPLES (1024 * 2) // 64ms
+#define INDEX_MASK (MAX_SAMPLES * 2 - 1)
 
-#define LOW_WATERMARK   1280 // 40 ms
-#define MAX_FREQ_SHIFT  200  // per 32000 Hz
-#define CONTROL_FACTOR  0.2f  // in freq_shift per fifo size offset
-#define CONTROL_AVG     32
+#define LOW_WATERMARK 1280 // 40 ms
+#define MAX_FREQ_SHIFT 200 // per 32000 Hz
+#define CONTROL_FACTOR 0.2f // in freq_shift per fifo size offset
+#define CONTROL_AVG 32
 
 class CMixer {
 
@@ -41,6 +41,7 @@ public:
 	virtual void PushSamples(const short* samples, unsigned int num_samples);
 	virtual void PushStreamingSamples(const short* samples, unsigned int num_samples);
 	unsigned int GetSampleRate() const { return m_sampleRate; }
+	void SetStreamingVolume(unsigned int lvolume, unsigned int rvolume);
 
 	void SetThrottle(bool use) { m_throttle = use; }
 
@@ -87,12 +88,16 @@ protected:
 			, m_input_sample_rate(sample_rate)
 			, m_indexW(0)
 			, m_indexR(0)
+			, m_LVolume(256)
+			, m_RVolume(256)
 			, m_numLeftI(0.0f)
+			, m_frac(0)
 		{
 			memset(m_buffer, 0, sizeof(m_buffer));
 		}
 		void PushSamples(const short* samples, unsigned int num_samples);
 		unsigned int Mix(short* samples, unsigned int numSamples, bool consider_framelimit = true);
+		void SetVolume(unsigned int lvolume, unsigned int rvolume);
 		u32 AvailableSamples();
 	private:
 		CMixer *m_mixer;
@@ -100,7 +105,11 @@ protected:
 		short m_buffer[MAX_SAMPLES * 2];
 		volatile u32 m_indexW;
 		volatile u32 m_indexR;
+		// Volume ranges from 0-256
+		volatile s32 m_LVolume;
+		volatile s32 m_RVolume;
 		float m_numLeftI;
+		u32 m_frac;
 	};
 	MixerFifo m_dma_mixer;
 	MixerFifo m_streaming_mixer;
