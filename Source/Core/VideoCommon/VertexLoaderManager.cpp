@@ -25,9 +25,11 @@
 #include "VideoCommon/G_GZLE01_pvt.h"
 #include "VideoCommon/G_R5WEA4_pvt.h"
 #include "VideoCommon/G_RMCE01_pvt.h"
+#include "VideoCommon/G_RMCP01_pvt.h"
 #include "VideoCommon/G_RMGP01_pvt.h"
 #include "VideoCommon/G_RSBE01_pvt.h"
 #include "VideoCommon/G_RZTP01_pvt.h"
+#include "VideoCommon/G_SEME4Q_pvt.h"
 #include "VideoCommon/G_SF8E01_pvt.h"
 #include "VideoCommon/G_SLSEXJ_pvt.h"
 #include "VideoCommon/G_SMNP01_pvt.h"
@@ -218,9 +220,11 @@ namespace VertexLoaderManager
 			G_GZLE01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
 			G_R5WEA4_pvt::Initialize(g_PrecompiledVertexLoaderMap);
 			G_RMCE01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
+			G_RMCP01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
 			G_RMGP01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
 			G_RSBE01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
 			G_RZTP01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
+			G_SEME4Q_pvt::Initialize(g_PrecompiledVertexLoaderMap);
 			G_SF8E01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
 			G_SLSEXJ_pvt::Initialize(g_PrecompiledVertexLoaderMap);
 			G_SMNP01_pvt::Initialize(g_PrecompiledVertexLoaderMap);

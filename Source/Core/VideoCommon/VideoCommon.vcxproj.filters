@@ -185,6 +185,12 @@
     <ClCompile Include="G_GZLE01_pvt.cpp">
       <Filter>Vertex Loading\Compiled Loaders</Filter>
     </ClCompile>
+    <ClCompile Include="G_SEME4Q_pvt.cpp">
+      <Filter>Vertex Loading\Compiled Loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="G_RMCP01_pvt.cpp">
+      <Filter>Vertex Loading\Compiled Loaders</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommandProcessor.h" />
@@ -397,6 +403,12 @@
       <Filter>Vertex Loading\Compiled Loaders</Filter>
     </ClInclude>
     <ClInclude Include="G_GZLE01_pvt.h">
+      <Filter>Vertex Loading\Compiled Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="G_SEME4Q_pvt.h">
+      <Filter>Vertex Loading\Compiled Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="G_RMCP01_pvt.h">
       <Filter>Vertex Loading\Compiled Loaders</Filter>
     </ClInclude>
   </ItemGroup>
