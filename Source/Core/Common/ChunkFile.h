@@ -201,6 +201,18 @@ public:
 		}
 	}
 
+	template <typename T>
+	void DoPointer(const T*& x, const T* const base)
+	{
+		// pointers can be more than 2^31 apart, but you're using this function wrong if you need that much range
+		ptrdiff_t offset = x - base;
+		Do(offset);
+		if (mode == MODE_READ)
+		{
+			x = base + offset;
+		}
+	}
+
 	// Let's pretend std::list doesn't exist!
 	template <class T, LinkedListItem<T>* (*TNew)(), void (*TFree)(LinkedListItem<T>*), void (*TDo)(PointerWrap&, T*)>
 	void DoLinkedList(LinkedListItem<T>*& list_start, LinkedListItem<T>** list_end=0)

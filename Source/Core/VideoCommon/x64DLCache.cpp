@@ -166,8 +166,8 @@ namespace DLCache
 	// First pass - analyze
 	void AnalyzeAndRunDisplayList(u32 address, u32 size, CachedDisplayList *dl)
 	{
-		u8* old_pVideoData = g_pVideoData;
-		u8* startAddress = Memory::GetPointer(address);
+		const u8* old_pVideoData = g_VideoData.GetReadPosition();
+		const u8* startAddress = Memory::GetPointer(address);
 		u32 num_xf_reg = 0;
 		u32 num_cp_reg = 0;
 		u32 num_bp_reg = 0;
@@ -178,16 +178,16 @@ namespace DLCache
 		// Avoid the crash if Memory::GetPointer failed ..
 		if (startAddress != 0)
 		{
-			g_pVideoData = startAddress;
+			g_VideoData.SetReadPosition(startAddress);
 
 			// temporarily swap dl and non-dl (small "hack" for the stats)
 			Statistics::SwapDL();
 
-			u8 *end = g_pVideoData + size;
-			while (g_pVideoData < end)
+			const u8 *end = startAddress + size;
+			while (g_VideoData.GetReadPosition() < end)
 			{
 				// Yet another reimplementation of the DL reading...
-				int cmd_byte = DataReadU8();
+				int cmd_byte = g_VideoData.Read<u8>();
 				switch (cmd_byte)
 				{
 				case GX_NOP:
@@ -195,8 +195,8 @@ namespace DLCache
 
 				case GX_LOAD_CP_REG: //0x08
 				{
-					u8 sub_cmd = DataReadU8();
-					u32 value = DataReadU32();
+					u8 sub_cmd = g_VideoData.Read<u8>();
+					u32 value = g_VideoData.Read<u32>();
 					LoadCPReg(sub_cmd, value);
 					INCSTAT(stats.thisFrame.numCPLoads);
 					num_cp_reg++;
@@ -205,7 +205,7 @@ namespace DLCache
 
 				case GX_LOAD_XF_REG:
 				{
-					u32 Cmd2 = DataReadU32();
+					u32 Cmd2 = g_VideoData.Read<u32>();
 					int transfer_size = ((Cmd2 >> 16) & 15) + 1;
 					u32 xf_address = Cmd2 & 0xFFFF;
 					GC_ALIGNED128(u32 data_buffer[16]);
@@ -218,32 +218,32 @@ namespace DLCache
 
 				case GX_LOAD_INDX_A: //used for position matrices
 				{
-					LoadIndexedXF(DataReadU32(), 0xC);
+					LoadIndexedXF(g_VideoData.Read<u32>(), 0xC);
 					num_index_xf++;
 				}
 					break;
 				case GX_LOAD_INDX_B: //used for normal matrices
 				{
-					LoadIndexedXF(DataReadU32(), 0xD);
+					LoadIndexedXF(g_VideoData.Read<u32>(), 0xD);
 					num_index_xf++;
 				}
 					break;
 				case GX_LOAD_INDX_C: //used for postmatrices
 				{
-					LoadIndexedXF(DataReadU32(), 0xE);
+					LoadIndexedXF(g_VideoData.Read<u32>(), 0xE);
 					num_index_xf++;
 				}
 					break;
 				case GX_LOAD_INDX_D: //used for lights
 				{
-					LoadIndexedXF(DataReadU32(), 0xF);
+					LoadIndexedXF(g_VideoData.Read<u32>(), 0xF);
 					num_index_xf++;
 				}
 					break;
 				case GX_CMD_CALL_DL:
 				{
-					u32 addr = DataReadU32();
-					u32 count = DataReadU32();
+					u32 addr = g_VideoData.Read<u32>();
+					u32 count = g_VideoData.Read<u32>();
 					ExecuteDisplayList(addr, count);
 				}
 					break;
@@ -255,7 +255,7 @@ namespace DLCache
 					break;
 				case GX_LOAD_BP_REG: //0x61
 				{
-					u32 bp_cmd = DataReadU32();
+					u32 bp_cmd = g_VideoData.Read<u32>();
 					LoadBPReg(bp_cmd);
 					INCSTAT(stats.thisFrame.numBPLoads);
 					num_bp_reg++;
@@ -267,7 +267,7 @@ namespace DLCache
 					if ((cmd_byte & 0xC0) == 0x80)
 					{
 						// load vertices (use computed vertex size from FifoCommandRunnable above)
-						u16 numVertices = DataReadU16();
+						u16 numVertices = g_VideoData.Read<u16>();
 						if (numVertices > 0)
 						{
 							VertexLoaderManager::RunVertices(
@@ -296,7 +296,7 @@ namespace DLCache
 		dl->num_index_xf = num_index_xf;
 		dl->num_xf_reg = num_xf_reg;
 		// reset to the old pointer
-		g_pVideoData = old_pVideoData;
+		g_VideoData.SetReadPosition(old_pVideoData);
 	}
 
 	// The only sensible way to detect changes to vertex data is to convert several times 
@@ -309,27 +309,27 @@ namespace DLCache
 	// have the compiled code so we don't have to interpret anymore, we just run it.
 	void CompileAndRunDisplayList(u32 address, u32 size, CachedDisplayList *dl)
 	{
-		u8* old_pVideoData = g_pVideoData;
-		u8* startAddress = Memory::GetPointer(address);
+		const u8* old_pVideoData = g_VideoData.GetReadPosition();
+		const u8* startAddress = Memory::GetPointer(address);
 
 		// Avoid the crash if Memory::GetPointer failed ..
 		if (startAddress != 0)
 		{
-			g_pVideoData = startAddress;
+			g_VideoData.SetReadPosition(startAddress);
 
 			// temporarily swap dl and non-dl (small "hack" for the stats)
 			Statistics::SwapDL();
 
-			u8 *end = g_pVideoData + size;
+			const u8 *end = startAddress + size;
 
 			emitter.AlignCode4();
 			dl->compiled_code = emitter.GetCodePtr();
 			emitter.ABI_PushAllCalleeSavedRegsAndAdjustStack();
 
-			while (g_pVideoData < end)
+			while (g_VideoData.GetReadPosition() < end)
 			{
 				// Yet another reimplementation of the DL reading...
-				int cmd_byte = DataReadU8();
+				int cmd_byte = g_VideoData.Read<u8>();
 				switch (cmd_byte)
 				{
 				case GX_NOP:
@@ -340,8 +340,8 @@ namespace DLCache
 				case GX_LOAD_CP_REG: //0x08
 				{
 					// Execute
-					u8 sub_cmd = DataReadU8();
-					u32 value = DataReadU32();
+					u8 sub_cmd = g_VideoData.Read<u8>();
+					u32 value = g_VideoData.Read<u32>();
 					LoadCPReg(sub_cmd, value);
 					INCSTAT(stats.thisFrame.numCPLoads);
 
@@ -353,7 +353,7 @@ namespace DLCache
 				case GX_LOAD_XF_REG:
 				{
 					// Execute
-					u32 Cmd2 = DataReadU32();
+					u32 Cmd2 = g_VideoData.Read<u32>();
 					int transfer_size = ((Cmd2 >> 16) & 15) + 1;
 					u32 xf_address = Cmd2 & 0xFFFF;
 					ReferencedDataRegion* NewRegion = new ReferencedDataRegion;
@@ -373,7 +373,7 @@ namespace DLCache
 
 				case GX_LOAD_INDX_A: //used for position matrices
 				{
-					u32 value = DataReadU32();
+					u32 value = g_VideoData.Read<u32>();
 					// Execute
 					LoadIndexedXF(value, 0xC);
 					// Compile
@@ -382,7 +382,7 @@ namespace DLCache
 					break;
 				case GX_LOAD_INDX_B: //used for normal matrices
 				{
-					u32 value = DataReadU32();
+					u32 value = g_VideoData.Read<u32>();
 					// Execute
 					LoadIndexedXF(value, 0xD);
 					// Compile
@@ -391,7 +391,7 @@ namespace DLCache
 					break;
 				case GX_LOAD_INDX_C: //used for postmatrices
 				{
-					u32 value = DataReadU32();
+					u32 value = g_VideoData.Read<u32>();
 					// Execute
 					LoadIndexedXF(value, 0xE);
 					// Compile
@@ -400,7 +400,7 @@ namespace DLCache
 					break;
 				case GX_LOAD_INDX_D: //used for lights
 				{
-					u32 value = DataReadU32();
+					u32 value = g_VideoData.Read<u32>();
 					// Execute
 					LoadIndexedXF(value, 0xF);
 					// Compile
@@ -410,8 +410,8 @@ namespace DLCache
 
 				case GX_CMD_CALL_DL:
 				{
-					u32 addr = DataReadU32();
-					u32 count = DataReadU32();
+					u32 addr = g_VideoData.Read<u32>();
+					u32 count = g_VideoData.Read<u32>();
 					ExecuteDisplayList(addr, count);
 					emitter.ABI_CallFunctionCC((void *)&ExecuteDisplayList, addr, count);
 				}
@@ -427,7 +427,7 @@ namespace DLCache
 
 				case GX_LOAD_BP_REG: //0x61
 				{
-					u32 bp_cmd = DataReadU32();
+					u32 bp_cmd = g_VideoData.Read<u32>();
 					// Execute
 					LoadBPReg(bp_cmd);
 					INCSTAT(stats.thisFrame.numBPLoads);
@@ -441,10 +441,10 @@ namespace DLCache
 					if ((cmd_byte & 0xC0) == 0x80)
 					{
 						// load vertices (use computed vertex size from FifoCommandRunnable above)
-						u16 numVertices = DataReadU16();
+						u16 numVertices = g_VideoData.Read<u16>();
 						if (numVertices > 0)
 						{
-							emitter.ABI_CallFunctionCCCP((void *)&VertexLoaderManager::RunCompiledVertices, cmd_byte & GX_VAT_MASK, (cmd_byte & GX_PRIMITIVE_MASK) >> GX_PRIMITIVE_SHIFT, numVertices, g_pVideoData);
+							emitter.ABI_CallFunctionCCCP((void *)&VertexLoaderManager::RunCompiledVertices, cmd_byte & GX_VAT_MASK, (cmd_byte & GX_PRIMITIVE_MASK) >> GX_PRIMITIVE_SHIFT, numVertices, g_VideoData.GetReadPosition());
 							// Execute
 							VertexLoaderManager::RunVertices(
 								cmd_byte & GX_VAT_MASK,   // Vertex loader index (0 - 7)
@@ -467,7 +467,7 @@ namespace DLCache
 			INCSTAT(stats.thisFrame.numDListsCalled);
 			Statistics::SwapDL();
 		}
-		g_pVideoData = old_pVideoData;
+		g_VideoData.SetReadPosition(old_pVideoData);
 	}
 
 
@@ -579,7 +579,7 @@ bool HandleDisplayList(u32 address, u32 size)
 				return false;
 			}
 			dl.frame_count = frameCount;
-			u8 *old_datareader = g_pVideoData;
+			const u8 *old_datareader = g_VideoData.GetReadPosition();
 			((void(*)())(void*)(dl.compiled_code))();
 			Statistics::SwapDL();
 			ADDSTAT(stats.thisFrame.numCPLoadsInDL, dl.num_cp_reg);
@@ -594,7 +594,7 @@ bool HandleDisplayList(u32 address, u32 size)
 			INCSTAT(stats.thisFrame.numDListsCalled);
 
 			Statistics::SwapDL();
-			g_pVideoData = old_datareader;
+			g_VideoData.SetReadPosition(old_datareader);
 			break;
 		}
 		}

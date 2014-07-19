@@ -288,7 +288,7 @@ namespace VertexLoaderManager
 		RefreshLoader(vtx_attr_group)->RunVertices(vtx_attr_group, primitive, count);
 	}
 
-	void RunCompiledVertices(int vtx_attr_group, int primitive, int count, u8* Data)
+	void RunCompiledVertices(int vtx_attr_group, int primitive, int count, const u8* Data)
 	{
 		if (!count || !Data)
 			return;

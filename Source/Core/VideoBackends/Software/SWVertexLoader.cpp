@@ -243,8 +243,8 @@ void SWVertexLoader::SetFormat(u8 attributeIndex, u8 primitiveType)
 
 void SWVertexLoader::LoadVertex()
 {
-	g_PipelineState.SetReadPosition(DataGetPosition());
-	DataSkip(m_VertexSize);
+	g_PipelineState.SetReadPosition(g_VideoData.GetReadPosition());
+	g_VideoData.ReadSkip(m_VertexSize);
 	for (int i = 0; i < m_NumAttributeLoaders; i++)
 		m_AttributeLoaders[i].loader(this, &m_Vertex, m_AttributeLoaders[i].index);
 
@@ -276,12 +276,12 @@ void SWVertexLoader::AddAttributeLoader(AttributeLoader loader, u8 index)
 
 void SWVertexLoader::LoadPosMtx(SWVertexLoader *vertexLoader, InputVertexData *vertex, u8 unused)
 {
-	vertex->posMtx = DataReadU8() & 0x3f;
+	vertex->posMtx = g_PipelineState.Read<u8>() & 0x3f;
 }
 
 void SWVertexLoader::LoadTexMtx(SWVertexLoader *vertexLoader, InputVertexData *vertex, u8 index)
 {
-	vertex->texMtx[index] = DataReadU8() & 0x3f;
+	vertex->texMtx[index] = g_PipelineState.Read<u8>() & 0x3f;
 }
 
 void SWVertexLoader::LoadPosition(SWVertexLoader *vertexLoader, InputVertexData *vertex, u8 unused)

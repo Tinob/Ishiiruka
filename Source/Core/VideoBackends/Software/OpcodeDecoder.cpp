@@ -58,7 +58,7 @@ void DecodePrimitiveStream(u32 iBufferSize)
 	{
 		while (streamSize > 0 && iBufferSize >= vertexSize)
 		{
-			g_pVideoData += vertexSize;
+			g_VideoData.ReadSkip(vertexSize);
 			iBufferSize -= vertexSize;
 			streamSize--;
 		}
@@ -86,7 +86,7 @@ void ReadXFData(u32 iBufferSize)
 
 	u32 pData[16];
 	for (int i = 0; i < streamSize; i++)
-		pData[i] = DataReadU32();
+		pData[i] = g_VideoData.Read<u32>();
 	SWLoadXFReg(streamSize, streamAddress, pData);
 
 	// return to normal command processing
@@ -95,33 +95,33 @@ void ReadXFData(u32 iBufferSize)
 
 void ExecuteDisplayList(u32 addr, u32 count)
 {
-	u8 *videoDataSave = g_pVideoData;
+	const u8 *videoDataSave = g_VideoData.GetReadPosition();
 
-	u8 *dlStart = Memory::GetPointer(addr);
+	const u8 *dlStart = Memory::GetPointer(addr);
 
-	g_pVideoData = dlStart;
+	g_VideoData.SetReadPosition(dlStart);
 
 	while (OpcodeDecoder::CommandRunnable(count))
 	{
 		OpcodeDecoder::Run(count);
 
 		// if data was read by the opcode decoder then the video data pointer changed
-		u32 readCount = (u32)(g_pVideoData - dlStart);
-		dlStart = g_pVideoData;
+		u32 readCount = (u32)(g_VideoData.GetReadPosition() - dlStart);
+		dlStart = g_VideoData.GetReadPosition();
 
 		_assert_msg_(VIDEO, count >= readCount, "Display list underrun"); 
 
 		count -= readCount;
 	}
 
-	g_pVideoData = videoDataSave;
+	g_VideoData.SetReadPosition(videoDataSave);
 }
 
 void DecodeStandard(u32 bufferSize)
 {
 	_assert_msg_(VIDEO, CommandRunnable(bufferSize), "Underflow during standard opcode decoding"); 
 
-	int Cmd = DataReadU8();
+	int Cmd = g_VideoData.Read<u8>();
 
 	if (Cmd == GX_NOP)
 		return;
@@ -148,44 +148,44 @@ void DecodeStandard(u32 bufferSize)
 		break;
 
 	case GX_LOAD_CP_REG: //0x08
-		{
-			u32 SubCmd = DataReadU8();
-			u32 Value = DataReadU32();
-			SWLoadCPReg(SubCmd, Value);
-		}
-		break;
+	{
+		u32 SubCmd = g_VideoData.Read<u8>();
+		u32 Value = g_VideoData.Read<u32>();
+		SWLoadCPReg(SubCmd, Value);
+	}
+	break;
 
 	case GX_LOAD_XF_REG:
-		{
-			u32 Cmd2 = DataReadU32();
-			streamSize = ((Cmd2 >> 16) & 15) + 1;
-			streamAddress = Cmd2 & 0xFFFF;
-			currentFunction = ReadXFData;
-			minCommandSize = streamSize * 4;
-			readOpcode = false;
-		}
-		break;
+	{
+		u32 Cmd2 = g_VideoData.Read<u32>();
+		streamSize = ((Cmd2 >> 16) & 15) + 1;
+		streamAddress = Cmd2 & 0xFFFF;
+		currentFunction = ReadXFData;
+		minCommandSize = streamSize * 4;
+		readOpcode = false;
+	}
+	break;
 
 	case GX_LOAD_INDX_A: //used for position matrices
-		SWLoadIndexedXF(DataReadU32(), 0xC);
+		SWLoadIndexedXF(g_VideoData.Read<u32>(), 0xC);
 		break;
 	case GX_LOAD_INDX_B: //used for normal matrices
-		SWLoadIndexedXF(DataReadU32(), 0xD);
+		SWLoadIndexedXF(g_VideoData.Read<u32>(), 0xD);
 		break;
 	case GX_LOAD_INDX_C: //used for postmatrices
-		SWLoadIndexedXF(DataReadU32(), 0xE);
+		SWLoadIndexedXF(g_VideoData.Read<u32>(), 0xE);
 		break;
 	case GX_LOAD_INDX_D: //used for lights
-		SWLoadIndexedXF(DataReadU32(), 0xF);
+		SWLoadIndexedXF(g_VideoData.Read<u32>(), 0xF);
 		break;
 
 	case GX_CMD_CALL_DL:
-		{
-			u32 dwAddr  = DataReadU32();
-			u32 dwCount = DataReadU32();
-			ExecuteDisplayList(dwAddr, dwCount);
-		}
-		break;
+	{
+		u32 dwAddr = g_VideoData.Read<u32>();
+		u32 dwCount = g_VideoData.Read<u32>();
+		ExecuteDisplayList(dwAddr, dwCount);
+	}
+	break;
 
 	case 0x44:
 		// zelda 4 swords calls it and checks the metrics registers after that
@@ -196,11 +196,11 @@ void DecodeStandard(u32 bufferSize)
 		break;
 
 	case GX_LOAD_BP_REG: //0x61
-		{
-			u32 cmd = DataReadU32();
-			SWLoadBPReg(cmd);
-		}
-		break;
+	{
+		u32 cmd = g_VideoData.Read<u32>();
+		SWLoadBPReg(cmd);
+	}
+	break;
 
 	// draw primitives 
 	default:
@@ -211,7 +211,7 @@ void DecodeStandard(u32 bufferSize)
 			vertexLoader.SetFormat(vatIndex, primitiveType);
 
 			// switch to primitive processing
-			streamSize = DataReadU16();
+			streamSize = g_VideoData.Read<u16>();
 			currentFunction = DecodePrimitiveStream;
 			minCommandSize = vertexLoader.GetVertexSize();
 			readOpcode = false;
@@ -250,7 +250,7 @@ bool CommandRunnable(u32 iBufferSize)
 
 	if (readOpcode)
 	{
-		u8 Cmd = DataPeek8(0);
+		u8 Cmd = g_VideoData.Peek<u8>(0);
 		u32 minSize = 1;
 
 		switch(Cmd)

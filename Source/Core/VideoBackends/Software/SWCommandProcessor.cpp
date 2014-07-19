@@ -53,9 +53,8 @@ void DoState(PointerWrap &p)
 	p.Do(et_UpdateInterrupts);
 	p.Do(interruptSet);
 	p.Do(interruptWaiting);
-
-	// Is this right?
-	p.DoArray(g_pVideoData,writePos);
+	// Is This Right?
+	p.DoArray(g_VideoData.GetReadPosition(), writePos);	
 }
 
 // does it matter that there is no synchronization between threads during writes?
@@ -101,7 +100,7 @@ void Init()
 	interruptSet = false;
 	interruptWaiting = false;
 
-	g_pVideoData = 0;
+	g_VideoData.SetReadPosition(0);
 	g_bSkipCurrentFrame = false;
 }
 
@@ -313,7 +312,7 @@ bool RunBuffer()
 
 	_dbg_assert_(COMMANDPROCESSOR, writePos >= readPos);
 
-	g_pVideoData = &commandBuffer[readPos];
+	g_VideoData.SetReadPosition(&commandBuffer[readPos]);
 
 	u32 availableBytes = writePos - readPos;
 
@@ -324,7 +323,7 @@ bool RunBuffer()
 		OpcodeDecoder::Run(availableBytes);
 
 		// if data was read by the opcode decoder then the video data pointer changed
-		readPos = (u32)(g_pVideoData - &commandBuffer[0]);
+		readPos = (u32)(g_VideoData.GetReadPosition() - &commandBuffer[0]);
 		_dbg_assert_(VIDEO, writePos >= readPos);
 		availableBytes = writePos - readPos;
 	}

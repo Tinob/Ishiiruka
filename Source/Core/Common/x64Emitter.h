@@ -678,7 +678,7 @@ public:
 	void ABI_CallFunctionCP(void *func, u32 param1, void *param2);
 	void ABI_CallFunctionCCC(void *func, u32 param1, u32 param2, u32 param3);
 	void ABI_CallFunctionCCP(void *func, u32 param1, u32 param2, void *param3);
-	void ABI_CallFunctionCCCP(void *func, u32 param1, u32 param2,u32 param3, void *param4);
+	void ABI_CallFunctionCCCP(void *func, u32 param1, u32 param2,u32 param3,const void *param4);
 	void ABI_CallFunctionPC(void *func, void *param1, u32 param2);
 	void ABI_CallFunctionPPC(void *func, void *param1, void *param2,u32 param3);
 	void ABI_CallFunctionAC(void *func, const Gen::OpArg &arg1, u32 param2);

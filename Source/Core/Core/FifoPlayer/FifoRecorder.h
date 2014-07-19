@@ -23,7 +23,7 @@ public:
 	// Called from video thread
 
 	// Must write one full GP command at a time
-	void WriteGPCommand(u8 *data, u32 size);
+	void WriteGPCommand(const u8 *data, u32 size);
 
 	void WriteMemory(u32 address, u32 size, MemoryUpdate::Type type);
 

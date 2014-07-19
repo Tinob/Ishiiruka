@@ -15,9 +15,9 @@
 #include "Core/Core.h"
 #include "Core/CoreTiming.h"
 #include "Common/FPURoundMode.h"
+#include "VideoCommon/DataReader.h"
 
 volatile bool g_bSkipCurrentFrame = false;
-extern u8* g_pVideoData;
 
 namespace
 {
@@ -33,7 +33,9 @@ void Fifo_DoState(PointerWrap &p)
 {
 	p.DoArray(videoBuffer, FIFO_SIZE);
 	p.Do(size);
-	p.DoPointer(g_pVideoData, videoBuffer);
+	const u8* videodata = g_VideoData.GetReadPosition();
+	p.DoPointer(videodata, videoBuffer);
+	g_VideoData.SetReadPosition(videodata);
 	p.Do(g_bSkipCurrentFrame);
 }
 
@@ -109,14 +111,14 @@ void ReadDataFromFifo(u8* _uData, u32 len)
 {
 	if (size + len >= FIFO_SIZE)
 	{
-		int pos = (int)(g_pVideoData - videoBuffer);
+		int pos = (int)(g_VideoData.GetReadPosition() - videoBuffer);
 		size -= pos;
 		if (size + len > FIFO_SIZE)
 		{
 			PanicAlert("FIFO out of bounds (size = %i, len = %i at %08x)", size, len, pos);
 		}
 		memmove(&videoBuffer[0], &videoBuffer[pos], size);
-		g_pVideoData = videoBuffer;
+		g_VideoData.SetReadPosition(videoBuffer);
 	}
 	// Copy new video instructions to videoBuffer for future use in rendering the new picture
 	memcpy(videoBuffer + size, _uData, len);
@@ -125,7 +127,7 @@ void ReadDataFromFifo(u8* _uData, u32 len)
 
 void ResetVideoBuffer()
 {
-	g_pVideoData = videoBuffer;
+	g_VideoData.SetReadPosition(videoBuffer);
 	size = 0;
 }
 
@@ -177,7 +179,7 @@ void RunGpuLoop()
 
 				Common::AtomicStore(fifo.CPReadPointer, readPtr);
 				Common::AtomicAdd(fifo.CPReadWriteDistance, -32);
-				if((GetVideoBufferEndPtr() - g_pVideoData) == 0)
+				if((GetVideoBufferEndPtr() - g_VideoData.GetReadPosition()) == 0)
 					Common::AtomicStore(fifo.SafeCPReadPointer, fifo.CPReadPointer);
 			}
 

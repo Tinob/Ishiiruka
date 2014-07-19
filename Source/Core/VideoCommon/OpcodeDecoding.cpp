@@ -32,47 +32,58 @@
 #include "VideoCommon/XFMemory.h"
 
 
-u8* g_pVideoData = 0;
+DataReader g_VideoData;
 bool g_bRecordFifoData = false;
 
 #if _M_SSE >= 0x301
+template <int count>
+void ReadU32xn_SSSE3(u32 *bufx16)
+{
+	g_VideoData.ReadU32xN_SSSE3<count>(bufx16);
+}
+
 DataReadU32xNfunc DataReadU32xFuncs_SSSE3[16] = {
-	DataReadU32xN_SSSE3<1>,
-	DataReadU32xN_SSSE3<2>,
-	DataReadU32xN_SSSE3<3>,
-	DataReadU32xN_SSSE3<4>,
-	DataReadU32xN_SSSE3<5>,
-	DataReadU32xN_SSSE3<6>,
-	DataReadU32xN_SSSE3<7>,
-	DataReadU32xN_SSSE3<8>,
-	DataReadU32xN_SSSE3<9>,
-	DataReadU32xN_SSSE3<10>,
-	DataReadU32xN_SSSE3<11>,
-	DataReadU32xN_SSSE3<12>,
-	DataReadU32xN_SSSE3<13>,
-	DataReadU32xN_SSSE3<14>,
-	DataReadU32xN_SSSE3<15>,
-	DataReadU32xN_SSSE3<16>
+	ReadU32xn_SSSE3<1>,
+	ReadU32xn_SSSE3<2>,
+	ReadU32xn_SSSE3<3>,
+	ReadU32xn_SSSE3<4>,
+	ReadU32xn_SSSE3<5>,
+	ReadU32xn_SSSE3<6>,
+	ReadU32xn_SSSE3<7>,
+	ReadU32xn_SSSE3<8>,
+	ReadU32xn_SSSE3<9>,
+	ReadU32xn_SSSE3<10>,
+	ReadU32xn_SSSE3<11>,
+	ReadU32xn_SSSE3<12>,
+	ReadU32xn_SSSE3<13>,
+	ReadU32xn_SSSE3<14>,
+	ReadU32xn_SSSE3<15>,
+	ReadU32xn_SSSE3<16>
 };
 #endif
+template <int count>
+void ReadU32xn(u32 *bufx16)
+{
+	g_VideoData.ReadU32xN<count>(bufx16);
+}
 
 DataReadU32xNfunc DataReadU32xFuncs[16] = {
-	DataReadU32xN<1>,
-	DataReadU32xN<2>,
-	DataReadU32xN<3>,
-	DataReadU32xN<4>,
-	DataReadU32xN<5>,
-	DataReadU32xN<6>,
-	DataReadU32xN<7>,
-	DataReadU32xN<8>,
-	DataReadU32xN<9>,
-	DataReadU32xN<10>,
-	DataReadU32xN<11>,
-	DataReadU32xN<12>,
-	DataReadU32xN<13>,
-	DataReadU32xN<14>,
-	DataReadU32xN<15>,
-	DataReadU32xN<16>
+	ReadU32xn<1>,
+	ReadU32xn<2>,
+	ReadU32xn<3>,
+	ReadU32xn<4>,
+	ReadU32xn<5>,
+	ReadU32xn<6>,
+	ReadU32xn<7>,
+	ReadU32xn<8>,
+	ReadU32xn<9>,
+	ReadU32xn<10>,
+	ReadU32xn<11>,
+	ReadU32xn<12>,
+	ReadU32xn<13>,
+	ReadU32xn<14>,
+	ReadU32xn<15>,
+	ReadU32xn<16>
 };
 
 extern u8* GetVideoBufferStartPtr();
@@ -82,19 +93,19 @@ static void Decode();
 
 void InterpretDisplayList(u32 address, u32 size)
 {
-	u8* old_pVideoData = g_pVideoData;
-	u8* startAddress = Memory::GetPointer(address);
+	const u8* old_pVideoData = g_VideoData.GetReadPosition();
+	const u8* startAddress = Memory::GetPointer(address);
 
 	// Avoid the crash if Memory::GetPointer failed ..
 	if (startAddress != 0)
 	{
-		g_pVideoData = startAddress;
+		g_VideoData.SetReadPosition(startAddress);
 
 		// temporarily swap dl and non-dl (small "hack" for the stats)
 		Statistics::SwapDL();
 
-		u8 *end = g_pVideoData + size;
-		while (g_pVideoData < end)
+		const u8 *end = startAddress + size;
+		while (g_VideoData.GetReadPosition() < end)
 		{
 			Decode();
 		}
@@ -106,7 +117,7 @@ void InterpretDisplayList(u32 address, u32 size)
 	}
 
 	// reset to the old pointer
-	g_pVideoData = old_pVideoData;
+	g_VideoData.SetReadPosition(old_pVideoData);
 }
 
 // Defer to backend-specific DL cache.
@@ -121,11 +132,11 @@ void ExecuteDisplayList(u32 address, u32 size)
 u32 FifoCommandRunnable(u32 &command_size)
 {
 	u32 cycleTime = 0;
-	u32 buffer_size = (u32)(GetVideoBufferEndPtr() - g_pVideoData);
+	u32 buffer_size = (u32)(GetVideoBufferEndPtr() - g_VideoData.GetReadPosition());
 	if (buffer_size == 0)
 		return 0;  // can't peek
 
-	u8 cmd_byte = DataPeek8(0);	
+	u8 cmd_byte = g_VideoData.Peek<u8>();
 
 	switch (cmd_byte)
 	{
@@ -165,19 +176,19 @@ u32 FifoCommandRunnable(u32 &command_size)
 			// FIXME: Calculate the cycle time of the display list.
 			//u32 address = DataPeek32(1);
 			//u32 size = DataPeek32(5);
-			//u8* old_pVideoData = g_pVideoData;
-			//u8* startAddress = Memory::GetPointer(address);
+			//const u8* old_pVideoData = g_VideoData.GetReadPosition();
+			//const u8* startAddress = Memory::GetPointer(address);
 
 			//// Avoid the crash if Memory::GetPointer failed ..
 			//if (startAddress != 0)
 			//{
-			//	g_pVideoData = startAddress;
-			//	u8 *end = g_pVideoData + size;
+			//	g_VideoData.SetReadPosition(startAddress);
+			//	const u8 *end = startAddress + size;
 			//	u32 step = 0;
-			//	while (g_pVideoData < end)
+			//	while (g_VideoData.GetReadPosition() < end)
 			//	{
 			//		cycleTime += FifoCommandRunnable(step);
-			//		g_pVideoData += step;
+			//		g_VideoData.ReadSkeep(step);
 			//	}
 			//}
 			//else
@@ -186,7 +197,7 @@ u32 FifoCommandRunnable(u32 &command_size)
 			//}
 
 			//// reset to the old pointer
-			//g_pVideoData = old_pVideoData;
+			//g_VideoData.SetReadPosition(old_pVideoData);
 			command_size = 9;
 			cycleTime = 45;  // This is unverified
 		}
@@ -198,7 +209,7 @@ u32 FifoCommandRunnable(u32 &command_size)
 			if (buffer_size >= 5)
 			{
 				command_size = 1 + 4;
-				u32 Cmd2 = DataPeek32(1);
+				u32 Cmd2 = g_VideoData.Peek<u32>(1);
 				int transfer_size = ((Cmd2 >> 16) & 15) + 1;
 				command_size += transfer_size * 4;
 				cycleTime = 18 + 6 * transfer_size;
@@ -217,7 +228,7 @@ u32 FifoCommandRunnable(u32 &command_size)
 			if (buffer_size >= 3)
 			{
 				command_size = 1 + 2;
-				u16 numVertices = DataPeek16(1);
+				u16 numVertices = g_VideoData.Peek<u16>(1);
 				command_size += numVertices * VertexLoaderManager::GetVertexSize(cmd_byte & GX_VAT_MASK);
 				cycleTime = 1600; // This depends on the number of pixels rendered
 			}
@@ -287,57 +298,54 @@ u32 FifoCommandRunnable()
 
 static void Decode()
 {
-	u8 *opcodeStart = g_pVideoData;
+	const u8 *opcodeStart = g_VideoData.GetReadPosition();
 
-	int cmd_byte = DataReadU8();
+	u8 cmd_byte = g_VideoData.Read<u8>();
 	switch (cmd_byte)
 	{
 	case GX_NOP:
 		break;
 
 	case GX_LOAD_CP_REG: //0x08
-		{
-			u8 sub_cmd = DataReadU8();
-			u32 value = DataReadU32();
-			LoadCPReg(sub_cmd, value);
-			INCSTAT(stats.thisFrame.numCPLoads);
-		}
-		break;
-
+	{
+		u8 sub_cmd = g_VideoData.Read<u8>();
+		u32 value = g_VideoData.Read<u32>();
+		LoadCPReg(sub_cmd, value);
+		INCSTAT(stats.thisFrame.numCPLoads);
+	}
+	break;
 	case GX_LOAD_XF_REG:
-		{
-			u32 Cmd2 = DataReadU32();
-			int transfer_size = ((Cmd2 >> 16) & 15) + 1;
-			u32 xf_address = Cmd2 & 0xFFFF;
-			GC_ALIGNED128(u32 data_buffer[16]);
-			DataReadU32xFuncs[transfer_size-1](data_buffer);
-			LoadXFReg(transfer_size, xf_address, data_buffer);
+	{
+		u32 Cmd2 = g_VideoData.Read<u32>();
+		int transfer_size = ((Cmd2 >> 16) & 15) + 1;
+		u32 xf_address = Cmd2 & 0xFFFF;
+		GC_ALIGNED128(u32 data_buffer[16]);
+		DataReadU32xFuncs[transfer_size-1](data_buffer);
+		LoadXFReg(transfer_size, xf_address, data_buffer);
 
-			INCSTAT(stats.thisFrame.numXFLoads);
-		}
-		break;
-
+		INCSTAT(stats.thisFrame.numXFLoads);
+	}
+	break;
 	case GX_LOAD_INDX_A: //used for position matrices
-		LoadIndexedXF(DataReadU32(), 0xC);
+		LoadIndexedXF(g_VideoData.Read<u32>(), 0xC);
 		break;
 	case GX_LOAD_INDX_B: //used for normal matrices
-		LoadIndexedXF(DataReadU32(), 0xD);
+		LoadIndexedXF(g_VideoData.Read<u32>(), 0xD);
 		break;
 	case GX_LOAD_INDX_C: //used for postmatrices
-		LoadIndexedXF(DataReadU32(), 0xE);
+		LoadIndexedXF(g_VideoData.Read<u32>(), 0xE);
 		break;
 	case GX_LOAD_INDX_D: //used for lights
-		LoadIndexedXF(DataReadU32(), 0xF);
+		LoadIndexedXF(g_VideoData.Read<u32>(), 0xF);
 		break;
 
 	case GX_CMD_CALL_DL:
-		{
-			u32 address = DataReadU32();
-			u32 count = DataReadU32();
-			ExecuteDisplayList(address, count);
-		}			
-		break;
-
+	{
+		u32 address = g_VideoData.Read<u32>();
+		u32 count = g_VideoData.Read<u32>();
+		ExecuteDisplayList(address, count);
+	}			
+	break;
 	case GX_CMD_UNKNOWN_METRICS: // zelda 4 swords calls it and checks the metrics registers after that
 		DEBUG_LOG(VIDEO, "GX 0x44: %08x", cmd_byte);
 		break;
@@ -347,20 +355,19 @@ static void Decode()
 		break;
 
 	case GX_LOAD_BP_REG: //0x61
-		{
-			u32 bp_cmd = DataReadU32();
-			LoadBPReg(bp_cmd);
-			INCSTAT(stats.thisFrame.numBPLoads);
-		}
-		break;
+	{
+		u32 bp_cmd = g_VideoData.Read<u32>();
+		LoadBPReg(bp_cmd);
+		INCSTAT(stats.thisFrame.numBPLoads);
+	}
+	break;
 
 	// draw primitives 
 	default:
 		if ((cmd_byte & 0xC0) == 0x80)
 		{
 			// load vertices (use computed vertex size from FifoCommandRunnable above)
-			u16 numVertices = DataReadU16();
-
+			u16 numVertices = g_VideoData.Read<u16>();
 			VertexLoaderManager::RunVertices(
 				cmd_byte & GX_VAT_MASK,   // Vertex loader index (0 - 7)
 				(cmd_byte & GX_PRIMITIVE_MASK) >> GX_PRIMITIVE_SHIFT,
@@ -376,14 +383,14 @@ static void Decode()
 
 	// Display lists get added directly into the FIFO stream
 	if (g_bRecordFifoData && cmd_byte != GX_CMD_CALL_DL)
-		FifoRecorder::GetInstance().WriteGPCommand(opcodeStart, u32(g_pVideoData - opcodeStart));
+		FifoRecorder::GetInstance().WriteGPCommand(opcodeStart, u32(g_VideoData.GetReadPosition() - opcodeStart));
 }
 
 static void DecodeSemiNop()
 {
-	u8 *opcodeStart = g_pVideoData;
+	const u8 *opcodeStart = g_VideoData.GetReadPosition();
 
-	int cmd_byte = DataReadU8();
+	int cmd_byte = g_VideoData.Read<u8>();
 	switch (cmd_byte)
 	{
 	case GX_CMD_UNKNOWN_METRICS: // zelda 4 swords calls it and checks the metrics registers after that
@@ -392,63 +399,63 @@ static void DecodeSemiNop()
 		break;
 
 	case GX_LOAD_CP_REG: //0x08
-		// We have to let CP writes through because they determine the size of vertices.
-		{
-			u8 sub_cmd = DataReadU8();
-			u32 value = DataReadU32();
-			LoadCPReg(sub_cmd, value);
-			INCSTAT(stats.thisFrame.numCPLoads);
-		}
-		break;
+	// We have to let CP writes through because they determine the size of vertices.
+	{
+		u8 sub_cmd = g_VideoData.Read<u8>();
+		u32 value = g_VideoData.Read<u32>();
+		LoadCPReg(sub_cmd, value);
+		INCSTAT(stats.thisFrame.numCPLoads);
+	}
+	break;
 
 	case GX_LOAD_XF_REG:
-		{
-			u32 Cmd2 = DataReadU32();
-			int transfer_size = ((Cmd2 >> 16) & 15) + 1;
-			u32 address = Cmd2 & 0xFFFF;
-			GC_ALIGNED128(u32 data_buffer[16]);
-			DataReadU32xFuncs[transfer_size-1](data_buffer);
-			LoadXFReg(transfer_size, address, data_buffer);
-			INCSTAT(stats.thisFrame.numXFLoads);
-		}
-		break;
+	{
+		u32 Cmd2 = g_VideoData.Read<u32>();
+		int transfer_size = ((Cmd2 >> 16) & 15) + 1;
+		u32 address = Cmd2 & 0xFFFF;
+		GC_ALIGNED128(u32 data_buffer[16]);
+		DataReadU32xFuncs[transfer_size-1](data_buffer);
+		LoadXFReg(transfer_size, address, data_buffer);
+		INCSTAT(stats.thisFrame.numXFLoads);
+	}
+	break;
 
 	case GX_LOAD_INDX_A: //used for position matrices
-		LoadIndexedXF(DataReadU32(), 0xC);
+		LoadIndexedXF(g_VideoData.Read<u32>(), 0xC);
 		break;
 	case GX_LOAD_INDX_B: //used for normal matrices
-		LoadIndexedXF(DataReadU32(), 0xD);
+		LoadIndexedXF(g_VideoData.Read<u32>(), 0xD);
 		break;
 	case GX_LOAD_INDX_C: //used for postmatrices
-		LoadIndexedXF(DataReadU32(), 0xE);
+		LoadIndexedXF(g_VideoData.Read<u32>(), 0xE);
 		break;
 	case GX_LOAD_INDX_D: //used for lights
-		LoadIndexedXF(DataReadU32(), 0xF);
+		LoadIndexedXF(g_VideoData.Read<u32>(), 0xF);
 		break;
 
 	case GX_CMD_CALL_DL:
 		// Hm, wonder if any games put tokens in display lists - in that case, 
 		// we'll have to parse them too.
-		DataSkip(8);
+		g_VideoData.ReadSkip(8);
 		break;
 
 	case GX_LOAD_BP_REG: //0x61
-		// We have to let BP writes through because they set tokens and stuff.
-		// TODO: Call a much simplified LoadBPReg instead.
-		{
-			u32 bp_cmd = DataReadU32();
-			LoadBPReg(bp_cmd);
-			INCSTAT(stats.thisFrame.numBPLoads);
-		}
-		break;
+	// We have to let BP writes through because they set tokens and stuff.
+	// TODO: Call a much simplified LoadBPReg instead.
+	{
+		u32 bp_cmd = g_VideoData.Read<u32>();
+		LoadBPReg(bp_cmd);
+		INCSTAT(stats.thisFrame.numBPLoads);
+	}
+	break;
 
 	// draw primitives 
 	default:
 		if ((cmd_byte & 0xC0) == 0x80)
 		{
 			// load vertices (use computed vertex size from FifoCommandRunnable above)
-			u16 numVertices = DataReadU16();
-			DataSkip(numVertices * VertexLoaderManager::GetVertexSize(cmd_byte & GX_VAT_MASK));
+			u16 numVertices = g_VideoData.Read<u16>();
+			g_VideoData.ReadSkip(numVertices * VertexLoaderManager::GetVertexSize(cmd_byte & GX_VAT_MASK));
 		}
 		else
 		{
@@ -459,12 +466,12 @@ static void DecodeSemiNop()
 	}
 
 	if (g_bRecordFifoData && cmd_byte != GX_CMD_CALL_DL)
-		FifoRecorder::GetInstance().WriteGPCommand(opcodeStart, u32(g_pVideoData - opcodeStart));
+		FifoRecorder::GetInstance().WriteGPCommand(opcodeStart, u32(g_VideoData.GetReadPosition() - opcodeStart));
 }
 
 void OpcodeDecoder_Init()
 {
-	g_pVideoData = GetVideoBufferStartPtr();
+	g_VideoData.SetReadPosition(GetVideoBufferStartPtr());
 
 #if _M_SSE >= 0x301
 	if (cpu_info.bSSSE3)

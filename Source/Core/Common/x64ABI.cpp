@@ -202,7 +202,7 @@ void XEmitter::ABI_CallFunctionCCP(void *func, u32 param1, u32 param2, void *par
 	ABI_RestoreStack(3 * 4);
 }
 
-void XEmitter::ABI_CallFunctionCCCP(void *func, u32 param1, u32 param2,u32 param3, void *param4) {
+void XEmitter::ABI_CallFunctionCCCP(void *func, u32 param1, u32 param2,u32 param3, const void *param4) {
 	ABI_AlignStack(4 * 4);
 	PUSH(32, Imm32((u32)param4));
 	PUSH(32, Imm32(param3));
@@ -434,7 +434,7 @@ void XEmitter::ABI_CallFunctionCCP(void *func, u32 param1, u32 param2, void *par
 	ABI_RestoreStack(0);
 }
 
-void XEmitter::ABI_CallFunctionCCCP(void *func, u32 param1, u32 param2, u32 param3, void *param4) {
+void XEmitter::ABI_CallFunctionCCCP(void *func, u32 param1, u32 param2, u32 param3, const void *param4) {
 	ABI_AlignStack(0);
 	MOV(32, R(ABI_PARAM1), Imm32(param1));
 	MOV(32, R(ABI_PARAM2), Imm32(param2));

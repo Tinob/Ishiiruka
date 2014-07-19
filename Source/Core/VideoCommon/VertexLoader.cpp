@@ -351,13 +351,13 @@ void VertexLoader::RunVertices(int vtx_attr_group, int primitive, int const coun
 	if (bpmem.genMode.cullmode == 3 && primitive < 5)
 	{
 		// if cull mode is none, ignore triangles and quads
-		DataSkip(count * m_VertexSize);
+		g_VideoData.ReadSkip(count * m_VertexSize);
 		return;
 	}
 	auto const new_count = SetupRunVertices(vtx_attr_group, primitive, count);
-	g_PipelineState.Initialize(DataGetPosition(), VertexManager::s_pCurBufferPointer);
+	g_PipelineState.Initialize(g_VideoData.GetReadPosition(), VertexManager::s_pCurBufferPointer);
 	VertexManager::s_pCurBufferPointer += native_stride * new_count;
-	DataSkip(new_count * m_VertexSize);
+	g_VideoData.ReadSkip(new_count * m_VertexSize);
 	g_PipelineState.count = new_count;
 	m_CompiledFunction(this);
 	VertexManager::AddVertices(primitive, new_count);
@@ -380,12 +380,12 @@ void LOADERDECL VertexLoader::ConvertVertices(VertexLoader *loader)
 	}
 }
 
-void VertexLoader::RunCompiledVertices(int vtx_attr_group, int primitive, int const count, u8* Data)
+void VertexLoader::RunCompiledVertices(int vtx_attr_group, int primitive, int const count, const u8* Data)
 {
 	if (bpmem.genMode.cullmode == 3 && primitive < 5)
 	{
 		// if cull mode is none, ignore triangles and quads
-		DataSkip(count * m_VertexSize);
+		g_VideoData.ReadSkip(count * m_VertexSize);
 		return;
 	}
 	auto const new_count = SetupRunVertices(vtx_attr_group, primitive, count);

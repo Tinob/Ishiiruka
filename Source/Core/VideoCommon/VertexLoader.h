@@ -135,7 +135,7 @@ public:
 
 	int SetupRunVertices(s32 vtx_attr_group, s32 primitive, s32 const count);
 	void RunVertices(s32 vtx_attr_group, s32 primitive, s32 count);
-	void RunCompiledVertices(s32 vtx_attr_group, s32 primitive, s32 count, u8* Data);
+	void RunCompiledVertices(s32 vtx_attr_group, s32 primitive, s32 count, const u8* Data);
 
 	// For debugging / profiling
 	void AppendToString(std::string *dest) const;

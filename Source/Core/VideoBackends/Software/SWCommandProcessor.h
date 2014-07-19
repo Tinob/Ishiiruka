@@ -5,12 +5,13 @@
 #pragma once
 
 #include "Common/Common.h"
+#include "VideoCommon/DataReader.h"
 
 class PointerWrap;
 namespace MMIO { class Mapping; }
 
 extern volatile bool g_bSkipCurrentFrame;
-extern u8* g_pVideoData;
+
 
 namespace SWCommandProcessor
 {
