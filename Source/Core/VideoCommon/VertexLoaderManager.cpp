@@ -18,6 +18,7 @@
 #include "VideoCommon/VideoConfig.h"
 // Precompiled Loaders
 #include "VideoCommon/G_GZ2P01_pvt.h"
+#include "VideoCommon/G_R5WEA4_pvt.h"
 #include "VideoCommon/G_RMCP01_pvt.h"
 #include "VideoCommon/G_RMGP01_pvt.h"
 #include "VideoCommon/G_SX4E01_pvt.h"
@@ -251,6 +252,7 @@ namespace VertexLoaderManager
 		{
 			s_PrecompiledLoadersInitialized = true;
 			G_GZ2P01_pvt::Initialize(s_PrecompiledVertexLoaderMap);
+			G_R5WEA4_pvt::Initialize(s_PrecompiledVertexLoaderMap);
 			G_RMCP01_pvt::Initialize(s_PrecompiledVertexLoaderMap);
 			G_RMGP01_pvt::Initialize(s_PrecompiledVertexLoaderMap);
 			G_SX4E01_pvt::Initialize(s_PrecompiledVertexLoaderMap);

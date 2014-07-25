@@ -63,6 +63,7 @@
     <ClCompile Include="FPSCounter.cpp" />
     <ClCompile Include="FramebufferManagerBase.cpp" />
     <ClCompile Include="G_GZ2P01_pvt.cpp" />
+    <ClCompile Include="G_R5WEA4_pvt.cpp" />
     <ClCompile Include="G_RMCP01_pvt.cpp" />
     <ClCompile Include="G_RMGP01_pvt.cpp" />
     <ClCompile Include="G_SX4E01_pvt.cpp" />
@@ -123,6 +124,7 @@
     <ClInclude Include="FPSCounter.h" />
     <ClInclude Include="FramebufferManagerBase.h" />
     <ClInclude Include="G_GZ2P01_pvt.h" />
+    <ClInclude Include="G_R5WEA4_pvt.h" />
     <ClInclude Include="G_RMCP01_pvt.h" />
     <ClInclude Include="G_RMGP01_pvt.h" />
     <ClInclude Include="G_SX4E01_pvt.h" />
