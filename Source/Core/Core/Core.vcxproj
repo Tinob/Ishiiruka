@@ -184,6 +184,7 @@
     <ClCompile Include="IPC_HLE\WII_IPC_HLE_Device_usb.cpp" />
     <ClCompile Include="IPC_HLE\WII_IPC_HLE_Device_usb_kbd.cpp" />
     <ClCompile Include="IPC_HLE\WII_IPC_HLE_WiiMote.cpp" />
+    <ClCompile Include="IPC_HLE\WII_IPC_HLE_WiiSpeak.cpp" />
     <ClCompile Include="IPC_HLE\WII_Socket.cpp" />
     <ClCompile Include="Movie.cpp" />
     <ClCompile Include="NetPlayClient.cpp" />
@@ -385,6 +386,7 @@
     <ClInclude Include="IPC_HLE\WII_IPC_HLE_Device_usb.h" />
     <ClInclude Include="IPC_HLE\WII_IPC_HLE_Device_usb_kbd.h" />
     <ClInclude Include="IPC_HLE\WII_IPC_HLE_WiiMote.h" />
+    <ClInclude Include="IPC_HLE\WII_IPC_HLE_WiiSpeak.h" />
     <ClInclude Include="IPC_HLE\WII_Socket.h" />
     <ClInclude Include="MemTools.h" />
     <ClInclude Include="Movie.h" />

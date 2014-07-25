@@ -699,6 +699,9 @@
     <ClCompile Include="PowerPC\JitILCommon\IR.cpp">
       <Filter>PowerPC\JitILCommon</Filter>
     </ClCompile>
+    <ClCompile Include="IPC_HLE\WII_IPC_HLE_WiiSpeak.cpp">
+      <Filter>IPC HLE %28IOS/Starlet%29</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BootManager.h" />
@@ -1200,6 +1203,9 @@
     </ClInclude>
     <ClInclude Include="PowerPC\JitILCommon\IR.h">
       <Filter>PowerPC\JitILCommon</Filter>
+    </ClInclude>
+    <ClInclude Include="IPC_HLE\WII_IPC_HLE_WiiSpeak.h">
+      <Filter>IPC HLE %28IOS/Starlet%29</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
