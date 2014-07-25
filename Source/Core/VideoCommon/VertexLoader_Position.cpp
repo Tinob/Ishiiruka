@@ -146,7 +146,7 @@ static TPipelineFunction tableReadPosition[4][5][2] = {
 		},
 };
 
-static const char* tableReadPositionSTR[4][5][2] = 
+static const char* tableReadPositionSTR[4][5][2] =
 {
 	{
 		{ NULL, NULL },
@@ -180,19 +180,20 @@ static const char* tableReadPositionSTR[4][5][2] =
 			"\tif (iSSE >= 0x401)\n"
 			"\t{\n\t\t_Pos_ReadDirect_16x3_SSE4<true>(pipelinestate);\n\t}\n\telse\n"
 			"#endif\n"
-			"\t{\n\t\t_Pos_ReadDirect<s16, 3>(pipelinestate);\n\t}\n" },
-			{
-				"#if _M_SSE >= 0x301\n"
-				"\tif (iSSE >= 0x301)\n"
-				"\t{\n\t\t_Pos_ReadDirect_Float_SSSE3<false>(pipelinestate);\n\t}\n\telse\n"
-				"#endif\n"
-				"\t{\n\t\t_Pos_ReadDirect<float, 2>(pipelinestate);\n\t}\n",
-				"#if _M_SSE >= 0x301\n"
-				"\tif (iSSE >= 0x301)\n"
-				"\t{\n\t\t_Pos_ReadDirect_Float_SSSE3<true>(pipelinestate);\n\t}\n\telse\n"
-				"#endif\n"
-				"\t{\n\t\t_Pos_ReadDirect<float, 3>(pipelinestate);\n\t}\n" 
-			}
+			"\t{\n\t\t_Pos_ReadDirect<s16, 3>(pipelinestate);\n\t}\n" 
+		},
+		{
+			"#if _M_SSE >= 0x301\n"
+			"\tif (iSSE >= 0x301)\n"
+			"\t{\n\t\t_Pos_ReadDirect_Float_SSSE3<false>(pipelinestate);\n\t}\n\telse\n"
+			"#endif\n"
+			"\t{\n\t\t_Pos_ReadDirect<float, 2>(pipelinestate);\n\t}\n",
+			"#if _M_SSE >= 0x301\n"
+			"\tif (iSSE >= 0x301)\n"
+			"\t{\n\t\t_Pos_ReadDirect_Float_SSSE3<true>(pipelinestate);\n\t}\n\telse\n"
+			"#endif\n"
+			"\t{\n\t\t_Pos_ReadDirect<float, 3>(pipelinestate);\n\t}\n"
+		}
 	},
 	{
 		{ "\t_Pos_ReadIndex<u8, u8, 2>(pipelinestate);\n", "\t_Pos_ReadIndex<u8, u8, 3>(pipelinestate);\n" },
@@ -219,7 +220,7 @@ static const char* tableReadPositionSTR[4][5][2] =
 			"\tif (iSSE >= 0x401)\n"
 			"\t{\n\t\t_Pos_ReadIndex_16x3_SSE4<u8, true>(pipelinestate);\n\t}\n\telse\n"
 			"#endif\n"
-			"\t{\n\t\t_Pos_ReadIndex<u8, s16, 3>(pipelinestate);\n\t}\n" 
+			"\t{\n\t\t_Pos_ReadIndex<u8, s16, 3>(pipelinestate);\n\t}\n"
 		},
 		{
 			"#if _M_SSE >= 0x301\n"
@@ -303,32 +304,32 @@ void VertexLoader_Position::Init(void)
 
 	if (cpu_info.bSSSE3)
 	{
-		tableReadPosition[1][4][0] = Pos_ReadDirect_Float_SSSE3<false>;
-		tableReadPosition[1][4][1] = Pos_ReadDirect_Float_SSSE3<true>;
-		tableReadPosition[2][4][0] = Pos_ReadIndex_Float_SSSE3<u8, false>;
-		tableReadPosition[2][4][1] = Pos_ReadIndex_Float_SSSE3<u8, true>;
-		tableReadPosition[3][4][0] = Pos_ReadIndex_Float_SSSE3<u16, false>;
-		tableReadPosition[3][4][1] = Pos_ReadIndex_Float_SSSE3<u16, true>;
+		tableReadPosition[DIRECT][FORMAT_FLOAT][POS_ELEMENTS_2] = Pos_ReadDirect_Float_SSSE3<false>;
+		tableReadPosition[DIRECT][FORMAT_FLOAT][POS_ELEMENTS_3] = Pos_ReadDirect_Float_SSSE3<true>;
+		tableReadPosition[INDEX8][FORMAT_FLOAT][POS_ELEMENTS_2] = Pos_ReadIndex_Float_SSSE3<u8, false>;
+		tableReadPosition[INDEX8][FORMAT_FLOAT][POS_ELEMENTS_3] = Pos_ReadIndex_Float_SSSE3<u8, true>;
+		tableReadPosition[INDEX16][FORMAT_FLOAT][POS_ELEMENTS_2] = Pos_ReadIndex_Float_SSSE3<u16, false>;
+		tableReadPosition[INDEX16][FORMAT_FLOAT][POS_ELEMENTS_3] = Pos_ReadIndex_Float_SSSE3<u16, true>;
 	}
 
 #endif
 #if _M_SSE >= 0x401
 	if (cpu_info.bSSE4_1)
 	{
-		tableReadPosition[1][2][0] = Pos_ReadDirect_16x2_SSE4<false>;
-		tableReadPosition[1][2][1] = Pos_ReadDirect_16x3_SSE4<false>;
-		tableReadPosition[1][3][0] = Pos_ReadDirect_16x2_SSE4<true>;
-		tableReadPosition[1][3][1] = Pos_ReadDirect_16x3_SSE4<true>;
+		tableReadPosition[DIRECT][FORMAT_USHORT][POS_ELEMENTS_2] = Pos_ReadDirect_16x2_SSE4<false>;
+		tableReadPosition[DIRECT][FORMAT_USHORT][POS_ELEMENTS_3] = Pos_ReadDirect_16x3_SSE4<false>;
+		tableReadPosition[DIRECT][FORMAT_SHORT][POS_ELEMENTS_2] = Pos_ReadDirect_16x2_SSE4<true>;
+		tableReadPosition[DIRECT][FORMAT_SHORT][POS_ELEMENTS_3] = Pos_ReadDirect_16x3_SSE4<true>;
 
-		tableReadPosition[2][2][0] = Pos_ReadIndex_16x2_SSE4<u8, false>;
-		tableReadPosition[2][2][1] = Pos_ReadIndex_16x3_SSE4<u8, false>;
-		tableReadPosition[2][3][0] = Pos_ReadIndex_16x2_SSE4<u8, true>;
-		tableReadPosition[2][3][1] = Pos_ReadIndex_16x3_SSE4<u8, true>;
+		tableReadPosition[INDEX8][FORMAT_USHORT][POS_ELEMENTS_2] = Pos_ReadIndex_16x2_SSE4<u8, false>;
+		tableReadPosition[INDEX8][FORMAT_USHORT][POS_ELEMENTS_3] = Pos_ReadIndex_16x3_SSE4<u8, false>;
+		tableReadPosition[INDEX8][FORMAT_SHORT][POS_ELEMENTS_2] = Pos_ReadIndex_16x2_SSE4<u8, true>;
+		tableReadPosition[INDEX8][FORMAT_SHORT][POS_ELEMENTS_3] = Pos_ReadIndex_16x3_SSE4<u8, true>;
 
-		tableReadPosition[3][2][0] = Pos_ReadIndex_16x2_SSE4<u16, false>;
-		tableReadPosition[3][2][1] = Pos_ReadIndex_16x3_SSE4<u16, false>;
-		tableReadPosition[3][3][0] = Pos_ReadIndex_16x2_SSE4<u16, true>;
-		tableReadPosition[3][3][1] = Pos_ReadIndex_16x3_SSE4<u16, true>;
+		tableReadPosition[INDEX16][FORMAT_USHORT][POS_ELEMENTS_2] = Pos_ReadIndex_16x2_SSE4<u16, false>;
+		tableReadPosition[INDEX16][FORMAT_USHORT][POS_ELEMENTS_3] = Pos_ReadIndex_16x3_SSE4<u16, false>;
+		tableReadPosition[INDEX16][FORMAT_SHORT][POS_ELEMENTS_2] = Pos_ReadIndex_16x2_SSE4<u16, true>;
+		tableReadPosition[INDEX16][FORMAT_SHORT][POS_ELEMENTS_3] = Pos_ReadIndex_16x3_SSE4<u16, true>;
 	}
 #endif
 }

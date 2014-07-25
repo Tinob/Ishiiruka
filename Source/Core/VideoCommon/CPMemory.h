@@ -18,7 +18,7 @@ enum
 };
 
 // Vertex components
-enum
+enum EVTXComponentType
 {
 	NOT_PRESENT = 0,
 	DIRECT		= 1,
@@ -26,7 +26,7 @@ enum
 	INDEX16		= 3,
 };
 
-enum
+enum EVTXComponentFormat
 {
 	FORMAT_UBYTE		= 0,	// 2 Cmp
 	FORMAT_BYTE			= 1,	// 3 Cmp
@@ -35,7 +35,7 @@ enum
 	FORMAT_FLOAT		= 4,
 };
 
-enum
+enum EVTXColorFormat
 {
 	FORMAT_16B_565		= 0,	// NA
 	FORMAT_24B_888		= 1,	

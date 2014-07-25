@@ -7,6 +7,23 @@
 #include "VideoCommon/VertexLoader.h"
 #include "VideoCommon/VertexLoadingSSE.h"
 
+#define NUM_NRM_FORMAT 5
+#define NUM_NRM_TYPE 4
+
+enum ENormalElements
+{
+	NRM_NBT = 0,
+	NRM_NBT3 = 1,
+	NUM_NRM_ELEMENTS
+};
+
+enum ENormalIndices
+{
+	NRM_INDICES1 = 0,
+	NRM_INDICES3 = 1,
+	NUM_NRM_INDICES
+};
+
 __forceinline float nrmFracAdjust(s8 val)
 {
 	return val * fractionTable[6];

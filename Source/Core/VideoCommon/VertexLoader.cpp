@@ -46,6 +46,95 @@ const float fractionTable[32] = {
 	1.0f / (1U << 28), 1.0f / (1U << 29), 1.0f / (1U << 30), 1.0f / (1U << 31),
 };
 
+void VertexLoaderUID::InitFromCurrentState(s32 vtx_attr_group)
+{
+	u32 fullmask = 0xFFFFFFFFu;
+	vid[0] = (u32)((g_VtxDesc.Hex >> 1) & fullmask);	
+	// Disable unused components		
+	u32 mask = ~VAT_0_FRACBITS;
+	mask &= g_VtxDesc.Color0 ? fullmask : ~VAT_0_COL0BITS;
+	mask &= g_VtxDesc.Color1 ? fullmask : ~VAT_0_COL1BITS;
+	mask &= g_VtxDesc.Normal ? fullmask : ~VAT_0_NRMBITS;
+	mask &= g_VtxDesc.Tex0Coord || g_VtxDesc.Tex0MatIdx ? fullmask : ~VAT_0_TEX0BITS;
+	vid[1] = g_VtxAttr[vtx_attr_group].g0.Hex & mask;
+	mask = ~VAT_1_FRACBITS;
+	mask &= g_VtxDesc.Tex1Coord || g_VtxDesc.Tex1MatIdx ? fullmask : ~VAT_1_TEX1BITS;
+	mask &= g_VtxDesc.Tex2Coord || g_VtxDesc.Tex2MatIdx ? fullmask : ~VAT_1_TEX2BITS;
+	mask &= g_VtxDesc.Tex3Coord || g_VtxDesc.Tex3MatIdx ? fullmask : ~VAT_1_TEX3BITS;
+	mask &= g_VtxDesc.Tex4Coord || g_VtxDesc.Tex4MatIdx ? fullmask : ~VAT_1_TEX4BITS;
+	vid[2] = g_VtxAttr[vtx_attr_group].g1.Hex & mask;
+	// encode posmtxidx in the free bit inside VAT2
+	vid[2] = g_VtxDesc.PosMatIdx ? (vid[2] | 0x80000000u) : (vid[2] & 0x7FFFFFFFu);
+	mask = ~VAT_2_FRACBITS;
+	mask &= g_VtxDesc.Tex4Coord || g_VtxDesc.Tex4MatIdx ? fullmask : ~VAT_2_TEX4BITS;
+	mask &= g_VtxDesc.Tex5Coord || g_VtxDesc.Tex5MatIdx ? fullmask : ~VAT_2_TEX5BITS;
+	mask &= g_VtxDesc.Tex6Coord || g_VtxDesc.Tex6MatIdx ? fullmask : ~VAT_2_TEX6BITS;
+	mask &= g_VtxDesc.Tex7Coord || g_VtxDesc.Tex7MatIdx ? fullmask : ~VAT_2_TEX7BITS;
+	vid[3] = g_VtxAttr[vtx_attr_group].g2.Hex & mask;
+	hash = CalculateHash();
+	if (sizeof(size_t) >= sizeof(u64))
+	{
+		platformhash = (size_t)hash;
+	}
+	else
+	{
+		size_t platformmask = 0;
+		platformmask = ~platformmask;
+		platformhash = (size_t)(hash & platformmask);
+		u32 sl = sizeof(size_t) * 8;
+		platformhash = platformhash ^ (size_t)((hash >> sl) && platformmask);
+	}
+}
+
+bool VertexLoaderUID::operator < (const VertexLoaderUID &other) const
+{
+	// This is complex because of speed.
+	if (vid[0] < other.vid[0])
+		return true;
+	else if (vid[0] > other.vid[0])
+		return false;
+
+	for (int i = 1; i < 5; ++i)
+	{
+		if (vid[i] < other.vid[i])
+			return true;
+		else if (vid[i] > other.vid[i])
+			return false;
+	}
+
+	return false;
+}
+
+bool VertexLoaderUID::operator == (const VertexLoaderUID& rh) const
+{
+	return hash == rh.hash && std::equal(vid, vid + sizeof(vid) / sizeof(vid[0]), rh.vid);
+}
+
+u64 VertexLoaderUID::GetHash() const
+{
+	return hash;
+}
+
+size_t VertexLoaderUID::GetplatformHash() const
+{
+	return platformhash;
+}
+
+u32 VertexLoaderUID::GetElement(u32 idx) const
+{
+	return vid[idx];
+}
+
+u64 VertexLoaderUID::CalculateHash()
+{
+	u64 h = -1;
+	for (auto word : vid)
+	{
+		h = h * 137 + word;
+	}
+	return h;
+}
+
 VertexLoader::VertexLoader(const TVtxDesc &vtx_desc, const VAT &vtx_attr, TCompiledLoaderFunction precompiledFunction)
 {
 	m_numLoadedVertices = 0;

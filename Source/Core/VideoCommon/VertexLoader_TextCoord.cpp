@@ -219,30 +219,26 @@ void VertexLoader_TextCoord::Init(void)
 	}
 	Initialized = true;
 #if _M_SSE >= 0x301
-
 	if (cpu_info.bSSSE3)
 	{
-		tableReadTexCoord[1][4][1] = TexCoord_ReadDirect_Float2_SSSE3;
-		tableReadTexCoord[2][4][1] = TexCoord_ReadIndex_Float2_SSSE3<u8>;
-		tableReadTexCoord[3][4][1] = TexCoord_ReadIndex_Float2_SSSE3<u16>;
+		tableReadTexCoord[DIRECT][FORMAT_FLOAT][TC_ELEMENTS_2] = TexCoord_ReadDirect_Float2_SSSE3;
+		tableReadTexCoord[INDEX8][FORMAT_FLOAT][TC_ELEMENTS_2] = TexCoord_ReadIndex_Float2_SSSE3<u8>;
+		tableReadTexCoord[INDEX16][FORMAT_FLOAT][TC_ELEMENTS_2] = TexCoord_ReadIndex_Float2_SSSE3<u16>;
 	}
-
 #endif
 
 #if _M_SSE >= 0x401
 
 	if (cpu_info.bSSE4_1)
 	{
-		tableReadTexCoord[1][2][1] = TexCoord_ReadDirect_16x2_SSE4<false>;
-		tableReadTexCoord[1][3][1] = TexCoord_ReadDirect_16x2_SSE4<true>;
-		tableReadTexCoord[2][2][1] = TexCoord_ReadIndex_16x2_SSE4<u8, false>;
-		tableReadTexCoord[3][2][1] = TexCoord_ReadIndex_16x2_SSE4<u16, false>;
-		tableReadTexCoord[2][3][1] = TexCoord_ReadIndex_16x2_SSE4<u8, true>;
-		tableReadTexCoord[3][3][1] = TexCoord_ReadIndex_16x2_SSE4<u16, true>;
+		tableReadTexCoord[DIRECT][FORMAT_USHORT][TC_ELEMENTS_2] = TexCoord_ReadDirect_16x2_SSE4<false>;
+		tableReadTexCoord[DIRECT][FORMAT_SHORT][TC_ELEMENTS_2] = TexCoord_ReadDirect_16x2_SSE4<true>;
+		tableReadTexCoord[INDEX8][FORMAT_USHORT][TC_ELEMENTS_2] = TexCoord_ReadIndex_16x2_SSE4<u8, false>;
+		tableReadTexCoord[INDEX8][FORMAT_SHORT][TC_ELEMENTS_2] = TexCoord_ReadIndex_16x2_SSE4<u8, true>;
+		tableReadTexCoord[INDEX16][FORMAT_USHORT][TC_ELEMENTS_2] = TexCoord_ReadIndex_16x2_SSE4<u16, false>;
+		tableReadTexCoord[INDEX16][FORMAT_SHORT][TC_ELEMENTS_2] = TexCoord_ReadIndex_16x2_SSE4<u16, true>;
 	}
-
 #endif
-
 }
 
 u32 VertexLoader_TextCoord::GetSize(u32 _type, u32 _format, u32 _elements)

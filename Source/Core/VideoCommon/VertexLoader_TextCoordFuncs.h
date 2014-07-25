@@ -106,3 +106,10 @@ __forceinline void _TexCoord_ReadDirect_16x2_SSE4(TPipelineState &pipelinestate)
 	pipelinestate.ReadSkip(sizeof(s32));
 }
 #endif
+
+enum ETcoordElements
+{
+	TC_ELEMENTS_1 = 0,
+	TC_ELEMENTS_2 = 1,
+	TC_ELEMENTS
+};

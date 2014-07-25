@@ -43,6 +43,11 @@
     <Import Project="..\..\VSProps\PrecompiledHeader.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Lib>
+      <TreatLibWarningAsErrors>false</TreatLibWarningAsErrors>
+    </Lib>
+  </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="AVIDump.cpp" />
     <ClCompile Include="BPFunctions.cpp" />
@@ -57,24 +62,10 @@
     <ClCompile Include="Fifo.cpp" />
     <ClCompile Include="FPSCounter.cpp" />
     <ClCompile Include="FramebufferManagerBase.cpp" />
-    <ClCompile Include="G_GBVE41_pvt.cpp" />
-    <ClCompile Include="G_GKYE01_pvt.cpp" />
-    <ClCompile Include="G_GLME01_pvt.cpp" />
-    <ClCompile Include="G_GMSE01_pvt.cpp" />
     <ClCompile Include="G_GZ2P01_pvt.cpp" />
-    <ClCompile Include="G_GZLE01_pvt.cpp" />
-    <ClCompile Include="G_R5WEA4_pvt.cpp" />
-    <ClCompile Include="G_RMCE01_pvt.cpp" />
     <ClCompile Include="G_RMCP01_pvt.cpp" />
     <ClCompile Include="G_RMGP01_pvt.cpp" />
-    <ClCompile Include="G_RSBE01_pvt.cpp" />
-    <ClCompile Include="G_RZTP01_pvt.cpp" />
-    <ClCompile Include="G_SEME4Q_pvt.cpp" />
-    <ClCompile Include="G_SF8E01_pvt.cpp" />
-    <ClCompile Include="G_SLSEXJ_pvt.cpp" />
-    <ClCompile Include="G_SMNP01_pvt.cpp" />
-    <ClCompile Include="G_SX4P01_pvt.cpp" />
-    <ClCompile Include="G_WILETL_pvt.cpp" />
+    <ClCompile Include="G_SX4E01_pvt.cpp" />
     <ClCompile Include="HiresTextures.cpp" />
     <ClCompile Include="ImageWrite.cpp" />
     <ClCompile Include="IndexGenerator.cpp" />
@@ -131,24 +122,10 @@
     <ClInclude Include="Fifo.h" />
     <ClInclude Include="FPSCounter.h" />
     <ClInclude Include="FramebufferManagerBase.h" />
-    <ClInclude Include="G_GBVE41_pvt.h" />
-    <ClInclude Include="G_GKYE01_pvt.h" />
-    <ClInclude Include="G_GLME01_pvt.h" />
-    <ClInclude Include="G_GMSE01_pvt.h" />
     <ClInclude Include="G_GZ2P01_pvt.h" />
-    <ClInclude Include="G_GZLE01_pvt.h" />
-    <ClInclude Include="G_R5WEA4_pvt.h" />
-    <ClInclude Include="G_RMCE01_pvt.h" />
     <ClInclude Include="G_RMCP01_pvt.h" />
     <ClInclude Include="G_RMGP01_pvt.h" />
-    <ClInclude Include="G_RSBE01_pvt.h" />
-    <ClInclude Include="G_RZTP01_pvt.h" />
-    <ClInclude Include="G_SEME4Q_pvt.h" />
-    <ClInclude Include="G_SF8E01_pvt.h" />
-    <ClInclude Include="G_SLSEXJ_pvt.h" />
-    <ClInclude Include="G_SMNP01_pvt.h" />
-    <ClInclude Include="G_SX4P01_pvt.h" />
-    <ClInclude Include="G_WILETL_pvt.h" />
+    <ClInclude Include="G_SX4E01_pvt.h" />
     <ClInclude Include="HiresTextures.h" />
     <ClInclude Include="ImageWrite.h" />
     <ClInclude Include="IndexGenerator.h" />
@@ -182,6 +159,7 @@
     <ClInclude Include="VertexLoader_NormalFuncs.h" />
     <ClInclude Include="VertexLoader_Position.h" />
     <ClInclude Include="VertexLoader_PositionFuncs.h" />
+    <ClInclude Include="VertexLoader_Template.h" />
     <ClInclude Include="VertexLoader_TextCoord.h" />
     <ClInclude Include="VertexLoader_TextCoordFuncs.h" />
     <ClInclude Include="VertexLoadingSSE.h" />

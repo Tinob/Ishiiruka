@@ -1,728 +1,312 @@
 #include "VideoCommon/G_GZ2P01_pvt.h"
-#include "VideoCommon/VertexLoader_ColorFuncs.h"
-#include "VideoCommon/VertexLoader_NormalFuncs.h"
-#include "VideoCommon/VertexLoader_PositionFuncs.h"
-#include "VideoCommon/VertexLoader_TextCoordFuncs.h"
-#include "VideoCommon/VertexLoader_BBox.h"
-#include "VideoCommon/VideoConfig.h"
+#include "VideoCommon/VertexLoader_Template.h"
 
-template <int iSSE>
-void P_mtx1_3_I16_flt_Nrm_0_0_I16_s16_T0_mtx0_1_I16_s16_T1_mtx1_1_Inv_flt_(VertexLoader *loader)
-{
-	TPipelineState pipelinestate = g_PipelineState;
-	u32 loopcount = pipelinestate.count;
-	while(loopcount)
-	{
-	pipelinestate.tcIndex = 0;
-	pipelinestate.colIndex = 0;
-	pipelinestate.texmtxwrite = pipelinestate.texmtxread = 0; 
-	pipelinestate.curposmtx = pipelinestate.Read<u8>() & 0x3f;
-	pipelinestate.curtexmtx[pipelinestate.texmtxread] = pipelinestate.Read<u8>() & 0x3f;
-	pipelinestate.texmtxread++;
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare(pipelinestate);
-#if _M_SSE >= 0x301
-	if (iSSE >= 0x301)
-	{
-		_Pos_ReadIndex_Float_SSSE3<u16, true>(pipelinestate);
-	}
-	else
-#endif
-	{
-		_Pos_ReadIndex<u16, float, 3>(pipelinestate);
-	}
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox(pipelinestate);
-#if _M_SSE >= 0x401
-	if(iSSE >= 0x401)
-	{
-		_Normal_Index_S16_SSE4<u16, 1>(pipelinestate);
-	}
-	else
-#endif
-	{
-		_Normal_Index_Offset<u16, s16, 1, 0>(pipelinestate);
-	}
-#if _M_SSE >= 0x401
-	if (iSSE >= 0x401)
-	{
-		_TexCoord_ReadIndex_16x2_SSE4<u16, true>(pipelinestate);
-	}
-	else
-#endif
-	{
-		_TexCoord_ReadIndex<u16, s16, 2>(pipelinestate);
-	}
-	pipelinestate.Write(0.f);
-	pipelinestate.Write(0.f); 
-	pipelinestate.Write(float(pipelinestate.curtexmtx[pipelinestate.texmtxwrite++])); 
-	pipelinestate.Write(0.f); 
-	pipelinestate.Write<u8>(pipelinestate.curposmtx);
-	pipelinestate.Write<u8>(0);
-	pipelinestate.Write<u8>(0);
-	pipelinestate.Write<u8>(0);
-	--loopcount;
-	}
-}
-template <int iSSE>
-void P_mtx0_2_I16_flt_T0_mtx0_1_Dir_flt_(VertexLoader *loader)
-{
-	TPipelineState pipelinestate = g_PipelineState;
-	u32 loopcount = pipelinestate.count;
-	while(loopcount)
-	{
-	pipelinestate.tcIndex = 0;
-	pipelinestate.colIndex = 0;
-	pipelinestate.texmtxwrite = pipelinestate.texmtxread = 0; 
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare(pipelinestate);
-#if _M_SSE >= 0x301
-	if (iSSE >= 0x301)
-	{
-		_Pos_ReadIndex_Float_SSSE3<u16, false>(pipelinestate);
-	}
-	else
-#endif
-	{
-		_Pos_ReadIndex<u16, float, 2>(pipelinestate);
-	}
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox(pipelinestate);
-#if _M_SSE >= 0x301
-	if (iSSE >= 0x301)
-	{
-		_TexCoord_ReadDirect_Float2_SSSE3(pipelinestate);
-	}
-	else
-#endif
-	{
-		_TexCoord_ReadDirect<float, 2>(pipelinestate);
-	}
-	pipelinestate.Write<u32>(0);
-	--loopcount;
-	}
-}
-template <int iSSE>
-void P_mtx1_3_I16_flt_Nrm_0_0_I16_s16_T0_mtx0_1_I16_s16_(VertexLoader *loader)
-{
-	TPipelineState pipelinestate = g_PipelineState;
-	u32 loopcount = pipelinestate.count;
-	while(loopcount)
-	{
-	pipelinestate.tcIndex = 0;
-	pipelinestate.colIndex = 0;
-	pipelinestate.texmtxwrite = pipelinestate.texmtxread = 0; 
-	pipelinestate.curposmtx = pipelinestate.Read<u8>() & 0x3f;
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare(pipelinestate);
-#if _M_SSE >= 0x301
-	if (iSSE >= 0x301)
-	{
-		_Pos_ReadIndex_Float_SSSE3<u16, true>(pipelinestate);
-	}
-	else
-#endif
-	{
-		_Pos_ReadIndex<u16, float, 3>(pipelinestate);
-	}
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox(pipelinestate);
-#if _M_SSE >= 0x401
-	if(iSSE >= 0x401)
-	{
-		_Normal_Index_S16_SSE4<u16, 1>(pipelinestate);
-	}
-	else
-#endif
-	{
-		_Normal_Index_Offset<u16, s16, 1, 0>(pipelinestate);
-	}
-#if _M_SSE >= 0x401
-	if (iSSE >= 0x401)
-	{
-		_TexCoord_ReadIndex_16x2_SSE4<u16, true>(pipelinestate);
-	}
-	else
-#endif
-	{
-		_TexCoord_ReadIndex<u16, s16, 2>(pipelinestate);
-	}
-	pipelinestate.Write<u8>(pipelinestate.curposmtx);
-	pipelinestate.Write<u8>(0);
-	pipelinestate.Write<u8>(0);
-	pipelinestate.Write<u8>(0);
-	--loopcount;
-	}
-}
-template <int iSSE>
-void P_mtx0_3_Dir_flt_T0_mtx0_1_Dir_s16_(VertexLoader *loader)
-{
-	TPipelineState pipelinestate = g_PipelineState;
-	u32 loopcount = pipelinestate.count;
-	while(loopcount)
-	{
-	pipelinestate.tcIndex = 0;
-	pipelinestate.colIndex = 0;
-	pipelinestate.texmtxwrite = pipelinestate.texmtxread = 0; 
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare(pipelinestate);
-#if _M_SSE >= 0x301
-	if (iSSE >= 0x301)
-	{
-		_Pos_ReadDirect_Float_SSSE3<true>(pipelinestate);
-	}
-	else
-#endif
-	{
-		_Pos_ReadDirect<float, 3>(pipelinestate);
-	}
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox(pipelinestate);
-#if _M_SSE >= 0x401
-	if (iSSE >= 0x401)
-	{
-		_TexCoord_ReadDirect_16x2_SSE4<true>(pipelinestate);
-	}
-	else
-#endif
-	{
-		_TexCoord_ReadDirect<s16, 2>(pipelinestate);
-	}
-	pipelinestate.Write<u32>(0);
-	--loopcount;
-	}
-}
-template <int iSSE>
-void P_mtx0_2_I16_flt_(VertexLoader *loader)
-{
-	TPipelineState pipelinestate = g_PipelineState;
-	u32 loopcount = pipelinestate.count;
-	while(loopcount)
-	{
-	pipelinestate.tcIndex = 0;
-	pipelinestate.colIndex = 0;
-	pipelinestate.texmtxwrite = pipelinestate.texmtxread = 0; 
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare(pipelinestate);
-#if _M_SSE >= 0x301
-	if (iSSE >= 0x301)
-	{
-		_Pos_ReadIndex_Float_SSSE3<u16, false>(pipelinestate);
-	}
-	else
-#endif
-	{
-		_Pos_ReadIndex<u16, float, 2>(pipelinestate);
-	}
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox(pipelinestate);
-	pipelinestate.Write<u32>(0);
-	--loopcount;
-	}
-}
-template <int iSSE>
-void P_mtx0_3_I8_flt_(VertexLoader *loader)
-{
-	TPipelineState pipelinestate = g_PipelineState;
-	u32 loopcount = pipelinestate.count;
-	while(loopcount)
-	{
-	pipelinestate.tcIndex = 0;
-	pipelinestate.colIndex = 0;
-	pipelinestate.texmtxwrite = pipelinestate.texmtxread = 0; 
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare(pipelinestate);
-#if _M_SSE >= 0x301
-	if (iSSE >= 0x301)
-	{
-		_Pos_ReadIndex_Float_SSSE3<u8, true>(pipelinestate);
-	}
-	else
-#endif
-	{
-		_Pos_ReadIndex<u8, float, 3>(pipelinestate);
-	}
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox(pipelinestate);
-	pipelinestate.Write<u32>(0);
-	--loopcount;
-	}
-}
-template <int iSSE>
-void P_mtx0_3_I16_flt_C0_1_I16_8888_(VertexLoader *loader)
-{
-	TPipelineState pipelinestate = g_PipelineState;
-	u32 loopcount = pipelinestate.count;
-	while(loopcount)
-	{
-	pipelinestate.tcIndex = 0;
-	pipelinestate.colIndex = 0;
-	pipelinestate.texmtxwrite = pipelinestate.texmtxread = 0; 
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare(pipelinestate);
-#if _M_SSE >= 0x301
-	if (iSSE >= 0x301)
-	{
-		_Pos_ReadIndex_Float_SSSE3<u16, true>(pipelinestate);
-	}
-	else
-#endif
-	{
-		_Pos_ReadIndex<u16, float, 3>(pipelinestate);
-	}
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox(pipelinestate);
-	Color_ReadIndex_32b_8888<u16>(pipelinestate);
-	pipelinestate.Write<u32>(0);
-	--loopcount;
-	}
-}
-template <int iSSE>
-void P_mtx0_3_I16_flt_Nrm_0_0_I16_s8_T0_mtx0_1_I16_flt_(VertexLoader *loader)
-{
-	TPipelineState pipelinestate = g_PipelineState;
-	u32 loopcount = pipelinestate.count;
-	while(loopcount)
-	{
-	pipelinestate.tcIndex = 0;
-	pipelinestate.colIndex = 0;
-	pipelinestate.texmtxwrite = pipelinestate.texmtxread = 0; 
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare(pipelinestate);
-#if _M_SSE >= 0x301
-	if (iSSE >= 0x301)
-	{
-		_Pos_ReadIndex_Float_SSSE3<u16, true>(pipelinestate);
-	}
-	else
-#endif
-	{
-		_Pos_ReadIndex<u16, float, 3>(pipelinestate);
-	}
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox(pipelinestate);
-	_Normal_Index_Offset<u16, s8, 1, 0>(pipelinestate);
-#if _M_SSE >= 0x301
-	if (iSSE >= 0x301)
-	{
-		_TexCoord_ReadIndex_Float2_SSSE3<u16>(pipelinestate);
-	}
-	else
-#endif
-	{
-		_TexCoord_ReadIndex<u16, float, 2>(pipelinestate);
-	}
-	pipelinestate.Write<u32>(0);
-	--loopcount;
-	}
-}
-template <int iSSE>
-void P_mtx0_3_I16_flt_T0_mtx0_1_I16_s16_(VertexLoader *loader)
-{
-	TPipelineState pipelinestate = g_PipelineState;
-	u32 loopcount = pipelinestate.count;
-	while(loopcount)
-	{
-	pipelinestate.tcIndex = 0;
-	pipelinestate.colIndex = 0;
-	pipelinestate.texmtxwrite = pipelinestate.texmtxread = 0; 
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare(pipelinestate);
-#if _M_SSE >= 0x301
-	if (iSSE >= 0x301)
-	{
-		_Pos_ReadIndex_Float_SSSE3<u16, true>(pipelinestate);
-	}
-	else
-#endif
-	{
-		_Pos_ReadIndex<u16, float, 3>(pipelinestate);
-	}
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox(pipelinestate);
-#if _M_SSE >= 0x401
-	if (iSSE >= 0x401)
-	{
-		_TexCoord_ReadIndex_16x2_SSE4<u16, true>(pipelinestate);
-	}
-	else
-#endif
-	{
-		_TexCoord_ReadIndex<u16, s16, 2>(pipelinestate);
-	}
-	pipelinestate.Write<u32>(0);
-	--loopcount;
-	}
-}
-template <int iSSE>
-void P_mtx0_2_Dir_s8_T0_mtx0_1_Dir_s8_(VertexLoader *loader)
-{
-	TPipelineState pipelinestate = g_PipelineState;
-	u32 loopcount = pipelinestate.count;
-	while(loopcount)
-	{
-	pipelinestate.tcIndex = 0;
-	pipelinestate.colIndex = 0;
-	pipelinestate.texmtxwrite = pipelinestate.texmtxread = 0; 
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare(pipelinestate);
-	_Pos_ReadDirect<s8, 2>(pipelinestate);
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox(pipelinestate);
-	_TexCoord_ReadDirect<s8, 2>(pipelinestate);
-	pipelinestate.Write<u32>(0);
-	--loopcount;
-	}
-}
-template <int iSSE>
-void P_mtx0_3_I16_s16_T0_mtx0_1_I16_s16_(VertexLoader *loader)
-{
-	TPipelineState pipelinestate = g_PipelineState;
-	u32 loopcount = pipelinestate.count;
-	while(loopcount)
-	{
-	pipelinestate.tcIndex = 0;
-	pipelinestate.colIndex = 0;
-	pipelinestate.texmtxwrite = pipelinestate.texmtxread = 0; 
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare(pipelinestate);
-#if _M_SSE >= 0x401
-	if (iSSE >= 0x401)
-	{
-		_Pos_ReadIndex_16x3_SSE4<u16, true>(pipelinestate);
-	}
-	else
-#endif
-	{
-		_Pos_ReadIndex<u16, s16, 3>(pipelinestate);
-	}
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox(pipelinestate);
-#if _M_SSE >= 0x401
-	if (iSSE >= 0x401)
-	{
-		_TexCoord_ReadIndex_16x2_SSE4<u16, true>(pipelinestate);
-	}
-	else
-#endif
-	{
-		_TexCoord_ReadIndex<u16, s16, 2>(pipelinestate);
-	}
-	pipelinestate.Write<u32>(0);
-	--loopcount;
-	}
-}
-template <int iSSE>
-void P_mtx0_3_I8_flt_T0_mtx0_1_Dir_s8_(VertexLoader *loader)
-{
-	TPipelineState pipelinestate = g_PipelineState;
-	u32 loopcount = pipelinestate.count;
-	while(loopcount)
-	{
-	pipelinestate.tcIndex = 0;
-	pipelinestate.colIndex = 0;
-	pipelinestate.texmtxwrite = pipelinestate.texmtxread = 0; 
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare(pipelinestate);
-#if _M_SSE >= 0x301
-	if (iSSE >= 0x301)
-	{
-		_Pos_ReadIndex_Float_SSSE3<u8, true>(pipelinestate);
-	}
-	else
-#endif
-	{
-		_Pos_ReadIndex<u8, float, 3>(pipelinestate);
-	}
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox(pipelinestate);
-	_TexCoord_ReadDirect<s8, 2>(pipelinestate);
-	pipelinestate.Write<u32>(0);
-	--loopcount;
-	}
-}
-template <int iSSE>
-void P_mtx0_3_Dir_s16_(VertexLoader *loader)
-{
-	TPipelineState pipelinestate = g_PipelineState;
-	u32 loopcount = pipelinestate.count;
-	while(loopcount)
-	{
-	pipelinestate.tcIndex = 0;
-	pipelinestate.colIndex = 0;
-	pipelinestate.texmtxwrite = pipelinestate.texmtxread = 0; 
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare(pipelinestate);
-#if _M_SSE >= 0x401
-	if (iSSE >= 0x401)
-	{
-		_Pos_ReadDirect_16x3_SSE4<true>(pipelinestate);
-	}
-	else
-#endif
-	{
-		_Pos_ReadDirect<s16, 3>(pipelinestate);
-	}
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox(pipelinestate);
-	pipelinestate.Write<u32>(0);
-	--loopcount;
-	}
-}
-template <int iSSE>
-void P_mtx0_3_Dir_s16_T0_mtx0_1_Dir_s8_(VertexLoader *loader)
-{
-	TPipelineState pipelinestate = g_PipelineState;
-	u32 loopcount = pipelinestate.count;
-	while(loopcount)
-	{
-	pipelinestate.tcIndex = 0;
-	pipelinestate.colIndex = 0;
-	pipelinestate.texmtxwrite = pipelinestate.texmtxread = 0; 
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBoxPrepare(pipelinestate);
-#if _M_SSE >= 0x401
-	if (iSSE >= 0x401)
-	{
-		_Pos_ReadDirect_16x3_SSE4<true>(pipelinestate);
-	}
-	else
-#endif
-	{
-		_Pos_ReadDirect<s16, 3>(pipelinestate);
-	}
-	if(g_ActiveConfig.bUseBBox) VertexLoader_BBox::UpdateBoundingBox(pipelinestate);
-	_TexCoord_ReadDirect<s8, 2>(pipelinestate);
-	pipelinestate.Write<u32>(0);
-	--loopcount;
-	}
-}
+
 
 void G_GZ2P01_pvt::Initialize(std::map<u64, TCompiledLoaderFunction> &pvlmap)
 {
-	// num_verts= 35048130
+	// P_mtx1_3_I16_flt_Nrm_0_0_I16_s16_T0_mtx0_1_I16_s16_T1_mtx1_1_Inv_flt_
+// num_verts= 79262418
 #if _M_SSE >= 0x401
 	if (cpu_info.bSSE4_1)
 	{
-	pvlmap[161902136279974] = P_mtx1_3_I16_flt_Nrm_0_0_I16_s16_T0_mtx0_1_I16_s16_T1_mtx1_1_Inv_flt_<0x401>;
+	pvlmap[21237928937659] = TemplatedLoader<0x401, 0x00030f02u, 0x40e00c09u, 0x80000009u, 0x00000000u>;
 	}
 	else
 #endif
 #if _M_SSE >= 0x301
 	if (cpu_info.bSSSE3)
 	{
-	pvlmap[161902136279974] = P_mtx1_3_I16_flt_Nrm_0_0_I16_s16_T0_mtx0_1_I16_s16_T1_mtx1_1_Inv_flt_<0x301>;
+	pvlmap[21237928937659] = TemplatedLoader<0x301, 0x00030f02u, 0x40e00c09u, 0x80000009u, 0x00000000u>;
 	}
 	else
 #endif
 	{
-	pvlmap[161902136279974] = P_mtx1_3_I16_flt_Nrm_0_0_I16_s16_T0_mtx0_1_I16_s16_T1_mtx1_1_Inv_flt_<0>;
+	pvlmap[21237928937659] = TemplatedLoader<0, 0x00030f02u, 0x40e00c09u, 0x80000009u, 0x00000000u>;
 	}
-	// num_verts= 34333480
+	// P_mtx1_3_I16_flt_Nrm_0_0_I16_s16_T0_mtx0_1_I16_s16_
+// num_verts= 75927898
 #if _M_SSE >= 0x401
 	if (cpu_info.bSSE4_1)
 	{
-	pvlmap[67467788064607] = P_mtx0_2_I16_flt_T0_mtx0_1_Dir_flt_<0x401>;
+	pvlmap[21237923793720] = TemplatedLoader<0x401, 0x00030f00u, 0x40e00c09u, 0x80000000u, 0x00000000u>;
 	}
 	else
 #endif
 #if _M_SSE >= 0x301
 	if (cpu_info.bSSSE3)
 	{
-	pvlmap[67467788064607] = P_mtx0_2_I16_flt_T0_mtx0_1_Dir_flt_<0x301>;
+	pvlmap[21237923793720] = TemplatedLoader<0x301, 0x00030f00u, 0x40e00c09u, 0x80000000u, 0x00000000u>;
 	}
 	else
 #endif
 	{
-	pvlmap[67467788064607] = P_mtx0_2_I16_flt_T0_mtx0_1_Dir_flt_<0>;
+	pvlmap[21237923793720] = TemplatedLoader<0, 0x00030f00u, 0x40e00c09u, 0x80000000u, 0x00000000u>;
 	}
-	// num_verts= 32366998
+	// P_mtx0_2_I16_flt_T0_mtx0_1_Dir_flt_
+// num_verts= 72944720
 #if _M_SSE >= 0x401
 	if (cpu_info.bSSE4_1)
 	{
-	pvlmap[161900727177297] = P_mtx1_3_I16_flt_Nrm_0_0_I16_s16_T0_mtx0_1_I16_s16_<0x401>;
+	pvlmap[20677452171751] = TemplatedLoader<0x401, 0x00010300u, 0x41200008u, 0x00000000u, 0x00000000u>;
 	}
 	else
 #endif
 #if _M_SSE >= 0x301
 	if (cpu_info.bSSSE3)
 	{
-	pvlmap[161900727177297] = P_mtx1_3_I16_flt_Nrm_0_0_I16_s16_T0_mtx0_1_I16_s16_<0x301>;
+	pvlmap[20677452171751] = TemplatedLoader<0x301, 0x00010300u, 0x41200008u, 0x00000000u, 0x00000000u>;
 	}
 	else
 #endif
 	{
-	pvlmap[161900727177297] = P_mtx1_3_I16_flt_Nrm_0_0_I16_s16_T0_mtx0_1_I16_s16_<0>;
+	pvlmap[20677452171751] = TemplatedLoader<0, 0x00010300u, 0x41200008u, 0x00000000u, 0x00000000u>;
 	}
-	// num_verts= 15559468
+	// P_mtx0_3_Dir_flt_T0_mtx0_1_Dir_s16_
+// num_verts= 34229824
 #if _M_SSE >= 0x401
 	if (cpu_info.bSSE4_1)
 	{
-	pvlmap[67028335221936] = P_mtx0_3_Dir_flt_T0_mtx0_1_Dir_s16_<0x401>;
+	pvlmap[20597412766008] = TemplatedLoader<0x401, 0x00010100u, 0x40e00009u, 0x00000000u, 0x00000000u>;
 	}
 	else
 #endif
 #if _M_SSE >= 0x301
 	if (cpu_info.bSSSE3)
 	{
-	pvlmap[67028335221936] = P_mtx0_3_Dir_flt_T0_mtx0_1_Dir_s16_<0x301>;
+	pvlmap[20597412766008] = TemplatedLoader<0x301, 0x00010100u, 0x40e00009u, 0x00000000u, 0x00000000u>;
 	}
 	else
 #endif
 	{
-	pvlmap[67028335221936] = P_mtx0_3_Dir_flt_T0_mtx0_1_Dir_s16_<0>;
+	pvlmap[20597412766008] = TemplatedLoader<0, 0x00010100u, 0x40e00009u, 0x00000000u, 0x00000000u>;
 	}
-	// num_verts= 2425534
+	// P_mtx0_2_I16_flt_
+// num_verts= 5153276
 #if _M_SSE >= 0x401
 	if (cpu_info.bSSE4_1)
 	{
-	pvlmap[20940098934623] = P_mtx0_2_I16_flt_<0x401>;
+	pvlmap[20154682968551] = TemplatedLoader<0x401, 0x00000300u, 0x40000008u, 0x00000000u, 0x00000000u>;
 	}
 	else
 #endif
 #if _M_SSE >= 0x301
 	if (cpu_info.bSSSE3)
 	{
-	pvlmap[20940098934623] = P_mtx0_2_I16_flt_<0x301>;
+	pvlmap[20154682968551] = TemplatedLoader<0x301, 0x00000300u, 0x40000008u, 0x00000000u, 0x00000000u>;
 	}
 	else
 #endif
 	{
-	pvlmap[20940098934623] = P_mtx0_2_I16_flt_<0>;
+	pvlmap[20154682968551] = TemplatedLoader<0, 0x00000300u, 0x40000008u, 0x00000000u, 0x00000000u>;
 	}
-	// num_verts= 1008500
+	// P_mtx0_3_I16_flt_C0_1_I16_8888_
+// num_verts= 767382
 #if _M_SSE >= 0x401
 	if (cpu_info.bSSE4_1)
 	{
-	pvlmap[20759733968560] = P_mtx0_3_I8_flt_<0x401>;
+	pvlmap[20187971085112] = TemplatedLoader<0x401, 0x00003300u, 0x40016009u, 0x00000000u, 0x00000000u>;
 	}
 	else
 #endif
 #if _M_SSE >= 0x301
 	if (cpu_info.bSSSE3)
 	{
-	pvlmap[20759733968560] = P_mtx0_3_I8_flt_<0x301>;
+	pvlmap[20187971085112] = TemplatedLoader<0x301, 0x00003300u, 0x40016009u, 0x00000000u, 0x00000000u>;
 	}
 	else
 #endif
 	{
-	pvlmap[20759733968560] = P_mtx0_3_I8_flt_<0>;
+	pvlmap[20187971085112] = TemplatedLoader<0, 0x00003300u, 0x40016009u, 0x00000000u, 0x00000000u>;
 	}
-	// num_verts= 286594
+	// P_mtx0_3_I16_flt_Nrm_0_0_I16_s8_T0_mtx0_1_I16_flt_
+// num_verts= 322276
 #if _M_SSE >= 0x401
 	if (cpu_info.bSSE4_1)
 	{
-	pvlmap[29599309537456] = P_mtx0_3_I16_flt_C0_1_I16_8888_<0x401>;
+	pvlmap[21022402986808] = TemplatedLoader<0x401, 0x00030f00u, 0x41200409u, 0x00000000u, 0x00000000u>;
 	}
 	else
 #endif
 #if _M_SSE >= 0x301
 	if (cpu_info.bSSSE3)
 	{
-	pvlmap[29599309537456] = P_mtx0_3_I16_flt_C0_1_I16_8888_<0x301>;
+	pvlmap[21022402986808] = TemplatedLoader<0x301, 0x00030f00u, 0x41200409u, 0x00000000u, 0x00000000u>;
 	}
 	else
 #endif
 	{
-	pvlmap[29599309537456] = P_mtx0_3_I16_flt_C0_1_I16_8888_<0>;
+	pvlmap[21022402986808] = TemplatedLoader<0, 0x00030f00u, 0x41200409u, 0x00000000u, 0x00000000u>;
 	}
-	// num_verts= 155572
+	// P_mtx0_3_I16_flt_T0_mtx0_1_I16_s16_
+// num_verts= 310152
 #if _M_SSE >= 0x401
 	if (cpu_info.bSSE4_1)
 	{
-	pvlmap[161979059354800] = P_mtx0_3_I16_flt_Nrm_0_0_I16_s8_T0_mtx0_1_I16_flt_<0x401>;
+	pvlmap[20935761679160] = TemplatedLoader<0x401, 0x00030300u, 0x40e00009u, 0x00000000u, 0x00000000u>;
 	}
 	else
 #endif
 #if _M_SSE >= 0x301
 	if (cpu_info.bSSSE3)
 	{
-	pvlmap[161979059354800] = P_mtx0_3_I16_flt_Nrm_0_0_I16_s8_T0_mtx0_1_I16_flt_<0x301>;
+	pvlmap[20935761679160] = TemplatedLoader<0x301, 0x00030300u, 0x40e00009u, 0x00000000u, 0x00000000u>;
 	}
 	else
 #endif
 	{
-	pvlmap[161979059354800] = P_mtx0_3_I16_flt_Nrm_0_0_I16_s8_T0_mtx0_1_I16_flt_<0>;
+	pvlmap[20935761679160] = TemplatedLoader<0, 0x00030300u, 0x40e00009u, 0x00000000u, 0x00000000u>;
 	}
-	// num_verts= 108604
+	// P_mtx0_2_Dir_s8_T0_mtx0_1_Dir_s8_
+// num_verts= 255160
 #if _M_SSE >= 0x401
 	if (cpu_info.bSSE4_1)
 	{
-	pvlmap[159735937425584] = P_mtx0_3_I16_flt_T0_mtx0_1_I16_s16_<0x401>;
+	pvlmap[20439966851073] = TemplatedLoader<0x401, 0x00010100u, 0x40600002u, 0x00000000u, 0x00000000u>;
 	}
 	else
 #endif
 #if _M_SSE >= 0x301
 	if (cpu_info.bSSSE3)
 	{
-	pvlmap[159735937425584] = P_mtx0_3_I16_flt_T0_mtx0_1_I16_s16_<0x301>;
+	pvlmap[20439966851073] = TemplatedLoader<0x301, 0x00010100u, 0x40600002u, 0x00000000u, 0x00000000u>;
 	}
 	else
 #endif
 	{
-	pvlmap[159735937425584] = P_mtx0_3_I16_flt_T0_mtx0_1_I16_s16_<0>;
+	pvlmap[20439966851073] = TemplatedLoader<0, 0x00010100u, 0x40600002u, 0x00000000u, 0x00000000u>;
 	}
-	// num_verts= 108060
+	// P_mtx0_3_I16_s16_T0_mtx0_1_I16_s16_
+// num_verts= 232200
 #if _M_SSE >= 0x401
 	if (cpu_info.bSSE4_1)
 	{
-	pvlmap[66870889307001] = P_mtx0_2_Dir_s8_T0_mtx0_1_Dir_s8_<0x401>;
+	pvlmap[20935761641622] = TemplatedLoader<0x401, 0x00030300u, 0x40e00007u, 0x00000000u, 0x00000000u>;
 	}
 	else
 #endif
 #if _M_SSE >= 0x301
 	if (cpu_info.bSSSE3)
 	{
-	pvlmap[66870889307001] = P_mtx0_2_Dir_s8_T0_mtx0_1_Dir_s8_<0x301>;
+	pvlmap[20935761641622] = TemplatedLoader<0x301, 0x00030300u, 0x40e00007u, 0x00000000u, 0x00000000u>;
 	}
 	else
 #endif
 	{
-	pvlmap[66870889307001] = P_mtx0_2_Dir_s8_T0_mtx0_1_Dir_s8_<0>;
+	pvlmap[20935761641622] = TemplatedLoader<0, 0x00030300u, 0x40e00007u, 0x00000000u, 0x00000000u>;
 	}
-	// num_verts= 96084
+	// P_mtx0_3_I8_flt_T0_mtx0_1_Dir_s8_
+// num_verts= 47672
 #if _M_SSE >= 0x401
 	if (cpu_info.bSSE4_1)
 	{
-	pvlmap[159735937388046] = P_mtx0_3_I16_s16_T0_mtx0_1_I16_s16_<0x401>;
+	pvlmap[20440625248824] = TemplatedLoader<0x401, 0x00010200u, 0x40600009u, 0x00000000u, 0x00000000u>;
 	}
 	else
 #endif
 #if _M_SSE >= 0x301
 	if (cpu_info.bSSSE3)
 	{
-	pvlmap[159735937388046] = P_mtx0_3_I16_s16_T0_mtx0_1_I16_s16_<0x301>;
+	pvlmap[20440625248824] = TemplatedLoader<0x301, 0x00010200u, 0x40600009u, 0x00000000u, 0x00000000u>;
 	}
 	else
 #endif
 	{
-	pvlmap[159735937388046] = P_mtx0_3_I16_s16_T0_mtx0_1_I16_s16_<0>;
+	pvlmap[20440625248824] = TemplatedLoader<0, 0x00010200u, 0x40600009u, 0x00000000u, 0x00000000u>;
 	}
-	// num_verts= 19036
+	// P_mtx0_3_I16_flt_Nrm_0_0_I16_flt_C0_1_I16_8888_T0_mtx0_1_I16_s16_
+// num_verts= 46368
 #if _M_SSE >= 0x401
 	if (cpu_info.bSSE4_1)
 	{
-	pvlmap[67051254423216] = P_mtx0_3_I8_flt_T0_mtx0_1_Dir_s8_<0x401>;
+	pvlmap[20977025851192] = TemplatedLoader<0x401, 0x00033f00u, 0x40e17009u, 0x00000000u, 0x00000000u>;
 	}
 	else
 #endif
 #if _M_SSE >= 0x301
 	if (cpu_info.bSSSE3)
 	{
-	pvlmap[67051254423216] = P_mtx0_3_I8_flt_T0_mtx0_1_Dir_s8_<0x301>;
+	pvlmap[20977025851192] = TemplatedLoader<0x301, 0x00033f00u, 0x40e17009u, 0x00000000u, 0x00000000u>;
 	}
 	else
 #endif
 	{
-	pvlmap[67051254423216] = P_mtx0_3_I8_flt_T0_mtx0_1_Dir_s8_<0>;
+	pvlmap[20977025851192] = TemplatedLoader<0, 0x00033f00u, 0x40e17009u, 0x00000000u, 0x00000000u>;
 	}
-	// num_verts= 6216
+	// P_mtx0_3_Dir_s16_T0_mtx0_1_Dir_u16_
+// num_verts= 32352
 #if _M_SSE >= 0x401
 	if (cpu_info.bSSE4_1)
 	{
-	pvlmap[20579368946190] = P_mtx0_3_Dir_s16_<0x401>;
+	pvlmap[20518689836694] = TemplatedLoader<0x401, 0x00010100u, 0x40a00007u, 0x00000000u, 0x00000000u>;
 	}
 	else
 #endif
 #if _M_SSE >= 0x301
 	if (cpu_info.bSSSE3)
 	{
-	pvlmap[20579368946190] = P_mtx0_3_Dir_s16_<0x301>;
+	pvlmap[20518689836694] = TemplatedLoader<0x301, 0x00010100u, 0x40a00007u, 0x00000000u, 0x00000000u>;
 	}
 	else
 #endif
 	{
-	pvlmap[20579368946190] = P_mtx0_3_Dir_s16_<0>;
+	pvlmap[20518689836694] = TemplatedLoader<0, 0x00010100u, 0x40a00007u, 0x00000000u, 0x00000000u>;
 	}
-	// num_verts= 824
+	// P_mtx0_3_Dir_s16_T0_mtx0_1_Dir_s8_
+// num_verts= 808
 #if _M_SSE >= 0x401
 	if (cpu_info.bSSE4_1)
 	{
-	pvlmap[66870889400846] = P_mtx0_3_Dir_s16_T0_mtx0_1_Dir_s8_<0x401>;
+	pvlmap[20439966944918] = TemplatedLoader<0x401, 0x00010100u, 0x40600007u, 0x00000000u, 0x00000000u>;
 	}
 	else
 #endif
 #if _M_SSE >= 0x301
 	if (cpu_info.bSSSE3)
 	{
-	pvlmap[66870889400846] = P_mtx0_3_Dir_s16_T0_mtx0_1_Dir_s8_<0x301>;
+	pvlmap[20439966944918] = TemplatedLoader<0x301, 0x00010100u, 0x40600007u, 0x00000000u, 0x00000000u>;
 	}
 	else
 #endif
 	{
-	pvlmap[66870889400846] = P_mtx0_3_Dir_s16_T0_mtx0_1_Dir_s8_<0>;
+	pvlmap[20439966944918] = TemplatedLoader<0, 0x00010100u, 0x40600007u, 0x00000000u, 0x00000000u>;
+	}
+	// P_mtx0_3_Dir_s8_
+// num_verts= 768
+#if _M_SSE >= 0x401
+	if (cpu_info.bSSE4_1)
+	{
+	pvlmap[20153366341970] = TemplatedLoader<0x401, 0x00000100u, 0x40000003u, 0x00000000u, 0x00000000u>;
+	}
+	else
+#endif
+#if _M_SSE >= 0x301
+	if (cpu_info.bSSSE3)
+	{
+	pvlmap[20153366341970] = TemplatedLoader<0x301, 0x00000100u, 0x40000003u, 0x00000000u, 0x00000000u>;
+	}
+	else
+#endif
+	{
+	pvlmap[20153366341970] = TemplatedLoader<0, 0x00000100u, 0x40000003u, 0x00000000u, 0x00000000u>;
+	}
+	// P_mtx0_3_I16_flt_C0_1_I16_8888_T0_mtx0_1_I16_flt_
+	// num_verts= 10540854
+#if _M_SSE >= 0x401
+	if (cpu_info.bSSE4_1)
+	{
+		pvlmap[21047772668728] = TemplatedLoader<0x401, 0x00033300u, 0x41216009u, 0x00000000u, 0x00000000u>;
+	}
+	else
+#endif
+#if _M_SSE >= 0x301
+	if (cpu_info.bSSSE3)
+	{
+	pvlmap[21047772668728] = TemplatedLoader<0x301, 0x00033300u, 0x41216009u, 0x00000000u, 0x00000000u>;
+	}
+	else
+#endif
+	{
+	pvlmap[21047772668728] = TemplatedLoader<0, 0x00033300u, 0x41216009u, 0x00000000u, 0x00000000u>;
 	}
 }

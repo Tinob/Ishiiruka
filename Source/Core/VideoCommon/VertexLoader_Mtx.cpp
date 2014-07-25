@@ -11,10 +11,7 @@ void LOADERDECL Vertexloader_Mtx::PosMtx_ReadDirect_UByte()
 
 void LOADERDECL Vertexloader_Mtx::PosMtx_Write()
 {
-	g_PipelineState.Write<u8>(g_PipelineState.curposmtx);
-	g_PipelineState.Write<u8>(0);
-	g_PipelineState.Write<u8>(0);
-	g_PipelineState.Write<u8>(0);
+	g_PipelineState.Write<u32>(g_PipelineState.curposmtx);
 }
 
 void LOADERDECL Vertexloader_Mtx::PosMtxDisabled_Write()
@@ -24,8 +21,7 @@ void LOADERDECL Vertexloader_Mtx::PosMtxDisabled_Write()
 
 void LOADERDECL Vertexloader_Mtx::TexMtx_ReadDirect_UByte()
 {
-	g_PipelineState.curtexmtx[g_PipelineState.texmtxread] = g_PipelineState.Read<u8>() & 0x3f;
-	g_PipelineState.texmtxread++;
+	g_PipelineState.curtexmtx[g_PipelineState.texmtxread++] = g_PipelineState.Read<u8>() & 0x3f;
 }
 
 void LOADERDECL Vertexloader_Mtx::TexMtx_Write_Float()
@@ -55,10 +51,7 @@ void Vertexloader_Mtx::PosMtx_ReadDirect_UByteSTR(std::string *dest)
 
 void Vertexloader_Mtx::PosMtx_WriteSTR(std::string *dest)
 {
-	dest->append("\tpipelinestate.Write<u8>(pipelinestate.curposmtx);\n"
-		"\tpipelinestate.Write<u8>(0);\n"
-		"\tpipelinestate.Write<u8>(0);\n"
-		"\tpipelinestate.Write<u8>(0);\n");
+	dest->append("\tpipelinestate.Write<u32>(pipelinestate.curposmtx);\n");
 }
 
 void Vertexloader_Mtx::PosMtxDisabled_WriteSTR(std::string *dest)

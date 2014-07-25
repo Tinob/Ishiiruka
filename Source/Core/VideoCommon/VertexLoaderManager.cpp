@@ -16,26 +16,11 @@
 #include "VideoCommon/VertexShaderManager.h"
 #include "VideoCommon/VideoCommon.h"
 #include "VideoCommon/VideoConfig.h"
-// Compiled loaders
-#include "VideoCommon/G_GBVE41_pvt.h"
-#include "VideoCommon/G_GKYE01_pvt.h"
-#include "VideoCommon/G_GLME01_pvt.h"
-#include "VideoCommon/G_GMSE01_pvt.h"
+// Precompiled Loaders
 #include "VideoCommon/G_GZ2P01_pvt.h"
-#include "VideoCommon/G_GZLE01_pvt.h"
-#include "VideoCommon/G_R5WEA4_pvt.h"
-#include "VideoCommon/G_RMCE01_pvt.h"
 #include "VideoCommon/G_RMCP01_pvt.h"
 #include "VideoCommon/G_RMGP01_pvt.h"
-#include "VideoCommon/G_RSBE01_pvt.h"
-#include "VideoCommon/G_RZTP01_pvt.h"
-#include "VideoCommon/G_SEME4Q_pvt.h"
-#include "VideoCommon/G_SF8E01_pvt.h"
-#include "VideoCommon/G_SLSEXJ_pvt.h"
-#include "VideoCommon/G_SMNP01_pvt.h"
-#include "VideoCommon/G_SX4P01_pvt.h"
-#include "VideoCommon/G_WILETL_pvt.h"
-
+#include "VideoCommon/G_SX4E01_pvt.h"
 static int s_attr_dirty;  // bitfield
 
 static VertexLoader *g_VertexLoaders[8];
@@ -60,7 +45,7 @@ typedef std::map<PortableVertexDeclaration, std::unique_ptr<NativeVertexFormat>>
 namespace VertexLoaderManager
 {
 	static bool s_PrecompiledLoadersInitialized = false;
-	static PrecompiledVertexLoaderMap g_PrecompiledVertexLoaderMap;
+	static PrecompiledVertexLoaderMap s_PrecompiledVertexLoaderMap;
 	static VertexLoaderMap g_VertexLoaderMap;
 	static NativeVertexLoaderMap s_native_vertex_map;
 	// TODO - change into array of pointers. Keep a map of all seen so far.
@@ -81,6 +66,7 @@ namespace VertexLoaderManager
 		{
 			std::string name;
 			std::string text;
+			std::string conf;
 			u64 num_verts;
 			std::string hash;
 			bool operator < (const codeentry &other) const
@@ -90,7 +76,13 @@ namespace VertexLoaderManager
 		};
 	}
 
-	void DumpLoadersCode()
+	std::string To_HexString(u32 in) {
+		char hexString[2 * sizeof(u32) + 8];
+		sprintf(hexString, "0x%08xu", in);
+		return std::string(hexString);
+	}
+
+	void DumpLoadersCode(bool btemplated)
 	{
 		std::vector<codeentry> entries;
 		for (VertexLoaderMap::const_iterator iter = g_VertexLoaderMap.begin(); iter != g_VertexLoaderMap.end(); ++iter)
@@ -98,6 +90,13 @@ namespace VertexLoaderManager
 			if (!iter->second->IsPrecompiled())
 			{
 				codeentry e;
+				e.conf.append(To_HexString(iter->first.GetElement(0)));
+				e.conf.append(", ");
+				e.conf.append(To_HexString(iter->first.GetElement(1)));
+				e.conf.append(", ");
+				e.conf.append(To_HexString(iter->first.GetElement(2)));
+				e.conf.append(", ");
+				e.conf.append(To_HexString(iter->first.GetElement(3)));
 				iter->second->DumpCode(&e.text);
 				iter->second->GetName(&e.name);
 				e.num_verts = iter->second->GetNumLoadedVerts();
@@ -132,22 +131,30 @@ namespace VertexLoaderManager
 		sourcecode.append("#include \"VideoCommon/G_");
 		sourcecode.append(gamename);
 		sourcecode.append("_pvt.h\"\n");
-		sourcecode.append("#include \"VideoCommon/VertexLoader_ColorFuncs.h\"\n");
-		sourcecode.append("#include \"VideoCommon/VertexLoader_NormalFuncs.h\"\n");
-		sourcecode.append("#include \"VideoCommon/VertexLoader_PositionFuncs.h\"\n");
-		sourcecode.append("#include \"VideoCommon/VertexLoader_TextCoordFuncs.h\"\n");
-		sourcecode.append("#include \"VideoCommon/VertexLoader_BBox.h\"\n");
-		sourcecode.append("#include \"VideoCommon/VideoConfig.h\"\n\n");
-		for (std::vector<codeentry>::const_iterator iter = entries.begin(); iter != entries.end(); ++iter)
+		sourcecode.append("#include \"VideoCommon/VertexLoader_Template.h\"\n\n");
+		if (!btemplated)
 		{
-			sourcecode.append(iter->text);
+			for (std::vector<codeentry>::const_iterator iter = entries.begin(); iter != entries.end(); ++iter)
+			{
+				sourcecode.append(iter->text);
+			}
 		}
-		sourcecode.append("\nvoid G_");
+		sourcecode.append("\n\nvoid G_");
 		sourcecode.append(gamename);
 		sourcecode.append("_pvt::Initialize(std::map<u64, TCompiledLoaderFunction> &pvlmap)\n{\n");
 		for (std::vector<codeentry>::const_iterator iter = entries.begin(); iter != entries.end(); ++iter)
 		{
-			sourcecode.append("\t// num_verts= ");
+			sourcecode.append("\t// ");
+			if (btemplated)
+			{
+				sourcecode.append(iter->name);
+			}
+			else
+			{
+				sourcecode.append("Configuration: ");
+				sourcecode.append(iter->conf);
+			}
+			sourcecode.append("\n// num_verts= ");
 			sourcecode.append(std::to_string(iter->num_verts));
 			sourcecode.append("\n#if _M_SSE >= 0x401\n");
 			sourcecode.append("\tif (cpu_info.bSSE4_1)\n");
@@ -155,8 +162,18 @@ namespace VertexLoaderManager
 			sourcecode.append("\tpvlmap[");
 			sourcecode.append(iter->hash);
 			sourcecode.append("] = ");
-			sourcecode.append(iter->name);
-			sourcecode.append("<0x401>;\n");
+			if (btemplated)
+			{
+				sourcecode.append("TemplatedLoader");
+				sourcecode.append("<0x401, ");
+				sourcecode.append(iter->conf);
+				sourcecode.append(">;\n");
+			}
+			else
+			{
+				sourcecode.append(iter->name);
+				sourcecode.append("<0x401>;\n");
+			}
 			sourcecode.append("\t}\n\telse\n");
 			sourcecode.append("#endif\n");
 			sourcecode.append("#if _M_SSE >= 0x301\n");
@@ -165,16 +182,36 @@ namespace VertexLoaderManager
 			sourcecode.append("\tpvlmap[");
 			sourcecode.append(iter->hash);
 			sourcecode.append("] = ");
-			sourcecode.append(iter->name);
-			sourcecode.append("<0x301>;\n");
+			if (btemplated)
+			{
+				sourcecode.append("TemplatedLoader");
+				sourcecode.append("<0x301, ");
+				sourcecode.append(iter->conf);
+				sourcecode.append(">;\n");
+			}
+			else
+			{
+				sourcecode.append(iter->name);
+				sourcecode.append("<0x301>;\n");
+			}
 			sourcecode.append("\t}\n\telse\n");
 			sourcecode.append("#endif\n");
 			sourcecode.append("\t{\n");
 			sourcecode.append("\tpvlmap[");
 			sourcecode.append(iter->hash);
 			sourcecode.append("] = ");
-			sourcecode.append(iter->name);
-			sourcecode.append("<0>;\n");
+			if (btemplated)
+			{
+				sourcecode.append("TemplatedLoader");
+				sourcecode.append("<0, ");
+				sourcecode.append(iter->conf);
+				sourcecode.append(">;\n");
+			}
+			else
+			{
+				sourcecode.append(iter->name);
+				sourcecode.append("<0>;\n");
+			}
 			sourcecode.append("\t}\n");
 		}
 		sourcecode.append("}\n");
@@ -212,32 +249,18 @@ namespace VertexLoaderManager
 		RecomputeCachedArraybases();
 		if (!s_PrecompiledLoadersInitialized)
 		{
-			G_GBVE41_pvt::Initialize(g_PrecompiledVertexLoaderMap);
-			G_GKYE01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
-			G_GLME01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
-			G_GMSE01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
-			G_GZ2P01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
-			G_GZLE01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
-			G_R5WEA4_pvt::Initialize(g_PrecompiledVertexLoaderMap);
-			G_RMCE01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
-			G_RMCP01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
-			G_RMGP01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
-			G_RSBE01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
-			G_RZTP01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
-			G_SEME4Q_pvt::Initialize(g_PrecompiledVertexLoaderMap);
-			G_SF8E01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
-			G_SLSEXJ_pvt::Initialize(g_PrecompiledVertexLoaderMap);
-			G_SMNP01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
-			G_SX4P01_pvt::Initialize(g_PrecompiledVertexLoaderMap);
-			G_WILETL_pvt::Initialize(g_PrecompiledVertexLoaderMap);
 			s_PrecompiledLoadersInitialized = true;
+			G_GZ2P01_pvt::Initialize(s_PrecompiledVertexLoaderMap);
+			G_RMCP01_pvt::Initialize(s_PrecompiledVertexLoaderMap);
+			G_RMGP01_pvt::Initialize(s_PrecompiledVertexLoaderMap);
+			G_SX4E01_pvt::Initialize(s_PrecompiledVertexLoaderMap);
 		}
 	}
 
 	void Shutdown()
 	{
 		if (g_VertexLoaderMap.size() > 0 && g_ActiveConfig.bDumpVertexLoaders)
-			DumpLoadersCode();
+			DumpLoadersCode(true);
 		for (auto& p : g_VertexLoaderMap)
 		{
 			delete p.second;
@@ -264,9 +287,9 @@ namespace VertexLoaderManager
 			}
 			else
 			{
-				PrecompiledVertexLoaderMap::iterator piter = g_PrecompiledVertexLoaderMap.find(uid.GetHash());
+				PrecompiledVertexLoaderMap::iterator piter = s_PrecompiledVertexLoaderMap.find(uid.GetHash());
 				TCompiledLoaderFunction precompiledfunc = nullptr;
-				if (piter != g_PrecompiledVertexLoaderMap.end())
+				if (piter != s_PrecompiledVertexLoaderMap.end())
 				{
 					precompiledfunc = piter->second;
 				}

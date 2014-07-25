@@ -144,3 +144,10 @@ __forceinline void _Pos_ReadDirect_16x3_SSE4(TPipelineState &pipelinestate)
 	pipelinestate.WriteSkip(sizeof(float) * 3);
 }
 #endif
+
+enum EPosElements
+{
+	POS_ELEMENTS_2 = 0,
+	POS_ELEMENTS_3 = 1,
+	POS_ELEMENTS
+};

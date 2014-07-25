@@ -137,55 +137,13 @@
     <ClCompile Include="VertexLoader_Mtx.cpp">
       <Filter>Vertex Loading</Filter>
     </ClCompile>
-    <ClCompile Include="G_R5WEA4_pvt.cpp">
+    <ClCompile Include="G_GZ2P01_pvt.cpp">
       <Filter>Vertex Loading\Compiled Loaders</Filter>
     </ClCompile>
     <ClCompile Include="G_RMGP01_pvt.cpp">
       <Filter>Vertex Loading\Compiled Loaders</Filter>
     </ClCompile>
-    <ClCompile Include="G_GZ2P01_pvt.cpp">
-      <Filter>Vertex Loading\Compiled Loaders</Filter>
-    </ClCompile>
-    <ClCompile Include="G_GMSE01_pvt.cpp">
-      <Filter>Vertex Loading\Compiled Loaders</Filter>
-    </ClCompile>
-    <ClCompile Include="G_SF8E01_pvt.cpp">
-      <Filter>Vertex Loading\Compiled Loaders</Filter>
-    </ClCompile>
-    <ClCompile Include="G_SX4P01_pvt.cpp">
-      <Filter>Vertex Loading\Compiled Loaders</Filter>
-    </ClCompile>
-    <ClCompile Include="G_RZTP01_pvt.cpp">
-      <Filter>Vertex Loading\Compiled Loaders</Filter>
-    </ClCompile>
-    <ClCompile Include="G_RMCE01_pvt.cpp">
-      <Filter>Vertex Loading\Compiled Loaders</Filter>
-    </ClCompile>
-    <ClCompile Include="G_SMNP01_pvt.cpp">
-      <Filter>Vertex Loading\Compiled Loaders</Filter>
-    </ClCompile>
-    <ClCompile Include="G_SLSEXJ_pvt.cpp">
-      <Filter>Vertex Loading\Compiled Loaders</Filter>
-    </ClCompile>
-    <ClCompile Include="G_GBVE41_pvt.cpp">
-      <Filter>Vertex Loading\Compiled Loaders</Filter>
-    </ClCompile>
-    <ClCompile Include="G_WILETL_pvt.cpp">
-      <Filter>Vertex Loading\Compiled Loaders</Filter>
-    </ClCompile>
-    <ClCompile Include="G_GKYE01_pvt.cpp">
-      <Filter>Vertex Loading\Compiled Loaders</Filter>
-    </ClCompile>
-    <ClCompile Include="G_RSBE01_pvt.cpp">
-      <Filter>Vertex Loading\Compiled Loaders</Filter>
-    </ClCompile>
-    <ClCompile Include="G_GLME01_pvt.cpp">
-      <Filter>Vertex Loading\Compiled Loaders</Filter>
-    </ClCompile>
-    <ClCompile Include="G_GZLE01_pvt.cpp">
-      <Filter>Vertex Loading\Compiled Loaders</Filter>
-    </ClCompile>
-    <ClCompile Include="G_SEME4Q_pvt.cpp">
+    <ClCompile Include="G_SX4E01_pvt.cpp">
       <Filter>Vertex Loading\Compiled Loaders</Filter>
     </ClCompile>
     <ClCompile Include="G_RMCP01_pvt.cpp">
@@ -357,55 +315,16 @@
     <ClInclude Include="VertexLoader_Mtx.h">
       <Filter>Vertex Loading</Filter>
     </ClInclude>
-    <ClInclude Include="G_RMGP01_pvt.h">
-      <Filter>Vertex Loading\Compiled Loaders</Filter>
-    </ClInclude>
-    <ClInclude Include="G_R5WEA4_pvt.h">
-      <Filter>Vertex Loading\Compiled Loaders</Filter>
+    <ClInclude Include="VertexLoader_Template.h">
+      <Filter>Vertex Loading</Filter>
     </ClInclude>
     <ClInclude Include="G_GZ2P01_pvt.h">
       <Filter>Vertex Loading\Compiled Loaders</Filter>
     </ClInclude>
-    <ClInclude Include="G_GMSE01_pvt.h">
+    <ClInclude Include="G_RMGP01_pvt.h">
       <Filter>Vertex Loading\Compiled Loaders</Filter>
     </ClInclude>
-    <ClInclude Include="G_SF8E01_pvt.h">
-      <Filter>Vertex Loading\Compiled Loaders</Filter>
-    </ClInclude>
-    <ClInclude Include="G_SX4P01_pvt.h">
-      <Filter>Vertex Loading\Compiled Loaders</Filter>
-    </ClInclude>
-    <ClInclude Include="G_RZTP01_pvt.h">
-      <Filter>Vertex Loading\Compiled Loaders</Filter>
-    </ClInclude>
-    <ClInclude Include="G_RMCE01_pvt.h">
-      <Filter>Vertex Loading\Compiled Loaders</Filter>
-    </ClInclude>
-    <ClInclude Include="G_SMNP01_pvt.h">
-      <Filter>Vertex Loading\Compiled Loaders</Filter>
-    </ClInclude>
-    <ClInclude Include="G_SLSEXJ_pvt.h">
-      <Filter>Vertex Loading\Compiled Loaders</Filter>
-    </ClInclude>
-    <ClInclude Include="G_GBVE41_pvt.h">
-      <Filter>Vertex Loading\Compiled Loaders</Filter>
-    </ClInclude>
-    <ClInclude Include="G_WILETL_pvt.h">
-      <Filter>Vertex Loading\Compiled Loaders</Filter>
-    </ClInclude>
-    <ClInclude Include="G_GKYE01_pvt.h">
-      <Filter>Vertex Loading\Compiled Loaders</Filter>
-    </ClInclude>
-    <ClInclude Include="G_RSBE01_pvt.h">
-      <Filter>Vertex Loading\Compiled Loaders</Filter>
-    </ClInclude>
-    <ClInclude Include="G_GLME01_pvt.h">
-      <Filter>Vertex Loading\Compiled Loaders</Filter>
-    </ClInclude>
-    <ClInclude Include="G_GZLE01_pvt.h">
-      <Filter>Vertex Loading\Compiled Loaders</Filter>
-    </ClInclude>
-    <ClInclude Include="G_SEME4Q_pvt.h">
+    <ClInclude Include="G_SX4E01_pvt.h">
       <Filter>Vertex Loading\Compiled Loaders</Filter>
     </ClInclude>
     <ClInclude Include="G_RMCP01_pvt.h">
