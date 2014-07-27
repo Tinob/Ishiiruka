@@ -1,7 +1,7 @@
 // Copyright 2013 Dolphin Emulator Project
 // Licensed under GPLv2
 // Refer to the license.txt file included.
-
+// Modified For Ishiiruka By Tino
 #pragma once
 
 #include "VideoCommon/VertexManagerBase.h"

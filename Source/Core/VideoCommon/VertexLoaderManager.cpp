@@ -1,6 +1,7 @@
 // Copyright 2013 Dolphin Emulator Project
 // Licensed under GPLv2
 // Refer to the license.txt file included.
+// Modified for Ishiiruka by Tino
 
 #include <algorithm>
 #include <memory>
@@ -17,6 +18,7 @@
 #include "VideoCommon/VideoCommon.h"
 #include "VideoCommon/VideoConfig.h"
 // Precompiled Loaders
+#include "VideoCommon/G_GSAE01_pvt.h"
 #include "VideoCommon/G_GZ2P01_pvt.h"
 #include "VideoCommon/G_R5WEA4_pvt.h"
 #include "VideoCommon/G_RMCP01_pvt.h"
@@ -115,6 +117,10 @@ namespace VertexLoaderManager
 
 		sprintf(filename, "%sG_%s_pvt.h", dumpfolder, gamename);
 		std::string header;
+		header.append("// Copyright 2013 Dolphin Emulator Project\n");
+		header.append("// Licensed under GPLv2\n");
+		header.append("// Refer to the license.txt file included.\n");
+		header.append("// Added for Ishiiruka by Tino\n");
 		header.append("#pragma once\n");
 		header.append("#include <map>\n");
 		header.append("#include \"VideoCommon/VertexLoader.h\"\n");
@@ -251,6 +257,7 @@ namespace VertexLoaderManager
 		if (!s_PrecompiledLoadersInitialized)
 		{
 			s_PrecompiledLoadersInitialized = true;
+			G_GSAE01_pvt::Initialize(s_PrecompiledVertexLoaderMap);
 			G_GZ2P01_pvt::Initialize(s_PrecompiledVertexLoaderMap);
 			G_R5WEA4_pvt::Initialize(s_PrecompiledVertexLoaderMap);
 			G_RMCP01_pvt::Initialize(s_PrecompiledVertexLoaderMap);

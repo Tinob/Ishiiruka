@@ -1,3 +1,7 @@
+// Copyright 2013 Dolphin Emulator Project
+// Licensed under GPLv2
+// Refer to the license.txt file included.
+// Added for Ishiiruka by Tino
 #include "VideoCommon/VertexLoader_ColorFuncs.h"
 #include "VideoCommon/VertexLoader_NormalFuncs.h"
 #include "VideoCommon/VertexLoader_PositionFuncs.h"

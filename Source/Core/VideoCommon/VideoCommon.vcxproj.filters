@@ -152,6 +152,9 @@
     <ClCompile Include="G_R5WEA4_pvt.cpp">
       <Filter>Vertex Loading\Compiled Loaders</Filter>
     </ClCompile>
+    <ClCompile Include="G_GSAE01_pvt.cpp">
+      <Filter>Vertex Loading\Compiled Loaders</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommandProcessor.h" />
@@ -334,6 +337,9 @@
       <Filter>Vertex Loading\Compiled Loaders</Filter>
     </ClInclude>
     <ClInclude Include="G_R5WEA4_pvt.h">
+      <Filter>Vertex Loading\Compiled Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="G_GSAE01_pvt.h">
       <Filter>Vertex Loading\Compiled Loaders</Filter>
     </ClInclude>
   </ItemGroup>
