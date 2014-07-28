@@ -3,8 +3,7 @@
 // Refer to the license.txt file included.
 // Modified for Ishiiruka by Tino
 #pragma once
-#include "Common/Common.h"
-#include "VideoCommon/VertexLoader.h"
+#include "VideoCommon/NativeVertexFormat.h"
 
 class VertexLoader_Position {
 public:

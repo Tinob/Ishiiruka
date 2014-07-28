@@ -3,19 +3,9 @@
 // Refer to the license.txt file included.
 // Modified for Ishiiruka By Tino
 
-#include "Common/Common.h"
-#include "Common/MemoryUtil.h"
-#include "Common/StringUtil.h"
-#include "Common/x64ABI.h"
-#include "Common/x64Emitter.h"
-
 #include "Core/Host.h"
 
 #include "VideoCommon/BPMemory.h"
-#include "VideoCommon/DataReader.h"
-#include "VideoCommon/IndexGenerator.h"
-#include "VideoCommon/LookUpTables.h"
-#include "VideoCommon/Statistics.h"
 #include "VideoCommon/VertexLoader.h"
 #include "VideoCommon/VertexLoader_Color.h"
 #include "VideoCommon/VertexLoader_Normal.h"
@@ -25,15 +15,10 @@
 #include "VideoCommon/VertexLoader_BBox.h"
 #include "VideoCommon/VertexLoaderManager.h"
 #include "VideoCommon/VertexManagerBase.h"
-#include "VideoCommon/VideoCommon.h"
 #include "VideoCommon/VideoConfig.h"
 
 NativeVertexFormat *g_nativeVertexFmt;
 TPipelineState g_PipelineState;
-#ifndef _WIN32
-#undef inline
-#define inline
-#endif
 
 const float fractionTable[32] = {
 	1.0f / (1U << 0), 1.0f / (1U << 1), 1.0f / (1U << 2), 1.0f / (1U << 3),
@@ -46,31 +31,31 @@ const float fractionTable[32] = {
 	1.0f / (1U << 28), 1.0f / (1U << 29), 1.0f / (1U << 30), 1.0f / (1U << 31),
 };
 
-void VertexLoaderUID::InitFromCurrentState(s32 vtx_attr_group)
+VertexLoaderUID::VertexLoaderUID(const TVtxDesc& VtxDesc,  const VAT& vat)
 {
 	u32 fullmask = 0xFFFFFFFFu;
 	vid[0] = (u32)((g_VtxDesc.Hex >> 1) & fullmask);	
 	// Disable unused components		
 	u32 mask = ~VAT_0_FRACBITS;
-	mask &= g_VtxDesc.Color0 ? fullmask : ~VAT_0_COL0BITS;
-	mask &= g_VtxDesc.Color1 ? fullmask : ~VAT_0_COL1BITS;
-	mask &= g_VtxDesc.Normal ? fullmask : ~VAT_0_NRMBITS;
-	mask &= g_VtxDesc.Tex0Coord || g_VtxDesc.Tex0MatIdx ? fullmask : ~VAT_0_TEX0BITS;
-	vid[1] = g_VtxAttr[vtx_attr_group].g0.Hex & mask;
+	mask &= VtxDesc.Color0 ? fullmask : ~VAT_0_COL0BITS;
+	mask &= VtxDesc.Color1 ? fullmask : ~VAT_0_COL1BITS;
+	mask &= VtxDesc.Normal ? fullmask : ~VAT_0_NRMBITS;
+	mask &= VtxDesc.Tex0Coord || VtxDesc.Tex0MatIdx ? fullmask : ~VAT_0_TEX0BITS;
+	vid[1] = vat.g0.Hex & mask;
 	mask = ~VAT_1_FRACBITS;
-	mask &= g_VtxDesc.Tex1Coord || g_VtxDesc.Tex1MatIdx ? fullmask : ~VAT_1_TEX1BITS;
-	mask &= g_VtxDesc.Tex2Coord || g_VtxDesc.Tex2MatIdx ? fullmask : ~VAT_1_TEX2BITS;
-	mask &= g_VtxDesc.Tex3Coord || g_VtxDesc.Tex3MatIdx ? fullmask : ~VAT_1_TEX3BITS;
-	mask &= g_VtxDesc.Tex4Coord || g_VtxDesc.Tex4MatIdx ? fullmask : ~VAT_1_TEX4BITS;
-	vid[2] = g_VtxAttr[vtx_attr_group].g1.Hex & mask;
+	mask &= VtxDesc.Tex1Coord || VtxDesc.Tex1MatIdx ? fullmask : ~VAT_1_TEX1BITS;
+	mask &= VtxDesc.Tex2Coord || VtxDesc.Tex2MatIdx ? fullmask : ~VAT_1_TEX2BITS;
+	mask &= VtxDesc.Tex3Coord || VtxDesc.Tex3MatIdx ? fullmask : ~VAT_1_TEX3BITS;
+	mask &= VtxDesc.Tex4Coord || VtxDesc.Tex4MatIdx ? fullmask : ~VAT_1_TEX4BITS;
+	vid[2] = vat.g1.Hex & mask;
 	// encode posmtxidx in the free bit inside VAT2
-	vid[2] = g_VtxDesc.PosMatIdx ? (vid[2] | 0x80000000u) : (vid[2] & 0x7FFFFFFFu);
+	vid[2] = VtxDesc.PosMatIdx ? (vid[2] | 0x80000000u) : (vid[2] & 0x7FFFFFFFu);
 	mask = ~VAT_2_FRACBITS;
-	mask &= g_VtxDesc.Tex4Coord || g_VtxDesc.Tex4MatIdx ? fullmask : ~VAT_2_TEX4BITS;
-	mask &= g_VtxDesc.Tex5Coord || g_VtxDesc.Tex5MatIdx ? fullmask : ~VAT_2_TEX5BITS;
-	mask &= g_VtxDesc.Tex6Coord || g_VtxDesc.Tex6MatIdx ? fullmask : ~VAT_2_TEX6BITS;
-	mask &= g_VtxDesc.Tex7Coord || g_VtxDesc.Tex7MatIdx ? fullmask : ~VAT_2_TEX7BITS;
-	vid[3] = g_VtxAttr[vtx_attr_group].g2.Hex & mask;
+	mask &= VtxDesc.Tex4Coord || VtxDesc.Tex4MatIdx ? fullmask : ~VAT_2_TEX4BITS;
+	mask &= VtxDesc.Tex5Coord || VtxDesc.Tex5MatIdx ? fullmask : ~VAT_2_TEX5BITS;
+	mask &= VtxDesc.Tex6Coord || VtxDesc.Tex6MatIdx ? fullmask : ~VAT_2_TEX6BITS;
+	mask &= VtxDesc.Tex7Coord || VtxDesc.Tex7MatIdx ? fullmask : ~VAT_2_TEX7BITS;
+	vid[3] = vat.g2.Hex & mask;
 	hash = CalculateHash();
 	if (sizeof(size_t) >= sizeof(u64))
 	{
@@ -135,6 +120,8 @@ u64 VertexLoaderUID::CalculateHash()
 	return h;
 }
 
+const VertexLoader* VertexLoader::s_CurrentVertexLoader = NULL;
+
 VertexLoader::VertexLoader(const TVtxDesc &vtx_desc, const VAT &vtx_attr, TCompiledLoaderFunction precompiledFunction)
 {
 	m_numLoadedVertices = 0;
@@ -145,7 +132,7 @@ VertexLoader::VertexLoader(const TVtxDesc &vtx_desc, const VAT &vtx_attr, TCompi
 	VertexLoader_TextCoord::Init();
 
 	m_VtxDesc = vtx_desc;
-	SetVAT(vtx_attr.g0.Hex, vtx_attr.g1.Hex, vtx_attr.g2.Hex);
+	SetVAT(vtx_attr);
 	m_numPipelineStages = 0;
 	CompileVertexTranslator();
 	m_Isprecompiled = precompiledFunction != nullptr;
@@ -218,7 +205,7 @@ void VertexLoader::CompileVertexTranslator()
 	vtx_decl.position.components = 3;
 	vtx_decl.position.enable = true;
 	vtx_decl.position.offset = 0;
-	vtx_decl.position.type = VAR_FLOAT;
+	vtx_decl.position.type = FORMAT_FLOAT;
 
 	// Normals
 	if (m_VtxDesc.Normal != NOT_PRESENT)
@@ -243,7 +230,7 @@ void VertexLoader::CompileVertexTranslator()
 			vtx_decl.normals[i].components = 3;
 			vtx_decl.normals[i].enable = true;
 			vtx_decl.normals[i].offset = nat_offset;
-			vtx_decl.normals[i].type = VAR_FLOAT;
+			vtx_decl.normals[i].type = FORMAT_FLOAT;
 			nat_offset += 12;
 		}
 
@@ -302,7 +289,7 @@ void VertexLoader::CompileVertexTranslator()
 		{
 			components |= VB_HAS_COL0 << i;
 			vtx_decl.colors[i].components = 4;
-			vtx_decl.colors[i].type = VAR_UNSIGNED_BYTE;
+			vtx_decl.colors[i].type = FORMAT_UBYTE;
 			vtx_decl.colors[i].offset = nat_offset;
 			vtx_decl.colors[i].enable = true;
 			nat_offset += 4;
@@ -329,7 +316,7 @@ void VertexLoader::CompileVertexTranslator()
 		{
 			vtx_decl.texcoords[i].enable = true;
 			vtx_decl.texcoords[i].offset = nat_offset;
-			vtx_decl.texcoords[i].type = VAR_FLOAT;
+			vtx_decl.texcoords[i].type = FORMAT_FLOAT;
 			if (tc[i] != NOT_PRESENT)
 			{
 				// if texmtx is included, texcoord will always be 3 floats, z will be the texmtx index
@@ -351,7 +338,7 @@ void VertexLoader::CompileVertexTranslator()
 			{
 				vtx_decl.texcoords[i].enable = true;
 				vtx_decl.texcoords[i].offset = nat_offset;
-				vtx_decl.texcoords[i].type = VAR_FLOAT;
+				vtx_decl.texcoords[i].type = FORMAT_FLOAT;
 				vtx_decl.texcoords[i].components = m_VtxAttr.texCoord[i].Elements ? 2 : 1;
 				nat_offset += 4 * (m_VtxAttr.texCoord[i].Elements ? 2 : 1);
 			}
@@ -388,7 +375,7 @@ void VertexLoader::CompileVertexTranslator()
 	}
 	vtx_decl.posmtx.components = 4;
 	vtx_decl.posmtx.offset = nat_offset;
-	vtx_decl.posmtx.type = VAR_UNSIGNED_BYTE;
+	vtx_decl.posmtx.type = FORMAT_UBYTE;
 	nat_offset += 4;
 
 	native_stride = nat_offset;
@@ -401,7 +388,7 @@ void VertexLoader::WriteCall(TPipelineFunction func)
 	m_PipelineStages[m_numPipelineStages++] = func;
 }
 
-int VertexLoader::SetupRunVertices(int vtx_attr_group, int primitive, int const count)
+s32 VertexLoader::SetupRunVertices(const VAT &vat, int primitive, int const count)
 {
 	m_numLoadedVertices += count;
 
@@ -413,15 +400,15 @@ int VertexLoader::SetupRunVertices(int vtx_attr_group, int primitive, int const 
 	g_nativeVertexFmt = m_NativeFmt;
 
 	// Load position and texcoord scale factors.
-	m_VtxAttr.PosFrac = g_VtxAttr[vtx_attr_group].g0.PosFrac;
-	m_VtxAttr.texCoord[0].Frac = g_VtxAttr[vtx_attr_group].g0.Tex0Frac;
-	m_VtxAttr.texCoord[1].Frac = g_VtxAttr[vtx_attr_group].g1.Tex1Frac;
-	m_VtxAttr.texCoord[2].Frac = g_VtxAttr[vtx_attr_group].g1.Tex2Frac;
-	m_VtxAttr.texCoord[3].Frac = g_VtxAttr[vtx_attr_group].g1.Tex3Frac;
-	m_VtxAttr.texCoord[4].Frac = g_VtxAttr[vtx_attr_group].g2.Tex4Frac;
-	m_VtxAttr.texCoord[5].Frac = g_VtxAttr[vtx_attr_group].g2.Tex5Frac;
-	m_VtxAttr.texCoord[6].Frac = g_VtxAttr[vtx_attr_group].g2.Tex6Frac;
-	m_VtxAttr.texCoord[7].Frac = g_VtxAttr[vtx_attr_group].g2.Tex7Frac;
+	m_VtxAttr.PosFrac = vat.g0.PosFrac;
+	m_VtxAttr.texCoord[0].Frac = vat.g0.Tex0Frac;
+	m_VtxAttr.texCoord[1].Frac = vat.g1.Tex1Frac;
+	m_VtxAttr.texCoord[2].Frac = vat.g1.Tex2Frac;
+	m_VtxAttr.texCoord[3].Frac = vat.g1.Tex3Frac;
+	m_VtxAttr.texCoord[4].Frac = vat.g2.Tex4Frac;
+	m_VtxAttr.texCoord[5].Frac = vat.g2.Tex5Frac;
+	m_VtxAttr.texCoord[6].Frac = vat.g2.Tex6Frac;
+	m_VtxAttr.texCoord[7].Frac = vat.g2.Tex7Frac;
 	g_PipelineState.posScale = fractionTable[m_VtxAttr.PosFrac];
 	if (m_NativeFmt->m_components & VB_HAS_UVALL)
 		for (int i = 0; i < 8; i++)
@@ -435,7 +422,7 @@ int VertexLoader::SetupRunVertices(int vtx_attr_group, int primitive, int const 
 	return count;
 }
 
-void VertexLoader::RunVertices(int vtx_attr_group, int primitive, int const count)
+void VertexLoader::RunVertices(const VAT &vtx_attr, int primitive, int const count)
 {
 	if (bpmem.genMode.cullmode == 3 && primitive < 5)
 	{
@@ -443,20 +430,21 @@ void VertexLoader::RunVertices(int vtx_attr_group, int primitive, int const coun
 		g_VideoData.ReadSkip(count * m_VertexSize);
 		return;
 	}
-	auto const new_count = SetupRunVertices(vtx_attr_group, primitive, count);
+	auto const new_count = SetupRunVertices(vtx_attr, primitive, count);
 	g_PipelineState.Initialize(g_VideoData.GetReadPosition(), VertexManager::s_pCurBufferPointer);
 	VertexManager::s_pCurBufferPointer += native_stride * new_count;
 	g_VideoData.ReadSkip(new_count * m_VertexSize);
 	g_PipelineState.count = new_count;
-	m_CompiledFunction(this);
+	s_CurrentVertexLoader = this;
+	m_CompiledFunction();
 	VertexManager::AddVertices(primitive, new_count);
 }
 
-void LOADERDECL VertexLoader::ConvertVertices(VertexLoader *loader)
+void LOADERDECL VertexLoader::ConvertVertices()
 {
 	TPipelineState &pipelinestate = g_PipelineState;
-	s32 stagescount = loader->m_numPipelineStages;
-	TPipelineFunction* stages = loader->m_PipelineStages;
+	s32 stagescount = s_CurrentVertexLoader->m_numPipelineStages;
+	const TPipelineFunction* stages = s_CurrentVertexLoader->m_PipelineStages;
 	s32 count = pipelinestate.count;
 	while (count)
 	{
@@ -469,7 +457,7 @@ void LOADERDECL VertexLoader::ConvertVertices(VertexLoader *loader)
 	}
 }
 
-void VertexLoader::RunCompiledVertices(int vtx_attr_group, int primitive, int const count, const u8* Data)
+void VertexLoader::RunCompiledVertices(const VAT &vtx_attr, int primitive, int const count, const u8* Data)
 {
 	if (bpmem.genMode.cullmode == 3 && primitive < 5)
 	{
@@ -477,21 +465,17 @@ void VertexLoader::RunCompiledVertices(int vtx_attr_group, int primitive, int co
 		g_VideoData.ReadSkip(count * m_VertexSize);
 		return;
 	}
-	auto const new_count = SetupRunVertices(vtx_attr_group, primitive, count);
+	auto const new_count = SetupRunVertices(vtx_attr, primitive, count);
 	g_PipelineState.Initialize(Data, VertexManager::s_pCurBufferPointer);
 	VertexManager::s_pCurBufferPointer += native_stride * new_count;
 	g_PipelineState.count = new_count;
-	m_CompiledFunction(this);
+	s_CurrentVertexLoader = this;
+	m_CompiledFunction();
 	VertexManager::AddVertices(primitive, new_count);
 }
 
-void VertexLoader::SetVAT(u32 _group0, u32 _group1, u32 _group2)
+void VertexLoader::SetVAT(const VAT &vat)
 {
-	VAT vat;
-	vat.g0.Hex = _group0;
-	vat.g1.Hex = _group1;
-	vat.g2.Hex = _group2;
-
 	m_VtxAttr.PosElements = vat.g0.PosElements;
 	m_VtxAttr.PosFormat = vat.g0.PosFormat;
 	m_VtxAttr.PosFrac = vat.g0.PosFrac;

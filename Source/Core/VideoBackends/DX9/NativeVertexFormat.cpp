@@ -54,7 +54,7 @@ D3DVertexFormat::~D3DVertexFormat()
 	}
 }
 
-D3DDECLTYPE VarToD3D(VarType t, int size)
+D3DDECLTYPE VarToD3D(EVTXComponentFormat t, int size)
 {
 	if (t < 0 || t > 4) {
 		PanicAlert("VarToD3D: Invalid VarType %i", t);

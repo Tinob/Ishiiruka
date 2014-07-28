@@ -5,6 +5,7 @@
 #include "VideoCommon/VertexLoader_BBox.h"
 #include "VideoCommon/PixelEngine.h"
 #include "VideoCommon/XFMemory.h"
+
 // bbox variables
 // bbox must read vertex position, so convert it to this buffer
 static float s_bbox_vertex_buffer[4];

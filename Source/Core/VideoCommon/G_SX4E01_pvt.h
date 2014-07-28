@@ -4,7 +4,7 @@
 // Added for Ishiiruka by Tino
 #pragma once
 #include <map>
-#include "VideoCommon/VertexLoader.h"
+#include "VideoCommon/NativeVertexFormat.h"
 class G_SX4E01_pvt
 {
 public:

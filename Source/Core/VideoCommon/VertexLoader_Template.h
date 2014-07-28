@@ -2,6 +2,8 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 // Added for Ishiiruka by Tino
+#pragma once
+#include "Common/CPUDetect.h"
 #include "VideoCommon/VertexLoader_ColorFuncs.h"
 #include "VideoCommon/VertexLoader_NormalFuncs.h"
 #include "VideoCommon/VertexLoader_PositionFuncs.h"
@@ -136,7 +138,7 @@ enum EVAT2Mask
 	maskTex6CoordElements = 0x4000,
 	maskTex6CoordFormat = 0x38000,
 	maskTex7CoordElements = 0x800000,
-	maskTex7CoordFormat = 0x7000000	
+	maskTex7CoordFormat = 0x7000000
 };
 
 enum EVAT2Stride
@@ -300,36 +302,15 @@ __forceinline void PosFunction(TPipelineState &pipelinestate)
 {
 	if (_type == DIRECT)
 	{
-		if (_elements == POS_ELEMENTS_2)
-		{
-			PosFunction_DIRECT<iSSE, _format, 2>(pipelinestate);
-		}
-		else
-		{
-			PosFunction_DIRECT<iSSE, _format, 3>(pipelinestate);
-		}
+		PosFunction_DIRECT<iSSE, _format, 2 + _elements>(pipelinestate);
 	}
 	else if (_type == INDEX8)
 	{
-		if (_elements == POS_ELEMENTS_2)
-		{
-			PosFunction_Index<iSSE, _format, u8, 2>(pipelinestate);
-		}
-		else
-		{
-			PosFunction_Index<iSSE, _format, u8, 3>(pipelinestate);
-		}
+		PosFunction_Index<iSSE, _format, u8, 2 + _elements>(pipelinestate);
 	}
 	else if (_type == INDEX16)
 	{
-		if (_elements == POS_ELEMENTS_2)
-		{
-			PosFunction_Index<iSSE, _format, u16, 2>(pipelinestate);
-		}
-		else
-		{
-			PosFunction_Index<iSSE, _format, u16, 3>(pipelinestate);
-		}
+		PosFunction_Index<iSSE, _format, u16, 2 + _elements>(pipelinestate);
 	}
 }
 
@@ -494,49 +475,28 @@ __forceinline void NormalFunction(TPipelineState &pipelinestate)
 {
 	if (_type == DIRECT)
 	{
-		if (_elements == NRM_NBT)
-		{
-			NormalFunction_DIRECT<iSSE, _format, 1>(pipelinestate);
-		}
-		else
-		{
-			NormalFunction_DIRECT<iSSE, _format, 3>(pipelinestate);
-		}
+		NormalFunction_DIRECT<iSSE, _format, 1 + 2 * _elements>(pipelinestate);
 	}
 	else if (_type == INDEX8)
 	{
-		if (_elements == NRM_NBT)
+		if (_elements == NRM_NBT || _index3 == NRM_INDICES1)
 		{
-			NormalFunction_Index<iSSE, _format, u8, 1>(pipelinestate);
+			NormalFunction_Index<iSSE, _format, u8, 1 + 2 * _elements>(pipelinestate);
 		}
 		else
 		{
-			if (_index3 == NRM_INDICES1)
-			{
-				NormalFunction_Index<iSSE, _format, u8, 3>(pipelinestate);
-			}
-			else
-			{
-				NormalFunction_Index3<iSSE, _format, u8>(pipelinestate);
-			}
+			NormalFunction_Index3<iSSE, _format, u8>(pipelinestate);
 		}
 	}
 	else if (_type == INDEX16)
 	{
-		if (_elements == NRM_NBT)
+		if (_elements == NRM_NBT || _index3 == NRM_INDICES1)
 		{
-			NormalFunction_Index<iSSE, _format, u16, 1>(pipelinestate);
+			NormalFunction_Index<iSSE, _format, u16, 1 + 2 * _elements>(pipelinestate);
 		}
 		else
 		{
-			if (_index3 == NRM_INDICES1)
-			{
-				NormalFunction_Index<iSSE, _format, u16, 3>(pipelinestate);
-			}
-			else
-			{
-				NormalFunction_Index3<iSSE, _format, u16>(pipelinestate);
-			}
+			NormalFunction_Index3<iSSE, _format, u16>(pipelinestate);
 		}
 	}
 }
@@ -691,50 +651,23 @@ __forceinline void TexCoordFunction_Index(TPipelineState &pipelinestate)
 	}
 }
 
-template<u32 iSSE, EVTXComponentType _type, EVTXComponentFormat _format, ETcoordElements _elements>
-__forceinline void TexCoordFunction(TPipelineState &pipelinestate)
-{
-	if (_type == DIRECT)
-	{
-		if (_elements == TC_ELEMENTS_1)
-		{
-			TexCoordFunction_DIRECT<iSSE, _format, 1>(pipelinestate);
-		}
-		else
-		{
-			TexCoordFunction_DIRECT<iSSE, _format, 2>(pipelinestate);
-		}
-	}
-	else if (_type == INDEX8)
-	{
-		if (_elements == TC_ELEMENTS_1)
-		{
-			TexCoordFunction_Index<iSSE, _format, u8, 1>(pipelinestate);
-		}
-		else
-		{
-			TexCoordFunction_Index<iSSE, _format, u8, 2>(pipelinestate);
-		}
-	}
-	else if (_type == INDEX16)
-	{
-		if (_elements == TC_ELEMENTS_1)
-		{
-			TexCoordFunction_Index<iSSE, _format, u16, 1>(pipelinestate);
-		}
-		else
-		{
-			TexCoordFunction_Index<iSSE, _format, u16, 2>(pipelinestate);
-		}
-	}
-}
-
 template<u32 iSSE, EVTXComponentType _type, EVTXComponentFormat _format, ETcoordElements _elements, bool mtxidx>
 __forceinline void TexCoordElement(TPipelineState &pipelinestate)
 {
 	if (_type != NOT_PRESENT)
 	{
-		TexCoordFunction<iSSE, _type, _format, _elements>(pipelinestate);
+		if (_type == DIRECT)
+		{
+			TexCoordFunction_DIRECT<iSSE, _format, 1 + _elements>(pipelinestate);
+		}
+		else if (_type == INDEX8)
+		{
+			TexCoordFunction_Index<iSSE, _format, u8, 1 + _elements>(pipelinestate);
+		}
+		else if (_type == INDEX16)
+		{
+			TexCoordFunction_Index<iSSE, _format, u16, 1 + _elements>(pipelinestate);
+		}
 	}
 	if (mtxidx)
 	{
@@ -761,7 +694,7 @@ __forceinline void TexCoordElement(TPipelineState &pipelinestate)
 }
 
 template <int iSSE, u32 VtxDesc, u32 VAT0, u32 VAT1, u32 VAT2>
-void TemplatedLoader(VertexLoader *loader)
+void TemplatedLoader()
 {
 	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
@@ -814,7 +747,7 @@ void TemplatedLoader(VertexLoader *loader)
 			VertexLoader_BBox::UpdateBoundingBoxPrepare(pipelinestate);
 		}
 
-		PosFunction<iSSE, 
+		PosFunction<iSSE,
 			static_cast<EVTXComponentType>((VtxDesc & maskPosition) >> stridePosition),
 			static_cast<EVTXComponentFormat>((VAT0 & maskPosFormat) >> stridePosFormat),
 			static_cast<EPosElements>(VAT0 & maskPosElements)>(pipelinestate);
@@ -827,7 +760,7 @@ void TemplatedLoader(VertexLoader *loader)
 		// Normals
 		if (VtxDesc & maskNormal)
 		{
-			NormalFunction<iSSE, 
+			NormalFunction<iSSE,
 				static_cast<EVTXComponentType>((VtxDesc & maskNormal) >> strideNormal),
 				static_cast<ENormalIndices>((VAT0 & maskNormalIndex3) >> strideNormalIndex3),
 				static_cast<ENormalElements>((VAT0 & maskNormalElements) >> strideNormalElements),

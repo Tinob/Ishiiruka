@@ -4,26 +4,26 @@
 // Modified for Ishiiruka by Tino
 // TODO: Handle cache-is-full condition :p
 
-#include "Common/Common.h"
-#include "VideoCommon/VideoCommon.h"
-#include "Common/Hash.h"
-#include "Common/MemoryUtil.h"
-#include "VideoCommon/DataReader.h"
-#include "VideoCommon/Statistics.h"
-#include "VideoCommon/OpcodeDecoding.h"   // For the GX_ constants.
 #include "Core/HW/Memmap.h"
 
-#include "VideoCommon/XFMemory.h"
-#include "VideoCommon/CPMemory.h"
-#include "VideoCommon/BPMemory.h"
-
-#include "VideoCommon/VertexLoaderManager.h"
-#include "VideoCommon/VertexManagerBase.h"
+#include "Common/Common.h"
+#include "Common/Hash.h"
+#include "Common/MemoryUtil.h"
 #include "Common/x64Emitter.h"
 #include "Common/x64ABI.h"
 
+
+#include "VideoCommon/BPMemory.h"
+#include "VideoCommon/CPMemory.h"
+#include "VideoCommon/DataReader.h"
 #include "VideoCommon/DLCache.h"
+#include "VideoCommon/OpcodeDecoding.h"   // For the GX_ constants.
+#include "VideoCommon/Statistics.h"
+#include "VideoCommon/VertexLoaderManager.h"
+#include "VideoCommon/VertexManagerBase.h"
+#include "VideoCommon/VideoCommon.h"
 #include "VideoCommon/VideoConfig.h"
+#include "VideoCommon/XFMemory.h"
 
 #define DL_CODE_CACHE_SIZE (1024*1024*16)
 #define DL_CODE_CLEAR_THRESHOLD (16 * 1024)

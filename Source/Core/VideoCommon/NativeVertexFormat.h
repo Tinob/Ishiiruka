@@ -4,8 +4,7 @@
 // Modified for Ishiiruka by Tino
 
 #pragma once
-
-#include "Common/Common.h"
+#include "VideoCommon/CPMemory.h"
 #include "VideoCommon/DataReader.h"
 
 // m_components
@@ -90,19 +89,11 @@ public:
 };
 
 typedef void (LOADERDECL *TPipelineFunction)();
-
-enum VarType
-{
-	VAR_UNSIGNED_BYTE,  // GX_U8  = 0
-	VAR_BYTE,           // GX_S8  = 1
-	VAR_UNSIGNED_SHORT, // GX_U16 = 2
-	VAR_SHORT,          // GX_S16 = 3
-	VAR_FLOAT,          // GX_F32 = 4
-};
+typedef void (LOADERDECL *TCompiledLoaderFunction)();
 
 struct AttributeFormat
 {
-	VarType type;
+	EVTXComponentFormat type;
 	int components;
 	int offset;
 	bool enable;
@@ -152,3 +143,5 @@ protected:
 
 	u32 vertex_stride;
 };
+
+extern TPipelineState g_PipelineState;

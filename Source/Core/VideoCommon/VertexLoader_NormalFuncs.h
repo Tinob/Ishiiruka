@@ -2,9 +2,8 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 // Added for Ishiiruka by Tino
-#include "Common/Common.h"
-#include "Common/CPUDetect.h"
-#include "VideoCommon/VertexLoader.h"
+#pragma once
+#include "VideoCommon/NativeVertexFormat.h"
 #include "VideoCommon/VertexLoadingSSE.h"
 
 #define NUM_NRM_FORMAT 5
@@ -26,22 +25,26 @@ enum ENormalIndices
 
 __forceinline float nrmFracAdjust(s8 val)
 {
-	return val * fractionTable[6];
+	const float scale = (1.0f / (1U << 6));
+	return val * scale;
 }
 
 __forceinline float nrmFracAdjust(u8 val)
 {
-	return val * fractionTable[7];
+	const float scale = (1.0f / (1U << 7));
+	return val * scale;
 }
 
 __forceinline float nrmFracAdjust(s16 val)
 {
-	return val * fractionTable[14];
+	const float scale = (1.0f / (1U << 14));
+	return val * scale;
 }
 
 __forceinline float nrmFracAdjust(u16 val)
 {
-	return val * fractionTable[15];
+	const float scale = (1.0f / (1U << 15));
+	return val * scale;
 }
 
 __forceinline float nrmFracAdjust(float val)
@@ -162,7 +165,7 @@ __forceinline void _Normal_Direct_S16_SSSE4(TPipelineState &pipelinestate)
 {
 	const s16* src = reinterpret_cast<const s16*>(pipelinestate.GetReadPosition());
 	float* dst = reinterpret_cast<float*>(pipelinestate.GetWritePosition());
-	float scale = fractionTable[14];
+	const float scale = (1.0f / (1U << 14));
 	Short3ToFloat3sse4(dst, (const __m128i*)src, &scale);
 	if (N > 1)
 	{
@@ -183,7 +186,7 @@ __forceinline void _Normal_Direct_U16_SSSE4(TPipelineState &pipelinestate)
 {
 	const u16* src = reinterpret_cast<const u16*>(pipelinestate.GetReadPosition());
 	float* dst = reinterpret_cast<float*>(pipelinestate.GetWritePosition());
-	float scale = fractionTable[15];
+	const float scale = (1.0f / (1U << 15));
 	UShort3ToFloat3sse4(dst, (const __m128i*)src, &scale);
 	if (N > 1)
 	{
@@ -206,7 +209,7 @@ __forceinline void _Normal_Index_S16_SSE4(TPipelineState &pipelinestate)
 
 	const s16* src = reinterpret_cast<const s16*>(IndexedNormalPosition<I, s16, 0>(pipelinestate));
 	float* dst = reinterpret_cast<float*>(pipelinestate.GetWritePosition());
-	float scale = fractionTable[14];
+	const float scale = (1.0f / (1U << 14));
 	Short3ToFloat3sse4(dst, (const __m128i*)src, &scale);
 	if (N > 1)
 	{
@@ -228,7 +231,7 @@ __forceinline void _Normal_Index_U16_SSE4(TPipelineState &pipelinestate)
 
 	const u16* src = reinterpret_cast<const u16*>(IndexedNormalPosition<I, u16, 0>(pipelinestate));
 	float* dst = reinterpret_cast<float*>(pipelinestate.GetWritePosition());
-	float scale = fractionTable[15];
+	const float scale = (1.0f / (1U << 15));
 	UShort3ToFloat3sse4(dst, (const __m128i*)src, &scale);
 	if (N > 1)
 	{
@@ -249,7 +252,7 @@ __forceinline void _Normal_Index3_S16_SSE4(TPipelineState &pipelinestate)
 	static_assert(!std::numeric_limits<I>::is_signed, "Only unsigned I is sane!");
 	float* dst = reinterpret_cast<float*>(pipelinestate.GetWritePosition());
 	const s16* src = reinterpret_cast<const s16*>(IndexedNormalPosition<I, s16, 0>(pipelinestate));
-	float scale = fractionTable[14];
+	const float scale = (1.0f / (1U << 14));
 	Short3ToFloat3sse4(dst, (const __m128i*)src, &scale);
 	dst += 3;
 	src = reinterpret_cast<const s16*>(IndexedNormalPosition<I, s16, 0>(pipelinestate));
@@ -267,7 +270,7 @@ __forceinline void _Normal_Index3_U16_SSE4(TPipelineState &pipelinestate)
 	static_assert(!std::numeric_limits<I>::is_signed, "Only unsigned I is sane!");
 	float* dst = reinterpret_cast<float*>(pipelinestate.GetWritePosition());
 	const u16* src = reinterpret_cast<const u16*>(IndexedNormalPosition<I, u16, 0>(pipelinestate));
-	float scale = fractionTable[15];
+	const float scale = (1.0f / (1U << 15));
 	UShort3ToFloat3sse4(dst, (const __m128i*)src, &scale);
 	dst += 3;
 	src = reinterpret_cast<const u16*>(IndexedNormalPosition<I, u16, 0>(pipelinestate));

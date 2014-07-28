@@ -3,10 +3,10 @@
 // Refer to the license.txt file included.
 // Modified for Ishiiruka by Tino
 
-#include <algorithm>
+#include <map>
 #include <memory>
 #include <unordered_map>
-#include <vector>
+
 
 #include "Core/ConfigManager.h"
 #include "Core/HW/Memmap.h"
@@ -14,9 +14,10 @@
 #include "VideoCommon/Statistics.h"
 #include "VideoCommon/VertexLoader.h"
 #include "VideoCommon/VertexLoaderManager.h"
+#include "VideoCommon/VertexManagerBase.h"
 #include "VideoCommon/VertexShaderManager.h"
-#include "VideoCommon/VideoCommon.h"
 #include "VideoCommon/VideoConfig.h"
+
 // Precompiled Loaders
 #include "VideoCommon/G_GSAE01_pvt.h"
 #include "VideoCommon/G_GZ2P01_pvt.h"
@@ -123,7 +124,7 @@ namespace VertexLoaderManager
 		header.append("// Added for Ishiiruka by Tino\n");
 		header.append("#pragma once\n");
 		header.append("#include <map>\n");
-		header.append("#include \"VideoCommon/VertexLoader.h\"\n");
+		header.append("#include \"VideoCommon/NativeVertexFormat.h\"\n");
 		header.append("class G_");
 		header.append(gamename);
 		header.append("_pvt\n{\npublic:\n");
@@ -287,8 +288,7 @@ namespace VertexLoaderManager
 	{
 		if ((s_attr_dirty >> vtx_attr_group) & 1)
 		{
-			VertexLoaderUID uid;
-			uid.InitFromCurrentState(vtx_attr_group);
+			VertexLoaderUID uid(g_VtxDesc, g_VtxAttr[vtx_attr_group]);
 			VertexLoaderMap::iterator iter = g_VertexLoaderMap.find(uid);
 			if (iter != g_VertexLoaderMap.end())
 			{
@@ -307,8 +307,8 @@ namespace VertexLoaderManager
 				g_VertexLoaders[vtx_attr_group] = loader;
 				INCSTAT(stats.numVertexLoaders);
 			}
+			s_attr_dirty &= ~(1 << vtx_attr_group);
 		}
-		s_attr_dirty &= ~(1 << vtx_attr_group);
 		return g_VertexLoaders[vtx_attr_group];
 	}
 
@@ -317,14 +317,14 @@ namespace VertexLoaderManager
 		if (!count)
 			return;
 
-		RefreshLoader(vtx_attr_group)->RunVertices(vtx_attr_group, primitive, count);
+		RefreshLoader(vtx_attr_group)->RunVertices(g_VtxAttr[vtx_attr_group], primitive, count);
 	}
 
 	void RunCompiledVertices(int vtx_attr_group, int primitive, int count, const u8* Data)
 	{
 		if (!count || !Data)
 			return;
-		RefreshLoader(vtx_attr_group)->RunCompiledVertices(vtx_attr_group, primitive, count, Data);
+		RefreshLoader(vtx_attr_group)->RunCompiledVertices(g_VtxAttr[vtx_attr_group], primitive, count, Data);
 	}
 
 	int GetVertexSize(int vtx_attr_group)

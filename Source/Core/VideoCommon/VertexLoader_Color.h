@@ -2,8 +2,8 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 // Modified for Ishiiruka by Tino
-#include "VideoCommon/VertexLoader.h"
 #pragma once
+#include "VideoCommon/NativeVertexFormat.h"
 
 void LOADERDECL Color_ReadDirect_24b_888();
 void LOADERDECL Color_ReadDirect_32b_888x();

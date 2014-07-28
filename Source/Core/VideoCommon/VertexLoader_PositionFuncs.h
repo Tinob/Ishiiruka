@@ -2,9 +2,8 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 // Added for Ishiiruka by Tino
-#include "Common/Common.h"
-#include "Common/CPUDetect.h"
-#include "VideoCommon/VertexLoader.h"
+#pragma once
+#include "VideoCommon/NativeVertexFormat.h"
 #include "VideoCommon/VertexLoadingSSE.h"
 
 template <typename T>

@@ -31,7 +31,7 @@ NativeVertexFormat* VertexManager::CreateNativeVertexFormat()
 	return new D3DVertexFormat();
 }
 
-DXGI_FORMAT VarToD3D(VarType t, int size)
+DXGI_FORMAT VarToD3D(EVTXComponentFormat t, int size)
 {
 	DXGI_FORMAT retval = DXGI_FORMAT_UNKNOWN;
 	static const DXGI_FORMAT lookup[4][5] = 

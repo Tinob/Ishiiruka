@@ -2,7 +2,7 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 // Modified for Ishiiruka by Tino
-
+#include "Common/CPUDetect.h"
 #include "VideoCommon/VertexLoader_TextCoord.h"
 #include "VideoCommon/VertexLoader_TextCoordFuncs.h"
 

@@ -3,9 +3,7 @@
 // Refer to the license.txt file included.
 // Modified For Ishiiruka By Tino
 #pragma once
-
-#include "VideoCommon/VertexManagerBase.h"
-
+#include "Common/Common.h"
 #if _M_SSE >= 0x301 && !(defined __GNUC__ && !defined __SSSE3__)
 #include <tmmintrin.h>
 #endif

@@ -3,7 +3,7 @@
 // Refer to the license.txt file included.
 // Added for Ishiiruka by Tino
 #pragma once
-#include "VideoCommon/VertexLoader.h"
+#include "VideoCommon/NativeVertexFormat.h"
 
 class Vertexloader_Mtx
 {
