@@ -20,8 +20,9 @@ class VideoBackend : public VideoBackendHardware
 
 	void ShowConfig(void* parent);
 
-	void UpdateFPSDisplay(const char*);
+	void UpdateFPSDisplay(const std::string&);
 	unsigned int PeekMessages();
+	void* m_window_handle;
 };
 
 }

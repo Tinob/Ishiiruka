@@ -5,8 +5,7 @@
 #ifndef _VIDEOSTATE_H
 #define _VIDEOSTATE_H
 
-#include "Common/Common.h"
-#include "Common/ChunkFile.h"
+class PointerWrap;
 
 void VideoCommon_DoState(PointerWrap &p);
 void VideoCommon_RunLoop(bool enable);

@@ -59,7 +59,7 @@ public:
 	void ApplyState(bool bUseDstAlpha) {}
 	void RestoreState() {}
 
-	void RenderText(const char* pstr, int left, int top, u32 color);
+	void RenderText(const std::string &str, int left, int top, u32 color);
 	void DrawDebugInfo();
 	void FlipImageData(u8 *data, int w, int h);
 

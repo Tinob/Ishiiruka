@@ -4,7 +4,7 @@
 
 #include <wx/wx.h>
 
-#include "Common/LogManager.h"
+#include "Common/Logging/LogManager.h"
 
 #include "VideoCommon/BPStructs.h"
 #include "VideoCommon/CommandProcessor.h"
@@ -21,7 +21,6 @@
 
 #include "DolphinWX/Debugger/DebuggerPanel.h"
 #include "VideoCommon/DLCache.h"
-#include "VideoCommon/EmuWindow.h"
 #include "VideoCommon/IndexGenerator.h"
 #include "Common/FileUtil.h"
 #include "Globals.h"
@@ -55,11 +54,10 @@ unsigned int VideoBackend::PeekMessages()
 	return TRUE;
 }
 
-void VideoBackend::UpdateFPSDisplay(const char *text)
+void VideoBackend::UpdateFPSDisplay(const std::string& text)
 {
-	TCHAR temp[512];
-	swprintf_s(temp, sizeof(temp)/sizeof(TCHAR), _T("%hs | DX11 | %hs"), scm_rev_str, text);
-	EmuWindow::SetWindowText(temp);
+	std::string str = StringFromFormat("%s | D3D11 | %s", scm_rev_str, text.c_str());
+	SetWindowTextA((HWND)m_window_handle, str.c_str());
 }
 
 std::string VideoBackend::GetName()
@@ -95,7 +93,7 @@ void InitBackendInfo()
 	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT5] = true;
 
 	g_Config.backend_info.bUseMinimalMipCount = true;
-	g_Config.backend_info.bSupports3DVision = false;
+	g_Config.backend_info.bSupportsExclusiveFullscreen = true;
 	g_Config.backend_info.bSupportsDualSourceBlend = true;
 	g_Config.backend_info.bSupportsFormatReinterpretation = true;
 	g_Config.backend_info.bSupportsPixelLighting = true;
@@ -173,12 +171,7 @@ bool VideoBackend::Initialize(void *&window_handle)
 	g_Config.VerifyValidity();
 	UpdateActiveConfig();
 
-	window_handle = (void*)EmuWindow::Create((HWND)window_handle, GetModuleHandle(0), _T("Loading - Please wait."));
-	if (window_handle == NULL)
-	{
-		ERROR_LOG(VIDEO, "An error has occurred while trying to create the window.");
-		return false;
-	}
+	m_window_handle = window_handle;
 
 	s_BackendInitialized = true;
 
@@ -193,7 +186,7 @@ void VideoBackend::Video_Prepare()
 	s_swapRequested = FALSE;
 
 	// internal interfaces
-	g_renderer = new Renderer;
+	g_renderer = new Renderer(m_window_handle);
 	g_texture_cache = new TextureCache;
 	g_vertex_manager = new VertexManager;
 	g_perf_query = new PerfQuery;

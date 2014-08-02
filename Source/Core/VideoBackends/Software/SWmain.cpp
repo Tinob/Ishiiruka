@@ -20,7 +20,7 @@
 #include "Rasterizer.h"
 #include "SWRenderer.h"
 #include "HwRasterizer.h"
-#include "Common/LogManager.h"
+#include "Common/Logging/LogManager.h"
 #include "EfbInterface.h"
 #include "DebugUtil.h"
 #include "Common/FileUtil.h"
@@ -234,7 +234,7 @@ u32 VideoSoftware::Video_GetQueryResult(PerfQueryType type)
 	return 0;
 }
 
-bool VideoSoftware::Video_Screenshot(const char *_szFilename)
+bool VideoSoftware::Video_Screenshot(const std::string &_szFilename)
 {
 	return false;
 }
@@ -273,7 +273,7 @@ void VideoSoftware::Video_ExitLoop()
 
 // TODO : could use the OSD class in video common, we would need to implement the Renderer class
 //        however most of it is useless for the SW backend so we could as well move it to its own class
-void VideoSoftware::Video_AddMessage(const char* pstr, u32 milliseconds)
+void VideoSoftware::Video_AddMessage(const std::string &str, u32 milliseconds)
 {
 }
 void VideoSoftware::Video_ClearMessages()
@@ -317,11 +317,10 @@ unsigned int VideoSoftware::PeekMessages()
 }
 
 // Show the current FPS
-void VideoSoftware::UpdateFPSDisplay(const char *text)
+void VideoSoftware::UpdateFPSDisplay(const std::string &text)
 {
-	char temp[100];
-	snprintf(temp, sizeof temp, "%s | Software | %s", scm_rev_str, text);
-	GLInterface->UpdateFPSDisplay(temp);
+	std::string str = StringFromFormat("%s | Softeware | %s", scm_rev_str, text.c_str());
+	return GLInterface->UpdateFPSDisplay(str);
 }
 
 }

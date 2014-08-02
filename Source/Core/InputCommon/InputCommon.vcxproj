@@ -56,8 +56,6 @@
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="UDPWiimote.cpp" />
-    <ClCompile Include="UDPWrapper.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ControllerEmu.h" />
@@ -72,8 +70,6 @@
     <ClInclude Include="GCPadStatus.h" />
     <ClInclude Include="InputConfig.h" />
     <ClInclude Include="stdafx.h" />
-    <ClInclude Include="UDPWiimote.h" />
-    <ClInclude Include="UDPWrapper.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />

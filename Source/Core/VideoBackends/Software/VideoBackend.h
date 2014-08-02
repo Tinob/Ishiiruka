@@ -31,9 +31,9 @@ class VideoSoftware : public VideoBackend
 	u32 Video_AccessEFB(EFBAccessType, u32, u32, u32);
 	u32 Video_GetQueryResult(PerfQueryType type);
 
-	void Video_AddMessage(const char* pstr, unsigned int milliseconds);
+	void Video_AddMessage(const std::string& str, unsigned int milliseconds);
 	void Video_ClearMessages();
-	bool Video_Screenshot(const char* filename);
+	bool Video_Screenshot(const std::string& filename);
 
 	int Video_LoadTexture(char *imagedata, u32 width, u32 height);
 	void Video_DeleteTexture(int texID);
@@ -48,7 +48,7 @@ class VideoSoftware : public VideoBackend
 
 	void RegisterCPMMIO(MMIO::Mapping* mmio, u32 base) override;
 
-	void UpdateFPSDisplay(const char*);
+	void UpdateFPSDisplay(const std::string&);
 	unsigned int PeekMessages();
 
 	void PauseAndLock(bool doLock, bool unpauseOnUnlock=true);

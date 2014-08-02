@@ -228,12 +228,12 @@ public:
 
 	virtual ControlState GetValue() override
 	{
-		return control->ToInput()->GetState();
+		return control->ToInput()->GetGatedState();
 	}
 
 	virtual void SetValue(ControlState value) override
 	{
-		control->ToOutput()->SetState(value);
+		control->ToOutput()->SetGatedState(value);
 	}
 
 	virtual int CountNumControls() override
@@ -412,14 +412,14 @@ private:
 		switch (tok.type)
 		{
 		case TOK_CONTROL:
-			{
-				Device::Control *control = finder.FindControl(tok.qualifier);
-				if (control == nullptr)
-					return EXPRESSION_PARSE_NO_DEVICE;
+		{
+			Device::Control *control = finder.FindControl(tok.qualifier);
+			if (control == nullptr)
+				return EXPRESSION_PARSE_NO_DEVICE;
 
-				*expr_out = new ControlExpression(tok.qualifier, control);
-				return EXPRESSION_PARSE_SUCCESS;
-			}
+			*expr_out = new ControlExpression(tok.qualifier, control);
+			return EXPRESSION_PARSE_SUCCESS;
+		}
 		case TOK_LPAREN:
 			return Paren(expr_out);
 		default:
@@ -535,7 +535,7 @@ Expression::~Expression()
 	delete node;
 }
 
-ExpressionParseStatus ParseExpressionInner(std::string str, ControlFinder &finder, Expression **expr_out)
+static ExpressionParseStatus ParseExpressionInner(std::string str, ControlFinder &finder, Expression **expr_out)
 {
 	ExpressionParseStatus status;
 	Expression *expr;

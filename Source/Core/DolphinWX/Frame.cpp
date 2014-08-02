@@ -15,12 +15,14 @@
 #endif
 
 #include <cstddef>
+#include <fstream>
 #include <string>
 #include <utility>
 #include <vector>
 #include <wx/chartype.h>
 #include <wx/defs.h>
 #include <wx/event.h>
+#include <wx/filename.h>
 #include <wx/frame.h>
 #include <wx/gdicmn.h>
 #include <wx/icon.h>
@@ -44,20 +46,22 @@
 #include <wx/aui/framemanager.h>
 
 #include "Common/Common.h"
-#include "Common/ConsoleListener.h"
 #include "Common/FileUtil.h"
 #include "Common/Thread.h"
+#include "Common/Logging/ConsoleListener.h"
 
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
 #include "Core/CoreParameter.h"
 #include "Core/Movie.h"
 #include "Core/State.h"
+#include "Core/HW/DVDInterface.h"
 
 #include "DolphinWX/Frame.h"
 #include "DolphinWX/GameListCtrl.h"
 #include "DolphinWX/Globals.h"
 #include "DolphinWX/LogWindow.h"
+#include "DolphinWX/Main.h"
 #include "DolphinWX/TASInputDlg.h"
 #include "DolphinWX/WxUtils.h"
 #include "DolphinWX/Debugger/CodeWindow.h"
@@ -74,60 +78,6 @@ extern "C" {
 #include "DolphinWX/resources/Dolphin.c" // NOLINT: Dolphin icon
 };
 
-#ifdef _WIN32
-// I could not use FindItemByHWND() instead of this, it crashed on that occasion I used it */
-HWND MSWGetParent_(HWND Parent)
-{
-	return GetParent(Parent);
-}
-#endif
-
-// ---------------
-// The CPanel class to receive MSWWindowProc messages from the video backend.
-
-extern CFrame* main_frame;
-
-
-BEGIN_EVENT_TABLE(CPanel, wxPanel)
-END_EVENT_TABLE()
-
-CPanel::CPanel(
-wxWindow *parent,
-wxWindowID id
-)
-: wxPanel(parent, id, wxDefaultPosition, wxDefaultSize, 0) // disables wxTAB_TRAVERSAL because it was breaking hotkeys
-{
-}
-
-#ifdef _WIN32
-WXLRESULT CPanel::MSWWindowProc(WXUINT nMsg, WXWPARAM wParam, WXLPARAM lParam)
-{
-	switch (nMsg)
-	{
-	case WM_USER:
-		switch (wParam)
-		{
-		case WM_USER_STOP:
-			main_frame->DoStop();
-			break;
-
-		case WM_USER_SETCURSOR:
-			if (SConfig::GetInstance().m_LocalCoreStartupParameter.bHideCursor &&
-				main_frame->RendererHasFocus() && Core::GetState() == Core::CORE_RUN)
-				SetCursor(wxCURSOR_BLANK);
-			else
-				SetCursor(wxNullCursor);
-			break;
-		}
-		break;
-
-	default:
-		// By default let wxWidgets do what it normally does with this event
-		return wxPanel::MSWWindowProc(nMsg, wParam, lParam);
-	}
-	return 0;
-}
-#endif
 
 CRenderFrame::CRenderFrame(wxFrame* parent, wxWindowID id, const wxString& title,
 	const wxPoint& pos, const wxSize& size, long style)
@@ -139,17 +89,60 @@ CRenderFrame::CRenderFrame(wxFrame* parent, wxWindowID id, const wxString& title
 	SetIcon(IconTemp);
 
 	DragAcceptFiles(true);
-	Connect(wxEVT_DROP_FILES, wxDropFilesEventHandler(CRenderFrame::OnDropFiles), nullptr, this);
+	Bind(wxEVT_DROP_FILES, &CRenderFrame::OnDropFiles, this);
 }
 
 void CRenderFrame::OnDropFiles(wxDropFilesEvent& event)
 {
 	if (event.GetNumberOfFiles() != 1)
 		return;
-	if (File::IsDirectory(event.GetFiles()[0].ToStdString()))
+	if (File::IsDirectory(WxStrToStr(event.GetFiles()[0])))
 		return;
 
-	State::LoadAs(event.GetFiles()[0].ToStdString());
+	wxFileName file = event.GetFiles()[0];
+	const std::string filepath = WxStrToStr(file.GetFullPath());
+
+	if (file.GetExt() == "dtm")
+	{
+		if (Core::IsRunning())
+			return;
+
+		if (!Movie::IsReadOnly())
+		{
+			// let's make the read-only flag consistent at the start of a movie.
+			Movie::SetReadOnly(true);
+			main_frame->GetMenuBar()->FindItem(IDM_RECORDREADONLY)->Check(true);
+		}
+
+		if (Movie::PlayInput(filepath))
+			main_frame->BootGame("");
+	}
+	else if (!Core::IsRunning())
+	{
+		main_frame->BootGame(filepath);
+	}
+	else if (IsValidSavestateDropped(filepath) && Core::IsRunning())
+	{
+		State::LoadAs(filepath);
+	}
+	else
+	{
+		DVDInterface::ChangeDisc(filepath);
+	}
+}
+
+bool CRenderFrame::IsValidSavestateDropped(const std::string& filepath)
+{
+	const int game_id_length = 6;
+	std::ifstream file(filepath, std::ios::in | std::ios::binary);
+
+	if (!file)
+		return false;
+
+	std::string internal_game_id(game_id_length, ' ');
+	file.read(&internal_game_id[0], game_id_length);
+
+	return internal_game_id == SConfig::GetInstance().m_LocalCoreStartupParameter.GetUniqueID();
 }
 
 #ifdef _WIN32
@@ -169,9 +162,26 @@ WXLRESULT CRenderFrame::MSWWindowProc(WXUINT nMsg, WXWPARAM wParam, WXLPARAM lPa
 		}
 		break;
 
+	case WM_USER:
+		switch (wParam)
+		{
+		case WM_USER_STOP:
+			main_frame->DoStop();
+			break;
+
+		case WM_USER_SETCURSOR:
+			if (SConfig::GetInstance().m_LocalCoreStartupParameter.bHideCursor &&
+				main_frame->RendererHasFocus() && Core::GetState() == Core::CORE_RUN)
+				SetCursor(wxCURSOR_BLANK);
+			else
+				SetCursor(wxNullCursor);
+			break;
+		}
+		break;
+
 	case WM_CLOSE:
 		// Let Core finish initializing before accepting any WM_CLOSE messages
-		if (Core::GetState() == Core::CORE_UNINITIALIZED) break;
+		if (!Core::IsRunning()) break;
 		// Use default action otherwise
 
 	default:
@@ -195,7 +205,7 @@ EVT_MENU(wxID_OPEN, CFrame::OnOpen)
 EVT_MENU(wxID_EXIT, CFrame::OnQuit)
 EVT_MENU(IDM_HELPWEBSITE, CFrame::OnHelp)
 EVT_MENU(IDM_HELPONLINEDOCS, CFrame::OnHelp)
-EVT_MENU(IDM_HELPGOOGLECODE, CFrame::OnHelp)
+EVT_MENU(IDM_HELPGITHUB, CFrame::OnHelp)
 EVT_MENU(wxID_ABOUT, CFrame::OnHelp)
 EVT_MENU(wxID_REFRESH, CFrame::OnRefresh)
 EVT_MENU(IDM_PLAY, CFrame::OnPlay)
@@ -248,6 +258,7 @@ EVT_MENU(IDM_TOGGLE_SKIPIDLE, CFrame::OnToggleSkipIdle)
 EVT_MENU(IDM_TOGGLE_TOOLBAR, CFrame::OnToggleToolbar)
 EVT_MENU(IDM_TOGGLE_STATUSBAR, CFrame::OnToggleStatusbar)
 EVT_MENU_RANGE(IDM_LOGWINDOW, IDM_VIDEOWINDOW, CFrame::OnToggleWindow)
+EVT_MENU_RANGE(IDM_SHOW_SYSTEM, IDM_SHOW_STATE, CFrame::OnChangeColumnsVisible)
 
 EVT_MENU(IDM_PURGECACHE, CFrame::GameListChanged)
 
@@ -305,7 +316,7 @@ long style)
 , m_LogWindow(nullptr), m_LogConfigWindow(nullptr)
 , m_FifoPlayerDlg(nullptr), UseDebugger(_UseDebugger)
 , m_bBatchMode(_BatchMode), m_bEdit(false), m_bTabSplit(false), m_bNoDocking(false)
-, m_bGameLoading(false)
+, m_bGameLoading(false), m_bClosing(false), m_confirmStop(false)
 {
 	for (int i = 0; i <= IDM_CODEWINDOW - IDM_LOGWINDOW; i++)
 		bFloatWindow[i] = false;
@@ -339,7 +350,7 @@ long style)
 	// ---------------
 	// Main panel
 	// This panel is the parent for rendering and it holds the gamelistctrl
-	m_Panel = new CPanel(this, IDM_MPANEL);
+	m_Panel = new wxPanel(this, IDM_MPANEL, wxDefaultPosition, wxDefaultSize, 0);
 
 	m_GameListCtrl = new CGameListCtrl(m_Panel, LIST_CTRL,
 		wxDefaultPosition, wxDefaultSize,
@@ -378,6 +389,7 @@ long style)
 	Movie::SetInputManip(TASManipFunction);
 
 	State::SetOnAfterLoadCallback(OnAfterLoadCallback);
+	Core::SetOnStoppedCallback(OnStoppedCallback);
 
 	// Setup perspectives
 	if (g_pCodeWindow)
@@ -488,15 +500,18 @@ void CFrame::OnActive(wxActivateEvent& event)
 
 void CFrame::OnClose(wxCloseEvent& event)
 {
+	m_bClosing = true;
+
+	// Before closing the window we need to shut down the emulation core.
+	// We'll try to close this window again once that is done.
 	if (Core::GetState() != Core::CORE_UNINITIALIZED)
 	{
 		DoStop();
-		if (Core::GetState() != Core::CORE_UNINITIALIZED)
-			return;
-		UpdateGUI();
+		event.Veto();
+		return;
 	}
 
-	//Stop Dolphin from saving the minimized Xpos and Ypos
+	// Stop Dolphin from saving the minimized Xpos and Ypos
 	if (main_frame->IsIconized())
 		main_frame->Iconize(false);
 
@@ -625,6 +640,21 @@ void CFrame::OnHostMessage(wxCommandEvent& event)
 	}
 		break;
 
+	case IDM_FULLSCREENREQUEST:
+	{
+		bool enable_fullscreen = event.GetInt() == 0 ? false : true;
+		ToggleDisplayMode(enable_fullscreen);
+		if (m_RenderFrame != nullptr)
+			m_RenderFrame->ShowFullScreen(enable_fullscreen);
+
+		// If the stop dialog initiated this fullscreen switch then we need
+		// to pause the emulator after we've completed the switch.
+		// TODO: Allow the renderer to switch fullscreen modes while paused.
+		if (m_confirmStop)
+			Core::SetState(Core::CORE_PAUSE);
+	}
+		break;
+
 	case WM_USER_CREATE:
 		if (SConfig::GetInstance().m_LocalCoreStartupParameter.bHideCursor)
 			m_RenderParent->SetCursor(wxCURSOR_BLANK);
@@ -644,6 +674,10 @@ void CFrame::OnHostMessage(wxCommandEvent& event)
 
 	case WM_USER_STOP:
 		DoStop();
+		break;
+
+	case IDM_STOPPED:
+		OnStopped();
 		break;
 	}
 }
@@ -667,7 +701,7 @@ void CFrame::GetRenderWindowSize(int& x, int& y, int& width, int& height)
 
 void CFrame::OnRenderWindowSizeRequest(int width, int height)
 {
-	if (Core::GetState() == Core::CORE_UNINITIALIZED ||
+	if (!Core::IsRunning() ||
 		!SConfig::GetInstance().m_LocalCoreStartupParameter.bRenderWindowAutoSize ||
 		RendererIsFullscreen() || m_RenderFrame->IsMaximized())
 		return;
@@ -703,7 +737,11 @@ bool CFrame::RendererHasFocus()
 	if (m_RenderParent == nullptr)
 		return false;
 #ifdef _WIN32
-	if (m_RenderParent->GetParent()->GetHWND() == GetForegroundWindow())
+	HWND window = GetForegroundWindow();
+	if (window == nullptr)
+		return false;
+
+	if (m_RenderFrame->GetHWND() == window)
 		return true;
 #else
 	wxWindow *window = wxWindow::FindFocus();
@@ -718,6 +756,19 @@ bool CFrame::RendererHasFocus()
 	}
 #endif
 	return false;
+}
+
+bool CFrame::UIHasFocus()
+{
+	// UIHasFocus should return true any time any one of our UI
+	// windows has the focus, including any dialogs or other windows.
+	//
+	// wxGetActiveWindow() returns the current wxWindow which has
+	// focus. If it's not one of our windows, then it will return
+	// null.
+
+	wxWindow *focusWindow = wxGetActiveWindow();
+	return (focusWindow != nullptr);
 }
 
 void CFrame::OnGameListCtrl_ItemActivated(wxListEvent& WXUNUSED(event))
@@ -774,7 +825,7 @@ void CFrame::OnGameListCtrl_ItemActivated(wxListEvent& WXUNUSED(event))
 	}
 }
 
-bool IsHotkey(wxKeyEvent &event, int Id)
+static bool IsHotkey(wxKeyEvent &event, int Id)
 {
 	return (event.GetKeyCode() != WXK_NONE &&
 		event.GetKeyCode() == SConfig::GetInstance().m_LocalCoreStartupParameter.iHotkey[Id] &&
@@ -857,7 +908,17 @@ void OnAfterLoadCallback()
 	}
 }
 
-void TASManipFunction(SPADStatus *PadStatus, int controllerID)
+void OnStoppedCallback()
+{
+	// warning: this gets called from the EmuThread, so we should only queue things to do on the proper thread
+	if (main_frame)
+	{
+		wxCommandEvent event(wxEVT_HOST_COMMAND, IDM_STOPPED);
+		main_frame->GetEventHandler()->AddPendingEvent(event);
+	}
+}
+
+void TASManipFunction(GCPadStatus* PadStatus, int controllerID)
 {
 	if (main_frame)
 		main_frame->g_TASInputDlg[controllerID]->GetValues(PadStatus, controllerID);
@@ -1044,8 +1105,7 @@ void CFrame::OnKeyDown(wxKeyEvent& event)
 
 void CFrame::OnKeyUp(wxKeyEvent& event)
 {
-	if (Core::GetState() != Core::CORE_UNINITIALIZED &&
-		(RendererHasFocus() || TASInputHasFocus()))
+	if (Core::IsRunning() && (RendererHasFocus() || TASInputHasFocus()))
 	{
 		if (IsHotkey(event, HK_TOGGLE_THROTTLE))
 		{
@@ -1127,25 +1187,47 @@ void CFrame::OnMouse(wxMouseEvent& event)
 	event.Skip();
 }
 
-void CFrame::DoFullscreen(bool bF)
+void CFrame::DoFullscreen(bool enable_fullscreen)
 {
-	ToggleDisplayMode(bF);
+	if (!g_Config.BorderlessFullscreenEnabled() &&
+		!SConfig::GetInstance().m_LocalCoreStartupParameter.bRenderToMain &&
+		Core::GetState() == Core::CORE_PAUSE)
+	{
+		// A responsive renderer is required for exclusive fullscreen, but the
+		// renderer can only respond in the running state. Therefore we ignore
+		// fullscreen switches if we support exclusive fullscreen, but the
+		// renderer is not running.
+		// TODO: Allow the renderer to switch fullscreen modes while paused.
+		return;
+	}
+
+	ToggleDisplayMode(enable_fullscreen);
 
 #if defined(__APPLE__)
 	NSView *view = (NSView *)m_RenderFrame->GetHandle();
 	NSWindow *window = [view window];
 
-	if (bF != RendererIsFullscreen())
+	if (enable_fullscreen != RendererIsFullscreen())
 	{
 		[window toggleFullScreen : nil];
 	}
 #else
-	m_RenderFrame->ShowFullScreen(bF, wxFULLSCREEN_ALL);
+	if (enable_fullscreen)
+	{
+		m_RenderFrame->ShowFullScreen(true, wxFULLSCREEN_ALL);
+	}
+	else if (g_Config.BorderlessFullscreenEnabled() ||
+		SConfig::GetInstance().m_LocalCoreStartupParameter.bRenderToMain)
+	{
+		// Exiting exclusive fullscreen should be done from a Renderer callback.
+		// Therefore we don't exit fullscreen from here if we support exclusive mode.
+		m_RenderFrame->ShowFullScreen(false, wxFULLSCREEN_ALL);
+	}
 #endif
 
 	if (SConfig::GetInstance().m_LocalCoreStartupParameter.bRenderToMain)
 	{
-		if (bF)
+		if (enable_fullscreen)
 		{
 			// Save the current mode before going to fullscreen
 			AuiCurrent = m_Mgr->SavePerspective();
@@ -1161,6 +1243,9 @@ void CFrame::DoFullscreen(bool bF)
 	{
 		m_RenderFrame->Raise();
 	}
+
+	g_Config.bFullscreen = (g_Config.BorderlessFullscreenEnabled() ||
+		SConfig::GetInstance().m_LocalCoreStartupParameter.bRenderToMain) ? false : enable_fullscreen;;
 }
 
 const CGameListCtrl *CFrame::GetGameListCtrl() const

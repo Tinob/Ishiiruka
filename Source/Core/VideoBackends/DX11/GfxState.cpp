@@ -2,7 +2,7 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include "Common/Log.h"
+#include "Common/Logging/Log.h"
 
 #include "D3DBase.h"
 #include "GfxState.h"

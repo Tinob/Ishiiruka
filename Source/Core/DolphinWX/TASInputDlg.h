@@ -39,11 +39,11 @@ public:
 	void OnMouseDownL(wxMouseEvent& event);
 	void OnMouseUpR(wxMouseEvent& event);
 	void ResetValues();
-	void GetValues(SPADStatus *PadStatus, int controllerID);
+	void GetValues(GCPadStatus* PadStatus, int controllerID);
 	void SetTurbo(wxMouseEvent& event);
 	void SetTurboFalse(wxMouseEvent& event);
 	void ButtonTurbo();
-	void GetKeyBoardInput(SPADStatus *PadStatus);
+	void GetKeyBoardInput(GCPadStatus* PadStatus);
 	bool TextBoxHasFocus();
 	void SetLandRTriggers();
 	bool TASHasFocus();

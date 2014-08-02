@@ -33,11 +33,13 @@
 #include "Common/CPUDetect.h"
 #include "Common/FileUtil.h"
 #include "Common/IniFile.h"
-#include "Common/LogManager.h"
 #include "Common/Thread.h"
+#include "Common/Logging/LogManager.h"
 
 #include "Core/ConfigManager.h"
+#include "Core/Core.h"
 #include "Core/CoreParameter.h"
+#include "Core/Host.h"
 #include "Core/Movie.h"
 #include "Core/HW/Wiimote.h"
 
@@ -413,7 +415,7 @@ void DolphinApp::InitLanguageSupport()
 
 	IniFile ini;
 	ini.Load(File::GetUserPath(F_DOLPHINCONFIG_IDX));
-	ini.Get("Interface", "Language", &language, wxLANGUAGE_DEFAULT);
+	ini.GetOrCreateSection("Interface")->Get("Language", &language, wxLANGUAGE_DEFAULT);
 
 	// Load language if possible, fall back to system default otherwise
 	if (wxLocale::IsAvailable(language))
@@ -451,6 +453,7 @@ void DolphinApp::OnEndSession(wxCloseEvent& event)
 
 int DolphinApp::OnExit()
 {
+	Core::Shutdown();
 	WiimoteReal::Shutdown();
 	VideoBackend::ClearList();
 	SConfig::Shutdown();
@@ -624,6 +627,13 @@ void Host_RequestRenderWindowSize(int width, int height)
 	main_frame->GetEventHandler()->AddPendingEvent(event);
 }
 
+void Host_RequestFullscreen(bool enable_fullscreen)
+{
+	wxCommandEvent event(wxEVT_HOST_COMMAND, IDM_FULLSCREENREQUEST);
+	event.SetInt(enable_fullscreen ? 1 : 0);
+	main_frame->GetEventHandler()->AddPendingEvent(event);
+}
+
 void Host_SetStartupDebuggingParameters()
 {
 	SCoreStartupParameter& StartUp = SConfig::GetInstance().m_LocalCoreStartupParameter;
@@ -673,6 +683,11 @@ void Host_SetWiiMoteConnectionState(int _State)
 	NOTICE_LOG(WIIMOTE, "%s", static_cast<const char*>(event.GetString().c_str()));
 
 	main_frame->GetEventHandler()->AddPendingEvent(event);
+}
+
+bool Host_UIHasFocus()
+{
+	return main_frame->UIHasFocus();
 }
 
 bool Host_RendererHasFocus()

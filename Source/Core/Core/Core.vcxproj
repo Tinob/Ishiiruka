@@ -61,6 +61,7 @@
     <ClCompile Include="Debugger\PPCDebugInterface.cpp" />
     <ClCompile Include="DSPEmulator.cpp" />
     <ClCompile Include="DSP\DSPAssembler.cpp" />
+    <ClCompile Include="DSP\DSPCaptureLogger.cpp" />
     <ClCompile Include="DSP\DSPDisassembler.cpp" />
     <ClCompile Include="DSP\DSPAccelerator.cpp" />
     <ClCompile Include="DSP\DSPAnalyzer.cpp" />
@@ -136,6 +137,8 @@
     <ClCompile Include="HW\EXI_DeviceMemoryCard.cpp" />
     <ClCompile Include="HW\EXI_DeviceMic.cpp" />
     <ClCompile Include="HW\GCMemcard.cpp" />
+    <ClCompile Include="HW\GCMemcardDirectory.cpp" />
+    <ClCompile Include="HW\GCMemcardRaw.cpp" />
     <ClCompile Include="HW\GCPad.cpp" />
     <ClCompile Include="HW\GCPadEmu.cpp" />
     <ClCompile Include="HW\GPFifo.cpp" />
@@ -229,7 +232,6 @@
     <ClCompile Include="PowerPC\JitCommon\JitCache.cpp" />
     <ClCompile Include="PowerPC\JitCommon\Jit_Util.cpp" />
     <ClCompile Include="PowerPC\JitInterface.cpp" />
-    <ClCompile Include="PowerPC\LUT_frsqrtex.cpp" />
     <ClCompile Include="PowerPC\PowerPC.cpp" />
     <ClCompile Include="PowerPC\PPCAnalyst.cpp" />
     <ClCompile Include="PowerPC\PPCCache.cpp" />
@@ -265,6 +267,7 @@
     <ClInclude Include="Debugger\PPCDebugInterface.h" />
     <ClInclude Include="DSPEmulator.h" />
     <ClInclude Include="DSP\DSPAssembler.h" />
+    <ClInclude Include="DSP\DSPCaptureLogger.h" />
     <ClInclude Include="DSP\DSPDisassembler.h" />
     <ClInclude Include="DSP\DSPAccelerator.h" />
     <ClInclude Include="DSP\DSPAnalyzer.h" />
@@ -332,6 +335,8 @@
     <ClInclude Include="HW\EXI_DeviceMemoryCard.h" />
     <ClInclude Include="HW\EXI_DeviceMic.h" />
     <ClInclude Include="HW\GCMemcard.h" />
+    <ClInclude Include="HW\GCMemcardDirectory.h" />
+    <ClInclude Include="HW\GCMemcardRaw.h" />
     <ClInclude Include="HW\GCPad.h" />
     <ClInclude Include="HW\GCPadEmu.h" />
     <ClInclude Include="HW\GPFifo.h" />
@@ -361,7 +366,6 @@
     <ClInclude Include="HW\WiimoteEmu\Attachment\Turntable.h" />
     <ClInclude Include="HW\WiimoteEmu\Encryption.h" />
     <ClInclude Include="HW\WiimoteEmu\MatrixMath.h" />
-    <ClInclude Include="HW\WiimoteEmu\UDPTLayer.h" />
     <ClInclude Include="HW\WiimoteEmu\WiimoteEmu.h" />
     <ClInclude Include="HW\WiimoteEmu\WiimoteHid.h" />
     <ClInclude Include="HW\WiimoteReal\WiimoteReal.h" />
@@ -413,7 +417,6 @@
     <ClInclude Include="PowerPC\JitCommon\JitCache.h" />
     <ClInclude Include="PowerPC\JitCommon\Jit_Util.h" />
     <ClInclude Include="PowerPC\JitInterface.h" />
-    <ClInclude Include="PowerPC\LUT_frsqrtex.h" />
     <ClInclude Include="PowerPC\PowerPC.h" />
     <ClInclude Include="PowerPC\PPCAnalyst.h" />
     <ClInclude Include="PowerPC\PPCCache.h" />

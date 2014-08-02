@@ -6,7 +6,7 @@
 
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License 2.0 for more details.
 
 // A copy of the GPL 2.0 should have been included with the program.
@@ -19,10 +19,10 @@
 Here is a nice ascii overview of audio flow affected by this file:
 
 (RAM)---->[AI FIFO]---->[SRC]---->[Mixer]---->[DAC]---->(Speakers)
-^
-|
-[L/R Volume]
-\
+                          ^
+                          |
+                      [L/R Volume]
+                           \
 (DVD)---->[Drive I/F]---->[SRC]---->[Counter]
 
 Notes:
@@ -30,35 +30,35 @@ Output at "48KHz" is actually 48043Hz.
 Sample counter counts streaming stereo samples after upsampling.
 [DAC] causes [AI I/F] to read from RAM at rate selected by AIDFR.
 Each [SRC] will upsample a 32KHz source, or pass through the 48KHz
-source. The [Mixer]/[DAC] only operate at 48KHz.
+  source. The [Mixer]/[DAC] only operate at 48KHz.
 
 AIS == disc streaming == DTK(Disk Track Player) == streaming audio, etc.
 
 Supposedly, the retail hardware only supports 48KHz streaming from
-[Drive I/F]. However it's more likely that the hardware supports
-32KHz streaming, and the upsampling is transparent to the user.
-TODO check if anything tries to stream at 32KHz.
+  [Drive I/F]. However it's more likely that the hardware supports
+  32KHz streaming, and the upsampling is transparent to the user.
+  TODO check if anything tries to stream at 32KHz.
 
 The [Drive I/F] actually supports simultaneous requests for audio and
-normal data. For this reason, we can't really get rid of the crit section.
+  normal data. For this reason, we can't really get rid of the crit section.
 
 IMPORTANT:
 This file mainly deals with the [Drive I/F], however [AIDFR] controls
-the rate at which the audio data is DMA'd from RAM into the [AI FIFO]
-(and the speed at which the FIFO is read by its SRC). Everything else
-relating to AID happens in DSP.cpp. It's kinda just bad hardware design.
-TODO maybe the files should be merged?
+  the rate at which the audio data is DMA'd from RAM into the [AI FIFO]
+  (and the speed at which the FIFO is read by its SRC). Everything else
+  relating to AID happens in DSP.cpp. It's kinda just bad hardware design.
+  TODO maybe the files should be merged?
 */
 
 #include "AudioCommon/AudioCommon.h"
 
+#include "Common/ChunkFile.h"
 #include "Common/Common.h"
 #include "Common/MathUtil.h"
 
 #include "Core/CoreTiming.h"
 #include "Core/HW/AudioInterface.h"
 #include "Core/HW/CPU.h"
-#include "Core/HW/DVDInterface.h"
 #include "Core/HW/MMIO.h"
 #include "Core/HW/ProcessorInterface.h"
 #include "Core/HW/SystemTimers.h"
@@ -71,8 +71,8 @@ namespace AudioInterface
 enum
 {
 	AI_CONTROL_REGISTER = 0x6C00,
-	AI_VOLUME_REGISTER = 0x6C04,
-	AI_SAMPLE_COUNTER = 0x6C08,
+	AI_VOLUME_REGISTER  = 0x6C04,
+	AI_SAMPLE_COUNTER   = 0x6C08,
 	AI_INTERRUPT_TIMING = 0x6C0C,
 };
 
@@ -88,19 +88,19 @@ enum
 // AI Control Register
 union AICR
 {
-	AICR() { hex = 0; }
-	AICR(u32 _hex) { hex = _hex; }
+	AICR() { hex = 0;}
+	AICR(u32 _hex) { hex = _hex;}
 	struct
 	{
-		u32 PSTAT : 1; // sample counter/playback enable
-		u32 AISFR : 1; // AIS Frequency (0=32khz 1=48khz)
-		u32 AIINTMSK : 1; // 0=interrupt masked 1=interrupt enabled
-		u32 AIINT : 1; // audio interrupt status
-		u32 AIINTVLD : 1; // This bit controls whether AIINT is affected by the Interrupt Timing register
-		// matching the sample counter. Once set, AIINT will hold its last value
-		u32 SCRESET : 1; // write to reset counter
-		u32 AIDFR : 1; // AID Frequency (0=48khz 1=32khz)
-	u32:25;
+		u32 PSTAT    : 1;  // sample counter/playback enable
+		u32 AISFR    : 1;  // AIS Frequency (0=32khz 1=48khz)
+		u32 AIINTMSK : 1;  // 0=interrupt masked 1=interrupt enabled
+		u32 AIINT    : 1;  // audio interrupt status
+		u32 AIINTVLD : 1;  // This bit controls whether AIINT is affected by the Interrupt Timing register
+		                      // matching the sample counter. Once set, AIINT will hold its last value
+		u32 SCRESET  : 1;  // write to reset counter
+		u32 AIDFR    : 1;  // AID Frequency (0=48khz 1=32khz)
+		u32          :25;
 	};
 	u32 hex;
 };
@@ -108,12 +108,12 @@ union AICR
 // AI Volume Register
 union AIVR
 {
-	AIVR() { hex = 0; }
+	AIVR() { hex = 0;}
 	struct
 	{
-		u32 left : 8;
+		u32 left  : 8;
 		u32 right : 8;
-	u32:16;
+		u32       :16;
 	};
 	u32 hex;
 };
@@ -147,7 +147,7 @@ static void GenerateAudioInterrupt();
 static void UpdateInterrupts();
 static void IncreaseSampleCount(const u32 _uAmount);
 static u64 GetAIPeriod();
-int et_AI;
+static int et_AI;
 
 void Init()
 {
@@ -175,87 +175,97 @@ void RegisterMMIO(MMIO::Mapping* mmio, u32 base)
 	mmio->Register(base | AI_CONTROL_REGISTER,
 		MMIO::DirectRead<u32>(&m_Control.hex),
 		MMIO::ComplexWrite<u32>([](u32, u32 val) {
-		AICR tmpAICtrl(val);
+			AICR tmpAICtrl(val);
 
-		m_Control.AIINTMSK = tmpAICtrl.AIINTMSK;
-		m_Control.AIINTVLD = tmpAICtrl.AIINTVLD;
 
-		// Set frequency of streaming audio
-		if (tmpAICtrl.AISFR != m_Control.AISFR)
-		{
-			DEBUG_LOG(AUDIO_INTERFACE, "Change AISFR to %s", tmpAICtrl.AISFR ? "48khz" : "32khz");
-			m_Control.AISFR = tmpAICtrl.AISFR;
-		}
-		// Set frequency of DMA
-		if (tmpAICtrl.AIDFR != m_Control.AIDFR)
-		{
-			DEBUG_LOG(AUDIO_INTERFACE, "Change AIDFR to %s", tmpAICtrl.AIDFR ? "32khz" : "48khz");
-			m_Control.AIDFR = tmpAICtrl.AIDFR;
-		}
+			if (m_Control.AIINTMSK != tmpAICtrl.AIINTMSK)
+			{
+				DEBUG_LOG(AUDIO_INTERFACE, "Change AIINTMSK to %d", tmpAICtrl.AIINTMSK);
+				m_Control.AIINTMSK = tmpAICtrl.AIINTMSK;
+			}
 
-		g_AISSampleRate = tmpAICtrl.AISFR ? 48000 : 32000;
-		g_AIDSampleRate = tmpAICtrl.AIDFR ? 32000 : 48000;
+			if (m_Control.AIINTVLD != tmpAICtrl.AIINTVLD)
+			{
+				DEBUG_LOG(AUDIO_INTERFACE, "Change AIINTVLD to %d", tmpAICtrl.AIINTVLD);
+				m_Control.AIINTVLD = tmpAICtrl.AIINTVLD;
+			}
 
-		g_CPUCyclesPerSample = SystemTimers::GetTicksPerSecond() / g_AISSampleRate;
+			// Set frequency of streaming audio
+			if (tmpAICtrl.AISFR != m_Control.AISFR)
+			{
+				// AISFR rates below are intentionally inverted wrt yagcd
+				DEBUG_LOG(AUDIO_INTERFACE, "Change AISFR to %s", tmpAICtrl.AISFR ? "48khz":"32khz");
+				m_Control.AISFR = tmpAICtrl.AISFR;
+				g_AISSampleRate = tmpAICtrl.AISFR ? 48000 : 32000;
+				soundStream->GetMixer()->SetStreamInputSampleRate(g_AISSampleRate);
+				g_CPUCyclesPerSample = SystemTimers::GetTicksPerSecond() / g_AISSampleRate;
+			}
+			// Set frequency of DMA
+			if (tmpAICtrl.AIDFR != m_Control.AIDFR)
+			{
+				DEBUG_LOG(AUDIO_INTERFACE, "Change AIDFR to %s", tmpAICtrl.AIDFR ? "32khz":"48khz");
+				m_Control.AIDFR = tmpAICtrl.AIDFR;
+				g_AIDSampleRate = tmpAICtrl.AIDFR ? 32000 : 48000;
+				soundStream->GetMixer()->SetDMAInputSampleRate(g_AIDSampleRate);
+			}
 
-		// Streaming counter
-		if (tmpAICtrl.PSTAT != m_Control.PSTAT)
-		{
-			DEBUG_LOG(AUDIO_INTERFACE, "%s streaming audio", tmpAICtrl.PSTAT ? "start" : "stop");
-			m_Control.PSTAT = tmpAICtrl.PSTAT;
-			g_LastCPUTime = CoreTiming::GetTicks();
 
-			// Tell Drive Interface to start/stop streaming
-			DVDInterface::g_bStream = tmpAICtrl.PSTAT;
+			// Streaming counter
+			if (tmpAICtrl.PSTAT != m_Control.PSTAT)
+			{
+				DEBUG_LOG(AUDIO_INTERFACE, "%s streaming audio", tmpAICtrl.PSTAT ? "start":"stop");
+				m_Control.PSTAT = tmpAICtrl.PSTAT;
+				g_LastCPUTime = CoreTiming::GetTicks();
 
-			CoreTiming::RemoveEvent(et_AI);
-			CoreTiming::ScheduleEvent(((int)GetAIPeriod() / 2), et_AI);
-		}
+				CoreTiming::RemoveEvent(et_AI);
+				CoreTiming::ScheduleEvent(((int)GetAIPeriod() / 2), et_AI);
+			}
 
-		// AI Interrupt
-		if (tmpAICtrl.AIINT)
-		{
-			DEBUG_LOG(AUDIO_INTERFACE, "Clear AIS Interrupt");
-			m_Control.AIINT = 0;
-		}
+			// AI Interrupt
+			if (tmpAICtrl.AIINT)
+			{
+				DEBUG_LOG(AUDIO_INTERFACE, "Clear AIS Interrupt");
+				m_Control.AIINT = 0;
+			}
 
-		// Sample Count Reset
-		if (tmpAICtrl.SCRESET)
-		{
-			DEBUG_LOG(AUDIO_INTERFACE, "Reset AIS sample counter");
-			m_SampleCounter = 0;
+			// Sample Count Reset
+			if (tmpAICtrl.SCRESET)
+			{
+				DEBUG_LOG(AUDIO_INTERFACE, "Reset AIS sample counter");
+				m_SampleCounter = 0;
 
-			g_LastCPUTime = CoreTiming::GetTicks();
-		}
+				g_LastCPUTime = CoreTiming::GetTicks();
+			}
 
-		UpdateInterrupts();
-	})
-		);
+			UpdateInterrupts();
+		})
+	);
 
 	mmio->Register(base | AI_VOLUME_REGISTER,
 		MMIO::DirectRead<u32>(&m_Volume.hex),
 		MMIO::ComplexWrite<u32>([](u32, u32 val) {
-		m_Volume.hex = val;
-		soundStream->GetMixer()->SetStreamingVolume(m_Volume.left, m_Volume.right);
-	})
-		);
+			m_Volume.hex = val;
+			soundStream->GetMixer()->SetStreamingVolume(m_Volume.left, m_Volume.right);
+		})
+	);
 
 	mmio->Register(base | AI_SAMPLE_COUNTER,
 		MMIO::ComplexRead<u32>([](u32) {
-		Update(0, 0);
-		return m_SampleCounter;
-	}),
+			Update(0, 0);
+			return m_SampleCounter;
+		}),
 		MMIO::DirectWrite<u32>(&m_SampleCounter)
-		);
+	);
 
 	mmio->Register(base | AI_INTERRUPT_TIMING,
 		MMIO::DirectRead<u32>(&m_InterruptTiming),
 		MMIO::ComplexWrite<u32>([](u32, u32 val) {
-		m_InterruptTiming = val;
-		CoreTiming::RemoveEvent(et_AI);
-		CoreTiming::ScheduleEvent(((int)GetAIPeriod() / 2), et_AI);
-	})
-		);
+			DEBUG_LOG(AUDIO_INTERFACE, "AI_INTERRUPT_TIMING=%08x@%08x", val, PowerPC::ppcState.pc);
+			m_InterruptTiming = val;
+			CoreTiming::RemoveEvent(et_AI);
+			CoreTiming::ScheduleEvent(((int)GetAIPeriod() / 2), et_AI);
+		})
+	);
 }
 
 static void UpdateInterrupts()
@@ -279,12 +289,20 @@ static void IncreaseSampleCount(const u32 _iAmount)
 {
 	if (m_Control.PSTAT)
 	{
+		u32 old_SampleCounter = m_SampleCounter + 1;
 		m_SampleCounter += _iAmount;
-		if (m_Control.AIINTVLD && (m_SampleCounter >= m_InterruptTiming))
+
+		if ((m_InterruptTiming - old_SampleCounter) <= (m_SampleCounter - old_SampleCounter))
 		{
+			DEBUG_LOG(AUDIO_INTERFACE, "GenerateAudioInterrupt %08x:%08x @ %08x m_Control.AIINTVLD=%d", m_SampleCounter, m_InterruptTiming, PowerPC::ppcState.pc, m_Control.AIINTVLD);
 			GenerateAudioInterrupt();
 		}
 	}
+}
+
+bool IsPlaying()
+{
+	return (m_Control.PSTAT == 1);
 }
 
 unsigned int GetAIDSampleRate()

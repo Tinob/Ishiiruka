@@ -1,17 +1,19 @@
 // Copyright 2013 Dolphin Emulator Project
 // Licensed under GPLv2
 // Refer to the license.txt file included.
+// Added For Ishiiruka By Tino
 
+#include <soundtouch/SoundTouch.h>
+#include <soundtouch/STTypes.h>
+
+#include "Core/Core.h"
+#include "Core/HW/AudioInterface.h"
+#include "Core/HW/SystemTimers.h"
 
 #include "AudioCommon/AudioCommon.h"
 #include "AudioCommon/SoundStream.h"
 #include "AudioCommon/DPL2Decoder.h"
 #include "Common/StdThread.h"
-#include "Core/Core.h"
-#include "Core/HW/AudioInterface.h"
-#include "Core/HW/SystemTimers.h"
-#include <soundtouch/SoundTouch.h>
-#include <soundtouch/STTypes.h>
 
 SoundStream::SoundStream(CMixer *mixer) : m_mixer(mixer), threadData(0), m_logAudio(false), m_muted(false), m_enablesoundloop(true)
 {

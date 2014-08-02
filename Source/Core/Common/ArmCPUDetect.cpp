@@ -175,9 +175,9 @@ void CPUInfo::Detect()
 #ifdef IOS
 	isVFP3 = true;
 	// Check for swift arch (VFP4`)
-	#ifdef __ARM_ARCH_7S__
-		isVFP4 = true;
-	#endif // #ifdef __ARM_ARCH_7S__
+#ifdef __ARM_ARCH_7S__
+	isVFP4 = true;
+#endif // #ifdef __ARM_ARCH_7S__
 #elif defined(BLACKBERRY)
 	isVFP3 = true;
 	const char cpuInfoPath[] = "/pps/services/hw_info/inventory";
@@ -280,9 +280,4 @@ std::string CPUInfo::Summarize()
 	if (CPU64bit) sum += ", 64-bit";
 
 	return sum;
-}
-
-bool CPUInfo::IsUnsafe()
-{
-	return false;
 }

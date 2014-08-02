@@ -17,6 +17,14 @@ var cache_modifier_files = new Array(
     "../VideoCommon/TextureConversionShader.h");
 function GetGitExe()
 {
+    try {
+        gitexe = wshShell.RegRead("HKCU\\Software\\GitExtensions\\gitcommand");
+        wshShell.Exec(gitexe);
+        return gitexe;
+    }
+    catch (e)
+    { }
+
 	for (var gitexe in {"git.cmd":1, "git":1, "git.bat":1})
 	{
 		try

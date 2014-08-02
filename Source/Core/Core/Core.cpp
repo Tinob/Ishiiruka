@@ -6,7 +6,6 @@
 
 #ifdef _WIN32
 #include <windows.h>
-#include "VideoCommon/EmuWindow.h"
 #endif
 
 #include "AudioCommon/AudioCommon.h"
@@ -15,12 +14,12 @@
 #include "Common/Common.h"
 #include "Common/CommonPaths.h"
 #include "Common/CPUDetect.h"
-#include "Common/LogManager.h"
 #include "Common/MathUtil.h"
 #include "Common/MemoryUtil.h"
 #include "Common/StringUtil.h"
 #include "Common/Thread.h"
 #include "Common/Timer.h"
+#include "Common/Logging/LogManager.h"
 
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
@@ -67,23 +66,23 @@ namespace Core
 {
 
 // Declarations and definitions
-Common::Timer Timer;
-volatile u32 DrawnFrame = 0;
-u32 DrawnVideo = 0;
+static Common::Timer Timer;
+static volatile u32 DrawnFrame = 0;
+static u32 DrawnVideo = 0;
 
 // Function forwarding
-const char *Callback_ISOName(void);
 void Callback_WiimoteInterruptChannel(int _number, u16 _channelID, const void* _pData, u32 _Size);
 
 // Function declarations
 void EmuThread();
 
-bool g_bStopping = false;
-bool g_bHwInit = false;
-bool g_bStarted = false;
-void *g_pWindowHandle = nullptr;
-std::string g_stateFileName;
-std::thread g_EmuThread;
+static bool g_bStopping = false;
+static bool g_bHwInit = false;
+static bool g_bStarted = false;
+static void *g_pWindowHandle = nullptr;
+static std::string g_stateFileName;
+static std::thread g_EmuThread;
+static StoppedCallbackFunc s_onStoppedCb = nullptr;
 
 static std::thread g_cpu_thread;
 static bool g_requestRefreshInfo = false;
@@ -126,7 +125,7 @@ void DisplayMessage(const std::string& message, int time_in_ms)
 			return;
 	}
 
-	g_video_backend->Video_AddMessage(message.c_str(), time_in_ms);
+	g_video_backend->Video_AddMessage(message, time_in_ms);
 
 	if (_CoreParameter.bRenderToMain &&
 		SConfig::GetInstance().m_InterfaceStatusbar)
@@ -137,11 +136,6 @@ void DisplayMessage(const std::string& message, int time_in_ms)
 	{
 		Host_UpdateTitle(message);
 	}
-}
-
-void Callback_DebuggerBreak()
-{
-	CCPU::Break();
 }
 
 void *GetWindowHandle()
@@ -156,7 +150,7 @@ bool IsRunning()
 
 bool IsRunningAndStarted()
 {
-	return g_bStarted;
+	return g_bStarted && !g_bStopping;
 }
 
 bool IsRunningInCurrentThread()
@@ -192,14 +186,20 @@ bool Init()
 
 	if (g_EmuThread.joinable())
 	{
-		PanicAlertT("Emu Thread already running");
-		return false;
+		if (IsRunning())
+		{
+			PanicAlertT("Emu Thread already running");
+			return false;
+		}
+
+		// The Emu Thread was stopped, synchronize with it.
+		g_EmuThread.join();
 	}
 
 	g_CoreStartupParameter = _CoreParameter;
 
 	INFO_LOG(OSREPORT, "Starting core = %s mode",
-		g_CoreStartupParameter.bWii ? "Wii" : "Gamecube");
+		g_CoreStartupParameter.bWii ? "Wii" : "GameCube");
 	INFO_LOG(OSREPORT, "CPU Thread separate = %s",
 		g_CoreStartupParameter.bCPUThread ? "Yes" : "No");
 
@@ -209,9 +209,8 @@ bool Init()
 	if (g_aspect_wide)
 	{
 		IniFile gameIni = _CoreParameter.LoadGameIni();
-		gameIni.Get("Wii", "Widescreen", &g_aspect_wide,
-			!!SConfig::GetInstance().m_SYSCONF->
-				GetData<u8>("IPL.AR"));
+		gameIni.GetOrCreateSection("Wii")->Get("Widescreen", &g_aspect_wide,
+		     !!SConfig::GetInstance().m_SYSCONF->GetData<u8>("IPL.AR"));
 	}
 
 	// g_pWindowHandle is first the m_Panel handle,
@@ -228,12 +227,8 @@ bool Init()
 // Called from GUI thread
 void Stop()  // - Hammertime!
 {
-	if (PowerPC::GetState() == PowerPC::CPU_POWERDOWN)
-	{
-		if (g_EmuThread.joinable())
-			g_EmuThread.join();
+	if (GetState() == CORE_STOPPING)
 		return;
-	}
 
 	const SCoreStartupParameter& _CoreParameter =
 		SConfig::GetInstance().m_LocalCoreStartupParameter;
@@ -260,36 +255,10 @@ void Stop()  // - Hammertime!
 
 		g_video_backend->Video_ExitLoop();
 	}
-
-	INFO_LOG(CONSOLE, "%s", StopMessage(true, "Stopping Emu thread ...").c_str());
-
-	g_EmuThread.join(); // Wait for emuthread to close.
-
-	INFO_LOG(CONSOLE, "%s", StopMessage(true, "Main Emu thread stopped").c_str());
-
-#ifdef _WIN32
-	EmuWindow::Close();
-#endif
-
-	// Clear on screen messages that haven't expired
-	g_video_backend->Video_ClearMessages();
-
-	// Close the trace file
-	Core::StopTrace();
-
-	// Reload sysconf file in order to see changes committed during emulation
-	if (_CoreParameter.bWii)
-		SConfig::GetInstance().m_SYSCONF->Reload();
-
-	INFO_LOG(CONSOLE, "Stop [Main Thread]\t\t---- Shutdown complete ----");
-	Movie::Shutdown();
-	PatchEngine::Shutdown();
-
-	g_bStopping = false;
 }
 
 // Create the CPU thread, which is a CPU + Video thread in Single Core mode.
-void CpuThread()
+static void CpuThread()
 {
 	const SCoreStartupParameter& _CoreParameter =
 		SConfig::GetInstance().m_LocalCoreStartupParameter;
@@ -335,7 +304,7 @@ void CpuThread()
 	return;
 }
 
-void FifoPlayerThread()
+static void FifoPlayerThread()
 {
 	const SCoreStartupParameter& _CoreParameter = SConfig::GetInstance().m_LocalCoreStartupParameter;
 
@@ -379,10 +348,6 @@ void EmuThread()
 	DisplayMessage(cpu_info.brand_string, 8000);
 	DisplayMessage(cpu_info.Summarize(), 8000);
 	DisplayMessage(_CoreParameter.m_strFilename, 3000);
-	if (cpu_info.IsUnsafe() && (NetPlay::IsNetPlayRunning() || Movie::IsRecordingInput() || Movie::IsPlayingInput()))
-	{
-		PanicAlertT("Warning: Netplay/movies will desync because your CPU does not support DAZ and Dolphin does not emulate it anymore.");
-	}
 
 	Movie::Init();
 
@@ -397,8 +362,7 @@ void EmuThread()
 
 	OSD::AddMessage("Dolphin " + g_video_backend->GetName() + " Video Backend.", 5000);
 
-	if (!DSP::GetDSPEmulator()->Initialize(g_pWindowHandle,
-		_CoreParameter.bWii, _CoreParameter.bDSPThread))
+	if (!DSP::GetDSPEmulator()->Initialize(_CoreParameter.bWii, _CoreParameter.bDSPThread))
 	{
 		HW::Shutdown();
 		g_video_backend->Shutdown();
@@ -488,6 +452,8 @@ void EmuThread()
 		}
 	}
 
+	INFO_LOG(CONSOLE, "%s", StopMessage(true, "Stopping Emu thread ...").c_str());
+
 	// Wait for g_cpu_thread to exit
 	INFO_LOG(CONSOLE, "%s", StopMessage(true, "Stopping CPU-GPU thread ...").c_str());
 
@@ -520,6 +486,27 @@ void EmuThread()
 	Wiimote::Shutdown();
 	g_video_backend->Shutdown();
 	AudioCommon::ShutdownSoundStream();
+
+	INFO_LOG(CONSOLE, "%s", StopMessage(true, "Main Emu thread stopped").c_str());
+
+	// Clear on screen messages that haven't expired
+	g_video_backend->Video_ClearMessages();
+
+	// Close the trace file
+	Core::StopTrace();
+
+	// Reload sysconf file in order to see changes committed during emulation
+	if (_CoreParameter.bWii)
+		SConfig::GetInstance().m_SYSCONF->Reload();
+
+	INFO_LOG(CONSOLE, "Stop [Video Thread]\t\t---- Shutdown complete ----");
+	Movie::Shutdown();
+	PatchEngine::Shutdown();
+
+	g_bStopping = false;
+
+	if (s_onStoppedCb)
+		s_onStoppedCb();
 }
 
 // Set or get the running state
@@ -544,15 +531,17 @@ void SetState(EState _State)
 
 EState GetState()
 {
+	if (g_bStopping)
+		return CORE_STOPPING;
+
 	if (g_bHwInit)
 	{
 		if (CCPU::IsStepping())
 			return CORE_PAUSE;
-		else if (g_bStopping)
-			return CORE_STOPPING;
 		else
 			return CORE_RUN;
 	}
+
 	return CORE_UNINITIALIZED;
 }
 
@@ -585,7 +574,7 @@ void SaveScreenShot()
 
 	SetState(CORE_PAUSE);
 
-	g_video_backend->Video_Screenshot(GenerateScreenshotName().c_str());
+	g_video_backend->Video_Screenshot(GenerateScreenshotName());
 
 	if (!bPaused)
 		SetState(CORE_RUN);
@@ -631,6 +620,7 @@ void VideoThrottle()
 		Common::AtomicStore(DrawnFrame, 0);
 		DrawnVideo = 0;
 	}
+
 	DrawnVideo++;
 	// Update the audio timestretcher with the current speed
 	if (soundStream)
@@ -665,18 +655,6 @@ void Callback_VideoCopiedToXFB(bool video_update)
 	Movie::FrameUpdate();
 }
 
-// Callback_ISOName: Let the DSP emulator get the game name
-//
-const char *Callback_ISOName()
-{
-	SCoreStartupParameter& params =
-		SConfig::GetInstance().m_LocalCoreStartupParameter;
-	if (params.m_strName.length() > 0)
-		return params.m_strName.c_str();
-	else
-		return "";
-}
-
 void UpdateTitle()
 {
 	u32 ElapseTime = (u32)Timer.GetTimeDifference();
@@ -697,9 +675,9 @@ void UpdateTitle()
 	std::string SFPS;
 
 	if (Movie::IsPlayingInput())
-		SFPS = StringFromFormat("VI: %u/%u - Frame: %u/%u - FPS: %.0f - VPS: %.0f - %.0f%%", (u32)Movie::g_currentFrame, (u32)Movie::g_totalFrames, (u32)Movie::g_currentInputCount, (u32)Movie::g_totalInputCount, FPS, VPS, Speed);
+		SFPS = StringFromFormat("VI: %u/%u - Input: %u/%u - FPS: %.0f - VPS: %.0f - %.0f%%", (u32)Movie::g_currentFrame, (u32)Movie::g_totalFrames, (u32)Movie::g_currentInputCount, (u32)Movie::g_totalInputCount, FPS, VPS, Speed);
 	else if (Movie::IsRecordingInput())
-		SFPS = StringFromFormat("VI: %u - Frame: %u - FPS: %.0f - VPS: %.0f - %.0f%%", (u32)Movie::g_currentFrame, (u32)Movie::g_currentInputCount, FPS, VPS, Speed);
+		SFPS = StringFromFormat("VI: %u - Input: %u - FPS: %.0f - VPS: %.0f - %.0f%%", (u32)Movie::g_currentFrame, (u32)Movie::g_currentInputCount, FPS, VPS, Speed);
 	else
 	{
 		SFPS = StringFromFormat("FPS: %.0f - VPS: %.0f - %.0f%%", FPS, VPS, Speed);
@@ -735,7 +713,7 @@ void UpdateTitle()
 	std::string TMessage = StringFromFormat("%s | %s", scm_rev_str, SMessage.c_str());
 
 	// Show message
-	g_video_backend->UpdateFPSDisplay(SMessage.c_str());
+	g_video_backend->UpdateFPSDisplay(SMessage);
 
 	if (_CoreParameter.bRenderToMain &&
 		SConfig::GetInstance().m_InterfaceStatusbar)
@@ -747,6 +725,17 @@ void UpdateTitle()
 	{
 		Host_UpdateTitle(TMessage);
 	}
+}
+
+void Shutdown()
+{
+	if (g_EmuThread.joinable())
+		g_EmuThread.join();
+}
+
+void SetOnStoppedCallback(StoppedCallbackFunc callback)
+{
+	s_onStoppedCb = callback;
 }
 
 } // Core

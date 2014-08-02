@@ -27,7 +27,7 @@ private:
 	void _SetLogicOpMode();	
 	void _SetLineWidth();
 public:
-	Renderer();
+	Renderer(void *&window_handle);
 	~Renderer();
 
 	void SetColorMask();
@@ -44,7 +44,7 @@ public:
 	void ApplyState(bool bUseDstAlpha);
 	void RestoreState();
 
-	void RenderText(const char* pstr, int left, int top, u32 color);
+	void RenderText(const std::string& pstr, int left, int top, u32 color);
 
 	u32 AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data);
 
@@ -63,7 +63,7 @@ public:
 
 	bool SaveScreenshot(const std::string &filename, const TargetRectangle &rc);
 
-	static bool CheckForResize();
+	static void CheckForResize(bool &resized, bool &fullscreen, bool &fullscreencahnged);
 
 	void SetPSConstant4f(unsigned int const_number, float f1, float f2, float f3, float f4);
 	void SetPSConstant4fv(unsigned int const_number, const float *f);

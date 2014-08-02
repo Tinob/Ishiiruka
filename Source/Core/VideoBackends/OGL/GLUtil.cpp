@@ -28,11 +28,10 @@ unsigned int VideoBackend::PeekMessages()
 }
 
 // Show the current FPS
-void VideoBackend::UpdateFPSDisplay(const char *text)
+void VideoBackend::UpdateFPSDisplay(const std::string &text)
 {
-	char temp[100];
-	snprintf(temp, sizeof temp, "%s | OpenGL | %s", scm_rev_str, text);
-	return GLInterface->UpdateFPSDisplay(temp);
+	std::string str = StringFromFormat("%s | OpenGl | %s", scm_rev_str, text.c_str());
+	return GLInterface->UpdateFPSDisplay(str);
 }
 
 }

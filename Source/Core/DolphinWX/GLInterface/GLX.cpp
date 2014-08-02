@@ -1,31 +1,18 @@
-// Copyright (C) 2003 Dolphin Project.
+// Copyright 2014 Dolphin Emulator Project
+// Licensed under GPLv2
+// Refer to the license.txt file included.
 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, version 2.0.
+#include "Core/Host.h"
 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License 2.0 for more details.
+#include "DolphinWX/GLInterface/GLInterface.h"
 
-// A copy of the GPL 2.0 should have been included with the program.
-// If not, see http://www.gnu.org/licenses/
-
-// Official SVN repository and contact information can be found at
-// http://code.google.com/p/dolphin-emu/
-
-#include "Host.h"
-#include "RenderBase.h"
-#include "VideoConfig.h"
-
-#include "../GLInterface.h"
-#include "GLX.h"
+#include "VideoCommon/RenderBase.h"
+#include "VideoCommon/VideoConfig.h"
 
 // Show the current FPS
-void cInterfaceGLX::UpdateFPSDisplay(const char *text)
+void cInterfaceGLX::UpdateFPSDisplay(const std::string& text)
 {
-	XStoreName(GLWin.evdpy, GLWin.win, text);
+	XStoreName(GLWin.evdpy, GLWin.win, text.c_str());
 }
 
 void cInterfaceGLX::SwapInterval(int Interval)
@@ -36,13 +23,18 @@ void cInterfaceGLX::SwapInterval(int Interval)
 		ERROR_LOG(VIDEO, "No support for SwapInterval (framerate clamped to monitor refresh rate).");
 }
 
+void* cInterfaceGLX::GetFuncAddress(const std::string& name)
+{
+	return (void*)glXGetProcAddress((const GLubyte*)name.c_str());
+}
+
 void cInterfaceGLX::Swap()
 {
 	glXSwapBuffers(GLWin.dpy, GLWin.win);
 }
 
 // Create rendering window.
-//		Call browser: Core.cpp:EmuThread() > main.cpp:Video_Initialize()
+// Call browser: Core.cpp:EmuThread() > main.cpp:Video_Initialize()
 bool cInterfaceGLX::Create(void *&window_handle)
 {
 	int _tx, _ty, _twidth, _theight;
@@ -55,18 +47,15 @@ bool cInterfaceGLX::Create(void *&window_handle)
 	int glxMajorVersion, glxMinorVersion;
 
 	// attributes for a single buffered visual in RGBA format with at least
-	// 8 bits per color and a 24 bit depth buffer
-	int attrListSgl[] = {
-		GLX_RGBA, 
-		GLX_RED_SIZE, 8,
+	// 8 bits per color
+	int attrListSgl[] = { GLX_RGBA, GLX_RED_SIZE, 8,
 		GLX_GREEN_SIZE, 8,
 		GLX_BLUE_SIZE, 8,
-		None};
+		None };
 
-	// attributes for a single buffered visual in RGBA format with at least
+	// attributes for a double buffered visual in RGBA format with at least
 	// 8 bits per color
-	int attrListDbl[] = {
-		GLX_RGBA,
+	int attrListDbl[] = { GLX_RGBA, GLX_DOUBLEBUFFER,
 		GLX_RED_SIZE, 8,
 		GLX_GREEN_SIZE, 8,
 		GLX_BLUE_SIZE, 8,
@@ -77,10 +66,11 @@ bool cInterfaceGLX::Create(void *&window_handle)
 		GLX_RED_SIZE, 1,
 		GLX_GREEN_SIZE, 1,
 		GLX_BLUE_SIZE, 1,
+		GLX_DOUBLEBUFFER,
 		None };
 
-	GLWin.dpy = XOpenDisplay(0);
-	GLWin.evdpy = XOpenDisplay(0);
+	GLWin.dpy = XOpenDisplay(nullptr);
+	GLWin.evdpy = XOpenDisplay(nullptr);
 	GLWin.parent = (Window)window_handle;
 	GLWin.screen = DefaultScreen(GLWin.dpy);
 	if (GLWin.parent == 0)
@@ -91,17 +81,17 @@ bool cInterfaceGLX::Create(void *&window_handle)
 
 	// Get an appropriate visual
 	GLWin.vi = glXChooseVisual(GLWin.dpy, GLWin.screen, attrListDbl);
-	if (GLWin.vi == NULL)
+	if (GLWin.vi == nullptr)
 	{
 		GLWin.vi = glXChooseVisual(GLWin.dpy, GLWin.screen, attrListSgl);
-		if (GLWin.vi != NULL)
+		if (GLWin.vi != nullptr)
 		{
 			ERROR_LOG(VIDEO, "Only single buffered visual!");
 		}
 		else
 		{
 			GLWin.vi = glXChooseVisual(GLWin.dpy, GLWin.screen, attrListDefault);
-			if (GLWin.vi == NULL)
+			if (GLWin.vi == nullptr)
 			{
 				ERROR_LOG(VIDEO, "Could not choose visual (glXChooseVisual)");
 				return false;
@@ -112,7 +102,7 @@ bool cInterfaceGLX::Create(void *&window_handle)
 		NOTICE_LOG(VIDEO, "Got double buffered visual!");
 
 	// Create a GLX context.
-	GLWin.ctx = glXCreateContext(GLWin.dpy, GLWin.vi, 0, GL_TRUE);
+	GLWin.ctx = glXCreateContext(GLWin.dpy, GLWin.vi, nullptr, GL_TRUE);
 	if (!GLWin.ctx)
 	{
 		PanicAlert("Unable to create GLX context.");
@@ -156,7 +146,7 @@ void cInterfaceGLX::Shutdown()
 		glXDestroyContext(GLWin.dpy, GLWin.ctx);
 		XCloseDisplay(GLWin.dpy);
 		XCloseDisplay(GLWin.evdpy);
-		GLWin.ctx = NULL;
+		GLWin.ctx = nullptr;
 	}
 }
 

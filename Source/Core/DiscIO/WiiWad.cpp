@@ -8,8 +8,8 @@
 
 #include "Common/Common.h"
 #include "Common/FileUtil.h"
-#include "Common/Log.h"
 #include "Common/MathUtil.h"
+#include "Common/Logging/Log.h"
 #include "DiscIO/Blob.h"
 #include "DiscIO/WiiWad.h"
 
@@ -63,7 +63,7 @@ u8* WiiWAD::CreateWADEntry(DiscIO::IBlobReader& _rReader, u32 _Size, u64 _Offset
 	if (_Size > 0)
 	{
 		u8* pTmpBuffer = new u8[_Size];
-		_dbg_assert_msg_(BOOT, pTmpBuffer!=nullptr, "WiiWAD: Cant allocate memory for WAD entry");
+		_dbg_assert_msg_(BOOT, pTmpBuffer != nullptr, "WiiWAD: Cant allocate memory for WAD entry");
 
 		if (!_rReader.Read(_Offset, _Size, pTmpBuffer))
 		{
@@ -84,7 +84,7 @@ bool WiiWAD::ParseWAD(DiscIO::IBlobReader& _rReader)
 	u32 HeaderSize = ReaderBig.Read32(0);
 	if (HeaderSize != 0x20)
 	{
-		_dbg_assert_msg_(BOOT, (HeaderSize==0x20), "WiiWAD: Header size != 0x20");
+		_dbg_assert_msg_(BOOT, (HeaderSize == 0x20), "WiiWAD: Header size != 0x20");
 		return false;
 	}
 
@@ -95,25 +95,25 @@ bool WiiWAD::ParseWAD(DiscIO::IBlobReader& _rReader)
 	if ((0x49730000 != HeaderType) && (0x69620000 != HeaderType))
 		return false;
 
-	m_CertificateChainSize    = ReaderBig.Read32(0x8);
-	u32 Reserved              = ReaderBig.Read32(0xC);
-	m_TicketSize              = ReaderBig.Read32(0x10);
-	m_TMDSize                 = ReaderBig.Read32(0x14);
-	m_DataAppSize             = ReaderBig.Read32(0x18);
-	m_FooterSize              = ReaderBig.Read32(0x1C);
+	m_CertificateChainSize = ReaderBig.Read32(0x8);
+	u32 Reserved = ReaderBig.Read32(0xC);
+	m_TicketSize = ReaderBig.Read32(0x10);
+	m_TMDSize = ReaderBig.Read32(0x14);
+	m_DataAppSize = ReaderBig.Read32(0x18);
+	m_FooterSize = ReaderBig.Read32(0x1C);
 
 #if MAX_LOGLEVEL >= DEBUG_LEVEL
-	_dbg_assert_msg_(BOOT, Reserved==0x00, "WiiWAD: Reserved must be 0x00");
+	_dbg_assert_msg_(BOOT, Reserved == 0x00, "WiiWAD: Reserved must be 0x00");
 #else
 	(void)Reserved;
 #endif
 
 	u32 Offset = 0x40;
-	m_pCertificateChain   = CreateWADEntry(_rReader, m_CertificateChainSize, Offset);  Offset += ROUND_UP(m_CertificateChainSize, 0x40);
-	m_pTicket             = CreateWADEntry(_rReader, m_TicketSize, Offset);            Offset += ROUND_UP(m_TicketSize, 0x40);
-	m_pTMD                = CreateWADEntry(_rReader, m_TMDSize, Offset);               Offset += ROUND_UP(m_TMDSize, 0x40);
-	m_pDataApp            = CreateWADEntry(_rReader, m_DataAppSize, Offset);           Offset += ROUND_UP(m_DataAppSize, 0x40);
-	m_pFooter             = CreateWADEntry(_rReader, m_FooterSize, Offset);            Offset += ROUND_UP(m_FooterSize, 0x40);
+	m_pCertificateChain = CreateWADEntry(_rReader, m_CertificateChainSize, Offset);  Offset += ROUND_UP(m_CertificateChainSize, 0x40);
+	m_pTicket = CreateWADEntry(_rReader, m_TicketSize, Offset);            Offset += ROUND_UP(m_TicketSize, 0x40);
+	m_pTMD = CreateWADEntry(_rReader, m_TMDSize, Offset);               Offset += ROUND_UP(m_TMDSize, 0x40);
+	m_pDataApp = CreateWADEntry(_rReader, m_DataAppSize, Offset);           Offset += ROUND_UP(m_DataAppSize, 0x40);
+	m_pFooter = CreateWADEntry(_rReader, m_FooterSize, Offset);            Offset += ROUND_UP(m_FooterSize, 0x40);
 
 	return true;
 }
@@ -143,8 +143,6 @@ bool WiiWAD::IsWiiWAD(const std::string& _rName)
 
 	return Result;
 }
-
-
 
 } // namespace end
 

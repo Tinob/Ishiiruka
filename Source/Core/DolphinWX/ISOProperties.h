@@ -19,6 +19,7 @@
 #include <wx/windowid.h>
 
 #include "Common/IniFile.h"
+#include "Core/ActionReplay.h"
 
 class GameListItem;
 class wxButton;
@@ -32,6 +33,8 @@ class wxWindow;
 namespace DiscIO { struct SFileInfo; }
 namespace Gecko { class CodeConfigPanel; }
 
+extern std::vector<ActionReplay::ARCode> arCodes;
+
 struct PHackData
 {
 	bool PHackSZNear;
@@ -39,6 +42,7 @@ struct PHackData
 	std::string PHZNear;
 	std::string PHZFar;
 };
+extern PHackData PHack_Data;
 
 class CISOProperties : public wxDialog
 {
@@ -205,7 +209,7 @@ private:
 		std::vector<const DiscIO::SFileInfo*> fileInfos,
 		const size_t _FirstIndex,
 		const size_t _LastIndex);
-	void ExportDir(const char* _rFullPath, const char* _rExportFilename,
+	void ExportDir(const std::string& _rFullPath, const std::string& _rExportFilename,
 		const int partitionNum = 0);
 
 	IniFile GameIniDefault;

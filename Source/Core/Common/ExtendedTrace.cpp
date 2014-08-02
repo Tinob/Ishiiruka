@@ -412,7 +412,8 @@ void StackTrace(HANDLE hThread, const char* lpszMessage, FILE *file, DWORD eip, 
 			ResumeThread(hThread);
 }
 
-char g_uefbuf[2048];
+#define UEFBUFSIZE 2048
+static char g_uefbuf[UEFBUFSIZE];
 
 void etfprintf(FILE *file, const char *format, ...)
 {

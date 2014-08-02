@@ -30,4 +30,7 @@
     <LocalDebuggerCommand>$(BinaryOutputDir)$(TargetFileName)</LocalDebuggerCommand>
     <LocalDebuggerWorkingDirectory>$(BinaryOutputDir)</LocalDebuggerWorkingDirectory>
   </PropertyGroup>
+  <PropertyGroup>
+    <ShowAllFiles>true</ShowAllFiles>
+  </PropertyGroup>
 </Project>

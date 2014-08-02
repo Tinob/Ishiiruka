@@ -68,7 +68,7 @@ struct VideoConfig
 
 	// General
 	bool bVSync;
-
+	bool bFullscreen;
 	bool bRunning;
 	bool bWidescreenHack;
 	int iAspectRatio;
@@ -113,7 +113,6 @@ struct VideoConfig
 	int i3DStereo; // 0: disabled, 1: Anaglyph, 2: Top/Bottom
 	int i3DStereoSeparation;
 	int i3DStereoFocalAngle;
-	bool b3DVision;
 
 	// Hacks
 	bool bEFBAccessEnable;
@@ -138,16 +137,14 @@ struct VideoConfig
 	bool bForceDualSourceBlend;
 	int iLog; // CONF_ bits
 	int iSaveTargetId; // TODO: Should be dropped
-
-	//currently unused:
-	int iCompileDLsLevel;
-
+	
 	// D3D only config, mostly to be merged into the above
 	int iAdapter;
 
 	// Debugging
 	bool bEnableShaderDebugging;
-
+	//Exclusive Full Screen
+	bool bBorderlessFullscreen;
 	// Static config per API
 	// TODO: Move this out of VideoConfig
 	struct
@@ -159,7 +156,6 @@ struct VideoConfig
 		std::vector<std::string> PPShaders; // post-processing shaders
 		bool bSupportedFormats[16]; // used for D3D9 in TextureCache		
 		bool bUseMinimalMipCount;
-		bool bSupports3DVision;
 		bool bSupportsDualSourceBlend; // only supported by D3D11 and OpenGL
 		bool bSupportsFormatReinterpretation;
 		bool bSupportsPixelLighting;
@@ -168,6 +164,7 @@ struct VideoConfig
 		bool bSupportsGLSLUBO; // needed by PixelShaderGen, so must stay in VideoCommon
 		bool bSupportsEarlyZ; // needed by PixelShaderGen, so must stay in VideoCommon
 		bool bNeedBlendIndices; // needed by PixelShaderGen, so must stay in VideoCommon
+		bool  bSupportsExclusiveFullscreen;
 	} backend_info;
 
 	// Utility
@@ -175,6 +172,7 @@ struct VideoConfig
 	bool VirtualXFBEnabled() const { return bUseXFB && !bUseRealXFB; }
 	bool EFBCopiesToTextureEnabled() const { return bEFBCopyEnable && bCopyEFBToTexture; }
 	bool EFBCopiesToRamEnabled() const { return bEFBCopyEnable && !bCopyEFBToTexture; }
+	bool BorderlessFullscreenEnabled() const { return !backend_info.bSupportsExclusiveFullscreen || bBorderlessFullscreen; }
 };
 
 extern VideoConfig g_Config;

@@ -6,8 +6,8 @@
 
 #include "Common/ChunkFile.h"
 #include "Common/IniFile.h"
-#include "Common/LogManager.h"
 #include "Common/StringUtil.h"
+#include "Common/Logging/LogManager.h"
 
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
@@ -39,7 +39,7 @@ struct DSPState
 	}
 };
 
-bool DSPHLE::Initialize(void *hWnd, bool bWii, bool bDSPThread)
+bool DSPHLE::Initialize(bool bWii, bool bDSPThread)
 {
 	m_bWii = bWii;
 	m_pUCode = nullptr;

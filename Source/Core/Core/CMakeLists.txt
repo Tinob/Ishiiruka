@@ -29,6 +29,7 @@ set(SRCS	ActionReplay.cpp
 			DSP/DSPAssembler.cpp
 			DSP/DSPDisassembler.cpp
 			DSP/DSPAccelerator.cpp
+			DSP/DSPCaptureLogger.cpp
 			DSP/DSPIntCCUtil.cpp
 			DSP/DSPIntExtOps.cpp
 			DSP/DSPHWInterface.cpp
@@ -98,6 +99,8 @@ set(SRCS	ActionReplay.cpp
 			HW/EXI_DeviceMemoryCard.cpp
 			HW/EXI_DeviceMic.cpp
 			HW/GCMemcard.cpp
+			HW/GCMemcardDirectory.cpp
+			HW/GCMemcardRaw.cpp
 			HW/GCPad.cpp
 			HW/GCPadEmu.cpp
 			HW/GPFifo.cpp
@@ -145,7 +148,6 @@ set(SRCS	ActionReplay.cpp
 			IPC_HLE/WII_IPC_HLE_Device_usb_kbd.cpp
 			IPC_HLE/WII_IPC_HLE_WiiMote.cpp
 			IPC_HLE/WiiMote_HID_Attr.cpp
-			PowerPC/LUT_frsqrtex.cpp
 			PowerPC/PowerPC.cpp
 			PowerPC/PPCAnalyst.cpp
 			PowerPC/PPCCache.cpp
@@ -216,12 +218,6 @@ if(_M_ARM_32)
 			PowerPC/JitArm32/JitArm_LoadStorePaired.cpp
 			PowerPC/JitArm32/JitArm_SystemRegisters.cpp
 			PowerPC/JitArm32/JitArm_LoadStoreFloating.cpp
-			#JitArmIL
-			PowerPC/JitArmIL/JitIL.cpp
-			PowerPC/JitArmIL/JitILAsm.cpp
-			PowerPC/JitArmIL/JitIL_Tables.cpp
-			PowerPC/JitArmIL/JitIL_Branch.cpp
-			PowerPC/JitArmIL/IR_Arm.cpp
 			)
 endif()
 

@@ -66,7 +66,7 @@ CARCFile::CARCFile(const u8* _pBuffer, size_t _BufferSize)
 
 CARCFile::~CARCFile()
 {
-	delete [] m_pBuffer;
+	delete[] m_pBuffer;
 }
 
 
@@ -114,7 +114,7 @@ size_t CARCFile::ReadFile(const std::string& _rFullPath, u8* _pBuffer, size_t _M
 	}
 
 	memcpy(_pBuffer, &m_pBuffer[pFileInfo->m_Offset], (size_t)pFileInfo->m_FileSize);
-	return (size_t) pFileInfo->m_FileSize;
+	return (size_t)pFileInfo->m_FileSize;
 }
 
 
@@ -134,7 +134,7 @@ bool CARCFile::ExportFile(const std::string& _rFullPath, const std::string& _rEx
 
 	File::IOFile pFile(_rExportFilename, "wb");
 
-	return pFile.WriteBytes(&m_pBuffer[pFileInfo->m_Offset], (size_t) pFileInfo->m_FileSize);
+	return pFile.WriteBytes(&m_pBuffer[pFileInfo->m_Offset], (size_t)pFileInfo->m_FileSize);
 }
 
 
@@ -153,15 +153,15 @@ bool CARCFile::ParseBuffer()
 		return false;
 
 	// read header
-	u32 FSTOffset  = Common::swap32(*(u32*)(m_pBuffer + 0x4));
+	u32 FSTOffset = Common::swap32(*(u32*)(m_pBuffer + 0x4));
 	//u32 FSTSize    = Common::swap32(*(u32*)(m_pBuffer + 0x8));
 	//u32 FileOffset = Common::swap32(*(u32*)(m_pBuffer + 0xC));
 
 	// read all file infos
 	SFileInfo Root;
 	Root.m_NameOffset = Common::swap32(*(u32*)(m_pBuffer + FSTOffset + 0x0));
-	Root.m_Offset     = Common::swap32(*(u32*)(m_pBuffer + FSTOffset + 0x4));
-	Root.m_FileSize   = Common::swap32(*(u32*)(m_pBuffer + FSTOffset + 0x8));
+	Root.m_Offset = Common::swap32(*(u32*)(m_pBuffer + FSTOffset + 0x4));
+	Root.m_FileSize = Common::swap32(*(u32*)(m_pBuffer + FSTOffset + 0x8));
 
 	if (Root.IsDirectory())
 	{
@@ -172,7 +172,7 @@ bool CARCFile::ParseBuffer()
 		{
 			u8* Offset = m_pBuffer + FSTOffset + (i * 0xC);
 			m_FileInfoVector[i].m_NameOffset = Common::swap32(*(u32*)(Offset + 0x0));
-			m_FileInfoVector[i].m_Offset   = Common::swap32(*(u32*)(Offset + 0x4));
+			m_FileInfoVector[i].m_Offset = Common::swap32(*(u32*)(Offset + 0x4));
 			m_FileInfoVector[i].m_FileSize = Common::swap32(*(u32*)(Offset + 0x8));
 
 			szNameTable += 0xC;
@@ -192,26 +192,19 @@ size_t CARCFile::BuildFilenames(const size_t _FirstIndex, const size_t _LastInde
 	while (CurrentIndex < _LastIndex)
 	{
 		SFileInfo& rFileInfo = m_FileInfoVector[CurrentIndex];
-		int uOffset = rFileInfo.m_NameOffset & 0xFFFFFF;
+		int const uOffset = rFileInfo.m_NameOffset & 0xFFFFFF;
+
+		rFileInfo.m_FullPath = _szDirectory + &_szNameTable[uOffset];
 
 		// check next index
 		if (rFileInfo.IsDirectory())
 		{
-			if (_szDirectory.empty())
-				rFileInfo.m_FullPath += StringFromFormat("%s/", &_szNameTable[uOffset]);
-			else
-				rFileInfo.m_FullPath += StringFromFormat("%s%s/", _szDirectory.c_str(), &_szNameTable[uOffset]);
-
-			CurrentIndex = BuildFilenames(CurrentIndex + 1, (size_t) rFileInfo.m_FileSize, rFileInfo.m_FullPath, _szNameTable);
+			rFileInfo.m_FullPath += '/';
+			CurrentIndex = BuildFilenames(CurrentIndex + 1, (size_t)rFileInfo.m_FileSize, rFileInfo.m_FullPath, _szNameTable);
 		}
-		else // This is a filename
+		else
 		{
-			if (_szDirectory.empty())
-				rFileInfo.m_FullPath += StringFromFormat("%s", &_szNameTable[uOffset]);
-			else
-				rFileInfo.m_FullPath += StringFromFormat("%s%s", _szDirectory.c_str(), &_szNameTable[uOffset]);
-
-			CurrentIndex++;
+			++CurrentIndex;
 		}
 	}
 

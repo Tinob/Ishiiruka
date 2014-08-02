@@ -50,24 +50,6 @@ class wxListEvent;
 class wxMenuItem;
 class wxWindow;
 
-// The CPanel class to receive MSWWindowProc messages from the video backend.
-class CPanel : public wxPanel
-{
-public:
-	CPanel(
-		wxWindow* parent,
-		wxWindowID id = wxID_ANY
-		);
-
-private:
-	DECLARE_EVENT_TABLE();
-
-#ifdef _WIN32
-	// Receive WndProc messages
-	WXLRESULT MSWWindowProc(WXUINT nMsg, WXWPARAM wParam, WXLPARAM lParam);
-#endif
-};
-
 class CRenderFrame : public wxFrame
 {
 public:
@@ -80,6 +62,7 @@ public:
 
 private:
 	void OnDropFiles(wxDropFilesEvent& event);
+	static bool IsValidSavestateDropped(const std::string& filepath);
 #ifdef _WIN32
 	// Receive WndProc messages
 	WXLRESULT MSWWindowProc(WXUINT nMsg, WXWPARAM wParam, WXLPARAM lParam);
@@ -122,6 +105,7 @@ public:
 	void InitBitmaps();
 	void DoPause();
 	void DoStop();
+	void OnStopped();
 	void DoRecordingSave();
 	void UpdateGUI();
 	void UpdateGameList();
@@ -136,6 +120,7 @@ public:
 	void OnRenderParentClose(wxCloseEvent& event);
 	void OnRenderParentMove(wxMoveEvent& event);
 	bool RendererHasFocus();
+	bool UIHasFocus();
 	void DoFullscreen(bool bF);
 	void ToggleDisplayMode(bool bFullscreen);
 	void UpdateWiiMenuChoice(wxMenuItem *WiiMenuItem = nullptr);
@@ -174,7 +159,7 @@ private:
 	CGameListCtrl* m_GameListCtrl;
 	wxPanel* m_Panel;
 	CRenderFrame* m_RenderFrame;
-	wxPanel* m_RenderParent;
+	wxWindow* m_RenderParent;
 	CLogWindow* m_LogWindow;
 	LogConfigWindow* m_LogConfigWindow;
 	FifoPlayerDlg* m_FifoPlayerDlg;
@@ -184,6 +169,8 @@ private:
 	bool m_bTabSplit;
 	bool m_bNoDocking;
 	bool m_bGameLoading;
+	bool m_bClosing;
+	bool m_confirmStop;
 
 	std::vector<std::string> drives;
 
@@ -343,6 +330,7 @@ private:
 	void OnRenderParentResize(wxSizeEvent& event);
 	bool RendererIsFullscreen();
 	void StartGame(const std::string& filename);
+	void OnChangeColumnsVisible(wxCommandEvent& event);
 
 	// Event table
 	DECLARE_EVENT_TABLE();
@@ -351,7 +339,8 @@ private:
 int GetCmdForHotkey(unsigned int key);
 
 void OnAfterLoadCallback();
+void OnStoppedCallback();
 
 // For TASInputDlg
-void TASManipFunction(SPADStatus *PadStatus, int controllerID);
+void TASManipFunction(GCPadStatus* PadStatus, int controllerID);
 bool TASInputHasFocus();

@@ -116,7 +116,6 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="TASInputDlg.cpp" />
-    <ClCompile Include="UDPConfigDiag.cpp" />
     <ClCompile Include="VideoConfigDiag.cpp" />
     <ClCompile Include="WiimoteConfigDiag.cpp" />
     <ClCompile Include="WXInputBase.cpp" />
@@ -162,12 +161,11 @@
     <ClInclude Include="Debugger\RegisterWindow.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="TASInputDlg.h" />
-    <ClInclude Include="UDPConfigDiag.h" />
     <ClInclude Include="VideoConfigDiag.h" />
     <ClInclude Include="WiimoteConfigDiag.h" />
     <ClInclude Include="WXInputBase.h" />
     <ClInclude Include="WxUtils.h" />
-    <ClInclude Include="GLInterface.h" />
+    <ClInclude Include="GLInterface\GLInterface.h" />
     <ClInclude Include="GLInterface\InterfaceBase.h" />
     <ClInclude Include="GLInterface\WGL.h" />
   </ItemGroup>

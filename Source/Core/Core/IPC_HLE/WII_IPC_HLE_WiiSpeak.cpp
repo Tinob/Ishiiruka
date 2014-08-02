@@ -14,9 +14,13 @@
 
 // Official SVN repository and contact information can be found at
 // http://code.google.com/p/dolphin-emu/
+#include <cinttypes>
 
-#include "Core/IPC_HLE/WII_IPC_HLE_WiiSpeak.h"
+#include "Common/Common.h"
 #include "Common/StringUtil.h"
+#include "Common/Logging/LogManager.h"
+#include "Core/IPC_HLE/WII_IPC_HLE_WiiSpeak.h"
+
 #pragma optimize("",off)
 CWII_IPC_HLE_Device_usb_oh0::CWII_IPC_HLE_Device_usb_oh0(u32 DeviceID, const std::string& DeviceName)
 	: IWII_IPC_HLE_Device(DeviceID, DeviceName)
@@ -473,7 +477,7 @@ bool CWII_IPC_HLE_Device_usb_oh0_57e_308::IOCtlV(u32 CommandAddress)
 			}
 
 			// command finished, send a reply to command
-			WII_IPC_HLE_Interface::EnqReply(CommandBuffer.m_Address);
+			WII_IPC_HLE_Interface::EnqueueReply(CommandBuffer.m_Address);
 		}
 		break;
 
@@ -927,7 +931,7 @@ bool CWII_IPC_HLE_Device_usb_oh0_46d_a03::IOCtlV(u32 CommandAddress)
 			}
 
 			// command finished, send a reply to command
-			WII_IPC_HLE_Interface::EnqReply(CommandBuffer.m_Address);
+			WII_IPC_HLE_Interface::EnqueueReply(CommandBuffer.m_Address);
 		}
 		break;
 

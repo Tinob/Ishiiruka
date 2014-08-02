@@ -1,22 +1,10 @@
-// Copyright (C) 2013 Scott Moreau <oreaus@gmail.com>
+// Copyright 2014 Dolphin Emulator Project
+// Licensed under GPLv2
+// Refer to the license.txt file included.
 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, version 2.0.
-
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License 2.0 for more details.
-
-// A copy of the GPL 2.0 should have been included with the program.
-// If not, see http://www.gnu.org/licenses/
-
-// Official SVN repository and contact information can be found at
-// http://code.google.com/p/dolphin-emu/
-
-#include "Host.h"
-#include "Platform.h"
+#include <string>
+#include "Core/Host.h"
+#include "DolphinWX/GLInterface/GLInterface.h"
 
 bool cPlatform::SelectDisplay(void)
 {
@@ -73,9 +61,9 @@ bool cPlatform::SelectDisplay(void)
 #if !HAVE_WAYLAND && !HAVE_X11
 				"Note: No Valid platform. Must be Android\n",
 #endif
-			platform_env);
+				platform_env);
 			free(platform_env);
-			platform_env = NULL;
+			platform_env = nullptr;
 		}
 #if HAVE_WAYLAND
 		if (wayland_possible)
@@ -110,16 +98,18 @@ out:
 		if (GLWin.wl_display)
 			wl_display_disconnect(GLWin.wl_display);
 	}
-		
+
 #endif
 #if HAVE_X11
 	if (selected_platform != EGL_PLATFORM_X11) {
 		if (GLWin.dpy)
 		{
 			XCloseDisplay(GLWin.dpy);
-			XCloseDisplay(GLWin.evdpy);
 		}
 	}
+#endif
+#if ANDROID
+	selected_platform = EGL_PLATFORM_ANDROID;
 #endif
 	if (selected_platform == EGL_PLATFORM_NONE)
 		return false;
@@ -127,7 +117,7 @@ out:
 	return true;
 }
 
-bool cPlatform::Init(EGLConfig config)
+bool cPlatform::Init(EGLConfig config, void *window_handle)
 {
 #if HAVE_WAYLAND
 	if (cPlatform::platform == EGL_PLATFORM_WAYLAND)
@@ -136,7 +126,7 @@ bool cPlatform::Init(EGLConfig config)
 #endif
 #if HAVE_X11
 	if (cPlatform::platform == EGL_PLATFORM_X11)
-		if (!XInterface.Initialize(config))
+		if (!XInterface.Initialize(config, window_handle))
 			return false;
 #endif
 #ifdef ANDROID
@@ -156,30 +146,30 @@ EGLDisplay cPlatform::EGLGetDisplay(void)
 {
 #if HAVE_WAYLAND
 	if (cPlatform::platform == EGL_PLATFORM_WAYLAND)
-		return (EGLDisplay) WaylandInterface.EGLGetDisplay();
+		return (EGLDisplay)WaylandInterface.EGLGetDisplay();
 #endif
 #if HAVE_X11
 	if (cPlatform::platform == EGL_PLATFORM_X11)
-		return (EGLDisplay) XInterface.EGLGetDisplay();
+		return (EGLDisplay)XInterface.EGLGetDisplay();
 #endif
 #ifdef ANDROID
 	return eglGetDisplay(EGL_DEFAULT_DISPLAY);
 #endif
-	return NULL;
+	return nullptr;
 }
 
 EGLNativeWindowType cPlatform::CreateWindow(void)
 {
 #if HAVE_WAYLAND
 	if (cPlatform::platform == EGL_PLATFORM_WAYLAND)
-		return (EGLNativeWindowType) WaylandInterface.CreateWindow();
+		return (EGLNativeWindowType)WaylandInterface.CreateWindow();
 #endif
 #if HAVE_X11
 	if (cPlatform::platform == EGL_PLATFORM_X11)
-		return (EGLNativeWindowType) XInterface.CreateWindow();
+		return (EGLNativeWindowType)XInterface.CreateWindow();
 #endif
 #ifdef ANDROID
-	return (EGLNativeWindowType)Host_GetRenderHandle(); 
+	return (EGLNativeWindowType)Host_GetRenderHandle();
 #endif
 	return 0;
 }
@@ -196,7 +186,7 @@ void cPlatform::DestroyWindow(void)
 #endif
 }
 
-void cPlatform::UpdateFPSDisplay(const char *text)
+void cPlatform::UpdateFPSDisplay(const std::string& text)
 {
 #if HAVE_WAYLAND
 	if (cPlatform::platform == EGL_PLATFORM_WAYLAND)
@@ -217,5 +207,21 @@ cPlatform::ToggleFullscreen(bool fullscreen)
 #endif
 #if HAVE_X11
 	// Only wayland uses this function
+#endif
+}
+
+void
+cPlatform::SwapBuffers()
+{
+#if HAVE_WAYLAND
+	if (cPlatform::platform == EGL_PLATFORM_WAYLAND)
+		WaylandInterface.SwapBuffers();
+#endif
+#if HAVE_X11
+	if (cPlatform::platform == EGL_PLATFORM_X11)
+		XInterface.SwapBuffers();
+#endif
+#if ANDROID
+	eglSwapBuffers(GLWin.egl_dpy, GLWin.egl_surf);
 #endif
 }

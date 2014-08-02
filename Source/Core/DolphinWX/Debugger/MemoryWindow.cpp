@@ -60,26 +60,26 @@ enum
 };
 
 BEGIN_EVENT_TABLE(CMemoryWindow, wxPanel)
-	EVT_TEXT(IDM_MEM_ADDRBOX,       CMemoryWindow::OnAddrBoxChange)
-	EVT_LISTBOX(IDM_SYMBOLLIST,     CMemoryWindow::OnSymbolListChange)
-	EVT_HOST_COMMAND(wxID_ANY,      CMemoryWindow::OnHostMessage)
-	EVT_BUTTON(IDM_SETVALBUTTON,    CMemoryWindow::SetMemoryValue)
-	EVT_BUTTON(IDM_DUMP_MEMORY,     CMemoryWindow::OnDumpMemory)
-	EVT_BUTTON(IDM_DUMP_MEM2,       CMemoryWindow::OnDumpMem2)
-	EVT_BUTTON(IDM_DUMP_FAKEVMEM,   CMemoryWindow::OnDumpFakeVMEM)
-	EVT_CHECKBOX(IDM_U8,            CMemoryWindow::U8)
-	EVT_CHECKBOX(IDM_U16,           CMemoryWindow::U16)
-	EVT_CHECKBOX(IDM_U32,           CMemoryWindow::U32)
-	EVT_BUTTON(IDM_SEARCH,          CMemoryWindow::onSearch)
-	EVT_CHECKBOX(IDM_ASCII,         CMemoryWindow::onAscii)
-	EVT_CHECKBOX(IDM_HEX,           CMemoryWindow::onHex)
+EVT_TEXT(IDM_MEM_ADDRBOX, CMemoryWindow::OnAddrBoxChange)
+EVT_LISTBOX(IDM_SYMBOLLIST, CMemoryWindow::OnSymbolListChange)
+EVT_HOST_COMMAND(wxID_ANY, CMemoryWindow::OnHostMessage)
+EVT_BUTTON(IDM_SETVALBUTTON, CMemoryWindow::SetMemoryValue)
+EVT_BUTTON(IDM_DUMP_MEMORY, CMemoryWindow::OnDumpMemory)
+EVT_BUTTON(IDM_DUMP_MEM2, CMemoryWindow::OnDumpMem2)
+EVT_BUTTON(IDM_DUMP_FAKEVMEM, CMemoryWindow::OnDumpFakeVMEM)
+EVT_CHECKBOX(IDM_U8, CMemoryWindow::U8)
+EVT_CHECKBOX(IDM_U16, CMemoryWindow::U16)
+EVT_CHECKBOX(IDM_U32, CMemoryWindow::U32)
+EVT_BUTTON(IDM_SEARCH, CMemoryWindow::onSearch)
+EVT_CHECKBOX(IDM_ASCII, CMemoryWindow::onAscii)
+EVT_CHECKBOX(IDM_HEX, CMemoryWindow::onHex)
 END_EVENT_TABLE()
 
 CMemoryWindow::CMemoryWindow(wxWindow* parent, wxWindowID id,
-		const wxPoint& pos, const wxSize& size, long style, const wxString& name)
-	: wxPanel(parent, id, pos, size, style, name)
+const wxPoint& pos, const wxSize& size, long style, const wxString& name)
+: wxPanel(parent, id, pos, size, style, name)
 {
-	wxBoxSizer* sizerBig   = new wxBoxSizer(wxHORIZONTAL);
+	wxBoxSizer* sizerBig = new wxBoxSizer(wxHORIZONTAL);
 	wxBoxSizer* sizerRight = new wxBoxSizer(wxVERTICAL);
 	// Didn't see anything useful in the left part
 	//wxBoxSizer* sizerLeft  = new wxBoxSizer(wxVERTICAL);
@@ -127,25 +127,29 @@ CMemoryWindow::CMemoryWindow(wxWindow* parent, wxWindowID id,
 	sizerBig->Fit(this);
 }
 
-void CMemoryWindow::Save(IniFile& _IniFile) const
+void CMemoryWindow::Save(IniFile& ini) const
 {
 	// Prevent these bad values that can happen after a crash or hanging
 	if (GetPosition().x != -32000 && GetPosition().y != -32000)
 	{
-		_IniFile.Set("MemoryWindow", "x", GetPosition().x);
-		_IniFile.Set("MemoryWindow", "y", GetPosition().y);
-		_IniFile.Set("MemoryWindow", "w", GetSize().GetWidth());
-		_IniFile.Set("MemoryWindow", "h", GetSize().GetHeight());
+		IniFile::Section* mem_window = ini.GetOrCreateSection("MemoryWindow");
+		mem_window->Set("x", GetPosition().x);
+		mem_window->Set("y", GetPosition().y);
+		mem_window->Set("w", GetSize().GetWidth());
+		mem_window->Set("h", GetSize().GetHeight());
 	}
 }
 
-void CMemoryWindow::Load(IniFile& _IniFile)
+void CMemoryWindow::Load(IniFile& ini)
 {
 	int x, y, w, h;
-	_IniFile.Get("MemoryWindow", "x", &x, GetPosition().x);
-	_IniFile.Get("MemoryWindow", "y", &y, GetPosition().y);
-	_IniFile.Get("MemoryWindow", "w", &w, GetSize().GetWidth());
-	_IniFile.Get("MemoryWindow", "h", &h, GetSize().GetHeight());
+
+	IniFile::Section* mem_window = ini.GetOrCreateSection("MemoryWindow");
+	mem_window->Get("x", &x, GetPosition().x);
+	mem_window->Get("y", &y, GetPosition().y);
+	mem_window->Get("w", &w, GetSize().GetWidth());
+	mem_window->Get("h", &h, GetSize().GetHeight());
+
 	SetSize(x, y, w, h);
 }
 
@@ -156,6 +160,12 @@ void CMemoryWindow::JumpToAddress(u32 _Address)
 
 void CMemoryWindow::SetMemoryValue(wxCommandEvent& event)
 {
+	if (!Memory::IsInitialized())
+	{
+		PanicAlertT("Cannot set uninitialized memory.");
+		return;
+	}
+
 	std::string str_addr = WxStrToStr(addrbox->GetValue());
 	std::string str_val = WxStrToStr(valbox->GetValue());
 	u32 addr;
@@ -187,7 +197,7 @@ void CMemoryWindow::OnAddrBoxChange(wxCommandEvent& event)
 		memview->Center(addr & ~3);
 	}
 
-	event.Skip(1);
+	event.Skip();
 }
 
 void CMemoryWindow::Update()
@@ -201,14 +211,14 @@ void CMemoryWindow::NotifyMapLoaded()
 	symbols->Show(false); // hide it for faster filling
 	symbols->Clear();
 #if 0
-	#ifdef _WIN32
+#ifdef _WIN32
 	const FunctionDB::XFuncMap &syms = g_symbolDB.Symbols();
 	for (FuntionDB::XFuncMap::iterator iter = syms.begin(); iter != syms.end(); ++iter)
 	{
-	int idx = symbols->Append(iter->second.name.c_str());
-	symbols->SetClientData(idx, (void*)&iter->second);
+		int idx = symbols->Append(iter->second.name.c_str());
+		symbols->SetClientData(idx, (void*)&iter->second);
 	}
-	#endif
+#endif
 #endif
 	symbols->Show(true);
 	Update();
@@ -231,13 +241,13 @@ void CMemoryWindow::OnHostMessage(wxCommandEvent& event)
 {
 	switch (event.GetId())
 	{
-		case IDM_NOTIFYMAPLOADED:
-			NotifyMapLoaded();
-			break;
+	case IDM_NOTIFYMAPLOADED:
+		NotifyMapLoaded();
+		break;
 	}
 }
 
-void DumpArray(const std::string& filename, const u8* data, size_t length)
+static void DumpArray(const std::string& filename, const u8* data, size_t length)
 {
 	if (data)
 	{
@@ -247,13 +257,13 @@ void DumpArray(const std::string& filename, const u8* data, size_t length)
 }
 
 // Write mram to file
-void CMemoryWindow::OnDumpMemory( wxCommandEvent& event )
+void CMemoryWindow::OnDumpMemory(wxCommandEvent& event)
 {
 	DumpArray(File::GetUserPath(F_RAMDUMP_IDX), Memory::m_pRAM, Memory::REALRAM_SIZE);
 }
 
 // Write exram (aram or mem2) to file
-void CMemoryWindow::OnDumpMem2( wxCommandEvent& event )
+void CMemoryWindow::OnDumpMem2(wxCommandEvent& event)
 {
 	if (SConfig::GetInstance().m_LocalCoreStartupParameter.bWii)
 	{
@@ -266,7 +276,7 @@ void CMemoryWindow::OnDumpMem2( wxCommandEvent& event )
 }
 
 // Write fake vmem to file
-void CMemoryWindow::OnDumpFakeVMEM( wxCommandEvent& event )
+void CMemoryWindow::OnDumpFakeVMEM(wxCommandEvent& event)
 {
 	DumpArray(File::GetUserPath(F_FAKEVMEMDUMP_IDX), Memory::m_pVirtualFakeVMEM, Memory::FAKEVMEM_SIZE);
 }
@@ -310,14 +320,14 @@ void CMemoryWindow::onSearch(wxCommandEvent& event)
 		}
 		break;
 	case 1:
+	{
+		u8* aram = DSP::GetARAMPtr();
+		if (aram)
 		{
-			u8* aram = DSP::GetARAMPtr();
-			if (aram)
-			{
-				TheRAM = aram;
-				szRAM = DSP::ARAM_SIZE;
-			}
+			TheRAM = aram;
+			szRAM = DSP::ARAM_SIZE;
 		}
+	}
 		break;
 	}
 	//Now we have memory to look in
@@ -326,10 +336,10 @@ void CMemoryWindow::onSearch(wxCommandEvent& event)
 	wxString rawData = valbox->GetValue();
 	std::vector<u8> Dest; //May need a better name
 	u32 size = 0;
-	int pad = rawData.size()%2; //If it's uneven
+	int pad = rawData.size() % 2; //If it's uneven
 	unsigned int i = 0;
 	long count = 0;
-	char copy[3] = {0};
+	char copy[3] = { 0 };
 	long newsize = 0;
 	unsigned char *tmp2 = nullptr;
 	char* tmpstr = nullptr;
@@ -338,8 +348,8 @@ void CMemoryWindow::onSearch(wxCommandEvent& event)
 	{
 		//We are looking for hex
 		//If it's uneven
-		size = (rawData.size()/2) + pad;
-		Dest.resize(size+32);
+		size = (rawData.size() / 2) + pad;
+		Dest.resize(size + 32);
 		newsize = rawData.size();
 
 		if (pad)
@@ -359,7 +369,7 @@ void CMemoryWindow::onSearch(wxCommandEvent& event)
 		for (i = 0; i < strlen(tmpstr); i++)
 		{
 			copy[0] = tmpstr[i];
-			copy[1] = tmpstr[i+1];
+			copy[1] = tmpstr[i + 1];
 			copy[2] = 0;
 			int tmpint;
 			sscanf(copy, "%02x", &tmpint);
@@ -375,8 +385,8 @@ void CMemoryWindow::onSearch(wxCommandEvent& event)
 	{
 		//Looking for an ascii string
 		size = rawData.size();
-		Dest.resize(size+1);
-		tmpstr = new char[size+1];
+		Dest.resize(size + 1);
+		tmpstr = new char[size + 1];
 
 		tmp2 = &Dest.front();
 		sprintf(tmpstr, "%s", WxStrToStr(rawData).c_str());
@@ -398,14 +408,14 @@ void CMemoryWindow::onSearch(wxCommandEvent& event)
 		{
 			sscanf(WxStrToStr(txt).c_str(), "%08x", &addr);
 		}
-		i = addr+4;
-		for ( ; i < szRAM; ++i)
+		i = addr + 4;
+		for (; i < szRAM; ++i)
 		{
 			for (k = 0; k < size; ++k)
 			{
 				if (i + k > szRAM) break;
 				if (k > size) break;
-				if (pnt[k] != TheRAM[i+k])
+				if (pnt[k] != TheRAM[i + k])
 				{
 					k = 0;
 					break;
@@ -415,7 +425,7 @@ void CMemoryWindow::onSearch(wxCommandEvent& event)
 			{
 				//Match was found
 				wxMessageBox(_("A match was found. Placing viewer at the offset."));
-				wxChar tmpwxstr[128] = {0};
+				wxChar tmpwxstr[128] = { 0 };
 				wxSprintf(tmpwxstr, "%08x", i);
 				wxString tmpwx(tmpwxstr);
 				addrbox->SetValue(tmpwx);

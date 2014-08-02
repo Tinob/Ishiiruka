@@ -43,6 +43,7 @@ void Shutdown();
 // Direct access to the device.
 extern LPDIRECT3DDEVICE9 dev;
 extern bool bFrameInProgress;
+extern HWND hWnd;
 
 void Reset();
 bool BeginFrame();

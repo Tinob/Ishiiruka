@@ -21,7 +21,7 @@
 
 #include "Common/FileUtil.h"
 #include "Common/CommonPaths.h"
-#include "Common/Log.h"
+#include "Common/Logging/Log.h"
 
 HWND m_emuWnd;
 LONG m_byteBuffer;

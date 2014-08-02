@@ -2,17 +2,17 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include "VideoCommon/VideoConfig.h"
 #include "Core/Host.h"
 #include "VideoCommon/RenderBase.h"
+#include "VideoCommon/VideoConfig.h"
 
 #include "VideoCommon/VertexShaderManager.h"
-#include "../GLInterface.h"
 #include "WGL.h"
 
-#include "VideoCommon/EmuWindow.h"
 static HDC hDC = NULL;       // Private GDI Device Context
 static HGLRC hRC = NULL;     // Permanent Rendering Context
+
+static HINSTANCE dllHandle = nullptr; // Handle to OpenGL32.dll
 
 void cInterfaceWGL::SwapInterval(int Interval)
 {
@@ -21,10 +21,20 @@ void cInterfaceWGL::SwapInterval(int Interval)
 	else
 		ERROR_LOG(VIDEO, "No support for SwapInterval (framerate clamped to monitor refresh rate).");
 }
+
 void cInterfaceWGL::Swap()
 {
 	SwapBuffers(hDC);
 }
+
+void* cInterfaceWGL::GetFuncAddress(const std::string& name)
+{
+	void* func = (void*)wglGetProcAddress((LPCSTR)name.c_str());
+	if (func == nullptr)
+		func = (void*)GetProcAddress(dllHandle, (LPCSTR)name.c_str());
+	return func;
+}
+
 
 // Draw messages on top of the screen
 bool cInterfaceWGL::PeekMessages()
@@ -42,11 +52,9 @@ bool cInterfaceWGL::PeekMessages()
 }
 
 // Show the current FPS
-void cInterfaceWGL::UpdateFPSDisplay(const char *text)
+void cInterfaceWGL::UpdateFPSDisplay(const std::string& text)
 {
-	TCHAR temp[512];
-	swprintf_s(temp, sizeof(temp)/sizeof(TCHAR), _T("%hs"), text);
-	EmuWindow::SetWindowText(temp);
+	SetWindowTextA((HWND)m_window_handle, text.c_str());
 }
 
 // Create rendering window.
@@ -60,15 +68,11 @@ bool cInterfaceWGL::Create(void *&window_handle)
 	s_backbuffer_width = _twidth;
 	s_backbuffer_height = _theight;
 
-	window_handle = (void*)EmuWindow::Create((HWND)window_handle, GetModuleHandle(0), _T("Please wait..."));
-	if (window_handle == NULL)
-	{
-		Host_SysMessage("failed to create window");
-		return false;
-	}
+	m_window_handle = window_handle;
 
-	// Show the window
-	EmuWindow::Show();
+#ifdef _WIN32
+	dllHandle = LoadLibrary(TEXT("OpenGL32.dll"));
+#endif
 
 	PIXELFORMATDESCRIPTOR pfd =         // pfd Tells Windows How We Want Things To Be
 	{
@@ -94,7 +98,7 @@ bool cInterfaceWGL::Create(void *&window_handle)
 
 	GLuint      PixelFormat;            // Holds The Results After Searching For A Match
 
-	if (!(hDC=GetDC(EmuWindow::GetWnd()))) {
+	if (!(hDC = GetDC((HWND)window_handle))) {
 		PanicAlert("(1) Can't create an OpenGL Device context. Fail.");
 		return false;
 	}
@@ -115,7 +119,8 @@ bool cInterfaceWGL::Create(void *&window_handle)
 
 bool cInterfaceWGL::MakeCurrent()
 {
-	return wglMakeCurrent(hDC, hRC) ? true : false;
+	bool success = wglMakeCurrent(hDC, hRC) ? true : false;
+	return success;
 }
 
 bool cInterfaceWGL::ClearCurrent()
@@ -127,31 +132,11 @@ bool cInterfaceWGL::ClearCurrent()
 void cInterfaceWGL::Update()
 {
 	RECT rcWindow;
-	if (!EmuWindow::GetParentWnd())
-	{
-		// We are not rendering to a child window - use client size.
-		GetClientRect(EmuWindow::GetWnd(), &rcWindow);
-	}
-	else
-	{
-		// We are rendering to a child window - use parent size.
-		GetWindowRect(EmuWindow::GetParentWnd(), &rcWindow);
-	}
+	GetClientRect((HWND)m_window_handle, &rcWindow);
 
 	// Get the new window width and height
-	// See below for documentation
-	int width = rcWindow.right - rcWindow.left;
-	int height = rcWindow.bottom - rcWindow.top;
-
-	// If we are rendering to a child window
-	if (EmuWindow::GetParentWnd() != 0 &&
-			(s_backbuffer_width != width || s_backbuffer_height != height) &&
-			width >= 4 && height >= 4)
-	{
-		::MoveWindow(EmuWindow::GetWnd(), 0, 0, width, height, FALSE);
-		s_backbuffer_width = width;
-		s_backbuffer_height = height;
-	}
+	s_backbuffer_width = rcWindow.right - rcWindow.left;
+	s_backbuffer_height = rcWindow.bottom - rcWindow.top;
 }
 
 // Close backend
@@ -168,7 +153,7 @@ void cInterfaceWGL::Shutdown()
 		hRC = NULL;
 	}
 
-	if (hDC && !ReleaseDC(EmuWindow::GetWnd(), hDC))
+	if (hDC && !ReleaseDC((HWND)m_window_handle, hDC))
 	{
 		ERROR_LOG(VIDEO, "Attempt to release device context failed.");
 		hDC = NULL;

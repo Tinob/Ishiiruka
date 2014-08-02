@@ -2,6 +2,7 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
+#include <algorithm>
 #include <string>
 #include "InputCommon/ControllerInterface/ForceFeedback/ForceFeedbackDevice.h"
 
@@ -15,21 +16,21 @@ template class ForceFeedbackDevice::Force<DICONSTANTFORCE>;
 template class ForceFeedbackDevice::Force<DIRAMPFORCE>;
 template class ForceFeedbackDevice::Force<DIPERIODIC>;
 
-typedef struct
+struct ForceType
 {
 	GUID guid;
 	const std::string name;
-} ForceType;
+};
 
 static const ForceType force_type_names[] =
 {
-	{GUID_ConstantForce, "Constant"}, // DICONSTANTFORCE
-	{GUID_RampForce, "Ramp"},         // DIRAMPFORCE
-	{GUID_Square, "Square"},          // DIPERIODIC ...
-	{GUID_Sine, "Sine"},
-	{GUID_Triangle, "Triangle"},
-	{GUID_SawtoothUp, "Sawtooth Up"},
-	{GUID_SawtoothDown, "Sawtooth Down"},
+	{ GUID_ConstantForce, "Constant" }, // DICONSTANTFORCE
+	{ GUID_RampForce, "Ramp" },         // DIRAMPFORCE
+	{ GUID_Square, "Square" },          // DIPERIODIC ...
+	{ GUID_Sine, "Sine" },
+	{ GUID_Triangle, "Triangle" },
+	{ GUID_SawtoothUp, "Sawtooth Up" },
+	{ GUID_SawtoothDown, "Sawtooth Down" },
 	//{GUID_Spring, "Spring"},          // DICUSTOMFORCE ... < I think
 	//{GUID_Damper, "Damper"},
 	//{GUID_Inertia, "Inertia"},
@@ -55,8 +56,8 @@ bool ForceFeedbackDevice::InitForceFeedback(const LPDIRECTINPUTDEVICE8 device, i
 	// TODO: check for DIDC_FORCEFEEDBACK in devcaps?
 
 	// temporary
-	DWORD rgdwAxes[2] = {DIJOFS_X, DIJOFS_Y};
-	LONG rglDirection[2] = {-200, 0};
+	DWORD rgdwAxes[2] = { DIJOFS_X, DIJOFS_Y };
+	LONG rglDirection[2] = { -200, 0 };
 
 	DIEFFECT eff;
 	memset(&eff, 0, sizeof(eff));
@@ -67,7 +68,7 @@ bool ForceFeedbackDevice::InitForceFeedback(const LPDIRECTINPUTDEVICE8 device, i
 	eff.dwGain = DI_FFNOMINALMAX;
 	eff.dwTriggerButton = DIEB_NOTRIGGER;
 	eff.dwTriggerRepeatInterval = 0;
-	eff.cAxes = std::min((DWORD)1, (DWORD)cAxes);
+	eff.cAxes = std::min<DWORD>(1, cAxes);
 	eff.rgdwAxes = rgdwAxes;
 	eff.rglDirection = rglDirection;
 
@@ -120,12 +121,12 @@ bool ForceFeedbackDevice::InitForceFeedback(const LPDIRECTINPUTDEVICE8 device, i
 	if (Outputs().size())
 	{
 		DIPROPDWORD dipdw;
-		dipdw.diph.dwSize = sizeof( DIPROPDWORD );
-		dipdw.diph.dwHeaderSize = sizeof( DIPROPHEADER );
+		dipdw.diph.dwSize = sizeof(DIPROPDWORD);
+		dipdw.diph.dwHeaderSize = sizeof(DIPROPHEADER);
 		dipdw.diph.dwObj = 0;
 		dipdw.diph.dwHow = DIPH_DEVICE;
 		dipdw.dwData = DIPROPAUTOCENTER_OFF;
-		device->SetProperty( DIPROP_AUTOCENTER, &dipdw.diph );
+		device->SetProperty(DIPROP_AUTOCENTER, &dipdw.diph);
 	}
 
 	return true;
@@ -218,7 +219,7 @@ void ForceFeedbackDevice::ForcePeriodic::SetState(const ControlState state)
 
 template <typename P>
 ForceFeedbackDevice::Force<P>::Force(const std::string& name, EffectState& state)
-: m_name(name), m_state(state)
+	: m_name(name), m_state(state)
 {
 	memset(&params, 0, sizeof(params));
 }

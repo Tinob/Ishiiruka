@@ -17,6 +17,7 @@
 #include "Common/Common.h"
 #include "Common/FileUtil.h"
 #include "Common/Hash.h"
+#include "Common/StringUtil.h"
 #include "DiscIO/Blob.h"
 #include "DiscIO/CompressedBlob.h"
 #include "DiscIO/DiscScrubber.h"
@@ -60,9 +61,9 @@ CompressedBlobReader* CompressedBlobReader::Create(const std::string& filename)
 
 CompressedBlobReader::~CompressedBlobReader()
 {
-	delete [] zlib_buffer;
-	delete [] block_pointers;
-	delete [] hashes;
+	delete[] zlib_buffer;
+	delete[] block_pointers;
+	delete[] hashes;
 }
 
 // IMPORTANT: Calling this function invalidates all earlier pointers gotten from this function.
@@ -105,9 +106,9 @@ void CompressedBlobReader::GetBlock(u64 block_num, u8 *out_ptr)
 	u32 block_hash = HashAdler32(source, comp_block_size);
 	if (block_hash != hashes[block_num])
 		PanicAlert("Hash of block %" PRIu64 " is %08x instead of %08x.\n"
-		           "Your ISO, %s, is corrupt.",
-		           block_num, block_hash, hashes[block_num],
-		           file_name.c_str());
+		"Your ISO, %s, is corrupt.",
+		block_num, block_hash, hashes[block_num],
+		file_name.c_str());
 
 	if (uncompressed)
 	{
@@ -117,13 +118,13 @@ void CompressedBlobReader::GetBlock(u64 block_num, u8 *out_ptr)
 	{
 		z_stream z;
 		memset(&z, 0, sizeof(z));
-		z.next_in  = source;
+		z.next_in = source;
 		z.avail_in = comp_block_size;
 		if (z.avail_in > header.block_size)
 		{
 			PanicAlert("We have a problem");
 		}
-		z.next_out  = dest;
+		z.next_out = dest;
 		z.avail_out = header.block_size;
 		inflateInit(&z);
 		int status = inflate(&z, Z_FULL_FLUSH);
@@ -141,7 +142,7 @@ void CompressedBlobReader::GetBlock(u64 block_num, u8 *out_ptr)
 }
 
 bool CompressFileToBlob(const std::string& infile, const std::string& outfile, u32 sub_type,
-						int block_size, CompressCB callback, void* arg)
+	int block_size, CompressCB callback, void* arg)
 {
 	bool scrubbing = false;
 
@@ -172,9 +173,9 @@ bool CompressFileToBlob(const std::string& infile, const std::string& outfile, u
 
 	CompressedBlobHeader header;
 	header.magic_cookie = kBlobCookie;
-	header.sub_type   = sub_type;
+	header.sub_type = sub_type;
 	header.block_size = block_size;
-	header.data_size  = File::GetSize(infile);
+	header.data_size = File::GetSize(infile);
 
 	// round upwards!
 	header.num_blocks = (u32)((header.data_size + (block_size - 1)) / block_size);
@@ -203,8 +204,8 @@ bool CompressFileToBlob(const std::string& infile, const std::string& outfile, u
 			int ratio = 0;
 			if (inpos != 0)
 				ratio = (int)(100 * position / inpos);
-			char temp[512];
-			sprintf(temp, "%i of %i blocks. Compression ratio %i%%", i, header.num_blocks, ratio);
+
+			std::string temp = StringFromFormat("%i of %i blocks. Compression ratio %i%%", i, header.num_blocks, ratio);
 			callback(temp, (float)i / (float)header.num_blocks, arg);
 		}
 
@@ -219,11 +220,11 @@ bool CompressFileToBlob(const std::string& infile, const std::string& outfile, u
 		z_stream z;
 		memset(&z, 0, sizeof(z));
 		z.zalloc = Z_NULL;
-		z.zfree  = Z_NULL;
+		z.zfree = Z_NULL;
 		z.opaque = Z_NULL;
-		z.next_in   = in_buf;
-		z.avail_in  = header.block_size;
-		z.next_out  = out_buf;
+		z.next_in = in_buf;
+		z.avail_in = header.block_size;
+		z.next_out = out_buf;
 		z.avail_out = block_size;
 		int retval = deflateInit(&z, 9);
 

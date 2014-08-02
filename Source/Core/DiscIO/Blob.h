@@ -25,7 +25,7 @@ class IBlobReader
 public:
 	virtual ~IBlobReader() {}
 
-	virtual u64 GetRawSize() const  = 0;
+	virtual u64 GetRawSize() const = 0;
 	virtual u64 GetDataSize() const = 0;
 	// NOT thread-safe - can't call this from multiple threads.
 	virtual bool Read(u64 offset, u64 size, u8* out_ptr) = 0;
@@ -66,11 +66,11 @@ public:
 // Factory function - examines the path to choose the right type of IBlobReader, and returns one.
 IBlobReader* CreateBlobReader(const std::string& filename);
 
-typedef void (*CompressCB)(const char *text, float percent, void* arg);
+typedef void(*CompressCB)(const std::string& text, float percent, void* arg);
 
 bool CompressFileToBlob(const std::string& infile, const std::string& outfile, u32 sub_type = 0, int sector_size = 16384,
-		CompressCB callback = nullptr, void *arg = nullptr);
+	CompressCB callback = nullptr, void *arg = nullptr);
 bool DecompressBlobToFile(const std::string& infile, const std::string& outfile,
-		CompressCB callback = nullptr, void *arg = nullptr);
+	CompressCB callback = nullptr, void *arg = nullptr);
 
 }  // namespace

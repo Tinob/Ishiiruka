@@ -19,11 +19,11 @@
 // so that people can change default language.
 
 static const char iplverPAL[0x100] = "(C) 1999-2001 Nintendo.  All rights reserved."
-									 "(C) 1999 ArtX Inc.  All rights reserved."
-									 "PAL  Revision 1.0  ";
+"(C) 1999 ArtX Inc.  All rights reserved."
+"PAL  Revision 1.0  ";
 
-static const char iplverNTSC[0x100]= "(C) 1999-2001 Nintendo.  All rights reserved."
-									 "(C) 1999 ArtX Inc.  All rights reserved.";
+static const char iplverNTSC[0x100] = "(C) 1999-2001 Nintendo.  All rights reserved."
+"(C) 1999 ArtX Inc.  All rights reserved.";
 
 // bootrom descrambler reversed by segher
 // Copyright 2008 Segher Boessenkool <segher@kernel.crashing.org>
@@ -69,7 +69,7 @@ void CEXIIPL::Descrambler(u8* data, u32 size)
 			t ^= 0xa740;
 
 		nacc++;
-		acc = 2*acc + x;
+		acc = 2 * acc + x;
 		if (nacc == 8)
 		{
 			data[it++] ^= acc;
@@ -79,14 +79,11 @@ void CEXIIPL::Descrambler(u8* data, u32 size)
 }
 
 CEXIIPL::CEXIIPL() :
-	m_uPosition(0),
-	m_uAddress(0),
-	m_uRWOffset(0),
-	m_count(0),
-	m_FontsLoaded(false)
+m_uPosition(0),
+m_uAddress(0),
+m_uRWOffset(0),
+m_FontsLoaded(false)
 {
-	memset(m_szBuffer,0,sizeof(m_szBuffer));
-
 	// Determine region
 	m_bNTSC = SConfig::GetInstance().m_LocalCoreStartupParameter.bNTSC;
 
@@ -114,7 +111,6 @@ CEXIIPL::CEXIIPL() :
 	// Clear RTC
 	memset(m_RTC, 0, sizeof(m_RTC));
 
-
 	// We Overwrite language selection here since it's possible on the GC to change the language as you please
 	g_SRAM.lang = SConfig::GetInstance().m_LocalCoreStartupParameter.SelectedLanguage;
 
@@ -124,11 +120,6 @@ CEXIIPL::CEXIIPL() :
 
 CEXIIPL::~CEXIIPL()
 {
-	if (m_count > 0)
-	{
-		m_szBuffer[m_count] = 0x00;
-	}
-
 	FreeMemoryPages(m_pIPL, ROM_SIZE);
 	m_pIPL = nullptr;
 
@@ -142,8 +133,7 @@ void CEXIIPL::DoState(PointerWrap &p)
 	p.Do(m_uPosition);
 	p.Do(m_uAddress);
 	p.Do(m_uRWOffset);
-	p.Do(m_szBuffer);
-	p.Do(m_count);
+	p.Do(m_buffer);
 	p.Do(m_FontsLoaded);
 }
 
@@ -274,13 +264,12 @@ void CEXIIPL::TransferByte(u8& _uByte)
 			if (IsWriteCommand())
 			{
 				if (_uByte != '\0')
-					m_szBuffer[m_count++] = _uByte;
-				if ((m_count >= 256) || (_uByte == 0xD))
+					m_buffer += _uByte;
+
+				if (_uByte == '\r')
 				{
-					m_szBuffer[m_count] = 0x00;
-					NOTICE_LOG(OSREPORT, "%s", m_szBuffer);
-					memset(m_szBuffer, 0, sizeof(m_szBuffer));
-					m_count = 0;
+					NOTICE_LOG(OSREPORT, "%s", m_buffer.c_str());
+					m_buffer.clear();
 				}
 			}
 			else
@@ -374,9 +363,9 @@ u32 CEXIIPL::GetGCTime()
 	// Get SRAM bias
 	u32 Bias;
 
-	for (int i=0; i<4; i++)
+	for (int i = 0; i<4; i++)
 	{
-		((u8*)&Bias)[i] = sram_dump[0xc + (i^3)];
+		((u8*)&Bias)[i] = sram_dump[0xc + (i ^ 3)];
 	}
 
 	// Get the time ...

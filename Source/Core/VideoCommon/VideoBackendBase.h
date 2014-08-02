@@ -80,7 +80,7 @@ public:
 
 	virtual void EmuStateChange(EMUSTATE_CHANGE) = 0;
 
-	virtual void UpdateFPSDisplay(const char*) = 0;
+	virtual void UpdateFPSDisplay(const std::string&) = 0;
 
 	virtual unsigned int PeekMessages() = 0;
 
@@ -104,9 +104,9 @@ public:
 	virtual u32 Video_AccessEFB(EFBAccessType, u32, u32, u32) = 0;
 	virtual u32 Video_GetQueryResult(PerfQueryType type) = 0;
 
-	virtual void Video_AddMessage(const char* pstr, unsigned int milliseconds) = 0;
+	virtual void Video_AddMessage(const std::string& pstr, unsigned int milliseconds) = 0;
 	virtual void Video_ClearMessages() = 0;
-	virtual bool Video_Screenshot(const char* filename) = 0;
+	virtual bool Video_Screenshot(const std::string& filename) = 0;
 
 	virtual void Video_SetRendering(bool bEnabled) = 0;
 
@@ -153,9 +153,9 @@ class VideoBackendHardware : public VideoBackend
 	u32 Video_AccessEFB(EFBAccessType, u32, u32, u32);
 	u32 Video_GetQueryResult(PerfQueryType type);
 	
-	void Video_AddMessage(const char* pstr, unsigned int milliseconds);
+	void Video_AddMessage(const std::string& str, unsigned int milliseconds);
 	void Video_ClearMessages();
-	bool Video_Screenshot(const char* filename);
+	bool Video_Screenshot(const std::string& filename);
 
 	void Video_SetRendering(bool bEnabled);
 

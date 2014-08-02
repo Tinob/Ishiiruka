@@ -29,7 +29,6 @@
 #include "PixelShaderCache.h"
 #include "VideoCommon/VertexLoaderManager.h"
 #include "TextureCache.h"
-#include "VideoCommon/EmuWindow.h"
 #include "VideoCommon/AVIDump.h"
 #include "VideoCommon/OnScreenDisplay.h"
 #include "FramebufferManager.h"
@@ -59,7 +58,7 @@ static bool s_vsync;
 static char *st;
 static bool s_b3D_RightFrame = false;
 static LPDIRECT3DSURFACE9 ScreenShootMEMSurface = NULL;
-
+static bool s_last_fullscreen_mode;
 
 void SetupDeviceObjects()
 {
@@ -99,7 +98,7 @@ void TeardownDeviceObjects()
 }
 
 // Init functions
-Renderer::Renderer()
+Renderer::Renderer(void *&window_handle)
 {
 	InitFPSCounter();
 
@@ -121,7 +120,7 @@ Renderer::Renderer()
 	if (fullScreenRes == D3D::GetAdapter(g_ActiveConfig.iAdapter).resolutions.size())
 		fullScreenRes = 0;
 
-	D3D::Create(g_ActiveConfig.iAdapter, EmuWindow::GetWnd(), 
+	D3D::Create(g_ActiveConfig.iAdapter, (HWND)window_handle,
 		fullScreenRes, backbuffer_ms_mode, false);
 
 	IS_AMD = D3D::IsATIDevice();
@@ -209,10 +208,10 @@ Renderer::~Renderer()
 	delete[] st;
 }
 
-void Renderer::RenderText(const char *text, int left, int top, u32 color)
+void Renderer::RenderText(const std::string &text, int left, int top, u32 color)
 {
 	TargetRectangle trc = GetTargetRectangle();
-	D3D::font.DrawTextScaled((float)(trc.left + left), (float)(trc.top + top), 20, 20, 0.0f, color, text);
+	D3D::font.DrawTextScaled((float)(trc.left + left), (float)(trc.top + top), 20, 20, 0.0f, color, text.c_str());
 }
 
 TargetRectangle Renderer::ConvertEFBRectangle(const EFBRectangle& rc)
@@ -246,32 +245,27 @@ namespace DX9
 
 // With D3D, we have to resize the backbuffer if the window changed
 // size.
-bool Renderer::CheckForResize()
+void Renderer::CheckForResize(bool &resized, bool &fullscreen, bool &fullscreencahnged)
 {
-	while (EmuWindow::IsSizing())
-		Sleep(10);
-
-	if (EmuWindow::GetParentWnd())
-	{
-		// Re-stretch window to parent window size again, if it has a parent window.
-		RECT rcParentWindow;
-		GetWindowRect(EmuWindow::GetParentWnd(), &rcParentWindow);
-		int width = rcParentWindow.right - rcParentWindow.left;
-		int height = rcParentWindow.bottom - rcParentWindow.top;
-		if (width != Renderer::GetBackbufferWidth() || height != Renderer::GetBackbufferHeight())
-			MoveWindow(EmuWindow::GetWnd(), 0, 0, width, height, FALSE);
-	}
-
 	RECT rcWindow;
-	GetClientRect(EmuWindow::GetWnd(), &rcWindow);
+	GetClientRect(D3D::hWnd, &rcWindow);
 	int client_width = rcWindow.right - rcWindow.left;
 	int client_height = rcWindow.bottom - rcWindow.top;
-
 	// Sanity check
-	if ((client_width != Renderer::GetBackbufferWidth() ||
-		client_height != Renderer::GetBackbufferHeight()) && 
-		client_width >= 4 && client_height >= 4)
+	resized = (client_width != Renderer::GetBackbufferWidth()
+		|| client_height != Renderer::GetBackbufferHeight()
+		|| s_vsync != g_ActiveConfig.IsVSync()) &&
+		client_width >= 4 && client_height >= 4;
+	
+	fullscreen = g_ActiveConfig.bFullscreen &&
+		!SConfig::GetInstance().m_LocalCoreStartupParameter.bRenderToMain;
+
+	fullscreencahnged = s_last_fullscreen_mode != fullscreen;
+
+	if (resized || fullscreencahnged)
 	{
+		// Handle vsync changes during execution
+		s_vsync = g_ActiveConfig.IsVSync();
 		TeardownDeviceObjects();
 
 		D3D::Reset();
@@ -282,10 +276,7 @@ bool Renderer::CheckForResize()
 		D3D::dev->CreateOffscreenPlainSurface(Renderer::GetBackbufferWidth(), Renderer::GetBackbufferHeight(),
 			D3DFMT_X8R8G8B8, D3DPOOL_SYSTEMMEM, &ScreenShootMEMSurface, NULL );
 
-		return true;
 	}
-
-	return false;
 }
 
 // This function allows the CPU to directly access the EFB.
@@ -774,7 +765,7 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 		{
 			s_recordWidth = GetTargetRectangle().GetWidth();
 			s_recordHeight = GetTargetRectangle().GetHeight();
-			bAVIDumping = AVIDump::Start(EmuWindow::GetParentWnd(), s_recordWidth, s_recordHeight);
+			bAVIDumping = AVIDump::Start(D3D::hWnd, s_recordWidth, s_recordHeight);
 			if (!bAVIDumping)
 			{
 				PanicAlert("Error dumping frames to AVI.");
@@ -869,8 +860,11 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 
 	SetWindowSize(fbWidth, fbHeight);
 
-	const bool windowResized = CheckForResize();
-
+	bool windowResized;
+	bool fullscreen;
+	bool fullscreen_changed;
+	CheckForResize(windowResized, fullscreen, fullscreen_changed);;	
+	
 	bool xfbchanged = false;
 
 	if (FramebufferManagerBase::LastXfbWidth() != fbWidth || FramebufferManagerBase::LastXfbHeight() != fbHeight)
@@ -884,7 +878,11 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 
 	u32 newAA = g_ActiveConfig.iMultisampleMode;
 
-	if (xfbchanged || windowResized || s_LastEFBScale != g_ActiveConfig.iEFBScale || s_LastAA != newAA)
+	if (xfbchanged 
+		|| windowResized 
+		|| fullscreen_changed
+		|| s_LastEFBScale != g_ActiveConfig.iEFBScale 
+		|| s_LastAA != newAA)
 	{
 		s_LastAA = newAA;
 
@@ -897,8 +895,18 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 
 		D3D::dev->SetRenderTarget(0, D3D::GetBackBufferSurface());
 		D3D::dev->SetDepthStencilSurface(D3D::GetBackBufferDepthSurface());
-		if (windowResized)
+		if (windowResized || fullscreen_changed)
 		{
+			// Apply fullscreen state
+			if (fullscreen_changed)
+			{
+				s_last_fullscreen_mode = fullscreen;
+				// Notify the host that it is safe to exit fullscreen
+				if (!fullscreen)
+				{
+					Host_RequestFullscreen(false);
+				}
+			}
 			// device objects lost, so recreate all of them
 			SetupDeviceObjects();
 		}
@@ -922,16 +930,6 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 	// Set default viewport and scissor, for the clear to work correctly
 	// New frame
 	stats.ResetFrame();
-
-	// Handle vsync changes during execution
-	if(s_vsync != g_ActiveConfig.IsVSync())
-	{
-		s_vsync = g_ActiveConfig.IsVSync();
-		TeardownDeviceObjects();
-		D3D::Reset();
-		// device objects lost, so recreate all of them
-		SetupDeviceObjects();
-	}
 	D3D::BeginFrame();
 	RestoreAPIState();
 

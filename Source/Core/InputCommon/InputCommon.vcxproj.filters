@@ -17,8 +17,6 @@
   <ItemGroup>
     <ClCompile Include="ControllerEmu.cpp" />
     <ClCompile Include="InputConfig.cpp" />
-    <ClCompile Include="UDPWiimote.cpp" />
-    <ClCompile Include="UDPWrapper.cpp" />
     <ClCompile Include="ControllerInterface\DInput\DInput.cpp">
       <Filter>ControllerInterface\DInput</Filter>
     </ClCompile>
@@ -49,8 +47,6 @@
     <ClInclude Include="ControllerEmu.h" />
     <ClInclude Include="GCPadStatus.h" />
     <ClInclude Include="InputConfig.h" />
-    <ClInclude Include="UDPWiimote.h" />
-    <ClInclude Include="UDPWrapper.h" />
     <ClInclude Include="ControllerInterface\DInput\DInput.h">
       <Filter>ControllerInterface\DInput</Filter>
     </ClInclude>

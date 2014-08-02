@@ -15,7 +15,7 @@
 #define __has_feature(x) 0
 #endif
 
-// SVN version number
+// Git version number
 extern const char *scm_desc_str;
 extern const char *scm_branch_str;
 extern const char *scm_rev_str;
@@ -36,6 +36,28 @@ extern const char *netplay_dolphin_ver;
 #else
 // Not sure MSVC even checks this...
 #define UNUSED
+#endif
+
+#if defined(__GNUC__) || __clang__
+#define EXPECT(x, y) __builtin_expect(x, y)
+#define LIKELY(x)    __builtin_expect(!!(x), 1)
+#define UNLIKELY(x)  __builtin_expect(!!(x), 0)
+// Careful, wrong assumptions result in undefined behavior!
+#define UNREACHABLE  __builtin_unreachable()
+// Careful, wrong assumptions result in undefined behavior!
+#define ASSUME(x)    do { if (!x) __builtin_unreachable(); } while (0)
+#else
+#define EXPECT(x, y) (x)
+#define LIKELY(x)    (x)
+#define UNLIKELY(x)  (x)
+// Careful, wrong assumptions result in undefined behavior!
+#define UNREACHABLE  ASSUME(0)
+#if defined(_MSC_VER)
+// Careful, wrong assumptions result in undefined behavior!
+#define ASSUME(x) __assume(x)
+#else
+#define ASSUME(x) do { void(x); } while (0)
+#endif
 #endif
 
 #define STACKALIGN
@@ -69,40 +91,40 @@ private:
 #elif defined _WIN32
 
 // Check MSC ver
-	#if !defined _MSC_VER || _MSC_VER <= 1000
-		#error needs at least version 1000 of MSC
-	#endif
+#if !defined _MSC_VER || _MSC_VER <= 1000
+#error needs at least version 1000 of MSC
+#endif
 
-	#define NOMINMAX
+#define NOMINMAX
 
 // Memory leak checks
-	#define CHECK_HEAP_INTEGRITY()
+#define CHECK_HEAP_INTEGRITY()
 
 // Alignment
-	#define GC_ALIGNED16(x) __declspec(align(16)) x
-	#define GC_ALIGNED32(x) __declspec(align(32)) x
-	#define GC_ALIGNED64(x) __declspec(align(64)) x
-	#define GC_ALIGNED128(x) __declspec(align(128)) x
-	#define GC_ALIGNED16_DECL(x) __declspec(align(16)) x
-	#define GC_ALIGNED64_DECL(x) __declspec(align(64)) x
+#define GC_ALIGNED16(x) __declspec(align(16)) x
+#define GC_ALIGNED32(x) __declspec(align(32)) x
+#define GC_ALIGNED64(x) __declspec(align(64)) x
+#define GC_ALIGNED128(x) __declspec(align(128)) x
+#define GC_ALIGNED16_DECL(x) __declspec(align(16)) x
+#define GC_ALIGNED64_DECL(x) __declspec(align(64)) x
 
 // Since they are always around on windows
-	#define HAVE_WX 1
-	#define HAVE_OPENAL 1
+#define HAVE_WX 1
+#define HAVE_OPENAL 1
 
-	#define HAVE_PORTAUDIO 1
+#define HAVE_PORTAUDIO 1
 
 // Debug definitions
-	#if defined(_DEBUG)
-		#include <crtdbg.h>
-		#undef CHECK_HEAP_INTEGRITY
-		#define CHECK_HEAP_INTEGRITY() {if (!_CrtCheckMemory()) PanicAlert("memory corruption detected. see log.");}
-		// If you want to see how much a pain in the ass singletons are, for example:
-		// {614} normal block at 0x030C5310, 188 bytes long.
-		// Data: <Master Log      > 4D 61 73 74 65 72 20 4C 6F 67 00 00 00 00 00 00
-		struct CrtDebugBreak { CrtDebugBreak(int spot) { _CrtSetBreakAlloc(spot); } };
-		//CrtDebugBreak breakAt(614);
-	#endif // end DEBUG/FAST
+#if defined(_DEBUG)
+#include <crtdbg.h>
+#undef CHECK_HEAP_INTEGRITY
+#define CHECK_HEAP_INTEGRITY() {if (!_CrtCheckMemory()) PanicAlert("memory corruption detected. see log.");}
+// If you want to see how much a pain in the ass singletons are, for example:
+// {614} normal block at 0x030C5310, 188 bytes long.
+// Data: <Master Log      > 4D 61 73 74 65 72 20 4C 6F 67 00 00 00 00 00 00
+struct CrtDebugBreak { CrtDebugBreak(int spot) { _CrtSetBreakAlloc(spot); } };
+//CrtDebugBreak breakAt(614);
+#endif // end DEBUG/FAST
 
 #endif
 
@@ -169,5 +191,5 @@ enum EMUSTATE_CHANGE
 
 #include "Common/CommonTypes.h" // IWYU pragma: export
 #include "Common/CommonFuncs.h" // IWYU pragma: export // NOLINT
-#include "Common/Log.h" // IWYU pragma: export
 #include "Common/MsgHandler.h" // IWYU pragma: export
+#include "Common/Logging/Log.h" // IWYU pragma: export

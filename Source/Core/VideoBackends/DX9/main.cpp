@@ -5,7 +5,7 @@
 #include "Common/Common.h"
 #include "Common/Atomic.h"
 #include "Common/Thread.h"
-#include "Common/LogManager.h"
+#include "Common/Logging/LogManager.h"
 
 #if defined(HAVE_WX) && HAVE_WX
 #include "DolphinWX/VideoConfigDiag.h"
@@ -32,7 +32,6 @@
 #include "VideoCommon/OnScreenDisplay.h"
 #include "D3DTexture.h"
 #include "D3DUtil.h"
-#include "VideoCommon/EmuWindow.h"
 #include "VideoCommon/VideoState.h"
 #include "Render.h"
 #include "VideoCommon/DLCache.h"
@@ -61,11 +60,10 @@ unsigned int VideoBackend::PeekMessages()
 	return TRUE;
 }
 
-void VideoBackend::UpdateFPSDisplay(const char *text)
+void VideoBackend::UpdateFPSDisplay(const std::string& text)
 {
-	TCHAR temp[512];
-	swprintf_s(temp, sizeof(temp)/sizeof(TCHAR), _T("%hs | DX9 | %hs"), scm_rev_str, text);
-	EmuWindow::SetWindowText(temp);
+	std::string str = StringFromFormat("%s | DX9 | %s", scm_rev_str, text.c_str());
+	SetWindowTextA((HWND)m_window_handle, str.c_str());
 }
 
 std::string VideoBackend::GetName()
@@ -96,11 +94,10 @@ void InitBackendInfo()
 	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT3] = true;
 	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT5] = true;
 	g_Config.backend_info.bUseMinimalMipCount = true;
-	g_Config.backend_info.bSupports3DVision = true;
+	g_Config.backend_info.bSupportsExclusiveFullscreen = true;
 	g_Config.backend_info.bSupportsPrimitiveRestart = false; // D3D9 does not support primitive restart
 	g_Config.backend_info.bSupportsSeparateAlphaFunction = (device_caps.PrimitiveMiscCaps & D3DPMISCCAPS_SEPARATEALPHABLEND) == D3DPMISCCAPS_SEPARATEALPHABLEND;
 	// Dual source blend disabled by default until a proper method to test for support is found	
-	g_Config.backend_info.bSupports3DVision = true;
 	g_Config.backend_info.bSupportsDualSourceBlend = false;	
 	g_Config.backend_info.bSupportsFormatReinterpretation = true;
 	g_Config.backend_info.bSupportsPixelLighting = C_PLIGHTS + 40 <= maxConstants && C_PMATERIALS + 4 <= maxConstants;
@@ -154,7 +151,7 @@ bool VideoBackend::Initialize(void *&window_handle)
 	g_Config.backend_info.bSupportsDualSourceBlend = g_Config.bForceDualSourceBlend;
 	UpdateActiveConfig();
 
-	window_handle = (void*)EmuWindow::Create((HWND)window_handle, GetModuleHandle(0), _T("Loading - Please wait."));
+	m_window_handle = window_handle;
 	if (window_handle == NULL)
 	{
 		ERROR_LOG(VIDEO, "An error has occurred while trying to create the window.");
@@ -162,10 +159,9 @@ bool VideoBackend::Initialize(void *&window_handle)
 	}
 	else if (FAILED(DX9::D3D::Init()))
 	{
-		MessageBox(GetActiveWindow(), _T("Unable to initialize Direct3D. Please make sure that you have the latest version of DirectX 9.0c correctly installed."), _T("Fatal Error"), MB_ICONERROR|MB_OK);
+		MessageBox(GetActiveWindow(), _T("Unable to initialize Direct3D. Please make sure that you have the latest version of DirectX 9.0c correctly installed."), _T("Fatal Error"), MB_ICONERROR | MB_OK);
 		return false;
 	}
-
 	s_BackendInitialized = true;
 
 	return true;
@@ -181,7 +177,7 @@ void VideoBackend::Video_Prepare()
 	// internal interfaces
 	g_vertex_manager = new VertexManager;
 	g_perf_query = new PerfQuery;
-	g_renderer = new Renderer;
+	g_renderer = new Renderer(m_window_handle);
 	g_texture_cache = new TextureCache;	
 	// VideoCommon
 	BPInit();

@@ -320,7 +320,7 @@ HRESULT Create(HWND wnd)
 	swap_chain_desc.OutputWindow = wnd;
 	swap_chain_desc.SampleDesc.Count = 1;
 	swap_chain_desc.SampleDesc.Quality = 0;
-	swap_chain_desc.Windowed = TRUE;
+	swap_chain_desc.Windowed = !g_ActiveConfig.bFullscreen;
 
 	DXGI_MODE_DESC mode_desc;
 	memset(&mode_desc, 0, sizeof(mode_desc));
@@ -336,9 +336,13 @@ HRESULT Create(HWND wnd)
 		hr = output->FindClosestMatchingMode(&mode_desc, &swap_chain_desc.BufferDesc, NULL);
 		if (FAILED(hr)) MessageBox(wnd, _T("Failed to find a supported video mode"), _T("Dolphin Direct3D 11 backend"), MB_OK | MB_ICONERROR);
 	}
-	// forcing buffer resolution to xres and yres.. TODO: The new video mode might not actually be supported!
-	swap_chain_desc.BufferDesc.Width = xres;
-	swap_chain_desc.BufferDesc.Height = yres;
+	if (swap_chain_desc.Windowed)
+	{
+		// forcing buffer resolution to xres and yres..
+		// this is not a problem as long as we're in windowed mode
+		swap_chain_desc.BufferDesc.Width = xres;
+		swap_chain_desc.BufferDesc.Height = yres;
+	}
 
 #if defined(_DEBUG) || defined(DEBUGFAST)
 	// Creating debug devices can sometimes fail if the user doesn't have the correct
@@ -408,6 +412,8 @@ void ReleaseStates();
 
 void Close()
 {
+	// we can't release the swapchain while in fullscreen.
+	swapchain->SetFullscreenState(false, nullptr);
 	// release all bound resources
 	context->ClearState();
 	SAFE_RELEASE(backbuf);
@@ -622,6 +628,24 @@ void Present()
 {
 	// TODO: Is 1 the correct value for vsyncing?
 	swapchain->Present((UINT)g_ActiveConfig.IsVSync(), 0);
+}
+
+HRESULT SetFullscreenState(bool enable_fullscreen)
+{
+	return swapchain->SetFullscreenState(enable_fullscreen, nullptr);
+}
+
+HRESULT GetFullscreenState(bool* fullscreen_state)
+{
+	if (fullscreen_state == nullptr)
+	{
+		return E_POINTER;
+	}
+
+	BOOL state;
+	HRESULT hr = swapchain->GetFullscreenState(&state, nullptr);
+	*fullscreen_state = !!state;
+	return hr;
 }
 
 }  // namespace D3D

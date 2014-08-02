@@ -21,24 +21,24 @@
 
 namespace {
 
-void ParseLine(const std::string& line, std::string* keyOut, std::string* valueOut)
-{
-	if (line[0] == '#')
-		return;
-
-	size_t firstEquals = line.find("=", 0);
-
-	if (firstEquals != std::string::npos)
+	void ParseLine(const std::string& line, std::string* keyOut, std::string* valueOut)
 	{
-		// Yes, a valid line!
-		*keyOut = StripSpaces(line.substr(0, firstEquals));
+		if (line[0] == '#')
+			return;
 
-		if (valueOut)
+		size_t firstEquals = line.find("=", 0);
+
+		if (firstEquals != std::string::npos)
 		{
-			*valueOut = StripQuotes(StripSpaces(line.substr(firstEquals + 1, std::string::npos)));
+			// Yes, a valid line!
+			*keyOut = StripSpaces(line.substr(0, firstEquals));
+
+			if (valueOut)
+			{
+				*valueOut = StripQuotes(StripSpaces(line.substr(firstEquals + 1, std::string::npos)));
+			}
 		}
 	}
-}
 
 }
 
@@ -233,7 +233,7 @@ IniFile::Section* IniFile::GetOrCreateSection(const std::string& sectionName)
 	if (!section)
 	{
 		sections.push_back(Section(sectionName));
-		section = &sections[sections.size() - 1];
+		section = &sections.back();
 	}
 	return section;
 }
@@ -323,7 +323,7 @@ bool IniFile::GetLines(const std::string& sectionName, std::vector<std::string>*
 
 void IniFile::SortSections()
 {
-	std::sort(sections.begin(), sections.end());
+	sections.sort();
 }
 
 bool IniFile::Load(const std::string& filename, bool keep_current_data)
@@ -354,9 +354,9 @@ bool IniFile::Load(const std::string& filename, bool keep_current_data)
 
 #ifndef _WIN32
 		// Check for CRLF eol and convert it to LF
-		if (!line.empty() && line.at(line.size()-1) == '\r')
+		if (!line.empty() && line.at(line.size() - 1) == '\r')
 		{
-			line.erase(line.size()-1);
+			line.erase(line.size() - 1);
 		}
 #endif
 
@@ -384,10 +384,10 @@ bool IniFile::Load(const std::string& filename, bool keep_current_data)
 					// Kind of a hack, but the support for raw lines inside an
 					// INI is a hack anyway.
 					if ((key == "" && value == "") ||
-					    (line.size() >= 1 &&
-					     (line[0] == '$' ||
-					      line[0] == '+' ||
-					      line[0] == '*')))
+						(line.size() >= 1 &&
+						(line[0] == '$' ||
+						line[0] == '+' ||
+						line[0] == '*')))
 						current_section->lines.push_back(line);
 					else
 						current_section->Set(key, value);
@@ -436,78 +436,23 @@ bool IniFile::Save(const std::string& filename)
 	return File::RenameSync(temp, filename);
 }
 
-bool IniFile::Get(const std::string& sectionName, const std::string& key, std::vector<std::string>* values)
-{
-	Section *section = GetSection(sectionName);
-	if (!section)
-		return false;
-	return section->Get(key, values);
-}
-
-bool IniFile::Get(const std::string& sectionName, const std::string& key, int* value, int defaultValue)
-{
-	Section *section = GetSection(sectionName);
-	if (!section) {
-		*value = defaultValue;
-		return false;
-	} else {
-		return section->Get(key, value, defaultValue);
-	}
-}
-
-bool IniFile::Get(const std::string& sectionName, const std::string& key, u32* value, u32 defaultValue)
-{
-	Section *section = GetSection(sectionName);
-	if (!section) {
-		*value = defaultValue;
-		return false;
-	} else {
-		return section->Get(key, value, defaultValue);
-	}
-}
-
-bool IniFile::Get(const std::string& sectionName, const std::string& key, bool* value, bool defaultValue)
-{
-	Section *section = GetSection(sectionName);
-	if (!section) {
-		*value = defaultValue;
-		return false;
-	} else {
-		return section->Get(key, value, defaultValue);
-	}
-}
-
-bool IniFile::Get(const std::string& sectionName, const std::string& key, std::string* value, const std::string& defaultValue)
-{
-	Section* section = GetSection(sectionName);
-	if (!section) {
-		if (&defaultValue != &NULL_STRING) {
-			*value = defaultValue;
-		}
-		return false;
-	}
-	return section->Get(key, value, defaultValue);
-}
-
-
-
 // Unit test. TODO: Move to the real unit test framework.
 /*
-   int main()
-   {
-    IniFile ini;
-    ini.Load("my.ini");
-    ini.Set("Hej", "A", "amaskdfl");
-    ini.Set("Mossa", "A", "amaskdfl");
-    ini.Set("Aissa", "A", "amaskdfl");
-    //ini.Read("my.ini");
-    std::string x;
-    ini.Get("Hej", "B", &x, "boo");
-    ini.DeleteKey("Mossa", "A");
-    ini.DeleteSection("Mossa");
-    ini.SortSections();
-    ini.Save("my.ini");
-    //UpdateVars(ini);
-    return 0;
-   }
- */
+int main()
+{
+IniFile ini;
+ini.Load("my.ini");
+ini.Set("Hej", "A", "amaskdfl");
+ini.Set("Mossa", "A", "amaskdfl");
+ini.Set("Aissa", "A", "amaskdfl");
+//ini.Read("my.ini");
+std::string x;
+ini.Get("Hej", "B", &x, "boo");
+ini.DeleteKey("Mossa", "A");
+ini.DeleteSection("Mossa");
+ini.SortSections();
+ini.Save("my.ini");
+//UpdateVars(ini);
+return 0;
+}
+*/

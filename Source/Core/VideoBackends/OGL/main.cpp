@@ -40,13 +40,12 @@ Make AA apply instantly during gameplay if possible
 #include "Common/Atomic.h"
 #include "Common/CommonPaths.h"
 #include "Common/Thread.h"
-#include "Common/LogManager.h"
+#include "Common/Logging/LogManager.h"
 
 #include <cstdarg>
 #include <algorithm>
 
 #ifdef _WIN32
-#include "VideoCommon/EmuWindow.h"
 #include "Common/IniFile.h"
 #endif
 
@@ -150,7 +149,7 @@ void InitBackendInfo()
 	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT3] = true;
 	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT5] = true;
 	g_Config.backend_info.bUseMinimalMipCount = false;
-	g_Config.backend_info.bSupports3DVision = false;
+	g_Config.backend_info.bSupportsExclusiveFullscreen = false;
 	//g_Config.backend_info.bSupportsDualSourceBlend = true; // is gpu dependent and must be set in renderer
 	g_Config.backend_info.bSupportsFormatReinterpretation = true;
 	g_Config.backend_info.bSupportsPixelLighting = true;

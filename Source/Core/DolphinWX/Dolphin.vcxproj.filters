@@ -60,9 +60,6 @@
     <ClCompile Include="PatchAddEdit.cpp">
       <Filter>GUI</Filter>
     </ClCompile>
-    <ClCompile Include="UDPConfigDiag.cpp">
-      <Filter>GUI</Filter>
-    </ClCompile>
     <ClCompile Include="WiimoteConfigDiag.cpp">
       <Filter>GUI</Filter>
     </ClCompile>
@@ -187,9 +184,6 @@
     <ClInclude Include="PatchAddEdit.h">
       <Filter>GUI</Filter>
     </ClInclude>
-    <ClInclude Include="UDPConfigDiag.h">
-      <Filter>GUI</Filter>
-    </ClInclude>
     <ClInclude Include="WiimoteConfigDiag.h">
       <Filter>GUI</Filter>
     </ClInclude>
@@ -259,9 +253,9 @@
     <ClInclude Include="TASInputDlg.h">
       <Filter>GUI</Filter>
     </ClInclude>
-    <ClInclude Include="GLInterface.h" />
     <ClInclude Include="GLInterface\InterfaceBase.h" />
     <ClInclude Include="GLInterface\WGL.h" />
+    <ClInclude Include="GLInterface\GLInterface.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="CMakeLists.txt" />

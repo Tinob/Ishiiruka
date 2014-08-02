@@ -44,6 +44,7 @@ extern ID3D11Device* device;
 extern WrapDeviceContext context;
 extern IDXGISwapChain* swapchain;
 extern bool bFrameInProgress;
+extern HWND hWnd;
 
 void Reset();
 bool BeginFrame();
@@ -61,6 +62,9 @@ bool BGRATexturesSupported();
 bool BGRA565TexturesSupported();
 
 unsigned int GetMaxTextureSize();
+
+HRESULT SetFullscreenState(bool enable_fullscreen);
+HRESULT GetFullscreenState(bool* fullscreen_state);
 
 ID3D11RasterizerState*   GetRasterizerState(D3D11_RASTERIZER_DESC const&, char const* debugNameOnCreation = nullptr);
 ID3D11BlendState*        GetBlendState(D3D11_BLEND_DESC const&, char const* debugNameOnCreation = nullptr);

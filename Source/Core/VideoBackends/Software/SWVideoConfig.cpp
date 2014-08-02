@@ -36,48 +36,60 @@ void SWVideoConfig::Load(const char* ini_file)
 {
 	IniFile iniFile;
 	iniFile.Load(ini_file);
+	IniFile::Section* hardware = iniFile.GetOrCreateSection("Hardware");
+	hardware->Get("Fullscreen", &bFullscreen, 0); 
+	hardware->Get("RenderToMainframe", &renderToMainframe, false);
 
-	iniFile.Get("Hardware", "Fullscreen", &bFullscreen, 0); // Hardware
-	iniFile.Get("Hardware", "RenderToMainframe", &renderToMainframe, false);
+	IniFile::Section* rendering = iniFile.GetOrCreateSection("Rendering");
 
-	iniFile.Get("Rendering", "HwRasterizer", &bHwRasterizer, false);
-	iniFile.Get("Rendering", "ZComploc", &bZComploc, true);
-	iniFile.Get("Rendering", "ZFreeze", &bZFreeze, true);
+	rendering->Get("HwRasterizer", &bHwRasterizer, false);
+	rendering->Get("ZComploc", &bZComploc, true);
+	rendering->Get("ZFreeze", &bZFreeze, true);
 
-	iniFile.Get("Info", "ShowStats", &bShowStats, false);
+	iniFile.GetOrCreateSection("Info")->Get("ShowStats", &bShowStats, false);
 
-	iniFile.Get("Utility", "DumpTexture", &bDumpTextures, false);
-	iniFile.Get("Utility", "DumpObjects", &bDumpObjects, false);
-	iniFile.Get("Utility", "DumpFrames", &bDumpFrames, false);
-	iniFile.Get("Utility", "DumpTevStages", &bDumpTevStages, false);
-	iniFile.Get("Utility", "DumpTevTexFetches", &bDumpTevTextureFetches, false);
+	IniFile::Section* utility = iniFile.GetOrCreateSection("Utility");
 
-	iniFile.Get("Misc", "DrawStart", &drawStart, 0);
-	iniFile.Get("Misc", "DrawEnd", &drawEnd, 100000);
+	utility->Get("DumpTexture", &bDumpTextures, false);
+	utility->Get("DumpObjects", &bDumpObjects, false);
+	utility->Get("DumpFrames", &bDumpFrames, false);
+	utility->Get("DumpTevStages", &bDumpTevStages, false);
+	utility->Get("DumpTevTexFetches", &bDumpTevTextureFetches, false);
+
+	IniFile::Section* misc = iniFile.GetOrCreateSection("Misc");
+
+	misc->Get("DrawStart", &drawStart, 0);
+	misc->Get("DrawEnd", &drawEnd, 100000);
 }
 
 void SWVideoConfig::Save(const char* ini_file)
 {
 	IniFile iniFile;
 	iniFile.Load(ini_file);
+	IniFile::Section* hardware = iniFile.GetOrCreateSection("Hardware");
+	hardware->Set("Fullscreen", bFullscreen);
+	hardware->Set("RenderToMainframe", renderToMainframe);
 
-	iniFile.Set("Hardware", "Fullscreen", bFullscreen);
-	iniFile.Set("Hardware", "RenderToMainframe", renderToMainframe);
+	IniFile::Section* rendering = iniFile.GetOrCreateSection("Rendering");
 
-	iniFile.Set("Rendering", "HwRasterizer", bHwRasterizer);
-	iniFile.Set("Rendering", "ZComploc", &bZComploc);
-	iniFile.Set("Rendering", "ZFreeze", &bZFreeze);
+	rendering->Set("HwRasterizer", bHwRasterizer);
+	rendering->Set("ZComploc", &bZComploc);
+	rendering->Set("ZFreeze", &bZFreeze);
 
-	iniFile.Set("Info", "ShowStats", bShowStats);
+	iniFile.GetOrCreateSection("Info")->Set("ShowStats", bShowStats);
 
-	iniFile.Set("Utility", "DumpTexture", bDumpTextures);
-	iniFile.Set("Utility", "DumpObjects", bDumpObjects);
-	iniFile.Set("Utility", "DumpFrames", bDumpFrames);
-	iniFile.Set("Utility", "DumpTevStages", bDumpTevStages);
-	iniFile.Set("Utility", "DumpTevTexFetches", bDumpTevTextureFetches);
+	IniFile::Section* utility = iniFile.GetOrCreateSection("Utility");
 
-	iniFile.Set("Misc", "DrawStart", drawStart);
-	iniFile.Set("Misc", "DrawEnd", drawEnd);
+	utility->Set("DumpTexture", bDumpTextures);
+	utility->Set("DumpObjects", bDumpObjects);
+	utility->Set("DumpFrames", bDumpFrames);
+	utility->Set("DumpTevStages", bDumpTevStages);
+	utility->Set("DumpTevTexFetches", bDumpTevTextureFetches);
+
+	IniFile::Section* misc = iniFile.GetOrCreateSection("Misc");
+
+	misc->Set("DrawStart", drawStart);
+	misc->Set("DrawEnd", drawEnd);
 
 	iniFile.Save(ini_file);
 }

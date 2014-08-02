@@ -8,7 +8,6 @@
 
 #include "VideoCommon/Debugger.h"
 #include "VideoCommon/DLCache.h"
-#include "VideoCommon/EmuWindow.h"
 #include "VideoCommon/Fifo.h"
 #include "VideoCommon/OnScreenDisplay.h"
 #include "VideoCommon/PixelEngine.h"
@@ -42,6 +41,8 @@ static int s_fps = 0;
 static u32 s_LastAA = 0;
 
 static Television s_television;
+
+static bool s_last_fullscreen_mode = false;
 
 ID3D11Buffer* access_efb_cbuf = NULL;
 ID3D11BlendState* clearblendstates[4] = {NULL};
@@ -176,7 +177,7 @@ void CreateScreenshotTexture(const TargetRectangle& rc)
 	D3D::SetDebugObjectName((ID3D11DeviceChild*)s_screenshot_texture, "staging screenshot texture");
 }
 
-Renderer::Renderer()
+Renderer::Renderer(void *&window_handle)
 {
 	int x, y, w_temp, h_temp;
 
@@ -184,7 +185,7 @@ Renderer::Renderer()
 
 	Host_GetRenderWindowSize(x, y, w_temp, h_temp);
 
-	D3D::Create(EmuWindow::GetWnd());
+	D3D::Create((HWND)window_handle);
 
 	s_backbuffer_width = D3D::GetBackBufferWidth();
 	s_backbuffer_height = D3D::GetBackBufferHeight();
@@ -196,6 +197,7 @@ Renderer::Renderer()
 
 	s_LastAA = g_ActiveConfig.iMultisampleMode;
 	s_LastEFBScale = g_ActiveConfig.iEFBScale;
+	s_last_fullscreen_mode = g_ActiveConfig.bFullscreen;
 	CalculateTargetSize(s_backbuffer_width, s_backbuffer_height);
 
 	SetupDeviceObjects();
@@ -254,7 +256,7 @@ Renderer::~Renderer()
 	D3D::Close();
 }
 
-void Renderer::RenderText(const char *text, int left, int top, u32 color)
+void Renderer::RenderText(const std::string& text, int left, int top, u32 color)
 {
 	TargetRectangle trc = GetTargetRectangle();	
 	const int nBackbufferWidth = trc.right - trc.left;
@@ -264,7 +266,7 @@ void Renderer::RenderText(const char *text, int left, int top, u32 color)
 	float scaley = 1 / (float)nBackbufferHeight * 2.f;
 	
 
-	D3D::font.DrawTextScaled((float)left, (float)top, 20.f, 0.0f, color, text, scalex, scaley);
+	D3D::font.DrawTextScaled((float)left, (float)top, 20.f, 0.0f, color, text.c_str(), scalex, scaley);
 }
 
 TargetRectangle Renderer::ConvertEFBRectangle(const EFBRectangle& rc)
@@ -281,21 +283,8 @@ TargetRectangle Renderer::ConvertEFBRectangle(const EFBRectangle& rc)
 // size.
 bool Renderer::CheckForResize()
 {
-	while (EmuWindow::IsSizing())
-		Sleep(10);
-
-	if (EmuWindow::GetParentWnd())
-	{
-		// Re-stretch window to parent window size again, if it has a parent window.
-		RECT rcParentWindow;
-		GetWindowRect(EmuWindow::GetParentWnd(), &rcParentWindow);
-		int width = rcParentWindow.right - rcParentWindow.left;
-		int height = rcParentWindow.bottom - rcParentWindow.top;
-		if (width != Renderer::GetBackbufferWidth() || height != Renderer::GetBackbufferHeight())
-			MoveWindow(EmuWindow::GetWnd(), 0, 0, width, height, FALSE);
-	}
 	RECT rcWindow;
-	GetClientRect(EmuWindow::GetWnd(), &rcWindow);
+	GetClientRect(D3D::hWnd, &rcWindow);
 	int client_width = rcWindow.right - rcWindow.left;
 	int client_height = rcWindow.bottom - rcWindow.top;
 
@@ -907,7 +896,7 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 		{
 			s_recordWidth = GetTargetRectangle().GetWidth();
 			s_recordHeight = GetTargetRectangle().GetHeight();
-			bAVIDumping = AVIDump::Start(EmuWindow::GetParentWnd(), s_recordWidth, s_recordHeight);
+			bAVIDumping = AVIDump::Start(D3D::hWnd, s_recordWidth, s_recordHeight);
 			if (!bAVIDumping)
 			{
 				PanicAlert("Error dumping frames to AVI.");
@@ -1003,6 +992,21 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 	SetWindowSize(fbWidth, fbHeight);
 
 	const bool windowResized = CheckForResize();
+	const bool fullscreen = g_ActiveConfig.bFullscreen &&
+		!SConfig::GetInstance().m_LocalCoreStartupParameter.bRenderToMain;
+
+	bool fullscreen_changed = s_last_fullscreen_mode != fullscreen;
+	bool fullscreen_state;
+	if (SUCCEEDED(D3D::GetFullscreenState(&fullscreen_state)))
+	{
+		if (fullscreen_state != fullscreen && Host_RendererHasFocus())
+		{
+			// The current fullscreen state does not match the configuration,
+			// this may happen when the renderer frame loses focus. When the
+			// render frame is in focus again we can re-apply the configuration.
+			fullscreen_changed = true;
+		}
+	}
 
 	bool xfbchanged = false;
 
@@ -1030,14 +1034,27 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 	// resize the back buffers NOW to avoid flickering
 	if (xfbchanged ||
 		windowResized ||
+		fullscreen_changed ||
 		s_LastEFBScale != g_ActiveConfig.iEFBScale ||
 		s_LastAA != g_ActiveConfig.iMultisampleMode)
 	{
 		s_LastAA = g_ActiveConfig.iMultisampleMode;
 		PixelShaderCache::InvalidateMSAAShaders();
 
-		if (windowResized)
+		if (windowResized || fullscreen_changed)
 		{
+			// Apply fullscreen state
+			if (fullscreen_changed)
+			{
+				s_last_fullscreen_mode = fullscreen;
+				D3D::SetFullscreenState(fullscreen);
+
+				// Notify the host that it is safe to exit fullscreen
+				if (!fullscreen)
+				{
+					Host_RequestFullscreen(false);
+				}
+			}
 			// TODO: Aren't we still holding a reference to the back buffer right now?
 			D3D::Reset();
 			SAFE_RELEASE(s_screenshot_texture);

@@ -18,7 +18,7 @@ namespace ciface
 namespace SDL
 {
 
-std::string GetJoystickName(int index)
+static std::string GetJoystickName(int index)
 {
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 	return SDL_JoystickNameForIndex(index);
@@ -27,13 +27,13 @@ std::string GetJoystickName(int index)
 #endif
 }
 
-void Init( std::vector<Core::Device*>& devices )
+void Init(std::vector<Core::Device*>& devices)
 {
 	// this is used to number the joysticks
 	// multiple joysticks with the same name shall get unique ids starting at 0
 	std::map<std::string, int> name_counts;
 
-	if (SDL_Init( SDL_INIT_FLAGS ) >= 0)
+	if (SDL_Init(SDL_INIT_FLAGS) >= 0)
 	{
 		// joysticks
 		for (int i = 0; i < SDL_NumJoysticks(); ++i)
@@ -44,7 +44,7 @@ void Init( std::vector<Core::Device*>& devices )
 				Joystick* js = new Joystick(dev, i, name_counts[GetJoystickName(i)]++);
 				// only add if it has some inputs/outputs
 				if (js->Inputs().size() || js->Outputs().size())
-					devices.push_back( js );
+					devices.push_back(js);
 				else
 					delete js;
 			}
@@ -68,10 +68,10 @@ Joystick::Joystick(SDL_Joystick* const joystick, const int sdl_index, const unsi
 	std::transform(lcasename.begin(), lcasename.end(), lcasename.begin(), tolower);
 
 	if ((std::string::npos != lcasename.find("xbox 360")) &&
-	    (10 == SDL_JoystickNumButtons(joystick)) &&
-	    (5 == SDL_JoystickNumAxes(joystick)) &&
-	    (1 == SDL_JoystickNumHats(joystick)) &&
-	    (0 == SDL_JoystickNumBalls(joystick)))
+		(10 == SDL_JoystickNumButtons(joystick)) &&
+		(5 == SDL_JoystickNumAxes(joystick)) &&
+		(1 == SDL_JoystickNumHats(joystick)) &&
+		(0 == SDL_JoystickNumBalls(joystick)))
 	{
 		// this device won't be used
 		return;
@@ -79,9 +79,9 @@ Joystick::Joystick(SDL_Joystick* const joystick, const int sdl_index, const unsi
 #endif
 
 	if (SDL_JoystickNumButtons(joystick) > 255 ||
-	    SDL_JoystickNumAxes(joystick) > 255 ||
-	    SDL_JoystickNumHats(joystick) > 255 ||
-	    SDL_JoystickNumBalls(joystick) > 255)
+		SDL_JoystickNumAxes(joystick) > 255 ||
+		SDL_JoystickNumHats(joystick) > 255 ||
+		SDL_JoystickNumBalls(joystick) > 255)
 	{
 		// This device is invalid, don't use it
 		// Some crazy devices(HP webcam 2100) end up as HID devices
@@ -111,13 +111,13 @@ Joystick::Joystick(SDL_Joystick* const joystick, const int sdl_index, const unsi
 
 #ifdef USE_SDL_HAPTIC
 	// try to get supported ff effects
-	m_haptic = SDL_HapticOpenFromJoystick( m_joystick );
+	m_haptic = SDL_HapticOpenFromJoystick(m_joystick);
 	if (m_haptic)
 	{
 		//SDL_HapticSetGain( m_haptic, 1000 );
 		//SDL_HapticSetAutocenter( m_haptic, 0 );
 
-		const unsigned int supported_effects = SDL_HapticQuery( m_haptic );
+		const unsigned int supported_effects = SDL_HapticQuery(m_haptic);
 
 		// constant effect
 		if (supported_effects & SDL_HAPTIC_CONSTANT)

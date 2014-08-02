@@ -3,7 +3,7 @@
 // Refer to the license.txt file included.
 #ifndef GLFUNCTIONS_H_
 #define GLFUNCTIONS_H_
-#include "DolphinWX/GLInterface.h"
+#include "DolphinWX/GLInterface/GLInterface.h"
 
 #ifdef USE_GLES3
 typedef GLvoid* (*PFNGLMAPBUFFERPROC) (GLenum target, GLenum access);

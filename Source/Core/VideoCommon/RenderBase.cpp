@@ -251,7 +251,7 @@ bool Renderer::CalculateTargetSize(unsigned int framebuffer_width, unsigned int 
 	return false;
 }
 
-void Renderer::SetScreenshot(const char *filename)
+void Renderer::SetScreenshot(const std::string& filename)
 {
 	std::lock_guard<std::mutex> lk(s_criticalScreenshot);
 	s_sScreenshotName = filename;

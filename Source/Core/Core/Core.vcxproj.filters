@@ -593,9 +593,6 @@
     <ClCompile Include="PowerPC\JitInterface.cpp">
       <Filter>PowerPC</Filter>
     </ClCompile>
-    <ClCompile Include="PowerPC\LUT_frsqrtex.cpp">
-      <Filter>PowerPC</Filter>
-    </ClCompile>
     <ClCompile Include="PowerPC\PowerPC.cpp">
       <Filter>PowerPC</Filter>
     </ClCompile>
@@ -701,6 +698,13 @@
     </ClCompile>
     <ClCompile Include="IPC_HLE\WII_IPC_HLE_WiiSpeak.cpp">
       <Filter>IPC HLE %28IOS/Starlet%29</Filter>
+    </ClCompile>
+    <ClCompile Include="DSP\DSPCaptureLogger.cpp" />
+    <ClCompile Include="HW\GCMemcardDirectory.cpp">
+      <Filter>HW %28Flipper/Hollywood%29\GCMemcard</Filter>
+    </ClCompile>
+    <ClCompile Include="HW\GCMemcardRaw.cpp">
+      <Filter>HW %28Flipper/Hollywood%29\GCMemcard</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -996,9 +1000,6 @@
     <ClInclude Include="HW\WiimoteEmu\MatrixMath.h">
       <Filter>HW %28Flipper/Hollywood%29\Wiimote\Emu</Filter>
     </ClInclude>
-    <ClInclude Include="HW\WiimoteEmu\UDPTLayer.h">
-      <Filter>HW %28Flipper/Hollywood%29\Wiimote\Emu</Filter>
-    </ClInclude>
     <ClInclude Include="HW\WiimoteEmu\WiimoteEmu.h">
       <Filter>HW %28Flipper/Hollywood%29\Wiimote\Emu</Filter>
     </ClInclude>
@@ -1098,9 +1099,6 @@
     <ClInclude Include="IPC_HLE\WII_IPC_HLE_Device_usb_kbd.h">
       <Filter>IPC HLE %28IOS/Starlet%29\Keyboard</Filter>
     </ClInclude>
-    <ClInclude Include="IPC_HLE\fakepoll.h">
-      <Filter>IPC HLE %28IOS/Starlet%29\Net</Filter>
-    </ClInclude>
     <ClInclude Include="IPC_HLE\ICMP.h">
       <Filter>IPC HLE %28IOS/Starlet%29\Net</Filter>
     </ClInclude>
@@ -1144,9 +1142,6 @@
       <Filter>PowerPC</Filter>
     </ClInclude>
     <ClInclude Include="PowerPC\JitInterface.h">
-      <Filter>PowerPC</Filter>
-    </ClInclude>
-    <ClInclude Include="PowerPC\LUT_frsqrtex.h">
       <Filter>PowerPC</Filter>
     </ClInclude>
     <ClInclude Include="PowerPC\PowerPC.h">
@@ -1207,6 +1202,14 @@
     <ClInclude Include="IPC_HLE\WII_IPC_HLE_WiiSpeak.h">
       <Filter>IPC HLE %28IOS/Starlet%29</Filter>
     </ClInclude>
+    <ClInclude Include="DSP\DSPCaptureLogger.h" />
+    <ClInclude Include="HW\GCMemcardDirectory.h">
+      <Filter>HW %28Flipper/Hollywood%29\GCMemcard</Filter>
+    </ClInclude>
+    <ClInclude Include="HW\GCMemcardRaw.h">
+      <Filter>HW %28Flipper/Hollywood%29\GCMemcard</Filter>
+    </ClInclude>
+    <ClInclude Include="IPC_HLE\fakepoll.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />

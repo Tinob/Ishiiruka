@@ -1,61 +1,61 @@
-// Copyright (C) 2003 Dolphin Project.
+// Copyright 2014 Dolphin Emulator Project
+// Licensed under GPLv2
+// Refer to the license.txt file included.
 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, version 2.0.
+#include <unordered_map>
 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License 2.0 for more details.
-
-// A copy of the GPL 2.0 should have been included with the program.
-// If not, see http://www.gnu.org/licenses/
-
-// Official SVN repository and contact information can be found at
-// http://code.google.com/p/dolphin-emu/
-
-#include <vector>
-#include "GLInterface.h"
-#include "Android/TextureLoader.h"
-#include "Android/ButtonManager.h"
-
-extern void DrawButton(GLuint tex, float *coords);
+#include "DolphinWX/Android/ButtonManager.h"
+#include "DolphinWX/GLInterface/GLInterface.h"
 
 namespace ButtonManager
 {
-	std::vector<Button*> m_buttons;
-	std::map<std::string, InputDevice*> m_controllers;
-	// XXX: This needs to not be here so we can load the locations from file
-	// This will allow customizable button locations in the future
-	// These are the OpenGL on screen coordinates
-	float m_coords[][8] =	{ // X, Y, X, EY, EX, EY, EX, Y
-				{0.75f, -1.0f, 0.75f, -0.75f, 1.0f, -0.75f, 1.0f, -1.0f}, // A
-				{0.50f, -1.0f, 0.50f, -0.75f, 0.75f, -0.75f, 0.75f, -1.0f}, // B
-				{-0.10f, -1.0f, -0.10f, -0.80f, 0.10f, -0.80f, 0.10f, -1.0f}, // Start
-				};
-	const char *configStrings[] = {	"InputA",
-					"InputB",
-					"InputStart",
-					"InputX",
-					"InputY",
-					"InputZ",
-					"DPadUp",
-					"DPadDown",
-					"DPadLeft",
-					"DPadRight",
-					"MainUp",
-					"MainDown",
-					"MainLeft",
-					"MainRight",
-					"CStickUp",
-					"CStickDown",
-					"CStickLeft",
-					"CStickRight",
-					"InputL",
-					"InputR" };
-	const int configStringNum = 20;
-	
+	const std::string touchScreenKey = "Touchscreen";
+	std::unordered_map<std::string, InputDevice*> m_controllers;
+	std::vector<std::string> configStrings = {
+		"InputA",
+		"InputB",
+		"InputStart",
+		"InputX",
+		"InputY",
+		"InputZ",
+		"DPadUp",
+		"DPadDown",
+		"DPadLeft",
+		"DPadRight",
+		"MainUp",
+		"MainDown",
+		"MainLeft",
+		"MainRight",
+		"CStickUp",
+		"CStickDown",
+		"CStickLeft",
+		"CStickRight",
+		"InputL",
+		"InputR"
+	};
+	std::vector<ButtonType> configTypes = {
+		BUTTON_A,
+		BUTTON_B,
+		BUTTON_START,
+		BUTTON_X,
+		BUTTON_Y,
+		BUTTON_Z,
+		BUTTON_UP,
+		BUTTON_DOWN,
+		BUTTON_LEFT,
+		BUTTON_RIGHT,
+		STICK_MAIN_UP,
+		STICK_MAIN_DOWN,
+		STICK_MAIN_LEFT,
+		STICK_MAIN_RIGHT,
+		STICK_C_UP,
+		STICK_C_DOWN,
+		STICK_C_LEFT,
+		STICK_C_RIGHT,
+		TRIGGER_L,
+		TRIGGER_R
+	};
+
 	void AddBind(std::string dev, sBind *bind)
 	{
 		auto it = m_controllers.find(dev);
@@ -70,85 +70,90 @@ namespace ButtonManager
 
 	void Init()
 	{
-		// Initialize our touchscreen buttons
-		m_buttons.push_back(new Button("ButtonA.png", BUTTON_A, m_coords[0]));
-		m_buttons.push_back(new Button("ButtonB.png", BUTTON_B, m_coords[1]));
-		m_buttons.push_back(new Button("ButtonStart.png", BUTTON_START, m_coords[2]));
+		// Initialize our touchScreenKey buttons
+		for (int a = 0; a < 4; ++a)
+		{
+			AddBind(touchScreenKey, new sBind(a, BUTTON_A, BIND_BUTTON, BUTTON_A, 1.0f));
+			AddBind(touchScreenKey, new sBind(a, BUTTON_B, BIND_BUTTON, BUTTON_B, 1.0f));
+			AddBind(touchScreenKey, new sBind(a, BUTTON_START, BIND_BUTTON, BUTTON_START, 1.0f));
+			AddBind(touchScreenKey, new sBind(a, BUTTON_X, BIND_BUTTON, BUTTON_X, 1.0f));
+			AddBind(touchScreenKey, new sBind(a, BUTTON_Y, BIND_BUTTON, BUTTON_Y, 1.0f));
+			AddBind(touchScreenKey, new sBind(a, BUTTON_Z, BIND_BUTTON, BUTTON_Z, 1.0f));
+			AddBind(touchScreenKey, new sBind(a, BUTTON_UP, BIND_BUTTON, BUTTON_UP, 1.0f));
+			AddBind(touchScreenKey, new sBind(a, BUTTON_DOWN, BIND_BUTTON, BUTTON_DOWN, 1.0f));
+			AddBind(touchScreenKey, new sBind(a, BUTTON_LEFT, BIND_BUTTON, BUTTON_LEFT, 1.0f));
+			AddBind(touchScreenKey, new sBind(a, BUTTON_RIGHT, BIND_BUTTON, BUTTON_RIGHT, 1.0f));
 
+			AddBind(touchScreenKey, new sBind(a, STICK_MAIN_UP, BIND_AXIS, STICK_MAIN_UP, -1.0f));
+			AddBind(touchScreenKey, new sBind(a, STICK_MAIN_DOWN, BIND_AXIS, STICK_MAIN_DOWN, 1.0f));
+			AddBind(touchScreenKey, new sBind(a, STICK_MAIN_LEFT, BIND_AXIS, STICK_MAIN_LEFT, -1.0f));
+			AddBind(touchScreenKey, new sBind(a, STICK_MAIN_RIGHT, BIND_AXIS, STICK_MAIN_RIGHT, 1.0f));
+			AddBind(touchScreenKey, new sBind(a, STICK_C_UP, BIND_AXIS, STICK_C_UP, -1.0f));
+			AddBind(touchScreenKey, new sBind(a, STICK_C_DOWN, BIND_AXIS, STICK_C_DOWN, 1.0f));
+			AddBind(touchScreenKey, new sBind(a, STICK_C_LEFT, BIND_AXIS, STICK_C_LEFT, -1.0f));
+			AddBind(touchScreenKey, new sBind(a, STICK_C_RIGHT, BIND_AXIS, STICK_C_RIGHT, 1.0f));
+			AddBind(touchScreenKey, new sBind(a, TRIGGER_L, BIND_AXIS, TRIGGER_L, 1.0f));
+			AddBind(touchScreenKey, new sBind(a, TRIGGER_R, BIND_AXIS, TRIGGER_R, 1.0f));
+		}
 		// Init our controller bindings
 		IniFile ini;
 		ini.Load(File::GetUserPath(D_CONFIG_IDX) + std::string("Dolphin.ini"));
-		for (int a = 0; a < configStringNum; ++a)
+		for (u32 a = 0; a < configStrings.size(); ++a)
 		{
-			BindType type;
-			int bindnum;
-			char dev[128];
-			bool hasbind = false;
-			char modifier = 0;
-			std::string value;
-			ini.Get("Android", configStrings[a], &value, "None");
-			if (value == "None")
-				continue;
-			if (std::string::npos != value.find("Axis"))
+			for (int padID = 0; padID < 4; ++padID)
 			{
-				hasbind = true;
-				type = BIND_AXIS;
-				sscanf(value.c_str(), "Device '%[^\']'-Axis %d%c", dev, &bindnum, &modifier);	
+				std::ostringstream config;
+				config << configStrings[a] << "_" << padID;
+				BindType type;
+				int bindnum;
+				char dev[128];
+				bool hasbind = false;
+				char modifier = '+';
+				std::string value;
+				ini.GetOrCreateSection("Android")->Get(config.str(), &value, "None");
+				if (value == "None")
+					continue;
+				if (std::string::npos != value.find("Axis"))
+				{
+					hasbind = true;
+					type = BIND_AXIS;
+					sscanf(value.c_str(), "Device '%127[^\']'-Axis %d%c", dev, &bindnum, &modifier);
+				}
+				else if (std::string::npos != value.find("Button"))
+				{
+					hasbind = true;
+					type = BIND_BUTTON;
+					sscanf(value.c_str(), "Device '%127[^\']'-Button %d", dev, &bindnum);
+				}
+				if (hasbind)
+					AddBind(std::string(dev), new sBind(padID, configTypes[a], type, bindnum, modifier == '-' ? -1.0f : 1.0f));
 			}
-			else if (std::string::npos != value.find("Button"))  
-			{
-				hasbind = true;
-				type = BIND_BUTTON;
-				sscanf(value.c_str(), "Device '%[^\']'-Button %d", dev, &bindnum);
-			}
-			if (hasbind)
-				AddBind(std::string(dev), new sBind((ButtonType)a, type, bindnum, modifier == '-' ? -1.0f : 1.0f));
 		}
 
 	}
-	bool GetButtonPressed(ButtonType button)
+	bool GetButtonPressed(int padID, ButtonType button)
 	{
-		bool pressed = false;
-		for (auto it = m_buttons.begin(); it != m_buttons.end(); ++it)
-			if ((*it)->GetButtonType() == button)
-				pressed = (*it)->Pressed();
+		bool pressed = m_controllers[touchScreenKey]->ButtonValue(padID, button);
 
-		for (auto it = m_controllers.begin(); it != m_controllers.end(); ++it)
-			pressed |= it->second->ButtonValue(button);
+		for (const auto& ctrl : m_controllers)
+			pressed |= ctrl.second->ButtonValue(padID, button);
 
 		return pressed;
 	}
-	float GetAxisValue(ButtonType axis)
+	float GetAxisValue(int padID, ButtonType axis)
 	{
-		auto it = m_controllers.begin();
-		if (it == m_controllers.end())
-			return 0.0f;
-		return it->second->AxisValue(axis); 
-	}
-	void TouchEvent(int action, float x, float y)
-	{
-		// Actions
-		// 0 is press
-		// 1 is let go
-		// 2 is move
-		for (auto it = m_buttons.begin(); it != m_buttons.end(); ++it)
+		float value = m_controllers[touchScreenKey]->AxisValue(padID, axis);
+		if (value == 0.0f)
 		{
-			float *coords = (*it)->GetCoords();
-			if (	x >= coords[0] &&
-				x <= coords[4] &&
-				y >= coords[1] &&
-				y <= coords[3])
+			for (const auto& ctrl : m_controllers)
 			{
-				if (action == 0)
-					(*it)->SetState(BUTTON_PRESSED);
-				if (action == 1)
-					(*it)->SetState(BUTTON_RELEASED);
-				if (action == 2)
-					; // XXX: Be used later for analog stick
+				value = ctrl.second->AxisValue(padID, axis);
+				if (value != 0.0f)
+					return value;
 			}
 		}
+		return value;
 	}
-
 	void GamepadEvent(std::string dev, int button, int action)
 	{
 		auto it = m_controllers.find(dev);
@@ -173,47 +178,58 @@ namespace ButtonManager
 	}
 	void Shutdown()
 	{
-		for(auto it = m_buttons.begin(); it != m_buttons.end(); ++it)
-			delete *it;
-		for (auto it = m_controllers.begin(); it != m_controllers.end(); ++it)
-			delete it->second;
+		for (const auto& controller : m_controllers)
+			delete controller.second;
 		m_controllers.clear();
-		m_buttons.clear();
 	}
 
-	void DrawButtons()
-	{
-		// XXX: Make platform specific drawing
-	}
-	
 	// InputDevice
 	void InputDevice::PressEvent(int button, int action)
 	{
-		m_buttons[button] = action == 0 ? true : false;
+		for (const auto& binding : _inputbinds)
+		{
+			if (binding.second->_bind == button)
+			{
+				if (binding.second->_bindtype == BIND_BUTTON)
+					_buttons[binding.second->_buttontype] = action == BUTTON_PRESSED ? true : false;
+				else
+					_axises[binding.second->_buttontype] = action == BUTTON_PRESSED ? 1.0f : 0.0f;
+			}
+		}
 	}
 	void InputDevice::AxisEvent(int axis, float value)
 	{
-		m_axises[axis] = value;
+		for (const auto& binding : _inputbinds)
+		{
+			if (binding.second->_bind == axis)
+			{
+				if (binding.second->_bindtype == BIND_AXIS)
+					_axises[binding.second->_buttontype] = value;
+				else
+					_buttons[binding.second->_buttontype] = value > 0.5f ? true : false;
+			}
+		}
 	}
-	bool InputDevice::ButtonValue(ButtonType button)
+	bool InputDevice::ButtonValue(int padID, ButtonType button)
 	{
-		auto it = m_binds.find(button);
-		if (it == m_binds.end())
+		const auto& binding = _inputbinds.find(std::make_pair(padID, button));
+		if (binding == _inputbinds.end())
 			return false;
-		if (it->second->m_bindtype == BIND_BUTTON)
-			return m_buttons[it->second->m_bind];
+
+		if (binding->second->_bindtype == BIND_BUTTON)
+			return _buttons[binding->second->_buttontype];
 		else
-			return AxisValue(button);
+			return (_axises[binding->second->_buttontype] * binding->second->_neg) > 0.5f;
 	}
-	float InputDevice::AxisValue(ButtonType axis)
+	float InputDevice::AxisValue(int padID, ButtonType axis)
 	{
-		auto it = m_binds.find(axis);
-		if (it == m_binds.end())
+		const auto& binding = _inputbinds.find(std::make_pair(padID, axis));
+		if (binding == _inputbinds.end())
 			return 0.0f;
-		if (it->second->m_bindtype == BIND_BUTTON)
-			return ButtonValue(axis);
-		else		
-			return m_axises[it->second->m_bind] * it->second->m_neg;
+
+		if (binding->second->_bindtype == BIND_AXIS)
+			return _axises[binding->second->_buttontype] * binding->second->_neg;
+		else
+			return _buttons[binding->second->_buttontype] == BUTTON_PRESSED ? 1.0f : 0.0f;
 	}
-	
 }

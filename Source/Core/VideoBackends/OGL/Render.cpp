@@ -58,9 +58,6 @@
 #include "StreamBuffer.h"
 
 #include "main.h" // Local
-#ifdef _WIN32
-#include "VideoCommon/EmuWindow.h"
-#endif
 #if defined _WIN32 || defined HAVE_LIBAV
 #include "VideoCommon/AVIDump.h"
 #endif
@@ -826,14 +823,14 @@ void Renderer::DrawDebugInfo()
 	}
 }
 
-void Renderer::RenderText(const char *text, int left, int top, u32 color)
+void Renderer::RenderText(const std::string &text, int left, int top, u32 color)
 {
 	TargetRectangle trc = GetTargetRectangle();
 	
 	const int nBackbufferWidth = trc.right - trc.left;
 	const int nBackbufferHeight = trc.bottom - trc.top;
 
-	s_pfont->printMultilineText(text,
+	s_pfont->printMultilineText(text.c_str(),
 		left * 2.0f / (float)nBackbufferWidth - 1,
 		1 - top * 2.0f / (float)nBackbufferHeight,
 		0, nBackbufferWidth, nBackbufferHeight, color);
@@ -1373,7 +1370,7 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 			if (!bLastFrameDumped)
 			{
 				#ifdef _WIN32
-					bAVIDumping = AVIDump::Start(EmuWindow::GetParentWnd(), w, h);
+					bAVIDumping = AVIDump::Start((HWND)((cInterfaceWGL*)GLInterface)->m_window_handle, w, h);
 				#else
 					bAVIDumping = AVIDump::Start(w, h);
 				#endif

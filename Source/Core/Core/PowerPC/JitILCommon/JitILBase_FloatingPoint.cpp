@@ -8,19 +8,11 @@
 void JitILBase::fp_arith_s(UGeckoInstruction inst)
 {
 	INSTRUCTION_START
-	JITDISABLE(bJITFloatingPointOff)
-	if (inst.Rc || (inst.SUBOP5 != 25 && inst.SUBOP5 != 20 && inst.SUBOP5 != 21))
-	{
-		FallBackToInterpreter(inst);
-		return;
-	}
+	JITDISABLE(bJITFloatingPointOff);
+	FALLBACK_IF(inst.Rc || (inst.SUBOP5 != 25 && inst.SUBOP5 != 20 && inst.SUBOP5 != 21));
 
 	// Only the interpreter has "proper" support for (some) FP flags
-	if (inst.SUBOP5 == 25 && Core::g_CoreStartupParameter.bEnableFPRF)
-	{
-		FallBackToInterpreter(inst);
-		return;
-	}
+	FALLBACK_IF(inst.SUBOP5 == 25 && Core::g_CoreStartupParameter.bEnableFPRF);
 
 	IREmitter::InstLoc val = ibuild.EmitLoadFReg(inst.FA);
 	switch (inst.SUBOP5)
@@ -50,19 +42,11 @@ void JitILBase::fp_arith_s(UGeckoInstruction inst)
 void JitILBase::fmaddXX(UGeckoInstruction inst)
 {
 	INSTRUCTION_START
-	JITDISABLE(bJITFloatingPointOff)
-	if (inst.Rc)
-	{
-		FallBackToInterpreter(inst);
-		return;
-	}
+	JITDISABLE(bJITFloatingPointOff);
+	FALLBACK_IF(inst.Rc);
 
 	// Only the interpreter has "proper" support for (some) FP flags
-	if (inst.SUBOP5 == 29 && Core::g_CoreStartupParameter.bEnableFPRF)
-	{
-		FallBackToInterpreter(inst);
-		return;
-	}
+	FALLBACK_IF(inst.SUBOP5 == 29 && Core::g_CoreStartupParameter.bEnableFPRF);
 
 	IREmitter::InstLoc val = ibuild.EmitLoadFReg(inst.FA);
 	val = ibuild.EmitFDMul(val, ibuild.EmitLoadFReg(inst.FC));
@@ -84,13 +68,8 @@ void JitILBase::fmaddXX(UGeckoInstruction inst)
 void JitILBase::fmrx(UGeckoInstruction inst)
 {
 	INSTRUCTION_START
-	JITDISABLE(bJITFloatingPointOff)
-
-	if (inst.Rc)
-	{
-		FallBackToInterpreter(inst);
-		return;
-	}
+	JITDISABLE(bJITFloatingPointOff);
+	FALLBACK_IF(inst.Rc);
 
 	IREmitter::InstLoc val = ibuild.EmitLoadFReg(inst.FB);
 	val = ibuild.EmitInsertDoubleInMReg(val, ibuild.EmitLoadFReg(inst.FD));
@@ -100,23 +79,22 @@ void JitILBase::fmrx(UGeckoInstruction inst)
 void JitILBase::fcmpx(UGeckoInstruction inst)
 {
 	INSTRUCTION_START
-	JITDISABLE(bJITFloatingPointOff)
+	JITDISABLE(bJITFloatingPointOff);
 	IREmitter::InstLoc lhs, rhs, res;
 	lhs = ibuild.EmitLoadFReg(inst.FA);
 	rhs = ibuild.EmitLoadFReg(inst.FB);
 	int ordered = (inst.SUBOP10 == 32) ? 1 : 0;
 	res = ibuild.EmitFDCmpCR(lhs, rhs, ordered);
 	ibuild.EmitStoreFPRF(res);
-	ibuild.EmitStoreCR(res, inst.CRFD);
+	ibuild.EmitStoreCR(ibuild.EmitConvertToFastCR(res), inst.CRFD);
 }
 
 void JitILBase::fsign(UGeckoInstruction inst)
 {
 	INSTRUCTION_START
-	JITDISABLE(bJITFloatingPointOff)
+	JITDISABLE(bJITFloatingPointOff);
 
-	FallBackToInterpreter(inst);
-	return;
+	FALLBACK_IF(true);
 
 	// TODO
 	switch (inst.SUBOP10) {

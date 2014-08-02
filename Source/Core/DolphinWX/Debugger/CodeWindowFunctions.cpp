@@ -62,13 +62,14 @@ void CCodeWindow::Load()
 
 	// The font to override DebuggerFont with
 	std::string fontDesc;
-	ini.Get("General", "DebuggerFont", &fontDesc);
+
+	IniFile::Section* general = ini.GetOrCreateSection("General");
+	general->Get("DebuggerFont", &fontDesc);
+	general->Get("AutomaticStart", &bAutomaticStart, false);
+	general->Get("BootToPause", &bBootToPause, true);
+
 	if (!fontDesc.empty())
 		DebuggerFont.SetNativeFontInfoUserDesc(StrToWxStr(fontDesc));
-
-	// Boot to pause or not
-	ini.Get("General", "AutomaticStart", &bAutomaticStart, false);
-	ini.Get("General", "BootToPause", &bBootToPause, true);
 
 	const char* SettingName[] = {
 		"Log",
@@ -85,19 +86,19 @@ void CCodeWindow::Load()
 
 	// Decide what windows to show
 	for (int i = 0; i <= IDM_VIDEOWINDOW - IDM_LOGWINDOW; i++)
-		ini.Get("ShowOnStart", SettingName[i], &bShowOnStart[i], false);
+		ini.GetOrCreateSection("ShowOnStart")->Get(SettingName[i], &bShowOnStart[i], false);
 
 	// Get notebook affiliation
-	std::string _Section = "P - " +
+	std::string section = "P - " +
 		((Parent->ActivePerspective < Parent->Perspectives.size())
 		? Parent->Perspectives[Parent->ActivePerspective].Name : "Perspective 1");
 
 	for (int i = 0; i <= IDM_CODEWINDOW - IDM_LOGWINDOW; i++)
-		ini.Get(_Section, SettingName[i], &iNbAffiliation[i], 0);
+		ini.GetOrCreateSection(section)->Get(SettingName[i], &iNbAffiliation[i], 0);
 
 	// Get floating setting
 	for (int i = 0; i <= IDM_CODEWINDOW - IDM_LOGWINDOW; i++)
-		ini.Get("Float", SettingName[i], &Parent->bFloatWindow[i], false);
+		ini.GetOrCreateSection("Float")->Get(SettingName[i], &Parent->bFloatWindow[i], false);
 }
 
 void CCodeWindow::Save()
@@ -105,11 +106,10 @@ void CCodeWindow::Save()
 	IniFile ini;
 	ini.Load(File::GetUserPath(F_DEBUGGERCONFIG_IDX));
 
-	ini.Set("General", "DebuggerFont", WxStrToStr(DebuggerFont.GetNativeFontInfoUserDesc()));
-
-	// Boot to pause or not
-	ini.Set("General", "AutomaticStart", GetMenuBar()->IsChecked(IDM_AUTOMATICSTART));
-	ini.Set("General", "BootToPause", GetMenuBar()->IsChecked(IDM_BOOTTOPAUSE));
+	IniFile::Section* general = ini.GetOrCreateSection("General");
+	general->Set("DebuggerFont", WxStrToStr(DebuggerFont.GetNativeFontInfoUserDesc()));
+	general->Set("AutomaticStart", GetMenuBar()->IsChecked(IDM_AUTOMATICSTART));
+	general->Set("BootToPause", GetMenuBar()->IsChecked(IDM_BOOTTOPAUSE));
 
 	const char* SettingName[] = {
 		"Log",
@@ -126,16 +126,16 @@ void CCodeWindow::Save()
 
 	// Save windows settings
 	for (int i = IDM_LOGWINDOW; i <= IDM_VIDEOWINDOW; i++)
-		ini.Set("ShowOnStart", SettingName[i - IDM_LOGWINDOW], GetMenuBar()->IsChecked(i));
+		ini.GetOrCreateSection("ShowOnStart")->Set(SettingName[i - IDM_LOGWINDOW], GetMenuBar()->IsChecked(i));
 
 	// Save notebook affiliations
-	std::string _Section = "P - " + Parent->Perspectives[Parent->ActivePerspective].Name;
+	std::string section = "P - " + Parent->Perspectives[Parent->ActivePerspective].Name;
 	for (int i = 0; i <= IDM_CODEWINDOW - IDM_LOGWINDOW; i++)
-		ini.Set(_Section, SettingName[i], iNbAffiliation[i]);
+		ini.GetOrCreateSection(section)->Set(SettingName[i], iNbAffiliation[i]);
 
 	// Save floating setting
 	for (int i = IDM_LOGWINDOW_PARENT; i <= IDM_CODEWINDOW_PARENT; i++)
-		ini.Set("Float", SettingName[i - IDM_LOGWINDOW_PARENT], !!FindWindowById(i));
+		ini.GetOrCreateSection("Float")->Set(SettingName[i - IDM_LOGWINDOW_PARENT], !!FindWindowById(i));
 
 	ini.Save(File::GetUserPath(F_DEBUGGERCONFIG_IDX));
 }
@@ -219,11 +219,11 @@ void CCodeWindow::OnSymbolsMenu(wxCommandEvent& event)
 {
 	Parent->ClearStatusBar();
 
-	if (Core::GetState() == Core::CORE_UNINITIALIZED) return;
+	if (!Core::IsRunning()) return;
 
 	std::string existing_map_file, writable_map_file;
 	bool map_exists = CBoot::FindMapFile(&existing_map_file,
-	                                     &writable_map_file);
+		&writable_map_file);
 	switch (event.GetId())
 	{
 	case IDM_CLEARSYMBOLS:
@@ -232,7 +232,7 @@ void CCodeWindow::OnSymbolsMenu(wxCommandEvent& event)
 		Host_NotifyMapLoaded();
 		break;
 	case IDM_SCANFUNCTIONS:
-		{
+	{
 		PPCAnalyst::FindFunctions(0x80000000, 0x81800000, &g_symbolDB);
 		SignatureDB db;
 		if (db.Load(File::GetSysDirectory() + TOTALDB))
@@ -248,7 +248,7 @@ void CCodeWindow::OnSymbolsMenu(wxCommandEvent& event)
 		// Update GUI
 		NotifyMapLoaded();
 		break;
-		}
+	}
 	case IDM_LOADMAPFILE:
 		if (!map_exists)
 		{
@@ -275,78 +275,78 @@ void CCodeWindow::OnSymbolsMenu(wxCommandEvent& event)
 		break;
 
 	case IDM_RENAME_SYMBOLS:
+	{
+		const wxString path = wxFileSelector(
+			_("Apply signature file"), wxEmptyString,
+			wxEmptyString, wxEmptyString,
+			"Dolphin Symbol Rename File (*.sym)|*.sym",
+			wxFD_OPEN | wxFD_FILE_MUST_EXIST, this);
+
+		if (!path.IsEmpty())
 		{
-			const wxString path = wxFileSelector(
-				_("Apply signature file"), wxEmptyString,
-				wxEmptyString, wxEmptyString,
-				"Dolphin Symbol Rename File (*.sym)|*.sym",
-				wxFD_OPEN | wxFD_FILE_MUST_EXIST, this);
+			std::ifstream f;
+			OpenFStream(f, WxStrToStr(path), std::ios_base::in);
 
-			if (!path.IsEmpty())
+			std::string line;
+			while (std::getline(f, line))
 			{
-				std::ifstream f;
-				OpenFStream(f, WxStrToStr(path), std::ios_base::in);
+				if (line.length() < 12)
+					continue;
 
-				std::string line;
-				while (std::getline(f, line))
-				{
-					if (line.length() < 12)
-						continue;
+				u32 address, type;
+				std::string name;
 
-					u32 address, type;
-					std::string name;
+				std::istringstream ss(line);
+				ss >> std::hex >> address >> std::dec >> type >> name;
 
-					std::istringstream ss(line);
-					ss >> std::hex >> address >> std::dec >> type >> name;
-
-					Symbol *symbol = g_symbolDB.GetSymbolFromAddr(address);
-					if (symbol)
-						symbol->name = line.substr(12);
-				}
-
-				Host_NotifyMapLoaded();
+				Symbol *symbol = g_symbolDB.GetSymbolFromAddr(address);
+				if (symbol)
+					symbol->name = line.substr(12);
 			}
+
+			Host_NotifyMapLoaded();
 		}
+	}
 		break;
 
 	case IDM_CREATESIGNATUREFILE:
-		{
-			wxTextEntryDialog input_prefix(
-				this,
-				_("Only export symbols with prefix:\n(Blank for all symbols)"),
-				wxGetTextFromUserPromptStr,
-				wxEmptyString);
+	{
+		wxTextEntryDialog input_prefix(
+			this,
+			_("Only export symbols with prefix:\n(Blank for all symbols)"),
+			wxGetTextFromUserPromptStr,
+			wxEmptyString);
 
-			if (input_prefix.ShowModal() == wxID_OK)
-			{
-				std::string prefix(WxStrToStr(input_prefix.GetValue()));
-
-				wxString path = wxFileSelector(
-					_("Save signature as"), wxEmptyString, wxEmptyString, wxEmptyString,
-					"Dolphin Signature File (*.dsy)|*.dsy;", wxFD_SAVE,
-					this);
-				if (!path.IsEmpty())
-				{
-					SignatureDB db;
-					db.Initialize(&g_symbolDB, prefix);
-					db.Save(WxStrToStr(path));
-				}
-			}
-		}
-		break;
-	case IDM_USESIGNATUREFILE:
+		if (input_prefix.ShowModal() == wxID_OK)
 		{
+			std::string prefix(WxStrToStr(input_prefix.GetValue()));
+
 			wxString path = wxFileSelector(
-				_("Apply signature file"), wxEmptyString, wxEmptyString, wxEmptyString,
-				"Dolphin Signature File (*.dsy)|*.dsy;", wxFD_OPEN | wxFD_FILE_MUST_EXIST,
+				_("Save signature as"), wxEmptyString, wxEmptyString, wxEmptyString,
+				"Dolphin Signature File (*.dsy)|*.dsy;", wxFD_SAVE,
 				this);
 			if (!path.IsEmpty())
 			{
 				SignatureDB db;
-				db.Load(WxStrToStr(path));
-				db.Apply(&g_symbolDB);
+				db.Initialize(&g_symbolDB, prefix);
+				db.Save(WxStrToStr(path));
 			}
 		}
+	}
+		break;
+	case IDM_USESIGNATUREFILE:
+	{
+		wxString path = wxFileSelector(
+			_("Apply signature file"), wxEmptyString, wxEmptyString, wxEmptyString,
+			"Dolphin Signature File (*.dsy)|*.dsy;", wxFD_OPEN | wxFD_FILE_MUST_EXIST,
+			this);
+		if (!path.IsEmpty())
+		{
+			SignatureDB db;
+			db.Load(WxStrToStr(path));
+			db.Apply(&g_symbolDB);
+		}
+	}
 		NotifyMapLoaded();
 		break;
 	case IDM_PATCHHLEFUNCTIONS:
@@ -405,7 +405,7 @@ void CCodeWindow::OnChangeFont(wxCommandEvent& event)
 	data.SetInitialFont(DebuggerFont);
 
 	wxFontDialog dialog(this, data);
-	if ( dialog.ShowModal() == wxID_OK )
+	if (dialog.ShowModal() == wxID_OK)
 		DebuggerFont = dialog.GetFontData().GetChosenFont();
 }
 
@@ -436,8 +436,8 @@ void CCodeWindow::ToggleCodeWindow(bool bShow)
 {
 	if (bShow)
 		Parent->DoAddPage(this,
-		        iNbAffiliation[IDM_CODEWINDOW - IDM_LOGWINDOW],
-		        Parent->bFloatWindow[IDM_CODEWINDOW - IDM_LOGWINDOW]);
+		iNbAffiliation[IDM_CODEWINDOW - IDM_LOGWINDOW],
+		Parent->bFloatWindow[IDM_CODEWINDOW - IDM_LOGWINDOW]);
 	else // Hide
 		Parent->DoRemovePage(this);
 }
@@ -450,8 +450,8 @@ void CCodeWindow::ToggleRegisterWindow(bool bShow)
 		if (!m_RegisterWindow)
 			m_RegisterWindow = new CRegisterWindow(Parent, IDM_REGISTERWINDOW);
 		Parent->DoAddPage(m_RegisterWindow,
-		        iNbAffiliation[IDM_REGISTERWINDOW - IDM_LOGWINDOW],
-		        Parent->bFloatWindow[IDM_REGISTERWINDOW - IDM_LOGWINDOW]);
+			iNbAffiliation[IDM_REGISTERWINDOW - IDM_LOGWINDOW],
+			Parent->bFloatWindow[IDM_REGISTERWINDOW - IDM_LOGWINDOW]);
 	}
 	else // Close
 	{
@@ -468,8 +468,8 @@ void CCodeWindow::ToggleBreakPointWindow(bool bShow)
 		if (!m_BreakpointWindow)
 			m_BreakpointWindow = new CBreakPointWindow(this, Parent, IDM_BREAKPOINTWINDOW);
 		Parent->DoAddPage(m_BreakpointWindow,
-		        iNbAffiliation[IDM_BREAKPOINTWINDOW - IDM_LOGWINDOW],
-		        Parent->bFloatWindow[IDM_BREAKPOINTWINDOW - IDM_LOGWINDOW]);
+			iNbAffiliation[IDM_BREAKPOINTWINDOW - IDM_LOGWINDOW],
+			Parent->bFloatWindow[IDM_BREAKPOINTWINDOW - IDM_LOGWINDOW]);
 	}
 	else // Close
 	{
@@ -486,8 +486,8 @@ void CCodeWindow::ToggleMemoryWindow(bool bShow)
 		if (!m_MemoryWindow)
 			m_MemoryWindow = new CMemoryWindow(Parent, IDM_MEMORYWINDOW);
 		Parent->DoAddPage(m_MemoryWindow,
-		        iNbAffiliation[IDM_MEMORYWINDOW - IDM_LOGWINDOW],
-		        Parent->bFloatWindow[IDM_MEMORYWINDOW - IDM_LOGWINDOW]);
+			iNbAffiliation[IDM_MEMORYWINDOW - IDM_LOGWINDOW],
+			Parent->bFloatWindow[IDM_MEMORYWINDOW - IDM_LOGWINDOW]);
 	}
 	else // Close
 	{
@@ -504,8 +504,8 @@ void CCodeWindow::ToggleJitWindow(bool bShow)
 		if (!m_JitWindow)
 			m_JitWindow = new CJitWindow(Parent, IDM_JITWINDOW);
 		Parent->DoAddPage(m_JitWindow,
-		        iNbAffiliation[IDM_JITWINDOW - IDM_LOGWINDOW],
-		        Parent->bFloatWindow[IDM_JITWINDOW - IDM_LOGWINDOW]);
+			iNbAffiliation[IDM_JITWINDOW - IDM_LOGWINDOW],
+			Parent->bFloatWindow[IDM_JITWINDOW - IDM_LOGWINDOW]);
 	}
 	else // Close
 	{
@@ -523,8 +523,8 @@ void CCodeWindow::ToggleSoundWindow(bool bShow)
 		if (!m_SoundWindow)
 			m_SoundWindow = new DSPDebuggerLLE(Parent, IDM_SOUNDWINDOW);
 		Parent->DoAddPage(m_SoundWindow,
-		       iNbAffiliation[IDM_SOUNDWINDOW - IDM_LOGWINDOW],
-		        Parent->bFloatWindow[IDM_SOUNDWINDOW - IDM_LOGWINDOW]);
+			iNbAffiliation[IDM_SOUNDWINDOW - IDM_LOGWINDOW],
+			Parent->bFloatWindow[IDM_SOUNDWINDOW - IDM_LOGWINDOW]);
 	}
 	else // Close
 	{
@@ -541,8 +541,8 @@ void CCodeWindow::ToggleVideoWindow(bool bShow)
 		if (!m_VideoWindow)
 			m_VideoWindow = new GFXDebuggerPanel(Parent, IDM_VIDEOWINDOW);
 		Parent->DoAddPage(m_VideoWindow,
-		        iNbAffiliation[IDM_VIDEOWINDOW - IDM_LOGWINDOW],
-		        Parent->bFloatWindow[IDM_VIDEOWINDOW - IDM_LOGWINDOW]);
+			iNbAffiliation[IDM_VIDEOWINDOW - IDM_LOGWINDOW],
+			Parent->bFloatWindow[IDM_VIDEOWINDOW - IDM_LOGWINDOW]);
 	}
 	else // Close
 	{

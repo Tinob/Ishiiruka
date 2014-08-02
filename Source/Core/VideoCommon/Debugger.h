@@ -2,8 +2,7 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _GFX_DEBUGGER_H_
-#define _GFX_DEBUGGER_H_
+#pragma once
 
 class GFXDebuggerBase
 {
@@ -14,16 +13,16 @@ public:
 	virtual void OnPause() {};
 	virtual void OnContinue() {};
 
-	void DumpPixelShader(const char* path);
-	void DumpVertexShader(const char* path);
-	void DumpPixelShaderConstants(const char* path);
-	void DumpVertexShaderConstants(const char* path);
-	void DumpTextures(const char* path);
-	void DumpFrameBuffer(const char* path);
-	void DumpGeometry(const char* path);
-	void DumpVertexDecl(const char* path);
-	void DumpMatrices(const char* path);
-	void DumpStats(const char* path);
+	void DumpPixelShader(const std::string& path);
+	void DumpVertexShader(const std::string& path);
+	void DumpPixelShaderConstants(const std::string& path);
+	void DumpVertexShaderConstants(const std::string& path);
+	void DumpTextures(const std::string& path);
+	void DumpFrameBuffer(const std::string& path);
+	void DumpGeometry(const std::string& path);
+	void DumpVertexDecl(const std::string& path);
+	void DumpMatrices(const std::string& path);
+	void DumpStats(const std::string& path);
 };
 
 enum PauseEvent {
@@ -62,6 +61,3 @@ void GFXDebuggerUpdateScreen();
 #define GFX_DEBUGGER_PAUSE_AT(event,update) {if (((GFXDebuggerToPauseAtNext & event) && --GFXDebuggerEventToPauseCount<=0) || GFXDebuggerPauseFlag) GFXDebuggerToPause(update);}
 #define GFX_DEBUGGER_PAUSE_LOG_AT(event,update,dumpfunc) {if (((GFXDebuggerToPauseAtNext & event) && --GFXDebuggerEventToPauseCount<=0) || GFXDebuggerPauseFlag) {{dumpfunc};GFXDebuggerToPause(update);}}
 #define GFX_DEBUGGER_LOG_AT(event,dumpfunc) {if (( GFXDebuggerToPauseAtNext & event ) ) {{dumpfunc};}}
-
-
-#endif // _GFX_DEBUGGER_H_
