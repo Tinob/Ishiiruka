@@ -76,7 +76,7 @@ public:
 	virtual void HandleMail(u32 mail) = 0;
 
 	// Cycles are out of the 81/121mhz the DSP runs at.
-	virtual void Update(int cycles) = 0;
+	virtual void Update() = 0;
 	virtual u32 GetUpdateMs() = 0;
 
 	virtual void DoState(PointerWrap &p) { DoStateShared(p); }

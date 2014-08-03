@@ -23,7 +23,7 @@ void INITUCode::Init()
 }
 
 
-void INITUCode::Update(int cycles)
+void INITUCode::Update()
 {
 	if (m_mail_handler.IsEmpty())
 	{

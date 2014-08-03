@@ -28,7 +28,7 @@ ROMUCode::ROMUCode(DSPHLE *dsphle, u32 crc)
 ROMUCode::~ROMUCode()
 {}
 
-void ROMUCode::Update(int cycles)
+void ROMUCode::Update()
 {}
 
 void ROMUCode::HandleMail(u32 mail)
