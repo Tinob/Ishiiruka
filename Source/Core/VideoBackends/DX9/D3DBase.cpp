@@ -15,8 +15,8 @@ D3DXCOMPILESHADERTYPE PD3DXCompileShader = NULL;
 
 namespace DX9
 {
-static char vsVersions[5][7] = {"ERROR", "vs_1_4", "vs_2_a", "vs_3_0", "vs_4_0"};
-static char psVersions[5][7] = {"ERROR", "ps_1_4", "ps_2_a", "ps_3_0", "ps_4_0"};
+static char vsVersions[5][7] = {"ERROR", "vs_1_4", "vs_2_0", "vs_2_a" "vs_3_0", "vs_4_0" "vs_5_0"};
+static char psVersions[5][7] = {"ERROR", "ps_1_4", "ps_2_0", "ps_2_a" "ps_3_0", "ps_4_0" "ps_5_0"};
 // D3DX
 HINSTANCE hD3DXDll = NULL;
 int d3dx_dll_ref = 0;
