@@ -51,7 +51,6 @@
     <ClInclude Include="XAudio2Stream.h">
       <Filter>SoundStreams</Filter>
     </ClInclude>
-    <ClInclude Include="stdafx.h" />
     <ClInclude Include="XAudio2_7Stream.h">
       <Filter>SoundStreams</Filter>
     </ClInclude>

@@ -3,6 +3,7 @@
 // Refer to the license.txt file included.
 
 #include <cstddef>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -21,8 +22,6 @@ CVolumeGC::CVolumeGC(IBlobReader* _pReader)
 
 CVolumeGC::~CVolumeGC()
 {
-	delete m_pReader;
-	m_pReader = nullptr; // I don't think this makes any difference, but anyway
 }
 
 bool CVolumeGC::Read(u64 _Offset, u64 _Length, u8* _pBuffer) const
@@ -157,7 +156,7 @@ u64 CVolumeGC::GetRawSize() const
 
 bool CVolumeGC::IsDiscTwo() const
 {
-	bool discTwo;
+	bool discTwo = false;
 	Read(6,1, (u8*) &discTwo);
 	return discTwo;
 }

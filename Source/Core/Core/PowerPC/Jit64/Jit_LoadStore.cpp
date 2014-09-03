@@ -30,26 +30,26 @@ void Jit64::lXXx(UGeckoInstruction inst)
 	bool signExtend = false;
 	switch (inst.OPCD)
 	{
-	case 32: /* lwz */
-	case 33: /* lwzu */
+	case 32: // lwz
+	case 33: // lwzu
 		accessSize = 32;
 		signExtend = false;
 		break;
 
-	case 34: /* lbz */
-	case 35: /* lbzu */
+	case 34: // lbz
+	case 35: // lbzu
 		accessSize = 8;
 		signExtend = false;
 		break;
 
-	case 40: /* lhz */
-	case 41: /* lhzu */
+	case 40: // lhz
+	case 41: // lhzu
 		accessSize = 16;
 		signExtend = false;
 		break;
 
-	case 42: /* lha */
-	case 43: /* lhau */
+	case 42: // lha
+	case 43: // lhau
 		accessSize = 16;
 		signExtend = true;
 		break;
@@ -57,25 +57,25 @@ void Jit64::lXXx(UGeckoInstruction inst)
 	case 31:
 		switch (inst.SUBOP10)
 		{
-		case 23:  /* lwzx */
-		case 55:  /* lwzux */
+		case 23: // lwzx
+		case 55: // lwzux
 			accessSize = 32;
 			signExtend = false;
 			break;
 
-		case 87:  /* lbzx */
-		case 119: /* lbzux */
+		case 87:  // lbzx
+		case 119: // lbzux
 			accessSize = 8;
 			signExtend = false;
 			break;
-		case 279: /* lhzx */
-		case 311: /* lhzux */
+		case 279: // lhzx
+		case 311: // lhzux
 			accessSize = 16;
 			signExtend = false;
 			break;
 
-		case 343: /* lhax */
-		case 375: /* lhaux */
+		case 343: // lhax
+		case 375: // lhaux
 			accessSize = 16;
 			signExtend = true;
 			break;
@@ -96,11 +96,11 @@ void Jit64::lXXx(UGeckoInstruction inst)
 	// ... maybe the throttle one already do that :p
 	// if (CommandProcessor::AllowIdleSkipping() && PixelEngine::AllowIdleSkipping())
 	if (SConfig::GetInstance().m_LocalCoreStartupParameter.bSkipIdle &&
-		inst.OPCD == 32 &&
-		(inst.hex & 0xFFFF0000) == 0x800D0000 &&
-		(Memory::ReadUnchecked_U32(js.compilerPC + 4) == 0x28000000 ||
-		(SConfig::GetInstance().m_LocalCoreStartupParameter.bWii && Memory::ReadUnchecked_U32(js.compilerPC + 4) == 0x2C000000)) &&
-		Memory::ReadUnchecked_U32(js.compilerPC + 8) == 0x4182fff8)
+	    inst.OPCD == 32 &&
+	    (inst.hex & 0xFFFF0000) == 0x800D0000 &&
+	    (Memory::ReadUnchecked_U32(js.compilerPC + 4) == 0x28000000 ||
+	    (SConfig::GetInstance().m_LocalCoreStartupParameter.bWii && Memory::ReadUnchecked_U32(js.compilerPC + 4) == 0x2C000000)) &&
+	    Memory::ReadUnchecked_U32(js.compilerPC + 8) == 0x4182fff8)
 	{
 		// TODO(LinesPrower):
 		// - Rewrite this!
@@ -110,13 +110,13 @@ void Jit64::lXXx(UGeckoInstruction inst)
 		// do our job at first
 		s32 offset = (s32)(s16)inst.SIMM_16;
 		gpr.BindToRegister(d, false, true);
-		SafeLoadToReg(gpr.RX(d), gpr.R(a), accessSize, offset, RegistersInUse(), signExtend);
+		SafeLoadToReg(gpr.RX(d), gpr.R(a), accessSize, offset, CallerSavedRegistersInUse(), signExtend);
 
 		// if it's still 0, we can wait until the next event
 		TEST(32, gpr.R(d), gpr.R(d));
 		FixupBranch noIdle = J_CC(CC_NZ);
 
-		u32 registersInUse = RegistersInUse();
+		u32 registersInUse = CallerSavedRegistersInUse();
 		ABI_PushRegistersAndAdjustStack(registersInUse, false);
 
 		ABI_CallFunctionC((void *)&PowerPC::OnIdle, PowerPC::ppcState.gpr[a] + (s32)(s16)inst.SIMM_16);
@@ -136,11 +136,12 @@ void Jit64::lXXx(UGeckoInstruction inst)
 	// Determine whether this instruction updates inst.RA
 	bool update;
 	if (inst.OPCD == 31)
-		update = ((inst.SUBOP10 & 0x20) != 0);
+		update = ((inst.SUBOP10 & 0x20) != 0) && (!gpr.R(b).IsImm() || gpr.R(b).offset != 0);
 	else
-		update = ((inst.OPCD & 1) != 0);
+		update = ((inst.OPCD & 1) != 0) && inst.SIMM_16 != 0;
 
-	bool zeroOffset = inst.OPCD != 31 && inst.SIMM_16 == 0;
+	bool storeAddress = false;
+	s32 loadOffset = 0;
 
 	// Prepare address operand
 	Gen::OpArg opAddress;
@@ -178,30 +179,59 @@ void Jit64::lXXx(UGeckoInstruction inst)
 		}
 		else
 		{
-			if ((update && !js.memcheck) || zeroOffset)
+			// If we're using reg+reg mode and b is an immediate, pretend we're using constant offset mode
+			bool use_constant_offset = inst.OPCD != 31 || gpr.R(b).IsImm();
+			s32 offset = inst.OPCD == 31 ? (s32)gpr.R(b).offset : (s32)inst.SIMM_16;
+			// Depending on whether we have an immediate and/or update, find the optimum way to calculate
+			// the load address.
+			if ((update || use_constant_offset) && !js.memcheck)
 			{
 				gpr.BindToRegister(a, true, update);
 				opAddress = gpr.R(a);
+				if (!use_constant_offset)
+					ADD(32, opAddress, gpr.R(b));
+				else if (update)
+					ADD(32, opAddress, Imm32((u32)offset));
+				else
+					loadOffset = offset;
 			}
 			else
 			{
+				// In this case we need an extra temporary register.
 				gpr.FlushLockX(ABI_PARAM1);
 				opAddress = R(ABI_PARAM1);
-				MOV(32, opAddress, gpr.R(a));
+				storeAddress = true;
+				if (use_constant_offset)
+				{
+					if (gpr.R(a).IsSimpleReg() && offset != 0)
+					{
+						LEA(32, ABI_PARAM1, MDisp(gpr.RX(a), offset));
+					}
+					else
+					{
+						MOV(32, opAddress, gpr.R(a));
+						if (offset != 0)
+							ADD(32, opAddress, Imm32((u32)offset));
+					}
+				}
+				else if (gpr.R(a).IsSimpleReg() && gpr.R(b).IsSimpleReg())
+				{
+					LEA(32, ABI_PARAM1, MComplex(gpr.RX(a), gpr.RX(b), SCALE_1, 0));
+				}
+				else
+				{
+					MOV(32, opAddress, gpr.R(a));
+					ADD(32, opAddress, gpr.R(b));
+				}
 			}
-
-			if (inst.OPCD == 31)
-				ADD(32, opAddress, gpr.R(b));
-			else if (inst.SIMM_16 != 0)
-				ADD(32, opAddress, Imm32((u32)(s32)inst.SIMM_16));
 		}
 	}
 
 	gpr.Lock(a, b, d);
 	gpr.BindToRegister(d, js.memcheck, true);
-	SafeLoadToReg(gpr.RX(d), opAddress, accessSize, 0, RegistersInUse(), signExtend);
+	SafeLoadToReg(gpr.RX(d), opAddress, accessSize, loadOffset, CallerSavedRegistersInUse(), signExtend);
 
-	if (update && js.memcheck && !zeroOffset)
+	if (update && storeAddress)
 	{
 		gpr.BindToRegister(a, true, true);
 		MEMCHECK_START
@@ -230,17 +260,37 @@ void Jit64::dcbz(UGeckoInstruction inst)
 {
 	INSTRUCTION_START
 	JITDISABLE(bJITLoadStoreOff);
+	if (Core::g_CoreStartupParameter.bDCBZOFF)
+		return;
 
-	// FIXME
-	FALLBACK_IF(true);
+	int a = inst.RA;
+	int b = inst.RB;
 
-	MOV(32, R(EAX), gpr.R(inst.RB));
-	if (inst.RA)
-		ADD(32, R(EAX), gpr.R(inst.RA));
+	u32 mem_mask = Memory::ADDR_MASK_HW_ACCESS;
+	if (Core::g_CoreStartupParameter.bMMU || Core::g_CoreStartupParameter.bTLBHack)
+		mem_mask |= Memory::ADDR_MASK_MEM1;
+
+	MOV(32, R(EAX), gpr.R(b));
+	if (a)
+		ADD(32, R(EAX), gpr.R(a));
 	AND(32, R(EAX), Imm32(~31));
+	TEST(32, R(EAX), Imm32(mem_mask));
+	FixupBranch fast = J_CC(CC_Z, true);
+
+	// Should this code ever run? I can't find any games that use DCBZ on non-physical addresses, but
+	// supposedly there are, at least for some MMU titles. Let's be careful and support it to be sure.
+	MOV(32, M(&PC), Imm32(jit->js.compilerPC));
+	u32 registersInUse = CallerSavedRegistersInUse();
+	ABI_PushRegistersAndAdjustStack(registersInUse, false);
+	ABI_CallFunctionR((void *)&Memory::ClearCacheLine, EAX);
+	ABI_PopRegistersAndAdjustStack(registersInUse, false);
+
+	FixupBranch exit = J();
+	SetJumpTarget(fast);
 	PXOR(XMM0, R(XMM0));
-	MOVAPS(MComplex(EBX, EAX, SCALE_1, 0), XMM0);
-	MOVAPS(MComplex(EBX, EAX, SCALE_1, 16), XMM0);
+	MOVAPS(MComplex(RBX, RAX, SCALE_1, 0), XMM0);
+	MOVAPS(MComplex(RBX, RAX, SCALE_1, 16), XMM0);
+	SetJumpTarget(exit);
 }
 
 void Jit64::stX(UGeckoInstruction inst)
@@ -259,10 +309,18 @@ void Jit64::stX(UGeckoInstruction inst)
 		int accessSize;
 		switch (inst.OPCD & ~1)
 		{
-		case 36: accessSize = 32; break; //stw
-		case 44: accessSize = 16; break; //sth
-		case 38: accessSize = 8; break;  //stb
-		default: _assert_msg_(DYNA_REC, 0, "AWETKLJASDLKF"); return;
+		case 36: // stw
+			accessSize = 32;
+			break;
+		case 44: // sth
+			accessSize = 16;
+			break;
+		case 38: // stb
+			accessSize = 8;
+			break;
+		default:
+			_assert_msg_(DYNA_REC, 0, "stX: Invalid access size.");
+			return;
 		}
 
 		if ((a == 0) || gpr.R(a).IsImm())
@@ -273,18 +331,27 @@ void Jit64::stX(UGeckoInstruction inst)
 			addr += offset;
 			if ((addr & 0xFFFFF000) == 0xCC008000 && jo.optimizeGatherPipe)
 			{
-				MOV(32, M(&PC), Imm32(jit->js.compilerPC)); // Helps external systems know which instruction triggered the write
+				// Helps external systems know which instruction triggered the write
+				MOV(32, M(&PC), Imm32(jit->js.compilerPC));
+
 				gpr.FlushLockX(ABI_PARAM1);
 				MOV(32, R(ABI_PARAM1), gpr.R(s));
 				if (update)
 					gpr.SetImmediate32(a, addr);
+
+				// No need to protect these, they don't touch any state
+				// question - should we inline them instead? Pro: Lose a CALL   Con: Code bloat
 				switch (accessSize)
 				{
-					// No need to protect these, they don't touch any state
-					// question - should we inline them instead? Pro: Lose a CALL   Con: Code bloat
-				case 8:  CALL((void *)asm_routines.fifoDirectWrite8);  break;
-				case 16: CALL((void *)asm_routines.fifoDirectWrite16); break;
-				case 32: CALL((void *)asm_routines.fifoDirectWrite32); break;
+				case 8:
+					CALL((void *)asm_routines.fifoDirectWrite8);
+					break;
+				case 16:
+					CALL((void *)asm_routines.fifoDirectWrite16);
+					break;
+				case 32:
+					CALL((void *)asm_routines.fifoDirectWrite32);
+					break;
 				}
 				js.fifoBytesThisBlock += accessSize >> 3;
 				gpr.UnlockAllX();
@@ -300,14 +367,22 @@ void Jit64::stX(UGeckoInstruction inst)
 			}
 			else
 			{
-				MOV(32, M(&PC), Imm32(jit->js.compilerPC)); // Helps external systems know which instruction triggered the write
-				u32 registersInUse = RegistersInUse();
+				// Helps external systems know which instruction triggered the write
+				MOV(32, M(&PC), Imm32(jit->js.compilerPC));
+
+				u32 registersInUse = CallerSavedRegistersInUse();
 				ABI_PushRegistersAndAdjustStack(registersInUse, false);
 				switch (accessSize)
 				{
-				case 32: ABI_CallFunctionAC(true ? ((void *)&Memory::Write_U32) : ((void *)&Memory::Write_U32_Swap), gpr.R(s), addr); break;
-				case 16: ABI_CallFunctionAC(true ? ((void *)&Memory::Write_U16) : ((void *)&Memory::Write_U16_Swap), gpr.R(s), addr); break;
-				case 8:  ABI_CallFunctionAC((void *)&Memory::Write_U8, gpr.R(s), addr);  break;
+				case 32:
+					ABI_CallFunctionAC(true ? ((void *)&Memory::Write_U32) : ((void *)&Memory::Write_U32_Swap), gpr.R(s), addr);
+					break;
+				case 16:
+					ABI_CallFunctionAC(true ? ((void *)&Memory::Write_U16) : ((void *)&Memory::Write_U16_Swap), gpr.R(s), addr);
+					break;
+				case 8:
+					ABI_CallFunctionAC((void *)&Memory::Write_U8, gpr.R(s), addr);
+					break;
 				}
 				ABI_PopRegistersAndAdjustStack(registersInUse, false);
 				if (update)
@@ -320,7 +395,7 @@ void Jit64::stX(UGeckoInstruction inst)
 		gpr.Lock(s, a);
 		MOV(32, R(EDX), gpr.R(a));
 		MOV(32, R(ECX), gpr.R(s));
-		SafeWriteRegToReg(ECX, EDX, accessSize, offset, RegistersInUse());
+		SafeWriteRegToReg(ECX, EDX, accessSize, offset, CallerSavedRegistersInUse());
 
 		if (update && offset)
 		{
@@ -359,21 +434,37 @@ void Jit64::stXx(UGeckoInstruction inst)
 		ADD(32, gpr.R(a), gpr.R(b));
 		MOV(32, R(EDX), gpr.R(a));
 		MEMCHECK_END
-	} else {
+	}
+	else if (gpr.R(a).IsSimpleReg() && gpr.R(b).IsSimpleReg())
+	{
+		LEA(32, EDX, MComplex(gpr.RX(a), gpr.RX(b), SCALE_1, 0));
+	}
+	else
+	{
 		MOV(32, R(EDX), gpr.R(a));
 		ADD(32, R(EDX), gpr.R(b));
 	}
+
 	int accessSize;
-	switch (inst.SUBOP10 & ~32) {
-		case 151: accessSize = 32; break;
-		case 407: accessSize = 16; break;
-		case 215: accessSize = 8; break;
-		default: PanicAlert("stXx: invalid access size");
-			accessSize = 0; break;
+	switch (inst.SUBOP10 & ~32)
+	{
+		case 151:
+			accessSize = 32;
+			break;
+		case 407:
+			accessSize = 16;
+			break;
+		case 215:
+			accessSize = 8;
+			break;
+		default:
+			PanicAlert("stXx: invalid access size");
+			accessSize = 0;
+			break;
 	}
 
 	MOV(32, R(ECX), gpr.R(s));
-	SafeWriteRegToReg(ECX, EDX, accessSize, 0, RegistersInUse());
+	SafeWriteRegToReg(ECX, EDX, accessSize, 0, CallerSavedRegistersInUse());
 
 	gpr.UnlockAll();
 	gpr.UnlockAllX();
@@ -392,7 +483,7 @@ void Jit64::lmw(UGeckoInstruction inst)
 		ADD(32, R(ECX), gpr.R(inst.RA));
 	for (int i = inst.RD; i < 32; i++)
 	{
-		SafeLoadToReg(EAX, R(ECX), 32, (i - inst.RD) * 4, RegistersInUse(), false);
+		SafeLoadToReg(EAX, R(ECX), 32, (i - inst.RD) * 4, CallerSavedRegistersInUse(), false);
 		gpr.BindToRegister(i, false, true);
 		MOV(32, gpr.R(i), R(EAX));
 	}
@@ -413,7 +504,7 @@ void Jit64::stmw(UGeckoInstruction inst)
 		else
 			XOR(32, R(EAX), R(EAX));
 		MOV(32, R(ECX), gpr.R(i));
-		SafeWriteRegToReg(ECX, EAX, 32, (i - inst.RD) * 4 + (u32)(s32)inst.SIMM_16, RegistersInUse());
+		SafeWriteRegToReg(ECX, EAX, 32, (i - inst.RD) * 4 + (u32)(s32)inst.SIMM_16, CallerSavedRegistersInUse());
 	}
 	gpr.UnlockAllX();
 }

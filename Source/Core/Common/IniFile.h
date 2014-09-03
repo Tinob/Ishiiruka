@@ -40,24 +40,31 @@ public:
 
 		bool Get(const std::string& key, std::string* value, const std::string& defaultValue = NULL_STRING);
 
-		void Set(const std::string& key, u32 newValue) {
+		void Set(const std::string& key, u32 newValue)
+		{
 			Set(key, StringFromFormat("0x%08x", newValue));
 		}
-		void Set(const std::string& key, float newValue) {
+
+		void Set(const std::string& key, float newValue)
+		{
 			Set(key, StringFromFormat("%f", newValue));
 		}
+
 		void Set(const std::string& key, const float newValue, const float defaultValue);
-		void Set(const std::string& key, double newValue) {
+		void Set(const std::string& key, double newValue)
+		{
 			Set(key, StringFromFormat("%f", newValue));
 		}
 
 		void Set(const std::string& key, int newValue, int defaultValue);
-		void Set(const std::string& key, int newValue) {
+		void Set(const std::string& key, int newValue)
+		{
 			Set(key, StringFromInt(newValue));
 		}
 
 		void Set(const std::string& key, bool newValue, bool defaultValue);
-		void Set(const std::string& key, bool newValue) {
+		void Set(const std::string& key, bool newValue)
+		{
 			Set(key, StringFromBool(newValue));
 		}
 		void Set(const std::string& key, const std::vector<std::string>& newValues);
@@ -69,7 +76,8 @@ public:
 		bool Get(const std::string& key, double* value, double defaultValue = false);
 		bool Get(const std::string& key, std::vector<std::string>* values);
 
-		bool operator < (const Section& other) const {
+		bool operator < (const Section& other) const
+		{
 			return name < other.name;
 		}
 
@@ -83,12 +91,12 @@ public:
 	};
 
 	/**
-	* Loads sections and keys.
-	* @param filename filename of the ini file which should be loaded
-	* @param keep_current_data If true, "extends" the currently loaded list of sections and keys with the loaded data (and replaces existing entries). If false, existing data will be erased.
-	* @warning Using any other operations than "Get*" and "Exists" is untested and will behave unexpectedly
-	* @todo This really is just a hack to support having two levels of gameinis (defaults and user-specified) and should eventually be replaced with a less stupid system.
-	*/
+	 * Loads sections and keys.
+	 * @param filename filename of the ini file which should be loaded
+	 * @param keep_current_data If true, "extends" the currently loaded list of sections and keys with the loaded data (and replaces existing entries). If false, existing data will be erased.
+	 * @warning Using any other operations than "Get*" and "Exists" is untested and will behave unexpectedly
+	 * @todo This really is just a hack to support having two levels of gameinis (defaults and user-specified) and should eventually be replaced with a less stupid system.
+	 */
 	bool Load(const std::string& filename, bool keep_current_data = false);
 
 	bool Save(const std::string& filename);
@@ -115,6 +123,11 @@ public:
 	void SortSections();
 
 	Section* GetOrCreateSection(const std::string& section);
+
+	// This function is related to parsing data from lines of INI files
+	// It's used outside of IniFile, which is why it is exposed publicly
+	// In particular it is used in PostProcessing for its configuration
+	static void ParseLine(const std::string& line, std::string* keyOut, std::string* valueOut);
 
 private:
 	std::list<Section> sections;

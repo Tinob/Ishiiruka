@@ -50,7 +50,8 @@ int ZeldaUCode::ConvertRatio(int pb_ratio)
 	return pb_ratio * 16;
 }
 
-int ZeldaUCode::SizeForResampling(ZeldaVoicePB &PB, int size, int ratio) {
+int ZeldaUCode::SizeForResampling(ZeldaVoicePB &PB, int size)
+{
 	// This is the little calculation at the start of every sample decoder
 	// in the ucode.
 	return (PB.CurSampleFrac + size * ConvertRatio(PB.RatioInt)) >> 16;
@@ -73,7 +74,7 @@ void ZeldaUCode::Resample(ZeldaVoicePB &PB, int size, s16 *in, s32 *out, bool do
 	}
 
 	int ratio = ConvertRatio(PB.RatioInt);
-	int in_size = SizeForResampling(PB, size, ratio);
+	int in_size = SizeForResampling(PB, size);
 
 	int position = PB.CurSampleFrac;
 	for (int i = 0; i < size; i++)
@@ -100,7 +101,7 @@ static void UpdateSampleCounters10(ZeldaVoicePB &PB)
 
 void ZeldaUCode::RenderVoice_PCM16(ZeldaVoicePB &PB, s16 *_Buffer, int _Size)
 {
-	int _RealSize = SizeForResampling(PB, _Size, PB.RatioInt);
+	int _RealSize = SizeForResampling(PB, _Size);
 	u32 rem_samples = _RealSize;
 	if (PB.KeyOff)
 		goto clear_buffer;
@@ -158,7 +159,7 @@ static void UpdateSampleCounters8(ZeldaVoicePB &PB)
 
 void ZeldaUCode::RenderVoice_PCM8(ZeldaVoicePB &PB, s16 *_Buffer, int _Size)
 {
-	int _RealSize = SizeForResampling(PB, _Size, PB.RatioInt);
+	int _RealSize = SizeForResampling(PB, _Size);
 	u32 rem_samples = _RealSize;
 	if (PB.KeyOff)
 		goto clear_buffer;
@@ -238,7 +239,7 @@ void ZeldaUCode::RenderVoice_AFC(ZeldaVoicePB &PB, s16 *_Buffer, int _Size)
 	PrintObject(PB);
 #endif
 
-	int _RealSize = SizeForResampling(PB, _Size, PB.RatioInt);
+	int _RealSize = SizeForResampling(PB, _Size);
 
 	// initialize "decoder" if the sample is played the first time
 	if (PB.NeedsReset != 0)
@@ -382,7 +383,7 @@ void Decoder21_ReadAudio(ZeldaVoicePB &PB, int size, s16 *_Buffer);
 void ZeldaUCode::RenderVoice_Raw(ZeldaVoicePB &PB, s16 *_Buffer, int _Size)
 {
 	// Decoder0x21 starts here.
-	u32 _RealSize = SizeForResampling(PB, _Size, PB.RatioInt);
+	u32 _RealSize = SizeForResampling(PB, _Size);
 
 	// Decoder0x21Core starts here.
 	u32 AX0 = _RealSize;
@@ -463,7 +464,8 @@ void Decoder21_ReadAudio(ZeldaVoicePB &PB, int size, s16 *_Buffer)
 	const u8 *source = Memory::GetPointer(0x80000000);
 	const u16 *src = (u16 *)(source + (ACC0 & ram_mask));
 
-	for (u32 i = 0; i < (ACC1 >> 16); i++) {
+	for (u32 i = 0; i < (ACC1 >> 16); i++)
+	{
 		_Buffer[i] = Common::swap16(src[i]);
 	}
 
@@ -483,7 +485,8 @@ void ZeldaUCode::RenderAddVoice(ZeldaVoicePB &PB, s32* _LeftBuffer, s32* _RightB
 	}
 
 	// XK: Use this to disable MIDI music (GREAT for testing). Also kills some sound FX.
-	//if (PB.SoundType == 0x0d00) {
+	//if (PB.SoundType == 0x0d00)
+	//{
 	//    PB.NeedsReset = 0;
 	//    return;
 	//}
@@ -591,13 +594,15 @@ ContinueWithBlock:
 	if (PB.VolumeMode != 0)
 	{
 		// Complex volume mode. Let's see what we can do.
-		if (PB.StopOnSilence) {
+		if (PB.StopOnSilence)
+		{
 			PB.raw[0x2b] = PB.raw[0x2a] >> 1;
 			if (PB.raw[0x2b] == 0)
 			{
 				PB.KeyOff = 1;
 			}
 		}
+
 		short AX0L = PB.raw[0x28] >> 8;
 		short AX0H = PB.raw[0x28] & 0x7F;
 		short AX1L = AX0L ^ 0x7F;
@@ -650,7 +655,8 @@ ContinueWithBlock:
 			for (int i = 0; i < _Size; i++)
 			{
 				int unmixed_audio = m_voice_buffer[i];
-				switch (count) {
+				switch (count)
+				{
 				case 0: _LeftBuffer[i] += (u64)unmixed_audio * ramp >> 29; break;
 				case 1: _RightBuffer[i] += (u64)unmixed_audio * ramp >> 29; break;
 				}
@@ -730,7 +736,8 @@ ContinueWithBlock:
 		}
 	}
 	// 03b2, this is the reason of using PB.NeedsReset. Seems to be necessary for SMG, and maybe other games.
-	if (PB.IsBlank == 0){
+	if (PB.IsBlank == 0)
+	{
 		PB.NeedsReset = 0;
 	}
 }

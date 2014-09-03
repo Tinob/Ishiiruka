@@ -6,6 +6,7 @@
 #include <xaudio2.h>
 #include "AudioCommon/AudioCommon.h"
 #include "AudioCommon/XAudio2Stream.h"
+#include "Core/Core.h"
 #include "Common/Event.h"
 
 
@@ -57,7 +58,7 @@ void StreamingVoiceContext::SubmitBuffer(u32 index, u32 sizeinbytes)
 	m_source_voice->SubmitSourceBuffer(&buf);
 }
 
-StreamingVoiceContext::StreamingVoiceContext2_7(IXAudio2 *pXAudio2, CMixer *pMixer, bool useSurround)
+StreamingVoiceContext::StreamingVoiceContext(IXAudio2 *pXAudio2, CMixer *pMixer, bool useSurround)
 	: m_mixer(pMixer), m_useSurround(useSurround), m_xaudio_buffer(new BYTE[SOUND_BUFFER_COUNT * (useSurround ? SOUND_SURROUND_FRAME_SIZE_BYTES : SOUND_STEREO_FRAME_SIZE_BYTES)])
 {
 	WAVEFORMATEXTENSIBLE wfx = {};
@@ -71,7 +72,8 @@ StreamingVoiceContext::StreamingVoiceContext2_7(IXAudio2 *pXAudio2, CMixer *pMix
 	wfx.Format.nAvgBytesPerSec = wfx.Format.nSamplesPerSec * wfx.Format.nBlockAlign;
 	wfx.Format.cbSize          = sizeof(WAVEFORMATEXTENSIBLE) - sizeof(WAVEFORMATEX);
 	wfx.Samples.wValidBitsPerSample = 16;
-	wfx.dwChannelMask = m_useSurround ? SPEAKER_5POINT1_SURROUND : SPEAKER_STEREO;
+	wfx.dwChannelMask = m_useSurround ? (SPEAKER_FRONT_LEFT | SPEAKER_FRONT_RIGHT | SPEAKER_FRONT_CENTER | SPEAKER_LOW_FREQUENCY | SPEAKER_SIDE_LEFT | SPEAKER_SIDE_RIGHT)
+		: SPEAKER_FRONT_LEFT | SPEAKER_FRONT_RIGHT;
 	wfx.SubFormat              = KSDATAFORMAT_SUBTYPE_PCM;
 
 	// create source voice
@@ -95,7 +97,7 @@ StreamingVoiceContext::StreamingVoiceContext2_7(IXAudio2 *pXAudio2, CMixer *pMix
 	}
 }
 
-StreamingVoiceContext::~StreamingVoiceContext2_7()
+StreamingVoiceContext::~StreamingVoiceContext()
 {
 	if (m_source_voice)
 	{

@@ -42,7 +42,7 @@ void Init()
 	}
 }
 
-void SaveTexture(const char* filename, u32 texmap, s32 mip)
+void SaveTexture(const std::string& filename, u32 texmap, s32 mip)
 {
 	FourTexUnits& texUnit = bpmem.tex[(texmap >> 2) & 1];
 	u8 subTexmap = texmap & 3;
@@ -56,7 +56,7 @@ void SaveTexture(const char* filename, u32 texmap, s32 mip)
 
 	GetTextureBGRA(data, texmap, mip, width, height);
 
-	(void)SaveTGA(filename, width, height, data);
+	(void)TextureToPng(data, width * 4, filename, width, height);
 
 	delete []data;
 }
@@ -104,9 +104,9 @@ void DumpActiveTextures()
 		s32 maxLod = GetMaxTextureLod(texmap);
 		for (s32 mip = 0; mip <= maxLod; ++mip)
 		{
-			SaveTexture(StringFromFormat("%star%i_ind%i_map%i_mip%i.tga",
-						File::GetUserPath(D_DUMPTEXTURES_IDX).c_str(),
-						swstats.thisFrame.numDrawnObjects, stageNum, texmap, mip).c_str(), texmap, mip);
+			SaveTexture(StringFromFormat("%star%i_ind%i_map%i_mip%i.png",
+						File::GetUserPath(D_DUMPTEXTURES_IDX),
+						swstats.thisFrame.numDrawnObjects, stageNum, texmap, mip), texmap, mip);
 		}
 	}
 
@@ -121,9 +121,9 @@ void DumpActiveTextures()
 		s32 maxLod = GetMaxTextureLod(texmap);
 		for (s32 mip = 0; mip <= maxLod; ++mip)
 		{
-			SaveTexture(StringFromFormat("%star%i_stage%i_map%i_mip%i.tga",
-						File::GetUserPath(D_DUMPTEXTURES_IDX).c_str(),
-						swstats.thisFrame.numDrawnObjects, stageNum, texmap, mip).c_str(), texmap, mip);
+			SaveTexture(StringFromFormat("%star%i_stage%i_map%i_mip%i.png",
+						File::GetUserPath(D_DUMPTEXTURES_IDX),
+						swstats.thisFrame.numDrawnObjects, stageNum, texmap, mip), texmap, mip);
 		}
 	}
 }
@@ -147,7 +147,7 @@ void DumpEfb(const char* filename)
 		}
 	}
 
-	(void)SaveTGA(filename, EFB_WIDTH, EFB_HEIGHT, data);
+	(void)TextureToPng(data, EFB_WIDTH * 4, filename, EFB_WIDTH, EFB_HEIGHT);
 
 	delete []data;
 }
@@ -170,7 +170,7 @@ void DumpDepth(const char* filename)
 		}
 	}
 
-	(void)SaveTGA(filename, EFB_WIDTH, EFB_HEIGHT, data);
+	(void)TextureToPng(data, EFB_WIDTH * 4, filename, EFB_WIDTH, EFB_HEIGHT);
 
 	delete []data;
 }
@@ -232,7 +232,7 @@ void OnObjectEnd()
 	if (!g_bSkipCurrentFrame)
 	{
 		if (g_SWVideoConfig.bDumpObjects && swstats.thisFrame.numDrawnObjects >= g_SWVideoConfig.drawStart && swstats.thisFrame.numDrawnObjects < g_SWVideoConfig.drawEnd)
-			DumpEfb(StringFromFormat("%sobject%i.tga",
+			DumpEfb(StringFromFormat("%sobject%i.png",
 						File::GetUserPath(D_DUMPFRAMES_IDX).c_str(),
 						swstats.thisFrame.numDrawnObjects).c_str());
 
@@ -247,10 +247,10 @@ void OnObjectEnd()
 			if (DrawnToBuffer[i])
 			{
 				DrawnToBuffer[i] = false;
-				(void)SaveTGA(StringFromFormat("%sobject%i_%s(%i).tga",
+				(void)TextureToPng((u8*)ObjectBuffer[i], EFB_WIDTH * 4, StringFromFormat("%sobject%i_%s(%i).png",
 							File::GetUserPath(D_DUMPFRAMES_IDX).c_str(),
-							swstats.thisFrame.numDrawnObjects, ObjectBufferName[i], i - BufferBase[i]).c_str(),
-						EFB_WIDTH, EFB_HEIGHT, ObjectBuffer[i]);
+							swstats.thisFrame.numDrawnObjects, ObjectBufferName[i], i - BufferBase[i]),
+						EFB_WIDTH, EFB_HEIGHT);
 				memset(ObjectBuffer[i], 0, sizeof(ObjectBuffer[i]));
 			}
 		}
@@ -265,9 +265,9 @@ void OnFrameEnd()
 	{
 		if (g_SWVideoConfig.bDumpFrames)
 		{
-			DumpEfb(StringFromFormat("%sframe%i_color.tga",
+			DumpEfb(StringFromFormat("%sframe%i_color.png",
 						File::GetUserPath(D_DUMPFRAMES_IDX).c_str(), swstats.frameCount).c_str());
-			DumpDepth(StringFromFormat("%sframe%i_depth.tga",
+			DumpDepth(StringFromFormat("%sframe%i_depth.png",
 						File::GetUserPath(D_DUMPFRAMES_IDX).c_str(), swstats.frameCount).c_str());
 		}
 	}

@@ -18,6 +18,7 @@
 #include <wx/event.h>
 #include <wx/gdicmn.h>
 #include <wx/listbox.h>
+#include <wx/msgdlg.h>
 #include <wx/notebook.h>
 #include <wx/panel.h>
 #include <wx/radiobut.h>
@@ -55,7 +56,7 @@ class wxWindow;
 static wxCheatsWindow *g_cheat_window;
 
 wxCheatsWindow::wxCheatsWindow(wxWindow* const parent)
-	: wxDialog(parent, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER | wxMAXIMIZE_BOX | wxMINIMIZE_BOX | wxDIALOG_NO_PARENT)
+	: wxDialog(parent, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER|wxMAXIMIZE_BOX|wxMINIMIZE_BOX|wxDIALOG_NO_PARENT)
 {
 	::g_cheat_window = this;
 
@@ -124,12 +125,12 @@ void wxCheatsWindow::Init_ChildControls()
 	m_TextCtrl_Log = new wxTextCtrl(m_Tab_Log, wxID_ANY, "", wxDefaultPosition, wxSize(100, -1), wxTE_MULTILINE | wxTE_READONLY | wxTE_DONTWRAP);
 
 	wxBoxSizer *HStrip1 = new wxBoxSizer(wxHORIZONTAL);
-	HStrip1->Add(m_CheckBox_LogAR, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+	HStrip1->Add(m_CheckBox_LogAR, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5);
 	HStrip1->Add(button_updatelog, 0, wxALL, 5);
 
 	wxBoxSizer *sTabLog = new wxBoxSizer(wxVERTICAL);
 	sTabLog->Add(HStrip1, 0, wxALL, 5);
-	sTabLog->Add(m_TextCtrl_Log, 1, wxALL | wxEXPAND, 5);
+	sTabLog->Add(m_TextCtrl_Log, 1, wxALL|wxEXPAND, 5);
 
 	m_Tab_Log->SetSizerAndFit(sTabLog);
 
@@ -154,7 +155,7 @@ void wxCheatsWindow::Init_ChildControls()
 	sButtons->Realize();
 
 	wxBoxSizer* const sMain = new wxBoxSizer(wxVERTICAL);
-	sMain->Add(m_Notebook_Main, 1, wxEXPAND | wxALL, 5);
+	sMain->Add(m_Notebook_Main, 1, wxEXPAND|wxALL, 5);
 	sMain->Add(sButtons, 0, wxRIGHT | wxBOTTOM | wxALIGN_RIGHT, 5);
 	panel->SetSizerAndFit(sMain);
 
@@ -207,7 +208,7 @@ CheatSearchTab::CheatSearchTab(wxWindow* const parent)
 	value_x_radiobtn.rad_oldvalue->SetValue(true);
 
 	// search value textbox
-	textctrl_value_x = new wxTextCtrl(this, -1, "0x0", wxDefaultPosition, wxSize(96, -1));
+	textctrl_value_x = new wxTextCtrl(this, -1, "0x0", wxDefaultPosition, wxSize(96,-1));
 	textctrl_value_x->Bind(wxEVT_SET_FOCUS, &CheatSearchTab::ApplyFocus, this);
 
 	wxBoxSizer* const sizer_cheat_filter_text = new wxBoxSizer(wxHORIZONTAL);
@@ -226,11 +227,11 @@ CheatSearchTab::CheatSearchTab(wxWindow* const parent)
 		_("Equal"),
 		_("Greater Than"),
 		_("Less Than"),
-		// TODO: Implement between search.
+	// TODO: Implement between search.
 		//_("Between"),
 	};
 
-	search_type = new wxChoice(this, -1, wxDefaultPosition, wxDefaultSize, sizeof(searches) / sizeof(*searches), searches);
+	search_type = new wxChoice(this, -1, wxDefaultPosition, wxDefaultSize, sizeof(searches)/sizeof(*searches), searches);
 	search_type->Select(0);
 
 	wxStaticBoxSizer* const sizer_cheat_search_filter = new wxStaticBoxSizer(wxVERTICAL, this, _("Search Filter"));
@@ -261,7 +262,7 @@ CheatSearchTab::CheatSearchTab(wxWindow* const parent)
 	SetSizerAndFit(sizer_main);
 }
 
-void wxCheatsWindow::OnEvent_ButtonClose_Press(wxCommandEvent& WXUNUSED(event))
+void wxCheatsWindow::OnEvent_ButtonClose_Press(wxCommandEvent& WXUNUSED (event))
 {
 	Close();
 }
@@ -321,7 +322,7 @@ void wxCheatsWindow::Load_GeckoCodes()
 	m_geckocode_panel->LoadCodes(m_gameini_default, m_gameini_local, Core::g_CoreStartupParameter.GetUniqueID(), true);
 }
 
-void wxCheatsWindow::OnEvent_CheatsList_ItemSelected(wxCommandEvent& WXUNUSED(event))
+void wxCheatsWindow::OnEvent_CheatsList_ItemSelected(wxCommandEvent& WXUNUSED (event))
 {
 	using namespace ActionReplay;
 
@@ -346,7 +347,7 @@ void wxCheatsWindow::OnEvent_CheatsList_ItemSelected(wxCommandEvent& WXUNUSED(ev
 	}
 }
 
-void wxCheatsWindow::OnEvent_CheatsList_ItemToggled(wxCommandEvent& WXUNUSED(event))
+void wxCheatsWindow::OnEvent_CheatsList_ItemToggled(wxCommandEvent& WXUNUSED (event))
 {
 	int index = m_CheckListBox_CheatsList->GetSelection();
 	for (const ARCodeIndex& code_index : indexList)
@@ -379,7 +380,7 @@ void wxCheatsWindow::OnEvent_ApplyChanges_Press(wxCommandEvent& ev)
 	ev.Skip();
 }
 
-void wxCheatsWindow::OnEvent_ButtonUpdateLog_Press(wxCommandEvent& WXUNUSED(event))
+void wxCheatsWindow::OnEvent_ButtonUpdateLog_Press(wxCommandEvent& WXUNUSED (event))
 {
 	m_TextCtrl_Log->Clear();
 	for (const std::string& text : ActionReplay::GetSelfLog())
@@ -388,17 +389,17 @@ void wxCheatsWindow::OnEvent_ButtonUpdateLog_Press(wxCommandEvent& WXUNUSED(even
 	}
 }
 
-void wxCheatsWindow::OnEvent_CheckBoxEnableLogging_StateChange(wxCommandEvent& WXUNUSED(event))
+void wxCheatsWindow::OnEvent_CheckBoxEnableLogging_StateChange(wxCommandEvent& WXUNUSED (event))
 {
 	ActionReplay::EnableSelfLogging(m_CheckBox_LogAR->IsChecked());
 }
 
-void CheatSearchTab::StartNewSearch(wxCommandEvent& WXUNUSED(event))
+void CheatSearchTab::StartNewSearch(wxCommandEvent& WXUNUSED (event))
 {
 	const u8* const memptr = Memory::GetPointer(0);
 	if (nullptr == memptr)
 	{
-		PanicAlertT("A game is not currently running.");
+		WxUtils::ShowErrorDialog(_("A game is not currently running."));
 		return;
 	}
 
@@ -432,7 +433,7 @@ void CheatSearchTab::FilterCheatSearchResults(wxCommandEvent&)
 	const u8* const memptr = Memory::GetPointer(0);
 	if (nullptr == memptr)
 	{
-		PanicAlertT("A game is not currently running.");
+		WxUtils::ShowErrorDialog(_("A game is not currently running."));
 		return;
 	}
 
@@ -446,7 +447,7 @@ void CheatSearchTab::FilterCheatSearchResults(wxCommandEvent&)
 	// 2 : greater-than
 	// 4 : less-than
 
-	const int filters[] = { 7, 6, 1, 2, 4 };
+	const int filters[] = {7, 6, 1, 2, 4};
 	int filter_mask = filters[search_type->GetSelection()];
 
 	if (value_x_radiobtn.rad_oldvalue->GetValue()) // using old value comparison
@@ -479,7 +480,7 @@ void CheatSearchTab::FilterCheatSearchResults(wxCommandEvent&)
 
 			if (!x_val.ToULong(&parsed_x_val, 0))
 			{
-				PanicAlertT("You must enter a valid decimal, hexadecimal or octal value.");
+				WxUtils::ShowErrorDialog(_("You must enter a valid decimal, hexadecimal or octal value."));
 				return;
 			}
 
@@ -488,12 +489,12 @@ void CheatSearchTab::FilterCheatSearchResults(wxCommandEvent&)
 			// #ifdef LIL_ENDIAN :p
 			switch (search_type_size)
 			{
-			case 1:
+			case 1 :
 				break;
-			case 2:
+			case 2 :
 				*(u16*)&user_x_val = Common::swap16((u8*)&user_x_val);
 				break;
-			case 4:
+			case 4 :
 				user_x_val = Common::swap32(user_x_val);
 				break;
 			}
@@ -551,19 +552,19 @@ void CheatSearchTab::UpdateCheatSearchResultsList()
 			// #ifdef LIL_ENDIAN :p
 			switch (search_type_size)
 			{
-			case 1:
+			case 1 :
 				break;
-			case 2:
+			case 2 :
 				*(u16*)&display_value = Common::swap16((u8*)&display_value);
 				break;
-			case 4:
+			case 4 :
 				display_value = Common::swap32(display_value);
 				break;
 			}
 			// #elseif BIG_ENDIAN
 			// need to do some stuff in here (for 8 and 16bit) for bigendian
 			// #endif
-			std::string rowfmt = StringFromFormat("0x%%08x    0x%%0%ux    %%u/%%i", search_type_size * 2);
+			std::string rowfmt = StringFromFormat("0x%%08x    0x%%0%ux    %%u/%%i", search_type_size*2);
 
 			lbox_search_results->Append(
 				wxString::Format(rowfmt.c_str(), result.address, display_value, display_value, display_value));
@@ -590,7 +591,7 @@ CreateCodeDialog::CreateCodeDialog(wxWindow* const parent, const u32 address)
 	, code_address(address)
 {
 	wxStaticText* const label_name = new wxStaticText(this, -1, _("Name: "));
-	textctrl_name = new wxTextCtrl(this, -1, wxEmptyString, wxDefaultPosition, wxSize(256, -1));
+	textctrl_name = new wxTextCtrl(this, -1, wxEmptyString, wxDefaultPosition, wxSize(256,-1));
 
 	wxStaticText* const label_code = new wxStaticText(this, -1, _("Code: "));
 	textctrl_code = new wxTextCtrl(this, -1, wxString::Format("0x%08x", address));
@@ -629,7 +630,7 @@ void CreateCodeDialog::PressOK(wxCommandEvent& ev)
 	const wxString code_name = textctrl_name->GetValue();
 	if (code_name.empty())
 	{
-		PanicAlertT("You must enter a name!");
+		WxUtils::ShowErrorDialog(_("You must enter a name."));
 		return;
 	}
 
@@ -637,7 +638,7 @@ void CreateCodeDialog::PressOK(wxCommandEvent& ev)
 	int base = checkbox_use_hex->IsChecked() ? 16 : 10;
 	if (!textctrl_value->GetValue().ToLong(&code_value, base))
 	{
-		PanicAlertT("Invalid Value!");
+		WxUtils::ShowErrorDialog(_("Invalid value."));
 		return;
 	}
 
@@ -654,13 +655,13 @@ void CreateCodeDialog::PressOK(wxCommandEvent& ev)
 
 	// pretty hacky - add the code to the gameini
 	{
-		CISOProperties isoprops(SConfig::GetInstance().m_LastFilename, this);
-		// add the code to the isoproperties arcode list
-		arCodes.push_back(new_cheat);
-		// save the gameini
-		isoprops.SaveGameConfig();
-		isoprops.ActionReplayList_Load(); // loads the new arcodes
-		//ActionReplay::UpdateActiveList();
+	CISOProperties isoprops(SConfig::GetInstance().m_LastFilename, this);
+	// add the code to the isoproperties arcode list
+	arCodes.push_back(new_cheat);
+	// save the gameini
+	isoprops.SaveGameConfig();
+	isoprops.ActionReplayList_Load(); // loads the new arcodes
+	//ActionReplay::UpdateActiveList();
 	}
 
 	// refresh arcode list in other tab

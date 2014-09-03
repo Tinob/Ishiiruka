@@ -36,7 +36,7 @@ namespace DX11
 				ID3D11RasterizerState *  rasterizerState_{};
 
 				ID3D11BlendState *       blendState_{};
-				std::array<FLOAT, 4>      blendFactor_{ std::array<FLOAT, 4>{ 1, 1, 1, 1} }; // VS2013 miss non static aggregate member c++11
+				std::array<FLOAT, 4>      blendFactor_{}; // VS2013 miss non static aggregate member c++11
 				UINT                     sampleMask_ = 0xffffffffu;
 
 				ID3D11DepthStencilState * depthStencilState_{};
@@ -61,6 +61,7 @@ namespace DX11
 				ID3D11Buffer* gsCb0_{};
 
 				Cache() {
+					blendFactor_.fill(1.0f);
 					psSrvs_.fill(nullptr);
 					psSrvDirties_.fill(false);
 					samplerStates_.fill(nullptr);
@@ -163,7 +164,8 @@ namespace DX11
 			//
 			void OMSetRenderTargets(UINT NumViews, ID3D11RenderTargetView *const *ppRenderTargetViews, ID3D11DepthStencilView *pDepthStencilView) {
 				// OMSetRenderTargets will unbind SRVs if they are in conflict with the new RTVs or DSV.
-				std::array<ID3D11ShaderResourceView*, 8> nils{ nullptr };
+				std::array<ID3D11ShaderResourceView*, 8> nils;
+				nils.fill(nullptr);
 				PSSetShaderResources(0, 8, nils.data());
 				ApplyLazyStates();
 				ctx_->OMSetRenderTargets(NumViews, ppRenderTargetViews, pDepthStencilView);

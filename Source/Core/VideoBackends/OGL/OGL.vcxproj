@@ -1,17 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
-    <ProjectConfiguration Include="Debug|Win32">
-      <Configuration>Debug</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
       <Platform>x64</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Release|Win32">
-      <Configuration>Release</Configuration>
-      <Platform>Win32</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="Release|x64">
       <Configuration>Release</Configuration>
@@ -26,7 +18,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <PlatformToolset>v120_xp</PlatformToolset>
+    <PlatformToolset>v120</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)'=='Debug'" Label="Configuration">
@@ -41,7 +33,7 @@
   <ImportGroup Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\..\..\VSProps\Base.props" />
-    <Import Project="..\..\..\VSProps\PrecompiledHeader.props" />
+    <Import Project="..\..\..\VSProps\PCHUse.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <ItemGroup>
@@ -57,9 +49,6 @@
     <ClCompile Include="Render.cpp" />
     <ClCompile Include="SamplerCache.cpp" />
     <ClCompile Include="StreamBuffer.cpp" />
-    <ClCompile Include="stdafx.cpp">
-      <PrecompiledHeader>Create</PrecompiledHeader>
-    </ClCompile>
     <ClCompile Include="TextureCache.cpp" />
     <ClCompile Include="TextureConverter.cpp" />
     <ClCompile Include="VertexManager.cpp" />
@@ -77,7 +66,6 @@
     <ClInclude Include="Render.h" />
     <ClInclude Include="SamplerCache.h" />
     <ClInclude Include="StreamBuffer.h" />
-    <ClInclude Include="stdafx.h" />
     <ClInclude Include="TextureCache.h" />
     <ClInclude Include="TextureConverter.h" />
     <ClInclude Include="VertexManager.h" />
@@ -87,16 +75,13 @@
     <None Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\Externals\GLew\glew.vcxproj">
-      <Project>{2A3F751D-69E9-45F2-9199-9A00BFB6CC72}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\..\Externals\wxWidgets3\build\msw\wx_base.vcxproj">
+    <ProjectReference Include="$(ExternalsDir)wxWidgets3\build\msw\wx_base.vcxproj">
       <Project>{1C8436C9-DBAF-42BE-83BC-CF3EC9175ABE}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\..\Externals\zlib\zlib.vcxproj">
+    <ProjectReference Include="$(ExternalsDir)zlib\zlib.vcxproj">
       <Project>{3E1339F5-9311-4122-9442-369702E8FCAD}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\Core\VideoCommon\VideoCommon.vcxproj">
+    <ProjectReference Include="$(CoreDir)VideoCommon\VideoCommon.vcxproj">
       <Project>{3E5C4E02-1BA9-4776-BDBE-E3F91FFA34CF}</Project>
     </ProjectReference>
   </ItemGroup>

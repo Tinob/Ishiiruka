@@ -73,8 +73,8 @@ void SWVideoConfig::Save(const char* ini_file)
 	IniFile::Section* rendering = iniFile.GetOrCreateSection("Rendering");
 
 	rendering->Set("HwRasterizer", bHwRasterizer);
-	rendering->Set("ZComploc", &bZComploc);
-	rendering->Set("ZFreeze", &bZFreeze);
+	rendering->Set("ZComploc", bZComploc);
+	rendering->Set("ZFreeze", bZFreeze);
 
 	iniFile.GetOrCreateSection("Info")->Set("ShowStats", bShowStats);
 

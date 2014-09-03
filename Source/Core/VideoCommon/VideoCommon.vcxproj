@@ -1,17 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
-    <ProjectConfiguration Include="Debug|Win32">
-      <Configuration>Debug</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
       <Platform>x64</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Release|Win32">
-      <Configuration>Release</Configuration>
-      <Platform>Win32</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="Release|x64">
       <Configuration>Release</Configuration>
@@ -25,7 +17,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <PlatformToolset>v120_xp</PlatformToolset>
+    <PlatformToolset>v120</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)'=='Debug'" Label="Configuration">
@@ -40,7 +32,7 @@
   <ImportGroup Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\..\VSProps\Base.props" />
-    <Import Project="..\..\VSProps\PrecompiledHeader.props" />
+    <Import Project="..\..\VSProps\PCHUse.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -82,9 +74,6 @@
     <ClCompile Include="PixelShaderManager.cpp" />
     <ClCompile Include="RenderBase.cpp" />
     <ClCompile Include="Statistics.cpp" />
-    <ClCompile Include="stdafx.cpp">
-      <PrecompiledHeader>Create</PrecompiledHeader>
-    </ClCompile>
     <ClCompile Include="TextureCacheBase.cpp" />
     <ClCompile Include="TextureConversionShader.cpp" />
     <ClCompile Include="TextureUtil.cpp" />
@@ -146,7 +135,6 @@
     <ClInclude Include="RenderBase.h" />
     <ClInclude Include="ShaderGenCommon.h" />
     <ClInclude Include="Statistics.h" />
-    <ClInclude Include="stdafx.h" />
     <ClInclude Include="TextureCacheBase.h" />
     <ClInclude Include="TextureConversionShader.h" />
     <ClInclude Include="TextureDecoder.h" />
@@ -180,13 +168,13 @@
     <None Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Externals\CLRun\clrun\CLRun.vcxproj">
+    <ProjectReference Include="$(ExternalsDir)CLRun\clrun\CLRun.vcxproj">
       <Project>{AA862E5E-A993-497A-B6A0-0E8E94B10050}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\Externals\SOIL\SOIL.vcxproj">
+    <ProjectReference Include="$(ExternalsDir)SOIL\SOIL.vcxproj">
       <Project>{8544F1FF-F2A5-42D8-A568-C56B5D3B4181}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\Common\Common.vcxproj">
+    <ProjectReference Include="$(CoreDir)Common\Common.vcxproj">
       <Project>{C87A4178-44F6-49B2-B7AA-C79AF1B8C534}</Project>
     </ProjectReference>
   </ItemGroup>

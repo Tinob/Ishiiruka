@@ -236,7 +236,7 @@ void VideoConfig::Save(const char *ini_file)
 	hardware->Set("Adapter", iAdapter);
 
 	IniFile::Section* settings = iniFile.GetOrCreateSection("Settings");
-	settings->Set("Settings", "AspectRatio", iAspectRatio);
+	settings->Set("AspectRatio", iAspectRatio);
 	settings->Set("Crop", bCrop);
 	settings->Set("wideScreenHack", bWidescreenHack);
 	settings->Set("UseXFB", bUseXFB);

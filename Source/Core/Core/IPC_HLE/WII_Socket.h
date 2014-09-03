@@ -7,9 +7,11 @@
 #ifdef _WIN32
 #include <ws2tcpip.h>
 #include <iphlpapi.h>
+#include <WinSock2.h>
 
-#include "fakepoll.h"
+typedef pollfd pollfd_t;
 
+#define poll WSAPoll
 #define MALLOC(x) HeapAlloc(GetProcessHeap(), 0, (x))
 #define FREE(x) HeapFree(GetProcessHeap(), 0, (x))
 
@@ -50,12 +52,15 @@ typedef struct pollfd pollfd_t;
 #include "Core/IPC_HLE/WII_IPC_HLE_Device_net.h"
 #include "Core/IPC_HLE/WII_IPC_HLE_Device_net_ssl.h"
 
-enum {
+enum
+{
 	SO_MSG_OOB      = 0x01,
 	SO_MSG_PEEK     = 0x02,
 	SO_MSG_NONBLOCK = 0x04,
 };
-enum {
+
+enum
+{
 	SO_SUCCESS,
 	SO_E2BIG = 1,
 	SO_EACCES,

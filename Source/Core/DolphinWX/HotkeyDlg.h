@@ -9,6 +9,7 @@
 #include <wx/event.h>
 #include <wx/gdicmn.h>
 #include <wx/string.h>
+#include <wx/timer.h>
 #include <wx/translation.h>
 #include <wx/windowid.h>
 
@@ -20,41 +21,40 @@
 #endif
 
 class wxButton;
-class wxTimer;
 class wxTimerEvent;
 class wxWindow;
 
 class HotkeyConfigDialog : public wxDialog
 {
-public:
-	HotkeyConfigDialog(wxWindow *parent,
-		wxWindowID id = 1,
-		const wxString &title = _("Hotkey Configuration"),
-		const wxPoint& pos = wxDefaultPosition,
-		const wxSize& size = wxDefaultSize,
-		long style = wxDEFAULT_DIALOG_STYLE);
-	virtual ~HotkeyConfigDialog();
+	public:
+		HotkeyConfigDialog(wxWindow *parent,
+				wxWindowID id = 1,
+				const wxString &title = _("Hotkey Configuration"),
+				const wxPoint& pos = wxDefaultPosition,
+				const wxSize& size = wxDefaultSize,
+				long style = wxDEFAULT_DIALOG_STYLE);
+		virtual ~HotkeyConfigDialog();
 
-private:
-	DECLARE_EVENT_TABLE();
+	private:
+		DECLARE_EVENT_TABLE();
 
-	wxString OldLabel;
+		wxString OldLabel;
 
-	wxButton *ClickedButton,
-		*m_Button_Hotkeys[NUM_HOTKEYS];
+		wxButton *ClickedButton;
+		wxButton *m_Button_Hotkeys[NUM_HOTKEYS];
 
-	wxTimer *m_ButtonMappingTimer;
+		wxTimer m_ButtonMappingTimer;
 
-	void OnButtonTimer(wxTimerEvent& WXUNUSED(event)) { DoGetButtons(GetButtonWaitingID); }
-	void OnButtonClick(wxCommandEvent& event);
-	void OnKeyDown(wxKeyEvent& event);
-	void SaveButtonMapping(int Id, int Key, int Modkey);
-	void CreateHotkeyGUIControls(void);
+		void OnButtonTimer(wxTimerEvent& WXUNUSED(event)) { DoGetButtons(GetButtonWaitingID); }
+		void OnButtonClick(wxCommandEvent& event);
+		void OnKeyDown(wxKeyEvent& event);
+		void SaveButtonMapping(int Id, int Key, int Modkey);
+		void CreateHotkeyGUIControls();
 
-	void SetButtonText(int id, const wxString &keystr, const wxString &modkeystr = wxString());
+		void SetButtonText(int id, const wxString &keystr, const wxString &modkeystr = wxString());
 
-	void DoGetButtons(int id);
-	void EndGetButtons(void);
+		void DoGetButtons(int id);
+		void EndGetButtons();
 
-	int GetButtonWaitingID, GetButtonWaitingTimer, g_Pressed, g_Modkey;
+		int GetButtonWaitingID, GetButtonWaitingTimer, g_Pressed, g_Modkey;
 };

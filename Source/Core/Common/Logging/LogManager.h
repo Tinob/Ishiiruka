@@ -6,11 +6,11 @@
 
 #include <cstdarg>
 #include <fstream>
+#include <mutex>
 #include <set>
 #include <string>
 
 #include "Common/Common.h"
-#include "Common/StdMutex.h"
 
 #define MAX_MESSAGES 8000
 #define MAX_MSGLEN  1024
@@ -99,7 +99,7 @@ public:
 	static u32 GetMaxLevel() { return MAX_LOGLEVEL; }
 
 	void Log(LogTypes::LOG_LEVELS level, LogTypes::LOG_TYPE type,
-		const char *file, int line, const char *fmt, va_list args);
+			 const char *file, int line, const char *fmt, va_list args);
 
 	void SetLogLevel(LogTypes::LOG_TYPE type, LogTypes::LOG_LEVELS level)
 	{

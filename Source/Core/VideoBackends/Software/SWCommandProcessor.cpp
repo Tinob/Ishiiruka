@@ -54,7 +54,8 @@ void DoState(PointerWrap &p)
 	p.Do(interruptSet);
 	p.Do(interruptWaiting);
 	// Is This Right?
-	p.DoArray(g_VideoData.GetReadPosition(), writePos);	
+	u8* videodata = const_cast<u8*>(g_VideoData.GetReadPosition());
+	p.DoArray(videodata, writePos);
 }
 
 // does it matter that there is no synchronization between threads during writes?
@@ -132,7 +133,7 @@ void RegisterMMIO(MMIO::Mapping* mmio, u32 base)
 	for (size_t i = 0; i < sizeof(cpreg) / sizeof(u16); ++i)
 	{
 		u16* ptr = ((u16*)&cpreg) + i;
-		mmio->Register(base | (i * 2),
+		mmio->Register(base | (u32)(i * 2),
 			MMIO::DirectRead<u16>(ptr),
 			MMIO::DirectWrite<u16>(ptr)
 			);
@@ -142,7 +143,7 @@ void RegisterMMIO(MMIO::Mapping* mmio, u32 base)
 	// 0x64...
 	for (size_t i = 0x40; i < 0x64; ++i)
 	{
-		mmio->Register(base | i,
+		mmio->Register(base | (u32)i,
 			MMIO::Constant<u16>(0),
 			MMIO::Nop<u16>()
 			);

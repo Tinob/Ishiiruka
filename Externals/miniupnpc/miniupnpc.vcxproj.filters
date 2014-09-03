@@ -89,9 +89,6 @@
     <ClCompile Include="src\receivedata.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\upnpc.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\upnpcommands.c">
       <Filter>Source Files</Filter>
     </ClCompile>

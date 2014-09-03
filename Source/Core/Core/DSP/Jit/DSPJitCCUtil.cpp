@@ -13,7 +13,6 @@ using namespace Gen;
 // Clobbers RDX
 void DSPEmitter::Update_SR_Register(Gen::X64Reg val)
 {
-#if _M_X86_64
 	OpArg sr_reg;
 	gpr.getReg(DSP_REG_SR,sr_reg);
 	//	// 0x04
@@ -50,21 +49,18 @@ void DSPEmitter::Update_SR_Register(Gen::X64Reg val)
 	OR(16, sr_reg, Imm16(SR_TOP2BITS));
 	SetJumpTarget(cC);
 	gpr.putReg(DSP_REG_SR);
-#endif
 }
 
 // In: RAX: s64 _Value
 // Clobbers RDX
 void DSPEmitter::Update_SR_Register64(Gen::X64Reg val)
 {
-#if _M_X86_64
 //	g_dsp.r[DSP_REG_SR] &= ~SR_CMP_MASK;
 	OpArg sr_reg;
 	gpr.getReg(DSP_REG_SR,sr_reg);
 	AND(16, sr_reg, Imm16(~SR_CMP_MASK));
 	gpr.putReg(DSP_REG_SR);
 	Update_SR_Register(val);
-#endif
 }
 
 // In: (val): s64 _Value
@@ -72,7 +68,6 @@ void DSPEmitter::Update_SR_Register64(Gen::X64Reg val)
 // Clobbers RDX
 void DSPEmitter::Update_SR_Register64_Carry(X64Reg val, X64Reg carry_ovfl)
 {
-#if _M_X86_64
 	OpArg sr_reg;
 	gpr.getReg(DSP_REG_SR,sr_reg);
 	//	g_dsp.r[DSP_REG_SR] &= ~SR_CMP_MASK;
@@ -101,7 +96,6 @@ void DSPEmitter::Update_SR_Register64_Carry(X64Reg val, X64Reg carry_ovfl)
 
 	gpr.putReg(DSP_REG_SR);
 	Update_SR_Register(val);
-#endif
 }
 
 // In: (val): s64 _Value
@@ -109,7 +103,6 @@ void DSPEmitter::Update_SR_Register64_Carry(X64Reg val, X64Reg carry_ovfl)
 // Clobbers RDX
 void DSPEmitter::Update_SR_Register64_Carry2(X64Reg val, X64Reg carry_ovfl)
 {
-#if _M_X86_64
 	OpArg sr_reg;
 	gpr.getReg(DSP_REG_SR,sr_reg);
 	//	g_dsp.r[DSP_REG_SR] &= ~SR_CMP_MASK;
@@ -138,24 +131,12 @@ void DSPEmitter::Update_SR_Register64_Carry2(X64Reg val, X64Reg carry_ovfl)
 	gpr.putReg(DSP_REG_SR);
 
 	Update_SR_Register();
-#endif
 }
-
-//void DSPEmitter::Update_SR_Register16(s16 _Value, bool carry, bool overflow, bool overS32)
-//{
-
-//	// 0x20 - Checks if top bits of m are equal
-//	if ((((u16)_Value >> 14) == 0) || (((u16)_Value >> 14) == 3))
-//	{
-//		g_dsp.r[DSP_REG_SR] |= SR_TOP2BITS;
-//	}
-//}
 
 // In: RAX: s64 _Value
 // Clobbers RDX
 void DSPEmitter::Update_SR_Register16(X64Reg val)
 {
-#if _M_X86_64
 	OpArg sr_reg;
 	gpr.getReg(DSP_REG_SR,sr_reg);
 	AND(16, sr_reg, Imm16(~SR_CMP_MASK));
@@ -190,14 +171,12 @@ void DSPEmitter::Update_SR_Register16(X64Reg val)
 	SetJumpTarget(notThree);
 	SetJumpTarget(cC);
 	gpr.putReg(DSP_REG_SR);
-#endif
 }
 
 // In: RAX: s64 _Value
 // Clobbers RDX
 void DSPEmitter::Update_SR_Register16_OverS32(Gen::X64Reg val)
 {
-#if _M_X86_64
 	OpArg sr_reg;
 	gpr.getReg(DSP_REG_SR,sr_reg);
 	AND(16, sr_reg, Imm16(~SR_CMP_MASK));
@@ -215,88 +194,4 @@ void DSPEmitter::Update_SR_Register16_OverS32(Gen::X64Reg val)
 	//	if ((((u16)_Value >> 14) == 0) || (((u16)_Value >> 14) == 3))
 	//AND(32, R(val), Imm32(0xc0000000));
 	Update_SR_Register16(val);
-#endif
 }
-
-//void DSPEmitter::Update_SR_LZ(bool value) {
-
-//	if (value == true)
-//		g_dsp.r[DSP_REG_SR] |= SR_LOGIC_ZERO;
-//	else
-//		g_dsp.r[DSP_REG_SR] &= ~SR_LOGIC_ZERO;
-//}
-
-//inline int GetMultiplyModifier()
-//{
-//	return (g_dsp.r[DSP_REG_SR] & SR_MUL_MODIFY)?1:2;
-//}
-
-//inline bool isCarry() {
-//	return (g_dsp.r[DSP_REG_SR] & SR_CARRY) ? true : false;
-//}
-
-//inline bool isOverflow() {
-//	return (g_dsp.r[DSP_REG_SR] & SR_OVERFLOW) ? true : false;
-//}
-
-//inline bool isOverS32() {
-//	return (g_dsp.r[DSP_REG_SR] & SR_OVER_S32) ? true : false;
-//}
-
-//inline bool isLess() {
-//	return (!(g_dsp.r[DSP_REG_SR] & SR_OVERFLOW) != !(g_dsp.r[DSP_REG_SR] & SR_SIGN));
-//}
-
-//inline bool isZero() {
-//	return (g_dsp.r[DSP_REG_SR] & SR_ARITH_ZERO) ? true : false;
-//}
-
-//inline bool isLogicZero() {
-//	return (g_dsp.r[DSP_REG_SR] & SR_LOGIC_ZERO) ? true : false;
-//}
-
-//inline bool isConditionA() {
-//	return (((g_dsp.r[DSP_REG_SR] & SR_OVER_S32) || (g_dsp.r[DSP_REG_SR] & SR_TOP2BITS)) && !(g_dsp.r[DSP_REG_SR] & SR_ARITH_ZERO)) ? true : false;
-//}
-
-//see DSPCore.h for flags
-//bool CheckCondition(u8 _Condition)
-//{
-//	switch (_Condition & 0xf)
-//	{
-//	case 0xf: // Always true.
-//		return true;
-//	case 0x0: // GE - Greater Equal
-//		return !isLess();
-//	case 0x1: // L - Less
-//		return isLess();
-//	case 0x2: // G - Greater
-//		return !isLess() && !isZero();
-//	case 0x3: // LE - Less Equal
-//		return isLess() || isZero();
-//	case 0x4: // NZ - Not Zero
-//		return !isZero();
-//	case 0x5: // Z - Zero
-//		return isZero();
-//	case 0x6: // NC - Not carry
-//		return !isCarry();
-//	case 0x7: // C - Carry
-//		return isCarry();
-//	case 0x8: // ? - Not over s32
-//		return !isOverS32();
-//	case 0x9: // ? - Over s32
-//		return isOverS32();
-//	case 0xa: // ?
-//		return isConditionA();
-//	case 0xb: // ?
-//		return !isConditionA();
-//	case 0xc: // LNZ  - Logic Not Zero
-//		return !isLogicZero();
-//	case 0xd: // LZ - Logic Zero
-//		return isLogicZero();
-//	case 0xe: // 0 - Overflow
-//		return isOverflow();
-//	default:
-//		return true;
-//	}
-//}

@@ -2,36 +2,39 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include <math.h>
 #include <cinttypes>
+#include <cmath>
+#include <string>
+#include <strsafe.h>
+#include <array>
 #include "Common/Timer.h"
 
-#include "VideoCommon/Debugger.h"
+#include "Core/ConfigManager.h"
+#include "Core/Core.h"
+#include "Core/Host.h"
+#include "Core/Movie.h"
+
+#include "VideoBackends/DX11/D3DBase.h"
+#include "VideoBackends/DX11/D3DUtil.h"
+#include "VideoBackends/DX11/FramebufferManager.h"
+#include "VideoBackends/DX11/GfxState.h"
+#include "VideoBackends/DX11/PixelShaderCache.h"
+#include "VideoBackends/DX11/Render.h"
+#include "VideoBackends/DX11/Television.h"
+#include "VideoBackends/DX11/TextureCache.h"
+#include "VideoBackends/DX11/VertexShaderCache.h"
+
+#include "VideoCommon/AVIDump.h"
+#include "VideoCommon/BPFunctions.h"
 #include "VideoCommon/DLCache.h"
 #include "VideoCommon/Fifo.h"
+#include "VideoCommon/FPSCounter.h"
+#include "VideoCommon/ImageWrite.h"
 #include "VideoCommon/OnScreenDisplay.h"
 #include "VideoCommon/PixelEngine.h"
 #include "VideoCommon/Statistics.h"
 #include "VideoCommon/VertexShaderManager.h"
 #include "VideoCommon/VideoConfig.h"
-
-#include "D3DBase.h"
-#include "D3DUtil.h"
-#include "FramebufferManager.h"
-#include "GfxState.h"
-#include "PixelShaderCache.h"
-#include "Render.h"
-#include "TextureCache.h"
-#include "VertexShaderCache.h"
-#include "Core/Core.h"
-#include "Core/Movie.h"
-#include "Television.h"
-#include "Core/Host.h"
-#include "VideoCommon/BPFunctions.h"
-#include "VideoCommon/AVIDump.h"
-#include "VideoCommon/FPSCounter.h"
-#include "Core/ConfigManager.h"
-#include <strsafe.h>
 
 namespace DX11
 {
@@ -171,9 +174,9 @@ void TeardownDeviceObjects()
 
 void CreateScreenshotTexture(const TargetRectangle& rc)
 {
-	D3D11_TEXTURE2D_DESC scrtex_desc = CD3D11_TEXTURE2D_DESC(D3D::GetBaseBufferFormat(), rc.GetWidth(), rc.GetHeight(), 1, 1, 0, D3D11_USAGE_STAGING, D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE);
-	HRESULT hr = D3D::device->CreateTexture2D(&scrtex_desc, NULL, &s_screenshot_texture);
-	CHECK(hr==S_OK, "Create screenshot staging texture");
+	D3D11_TEXTURE2D_DESC scrtex_desc = CD3D11_TEXTURE2D_DESC(DXGI_FORMAT_R8G8B8A8_UNORM, rc.GetWidth(), rc.GetHeight(), 1, 1, 0, D3D11_USAGE_STAGING, D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE);
+	HRESULT hr = D3D::device->CreateTexture2D(&scrtex_desc, nullptr, &s_screenshot_texture);
+	CHECK(hr == S_OK, "Create screenshot staging texture");
 	D3D::SetDebugObjectName((ID3D11DeviceChild*)s_screenshot_texture, "staging screenshot texture");
 }
 
@@ -723,33 +726,25 @@ bool Renderer::SaveScreenshot(const std::string &filename, const TargetRectangle
 	D3D11_BOX box = CD3D11_BOX(rc.left, rc.top, 0, rc.right, rc.bottom, 1);
 	D3D::context->CopySubresourceRegion(s_screenshot_texture, 0, 0, 0, 0, (ID3D11Resource*)D3D::GetBackBuffer()->GetTex(), 0, &box);
 
-	// D3DX11SaveTextureToFileA doesn't allow us to ignore the alpha channel, so we need to strip it out ourselves
 	D3D11_MAPPED_SUBRESOURCE map;
 	D3D::context->Map(s_screenshot_texture, 0, D3D11_MAP_READ_WRITE, 0, &map);
-	for (s32 y = 0; y < rc.GetHeight(); ++y)
-	{
-		u8* ptr = (u8*)map.pData + y * map.RowPitch + 3;
-		for (s32 x = 0; x < rc.GetWidth(); ++x)
-		{
-			*ptr = 0xFF;
-			ptr += 4;
-		}
-	}
+
+	bool saved_png = TextureToPng((u8*)map.pData, map.RowPitch, filename, rc.GetWidth(), rc.GetHeight(), false);
+
 	D3D::context->Unmap(s_screenshot_texture, 0);
 
-	// ready to be saved
-	HRESULT hr = PD3DX11SaveTextureToFileA(*(&D3D::context), s_screenshot_texture, D3DX11_IFF_PNG, filename.c_str());
-	if (SUCCEEDED(hr))
+
+	if (saved_png)
 	{
 		OSD::AddMessage(StringFromFormat("Saved %i x %i %s", rc.GetWidth(),
-		                                 rc.GetHeight(), filename.c_str()));
+			rc.GetHeight(), filename.c_str()));
 	}
 	else
 	{
 		OSD::AddMessage(StringFromFormat("Error saving %s", filename.c_str()));
 	}
 
-	return SUCCEEDED(hr);
+	return saved_png;
 }
 
 void formatBufferDump(const u8* in, u8* out, int w, int h, int p)
@@ -979,8 +974,6 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 	OSD::DrawMessages();
 	D3D::EndFrame();
 	frameCount++;
-
-	GFX_DEBUGGER_PAUSE_AT(NEXT_FRAME, true);
 
 	DLCache::ProgressiveCleanup();
 	TextureCache::Cleanup();

@@ -43,15 +43,6 @@
     <ClCompile Include="PeakFinder.cpp">
       <Filter>Source Files\bpm</Filter>
     </ClCompile>
-    <ClCompile Include="InterpolateCubic.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="InterpolateLinear.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="InterpolateShannon.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FIFOSampleBuffer.h" />
@@ -65,9 +56,6 @@
     <ClInclude Include="AAFilter.h" />
     <ClInclude Include="BPMDetect.h" />
     <ClInclude Include="cpu_detect.h" />
-    <ClInclude Include="InterpolateCubic.h" />
-    <ClInclude Include="InterpolateLinear.h" />
-    <ClInclude Include="InterpolateShannon.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />

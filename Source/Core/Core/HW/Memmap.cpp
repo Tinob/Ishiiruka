@@ -235,6 +235,20 @@ void Memset(const u32 _Address, const u8 _iValue, const u32 _iLength)
 	}
 }
 
+void ClearCacheLine(const u32 _Address)
+{
+	u8 *ptr = GetPointer(_Address);
+	if (ptr != nullptr)
+	{
+		memset(ptr, 0, 32);
+	}
+	else
+	{
+		for (u32 i = 0; i < 32; i += 8)
+			Write_U64(0, _Address + i);
+	}
+}
+
 void DMA_LCToMemory(const u32 _MemAddr, const u32 _CacheAddr, const u32 _iNumBlocks)
 {
 	const u8 *src = m_pL1Cache + (_CacheAddr & 0x3FFFF);
@@ -279,19 +293,18 @@ void ReadBigEData(u8 *data, const u32 em_address, const u32 size)
 	memcpy(data, src, size);
 }
 
-void GetString(std::string& _string, const u32 em_address)
+std::string GetString(u32 em_address)
 {
-	char stringBuffer[2048];
-	char *string = stringBuffer;
+	std::string str;
 	char c;
-	u32 addr = em_address;
-	while ((c = Read_U8(addr)))
+
+	while ((c = Read_U8(em_address)) != '\0')
 	{
-		*string++ = c;
-		addr++;
+		str += c;
+		em_address++;
 	}
-	*string++ = '\0';
-	_string = stringBuffer;
+
+	return str;
 }
 
 // GetPointer must always return an address in the bottom 32 bits of address space, so that 64-bit

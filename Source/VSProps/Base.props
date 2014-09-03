@@ -3,17 +3,19 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros">
     <DolphinRelease Condition="'$(DolphinRelease)'!='true' or '$(Configuration)'!='Release'">false</DolphinRelease>
-    <TargetSuffix></TargetSuffix>
+    <TargetSuffix>
+    </TargetSuffix>
     <TargetSuffix Condition="'$(Configuration)'=='Debug'">D</TargetSuffix>
-    <BuildRootDir>$(SolutionDir)..\Build\</BuildRootDir>
-    <BinaryRootDir>$(SolutionDir)..\Binary\</BinaryRootDir>
+    <DolphinRootDir>$(SolutionDir)..\</DolphinRootDir>
+    <BuildRootDir>$(DolphinRootDir)Build\</BuildRootDir>
+    <BinaryRootDir>$(DolphinRootDir)Binary\</BinaryRootDir>
     <BinaryOutputDir>$(BinaryRootDir)$(Platform)\</BinaryOutputDir>
-    <ExternalsDir>$(SolutionDir)..\Externals\</ExternalsDir>
+    <ExternalsDir>$(DolphinRootDir)Externals\</ExternalsDir>
     <CoreDir>$(SolutionDir)Core\</CoreDir>
   </PropertyGroup>
   <PropertyGroup>
     <!--
-    Opt-in to x64 compiler and tools. The environment will default back to x86 if x64 is not usable.
+    Opt-in to x64 compiler and tools.
     Unfortunately we can't set this property here, as it'll be overridden later. Instead, set it
     from commandline if you're interested in using x64 toolset
     <PreferredToolArchitecture>x64</PreferredToolArchitecture>
@@ -47,21 +49,22 @@
       <AdditionalIncludeDirectories>$(ExternalsDir)wxWidgets3;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>$(ExternalsDir)wxWidgets3\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>$(ExternalsDir)zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-
-      <!--Allow compile-time testing of whether DXSDK (aka DX before integration into VS) is present-->
-      <PreprocessorDefinitions Condition="Exists('$(DXSDK_DIR)')">HAVE_DXSDK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions>USE_UPNP;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>PSAPI_VERSION=1;_M_X86=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Platform)'=='x64'">_ARCH_64=1;_M_X86_64=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <WarningLevel>Level3</WarningLevel>
+      <TreatWarningAsError>true</TreatWarningAsError>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <StructMemberAlignment>16Bytes</StructMemberAlignment>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <MinimalRebuild>false</MinimalRebuild>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <AdditionalOptions>/d2Zi+ /volatile:iso /D PSAPI_VERSION=1 /D _M_X86=1 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalOptions Condition="'$(Platform)'=='Win32'">/D _ARCH_32=1 /D _M_X86_32=1 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalOptions Condition="'$(Platform)'=='x64'">/D _ARCH_64=1 /D _M_X86_64=1 %(AdditionalOptions)</AdditionalOptions>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <!--Enforce some behaviors as standards-conformant when they don't default as such-->
+      <AdditionalOptions>/Zc:inline /Zc:rvalueCast /volatile:iso %(AdditionalOptions)</AdditionalOptions>
+      <!--Enable detailed debug info-->
+      <AdditionalOptions>/Zo %(AdditionalOptions)</AdditionalOptions>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
       <!--
       This is for GetVersionEx being marked as depreciated - which is idiotic and there's
       not much else we can do since many externals use it. The bad part is that there doesn't
@@ -69,10 +72,6 @@
       -->
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
       <OpenMPSupport>true</OpenMPSupport>
-    </ClCompile>
-    <!--ClCompile Base:StaticLibrary-->
-    <ClCompile Condition="'$(ConfigurationType)'=='StaticLibrary'">
-      <PreprocessorDefinitions>_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <!--ClCompile Debug-->
     <ClCompile Condition="'$(Configuration)'=='Debug'">
@@ -93,8 +92,8 @@
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <FunctionLevelLinking>false</FunctionLevelLinking>
       <PreprocessorDefinitions>_SECURE_SCL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <!--SSE2 is already the default on x64, setting it explicitly just generates a warning-->
-      <EnableEnhancedInstructionSet Condition="'$(Platform)'=='Win32'">StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <!--This option is not supported in debug mode (for VS2013)-->
+      <AdditionalOptions>/Zc:strictStrings %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <!--Link Base-->
     <Link>
@@ -106,6 +105,11 @@
       <LinkTimeCodeGeneration Condition="'$(DolphinRelease)'=='true'">UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
+    </Link>
+    <!--Link Base:Application-->
+    <Link Condition="'$(ConfigurationType)'=='Application'">
+      <!--See Common/EnableXSaveWorkaround.cpp-->
+      <ForceSymbolReferences>XSaveWorkaround</ForceSymbolReferences>
     </Link>
     <Lib>
       <TreatLibWarningAsErrors>true</TreatLibWarningAsErrors>

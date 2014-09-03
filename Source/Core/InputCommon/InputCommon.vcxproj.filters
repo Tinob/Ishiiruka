@@ -38,9 +38,11 @@
     <ClCompile Include="ControllerInterface\ExpressionParser.cpp">
       <Filter>ControllerInterface</Filter>
     </ClCompile>
-    <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="ControllerInterface\ForceFeedback\ForceFeedbackDevice.cpp">
       <Filter>ControllerInterface\ForceFeedback</Filter>
+    </ClCompile>
+    <ClCompile Include="ControllerInterface\DInput\XInputFilter.cpp">
+      <Filter>ControllerInterface\DInput</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -68,9 +70,14 @@
     <ClInclude Include="ControllerInterface\ExpressionParser.h">
       <Filter>ControllerInterface</Filter>
     </ClInclude>
-    <ClInclude Include="stdafx.h" />
     <ClInclude Include="ControllerInterface\ForceFeedback\ForceFeedbackDevice.h">
       <Filter>ControllerInterface\ForceFeedback</Filter>
+    </ClInclude>
+    <ClInclude Include="ControllerInterface\DInput\DInput8.h">
+      <Filter>ControllerInterface\DInput</Filter>
+    </ClInclude>
+    <ClInclude Include="ControllerInterface\DInput\XInputFilter.h">
+      <Filter>ControllerInterface\DInput</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

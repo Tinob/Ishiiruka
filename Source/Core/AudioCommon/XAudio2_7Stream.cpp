@@ -298,5 +298,8 @@ void XAudio2_7::Update() {}
 void XAudio2_7::Clear(bool mute) {}
 void XAudio2_7::SetVolume(int volume) {}
 bool XAudio2_7::InitLibrary() { return false; }
-
+bool XAudio2_7::SupportSurroundOutput() { return false;}
+void XAudio2_7::InitializeSoundLoop(){}
+u32  XAudio2_7::SamplesNeeded() { return 0; }
+void XAudio2_7::WriteSamples(s16 *src, u32 numsamples){}
 #endif

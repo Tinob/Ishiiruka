@@ -2,12 +2,12 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
+#include <mutex>
+#include <thread>
 #include <lzo/lzo1x.h>
 
 #include "Common/Common.h"
 #include "Common/Event.h"
-#include "Common/StdMutex.h"
-#include "Common/StdThread.h"
 #include "Common/StringUtil.h"
 #include "Common/Timer.h"
 
@@ -63,7 +63,7 @@ static Common::Event g_compressAndDumpStateSyncEvent;
 static std::thread g_save_thread;
 
 // Don't forget to increase this after doing changes on the savestate system
-static const u32 STATE_VERSION = 30;
+static const u32 STATE_VERSION = 31;
 
 enum
 {

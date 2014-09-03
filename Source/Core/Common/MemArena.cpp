@@ -141,16 +141,7 @@ u8* MemArena::Find4GBBase()
 	return reinterpret_cast<u8*>(0x2300000000ULL);
 #endif
 
-#else
-	// 32 bit
-#ifdef _WIN32
-	// The highest thing in any 1GB section of memory space is the locked cache. We only need to fit it.
-	u8* base = (u8*)VirtualAlloc(0, 0x31000000, MEM_RESERVE, PAGE_READWRITE);
-	if (base) {
-		VirtualFree(base, 0, MEM_RELEASE);
-	}
-	return base;
-#else
+#else // 32 bit
 #ifdef ANDROID
 	// Android 4.3 changed how mmap works.
 	// if we map it private and then munmap it, we can't use the base returned.
@@ -161,13 +152,13 @@ u8* MemArena::Find4GBBase()
 #endif
 	const u32 MemSize = 0x31000000;
 	void* base = mmap(0, MemSize, PROT_NONE, flags, -1, 0);
-	if (base == MAP_FAILED) {
+	if (base == MAP_FAILED)
+	{
 		PanicAlert("Failed to map 1 GB of memory space: %s", strerror(errno));
 		return 0;
 	}
 	munmap(base, MemSize);
 	return static_cast<u8*>(base);
-#endif
 #endif
 }
 
@@ -180,7 +171,8 @@ u8* MemArena::Find4GBBase()
 		continue; \
 
 
-static bool Memory_TryBase(u8 *base, const MemoryView *views, int num_views, u32 flags, MemArena *arena) {
+static bool Memory_TryBase(u8 *base, const MemoryView *views, int num_views, u32 flags, MemArena *arena)
+{
 	// OK, we know where to find free space. Now grab it!
 	// We just mimic the popular BAT setup.
 	u32 position = 0;
@@ -199,9 +191,12 @@ static bool Memory_TryBase(u8 *base, const MemoryView *views, int num_views, u32
 	for (i = 0; i < num_views; i++)
 	{
 		SKIP(flags, views[i].flags);
-		if (views[i].flags & MV_MIRROR_PREVIOUS) {
+		if (views[i].flags & MV_MIRROR_PREVIOUS)
+		{
 			position = last_position;
-		} else {
+		}
+		else
+		{
 			*(views[i].out_ptr_low) = (u8*)arena->CreateView(position, views[i].size);
 			if (!*views[i].out_ptr_low)
 				goto bail;
@@ -210,10 +205,13 @@ static bool Memory_TryBase(u8 *base, const MemoryView *views, int num_views, u32
 		*views[i].out_ptr = (u8*)arena->CreateView(
 			position, views[i].size, base + views[i].virtual_address);
 #else
-		if (views[i].flags & MV_MIRROR_PREVIOUS) {
+		if (views[i].flags & MV_MIRROR_PREVIOUS)
+		{
 			// No need to create multiple identical views.
 			*views[i].out_ptr = *views[i - 1].out_ptr;
-		} else {
+		}
+		else
+		{
 			*views[i].out_ptr = (u8*)arena->CreateView(
 				position, views[i].size, base + (views[i].virtual_address & 0x3FFFFFFF));
 			if (!*views[i].out_ptr)
@@ -258,23 +256,6 @@ u8 *MemoryMap_Setup(const MemoryView *views, int num_views, u32 flags, MemArena 
 		return nullptr;
 	}
 #else
-#ifdef _WIN32
-	// Try a whole range of possible bases. Return once we got a valid one.
-	u32 max_base_addr = 0x7FFF0000 - 0x31000000;
-	u8 *base = nullptr;
-
-	for (u32 base_addr = 0x40000; base_addr < max_base_addr; base_addr += 0x40000)
-	{
-		base_attempts++;
-		base = (u8 *)base_addr;
-		if (Memory_TryBase(base, views, num_views, flags, arena))
-		{
-			INFO_LOG(MEMMAP, "Found valid memory base at %p after %i tries.", base, base_attempts);
-			base_attempts = 0;
-			break;
-		}
-	}
-#else
 	// Linux32 is fine with the x64 method, although limited to 32-bit with no automirrors.
 	u8 *base = MemArena::Find4GBBase();
 	if (!Memory_TryBase(base, views, num_views, flags, arena))
@@ -285,7 +266,6 @@ u8 *MemoryMap_Setup(const MemoryView *views, int num_views, u32 flags, MemArena 
 	}
 #endif
 
-#endif
 	if (base_attempts)
 		PanicAlert("No possible memory base pointer found!");
 	return base;

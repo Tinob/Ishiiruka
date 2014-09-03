@@ -2,7 +2,6 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="D3DBase.cpp">
       <Filter>D3D</Filter>
     </ClCompile>
@@ -64,7 +63,6 @@
   <ItemGroup>
     <ClInclude Include="Globals.h" />
     <ClInclude Include="main.h" />
-    <ClInclude Include="stdafx.h" />
     <ClInclude Include="VideoBackend.h" />
     <ClInclude Include="D3DUtil.h">
       <Filter>D3D</Filter>

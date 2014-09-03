@@ -1,17 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
-    <ProjectConfiguration Include="Debug|Win32">
-      <Configuration>Debug</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
       <Platform>x64</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Release|Win32">
-      <Configuration>Release</Configuration>
-      <Platform>Win32</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="Release|x64">
       <Configuration>Release</Configuration>
@@ -24,7 +16,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <PlatformToolset>v120_xp</PlatformToolset>
+    <PlatformToolset>v120</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)'=='Debug'" Label="Configuration">
@@ -39,7 +31,7 @@
   <ImportGroup Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\..\VSProps\Base.props" />
-    <Import Project="..\..\VSProps\PrecompiledHeader.props" />
+    <Import Project="..\..\VSProps\PCHUse.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <ItemGroup>
@@ -61,10 +53,10 @@
     <ClCompile Include="Debugger\PPCDebugInterface.cpp" />
     <ClCompile Include="DSPEmulator.cpp" />
     <ClCompile Include="DSP\DSPAssembler.cpp" />
-    <ClCompile Include="DSP\DSPCaptureLogger.cpp" />
     <ClCompile Include="DSP\DSPDisassembler.cpp" />
     <ClCompile Include="DSP\DSPAccelerator.cpp" />
     <ClCompile Include="DSP\DSPAnalyzer.cpp" />
+    <ClCompile Include="DSP\DSPCaptureLogger.cpp" />
     <ClCompile Include="DSP\DSPCodeUtil.cpp" />
     <ClCompile Include="DSP\DSPCore.cpp" />
     <ClCompile Include="DSP\DSPEmitter.cpp" />
@@ -180,7 +172,13 @@
     <ClCompile Include="IPC_HLE\WII_IPC_HLE_Device_es.cpp" />
     <ClCompile Include="IPC_HLE\WII_IPC_HLE_Device_FileIO.cpp" />
     <ClCompile Include="IPC_HLE\WII_IPC_HLE_Device_fs.cpp" />
-    <ClCompile Include="IPC_HLE\WII_IPC_HLE_Device_hid.cpp" />
+    <ClCompile Include="IPC_HLE\WII_IPC_HLE_Device_hid.cpp">
+      <!--
+      Disable "nonstandard extension used : zero-sized array in struct/union" warning,
+      which is hit in libusb.h (and this is the only file which uses that header).
+      -->
+      <DisableSpecificWarnings>4200;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
     <ClCompile Include="IPC_HLE\WII_IPC_HLE_Device_net.cpp" />
     <ClCompile Include="IPC_HLE\WII_IPC_HLE_Device_net_ssl.cpp" />
     <ClCompile Include="IPC_HLE\WII_IPC_HLE_Device_sdio_slot0.cpp" />
@@ -240,10 +238,6 @@
     <ClCompile Include="PowerPC\Profiler.cpp" />
     <ClCompile Include="PowerPC\SignatureDB.cpp" />
     <ClCompile Include="State.cpp" />
-    <ClCompile Include="stdafx.cpp">
-      <PrecompiledHeader>Create</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="Tracer.cpp" />
     <ClCompile Include="VolumeHandler.cpp" />
     <ClCompile Include="x64MemTools.cpp" />
   </ItemGroup>
@@ -253,8 +247,6 @@
     <ClInclude Include="BootManager.h" />
     <ClInclude Include="Boot\Boot.h" />
     <ClInclude Include="Boot\Boot_DOL.h" />
-    <ClInclude Include="Boot\Boot_ELF.h" />
-    <ClInclude Include="Boot\Boot_WiiWAD.h" />
     <ClInclude Include="Boot\ElfReader.h" />
     <ClInclude Include="Boot\ElfTypes.h" />
     <ClInclude Include="ConfigManager.h" />
@@ -267,11 +259,11 @@
     <ClInclude Include="Debugger\PPCDebugInterface.h" />
     <ClInclude Include="DSPEmulator.h" />
     <ClInclude Include="DSP\DSPAssembler.h" />
-    <ClInclude Include="DSP\DSPCaptureLogger.h" />
     <ClInclude Include="DSP\DSPDisassembler.h" />
     <ClInclude Include="DSP\DSPAccelerator.h" />
     <ClInclude Include="DSP\DSPAnalyzer.h" />
     <ClInclude Include="DSP\DSPBreakpoints.h" />
+    <ClInclude Include="DSP\DSPCaptureLogger.h" />
     <ClInclude Include="DSP\DSPCodeUtil.h" />
     <ClInclude Include="DSP\DSPCommon.h" />
     <ClInclude Include="DSP\DSPCore.h" />
@@ -286,7 +278,6 @@
     <ClInclude Include="DSP\DSPStacks.h" />
     <ClInclude Include="DSP\DSPTables.h" />
     <ClInclude Include="DSP\Jit\DSPJitRegCache.h" />
-    <ClInclude Include="DSP\Jit\DSPJitUtil.h" />
     <ClInclude Include="DSP\LabelMap.h" />
     <ClInclude Include="ec_wii.h" />
     <ClInclude Include="FifoPlayer\FifoAnalyzer.h" />
@@ -371,7 +362,6 @@
     <ClInclude Include="HW\WiimoteReal\WiimoteReal.h" />
     <ClInclude Include="HW\WiimoteReal\WiimoteRealBase.h" />
     <ClInclude Include="HW\WII_IPC.h" />
-    <ClInclude Include="IPC_HLE\fakepoll.h" />
     <ClInclude Include="IPC_HLE\hci.h" />
     <ClInclude Include="IPC_HLE\ICMP.h" />
     <ClInclude Include="IPC_HLE\l2cap.h" />
@@ -425,48 +415,49 @@
     <ClInclude Include="PowerPC\Profiler.h" />
     <ClInclude Include="PowerPC\SignatureDB.h" />
     <ClInclude Include="State.h" />
-    <ClInclude Include="stdafx.h" />
-    <ClInclude Include="Tracer.h" />
     <ClInclude Include="VolumeHandler.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Externals\Bochs_disasm\Bochs_disasm.vcxproj">
+    <ProjectReference Include="$(ExternalsDir)Bochs_disasm\Bochs_disasm.vcxproj">
       <Project>{8ada04d7-6db1-4da4-ab55-64fb12a0997b}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\Externals\libusbx\msvc\libusb_static_2013.vcxproj">
+    <ProjectReference Include="$(ExternalsDir)libusbx\msvc\libusb_static_2013.vcxproj">
       <Project>{349ee8f9-7d25-4909-aaf5-ff3fade72187}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\Externals\LZO\LZO.vcxproj">
+    <ProjectReference Include="$(ExternalsDir)LZO\LZO.vcxproj">
       <Project>{ab993f38-c31d-4897-b139-a620c42bc565}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\Externals\polarssl\visualc\PolarSSL.vcxproj">
+    <ProjectReference Include="$(ExternalsDir)miniupnpc\miniupnpc.vcxproj">
+      <Project>{31643fdb-1bb8-4965-9de7-000fc88d35ae}</Project>
+    </ProjectReference>
+    <ProjectReference Include="$(ExternalsDir)polarssl\visualc\PolarSSL.vcxproj">
       <Project>{bdb6578b-0691-4e80-a46c-df21639fd3b8}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\Externals\portaudio\build\portaudio.vcxproj">
+    <ProjectReference Include="$(ExternalsDir)portaudio\build\portaudio.vcxproj">
       <Project>{0a18a071-125e-442f-aff7-a3f68abecf99}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\Externals\SFML\build\vc2010\SFML_Network.vcxproj">
+    <ProjectReference Include="$(ExternalsDir)SFML\build\vc2010\SFML_Network.vcxproj">
       <Project>{93d73454-2512-424e-9cda-4bb357fe13dd}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\AudioCommon\AudioCommon.vcxproj">
+    <ProjectReference Include="$(CoreDir)AudioCommon\AudioCommon.vcxproj">
       <Project>{54aa7840-5beb-4a0c-9452-74ba4cc7fd44}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\Common\Common.vcxproj">
+    <ProjectReference Include="$(CoreDir)Common\Common.vcxproj">
       <Project>{2e6c348c-c75c-4d94-8d1e-9c1fcbf3efe4}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\Common\SCMRevGen.vcxproj">
+    <ProjectReference Include="$(CoreDir)Common\SCMRevGen.vcxproj">
       <Project>{41279555-f94f-4ebc-99de-af863c10c5c4}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\DiscIO\DiscIO.vcxproj">
+    <ProjectReference Include="$(CoreDir)DiscIO\DiscIO.vcxproj">
       <Project>{160bdc25-5626-4b0d-bdd8-2953d9777fb5}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\InputCommon\InputCommon.vcxproj">
+    <ProjectReference Include="$(CoreDir)InputCommon\InputCommon.vcxproj">
       <Project>{6bbd47cf-91fd-4077-b676-8b76980178a9}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\VideoCommon\VideoCommon.vcxproj">
+    <ProjectReference Include="$(CoreDir)VideoCommon\VideoCommon.vcxproj">
       <Project>{3de9ee35-3e91-4f27-a014-2866ad8c3fe3}</Project>
     </ProjectReference>
   </ItemGroup>

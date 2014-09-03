@@ -1222,7 +1222,7 @@ void SampleTexture(T& out, const char *texcoords, const char *texswap, int texma
 	{
 		if (ApiType == API_D3D11)
 		{
-			char * texfmtswp = NULL;
+			const char *texfmtswp = nullptr;
 			switch (TextureCache::stagemap[texmap]->pcformat)
 			{
 			case PC_TEX_FMT_I4_AS_I8:

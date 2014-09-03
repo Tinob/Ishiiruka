@@ -32,14 +32,6 @@ enum EDiscType
 	DISC_TYPE_WAD
 };
 
-#ifndef _WIN32
-struct SPartition
-{
-	u64 Offset;
-	u32 Type;
-}; //gcc 4.3 cries if it's local
-#endif
-
 class CBlobBigEndianReader
 {
 public:
@@ -67,8 +59,8 @@ private:
 	IBlobReader& m_rReader;
 };
 
-const unsigned char g_MasterKey[16] = { 0xeb, 0xe4, 0x2a, 0x22, 0x5e, 0x85, 0x93, 0xe4, 0x48, 0xd9, 0xc5, 0x45, 0x73, 0x81, 0xaa, 0xf7 };
-const unsigned char g_MasterKeyK[16] = { 0x63, 0xb8, 0x2b, 0xb4, 0xf4, 0x61, 0x4e, 0x2e, 0x13, 0xf2, 0xfe, 0xfb, 0xba, 0x4c, 0x9b, 0x7e };
+const unsigned char g_MasterKey[16] = {0xeb,0xe4,0x2a,0x22,0x5e,0x85,0x93,0xe4,0x48,0xd9,0xc5,0x45,0x73,0x81,0xaa,0xf7};
+const unsigned char g_MasterKeyK[16] = {0x63,0xb8,0x2b,0xb4,0xf4,0x61,0x4e,0x2e,0x13,0xf2,0xfe,0xfb,0xba,0x4c,0x9b,0x7e};
 
 static IVolume* CreateVolumeFromCryptedWiiImage(IBlobReader& _rReader, u32 _PartitionGroup, u32 _VolumeType, u32 _VolumeNum, bool Korean);
 EDiscType GetDiscType(IBlobReader& _rReader);
@@ -81,38 +73,38 @@ IVolume* CreateVolumeFromFilename(const std::string& _rFilename, u32 _PartitionG
 
 	switch (GetDiscType(*pReader))
 	{
-	case DISC_TYPE_WII:
-	case DISC_TYPE_GC:
-		return new CVolumeGC(pReader);
+		case DISC_TYPE_WII:
+		case DISC_TYPE_GC:
+			return new CVolumeGC(pReader);
 
-	case DISC_TYPE_WAD:
-		return new CVolumeWAD(pReader);
+		case DISC_TYPE_WAD:
+			return new CVolumeWAD(pReader);
 
-	case DISC_TYPE_WII_CONTAINER:
-	{
-		u8 region;
-		pReader->Read(0x3, 1, &region);
-
-		IVolume* pVolume = CreateVolumeFromCryptedWiiImage(*pReader, _PartitionGroup, 0, _VolumeNum, region == 'K');
-
-		if (pVolume == nullptr)
+		case DISC_TYPE_WII_CONTAINER:
 		{
-			delete pReader;
+			u8 region;
+			pReader->Read(0x3,1,&region);
+
+			IVolume* pVolume = CreateVolumeFromCryptedWiiImage(*pReader, _PartitionGroup, 0, _VolumeNum, region == 'K');
+
+			if (pVolume == nullptr)
+			{
+				delete pReader;
+			}
+
+			return pVolume;
 		}
+			break;
 
-		return pVolume;
-	}
-		break;
-
-	case DISC_TYPE_UNK:
-	default:
-		std::string Filename, ext;
-		SplitPath(_rFilename, nullptr, &Filename, &ext);
-		Filename += ext;
-		NOTICE_LOG(DISCIO, "%s does not have the Magic word for a gcm, wiidisc or wad file\n"
-			"Set Log Verbosity to Warning and attempt to load the game again to view the values", Filename.c_str());
-		delete pReader;
-		return nullptr;
+		case DISC_TYPE_UNK:
+		default:
+			std::string Filename, ext;
+			SplitPath(_rFilename, nullptr, &Filename, &ext);
+			Filename += ext;
+			NOTICE_LOG(DISCIO, "%s does not have the Magic word for a gcm, wiidisc or wad file\n"
+						"Set Log Verbosity to Warning and attempt to load the game again to view the values", Filename.c_str());
+			delete pReader;
+			return nullptr;
 	}
 
 	// unreachable code
@@ -155,13 +147,12 @@ static IVolume* CreateVolumeFromCryptedWiiImage(IBlobReader& _rReader, u32 _Part
 	if ((int)_VolumeNum != -1 && _VolumeNum > numPartitions)
 		return nullptr;
 
-#ifdef _WIN32
 	struct SPartition
 	{
 		u64 Offset;
 		u32 Type;
 	};
-#endif
+
 	struct SPartitionGroup
 	{
 		u32 numPartitions;
@@ -177,7 +168,7 @@ static IVolume* CreateVolumeFromCryptedWiiImage(IBlobReader& _rReader, u32 _Part
 		{
 			SPartition Partition;
 			Partition.Offset = ((u64)Reader.Read32(PartitionsOffset + (i * 8) + 0)) << 2;
-			Partition.Type = Reader.Read32(PartitionsOffset + (i * 8) + 4);
+			Partition.Type   = Reader.Read32(PartitionsOffset + (i * 8) + 4);
 			group.PartitionsVec.push_back(Partition);
 		}
 	}

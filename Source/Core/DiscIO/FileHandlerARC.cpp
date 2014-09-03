@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdio>
 #include <cstring>
+#include <memory>
 #include <string>
 
 #include "Common/Common.h"
@@ -22,13 +23,12 @@ CARCFile::CARCFile(const std::string& _rFilename)
 	: m_pBuffer(nullptr)
 	, m_Initialized(false)
 {
-	DiscIO::IBlobReader* pReader = DiscIO::CreateBlobReader(_rFilename.c_str());
-	if (pReader != nullptr)
+	std::unique_ptr<IBlobReader> reader(DiscIO::CreateBlobReader(_rFilename));
+	if (reader != nullptr)
 	{
-		u64 FileSize = pReader->GetDataSize();
+		u64 FileSize = reader->GetDataSize();
 		m_pBuffer = new u8[(u32)FileSize];
-		pReader->Read(0, FileSize, m_pBuffer);
-		delete pReader;
+		reader->Read(0, FileSize, m_pBuffer);
 
 		m_Initialized = ParseBuffer();
 	}
@@ -38,13 +38,12 @@ CARCFile::CARCFile(const std::string& _rFilename, u32 offset)
 	: m_pBuffer(nullptr)
 	, m_Initialized(false)
 {
-	DiscIO::IBlobReader* pReader = DiscIO::CreateBlobReader(_rFilename.c_str());
-	if (pReader != nullptr)
+	std::unique_ptr<IBlobReader> reader(DiscIO::CreateBlobReader(_rFilename));
+	if (reader != nullptr)
 	{
-		u64 FileSize = pReader->GetDataSize() - offset;
+		u64 FileSize = reader->GetDataSize() - offset;
 		m_pBuffer = new u8[(u32)FileSize];
-		pReader->Read(offset, FileSize, m_pBuffer);
-		delete pReader;
+		reader->Read(offset, FileSize, m_pBuffer);
 
 		m_Initialized = ParseBuffer();
 	}
@@ -66,7 +65,7 @@ CARCFile::CARCFile(const u8* _pBuffer, size_t _BufferSize)
 
 CARCFile::~CARCFile()
 {
-	delete[] m_pBuffer;
+	delete [] m_pBuffer;
 }
 
 
@@ -114,7 +113,7 @@ size_t CARCFile::ReadFile(const std::string& _rFullPath, u8* _pBuffer, size_t _M
 	}
 
 	memcpy(_pBuffer, &m_pBuffer[pFileInfo->m_Offset], (size_t)pFileInfo->m_FileSize);
-	return (size_t)pFileInfo->m_FileSize;
+	return (size_t) pFileInfo->m_FileSize;
 }
 
 
@@ -134,7 +133,7 @@ bool CARCFile::ExportFile(const std::string& _rFullPath, const std::string& _rEx
 
 	File::IOFile pFile(_rExportFilename, "wb");
 
-	return pFile.WriteBytes(&m_pBuffer[pFileInfo->m_Offset], (size_t)pFileInfo->m_FileSize);
+	return pFile.WriteBytes(&m_pBuffer[pFileInfo->m_Offset], (size_t) pFileInfo->m_FileSize);
 }
 
 
@@ -153,15 +152,15 @@ bool CARCFile::ParseBuffer()
 		return false;
 
 	// read header
-	u32 FSTOffset = Common::swap32(*(u32*)(m_pBuffer + 0x4));
+	u32 FSTOffset  = Common::swap32(*(u32*)(m_pBuffer + 0x4));
 	//u32 FSTSize    = Common::swap32(*(u32*)(m_pBuffer + 0x8));
 	//u32 FileOffset = Common::swap32(*(u32*)(m_pBuffer + 0xC));
 
 	// read all file infos
 	SFileInfo Root;
 	Root.m_NameOffset = Common::swap32(*(u32*)(m_pBuffer + FSTOffset + 0x0));
-	Root.m_Offset = Common::swap32(*(u32*)(m_pBuffer + FSTOffset + 0x4));
-	Root.m_FileSize = Common::swap32(*(u32*)(m_pBuffer + FSTOffset + 0x8));
+	Root.m_Offset     = Common::swap32(*(u32*)(m_pBuffer + FSTOffset + 0x4));
+	Root.m_FileSize   = Common::swap32(*(u32*)(m_pBuffer + FSTOffset + 0x8));
 
 	if (Root.IsDirectory())
 	{
@@ -172,7 +171,7 @@ bool CARCFile::ParseBuffer()
 		{
 			u8* Offset = m_pBuffer + FSTOffset + (i * 0xC);
 			m_FileInfoVector[i].m_NameOffset = Common::swap32(*(u32*)(Offset + 0x0));
-			m_FileInfoVector[i].m_Offset = Common::swap32(*(u32*)(Offset + 0x4));
+			m_FileInfoVector[i].m_Offset   = Common::swap32(*(u32*)(Offset + 0x4));
 			m_FileInfoVector[i].m_FileSize = Common::swap32(*(u32*)(Offset + 0x8));
 
 			szNameTable += 0xC;

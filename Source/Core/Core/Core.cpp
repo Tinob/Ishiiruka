@@ -115,9 +115,6 @@ std::string StopMessage(bool bMainThread, std::string Message)
 
 void DisplayMessage(const std::string& message, int time_in_ms)
 {
-	SCoreStartupParameter& _CoreParameter =
-		SConfig::GetInstance().m_LocalCoreStartupParameter;
-
 	// Actually displaying non-ASCII could cause things to go pear-shaped
 	for (const char& c : message)
 	{
@@ -126,21 +123,7 @@ void DisplayMessage(const std::string& message, int time_in_ms)
 	}
 
 	g_video_backend->Video_AddMessage(message, time_in_ms);
-
-	if (_CoreParameter.bRenderToMain &&
-		SConfig::GetInstance().m_InterfaceStatusbar)
-	{
-			Host_UpdateStatusBar(message);
-	}
-	else
-	{
-		Host_UpdateTitle(message);
-	}
-}
-
-void *GetWindowHandle()
-{
-	return g_pWindowHandle;
+	Host_UpdateTitle(message);
 }
 
 bool IsRunning()
@@ -213,9 +196,6 @@ bool Init()
 		     !!SConfig::GetInstance().m_SYSCONF->GetData<u8>("IPL.AR"));
 	}
 
-	// g_pWindowHandle is first the m_Panel handle,
-	// then it is updated to the render window handle,
-	// within g_video_backend->Initialize()
 	g_pWindowHandle = Host_GetRenderHandle();
 
 	// Start the emu thread
@@ -492,9 +472,6 @@ void EmuThread()
 	// Clear on screen messages that haven't expired
 	g_video_backend->Video_ClearMessages();
 
-	// Close the trace file
-	Core::StopTrace();
-
 	// Reload sysconf file in order to see changes committed during emulation
 	if (_CoreParameter.bWii)
 		SConfig::GetInstance().m_SYSCONF->Reload();
@@ -710,21 +687,7 @@ void UpdateTitle()
 	}
 	// This is our final "frame counter" string
 	std::string SMessage = StringFromFormat("%s | %s", SSettings.c_str(), SFPS.c_str());
-	std::string TMessage = StringFromFormat("%s | %s", scm_rev_str, SMessage.c_str());
-
-	// Show message
-	g_video_backend->UpdateFPSDisplay(SMessage);
-
-	if (_CoreParameter.bRenderToMain &&
-		SConfig::GetInstance().m_InterfaceStatusbar)
-	{
-		Host_UpdateStatusBar(SMessage);
-		Host_UpdateTitle(scm_rev_str);
-	}
-	else
-	{
-		Host_UpdateTitle(TMessage);
-	}
+	Host_UpdateTitle(SMessage);
 }
 
 void Shutdown()

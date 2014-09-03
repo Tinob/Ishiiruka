@@ -68,7 +68,7 @@ GameListItem::GameListItem(const std::string& _rFileName)
 
 			m_volume_names = pVolume->GetNames();
 
-			m_Country = pVolume->GetCountry();
+			m_Country  = pVolume->GetCountry();
 			m_FileSize = pVolume->GetRawSize();
 			m_VolumeSize = pVolume->GetSize();
 
@@ -101,8 +101,8 @@ GameListItem::GameListItem(const std::string& _rFileName)
 						for (int i = 0; i < m_ImageWidth * m_ImageHeight; i++)
 						{
 							m_pImage[i * 3 + 0] = (pData[i] & 0xFF0000) >> 16;
-							m_pImage[i * 3 + 1] = (pData[i] & 0x00FF00) >> 8;
-							m_pImage[i * 3 + 2] = (pData[i] & 0x0000FF) >> 0;
+							m_pImage[i * 3 + 1] = (pData[i] & 0x00FF00) >>  8;
+							m_pImage[i * 3 + 2] = (pData[i] & 0x0000FF) >>  0;
 						}
 					}
 					delete pBannerLoader;
@@ -288,13 +288,13 @@ const std::string GameListItem::GetWiiFSPath() const
 
 	if (DiscIO::IsVolumeWiiDisc(iso) || DiscIO::IsVolumeWadFile(iso))
 	{
-		u64 title;
+		u64 title = 0;
 
 		iso->GetTitleID((u8*)&title);
 		title = Common::swap64(title);
 
 		const std::string path = StringFromFormat("%stitle/%08x/%08x/data/",
-			File::GetUserPath(D_WIIUSER_IDX).c_str(), (u32)(title >> 32), (u32)title);
+				File::GetUserPath(D_WIIUSER_IDX).c_str(), (u32)(title>>32), (u32)title);
 
 		if (!File::Exists(path))
 			File::CreateFullPath(path);

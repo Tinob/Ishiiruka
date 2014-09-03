@@ -61,17 +61,13 @@ void Callback_WiimoteInterruptChannel(int _number, u16 _channelID, const void* _
 
 void* GetWindowHandle();
 
-void StartTrace(bool write);
-
 // This displays messages in a user-visible way.
 void DisplayMessage(const std::string& message, int time_in_ms);
 
 std::string GetStateFileName();
 void SetStateFileName(std::string val);
 
-int SyncTrace();
 void SetBlockStart(u32 addr);
-void StopTrace();
 
 bool ShouldSkipFrame(int skipped);
 void VideoThrottle();

@@ -21,7 +21,7 @@
 #include "Core/PowerPC/Jit64/JitAsm.h"
 #include "Core/PowerPC/Jit64/JitRegCache.h"
 #if defined(_DEBUG) || defined(DEBUGFAST)
-#include "PowerPCDisasm.h"
+#include "Common/GekkoDisassembler.h"
 #endif
 
 using namespace Gen;
@@ -162,7 +162,9 @@ void Jit64::Init()
 			jo.enableBlocklink = false;
 		}
 		else
+		{
 			jo.enableBlocklink = !Core::g_CoreStartupParameter.bMMU;
+		}
 	}
 	jo.fpAccurateFcmp = Core::g_CoreStartupParameter.bEnableFPRF;
 	jo.optimizeGatherPipe = true;
@@ -247,13 +249,8 @@ static void ImHere()
 	if (ImHereLog)
 	{
 		if (!f)
-		{
-#if _M_X86_64
 			f.Open("log64.txt", "w");
-#else
-			f.Open("log32.txt", "w");
-#endif
-		}
+
 		fprintf(f.GetHandle(), "%08x\n", PC);
 	}
 	if (been_here.find(PC) != been_here.end())
@@ -282,7 +279,7 @@ void Jit64::WriteExit(u32 destination)
 {
 	Cleanup();
 
-	SUB(32, M(&PowerPC::ppcState.downcount), js.downcountAmount > 127 ? Imm32(js.downcountAmount) : Imm8(js.downcountAmount));
+	SUB(32, M(&PowerPC::ppcState.downcount), Imm32(js.downcountAmount));
 
 	//If nobody has taken care of this yet (this can be removed when all branches are done)
 	JitBlock *b = js.curBlock;
@@ -312,7 +309,7 @@ void Jit64::WriteExitDestInEAX()
 {
 	MOV(32, M(&PC), R(EAX));
 	Cleanup();
-	SUB(32, M(&PowerPC::ppcState.downcount), js.downcountAmount > 127 ? Imm32(js.downcountAmount) : Imm8(js.downcountAmount));
+	SUB(32, M(&PowerPC::ppcState.downcount), Imm32(js.downcountAmount));
 	JMP(asm_routines.dispatcher, true);
 }
 
@@ -322,7 +319,7 @@ void Jit64::WriteRfiExitDestInEAX()
 	MOV(32, M(&NPC), R(EAX));
 	Cleanup();
 	ABI_CallFunction(reinterpret_cast<void *>(&PowerPC::CheckExceptions));
-	SUB(32, M(&PowerPC::ppcState.downcount), js.downcountAmount > 127 ? Imm32(js.downcountAmount) : Imm8(js.downcountAmount));
+	SUB(32, M(&PowerPC::ppcState.downcount), Imm32(js.downcountAmount));
 	JMP(asm_routines.dispatcher, true);
 }
 
@@ -332,7 +329,7 @@ void Jit64::WriteExceptionExit()
 	MOV(32, R(EAX), M(&PC));
 	MOV(32, M(&NPC), R(EAX));
 	ABI_CallFunction(reinterpret_cast<void *>(&PowerPC::CheckExceptions));
-	SUB(32, M(&PowerPC::ppcState.downcount), js.downcountAmount > 127 ? Imm32(js.downcountAmount) : Imm8(js.downcountAmount));
+	SUB(32, M(&PowerPC::ppcState.downcount), Imm32(js.downcountAmount));
 	JMP(asm_routines.dispatcher, true);
 }
 
@@ -342,7 +339,7 @@ void Jit64::WriteExternalExceptionExit()
 	MOV(32, R(EAX), M(&PC));
 	MOV(32, M(&NPC), R(EAX));
 	ABI_CallFunction(reinterpret_cast<void *>(&PowerPC::CheckExternalExceptions));
-	SUB(32, M(&PowerPC::ppcState.downcount), js.downcountAmount > 127 ? Imm32(js.downcountAmount) : Imm8(js.downcountAmount));
+	SUB(32, M(&PowerPC::ppcState.downcount), Imm32(js.downcountAmount));
 	JMP(asm_routines.dispatcher, true);
 }
 
@@ -440,7 +437,8 @@ const u8* Jit64::DoJit(u32 em_address, PPCAnalyst::CodeBuffer *code_buf, JitBloc
 		ABI_CallFunction((void *)&ImHere); //Used to get a trace of the last few blocks before a crash, sometimes VERY useful
 
 	// Conditionally add profiling code.
-	if (Profiler::g_ProfileBlocks) {
+	if (Profiler::g_ProfileBlocks)
+	{
 		ADD(32, M(&b->runCount), Imm8(1));
 #ifdef _WIN32
 		b->ticCounter = 0;
@@ -482,7 +480,8 @@ const u8* Jit64::DoJit(u32 em_address, PPCAnalyst::CodeBuffer *code_buf, JitBloc
 			// WARNING - cmp->branch merging will screw this up.
 			js.isLastInstruction = true;
 			js.next_inst = 0;
-			if (Profiler::g_ProfileBlocks) {
+			if (Profiler::g_ProfileBlocks)
+			{
 				// CAUTION!!! push on stack regs you use, do your stuff, then pop
 				PROFILER_VPUSH;
 				// get end tic
@@ -503,7 +502,7 @@ const u8* Jit64::DoJit(u32 em_address, PPCAnalyst::CodeBuffer *code_buf, JitBloc
 		{
 			js.fifoBytesThisBlock -= 32;
 			MOV(32, M(&PC), Imm32(jit->js.compilerPC)); // Helps external systems know which instruction triggered the write
-			u32 registersInUse = RegistersInUse();
+			u32 registersInUse = CallerSavedRegistersInUse();
 			ABI_PushRegistersAndAdjustStack(registersInUse, false);
 			ABI_CallFunction((void *)&GPFifo::CheckGatherPipe);
 			ABI_PopRegistersAndAdjustStack(registersInUse, false);
@@ -618,12 +617,12 @@ const u8* Jit64::DoJit(u32 em_address, PPCAnalyst::CodeBuffer *code_buf, JitBloc
 #if defined(_DEBUG) || defined(DEBUGFAST)
 		if (gpr.SanityCheck() || fpr.SanityCheck())
 		{
-			char ppcInst[256];
-			DisassembleGekko(ops[i].inst.hex, em_address, ppcInst, 256);
-			//NOTICE_LOG(DYNA_REC, "Unflushed register: %s", ppcInst);
+			std::string ppc_inst = GekkoDisassembler::Disassemble(ops[i].inst.hex, em_address);
+			//NOTICE_LOG(DYNA_REC, "Unflushed register: %s", ppc_inst.c_str());
 		}
 #endif
-		if (js.skipnext) {
+		if (js.skipnext)
+		{
 			js.skipnext = false;
 			i++; // Skip next instruction
 		}
@@ -651,12 +650,8 @@ const u8* Jit64::DoJit(u32 em_address, PPCAnalyst::CodeBuffer *code_buf, JitBloc
 		OR(32, M((void *)&PowerPC::ppcState.Exceptions), Imm32(EXCEPTION_ISI));
 
 		// Remove the invalid instruction from the icache, forcing a recompile
-#if _M_X86_32
-		MOV(32, M(jit->GetBlockCache()->GetICachePtr(js.compilerPC)), Imm32(JIT_ICACHE_INVALID_WORD));
-#else
 		MOV(64, R(RAX), ImmPtr(jit->GetBlockCache()->GetICachePtr(js.compilerPC)));
 		MOV(32,MatR(RAX),Imm32(JIT_ICACHE_INVALID_WORD));
-#endif
 
 		WriteExceptionExit();
 	}
@@ -678,7 +673,7 @@ const u8* Jit64::DoJit(u32 em_address, PPCAnalyst::CodeBuffer *code_buf, JitBloc
 	return normalEntry;
 }
 
-u32 Jit64::RegistersInUse()
+u32 Jit64::CallerSavedRegistersInUse()
 {
 	u32 result = 0;
 	for (int i = 0; i < NUMXREGS; i++)
@@ -688,5 +683,5 @@ u32 Jit64::RegistersInUse()
 		if (!fpr.IsFreeX(i))
 			result |= (1 << (16 + i));
 	}
-	return result;
+	return result & ABI_ALL_CALLER_SAVED;
 }

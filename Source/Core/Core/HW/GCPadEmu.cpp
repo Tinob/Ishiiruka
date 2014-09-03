@@ -5,6 +5,9 @@
 #include "Core/Host.h"
 #include "Core/HW/GCPadEmu.h"
 
+// TODO: Move to header file when VS supports constexpr.
+const ControlState GCPad::DEFAULT_PAD_STICK_RADIUS = 0.7f;
+
 const u16 button_bitmasks[] =
 {
 	PAD_BUTTON_A,
@@ -60,8 +63,8 @@ GCPad::GCPad(const unsigned int index) : m_index(index)
 		m_buttons->controls.emplace_back(new ControlGroup::Input(named_buttons[i]));
 
 	// sticks
-	groups.emplace_back(m_main_stick = new AnalogStick(_trans("Main Stick")));
-	groups.emplace_back(m_c_stick = new AnalogStick(_trans("C-Stick")));
+	groups.emplace_back(m_main_stick = new AnalogStick(_trans("Main Stick"), DEFAULT_PAD_STICK_RADIUS));
+	groups.emplace_back(m_c_stick = new AnalogStick(_trans("C-Stick"), DEFAULT_PAD_STICK_RADIUS));
 
 	// triggers
 	groups.emplace_back(m_triggers = new MixedTriggers(_trans("Triggers")));
@@ -89,7 +92,7 @@ std::string GCPad::GetName() const
 
 void GCPad::GetInput(GCPadStatus* const pad)
 {
-	double x, y, triggers[2];
+	ControlState x, y, triggers[2];
 
 	// buttons
 	m_buttons->GetState(&pad->button, button_bitmasks);
@@ -103,23 +106,23 @@ void GCPad::GetInput(GCPadStatus* const pad)
 
 	// sticks
 	m_main_stick->GetState(&x, &y);
-	pad->stickX = GCPadStatus::MAIN_STICK_CENTER_X + (x * GCPadStatus::MAIN_STICK_RADIUS);
-	pad->stickY = GCPadStatus::MAIN_STICK_CENTER_Y + (y * GCPadStatus::MAIN_STICK_RADIUS);
+	pad->stickX = static_cast<u8>(GCPadStatus::MAIN_STICK_CENTER_X + (x * GCPadStatus::MAIN_STICK_RADIUS));
+	pad->stickY = static_cast<u8>(GCPadStatus::MAIN_STICK_CENTER_Y + (y * GCPadStatus::MAIN_STICK_RADIUS));
 
 	m_c_stick->GetState(&x, &y);
-	pad->substickX = GCPadStatus::C_STICK_CENTER_X + (x * GCPadStatus::C_STICK_RADIUS);
-	pad->substickY = GCPadStatus::C_STICK_CENTER_Y + (y * GCPadStatus::C_STICK_RADIUS);
+	pad->substickX = static_cast<u8>(GCPadStatus::C_STICK_CENTER_X + (x * GCPadStatus::C_STICK_RADIUS));
+	pad->substickY = static_cast<u8>(GCPadStatus::C_STICK_CENTER_Y + (y * GCPadStatus::C_STICK_RADIUS));
 
 	// triggers
 	m_triggers->GetState(&pad->button, trigger_bitmasks, triggers);
-	pad->triggerLeft = triggers[0] * 0xFF;
-	pad->triggerRight = triggers[1] * 0xFF;
+	pad->triggerLeft = static_cast<u8>(triggers[0] * 0xFF);
+	pad->triggerRight = static_cast<u8>(triggers[1] * 0xFF);
 }
 
 void GCPad::SetMotor(const u8 on)
 {
-	float state = (float)on / 255;
-	float force = abs(state - 0.5f) * 2;
+	ControlState state = static_cast<ControlState>(on) / 255;
+	ControlState force = abs(state - 0.5) * 2;
 	if (state < 0.5)
 		force = -force;
 

@@ -223,7 +223,7 @@ void CCodeWindow::OnSymbolsMenu(wxCommandEvent& event)
 
 	std::string existing_map_file, writable_map_file;
 	bool map_exists = CBoot::FindMapFile(&existing_map_file,
-		&writable_map_file);
+	                                     &writable_map_file);
 	switch (event.GetId())
 	{
 	case IDM_CLEARSYMBOLS:
@@ -232,7 +232,7 @@ void CCodeWindow::OnSymbolsMenu(wxCommandEvent& event)
 		Host_NotifyMapLoaded();
 		break;
 	case IDM_SCANFUNCTIONS:
-	{
+		{
 		PPCAnalyst::FindFunctions(0x80000000, 0x81800000, &g_symbolDB);
 		SignatureDB db;
 		if (db.Load(File::GetSysDirectory() + TOTALDB))
@@ -248,7 +248,7 @@ void CCodeWindow::OnSymbolsMenu(wxCommandEvent& event)
 		// Update GUI
 		NotifyMapLoaded();
 		break;
-	}
+		}
 	case IDM_LOADMAPFILE:
 		if (!map_exists)
 		{
@@ -275,78 +275,78 @@ void CCodeWindow::OnSymbolsMenu(wxCommandEvent& event)
 		break;
 
 	case IDM_RENAME_SYMBOLS:
-	{
-		const wxString path = wxFileSelector(
-			_("Apply signature file"), wxEmptyString,
-			wxEmptyString, wxEmptyString,
-			"Dolphin Symbol Rename File (*.sym)|*.sym",
-			wxFD_OPEN | wxFD_FILE_MUST_EXIST, this);
-
-		if (!path.IsEmpty())
 		{
-			std::ifstream f;
-			OpenFStream(f, WxStrToStr(path), std::ios_base::in);
+			const wxString path = wxFileSelector(
+				_("Apply signature file"), wxEmptyString,
+				wxEmptyString, wxEmptyString,
+				"Dolphin Symbol Rename File (*.sym)|*.sym",
+				wxFD_OPEN | wxFD_FILE_MUST_EXIST, this);
 
-			std::string line;
-			while (std::getline(f, line))
+			if (!path.IsEmpty())
 			{
-				if (line.length() < 12)
-					continue;
+				std::ifstream f;
+				OpenFStream(f, WxStrToStr(path), std::ios_base::in);
 
-				u32 address, type;
-				std::string name;
+				std::string line;
+				while (std::getline(f, line))
+				{
+					if (line.length() < 12)
+						continue;
 
-				std::istringstream ss(line);
-				ss >> std::hex >> address >> std::dec >> type >> name;
+					u32 address, type;
+					std::string name;
 
-				Symbol *symbol = g_symbolDB.GetSymbolFromAddr(address);
-				if (symbol)
-					symbol->name = line.substr(12);
+					std::istringstream ss(line);
+					ss >> std::hex >> address >> std::dec >> type >> name;
+
+					Symbol *symbol = g_symbolDB.GetSymbolFromAddr(address);
+					if (symbol)
+						symbol->name = line.substr(12);
+				}
+
+				Host_NotifyMapLoaded();
 			}
-
-			Host_NotifyMapLoaded();
 		}
-	}
 		break;
 
 	case IDM_CREATESIGNATUREFILE:
-	{
-		wxTextEntryDialog input_prefix(
-			this,
-			_("Only export symbols with prefix:\n(Blank for all symbols)"),
-			wxGetTextFromUserPromptStr,
-			wxEmptyString);
-
-		if (input_prefix.ShowModal() == wxID_OK)
 		{
-			std::string prefix(WxStrToStr(input_prefix.GetValue()));
+			wxTextEntryDialog input_prefix(
+				this,
+				_("Only export symbols with prefix:\n(Blank for all symbols)"),
+				wxGetTextFromUserPromptStr,
+				wxEmptyString);
 
+			if (input_prefix.ShowModal() == wxID_OK)
+			{
+				std::string prefix(WxStrToStr(input_prefix.GetValue()));
+
+				wxString path = wxFileSelector(
+					_("Save signature as"), wxEmptyString, wxEmptyString, wxEmptyString,
+					"Dolphin Signature File (*.dsy)|*.dsy;", wxFD_SAVE,
+					this);
+				if (!path.IsEmpty())
+				{
+					SignatureDB db;
+					db.Initialize(&g_symbolDB, prefix);
+					db.Save(WxStrToStr(path));
+				}
+			}
+		}
+		break;
+	case IDM_USESIGNATUREFILE:
+		{
 			wxString path = wxFileSelector(
-				_("Save signature as"), wxEmptyString, wxEmptyString, wxEmptyString,
-				"Dolphin Signature File (*.dsy)|*.dsy;", wxFD_SAVE,
+				_("Apply signature file"), wxEmptyString, wxEmptyString, wxEmptyString,
+				"Dolphin Signature File (*.dsy)|*.dsy;", wxFD_OPEN | wxFD_FILE_MUST_EXIST,
 				this);
 			if (!path.IsEmpty())
 			{
 				SignatureDB db;
-				db.Initialize(&g_symbolDB, prefix);
-				db.Save(WxStrToStr(path));
+				db.Load(WxStrToStr(path));
+				db.Apply(&g_symbolDB);
 			}
 		}
-	}
-		break;
-	case IDM_USESIGNATUREFILE:
-	{
-		wxString path = wxFileSelector(
-			_("Apply signature file"), wxEmptyString, wxEmptyString, wxEmptyString,
-			"Dolphin Signature File (*.dsy)|*.dsy;", wxFD_OPEN | wxFD_FILE_MUST_EXIST,
-			this);
-		if (!path.IsEmpty())
-		{
-			SignatureDB db;
-			db.Load(WxStrToStr(path));
-			db.Apply(&g_symbolDB);
-		}
-	}
 		NotifyMapLoaded();
 		break;
 	case IDM_PATCHHLEFUNCTIONS:
@@ -377,7 +377,8 @@ void CCodeWindow::NotifyMapLoaded()
 void CCodeWindow::OnSymbolListChange(wxCommandEvent& event)
 {
 	int index = symbols->GetSelection();
-	if (index >= 0) {
+	if (index >= 0)
+	{
 		Symbol* pSymbol = static_cast<Symbol *>(symbols->GetClientData(index));
 		if (pSymbol != nullptr)
 		{
@@ -405,7 +406,7 @@ void CCodeWindow::OnChangeFont(wxCommandEvent& event)
 	data.SetInitialFont(DebuggerFont);
 
 	wxFontDialog dialog(this, data);
-	if (dialog.ShowModal() == wxID_OK)
+	if ( dialog.ShowModal() == wxID_OK )
 		DebuggerFont = dialog.GetFontData().GetChosenFont();
 }
 
@@ -436,8 +437,8 @@ void CCodeWindow::ToggleCodeWindow(bool bShow)
 {
 	if (bShow)
 		Parent->DoAddPage(this,
-		iNbAffiliation[IDM_CODEWINDOW - IDM_LOGWINDOW],
-		Parent->bFloatWindow[IDM_CODEWINDOW - IDM_LOGWINDOW]);
+		        iNbAffiliation[IDM_CODEWINDOW - IDM_LOGWINDOW],
+		        Parent->bFloatWindow[IDM_CODEWINDOW - IDM_LOGWINDOW]);
 	else // Hide
 		Parent->DoRemovePage(this);
 }
@@ -450,8 +451,8 @@ void CCodeWindow::ToggleRegisterWindow(bool bShow)
 		if (!m_RegisterWindow)
 			m_RegisterWindow = new CRegisterWindow(Parent, IDM_REGISTERWINDOW);
 		Parent->DoAddPage(m_RegisterWindow,
-			iNbAffiliation[IDM_REGISTERWINDOW - IDM_LOGWINDOW],
-			Parent->bFloatWindow[IDM_REGISTERWINDOW - IDM_LOGWINDOW]);
+		        iNbAffiliation[IDM_REGISTERWINDOW - IDM_LOGWINDOW],
+		        Parent->bFloatWindow[IDM_REGISTERWINDOW - IDM_LOGWINDOW]);
 	}
 	else // Close
 	{
@@ -468,8 +469,8 @@ void CCodeWindow::ToggleBreakPointWindow(bool bShow)
 		if (!m_BreakpointWindow)
 			m_BreakpointWindow = new CBreakPointWindow(this, Parent, IDM_BREAKPOINTWINDOW);
 		Parent->DoAddPage(m_BreakpointWindow,
-			iNbAffiliation[IDM_BREAKPOINTWINDOW - IDM_LOGWINDOW],
-			Parent->bFloatWindow[IDM_BREAKPOINTWINDOW - IDM_LOGWINDOW]);
+		        iNbAffiliation[IDM_BREAKPOINTWINDOW - IDM_LOGWINDOW],
+		        Parent->bFloatWindow[IDM_BREAKPOINTWINDOW - IDM_LOGWINDOW]);
 	}
 	else // Close
 	{
@@ -486,8 +487,8 @@ void CCodeWindow::ToggleMemoryWindow(bool bShow)
 		if (!m_MemoryWindow)
 			m_MemoryWindow = new CMemoryWindow(Parent, IDM_MEMORYWINDOW);
 		Parent->DoAddPage(m_MemoryWindow,
-			iNbAffiliation[IDM_MEMORYWINDOW - IDM_LOGWINDOW],
-			Parent->bFloatWindow[IDM_MEMORYWINDOW - IDM_LOGWINDOW]);
+		        iNbAffiliation[IDM_MEMORYWINDOW - IDM_LOGWINDOW],
+		        Parent->bFloatWindow[IDM_MEMORYWINDOW - IDM_LOGWINDOW]);
 	}
 	else // Close
 	{
@@ -504,8 +505,8 @@ void CCodeWindow::ToggleJitWindow(bool bShow)
 		if (!m_JitWindow)
 			m_JitWindow = new CJitWindow(Parent, IDM_JITWINDOW);
 		Parent->DoAddPage(m_JitWindow,
-			iNbAffiliation[IDM_JITWINDOW - IDM_LOGWINDOW],
-			Parent->bFloatWindow[IDM_JITWINDOW - IDM_LOGWINDOW]);
+		        iNbAffiliation[IDM_JITWINDOW - IDM_LOGWINDOW],
+		        Parent->bFloatWindow[IDM_JITWINDOW - IDM_LOGWINDOW]);
 	}
 	else // Close
 	{
@@ -523,8 +524,8 @@ void CCodeWindow::ToggleSoundWindow(bool bShow)
 		if (!m_SoundWindow)
 			m_SoundWindow = new DSPDebuggerLLE(Parent, IDM_SOUNDWINDOW);
 		Parent->DoAddPage(m_SoundWindow,
-			iNbAffiliation[IDM_SOUNDWINDOW - IDM_LOGWINDOW],
-			Parent->bFloatWindow[IDM_SOUNDWINDOW - IDM_LOGWINDOW]);
+		       iNbAffiliation[IDM_SOUNDWINDOW - IDM_LOGWINDOW],
+		        Parent->bFloatWindow[IDM_SOUNDWINDOW - IDM_LOGWINDOW]);
 	}
 	else // Close
 	{
@@ -541,8 +542,8 @@ void CCodeWindow::ToggleVideoWindow(bool bShow)
 		if (!m_VideoWindow)
 			m_VideoWindow = new GFXDebuggerPanel(Parent, IDM_VIDEOWINDOW);
 		Parent->DoAddPage(m_VideoWindow,
-			iNbAffiliation[IDM_VIDEOWINDOW - IDM_LOGWINDOW],
-			Parent->bFloatWindow[IDM_VIDEOWINDOW - IDM_LOGWINDOW]);
+		        iNbAffiliation[IDM_VIDEOWINDOW - IDM_LOGWINDOW],
+		        Parent->bFloatWindow[IDM_VIDEOWINDOW - IDM_LOGWINDOW]);
 	}
 	else // Close
 	{

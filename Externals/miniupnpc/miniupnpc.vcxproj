@@ -20,12 +20,11 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{A680190D-0764-485B-9CF3-A82C5EDD5715}</ProjectGuid>
-    <RootNamespace>miniupnpc</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <PlatformToolset>v120_xp</PlatformToolset>
+    <PlatformToolset>v120</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)'=='Debug'" Label="Configuration">
@@ -40,6 +39,7 @@
   <ImportGroup Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\..\Source\VSProps\Base.props" />
+    <Import Project="..\..\Source\VSProps\ClDisableAllWarnings.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <ItemGroup>
@@ -70,7 +70,6 @@
     <ClCompile Include="src\minixml.c" />
     <ClCompile Include="src\portlistingparse.c" />
     <ClCompile Include="src\receivedata.c" />
-    <ClCompile Include="src\upnpc.c" />
     <ClCompile Include="src\upnpcommands.c" />
     <ClCompile Include="src\upnperrors.c" />
     <ClCompile Include="src\upnpreplyparse.c" />

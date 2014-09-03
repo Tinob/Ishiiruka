@@ -17,7 +17,6 @@
     <ClCompile Include="..\pngwtran.c" />
     <ClCompile Include="..\pngwutil.c" />
     <ClCompile Include="..\pnggccrd.c" />
-    <ClCompile Include="..\pngtest.c" />
     <ClCompile Include="..\pngvcrd.c" />
   </ItemGroup>
   <ItemGroup>

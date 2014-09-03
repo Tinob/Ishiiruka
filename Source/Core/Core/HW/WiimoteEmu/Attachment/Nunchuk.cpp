@@ -36,7 +36,7 @@ Nunchuk::Nunchuk(WiimoteEmu::ExtensionReg& _reg) : Attachment(_trans("Nunchuk"),
 	m_buttons->controls.emplace_back(new ControlGroup::Input("Z"));
 
 	// stick
-	groups.emplace_back(m_stick = new AnalogStick("Stick"));
+	groups.emplace_back(m_stick = new AnalogStick("Stick", DEFAULT_ATTACHMENT_STICK_RADIUS));
 
 	// swing
 	groups.emplace_back(m_swing = new Force("Swing"));
@@ -74,7 +74,8 @@ void Nunchuk::GetState(u8* const data)
 	cal_js[0] = cal.jx;
 	cal_js[1] = cal.jy;
 
-	for (int i = 0; i < 2; i++) {
+	for (int i = 0; i < 2; i++)
+	{
 		double &s = state[i];
 		nu_js c = cal_js[i];
 		if (s < 0)

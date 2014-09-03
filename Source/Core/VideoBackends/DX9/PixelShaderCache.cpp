@@ -196,8 +196,27 @@ static LPDIRECT3DPIXELSHADER9 CreateCopyShader(int copyMatrixType, int depthConv
 	{
 		// Watch out for the fire fumes effect in Metroid it's really sensitive to this,
 		// the lighting in RE0 is also way beyond sensitive since the "good value" is hardcoded and Dolphin is almost always off.
-		WRITE(p, "float4 EncodedDepth = frac(texcol.r * (16777215.f/16777216.f) * float4(1.0f,256.0f,256.0f*256.0f,1.0f));\n"
-			"texcol = floor(EncodedDepth * float4(256.f,256.f,256.f,15.0f)) / float4(255.0f,255.0f,255.0f,15.0f);\n");
+		WRITE(p, // 255.99998474121 = 16777215/16777216*256
+			"	float workspace = texcol.x * 255.99998474121;\n"
+
+			"	texcol.x = floor(workspace);\n"         // x component
+
+			"	workspace = workspace - texcol.x;\n"    // subtract x component out
+			"	workspace = workspace * 256.0;\n"       // shift left 8 bits
+			"	texcol.y = floor(workspace);\n"         // y component
+
+			"	workspace = workspace - texcol.y;\n"    // subtract y component out
+			"	workspace = workspace * 256.0;\n"       // shift left 8 bits
+			"	texcol.z = floor(workspace);\n"         // z component
+
+			"	texcol.w = texcol.x;\n"                 // duplicate x into w
+
+			"	texcol = texcol / 255.0;\n"             // normalize components to [0.0..1.0]
+
+			"	texcol.w = texcol.w * 15.0;\n"
+			"	texcol.w = floor(texcol.w);\n"
+			"	texcol.w = texcol.w / 15.0;\n"          // w component
+			);
 	}
 	else
 	{

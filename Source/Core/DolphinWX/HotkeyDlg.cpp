@@ -29,30 +29,27 @@
 
 class wxWindow;
 
-BEGIN_EVENT_TABLE(HotkeyConfigDialog, wxDialog)
-EVT_COMMAND_RANGE(0, NUM_HOTKEYS - 1, wxEVT_BUTTON, HotkeyConfigDialog::OnButtonClick)
-EVT_TIMER(wxID_ANY, HotkeyConfigDialog::OnButtonTimer)
+BEGIN_EVENT_TABLE(HotkeyConfigDialog,wxDialog)
+	EVT_COMMAND_RANGE(0, NUM_HOTKEYS - 1, wxEVT_BUTTON, HotkeyConfigDialog::OnButtonClick)
+	EVT_TIMER(wxID_ANY, HotkeyConfigDialog::OnButtonTimer)
 END_EVENT_TABLE()
 
 HotkeyConfigDialog::HotkeyConfigDialog(wxWindow *parent, wxWindowID id, const wxString &title,
-const wxPoint &position, const wxSize& size, long style)
+		const wxPoint &position, const wxSize& size, long style)
 : wxDialog(parent, id, title, position, size, style)
+, m_ButtonMappingTimer(this)
 {
 	CreateHotkeyGUIControls();
 
-#if wxUSE_TIMER
-	m_ButtonMappingTimer = new wxTimer(this, wxID_ANY);
 	g_Pressed = 0;
 	g_Modkey = 0;
 	ClickedButton = nullptr;
 	GetButtonWaitingID = 0;
 	GetButtonWaitingTimer = 0;
-#endif
 }
 
 HotkeyConfigDialog::~HotkeyConfigDialog()
 {
-	delete m_ButtonMappingTimer;
 }
 
 // Save keyboard key mapping
@@ -62,10 +59,10 @@ void HotkeyConfigDialog::SaveButtonMapping(int Id, int Key, int Modkey)
 	SConfig::GetInstance().m_LocalCoreStartupParameter.iHotkeyModifier[Id] = Modkey;
 }
 
-void HotkeyConfigDialog::EndGetButtons(void)
+void HotkeyConfigDialog::EndGetButtons()
 {
 	wxTheApp->Unbind(wxEVT_KEY_DOWN, &HotkeyConfigDialog::OnKeyDown, this);
-	m_ButtonMappingTimer->Stop();
+	m_ButtonMappingTimer.Stop();
 	GetButtonWaitingTimer = 0;
 	GetButtonWaitingID = 0;
 	ClickedButton = nullptr;
@@ -114,8 +111,8 @@ void HotkeyConfigDialog::OnKeyDown(wxKeyEvent& event)
 
 			// Proceed to apply the binding to the selected button.
 			SetButtonText(ClickedButton->GetId(),
-				InputCommon::WXKeyToString(g_Pressed),
-				InputCommon::WXKeymodToString(g_Modkey));
+					InputCommon::WXKeyToString(g_Pressed),
+					InputCommon::WXKeymodToString(g_Modkey));
 			SaveButtonMapping(ClickedButton->GetId(), g_Pressed, g_Modkey);
 		}
 		EndGetButtons();
@@ -135,19 +132,17 @@ void HotkeyConfigDialog::DoGetButtons(int _GetId)
 	const int TimesPerSecond = 40; // How often to run the check
 
 	// If the Id has changed or the timer is not running we should start one
-	if (GetButtonWaitingID != _GetId || !m_ButtonMappingTimer->IsRunning())
+	if ( GetButtonWaitingID != _GetId || !m_ButtonMappingTimer.IsRunning() )
 	{
-		if (m_ButtonMappingTimer->IsRunning())
-			m_ButtonMappingTimer->Stop();
+		if (m_ButtonMappingTimer.IsRunning())
+			m_ButtonMappingTimer.Stop();
 
 		// Save the button Id
 		GetButtonWaitingID = _GetId;
 		GetButtonWaitingTimer = 0;
 
 		// Start the timer
-#if wxUSE_TIMER
-		m_ButtonMappingTimer->Start(1000 / TimesPerSecond);
-#endif
+		m_ButtonMappingTimer.Start(1000 / TimesPerSecond);
 	}
 
 	// Process results
@@ -177,7 +172,7 @@ void HotkeyConfigDialog::OnButtonClick(wxCommandEvent& event)
 {
 	event.Skip();
 
-	if (m_ButtonMappingTimer->IsRunning())
+	if (m_ButtonMappingTimer.IsRunning())
 		return;
 
 	wxTheApp->Bind(wxEVT_KEY_DOWN, &HotkeyConfigDialog::OnKeyDown, this);
@@ -194,7 +189,7 @@ void HotkeyConfigDialog::OnButtonClick(wxCommandEvent& event)
 
 #define HOTKEY_NUM_COLUMNS 2
 
-void HotkeyConfigDialog::CreateHotkeyGUIControls(void)
+void HotkeyConfigDialog::CreateHotkeyGUIControls()
 {
 	const wxString pageNames[] =
 	{
@@ -274,10 +269,10 @@ void HotkeyConfigDialog::CreateHotkeyGUIControls(void)
 		_("Load State"),
 	};
 
-	const int page_breaks[3] = { HK_OPEN, HK_LOAD_STATE_SLOT_1, NUM_HOTKEYS };
+	const int page_breaks[3] = {HK_OPEN, HK_LOAD_STATE_SLOT_1, NUM_HOTKEYS};
 
 	// Configuration controls sizes
-	wxSize size(100, 20);
+	wxSize size(100,20);
 	// A small type font
 	wxFont m_SmallFont(7, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
 
@@ -301,9 +296,9 @@ void HotkeyConfigDialog::CreateHotkeyGUIControls(void)
 			sHotkeys->Add(HeaderSizer, wxGBPosition(0, i), wxDefaultSpan, wxEXPAND | wxLEFT, (i > 0) ? 30 : 1);
 		}
 
-		int column_break = (page_breaks[j + 1] + page_breaks[j] + 1) / 2;
+		int column_break = (page_breaks[j+1] + page_breaks[j] + 1) / 2;
 
-		for (int i = page_breaks[j]; i < page_breaks[j + 1]; i++)
+		for (int i = page_breaks[j]; i < page_breaks[j+1]; i++)
 		{
 			// Text for the action
 			wxStaticText *stHotkeys = new wxStaticText(Page, wxID_ANY, hkText[i]);
@@ -313,17 +308,17 @@ void HotkeyConfigDialog::CreateHotkeyGUIControls(void)
 			m_Button_Hotkeys[i]->SetFont(m_SmallFont);
 			m_Button_Hotkeys[i]->SetToolTip(_("Left click to detect hotkeys.\nEnter space to clear."));
 			SetButtonText(i,
-				InputCommon::WXKeyToString(SConfig::GetInstance().m_LocalCoreStartupParameter.iHotkey[i]),
-				InputCommon::WXKeymodToString(
-				SConfig::GetInstance().m_LocalCoreStartupParameter.iHotkeyModifier[i]));
+					InputCommon::WXKeyToString(SConfig::GetInstance().m_LocalCoreStartupParameter.iHotkey[i]),
+					InputCommon::WXKeymodToString(
+						SConfig::GetInstance().m_LocalCoreStartupParameter.iHotkeyModifier[i]));
 
 			wxBoxSizer *sHotkey = new wxBoxSizer(wxHORIZONTAL);
 			sHotkey->Add(stHotkeys, 1, wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL | wxALL, 2);
 			sHotkey->Add(m_Button_Hotkeys[i], 0, wxALL, 2);
 			sHotkeys->Add(sHotkey,
-				wxGBPosition((i < column_break) ? i - page_breaks[j] + 1 : i - column_break + 1,
-				(i < column_break) ? 0 : 1),
-				wxDefaultSpan, wxEXPAND | wxLEFT, (i < column_break) ? 1 : 30);
+					wxGBPosition((i < column_break) ? i - page_breaks[j] + 1 : i - column_break + 1,
+						(i < column_break) ? 0 : 1),
+					wxDefaultSpan, wxEXPAND | wxLEFT, (i < column_break) ? 1 : 30);
 		}
 
 		wxStaticBoxSizer *sHotkeyBox = new wxStaticBoxSizer(wxVERTICAL, Page, _("Hotkeys"));

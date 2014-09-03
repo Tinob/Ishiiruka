@@ -34,9 +34,12 @@ struct CodeOp //16B
 	bool wantsCR0;
 	bool wantsCR1;
 	bool wantsPS1;
+	bool wantsFPRF;
 	bool outputCR0;
 	bool outputCR1;
 	bool outputPS1;
+	bool outputFPRF;
+	bool canEndBlock;
 	bool skip;  // followed BL-s for example
 };
 
@@ -60,9 +63,11 @@ struct BlockRegStats
 	bool anyTimer;
 
 	int GetTotalNumAccesses(int reg) {return numReads[reg] + numWrites[reg];}
-	int GetUseRange(int reg) {
+	int GetUseRange(int reg)
+	{
 		return std::max(lastRead[reg], lastWrite[reg]) -
-			   std::min(firstRead[reg], firstWrite[reg]);}
+			   std::min(firstRead[reg], firstWrite[reg]);
+	}
 
 	inline void SetInputRegister(int reg, short opindex)
 	{

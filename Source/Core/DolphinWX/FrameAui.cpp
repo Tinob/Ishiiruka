@@ -50,8 +50,8 @@
 void CFrame::OnManagerResize(wxAuiManagerEvent& event)
 {
 	if (!g_pCodeWindow && m_LogWindow &&
-		m_Mgr->GetPane("Pane 1").IsShown() &&
-		!m_Mgr->GetPane("Pane 1").IsFloating())
+			m_Mgr->GetPane("Pane 1").IsShown() &&
+			!m_Mgr->GetPane("Pane 1").IsFloating())
 	{
 		m_LogWindow->x = m_Mgr->GetPane("Pane 1").rect.GetWidth();
 		m_LogWindow->y = m_Mgr->GetPane("Pane 1").rect.GetHeight();
@@ -70,7 +70,7 @@ void CFrame::OnPaneClose(wxAuiManagerEvent& event)
 	if (!g_pCodeWindow)
 	{
 		if (nb->GetPage(0)->GetId() == IDM_LOGWINDOW ||
-			nb->GetPage(0)->GetId() == IDM_LOGCONFIGWINDOW)
+		    nb->GetPage(0)->GetId() == IDM_LOGCONFIGWINDOW)
 		{
 
 			SConfig::GetInstance().m_InterfaceLogWindow = false;
@@ -84,12 +84,12 @@ void CFrame::OnPaneClose(wxAuiManagerEvent& event)
 		if (GetNotebookCount() == 1)
 		{
 			wxMessageBox(_("At least one pane must remain open."),
-				_("Notice"), wxOK, this);
+					_("Notice"), wxOK, this);
 		}
 		else if (nb->GetPageCount() != 0 && !nb->GetPageText(0).IsSameAs("<>"))
 		{
 			wxMessageBox(_("You can't close panes that have pages in them."),
-				_("Notice"), wxOK, this);
+					_("Notice"), wxOK, this);
 		}
 		else
 		{
@@ -120,8 +120,8 @@ void CFrame::ToggleLogWindow(bool bShow)
 		m_LogWindow->Enable();
 
 		DoAddPage(m_LogWindow,
-			g_pCodeWindow ? g_pCodeWindow->iNbAffiliation[0] : 0,
-			g_pCodeWindow ? bFloatWindow[0] : false);
+				g_pCodeWindow ? g_pCodeWindow->iNbAffiliation[0] : 0,
+				g_pCodeWindow ? bFloatWindow[0] : false);
 	}
 	else
 	{
@@ -146,8 +146,8 @@ void CFrame::ToggleLogConfigWindow(bool bShow)
 
 		const int nbIndex = IDM_LOGCONFIGWINDOW - IDM_LOGWINDOW;
 		DoAddPage(m_LogConfigWindow,
-			g_pCodeWindow ? g_pCodeWindow->iNbAffiliation[nbIndex] : 0,
-			g_pCodeWindow ? bFloatWindow[nbIndex] : false);
+				g_pCodeWindow ? g_pCodeWindow->iNbAffiliation[nbIndex] : 0,
+				g_pCodeWindow ? bFloatWindow[nbIndex] : false);
 	}
 	else
 	{
@@ -166,34 +166,34 @@ void CFrame::OnToggleWindow(wxCommandEvent& event)
 
 	switch (event.GetId())
 	{
-	case IDM_LOGWINDOW:
-		if (!g_pCodeWindow)
-			SConfig::GetInstance().m_InterfaceLogWindow = bShow;
-		ToggleLogWindow(bShow);
-		break;
-	case IDM_LOGCONFIGWINDOW:
-		if (!g_pCodeWindow)
-			SConfig::GetInstance().m_InterfaceLogConfigWindow = bShow;
-		ToggleLogConfigWindow(bShow);
-		break;
-	case IDM_REGISTERWINDOW:
-		g_pCodeWindow->ToggleRegisterWindow(bShow);
-		break;
-	case IDM_BREAKPOINTWINDOW:
-		g_pCodeWindow->ToggleBreakPointWindow(bShow);
-		break;
-	case IDM_MEMORYWINDOW:
-		g_pCodeWindow->ToggleMemoryWindow(bShow);
-		break;
-	case IDM_JITWINDOW:
-		g_pCodeWindow->ToggleJitWindow(bShow);
-		break;
-	case IDM_SOUNDWINDOW:
-		g_pCodeWindow->ToggleSoundWindow(bShow);
-		break;
-	case IDM_VIDEOWINDOW:
-		g_pCodeWindow->ToggleVideoWindow(bShow);
-		break;
+		case IDM_LOGWINDOW:
+			if (!g_pCodeWindow)
+				SConfig::GetInstance().m_InterfaceLogWindow = bShow;
+			ToggleLogWindow(bShow);
+			break;
+		case IDM_LOGCONFIGWINDOW:
+			if (!g_pCodeWindow)
+				SConfig::GetInstance().m_InterfaceLogConfigWindow = bShow;
+			ToggleLogConfigWindow(bShow);
+			break;
+		case IDM_REGISTERWINDOW:
+			g_pCodeWindow->ToggleRegisterWindow(bShow);
+			break;
+		case IDM_BREAKPOINTWINDOW:
+			g_pCodeWindow->ToggleBreakPointWindow(bShow);
+			break;
+		case IDM_MEMORYWINDOW:
+			g_pCodeWindow->ToggleMemoryWindow(bShow);
+			break;
+		case IDM_JITWINDOW:
+			g_pCodeWindow->ToggleJitWindow(bShow);
+			break;
+		case IDM_SOUNDWINDOW:
+			g_pCodeWindow->ToggleSoundWindow(bShow);
+			break;
+		case IDM_VIDEOWINDOW:
+			g_pCodeWindow->ToggleVideoWindow(bShow);
+			break;
 	}
 }
 
@@ -303,7 +303,7 @@ void CFrame::DoFloatNotebookPage(wxWindowID Id)
 			nb->RemovePage(nb->GetPageIndex(Win));
 			// Create the parent frame and reparent the window
 			CreateParentFrame(Win->GetId() + IDM_LOGWINDOW_PARENT - IDM_LOGWINDOW,
-				Win->GetName(), Win);
+					Win->GetName(), Win);
 			if (nb->GetPageCount() == 0)
 				AddRemoveBlankPage();
 		}
@@ -329,7 +329,7 @@ void CFrame::OnTab(wxAuiNotebookEvent& event)
 	// Create the popup menu
 	wxMenu* MenuPopup = new wxMenu;
 
-	wxMenuItem* Item = new wxMenuItem(MenuPopup, wxID_ANY, _("Select floating windows"));
+	wxMenuItem* Item =  new wxMenuItem(MenuPopup, wxID_ANY, _("Select floating windows"));
 	MenuPopup->Append(Item);
 	Item->Enable(false);
 	MenuPopup->Append(new wxMenuItem(MenuPopup));
@@ -340,7 +340,7 @@ void CFrame::OnTab(wxAuiNotebookEvent& event)
 		if (Win && Win->IsEnabled())
 		{
 			Item = new wxMenuItem(MenuPopup, i + IDM_FLOAT_LOGWINDOW - IDM_LOGWINDOW,
-				Win->GetName(), "", wxITEM_CHECK);
+					Win->GetName(), "", wxITEM_CHECK);
 			MenuPopup->Append(Item);
 			Item->Check(!!FindWindowById(i + IDM_LOGWINDOW_PARENT - IDM_LOGWINDOW));
 		}
@@ -415,7 +415,7 @@ void CFrame::DoRemovePage(wxWindow *Win, bool bHide)
 	if (!Win) return;
 
 	wxWindow *Parent = FindWindowById(Win->GetId() +
-		IDM_LOGWINDOW_PARENT - IDM_LOGWINDOW);
+			IDM_LOGWINDOW_PARENT - IDM_LOGWINDOW);
 
 	if (Parent)
 	{
@@ -461,7 +461,7 @@ void CFrame::DoAddPage(wxWindow *Win, int i, bool Float)
 	if (!Win) return;
 
 	// Ensure accessor remains within valid bounds.
-	if (i < 0 || i > GetNotebookCount() - 1)
+	if (i < 0 || i > GetNotebookCount()-1)
 		i = 0;
 
 	// The page was already previously added, no need to add it again.
@@ -472,208 +472,120 @@ void CFrame::DoAddPage(wxWindow *Win, int i, bool Float)
 		GetNotebookFromId(i)->AddPage(Win, Win->GetName(), true);
 	else
 		CreateParentFrame(Win->GetId() + IDM_LOGWINDOW_PARENT - IDM_LOGWINDOW,
-		Win->GetName(), Win);
+				Win->GetName(), Win);
 }
 
-// Toolbar
-void CFrame::OnDropDownSettingsToolbar(wxAuiToolBarEvent& event)
+void CFrame::PopulateSavedPerspectives()
 {
-	event.Skip();
-	ClearStatusBar();
+	// If the perspective submenu hasn't been created yet, return
+	if (!m_SavedPerspectives) return;
 
-	if (event.IsDropDownClicked())
+	// Delete all saved perspective menu items
+	while (m_SavedPerspectives->GetMenuItemCount() != 0)
 	{
-		wxAuiToolBar* Tb = static_cast<wxAuiToolBar*>(event.GetEventObject());
-		Tb->SetToolSticky(event.GetId(), true);
-
-		// Create the popup menu
-		wxMenu* menuPopup = new wxMenu;
-
-		wxMenuItem* Item = new wxMenuItem(menuPopup, IDM_PERSPECTIVES_ADD_PANE,
-			_("Add new pane"));
-		menuPopup->Append(Item);
-		menuPopup->Append(new wxMenuItem(menuPopup));
-		Item = new wxMenuItem(menuPopup, IDM_TAB_SPLIT, _("Tab split"), "", wxITEM_CHECK);
-		menuPopup->Append(Item);
-		Item->Check(m_bTabSplit);
-		Item = new wxMenuItem(menuPopup, IDM_NO_DOCKING, _("No docking"), "", wxITEM_CHECK);
-		menuPopup->Append(Item);
-		Item->Check(m_bNoDocking);
-
-		// Line up our menu with the button
-		wxRect rect = Tb->GetToolRect(event.GetId());
-		wxPoint Pt = Tb->ClientToScreen(rect.GetBottomLeft());
-		Pt = ScreenToClient(Pt);
-
-		// Show
-		PopupMenu(menuPopup, Pt);
-
-		// Make the button un-stuck again
-		if (!m_bEdit)
-		{
-			Tb->SetToolSticky(event.GetId(), false);
-		}
+		// Delete the first menu item in the list (while there are menu items)
+		m_SavedPerspectives->Delete(m_SavedPerspectives->FindItemByPosition(0));
 	}
-}
 
-void CFrame::OnDropDownToolbarItem(wxAuiToolBarEvent& event)
-{
-	event.Skip();
-	ClearStatusBar();
-
-	if (event.IsDropDownClicked())
+	if (Perspectives.size() > 0)
 	{
-		wxAuiToolBar* tb = static_cast<wxAuiToolBar*>(event.GetEventObject());
-		tb->SetToolSticky(event.GetId(), true);
-
-		// create the popup menu
-		wxMenu* menuPopup = new wxMenu;
-		wxMenuItem* Item = new wxMenuItem(menuPopup, IDM_ADD_PERSPECTIVE,
-			_("Create new perspective"));
-		menuPopup->Append(Item);
-
-		if (Perspectives.size() > 0)
+		for (u32 i = 0; i < Perspectives.size(); i++)
 		{
-			menuPopup->Append(new wxMenuItem(menuPopup));
-			for (u32 i = 0; i < Perspectives.size(); i++)
-			{
-				wxMenuItem* mItem = new wxMenuItem(menuPopup, IDM_PERSPECTIVES_0 + i,
+			wxMenuItem* mItem = new wxMenuItem(m_SavedPerspectives, IDM_PERSPECTIVES_0 + i,
 					StrToWxStr(Perspectives[i].Name), "", wxITEM_CHECK);
 
-				menuPopup->Append(mItem);
+			m_SavedPerspectives->Append(mItem);
 
-				if (i == ActivePerspective)
-				{
-					mItem->Check(true);
-				}
+			if (i == ActivePerspective)
+			{
+				mItem->Check(true);
 			}
 		}
-
-		// line up our menu with the button
-		wxRect rect = tb->GetToolRect(event.GetId());
-		wxPoint pt = tb->ClientToScreen(rect.GetBottomLeft());
-		pt = ScreenToClient(pt);
-
-		// show
-		PopupMenu(menuPopup, pt);
-
-		// make sure the button is "un-stuck"
-		tb->SetToolSticky(event.GetId(), false);
 	}
 }
 
-void CFrame::OnToolBar(wxCommandEvent& event)
+void CFrame::OnPerspectiveMenu(wxCommandEvent& event)
 {
 	ClearStatusBar();
 
 	switch (event.GetId())
 	{
-	case IDM_SAVE_PERSPECTIVE:
-		if (Perspectives.size() == 0)
-		{
-			wxMessageBox(_("Please create a perspective before saving"),
-				_("Notice"), wxOK, this);
-			return;
-		}
-		SaveIniPerspectives();
-		GetStatusBar()->SetStatusText(StrToWxStr(std::string
-			("Saved " + Perspectives[ActivePerspective].Name)), 0);
-		break;
-	case IDM_PERSPECTIVES_ADD_PANE:
-		AddPane();
-		break;
-	case IDM_EDIT_PERSPECTIVES:
-		m_bEdit = !m_bEdit;
-		m_ToolBarAui->SetToolSticky(IDM_EDIT_PERSPECTIVES, m_bEdit);
-		TogglePaneStyle(m_bEdit, IDM_EDIT_PERSPECTIVES);
-		break;
-	}
-}
-
-void CFrame::OnDropDownToolbarSelect(wxCommandEvent& event)
-{
-	ClearStatusBar();
-
-	switch (event.GetId())
-	{
-	case IDM_ADD_PERSPECTIVE:
-	{
-		wxTextEntryDialog dlg(this,
-			_("Enter a name for the new perspective:"),
-			_("Create new perspective"));
-		wxString DefaultValue = wxString::Format(_("Perspective %d"),
-			Perspectives.size() + 1);
-		dlg.SetValue(DefaultValue);
-
-		int Return = 0;
-		bool DlgOk = false;
-
-		while (!DlgOk)
-		{
-			Return = dlg.ShowModal();
-			if (Return == wxID_CANCEL)
+		case IDM_SAVE_PERSPECTIVE:
+			if (Perspectives.size() == 0)
 			{
+				wxMessageBox(_("Please create a perspective before saving"),
+						_("Notice"), wxOK, this);
 				return;
 			}
-			else if (dlg.GetValue().Find(",") != -1)
+			SaveIniPerspectives();
+			GetStatusBar()->SetStatusText(StrToWxStr(std::string
+						("Saved " + Perspectives[ActivePerspective].Name)), 0);
+			break;
+		case IDM_PERSPECTIVES_ADD_PANE:
+			AddPane();
+			break;
+		case IDM_EDIT_PERSPECTIVES:
+			m_bEdit = event.IsChecked();
+			TogglePaneStyle(m_bEdit, IDM_EDIT_PERSPECTIVES);
+			break;
+		case IDM_ADD_PERSPECTIVE:
 			{
-				wxMessageBox(_("The name can not contain the character ','"),
-					_("Notice"), wxOK, this);
-				wxString Str = dlg.GetValue();
-				Str.Replace(",", "", true);
-				dlg.SetValue(Str);
-			}
-			else if (dlg.GetValue().IsSameAs(""))
-			{
-				wxMessageBox(_("The name can not be empty"),
-					_("Notice"), wxOK, this);
+				wxTextEntryDialog dlg(this,
+						_("Enter a name for the new perspective:"),
+						_("Create new perspective"));
+				wxString DefaultValue = wxString::Format(_("Perspective %d"), (int)(Perspectives.size() + 1));
 				dlg.SetValue(DefaultValue);
+
+				int Return = 0;
+				bool DlgOk = false;
+
+				while (!DlgOk)
+				{
+					Return = dlg.ShowModal();
+					if (Return == wxID_CANCEL)
+					{
+						return;
+					}
+					else if (dlg.GetValue().Find(",") != -1)
+					{
+						wxMessageBox(_("The name can not contain the character ','"),
+								_("Notice"), wxOK, this);
+						wxString Str = dlg.GetValue();
+						Str.Replace(",", "", true);
+						dlg.SetValue(Str);
+					}
+					else if (dlg.GetValue().IsSameAs(""))
+					{
+						wxMessageBox(_("The name can not be empty"),
+								_("Notice"), wxOK, this);
+						dlg.SetValue(DefaultValue);
+					}
+					else
+					{
+						DlgOk = true;
+					}
+				}
+
+				SPerspectives Tmp;
+				Tmp.Name = WxStrToStr(dlg.GetValue());
+				Tmp.Perspective = m_Mgr->SavePerspective();
+
+				ActivePerspective = (u32)Perspectives.size();
+				Perspectives.push_back(Tmp);
+
+				UpdateCurrentPerspective();
+				PopulateSavedPerspectives();
 			}
-			else
-			{
-				DlgOk = true;
-			}
-		}
-
-		SPerspectives Tmp;
-		Tmp.Name = WxStrToStr(dlg.GetValue());
-		Tmp.Perspective = m_Mgr->SavePerspective();
-
-		ActivePerspective = (u32)Perspectives.size();
-		Perspectives.push_back(Tmp);
-
-		UpdateCurrentPerspective();
+			break;
+		case IDM_TAB_SPLIT:
+			m_bTabSplit = event.IsChecked();
+			ToggleNotebookStyle(m_bTabSplit, wxAUI_NB_TAB_SPLIT);
+			break;
+		case IDM_NO_DOCKING:
+			m_bNoDocking = event.IsChecked();
+			TogglePaneStyle(m_bNoDocking, IDM_NO_DOCKING);
+			break;
 	}
-		break;
-	case IDM_TAB_SPLIT:
-		m_bTabSplit = event.IsChecked();
-		ToggleNotebookStyle(m_bTabSplit, wxAUI_NB_TAB_SPLIT);
-		break;
-	case IDM_NO_DOCKING:
-		m_bNoDocking = event.IsChecked();
-		TogglePaneStyle(m_bNoDocking, IDM_NO_DOCKING);
-		break;
-	}
-}
-
-void CFrame::ResetToolbarStyle()
-{
-	wxAuiPaneInfoArray& AllPanes = m_Mgr->GetAllPanes();
-	for (int i = 0, Count = (int)AllPanes.GetCount(); i < Count; ++i)
-	{
-		wxAuiPaneInfo& Pane = AllPanes[i];
-		if (Pane.window->IsKindOf(CLASSINFO(wxAuiToolBar)))
-		{
-			Pane.Show();
-
-			// Show all of it
-			if (Pane.rect.GetLeft() > GetClientSize().GetX() - 50)
-			{
-				Pane.Position(GetClientSize().GetX() - Pane.window->GetClientSize().GetX());
-			}
-		}
-	}
-	m_Mgr->Update();
 }
 
 void CFrame::TogglePaneStyle(bool On, int EventId)
@@ -693,12 +605,12 @@ void CFrame::TogglePaneStyle(bool On, int EventId)
 
 			switch (EventId)
 			{
-			case IDM_EDIT_PERSPECTIVES:
-				Pane.CaptionVisible(On);
-				Pane.Movable(On);
-				Pane.Floatable(On);
-				Pane.Dockable(On);
-				break;
+				case IDM_EDIT_PERSPECTIVES:
+					Pane.CaptionVisible(On);
+					Pane.Movable(On);
+					Pane.Floatable(On);
+					Pane.Dockable(On);
+					break;
 			}
 			Pane.Dockable(!m_bNoDocking);
 		}
@@ -719,7 +631,7 @@ void CFrame::ToggleNotebookStyle(bool On, long Style)
 			if (On)
 				NB->SetWindowStyleFlag(NB->GetWindowStyleFlag() | Style);
 			else
-				NB->SetWindowStyleFlag(NB->GetWindowStyleFlag() &~Style);
+				NB->SetWindowStyleFlag(NB->GetWindowStyleFlag() &~ Style);
 
 			NB->Refresh();
 		}
@@ -750,7 +662,7 @@ void CFrame::SetPaneSize()
 				return;
 
 			if (Perspectives[ActivePerspective].Width.size() <= j ||
-				Perspectives[ActivePerspective].Height.size() <= j)
+					Perspectives[ActivePerspective].Height.size() <= j)
 				continue;
 
 			// Width and height of the active perspective
@@ -764,7 +676,7 @@ void CFrame::SetPaneSize()
 			// Convert percentages to pixel lengths
 			W = (W * iClientX) / 100;
 			H = (H * iClientY) / 100;
-			m_Mgr->GetAllPanes()[i].BestSize(W, H).MinSize(W, H);
+			m_Mgr->GetAllPanes()[i].BestSize(W,H).MinSize(W,H);
 
 			j++;
 		}
@@ -775,7 +687,7 @@ void CFrame::SetPaneSize()
 	{
 		if (!m_Mgr->GetAllPanes()[i].window->IsKindOf(CLASSINFO(wxAuiToolBar)))
 		{
-			m_Mgr->GetAllPanes()[i].MinSize(-1, -1);
+			m_Mgr->GetAllPanes()[i].MinSize(-1,-1);
 		}
 	}
 }
@@ -792,14 +704,12 @@ void CFrame::ReloadPanes()
 	{
 		wxString PaneName = wxString::Format("Pane %i", i + 1);
 		m_Mgr->AddPane(CreateEmptyNotebook(), wxAuiPaneInfo().Hide()
-			.CaptionVisible(m_bEdit).Dockable(!m_bNoDocking).Position(i)
-			.Name(PaneName).Caption(PaneName));
+				.CaptionVisible(m_bEdit).Dockable(!m_bNoDocking).Position(i)
+				.Name(PaneName).Caption(PaneName));
 	}
 
 	// Perspectives
 	m_Mgr->LoadPerspective(Perspectives[ActivePerspective].Perspective, false);
-	// Reset toolbars
-	ResetToolbarStyle();
 	// Restore settings
 	TogglePaneStyle(m_bNoDocking, IDM_NO_DOCKING);
 	TogglePaneStyle(m_bEdit, IDM_EDIT_PERSPECTIVES);
@@ -809,6 +719,9 @@ void CFrame::ReloadPanes()
 	// Open notebook pages
 	AddRemoveBlankPage();
 	g_pCodeWindow->OpenPages();
+
+	// Repopulate perspectives
+	PopulateSavedPerspectives();
 }
 
 void CFrame::DoLoadPerspective()
@@ -852,10 +765,10 @@ void CFrame::LoadIniPerspectives()
 
 		IniFile::Section* perspec_section = ini.GetOrCreateSection(_Section);
 		perspec_section->Get("Perspective", &_Perspective,
-			"layout2|"
-			"name=Pane 0;caption=Pane 0;state=768;dir=5;prop=100000;|"
-			"name=Pane 1;caption=Pane 1;state=31458108;dir=4;prop=100000;|"
-			"dock_size(5,0,0)=22|dock_size(4,0,0)=333|");
+		                     "layout2|"
+		                     "name=Pane 0;caption=Pane 0;state=768;dir=5;prop=100000;|"
+		                     "name=Pane 1;caption=Pane 1;state=31458108;dir=4;prop=100000;|"
+		                     "dock_size(5,0,0)=22|dock_size(4,0,0)=333|");
 		perspec_section->Get("Width", &_Widths, "70,25");
 		perspec_section->Get("Height", &_Heights, "80,80");
 
@@ -891,15 +804,15 @@ void CFrame::UpdateCurrentPerspective()
 	for (u32 i = 0; i < m_Mgr->GetAllPanes().GetCount(); i++)
 	{
 		if (!m_Mgr->GetAllPanes()[i].window->
-			IsKindOf(CLASSINFO(wxAuiToolBar)))
+				IsKindOf(CLASSINFO(wxAuiToolBar)))
 		{
 			// Save width and height as a percentage of the client width and height
 			current->Width.push_back(
-				(m_Mgr->GetAllPanes()[i].window->GetClientSize().GetX() * 100) /
-				iClientX);
+					(m_Mgr->GetAllPanes()[i].window->GetClientSize().GetX() * 100) /
+					iClientX);
 			current->Height.push_back(
-				(m_Mgr->GetAllPanes()[i].window->GetClientSize().GetY() * 100) /
-				iClientY);
+					(m_Mgr->GetAllPanes()[i].window->GetClientSize().GetY() * 100) /
+					iClientY);
 		}
 	}
 }
@@ -923,7 +836,7 @@ void CFrame::SaveIniPerspectives()
 	{
 		STmp += Perspective.Name + ",";
 	}
-	STmp = STmp.substr(0, STmp.length() - 1);
+	STmp = STmp.substr(0, STmp.length()-1);
 
 	IniFile::Section* perspectives = ini.GetOrCreateSection("Perspectives");
 	perspectives->Set("Perspectives", STmp);
@@ -943,8 +856,8 @@ void CFrame::SaveIniPerspectives()
 			SHeight += StringFromFormat("%i,", Perspective.Height[j]);
 		}
 		// Remove the ending ","
-		SWidth = SWidth.substr(0, SWidth.length() - 1);
-		SHeight = SHeight.substr(0, SHeight.length() - 1);
+		SWidth = SWidth.substr(0, SWidth.length()-1);
+		SHeight = SHeight.substr(0, SHeight.length()-1);
 
 		perspec_section->Set("Width", SWidth);
 		perspec_section->Set("Height", SHeight);
@@ -1014,7 +927,7 @@ wxAuiNotebook* CFrame::CreateEmptyNotebook()
 		wxAUI_NB_TAB_EXTERNAL_MOVE | wxAUI_NB_SCROLL_BUTTONS |
 		wxAUI_NB_WINDOWLIST_BUTTON | wxNO_BORDER;
 	wxAuiNotebook* NB = new wxAuiNotebook(this, wxID_ANY,
-		wxDefaultPosition, wxDefaultSize, NOTEBOOK_STYLE);
+			wxDefaultPosition, wxDefaultSize, NOTEBOOK_STYLE);
 	return NB;
 }
 

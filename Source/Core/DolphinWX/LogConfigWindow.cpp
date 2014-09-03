@@ -56,7 +56,7 @@ void LogConfigWindow::CreateGUIControls()
 	for (int i = 0; i < MAX_LOGLEVEL; ++i)
 		wxLevelsUse.Add(wxLevels[i]);
 	m_verbosity = new wxRadioBox(this, wxID_ANY, _("Verbosity"),
-		wxDefaultPosition, wxDefaultSize, wxLevelsUse, 0, wxRA_SPECIFY_ROWS);
+			wxDefaultPosition, wxDefaultSize, wxLevelsUse, 0, wxRA_SPECIFY_ROWS);
 	m_verbosity->Bind(wxEVT_RADIOBOX, &LogConfigWindow::OnVerbosityChange, this);
 
 	// Options
@@ -76,7 +76,7 @@ void LogConfigWindow::CreateGUIControls()
 #endif
 
 	wxButton *btn_toggle_all = new wxButton(this, wxID_ANY, _("Toggle All Log Types"),
-		wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT);
+			wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT);
 	btn_toggle_all->Bind(wxEVT_BUTTON, &LogConfigWindow::OnToggleAll, this);
 	m_checks = new wxCheckListBox(this, wxID_ANY);
 	m_checks->Bind(wxEVT_CHECKLISTBOX, &LogConfigWindow::OnLogCheck, this);
@@ -156,7 +156,7 @@ void LogConfigWindow::LoadSettings()
 	for (int i = 0; i < LogTypes::NUMBER_OF_LOGS; ++i)
 	{
 		bool log_enabled;
-		ini.GetOrCreateSection("Logs")->Get(m_LogManager->GetShortName((LogTypes::LOG_TYPE)i), &log_enabled, true);
+		ini.GetOrCreateSection("Logs")->Get(m_LogManager->GetShortName((LogTypes::LOG_TYPE)i), &log_enabled, false);
 
 		if (log_enabled)
 			enableAll = false;

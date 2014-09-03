@@ -74,7 +74,8 @@ void PPCSymbolDB::AddKnownSymbol(u32 startAddr, u32 size, const std::string& nam
 		tf.name = name;
 		tf.type = type;
 		tf.address = startAddr;
-		if (tf.type == Symbol::SYMBOL_FUNCTION) {
+		if (tf.type == Symbol::SYMBOL_FUNCTION)
+		{
 			PPCAnalyst::AnalyzeFunction(startAddr, tf, size);
 			checksumToFunction[tf.hash] = &(functions[startAddr]);
 		}
@@ -279,9 +280,6 @@ bool PPCSymbolDB::SaveMap(const std::string& filename, bool WithCodes) const
 			mapFile.c_str()).c_str(), "Confirm", wxYES_NO)) return false;
 	}
 
-	if (WithCodes)
-		Host_UpdateStatusBar("Saving code, please stand by ...");
-
 	// Make a file
 	File::IOFile f(mapFile, "w");
 	if (!f)
@@ -334,16 +332,14 @@ bool PPCSymbolDB::SaveMap(const std::string& filename, bool WithCodes) const
 			for (int i = 0; i < space; i += 4)
 			{
 				int Address = LastAddress + i;
-				char disasm[256];
-				debugger->Disassemble(Address, disasm, 256);
-				fprintf(f.GetHandle(),"%08x %i %20s %s\n", Address, 0, TempSym.c_str(), disasm);
+
+				std::string disasm = debugger->Disassemble(Address);
+				fprintf(f.GetHandle(),"%08x %i %20s %s\n", Address, 0, TempSym.c_str(), disasm.c_str());
 			}
 			// Write a blank line after each block
 			fprintf(f.GetHandle(), "\n");
 		}
 	}
-	// ---------------
-	Host_UpdateStatusBar(StringFromFormat("Saved %s", mapFile.c_str()).c_str());
 
 	return true;
 }

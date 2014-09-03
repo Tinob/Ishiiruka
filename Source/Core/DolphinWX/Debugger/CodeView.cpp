@@ -2,9 +2,11 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <memory>
 #include <string>
 #include <vector>
 #include <wx/brush.h>
@@ -17,6 +19,7 @@
 #include <wx/defs.h>
 #include <wx/event.h>
 #include <wx/gdicmn.h>
+#include <wx/graphics.h>
 #include <wx/menu.h>
 #include <wx/menuitem.h>
 #include <wx/pen.h>
@@ -32,11 +35,12 @@
 #include "Common/SymbolDB.h"
 #include "Core/Core.h"
 #include "Core/Host.h"
+#include "DolphinWX/Globals.h"
 #include "DolphinWX/WxUtils.h"
 #include "DolphinWX/Debugger/CodeView.h"
 #include "DolphinWX/Debugger/DebuggerUIUtil.h"
 
-DEFINE_EVENT_TYPE(wxEVT_CODEVIEW_CHANGE);
+wxDEFINE_EVENT(wxEVT_CODEVIEW_CHANGE, wxCommandEvent);
 
 enum
 {
@@ -55,32 +59,32 @@ enum
 };
 
 BEGIN_EVENT_TABLE(CCodeView, wxControl)
-EVT_ERASE_BACKGROUND(CCodeView::OnErase)
-EVT_PAINT(CCodeView::OnPaint)
-EVT_MOUSEWHEEL(CCodeView::OnScrollWheel)
-EVT_LEFT_DOWN(CCodeView::OnMouseDown)
-EVT_LEFT_UP(CCodeView::OnMouseUpL)
-EVT_MOTION(CCodeView::OnMouseMove)
-EVT_RIGHT_DOWN(CCodeView::OnMouseDown)
-EVT_RIGHT_UP(CCodeView::OnMouseUpR)
-EVT_MENU(-1, CCodeView::OnPopupMenu)
-EVT_SIZE(CCodeView::OnResize)
+	EVT_ERASE_BACKGROUND(CCodeView::OnErase)
+	EVT_PAINT(CCodeView::OnPaint)
+	EVT_MOUSEWHEEL(CCodeView::OnScrollWheel)
+	EVT_LEFT_DOWN(CCodeView::OnMouseDown)
+	EVT_LEFT_UP(CCodeView::OnMouseUpL)
+	EVT_MOTION(CCodeView::OnMouseMove)
+	EVT_RIGHT_DOWN(CCodeView::OnMouseDown)
+	EVT_RIGHT_UP(CCodeView::OnMouseUpR)
+	EVT_MENU(-1, CCodeView::OnPopupMenu)
+	EVT_SIZE(CCodeView::OnResize)
 END_EVENT_TABLE()
 
 CCodeView::CCodeView(DebugInterface* debuginterface, SymbolDB *symboldb,
-wxWindow* parent, wxWindowID Id)
-: wxControl(parent, Id),
-m_debugger(debuginterface),
-m_symbol_db(symboldb),
-m_plain(false),
-m_curAddress(debuginterface->GetPC()),
-m_align(debuginterface->GetInstructionSize(0)),
-m_rowHeight(13),
-m_selection(0),
-m_oldSelection(0),
-m_selecting(false),
-m_lx(-1),
-m_ly(-1)
+		wxWindow* parent, wxWindowID Id)
+	: wxControl(parent, Id),
+	  m_debugger(debuginterface),
+	  m_symbol_db(symboldb),
+	  m_plain(false),
+	  m_curAddress(debuginterface->GetPC()),
+	  m_align(debuginterface->GetInstructionSize(0)),
+	  m_rowHeight(13),
+	  m_selection(0),
+	  m_oldSelection(0),
+	  m_selecting(false),
+	  m_lx(-1),
+	  m_ly(-1)
 {
 }
 
@@ -138,7 +142,10 @@ void CCodeView::ToggleBreakpoint(u32 address)
 {
 	m_debugger->ToggleBreakpoint(address);
 	Refresh();
-	Host_UpdateBreakPointView();
+
+	// Propagate back to the parent window to update the breakpoint list.
+	wxCommandEvent evt(wxEVT_HOST_COMMAND, IDM_UPDATEBREAKPOINTS);
+	GetEventHandler()->AddPendingEvent(evt);
 }
 
 void CCodeView::OnMouseMove(wxMouseEvent& event)
@@ -189,15 +196,15 @@ void CCodeView::OnMouseUpL(wxMouseEvent& event)
 
 u32 CCodeView::AddrToBranch(u32 addr)
 {
-	char disasm[256];
-	m_debugger->Disassemble(addr, disasm, 256);
-	const char *mojs = strstr(disasm, "->0x");
-	if (mojs)
+	std::string disasm = m_debugger->Disassemble(addr);
+	size_t pos = disasm.find("->0x");
+
+	if (pos != std::string::npos)
 	{
-		u32 dest;
-		sscanf(mojs + 4, "%08x", &dest);
-		return dest;
+		std::string hex = disasm.substr(pos + 2);
+		return std::stoul(hex, nullptr, 16);
 	}
+
 	return 0;
 }
 
@@ -242,110 +249,112 @@ void CCodeView::OnPopupMenu(wxCommandEvent& event)
 
 	switch (event.GetId())
 	{
-	case IDM_GOTOINMEMVIEW:
-		// CMemoryDlg::Goto(selection);
-		break;
+		case IDM_GOTOINMEMVIEW:
+			// CMemoryDlg::Goto(selection);
+			break;
 
 #if wxUSE_CLIPBOARD
-	case IDM_COPYADDRESS:
-		wxTheClipboard->SetData(new wxTextDataObject(wxString::Format("%08x", m_selection)));
-		break;
+		case IDM_COPYADDRESS:
+			wxTheClipboard->SetData(new wxTextDataObject(wxString::Format("%08x", m_selection)));
+			break;
 
-	case IDM_COPYCODE:
-	{
-		char disasm[256];
-		m_debugger->Disassemble(m_selection, disasm, 256);
-		wxTheClipboard->SetData(new wxTextDataObject(StrToWxStr(disasm)));
-	}
-		break;
-
-	case IDM_COPYHEX:
-	{
-		char temp[24];
-		sprintf(temp, "%08x", m_debugger->ReadInstruction(m_selection));
-		wxTheClipboard->SetData(new wxTextDataObject(StrToWxStr(temp)));
-	}
-		break;
-
-
-	case IDM_COPYFUNCTION:
-	{
-		Symbol *symbol = m_symbol_db->GetSymbolFromAddr(m_selection);
-		if (symbol)
-		{
-			std::string text;
-			text = text + symbol->name + "\r\n";
-			// we got a function
-			u32 start = symbol->address;
-			u32 end = start + symbol->size;
-			for (u32 addr = start; addr != end; addr += 4)
+		case IDM_COPYCODE:
 			{
-				char disasm[256];
-				m_debugger->Disassemble(addr, disasm, 256);
-				text = text + StringFromFormat("%08x: ", addr) + disasm + "\r\n";
+				std::string disasm = m_debugger->Disassemble(m_selection);
+				wxTheClipboard->SetData(new wxTextDataObject(StrToWxStr(disasm)));
 			}
-			wxTheClipboard->SetData(new wxTextDataObject(StrToWxStr(text)));
-		}
-	}
-		break;
+			break;
+
+		case IDM_COPYHEX:
+			{
+				std::string temp = StringFromFormat("%08x", m_debugger->ReadInstruction(m_selection));
+				wxTheClipboard->SetData(new wxTextDataObject(StrToWxStr(temp)));
+			}
+			break;
+
+
+		case IDM_COPYFUNCTION:
+			{
+				Symbol *symbol = m_symbol_db->GetSymbolFromAddr(m_selection);
+				if (symbol)
+				{
+					std::string text;
+					text = text + symbol->name + "\r\n";
+					// we got a function
+					u32 start = symbol->address;
+					u32 end = start + symbol->size;
+					for (u32 addr = start; addr != end; addr += 4)
+					{
+						std::string disasm = m_debugger->Disassemble(addr);
+						text += StringFromFormat("%08x: ", addr) + disasm + "\r\n";
+					}
+					wxTheClipboard->SetData(new wxTextDataObject(StrToWxStr(text)));
+				}
+			}
+			break;
 #endif
 
-	case IDM_RUNTOHERE:
-		m_debugger->SetBreakpoint(m_selection);
-		m_debugger->RunToBreakpoint();
-		Refresh();
-		break;
+		case IDM_RUNTOHERE:
+			m_debugger->SetBreakpoint(m_selection);
+			m_debugger->RunToBreakpoint();
+			Refresh();
+			break;
 
 		// Insert blr or restore old value
-	case IDM_INSERTBLR:
-		InsertBlrNop(0);
-		Refresh();
-		break;
-	case IDM_INSERTNOP:
-		InsertBlrNop(1);
-		Refresh();
-		break;
+		case IDM_INSERTBLR:
+			InsertBlrNop(0);
+			Refresh();
+			break;
+		case IDM_INSERTNOP:
+			InsertBlrNop(1);
+			Refresh();
+			break;
 
-	case IDM_JITRESULTS:
-		m_debugger->ShowJitResults(m_selection);
-		break;
-
-	case IDM_FOLLOWBRANCH:
-	{
-		u32 dest = AddrToBranch(m_selection);
-		if (dest)
-		{
-			Center(dest);
-			RaiseEvent();
-		}
-	}
-		break;
-
-	case IDM_ADDFUNCTION:
-		m_symbol_db->AddFunction(m_selection);
-		Host_NotifyMapLoaded();
-		break;
-
-	case IDM_RENAMESYMBOL:
-	{
-		Symbol *symbol = m_symbol_db->GetSymbolFromAddr(m_selection);
-		if (symbol)
-		{
-			wxTextEntryDialog input_symbol(this, _("Rename symbol:"),
-				wxGetTextFromUserPromptStr,
-				StrToWxStr(symbol->name));
-			if (input_symbol.ShowModal() == wxID_OK)
+		case IDM_JITRESULTS:
 			{
-				symbol->name = WxStrToStr(input_symbol.GetValue());
-				Refresh(); // Redraw to show the renamed symbol
+				// Propagate back to the parent window and tell it
+				// to flip to the JIT tab for the current address.
+				wxCommandEvent jit_event(wxEVT_HOST_COMMAND, IDM_UPDATEJITPANE);
+				GetEventHandler()->AddPendingEvent(jit_event);
 			}
-			Host_NotifyMapLoaded();
-		}
-	}
-		break;
+			break;
 
-	case IDM_PATCHALERT:
-		break;
+		case IDM_FOLLOWBRANCH:
+			{
+				u32 dest = AddrToBranch(m_selection);
+				if (dest)
+				{
+					Center(dest);
+					RaiseEvent();
+				}
+			}
+			break;
+
+		case IDM_ADDFUNCTION:
+			m_symbol_db->AddFunction(m_selection);
+			Host_NotifyMapLoaded();
+			break;
+
+		case IDM_RENAMESYMBOL:
+			{
+				Symbol *symbol = m_symbol_db->GetSymbolFromAddr(m_selection);
+				if (symbol)
+				{
+					wxTextEntryDialog input_symbol(this, _("Rename symbol:"),
+							wxGetTextFromUserPromptStr,
+							StrToWxStr(symbol->name));
+					if (input_symbol.ShowModal() == wxID_OK)
+					{
+						symbol->name = WxStrToStr(input_symbol.GetValue());
+						Refresh(); // Redraw to show the renamed symbol
+					}
+					Host_NotifyMapLoaded();
+				}
+			}
+			break;
+
+		case IDM_PATCHALERT:
+			break;
 	}
 
 #if wxUSE_CLIPBOARD
@@ -386,21 +395,21 @@ void CCodeView::OnErase(wxEraseEvent& event)
 
 void CCodeView::OnPaint(wxPaintEvent& event)
 {
-	// --------------------------------------------------------------------
+	// -------------------------
 	// General settings
 	// -------------------------
-	wxPaintDC dc(this);
+	std::unique_ptr<wxGraphicsContext> ctx(wxGraphicsContext::Create(wxPaintDC(this)));
 	wxRect rc = GetClientRect();
 
-	dc.SetFont(DebuggerFont);
+	ctx->SetFont(DebuggerFont, *wxBLACK);
 
-	wxCoord w, h;
-	dc.GetTextExtent("0WJyq", &w, &h);
+	wxDouble w,h;
+	ctx->GetTextExtent("0WJyq", &w, &h);
 
 	if (h > m_rowHeight)
 		m_rowHeight = h;
 
-	dc.GetTextExtent("W", &w, &h);
+	ctx->GetTextExtent("W", &w, &h);
 	int charWidth = w;
 
 	struct branch
@@ -411,14 +420,14 @@ void CCodeView::OnPaint(wxPaintEvent& event)
 	branch branches[256];
 	int numBranches = 0;
 	// TODO: Add any drawing code here...
-	int width = rc.width;
-	int numRows = (rc.height / m_rowHeight) / 2 + 2;
+	int width   = rc.width;
+	int numRows = ((rc.height / m_rowHeight) / 2) + 2;
 	// ------------
 
-	// --------------------------------------------------------------------
+	// -------------------------
 	// Colors and brushes
 	// -------------------------
-	dc.SetBackgroundMode(wxTRANSPARENT); // the text background
+
 	const wxColour bgColor = *wxWHITE;
 	wxPen nullPen(bgColor);
 	wxPen currentPen(*wxBLACK_PEN);
@@ -433,174 +442,166 @@ void CCodeView::OnPaint(wxPaintEvent& event)
 	wxBrush nullBrush(bgColor);
 	nullBrush.SetStyle(wxTRANSPARENT);
 
-	dc.SetPen(nullPen);
-	dc.SetBrush(bgBrush);
-	dc.DrawRectangle(0, 0, 16, rc.height);
-	dc.DrawRectangle(0, 0, rc.width, 5);
+	ctx->SetPen(nullPen);
+	ctx->SetBrush(bgBrush);
+	ctx->DrawRectangle(0, 0, 16, rc.height);
+	ctx->DrawRectangle(0, 0, rc.width, 5);
 	// ------------
 
-	// --------------------------------------------------------------------
+	// -----------------------------
 	// Walk through all visible rows
-	// -------------------------
+	// -----------------------------
 	for (int i = -numRows; i <= numRows; i++)
 	{
-		unsigned int address = m_curAddress + i * m_align;
+		unsigned int address = m_curAddress + (i * m_align);
 
-		int rowY1 = rc.height / 2 + m_rowHeight * i - m_rowHeight / 2;
-		int rowY2 = rc.height / 2 + m_rowHeight * i + m_rowHeight / 2;
+		int rowY1 = (rc.height / 2) + (m_rowHeight * i) - (m_rowHeight / 2);
+		int rowY2 = (rc.height / 2) + (m_rowHeight * i) + (m_rowHeight / 2);
 
 		wxString temp = wxString::Format("%08x", address);
-		u32 col = m_debugger->GetColor(address);
-		wxBrush rowBrush(wxColour(col >> 16, col >> 8, col));
-		dc.SetBrush(nullBrush);
-		dc.SetPen(nullPen);
-		dc.DrawRectangle(0, rowY1, 16, rowY2 - rowY1 + 2);
+		u32 color = m_debugger->GetColor(address);
+		wxBrush rowBrush(wxColour(color >> 16, color >> 8, color));
+		ctx->SetBrush(nullBrush);
+		ctx->SetPen(nullPen);
+		ctx->DrawRectangle(0, rowY1, 16, rowY2 - rowY1 + 2);
 
 		if (m_selecting && (address == m_selection))
-			dc.SetPen(selPen);
+			ctx->SetPen(selPen);
 		else
-			dc.SetPen(i == 0 ? currentPen : nullPen);
+			ctx->SetPen(i == 0 ? currentPen : nullPen);
 
 		if (address == m_debugger->GetPC())
-			dc.SetBrush(pcBrush);
+			ctx->SetBrush(pcBrush);
 		else
-			dc.SetBrush(rowBrush);
+			ctx->SetBrush(rowBrush);
 
-		dc.DrawRectangle(16, rowY1, width, rowY2 - rowY1 + 1);
-		dc.SetBrush(currentBrush);
+		ctx->DrawRectangle(16, rowY1, width, rowY2 - rowY1 + 1);
+		ctx->SetBrush(currentBrush);
 		if (!m_plain)
 		{
-			dc.SetTextForeground("#600000"); // the address text is dark red
-			dc.DrawText(temp, 17, rowY1);
-			dc.SetTextForeground(*wxBLACK);
+			// the address text is dark red
+			ctx->SetFont(DebuggerFont, wxColour("#600000"));
+			ctx->DrawText(temp, 17, rowY1);
+			ctx->SetFont(DebuggerFont, *wxBLACK);
 		}
 
 		// If running
 		if (m_debugger->IsAlive())
 		{
-			char dis[256];
-			m_debugger->Disassemble(address, dis, 256);
-			char* dis2 = strchr(dis, '\t');
-			char desc[256] = "";
+			std::vector<std::string> dis;
+			SplitString(m_debugger->Disassemble(address), '\t', dis);
+			dis.resize(2);
 
-			// If we have a code
-			if (dis2)
+			static const size_t VALID_BRANCH_LENGTH = 10;
+			const std::string& opcode   = dis[0];
+			const std::string& operands = dis[1];
+			std::string desc;
+
+			// look for hex strings to decode branches
+			std::string hex_str;
+			size_t pos = operands.find("0x8");
+			if (pos != std::string::npos)
 			{
-				*dis2 = 0;
-				dis2++;
-				// look for hex strings to decode branches
-				const char* mojs = strstr(dis2, "0x8");
-				if (mojs)
-				{
-					for (int k = 0; k < 8; k++)
-					{
-						bool found = false;
-						for (int j = 0; j < 22; j++)
-						{
-							if (mojs[k + 2] == "0123456789ABCDEFabcdef"[j])
-								found = true;
-						}
-						if (!found)
-						{
-							mojs = nullptr;
-							break;
-						}
-					}
-				}
-				if (mojs)
-				{
-					int offs;
-					sscanf(mojs + 2, "%08x", &offs);
-					branches[numBranches].src = rowY1 + m_rowHeight / 2;
-					branches[numBranches].srcAddr = address / m_align;
-					branches[numBranches++].dst = (int)(rowY1 + ((s64)(u32)offs - (s64)(u32)address) * m_rowHeight / m_align + m_rowHeight / 2);
-					sprintf(desc, "-->%s", m_debugger->GetDescription(offs).c_str());
-					dc.SetTextForeground(wxTheColourDatabase->Find("PURPLE")); // the -> arrow illustrations are purple
-				}
-				else
-				{
-					dc.SetTextForeground(*wxBLACK);
-				}
-
-				dc.DrawText(StrToWxStr(dis2), 17 + 17 * charWidth, rowY1);
-				// ------------
+				hex_str = operands.substr(pos);
 			}
 
-			// Show blr as its' own color
-			if (strcmp(dis, "blr"))
-				dc.SetTextForeground(wxTheColourDatabase->Find("DARK GREEN"));
-			else
-				dc.SetTextForeground(wxTheColourDatabase->Find("VIOLET"));
-
-			dc.DrawText(StrToWxStr(dis), 17 + (m_plain ? 1 * charWidth : 9 * charWidth), rowY1);
-
-			if (desc[0] == 0)
+			if (hex_str.length() == VALID_BRANCH_LENGTH)
 			{
-				strcpy(desc, m_debugger->GetDescription(address).c_str());
+				u32 offs = std::stoul(hex_str, nullptr, 16);
+
+				branches[numBranches].src = rowY1 + (m_rowHeight / 2);
+				branches[numBranches].srcAddr = (address / m_align);
+				branches[numBranches++].dst = (int)(rowY1 + ((s64)(u32)offs - (s64)(u32)address) * m_rowHeight / m_align + m_rowHeight / 2);
+				desc = StringFromFormat("-->%s", m_debugger->GetDescription(offs).c_str());
+
+				// the -> arrow illustrations are purple
+				ctx->SetFont(DebuggerFont, wxTheColourDatabase->Find("PURPLE"));
+			}
+			else
+			{
+				ctx->SetFont(DebuggerFont, *wxBLACK);
+			}
+
+			ctx->DrawText(StrToWxStr(operands), 17 + 17*charWidth, rowY1);
+			// ------------
+
+			// Show blr as its' own color
+			if (opcode == "blr")
+				ctx->SetFont(DebuggerFont, wxTheColourDatabase->Find("DARK GREEN"));
+			else
+				ctx->SetFont(DebuggerFont, wxTheColourDatabase->Find("VIOLET"));
+
+			ctx->DrawText(StrToWxStr(opcode), 17 + (m_plain ? 1*charWidth : 9*charWidth), rowY1);
+
+			if (desc.empty())
+			{
+				desc = m_debugger->GetDescription(address);
 			}
 
 			if (!m_plain)
 			{
-				dc.SetTextForeground(*wxBLUE);
+				ctx->SetFont(DebuggerFont, *wxBLUE);
 
 				//char temp[256];
 				//UnDecorateSymbolName(desc,temp,255,UNDNAME_COMPLETE);
-				if (strlen(desc))
+				if (!desc.empty())
 				{
-					dc.DrawText(StrToWxStr(desc), 17 + 35 * charWidth, rowY1);
+					ctx->DrawText(StrToWxStr(desc), 17 + 35 * charWidth, rowY1);
 				}
 			}
 
 			// Show red breakpoint dot
 			if (m_debugger->IsBreakpoint(address))
 			{
-				dc.SetBrush(bpBrush);
-				dc.DrawRectangle(2, rowY1 + 1, 11, 11);
+				ctx->SetBrush(bpBrush);
+				ctx->DrawRectangle(2, rowY1 + 1, 11, 11);
 			}
 		}
 	} // end of for
 	// ------------
 
-	// --------------------------------------------------------------------
+	// -------------------------
 	// Colors and brushes
 	// -------------------------
-	dc.SetPen(currentPen);
+	ctx->SetPen(currentPen);
 
 	for (int i = 0; i < numBranches; i++)
 	{
 		int x = 17 + 49 * charWidth + (branches[i].srcAddr % 9) * 8;
-		MoveTo(x - 2, branches[i].src);
+		MoveTo(x-2, branches[i].src);
 
 		if (branches[i].dst < rc.height + 400 && branches[i].dst > -400)
 		{
-			LineTo(dc, x + 2, branches[i].src);
-			LineTo(dc, x + 2, branches[i].dst);
-			LineTo(dc, x - 4, branches[i].dst);
+			LineTo(ctx, x+2, branches[i].src);
+			LineTo(ctx, x+2, branches[i].dst);
+			LineTo(ctx, x-4, branches[i].dst);
 
 			MoveTo(x, branches[i].dst - 4);
-			LineTo(dc, x - 4, branches[i].dst);
-			LineTo(dc, x + 1, branches[i].dst + 5);
+			LineTo(ctx, x-4, branches[i].dst);
+			LineTo(ctx, x+1, branches[i].dst+5);
 		}
 		//else
 		//{
-		// This can be re-enabled when there is a scrollbar or
-		// something on the codeview (the lines are too long)
+			// This can be re-enabled when there is a scrollbar or
+			// something on the codeview (the lines are too long)
 
-		//LineTo(dc, x+4, branches[i].src);
-		//MoveTo(x+2, branches[i].dst-4);
-		//LineTo(dc, x+6, branches[i].dst);
-		//LineTo(dc, x+1, branches[i].dst+5);
+			//LineTo(ctx, x+4, branches[i].src);
+			//MoveTo(x+2, branches[i].dst-4);
+			//LineTo(ctx, x+6, branches[i].dst);
+			//LineTo(ctx, x+1, branches[i].dst+5);
 		//}
 
-		//LineTo(dc, x, branches[i].dst+4);
-		//LineTo(dc, x-2, branches[i].dst);
+		//LineTo(ctx, x, branches[i].dst+4);
+		//LineTo(ctx, x-2, branches[i].dst);
 	}
 	// ------------
 }
 
-void CCodeView::LineTo(wxPaintDC &dc, int x, int y)
+void CCodeView::LineTo(std::unique_ptr<wxGraphicsContext>& ctx, int x, int y)
 {
-	dc.DrawLine(m_lx, m_ly, x, y);
+	std::vector<wxPoint2DDouble> points { wxPoint2DDouble(m_lx, m_ly), wxPoint2DDouble(x, y) };
+
+	ctx->DrawLines(points.size(), points.data());
 	m_lx = x;
 	m_ly = y;
 }

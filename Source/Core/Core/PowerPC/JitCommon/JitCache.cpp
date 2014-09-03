@@ -135,9 +135,9 @@ using namespace Gen;
 	{
 		// check if any endpoint is inside the other range
 		if ((s1 >= s2 && s1 <= e2) ||
-			(e1 >= s2 && e1 <= e2) ||
-			(s2 >= s1 && s2 <= e1) ||
-			(e2 >= s1 && e2 <= e1))
+		    (e1 >= s2 && e1 <= e2) ||
+		    (s2 >= s1 && s2 <= e1) ||
+		    (e2 >= s1 && e2 <= e1))
 			return true;
 		else
 			return false;
@@ -264,19 +264,19 @@ using namespace Gen;
 		}
 	}
 
-	using namespace std;
-
 	void JitBaseBlockCache::LinkBlock(int i)
 	{
 		LinkBlockExits(i);
 		JitBlock &b = blocks[i];
-		pair<multimap<u32, int>::iterator, multimap<u32, int>::iterator> ppp;
 		// equal_range(b) returns pair<iterator,iterator> representing the range
 		// of element with key b
-		ppp = links_to.equal_range(b.originalAddress);
+		auto ppp = links_to.equal_range(b.originalAddress);
+
 		if (ppp.first == ppp.second)
 			return;
-		for (multimap<u32, int>::iterator iter = ppp.first; iter != ppp.second; ++iter) {
+
+		for (auto iter = ppp.first; iter != ppp.second; ++iter)
+		{
 			// PanicAlert("Linking block %i to block %i", iter->second, i);
 			LinkBlockExits(iter->second);
 		}
@@ -285,11 +285,13 @@ using namespace Gen;
 	void JitBaseBlockCache::UnlinkBlock(int i)
 	{
 		JitBlock &b = blocks[i];
-		pair<multimap<u32, int>::iterator, multimap<u32, int>::iterator> ppp;
-		ppp = links_to.equal_range(b.originalAddress);
+		auto ppp = links_to.equal_range(b.originalAddress);
+
 		if (ppp.first == ppp.second)
 			return;
-		for (multimap<u32, int>::iterator iter = ppp.first; iter != ppp.second; ++iter) {
+
+		for (auto iter = ppp.first; iter != ppp.second; ++iter)
+		{
 			JitBlock &sourceBlock = blocks[iter->second];
 			for (auto& e : sourceBlock.linkData)
 			{
@@ -344,7 +346,7 @@ using namespace Gen;
 		// !! this works correctly under assumption that any two overlapping blocks end at the same address
 		if (destroy_block)
 		{
-			std::map<pair<u32,u32>, u32>::iterator it1 = block_map.lower_bound(std::make_pair(pAddr, 0)), it2 = it1;
+			std::map<std::pair<u32,u32>, u32>::iterator it1 = block_map.lower_bound(std::make_pair(pAddr, 0)), it2 = it1;
 			while (it2 != block_map.end() && it2->first.second < pAddr + length)
 			{
 				JitBlock &b = blocks[it2->second];
@@ -358,11 +360,13 @@ using namespace Gen;
 			}
 		}
 	}
+
 	void JitBlockCache::WriteLinkBlock(u8* location, const u8* address)
 	{
 		XEmitter emit(location);
 		emit.JMP(address, true);
 	}
+
 	void JitBlockCache::WriteDestroyBlock(const u8* location, u32 address)
 	{
 		XEmitter emit((u8 *)location);

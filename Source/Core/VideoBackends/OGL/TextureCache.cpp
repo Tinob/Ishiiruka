@@ -63,27 +63,27 @@ static std::map<u64,VBOCache> s_VBO;
 
 bool SaveTexture(const char* filename, u32 textarget, u32 tex, int virtual_width, int virtual_height, unsigned int level)
 {
-#ifndef USE_GLES3
+	if (GLInterface->GetMode() != GLInterfaceMode::MODE_OPENGL)
+		return false;
 	int width = std::max(virtual_width >> level, 1);
 	int height = std::max(virtual_height >> level, 1);
-	std::vector<u32> data(width * height);
-	glActiveTexture(GL_TEXTURE0+9);
+	u8* data = new u8[width * height * 4];
+	glActiveTexture(GL_TEXTURE0 + 9);
 	glBindTexture(textarget, tex);
-	glGetTexImage(textarget, level, GL_BGRA, GL_UNSIGNED_BYTE, &data[0]);
+	glGetTexImage(textarget, level, GL_RGBA, GL_UNSIGNED_BYTE, data);
 	glBindTexture(textarget, 0);
 	TextureCache::SetStage();
 
 	const GLenum err = GL_REPORT_ERROR();
 	if (GL_NO_ERROR != err)
 	{
-		PanicAlert("Can't save texture, GL Error: %s", gluErrorString(err));
+		PanicAlert("Can't save texture, GL Error: %d", err);
+		delete[] data;
 		return false;
 	}
-
-	return SaveTGA(filename, width, height, &data[0]);
-#else
-	return false;
-#endif
+	bool success = TextureToPng(data, width * 4, filename, width, height, true);
+	delete[] data;
+	return success;
 }
 
 TextureCache::TCacheEntry::~TCacheEntry()
@@ -464,9 +464,28 @@ TextureCache::TextureCache()
 		"\n"
 		"void main(){\n"
 		"	vec4 texcol = texture2DRect(samp9, uv0);\n"
-		"	vec4 EncodedDepth = fract((texcol.r * (16777215.0f/16777216.0f)) * vec4(1.0f,256.0f,256.0f*256.0f,1.0f));\n"
-		"	texcol = round(EncodedDepth * (16777216.0f/16777215.0f) * vec4(255.0f,255.0f,255.0f,15.0f)) / vec4(255.0f,255.0f,255.0f,15.0f);\n"
-		"	ocol0 = texcol * mat4(colmat[0], colmat[1], colmat[2], colmat[3]) + colmat[4];"
+		// 255.99998474121 = 16777215/16777216*256
+		"	float workspace = texcol.x * 255.99998474121;\n"
+
+		"	texcol.x = floor(workspace);\n"         // x component
+
+		"	workspace = workspace - texcol.x;\n"    // subtract x component out
+		"	workspace = workspace * 256.0;\n"       // shift left 8 bits
+		"	texcol.y = floor(workspace);\n"         // y component
+
+		"	workspace = workspace - texcol.y;\n"    // subtract y component out
+		"	workspace = workspace * 256.0;\n"       // shift left 8 bits
+		"	texcol.z = floor(workspace);\n"         // z component
+
+		"	texcol.w = texcol.x;\n"                 // duplicate x into w
+
+		"	texcol = texcol / 255.0;\n"             // normalize components to [0.0..1.0]
+
+		"	texcol.w = texcol.w * 15.0;\n"
+		"	texcol.w = floor(texcol.w);\n"
+		"	texcol.w = texcol.w / 15.0;\n"          // w component
+
+		"	ocol0 = texcol * mat4(colmat[0], colmat[1], colmat[2], colmat[3]) + colmat[4];\n"
 		"}\n";
 
 	const char *VProgram =

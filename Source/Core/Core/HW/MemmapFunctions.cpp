@@ -70,10 +70,13 @@ static u32 EFB_Read(const u32 addr)
 	int x = (addr & 0xfff) >> 2;
 	int y = (addr >> 12) & 0x3ff;
 
-	if (addr & 0x00400000) {
+	if (addr & 0x00400000)
+	{
 		var = g_video_backend->Video_AccessEFB(PEEK_Z, x, y, 0);
 		DEBUG_LOG(MEMMAP, "EFB Z Read @ %i, %i\t= 0x%08x", x, y, var);
-	} else {
+	}
+	else
+	{
 		var = g_video_backend->Video_AccessEFB(PEEK_COLOR, x, y, 0);
 		DEBUG_LOG(MEMMAP, "EFB Color Read @ %i, %i\t= 0x%08x", x, y, var);
 	}
@@ -378,7 +381,8 @@ void Write_U16(const u16 _Data, const u32 _Address)
 
 	WriteToHardware<u16>(_Address, _Data, _Address, FLAG_WRITE);
 }
-void Write_U16_Swap(const u16 _Data, const u32 _Address) {
+void Write_U16_Swap(const u16 _Data, const u32 _Address)
+{
 	Write_U16(Common::swap16(_Data), _Address);
 }
 
@@ -413,7 +417,8 @@ void Write_U64(const u64 _Data, const u32 _Address)
 
 	WriteToHardware<u64>(_Address, _Data, _Address + 4, FLAG_WRITE);
 }
-void Write_U64_Swap(const u64 _Data, const u32 _Address) {
+void Write_U64_Swap(const u64 _Data, const u32 _Address)
+{
 	Write_U64(Common::swap64(_Data), _Address);
 }
 
@@ -841,63 +846,53 @@ static u32 TranslatePageAddress(const u32 _Address, const XCheckTLBFlag _Flag)
 #define BAT_EA_11(v)     ((v)&0x0ffe0000)
 #define BAT_EA_4(v)      ((v)&0xf0000000)
 
+static inline bool CheckAddrBats(const u32 addr, u32* result, u32 batu, u32 spr)
+{
+	for (int i = 0; i < 4; i++)
+	{
+		u32 bl17 = ~(BATU_BL(PowerPC::ppcState.spr[spr + i * 2]) << 17);
+		u32 addr2 = addr & (bl17 | 0xf001ffff);
+
+		if (BATU_BEPI(addr2) == BATU_BEPI(PowerPC::ppcState.spr[spr + i * 2]))
+		{
+			// bat applies to this address
+			if (PowerPC::ppcState.spr[spr + i * 2] & batu)
+			{
+				// bat entry valid
+				u32 offset = BAT_EA_OFFSET(addr);
+				u32 page = BAT_EA_11(addr);
+				page &= ~bl17;
+				page |= BATL_BRPN(PowerPC::ppcState.spr[spr + 1 + i * 2]);
+				// fixme: check access rights
+				*result = page | offset;
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 // Block Address Translation
 static u32 TranslateBlockAddress(const u32 addr, const XCheckTLBFlag _Flag)
 {
 	u32 result = 0;
 	UReg_MSR& m_MSR = ((UReg_MSR&)PowerPC::ppcState.msr);
+	u32 batu = (m_MSR.PR ? BATU_Vp : BATU_Vs);
 
 	// Check for enhanced mode (secondary BAT enable) using 8 BATs
-	int bats = (Core::g_CoreStartupParameter.bWii && HID4.SBE)?8:4;
+	bool enhanced_bats = Core::g_CoreStartupParameter.bWii && HID4.SBE;
 
-	for (int i = 0; i < bats; i++)
+	if (_Flag != FLAG_OPCODE)
 	{
-		if (_Flag != FLAG_OPCODE)
-		{
-			u32 bl17 = ~(BATU_BL(PowerPC::ppcState.spr[SPR_DBAT0U + i * 2]) << 17);
-			u32 addr2 = addr & (bl17 | 0xf001ffff);
-			u32 batu = (m_MSR.PR ? BATU_Vp : BATU_Vs);
-
-			if (BATU_BEPI(addr2) == BATU_BEPI(PowerPC::ppcState.spr[SPR_DBAT0U + i * 2]))
-			{
-				// bat applies to this address
-				if (PowerPC::ppcState.spr[SPR_DBAT0U + i * 2] & batu)
-				{
-					// bat entry valid
-					u32 offset = BAT_EA_OFFSET(addr);
-					u32 page = BAT_EA_11(addr);
-					page &= ~bl17;
-					page |= BATL_BRPN(PowerPC::ppcState.spr[SPR_DBAT0L + i * 2]);
-					// fixme: check access rights
-					result = page | offset;
-					return result;
-				}
-			}
-		}
-		else
-		{
-			u32 bl17 = ~(BATU_BL(PowerPC::ppcState.spr[SPR_IBAT0U + i * 2]) << 17);
-			u32 addr2 = addr & (bl17 | 0xf001ffff);
-			u32 batu = (m_MSR.PR ? BATU_Vp : BATU_Vs);
-
-			if (BATU_BEPI(addr2) == BATU_BEPI(PowerPC::ppcState.spr[SPR_IBAT0U + i * 2]))
-			{
-				// bat applies to this address
-				if (PowerPC::ppcState.spr[SPR_IBAT0U + i * 2] & batu)
-				{
-					// bat entry valid
-					u32 offset = BAT_EA_OFFSET(addr);
-					u32 page = BAT_EA_11(addr);
-					page &= ~bl17;
-					page |= BATL_BRPN(PowerPC::ppcState.spr[SPR_IBAT0L + i * 2]);
-					// fixme: check access rights
-					result = page | offset;
-					return result;
-				}
-			}
-		}
+		if (!CheckAddrBats(addr, &result, batu, SPR_DBAT0U) && enhanced_bats)
+			CheckAddrBats(addr, &result, batu, SPR_DBAT4U);
 	}
-	return 0;
+	else
+	{
+		if (!CheckAddrBats(addr, &result, batu, SPR_IBAT0U) && enhanced_bats)
+			CheckAddrBats(addr, &result, batu, SPR_IBAT4U);
+	}
+	return result;
 }
 
 // Translate effective address using BAT or PAT.  Returns 0 if the address cannot be translated.

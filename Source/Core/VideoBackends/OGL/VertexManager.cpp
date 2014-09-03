@@ -90,21 +90,21 @@ void VertexManager::PrepareDrawBuffers(u32 stride)
 	u32 index_size = (triangle_index_size+line_index_size+point_index_size) * sizeof(u16);
 	
 	s_vertexBuffer->Alloc(vertex_data_size, stride);
-	u32 offset = s_vertexBuffer->Upload(GetVertexBuffer(), vertex_data_size);
+	u32 offset = (u32)s_vertexBuffer->Upload(GetVertexBuffer(), vertex_data_size);
 	s_baseVertex = offset / stride;
 
 	s_indexBuffer->Alloc(index_size);
 	if(triangle_index_size)
 	{
-		s_offset[0] = s_indexBuffer->Upload((u8*)GetTriangleIndexBuffer(), triangle_index_size * sizeof(u16));
+		s_offset[0] = (u32)s_indexBuffer->Upload((u8*)GetTriangleIndexBuffer(), triangle_index_size * sizeof(u16));
 	}
 	if(line_index_size)
 	{
-		s_offset[1] = s_indexBuffer->Upload((u8*)GetLineIndexBuffer(), line_index_size * sizeof(u16));
+		s_offset[1] = (u32)s_indexBuffer->Upload((u8*)GetLineIndexBuffer(), line_index_size * sizeof(u16));
 	}
 	if(point_index_size)
 	{
-		s_offset[2] = s_indexBuffer->Upload((u8*)GetPointIndexBuffer(), point_index_size * sizeof(u16));
+		s_offset[2] = (u32)s_indexBuffer->Upload((u8*)GetPointIndexBuffer(), point_index_size * sizeof(u16));
 	}
 	
 	ADDSTAT(stats.thisFrame.bytesVertexStreamed, vertex_data_size);

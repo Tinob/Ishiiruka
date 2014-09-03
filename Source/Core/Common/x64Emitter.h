@@ -105,6 +105,10 @@ enum FloatOp {
 	floatLD = 0,
 	floatST = 2,
 	floatSTP = 3,
+	floatLD80 = 5,
+	floatSTP80 = 7,
+
+	floatINVALID = -1,
 };
 
 class XEmitter;
@@ -123,7 +127,7 @@ struct OpArg
 		offset = _offset;
 	}
 	void WriteRex(XEmitter *emit, int opBits, int bits, int customOp = -1) const;
-	void WriteVex(XEmitter* emit, int size, int packed, Gen::X64Reg regOp1, X64Reg regOp2) const;
+	void WriteVex(XEmitter* emit, int size, bool packed, X64Reg regOp1, X64Reg regOp2) const;
 	void WriteRest(XEmitter *emit, int extraBytes=0, X64Reg operandReg=(X64Reg)0xFF, bool warn_64bit_offset = true) const;
 	void WriteFloatModRM(XEmitter *emit, FloatOp op);
 	void WriteSingleByteOp(XEmitter *emit, u8 op, X64Reg operandReg, int bits);
@@ -134,7 +138,8 @@ struct OpArg
 	void WriteNormalOp(XEmitter *emit, bool toRM, NormalOp op, const OpArg &operand, int bits) const;
 	bool IsImm() const {return scale == SCALE_IMM8 || scale == SCALE_IMM16 || scale == SCALE_IMM32 || scale == SCALE_IMM64;}
 	bool IsSimpleReg() const {return scale == SCALE_NONE;}
-	bool IsSimpleReg(X64Reg reg) const {
+	bool IsSimpleReg(X64Reg reg) const
+	{
 		if (!IsSimpleReg())
 			return false;
 		return GetSimpleReg() == reg;
@@ -175,21 +180,30 @@ private:
 inline OpArg M(const void *ptr) {return OpArg((u64)ptr, (int)SCALE_RIP);}
 inline OpArg R(X64Reg value)    {return OpArg(0, SCALE_NONE, value);}
 inline OpArg MatR(X64Reg value) {return OpArg(0, SCALE_ATREG, value);}
-inline OpArg MDisp(X64Reg value, int offset) {
+
+inline OpArg MDisp(X64Reg value, int offset)
+{
 	return OpArg((u32)offset, SCALE_ATREG, value);
 }
-inline OpArg MComplex(X64Reg base, X64Reg scaled, int scale, int offset) {
+
+inline OpArg MComplex(X64Reg base, X64Reg scaled, int scale, int offset)
+{
 	return OpArg(offset, scale, base, scaled);
 }
-inline OpArg MScaled(X64Reg scaled, int scale, int offset) {
+
+inline OpArg MScaled(X64Reg scaled, int scale, int offset)
+{
 	if (scale == SCALE_1)
 		return OpArg(offset, SCALE_ATREG, scaled);
 	else
 		return OpArg(offset, scale | 0x20, RAX, scaled);
 }
-inline OpArg MRegSum(X64Reg base, X64Reg offset) {
+
+inline OpArg MRegSum(X64Reg base, X64Reg offset)
+{
 	return MComplex(base, offset, 1, 0);
 }
+
 inline OpArg Imm8 (u8 imm)  {return OpArg(imm, SCALE_IMM8);}
 inline OpArg Imm16(u16 imm) {return OpArg(imm, SCALE_IMM16);} //rarely used
 inline OpArg Imm32(u32 imm) {return OpArg(imm, SCALE_IMM32);}
@@ -199,14 +213,18 @@ inline OpArg ImmPtr(const void* imm) {return Imm64((u64)imm);}
 #else
 inline OpArg ImmPtr(const void* imm) {return Imm32((u32)imm);}
 #endif
-inline u32 PtrOffset(void* ptr, void* base) {
+
+inline u32 PtrOffset(void* ptr, void* base)
+{
 #ifdef _ARCH_64
 	s64 distance = (s64)ptr-(s64)base;
 	if (distance >= 0x80000000LL ||
-	    distance < -0x80000000LL) {
+	    distance < -0x80000000LL)
+	{
 		_assert_msg_(DYNA_REC, 0, "pointer offset out of range");
 		return 0;
 	}
+
 	return (u32)distance;
 #else
 	return (u32)ptr-(u32)base;
@@ -252,10 +270,12 @@ private:
 	void WriteShift(int bits, OpArg dest, OpArg &shift, int ext);
 	void WriteBitTest(int bits, OpArg &dest, OpArg &index, int ext);
 	void WriteMXCSR(OpArg arg, int ext);
-	void WriteSSEOp(int size, u8 sseOp, bool packed, X64Reg regOp, OpArg arg, int extrabytes = 0);
-	void WriteAVXOp(int size, u8 sseOp, bool packed, X64Reg regOp, OpArg arg, int extrabytes = 0);
-	void WriteAVXOp(int size, u8 sseOp, bool packed, X64Reg regOp1, X64Reg regOp2, OpArg arg, int extrabytes = 0);
-	void WriteFloatLoadStore(int bits, FloatOp op, OpArg arg);
+	void WriteSSEOp(int size, u16 sseOp, bool packed, X64Reg regOp, OpArg arg, int extrabytes = 0);
+	void WriteSSSE3Op(int size, u16 sseOp, bool packed, X64Reg regOp, OpArg arg, int extrabytes = 0);
+	void WriteSSE41Op(int size, u16 sseOp, bool packed, X64Reg regOp, OpArg arg, int extrabytes = 0);
+	void WriteAVXOp(int size, u16 sseOp, bool packed, X64Reg regOp, OpArg arg, int extrabytes = 0);
+	void WriteAVXOp(int size, u16 sseOp, bool packed, X64Reg regOp1, X64Reg regOp2, OpArg arg, int extrabytes = 0);
+	void WriteFloatLoadStore(int bits, FloatOp op, FloatOp op_80b, OpArg arg);
 	void WriteNormalOp(XEmitter *emit, int bits, NormalOp op, const OpArg &a1, const OpArg &a2);
 
 protected:
@@ -320,7 +340,6 @@ public:
 	FixupBranch J(bool force5bytes = false);
 
 	void JMP(const u8 * addr, bool force5Bytes = false);
-	void JMP(OpArg arg);
 	void JMPptr(const OpArg &arg);
 	void JMPself(); //infinite loop!
 #ifdef CALL
@@ -520,11 +539,8 @@ public:
 	// SSE/SSE2: Useful alternative to shuffle in some cases.
 	void MOVDDUP(X64Reg regOp, OpArg arg);
 
-	// THESE TWO ARE NEW AND UNTESTED
 	void UNPCKLPS(X64Reg dest, OpArg src);
 	void UNPCKHPS(X64Reg dest, OpArg src);
-
-	// These are OK.
 	void UNPCKLPD(X64Reg dest, OpArg src);
 	void UNPCKHPD(X64Reg dest, OpArg src);
 
@@ -550,6 +566,11 @@ public:
 	void MOVSS(OpArg arg, X64Reg regOp);
 	void MOVSD(OpArg arg, X64Reg regOp);
 
+	void MOVLPD(X64Reg regOp, OpArg arg);
+	void MOVHPD(X64Reg regOp, OpArg arg);
+	void MOVLPD(OpArg arg, X64Reg regOp);
+	void MOVHPD(OpArg arg, X64Reg regOp);
+
 	void MOVD_xmm(X64Reg dest, const OpArg &arg);
 	void MOVQ_xmm(X64Reg dest, OpArg arg);
 	void MOVD_xmm(const OpArg &arg, X64Reg src);
@@ -567,21 +588,27 @@ public:
 	void CVTPS2PD(X64Reg dest, OpArg src);
 	void CVTPD2PS(X64Reg dest, OpArg src);
 	void CVTSS2SD(X64Reg dest, OpArg src);
+	void CVTSI2SS(X64Reg dest, OpArg src);
 	void CVTSD2SS(X64Reg dest, OpArg src);
-	void CVTSD2SI(X64Reg dest, OpArg src);
+	void CVTSI2SD(X64Reg dest, OpArg src);
 	void CVTDQ2PD(X64Reg regOp, OpArg arg);
 	void CVTPD2DQ(X64Reg regOp, OpArg arg);
 	void CVTDQ2PS(X64Reg regOp, OpArg arg);
 	void CVTPS2DQ(X64Reg regOp, OpArg arg);
 
-	void CVTTSS2SI(X64Reg xregdest, OpArg arg);  // Yeah, destination really is a GPR like EAX!
 	void CVTTPS2DQ(X64Reg regOp, OpArg arg);
 	void CVTTPD2DQ(X64Reg regOp, OpArg arg);
+
+	// Destinations are X64 regs (rax, rbx, ...) for these instructions.
+	void CVTSS2SI(X64Reg xregdest, OpArg src);
+	void CVTSD2SI(X64Reg xregdest, OpArg src);
+	void CVTTSS2SI(X64Reg xregdest, OpArg arg);
+	void CVTTSD2SI(X64Reg xregdest, OpArg arg);
 
 	// SSE2: Packed integer instructions
 	void PACKSSDW(X64Reg dest, OpArg arg);
 	void PACKSSWB(X64Reg dest, OpArg arg);
-	//void PACKUSDW(X64Reg dest, OpArg arg);
+	void PACKUSDW(X64Reg dest, OpArg arg);
 	void PACKUSWB(X64Reg dest, OpArg arg);
 
 	void PUNPCKLBW(X64Reg dest, const OpArg &arg);
@@ -653,6 +680,25 @@ public:
 	void PSRAW(X64Reg reg, int shift);
 	void PSRAD(X64Reg reg, int shift);
 
+	// SSE4: data type conversions
+	void PMOVSXBW(X64Reg dest, OpArg arg);
+	void PMOVSXBD(X64Reg dest, OpArg arg);
+	void PMOVSXBQ(X64Reg dest, OpArg arg);
+	void PMOVSXWD(X64Reg dest, OpArg arg);
+	void PMOVSXWQ(X64Reg dest, OpArg arg);
+	void PMOVSXDQ(X64Reg dest, OpArg arg);
+	void PMOVZXBW(X64Reg dest, OpArg arg);
+	void PMOVZXBD(X64Reg dest, OpArg arg);
+	void PMOVZXBQ(X64Reg dest, OpArg arg);
+	void PMOVZXWD(X64Reg dest, OpArg arg);
+	void PMOVZXWQ(X64Reg dest, OpArg arg);
+	void PMOVZXDQ(X64Reg dest, OpArg arg);
+
+	// SSE4: variable blend instructions (xmm0 implicit argument)
+	void PBLENDVB(X64Reg dest, OpArg arg);
+	void BLENDVPS(X64Reg dest, OpArg arg);
+	void BLENDVPD(X64Reg dest, OpArg arg);
+
 	// AVX
 	void VADDSD(X64Reg regOp1, X64Reg regOp2, OpArg arg);
 	void VSUBSD(X64Reg regOp1, X64Reg regOp2, OpArg arg);
@@ -662,7 +708,7 @@ public:
 	void VPAND(X64Reg regOp1, X64Reg regOp2, OpArg arg);
 	void VPANDN(X64Reg regOp1, X64Reg regOp2, OpArg arg);
 
-	void RTDSC();
+	void RDTSC();
 
 	// Utility functions
 	// The difference between this and CALL is that this aligns the stack
@@ -679,15 +725,15 @@ public:
 	void ABI_CallFunctionCP(void *func, u32 param1, void *param2);
 	void ABI_CallFunctionCCC(void *func, u32 param1, u32 param2, u32 param3);
 	void ABI_CallFunctionCCP(void *func, u32 param1, u32 param2, void *param3);
-	void ABI_CallFunctionCCCP(void *func, u32 param1, u32 param2,u32 param3,const void *param4);
+	void ABI_CallFunctionCCCP(void *func, u32 param1, u32 param2,u32 param3, const void *param4);
 	void ABI_CallFunctionPC(void *func, void *param1, u32 param2);
 	void ABI_CallFunctionPPC(void *func, void *param1, void *param2,u32 param3);
-	void ABI_CallFunctionAC(void *func, const Gen::OpArg &arg1, u32 param2);
-	void ABI_CallFunctionA(void *func, const Gen::OpArg &arg1);
+	void ABI_CallFunctionAC(void *func, const OpArg &arg1, u32 param2);
+	void ABI_CallFunctionA(void *func, const OpArg &arg1);
 
 	// Pass a register as a parameter.
-	void ABI_CallFunctionR(void *func, Gen::X64Reg reg1);
-	void ABI_CallFunctionRR(void *func, Gen::X64Reg reg1, Gen::X64Reg reg2, bool noProlog = false);
+	void ABI_CallFunctionR(void *func, X64Reg reg1);
+	void ABI_CallFunctionRR(void *func, X64Reg reg1, X64Reg reg2, bool noProlog = false);
 
 	// A function that doesn't have any control over what it will do to regs,
 	// such as the dispatcher, should be surrounded by these.
@@ -702,28 +748,13 @@ public:
 	void ABI_AlignStack(unsigned int frameSize, bool noProlog = false);
 	void ABI_RestoreStack(unsigned int frameSize, bool noProlog = false);
 
-	#if _M_X86_32
-	inline int ABI_GetNumXMMRegs() { return 8; }
-	#else
 	inline int ABI_GetNumXMMRegs() { return 16; }
-	#endif
 
 	// Strange call wrappers.
 	void CallCdeclFunction3(void* fnptr, u32 arg0, u32 arg1, u32 arg2);
 	void CallCdeclFunction4(void* fnptr, u32 arg0, u32 arg1, u32 arg2, u32 arg3);
 	void CallCdeclFunction5(void* fnptr, u32 arg0, u32 arg1, u32 arg2, u32 arg3, u32 arg4);
 	void CallCdeclFunction6(void* fnptr, u32 arg0, u32 arg1, u32 arg2, u32 arg3, u32 arg4, u32 arg5);
-
-#if _M_X86_32
-
-	#define CallCdeclFunction3_I(a,b,c,d) CallCdeclFunction3((void *)(a), (b), (c), (d))
-	#define CallCdeclFunction4_I(a,b,c,d,e) CallCdeclFunction4((void *)(a), (b), (c), (d), (e))
-	#define CallCdeclFunction5_I(a,b,c,d,e,f) CallCdeclFunction5((void *)(a), (b), (c), (d), (e), (f))
-	#define CallCdeclFunction6_I(a,b,c,d,e,f,g) CallCdeclFunction6((void *)(a), (b), (c), (d), (e), (f), (g))
-
-	#define DECLARE_IMPORT(x)
-
-#else
 
 	// Comments from VertexLoader.cpp about these horrors:
 
@@ -742,8 +773,6 @@ public:
 	#define CallCdeclFunction6_I(a,b,c,d,e,f,g) ___CallCdeclImport6(&__imp_##a,b,c,d,e,f,g)
 
 	#define DECLARE_IMPORT(x) extern "C" void *__imp_##x
-
-#endif
 
 	// Utility to generate a call to a std::function object.
 	//

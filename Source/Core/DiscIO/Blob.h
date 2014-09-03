@@ -25,7 +25,7 @@ class IBlobReader
 public:
 	virtual ~IBlobReader() {}
 
-	virtual u64 GetRawSize() const = 0;
+	virtual u64 GetRawSize() const  = 0;
 	virtual u64 GetDataSize() const = 0;
 	// NOT thread-safe - can't call this from multiple threads.
 	virtual bool Read(u64 offset, u64 size, u8* out_ptr) = 0;
@@ -41,19 +41,6 @@ protected:
 // Multi-block reads are not cached.
 class SectorReader : public IBlobReader
 {
-private:
-	enum { CACHE_SIZE = 32 };
-	int m_blocksize;
-	u8* cache[CACHE_SIZE];
-	u64 cache_tags[CACHE_SIZE];
-	int cache_age[CACHE_SIZE];
-
-protected:
-	void SetSectorSize(int blocksize);
-	virtual void GetBlock(u64 block_num, u8 *out) = 0;
-	// This one is uncached. The default implementation is to simply call GetBlockData multiple times and memcpy.
-	virtual bool ReadMultipleAlignedBlocks(u64 block_num, u64 num_blocks, u8 *out_ptr);
-
 public:
 	virtual ~SectorReader();
 
@@ -61,16 +48,29 @@ public:
 	const u8 *GetBlockData(u64 block_num);
 	virtual bool Read(u64 offset, u64 size, u8 *out_ptr) override;
 	friend class DriveReader;
+
+protected:
+	void SetSectorSize(int blocksize);
+	virtual void GetBlock(u64 block_num, u8 *out) = 0;
+	// This one is uncached. The default implementation is to simply call GetBlockData multiple times and memcpy.
+	virtual bool ReadMultipleAlignedBlocks(u64 block_num, u64 num_blocks, u8 *out_ptr);
+
+private:
+	enum { CACHE_SIZE = 32 };
+	int m_blocksize;
+	u8* m_cache[CACHE_SIZE];
+	u64 m_cache_tags[CACHE_SIZE];
+	int m_cache_age[CACHE_SIZE];
 };
 
 // Factory function - examines the path to choose the right type of IBlobReader, and returns one.
 IBlobReader* CreateBlobReader(const std::string& filename);
 
-typedef void(*CompressCB)(const std::string& text, float percent, void* arg);
+typedef void (*CompressCB)(const std::string& text, float percent, void* arg);
 
 bool CompressFileToBlob(const std::string& infile, const std::string& outfile, u32 sub_type = 0, int sector_size = 16384,
-	CompressCB callback = nullptr, void *arg = nullptr);
+		CompressCB callback = nullptr, void *arg = nullptr);
 bool DecompressBlobToFile(const std::string& infile, const std::string& outfile,
-	CompressCB callback = nullptr, void *arg = nullptr);
+		CompressCB callback = nullptr, void *arg = nullptr);
 
 }  // namespace

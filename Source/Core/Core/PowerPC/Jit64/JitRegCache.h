@@ -20,6 +20,7 @@ struct PPCCachedReg
 	Gen::OpArg location;
 	bool away;  // value not in source register
 	bool locked;
+	u32 last_used_quantum;
 };
 
 struct X64CachedReg
@@ -33,11 +34,7 @@ struct X64CachedReg
 typedef int XReg;
 typedef int PReg;
 
-#if _M_X86_64
 #define NUMXREGS 16
-#elif _M_X86_32
-#define NUMXREGS 8
-#endif
 
 class RegCache
 {
@@ -49,25 +46,38 @@ protected:
 
 	Gen::XEmitter *emit;
 
+	u32 cur_use_quantum;
+
 public:
 	RegCache();
-
 	virtual ~RegCache() {}
+
 	void Start();
 
 	void DiscardRegContentsIfCached(size_t preg);
-	void SetEmitter(Gen::XEmitter *emitter) {emit = emitter;}
+	void SetEmitter(Gen::XEmitter *emitter)
+	{
+		emit = emitter;
+	}
 
 	void FlushR(Gen::X64Reg reg);
-	void FlushR(Gen::X64Reg reg, Gen::X64Reg reg2) {FlushR(reg); FlushR(reg2);}
-	void FlushLockX(Gen::X64Reg reg) {
+	void FlushR(Gen::X64Reg reg, Gen::X64Reg reg2)
+	{
+		FlushR(reg);
+		FlushR(reg2);
+	}
+
+	void FlushLockX(Gen::X64Reg reg)
+	{
 		FlushR(reg);
 		LockX(reg);
 	}
-	void FlushLockX(Gen::X64Reg reg1, Gen::X64Reg reg2) {
+	void FlushLockX(Gen::X64Reg reg1, Gen::X64Reg reg2)
+	{
 		FlushR(reg1); FlushR(reg2);
 		LockX(reg1); LockX(reg2);
 	}
+
 	void Flush(FlushMode mode = FLUSH_ALL);
 	void Flush(PPCAnalyst::CodeOp *op) {Flush();}
 	int SanityCheck() const;
@@ -80,13 +90,17 @@ public:
 	virtual void StoreRegister(size_t preg, Gen::OpArg newLoc) = 0;
 	virtual void LoadRegister(size_t preg, Gen::X64Reg newLoc) = 0;
 
-	const Gen::OpArg &R(size_t preg) const {return regs[preg].location;}
+	const Gen::OpArg &R(size_t preg) const
+	{
+		return regs[preg].location;
+	}
+
 	Gen::X64Reg RX(size_t preg) const
 	{
 		if (IsBound(preg))
 			return regs[preg].location.GetSimpleReg();
 
-		PanicAlert("Not so simple - %" PRIx64, preg);
+		PanicAlert("Not so simple - %u", (unsigned int) preg);
 		return Gen::INVALID_REG;
 	}
 	virtual Gen::OpArg GetDefaultLocation(size_t reg) const = 0;

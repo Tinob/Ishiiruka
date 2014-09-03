@@ -118,7 +118,7 @@ void Write_U64_Swap(const u64 _Data, const u32 _Address);
 // Useful helper functions, used by ARM JIT
 void Write_F64(const double _Data, const u32 _Address);
 
-void GetString(std::string& _string, const u32 _Address);
+std::string GetString(u32 em_address);
 
 void WriteBigEData(const u8 *_pData, const u32 _Address, const size_t size);
 void ReadBigEData(u8 *_pDest, const u32 _Address, const u32 size);
@@ -126,6 +126,7 @@ u8* GetPointer(const u32 _Address);
 void DMA_LCToMemory(const u32 _iMemAddr, const u32 _iCacheAddr, const u32 _iNumBlocks);
 void DMA_MemoryToLC(const u32 _iCacheAddr, const u32 _iMemAddr, const u32 _iNumBlocks);
 void Memset(const u32 _Address, const u8 _Data, const u32 _iLength);
+void ClearCacheLine(const u32 _Address); // Zeroes 32 bytes; address should be 32-byte-aligned
 
 // TLB functions
 void SDRUpdated();

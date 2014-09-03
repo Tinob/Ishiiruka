@@ -17,6 +17,7 @@
 
 // for compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
+#define GL_GLEXT_PROTOTYPES
 
 #ifdef __BORLANDC__
     #pragma hdrstop

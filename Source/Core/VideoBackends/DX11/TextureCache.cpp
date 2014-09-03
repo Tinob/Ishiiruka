@@ -2,17 +2,17 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include "VideoCommon/RenderBase.h"
-
-#include "D3DBase.h"
-#include "D3DUtil.h"
-#include "FramebufferManager.h"
-#include "PixelShaderCache.h"
-#include "TextureCache.h"
-#include "VertexShaderCache.h"
-#include "TextureEncoder.h"
-#include "PSTextureEncoder.h"
 #include "Core/HW/Memmap.h"
+#include "VideoBackends/DX11/D3DBase.h"
+#include "VideoBackends/DX11/D3DUtil.h"
+#include "VideoBackends/DX11/FramebufferManager.h"
+#include "VideoBackends/DX11/PixelShaderCache.h"
+#include "VideoBackends/DX11/PSTextureEncoder.h"
+#include "VideoBackends/DX11/TextureCache.h"
+#include "VideoBackends/DX11/TextureEncoder.h"
+#include "VideoBackends/DX11/VertexShaderCache.h"
+#include "VideoCommon/ImageWrite.h"
+#include "VideoCommon/RenderBase.h"
 #include "VideoCommon/VideoConfig.h"
 
 namespace DX11
@@ -42,7 +42,35 @@ bool TextureCache::TCacheEntry::Save(const char filename[], unsigned int level)
 		warn_once = false;
 		return false;
 	}
-	return SUCCEEDED(PD3DX11SaveTextureToFileA(*(&D3D::context), texture->GetTex(), D3DX11_IFF_PNG, filename));
+
+	ID3D11Texture2D* pNewTexture = nullptr;
+	ID3D11Texture2D* pSurface = texture->GetTex();
+	D3D11_TEXTURE2D_DESC desc;
+	pSurface->GetDesc(&desc);
+
+	desc.BindFlags = 0;
+	desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
+	desc.Usage = D3D11_USAGE_STAGING;
+
+	HRESULT hr = D3D::device->CreateTexture2D(&desc, nullptr, &pNewTexture);
+
+	bool saved_png = false;
+
+	if (SUCCEEDED(hr) && pNewTexture)
+	{
+		D3D::context->CopyResource(pNewTexture, pSurface);
+
+		D3D11_MAPPED_SUBRESOURCE map;
+		HRESULT hr = D3D::context->Map(pNewTexture, 0, D3D11_MAP_READ_WRITE, 0, &map);
+		if (SUCCEEDED(hr))
+		{
+			saved_png = TextureToPng((u8*)map.pData, map.RowPitch, filename, desc.Width, desc.Height);
+			D3D::context->Unmap(pNewTexture, 0);
+		}
+		SAFE_RELEASE(pNewTexture);
+	}
+
+	return saved_png;
 }
 
 void TextureCache::TCacheEntry::Load(unsigned int width, unsigned int height,

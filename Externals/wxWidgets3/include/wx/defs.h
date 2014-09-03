@@ -310,8 +310,10 @@ typedef short int WXTYPE;
     inline T wx_truncate_cast_impl(X x)
     {
         #pragma warning(push)
-        /* conversion from 'X' to 'T', possible loss of data */
+        /* conversion from 'size_t' to 'type', possible loss of data */
         #pragma warning(disable: 4267)
+        /* conversion from 'type1' to 'type2', possible loss of data */
+        #pragma warning(disable: 4242)
 
         return x;
 
@@ -951,6 +953,10 @@ typedef wxUint16 wxWord;
             #define SIZEOF_LONG 4
         #endif
 
+        #ifndef SIZEOF_LONG_LONG
+            #define SIZEOF_LONG_LONG 8
+        #endif
+
         #ifndef SIZEOF_WCHAR_T
             /* Windows uses UTF-16 */
             #define SIZEOF_WCHAR_T 2
@@ -1222,7 +1228,9 @@ typedef wxUint32 wxDword;
     each time we cast it to a pointer or a handle (which results in hundreds
     of warnings as Win32 API often passes pointers in them)
  */
-#if wxCHECK_VISUALC_VERSION(7)
+// (dolphin-emu) Just disable __w64 usage. It's not meant to be used anymore,
+// even on 32bit builds.
+#if 0
     #define wxW64 __w64
 #else
     #define wxW64
@@ -2287,8 +2295,13 @@ enum wxStandardID
     wxID_OSX_HIDE = wxID_OSX_MENU_FIRST,
     wxID_OSX_HIDEOTHERS,
     wxID_OSX_SHOWALL,
+#if wxABI_VERSION >= 30001
+    wxID_OSX_SERVICES,
+    wxID_OSX_MENU_LAST = wxID_OSX_SERVICES,
+#else
     wxID_OSX_MENU_LAST = wxID_OSX_SHOWALL,
-    
+#endif
+
     /*  IDs used by generic file dialog (13 consecutive starting from this value) */
     wxID_FILEDLGG = 5900,
 
@@ -3502,7 +3515,7 @@ typedef const void* WXWidget;
 
 #if defined _M_IX86
     #pragma comment(linker, WX_CC_MANIFEST("x86"))
-#elif defined _M_X86_64
+#elif defined _M_X64
     #pragma comment(linker, WX_CC_MANIFEST("amd64"))
 #elif defined _M_IA64
     #pragma comment(linker, WX_CC_MANIFEST("ia64"))

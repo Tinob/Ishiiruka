@@ -5,7 +5,6 @@
 #include <cstdio>
 #include <cstring>
 #include <disasm.h>        // Bochs
-#include <PowerPCDisasm.h> // Bochs
 #include <wx/button.h>
 #include <wx/chartype.h>
 #include <wx/defs.h>
@@ -22,6 +21,7 @@
 #include <wx/windowid.h>
 
 #include "Common/Common.h"
+#include "Common/GekkoDisassembler.h"
 #include "Common/StringUtil.h"
 #include "Core/PowerPC/Gekko.h"
 #include "Core/PowerPC/PPCAnalyst.h"
@@ -75,7 +75,8 @@ CJitWindow::CJitWindow(wxWindow* parent, wxWindowID id, const wxPoint& pos,
 	sizerBig->Fit(this);
 }
 
-void CJitWindow::OnRefresh(wxCommandEvent& /*event*/) {
+void CJitWindow::OnRefresh(wxCommandEvent& /*event*/)
+{
 	block_list->Update();
 }
 
@@ -134,11 +135,7 @@ void CJitWindow::Compare(u32 em_address)
 	int num_x86_instructions = 0;
 	while ((u8*)disasmPtr < end)
 	{
-#if _M_X86_64
 		disasmPtr += x64disasm.disasm64(disasmPtr, disasmPtr, (u8*)disasmPtr, sptr);
-#else
-		disasmPtr += x64disasm.disasm32(disasmPtr, disasmPtr, (u8*)disasmPtr, sptr);
-#endif
 		sptr += strlen(sptr);
 		*sptr++ = 13;
 		*sptr++ = 10;
@@ -154,6 +151,7 @@ void CJitWindow::Compare(u32 em_address)
 	PPCAnalyst::BlockRegStats fpa;
 	PPCAnalyst::CodeBlock code_block;
 	PPCAnalyst::PPCAnalyzer analyzer;
+	analyzer.SetOption(PPCAnalyst::PPCAnalyzer::OPTION_CONDITIONAL_CONTINUE);
 
 	code_block.m_stats = &st;
 	code_block.m_gpa = &gpa;
@@ -165,9 +163,8 @@ void CJitWindow::Compare(u32 em_address)
 		for (u32 i = 0; i < code_block.m_num_instructions; i++)
 		{
 			const PPCAnalyst::CodeOp &op = code_buffer.codebuffer[i];
-			char temp[256];
-			DisassembleGekko(op.inst.hex, op.address, temp, 256);
-			sptr += sprintf(sptr, "%08x %s\n", op.address, temp);
+			std::string temp = GekkoDisassembler::Disassemble(op.inst.hex, op.address);
+			sptr += sprintf(sptr, "%08x %s\n", op.address, temp.c_str());
 		}
 
 		// Add stats to the end of the ppc box since it's generally the shortest.
@@ -182,9 +179,9 @@ void CJitWindow::Compare(u32 em_address)
 		sptr += sprintf(sptr, "%i estimated cycles\n", st.numCycles);
 
 		sptr += sprintf(sptr, "Num instr: PPC: %i  x86: %i  (blowup: %i%%)\n",
-				code_block.m_num_instructions, num_x86_instructions, 100 * (num_x86_instructions / code_block.m_num_instructions - 1));
+				code_block.m_num_instructions, num_x86_instructions, 100 * num_x86_instructions / code_block.m_num_instructions - 100);
 		sptr += sprintf(sptr, "Num bytes: PPC: %i  x86: %i  (blowup: %i%%)\n",
-				code_block.m_num_instructions * 4, block->codeSize, 100 * (block->codeSize / (4 * code_block.m_num_instructions) - 1));
+				code_block.m_num_instructions * 4, block->codeSize, 100 * block->codeSize / (4 * code_block.m_num_instructions) - 100);
 
 		ppc_box->SetValue(StrToWxStr((char*)xDis));
 	}
@@ -216,7 +213,8 @@ void CJitWindow::OnHostMessage(wxCommandEvent& event)
 // JitBlockList
 //================
 
-enum {
+enum
+{
 	COLUMN_ADDRESS,
 	COLUMN_PPCSIZE,
 	COLUMN_X86SIZE,

@@ -80,14 +80,14 @@ void StreamBuffer::Alloc ( size_t size, u32 stride )
 	case PINNED_MEMORY:
 		
 		// insert waiting slots for used memory
-		for(u32 i=SLOT(m_used_iterator); i<SLOT(m_iterator); i++)
+		for(size_t i=SLOT(m_used_iterator); i<SLOT(m_iterator); i++)
 		{
 			fences[i] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 		}
 		m_used_iterator = m_iterator;
 		
 		// wait for new slots to end of buffer
-		for(u32 i=SLOT(m_free_iterator)+1; i<=SLOT(iter_end) && i < SYNC_POINTS; i++)
+		for(size_t i=SLOT(m_free_iterator)+1; i<=SLOT(iter_end) && i < SYNC_POINTS; i++)
 		{
 			glClientWaitSync(fences[i], GL_SYNC_FLUSH_COMMANDS_BIT, GL_TIMEOUT_IGNORED);
 			glDeleteSync(fences[i]);
@@ -98,7 +98,7 @@ void StreamBuffer::Alloc ( size_t size, u32 stride )
 		if(iter_end >= m_size) {
 			
 			// insert waiting slots in unused space at the end of the buffer
-			for(u32 i=SLOT(m_used_iterator); i < SYNC_POINTS; i++)
+			for(size_t i=SLOT(m_used_iterator); i < SYNC_POINTS; i++)
 				fences[i] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 			
 			// move to the start
@@ -243,9 +243,9 @@ void StreamBuffer::Shutdown()
 
 void StreamBuffer::DeleteFences()
 {
-	for(u32 i=SLOT(m_free_iterator)+1; i < SYNC_POINTS; i++)
+	for(size_t i=SLOT(m_free_iterator)+1; i < SYNC_POINTS; i++)
 		glDeleteSync(fences[i]);
-	for(u32 i=0; i<SLOT(m_iterator); i++)
+	for (size_t i = 0; i<SLOT(m_iterator); i++)
 		glDeleteSync(fences[i]);
 	delete [] fences;
 }

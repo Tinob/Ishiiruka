@@ -3,6 +3,7 @@ set(SRCS BreakPoints.cpp
          ColorUtil.cpp
          FileSearch.cpp
          FileUtil.cpp
+         GekkoDisassembler.cpp
          Hash.cpp
          IniFile.cpp
          MathUtil.cpp
@@ -48,6 +49,9 @@ if(WIN32)
     set(SRCS ${SRCS} ExtendedTrace.cpp)
 endif(WIN32)
 
-enable_precompiled_headers(stdafx.h stdafx.cpp SRCS)
+set(LIBS "${CMAKE_THREAD_LIBS_INIT}")
+if((NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin") AND (NOT ANDROID))
+	set(LIBS ${LIBS} rt)
+endif()
 
-add_dolphin_library(common "${SRCS}" "${CMAKE_THREAD_LIBS_INIT}")
+add_dolphin_library(common "${SRCS}" "${LIBS}")

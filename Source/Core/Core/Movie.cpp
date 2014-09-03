@@ -20,8 +20,6 @@
 #include "Core/State.h"
 #include "Core/DSP/DSPCore.h"
 #include "Core/HW/DVDInterface.h"
-#include "Core/HW/EXI.h"
-#include "Core/HW/EXI_Channel.h"
 #include "Core/HW/EXI_Device.h"
 #include "Core/HW/SI.h"
 #include "Core/HW/Wiimote.h"
@@ -103,6 +101,14 @@ static void EnsureTmpInputSize(size_t bound)
 		delete[] tmpInput;
 	}
 	tmpInput = newTmpInput;
+}
+
+static bool IsMovieHeader(u8 magic[4])
+{
+	return magic[0] == 'D' &&
+	       magic[1] == 'T' &&
+	       magic[2] == 'M' &&
+	       magic[3] == 0x1A;
 }
 
 std::string GetInputDisplay()
@@ -732,10 +738,8 @@ bool PlayInput(const std::string& filename)
 
 	g_recordfd.ReadArray(&tmpHeader, 1);
 
-	if (tmpHeader.filetype[0] != 'D' ||
-	    tmpHeader.filetype[1] != 'T' ||
-	    tmpHeader.filetype[2] != 'M' ||
-	    tmpHeader.filetype[3] != 0x1A) {
+	if (!IsMovieHeader(tmpHeader.filetype))
+	{
 		PanicAlertT("Invalid recording file");
 		goto cleanup;
 	}
@@ -802,7 +806,7 @@ void LoadInput(const std::string& filename)
 
 	t_record.ReadArray(&tmpHeader, 1);
 
-	if (tmpHeader.filetype[0] != 'D' || tmpHeader.filetype[1] != 'T' || tmpHeader.filetype[2] != 'M' || tmpHeader.filetype[3] != 0x1A)
+	if (!IsMovieHeader(tmpHeader.filetype))
 	{
 		PanicAlertT("Savestate movie %s is corrupted, movie recording stopping...", filename.c_str());
 		EndPlayInput(false);

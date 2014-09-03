@@ -19,11 +19,11 @@
 // so that people can change default language.
 
 static const char iplverPAL[0x100] = "(C) 1999-2001 Nintendo.  All rights reserved."
-"(C) 1999 ArtX Inc.  All rights reserved."
-"PAL  Revision 1.0  ";
+									 "(C) 1999 ArtX Inc.  All rights reserved."
+									 "PAL  Revision 1.0  ";
 
-static const char iplverNTSC[0x100] = "(C) 1999-2001 Nintendo.  All rights reserved."
-"(C) 1999 ArtX Inc.  All rights reserved.";
+static const char iplverNTSC[0x100]= "(C) 1999-2001 Nintendo.  All rights reserved."
+									 "(C) 1999 ArtX Inc.  All rights reserved.";
 
 // bootrom descrambler reversed by segher
 // Copyright 2008 Segher Boessenkool <segher@kernel.crashing.org>
@@ -69,7 +69,7 @@ void CEXIIPL::Descrambler(u8* data, u32 size)
 			t ^= 0xa740;
 
 		nacc++;
-		acc = 2 * acc + x;
+		acc = 2*acc + x;
 		if (nacc == 8)
 		{
 			data[it++] ^= acc;
@@ -79,10 +79,10 @@ void CEXIIPL::Descrambler(u8* data, u32 size)
 }
 
 CEXIIPL::CEXIIPL() :
-m_uPosition(0),
-m_uAddress(0),
-m_uRWOffset(0),
-m_FontsLoaded(false)
+	m_uPosition(0),
+	m_uAddress(0),
+	m_uRWOffset(0),
+	m_FontsLoaded(false)
 {
 	// Determine region
 	m_bNTSC = SConfig::GetInstance().m_LocalCoreStartupParameter.bNTSC;
@@ -352,6 +352,8 @@ u32 CEXIIPL::GetGCTime()
 
 		if (0 == ltime)
 			ltime = Common::Timer::GetLocalTimeSinceJan1970();
+		else
+			ltime += CoreTiming::GetTicks() / SystemTimers::GetTicksPerSecond();
 	}
 
 	return ((u32)ltime - cJanuary2000);
@@ -363,9 +365,9 @@ u32 CEXIIPL::GetGCTime()
 	// Get SRAM bias
 	u32 Bias;
 
-	for (int i = 0; i<4; i++)
+	for (int i=0; i<4; i++)
 	{
-		((u8*)&Bias)[i] = sram_dump[0xc + (i ^ 3)];
+		((u8*)&Bias)[i] = sram_dump[0xc + (i^3)];
 	}
 
 	// Get the time ...

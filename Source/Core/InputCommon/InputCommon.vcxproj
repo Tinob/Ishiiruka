@@ -1,17 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
-    <ProjectConfiguration Include="Debug|Win32">
-      <Configuration>Debug</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
       <Platform>x64</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Release|Win32">
-      <Configuration>Release</Configuration>
-      <Platform>Win32</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="Release|x64">
       <Configuration>Release</Configuration>
@@ -24,7 +16,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <PlatformToolset>v120_xp</PlatformToolset>
+    <PlatformToolset>v120</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)'=='Debug'" Label="Configuration">
@@ -39,7 +31,7 @@
   <ImportGroup Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\..\VSProps\Base.props" />
-    <Import Project="..\..\VSProps\PrecompiledHeader.props" />
+    <Import Project="..\..\VSProps\PCHUse.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <ItemGroup>
@@ -49,33 +41,39 @@
     <ClCompile Include="ControllerInterface\DInput\DInput.cpp" />
     <ClCompile Include="ControllerInterface\DInput\DInputJoystick.cpp" />
     <ClCompile Include="ControllerInterface\DInput\DInputKeyboardMouse.cpp" />
+    <ClCompile Include="ControllerInterface\DInput\XInputFilter.cpp">
+      <!--Disable /Zc:strictStrings so that wbem headers may compile-->
+      <!--
+        This is somewhat gross as it doesn't dynamically remove the option,
+        I really hope the issue is fixed in next VS release :(
+        -->
+      <AdditionalOptions>/Zo /Zc:inline /Zc:rvalueCast /volatile:iso</AdditionalOptions>
+    </ClCompile>
     <ClCompile Include="ControllerInterface\ExpressionParser.cpp" />
     <ClCompile Include="ControllerInterface\ForceFeedback\ForceFeedbackDevice.cpp" />
     <ClCompile Include="ControllerInterface\XInput\XInput.cpp" />
     <ClCompile Include="InputConfig.cpp" />
-    <ClCompile Include="stdafx.cpp">
-      <PrecompiledHeader>Create</PrecompiledHeader>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ControllerEmu.h" />
     <ClInclude Include="ControllerInterface\ControllerInterface.h" />
     <ClInclude Include="ControllerInterface\Device.h" />
     <ClInclude Include="ControllerInterface\DInput\DInput.h" />
+    <ClInclude Include="ControllerInterface\DInput\DInput8.h" />
     <ClInclude Include="ControllerInterface\DInput\DInputJoystick.h" />
     <ClInclude Include="ControllerInterface\DInput\DInputKeyboardMouse.h" />
+    <ClInclude Include="ControllerInterface\DInput\XInputFilter.h" />
     <ClInclude Include="ControllerInterface\ExpressionParser.h" />
     <ClInclude Include="ControllerInterface\ForceFeedback\ForceFeedbackDevice.h" />
     <ClInclude Include="ControllerInterface\XInput\XInput.h" />
     <ClInclude Include="GCPadStatus.h" />
     <ClInclude Include="InputConfig.h" />
-    <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Common\Common.vcxproj">
+    <ProjectReference Include="$(CoreDir)Common\Common.vcxproj">
       <Project>{2e6c348c-c75c-4d94-8d1e-9c1fcbf3efe4}</Project>
     </ProjectReference>
   </ItemGroup>

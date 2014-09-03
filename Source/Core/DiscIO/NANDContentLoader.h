@@ -14,7 +14,7 @@
 
 namespace DiscIO
 {
-bool Add_Ticket(u64 TitleID, const u8 *p_tik, u32 tikSize);
+	bool Add_Ticket(u64 TitleID, const u8 *p_tik, u32 tikSize);
 struct SNANDContent
 {
 	u32 m_ContentID;
@@ -56,10 +56,10 @@ public:
 
 	enum
 	{
-		TMD_VIEW_SIZE = 0x58,
-		TMD_HEADER_SIZE = 0x1E4,
+		TMD_VIEW_SIZE       = 0x58,
+		TMD_HEADER_SIZE     = 0x1E4,
 		CONTENT_HEADER_SIZE = 0x24,
-		TICKET_SIZE = 0x2A4
+		TICKET_SIZE         = 0x2A4
 	};
 };
 
@@ -106,8 +106,8 @@ private:
 	};
 #pragma pack(pop)
 
-	u32 lastID;
-	std::string contentMap;
+	u32 m_lastID;
+	std::string m_contentMap;
 	std::vector<SElement> m_Elements;
 	static CSharedContent m_Instance;
 };
@@ -134,8 +134,8 @@ private:
 	};
 #pragma pack(pop)
 
-	u32 lastUID;
-	std::string uidSys;
+	u32 m_lastUID;
+	std::string m_uidSys;
 	std::vector<SElement> m_Elements;
 	static cUIDsys m_Instance;
 };

@@ -7,16 +7,18 @@
 #define wxUSE_XPM_IN_MSW 1
 #define USE_XPM_BITMAPS 1
 
+#include <memory>
 #include <vector>
 
 #include <wx/control.h>
 #include <wx/defs.h>
 #include <wx/event.h>
+#include <wx/graphics.h>
 #include <wx/windowid.h>
 
 #include "Common/Common.h"
 
-DECLARE_EVENT_TYPE(wxEVT_CODEVIEW_CHANGE, -1);
+wxDECLARE_EVENT(wxEVT_CODEVIEW_CHANGE, wxCommandEvent);
 
 class DebugInterface;
 class SymbolDB;
@@ -27,7 +29,7 @@ class CCodeView : public wxControl
 {
 public:
 	CCodeView(DebugInterface* debuginterface, SymbolDB *symbol_db,
-		wxWindow* parent, wxWindowID Id = wxID_ANY);
+			wxWindow* parent, wxWindowID Id = wxID_ANY);
 	void OnPaint(wxPaintEvent& event);
 	void OnErase(wxEraseEvent& event);
 	void OnScrollWheel(wxMouseEvent& event);
@@ -70,7 +72,7 @@ private:
 		m_ly = y;
 	}
 
-	void LineTo(wxPaintDC &dc, int x, int y);
+	void LineTo(std::unique_ptr<wxGraphicsContext>& dc, int x, int y);
 
 	struct BlrStruct // for IDM_INSERTBLR
 	{

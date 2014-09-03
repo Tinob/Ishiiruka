@@ -25,7 +25,7 @@
 
 #include "Common/Common.h"
 #include "Common/DebugInterface.h"
-#include "Core/Host.h"
+#include "DolphinWX/Globals.h"
 #include "DolphinWX/WxUtils.h"
 #include "DolphinWX/Debugger/DebuggerUIUtil.h"
 #include "DolphinWX/Debugger/MemoryView.h"
@@ -45,27 +45,27 @@ enum
 };
 
 BEGIN_EVENT_TABLE(CMemoryView, wxControl)
-EVT_PAINT(CMemoryView::OnPaint)
-EVT_LEFT_DOWN(CMemoryView::OnMouseDownL)
-EVT_LEFT_UP(CMemoryView::OnMouseUpL)
-EVT_MOTION(CMemoryView::OnMouseMove)
-EVT_RIGHT_DOWN(CMemoryView::OnMouseDownR)
-EVT_MOUSEWHEEL(CMemoryView::OnScrollWheel)
-EVT_MENU(-1, CMemoryView::OnPopupMenu)
-EVT_SIZE(CMemoryView::OnResize)
+	EVT_PAINT(CMemoryView::OnPaint)
+	EVT_LEFT_DOWN(CMemoryView::OnMouseDownL)
+	EVT_LEFT_UP(CMemoryView::OnMouseUpL)
+	EVT_MOTION(CMemoryView::OnMouseMove)
+	EVT_RIGHT_DOWN(CMemoryView::OnMouseDownR)
+	EVT_MOUSEWHEEL(CMemoryView::OnScrollWheel)
+	EVT_MENU(-1, CMemoryView::OnPopupMenu)
+	EVT_SIZE(CMemoryView::OnResize)
 END_EVENT_TABLE()
 
 CMemoryView::CMemoryView(DebugInterface* debuginterface, wxWindow* parent)
-: wxControl(parent, wxID_ANY)
-, curAddress(debuginterface->GetPC())
-, debugger(debuginterface)
-, align(debuginterface->GetInstructionSize(0))
-, rowHeight(13)
-, selection(0)
-, oldSelection(0)
-, selecting(false)
-, memory(0)
-, viewAsType(VIEWAS_FP)
+	: wxControl(parent, wxID_ANY)
+	, curAddress(debuginterface->GetPC())
+	, debugger(debuginterface)
+	, align(debuginterface->GetInstructionSize(0))
+	, rowHeight(13)
+	, selection(0)
+	, oldSelection(0)
+	, selecting(false)
+	, memory(0)
+	, viewAsType(VIEWAS_FP)
 {
 }
 
@@ -97,7 +97,10 @@ void CMemoryView::OnMouseDownL(wxMouseEvent& event)
 		debugger->ToggleMemCheck(YToAddress(y));
 
 		Refresh();
-		Host_UpdateBreakPointView();
+
+		// Propagate back to the parent window to update the breakpoint list.
+		wxCommandEvent evt(wxEVT_HOST_COMMAND, IDM_UPDATEBREAKPOINTS);
+		GetEventHandler()->AddPendingEvent(evt);
 	}
 
 	event.Skip();
@@ -165,37 +168,37 @@ void CMemoryView::OnPopupMenu(wxCommandEvent& event)
 	switch (event.GetId())
 	{
 #if wxUSE_CLIPBOARD
-	case IDM_COPYADDRESS:
-		wxTheClipboard->SetData(new wxTextDataObject(wxString::Format("%08x", selection)));
-		break;
+		case IDM_COPYADDRESS:
+			wxTheClipboard->SetData(new wxTextDataObject(wxString::Format("%08x", selection)));
+			break;
 
-	case IDM_COPYHEX:
-	{
-		char temp[24];
-		sprintf(temp, "%08x", debugger->ReadExtraMemory(memory, selection));
-		wxTheClipboard->SetData(new wxTextDataObject(StrToWxStr(temp)));
-	}
-		break;
+		case IDM_COPYHEX:
+			{
+			char temp[24];
+			sprintf(temp, "%08x", debugger->ReadExtraMemory(memory, selection));
+			wxTheClipboard->SetData(new wxTextDataObject(StrToWxStr(temp)));
+			}
+			break;
 #endif
 
-	case IDM_TOGGLEMEMORY:
-		memory ^= 1;
-		Refresh();
-		break;
+		case IDM_TOGGLEMEMORY:
+			memory ^= 1;
+			Refresh();
+			break;
 
-	case IDM_VIEWASFP:
-		viewAsType = VIEWAS_FP;
-		Refresh();
-		break;
+		case IDM_VIEWASFP:
+			viewAsType = VIEWAS_FP;
+			Refresh();
+			break;
 
-	case IDM_VIEWASASCII:
-		viewAsType = VIEWAS_ASCII;
-		Refresh();
-		break;
-	case IDM_VIEWASHEX:
-		viewAsType = VIEWAS_HEX;
-		Refresh();
-		break;
+		case IDM_VIEWASASCII:
+			viewAsType = VIEWAS_ASCII;
+			Refresh();
+			break;
+		case IDM_VIEWASHEX:
+			viewAsType = VIEWAS_HEX;
+			Refresh();
+			break;
 	}
 
 #if wxUSE_CLIPBOARD
@@ -231,7 +234,7 @@ void CMemoryView::OnPaint(wxPaintEvent& event)
 	wxFont hFont("Courier");
 	hFont.SetFamily(wxFONTFAMILY_TELETYPE);
 
-	wxCoord w, h;
+	wxCoord w,h;
 	dc.GetTextExtent("0WJyq", &w, &h, nullptr, nullptr, &hFont);
 	if (h > rowHeight)
 		rowHeight = h;
@@ -239,7 +242,7 @@ void CMemoryView::OnPaint(wxPaintEvent& event)
 	if (h > rowHeight)
 		rowHeight = h;
 
-	if (viewAsType == VIEWAS_HEX)
+	if (viewAsType==VIEWAS_HEX)
 		dc.SetFont(hFont);
 	else
 		dc.SetFont(DebuggerFont);
@@ -249,7 +252,7 @@ void CMemoryView::OnPaint(wxPaintEvent& event)
 	int textPlacement = 17 + 9 * fontSize;
 
 	// TODO: Add any drawing code here...
-	int width = rc.width;
+	int width   = rc.width;
 	int numRows = (rc.height / rowHeight) / 2 + 2;
 	dc.SetBackgroundMode(wxTRANSPARENT);
 	const wxColour bgColor = *wxWHITE;
@@ -268,7 +271,7 @@ void CMemoryView::OnPaint(wxPaintEvent& event)
 	dc.SetPen(nullPen);
 	dc.SetBrush(bgBrush);
 	dc.DrawRectangle(0, 0, 16, rc.height);
-	dc.DrawRectangle(0, 0, rc.width, 5 + 8);
+	dc.DrawRectangle(0, 0, rc.width, 5+8);
 
 	// TODO - clean up this freaking mess!!!!!
 	for (int row = -numRows; row <= numRows; row++)
@@ -305,13 +308,13 @@ void CMemoryView::OnPaint(wxPaintEvent& event)
 			char mem[256];
 			debugger->GetRawMemoryString(memory, address, mem, 256);
 			dc.SetTextForeground(wxTheColourDatabase->Find("NAVY"));
-			dc.DrawText(StrToWxStr(mem), 17 + fontSize*(8), rowY1);
+			dc.DrawText(StrToWxStr(mem), 17+fontSize*(8), rowY1);
 			dc.SetTextForeground(*wxBLACK);
 		}
 
 		if (debugger->IsAlive())
 		{
-			char dis[256] = { 0 };
+			char dis[256] = {0};
 			u32 mem_data = debugger->ReadExtraMemory(memory, address);
 
 			if (viewAsType == VIEWAS_FP)
@@ -321,10 +324,10 @@ void CMemoryView::OnPaint(wxPaintEvent& event)
 			}
 			else if (viewAsType == VIEWAS_ASCII)
 			{
-				u32 a[4] = { (mem_data & 0xff000000) >> 24,
-					(mem_data & 0xff0000) >> 16,
-					(mem_data & 0xff00) >> 8,
-					mem_data & 0xff };
+				u32 a[4] = {(mem_data&0xff000000)>>24,
+					(mem_data&0xff0000)>>16,
+					(mem_data&0xff00)>>8,
+					mem_data&0xff};
 				for (auto& word : a)
 					if (word == '\0')
 						word = ' ';
@@ -336,13 +339,13 @@ void CMemoryView::OnPaint(wxPaintEvent& event)
 				dis[1] = 0;
 				u32 mema[8] = {
 					debugger->ReadExtraMemory(memory, address),
-					debugger->ReadExtraMemory(memory, address + 4),
-					debugger->ReadExtraMemory(memory, address + 8),
-					debugger->ReadExtraMemory(memory, address + 12),
-					debugger->ReadExtraMemory(memory, address + 16),
-					debugger->ReadExtraMemory(memory, address + 20),
-					debugger->ReadExtraMemory(memory, address + 24),
-					debugger->ReadExtraMemory(memory, address + 28)
+					debugger->ReadExtraMemory(memory, address+4),
+					debugger->ReadExtraMemory(memory, address+8),
+					debugger->ReadExtraMemory(memory, address+12),
+					debugger->ReadExtraMemory(memory, address+16),
+					debugger->ReadExtraMemory(memory, address+20),
+					debugger->ReadExtraMemory(memory, address+24),
+					debugger->ReadExtraMemory(memory, address+28)
 				};
 
 				for (auto& word : mema)
@@ -352,29 +355,28 @@ void CMemoryView::OnPaint(wxPaintEvent& event)
 					{
 					case 0:
 						sprintf(buf, " %02X %02X %02X %02X",
-							((word & 0xff000000) >> 24) & 0xFF,
-							((word & 0xff0000) >> 16) & 0xFF,
-							((word & 0xff00) >> 8) & 0xFF,
-							word & 0xff);
+							((word&0xff000000)>>24)&0xFF,
+							((word&0xff0000)>>16)&0xFF,
+							((word&0xff00)>>8)&0xFF,
+							word&0xff);
 						break;
 					case 1:
 						sprintf(buf, " %02X%02X %02X%02X",
-							((word & 0xff000000) >> 24) & 0xFF,
-							((word & 0xff0000) >> 16) & 0xFF,
-							((word & 0xff00) >> 8) & 0xFF,
-							word & 0xff);
+							((word&0xff000000)>>24)&0xFF,
+							((word&0xff0000)>>16)&0xFF,
+							((word&0xff00)>>8)&0xFF,
+							word&0xff);
 						break;
 					case 2:
 						sprintf(buf, " %02X%02X%02X%02X",
-							((word & 0xff000000) >> 24) & 0xFF,
-							((word & 0xff0000) >> 16) & 0xFF,
-							((word & 0xff00) >> 8) & 0xFF,
-							word & 0xff);
+							((word&0xff000000)>>24)&0xFF,
+							((word&0xff0000)>>16)&0xFF,
+							((word&0xff00)>>8)&0xFF,
+							word&0xff);
 						break;
 					}
 					strcat(dis, buf);
 				}
-				curAddress += 32;
 			}
 			else
 			{
@@ -393,7 +395,7 @@ void CMemoryView::OnPaint(wxPaintEvent& event)
 			dc.SetTextForeground(*wxBLUE);
 
 			if (strlen(desc))
-				dc.DrawText(StrToWxStr(desc), 17 + fontSize*((8 + 8 + 8 + 30) * 2), rowY1);
+				dc.DrawText(StrToWxStr(desc), 17+fontSize*((8+8+8+30)*2), rowY1);
 
 			// Show blue memory check dot
 			if (debugger->IsMemCheck(address))

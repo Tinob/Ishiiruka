@@ -26,10 +26,12 @@ ROMUCode::ROMUCode(DSPHLE *dsphle, u32 crc)
 }
 
 ROMUCode::~ROMUCode()
-{}
+{
+}
 
 void ROMUCode::Update()
-{}
+{
+}
 
 void ROMUCode::HandleMail(u32 mail)
 {
@@ -60,7 +62,8 @@ void ROMUCode::HandleMail(u32 mail)
 
 			case 0x80F3B002:
 				m_current_ucode.m_dmem_length = mail & 0xffff;
-				if (m_current_ucode.m_dmem_length) {
+				if (m_current_ucode.m_dmem_length)
+				{
 					NOTICE_LOG(DSPHLE,"m_current_ucode.m_dmem_length = 0x%04x.", m_current_ucode.m_dmem_length);
 				}
 				break;

@@ -167,7 +167,7 @@ bool CWII_IPC_HLE_Device_usb_ven::IOCtlV(u32 CommandAddress)
 
 	SIOCtlVBuffer CommandBuffer(CommandAddress);
 
-	switch (CommandBuffer.Parameter)
+	/*switch (CommandBuffer.Parameter)
 	{
 	default:
 		WARN_LOG(OSHLE, "%s - IOCtlV:", GetDeviceName().c_str());
@@ -177,7 +177,14 @@ bool CWII_IPC_HLE_Device_usb_ven::IOCtlV(u32 CommandAddress)
 		WARN_LOG(OSHLE, "    BufferVector: 0x%08x", CommandBuffer.BufferVector);
 		DumpAsync(CommandBuffer.BufferVector, CommandBuffer.NumberInBuffer, CommandBuffer.NumberPayloadBuffer);
 		break;
-	}
+	}*/
+
+	WARN_LOG(OSHLE, "%s - IOCtlV:", GetDeviceName().c_str());
+	WARN_LOG(OSHLE, "    Parameter: 0x%x", CommandBuffer.Parameter);
+	WARN_LOG(OSHLE, "    NumberIn: 0x%08x", CommandBuffer.NumberInBuffer);
+	WARN_LOG(OSHLE, "    NumberOut: 0x%08x", CommandBuffer.NumberPayloadBuffer);
+	WARN_LOG(OSHLE, "    BufferVector: 0x%08x", CommandBuffer.BufferVector);
+	DumpAsync(CommandBuffer.BufferVector, CommandBuffer.NumberInBuffer, CommandBuffer.NumberPayloadBuffer);
 
 	Memory::Write_U32(0, CommandAddress + 4);
 	return SendReply;

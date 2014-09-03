@@ -2,8 +2,8 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 #include "VideoCommon/TextureUtil.h"
-#include "D3DBase.h"
-#include "D3DTexture.h"
+#include "VideoBackends/DX11/D3DBase.h"
+#include "VideoBackends/DX11/D3DTexture.h"
 
 namespace DX11
 {

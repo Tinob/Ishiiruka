@@ -22,12 +22,12 @@ namespace DiscIO
 
 CBannerLoaderWii::CBannerLoaderWii(DiscIO::IVolume *pVolume)
 {
-	u64 TitleID;
+	u64 TitleID = 0;
 	pVolume->GetTitleID((u8*)&TitleID);
 	TitleID = Common::swap64(TitleID);
 
 	std::string Filename = StringFromFormat("%stitle/%08x/%08x/data/banner.bin",
-		File::GetUserPath(D_WIIUSER_IDX).c_str(), (u32)(TitleID >> 32), (u32)TitleID);
+		File::GetUserPath(D_WIIUSER_IDX).c_str(), (u32)(TitleID>>32), (u32)TitleID);
 
 	if (!File::Exists(Filename))
 	{
@@ -37,13 +37,13 @@ CBannerLoaderWii::CBannerLoaderWii(DiscIO::IVolume *pVolume)
 #if 0
 		// Creating title folder
 		std::string titleFolder = StringFromFormat("%stitle/%08x/%08x/data/",
-			File::GetUserPath(D_WIIUSER_IDX).c_str(), (u32)(TitleID >> 32), (u32)TitleID);
+			File::GetUserPath(D_WIIUSER_IDX).c_str(), (u32)(TitleID>>32), (u32)TitleID);
 		if (!File::Exists(titleFolder))
 			File::CreateFullPath(titleFolder);
 
 		// Extracting banner.bin from opening.bnr
 		std::string bnrFilename = StringFromFormat("%stitle/%08x/%08x/data/opening.bnr",
-			File::GetUserPath(D_WIIUSER_IDX).c_str(), (u32)(TitleID >> 32), (u32)TitleID);
+			File::GetUserPath(D_WIIUSER_IDX).c_str(), (u32)(TitleID>>32), (u32)TitleID);
 
 		if (!_rFileSystem.ExportFile("opening.bnr", bnrFilename))
 		{
@@ -51,7 +51,7 @@ CBannerLoaderWii::CBannerLoaderWii(DiscIO::IVolume *pVolume)
 			return;
 		}
 
-		CARCFile bnrArc(bnrFilename, 0x600);
+		CARCFile bnrArc (bnrFilename, 0x600);
 
 		if (!bnrArc.ExportFile("meta/banner.bin", Filename))
 		{
@@ -70,7 +70,7 @@ CBannerLoaderWii::CBannerLoaderWii(DiscIO::IVolume *pVolume)
 	}
 
 	// load the banner.bin
-	size_t FileSize = (size_t)File::GetSize(Filename);
+	size_t FileSize = (size_t) File::GetSize(Filename);
 
 	if (FileSize > 0)
 	{
@@ -88,7 +88,7 @@ CBannerLoaderWii::~CBannerLoaderWii()
 {
 	if (m_pBannerFile)
 	{
-		delete[] m_pBannerFile;
+		delete [] m_pBannerFile;
 		m_pBannerFile = nullptr;
 	}
 }

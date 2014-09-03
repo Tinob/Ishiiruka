@@ -1,17 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
-    <ProjectConfiguration Include="Debug|Win32">
-      <Configuration>Debug</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
       <Platform>x64</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Release|Win32">
-      <Configuration>Release</Configuration>
-      <Platform>Win32</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="Release|x64">
       <Configuration>Release</Configuration>
@@ -25,7 +17,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v120_xp</PlatformToolset>
+    <PlatformToolset>v120</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)'=='Debug'" Label="Configuration">
@@ -40,15 +32,9 @@
   <ImportGroup Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\..\VSProps\Base.props" />
-    <Import Project="..\..\VSProps\PrecompiledHeader.props" />
+    <Import Project="..\..\VSProps\PCHUse.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LibraryPath>$(DXSDK_DIR)Lib\x86;$(LibraryPath)</LibraryPath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LibraryPath>$(DXSDK_DIR)Lib\x86;$(LibraryPath)</LibraryPath>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LibraryPath>$(DXSDK_DIR)Lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
@@ -60,12 +46,12 @@
       <BaseAddress>0x00400000</BaseAddress>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <FixedBaseAddress>true</FixedBaseAddress>
-      <AdditionalLibraryDirectories>..\..\..\Externals\SDL2-2.0.1\lib\$(PlatformName);..\..\..\Externals\OpenAL\$(PlatformName);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ExternalsDir)SDL2-2.0.1\lib\$(PlatformName);$(ExternalsDir)OpenAL\$(PlatformName);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>dsound.lib;iphlpapi.lib;winmm.lib;setupapi.lib;vfw32.lib;opengl32.lib;glu32.lib;rpcrt4.lib;comctl32.lib;OpenAL32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Windows</SubSystem>
     </Link>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>..\..\..\Externals\wxWidgets3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ExternalsDir)wxWidgets3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -112,9 +98,6 @@
     <ClCompile Include="Debugger\RegisterView.cpp" />
     <ClCompile Include="Debugger\RegisterWindow.cpp" />
     <ClCompile Include="GLInterface\WGL.cpp" />
-    <ClCompile Include="stdafx.cpp">
-      <PrecompiledHeader>Create</PrecompiledHeader>
-    </ClCompile>
     <ClCompile Include="TASInputDlg.cpp" />
     <ClCompile Include="VideoConfigDiag.cpp" />
     <ClCompile Include="WiimoteConfigDiag.cpp" />
@@ -174,58 +157,58 @@
     <None Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Externals\Bochs_disasm\Bochs_disasm.vcxproj">
+    <ProjectReference Include="$(ExternalsDir)Bochs_disasm\Bochs_disasm.vcxproj">
       <Project>{CD3D4C3C-1027-4D33-B047-AEC7B56D0BF6}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\Externals\libpng\png\png.vcxproj">
+    <ProjectReference Include="$(ExternalsDir)libpng\png\png.vcxproj">
       <Project>{01573C36-AC6E-49F6-94BA-572517EB9740}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\Externals\libusbx\msvc\libusb_static_2013.vcxproj">
+    <ProjectReference Include="$(ExternalsDir)libusbx\msvc\libusb_static_2013.vcxproj">
       <Project>{349EE8F9-7D25-4909-AAF5-FF3FADE72187}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\Externals\LZO\LZO.vcxproj">
+    <ProjectReference Include="$(ExternalsDir)LZO\LZO.vcxproj">
       <Project>{D8890B98-26F7-4CFF-BBFB-B95F371B5F20}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\Externals\miniupnpc\miniupnpc.vcxproj">
+    <ProjectReference Include="$(ExternalsDir)miniupnpc\miniupnpc.vcxproj">
       <Project>{A680190D-0764-485B-9CF3-A82C5EDD5715}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\Externals\SFML\build\vc2010\SFML_Network.vcxproj">
+    <ProjectReference Include="$(ExternalsDir)SFML\build\vc2010\SFML_Network.vcxproj">
       <Project>{93D73454-2512-424E-9CDA-4BB357FE13DD}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\Externals\wxWidgets3\build\msw\wx_base.vcxproj">
+    <ProjectReference Include="$(ExternalsDir)wxWidgets3\build\msw\wx_base.vcxproj">
       <Project>{1C8436C9-DBAF-42BE-83BC-CF3EC9175ABE}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\Externals\zlib\zlib.vcxproj">
+    <ProjectReference Include="$(ExternalsDir)zlib\zlib.vcxproj">
       <Project>{3E1339F5-9311-4122-9442-369702E8FCAD}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\VideoBackends\DX11\DX11.vcxproj">
+    <ProjectReference Include="$(CoreDir)VideoBackends\DX11\DX11.vcxproj">
       <Project>{9A4C733C-BADE-4AC6-B58A-6E274395E90E}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\VideoBackends\DX9\DX9.vcxproj">
+    <ProjectReference Include="$(CoreDir)VideoBackends\DX9\DX9.vcxproj">
       <Project>{DC7D7AF4-CE47-49E8-8B63-265CB6233A49}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\VideoBackends\OGL\OGL.vcxproj">
+    <ProjectReference Include="$(CoreDir)VideoBackends\OGL\OGL.vcxproj">
       <Project>{1909CD2D-1707-456F-86CA-0DF42A727C99}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\VideoBackends\Software\Software.vcxproj">
+    <ProjectReference Include="$(CoreDir)VideoBackends\Software\Software.vcxproj">
       <Project>{9E9DA440-E9AD-413C-B648-91030E792211}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\AudioCommon\AudioCommon.vcxproj">
+    <ProjectReference Include="$(CoreDir)AudioCommon\AudioCommon.vcxproj">
       <Project>{37D007BD-D66C-4EAF-B56C-BD1AAC340A05}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\Common\Common.vcxproj">
+    <ProjectReference Include="$(CoreDir)Common\Common.vcxproj">
       <Project>{C87A4178-44F6-49B2-B7AA-C79AF1B8C534}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\Core\Core.vcxproj">
+    <ProjectReference Include="$(CoreDir)Core\Core.vcxproj">
       <Project>{8C60E805-0DA5-4E25-8F84-038DB504BB0D}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\DiscIO\DiscIO.vcxproj">
+    <ProjectReference Include="$(CoreDir)DiscIO\DiscIO.vcxproj">
       <Project>{B6398059-EBB6-4C34-B547-95F365B71FF4}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\InputCommon\InputCommon.vcxproj">
+    <ProjectReference Include="$(CoreDir)InputCommon\InputCommon.vcxproj">
       <Project>{B39AC394-5DB5-4DA9-9D98-09D46CA3701F}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\VideoCommon\VideoCommon.vcxproj">
+    <ProjectReference Include="$(CoreDir)VideoCommon\VideoCommon.vcxproj">
       <Project>{3E5C4E02-1BA9-4776-BDBE-E3F91FFA34CF}</Project>
     </ProjectReference>
   </ItemGroup>

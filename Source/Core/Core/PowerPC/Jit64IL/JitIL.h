@@ -36,7 +36,6 @@
 #include "Core/PowerPC/JitILCommon/IR.h"
 #include "Core/PowerPC/JitILCommon/JitILBase.h"
 
-
 class JitIL : public JitILBase, public EmuCodeBlock
 {
 private:
@@ -68,19 +67,22 @@ public:
 	bool IsInCodeSpace(u8 *ptr) override { return IsInSpace(ptr); }
 
 	void ClearCache() override;
-	const u8 *GetDispatcher() {
+	const u8 *GetDispatcher()
+	{
 		return asm_routines.dispatcher;  // asm_routines.dispatcher
 	}
-	const CommonAsmRoutines *GetAsmRoutines() override {
+
+	const CommonAsmRoutines *GetAsmRoutines() override
+	{
 		return &asm_routines;
 	}
 
-	const char *GetName() override {
+	const char *GetName() override
+	{
 		return "JIT64IL";
 	}
 
 	// Run!
-
 	void Run() override;
 	void SingleStep() override;
 

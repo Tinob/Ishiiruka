@@ -18,6 +18,7 @@
 #include <wx/frame.h>
 #include <wx/gdicmn.h>
 #include <wx/listbox.h>
+#include <wx/msgdlg.h>
 #include <wx/notebook.h>
 #include <wx/panel.h>
 #include <wx/sizer.h>
@@ -52,7 +53,7 @@ class wxWindow;
 #define INITIAL_PAD_BUFFER_SIZE 20
 
 BEGIN_EVENT_TABLE(NetPlayDiag, wxFrame)
-EVT_COMMAND(wxID_ANY, wxEVT_THREAD, NetPlayDiag::OnThread)
+	EVT_COMMAND(wxID_ANY, wxEVT_THREAD, NetPlayDiag::OnThread)
 END_EVENT_TABLE()
 
 static NetPlayServer* netplay_server = nullptr;
@@ -76,7 +77,7 @@ static std::string BuildGameName(const GameListItem& game)
 
 static void FillWithGameNames(wxListBox* game_lbox, const CGameListCtrl& game_list)
 {
-	for (u32 i = 0; auto game = game_list.GetISO(i); ++i)
+	for (u32 i = 0 ; auto game = game_list.GetISO(i); ++i)
 		game_lbox->Append(StrToWxStr(BuildGameName(*game)));
 }
 
@@ -112,84 +113,83 @@ NetPlaySetupDiag::NetPlaySetupDiag(wxWindow* const parent, const CGameListCtrl* 
 
 	// connect tab
 	{
-		wxStaticText* const ip_lbl = new wxStaticText(connect_tab, wxID_ANY, _("Address :"));
+	wxStaticText* const ip_lbl = new wxStaticText(connect_tab, wxID_ANY, _("Address :"));
 
-		std::string address;
-		netplay_section.Get("Address", &address, "localhost");
-		m_connect_ip_text = new wxTextCtrl(connect_tab, wxID_ANY, StrToWxStr(address));
+	std::string address;
+	netplay_section.Get("Address", &address, "localhost");
+	m_connect_ip_text = new wxTextCtrl(connect_tab, wxID_ANY, StrToWxStr(address));
 
-		wxStaticText* const port_lbl = new wxStaticText(connect_tab, wxID_ANY, _("Port :"));
+	wxStaticText* const port_lbl = new wxStaticText(connect_tab, wxID_ANY, _("Port :"));
 
-		// string? w/e
-		std::string port;
-		netplay_section.Get("ConnectPort", &port, "2626");
-		m_connect_port_text = new wxTextCtrl(connect_tab, wxID_ANY, StrToWxStr(port));
+	// string? w/e
+	std::string port;
+	netplay_section.Get("ConnectPort", &port, "2626");
+	m_connect_port_text = new wxTextCtrl(connect_tab, wxID_ANY, StrToWxStr(port));
 
-		wxButton* const connect_btn = new wxButton(connect_tab, wxID_ANY, _("Connect"));
-		connect_btn->Bind(wxEVT_BUTTON, &NetPlaySetupDiag::OnJoin, this);
+	wxButton* const connect_btn = new wxButton(connect_tab, wxID_ANY, _("Connect"));
+	connect_btn->Bind(wxEVT_BUTTON, &NetPlaySetupDiag::OnJoin, this);
 
-		wxStaticText* const alert_lbl = new wxStaticText(connect_tab, wxID_ANY,
-			_("ALERT:\n\n"
-			"Netplay will only work with the following settings:\n"
-			" - Enable Dual Core [OFF]\n"
-			" - DSP Emulator Engine Must be the same on all computers!\n"
-			" - DSP on Dedicated Thread [OFF]\n"
-			" - Framelimit NOT set to [Audio]\n"
-			" - Manually set the extensions for each wiimote\n"
-			"\n"
-			"All players should use the same Dolphin version and settings.\n"
-			"All memory cards must be identical between players or disabled.\n"
-			"Wiimote support is probably terrible. Don't use it.\n"
-			"\n"
-			"The host must have the chosen TCP port open/forwarded!\n"));
+	wxStaticText* const alert_lbl = new wxStaticText(connect_tab, wxID_ANY,
+		_("ALERT:\n\n"
+		"Netplay will only work with the following settings:\n"
+		" - Enable Dual Core [OFF]\n"
+		" - DSP Emulator Engine Must be the same on all computers!\n"
+		" - DSP on Dedicated Thread [OFF]\n"
+		" - Manually set the extensions for each wiimote\n"
+		"\n"
+		"All players should use the same Dolphin version and settings.\n"
+		"All memory cards must be identical between players or disabled.\n"
+		"Wiimote support is probably terrible. Don't use it.\n"
+		"\n"
+		"The host must have the chosen TCP port open/forwarded!\n"));
 
-		wxBoxSizer* const top_szr = new wxBoxSizer(wxHORIZONTAL);
-		top_szr->Add(ip_lbl, 0, wxCENTER | wxRIGHT, 5);
-		top_szr->Add(m_connect_ip_text, 3);
-		top_szr->Add(port_lbl, 0, wxCENTER | wxRIGHT | wxLEFT, 5);
-		top_szr->Add(m_connect_port_text, 1);
+	wxBoxSizer* const top_szr = new wxBoxSizer(wxHORIZONTAL);
+	top_szr->Add(ip_lbl, 0, wxCENTER | wxRIGHT, 5);
+	top_szr->Add(m_connect_ip_text, 3);
+	top_szr->Add(port_lbl, 0, wxCENTER | wxRIGHT | wxLEFT, 5);
+	top_szr->Add(m_connect_port_text, 1);
 
-		wxBoxSizer* const con_szr = new wxBoxSizer(wxVERTICAL);
-		con_szr->Add(top_szr, 0, wxALL | wxEXPAND, 5);
-		con_szr->AddStretchSpacer(1);
-		con_szr->Add(alert_lbl, 0, wxLEFT | wxRIGHT | wxEXPAND, 5);
-		con_szr->AddStretchSpacer(1);
-		con_szr->Add(connect_btn, 0, wxALL | wxALIGN_RIGHT, 5);
+	wxBoxSizer* const con_szr = new wxBoxSizer(wxVERTICAL);
+	con_szr->Add(top_szr, 0, wxALL | wxEXPAND, 5);
+	con_szr->AddStretchSpacer(1);
+	con_szr->Add(alert_lbl, 0, wxLEFT | wxRIGHT | wxEXPAND, 5);
+	con_szr->AddStretchSpacer(1);
+	con_szr->Add(connect_btn, 0, wxALL | wxALIGN_RIGHT, 5);
 
-		connect_tab->SetSizerAndFit(con_szr);
+	connect_tab->SetSizerAndFit(con_szr);
 	}
 
 	// host tab
 	{
-		wxStaticText* const port_lbl = new wxStaticText(host_tab, wxID_ANY, _("Port :"));
+	wxStaticText* const port_lbl = new wxStaticText(host_tab, wxID_ANY, _("Port :"));
 
-		// string? w/e
-		std::string port;
-		netplay_section.Get("HostPort", &port, "2626");
-		m_host_port_text = new wxTextCtrl(host_tab, wxID_ANY, StrToWxStr(port));
+	// string? w/e
+	std::string port;
+	netplay_section.Get("HostPort", &port, "2626");
+	m_host_port_text = new wxTextCtrl(host_tab, wxID_ANY, StrToWxStr(port));
 
-		wxButton* const host_btn = new wxButton(host_tab, wxID_ANY, _("Host"));
-		host_btn->Bind(wxEVT_BUTTON, &NetPlaySetupDiag::OnHost, this);
+	wxButton* const host_btn = new wxButton(host_tab, wxID_ANY, _("Host"));
+	host_btn->Bind(wxEVT_BUTTON, &NetPlaySetupDiag::OnHost, this);
 
-		m_game_lbox = new wxListBox(host_tab, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0, nullptr, wxLB_SORT);
-		m_game_lbox->Bind(wxEVT_LISTBOX_DCLICK, &NetPlaySetupDiag::OnHost, this);
+	m_game_lbox = new wxListBox(host_tab, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0, nullptr, wxLB_SORT);
+	m_game_lbox->Bind(wxEVT_LISTBOX_DCLICK, &NetPlaySetupDiag::OnHost, this);
 
-		FillWithGameNames(m_game_lbox, *game_list);
+	FillWithGameNames(m_game_lbox, *game_list);
 
-		wxBoxSizer* const top_szr = new wxBoxSizer(wxHORIZONTAL);
-		top_szr->Add(port_lbl, 0, wxCENTER | wxRIGHT, 5);
-		top_szr->Add(m_host_port_text, 0);
+	wxBoxSizer* const top_szr = new wxBoxSizer(wxHORIZONTAL);
+	top_szr->Add(port_lbl, 0, wxCENTER | wxRIGHT, 5);
+	top_szr->Add(m_host_port_text, 0);
 #ifdef USE_UPNP
-		m_upnp_chk = new wxCheckBox(host_tab, wxID_ANY, _("Forward port (UPnP)"));
-		top_szr->Add(m_upnp_chk, 0, wxALL | wxALIGN_RIGHT, 5);
+	m_upnp_chk = new wxCheckBox(host_tab, wxID_ANY, _("Forward port (UPnP)"));
+	top_szr->Add(m_upnp_chk, 0, wxALL | wxALIGN_RIGHT, 5);
 #endif
 
-		wxBoxSizer* const host_szr = new wxBoxSizer(wxVERTICAL);
-		host_szr->Add(top_szr, 0, wxALL | wxEXPAND, 5);
-		host_szr->Add(m_game_lbox, 1, wxLEFT | wxRIGHT | wxEXPAND, 5);
-		host_szr->Add(host_btn, 0, wxALL | wxALIGN_RIGHT, 5);
+	wxBoxSizer* const host_szr = new wxBoxSizer(wxVERTICAL);
+	host_szr->Add(top_szr, 0, wxALL | wxEXPAND, 5);
+	host_szr->Add(m_game_lbox, 1, wxLEFT | wxRIGHT | wxEXPAND, 5);
+	host_szr->Add(host_btn, 0, wxALL | wxALIGN_RIGHT, 5);
 
-		host_tab->SetSizerAndFit(host_szr);
+	host_tab->SetSizerAndFit(host_szr);
 	}
 
 	// bottom row
@@ -257,13 +257,13 @@ void NetPlaySetupDiag::OnHost(wxCommandEvent&)
 	NetPlayDiag *&npd = NetPlayDiag::GetInstance();
 	if (npd)
 	{
-		PanicAlertT("A NetPlay window is already open!!");
+		WxUtils::ShowErrorDialog(_("A NetPlay window is already open!"));
 		return;
 	}
 
 	if (-1 == m_game_lbox->GetSelection())
 	{
-		PanicAlertT("You must choose a game!!");
+		WxUtils::ShowErrorDialog(_("You must choose a game!"));
 		return;
 	}
 
@@ -284,7 +284,7 @@ void NetPlaySetupDiag::OnHost(wxCommandEvent&)
 	}
 	else
 	{
-		PanicAlertT("Failed to listen.  Is another instance of the NetPlay server running?");
+		WxUtils::ShowErrorDialog(_("Failed to listen. Is another instance of the NetPlay server running?"));
 	}
 }
 
@@ -293,7 +293,7 @@ void NetPlaySetupDiag::OnJoin(wxCommandEvent&)
 	NetPlayDiag *&npd = NetPlayDiag::GetInstance();
 	if (npd)
 	{
-		PanicAlertT("A NetPlay window is already open!!");
+		WxUtils::ShowErrorDialog(_("A NetPlay window is already open!"));
 		return;
 	}
 
@@ -308,7 +308,7 @@ void NetPlaySetupDiag::OnQuit(wxCommandEvent&)
 }
 
 NetPlayDiag::NetPlayDiag(wxWindow* const parent, const CGameListCtrl* const game_list,
-	const std::string& game, const bool is_hosting)
+		const std::string& game, const bool is_hosting)
 	: wxFrame(parent, wxID_ANY, NETPLAY_TITLEBAR)
 	, m_selected_game(game)
 	, m_start_btn(nullptr)
@@ -318,8 +318,8 @@ NetPlayDiag::NetPlayDiag(wxWindow* const parent, const CGameListCtrl* const game
 
 	// top crap
 	m_game_btn = new wxButton(panel, wxID_ANY,
-		StrToWxStr(m_selected_game).Prepend(_(" Game : ")),
-		wxDefaultPosition, wxDefaultSize, wxBU_LEFT);
+			StrToWxStr(m_selected_game).Prepend(_(" Game : ")),
+			wxDefaultPosition, wxDefaultSize, wxBU_LEFT);
 
 	if (is_hosting)
 		m_game_btn->Bind(wxEVT_BUTTON, &NetPlayDiag::OnChangeGame, this);
@@ -381,7 +381,7 @@ NetPlayDiag::NetPlayDiag(wxWindow* const parent, const CGameListCtrl* const game
 		m_start_btn->Bind(wxEVT_BUTTON, &NetPlayDiag::OnStart, this);
 		bottom_szr->Add(m_start_btn);
 
-		bottom_szr->Add(new wxStaticText(panel, wxID_ANY, _("Buffer:")), 0, wxLEFT | wxCENTER, 5);
+		bottom_szr->Add(new wxStaticText(panel, wxID_ANY, _("Buffer:")), 0, wxLEFT | wxCENTER, 5 );
 		wxSpinCtrl* const padbuf_spin = new wxSpinCtrl(panel, wxID_ANY, "20"
 			, wxDefaultPosition, wxSize(64, -1), wxSP_ARROW_KEYS, 0, 200, INITIAL_PAD_BUFFER_SIZE);
 		padbuf_spin->Bind(wxEVT_SPINCTRL, &NetPlayDiag::OnAdjustBuffer, this);
@@ -406,7 +406,7 @@ NetPlayDiag::NetPlayDiag(wxWindow* const parent, const CGameListCtrl* const game
 	panel->SetSizerAndFit(main_szr);
 
 	main_szr->SetSizeHints(this);
-	SetSize(512, 512 - 128);
+	SetSize(512, 512-128);
 
 	Center();
 }
@@ -456,11 +456,11 @@ void NetPlayDiag::GetNetSettings(NetSettings &settings)
 std::string NetPlayDiag::FindGame()
 {
 	// find path for selected game, sloppy..
-	for (u32 i = 0; auto game = m_game_list->GetISO(i); ++i)
+	for (u32 i = 0 ; auto game = m_game_list->GetISO(i); ++i)
 		if (m_selected_game == BuildGameName(*game))
 			return game->GetFileName();
 
-	PanicAlertT("Game not found!");
+	WxUtils::ShowErrorDialog(_("Game not found!"));
 	return "";
 }
 
@@ -573,8 +573,8 @@ void NetPlayDiag::OnThread(wxCommandEvent& event)
 	// flash window in taskbar when someone joins if window isn't active
 	static u8 numPlayers = 1;
 	bool focus = (wxWindow::FindFocus() == this || (wxWindow::FindFocus() != nullptr && wxWindow::FindFocus()->GetParent() == this) ||
-		(wxWindow::FindFocus() != nullptr && wxWindow::FindFocus()->GetParent() != nullptr
-		&& wxWindow::FindFocus()->GetParent()->GetParent() == this));
+	             (wxWindow::FindFocus() != nullptr && wxWindow::FindFocus()->GetParent() != nullptr
+	              && wxWindow::FindFocus()->GetParent()->GetParent() == this));
 	if (netplay_server != nullptr && numPlayers < m_playerids.size() && !focus)
 	{
 		RequestUserAttention();
@@ -583,24 +583,24 @@ void NetPlayDiag::OnThread(wxCommandEvent& event)
 
 	switch (event.GetId())
 	{
-	case NP_GUI_EVT_CHANGE_GAME:
+	case NP_GUI_EVT_CHANGE_GAME :
 		// update selected game :/
-	{
+		{
 		m_selected_game.assign(WxStrToStr(event.GetString()));
 		m_game_btn->SetLabel(event.GetString().Prepend(_(" Game : ")));
-	}
+		}
 		break;
-	case NP_GUI_EVT_START_GAME:
+	case NP_GUI_EVT_START_GAME :
 		// client start game :/
-	{
+		{
 		netplay_client->StartGame(FindGame());
-	}
+		}
 		break;
-	case NP_GUI_EVT_STOP_GAME:
+	case NP_GUI_EVT_STOP_GAME :
 		// client stop game
-	{
+		{
 		netplay_client->StopGame();
-	}
+		}
 		break;
 	}
 
@@ -698,7 +698,7 @@ void ChangeGameDiag::OnPick(wxCommandEvent& event)
 PadMapDiag::PadMapDiag(wxWindow* const parent, PadMapping map[], PadMapping wiimotemap[], std::vector<const Player *>& player_list)
 	: wxDialog(parent, wxID_ANY, _("Configure Pads"))
 	, m_mapping(map)
-	, m_wiimapping(wiimotemap)
+	, m_wiimapping (wiimotemap)
 	, m_player_list(player_list)
 {
 	wxBoxSizer* const h_szr = new wxBoxSizer(wxHORIZONTAL);
@@ -709,11 +709,11 @@ PadMapDiag::PadMapDiag(wxWindow* const parent, PadMapping map[], PadMapping wiim
 	for (auto& player : m_player_list)
 		player_names.Add(player->name);
 
-	for (unsigned int i = 0; i<4; ++i)
+	for (unsigned int i=0; i<4; ++i)
 	{
 		wxBoxSizer* const v_szr = new wxBoxSizer(wxVERTICAL);
-		v_szr->Add(new wxStaticText(this, wxID_ANY, (wxString(_("Pad ")) + (wxChar)('0' + i))),
-			1, wxALIGN_CENTER_HORIZONTAL);
+		v_szr->Add(new wxStaticText(this, wxID_ANY, (wxString(_("Pad ")) + (wxChar)('0'+i))),
+					    1, wxALIGN_CENTER_HORIZONTAL);
 
 		m_map_cbox[i] = new wxChoice(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, player_names);
 		m_map_cbox[i]->Bind(wxEVT_CHOICE, &PadMapDiag::OnAdjust, this);
@@ -730,22 +730,22 @@ PadMapDiag::PadMapDiag(wxWindow* const parent, PadMapping map[], PadMapping wiim
 		h_szr->AddSpacer(10);
 	}
 
-	for (unsigned int i = 0; i<4; ++i)
+	for (unsigned int i=0; i<4; ++i)
 	{
 		wxBoxSizer* const v_szr = new wxBoxSizer(wxVERTICAL);
-		v_szr->Add(new wxStaticText(this, wxID_ANY, (wxString(_("Wiimote ")) + (wxChar)('0' + i))),
-			1, wxALIGN_CENTER_HORIZONTAL);
+		v_szr->Add(new wxStaticText(this, wxID_ANY, (wxString(_("Wiimote ")) + (wxChar)('0'+i))),
+					    1, wxALIGN_CENTER_HORIZONTAL);
 
-		m_map_cbox[i + 4] = new wxChoice(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, player_names);
-		m_map_cbox[i + 4]->Bind(wxEVT_CHOICE, &PadMapDiag::OnAdjust, this);
+		m_map_cbox[i+4] = new wxChoice(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, player_names);
+		m_map_cbox[i+4]->Bind(wxEVT_CHOICE, &PadMapDiag::OnAdjust, this);
 		if (m_wiimapping[i] == -1)
-			m_map_cbox[i + 4]->Select(0);
+			m_map_cbox[i+4]->Select(0);
 		else
 			for (unsigned int j = 0; j < m_player_list.size(); j++)
 				if (m_wiimapping[i] == m_player_list[j]->pid)
-					m_map_cbox[i + 4]->Select(j + 1);
+					m_map_cbox[i+4]->Select(j + 1);
 
-		v_szr->Add(m_map_cbox[i + 4], 1);
+		v_szr->Add(m_map_cbox[i+4], 1);
 
 		h_szr->Add(v_szr, 1, wxTOP | wxEXPAND, 20);
 		h_szr->AddSpacer(10);
@@ -771,7 +771,7 @@ void PadMapDiag::OnAdjust(wxCommandEvent& event)
 		else
 			m_mapping[i] = -1;
 
-		player_idx = m_map_cbox[i + 4]->GetSelection();
+		player_idx = m_map_cbox[i+4]->GetSelection();
 		if (player_idx > 0)
 			m_wiimapping[i] = m_player_list[player_idx - 1]->pid;
 		else

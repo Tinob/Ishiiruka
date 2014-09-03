@@ -2,6 +2,7 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
+#include <limits>
 #include <vector>
 
 #include "Core/PowerPC/Jit64/Jit.h"
@@ -9,6 +10,11 @@
 #include "Core/PowerPC/Jit64/JitRegCache.h"
 
 using namespace Gen;
+
+void Jit64::GenerateConstantOverflow(s64 val)
+{
+	GenerateConstantOverflow(val > std::numeric_limits<s32>::max() || val < std::numeric_limits<s32>::min());
+}
 
 void Jit64::GenerateConstantOverflow(bool overflow)
 {
@@ -122,8 +128,7 @@ void Jit64::ComputeRC(const Gen::OpArg & arg)
 {
 	if (arg.IsImm())
 	{
-		MOV(32, R(EAX), Imm32((s32)arg.offset));
-		MOV(64, M(&PowerPC::ppcState.cr_val[0]), R(RAX));
+		MOV(64, M(&PowerPC::ppcState.cr_val[0]), Imm32((s32)arg.offset));
 	}
 	else
 	{
@@ -132,10 +137,26 @@ void Jit64::ComputeRC(const Gen::OpArg & arg)
 	}
 }
 
-static u32 Add(u32 a, u32 b) {return a + b;}
-static u32 Or (u32 a, u32 b) {return a | b;}
-static u32 And(u32 a, u32 b) {return a & b;}
-static u32 Xor(u32 a, u32 b) {return a ^ b;}
+// Following static functions are used in conjunction with regimmop
+static u32 Add(u32 a, u32 b)
+{
+	return a + b;
+}
+
+static u32 Or(u32 a, u32 b)
+{
+	return a | b;
+}
+
+static u32 And(u32 a, u32 b)
+{
+	return a & b;
+}
+
+static u32 Xor(u32 a, u32 b)
+{
+	return a ^ b;
+}
 
 void Jit64::regimmop(int d, int a, bool binary, u32 value, Operation doop, void (XEmitter::*op)(int, const Gen::OpArg&, const Gen::OpArg&), bool Rc, bool carry)
 {
@@ -191,7 +212,7 @@ void Jit64::reg_imm(UGeckoInstruction inst)
 	u32 d = inst.RD, a = inst.RA, s = inst.RS;
 	switch (inst.OPCD)
 	{
-	case 14:  // addi
+	case 14: // addi
 		// occasionally used as MOV - emulate, with immediate propagation
 		if (gpr.R(a).IsImm() && d != a && a != 0)
 		{
@@ -239,18 +260,36 @@ void Jit64::reg_imm(UGeckoInstruction inst)
 			regimmop(d, a, false, (u32)inst.SIMM_16 << 16, Add, &XEmitter::ADD);
 		}
 		break;
-	case 24:
+	case 24: // ori
 		if (a == 0 && s == 0 && inst.UIMM == 0 && !inst.Rc)  //check for nop
-		{NOP(); return;} //make the nop visible in the generated code. not much use but interesting if we see one.
+		{
+			// Make the nop visible in the generated code. not much use but interesting if we see one.
+			NOP();
+			return;
+		}
 		regimmop(a, s, true, inst.UIMM, Or, &XEmitter::OR);
-		break; //ori
-	case 25: regimmop(a, s, true, inst.UIMM << 16, Or,  &XEmitter::OR, false); break;//oris
-	case 28: regimmop(a, s, true, inst.UIMM,       And, &XEmitter::AND, true); break;
-	case 29: regimmop(a, s, true, inst.UIMM << 16, And, &XEmitter::AND, true); break;
-	case 26: regimmop(a, s, true, inst.UIMM,       Xor, &XEmitter::XOR, false); break; //xori
-	case 27: regimmop(a, s, true, inst.UIMM << 16, Xor, &XEmitter::XOR, false); break; //xoris
-	case 12: regimmop(d, a, false, (u32)(s32)inst.SIMM_16, Add, &XEmitter::ADD, false, true); break; //addic
-	case 13: regimmop(d, a, true, (u32)(s32)inst.SIMM_16, Add, &XEmitter::ADD, true, true); break; //addic_rc
+		break;
+	case 25: // oris
+		regimmop(a, s, true, inst.UIMM << 16, Or,  &XEmitter::OR, false);
+		break;
+	case 28: // andi
+		regimmop(a, s, true, inst.UIMM,       And, &XEmitter::AND, true);
+		break;
+	case 29: // andis
+		regimmop(a, s, true, inst.UIMM << 16, And, &XEmitter::AND, true);
+		break;
+	case 26: // xori
+		regimmop(a, s, true, inst.UIMM,       Xor, &XEmitter::XOR, false);
+		break;
+	case 27: // xoris
+		regimmop(a, s, true, inst.UIMM << 16, Xor, &XEmitter::XOR, false);
+		break;
+	case 12: // addic
+		regimmop(d, a, false, (u32)(s32)inst.SIMM_16, Add, &XEmitter::ADD, false, true);
+		break;
+	case 13: // addic_rc
+		regimmop(d, a, true, (u32)(s32)inst.SIMM_16, Add, &XEmitter::ADD, true, true);
+		break;
 	default:
 		FALLBACK_IF(true);
 	}
@@ -269,20 +308,23 @@ void Jit64::cmpXX(UGeckoInstruction inst)
 	int test_crf = js.next_inst.BI >> 2;
 	// Check if the next instruction is a branch - if it is, merge the two.
 	if (((js.next_inst.OPCD == 16 /* bcx */) ||
-		((js.next_inst.OPCD == 19) && (js.next_inst.SUBOP10 == 528) /* bcctrx */) ||
-		((js.next_inst.OPCD == 19) && (js.next_inst.SUBOP10 == 16) /* bclrx */)) &&
-		(js.next_inst.BO & BO_DONT_DECREMENT_FLAG) &&
-		!(js.next_inst.BO & BO_DONT_CHECK_CONDITION)) {
+	    ((js.next_inst.OPCD == 19) && (js.next_inst.SUBOP10 == 528) /* bcctrx */) ||
+	    ((js.next_inst.OPCD == 19) && (js.next_inst.SUBOP10 == 16) /* bclrx */)) &&
+	    (js.next_inst.BO & BO_DONT_DECREMENT_FLAG) &&
+	    !(js.next_inst.BO & BO_DONT_CHECK_CONDITION))
+	{
 			// Looks like a decent conditional branch that we can merge with.
 			// It only test CR, not CTR.
-			if (test_crf == crf) {
+			if (test_crf == crf)
+			{
 				merge_branch = true;
 			}
 	}
 
 	OpArg comparand;
 	bool signedCompare;
-	if (inst.OPCD == 31) {
+	if (inst.OPCD == 31)
+	{
 		// cmp / cmpl
 		gpr.Lock(a, b);
 		comparand = gpr.R(b);
@@ -339,14 +381,15 @@ void Jit64::cmpXX(UGeckoInstruction inst)
 		if (merge_branch)
 		{
 			js.downcountAmount++;
-
-			gpr.Flush();
-			fpr.Flush();
+			js.skipnext = true;
 
 			int test_bit = 8 >> (js.next_inst.BI & 3);
 			u8 conditionResult = (js.next_inst.BO & BO_BRANCH_IF_TRUE) ? test_bit : 0;
 			if ((compareResult & test_bit) == conditionResult)
 			{
+				gpr.Flush();
+				fpr.Flush();
+
 				if (js.next_inst.OPCD == 16) // bcx
 				{
 					if (js.next_inst.LK)
@@ -383,7 +426,6 @@ void Jit64::cmpXX(UGeckoInstruction inst)
 			{
 				if (!analyzer.HasOption(PPCAnalyst::PPCAnalyzer::OPTION_CONDITIONAL_CONTINUE))
 				{
-					js.skipnext = true;
 					WriteExit(js.next_compilerPC + 4);
 				}
 			}
@@ -394,9 +436,10 @@ void Jit64::cmpXX(UGeckoInstruction inst)
 		if (signedCompare)
 		{
 			if (gpr.R(a).IsImm())
-				MOV(64, R(RAX), gpr.R(a));
+				MOV(64, R(RAX), Imm32((s32)gpr.R(a).offset));
 			else
 				MOVSX(64, 32, RAX, gpr.R(a));
+
 			if (!comparand.IsImm())
 			{
 				MOVSX(64, 32, ABI_PARAM1, comparand);
@@ -406,7 +449,7 @@ void Jit64::cmpXX(UGeckoInstruction inst)
 		else
 		{
 			if (gpr.R(a).IsImm())
-				MOV(32, R(RAX), gpr.R(a));
+				MOV(32, R(RAX), Imm32((u32)gpr.R(a).offset));
 			else
 				MOVZX(64, 32, RAX, gpr.R(a));
 
@@ -414,6 +457,7 @@ void Jit64::cmpXX(UGeckoInstruction inst)
 				MOV(32, R(ABI_PARAM1), comparand);
 			else
 				MOVZX(64, 32, ABI_PARAM1, comparand);
+
 			comparand = R(ABI_PARAM1);
 		}
 		SUB(64, R(RAX), comparand);
@@ -422,25 +466,27 @@ void Jit64::cmpXX(UGeckoInstruction inst)
 		if (merge_branch)
 		{
 			js.downcountAmount++;
+			js.skipnext = true;
 			int test_bit = 8 >> (js.next_inst.BI & 3);
-			bool condition = js.next_inst.BO & BO_BRANCH_IF_TRUE;
+			bool condition = !!(js.next_inst.BO & BO_BRANCH_IF_TRUE);
 
 			// Test swapping (in the future, will be used to inline across branches the right way)
 			// if (rand() & 1)
 			//     std::swap(destination1, destination2), condition = !condition;
 
 			gpr.UnlockAll();
-			gpr.Flush();
-			fpr.Flush();
 			FixupBranch pDontBranch;
 			if (test_bit & 8)
-				pDontBranch = J_CC(condition ? CC_GE : CC_L);  // Test < 0, so jump over if >= 0.
+				pDontBranch = J_CC(condition ? CC_GE : CC_L, true);  // Test < 0, so jump over if >= 0.
 			else if (test_bit & 4)
-				pDontBranch = J_CC(condition ? CC_LE : CC_G);  // Test > 0, so jump over if <= 0.
+				pDontBranch = J_CC(condition ? CC_LE : CC_G, true);  // Test > 0, so jump over if <= 0.
 			else if (test_bit & 2)
-				pDontBranch = J_CC(condition ? CC_NE : CC_E);  // Test = 0, so jump over if != 0.
+				pDontBranch = J_CC(condition ? CC_NE : CC_E, true);  // Test = 0, so jump over if != 0.
 			else  // SO bit, do not branch (we don't emulate SO for cmp).
-				pDontBranch = J();
+				pDontBranch = J(true);
+
+			gpr.Flush(FLUSH_MAINTAIN_STATE);
+			fpr.Flush(FLUSH_MAINTAIN_STATE);
 
 			// Code that handles successful PPC branching.
 			if (js.next_inst.OPCD == 16) // bcx
@@ -459,6 +505,7 @@ void Jit64::cmpXX(UGeckoInstruction inst)
 			{
 				if (js.next_inst.LK)
 					MOV(32, M(&LR), Imm32(js.compilerPC + 4));
+
 				MOV(32, R(EAX), M(&CTR));
 				AND(32, R(EAX), Imm32(0xFFFFFFFC));
 				WriteExitDestInEAX();
@@ -467,8 +514,10 @@ void Jit64::cmpXX(UGeckoInstruction inst)
 			{
 				MOV(32, R(EAX), M(&LR));
 				AND(32, R(EAX), Imm32(0xFFFFFFFC));
+
 				if (js.next_inst.LK)
 					MOV(32, M(&LR), Imm32(js.compilerPC + 4));
+
 				WriteExitDestInEAX();
 			}
 			else
@@ -480,7 +529,8 @@ void Jit64::cmpXX(UGeckoInstruction inst)
 
 			if (!analyzer.HasOption(PPCAnalyst::PPCAnalyzer::OPTION_CONDITIONAL_CONTINUE))
 			{
-				js.skipnext = true;
+				gpr.Flush();
+				fpr.Flush();
 				WriteExit(js.next_compilerPC + 4);
 			}
 		}
@@ -498,22 +548,23 @@ void Jit64::boolX(UGeckoInstruction inst)
 
 	if (gpr.R(s).IsImm() && gpr.R(b).IsImm())
 	{
-		if (inst.SUBOP10 == 28) /* andx */
+		if (inst.SUBOP10 == 28)       // andx
 			gpr.SetImmediate32(a, (u32)gpr.R(s).offset & (u32)gpr.R(b).offset);
-		else if (inst.SUBOP10 == 476) /* nandx */
+		else if (inst.SUBOP10 == 476) // nandx
 			gpr.SetImmediate32(a, ~((u32)gpr.R(s).offset & (u32)gpr.R(b).offset));
-		else if (inst.SUBOP10 == 60) /* andcx */
+		else if (inst.SUBOP10 == 60)  // andcx
 			gpr.SetImmediate32(a, (u32)gpr.R(s).offset & (~(u32)gpr.R(b).offset));
-		else if (inst.SUBOP10 == 444) /* orx */
+		else if (inst.SUBOP10 == 444) // orx
 			gpr.SetImmediate32(a, (u32)gpr.R(s).offset | (u32)gpr.R(b).offset);
-		else if (inst.SUBOP10 == 124) /* norx */
+		else if (inst.SUBOP10 == 124) // norx
 			gpr.SetImmediate32(a, ~((u32)gpr.R(s).offset | (u32)gpr.R(b).offset));
-		else if (inst.SUBOP10 == 412) /* orcx */
+		else if (inst.SUBOP10 == 412) // orcx
 			gpr.SetImmediate32(a, (u32)gpr.R(s).offset | (~(u32)gpr.R(b).offset));
-		else if (inst.SUBOP10 == 316) /* xorx */
+		else if (inst.SUBOP10 == 316) // xorx
 			gpr.SetImmediate32(a, (u32)gpr.R(s).offset ^ (u32)gpr.R(b).offset);
-		else if (inst.SUBOP10 == 284) /* eqvx */
+		else if (inst.SUBOP10 == 284) // eqvx
 			gpr.SetImmediate32(a, ~((u32)gpr.R(s).offset ^ (u32)gpr.R(b).offset));
+
 		if (inst.Rc)
 		{
 			ComputeRC(gpr.R(a));
@@ -567,16 +618,16 @@ void Jit64::boolX(UGeckoInstruction inst)
 		OpArg operand = ((a == s) ? gpr.R(b) : gpr.R(s));
 		gpr.BindToRegister(a, true, true);
 
-		if (inst.SUBOP10 == 28) /* andx */
+		if (inst.SUBOP10 == 28) // andx
 		{
 			AND(32, gpr.R(a), operand);
 		}
-		else if (inst.SUBOP10 == 476) /* nandx */
+		else if (inst.SUBOP10 == 476) // nandx
 		{
 			AND(32, gpr.R(a), operand);
 			NOT(32, gpr.R(a));
 		}
-		else if (inst.SUBOP10 == 60) /* andcx */
+		else if (inst.SUBOP10 == 60) // andcx
 		{
 			if (a == b)
 			{
@@ -590,16 +641,16 @@ void Jit64::boolX(UGeckoInstruction inst)
 				AND(32, gpr.R(a), R(EAX));
 			}
 		}
-		else if (inst.SUBOP10 == 444) /* orx */
+		else if (inst.SUBOP10 == 444) // orx
 		{
 			OR(32, gpr.R(a), operand);
 		}
-		else if (inst.SUBOP10 == 124) /* norx */
+		else if (inst.SUBOP10 == 124) // norx
 		{
 			OR(32, gpr.R(a), operand);
 			NOT(32, gpr.R(a));
 		}
-		else if (inst.SUBOP10 == 412) /* orcx */
+		else if (inst.SUBOP10 == 412) // orcx
 		{
 			if (a == b)
 			{
@@ -613,11 +664,11 @@ void Jit64::boolX(UGeckoInstruction inst)
 				OR(32, gpr.R(a), R(EAX));
 			}
 		}
-		else if (inst.SUBOP10 == 316) /* xorx */
+		else if (inst.SUBOP10 == 316) // xorx
 		{
 			XOR(32, gpr.R(a), operand);
 		}
-		else if (inst.SUBOP10 == 284) /* eqvx */
+		else if (inst.SUBOP10 == 284) // eqvx
 		{
 			NOT(32, gpr.R(a));
 			XOR(32, gpr.R(a), operand);
@@ -635,46 +686,46 @@ void Jit64::boolX(UGeckoInstruction inst)
 		gpr.Lock(a,s,b);
 		gpr.BindToRegister(a, false, true);
 
-		if (inst.SUBOP10 == 28) /* andx */
+		if (inst.SUBOP10 == 28) // andx
 		{
 			MOV(32, gpr.R(a), gpr.R(s));
 			AND(32, gpr.R(a), gpr.R(b));
 		}
-		else if (inst.SUBOP10 == 476) /* nandx */
+		else if (inst.SUBOP10 == 476) // nandx
 		{
 			MOV(32, gpr.R(a), gpr.R(s));
 			AND(32, gpr.R(a), gpr.R(b));
 			NOT(32, gpr.R(a));
 		}
-		else if (inst.SUBOP10 == 60) /* andcx */
+		else if (inst.SUBOP10 == 60) // andcx
 		{
 			MOV(32, gpr.R(a), gpr.R(b));
 			NOT(32, gpr.R(a));
 			AND(32, gpr.R(a), gpr.R(s));
 		}
-		else if (inst.SUBOP10 == 444) /* orx */
+		else if (inst.SUBOP10 == 444) // orx
 		{
 			MOV(32, gpr.R(a), gpr.R(s));
 			OR(32, gpr.R(a), gpr.R(b));
 		}
-		else if (inst.SUBOP10 == 124) /* norx */
+		else if (inst.SUBOP10 == 124) // norx
 		{
 			MOV(32, gpr.R(a), gpr.R(s));
 			OR(32, gpr.R(a), gpr.R(b));
 			NOT(32, gpr.R(a));
 		}
-		else if (inst.SUBOP10 == 412) /* orcx */
+		else if (inst.SUBOP10 == 412) // orcx
 		{
 			MOV(32, gpr.R(a), gpr.R(b));
 			NOT(32, gpr.R(a));
 			OR(32, gpr.R(a), gpr.R(s));
 		}
-		else if (inst.SUBOP10 == 316) /* xorx */
+		else if (inst.SUBOP10 == 316) // xorx
 		{
 			MOV(32, gpr.R(a), gpr.R(s));
 			XOR(32, gpr.R(a), gpr.R(b));
 		}
-		else if (inst.SUBOP10 == 284) /* eqvx */
+		else if (inst.SUBOP10 == 284) // eqvx
 		{
 			MOV(32, gpr.R(a), gpr.R(s));
 			NOT(32, gpr.R(a));
@@ -926,7 +977,7 @@ void Jit64::subfx(UGeckoInstruction inst)
 		}
 		if (inst.OE)
 		{
-			GenerateConstantOverflow((s64)(i - j) != (s64)i - (s64)j);
+			GenerateConstantOverflow((s64)i - (s64)j);
 		}
 	}
 	else
@@ -984,13 +1035,25 @@ void Jit64::mulli(UGeckoInstruction inst)
 		else if ((imm & (imm - 1)) == 0)
 		{
 			u32 shift = 0;
-			if (imm & 0xFFFF0000) shift |= 16;
-			if (imm & 0xFF00FF00) shift |= 8;
-			if (imm & 0xF0F0F0F0) shift |= 4;
-			if (imm & 0xCCCCCCCC) shift |= 2;
-			if (imm & 0xAAAAAAAA) shift |= 1;
+
+			if (imm & 0xFFFF0000)
+				shift |= 16;
+
+			if (imm & 0xFF00FF00)
+				shift |= 8;
+
+			if (imm & 0xF0F0F0F0)
+				shift |= 4;
+
+			if (imm & 0xCCCCCCCC)
+				shift |= 2;
+
+			if (imm & 0xAAAAAAAA)
+				shift |= 1;
+
 			if (d != a)
 				MOV(32, gpr.R(d), gpr.R(a));
+
 			if (shift)
 				SHL(32, gpr.R(d), Imm8(shift));
 		}
@@ -1015,7 +1078,7 @@ void Jit64::mullwx(UGeckoInstruction inst)
 		gpr.SetImmediate32(d, i * j);
 		if (inst.OE)
 		{
-			GenerateConstantOverflow((s64)(i*j) != (s64)i * (s64)j);
+			GenerateConstantOverflow((s64)i * (s64)j);
 		}
 	}
 	else
@@ -1039,13 +1102,25 @@ void Jit64::mullwx(UGeckoInstruction inst)
 			else if ((imm & (imm - 1)) == 0 && !inst.OE)
 			{
 				u32 shift = 0;
-				if (imm & 0xFFFF0000) shift |= 16;
-				if (imm & 0xFF00FF00) shift |= 8;
-				if (imm & 0xF0F0F0F0) shift |= 4;
-				if (imm & 0xCCCCCCCC) shift |= 2;
-				if (imm & 0xAAAAAAAA) shift |= 1;
+
+				if (imm & 0xFFFF0000)
+					shift |= 16;
+
+				if (imm & 0xFF00FF00)
+					shift |= 8;
+
+				if (imm & 0xF0F0F0F0)
+					shift |= 4;
+
+				if (imm & 0xCCCCCCCC)
+					shift |= 2;
+
+				if (imm & 0xAAAAAAAA)
+					shift |= 1;
+
 				if (d != src)
 					MOV(32, gpr.R(d), gpr.R(src));
+
 				if (shift)
 					SHL(32, gpr.R(d), Imm8(shift));
 			}
@@ -1079,15 +1154,19 @@ void Jit64::mullwx(UGeckoInstruction inst)
 	}
 }
 
-void Jit64::mulhwux(UGeckoInstruction inst)
+void Jit64::mulhwXx(UGeckoInstruction inst)
 {
 	INSTRUCTION_START
 	JITDISABLE(bJITIntegerOff);
 	int a = inst.RA, b = inst.RB, d = inst.RD;
+	bool sign = inst.SUBOP10 == 75;
 
 	if (gpr.R(a).IsImm() && gpr.R(b).IsImm())
 	{
-		gpr.SetImmediate32(d, (u32)(((u64)gpr.R(a).offset * (u64)gpr.R(b).offset) >> 32));
+		if (sign)
+			gpr.SetImmediate32(d, (u32)((u64)(((s64)(s32)gpr.R(a).offset * (s64)(s32)gpr.R(b).offset)) >> 32));
+		else
+			gpr.SetImmediate32(d, (u32)((gpr.R(a).offset * gpr.R(b).offset) >> 32));
 	}
 	else
 	{
@@ -1098,16 +1177,17 @@ void Jit64::mulhwux(UGeckoInstruction inst)
 			PanicAlert("mulhwux : WTF");
 		MOV(32, R(EAX), gpr.R(a));
 		gpr.KillImmediate(b, true, false);
-		MUL(32, gpr.R(b));
+		if (sign)
+			IMUL(32, gpr.R(b));
+		else
+			MUL(32, gpr.R(b));
 		gpr.UnlockAll();
 		gpr.UnlockAllX();
 		MOV(32, gpr.R(d), R(EDX));
 	}
 
 	if (inst.Rc)
-	{
 		ComputeRC(gpr.R(d));
-	}
 }
 
 void Jit64::divwux(UGeckoInstruction inst)
@@ -1171,7 +1251,6 @@ void Jit64::divwux(UGeckoInstruction inst)
 				if (((u64)(magic+1) * (max_quotient*divisor-1)) >> (shift + 32) != max_quotient-1)
 				{
 					// If failed, use slower round-down method
-#if _M_X86_64
 					gpr.Lock(a, b, d);
 					gpr.BindToRegister(d, d == a, true);
 					MOV(32, R(EAX), Imm32(magic));
@@ -1180,24 +1259,10 @@ void Jit64::divwux(UGeckoInstruction inst)
 					IMUL(64, gpr.RX(d), R(RAX));
 					ADD(64, gpr.R(d), R(RAX));
 					SHR(64, gpr.R(d), Imm8(shift+32));
-#else
-					gpr.FlushLockX(EDX);
-					gpr.Lock(a, b, d);
-					gpr.BindToRegister(d, d == a, true);
-					MOV(32, R(EAX), Imm32(magic));
-					MUL(32, gpr.R(a));
-					XOR(32, gpr.R(d), gpr.R(d));
-					ADD(32, R(EAX), Imm32(magic));
-					ADC(32, gpr.R(d), R(EDX));
-					if (shift)
-						SHR(32, gpr.R(d), Imm8(shift));
-					gpr.UnlockAllX();
-#endif
 				}
 				else
 				{
 					// If success, use faster round-up method
-#if _M_X86_64
 					gpr.Lock(a, b, d);
 					gpr.BindToRegister(a, true, false);
 					gpr.BindToRegister(d, false, true);
@@ -1212,17 +1277,6 @@ void Jit64::divwux(UGeckoInstruction inst)
 						IMUL(64, gpr.RX(d), gpr.R(a));
 					}
 					SHR(64, gpr.R(d), Imm8(shift+32));
-#else
-					gpr.FlushLockX(EDX);
-					gpr.Lock(a, b, d);
-					gpr.BindToRegister(d, d == a, true);
-					MOV(32, R(EAX), Imm32(magic+1));
-					MUL(32, gpr.R(a));
-					MOV(32, gpr.R(d), R(EDX));
-					if (shift)
-						SHR(32, gpr.R(d), Imm8(shift));
-					gpr.UnlockAllX();
-#endif
 				}
 			}
 			if (inst.OE)
@@ -1357,7 +1411,7 @@ void Jit64::addx(UGeckoInstruction inst)
 		}
 		if (inst.OE)
 		{
-			GenerateConstantOverflow((s64)(i + j) != (s64)i + (s64)j);
+			GenerateConstantOverflow((s64)i + (s64)j);
 		}
 	}
 	else if (gpr.R(a).IsSimpleReg() && gpr.R(b).IsSimpleReg() && !inst.Rc && !inst.OE)
@@ -1535,7 +1589,7 @@ void Jit64::rlwinmx(UGeckoInstruction inst)
 	int s = inst.RS;
 	if (gpr.R(s).IsImm())
 	{
-		unsigned result = (int)gpr.R(s).offset;
+		u32 result = (int)gpr.R(s).offset;
 		if (inst.SH != 0)
 			result = _rotl(result, inst.SH);
 		result &= Helper_Mask(inst.MB, inst.ME);
@@ -1572,6 +1626,7 @@ void Jit64::rlwinmx(UGeckoInstruction inst)
 			{
 				ROL(32, gpr.R(a), Imm8(inst.SH));
 			}
+
 			if (!(inst.MB==0 && inst.ME==31))
 			{
 				AND(32, gpr.R(a), Imm32(Helper_Mask(inst.MB, inst.ME)));
@@ -1622,10 +1677,12 @@ void Jit64::rlwimix(UGeckoInstruction inst)
 			{
 				MOV(32, gpr.R(a), gpr.R(s));
 			}
+
 			if (inst.SH)
 			{
 				ROL(32, gpr.R(a), Imm8(inst.SH));
 			}
+
 			if (inst.Rc)
 			{
 				ComputeRC(gpr.R(a));
@@ -1655,6 +1712,7 @@ void Jit64::rlwimix(UGeckoInstruction inst)
 				AND(32, R(EAX), Imm32(mask));
 				XOR(32, gpr.R(a), R(EAX));
 			}
+
 			if (inst.Rc)
 				ComputeRC(gpr.R(a));
 		}
@@ -1718,6 +1776,7 @@ void Jit64::negx(UGeckoInstruction inst)
 		{
 			ComputeRC(gpr.R(d));
 		}
+
 		if (inst.OE)
 		{
 			GenerateConstantOverflow(gpr.R(d).offset == 0x80000000);
@@ -1753,7 +1812,6 @@ void Jit64::srwx(UGeckoInstruction inst)
 	}
 	else
 	{
-#if _M_X86_64
 		gpr.FlushLockX(ECX);
 		gpr.Lock(a, b, s);
 		gpr.BindToRegister(a, (a == b || a == s), true);
@@ -1765,23 +1823,6 @@ void Jit64::srwx(UGeckoInstruction inst)
 		SHR(64, gpr.R(a), R(ECX));
 		gpr.UnlockAll();
 		gpr.UnlockAllX();
-#else
-		gpr.FlushLockX(ECX);
-		gpr.Lock(a, b, s);
-		gpr.BindToRegister(a, (a == b || a == s), true);
-		MOV(32, R(ECX), gpr.R(b));
-		TEST(32, R(ECX), Imm32(32));
-		if (a != s)
-		{
-			MOV(32, gpr.R(a), gpr.R(s));
-		}
-		FixupBranch branch = J_CC(CC_Z);
-		XOR(32, gpr.R(a), gpr.R(a));
-		SetJumpTarget(branch);
-		SHR(32, gpr.R(a), R(ECX));
-		gpr.UnlockAll();
-		gpr.UnlockAllX();
-#endif
 	}
 	// Shift of 0 doesn't update flags, so compare manually just in case
 	if (inst.Rc)
@@ -1809,7 +1850,6 @@ void Jit64::slwx(UGeckoInstruction inst)
 	}
 	else
 	{
-#if _M_X86_64
 		gpr.FlushLockX(ECX);
 		gpr.Lock(a, b, s);
 		gpr.BindToRegister(a, (a == b || a == s), true);
@@ -1830,28 +1870,6 @@ void Jit64::slwx(UGeckoInstruction inst)
 		}
 		gpr.UnlockAll();
 		gpr.UnlockAllX();
-#else
-		gpr.FlushLockX(ECX);
-		gpr.Lock(a, b, s);
-		gpr.BindToRegister(a, (a == b || a == s), true);
-		MOV(32, R(ECX), gpr.R(b));
-		TEST(32, R(ECX), Imm32(32));
-		if (a != s)
-		{
-			MOV(32, gpr.R(a), gpr.R(s));
-		}
-		FixupBranch branch = J_CC(CC_Z);
-		XOR(32, gpr.R(a), gpr.R(a));
-		SetJumpTarget(branch);
-		SHL(32, gpr.R(a), R(ECX));
-		gpr.UnlockAll();
-		gpr.UnlockAllX();
-		// Shift of 0 doesn't update flags, so compare manually just in case
-		if (inst.Rc)
-		{
-			ComputeRC(gpr.R(a));
-		}
-#endif
 	}
 }
 
@@ -1863,7 +1881,6 @@ void Jit64::srawx(UGeckoInstruction inst)
 	int a = inst.RA;
 	int b = inst.RB;
 	int s = inst.RS;
-#if _M_X86_64
 	gpr.Lock(a, s, b);
 	gpr.FlushLockX(ECX);
 	gpr.BindToRegister(a, (a == s || a == b), true);
@@ -1881,34 +1898,9 @@ void Jit64::srawx(UGeckoInstruction inst)
 	SetJumpTarget(nocarry);
 	gpr.UnlockAll();
 	gpr.UnlockAllX();
-#else
-	gpr.Lock(a, s, b);
-	gpr.FlushLockX(ECX);
-	gpr.BindToRegister(a, (a == s || a == b), true);
-	JitClearCA();
-	MOV(32, R(ECX), gpr.R(b));
-	if (a != s)
-		MOV(32, gpr.R(a), gpr.R(s));
-	TEST(32, R(ECX), Imm32(32));
-	FixupBranch topBitSet = J_CC(CC_NZ);
-	XOR(32, R(EAX), R(EAX));
-	SHRD(32, R(EAX), gpr.R(a), R(ECX));
-	SAR(32, gpr.R(a), R(ECX));
-	TEST(32, R(EAX), gpr.R(a));
-	FixupBranch nocarry1 = J_CC(CC_Z);
-	JitSetCA();
-	FixupBranch end = J();
-	SetJumpTarget(topBitSet);
-	SAR(32, gpr.R(a), Imm8(31));
-	FixupBranch nocarry2 = J_CC(CC_Z);
-	JitSetCA();
-	SetJumpTarget(end);
-	SetJumpTarget(nocarry1);
-	SetJumpTarget(nocarry2);
-	gpr.UnlockAll();
-	gpr.UnlockAllX();
-#endif
-	if (inst.Rc) {
+
+	if (inst.Rc)
+	{
 		ComputeRC(gpr.R(a));
 	}
 }
@@ -1975,8 +1967,10 @@ void Jit64::cntlzwx(UGeckoInstruction inst)
 		u32 mask = 0x80000000;
 		u32 i = 0;
 		for (; i < 32; i++, mask >>= 1)
+		{
 			if ((u32)gpr.R(s).offset & mask)
 				break;
+		}
 		gpr.SetImmediate32(a, i);
 	}
 	else

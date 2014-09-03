@@ -421,8 +421,9 @@ void XFBSource::Draw(const MathUtil::Rectangle<float> &sourcerc,
 {
 	// Texture map xfbSource->texture onto the main buffer
 	glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
-	glBlitFramebuffer(sourcerc.left, sourcerc.bottom, sourcerc.right, sourcerc.top,
-		drawrc.left, drawrc.bottom, drawrc.right, drawrc.top,
+	//GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter
+	glBlitFramebuffer((GLint)sourcerc.left, (GLint)sourcerc.bottom, (GLint)sourcerc.right, (GLint)sourcerc.top,
+		(GLint)drawrc.left, (GLint)drawrc.bottom, (GLint)drawrc.right, (GLint)drawrc.top,
 		GL_COLOR_BUFFER_BIT, GL_LINEAR);
 
 	GL_REPORT_ERRORD();

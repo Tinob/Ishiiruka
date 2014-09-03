@@ -136,7 +136,8 @@ public:
 		std::string name;
 		name += c;
 
-		while (it != expr.end()) {
+		while (it != expr.end())
+		{
 			c = *it;
 			if (!isalpha(c))
 				break;
@@ -272,7 +273,7 @@ public:
 		case TOK_OR:
 			return std::max(lhsValue, rhsValue);
 		case TOK_ADD:
-			return std::min(lhsValue + rhsValue, 1.0f);
+			return std::min(lhsValue + rhsValue, 1.0);
 		default:
 			assert(false);
 			return 0;
@@ -412,14 +413,14 @@ private:
 		switch (tok.type)
 		{
 		case TOK_CONTROL:
-		{
-			Device::Control *control = finder.FindControl(tok.qualifier);
-			if (control == nullptr)
-				return EXPRESSION_PARSE_NO_DEVICE;
+			{
+				Device::Control *control = finder.FindControl(tok.qualifier);
+				if (control == nullptr)
+					return EXPRESSION_PARSE_NO_DEVICE;
 
-			*expr_out = new ControlExpression(tok.qualifier, control);
-			return EXPRESSION_PARSE_SUCCESS;
-		}
+				*expr_out = new ControlExpression(tok.qualifier, control);
+				return EXPRESSION_PARSE_SUCCESS;
+			}
 		case TOK_LPAREN:
 			return Paren(expr_out);
 		default:
@@ -569,7 +570,8 @@ ExpressionParseStatus ParseExpression(std::string str, ControlFinder &finder, Ex
 	qualifier.has_device = false;
 
 	Device::Control *control = finder.FindControl(qualifier);
-	if (control) {
+	if (control)
+	{
 		*expr_out = new Expression(new ControlExpression(qualifier, control));
 		return EXPRESSION_PARSE_SUCCESS;
 	}

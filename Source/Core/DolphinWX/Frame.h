@@ -44,29 +44,29 @@ class wxAuiManager;
 class wxAuiManagerEvent;
 class wxAuiNotebook;
 class wxAuiNotebookEvent;
-class wxAuiToolBar;
-class wxAuiToolBarEvent;
 class wxListEvent;
 class wxMenuItem;
 class wxWindow;
 
 class CRenderFrame : public wxFrame
 {
-public:
-	CRenderFrame(wxFrame* parent,
-		wxWindowID id = wxID_ANY,
-		const wxString& title = "Dolphin",
-		const wxPoint& pos = wxDefaultPosition,
-		const wxSize& size = wxDefaultSize,
-		long style = wxDEFAULT_FRAME_STYLE | wxNO_FULL_REPAINT_ON_RESIZE);
+	public:
+		CRenderFrame(wxFrame* parent,
+			wxWindowID id = wxID_ANY,
+			const wxString& title = "Dolphin",
+			const wxPoint& pos = wxDefaultPosition,
+			const wxSize& size = wxDefaultSize,
+			long style = wxDEFAULT_FRAME_STYLE | wxNO_FULL_REPAINT_ON_RESIZE);
 
-private:
-	void OnDropFiles(wxDropFilesEvent& event);
-	static bool IsValidSavestateDropped(const std::string& filepath);
-#ifdef _WIN32
-	// Receive WndProc messages
-	WXLRESULT MSWWindowProc(WXUINT nMsg, WXWPARAM wParam, WXLPARAM lParam);
-#endif
+		bool ShowFullScreen(bool show, long style = wxFULLSCREEN_ALL) override;
+
+	private:
+		void OnDropFiles(wxDropFilesEvent& event);
+		static bool IsValidSavestateDropped(const std::string& filepath);
+		#ifdef _WIN32
+			// Receive WndProc messages
+			WXLRESULT MSWWindowProc(WXUINT nMsg, WXWPARAM wParam, WXLPARAM lParam);
+		#endif
 
 };
 
@@ -87,13 +87,13 @@ public:
 
 	void* GetRenderHandle()
 	{
-#ifdef _WIN32
-		return (void *)m_RenderParent->GetHandle();
-#elif defined(HAVE_X11) && HAVE_X11
-		return (void *)X11Utils::XWindowFromHandle(m_RenderParent->GetHandle());
-#else
-		return m_RenderParent;
-#endif
+		#ifdef _WIN32
+			return (void *)m_RenderParent->GetHandle();
+		#elif defined(HAVE_X11) && HAVE_X11
+			return (void *)X11Utils::XWindowFromHandle(m_RenderParent->GetHandle());
+		#else
+			return m_RenderParent;
+		#endif
 	}
 
 	// These have to be public
@@ -122,9 +122,11 @@ public:
 	bool RendererHasFocus();
 	bool UIHasFocus();
 	void DoFullscreen(bool bF);
-	void ToggleDisplayMode(bool bFullscreen);
-	void UpdateWiiMenuChoice(wxMenuItem *WiiMenuItem = nullptr);
+	void ToggleDisplayMode (bool bFullscreen);
+	void UpdateWiiMenuChoice(wxMenuItem *WiiMenuItem=nullptr);
+	void PopulateSavedPerspectives();
 	static void ConnectWiimote(int wm_idx, bool connect);
+	void UpdateTitle(const std::string &str);
 
 	const CGameListCtrl *GetGameListCtrl() const;
 
@@ -138,9 +140,11 @@ public:
 	X11Utils::XRRConfiguration *m_XRRConfig;
 #endif
 
+	wxMenu* m_SavedPerspectives;
+
+	wxToolBar *m_ToolBar;
 	// AUI
 	wxAuiManager *m_Mgr;
-	wxAuiToolBar *m_ToolBar, *m_ToolBarDebug, *m_ToolBarAui;
 	bool bFloatWindow[IDM_CODEWINDOW - IDM_LOGWINDOW + 1];
 
 	// Perspectives (Should find a way to make all of this private)
@@ -195,8 +199,7 @@ private:
 	wxBitmap m_Bitmaps[EToolbar_Max];
 	wxBitmap m_BitmapsMenu[EToolbar_Max];
 
-	void PopulateToolbar(wxAuiToolBar* toolBar);
-	void PopulateToolbarAui(wxAuiToolBar* toolBar);
+	void PopulateToolbar(wxToolBar* toolBar);
 	void RecreateToolbar();
 	void CreateMenu();
 
@@ -221,7 +224,6 @@ private:
 	void ShowResizePane();
 	void TogglePane();
 	void SetPaneSize();
-	void ResetToolbarStyle();
 	void TogglePaneStyle(bool On, int EventId);
 	void ToggleNotebookStyle(bool On, long Style);
 	// Float window
@@ -230,8 +232,8 @@ private:
 	void OnFloatingPageSize(wxSizeEvent& event);
 	void DoFloatNotebookPage(wxWindowID Id);
 	wxFrame * CreateParentFrame(wxWindowID Id = wxID_ANY,
-		const wxString& title = "",
-		wxWindow * = nullptr);
+			const wxString& title = "",
+			wxWindow * = nullptr);
 	wxString AuiFullscreen, AuiCurrent;
 	void AddPane();
 	void UpdateCurrentPerspective();
@@ -240,9 +242,7 @@ private:
 	void OnPaneClose(wxAuiManagerEvent& evt);
 	void ReloadPanes();
 	void DoLoadPerspective();
-	void OnDropDownToolbarSelect(wxCommandEvent& event);
-	void OnDropDownSettingsToolbar(wxAuiToolBarEvent& event);
-	void OnDropDownToolbarItem(wxAuiToolBarEvent& event);
+	void OnPerspectiveMenu(wxCommandEvent& event);
 	void OnSelectPerspective(wxCommandEvent& event);
 
 #ifdef _WIN32
@@ -252,8 +252,6 @@ private:
 	// Event functions
 	void OnQuit(wxCommandEvent& event);
 	void OnHelp(wxCommandEvent& event);
-	void OnToolBar(wxCommandEvent& event);
-	void OnAuiToolBar(wxAuiToolBarEvent& event);
 
 	void OnOpen(wxCommandEvent& event); // File menu
 	void DoOpen(bool Boot);

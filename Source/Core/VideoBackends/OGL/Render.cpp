@@ -472,18 +472,18 @@ Renderer::Renderer()
 		
 	}
 	
-	g_Config.backend_info.bSupportsDualSourceBlend = GLEW_ARB_blend_func_extended;
-	g_Config.backend_info.bSupportsGLSLUBO = GLEW_ARB_uniform_buffer_object;
-	g_Config.backend_info.bSupportsPrimitiveRestart = GLEW_VERSION_3_1 || GLEW_NV_primitive_restart;
-	g_Config.backend_info.bSupportsEarlyZ = GLEW_ARB_shader_image_load_store;
+	g_Config.backend_info.bSupportsDualSourceBlend = GLEW_ARB_blend_func_extended != 0;
+	g_Config.backend_info.bSupportsGLSLUBO = GLEW_ARB_uniform_buffer_object != 0;
+	g_Config.backend_info.bSupportsPrimitiveRestart = (GLEW_VERSION_3_1 != 0) || (GLEW_NV_primitive_restart != 0);
+	g_Config.backend_info.bSupportsEarlyZ = GLEW_ARB_shader_image_load_store != 0;
 	
-	g_ogl_config.bSupportsGLSLCache = GLEW_ARB_get_program_binary;
-	g_ogl_config.bSupportsGLPinnedMemory = GLEW_AMD_pinned_memory;
-	g_ogl_config.bSupportsGLSync = GLEW_ARB_sync;
-	g_ogl_config.bSupportsGLBaseVertex = GLEW_ARB_draw_elements_base_vertex;
-	g_ogl_config.bSupportCoverageMSAA = GLEW_NV_framebuffer_multisample_coverage;
-	g_ogl_config.bSupportSampleShading = GLEW_ARB_sample_shading;
-	g_ogl_config.bSupportOGL31 = GLEW_VERSION_3_1;
+	g_ogl_config.bSupportsGLSLCache = GLEW_ARB_get_program_binary != 0;
+	g_ogl_config.bSupportsGLPinnedMemory = GLEW_AMD_pinned_memory != 0;
+	g_ogl_config.bSupportsGLSync = GLEW_ARB_sync != 0;
+	g_ogl_config.bSupportsGLBaseVertex = GLEW_ARB_draw_elements_base_vertex != 0;
+	g_ogl_config.bSupportCoverageMSAA = GLEW_NV_framebuffer_multisample_coverage != 0;
+	g_ogl_config.bSupportSampleShading = GLEW_ARB_sample_shading != 0;
+	g_ogl_config.bSupportOGL31 = GLEW_VERSION_3_1 != 0;
 
 	if(strstr(g_ogl_config.glsl_version, "1.00") || strstr(g_ogl_config.glsl_version, "1.10") || strstr(g_ogl_config.glsl_version, "1.20"))
 	{

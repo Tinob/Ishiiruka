@@ -20,6 +20,7 @@
 #include <wx/textctrl.h>
 #include <wx/textdlg.h>
 #include <wx/thread.h>
+#include <wx/toolbar.h>
 #include <wx/translation.h>
 #include <wx/window.h>
 #include <wx/windowid.h>
@@ -48,12 +49,13 @@
 #include "DolphinWX/Debugger/CodeView.h"
 #include "DolphinWX/Debugger/CodeWindow.h"
 #include "DolphinWX/Debugger/DebuggerUIUtil.h"
+#include "DolphinWX/Debugger/JitWindow.h"
 #include "DolphinWX/Debugger/RegisterWindow.h"
 
 extern "C"  // Bitmaps
 {
-#include "DolphinWX/resources/toolbar_add_memorycheck.c" // NOLINT
-#include "DolphinWX/resources/toolbar_add_breakpoint.c" // NOLINT
+	#include "DolphinWX/resources/toolbar_add_memorycheck.c" // NOLINT
+	#include "DolphinWX/resources/toolbar_add_breakpoint.c" // NOLINT
 }
 
 class DebugInterface;
@@ -63,44 +65,44 @@ class DebugInterface;
 
 BEGIN_EVENT_TABLE(CCodeWindow, wxPanel)
 
-// Menu bar
-EVT_MENU_RANGE(IDM_INTERPRETER, IDM_JITSROFF, CCodeWindow::OnCPUMode)
-EVT_MENU(IDM_FONTPICKER, CCodeWindow::OnChangeFont)
-EVT_MENU_RANGE(IDM_CLEARCODECACHE, IDM_SEARCHINSTRUCTION, CCodeWindow::OnJitMenu)
-EVT_MENU_RANGE(IDM_CLEARSYMBOLS, IDM_PATCHHLEFUNCTIONS, CCodeWindow::OnSymbolsMenu)
-EVT_MENU_RANGE(IDM_PROFILEBLOCKS, IDM_WRITEPROFILE, CCodeWindow::OnProfilerMenu)
+	// Menu bar
+	EVT_MENU_RANGE(IDM_INTERPRETER, IDM_JITSROFF, CCodeWindow::OnCPUMode)
+	EVT_MENU(IDM_FONTPICKER, CCodeWindow::OnChangeFont)
+	EVT_MENU_RANGE(IDM_CLEARCODECACHE, IDM_SEARCHINSTRUCTION, CCodeWindow::OnJitMenu)
+	EVT_MENU_RANGE(IDM_CLEARSYMBOLS, IDM_PATCHHLEFUNCTIONS, CCodeWindow::OnSymbolsMenu)
+	EVT_MENU_RANGE(IDM_PROFILEBLOCKS, IDM_WRITEPROFILE, CCodeWindow::OnProfilerMenu)
 
-// Toolbar
-EVT_MENU_RANGE(IDM_STEP, IDM_GOTOPC, CCodeWindow::OnCodeStep)
-EVT_TEXT(IDM_ADDRBOX, CCodeWindow::OnAddrBoxChange)
+	// Toolbar
+	EVT_MENU_RANGE(IDM_STEP, IDM_GOTOPC, CCodeWindow::OnCodeStep)
+	EVT_TEXT(IDM_ADDRBOX, CCodeWindow::OnAddrBoxChange)
 
-// Other
-EVT_LISTBOX(ID_SYMBOLLIST, CCodeWindow::OnSymbolListChange)
-EVT_LISTBOX(ID_CALLSTACKLIST, CCodeWindow::OnCallstackListChange)
-EVT_LISTBOX(ID_CALLERSLIST, CCodeWindow::OnCallersListChange)
-EVT_LISTBOX(ID_CALLSLIST, CCodeWindow::OnCallsListChange)
+	// Other
+	EVT_LISTBOX(ID_SYMBOLLIST,    CCodeWindow::OnSymbolListChange)
+	EVT_LISTBOX(ID_CALLSTACKLIST, CCodeWindow::OnCallstackListChange)
+	EVT_LISTBOX(ID_CALLERSLIST,   CCodeWindow::OnCallersListChange)
+	EVT_LISTBOX(ID_CALLSLIST,     CCodeWindow::OnCallsListChange)
 
-EVT_HOST_COMMAND(wxID_ANY, CCodeWindow::OnHostMessage)
+	EVT_HOST_COMMAND(wxID_ANY,    CCodeWindow::OnHostMessage)
 
 END_EVENT_TABLE()
 
 // Class
 CCodeWindow::CCodeWindow(const SCoreStartupParameter& _LocalCoreStartupParameter, CFrame *parent,
-wxWindowID id, const wxPoint& position, const wxSize& size, long style, const wxString& name)
-: wxPanel(parent, id, position, size, style, name)
-, Parent(parent)
-, m_RegisterWindow(nullptr)
-, m_BreakpointWindow(nullptr)
-, m_MemoryWindow(nullptr)
-, m_JitWindow(nullptr)
-, m_SoundWindow(nullptr)
-, m_VideoWindow(nullptr)
-, codeview(nullptr)
+	wxWindowID id, const wxPoint& position, const wxSize& size, long style, const wxString& name)
+	: wxPanel(parent, id, position, size, style, name)
+	, Parent(parent)
+	, m_RegisterWindow(nullptr)
+	, m_BreakpointWindow(nullptr)
+	, m_MemoryWindow(nullptr)
+	, m_JitWindow(nullptr)
+	, m_SoundWindow(nullptr)
+	, m_VideoWindow(nullptr)
+	, codeview(nullptr)
 {
 	InitBitmaps();
 
-	wxBoxSizer* sizerBig = new wxBoxSizer(wxHORIZONTAL);
-	wxBoxSizer* sizerLeft = new wxBoxSizer(wxVERTICAL);
+	wxBoxSizer* sizerBig   = new wxBoxSizer(wxHORIZONTAL);
+	wxBoxSizer* sizerLeft  = new wxBoxSizer(wxVERTICAL);
 
 	DebugInterface* di = &PowerPC::debug_interface;
 
@@ -109,13 +111,13 @@ wxWindowID id, const wxPoint& position, const wxSize& size, long style, const wx
 	sizerBig->Add(codeview, 5, wxEXPAND);
 
 	sizerLeft->Add(callstack = new wxListBox(this, ID_CALLSTACKLIST,
-		wxDefaultPosition, wxSize(90, 100)), 0, wxEXPAND);
+				wxDefaultPosition, wxSize(90, 100)), 0, wxEXPAND);
 	sizerLeft->Add(symbols = new wxListBox(this, ID_SYMBOLLIST,
-		wxDefaultPosition, wxSize(90, 100), 0, nullptr, wxLB_SORT), 1, wxEXPAND);
+				wxDefaultPosition, wxSize(90, 100), 0, nullptr, wxLB_SORT), 1, wxEXPAND);
 	sizerLeft->Add(calls = new wxListBox(this, ID_CALLSLIST, wxDefaultPosition,
-		wxSize(90, 100), 0, nullptr, wxLB_SORT), 0, wxEXPAND);
+				wxSize(90, 100), 0, nullptr, wxLB_SORT), 0, wxEXPAND);
 	sizerLeft->Add(callers = new wxListBox(this, ID_CALLERSLIST, wxDefaultPosition,
-		wxSize(90, 100), 0, nullptr, wxLB_SORT), 0, wxEXPAND);
+				wxSize(90, 100), 0, nullptr, wxLB_SORT), 0, wxEXPAND);
 
 	SetSizer(sizerBig);
 
@@ -128,9 +130,9 @@ wxMenuBar *CCodeWindow::GetMenuBar()
 	return Parent->GetMenuBar();
 }
 
-wxAuiToolBar *CCodeWindow::GetToolBar()
+wxToolBar *CCodeWindow::GetToolBar()
 {
-	return Parent->m_ToolBarDebug;
+	return Parent->m_ToolBar;
 }
 
 // ----------
@@ -140,21 +142,28 @@ void CCodeWindow::OnHostMessage(wxCommandEvent& event)
 {
 	switch (event.GetId())
 	{
-	case IDM_NOTIFYMAPLOADED:
-		NotifyMapLoaded();
-		if (m_BreakpointWindow) m_BreakpointWindow->NotifyUpdate();
-		break;
+		case IDM_NOTIFYMAPLOADED:
+			NotifyMapLoaded();
+			if (m_BreakpointWindow) m_BreakpointWindow->NotifyUpdate();
+			break;
 
-	case IDM_UPDATEDISASMDIALOG:
-		Update();
-		if (codeview) codeview->Center(PC);
-		if (m_RegisterWindow) m_RegisterWindow->NotifyUpdate();
-		break;
+		case IDM_UPDATEDISASMDIALOG:
+			Update();
+			if (codeview) codeview->Center(PC);
+			if (m_RegisterWindow) m_RegisterWindow->NotifyUpdate();
+			break;
 
-	case IDM_UPDATEBREAKPOINTS:
-		Update();
-		if (m_BreakpointWindow) m_BreakpointWindow->NotifyUpdate();
-		break;
+		case IDM_UPDATEBREAKPOINTS:
+			Update();
+			if (m_BreakpointWindow) m_BreakpointWindow->NotifyUpdate();
+			break;
+
+		case IDM_UPDATEJITPANE:
+			// Check if the JIT pane is in the AUI notebook. If not, add it and switch to it.
+			if (!m_JitWindow)
+				ToggleJitWindow(true);
+			m_JitWindow->ViewAddr(codeview->GetSelection());
+			break;
 	}
 }
 
@@ -163,31 +172,31 @@ void CCodeWindow::OnCodeStep(wxCommandEvent& event)
 {
 	switch (event.GetId())
 	{
-	case IDM_STEP:
-		SingleStep();
-		break;
+		case IDM_STEP:
+			SingleStep();
+			break;
 
-	case IDM_STEPOVER:
-		StepOver();
-		break;
+		case IDM_STEPOVER:
+			StepOver();
+			break;
 
-	case IDM_TOGGLE_BREAKPOINT:
-		ToggleBreakpoint();
-		break;
+		case IDM_TOGGLE_BREAKPOINT:
+			ToggleBreakpoint();
+			break;
 
-	case IDM_SKIP:
-		PC += 4;
-		Update();
-		break;
+		case IDM_SKIP:
+			PC += 4;
+			Update();
+			break;
 
-	case IDM_SETPC:
-		PC = codeview->GetSelection();
-		Update();
-		break;
+		case IDM_SETPC:
+			PC = codeview->GetSelection();
+			Update();
+			break;
 
-	case IDM_GOTOPC:
-		JumpToAddress(PC);
-		break;
+		case IDM_GOTOPC:
+			JumpToAddress(PC);
+			break;
 	}
 
 	UpdateButtonStates();
@@ -244,7 +253,7 @@ void CCodeWindow::OnAddrBoxChange(wxCommandEvent& event)
 
 void CCodeWindow::OnCallstackListChange(wxCommandEvent& event)
 {
-	int index = callstack->GetSelection();
+	int index   = callstack->GetSelection();
 	if (index >= 0)
 	{
 		u32 address = (u32)(u64)(callstack->GetClientData(index));
@@ -285,7 +294,6 @@ void CCodeWindow::SingleStep()
 		// need a short wait here
 		JumpToAddress(PC);
 		Update();
-		Host_UpdateLogDisplay();
 	}
 }
 
@@ -336,7 +344,7 @@ void CCodeWindow::UpdateLists()
 		if (caller_symbol)
 		{
 			int idx = callers->Append(StrToWxStr(StringFromFormat
-				("< %s (%08x)", caller_symbol->name.c_str(), caller_addr).c_str()));
+						("< %s (%08x)", caller_symbol->name.c_str(), caller_addr).c_str()));
 			callers->SetClientData(idx, (void*)(u64)caller_addr);
 		}
 	}
@@ -349,7 +357,7 @@ void CCodeWindow::UpdateLists()
 		if (call_symbol)
 		{
 			int idx = calls->Append(StrToWxStr(StringFromFormat
-				("> %s (%08x)", call_symbol->name.c_str(), call_addr).c_str()));
+						("> %s (%08x)", call_symbol->name.c_str(), call_addr).c_str()));
 			calls->SetClientData(idx, (void*)(u64)call_addr);
 		}
 	}
@@ -407,25 +415,25 @@ void CCodeWindow::CreateMenu(const SCoreStartupParameter& _LocalCoreStartupParam
 		_("Turn off all JIT functions, but still use the JIT core from Jit.cpp"),
 		wxITEM_CHECK);
 	pCoreMenu->Append(IDM_JITLSOFF, _("&JIT LoadStore off"),
-		wxEmptyString, wxITEM_CHECK);
+			wxEmptyString, wxITEM_CHECK);
 	pCoreMenu->Append(IDM_JITLSLBZXOFF, _("    &JIT LoadStore lbzx off"),
-		wxEmptyString, wxITEM_CHECK);
+			wxEmptyString, wxITEM_CHECK);
 	pCoreMenu->Append(IDM_JITLSLXZOFF, _("    &JIT LoadStore lXz off"),
-		wxEmptyString, wxITEM_CHECK);
+			wxEmptyString, wxITEM_CHECK);
 	pCoreMenu->Append(IDM_JITLSLWZOFF, _("&JIT LoadStore lwz off"),
-		wxEmptyString, wxITEM_CHECK);
+			wxEmptyString, wxITEM_CHECK);
 	pCoreMenu->Append(IDM_JITLSFOFF, _("&JIT LoadStore Floating off"),
-		wxEmptyString, wxITEM_CHECK);
+			wxEmptyString, wxITEM_CHECK);
 	pCoreMenu->Append(IDM_JITLSPOFF, _("&JIT LoadStore Paired off"),
-		wxEmptyString, wxITEM_CHECK);
+			wxEmptyString, wxITEM_CHECK);
 	pCoreMenu->Append(IDM_JITFPOFF, _("&JIT FloatingPoint off"),
-		wxEmptyString, wxITEM_CHECK);
+			wxEmptyString, wxITEM_CHECK);
 	pCoreMenu->Append(IDM_JITIOFF, _("&JIT Integer off"),
-		wxEmptyString, wxITEM_CHECK);
+			wxEmptyString, wxITEM_CHECK);
 	pCoreMenu->Append(IDM_JITPOFF, _("&JIT Paired off"),
-		wxEmptyString, wxITEM_CHECK);
+			wxEmptyString, wxITEM_CHECK);
 	pCoreMenu->Append(IDM_JITSROFF, _("&JIT SystemRegisters off"),
-		wxEmptyString, wxITEM_CHECK);
+			wxEmptyString, wxITEM_CHECK);
 
 	pMenuBar->Append(pCoreMenu, _("&JIT"));
 
@@ -436,6 +444,22 @@ void CCodeWindow::CreateMenu(const SCoreStartupParameter& _LocalCoreStartupParam
 	pDebugMenu->Append(IDM_STEP, _("Step &Into\tF11"));
 	pDebugMenu->Append(IDM_STEPOVER, _("Step &Over\tF10"));
 	pDebugMenu->Append(IDM_TOGGLE_BREAKPOINT, _("Toggle &Breakpoint\tF9"));
+	pDebugMenu->AppendSeparator();
+
+	wxMenu* pPerspectives = new wxMenu;
+	Parent->m_SavedPerspectives = new wxMenu;
+	pDebugMenu->AppendSubMenu(pPerspectives, _("Perspectives"), _("Edit Perspectives"));
+	pPerspectives->Append(IDM_SAVE_PERSPECTIVE, _("Save perspectives"), _("Save currently-toggled perspectives"));
+	pPerspectives->Append(IDM_EDIT_PERSPECTIVES, _("Edit perspectives"), _("Toggle editing of perspectives"), wxITEM_CHECK);
+	pPerspectives->AppendSeparator();
+	pPerspectives->Append(IDM_ADD_PERSPECTIVE, _("Create new perspective"));
+	pPerspectives->AppendSubMenu(Parent->m_SavedPerspectives, _("Saved perspectives"));
+	Parent->PopulateSavedPerspectives();
+	pPerspectives->AppendSeparator();
+	pPerspectives->Append(IDM_PERSPECTIVES_ADD_PANE, _("Add new pane"));
+	pPerspectives->Append(IDM_TAB_SPLIT, _("Tab split"), "", wxITEM_CHECK);
+	pPerspectives->Append(IDM_NO_DOCKING, _("Disable docking"), "Disable docking of perspective panes to main window", wxITEM_CHECK);
+
 
 	pMenuBar->Append(pDebugMenu, _("&Debug"));
 
@@ -467,48 +491,48 @@ void CCodeWindow::OnCPUMode(wxCommandEvent& event)
 {
 	switch (event.GetId())
 	{
-	case IDM_INTERPRETER:
-		PowerPC::SetMode(UseInterpreter() ? PowerPC::MODE_INTERPRETER : PowerPC::MODE_JIT);
-		break;
-	case IDM_BOOTTOPAUSE:
-		bBootToPause = !bBootToPause;
-		return;
-	case IDM_AUTOMATICSTART:
-		bAutomaticStart = !bAutomaticStart;
-		return;
-	case IDM_JITOFF:
-		Core::g_CoreStartupParameter.bJITOff = event.IsChecked();
-		break;
-	case IDM_JITLSOFF:
-		Core::g_CoreStartupParameter.bJITLoadStoreOff = event.IsChecked();
-		break;
-	case IDM_JITLSLXZOFF:
-		Core::g_CoreStartupParameter.bJITLoadStorelXzOff = event.IsChecked();
-		break;
-	case IDM_JITLSLWZOFF:
-		Core::g_CoreStartupParameter.bJITLoadStorelwzOff = event.IsChecked();
-		break;
-	case IDM_JITLSLBZXOFF:
-		Core::g_CoreStartupParameter.bJITLoadStorelbzxOff = event.IsChecked();
-		break;
-	case IDM_JITLSFOFF:
-		Core::g_CoreStartupParameter.bJITLoadStoreFloatingOff = event.IsChecked();
-		break;
-	case IDM_JITLSPOFF:
-		Core::g_CoreStartupParameter.bJITLoadStorePairedOff = event.IsChecked();
-		break;
-	case IDM_JITFPOFF:
-		Core::g_CoreStartupParameter.bJITFloatingPointOff = event.IsChecked();
-		break;
-	case IDM_JITIOFF:
-		Core::g_CoreStartupParameter.bJITIntegerOff = event.IsChecked();
-		break;
-	case IDM_JITPOFF:
-		Core::g_CoreStartupParameter.bJITPairedOff = event.IsChecked();
-		break;
-	case IDM_JITSROFF:
-		Core::g_CoreStartupParameter.bJITSystemRegistersOff = event.IsChecked();
-		break;
+		case IDM_INTERPRETER:
+			PowerPC::SetMode(UseInterpreter() ? PowerPC::MODE_INTERPRETER : PowerPC::MODE_JIT);
+			break;
+		case IDM_BOOTTOPAUSE:
+			bBootToPause = !bBootToPause;
+			return;
+		case IDM_AUTOMATICSTART:
+			bAutomaticStart = !bAutomaticStart;
+			return;
+		case IDM_JITOFF:
+			Core::g_CoreStartupParameter.bJITOff = event.IsChecked();
+			break;
+		case IDM_JITLSOFF:
+			Core::g_CoreStartupParameter.bJITLoadStoreOff = event.IsChecked();
+			break;
+		case IDM_JITLSLXZOFF:
+			Core::g_CoreStartupParameter.bJITLoadStorelXzOff = event.IsChecked();
+			break;
+		case IDM_JITLSLWZOFF:
+			Core::g_CoreStartupParameter.bJITLoadStorelwzOff = event.IsChecked();
+			break;
+		case IDM_JITLSLBZXOFF:
+			Core::g_CoreStartupParameter.bJITLoadStorelbzxOff = event.IsChecked();
+			break;
+		case IDM_JITLSFOFF:
+			Core::g_CoreStartupParameter.bJITLoadStoreFloatingOff = event.IsChecked();
+			break;
+		case IDM_JITLSPOFF:
+			Core::g_CoreStartupParameter.bJITLoadStorePairedOff = event.IsChecked();
+			break;
+		case IDM_JITFPOFF:
+			Core::g_CoreStartupParameter.bJITFloatingPointOff = event.IsChecked();
+			break;
+		case IDM_JITIOFF:
+			Core::g_CoreStartupParameter.bJITIntegerOff = event.IsChecked();
+			break;
+		case IDM_JITPOFF:
+			Core::g_CoreStartupParameter.bJITPairedOff = event.IsChecked();
+			break;
+		case IDM_JITSROFF:
+			Core::g_CoreStartupParameter.bJITSystemRegistersOff = event.IsChecked();
+			break;
 	}
 
 	// Clear the JIT cache to enable these changes
@@ -522,28 +546,28 @@ void CCodeWindow::OnJitMenu(wxCommandEvent& event)
 {
 	switch (event.GetId())
 	{
-	case IDM_LOGINSTRUCTIONS:
-		PPCTables::LogCompiledInstructions();
-		break;
+		case IDM_LOGINSTRUCTIONS:
+			PPCTables::LogCompiledInstructions();
+			break;
 
-	case IDM_CLEARCODECACHE:
-		JitInterface::ClearCache();
-		break;
+		case IDM_CLEARCODECACHE:
+			JitInterface::ClearCache();
+			break;
 
-	case IDM_SEARCHINSTRUCTION:
-	{
-		wxString str = wxGetTextFromUser("", _("Op?"), wxEmptyString, this);
-		for (u32 addr = 0x80000000; addr < 0x80100000; addr += 4)
+		case IDM_SEARCHINSTRUCTION:
 		{
-			const char *name = PPCTables::GetInstructionName(Memory::ReadUnchecked_U32(addr));
-			auto const wx_name = WxStrToStr(str);
-			if (name && (wx_name == name))
+			wxString str = wxGetTextFromUser("", _("Op?"), wxEmptyString, this);
+			for (u32 addr = 0x80000000; addr < 0x80100000; addr += 4)
 			{
-				NOTICE_LOG(POWERPC, "Found %s at %08x", wx_name.c_str(), addr);
+				const char *name = PPCTables::GetInstructionName(Memory::ReadUnchecked_U32(addr));
+				auto const wx_name = WxStrToStr(str);
+				if (name && (wx_name == name))
+				{
+					NOTICE_LOG(POWERPC, "Found %s at %08x", wx_name.c_str(), addr);
+				}
 			}
+			break;
 		}
-		break;
-	}
 	}
 }
 
@@ -588,22 +612,20 @@ void CCodeWindow::InitBitmaps()
 		bitmap = wxBitmap(bitmap.ConvertToImage().Scale(24, 24));
 }
 
-void CCodeWindow::PopulateToolbar(wxAuiToolBar* toolBar)
+void CCodeWindow::PopulateToolbar(wxToolBar* toolBar)
 {
 	int w = m_Bitmaps[0].GetWidth(),
 		h = m_Bitmaps[0].GetHeight();
 
 	toolBar->SetToolBitmapSize(wxSize(w, h));
-	toolBar->AddTool(IDM_STEP, _("Step"), m_Bitmaps[Toolbar_Step]);
-	toolBar->AddTool(IDM_STEPOVER, _("Step Over"), m_Bitmaps[Toolbar_StepOver]);
-	toolBar->AddTool(IDM_SKIP, _("Skip"), m_Bitmaps[Toolbar_Skip]);
+	WxUtils::AddToolbarButton(toolBar, IDM_STEP,     _("Step"),      m_Bitmaps[Toolbar_Step],     _("Step into the next instruction"));
+	WxUtils::AddToolbarButton(toolBar, IDM_STEPOVER, _("Step Over"), m_Bitmaps[Toolbar_StepOver], _("Step over the next instruction"));
+	WxUtils::AddToolbarButton(toolBar, IDM_SKIP,     _("Skip"),      m_Bitmaps[Toolbar_Skip],     _("Skips the next instruction completely"));
 	toolBar->AddSeparator();
-	toolBar->AddTool(IDM_GOTOPC, _("Show PC"), m_Bitmaps[Toolbar_GotoPC]);
-	toolBar->AddTool(IDM_SETPC, _("Set PC"), m_Bitmaps[Toolbar_SetPC]);
+	WxUtils::AddToolbarButton(toolBar, IDM_GOTOPC,   _("Show PC"),   m_Bitmaps[Toolbar_GotoPC],   _("Go to the current instruction"));
+	WxUtils::AddToolbarButton(toolBar, IDM_SETPC,    _("Set PC"),    m_Bitmaps[Toolbar_SetPC],    _("Set the current instruction"));
 	toolBar->AddSeparator();
 	toolBar->AddControl(new wxTextCtrl(toolBar, IDM_ADDRBOX, ""));
-
-	toolBar->Realize();
 }
 
 // Update GUI
@@ -625,7 +647,7 @@ void CCodeWindow::UpdateButtonStates()
 	bool Initialized = (Core::GetState() != Core::CORE_UNINITIALIZED);
 	bool Pause = (Core::GetState() == Core::CORE_PAUSE);
 	bool Stepping = CCPU::IsStepping();
-	wxAuiToolBar* ToolBar = GetToolBar();
+	wxToolBar* ToolBar = GetToolBar();
 
 	// Toolbar
 	if (!ToolBar)

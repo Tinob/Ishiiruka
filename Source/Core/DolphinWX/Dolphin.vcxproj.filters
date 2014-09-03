@@ -3,7 +3,6 @@
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="MainNoGUI.cpp" />
-    <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="WXInputBase.cpp" />
     <ClCompile Include="WxUtils.cpp" />
     <ClCompile Include="MemoryCards\WiiSaveCrypted.cpp">

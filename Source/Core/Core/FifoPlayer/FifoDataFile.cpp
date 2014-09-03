@@ -11,7 +11,6 @@
 #include "Core/FifoPlayer/FifoFileStruct.h"
 
 using namespace FifoFileStruct;
-using namespace std;
 
 FifoDataFile::FifoDataFile() :
 	m_Flags(0)
@@ -196,7 +195,7 @@ FifoDataFile *FifoDataFile::Load(const std::string &filename, bool flagsOnly)
 	return dataFile;
 }
 
-void FifoDataFile::PadFile(u32 numBytes, File::IOFile& file)
+void FifoDataFile::PadFile(size_t numBytes, File::IOFile& file)
 {
 	const u8 zero = 0;
 	fwrite(&zero, sizeof(zero), numBytes, file.GetHandle());
