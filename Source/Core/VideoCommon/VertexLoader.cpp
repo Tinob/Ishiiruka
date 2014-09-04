@@ -6,6 +6,8 @@
 #include "Core/Host.h"
 
 #include "VideoCommon/BPMemory.h"
+#include "VideoCommon/IndexGenerator.h"
+#include "VideoCommon/Statistics.h"
 #include "VideoCommon/VertexLoader.h"
 #include "VideoCommon/VertexLoader_Color.h"
 #include "VideoCommon/VertexLoader_Normal.h"
@@ -31,10 +33,10 @@ const float fractionTable[32] = {
 	1.0f / (1U << 28), 1.0f / (1U << 29), 1.0f / (1U << 30), 1.0f / (1U << 31),
 };
 
-VertexLoaderUID::VertexLoaderUID(const TVtxDesc& VtxDesc,  const VAT& vat)
+VertexLoaderUID::VertexLoaderUID(const TVtxDesc& VtxDesc, const VAT& vat)
 {
 	u32 fullmask = 0xFFFFFFFFu;
-	vid[0] = (u32)((g_VtxDesc.Hex >> 1) & fullmask);	
+	vid[0] = (u32)((g_VtxDesc.Hex >> 1) & fullmask);
 	// Disable unused components		
 	u32 mask = ~VAT_0_FRACBITS;
 	mask &= VtxDesc.Color0 ? fullmask : ~VAT_0_COL0BITS;
@@ -79,7 +81,7 @@ bool VertexLoaderUID::operator < (const VertexLoaderUID &other) const
 	else if (vid[0] > other.vid[0])
 		return false;
 
-	for (int i = 1; i < 5; ++i)
+	for (int i = 1; i < 4; ++i)
 	{
 		if (vid[i] < other.vid[i])
 			return true;
@@ -391,7 +393,6 @@ void VertexLoader::WriteCall(TPipelineFunction func)
 s32 VertexLoader::SetupRunVertices(const VAT &vat, int primitive, int const count)
 {
 	m_numLoadedVertices += count;
-
 	// Flush if our vertex format is different from the currently set.
 	if (g_nativeVertexFmt != nullptr && g_nativeVertexFmt != m_NativeFmt)
 	{
@@ -436,13 +437,15 @@ void VertexLoader::RunVertices(const VAT &vtx_attr, int primitive, int const cou
 	g_VideoData.ReadSkip(new_count * m_VertexSize);
 	g_PipelineState.count = new_count;
 	s_CurrentVertexLoader = this;
-	m_CompiledFunction();
-	VertexManager::AddVertices(primitive, new_count);
+	m_CompiledFunction(g_PipelineState);
+	ADDSTAT(stats.thisFrame.numPrims, new_count);
+	INCSTAT(stats.thisFrame.numPrimitiveJoins);
+
+	IndexGenerator::AddIndices(primitive, new_count);
 }
 
-void LOADERDECL VertexLoader::ConvertVertices()
+void LOADERDECL VertexLoader::ConvertVertices(TPipelineState& pipelinestate)
 {
-	TPipelineState &pipelinestate = g_PipelineState;
 	s32 stagescount = s_CurrentVertexLoader->m_numPipelineStages;
 	const TPipelineFunction* stages = s_CurrentVertexLoader->m_PipelineStages;
 	s32 count = pipelinestate.count;
@@ -455,23 +458,6 @@ void LOADERDECL VertexLoader::ConvertVertices()
 			stages[i]();
 		count--;
 	}
-}
-
-void VertexLoader::RunCompiledVertices(const VAT &vtx_attr, int primitive, int const count, const u8* Data)
-{
-	if (bpmem.genMode.cullmode == 3 && primitive < 5)
-	{
-		// if cull mode is none, ignore triangles and quads
-		g_VideoData.ReadSkip(count * m_VertexSize);
-		return;
-	}
-	auto const new_count = SetupRunVertices(vtx_attr, primitive, count);
-	g_PipelineState.Initialize(Data, VertexManager::s_pCurBufferPointer);
-	VertexManager::s_pCurBufferPointer += native_stride * new_count;
-	g_PipelineState.count = new_count;
-	s_CurrentVertexLoader = this;
-	m_CompiledFunction();
-	VertexManager::AddVertices(primitive, new_count);
 }
 
 void VertexLoader::SetVAT(const VAT &vat)

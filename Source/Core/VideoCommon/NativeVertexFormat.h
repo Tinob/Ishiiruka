@@ -89,7 +89,7 @@ public:
 };
 
 typedef void (LOADERDECL *TPipelineFunction)();
-typedef void (LOADERDECL *TCompiledLoaderFunction)();
+typedef void (LOADERDECL *TCompiledLoaderFunction)(TPipelineState&);
 
 struct AttributeFormat
 {

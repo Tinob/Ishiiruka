@@ -30,7 +30,6 @@ public:
 	s32 GetVertexSize() const { return m_VertexSize; }
 
 	void RunVertices(const VAT &vtx_attr, s32 primitive, s32 count);
-	void RunCompiledVertices(const VAT &vtx_attr, s32 primitive, s32 count, const u8* Data);
 
 	// For debugging / profiling
 	void AppendToString(std::string *dest) const;
@@ -39,6 +38,9 @@ public:
 
 	u64 GetNumLoadedVerts() const { return m_numLoadedVertices; }
 	bool IsPrecompiled();
+	// PC vertex format
+	NativeVertexFormat *m_NativeFmt;
+	s32 native_stride;
 private:
 	bool m_Isprecompiled;
 	TCompiledLoaderFunction m_CompiledFunction;
@@ -49,9 +51,7 @@ private:
 	TVtxAttr m_VtxAttr;  // VAT decoded into easy format
 	TVtxDesc m_VtxDesc;  // Not really used currently - or well it is, but could be easily avoided.
 
-	// PC vertex format
-	NativeVertexFormat *m_NativeFmt;
-	s32 native_stride;
+
 
 	TPipelineFunction m_PipelineStages[32];
 	s32 m_numPipelineStages;
@@ -63,7 +63,7 @@ private:
 	void CompileVertexTranslator();
 
 	static const VertexLoader* s_CurrentVertexLoader;
-	static void LOADERDECL ConvertVertices();
+	static void LOADERDECL ConvertVertices(TPipelineState& pipelinestate);
 
 	void WriteCall(TPipelineFunction);
 };

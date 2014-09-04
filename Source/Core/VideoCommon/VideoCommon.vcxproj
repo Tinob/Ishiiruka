@@ -53,6 +53,8 @@
     <ClCompile Include="Fifo.cpp" />
     <ClCompile Include="FPSCounter.cpp" />
     <ClCompile Include="FramebufferManagerBase.cpp" />
+    <ClCompile Include="G_GFZE01_pvt.cpp" />
+    <ClCompile Include="G_GLMP01_pvt.cpp" />
     <ClCompile Include="G_GSAE01_pvt.cpp" />
     <ClCompile Include="G_GZ2P01_pvt.cpp" />
     <ClCompile Include="G_R5WEA4_pvt.cpp" />
@@ -109,6 +111,8 @@
     <ClInclude Include="Fifo.h" />
     <ClInclude Include="FPSCounter.h" />
     <ClInclude Include="FramebufferManagerBase.h" />
+    <ClInclude Include="G_GFZE01_pvt.h" />
+    <ClInclude Include="G_GLMP01_pvt.h" />
     <ClInclude Include="G_GSAE01_pvt.h" />
     <ClInclude Include="G_GZ2P01_pvt.h" />
     <ClInclude Include="G_R5WEA4_pvt.h" />

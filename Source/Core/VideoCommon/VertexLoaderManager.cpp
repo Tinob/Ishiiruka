@@ -19,6 +19,8 @@
 #include "VideoCommon/VideoConfig.h"
 
 // Precompiled Loaders
+#include "VideoCommon/G_GFZE01_pvt.h"
+#include "VideoCommon/G_GLMP01_pvt.h"
 #include "VideoCommon/G_GSAE01_pvt.h"
 #include "VideoCommon/G_GZ2P01_pvt.h"
 #include "VideoCommon/G_R5WEA4_pvt.h"
@@ -28,7 +30,7 @@
 static int s_attr_dirty;  // bitfield
 
 static VertexLoader *g_VertexLoaders[8];
-
+static std::string LastGameCode;
 namespace std
 {
 	template <>
@@ -113,7 +115,7 @@ namespace VertexLoaderManager
 			return;
 		}
 		char filename[MAX_PATH];
-		const char* gamename = SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID.c_str();
+		const char* gamename = LastGameCode.c_str();
 		const char* dumpfolder = File::GetUserPath(D_DUMP_IDX).c_str();
 
 		sprintf(filename, "%sG_%s_pvt.h", dumpfolder, gamename);
@@ -167,7 +169,7 @@ namespace VertexLoaderManager
 			sourcecode.append("\n#if _M_SSE >= 0x401\n");
 			sourcecode.append("\tif (cpu_info.bSSE4_1)\n");
 			sourcecode.append("\t{\n");
-			sourcecode.append("\tpvlmap[");
+			sourcecode.append("\t\tpvlmap[");
 			sourcecode.append(iter->hash);
 			sourcecode.append("] = ");
 			if (btemplated)
@@ -187,7 +189,7 @@ namespace VertexLoaderManager
 			sourcecode.append("#if _M_SSE >= 0x301\n");
 			sourcecode.append("\tif (cpu_info.bSSSE3)\n");
 			sourcecode.append("\t{\n");
-			sourcecode.append("\tpvlmap[");
+			sourcecode.append("\t\tpvlmap[");
 			sourcecode.append(iter->hash);
 			sourcecode.append("] = ");
 			if (btemplated)
@@ -205,7 +207,7 @@ namespace VertexLoaderManager
 			sourcecode.append("\t}\n\telse\n");
 			sourcecode.append("#endif\n");
 			sourcecode.append("\t{\n");
-			sourcecode.append("\tpvlmap[");
+			sourcecode.append("\t\tpvlmap[");
 			sourcecode.append(iter->hash);
 			sourcecode.append("] = ");
 			if (btemplated)
@@ -258,13 +260,16 @@ namespace VertexLoaderManager
 		if (!s_PrecompiledLoadersInitialized)
 		{
 			s_PrecompiledLoadersInitialized = true;
+			G_GFZE01_pvt::Initialize(s_PrecompiledVertexLoaderMap);
 			G_GSAE01_pvt::Initialize(s_PrecompiledVertexLoaderMap);
 			G_GZ2P01_pvt::Initialize(s_PrecompiledVertexLoaderMap);
 			G_R5WEA4_pvt::Initialize(s_PrecompiledVertexLoaderMap);
 			G_RMCP01_pvt::Initialize(s_PrecompiledVertexLoaderMap);
 			G_RMGP01_pvt::Initialize(s_PrecompiledVertexLoaderMap);
 			G_SX4E01_pvt::Initialize(s_PrecompiledVertexLoaderMap);
+			G_GLMP01_pvt::Initialize(s_PrecompiledVertexLoaderMap);
 		}
+		LastGameCode = SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID;
 	}
 
 	void Shutdown()

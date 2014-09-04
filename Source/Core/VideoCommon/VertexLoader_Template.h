@@ -694,9 +694,8 @@ __forceinline void TexCoordElement(TPipelineState &pipelinestate)
 }
 
 template <int iSSE, u32 VtxDesc, u32 VAT0, u32 VAT1, u32 VAT2>
-void TemplatedLoader()
+void TemplatedLoader(TPipelineState& pipelinestate)
 {
-	TPipelineState pipelinestate = g_PipelineState;
 	u32 loopcount = pipelinestate.count;
 	pipelinestate.curposmtx = 0;
 	while (loopcount)
