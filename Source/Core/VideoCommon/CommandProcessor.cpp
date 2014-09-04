@@ -19,7 +19,6 @@
 #include "Core/HW/GPFifo.h"
 #include "Core/HW/Memmap.h"
 #include "Core/HW/MMIO.h"
-#include "VideoCommon/DLCache.h"
 #include "Core/HW/SystemTimers.h"
 #include "Core/Core.h"
 
@@ -392,7 +391,6 @@ void SetCpStatus(bool isCPUThread)
 				{
 					INFO_LOG(COMMANDPROCESSOR, "Hit breakpoint at %i", fifo.CPReadPointer);
 					fifo.bFF_Breakpoint = true;
-					IncrementCheckContextId();
 				}
 			}
 			else

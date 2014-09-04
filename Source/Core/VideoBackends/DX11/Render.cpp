@@ -26,7 +26,6 @@
 
 #include "VideoCommon/AVIDump.h"
 #include "VideoCommon/BPFunctions.h"
-#include "VideoCommon/DLCache.h"
 #include "VideoCommon/Fifo.h"
 #include "VideoCommon/FPSCounter.h"
 #include "VideoCommon/ImageWrite.h"
@@ -975,7 +974,6 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 	D3D::EndFrame();
 	frameCount++;
 
-	DLCache::ProgressiveCleanup();
 	TextureCache::Cleanup();
 
 	// Enable configuration changes

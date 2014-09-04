@@ -312,19 +312,17 @@ namespace VertexLoaderManager
 		return g_VertexLoaders[vtx_attr_group];
 	}
 
-	void RunVertices(int vtx_attr_group, int primitive, int count)
+	bool RunVertices(int vtx_attr_group, int primitive, int count, size_t buf_size)
 	{
 		if (!count)
-			return;
+			return true;
+		auto loader = RefreshLoader(vtx_attr_group);
+		size_t size = count * loader->GetVertexSize();
+		if (buf_size < size)
+			return false;
 
-		RefreshLoader(vtx_attr_group)->RunVertices(g_VtxAttr[vtx_attr_group], primitive, count);
-	}
-
-	void RunCompiledVertices(int vtx_attr_group, int primitive, int count, const u8* Data)
-	{
-		if (!count || !Data)
-			return;
-		RefreshLoader(vtx_attr_group)->RunCompiledVertices(g_VtxAttr[vtx_attr_group], primitive, count, Data);
+		loader->RunVertices(g_VtxAttr[vtx_attr_group], primitive, count);
+		return true;
 	}
 
 	int GetVertexSize(int vtx_attr_group)

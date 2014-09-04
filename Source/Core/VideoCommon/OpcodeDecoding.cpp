@@ -11,7 +11,6 @@
 // Note that it IS NOT GENERALLY POSSIBLE to precompile display lists! You can compile them as they are
 // while interpreting them, and hope that the vertex format doesn't change, though, if you do it right
 // when they are called. The reason is that the vertex format affects the sizes of the vertices.
-#include "Common/Common.h"
 #include "Common/CPUDetect.h"
 #include "Core/Core.h"
 #include "Core/Host.h"
@@ -30,7 +29,6 @@
 #include "VideoCommon/VideoCommon.h"
 #include "VideoCommon/VideoConfig.h"
 #include "VideoCommon/XFMemory.h"
-
 
 DataReader g_VideoData;
 bool g_bRecordFifoData = false;
@@ -85,229 +83,29 @@ DataReadU32xNfunc DataReadU32xFuncs[16] = {
 	ReadU32xn<15>,
 	ReadU32xn<16>
 };
-
-extern u8* GetVideoBufferStartPtr();
-extern u8* GetVideoBufferEndPtr();
-
-static void Decode();
-
-void InterpretDisplayList(u32 address, u32 size)
-{
-	const u8* old_pVideoData = g_VideoData.GetReadPosition();
-	const u8* startAddress = Memory::GetPointer(address);
-
-	// Avoid the crash if Memory::GetPointer failed ..
-	if (startAddress != 0)
-	{
-		g_VideoData.SetReadPosition(startAddress);
-
-		// temporarily swap dl and non-dl (small "hack" for the stats)
-		Statistics::SwapDL();
-
-		const u8 *end = startAddress + size;
-		while (g_VideoData.GetReadPosition() < end)
-		{
-			Decode();
-		}
-		INCSTAT(stats.numDListsCalled);
-		INCSTAT(stats.thisFrame.numDListsCalled);
-
-		// un-swap
-		Statistics::SwapDL();
-	}
-
-	// reset to the old pointer
-	g_VideoData.SetReadPosition(old_pVideoData);
-}
-
-// Defer to backend-specific DL cache.
-extern bool HandleDisplayList(u32 address, u32 size);
-
-void ExecuteDisplayList(u32 address, u32 size)
-{
-	if (!HandleDisplayList(address, size))
-		InterpretDisplayList(address, size);
-}
-
-u32 FifoCommandRunnable(u32 &command_size)
-{
-	u32 cycleTime = 0;
-	u32 buffer_size = (u32)(GetVideoBufferEndPtr() - g_VideoData.GetReadPosition());
-	if (buffer_size == 0)
-		return 0;  // can't peek
-
-	u8 cmd_byte = g_VideoData.Peek<u8>();
-
-	switch (cmd_byte)
-	{
-	case GX_NOP: // Hm, this means that we scan over nop streams pretty slowly...
-		command_size = 1;
-		cycleTime = 6;
-		break;
-	case GX_CMD_INVL_VC: // Invalidate Vertex Cache - no parameters
-		command_size = 1;
-		cycleTime = 6;
-		break;
-	case GX_CMD_UNKNOWN_METRICS: // zelda 4 swords calls it and checks the metrics registers after that
-		command_size = 1;
-		cycleTime = 6;
-		break;
-
-	case GX_LOAD_BP_REG:
-		command_size = 5;
-		cycleTime = 12;
-		break;
-
-	case GX_LOAD_CP_REG:
-		command_size = 6;
-		cycleTime = 12;
-		break;
-
-	case GX_LOAD_INDX_A:
-	case GX_LOAD_INDX_B:
-	case GX_LOAD_INDX_C:
-	case GX_LOAD_INDX_D:
-		command_size = 5;
-		cycleTime = 6; // TODO
-		break;
-
-	case GX_CMD_CALL_DL:
-		{
-			// FIXME: Calculate the cycle time of the display list.
-			//u32 address = DataPeek32(1);
-			//u32 size = DataPeek32(5);
-			//const u8* old_pVideoData = g_VideoData.GetReadPosition();
-			//const u8* startAddress = Memory::GetPointer(address);
-
-			//// Avoid the crash if Memory::GetPointer failed ..
-			//if (startAddress != 0)
-			//{
-			//	g_VideoData.SetReadPosition(startAddress);
-			//	const u8 *end = startAddress + size;
-			//	u32 step = 0;
-			//	while (g_VideoData.GetReadPosition() < end)
-			//	{
-			//		cycleTime += FifoCommandRunnable(step);
-			//		g_VideoData.ReadSkeep(step);
-			//	}
-			//}
-			//else
-			//{
-			//	cycleTime = 45;
-			//}
-
-			//// reset to the old pointer
-			//g_VideoData.SetReadPosition(old_pVideoData);
-			command_size = 9;
-			cycleTime = 45;  // This is unverified
-		}
-		break;
-
-	case GX_LOAD_XF_REG:
-		{
-			// check if we can read the header
-			if (buffer_size >= 5)
-			{
-				command_size = 1 + 4;
-				u32 Cmd2 = g_VideoData.Peek<u32>(1);
-				int transfer_size = ((Cmd2 >> 16) & 15) + 1;
-				command_size += transfer_size * 4;
-				cycleTime = 18 + 6 * transfer_size;
-			}
-			else
-			{
-				return 0;
-			}
-		}
-		break;
-
-	default:
-		if ((cmd_byte & 0xC0) == 0x80)
-		{
-			// check if we can read the header
-			if (buffer_size >= 3)
-			{
-				command_size = 1 + 2;
-				u16 numVertices = g_VideoData.Peek<u16>(1);
-				command_size += numVertices * VertexLoaderManager::GetVertexSize(cmd_byte & GX_VAT_MASK);
-				cycleTime = 1600; // This depends on the number of pixels rendered
-			}
-			else
-			{
-				return 0;
-			}
-		}
-		else
-		{
-			// TODO(Omega): Maybe dump FIFO to file on this error
-			char szTemp[1024];
-			sprintf(szTemp, "GFX FIFO: Unknown Opcode (0x%x).\n"
-				"This means one of the following:\n"
-				"* The emulated GPU got desynced, disabling dual core can help\n"
-				"* Command stream corrupted by some spurious memory bug\n"
-				"* This really is an unknown opcode (unlikely)\n"
-				"* Some other sort of bug\n\n"
-				"Dolphin will now likely crash or hang. Enjoy." , cmd_byte);
-			Host_SysMessage(szTemp);
-			INFO_LOG(VIDEO, "%s", szTemp);
-			{
-				SCPFifoStruct &fifo = CommandProcessor::fifo;
-
-				char szTmp[512];
-				// sprintf(szTmp, "Illegal command %02x (at %08x)",cmd_byte,g_pDataReader->GetPtr());
-				sprintf(szTmp, "Illegal command %02x\n"
-					"CPBase: 0x%08x\n"
-					"CPEnd: 0x%08x\n"
-					"CPHiWatermark: 0x%08x\n"
-					"CPLoWatermark: 0x%08x\n"
-					"CPReadWriteDistance: 0x%08x\n"
-					"CPWritePointer: 0x%08x\n"
-					"CPReadPointer: 0x%08x\n"
-					"CPBreakpoint: 0x%08x\n"
-					"bFF_GPReadEnable: %s\n"
-					"bFF_BPEnable: %s\n"
-					"bFF_BPInt: %s\n"
-					"bFF_Breakpoint: %s\n"
-					,cmd_byte, fifo.CPBase, fifo.CPEnd, fifo.CPHiWatermark, fifo.CPLoWatermark, fifo.CPReadWriteDistance
-					,fifo.CPWritePointer, fifo.CPReadPointer, fifo.CPBreakpoint, fifo.bFF_GPReadEnable ? "true" : "false"
-					,fifo.bFF_BPEnable ? "true" : "false" ,fifo.bFF_BPInt ? "true" : "false"
-					,fifo.bFF_Breakpoint ? "true" : "false");
-
-				Host_SysMessage(szTmp);
-				INFO_LOG(VIDEO, "%s", szTmp);
-			}
-		}
-		break;
-	}
-
-	if (command_size > buffer_size)
-		return 0;
-
-	// INFO_LOG("OP detected: cmd_byte 0x%x  size %i  buffer %i",cmd_byte, command_size, buffer_size);
-	if (cycleTime == 0)
-		cycleTime = 6;
-
-	return cycleTime;
-}
-
-u32 FifoCommandRunnable()
-{
-	u32 command_size = 0;
-	return FifoCommandRunnable(command_size);
-}
-
-static void Decode()
+template<bool sizeCheck>
+inline u32 Decode(const u8* end, bool skipped_frame)
 {
 	const u8 *opcodeStart = g_VideoData.GetReadPosition();
+	if (opcodeStart == end)
+		return 0;
 
 	u8 cmd_byte = g_VideoData.Read<u8>();
+	size_t distance = (size_t)(end - g_VideoData.GetReadPosition());
+	u32 cycles;
+
 	switch (cmd_byte)
 	{
 	case GX_NOP:
-		break;
-
+	{
+		cycles = GX_NOP_CYCLES; // Hm, this means that we scan over nop streams pretty slowly...
+	}
+	break;
 	case GX_LOAD_CP_REG: //0x08
 	{
+		if (sizeCheck && distance < GX_LOAD_CP_REG_SIZE)
+			return 0;
+		cycles = GX_LOAD_CP_REG_CYCLES;
 		u8 sub_cmd = g_VideoData.Read<u8>();
 		u32 value = g_VideoData.Read<u32>();
 		LoadCPReg(sub_cmd, value);
@@ -316,67 +114,115 @@ static void Decode()
 	break;
 	case GX_LOAD_XF_REG:
 	{
+		if (sizeCheck && distance < GX_LOAD_XF_REG_SIZE)
+			return 0;
 		u32 Cmd2 = g_VideoData.Read<u32>();
+		distance -= GX_LOAD_XF_REG_SIZE;
 		int transfer_size = ((Cmd2 >> 16) & 15) + 1;
+		if (sizeCheck && distance < (transfer_size * sizeof(u32)))
+			return 0;
+		cycles = GX_LOAD_XF_REG_BASE_CYCLES + GX_LOAD_XF_REG_TRANSFER_CYCLES * transfer_size;
 		u32 xf_address = Cmd2 & 0xFFFF;
 		GC_ALIGNED128(u32 data_buffer[16]);
-		DataReadU32xFuncs[transfer_size-1](data_buffer);
+		DataReadU32xFuncs[transfer_size - 1](data_buffer);
 		LoadXFReg(transfer_size, xf_address, data_buffer);
 
 		INCSTAT(stats.thisFrame.numXFLoads);
 	}
 	break;
 	case GX_LOAD_INDX_A: //used for position matrices
-		LoadIndexedXF(g_VideoData.Read<u32>(), 0xC);
-		break;
+	{	if (sizeCheck && distance < GX_LOAD_INDX_A_SIZE)
+		return 0;
+	cycles = GX_LOAD_INDX_A_CYCLES;
+	LoadIndexedXF(g_VideoData.Read<u32>(), 0xC);
+	}
+	break;
 	case GX_LOAD_INDX_B: //used for normal matrices
+	{
+		if (sizeCheck && distance < GX_LOAD_INDX_B_SIZE)
+			return 0;
+		cycles = GX_LOAD_INDX_B_CYCLES;
 		LoadIndexedXF(g_VideoData.Read<u32>(), 0xD);
-		break;
+	}
+	break;
 	case GX_LOAD_INDX_C: //used for postmatrices
+	{
+		if (sizeCheck && distance < GX_LOAD_INDX_C_SIZE)
+			return 0;
+		cycles = GX_LOAD_INDX_C_CYCLES;
 		LoadIndexedXF(g_VideoData.Read<u32>(), 0xE);
-		break;
+	}
+	break;
 	case GX_LOAD_INDX_D: //used for lights
+	{
+		if (sizeCheck && distance < GX_LOAD_INDX_D_SIZE)
+			return 0;
+		cycles = GX_LOAD_INDX_D_CYCLES;
 		LoadIndexedXF(g_VideoData.Read<u32>(), 0xF);
-		break;
-
+	}
+	break;
 	case GX_CMD_CALL_DL:
 	{
+		if (sizeCheck && distance < GX_CMD_CALL_DL_SIZE)
+			return 0;
 		u32 address = g_VideoData.Read<u32>();
 		u32 count = g_VideoData.Read<u32>();
-		ExecuteDisplayList(address, count);
-	}			
+		cycles = GX_CMD_CALL_DL_BASE_CYCLES + InterpretDisplayList(address, count, skipped_frame);
+	}
 	break;
 	case GX_CMD_UNKNOWN_METRICS: // zelda 4 swords calls it and checks the metrics registers after that
+	{	
+		cycles = GX_CMD_UNKNOWN_METRICS_CYCLES;
 		DEBUG_LOG(VIDEO, "GX 0x44: %08x", cmd_byte);
-		break;
-
+	}
+	break;
 	case GX_CMD_INVL_VC: // Invalidate Vertex Cache	
+	{
+		cycles = GX_CMD_INVL_VC_CYCLES;
 		DEBUG_LOG(VIDEO, "Invalidate (vertex cache?)");
-		break;
-
+	}
+	break;
 	case GX_LOAD_BP_REG: //0x61
 	{
+		if (sizeCheck && distance < GX_LOAD_BP_REG_SIZE)
+			return 0;
+		cycles = GX_LOAD_BP_REG_CYCLES;
 		u32 bp_cmd = g_VideoData.Read<u32>();
 		LoadBPReg(bp_cmd);
 		INCSTAT(stats.thisFrame.numBPLoads);
 	}
 	break;
-
-	// draw primitives 
+		// draw primitives 
 	default:
-		if ((cmd_byte & 0xC0) == 0x80)
+		if ((cmd_byte & GX_DRAW_PRIMITIVES) == 0x80)
 		{
-			// load vertices (use computed vertex size from FifoCommandRunnable above)
+			cycles = GX_DRAW_PRIMITIVES_CYCLES;
+			// load vertices
+			if (sizeCheck && distance < GX_DRAW_PRIMITIVES_SIZE)
+				return 0;
 			u16 numVertices = g_VideoData.Read<u16>();
-			VertexLoaderManager::RunVertices(
-				cmd_byte & GX_VAT_MASK,   // Vertex loader index (0 - 7)
-				(cmd_byte & GX_PRIMITIVE_MASK) >> GX_PRIMITIVE_SHIFT,
-				numVertices);
+			distance -= GX_DRAW_PRIMITIVES_SIZE;
+			if (skipped_frame)
+			{
+				size_t size = numVertices * VertexLoaderManager::GetVertexSize(cmd_byte & GX_VAT_MASK);
+				if (sizeCheck && distance < size)
+					return 0;
+				g_VideoData.ReadSkip((u32)size);
+			}
+			else
+			{
+				if (!VertexLoaderManager::RunVertices(
+					cmd_byte & GX_VAT_MASK,   // Vertex loader index (0 - 7)
+					(cmd_byte & GX_PRIMITIVE_MASK) >> GX_PRIMITIVE_SHIFT,
+					numVertices,
+					distance))
+					return 0;
+			}
 		}
 		else
 		{
-			ERROR_LOG(VIDEO, "OpcodeDecoding::Decode: Illegal command %02x", cmd_byte);
-			break;
+			UnknownOpcode(cmd_byte, opcodeStart);
+			cycles = 1;
 		}
 		break;
 	}
@@ -384,89 +230,82 @@ static void Decode()
 	// Display lists get added directly into the FIFO stream
 	if (g_bRecordFifoData && cmd_byte != GX_CMD_CALL_DL)
 		FifoRecorder::GetInstance().WriteGPCommand(opcodeStart, u32(g_VideoData.GetReadPosition() - opcodeStart));
+
+	return cycles;
 }
 
-static void DecodeSemiNop()
+
+static u32 InterpretDisplayList(u32 address, u32 size, bool skipped_frame)
 {
-	const u8 *opcodeStart = g_VideoData.GetReadPosition();
-
-	int cmd_byte = g_VideoData.Read<u8>();
-	switch (cmd_byte)
+	const u8* old_pVideoData = g_VideoData.GetReadPosition();
+	const u8* startAddress = Memory::GetPointer(address);
+	
+	u32 cycles = 0;
+	
+	// Avoid the crash if Memory::GetPointer failed ..
+	if (startAddress != nullptr)
 	{
-	case GX_CMD_UNKNOWN_METRICS: // zelda 4 swords calls it and checks the metrics registers after that
-	case GX_CMD_INVL_VC: // Invalidate Vertex Cache	
-	case GX_NOP:
-		break;
+		g_VideoData.SetReadPosition(startAddress);
 
-	case GX_LOAD_CP_REG: //0x08
-	// We have to let CP writes through because they determine the size of vertices.
-	{
-		u8 sub_cmd = g_VideoData.Read<u8>();
-		u32 value = g_VideoData.Read<u32>();
-		LoadCPReg(sub_cmd, value);
-		INCSTAT(stats.thisFrame.numCPLoads);
-	}
-	break;
-
-	case GX_LOAD_XF_REG:
-	{
-		u32 Cmd2 = g_VideoData.Read<u32>();
-		int transfer_size = ((Cmd2 >> 16) & 15) + 1;
-		u32 address = Cmd2 & 0xFFFF;
-		GC_ALIGNED128(u32 data_buffer[16]);
-		DataReadU32xFuncs[transfer_size-1](data_buffer);
-		LoadXFReg(transfer_size, address, data_buffer);
-		INCSTAT(stats.thisFrame.numXFLoads);
-	}
-	break;
-
-	case GX_LOAD_INDX_A: //used for position matrices
-		LoadIndexedXF(g_VideoData.Read<u32>(), 0xC);
-		break;
-	case GX_LOAD_INDX_B: //used for normal matrices
-		LoadIndexedXF(g_VideoData.Read<u32>(), 0xD);
-		break;
-	case GX_LOAD_INDX_C: //used for postmatrices
-		LoadIndexedXF(g_VideoData.Read<u32>(), 0xE);
-		break;
-	case GX_LOAD_INDX_D: //used for lights
-		LoadIndexedXF(g_VideoData.Read<u32>(), 0xF);
-		break;
-
-	case GX_CMD_CALL_DL:
-		// Hm, wonder if any games put tokens in display lists - in that case, 
-		// we'll have to parse them too.
-		g_VideoData.ReadSkip(8);
-		break;
-
-	case GX_LOAD_BP_REG: //0x61
-	// We have to let BP writes through because they set tokens and stuff.
-	// TODO: Call a much simplified LoadBPReg instead.
-	{
-		u32 bp_cmd = g_VideoData.Read<u32>();
-		LoadBPReg(bp_cmd);
-		INCSTAT(stats.thisFrame.numBPLoads);
-	}
-	break;
-
-	// draw primitives 
-	default:
-		if ((cmd_byte & 0xC0) == 0x80)
+		// temporarily swap dl and non-dl (small "hack" for the stats)
+		Statistics::SwapDL();
+		const u8 *end = startAddress + size;		
+		while (g_VideoData.GetReadPosition() < end)
 		{
-			// load vertices (use computed vertex size from FifoCommandRunnable above)
-			u16 numVertices = g_VideoData.Read<u16>();
-			g_VideoData.ReadSkip(numVertices * VertexLoaderManager::GetVertexSize(cmd_byte & GX_VAT_MASK));
+			cycles += Decode<false>(end, skipped_frame);			
 		}
-		else
-		{
-			ERROR_LOG(VIDEO, "OpcodeDecoding::Decode: Illegal command %02x", cmd_byte);
-			break;
-		}
-		break;
+		INCSTAT(stats.numDListsCalled);
+		INCSTAT(stats.thisFrame.numDListsCalled);
+		// un-swap
+		Statistics::SwapDL();
 	}
 
-	if (g_bRecordFifoData && cmd_byte != GX_CMD_CALL_DL)
-		FifoRecorder::GetInstance().WriteGPCommand(opcodeStart, u32(g_VideoData.GetReadPosition() - opcodeStart));
+	// reset to the old pointer
+	g_VideoData.SetReadPosition(old_pVideoData);
+
+	return cycles;
+}
+
+static void UnknownOpcode(u8 cmd_byte, const void *buffer)
+{
+	// TODO(Omega): Maybe dump FIFO to file on this error
+	std::string temp = StringFromFormat(
+		"GFX FIFO: Unknown Opcode (0x%x @ %p).\n"
+		"This means one of the following:\n"
+		"* The emulated GPU got desynced, disabling dual core can help\n"
+		"* Command stream corrupted by some spurious memory bug\n"
+		"* This really is an unknown opcode (unlikely)\n"
+		"* Some other sort of bug\n\n"
+		"Dolphin will now likely crash or hang. Enjoy.",
+		cmd_byte,
+		buffer);
+	Host_SysMessage(temp.c_str());
+	INFO_LOG(VIDEO, "%s", temp.c_str());
+	{
+		SCPFifoStruct &fifo = CommandProcessor::fifo;
+
+		std::string tmp = StringFromFormat(
+			"Illegal command %02x\n"
+			"CPBase: 0x%08x\n"
+			"CPEnd: 0x%08x\n"
+			"CPHiWatermark: 0x%08x\n"
+			"CPLoWatermark: 0x%08x\n"
+			"CPReadWriteDistance: 0x%08x\n"
+			"CPWritePointer: 0x%08x\n"
+			"CPReadPointer: 0x%08x\n"
+			"CPBreakpoint: 0x%08x\n"
+			"bFF_GPReadEnable: %s\n"
+			"bFF_BPEnable: %s\n"
+			"bFF_BPInt: %s\n"
+			"bFF_Breakpoint: %s\n"
+			, cmd_byte, fifo.CPBase, fifo.CPEnd, fifo.CPHiWatermark, fifo.CPLoWatermark, fifo.CPReadWriteDistance
+			, fifo.CPWritePointer, fifo.CPReadPointer, fifo.CPBreakpoint, fifo.bFF_GPReadEnable ? "true" : "false"
+			, fifo.bFF_BPEnable ? "true" : "false", fifo.bFF_BPInt ? "true" : "false"
+			, fifo.bFF_Breakpoint ? "true" : "false");
+
+		Host_SysMessage(tmp.c_str());
+		INFO_LOG(VIDEO, "%s", tmp.c_str());
+	}
 }
 
 void OpcodeDecoder_Init()
@@ -498,15 +337,19 @@ void OpcodeDecoder_Shutdown()
 	}
 }
 
-u32 OpcodeDecoder_Run(bool skipped_frame)
+u32 OpcodeDecoder_Run(bool skipped_frame, const u8* end)
 {
 	u32 totalCycles = 0;
-	u32 cycles = FifoCommandRunnable();
-	while (cycles > 0)
+	while (true)
 	{
-		skipped_frame ? DecodeSemiNop() : Decode();
+		const u8* old = g_VideoData.GetReadPosition();
+		u32 cycles = Decode<true>(end, skipped_frame);
+		if (cycles == 0)
+		{
+			g_VideoData.SetReadPosition(old);
+			break;
+		}
 		totalCycles += cycles;
-		cycles = FifoCommandRunnable();
 	}
 	return totalCycles;
 }

@@ -34,7 +34,6 @@
 #include "FramebufferManager.h"
 #include "VideoCommon/Fifo.h"
 #include "TextureConverter.h"
-#include "VideoCommon/DLCache.h"
 #include "VideoCommon/Debugger.h"
 #include "Core/Core.h"
 #include "Core/Movie.h"
@@ -849,8 +848,7 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 	++frameCount;
 
 	GFX_DEBUGGER_PAUSE_AT(NEXT_FRAME, true);
-
-	DLCache::ProgressiveCleanup();
+	
 	TextureCache::Cleanup();
 	// Flip/present backbuffer to frontbuffer here
 	D3D::Present();

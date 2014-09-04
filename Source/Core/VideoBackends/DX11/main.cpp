@@ -20,7 +20,6 @@
 #include "Core/Host.h"
 
 #include "DolphinWX/Debugger/DebuggerPanel.h"
-#include "VideoCommon/DLCache.h"
 #include "VideoCommon/IndexGenerator.h"
 #include "Common/FileUtil.h"
 #include "Globals.h"
@@ -204,7 +203,6 @@ void VideoBackend::Video_Prepare()
 	PixelShaderManager::Init();
 	CommandProcessor::Init();
 	PixelEngine::Init();
-	DLCache::Init();
 
 	// Tell the host that the window is ready
 	Host_Message(WM_USER_CREATE);
@@ -222,7 +220,6 @@ void VideoBackend::Shutdown()
 		s_swapRequested = FALSE;
 
 		// VideoCommon
-		DLCache::Shutdown();
 		Fifo_Shutdown();
 		CommandProcessor::Shutdown();
 		PixelShaderManager::Shutdown();

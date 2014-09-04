@@ -2,8 +2,7 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _FIFO_H
-#define _FIFO_H
+#pragma once
 
 #include "Common/Common.h"
 #include "VideoCommon/VideoBackendBase.h"
@@ -17,6 +16,9 @@ extern volatile bool g_bSkipCurrentFrame;
 
 void Fifo_Init();
 void Fifo_Shutdown();
+
+u8* GetVideoBufferStartPtr();
+u8* GetVideoBufferEndPtr();
 
 void Fifo_DoState(PointerWrap &f);
 void Fifo_PauseAndLock(bool doLock, bool unpauseOnUnlock);
@@ -34,5 +36,3 @@ void Fifo_SetRendering(bool bEnabled);
 
 // Implemented by the Video Backend
 void VideoFifo_CheckAsyncRequest();
-
-#endif // _FIFO_H

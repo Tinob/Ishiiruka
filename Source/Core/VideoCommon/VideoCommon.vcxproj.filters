@@ -117,9 +117,6 @@
     <ClCompile Include="x64TextureDecoder.cpp">
       <Filter>Decoding</Filter>
     </ClCompile>
-    <ClCompile Include="x64DLCache.cpp">
-      <Filter>Vertex Loading</Filter>
-    </ClCompile>
     <ClCompile Include="DriverDetails.cpp" />
     <ClCompile Include="DDSLoader.cpp">
       <Filter>Util</Filter>
@@ -160,9 +157,6 @@
     <ClInclude Include="VideoBackendBase.h" />
     <ClInclude Include="VideoConfig.h" />
     <ClInclude Include="DataReader.h">
-      <Filter>Vertex Loading</Filter>
-    </ClInclude>
-    <ClInclude Include="DLCache.h">
       <Filter>Vertex Loading</Filter>
     </ClInclude>
     <ClInclude Include="VertexLoader.h">

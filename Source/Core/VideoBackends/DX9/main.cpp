@@ -34,7 +34,6 @@
 #include "D3DUtil.h"
 #include "VideoCommon/VideoState.h"
 #include "Render.h"
-#include "VideoCommon/DLCache.h"
 #include "VideoCommon/IndexGenerator.h"
 #include "Common/IniFile.h"
 #include "Core/Core.h"
@@ -189,7 +188,6 @@ void VideoBackend::Video_Prepare()
 	PixelShaderManager::Init();
 	CommandProcessor::Init();
 	PixelEngine::Init();
-	DLCache::Init();	
 	// Notify the core that the video backend is ready
 	Host_Message(WM_USER_CREATE);
 }
@@ -206,7 +204,6 @@ void VideoBackend::Shutdown()
 		s_swapRequested = FALSE;
 
 		// VideoCommon
-		DLCache::Shutdown();
 		Fifo_Shutdown();
 		CommandProcessor::Shutdown();
 		PixelShaderManager::Shutdown();

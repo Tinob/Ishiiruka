@@ -91,7 +91,6 @@
     <ClCompile Include="VideoBackendBase.cpp" />
     <ClCompile Include="VideoConfig.cpp" />
     <ClCompile Include="VideoState.cpp" />
-    <ClCompile Include="x64DLCache.cpp" />
     <ClCompile Include="x64TextureDecoder.cpp" />
     <ClCompile Include="XFMemory.cpp" />
     <ClCompile Include="XFStructs.cpp" />
@@ -107,7 +106,6 @@
     <ClInclude Include="DDSLoader.h" />
     <ClInclude Include="Debugger.h" />
     <ClInclude Include="DriverDetails.h" />
-    <ClInclude Include="DLCache.h" />
     <ClInclude Include="Fifo.h" />
     <ClInclude Include="FPSCounter.h" />
     <ClInclude Include="FramebufferManagerBase.h" />

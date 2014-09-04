@@ -15,8 +15,7 @@ namespace VertexLoaderManager
 	void MarkAllDirty();
 
 	int GetVertexSize(int vtx_attr_group);
-	void RunVertices(int vtx_attr_group, int primitive, int count);
-	void RunCompiledVertices(int vtx_attr_group, int primitive, int count, const u8* Data);
+	bool RunVertices(int vtx_attr_group, int primitive, int count, size_t buf_size);
 
 	// For debugging
 	void AppendListToString(std::string *dest);

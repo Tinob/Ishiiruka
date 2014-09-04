@@ -2,20 +2,22 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include "VideoCommon/VideoConfig.h"
+#include "Common/Atomic.h"
+#include "Common/ChunkFile.h"
+#include "Common/FPURoundMode.h"
 #include "Common/MemoryUtil.h"
 #include "Common/Thread.h"
-#include "Common/Atomic.h"
-#include "VideoCommon/OpcodeDecoding.h"
-#include "VideoCommon/CommandProcessor.h"
-#include "VideoCommon/PixelEngine.h"
-#include "Common/ChunkFile.h"
-#include "VideoCommon/Fifo.h"
-#include "Core/HW/Memmap.h"
+
 #include "Core/Core.h"
 #include "Core/CoreTiming.h"
-#include "Common/FPURoundMode.h"
+#include "Core/HW/Memmap.h"
+
+#include "VideoCommon/CommandProcessor.h"
 #include "VideoCommon/DataReader.h"
+#include "VideoCommon/Fifo.h"
+#include "VideoCommon/OpcodeDecoding.h"
+#include "VideoCommon/PixelEngine.h"
+#include "VideoCommon/VideoConfig.h"
 
 volatile bool g_bSkipCurrentFrame = false;
 
@@ -33,9 +35,8 @@ void Fifo_DoState(PointerWrap &p)
 {
 	p.DoArray(videoBuffer, FIFO_SIZE);
 	p.Do(size);
-	const u8* videodata = g_VideoData.GetReadPosition();
+	u8* videodata = const_cast<u8*>(g_VideoData.GetReadPosition());
 	p.DoPointer(videodata, videoBuffer);
-	g_VideoData.SetReadPosition(videodata);
 	p.Do(g_bSkipCurrentFrame);
 }
 
@@ -70,6 +71,7 @@ void Fifo_Shutdown()
 {
 	if (GpuRunningState) PanicAlert("Fifo shutting down while active");
 	FreeMemoryPages(videoBuffer, FIFO_SIZE);
+	videoBuffer = nullptr;
 }
 
 u8* GetVideoBufferStartPtr()
@@ -172,7 +174,7 @@ void RunGpuLoop()
 
 				ReadDataFromFifo(uData, 32);
 
-				cyclesExecuted = OpcodeDecoder_Run(g_bSkipCurrentFrame);
+				cyclesExecuted = OpcodeDecoder_Run(g_bSkipCurrentFrame, GetVideoBufferEndPtr());
 
 				if (Core::g_CoreStartupParameter.bSyncGPU && Common::AtomicLoad(CommandProcessor::VITicks) > cyclesExecuted)
 					Common::AtomicAdd(CommandProcessor::VITicks, -(s32)cyclesExecuted);
@@ -234,7 +236,7 @@ void RunGpu()
 		FPURoundMode::SaveSIMDState();
 		FPURoundMode::LoadDefaultSIMDState();
 		ReadDataFromFifo(uData, 32);
-		OpcodeDecoder_Run(g_bSkipCurrentFrame);
+		OpcodeDecoder_Run(g_bSkipCurrentFrame, GetVideoBufferEndPtr());
 		FPURoundMode::LoadSIMDState();
 
 		//DEBUG_LOG(COMMANDPROCESSOR, "Fifo wraps to base");
