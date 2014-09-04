@@ -2,8 +2,7 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _XFMEMORY_H
-#define _XFMEMORY_H
+#pragma once
 
 #include "Common/Common.h"
 
@@ -99,13 +98,13 @@ union LitChannel
 {
 	struct
 	{
-		u32 matsource      : 1;
+		u32 matsource : 1;
 		u32 enablelighting : 1;
-		u32 lightMask0_3   : 4;
-		u32 ambsource      : 1;
-		u32 diffusefunc    : 2; // LIGHTDIF_X
-		u32 attnfunc       : 2; // LIGHTATTN_X
-		u32 lightMask4_7   : 4;
+		u32 lightMask0_3 : 4;
+		u32 ambsource : 1;
+		u32 diffusefunc : 2; // LIGHTDIF_X
+		u32 attnfunc : 2; // LIGHTATTN_X
+		u32 lightMask4_7 : 4;
 	};
 	struct
 	{
@@ -129,8 +128,8 @@ union INVTXSPEC
 {
 	struct
 	{
-		u32 numcolors   : 2;
-		u32 numnormals  : 2; // 0 - nothing, 1 - just normal, 2 - normals and binormals
+		u32 numcolors : 2;
+		u32 numnormals : 2; // 0 - nothing, 1 - just normal, 2 - normals and binormals
 		u32 numtextures : 4;
 		u32 unused : 24;
 	};
@@ -139,25 +138,25 @@ union INVTXSPEC
 
 union TexMtxInfo
 {
-	struct 
+	struct
 	{
-		u32 unknown    : 1;
+		u32 unknown : 1;
 		u32 projection : 1; // XF_TEXPROJ_X
-		u32 inputform  : 2; // XF_TEXINPUT_X
+		u32 inputform : 2; // XF_TEXINPUT_X
 		u32 texgentype : 3; // XF_TEXGEN_X
-		u32 sourcerow  : 5; // XF_SRCGEOM_X
+		u32 sourcerow : 5; // XF_SRCGEOM_X
 		u32 embosssourceshift : 3; // what generated texcoord to use
-		u32 embosslightshift  : 3; // light index that is used
+		u32 embosslightshift : 3; // light index that is used
 	};
 	u32 hex;
 };
 
 union PostMtxInfo
 {
-	struct 
+	struct
 	{
-		u32 index     : 6; // base row of dual transform matrix
-		u32 unused    : 2;
+		u32 index : 6; // base row of dual transform matrix
+		u32 unused : 2;
 		u32 normalize : 1; // normalize before send operation
 	};
 	u32 hex;
@@ -194,14 +193,14 @@ union DualTexInfo
 
 struct Light
 {
-	u32 useless[3]; 
+	u32 useless[3];
 	u32 color; // rgba
 	float a0;  // attenuation
-	float a1; 
-	float a2; 
+	float a1;
+	float a2;
 	float k0;  // k stuff
-	float k1; 
-	float k2; 
+	float k1;
+	float k2;
 
 	union
 	{
@@ -274,5 +273,3 @@ extern u32 xfmem[XFMEM_SIZE];
 
 void LoadXFReg(u32 transferSize, u32 address, u32 *pData);
 void LoadIndexedXF(u32 val, int array);
-
-#endif // _XFMEMORY_H

@@ -1,9 +1,7 @@
 // Copyright 2013 Dolphin Emulator Project
 // Licensed under GPLv2
 // Refer to the license.txt file included.
-
-#ifndef _BPMEMORY_H
-#define _BPMEMORY_H
+#pragma once
 
 #include "Common/Common.h"
 
@@ -181,7 +179,7 @@ enum Compare
 
 enum AlphaOp
 {
-	ALPHAOP_AND = 0, 
+	ALPHAOP_AND = 0,
 	ALPHAOP_OR,
 	ALPHAOP_XOR,
 	ALPHAOP_XNOR,
@@ -285,18 +283,18 @@ struct TevStageCombiner
 			u32 dest : 2;  //1,2,3			
 		};
 		u32 hex;
-		bool UsedAsInput(u32 val)
+		bool UsedAsInput(u32 val) const
 		{
 			return a == val || b == val || c == val || d == val;
 		}
-		bool UsedAs8bitInput(u32 val)
+		bool UsedAs8bitInput(u32 val) const
 		{
 			return a == val || b == val || c == val;
 		}
 	};
 	union AlphaCombiner
 	{
-		struct 
+		struct
 		{
 			u32 rswap : 2;
 			u32 tswap : 2;
@@ -313,11 +311,11 @@ struct TevStageCombiner
 			u32 dest : 2;  //1,2,3			
 		};
 		u32 hex;
-		bool UsedAsInput(u32 val)
+		bool UsedAsInput(u32 val) const
 		{
 			return a == val || b == val || c == val || d == val;
 		}
-		bool UsedAs8bitInput(u32 val)
+		bool UsedAs8bitInput(u32 val) const
 		{
 			return a == val || b == val || c == val;
 		}
@@ -363,57 +361,57 @@ struct TevStageCombiner
 //  GXSetTevIndirect(tevstage+1, indstage, 0, 3, realmat+4, 6, 6, 1, 0, 0)
 //  GXSetTevIndirect(tevstage+2, indstage, 0, 0, 0, 0, 0, 1, 0, 0)
 
-	union TevStageIndirect
+union TevStageIndirect
+{
+	// if mid, sw, tw, and addprev are 0, then no indirect stage is used, mask = 0x17fe00
+	struct
 	{
-		// if mid, sw, tw, and addprev are 0, then no indirect stage is used, mask = 0x17fe00
-		struct
-		{
-			u32 bt			: 2; // indirect tex stage ID
-			u32 fmt			: 2; // format: ITF_X
-			u32 bias		: 3; // ITB_X
-			u32 bs			: 2; // ITBA_X, indicates which coordinate will become the 'bump alpha'
-			u32 mid			: 4; // matrix id to multiply offsets with
-			u32 sw			: 3; // ITW_X, wrapping factor for S of regular coord
-			u32 tw			: 3; // ITW_X, wrapping factor for T of regular coord
-			u32 lb_utclod	: 1; // use modified or unmodified texture coordinates for LOD computation
-			u32 fb_addprev	: 1; // 1 if the texture coordinate results from the previous TEV stage should be added
-			u32 pad0		: 3;
-			u32 rid			: 8;
-		};
-		struct
-		{
-			u32 hex : 21; 
-			u32 unused : 11;
-		};
-
-		bool IsActive() { return bs != ITBA_OFF || mid != 0; }
+		u32 bt : 2; // indirect tex stage ID
+		u32 fmt : 2; // format: ITF_X
+		u32 bias : 3; // ITB_X
+		u32 bs : 2; // ITBA_X, indicates which coordinate will become the 'bump alpha'
+		u32 mid : 4; // matrix id to multiply offsets with
+		u32 sw : 3; // ITW_X, wrapping factor for S of regular coord
+		u32 tw : 3; // ITW_X, wrapping factor for T of regular coord
+		u32 lb_utclod : 1; // use modified or unmodified texture coordinates for LOD computation
+		u32 fb_addprev : 1; // 1 if the texture coordinate results from the previous TEV stage should be added
+		u32 pad0 : 3;
+		u32 rid : 8;
+	};
+	struct
+	{
+		u32 hex : 21;
+		u32 unused : 11;
 	};
 
-	union TwoTevStageOrders
+	bool IsActive() const { return bs != ITBA_OFF || mid != 0; }
+};
+
+union TwoTevStageOrders
+{
+	struct
 	{
-		struct
-		{
-			u32 texmap0    : 3; // indirect tex stage texmap
-			u32 texcoord0  : 3;
-			u32 enable0    : 1; // 1 if should read from texture
-			u32 colorchan0 : 3; // RAS1_CC_X
+		u32 texmap0 : 3; // indirect tex stage texmap
+		u32 texcoord0 : 3;
+		u32 enable0 : 1; // 1 if should read from texture
+		u32 colorchan0 : 3; // RAS1_CC_X
 
-			u32 pad0       : 2;
+		u32 pad0 : 2;
 
-			u32 texmap1    : 3;
-			u32 texcoord1  : 3;
-			u32 enable1    : 1; // 1 if should read from texture
-			u32 colorchan1 : 3; // RAS1_CC_X
+		u32 texmap1 : 3;
+		u32 texcoord1 : 3;
+		u32 enable1 : 1; // 1 if should read from texture
+		u32 colorchan1 : 3; // RAS1_CC_X
 
-			u32 pad1       : 2;
-			u32 rid        : 8;
-		};
-		u32 hex;
-		int getTexMap(int i){return i?texmap1:texmap0;}
-		int getTexCoord(int i){return i?texcoord1:texcoord0;}
-		int getEnable(int i){return i?enable1:enable0;}
-		int getColorChan(int i){return i?colorchan1:colorchan0;}
+		u32 pad1 : 2;
+		u32 rid : 8;
 	};
+	u32 hex;
+	int getTexMap(int i) const { return i ? texmap1 : texmap0; }
+	int getTexCoord(int i) const { return i ? texcoord1 : texcoord0; }
+	int getEnable(int i) const { return i ? enable1 : enable0; }
+	int getColorChan(int i) const { return i ? colorchan1 : colorchan0; }
+};
 
 union TEXSCALE
 {
@@ -445,8 +443,8 @@ union RAS1_IREF
 	};
 	u32 hex;
 
-	u32 getTexCoord(int i) { return (hex>>(6*i+3))&7; }
-	u32 getTexMap(int i) { return (hex>>(6*i))&7; }
+	u32 getTexCoord(int i) const  { return (hex >> (6 * i + 3)) & 7; }
+	u32 getTexMap(int i) const { return (hex >> (6 * i)) & 7; }
 };
 
 
@@ -454,7 +452,7 @@ union RAS1_IREF
 
 union TexMode0
 {
-	struct 
+	struct
 	{
 		u32 wrap_s : 2;
 		u32 wrap_t : 2;
@@ -470,7 +468,7 @@ union TexMode0
 };
 union TexMode1
 {
-	struct 
+	struct
 	{
 		u32 min_lod : 8;
 		u32 max_lod : 8;
@@ -479,9 +477,9 @@ union TexMode1
 };
 union TexImage0
 {
-	struct 
+	struct
 	{
-		u32 width  : 10; //actually w-1
+		u32 width : 10; //actually w-1
 		u32 height : 10; //actually h-1
 		u32 format : 4;
 	};
@@ -489,7 +487,7 @@ union TexImage0
 };
 union TexImage1
 {
-	struct 
+	struct
 	{
 		u32 tmem_even : 15; // tmem line index for even LODs
 		u32 cache_width : 3;
@@ -501,10 +499,10 @@ union TexImage1
 
 union TexImage2
 {
-	struct 
+	struct
 	{
 		u32 tmem_odd : 15; // tmem line index for odd LODs
-		u32 cache_width : 3; 
+		u32 cache_width : 3;
 		u32 cache_height : 3;
 	};
 	u32 hex;
@@ -512,15 +510,15 @@ union TexImage2
 
 union TexImage3
 {
-	struct 
+	struct
 	{
-		u32 image_base: 24;  //address in memory >> 5 (was 20 for GC)
+		u32 image_base : 24;  //address in memory >> 5 (was 20 for GC)
 	};
 	u32 hex;
 };
 union TexTLUT
 {
-	struct 
+	struct
 	{
 		u32 tmem_offset : 10;
 		u32 tlut_format : 2;
@@ -530,7 +528,7 @@ union TexTLUT
 
 union ZTex1
 {
-	struct 
+	struct
 	{
 		u32 bias : 24;
 	};
@@ -539,7 +537,7 @@ union ZTex1
 
 union ZTex2
 {
-	struct 
+	struct
 	{
 		u32 type : 2; // TEV_Z_TYPE_X
 		u32 op : 2; // GXZTexOp
@@ -575,7 +573,7 @@ struct FourTexUnits
 
 union GenMode
 {
-	struct 
+	struct
 	{
 		u32 numtexgens : 4;    //     0xF
 		u32 numcolchans : 5;   //   0x1E0
@@ -590,7 +588,7 @@ union GenMode
 
 union LPSize
 {
-	struct 
+	struct
 	{
 		u32 linesize : 8; // in 1/6th pixels
 		u32 pointsize : 8; // in 1/6th pixels
@@ -605,7 +603,7 @@ union LPSize
 
 union X12Y12
 {
-	struct 
+	struct
 	{
 		u32 y : 12;
 		u32 x : 12;
@@ -614,7 +612,7 @@ union X12Y12
 };
 union X10Y10
 {
-	struct 
+	struct
 	{
 		u32 x : 10;
 		u32 y : 10;
@@ -638,9 +636,9 @@ union X10Y10
 
 union BlendMode
 {
-	struct 
+	struct
 	{
-		u32 blendenable   : 1;
+		u32 blendenable : 1;
 		u32 logicopenable : 1;
 		u32 dither : 1;
 		u32 colorupdate : 1;
@@ -656,7 +654,7 @@ union BlendMode
 
 union FogParam0
 {
-	struct 
+	struct
 	{
 		u32 mantissa : 11;
 		u32 exponent : 8;
@@ -686,7 +684,7 @@ union FogParam3
 
 	// amount to subtract from eyespacez after range adjustment
 	float GetC()
-	{ 
+	{
 		union { u32 i; float f; } dummy;
 		dummy.i = ((u32)c_sign << 31) | ((u32)c_exp << 23) | ((u32)c_mant << 12); // scale mantissa from 11 to 23 bits
 		return dummy.f;
@@ -737,9 +735,9 @@ struct FogParams
 	{
 		struct
 		{
-			u32 b  : 8;
-			u32 g  : 8;
-			u32 r  : 8;
+			u32 b : 8;
+			u32 g : 8;
+			u32 r : 8;
 		};
 		u32 hex;
 	};
@@ -751,9 +749,9 @@ union ZMode
 {
 	struct
 	{
-		u32 testenable		: 1;
-		u32 func			: 3;
-		u32 updateenable	: 1;  //size?
+		u32 testenable : 1;
+		u32 func : 3;
+		u32 updateenable : 1;  //size?
 	};
 	u32 hex;
 };
@@ -826,7 +824,7 @@ union PE_CONTROL
 
 union TCInfo
 {
-	struct 
+	struct
 	{
 		u32 scale_minus_1 : 16;
 		u32 range_bias : 1;
@@ -850,7 +848,7 @@ union ColReg
 	struct
 	{
 		s32 a : 11;
-		u32 : 1;
+	u32: 1;
 		s32 b : 11;
 		u32 type : 1;
 	};
@@ -874,8 +872,8 @@ union TevKSel
 	};
 	u32 hex;
 
-	int getKC(int i) {return i?kcsel1:kcsel0;}
-	int getKA(int i) {return i?kasel1:kasel0;}
+	int getKC(int i) const { return i ? kcsel1 : kcsel0; }
+	int getKA(int i) const { return i ? kasel1 : kasel0; }
 };
 
 union AlphaTest
@@ -899,7 +897,7 @@ union AlphaTest
 
 	inline TEST_RESULT TestResult() const
 	{
-		switch(logic)
+		switch (logic)
 		{
 		case 0: // AND
 			if (comp0 == ALPHACMP_ALWAYS && comp1 == ALPHACMP_ALWAYS)
@@ -936,22 +934,22 @@ union AlphaTest
 union UPE_Copy
 {
 	u32 Hex;
-	struct 
+	struct
 	{
-		u32 clamp0				: 1; // if set clamp top
-		u32 clamp1				: 1; // if set clamp bottom
-		u32 yuv					: 1; // if set, color conversion from RGB to YUV
-		u32 target_pixel_format	: 4; // realformat is (fmt/2)+((fmt&1)*8).... for some reason the msb is the lsb (pattern: cycling right shift)
-		u32 gamma				: 2; // gamma correction.. 0 = 1.0 ; 1 = 1.7 ; 2 = 2.2 ; 3 is reserved
-		u32 half_scale			: 1; // "mipmap" filter... 0 = no filter (scale 1:1) ; 1 = box filter (scale 2:1)
-		u32 scale_invert		: 1; // if set vertical scaling is on
-		u32 clear				: 1;
-		u32 frame_to_field		: 2; // 0 progressive ; 1 is reserved ; 2 = interlaced (even lines) ; 3 = interlaced 1 (odd lines)
-		u32 copy_to_xfb			: 1;
-		u32 intensity_fmt		: 1; // if set, is an intensity format (I4,I8,IA4,IA8)
-		u32	auto_conv			: 1; // if 0 automatic color conversion by texture format and pixel type
+		u32 clamp0 : 1; // if set clamp top
+		u32 clamp1 : 1; // if set clamp bottom
+		u32 yuv : 1; // if set, color conversion from RGB to YUV
+		u32 target_pixel_format : 4; // realformat is (fmt/2)+((fmt&1)*8).... for some reason the msb is the lsb (pattern: cycling right shift)
+		u32 gamma : 2; // gamma correction.. 0 = 1.0 ; 1 = 1.7 ; 2 = 2.2 ; 3 is reserved
+		u32 half_scale : 1; // "mipmap" filter... 0 = no filter (scale 1:1) ; 1 = box filter (scale 2:1)
+		u32 scale_invert : 1; // if set vertical scaling is on
+		u32 clear : 1;
+		u32 frame_to_field : 2; // 0 progressive ; 1 is reserved ; 2 = interlaced (even lines) ; 3 = interlaced 1 (odd lines)
+		u32 copy_to_xfb : 1;
+		u32 intensity_fmt : 1; // if set, is an intensity format (I4,I8,IA4,IA8)
+		u32	auto_conv : 1; // if 0 automatic color conversion by texture format and pixel type
 	};
-	u32 tp_realFormat() { 
+	u32 tp_realFormat() {
 		return target_pixel_format / 2 + (target_pixel_format & 1) * 8;
 	}
 };
@@ -1023,7 +1021,7 @@ struct BPMemory
 	u32 copyTexDest; //4b// 4b == CopyAddress (GXDispCopy and GXTexCopy use it)
 	u32 unknown6; //4c
 	u32 copyMipMapStrideChannels; // 4d usually set to 4 when dest is single channel, 8 when dest is 2 channel, 16 when dest is RGBA
-								// also, doubles whenever mipmap box filter option is set (excent on RGBA). Probably to do with number of bytes to look at when smoothing
+	// also, doubles whenever mipmap box filter option is set (excent on RGBA). Probably to do with number of bytes to look at when smoothing
 	u32 dispcopyyscale; //4e
 	u32 clearcolorAR; //4f
 	u32 clearcolorGB; //50
@@ -1063,5 +1061,3 @@ extern BPMemory bpmem;
 void LoadBPReg(u32 value0);
 
 void GetBPRegInfo(const u8* data, std::string* name, std::string* desc);
-
-#endif // _BPMEMORY_H
