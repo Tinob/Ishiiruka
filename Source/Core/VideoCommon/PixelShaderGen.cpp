@@ -1026,7 +1026,7 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, co
 		TevOverflowState[tevAOutputSourceMap[ac.dest]] = !ac.clamp;
 
 		out.Write("// color combine\n");
-		out.Write("%s = round(clamp(", tevCOutputTable[cc.dest]);
+		out.Write("%s = clamp(", tevCOutputTable[cc.dest]);
 		// combine the color channel
 		if (cc.bias != TevBias_COMPARE) // if not compare
 		{
@@ -1041,15 +1041,15 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, co
 		}
 		if (cc.clamp)
 		{
-			out.Write(",0.0,255.0));\n");
+			out.Write(",0.0,255.0);\n");
 		}
 		else
 		{
-			out.Write(",-1024.0,1023.0));\n");
+			out.Write(",-1024.0,1023.0);\n");
 		}
 
 		out.Write("// alpha combine\n");
-		out.Write("%s = round(clamp(", tevAOutputTable[ac.dest]);
+		out.Write("%s = clamp(", tevAOutputTable[ac.dest]);
 		if (ac.bias != TevBias_COMPARE) // if not compare
 		{
 			// 8 is used because alpha stage don't have ONE input so a number outside range is used
@@ -1063,11 +1063,11 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, co
 		}
 		if (ac.clamp)
 		{
-			out.Write(",0.0,255.0));\n\n");
+			out.Write(",0.0,255.0);\n\n");
 		}
 		else
 		{
-			out.Write(",-1024.0,1023.0));\n\n");
+			out.Write(",-1024.0,1023.0);\n\n");
 		}
 		out.Write("// TEV done\n");
 	}
@@ -1247,14 +1247,14 @@ void SampleTexture(T& out, const char *texcoords, const char *texswap, int texma
 
 static const char *tevAlphaFuncsTable[] =
 {
-	"(false)",					// NEVER
-	"(prev.a <  %s)",			// LESS
-	"(prev.a == %s)",			// EQUAL
-	"(prev.a <= %s)",			// LEQUAL
-	"(prev.a >  %s)",			// GREATER
-	"(prev.a != %s)",			// NEQUAL
-	"(prev.a >= %s)",			// GEQUAL
-	"(true)"					// ALWAYS
+	"(false)",						// NEVER
+	"(prev.a <= (%s - 0.25))",		// LESS
+	"(abs( prev.a - %s ) < 0.5)",	// EQUAL
+	"(prev.a < (%s + 0.25))",		// LEQUAL
+	"(prev.a >= (%s + 0.25))",		// GREATER
+	"(abs( prev.a - %s ) >= 0.5)",	// NEQUAL
+	"(prev.a > (%s - 0.25))",		// GEQUAL
+	"(true)"						// ALWAYS
 };
 
 static const char *tevAlphaFunclogicTable[] =
