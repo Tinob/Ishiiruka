@@ -230,8 +230,8 @@ SHADER* ProgramShaderCache::SetShader ( DSTALPHA_MODE dstAlphaMode, u32 componen
 
 	ShaderCode vcode;
 	ShaderCode pcode;
-	GenerateVertexShaderCodeGL(vcode, components);
-	GeneratePixelShaderCodeGL(pcode, dstAlphaMode, components);
+	GenerateVertexShaderCodeGL(vcode, components, xfregs, bpmem);
+	GeneratePixelShaderCodeGL(pcode, dstAlphaMode, components, xfregs, bpmem);
 
 	if (g_ActiveConfig.bEnableShaderDebugging)
 	{
@@ -392,17 +392,17 @@ GLuint ProgramShaderCache::CompileSingleShader (GLuint type, const char* code )
 
 void ProgramShaderCache::GetShaderId(SHADERUID* uid, DSTALPHA_MODE dstAlphaMode, u32 components)
 {
-	GetPixelShaderUidGL(uid->puid, dstAlphaMode, components);
-	GetVertexShaderUidGL(uid->vuid, components);
+	GetPixelShaderUidGL(uid->puid, dstAlphaMode, components, xfregs, bpmem);
+	GetVertexShaderUidGL(uid->vuid, components, xfregs, bpmem);
 
 	if (g_ActiveConfig.bEnableShaderDebugging)
 	{
 		ShaderCode pcode;
-		GeneratePixelShaderCodeGL(pcode, dstAlphaMode, components);
+		GeneratePixelShaderCodeGL(pcode, dstAlphaMode, components, xfregs, bpmem);
 		pixel_uid_checker.AddToIndexAndCheck(pcode, uid->puid, "Pixel", "p");
 
 		ShaderCode vcode;
-		GenerateVertexShaderCodeGL(vcode, components);
+		GenerateVertexShaderCodeGL(vcode, components, xfregs, bpmem);
 		vertex_uid_checker.AddToIndexAndCheck(vcode, uid->vuid, "Vertex", "v");
 	}
 }

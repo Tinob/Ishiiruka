@@ -1,22 +1,8 @@
-// Copyright (C) 2003 Dolphin Project.
+// Copyright 2013 Dolphin Emulator Project
+// Licensed under GPLv2
+// Refer to the license.txt file included.
 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, version 2.0.
-
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License 2.0 for more details.
-
-// A copy of the GPL 2.0 should have been included with the program.
-// If not, see http://www.gnu.org/licenses/
-
-// Official SVN repository and contact information can be found at
-// http://code.google.com/p/dolphin-emu/
-
-#ifndef _SHADERGENCOMMON_H
-#define _SHADERGENCOMMON_H
+#pragma once
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -29,57 +15,74 @@
 #include "VideoCommon/VideoCommon.h"
 
 /**
- * Common interface for classes that need to go through the shader generation path (GenerateVertexShader, GeneratePixelShader)
- * In particular, this includes the shader code generator (ShaderCode).
- * A different class (ShaderUid) can be used to uniquely identify each ShaderCode object.
- * More interesting things can be done with this, e.g. ShaderConstantProfile checks what shader constants are being used. This can be used to optimize buffer management.
- * Each of the ShaderCode, ShaderUid and ShaderConstantProfile child classes only implement the subset of ShaderGeneratorInterface methods that are required for the specific tasks.
- */
+* Common interface for classes that need to go through the shader generation path (GenerateVertexShader, GeneratePixelShader)
+* In particular, this includes the shader code generator (ShaderCode).
+* A different class (ShaderUid) can be used to uniquely identify each ShaderCode object.
+* More interesting things can be done with this, e.g. ShaderConstantProfile checks what shader constants are being used. This can be used to optimize buffer management.
+* Each of the ShaderCode, ShaderUid and ShaderConstantProfile child classes only implement the subset of ShaderGeneratorInterface methods that are required for the specific tasks.
+*/
 class ShaderGeneratorInterface
 {
 public:
 	/*
-	 * Used when the shader generator would write a piece of ShaderCode.
-	 * Can be used like printf.
-	 * @note In the ShaderCode implementation, this does indeed write the parameter string to an internal buffer. However, you're free to do whatever you like with the parameter.
-	 */
+	* Clears The UID data to its Default Value
+	*/
+	void ClearUID(){}
+	/*
+	* Calculates UID data Hash
+	*/
+	void CalculateUIDHash(){ }
+	/*
+	* Used when the shader generator would write a piece of ShaderCode.
+	* Can be used like printf.
+	* @note In the ShaderCode implementation, this does indeed write the parameter string to an internal buffer. However, you're free to do whatever you like with the parameter.
+	*/
 	void Write(const char* fmt, ...) {}
 
 	/*
-	 * Returns a read pointer to the internal buffer.
-	 * @note When implementing this method in a child class, you likely want to return the argument of the last SetBuffer call here
-	 * @note SetBuffer() should be called before using GetBuffer().
-	 */
-	const char* GetBuffer() { return NULL; }
+	* Returns a read pointer to the internal buffer.
+	* @note When implementing this method in a child class, you likely want to return the argument of the last SetBuffer call here
+	* @note SetBuffer() should be called before using GetBuffer().
+	*/
+	char* GetBuffer() { return NULL; }
 
 	/*
-	 * Can be used to give the object a place to write to. This should be called before using Write().
-	 * @param buffer pointer to a char buffer that the object can write to
-	 */
+	* Can be used to give the object a place to write to. This should be called before using Write().
+	* @param buffer pointer to a char buffer that the object can write to
+	*/
 	void SetBuffer(char* buffer) { }
 
 	/*
-	 * Returns a pointer to an internally stored object of the uid_data type.
-	 * @warning since most child classes use the default implementation you shouldn't access this directly without adding precautions against NULL access (e.g. via adding a dummy structure, cf. the vertex/pixel shader generators)
-	 */
+	* Returns a pointer to an internally stored object of the uid_data type.
+	* @warning since most child classes use the default implementation you shouldn't access this directly without adding precautions against NULL access (e.g. via adding a dummy structure, cf. the vertex/pixel shader generators)
+	*/
 	template<class uid_data>
 	uid_data& GetUidData() { return *(uid_data*)NULL; }
 };
 
 /**
- * Shader UID class used to uniquely identify the ShaderCode output written in the shader generator.
- * uid_data can be any struct of parameters that uniquely identify each shader code output.
- * Unless performance is not an issue, uid_data should be tightly packed to reduce memory footprint.
- * Shader generators will write to specific uid_data fields; ShaderUid methods will only read raw u32 values from a union.
- */
+* Shader UID class used to uniquely identify the ShaderCode output written in the shader generator.
+* uid_data can be any struct of parameters that uniquely identify each shader code output.
+* Unless performance is not an issue, uid_data should be tightly packed to reduce memory footprint.
+* Shader generators will write to specific uid_data fields; ShaderUid methods will only read raw u32 values from a union.
+*/
 template<class uid_data>
 class ShaderUid : public ShaderGeneratorInterface
 {
 public:
-	ShaderUid()
+	ShaderUid() : HASH(0){}
+
+	void ClearUID()
 	{
-		// TODO: Move to Shadergen => can be optimized out
 		memset(values, 0, sizeof(uid_data));
+	}
+
+	void CalculateUIDHash()
+	{
+		if (HASH == 0)
+		{
+			HASH = (std::size_t)HashAdler32(values + data.StartValue(), data.NumValues());
+		}
 	}
 
 	bool operator == (const ShaderUid& obj) const
@@ -107,7 +110,7 @@ public:
 	{
 		std::size_t operator()(const ShaderUid<uid_data>& k) const
 		{
-			return (std::size_t)HashAdler32(k.values, k.data.NumValues());
+			return k.HASH;
 		}
 	};
 private:
@@ -116,6 +119,7 @@ private:
 		uid_data data;
 		u8 values[sizeof(uid_data)];
 	};
+	std::size_t HASH;
 };
 
 
@@ -128,6 +132,10 @@ public:
 
 	}
 
+	void ClearUID(){}
+
+	void CalculateUIDHash(){ }
+
 	void Write(const char* fmt, ...)
 	{
 		va_list arglist;
@@ -136,11 +144,11 @@ public:
 		va_end(arglist);
 	}
 
-	const char* GetBuffer() { return buf; }
+	char* GetBuffer() { return buf; }
 	void SetBuffer(char* buffer) { buf = buffer; write_ptr = buffer; }
-
+	ptrdiff_t BufferSize() { return write_ptr - buf; }
 private:
-	const char* buf;
+	char* buf;
 	char* write_ptr;
 };
 
@@ -153,7 +161,7 @@ static inline void WriteRegister(T& object, const char *prefix, const u32 num)
 	object.Write(" : register(%s%d)", prefix, num);
 }
 
-template<class T , API_TYPE api_type>
+template<class T, API_TYPE api_type>
 static inline void WriteLocation(T& object, bool using_ubos)
 {
 	if (using_ubos)
@@ -172,8 +180,8 @@ static inline void DeclareUniform(T& object, bool using_ubos, const u32 num, con
 }
 
 /**
- * Checks if there has been
- */
+* Checks if there has been
+*/
 template<class UidT, class CodeT>
 class UidChecker
 {
@@ -202,8 +210,8 @@ public:
 
 				char szTemp[MAX_PATH];
 				sprintf(szTemp, "%s%ssuid_mismatch_%04i.txt", File::GetUserPath(D_DUMP_IDX).c_str(),
-						dump_prefix,
-						++num_failures);
+					dump_prefix,
+					++num_failures);
 
 				// TODO: Should also dump uids
 				std::ofstream file;
@@ -216,7 +224,7 @@ public:
 					u32 value = ((u32*)&new_uid.GetUidData())[i];
 					if ((i % 4) == 0)
 					{
-						auto last_value = (i+3 < new_uid.GetUidDataSize()-1) ? i+3 : new_uid.GetUidDataSize();
+						auto last_value = (i + 3 < new_uid.GetUidDataSize() - 1) ? i + 3 : new_uid.GetUidDataSize();
 						file << std::setfill(' ') << std::dec;
 						file << "Values " << std::setw(2) << i << " - " << last_value << ": ";
 					}
@@ -233,10 +241,8 @@ public:
 			}
 		}
 	}
-	
+
 private:
-	std::map<UidT,std::string> m_shaders;
+	std::map<UidT, std::string> m_shaders;
 	std::vector<UidT> m_uids;
 };
-
-#endif // _SHADERGENCOMMON_H

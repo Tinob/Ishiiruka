@@ -2,10 +2,10 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef GCOGL_VERTEXSHADER_H
-#define GCOGL_VERTEXSHADER_H
+#pragma once
 
 #include <stdarg.h>
+#include "VideoCommon/BPMemory.h"
 #include "VideoCommon/XFMemory.h"
 #include "VideoCommon/VideoCommon.h"
 #include "ShaderGenCommon.h"
@@ -55,17 +55,17 @@
 #define C_PLOFFSETPARAMS    (C_DEPTHPARAMS + 1)
 #define C_VENVCONST_END			(C_PLOFFSETPARAMS + 13)
 
-const s_svar VSVar_Loc[] = {  {I_POSNORMALMATRIX, C_POSNORMALMATRIX, 6 },
-						{I_PROJECTION , C_PROJECTION, 4  },
-						{I_MATERIALS, C_MATERIALS, 4 },
-						{I_LIGHTS, C_LIGHTS, 40 },
-						{I_TEXMATRICES, C_TEXMATRICES, 24 },
-						{I_TRANSFORMMATRICES , C_TRANSFORMMATRICES, 64  },
-						{I_NORMALMATRICES , C_NORMALMATRICES, 32  },
-						{I_POSTTRANSFORMMATRICES, C_POSTTRANSFORMMATRICES, 64 },
-						{I_DEPTHPARAMS, C_DEPTHPARAMS, 1 },
-						{I_PLOFFSETPARAMS, C_PLOFFSETPARAMS, 13 },
-						};
+const s_svar VSVar_Loc[] = { { I_POSNORMALMATRIX, C_POSNORMALMATRIX, 6 },
+{ I_PROJECTION, C_PROJECTION, 4 },
+{ I_MATERIALS, C_MATERIALS, 4 },
+{ I_LIGHTS, C_LIGHTS, 40 },
+{ I_TEXMATRICES, C_TEXMATRICES, 24 },
+{ I_TRANSFORMMATRICES, C_TRANSFORMMATRICES, 64 },
+{ I_NORMALMATRICES, C_NORMALMATRICES, 32 },
+{ I_POSTTRANSFORMMATRICES, C_POSTTRANSFORMMATRICES, 64 },
+{ I_DEPTHPARAMS, C_DEPTHPARAMS, 1 },
+{ I_PLOFFSETPARAMS, C_PLOFFSETPARAMS, 13 },
+};
 
 #pragma pack(1)
 
@@ -98,25 +98,23 @@ struct vertex_shader_uid_data
 	LightingUidData lighting;
 };
 #pragma pack()
-
+#define VERTEXSHADERGEN_BUFFERSIZE 16768
 typedef ShaderUid<vertex_shader_uid_data> VertexShaderUid;
 
-void GetVertexShaderUidD3D9(VertexShaderUid& object, u32 components);
+void GetVertexShaderUidD3D9(VertexShaderUid& object, u32 components, const XFRegisters &xfr, const BPMemory &bpm);
 
-void GenerateVertexShaderCodeD3D9(ShaderCode& object, u32 components);
+void GenerateVertexShaderCodeD3D9(ShaderCode& object, u32 components, const XFRegisters &xfr, const BPMemory &bpm);
 
-void GenerateVSOutputStructForGSD3D9(ShaderCode& object);
+void GenerateVSOutputStructForGSD3D9(ShaderCode& object, const XFRegisters &xfr);
 
-void GetVertexShaderUidD3D11(VertexShaderUid& object, u32 components);
+void GetVertexShaderUidD3D11(VertexShaderUid& object, u32 components, const XFRegisters &xfr, const BPMemory &bpm);
 
-void GenerateVertexShaderCodeD3D11(ShaderCode& object, u32 components);
+void GenerateVertexShaderCodeD3D11(ShaderCode& object, u32 components, const XFRegisters &xfr, const BPMemory &bpm);
 
-void GenerateVSOutputStructForGSD3D11(ShaderCode& object);
+void GenerateVSOutputStructForGSD3D11(ShaderCode& object, const XFRegisters &xfr);
 
-void GetVertexShaderUidGL(VertexShaderUid& object, u32 components);
+void GetVertexShaderUidGL(VertexShaderUid& object, u32 components, const XFRegisters &xfr, const BPMemory &bpm);
 
-void GenerateVertexShaderCodeGL(ShaderCode& object, u32 components);
+void GenerateVertexShaderCodeGL(ShaderCode& object, u32 components, const XFRegisters &xfr, const BPMemory &bpm);
 
-void GenerateVSOutputStructForGSGL(ShaderCode& object);
-
-#endif // GCOGL_VERTEXSHADER_H
+void GenerateVSOutputStructForGSGL(ShaderCode& object, const XFRegisters &xfr);

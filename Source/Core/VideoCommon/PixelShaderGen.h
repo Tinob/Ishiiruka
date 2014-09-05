@@ -2,13 +2,12 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef GCOGL_PIXELSHADER_H
-#define GCOGL_PIXELSHADER_H
+#pragma once
 
-#include "VideoCommon/VideoCommon.h"
-#include "ShaderGenCommon.h"
 #include "VideoCommon/BPMemory.h"
-#include "LightingShaderGen.h"
+#include "VideoCommon/LightingShaderGen.h"
+#include "VideoCommon/ShaderGenCommon.h"
+#include "VideoCommon/VideoCommon.h"
 
 #define I_COLORS      "color"
 #define I_KCOLORS     "k"
@@ -45,17 +44,17 @@ enum DSTALPHA_MODE
 };
 
 // Annoying sure, can be removed once we get up to GLSL ~1.3
-const s_svar PSVar_Loc[] = { {I_COLORS, C_COLORS, 4 },
-						{I_KCOLORS, C_KCOLORS, 4 },
-						{I_ALPHA, C_ALPHA, 1 },
-						{I_TEXDIMS, C_TEXDIMS, 8 },
-						{I_ZBIAS , C_ZBIAS, 2  },
-						{I_INDTEXSCALE , C_INDTEXSCALE, 2  },
-						{I_INDTEXMTX, C_INDTEXMTX, 6 },
-						{I_FOG, C_FOG, 3 },
-						{I_PLIGHTS, C_PLIGHTS, 40 },
-						{I_PMATERIALS, C_PMATERIALS, 4 },
-						};
+const s_svar PSVar_Loc[] = { { I_COLORS, C_COLORS, 4 },
+{ I_KCOLORS, C_KCOLORS, 4 },
+{ I_ALPHA, C_ALPHA, 1 },
+{ I_TEXDIMS, C_TEXDIMS, 8 },
+{ I_ZBIAS, C_ZBIAS, 2 },
+{ I_INDTEXSCALE, C_INDTEXSCALE, 2 },
+{ I_INDTEXMTX, C_INDTEXMTX, 6 },
+{ I_FOG, C_FOG, 3 },
+{ I_PLIGHTS, C_PLIGHTS, 40 },
+{ I_PMATERIALS, C_PMATERIALS, 4 },
+};
 
 #pragma pack(1)
 
@@ -66,14 +65,14 @@ struct stage_hash_data
 	u32 pad0 : 8;
 	u32 ac : 24;
 	u32 pad1 : 8;
-		
+
+	u32 tevorders_enable : 1;
 	u32 tevorders_texmap : 3;
 	u32 tevorders_texcoord : 3;
-	u32 tevorders_enable : 1;
-	u32 tevorders_colorchan : 3;
 	u32 hasindstage : 1;
-	u32 tevind : 21;		
-		
+	u32 tevorders_colorchan : 3;
+	u32 tevind : 21;
+
 	// TODO: Clean up the swapXY mess
 	u32 tevksel_swap1a : 2;
 	u32 tevksel_swap2a : 2;
@@ -83,21 +82,8 @@ struct stage_hash_data
 	u32 tevksel_swap2c : 2;
 	u32 tevksel_swap1d : 2;
 	u32 tevksel_swap2d : 2;
-	u32 tevksel_kc : 5;
-	u32 tevksel_ka : 5;
-	u32 pad2 : 6;
-};
-
-struct tex_stage_pc_format
-{
-	u32 samp0 : 4;
-	u32 samp1 : 4;
-	u32 samp2 : 4;
-	u32 samp3 : 4;
-	u32 samp4 : 4;
-	u32 samp5 : 4;
-	u32 samp6 : 4;
-	u32 samp7 : 4;
+	u32 tevksel_kc : 8; // 3 bits padded to aling data
+	u32 tevksel_ka : 8; // 3 bits padded to aling data
 };
 
 struct pixel_shader_uid_data
@@ -106,23 +92,27 @@ struct pixel_shader_uid_data
 	u32 StartValue() const { return pixel_lighting ? 0 : sizeof(LightingUidData); }
 
 	// TODO: Optimize field order for easy access!
-	LightingUidData lighting;	
+	LightingUidData lighting;
 
 	u32 components : 23;
+	u32 pixel_lighting : 1;
+
 	u32 dstAlphaMode : 2;
 	u32 Pretest : 2;
 	u32 nIndirectStagesUsed : 4;
-	u32 pixel_lighting : 1;
 
 	u32 genMode_numtexgens : 4;
 	u32 genMode_numtevstages : 4;
+
 	u32 genMode_numindstages : 3;
-	u32 alpha_test_comp0 : 3;
-	u32 alpha_test_comp1 : 3;
 	u32 alpha_test_logic : 2;
+	u32 alpha_test_comp0 : 3;
+
+	u32 alpha_test_comp1 : 3;
 	u32 alpha_test_use_zcomploc_hack : 1;
 	u32 fog_proj : 1;
 	u32 fog_fsel : 3;
+
 	u32 fog_RangeBaseEnabled : 1;
 	u32 ztex_op : 2;
 	u32 fast_depth_calc : 1;
@@ -140,7 +130,6 @@ struct pixel_shader_uid_data
 	u32 tevindref_bc3 : 3;
 	u32 tevindref_bi4 : 3;
 	u32 tevindref_bc4 : 3;
-	tex_stage_pc_format tex_pcformat;
 	stage_hash_data stagehash[16];
 
 	inline void SetTevindrefValues(int index, u32 texcoord, u32 texmap)
@@ -159,21 +148,19 @@ struct pixel_shader_uid_data
 	}
 };
 #pragma pack()
-
+#define PIXELSHADERGEN_BUFFERSIZE 16768
 typedef ShaderUid<pixel_shader_uid_data> PixelShaderUid;
 
-void GetPixelShaderUidD3D9(PixelShaderUid& object, DSTALPHA_MODE dstAlphaMode, u32 components);
+void GetPixelShaderUidD3D9(PixelShaderUid& object, DSTALPHA_MODE dstAlphaMode, u32 components, const XFRegisters &xfr, const BPMemory &bpm);
 
-void GeneratePixelShaderCodeD3D9(ShaderCode& object, DSTALPHA_MODE dstAlphaMode, u32 components);
+void GeneratePixelShaderCodeD3D9(ShaderCode& object, DSTALPHA_MODE dstAlphaMode, u32 components, const XFRegisters &xfr, const BPMemory &bpm);
 
-void GeneratePixelShaderCodeD3D9SM2(ShaderCode& object, DSTALPHA_MODE dstAlphaMode, u32 components);
+void GeneratePixelShaderCodeD3D9SM2(ShaderCode& object, DSTALPHA_MODE dstAlphaMode, u32 components, const XFRegisters &xfr, const BPMemory &bpm);
 
-void GetPixelShaderUidD3D11(PixelShaderUid& object, DSTALPHA_MODE dstAlphaMode, u32 components);
+void GetPixelShaderUidD3D11(PixelShaderUid& object, DSTALPHA_MODE dstAlphaMode, u32 components, const XFRegisters &xfr, const BPMemory &bpm);
 
-void GeneratePixelShaderCodeD3D11(ShaderCode& object, DSTALPHA_MODE dstAlphaMode, u32 components);
+void GeneratePixelShaderCodeD3D11(ShaderCode& object, DSTALPHA_MODE dstAlphaMode, u32 components, const XFRegisters &xfr, const BPMemory &bpm);
 
-void GetPixelShaderUidGL(PixelShaderUid& object, DSTALPHA_MODE dstAlphaMode, u32 components);
+void GetPixelShaderUidGL(PixelShaderUid& object, DSTALPHA_MODE dstAlphaMode, u32 components, const XFRegisters &xfr, const BPMemory &bpm);
 
-void GeneratePixelShaderCodeGL(ShaderCode& object, DSTALPHA_MODE dstAlphaMode, u32 components);
-
-#endif // GCOGL_PIXELSHADER_H
+void GeneratePixelShaderCodeGL(ShaderCode& object, DSTALPHA_MODE dstAlphaMode, u32 components, const XFRegisters &xfr, const BPMemory &bpm);

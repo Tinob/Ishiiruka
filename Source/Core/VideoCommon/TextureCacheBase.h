@@ -86,26 +86,6 @@ public:
 		bool IsEfbCopy() { return (type == TCET_EC_VRAM || type == TCET_EC_DYNAMIC); }
 	};
 
-	static TCacheEntryBase* stagemap[8];
-	static u32 getStagePCelementCount(u32 stage)
-	{
-		if (stagemap[stage] != NULL)
-		{
-			if (stagemap[stage]->pcformat == PC_TEX_FMT_I4_AS_I8 || stagemap[stage]->pcformat == PC_TEX_FMT_I8)
-			{
-				return 1;
-			}
-			else if (stagemap[stage]->pcformat == PC_TEX_FMT_IA4_AS_IA8 || stagemap[stage]->pcformat == PC_TEX_FMT_IA8)
-			{
-				return 2;
-			}
-			else
-			{
-				return 4;
-			}
-		}
-		return 0;
-	}
 	virtual ~TextureCache(); // needs virtual for DX11 dtor
 
 	static void OnConfigChanged(VideoConfig& config);

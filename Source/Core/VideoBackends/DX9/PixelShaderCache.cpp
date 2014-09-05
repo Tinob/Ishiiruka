@@ -346,11 +346,11 @@ bool PixelShaderCache::SetShader(DSTALPHA_MODE dstAlphaMode, u32 components)
 {
 	const API_TYPE api = ((D3D::GetCaps().PixelShaderVersion >> 8) & 0xFF) < 3 ? API_D3D9_SM20 : API_D3D9_SM30;
 	PixelShaderUid uid;
-	GetPixelShaderUidD3D9(uid, dstAlphaMode, components);
+	GetPixelShaderUidD3D9(uid, dstAlphaMode, components, xfregs, bpmem);
 	if (g_ActiveConfig.bEnableShaderDebugging)
 	{
 		ShaderCode code;
-		GeneratePixelShaderCodeD3D9(code, dstAlphaMode, components);
+		GeneratePixelShaderCodeD3D9(code, dstAlphaMode, components, xfregs, bpmem);
 		pixel_uid_checker.AddToIndexAndCheck(code, uid, "Pixel", "p");
 	}
 
@@ -384,11 +384,11 @@ bool PixelShaderCache::SetShader(DSTALPHA_MODE dstAlphaMode, u32 components)
 	ShaderCode code;
 	if (api == API_D3D9_SM20)
 	{
-		GeneratePixelShaderCodeD3D9SM2(code, dstAlphaMode, components);
+		GeneratePixelShaderCodeD3D9SM2(code, dstAlphaMode, components, xfregs, bpmem);
 	}
 	else
 	{
-		GeneratePixelShaderCodeD3D9(code, dstAlphaMode, components);
+		GeneratePixelShaderCodeD3D9(code, dstAlphaMode, components, xfregs, bpmem);
 	}	
 
 	if (g_ActiveConfig.bEnableShaderDebugging)

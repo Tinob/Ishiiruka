@@ -28,7 +28,6 @@ TextureCache *g_texture_cache;
 GC_ALIGNED16(u8 *TextureCache::temp) = NULL;
 GC_ALIGNED16(u8 *TextureCache::bufferstart) = NULL;
 u32 TextureCache::temp_size;
-TextureCache::TCacheEntryBase* TextureCache::stagemap[8];
 
 TextureCache::TexCache TextureCache::textures;
 
@@ -54,10 +53,6 @@ TextureCache::TextureCache()
 	SetHash64Function(g_ActiveConfig.bHiresTextures || g_ActiveConfig.bDumpTextures);
 
 	invalidate_texture_cache_requested = false;
-	for (u32 i = 0; i < 8; i++)
-	{
-		stagemap[i] = nullptr;
-	}
 }
 
 void TextureCache::RequestInvalidateTextureCache()
@@ -322,7 +317,6 @@ static TextureCache::TCacheEntryBase* ReturnEntry(u32 stage, TextureCache::TCach
 {
 	entry->frameCount = frameCount;
 	entry->Bind(stage);
-	TextureCache::stagemap[stage] = entry;
 	GFX_DEBUGGER_PAUSE_AT(NEXT_TEXTURE_CHANGE, true);
 
 	return entry;

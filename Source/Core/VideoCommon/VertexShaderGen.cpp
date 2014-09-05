@@ -17,7 +17,7 @@
 #include "VideoCommon/VertexShaderGen.h"
 #include "VideoCommon/VideoConfig.h"
 
-static char text[16768];
+static char text[VERTEXSHADERGEN_BUFFERSIZE];
 static const char *texOffsetMemberSelector[] = { "x", "y", "z", "w" };
 template<class T, API_TYPE api_type>
 void DefineVSOutputStructMember(T& object, const char* type, const char* name, int var_index, const char* semantic, int semantic_index = -1)
@@ -38,27 +38,27 @@ void DefineVSOutputStructMember(T& object, const char* type, const char* name, i
 }
 
 template<class T, API_TYPE api_type>
-inline void GenerateVSOutputStruct(T& object, bool enable_pl)
+inline void GenerateVSOutputStruct(T& object, bool enable_pl, const XFRegisters &xfr)
 {
 	object.Write("struct VS_OUTPUT {\n");
 	DefineVSOutputStructMember<T, api_type>(object, "float4", "pos", -1, "POSITION");
 	DefineVSOutputStructMember<T, api_type>(object, "float4", "colors_", 0, "COLOR", 0);
 	DefineVSOutputStructMember<T, api_type>(object, "float4", "colors_", 1, "COLOR", 1);
 
-	if (xfregs.numTexGen.numTexGens < 7)
+	if (xfr.numTexGen.numTexGens < 7)
 	{
-		for (unsigned int i = 0; i < xfregs.numTexGen.numTexGens; ++i)
+		for (unsigned int i = 0; i < xfr.numTexGen.numTexGens; ++i)
 			DefineVSOutputStructMember<T, api_type>(object, "float3", "tex", i, "TEXCOORD", i);
 
-		DefineVSOutputStructMember<T, api_type>(object, "float4", "clipPos", -1, "TEXCOORD", xfregs.numTexGen.numTexGens);
+		DefineVSOutputStructMember<T, api_type>(object, "float4", "clipPos", -1, "TEXCOORD", xfr.numTexGen.numTexGens);
 
 		if (enable_pl)
-			DefineVSOutputStructMember<T, api_type>(object, "float4", "Normal", -1, "TEXCOORD", xfregs.numTexGen.numTexGens + 1);
+			DefineVSOutputStructMember<T, api_type>(object, "float4", "Normal", -1, "TEXCOORD", xfr.numTexGen.numTexGens + 1);
 	}
 	else
 	{
 		// Store clip position in the w component of first 4 texcoords
-		int num_texcoords = enable_pl ? 8 : xfregs.numTexGen.numTexGens;
+		int num_texcoords = enable_pl ? 8 : xfr.numTexGen.numTexGens;
 		for (int i = 0; i < num_texcoords; ++i)
 			DefineVSOutputStructMember<T, api_type>(object, (enable_pl || i < 4) ? "float4" : "float3", "tex", i, "TEXCOORD", i);
 	}
@@ -66,39 +66,49 @@ inline void GenerateVSOutputStruct(T& object, bool enable_pl)
 }
 
 template<class T, bool Write_Code, API_TYPE api_type>
-inline void GenerateVertexShader(T& out, u32 components)
+inline void GenerateVertexShader(T& out, u32 components, const XFRegisters &xfr, const BPMemory &bpm)
 {
 	// Non-uid template parameters will write to the dummy data (=> gets optimized out)
+	bool uidPresent = (&out.template GetUidData<vertex_shader_uid_data>() != NULL);
 	vertex_shader_uid_data dummy_data;
-	vertex_shader_uid_data& uid_data = (&out.template GetUidData<vertex_shader_uid_data>() != NULL)
-		? out.template GetUidData<vertex_shader_uid_data>() : dummy_data;
+	vertex_shader_uid_data& uid_data = uidPresent ? out.template GetUidData<vertex_shader_uid_data>() : dummy_data;
 #ifndef ANDROID
 	locale_t locale;
 	locale_t old_locale;
 #endif
-	_assert_(bpmem.genMode.numtexgens == xfregs.numTexGen.numTexGens);
-	_assert_(bpmem.genMode.numcolchans == xfregs.numChan.numColorChans);
-	uid_data.numTexGens = xfregs.numTexGen.numTexGens;
+	if (uidPresent)
+	{
+		out.ClearUID();
+	}
+	_assert_(bpm.genMode.numtexgens == xfr.numTexGen.numTexGens);
+	_assert_(bpm.genMode.numcolchans == xfr.numChan.numColorChans);
+	uid_data.numTexGens = xfr.numTexGen.numTexGens;
 	uid_data.components = components;
-	bool lightingEnabled = xfregs.numChan.numColorChans > 0;
+	bool lightingEnabled = xfr.numChan.numColorChans > 0;
 	bool enable_pl = g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting && lightingEnabled;
 	bool needLightShader = lightingEnabled && !enable_pl;
-	for (unsigned int i = 0; i < xfregs.numTexGen.numTexGens; ++i)
+	for (unsigned int i = 0; i < xfr.numTexGen.numTexGens; ++i)
 	{
-		TexMtxInfo& texinfo = xfregs.texMtxInfo[i];
+		const TexMtxInfo& texinfo = xfr.texMtxInfo[i];
 		needLightShader = needLightShader || texinfo.texgentype == XF_TEXGEN_COLOR_STRGBC0 || texinfo.texgentype == XF_TEXGEN_COLOR_STRGBC1;
 	}
 	uid_data.pixel_lighting = enable_pl;
-	uid_data.numColorChans = xfregs.numChan.numColorChans;
-
+	uid_data.numColorChans = xfr.numChan.numColorChans;
+	char * buffer = nullptr;
 	if (Write_Code)
 	{
-		out.SetBuffer(text);
+		buffer = out.GetBuffer();
+		if (buffer == nullptr)
+		{
+			buffer = text;
+			out.SetBuffer(text);
+		}
+
 #ifndef ANDROID	
 		locale = newlocale(LC_NUMERIC_MASK, "C", NULL); // New locale for compilation
 		old_locale = uselocale(locale); // Apply the locale for this thread		
 #endif
-		text[sizeof(text) - 1] = 0x7C;  // canary
+		buffer[VERTEXSHADERGEN_BUFFERSIZE - 1] = 0x7C;  // canary
 		// uniforms
 		if (g_ActiveConfig.backend_info.bSupportsGLSLUBO)
 			out.Write("layout(std140) uniform VSBlock {\n");
@@ -117,7 +127,7 @@ inline void GenerateVertexShader(T& out, u32 components)
 		if (g_ActiveConfig.backend_info.bSupportsGLSLUBO)
 			out.Write("};\n");
 
-		GenerateVSOutputStruct<T, api_type>(out, enable_pl);
+		GenerateVSOutputStruct<T, api_type>(out, enable_pl, xfr);
 		if (api_type == API_OPENGL)
 		{
 			out.Write("ATTRIN float4 rawpos; // ATTR%d,\n", SHADER_POSITION_ATTRIB);
@@ -143,7 +153,7 @@ inline void GenerateVertexShader(T& out, u32 components)
 			}
 
 			// Let's set up attributes
-			if (xfregs.numTexGen.numTexGens < 7)
+			if (xfr.numTexGen.numTexGens < 7)
 			{
 				for (int i = 0; i < 8; ++i)
 					out.Write("VARYOUT  float3 uv%d_2;\n", i);
@@ -161,7 +171,7 @@ inline void GenerateVertexShader(T& out, u32 components)
 				}
 				else
 				{
-					for (unsigned int i = 0; i < xfregs.numTexGen.numTexGens; ++i)
+					for (unsigned int i = 0; i < xfr.numTexGen.numTexGens; ++i)
 						out.Write("VARYOUT   float%d uv%d_2;\n", i < 4 ? 4 : 3, i);
 				}
 			}
@@ -281,7 +291,7 @@ inline void GenerateVertexShader(T& out, u32 components)
 		}
 	}
 	if (needLightShader)
-		GenerateLightingShader<T, Write_Code>(out, uid_data.lighting, components, I_MATERIALS, I_LIGHTS, "color", "o.colors_");
+		GenerateLightingShader<T, Write_Code>(out, uid_data.lighting, components, I_MATERIALS, I_LIGHTS, "color", "o.colors_", xfr);
 
 	// special case if only pos and tex coord 0 and tex coord input is AB11
 	// donko - this has caused problems in some games. removed for now.
@@ -289,11 +299,11 @@ inline void GenerateVertexShader(T& out, u32 components)
 	/*bool texGenSpecialCase =
 	((g_VtxDesc.Hex & 0x60600L) == g_VtxDesc.Hex) && // only pos and tex coord 0
 	(g_VtxDesc.Tex0Coord != NOT_PRESENT) &&
-	(xfregs.texcoords[0].texmtxinfo.inputform == XF_TEXINPUT_AB11);
+	(xfr.texcoords[0].texmtxinfo.inputform == XF_TEXINPUT_AB11);
 	*/
 	if (Write_Code)
 	{
-		if (xfregs.numChan.numColorChans < 2 && needLightShader)
+		if (xfr.numChan.numColorChans < 2 && needLightShader)
 		{
 			if (components & VB_HAS_COL1)
 				out.Write("o.colors_1 = color1;\n");
@@ -305,10 +315,10 @@ inline void GenerateVertexShader(T& out, u32 components)
 	}
 
 
-	for (unsigned int i = 0; i < xfregs.numTexGen.numTexGens; ++i)
+	for (unsigned int i = 0; i < xfr.numTexGen.numTexGens; ++i)
 	{
-		TexMtxInfo& texinfo = xfregs.texMtxInfo[i];
-		uid_data.texMtxInfo[i].sourcerow = xfregs.texMtxInfo[i].sourcerow;
+		const TexMtxInfo& texinfo = xfr.texMtxInfo[i];
+		uid_data.texMtxInfo[i].sourcerow = xfr.texMtxInfo[i].sourcerow;
 		if (Write_Code)
 		{
 			out.Write("{\n");
@@ -352,7 +362,7 @@ inline void GenerateVertexShader(T& out, u32 components)
 		}
 
 		// first transformation
-		uid_data.texMtxInfo[i].texgentype = xfregs.texMtxInfo[i].texgentype;
+		uid_data.texMtxInfo[i].texgentype = xfr.texMtxInfo[i].texgentype;
 		switch (texinfo.texgentype)
 		{
 		case XF_TEXGEN_EMBOSS_MAP: // calculate tex coords into bump map
@@ -360,8 +370,8 @@ inline void GenerateVertexShader(T& out, u32 components)
 			if (components & (VB_HAS_NRM1 | VB_HAS_NRM2))
 			{
 				// transform the light dir into tangent space
-				uid_data.texMtxInfo[i].embosslightshift = xfregs.texMtxInfo[i].embosslightshift;
-				uid_data.texMtxInfo[i].embosssourceshift = xfregs.texMtxInfo[i].embosssourceshift;
+				uid_data.texMtxInfo[i].embosslightshift = xfr.texMtxInfo[i].embosslightshift;
+				uid_data.texMtxInfo[i].embosssourceshift = xfr.texMtxInfo[i].embosssourceshift;
 				if (Write_Code)
 				{
 					out.Write("float3 eldir = normalize(" LIGHT_POS".xyz - pos.xyz);\n", LIGHT_POS_PARAMS(I_LIGHTS, texinfo.embosslightshift));
@@ -371,7 +381,7 @@ inline void GenerateVertexShader(T& out, u32 components)
 			else
 			{
 				_assert_(0); // should have normals
-				uid_data.texMtxInfo[i].embosssourceshift = xfregs.texMtxInfo[i].embosssourceshift;
+				uid_data.texMtxInfo[i].embosssourceshift = xfr.texMtxInfo[i].embosssourceshift;
 				if (Write_Code)
 				{
 					out.Write("o.tex%d.xyz = o.tex%d.xyz;\n", i, texinfo.embosssourceshift);
@@ -391,7 +401,7 @@ inline void GenerateVertexShader(T& out, u32 components)
 			break;
 		case XF_TEXGEN_REGULAR:
 		default:
-			uid_data.texMtxInfo_n_projection |= xfregs.texMtxInfo[i].projection << i;
+			uid_data.texMtxInfo_n_projection |= xfr.texMtxInfo[i].projection << i;
 			if (Write_Code)
 			{
 				if (components & (VB_HAS_TEXMTXIDX0 << i))
@@ -413,13 +423,13 @@ inline void GenerateVertexShader(T& out, u32 components)
 			break;
 		}
 
-		uid_data.dualTexTrans_enabled = xfregs.dualTexTrans.enabled;
+		uid_data.dualTexTrans_enabled = xfr.dualTexTrans.enabled;
 		// CHECKME: does this only work for regular tex gen types?
-		if (xfregs.dualTexTrans.enabled && texinfo.texgentype == XF_TEXGEN_REGULAR)
+		if (xfr.dualTexTrans.enabled && texinfo.texgentype == XF_TEXGEN_REGULAR)
 		{
-			const PostMtxInfo& postInfo = xfregs.postMtxInfo[i];
+			const PostMtxInfo& postInfo = xfr.postMtxInfo[i];
 
-			uid_data.postMtxInfo[i].index = xfregs.postMtxInfo[i].index;
+			uid_data.postMtxInfo[i].index = xfr.postMtxInfo[i].index;
 			int postidx = postInfo.index;
 			if (Write_Code)
 			{
@@ -440,7 +450,7 @@ inline void GenerateVertexShader(T& out, u32 components)
 			}
 			else
 			{
-				uid_data.postMtxInfo[i].normalize = xfregs.postMtxInfo[i].normalize;
+				uid_data.postMtxInfo[i].normalize = xfr.postMtxInfo[i].normalize;
 				if (Write_Code)
 				{
 					if (postInfo.normalize)
@@ -457,7 +467,7 @@ inline void GenerateVertexShader(T& out, u32 components)
 	if (Write_Code)
 	{
 		// clipPos/w needs to be done in pixel shader, not here
-		if (xfregs.numTexGen.numTexGens < 7)
+		if (xfr.numTexGen.numTexGens < 7)
 		{
 			out.Write("o.clipPos = float4(pos.x,pos.y,o.pos.z,o.pos.w);\n");
 		}
@@ -471,7 +481,7 @@ inline void GenerateVertexShader(T& out, u32 components)
 
 		if (enable_pl)
 		{
-			if (xfregs.numTexGen.numTexGens < 7)
+			if (xfr.numTexGen.numTexGens < 7)
 			{
 				out.Write("o.Normal = float4(_norm0.x,_norm0.y,_norm0.z,pos.z);\n");
 			}
@@ -480,7 +490,7 @@ inline void GenerateVertexShader(T& out, u32 components)
 				out.Write("o.tex4.w = _norm0.x;\n");
 				out.Write("o.tex5.w = _norm0.y;\n");
 				out.Write("o.tex6.w = _norm0.z;\n");
-				if (xfregs.numTexGen.numTexGens < 8)
+				if (xfr.numTexGen.numTexGens < 8)
 					out.Write("o.tex7 = pos.xyzz;\n");
 				else
 					out.Write("o.tex7.w = pos.z;\n");
@@ -531,7 +541,7 @@ inline void GenerateVertexShader(T& out, u32 components)
 		if (api_type & API_D3D9)
 		{
 			// Write Texture Offsets for Point/Line Rendering
-			for (unsigned int i = 0; i < xfregs.numTexGen.numTexGens; ++i)
+			for (unsigned int i = 0; i < xfr.numTexGen.numTexGens; ++i)
 			{
 				out.Write("o.tex%d.xy = o.tex%d.xy + (" I_PLOFFSETPARAMS"[indices.w].zw * " I_PLOFFSETPARAMS"[indices.y + %d].%s );\n", i, i, ((i / 4) + 1), texOffsetMemberSelector[i % 4]);
 			}
@@ -544,11 +554,11 @@ inline void GenerateVertexShader(T& out, u32 components)
 			// Will look better when we bind uniforms in GLSL 1.3
 			// clipPos/w needs to be done in pixel shader, not here
 
-			if (xfregs.numTexGen.numTexGens < 7)
+			if (xfr.numTexGen.numTexGens < 7)
 			{
 				for (unsigned int i = 0; i < 8; ++i)
 				{
-					if (i < xfregs.numTexGen.numTexGens)
+					if (i < xfr.numTexGen.numTexGens)
 						out.Write(" uv%d_2.xyz =  o.tex%d;\n", i, i);
 					else
 						out.Write(" uv%d_2.xyz =  float3(0.0, 0.0, 0.0);\n", i);
@@ -567,7 +577,7 @@ inline void GenerateVertexShader(T& out, u32 components)
 				}
 				else
 				{
-					for (unsigned int i = 0; i < xfregs.numTexGen.numTexGens; ++i)
+					for (unsigned int i = 0; i < xfr.numTexGen.numTexGens; ++i)
 						out.Write("  uv%d_2%s = o.tex%d;\n", i, i < 4 ? ".xyzw" : ".xyz", i);
 				}
 			}
@@ -581,7 +591,7 @@ inline void GenerateVertexShader(T& out, u32 components)
 			out.Write("return o;\n}\n");
 		}
 
-		if (text[sizeof(text) - 1] != 0x7C)
+		if (buffer[VERTEXSHADERGEN_BUFFERSIZE - 1] != 0x7C)
 			PanicAlert("VertexShader generator - buffer too small, canary has been eaten!");
 
 #ifndef ANDROID
@@ -589,49 +599,53 @@ inline void GenerateVertexShader(T& out, u32 components)
 		freelocale(locale);
 #endif		
 	}
+	if (uidPresent)
+	{
+		out.CalculateUIDHash();
+	}
 }
 
-void GetVertexShaderUidD3D9(VertexShaderUid& object, u32 components)
+void GetVertexShaderUidD3D9(VertexShaderUid& object, u32 components, const XFRegisters &xfr, const BPMemory &bpm)
 {
-	GenerateVertexShader<VertexShaderUid, false, API_D3D9>(object, components);
+	GenerateVertexShader<VertexShaderUid, false, API_D3D9>(object, components, xfr, bpm);
 }
 
-void GenerateVertexShaderCodeD3D9(ShaderCode& object, u32 components)
+void GenerateVertexShaderCodeD3D9(ShaderCode& object, u32 components, const XFRegisters &xfr, const BPMemory &bpm)
 {
-	GenerateVertexShader<ShaderCode, true, API_D3D9>(object, components);
+	GenerateVertexShader<ShaderCode, true, API_D3D9>(object, components, xfr, bpm);
 }
 
-void GenerateVSOutputStructForGSD3D9(ShaderCode& object)
+void GenerateVSOutputStructForGSD3D9(ShaderCode& object, const XFRegisters &xfr)
 {
-	GenerateVSOutputStruct<ShaderCode, API_D3D9>(object, g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting && xfregs.numChan.numColorChans > 0);
+	GenerateVSOutputStruct<ShaderCode, API_D3D9>(object, g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting && xfr.numChan.numColorChans > 0, xfr);
 }
 
-void GetVertexShaderUidD3D11(VertexShaderUid& object, u32 components)
+void GetVertexShaderUidD3D11(VertexShaderUid& object, u32 components, const XFRegisters &xfr, const BPMemory &bpm)
 {
-	GenerateVertexShader<VertexShaderUid, false, API_D3D11>(object, components);
+	GenerateVertexShader<VertexShaderUid, false, API_D3D11>(object, components, xfr, bpm);
 }
 
-void GenerateVertexShaderCodeD3D11(ShaderCode& object, u32 components)
+void GenerateVertexShaderCodeD3D11(ShaderCode& object, u32 components, const XFRegisters &xfr, const BPMemory &bpm)
 {
-	GenerateVertexShader<ShaderCode, true, API_D3D11>(object, components);
+	GenerateVertexShader<ShaderCode, true, API_D3D11>(object, components, xfr, bpm);
 }
 
-void GenerateVSOutputStructForGSD3D11(ShaderCode& object)
+void GenerateVSOutputStructForGSD3D11(ShaderCode& object, const XFRegisters &xfr)
 {
-	GenerateVSOutputStruct<ShaderCode, API_D3D11>(object, g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting && xfregs.numChan.numColorChans > 0);
+	GenerateVSOutputStruct<ShaderCode, API_D3D11>(object, g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting && xfr.numChan.numColorChans > 0, xfr);
 }
 
-void GetVertexShaderUidGL(VertexShaderUid& object, u32 components)
+void GetVertexShaderUidGL(VertexShaderUid& object, u32 components, const XFRegisters &xfr, const BPMemory &bpm)
 {
-	GenerateVertexShader<VertexShaderUid, false, API_OPENGL>(object, components);
+	GenerateVertexShader<VertexShaderUid, false, API_OPENGL>(object, components, xfr, bpm);
 }
 
-void GenerateVertexShaderCodeGL(ShaderCode& object, u32 components)
+void GenerateVertexShaderCodeGL(ShaderCode& object, u32 components, const XFRegisters &xfr, const BPMemory &bpm)
 {
-	GenerateVertexShader<ShaderCode, true, API_OPENGL>(object, components);
+	GenerateVertexShader<ShaderCode, true, API_OPENGL>(object, components, xfr, bpm);
 }
 
-void GenerateVSOutputStructForGSGL(ShaderCode& object)
+void GenerateVSOutputStructForGSGL(ShaderCode& object, const XFRegisters &xfr)
 {
-	GenerateVSOutputStruct<ShaderCode, API_OPENGL>(object, g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting && xfregs.numChan.numColorChans > 0);
+	GenerateVSOutputStruct<ShaderCode, API_OPENGL>(object, g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting && xfr.numChan.numColorChans > 0, xfr);
 }
