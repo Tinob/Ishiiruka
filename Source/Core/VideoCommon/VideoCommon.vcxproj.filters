@@ -154,6 +154,9 @@
     <ClCompile Include="G_GLMP01_pvt.cpp">
       <Filter>Vertex Loading\Compiled Loaders</Filter>
     </ClCompile>
+    <ClCompile Include="HLSLCompiler.cpp">
+      <Filter>Shader Managers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommandProcessor.h" />
@@ -339,6 +342,9 @@
     </ClInclude>
     <ClInclude Include="G_GLMP01_pvt.h">
       <Filter>Vertex Loading\Compiled Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="HLSLCompiler.h">
+      <Filter>Shader Managers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

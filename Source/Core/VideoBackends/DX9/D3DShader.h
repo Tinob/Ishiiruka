@@ -11,16 +11,16 @@ namespace DX9
 
 namespace D3D
 {
-	LPDIRECT3DVERTEXSHADER9 CreateVertexShaderFromByteCode(const u8 *bytecode, int len);
-	LPDIRECT3DPIXELSHADER9 CreatePixelShaderFromByteCode(const u8 *bytecode, int len);
+	LPDIRECT3DVERTEXSHADER9 CreateVertexShaderFromByteCode(const u8 *bytecode, u32 len);
+	LPDIRECT3DPIXELSHADER9 CreatePixelShaderFromByteCode(const u8 *bytecode, u32 len);
 
 	// The returned bytecode buffers should be delete[]-d.
-	bool CompileVertexShader(const char *code, int len, u8 **bytecode, int *bytecodelen);
-	bool CompilePixelShader(const char *code, int len, u8 **bytecode, int *bytecodelen);
+	bool CompileVertexShader(const char *code, u32 len, u8 **bytecode, u32 *bytecodelen);
+	bool CompilePixelShader(const char *code, u32 len, u8 **bytecode, u32 *bytecodelen);
 
 	// Utility functions
-	LPDIRECT3DVERTEXSHADER9 CompileAndCreateVertexShader(const char *code, int len);
-	LPDIRECT3DPIXELSHADER9 CompileAndCreatePixelShader(const char *code, unsigned int len);
+	LPDIRECT3DVERTEXSHADER9 CompileAndCreateVertexShader(const char *code, u32 len);
+	LPDIRECT3DPIXELSHADER9 CompileAndCreatePixelShader(const char *code, u32 len);
 }
 
 }  // namespace DX9

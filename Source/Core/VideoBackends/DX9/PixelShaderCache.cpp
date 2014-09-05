@@ -409,7 +409,7 @@ bool PixelShaderCache::SetShader(DSTALPHA_MODE dstAlphaMode, u32 components)
 #endif
 
 	u8 *bytecode = 0;
-	int bytecodelen = 0;
+	u32 bytecodelen = 0;
 	if (!D3D::CompilePixelShader(code.GetBuffer(), (int)strlen(code.GetBuffer()), &bytecode, &bytecodelen)) {
 		GFX_DEBUGGER_PAUSE_AT(NEXT_ERROR, true);
 		return false;

@@ -15,7 +15,7 @@ D3DBlob::D3DBlob(unsigned int blob_size, const u8* init_data) : ref(1), size(blo
 	if (init_data) memcpy(data, init_data, size);
 }
 
-D3DBlob::D3DBlob(ID3D10Blob* d3dblob) : ref(1)
+D3DBlob::D3DBlob(ID3DBlob* d3dblob) : ref(1)
 {
 	blob = d3dblob;
 	data = (u8*)blob->GetBufferPointer();

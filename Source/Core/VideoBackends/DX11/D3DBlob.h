@@ -19,7 +19,7 @@ public:
 	D3DBlob(unsigned int blob_size, const u8* init_data = nullptr);
 
 	// d3dblob will be AddRef'd
-	D3DBlob(ID3D10Blob* d3dblob);
+	D3DBlob(ID3DBlob* d3dblob);
 
 	void AddRef();
 	unsigned int Release();
@@ -34,7 +34,7 @@ private:
 	unsigned int size;
 
 	u8* data;
-	ID3D10Blob* blob;
+	ID3DBlob* blob;
 };
 
 }  // namespace

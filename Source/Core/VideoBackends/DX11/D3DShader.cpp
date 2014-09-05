@@ -5,7 +5,7 @@
 #include <string>
 
 #include "VideoCommon/VideoConfig.h"
-
+#include "VideoCommon/HLSLCompiler.h"
 #include "D3DBase.h"
 #include "D3DShader.h"
 
@@ -37,7 +37,7 @@ bool CompileVertexShader(const char* code, unsigned int len, D3DBlob** blob)
 #else
 	UINT flags = D3D10_SHADER_ENABLE_BACKWARDS_COMPATIBILITY|D3D10_SHADER_OPTIMIZATION_LEVEL3|D3D10_SHADER_SKIP_VALIDATION;
 #endif
-	HRESULT hr = PD3DCompile(code, len, nullptr, nullptr, nullptr, "main", D3D::VertexShaderVersionString(),
+	HRESULT hr = HLSLCompiler::getInstance().CompileShader(code, len, nullptr, nullptr, nullptr, "main", D3D::VertexShaderVersionString(),
 		flags, 0, &shaderBuffer, &errorBuffer);
 	if (errorBuffer)
 	{
@@ -94,7 +94,7 @@ bool CompileGeometryShader(const char* code, unsigned int len, D3DBlob** blob,
 #else
 	UINT flags = D3D10_SHADER_ENABLE_BACKWARDS_COMPATIBILITY|D3D10_SHADER_OPTIMIZATION_LEVEL3|D3D10_SHADER_SKIP_VALIDATION;
 #endif
-	HRESULT hr = PD3DCompile(code, len, nullptr, pDefines, nullptr, "main", D3D::GeometryShaderVersionString(),
+	HRESULT hr = HLSLCompiler::getInstance().CompileShader(code, len, nullptr, pDefines, nullptr, "main", D3D::GeometryShaderVersionString(),
 		flags, 0, &shaderBuffer, &errorBuffer);
 	
 	if (errorBuffer)
@@ -154,7 +154,7 @@ bool CompilePixelShader(const char* code, unsigned int len, D3DBlob** blob,
 #else
 	UINT flags = D3D10_SHADER_OPTIMIZATION_LEVEL3 | D3D10_SHADER_SKIP_VALIDATION;
 #endif
-	HRESULT hr = PD3DCompile(code, len, nullptr, pDefines, nullptr, "main", D3D::PixelShaderVersionString(),
+	HRESULT hr = HLSLCompiler::getInstance().CompileShader(code, len, nullptr, pDefines, nullptr, "main", D3D::PixelShaderVersionString(),
 		flags, 0, &shaderBuffer, &errorBuffer);
 
 	if (errorBuffer)

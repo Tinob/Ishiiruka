@@ -6,6 +6,7 @@
 #include <string>
 
 #include "VideoCommon/VideoConfig.h"
+#include "VideoCommon/HLSLCompiler.h"
 #include "D3DShader.h"
 
 namespace DX9
@@ -15,7 +16,7 @@ namespace D3D
 {
 
 // bytecode->shader.
-LPDIRECT3DVERTEXSHADER9 CreateVertexShaderFromByteCode(const u8 *bytecode, int len)
+LPDIRECT3DVERTEXSHADER9 CreateVertexShaderFromByteCode(const u8 *bytecode, u32 len)
 {
 	LPDIRECT3DVERTEXSHADER9 v_shader;
 	HRESULT hr = D3D::dev->CreateVertexShader((DWORD *)bytecode, &v_shader);
@@ -26,15 +27,27 @@ LPDIRECT3DVERTEXSHADER9 CreateVertexShaderFromByteCode(const u8 *bytecode, int l
 }
 
 // code->bytecode.
-bool CompileVertexShader(const char *code, int len, u8 **bytecode, int *bytecodelen)
+bool CompileVertexShader(const char *code, u32 len, u8 **bytecode, u32 *bytecodelen)
 {
-	LPD3DXBUFFER shaderBuffer = NULL;
-	LPD3DXBUFFER errorBuffer = NULL;
-	HRESULT hr = PD3DXCompileShader(code, len, 0, 0, "main", D3D::VertexShaderVersionString(),
-		D3DXSHADER_SKIPVALIDATION, &shaderBuffer, &errorBuffer, 0);
+	ID3DBlob* shaderBuffer = NULL;
+	ID3DBlob* errorBuffer = NULL;
+
+	HRESULT hr = HLSLCompiler::getInstance().CompileShader(
+		code,
+		len,
+		nullptr,
+		nullptr,
+		nullptr,
+		"main",
+		D3D::VertexShaderVersionString(),
+		D3DCOMPILE_SKIP_VALIDATION | D3DCOMPILE_OPTIMIZATION_LEVEL3,
+		0,
+		&shaderBuffer,
+		&errorBuffer);
+
 	if (FAILED(hr))
 	{
-		static int num_failures = 0;
+		static u32 num_failures = 0;
 		char szTemp[MAX_PATH];
 		sprintf(szTemp, "%sbad_vs_%04i.txt", File::GetUserPath(D_DUMP_IDX).c_str(), num_failures++);
 		std::ofstream file;
@@ -52,7 +65,7 @@ bool CompileVertexShader(const char *code, int len, u8 **bytecode, int *bytecode
 	}
 	else
 	{
-		*bytecodelen = shaderBuffer->GetBufferSize();
+		*bytecodelen = (u32)shaderBuffer->GetBufferSize();
 		*bytecode = new u8[*bytecodelen];
 		memcpy(*bytecode, shaderBuffer->GetBufferPointer(), *bytecodelen);
 	}
@@ -66,7 +79,7 @@ bool CompileVertexShader(const char *code, int len, u8 **bytecode, int *bytecode
 }
 
 // bytecode->shader
-LPDIRECT3DPIXELSHADER9 CreatePixelShaderFromByteCode(const u8 *bytecode, int len)
+LPDIRECT3DPIXELSHADER9 CreatePixelShaderFromByteCode(const u8 *bytecode, u32 len)
 {
 	LPDIRECT3DPIXELSHADER9 p_shader;
 	HRESULT hr = D3D::dev->CreatePixelShader((DWORD *)bytecode, &p_shader);
@@ -77,20 +90,30 @@ LPDIRECT3DPIXELSHADER9 CreatePixelShaderFromByteCode(const u8 *bytecode, int len
 }
 
 // code->bytecode
-bool CompilePixelShader(const char *code, int len, u8 **bytecode, int *bytecodelen)
+bool CompilePixelShader(const char *code, u32 len, u8 **bytecode, u32 *bytecodelen)
 {
-	LPD3DXBUFFER shaderBuffer = 0;
-	LPD3DXBUFFER errorBuffer = 0;
+	ID3DBlob* shaderBuffer = 0;
+	ID3DBlob* errorBuffer = 0;
 
 	// Someone:
 	// For some reason, I had this kind of errors : "Shader uses texture addressing operations
 	// in a dependency chain that is too complex for the target shader model (ps_2_0) to handle."
-	HRESULT hr = PD3DXCompileShader(code, len, 0, 0, "main", D3D::PixelShaderVersionString(), 
-		D3DXSHADER_SKIPVALIDATION, &shaderBuffer, &errorBuffer, 0);
+	HRESULT hr = HLSLCompiler::getInstance().CompileShader(
+		code,
+		len,
+		nullptr,
+		nullptr,
+		nullptr,
+		"main",
+		D3D::PixelShaderVersionString(),
+		D3DCOMPILE_SKIP_VALIDATION | D3DCOMPILE_OPTIMIZATION_LEVEL3,
+		0,
+		&shaderBuffer,
+		&errorBuffer);;
 
 	if (FAILED(hr))
 	{
-		static int num_failures = 0;
+		static u32 num_failures = 0;
 		char szTemp[MAX_PATH];
 		sprintf(szTemp, "%sbad_ps_%04i.txt", File::GetUserPath(D_DUMP_IDX).c_str(), num_failures++);
 		std::ofstream file;
@@ -108,7 +131,7 @@ bool CompilePixelShader(const char *code, int len, u8 **bytecode, int *bytecodel
 	}
 	else
 	{
-		*bytecodelen = shaderBuffer->GetBufferSize();
+		*bytecodelen = (u32)shaderBuffer->GetBufferSize();
 		*bytecode = new u8[*bytecodelen];
 		memcpy(*bytecode, shaderBuffer->GetBufferPointer(), *bytecodelen);
 	}
@@ -121,10 +144,10 @@ bool CompilePixelShader(const char *code, int len, u8 **bytecode, int *bytecodel
 	return SUCCEEDED(hr) ? true : false;
 }
 
-LPDIRECT3DVERTEXSHADER9 CompileAndCreateVertexShader(const char *code, int len)
+LPDIRECT3DVERTEXSHADER9 CompileAndCreateVertexShader(const char *code, u32 len)
 {
 	u8 *bytecode;
-	int bytecodelen;
+	u32 bytecodelen;
 	if (CompileVertexShader(code, len, &bytecode, &bytecodelen))
 	{
 		LPDIRECT3DVERTEXSHADER9 v_shader = CreateVertexShaderFromByteCode(bytecode, len);
@@ -134,10 +157,10 @@ LPDIRECT3DVERTEXSHADER9 CompileAndCreateVertexShader(const char *code, int len)
 	return NULL;
 }
 
-LPDIRECT3DPIXELSHADER9 CompileAndCreatePixelShader(const char* code, unsigned int len)
+LPDIRECT3DPIXELSHADER9 CompileAndCreatePixelShader(const char* code, u32 len)
 {
 	u8 *bytecode;
-	int bytecodelen;
+	u32 bytecodelen;
 	if (CompilePixelShader(code, len, &bytecode, &bytecodelen))
 	{
 		LPDIRECT3DPIXELSHADER9 p_shader = CreatePixelShaderFromByteCode(bytecode, len);

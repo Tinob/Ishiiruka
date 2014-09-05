@@ -8,6 +8,7 @@
 #include "D3DShader.h"
 #include "GfxState.h"
 #include "VideoCommon/BPMemory.h"
+#include "VideoCommon/HLSLCompiler.h"
 #include "FramebufferManager.h"
 #include "Render.h"
 #include "Core/HW/Memmap.h"
@@ -1316,7 +1317,7 @@ bool PSTextureEncoder::InitDynamicMode()
 	// Use D3DReflect
 
 	ID3D11ShaderReflection* reflect = NULL;
-	hr = PD3DReflect(bytecode->Data(), bytecode->Size(), IID_ID3D11ShaderReflection, (void**)&reflect);
+	hr = HLSLCompiler::getInstance().Reflect(bytecode->Data(), bytecode->Size(), IID_ID3D11ShaderReflection, (void**)&reflect);
 	CHECK(SUCCEEDED(hr), "reflect on efb encoder shader");
 
 	// Get number of slots and create dynamic linkage array

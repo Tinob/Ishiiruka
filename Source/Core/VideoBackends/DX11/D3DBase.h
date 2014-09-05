@@ -27,10 +27,8 @@ namespace D3D
 
 	HRESULT LoadDXGI();
 	HRESULT LoadD3D();
-	HRESULT LoadD3DCompiler();
 	void UnloadDXGI();
 	void UnloadD3D();
-	void UnloadD3DCompiler();
 
 	D3D_FEATURE_LEVEL GetFeatureLevel(IDXGIAdapter* adapter);
 	std::vector<DXGI_SAMPLE_DESC> EnumAAModes(IDXGIAdapter* adapter);
@@ -87,9 +85,5 @@ void SetDebugObjectName(T resource, const char* name)
 typedef HRESULT(WINAPI *CREATEDXGIFACTORY)(REFIID, void**);
 extern CREATEDXGIFACTORY PCreateDXGIFactory;
 typedef HRESULT(WINAPI *D3D11CREATEDEVICE)(IDXGIAdapter*, D3D_DRIVER_TYPE, HMODULE, UINT, CONST D3D_FEATURE_LEVEL*, UINT, UINT, ID3D11Device**, D3D_FEATURE_LEVEL*, ID3D11DeviceContext**);
-
-typedef HRESULT(WINAPI *D3DREFLECT)(LPCVOID, SIZE_T, REFIID, void**);
-extern D3DREFLECT PD3DReflect;
-extern pD3DCompile PD3DCompile;
 
 }  // namespace DX11

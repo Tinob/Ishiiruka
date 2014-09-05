@@ -11,7 +11,6 @@
 
 D3DXSAVESURFACETOFILEATYPE PD3DXSaveSurfaceToFileA = NULL;
 D3DXSAVETEXTURETOFILEATYPE PD3DXSaveTextureToFileA = NULL;
-D3DXCOMPILESHADERTYPE PD3DXCompileShader = NULL;
 
 namespace DX9
 {
@@ -352,13 +351,7 @@ HRESULT LoadD3DX9()
 			return hr;
 		}
 	}
-	PD3DXCompileShader = (D3DXCOMPILESHADERTYPE)GetProcAddress(hD3DXDll, "D3DXCompileShader");
-	if (PD3DXCompileShader == NULL)
-	{
-		MessageBoxA(NULL, "GetProcAddress failed for D3DXCompileShader!", "Critical error", MB_OK | MB_ICONERROR);
-		goto fail;
-	}
-
+	
 	PD3DXSaveSurfaceToFileA = (D3DXSAVESURFACETOFILEATYPE)GetProcAddress(hD3DXDll, "D3DXSaveSurfaceToFileA");
 	if (PD3DXSaveSurfaceToFileA == NULL)
 	{
@@ -377,7 +370,6 @@ HRESULT LoadD3DX9()
 fail:
 	--d3dx_dll_ref;
 	FreeLibrary(hD3DXDll);
-	PD3DXCompileShader = NULL;
 	PD3DXSaveSurfaceToFileA = NULL;
 	PD3DXSaveTextureToFileA = NULL;
 	return E_FAIL;
@@ -389,7 +381,6 @@ void UnloadD3DX9()
 	if (--d3dx_dll_ref != 0) return;
 
 	FreeLibrary(hD3DXDll);
-	PD3DXCompileShader = NULL;
 	PD3DXSaveSurfaceToFileA = NULL;
 	PD3DXSaveTextureToFileA = NULL;
 }

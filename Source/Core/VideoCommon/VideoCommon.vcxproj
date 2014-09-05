@@ -62,6 +62,7 @@
     <ClCompile Include="G_RMGP01_pvt.cpp" />
     <ClCompile Include="G_SX4E01_pvt.cpp" />
     <ClCompile Include="HiresTextures.cpp" />
+    <ClCompile Include="HLSLCompiler.cpp" />
     <ClCompile Include="ImageWrite.cpp" />
     <ClCompile Include="IndexGenerator.cpp" />
     <ClCompile Include="MainBase.cpp" />
@@ -120,6 +121,7 @@
     <ClInclude Include="G_RMGP01_pvt.h" />
     <ClInclude Include="G_SX4E01_pvt.h" />
     <ClInclude Include="HiresTextures.h" />
+    <ClInclude Include="HLSLCompiler.h" />
     <ClInclude Include="ImageWrite.h" />
     <ClInclude Include="IndexGenerator.h" />
     <ClInclude Include="LightingShaderGen.h" />

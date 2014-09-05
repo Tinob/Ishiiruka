@@ -12,11 +12,6 @@
 namespace DX11
 {
 
-HINSTANCE hD3DCompilerDll = nullptr;
-D3DREFLECT PD3DReflect = nullptr;
-pD3DCompile PD3DCompile = nullptr;
-int d3dcompiler_dll_ref = 0;
-
 CREATEDXGIFACTORY PCreateDXGIFactory = nullptr;
 HINSTANCE hDXGIDll = nullptr;
 int dxgi_dll_ref = 0;
@@ -92,37 +87,6 @@ HRESULT LoadD3D()
 	return S_OK;
 }
 
-HRESULT LoadD3DCompiler()
-{
-	if (d3dcompiler_dll_ref++ > 0) return S_OK;
-	if (hD3DCompilerDll) return S_OK;
-
-	// try to load D3DCompiler first to check whether we have proper runtime support
-	// try to use the dll the backend was compiled against first - don't bother about debug runtimes
-	hD3DCompilerDll = LoadLibraryA(D3DCOMPILER_DLL_A);
-	if (!hD3DCompilerDll)
-	{
-		// if that fails, use the dll which should be available in every SDK which officially supports DX11.
-		hD3DCompilerDll = LoadLibraryA("D3DCompiler_42.dll");
-		if (!hD3DCompilerDll)
-		{
-			MessageBoxA(nullptr, "Failed to load D3DCompiler_42.dll, update your DX11 runtime, please", "Critical error", MB_OK | MB_ICONERROR);
-			return E_FAIL;
-		}
-		else
-		{
-			NOTICE_LOG(VIDEO, "Successfully loaded D3DCompiler_42.dll. If you're having trouble, try updating your DX runtime first.");
-		}
-	}
-
-	PD3DReflect = (D3DREFLECT)GetProcAddress(hD3DCompilerDll, "D3DReflect");
-	if (PD3DReflect == nullptr) MessageBoxA(nullptr, "GetProcAddress failed for D3DReflect!", "Critical error", MB_OK | MB_ICONERROR);
-	PD3DCompile = (pD3DCompile)GetProcAddress(hD3DCompilerDll, "D3DCompile");
-	if (PD3DCompile == nullptr) MessageBoxA(nullptr, "GetProcAddress failed for D3DCompile!", "Critical error", MB_OK | MB_ICONERROR);
-
-	return S_OK;
-}
-
 void UnloadDXGI()
 {
 	if (!dxgi_dll_ref) return;
@@ -142,16 +106,6 @@ void UnloadD3D()
 	hD3DDll = nullptr;
 	PD3D11CreateDevice = nullptr;
 	PD3D11CreateDeviceAndSwapChain = nullptr;
-}
-
-void UnloadD3DCompiler()
-{
-	if (!d3dcompiler_dll_ref) return;
-	if (--d3dcompiler_dll_ref != 0) return;
-
-	if (hD3DCompilerDll) FreeLibrary(hD3DCompilerDll);
-	hD3DCompilerDll = nullptr;
-	PD3DReflect = nullptr;
 }
 
 std::vector<DXGI_SAMPLE_DESC> EnumAAModes(IDXGIAdapter* adapter)
@@ -215,13 +169,11 @@ HRESULT Create(HWND wnd)
 	yres = client.bottom - client.top;
 
 	hr = LoadDXGI();
-	if (SUCCEEDED(hr)) hr = LoadD3D();
-	if (SUCCEEDED(hr)) hr = LoadD3DCompiler();
+	if (SUCCEEDED(hr)) hr = LoadD3D();	
 	if (FAILED(hr))
 	{
 		UnloadDXGI();
 		UnloadD3D();
-		UnloadD3DCompiler();
 		return hr;
 	}
 

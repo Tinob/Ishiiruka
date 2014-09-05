@@ -212,7 +212,7 @@ bool VertexShaderCache::SetShader(u32 components)
 	GenerateVertexShaderCodeD3D9(code, components, xfregs, bpmem);
 
 	u8 *bytecode;
-	int bytecodelen;
+	u32 bytecodelen;
 	if (!D3D::CompileVertexShader(code.GetBuffer(), (int)strlen(code.GetBuffer()), &bytecode, &bytecodelen))
 	{
 		GFX_DEBUGGER_PAUSE_AT(NEXT_ERROR, true);
