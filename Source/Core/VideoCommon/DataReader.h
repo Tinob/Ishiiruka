@@ -12,7 +12,7 @@ class DataReader
 {
 public:
 	inline DataReader(const u8 *source) : Rbuffer(source) {}
-	inline DataReader() : Rbuffer(nullptr) {}	
+	inline DataReader() : Rbuffer(nullptr) {}
 	__forceinline void ReadSkip(u32 skip)
 	{
 		Rbuffer += skip;
@@ -23,7 +23,7 @@ public:
 		auto const result = Common::FromBigEndian(*reinterpret_cast<const T*>(Rbuffer + _uOffset));
 		return result;
 	}
-	
+
 	template <typename T> __forceinline T Peek()
 	{
 		auto const result = Common::FromBigEndian(*reinterpret_cast<const T*>(Rbuffer));
@@ -56,19 +56,19 @@ public:
 		return result;
 	}
 
-	__forceinline const u8* GetReadPosition()
+	__forceinline const u8* GetReadPosition() const
 	{
 		return Rbuffer;
 	}
-	
+
 	__forceinline void SetReadPosition(const u8 *source)
-	{ 
-		Rbuffer = source; 
+	{
+		Rbuffer = source;
 	}
 
-	#if _M_SSE >= 0x301
+#if _M_SSE >= 0x301
 	const __m128i bs_mask = _mm_set_epi32(0x0C0D0E0FL, 0x08090A0BL, 0x04050607L, 0x00010203L);
-	
+
 	template<unsigned int N>
 	void ReadU32xN_SSSE3(u32 *bufx16)
 	{
@@ -80,9 +80,9 @@ public:
 		_mm_store_si128(buf, _mm_shuffle_epi8(_mm_load_si128(buf), bs_mask));
 		Rbuffer += (sizeof(u32) * N);
 	}
-	
-	#endif
-	
+
+#endif
+
 	template<unsigned int N>
 	void ReadU32xN(u32 *bufx16)
 	{
@@ -105,7 +105,7 @@ public:
 		if (N >= 16) bufx16[15] = Common::swap32(bufx16[15]);
 		Rbuffer += (sizeof(u32) * N);
 	}
-private:
+protected:
 	const u8 *Rbuffer;
 };
 
@@ -125,19 +125,15 @@ public:
 		WriteSkip(sizeof(T));
 	}
 
-	__forceinline u8* GetWritePosition()
+	__forceinline u8* GetWritePosition() const
 	{
 		return Wbuffer;
 	}
-	
+
 	__forceinline void SetWritePosition(u8 *destination)
-	{ 
-		Wbuffer = destination; 
+	{
+		Wbuffer = destination;
 	}
-private:
+protected:
 	u8 *Wbuffer;
 };
-
-extern DataReader g_VideoData;
-typedef void(*DataReadU32xNfunc)(u32 *buf);
-extern DataReadU32xNfunc DataReadU32xFuncs[16];

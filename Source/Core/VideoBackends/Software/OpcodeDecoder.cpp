@@ -3,9 +3,6 @@
 // Refer to the license.txt file included.
 
 #include "Common/Common.h"
-
-#include "VideoCommon/DataReader.h"
-
 #include "OpcodeDecoder.h"
 #include "BPMemLoader.h"
 #include "CPMemLoader.h"

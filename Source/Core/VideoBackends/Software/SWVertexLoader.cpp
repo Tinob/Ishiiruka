@@ -17,7 +17,7 @@
 #include "SetupUnit.h"
 #include "SWStatistics.h"
 #include "VideoCommon/VertexManagerBase.h"
-#include "VideoCommon/DataReader.h"
+#include "VideoBackends/Software/OpcodeDecoder.h"
 
 SWVertexLoader::SWVertexLoader() :
 	m_VertexSize(0),

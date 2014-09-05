@@ -4,6 +4,7 @@
 
 #pragma once
 #include "Common/Common.h"
+#include "VideoCommon/DataReader.h"
 
 enum GxOpCodes : u8
 {
@@ -81,3 +82,7 @@ extern bool g_bRecordFifoData;
 void OpcodeDecoder_Init();
 void OpcodeDecoder_Shutdown();
 u32 OpcodeDecoder_Run(bool skipped_frame, const u8* end);
+
+extern DataReader g_VideoData;
+typedef void(*DataReadU32xNfunc)(u32 *buf);
+extern DataReadU32xNfunc DataReadU32xFuncs[16];

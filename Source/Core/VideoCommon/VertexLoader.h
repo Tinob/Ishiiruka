@@ -4,6 +4,7 @@
 // Modified for Ishiiruka By Tino
 #pragma once
 #include "VideoCommon/NativeVertexFormat.h"
+#include "VideoCommon/OpcodeDecoding.h"
 
 class VertexLoaderUID
 {
