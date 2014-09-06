@@ -9,7 +9,6 @@
 #include "VideoCommon/VertexLoader_PositionFuncs.h"
 #include "VideoCommon/VertexLoader_TextCoordFuncs.h"
 #include "VideoCommon/VertexLoader_BBox.h"
-#include "VideoCommon/VideoConfig.h"
 
 enum EMtxMask
 {
@@ -741,7 +740,7 @@ void TemplatedLoader(TPipelineState& pipelinestate)
 		}
 
 		// Write vertex position loader
-		if (g_ActiveConfig.bUseBBox)
+		if (pipelinestate.bUseBBox)
 		{
 			VertexLoader_BBox::UpdateBoundingBoxPrepare(pipelinestate);
 		}
@@ -751,7 +750,7 @@ void TemplatedLoader(TPipelineState& pipelinestate)
 			static_cast<EVTXComponentFormat>((VAT0 & maskPosFormat) >> stridePosFormat),
 			static_cast<EPosElements>(VAT0 & maskPosElements)>(pipelinestate);
 
-		if (g_ActiveConfig.bUseBBox)
+		if (pipelinestate.bUseBBox)
 		{
 			VertexLoader_BBox::UpdateBoundingBox(pipelinestate);
 		}

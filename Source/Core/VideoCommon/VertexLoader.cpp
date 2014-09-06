@@ -410,6 +410,7 @@ s32 VertexLoader::SetupRunVertices(const VAT &vat, int primitive, int const coun
 	m_VtxAttr.texCoord[5].Frac = vat.g2.Tex5Frac;
 	m_VtxAttr.texCoord[6].Frac = vat.g2.Tex6Frac;
 	m_VtxAttr.texCoord[7].Frac = vat.g2.Tex7Frac;
+	g_PipelineState.bUseBBox = g_ActiveConfig.bUseBBox ? 1 : 0;
 	g_PipelineState.posScale = fractionTable[m_VtxAttr.PosFrac];
 	if (m_NativeFmt->m_components & VB_HAS_UVALL)
 		for (int i = 0; i < 8; i++)

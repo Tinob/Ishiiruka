@@ -83,7 +83,7 @@ public:
 	u8 curposmtx;
 	u8 texmtxwrite;
 	u8 texmtxread;
-	u8 padding;
+	u8 bUseBBox;
 	u8 colElements[2];
 	u8 curtexmtx[8];
 };
