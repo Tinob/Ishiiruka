@@ -9,18 +9,26 @@
 
 namespace VertexLoaderManager
 {
+	struct VertexLoaderParameters
+	{
+		const u8* source;
+		u8* destination;
+		const TVtxDesc *VtxDesc;
+		const VAT *VtxAttr;
+		size_t buf_size;
+		int vtx_attr_group;
+		int primitive;
+		int count;		
+		bool skip_draw;
+		bool needloaderrefresh;
+	};
 	void Init();
 	void Shutdown();
-
-	void MarkAllDirty();
-
-	int GetVertexSize(int vtx_attr_group);
-	bool RunVertices(int vtx_attr_group, int primitive, int count, size_t buf_size);
+	int GetVertexSize(const VertexLoaderParameters &parameters);
+	bool ConvertVertices(const VertexLoaderParameters &parameters, u32 &readsize, u32 &writesize);
 
 	// For debugging
 	void AppendListToString(std::string *dest);
 
 	NativeVertexFormat* GetNativeVertexFormat(const PortableVertexDeclaration& format, u32 components);
 };
-
-void RecomputeCachedArraybases();

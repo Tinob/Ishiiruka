@@ -2,8 +2,7 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _CPMEMORY_H
-#define _CPMEMORY_H
+#pragma once
 
 #include "Common/Common.h"
 
@@ -260,11 +259,13 @@ struct VAT
 
 extern TVtxDesc g_VtxDesc;
 extern VAT g_VtxAttr[8];
-
+extern int g_attr_dirty;  // bitfield 
 // Might move this into its own file later.
 void LoadCPReg(u32 SubCmd, u32 Value);
 
 // Fills memory with data from CP regs
 void FillCPMemoryArray(u32 *memory);
 
-#endif // _CPMEMORY_H
+void RecomputeCachedArraybases();
+
+void MarkAllAttrDirty();

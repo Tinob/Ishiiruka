@@ -26,7 +26,7 @@ static u32 mapTexAddress;
 static bool mapTexFound;
 static int numWrites;
 
-extern volatile bool g_bSkipCurrentFrame;
+extern bool g_bSkipCurrentFrame;
 
 static const float s_gammaLUT[] = 
 {

@@ -159,7 +159,6 @@ protected:
 	// can probably eliminate this static var
 	static int s_LastEFBScale;
 
-	static bool s_skipSwap;
 	static bool XFBWrited;
 
 	static bool s_EnableDLCachingAfterRecording;

@@ -10,7 +10,7 @@
 class PointerWrap;
 namespace MMIO { class Mapping; }
 
-extern volatile bool g_bSkipCurrentFrame;
+extern bool g_bSkipCurrentFrame;
 
 
 namespace SWCommandProcessor

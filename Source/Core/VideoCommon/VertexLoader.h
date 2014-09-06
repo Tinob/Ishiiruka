@@ -28,9 +28,11 @@ public:
 	VertexLoader(const TVtxDesc &vtx_desc, const VAT &vtx_attr, TCompiledLoaderFunction precompiledFunction);
 	~VertexLoader();
 
-	s32 GetVertexSize() const { return m_VertexSize; }
+	inline s32 GetVertexSize() const { return m_VertexSize; }
+	inline NativeVertexFormat* GetNativeVertexFormat() const { return m_NativeFmt; }
+	inline s32 GetNativeStride() const { return m_native_stride; }
 
-	void RunVertices(const VAT &vtx_attr, s32 primitive, s32 count);
+	void RunVertices(const VAT &vtx_attr, int primitive, int const count, const u8* source, u8* destination);
 
 	// For debugging / profiling
 	void AppendToString(std::string *dest) const;
@@ -38,15 +40,15 @@ public:
 	void DumpCode(std::string *dest) const;
 
 	u64 GetNumLoadedVerts() const { return m_numLoadedVertices; }
-	bool IsPrecompiled();
-	// PC vertex format
-	NativeVertexFormat *m_NativeFmt;
-	s32 native_stride;
+	bool IsPrecompiled();	
 private:
 	bool m_Isprecompiled;
 	TCompiledLoaderFunction m_CompiledFunction;
 
 	s32 m_VertexSize;      // number of bytes of a raw GC vertex. Computed by CompileVertexTranslator.
+	// PC vertex format
+	NativeVertexFormat *m_NativeFmt;
+	s32 m_native_stride;
 
 	// GC vertex format
 	TVtxAttr m_VtxAttr;  // VAT decoded into easy format
@@ -60,7 +62,7 @@ private:
 	u64 m_numLoadedVertices;
 
 	void SetVAT(const VAT &vtx_attr);
-	s32 SetupRunVertices(const VAT &vtx_attr, s32 primitive, s32 const count);
+	void SetupRunVertices(const VAT &vtx_attr, s32 primitive, s32 const count);
 	void CompileVertexTranslator();
 
 	static const VertexLoader* s_CurrentVertexLoader;

@@ -26,6 +26,7 @@
 #include "VideoCommon/OpenCL/OCLTextureDecoder.h"
 #include "VideoCommon/Statistics.h"
 #include "VideoCommon/VertexLoaderManager.h"
+#include "VideoCommon/VertexManagerBase.h"
 #include "VideoCommon/VideoCommon.h"
 #include "VideoCommon/VideoConfig.h"
 #include "VideoCommon/XFMemory.h"
@@ -84,7 +85,7 @@ DataReadU32xNfunc DataReadU32xFuncs[16] = {
 	ReadU32xn<16>
 };
 template<bool sizeCheck>
-inline u32 Decode(const u8* end, bool skipped_frame)
+inline u32 Decode(const u8* end)
 {
 	const u8 *opcodeStart = g_VideoData.GetReadPosition();
 	if (opcodeStart == end)
@@ -167,7 +168,7 @@ inline u32 Decode(const u8* end, bool skipped_frame)
 			return 0;
 		u32 address = g_VideoData.Read<u32>();
 		u32 count = g_VideoData.Read<u32>();
-		cycles = GX_CMD_CALL_DL_BASE_CYCLES + InterpretDisplayList(address, count, skipped_frame);
+		cycles = GX_CMD_CALL_DL_BASE_CYCLES + InterpretDisplayList(address, count);
 	}
 	break;
 	case GX_CMD_UNKNOWN_METRICS: // zelda 4 swords calls it and checks the metrics registers after that
@@ -200,23 +201,29 @@ inline u32 Decode(const u8* end, bool skipped_frame)
 			// load vertices
 			if (sizeCheck && distance < GX_DRAW_PRIMITIVES_SIZE)
 				return 0;
-			u16 numVertices = g_VideoData.Read<u16>();
+			VertexLoaderManager::VertexLoaderParameters parameters;
+			parameters.count = g_VideoData.Read<u16>();
 			distance -= GX_DRAW_PRIMITIVES_SIZE;
-			if (skipped_frame)
+			parameters.buf_size = distance;			
+			parameters.primitive = (cmd_byte & GX_PRIMITIVE_MASK) >> GX_PRIMITIVE_SHIFT;
+			parameters.vtx_attr_group = cmd_byte & GX_VAT_MASK;
+			parameters.needloaderrefresh = (g_attr_dirty & (1 << parameters.vtx_attr_group)) != 0;
+			parameters.skip_draw = (bpmem.genMode.cullmode == 3 && parameters.primitive < 5) || g_bSkipCurrentFrame;
+			parameters.VtxDesc = &g_VtxDesc;
+			parameters.VtxAttr = &g_VtxAttr[parameters.vtx_attr_group];
+			parameters.source = g_VideoData.GetReadPosition();
+			parameters.destination = VertexManager::s_pCurBufferPointer;
+			g_attr_dirty &= ~(1 << parameters.vtx_attr_group);
+			u32 readsize;
+			u32 writesize;
+			if (VertexLoaderManager::ConvertVertices(parameters, readsize, writesize))
 			{
-				size_t size = numVertices * VertexLoaderManager::GetVertexSize(cmd_byte & GX_VAT_MASK);
-				if (sizeCheck && distance < size)
-					return 0;
-				g_VideoData.ReadSkip((u32)size);
+				g_VideoData.ReadSkip(readsize);
+				VertexManager::s_pCurBufferPointer += writesize;
 			}
 			else
 			{
-				if (!VertexLoaderManager::RunVertices(
-					cmd_byte & GX_VAT_MASK,   // Vertex loader index (0 - 7)
-					(cmd_byte & GX_PRIMITIVE_MASK) >> GX_PRIMITIVE_SHIFT,
-					numVertices,
-					distance))
-					return 0;
+				return 0;
 			}
 		}
 		else
@@ -235,7 +242,7 @@ inline u32 Decode(const u8* end, bool skipped_frame)
 }
 
 
-static u32 InterpretDisplayList(u32 address, u32 size, bool skipped_frame)
+static u32 InterpretDisplayList(u32 address, u32 size)
 {
 	const u8* old_pVideoData = g_VideoData.GetReadPosition();
 	const u8* startAddress = Memory::GetPointer(address);
@@ -252,7 +259,7 @@ static u32 InterpretDisplayList(u32 address, u32 size, bool skipped_frame)
 		const u8 *end = startAddress + size;		
 		while (g_VideoData.GetReadPosition() < end)
 		{
-			cycles += Decode<false>(end, skipped_frame);			
+			cycles += Decode<false>(end);			
 		}
 		INCSTAT(stats.numDListsCalled);
 		INCSTAT(stats.thisFrame.numDListsCalled);
@@ -337,13 +344,13 @@ void OpcodeDecoder_Shutdown()
 	}
 }
 
-u32 OpcodeDecoder_Run(bool skipped_frame, const u8* end)
+u32 OpcodeDecoder_Run(const u8* end)
 {
 	u32 totalCycles = 0;
 	while (true)
 	{
 		const u8* old = g_VideoData.GetReadPosition();
-		u32 cycles = Decode<true>(end, skipped_frame);
+		u32 cycles = Decode<true>(end);
 		if (cycles == 0)
 		{
 			g_VideoData.SetReadPosition(old);

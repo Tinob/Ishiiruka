@@ -58,7 +58,6 @@ TargetRectangle Renderer::target_rc;
 
 int Renderer::s_LastEFBScale;
 
-bool Renderer::s_skipSwap;
 bool Renderer::XFBWrited;
 bool Renderer::s_EnableDLCachingAfterRecording;
 
@@ -107,8 +106,6 @@ void Renderer::RenderToXFB(u32 xfbAddr, u32 fbWidth, u32 fbHeight, const EFBRect
 
 	if (!fbWidth || !fbHeight)
 		return;
-
-	s_skipSwap = g_bSkipCurrentFrame;
 
 	VideoFifo_CheckEFBAccess();
 	VideoFifo_CheckSwapRequestAt(xfbAddr, fbWidth, fbHeight);
