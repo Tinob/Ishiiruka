@@ -4,9 +4,9 @@
 
 #include <cmath>
 #include <functional>
-
 #include <windows.h>
 
+#include "Core/Core.h"
 #include "AudioCommon/DSoundStream.h"
 
 bool DSound::CreateBuffer()
@@ -27,7 +27,7 @@ bool DSound::CreateBuffer()
 	// Fill out DSound buffer description.
 	dsbdesc.dwSize  = sizeof(DSBUFFERDESC);
 	dsbdesc.dwFlags = DSBCAPS_GETCURRENTPOSITION2 | DSBCAPS_CTRLVOLUME | DSBCAPS_GLOBALFOCUS;
-	dsbdesc.dwBufferBytes = bufferSize = SOUND_FRAME_SIZE * SOUND_SAMPLES_STEREO * SOUND_BUFFER_COUNT * sizeof(s16);
+	dsbdesc.dwBufferBytes = bufferSize = SOUND_FRAME_SIZE * SOUND_SAMPLES_STEREO * (Core::g_CoreStartupParameter.iLatency + SOUND_BUFFER_COUNT) * sizeof(s16);
 	dsbdesc.lpwfxFormat = (WAVEFORMATEX *)&pcmwf;
 	dsbdesc.guid3DAlgorithm = DS3DALG_DEFAULT;
 

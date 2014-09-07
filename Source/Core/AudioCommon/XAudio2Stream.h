@@ -7,7 +7,7 @@
 // This backend is always compiled, but only available if running on Win8+
 
 #pragma once
-#ifndef HAVE_DXSDK
+
 #include <memory>
 
 #include "AudioCommon/SoundStream.h"
@@ -74,4 +74,3 @@ public:
 
 #endif
 };
-#endif

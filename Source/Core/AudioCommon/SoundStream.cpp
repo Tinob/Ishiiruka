@@ -64,8 +64,11 @@ void SoundStream::Clear(bool mute)
 
 void SoundStream::Stop()
 {
-	threadData = 1;
-	thread.join();
+	if (m_enablesoundloop)
+	{
+		threadData = 1;
+		thread.join();
+	}
 }
 
 const float shortToFloat = 1.0f / 32768.0f;
@@ -114,7 +117,7 @@ inline void s16ToFloat(float* dst, const s16* src, u32 count)
 
 inline void floatTos16(s16* dst, const float* src, u32 count)
 {
-	__m128 factor = _mm_set1_ps(32768.0f);
+	__m128 factor = _mm_set1_ps(32767.0f);
 	__m128i* destination = (__m128i*)dst;
 	__m128i* end = (__m128i*)(dst + count);
 	while (destination < end)
@@ -159,7 +162,7 @@ void SoundStream::SoundLoop()
 		sTouch.setTempo(1.0);
 		sTouch.setSetting(SETTING_SEQUENCE_MS, 35);
 		sTouch.setSetting(SETTING_USE_QUICKSEEK, 0);
-		sTouch.setSetting(SETTING_USE_AA_FILTER, 1);
+		sTouch.setSetting(SETTING_USE_AA_FILTER, 0);
 		while (!threadData)
 		{
 			u32 availablesamples = m_mixer->AvailableSamples();

@@ -42,12 +42,9 @@ namespace AudioCommon
 			soundStream = new DSound(mixer, hWnd);
 		else if (backend == BACKEND_XAUDIO2)
 		{
-#ifndef HAVE_DXSDK
 			if (XAudio2::isValid())
 				soundStream = new XAudio2(mixer);
-			else 
-#endif
-				if (XAudio2_7::isValid())
+			else if (XAudio2_7::isValid())
 				soundStream = new XAudio2_7(mixer);
 		}
 		else if (backend == BACKEND_AOSOUND     && AOSound::isValid())

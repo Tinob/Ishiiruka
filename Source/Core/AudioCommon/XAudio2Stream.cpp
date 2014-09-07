@@ -2,33 +2,32 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef HAVE_DXSDK
 #include <xaudio2.h>
 #include "AudioCommon/AudioCommon.h"
 #include "AudioCommon/XAudio2Stream.h"
 #include "Core/Core.h"
 #include "Common/Event.h"
 
-
-
-
-
 struct StreamingVoiceContext : public IXAudio2VoiceCallback
 {
 private:
 	CMixer* const m_mixer;
 	IXAudio2SourceVoice* m_source_voice;
-	u32 volatile m_bufferReady[SOUND_BUFFER_COUNT];
-	PBYTE m_bufferAddress[SOUND_BUFFER_COUNT];
+	std::unique_ptr<std::atomic<u32>[]> m_safebufferReady;
+	std::atomic<u32>* m_bufferReady;
+	std::unique_ptr<PBYTE[]> m_safebufferAddress;
+	PBYTE* m_bufferAddress;
 	u32 m_NextBuffer;
 	std::unique_ptr<BYTE[]> m_xaudio_buffer;
 	void SubmitBuffer(u32 index, u32 sizeinbytes);
 	bool m_useSurround;
+	bool m_directstreaming;
+	s32 m_buffercount;
 	s32 m_framesizeinbytes;
 	s32 m_samplesizeinBytes;
 
 public:
-	StreamingVoiceContext(IXAudio2 *pXAudio2, CMixer *pMixer, bool useSurround);
+	StreamingVoiceContext(IXAudio2 *pXAudio2, CMixer *pMixer, bool useSurround, bool directstreaming);
 
 	~StreamingVoiceContext();
 
@@ -47,9 +46,16 @@ public:
 	STDMETHOD_(void, OnBufferEnd) (void* context);
 };
 
+const int NUM_BUFFERS = 3;
+const int SAMPLES_PER_BUFFER = 96;
+
+const int NUM_CHANNELS = 2;
+const int BUFFER_SIZE = SAMPLES_PER_BUFFER * NUM_CHANNELS;
+const int BUFFER_SIZE_BYTES = BUFFER_SIZE * sizeof(s16);
+
 void StreamingVoiceContext::SubmitBuffer(u32 index, u32 sizeinbytes)
 {
-	m_bufferReady[index] = 0;
+	m_bufferReady[index].store(0);
 	XAUDIO2_BUFFER buf = {};
 	buf.AudioBytes = sizeinbytes;
 	buf.pContext = (void*)index;
@@ -58,12 +64,24 @@ void StreamingVoiceContext::SubmitBuffer(u32 index, u32 sizeinbytes)
 	m_source_voice->SubmitSourceBuffer(&buf);
 }
 
-StreamingVoiceContext::StreamingVoiceContext(IXAudio2 *pXAudio2, CMixer *pMixer, bool useSurround)
-	: m_mixer(pMixer), m_useSurround(useSurround), m_xaudio_buffer(new BYTE[SOUND_BUFFER_COUNT * (useSurround ? SOUND_SURROUND_FRAME_SIZE_BYTES : SOUND_STEREO_FRAME_SIZE_BYTES)])
+StreamingVoiceContext::StreamingVoiceContext(IXAudio2 *pXAudio2, CMixer *pMixer, bool useSurround, bool directstreaming)
+	: m_mixer(pMixer),
+	m_useSurround(useSurround),
+	m_bufferReady(nullptr),
+	m_bufferAddress(nullptr),
+	m_directstreaming(directstreaming)
 {
-	WAVEFORMATEXTENSIBLE wfx = {};
-	m_framesizeinbytes = m_useSurround ? SOUND_SURROUND_FRAME_SIZE_BYTES : SOUND_STEREO_FRAME_SIZE_BYTES;
+	m_buffercount = m_directstreaming ? NUM_BUFFERS : Core::g_CoreStartupParameter.iLatency + SOUND_BUFFER_COUNT;
+	m_bufferReady = new std::atomic<u32>[m_buffercount];
+	m_safebufferReady.reset(m_bufferReady);
+	m_bufferAddress = new PBYTE[m_buffercount];
+	m_safebufferAddress.reset(m_bufferAddress);
+	m_framesizeinbytes = m_useSurround ? SOUND_SURROUND_FRAME_SIZE_BYTES : (directstreaming ? BUFFER_SIZE_BYTES : SOUND_STEREO_FRAME_SIZE_BYTES);
 	m_samplesizeinBytes = (m_useSurround ? SOUND_SAMPLES_SURROUND : SOUND_SAMPLES_STEREO) * sizeof(s16);
+	m_xaudio_buffer.reset(new BYTE[m_buffercount * m_framesizeinbytes]);
+	
+	WAVEFORMATEXTENSIBLE wfx = {};
+	
 	wfx.Format.wFormatTag      = WAVE_FORMAT_EXTENSIBLE;
 	wfx.Format.nSamplesPerSec  = m_mixer->GetSampleRate();
 	wfx.Format.nChannels = m_useSurround ? 6 : 2;
@@ -87,10 +105,10 @@ StreamingVoiceContext::StreamingVoiceContext(IXAudio2 *pXAudio2, CMixer *pMixer,
 	// Initialize the filling loop with the first buffer
 	BYTE* buff = m_xaudio_buffer.get();
 	// Initialize the filling loop with the first buffer
-	memset(buff, 0, SOUND_BUFFER_COUNT * m_framesizeinbytes);
+	memset(buff, 0, m_buffercount * m_framesizeinbytes);
 	m_NextBuffer = 0;
 	// start buffers with silence
-	for (int i = 0; i != SOUND_BUFFER_COUNT; ++i)
+	for (int i = 0; i != m_buffercount; ++i)
 	{
 		m_bufferAddress[i] = buff + (i * m_framesizeinbytes);
 		SubmitBuffer(i, m_framesizeinbytes);
@@ -123,7 +141,15 @@ void StreamingVoiceContext::OnBufferEnd(void* context)
 	if (!m_source_voice)
 		return;
 	u32 index = (u32)context;
-	m_bufferReady[index] = 1;
+	if (m_directstreaming)
+	{
+		m_mixer->Mix((s16*)m_bufferAddress[index], SAMPLES_PER_BUFFER);
+		SubmitBuffer(index, BUFFER_SIZE_BYTES);
+	}
+	else
+	{
+		m_bufferReady[index].store(1);
+	}
 }
 
 void StreamingVoiceContext::WriteFrame(s16* src, u32 numsamples)
@@ -131,12 +157,12 @@ void StreamingVoiceContext::WriteFrame(s16* src, u32 numsamples)
 	memcpy(m_bufferAddress[m_NextBuffer], src, numsamples * m_samplesizeinBytes);
 	SubmitBuffer(m_NextBuffer, numsamples * m_samplesizeinBytes);
 	m_NextBuffer++;
-	m_NextBuffer = m_NextBuffer % SOUND_BUFFER_COUNT;
+	m_NextBuffer = m_NextBuffer % m_buffercount;
 }
 
 bool StreamingVoiceContext::BufferReady()
 {
-	return m_bufferReady[m_NextBuffer] == 1;
+	return m_bufferReady[m_NextBuffer].load() == 1;
 }
 
 HMODULE XAudio2::m_xaudio2_dll = nullptr;
@@ -176,7 +202,7 @@ XAudio2::XAudio2(CMixer *mixer)
 	, m_volume(1.0f)
 	, m_cleanup_com(SUCCEEDED(CoInitializeEx(nullptr, COINIT_MULTITHREADED)))
 {
-	m_enablesoundloop = true;
+	m_enablesoundloop = Core::g_CoreStartupParameter.bTimeStretching || Core::g_CoreStartupParameter.bDPL2Decoder;
 }
 
 XAudio2::~XAudio2()
@@ -213,7 +239,7 @@ bool XAudio2::Start()
 	m_mastering_voice->SetVolume(m_volume);
 
 	m_voice_context = std::unique_ptr<StreamingVoiceContext>
-		(new StreamingVoiceContext(m_xaudio2.get(), m_mixer, SupportSurroundOutput()));
+		(new StreamingVoiceContext(m_xaudio2.get(), m_mixer, SupportSurroundOutput(), !m_enablesoundloop));
 
 	return SoundStream::Start();
 }
@@ -285,4 +311,3 @@ void XAudio2::Stop()
 		PXAudio2Create = nullptr;
 	}
 }
-#endif
