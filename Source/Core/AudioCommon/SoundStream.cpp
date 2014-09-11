@@ -167,7 +167,7 @@ void SoundStream::SoundLoop()
 		{
 			u32 availablesamples = m_mixer->AvailableSamples();
 			u32 numsamples = availablesamples & (~(0xF));			
-			if (numsamples > 128)
+			if (numsamples >= 128)
 			{
 				float rate = m_mixer->GetCurrentSpeed();
 				if (rate <= 0)
