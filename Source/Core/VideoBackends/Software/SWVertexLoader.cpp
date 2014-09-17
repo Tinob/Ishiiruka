@@ -16,7 +16,6 @@
 #include "TransformUnit.h"
 #include "SetupUnit.h"
 #include "SWStatistics.h"
-#include "VideoCommon/VertexManagerBase.h"
 #include "VideoBackends/Software/OpcodeDecoder.h"
 
 SWVertexLoader::SWVertexLoader() :

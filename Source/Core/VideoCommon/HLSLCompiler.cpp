@@ -3,7 +3,158 @@
 // Refer to the license.txt file included.
 // Added for Ishiiruka By Tino
 
+#include "Common/CPUDetect.h"
 #include "VideoCommon/HLSLCompiler.h"
+
+
+ShaderCompilerWorkUnit::ShaderCompilerWorkUnit() :
+flags(0),
+cresult(0),
+code(),
+defines(nullptr),
+entrypoint(nullptr),
+target(nullptr),
+shaderbytecode(nullptr),
+error(nullptr),
+ResultHandler()
+{
+
+}
+
+void ShaderCompilerWorkUnit::Clear()
+{
+	cresult = 0;
+	defines = nullptr;
+	entrypoint = nullptr;
+	target = nullptr;
+	flags = 0;
+	if (shaderbytecode)
+	{
+		shaderbytecode->Release();
+		shaderbytecode = nullptr;
+	}
+	if (error)
+	{
+		error->Release();
+		error = nullptr;
+	}
+}
+
+void ShaderCompilerWorkUnit::Release()
+{
+	if (shaderbytecode)
+	{
+		shaderbytecode->Release();
+		shaderbytecode = nullptr;
+	}
+	if (error)
+	{
+		error->Release();
+		error = nullptr;
+	}
+}
+
+HLSLAsyncCompiler::HLSLAsyncCompiler() :
+m_repositoryIndex(0),
+m_input(128),
+m_output(128),
+m_inputsize(0),
+m_outputsize(0)
+{
+	WorkUnitRepository = new ShaderCompilerWorkUnit[256];
+	Common::ThreadPool::RegisterWorker(this);
+}
+
+void HLSLAsyncCompiler::SetCompilerFunction(pD3DCompile compilerfunc)
+{
+	PD3DCompile = compilerfunc;
+}
+
+HLSLAsyncCompiler::~HLSLAsyncCompiler()
+{
+	delete[] WorkUnitRepository;
+	Common::ThreadPool::UnregisterWorker(this);
+}
+
+bool HLSLAsyncCompiler::NextTask()
+{
+	ShaderCompilerWorkUnit* unit;
+	if (m_input.try_pop(unit))
+	{
+		unit->cresult = PD3DCompile(unit->code.data(),
+			unit->codesize,
+			nullptr,
+			(const D3D_SHADER_MACRO*)unit->defines,
+			nullptr,
+			unit->entrypoint,
+			unit->target,
+			unit->flags, 0,
+			&unit->shaderbytecode,
+			&unit->error);
+		m_output.push(unit);
+		m_outputsize++;
+		m_inputsize--;
+		return true;
+	}
+	return false;
+}
+ShaderCompilerWorkUnit* HLSLAsyncCompiler::NewUnit(u32 codesize)
+{
+	u32 index = m_repositoryIndex.fetch_add(1);
+	ShaderCompilerWorkUnit* result = &WorkUnitRepository[index & 255];
+	result->Clear();
+	if (result->code.size() < codesize)
+	{
+		result->code.resize(codesize);
+	}
+	result->codesize = codesize;
+	return result;
+}
+void HLSLAsyncCompiler::CompileShaderAsync(ShaderCompilerWorkUnit* unit)
+{
+	m_input.push(unit);
+	m_inputsize++;
+	Common::ThreadPool::NotifyWorkPending();
+}
+void HLSLAsyncCompiler::ProcCompilationResults()
+{
+	if (m_outputsize.load() > 0)
+	{
+		ShaderCompilerWorkUnit* unit;
+		while (m_output.try_pop(unit))
+		{
+			unit->ResultHandler(unit);
+			m_outputsize--;
+		}
+	}
+}
+bool HLSLAsyncCompiler::CompilationFinished()
+{
+	return m_inputsize.load() == 0;
+}
+void HLSLAsyncCompiler::WaitForCompilationFinished()
+{
+	u32 loopcount = 0;
+	while (m_inputsize.load() > 0)
+	{
+		Common::cYield(loopcount++);
+	}
+}
+void HLSLAsyncCompiler::WaitForFinish()
+{
+	ShaderCompilerWorkUnit* unit;
+	WaitForCompilationFinished();
+	if (m_outputsize.load() > 0)
+	{
+		while (m_output.try_pop(unit))
+		{
+			unit->ResultHandler(unit);
+			m_outputsize--;
+		}
+	}
+}
+
+
 
 HLSLCompiler& HLSLCompiler::getInstance()
 {
@@ -12,13 +163,20 @@ HLSLCompiler& HLSLCompiler::getInstance()
 	return instance;
 }
 
-HLSLCompiler::HLSLCompiler() :
-hD3DCompilerDll(nullptr), 
-PD3DCompile(nullptr), 
-PD3DReflect(nullptr),
-d3dcompiler_dll_ref(0)
+HLSLAsyncCompiler& HLSLAsyncCompiler::getInstance()
 {
-	LoadCompiler();	
+	return HLSLCompiler::getInstance().m_AsyncCompiler;
+}
+
+HLSLCompiler::HLSLCompiler() :
+hD3DCompilerDll(nullptr),
+PD3DCompile(nullptr),
+PD3DReflect(nullptr),
+d3dcompiler_dll_ref(0),
+m_AsyncCompiler()
+{
+	LoadCompiler();
+	m_AsyncCompiler.SetCompilerFunction(PD3DCompile);
 }
 
 HLSLCompiler::~HLSLCompiler()
