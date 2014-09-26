@@ -16,10 +16,12 @@
 #include "VideoCommon/VideoConfig.h"
 
 VertexManager *g_vertex_manager;
+extern NativeVertexFormat *g_nativeVertexFmt;
 
 u8 *VertexManager::s_pCurBufferPointer;
 u8 *VertexManager::s_pBaseBufferPointer;
 u8 *VertexManager::s_pEndBufferPointer;
+bool VertexManager::s_Shader_Refresh_Required = true;
 
 VertexManager::VertexManager()
 {
@@ -132,14 +134,15 @@ u32 VertexManager::GetRemainingIndices(int primitive)
 
 void VertexManager::Flush()
 {
+	s_Shader_Refresh_Required = true;
 	if (g_vertex_manager->IsFlushed())
 		return;
 
 	// loading a state will invalidate BP, so check for it
 	g_video_backend->CheckInvalidState();
-
+	g_vertex_manager->PrepareShaders(g_nativeVertexFmt->m_components, xfregs, bpmem, true);
 	VideoFifo_CheckEFBAccess();
-
+	
 	g_vertex_manager->vFlush();
 
 	g_vertex_manager->ResetBuffer();

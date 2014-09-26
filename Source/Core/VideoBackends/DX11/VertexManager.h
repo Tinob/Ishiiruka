@@ -2,8 +2,7 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _VERTEXMANAGER_H
-#define _VERTEXMANAGER_H
+#pragma once
 
 #include "VideoCommon/VertexManagerBase.h"
 #include "LineGeometryShader.h"
@@ -21,7 +20,10 @@ public:
 	NativeVertexFormat* CreateNativeVertexFormat();
 	void CreateDeviceObjects();
 	void DestroyDeviceObjects();
-
+	void PrepareShaders(u32 components, 
+		const XFRegisters &xfr, 
+		const BPMemory &bpm, 
+		bool fromgputhread = true);
 private:
 	
 	void PrepareDrawBuffers(u32 stride);
@@ -46,5 +48,3 @@ private:
 };
 
 }  // namespace
-
-#endif

@@ -118,7 +118,9 @@ struct VideoConfig
 	bool bEFBAccessEnable;
 	bool bDlistCachingEnable;
 	bool bPerfQueriesEnable;
-
+	bool bFullAsyncShaderCompilation;
+	bool bPredictiveFifo;
+	bool bWaitForShaderCompilation;
 	bool bEFBCopyEnable;
 	bool bEFBCopyCacheEnable;
 	bool bEFBEmulateFormatChanges;

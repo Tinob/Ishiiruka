@@ -3,9 +3,7 @@
 // Refer to the license.txt file included.
 
 #pragma once
-
-#include "D3DBase.h"
-
+#include <atomic>
 #include <unordered_map>
 #include <string>
 
@@ -23,8 +21,12 @@ private:
 		LPDIRECT3DVERTEXSHADER9 shader;
 
 		std::string code;
-
-		VSCacheEntry() : shader(NULL) {}
+		bool compiled;
+		std::atomic_flag initialized;
+		VSCacheEntry() : shader(NULL), compiled(false)
+		{
+			initialized.clear();
+		}
 		void Destroy()
 		{
 			if (shader)
@@ -34,11 +36,11 @@ private:
 	};
 
 	typedef std::unordered_map<VertexShaderUid, VSCacheEntry, VertexShaderUid::ShaderUidHasher> VSCache;
-
+	static inline void PushByteCode(const VertexShaderUid &uid, const u8 *bytecode, int bytecodelen, VSCacheEntry* entry);
 	static VSCache vshaders;
 	static const VSCacheEntry *last_entry;
 	static VertexShaderUid last_uid;
-
+	static VertexShaderUid external_last_uid;
 	static UidChecker<VertexShaderUid,ShaderCode> vertex_uid_checker;
 
 	static void Clear();
@@ -46,10 +48,11 @@ private:
 public:
 	static void Init();
 	static void Shutdown();
-	static bool SetShader(u32 components);
+	static void PrepareShader(u32 components, const XFRegisters &xfr, const BPMemory &bpm, bool ongputhread);
+	static bool TestShader();
 	static LPDIRECT3DVERTEXSHADER9 GetSimpleVertexShader(int level);
 	static LPDIRECT3DVERTEXSHADER9 GetClearVertexShader();	
-	static bool InsertByteCode(const VertexShaderUid &uid, const u8 *bytecode, int bytecodelen, bool activate);
+	static void InsertByteCode(const VertexShaderUid &uid, const u8 *bytecode, int bytecodelen);
 
 	static std::string GetCurrentShaderCode();
 };

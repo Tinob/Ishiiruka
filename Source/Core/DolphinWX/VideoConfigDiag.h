@@ -171,6 +171,11 @@ protected:
 		hacked_buffer_upload->Enable(Core::GetState() == Core::CORE_UNINITIALIZED && vconfig.backend_info.APIType == API_OPENGL);
 		hacked_buffer_upload->Show(vconfig.backend_info.APIType == API_OPENGL);
 
+		// Predictive Fifo
+		Async_Shader_compilation->Show(vconfig.backend_info.APIType != API_OPENGL);
+		Predictive_FIFO->Show(vconfig.backend_info.APIType != API_OPENGL);
+		Wait_For_Shaders->Enable(vconfig.bPredictiveFifo);
+		Wait_For_Shaders->Show(vconfig.backend_info.APIType != API_OPENGL);
 		ev.Skip();
 	}
 
@@ -200,6 +205,9 @@ protected:
 	SettingCheckBox* cache_efb_copies;
 	SettingCheckBox* emulate_efb_format_changes;
 	SettingCheckBox* hacked_buffer_upload;
+	SettingCheckBox* Async_Shader_compilation;
+	SettingCheckBox* Predictive_FIFO;
+	SettingCheckBox* Wait_For_Shaders;
 
 	SettingRadioButton* virtual_xfb;
 	SettingRadioButton* real_xfb;

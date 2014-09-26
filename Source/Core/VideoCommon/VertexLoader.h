@@ -6,6 +6,20 @@
 #include "VideoCommon/NativeVertexFormat.h"
 #include "VideoCommon/OpcodeDecoding.h"
 
+struct VertexLoaderParameters
+{
+	const u8* source;
+	u8* destination;
+	const TVtxDesc *VtxDesc;
+	const VAT *VtxAttr;
+	size_t buf_size;
+	int vtx_attr_group;
+	int primitive;
+	int count;
+	bool skip_draw;
+	bool needloaderrefresh;
+};
+
 class VertexLoaderUID
 {
 	u32 vid[4];
@@ -32,7 +46,7 @@ public:
 	inline NativeVertexFormat* GetNativeVertexFormat() const { return m_NativeFmt; }
 	inline s32 GetNativeStride() const { return m_native_stride; }
 
-	void RunVertices(const VAT &vtx_attr, int primitive, int const count, const u8* source, u8* destination);
+	void RunVertices(const VertexLoaderParameters &parameters);
 
 	// For debugging / profiling
 	void AppendToString(std::string *dest) const;

@@ -2,13 +2,14 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _VERTEXMANAGER_H
-#define _VERTEXMANAGER_H
+#pragma once
 
 #include "VideoCommon/CPMemory.h"
 #include "VideoCommon/VertexLoader.h"
-
 #include "VideoCommon/VertexManagerBase.h"
+
+#include "VideoBackends/DX9/VertexShaderCache.h"
+#include "VideoBackends/DX9/PixelShaderCache.h"
 
 namespace DX9
 {
@@ -20,6 +21,7 @@ public:
 	void GetElements(NativeVertexFormat* format, D3DVERTEXELEMENT9** elems, int* num);
 	void CreateDeviceObjects();
 	void DestroyDeviceObjects();
+	void PrepareShaders(u32 components, const XFRegisters &xfr, const BPMemory &bpm, bool ongputhread = true);
 private:
 	u32 m_vertex_buffer_cursor;
 	u32 m_vertex_buffer_size;
@@ -52,5 +54,3 @@ private:
 };
 
 }
-
-#endif

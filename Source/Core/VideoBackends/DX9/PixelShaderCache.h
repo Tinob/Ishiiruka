@@ -3,15 +3,15 @@
 // Refer to the license.txt file included.
 
 #pragma once
+#include <atomic>
+#include <unordered_map>
 
 #include "Common/Common.h"
 #include "Common/LinearDiskCache.h"
-#include "D3DBase.h"
-
-#include <unordered_map>
-
 #include "VideoCommon/PixelShaderGen.h"
 #include "VideoCommon/VertexShaderGen.h"
+
+#include "D3DBase.h"
 
 namespace DX9
 {
@@ -26,24 +26,27 @@ private:
 	struct PSCacheEntry
 	{
 		LPDIRECT3DPIXELSHADER9 shader;
-		bool owns_shader;
-
 		std::string code;
-
-		PSCacheEntry() : shader(NULL), owns_shader(true) {}
+		bool compiled;
+		std::atomic_flag initialized;
+		PSCacheEntry() : shader(NULL), compiled(false)
+		{
+			initialized.clear();
+		}
 		void Destroy()
 		{
-			if (shader && owns_shader)
+			if (shader)
 				shader->Release();
 			shader = NULL;
 		}
 	};
 
 	typedef std::unordered_map<PixelShaderUid, PSCacheEntry, PixelShaderUid::ShaderUidHasher> PSCache;
-
+	static inline void PushByteCode(const PixelShaderUid &uid, const u8 *bytecode, int bytecodelen, PSCacheEntry* entry);
 	static PSCache PixelShaders;
-	static const PSCacheEntry *last_entry;
-	static PixelShaderUid last_uid;
+	static const PSCacheEntry *last_entry[DSTALPHA_NULL + 1];
+	static PixelShaderUid last_uid[DSTALPHA_NULL + 1];
+	static PixelShaderUid external_last_uid[DSTALPHA_NULL + 1];
 	static UidChecker<PixelShaderUid,ShaderCode> pixel_uid_checker;
 
 	static void Clear();
@@ -51,8 +54,14 @@ private:
 public:
 	static void Init();
 	static void Shutdown();
-	static bool SetShader(DSTALPHA_MODE dstAlphaMode, u32 componets);
-	static bool InsertByteCode(const PixelShaderUid &uid, const u8 *bytecode, int bytecodelen, bool activate);
+	static void PrepareShader(
+		DSTALPHA_MODE dstAlphaMode,
+		u32 componets,
+		const XFRegisters &xfr,
+		const BPMemory &bpm, 
+		bool ongputhread);
+	static bool SetShader(DSTALPHA_MODE dstAlphaMode);
+	static void InsertByteCode(const PixelShaderUid &uid, const u8 *bytecode, int bytecodelen);
 	static LPDIRECT3DPIXELSHADER9 GetColorMatrixProgram(int SSAAMode);
 	static LPDIRECT3DPIXELSHADER9 GetColorCopyProgram(int SSAAMode);
 	static LPDIRECT3DPIXELSHADER9 GetDepthMatrixProgram(int SSAAMode, bool depthConversion);

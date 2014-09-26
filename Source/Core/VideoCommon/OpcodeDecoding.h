@@ -81,6 +81,7 @@ extern bool g_bRecordFifoData;
 
 void OpcodeDecoder_Init();
 void OpcodeDecoder_Shutdown();
+void ResetStates();
 u32 OpcodeDecoder_Run(const u8* end);
 
 extern DataReader g_VideoData;

@@ -154,6 +154,11 @@ void VertexManager::Draw(u32 stride)
 	}
 }
 
+void VertexManager::PrepareShaders(u32 components, const XFRegisters &xfr, const BPMemory &bpm, bool ongputhread)
+{
+
+}
+
 void VertexManager::vFlush()
 {
 #if defined(_DEBUG) || defined(DEBUGFAST) 

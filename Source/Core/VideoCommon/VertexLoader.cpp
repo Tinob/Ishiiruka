@@ -33,7 +33,7 @@ const float fractionTable[32] = {
 VertexLoaderUID::VertexLoaderUID(const TVtxDesc& VtxDesc, const VAT& vat)
 {
 	u32 fullmask = 0xFFFFFFFFu;
-	vid[0] = (u32)((g_VtxDesc.Hex >> 1) & fullmask);
+	vid[0] = (u32)((VtxDesc.Hex >> 1) & fullmask);
 	// Disable unused components		
 	u32 mask = ~VAT_0_FRACBITS;
 	mask &= VtxDesc.Color0 ? fullmask : ~VAT_0_COL0BITS;
@@ -408,14 +408,14 @@ void VertexLoader::SetupRunVertices(const VAT &vat, int primitive, int const cou
 	for (int i = 0; i < 2; i++)
 		g_PipelineState.colElements[i] = m_VtxAttr.color[i].Elements;
 	// Prepare bounding box
-	VertexLoader_BBox::SetPrimitive(primitive);	
+	VertexLoader_BBox::SetPrimitive(primitive);
+	g_PipelineState.count = count;
 }
 
-void VertexLoader::RunVertices(const VAT &vtx_attr, int primitive, int const count, const u8* source, u8* destination)
+void VertexLoader::RunVertices(const VertexLoaderParameters &parameters)
 {
-	SetupRunVertices(vtx_attr, primitive, count);
-	g_PipelineState.Initialize(source, destination);	
-	g_PipelineState.count = count;
+	SetupRunVertices(*parameters.VtxAttr, parameters.primitive, parameters.count);
+	g_PipelineState.Initialize(parameters.source, parameters.destination);
 	s_CurrentVertexLoader = this;
 	m_CompiledFunction(g_PipelineState);
 }

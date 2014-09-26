@@ -232,9 +232,7 @@ void RegisterMMIO(MMIO::Mapping* mmio, u32 base)
 		MMIO::ComplexWrite<u16>([](u32, u16 val) {
 		UCPClearReg tmp(val);
 		m_CPClearReg.Hex = tmp.Hex;
-		SetCpClearRegister();
-		if (!IsOnThread())
-			RunGpu();
+		SetCpClearRegister();		
 	})
 		);
 
@@ -274,9 +272,7 @@ void RegisterMMIO(MMIO::Mapping* mmio, u32 base)
 		else
 		{
 			ResetVideoBuffer();
-		}
-		if (!IsOnThread())
-			RunGpu();
+		}		
 	})
 		);
 	mmio->Register(base | FIFO_READ_POINTER_LO,
@@ -304,11 +300,7 @@ void STACKALIGN GatherPipeBursted()
 	// if we aren't linked, we don't care about gather pipe data
 	if (!m_CPCtrlReg.GPLinkEnable)
 	{
-		if (!IsOnThread())
-		{
-			RunGpu();
-		}
-		else
+		if (IsOnThread())
 		{
 			// In multibuffer mode is not allowed write in the same FIFO attached to the GPU.
 			// Fix Pokemon XD in DC mode.
@@ -332,6 +324,8 @@ void STACKALIGN GatherPipeBursted()
 	else
 		fifo.CPWritePointer += GATHER_PIPE_SIZE;
 
+	if (g_ActiveConfig.bPredictiveFifo && IsOnThread())
+		PreProcessingFifo(fifo.bFF_GPReadEnable != 0);
 	Common::AtomicAdd(fifo.CPReadWriteDistance, GATHER_PIPE_SIZE);
 
 	if (!IsOnThread())
@@ -371,7 +365,7 @@ void UpdateInterruptsFromVideoBackend(u64 userdata)
 // This is called by the ProcessorInterface when PI_FIFO_RESET is written to.
 void AbortFrame()
 {
-
+	ResetStates();
 }
 
 void SetCpStatus(bool isCPUThread)
@@ -519,6 +513,12 @@ void SetCpControlRegister()
 		ProcessorInterface::Fifo_CPUBase = fifo.CPBase;
 		ProcessorInterface::Fifo_CPUEnd = fifo.CPEnd;
 	}
+
+	bool priorGPReadEnable = fifo.bFF_GPReadEnable != 0;
+
+	if (g_ActiveConfig.bPredictiveFifo && IsOnThread())
+		PreProcessingFifo(m_CPCtrlReg.GPReadEnable);
+
 			
 	if(fifo.bFF_GPReadEnable && !m_CPCtrlReg.GPReadEnable)
 	{

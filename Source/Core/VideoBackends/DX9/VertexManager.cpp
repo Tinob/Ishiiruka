@@ -12,7 +12,6 @@
 #include "VideoCommon/OpcodeDecoding.h"
 #include "VideoCommon/IndexGenerator.h"
 #include "VideoCommon/VertexShaderManager.h"
-#include "VertexShaderCache.h"
 #include "VideoCommon/PixelShaderManager.h"
 #include "PixelShaderCache.h"
 #include "VideoCommon/NativeVertexFormat.h"
@@ -156,6 +155,7 @@ void VertexManager::CreateDeviceObjects()
 	m_index_buffer_cursor = m_index_buffer_size;
 	m_vertex_buffer_cursor = m_vertex_buffer_size;
 	m_current_stride = 0;
+	g_Config.backend_info.bSupportsEarlyZ = !g_ActiveConfig.bFastDepthCalc;
 }
 
 void VertexManager::DestroyDeviceObjects()
@@ -519,6 +519,33 @@ void VertexManager::SetPLRasterOffsets()
 	
 }
 
+void DX9::VertexManager::PrepareShaders(u32 components, const XFRegisters &xfr, const BPMemory &bpm, bool ongputhread)
+{
+	if (ongputhread)
+	{
+		if (!s_Shader_Refresh_Required)
+		{
+			return;
+		}
+		s_Shader_Refresh_Required = false;
+	}
+	const bool useDstAlpha = !g_ActiveConfig.bDstAlphaPass && bpm.dstalpha.enable && bpm.blendmode.alphaupdate &&
+		bpm.zcontrol.pixel_format == PIXELFMT_RGBA6_Z24;
+	const bool useDualSource = useDstAlpha && g_ActiveConfig.backend_info.bSupportsDualSourceBlend;
+	const bool forced_early_z = bpm.UseEarlyDepthTest() && bpm.zmode.updateenable && bpm.alpha_test.TestResult() == AlphaTest::UNDETERMINED && !g_ActiveConfig.bFastDepthCalc;
+	DSTALPHA_MODE AlphaMode = forced_early_z ? DSTALPHA_NULL : (useDualSource ? DSTALPHA_DUAL_SOURCE_BLEND : DSTALPHA_NONE);
+	VertexShaderCache::PrepareShader(components, xfr, bpm, ongputhread);
+	PixelShaderCache::PrepareShader(AlphaMode, components, xfr, bpm, ongputhread);
+	if (forced_early_z)
+	{
+		PixelShaderCache::PrepareShader(useDualSource ? DSTALPHA_DUAL_SOURCE_BLEND : DSTALPHA_NONE, components, xfr, bpm, ongputhread);
+	}
+	if (useDstAlpha && !useDualSource)
+	{
+		PixelShaderCache::PrepareShader(DSTALPHA_ALPHA_PASS, components, xfr, bpm, ongputhread);
+	}
+}
+
 void VertexManager::vFlush()
 {
 	// initialize all values for the current flush
@@ -641,33 +668,32 @@ void VertexManager::vFlush()
 	
 
 	// set global constants
-	VertexShaderManager::SetConstants();
-	g_renderer->ApplyState(false);
-	if ((m_line_index_len && m_line_emulation_required) || (m_point_index_len && m_point_emulation_required))
-	{
-		// if we use emulation setup the offsets for the vertex shaders
-		SetPLRasterOffsets();
-	}	
-	g_Config.backend_info.bSupportsEarlyZ = !g_ActiveConfig.bFastDepthCalc;
-	PixelShaderManager::SetConstants();
+	
 	const bool useDstAlpha = !g_ActiveConfig.bDstAlphaPass && bpmem.dstalpha.enable && bpmem.blendmode.alphaupdate &&
 		bpmem.zcontrol.pixel_format == PIXELFMT_RGBA6_Z24;
 	const bool useDualSource = useDstAlpha && g_ActiveConfig.backend_info.bSupportsDualSourceBlend;
 	const bool forced_early_z = bpmem.UseEarlyDepthTest() && bpmem.zmode.updateenable && bpmem.alpha_test.TestResult() == AlphaTest::UNDETERMINED && !g_ActiveConfig.bFastDepthCalc;
 	DSTALPHA_MODE AlphaMode = forced_early_z ? DSTALPHA_NULL :( useDualSource ? DSTALPHA_DUAL_SOURCE_BLEND : DSTALPHA_NONE);
 
-	if (!VertexShaderCache::SetShader(g_nativeVertexFmt->m_components))
+	if (!VertexShaderCache::TestShader())
 	{
-		GFX_DEBUGGER_PAUSE_LOG_AT(NEXT_ERROR,true,{printf("Fail to set vertex shader\n");});
 		goto shader_fail;
 
 	}
-	if (!PixelShaderCache::SetShader(AlphaMode ,g_nativeVertexFmt->m_components))
+	if (!PixelShaderCache::SetShader(AlphaMode))
 	{
-		GFX_DEBUGGER_PAUSE_LOG_AT(NEXT_ERROR,true,{printf("Fail to set pixel shader\n");});
 		goto shader_fail;
 	}
-	
+
+	VertexShaderManager::SetConstants();
+	g_renderer->ApplyState(false);
+	if ((m_line_index_len && m_line_emulation_required) || (m_point_index_len && m_point_emulation_required))
+	{
+		// if we use emulation setup the offsets for the vertex shaders
+		SetPLRasterOffsets();
+	}
+	g_Config.backend_info.bSupportsEarlyZ = !g_ActiveConfig.bFastDepthCalc;
+	PixelShaderManager::SetConstants();
 	PrepareDrawBuffers();
 	if(forced_early_z)
 	{
@@ -683,9 +709,8 @@ void VertexManager::vFlush()
 		D3D::ChangeRenderState(D3DRS_ZWRITEENABLE, FALSE);
 		D3D::ChangeRenderState(D3DRS_ZFUNC, D3DCMP_EQUAL);
 		AlphaMode = useDualSource ? DSTALPHA_DUAL_SOURCE_BLEND : DSTALPHA_NONE;
-		if (!PixelShaderCache::SetShader(AlphaMode ,g_nativeVertexFmt->m_components))
+		if (!PixelShaderCache::SetShader(AlphaMode))
 		{
-			GFX_DEBUGGER_PAUSE_LOG_AT(NEXT_ERROR,true,{printf("Fail to set pixel shader\n");});
 			goto shader_fail;
 		}
 		Draw();
@@ -695,9 +720,8 @@ void VertexManager::vFlush()
 
 	if (useDstAlpha && !useDualSource)
 	{
-		if (!PixelShaderCache::SetShader(DSTALPHA_ALPHA_PASS, g_nativeVertexFmt->m_components))
+		if (!PixelShaderCache::SetShader(DSTALPHA_ALPHA_PASS))
 		{
-			GFX_DEBUGGER_PAUSE_LOG_AT(NEXT_ERROR,true,{printf("Fail to set pixel shader\n");});
 			goto shader_fail;
 		}
 		// update alpha only

@@ -157,6 +157,9 @@
     <ClCompile Include="HLSLCompiler.cpp">
       <Filter>Shader Managers</Filter>
     </ClCompile>
+    <ClCompile Include="OpcodeDecodingSC.cpp">
+      <Filter>Decoding</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommandProcessor.h" />
@@ -345,6 +348,9 @@
     </ClInclude>
     <ClInclude Include="HLSLCompiler.h">
       <Filter>Shader Managers</Filter>
+    </ClInclude>
+    <ClInclude Include="OpcodeDecodingSC.h">
+      <Filter>Decoding</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

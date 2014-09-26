@@ -2,8 +2,7 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _VERTEXMANAGER_H_
-#define _VERTEXMANAGER_H_
+#pragma once
 
 #include "VideoCommon/CPMemory.h"
 
@@ -35,7 +34,7 @@ public:
 	NativeVertexFormat* CreateNativeVertexFormat();
 	void CreateDeviceObjects();
 	void DestroyDeviceObjects();
-	
+	void PrepareShaders(u32 components, const XFRegisters &xfr, const BPMemory &bpm, bool ongputhread);
 	// NativeVertexFormat use this
 	GLuint m_vertex_buffers;
 	GLuint m_index_buffers; 
@@ -48,5 +47,3 @@ private:
 };
 
 }
-
-#endif  // _VERTEXMANAGER_H_

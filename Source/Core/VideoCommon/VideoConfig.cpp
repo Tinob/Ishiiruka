@@ -103,7 +103,9 @@ void VideoConfig::Load(const char *ini_file)
 	hacks->Get("EFBCopyCacheEnable", &bEFBCopyCacheEnable, false);
 	hacks->Get("EFBEmulateFormatChanges", &bEFBEmulateFormatChanges, false);
 	hacks->Get("ForceDualSourceBlend", &bForceDualSourceBlend, false);
-
+	hacks->Get("FullAsyncShaderCompilation", &bFullAsyncShaderCompilation, false);
+	hacks->Get("WaitForShaderCompilation", &bWaitForShaderCompilation, false);
+	hacks->Get("PredictiveFifo", &bPredictiveFifo, false);
 	// Load common settings
 	iniFile.Load(File::GetUserPath(F_DOLPHINCONFIG_IDX));
 	bool bTmp;
@@ -210,8 +212,10 @@ void VideoConfig::GameIniLoad(const char* default_ini_file, const char* local_in
 	CHECK_SETTING("Video", "PH_ZFar", sPhackvalue[1]);
 	CHECK_SETTING("Video", "ZTPSpeedupHack", bZTPSpeedHack);
 	CHECK_SETTING("Video", "UseBBox", bUseBBox);
-	CHECK_SETTING("Video", "PerfQueriesEnable", bPerfQueriesEnable);
-
+	CHECK_SETTING("Video", "PerfQueriesEnable", bFullAsyncShaderCompilation);
+	CHECK_SETTING("Video", "FullAsyncShaderCompilation", bPerfQueriesEnable);
+	CHECK_SETTING("Video", "WaitForShaderCompilation", bWaitForShaderCompilation);
+	CHECK_SETTING("Video", "PredictiveFifo", bPredictiveFifo);
 	if (gfx_override_exists)
 		OSD::AddMessage("Warning: Opening the graphics configuration will reset settings and might cause issues!", 10000);
 }
@@ -224,6 +228,13 @@ void VideoConfig::VerifyValidity()
 	if (!backend_info.bSupportsFormatReinterpretation) bEFBEmulateFormatChanges = false;
 	if (!backend_info.bSupportsPixelLighting) bEnablePixelLighting = false;
 	if (backend_info.APIType != API_OPENGL) backend_info.bSupportsGLSLUBO = false;
+	if (backend_info.APIType == API_OPENGL)
+	{
+		//disable until is properly implemneted
+		bPredictiveFifo = false;
+		bFullAsyncShaderCompilation = false;
+		bWaitForShaderCompilation = false;
+	}
 	if (!backend_info.bSupportsExclusiveFullscreen) bBorderlessFullscreen = false;
 }
 
@@ -291,7 +302,9 @@ void VideoConfig::Save(const char *ini_file)
 	hacks->Set("EFBCopyCacheEnable", bEFBCopyCacheEnable);
 	hacks->Set("EFBEmulateFormatChanges", bEFBEmulateFormatChanges);
 	hacks->Set("ForceDualSourceBlend", bForceDualSourceBlend);
-
+	hacks->Set("FullAsyncShaderCompilation", bFullAsyncShaderCompilation);
+	hacks->Set("WaitForShaderCompilation", bWaitForShaderCompilation);
+	hacks->Set("PredictiveFifo", bPredictiveFifo);
 	
 
 	iniFile.Save(ini_file);

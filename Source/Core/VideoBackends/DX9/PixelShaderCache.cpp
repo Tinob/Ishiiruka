@@ -2,37 +2,38 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include <set>
-#include <locale.h>
-
 #include "Common/Common.h"
 #include "Common/Hash.h"
 #include "Common/FileUtil.h"
 #include "Common/LinearDiskCache.h"
+#include "Core/ConfigManager.h"
 
-#include "Globals.h"
-#include "D3DBase.h"
-#include "D3DShader.h"
 #include "VideoCommon/Statistics.h"
 #include "VideoCommon/VideoConfig.h"
 #include "VideoCommon/PixelShaderGen.h"
 #include "VideoCommon/PixelShaderManager.h"
-#include "PixelShaderCache.h"
 #include "VideoCommon/VertexLoader.h"
 #include "VideoCommon/BPMemory.h"
 #include "VideoCommon/XFMemory.h"
 #include "VideoCommon/ImageWrite.h"
 #include "VideoCommon/Debugger.h"
-#include "Core/ConfigManager.h"
+#include "VideoCommon/HLSLCompiler.h"
 
+#include "Globals.h"
+#include "D3DBase.h"
+#include "D3DShader.h"
+#include "PixelShaderCache.h"
 namespace DX9
 {
 
 PixelShaderCache::PSCache PixelShaderCache::PixelShaders;
-const PixelShaderCache::PSCacheEntry *PixelShaderCache::last_entry;
-PixelShaderUid PixelShaderCache::last_uid;
+const PixelShaderCache::PSCacheEntry *PixelShaderCache::last_entry[DSTALPHA_NULL + 1];
+PixelShaderUid PixelShaderCache::last_uid[DSTALPHA_NULL + 1];
+PixelShaderUid PixelShaderCache::external_last_uid[DSTALPHA_NULL + 1];
 UidChecker<PixelShaderUid,ShaderCode> PixelShaderCache::pixel_uid_checker;
 
+static HLSLAsyncCompiler *Compiler;
+static Common::SpinLock<true> PixelShadersLock;
 static LinearDiskCache<PixelShaderUid, u8> g_ps_disk_cache;
 static std::set<u32> unique_shaders;
 
@@ -60,7 +61,7 @@ class PixelShaderCacheInserter : public LinearDiskCacheReader<PixelShaderUid, u8
 public:
 	void Read(const PixelShaderUid &key, const u8 *value, u32 value_size)
 	{
-		PixelShaderCache::InsertByteCode(key, value, value_size, false);
+		PixelShaderCache::InsertByteCode(key, value, value_size);
 	}
 };
 
@@ -245,7 +246,12 @@ static LPDIRECT3DPIXELSHADER9 CreateCopyShader(int copyMatrixType, int depthConv
 
 void PixelShaderCache::Init()
 {
-	last_entry = NULL;
+	PixelShadersLock.unlock();
+	for (u32 i = 0; i < DSTALPHA_NULL + 1; i++)
+	{
+		last_entry[i] = nullptr;
+	}
+	Compiler = &HLSLAsyncCompiler::getInstance();
 
 	//program used for clear screen
 	{
@@ -296,8 +302,9 @@ void PixelShaderCache::Init()
 	sprintf(cache_filename, "%sdx9-%s-ps.cache", File::GetUserPath(D_SHADERCACHE_IDX).c_str(),
 		SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID.c_str());
 	PixelShaderCacheInserter inserter;
+	PixelShadersLock.lock();
 	g_ps_disk_cache.OpenAndRead(cache_filename, inserter);
-
+	PixelShadersLock.unlock();
 	if (g_Config.bEnableShaderDebugging)
 		Clear();
 }
@@ -305,16 +312,22 @@ void PixelShaderCache::Init()
 // ONLY to be used during shutdown.
 void PixelShaderCache::Clear()
 {
+	PixelShadersLock.lock();
 	for (PSCache::iterator iter = PixelShaders.begin(); iter != PixelShaders.end(); iter++)
 		iter->second.Destroy();
 	PixelShaders.clear();
+	PixelShadersLock.unlock();
 	pixel_uid_checker.Invalidate();
 
-	last_entry = NULL;
+	for (u32 i = 0; i < DSTALPHA_NULL + 1; i++)
+	{
+		last_entry[i] = nullptr;
+	}
 }
 
 void PixelShaderCache::Shutdown()
 {
+	Compiler->WaitForFinish();
 	for(int copyMatrixType = 0; copyMatrixType < NUM_COPY_TYPES; copyMatrixType++)
 		for(int depthType = 0; depthType < NUM_DEPTH_CONVERSION_TYPES; depthType++)
 			for(int ssaaMode = 0; ssaaMode < MAX_SSAA_SHADERS; ssaaMode++)
@@ -342,117 +355,156 @@ void PixelShaderCache::Shutdown()
 	unique_shaders.clear();
 }
 
-bool PixelShaderCache::SetShader(DSTALPHA_MODE dstAlphaMode, u32 components)
+void PixelShaderCache::PrepareShader(
+	DSTALPHA_MODE dstAlphaMode, 
+	u32 components, 
+	const XFRegisters &xfr, 
+	const BPMemory &bpm,
+	bool ongputhread)
 {
 	const API_TYPE api = ((D3D::GetCaps().PixelShaderVersion >> 8) & 0xFF) < 3 ? API_D3D9_SM20 : API_D3D9_SM30;
 	PixelShaderUid uid;
-	GetPixelShaderUidD3D9(uid, dstAlphaMode, components, xfregs, bpmem);
-	if (g_ActiveConfig.bEnableShaderDebugging)
+	GetPixelShaderUidD3D9(uid, dstAlphaMode, components, xfr, bpm);
+	if (ongputhread)
 	{
-		ShaderCode code;
-		GeneratePixelShaderCodeD3D9(code, dstAlphaMode, components, xfregs, bpmem);
-		pixel_uid_checker.AddToIndexAndCheck(code, uid, "Pixel", "p");
-	}
-
-	// Check if the shader is already set
-	if (last_entry)
-	{
-		if (uid == last_uid)
+		Compiler->ProcCompilationResults();
+#if defined(_DEBUG) || defined(DEBUGFAST)
+		if (g_ActiveConfig.bEnableShaderDebugging)
 		{
-			GFX_DEBUGGER_PAUSE_AT(NEXT_PIXEL_SHADER_CHANGE, true);
-			return last_entry->shader != NULL;
+			ShaderCode code;
+			GeneratePixelShaderCodeD3D9(code, dstAlphaMode, components, xfr, bpm);
+			pixel_uid_checker.AddToIndexAndCheck(code, uid, "Pixel", "p");
 		}
-	}
-
-	last_uid = uid;
-
-	// Check if the shader is already in the cache
-	PSCache::iterator iter;
-	iter = PixelShaders.find(uid);
-	if (iter != PixelShaders.end())
-	{
-		const PSCacheEntry &entry = iter->second;
-		last_entry = &entry;
-
-		if (entry.shader) D3D::SetPixelShader(entry.shader);
+#endif
+		// Check if the shader is already set
+		if (last_entry[dstAlphaMode])
+		{
+			if (uid == last_uid[dstAlphaMode])
+			{
+				return;
+			}
+		}
+		last_uid[dstAlphaMode] = uid;
 		GFX_DEBUGGER_PAUSE_AT(NEXT_PIXEL_SHADER_CHANGE, true);
-		return (entry.shader != NULL);
-	}
-
-
-	// Need to compile a new shader
-	ShaderCode code;
-	if (api == API_D3D9_SM20)
-	{
-		GeneratePixelShaderCodeD3D9SM2(code, dstAlphaMode, components, xfregs, bpmem);
 	}
 	else
 	{
-		GeneratePixelShaderCodeD3D9(code, dstAlphaMode, components, xfregs, bpmem);
-	}	
-
-	if (g_ActiveConfig.bEnableShaderDebugging)
-	{
-		u32 code_hash = HashAdler32((const u8 *)code.GetBuffer(), strlen(code.GetBuffer()));
-		unique_shaders.insert(code_hash);
-		SETSTAT(stats.numUniquePixelShaders, unique_shaders.size());
+		if (external_last_uid[dstAlphaMode] == uid)
+		{
+			return;
+		}
+		external_last_uid[dstAlphaMode] = uid;
 	}
-
+	PixelShadersLock.lock();
+	PSCacheEntry* entry = &PixelShaders[uid];
+	PixelShadersLock.unlock();
+	if (ongputhread)
+	{
+		last_entry[dstAlphaMode] = entry;
+	}
+	// Compile only when we have a new instance
+	if (entry->initialized.test_and_set())
+	{
+		return;
+	}
+	// Need to compile a new shader
+	ShaderCode code;
+	ShaderCompilerWorkUnit *wunit = Compiler->NewUnit(PIXELSHADERGEN_BUFFERSIZE);
+	code.SetBuffer(wunit->code.data());
+	if (api == API_D3D9_SM20)
+	{
+		GeneratePixelShaderCodeD3D9SM2(code, dstAlphaMode, components, xfr, bpm);
+	}
+	else
+	{
+		GeneratePixelShaderCodeD3D9(code, dstAlphaMode, components, xfr, bpm);
+	}
+	wunit->codesize = (u32)code.BufferSize();
+	wunit->entrypoint = "main";
+	wunit->flags = D3DCOMPILE_SKIP_VALIDATION | D3DCOMPILE_OPTIMIZATION_LEVEL3;
+	wunit->target = D3D::PixelShaderVersionString();
+	wunit->ResultHandler = [uid, entry](ShaderCompilerWorkUnit* wunit)
+	{
+		if (SUCCEEDED(wunit->cresult))
+		{
+			ID3DBlob* shaderBuffer = wunit->shaderbytecode;
+			const u8* bytecode = (const u8*)shaderBuffer->GetBufferPointer();
+			u32 bytecodelen = (u32)shaderBuffer->GetBufferSize();
+			g_ps_disk_cache.Append(uid, bytecode, bytecodelen);
+			PushByteCode(uid, bytecode, bytecodelen, entry);
 #if defined(_DEBUG) || defined(DEBUGFAST)
-	if (g_ActiveConfig.iLog & CONF_SAVESHADERS) {
-		static int counter = 0;
-		char szTemp[MAX_PATH];
-		sprintf(szTemp, "%sps_%04i.txt", File::GetUserPath(D_DUMP_IDX).c_str(), counter++);
+			if (g_ActiveConfig.bEnableShaderDebugging)
+			{
+				u32 code_hash = HashAdler32((const u8 *)wunit->code.data(), wunit->codesize);
+				unique_shaders.insert(code_hash);
+				SETSTAT(stats.numUniquePixelShaders, unique_shaders.size());
+				entry->code = wunit->code.data();
+			}
+			if (g_ActiveConfig.iLog & CONF_SAVESHADERS) {
+				static int counter = 0;
+				char szTemp[MAX_PATH];
+				sprintf(szTemp, "%sps_%04i.txt", File::GetUserPath(D_DUMP_IDX).c_str(), counter++);
 
-		SaveData(szTemp, code.GetBuffer());
-	}
-#endif
+				SaveData(szTemp, wunit->code.data());
+			}
+#endif			
+		}
+		else
+		{
+			static int num_failures = 0;
+			char szTemp[MAX_PATH];
+			sprintf(szTemp, "%sbad_ps_%04i.txt", File::GetUserPath(D_DUMP_IDX).c_str(), num_failures++);
+			std::ofstream file;
+			OpenFStream(file, szTemp, std::ios_base::out);
+			file << ((const char *)wunit->code.data());
+			file.close();
 
-	u8 *bytecode = 0;
-	u32 bytecodelen = 0;
-	if (!D3D::CompilePixelShader(code.GetBuffer(), (int)strlen(code.GetBuffer()), &bytecode, &bytecodelen)) {
-		GFX_DEBUGGER_PAUSE_AT(NEXT_ERROR, true);
-		return false;
-	}
-
-	// Insert the bytecode into the caches
-	g_ps_disk_cache.Append(uid, bytecode, bytecodelen);
-
-	// And insert it into the shader cache.
-	bool success = InsertByteCode(uid, bytecode, bytecodelen, true);
-	delete [] bytecode;
-
-	if (g_ActiveConfig.bEnableShaderDebugging && success)
-	{
-		PixelShaders[uid].code = code.GetBuffer();
-	}
-
-	GFX_DEBUGGER_PAUSE_AT(NEXT_PIXEL_SHADER_CHANGE, true);
-	return success;
+			PanicAlert("Failed to compile pixel shader!\nThis usually happens when trying to use Dolphin with an outdated GPU or integrated GPU like the Intel GMA series.\n\nIf you're sure this is Dolphin's error anyway, post the contents of %s along with this error message at the forums.\n\nDebug info (%s):\n%s",
+				szTemp,
+				D3D::VertexShaderVersionString(),
+				(char*)wunit->error->GetBufferPointer());
+		}
+	};
+	Compiler->CompileShaderAsync(wunit);
 }
 
-bool PixelShaderCache::InsertByteCode(const PixelShaderUid &uid, const u8 *bytecode, int bytecodelen, bool activate)
+bool PixelShaderCache::SetShader(DSTALPHA_MODE dstAlphaMode)
 {
-	LPDIRECT3DPIXELSHADER9 shader = D3D::CreatePixelShaderFromByteCode(bytecode, bytecodelen);
-
-	// Make an entry in the table
-	PSCacheEntry newentry;
-	newentry.shader = shader;
-	PixelShaders[uid] = newentry;
-	last_entry = &PixelShaders[uid];
-
-	if (!shader) {
-		// INCSTAT(stats.numPixelShadersFailed);
-		return false;
-	}
-
-	INCSTAT(stats.numPixelShadersCreated);
-	SETSTAT(stats.numPixelShadersAlive, PixelShaders.size());
-	if (activate)
+	const PSCacheEntry* entry = last_entry[dstAlphaMode];
+	u32 count = 0;
+	while (!entry->compiled)
 	{
-		D3D::SetPixelShader(shader);
+		Compiler->ProcCompilationResults();
+		if (g_ActiveConfig.bFullAsyncShaderCompilation)
+		{
+			break;
+		}
+		Common::cYield(count++);
 	}
-	return true;
+	if (entry->shader && entry->compiled)
+	{
+		D3D::SetPixelShader(entry->shader);
+		return true;
+	}
+	return false;
+}
+
+void PixelShaderCache::PushByteCode(const PixelShaderUid &uid, const u8 *bytecode, int bytecodelen, PixelShaderCache::PSCacheEntry* entry)
+{
+	entry->shader = D3D::CreatePixelShaderFromByteCode(bytecode, bytecodelen);
+	entry->compiled = true;
+	if (entry->shader)
+	{
+		INCSTAT(stats.numPixelShadersCreated);
+		SETSTAT(stats.numPixelShadersAlive, PixelShaders.size());
+	}
+}
+
+void PixelShaderCache::InsertByteCode(const PixelShaderUid &uid, const u8 *bytecode, int bytecodelen)
+{
+	PixelShaderCache::PSCacheEntry *entry = &PixelShaders[uid];
+	entry->initialized.test_and_set();
+	PushByteCode(uid, bytecode, bytecodelen, entry);
 }
 
 void Renderer::SetPSConstant4f(unsigned int const_number, float f1, float f2, float f3, float f4)

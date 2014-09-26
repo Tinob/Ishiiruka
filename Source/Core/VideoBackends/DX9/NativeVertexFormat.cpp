@@ -19,9 +19,8 @@ namespace DX9
 class D3DVertexFormat : public NativeVertexFormat
 {
 	LPDIRECT3DVERTEXDECLARATION9 d3d_decl;
-
 public:
-	D3DVertexFormat() : d3d_decl(NULL) {}
+	D3DVertexFormat() : d3d_decl(nullptr){}
 	~D3DVertexFormat();
 	void Initialize(const PortableVertexDeclaration &_vtx_decl) override;
 	void SetupVertexPointers() override;
@@ -153,17 +152,19 @@ void D3DVertexFormat::Initialize(const PortableVertexDeclaration &_vtx_decl)
 	m_elements[elem_idx].Stream = 0xff;
 	m_elements[elem_idx].Type = D3DDECLTYPE_UNUSED;
 	++elem_idx;
-
-	if (FAILED(DX9::D3D::dev->CreateVertexDeclaration(m_elements, &d3d_decl)))
-	{
-		PanicAlert("Failed to create D3D vertex declaration!");
-		return;
-	}
 	m_num_elements = elem_idx;
 }
 
 void D3DVertexFormat::SetupVertexPointers()
 {
+	if (!d3d_decl)
+	{
+		if (FAILED(DX9::D3D::dev->CreateVertexDeclaration(m_elements, &d3d_decl)))
+		{
+			PanicAlert("Failed to create D3D vertex declaration!");
+			return;
+		}
+	}
 	if (d3d_decl)
 		DX9::D3D::SetVertexDeclaration(d3d_decl);
 	else

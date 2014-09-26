@@ -213,6 +213,22 @@ void VertexManager::Draw(UINT stride)
 		((DX11::Renderer*)g_renderer)->RestoreCull();
 }
 
+void VertexManager::PrepareShaders(u32 components, const XFRegisters &xfr, const BPMemory &bpm, bool ongputhread)
+{
+	if (ongputhread)
+	{
+		if (!s_Shader_Refresh_Required)
+		{
+			return;
+		}
+		s_Shader_Refresh_Required = false;
+	}
+	bool useDstAlpha = !g_ActiveConfig.bDstAlphaPass && bpm.dstalpha.enable && bpm.blendmode.alphaupdate &&
+		bpm.zcontrol.pixel_format == PIXELFMT_RGBA6_Z24;
+	VertexShaderCache::PrepareShader(components, xfr, bpm, ongputhread);
+	PixelShaderCache::PrepareShader(useDstAlpha ? DSTALPHA_DUAL_SOURCE_BLEND : DSTALPHA_NONE, components, xfr, bpm, ongputhread);
+}
+
 void VertexManager::vFlush()
 {
 	u32 usedtextures = 0;
@@ -250,25 +266,20 @@ void VertexManager::vFlush()
 		}
 	}
 
+	if (!PixelShaderCache::TestShader())
+	{
+		return;
+	}
+	if (!VertexShaderCache::TestShader())
+	{
+		return;
+	}
 	// set global constants
 	VertexShaderManager::SetConstants();
 	PixelShaderManager::SetConstants();
 
 	bool useDstAlpha = !g_ActiveConfig.bDstAlphaPass && bpmem.dstalpha.enable && bpmem.blendmode.alphaupdate &&
-		bpmem.zcontrol.pixel_format == PIXELFMT_RGBA6_Z24;
-
-	if (!PixelShaderCache::SetShader(
-		useDstAlpha ? DSTALPHA_DUAL_SOURCE_BLEND : DSTALPHA_NONE,
-		g_nativeVertexFmt->m_components))
-	{
-		GFX_DEBUGGER_PAUSE_LOG_AT(NEXT_ERROR,true,{printf("Fail to set pixel shader\n");});
-		return;
-	}
-	if (!VertexShaderCache::SetShader(g_nativeVertexFmt->m_components))
-	{
-		GFX_DEBUGGER_PAUSE_LOG_AT(NEXT_ERROR,true,{printf("Fail to set pixel shader\n");});
-		return;
-	}
+		bpmem.zcontrol.pixel_format == PIXELFMT_RGBA6_Z24;	
 	
 	unsigned int stride = g_nativeVertexFmt->GetVertexStride();
 	PrepareDrawBuffers(stride);

@@ -130,6 +130,9 @@ static wxString xfb_virtual_desc = wxTRANSLATE("Emulate XFBs using GPU texture o
 static wxString xfb_real_desc = wxTRANSLATE("Emulate XFBs accurately.\nSlows down emulation a lot and prohibits high-resolution rendering but is necessary to emulate a number of games properly.\n\nIf unsure, check virtual XFB emulation instead.");
 static wxString dump_textures_desc = wxTRANSLATE("Dump decoded game textures to User/Dump/Textures/<game_id>/\n\nIf unsure, leave this unchecked.");
 static wxString dump_VertexTranslators_desc = wxTRANSLATE("Dump Vertex translator code to User/Dump/\n\nIf unsure, leave this unchecked.");
+static wxString fullAsyncShaderCompilation_desc = wxTRANSLATE("Make shader compilation proccess fully asynchronous. This can cause glitches but will give a smooth game experience.");
+static wxString waitforshadercompilation_desc = wxTRANSLATE("Wait for shader compilation in the cpu to avoid fifo problems. This option prevents loops in F-Zero, Metroid Prime fifo resets and others.");
+static wxString predictiveFifo_desc = wxTRANSLATE("Generate a secondary fifo to predict resource usage and improve loading time.");
 static wxString load_hires_textures_desc = wxTRANSLATE("Load custom textures from User/Load/Textures/<game_id>/\n\nIf unsure, leave this unchecked.");
 static wxString dump_efb_desc = wxTRANSLATE("Dump the contents of EFB copies to User/Dump/Textures/\n\nIf unsure, leave this unchecked.");
 static wxString dump_frames_desc = wxTRANSLATE("Dump all rendered frames to an AVI file in User/Dump/Frames/\n\nIf unsure, leave this unchecked.");
@@ -518,8 +521,10 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title, con
 	szr_other->Add(CreateCheckBox(page_hacks, _("OpenCL Texture Decoder"), wxGetTranslation(opencl_desc), vconfig.bEnableOpenCL));
 	szr_other->Add(CreateCheckBox(page_hacks, _("OpenMP Texture Decoder"), wxGetTranslation(omp_desc), vconfig.bOMPDecoder));
 	szr_other->Add(CreateCheckBox(page_hacks, _("Fast Depth Calculation"), wxGetTranslation(fast_depth_calc_desc), vconfig.bFastDepthCalc));
+	szr_other->Add(Predictive_FIFO = CreateCheckBox(page_hacks, _("Predictive FIFO"), wxGetTranslation(predictiveFifo_desc), vconfig.bPredictiveFifo));
+	szr_other->Add(Wait_For_Shaders = CreateCheckBox(page_hacks, _("Wait for Shader Compilation"), wxGetTranslation(waitforshadercompilation_desc), vconfig.bWaitForShaderCompilation));
+	szr_other->Add(Async_Shader_compilation = CreateCheckBox(page_hacks, _("Full Async Shader Compilation"), wxGetTranslation(fullAsyncShaderCompilation_desc), vconfig.bFullAsyncShaderCompilation));
 	szr_other->Add(hacked_buffer_upload = CreateCheckBox(page_hacks, _("Vertex Streaming Hack"), wxGetTranslation(hacked_buffer_upload_desc), vconfig.bHackedBufferUpload));
-	
 	wxStaticBoxSizer* const group_other = new wxStaticBoxSizer(wxVERTICAL, page_hacks, _("Other"));
 	group_other->Add(szr_other, 1, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 5);
 	szr_hacks->Add(group_other, 0, wxEXPAND | wxALL, 5);

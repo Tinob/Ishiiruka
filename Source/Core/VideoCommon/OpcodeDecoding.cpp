@@ -120,7 +120,7 @@ inline u32 Decode(const u8* end)
 		u32 Cmd2 = g_VideoData.Read<u32>();
 		distance -= GX_LOAD_XF_REG_SIZE;
 		int transfer_size = ((Cmd2 >> 16) & 15) + 1;
-		if (sizeCheck && distance < (transfer_size * sizeof(u32)))
+		if (sizeCheck && (distance < (transfer_size * sizeof(u32))))
 			return 0;
 		cycles = GX_LOAD_XF_REG_BASE_CYCLES + GX_LOAD_XF_REG_TRANSFER_CYCLES * transfer_size;
 		u32 xf_address = Cmd2 & 0xFFFF;
@@ -132,10 +132,11 @@ inline u32 Decode(const u8* end)
 	}
 	break;
 	case GX_LOAD_INDX_A: //used for position matrices
-	{	if (sizeCheck && distance < GX_LOAD_INDX_A_SIZE)
-		return 0;
-	cycles = GX_LOAD_INDX_A_CYCLES;
-	LoadIndexedXF(g_VideoData.Read<u32>(), 0xC);
+	{	
+		if (sizeCheck && distance < GX_LOAD_INDX_A_SIZE)
+			return 0;
+		cycles = GX_LOAD_INDX_A_CYCLES;
+		LoadIndexedXF(g_VideoData.Read<u32>(), 0xC);
 	}
 	break;
 	case GX_LOAD_INDX_B: //used for normal matrices
@@ -197,11 +198,10 @@ inline u32 Decode(const u8* end)
 	default:
 		if ((cmd_byte & GX_DRAW_PRIMITIVES) == 0x80)
 		{
-			cycles = GX_DRAW_PRIMITIVES_CYCLES;
 			// load vertices
 			if (sizeCheck && distance < GX_DRAW_PRIMITIVES_SIZE)
 				return 0;
-			VertexLoaderManager::VertexLoaderParameters parameters;
+			VertexLoaderParameters parameters;
 			parameters.count = g_VideoData.Read<u16>();
 			distance -= GX_DRAW_PRIMITIVES_SIZE;
 			parameters.buf_size = distance;			
@@ -214,10 +214,11 @@ inline u32 Decode(const u8* end)
 			parameters.source = g_VideoData.GetReadPosition();
 			parameters.destination = VertexManager::s_pCurBufferPointer;
 			g_attr_dirty &= ~(1 << parameters.vtx_attr_group);
-			u32 readsize;
-			u32 writesize;
+			u32 readsize = 0;
+			u32 writesize = 0;
 			if (VertexLoaderManager::ConvertVertices(parameters, readsize, writesize))
 			{
+				cycles = GX_DRAW_PRIMITIVES_CYCLES;
 				g_VideoData.ReadSkip(readsize);
 				VertexManager::s_pCurBufferPointer += writesize;
 			}
@@ -229,6 +230,7 @@ inline u32 Decode(const u8* end)
 		else
 		{
 			UnknownOpcode(cmd_byte, opcodeStart);
+			g_VideoData.SetReadPosition(end);
 			cycles = 1;
 		}
 		break;
@@ -334,6 +336,18 @@ void OpcodeDecoder_Init()
 	}
 }
 
+void ResetStates()
+{
+	memset(&bpmem, 0, sizeof(bpmem));
+	bpmem.bpMask = 0xFFFFFF;
+
+	memset(arraybases, 0, sizeof(arraybases));
+	memset(arraystrides, 0, sizeof(arraystrides));
+	memset(&MatrixIndexA, 0, sizeof(MatrixIndexA));
+	memset(&MatrixIndexB, 0, sizeof(MatrixIndexB));
+	memset(&g_VtxDesc, 0, sizeof(g_VtxDesc));
+	memset(g_VtxAttr, 0, sizeof(g_VtxAttr));
+}
 
 void OpcodeDecoder_Shutdown()
 {

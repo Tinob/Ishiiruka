@@ -9,11 +9,10 @@
 
 
 #include "Core/ConfigManager.h"
-
+#include "Common/ThreadPool.h"
 
 #include "VideoCommon/IndexGenerator.h"
 #include "VideoCommon/Statistics.h"
-#include "VideoCommon/VertexLoader.h"
 #include "VideoCommon/VertexLoaderManager.h"
 #include "VideoCommon/VertexManagerBase.h"
 #include "VideoCommon/VideoConfig.h"
@@ -30,6 +29,7 @@
 
 NativeVertexFormat *g_nativeVertexFmt;
 static VertexLoader *s_VertexLoaders[8];
+static VertexLoader *s_CPULoaders[8];
 static std::string LastGameCode;
 namespace std
 {
@@ -283,18 +283,12 @@ namespace VertexLoaderManager
 		s_VertexLoaderMap.clear();
 		s_native_vertex_map.clear();
 	}
-
 	
-
-	static void UpdateLoader(const TVtxDesc &VtxDesc, const VAT &VtxAttr, int vtx_attr_group)
+	inline VertexLoader *GetOrAddLoader(const TVtxDesc &VtxDesc, const VAT &VtxAttr)
 	{
 		VertexLoaderUID uid(VtxDesc, VtxAttr);
 		VertexLoaderMap::iterator iter = s_VertexLoaderMap.find(uid);
-		if (iter != s_VertexLoaderMap.end())
-		{
-			s_VertexLoaders[vtx_attr_group] = iter->second;
-		}
-		else
+		if (iter == s_VertexLoaderMap.end())
 		{
 			PrecompiledVertexLoaderMap::iterator piter = s_PrecompiledVertexLoaderMap.find(uid.GetHash());
 			TCompiledLoaderFunction precompiledfunc = nullptr;
@@ -304,15 +298,32 @@ namespace VertexLoaderManager
 			}
 			VertexLoader *loader = new VertexLoader(VtxDesc, VtxAttr, precompiledfunc);
 			s_VertexLoaderMap[uid] = loader;
-			s_VertexLoaders[vtx_attr_group] = loader;
 			INCSTAT(stats.numVertexLoaders);
+			return loader;
 		}
+		return iter->second;
 	}
+
+	void GetVertexSizeAndComponents(const VertexLoaderParameters &parameters, u32 &vertexsize, u32 &components)
+	{
+		if (parameters.needloaderrefresh)
+		{
+			s_CPULoaders[parameters.vtx_attr_group] = GetOrAddLoader(*parameters.VtxDesc, *parameters.VtxAttr);
+		}
+		vertexsize = s_CPULoaders[parameters.vtx_attr_group]->GetVertexSize();
+		components = s_CPULoaders[parameters.vtx_attr_group]->GetNativeVertexFormat()->m_components;
+	}
+
+	inline void UpdateLoader(const VertexLoaderParameters &parameters)
+	{
+		s_VertexLoaders[parameters.vtx_attr_group] = GetOrAddLoader(*parameters.VtxDesc, *parameters.VtxAttr);
+	}
+
 	bool ConvertVertices(const VertexLoaderParameters &parameters, u32 &readsize, u32 &writesize)
 	{
 		if (parameters.needloaderrefresh)
 		{
-			UpdateLoader(*parameters.VtxDesc, *parameters.VtxAttr, parameters.vtx_attr_group);
+			UpdateLoader(parameters);
 		}
 		auto loader = s_VertexLoaders[parameters.vtx_attr_group];
 		readsize = parameters.count * loader->GetVertexSize();
@@ -331,7 +342,7 @@ namespace VertexLoaderManager
 		VertexManager::PrepareForAdditionalData(parameters.primitive, parameters.count, nativefmt->GetVertexStride());
 		writesize = nativefmt->GetVertexStride() * parameters.count;
 		g_nativeVertexFmt = nativefmt;
-		loader->RunVertices(*parameters.VtxAttr, parameters.primitive, parameters.count, parameters.source, parameters.destination);
+		loader->RunVertices(parameters);
 		ADDSTAT(stats.thisFrame.numPrims, parameters.count);
 		INCSTAT(stats.thisFrame.numPrimitiveJoins);
 		IndexGenerator::AddIndices(parameters.primitive, parameters.count);
@@ -342,7 +353,7 @@ namespace VertexLoaderManager
 	{
 		if (parameters.needloaderrefresh)
 		{
-			UpdateLoader(*parameters.VtxDesc, *parameters.VtxAttr, parameters.vtx_attr_group);
+			UpdateLoader(parameters);
 		}
 		return s_VertexLoaders[parameters.vtx_attr_group]->GetVertexSize();
 	}

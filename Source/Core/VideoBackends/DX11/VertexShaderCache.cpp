@@ -8,7 +8,7 @@
 #include "VideoCommon/Debugger.h"
 #include "VideoCommon/Statistics.h"
 #include "VideoCommon/VertexShaderGen.h"
-
+#include "VideoCommon/HLSLCompiler.h"
 #include "D3DShader.h"
 #include "Globals.h"
 #include "VertexShaderCache.h"
@@ -25,7 +25,10 @@ namespace DX11 {
 VertexShaderCache::VSCache VertexShaderCache::vshaders;
 const VertexShaderCache::VSCacheEntry *VertexShaderCache::last_entry;
 VertexShaderUid VertexShaderCache::last_uid;
+VertexShaderUid VertexShaderCache::external_last_uid;
 UidChecker<VertexShaderUid,ShaderCode> VertexShaderCache::vertex_uid_checker;
+static HLSLAsyncCompiler *Compiler;
+static Common::SpinLock<true> vshadersLock;
 
 static ID3D11VertexShader* SimpleVertexShader = NULL;
 static ID3D11VertexShader* ClearVertexShader = NULL;
@@ -104,6 +107,8 @@ const char clear_shader_code[] = {
 
 void VertexShaderCache::Init()
 {
+	vshadersLock.unlock();
+	Compiler = &HLSLAsyncCompiler::getInstance();
 	const D3D11_INPUT_ELEMENT_DESC simpleelems[2] =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0,  0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -164,7 +169,9 @@ void VertexShaderCache::Init()
 	sprintf(cache_filename, "%sdx11-%s-vs.cache", File::GetUserPath(D_SHADERCACHE_IDX).c_str(),
 			SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID.c_str());
 	VertexShaderCacheInserter inserter;
+	vshadersLock.lock();
 	g_vs_disk_cache.OpenAndRead(cache_filename, inserter);
+	vshadersLock.unlock();
 
 	if (g_Config.bEnableShaderDebugging)
 		Clear();
@@ -174,9 +181,11 @@ void VertexShaderCache::Init()
 
 void VertexShaderCache::Clear()
 {
+	vshadersLock.lock();
 	for (VSCache::iterator iter = vshaders.begin(); iter != vshaders.end(); ++iter)
 		iter->second.Destroy();
 	vshaders.clear();
+	vshadersLock.unlock();
 	vertex_uid_checker.Invalidate();
 
 	last_entry = NULL;
@@ -184,6 +193,7 @@ void VertexShaderCache::Clear()
 
 void VertexShaderCache::Shutdown()
 {
+	Compiler->WaitForFinish();
 	SAFE_RELEASE(vscbuf);
 
 	SAFE_RELEASE(SimpleVertexShader);
@@ -197,86 +207,133 @@ void VertexShaderCache::Shutdown()
 	g_vs_disk_cache.Close();
 }
 
-bool VertexShaderCache::SetShader(u32 components)
+void VertexShaderCache::PrepareShader(
+	u32 components, 
+	const XFRegisters 
+	&xfr, 
+	const BPMemory &bpm, 
+	bool ongputhread)
 {
 	VertexShaderUid uid;
-	GetVertexShaderUidD3D11(uid, components, xfregs, bpmem);
-	if (g_ActiveConfig.bEnableShaderDebugging)
+	GetVertexShaderUidD3D11(uid, components, xfr, bpm);
+	if (ongputhread)
 	{
-		ShaderCode code;
-		GenerateVertexShaderCodeD3D11(code, components, xfregs, bpmem);
-		vertex_uid_checker.AddToIndexAndCheck(code, uid, "Vertex", "v");
-	}
-
-	if (last_entry)
-	{
-		if (uid == last_uid)
+		Compiler->ProcCompilationResults();
+	#if defined(_DEBUG) || defined(DEBUGFAST)
+		if (g_ActiveConfig.bEnableShaderDebugging)
 		{
-			GFX_DEBUGGER_PAUSE_AT(NEXT_VERTEX_SHADER_CHANGE, true);
-			return (last_entry->shader != NULL);
+			ShaderCode code;
+			GenerateVertexShaderCodeD3D11(code, components, xfr, bpm);
+			vertex_uid_checker.AddToIndexAndCheck(code, uid, "Vertex", "v");
 		}
-	}
-
-	last_uid = uid;
-
-	VSCache::iterator iter = vshaders.find(uid);
-	if (iter != vshaders.end())
-	{
-		const VSCacheEntry &entry = iter->second;
-		last_entry = &entry;
-
+	#endif
+		if (last_entry)
+		{
+			if (uid == last_uid)
+			{
+				return;
+			}
+		}
+		last_uid = uid;
 		GFX_DEBUGGER_PAUSE_AT(NEXT_VERTEX_SHADER_CHANGE, true);
-		return (entry.shader != NULL);
 	}
-
+	else
+	{
+		if (external_last_uid == uid)
+		{
+			return;
+		}
+		external_last_uid = uid;
+	}
+	vshadersLock.lock();
+	VSCacheEntry* entry = &vshaders[uid];
+	vshadersLock.unlock();
+	if (ongputhread)
+	{
+		last_entry = entry;
+	}
+	// Compile only when we have a new instance
+	if (entry->initialized.test_and_set())
+	{
+		return;
+	}
 	ShaderCode code;
-	GenerateVertexShaderCodeD3D11(code, components, xfregs, bpmem);
-
-	D3DBlob* pbytecode = NULL;
-	D3D::CompileVertexShader(code.GetBuffer(), (int)strlen(code.GetBuffer()), &pbytecode);
-
-	if (pbytecode == NULL)
+	ShaderCompilerWorkUnit *wunit = Compiler->NewUnit(VERTEXSHADERGEN_BUFFERSIZE);
+	code.SetBuffer(wunit->code.data());
+	GenerateVertexShaderCodeD3D11(code, components, xfr, bpm);
+	wunit->codesize = (u32)code.BufferSize();
+	wunit->entrypoint = "main";
+	wunit->flags = D3DCOMPILE_SKIP_VALIDATION | D3DCOMPILE_OPTIMIZATION_LEVEL3 | D3DCOMPILE_ENABLE_BACKWARDS_COMPATIBILITY;
+	wunit->target = D3D::VertexShaderVersionString();
+	wunit->ResultHandler = [uid, entry](ShaderCompilerWorkUnit* wunit)
 	{
-		GFX_DEBUGGER_PAUSE_AT(NEXT_ERROR, true);
-		return false;
-	}
-	g_vs_disk_cache.Append(uid, pbytecode->Data(), pbytecode->Size());
+		if (SUCCEEDED(wunit->cresult))
+		{
+			D3DBlob* pbytecode = new D3DBlob(wunit->shaderbytecode);
+			g_vs_disk_cache.Append(uid, pbytecode->Data(), pbytecode->Size());
+			PushByteCode(uid, pbytecode, entry);
+#if defined(_DEBUG) || defined(DEBUGFAST)
+			if (g_ActiveConfig.bEnableShaderDebugging)
+			{
+				entry->code = wunit->code.data();
+			}
+#endif
+		}
+		else
+		{
+			static int num_failures = 0;
+			char szTemp[MAX_PATH];
+			sprintf(szTemp, "%sbad_vs_%04i.txt", File::GetUserPath(D_DUMP_IDX).c_str(), num_failures++);
+			std::ofstream file;
+			OpenFStream(file, szTemp, std::ios_base::out);
+			file << ((const char*)wunit->code.data());
+			file.close();
 
-	bool success = InsertByteCode(uid, pbytecode);
-	pbytecode->Release();
-
-	if (g_ActiveConfig.bEnableShaderDebugging && success)
-	{
-		vshaders[uid].code = code.GetBuffer();
-	}
-
-	GFX_DEBUGGER_PAUSE_AT(NEXT_VERTEX_SHADER_CHANGE, true);
-	return success;
+			PanicAlert("Failed to compile vertex shader!\nThis usually happens when trying to use Dolphin with an outdated GPU or integrated GPU like the Intel GMA series.\n\nIf you're sure this is Dolphin's error anyway, post the contents of %s along with this error message at the forums.\n\nDebug info (%s):\n%s",
+				szTemp,
+				D3D::VertexShaderVersionString(),
+				(char*)wunit->error->GetBufferPointer());
+		}
+	};
+	Compiler->CompileShaderAsync(wunit);
 }
 
-bool VertexShaderCache::InsertByteCode(const VertexShaderUid &uid, D3DBlob* bcodeblob)
+bool VertexShaderCache::TestShader()
 {
-	ID3D11VertexShader* shader = D3D::CreateVertexShaderFromByteCode(bcodeblob);
-	if (shader == NULL)
-		return false;
-
-	// TODO: Somehow make the debug name a bit more specific
-	D3D::SetDebugObjectName((ID3D11DeviceChild*)shader, "a vertex shader of VertexShaderCache");
-
-	// Make an entry in the table
-	VSCacheEntry entry;
-	entry.shader = shader;
-	entry.SetByteCode(bcodeblob);
-
-	vshaders[uid] = entry;
-	last_entry = &vshaders[uid];
-
-	INCSTAT(stats.numVertexShadersCreated);
-	SETSTAT(stats.numVertexShadersAlive, (int)vshaders.size());
-
-	return true;
+	int count = 0;
+	while (!last_entry->compiled)
+	{
+		Compiler->ProcCompilationResults();
+		if (g_ActiveConfig.bFullAsyncShaderCompilation)
+		{
+			break;
+		}
+		Common::cYield(count++);
+	}
+	return last_entry->shader != nullptr && last_entry->compiled;
 }
 
+
+void VertexShaderCache::PushByteCode(const VertexShaderUid &uid, D3DBlob* bcodeblob, VertexShaderCache::VSCacheEntry* entry)
+{
+	entry->shader = D3D::CreateVertexShaderFromByteCode(bcodeblob);
+	entry->compiled = true;
+	entry->SetByteCode(bcodeblob);
+	if (entry->shader)
+	{
+		// TODO: Somehow make the debug name a bit more specific
+		D3D::SetDebugObjectName((ID3D11DeviceChild*)entry->shader, "a vertex shader of VertexShaderCache");
+		INCSTAT(stats.numVertexShadersCreated);
+		SETSTAT(stats.numVertexShadersAlive, (int)vshaders.size());
+	}
+}
+
+void VertexShaderCache::InsertByteCode(const VertexShaderUid &uid, D3DBlob* bcodeblob)
+{
+	VSCacheEntry* entry = &vshaders[uid];
+	entry->initialized.test_and_set();
+	PushByteCode(uid, bcodeblob, entry);
+}
 // These are "callbacks" from VideoCommon and thus must be outside namespace DX11.
 // This will have to be changed when we merge.
 

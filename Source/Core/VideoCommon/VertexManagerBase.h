@@ -1,8 +1,12 @@
 
 #pragma once
 
-#include "Common/Common.h"
 #include <vector>
+
+#include "Common/Common.h"
+#include "VideoCommon/BPMemory.h"
+#include "VideoCommon/XFMemory.h"
+
 
 class NativeVertexFormat;
 class PointerWrap;
@@ -13,8 +17,7 @@ private:
 	static const u32 SMALLEST_POSSIBLE_VERTEX = sizeof(float)*3;                 // 3 pos
 	static const u32 LARGEST_POSSIBLE_VERTEX = sizeof(float)*45 + sizeof(u32)*2; // 3 pos, 3*3 normal, 2*u32 color, 8*4 tex, 1 posMat 
 	
-	static const u32 MAX_PRIMITIVES_PER_COMMAND = (u16)-1;
-	
+	static const u32 MAX_PRIMITIVES_PER_COMMAND = (u16)-1;	
 public:
 	static const u32 MAXVBUFFERSIZE = ROUND_UP_POW2 (MAX_PRIMITIVES_PER_COMMAND * LARGEST_POSSIBLE_VERTEX);
 	
@@ -33,6 +36,7 @@ public:
 	static void PrepareForAdditionalData(int primitive, u32 count, u32 stride);
 	static u32 GetRemainingIndices(int primitive);
 
+	virtual void PrepareShaders(u32 components, const XFRegisters &xfr, const BPMemory &bpm, bool ongputhread) = 0;
 	static void Flush();
 
 	virtual ::NativeVertexFormat* CreateNativeVertexFormat() = 0;
@@ -42,6 +46,7 @@ public:
 	virtual void DestroyDeviceObjects(){};
 	
 protected:
+	static bool s_Shader_Refresh_Required;
 	u16* GetTriangleIndexBuffer() { return &TIBuffer[0]; }
 	u16* GetLineIndexBuffer() { return &LIBuffer[0]; }
 	u16* GetPointIndexBuffer() { return &PIBuffer[0]; }

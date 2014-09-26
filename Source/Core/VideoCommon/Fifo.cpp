@@ -15,7 +15,9 @@
 #include "VideoCommon/CommandProcessor.h"
 #include "VideoCommon/DataReader.h"
 #include "VideoCommon/Fifo.h"
+#include "VideoCommon/HLSLCompiler.h"
 #include "VideoCommon/OpcodeDecoding.h"
+#include "VideoCommon/OpcodeDecodingSC.h"
 #include "VideoCommon/PixelEngine.h"
 #include "VideoCommon/VideoConfig.h"
 
@@ -29,6 +31,12 @@ static std::mutex m_csHWVidOccupied;
 // STATE_TO_SAVE
 static u8 *videoBuffer;
 static int size = 0;
+static u8 *videoBufferSC;
+static int sizeSC = 0;
+
+volatile u32 CPReadFifoSC;
+volatile u32 CPBaseFifoSC;
+volatile u32 CPEndFifoSC;
 }  // namespace
 
 void Fifo_DoState(PointerWrap &p) 
@@ -65,13 +73,20 @@ void Fifo_Init()
 	size = 0;
 	GpuRunningState = false;
 	Common::AtomicStore(CommandProcessor::VITicks, CommandProcessor::m_cpClockOrigin);
+	videoBufferSC = (u8*)AllocateMemoryPages(FIFO_SIZE);
+	sizeSC = 0;
+	CPReadFifoSC = -1;
+	CPBaseFifoSC = -1;
+	CPEndFifoSC = -1;
 }
 
 void Fifo_Shutdown()
 {
 	if (GpuRunningState) PanicAlert("Fifo shutting down while active");
 	FreeMemoryPages(videoBuffer, FIFO_SIZE);
+	FreeMemoryPages(videoBufferSC, FIFO_SIZE);
 	videoBuffer = nullptr;
+	videoBufferSC = nullptr;
 }
 
 u8* GetVideoBufferStartPtr()
@@ -83,6 +98,17 @@ u8* GetVideoBufferEndPtr()
 {
 	return &videoBuffer[size];
 }
+
+u8* GetVideoBufferStartPtrSC()
+{
+	return videoBufferSC;
+}
+
+u8* GetVideoBufferEndPtrSC()
+{
+	return &videoBufferSC[sizeSC];
+}
+
 
 void Fifo_SetRendering(bool enabled)
 {
@@ -131,6 +157,12 @@ void ResetVideoBuffer()
 {
 	g_VideoData.SetReadPosition(videoBuffer);
 	size = 0;
+	g_VideoDataSC.SetReadPosition(videoBufferSC);
+	sizeSC = 0;
+
+	CPReadFifoSC = -1;
+	CPBaseFifoSC = -1;
+	CPEndFifoSC = -1;
 }
 
 
@@ -154,7 +186,7 @@ void RunGpuLoop()
 		Common::AtomicStore(CommandProcessor::VITicks, CommandProcessor::m_cpClockOrigin);
 
 		// check if we are able to run this buffer	
-		while (GpuRunningState && !CommandProcessor::interruptWaiting && fifo.bFF_GPReadEnable && fifo.CPReadWriteDistance && !AtBreakpoint())
+		while (GpuRunningState && EmuRunningState && !CommandProcessor::interruptWaiting && fifo.bFF_GPReadEnable && fifo.CPReadWriteDistance && !AtBreakpoint())
 		{
 			fifo.isGpuReadingData = true;
 			CommandProcessor::isPossibleWaitingSetDrawDone = fifo.bFF_GPLinkEnable ? true : false;
@@ -177,11 +209,11 @@ void RunGpuLoop()
 				cyclesExecuted = OpcodeDecoder_Run(GetVideoBufferEndPtr());
 
 				if (Core::g_CoreStartupParameter.bSyncGPU && Common::AtomicLoad(CommandProcessor::VITicks) > cyclesExecuted)
-					Common::AtomicAdd(CommandProcessor::VITicks, -(s32)cyclesExecuted);
+						Common::AtomicAdd(CommandProcessor::VITicks, -(s32)cyclesExecuted);
 
 				Common::AtomicStore(fifo.CPReadPointer, readPtr);
 				Common::AtomicAdd(fifo.CPReadWriteDistance, -32);
-				if((GetVideoBufferEndPtr() - g_VideoData.GetReadPosition()) == 0)
+				if ((GetVideoBufferEndPtr() - g_VideoData.GetReadPosition()) == 0)
 					Common::AtomicStore(fifo.SafeCPReadPointer, fifo.CPReadPointer);
 			}
 
@@ -249,4 +281,62 @@ void RunGpu()
 		fifo.CPReadWriteDistance -= 32;
 	}
 	CommandProcessor::SetCpStatus();
+}
+
+void PreProcessingFifo(bool GPReadEnabled)
+{
+
+	SCPFifoStruct &fifo = CommandProcessor::fifo;
+
+	if (CPBaseFifoSC
+		!= fifo.CPBase || CPEndFifoSC != fifo.CPEnd)
+	{
+		CPBaseFifoSC = fifo.CPBase;
+		CPEndFifoSC = fifo.CPEnd;
+		CPReadFifoSC = fifo.CPReadPointer;
+	}
+
+	if (GPReadEnabled && CPReadFifoSC != fifo.CPWritePointer)
+	{
+
+		u8 *uData = Memory::GetPointer(CPReadFifoSC);
+
+		if (CPReadFifoSC < fifo.CPWritePointer)
+		{
+			ReadDataFromPreProcFifo(uData, (fifo.CPWritePointer - CPReadFifoSC));
+		}
+		else
+		{
+			ReadDataFromPreProcFifo(uData, (fifo.CPEnd - CPReadFifoSC) + 32);
+			CPReadFifoSC = fifo.CPBase;
+			uData = Memory::GetPointer(CPReadFifoSC);
+			ReadDataFromPreProcFifo(uData, (fifo.CPWritePointer - CPReadFifoSC));
+		}
+		CPReadFifoSC = fifo.CPWritePointer;
+
+		OpcodeDecoderSC_Run(GetVideoBufferEndPtrSC());
+		if (g_ActiveConfig.bWaitForShaderCompilation)
+			HLSLAsyncCompiler::getInstance().WaitForCompilationFinished();
+	}
+
+}
+
+
+void ReadDataFromPreProcFifo(u8* _uData, u32 len)
+{
+	if (len == 0) return;
+	if (sizeSC + len >= FIFO_SIZE)
+	{
+		int pos = (int)(g_VideoDataSC.GetReadPosition() - videoBufferSC);
+		sizeSC -= pos;
+		if (sizeSC + len > FIFO_SIZE)
+		{
+			PanicAlert("FIFO SC out of bounds (size = %i, len = %i at %08x)", sizeSC, len, pos);
+		}
+		memmove(&videoBufferSC[0], &videoBufferSC[pos], sizeSC);
+		g_VideoDataSC.SetReadPosition(videoBufferSC);
+	}
+	// Copy new video instructions to videoBuffer for future use in rendering the new picture
+	memcpy(videoBufferSC + sizeSC, _uData, len);
+	sizeSC += len;
 }
