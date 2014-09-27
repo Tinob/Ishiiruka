@@ -24,7 +24,7 @@ int d3d_dll_ref = 0;
 
 namespace D3D
 {
-DXGI_FORMAT DXGI_BaseFormat = DXGI_FORMAT_B8G8R8A8_UNORM;
+const DXGI_FORMAT DXGI_BaseFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 ID3D11Device* device = NULL;
 WrapDeviceContext context;
 IDXGISwapChain* swapchain = NULL;
@@ -231,13 +231,7 @@ HRESULT Create(HWND wnd)
 	mode_desc.Format = DXGI_BaseFormat;
 	mode_desc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
 	hr = output->FindClosestMatchingMode(&mode_desc, &swap_chain_desc.BufferDesc, NULL);
-	if (FAILED(hr))
-	{
-		DXGI_BaseFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
-		mode_desc.Format = DXGI_BaseFormat;
-		hr = output->FindClosestMatchingMode(&mode_desc, &swap_chain_desc.BufferDesc, NULL);
-		if (FAILED(hr)) MessageBox(wnd, _T("Failed to find a supported video mode"), _T("Dolphin Direct3D 11 backend"), MB_OK | MB_ICONERROR);
-	}
+	if (FAILED(hr)) MessageBox(wnd, _T("Failed to find a supported video mode"), _T("Dolphin Direct3D 11 backend"), MB_OK | MB_ICONERROR);	
 	if (swap_chain_desc.Windowed)
 	{
 		// forcing buffer resolution to xres and yres..
@@ -311,8 +305,8 @@ hr = PD3D11CreateDeviceAndSwapChain(adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr,
 	bgra_textures_supported = (format_support & D3D11_FORMAT_SUPPORT_TEXTURE2D) != 0;
 	device->CheckFormatSupport(DXGI_FORMAT_B5G6R5_UNORM, &format_support);
 	bgra565_textures_supported = (format_support & D3D11_FORMAT_SUPPORT_TEXTURE2D) != 0;
-	g_ActiveConfig.backend_info.bSupportedFormats[1] = D3D::BGRATexturesSupported();
-	g_ActiveConfig.backend_info.bSupportedFormats[7] = D3D::BGRA565TexturesSupported();
+	g_ActiveConfig.backend_info.bSupportedFormats[1] = bgra_textures_supported;
+	g_ActiveConfig.backend_info.bSupportedFormats[7] = bgra565_textures_supported;
 	stateman = new StateManager;
 	return S_OK;
 }
