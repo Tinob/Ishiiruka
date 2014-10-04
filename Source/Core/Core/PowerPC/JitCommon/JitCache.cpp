@@ -11,7 +11,7 @@
 
 #include "disasm.h"
 
-#include "Common/Common.h"
+#include "Common/CommonTypes.h"
 #include "Common/MemoryUtil.h"
 #include "Core/PowerPC/JitInterface.h"
 #include "Core/PowerPC/JitCommon/JitBase.h"
@@ -364,12 +364,15 @@ using namespace Gen;
 	void JitBlockCache::WriteLinkBlock(u8* location, const u8* address)
 	{
 		XEmitter emit(location);
-		emit.JMP(address, true);
+		if (*location == 0xE8)
+			emit.CALL(address);
+		else
+			emit.JMP(address, true);
 	}
 
 	void JitBlockCache::WriteDestroyBlock(const u8* location, u32 address)
 	{
 		XEmitter emit((u8 *)location);
-		emit.MOV(32, M(&PC), Imm32(address));
+		emit.MOV(32, PPCSTATE(pc), Imm32(address));
 		emit.JMP(jit->GetAsmRoutines()->dispatcher, true);
 	}

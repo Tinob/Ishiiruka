@@ -218,19 +218,19 @@ void ControlDialog::UpdateListContents()
 {
 	control_lbox->Clear();
 
-	Device* const dev = g_controller_interface.FindDevice(m_devq);
+	ciface::Core::Device* const dev = g_controller_interface.FindDevice(m_devq);
 	if (dev)
 	{
 		if (control_reference->is_input)
 		{
-			for (Device::Input* input : dev->Inputs())
+			for (ciface::Core::Device::Input* input : dev->Inputs())
 			{
 				control_lbox->Append(StrToWxStr(input->GetName()));
 			}
 		}
 		else // It's an output
 		{
-			for (Device::Output* output : dev->Outputs())
+			for (ciface::Core::Device::Output* output : dev->Outputs())
 			{
 				control_lbox->Append(StrToWxStr(output->GetName()));
 			}
@@ -373,8 +373,8 @@ inline bool IsAlphabetic(wxString &str)
 
 inline void GetExpressionForControl(wxString &expr,
 				    wxString &control_name,
-				    DeviceQualifier *control_device = nullptr,
-				    DeviceQualifier *default_device = nullptr)
+				    ciface::Core::DeviceQualifier *control_device = nullptr,
+				    ciface::Core::DeviceQualifier *default_device = nullptr)
 {
 	expr = "";
 
@@ -465,6 +465,13 @@ void GamepadPage::AdjustSetting(wxCommandEvent& event)
 	((PadSetting*)((wxControl*)event.GetEventObject())->GetClientData())->UpdateValue();
 }
 
+void GamepadPage::AdjustSettingUI(wxCommandEvent& event)
+{
+	m_iterate = !m_iterate;
+	std::lock_guard<std::recursive_mutex> lk(m_config.controls_lock);
+	((PadSetting*)((wxControl*)event.GetEventObject())->GetClientData())->UpdateValue();
+}
+
 void GamepadPage::AdjustControlOption(wxCommandEvent&)
 {
 	std::lock_guard<std::recursive_mutex> lk(m_config.controls_lock);
@@ -499,7 +506,7 @@ void ControlDialog::DetectControl(wxCommandEvent& event)
 	wxButton* const btn = (wxButton*)event.GetEventObject();
 	const wxString lbl = btn->GetLabel();
 
-	Device* const dev = g_controller_interface.FindDevice(m_devq);
+	ciface::Core::Device* const dev = g_controller_interface.FindDevice(m_devq);
 	if (dev)
 	{
 		btn->SetLabel(_("[ waiting ]"));
@@ -508,7 +515,7 @@ void ControlDialog::DetectControl(wxCommandEvent& event)
 		wxTheApp->Yield(true);
 
 		std::lock_guard<std::recursive_mutex> lk(m_config.controls_lock);
-		Device::Control* const ctrl = control_reference->Detect(DETECT_WAIT_TIME, dev);
+		ciface::Core::Device::Control* const ctrl = control_reference->Detect(DETECT_WAIT_TIME, dev);
 
 		// if we got input, select it in the list
 		if (ctrl)
@@ -521,18 +528,34 @@ void ControlDialog::DetectControl(wxCommandEvent& event)
 void GamepadPage::DetectControl(wxCommandEvent& event)
 {
 	ControlButton* btn = (ControlButton*)event.GetEventObject();
+	if (DetectButton(btn) && m_iterate == true)
+	{
+		auto it = std::find(control_buttons.begin(), control_buttons.end(), btn);
 
+		// std find will never return end since btn will always be found in control_buttons
+		++it;
+		for (; it != control_buttons.end(); ++it)
+		{
+			if (!DetectButton(*it))
+				break;
+		}
+	}
+}
+
+bool GamepadPage::DetectButton(ControlButton* button)
+{
+	bool success = false;
 	// find device :/
-	Device* const dev = g_controller_interface.FindDevice(controller->default_device);
+	ciface::Core::Device* const dev = g_controller_interface.FindDevice(controller->default_device);
 	if (dev)
 	{
-		btn->SetLabel(_("[ waiting ]"));
+		button->SetLabel(_("[ waiting ]"));
 
 		// This makes the "waiting" text work on Linux. true (only if needed) prevents crash on Windows
 		wxTheApp->Yield(true);
 
 		std::lock_guard<std::recursive_mutex> lk(m_config.controls_lock);
-		Device::Control* const ctrl = btn->control_reference->Detect(DETECT_WAIT_TIME, dev);
+		ciface::Core::Device::Control* const ctrl = button->control_reference->Detect(DETECT_WAIT_TIME, dev);
 
 		// if we got input, update expression and reference
 		if (ctrl)
@@ -540,12 +563,15 @@ void GamepadPage::DetectControl(wxCommandEvent& event)
 			wxString control_name = ctrl->GetName();
 			wxString expr;
 			GetExpressionForControl(expr, control_name);
-			btn->control_reference->expression = expr;
-			g_controller_interface.UpdateReference(btn->control_reference, controller->default_device);
+			button->control_reference->expression = expr;
+			g_controller_interface.UpdateReference(button->control_reference, controller->default_device);
+			success = true;
 		}
 	}
 
 	UpdateGUI();
+
+	return success;
 }
 
 wxStaticBoxSizer* ControlDialog::CreateControlChooser(GamepadPage* const parent)
@@ -699,12 +725,12 @@ void GamepadPage::DeleteProfile(wxCommandEvent&)
 
 void InputConfigDialog::UpdateDeviceComboBox()
 {
-	DeviceQualifier dq;
+	ciface::Core::DeviceQualifier dq;
 	for (GamepadPage* page : m_padpages)
 	{
 		page->device_cbox->Clear();
 
-		for (Device* d : g_controller_interface.Devices())
+		for (ciface::Core::Device* d : g_controller_interface.Devices())
 		{
 			dq.FromDevice(d);
 			page->device_cbox->Append(StrToWxStr(dq.ToString()));
@@ -740,6 +766,8 @@ ControlGroupBox::ControlGroupBox(ControllerEmu::ControlGroup* const group, wxWin
 	, control_group(group)
 {
 	static_bitmap = nullptr;
+	const std::vector<std::string> exclude_buttons = {"Mic", "Modifier"};
+	const std::vector<std::string> exclude_groups = {"IR", "Swing", "Tilt", "Shake", "UDP Wiimote", "Extension", "Rumble"};
 
 	wxFont m_SmallFont(7, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
 	for (auto& control : group->controls)
@@ -750,6 +778,10 @@ ControlGroupBox::ControlGroupBox(ControllerEmu::ControlGroup* const group, wxWin
 		control_button->SetFont(m_SmallFont);
 
 		control_buttons.push_back(control_button);
+		if (std::find(exclude_groups.begin(), exclude_groups.end(), control_group->name) == exclude_groups.end() &&
+		    std::find(exclude_buttons.begin(), exclude_buttons.end(), control->name) == exclude_buttons.end())
+			eventsink->control_buttons.push_back(control_button);
+
 
 		if (control->control_ref->is_input)
 		{
@@ -879,11 +911,31 @@ ControlGroupBox::ControlGroupBox(ControllerEmu::ControlGroup* const group, wxWin
 			//options
 			for (auto& groupSetting : group->settings)
 			{
-				PadSettingCheckBox* setting_cbox = new PadSettingCheckBox(parent, groupSetting.get());
-				setting_cbox->wxcontrol->Bind(wxEVT_CHECKBOX, &GamepadPage::AdjustSetting, eventsink);
-				options.push_back(setting_cbox);
-
-				Add(setting_cbox->wxcontrol, 0, wxALL|wxLEFT, 5);
+				if (groupSetting->high == DEFAULT_HIGH_VALUE)
+				{
+					PadSettingCheckBox* setting_cbox = new PadSettingCheckBox(parent, groupSetting.get());
+					if (groupSetting->is_iterate == true)
+					{
+						setting_cbox->wxcontrol->Bind(wxEVT_CHECKBOX, &GamepadPage::AdjustSettingUI, eventsink);
+						groupSetting->value = 0;
+					}
+					else
+					{
+						setting_cbox->wxcontrol->Bind(wxEVT_CHECKBOX, &GamepadPage::AdjustSetting, eventsink);
+					}
+					options.push_back(setting_cbox);
+					Add(setting_cbox->wxcontrol, 0, wxALL | wxLEFT, 5);
+				}
+				else
+				{
+					PadSettingSpin* setting = new PadSettingSpin(parent, groupSetting.get());
+					setting->wxcontrol->Bind(wxEVT_SPINCTRL, &GamepadPage::AdjustSetting, eventsink);
+					options.push_back(setting);
+					wxBoxSizer* const szr = new wxBoxSizer(wxHORIZONTAL);
+					szr->Add(new wxStaticText(parent, -1, wxGetTranslation(StrToWxStr(groupSetting->name))), 0, wxCENTER | wxRIGHT, 3);
+					szr->Add(setting->wxcontrol, 0, wxRIGHT, 3);
+					Add(szr, 0, wxALL | wxCENTER, 3);
+				}
 			}
 		}
 		break;

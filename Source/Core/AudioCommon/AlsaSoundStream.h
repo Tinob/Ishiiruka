@@ -9,7 +9,7 @@
 #endif
 
 #include "AudioCommon/SoundStream.h"
-#include "Common/Common.h"
+#include "Common/CommonTypes.h"
 #include "Common/Thread.h"
 
 class AlsaSound final : public SoundStream
@@ -23,7 +23,8 @@ public:
 	virtual void SoundLoop() override;
 	virtual void Stop() override;
 
-	static bool isValid() {
+	static bool isValid()
+	{
 		return true;
 	}
 

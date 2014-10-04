@@ -165,6 +165,7 @@
     <ClCompile Include="HW\WiimoteReal\IOWin.cpp" />
     <ClCompile Include="HW\WiimoteReal\WiimoteReal.cpp" />
     <ClCompile Include="HW\WII_IPC.cpp" />
+    <ClCompile Include="HW\WiiSaveCrypted.cpp" />
     <ClCompile Include="IPC_HLE\ICMPWin.cpp" />
     <ClCompile Include="IPC_HLE\WiiMote_HID_Attr.cpp" />
     <ClCompile Include="IPC_HLE\WII_IPC_HLE.cpp" />
@@ -229,6 +230,7 @@
     <ClCompile Include="PowerPC\JitCommon\JitBase.cpp" />
     <ClCompile Include="PowerPC\JitCommon\JitCache.cpp" />
     <ClCompile Include="PowerPC\JitCommon\Jit_Util.cpp" />
+    <ClCompile Include="PowerPC\JitCommon\TrampolineCache.cpp" />
     <ClCompile Include="PowerPC\JitInterface.cpp" />
     <ClCompile Include="PowerPC\PowerPC.cpp" />
     <ClCompile Include="PowerPC\PPCAnalyst.cpp" />
@@ -361,6 +363,7 @@
     <ClInclude Include="HW\WiimoteEmu\WiimoteHid.h" />
     <ClInclude Include="HW\WiimoteReal\WiimoteReal.h" />
     <ClInclude Include="HW\WiimoteReal\WiimoteRealBase.h" />
+    <ClInclude Include="HW\WiiSaveCrypted.h" />
     <ClInclude Include="HW\WII_IPC.h" />
     <ClInclude Include="IPC_HLE\hci.h" />
     <ClInclude Include="IPC_HLE\ICMP.h" />
@@ -406,6 +409,7 @@
     <ClInclude Include="PowerPC\JitCommon\JitBase.h" />
     <ClInclude Include="PowerPC\JitCommon\JitCache.h" />
     <ClInclude Include="PowerPC\JitCommon\Jit_Util.h" />
+    <ClInclude Include="PowerPC\JitCommon\TrampolineCache.h" />
     <ClInclude Include="PowerPC\JitInterface.h" />
     <ClInclude Include="PowerPC\PowerPC.h" />
     <ClInclude Include="PowerPC\PPCAnalyst.h" />

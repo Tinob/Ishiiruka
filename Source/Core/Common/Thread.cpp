@@ -2,17 +2,14 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include "Common/Common.h"
+#include "Common/CommonFuncs.h"
+#include "Common/CommonTypes.h"
 #include "Common/Thread.h"
 
 #ifdef __APPLE__
 #include <mach/mach.h>
 #elif defined BSD4_4
 #include <pthread_np.h>
-#endif
-
-#ifdef USE_BEGINTHREADEX
-#include <process.h>
 #endif
 
 namespace Common

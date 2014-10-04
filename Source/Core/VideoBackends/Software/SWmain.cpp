@@ -187,7 +187,7 @@ void VideoSoftware::Video_Prepare()
 }
 
 // Run from the CPU thread (from VideoInterface.cpp)
-void VideoSoftware::Video_BeginField(u32 xfbAddr, u32 fbWidth, u32 fbHeight)
+void VideoSoftware::Video_BeginField(u32 xfbAddr, u32 fbWidth, u32 fbstride, u32 fbHeight)
 {	
 }
 

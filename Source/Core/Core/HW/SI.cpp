@@ -5,7 +5,7 @@
 #include <algorithm>
 
 #include "Common/ChunkFile.h"
-#include "Common/Common.h"
+#include "Common/CommonTypes.h"
 
 #include "Core/ConfigManager.h"
 #include "Core/CoreTiming.h"
@@ -230,8 +230,7 @@ void DoState(PointerWrap &p)
 			// if we had to create a temporary device, discard it if we're not loading.
 			// also, if no movie is active, we'll assume the user wants to keep their current devices
 			// instead of the ones they had when the savestate was created.
-			if (p.GetMode() != PointerWrap::MODE_READ ||
-				(!Movie::IsRecordingInput() && !Movie::IsPlayingInput()))
+			if (p.GetMode() != PointerWrap::MODE_READ || !Movie::IsMovieActive())
 			{
 				delete pSaveDevice;
 			}
@@ -257,7 +256,7 @@ void Init()
 		g_Channel[i].m_InHi.Hex = 0;
 		g_Channel[i].m_InLo.Hex = 0;
 
-		if (Movie::IsRecordingInput() || Movie::IsPlayingInput())
+		if (Movie::IsMovieActive())
 			AddDevice(Movie::IsUsingPad(i) ?  (Movie::IsUsingBongo(i) ? SIDEVICE_GC_TARUKONGA : SIDEVICE_GC_CONTROLLER) : SIDEVICE_NONE, i);
 		else if (!NetPlay::IsNetPlayRunning())
 			AddDevice(SConfig::GetInstance().m_SIDevice[i], i);
@@ -503,6 +502,14 @@ void UpdateDevices()
 	UpdateInterrupts();
 }
 
+SIDevices GetDeviceType(int channel)
+{
+	if (channel < 0 || channel > 3)
+		return SIDEVICE_NONE;
+	else
+		return g_Channel[channel].m_pDevice->GetDeviceType();
+}
+
 void RunSIBuffer()
 {
 	// Math inLength
@@ -531,7 +538,7 @@ void RunSIBuffer()
 int GetTicksToNextSIPoll()
 {
 	// Poll for input at regular intervals (once per frame) when playing or recording a movie
-	if (Movie::IsPlayingInput() || Movie::IsRecordingInput())
+	if (Movie::IsMovieActive())
 	{
 		if (Movie::IsNetPlayRecording())
 			return SystemTimers::GetTicksPerSecond() / VideoInterface::TargetRefreshRate / 2;

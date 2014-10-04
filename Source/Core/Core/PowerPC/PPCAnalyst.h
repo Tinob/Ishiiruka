@@ -10,7 +10,7 @@
 #include <string>
 #include <vector>
 
-#include "Common/Common.h"
+#include "Common/CommonTypes.h"
 #include "Core/PowerPC/PPCTables.h"
 
 class PPCSymbolDB;
@@ -29,18 +29,22 @@ struct CodeOp //16B
 	s8 regsOut[2];
 	s8 regsIn[3];
 	s8 fregOut;
-	s8 fregsIn[3];
+	s8 fregsIn[4];
 	bool isBranchTarget;
 	bool wantsCR0;
 	bool wantsCR1;
-	bool wantsPS1;
 	bool wantsFPRF;
+	bool wantsCA;
+	bool wantsCAInFlags;
 	bool outputCR0;
 	bool outputCR1;
-	bool outputPS1;
 	bool outputFPRF;
+	bool outputCA;
 	bool canEndBlock;
 	bool skip;  // followed BL-s for example
+	// which registers are still needed after this instruction in this block
+	u32 gprInUse;
+	u32 fprInUse;
 };
 
 struct BlockStats
@@ -67,6 +71,11 @@ struct BlockRegStats
 	{
 		return std::max(lastRead[reg], lastWrite[reg]) -
 			   std::min(firstRead[reg], firstWrite[reg]);
+	}
+
+	bool IsUsed(int reg)
+	{
+		return (numReads[reg] + numWrites[reg]) > 0;
 	}
 
 	inline void SetInputRegister(int reg, short opindex)
@@ -138,6 +147,13 @@ class PPCAnalyzer
 {
 private:
 
+	enum ReorderType
+	{
+		REORDER_CARRY,
+		REORDER_CMP
+	};
+
+	void ReorderInstructionsCore(u32 instructions, CodeOp* code, bool reverse, ReorderType type);
 	void ReorderInstructions(u32 instructions, CodeOp *code);
 	void SetInstructionStats(CodeBlock *block, CodeOp *code, GekkoOPInfo *opinfo, u32 index);
 
@@ -170,6 +186,14 @@ public:
 		// Requires JIT support to work.
 		// XXX: NOT COMPLETE
 		OPTION_FORWARD_JUMP = (1 << 3),
+
+		// Reorder compare/Rc instructions next to their associated branches and
+		// merge in the JIT (for common cases, anyway).
+		OPTION_BRANCH_MERGE = (1 << 4),
+
+		// Reorder carry instructions next to their associated branches and pass
+		// carry flags in the x86 flags between them, instead of in XER.
+		OPTION_CARRY_MERGE = (1 << 5),
 	};
 
 

@@ -2,7 +2,7 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include "Common/Common.h"
+#include "Common/CommonTypes.h"
 #include "Core/PowerPC/JitILCommon/JitILBase.h"
 
 void JitILBase::lhax(UGeckoInstruction inst)
@@ -33,6 +33,22 @@ void JitILBase::lXz(UGeckoInstruction inst)
 		ibuild.EmitStoreGReg(addr, inst.RA);
 
 	IREmitter::InstLoc val;
+
+	// Idle Skipping. This really should be done somewhere else.
+	// Either lower in the IR or higher in PPCAnalyist
+	if (SConfig::GetInstance().m_LocalCoreStartupParameter.bSkipIdle &&
+		inst.OPCD == 32 && // Lwx
+		(inst.hex & 0xFFFF0000) == 0x800D0000 &&
+		(Memory::ReadUnchecked_U32(js.compilerPC + 4) == 0x28000000 ||
+		(SConfig::GetInstance().m_LocalCoreStartupParameter.bWii && Memory::ReadUnchecked_U32(js.compilerPC + 4) == 0x2C000000)) &&
+		Memory::ReadUnchecked_U32(js.compilerPC + 8) == 0x4182fff8)
+	{
+		val = ibuild.EmitLoad32(addr);
+		ibuild.EmitIdleBranch(val, ibuild.EmitIntConst(js.compilerPC));
+		ibuild.EmitStoreGReg(val, inst.RD);
+		return;
+	}
+
 	switch (inst.OPCD & ~0x1)
 	{
 	case 32: // lwz
@@ -131,25 +147,19 @@ void JitILBase::dcbz(UGeckoInstruction inst)
 
 	// TODO!
 #if 0
-	if (Core::g_CoreStartupParameter.bJITOff || Core::g_CoreStartupParameter.bJITLoadStoreOff)
+	if (SConfig::GetInstance().m_LocalCoreStartupParameter.bJITOff || SConfig::GetInstance().m_LocalCoreStartupParameter.bJITLoadStoreOff)
 	{
 		Default(inst);
 		return;
 	}
 	INSTRUCTION_START;
-		MOV(32, R(EAX), gpr.R(inst.RB));
+		MOV(32, R(RSCRATCH), gpr.R(inst.RB));
 	if (inst.RA)
-		ADD(32, R(EAX), gpr.R(inst.RA));
-	AND(32, R(EAX), Imm32(~31));
+		ADD(32, R(RSCRATCH), gpr.R(inst.RA));
+	AND(32, R(RSCRATCH), Imm32(~31));
 	PXOR(XMM0, R(XMM0));
-#if _M_X86_64
-	MOVAPS(MComplex(EBX, EAX, SCALE_1, 0), XMM0);
-	MOVAPS(MComplex(EBX, EAX, SCALE_1, 16), XMM0);
-#else
-	AND(32, R(EAX), Imm32(Memory::MEMVIEW32_MASK));
-	MOVAPS(MDisp(EAX, (u32)Memory::base), XMM0);
-	MOVAPS(MDisp(EAX, (u32)Memory::base + 16), XMM0);
-#endif
+	MOVAPS(MComplex(RMEM, RSCRATCH, SCALE_1, 0), XMM0);
+	MOVAPS(MComplex(RMEM, RSCRATCH, SCALE_1, 16), XMM0);
 #endif
 }
 

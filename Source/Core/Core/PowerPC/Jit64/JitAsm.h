@@ -24,11 +24,14 @@ class Jit64AsmRoutineManager : public CommonAsmRoutines
 {
 private:
 	void Generate();
+	void ResetStack();
 	void GenerateCommon();
+	u8* m_stack_top;
 
 public:
-	void Init()
+	void Init(u8* stack_top)
 	{
+		m_stack_top = stack_top;
 		AllocCodeSpace(8192);
 		Generate();
 		WriteProtect();

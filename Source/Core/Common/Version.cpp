@@ -3,7 +3,7 @@
 // Refer to the license.txt file included.
 
 #include "scmrev.h"
-#include "Common/Common.h"
+#include "Common/CommonTypes.h"
 
 #ifdef _DEBUG
 	#define BUILD_TYPE_STR "Debug "
@@ -27,9 +27,9 @@ const char *scm_rev_str = "Dolphin "
 #ifdef _WIN32
 const char *netplay_dolphin_ver = SCM_DESC_STR " Win";
 #elif __APPLE__
-const char *netplay_dolphin_ver = SCM_DESC_STR " Mac ";
+const char *netplay_dolphin_ver = SCM_DESC_STR " Mac";
 #else
-const char *netplay_dolphin_ver = SCM_DESC_STR " Lin ";
+const char *netplay_dolphin_ver = SCM_DESC_STR " Lin";
 #endif
 
 const char *scm_rev_git_str = SCM_REV_STR;

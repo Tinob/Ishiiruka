@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-#include "Common/Common.h"
+#include "Common/CommonTypes.h"
 #include "Common/FileUtil.h"
 #include "Common/StringUtil.h"
 
@@ -54,7 +54,7 @@ const std::string CFileSystemGCWii::GetFileName(u64 _Address)
 	for (auto& fileInfo : m_FileInfoVector)
 	{
 		if ((fileInfo.m_Offset <= _Address) &&
-			((fileInfo.m_Offset + fileInfo.m_FileSize) > _Address))
+		    ((fileInfo.m_Offset + fileInfo.m_FileSize) > _Address))
 		{
 			return fileInfo.m_FullPath;
 		}
@@ -127,7 +127,7 @@ bool CFileSystemGCWii::ExportApploader(const std::string& _rExportFolder) const
 	u32 AppSize = Read32(0x2440 + 0x14);// apploader size
 	AppSize += Read32(0x2440 + 0x18);   // + trailer size
 	AppSize += 0x20;                    // + header size
-	DEBUG_LOG(DISCIO, "AppSize -> %x", AppSize);
+	DEBUG_LOG(DISCIO,"AppSize -> %x", AppSize);
 
 	std::vector<u8> buffer(AppSize);
 	if (m_rVolume->Read(0x2440, AppSize, &buffer[0]))
@@ -155,7 +155,7 @@ u32 CFileSystemGCWii::GetBootDOLSize() const
 	for (u8 i = 0; i < 7; i++)
 	{
 		offset = Read32(DolOffset + 0x00 + i * 4);
-		size = Read32(DolOffset + 0x90 + i * 4);
+		size   = Read32(DolOffset + 0x90 + i * 4);
 		if (offset + size > DolSize)
 			DolSize = offset + size;
 	}
@@ -164,7 +164,7 @@ u32 CFileSystemGCWii::GetBootDOLSize() const
 	for (u8 i = 0; i < 11; i++)
 	{
 		offset = Read32(DolOffset + 0x1c + i * 4);
-		size = Read32(DolOffset + 0xac + i * 4);
+		size   = Read32(DolOffset + 0xac + i * 4);
 		if (offset + size > DolSize)
 			DolSize = offset + size;
 	}
@@ -275,8 +275,8 @@ void CFileSystemGCWii::InitFileSystem()
 	// read all fileinfos
 	SFileInfo Root;
 	Root.m_NameOffset = Read32(FSTOffset + 0x0);
-	Root.m_Offset = (u64)Read32(FSTOffset + 0x4) << m_OffsetShift;
-	Root.m_FileSize = Read32(FSTOffset + 0x8);
+	Root.m_Offset     = (u64)Read32(FSTOffset + 0x4) << m_OffsetShift;
+	Root.m_FileSize   = Read32(FSTOffset + 0x8);
 
 	if (Root.IsDirectory())
 	{
@@ -290,8 +290,8 @@ void CFileSystemGCWii::InitFileSystem()
 			SFileInfo sfi;
 			u64 Offset = FSTOffset + (i * 0xC);
 			sfi.m_NameOffset = Read32(Offset + 0x0);
-			sfi.m_Offset = (u64)Read32(Offset + 0x4) << m_OffsetShift;
-			sfi.m_FileSize = Read32(Offset + 0x8);
+			sfi.m_Offset     = (u64)Read32(Offset + 0x4) << m_OffsetShift;
+			sfi.m_FileSize   = Read32(Offset + 0x8);
 
 			m_FileInfoVector.push_back(sfi);
 			NameTableOffset += 0xC;
@@ -316,7 +316,7 @@ size_t CFileSystemGCWii::BuildFilenames(const size_t _FirstIndex, const size_t _
 		if (rFileInfo.IsDirectory())
 		{
 			rFileInfo.m_FullPath += '/';
-			CurrentIndex = BuildFilenames(CurrentIndex + 1, (size_t)rFileInfo.m_FileSize, rFileInfo.m_FullPath, _NameTableOffset);
+			CurrentIndex = BuildFilenames(CurrentIndex + 1, (size_t) rFileInfo.m_FileSize, rFileInfo.m_FullPath, _NameTableOffset);
 		}
 		else
 		{

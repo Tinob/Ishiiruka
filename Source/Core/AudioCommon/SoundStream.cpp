@@ -7,6 +7,7 @@
 #include <soundtouch/STTypes.h>
 
 #include "Core/Core.h"
+#include "Core/ConfigManager.h"
 #include "Core/HW/AudioInterface.h"
 #include "Core/HW/SystemTimers.h"
 
@@ -148,12 +149,12 @@ void SoundStream::SoundLoop()
 {
 	Common::SetCurrentThreadName("Audio thread");
 	InitializeSoundLoop();	
-	bool surroundSupported = SupportSurroundOutput() && Core::g_CoreStartupParameter.bDPL2Decoder;
+	bool surroundSupported = SupportSurroundOutput() && SConfig::GetInstance().m_LocalCoreStartupParameter.bDPL2Decoder;
 	memset(realtimeBuffer, 0, SOUND_MAX_FRAME_SIZE * sizeof(u16));
 	memset(dpl2buffer, 0, SOUND_MAX_FRAME_SIZE * sizeof(soundtouch::SAMPLETYPE));
 	memset(samplebuffer, 0, SOUND_MAX_FRAME_SIZE * sizeof(soundtouch::SAMPLETYPE));
 	u32 channelmultiplier = surroundSupported ? SOUND_SAMPLES_SURROUND : SOUND_SAMPLES_STEREO;	
-	if (Core::g_CoreStartupParameter.bTimeStretching)
+	if (SConfig::GetInstance().m_LocalCoreStartupParameter.bTimeStretching)
 	{
 		float ratemultiplier = 1.0f;
 		soundtouch::SoundTouch sTouch;

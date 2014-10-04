@@ -5,8 +5,9 @@
 #pragma once
 
 #define SLIDER_TICK_COUNT    100
-#define DETECT_WAIT_TIME     1500
+#define DETECT_WAIT_TIME     2500
 #define PREVIEW_UPDATE_TIME  25
+#define DEFAULT_HIGH_VALUE   100
 
 // might have to change this setup for wiimote
 #define PROFILES_PATH       "Profiles/"
@@ -124,7 +125,7 @@ private:
 	GamepadPage* const m_parent;
 	wxStaticText*      m_bound_label;
 	wxStaticText*      m_error_label;
-	DeviceQualifier    m_devq;
+	ciface::Core::DeviceQualifier    m_devq;
 	bool GetExpressionForSelectedControl(wxString &expr);
 };
 
@@ -196,6 +197,7 @@ public:
 
 	void AdjustControlOption(wxCommandEvent& event);
 	void AdjustSetting(wxCommandEvent& event);
+	void AdjustSettingUI(wxCommandEvent& event);
 
 	void GetProfilePath(std::string& path);
 
@@ -203,6 +205,7 @@ public:
 	wxComboBox* device_cbox;
 
 	std::vector<ControlGroupBox*> control_groups;
+	std::vector<ControlButton*>   control_buttons;
 
 protected:
 
@@ -213,6 +216,8 @@ private:
 	ControlDialog*           m_control_dialog;
 	InputConfigDialog* const m_config_dialog;
 	InputConfig& m_config;
+	bool DetectButton(ControlButton* button);
+	bool m_iterate = false;
 };
 
 class InputConfigDialog : public wxDialog

@@ -4,10 +4,10 @@ set(SRCS
 	cpu_detect_x86.cpp
 	FIFOSampleBuffer.cpp
 	FIRFilter.cpp
-	mmx_optimized.cpp
 	InterpolateCubic.cpp
 	InterpolateLinear.cpp
 	InterpolateShannon.cpp
+	mmx_optimized.cpp
 	PeakFinder.cpp
 	RateTransposer.cpp
 	SoundTouch.cpp

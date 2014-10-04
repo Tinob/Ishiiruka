@@ -2,7 +2,7 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include "Common/Common.h"
+#include "Common/CommonTypes.h"
 #include "Common/CPUDetect.h"
 
 #include "Core/PowerPC/Jit64/Jit.h"
@@ -10,8 +10,8 @@
 
 using namespace Gen;
 
-static const u64 GC_ALIGNED16(psSignBits2[2]) = {0x8000000000000000ULL, 0x8000000000000000ULL};
-static const u64 GC_ALIGNED16(psAbsMask2[2])  = {0x7FFFFFFFFFFFFFFFULL, 0x7FFFFFFFFFFFFFFFULL};
+static const u64 GC_ALIGNED16(psSignBits[2]) = {0x8000000000000000ULL, 0x0000000000000000ULL};
+static const u64 GC_ALIGNED16(psAbsMask[2])  = {0x7FFFFFFFFFFFFFFFULL, 0xFFFFFFFFFFFFFFFFULL};
 static const double GC_ALIGNED16(half_qnan_and_s32_max[2]) = {0x7FFFFFFF, -0x80000};
 
 void Jit64::fp_tri_op(int d, int a, int b, bool reversible, bool single, void (XEmitter::*op)(Gen::X64Reg, Gen::OpArg), UGeckoInstruction inst, bool roundRHS)
@@ -77,16 +77,7 @@ void Jit64::fp_tri_op(int d, int a, int b, bool reversible, bool single, void (X
 	if (single)
 	{
 		ForceSinglePrecisionS(fpr.RX(d));
-		if (cpu_info.bSSE3)
-		{
-			MOVDDUP(fpr.RX(d), fpr.R(d));
-		}
-		else
-		{
-			if (!fpr.R(d).IsSimpleReg(fpr.RX(d)))
-				MOVQ_xmm(fpr.RX(d), fpr.R(d));
-			UNPCKLPD(fpr.RX(d), R(fpr.RX(d)));
-		}
+		MOVDDUP(fpr.RX(d), fpr.R(d));
 	}
 	SetFPRFIfNeeded(inst, fpr.RX(d));
 	fpr.UnlockAll();
@@ -100,7 +91,7 @@ void Jit64::SetFPRFIfNeeded(UGeckoInstruction inst, X64Reg xmm)
 	// As far as we know, the games that use this flag only need FPRF for fmul and fmadd, but
 	// FPRF is fast enough in JIT that we might as well just enable it for every float instruction
 	// if the enableFPRF flag is set.
-	if (Core::g_CoreStartupParameter.bEnableFPRF && js.op->wantsFPRF)
+	if (SConfig::GetInstance().m_LocalCoreStartupParameter.bEnableFPRF && js.op->wantsFPRF)
 		SetFPRF(xmm);
 }
 
@@ -136,29 +127,29 @@ void Jit64::fmaddXX(UGeckoInstruction inst)
 	int d = inst.FD;
 
 	fpr.Lock(a, b, c, d);
-	MOVSD(XMM0, fpr.R(c));
-	if (single_precision)
-		Force25BitPrecision(XMM0, XMM1);
-	switch (inst.SUBOP5)
+
+	// nmsub is implemented a little differently ((b - a*c) instead of -(a*c - b)), so handle it separately
+	if (inst.SUBOP5 == 30) //nmsub
 	{
-	case 28: //msub
+		MOVSD(XMM1, fpr.R(c));
+		if (single_precision)
+			Force25BitPrecision(XMM1, XMM0);
+		MULSD(XMM1, fpr.R(a));
+		MOVSD(XMM0, fpr.R(b));
+		SUBSD(XMM0, R(XMM1));
+	}
+	else
+	{
+		MOVSD(XMM0, fpr.R(c));
+		if (single_precision)
+			Force25BitPrecision(XMM0, XMM1);
 		MULSD(XMM0, fpr.R(a));
-		SUBSD(XMM0, fpr.R(b));
-		break;
-	case 29: //madd
-		MULSD(XMM0, fpr.R(a));
-		ADDSD(XMM0, fpr.R(b));
-		break;
-	case 30: //nmsub
-		MULSD(XMM0, fpr.R(a));
-		SUBSD(XMM0, fpr.R(b));
-		PXOR(XMM0, M((void*)&psSignBits2));
-		break;
-	case 31: //nmadd
-		MULSD(XMM0, fpr.R(a));
-		ADDSD(XMM0, fpr.R(b));
-		PXOR(XMM0, M((void*)&psSignBits2));
-		break;
+		if (inst.SUBOP5 == 28) //msub
+			SUBSD(XMM0, fpr.R(b));
+		else                   //(n)madd
+			ADDSD(XMM0, fpr.R(b));
+		if (inst.SUBOP5 == 31) //nmadd
+			PXOR(XMM0, M((void*)&psSignBits));
 	}
 	fpr.BindToRegister(d, false);
 	//YES it is necessary to dupe the result :(
@@ -186,23 +177,61 @@ void Jit64::fsign(UGeckoInstruction inst)
 	int b = inst.FB;
 	fpr.Lock(b, d);
 	fpr.BindToRegister(d, true, true);
-	MOVSD(XMM0, fpr.R(b));
+
+	if (d != b)
+		MOVSD(fpr.RX(d), fpr.R(b));
 	switch (inst.SUBOP10)
 	{
 	case 40:  // fnegx
-		PXOR(XMM0, M((void*)&psSignBits2));
+		// We can cheat and not worry about clobbering the top half by using masks
+		// that don't modify the top half.
+		PXOR(fpr.RX(d), M((void*)&psSignBits));
 		break;
 	case 264: // fabsx
-		PAND(XMM0, M((void*)&psAbsMask2));
+		PAND(fpr.RX(d), M((void*)&psAbsMask));
 		break;
 	case 136: // fnabs
-		POR(XMM0, M((void*)&psSignBits2));
+		POR(fpr.RX(d), M((void*)&psSignBits));
 		break;
 	default:
 		PanicAlert("fsign bleh");
 		break;
 	}
-	MOVSD(fpr.R(d), XMM0);
+	fpr.UnlockAll();
+}
+
+void Jit64::fselx(UGeckoInstruction inst)
+{
+	INSTRUCTION_START
+	JITDISABLE(bJITFloatingPointOff);
+	FALLBACK_IF(inst.Rc);
+
+	int d = inst.FD;
+	int a = inst.FA;
+	int b = inst.FB;
+	int c = inst.FC;
+
+	fpr.Lock(a, b, c, d);
+	MOVSD(XMM1, fpr.R(a));
+	PXOR(XMM0, R(XMM0));
+	// This condition is very tricky; there's only one right way to handle both the case of
+	// negative/positive zero and NaN properly.
+	// (a >= -0.0 ? c : b) transforms into (0 > a ? b : c), hence the NLE.
+	CMPSD(XMM0, R(XMM1), NLE);
+	if (cpu_info.bSSE4_1)
+	{
+		MOVSD(XMM1, fpr.R(c));
+		BLENDVPD(XMM1, fpr.R(b));
+	}
+	else
+	{
+		MOVSD(XMM1, R(XMM0));
+		PAND(XMM0, fpr.R(b));
+		PANDN(XMM1, fpr.R(c));
+		POR(XMM1, R(XMM0));
+	}
+	fpr.BindToRegister(d, true);
+	MOVSD(fpr.RX(d), R(XMM1));
 	fpr.UnlockAll();
 }
 
@@ -220,37 +249,52 @@ void Jit64::fmrx(UGeckoInstruction inst)
 
 	fpr.Lock(b, d);
 
-	// We don't need to load d, but if it is loaded, we need to mark it as dirty.
 	if (fpr.IsBound(d))
+	{
+		// We don't need to load d, but if it is loaded, we need to mark it as dirty.
 		fpr.BindToRegister(d);
-
-	// b needs to be in a register because "MOVSD reg, mem" sets the upper bits (64+) to zero and we don't want that.
-	fpr.BindToRegister(b, true, false);
-
-	MOVSD(fpr.R(d), fpr.RX(b));
+		// We have to use MOVLPD if b isn't loaded because "MOVSD reg, mem" sets the upper bits (64+)
+		// to zero and we don't want that.
+		if (!fpr.R(b).IsSimpleReg())
+			MOVLPD(fpr.RX(d), fpr.R(b));
+		else
+			MOVSD(fpr.R(d), fpr.RX(b));
+	}
+	else
+	{
+		fpr.BindToRegister(b, true, false);
+		MOVSD(fpr.R(d), fpr.RX(b));
+	}
 
 	fpr.UnlockAll();
 }
 
-void Jit64::fcmpx(UGeckoInstruction inst)
+void Jit64::FloatCompare(UGeckoInstruction inst, bool upper)
 {
-	INSTRUCTION_START
-	JITDISABLE(bJITFloatingPointOff);
-	FALLBACK_IF(jo.fpAccurateFcmp);
-
-	//bool ordered = inst.SUBOP10 == 32;
-	int a   = inst.FA;
-	int b   = inst.FB;
+	bool fprf = SConfig::GetInstance().m_LocalCoreStartupParameter.bEnableFPRF && js.op->wantsFPRF;
+	//bool ordered = !!(inst.SUBOP10 & 32);
+	int a = inst.FA;
+	int b = inst.FB;
 	int crf = inst.CRFD;
-	bool fprf = Core::g_CoreStartupParameter.bEnableFPRF && js.op->wantsFPRF;
 
-	fpr.Lock(a,b);
-	fpr.BindToRegister(b, true);
+	fpr.Lock(a, b);
+	fpr.BindToRegister(b, true, false);
 
 	if (fprf)
-		AND(32, M(&FPSCR), Imm32(~FPRF_MASK));
-	// Are we masking sNaN invalid floating point exceptions? If not this could crash if we don't handle the exception?
-	UCOMISD(fpr.R(b).GetSimpleReg(), fpr.R(a));
+		AND(32, PPCSTATE(fpscr), Imm32(~FPRF_MASK));
+
+	if (upper)
+	{
+		fpr.BindToRegister(a, true, false);
+		MOVHLPS(XMM0, fpr.RX(a));
+		MOVHLPS(XMM1, fpr.RX(b));
+		UCOMISD(XMM1, R(XMM0));
+	}
+	else
+	{
+		// Are we masking sNaN invalid floating point exceptions? If not this could crash if we don't handle the exception?
+		UCOMISD(fpr.RX(b), fpr.R(a));
+	}
 
 	FixupBranch pNaN, pLesser, pGreater;
 	FixupBranch continue1, continue2, continue3;
@@ -258,7 +302,7 @@ void Jit64::fcmpx(UGeckoInstruction inst)
 	if (a != b)
 	{
 		// if B > A, goto Lesser's jump target
-		pLesser  = J_CC(CC_A);
+		pLesser = J_CC(CC_A);
 	}
 
 	// if (B != B) or (A != A), goto NaN's jump target
@@ -271,31 +315,31 @@ void Jit64::fcmpx(UGeckoInstruction inst)
 		pGreater = J_CC(CC_B);
 	}
 
-	MOV(64, R(RAX), Imm64(PPCCRToInternal(CR_EQ)));
+	MOV(64, R(RSCRATCH), Imm64(PPCCRToInternal(CR_EQ)));
 	if (fprf)
-		OR(32, M(&FPSCR), Imm32(CR_EQ << FPRF_SHIFT));
+		OR(32, PPCSTATE(fpscr), Imm32(CR_EQ << FPRF_SHIFT));
 
 	continue1 = J();
 
 	SetJumpTarget(pNaN);
-	MOV(64, R(RAX), Imm64(PPCCRToInternal(CR_SO)));
+	MOV(64, R(RSCRATCH), Imm64(PPCCRToInternal(CR_SO)));
 	if (fprf)
-		OR(32, M(&FPSCR), Imm32(CR_SO << FPRF_SHIFT));
+		OR(32, PPCSTATE(fpscr), Imm32(CR_SO << FPRF_SHIFT));
 
 	if (a != b)
 	{
 		continue2 = J();
 
 		SetJumpTarget(pGreater);
-		MOV(64, R(RAX), Imm64(PPCCRToInternal(CR_GT)));
+		MOV(64, R(RSCRATCH), Imm64(PPCCRToInternal(CR_GT)));
 		if (fprf)
-			OR(32, M(&FPSCR), Imm32(CR_GT << FPRF_SHIFT));
+			OR(32, PPCSTATE(fpscr), Imm32(CR_GT << FPRF_SHIFT));
 		continue3 = J();
 
 		SetJumpTarget(pLesser);
-		MOV(64, R(RAX), Imm64(PPCCRToInternal(CR_LT)));
+		MOV(64, R(RSCRATCH), Imm64(PPCCRToInternal(CR_LT)));
 		if (fprf)
-			OR(32, M(&FPSCR), Imm32(CR_LT << FPRF_SHIFT));
+			OR(32, PPCSTATE(fpscr), Imm32(CR_LT << FPRF_SHIFT));
 	}
 
 	SetJumpTarget(continue1);
@@ -305,8 +349,17 @@ void Jit64::fcmpx(UGeckoInstruction inst)
 		SetJumpTarget(continue3);
 	}
 
-	MOV(64, M(&PowerPC::ppcState.cr_val[crf]), R(RAX));
+	MOV(64, PPCSTATE(cr_val[crf]), R(RSCRATCH));
 	fpr.UnlockAll();
+}
+
+void Jit64::fcmpx(UGeckoInstruction inst)
+{
+	INSTRUCTION_START
+	JITDISABLE(bJITFloatingPointOff);
+	FALLBACK_IF(jo.fpAccurateFcmp);
+
+	FloatCompare(inst);
 }
 
 void Jit64::fctiwx(UGeckoInstruction inst)
@@ -365,4 +418,42 @@ void Jit64::frspx(UGeckoInstruction inst)
 	MOVDDUP(fpr.RX(d), fpr.R(d));
 	SetFPRFIfNeeded(inst, fpr.RX(d));
 	fpr.UnlockAll();
+}
+
+void Jit64::frsqrtex(UGeckoInstruction inst)
+{
+	INSTRUCTION_START
+	JITDISABLE(bJITFloatingPointOff);
+	FALLBACK_IF(inst.Rc);
+	int b = inst.FB;
+	int d = inst.FD;
+
+	gpr.FlushLockX(RSCRATCH_EXTRA);
+	fpr.Lock(b, d);
+	fpr.BindToRegister(d, d == b);
+	MOVSD(XMM0, fpr.R(b));
+	CALL((void *)asm_routines.frsqrte);
+	MOVSD(fpr.R(d), XMM0);
+	SetFPRFIfNeeded(inst, fpr.RX(d));
+	fpr.UnlockAll();
+	gpr.UnlockAllX();
+}
+
+void Jit64::fresx(UGeckoInstruction inst)
+{
+	INSTRUCTION_START
+	JITDISABLE(bJITFloatingPointOff);
+	FALLBACK_IF(inst.Rc);
+	int b = inst.FB;
+	int d = inst.FD;
+
+	gpr.FlushLockX(RSCRATCH_EXTRA);
+	fpr.Lock(b, d);
+	fpr.BindToRegister(d, d == b);
+	MOVSD(XMM0, fpr.R(b));
+	CALL((void *)asm_routines.fres);
+	MOVSD(fpr.R(d), XMM0);
+	SetFPRFIfNeeded(inst, fpr.RX(d));
+	fpr.UnlockAll();
+	gpr.UnlockAllX();
 }

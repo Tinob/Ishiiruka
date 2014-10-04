@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "Common/Common.h"
+#include "Common/CommonTypes.h"
 #include "Common/CommonTypes.h"
 
 #include "Core/HW/EXI_Device.h"
@@ -76,4 +76,4 @@ enum
 namespace NetPlay
 {
 	bool IsNetPlayRunning();
-};
+}

@@ -83,6 +83,7 @@ GCPad::GCPad(const unsigned int index) : m_index(index)
 	// options
 	groups.emplace_back(m_options = new ControlGroup(_trans("Options")));
 	m_options->settings.emplace_back(new ControlGroup::BackgroundInputSetting(_trans("Background Input")));
+	m_options->settings.emplace_back(new ControlGroup::IterateUI(_trans("Iterative Input")));
 }
 
 std::string GCPad::GetName() const
@@ -121,11 +122,8 @@ void GCPad::GetInput(GCPadStatus* const pad)
 
 void GCPad::SetMotor(const u8 on)
 {
-	ControlState state = static_cast<ControlState>(on) / 255;
-	ControlState force = abs(state - 0.5) * 2;
-	if (state < 0.5)
-		force = -force;
-
+	// map 0..255 to -1.0..1.0
+	ControlState force = on / 127.5 - 1;
 	m_rumble->controls[0]->control_ref->State(force);
 }
 

@@ -36,7 +36,7 @@
 #endif
 
 #include "Common/CDUtils.h"
-#include "Common/Common.h"
+#include "Common/CommonTypes.h"
 #include "Common/FileSearch.h"
 #include "Common/FileUtil.h"
 #include "Common/NandPaths.h"
@@ -54,6 +54,7 @@
 #include "Core/HW/ProcessorInterface.h"
 #include "Core/HW/SI_Device.h"
 #include "Core/HW/Wiimote.h"
+#include "Core/HW/WiiSaveCrypted.h"
 #include "Core/IPC_HLE/WII_IPC_HLE_Device_usb.h"
 #include "Core/IPC_HLE/WII_IPC_HLE_WiiMote.h"
 #include "Core/PowerPC/PowerPC.h"
@@ -78,7 +79,6 @@
 #include "DolphinWX/WXInputBase.h"
 #include "DolphinWX/WxUtils.h"
 #include "DolphinWX/Debugger/CodeWindow.h"
-#include "DolphinWX/MemoryCards/WiiSaveCrypted.h"
 
 #include "InputCommon/ControllerInterface/ControllerInterface.h"
 
@@ -108,13 +108,24 @@ extern "C" {
 class InputConfig;
 class wxFrame;
 
+// This override allows returning a fake menubar object while removing the real one from the screen
+wxMenuBar* CFrame::GetMenuBar() const
+{
+	if (m_frameMenuBar)
+	{
+		return m_frameMenuBar;
+	}
+	else
+	{
+		return m_menubar_shadow;
+	}
+}
+
 // Create menu items
 // ---------------------
-void CFrame::CreateMenu()
+wxMenuBar* CFrame::CreateMenu()
 {
-	if (GetMenuBar()) GetMenuBar()->Destroy();
-
-	wxMenuBar *m_MenuBar = new wxMenuBar();
+	wxMenuBar* menubar = new wxMenuBar();
 
 	// file menu
 	wxMenu* fileMenu = new wxMenu;
@@ -137,7 +148,7 @@ void CFrame::CreateMenu()
 	fileMenu->Append(IDM_BROWSE, _("&Browse for ISOs..."));
 	fileMenu->AppendSeparator();
 	fileMenu->Append(wxID_EXIT, _("E&xit") + wxString("\tAlt+F4"));
-	m_MenuBar->Append(fileMenu, _("&File"));
+	menubar->Append(fileMenu, _("&File"));
 
 	// Emulation menu
 	wxMenu* emulationMenu = new wxMenu;
@@ -174,16 +185,19 @@ void CFrame::CreateMenu()
 	emulationMenu->AppendSeparator();
 	wxMenu *saveMenu = new wxMenu;
 	wxMenu *loadMenu = new wxMenu;
+	wxMenu *slotSelectMenu = new wxMenu;
 	emulationMenu->Append(IDM_LOADSTATE, _("&Load State"), loadMenu);
 	emulationMenu->Append(IDM_SAVESTATE, _("Sa&ve State"), saveMenu);
+	emulationMenu->Append(IDM_SELECTSLOT, _("Select State slot"), slotSelectMenu);
 
 	saveMenu->Append(IDM_SAVESTATEFILE, GetMenuLabel(HK_SAVE_STATE_FILE));
+	saveMenu->Append(IDM_SAVESELECTEDSLOT, GetMenuLabel(HK_SAVE_STATE_SLOT_SELECTED));
 	saveMenu->Append(IDM_SAVEFIRSTSTATE, GetMenuLabel(HK_SAVE_FIRST_STATE));
 	loadMenu->Append(IDM_UNDOSAVESTATE, GetMenuLabel(HK_UNDO_SAVE_STATE));
 	saveMenu->AppendSeparator();
 
 	loadMenu->Append(IDM_LOADSTATEFILE,  GetMenuLabel(HK_LOAD_STATE_FILE));
-
+	loadMenu->Append(IDM_LOADSELECTEDSLOT, GetMenuLabel(HK_LOAD_STATE_SLOT_SELECTED));
 	loadMenu->Append(IDM_UNDOLOADSTATE, GetMenuLabel(HK_UNDO_LOAD_STATE));
 	loadMenu->AppendSeparator();
 
@@ -191,13 +205,14 @@ void CFrame::CreateMenu()
 	{
 		loadMenu->Append(IDM_LOADSLOT1 + i - 1, GetMenuLabel(HK_LOAD_STATE_SLOT_1 + i - 1));
 		saveMenu->Append(IDM_SAVESLOT1 + i - 1, GetMenuLabel(HK_SAVE_STATE_SLOT_1 + i - 1));
+		slotSelectMenu->Append(IDM_SELECTSLOT1 + i - 1, GetMenuLabel(HK_SELECT_STATE_SLOT_1 + i -1));
 	}
 
 	loadMenu->AppendSeparator();
 	for (unsigned int i = 1; i <= State::NUM_STATES; i++)
 		loadMenu->Append(IDM_LOADLAST1 + i - 1, GetMenuLabel(HK_LOAD_LAST_STATE_1 + i - 1));
 
-	m_MenuBar->Append(emulationMenu, _("&Emulation"));
+	menubar->Append(emulationMenu, _("&Emulation"));
 
 	// Options menu
 	wxMenu* pOptionsMenu = new wxMenu;
@@ -213,7 +228,7 @@ void CFrame::CreateMenu()
 		pOptionsMenu->AppendSeparator();
 		g_pCodeWindow->CreateMenuOptions(pOptionsMenu);
 	}
-	m_MenuBar->Append(pOptionsMenu, _("&Options"));
+	menubar->Append(pOptionsMenu, _("&Options"));
 
 	// Tools menu
 	wxMenu* toolsMenu = new wxMenu;
@@ -236,7 +251,7 @@ void CFrame::CreateMenu()
 	toolsMenu->AppendCheckItem(IDM_CONNECT_WIIMOTE4, GetMenuLabel(HK_WIIMOTE4_CONNECT));
 	toolsMenu->AppendCheckItem(IDM_CONNECT_BALANCEBOARD, GetMenuLabel(HK_BALANCEBOARD_CONNECT));
 
-	m_MenuBar->Append(toolsMenu, _("&Tools"));
+	menubar->Append(toolsMenu, _("&Tools"));
 
 	wxMenu* viewMenu = new wxMenu;
 	viewMenu->AppendCheckItem(IDM_TOGGLE_TOOLBAR, _("Show &Toolbar"));
@@ -326,11 +341,11 @@ void CFrame::CreateMenu()
 
 
 
-	m_MenuBar->Append(viewMenu, _("&View"));
+	menubar->Append(viewMenu, _("&View"));
 
 	if (g_pCodeWindow)
 	{
-		g_pCodeWindow->CreateMenu(SConfig::GetInstance().m_LocalCoreStartupParameter, m_MenuBar);
+		g_pCodeWindow->CreateMenu(SConfig::GetInstance().m_LocalCoreStartupParameter, menubar);
 	}
 
 	// Help menu
@@ -342,10 +357,9 @@ void CFrame::CreateMenu()
 	helpMenu->Append(IDM_HELPGITHUB, _("Dolphin at &GitHub"));
 	helpMenu->AppendSeparator();
 	helpMenu->Append(wxID_ABOUT, _("&About..."));
-	m_MenuBar->Append(helpMenu, _("&Help"));
+	menubar->Append(helpMenu, _("&Help"));
 
-	// Associate the menu bar with the frame
-	SetMenuBar(m_MenuBar);
+	return menubar;
 }
 
 wxString CFrame::GetMenuLabel(int Id)
@@ -466,6 +480,28 @@ wxString CFrame::GetMenuLabel(int Id)
 		case HK_SAVE_FIRST_STATE: Label = _("Save Oldest State"); break;
 		case HK_UNDO_LOAD_STATE:  Label = _("Undo Load State");   break;
 		case HK_UNDO_SAVE_STATE:  Label = _("Undo Save State");   break;
+
+		case HK_SAVE_STATE_SLOT_SELECTED:
+			Label = _("Save state to selected slot");
+			break;
+
+		case HK_LOAD_STATE_SLOT_SELECTED:
+			Label = _("load state from selected slot");
+			break;
+
+		case HK_SELECT_STATE_SLOT_1:
+		case HK_SELECT_STATE_SLOT_2:
+		case HK_SELECT_STATE_SLOT_3:
+		case HK_SELECT_STATE_SLOT_4:
+		case HK_SELECT_STATE_SLOT_5:
+		case HK_SELECT_STATE_SLOT_6:
+		case HK_SELECT_STATE_SLOT_7:
+		case HK_SELECT_STATE_SLOT_8:
+		case HK_SELECT_STATE_SLOT_9:
+		case HK_SELECT_STATE_SLOT_10:
+			Label = wxString::Format(_("Select Slot %i"), Id - HK_SELECT_STATE_SLOT_1 + 1);
+			break;
+
 
 		default:
 			Label = wxString::Format(_("Undefined %i"), Id);
@@ -697,6 +733,9 @@ void CFrame::OnChangeDisc(wxCommandEvent& WXUNUSED (event))
 
 void CFrame::OnRecord(wxCommandEvent& WXUNUSED (event))
 {
+	if ((!Core::IsRunningAndStarted() && Core::IsRunning()) || Movie::IsRecordingInput() || Movie::IsPlayingInput())
+		return;
+
 	int controllers = 0;
 
 	if (Movie::IsReadOnly())
@@ -960,11 +999,7 @@ void CFrame::StartGame(const std::string& filename)
 				X11Utils::XWindowFromHandle(GetHandle()), true);
 #endif
 
-#ifdef _WIN32
-		::SetFocus((HWND)m_RenderParent->GetHandle());
-#else
 		m_RenderParent->SetFocus();
-#endif
 
 		wxTheApp->Bind(wxEVT_KEY_DOWN,    &CFrame::OnKeyDown, this);
 		wxTheApp->Bind(wxEVT_KEY_UP,      &CFrame::OnKeyUp,   this);
@@ -1084,7 +1119,7 @@ void CFrame::DoStop()
 		// TODO: Show the author/description dialog here
 		if (Movie::IsRecordingInput())
 			DoRecordingSave();
-		if (Movie::IsPlayingInput() || Movie::IsRecordingInput())
+		if (Movie::IsMovieActive())
 			Movie::EndPlayInput(false);
 		NetPlay::StopGame();
 
@@ -1232,11 +1267,9 @@ void CFrame::OnConfigPAD(wxCommandEvent& WXUNUSED (event))
 	{
 #if defined(HAVE_X11) && HAVE_X11
 		Window win = X11Utils::XWindowFromHandle(GetHandle());
-		Pad::Initialize((void *)win);
-#elif defined(__APPLE__)
-		Pad::Initialize((void *)this);
+		Pad::Initialize(reinterpret_cast<void*>(win));
 #else
-		Pad::Initialize(GetHandle());
+		Pad::Initialize(reinterpret_cast<void*>(GetHandle()));
 #endif
 	}
 	InputConfigDialog m_ConfigFrame(this, *pad_plugin, _trans("Dolphin GCPad Configuration"));
@@ -1260,11 +1293,9 @@ void CFrame::OnConfigWiimote(wxCommandEvent& WXUNUSED (event))
 	{
 #if defined(HAVE_X11) && HAVE_X11
 		Window win = X11Utils::XWindowFromHandle(GetHandle());
-		Wiimote::Initialize((void *)win);
-#elif defined(__APPLE__)
-		Wiimote::Initialize((void *)this);
+		Wiimote::Initialize(reinterpret_cast<void*>(win));
 #else
-		Wiimote::Initialize(GetHandle());
+		Wiimote::Initialize(reinterpret_cast<void*>(GetHandle()));
 #endif
 	}
 	WiimoteConfigDiag m_ConfigFrame(this, *wiimote_plugin);
@@ -1589,6 +1620,27 @@ void CFrame::OnFrameSkip(wxCommandEvent& event)
 	SConfig::GetInstance().m_FrameSkip = amount;
 }
 
+void CFrame::OnSelectSlot(wxCommandEvent& event)
+{
+	g_saveSlot = event.GetId() - IDM_SELECTSLOT1 + 1;
+	Core::DisplayMessage(StringFromFormat("Selected slot %d", g_saveSlot), 1000);
+}
+
+void CFrame::OnLoadCurrentSlot(wxCommandEvent& event)
+{
+	if (Core::IsRunningAndStarted())
+	{
+		State::Load(g_saveSlot);
+	}
+}
+
+void CFrame::OnSaveCurrentSlot(wxCommandEvent& event)
+{
+	if (Core::IsRunningAndStarted())
+	{
+		State::Save(g_saveSlot);
+	}
+}
 
 
 
@@ -1631,7 +1683,7 @@ void CFrame::UpdateGUI()
 	GetMenuBar()->FindItem(IDM_RESET)->Enable(Running || Paused);
 	GetMenuBar()->FindItem(IDM_RECORD)->Enable(!Movie::IsRecordingInput());
 	GetMenuBar()->FindItem(IDM_PLAYRECORD)->Enable(!Initialized);
-	GetMenuBar()->FindItem(IDM_RECORDEXPORT)->Enable(Movie::IsPlayingInput() || Movie::IsRecordingInput());
+	GetMenuBar()->FindItem(IDM_RECORDEXPORT)->Enable(Movie::IsMovieActive());
 	GetMenuBar()->FindItem(IDM_FRAMESTEP)->Enable(Running || Paused);
 	GetMenuBar()->FindItem(IDM_SCREENSHOT)->Enable(Running || Paused);
 	GetMenuBar()->FindItem(IDM_TOGGLE_FULLSCREEN)->Enable(Running || Paused);

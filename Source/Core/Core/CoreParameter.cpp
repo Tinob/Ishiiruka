@@ -5,8 +5,8 @@
 #include <cinttypes>
 
 #include "Common/CDUtils.h"
-#include "Common/Common.h"
 #include "Common/CommonPaths.h"
+#include "Common/CommonTypes.h"
 #include "Common/FileUtil.h"
 #include "Common/StringUtil.h"
 
@@ -21,8 +21,7 @@
 #include "DiscIO/VolumeCreator.h"
 
 SCoreStartupParameter::SCoreStartupParameter()
-: hInstance(nullptr),
-  bEnableDebugging(false), bAutomaticStart(false), bBootToPause(false),
+: bEnableDebugging(false), bAutomaticStart(false), bBootToPause(false),
   bJITNoBlockCache(false), bJITBlockLinking(true),
   bJITOff(false),
   bJITLoadStoreOff(false), bJITLoadStorelXzOff(false),
@@ -391,7 +390,7 @@ void SCoreStartupParameter::CheckMemcardPath(std::string& memcardPath, std::stri
 		{
 			// filename has region, but it's not == gameRegion
 			// Just set the correct filename, the EXI Device will create it if it doesn't exist
-			memcardPath = filename.replace(filename.size()-ext.size(), ext.size(), ext);;
+			memcardPath = filename.replace(filename.size()-ext.size(), ext.size(), ext);
 		}
 	}
 }

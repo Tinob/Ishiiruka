@@ -7,11 +7,10 @@
 #include "AudioCommon/AudioCommon.h"
 
 #include "Common/ChunkFile.h"
-#include "Common/Common.h"
+#include "Common/CommonTypes.h"
 #include "Common/Thread.h"
 
 #include "Core/ConfigManager.h"
-#include "Core/Core.h"
 #include "Core/CoreTiming.h"
 #include "Core/Movie.h"
 #include "Core/VolumeHandler.h"
@@ -313,7 +312,7 @@ static void DTKStreamingCallback(u64 userdata, int cyclesLate)
 	short tempPCM[NUM_SAMPLES * 2];
 	unsigned samples_processed = NUM_SAMPLES;
 	const bool bStreaming = g_bStream && AudioInterface::IsPlaying();
-	const bool bTimeStretching = Core::g_CoreStartupParameter.bTimeStretching;
+	const bool bTimeStretching = SConfig::GetInstance().m_LocalCoreStartupParameter.bTimeStretching;
 	if (bStreaming)
 	{
 		samples_processed = ProcessDTKSamples(tempPCM, NUM_SAMPLES);

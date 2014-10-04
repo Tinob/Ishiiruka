@@ -6,7 +6,7 @@
 
 #include "Common/Atomic.h"
 #include "Common/ChunkFile.h"
-#include "Common/Common.h"
+#include "Common/CommonTypes.h"
 
 #include "Core/CoreTiming.h"
 #include "Core/HW/CPU.h"
@@ -128,7 +128,6 @@ void RegisterMMIO(MMIO::Mapping* mmio, u32 base)
 	mmio->Register(base | PI_FIFO_RESET,
 		MMIO::InvalidRead<u32>(),
 		MMIO::ComplexWrite<u32>([](u32, u32 val) {
-			g_video_backend->Video_AbortFrame();
 			WARN_LOG(PROCESSORINTERFACE, "Fifo reset (%08x)", val);
 		})
 	);

@@ -9,7 +9,7 @@
 #include <getopt.h>
 #include <string>
 
-#include "Common/Common.h"
+#include "Common/CommonTypes.h"
 #include "Common/Event.h"
 #include "Common/Logging/LogManager.h"
 
@@ -141,7 +141,7 @@ class PlatformX11 : public Platform
 	void Init() override
 	{
 		XInitThreads();
-		dpy = XOpenDisplay(NULL);
+		dpy = XOpenDisplay(nullptr);
 
 		win = XCreateSimpleWindow(dpy, DefaultRootWindow(dpy),
 					  SConfig::GetInstance().m_LocalCoreStartupParameter.iRenderWindowXPos,

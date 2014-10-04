@@ -11,7 +11,7 @@
 #include <functional>
 
 #include "Common/CodeBlock.h"
-#include "Common/Common.h"
+#include "Common/CommonTypes.h"
 
 namespace Gen
 {
@@ -127,8 +127,8 @@ struct OpArg
 		offset = _offset;
 	}
 	void WriteRex(XEmitter *emit, int opBits, int bits, int customOp = -1) const;
-	void WriteVex(XEmitter* emit, int size, bool packed, X64Reg regOp1, X64Reg regOp2) const;
-	void WriteRest(XEmitter *emit, int extraBytes=0, X64Reg operandReg=(X64Reg)0xFF, bool warn_64bit_offset = true) const;
+	void WriteVex(XEmitter* emit, X64Reg regOp1, X64Reg regOp2, int L, int pp, int mmmmm, int W = 0) const;
+	void WriteRest(XEmitter *emit, int extraBytes=0, X64Reg operandReg=INVALID_REG, bool warn_64bit_offset = true) const;
 	void WriteFloatModRM(XEmitter *emit, FloatOp op);
 	void WriteSingleByteOp(XEmitter *emit, u8 op, X64Reg operandReg, int bits);
 	// This one is public - must be written to
@@ -266,7 +266,7 @@ private:
 	void WriteSimple1Byte(int bits, u8 byte, X64Reg reg);
 	void WriteSimple2Byte(int bits, u8 byte1, u8 byte2, X64Reg reg);
 	void WriteMulDivType(int bits, OpArg src, int ext);
-	void WriteBitSearchType(int bits, X64Reg dest, OpArg src, u8 byte2);
+	void WriteBitSearchType(int bits, X64Reg dest, OpArg src, u8 byte2, bool rep = false);
 	void WriteShift(int bits, OpArg dest, OpArg &shift, int ext);
 	void WriteBitTest(int bits, OpArg &dest, OpArg &index, int ext);
 	void WriteMXCSR(OpArg arg, int ext);
@@ -275,8 +275,13 @@ private:
 	void WriteSSE41Op(int size, u16 sseOp, bool packed, X64Reg regOp, OpArg arg, int extrabytes = 0);
 	void WriteAVXOp(int size, u16 sseOp, bool packed, X64Reg regOp, OpArg arg, int extrabytes = 0);
 	void WriteAVXOp(int size, u16 sseOp, bool packed, X64Reg regOp1, X64Reg regOp2, OpArg arg, int extrabytes = 0);
+	void WriteVEXOp(int size, u8 opPrefix, u16 op, X64Reg regOp1, X64Reg regOp2, OpArg arg, int extrabytes = 0);
+	void WriteBMI1Op(int size, u8 opPrefix, u16 op, X64Reg regOp1, X64Reg regOp2, OpArg arg, int extrabytes = 0);
+	void WriteBMI2Op(int size, u8 opPrefix, u16 op, X64Reg regOp1, X64Reg regOp2, OpArg arg, int extrabytes = 0);
 	void WriteFloatLoadStore(int bits, FloatOp op, FloatOp op_80b, OpArg arg);
 	void WriteNormalOp(XEmitter *emit, int bits, NormalOp op, const OpArg &a1, const OpArg &a2);
+
+	void ABI_CalculateFrameSize(u32 mask, size_t rsp_alignment, size_t needed_frame_size, size_t* shadowp, size_t* subtractionp, size_t* xmm_offsetp);
 
 protected:
 	inline void Write8(u8 value)   {*code++ = value;}
@@ -449,6 +454,11 @@ public:
 	// Available only on Atom or >= Haswell so far. Test with cpu_info.bMOVBE.
 	void MOVBE(int dbits, const OpArg& dest, const OpArg& src);
 
+	// Available only on AMD >= Phenom or Intel >= Haswell
+	void LZCNT(int bits, X64Reg dest, OpArg src);
+	// Note: this one is actually part of BMI1
+	void TZCNT(int bits, X64Reg dest, OpArg src);
+
 	// WARNING - These two take 11-13 cycles and are VectorPath! (AMD64)
 	void STMXCSR(OpArg memloc);
 	void LDMXCSR(OpArg memloc);
@@ -457,6 +467,8 @@ public:
 	void LOCK();
 	void REP();
 	void REPNE();
+	void FSOverride();
+	void GSOverride();
 
 	// x87
 	enum x87StatusWordBits {
@@ -570,6 +582,9 @@ public:
 	void MOVHPD(X64Reg regOp, OpArg arg);
 	void MOVLPD(OpArg arg, X64Reg regOp);
 	void MOVHPD(OpArg arg, X64Reg regOp);
+
+	void MOVHLPS(X64Reg regOp1, X64Reg regOp2);
+	void MOVLHPS(X64Reg regOp1, X64Reg regOp2);
 
 	void MOVD_xmm(X64Reg dest, const OpArg &arg);
 	void MOVQ_xmm(X64Reg dest, OpArg arg);
@@ -708,6 +723,21 @@ public:
 	void VPAND(X64Reg regOp1, X64Reg regOp2, OpArg arg);
 	void VPANDN(X64Reg regOp1, X64Reg regOp2, OpArg arg);
 
+	// VEX GPR instructions
+	void SARX(int bits, X64Reg regOp1, OpArg arg, X64Reg regOp2);
+	void SHLX(int bits, X64Reg regOp1, OpArg arg, X64Reg regOp2);
+	void SHRX(int bits, X64Reg regOp1, OpArg arg, X64Reg regOp2);
+	void RORX(int bits, X64Reg regOp, OpArg arg, u8 rotate);
+	void PEXT(int bits, X64Reg regOp1, X64Reg regOp2, OpArg arg);
+	void PDEP(int bits, X64Reg regOp1, X64Reg regOp2, OpArg arg);
+	void MULX(int bits, X64Reg regOp1, X64Reg regOp2, OpArg arg);
+	void BZHI(int bits, X64Reg regOp1, OpArg arg, X64Reg regOp2);
+	void BLSR(int bits, X64Reg regOp, OpArg arg);
+	void BLSMSK(int bits, X64Reg regOp, OpArg arg);
+	void BLSI(int bits, X64Reg regOp, OpArg arg);
+	void BEXTR(int bits, X64Reg regOp1, OpArg arg, X64Reg regOp2);
+	void ANDN(int bits, X64Reg regOp1, X64Reg regOp2, OpArg arg);
+
 	void RDTSC();
 
 	// Utility functions
@@ -725,7 +755,7 @@ public:
 	void ABI_CallFunctionCP(void *func, u32 param1, void *param2);
 	void ABI_CallFunctionCCC(void *func, u32 param1, u32 param2, u32 param3);
 	void ABI_CallFunctionCCP(void *func, u32 param1, u32 param2, void *param3);
-	void ABI_CallFunctionCCCP(void *func, u32 param1, u32 param2,u32 param3, const void *param4);
+	void ABI_CallFunctionCCCP(void *func, u32 param1, u32 param2,u32 param3, void *param4);
 	void ABI_CallFunctionPC(void *func, void *param1, u32 param2);
 	void ABI_CallFunctionPPC(void *func, void *param1, void *param2,u32 param3);
 	void ABI_CallFunctionAC(void *func, const OpArg &arg1, u32 param2);
@@ -733,20 +763,16 @@ public:
 
 	// Pass a register as a parameter.
 	void ABI_CallFunctionR(void *func, X64Reg reg1);
-	void ABI_CallFunctionRR(void *func, X64Reg reg1, X64Reg reg2, bool noProlog = false);
+	void ABI_CallFunctionRR(void *func, X64Reg reg1, X64Reg reg2);
 
-	// A function that doesn't have any control over what it will do to regs,
-	// such as the dispatcher, should be surrounded by these.
-	void ABI_PushAllCalleeSavedRegsAndAdjustStack();
-	void ABI_PopAllCalleeSavedRegsAndAdjustStack();
+	// Helper method for the above, or can be used separately.
+	void MOVTwo(int bits, Gen::X64Reg dst1, Gen::X64Reg src1, Gen::X64Reg dst2, Gen::X64Reg src2);
 
-	// A more flexible version of the above.
-	void ABI_PushRegistersAndAdjustStack(u32 mask, bool noProlog);
-	void ABI_PopRegistersAndAdjustStack(u32 mask, bool noProlog);
-
-	unsigned int ABI_GetAlignedFrameSize(unsigned int frameSize, bool noProlog = false);
-	void ABI_AlignStack(unsigned int frameSize, bool noProlog = false);
-	void ABI_RestoreStack(unsigned int frameSize, bool noProlog = false);
+	// Saves/restores the registers and adjusts the stack to be aligned as
+	// required by the ABI, where the previous alignment was as specified.
+	// Push returns the size of the shadow space, i.e. the offset of the frame.
+	size_t ABI_PushRegistersAndAdjustStack(u32 mask, size_t rsp_alignment, size_t needed_frame_size = 0);
+	void ABI_PopRegistersAndAdjustStack(u32 mask, size_t rsp_alignment, size_t needed_frame_size = 0);
 
 	inline int ABI_GetNumXMMRegs() { return 16; }
 

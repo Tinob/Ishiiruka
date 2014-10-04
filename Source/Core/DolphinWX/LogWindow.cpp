@@ -28,7 +28,7 @@
 #include <wx/windowid.h>
 #include <wx/aui/framemanager.h>
 
-#include "Common/Common.h"
+#include "Common/CommonTypes.h"
 #include "Common/FileUtil.h"
 #include "Common/IniFile.h"
 #include "Common/Logging/ConsoleListener.h"
@@ -42,19 +42,19 @@
 #define UPDATETIME 200
 
 BEGIN_EVENT_TABLE(CLogWindow, wxPanel)
-EVT_CLOSE(CLogWindow::OnClose)
-EVT_BUTTON(IDM_CLEARLOG, CLogWindow::OnClear)
-EVT_CHOICE(IDM_FONT, CLogWindow::OnFontChange)
-EVT_CHECKBOX(IDM_WRAPLINE, CLogWindow::OnWrapLineCheck)
-EVT_TIMER(IDTM_UPDATELOG, CLogWindow::OnLogTimer)
+	EVT_CLOSE(CLogWindow::OnClose)
+	EVT_BUTTON(IDM_CLEARLOG, CLogWindow::OnClear)
+	EVT_CHOICE(IDM_FONT, CLogWindow::OnFontChange)
+	EVT_CHECKBOX(IDM_WRAPLINE, CLogWindow::OnWrapLineCheck)
+	EVT_TIMER(IDTM_UPDATELOG, CLogWindow::OnLogTimer)
 END_EVENT_TABLE()
 
 CLogWindow::CLogWindow(CFrame *parent, wxWindowID id, const wxPoint& pos,
-const wxSize& size, long style, const wxString& name)
-: wxPanel(parent, id, pos, size, style, name)
-, x(0), y(0), winpos(0)
-, Parent(parent), m_ignoreLogTimer(false), m_LogAccess(true)
-, m_Log(nullptr), m_cmdline(nullptr), m_FontChoice(nullptr)
+		const wxSize& size, long style, const wxString& name)
+	: wxPanel(parent, id, pos, size, style, name)
+	, x(0), y(0), winpos(0)
+	, Parent(parent), m_ignoreLogTimer(false), m_LogAccess(true)
+	, m_Log(nullptr), m_cmdline(nullptr), m_FontChoice(nullptr)
 {
 	m_LogManager = LogManager::GetInstance();
 
@@ -69,7 +69,7 @@ void CLogWindow::CreateGUIControls()
 	IniFile ini;
 	ini.Load(File::GetUserPath(F_LOGGERCONFIG_IDX));
 
-	IniFile::Section* options = ini.GetOrCreateSection("Options");
+	IniFile::Section* options    = ini.GetOrCreateSection("Options");
 	IniFile::Section* log_window = ini.GetOrCreateSection("LogWindow");
 	log_window->Get("x", &x, Parent->GetSize().GetX() / 2);
 	log_window->Get("y", &y, Parent->GetSize().GetY());
@@ -103,7 +103,7 @@ void CLogWindow::CreateGUIControls()
 	for (int i = 0; i < LogTypes::NUMBER_OF_LOGS; ++i)
 	{
 		bool enable;
-		logs->Get(m_LogManager->GetShortName((LogTypes::LOG_TYPE)i), &enable, true);
+		logs->Get(m_LogManager->GetShortName((LogTypes::LOG_TYPE)i), &enable, false);
 
 		if (m_writeWindow && enable)
 			m_LogManager->AddListener((LogTypes::LOG_TYPE)i, this);
@@ -147,11 +147,11 @@ void CLogWindow::CreateGUIControls()
 
 	// Log viewer
 	m_Log = CreateTextCtrl(this, IDM_LOG, wxTE_RICH | wxTE_MULTILINE | wxTE_READONLY |
-		(wrap_lines ? wxTE_WORDWRAP : wxTE_DONTWRAP));
+			(wrap_lines ? wxTE_WORDWRAP : wxTE_DONTWRAP));
 
 	// submit row
 	m_cmdline = new wxTextCtrl(this, IDM_SUBMITCMD, wxEmptyString, wxDefaultPosition, wxDefaultSize,
-		wxTE_PROCESS_ENTER | wxTE_PROCESS_TAB);
+			wxTE_PROCESS_ENTER | wxTE_PROCESS_TAB);
 
 	// Sizers
 	wxBoxSizer *sTop = new wxBoxSizer(wxHORIZONTAL);
@@ -206,14 +206,14 @@ void CLogWindow::SaveSettings()
 	ini.Save(File::GetUserPath(F_LOGGERCONFIG_IDX));
 }
 
-void CLogWindow::OnClear(wxCommandEvent& WXUNUSED(event))
+void CLogWindow::OnClear(wxCommandEvent& WXUNUSED (event))
 {
 	m_Log->Clear();
 
 	{
-		std::lock_guard<std::mutex> lk(m_LogSection);
-		while (!msgQueue.empty())
-			msgQueue.pop();
+	std::lock_guard<std::mutex> lk(m_LogSection);
+	while (!msgQueue.empty())
+		msgQueue.pop();
 	}
 
 	m_LogManager->GetConsoleListener()->ClearScreen();
@@ -249,9 +249,9 @@ wxTextCtrl* CLogWindow::CreateTextCtrl(wxPanel* parent, wxWindowID id, long Styl
 void CLogWindow::OnFontChange(wxCommandEvent& event)
 {
 	// Update selected font
-	LogFont[LogFont.size() - 1] = DebuggerFont;
+	LogFont[LogFont.size()-1] = DebuggerFont;
 	m_Log->SetStyle(0, m_Log->GetLastPosition(),
-		wxTextAttr(wxNullColour, wxNullColour, LogFont[event.GetSelection()]));
+			wxTextAttr(wxNullColour, wxNullColour, LogFont[event.GetSelection()]));
 	m_Log->SetDefaultStyle(wxTextAttr(wxNullColour, wxNullColour, LogFont[event.GetSelection()]));
 
 	SaveSettings();
@@ -295,7 +295,7 @@ void CLogWindow::OnLogTimer(wxTimerEvent& WXUNUSED(event))
 	if (!msgQueue.empty())
 	{
 		m_Log->ScrollLines(1);
-		m_Log->ShowPosition(m_Log->GetLastPosition());
+		m_Log->ShowPosition( m_Log->GetLastPosition() );
 	}
 }
 
@@ -314,29 +314,29 @@ void CLogWindow::UpdateLog()
 	{
 		switch (msgQueue.front().first)
 		{
-		case ERROR_LEVEL:
-			m_Log->SetDefaultStyle(wxTextAttr(*wxRED));
-			break;
+			case LogTypes::LOG_LEVELS::LERROR:
+				m_Log->SetDefaultStyle(wxTextAttr(*wxRED));
+				break;
 
-		case WARNING_LEVEL:
-			m_Log->SetDefaultStyle(wxTextAttr(*wxYELLOW));
-			break;
+			case LogTypes::LOG_LEVELS::LWARNING:
+				m_Log->SetDefaultStyle(wxTextAttr(*wxYELLOW));
+				break;
 
-		case NOTICE_LEVEL:
-			m_Log->SetDefaultStyle(wxTextAttr(*wxGREEN));
-			break;
+			case LogTypes::LOG_LEVELS::LNOTICE:
+				m_Log->SetDefaultStyle(wxTextAttr(*wxGREEN));
+				break;
 
-		case INFO_LEVEL:
-			m_Log->SetDefaultStyle(wxTextAttr(*wxCYAN));
-			break;
+			case LogTypes::LOG_LEVELS::LINFO:
+				m_Log->SetDefaultStyle(wxTextAttr(*wxCYAN));
+				break;
 
-		case DEBUG_LEVEL:
-			m_Log->SetDefaultStyle(wxTextAttr(*wxLIGHT_GREY));
-			break;
+			case LogTypes::LOG_LEVELS::LDEBUG:
+				m_Log->SetDefaultStyle(wxTextAttr(*wxLIGHT_GREY));
+				break;
 
-		default:
-			m_Log->SetDefaultStyle(wxTextAttr(*wxWHITE));
-			break;
+			default:
+				m_Log->SetDefaultStyle(wxTextAttr(*wxWHITE));
+				break;
 		}
 
 		if (msgQueue.front().second.size())

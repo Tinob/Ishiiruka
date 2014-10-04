@@ -2,9 +2,10 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include "Common/Common.h"
+#include "Common/CommonTypes.h"
 #include "Common/MathUtil.h"
 
+#include "Core/HW/DSP.h"
 #include "Core/PowerPC/JitInterface.h"
 #include "Core/PowerPC/Interpreter/Interpreter.h"
 #include "Core/PowerPC/Interpreter/Interpreter_FPUtils.h"
@@ -220,22 +221,6 @@ void Interpreter::lwz(UGeckoInstruction _inst)
 	{
 		m_GPR[_inst.RD] = temp;
 	}
-
-	// hack to detect SelectThread loop
-	// should probably run a pass through memory instead before execution
-	// but that would be dangerous
-
-	// Enable idle skipping?
-	/*
-	if ((_inst.hex & 0xFFFF0000)==0x800D0000 &&
-		Memory::ReadUnchecked_U32(PC+4)==0x28000000 &&
-		Memory::ReadUnchecked_U32(PC+8)==0x4182fff8)
-	{
-		if (CommandProcessor::AllowIdleSkipping() && PixelEngine::AllowIdleSkipping())
-		{
-			CoreTiming::Idle();
-		}
-	}*/
 }
 
 void Interpreter::lwzu(UGeckoInstruction _inst)
@@ -341,24 +326,40 @@ void Interpreter::dcbf(UGeckoInstruction _inst)
 	{
 		NPC = PC + 12;
 	}*/
-		u32 address = Helper_Get_EA_X(_inst);
-		JitInterface::InvalidateICache(address & ~0x1f, 32);
+	u32 address = Helper_Get_EA_X(_inst);
+	JitInterface::InvalidateICache(address & ~0x1f, 32);
 }
 
 void Interpreter::dcbi(UGeckoInstruction _inst)
 {
 	// Removes a block from data cache. Since we don't emulate the data cache, we don't need to do anything to the data cache
 	// However, we invalidate the jit block cache on dcbi
-		u32 address = Helper_Get_EA_X(_inst);
-		JitInterface::InvalidateICache(address & ~0x1f, 32);
+	u32 address = Helper_Get_EA_X(_inst);
+	JitInterface::InvalidateICache(address & ~0x1f, 32);
+
+	// The following detects a situation where the game is writing to the dcache at the address being DMA'd. As we do not
+	// have dcache emulation, invalid data is being DMA'd causing audio glitches. The following code detects this and
+	// enables the DMA to complete instantly before the invalid data is written. Resident Evil 2 & 3 trigger this.
+	u64 dma_in_progress = DSP::DMAInProgress();
+	if (dma_in_progress != 0)
+	{
+		u32 start_addr = (dma_in_progress >> 32) & Memory::RAM_MASK;
+		u32 end_addr = (dma_in_progress & Memory::RAM_MASK) & 0xffffffff;
+		u32 invalidated_addr = (address & Memory::RAM_MASK) & ~0x1f;
+
+		if (invalidated_addr >= start_addr && invalidated_addr <= end_addr)
+		{
+			DSP::EnableInstantDMA();
+		}
+	}
 }
 
 void Interpreter::dcbst(UGeckoInstruction _inst)
 {
 	// Cache line flush. Since we don't emulate the data cache, we don't need to do anything.
 	// Invalidate the jit block cache on dcbst in case new code has been loaded via the data cache
-		u32 address = Helper_Get_EA_X(_inst);
-		JitInterface::InvalidateICache(address & ~0x1f, 32);
+	u32 address = Helper_Get_EA_X(_inst);
+	JitInterface::InvalidateICache(address & ~0x1f, 32);
 }
 
 void Interpreter::dcbt(UGeckoInstruction _inst)
@@ -375,7 +376,7 @@ void Interpreter::dcbtst(UGeckoInstruction _inst)
 void Interpreter::dcbz(UGeckoInstruction _inst)
 {
 	// HACK but works... we think
-	if (!Core::g_CoreStartupParameter.bDCBZOFF)
+	if (!SConfig::GetInstance().m_LocalCoreStartupParameter.bDCBZOFF)
 		Memory::ClearCacheLine(Helper_Get_EA_X(_inst) & (~31));
 	if (!JitInterface::GetCore())
 		PowerPC::CheckExceptions();
@@ -515,7 +516,7 @@ void Interpreter::lhzx(UGeckoInstruction _inst)
 void Interpreter::lswx(UGeckoInstruction _inst)
 {
 	u32 EA = Helper_Get_EA_X(_inst);
-	u32 n = rSPR(SPR_XER) & 0x7F;
+	u32 n = (u8)PowerPC::ppcState.xer_stringctrl;
 	int r = _inst.RD;
 	int i = 0;
 
@@ -743,7 +744,7 @@ void Interpreter::stswi(UGeckoInstruction _inst)
 void Interpreter::stswx(UGeckoInstruction _inst)
 {
 	u32 EA = Helper_Get_EA_X(_inst);
-	u32 n = rSPR(SPR_XER) & 0x7F;
+	u32 n = (u8)PowerPC::ppcState.xer_stringctrl;
 	int r = _inst.RS;
 	int i = 0;
 

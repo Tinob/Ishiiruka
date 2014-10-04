@@ -53,8 +53,8 @@
 #include <wx/validate.h>
 #include <wx/windowid.h>
 
-#include "Common/Common.h"
 #include "Common/CommonPaths.h"
+#include "Common/CommonTypes.h"
 #include "Common/FileUtil.h"
 #include "Common/IniFile.h"
 #include "Common/StringUtil.h"
@@ -363,7 +363,7 @@ long CISOProperties::GetElementStyle(const char* section, const char* key)
 void CISOProperties::CreateGUIControls(bool IsWad)
 {
 	wxButton* const EditConfig = new wxButton(this, ID_EDITCONFIG, _("Edit Config"));
-	EditConfig->SetToolTip(_("This will let you Manually Edit the INI config file"));
+	EditConfig->SetToolTip(_("This will let you manually edit the INI config file."));
 
 	wxButton* const EditConfigDefault = new wxButton(this, ID_SHOWDEFAULTCONFIG, _("Show Defaults"));
 	EditConfigDefault->SetToolTip(_("Opens the default (read-only) configuration for this game in an external text editor."));

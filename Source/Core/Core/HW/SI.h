@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "Common/Common.h"
+#include "Common/CommonTypes.h"
 #include "Core/HW/SI_Device.h"
 
 class PointerWrap;
@@ -35,6 +35,8 @@ void AddDevice(ISIDevice* pDevice);
 void ChangeDeviceCallback(u64 userdata, int cyclesLate);
 void ChangeDevice(SIDevices device, int channel);
 
+SIDevices GetDeviceType(int channel);
+
 int GetTicksToNextSIPoll();
 
-}; // end of namespace SerialInterface
+} // end of namespace SerialInterface

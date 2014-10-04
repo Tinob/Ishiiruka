@@ -7,7 +7,6 @@
 #include <Foundation/Foundation.h>
 #include <IOKit/hid/IOHIDLib.h>
 #include <Cocoa/Cocoa.h>
-#include <wx/wx.h> // wxWidgets
 
 #include "InputCommon/ControllerInterface/OSX/OSXKeyboard.h"
 
@@ -23,13 +22,11 @@ Keyboard::Keyboard(IOHIDDeviceRef device, std::string name, int index, void *win
 {
 	// This class should only recieve Keyboard or Keypad devices
 	// Now, filter on just the buttons we can handle sanely
-	NSDictionary *matchingElements =
-	 [NSDictionary dictionaryWithObjectsAndKeys:
-	  [NSNumber numberWithInteger: kIOHIDElementTypeInput_Button],
-		@kIOHIDElementTypeKey,
-	  [NSNumber numberWithInteger: 0], @kIOHIDElementMinKey,
-	  [NSNumber numberWithInteger: 1], @kIOHIDElementMaxKey,
-	  nil];
+	NSDictionary *matchingElements = @{
+		@kIOHIDElementTypeKey : [NSNumber numberWithInteger: kIOHIDElementTypeInput_Button],
+		@kIOHIDElementMinKey  : [NSNumber numberWithInteger: 0],
+		@kIOHIDElementMaxKey  : [NSNumber numberWithInteger: 1]
+	};
 
 	CFArrayRef elements = IOHIDDeviceCopyMatchingElements(m_device,
 		(CFDictionaryRef)matchingElements, kIOHIDOptionsTypeNone);
@@ -47,7 +44,7 @@ Keyboard::Keyboard(IOHIDDeviceRef device, std::string name, int index, void *win
 		CFRelease(elements);
 	}
 
-	m_windowid = [[(NSView *)(((wxWindow *)window)->GetHandle()) window] windowNumber];
+	m_windowid = [[reinterpret_cast<NSView*>(window) window] windowNumber];
 
 	// cursor, with a hax for-loop
 	for (unsigned int i=0; i<4; ++i)

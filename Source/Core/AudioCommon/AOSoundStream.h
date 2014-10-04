@@ -4,10 +4,12 @@
 
 #pragma once
 
+#include <mutex>
+#include <thread>
+
 #include "AudioCommon/SoundStream.h"
 #include "Common/Event.h"
-#include "Common/StdMutex.h"
-#include "Common/StdThread.h"
+#include "Common/Thread.h"
 
 #if defined(HAVE_AO) && HAVE_AO
 #include <ao/ao.h>
@@ -39,7 +41,8 @@ public:
 
 	virtual void Stop() override;
 
-	static bool isValid() {
+	static bool isValid()
+	{
 		return true;
 	}
 

@@ -27,6 +27,12 @@
 #include "Core/PowerPC/JitCommon/JitBase.h"
 
 #define PPCSTATE_OFF(elem) ((s32)STRUCT_OFF(PowerPC::ppcState, elem) - (s32)STRUCT_OFF(PowerPC::ppcState, spr[0]))
+
+// Some asserts to make sure we will be able to load everything
+static_assert(PPCSTATE_OFF(spr[1023]) > -4096 && PPCSTATE_OFF(spr[1023]) < 4096, "LDR can't reach all of the SPRs");
+static_assert(PPCSTATE_OFF(ps[0][0]) >= -1020 && PPCSTATE_OFF(ps[0][0]) <= 1020, "VLDR can't reach all of the FPRs");
+static_assert((PPCSTATE_OFF(ps[0][0]) % 4) == 0, "VLDR requires FPRs to be 4 byte aligned");
+
 class JitArm : public JitBase, public ArmGen::ARMCodeBlock
 {
 private:
@@ -47,11 +53,13 @@ private:
 
 	void PrintDebug(UGeckoInstruction inst, u32 level);
 
-	void Helper_UpdateCR1(ARMReg fpscr, ARMReg temp);
+	void Helper_UpdateCR1(ArmGen::ARMReg fpscr, ArmGen::ARMReg temp);
 
-	void SetFPException(ARMReg Reg, u32 Exception);
+	void SetFPException(ArmGen::ARMReg Reg, u32 Exception);
 
-	FixupBranch JumpIfCRFieldBit(int field, int bit, bool jump_if_set);
+	ArmGen::FixupBranch JumpIfCRFieldBit(int field, int bit, bool jump_if_set);
+
+	bool BackPatch(SContext* ctx);
 public:
 	JitArm() : code_buffer(32000) {}
 	~JitArm() {}
@@ -66,9 +74,7 @@ public:
 
 	JitBaseBlockCache *GetBlockCache() { return &blocks; }
 
-	const u8 *BackPatch(u8 *codePtr, u32 em_address, void *ctx);
-
-	bool IsInCodeSpace(u8 *ptr) { return IsInSpace(ptr); }
+	bool HandleFault(uintptr_t access_address, SContext* ctx) override;
 
 	void Trace();
 
@@ -96,25 +102,25 @@ public:
 	// Utilities for use by opcodes
 
 	void WriteExit(u32 destination);
-	void WriteExitDestInR(ARMReg Reg);
-	void WriteRfiExitDestInR(ARMReg Reg);
+	void WriteExitDestInR(ArmGen::ARMReg Reg);
+	void WriteRfiExitDestInR(ArmGen::ARMReg Reg);
 	void WriteExceptionExit();
 	void WriteCallInterpreter(UGeckoInstruction _inst);
 	void Cleanup();
 
-	void ComputeRC(ARMReg value, int cr = 0);
+	void ComputeRC(ArmGen::ARMReg value, int cr = 0);
 	void ComputeRC(s32 value, int cr);
 
 	void ComputeCarry();
 	void ComputeCarry(bool Carry);
-	void GetCarryAndClear(ARMReg reg);
-	void FinalizeCarry(ARMReg reg);
+	void GetCarryAndClear(ArmGen::ARMReg reg);
+	void FinalizeCarry(ArmGen::ARMReg reg);
 
 	// TODO: This shouldn't be here
-	void UnsafeStoreFromReg(ARMReg dest, ARMReg value, int accessSize, s32 offset);
+	void UnsafeStoreFromReg(ArmGen::ARMReg dest, ArmGen::ARMReg value, int accessSize, s32 offset);
 	void SafeStoreFromReg(bool fastmem, s32 dest, u32 value, s32 offsetReg, int accessSize, s32 offset);
 
-	void UnsafeLoadToReg(ARMReg dest, ARMReg addr, int accessSize, s32 offsetReg, s32 offset);
+	void UnsafeLoadToReg(ArmGen::ARMReg dest, ArmGen::ARMReg addr, int accessSize, s32 offsetReg, s32 offset);
 	void SafeLoadToReg(bool fastmem, u32 dest, s32 addr, s32 offsetReg, int accessSize, s32 offset, bool signExtend, bool reverse);
 
 

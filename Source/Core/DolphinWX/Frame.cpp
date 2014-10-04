@@ -36,7 +36,7 @@
 #include <wx/aui/auibook.h>
 #include <wx/aui/framemanager.h>
 
-#include "Common/Common.h"
+#include "Common/CommonTypes.h"
 #include "Common/FileUtil.h"
 #include "Common/Thread.h"
 #include "Common/Logging/ConsoleListener.h"
@@ -59,6 +59,7 @@
 
 #include "InputCommon/GCPadStatus.h"
 
+#include "VideoCommon/OnScreenDisplay.h"
 #include "VideoCommon/RenderBase.h"
 #include "VideoCommon/VertexShaderManager.h"
 #include "VideoCommon/VideoConfig.h"
@@ -69,6 +70,7 @@ extern "C" {
 #include "DolphinWX/resources/Dolphin.c" // NOLINT: Dolphin icon
 };
 
+int g_saveSlot = 1;
 
 CRenderFrame::CRenderFrame(wxFrame* parent, wxWindowID id, const wxString& title,
 		const wxPoint& pos, const wxSize& size, long style)
@@ -275,10 +277,13 @@ EVT_MENU(IDM_UNDOLOADSTATE,     CFrame::OnUndoLoadState)
 EVT_MENU(IDM_UNDOSAVESTATE,     CFrame::OnUndoSaveState)
 EVT_MENU(IDM_LOADSTATEFILE, CFrame::OnLoadStateFromFile)
 EVT_MENU(IDM_SAVESTATEFILE, CFrame::OnSaveStateToFile)
+EVT_MENU(IDM_SAVESELECTEDSLOT, CFrame::OnSaveCurrentSlot)
+EVT_MENU(IDM_LOADSELECTEDSLOT, CFrame::OnLoadCurrentSlot)
 
 EVT_MENU_RANGE(IDM_LOADSLOT1, IDM_LOADSLOT10, CFrame::OnLoadState)
 EVT_MENU_RANGE(IDM_LOADLAST1, IDM_LOADLAST8, CFrame::OnLoadLastState)
 EVT_MENU_RANGE(IDM_SAVESLOT1, IDM_SAVESLOT10, CFrame::OnSaveState)
+EVT_MENU_RANGE(IDM_SELECTSLOT1, IDM_SELECTSLOT10, CFrame::OnSelectSlot)
 EVT_MENU_RANGE(IDM_FRAMESKIP0, IDM_FRAMESKIP9, CFrame::OnFrameSkip)
 EVT_MENU_RANGE(IDM_DRIVE1, IDM_DRIVE24, CFrame::OnBootDrive)
 EVT_MENU_RANGE(IDM_CONNECT_WIIMOTE1, IDM_CONNECT_BALANCEBOARD, CFrame::OnConnectWiimote)
@@ -324,7 +329,7 @@ CFrame::CFrame(wxFrame* parent,
 	, m_LogWindow(nullptr), m_LogConfigWindow(nullptr)
 	, m_FifoPlayerDlg(nullptr), UseDebugger(_UseDebugger)
 	, m_bBatchMode(_BatchMode), m_bEdit(false), m_bTabSplit(false), m_bNoDocking(false)
-	, m_bGameLoading(false), m_bClosing(false), m_confirmStop(false)
+	, m_bGameLoading(false), m_bClosing(false), m_confirmStop(false), m_menubar_shadow(nullptr)
 {
 	for (int i = 0; i <= IDM_CODEWINDOW - IDM_LOGWINDOW; i++)
 		bFloatWindow[i] = false;
@@ -353,7 +358,10 @@ CFrame::CFrame(wxFrame* parent,
 		GetStatusBar()->Hide();
 
 	// Give it a menu bar
-	CreateMenu();
+	wxMenuBar* menubar_active = CreateMenu();
+	SetMenuBar(menubar_active);
+	// Create a menubar to service requests while the real menubar is hidden from the screen
+	m_menubar_shadow = CreateMenu();
 
 	// ---------------
 	// Main panel
@@ -437,6 +445,8 @@ CFrame::CFrame(wxFrame* parent,
 
 	// Update controls
 	UpdateGUI();
+	if (g_pCodeWindow)
+		g_pCodeWindow->UpdateButtonStates();
 }
 // Destructor
 CFrame::~CFrame()
@@ -450,6 +460,10 @@ CFrame::~CFrame()
 	ClosePages();
 
 	delete m_Mgr;
+
+	// This object is owned by us, not wxw
+	m_menubar_shadow->Destroy();
+	m_menubar_shadow = nullptr;
 }
 
 bool CFrame::RendererIsFullscreen()
@@ -921,6 +935,19 @@ int GetCmdForHotkey(unsigned int key)
 	case HK_UNDO_SAVE_STATE: return IDM_UNDOSAVESTATE;
 	case HK_LOAD_STATE_FILE: return IDM_LOADSTATEFILE;
 	case HK_SAVE_STATE_FILE: return IDM_SAVESTATEFILE;
+
+	case HK_SELECT_STATE_SLOT_1: return IDM_SELECTSLOT1;
+	case HK_SELECT_STATE_SLOT_2: return IDM_SELECTSLOT2;
+	case HK_SELECT_STATE_SLOT_3: return IDM_SELECTSLOT3;
+	case HK_SELECT_STATE_SLOT_4: return IDM_SELECTSLOT4;
+	case HK_SELECT_STATE_SLOT_5: return IDM_SELECTSLOT5;
+	case HK_SELECT_STATE_SLOT_6: return IDM_SELECTSLOT6;
+	case HK_SELECT_STATE_SLOT_7: return IDM_SELECTSLOT7;
+	case HK_SELECT_STATE_SLOT_8: return IDM_SELECTSLOT8;
+	case HK_SELECT_STATE_SLOT_9: return IDM_SELECTSLOT9;
+	case HK_SELECT_STATE_SLOT_10: return IDM_SELECTSLOT10;
+	case HK_SAVE_STATE_SLOT_SELECTED: return IDM_SAVESELECTEDSLOT;
+	case HK_LOAD_STATE_SLOT_SELECTED: return IDM_LOADSELECTEDSLOT;
 	}
 
 	return -1;
@@ -1013,11 +1040,10 @@ void CFrame::OnKeyDown(wxKeyEvent& event)
 		else if (IsHotkey(event, HK_TOGGLE_EFBCOPIES))
 		{
 			OSDChoice = 3;
-			// Toggle EFB copy
-			if (!g_Config.bEFBCopyEnable || g_Config.bCopyEFBToTexture)
+			// Toggle EFB copies between EFB2RAM and EFB2Texture
+			if (!g_Config.bEFBCopyEnable)
 			{
-				g_Config.bEFBCopyEnable ^= true;
-				g_Config.bCopyEFBToTexture = false;
+				OSD::AddMessage("EFB Copies are disabled, enable them in Graphics settings for toggling", 6000);
 			}
 			else
 			{
@@ -1043,8 +1069,27 @@ void CFrame::OnKeyDown(wxKeyEvent& event)
 			if (--SConfig::GetInstance().m_Framelimit > 0x19)
 				SConfig::GetInstance().m_Framelimit = 0x19;
 		}
+		else if (IsHotkey(event, HK_SAVE_STATE_SLOT_SELECTED))
+		{
+			State::Save(g_saveSlot);
+		}
+		else if (IsHotkey(event, HK_LOAD_STATE_SLOT_SELECTED))
+		{
+			State::Load(g_saveSlot);
+		}
+
 		else
 		{
+			for (int i = HK_SELECT_STATE_SLOT_1; i < HK_SELECT_STATE_SLOT_10; ++i)
+			{
+				if (IsHotkey (event, i))
+				{
+					wxCommandEvent slot_event;
+					slot_event.SetId(i + IDM_SELECTSLOT1 - HK_SELECT_STATE_SLOT_1);
+					CFrame::OnSelectSlot(slot_event);
+				}
+			}
+
 			unsigned int i = NUM_HOTKEYS;
 			if (!SConfig::GetInstance().m_LocalCoreStartupParameter.bRenderToMain || TASInputHasFocus())
 			{
@@ -1252,8 +1297,15 @@ void CFrame::DoFullscreen(bool enable_fullscreen)
 			// Hide toolbar
 			DoToggleToolbar(false);
 
-			// Disable toggling toolbar in menu
-			GetMenuBar()->FindItem(IDM_TOGGLE_TOOLBAR)->Enable(false);
+			// Hide menubar (by having wxwidgets delete it)
+			SetMenuBar(nullptr);
+
+			// Hide the statusbar if enabled
+			if (GetStatusBar()->IsShown())
+			{
+				GetStatusBar()->Hide();
+				this->SendSizeEvent();
+			}
 		}
 		else
 		{
@@ -1263,8 +1315,18 @@ void CFrame::DoFullscreen(bool enable_fullscreen)
 			// Restore toolbar to the status it was at before going fullscreen.
 			DoToggleToolbar(SConfig::GetInstance().m_InterfaceToolbar);
 
-			// Re-enable toggling toolbar in menu
-			GetMenuBar()->FindItem(IDM_TOGGLE_TOOLBAR)->Enable(true);
+			// Recreate the menubar if needed.
+			if (wxFrame::GetMenuBar() == nullptr)
+			{
+				SetMenuBar(CreateMenu());
+			}
+
+			// Show statusbar if enabled
+			if (SConfig::GetInstance().m_InterfaceStatusbar)
+			{
+				GetStatusBar()->Show();
+				this->SendSizeEvent();
+			}
 		}
 	}
 	else

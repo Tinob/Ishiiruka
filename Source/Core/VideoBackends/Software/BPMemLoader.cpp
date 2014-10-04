@@ -12,6 +12,7 @@
 #include "Tev.h"
 #include "Core/HW/Memmap.h"
 #include "Core/Core.h"
+#include "Core/ConfigManager.h"
 
 
 void InitBPMemory()
@@ -102,7 +103,7 @@ void SWBPWritten(int address, int newvalue)
 			u8 *ptr = 0;
 
 			// TODO - figure out a cleaner way.
-			if (Core::g_CoreStartupParameter.bWii)
+			if (SConfig::GetInstance().m_LocalCoreStartupParameter.bWii)
 				ptr = Memory::GetPointer(bpmem.tmem_config.tlut_src << 5);
 			else
 				ptr = Memory::GetPointer((bpmem.tmem_config.tlut_src & 0xFFFFF) << 5);

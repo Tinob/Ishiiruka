@@ -7,8 +7,9 @@
 #include <vector>
 
 #include "Common/ColorUtil.h"
-#include "Common/Common.h"
-
+#include "Common/CommonTypes.h"
+#include "Common/MsgHandler.h"
+#include "Common/Logging/Log.h"
 #include "DiscIO/BannerLoaderGC.h"
 #include "DiscIO/Filesystem.h"
 #include "DiscIO/Volume.h"
@@ -19,7 +20,7 @@ CBannerLoaderGC::CBannerLoaderGC(DiscIO::IFileSystem& _rFileSystem, DiscIO::IVol
 	: m_country(volume->GetCountry())
 {
 	// load the opening.bnr
-	size_t FileSize = (size_t)_rFileSystem.GetFileSize("opening.bnr");
+	size_t FileSize = (size_t) _rFileSystem.GetFileSize("opening.bnr");
 	if (FileSize == BNR1_SIZE || FileSize == BNR2_SIZE)
 	{
 		m_pBannerFile = new u8[FileSize];
@@ -29,7 +30,7 @@ CBannerLoaderGC::CBannerLoaderGC(DiscIO::IFileSystem& _rFileSystem, DiscIO::IVol
 			m_BNRType = getBannerType();
 			if (m_BNRType == BANNER_UNKNOWN)
 				PanicAlertT("Invalid opening.bnr found in gcm:\n%s\n You may need to redump this game.",
-				_rFileSystem.GetVolume()->GetName().c_str());
+					_rFileSystem.GetVolume()->GetName().c_str());
 			else m_IsValid = true;
 		}
 	}
@@ -42,7 +43,7 @@ CBannerLoaderGC::~CBannerLoaderGC()
 {
 	if (m_pBannerFile)
 	{
-		delete[] m_pBannerFile;
+		delete [] m_pBannerFile;
 		m_pBannerFile = nullptr;
 	}
 }
@@ -140,7 +141,7 @@ std::vector<std::string> CBannerLoaderGC::GetDescriptions()
 		desc_count = 1;
 		break;
 
-		// English, German, French, Spanish, Italian, Dutch
+	// English, German, French, Spanish, Italian, Dutch
 	case CBannerLoaderGC::BANNER_BNR2:
 		desc_count = 6;
 		break;
@@ -166,12 +167,12 @@ CBannerLoaderGC::BANNER_TYPE CBannerLoaderGC::getBannerType()
 	CBannerLoaderGC::BANNER_TYPE type = CBannerLoaderGC::BANNER_UNKNOWN;
 	switch (bannerSignature)
 	{
-		// "BNR1"
+	// "BNR1"
 	case 0x31524e42:
 		type = CBannerLoaderGC::BANNER_BNR1;
 		break;
 
-		// "BNR2"
+	// "BNR2"
 	case 0x32524e42:
 		type = CBannerLoaderGC::BANNER_BNR2;
 		break;

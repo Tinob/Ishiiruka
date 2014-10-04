@@ -25,8 +25,8 @@
 
 #include "AudioCommon/AudioCommon.h"
 
-#include "Common/Common.h"
 #include "Common/CommonPaths.h"
+#include "Common/CommonTypes.h"
 #include "Common/FileSearch.h"
 #include "Common/SysConf.h"
 
@@ -763,7 +763,7 @@ void CConfigMain::CreateGUIControls()
 	{
 		sbGamecubeDevSettings->Add(GCSIDeviceText[i], 1, wxALIGN_CENTER_VERTICAL|wxLEFT|wxRIGHT|wxBOTTOM, 0);
 		sbGamecubeDevSettings->Add(GCSIDevice[i], 1, wxEXPAND|wxLEFT|wxRIGHT|wxBOTTOM, 0);
-		if (NetPlay::IsNetPlayRunning() || Movie::IsRecordingInput() || Movie::IsPlayingInput())
+		if (NetPlay::IsNetPlayRunning() || Movie::IsMovieActive())
 		{
 			GCSIDevice[i]->Disable();
 		}

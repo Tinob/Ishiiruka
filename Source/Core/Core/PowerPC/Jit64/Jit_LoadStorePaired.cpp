@@ -5,7 +5,7 @@
 // TODO(ector): Tons of pshufb optimization of the loads/stores, for SSSE3+, possibly SSE4, only.
 // Should give a very noticeable speed boost to paired single heavy code.
 
-#include "Common/Common.h"
+#include "Common/CommonTypes.h"
 #include "Common/CPUDetect.h"
 
 #include "Core/PowerPC/Jit64/Jit.h"
@@ -16,88 +16,138 @@ using namespace Gen;
 
 // The big problem is likely instructions that set the quantizers in the same block.
 // We will have to break block after quantizers are written to.
-void Jit64::psq_st(UGeckoInstruction inst)
+void Jit64::psq_stXX(UGeckoInstruction inst)
 {
 	INSTRUCTION_START
 	JITDISABLE(bJITLoadStorePairedOff);
-	FALLBACK_IF(js.memcheck || !inst.RA);
+	FALLBACK_IF(!inst.RA);
 
-	bool update = inst.OPCD == 61;
-
-	int offset = inst.SIMM_12;
+	s32 offset = inst.SIMM_12;
+	bool indexed = inst.OPCD == 4;
+	bool update = (inst.OPCD == 61 && offset) || (inst.OPCD == 4 && !!(inst.SUBOP6 & 32));
 	int a = inst.RA;
-	int s = inst.RS; // Fp numbers
+	int b = indexed ? inst.RB : a;
+	int s = inst.FS;
+	int i = indexed ? inst.Ix : inst.I;
+	int w = indexed ? inst.Wx : inst.W;
 
-	gpr.FlushLockX(EAX, EDX);
-	gpr.FlushLockX(ECX);
+	gpr.Lock(a, b);
+	gpr.FlushLockX(RSCRATCH_EXTRA);
 	if (update)
-		gpr.BindToRegister(inst.RA, true, true);
-	fpr.BindToRegister(inst.RS, true, false);
-	MOV(32, R(ECX), gpr.R(inst.RA));
-	if (offset)
-		ADD(32, R(ECX), Imm32((u32)offset));
-	if (update && offset)
-		MOV(32, gpr.R(a), R(ECX));
+		gpr.BindToRegister(a, true, true);
+	fpr.BindToRegister(s, true, false);
+	if (gpr.R(a).IsSimpleReg() && gpr.R(b).IsSimpleReg() && (indexed || offset))
+	{
+		if (indexed)
+			LEA(32, RSCRATCH_EXTRA, MComplex(gpr.RX(a), gpr.RX(b), SCALE_1, 0));
+		else
+			LEA(32, RSCRATCH_EXTRA, MDisp(gpr.RX(a), offset));
+	}
+	else
+	{
+		MOV(32, R(RSCRATCH_EXTRA), gpr.R(a));
+		if (indexed)
+			ADD(32, R(RSCRATCH_EXTRA), gpr.R(b));
+		else if (offset)
+			ADD(32, R(RSCRATCH_EXTRA), Imm32((u32)offset));
+	}
+	// In memcheck mode, don't update the address until the exception check
+	if (update && !js.memcheck)
+		MOV(32, gpr.R(a), R(RSCRATCH_EXTRA));
 	// Some games (e.g. Dirt 2) incorrectly set the unused bits which breaks the lookup table code.
 	// Hence, we need to mask out the unused bits. The layout of the GQR register is
 	// UU[SCALE]UUUUU[TYPE] where SCALE is 6 bits and TYPE is 3 bits, so we have to AND with
 	// 0b0011111100000111, or 0x3F07.
-	MOV(32, R(EAX), Imm32(0x3F07));
-	AND(32, R(EAX), M(&PowerPC::ppcState.spr[SPR_GQR0 + inst.I]));
-	MOVZX(32, 8, EDX, R(AL));
+	MOV(32, R(RSCRATCH2), Imm32(0x3F07));
+	AND(32, R(RSCRATCH2), PPCSTATE(spr[SPR_GQR0 + i]));
+	MOVZX(32, 8, RSCRATCH, R(RSCRATCH2));
 
-	// FIXME: Fix ModR/M encoding to allow [EDX*4+disp32] without a base register!
-	if (inst.W)
+	// FIXME: Fix ModR/M encoding to allow [RSCRATCH2*8+disp32] without a base register!
+	if (w)
 	{
 		// One value
 		PXOR(XMM0, R(XMM0));  // TODO: See if we can get rid of this cheaply by tweaking the code in the singleStore* functions.
 		CVTSD2SS(XMM0, fpr.R(s));
-		CALLptr(MScaled(EDX, SCALE_8, (u32)(u64)asm_routines.singleStoreQuantized));
+		CALLptr(MScaled(RSCRATCH, SCALE_8, (u32)(u64)asm_routines.singleStoreQuantized));
 	}
 	else
 	{
 		// Pair of values
 		CVTPD2PS(XMM0, fpr.R(s));
-		CALLptr(MScaled(EDX, SCALE_8, (u32)(u64)asm_routines.pairedStoreQuantized));
+		CALLptr(MScaled(RSCRATCH, SCALE_8, (u32)(u64)asm_routines.pairedStoreQuantized));
+	}
+
+	if (update && js.memcheck)
+	{
+		MEMCHECK_START(false)
+		if (indexed)
+			ADD(32, gpr.R(a), gpr.R(b));
+		else
+			ADD(32, gpr.R(a), Imm32((u32)offset));
+		MEMCHECK_END
 	}
 	gpr.UnlockAll();
 	gpr.UnlockAllX();
 }
 
-void Jit64::psq_l(UGeckoInstruction inst)
+void Jit64::psq_lXX(UGeckoInstruction inst)
 {
 	INSTRUCTION_START
 	JITDISABLE(bJITLoadStorePairedOff);
-	FALLBACK_IF(js.memcheck || !inst.RA);
+	FALLBACK_IF(!inst.RA);
 
-	bool update = inst.OPCD == 57;
-	int offset = inst.SIMM_12;
+	s32 offset = inst.SIMM_12;
+	bool indexed = inst.OPCD == 4;
+	bool update = (inst.OPCD == 57 && offset) || (inst.OPCD == 4 && !!(inst.SUBOP6 & 32));
+	int a = inst.RA;
+	int b = indexed ? inst.RB : a;
+	int s = inst.FS;
+	int i = indexed ? inst.Ix : inst.I;
+	int w = indexed ? inst.Wx : inst.W;
 
-	gpr.FlushLockX(EAX, EDX);
-	gpr.FlushLockX(ECX);
-	gpr.BindToRegister(inst.RA, true, update && offset);
-	fpr.BindToRegister(inst.RS, false, true);
-	if (offset)
-		LEA(32, ECX, MDisp(gpr.RX(inst.RA), offset));
+	gpr.Lock(a, b);
+	gpr.FlushLockX(RSCRATCH_EXTRA);
+	gpr.BindToRegister(a, true, update);
+	fpr.BindToRegister(s, false, true);
+	if (gpr.R(a).IsSimpleReg() && gpr.R(b).IsSimpleReg() && (indexed || offset))
+	{
+		if (indexed)
+			LEA(32, RSCRATCH_EXTRA, MComplex(gpr.RX(a), gpr.RX(b), SCALE_1, 0));
+		else
+			LEA(32, RSCRATCH_EXTRA, MDisp(gpr.RX(a), offset));
+	}
 	else
-		MOV(32, R(ECX), gpr.R(inst.RA));
-	if (update && offset)
-		MOV(32, gpr.R(inst.RA), R(ECX));
-	MOV(32, R(EAX), Imm32(0x3F07));
-	AND(32, R(EAX), M(((char *)&GQR(inst.I)) + 2));
-	MOVZX(32, 8, EDX, R(AL));
-	if (inst.W)
-		OR(32, R(EDX), Imm8(8));
+	{
+		MOV(32, R(RSCRATCH_EXTRA), gpr.R(a));
+		if (indexed)
+			ADD(32, R(RSCRATCH_EXTRA), gpr.R(b));
+		else if (offset)
+			ADD(32, R(RSCRATCH_EXTRA), Imm32((u32)offset));
+	}
+	// In memcheck mode, don't update the address until the exception check
+	if (update && !js.memcheck)
+		MOV(32, gpr.R(a), R(RSCRATCH_EXTRA));
+	MOV(32, R(RSCRATCH2), Imm32(0x3F07));
 
-	ABI_AlignStack(0);
-	CALLptr(MScaled(EDX, SCALE_8, (u32)(u64)asm_routines.pairedLoadQuantized));
-	ABI_RestoreStack(0);
+	// Get the high part of the GQR register
+	OpArg gqr = PPCSTATE(spr[SPR_GQR0 + i]);
+	gqr.offset += 2;
 
-	// MEMCHECK_START // FIXME: MMU does not work here because of unsafe memory access
+	AND(32, R(RSCRATCH2), gqr);
+	MOVZX(32, 8, RSCRATCH, R(RSCRATCH2));
 
-	CVTPS2PD(fpr.RX(inst.RS), R(XMM0));
+	CALLptr(MScaled(RSCRATCH, SCALE_8, (u32)(u64)(&asm_routines.pairedLoadQuantized[w * 8])));
 
-	// MEMCHECK_END
+	MEMCHECK_START(false)
+	CVTPS2PD(fpr.RX(s), R(XMM0));
+	if (update && js.memcheck)
+	{
+		if (indexed)
+			ADD(32, gpr.R(a), gpr.R(b));
+		else
+			ADD(32, gpr.R(a), Imm32((u32)offset));
+	}
+	MEMCHECK_END
 
 	gpr.UnlockAll();
 	gpr.UnlockAllX();

@@ -2,8 +2,8 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include "Common/Common.h"
 #include "Common/CommonPaths.h"
+#include "Common/CommonTypes.h"
 #include "Common/FileUtil.h"
 #include "Common/MemoryUtil.h"
 #include "Common/Timer.h"
@@ -338,7 +338,7 @@ u32 CEXIIPL::GetGCTime()
 	u64 ltime = 0;
 	static const u32 cJanuary2000 = 0x386D4380;  // Seconds between 1.1.1970 and 1.1.2000
 
-	if (Movie::IsRecordingInput() || Movie::IsPlayingInput())
+	if (Movie::IsMovieActive())
 	{
 		ltime = Movie::GetRecordingStartTime();
 

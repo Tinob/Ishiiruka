@@ -40,7 +40,7 @@
 #include <wx/windowid.h>
 
 #include "Common/CDUtils.h"
-#include "Common/Common.h"
+#include "Common/CommonTypes.h"
 #include "Common/FileSearch.h"
 #include "Common/FileUtil.h"
 #include "Common/MathUtil.h"
@@ -53,6 +53,7 @@
 #include "Core/Movie.h"
 #include "Core/Boot/Boot.h"
 #include "Core/HW/DVDInterface.h"
+#include "Core/HW/WiiSaveCrypted.h"
 #include "DiscIO/Blob.h"
 #include "DiscIO/Volume.h"
 #include "DiscIO/VolumeCreator.h"
@@ -63,7 +64,6 @@
 #include "DolphinWX/ISOProperties.h"
 #include "DolphinWX/Main.h"
 #include "DolphinWX/WxUtils.h"
-#include "DolphinWX/MemoryCards/WiiSaveCrypted.h"
 #include "DolphinWX/resources/Flag_Europe.xpm"
 #include "DolphinWX/resources/Flag_France.xpm"
 #include "DolphinWX/resources/Flag_Germany.xpm"
@@ -397,7 +397,7 @@ static wxString NiceSizeFormat(u64 _size)
 	// Find largest power of 2 less than _size.
 	// div 10 to get largest named unit less than _size
 	// 10 == log2(1024) (number of B in a KiB, KiB in a MiB, etc)
-	const u64 unit = Log2(std::max<u64>(_size, 1)) / 10;
+	const u64 unit = IntLog2(std::max<u64>(_size, 1)) / 10;
 	const u64 unit_size = (1 << (unit * 10));
 
 	// mul 1000 for 3 decimal places, add 5 to round up, div 10 for 2 decimal places
@@ -588,6 +588,7 @@ void CGameListCtrl::ScanForISOs()
 					case DiscIO::IVolume::COUNTRY_TAIWAN:
 						if (!SConfig::GetInstance().m_ListTaiwan)
 							list = false;
+						break;
 					case DiscIO::IVolume::COUNTRY_KOREA:
 						if (!SConfig::GetInstance().m_ListKorea)
 							list = false;
@@ -972,16 +973,13 @@ void CGameListCtrl::OnExportSave(wxCommandEvent& WXUNUSED (event))
 	const GameListItem *iso =  GetSelectedISO();
 	if (!iso)
 		return;
+
 	u64 title;
-	DiscIO::IVolume *Iso = DiscIO::CreateVolumeFromFilename(iso->GetFileName());
-	if (Iso)
+	std::unique_ptr<DiscIO::IVolume> volume(DiscIO::CreateVolumeFromFilename(iso->GetFileName()));
+	if (volume && volume->GetTitleID((u8*)&title))
 	{
-		if (Iso->GetTitleID((u8*)&title))
-		{
-			title = Common::swap64(title);
-			CWiiSaveCrypted::ExportWiiSave(title);
-		}
-		delete Iso;
+		title = Common::swap64(title);
+		CWiiSaveCrypted::ExportWiiSave(title);
 	}
 }
 
@@ -1054,13 +1052,7 @@ void CGameListCtrl::OnWiki(wxCommandEvent& WXUNUSED (event))
 	if (!iso)
 		return;
 
-	std::string wikiUrl = "http://wiki.dolphin-emu.org/dolphin-redirect.php?gameid=[GAME_ID]";
-	wikiUrl = ReplaceAll(wikiUrl, "[GAME_ID]", UriEncode(iso->GetUniqueID()));
-	if (UriEncode(iso->GetName(0)).length() < 100)
-		wikiUrl = ReplaceAll(wikiUrl, "[GAME_NAME]", UriEncode(iso->GetName(0)));
-	else
-		wikiUrl = ReplaceAll(wikiUrl, "[GAME_NAME]", "");
-
+	std::string wikiUrl = "http://wiki.dolphin-emu.org/dolphin-redirect.php?gameid=" + iso->GetUniqueID();
 	WxUtils::Launch(wikiUrl);
 }
 

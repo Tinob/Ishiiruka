@@ -18,12 +18,16 @@
 //   ScheduleEvent(periodInCycles - cyclesLate, callback, "whatever")
 
 #include <string>
-#include "Common/Common.h"
+#include "Common/CommonTypes.h"
 
 class PointerWrap;
 
 namespace CoreTiming
 {
+
+extern s64 globalTimer;
+extern u64 fakeTBStartValue;
+extern u64 fakeTBStartTicks;
 
 void Init();
 void Shutdown();
@@ -80,4 +84,4 @@ void ForceExceptionCheck(int cycles);
 
 extern int slicelength;
 
-}; // end of namespace
+} // end of namespace

@@ -149,7 +149,7 @@ void Interpreter::twi(UGeckoInstruction _inst)
 	s32 b = _inst.SIMM_16;
 	s32 TO = _inst.TO;
 
-	ERROR_LOG(POWERPC, "twi rA %x SIMM %x TO %0x", a, b, TO);
+	DEBUG_LOG(POWERPC, "twi rA %x SIMM %x TO %0x", a, b, TO);
 
 	if (((a < b) && (TO & 0x10)) ||
 	    ((a > b) && (TO & 0x08)) ||
@@ -362,8 +362,10 @@ void Interpreter::srawx(UGeckoInstruction _inst)
 		}
 		else
 		{
-			m_GPR[_inst.RA] = (u32)((s32)m_GPR[_inst.RS] >> amount);
-			if (m_GPR[_inst.RS] & 0x80000000)
+			s32 rrs = m_GPR[_inst.RS];
+			m_GPR[_inst.RA] = rrs >> amount;
+
+			if ((rrs < 0) && (rrs << (32 - amount)))
 				SetCarry(1);
 			else
 				SetCarry(0);
@@ -413,7 +415,7 @@ void Interpreter::tw(UGeckoInstruction _inst)
 	s32 b = m_GPR[_inst.RB];
 	s32 TO = _inst.TO;
 
-	ERROR_LOG(POWERPC, "tw rA %0x rB %0x TO %0x", a, b, TO);
+	DEBUG_LOG(POWERPC, "tw rA %0x rB %0x TO %0x", a, b, TO);
 
 	if (((a < b) && (TO & 0x10)) ||
 	    ((a > b) && (TO & 0x08)) ||

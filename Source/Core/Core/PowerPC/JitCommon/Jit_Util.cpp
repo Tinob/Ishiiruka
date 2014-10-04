@@ -4,8 +4,7 @@
 
 #include <emmintrin.h>
 
-#include "Common/Common.h"
-#include "Common/CPUDetect.h"
+#include "Common/CommonTypes.h"
 #include "Common/MathUtil.h"
 
 #include "Core/HW/MMIO.h"
@@ -42,7 +41,7 @@ void EmuCodeBlock::SwapAndStore(int size, const Gen::OpArg& dst, Gen::X64Reg src
 
 void EmuCodeBlock::UnsafeLoadRegToReg(X64Reg reg_addr, X64Reg reg_value, int accessSize, s32 offset, bool signExtend)
 {
-	MOVZX(32, accessSize, reg_value, MComplex(RBX, reg_addr, SCALE_1, offset));
+	MOVZX(32, accessSize, reg_value, MComplex(RMEM, reg_addr, SCALE_1, offset));
 	if (accessSize == 32)
 	{
 		BSWAP(32, reg_value);
@@ -62,9 +61,12 @@ void EmuCodeBlock::UnsafeLoadRegToReg(X64Reg reg_addr, X64Reg reg_value, int acc
 	}
 }
 
-void EmuCodeBlock::UnsafeLoadRegToRegNoSwap(X64Reg reg_addr, X64Reg reg_value, int accessSize, s32 offset)
+void EmuCodeBlock::UnsafeLoadRegToRegNoSwap(X64Reg reg_addr, X64Reg reg_value, int accessSize, s32 offset, bool signExtend)
 {
-	MOVZX(32, accessSize, reg_value, MComplex(RBX, reg_addr, SCALE_1, offset));
+	if (signExtend)
+		MOVSX(32, accessSize, reg_value, MComplex(RMEM, reg_addr, SCALE_1, offset));
+	else
+		MOVZX(32, accessSize, reg_value, MComplex(RMEM, reg_addr, SCALE_1, offset));
 }
 
 u8 *EmuCodeBlock::UnsafeLoadToReg(X64Reg reg_value, OpArg opAddress, int accessSize, s32 offset, bool signExtend)
@@ -86,16 +88,16 @@ u8 *EmuCodeBlock::UnsafeLoadToReg(X64Reg reg_value, OpArg opAddress, int accessS
 			offset = 0;
 		}
 
-		memOperand = MComplex(RBX, opAddress.GetSimpleReg(), SCALE_1, offset);
+		memOperand = MComplex(RMEM, opAddress.GetSimpleReg(), SCALE_1, offset);
 	}
 	else if (opAddress.IsImm())
 	{
-		memOperand = MDisp(RBX, (opAddress.offset + offset) & 0x3FFFFFFF);
+		memOperand = MDisp(RMEM, (opAddress.offset + offset) & 0x3FFFFFFF);
 	}
 	else
 	{
 		MOV(32, R(reg_value), opAddress);
-		memOperand = MComplex(RBX, reg_value, SCALE_1, offset);
+		memOperand = MComplex(RMEM, reg_value, SCALE_1, offset);
 	}
 
 	result = GetWritableCodePtr();
@@ -130,7 +132,7 @@ u8 *EmuCodeBlock::UnsafeLoadToReg(X64Reg reg_value, OpArg opAddress, int accessS
 	return result;
 }
 
-// Visitor that generates code to read a MMIO value to EAX.
+// Visitor that generates code to read a MMIO value.
 template <typename T>
 class MMIOReadCodeGenerator : public MMIO::ReadHandlingMethodVisitor<T>
 {
@@ -182,9 +184,9 @@ private:
 	void LoadAddrMaskToReg(int sbits, const void* ptr, u32 mask)
 	{
 #ifdef _ARCH_64
-		m_code->MOV(64, R(EAX), ImmPtr(ptr));
+		m_code->MOV(64, R(RSCRATCH), ImmPtr(ptr));
 #else
-		m_code->MOV(32, R(EAX), ImmPtr(ptr));
+		m_code->MOV(32, R(RSCRATCH), ImmPtr(ptr));
 #endif
 		// If we do not need to mask, we can do the sign extend while loading
 		// from memory. If masking is required, we have to first zero extend,
@@ -192,11 +194,11 @@ private:
 		u32 all_ones = (1ULL << sbits) - 1;
 		if ((all_ones & mask) == all_ones)
 		{
-			MoveOpArgToReg(sbits, MDisp(EAX, 0));
+			MoveOpArgToReg(sbits, MDisp(RSCRATCH, 0));
 		}
 		else
 		{
-			m_code->MOVZX(32, sbits, m_dst_reg, MDisp(EAX, 0));
+			m_code->MOVZX(32, sbits, m_dst_reg, MDisp(RSCRATCH, 0));
 			m_code->AND(32, R(m_dst_reg), Imm32(mask));
 			if (m_sign_extend)
 				m_code->MOVSX(32, sbits, m_dst_reg, R(m_dst_reg));
@@ -205,10 +207,10 @@ private:
 
 	void CallLambda(int sbits, const std::function<T(u32)>* lambda)
 	{
-		m_code->ABI_PushRegistersAndAdjustStack(m_registers_in_use, false);
+		m_code->ABI_PushRegistersAndAdjustStack(m_registers_in_use, 0);
 		m_code->ABI_CallLambdaC(lambda, m_address);
-		m_code->ABI_PopRegistersAndAdjustStack(m_registers_in_use, false);
-		MoveOpArgToReg(sbits, R(EAX));
+		m_code->ABI_PopRegistersAndAdjustStack(m_registers_in_use, 0);
+		MoveOpArgToReg(sbits, R(ABI_RETURN));
 	}
 
 	Gen::X64CodeBlock* m_code;
@@ -248,20 +250,58 @@ void EmuCodeBlock::MMIOLoadToReg(MMIO::Mapping* mmio, Gen::X64Reg reg_value,
 	}
 }
 
-// Always clobbers EAX.  Preserves the address.
-// Preserves the value if the load fails and js.memcheck is enabled.
+FixupBranch EmuCodeBlock::CheckIfSafeAddress(OpArg reg_value, X64Reg reg_addr, u32 registers_in_use, u32 mem_mask)
+{
+	registers_in_use |= (1 << reg_addr);
+	if (reg_value.IsSimpleReg())
+		registers_in_use |= (1 << reg_value.GetSimpleReg());
+
+	// Get ourselves a free register; try to pick one that doesn't involve pushing, if we can.
+	X64Reg scratch = RSCRATCH;
+	if (!(registers_in_use & (1 << RSCRATCH)))
+		scratch = RSCRATCH;
+	else if (!(registers_in_use & (1 << RSCRATCH_EXTRA)))
+		scratch = RSCRATCH_EXTRA;
+	else
+		scratch = reg_addr;
+
+	// On Gamecube games with MMU, do a little bit of extra work to make sure we're not accessing the
+	// 0x81800000 to 0x83FFFFFF range.
+	// It's okay to take a shortcut and not check this range on non-MMU games, since we're already
+	// assuming they'll never do an invalid memory access.
+	// The slightly more complex check needed for Wii games using the space just above MEM1 isn't
+	// implemented here yet, since there are no known working Wii MMU games to test it with.
+	if (jit->js.memcheck && !SConfig::GetInstance().m_LocalCoreStartupParameter.bWii)
+	{
+		if (scratch == reg_addr)
+			PUSH(scratch);
+		else
+			MOV(32, R(scratch), R(reg_addr));
+		AND(32, R(scratch), Imm32(0x3FFFFFFF));
+		CMP(32, R(scratch), Imm32(0x01800000));
+		if (scratch == reg_addr)
+			POP(scratch);
+		return J_CC(CC_AE, farcode.Enabled());
+	}
+	else
+	{
+		TEST(32, R(reg_addr), Imm32(mem_mask));
+		return J_CC(CC_NZ, farcode.Enabled());
+	}
+}
+
 void EmuCodeBlock::SafeLoadToReg(X64Reg reg_value, const Gen::OpArg & opAddress, int accessSize, s32 offset, u32 registersInUse, bool signExtend, int flags)
 {
 	if (!jit->js.memcheck)
 	{
-		registersInUse &= ~(1 << RAX | 1 << reg_value);
+		registersInUse &= ~(1 << reg_value);
 	}
-	if (!Core::g_CoreStartupParameter.bMMU &&
-	    Core::g_CoreStartupParameter.bFastmem &&
+	if (!SConfig::GetInstance().m_LocalCoreStartupParameter.bMMU &&
+	    SConfig::GetInstance().m_LocalCoreStartupParameter.bFastmem &&
 	    !opAddress.IsImm() &&
 	    !(flags & (SAFE_LOADSTORE_NO_SWAP | SAFE_LOADSTORE_NO_FASTMEM))
 #ifdef ENABLE_MEM_CHECK
-	    && !Core::g_CoreStartupParameter.bEnableDebugging
+	    && !SConfig::GetInstance().m_LocalCoreStartupParameter.bEnableDebugging
 #endif
 	    )
 	{
@@ -272,13 +312,13 @@ void EmuCodeBlock::SafeLoadToReg(X64Reg reg_value, const Gen::OpArg & opAddress,
 	else
 	{
 		u32 mem_mask = Memory::ADDR_MASK_HW_ACCESS;
-		if (Core::g_CoreStartupParameter.bMMU || Core::g_CoreStartupParameter.bTLBHack)
+		if (SConfig::GetInstance().m_LocalCoreStartupParameter.bMMU || SConfig::GetInstance().m_LocalCoreStartupParameter.bTLBHack)
 		{
 			mem_mask |= Memory::ADDR_MASK_MEM1;
 		}
 
 #ifdef ENABLE_MEM_CHECK
-		if (Core::g_CoreStartupParameter.bEnableDebugging)
+		if (SConfig::GetInstance().m_LocalCoreStartupParameter.bEnableDebugging)
 		{
 			mem_mask |= Memory::EXRAM_MASK;
 		}
@@ -301,14 +341,14 @@ void EmuCodeBlock::SafeLoadToReg(X64Reg reg_value, const Gen::OpArg & opAddress,
 			{
 				UnsafeLoadToReg(reg_value, opAddress, accessSize, offset, signExtend);
 			}
-			else if (!Core::g_CoreStartupParameter.bMMU && MMIO::IsMMIOAddress(address) && accessSize != 64)
+			else if (!SConfig::GetInstance().m_LocalCoreStartupParameter.bMMU && MMIO::IsMMIOAddress(address) && accessSize != 64)
 			{
 				MMIOLoadToReg(Memory::mmio_mapping, reg_value, registersInUse,
 				              address, accessSize, signExtend);
 			}
 			else
 			{
-				ABI_PushRegistersAndAdjustStack(registersInUse, false);
+				ABI_PushRegistersAndAdjustStack(registersInUse, 0);
 				switch (accessSize)
 				{
 				case 64: ABI_CallFunctionC((void *)&Memory::Read_U64, address); break;
@@ -316,122 +356,136 @@ void EmuCodeBlock::SafeLoadToReg(X64Reg reg_value, const Gen::OpArg & opAddress,
 				case 16: ABI_CallFunctionC((void *)&Memory::Read_U16_ZX, address); break;
 				case 8:  ABI_CallFunctionC((void *)&Memory::Read_U8_ZX, address); break;
 				}
-				ABI_PopRegistersAndAdjustStack(registersInUse, false);
+				ABI_PopRegistersAndAdjustStack(registersInUse, 0);
 
-				MEMCHECK_START
-
+				MEMCHECK_START(false)
 				if (signExtend && accessSize < 32)
 				{
 					// Need to sign extend values coming from the Read_U* functions.
-					MOVSX(32, accessSize, reg_value, R(EAX));
+					MOVSX(32, accessSize, reg_value, R(ABI_RETURN));
 				}
-				else if (reg_value != EAX)
+				else if (reg_value != ABI_RETURN)
 				{
-					MOVZX(64, accessSize, reg_value, R(EAX));
+					MOVZX(64, accessSize, reg_value, R(ABI_RETURN));
 				}
-
 				MEMCHECK_END
 			}
 		}
 		else
 		{
-			OpArg addr_loc = opAddress;
+			_assert_msg_(DYNA_REC, opAddress.IsSimpleReg(), "Incorrect use of SafeLoadToReg (address isn't register or immediate)");
+			X64Reg reg_addr = opAddress.GetSimpleReg();
 			if (offset)
 			{
-				addr_loc = R(EAX);
-				if (opAddress.IsSimpleReg())
-				{
-					LEA(32, EAX, MDisp(opAddress.GetSimpleReg(), offset));
-				}
-				else
-				{
-					MOV(32, R(EAX), opAddress);
-					ADD(32, R(EAX), Imm32(offset));
-				}
+				reg_addr = RSCRATCH;
+				LEA(32, RSCRATCH, MDisp(opAddress.GetSimpleReg(), offset));
 			}
-			TEST(32, addr_loc, Imm32(mem_mask));
 
-			FixupBranch fast = J_CC(CC_Z, true);
-
-			ABI_PushRegistersAndAdjustStack(registersInUse, false);
+			FixupBranch slow, exit;
+			slow = CheckIfSafeAddress(R(reg_value), reg_addr, registersInUse, mem_mask);
+			UnsafeLoadToReg(reg_value, R(reg_addr), accessSize, 0, signExtend);
+			if (farcode.Enabled())
+				SwitchToFarCode();
+			else
+				exit = J(true);
+			SetJumpTarget(slow);
+			size_t rsp_alignment = (flags & SAFE_LOADSTORE_NO_PROLOG) ? 8 : 0;
+			ABI_PushRegistersAndAdjustStack(registersInUse, rsp_alignment);
 			switch (accessSize)
 			{
 			case 64:
-				ABI_CallFunctionA((void *)&Memory::Read_U64, addr_loc);
+				ABI_CallFunctionR((void *)&Memory::Read_U64, reg_addr);
 				break;
 			case 32:
-				ABI_CallFunctionA((void *)&Memory::Read_U32, addr_loc);
+				ABI_CallFunctionR((void *)&Memory::Read_U32, reg_addr);
 				break;
 			case 16:
-				ABI_CallFunctionA((void *)&Memory::Read_U16_ZX, addr_loc);
+				ABI_CallFunctionR((void *)&Memory::Read_U16_ZX, reg_addr);
 				break;
 			case 8:
-				ABI_CallFunctionA((void *)&Memory::Read_U8_ZX, addr_loc);
+				ABI_CallFunctionR((void *)&Memory::Read_U8_ZX, reg_addr);
 				break;
 			}
-			ABI_PopRegistersAndAdjustStack(registersInUse, false);
+			ABI_PopRegistersAndAdjustStack(registersInUse, rsp_alignment);
 
-			MEMCHECK_START
-
+			MEMCHECK_START(false)
 			if (signExtend && accessSize < 32)
 			{
 				// Need to sign extend values coming from the Read_U* functions.
-				MOVSX(32, accessSize, reg_value, R(EAX));
+				MOVSX(32, accessSize, reg_value, R(ABI_RETURN));
 			}
-			else if (reg_value != EAX)
+			else if (reg_value != ABI_RETURN)
 			{
-				MOVZX(64, accessSize, reg_value, R(EAX));
+				MOVZX(64, accessSize, reg_value, R(ABI_RETURN));
 			}
-
 			MEMCHECK_END
 
-			FixupBranch exit = J();
-			SetJumpTarget(fast);
-			UnsafeLoadToReg(reg_value, addr_loc, accessSize, 0, signExtend);
+			if (farcode.Enabled())
+			{
+				exit = J(true);
+				SwitchToNearCode();
+			}
 			SetJumpTarget(exit);
 		}
 	}
 }
 
-u8 *EmuCodeBlock::UnsafeWriteRegToReg(X64Reg reg_value, X64Reg reg_addr, int accessSize, s32 offset, bool swap)
+u8 *EmuCodeBlock::UnsafeWriteRegToReg(OpArg reg_value, X64Reg reg_addr, int accessSize, s32 offset, bool swap)
 {
-	if (accessSize == 8 && reg_value >= 4)
-	{
-		PanicAlert("WARNING: likely incorrect use of UnsafeWriteRegToReg!");
-	}
-
 	u8* result = GetWritableCodePtr();
-	OpArg dest = MComplex(RBX, reg_addr, SCALE_1, offset);
-	if (swap)
+	OpArg dest = MComplex(RMEM, reg_addr, SCALE_1, offset);
+	if (reg_value.IsImm())
+	{
+		if (swap)
+		{
+			if (accessSize == 32)
+				reg_value = Imm32(Common::swap32((u32)reg_value.offset));
+			else if (accessSize == 16)
+				reg_value = Imm16(Common::swap16((u16)reg_value.offset));
+			else
+				reg_value = Imm8((u8)reg_value.offset);
+		}
+		MOV(accessSize, dest, reg_value);
+	}
+	else if (swap)
 	{
 		if (cpu_info.bMOVBE)
 		{
-			MOVBE(accessSize, dest, R(reg_value));
+			MOVBE(accessSize, dest, reg_value);
 		}
 		else
 		{
-			BSWAP(accessSize, reg_value);
+			if (accessSize > 8)
+				BSWAP(accessSize, reg_value.GetSimpleReg());
 			result = GetWritableCodePtr();
-			MOV(accessSize, dest, R(reg_value));
+			MOV(accessSize, dest, reg_value);
 		}
 	}
 	else
 	{
-		MOV(accessSize, dest, R(reg_value));
+		MOV(accessSize, dest, reg_value);
 	}
 
 	return result;
 }
 
-// Destroys both arg registers
-void EmuCodeBlock::SafeWriteRegToReg(X64Reg reg_value, X64Reg reg_addr, int accessSize, s32 offset, u32 registersInUse, int flags)
+void EmuCodeBlock::SafeWriteRegToReg(OpArg reg_value, X64Reg reg_addr, int accessSize, s32 offset, u32 registersInUse, int flags)
 {
-	registersInUse &= ~(1 << RAX);
-	if (!Core::g_CoreStartupParameter.bMMU &&
-	    Core::g_CoreStartupParameter.bFastmem &&
-	    !(flags & (SAFE_LOADSTORE_NO_SWAP | SAFE_LOADSTORE_NO_FASTMEM))
+	// set the correct immediate format
+	if (reg_value.IsImm())
+	{
+		reg_value = accessSize == 32 ? Imm32((u32)reg_value.offset) :
+		            accessSize == 16 ? Imm16((u16)reg_value.offset) :
+		                               Imm8((u8)reg_value.offset);
+	}
+
+	// TODO: support byte-swapped non-immediate fastmem stores
+	if (!SConfig::GetInstance().m_LocalCoreStartupParameter.bMMU &&
+	    SConfig::GetInstance().m_LocalCoreStartupParameter.bFastmem &&
+	    !(flags & SAFE_LOADSTORE_NO_FASTMEM) &&
+		(reg_value.IsImm() || !(flags & SAFE_LOADSTORE_NO_SWAP))
 #ifdef ENABLE_MEM_CHECK
-	    && !Core::g_CoreStartupParameter.bEnableDebugging
+	    && !SConfig::GetInstance().m_LocalCoreStartupParameter.bEnableDebugging
 #endif
 	    )
 	{
@@ -449,65 +503,99 @@ void EmuCodeBlock::SafeWriteRegToReg(X64Reg reg_value, X64Reg reg_addr, int acce
 	}
 
 	if (offset)
-		ADD(32, R(reg_addr), Imm32((u32)offset));
+	{
+		if (flags & SAFE_LOADSTORE_CLOBBER_RSCRATCH_INSTEAD_OF_ADDR)
+		{
+			LEA(32, RSCRATCH, MDisp(reg_addr, (u32)offset));
+			reg_addr = RSCRATCH;
+		}
+		else
+		{
+			ADD(32, R(reg_addr), Imm32((u32)offset));
+		}
+	}
 
 	u32 mem_mask = Memory::ADDR_MASK_HW_ACCESS;
 
-	if (Core::g_CoreStartupParameter.bMMU || Core::g_CoreStartupParameter.bTLBHack)
+	if (SConfig::GetInstance().m_LocalCoreStartupParameter.bMMU || SConfig::GetInstance().m_LocalCoreStartupParameter.bTLBHack)
 	{
 		mem_mask |= Memory::ADDR_MASK_MEM1;
 	}
 
 #ifdef ENABLE_MEM_CHECK
-	if (Core::g_CoreStartupParameter.bEnableDebugging)
+	if (SConfig::GetInstance().m_LocalCoreStartupParameter.bEnableDebugging)
 	{
 		mem_mask |= Memory::EXRAM_MASK;
 	}
 #endif
 
-	TEST(32, R(reg_addr), Imm32(mem_mask));
-	FixupBranch fast = J_CC(CC_Z, true);
-	// PC is used by memory watchpoints (if enabled) or to print accurate PC locations in debug logs
-	MOV(32, M(&PC), Imm32(jit->js.compilerPC));
-	bool noProlog = (0 != (flags & SAFE_LOADSTORE_NO_PROLOG));
 	bool swap = !(flags & SAFE_LOADSTORE_NO_SWAP);
-	ABI_PushRegistersAndAdjustStack(registersInUse, noProlog);
+
+	FixupBranch slow, exit;
+	slow = CheckIfSafeAddress(reg_value, reg_addr, registersInUse, mem_mask);
+	UnsafeWriteRegToReg(reg_value, reg_addr, accessSize, 0, swap);
+	if (farcode.Enabled())
+		SwitchToFarCode();
+	else
+		exit = J(true);
+	SetJumpTarget(slow);
+
+	// PC is used by memory watchpoints (if enabled) or to print accurate PC locations in debug logs
+	MOV(32, PPCSTATE(pc), Imm32(jit->js.compilerPC));
+
+	size_t rsp_alignment = (flags & SAFE_LOADSTORE_NO_PROLOG) ? 8 : 0;
+	ABI_PushRegistersAndAdjustStack(registersInUse, rsp_alignment);
+
+	// If the input is an immediate, we need to put it in a register.
+	X64Reg reg;
+	if (reg_value.IsImm())
+	{
+		reg = reg_addr == ABI_PARAM1 ? RSCRATCH : ABI_PARAM1;
+		MOV(accessSize, R(reg), reg_value);
+	}
+	else
+	{
+		reg = reg_value.GetSimpleReg();
+	}
+
 	switch (accessSize)
 	{
 	case 64:
-		ABI_CallFunctionRR(swap ? ((void *)&Memory::Write_U64) : ((void *)&Memory::Write_U64_Swap), reg_value, reg_addr, false);
+		ABI_CallFunctionRR(swap ? ((void *)&Memory::Write_U64) : ((void *)&Memory::Write_U64_Swap), reg, reg_addr);
 		break;
 	case 32:
-		ABI_CallFunctionRR(swap ? ((void *)&Memory::Write_U32) : ((void *)&Memory::Write_U32_Swap), reg_value, reg_addr, false);
+		ABI_CallFunctionRR(swap ? ((void *)&Memory::Write_U32) : ((void *)&Memory::Write_U32_Swap), reg, reg_addr);
 		break;
 	case 16:
-		ABI_CallFunctionRR(swap ? ((void *)&Memory::Write_U16) : ((void *)&Memory::Write_U16_Swap), reg_value, reg_addr, false);
+		ABI_CallFunctionRR(swap ? ((void *)&Memory::Write_U16) : ((void *)&Memory::Write_U16_Swap), reg, reg_addr);
 		break;
 	case 8:
-		ABI_CallFunctionRR((void *)&Memory::Write_U8, reg_value, reg_addr, false);
+		ABI_CallFunctionRR((void *)&Memory::Write_U8, reg, reg_addr);
 		break;
 	}
-	ABI_PopRegistersAndAdjustStack(registersInUse, noProlog);
-	FixupBranch exit = J();
-	SetJumpTarget(fast);
-	UnsafeWriteRegToReg(reg_value, reg_addr, accessSize, 0, swap);
+	ABI_PopRegistersAndAdjustStack(registersInUse, rsp_alignment);
+	if (farcode.Enabled())
+	{
+		exit = J(true);
+		SwitchToNearCode();
+	}
 	SetJumpTarget(exit);
 }
 
-// Destroys both arg registers and EAX
+// Destroys the same as SafeWrite plus RSCRATCH.  TODO: see if we can avoid temporaries here
 void EmuCodeBlock::SafeWriteF32ToReg(X64Reg xmm_value, X64Reg reg_addr, s32 offset, u32 registersInUse, int flags)
 {
 	// TODO: PSHUFB might be faster if fastmem supported MOVSS.
-	MOVD_xmm(R(EAX), xmm_value);
-	SafeWriteRegToReg(EAX, reg_addr, 32, offset, registersInUse, flags);
+	MOVD_xmm(R(RSCRATCH), xmm_value);
+	SafeWriteRegToReg(RSCRATCH, reg_addr, 32, offset, registersInUse, flags);
 }
 
 void EmuCodeBlock::WriteToConstRamAddress(int accessSize, Gen::X64Reg arg, u32 address, bool swap)
 {
 	if (swap)
-		SwapAndStore(accessSize, MDisp(RBX, address & 0x3FFFFFFF), arg);
+		SwapAndStore(accessSize, MDisp(RMEM, address & 0x3FFFFFFF), arg);
 	else
-		MOV(accessSize, MDisp(RBX, address & 0x3FFFFFFF), R(arg));
+		MOV(accessSize, MDisp(RMEM, address & 0x3FFFFFFF), R(arg));
 }
 
 void EmuCodeBlock::ForceSinglePrecisionS(X64Reg xmm)
@@ -584,20 +672,20 @@ void EmuCodeBlock::ConvertDoubleToSingle(X64Reg dst, X64Reg src)
 	// Grab Exponent
 	PAND(XMM1, M((void *)&double_exponent));
 	PSRLQ(XMM1, 52);
-	MOVD_xmm(R(EAX), XMM1);
+	MOVD_xmm(R(RSCRATCH), XMM1);
 
 
 	// Check if the double is in the range of valid single subnormal
-	CMP(16, R(EAX), Imm16(896));
+	CMP(16, R(RSCRATCH), Imm16(896));
 	FixupBranch NoDenormalize = J_CC(CC_G);
-	CMP(16, R(EAX), Imm16(874));
+	CMP(16, R(RSCRATCH), Imm16(874));
 	FixupBranch NoDenormalize2 = J_CC(CC_L);
 
 	// Denormalise
 
 	// shift = (905 - Exponent) plus the 21 bit double to single shift
-	MOV(16, R(EAX), Imm16(905 + 21));
-	MOVD_xmm(XMM0, R(EAX));
+	MOV(16, R(RSCRATCH), Imm16(905 + 21));
+	MOVD_xmm(XMM0, R(RSCRATCH));
 	PSUBQ(XMM0, R(XMM1));
 
 	// xmm1 = fraction | 0x0010000000000000
@@ -648,21 +736,23 @@ void EmuCodeBlock::ConvertDoubleToSingle(X64Reg dst, X64Reg src)
 	// Changing the FPU mode is very expensive, so we can't do that.
 	// Here, check to see if the exponent is small enough that it will result in a denormal, and pass it to the x87 unit
 	// if it is.
-	MOVQ_xmm(R(RAX), src);
-	SHR(64, R(RAX), Imm8(55));
+	MOVQ_xmm(R(RSCRATCH), src);
+	SHR(64, R(RSCRATCH), Imm8(55));
 	// Exponents 0x369 <= x <= 0x380 are denormal. This code accepts the range 0x368 <= x <= 0x387
 	// to save an instruction, since diverting a few more floats to the slow path can't hurt much.
-	SUB(8, R(AL), Imm8(0x6D));
-	CMP(8, R(AL), Imm8(0x3));
-	FixupBranch x87Conversion = J_CC(CC_BE);
+	SUB(8, R(RSCRATCH), Imm8(0x6D));
+	CMP(8, R(RSCRATCH), Imm8(0x3));
+	FixupBranch x87Conversion = J_CC(CC_BE, true);
 	CVTSD2SS(dst, R(src));
-	FixupBranch continue1 = J();
 
+	SwitchToFarCode();
 	SetJumpTarget(x87Conversion);
 	MOVSD(M(&temp64), src);
 	FLD(64, M(&temp64));
 	FSTP(32, M(&temp32));
 	MOVSS(dst, M(&temp32));
+	FixupBranch continue1 = J(true);
+	SwitchToNearCode();
 
 	SetJumpTarget(continue1);
 	// We'd normally need to MOVDDUP here to put the single in the top half of the output register too, but
@@ -674,7 +764,7 @@ void EmuCodeBlock::ConvertSingleToDouble(X64Reg dst, X64Reg src, bool src_is_gpr
 {
 	// If the input isn't denormal, just do things the simple way -- otherwise, go through the x87 unit, which has
 	// flush-to-zero off.
-	X64Reg gprsrc = src_is_gpr ? src : EAX;
+	X64Reg gprsrc = src_is_gpr ? src : RSCRATCH;
 	if (src_is_gpr)
 	{
 		MOVD_xmm(dst, R(src));
@@ -683,7 +773,7 @@ void EmuCodeBlock::ConvertSingleToDouble(X64Reg dst, X64Reg src, bool src_is_gpr
 	{
 		if (dst != src)
 			MOVAPD(dst, R(src));
-		MOVD_xmm(EAX, R(src));
+		MOVD_xmm(RSCRATCH, R(src));
 	}
 	// A sneaky hack: floating-point zero is rather common and we don't want to confuse it for denormals and
 	// needlessly send it through the slow path. If we subtract 1 before doing the comparison, it turns
@@ -691,16 +781,17 @@ void EmuCodeBlock::ConvertSingleToDouble(X64Reg dst, X64Reg src, bool src_is_gpr
 	// through the slow path (0x00800000), but the performance effects of that should be negligible.
 	SUB(32, R(gprsrc), Imm8(1));
 	TEST(32, R(gprsrc), Imm32(0x7f800000));
-
-	FixupBranch x87Conversion = J_CC(CC_Z);
+	FixupBranch x87Conversion = J_CC(CC_Z, true);
 	CVTSS2SD(dst, R(dst));
-	FixupBranch continue1 = J();
 
+	SwitchToFarCode();
 	SetJumpTarget(x87Conversion);
 	MOVSS(M(&temp32), dst);
 	FLD(32, M(&temp32));
 	FSTP(64, M(&temp64));
 	MOVSD(dst, M(&temp64));
+	FixupBranch continue1 = J(true);
+	SwitchToNearCode();
 
 	SetJumpTarget(continue1);
 	MOVDDUP(dst, R(dst));
@@ -718,19 +809,19 @@ static const u64 GC_ALIGNED16(psDoubleNoSign[2]) = {0x7FFFFFFFFFFFFFFFULL, 0};
 // quite that necessary.
 void EmuCodeBlock::SetFPRF(Gen::X64Reg xmm)
 {
-	AND(32, M(&FPSCR), Imm32(~FPRF_MASK));
+	AND(32, PPCSTATE(fpscr), Imm32(~FPRF_MASK));
 
 	FixupBranch continue1, continue2, continue3, continue4;
 	if (cpu_info.bSSE4_1)
 	{
-		MOVQ_xmm(R(RAX), xmm);
-		SHR(64, R(RAX), Imm8(63)); // Get the sign bit; almost all the branches need it.
+		MOVQ_xmm(R(RSCRATCH), xmm);
+		SHR(64, R(RSCRATCH), Imm8(63)); // Get the sign bit; almost all the branches need it.
 		PTEST(xmm, M((void*)psDoubleExp));
 		FixupBranch maxExponent = J_CC(CC_C);
 		FixupBranch zeroExponent = J_CC(CC_Z);
 
 		// Nice normalized number: sign ? PPC_FPCLASS_NN : PPC_FPCLASS_PN;
-		LEA(32, EAX, MScaled(EAX, MathUtil::PPC_FPCLASS_NN - MathUtil::PPC_FPCLASS_PN, MathUtil::PPC_FPCLASS_PN));
+		LEA(32, RSCRATCH, MScaled(RSCRATCH, MathUtil::PPC_FPCLASS_NN - MathUtil::PPC_FPCLASS_PN, MathUtil::PPC_FPCLASS_PN));
 		continue1 = J();
 
 		SetJumpTarget(maxExponent);
@@ -738,12 +829,12 @@ void EmuCodeBlock::SetFPRF(Gen::X64Reg xmm)
 		FixupBranch notNAN = J_CC(CC_Z);
 
 		// Max exponent + mantissa: PPC_FPCLASS_QNAN
-		MOV(32, R(EAX), Imm32(MathUtil::PPC_FPCLASS_QNAN));
+		MOV(32, R(RSCRATCH), Imm32(MathUtil::PPC_FPCLASS_QNAN));
 		continue2 = J();
 
 		// Max exponent + no mantissa: sign ? PPC_FPCLASS_NINF : PPC_FPCLASS_PINF;
 		SetJumpTarget(notNAN);
-		LEA(32, EAX, MScaled(EAX, MathUtil::PPC_FPCLASS_NINF - MathUtil::PPC_FPCLASS_PINF, MathUtil::PPC_FPCLASS_NINF));
+		LEA(32, RSCRATCH, MScaled(RSCRATCH, MathUtil::PPC_FPCLASS_NINF - MathUtil::PPC_FPCLASS_PINF, MathUtil::PPC_FPCLASS_NINF));
 		continue3 = J();
 
 		SetJumpTarget(zeroExponent);
@@ -751,72 +842,77 @@ void EmuCodeBlock::SetFPRF(Gen::X64Reg xmm)
 		FixupBranch zero = J_CC(CC_Z);
 
 		// No exponent + mantissa: sign ? PPC_FPCLASS_ND : PPC_FPCLASS_PD;
-		LEA(32, EAX, MScaled(EAX, MathUtil::PPC_FPCLASS_ND - MathUtil::PPC_FPCLASS_PD, MathUtil::PPC_FPCLASS_ND));
+		LEA(32, RSCRATCH, MScaled(RSCRATCH, MathUtil::PPC_FPCLASS_ND - MathUtil::PPC_FPCLASS_PD, MathUtil::PPC_FPCLASS_ND));
 		continue4 = J();
 
 		// Zero: sign ? PPC_FPCLASS_NZ : PPC_FPCLASS_PZ;
 		SetJumpTarget(zero);
-		SHL(32, R(EAX), Imm8(4));
-		ADD(32, R(EAX), Imm8(MathUtil::PPC_FPCLASS_PZ));
+		SHL(32, R(RSCRATCH), Imm8(4));
+		ADD(32, R(RSCRATCH), Imm8(MathUtil::PPC_FPCLASS_PZ));
 	}
 	else
 	{
-		MOVQ_xmm(R(RAX), xmm);
-		TEST(64, R(RAX), M((void*)psDoubleExp));
+		MOVQ_xmm(R(RSCRATCH), xmm);
+		TEST(64, R(RSCRATCH), M((void*)psDoubleExp));
 		FixupBranch zeroExponent = J_CC(CC_Z);
-		AND(64, R(RAX), M((void*)psDoubleNoSign));
-		CMP(64, R(RAX), M((void*)psDoubleExp));
-		FixupBranch nan = J_CC(CC_G); // This works because if the sign bit is set, RAX is negative
+		AND(64, R(RSCRATCH), M((void*)psDoubleNoSign));
+		CMP(64, R(RSCRATCH), M((void*)psDoubleExp));
+		FixupBranch nan = J_CC(CC_G); // This works because if the sign bit is set, RSCRATCH is negative
 		FixupBranch infinity = J_CC(CC_E);
-		MOVQ_xmm(R(RAX), xmm);
-		SHR(64, R(RAX), Imm8(63));
-		LEA(32, EAX, MScaled(EAX, MathUtil::PPC_FPCLASS_NN - MathUtil::PPC_FPCLASS_PN, MathUtil::PPC_FPCLASS_PN));
+		MOVQ_xmm(R(RSCRATCH), xmm);
+		SHR(64, R(RSCRATCH), Imm8(63));
+		LEA(32, RSCRATCH, MScaled(RSCRATCH, MathUtil::PPC_FPCLASS_NN - MathUtil::PPC_FPCLASS_PN, MathUtil::PPC_FPCLASS_PN));
 		continue1 = J();
 		SetJumpTarget(nan);
-		MOVQ_xmm(R(RAX), xmm);
-		SHR(64, R(RAX), Imm8(63));
-		MOV(32, R(EAX), Imm32(MathUtil::PPC_FPCLASS_QNAN));
+		MOVQ_xmm(R(RSCRATCH), xmm);
+		SHR(64, R(RSCRATCH), Imm8(63));
+		MOV(32, R(RSCRATCH), Imm32(MathUtil::PPC_FPCLASS_QNAN));
 		continue2 = J();
 		SetJumpTarget(infinity);
-		MOVQ_xmm(R(RAX), xmm);
-		SHR(64, R(RAX), Imm8(63));
-		LEA(32, EAX, MScaled(EAX, MathUtil::PPC_FPCLASS_NINF - MathUtil::PPC_FPCLASS_PINF, MathUtil::PPC_FPCLASS_NINF));
+		MOVQ_xmm(R(RSCRATCH), xmm);
+		SHR(64, R(RSCRATCH), Imm8(63));
+		LEA(32, RSCRATCH, MScaled(RSCRATCH, MathUtil::PPC_FPCLASS_NINF - MathUtil::PPC_FPCLASS_PINF, MathUtil::PPC_FPCLASS_NINF));
 		continue3 = J();
 		SetJumpTarget(zeroExponent);
-		TEST(64, R(RAX), R(RAX));
+		TEST(64, R(RSCRATCH), R(RSCRATCH));
 		FixupBranch zero = J_CC(CC_Z);
-		SHR(64, R(RAX), Imm8(63));
-		LEA(32, EAX, MScaled(EAX, MathUtil::PPC_FPCLASS_ND - MathUtil::PPC_FPCLASS_PD, MathUtil::PPC_FPCLASS_ND));
+		SHR(64, R(RSCRATCH), Imm8(63));
+		LEA(32, RSCRATCH, MScaled(RSCRATCH, MathUtil::PPC_FPCLASS_ND - MathUtil::PPC_FPCLASS_PD, MathUtil::PPC_FPCLASS_ND));
 		continue4 = J();
 		SetJumpTarget(zero);
-		SHR(64, R(RAX), Imm8(63));
-		SHL(32, R(EAX), Imm8(4));
-		ADD(32, R(EAX), Imm8(MathUtil::PPC_FPCLASS_PZ));
+		SHR(64, R(RSCRATCH), Imm8(63));
+		SHL(32, R(RSCRATCH), Imm8(4));
+		ADD(32, R(RSCRATCH), Imm8(MathUtil::PPC_FPCLASS_PZ));
 	}
 
 	SetJumpTarget(continue1);
 	SetJumpTarget(continue2);
 	SetJumpTarget(continue3);
 	SetJumpTarget(continue4);
-	SHL(32, R(EAX), Imm8(FPRF_SHIFT));
-	OR(32, M(&FPSCR), R(EAX));
+	SHL(32, R(RSCRATCH), Imm8(FPRF_SHIFT));
+	OR(32, PPCSTATE(fpscr), R(RSCRATCH));
 }
 
-
-void EmuCodeBlock::JitClearCA()
+void EmuCodeBlock::JitGetAndClearCAOV(bool oe)
 {
-	AND(32, M(&PowerPC::ppcState.spr[SPR_XER]), Imm32(~XER_CA_MASK)); //XER.CA = 0
+	if (oe)
+		AND(8, PPCSTATE(xer_so_ov), Imm32(~XER_OV_MASK)); //XER.OV = 0
+	SHR(8, PPCSTATE(xer_ca), Imm8(1)); //carry = XER.CA, XER.CA = 0
 }
 
 void EmuCodeBlock::JitSetCA()
 {
-	OR(32, M(&PowerPC::ppcState.spr[SPR_XER]), Imm32(XER_CA_MASK)); //XER.CA = 1
+	MOV(8, PPCSTATE(xer_ca), Imm8(1)); //XER.CA = 1
 }
 
-void EmuCodeBlock::JitClearCAOV(bool oe)
+// Some testing shows CA is set roughly ~1/3 of the time (relative to clears), so
+// branchless calculation of CA is probably faster in general.
+void EmuCodeBlock::JitSetCAIf(CCFlags conditionCode)
 {
-	if (oe)
-		AND(32, M(&PowerPC::ppcState.spr[SPR_XER]), Imm32(~XER_CA_MASK & ~XER_OV_MASK)); //XER.CA, XER.OV = 0
-	else
-		AND(32, M(&PowerPC::ppcState.spr[SPR_XER]), Imm32(~XER_CA_MASK)); //XER.CA = 0
+	SETcc(conditionCode, PPCSTATE(xer_ca));
+}
+
+void EmuCodeBlock::JitClearCA()
+{
+	MOV(8, PPCSTATE(xer_ca), Imm8(0));
 }

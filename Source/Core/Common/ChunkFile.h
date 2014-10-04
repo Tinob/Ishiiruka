@@ -13,6 +13,7 @@
 // - Zero backwards/forwards compatibility
 // - Serialization code for anything complex has to be manually written.
 
+#include <array>
 #include <cstddef>
 #include <deque>
 #include <list>
@@ -23,7 +24,7 @@
 #include <utility>
 #include <vector>
 
-#include "Common/Common.h"
+#include "Common/CommonTypes.h"
 #include "Common/FileUtil.h"
 #include "Common/Flag.h"
 
@@ -157,6 +158,12 @@ public:
 	{
 		Do(x.first);
 		Do(x.second);
+	}
+
+	template <typename T, std::size_t N>
+	void DoArray(std::array<T,N>& x)
+	{
+		DoArray(x.data(), (u32)x.size());
 	}
 
 	template <typename T>

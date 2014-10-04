@@ -28,8 +28,8 @@
 #include <wx/utils.h>
 #include <wx/window.h>
 
-#include "Common/Common.h"
 #include "Common/CommonPaths.h"
+#include "Common/CommonTypes.h"
 #include "Common/CPUDetect.h"
 #include "Common/FileUtil.h"
 #include "Common/IniFile.h"
@@ -46,6 +46,7 @@
 #include "DolphinWX/Frame.h"
 #include "DolphinWX/Globals.h"
 #include "DolphinWX/Main.h"
+#include "DolphinWX/VideoConfigDiag.h"
 #include "DolphinWX/WxUtils.h"
 #include "DolphinWX/Debugger/CodeWindow.h"
 #include "DolphinWX/Debugger/JitWindow.h"
@@ -96,9 +97,9 @@ extern "C" {
 IMPLEMENT_APP(DolphinApp)
 
 BEGIN_EVENT_TABLE(DolphinApp, wxApp)
-EVT_TIMER(wxID_ANY, DolphinApp::AfterInit)
-EVT_QUERY_END_SESSION(DolphinApp::OnEndSession)
-EVT_END_SESSION(DolphinApp::OnEndSession)
+	EVT_TIMER(wxID_ANY, DolphinApp::AfterInit)
+	EVT_QUERY_END_SESSION(DolphinApp::OnEndSession)
+	EVT_END_SESSION(DolphinApp::OnEndSession)
 END_EVENT_TABLE()
 
 bool wxMsgAlert(const char*, const char*, bool, int);
@@ -109,7 +110,8 @@ CFrame* main_frame = nullptr;
 #ifdef WIN32
 //Has no error handling.
 //I think that if an error occurs here there's no way to handle it anyway.
-LONG WINAPI MyUnhandledExceptionFilter(LPEXCEPTION_POINTERS e) {
+LONG WINAPI MyUnhandledExceptionFilter(LPEXCEPTION_POINTERS e)
+{
 	//EnterCriticalSection(&g_uefcs);
 
 	File::IOFile file("exceptioninfo.txt", "a");
@@ -120,11 +122,9 @@ LONG WINAPI MyUnhandledExceptionFilter(LPEXCEPTION_POINTERS e) {
 	//dumpCurrentDate(file);
 	etfprintf(file.GetHandle(), "Unhandled Exception\n  Code: 0x%08X\n",
 		e->ExceptionRecord->ExceptionCode);
-#if _M_X86_32
-	STACKTRACE2(file.GetHandle(), e->ContextRecord->Eip, e->ContextRecord->Esp, e->ContextRecord->Ebp);
-#else
+
 	STACKTRACE2(file.GetHandle(), e->ContextRecord->Rip, e->ContextRecord->Rsp, e->ContextRecord->Rbp);
-#endif
+
 	file.Close();
 	_flushall();
 
@@ -244,31 +244,21 @@ bool DolphinApp::OnInit()
 	wxHandleFatalExceptions(true);
 #endif
 
-#ifndef _M_ARM
-	// TODO: if First Boot
-	if (!cpu_info.bSSE2)
-	{
-		PanicAlertT("Hi,\n\nDolphin requires that your CPU has support for SSE2 extensions.\n"
-			"Unfortunately your CPU does not support them, so Dolphin will not run.\n\n"
-			"Sayonara!\n");
-		return false;
-	}
-#endif
 #ifdef __APPLE__
 	if (floor(NSAppKitVersionNumber) < NSAppKitVersionNumber10_7)
 	{
 		PanicAlertT("Hi,\n\nDolphin requires Mac OS X 10.7 or greater.\n"
-			"Unfortunately you're running an old version of OS X.\n"
-			"The last Dolphin version to support OS X 10.6 is Dolphin 3.5\n"
-			"Please upgrade to 10.7 or greater to use the newest Dolphin version.\n\n"
-			"Sayonara!\n");
+				"Unfortunately you're running an old version of OS X.\n"
+				"The last Dolphin version to support OS X 10.6 is Dolphin 3.5\n"
+				"Please upgrade to 10.7 or greater to use the newest Dolphin version.\n\n"
+				"Sayonara!\n");
 		return false;
 	}
 #endif
 
 	// Copy initial Wii NAND data from Sys to User.
 	File::CopyDir(File::GetSysDirectory() + WII_USER_DIR DIR_SEP,
-		File::GetUserPath(D_WIIUSER_IDX));
+	              File::GetUserPath(D_WIIUSER_IDX));
 
 	File::CreateFullPath(File::GetUserPath(D_USER_IDX));
 	File::CreateFullPath(File::GetUserPath(D_CACHE_IDX));
@@ -295,7 +285,7 @@ bool DolphinApp::OnInit()
 
 	if (selectVideoBackend && videoBackendName != wxEmptyString)
 		SConfig::GetInstance().m_LocalCoreStartupParameter.m_strVideoBackend =
-		WxStrToStr(videoBackendName);
+			WxStrToStr(videoBackendName);
 
 	if (selectAudioEmulation)
 	{
@@ -322,9 +312,9 @@ bool DolphinApp::OnInit()
 	{
 		File::Delete("www.dolphin-emulator.com.txt");
 		MessageBox(nullptr,
-			L"This version of Dolphin was downloaded from a website stealing money from developers of the emulator. Please "
-			L"download Dolphin from the official website instead: http://dolphin-emu.org/",
-			L"Unofficial version detected", MB_OK | MB_ICONWARNING);
+				   L"This version of Dolphin was downloaded from a website stealing money from developers of the emulator. Please "
+				   L"download Dolphin from the official website instead: http://dolphin-emu.org/",
+				   L"Unofficial version detected", MB_OK | MB_ICONWARNING);
 		ShellExecute(nullptr, L"open", L"http://dolphin-emu.org/?ref=badver", nullptr, nullptr, SW_SHOWDEFAULT);
 		exit(0);
 	}
@@ -336,7 +326,7 @@ bool DolphinApp::OnInit()
 	// Out of desktop check
 	int leftPos = GetSystemMetrics(SM_XVIRTUALSCREEN);
 	int topPos = GetSystemMetrics(SM_YVIRTUALSCREEN);
-	int width = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+	int width =  GetSystemMetrics(SM_CXVIRTUALSCREEN);
 	int height = GetSystemMetrics(SM_CYVIRTUALSCREEN);
 	if ((leftPos + width) < (x + w) || leftPos > x || (topPos + height) < (y + h) || topPos > y)
 		x = y = wxDefaultCoord;
@@ -346,9 +336,9 @@ bool DolphinApp::OnInit()
 #endif
 
 	main_frame = new CFrame((wxFrame*)nullptr, wxID_ANY,
-		StrToWxStr(scm_rev_str),
-		wxPoint(x, y), wxSize(w, h),
-		UseDebugger, BatchMode, UseLogger);
+				StrToWxStr(scm_rev_str),
+				wxPoint(x, y), wxSize(w, h),
+				UseDebugger, BatchMode, UseLogger);
 	SetTopWindow(main_frame);
 	main_frame->SetMinSize(wxSize(400, 300));
 
@@ -430,14 +420,14 @@ void DolphinApp::InitLanguageSupport()
 
 		if (!m_locale->IsOk())
 		{
-			PanicAlertT("Error loading selected language. Falling back to system default.");
+			wxMessageBox(_("Error loading selected language. Falling back to system default."), _("Error"));
 			delete m_locale;
 			m_locale = new wxLocale(wxLANGUAGE_DEFAULT);
 		}
 	}
 	else
 	{
-		PanicAlertT("The selected language is not supported by your system. Falling back to system default.");
+		wxMessageBox(_("The selected language is not supported by your system. Falling back to system default."), _("Error"));
 		m_locale = new wxLocale(wxLANGUAGE_DEFAULT);
 	}
 }
@@ -482,7 +472,7 @@ void Host_SysMessage(const char *fmt, ...)
 	vsprintf(msg, fmt, list);
 	va_end(list);
 
-	if (msg[strlen(msg) - 1] == '\n') msg[strlen(msg) - 1] = 0;
+	if (msg[strlen(msg)-1] == '\n') msg[strlen(msg)-1] = 0;
 	//wxMessageBox(StrToWxStr(msg));
 	PanicAlert("%s", msg);
 }
@@ -493,7 +483,7 @@ bool wxMsgAlert(const char* caption, const char* text, bool yes_no, int /*Style*
 	if (wxIsMainThread())
 #endif
 		return wxYES == wxMessageBox(StrToWxStr(text), StrToWxStr(caption),
-		(yes_no) ? wxYES_NO : wxOK, wxGetActiveWindow());
+				(yes_no) ? wxYES_NO : wxOK, wxGetActiveWindow());
 #ifdef __WXGTK__
 	else
 	{
@@ -524,19 +514,6 @@ void Host_Message(int Id)
 	main_frame->GetEventHandler()->AddPendingEvent(event);
 }
 
-#ifdef _WIN32
-extern "C" HINSTANCE wxGetInstance();
-void* Host_GetInstance()
-{
-	return (void*)wxGetInstance();
-}
-#else
-void* Host_GetInstance()
-{
-	return nullptr;
-}
-#endif
-
 void* Host_GetRenderHandle()
 {
 	return main_frame->GetRenderHandle();
@@ -566,13 +543,6 @@ void Host_UpdateDisasmDialog()
 	}
 }
 
-
-void Host_ShowJitResults(unsigned int address)
-{
-	if (main_frame->g_pCodeWindow && main_frame->g_pCodeWindow->m_JitWindow)
-		main_frame->g_pCodeWindow->m_JitWindow->ViewAddr(address);
-}
-
 void Host_UpdateMainFrame()
 {
 	wxCommandEvent event(wxEVT_HOST_COMMAND, IDM_UPDATEGUI);
@@ -589,17 +559,6 @@ void Host_UpdateTitle(const std::string& title)
 	wxCommandEvent event(wxEVT_HOST_COMMAND, IDM_UPDATETITLE);
 	event.SetString(StrToWxStr(title));
 	main_frame->GetEventHandler()->AddPendingEvent(event);
-}
-
-void Host_UpdateBreakPointView()
-{
-	wxCommandEvent event(wxEVT_HOST_COMMAND, IDM_UPDATEBREAKPOINTS);
-	main_frame->GetEventHandler()->AddPendingEvent(event);
-
-	if (main_frame->g_pCodeWindow)
-	{
-		main_frame->g_pCodeWindow->GetEventHandler()->AddPendingEvent(event);
-	}
 }
 
 void Host_GetRenderWindowSize(int& x, int& y, int& width, int& height)
@@ -638,17 +597,6 @@ void Host_SetStartupDebuggingParameters()
 	StartUp.bEnableDebugging = main_frame->g_pCodeWindow ? true : false; // RUNNING_DEBUG
 }
 
-void Host_UpdateStatusBar(const std::string& text, int Field)
-{
-	wxCommandEvent event(wxEVT_HOST_COMMAND, IDM_UPDATESTATUSBAR);
-	// Set the event string
-	event.SetString(StrToWxStr(text));
-	// Update statusbar field
-	event.SetInt(Field);
-	// Post message
-	main_frame->GetEventHandler()->AddPendingEvent(event);
-}
-
 void Host_SetWiiMoteConnectionState(int _State)
 {
 	static int currentState = -1;
@@ -685,4 +633,11 @@ bool Host_RendererHasFocus()
 void Host_ConnectWiimote(int wm_idx, bool connect)
 {
 	CFrame::ConnectWiimote(wm_idx, connect);
+}
+
+void Host_ShowVideoConfig(void* parent, const std::string& backend_name,
+                          const std::string& config_name)
+{
+	VideoConfigDiag diag((wxWindow*)parent, backend_name, config_name);
+	diag.ShowModal();
 }

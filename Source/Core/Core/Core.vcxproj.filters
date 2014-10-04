@@ -511,6 +511,9 @@
     <ClCompile Include="HW\SystemTimers.cpp">
       <Filter>HW %28Flipper/Hollywood%29</Filter>
     </ClCompile>
+    <ClCompile Include="HW\WiiSaveCrypted.cpp">
+      <Filter>HW %28Flipper/Hollywood%29</Filter>
+    </ClCompile>
     <ClCompile Include="DSP\DSPAssembler.cpp">
       <Filter>DSPCore</Filter>
     </ClCompile>
@@ -635,6 +638,9 @@
       <Filter>PowerPC\JitCommon</Filter>
     </ClCompile>
     <ClCompile Include="PowerPC\JitCommon\JitCache.cpp">
+      <Filter>PowerPC\JitCommon</Filter>
+    </ClCompile>
+    <ClCompile Include="PowerPC\JitCommon\TrampolineCache.cpp">
       <Filter>PowerPC\JitCommon</Filter>
     </ClCompile>
     <ClCompile Include="PowerPC\Jit64IL\IR_X86.cpp">
@@ -1029,6 +1035,9 @@
     <ClInclude Include="HW\SystemTimers.h">
       <Filter>HW %28Flipper/Hollywood%29</Filter>
     </ClInclude>
+    <ClInclude Include="HW\WiiSaveCrypted.h">
+      <Filter>HW %28Flipper/Hollywood%29</Filter>
+    </ClInclude>
     <ClInclude Include="DSP\DSPAssembler.h">
       <Filter>DSPCore</Filter>
     </ClInclude>
@@ -1177,6 +1186,9 @@
       <Filter>PowerPC\JitCommon</Filter>
     </ClInclude>
     <ClInclude Include="PowerPC\JitCommon\JitCache.h">
+      <Filter>PowerPC\JitCommon</Filter>
+    </ClInclude>
+    <ClInclude Include="PowerPC\JitCommon\TrampolineCache.h">
       <Filter>PowerPC\JitCommon</Filter>
     </ClInclude>
     <ClInclude Include="PowerPC\Jit64IL\JitIL.h">

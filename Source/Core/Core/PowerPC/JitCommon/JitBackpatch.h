@@ -4,15 +4,15 @@
 
 #pragma once
 
-#include "Common/Common.h"
-#include "Common/x64Analyzer.h"
-#include "Common/x64Emitter.h"
-
-// We need at least this many bytes for backpatching.
-const int BACKPATCH_SIZE = 5;
+#include "Common/CommonTypes.h"
 
 // meh.
-#if defined(_WIN32)
+#if defined(_M_GENERIC)
+	// JitBase uses SContext; it should have no concrete implementations in a
+	// generic build.
+	struct FakeGenericContext;
+	typedef FakeGenericContext SContext;
+#elif defined(_WIN32)
 	#include <windows.h>
 	typedef CONTEXT SContext;
 	#if _M_X86_64
@@ -83,9 +83,15 @@ const int BACKPATCH_SIZE = 5;
 		#define CTX_R14 gregs[REG_R14]
 		#define CTX_R15 gregs[REG_R15]
 		#define CTX_RIP gregs[REG_RIP]
-	#elif _M_ARM_32
-		// Add others if required.
+	#elif _M_ARM_64
 		typedef struct sigcontext SContext;
+		#define CTX_REG(x) regs[x]
+		#define CTX_SP sp
+		#define CTX_PC pc
+	#elif _M_ARM_32
+		#include <asm/sigcontext.h>
+		// Add others if required.
+		typedef sigcontext SContext;
 		#define CTX_PC  arm_pc
 	#else
 		#warning No context definition for OS
@@ -141,8 +147,8 @@ const int BACKPATCH_SIZE = 5;
 #endif
 
 #if _M_X86_64
-#define CTX_PC CTX_RIP
 #include <stddef.h>
+#define CTX_PC CTX_RIP
 static inline u64 *ContextRN(SContext* ctx, int n)
 {
 	static const u8 offsets[] =
@@ -167,13 +173,3 @@ static inline u64 *ContextRN(SContext* ctx, int n)
 	return (u64 *) ((char *) ctx + offsets[n]);
 }
 #endif
-
-class TrampolineCache : public Gen::X64CodeBlock
-{
-public:
-	void Init();
-	void Shutdown();
-
-	const u8 *GetReadTrampoline(const InstructionInfo &info, u32 registersInUse);
-	const u8 *GetWriteTrampoline(const InstructionInfo &info, u32 registersInUse, u32 pc);
-};

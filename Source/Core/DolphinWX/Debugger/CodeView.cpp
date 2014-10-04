@@ -29,7 +29,7 @@
 #include <wx/translation.h>
 #include <wx/windowid.h>
 
-#include "Common/Common.h"
+#include "Common/CommonTypes.h"
 #include "Common/DebugInterface.h"
 #include "Common/StringUtil.h"
 #include "Common/SymbolDB.h"
@@ -127,11 +127,11 @@ void CCodeView::OnScrollWheel(wxMouseEvent& event)
 
 	if (scroll_down)
 	{
-		m_curAddress += num_lines;
+		m_curAddress += num_lines * 4;
 	}
 	else
 	{
-		m_curAddress -= num_lines;
+		m_curAddress -= num_lines * 4;
 	}
 
 	Refresh();

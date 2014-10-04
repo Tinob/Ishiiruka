@@ -6,6 +6,8 @@
 #include "AudioCommon/DPL2Decoder.h"
 #include "AudioCommon/OpenALStream.h"
 #include "Core/Core.h"
+#include "Core/ConfigManager.h"
+
 #if defined HAVE_OPENAL && HAVE_OPENAL
 //
 // AyuanX: Spec says OpenAL1.1 is thread safe already
@@ -103,7 +105,7 @@ void OpenALStream::InitializeSoundLoop()
 	format = surroundsupported ? AL_FORMAT_51CHN16 : AL_FORMAT_STEREO16;
 	samplesize = surroundsupported ? SOUND_SAMPLES_SURROUND : SOUND_SAMPLES_STEREO;
 	ulFrequency = m_mixer->GetSampleRate();
-	numBuffers = Core::g_CoreStartupParameter.iLatency + SOUND_BUFFER_COUNT; // OpenAL requires a minimum of two buffers
+	numBuffers = SConfig::GetInstance().m_LocalCoreStartupParameter.iLatency + SOUND_BUFFER_COUNT; // OpenAL requires a minimum of two buffers
 
 	memset(uiBuffers, 0, numBuffers * sizeof(ALuint));
 	uiSource = 0;
@@ -152,7 +154,7 @@ void OpenALStream::WriteSamples(s16 *src, u32 numsamples)
 
 bool OpenALStream::SupportSurroundOutput()
 {
-	bool surround_capable = Core::g_CoreStartupParameter.bDPL2Decoder;
+	bool surround_capable = SConfig::GetInstance().m_LocalCoreStartupParameter.bDPL2Decoder;
 #if defined(__APPLE__)
 	surround_capable = false;	
 #endif	

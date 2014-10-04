@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "Common/Common.h"
+#include "Common/CommonTypes.h"
 
 class PointerWrap;
 class DSPEmulator;
@@ -76,5 +76,7 @@ u8* GetARAMPtr();
 
 void UpdateAudioDMA();
 void UpdateDSPSlice(int cycles);
+u64 DMAInProgress();
+void EnableInstantDMA();
 
 }// end of namespace DSP

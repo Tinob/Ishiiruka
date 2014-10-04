@@ -29,6 +29,11 @@
 #include "Core/PowerPC/JitArm32/JitArm_Tables.h"
 #endif
 
+#if _M_ARM_64
+#include "Core/PowerPC/JitArm64/Jit.h"
+#include "Core/PowerPC/JitArm64/JitArm64_Tables.h"
+#endif
+
 static bool bFakeVMEM = false;
 bool bMMU = false;
 
@@ -66,6 +71,13 @@ namespace JitInterface
 				break;
 			}
 			#endif
+			#if _M_ARM_64
+			case 4:
+			{
+				ptr = new JitArm64();
+				break;
+			}
+			#endif
 			default:
 			{
 				PanicAlert("Unrecognizable cpu_core: %d", core);
@@ -97,6 +109,13 @@ namespace JitInterface
 			case 3:
 			{
 				JitArmTables::InitTables();
+				break;
+			}
+			#endif
+			#if _M_ARM_64
+			case 4:
+			{
+				JitArm64Tables::InitTables();
 				break;
 			}
 			#endif
@@ -171,13 +190,9 @@ namespace JitInterface
 		}
 		#endif
 	}
-	bool IsInCodeSpace(u8 *ptr)
+	bool HandleFault(uintptr_t access_address, SContext* ctx)
 	{
-		return jit->IsInCodeSpace(ptr);
-	}
-	const u8 *BackPatch(u8 *codePtr, u32 em_address, void *ctx)
-	{
-		return jit->BackPatch(codePtr, em_address, ctx);
+		return jit->HandleFault(access_address, ctx);
 	}
 
 	void ClearCache()
@@ -201,7 +216,7 @@ namespace JitInterface
 			jit->GetBlockCache()->InvalidateICache(address, size);
 	}
 
-	u32 Read_Opcode_JIT(u32 _Address)
+	u32 ReadOpcodeJIT(u32 _Address)
 	{
 		if (bMMU && !bFakeVMEM && (_Address & Memory::ADDR_MASK_MEM1))
 		{
@@ -220,6 +235,37 @@ namespace JitInterface
 		else
 			inst = PowerPC::ppcState.iCache.ReadInstruction(_Address);
 		return inst;
+	}
+
+	void CompileExceptionCheck(int type)
+	{
+		if (!jit)
+			return;
+
+		std::unordered_set<u32> *exception_addresses;
+
+		switch (type)
+		{
+		case EXCEPTIONS_FIFO_WRITE:
+		{
+			exception_addresses = &jit->js.fifoWriteAddresses;
+			break;
+		}
+		default:
+			ERROR_LOG(POWERPC, "Unknown exception check type");
+		}
+
+		if (PC != 0 && (exception_addresses->find(PC)) == (exception_addresses->end()))
+		{
+			int optype = GetOpInfo(Memory::ReadUnchecked_U32(PC))->type;
+			if (optype == OPTYPE_STORE || optype == OPTYPE_STOREFP || (optype == OPTYPE_STOREPS))
+			{
+				exception_addresses->insert(PC);
+
+				// Invalidate the JIT block so that it gets recompiled with the external exception check included.
+				jit->GetBlockCache()->InvalidateICache(PC, 4);
+			}
+		}
 	}
 
 	void Shutdown()

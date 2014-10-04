@@ -24,7 +24,7 @@
 #include <wx/windowid.h>
 #include <wx/wxcrtvararg.h>
 
-#include "Common/Common.h"
+#include "Common/CommonTypes.h"
 #include "Common/FileUtil.h"
 #include "Common/IniFile.h"
 #include "Common/StringUtil.h"
@@ -44,7 +44,7 @@ class DebugInterface;
 
 enum
 {
-	IDM_MEM_ADDRBOX = 350,
+	IDM_MEM_ADDRBOX,
 	IDM_SYMBOLLIST,
 	IDM_SETVALBUTTON,
 	IDM_DUMP_MEMORY,

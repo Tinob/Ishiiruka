@@ -87,12 +87,10 @@ public:
 
 	void* GetRenderHandle()
 	{
-		#ifdef _WIN32
-			return (void *)m_RenderParent->GetHandle();
-		#elif defined(HAVE_X11) && HAVE_X11
-			return (void *)X11Utils::XWindowFromHandle(m_RenderParent->GetHandle());
+		#if defined(HAVE_X11) && HAVE_X11
+			return reinterpret_cast<void*>(X11Utils::XWindowFromHandle(m_RenderParent->GetHandle()));
 		#else
-			return m_RenderParent;
+			return reinterpret_cast<void*>(m_RenderParent->GetHandle());
 		#endif
 	}
 
@@ -129,6 +127,7 @@ public:
 	void UpdateTitle(const std::string &str);
 
 	const CGameListCtrl *GetGameListCtrl() const;
+	virtual wxMenuBar* GetMenuBar() const override;
 
 #ifdef __WXGTK__
 	Common::Event panic_event;
@@ -199,9 +198,11 @@ private:
 	wxBitmap m_Bitmaps[EToolbar_Max];
 	wxBitmap m_BitmapsMenu[EToolbar_Max];
 
+	wxMenuBar* m_menubar_shadow;
+
 	void PopulateToolbar(wxToolBar* toolBar);
 	void RecreateToolbar();
-	void CreateMenu();
+	wxMenuBar* CreateMenu();
 
 	// Utility
 	wxString GetMenuLabel(int Id);
@@ -330,6 +331,10 @@ private:
 	void StartGame(const std::string& filename);
 	void OnChangeColumnsVisible(wxCommandEvent& event);
 
+	void OnSelectSlot(wxCommandEvent& event);
+	void OnSaveCurrentSlot(wxCommandEvent& event);
+	void OnLoadCurrentSlot(wxCommandEvent& event);
+
 	// Event table
 	DECLARE_EVENT_TABLE();
 };
@@ -342,3 +347,4 @@ void OnStoppedCallback();
 // For TASInputDlg
 void TASManipFunction(GCPadStatus* PadStatus, int controllerID);
 bool TASInputHasFocus();
+extern int g_saveSlot;

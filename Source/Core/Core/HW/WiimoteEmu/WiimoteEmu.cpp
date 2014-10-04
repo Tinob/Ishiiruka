@@ -4,7 +4,7 @@
 
 #include <cmath>
 
-#include "Common/Common.h"
+#include "Common/CommonTypes.h"
 #include "Common/Timer.h"
 
 #include "Core/ConfigManager.h"
@@ -308,6 +308,8 @@ Wiimote::Wiimote( const unsigned int index )
 	m_options->settings.emplace_back(new ControlGroup::BackgroundInputSetting(_trans("Background Input")));
 	m_options->settings.emplace_back(new ControlGroup::Setting(_trans("Sideways Wiimote"), false));
 	m_options->settings.emplace_back(new ControlGroup::Setting(_trans("Upright Wiimote"), false));
+	m_options->settings.emplace_back(new ControlGroup::IterateUI(_trans("Iterative Input")));
+	m_options->settings.emplace_back(new ControlGroup::Setting(_trans("Speaker Pan"), 0, -127, 127));
 
 	// TODO: This value should probably be re-read if SYSCONF gets changed
 	m_sensor_bar_on_top = SConfig::GetInstance().m_SYSCONF->GetData<u8>("BT.BAR") != 0;
@@ -329,7 +331,7 @@ bool Wiimote::Step()
 	m_rumble->controls[0]->control_ref->State(m_rumble_on);
 
 	// when a movie is active, this button status update is disabled (moved), because movies only record data reports.
-	if (!(Movie::IsPlayingInput() || Movie::IsRecordingInput()) || NetPlay::IsNetPlayRunning())
+	if (!(Movie::IsMovieActive()) || NetPlay::IsNetPlayRunning())
 	{
 		UpdateButtonsStatus();
 	}
@@ -383,7 +385,7 @@ void Wiimote::UpdateButtonsStatus()
 void Wiimote::GetCoreData(u8* const data)
 {
 	// when a movie is active, the button update happens here instead of Wiimote::Step, to avoid potential desync issues.
-	if (Movie::IsPlayingInput() || Movie::IsRecordingInput() || NetPlay::IsNetPlayRunning())
+	if (Movie::IsMovieActive() || NetPlay::IsNetPlayRunning())
 	{
 		UpdateButtonsStatus();
 	}

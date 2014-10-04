@@ -6,8 +6,11 @@
 #include <cstdlib>
 #include <string>
 
-#include "Common/Common.h"
+#include "Common/CommonFuncs.h"
+#include "Common/CommonTypes.h"
 #include "Common/MemoryUtil.h"
+#include "Common/MsgHandler.h"
+#include "Common/Logging/Log.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -156,6 +159,25 @@ void FreeAlignedMemory(void* ptr)
 		free(ptr);
 #endif
 	}
+}
+
+void ReadProtectMemory(void* ptr, size_t size)
+{
+	bool error_occurred = false;
+
+#ifdef _WIN32
+	DWORD oldValue;
+	if (!VirtualProtect(ptr, size, PAGE_NOACCESS, &oldValue))
+		error_occurred = true;
+#else
+	int retval = mprotect(ptr, size, PROT_NONE);
+
+	if (retval != 0)
+		error_occurred = true;
+#endif
+
+	if (error_occurred)
+		PanicAlert("ReadProtectMemory failed!\n%s", GetLastErrorMsg());
 }
 
 void WriteProtectMemory(void* ptr, size_t size, bool allowExecute)
