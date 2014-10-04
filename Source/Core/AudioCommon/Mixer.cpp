@@ -180,13 +180,13 @@ void CMixer::PushSamples(const short *samples, unsigned int num_samples)
 		// The auto throttle function. This loop will put a ceiling on the CPU MHz.
 		while (num_samples + m_dma_mixer.AvailableSamples() >= MAX_SAMPLES)
 		{
-			if (*PowerPC::GetStatePtr() != PowerPC::CPU_RUNNING || soundStream->IsMuted())
+			if (*PowerPC::GetStatePtr() != PowerPC::CPU_RUNNING || g_sound_stream->IsMuted())
 				break;
 			// Shortcut key for Throttle Skipping
 			if (Core::GetIsFramelimiterTempDisabled())
 				break;
 			Common::SleepCurrentThread(1);
-			soundStream->Update();
+			g_sound_stream->Update();
 		}
 	}
 	m_dma_mixer.PushSamples(samples, num_samples);

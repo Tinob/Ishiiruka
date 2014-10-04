@@ -301,7 +301,7 @@ void DSPLLE::DSP_Update(int cycles)
 	{
 		while (m_cycle_count > cycles_between_ss_update)
 			m_cycle_count -= cycles_between_ss_update;
-		soundStream->Update();
+		g_sound_stream->Update();
 	}
 */
 	// If we're not on a thread, run cycles here.

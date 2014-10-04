@@ -50,7 +50,8 @@ void VideoBackend::PopulateList()
 #if !defined(USE_GLES) || USE_GLES3
 	g_available_video_backends.push_back(backends[1] = new OGL::VideoBackend);
 #endif
-	g_available_video_backends.push_back(backends[3] = new SW::VideoSoftware);
+	// disable software video while is rewrited
+	//g_available_video_backends.push_back(backends[3] = new SW::VideoSoftware);
 
 	for (int i = 0; i < 4; ++i)
 	{

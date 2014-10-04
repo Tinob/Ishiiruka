@@ -68,7 +68,8 @@ void Wiimote::SpeakerData(wm_speaker_data* sd)
 	if (!SConfig::GetInstance().m_WiimoteEnableSpeaker)
 		return;
 
-	static s16 samples[20 * 2];
+	// TODO consider using static max size instead of new
+	s16 *samples = new s16[sd->length * 2];
 
 	if (m_reg_speaker.format == 0x40)
 	{
@@ -80,9 +81,9 @@ void Wiimote::SpeakerData(wm_speaker_data* sd)
 
 		// Speaker Pan
 		unsigned int vol = (unsigned int)(m_options->settings[4]->GetValue() * 100);
-		soundStream->GetMixer()->SetWiimoteSpeakerVolume(128 + vol, 128 - vol);
+		g_sound_stream->GetMixer()->SetWiimoteSpeakerVolume(128 + vol, 128 - vol);
 
-		soundStream->GetMixer()->PushWiimoteSpeakerSamples(samples, sd->length, 1500);
+		g_sound_stream->GetMixer()->PushWiimoteSpeakerSamples(samples, sd->length, 1500);
 	}
 	else if (m_reg_speaker.format == 0x00)
 	{
@@ -95,9 +96,9 @@ void Wiimote::SpeakerData(wm_speaker_data* sd)
 
 		// Speaker Pan
 		unsigned int vol = (unsigned int)(m_options->settings[4]->GetValue() * 100);
-		soundStream->GetMixer()->SetWiimoteSpeakerVolume(128 + vol, 128 - vol);
+		g_sound_stream->GetMixer()->SetWiimoteSpeakerVolume(128 + vol, 128 - vol);
 
-		soundStream->GetMixer()->PushWiimoteSpeakerSamples(samples, sd->length, 3000);
+		g_sound_stream->GetMixer()->PushWiimoteSpeakerSamples(samples, sd->length, 3000);
 	}
 
 #ifdef WIIMOTE_SPEAKER_DUMP
@@ -121,6 +122,8 @@ void Wiimote::SpeakerData(wm_speaker_data* sd)
 	}
 	num++;
 #endif
+
+	delete[] samples;
 }
 
 }

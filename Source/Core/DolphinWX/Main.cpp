@@ -212,14 +212,20 @@ bool DolphinApp::OnInit()
 
 	// Gets the command line parameters
 	wxCmdLineParser parser(cmdLineDesc, argc, argv);
-	if (parser.Parse() != 0)
+	if (argc == 2 && File::Exists(argv[1].ToUTF8().data()))
+	{
+		LoadFile = true;
+		FileToLoad = argv[1];
+	}
+	else if (parser.Parse() != 0)
 	{
 		return false;
 	}
 
 	UseDebugger = parser.Found("debugger");
 	UseLogger = parser.Found("logger");
-	LoadFile = parser.Found("exec", &FileToLoad);
+	if (!LoadFile)
+		LoadFile = parser.Found("exec", &FileToLoad);
 	BatchMode = parser.Found("batch");
 	selectVideoBackend = parser.Found("video_backend", &videoBackendName);
 	selectAudioEmulation = parser.Found("audio_emulation", &audioEmulationName);
@@ -483,7 +489,7 @@ bool wxMsgAlert(const char* caption, const char* text, bool yes_no, int /*Style*
 	if (wxIsMainThread())
 #endif
 		return wxYES == wxMessageBox(StrToWxStr(text), StrToWxStr(caption),
-				(yes_no) ? wxYES_NO : wxOK, wxGetActiveWindow());
+				(yes_no) ? wxYES_NO : wxOK, wxWindow::FindFocus());
 #ifdef __WXGTK__
 	else
 	{
@@ -638,6 +644,6 @@ void Host_ConnectWiimote(int wm_idx, bool connect)
 void Host_ShowVideoConfig(void* parent, const std::string& backend_name,
                           const std::string& config_name)
 {
-	VideoConfigDiag diag((wxWindow*)parent, backend_name, config_name);
-	diag.ShowModal();
-}
+		VideoConfigDiag diag((wxWindow*)parent, backend_name, config_name);
+		diag.ShowModal();
+	}

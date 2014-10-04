@@ -40,9 +40,13 @@ void Jit64::GenerateOverflow()
 	FixupBranch exit = J();
 	SetJumpTarget(jno);
 	//XER[OV] = 0
-	PUSHF();
-	AND(8, PPCSTATE(xer_so_ov), Imm8(~XER_OV_MASK));
-	POPF();
+	//We need to do this without modifying flags so as not to break stuff that assumes flags
+	//aren't clobbered (carry, branch merging): speed doesn't really matter here (this is really
+	//rare).
+	static const u8 ovtable[4] = {0, 0, XER_SO_MASK, XER_SO_MASK};
+	MOVZX(32, 8, RSCRATCH, PPCSTATE(xer_so_ov));
+	MOV(8, R(RSCRATCH), MDisp(RSCRATCH, (u32)(u64)ovtable));
+	MOV(8, PPCSTATE(xer_so_ov), R(RSCRATCH));
 	SetJumpTarget(exit);
 }
 
@@ -52,7 +56,8 @@ void Jit64::FinalizeCarry(CCFlags cond)
 	js.carryFlagInverted = false;
 	if (js.op->wantsCA)
 	{
-		if (js.next_op->wantsCAInFlags)
+		// Be careful: a breakpoint kills flags in between instructions
+		if (js.next_op->wantsCAInFlags && !js.next_inst_bp)
 		{
 			if (cond == CC_C || cond == CC_NC)
 			{
@@ -64,6 +69,7 @@ void Jit64::FinalizeCarry(CCFlags cond)
 				SETcc(cond, R(RSCRATCH));
 				SHR(8, R(RSCRATCH), Imm8(1));
 			}
+			LockFlags();
 			js.carryFlagSet = true;
 		}
 		else
@@ -86,6 +92,7 @@ void Jit64::FinalizeCarry(bool ca)
 				STC();
 			else
 				CLC();
+			LockFlags();
 			js.carryFlagSet = true;
 		}
 		else if (ca)
@@ -562,22 +569,25 @@ void Jit64::boolX(UGeckoInstruction inst)
 
 	if (gpr.R(s).IsImm() && gpr.R(b).IsImm())
 	{
+		const u32 rs_offset = static_cast<u32>(gpr.R(s).offset);
+		const u32 rb_offset = static_cast<u32>(gpr.R(b).offset);
+
 		if (inst.SUBOP10 == 28)       // andx
-			gpr.SetImmediate32(a, (u32)gpr.R(s).offset & (u32)gpr.R(b).offset);
+			gpr.SetImmediate32(a, rs_offset & rb_offset);
 		else if (inst.SUBOP10 == 476) // nandx
-			gpr.SetImmediate32(a, ~((u32)gpr.R(s).offset & (u32)gpr.R(b).offset));
+			gpr.SetImmediate32(a, ~(rs_offset & rb_offset));
 		else if (inst.SUBOP10 == 60)  // andcx
-			gpr.SetImmediate32(a, (u32)gpr.R(s).offset & (~(u32)gpr.R(b).offset));
+			gpr.SetImmediate32(a, rs_offset & (~rb_offset));
 		else if (inst.SUBOP10 == 444) // orx
-			gpr.SetImmediate32(a, (u32)gpr.R(s).offset | (u32)gpr.R(b).offset);
+			gpr.SetImmediate32(a, rs_offset | rb_offset);
 		else if (inst.SUBOP10 == 124) // norx
-			gpr.SetImmediate32(a, ~((u32)gpr.R(s).offset | (u32)gpr.R(b).offset));
+			gpr.SetImmediate32(a, ~(rs_offset | rb_offset));
 		else if (inst.SUBOP10 == 412) // orcx
-			gpr.SetImmediate32(a, (u32)gpr.R(s).offset | (~(u32)gpr.R(b).offset));
+			gpr.SetImmediate32(a, rs_offset | (~rb_offset));
 		else if (inst.SUBOP10 == 316) // xorx
-			gpr.SetImmediate32(a, (u32)gpr.R(s).offset ^ (u32)gpr.R(b).offset);
+			gpr.SetImmediate32(a, rs_offset ^ rb_offset);
 		else if (inst.SUBOP10 == 284) // eqvx
-			gpr.SetImmediate32(a, ~((u32)gpr.R(s).offset ^ (u32)gpr.R(b).offset));
+			gpr.SetImmediate32(a, ~(rs_offset ^ rb_offset));
 	}
 	else if (s == b)
 	{
@@ -1265,6 +1275,8 @@ void Jit64::arithXex(UGeckoInstruction inst)
 	gpr.BindToRegister(d, !same_input_sub && (d == a || d == b));
 	if (!js.carryFlagSet)
 		JitGetAndClearCAOV(inst.OE);
+	else
+		UnlockFlags();
 
 	bool invertedCarry = false;
 	// Special case: subfe A, B, B is a common compiler idiom
@@ -1288,13 +1300,23 @@ void Jit64::arithXex(UGeckoInstruction inst)
 	else
 	{
 		OpArg source = regsource ? gpr.R(d == b ? a : b) : Imm32(mex ? 0xFFFFFFFF : 0);
-		if (js.carryFlagInverted)
-			CMC();
 		if (d != a && d != b)
 			MOV(32, gpr.R(d), gpr.R(a));
 		if (!add)
 			NOT(32, gpr.R(d));
-		ADC(32, gpr.R(d), source);
+		// if the source is an immediate, we can invert carry by going from add -> sub and doing src = -1 - src
+		if (js.carryFlagInverted && source.IsImm())
+		{
+			source.offset = -1 - (s32)source.offset;
+			SBB(32, gpr.R(d), source);
+			invertedCarry = true;
+		}
+		else
+		{
+			if (js.carryFlagInverted)
+				CMC();
+			ADC(32, gpr.R(d), source);
+		}
 	}
 	FinalizeCarryOverflow(inst.OE, invertedCarry);
 	if (inst.Rc)

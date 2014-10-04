@@ -25,6 +25,8 @@
 #include "Core/HW/Wiimote.h"
 #include "Core/HW/WiimoteEmu/WiimoteEmu.h"
 #include "Core/HW/WiimoteEmu/WiimoteHid.h"
+#include "Core/HW/WiimoteEmu/Attachment/Classic.h"
+#include "Core/HW/WiimoteEmu/Attachment/Nunchuk.h"
 #include "Core/IPC_HLE/WII_IPC_HLE_Device_usb.h"
 #include "Core/PowerPC/PowerPC.h"
 #include "InputCommon/GCPadStatus.h"
@@ -437,6 +439,8 @@ bool BeginRecordingInput(int controllers)
 	if (s_playMode != MODE_NONE || controllers == 0)
 		return false;
 
+	bool was_unpaused = Core::PauseAndLock(true);
+
 	s_numPads = controllers;
 	g_currentFrame = g_totalFrames = 0;
 	g_currentLagCount = s_totalLagCount = 0;
@@ -487,28 +491,31 @@ bool BeginRecordingInput(int controllers)
 
 	s_currentByte = s_totalBytes = 0;
 
+	Core::PauseAndLock(false, was_unpaused);
+
 	Core::DisplayMessage("Starting movie recording", 2000);
 	return true;
 }
 
-static std::string Analog2DToString(u8 x, u8 y, const std::string& prefix)
+static std::string Analog2DToString(u8 x, u8 y, const std::string& prefix, u8 range = 255)
 {
-	if ((x <= 1 || x == 128 || x >= 255) &&
-	    (y <= 1 || y == 128 || y >= 255))
+	u8 center = range / 2 + 1;
+	if ((x <= 1 || x == center || x >= range) &&
+	    (y <= 1 || y == center || y >= range))
 	{
-		if (x != 128 || y != 128)
+		if (x != center || y != center)
 		{
-			if (x != 128 && y != 128)
+			if (x != center && y != center)
 			{
-				return StringFromFormat("%s:%s,%s", prefix.c_str(), x<128?"LEFT":"RIGHT", y<128?"DOWN":"UP");
+				return StringFromFormat("%s:%s,%s", prefix.c_str(), x < center ? "LEFT" : "RIGHT", y < center ? "DOWN" : "UP");
 			}
-			else if (x != 128)
+			else if (x != center)
 			{
-				return StringFromFormat("%s:%s", prefix.c_str(), x<128?"LEFT":"RIGHT");
+				return StringFromFormat("%s:%s", prefix.c_str(), x < center ? "LEFT" : "RIGHT");
 			}
 			else
 			{
-				return StringFromFormat("%s:%s", prefix.c_str(), y<128?"DOWN":"UP");
+				return StringFromFormat("%s:%s", prefix.c_str(), y < center ? "DOWN" : "UP");
 			}
 		}
 		else
@@ -522,11 +529,11 @@ static std::string Analog2DToString(u8 x, u8 y, const std::string& prefix)
 	}
 }
 
-static std::string Analog1DToString(u8 v, const std::string& prefix)
+static std::string Analog1DToString(u8 v, const std::string& prefix, u8 range = 255)
 {
 	if (v > 0)
 	{
-		if (v == 255)
+		if (v == range)
 		{
 			return prefix;
 		}
@@ -574,11 +581,16 @@ static void SetInputDisplayString(ControllerState padState, int controllerID)
 	s_InputDisplay[controllerID].append("\n");
 }
 
-static void SetWiiInputDisplayString(int remoteID, u8* const coreData, u8* const accelData, u8* const irData)
+static void SetWiiInputDisplayString(int remoteID, u8* const data, const WiimoteEmu::ReportFeatures& rptf, int ext, const wiimote_key key)
 {
 	int controllerID = remoteID + 4;
 
 	s_InputDisplay[controllerID] = StringFromFormat("R%d:", remoteID + 1);
+
+	u8* const coreData = rptf.core ? (data + rptf.core) : nullptr;
+	u8* const accelData = rptf.accel ? (data + rptf.accel) : nullptr;
+	u8* const irData = rptf.ir ? (data + rptf.ir) : nullptr;
+	u8* const extData = rptf.ext ? (data + rptf.ext) : nullptr;
 
 	if (coreData)
 	{
@@ -614,10 +626,71 @@ static void SetWiiInputDisplayString(int remoteID, u8* const coreData, u8* const
 		s_InputDisplay[controllerID].append(accel);
 	}
 
-	if (irData) // incomplete
+	if (irData)
 	{
-		std::string ir = StringFromFormat(" IR:%d,%d", ((u8*)irData)[0], ((u8*)irData)[1]);
+		u16 x = irData[0] | ((irData[2] >> 4 & 0x3) << 8);
+		u16 y = irData[1] | ((irData[2] >> 2 & 0x3) << 8);
+		std::string ir = StringFromFormat(" IR:%d,%d", x, y);
 		s_InputDisplay[controllerID].append(ir);
+	}
+
+	// Nunchuck
+	if (extData && ext == 1)
+	{
+		wm_extension nunchuck;
+		memcpy(&nunchuck, extData, sizeof(wm_extension));
+		WiimoteDecrypt(&key, (u8*)&nunchuck, 0, sizeof(wm_extension));
+		nunchuck.bt = nunchuck.bt ^ 0xFF;
+
+		std::string accel = StringFromFormat(" N-ACC:%d,%d,%d", nunchuck.ax, nunchuck.ay, nunchuck.az);
+
+		if (nunchuck.bt & WiimoteEmu::Nunchuk::BUTTON_C)
+			s_InputDisplay[controllerID].append(" C");
+		if (nunchuck.bt & WiimoteEmu::Nunchuk::BUTTON_Z)
+			s_InputDisplay[controllerID].append(" Z");
+		s_InputDisplay[controllerID].append(accel);
+		s_InputDisplay[controllerID].append(Analog2DToString(nunchuck.jx, nunchuck.jy, " ANA"));
+	}
+
+	// Classic controller
+	if (extData && ext == 2)
+	{
+		wm_classic_extension cc;
+		memcpy(&cc, extData, sizeof(wm_classic_extension));
+		WiimoteDecrypt(&key, (u8*)&cc, 0, sizeof(wm_classic_extension));
+		cc.bt = cc.bt ^ 0xFFFF;
+
+		if (cc.bt & WiimoteEmu::Classic::PAD_LEFT)
+			s_InputDisplay[controllerID].append(" LEFT");
+		if (cc.bt & WiimoteEmu::Classic::PAD_RIGHT)
+			s_InputDisplay[controllerID].append(" RIGHT");
+		if (cc.bt & WiimoteEmu::Classic::PAD_DOWN)
+			s_InputDisplay[controllerID].append(" DOWN");
+		if (cc.bt & WiimoteEmu::Classic::PAD_UP)
+			s_InputDisplay[controllerID].append(" UP");
+		if (cc.bt & WiimoteEmu::Classic::BUTTON_A)
+			s_InputDisplay[controllerID].append(" A");
+		if (cc.bt & WiimoteEmu::Classic::BUTTON_B)
+			s_InputDisplay[controllerID].append(" B");
+		if (cc.bt & WiimoteEmu::Classic::BUTTON_X)
+			s_InputDisplay[controllerID].append(" X");
+		if (cc.bt & WiimoteEmu::Classic::BUTTON_Y)
+			s_InputDisplay[controllerID].append(" Y");
+		if (cc.bt & WiimoteEmu::Classic::BUTTON_ZL)
+			s_InputDisplay[controllerID].append(" ZL");
+		if (cc.bt & WiimoteEmu::Classic::BUTTON_ZR)
+			s_InputDisplay[controllerID].append(" ZR");
+		if (cc.bt & WiimoteEmu::Classic::BUTTON_PLUS)
+			s_InputDisplay[controllerID].append(" +");
+		if (cc.bt & WiimoteEmu::Classic::BUTTON_MINUS)
+			s_InputDisplay[controllerID].append(" -");
+		if (cc.bt & WiimoteEmu::Classic::BUTTON_HOME)
+			s_InputDisplay[controllerID].append(" HOME");
+
+		s_InputDisplay[controllerID].append(Analog1DToString(cc.lt1 | (cc.lt2 << 3), " L", 31));
+		s_InputDisplay[controllerID].append(Analog1DToString(cc.rt, " R", 31));
+		s_InputDisplay[controllerID].append(Analog2DToString(cc.lx, cc.ly, " ANA", 63));
+		s_InputDisplay[controllerID].append(Analog2DToString(cc.rx1 | (cc.rx2 << 1) | (cc.rx3 << 3), cc.ry, " R-ANA", 31));
 	}
 
 	s_InputDisplay[controllerID].append("\n");
@@ -670,13 +743,10 @@ void RecordInput(GCPadStatus* PadStatus, int controllerID)
 	s_totalBytes = s_currentByte;
 }
 
-void CheckWiimoteStatus(int wiimote, u8 *data, const WiimoteEmu::ReportFeatures& rptf)
+void CheckWiimoteStatus(int wiimote, u8 *data, const WiimoteEmu::ReportFeatures& rptf, int ext, const wiimote_key key)
 {
-	u8* const coreData = rptf.core ? (data + rptf.core) : nullptr;
-	u8* const accelData = rptf.accel ? (data + rptf.accel) : nullptr;
-	u8* const irData = rptf.ir ? (data + rptf.ir) : nullptr;
 	u8 size = rptf.size;
-	SetWiiInputDisplayString(wiimote, coreData, accelData, irData);
+	SetWiiInputDisplayString(wiimote, data, rptf, ext, key);
 
 	if (IsRecordingInput())
 		RecordWiimote(wiimote, data, size);
@@ -1038,7 +1108,7 @@ void PlayController(GCPadStatus* PadStatus, int controllerID)
 	CheckInputEnd();
 }
 
-bool PlayWiimote(int wiimote, u8 *data, const WiimoteEmu::ReportFeatures& rptf)
+bool PlayWiimote(int wiimote, u8 *data, const WiimoteEmu::ReportFeatures& rptf, int ext, const wiimote_key key)
 {
 	if (!IsPlayingInput() || !IsUsingWiimote(wiimote) || tmpInput == nullptr)
 		return false;
@@ -1050,9 +1120,6 @@ bool PlayWiimote(int wiimote, u8 *data, const WiimoteEmu::ReportFeatures& rptf)
 		return false;
 	}
 
-	u8* const coreData = rptf.core ? (data + rptf.core) : nullptr;
-	u8* const accelData = rptf.accel ? (data + rptf.accel) : nullptr;
-	u8* const irData = rptf.ir ? (data + rptf.ir) : nullptr;
 	u8 size = rptf.size;
 
 	u8 sizeInMovie = tmpInput[s_currentByte];
@@ -1077,7 +1144,7 @@ bool PlayWiimote(int wiimote, u8 *data, const WiimoteEmu::ReportFeatures& rptf)
 	memcpy(data, &(tmpInput[s_currentByte]), size);
 	s_currentByte += size;
 
-	SetWiiInputDisplayString(wiimote, coreData, accelData, irData);
+	SetWiiInputDisplayString(wiimote, data, rptf, ext, key);
 
 	g_currentInputCount++;
 

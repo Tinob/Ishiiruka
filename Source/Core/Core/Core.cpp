@@ -564,6 +564,9 @@ void RequestRefreshInfo()
 
 bool PauseAndLock(bool doLock, bool unpauseOnUnlock)
 {
+	if (!IsRunning())
+		return true;
+
 	// let's support recursive locking to simplify things on the caller's side,
 	// and let's do it at this outer level in case the individual systems don't support it.
 	if (doLock ? s_pause_and_lock_depth++ : --s_pause_and_lock_depth)
@@ -600,10 +603,10 @@ void VideoThrottle()
 
 	s_drawn_video++;
 	// Update the audio timestretcher with the current speed
-	if (soundStream)
+	if (g_sound_stream)
 	{
 		float Speed = (float)(s_drawn_video * 1000.0 / (VideoInterface::TargetRefreshRate * ElapseTime));
-		CMixer* pMixer = soundStream->GetMixer();
+		CMixer* pMixer = g_sound_stream->GetMixer();
 		pMixer->UpdateSpeed((float)Speed);
 	}
 }

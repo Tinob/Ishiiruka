@@ -5,9 +5,6 @@
     <ClCompile Include="MainNoGUI.cpp" />
     <ClCompile Include="WXInputBase.cpp" />
     <ClCompile Include="WxUtils.cpp" />
-    <ClCompile Include="MemoryCards\WiiSaveCrypted.cpp">
-      <Filter>GUI\Saves</Filter>
-    </ClCompile>
     <ClCompile Include="NetWindow.cpp">
       <Filter>GUI\NetPlay</Filter>
     </ClCompile>
@@ -135,9 +132,6 @@
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="WXInputBase.h" />
     <ClInclude Include="WxUtils.h" />
-    <ClInclude Include="MemoryCards\WiiSaveCrypted.h">
-      <Filter>GUI\Saves</Filter>
-    </ClInclude>
     <ClInclude Include="NetWindow.h">
       <Filter>GUI\NetPlay</Filter>
     </ClInclude>

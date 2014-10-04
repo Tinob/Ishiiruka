@@ -88,7 +88,6 @@
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="MemcardManager.cpp" />
-    <ClCompile Include="MemoryCards\WiiSaveCrypted.cpp" />
     <ClCompile Include="Debugger\MemoryCheckDlg.cpp" />
     <ClCompile Include="Debugger\MemoryView.cpp" />
     <ClCompile Include="Debugger\MemoryWindow.cpp" />
@@ -133,7 +132,6 @@
     <ClInclude Include="LogWindow.h" />
     <ClInclude Include="Main.h" />
     <ClInclude Include="MemcardManager.h" />
-    <ClInclude Include="MemoryCards\WiiSaveCrypted.h" />
     <ClInclude Include="Debugger\MemoryCheckDlg.h" />
     <ClInclude Include="Debugger\MemoryView.h" />
     <ClInclude Include="Debugger\MemoryWindow.h" />
