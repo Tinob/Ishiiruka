@@ -118,7 +118,7 @@ inline void s16ToFloat(float* dst, const s16* src, u32 count)
 
 inline void floatTos16(s16* dst, const float* src, u32 count)
 {
-	__m128 factor = _mm_set1_ps(32767.0f);
+	__m128 factor = _mm_set1_ps(32768.0f);
 	__m128i* destination = (__m128i*)dst;
 	__m128i* end = (__m128i*)(dst + count);
 	while (destination < end)
@@ -161,9 +161,8 @@ void SoundStream::SoundLoop()
 		sTouch.setChannels(2);
 		sTouch.setSampleRate(m_mixer->GetSampleRate());
 		sTouch.setTempo(1.0);
-		sTouch.setSetting(SETTING_SEQUENCE_MS, 35);
 		sTouch.setSetting(SETTING_USE_QUICKSEEK, 0);
-		sTouch.setSetting(SETTING_USE_AA_FILTER, 0);
+		sTouch.setSetting(SETTING_USE_AA_FILTER, 1);
 		while (!threadData)
 		{
 			u32 availablesamples = m_mixer->AvailableSamples();
@@ -178,7 +177,7 @@ void SoundStream::SoundLoop()
 				numsamples = m_mixer->Mix(realtimeBuffer, numsamples);				
 				rate *= ratemultiplier;
 				rate = rate < 0.5f ? 0.5f : rate;
-				rate = roundf(rate * 32.0f) / 32.0f;
+				rate = roundf(rate * 16.0f) / 16.0f;
 				sTouch.setTempo(rate);
 				s16ToFloat(samplebuffer, realtimeBuffer, numsamples * SOUND_SAMPLES_STEREO);
 				sTouch.putSamples(samplebuffer, numsamples);
