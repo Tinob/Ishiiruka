@@ -458,6 +458,25 @@ void G_RMGP01_pvt::Initialize(std::map<u64, TCompiledLoaderFunction> &pvlmap)
 	{
 	pvlmap[20165590028600] = TemplatedLoader<0, 0x00001100u, 0x40016009u, 0x00000000u, 0x00000000u>;
 	}
+	// P_mtx0_3_Dir_flt_C0_1_Dir_8888_T0_mtx0_1_I16_flt_T1_mtx0_1_I16_flt_
+	// num_verts= 2883600
+#if _M_SSE >= 0x401
+	if (cpu_info.bSSE4_1)
+	{
+		pvlmap[23047585895945] = TemplatedLoader<0x401, 0x000f1100u, 0x41216009u, 0x00000009u, 0x00000000u>;
+	}
+	else
+#endif
+#if _M_SSE >= 0x301
+	if (cpu_info.bSSSE3)
+	{
+		pvlmap[23047585895945] = TemplatedLoader<0x301, 0x000f1100u, 0x41216009u, 0x00000009u, 0x00000000u>;
+	}
+	else
+#endif
+	{
+		pvlmap[23047585895945] = TemplatedLoader<0, 0x000f1100u, 0x41216009u, 0x00000009u, 0x00000000u>;
+	}
 	//P_mtx1_3_I16_s16_Nrm_0_0_I16_s16_C0_1_I16_8888_T0_mtx0_1_I16_s16_T2_mtx1_1_Inv_flt_ num_verts= 1255222
 #if _M_SSE >= 0x401
 	if (cpu_info.bSSE4_1)

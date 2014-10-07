@@ -20,11 +20,19 @@
 // Precompiled Loaders
 #include "VideoCommon/G_GFZE01_pvt.h"
 #include "VideoCommon/G_GLMP01_pvt.h"
+#include "VideoCommon/G_GM8E01_pvt.h"
+#include "VideoCommon/G_GNUEDA_pvt.h"
 #include "VideoCommon/G_GSAE01_pvt.h"
 #include "VideoCommon/G_GZ2P01_pvt.h"
+#include "VideoCommon/G_RBUP08_pvt.h"
 #include "VideoCommon/G_R5WEA4_pvt.h"
 #include "VideoCommon/G_RMCP01_pvt.h"
 #include "VideoCommon/G_RMGP01_pvt.h"
+#include "VideoCommon/G_RSBP01_pvt.h"
+#include "VideoCommon/G_SDWP18_pvt.h"
+#include "VideoCommon/G_SMNP01_pvt.h"
+#include "VideoCommon/G_SPDE52_pvt.h"
+#include "VideoCommon/G_SPXP41_pvt.h"
 #include "VideoCommon/G_SX4E01_pvt.h"
 
 NativeVertexFormat *g_nativeVertexFmt;
@@ -261,13 +269,21 @@ namespace VertexLoaderManager
 		{
 			s_PrecompiledLoadersInitialized = true;
 			G_GFZE01_pvt::Initialize(s_PrecompiledVertexLoaderMap);
+			G_GLMP01_pvt::Initialize(s_PrecompiledVertexLoaderMap);
+			G_GM8E01_pvt::Initialize(s_PrecompiledVertexLoaderMap);
+			G_GNUEDA_pvt::Initialize(s_PrecompiledVertexLoaderMap);
 			G_GSAE01_pvt::Initialize(s_PrecompiledVertexLoaderMap);
 			G_GZ2P01_pvt::Initialize(s_PrecompiledVertexLoaderMap);
 			G_R5WEA4_pvt::Initialize(s_PrecompiledVertexLoaderMap);
+			G_RBUP08_pvt::Initialize(s_PrecompiledVertexLoaderMap);
 			G_RMCP01_pvt::Initialize(s_PrecompiledVertexLoaderMap);
 			G_RMGP01_pvt::Initialize(s_PrecompiledVertexLoaderMap);
-			G_SX4E01_pvt::Initialize(s_PrecompiledVertexLoaderMap);
-			G_GLMP01_pvt::Initialize(s_PrecompiledVertexLoaderMap);
+			G_RSBP01_pvt::Initialize(s_PrecompiledVertexLoaderMap);
+			G_SDWP18_pvt::Initialize(s_PrecompiledVertexLoaderMap);
+			G_SMNP01_pvt::Initialize(s_PrecompiledVertexLoaderMap);
+			G_SPDE52_pvt::Initialize(s_PrecompiledVertexLoaderMap);
+			G_SPXP41_pvt::Initialize(s_PrecompiledVertexLoaderMap);
+			G_SX4E01_pvt::Initialize(s_PrecompiledVertexLoaderMap);			
 		}
 		LastGameCode = SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID;
 	}

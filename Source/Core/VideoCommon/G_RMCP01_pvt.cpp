@@ -1754,4 +1754,81 @@ void G_RMCP01_pvt::Initialize(std::map<u64, TCompiledLoaderFunction> &pvlmap)
 	{
 	pvlmap[20182065869718] = TemplatedLoader<0, 0x00002a00u, 0x40016407u, 0x00000000u, 0x00000000u>;
 	}
+	/*/*/
+	// P_mtx1_3_I16_flt_Nrm_0_0_I16_s16_C0_1_I8_8888_T0_mtx0_1_I16_s16_T1_mtx1_1_Inv_flt_
+	// num_verts= 40480667
+#if _M_SSE >= 0x401
+	if (cpu_info.bSSE4_1)
+	{
+		pvlmap[21260684773563] = TemplatedLoader<0x401, 0x00032f02u, 0x40e16c09u, 0x80000009u, 0x00000000u>;
+	}
+	else
+#endif
+#if _M_SSE >= 0x301
+		if (cpu_info.bSSSE3)
+		{
+		pvlmap[21260684773563] = TemplatedLoader<0x301, 0x00032f02u, 0x40e16c09u, 0x80000009u, 0x00000000u>;
+		}
+		else
+#endif
+		{
+			pvlmap[21260684773563] = TemplatedLoader<0, 0x00032f02u, 0x40e16c09u, 0x80000009u, 0x00000000u>;
+		}
+	// P_mtx0_3_I8_s16_Nrm_0_0_I8_s16_C0_0_I8_565_T0_mtx0_1_I8_u16_
+	// num_verts= 1035916
+#if _M_SSE >= 0x401
+	if (cpu_info.bSSE4_1)
+	{
+		pvlmap[20714252606358] = TemplatedLoader<0x401, 0x00022a00u, 0x40a00c07u, 0x00000000u, 0x00000000u>;
+	}
+	else
+#endif
+#if _M_SSE >= 0x301
+		if (cpu_info.bSSSE3)
+		{
+		pvlmap[20714252606358] = TemplatedLoader<0x301, 0x00022a00u, 0x40a00c07u, 0x00000000u, 0x00000000u>;
+		}
+		else
+#endif
+		{
+			pvlmap[20714252606358] = TemplatedLoader<0, 0x00022a00u, 0x40a00c07u, 0x00000000u, 0x00000000u>;
+		}
+	// P_mtx0_3_I8_flt_Nrm_0_0_I8_s16_C0_0_I8_565_
+	// num_verts= 258096
+#if _M_SSE >= 0x401
+	if (cpu_info.bSSE4_1)
+	{
+		pvlmap[20180413034040] = TemplatedLoader<0x401, 0x00002a00u, 0x40000c09u, 0x00000000u, 0x00000000u>;
+	}
+	else
+#endif
+#if _M_SSE >= 0x301
+		if (cpu_info.bSSSE3)
+		{
+		pvlmap[20180413034040] = TemplatedLoader<0x301, 0x00002a00u, 0x40000c09u, 0x00000000u, 0x00000000u>;
+		}
+		else
+#endif
+		{
+			pvlmap[20180413034040] = TemplatedLoader<0, 0x00002a00u, 0x40000c09u, 0x00000000u, 0x00000000u>;
+		}
+	// P_mtx0_2_I8_s8_Nrm_0_0_I8_s8_T0_mtx0_1_I8_s16_T1_mtx0_1_I8_s16_
+	// num_verts= 232
+#if _M_SSE >= 0x401
+	if (cpu_info.bSSE4_1)
+	{
+		pvlmap[22120001964224] = TemplatedLoader<0x401, 0x000a0a00u, 0x40e00402u, 0x00000007u, 0x00000000u>;
+	}
+	else
+#endif
+#if _M_SSE >= 0x301
+		if (cpu_info.bSSSE3)
+		{
+		pvlmap[22120001964224] = TemplatedLoader<0x301, 0x000a0a00u, 0x40e00402u, 0x00000007u, 0x00000000u>;
+		}
+		else
+#endif
+		{
+			pvlmap[22120001964224] = TemplatedLoader<0, 0x000a0a00u, 0x40e00402u, 0x00000007u, 0x00000000u>;
+		}
 }
