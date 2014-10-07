@@ -113,9 +113,10 @@ __forceinline void _Normal_Direct_FLOAT_SSSE3(TPipelineState &pipelinestate)
 		dst += 3;
 		Float3ToFloat3sse3((__m128i*)dst, (const __m128i*)src);
 	}
+	src += 3;
 	dst += 3;
+	pipelinestate.SetReadPosition(reinterpret_cast<const u8*>(src));
 	pipelinestate.SetWritePosition(reinterpret_cast<u8*>(dst));
-	pipelinestate.ReadSkip(N * 3 * sizeof(float));
 }
 
 template <typename I, int N>
@@ -176,9 +177,10 @@ __forceinline void _Normal_Direct_S16_SSSE4(TPipelineState &pipelinestate)
 		dst += 3;
 		Short3ToFloat3sse4(dst, (const __m128i*)src, &scale);
 	}
+	src += 3;
 	dst += 3;
+	pipelinestate.SetReadPosition(reinterpret_cast<const u8*>(src));
 	pipelinestate.SetWritePosition(reinterpret_cast<u8*>(dst));
-	pipelinestate.ReadSkip(N * 3 * sizeof(s16));
 }
 
 template <int N>
@@ -197,9 +199,10 @@ __forceinline void _Normal_Direct_U16_SSSE4(TPipelineState &pipelinestate)
 		dst += 3;
 		UShort3ToFloat3sse4(dst, (const __m128i*)src, &scale);
 	}
+	src += 3;
 	dst += 3;
+	pipelinestate.SetReadPosition(reinterpret_cast<const u8*>(src));
 	pipelinestate.SetWritePosition(reinterpret_cast<u8*>(dst));
-	pipelinestate.ReadSkip(N * 3 * sizeof(u16));
 }
 
 template <typename I, int N>

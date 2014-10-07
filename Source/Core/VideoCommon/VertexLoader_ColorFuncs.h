@@ -78,7 +78,7 @@ __forceinline void _Color_ReadDirect_16b_565(TPipelineState &pipelinestate)
 
 __forceinline void _Color_ReadDirect_16b_4444(TPipelineState &pipelinestate)
 {
-	_SetCol4444(pipelinestate, pipelinestate.Read<u16>());
+	_SetCol4444(pipelinestate, pipelinestate.ReadUnswapped<u16>());
 }
 
 __forceinline void _Color_ReadDirect_24b_6666(TPipelineState &pipelinestate)
