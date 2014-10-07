@@ -387,9 +387,10 @@ void VertexLoader::WriteCall(TPipelineFunction func)
 	m_PipelineStages[m_numPipelineStages++] = func;
 }
 
-void VertexLoader::SetupRunVertices(const VAT &vat, int primitive, int const count)
+void VertexLoader::RunVertices(const VertexLoaderParameters &parameters)
 {
-	m_numLoadedVertices += count;
+	m_numLoadedVertices += parameters.count;
+	const VAT &vat = *parameters.VtxAttr;
 	// Load position and texcoord scale factors.
 	m_VtxAttr.PosFrac = vat.g0.PosFrac;
 	m_VtxAttr.texCoord[0].Frac = vat.g0.Tex0Frac;
@@ -408,13 +409,8 @@ void VertexLoader::SetupRunVertices(const VAT &vat, int primitive, int const cou
 	for (int i = 0; i < 2; i++)
 		g_PipelineState.colElements[i] = m_VtxAttr.color[i].Elements;
 	// Prepare bounding box
-	VertexLoader_BBox::SetPrimitive(primitive);
-	g_PipelineState.count = count;
-}
-
-void VertexLoader::RunVertices(const VertexLoaderParameters &parameters)
-{
-	SetupRunVertices(*parameters.VtxAttr, parameters.primitive, parameters.count);
+	VertexLoader_BBox::SetPrimitive(parameters.primitive);
+	g_PipelineState.count = parameters.count;
 	g_PipelineState.Initialize(parameters.source, parameters.destination);
 	s_CurrentVertexLoader = this;
 	m_CompiledFunction(g_PipelineState);

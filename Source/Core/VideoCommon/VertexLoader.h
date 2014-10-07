@@ -76,7 +76,6 @@ private:
 	u64 m_numLoadedVertices;
 
 	void SetVAT(const VAT &vtx_attr);
-	void SetupRunVertices(const VAT &vtx_attr, s32 primitive, s32 const count);
 	void CompileVertexTranslator();
 
 	static const VertexLoader* s_CurrentVertexLoader;
