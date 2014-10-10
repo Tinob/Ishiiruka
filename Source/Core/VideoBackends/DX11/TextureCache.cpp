@@ -152,7 +152,7 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, unsigned int dstFo
 	if (type != TCET_EC_DYNAMIC || g_ActiveConfig.bCopyEFBToTexture)
 	{
 		g_renderer->ResetAPIState();
-
+		D3D::context->OMSetRenderTargets(1, &texture->GetRTV(), NULL);
 		// stretch picture with increased internal resolution
 		const D3D11_VIEWPORT vp = CD3D11_VIEWPORT(0.f, 0.f, (float)virtual_width, (float)virtual_height);
 		D3D::context->RSSetViewports(1, &vp);
@@ -178,8 +178,6 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, unsigned int dstFo
 			D3D::SetLinearCopySampler();
 		else
 			D3D::SetPointCopySampler();
-
-		D3D::context->OMSetRenderTargets(1, &texture->GetRTV(), NULL);
 
 		// Create texture copy
 		D3D::drawShadedTexQuad(

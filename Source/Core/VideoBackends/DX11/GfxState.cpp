@@ -4,8 +4,8 @@
 
 #include "Common/Logging/Log.h"
 
-#include "D3DBase.h"
-#include "GfxState.h"
+#include "VideoBackends/DX11/D3DBase.h"
+#include "VideoBackends/DX11/GfxState.h"
 
 namespace DX11
 {
@@ -15,7 +15,7 @@ namespace D3D
 
 StateManager* stateman;
 
-StateManager::StateManager() : cur_blendstate(NULL), cur_depthstate(NULL), cur_raststate(NULL) {}
+StateManager::StateManager() : cur_blendstate(nullptr), cur_depthstate(nullptr), cur_raststate(nullptr) {}
 
 void StateManager::PushBlendState(const ID3D11BlendState* state) { blendstates.push(state); }
 void StateManager::PushDepthState(const ID3D11DepthStencilState* state) { depthstates.push(state); }
@@ -31,7 +31,7 @@ void StateManager::Apply()
 		if (cur_blendstate != blendstates.top())
 		{
 			cur_blendstate = (ID3D11BlendState*)blendstates.top();
-			D3D::context->OMSetBlendState(cur_blendstate, NULL, 0xFFFFFFFF);
+			D3D::context->OMSetBlendState(cur_blendstate, nullptr, 0xFFFFFFFF);
 		}
 	}
 	else ERROR_LOG(VIDEO, "Tried to apply without blend state!");

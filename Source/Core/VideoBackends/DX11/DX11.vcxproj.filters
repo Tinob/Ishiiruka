@@ -50,13 +50,10 @@
     <ClCompile Include="Television.cpp">
       <Filter>Render</Filter>
     </ClCompile>
-    <ClCompile Include="LineGeometryShader.cpp">
-      <Filter>Render</Filter>
-    </ClCompile>
-    <ClCompile Include="PointGeometryShader.cpp">
-      <Filter>Render</Filter>
-    </ClCompile>
     <ClCompile Include="PerfQuery.cpp">
+      <Filter>Render</Filter>
+    </ClCompile>
+    <ClCompile Include="LineAndPointGeometryShader.cpp">
       <Filter>Render</Filter>
     </ClCompile>
   </ItemGroup>
@@ -112,16 +109,16 @@
     <ClInclude Include="Television.h">
       <Filter>Render</Filter>
     </ClInclude>
-    <ClInclude Include="LineGeometryShader.h">
-      <Filter>Render</Filter>
-    </ClInclude>
-    <ClInclude Include="PointGeometryShader.h">
-      <Filter>Render</Filter>
-    </ClInclude>
     <ClInclude Include="PerfQuery.h">
       <Filter>Render</Filter>
     </ClInclude>
     <ClInclude Include="D3DWrapDeviceContext.h">
+      <Filter>D3D</Filter>
+    </ClInclude>
+    <ClInclude Include="LineAndPointGeometryShader.h">
+      <Filter>Render</Filter>
+    </ClInclude>
+    <ClInclude Include="D3DPtr.h">
       <Filter>D3D</Filter>
     </ClInclude>
   </ItemGroup>

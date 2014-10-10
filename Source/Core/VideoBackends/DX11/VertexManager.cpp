@@ -61,14 +61,12 @@ void VertexManager::CreateDeviceObjects()
 	m_current_index_buffer = 0;
 	m_index_buffer_cursor = IBUFFER_SIZE;
 	m_vertex_buffer_cursor = VBUFFER_SIZE;
-	m_lineShader.Init();
-	m_pointShader.Init();
+	m_lineAndPointShader.Init();
 }
 
 void VertexManager::DestroyDeviceObjects()
 {
-	m_pointShader.Shutdown();
-	m_lineShader.Shutdown();
+	m_lineAndPointShader.Shutdown();
 	for (m_current_vertex_buffer = 0; m_current_vertex_buffer < MAX_VBUFFER_COUNT; m_current_vertex_buffer++)
 	{
 		SAFE_RELEASE(m_vertex_buffers[m_current_vertex_buffer]);
@@ -159,6 +157,7 @@ void VertexManager::Draw(UINT stride)
 		D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP :
 		D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		D3D::context->IASetPrimitiveTopology(pt);
+		D3D::context->GSSetShader(nullptr, nullptr, 0);
 		D3D::context->DrawIndexed(IndexGenerator::GetTriangleindexLen(), m_triangle_draw_index, baseVertexLocation);
 		INCSTAT(stats.thisFrame.numIndexedDrawCalls);
 	}
@@ -177,14 +176,14 @@ void VertexManager::Draw(UINT stride)
 		for (int i = 0; i < 8; ++i)
 			texOffsetEnable[i] = bpmem.texcoords[i].s.line_offset;
 
-		if (m_lineShader.SetShader(g_nativeVertexFmt->m_components, lineWidth,
+		if (m_lineAndPointShader.SetLineShader(g_nativeVertexFmt->m_components, lineWidth,
 			texOffset, vpWidth, vpHeight, texOffsetEnable))
 		{
 			D3D::context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
 			D3D::context->DrawIndexed(IndexGenerator::GetLineindexLen(), m_line_draw_index, baseVertexLocation);
 			INCSTAT(stats.thisFrame.numIndexedDrawCalls);
 
-			D3D::context->GSSetShader(NULL, NULL, 0);
+			D3D::context->GSSetShader(nullptr, nullptr, 0);
 		}
 	}
 	if (IndexGenerator::GetNumPoints() > 0)
@@ -199,14 +198,14 @@ void VertexManager::Draw(UINT stride)
 		for (int i = 0; i < 8; ++i)
 			texOffsetEnable[i] = bpmem.texcoords[i].s.point_offset;
 
-		if (m_pointShader.SetShader(g_nativeVertexFmt->m_components, pointSize,
+		if (m_lineAndPointShader.SetPointShader(g_nativeVertexFmt->m_components, pointSize,
 			texOffset, vpWidth, vpHeight, texOffsetEnable))
 		{
 			D3D::context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
 			D3D::context->DrawIndexed(IndexGenerator::GetPointindexLen(), m_point_draw_index, baseVertexLocation);
 			INCSTAT(stats.thisFrame.numIndexedDrawCalls);
 
-			D3D::context->GSSetShader(NULL, NULL, 0);
+			D3D::context->GSSetShader(nullptr, nullptr, 0);
 		}
 	}
 	if (IndexGenerator::GetNumLines() > 0 || IndexGenerator::GetNumPoints() > 0)
