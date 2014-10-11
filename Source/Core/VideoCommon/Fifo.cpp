@@ -46,7 +46,16 @@ void Fifo_DoState(PointerWrap &p)
 	p.Do(size);
 	u8* videodata = const_cast<u8*>(g_VideoData.GetReadPosition());
 	p.DoPointer(videodata, videoBuffer);
+	g_VideoData.SetReadPosition(videodata);
 	p.Do(g_bSkipCurrentFrame);
+	p.DoArray(videoBufferSC, FIFO_SIZE);
+	p.Do(sizeSC);
+	videodata = const_cast<u8*>(g_VideoDataSC.GetReadPosition());
+	p.DoPointer(videodata, videoBufferSC);
+	g_VideoDataSC.SetReadPosition(videodata);
+	p.Do(CPReadFifoSC);
+	p.Do(CPBaseFifoSC);
+	p.Do(CPEndFifoSC);
 }
 
 void Fifo_PauseAndLock(bool doLock, bool unpauseOnUnlock)
