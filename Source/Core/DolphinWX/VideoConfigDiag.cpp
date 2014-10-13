@@ -477,7 +477,8 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title, con
 	group_efbcopy->Add(cache_efb_copies, 0, wxRIGHT, 5);
 
 	szr_efb->Add(CreateCheckBox(page_hacks, _("Skip EFB Access from CPU"), wxGetTranslation(efb_access_desc), vconfig.bEFBAccessEnable, true), 0, wxBOTTOM | wxLEFT, 5);
-	szr_efb->Add(CreateCheckBox(page_hacks, _("Fast EFB Access"), wxGetTranslation(efb_fast_access_desc), vconfig.bEFBFastAccess, false), 0, wxBOTTOM | wxLEFT, 5);
+	Fast_efb_cache = CreateCheckBox(page_hacks, _("Fast EFB Access"), wxGetTranslation(efb_fast_access_desc), vconfig.bEFBFastAccess, false);
+	szr_efb->Add(Fast_efb_cache, 0, wxBOTTOM | wxLEFT, 5);
 	szr_efb->Add(emulate_efb_format_changes, 0, wxBOTTOM | wxLEFT, 5);
 	szr_efb->Add(group_efbcopy, 0, wxEXPAND | wxALL, 5);
 	szr_hacks->Add(szr_efb, 0, wxEXPAND | wxALL, 5);
@@ -722,4 +723,109 @@ void VideoConfigDiag::CreateDescriptionArea(wxPanel* const page, wxBoxSizer* con
 
 	// Store description text object for later lookup
 	desc_texts.insert(std::pair<wxWindow*,wxStaticText*>(page, desc_text));
+}
+
+void VideoConfigDiag::Event_Backend(wxCommandEvent &ev)
+{
+	VideoBackend* new_backend = g_available_video_backends[ev.GetInt()];
+	if (g_video_backend != new_backend)
+	{
+		bool do_switch = true;
+		if (new_backend->GetName() == "Software Renderer")
+		{
+			do_switch = (wxYES == wxMessageBox(_("Software rendering is an order of magnitude slower than using the other backends.\nIt's only useful for debugging purposes.\nDo you really want to enable software rendering? If unsure, select 'No'."),
+				_("Warning"), wxYES_NO | wxNO_DEFAULT | wxICON_EXCLAMATION, wxGetActiveWindow()));
+		}
+
+		if (do_switch)
+		{
+			// TODO: Only reopen the dialog if the software backend is
+			// selected (make sure to reinitialize backend info)
+			// reopen the dialog
+			Close();
+
+			g_video_backend = new_backend;
+			SConfig::GetInstance().m_LocalCoreStartupParameter.m_strVideoBackend = g_video_backend->GetName();
+
+			g_video_backend->ShowConfig(GetParent());
+		}
+		else
+		{
+			// Select current backend again
+			choice_backend->SetStringSelection(StrToWxStr(g_video_backend->GetName()));
+		}
+	}
+
+	ev.Skip();
+}
+
+void VideoConfigDiag::Event_Adapter(wxCommandEvent &ev) { ev.Skip(); } // TODO
+
+void VideoConfigDiag::Event_ProgressiveScan(wxCommandEvent &ev)
+{
+	SConfig::GetInstance().m_SYSCONF->SetData("IPL.PGS", ev.GetInt());
+	SConfig::GetInstance().m_LocalCoreStartupParameter.bProgressive = ev.IsChecked();
+
+	ev.Skip();
+}
+
+void VideoConfigDiag::Event_Stc(wxCommandEvent &ev)
+{
+	int samples[] = { 0, 512, 128 };
+	vconfig.iSafeTextureCache_ColorSamples = samples[ev.GetInt()];
+
+	ev.Skip();
+}
+
+void VideoConfigDiag::Event_PPShader(wxCommandEvent &ev)
+{
+	const int sel = ev.GetInt();
+	if (sel)
+		vconfig.sPostProcessingShader = WxStrToStr(ev.GetString());
+	else
+		vconfig.sPostProcessingShader.clear();
+
+	ev.Skip();
+}
+// Enables/disables UI elements depending on current config
+void VideoConfigDiag::OnUpdateUI(wxUpdateUIEvent& ev)
+{
+	// Anti-aliasing
+	choice_aamode->Enable(vconfig.backend_info.AAModes.size() > 1);
+	text_aamode->Enable(vconfig.backend_info.AAModes.size() > 1);
+
+	// pixel lighting
+	pixel_lighting->Enable(vconfig.backend_info.bSupportsPixelLighting);
+
+	// Borderless Fullscreen
+	borderless_fullscreen->Enable(vconfig.backend_info.bSupportsExclusiveFullscreen);
+	borderless_fullscreen->Show(vconfig.backend_info.bSupportsExclusiveFullscreen);
+
+	// EFB copy
+	efbcopy_texture->Enable(vconfig.bEFBCopyEnable);
+	efbcopy_ram->Enable(vconfig.bEFBCopyEnable);
+	cache_efb_copies->Enable(vconfig.bEFBCopyEnable && !vconfig.bCopyEFBToTexture);
+
+	// EFB format change emulation
+	emulate_efb_format_changes->Enable(vconfig.backend_info.bSupportsFormatReinterpretation);
+	// EFB Access Cache
+	Fast_efb_cache->Show(vconfig.bEFBAccessEnable);
+	// XFB
+	virtual_xfb->Enable(vconfig.bUseXFB);
+	real_xfb->Enable(vconfig.bUseXFB);
+
+	// OGL Hacked buffer
+	hacked_buffer_upload->Enable(Core::GetState() == Core::CORE_UNINITIALIZED && vconfig.backend_info.APIType == API_OPENGL);
+	hacked_buffer_upload->Show(vconfig.backend_info.APIType == API_OPENGL);
+
+	// Predictive Fifo
+	Async_Shader_compilation->Show(vconfig.backend_info.APIType != API_OPENGL);
+	Predictive_FIFO->Show(vconfig.backend_info.APIType != API_OPENGL);
+	Wait_For_Shaders->Show(vconfig.backend_info.APIType != API_OPENGL);
+	bool WaitForShaderCompilationenabled = vconfig.bPredictiveFifo && !vconfig.bFullAsyncShaderCompilation;
+	vconfig.bWaitForShaderCompilation = vconfig.bWaitForShaderCompilation && WaitForShaderCompilationenabled;
+	Wait_For_Shaders->Enable(WaitForShaderCompilationenabled);
+	Async_Shader_compilation->Enable(!vconfig.bWaitForShaderCompilation);
+	Predictive_FIFO->Enable(!vconfig.bWaitForShaderCompilation);
+	ev.Skip();
 }
