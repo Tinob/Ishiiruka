@@ -100,6 +100,7 @@ bool HLSLAsyncCompiler::NextTask()
 }
 ShaderCompilerWorkUnit* HLSLAsyncCompiler::NewUnit(u32 codesize)
 {
+	Common::ThreadPool::NotifyWorkPending();
 	u32 index = m_repositoryIndex.fetch_add(1);
 	ShaderCompilerWorkUnit* result = &WorkUnitRepository[index & 255];
 	result->Clear();
@@ -114,7 +115,6 @@ void HLSLAsyncCompiler::CompileShaderAsync(ShaderCompilerWorkUnit* unit)
 {
 	m_input.push(unit);
 	m_inputsize++;
-	Common::ThreadPool::NotifyWorkPending();
 }
 void HLSLAsyncCompiler::ProcCompilationResults()
 {

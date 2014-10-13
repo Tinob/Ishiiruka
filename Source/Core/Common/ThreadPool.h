@@ -439,7 +439,7 @@ namespace Common
 		std::atomic<u32> m_workflag;
 		std::atomic<u32> m_workercount;
 		volatile bool m_working;
-		static void Workloop(ThreadPool &state);
+		static void Workloop(ThreadPool &state, size_t ID);
 		static ThreadPool &Getinstance();
 		ThreadPool(ThreadPool const&);
 		void operator=(ThreadPool const&);

@@ -8,9 +8,9 @@ using namespace Common;
 ThreadPool::ThreadPool() : m_workflag(0), m_workercount(0), m_workers(16)
 {
 	m_working = true;
-	for (s32 i = 0; i < cpu_info.logical_cpu_count; i++)
+	for (size_t i = 0; i < cpu_info.logical_cpu_count; i++)
 	{
-		std::thread* current = new std::thread(&ThreadPool::Workloop, std::ref(*this));
+		std::thread* current = new std::thread(&ThreadPool::Workloop, std::ref(*this), i);
 		m_workerThreads.push_back(std::unique_ptr<std::thread>(current));
 #ifdef _WIN32
 		SetThreadPriority(current->native_handle(), THREAD_MODE_BACKGROUND_BEGIN);
@@ -70,11 +70,11 @@ void ThreadPool::UnregisterWorker(IWorker* worker)
 	workerLock.unlock();
 }
 
-void ThreadPool::Workloop(ThreadPool &state)
+void ThreadPool::Workloop(ThreadPool &state, size_t ID)
 {
 	while (state.m_working)
 	{
-		if (state.m_workflag.load() > 0)
+		if (state.m_workflag.load() > ID)
 		{
 			bool worked = false;
 			u32 count = state.m_workercount.load();
