@@ -88,7 +88,6 @@ private:
 		ID_DSPENGINE,
 		ID_ENABLE_HLE_AUDIO,
 		ID_ENABLE_THROTTLE,
-		ID_DUMP_AUDIO,
 		ID_DPL2DECODER,
 		ID_TIMESTRETCHING,
 		ID_LATENCY,
@@ -164,7 +163,6 @@ private:
 	wxRadioBox* DSPEngine;
 	wxSlider*   VolumeSlider;
 	wxStaticText* VolumeText;
-	wxCheckBox* DumpAudio;
 	wxCheckBox* DPL2Decoder;
 	wxCheckBox* TimeStretching;
 	wxArrayString wxArrayBackends;
@@ -273,7 +271,7 @@ private:
 	void AddRemoveISOPaths(wxCommandEvent& event);
 	void DefaultISOChanged(wxFileDirPickerEvent& event);
 	void DVDRootChanged(wxFileDirPickerEvent& event);
-	void ApploaderPathChanged(wxFileDirPickerEvent& WXUNUSED(event));
+	void ApploaderPathChanged(wxFileDirPickerEvent& WXUNUSED (event));
 	void NANDRootChanged(wxFileDirPickerEvent& event);
 
 private:

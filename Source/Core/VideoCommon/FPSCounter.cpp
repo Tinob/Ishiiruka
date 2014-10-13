@@ -25,16 +25,6 @@ void InitFPSCounter()
 		s_bench_file.Close();
 }
 
-static void LogFPSToFile(unsigned long val)
-{
-	if (!s_bench_file.IsOpen())
-		s_bench_file.Open(File::GetUserPath(D_LOGS_IDX) + "fps.txt", "w");
-
-	char buffer[256];
-	snprintf(buffer, 256, "%ld\n", val);
-	s_bench_file.WriteArray(buffer, strlen(buffer));
-}
-
 int UpdateFPSCounter()
 {
 	if (Common::Timer::GetTimeMs() - s_last_update_time >= FPS_REFRESH_INTERVAL)
@@ -42,8 +32,6 @@ int UpdateFPSCounter()
 		s_last_update_time = Common::Timer::GetTimeMs();
 		s_fps = s_counter - s_fps_last_counter;
 		s_fps_last_counter = s_counter;
-		if (g_ActiveConfig.bLogFPSToFile)
-			LogFPSToFile(s_fps);
 	}
 
 	s_counter++;

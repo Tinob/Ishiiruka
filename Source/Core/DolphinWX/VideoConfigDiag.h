@@ -174,7 +174,7 @@ protected:
 		// Predictive Fifo
 		Async_Shader_compilation->Show(vconfig.backend_info.APIType != API_OPENGL);
 		Predictive_FIFO->Show(vconfig.backend_info.APIType != API_OPENGL);
-		Wait_For_Shaders->Enable(vconfig.bPredictiveFifo);
+		Wait_For_Shaders->Enable(vconfig.bPredictiveFifo && !vconfig.bFullAsyncShaderCompilation);
 		Wait_For_Shaders->Show(vconfig.backend_info.APIType != API_OPENGL);
 		ev.Skip();
 	}

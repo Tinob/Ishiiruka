@@ -137,8 +137,6 @@ unsigned int CMixer::Mix(short* samples, unsigned int num_samples, bool consider
 	m_dma_mixer.Mix(samples, num_samples, consider_framelimit);
 	m_streaming_mixer.Mix(samples, num_samples, consider_framelimit);
 	m_wiimote_speaker_mixer.Mix(samples, num_samples, consider_framelimit);
-	if (m_logAudio)
-		g_wave_writer.AddStereoSamples(samples, num_samples);
 	return num_samples;
 }
 
@@ -147,7 +145,7 @@ void CMixer::MixerFifo::PushSamples(const short *samples, unsigned int num_sampl
 	// Cache access in non-volatile variable
 	// indexR isn't allowed to cache in the audio throttling loop as it
 	// needs to get updates to not deadlock.
-	u32 indexW = Common::AtomicLoad(m_indexW);	
+	u32 indexW = Common::AtomicLoad(m_indexW);
 
 	// Check if we have enough free space
 	// indexW == m_indexR results in empty buffer, so indexR must always be smaller than indexW
@@ -190,11 +188,15 @@ void CMixer::PushSamples(const short *samples, unsigned int num_samples)
 		}
 	}
 	m_dma_mixer.PushSamples(samples, num_samples);
+	if (m_log_dsp_audio)
+		g_wave_writer_dsp.AddStereoSamplesBE(samples, num_samples);
 }
 
 void CMixer::PushStreamingSamples(const short *samples, unsigned int num_samples)
 {
 	m_streaming_mixer.PushSamples(samples, num_samples);
+	if (m_log_dtk_audio)
+		g_wave_writer_dtk.AddStereoSamplesBE(samples, num_samples);
 }
 
 void CMixer::PushWiimoteSpeakerSamples(const short *samples, unsigned int num_samples, unsigned int sample_rate)

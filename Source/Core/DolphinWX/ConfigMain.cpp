@@ -145,7 +145,6 @@ EVT_CHECKBOX(ID_NTSCJ, CConfigMain::CoreSettingsChanged)
 EVT_RADIOBOX(ID_DSPENGINE, CConfigMain::AudioSettingsChanged)
 EVT_CHECKBOX(ID_DSPTHREAD, CConfigMain::AudioSettingsChanged)
 EVT_CHECKBOX(ID_ENABLE_THROTTLE, CConfigMain::AudioSettingsChanged)
-EVT_CHECKBOX(ID_DUMP_AUDIO, CConfigMain::AudioSettingsChanged)
 EVT_CHECKBOX(ID_DPL2DECODER, CConfigMain::AudioSettingsChanged)
 EVT_CHECKBOX(ID_TIMESTRETCHING, CConfigMain::AudioSettingsChanged)
 EVT_CHOICE(ID_BACKEND, CConfigMain::AudioSettingsChanged)
@@ -377,8 +376,7 @@ void CConfigMain::InitializeGUIValues()
 	VolumeSlider->SetValue(SConfig::GetInstance().m_Volume);
 	VolumeText->SetLabel(wxString::Format("%d %%", SConfig::GetInstance().m_Volume));
 	DSPThread->SetValue(startup_params.bDSPThread);
-	TimeStretching->SetValue(startup_params.bTimeStretching);
-	DumpAudio->SetValue(SConfig::GetInstance().m_DumpAudio ? true : false);
+	TimeStretching->SetValue(startup_params.bTimeStretching);	
 	DPL2Decoder->SetValue(startup_params.bDPL2Decoder);
 	TimeStretching->SetValue(startup_params.bTimeStretching);
 	Latency->SetValue(startup_params.iLatency);
@@ -660,10 +658,9 @@ void CConfigMain::CreateGUIControls()
 	// Audio page
 	DSPEngine = new wxRadioBox(AudioPage, ID_DSPENGINE, _("DSP Emulator Engine"), wxDefaultPosition, wxDefaultSize, arrayStringFor_DSPEngine, 0, wxRA_SPECIFY_ROWS);
 	DSPThread = new wxCheckBox(AudioPage, ID_DSPTHREAD, _("DSPLLE on Separate Thread"));
-	DumpAudio = new wxCheckBox(AudioPage, ID_DUMP_AUDIO, _("Dump Audio"));
 	DPL2Decoder = new wxCheckBox(AudioPage, ID_DPL2DECODER, _("Dolby Pro Logic II decoder"));
 	TimeStretching = new wxCheckBox(AudioPage, ID_TIMESTRETCHING, _("Time Stretching"));
-	VolumeSlider = new wxSlider(AudioPage, ID_VOLUME, 0, 1, 100, wxDefaultPosition, wxDefaultSize, wxSL_VERTICAL | wxSL_INVERSE);
+	VolumeSlider = new wxSlider(AudioPage, ID_VOLUME, 0, 1, 100, wxDefaultPosition, wxDefaultSize, wxSL_VERTICAL|wxSL_INVERSE);
 	VolumeText = new wxStaticText(AudioPage, wxID_ANY, "");
 	BackendSelection = new wxChoice(AudioPage, ID_BACKEND, wxDefaultPosition, wxDefaultSize, wxArrayBackends, 0, wxDefaultValidator, wxEmptyString);
 	Latency = new wxSpinCtrl(AudioPage, ID_LATENCY, "", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 30);
@@ -682,7 +679,6 @@ void CConfigMain::CreateGUIControls()
 	wxStaticBoxSizer *sbAudioSettings = new wxStaticBoxSizer(wxVERTICAL, AudioPage, _("Sound Settings"));
 	sbAudioSettings->Add(DSPEngine, 0, wxALL | wxEXPAND, 5);
 	sbAudioSettings->Add(DSPThread, 0, wxALL, 5);
-	sbAudioSettings->Add(DumpAudio, 0, wxALL, 5);
 	sbAudioSettings->Add(DPL2Decoder, 0, wxALL, 5);
 	sbAudioSettings->Add(TimeStretching, 0, wxALL, 5);
 
@@ -980,7 +976,7 @@ void CConfigMain::AudioSettingsChanged(wxCommandEvent& event)
 		break;
 
 	case ID_BACKEND:
-		VolumeSlider->Enable(SupportsVolumeChanges(WxStrToStr(BackendSelection->GetStringSelection())));		
+		VolumeSlider->Enable(SupportsVolumeChanges(WxStrToStr(BackendSelection->GetStringSelection())));
 		// Don't save the translated BACKEND_NULLSOUND string
 		SConfig::GetInstance().sBackend = BackendSelection->GetSelection() ?
 			WxStrToStr(BackendSelection->GetStringSelection()) : BACKEND_NULLSOUND;
@@ -992,7 +988,6 @@ void CConfigMain::AudioSettingsChanged(wxCommandEvent& event)
 		break;
 
 	default:
-		SConfig::GetInstance().m_DumpAudio = DumpAudio->GetValue();
 		break;
 	}
 }
@@ -1015,8 +1010,8 @@ bool CConfigMain::SupportsVolumeChanges(std::string backend)
 	//       too much just to enable/disable a stupid slider...
 	return (backend == BACKEND_DIRECTSOUND ||
 		backend == BACKEND_COREAUDIO ||
-		backend == BACKEND_OPENAL ||
-		backend == BACKEND_XAUDIO2);
+			backend == BACKEND_OPENAL ||
+			backend == BACKEND_XAUDIO2);
 }
 
 

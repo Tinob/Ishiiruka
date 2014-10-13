@@ -209,6 +209,9 @@
     <ProjectReference Include="$(CoreDir)VideoCommon\VideoCommon.vcxproj">
       <Project>{3E5C4E02-1BA9-4776-BDBE-E3F91FFA34CF}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\UICommon\UICommon.vcxproj">
+      <Project>{604c8368-f34a-4d55-82c8-cc92a0c13254}</Project>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="DolphinWX.rc" />

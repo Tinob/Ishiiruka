@@ -367,11 +367,11 @@ void CGameListCtrl::Update()
 			SConfig::GetInstance().m_ListUsa  &&
 			SConfig::GetInstance().m_ListPal))
 		{
-			errorString = _("Dolphin could not find any GameCube/Wii ISOs or WADs.  Double-click here to browse for files...");
+			errorString = _("Dolphin could not find any GameCube/Wii ISOs or WADs. Double-click here to browse for files...");
 		}
 		else
 		{
-			errorString = _("Dolphin is currently set to hide all games.  Double-click here to show all games...");
+			errorString = _("Dolphin is currently set to hide all games. Double-click here to show all games...");
 		}
 		InsertColumn(0, "");
 		long index = InsertItem(0, errorString);
@@ -1119,7 +1119,7 @@ void CGameListCtrl::CompressSelection(bool _compress)
 						WxStrToStr(browseDialog.GetPath()),
 						FileName);
 
-				if (wxFileExists(StrToWxStr(OutputFileName)) &&
+				if (File::Exists(OutputFileName) &&
 						wxMessageBox(
 							wxString::Format(_("The file %s already exists.\nDo you wish to replace it?"),
 								StrToWxStr(OutputFileName)),
@@ -1147,7 +1147,7 @@ void CGameListCtrl::CompressSelection(bool _compress)
 						WxStrToStr(browseDialog.GetPath()),
 						FileName);
 
-				if (wxFileExists(StrToWxStr(OutputFileName)) &&
+				if (File::Exists(OutputFileName) &&
 						wxMessageBox(
 							wxString::Format(_("The file %s already exists.\nDo you wish to replace it?"),
 								StrToWxStr(OutputFileName)),

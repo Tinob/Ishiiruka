@@ -6,32 +6,33 @@
 // IMPORTANT: UI etc should modify g_Config. Graphics code should read g_ActiveConfig.
 // The reason for this is to get rid of race conditions etc when the configuration
 // changes in the middle of a frame. This is done by copying g_Config to g_ActiveConfig
-// at the start of every frame. Noone should ever change members of g_ActiveConfig 
+// at the start of every frame. Noone should ever change members of g_ActiveConfig
 // directly.
 
-#ifndef _VIDEO_CONFIG_H_
-#define _VIDEO_CONFIG_H_
+#pragma once
 
-#include "Common/Common.h"
+#include <string>
+#include <vector>
+
+#include "Common/CommonTypes.h"
 #include "VideoCommon/VideoCommon.h"
 
-#include <vector>
-#include <string>
-
 // Log in two categories, and save three other options in the same byte
-#define CONF_LOG			1
-#define CONF_PRIMLOG		2
-#define CONF_SAVETARGETS	8
-#define CONF_SAVESHADERS	16
+#define CONF_LOG          1
+#define CONF_PRIMLOG      2
+#define CONF_SAVETARGETS  8
+#define CONF_SAVESHADERS  16
 
-enum AspectMode {
-	ASPECT_AUTO = 0,
+enum AspectMode
+{
+	ASPECT_AUTO       = 0,
 	ASPECT_FORCE_16_9 = 1,
-	ASPECT_FORCE_4_3 = 2,
-	ASPECT_STRETCH = 3,
+	ASPECT_FORCE_4_3  = 2,
+	ASPECT_STRETCH    = 3,
 };
 
-enum EFBScale {
+enum EFBScale
+{
 	SCALE_FORCE_INTEGRAL = -1,
 	SCALE_AUTO,
 	SCALE_AUTO_INTEGRAL,
@@ -55,14 +56,13 @@ enum Stereo3DMode {
 class IniFile;
 
 // NEVER inherit from this class.
-struct VideoConfig
+struct VideoConfig final
 {
 	VideoConfig();
-	void Load(const char *ini_file);
-	void GameIniLoad(const char* default_ini, const char* game_ini);
+	void Load(const std::string& ini_file);
+	void GameIniLoad();
 	void VerifyValidity();
-	void Save(const char *ini_file);
-	void GameIniSave(const char* default_ini, const char* game_ini);
+	void Save(const std::string& ini_file);
 	void UpdateProjectionHack();
 	bool IsVSync();
 
@@ -95,7 +95,7 @@ struct VideoConfig
 	bool bTexFmtOverlayEnable;
 	bool bTexFmtOverlayCenter;
 	bool bShowEFBCopyRegions;
-	bool bLogFPSToFile;
+	bool bLogRenderTimeToFile;
 
 	// Render
 	bool bWireFrame;
@@ -113,6 +113,7 @@ struct VideoConfig
 	int i3DStereo; // 0: disabled, 1: Anaglyph, 2: Top/Bottom
 	int i3DStereoSeparation;
 	int i3DStereoFocalAngle;
+	bool bBorderlessFullscreen;
 
 	// Hacks
 	bool bEFBAccessEnable;
@@ -124,7 +125,7 @@ struct VideoConfig
 	bool bEFBCopyEnable;
 	bool bEFBCopyCacheEnable;
 	bool bEFBEmulateFormatChanges;
-	bool bCopyEFBToTexture;	
+	bool bCopyEFBToTexture;
 	bool bCopyEFBScaled;
 	int iSafeTextureCache_ColorSamples;
 	int iPhackvalue[4];
@@ -139,14 +140,13 @@ struct VideoConfig
 	bool bForceDualSourceBlend;
 	int iLog; // CONF_ bits
 	int iSaveTargetId; // TODO: Should be dropped
-	
+
 	// D3D only config, mostly to be merged into the above
 	int iAdapter;
 
 	// Debugging
 	bool bEnableShaderDebugging;
-	//Exclusive Full Screen
-	bool bBorderlessFullscreen;
+
 	// Static config per API
 	// TODO: Move this out of VideoConfig
 	struct
@@ -174,7 +174,7 @@ struct VideoConfig
 	bool VirtualXFBEnabled() const { return bUseXFB && !bUseRealXFB; }
 	bool EFBCopiesToTextureEnabled() const { return bEFBCopyEnable && bCopyEFBToTexture; }
 	bool EFBCopiesToRamEnabled() const { return bEFBCopyEnable && !bCopyEFBToTexture; }
-	bool BorderlessFullscreenEnabled() const { return !backend_info.bSupportsExclusiveFullscreen || bBorderlessFullscreen; }
+	bool ExclusiveFullscreenEnabled() const { return backend_info.bSupportsExclusiveFullscreen && !bBorderlessFullscreen; }
 };
 
 extern VideoConfig g_Config;
@@ -182,5 +182,3 @@ extern VideoConfig g_ActiveConfig;
 
 // Called every frame.
 void UpdateActiveConfig();
-
-#endif  // _VIDEO_CONFIG_H_

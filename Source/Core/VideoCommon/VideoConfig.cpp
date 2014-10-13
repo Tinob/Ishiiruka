@@ -4,15 +4,16 @@
 
 #include <cmath>
 
-#include "Common/Common.h"
+#include "Common/CommonTypes.h"
+#include "Common/FileUtil.h"
 #include "Common/IniFile.h"
 #include "Common/StringUtil.h"
-#include "VideoCommon/VideoConfig.h"
-#include "VideoCommon/VideoCommon.h"
-#include "Common/FileUtil.h"
+#include "Core/ConfigManager.h"
 #include "Core/Core.h"
 #include "Core/Movie.h"
 #include "VideoCommon/OnScreenDisplay.h"
+#include "VideoCommon/VideoCommon.h"
+#include "VideoCommon/VideoConfig.h"
 
 VideoConfig g_Config;
 VideoConfig g_ActiveConfig;
@@ -28,6 +29,7 @@ VideoConfig::VideoConfig()
 {
 	bRunning = false;
 	bFullscreen = false;
+
 	// Needed for the first frame, I think
 	fAspectRatioHackW = 1;
 	fAspectRatioHackH = 1;
@@ -39,24 +41,27 @@ VideoConfig::VideoConfig()
 		backend_info.bSupportedFormats[i] = false;
 	}
 	backend_info.bUseMinimalMipCount = false;
+	backend_info.bSupportsExclusiveFullscreen = false;
 }
 
-void VideoConfig::Load(const char *ini_file)
+void VideoConfig::Load(const std::string& ini_file)
 {
 	IniFile iniFile;
 	iniFile.Load(ini_file);
-	IniFile::Section* hardware = iniFile.GetOrCreateSection("Hardware");// Hardware
-	hardware->Get("VSync", &bVSync, 0); 
+
+	IniFile::Section* hardware = iniFile.GetOrCreateSection("Hardware");
+	hardware->Get("VSync", &bVSync, 0);
 	hardware->Get("Adapter", &iAdapter, 0);
+
 	IniFile::Section* settings = iniFile.GetOrCreateSection("Settings");
-	settings->Get( "wideScreenHack", &bWidescreenHack, false);
+	settings->Get("wideScreenHack", &bWidescreenHack, false);
 	settings->Get("AspectRatio", &iAspectRatio, (int)ASPECT_AUTO);
 	settings->Get("Crop", &bCrop, false);
 	settings->Get("UseXFB", &bUseXFB, 0);
 	settings->Get("UseRealXFB", &bUseRealXFB, 0);
-	settings->Get("SafeTextureCacheColorSamples", &iSafeTextureCache_ColorSamples, 128);
-	settings->Get("ShowFPS", &bShowFPS, false); // Settings
-	settings->Get("LogFPSToFile", &bLogFPSToFile, false);
+	settings->Get("SafeTextureCacheColorSamples", &iSafeTextureCache_ColorSamples,128);
+	settings->Get("ShowFPS", &bShowFPS, false);
+	settings->Get("LogRenderTimeToFile", &bLogRenderTimeToFile, false);
 	settings->Get("ShowInputDisplay", &bShowInputDisplay, false);
 	settings->Get("OverlayStats", &bOverlayStats, false);
 	settings->Get("OverlayProjStats", &bOverlayProjStats, false);
@@ -74,12 +79,9 @@ void VideoConfig::Load(const char *ini_file)
 	settings->Get("EnablePixelLighting", &bEnablePixelLighting, 0);
 	settings->Get("HackedBufferUpload", &bHackedBufferUpload, 0);
 	settings->Get("FastDepthCalc", &bFastDepthCalc, true);
-
 	settings->Get("MSAA", &iMultisampleMode, 0);
-	settings->Get("EFBScale", &iEFBScale, (int)SCALE_1X); // native
-
+	settings->Get("EFBScale", &iEFBScale, (int) SCALE_1X); // native
 	settings->Get("DstAlphaPass", &bDstAlphaPass, false);
-
 	settings->Get("TexFmtOverlayEnable", &bTexFmtOverlayEnable, 0);
 	settings->Get("TexFmtOverlayCenter", &bTexFmtOverlayCenter, 0);
 	settings->Get("WireFrame", &bWireFrame, 0);
@@ -87,13 +89,14 @@ void VideoConfig::Load(const char *ini_file)
 
 	settings->Get("EnableOpenCL", &bEnableOpenCL, false);
 	settings->Get("OMPDecoder", &bOMPDecoder, false);
-
 	settings->Get("EnableShaderDebugging", &bEnableShaderDebugging, false);
-	settings->Get("BorderlessFullscreen", &bEnableShaderDebugging, false);
-	IniFile::Section* Enhancements = iniFile.GetOrCreateSection("Enhancements");
-	Enhancements->Get("ForceFiltering", &bForceFiltering, 0);
-	Enhancements->Get("MaxAnisotropy", &iMaxAnisotropy, 0);  // NOTE - this is x in (1 << x)
-	Enhancements->Get("PostProcessingShader", &sPostProcessingShader, "");
+	settings->Get("BorderlessFullscreen", &bBorderlessFullscreen, false);
+
+	IniFile::Section* enhancements = iniFile.GetOrCreateSection("Enhancements");
+	enhancements->Get("ForceFiltering", &bForceFiltering, 0);
+	enhancements->Get("MaxAnisotropy", &iMaxAnisotropy, 0);  // NOTE - this is x in (1 << x)
+	enhancements->Get("PostProcessingShader", &sPostProcessingShader, "");
+
 	IniFile::Section* hacks = iniFile.GetOrCreateSection("Hacks");
 	hacks->Get("EFBAccessEnable", &bEFBAccessEnable, true);
 	hacks->Get("DlistCachingEnable", &bDlistCachingEnable, false);
@@ -108,8 +111,9 @@ void VideoConfig::Load(const char *ini_file)
 	hacks->Get("PredictiveFifo", &bPredictiveFifo, false);
 	// Load common settings
 	iniFile.Load(File::GetUserPath(F_DOLPHINCONFIG_IDX));
+	IniFile::Section* interface = iniFile.GetOrCreateSection("Interface");
 	bool bTmp;
-	iniFile.GetOrCreateSection("Interface")->Get("UsePanicHandlers", &bTmp, true);
+	interface->Get("UsePanicHandlers", &bTmp, true);
 	SetEnableAlert(bTmp);
 
 	// Shader Debugging causes a huge slowdown and it's easy to forget about it
@@ -125,7 +129,7 @@ void VideoConfig::Load(const char *ini_file)
 		OSD::AddMessage("Warning: Shader Debugging is enabled, performance will suffer heavily", 15000);
 }
 
-void VideoConfig::GameIniLoad(const char* default_ini_file, const char* local_ini_file)
+void VideoConfig::GameIniLoad()
 {
 	bool gfx_override_exists = false;
 
@@ -140,9 +144,7 @@ void VideoConfig::GameIniLoad(const char* default_ini_file, const char* local_in
 		} \
 	} while (0)
 
-	IniFile iniFile;
-	iniFile.Load(default_ini_file);
-	iniFile.Load(local_ini_file, true);
+	IniFile iniFile = SConfig::GetInstance().m_LocalCoreStartupParameter.LoadGameIni();
 
 	CHECK_SETTING("Video_Hardware", "VSync", bVSync);
 
@@ -212,8 +214,8 @@ void VideoConfig::GameIniLoad(const char* default_ini_file, const char* local_in
 	CHECK_SETTING("Video", "PH_ZFar", sPhackvalue[1]);
 	CHECK_SETTING("Video", "ZTPSpeedupHack", bZTPSpeedHack);
 	CHECK_SETTING("Video", "UseBBox", bUseBBox);
-	CHECK_SETTING("Video", "PerfQueriesEnable", bFullAsyncShaderCompilation);
-	CHECK_SETTING("Video", "FullAsyncShaderCompilation", bPerfQueriesEnable);
+	CHECK_SETTING("Video", "PerfQueriesEnable", bPerfQueriesEnable);
+	CHECK_SETTING("Video", "FullAsyncShaderCompilation", bFullAsyncShaderCompilation);
 	CHECK_SETTING("Video", "WaitForShaderCompilation", bWaitForShaderCompilation);
 	CHECK_SETTING("Video", "PredictiveFifo", bPredictiveFifo);
 	if (gfx_override_exists)
@@ -224,7 +226,7 @@ void VideoConfig::VerifyValidity()
 {
 	// TODO: Check iMaxAnisotropy value
 	if (iAdapter < 0 || iAdapter > ((int)backend_info.Adapters.size() - 1)) iAdapter = 0;
-	if (iMultisampleMode < 0 || iMultisampleMode >= (int)backend_info.AAModes.size()) iMultisampleMode = 0;	
+	if (iMultisampleMode < 0 || iMultisampleMode >= (int)backend_info.AAModes.size()) iMultisampleMode = 0;
 	if (!backend_info.bSupportsFormatReinterpretation) bEFBEmulateFormatChanges = false;
 	if (!backend_info.bSupportsPixelLighting) bEnablePixelLighting = false;
 	if (backend_info.APIType != API_OPENGL) backend_info.bSupportsGLSLUBO = false;
@@ -235,13 +237,13 @@ void VideoConfig::VerifyValidity()
 		bFullAsyncShaderCompilation = false;
 		bWaitForShaderCompilation = false;
 	}
-	if (!backend_info.bSupportsExclusiveFullscreen) bBorderlessFullscreen = false;
 }
 
-void VideoConfig::Save(const char *ini_file)
+void VideoConfig::Save(const std::string& ini_file)
 {
 	IniFile iniFile;
 	iniFile.Load(ini_file);
+
 	IniFile::Section* hardware = iniFile.GetOrCreateSection("Hardware");
 	hardware->Set("VSync", bVSync);
 	hardware->Set("Adapter", iAdapter);
@@ -254,7 +256,7 @@ void VideoConfig::Save(const char *ini_file)
 	settings->Set("UseRealXFB", bUseRealXFB);
 	settings->Set("SafeTextureCacheColorSamples", iSafeTextureCache_ColorSamples);
 	settings->Set("ShowFPS", bShowFPS);
-	settings->Set("LogFPSToFile", bLogFPSToFile);
+	settings->Set("LogRenderTimeToFile", bLogRenderTimeToFile);
 	settings->Set("ShowInputDisplay", bShowInputDisplay);
 	settings->Set("OverlayStats", bOverlayStats);
 	settings->Set("OverlayProjStats", bOverlayProjStats);
@@ -271,7 +273,6 @@ void VideoConfig::Save(const char *ini_file)
 	settings->Set("EnablePixelLighting", bEnablePixelLighting);
 	settings->Set("HackedBufferUpload", bHackedBufferUpload);
 	settings->Set("FastDepthCalc", bFastDepthCalc);
-
 	settings->Set("ShowEFBCopyRegions", bShowEFBCopyRegions);
 	settings->Set("MSAA", iMultisampleMode);
 	settings->Set("EFBScale", iEFBScale);
@@ -283,16 +284,14 @@ void VideoConfig::Save(const char *ini_file)
 
 	settings->Set("EnableOpenCL", bEnableOpenCL);
 	settings->Set("OMPDecoder", bOMPDecoder);
-
 	settings->Set("EnableShaderDebugging", bEnableShaderDebugging);
 	settings->Set("BorderlessFullscreen", bBorderlessFullscreen);
-
 
 	IniFile::Section* enhancements = iniFile.GetOrCreateSection("Enhancements");
 	enhancements->Set("ForceFiltering", bForceFiltering);
 	enhancements->Set("MaxAnisotropy", iMaxAnisotropy);
 	enhancements->Set("PostProcessingShader", sPostProcessingShader);
-	
+
 	IniFile::Section* hacks = iniFile.GetOrCreateSection("Hacks");
 	hacks->Set("EFBAccessEnable", bEFBAccessEnable);
 	hacks->Set("DlistCachingEnable", bDlistCachingEnable);
@@ -305,7 +304,6 @@ void VideoConfig::Save(const char *ini_file)
 	hacks->Set("FullAsyncShaderCompilation", bFullAsyncShaderCompilation);
 	hacks->Set("WaitForShaderCompilation", bWaitForShaderCompilation);
 	hacks->Set("PredictiveFifo", bPredictiveFifo);
-	
 
 	iniFile.Save(ini_file);
 }

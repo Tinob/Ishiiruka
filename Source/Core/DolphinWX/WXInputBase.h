@@ -2,20 +2,12 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef WXINPUTBASE_H
-#define WXINPUTBASE_H
+#pragma once
 
-#include "Common/Common.h"
-#if defined(HAVE_WX) && HAVE_WX
-#include <wx/wx.h>
-#endif
+#include <wx/string.h>
 
-namespace InputCommon
+namespace WxUtils
 {
-#if defined(HAVE_WX) && HAVE_WX
 const wxString WXKeyToString(int keycode);
 const wxString WXKeymodToString(int modifier);
-#endif
 }
-#endif
-

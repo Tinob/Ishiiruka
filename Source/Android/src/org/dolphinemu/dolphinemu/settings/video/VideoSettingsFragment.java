@@ -47,9 +47,15 @@ public final class VideoSettingsFragment extends PreferenceFragment
 		// Setting valid video backends.
 		//
 		final ListPreference videoBackends = (ListPreference) findPreference("gpuPref");
+		final boolean deviceSupportsGL = eglHelper.supportsOpenGL();
 		final boolean deviceSupportsGLES3 = eglHelper.supportsGLES3();
 
-		if (deviceSupportsGLES3)
+		if (deviceSupportsGL)
+		{
+			videoBackends.setEntries(R.array.videoBackendEntriesGL);
+			videoBackends.setEntryValues(R.array.videoBackendValuesGL);
+		}
+		else if (deviceSupportsGLES3)
 		{
 			videoBackends.setEntries(R.array.videoBackendEntriesGLES3);
 			videoBackends.setEntryValues(R.array.videoBackendValuesGLES3);
@@ -153,7 +159,7 @@ public final class VideoSettingsFragment extends PreferenceFragment
 									// Get an editor.
 									SharedPreferences.Editor editor = sPrefs.edit();
 									editor.putString("gpuPref", "Software Renderer");
-									editor.commit();
+									editor.apply();
 									videoBackends.setValue("Software Renderer");
 									videoBackends.setSummary("Software Renderer");
 								}

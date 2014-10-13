@@ -202,7 +202,7 @@ void InitPP(int adapter, int f, int aa_mode, D3DPRESENT_PARAMETERS *pp)
 	yres = pp->BackBufferHeight = client.bottom - client.top;
 	pp->SwapEffect = D3DSWAPEFFECT_DISCARD;
 	pp->PresentationInterval = g_Config.IsVSync() ? D3DPRESENT_INTERVAL_DEFAULT : D3DPRESENT_INTERVAL_IMMEDIATE;	
-	pp->Windowed = g_Config.BorderlessFullscreenEnabled() || !g_Config.bFullscreen;
+	pp->Windowed = !(g_ActiveConfig.ExclusiveFullscreenEnabled()  && g_ActiveConfig.bFullscreen);
 }
 
 void Enumerate()

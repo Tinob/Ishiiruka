@@ -543,7 +543,7 @@ void SConfig::LoadCoreSettings(IniFile& ini)
 	core->Get("DCBZ",                      &m_LocalCoreStartupParameter.bDCBZOFF,          false);
 	core->Get("FrameLimit",                &m_Framelimit,                                  1); // auto frame limit by default
 	core->Get("FrameSkip",                 &m_FrameSkip,                                   0);
-	core->Get("GFXBackend",                &m_LocalCoreStartupParameter.m_strVideoBackend, "");
+	core->Get("GFXBackend",                &m_LocalCoreStartupParameter.m_strVideoBackend, "");	
 }
 
 void SConfig::LoadMovieSettings(IniFile& ini)
