@@ -99,6 +99,7 @@ void VideoConfig::Load(const std::string& ini_file)
 
 	IniFile::Section* hacks = iniFile.GetOrCreateSection("Hacks");
 	hacks->Get("EFBAccessEnable", &bEFBAccessEnable, true);
+	hacks->Get("EFBFastAccess", &bEFBFastAccess, false);
 	hacks->Get("DlistCachingEnable", &bDlistCachingEnable, false);
 	hacks->Get("EFBCopyEnable", &bEFBCopyEnable, true);
 	hacks->Get("EFBToTextureEnable", &bCopyEFBToTexture, true);
@@ -199,6 +200,7 @@ void VideoConfig::GameIniLoad()
 	CHECK_SETTING("Video_Enhancements", "PostProcessingShader", sPostProcessingShader);
 
 	CHECK_SETTING("Video_Hacks", "EFBAccessEnable", bEFBAccessEnable);
+	CHECK_SETTING("Video_Hacks", "EFBFastAccess", bEFBFastAccess);
 	CHECK_SETTING("Video_Hacks", "DlistCachingEnable", bDlistCachingEnable);
 	CHECK_SETTING("Video_Hacks", "EFBCopyEnable", bEFBCopyEnable);
 	CHECK_SETTING("Video_Hacks", "EFBToTextureEnable", bCopyEFBToTexture);
@@ -294,6 +296,7 @@ void VideoConfig::Save(const std::string& ini_file)
 
 	IniFile::Section* hacks = iniFile.GetOrCreateSection("Hacks");
 	hacks->Set("EFBAccessEnable", bEFBAccessEnable);
+	hacks->Set("EFBFastAccess", bEFBFastAccess);
 	hacks->Set("DlistCachingEnable", bDlistCachingEnable);
 	hacks->Set("EFBCopyEnable", bEFBCopyEnable);
 	hacks->Set("EFBToTextureEnable", bCopyEFBToTexture);

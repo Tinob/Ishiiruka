@@ -172,50 +172,52 @@ u32 VideoBackendHardware::Video_AccessEFB(EFBAccessType type, u32 x, u32 y, u32 
 {
 	if (s_BackendInitialized && g_ActiveConfig.bEFBAccessEnable)
 	{
-		u32 efb_p_cache_stride = (y >> m_EFB_PCache_Divisor) * m_EFB_PCache_Width + (x >> m_EFB_PCache_Divisor);
-		if (type == POKE_COLOR || type == POKE_Z 
-			|| (type == PEEK_COLOR && m_EFB_PCache[efb_p_cache_stride].ColorFrame < s_EFB_PCache_Frame)
-			|| (type == PEEK_Z && m_EFB_PCache[efb_p_cache_stride].DepthFrame < s_EFB_PCache_Frame)
-			)
+		u32 efb_p_cache_stride = 0;
+		if (g_ActiveConfig.bEFBFastAccess)
 		{
-			// In peek scenario we have a invalid cache so get the current values
-			s_accessEFBArgs.type = type;
-			s_accessEFBArgs.x = x;
-			s_accessEFBArgs.y = y;
-			s_accessEFBArgs.Data = InputData;
-
-			Common::AtomicStoreRelease(s_efbAccessRequested, true);
-
-			if (SConfig::GetInstance().m_LocalCoreStartupParameter.bCPUThread)
+			efb_p_cache_stride = (y >> m_EFB_PCache_Divisor) * m_EFB_PCache_Width + (x >> m_EFB_PCache_Divisor);
+			if ((type == PEEK_COLOR && m_EFB_PCache[efb_p_cache_stride].ColorFrame > s_EFB_PCache_Frame)
+				|| (type == PEEK_Z && m_EFB_PCache[efb_p_cache_stride].DepthFrame > s_EFB_PCache_Frame))
 			{
-				while (Common::AtomicLoadAcquire(s_efbAccessRequested) && !s_FifoShuttingDown)
-					//Common::SleepCurrentThread(1);
-					Common::YieldCPU();
+				// values are cached and valid so use them
+				if (type == PEEK_COLOR)
+				{
+					s_AccessEFBResult = m_EFB_PCache[efb_p_cache_stride].ColorValue;
+				}
+				else
+				{
+					s_AccessEFBResult = m_EFB_PCache[efb_p_cache_stride].DepthValue;
+				}
+				return s_AccessEFBResult;
 			}
-			else
-				VideoFifo_CheckEFBAccess();
+		}
+		s_accessEFBArgs.type = type;
+		s_accessEFBArgs.x = x;
+		s_accessEFBArgs.y = y;
+		s_accessEFBArgs.Data = InputData;
 
+		Common::AtomicStoreRelease(s_efbAccessRequested, true);
+
+		if (SConfig::GetInstance().m_LocalCoreStartupParameter.bCPUThread)
+		{
+			while (Common::AtomicLoadAcquire(s_efbAccessRequested) && !s_FifoShuttingDown)
+				//Common::SleepCurrentThread(1);
+				Common::YieldCPU();
+		}
+		else
+			VideoFifo_CheckEFBAccess();
+
+		if (g_ActiveConfig.bEFBFastAccess)
+		{
 			if (type == PEEK_COLOR)
 			{
 				m_EFB_PCache[efb_p_cache_stride].ColorValue = s_AccessEFBResult;
 				m_EFB_PCache[efb_p_cache_stride].ColorFrame = s_EFB_PCache_Frame + m_EFB_PCache_Life;
 			}
-			else if(type == PEEK_Z)
+			else if (type == PEEK_Z)
 			{
 				m_EFB_PCache[efb_p_cache_stride].DepthValue = s_AccessEFBResult;
 				m_EFB_PCache[efb_p_cache_stride].DepthFrame = s_EFB_PCache_Frame + m_EFB_PCache_Life;
-			}
-		}
-		else
-		{
-			// values are cached and valid so use them
-			if (type == PEEK_COLOR)
-			{
-				s_AccessEFBResult = m_EFB_PCache[efb_p_cache_stride].ColorValue;
-			}
-			else
-			{
-				s_AccessEFBResult = m_EFB_PCache[efb_p_cache_stride].DepthValue;
 			}
 		}
 		return s_AccessEFBResult;		

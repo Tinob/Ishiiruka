@@ -117,6 +117,7 @@ struct VideoConfig final
 
 	// Hacks
 	bool bEFBAccessEnable;
+	bool bEFBFastAccess;
 	bool bDlistCachingEnable;
 	bool bPerfQueriesEnable;
 	bool bFullAsyncShaderCompilation;
