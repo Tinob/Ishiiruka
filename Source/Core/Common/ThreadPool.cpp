@@ -39,7 +39,7 @@ ThreadPool& ThreadPool::Getinstance()
 
 void ThreadPool::NotifyWorkPending()
 {
-	ThreadPool::Getinstance().m_workflag++;
+	ThreadPool::Getinstance().m_workflag.fetch_add(1);
 }
 
 static SpinLock<true> workerLock;
@@ -66,7 +66,7 @@ void ThreadPool::UnregisterWorker(IWorker* worker)
 		}
 	}
 	instance.m_workers[index] = instance.m_workers[count - 1];
-	instance.m_workercount--;
+	instance.m_workercount.fetch_sub(1);
 	workerLock.unlock();
 }
 
@@ -86,7 +86,7 @@ void ThreadPool::Workloop(ThreadPool &state, size_t ID)
 					if (worker->NextTask())
 					{
 						worked = true;
-						state.m_workflag--;
+						state.m_workflag.fetch_sub(1);
 					}
 				}
 			}
@@ -124,7 +124,7 @@ bool AsyncWorker::NextTask()
 		if (m_TaskQueue.try_pop(func))
 		{
 			func();
-			m_inputsize--;
+			m_inputsize.fetch_sub(1);
 			return true;
 		}
 	}
@@ -134,7 +134,7 @@ bool AsyncWorker::NextTask()
 void AsyncWorker::ExecuteAsync(std::function<void()> &&func)
 {
 	AsyncWorker& instance = Getinstance();
-	instance.m_inputsize++;
+	instance.m_inputsize.fetch_add(1);
 	instance.m_TaskQueue.push(std::move(func));
 	ThreadPool::NotifyWorkPending();
 }

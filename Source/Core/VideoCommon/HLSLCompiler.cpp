@@ -114,7 +114,7 @@ ShaderCompilerWorkUnit* HLSLAsyncCompiler::NewUnit(u32 codesize)
 void HLSLAsyncCompiler::CompileShaderAsync(ShaderCompilerWorkUnit* unit)
 {
 	m_input.push(unit);
-	m_inputsize++;
+	m_inputsize.fetch_add(1);
 }
 void HLSLAsyncCompiler::ProcCompilationResults()
 {
@@ -124,7 +124,7 @@ void HLSLAsyncCompiler::ProcCompilationResults()
 		while (m_output.try_pop(unit))
 		{
 			unit->ResultHandler(unit);
-			m_outputsize--;
+			m_outputsize.fetch_sub(1);
 		}
 	}
 }
@@ -149,7 +149,7 @@ void HLSLAsyncCompiler::WaitForFinish()
 		while (m_output.try_pop(unit))
 		{
 			unit->ResultHandler(unit);
-			m_outputsize--;
+			m_outputsize.fetch_sub(1);
 		}
 	}
 }

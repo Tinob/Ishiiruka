@@ -37,10 +37,10 @@ class HLSLAsyncCompiler final : Common::IWorker
 	friend class HLSLCompiler;
 	pD3DCompile PD3DCompile;
 	HLSLAsyncCompiler();
-	std::atomic<u32> m_repositoryIndex;
+	std::atomic<s32> m_repositoryIndex;
 	ShaderCompilerWorkUnit* WorkUnitRepository;
-	std::atomic<u32> m_inputsize;
-	std::atomic<u32> m_outputsize;
+	std::atomic<s32> m_inputsize;
+	std::atomic<s32> m_outputsize;
 	Common::ManyToManyQueue<ShaderCompilerWorkUnit*, Common::CircularQueue<ShaderCompilerWorkUnit*>> m_input;
 	Common::ManyToOneQueue<ShaderCompilerWorkUnit*, Common::CircularQueue<ShaderCompilerWorkUnit*>> m_output;
 	HLSLAsyncCompiler(HLSLAsyncCompiler const&);

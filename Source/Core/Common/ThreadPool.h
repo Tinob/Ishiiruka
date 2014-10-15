@@ -436,8 +436,8 @@ namespace Common
 	private:
 		std::vector<std::unique_ptr<std::thread>> m_workerThreads;
 		std::vector<IWorker*> m_workers;
-		std::atomic<u32> m_workflag;
-		std::atomic<u32> m_workercount;
+		std::atomic<s32> m_workflag;
+		std::atomic<s32> m_workercount;
 		volatile bool m_working;
 		static void Workloop(ThreadPool &state, size_t ID);
 		static ThreadPool &Getinstance();
@@ -454,7 +454,7 @@ namespace Common
 	class AsyncWorker final : IWorker
 	{
 	private:
-		std::atomic<u32> m_inputsize;
+		std::atomic<s32> m_inputsize;
 		ManyToManyQueue<std::function<void()>, CircularQueue<std::function<void()>>> m_TaskQueue;
 		static AsyncWorker &Getinstance();
 		AsyncWorker();
