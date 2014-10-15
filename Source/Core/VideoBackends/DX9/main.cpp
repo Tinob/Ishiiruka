@@ -93,7 +93,7 @@ void InitBackendInfo()
 	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT3] = true;
 	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT5] = true;
 	g_Config.backend_info.bUseMinimalMipCount = true;
-	g_Config.backend_info.bSupportsExclusiveFullscreen = true;
+	g_Config.backend_info.bSupportsExclusiveFullscreen = false;
 	g_Config.backend_info.bSupportsPrimitiveRestart = false; // D3D9 does not support primitive restart
 	g_Config.backend_info.bSupportsSeparateAlphaFunction = (device_caps.PrimitiveMiscCaps & D3DPMISCCAPS_SEPARATEALPHABLEND) == D3DPMISCCAPS_SEPARATEALPHABLEND;
 	// Dual source blend disabled by default until a proper method to test for support is found	
