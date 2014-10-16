@@ -716,10 +716,10 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 	{
 		TargetRectangle targetRc = ConvertEFBRectangle(rc);
 		LPDIRECT3DTEXTURE9 read_texture = FramebufferManager::GetEFBColorTexture();
-		int multisamplemode = g_ActiveConfig.iMultisampleMode;
+		int multisamplemode = g_ActiveConfig.iMultisampleMode;		
 		if (multisamplemode == 0)
 		{
-			multisamplemode = std::min(std::max(targetRc.GetWidth() / Width, targetRc.GetHeight() / Height), 2);
+			multisamplemode = std::min(targetRc.GetWidth() / Width, 2);
 		}
 		D3D::drawShadedTexQuad(read_texture,targetRc.AsRECT(),
 			Renderer::GetTargetWidth(),Renderer::GetTargetHeight(),
