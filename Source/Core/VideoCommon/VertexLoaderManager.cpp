@@ -18,6 +18,8 @@
 #include "VideoCommon/VideoConfig.h"
 
 // Precompiled Loaders
+#include "VideoCommon/G_G4BP08_pvt.h"
+#include "VideoCommon/G_GB4P51_pvt.h"
 #include "VideoCommon/G_GFZE01_pvt.h"
 #include "VideoCommon/G_GLMP01_pvt.h"
 #include "VideoCommon/G_GM8E01_pvt.h"
@@ -268,6 +270,8 @@ namespace VertexLoaderManager
 		if (!s_PrecompiledLoadersInitialized)
 		{
 			s_PrecompiledLoadersInitialized = true;
+			G_G4BP08_pvt::Initialize(s_PrecompiledVertexLoaderMap);
+			G_GB4P51_pvt::Initialize(s_PrecompiledVertexLoaderMap);
 			G_GFZE01_pvt::Initialize(s_PrecompiledVertexLoaderMap);
 			G_GLMP01_pvt::Initialize(s_PrecompiledVertexLoaderMap);
 			G_GM8E01_pvt::Initialize(s_PrecompiledVertexLoaderMap);

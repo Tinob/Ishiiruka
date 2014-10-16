@@ -184,6 +184,12 @@
     <ClCompile Include="G_SPXP41_pvt.cpp">
       <Filter>Vertex Loading\Compiled Loaders</Filter>
     </ClCompile>
+    <ClCompile Include="G_G4BP08_pvt.cpp">
+      <Filter>Vertex Loading\Compiled Loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="G_GB4P51_pvt.cpp">
+      <Filter>Vertex Loading\Compiled Loaders</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommandProcessor.h" />
@@ -398,6 +404,12 @@
       <Filter>Vertex Loading\Compiled Loaders</Filter>
     </ClInclude>
     <ClInclude Include="G_SPXP41_pvt.h">
+      <Filter>Vertex Loading\Compiled Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="G_G4BP08_pvt.h">
+      <Filter>Vertex Loading\Compiled Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="G_GB4P51_pvt.h">
       <Filter>Vertex Loading\Compiled Loaders</Filter>
     </ClInclude>
   </ItemGroup>
