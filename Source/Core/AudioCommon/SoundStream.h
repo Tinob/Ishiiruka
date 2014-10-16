@@ -3,6 +3,7 @@
 // Refer to the license.txt file included.
 
 #pragma once
+#include <memory>
 
 #include "AudioCommon/Mixer.h"
 #include "AudioCommon/WaveFile.h"
@@ -33,7 +34,7 @@ protected:
 	bool m_logAudio;
 	WaveFileWriter g_wave_writer;
 	bool m_muted;
-	std::thread thread;
+	std::unique_ptr<std::thread> thread;
 	void SoundLoop();
 	virtual void InitializeSoundLoop() {}
 	virtual u32 SamplesNeeded(){ return 0; }

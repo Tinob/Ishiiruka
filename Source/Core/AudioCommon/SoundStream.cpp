@@ -2,7 +2,9 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 // Added For Ishiiruka By Tino
-
+#ifdef _WIN32
+#include <windows.h>
+#endif
 #include <soundtouch/SoundTouch.h>
 #include <soundtouch/STTypes.h>
 
@@ -53,7 +55,10 @@ bool SoundStream::Start()
 	if (m_enablesoundloop)
 	{
 		DPL2Reset();
-		thread = std::thread(std::mem_fn(&SoundStream::SoundLoop), this);
+		thread.reset(new std::thread(std::mem_fn(&SoundStream::SoundLoop), this));
+#ifdef _WIN32
+		SetThreadPriority(thread.get()->native_handle(), THREAD_PRIORITY_HIGHEST);
+#endif
 	}
 	return true;
 }
@@ -68,7 +73,7 @@ void SoundStream::Stop()
 	if (m_enablesoundloop)
 	{
 		threadData = 1;
-		thread.join();
+		thread.get()->join();
 	}
 }
 
@@ -166,8 +171,8 @@ void SoundStream::SoundLoop()
 		while (!threadData)
 		{
 			u32 availablesamples = m_mixer->AvailableSamples();
-			u32 numsamples = availablesamples & (~(0xF));			
-			if (numsamples >= 128)
+			u32 numsamples = std::min(availablesamples, 400u);
+			if (numsamples == 400u)
 			{
 				float rate = m_mixer->GetCurrentSpeed();
 				if (rate <= 0)
@@ -187,7 +192,7 @@ void SoundStream::SoundLoop()
 			if (samplesneeded >= SOUND_FRAME_SIZE && availablesamples > 0)
 			{
 				ratemultiplier = std::fmaxf(std::fminf((float)availablesamples / (float)samplesneeded, 1.1f), 0.9f);
-				numsamples = std::min(samplesneeded, SOUND_FRAME_SIZE);
+				numsamples = std::min(availablesamples, SOUND_FRAME_SIZE);
 				if (surroundSupported)
 				{
 					numsamples = sTouch.receiveSamples(dpl2buffer, numsamples);
