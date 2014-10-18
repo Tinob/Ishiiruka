@@ -719,7 +719,7 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 		int multisamplemode = g_ActiveConfig.iMultisampleMode;		
 		if (multisamplemode == 0)
 		{
-			multisamplemode = std::min(targetRc.GetWidth() / Width, 2);
+			multisamplemode = std::max(std::min((targetRc.GetWidth() / Width) - 1, 2), 0);
 		}
 		D3D::drawShadedTexQuad(read_texture,targetRc.AsRECT(),
 			Renderer::GetTargetWidth(),Renderer::GetTargetHeight(),
