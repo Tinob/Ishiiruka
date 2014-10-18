@@ -41,7 +41,7 @@ template<class T, API_TYPE api_type>
 inline void GenerateVSOutputStruct(T& object, bool enable_pl, const XFRegisters &xfr)
 {
 	object.Write("struct VS_OUTPUT {\n");
-	DefineVSOutputStructMember<T, api_type>(object, "float4", "pos", -1, "POSITION");
+	DefineVSOutputStructMember<T, api_type>(object, "float4", "pos", -1, api_type == API_D3D11 ? "SV_Position" : "POSITION");
 	DefineVSOutputStructMember<T, api_type>(object, "float4", "colors_", 0, "COLOR", 0);
 	DefineVSOutputStructMember<T, api_type>(object, "float4", "colors_", 1, "COLOR", 1);
 
@@ -615,11 +615,6 @@ void GenerateVertexShaderCodeD3D9(ShaderCode& object, u32 components, const XFRe
 	GenerateVertexShader<ShaderCode, true, API_D3D9>(object, components, xfr, bpm);
 }
 
-void GenerateVSOutputStructForGSD3D9(ShaderCode& object, const XFRegisters &xfr)
-{
-	GenerateVSOutputStruct<ShaderCode, API_D3D9>(object, g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting && xfr.numChan.numColorChans > 0, xfr);
-}
-
 void GetVertexShaderUidD3D11(VertexShaderUid& object, u32 components, const XFRegisters &xfr, const BPMemory &bpm)
 {
 	GenerateVertexShader<VertexShaderUid, false, API_D3D11>(object, components, xfr, bpm);
@@ -643,9 +638,4 @@ void GetVertexShaderUidGL(VertexShaderUid& object, u32 components, const XFRegis
 void GenerateVertexShaderCodeGL(ShaderCode& object, u32 components, const XFRegisters &xfr, const BPMemory &bpm)
 {
 	GenerateVertexShader<ShaderCode, true, API_OPENGL>(object, components, xfr, bpm);
-}
-
-void GenerateVSOutputStructForGSGL(ShaderCode& object, const XFRegisters &xfr)
-{
-	GenerateVSOutputStruct<ShaderCode, API_OPENGL>(object, g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting && xfr.numChan.numColorChans > 0, xfr);
 }

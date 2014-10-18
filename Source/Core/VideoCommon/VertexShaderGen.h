@@ -105,8 +105,6 @@ void GetVertexShaderUidD3D9(VertexShaderUid& object, u32 components, const XFReg
 
 void GenerateVertexShaderCodeD3D9(ShaderCode& object, u32 components, const XFRegisters &xfr, const BPMemory &bpm);
 
-void GenerateVSOutputStructForGSD3D9(ShaderCode& object, const XFRegisters &xfr);
-
 void GetVertexShaderUidD3D11(VertexShaderUid& object, u32 components, const XFRegisters &xfr, const BPMemory &bpm);
 
 void GenerateVertexShaderCodeD3D11(ShaderCode& object, u32 components, const XFRegisters &xfr, const BPMemory &bpm);
@@ -116,5 +114,3 @@ void GenerateVSOutputStructForGSD3D11(ShaderCode& object, const XFRegisters &xfr
 void GetVertexShaderUidGL(VertexShaderUid& object, u32 components, const XFRegisters &xfr, const BPMemory &bpm);
 
 void GenerateVertexShaderCodeGL(ShaderCode& object, u32 components, const XFRegisters &xfr, const BPMemory &bpm);
-
-void GenerateVSOutputStructForGSGL(ShaderCode& object, const XFRegisters &xfr);
