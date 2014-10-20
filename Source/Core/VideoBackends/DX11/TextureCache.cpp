@@ -7,7 +7,7 @@
 #include "VideoBackends/DX11/D3DUtil.h"
 #include "VideoBackends/DX11/FramebufferManager.h"
 #include "VideoBackends/DX11/PixelShaderCache.h"
-#include "VideoBackends/DX11/PSTextureEncoder.h"
+#include "VideoBackends/DX11/CSTextureEncoder.h"
 #include "VideoBackends/DX11/TextureCache.h"
 #include "VideoBackends/DX11/TextureEncoder.h"
 #include "VideoBackends/DX11/VertexShaderCache.h"
@@ -219,7 +219,7 @@ TextureCache::TCacheEntryBase* TextureCache::CreateRenderTargetTexture(
 TextureCache::TextureCache()
 {
 	// FIXME: Is it safe here?
-	g_encoder = new PSTextureEncoder;
+	g_encoder = new CSTextureEncoder;
 	g_encoder->Init();
 }
 

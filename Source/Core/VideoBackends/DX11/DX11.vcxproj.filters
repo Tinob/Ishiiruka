@@ -41,9 +41,6 @@
     <ClCompile Include="VertexShaderCache.cpp">
       <Filter>Render</Filter>
     </ClCompile>
-    <ClCompile Include="PSTextureEncoder.cpp">
-      <Filter>Render</Filter>
-    </ClCompile>
     <ClCompile Include="XFBEncoder.cpp">
       <Filter>Render</Filter>
     </ClCompile>
@@ -54,6 +51,9 @@
       <Filter>Render</Filter>
     </ClCompile>
     <ClCompile Include="LineAndPointGeometryShader.cpp">
+      <Filter>Render</Filter>
+    </ClCompile>
+    <ClCompile Include="CSTextureEncoder.cpp">
       <Filter>Render</Filter>
     </ClCompile>
   </ItemGroup>
@@ -97,9 +97,6 @@
     <ClInclude Include="VertexManager.h">
       <Filter>Render</Filter>
     </ClInclude>
-    <ClInclude Include="PSTextureEncoder.h">
-      <Filter>Render</Filter>
-    </ClInclude>
     <ClInclude Include="TextureEncoder.h">
       <Filter>Render</Filter>
     </ClInclude>
@@ -120,6 +117,9 @@
     </ClInclude>
     <ClInclude Include="D3DPtr.h">
       <Filter>D3D</Filter>
+    </ClInclude>
+    <ClInclude Include="CSTextureEncoder.h">
+      <Filter>Render</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
