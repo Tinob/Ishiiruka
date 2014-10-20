@@ -189,33 +189,33 @@ void main(point VS_OUTPUT input[1], inout TriangleStream<VS_OUTPUT> outStream)
 
 	void LineAndPointGeometryShader::Init()
 	{
-		ready_ = false;
+		m_ready = false;
 
 		HRESULT hr;
 
 		// Create constant buffer for uploading data to geometry shader
 
 		D3D11_BUFFER_DESC bd = CD3D11_BUFFER_DESC(sizeof(GSParams), D3D11_BIND_CONSTANT_BUFFER, D3D11_USAGE_DEFAULT, 0);
-		hr = D3D::device->CreateBuffer(&bd, nullptr, ToAddr(paramsBuffer_));
+		hr = D3D::device->CreateBuffer(&bd, nullptr, D3D::ToAddr(m_paramsBuffer));
 		CHECK(SUCCEEDED(hr), "create line geometry shader params buffer");
-		D3D::SetDebugObjectName(paramsBuffer_.get(), "line geometry shader params buffer");
-		memset(&shadowParamsBuffer_, 0, sizeof(GSParams));
-		ready_ = true;
+		D3D::SetDebugObjectName(m_paramsBuffer.get(), "line geometry shader params buffer");
+		memset(&m_shadowParamsBuffer, 0, sizeof(GSParams));
+		m_ready = true;
 	}
 
 	void LineAndPointGeometryShader::Shutdown()
 	{
-		ready_ = false;
+		m_ready = false;
 
-		lineShaders_.clear();
-		pointShaders_.clear();
-		paramsBuffer_.reset();
+		m_lineShaders.clear();
+		m_pointShaders.clear();
+		m_paramsBuffer.reset();
 	}
 
 	bool LineAndPointGeometryShader::SetLineShader(u32 components, float lineWidth,
 		float texOffset, float vpWidth, float vpHeight, const bool* texOffsetEnable)
 	{
-		if (!ready_)
+		if (!m_ready)
 			return false;
 
 		auto shader = GetShader(components, true);
@@ -223,20 +223,19 @@ void main(point VS_OUTPUT input[1], inout TriangleStream<VS_OUTPUT> outStream)
 		if (!shader)
 			return false;
 
-		UpdateConstantBuffer(lineWidth, shadowParamsBuffer_.PointSize, texOffset, vpWidth, vpHeight, texOffsetEnable);
+		UpdateConstantBuffer(lineWidth, m_shadowParamsBuffer.PointSize, texOffset, vpWidth, vpHeight, texOffsetEnable);
 		DEBUG_LOG(VIDEO, "Line params: width %f, texOffset %f, vpWidth %f, vpHeight %f",
 			lineWidth, texOffset, vpWidth, vpHeight);
 
 		D3D::context->GSSetShader(shader, nullptr, 0);
-		auto paramBuffer = paramsBuffer_.get();
-		D3D::context->GSSetConstantBuffers(0, 1, &paramBuffer);
+		D3D::context->GSSetConstantBuffers(0, 1, D3D::ToAddr(m_paramsBuffer));
 		return true;
 	}
 
 	bool LineAndPointGeometryShader::SetPointShader(u32 components, float pointSize,
 		float texOffset, float vpWidth, float vpHeight, const bool* texOffsetEnable)
 	{
-		if (!ready_)
+		if (!m_ready)
 			return false;
 
 		auto shader = GetShader(components, false);
@@ -244,23 +243,21 @@ void main(point VS_OUTPUT input[1], inout TriangleStream<VS_OUTPUT> outStream)
 		if (!shader)
 			return false;
 
-		UpdateConstantBuffer(shadowParamsBuffer_.LineWidth, pointSize, texOffset, vpWidth, vpHeight, texOffsetEnable);
+		UpdateConstantBuffer(m_shadowParamsBuffer.LineWidth, pointSize, texOffset, vpWidth, vpHeight, texOffsetEnable);
 		DEBUG_LOG(VIDEO, "Point params: size %f, texOffset %f, vpWidth %f, vpHeight %f",
 			pointSize, texOffset, vpWidth, vpHeight);
 
 		D3D::context->GSSetShader(shader, nullptr, 0);
-		auto paramBuffer = paramsBuffer_.get();
-		D3D::context->GSSetConstantBuffers(0, 1, &paramBuffer);
-
+		D3D::context->GSSetConstantBuffers(0, 1, D3D::ToAddr(m_paramsBuffer));
 		return true;
 	}
 
 	ID3D11GeometryShader* LineAndPointGeometryShader::GetShader(u32 components, bool line)
 	{
-		if (!ready_)
+		if (!m_ready)
 			return nullptr;
 
-		auto & map = line ? lineShaders_ : pointShaders_;
+		auto & map = line ? m_lineShaders : m_pointShaders;
 		auto type = line ? "Line" : "Point";
 
 		// Make sure geometry shader for "components" is available
@@ -284,7 +281,7 @@ void main(point VS_OUTPUT input[1], inout TriangleStream<VS_OUTPUT> outStream)
 				{ "NUM_TEXCOORDS", numTexCoordsStr.c_str() },
 				{ nullptr, nullptr }
 		};
-		GeometryShaderPtr newShader{ D3D::CompileAndCreateGeometryShader(code.GetBuffer(), macros) };
+		D3D::GeometryShaderPtr newShader = D3D::CompileAndCreateGeometryShader(code.GetBuffer(), macros);
 		if (!newShader)
 		{
 			WARN_LOG(VIDEO, "%s geometry shader for components 0x%.08X failed to compile", type, components);
@@ -308,9 +305,9 @@ void main(point VS_OUTPUT input[1], inout TriangleStream<VS_OUTPUT> outStream)
 			newParms.TexOffsetEnable[i] = texOffsetEnable[i] ? 1.f : 0.f;
 		newParms.ClearPadding();
 
-		if (memcmp(&newParms, &shadowParamsBuffer_, sizeof(GSParams))) {
-			D3D::context->UpdateSubresource(paramsBuffer_.get(), 0, nullptr, &newParms, sizeof(GSParams), 0);
-			shadowParamsBuffer_ = newParms;
+		if (memcmp(&newParms, &m_shadowParamsBuffer, sizeof(GSParams))) {
+			D3D::context->UpdateSubresource(m_paramsBuffer.get(), 0, nullptr, &newParms, sizeof(GSParams), 0);
+			m_shadowParamsBuffer = newParms;
 		}
 	}
 

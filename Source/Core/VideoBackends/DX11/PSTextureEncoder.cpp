@@ -850,24 +850,6 @@ static const char EFB_ENCODE_PS[] =
 "}\n"
 ;
 
-PSTextureEncoder::PSTextureEncoder()
-	: m_ready(false), m_out(nullptr), m_outRTV(nullptr), m_outStage(nullptr),
-	m_encodeParams(nullptr),
-	m_quad(nullptr), m_vShader(nullptr), m_quadLayout(nullptr),
-	m_efbEncodeBlendState(nullptr), m_efbEncodeDepthState(nullptr),
-	m_efbEncodeRastState(nullptr), m_efbSampler(nullptr),
-	m_dynamicShader(nullptr), m_classLinkage(nullptr)
-{
-	for (size_t i = 0; i < 4; ++i)
-		m_fetchClass[i] = nullptr;
-	for (size_t i = 0; i < 2; ++i)
-		m_scaledFetchClass[i] = nullptr;
-	for (size_t i = 0; i < 2; ++i)
-		m_intensityClass[i] = nullptr;
-	for (size_t i = 0; i < 16; ++i)
-		m_generatorClass[i] = nullptr;
-}
-
 static const D3D11_INPUT_ELEMENT_DESC QUAD_LAYOUT_DESC[] = {
 	{ "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 };
@@ -890,34 +872,34 @@ void PSTextureEncoder::Init()
 	D3D11_TEXTURE2D_DESC t2dd = CD3D11_TEXTURE2D_DESC(
 		DXGI_FORMAT_R32G32B32A32_UINT,
 		EFB_WIDTH, EFB_HEIGHT/4, 1, 1, D3D11_BIND_RENDER_TARGET);
-	hr = D3D::device->CreateTexture2D(&t2dd, nullptr, &m_out);
+	hr = D3D::device->CreateTexture2D(&t2dd, nullptr, D3D::ToAddr(m_out));
 	CHECK(SUCCEEDED(hr), "create efb encode output texture");
-	D3D::SetDebugObjectName(m_out, "efb encoder output texture");
+	D3D::SetDebugObjectName(m_out.get(), "efb encoder output texture");
 
 	// Create output render target view
 
-	D3D11_RENDER_TARGET_VIEW_DESC rtvd = CD3D11_RENDER_TARGET_VIEW_DESC(m_out,
+	D3D11_RENDER_TARGET_VIEW_DESC rtvd = CD3D11_RENDER_TARGET_VIEW_DESC(m_out.get(),
 		D3D11_RTV_DIMENSION_TEXTURE2D, DXGI_FORMAT_R32G32B32A32_UINT);
-	hr = D3D::device->CreateRenderTargetView(m_out, &rtvd, &m_outRTV);
+	hr = D3D::device->CreateRenderTargetView(m_out.get(), &rtvd, D3D::ToAddr(m_outRTV));
 	CHECK(SUCCEEDED(hr), "create efb encode output render target view");
-	D3D::SetDebugObjectName(m_outRTV, "efb encoder output rtv");
+	D3D::SetDebugObjectName(m_outRTV.get(), "efb encoder output rtv");
 
 	// Create output staging buffer
 	
 	t2dd.Usage = D3D11_USAGE_STAGING;
 	t2dd.BindFlags = 0;
 	t2dd.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
-	hr = D3D::device->CreateTexture2D(&t2dd, nullptr, &m_outStage);
+	hr = D3D::device->CreateTexture2D(&t2dd, nullptr, D3D::ToAddr(m_outStage));
 	CHECK(SUCCEEDED(hr), "create efb encode output staging buffer");
-	D3D::SetDebugObjectName(m_outStage, "efb encoder output staging buffer");
+	D3D::SetDebugObjectName(m_outStage.get(), "efb encoder output staging buffer");
 
 	// Create constant buffer for uploading data to shaders
 
 	D3D11_BUFFER_DESC bd = CD3D11_BUFFER_DESC(sizeof(EFBEncodeParams),
 		D3D11_BIND_CONSTANT_BUFFER);
-	hr = D3D::device->CreateBuffer(&bd, nullptr, &m_encodeParams);
+	hr = D3D::device->CreateBuffer(&bd, nullptr, D3D::ToAddr(m_encodeParams));
 	CHECK(SUCCEEDED(hr), "create efb encode params buffer");
-	D3D::SetDebugObjectName(m_encodeParams, "efb encoder params buffer");
+	D3D::SetDebugObjectName(m_encodeParams.get(), "efb encoder params buffer");
 
 	// Create vertex quad
 
@@ -925,32 +907,30 @@ void PSTextureEncoder::Init()
 		D3D11_USAGE_IMMUTABLE);
 	D3D11_SUBRESOURCE_DATA srd = { QUAD_VERTS, 0, 0 };
 
-	hr = D3D::device->CreateBuffer(&bd, &srd, &m_quad);
+	hr = D3D::device->CreateBuffer(&bd, &srd, D3D::ToAddr(m_quad));
 	CHECK(SUCCEEDED(hr), "create efb encode quad vertex buffer");
-	D3D::SetDebugObjectName(m_quad, "efb encoder quad vertex buffer");
+	D3D::SetDebugObjectName(m_quad.get(), "efb encoder quad vertex buffer");
 
 	// Create vertex shader
 
-	D3DBlob* bytecode = nullptr;
-	if (!D3D::CompileVertexShader(EFB_ENCODE_VS, &bytecode))
+	D3DBlob bytecode;
+	if (!D3D::CompileShader(D3D::ShaderType::Vertex, EFB_ENCODE_VS, bytecode))
 	{
 		ERROR_LOG(VIDEO, "EFB encode vertex shader failed to compile");
 		return;
 	}
 
-	hr = D3D::device->CreateVertexShader(bytecode->Data(), bytecode->Size(), nullptr, &m_vShader);
+	hr = D3D::device->CreateVertexShader(bytecode.Data(), bytecode.Size(), nullptr, D3D::ToAddr(m_vShader));
 	CHECK(SUCCEEDED(hr), "create efb encode vertex shader");
-	D3D::SetDebugObjectName(m_vShader, "efb encoder vertex shader");
+	D3D::SetDebugObjectName(m_vShader.get(), "efb encoder vertex shader");
 
 	// Create input layout for vertex quad using bytecode from vertex shader
 
 	hr = D3D::device->CreateInputLayout(QUAD_LAYOUT_DESC,
 		sizeof(QUAD_LAYOUT_DESC)/sizeof(D3D11_INPUT_ELEMENT_DESC),
-		bytecode->Data(), bytecode->Size(), &m_quadLayout);
+		bytecode.Data(), bytecode.Size(), D3D::ToAddr(m_quadLayout));
 	CHECK(SUCCEEDED(hr), "create efb encode quad vertex layout");
-	D3D::SetDebugObjectName(m_quadLayout, "efb encoder quad layout");
-
-	bytecode->Release();
+	D3D::SetDebugObjectName(m_quadLayout.get(), "efb encoder quad layout");
 
 	// Create pixel shader
 
@@ -964,34 +944,34 @@ void PSTextureEncoder::Init()
 	// Create blend state
 
 	D3D11_BLEND_DESC bld = CD3D11_BLEND_DESC(CD3D11_DEFAULT());
-	hr = D3D::device->CreateBlendState(&bld, &m_efbEncodeBlendState);
+	hr = D3D::device->CreateBlendState(&bld, D3D::ToAddr(m_efbEncodeBlendState));
 	CHECK(SUCCEEDED(hr), "create efb encode blend state");
-	D3D::SetDebugObjectName(m_efbEncodeBlendState, "efb encoder blend state");
+	D3D::SetDebugObjectName(m_efbEncodeBlendState.get(), "efb encoder blend state");
 
 	// Create depth state
 
 	D3D11_DEPTH_STENCIL_DESC dsd = CD3D11_DEPTH_STENCIL_DESC(CD3D11_DEFAULT());
 	dsd.DepthEnable = FALSE;
-	hr = D3D::device->CreateDepthStencilState(&dsd, &m_efbEncodeDepthState);
+	hr = D3D::device->CreateDepthStencilState(&dsd, D3D::ToAddr(m_efbEncodeDepthState));
 	CHECK(SUCCEEDED(hr), "create efb encode depth state");
-	D3D::SetDebugObjectName(m_efbEncodeDepthState, "efb encoder depth state");
+	D3D::SetDebugObjectName(m_efbEncodeDepthState.get(), "efb encoder depth state");
 
 	// Create rasterizer state
 
 	D3D11_RASTERIZER_DESC rd = CD3D11_RASTERIZER_DESC(CD3D11_DEFAULT());
 	rd.CullMode = D3D11_CULL_NONE;
 	rd.DepthClipEnable = FALSE;
-	hr = D3D::device->CreateRasterizerState(&rd, &m_efbEncodeRastState);
+	hr = D3D::device->CreateRasterizerState(&rd, D3D::ToAddr(m_efbEncodeRastState));
 	CHECK(SUCCEEDED(hr), "create efb encode rast state");
-	D3D::SetDebugObjectName(m_efbEncodeRastState, "efb encoder rast state");
+	D3D::SetDebugObjectName(m_efbEncodeRastState.get(), "efb encoder rast state");
 
 	// Create efb texture sampler
 
 	D3D11_SAMPLER_DESC sd = CD3D11_SAMPLER_DESC(CD3D11_DEFAULT());
 	sd.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
-	hr = D3D::device->CreateSamplerState(&sd, &m_efbSampler);
+	hr = D3D::device->CreateSamplerState(&sd, D3D::ToAddr(m_efbSampler));
 	CHECK(SUCCEEDED(hr), "create efb encode texture sampler");
-	D3D::SetDebugObjectName(m_efbSampler, "efb encoder texture sampler");
+	D3D::SetDebugObjectName(m_efbSampler.get(), "efb encoder texture sampler");
 
 	m_ready = true;
 }
@@ -1000,37 +980,32 @@ void PSTextureEncoder::Shutdown()
 {
 	m_ready = false;
 	
-	for (size_t i = 0; i < 4; ++i)
-		SAFE_RELEASE(m_fetchClass[i]);
-	for (size_t i = 0; i < 2; ++i)
-		SAFE_RELEASE(m_scaledFetchClass[i]);
-	for (size_t i = 0; i < 2; ++i)
-		SAFE_RELEASE(m_intensityClass[i]);
-	for (size_t i = 0; i < 16; ++i)
-		SAFE_RELEASE(m_generatorClass[i]);
+	for (auto &e : m_fetchClass)
+		e.reset();
+	for (auto &e : m_scaledFetchClass)
+		e.reset();
+	for (auto &e : m_intensityClass)
+		e.reset();
+	for (auto &e : m_generatorClass)
+		e.reset();
 	m_linkageArray.clear();
 	
-	SAFE_RELEASE(m_classLinkage);
-	SAFE_RELEASE(m_dynamicShader);
+	m_classLinkage.reset();
+	m_dynamicShader.reset();
 
-	for (ComboMap::iterator it = m_staticShaders.begin();
-		it != m_staticShaders.end(); ++it)
-	{
-		SAFE_RELEASE(it->second);
-	}
 	m_staticShaders.clear();
 
-	SAFE_RELEASE(m_efbSampler);
-	SAFE_RELEASE(m_efbEncodeRastState);
-	SAFE_RELEASE(m_efbEncodeDepthState);
-	SAFE_RELEASE(m_efbEncodeBlendState);
-	SAFE_RELEASE(m_quadLayout);
-	SAFE_RELEASE(m_vShader);
-	SAFE_RELEASE(m_quad);
-	SAFE_RELEASE(m_encodeParams);
-	SAFE_RELEASE(m_outStage);
-	SAFE_RELEASE(m_outRTV);
-	SAFE_RELEASE(m_out);
+	m_efbSampler.reset();
+	m_efbEncodeRastState.reset();
+	m_efbEncodeDepthState.reset();
+	m_efbEncodeBlendState.reset();
+	m_quadLayout.reset();
+	m_vShader.reset();
+	m_quad.reset();
+	m_encodeParams.reset();
+	m_outStage.reset();
+	m_outRTV.reset();
+	m_out.reset();
 }
 
 size_t PSTextureEncoder::Encode(u8* dst, unsigned int dstFormat,
@@ -1087,22 +1062,22 @@ size_t PSTextureEncoder::Encode(u8* dst, unsigned int dstFormat,
 	if (SetStaticShader(dstFormat, srcFormat, isIntensity, scaleByHalf))
 #endif
 	{
-		D3D::context->VSSetShader(m_vShader, nullptr, 0);
+		D3D::context->VSSetShader(m_vShader.get(), nullptr, 0);
 		D3D::context->GSSetShader(nullptr, nullptr, 0);
 
-		D3D::stateman->PushBlendState(m_efbEncodeBlendState);
-		D3D::stateman->PushDepthState(m_efbEncodeDepthState);
-		D3D::stateman->PushRasterizerState(m_efbEncodeRastState);
+		D3D::stateman->PushBlendState(m_efbEncodeBlendState.get());
+		D3D::stateman->PushDepthState(m_efbEncodeDepthState.get());
+		D3D::stateman->PushRasterizerState(m_efbEncodeRastState.get());
 		D3D::stateman->Apply();
-		D3D::context->OMSetRenderTargets(1, &m_outRTV, nullptr);
+		D3D::context->OMSetRenderTargets(1, D3D::ToAddr(m_outRTV), nullptr);
 		D3D11_VIEWPORT vp = CD3D11_VIEWPORT(0.f, 0.f, FLOAT(cacheLinesPerRow*2), FLOAT(numBlocksY));
 		D3D::context->RSSetViewports(1, &vp);
 
-		D3D::context->IASetInputLayout(m_quadLayout);
+		D3D::context->IASetInputLayout(m_quadLayout.get());
 		D3D::context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 		UINT stride = sizeof(QuadVertex);
 		UINT offset = 0;
-		D3D::context->IASetVertexBuffers(0, 1, &m_quad, &stride, &offset);
+		D3D::context->IASetVertexBuffers(0, 1, D3D::ToAddr(m_quad), &stride, &offset);
 	
 		EFBRectangle fullSrcRect;
 		fullSrcRect.left = 0;
@@ -1120,9 +1095,9 @@ size_t PSTextureEncoder::Encode(u8* dst, unsigned int dstFormat,
 		params.TexTop = float(targetRect.top) / g_renderer->GetTargetHeight();
 		params.TexRight = float(targetRect.right) / g_renderer->GetTargetWidth();
 		params.TexBottom = float(targetRect.bottom) / g_renderer->GetTargetHeight();
-		D3D::context->UpdateSubresource(m_encodeParams, 0, nullptr, &params, 0, 0);
+		D3D::context->UpdateSubresource(m_encodeParams.get(), 0, nullptr, &params, 0, 0);
 
-		D3D::context->VSSetConstantBuffers(0, 1, &m_encodeParams);
+		D3D::context->VSSetConstantBuffers(0, 1, D3D::ToAddr(m_encodeParams));
 
 		ID3D11ShaderResourceView* pEFB = (srcFormat == PIXELFMT_Z24) ?
 			FramebufferManager::GetEFBDepthTexture()->GetSRV() :
@@ -1131,9 +1106,9 @@ size_t PSTextureEncoder::Encode(u8* dst, unsigned int dstFormat,
 			// expecting the blurred edges around multisampled shapes.
 			FramebufferManager::GetResolvedEFBColorTexture()->GetSRV();
 
-		D3D::context->PSSetConstantBuffers(0, 1, &m_encodeParams);
+		D3D::context->PSSetConstantBuffers(0, 1, D3D::ToAddr(m_encodeParams));
 		D3D::context->PSSetShaderResources(0, 1, &pEFB);
-		D3D::context->PSSetSamplers(0, 1, &m_efbSampler);
+		D3D::context->PSSetSamplers(0, 1, D3D::ToAddr(m_efbSampler));
 
 		// Encode!
 
@@ -1142,7 +1117,7 @@ size_t PSTextureEncoder::Encode(u8* dst, unsigned int dstFormat,
 		// Copy to staging buffer
 
 		D3D11_BOX srcBox = CD3D11_BOX(0, 0, 0, cacheLinesPerRow*2, numBlocksY, 1);
-		D3D::context->CopySubresourceRegion(m_outStage, 0, 0, 0, 0, m_out, 0, &srcBox);
+		D3D::context->CopySubresourceRegion(m_outStage.get(), 0, 0, 0, 0, m_out.get(), 0, &srcBox);
 
 		// Clean up state
 	
@@ -1167,7 +1142,7 @@ size_t PSTextureEncoder::Encode(u8* dst, unsigned int dstFormat,
 		// Transfer staging buffer to GameCube/Wii RAM
 
 		D3D11_MAPPED_SUBRESOURCE map = { 0 };
-		hr = D3D::context->Map(m_outStage, 0, D3D11_MAP_READ, 0, &map);
+		hr = D3D::context->Map(m_outStage.get(), 0, D3D11_MAP_READ, 0, &map);
 		CHECK(SUCCEEDED(hr), "map staging buffer");
 
 		u8* src = (u8*)map.pData;
@@ -1178,7 +1153,7 @@ size_t PSTextureEncoder::Encode(u8* dst, unsigned int dstFormat,
 			src += map.RowPitch;
 		}
 
-		D3D::context->Unmap(m_outStage, 0);
+		D3D::context->Unmap(m_outStage.get(), 0);
 
 		encodeSize = bpmem.copyMipMapStrideChannels*32 * numBlocksY;
 	}
@@ -1242,7 +1217,7 @@ bool PSTextureEncoder::SetStaticShader(unsigned int dstFormat, unsigned int srcF
 		case 0xC: generatorFuncName = "Generate_C"; break;
 		default:
 			WARN_LOG(VIDEO, "No generator available for dst format 0x%X; aborting", generatorNum);
-			m_staticShaders[key] = nullptr;
+			m_staticShaders.emplace(key, D3D::PixelShaderPtr(nullptr));
 			return false;
 		}
 
@@ -1250,7 +1225,7 @@ bool PSTextureEncoder::SetStaticShader(unsigned int dstFormat, unsigned int srcF
 			dstFormat, srcFormat, isIntensity ? 1 : 0, scaleByHalf ? 1 : 0);
 
 		// Shader permutation not found, so compile it
-		D3DBlob* bytecode = nullptr;
+		D3DBlob bytecode;
 		D3D_SHADER_MACRO macros[] = {
 			{ "IMP_FETCH", FETCH_FUNC_NAMES[fetchNum] },
 			{ "IMP_SCALEDFETCH", SCALEDFETCH_FUNC_NAMES[scaledFetchNum] },
@@ -1258,29 +1233,28 @@ bool PSTextureEncoder::SetStaticShader(unsigned int dstFormat, unsigned int srcF
 			{ "IMP_GENERATOR", generatorFuncName },
 			{ nullptr, nullptr }
 		};
-		if (!D3D::CompilePixelShader(EFB_ENCODE_PS, &bytecode, macros))
+		if (!D3D::CompileShader(D3D::ShaderType::Pixel , EFB_ENCODE_PS, bytecode, macros))
 		{
 			WARN_LOG(VIDEO, "EFB encoder shader for dstFormat 0x%X, srcFormat %d, isIntensity %d, scaleByHalf %d failed to compile",
 				dstFormat, srcFormat, isIntensity ? 1 : 0, scaleByHalf ? 1 : 0);
 			// Add dummy shader to map to prevent trying to compile over and
 			// over again
-			m_staticShaders[key] = nullptr;
+			m_staticShaders[key].reset(nullptr);
 			return false;
 		}
 
-		ID3D11PixelShader* newShader;
-		HRESULT hr = D3D::device->CreatePixelShader(bytecode->Data(), bytecode->Size(), nullptr, &newShader);
+		D3D::PixelShaderPtr newShader;
+		HRESULT hr = D3D::device->CreatePixelShader(bytecode.Data(), bytecode.Size(), nullptr, D3D::ToAddr(newShader));
 		CHECK(SUCCEEDED(hr), "create efb encoder pixel shader");
 
-		it = m_staticShaders.insert(std::make_pair(key, newShader)).first;
-		bytecode->Release();
+		it = m_staticShaders.emplace(key, std::move(newShader)).first;
 	}
 
 	if (it != m_staticShaders.end())
 	{
 		if (it->second)
 		{
-			D3D::context->PSSetShader(it->second, nullptr, 0);
+			D3D::context->PSSetShader(it->second.get(), nullptr, 0);
 			return true;
 		}
 		else
@@ -1299,25 +1273,25 @@ bool PSTextureEncoder::InitDynamicMode()
 		{ nullptr, nullptr }
 	};
 
-	D3DBlob* bytecode = nullptr;
-	if (!D3D::CompilePixelShader(EFB_ENCODE_PS, &bytecode, macros))
+	D3DBlob bytecode;
+	if (!D3D::CompileShader(D3D::ShaderType::Pixel, EFB_ENCODE_PS, bytecode, macros))
 	{
 		ERROR_LOG(VIDEO, "EFB encode pixel shader failed to compile");
 		return false;
 	}
 
-	hr = D3D::device->CreateClassLinkage(&m_classLinkage);
+	hr = D3D::device->CreateClassLinkage(D3D::ToAddr(m_classLinkage));
 	CHECK(SUCCEEDED(hr), "create efb encode class linkage");
-	D3D::SetDebugObjectName(m_classLinkage, "efb encoder class linkage");
+	D3D::SetDebugObjectName(m_classLinkage.get(), "efb encoder class linkage");
 
-	hr = D3D::device->CreatePixelShader(bytecode->Data(), bytecode->Size(), m_classLinkage, &m_dynamicShader);
+	hr = D3D::device->CreatePixelShader(bytecode.Data(), bytecode.Size(), m_classLinkage.get(), D3D::ToAddr(m_dynamicShader));
 	CHECK(SUCCEEDED(hr), "create efb encode pixel shader");
-	D3D::SetDebugObjectName(m_dynamicShader, "efb encoder pixel shader");
+	D3D::SetDebugObjectName(m_dynamicShader.get(), "efb encoder pixel shader");
 	
 	// Use D3DReflect
 
 	ID3D11ShaderReflection* reflect = nullptr;
-	hr = HLSLCompiler::getInstance().Reflect(bytecode->Data(), bytecode->Size(), IID_ID3D11ShaderReflection, (void**)&reflect);
+	hr = HLSLCompiler::getInstance().Reflect(bytecode.Data(), bytecode.Size(), IID_ID3D11ShaderReflection, (void**)&reflect);
 	CHECK(SUCCEEDED(hr), "reflect on efb encoder shader");
 
 	// Get number of slots and create dynamic linkage array
@@ -1354,8 +1328,6 @@ bool PSTextureEncoder::InitDynamicMode()
 		m_generatorClass[i] = nullptr;
 
 	reflect->Release();
-	bytecode->Release();
-
 	return true;
 }
 
@@ -1400,7 +1372,7 @@ bool PSTextureEncoder::SetDynamicShader(unsigned int dstFormat,
 		INFO_LOG(VIDEO, "Creating %s class instance for encoder 0x%X",
 			FETCH_CLASS_NAMES[fetchNum], dstFormat);
 		HRESULT hr = m_classLinkage->CreateClassInstance(
-			FETCH_CLASS_NAMES[fetchNum], 0, 0, 0, 0, &m_fetchClass[fetchNum]);
+			FETCH_CLASS_NAMES[fetchNum], 0, 0, 0, 0, D3D::ToAddr(m_fetchClass[fetchNum]));
 		CHECK(SUCCEEDED(hr), "create fetch class instance");
 	}
 	if (!m_scaledFetchClass[scaledFetchNum])
@@ -1409,7 +1381,7 @@ bool PSTextureEncoder::SetDynamicShader(unsigned int dstFormat,
 			SCALEDFETCH_CLASS_NAMES[scaledFetchNum], dstFormat);
 		HRESULT hr = m_classLinkage->CreateClassInstance(
 			SCALEDFETCH_CLASS_NAMES[scaledFetchNum], 0, 0, 0, 0,
-			&m_scaledFetchClass[scaledFetchNum]);
+			D3D::ToAddr(m_scaledFetchClass[scaledFetchNum]));
 		CHECK(SUCCEEDED(hr), "create scaled fetch class instance");
 	}
 	if (!m_intensityClass[intensityNum])
@@ -1418,7 +1390,7 @@ bool PSTextureEncoder::SetDynamicShader(unsigned int dstFormat,
 			INTENSITY_CLASS_NAMES[intensityNum], dstFormat);
 		HRESULT hr = m_classLinkage->CreateClassInstance(
 			INTENSITY_CLASS_NAMES[intensityNum], 0, 0, 0, 0,
-			&m_intensityClass[intensityNum]);
+			D3D::ToAddr(m_intensityClass[intensityNum]));
 		CHECK(SUCCEEDED(hr), "create intensity class instance");
 	}
 	if (!m_generatorClass[generatorNum])
@@ -1426,22 +1398,22 @@ bool PSTextureEncoder::SetDynamicShader(unsigned int dstFormat,
 		INFO_LOG(VIDEO, "Creating %s class instance for encoder 0x%X",
 			generatorName, dstFormat);
 		HRESULT hr = m_classLinkage->CreateClassInstance(
-			generatorName, 0, 0, 0, 0, &m_generatorClass[generatorNum]);
+			generatorName, 0, 0, 0, 0, D3D::ToAddr(m_generatorClass[generatorNum]));
 		CHECK(SUCCEEDED(hr), "create generator class instance");
 	}
 
 	// Assemble dynamic linkage array
 	if (m_fetchSlot != UINT(-1))
-		m_linkageArray[m_fetchSlot] = m_fetchClass[fetchNum];
+		m_linkageArray[m_fetchSlot] = m_fetchClass[fetchNum].get();
 	if (m_scaledFetchSlot != UINT(-1))
-		m_linkageArray[m_scaledFetchSlot] = m_scaledFetchClass[scaledFetchNum];
+		m_linkageArray[m_scaledFetchSlot] = m_scaledFetchClass[scaledFetchNum].get();
 	if (m_intensitySlot != UINT(-1))
-		m_linkageArray[m_intensitySlot] = m_intensityClass[intensityNum];
+		m_linkageArray[m_intensitySlot] = m_intensityClass[intensityNum].get();
 	if (m_generatorSlot != UINT(-1))
-		m_linkageArray[m_generatorSlot] = m_generatorClass[generatorNum];
+		m_linkageArray[m_generatorSlot] = m_generatorClass[generatorNum].get();
 	
-	D3D::context->PSSetShader(m_dynamicShader,
-		m_linkageArray.empty() ? nullptr : &m_linkageArray[0],
+	D3D::context->PSSetShader(m_dynamicShader.get(),
+		(m_linkageArray.empty() ? nullptr : m_linkageArray.data()),
 		(UINT)m_linkageArray.size());
 
 	return true;

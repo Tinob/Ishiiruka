@@ -5,8 +5,9 @@
 #pragma once
 #include <atomic>
 #include <unordered_map>
+#include <d3d11_2.h>
+#include "VideoBackends/DX11/D3DPtr.h"
 #include "VideoCommon/PixelShaderGen.h"
-#include <d3d11.h>
 
 enum DSTALPHA_MODE;
 
@@ -27,7 +28,7 @@ public:
 	static bool TestShader();
 	static void InsertByteCode(const PixelShaderUid &uid, const void* bytecode, unsigned int bytecodelen);
 
-	static ID3D11PixelShader* GetActiveShader() { return last_entry->shader; }
+	static ID3D11PixelShader* GetActiveShader() { return last_entry->shader.get(); }
 	static ID3D11Buffer* &GetConstantBuffer();
 
 	static ID3D11PixelShader* GetColorMatrixProgram(bool multisampled);
@@ -42,16 +43,16 @@ public:
 private:
 	struct PSCacheEntry
 	{
-		ID3D11PixelShader* shader;
+		D3D::PixelShaderPtr shader;
 		bool compiled;
 		std::atomic_flag initialized;
 		std::string code;
 
-		PSCacheEntry() : shader(NULL), compiled(false)
+		PSCacheEntry() : compiled(false)
 		{
 			initialized.clear();
 		}
-		void Destroy() { SAFE_RELEASE(shader); }
+		void Destroy() { shader.reset(); }
 	};
 	static inline void PushByteCode(const PixelShaderUid &uid, const void* bytecode, unsigned int bytecodelen, PSCacheEntry* entry);
 	typedef std::unordered_map<PixelShaderUid, PSCacheEntry, PixelShaderUid::ShaderUidHasher> PSCache;

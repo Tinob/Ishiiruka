@@ -59,7 +59,6 @@ static const char YUYV_DECODER_PS[] =
 ;
 
 Television::Television()
-	: m_yuyvTexture(NULL), m_yuyvTextureSRV(NULL), m_pShader(NULL)
 { }
 
 void Television::Init()
@@ -83,24 +82,24 @@ void Television::Init()
 	// This texture format is designed for YUYV data.
 	D3D11_TEXTURE2D_DESC t2dd = CD3D11_TEXTURE2D_DESC(
 		DXGI_FORMAT_G8R8_G8B8_UNORM, MAX_XFB_WIDTH, MAX_XFB_HEIGHT, 1, 1);
-	hr = D3D::device->CreateTexture2D(&t2dd, &srd, &m_yuyvTexture);
+	hr = D3D::device->CreateTexture2D(&t2dd, &srd, D3D::ToAddr(m_yuyvTexture));
 	CHECK(SUCCEEDED(hr), "create tv yuyv texture");
-	D3D::SetDebugObjectName(m_yuyvTexture, "tv yuyv texture");
+	D3D::SetDebugObjectName(m_yuyvTexture.get(), "tv yuyv texture");
 
 	// Create shader resource view for YUYV texture
 
 	D3D11_SHADER_RESOURCE_VIEW_DESC srvd = CD3D11_SHADER_RESOURCE_VIEW_DESC(
-		m_yuyvTexture, D3D11_SRV_DIMENSION_TEXTURE2D,
+		m_yuyvTexture.get(), D3D11_SRV_DIMENSION_TEXTURE2D,
 		DXGI_FORMAT_G8R8_G8B8_UNORM);
-	hr = D3D::device->CreateShaderResourceView(m_yuyvTexture, &srvd, &m_yuyvTextureSRV);
+	hr = D3D::device->CreateShaderResourceView(m_yuyvTexture.get(), &srvd, D3D::ToAddr(m_yuyvTextureSRV));
 	CHECK(SUCCEEDED(hr), "create tv yuyv texture srv");
-	D3D::SetDebugObjectName(m_yuyvTextureSRV, "tv yuyv texture srv");
+	D3D::SetDebugObjectName(m_yuyvTextureSRV.get(), "tv yuyv texture srv");
 
 	// Create YUYV-decoding pixel shader
 
 	m_pShader = D3D::CompileAndCreatePixelShader(YUYV_DECODER_PS);
 	CHECK(m_pShader != NULL, "compile and create yuyv decoder pixel shader");
-	D3D::SetDebugObjectName(m_pShader, "yuyv decoder pixel shader");
+	D3D::SetDebugObjectName(m_pShader.get(), "yuyv decoder pixel shader");
 
 	// Create sampler state and set border color
 	// 
@@ -113,17 +112,17 @@ void Television::Init()
 	D3D11_SAMPLER_DESC samDesc = CD3D11_SAMPLER_DESC(D3D11_FILTER_MIN_MAG_MIP_LINEAR,
 		D3D11_TEXTURE_ADDRESS_BORDER, D3D11_TEXTURE_ADDRESS_BORDER, D3D11_TEXTURE_ADDRESS_BORDER,
 		0.f, 1, D3D11_COMPARISON_ALWAYS, border, 0.f, 0.f);
-	hr = D3D::device->CreateSamplerState(&samDesc, &m_samplerState);
+	hr = D3D::device->CreateSamplerState(&samDesc, D3D::ToAddr(m_samplerState));
 	CHECK(SUCCEEDED(hr), "create yuyv decoder sampler state");
-	D3D::SetDebugObjectName(m_samplerState, "yuyv decoder sampler state");
+	D3D::SetDebugObjectName(m_samplerState.get(), "yuyv decoder sampler state");
 }
 
 void Television::Shutdown()
 {
-	SAFE_RELEASE(m_pShader);
-	SAFE_RELEASE(m_yuyvTextureSRV);
-	SAFE_RELEASE(m_yuyvTexture);
-	SAFE_RELEASE(m_samplerState);
+	m_pShader.reset();
+	m_yuyvTextureSRV.reset();
+	m_yuyvTexture.reset();
+	m_samplerState.reset();
 }
 
 void Television::Submit(u32 xfbAddr, u32 width, u32 height)
@@ -135,7 +134,7 @@ void Television::Submit(u32 xfbAddr, u32 width, u32 height)
 	// Load data from GameCube RAM to YUYV texture
 	u8* yuyvSrc = Memory::GetPointer(xfbAddr);
 	D3D11_BOX box = CD3D11_BOX(0, 0, 0, width, height, 1);
-	D3D::context->UpdateSubresource(m_yuyvTexture, 0, &box, yuyvSrc, 2*width, 2*width*height);
+	D3D::context->UpdateSubresource(m_yuyvTexture.get(), 0, &box, yuyvSrc, 2*width, 2*width*height);
 }
 
 void Television::Render()
@@ -149,14 +148,13 @@ void Television::Render()
 
 		MathUtil::Rectangle<float> sourceRc(0.f, 0.f, float(m_curWidth), float(m_curHeight));
 		MathUtil::Rectangle<float> destRc(-1.f, 1.f, 1.f, -1.f);
-
-		D3D::context->PSSetSamplers(0, 1, &m_samplerState);
+		D3D::context->PSSetSamplers(0, 1, D3D::ToAddr(m_samplerState));
 
 		D3D::drawShadedTexSubQuad(
-			m_yuyvTextureSRV, &sourceRc,
+			m_yuyvTextureSRV.get(), &sourceRc,
 			MAX_XFB_WIDTH, MAX_XFB_HEIGHT,
 			&destRc,
-			m_pShader,
+			m_pShader.get(),
 			VertexShaderCache::GetSimpleVertexShader(),
 			VertexShaderCache::GetSimpleInputLayout());
 	}

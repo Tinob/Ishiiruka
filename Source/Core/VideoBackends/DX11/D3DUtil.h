@@ -4,8 +4,9 @@
 
 #pragma	once
 
-#include <d3d11.h>
+#include <d3d11_2.h>
 #include "Common/MathUtil.h"
+#include "VideoBackends/DX11/D3DPtr.h"
 
 namespace DX11
 {
@@ -21,13 +22,13 @@ namespace D3D
 
 	class CD3DFont
 	{
-		ID3D11ShaderResourceView* m_pTexture;
-		ID3D11Buffer* m_pVB;
-		ID3D11InputLayout* m_InputLayout;
-		ID3D11PixelShader* m_pshader;
-		ID3D11VertexShader* m_vshader;
-		ID3D11BlendState* m_blendstate;
-		ID3D11RasterizerState* m_raststate;
+		SrvPtr m_pTexture;
+		BufferPtr m_pVB;
+		InputLayoutPtr m_InputLayout;
+		PixelShaderPtr m_pshader;
+		VertexShaderPtr m_vshader;
+		BlendStatePtr m_blendstate;
+		RasterizerStatePtr m_raststate;
 		const int m_dwTexWidth;
 		const int m_dwTexHeight;
 		unsigned int m_LineHeight;

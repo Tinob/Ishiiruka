@@ -8,9 +8,6 @@
 #include "VideoCommon/VideoCommon.h"
 #include "VideoBackends/DX11/D3DPtr.h"
 
-struct ID3D11Buffer;
-struct ID3D11GeometryShader;
-
 namespace DX11
 {
 // This class manages a collection of line and point geometry shaders, one for each
@@ -35,7 +32,7 @@ private:
 	void UpdateConstantBuffer(float lineWidth, float pointSize, float texOffset,
 		float vpWidth, float vpHeight, const bool* texOffsetEnable);
 
-	bool ready_;
+	bool m_ready;
 
 	GC_ALIGNED16(struct GSParams
 	{
@@ -55,14 +52,13 @@ private:
 		}
 	});
 
-	GSParams shadowParamsBuffer_;
-	D3D::UniquePtr<ID3D11Buffer> paramsBuffer_;
+	GSParams m_shadowParamsBuffer;
+	D3D::BufferPtr m_paramsBuffer;
 
-	using GeometryShaderPtr = D3D::UniquePtr<ID3D11GeometryShader>;
-	using ComboMap = std::unordered_map<u32, GeometryShaderPtr>;
+	using ComboMap = std::unordered_map<u32, D3D::GeometryShaderPtr>;
 
-	ComboMap lineShaders_;
-	ComboMap pointShaders_;
+	ComboMap m_lineShaders;
+	ComboMap m_pointShaders;
 };
 
 }

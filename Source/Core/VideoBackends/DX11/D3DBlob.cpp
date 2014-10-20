@@ -2,56 +2,46 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include <d3d11.h>
+#include <d3d11_2.h>
 
 #include "VideoBackends/DX11/D3DBlob.h"
 
 namespace DX11
 {
 
-D3DBlob::D3DBlob(unsigned int blob_size, const u8* init_data) : ref(1), size(blob_size), blob(nullptr)
+D3DBlob::D3DBlob(unsigned int blob_size, const u8* init_data) :
+	data_{ new u8[blob_size] },
+	size_{ blob_size }
 {
-	data = new u8[blob_size];
-	if (init_data) memcpy(data, init_data, size);
+	if (init_data)
+		memcpy(data_.get(), init_data, size_);
 }
 
-D3DBlob::D3DBlob(ID3DBlob* d3dblob) : ref(1)
+D3DBlob::D3DBlob(ID3DBlobPtr && d3dblob) :
+	blob_{ std::move(d3dblob) },
+	size_{ 0 }
 {
-	blob = d3dblob;
-	data = (u8*)blob->GetBufferPointer();
-	size = (unsigned int)blob->GetBufferSize();
-	d3dblob->AddRef();
+	if (blob_) {
+		data_.reset((u8*)blob_->GetBufferPointer());
+		size_ = blob_->GetBufferSize();
+	}
 }
 
 D3DBlob::~D3DBlob()
 {
-	if (blob) blob->Release();
-	else delete[] data;
-}
-
-void D3DBlob::AddRef()
-{
-	++ref;
-}
-
-unsigned int D3DBlob::Release()
-{
-	if (--ref == 0)
-	{
-		delete this;
-		return 0;
+	if (blob_) {
+		data_.release();
 	}
-	return ref;
 }
 
-unsigned int D3DBlob::Size()
+size_t D3DBlob::Size() const
 {
-	return size;
+	return size_;
 }
 
-u8* D3DBlob::Data()
+u8 const * D3DBlob::Data() const
 {
-	return data;
+	return data_.get();
 }
 
 }  // namespace DX11

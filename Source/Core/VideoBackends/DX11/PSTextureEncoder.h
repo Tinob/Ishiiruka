@@ -2,23 +2,11 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _PSTEXTUREENCODER_H
-#define _PSTEXTUREENCODER_H
+#pragma once
 
-#include "TextureEncoder.h"
-
-struct ID3D11Texture2D;
-struct ID3D11RenderTargetView;
-struct ID3D11Buffer;
-struct ID3D11InputLayout;
-struct ID3D11VertexShader;
-struct ID3D11PixelShader;
-struct ID3D11ClassLinkage;
-struct ID3D11ClassInstance;
-struct ID3D11BlendState;
-struct ID3D11DepthStencilState;
-struct ID3D11RasterizerState;
-struct ID3D11SamplerState;
+#include "Common/LinearDiskCache.h"
+#include "VideoBackends/DX11/D3DPtr.h"
+#include "VideoBackends/DX11/TextureEncoder.h"
 
 namespace DX11
 {
@@ -28,7 +16,7 @@ class PSTextureEncoder : public TextureEncoder
 
 public:
 
-	PSTextureEncoder();
+	PSTextureEncoder() = default;
 
 	void Init();
 	void Shutdown();
@@ -38,19 +26,19 @@ public:
 
 private:
 	
-	bool m_ready;
+	bool m_ready{};
 
-	ID3D11Texture2D* m_out;
-	ID3D11RenderTargetView* m_outRTV;
-	ID3D11Texture2D* m_outStage;
-	ID3D11Buffer* m_encodeParams;
-	ID3D11Buffer* m_quad;
-	ID3D11VertexShader* m_vShader;
-	ID3D11InputLayout* m_quadLayout;
-	ID3D11BlendState* m_efbEncodeBlendState;
-	ID3D11DepthStencilState* m_efbEncodeDepthState;
-	ID3D11RasterizerState* m_efbEncodeRastState;
-	ID3D11SamplerState* m_efbSampler;
+	D3D::Texture2dPtr m_out;
+	D3D::RtvPtr m_outRTV;
+	D3D::Texture2dPtr m_outStage;
+	D3D::BufferPtr m_encodeParams;
+	D3D::BufferPtr m_quad;
+	D3D::VertexShaderPtr m_vShader;
+	D3D::InputLayoutPtr m_quadLayout;
+	D3D::BlendStatePtr m_efbEncodeBlendState;
+	D3D::DepthStencilStatePtr m_efbEncodeDepthState;
+	D3D::RasterizerStatePtr m_efbEncodeRastState;
+	D3D::SamplerStatePtr m_efbSampler;
 
 	// Stuff only used in static-linking mode (SM4.0-compatible)
 
@@ -63,11 +51,11 @@ private:
 	ComboKey MakeComboKey(unsigned int dstFormat, unsigned int srcFormat,
 		bool isIntensity, bool scaleByHalf)
 	{
-		return (dstFormat << 4) | (srcFormat << 2) | (isIntensity ? (1<<1) : 0)
+		return (dstFormat << 4) | (srcFormat << 2) | (isIntensity ? (1 << 1) : 0)
 			| (scaleByHalf ? (1<<0) : 0);
 	}
 
-	typedef std::map<ComboKey, ID3D11PixelShader*> ComboMap;
+	typedef std::map<ComboKey, D3D::PixelShaderPtr> ComboMap;
 
 	ComboMap m_staticShaders;
 
@@ -78,8 +66,8 @@ private:
 	bool SetDynamicShader(unsigned int dstFormat, unsigned int srcFormat,
 		bool isIntensity, bool scaleByHalf);
 
-	ID3D11PixelShader* m_dynamicShader;
-	ID3D11ClassLinkage* m_classLinkage;
+	D3D::PixelShaderPtr m_dynamicShader;
+	D3D::ClkPtr m_classLinkage;
 
 	// Interface slots
 	UINT m_fetchSlot;
@@ -89,18 +77,16 @@ private:
 
 	// Class instances
 	// Fetch: 0 is RGB, 1 is RGBA, 2 is RGB565, 3 is Z
-	ID3D11ClassInstance* m_fetchClass[4];
+	D3D::CiPtr m_fetchClass[4];
 	// ScaledFetch: 0 is off, 1 is on
-	ID3D11ClassInstance* m_scaledFetchClass[2];
+	D3D::CiPtr m_scaledFetchClass[2];
 	// Intensity: 0 is off, 1 is on
-	ID3D11ClassInstance* m_intensityClass[2];
+	D3D::CiPtr m_intensityClass[2];
 	// Generator: one for each dst format, 16 total
-	ID3D11ClassInstance* m_generatorClass[16];
+	D3D::CiPtr m_generatorClass[16];
 
 	std::vector<ID3D11ClassInstance*> m_linkageArray;
 
 };
 
 }
-
-#endif

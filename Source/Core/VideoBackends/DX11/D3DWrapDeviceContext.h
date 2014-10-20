@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <d3d11.h>
+#include <d3d11_2.h>
 #include <array>
 #include <functional>
 namespace DX11
@@ -17,7 +17,7 @@ namespace D3D
 class WrapDeviceContext 
 {
 	ID3D11DeviceContext*     m_ctx{ nullptr };
-
+	ID3D11DeviceContext1*    m_ctx1{ nullptr };
 	struct Cache 
 	{
 		ID3D11PixelShader *      m_ps{};
@@ -72,10 +72,18 @@ public:
 	explicit operator bool() const { return m_ctx != nullptr; }
 	operator ID3D11DeviceChild* () { return m_ctx; }
 
+	void InitContext1() 
+	{
+		m_ctx->QueryInterface(__uuidof(ID3D11DeviceContext1), (void**)&m_ctx1);
+	}
 	//
 	inline ULONG Release() 
 	{
 		m_c = Cache{}; // in case of restart, as i am a global variable.
+		if (m_ctx1 != nullptr)
+		{
+			m_ctx1->Release();
+		}
 		return m_ctx->Release();
 	}
 
@@ -241,6 +249,13 @@ public:
 		}
 	}
 
+	inline void CSSetShader(
+		ID3D11ComputeShader *pShader, 
+		ID3D11ClassInstance *const *ppClassInstances, 
+		UINT NumClassInstances){
+		m_ctx->CSSetShader(pShader, ppClassInstances, NumClassInstances);
+	}
+
 	inline void VSSetConstantBuffers(UINT StartSlot, UINT NumBuffers, ID3D11Buffer *const *ppConstantBuffers)
 	{
 		NumBuffers += StartSlot;
@@ -342,6 +357,13 @@ public:
 		m_ctx->ClearRenderTargetView(pRenderTargetView, ColorRGBA);
 	}
 
+	inline void ClearUnorderedAccessViewUint(
+		ID3D11UnorderedAccessView *pRenderTargetView, 
+		const UINT ColorRGBA[4]) 
+	{
+		m_ctx->ClearUnorderedAccessViewUint(pRenderTargetView, ColorRGBA);
+	}
+
 	inline void DrawIndexed(
 		UINT IndexCount,
 		UINT StartIndexLocation,
@@ -356,6 +378,44 @@ public:
 	inline void Draw(UINT VertexCount, UINT StartVertexLocation)
 	{
 		m_ctx->Draw(VertexCount, StartVertexLocation);
+	}
+
+	inline void CSSetSamplers(
+		UINT StartSlot, 
+		UINT NumSamplers, 
+		ID3D11SamplerState *const *ppSamplers)
+	{
+		m_ctx->CSSetSamplers(StartSlot, NumSamplers, ppSamplers);
+	}
+
+	inline void CSSetShaderResources(
+		UINT StartSlot, 
+		UINT NumViews, 
+		ID3D11ShaderResourceView *const *ppShaderResourceViews) 
+	{
+		m_ctx->CSSetShaderResources(StartSlot, NumViews, ppShaderResourceViews);
+	}
+
+	inline void CSSetUnorderedAccessViews(
+		UINT StartSlot, 
+		UINT Num, 
+		ID3D11UnorderedAccessView *const *ppUavs)
+	{
+		m_ctx->CSSetUnorderedAccessViews(StartSlot, Num, ppUavs, nullptr);
+	}
+
+	inline void CSSetConstantBuffers(
+		UINT StartSlot, 
+		UINT NumBuffers, 
+		ID3D11Buffer *const *ppConstantBuffers) 
+	{
+		m_ctx->CSSetConstantBuffers(StartSlot, NumBuffers, ppConstantBuffers);
+	}
+
+
+	void Dispatch(UINT X, UINT Y, UINT Z) 
+	{
+		m_ctx->Dispatch(X, Y, Z);
 	}
 
 	inline void UpdateSubresource(

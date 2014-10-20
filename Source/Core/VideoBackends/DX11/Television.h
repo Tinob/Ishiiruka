@@ -2,15 +2,9 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _TELEVISION_H
-#define _TELEVISION_H
-
+#pragma once
+#include "VideoBackends/DX11/D3DPtr.h"
 #include "VideoCommon/VideoCommon.h"
-
-struct ID3D11Texture2D;
-struct ID3D11ShaderResourceView;
-struct ID3D11PixelShader;
-struct ID3D11SamplerState;
 
 namespace DX11
 {
@@ -42,13 +36,11 @@ private:
 
 	// Used for real XFB mode
 
-	ID3D11Texture2D* m_yuyvTexture;
-	ID3D11ShaderResourceView* m_yuyvTextureSRV;
-	ID3D11PixelShader* m_pShader;
-	ID3D11SamplerState* m_samplerState;
+	D3D::Texture2dPtr m_yuyvTexture;
+	D3D::SrvPtr m_yuyvTextureSRV;
+	D3D::PixelShaderPtr m_pShader;
+	D3D::SamplerStatePtr m_samplerState;
 
 };
 
 }
-
-#endif

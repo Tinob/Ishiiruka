@@ -5,11 +5,9 @@
 #pragma once
 #include <atomic>
 #include <unordered_map>
+#include "VideoBackends/DX11/D3DBase.h"
+#include "VideoBackends/DX11/D3DBlob.h"
 #include "VideoCommon/VertexShaderGen.h"
-#include "D3DBase.h"
-#include "D3DBlob.h"
-
-
 
 namespace DX11 {
 
@@ -24,8 +22,8 @@ public:
 		const XFRegisters &xfr, 
 		const BPMemory &bpm, bool ongputhread);
 	static bool TestShader();
-	static ID3D11VertexShader* GetActiveShader() { return last_entry->shader; }
-	static D3DBlob* GetActiveShaderBytecode() { return last_entry->bytecode; }
+	static ID3D11VertexShader* GetActiveShader() { return last_entry->shader.get(); }
+	static D3DBlob const& GetActiveShaderBytecode() { return last_entry->bytecode; }
 	static ID3D11Buffer* &GetConstantBuffer();
 
 	static ID3D11VertexShader* GetSimpleVertexShader();
@@ -33,34 +31,33 @@ public:
 	static ID3D11InputLayout* GetSimpleInputLayout();
 	static ID3D11InputLayout* GetClearInputLayout();
 
-	static void VertexShaderCache::InsertByteCode(const VertexShaderUid &uid, D3DBlob* bcodeblob);
+	static void VertexShaderCache::InsertByteCode(const VertexShaderUid &uid, D3DBlob&& bcodeblob);
 
 private:
 	struct VSCacheEntry
 	{ 
-		ID3D11VertexShader* shader;
-		D3DBlob* bytecode; // needed to initialize the input layout
+		D3D::VertexShaderPtr shader;
+		D3DBlob bytecode; // needed to initialize the input layout
 
 		std::string code;
 		bool compiled;
 		std::atomic_flag initialized;
-		VSCacheEntry() : shader(NULL), bytecode(NULL), compiled(false)
+		VSCacheEntry() : compiled(false)
 		{
 			initialized.clear();
 		}
-		void SetByteCode(D3DBlob* blob)
+		void SetByteCode(D3DBlob&& blob)
 		{
-			SAFE_RELEASE(bytecode);
-			bytecode = blob;
-			blob->AddRef();
+			bytecode = std::move(blob);
+			
 		}
 		void Destroy()
 		{
-			SAFE_RELEASE(shader);
-			SAFE_RELEASE(bytecode);
+			shader.reset();
+			bytecode = nullptr;
 		}
 	};
-	static inline void PushByteCode(const VertexShaderUid &uid, D3DBlob* bcodeblob, VSCacheEntry* entry);
+	static inline void PushByteCode(const VertexShaderUid &uid, D3DBlob&& bcodeblob, VSCacheEntry* entry);
 	typedef std::unordered_map<VertexShaderUid, VSCacheEntry, VertexShaderUid::ShaderUidHasher> VSCache;
 	
 	static VSCache vshaders;

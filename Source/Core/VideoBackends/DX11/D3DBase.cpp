@@ -2,8 +2,10 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 #include <unordered_map>
-#include "Common/StringUtil.h"
+#include "Common/CPUDetect.h"
 #include "Common/Hash.h"
+#include "Common/StringUtil.h"
+#include "VideoBackends/DX11/D3DPtr.h"
 #include "VideoBackends/DX11/D3DBase.h"
 #include "VideoBackends/DX11/D3DTexture.h"
 #include "VideoBackends/DX11/GfxState.h"
@@ -26,6 +28,7 @@ namespace D3D
 {
 const DXGI_FORMAT DXGI_BaseFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 ID3D11Device* device = NULL;
+ID3D11Device1* device1 = nullptr;
 WrapDeviceContext context;
 IDXGISwapChain* swapchain = NULL;
 D3D_FEATURE_LEVEL featlevel;
@@ -37,8 +40,9 @@ std::vector<DXGI_SAMPLE_DESC> aa_modes; // supported AA modes of the current ada
 bool bgra_textures_supported;
 bool bgra565_textures_supported;
 
-#define NUM_SUPPORTED_FEATURE_LEVELS 3
+#define NUM_SUPPORTED_FEATURE_LEVELS 4
 const D3D_FEATURE_LEVEL supported_feature_levels[NUM_SUPPORTED_FEATURE_LEVELS] = {
+	D3D_FEATURE_LEVEL_11_1,
 	D3D_FEATURE_LEVEL_11_0,
 	D3D_FEATURE_LEVEL_10_1,
 	D3D_FEATURE_LEVEL_10_0
@@ -47,6 +51,11 @@ const D3D_FEATURE_LEVEL supported_feature_levels[NUM_SUPPORTED_FEATURE_LEVELS] =
 unsigned int xres, yres;
 
 bool bFrameInProgress = false;
+
+D3D_FEATURE_LEVEL GetFeatureLevel()
+{
+	return featlevel;
+}
 
 HRESULT LoadDXGI()
 {
@@ -240,17 +249,44 @@ HRESULT Create(HWND wnd)
 		swap_chain_desc.BufferDesc.Height = yres;
 	}
 
-#if defined(_DEBUG) || defined(DEBUGFAST)
+#if defined(_DEBUG)
 	// Creating debug devices can sometimes fail if the user doesn't have the correct
 	// version of the DirectX SDK. If it does, simply fallback to a non-debug device.
 {
-hr = PD3D11CreateDeviceAndSwapChain(adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr,
-	D3D11_CREATE_DEVICE_SINGLETHREADED | D3D11_CREATE_DEVICE_DEBUG,
-	supported_feature_levels, NUM_SUPPORTED_FEATURE_LEVELS,
-	D3D11_SDK_VERSION, &swap_chain_desc, &swapchain, &device,
-	&featlevel, &context);
-}
+	hr = PD3D11CreateDeviceAndSwapChain(adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr,
+		D3D11_CREATE_DEVICE_SINGLETHREADED | D3D11_CREATE_DEVICE_DEBUG,
+		supported_feature_levels, NUM_SUPPORTED_FEATURE_LEVELS,
+		D3D11_SDK_VERSION, &swap_chain_desc, &swapchain, &device,
+		&featlevel, &context);
+	ID3D11Debug *d3dDebug = nullptr;
+	if (SUCCEEDED(device->QueryInterface(__uuidof(ID3D11Debug), (void**)&d3dDebug)))
+	{
+		ID3D11InfoQueue *d3dInfoQueue = nullptr;
+		if (SUCCEEDED(d3dDebug->QueryInterface(__uuidof(ID3D11InfoQueue), (void**)&d3dInfoQueue)))
+		{
 
+			d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_CORRUPTION, true);
+			d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_ERROR, true);
+			d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_WARNING, true);
+			D3D11_MESSAGE_ID hide[] =
+			{
+			D3D11_MESSAGE_ID_SETPRIVATEDATA_CHANGINGPARAMS,
+			D3D11_MESSAGE_ID_DEVICE_DRAW_SAMPLER_NOT_SET
+			// Add more message IDs here as needed
+			};
+
+			D3D11_INFO_QUEUE_FILTER filter;
+			memset(&filter, 0, sizeof(filter));
+			filter.DenyList.NumIDs = _countof(hide);
+			filter.DenyList.pIDList = hide;
+			d3dInfoQueue->AddStorageFilterEntries(&filter);
+			
+			d3dInfoQueue->Release();
+
+		}
+		d3dDebug->Release();
+	}
+}
 	if (FAILED(hr))
 #endif
 	{
@@ -268,6 +304,12 @@ hr = PD3D11CreateDeviceAndSwapChain(adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr,
 		SAFE_RELEASE(context);
 		SAFE_RELEASE(swapchain);
 		return E_FAIL;
+	}
+
+	if (featlevel >= D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_11_1)
+	{
+		device->QueryInterface( __uuidof(ID3D11Device1), (void**)&device1);
+		context->InitContext1();
 	}
 
 	// prevent DXGI from responding to Alt+Enter, unfortunately DXGI_MWA_NO_ALT_ENTER
@@ -326,6 +368,10 @@ void Close()
 	context->Flush();  // immediately destroy device objects
 	ReleaseStates();
 	SAFE_RELEASE(context);
+	if (device1 != nullptr)
+	{
+		device1->Release();
+	}
 	ULONG references = device->Release();
 	if (references)
 	{
@@ -344,23 +390,30 @@ void Close()
 
 const char* VertexShaderVersionString()
 {
-	if (featlevel == D3D_FEATURE_LEVEL_11_0) return "vs_5_0";
+	if (featlevel >= D3D_FEATURE_LEVEL_11_0) return "vs_5_0";
 	else if (featlevel == D3D_FEATURE_LEVEL_10_1) return "vs_4_1";
 	else /*if(featlevel == D3D_FEATURE_LEVEL_10_0)*/ return "vs_4_0";
 }
 
 const char* GeometryShaderVersionString()
 {
-	if (featlevel == D3D_FEATURE_LEVEL_11_0) return "gs_5_0";
+	if (featlevel >= D3D_FEATURE_LEVEL_11_0) return "gs_5_0";
 	else if (featlevel == D3D_FEATURE_LEVEL_10_1) return "gs_4_1";
 	else /*if(featlevel == D3D_FEATURE_LEVEL_10_0)*/ return "gs_4_0";
 }
 
 const char* PixelShaderVersionString()
 {
-	if (featlevel == D3D_FEATURE_LEVEL_11_0) return "ps_5_0";
+	if (featlevel >= D3D_FEATURE_LEVEL_11_0) return "ps_5_0";
 	else if (featlevel == D3D_FEATURE_LEVEL_10_1) return "ps_4_1";
 	else /*if(featlevel == D3D_FEATURE_LEVEL_10_0)*/ return "ps_4_0";
+}
+
+const char* ComputeShaderVersionString()
+{
+	if (featlevel >= D3D_FEATURE_LEVEL_11_0) return "cs_5_0";
+	else if (featlevel == D3D_FEATURE_LEVEL_10_1) return "cs_4_1";
+	else /*if(featlevel == D3D_FEATURE_LEVEL_10_0)*/ return "cs_4_0";
 }
 
 D3DTexture2D* &GetBackBuffer() { return backbuf; }
@@ -376,6 +429,7 @@ unsigned int GetMaxTextureSize()
 {
 	switch (featlevel)
 	{
+	case D3D_FEATURE_LEVEL_11_1:
 	case D3D_FEATURE_LEVEL_11_0:
 		return D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION;
 
@@ -395,80 +449,105 @@ unsigned int GetMaxTextureSize()
 	}
 }
 
-std::unordered_map<u64, ID3D11BlendState*> bstates_;
-std::unordered_map<u64, ID3D11SamplerState*> sstates_;
-std::unordered_map<u64, ID3D11RasterizerState*> rstates_;
-std::unordered_map<u64, ID3D11DepthStencilState*> dstates_;
+template <typename T>
+struct HashDesc {
+	std::size_t operator() (T const & val) {
+#if 0
+		if (cpu_info.bSSE4_2) // sse crc32 version
+		{
+			return std::size_t(GetCRC32((u8 const*)&val, sizeof(val), 0));
+		}
+		else
+#endif
+		{
+			return GetMurmurHash3((u8 const*)&val, sizeof(val), 0);
+		}
+	}
+};
 
-ID3D11RasterizerState* GetRasterizerState(D3D11_RASTERIZER_DESC const& desc, char const* debugNameOnCreation) {
-	auto crc = GetCRC32((u8 const*)&desc, sizeof(desc), 0);
+struct PassHash {
+	std::size_t operator()(size_t val) const { return val; }
+};
+
+std::unordered_map<size_t, D3D::BlendStatePtr, PassHash> bstates_;
+std::unordered_map<size_t, D3D::SamplerStatePtr, PassHash> sstates_;
+std::unordered_map<size_t, D3D::RasterizerStatePtr, PassHash> rstates_;
+std::unordered_map<size_t, D3D::DepthStencilStatePtr, PassHash> dstates_;
+
+ID3D11RasterizerState* GetRasterizerState(PackedD3DRasterisationDesc const& desc, char const* debugNameOnCreation) {
+	auto crc = HashDesc<decltype(desc)>{}(desc);
 	auto it = rstates_.find(crc);
 	if (it != rstates_.end()) {
-		return it->second;
+		return it->second.get();
 	}
 	ID3D11RasterizerState* state;
-	auto hr = D3D::device->CreateRasterizerState(&desc, &state);
+	auto d3ddesc = desc.Unpack();
+	auto hr = D3D::device->CreateRasterizerState(&d3ddesc, &state);
 	if (FAILED(hr))
 		PanicAlert("Failed to create rasterizer state at %s %d\n", __FILE__, __LINE__);
 	D3D::SetDebugObjectName(state, debugNameOnCreation);
-	rstates_.emplace(crc, state);
+	rstates_.emplace(crc, D3D::RasterizerStatePtr(state));
 	return state;
 }
 
-ID3D11BlendState* GetBlendState(D3D11_BLEND_DESC const& desc, char const* debugNameOnCreation) {
-	auto crc = GetCRC32((u8 const*)&desc, sizeof(desc), 0);
+ID3D11BlendState* GetBlendState(PackedD3DBlendDesc const& desc, char const* debugNameOnCreation) {
+	auto crc = HashDesc<decltype(desc)>{}(desc);
 	auto it = bstates_.find(crc);
 	if (it != bstates_.end()) {
-		return it->second;
+		return it->second.get();
 	}
 	ID3D11BlendState* state;
-	auto hr = D3D::device->CreateBlendState(&desc, &state);
-	if (FAILED(hr))
-		PanicAlert("Failed to create blend state at %s %d\n", __FILE__, __LINE__);
-	D3D::SetDebugObjectName(state, debugNameOnCreation);
-	bstates_.emplace(crc, state);
-	return state;
+	if (device1 && desc.LogicOpEnable) {
+		auto d3ddesc = desc.Unpack1();
+		auto hr = D3D::device1->CreateBlendState1(&d3ddesc, (ID3D11BlendState1**)&state);
+		if (FAILED(hr))
+			PanicAlert("Failed to create blend state at %s %d\n", __FILE__, __LINE__);
+		D3D::SetDebugObjectName(state, debugNameOnCreation);
+		bstates_.emplace(crc, D3D::BlendStatePtr(state));
+		return state;
+	}
+	else {
+		auto d3ddesc = desc.Unpack();
+		auto hr = D3D::device->CreateBlendState(&d3ddesc, &state);
+		if (FAILED(hr))
+			PanicAlert("Failed to create blend state at %s %d\n", __FILE__, __LINE__);
+		D3D::SetDebugObjectName(state, debugNameOnCreation);
+		bstates_.emplace(crc, D3D::BlendStatePtr(state));
+		return state;
+	}
 }
 
 ID3D11DepthStencilState* GetDepthStencilState(D3D11_DEPTH_STENCIL_DESC const& desc, char const* debugNameOnCreation) {
-	auto crc = GetCRC32((u8 const*)&desc, sizeof(desc), 0);
+	auto crc = HashDesc<decltype(desc)>{}(desc);
 	auto it = dstates_.find(crc);
 	if (it != dstates_.end()) {
-		return it->second;
+		return it->second.get();
 	}
 	ID3D11DepthStencilState* state;
 	auto hr = D3D::device->CreateDepthStencilState(&desc, &state);
 	if (FAILED(hr))
 		PanicAlert("Failed to create depth stencil state at %s %d\n", __FILE__, __LINE__);
 	D3D::SetDebugObjectName(state, debugNameOnCreation);
-	dstates_.emplace(crc, state);
+	dstates_.emplace(crc, D3D::DepthStencilStatePtr(state));
 	return state;
 }
 
 ID3D11SamplerState* GetSamplerState(D3D11_SAMPLER_DESC const& desc, char const* debugNameOnCreation) {
-	auto crc = GetCRC32((u8 const*)&desc, sizeof(desc), 0);
+	auto crc = HashDesc<decltype(desc)>{}(desc);
 	auto it = sstates_.find(crc);
 	if (it != sstates_.end()) {
-		return it->second;
+		return it->second.get();
 	}
 	ID3D11SamplerState* state;
 	auto hr = D3D::device->CreateSamplerState(&desc, &state);
 	if (FAILED(hr))
 		PanicAlert("Failed to create sampler state at %s %d\n", __FILE__, __LINE__);
 	D3D::SetDebugObjectName(state, debugNameOnCreation);
-	sstates_.emplace(crc, state);
+	sstates_.emplace(crc, D3D::SamplerStatePtr(state));
 	return state;
 }
 
-void ReleaseStates() {
-	for (auto & state : sstates_)
-		state.second->Release();
-	for (auto & state : dstates_)
-		state.second->Release();
-	for (auto & state : bstates_)
-		state.second->Release();
-	for (auto & state : rstates_)
-		state.second->Release();
+void ReleaseStates() {	
 	sstates_.clear();
 	dstates_.clear();
 	bstates_.clear();

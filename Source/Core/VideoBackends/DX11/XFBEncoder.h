@@ -2,21 +2,9 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _XFBENCODER_H
-#define _XFBENCODER_H
-
+#pragma once
+#include "VideoBackends/DX11/D3DPtr.h"
 #include "VideoCommon/VideoCommon.h"
-
-struct ID3D11Texture2D;
-struct ID3D11RenderTargetView;
-struct ID3D11Buffer;
-struct ID3D11VertexShader;
-struct ID3D11PixelShader;
-struct ID3D11InputLayout;
-struct ID3D11BlendState;
-struct ID3D11DepthStencilState;
-struct ID3D11RasterizerState;
-struct ID3D11SamplerState;
 
 namespace DX11
 {
@@ -35,21 +23,19 @@ public:
 
 private:
 
-	ID3D11Texture2D* m_out;
-	ID3D11RenderTargetView* m_outRTV;
-	ID3D11Texture2D* m_outStage;
-	ID3D11Buffer* m_encodeParams;
-	ID3D11Buffer* m_quad;
-	ID3D11VertexShader* m_vShader;
-	ID3D11InputLayout* m_quadLayout;
-	ID3D11PixelShader* m_pShader;
-	ID3D11BlendState* m_xfbEncodeBlendState;
-	ID3D11DepthStencilState* m_xfbEncodeDepthState;
-	ID3D11RasterizerState* m_xfbEncodeRastState;
-	ID3D11SamplerState* m_efbSampler;
+	D3D::Texture2dPtr m_out;
+	D3D::RtvPtr m_outRTV;
+	D3D::Texture2dPtr m_outStage;
+	D3D::BufferPtr m_encodeParams;
+	D3D::BufferPtr m_quad;
+	D3D::VertexShaderPtr m_vShader;
+	D3D::InputLayoutPtr m_quadLayout;
+	D3D::PixelShaderPtr m_pShader;
+	D3D::BlendStatePtr m_xfbEncodeBlendState;
+	D3D::DepthStencilStatePtr m_xfbEncodeDepthState;
+	D3D::RasterizerStatePtr m_xfbEncodeRastState;
+	D3D::SamplerStatePtr m_efbSampler;
 
 };
 
 }
-
-#endif
