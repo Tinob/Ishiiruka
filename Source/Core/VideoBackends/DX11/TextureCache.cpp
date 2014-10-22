@@ -18,7 +18,7 @@
 namespace DX11
 {
 
-static TextureEncoder* g_encoder = NULL;
+static TextureEncoder* g_encoder = nullptr;
 const size_t MAX_COPY_BUFFERS = 33;
 ID3D11Buffer* efbcopycbuf[MAX_COPY_BUFFERS] = { 0 };
 
@@ -73,33 +73,96 @@ bool TextureCache::TCacheEntry::Save(const char filename[], unsigned int level)
 	return saved_png;
 }
 
-void TextureCache::TCacheEntry::Load(unsigned int width, unsigned int height,
-	unsigned int expanded_width, unsigned int level)
+void TextureCache::TCacheEntry::Load(const u8* src, u32 width, u32 height,
+	u32 expanded_width, u32 level)
 {
-	D3D::ReplaceTexture2D(texture->GetTex(), TextureCache::bufferstart, width, height, expanded_width, level, usage, DXGI_format, swap_rg, convertrgb565);
+	D3D::ReplaceTexture2D(
+		texture->GetTex(),
+		src,
+		width,
+		height,
+		expanded_width,
+		level,
+		usage,
+		DXGI_format,
+		swap_rg,
+		convertrgb565);
+}
+void TextureCache::TCacheEntry::Load(const u8* src, u32 width, u32 height, u32 expandedWidth,
+	u32 expandedHeight, const s32 texformat, const u32 tlutaddr, const s32 tlutfmt, u32 level)
+{
+	TexDecoder_Decode(
+		TextureCache::temp, 
+		src,
+		expandedWidth,
+		expandedHeight,
+		texformat,
+		tlutaddr,
+		tlutfmt,
+		PC_TEX_FMT_RGBA32 == pcformat,
+		compressed);
+	D3D::ReplaceTexture2D(
+		texture->GetTex(),
+		TextureCache::temp,
+		width,
+		height,
+		expandedWidth,
+		level,
+		usage,
+		DXGI_format,
+		swap_rg,
+		convertrgb565);
+}
+void TextureCache::TCacheEntry::LoadFromTmem(const u8* ar_src, const u8* gb_src, u32 width, u32 height,
+	u32 expanded_width, u32 expanded_Height, u32 level)
+{
+	TexDecoder_DecodeRGBA8FromTmem(
+		(u32*)TextureCache::temp, 
+		ar_src, 
+		gb_src, 
+		expanded_width, 
+		expanded_Height);
+	D3D::ReplaceTexture2D(
+		texture->GetTex(), 
+		TextureCache::temp, 
+		width, 
+		height, 
+		expanded_width, 
+		level, 
+		usage, 
+		DXGI_format, 
+		swap_rg, 
+		convertrgb565);
 }
 
-TextureCache::TCacheEntryBase* TextureCache::CreateTexture(unsigned int width,
-	unsigned int height, unsigned int expanded_width,
-	unsigned int tex_levels, PC_TexFormat pcfmt)
+PC_TexFormat TextureCache::GetNativeTextureFormat(const s32 texformat, const s32 tlutfmt, u32 width, u32 height)
+{
+	const bool compressed_supported = ((width & 3) == 0) && ((height & 3) == 0);
+	PC_TexFormat pcfmt = GetPC_TexFormat(texformat, tlutfmt, compressed_supported);
+	pcfmt = !g_ActiveConfig.backend_info.bSupportedFormats[pcfmt] ? PC_TEX_FMT_RGBA32 : pcfmt;
+	return pcfmt;
+}
+
+TextureCache::TCacheEntryBase* TextureCache::CreateTexture(u32 width, u32 height,
+	u32 expanded_width, u32 tex_levels, PC_TexFormat pcfmt)
 {
 	bool swaprg = false;
 	bool convertrgb565 = false;
 	static const DXGI_FORMAT PC_TexFormat_To_DXGIFORMAT[11]
 	{
 		DXGI_FORMAT_UNKNOWN,//PC_TEX_FMT_NONE
-		DXGI_FORMAT_B8G8R8A8_UNORM,//PC_TEX_FMT_BGRA32
-		DXGI_FORMAT_R8G8B8A8_UNORM,//PC_TEX_FMT_RGBA32
-		DXGI_FORMAT_R8_UNORM,//PC_TEX_FMT_I4_AS_I8
-		DXGI_FORMAT_R8G8_UNORM,//PC_TEX_FMT_IA4_AS_IA8
-		DXGI_FORMAT_R8_UNORM,//PC_TEX_FMT_I8
-		DXGI_FORMAT_R8G8_UNORM,//PC_TEX_FMT_IA8
-		DXGI_FORMAT_B5G6R5_UNORM,//PC_TEX_FMT_RGB565
-		DXGI_FORMAT_BC1_UNORM,//PC_TEX_FMT_DXT1
-		DXGI_FORMAT_BC2_UNORM,//PC_TEX_FMT_DXT3
-		DXGI_FORMAT_BC3_UNORM,//PC_TEX_FMT_DXT5
+			DXGI_FORMAT_B8G8R8A8_UNORM,//PC_TEX_FMT_BGRA32
+			DXGI_FORMAT_R8G8B8A8_UNORM,//PC_TEX_FMT_RGBA32
+			DXGI_FORMAT_R8_UNORM,//PC_TEX_FMT_I4_AS_I8
+			DXGI_FORMAT_R8G8_UNORM,//PC_TEX_FMT_IA4_AS_IA8
+			DXGI_FORMAT_R8_UNORM,//PC_TEX_FMT_I8
+			DXGI_FORMAT_R8G8_UNORM,//PC_TEX_FMT_IA8
+			DXGI_FORMAT_B5G6R5_UNORM,//PC_TEX_FMT_RGB565
+			DXGI_FORMAT_BC1_UNORM,//PC_TEX_FMT_DXT1
+			DXGI_FORMAT_BC2_UNORM,//PC_TEX_FMT_DXT3
+			DXGI_FORMAT_BC3_UNORM,//PC_TEX_FMT_DXT5
 	};
-	DXGI_FORMAT format = PC_TexFormat_To_DXGIFORMAT[pcfmt];	
+	DXGI_FORMAT format = PC_TexFormat_To_DXGIFORMAT[pcfmt];
 	bool bgrasupported = D3D::BGRATexturesSupported();
 	if (format == DXGI_FORMAT_B8G8R8A8_UNORM && !bgrasupported)
 	{
@@ -111,16 +174,17 @@ TextureCache::TCacheEntryBase* TextureCache::CreateTexture(unsigned int width,
 		convertrgb565 = true;
 		format = bgrasupported ? DXGI_FORMAT_B8G8R8A8_UNORM : DXGI_FORMAT_R8G8B8A8_UNORM;
 	}
+	bool compressed = format == DXGI_FORMAT_BC1_UNORM
+		|| format == DXGI_FORMAT_BC2_UNORM
+		|| format == DXGI_FORMAT_BC3_UNORM;
 	D3D11_USAGE usage = D3D11_USAGE_DEFAULT;
-	D3D11_CPU_ACCESS_FLAG cpu_access = (D3D11_CPU_ACCESS_FLAG)0;	
+	D3D11_CPU_ACCESS_FLAG cpu_access = (D3D11_CPU_ACCESS_FLAG)0;
 
 	if (tex_levels == 1 || format == DXGI_FORMAT_B5G6R5_UNORM)
 	{
 		usage = D3D11_USAGE_DYNAMIC;
 		cpu_access = D3D11_CPU_ACCESS_WRITE;
 	}
-
-
 	const D3D11_TEXTURE2D_DESC texdesc = CD3D11_TEXTURE2D_DESC(format,
 		width, height, 1, tex_levels, D3D11_BIND_SHADER_RESOURCE, usage, cpu_access);
 
@@ -133,14 +197,12 @@ TextureCache::TCacheEntryBase* TextureCache::CreateTexture(unsigned int width,
 	entry->DXGI_format = format;
 	entry->swap_rg = swaprg;
 	entry->convertrgb565 = convertrgb565;
+	entry->compressed = compressed;
 	// TODO: better debug names
 	D3D::SetDebugObjectName((ID3D11DeviceChild*)entry->texture->GetTex(), "a texture of the TextureCache");
-	D3D::SetDebugObjectName((ID3D11DeviceChild*)entry->texture->GetSRV(), "shader resource view of a texture of the TextureCache");	
+	D3D::SetDebugObjectName((ID3D11DeviceChild*)entry->texture->GetSRV(), "shader resource view of a texture of the TextureCache");
 
 	SAFE_RELEASE(pTexture);
-	
-	entry->Load(width, height, expanded_width, 0);
-
 	return entry;
 }
 
@@ -230,7 +292,7 @@ TextureCache::~TextureCache()
 
 	g_encoder->Shutdown();
 	delete g_encoder;
-	g_encoder = NULL;
+	g_encoder = nullptr;
 }
 
 }

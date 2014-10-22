@@ -74,8 +74,12 @@ public:
 		virtual void Bind(u32 stage) = 0;
 		virtual bool Save(const char filename[], u32 level) = 0;
 
-		virtual void Load(u32 width, u32 height,
+		virtual void Load(const u8* src, u32 width, u32 height,
 			u32 expanded_width, u32 level) = 0;
+		virtual void Load(const u8* src, u32 width, u32 height, u32 expandedWidth,
+			u32 expandedHeight, const s32 texformat, const u32 tlutaddr, const s32 tlutfmt, u32 level) = 0;
+		virtual void LoadFromTmem(const u8* ar_src, const u8* gb_src, u32 width, u32 height,
+			u32 expanded_width, u32 expanded_Height, u32 level) = 0;
 		virtual void FromRenderTarget(u32 dstAddr, u32 dstFormat,
 			u32 srcFormat, const EFBRectangle& srcRect,
 			bool isIntensity, bool scaleByHalf, u32 cbufid,
@@ -97,6 +101,8 @@ public:
 	static void ClearRenderTargets();	// currently only used by OGL
 	static bool Find(u32 start_address, u64 hash);
 
+	virtual PC_TexFormat GetNativeTextureFormat(const s32 texformat, 
+		const s32 tlutfmt, u32 width, u32 height) = 0;
 	virtual TCacheEntryBase* CreateTexture(u32 width, u32 height,
 		u32 expanded_width, u32 tex_levels, PC_TexFormat pcfmt) = 0;
 	virtual TCacheEntryBase* CreateRenderTargetTexture(u32 scaled_tex_w, u32 scaled_tex_h) = 0;
@@ -107,13 +113,11 @@ public:
 		const EFBRectangle& srcRect, bool isIntensity, bool scaleByHalf);
 
 	static void RequestInvalidateTextureCache();
-
-protected:
-	TextureCache();
-
 	static  GC_ALIGNED16(u8 *temp);
 	static  GC_ALIGNED16(u8 *bufferstart);
 	static u32 temp_size;
+protected:
+	TextureCache();
 private:
 	static bool CheckForCustomTextureLODs(u64 tex_hash, s32 texformat, u32 levels);
 	static PC_TexFormat LoadCustomTexture(u64 tex_hash, s32 texformat, u32 level, u32& width, u32& height, u32 &nummipsinbuffer, bool rgbaonly);

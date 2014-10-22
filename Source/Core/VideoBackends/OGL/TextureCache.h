@@ -29,8 +29,7 @@ private:
 	{
 		GLuint texture;
 		GLuint framebuffer;
-
-		PC_TexFormat pcfmt;
+		bool compressed;
 
 		int gl_format;
 		int gl_iformat;
@@ -44,8 +43,12 @@ private:
 		TCacheEntry();
 		~TCacheEntry();
 
-		void Load(unsigned int width, unsigned int height,
-			unsigned int expanded_width, unsigned int level);
+		void Load(const u8* src, u32 width, u32 height,
+			u32 expanded_width, u32 level);
+		void Load(const u8* src, u32 width, u32 height, u32 expandedWidth,
+			u32 expandedHeight, const s32 texformat, const u32 tlutaddr, const s32 tlutfmt, u32 level);
+		void LoadFromTmem(const u8* ar_src, const u8* gb_src, u32 width, u32 height,
+			u32 expanded_width, u32 expanded_Height, u32 level);
 
 		void FromRenderTarget(u32 dstAddr, unsigned int dstFormat,
 			unsigned int srcFormat, const EFBRectangle& srcRect,
@@ -58,8 +61,10 @@ private:
 
 	~TextureCache();
 
-	TCacheEntryBase* CreateTexture(unsigned int width, unsigned int height,
-		unsigned int expanded_width, unsigned int tex_levels, PC_TexFormat pcfmt);
+	PC_TexFormat GetNativeTextureFormat(const s32 texformat, const s32 tlutfmt, u32 width, u32 height);
+
+	TCacheEntryBase* CreateTexture(u32 width, u32 height,
+		u32 expanded_width, u32 tex_levels, PC_TexFormat pcfmt);
 
 	TCacheEntryBase* CreateRenderTargetTexture(unsigned int scaled_tex_w, unsigned int scaled_tex_h);
 };

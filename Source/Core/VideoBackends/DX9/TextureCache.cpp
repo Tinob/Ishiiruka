@@ -35,6 +35,21 @@ extern s32 frameCount;
 namespace DX9
 {
 
+static const D3DFORMAT PC_TexFormat_To_D3DFORMAT[11]
+{
+	D3DFMT_UNKNOWN,//PC_TEX_FMT_NONE
+		D3DFMT_A8R8G8B8,//PC_TEX_FMT_BGRA32
+		D3DFMT_A8B8G8R8,//PC_TEX_FMT_RGBA32
+		D3DFMT_A8P8,//PC_TEX_FMT_I4_AS_I8 A hack which means the format is a packed 8-bit intensity texture. It is unpacked to A8L8 in D3DTexture.cpp
+		D3DFMT_A8L8,//PC_TEX_FMT_IA4_AS_IA8
+		D3DFMT_A8P8,//PC_TEX_FMT_I8
+		D3DFMT_A8L8,//PC_TEX_FMT_IA8
+		D3DFMT_R5G6B5,//PC_TEX_FMT_RGB565
+		D3DFMT_DXT1,//PC_TEX_FMT_DXT1
+		D3DFMT_DXT3,//PC_TEX_FMT_DXT3
+		D3DFMT_DXT5,//PC_TEX_FMT_DXT5
+};
+
 TextureCache::TCacheEntry::~TCacheEntry()
 {
 	texture->Release();
@@ -58,10 +73,22 @@ bool TextureCache::TCacheEntry::Save(const char filename[], u32 level)
 	return SUCCEEDED(hr);
 }
 
-void TextureCache::TCacheEntry::Load(u32 width, u32 height,
+void TextureCache::TCacheEntry::Load(const u8* src, u32 width, u32 height,
 	u32 expanded_width, u32 level)
 {
-	D3D::ReplaceTexture2D(texture, TextureCache::bufferstart, width, height, expanded_width, d3d_fmt, swap_r_b, level);
+	D3D::ReplaceTexture2D(texture, src, width, height, expanded_width, d3d_fmt, swap_r_b, level);
+}
+void TextureCache::TCacheEntry::Load(const u8* src, u32 width, u32 height, u32 expandedWidth,
+	u32 expandedHeight, const s32 texformat, const u32 tlutaddr, const s32 tlutfmt, u32 level)
+{
+	pcformat = TexDecoder_Decode(TextureCache::temp, src, expandedWidth, expandedHeight, texformat, tlutaddr, tlutfmt, false, compressed);
+	D3D::ReplaceTexture2D(texture, TextureCache::temp, width, height, expandedWidth, PC_TexFormat_To_D3DFORMAT[pcformat], swap_r_b, level);
+}
+void TextureCache::TCacheEntry::LoadFromTmem(const u8* ar_src, const u8* gb_src, u32 width, u32 height,
+	u32 expanded_width, u32 expanded_Height, u32 level)
+{
+	TexDecoder_DecodeBGRA8FromTmem((u32*)TextureCache::temp, ar_src, gb_src, expanded_width, expanded_Height);
+	D3D::ReplaceTexture2D(texture, TextureCache::temp, width, height, expanded_width, d3d_fmt, swap_r_b, level);
 }
 
 void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, u32 dstFormat,
@@ -172,29 +199,25 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, u32 dstFormat,
 	g_renderer->RestoreAPIState();
 }
 
+PC_TexFormat TextureCache::GetNativeTextureFormat(const s32 texformat, const s32 tlutfmt, u32 width, u32 height)
+{
+	const bool compressed_supported = ((width & 3) == 0) && ((height & 3) == 0);
+	return GetPC_TexFormat(texformat, tlutfmt, compressed_supported);
+}
+
 TextureCache::TCacheEntryBase* TextureCache::CreateTexture(u32 width, u32 height,
 	u32 expanded_width, u32 tex_levels, PC_TexFormat pcfmt)
 {
-	static const D3DFORMAT PC_TexFormat_To_D3DFORMAT[11]
-	{
-		D3DFMT_UNKNOWN,//PC_TEX_FMT_NONE
-		D3DFMT_A8R8G8B8,//PC_TEX_FMT_BGRA32
-		D3DFMT_A8B8G8R8,//PC_TEX_FMT_RGBA32
-		D3DFMT_A8P8,//PC_TEX_FMT_I4_AS_I8 A hack which means the format is a packed 8-bit intensity texture. It is unpacked to A8L8 in D3DTexture.cpp
-		D3DFMT_A8L8,//PC_TEX_FMT_IA4_AS_IA8
-		D3DFMT_A8P8,//PC_TEX_FMT_I8
-		D3DFMT_A8L8,//PC_TEX_FMT_IA8
-		D3DFMT_R5G6B5,//PC_TEX_FMT_RGB565
-		D3DFMT_DXT1,//PC_TEX_FMT_DXT1
-		D3DFMT_DXT3,//PC_TEX_FMT_DXT3
-		D3DFMT_DXT5,//PC_TEX_FMT_DXT5
-	};
+	
 	// if no rgba support so swap is needed
 	bool swap_r_b = !g_ActiveConfig.backend_info.bSupportedFormats[PC_TEX_FMT_RGBA32] && pcfmt == PC_TEX_FMT_RGBA32;
 	D3DFORMAT d3d_fmt = swap_r_b ? D3DFMT_A8R8G8B8 : PC_TexFormat_To_D3DFORMAT[pcfmt];
-	TCacheEntry* entry = new TCacheEntry(D3D::CreateTexture2D(TextureCache::bufferstart, width, height, expanded_width, d3d_fmt, swap_r_b, tex_levels));
+	TCacheEntry* entry = new TCacheEntry(D3D::CreateTexture2D(width, height, d3d_fmt, tex_levels));
 	entry->swap_r_b = swap_r_b;
 	entry->d3d_fmt = d3d_fmt;
+	entry->compressed = d3d_fmt == D3DFMT_DXT1
+		|| d3d_fmt == D3DFMT_DXT3
+		|| d3d_fmt == D3DFMT_DXT5;
 	return entry;
 }
 

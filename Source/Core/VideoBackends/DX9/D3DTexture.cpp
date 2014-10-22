@@ -56,7 +56,7 @@ inline void LoadDataToRect(LPDIRECT3DTEXTURE9 pTexture, const u8* buffer, const 
 	pTexture->UnlockRect(level);
 }
 
-LPDIRECT3DTEXTURE9 CreateTexture2D(const u8* buffer, const s32 width, const s32 height, const s32 pitch, D3DFORMAT fmt, bool swap_r_b, s32 levels)
+LPDIRECT3DTEXTURE9 CreateTexture2D(const s32 width, const s32 height, D3DFORMAT fmt, s32 levels)
 {
 	LPDIRECT3DTEXTURE9 pTexture;
 	D3DFORMAT cfmt = fmt;
@@ -68,8 +68,7 @@ LPDIRECT3DTEXTURE9 CreateTexture2D(const u8* buffer, const s32 width, const s32 
 	{
 		PanicAlert("Failed to create texture at %s, line %d: hr=%#x\n", __FILE__, __LINE__, hr);
 		return 0;
-	}
-	LoadDataToRect(pTexture, buffer, width, height, pitch, fmt, swap_r_b, 0);
+	}	
 	return pTexture;
 }
 

@@ -418,7 +418,8 @@ void DecodeToTexture(u32 xfbAddr, int srcWidth, int srcHeight, LPDIRECT3DTEXTURE
 	int srcFmtWidth = srcWidth / 2;
 
 	g_renderer->ResetAPIState(); // reset any game specific settings
-	LPDIRECT3DTEXTURE9 s_srcTexture = D3D::CreateTexture2D(srcAddr, srcFmtWidth, srcHeight, srcFmtWidth, D3DFMT_A8R8G8B8, false);
+	LPDIRECT3DTEXTURE9 s_srcTexture = D3D::CreateTexture2D(srcFmtWidth, srcHeight, D3DFMT_A8R8G8B8);
+	D3D::ReplaceTexture2D(s_srcTexture, srcAddr, srcFmtWidth, srcHeight, srcFmtWidth, D3DFMT_A8R8G8B8, false);
 	LPDIRECT3DSURFACE9 Rendersurf = NULL;
 	destTexture->GetSurfaceLevel(0,&Rendersurf);
 	D3D::dev->SetDepthStencilSurface(NULL);
