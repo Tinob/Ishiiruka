@@ -428,7 +428,6 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 			entry = NULL;
 		}
 	}
-
 	bool using_custom_texture = false;
 	u32 nummipsinbuffer = 0;
 	bool bUseRGBATextures = false;
@@ -454,7 +453,9 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 			using_custom_texture = true;
 		}
 	}
-	
+	if (isPaletteTexture && !using_custom_texture) {
+		g_texture_cache->LoadLut(tlutfmt, &texMem[tlutaddr], TexDecoder_GetPaletteSize(texformat));
+	}
 	if (pcfmt == PC_TEX_FMT_NONE)
 	{
 		pcfmt = g_texture_cache->GetNativeTextureFormat(texformat, tlutfmt, width, height);
@@ -477,6 +478,14 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 		entry->type = TCET_NORMAL;
 		GFX_DEBUGGER_PAUSE_AT(NEXT_NEW_TEXTURE, true);
 	}
+	entry->SetGeneralParameters(address, texture_size, full_format, entry->num_mipmaps);
+	entry->SetDimensions(nativeW, nativeH, width, height);
+	entry->hash = tex_hash;
+	entry->custom_texture = using_custom_texture;
+	if (entry->IsEfbCopy() && !g_ActiveConfig.bCopyEFBToTexture)
+		entry->type = TCET_EC_DYNAMIC;
+	else
+		entry->type = TCET_NORMAL;
 	// load texture
 	if (using_custom_texture)
 	{
@@ -496,14 +505,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 				expandedHeight, 0);
 		}
 	}	
-	entry->SetGeneralParameters(address, texture_size, full_format, entry->num_mipmaps);
-	entry->SetDimensions(nativeW, nativeH, width, height);
-	entry->hash = tex_hash;
-	entry->custom_texture = using_custom_texture;
-	if (entry->IsEfbCopy() && !g_ActiveConfig.bCopyEFBToTexture)
-		entry->type = TCET_EC_DYNAMIC;
-	else
-		entry->type = TCET_NORMAL;
+	
 
 	if (g_ActiveConfig.bDumpTextures && !using_custom_texture)
 		DumpTexture(entry, 0);

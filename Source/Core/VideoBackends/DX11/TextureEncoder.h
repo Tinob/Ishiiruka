@@ -126,8 +126,8 @@ namespace DX11
 
 		virtual void Init() = 0;
 		virtual void Shutdown() = 0;
-
-		virtual bool Decode(u8* src, u32 srcsize, u32 srcFmt, u32 w, u32 h, u32 levels, D3DTexture2D& dstTexture) = 0;
+		virtual bool FormatSupported(u32 srcFmt) = 0;
+		virtual bool Decode(const u8* src, u32 srcsize, u32 srcFmt, u32 w, u32 h, u32 levels, D3DTexture2D& dstTexture) = 0;
 		virtual bool DecodeRGBAFromTMEM(u8 const * ar_src, u8 const * bg_src, u32 width, u32 height, D3DTexture2D& dstTexture) = 0;
 		virtual void LoadLut(u32 lutFmt, void* addr, u32 size) = 0;
 

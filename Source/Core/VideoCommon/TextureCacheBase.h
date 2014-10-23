@@ -113,10 +113,13 @@ public:
 		const EFBRectangle& srcRect, bool isIntensity, bool scaleByHalf);
 
 	static void RequestInvalidateTextureCache();
+	
+	virtual void LoadLut(u32 lutFmt, void* addr, u32 size) {}	
+	
+protected:
 	static  GC_ALIGNED16(u8 *temp);
 	static  GC_ALIGNED16(u8 *bufferstart);
 	static u32 temp_size;
-protected:
 	TextureCache();
 private:
 	static bool CheckForCustomTextureLODs(u64 tex_hash, s32 texformat, u32 levels);

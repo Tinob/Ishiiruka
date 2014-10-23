@@ -7,6 +7,7 @@
 #include "VideoBackends/DX11/D3DUtil.h"
 #include "VideoBackends/DX11/FramebufferManager.h"
 #include "VideoBackends/DX11/PixelShaderCache.h"
+#include "VideoBackends/DX11/CSTextureDecoder.h"
 #include "VideoBackends/DX11/CSTextureEncoder.h"
 #include "VideoBackends/DX11/TextureCache.h"
 #include "VideoBackends/DX11/TextureEncoder.h"
@@ -18,9 +19,10 @@
 namespace DX11
 {
 
-static TextureEncoder* g_encoder = nullptr;
+static TextureEncoder* s_encoder = nullptr;
+static TextureDecoder* s_decoder = nullptr;
 const size_t MAX_COPY_BUFFERS = 33;
-ID3D11Buffer* efbcopycbuf[MAX_COPY_BUFFERS] = { 0 };
+D3D::BufferPtr efbcopycbuf[MAX_COPY_BUFFERS];
 
 TextureCache::TCacheEntry::~TCacheEntry()
 {
@@ -73,6 +75,10 @@ bool TextureCache::TCacheEntry::Save(const char filename[], unsigned int level)
 	return saved_png;
 }
 
+void TextureCache::LoadLut(u32 lutFmt, void* addr, u32 size) {
+	s_decoder->LoadLut(lutFmt, addr, size);
+}
+
 void TextureCache::TCacheEntry::Load(const u8* src, u32 width, u32 height,
 	u32 expanded_width, u32 level)
 {
@@ -91,52 +97,70 @@ void TextureCache::TCacheEntry::Load(const u8* src, u32 width, u32 height,
 void TextureCache::TCacheEntry::Load(const u8* src, u32 width, u32 height, u32 expandedWidth,
 	u32 expandedHeight, const s32 texformat, const u32 tlutaddr, const s32 tlutfmt, u32 level)
 {
-	TexDecoder_Decode(
-		TextureCache::temp, 
-		src,
-		expandedWidth,
-		expandedHeight,
-		texformat,
-		tlutaddr,
-		tlutfmt,
-		PC_TEX_FMT_RGBA32 == pcformat,
-		compressed);
-	D3D::ReplaceTexture2D(
-		texture->GetTex(),
-		TextureCache::temp,
-		width,
-		height,
-		expandedWidth,
-		level,
-		usage,
-		DXGI_format,
-		swap_rg,
-		convertrgb565);
+	if (!s_decoder->Decode(
+		src, 
+		TexDecoder_GetTextureSizeInBytes(expandedWidth, expandedHeight, texformat), 
+		texformat, 
+		width, 
+		height, 
+		level, 
+		*texture))
+	{
+		TexDecoder_Decode(
+			TextureCache::temp,
+			src,
+			expandedWidth,
+			expandedHeight,
+			texformat,
+			tlutaddr,
+			tlutfmt,
+			PC_TEX_FMT_RGBA32 == pcformat,
+			compressed);
+		D3D::ReplaceTexture2D(
+			texture->GetTex(),
+			TextureCache::temp,
+			width,
+			height,
+			expandedWidth,
+			level,
+			usage,
+			DXGI_format,
+			swap_rg,
+			convertrgb565);
+	}
 }
 void TextureCache::TCacheEntry::LoadFromTmem(const u8* ar_src, const u8* gb_src, u32 width, u32 height,
 	u32 expanded_width, u32 expanded_Height, u32 level)
 {
-	TexDecoder_DecodeRGBA8FromTmem(
-		(u32*)TextureCache::temp, 
-		ar_src, 
-		gb_src, 
-		expanded_width, 
-		expanded_Height);
-	D3D::ReplaceTexture2D(
-		texture->GetTex(), 
-		TextureCache::temp, 
-		width, 
-		height, 
-		expanded_width, 
-		level, 
-		usage, 
-		DXGI_format, 
-		swap_rg, 
-		convertrgb565);
+	if (!s_decoder->DecodeRGBAFromTMEM(ar_src, gb_src,width, height,*texture))
+	{
+		TexDecoder_DecodeRGBA8FromTmem(
+			(u32*)TextureCache::temp,
+			ar_src,
+			gb_src,
+			expanded_width,
+			expanded_Height);
+		D3D::ReplaceTexture2D(
+			texture->GetTex(),
+			TextureCache::temp,
+			width,
+			height,
+			expanded_width,
+			level,
+			usage,
+			DXGI_format,
+			swap_rg,
+			convertrgb565);
+	}
+	
 }
 
 PC_TexFormat TextureCache::GetNativeTextureFormat(const s32 texformat, const s32 tlutfmt, u32 width, u32 height)
 {
+	if (s_decoder->FormatSupported(texformat))
+	{
+		return PC_TEX_FMT_RGBA32;
+	}
 	const bool compressed_supported = ((width & 3) == 0) && ((height & 3) == 0);
 	PC_TexFormat pcfmt = GetPC_TexFormat(texformat, tlutfmt, compressed_supported);
 	pcfmt = !g_ActiveConfig.backend_info.bSupportedFormats[pcfmt] ? PC_TEX_FMT_RGBA32 : pcfmt;
@@ -151,16 +175,16 @@ TextureCache::TCacheEntryBase* TextureCache::CreateTexture(u32 width, u32 height
 	static const DXGI_FORMAT PC_TexFormat_To_DXGIFORMAT[11]
 	{
 		DXGI_FORMAT_UNKNOWN,//PC_TEX_FMT_NONE
-			DXGI_FORMAT_B8G8R8A8_UNORM,//PC_TEX_FMT_BGRA32
-			DXGI_FORMAT_R8G8B8A8_UNORM,//PC_TEX_FMT_RGBA32
-			DXGI_FORMAT_R8_UNORM,//PC_TEX_FMT_I4_AS_I8
-			DXGI_FORMAT_R8G8_UNORM,//PC_TEX_FMT_IA4_AS_IA8
-			DXGI_FORMAT_R8_UNORM,//PC_TEX_FMT_I8
-			DXGI_FORMAT_R8G8_UNORM,//PC_TEX_FMT_IA8
-			DXGI_FORMAT_B5G6R5_UNORM,//PC_TEX_FMT_RGB565
-			DXGI_FORMAT_BC1_UNORM,//PC_TEX_FMT_DXT1
-			DXGI_FORMAT_BC2_UNORM,//PC_TEX_FMT_DXT3
-			DXGI_FORMAT_BC3_UNORM,//PC_TEX_FMT_DXT5
+		DXGI_FORMAT_B8G8R8A8_UNORM,//PC_TEX_FMT_BGRA32
+		DXGI_FORMAT_R8G8B8A8_UNORM,//PC_TEX_FMT_RGBA32
+		DXGI_FORMAT_R8_UNORM,//PC_TEX_FMT_I4_AS_I8
+		DXGI_FORMAT_R8G8_UNORM,//PC_TEX_FMT_IA4_AS_IA8
+		DXGI_FORMAT_R8_UNORM,//PC_TEX_FMT_I8
+		DXGI_FORMAT_R8G8_UNORM,//PC_TEX_FMT_IA8
+		DXGI_FORMAT_B5G6R5_UNORM,//PC_TEX_FMT_RGB565
+		DXGI_FORMAT_BC1_UNORM,//PC_TEX_FMT_DXT1
+		DXGI_FORMAT_BC2_UNORM,//PC_TEX_FMT_DXT3
+		DXGI_FORMAT_BC3_UNORM,//PC_TEX_FMT_DXT5
 	};
 	DXGI_FORMAT format = PC_TexFormat_To_DXGIFORMAT[pcfmt];
 	bool bgrasupported = D3D::BGRATexturesSupported();
@@ -220,16 +244,16 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, unsigned int dstFo
 		D3D::context->RSSetViewports(1, &vp);
 
 		// set transformation
-		if (NULL == efbcopycbuf[cbufid])
+		if (nullptr == efbcopycbuf[cbufid].get())
 		{
 			const D3D11_BUFFER_DESC cbdesc = CD3D11_BUFFER_DESC(28 * sizeof(float), D3D11_BIND_CONSTANT_BUFFER, D3D11_USAGE_DEFAULT);
 			D3D11_SUBRESOURCE_DATA data;
 			data.pSysMem = colmat;
-			HRESULT hr = D3D::device->CreateBuffer(&cbdesc, &data, &efbcopycbuf[cbufid]);
+			HRESULT hr = D3D::device->CreateBuffer(&cbdesc, &data, D3D::ToAddr(efbcopycbuf[cbufid]));
 			CHECK(SUCCEEDED(hr), "Create efb copy constant buffer %d", cbufid);
-			D3D::SetDebugObjectName((ID3D11DeviceChild*)efbcopycbuf[cbufid], "a constant buffer used in TextureCache::CopyRenderTargetToTexture");
+			D3D::SetDebugObjectName((ID3D11DeviceChild*)efbcopycbuf[cbufid].get(), "a constant buffer used in TextureCache::CopyRenderTargetToTexture");
 		}
-		D3D::context->PSSetConstantBuffers(0, 1, &efbcopycbuf[cbufid]);
+		D3D::context->PSSetConstantBuffers(0, 1, D3D::ToAddr(efbcopycbuf[cbufid]));
 
 		const TargetRectangle targetSource = g_renderer->ConvertEFBRectangle(srcRect);
 		// TODO: try targetSource.asRECT();
@@ -256,7 +280,7 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, unsigned int dstFo
 	if (!g_ActiveConfig.bCopyEFBToTexture)
 	{
 		u8* dst = Memory::GetPointer(dstAddr);
-		size_t encoded_size = g_encoder->Encode(dst, dstFormat, srcFormat, srcRect, isIntensity, scaleByHalf);
+		size_t encoded_size = s_encoder->Encode(dst, dstFormat, srcFormat, srcRect, isIntensity, scaleByHalf);
 
 		u64 hash = GetHash64(dst, (int)encoded_size, g_ActiveConfig.iSafeTextureCache_ColorSamples);
 
@@ -281,18 +305,25 @@ TextureCache::TCacheEntryBase* TextureCache::CreateRenderTargetTexture(
 TextureCache::TextureCache()
 {
 	// FIXME: Is it safe here?
-	g_encoder = new CSTextureEncoder;
-	g_encoder->Init();
+	s_encoder = new CSTextureEncoder;
+	s_encoder->Init();
+
+	s_decoder = new CSTextureDecoder;
+	s_decoder->Init();
 }
 
 TextureCache::~TextureCache()
 {
 	for (unsigned int k = 0; k < MAX_COPY_BUFFERS; ++k)
-		SAFE_RELEASE(efbcopycbuf[k]);
+		efbcopycbuf[k].reset();
 
-	g_encoder->Shutdown();
-	delete g_encoder;
-	g_encoder = nullptr;
+	s_encoder->Shutdown();
+	delete s_encoder;
+	s_encoder = nullptr;
+
+	s_decoder->Shutdown();
+	delete s_decoder;
+	s_decoder = nullptr;
 }
 
 }
