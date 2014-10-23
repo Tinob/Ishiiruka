@@ -30,19 +30,14 @@ private:
 
 	bool m_ready{};
 
-	D3D::BufferPtr m_in; // dynamic to fill with the raw texture	
-
 	struct PoolKey {
-		u32 dstFmt;
 		u32 w_;
 		u32 h_;
 		bool operator<(PoolKey const & o) const {
-			return dstFmt < o.dstFmt 
-				|| dstFmt == o.dstFmt && w_ < o.w_
-				|| dstFmt == o.dstFmt && w_ == o.w_ && h_ < o.h_;
+			return w_ < o.w_
+				|| w_ == o.w_ && h_ < o.h_;
 		}
 	};
-
 	struct PoolValue {
 		D3D::Texture2dPtr m_rsc;
 		D3D::UavPtr m_uav;
@@ -81,8 +76,6 @@ private:
 	D3D::SrvPtr m_lutSrv;
 	u32 m_lutFmt{};
 
-	D3D::BufferPtr m_parms;
-
 	ComboMap m_staticShaders;
 
 	class ShaderCacheInserter : public LinearDiskCacheReader<ComboKey, u8>
@@ -99,7 +92,6 @@ private:
 	friend ShaderCacheInserter;
 
 	LinearDiskCache<ComboKey, u8> m_shaderCache;
-
 };
 
 }

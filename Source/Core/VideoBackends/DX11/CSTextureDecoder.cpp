@@ -271,13 +271,10 @@ uint4 DecodeRGBA8FromTMEM( uint2 st ) {
 void main(in uint3 groupIdx : SV_GroupID, in uint3 subgroup : SV_GroupThreadID) {
 	dstTexture_.GetDimensions(dims_.x,dims_.y);
 	uint2 st = groupIdx.xy * 8 + subgroup.xy;
-	//if( st.x <2 && st.y < 2 ){
-	//	dstTexture_[st] = 128+uint(FMT);
-	//} else 
-	if ( all( st < dims_) ) {
+	if ( all( st < dims_) ) 
+	{
 		dstTexture_[st] = DECODER_FUNC( st ); 
 	}
-	
 }
 //
 )HLSL";
@@ -290,36 +287,32 @@ void CSTextureDecoder::Init()
 	
 	HRESULT hr;
 
-	auto outBd = CD3D11_BUFFER_DESC(2<<20,D3D11_BIND_SHADER_RESOURCE);
-	//outBd.MiscFlags |= D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
-	hr = D3D::device->CreateBuffer(&outBd, nullptr, ToAddr(m_rawDataRsc));
+	auto rawBd = CD3D11_BUFFER_DESC(2<<20,D3D11_BIND_SHADER_RESOURCE);
+	
+	hr = D3D::device->CreateBuffer(&rawBd, nullptr, ToAddr(m_rawDataRsc));
 	CHECK(SUCCEEDED(hr), "create texture decoder input buffer");
 	D3D::SetDebugObjectName(m_rawDataRsc.get(), "texture decoder input buffer");
-	auto outUavDesc = CD3D11_SHADER_RESOURCE_VIEW_DESC(m_rawDataRsc.get(),DXGI_FORMAT_R32_UINT,0,(2<<20)/4,0/*D3D11_BUFFEREX_SRV_FLAG_RAW*/);
+	auto outUavDesc = CD3D11_SHADER_RESOURCE_VIEW_DESC(m_rawDataRsc.get(),DXGI_FORMAT_R32_UINT,0,(2<<20)/4,0);
 	hr = D3D::device->CreateShaderResourceView(m_rawDataRsc.get(),&outUavDesc,ToAddr(m_rawDataSrv));
 	CHECK(SUCCEEDED(hr), "create texture decoder input buffer srv");
 	D3D::SetDebugObjectName(m_rawDataSrv.get(), "texture decoder input buffer srv");
 
-	{
-		u32 lutMaxEntries = (1<<15) - 1;
-		auto outBd = CD3D11_BUFFER_DESC(sizeof(u16)*lutMaxEntries,D3D11_BIND_SHADER_RESOURCE);
-		hr = D3D::device->CreateBuffer(&outBd, nullptr, ToAddr(m_lutRsc));
-		CHECK(SUCCEEDED(hr), "create texture decoder lut buffer");
-		D3D::SetDebugObjectName(m_lutRsc.get(), "texture decoder lut buffer");
-		auto outUavDesc = CD3D11_SHADER_RESOURCE_VIEW_DESC(m_lutRsc.get(),DXGI_FORMAT_R16_UINT,0,lutMaxEntries,0);
-		hr = D3D::device->CreateShaderResourceView(m_lutRsc.get(),&outUavDesc,ToAddr(m_lutSrv));
-		CHECK(SUCCEEDED(hr), "create texture decoder lut srv");
-		D3D::SetDebugObjectName(m_lutSrv.get(), "texture decoder lut srv");
-
-	}
+	u32 lutMaxEntries = (1 << 15) - 1;
+	auto lutBd = CD3D11_BUFFER_DESC(sizeof(u16)*lutMaxEntries, D3D11_BIND_SHADER_RESOURCE);
+	hr = D3D::device->CreateBuffer(&lutBd, nullptr, ToAddr(m_lutRsc));
+	CHECK(SUCCEEDED(hr), "create texture decoder lut buffer");
+	D3D::SetDebugObjectName(m_lutRsc.get(), "texture decoder lut buffer");
+	auto outlutUavDesc = CD3D11_SHADER_RESOURCE_VIEW_DESC(m_lutRsc.get(), DXGI_FORMAT_R16_UINT, 0, lutMaxEntries, 0);
+	hr = D3D::device->CreateShaderResourceView(m_lutRsc.get(), &outlutUavDesc, ToAddr(m_lutSrv));
+	CHECK(SUCCEEDED(hr), "create texture decoder lut srv");
+	D3D::SetDebugObjectName(m_lutSrv.get(), "texture decoder lut srv");
 
 	m_ready = true;
 
 	// Warm up with shader cache
 	char cache_filename[MAX_PATH];
-	sprintf(cache_filename, "%sdx11-PSDECODER-cs.cache", File::GetUserPath(D_SHADERCACHE_IDX).c_str());
+	sprintf(cache_filename, "%sdx11-CSDECODER-cs.cache", File::GetUserPath(D_SHADERCACHE_IDX).c_str());
 	m_shaderCache.OpenAndRead(cache_filename, ShaderCacheInserter(*this));
-	
 }
 
 void CSTextureDecoder::Shutdown()
@@ -401,27 +394,28 @@ bool CSTextureDecoder::SetStaticShader(TextureFormat srcFmt, u32 lutFmt, u32 dst
 	{
 		return false;
 	}
-	//srcFmt = TextureFormat(0xd);
-
 	u32 rawFmt = (u32(srcFmt)&0xF);
-	if (rawFmt < GX_TF_C4 || rawFmt > GX_TF_C14X2 ) {
+	if (rawFmt < GX_TF_C4 || rawFmt > GX_TF_C14X2 ) 
+	{
 		lutFmt = 0;
 	}
 	auto key = MakeComboKey(srcFmt,lutFmt,dstFmt);
 
 	auto it = m_staticShaders.find(key);
 
-	if (it!=m_staticShaders.end()) {
+	if (it!=m_staticShaders.end()) 
+	{
 		D3D::context->CSSetShader(it->second.get(),nullptr, 0);
 		return bool(it->second);
 	}
 
 	// Shader permutation not found, so compile it
 	
-	D3D_SHADER_MACRO macros[] = {
-			{ "DECODER_FUNC", DecFunc[u32(srcFmt) & 0xF] },
-			{ "LUT_FUNC", LutFunc[u32(lutFmt) & 0xF] },
-			{ "FMT", valType[u32(srcFmt) & 0xF] },
+	D3D_SHADER_MACRO macros[] = 
+	{
+		{ "DECODER_FUNC", DecFunc[u32(srcFmt) & 0xF] },
+		{ "LUT_FUNC", LutFunc[u32(lutFmt) & 0xF] },
+		{ "FMT", valType[u32(srcFmt) & 0xF] },
 		{ nullptr, nullptr }
 	};
 
@@ -447,7 +441,8 @@ ID3D11ComputeShader* CSTextureDecoder::InsertShader( ComboKey const &key, u8 con
 	return result.get();
 }
 
-void CSTextureDecoder::LoadLut(u32 lutFmt, void* addr, u32 size ) {
+void CSTextureDecoder::LoadLut(u32 lutFmt, void* addr, u32 size ) 
+{
 	D3D11_BOX box{0,0,0,size,1,1};
 	D3D::context->UpdateSubresource(m_lutRsc.get(),0,&box,addr,0,0);
 	m_lutFmt = lutFmt;
@@ -457,12 +452,14 @@ bool CSTextureDecoder::Decode(const u8* src, u32 srcsize, u32 srcFmt, u32 w, u32
 	if (!m_ready) // Make sure we initialized OK
 		return false;
 
-	if (!SetStaticShader(TextureFormat(srcFmt),m_lutFmt,0)) {
+	if (!SetStaticShader(TextureFormat(srcFmt),m_lutFmt,0)) 
+	{
 		return false;
 	}
 
-	auto it = m_pool.find( {0,w,h} );
-	if ( it == m_pool.end() ) {
+	auto it = m_pool.find( {w,h} );
+	if ( it == m_pool.end() ) 
+	{
 		// create the pool texture here
 		auto desc = CD3D11_TEXTURE2D_DESC(DXGI_FORMAT_R8G8B8A8_UINT,w,h,1,1,D3D11_BIND_UNORDERED_ACCESS);
 
@@ -473,11 +470,12 @@ bool CSTextureDecoder::Decode(const u8* src, u32 srcsize, u32 srcFmt, u32 w, u32
 
 		hr = D3D::device->CreateUnorderedAccessView( val.m_rsc.get(), nullptr, ToAddr(val.m_uav));
 		CHECK(SUCCEEDED(hr), "create pool UAV for texture decoder");
-		PoolKey key{0,w,h};
+		PoolKey key{w,h};
 		it = m_pool.emplace( key, std::move(val) ).first;
 	}
 
-	if (it != m_pool.end()) {
+	if (it != m_pool.end()) 
+	{
 		D3D11_BOX box{ 0, 0, 0, srcsize, 1, 1 };
 		D3D::context->UpdateSubresource(m_rawDataRsc.get(), 0, &box, src, 0, 0);
 		ID3D11UnorderedAccessView* uav = it->second.m_uav.get();
@@ -502,12 +500,14 @@ bool CSTextureDecoder::DecodeRGBAFromTMEM( u8 const * ar_src, u8 const * bg_src,
 	if (!m_ready) // Make sure we initialized OK
 		return false;
 
-	if (!SetStaticShader(TextureFormat(0xf),0,0)) {
+	if (!SetStaticShader(TextureFormat(0xf),0,0)) 
+	{
 		return false;
 	}
 
-	auto it = m_pool.find( {0,w,h} );
-	if ( it == m_pool.end() ) {
+	auto it = m_pool.find( {w,h} );
+	if ( it == m_pool.end() ) 
+	{
 		// create the pool texture here
 		auto desc = CD3D11_TEXTURE2D_DESC(DXGI_FORMAT_R8G8B8A8_UINT,w,h,1,1,D3D11_BIND_UNORDERED_ACCESS);
 
@@ -518,11 +518,12 @@ bool CSTextureDecoder::DecodeRGBAFromTMEM( u8 const * ar_src, u8 const * bg_src,
 
 		hr = D3D::device->CreateUnorderedAccessView( val.m_rsc.get(), nullptr, ToAddr(val.m_uav));
 		CHECK(SUCCEEDED(hr), "create efb encoder pixel shader");
-		PoolKey key{0,w,h};
+		PoolKey key{w,h};
 		it = m_pool.emplace( key, std::move(val) ).first;
 	}
 
-	if (it != m_pool.end()) {
+	if (it != m_pool.end()) 
+	{
 		u32 aw = (w+4)&~4;
 		u32 ah = (h+4)&~4;
 
@@ -545,7 +546,6 @@ bool CSTextureDecoder::DecodeRGBAFromTMEM( u8 const * ar_src, u8 const * bg_src,
 		D3D::context->CopySubresourceRegion( dstTexture.GetTex(),0,0,0,0,it->second.m_rsc.get(), 0, nullptr );
 		return true;
 	}
-
 	return false;
 }
 
