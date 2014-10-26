@@ -1383,4 +1383,9 @@ void Renderer::SetInterlacingMode()
 	// TODO
 }
 
+int Renderer::GetMaxTextureSize()
+{
+	return DX11::D3D::GetMaxTextureSize();
+}
+
 }  // namespace DX11

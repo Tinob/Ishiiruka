@@ -125,11 +125,12 @@ public:
 	virtual void SetVSConstant4fv(unsigned int const_number, const float *f) = 0;
 	virtual void SetMultiVSConstant3fv(unsigned int const_number, unsigned int count, const float *f) = 0;
 	virtual void SetMultiVSConstant4fv(unsigned int const_number, unsigned int count, const float *f) = 0;
-
+	// Max height/width
+	virtual int GetMaxTextureSize() = 0;
 protected:
 
 	static void CalculateTargetScale(int x, int y, int &scaledX, int &scaledY);
-	static bool CalculateTargetSize(unsigned int framebuffer_width, unsigned int framebuffer_height, int multiplier = 1);
+	bool CalculateTargetSize(unsigned int framebuffer_width, unsigned int framebuffer_height, int multiplier = 1);
 
 	static void CheckFifoRecording();
 	static void RecordVideoMemory();

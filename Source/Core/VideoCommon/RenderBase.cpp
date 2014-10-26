@@ -169,70 +169,55 @@ bool Renderer::CalculateTargetSize(unsigned int framebuffer_width, unsigned int 
 	// TODO: Ugly. Clean up
 	switch (s_LastEFBScale)
 	{
-		case 2: // 1x
-			efb_scale_numeratorX = efb_scale_numeratorY = 1;
-			efb_scale_denominatorX = efb_scale_denominatorY = 1;
-			break;
-
-		case 3: // 1.5x
-			efb_scale_numeratorX = efb_scale_numeratorY = 3;
-			efb_scale_denominatorX = efb_scale_denominatorY = 2;
-			break;
-
-		case 4: // 2x
-			efb_scale_numeratorX = efb_scale_numeratorY = 2;
-			efb_scale_denominatorX = efb_scale_denominatorY = 1;
-			break;
-
-		case 5: // 2.5x
-			efb_scale_numeratorX = efb_scale_numeratorY = 5;
-			efb_scale_denominatorX = efb_scale_denominatorY = 2;
-			break;
-
-		case 6: // 3x
-			efb_scale_numeratorX = efb_scale_numeratorY = 3;
-			efb_scale_denominatorX = efb_scale_denominatorY = 1;
-			break;
-
-		case 7: // 4x
-			efb_scale_numeratorX = efb_scale_numeratorY = 4;
-			efb_scale_denominatorX = efb_scale_denominatorY = 1;
-			break;
-		case 8: // 5x
-			efb_scale_numeratorX = efb_scale_numeratorY = 5;
-			efb_scale_denominatorX = efb_scale_denominatorY = 1;
-			break;
-		case 9: // 6x
-			efb_scale_numeratorX = efb_scale_numeratorY = 6;
-			efb_scale_denominatorX = efb_scale_denominatorY = 1;
-			break;
-
-		default: // fractional & integral handled later
-			break;
-	}
-
-	switch (s_LastEFBScale)
-	{
-		case 0: // fractional
-		case 1: // integral
+		case SCALE_AUTO:
+		case SCALE_AUTO_INTEGRAL:
 			newEFBWidth = FramebufferManagerBase::ScaleToVirtualXfbWidth(EFB_WIDTH, framebuffer_width);
 			newEFBHeight = FramebufferManagerBase::ScaleToVirtualXfbHeight(EFB_HEIGHT, framebuffer_height);
 
-			if (s_LastEFBScale == 1)
+			if (s_LastEFBScale == SCALE_AUTO_INTEGRAL)
 			{
-				newEFBWidth = ((newEFBWidth-1) / EFB_WIDTH + 1) * EFB_WIDTH;
-				newEFBHeight = ((newEFBHeight-1) / EFB_HEIGHT + 1) * EFB_HEIGHT;
+				newEFBWidth = ((newEFBWidth - 1) / EFB_WIDTH + 1) * EFB_WIDTH;
+				newEFBHeight = ((newEFBHeight - 1) / EFB_HEIGHT + 1) * EFB_HEIGHT;
 			}
 			efb_scale_numeratorX = newEFBWidth;
 			efb_scale_denominatorX = EFB_WIDTH;
 			efb_scale_numeratorY = newEFBHeight;
 			efb_scale_denominatorY = EFB_HEIGHT;
 			break;
+		case SCALE_1X:
+			efb_scale_numeratorX = efb_scale_numeratorY = 1;
+			efb_scale_denominatorX = efb_scale_denominatorY = 1;
+			break;
 
+		case SCALE_1_5X:
+			efb_scale_numeratorX = efb_scale_numeratorY = 3;
+			efb_scale_denominatorX = efb_scale_denominatorY = 2;
+			break;
+
+		case SCALE_2X:
+			efb_scale_numeratorX = efb_scale_numeratorY = 2;
+			efb_scale_denominatorX = efb_scale_denominatorY = 1;
+			break;
+
+		case SCALE_2_5X: // 2.5x
+			efb_scale_numeratorX = efb_scale_numeratorY = 5;
+			efb_scale_denominatorX = efb_scale_denominatorY = 2;
+			break;
 		default:
-			CalculateTargetScale(EFB_WIDTH, EFB_HEIGHT, newEFBWidth, newEFBHeight);
+			efb_scale_numeratorX = efb_scale_numeratorY = s_LastEFBScale - 3;
+			efb_scale_denominatorX = efb_scale_denominatorY = 1;			
 			break;
 	}
+	int maxSize;
+	maxSize = GetMaxTextureSize();
+	if ((unsigned)maxSize < EFB_WIDTH * multiplier * efb_scale_numeratorX / efb_scale_denominatorX)
+	{
+		efb_scale_numeratorX = efb_scale_numeratorY = (maxSize / (EFB_WIDTH * multiplier));
+		efb_scale_denominatorX = efb_scale_denominatorY = 1;
+	}
+
+	if (s_LastEFBScale > SCALE_AUTO_INTEGRAL)
+		CalculateTargetScale(EFB_WIDTH, EFB_HEIGHT, newEFBWidth, newEFBHeight);
 
 	newEFBWidth *= multiplier;
 	newEFBHeight *= multiplier;

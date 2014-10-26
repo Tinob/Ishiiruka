@@ -73,6 +73,7 @@ public:
 	void SetVSConstant4fv(unsigned int const_number, const float *f);
 	void SetMultiVSConstant3fv(unsigned int const_number, unsigned int count, const float *f);
 	void SetMultiVSConstant4fv(unsigned int const_number, unsigned int count, const float *f);
+	int GetMaxTextureSize() override;
 };
 
 }  // namespace DX9
