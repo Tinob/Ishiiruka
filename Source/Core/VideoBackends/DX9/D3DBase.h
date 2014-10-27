@@ -32,7 +32,7 @@ namespace D3D
 
 // Null render target to do Z-only shadow maps: (probably not useful for Dolphin)
 #define FOURCC_NULL ((D3DFORMAT)(MAKEFOURCC('N','U','L','L')))
-
+bool GetEXSupported();
 bool IsATIDevice();
 bool IsIntelDevice();
 HRESULT Init();

@@ -19,6 +19,9 @@ namespace DX9
 
 class TextureCache : public ::TextureCache
 {
+public:
+	TextureCache();
+	~TextureCache();
 private:
 	struct TCacheEntry : TCacheEntryBase
 	{
@@ -29,6 +32,9 @@ private:
 		bool compressed;
 		TCacheEntry(LPDIRECT3DTEXTURE9 _tex) : texture(_tex) {}
 		~TCacheEntry();
+		
+		void ReplaceTexture(const u8* src, u32 width, u32 height,
+			u32 expanded_width, u32 level);
 
 		void Load(const u8* src, u32 width, u32 height,
 			u32 expanded_width, u32 level);

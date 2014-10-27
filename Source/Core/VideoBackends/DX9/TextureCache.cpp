@@ -38,17 +38,21 @@ namespace DX9
 static const D3DFORMAT PC_TexFormat_To_D3DFORMAT[11]
 {
 	D3DFMT_UNKNOWN,//PC_TEX_FMT_NONE
-		D3DFMT_A8R8G8B8,//PC_TEX_FMT_BGRA32
-		D3DFMT_A8B8G8R8,//PC_TEX_FMT_RGBA32
-		D3DFMT_A8P8,//PC_TEX_FMT_I4_AS_I8 A hack which means the format is a packed 8-bit intensity texture. It is unpacked to A8L8 in D3DTexture.cpp
-		D3DFMT_A8L8,//PC_TEX_FMT_IA4_AS_IA8
-		D3DFMT_A8P8,//PC_TEX_FMT_I8
-		D3DFMT_A8L8,//PC_TEX_FMT_IA8
-		D3DFMT_R5G6B5,//PC_TEX_FMT_RGB565
-		D3DFMT_DXT1,//PC_TEX_FMT_DXT1
-		D3DFMT_DXT3,//PC_TEX_FMT_DXT3
-		D3DFMT_DXT5,//PC_TEX_FMT_DXT5
+	D3DFMT_A8R8G8B8,//PC_TEX_FMT_BGRA32
+	D3DFMT_A8B8G8R8,//PC_TEX_FMT_RGBA32
+	D3DFMT_A8P8,//PC_TEX_FMT_I4_AS_I8 A hack which means the format is a packed 8-bit intensity texture. It is unpacked to A8L8 in D3DTexture.cpp
+	D3DFMT_A8L8,//PC_TEX_FMT_IA4_AS_IA8
+	D3DFMT_A8P8,//PC_TEX_FMT_I8
+	D3DFMT_A8L8,//PC_TEX_FMT_IA8
+	D3DFMT_R5G6B5,//PC_TEX_FMT_RGB565
+	D3DFMT_DXT1,//PC_TEX_FMT_DXT1
+	D3DFMT_DXT3,//PC_TEX_FMT_DXT3
+	D3DFMT_DXT5,//PC_TEX_FMT_DXT5
 };
+
+static LPDIRECT3DTEXTURE9 s_memPoolTexture[11];
+static u32 s_memPoolTextureW[11];
+static u32 s_memPoolTextureH[11];
 
 TextureCache::TCacheEntry::~TCacheEntry()
 {
@@ -73,22 +77,50 @@ bool TextureCache::TCacheEntry::Save(const char filename[], u32 level)
 	return SUCCEEDED(hr);
 }
 
+void TextureCache::TCacheEntry::ReplaceTexture(const u8* src, u32 width, u32 height,
+	u32 expanded_width, u32 level)
+{
+	d3d_fmt = PC_TexFormat_To_D3DFORMAT[pcformat];
+	if (s_memPoolTexture[pcformat] == nullptr || width > s_memPoolTextureW[pcformat] || height > s_memPoolTextureH[pcformat])
+	{
+		if (s_memPoolTexture[pcformat] != nullptr)
+		{
+			s_memPoolTexture[pcformat]->Release();
+			s_memPoolTexture[pcformat] = nullptr;
+		}
+		s_memPoolTextureW[pcformat] = std::max(width, s_memPoolTextureW[pcformat]);
+		s_memPoolTextureH[pcformat] = std::max(height, s_memPoolTextureH[pcformat]);
+		s_memPoolTexture[pcformat] = D3D::CreateTexture2D(s_memPoolTextureW[pcformat], s_memPoolTextureH[pcformat], d3d_fmt, 1, D3DPOOL_SYSTEMMEM);
+	}
+	D3D::ReplaceTexture2D(s_memPoolTexture[pcformat], src, width, height, expanded_width, d3d_fmt, swap_r_b, 0);
+	PDIRECT3DSURFACE9 srcsurf;
+	s_memPoolTexture[pcformat]->GetSurfaceLevel(0, &srcsurf);
+	PDIRECT3DSURFACE9 dstsurface;
+	texture->GetSurfaceLevel(level, &dstsurface);
+	RECT srcr{ 0, 0, width, height };
+	POINT dstp{ 0, 0 };
+	D3D::dev->UpdateSurface(srcsurf, &srcr, dstsurface, &dstp);
+	srcsurf->Release();
+	dstsurface->Release();
+}
+
 void TextureCache::TCacheEntry::Load(const u8* src, u32 width, u32 height,
 	u32 expanded_width, u32 level)
 {
-	D3D::ReplaceTexture2D(texture, src, width, height, expanded_width, d3d_fmt, swap_r_b, level);
+	ReplaceTexture(src, width, height, expanded_width, level);
 }
+
 void TextureCache::TCacheEntry::Load(const u8* src, u32 width, u32 height, u32 expandedWidth,
 	u32 expandedHeight, const s32 texformat, const u32 tlutaddr, const s32 tlutfmt, u32 level)
 {
 	pcformat = TexDecoder_Decode(TextureCache::temp, src, expandedWidth, expandedHeight, texformat, tlutaddr, tlutfmt, false, compressed);
-	D3D::ReplaceTexture2D(texture, TextureCache::temp, width, height, expandedWidth, PC_TexFormat_To_D3DFORMAT[pcformat], swap_r_b, level);
+	ReplaceTexture(TextureCache::temp, width, height, expandedWidth, level);
 }
 void TextureCache::TCacheEntry::LoadFromTmem(const u8* ar_src, const u8* gb_src, u32 width, u32 height,
 	u32 expanded_width, u32 expanded_Height, u32 level)
 {
 	TexDecoder_DecodeBGRA8FromTmem((u32*)TextureCache::temp, ar_src, gb_src, expanded_width, expanded_Height);
-	D3D::ReplaceTexture2D(texture, TextureCache::temp, width, height, expanded_width, d3d_fmt, swap_r_b, level);
+	ReplaceTexture(TextureCache::temp, width, height, expanded_width, level);
 }
 
 void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, u32 dstFormat,
@@ -158,8 +190,7 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, u32 dstFormat,
 		D3D::drawShadedTexQuad(read_texture, &sourcerect, 
 			Renderer::GetTargetWidth(), Renderer::GetTargetHeight(),
 			virtual_width, virtual_height,
-			// TODO: why is D3DFMT_D24X8 singled out here? why not D3DFMT_D24X4S4/D24S8/D24FS8/D32/D16/D15S1 too, or none of them?
-			PixelShaderCache::GetDepthMatrixProgram(SSAAMode, (srcFormat == PIXELFMT_Z24) && bformat != FOURCC_RAWZ && bformat != D3DFMT_D24X8),
+			PixelShaderCache::GetDepthMatrixProgram(SSAAMode, (srcFormat == PIXELFMT_Z24) && bformat != FOURCC_RAWZ),
 			VertexShaderCache::GetSimpleVertexShader(SSAAMode));
 
 		Rendersurf->Release();
@@ -230,5 +261,29 @@ TextureCache::TCacheEntryBase* TextureCache::CreateRenderTargetTexture(
 	
 	return new TCacheEntry(texture);
 }
+
+TextureCache::TextureCache()
+{
+	for (size_t i = 0; i < 10; i++)
+	{
+		s_memPoolTexture[i] = nullptr;
+		s_memPoolTextureW[i] = 1024u;
+		s_memPoolTextureH[i] = 1024u;
+	}
+}
+
+TextureCache::~TextureCache()
+{
+	for (size_t i = 0; i < 10; i++)
+	{
+		if (s_memPoolTexture[i])
+		{
+			s_memPoolTexture[i]->Release();
+			s_memPoolTexture[i] = nullptr;
+		}
+	}
+}
+
+
 
 }

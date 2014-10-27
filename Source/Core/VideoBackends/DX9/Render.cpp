@@ -265,7 +265,11 @@ void Renderer::CheckForResize(bool &resized, bool &fullscreen, bool &fullscreenc
 	{
 		// Handle vsync changes during execution
 		s_vsync = g_ActiveConfig.IsVSync();
-		TeardownDeviceObjects();
+		if (!D3D::GetEXSupported())
+		{
+			TeardownDeviceObjects();
+		}
+		
 
 		D3D::Reset();
 		s_backbuffer_width = D3D::GetBackBufferWidth();
@@ -910,8 +914,12 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 					Host_RequestFullscreen(false);
 				}
 			}
-			// device objects lost, so recreate all of them
-			SetupDeviceObjects();
+			if (!D3D::GetEXSupported())
+			{
+				// device objects lost, so recreate all of them
+				SetupDeviceObjects();
+			}
+			
 		}
 		else
 		{

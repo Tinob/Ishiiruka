@@ -9,37 +9,44 @@
 #include "Common/StringUtil.h"
 #include "VideoCommon/VideoCommon.h"
 
-D3DXSAVESURFACETOFILEATYPE PD3DXSaveSurfaceToFileA = NULL;
-D3DXSAVETEXTURETOFILEATYPE PD3DXSaveTextureToFileA = NULL;
+D3DXSAVESURFACETOFILEATYPE PD3DXSaveSurfaceToFileA = nullptr;
+D3DXSAVETEXTURETOFILEATYPE PD3DXSaveTextureToFileA = nullptr;
 
 namespace DX9
 {
 static char vsVersions[5][7] = {"ERROR", "vs_1_4", "vs_2_a", "vs_3_0", "vs_4_0"};
 static char psVersions[5][7] = {"ERROR", "ps_1_4", "ps_2_a", "ps_3_0", "ps_4_0"};
 // D3DX
-HINSTANCE hD3DXDll = NULL;
+HINSTANCE hD3DXDll = nullptr;
 int d3dx_dll_ref = 0;
 
-typedef IDirect3D9* (WINAPI* DIRECT3DCREATE9)(UINT);
-DIRECT3DCREATE9 PDirect3DCreate9 = NULL;
-HINSTANCE hD3DDll = NULL;
+typedef HRESULT (WINAPI* DIRECT3DCREATE9EX)(UINT, IDirect3D9Ex **ppD3D);
+typedef IDirect3D9 *(WINAPI* DIRECT3DCREATE9)(UINT);
+DIRECT3DCREATE9 PDirect3DCreate9 = nullptr;
+DIRECT3DCREATE9EX PDirect3DCreate9EX = nullptr;
+HINSTANCE hD3DDll = nullptr;
 int d3d_dll_ref = 0;
 
 namespace D3D
 {
 
-LPDIRECT3D9        D3D = NULL; // Used to create the D3DDevice
-LPDIRECT3DDEVICE9  dev = NULL; // Our rendering device
+LPDIRECT3D9EX      D3DEX = nullptr; // Used to create the D3DDevice
+LPDIRECT3D9        D3D = nullptr; // Used to create the D3DDevice
+LPDIRECT3DDEVICE9  dev = nullptr; // Our rendering device
+LPDIRECT3DDEVICE9EX  devEX = nullptr; // Our rendering device
 LPDIRECT3DSURFACE9 back_buffer;
 LPDIRECT3DSURFACE9 back_buffer_z;
 D3DCAPS9 caps;
 HWND hWnd;
-
+static bool EXSupported = false;
 static int multisample;
 static int resolution;
 static int xres, yres;
 static bool auto_depth_stencil = false;
-
+bool GetEXSupported()
+{
+	return EXSupported;
+}
 #define VENDOR_NVIDIA 4318
 #define VENDOR_ATI    4098
 #define VENDOR_INTEL  32902
@@ -127,16 +134,32 @@ HRESULT Init()
 	hD3DDll = LoadLibraryA("d3d9.dll");
 	if (!hD3DDll)
 	{
-		MessageBoxA(NULL, "Failed to load d3d9.dll", "Critical error", MB_OK | MB_ICONERROR);
+		MessageBoxA(nullptr, "Failed to load d3d9.dll", "Critical error", MB_OK | MB_ICONERROR);
 		return E_FAIL;
 	}
+	PDirect3DCreate9EX = (DIRECT3DCREATE9EX)GetProcAddress(hD3DDll, "Direct3DCreate9Ex");
 	PDirect3DCreate9 = (DIRECT3DCREATE9)GetProcAddress(hD3DDll, "Direct3DCreate9");
-	if (PDirect3DCreate9 == NULL) MessageBoxA(NULL, "GetProcAddress failed for Direct3DCreate9!", "Critical error", MB_OK | MB_ICONERROR);
+	HRESULT hr = 0;
+	if (PDirect3DCreate9EX == nullptr && PDirect3DCreate9)
+	{
+		MessageBoxA(nullptr, "GetProcAddress failed for Direct3DCreate9!", "Critical error", MB_OK | MB_ICONERROR);
+		--d3d_dll_ref;
+		return E_FAIL;
+	}
 
 	// Create the D3D object, which is needed to create the D3DDevice.
-	D3D = PDirect3DCreate9(D3D_SDK_VERSION);
+	if (PDirect3DCreate9EX)
+	{
+		hr = PDirect3DCreate9EX(D3D_SDK_VERSION, &D3DEX);
+		D3D = D3DEX;
+	}
+	else
+	{
+		D3D = PDirect3DCreate9(D3D_SDK_VERSION);
+	}
 	if (!D3D)
 	{
+		MessageBoxA(nullptr, "Failed To create Device", "Critical error", MB_OK | MB_ICONERROR);
 		--d3d_dll_ref;
 		return E_FAIL;
 	}
@@ -150,7 +173,6 @@ HRESULT Init()
 		psVersions[2][5] = '0';
 		vsVersions[2][5] = '0';
 	}
-
 	return S_OK;
 }
 
@@ -160,10 +182,10 @@ void Shutdown()
 	if (--d3d_dll_ref != 0) return;
 
 	if (D3D) D3D->Release();
-	D3D = NULL;
+	D3D = nullptr;
 
 	if (hD3DDll) FreeLibrary(hD3DDll);
-	PDirect3DCreate9 = NULL;
+	PDirect3DCreate9 = nullptr;
 }
 
 void EnableAlphaToCoverage()
@@ -328,7 +350,7 @@ HRESULT LoadD3DX9()
 
 	HRESULT hr = E_FAIL;
 	hD3DXDll = LoadLibraryA(StringFromFormat("d3dx9_%d.dll", D3DX_SDK_VERSION).c_str());
-	if (hD3DXDll != NULL)
+	if (hD3DXDll != nullptr)
 	{
 		hr = S_OK;
 	}
@@ -338,7 +360,7 @@ HRESULT LoadD3DX9()
 		for (unsigned int num = D3DX_SDK_VERSION-1; num >= 24; --num)
 		{
 			hD3DXDll = LoadLibraryA(StringFromFormat("d3dx9_%d.dll", num).c_str());
-			if (hD3DXDll != NULL)
+			if (hD3DXDll != nullptr)
 			{
 				NOTICE_LOG(VIDEO, "Successfully loaded %s. If you're having trouble, try updating your DX runtime first.", StringFromFormat("d3dx9_%d.dll", num).c_str());
 				hr = S_OK;
@@ -347,22 +369,22 @@ HRESULT LoadD3DX9()
 		}
 		if (FAILED(hr))
 		{
-			MessageBoxA(NULL, "Failed to load any D3DX9 dll, update your DX9 runtime, please", "Critical error", MB_OK | MB_ICONERROR);
+			MessageBoxA(nullptr, "Failed to load any D3DX9 dll, update your DX9 runtime, please", "Critical error", MB_OK | MB_ICONERROR);
 			return hr;
 		}
 	}
 	
 	PD3DXSaveSurfaceToFileA = (D3DXSAVESURFACETOFILEATYPE)GetProcAddress(hD3DXDll, "D3DXSaveSurfaceToFileA");
-	if (PD3DXSaveSurfaceToFileA == NULL)
+	if (PD3DXSaveSurfaceToFileA == nullptr)
 	{
-		MessageBoxA(NULL, "GetProcAddress failed for D3DXSaveSurfaceToFileA!", "Critical error", MB_OK | MB_ICONERROR);
+		MessageBoxA(nullptr, "GetProcAddress failed for D3DXSaveSurfaceToFileA!", "Critical error", MB_OK | MB_ICONERROR);
 		goto fail;
 	}
 
 	PD3DXSaveTextureToFileA = (D3DXSAVETEXTURETOFILEATYPE)GetProcAddress(hD3DXDll, "D3DXSaveTextureToFileA");
-	if (PD3DXSaveTextureToFileA == NULL)
+	if (PD3DXSaveTextureToFileA == nullptr)
 	{
-		MessageBoxA(NULL, "GetProcAddress failed for D3DXSaveTextureToFileA!", "Critical error", MB_OK | MB_ICONERROR);
+		MessageBoxA(nullptr, "GetProcAddress failed for D3DXSaveTextureToFileA!", "Critical error", MB_OK | MB_ICONERROR);
 		goto fail;
 	}
 	return S_OK;
@@ -370,8 +392,8 @@ HRESULT LoadD3DX9()
 fail:
 	--d3dx_dll_ref;
 	FreeLibrary(hD3DXDll);
-	PD3DXSaveSurfaceToFileA = NULL;
-	PD3DXSaveTextureToFileA = NULL;
+	PD3DXSaveSurfaceToFileA = nullptr;
+	PD3DXSaveTextureToFileA = nullptr;
 	return E_FAIL;
 }
 
@@ -381,8 +403,8 @@ void UnloadD3DX9()
 	if (--d3dx_dll_ref != 0) return;
 
 	FreeLibrary(hD3DXDll);
-	PD3DXSaveSurfaceToFileA = NULL;
-	PD3DXSaveTextureToFileA = NULL;
+	PD3DXSaveSurfaceToFileA = nullptr;
+	PD3DXSaveTextureToFileA = nullptr;
 }
 
 HRESULT Create(int adapter, HWND wnd, int _resolution, int aa_mode, bool auto_depth)
@@ -392,38 +414,65 @@ HRESULT Create(int adapter, HWND wnd, int _resolution, int aa_mode, bool auto_de
 	resolution = _resolution;
 	auto_depth_stencil = auto_depth;
 	cur_adapter = adapter;
+	EXSupported = false;
 	D3DPRESENT_PARAMETERS d3dpp;
 
 	HRESULT hr = LoadD3DX9();
 	if (FAILED(hr)) return hr;
 
 	InitPP(adapter, resolution, aa_mode, &d3dpp);
-
-	if (FAILED(D3D->CreateDevice(
-		adapter,
-		D3DDEVTYPE_HAL,
-		wnd,
-		D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_PUREDEVICE,  //doesn't seem to make a difference
-		&d3dpp, &dev)))
+	if (D3DEX)
+	{
+		if (FAILED(D3DEX->CreateDeviceEx(
+			adapter,
+			D3DDEVTYPE_HAL,
+			wnd,
+			D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_PUREDEVICE,  //doesn't seem to make a difference
+			&d3dpp, nullptr,  &devEX)))
+		{
+			if (FAILED(D3DEX->CreateDeviceEx(
+				adapter,
+				D3DDEVTYPE_HAL,
+				wnd,
+				D3DCREATE_SOFTWARE_VERTEXPROCESSING,
+				&d3dpp, nullptr, &devEX)))
+			{
+				MessageBox(wnd,
+					_T("Failed to initialize Direct3D."),
+					_T("Dolphin Direct3D Backend"), MB_OK | MB_ICONERROR);
+				return E_FAIL;
+			}
+		}
+		dev = devEX;
+		EXSupported = true;
+	}
+	else
 	{
 		if (FAILED(D3D->CreateDevice(
 			adapter,
 			D3DDEVTYPE_HAL,
 			wnd,
-			D3DCREATE_SOFTWARE_VERTEXPROCESSING,
+			D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_PUREDEVICE,  //doesn't seem to make a difference
 			&d3dpp, &dev)))
 		{
-			MessageBox(wnd,
-				_T("Failed to initialize Direct3D."),
-				_T("Dolphin Direct3D Backend"), MB_OK | MB_ICONERROR);
-			return E_FAIL;
+			if (FAILED(D3DEX->CreateDevice(
+				adapter,
+				D3DDEVTYPE_HAL,
+				wnd,
+				D3DCREATE_SOFTWARE_VERTEXPROCESSING,
+				&d3dpp, &dev)))
+			{
+				MessageBox(wnd,
+					_T("Failed to initialize Direct3D."),
+					_T("Dolphin Direct3D Backend"), MB_OK | MB_ICONERROR);
+				return E_FAIL;
+			}
 		}
 	}
-
 	dev->GetDeviceCaps(&caps);
 	dev->GetRenderTarget(0, &back_buffer);
 	if (dev->GetDepthStencilSurface(&back_buffer_z) == D3DERR_NOTFOUND)
-		back_buffer_z = NULL;
+		back_buffer_z = nullptr;
 	SetRenderState(D3DRS_ZENABLE, D3DZB_TRUE );
 	SetRenderState(D3DRS_FILLMODE, g_Config.bWireFrame ? D3DFILL_WIREFRAME : D3DFILL_SOLID);
 	memset(m_Textures, 0, sizeof(m_Textures));
@@ -434,12 +483,12 @@ HRESULT Create(int adapter, HWND wnd, int _resolution, int aa_mode, bool auto_de
 	m_RenderStatesChanged.assign(MaxRenderStates, false);
 	m_SamplerStatesSet.assign(MaxSamplerSize * MaxSamplerTypes, false);
 	m_SamplerStatesChanged.assign(MaxSamplerSize * MaxSamplerTypes, false);
-	m_VtxDecl = NULL;
-	m_PixelShader = NULL;
-	m_VertexShader = NULL;
-	m_index_buffer = NULL;
+	m_VtxDecl = nullptr;
+	m_PixelShader = nullptr;
+	m_VertexShader = nullptr;
+	m_index_buffer = nullptr;
 	memset(m_stream_sources, 0, sizeof(m_stream_sources));
-	m_index_buffer = NULL;
+	m_index_buffer = nullptr;
 	
 	m_VtxDeclChanged = false;
 	m_PixelShaderChanged = false;
@@ -456,16 +505,17 @@ void Close()
 
 	if (back_buffer_z)
 		back_buffer_z->Release();
-	back_buffer_z = NULL;
+	back_buffer_z = nullptr;
 	if( back_buffer )
 		back_buffer->Release();
-	back_buffer = NULL;
+	back_buffer = nullptr;
 
 	ULONG references = dev->Release();
 	if (references)
 		ERROR_LOG(VIDEO, "Unreleased references: %i.", references);
 
-	dev = NULL;
+	dev = nullptr;
+	devEX = nullptr;
 }
 
 const D3DCAPS9 &GetCaps()
@@ -578,9 +628,9 @@ void Reset()
 		// Can't keep a pointer around to the backbuffer surface when resetting.
 		if (back_buffer_z)
 			back_buffer_z->Release();
-		back_buffer_z = NULL;
+		back_buffer_z = nullptr;
 		back_buffer->Release();
-		back_buffer = NULL;
+		back_buffer = nullptr;
 
 		D3DPRESENT_PARAMETERS d3dpp;
 		InitPP(cur_adapter, resolution, multisample, &d3dpp);
@@ -601,7 +651,7 @@ void Reset()
 
 		dev->GetRenderTarget(0, &back_buffer);
 		if (dev->GetDepthStencilSurface(&back_buffer_z) == D3DERR_NOTFOUND)
-			back_buffer_z = NULL;
+			back_buffer_z = nullptr;
 		ApplyCachedState();
 	}
 }
@@ -648,7 +698,7 @@ void Present()
 {
 	if (dev)
 	{
-		dev->Present(NULL, NULL, NULL, NULL);
+		dev->Present(nullptr, nullptr, nullptr, nullptr);
 	}
 }
 
@@ -675,11 +725,11 @@ void ApplyCachedState()
 	memset(m_Textures, 0, sizeof(m_Textures));
 	m_TextureStageStatesSet.assign(MaxTextureStages * MaxTextureTypes, false);
 	m_TextureStageStatesChanged.assign(MaxTextureStages * MaxTextureTypes, false);
-	m_VtxDecl = NULL;
-	m_PixelShader = NULL;
-	m_VertexShader = NULL;
+	m_VtxDecl = nullptr;
+	m_PixelShader = nullptr;
+	m_VertexShader = nullptr;
 	memset(m_stream_sources, 0, sizeof(m_stream_sources));
-	m_index_buffer = NULL;
+	m_index_buffer = nullptr;
 	m_VtxDeclChanged = false;
 	m_PixelShaderChanged = false;
 	m_VertexShaderChanged = false;

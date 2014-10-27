@@ -56,14 +56,14 @@ inline void LoadDataToRect(LPDIRECT3DTEXTURE9 pTexture, const u8* buffer, const 
 	pTexture->UnlockRect(level);
 }
 
-LPDIRECT3DTEXTURE9 CreateTexture2D(const s32 width, const s32 height, D3DFORMAT fmt, s32 levels)
+LPDIRECT3DTEXTURE9 CreateTexture2D(const s32 width, const s32 height, D3DFORMAT fmt, s32 levels, D3DPOOL pool)
 {
 	LPDIRECT3DTEXTURE9 pTexture;
 	D3DFORMAT cfmt = fmt;
 	if (fmt == D3DFMT_A8P8) {
 		cfmt = D3DFMT_A8L8;
 	}
-	HRESULT hr = dev->CreateTexture(width, height, levels, 0, cfmt, D3DPOOL_MANAGED, &pTexture, NULL);
+	HRESULT hr = dev->CreateTexture(width, height, levels, 0, cfmt, pool, &pTexture, NULL);
 	if (FAILED(hr))
 	{
 		PanicAlert("Failed to create texture at %s, line %d: hr=%#x\n", __FILE__, __LINE__, hr);
