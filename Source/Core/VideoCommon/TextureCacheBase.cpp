@@ -429,6 +429,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 		}
 	}
 	bool using_custom_texture = false;
+	bool using_custom_lods = using_custom_texture;
 	u32 nummipsinbuffer = 0;
 	bool bUseRGBATextures = false;
 	TextureCache::bufferstart = TextureCache::temp;
@@ -451,19 +452,29 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 				entry = NULL;
 			}
 			using_custom_texture = true;
+			if (nummipsinbuffer == 0)
+			{
+				using_custom_lods = CheckForCustomTextureLODs(tex_hash, texformat, texLevels);
+			}
+			else
+			{
+				texLevels = nummipsinbuffer;
+				using_custom_lods = true;
+			}
 		}
 	}
-	if (isPaletteTexture && !using_custom_texture) {
+	if (isPaletteTexture && !using_custom_texture) 
+	{
 		g_texture_cache->LoadLut(tlutfmt, &texMem[tlutaddr], TexDecoder_GetPaletteSize(texformat));
 	}
 	if (pcfmt == PC_TEX_FMT_NONE)
 	{
 		pcfmt = g_texture_cache->GetNativeTextureFormat(texformat, tlutfmt, width, height);
 	}
-	const bool using_custom_lods = using_custom_texture && (nummipsinbuffer > 0  || CheckForCustomTextureLODs(tex_hash, texformat, texLevels));
 	// Only load native mips if their dimensions fit to our virtual texture dimensions
 	const bool use_native_mips = use_mipmaps && !using_custom_lods && (width == nativeW && height == nativeH);
 	texLevels = (use_native_mips || using_custom_lods) ? texLevels : 1; // TODO: Should be forced to 1 for non-pow2 textures (e.g. efb copies with automatically adjusted IR)
+	
 	// create the entry/texture
 	if (entry == nullptr)
 	{
@@ -548,7 +559,6 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 		{
 			if (nummipsinbuffer > 0)
 			{
-				texLevels = std::min(texLevels, nummipsinbuffer);
 				TextureCache::bufferstart += TextureUtil::GetTextureSizeInBytes(width, height, pcfmt);
 			}
 			for (; level != texLevels; ++level)
