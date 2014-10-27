@@ -20,9 +20,6 @@
     <ClCompile Include="ARCodeAddEdit.cpp">
       <Filter>GUI</Filter>
     </ClCompile>
-    <ClCompile Include="CheatsWindow.cpp">
-      <Filter>GUI</Filter>
-    </ClCompile>
     <ClCompile Include="ConfigMain.cpp">
       <Filter>GUI</Filter>
     </ClCompile>
@@ -36,9 +33,6 @@
       <Filter>GUI</Filter>
     </ClCompile>
     <ClCompile Include="GameListCtrl.cpp">
-      <Filter>GUI</Filter>
-    </ClCompile>
-    <ClCompile Include="GeckoCodeDiag.cpp">
       <Filter>GUI</Filter>
     </ClCompile>
     <ClCompile Include="HotkeyDlg.cpp">
@@ -126,6 +120,10 @@
       <Filter>GUI</Filter>
     </ClCompile>
     <ClCompile Include="GLInterface\WGL.cpp" />
+    <ClCompile Include="Cheats\CheatSearchTab.cpp" />
+    <ClCompile Include="Cheats\CheatsWindow.cpp" />
+    <ClCompile Include="Cheats\CreateCodeDialog.cpp" />
+    <ClCompile Include="Cheats\GeckoCodeDiag.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Main.h" />
@@ -145,12 +143,6 @@
       <Filter>GUI</Filter>
     </ClInclude>
     <ClInclude Include="ConfigMain.h">
-      <Filter>GUI</Filter>
-    </ClInclude>
-    <ClInclude Include="CheatsWindow.h">
-      <Filter>GUI</Filter>
-    </ClInclude>
-    <ClInclude Include="GeckoCodeDiag.h">
       <Filter>GUI</Filter>
     </ClInclude>
     <ClInclude Include="Frame.h">
@@ -249,6 +241,10 @@
     <ClInclude Include="GLInterface\InterfaceBase.h" />
     <ClInclude Include="GLInterface\WGL.h" />
     <ClInclude Include="GLInterface\GLInterface.h" />
+    <ClInclude Include="Cheats\CheatSearchTab.h" />
+    <ClInclude Include="Cheats\CheatsWindow.h" />
+    <ClInclude Include="Cheats\CreateCodeDialog.h" />
+    <ClInclude Include="Cheats\GeckoCodeDiag.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="CMakeLists.txt" />

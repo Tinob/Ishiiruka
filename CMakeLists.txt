@@ -1,26 +1,27 @@
 ########################################
 # General setup
 #
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8.8)
 
-option(ANDROID "Enables a build for Android" OFF)
 option(USE_EGL "Enables EGL OpenGL Interface" OFF)
-option(USE_X11 "Enables X11 Support" ON)
-option(USE_WAYLAND "Enables Wayland Support" OFF)
-option(USE_GLES "Enables GLES2 And EGL, disables OGL" OFF)
-option(USE_GLES3 "Enables GLES3 and EGL" OFF)
+option(TRY_X11 "Enables X11 Support" ON)
 option(USE_UPNP "Enables UPnP port mapping support" ON)
-option(DISABLE_WX "Disable wxWidgets (use CLI interface)" OFF)
+option(DISABLE_WX "Disable wxWidgets (use Qt or CLI interface)" OFF)
+option(ENABLE_QT "Enable Qt (use the experimental Qt interface)" OFF)
+option(ENABLE_PCH "Use PCH to speed up compilation" ON)
+option(ENABLE_LTO "Enables Link Time Optimization" OFF)
+option(ENABLE_GENERIC "Enables generic build that should run on any little-endian host" OFF)
+
+option(OPENMP "Enable OpenMP parallelization" ON)
+option(ENCODE_FRAMEDUMPS "Encode framedumps in AVI format" ON)
 
 option(FASTLOG "Enable all logs" OFF)
 option(OPROFILING "Enable profiling" OFF)
-option(OPENMP "Enable OpenMP parallelization" ON)
-option(ENCODE_FRAMEDUMPS "Encode framedumps in AVI format" ON)
+option(GDBSTUB "Enable gdb stub for remote debugging." OFF)
 ########################################
 # Optional Targets
-# TODO: Add DSPSpy and TestSuite.
+# TODO: Add DSPSpy
 option(DSPTOOL "Build dsptool" OFF)
-option(UNITTESTS "Build unitests" OFF)
 
 # Update compiler before calling project()
 if (APPLE)
@@ -31,7 +32,7 @@ if (APPLE)
 			set(CMAKE_CXX_COMPILER "clang++")
 		endif()
 	endif()
-	if (NOT DEFINED CMAKE_CXX_COMPILER)
+	if (NOT DEFINED CMAKE_C_COMPILER)
 		set(CMAKE_C_COMPILER "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang")
 		if (NOT EXISTS "${CMAKE_C_COMPILER}")
 			set(CMAKE_C_COMPILER "clang")
@@ -117,25 +118,56 @@ if(DOLPHIN_IS_STABLE)
 else()
 	set(DOLPHIN_VERSION_PATCH ${DOLPHIN_WC_REVISION})
 endif()
+
+# Architecture detection and arch specific settings
 message(${CMAKE_SYSTEM_PROCESSOR})
-if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "^arm")
-	set(_M_GENERIC 1)
-	set(_M_ARM 1)
-	add_definitions(-marm -march=armv7-a)
-	# Set generic options so you don't have to pass anything to cmake to build ARM
-	set(USE_GLES 1)
+
+# Detect 64bit or 32bit
+# CMake doesn't provide a simple way to determine 32bit or 64bit
+# If we ever support a architecture that is 64bit with 32bit pointers then this'll break
+# Of course the chances of that are slim(x32?) so who cares
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+	set(_ARCH_64 1)
+	add_definitions(-D_ARCH_64=1)
+else()
+	set(_ARCH_32 1)
+	add_definitions(-D_ARCH_32=1)
 endif()
 
-if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "mips")
-	set(_M_GENERIC 1)
+if(NOT ENABLE_GENERIC)
+	if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "^x86" OR
+	   ${CMAKE_SYSTEM_PROCESSOR} MATCHES "i.86" OR
+	   ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+		if(_ARCH_64)
+			set(_M_X86 1)
+			set(_M_X86_64 1)
+			add_definitions(-D_M_X86=1 -D_M_X86_64=1 -msse2)
+		else()
+			message(FATAL_ERROR "x86_32 is an unsupported platform. Enable generic build if you really want a JIT-less binary.")
+		endif()
+	elseif(${CMAKE_SYSTEM_PROCESSOR} MATCHES "^arm")
+		# This option only applies to 32bit ARM
+		set(_M_ARM 1)
+		set(_M_ARM_32 1)
+		add_definitions(-D_M_ARM=1 -D_M_ARM_32=1)
+		if(${ANDROID_NDK_ABI_NAME} MATCHES "armeabi-v7a")
+			add_definitions(-marm -march=armv7-a)
+		endif()
+	elseif(${CMAKE_SYSTEM_PROCESSOR} MATCHES "aarch64")
+		# This option only applies to 64bit ARM
+		set(_M_ARM 1)
+		set(_M_ARM_64 1)
+		add_definitions(-D_M_ARM=1 -D_M_ARM_64=1)
+		set(ENABLE_GENERIC 1)
+	else()
+		set(ENABLE_GENERIC 1)
+	endif()
 endif()
 
-# Set these next two lines to test generic
-#set(_M_GENERIC 1)
-#add_definitions(-D_M_GENERIC=1)
-# Various compile flags
-if(NOT _M_GENERIC)
-	add_definitions(-msse2)
+if(ENABLE_GENERIC)
+	message("Warning! Building generic build!")
+	set(_M_GENERIC 1)
+	add_definitions(-D_M_GENERIC=1)
 endif()
 
 include(CheckCXXCompilerFlag)
@@ -164,6 +196,8 @@ if(NOT MSVC)
 	check_and_add_flag(LOGICAL_OP -Wlogical-op)
 	check_and_add_flag(SHADOW -Wshadow)
 	check_and_add_flag(INIT_SELF -Winit-self)
+	check_and_add_flag(MISSING_DECLARATIONS -Wmissing-declarations)
+	check_and_add_flag(MISSING_VARIABLE_DECLARATIONS -Wmissing-variable-declarations)
 endif(NOT MSVC)
 
 # gcc uses some optimizations which might break stuff without this flag
@@ -173,6 +207,14 @@ check_and_add_flag(VISIBILITY_INLINES_HIDDEN -fvisibility-inlines-hidden)
 
 if(UNIX AND NOT APPLE)
 	check_and_add_flag(VISIBILITY_HIDDEN -fvisibility=hidden)
+endif()
+
+if(ENABLE_LTO)
+	check_and_add_flag(LTO -flto)
+	if(CMAKE_CXX_COMPILER_ID STREQUAL GNU)
+		set(CMAKE_AR gcc-ar)
+		set(CMAKE_RANLIB gcc-ranlib)
+	endif()
 endif()
 
 if(APPLE)
@@ -226,10 +268,6 @@ if(APPLE)
 	# page on x86_64 is 4GB in size.
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-pagezero_size,0x1000")
 
-	if(NOT DISABLE_WX)
-		add_definitions(-DUSE_WX -DHAVE_WX)
-		set(USE_WX TRUE)
-	endif()
 	find_library(APPKIT_LIBRARY AppKit)
 	find_library(APPSERV_LIBRARY ApplicationServices)
 	find_library(ATB_LIBRARY AudioToolbox)
@@ -243,6 +281,8 @@ if(APPLE)
 	find_library(IOK_LIBRARY IOKit)
 	find_library(QUICKTIME_LIBRARY QuickTime)
 	find_library(WEBKIT_LIBRARY WebKit)
+	find_library(FORCEFEEDBACK ForceFeedback)
+	find_library(OPENGL_LIBRARY OpenGL)
 endif()
 
 if(WIN32)
@@ -276,7 +316,6 @@ if(FASTLOG)
 	add_definitions(-DDEBUGFAST)
 endif()
 
-option(GDBSTUB "Enable gdb stub for remote debugging." OFF)
 if(GDBSTUB)
 	add_definitions(-DUSE_GDBSTUB)
 endif(GDBSTUB)
@@ -285,42 +324,12 @@ if(ANDROID)
 	message("Building for Android")
 	add_definitions(-DANDROID)
 	set(USE_X11 0)
-	set(USE_WAYLAND 0)
 	set(USE_UPNP 0)
-	set(USE_GLES3 1)
-endif()
-
-# For now GLES and EGL are tied to each other.
-# Enabling GLES also disables the OpenGL plugin.
-if(USE_GLES3)
-	message("GLES3 rendering enabled")
-	add_definitions(-DUSE_GLES=1 -DUSE_EGL=1 -DUSE_GLES3=1)
-	include_directories(Externals/GLES3)
-	set(USE_EGL True)
-	set(USE_GLES True)
-else()
-	if(USE_GLES)
-		message("GLES2 rendering enabled. OpenGL disabled")
-		add_definitions(-DUSE_GLES=1)
-		add_definitions(-DUSE_EGL=1)
-		set(USE_EGL True)
-	endif()
-endif()
-# For now Wayland and EGL are tied to each other.
-# The alternative would be an shm path
-if(USE_WAYLAND)
-	add_definitions(-DUSE_EGL)
 	set(USE_EGL 1)
 endif()
 
-if(USE_EGL)
-	message("EGL OpenGL interface enabled")
-	add_definitions(-DUSE_EGL=1)
-else()
-	# Using GLX
-	set(USE_X11 1)
-	set(USE_WAYLAND 0)
-endif()
+include_directories(Externals/GL)
+
 add_definitions(-D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE)
 
 ########################################
@@ -331,26 +340,24 @@ add_definitions(-D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE)
 # externals.
 include(CheckLib)
 include(CheckCXXSourceRuns)
+
+if(OPENMP)
+	include(FindOpenMP OPTIONAL)
+	if(OPENMP_FOUND)
+		message("OpenMP parallelization enabled")
+		add_definitions("${OpenMP_CXX_FLAGS}")
+		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_CXX_FLAGS}")
+	endif()
+endif()
+if(NOT OPENMP_FOUND)
+	add_definitions(-Wno-unknown-pragmas)
+	message("OpenMP parallelization disabled")
+endif()
+
 if(NOT ANDROID)
 
 	include(FindOpenGL)
 	include_directories(${OPENGL_INCLUDE_DIR})
-	if(NOT OPENGL_GLU_FOUND)
-		message(FATAL_ERROR "GLU is required but not found")
-	endif()
-
-	if(OPENMP)
-		include(FindOpenMP OPTIONAL)
-		if(OPENMP_FOUND)
-			message("OpenMP parallelization enabled")
-			add_definitions("${OpenMP_CXX_FLAGS}")
-			set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_CXX_FLAGS}")
-		endif()
-	endif()
-	if(NOT OPENMP_FOUND)
-		add_definitions(-Wno-unknown-pragmas)
-		message("OpenMP parallelization disabled")
-	endif()
 
 	include(FindALSA OPTIONAL)
 	if(ALSA_FOUND)
@@ -379,7 +386,7 @@ if(NOT ANDROID)
 		message("bluez NOT found, disabling bluetooth support")
 	endif(BLUEZ_FOUND)
 
-	check_lib(PULSEAUDIO libpulse-simple QUIET)
+	check_lib(PULSEAUDIO libpulse QUIET)
 	if(PULSEAUDIO_FOUND)
 		add_definitions(-DHAVE_PULSEAUDIO=1)
 		message("PulseAudio found, enabling PulseAudio sound backend")
@@ -398,27 +405,12 @@ if(NOT ANDROID)
 		message("OpenAL NOT found, disabling OpenAL sound backend")
 	endif(OPENAL_FOUND)
 
-	if(UNIX AND NOT APPLE)
-		# Note: The convention is to check USE_X11 or USE_WAYLAND where needed.
-		# This is where we detect platforms and set the variables accordingly.
-		pkg_check_modules(WAYLAND wayland-egl wayland-client wayland-cursor)
-		if(USE_WAYLAND AND WAYLAND_FOUND)
-			pkg_check_modules(XKBCOMMON xkbcommon)
-			if(XKBCOMMON_FOUND)
-				set(USE_WAYLAND 1)
-				add_definitions(-DHAVE_WAYLAND)
-				include_directories(${WAYLAND_INCLUDE_DIR})
-				message("Wayland support enabled")
-			endif(XKBCOMMON_FOUND)
-		else()
-			set(USE_WAYLAND 0)
-			message("Wayland support disabled")
-			add_definitions(-DHAVE_WAYLAND=0)
-		endif(USE_WAYLAND AND WAYLAND_FOUND)
+	set(USE_X11 0)
 
+	if(UNIX AND NOT APPLE)
 		# Note: We do not need to explicitly check for X11 as it is done in the cmake
 		# FindOpenGL module on linux.
-		if(USE_X11 AND X11_FOUND)
+		if(TRY_X11 AND X11_FOUND)
 			set(USE_X11 1)
 			add_definitions(-DHAVE_X11=1)
 			include_directories(${X11_INCLUDE_DIR})
@@ -428,12 +420,12 @@ if(NOT ANDROID)
 			SET(X11_FOUND "")
 			message("X11 support disabled")
 			add_definitions(-DHAVE_X11=0)
-		endif(USE_X11 AND X11_FOUND)
+		endif(TRY_X11 AND X11_FOUND)
 
-		if (NOT USE_WAYLAND AND NOT USE_X11)
+		if (NOT USE_X11)
 			message(FATAL_ERROR "\n"
 				"No suitable display platform found\n"
-				"Requires wayland or x11 to run")
+				"Requires x11 to run")
 		endif()
 	endif()
 
@@ -484,6 +476,11 @@ if(NOT ANDROID)
 	endif()
 endif()
 
+if(USE_EGL)
+	message("EGL OpenGL interface enabled")
+	add_definitions(-DUSE_EGL=1)
+endif()
+
 ########################################
 # Setup include directories (and make sure they are preferred over the Externals)
 #
@@ -497,10 +494,25 @@ include_directories(Source/Core)
 #   - make sure to tell cmake to link them statically or dynamically (most
 #     should be linked statically)
 #   - place the CMakeLists.txt in the first-level subdirectory, e.g.
-#     Externals/CLRun/CMakeLists.txt (that is: NOT in some Src/ subdirectory)
+#     Externals/zlib/CMakeLists.txt (that is: NOT in some Src/ subdirectory)
 #
 add_subdirectory(Externals/Bochs_disasm)
 include_directories(Externals/Bochs_disasm)
+
+# If zlib has already been found on a previous run of cmake don't check again
+# as the check seems to take a long time.
+if(NOT ZLIB_FOUND)
+	include(FindZLIB OPTIONAL)
+endif()
+if(ZLIB_FOUND)
+	set(ZLIB_FOUND 1 CACHE INTERNAL "")
+	message("Using shared zlib")
+	include_directories(${ZLIB_INCLUDE_DIRS})
+else(ZLIB_FOUND)
+	message("Shared zlib not found, falling back to the static library")
+	add_subdirectory(Externals/zlib)
+	include_directories(Externals/zlib)
+endif(ZLIB_FOUND)
 
 if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin" AND NOT ANDROID)
 	check_lib(LZO lzo2 lzo/lzo1x.h QUIET)
@@ -514,16 +526,21 @@ else()
 	set(LZO lzo2)
 endif()
 
-if(ANDROID)
+if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin" AND NOT ANDROID)
+	check_lib(PNG png png.h QUIET)
+endif()
+if (PNG_FOUND)
+	message("Using shared libpng")
+else()
 	message("Using static libpng from Externals")
 	add_subdirectory(Externals/libpng)
 	include_directories(Externals/libpng)
-	set(PNG libpng)
+	set(PNG png)
 endif()
 
 if(OPENAL_FOUND)
 	if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-		check_lib(SOUNDTOUCH SoundTouch soundtouch/soundtouch.h QUIET)
+		check_lib(SOUNDTOUCH SoundTouch soundtouch/SoundTouch.h QUIET)
 	endif()
 	if (SOUNDTOUCH_FOUND)
 		message("Using shared soundtouch")
@@ -540,6 +557,7 @@ if(NOT ANDROID)
 	endif()
 	if(SDL2_FOUND)
 		message("Using shared SDL2")
+		add_definitions(-DHAVE_SDL=1)
 		include_directories(${SDL2_INCLUDE_DIR})
 	else(SDL2_FOUND)
 		# SDL2 not found, try SDL
@@ -548,12 +566,11 @@ if(NOT ANDROID)
 		endif()
 		if(SDL_FOUND)
 			message("Using shared SDL")
+			add_definitions(-DHAVE_SDL=1)
 			include_directories(${SDL_INCLUDE_DIR})
 		else(SDL_FOUND)
-			# TODO: Use the prebuilt one on Windows
-			message("Using static SDL from Externals")
-			include_directories(Externals/SDL/SDL Externals/SDL Externals/SDL/include)
-			add_subdirectory(Externals/SDL)
+			message("SDL NOT found, disabling SDL input")
+			add_definitions(-DHAVE_SDL=0)
 		endif(SDL_FOUND)
 	endif(SDL2_FOUND)
 endif()
@@ -576,7 +593,7 @@ if(SFML_FOUND AND NOT SFML_VERSION_MAJOR) # SFML 1.x doesn't define SFML_VERSION
 else()
 	message("Using static SFML ${SFML_FIND_VERSION_MAJOR}.${SFML_FIND_VERSION_MINOR} from Externals")
 	add_subdirectory(Externals/SFML)
-	include_directories(Externals/SFML/include)
+	include_directories(BEFORE Externals/SFML/include)
 endif()
 
 if(USE_UPNP)
@@ -618,49 +635,15 @@ else()
 	include_directories(Externals/SOIL)
 endif()
 
-# If zlib has already been found on a previous run of cmake don't check again
-# as the check seems to take a long time.
-if(NOT ZLIB_FOUND)
-	include(FindZLIB OPTIONAL)
-endif()
-if(ZLIB_FOUND)
-	set(ZLIB_FOUND 1 CACHE INTERNAL "")
-	message("Using shared zlib")
-	include_directories(${ZLIB_INCLUDE_DIRS})
-else(ZLIB_FOUND)
-	message("Shared zlib not found, falling back to the static library")
-	add_subdirectory(Externals/zlib)
-	include_directories(Externals/zlib)
-endif(ZLIB_FOUND)
-
-if(WIN32)
-	find_library(GLEW glew32s PATHS Externals/GLew)
-	include_directories(Externals/GLew/include)
-else()
-	if(NOT USE_GLES3)
-		if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-			include(FindGLEW)
-		endif()
-		if(NOT GLEW_FOUND OR NOT GLEW_HAS_1_9_METHODS)
-			message("Using static GLEW from Externals")
-			add_subdirectory(Externals/GLew)
-			include_directories(Externals/GLew/include)
-		endif()
-	endif()
-endif()
-
 if (ANDROID)
 	message("Using static iconv from Externals")
 	include_directories(Externals/libiconv-1.14/include)
 	add_subdirectory(Externals/libiconv-1.14)
 endif()
 
-if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin" AND NOT ANDROID)
-	find_library(CL OpenCL)
-	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-weak_framework,OpenCL")
-else()
-	include_directories(Externals/CLRun/include)
-	add_subdirectory(Externals/CLRun)
+if(ENABLE_QT)
+	find_package(Qt5Widgets REQUIRED)
+	message("Found Qt version ${Qt5Core_VERSION}, enabling the Qt backend")
 endif()
 
 if(NOT DISABLE_WX AND NOT ANDROID)
@@ -676,10 +659,8 @@ if(NOT DISABLE_WX AND NOT ANDROID)
 			ERROR_QUIET
 			)
 		message("Found wxWidgets version ${wxWidgets_VERSION}")
-		if(UNIX AND NOT APPLE)
-			set(wxMIN_VERSION "2.9.3")
-		else()
-			set(wxMIN_VERSION "2.9.4")
+		if(UNIX)
+			set(wxMIN_VERSION "3.0.0")
 		endif()
 		if(${wxWidgets_VERSION} VERSION_LESS ${wxMIN_VERSION})
 			message("At least ${wxMIN_VERSION} is required; ignoring found version")
@@ -750,13 +731,23 @@ else()
 	set(DOLPHIN_WC_IS_MASTER "0")
 endif()
 
-file(WRITE ${PROJECT_BINARY_DIR}/Source/Core/Common/Src/scmrev.h
+file(WRITE ${PROJECT_BINARY_DIR}/Source/Core/Common/scmrev.h
 	"#define SCM_REV_STR \"" ${DOLPHIN_WC_REVISION} "\"\n"
 	"#define SCM_DESC_STR \"" ${DOLPHIN_WC_DESCRIBE} "\"\n"
 	"#define SCM_BRANCH_STR \"" ${DOLPHIN_WC_BRANCH} "\"\n"
 	"#define SCM_IS_MASTER " ${DOLPHIN_WC_IS_MASTER} "\n"
 	)
-include_directories("${PROJECT_BINARY_DIR}/Source/Core/Common/Src")
+include_directories("${PROJECT_BINARY_DIR}/Source/Core/Common")
+
+########################################
+# Unit testing.
+#
+include_directories(Externals/gtest/include)
+add_subdirectory(Externals/gtest)
+
+enable_testing()
+add_custom_target(unittests)
+add_custom_command(TARGET unittests POST_BUILD COMMAND ${CMAKE_CTEST_COMMAND})
 
 
 ########################################
@@ -777,9 +768,9 @@ if((NOT ${CMAKE_SYSTEM_NAME} MATCHES "Linux|FreeBSD|Darwin"))
 endif()
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 	# Install the application icon and menu item
-	install(FILES Source/Core/DolphinWX/resources/Dolphin.xpm
-		DESTINATION ${CMAKE_INSTALL_PREFIX}/share/pixmaps RENAME dolphin-emu.xpm)
-	install(FILES Source/Core/DolphinWX/resources/dolphin-emu.desktop
+	install(FILES Installer/dolphin-emu.xpm
+		DESTINATION ${CMAKE_INSTALL_PREFIX}/share/pixmaps)
+	install(FILES Installer/dolphin-emu.desktop
 		DESTINATION ${CMAKE_INSTALL_PREFIX}/share/applications)
 endif()
 
@@ -790,7 +781,7 @@ set(CPACK_PACKAGE_VERSION_MAJOR ${DOLPHIN_VERSION_MAJOR})
 set(CPACK_PACKAGE_VERSION_MINOR ${DOLPHIN_VERSION_MINOR})
 set(CPACK_PACKAGE_VERSION_PATCH ${DOLPHIN_VERSION_PATCH})
 set(CPACK_PACKAGE_DESCRIPTION_FILE ${PROJECT_SOURCE_DIR}/Data/cpack_package_description.txt)
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "A Gamecube, Wii and Triforce emulator")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "A GameCube, Wii and Triforce emulator")
 
 set(CPACK_RPM_PACKAGE_GROUP System/Emulators/Other)
 set(CPACK_RPM_PACKAGE_LICENSE GPL-2.0)
@@ -808,3 +799,4 @@ list(APPEND CPACK_SOURCE_IGNORE_FILES "${CMAKE_BINARY_DIR}")
 # CPack must be included after the CPACK_* variables are set in order for those
 # variables to take effect.
 Include(CPack)
+

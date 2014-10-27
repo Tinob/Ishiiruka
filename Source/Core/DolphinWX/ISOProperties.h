@@ -48,12 +48,12 @@ class CISOProperties : public wxDialog
 {
 public:
 	CISOProperties(const std::string fileName,
-		wxWindow* parent,
-		wxWindowID id = 1,
-		const wxString& title = _("Properties"),
-		const wxPoint& pos = wxDefaultPosition,
-		const wxSize& size = wxDefaultSize,
-		long style = wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER);
+			wxWindow* parent,
+			wxWindowID id = 1,
+			const wxString& title = _("Properties"),
+			const wxPoint& pos = wxDefaultPosition,
+			const wxSize& size = wxDefaultSize,
+			long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER);
 	virtual ~CISOProperties();
 
 	bool bRefreshList;
@@ -67,13 +67,12 @@ private:
 	DECLARE_EVENT_TABLE();
 
 	// Core
-	wxCheckBox *CPUThread, *SkipIdle, *MMU, *DCBZOFF, *TLBHack;
+	wxCheckBox *CPUThread, *SkipIdle, *MMU, *BAT, *DCBZOFF, *FPRF;
 	wxCheckBox *VBeam, *SyncGPU, *FastDiscSpeed, *BlockMerging, *DSPHLE;
 	// Wii
 	wxCheckBox *EnableWideScreen;
 	// Video
 	wxCheckBox *PHackEnable, *UseBBox;
-	wxButton *PHSettings;
 
 	wxArrayString arrayStringFor_EmuState;
 	wxChoice *EmuState;
@@ -129,15 +128,12 @@ private:
 		ID_IDLESKIP,
 		ID_MMU,
 		ID_DCBZOFF,
-		ID_TLBHACK,
 		ID_VBEAM,
 		ID_SYNCGPU,
 		ID_DISCSPEED,
 		ID_MERGEBLOCKS,
 		ID_AUDIO_DSP_HLE,
 		ID_USE_BBOX,
-		ID_PHACKENABLE,
-		ID_PHSETTINGS,
 		ID_ENABLEPROGRESSIVESCAN,
 		ID_ENABLEWIDESCREEN,
 		ID_EDITCONFIG,
@@ -198,7 +194,6 @@ private:
 	void CheckPartitionIntegrity(wxCommandEvent& event);
 	void SetRefresh(wxCommandEvent& event);
 	void OnChangeBannerLang(wxCommandEvent& event);
-	void PHackButtonClicked(wxCommandEvent& event);
 
 	GameListItem *OpenGameListItem;
 
@@ -206,11 +201,11 @@ private:
 	typedef std::vector<const DiscIO::SFileInfo *>::iterator fileIter;
 
 	size_t CreateDirectoryTree(wxTreeItemId& parent,
-		std::vector<const DiscIO::SFileInfo*> fileInfos,
-		const size_t _FirstIndex,
-		const size_t _LastIndex);
+			std::vector<const DiscIO::SFileInfo*> fileInfos,
+			const size_t _FirstIndex,
+			const size_t _LastIndex);
 	void ExportDir(const std::string& _rFullPath, const std::string& _rExportFilename,
-		const int partitionNum = 0);
+			const int partitionNum = 0);
 
 	IniFile GameIniDefault;
 	IniFile GameIniLocal;

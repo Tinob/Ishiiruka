@@ -4,6 +4,7 @@
 
 #include <algorithm>
 
+#include "Core/Core.h"
 #include "Core/Movie.h"
 #include "Core/NetPlayProto.h"
 #include "Core/IPC_HLE/WII_IPC_HLE.h"
@@ -424,7 +425,9 @@ void WiiSocket::Update(bool read, bool write, bool except)
 
 					u32 flags = Memory::Read_U32(BufferIn2 + 0x04);
 					u32 has_destaddr = Memory::Read_U32(BufferIn2 + 0x08);
-					char * data = (char*)Memory::GetPointer(BufferIn);
+
+                                        // Not a string, windows requires a const char* for sendto
+					const char* data = (const char*)Memory::GetPointer(BufferIn);
 
 					// Act as non blocking when SO_MSG_NONBLOCK is specified
 					forceNonBlock = ((flags & SO_MSG_NONBLOCK) == SO_MSG_NONBLOCK);
@@ -458,7 +461,8 @@ void WiiSocket::Update(bool read, bool write, bool except)
 				case IOCTLV_SO_RECVFROM:
 				{
 					u32 flags = Memory::Read_U32(BufferIn + 0x04);
-					char * data = (char *)Memory::GetPointer(BufferOut);
+					// Not a string, windows requires a char* for recvfrom
+					char* data = (char*)Memory::GetPointer(BufferOut);
 					int data_len = BufferOutSize;
 
 					sockaddr_in local_name;

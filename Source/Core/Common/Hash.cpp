@@ -226,11 +226,12 @@ u64 GetMurmurHash3(const u8 *src, int len, u32 samples)
 	return h1;
 }
 
+
 // CRC32 hash using the SSE4.2 instruction
 u64 GetCRC32(const u8 *src, int len, u32 samples)
 {
 #if _M_SSE >= 0x402
-		u64 h[4] = { len, 0, 0, 0 };
+	u64 h[4] = { len, 0, 0, 0 };
 	u32 Step = (len / 8);
 	const u64 *data = (const u64 *)src;
 	const u64 *end = data + Step;
@@ -251,11 +252,13 @@ u64 GetCRC32(const u8 *src, int len, u32 samples)
 		h[1] = _mm_crc32_u64(h[1], data[Step * 1]);
 	if (data < end - Step * 2)
 		h[2] = _mm_crc32_u64(h[2], data[Step * 2]);
+
 	const u8 *data2 = (const u8*)end;
+	// FIXME: is there a better way to combine these partial hashes?
 	h[0] = _mm_crc32_u64(h[0], u64(data2[0]));
 	return h[0] + (h[1] << 10) + (h[2] << 21) + (h[3] << 32);
 #else
-return 0;
+	return 0;
 #endif
 }
 

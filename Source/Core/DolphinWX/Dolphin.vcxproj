@@ -57,10 +57,13 @@
   <ItemGroup>
     <ClCompile Include="AboutDolphin.cpp" />
     <ClCompile Include="ARCodeAddEdit.cpp" />
+    <ClCompile Include="Cheats\CheatSearchTab.cpp" />
+    <ClCompile Include="Cheats\CheatsWindow.cpp" />
+    <ClCompile Include="Cheats\CreateCodeDialog.cpp" />
+    <ClCompile Include="Cheats\GeckoCodeDiag.cpp" />
     <ClCompile Include="Debugger\BreakpointDlg.cpp" />
     <ClCompile Include="Debugger\BreakpointView.cpp" />
     <ClCompile Include="Debugger\BreakpointWindow.cpp" />
-    <ClCompile Include="CheatsWindow.cpp" />
     <ClCompile Include="Debugger\CodeView.cpp" />
     <ClCompile Include="Debugger\CodeWindow.cpp" />
     <ClCompile Include="Debugger\CodeWindowFunctions.cpp" />
@@ -74,7 +77,6 @@
     <ClCompile Include="FrameAui.cpp" />
     <ClCompile Include="FrameTools.cpp" />
     <ClCompile Include="GameListCtrl.cpp" />
-    <ClCompile Include="GeckoCodeDiag.cpp" />
     <ClCompile Include="HotkeyDlg.cpp" />
     <ClCompile Include="InputConfigDiag.cpp" />
     <ClCompile Include="InputConfigDiagBitmaps.cpp" />
@@ -104,13 +106,16 @@
     <ClCompile Include="WxUtils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Cheats\CheatSearchTab.h" />
+    <ClInclude Include="Cheats\CheatsWindow.h" />
+    <ClInclude Include="Cheats\CreateCodeDialog.h" />
+    <ClInclude Include="Cheats\GeckoCodeDiag.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="AboutDolphin.h" />
     <ClInclude Include="ARCodeAddEdit.h" />
     <ClInclude Include="Debugger\BreakpointDlg.h" />
     <ClInclude Include="Debugger\BreakpointView.h" />
     <ClInclude Include="Debugger\BreakpointWindow.h" />
-    <ClInclude Include="CheatsWindow.h" />
     <ClInclude Include="Debugger\CodeView.h" />
     <ClInclude Include="Debugger\CodeWindow.h" />
     <ClInclude Include="ConfigMain.h" />
@@ -121,7 +126,6 @@
     <ClInclude Include="FifoPlayerDlg.h" />
     <ClInclude Include="Frame.h" />
     <ClInclude Include="GameListCtrl.h" />
-    <ClInclude Include="GeckoCodeDiag.h" />
     <ClInclude Include="Globals.h" />
     <ClInclude Include="HotkeyDlg.h" />
     <ClInclude Include="InputConfigDiag.h" />

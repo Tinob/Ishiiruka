@@ -172,6 +172,7 @@ void SConfig::SaveGeneralSettings(IniFile& ini)
 	// General
 	general->Set("LastFilename", m_LastFilename);
 	general->Set("ShowLag", m_ShowLag);
+	general->Set("ShowFrameCount", m_ShowFrameCount);
 
 	// ISO folders
 	// Clear removed folders
@@ -326,6 +327,8 @@ void SConfig::SaveMovieSettings(IniFile& ini)
 
 	movie->Set("PauseMovie", m_PauseMovie);
 	movie->Set("Author", m_strMovieAuthor);
+	movie->Set("DumpFrames", m_DumpFrames);
+	movie->Set("ShowInputDisplay", m_ShowInputDisplay);
 }
 
 void SConfig::SaveDSPSettings(IniFile& ini)
@@ -379,6 +382,7 @@ void SConfig::LoadGeneralSettings(IniFile& ini)
 
 	general->Get("LastFilename", &m_LastFilename);
 	general->Get("ShowLag", &m_ShowLag, false);
+	general->Get("ShowFrameCount", &m_ShowFrameCount, false);
 #ifdef USE_GDBSTUB
 	general->Get("GDBPort", &(m_LocalCoreStartupParameter.iGDBPort), -1);
 #endif
@@ -497,11 +501,11 @@ void SConfig::LoadCoreSettings(IniFile& ini)
 
 	core->Get("HLE_BS2",      &m_LocalCoreStartupParameter.bHLE_BS2, false);
 #ifdef _M_X86
-	core->Get("CPUCore",      &m_LocalCoreStartupParameter.iCPUCore, 1);
+	core->Get("CPUCore",      &m_LocalCoreStartupParameter.iCPUCore, SCoreStartupParameter::CORE_JIT64);
 #elif _M_ARM_32
-	core->Get("CPUCore",      &m_LocalCoreStartupParameter.iCPUCore, 3);
+	core->Get("CPUCore",      &m_LocalCoreStartupParameter.iCPUCore, SCoreStartupParameter::CORE_JITARM);
 #else
-	core->Get("CPUCore",      &m_LocalCoreStartupParameter.iCPUCore, 0);
+	core->Get("CPUCore",      &m_LocalCoreStartupParameter.iCPUCore, SCoreStartupParameter::CORE_INTERPRETER);
 #endif
 	core->Get("Fastmem",           &m_LocalCoreStartupParameter.bFastmem,      true);
 	core->Get("DSPThread",         &m_LocalCoreStartupParameter.bDSPThread,    false);
@@ -535,7 +539,6 @@ void SConfig::LoadCoreSettings(IniFile& ini)
 	core->Get("RunCompareServer",          &m_LocalCoreStartupParameter.bRunCompareServer, false);
 	core->Get("RunCompareClient",          &m_LocalCoreStartupParameter.bRunCompareClient, false);
 	core->Get("MMU",                       &m_LocalCoreStartupParameter.bMMU,              false);
-	core->Get("TLBHack",                   &m_LocalCoreStartupParameter.bTLBHack,          false);
 	core->Get("BBDumpPort",                &m_LocalCoreStartupParameter.iBBDumpPort,       -1);
 	core->Get("VBeam",                     &m_LocalCoreStartupParameter.bVBeamSpeedHack,   false);
 	core->Get("SyncGPU",                   &m_LocalCoreStartupParameter.bSyncGPU,          false);
@@ -543,7 +546,7 @@ void SConfig::LoadCoreSettings(IniFile& ini)
 	core->Get("DCBZ",                      &m_LocalCoreStartupParameter.bDCBZOFF,          false);
 	core->Get("FrameLimit",                &m_Framelimit,                                  1); // auto frame limit by default
 	core->Get("FrameSkip",                 &m_FrameSkip,                                   0);
-	core->Get("GFXBackend",                &m_LocalCoreStartupParameter.m_strVideoBackend, "");	
+	core->Get("GFXBackend",                &m_LocalCoreStartupParameter.m_strVideoBackend, "");
 }
 
 void SConfig::LoadMovieSettings(IniFile& ini)
@@ -552,6 +555,8 @@ void SConfig::LoadMovieSettings(IniFile& ini)
 
 	movie->Get("PauseMovie", &m_PauseMovie, false);
 	movie->Get("Author", &m_strMovieAuthor, "");
+	movie->Get("DumpFrames", &m_DumpFrames, false);
+	movie->Get("ShowInputDisplay", &m_ShowInputDisplay, false);
 }
 
 void SConfig::LoadDSPSettings(IniFile& ini)

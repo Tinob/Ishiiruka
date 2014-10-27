@@ -62,12 +62,13 @@ struct CPUCore
 };
 const CPUCore CPUCores[] = {
 	{0, wxTRANSLATE("Interpreter (VERY slow)")},
-#ifdef _M_ARM
-	{3, wxTRANSLATE("Arm JIT (experimental)")},
-	{4, wxTRANSLATE("Arm JITIL (experimental)")},
-#else
+#ifdef _M_X86_64
 	{1, wxTRANSLATE("JIT Recompiler (recommended)")},
 	{2, wxTRANSLATE("JITIL Recompiler (slower, experimental)")},
+#elif defined(_M_ARM_32)
+	{3, wxTRANSLATE("Arm JIT (experimental)")},
+#elif defined(_M_ARM_64)
+	{4, wxTRANSLATE("Arm64 JIT (experimental)")},
 #endif
 };
 
@@ -708,6 +709,18 @@ void CConfigMain::CreateGUIControls()
 	// IPL settings
 	GCSystemLang = new wxChoice(GamecubePage, ID_GC_SRAM_LNG, wxDefaultPosition, wxDefaultSize, arrayStringFor_GCSystemLang);
 	GCAlwaysHLE_BS2 = new wxCheckBox(GamecubePage, ID_GC_ALWAYS_HLE_BS2, _("Skip BIOS"));
+
+	if (!File::Exists(File::GetUserPath(D_GCUSER_IDX) + DIR_SEP + USA_DIR + DIR_SEP GC_IPL) &&
+	    !File::Exists(File::GetSysDirectory() + GC_SYS_DIR + DIR_SEP + USA_DIR + DIR_SEP GC_IPL) &&
+	    !File::Exists(File::GetUserPath(D_GCUSER_IDX) + DIR_SEP + JAP_DIR + DIR_SEP GC_IPL) &&
+	    !File::Exists(File::GetSysDirectory() + GC_SYS_DIR + DIR_SEP + JAP_DIR + DIR_SEP GC_IPL) &&
+	    !File::Exists(File::GetUserPath(D_GCUSER_IDX) + DIR_SEP + EUR_DIR + DIR_SEP GC_IPL) &&
+	    !File::Exists(File::GetSysDirectory() + GC_SYS_DIR + DIR_SEP + EUR_DIR + DIR_SEP GC_IPL))
+	{
+		GCAlwaysHLE_BS2->Disable();
+		GCAlwaysHLE_BS2->SetToolTip(_("Put BIOS roms in User/GC/{region}."));
+	}
+
 	// Device settings
 	// EXI Devices
 	wxStaticText* GCEXIDeviceText[3];
@@ -883,33 +896,36 @@ void CConfigMain::OnOk(wxCommandEvent& WXUNUSED (event))
 // Core settings
 void CConfigMain::CoreSettingsChanged(wxCommandEvent& event)
 {
+	SCoreStartupParameter& startup_params = SConfig::GetInstance().m_LocalCoreStartupParameter;
+
 	switch (event.GetId())
 	{
 	// Core - Basic
 	case ID_CPUTHREAD:
 		if (Core::IsRunning())
 			return;
-		SConfig::GetInstance().m_LocalCoreStartupParameter.bCPUThread = CPUThread->IsChecked();
+		startup_params.bCPUThread = CPUThread->IsChecked();
 		break;
 	case ID_IDLESKIP:
-		SConfig::GetInstance().m_LocalCoreStartupParameter.bSkipIdle = SkipIdle->IsChecked();
+		startup_params.bSkipIdle = SkipIdle->IsChecked();
 		break;
 	case ID_ENABLECHEATS:
-		SConfig::GetInstance().m_LocalCoreStartupParameter.bEnableCheats = EnableCheats->IsChecked();
+		startup_params.bEnableCheats = EnableCheats->IsChecked();
 		break;
 	case ID_FRAMELIMIT:
 		SConfig::GetInstance().m_Framelimit = Framelimit->GetSelection();
-		AudioCommon::UpdateSoundStream();
 		break;
 	// Core - Advanced
 	case ID_CPUENGINE:
-		SConfig::GetInstance().m_LocalCoreStartupParameter.iCPUCore = CPUCores[CPUEngine->GetSelection()].CPUid;
+		startup_params.iCPUCore = CPUCores[CPUEngine->GetSelection()].CPUid;
 		if (main_frame->g_pCodeWindow)
-			main_frame->g_pCodeWindow->GetMenuBar()->Check(IDM_INTERPRETER,
-				SConfig::GetInstance().m_LocalCoreStartupParameter.iCPUCore?false:true);
+		{
+			bool using_interp = (startup_params.iCPUCore == SCoreStartupParameter::CORE_INTERPRETER);
+			main_frame->g_pCodeWindow->GetMenuBar()->Check(IDM_INTERPRETER, using_interp);
+		}
 		break;
 	case ID_NTSCJ:
-		SConfig::GetInstance().m_LocalCoreStartupParameter.bForceNTSCJ = _NTSCJ->IsChecked();
+		startup_params.bForceNTSCJ = _NTSCJ->IsChecked();
 		break;
 	}
 }

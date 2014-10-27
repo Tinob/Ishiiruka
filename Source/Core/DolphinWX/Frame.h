@@ -273,6 +273,8 @@ private:
 	void OnToggleDumpFrames(wxCommandEvent& event);
 	void OnToggleDumpAudio(wxCommandEvent& event);
 	void OnShowLag(wxCommandEvent& event);
+	void OnShowFrameCount(wxCommandEvent& event);
+	void OnShowInputDisplay(wxCommandEvent& event);
 	void OnChangeDisc(wxCommandEvent& event);
 	void OnScreenshot(wxCommandEvent& event);
 	void OnActive(wxActivateEvent& event);

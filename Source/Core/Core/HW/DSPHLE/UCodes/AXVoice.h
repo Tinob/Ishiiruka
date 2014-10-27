@@ -166,6 +166,11 @@ u16 AcceleratorGetSample()
 				*acc_cur_addr += 2;
 			}
 
+			if ((acc_end_addr & 15) == 0)
+				step_size_bytes = 1;
+			else
+				step_size_bytes = 2;
+
 			int scale = 1 << (acc_pb->adpcm.pred_scale & 0xF);
 			int coef_idx = (acc_pb->adpcm.pred_scale >> 4) & 0x7;
 
@@ -184,7 +189,6 @@ u16 AcceleratorGetSample()
 
 			acc_pb->adpcm.yn2 = acc_pb->adpcm.yn1;
 			acc_pb->adpcm.yn1 = val;
-			step_size_bytes = 2;
 			*acc_cur_addr += 1;
 			ret = val;
 			break;
@@ -202,7 +206,7 @@ u16 AcceleratorGetSample()
 			ret = DSP::ReadARAM(*acc_cur_addr) << 8;
 			acc_pb->adpcm.yn2 = acc_pb->adpcm.yn1;
 			acc_pb->adpcm.yn1 = ret;
-			step_size_bytes = 1;
+			step_size_bytes = 2;
 			*acc_cur_addr += 1;
 			break;
 
@@ -426,6 +430,7 @@ void MixAdd(int* out, const s16* input, u32 count, u16* pvol, s16* dpop, bool ra
 		s64 sample = input[i];
 		sample *= volume;
 		sample >>= 15;
+		sample = MathUtil::Clamp((s32)sample, -32767, 32767);	// -32768 ?
 
 		out[i] += (s16)sample;
 		volume += volume_delta;
@@ -458,7 +463,7 @@ void ProcessVoice(PB_TYPE& pb, const AXBuffers& buffers, u16 count, AXMixControl
 	// Apply a global volume ramp using the volume envelope parameters.
 	for (u32 i = 0; i < count; ++i)
 	{
-		samples[i] = ((s32)samples[i] * pb.vol_env.cur_volume) >> 15;
+		samples[i] = MathUtil::Clamp(((s32)samples[i] * pb.vol_env.cur_volume) >> 15, -32767, 32767);	// -32768 ?
 		pb.vol_env.cur_volume += pb.vol_env.cur_volume_delta;
 	}
 
