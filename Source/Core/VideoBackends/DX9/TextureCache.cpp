@@ -92,7 +92,7 @@ void TextureCache::TCacheEntry::ReplaceTexture(const u8* src, u32 width, u32 hei
 		s_memPoolTextureH[pcformat] = std::max(height, s_memPoolTextureH[pcformat]);
 		s_memPoolTexture[pcformat] = D3D::CreateTexture2D(s_memPoolTextureW[pcformat], s_memPoolTextureH[pcformat], d3d_fmt, 1, D3DPOOL_SYSTEMMEM);
 	}
-	D3D::ReplaceTexture2D(s_memPoolTexture[pcformat], src, width, height, expanded_width, d3d_fmt, swap_r_b, 0);
+	D3D::ReplaceTexture2D(s_memPoolTexture[pcformat], src, width, height, expanded_width, d3d_fmt, swap_r_b);
 	PDIRECT3DSURFACE9 srcsurf;
 	s_memPoolTexture[pcformat]->GetSurfaceLevel(0, &srcsurf);
 	PDIRECT3DSURFACE9 dstsurface;
@@ -239,7 +239,6 @@ PC_TexFormat TextureCache::GetNativeTextureFormat(const s32 texformat, const s32
 TextureCache::TCacheEntryBase* TextureCache::CreateTexture(u32 width, u32 height,
 	u32 expanded_width, u32 tex_levels, PC_TexFormat pcfmt)
 {
-	
 	// if no rgba support so swap is needed
 	bool swap_r_b = !g_ActiveConfig.backend_info.bSupportedFormats[PC_TEX_FMT_RGBA32] && pcfmt == PC_TEX_FMT_RGBA32;
 	D3DFORMAT d3d_fmt = swap_r_b ? D3DFMT_A8R8G8B8 : PC_TexFormat_To_D3DFORMAT[pcfmt];

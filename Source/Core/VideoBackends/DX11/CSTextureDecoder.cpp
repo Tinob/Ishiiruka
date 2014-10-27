@@ -283,13 +283,8 @@ void CSTextureDecoder::Init()
 {
 	m_ready = false;
 
-		
-	
-	HRESULT hr;
-
-	auto rawBd = CD3D11_BUFFER_DESC(2<<20,D3D11_BIND_SHADER_RESOURCE);
-	
-	hr = D3D::device->CreateBuffer(&rawBd, nullptr, ToAddr(m_rawDataRsc));
+	auto rawBd = CD3D11_BUFFER_DESC(2<<20,D3D11_BIND_SHADER_RESOURCE);	
+	HRESULT hr = D3D::device->CreateBuffer(&rawBd, nullptr, ToAddr(m_rawDataRsc));
 	CHECK(SUCCEEDED(hr), "create texture decoder input buffer");
 	D3D::SetDebugObjectName(m_rawDataRsc.get(), "texture decoder input buffer");
 	auto outUavDesc = CD3D11_SHADER_RESOURCE_VIEW_DESC(m_rawDataRsc.get(),DXGI_FORMAT_R32_UINT,0,(2<<20)/4,0);
