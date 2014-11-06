@@ -458,7 +458,6 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 			}
 			else
 			{
-				texLevels = nummipsinbuffer;
 				using_custom_lods = true;
 			}
 		}
@@ -559,6 +558,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 		{
 			if (nummipsinbuffer > 0)
 			{
+				texLevels = std::min(texLevels, nummipsinbuffer);
 				TextureCache::bufferstart += TextureUtil::GetTextureSizeInBytes(width, height, pcfmt);
 			}
 			for (; level != texLevels; ++level)

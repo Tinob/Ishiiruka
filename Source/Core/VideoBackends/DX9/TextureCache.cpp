@@ -81,6 +81,7 @@ void TextureCache::TCacheEntry::ReplaceTexture(const u8* src, u32 width, u32 hei
 	u32 expanded_width, u32 level)
 {
 	d3d_fmt = PC_TexFormat_To_D3DFORMAT[pcformat];
+	d3d_fmt = swap_r_b ? D3DFMT_A8R8G8B8 : d3d_fmt;
 	if (s_memPoolTexture[pcformat] == nullptr || width > s_memPoolTextureW[pcformat] || height > s_memPoolTextureH[pcformat])
 	{
 		if (s_memPoolTexture[pcformat] != nullptr)
