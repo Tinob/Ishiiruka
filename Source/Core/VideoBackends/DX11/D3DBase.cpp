@@ -127,6 +127,10 @@ std::vector<DXGI_SAMPLE_DESC> EnumAAModes(IDXGIAdapter* adapter)
 	ID3D11DeviceContext* context;
 	D3D_FEATURE_LEVEL feat_level;
 	HRESULT hr = PD3D11CreateDevice(adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, D3D11_CREATE_DEVICE_SINGLETHREADED, supported_feature_levels, NUM_SUPPORTED_FEATURE_LEVELS, D3D11_SDK_VERSION, &device, &feat_level, &context);
+	if (FAILED(hr))
+	{
+		hr = PD3D11CreateDevice(adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, D3D11_CREATE_DEVICE_SINGLETHREADED, &supported_feature_levels[1] , NUM_SUPPORTED_FEATURE_LEVELS - 1, D3D11_SDK_VERSION, &device, &feat_level, &context);
+	}
 	if (FAILED(hr) || feat_level == D3D_FEATURE_LEVEL_10_0)
 	{
 		DXGI_SAMPLE_DESC desc;
@@ -158,7 +162,11 @@ std::vector<DXGI_SAMPLE_DESC> EnumAAModes(IDXGIAdapter* adapter)
 D3D_FEATURE_LEVEL GetFeatureLevel(IDXGIAdapter* adapter)
 {
 	D3D_FEATURE_LEVEL feat_level = D3D_FEATURE_LEVEL_9_1;
-	PD3D11CreateDevice(adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, D3D11_CREATE_DEVICE_SINGLETHREADED, supported_feature_levels, NUM_SUPPORTED_FEATURE_LEVELS, D3D11_SDK_VERSION, nullptr, &feat_level, nullptr);
+	HRESULT hr = PD3D11CreateDevice(adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, D3D11_CREATE_DEVICE_SINGLETHREADED, supported_feature_levels, NUM_SUPPORTED_FEATURE_LEVELS, D3D11_SDK_VERSION, nullptr, &feat_level, nullptr);
+	if (FAILED(hr))
+	{
+		hr = PD3D11CreateDevice(adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, D3D11_CREATE_DEVICE_SINGLETHREADED, &supported_feature_levels[1], NUM_SUPPORTED_FEATURE_LEVELS - 1, D3D11_SDK_VERSION, nullptr, &feat_level, nullptr);
+	}
 	return feat_level;
 }
 
@@ -295,6 +303,14 @@ HRESULT Create(HWND wnd)
 			supported_feature_levels, NUM_SUPPORTED_FEATURE_LEVELS,
 			D3D11_SDK_VERSION, &swap_chain_desc, &swapchain, &device,
 			&featlevel, &context);
+		if (FAILED(hr))
+		{
+			hr = PD3D11CreateDeviceAndSwapChain(adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr,
+				D3D11_CREATE_DEVICE_SINGLETHREADED,
+				&supported_feature_levels[1], NUM_SUPPORTED_FEATURE_LEVELS - 1,
+				D3D11_SDK_VERSION, &swap_chain_desc, &swapchain, &device,
+				&featlevel, &context);
+		}
 	}
 
 	if (FAILED(hr))
