@@ -25,11 +25,6 @@ extern NativeVertexFormat *g_nativeVertexFmt;
 namespace DX11
 {
 
-// TODO: Find sensible values for these two
-const u32 MAX_IBUFFER_SIZE = VertexManager::MAXIBUFFERSIZE * sizeof(u16) * 8;
-const u32 MAX_VBUFFER_SIZE = VertexManager::MAXVBUFFERSIZE;
-const u32 MAX_BUFFER_SIZE = (MAX_IBUFFER_SIZE + MAX_VBUFFER_SIZE) / 4;
-
 void VertexManager::CreateDeviceObjects()
 {
 	D3D11_BUFFER_DESC bufdesc = CD3D11_BUFFER_DESC(MAX_BUFFER_SIZE,
