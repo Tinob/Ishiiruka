@@ -97,7 +97,6 @@ static const float LINE_PT_TEX_OFFSETS[8] = {
 	1.f, 
 	1.f
 };
-static Float_4 s_line_pt_params[LINE_PT_OFFSETS_PARAMS_LEN];
 
 inline void DumpBadShaders()
 {
@@ -156,6 +155,8 @@ void VertexManager::CreateDeviceObjects()
 	m_vertex_buffer_cursor = m_vertex_buffer_size;
 	m_current_stride = 0;
 	g_Config.backend_info.bSupportsEarlyZ = !g_ActiveConfig.bFastDepthCalc;
+	VertexShaderManager::EnableDirtyRegions();
+	PixelShaderManager::EnableDirtyRegions();
 }
 
 void VertexManager::DestroyDeviceObjects()
@@ -499,24 +500,22 @@ void VertexManager::SetPLRasterOffsets()
 	float lsizex = lsize * vpWidth;
 	float lsizey = lsize * vpHeight;
 	float ltxoff = LINE_PT_TEX_OFFSETS[bpmem.lineptwidth.lineoff];
-	float* offsets_pointer = (float*)s_line_pt_params;
+	float* offsets_pointer = VertexShaderManager::GetBufferToUpdate(C_PLOFFSETPARAMS, 13);
+	Float_4* line_pt_params = (Float_4*)offsets_pointer;
 	// Fill texture offset Mask
 	for (int i = 0; i < 8; i++)
 	{
 		offsets_pointer[i + 4] = bpmem.texcoords[i].s.point_offset ? 1.0f : 0.0f;
 		offsets_pointer[i + 12] = bpmem.texcoords[i].s.line_offset ? 1.0f : 0.0f;
 	}
-	s_line_pt_params[PLO_POS_POINT_LEFT_TOP] = Float_4(-psizex,  psizey, ptxoff, 0.f);
-	s_line_pt_params[PLO_POS_POINT_LEFT_BOTTOM] = Float_4(-psizex, -psizey, 0.f, ptxoff);
-	s_line_pt_params[PLO_POS_POINT_RIGHT_TOP] = Float_4(psizex,  psizey, ptxoff, ptxoff);
-	s_line_pt_params[PLO_POS_POINT_RIGHT_BOTTOM] = Float_4(psizex, -psizey, ltxoff, 0.f);
-	s_line_pt_params[PLO_POS_LINE_NEGATIVE_X].x = -lsizex;
-	s_line_pt_params[PLO_POS_LINE_NEGATIVE_Y].y = -lsizey;
-	s_line_pt_params[PLO_POS_LINE_POSITIVE_X].x = lsizex;
-	s_line_pt_params[PLO_POS_LINE_POSITIVE_Y].y = lsizey;
-
-	g_renderer->SetMultiVSConstant4fv(C_PLOFFSETPARAMS, LINE_PT_OFFSETS_PARAMS_LEN, offsets_pointer);
-	
+	line_pt_params[PLO_POS_POINT_LEFT_TOP] = Float_4(-psizex, psizey, ptxoff, 0.f);
+	line_pt_params[PLO_POS_POINT_LEFT_BOTTOM] = Float_4(-psizex, -psizey, 0.f, ptxoff);
+	line_pt_params[PLO_POS_POINT_RIGHT_TOP] = Float_4(psizex, psizey, ptxoff, ptxoff);
+	line_pt_params[PLO_POS_POINT_RIGHT_BOTTOM] = Float_4(psizex, -psizey, ltxoff, 0.f);
+	line_pt_params[PLO_POS_LINE_NEGATIVE_X].x = -lsizex;
+	line_pt_params[PLO_POS_LINE_NEGATIVE_Y].y = -lsizey;
+	line_pt_params[PLO_POS_LINE_POSITIVE_X].x = lsizex;
+	line_pt_params[PLO_POS_LINE_POSITIVE_Y].y = lsizey;
 }
 
 void DX9::VertexManager::PrepareShaders(u32 components, const XFRegisters &xfr, const BPMemory &bpm, bool ongputhread)
@@ -692,8 +691,30 @@ void VertexManager::vFlush()
 		// if we use emulation setup the offsets for the vertex shaders
 		SetPLRasterOffsets();
 	}
+	if (VertexShaderManager::IsDirty())
+	{
+		const regionvector & regions = VertexShaderManager::GetDirtyRegions();
+		const float* buffer = VertexShaderManager::GetBuffer();
+		for (size_t i = 0; i < regions.size(); i++)
+		{
+			const std::pair<u32, u32> &region = regions[i];
+			DX9::D3D::dev->SetVertexShaderConstantF(region.first, &buffer[region.first * 4], region.second - region.first + 1);
+		}
+		VertexShaderManager::Clear();
+	}
 	g_Config.backend_info.bSupportsEarlyZ = !g_ActiveConfig.bFastDepthCalc;
 	PixelShaderManager::SetConstants();
+	if (PixelShaderManager::IsDirty())
+	{
+		const regionvector & regions = PixelShaderManager::GetDirtyRegions();
+		const float* buffer = PixelShaderManager::GetBuffer();
+		for (size_t i = 0; i < regions.size(); i++)
+		{
+			const std::pair<u32, u32> &region = regions[i];
+			DX9::D3D::dev->SetPixelShaderConstantF(region.first, &buffer[region.first * 4], region.second - region.first + 1);
+		}
+		PixelShaderManager::Clear();
+	}
 	PrepareDrawBuffers();
 	if(forced_early_z)
 	{

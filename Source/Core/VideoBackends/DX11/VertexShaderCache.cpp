@@ -9,15 +9,12 @@
 #include "VideoCommon/Statistics.h"
 #include "VideoCommon/VertexShaderGen.h"
 #include "VideoCommon/HLSLCompiler.h"
+#include "VideoCommon/VertexShaderManager.h"
 #include "D3DShader.h"
 #include "Globals.h"
 #include "VertexShaderCache.h"
 
 #include "Core/ConfigManager.h"
-
-// See comment near the bottom of this file
-GC_ALIGNED16(float vsconstants[C_VENVCONST_END*4]);
-bool vscbufchanged = true;
 
 namespace DX11 {
 
@@ -46,15 +43,15 @@ ID3D11Buffer* vscbuf = nullptr;
 ID3D11Buffer* &VertexShaderCache::GetConstantBuffer()
 {
 	// TODO: divide the global variables of the generated shaders into about 5 constant buffers to speed this up
-	if (vscbufchanged)
+	if (VertexShaderManager::IsDirty())
 	{
 		D3D11_MAPPED_SUBRESOURCE map;
 		D3D::context->Map(vscbuf, 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
-		memcpy(map.pData, vsconstants, sizeof(vsconstants));
+		const size_t size = sizeof(float) * VertexShaderManager::ConstantBufferSize;
+		memcpy(map.pData, VertexShaderManager::GetBuffer(), size);
 		D3D::context->Unmap(vscbuf, 0);
-		vscbufchanged = false;
-		
-		ADDSTAT(stats.thisFrame.bytesUniformStreamed, sizeof(vsconstants));
+		VertexShaderManager::Clear();
+		ADDSTAT(stats.thisFrame.bytesUniformStreamed, size);
 	}
 	return vscbuf;
 }
@@ -117,7 +114,7 @@ void VertexShaderCache::Init()
 		{ "COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	};
 
-	unsigned int cbsize = ((sizeof(vsconstants))&(~0xf))+0x10; // must be a multiple of 16
+	unsigned int cbsize = VertexShaderManager::ConstantBufferSize * sizeof(float); // is always multiple of 16
 	D3D11_BUFFER_DESC cbdesc = CD3D11_BUFFER_DESC(cbsize, D3D11_BIND_CONSTANT_BUFFER, D3D11_USAGE_DYNAMIC, D3D11_CPU_ACCESS_WRITE);
 	HRESULT hr = D3D::device->CreateBuffer(&cbdesc, NULL, &vscbuf);
 	CHECK(hr==S_OK, "Create vertex shader constant buffer (size=%u)", cbsize);
@@ -158,6 +155,7 @@ void VertexShaderCache::Init()
 		Clear();
 
 	last_entry = NULL;
+	VertexShaderManager::DisableDirtyRegions();
 }
 
 void VertexShaderCache::Clear()
@@ -315,45 +313,4 @@ void VertexShaderCache::InsertByteCode(const VertexShaderUid &uid, D3DBlob&& bco
 	entry->initialized.test_and_set();
 	PushByteCode(uid, std::move(bcodeblob), entry);
 }
-// These are "callbacks" from VideoCommon and thus must be outside namespace DX11.
-// This will have to be changed when we merge.
-
-// maps the constant numbers to float indices in the constant buffer
-void Renderer::SetVSConstant4f(unsigned int const_number, float f1, float f2, float f3, float f4)
-{
-	u32 idx = const_number * 4;
-	vsconstants[idx++] = f1;
-	vsconstants[idx++] = f2;
-	vsconstants[idx++] = f3;
-	vsconstants[idx] = f4;
-	vscbufchanged = true;
-}
-
-void Renderer::SetVSConstant4fv(unsigned int const_number, const float* f)
-{
-	u32 idx = const_number * 4;
-	memcpy(&vsconstants[idx], f, sizeof(float) * 4);
-	vscbufchanged = true;
-}
-
-void Renderer::SetMultiVSConstant3fv(unsigned int const_number, unsigned int count, const float* f)
-{
-	u32 idx = const_number * 4;
-	for (unsigned int i = 0; i < count; i++)
-	{
-		vsconstants[idx++] = *f++;
-		vsconstants[idx++] = *f++;
-		vsconstants[idx++] = *f++;
-		vsconstants[idx++] = 0.f;		
-	}
-	vscbufchanged = true;
-}
-
-void Renderer::SetMultiVSConstant4fv(unsigned int const_number, unsigned int count, const float* f)
-{
-	u32 idx = const_number * 4;
-	memcpy(&vsconstants[idx], f, sizeof(float) * 4 * count);
-	vscbufchanged = true;
-}
-
 }  // namespace DX11

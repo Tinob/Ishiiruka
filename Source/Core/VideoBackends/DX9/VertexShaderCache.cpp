@@ -310,40 +310,4 @@ void VertexShaderCache::InsertByteCode(const VertexShaderUid &uid, const u8 *byt
 	PushByteCode(uid, bytecode, bytecodelen, entry);
 }
 
-
-float VSConstantbuffer[4*C_VENVCONST_END];
-
-void Renderer::SetVSConstant4f(unsigned int const_number, float f1, float f2, float f3, float f4)
-{
-	float* VSConstantbuffer_pointer = &VSConstantbuffer[const_number];
-	VSConstantbuffer_pointer[0] = f1;
-	VSConstantbuffer_pointer[1] = f2;
-	VSConstantbuffer_pointer[2] = f3;
-	VSConstantbuffer_pointer[3] = f4;
-	DX9::D3D::dev->SetVertexShaderConstantF(const_number, VSConstantbuffer_pointer, 1);
-}
-
-void Renderer::SetVSConstant4fv(unsigned int const_number, const float *f)
-{
-	DX9::D3D::dev->SetVertexShaderConstantF(const_number, f, 1);
-}
-
-void Renderer::SetMultiVSConstant3fv(unsigned int const_number, unsigned int count, const float *f)
-{
-	float* VSConstantbuffer_pointer = &VSConstantbuffer[const_number];
-	for (unsigned int i = 0; i < count; i++)
-	{
-		*VSConstantbuffer_pointer++ = *f++;
-		*VSConstantbuffer_pointer++ = *f++;
-		*VSConstantbuffer_pointer++ = *f++;
-		*VSConstantbuffer_pointer++ = 0.f;
-	}
-	DX9::D3D::dev->SetVertexShaderConstantF(const_number, &VSConstantbuffer[const_number], count);
-}
-
-void Renderer::SetMultiVSConstant4fv(unsigned int const_number, unsigned int count, const float *f)
-{
-	DX9::D3D::dev->SetVertexShaderConstantF(const_number, f, count);
-}
-
 }  // namespace DX9

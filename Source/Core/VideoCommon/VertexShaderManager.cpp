@@ -20,6 +20,10 @@
 #include "VideoCommon/VertexManagerBase.h"
 
 #include "VideoCommon/RenderBase.h"
+
+GC_ALIGNED16(float VertexShaderManager::vsconstants[VertexShaderManager::ConstantBufferSize]);
+ConstatBuffer VertexShaderManager::m_buffer(VertexShaderManager::vsconstants, VertexShaderManager::ConstantBufferSize);
+
 float GC_ALIGNED16(g_fProjectionMatrix[16]);
 
 // track changes
@@ -43,26 +47,6 @@ void UpdateViewport(Matrix44& vpCorrection);
 void UpdateViewportWithCorrection()
 {
 	UpdateViewport(s_viewportCorrection);
-}
-
-inline void SetVSConstant4f(unsigned int const_number, float f1, float f2, float f3, float f4)
-{
-	g_renderer->SetVSConstant4f(const_number, f1, f2, f3, f4);
-}
-
-inline void SetVSConstant4fv(unsigned int const_number, const float *f)
-{
-	g_renderer->SetVSConstant4fv(const_number, f);
-}
-
-inline void SetMultiVSConstant3fv(unsigned int const_number, unsigned int count, const float *f)
-{
-	g_renderer->SetMultiVSConstant3fv(const_number, count, f);
-}
-
-inline void SetMultiVSConstant4fv(unsigned int const_number, unsigned int count, const float *f)
-{
-	g_renderer->SetMultiVSConstant4fv(const_number, count, f);
 }
 
 struct ProjectionHack
@@ -152,7 +136,7 @@ void UpdateProjectionHack(int iPhackvalue[], std::string sPhackvalue[])
 void VertexShaderManager::Init()
 {
 	Dirty();
-
+	m_buffer.Clear();
 	memset(&xfregs, 0, sizeof(xfregs));
 	memset(xfmem, 0, sizeof(xfmem));
 	ResetView();
@@ -166,6 +150,40 @@ void VertexShaderManager::Init()
 
 void VertexShaderManager::Shutdown()
 {
+	
+}
+const float* VertexShaderManager::GetBuffer()
+{
+	return vsconstants;
+}
+
+float* VertexShaderManager::GetBufferToUpdate(u32 const_number, u32 size)
+{
+	return m_buffer.GetBufferToUpdate<float>(const_number, size);
+}
+
+bool VertexShaderManager::IsDirty()
+{
+	return m_buffer.IsDirty();
+}
+
+const regionvector &VertexShaderManager::GetDirtyRegions()
+{
+	return m_buffer.GetRegions();
+}
+
+void VertexShaderManager::Clear()
+{
+	m_buffer.Clear();
+}
+
+void VertexShaderManager::EnableDirtyRegions()
+{
+	m_buffer.EnableDirtyRegions();
+}
+void VertexShaderManager::DisableDirtyRegions()
+{
+	m_buffer.DisableDirtyRegions();
 }
 
 void VertexShaderManager::Dirty()
@@ -203,7 +221,7 @@ void VertexShaderManager::SetConstants()
 		int startn = nTransformMatricesChanged[0] / 4;
 		int endn = (nTransformMatricesChanged[1] + 3) / 4;
 		const float* pstart = (const float*)&xfmem[startn * 4];
-		SetMultiVSConstant4fv(C_TRANSFORMMATRICES + startn, endn - startn, pstart);
+		m_buffer.SetMultiConstant4v(C_TRANSFORMMATRICES + startn, endn - startn, pstart);
 		nTransformMatricesChanged[0] = nTransformMatricesChanged[1] = -1;
 	}
 
@@ -212,7 +230,7 @@ void VertexShaderManager::SetConstants()
 		int startn = nNormalMatricesChanged[0] / 3;
 		int endn = (nNormalMatricesChanged[1] + 2) / 3;
 		const float *pnstart = (const float*)&xfmem[XFMEM_NORMALMATRICES+3*startn];
-		SetMultiVSConstant3fv(C_NORMALMATRICES + startn, endn - startn, pnstart);
+		m_buffer.SetMultiConstant3v(C_NORMALMATRICES + startn, endn - startn, pnstart);
 		nNormalMatricesChanged[0] = nNormalMatricesChanged[1] = -1;
 	}
 
@@ -221,7 +239,7 @@ void VertexShaderManager::SetConstants()
 		int startn = nPostTransformMatricesChanged[0] / 4;
 		int endn = (nPostTransformMatricesChanged[1] + 3 ) / 4;
 		const float* pstart = (const float*)&xfmem[XFMEM_POSTMATRICES + startn * 4];
-		SetMultiVSConstant4fv(C_POSTTRANSFORMMATRICES + startn, endn - startn, pstart);
+		m_buffer.SetMultiConstant4v(C_POSTTRANSFORMMATRICES + startn, endn - startn, pstart);
 		nPostTransformMatricesChanged[0] = nPostTransformMatricesChanged[1] = -1;
 	}
 
@@ -234,7 +252,7 @@ void VertexShaderManager::SetConstants()
 		for (int i = istart; i < iend; ++i)
 		{
 			u32 color = *(const u32*)(xfmemptr + 3);
-			SetVSConstant4f(C_LIGHTS + 5 * i,
+			m_buffer.SetConstant4(C_LIGHTS + 5 * i,
 				((color >> 24) & 0xFF) * U8_NORM_COEF,
 				((color >> 16) & 0xFF) * U8_NORM_COEF,
 				((color >> 8)  & 0xFF) * U8_NORM_COEF,
@@ -249,11 +267,11 @@ void VertexShaderManager::SetConstants()
 					fabs(xfmemptr[2]) < 0.00001f)
 				{
 					// dist attenuation, make sure not equal to 0!!!
-					SetVSConstant4f(C_LIGHTS+5*i+j+1, 0.00001f, xfmemptr[1], xfmemptr[2], 0);
+					m_buffer.SetConstant4(C_LIGHTS + 5 * i + j + 1, 0.00001f, xfmemptr[1], xfmemptr[2], 0.0f);
 				}
 				else
 				{
-					SetVSConstant4fv(C_LIGHTS+5*i+j+1, xfmemptr);
+					m_buffer.SetConstant4v(C_LIGHTS + 5 * i + j + 1, xfmemptr);
 				}
 			}
 		}
@@ -274,7 +292,7 @@ void VertexShaderManager::SetConstants()
 				material[2] = ((data >>  8) & 0xFF) * U8_NORM_COEF;
 				material[3] = ( data        & 0xFF) * U8_NORM_COEF;
 
-				SetVSConstant4fv(C_MATERIALS + i, material);
+				m_buffer.SetConstant4v(C_MATERIALS + i, material);
 			}
 		}
 		
@@ -288,7 +306,7 @@ void VertexShaderManager::SetConstants()
 				material[2] = ((data >>  8) & 0xFF) * U8_NORM_COEF;
 				material[3] = ( data        & 0xFF) * U8_NORM_COEF;
 
-				SetVSConstant4fv(C_MATERIALS + i + 2, material);
+				m_buffer.SetConstant4v(C_MATERIALS + i + 2, material);
 			}
 		}
 
@@ -302,8 +320,8 @@ void VertexShaderManager::SetConstants()
 		const float *pos = (const float *)xfmem + MatrixIndexA.PosNormalMtxIdx * 4;
 		const float *norm = (const float *)xfmem + XFMEM_NORMALMATRICES + 3 * (MatrixIndexA.PosNormalMtxIdx & 31);
 
-		SetMultiVSConstant4fv(C_POSNORMALMATRIX, 3, pos);
-		SetMultiVSConstant3fv(C_POSNORMALMATRIX + 3, 3, norm);
+		m_buffer.SetMultiConstant4v(C_POSNORMALMATRIX, 3, pos);
+		m_buffer.SetMultiConstant3v(C_POSNORMALMATRIX + 3, 3, norm);
 	}
 
 	if (bTexMatricesChanged[0])
@@ -317,7 +335,7 @@ void VertexShaderManager::SetConstants()
 
 		for (int i = 0; i < 4; ++i)
 		{
-			SetMultiVSConstant4fv(C_TEXMATRICES + 3 * i, 3, fptrs[i]);
+			m_buffer.SetMultiConstant4v(C_TEXMATRICES + 3 * i, 3, fptrs[i]);
 		}
 	}
 
@@ -331,7 +349,7 @@ void VertexShaderManager::SetConstants()
 
 		for (int i = 0; i < 4; ++i)
 		{
-			SetMultiVSConstant4fv(C_TEXMATRICES+3 * i + 12, 3, fptrs[i]);
+			m_buffer.SetMultiConstant4v(C_TEXMATRICES + 3 * i + 12, 3, fptrs[i]);
 		}
 	}
 
@@ -346,7 +364,7 @@ void VertexShaderManager::SetConstants()
 		const float pixel_center_correction = ((g_ActiveConfig.backend_info.APIType & API_D3D9) ? 0.0f : 0.5f) - 7.0f / 12.0f;
 		const float pixel_size_x = 2.f / Renderer::EFBToScaledXf(2.f * xfregs.viewport.wd);
 		const float pixel_size_y = 2.f / Renderer::EFBToScaledXf(2.f * xfregs.viewport.ht);
-		SetVSConstant4f(C_DEPTHPARAMS,
+		m_buffer.SetConstant4(C_DEPTHPARAMS,
 						xfregs.viewport.farZ * U24_NORM_COEF,
 						xfregs.viewport.zRange * U24_NORM_COEF,
 						pixel_center_correction * pixel_size_x,
@@ -480,7 +498,7 @@ void VertexShaderManager::SetConstants()
 			Matrix44::Multiply(mtxB, viewMtx, mtxA); // mtxA = projection x view
 			Matrix44::Multiply(s_viewportCorrection, mtxA, mtxB); // mtxB = viewportCorrection x mtxA
 
-			SetMultiVSConstant4fv(C_PROJECTION, 4, mtxB.data);
+			m_buffer.SetMultiConstant4v(C_PROJECTION, 4, mtxB.data);
 		}
 		else
 		{
@@ -489,7 +507,7 @@ void VertexShaderManager::SetConstants()
 
 			Matrix44 correctedMtx;
 			Matrix44::Multiply(s_viewportCorrection, projMtx, correctedMtx);
-			SetMultiVSConstant4fv(C_PROJECTION, 4, correctedMtx.data);
+			m_buffer.SetMultiConstant4v(C_PROJECTION, 4, correctedMtx.data);
 		}
 	}
 }

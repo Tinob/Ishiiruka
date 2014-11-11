@@ -2,9 +2,8 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _PIXELSHADERMANAGER_H
-#define _PIXELSHADERMANAGER_H
-
+#pragma once
+#include "Common/ConstantBuffer.h"
 #include "VideoCommon/BPMemory.h"
 #include "VideoCommon/XFMemory.h"
 #include "VideoCommon/PixelShaderGen.h"
@@ -14,13 +13,19 @@ class PointerWrap;
 // The non-API dependent parts.
 class PixelShaderManager
 {
-	static void SetPSTextureDims(int texid);
 public:
+	static const size_t ConstantBufferSize = C_PENVCONST_END * 4;
 	static void Init();
 	static void Dirty();
 	static void Shutdown();
 	static void DoState(PointerWrap &p);
-
+	static float* GetBufferToUpdate(u32 const_number, u32 size);
+	static const float* GetBuffer();
+	static bool IsDirty();
+	static void Clear();
+	static void EnableDirtyRegions();
+	static void DisableDirtyRegions();
+	static const regionvector &GetDirtyRegions();
 	static void SetConstants(); // sets pixel shader constants
 
 	// constant management, should be called after memory is committed
@@ -41,7 +46,8 @@ public:
 	static void SetColorMatrix(const float* pmatrix);
 	static void InvalidateXFRange(int start, int end);
 	static void SetMaterialColorChanged(int index);
+private:
+	static void SetPSTextureDims(int texid);
+	static float psconstants[ConstantBufferSize];
+	static ConstatBuffer m_buffer;
 };
-
-
-#endif // _PIXELSHADERMANAGER_H

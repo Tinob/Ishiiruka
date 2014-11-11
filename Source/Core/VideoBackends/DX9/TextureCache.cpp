@@ -159,6 +159,7 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, u32 dstFormat,
 		destrect.top = 0;
 
 		PixelShaderManager::SetColorMatrix(colmat); // set transformation
+		D3D::dev->SetPixelShaderConstantF(C_COLORMATRIX, PixelShaderManager::GetBuffer(), 7);
 		TargetRectangle targetSource = g_renderer->ConvertEFBRectangle(srcRect);
 		RECT sourcerect;
 		sourcerect.bottom = targetSource.bottom;

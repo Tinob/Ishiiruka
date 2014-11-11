@@ -435,6 +435,27 @@ public:
 			SrcDepthPitch);
 	}
 
+	inline void UpdateSubresource1(
+		ID3D11Resource *pDstResource,
+		UINT DstSubresource,
+		const D3D11_BOX *pDstBox,
+		const void *pSrcData,
+		UINT SrcRowPitch,
+		UINT SrcDepthPitch,
+		UINT copyflags)
+	{
+		if (m_ctx1)
+		{
+			m_ctx1->UpdateSubresource1(
+				pDstResource,
+				DstSubresource,
+				pDstBox,
+				pSrcData,
+				SrcRowPitch,
+				SrcDepthPitch, copyflags);
+		}
+	}
+
 	inline void ResolveSubresource(
 		ID3D11Resource *pDstResource, 
 		UINT DstSubresource, 

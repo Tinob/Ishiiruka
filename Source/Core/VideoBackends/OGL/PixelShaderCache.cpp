@@ -46,7 +46,7 @@ void SetPSConstant4fvByName(const char * name, unsigned int offset, const float 
 }
 
 // Renderer functions
-void Renderer::SetPSConstant4f(unsigned int const_number, float f1, float f2, float f3, float f4)
+void SetPSConstant4f(unsigned int const_number, float f1, float f2, float f3, float f4)
 {
 	float const f[4] = {f1, f2, f3, f4};
 
@@ -66,7 +66,7 @@ void Renderer::SetPSConstant4f(unsigned int const_number, float f1, float f2, fl
 	}
 }
 
-void Renderer::SetPSConstant4fv(unsigned int const_number, const float *f)
+void SetPSConstant4fv(unsigned int const_number, const float *f)
 {
 	if (g_ActiveConfig.backend_info.bSupportsGLSLUBO)
 	{
@@ -84,7 +84,7 @@ void Renderer::SetPSConstant4fv(unsigned int const_number, const float *f)
 	}
 }
 
-void Renderer::SetMultiPSConstant4fv(unsigned int const_number, unsigned int count, const float *f)
+void SetMultiPSConstant4fv(unsigned int const_number, unsigned int count, const float *f)
 {
 	if (g_ActiveConfig.backend_info.bSupportsGLSLUBO)
 	{

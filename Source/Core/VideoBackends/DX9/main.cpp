@@ -99,7 +99,7 @@ void InitBackendInfo()
 	// Dual source blend disabled by default until a proper method to test for support is found	
 	g_Config.backend_info.bSupportsDualSourceBlend = false;	
 	g_Config.backend_info.bSupportsFormatReinterpretation = true;
-	g_Config.backend_info.bSupportsPixelLighting = C_PLIGHTS + 40 <= maxConstants && C_PMATERIALS + 4 <= maxConstants;
+	g_Config.backend_info.bSupportsPixelLighting = C_PENVCONST_END <= maxConstants;
 	g_Config.backend_info.bSupportsEarlyZ = true;
 	g_Config.backend_info.bNeedBlendIndices = true;
 

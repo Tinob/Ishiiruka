@@ -8,6 +8,7 @@
 #include "TextureConverter.h"
 #include "VideoCommon/TextureConversionShader.h"
 #include "PixelShaderCache.h"
+#include "VideoCommon/PixelShaderManager.h"
 #include "VideoCommon/VertexShaderManager.h"
 #include "VertexShaderCache.h"
 #include "FramebufferManager.h"
@@ -370,7 +371,7 @@ int EncodeToRamFromTexture(u32 address,LPDIRECT3DTEXTURE9 source_texture, u32 So
 		Renderer::EFBToScaledYf(sampleStride),
 		(float)SourceW,
 		(float)SourceH);
-
+	D3D::dev->SetPixelShaderConstantF(C_COLORMATRIX, PixelShaderManager::GetBuffer(), 2);
 	TargetRectangle scaledSource;
 	scaledSource.top = 0;
 	scaledSource.bottom = expandedHeight;
@@ -396,6 +397,7 @@ void EncodeToRamYUYV(LPDIRECT3DTEXTURE9 srcTexture, const TargetRectangle& sourc
 		1.0f,
 		(float)Renderer::GetTargetWidth(),
 		(float)Renderer::GetTargetHeight());
+	D3D::dev->SetPixelShaderConstantF(C_COLORMATRIX, PixelShaderManager::GetBuffer(), 2);
 	g_renderer->ResetAPIState();
 	EncodeToRamUsingShader(s_rgbToYuyvProgram, srcTexture, sourceRc, destAddr,
 		dstWidth / 2, dstHeight, dstWidth * 2, false, false,Gamma);
@@ -459,6 +461,7 @@ void DecodeToTexture(u32 xfbAddr, int srcWidth, int srcHeight, LPDIRECT3DTEXTURE
 		1.0f,
 		(float)srcFmtWidth,
 		(float)srcHeight);
+	D3D::dev->SetPixelShaderConstantF(C_COLORMATRIX, PixelShaderManager::GetBuffer(), 2);
 	D3D::drawShadedTexQuad(
 		s_srcTexture,
 		&sourcerect,

@@ -375,6 +375,7 @@ u32 Renderer::AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data)
 		float colmat[28] = {0.0f};
 		colmat[0] = colmat[5] = colmat[10] = 1.0f;
 		PixelShaderManager::SetColorMatrix(colmat); // set transformation
+		D3D::dev->SetPixelShaderConstantF(C_COLORMATRIX, PixelShaderManager::GetBuffer(), 7);
 		LPDIRECT3DTEXTURE9 read_texture = FramebufferManager::GetEFBDepthTexture();
 
 		D3D::ChangeSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);

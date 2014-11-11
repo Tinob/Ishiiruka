@@ -45,7 +45,7 @@ void SetVSConstant4fvByName(const char * name, unsigned int offset, const float 
 	}
 }
 
-void Renderer::SetVSConstant4f(unsigned int const_number, float f1, float f2, float f3, float f4)
+void SetVSConstant4f(unsigned int const_number, float f1, float f2, float f3, float f4)
 {
 	float const buf[4] = {f1, f2, f3, f4};
 
@@ -65,7 +65,7 @@ void Renderer::SetVSConstant4f(unsigned int const_number, float f1, float f2, fl
 	}
 }
 
-void Renderer::SetVSConstant4fv(unsigned int const_number, const float *f)
+void SetVSConstant4fv(unsigned int const_number, const float *f)
 {
 	if (g_ActiveConfig.backend_info.bSupportsGLSLUBO)
 	{
@@ -83,7 +83,7 @@ void Renderer::SetVSConstant4fv(unsigned int const_number, const float *f)
 	}
 }
 
-void Renderer::SetMultiVSConstant4fv(unsigned int const_number, unsigned int count, const float *f)
+void SetMultiVSConstant4fv(unsigned int const_number, unsigned int count, const float *f)
 {
 	if (g_ActiveConfig.backend_info.bSupportsGLSLUBO)
 	{
@@ -101,7 +101,7 @@ void Renderer::SetMultiVSConstant4fv(unsigned int const_number, unsigned int cou
 	}
 }
 
-void Renderer::SetMultiVSConstant3fv(unsigned int const_number, unsigned int count, const float *f)
+void SetMultiVSConstant3fv(unsigned int const_number, unsigned int count, const float *f)
 {
 	float buf[4 * C_VENVCONST_END];
 	for (unsigned int i = 0; i < count; i++)

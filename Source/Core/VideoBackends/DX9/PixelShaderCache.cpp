@@ -500,21 +500,4 @@ void PixelShaderCache::InsertByteCode(const PixelShaderUid &uid, const u8 *bytec
 	entry->initialized.test_and_set();
 	PushByteCode(uid, bytecode, bytecodelen, entry);
 }
-
-void Renderer::SetPSConstant4f(unsigned int const_number, float f1, float f2, float f3, float f4)
-{
-	float f[4] = { f1, f2, f3, f4 };
-	DX9::D3D::dev->SetPixelShaderConstantF(const_number, f, 1);
-}
-
-void Renderer::SetPSConstant4fv(unsigned int const_number, const float *f)
-{
-	DX9::D3D::dev->SetPixelShaderConstantF(const_number, f, 1);
-}
-
-void Renderer::SetMultiPSConstant4fv(unsigned int const_number, unsigned int count, const float *f)
-{
-	DX9::D3D::dev->SetPixelShaderConstantF(const_number, f, count);
-}
-
 }  // namespace DX9

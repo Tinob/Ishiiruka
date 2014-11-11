@@ -903,8 +903,15 @@ const char *GenerateEncodingShader(u32 format,API_TYPE ApiType)
 
 void SetShaderParameters(float width, float height, float offsetX, float offsetY, float widthStride, float heightStride,float buffW,float buffH)
 {
-	g_renderer->SetPSConstant4f(C_COLORMATRIX, widthStride, heightStride, buffW, buffH);
-	g_renderer->SetPSConstant4f(C_COLORMATRIX + 1, width, (height - 1), offsetX, offsetY);
+	float* cbuff = PixelShaderManager::GetBufferToUpdate(C_COLORMATRIX, 2);
+	cbuff[0] = widthStride;
+	cbuff[1] = heightStride;
+	cbuff[2] = buffW;
+	cbuff[3] = buffH;
+	cbuff[4] = width;
+	cbuff[5] = height - 1;
+	cbuff[6] = offsetX;
+	cbuff[7] = offsetY;
 }
 
 }  // namespace

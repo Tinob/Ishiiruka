@@ -9,6 +9,7 @@
 #include "VideoCommon/Statistics.h"
 #include "VideoCommon/VideoConfig.h"
 #include "VideoCommon/HLSLCompiler.h"
+#include "VideoCommon/PixelShaderManager.h"
 
 #include "D3DBase.h"
 #include "D3DShader.h"
@@ -20,9 +21,6 @@
 
 extern int frameCount;
 
-// See comment near the bottom of this file.
-GC_ALIGNED16(float psconstants[C_PENVCONST_END*4]);
-bool pscbufchanged = true;
 bool prevpl = false;
 
 namespace DX11
@@ -387,16 +385,17 @@ ID3D11Buffer* &PixelShaderCache::GetConstantBuffer()
 	bool lightingEnabled = xfregs.numChan.numColorChans > 0;
 	bool enable_pl = g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting && lightingEnabled;
 	auto &buf = enable_pl ? pscbuf : pscbuf_alt;
-	// TODO: divide the global variables of the generated shaders into about 5 constant buffers to speed this up
-	if (pscbufchanged || prevpl != enable_pl)
+	if (PixelShaderManager::IsDirty() || prevpl != enable_pl)
 	{
+		int sz = enable_pl ? PixelShaderManager::ConstantBufferSize : C_PLIGHTS * 4;
+		sz *= sizeof(float);
 		prevpl = enable_pl;
+		// TODO: divide the global variables of the generated shaders into about 5 constant buffers to speed this up
 		D3D11_MAPPED_SUBRESOURCE map;
-		int sz = enable_pl ? sizeof(psconstants) : C_PLIGHTS * 4 * sizeof(float);
 		D3D::context->Map(buf, 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
-		memcpy(map.pData, psconstants, sz);
+		memcpy(map.pData, PixelShaderManager::GetBuffer(), sz);
 		D3D::context->Unmap(buf, 0);
-		pscbufchanged = false;
+		PixelShaderManager::Clear();
 		ADDSTAT(stats.thisFrame.bytesUniformStreamed, sz);
 	}
 	return buf;
@@ -416,8 +415,11 @@ void PixelShaderCache::Init()
 {
 	Compiler = &HLSLAsyncCompiler::getInstance();
 	PixelShadersLock.unlock();
-	unsigned int cbsize = sizeof(psconstants); // is always a multiple of 16
-	D3D11_BUFFER_DESC cbdesc = CD3D11_BUFFER_DESC(cbsize, D3D11_BIND_CONSTANT_BUFFER, D3D11_USAGE_DYNAMIC, D3D11_CPU_ACCESS_WRITE);	
+	unsigned int cbsize = PixelShaderManager::ConstantBufferSize * sizeof(float); // is always a multiple of 16	
+	D3D11_BUFFER_DESC cbdesc = CD3D11_BUFFER_DESC(cbsize, 
+		D3D11_BIND_CONSTANT_BUFFER, 
+		D3D11_USAGE_DYNAMIC, 
+		D3D11_CPU_ACCESS_WRITE);
 	D3D::device->CreateBuffer(&cbdesc, nullptr, &pscbuf);
 	CHECK(pscbuf!=nullptr, "Create pixel shader constant buffer");
 	D3D::SetDebugObjectName((ID3D11DeviceChild*)pscbuf, "pixel shader constant buffer used to emulate the GX pipeline");
@@ -468,6 +470,7 @@ void PixelShaderCache::Init()
 		Clear();
 
 	last_entry = nullptr;
+	PixelShaderManager::DisableDirtyRegions();
 }
 
 // ONLY to be used during shutdown.
@@ -641,33 +644,6 @@ void PixelShaderCache::InsertByteCode(const PixelShaderUid &uid, const void* byt
 	PSCacheEntry* entry = &PixelShaders[uid];
 	entry->initialized.test_and_set();
 	PushByteCode(uid, bytecode, bytecodelen, entry);
-}
-
-// These are "callbacks" from VideoCommon and thus must be outside namespace DX11.
-// This will have to be changed when we merge.
-
-void Renderer::SetPSConstant4f(unsigned int const_number, float f1, float f2, float f3, float f4)
-{
-	u32 idx = const_number * 4;
-	psconstants[idx++] = f1;
-	psconstants[idx++] = f2;
-	psconstants[idx++] = f3;
-	psconstants[idx] = f4;
-	pscbufchanged = true;
-}
-
-void Renderer::SetPSConstant4fv(unsigned int const_number, const float* f)
-{
-	u32 idx = const_number * 4;
-	memcpy(&psconstants[idx], f, sizeof(float) * 4);
-	pscbufchanged = true;
-}
-
-void Renderer::SetMultiPSConstant4fv(unsigned int const_number, unsigned int count, const float* f)
-{
-	u32 idx = const_number * 4;
-	memcpy(&psconstants[idx], f, sizeof(float) * 4 * count);
-	pscbufchanged = true;
 }
 
 }  // DX11
