@@ -91,7 +91,10 @@ void VertexManager::PrepareDrawBuffers(u32 stride)
 	D3D::context->Map(m_buffers[m_currentBuffer].get(), 0, MapType, 0, &map);
 	u8* mappedData = reinterpret_cast<u8*>(map.pData);
 	memcpy(mappedData + m_vertexDrawOffset, s_pBaseBufferPointer, vertexBufferSize);
-	memcpy(mappedData + m_indexDrawOffset, GetTriangleIndexBuffer(), tindexbuffersize);
+	if (tindexbuffersize)
+	{
+		memcpy(mappedData + m_indexDrawOffset, GetTriangleIndexBuffer(), tindexbuffersize);
+	}
 	if (lindexbuffersize)
 	{
 		memcpy(mappedData + lineDrawoffset, GetLineIndexBuffer(), lindexbuffersize);
