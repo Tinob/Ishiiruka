@@ -195,7 +195,7 @@ void VertexManager::PrepareShaders(u32 components, const XFRegisters &xfr, const
 		s_Shader_Refresh_Required = false;
 	}
 	bool useDstAlpha = !g_ActiveConfig.bDstAlphaPass && bpm.dstalpha.enable && bpm.blendmode.alphaupdate &&
-		bpm.zcontrol.pixel_format == PIXELFMT_RGBA6_Z24;
+		bpm.zcontrol.pixel_format == PEControl::RGBA6_Z24;
 	VertexShaderCache::PrepareShader(components, xfr, bpm, ongputhread);
 	PixelShaderCache::PrepareShader(useDstAlpha ? DSTALPHA_DUAL_SOURCE_BLEND : DSTALPHA_NONE, components, xfr, bpm, ongputhread);
 }
@@ -250,7 +250,7 @@ void VertexManager::vFlush()
 	PixelShaderManager::SetConstants();
 
 	bool useDstAlpha = !g_ActiveConfig.bDstAlphaPass && bpmem.dstalpha.enable && bpmem.blendmode.alphaupdate &&
-		bpmem.zcontrol.pixel_format == PIXELFMT_RGBA6_Z24;
+		bpmem.zcontrol.pixel_format == PEControl::RGBA6_Z24;
 
 	unsigned int stride = g_nativeVertexFmt->GetVertexStride();
 	PrepareDrawBuffers(stride);

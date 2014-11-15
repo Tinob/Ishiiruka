@@ -333,7 +333,7 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, unsigned int dstFo
 	g_renderer->ResetAPIState(); // reset any game specific settings
 
 	// Make sure to resolve anything we need to read from.
-	const GLuint read_texture = (srcFormat == PIXELFMT_Z24) ?
+	const GLuint read_texture = (srcFormat == PEControl::Z24) ?
 		FramebufferManager::ResolveAndGetDepthTarget(srcRect) :
 		FramebufferManager::ResolveAndGetRenderTarget(srcRect);
 
@@ -350,7 +350,7 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, unsigned int dstFo
 
 		glViewport(0, 0, virtual_width, virtual_height);
 
-		if(srcFormat == PIXELFMT_Z24) {
+		if(srcFormat == PEControl::Z24) {
 			s_DepthMatrixProgram.Bind();
 			if(s_DepthCbufid != cbufid)
 				glUniform4fv(s_DepthMatrixUniform, 5, colmat);
@@ -418,7 +418,7 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, unsigned int dstFo
 		int encoded_size = TextureConverter::EncodeToRamFromTexture(
 			addr,
 			read_texture,
-			srcFormat == PIXELFMT_Z24, 
+			srcFormat == PEControl::Z24, 
 			isIntensity, 
 			dstFormat, 
 			scaleByHalf, 

@@ -1,94 +1,98 @@
 // Copyright 2013 Dolphin Emulator Project
 // Licensed under GPLv2
 // Refer to the license.txt file included.
+
 #pragma once
 
-#include "Common/Common.h"
+#include <string>
+
+#include "Common/BitField.h"
+#include "Common/CommonTypes.h"
 
 #pragma pack(4)
 
-#define BPMEM_GENMODE          0x00
+#define BPMEM_GENMODE           0x00
 #define BPMEM_DISPLAYCOPYFILTER 0x01 // 0x01 + 4
-#define BPMEM_IND_MTXA         0x06 // 0x06 + (3 * 3)
-#define BPMEM_IND_MTXB         0x07 // 0x07 + (3 * 3)
-#define BPMEM_IND_MTXC         0x08 // 0x08 + (3 * 3)
-#define BPMEM_IND_IMASK        0x0F
-#define BPMEM_IND_CMD          0x10 // 0x10 + 16
-#define BPMEM_SCISSORTL        0x20
-#define BPMEM_SCISSORBR        0x21
-#define BPMEM_LINEPTWIDTH      0x22
-#define BPMEM_PERF0_TRI        0x23
-#define BPMEM_PERF0_QUAD       0x24
-#define BPMEM_RAS1_SS0         0x25 
-#define BPMEM_RAS1_SS1         0x26
-#define BPMEM_IREF             0x27
-#define BPMEM_TREF             0x28 // 0x28 + 8
-#define BPMEM_SU_SSIZE         0x30 // 0x30 + (2 * 8)
-#define BPMEM_SU_TSIZE         0x31 // 0x31 + (2 * 8)
-#define BPMEM_ZMODE            0x40
-#define BPMEM_BLENDMODE        0x41
-#define BPMEM_CONSTANTALPHA    0x42
-#define BPMEM_ZCOMPARE         0x43
-#define BPMEM_FIELDMASK        0x44
-#define BPMEM_SETDRAWDONE      0x45
-#define BPMEM_BUSCLOCK0        0x46
-#define BPMEM_PE_TOKEN_ID	   0x47
-#define BPMEM_PE_TOKEN_INT_ID  0x48
-#define BPMEM_EFB_TL           0x49
-#define BPMEM_EFB_BR           0x4A
-#define BPMEM_EFB_ADDR         0x4B
-#define BPMEM_MIPMAP_STRIDE    0x4D
-#define BPMEM_COPYYSCALE       0x4E
-#define BPMEM_CLEAR_AR         0x4F
-#define BPMEM_CLEAR_GB         0x50
-#define BPMEM_CLEAR_Z          0x51
-#define BPMEM_TRIGGER_EFB_COPY 0x52
-#define BPMEM_COPYFILTER0      0x53
-#define BPMEM_COPYFILTER1      0x54
-#define BPMEM_CLEARBBOX1       0x55 
-#define BPMEM_CLEARBBOX2       0x56
-#define BPMEM_CLEAR_PIXEL_PERF 0x57
-#define BPMEM_REVBITS          0x58
-#define BPMEM_SCISSOROFFSET    0x59
-#define BPMEM_PRELOAD_ADDR     0x60
-#define BPMEM_PRELOAD_TMEMEVEN 0x61
-#define BPMEM_PRELOAD_TMEMODD  0x62
-#define BPMEM_PRELOAD_MODE     0x63
-#define BPMEM_LOADTLUT0        0x64
-#define BPMEM_LOADTLUT1        0x65
-#define BPMEM_TEXINVALIDATE    0x66
-#define BPMEM_PERF1            0x67
-#define BPMEM_FIELDMODE        0x68
-#define BPMEM_BUSCLOCK1        0x69
-#define BPMEM_TX_SETMODE0      0x80 // 0x80 + 4
-#define BPMEM_TX_SETMODE1      0x84 // 0x84 + 4
-#define BPMEM_TX_SETIMAGE0     0x88 // 0x88 + 4
-#define BPMEM_TX_SETIMAGE1     0x8C // 0x8C + 4
-#define BPMEM_TX_SETIMAGE2     0x90 // 0x90 + 4
-#define BPMEM_TX_SETIMAGE3     0x94 // 0x94 + 4
-#define BPMEM_TX_SETTLUT       0x98 // 0x98 + 4
-#define BPMEM_TX_SETMODE0_4    0xA0 // 0xA0 + 4
-#define BPMEM_TX_SETMODE1_4    0xA4 // 0xA4 + 4
-#define BPMEM_TX_SETIMAGE0_4   0xA8 // 0xA8 + 4
-#define BPMEM_TX_SETIMAGE1_4   0xAC // 0xA4 + 4
-#define BPMEM_TX_SETIMAGE2_4   0xB0 // 0xB0 + 4
-#define BPMEM_TX_SETIMAGE3_4   0xB4 // 0xB4 + 4
-#define BPMEM_TX_SETLUT_4      0xB8 // 0xB8 + 4
-#define BPMEM_TEV_COLOR_ENV    0xC0 // 0xC0 + (2 * 16)
-#define BPMEM_TEV_ALPHA_ENV    0xC1 // 0xC1 + (2 * 16)
-#define BPMEM_TEV_REGISTER_L   0xE0 // 0xE0 + (2 * 4)
-#define BPMEM_TEV_REGISTER_H   0xE1 // 0xE1 + (2 * 4)
-#define BPMEM_FOGRANGE         0xE8 // 0xE8 + 6
-#define BPMEM_FOGPARAM0        0xEE
-#define BPMEM_FOGBMAGNITUDE    0xEF
-#define BPMEM_FOGBEXPONENT     0xF0
-#define BPMEM_FOGPARAM3        0xF1
-#define BPMEM_FOGCOLOR         0xF2
-#define BPMEM_ALPHACOMPARE     0xF3
-#define BPMEM_BIAS             0xF4
-#define BPMEM_ZTEX2            0xF5
-#define BPMEM_TEV_KSEL         0xF6 // 0xF6 + 8
-#define BPMEM_BP_MASK          0xFE
+#define BPMEM_IND_MTXA          0x06 // 0x06 + (3 * 3)
+#define BPMEM_IND_MTXB          0x07 // 0x07 + (3 * 3)
+#define BPMEM_IND_MTXC          0x08 // 0x08 + (3 * 3)
+#define BPMEM_IND_IMASK         0x0F
+#define BPMEM_IND_CMD           0x10 // 0x10 + 16
+#define BPMEM_SCISSORTL         0x20
+#define BPMEM_SCISSORBR         0x21
+#define BPMEM_LINEPTWIDTH       0x22
+#define BPMEM_PERF0_TRI         0x23
+#define BPMEM_PERF0_QUAD        0x24
+#define BPMEM_RAS1_SS0          0x25
+#define BPMEM_RAS1_SS1          0x26
+#define BPMEM_IREF              0x27
+#define BPMEM_TREF              0x28 // 0x28 + 8
+#define BPMEM_SU_SSIZE          0x30 // 0x30 + (2 * 8)
+#define BPMEM_SU_TSIZE          0x31 // 0x31 + (2 * 8)
+#define BPMEM_ZMODE             0x40
+#define BPMEM_BLENDMODE         0x41
+#define BPMEM_CONSTANTALPHA     0x42
+#define BPMEM_ZCOMPARE          0x43
+#define BPMEM_FIELDMASK         0x44
+#define BPMEM_SETDRAWDONE       0x45
+#define BPMEM_BUSCLOCK0         0x46
+#define BPMEM_PE_TOKEN_ID       0x47
+#define BPMEM_PE_TOKEN_INT_ID   0x48
+#define BPMEM_EFB_TL            0x49
+#define BPMEM_EFB_BR            0x4A
+#define BPMEM_EFB_ADDR          0x4B
+#define BPMEM_MIPMAP_STRIDE     0x4D
+#define BPMEM_COPYYSCALE        0x4E
+#define BPMEM_CLEAR_AR          0x4F
+#define BPMEM_CLEAR_GB          0x50
+#define BPMEM_CLEAR_Z           0x51
+#define BPMEM_TRIGGER_EFB_COPY  0x52
+#define BPMEM_COPYFILTER0       0x53
+#define BPMEM_COPYFILTER1       0x54
+#define BPMEM_CLEARBBOX1        0x55
+#define BPMEM_CLEARBBOX2        0x56
+#define BPMEM_CLEAR_PIXEL_PERF  0x57
+#define BPMEM_REVBITS           0x58
+#define BPMEM_SCISSOROFFSET     0x59
+#define BPMEM_PRELOAD_ADDR      0x60
+#define BPMEM_PRELOAD_TMEMEVEN  0x61
+#define BPMEM_PRELOAD_TMEMODD   0x62
+#define BPMEM_PRELOAD_MODE      0x63
+#define BPMEM_LOADTLUT0         0x64
+#define BPMEM_LOADTLUT1         0x65
+#define BPMEM_TEXINVALIDATE     0x66
+#define BPMEM_PERF1             0x67
+#define BPMEM_FIELDMODE         0x68
+#define BPMEM_BUSCLOCK1         0x69
+#define BPMEM_TX_SETMODE0       0x80 // 0x80 + 4
+#define BPMEM_TX_SETMODE1       0x84 // 0x84 + 4
+#define BPMEM_TX_SETIMAGE0      0x88 // 0x88 + 4
+#define BPMEM_TX_SETIMAGE1      0x8C // 0x8C + 4
+#define BPMEM_TX_SETIMAGE2      0x90 // 0x90 + 4
+#define BPMEM_TX_SETIMAGE3      0x94 // 0x94 + 4
+#define BPMEM_TX_SETTLUT        0x98 // 0x98 + 4
+#define BPMEM_TX_SETMODE0_4     0xA0 // 0xA0 + 4
+#define BPMEM_TX_SETMODE1_4     0xA4 // 0xA4 + 4
+#define BPMEM_TX_SETIMAGE0_4    0xA8 // 0xA8 + 4
+#define BPMEM_TX_SETIMAGE1_4    0xAC // 0xA4 + 4
+#define BPMEM_TX_SETIMAGE2_4    0xB0 // 0xB0 + 4
+#define BPMEM_TX_SETIMAGE3_4    0xB4 // 0xB4 + 4
+#define BPMEM_TX_SETTLUT_4      0xB8 // 0xB8 + 4
+#define BPMEM_TEV_COLOR_ENV     0xC0 // 0xC0 + (2 * 16)
+#define BPMEM_TEV_ALPHA_ENV     0xC1 // 0xC1 + (2 * 16)
+#define BPMEM_TEV_COLOR_RA      0xE0 // 0xE0 + (2 * 4)
+#define BPMEM_TEV_COLOR_BG      0xE1 // 0xE1 + (2 * 4)
+#define BPMEM_FOGRANGE          0xE8 // 0xE8 + 6
+#define BPMEM_FOGPARAM0         0xEE
+#define BPMEM_FOGBMAGNITUDE     0xEF
+#define BPMEM_FOGBEXPONENT      0xF0
+#define BPMEM_FOGPARAM3         0xF1
+#define BPMEM_FOGCOLOR          0xF2
+#define BPMEM_ALPHACOMPARE      0xF3
+#define BPMEM_BIAS              0xF4
+#define BPMEM_ZTEX2             0xF5
+#define BPMEM_TEV_KSEL          0xF6 // 0xF6 + 8
+#define BPMEM_BP_MASK           0xFE
 
 
 // Tev/combiner things
@@ -147,27 +151,6 @@
 #define GX_TEVREG1       2
 #define GX_TEVREG2       3
 
-#define ALPHACMP_NEVER   0
-#define ALPHACMP_LESS    1
-#define ALPHACMP_EQUAL   2
-#define ALPHACMP_LEQUAL  3
-#define ALPHACMP_GREATER 4
-#define ALPHACMP_NEQUAL  5
-#define ALPHACMP_GEQUAL  6
-#define ALPHACMP_ALWAYS  7
-
-enum Compare
-{
-	COMPARE_NEVER = 0,
-	COMPARE_LESS,
-	COMPARE_EQUAL,
-	COMPARE_LEQUAL,
-	COMPARE_GREATER,
-	COMPARE_NEQUAL,
-	COMPARE_GEQUAL,
-	COMPARE_ALWAYS
-};
-
 #define ZTEXTURE_DISABLE 0
 #define ZTEXTURE_ADD 1
 #define ZTEXTURE_REPLACE 2
@@ -176,14 +159,6 @@ enum Compare
 #define TevBias_ADDHALF  1
 #define TevBias_SUBHALF  2
 #define TevBias_COMPARE  3
-
-enum AlphaOp
-{
-	ALPHAOP_AND = 0,
-	ALPHAOP_OR,
-	ALPHAOP_XOR,
-	ALPHAOP_XNOR,
-};
 
 union IND_MTXA
 {
@@ -452,6 +427,13 @@ union RAS1_IREF
 
 union TexMode0
 {
+	enum TextureFilter : u32
+	{
+		TEXF_NONE = 0,
+		TEXF_POINT = 1,
+		TEXF_LINEAR = 2
+	};
+
 	struct
 	{
 		u32 wrap_s : 2;
@@ -573,16 +555,24 @@ struct FourTexUnits
 
 union GenMode
 {
-	struct
+	enum CullMode : u32
 	{
-		u32 numtexgens : 4;    //     0xF
-		u32 numcolchans : 5;   //   0x1E0
-		u32 multisampling : 1; //   0x200
-		u32 numtevstages : 4;  //  0x3C00
-		u32 cullmode : 2;      //  0xC000
-		u32 numindstages : 3;  // 0x30000
-		u32 zfreeze : 5;       //0x3C0000
+		CULL_NONE = 0,
+		CULL_BACK = 1, // cull back-facing primitives
+		CULL_FRONT = 2, // cull front-facing primitives
+		CULL_ALL = 3, // cull all primitives
 	};
+
+	BitField< 0, 4, u32> numtexgens;
+	BitField< 4, 3, u32> numcolchans;
+	// 1 bit unused?
+	BitField< 8, 1, u32> flat_shading; // unconfirmed
+	BitField< 9, 1, u32> multisampling;
+	BitField<10, 4, u32> numtevstages;
+	BitField<14, 2, CullMode> cullmode;
+	BitField<16, 3, u32> numindstages;
+	BitField<19, 1, u32> zfreeze;
+
 	u32 hex;
 };
 
@@ -623,31 +613,52 @@ union X10Y10
 
 // Framebuffer/pixel stuff (incl fog)
 
-#define GX_BL_ZERO         0
-#define GX_BL_ONE          1
-#define GX_BL_SRCCLR       2 // for dst factor
-#define GX_BL_INVSRCCLR    3 // for dst factor
-#define GX_BL_SRCALPHA     4
-#define GX_BL_INVSRCALPHA  5
-#define GX_BL_DSTALPHA     6
-#define GX_BL_INVDSTALPHA  7
-#define GX_BL_DSTCLR       GX_BL_SRCCLR // for src factor
-#define GX_BL_INVDSTCLR    GX_BL_INVSRCCLR // for src factor
-
 union BlendMode
 {
-	struct
+	enum BlendFactor : u32
 	{
-		u32 blendenable : 1;
-		u32 logicopenable : 1;
-		u32 dither : 1;
-		u32 colorupdate : 1;
-		u32 alphaupdate : 1;
-		u32 dstfactor : 3; //BLEND_ONE, BLEND_INV_SRc etc
-		u32 srcfactor : 3;
-		u32 subtract : 1;
-		u32 logicmode : 4;
+		ZERO = 0,
+		ONE = 1,
+		SRCCLR = 2,         // for dst factor
+		INVSRCCLR = 3,         // for dst factor
+		DSTCLR = SRCCLR,    // for src factor
+		INVDSTCLR = INVSRCCLR, // for src factor
+		SRCALPHA = 4,
+		INVSRCALPHA = 5,
+		DSTALPHA = 6,
+		INVDSTALPHA = 7
 	};
+
+	enum LogicOp : u32
+	{
+		CLEAR = 0,
+		AND = 1,
+		AND_REVERSE = 2,
+		COPY = 3,
+		AND_INVERTED = 4,
+		NOOP = 5,
+		XOR = 6,
+		OR = 7,
+		NOR = 8,
+		EQUIV = 9,
+		INVERT = 10,
+		OR_REVERSE = 11,
+		COPY_INVERTED = 12,
+		OR_INVERTED = 13,
+		NAND = 14,
+		SET = 15
+	};
+
+	BitField< 0, 1, u32>         blendenable;
+	BitField< 1, 1, u32>         logicopenable;
+	BitField< 2, 1, u32>         dither;
+	BitField< 3, 1, u32>         colorupdate;
+	BitField< 4, 1, u32>         alphaupdate;
+	BitField< 5, 3, BlendFactor> dstfactor;
+	BitField< 8, 3, BlendFactor> srcfactor;
+	BitField<11, 1, u32>         subtract;
+	BitField<12, 4, LogicOp>     logicmode;
+
 	u32 hex;
 };
 
@@ -661,7 +672,7 @@ union FogParam0
 		u32 sign : 1;
 	};
 
-	float GetA()
+	float GetA() const
 	{
 		union { u32 i; float f; } dummy;
 		dummy.i = ((u32)sign << 31) | ((u32)exponent << 23) | ((u32)mantissa << 12); // scale mantissa from 11 to 23 bits
@@ -683,7 +694,7 @@ union FogParam3
 	};
 
 	// amount to subtract from eyespacez after range adjustment
-	float GetC()
+	float GetC() const
 	{
 		union { u32 i; float f; } dummy;
 		dummy.i = ((u32)c_sign << 31) | ((u32)c_exp << 23) | ((u32)c_mant << 12); // scale mantissa from 11 to 23 bits
@@ -747,12 +758,22 @@ struct FogParams
 
 union ZMode
 {
-	struct
+	enum CompareMode : u32
 	{
-		u32 testenable : 1;
-		u32 func : 3;
-		u32 updateenable : 1;  //size?
+		NEVER = 0,
+		LESS = 1,
+		EQUAL = 2,
+		LEQUAL = 3,
+		GREATER = 4,
+		NEQUAL = 5,
+		GEQUAL = 6,
+		ALWAYS = 7
 	};
+
+	BitField<0, 1, u32>         testenable;
+	BitField<1, 3, CompareMode> func;
+	BitField<4, 1, u32>         updateenable;
+
 	u32 hex;
 };
 
@@ -786,35 +807,38 @@ union FieldMask
 	u32 hex;
 };
 
-#define PIXELFMT_RGB8_Z24 0
-#define PIXELFMT_RGBA6_Z24 1
-#define PIXELFMT_RGB565_Z16 2
-#define PIXELFMT_Z24 3
-#define PIXELFMT_Y8 4
-#define PIXELFMT_U8 5
-#define PIXELFMT_V8 6
-#define PIXELFMT_YUV420 7
-
-#define ZC_LINEAR 0
-#define ZC_NEAR 1
-#define ZC_MID 2
-#define ZC_FAR 3
-// It seems these Z formats aren't supported/were removed ?
-#define ZC_INV_LINEAR 4
-#define ZC_INV_NEAR 5
-#define ZC_INV_MID 6
-#define ZC_INV_FAR 7
-
-union PE_CONTROL
+union PEControl
 {
-	struct
+	enum PixelFormat : u32
 	{
-		u32 pixel_format : 3;	// PIXELFMT_X
-		u32 zformat : 3;		// Z Compression for 16bit Z format
-		u32 early_ztest : 1;	// 1: before tex stage
-		u32 unused : 17;
-		u32 rid : 8;
+		RGB8_Z24 = 0,
+		RGBA6_Z24 = 1,
+		RGB565_Z16 = 2,
+		Z24 = 3,
+		Y8 = 4,
+		U8 = 5,
+		V8 = 6,
+		YUV420 = 7,
+		INVALID_FMT = 0xffffffff, // Used by Dolphin to represent a missing value.
 	};
+
+	enum DepthFormat : u32
+	{
+		ZLINEAR = 0,
+		ZNEAR = 1,
+		ZMID = 2,
+		ZFAR = 3,
+
+		// It seems these Z formats aren't supported/were removed ?
+		ZINV_LINEAR = 4,
+		ZINV_NEAR = 5,
+		ZINV_MID = 6,
+		ZINV_FAR = 7
+	};
+
+	BitField< 0, 3, PixelFormat> pixel_format;
+	BitField< 3, 3, DepthFormat> zformat;
+	BitField< 6, 1, u32>         early_ztest;
 
 	u32 hex;
 };
@@ -841,23 +865,27 @@ struct TCoordInfo
 	TCInfo t;
 };
 
-
-union ColReg
+union TevReg
 {
-	u32 hex;
-	struct
-	{
-		s32 a : 11;
-	u32: 1;
-		s32 b : 11;
-		u32 type : 1;
-	};
-};
+	u64 hex;
 
-struct TevReg
-{
-	ColReg low;
-	ColReg high;
+	// Access to individual registers
+	BitField< 0, 32, u64> low;
+	BitField<32, 32, u64> high;
+
+	// TODO: Check if Konst uses all 11 bits or just 8
+
+	// Low register
+	BitField< 0, 11, s64> red;
+
+	BitField<12, 11, s64> alpha;
+	BitField<23, 1, u64> type_ra;
+
+	// High register
+	BitField<32, 11, s64> blue;
+
+	BitField<44, 11, s64> green;
+	BitField<55, 1, u64> type_bg;
 };
 
 union TevKSel
@@ -878,14 +906,32 @@ union TevKSel
 
 union AlphaTest
 {
-	struct
+	enum CompareMode : u32
 	{
-		u32 ref0 : 8;
-		u32 ref1 : 8;
-		u32 comp0 : 3;
-		u32 comp1 : 3;
-		u32 logic : 2;
+		NEVER = 0,
+		LESS = 1,
+		EQUAL = 2,
+		LEQUAL = 3,
+		GREATER = 4,
+		NEQUAL = 5,
+		GEQUAL = 6,
+		ALWAYS = 7
 	};
+
+	enum Op : u32
+	{
+		AND = 0,
+		OR = 1,
+		XOR = 2,
+		XNOR = 3
+	};
+
+	BitField< 0, 8, u32>         ref0;
+	BitField< 8, 8, u32>         ref1;
+	BitField<16, 3, CompareMode> comp0;
+	BitField<19, 3, CompareMode> comp1;
+	BitField<22, 2, Op>          logic;
+
 	u32 hex;
 
 	enum TEST_RESULT
@@ -895,35 +941,35 @@ union AlphaTest
 		PASS = 2,
 	};
 
-	inline TEST_RESULT TestResult() const
+	__forceinline TEST_RESULT TestResult() const
 	{
 		switch (logic)
 		{
-		case 0: // AND
-			if (comp0 == ALPHACMP_ALWAYS && comp1 == ALPHACMP_ALWAYS)
+		case AND:
+			if (comp0 == ALWAYS && comp1 == ALWAYS)
 				return PASS;
-			if (comp0 == ALPHACMP_NEVER || comp1 == ALPHACMP_NEVER)
+			if (comp0 == NEVER || comp1 == NEVER)
 				return FAIL;
 			break;
 
-		case 1: // OR
-			if (comp0 == ALPHACMP_ALWAYS || comp1 == ALPHACMP_ALWAYS)
+		case OR:
+			if (comp0 == ALWAYS || comp1 == ALWAYS)
 				return PASS;
-			if (comp0 == ALPHACMP_NEVER && comp1 == ALPHACMP_NEVER)
+			if (comp0 == NEVER && comp1 == NEVER)
 				return FAIL;
 			break;
 
-		case 2: // XOR
-			if ((comp0 == ALPHACMP_ALWAYS && comp1 == ALPHACMP_NEVER) || (comp0 == ALPHACMP_NEVER && comp1 == ALPHACMP_ALWAYS))
+		case XOR:
+			if ((comp0 == ALWAYS && comp1 == NEVER) || (comp0 == NEVER && comp1 == ALWAYS))
 				return PASS;
-			if ((comp0 == ALPHACMP_ALWAYS && comp1 == ALPHACMP_ALWAYS) || (comp0 == ALPHACMP_NEVER && comp1 == ALPHACMP_NEVER))
+			if ((comp0 == ALWAYS && comp1 == ALWAYS) || (comp0 == NEVER && comp1 == NEVER))
 				return FAIL;
 			break;
 
-		case 3: // XNOR
-			if ((comp0 == ALPHACMP_ALWAYS && comp1 == ALPHACMP_NEVER) || (comp0 == ALPHACMP_NEVER && comp1 == ALPHACMP_ALWAYS))
+		case XNOR:
+			if ((comp0 == ALWAYS && comp1 == NEVER) || (comp0 == NEVER && comp1 == ALWAYS))
 				return FAIL;
-			if ((comp0 == ALPHACMP_ALWAYS && comp1 == ALPHACMP_ALWAYS) || (comp0 == ALPHACMP_NEVER && comp1 == ALPHACMP_NEVER))
+			if ((comp0 == ALWAYS && comp1 == ALWAYS) || (comp0 == NEVER && comp1 == NEVER))
 				return PASS;
 			break;
 		}
@@ -934,22 +980,22 @@ union AlphaTest
 union UPE_Copy
 {
 	u32 Hex;
-	struct
+
+	BitField< 0, 1, u32> clamp0;               // if set clamp top
+	BitField< 1, 1, u32> clamp1;               // if set clamp bottom
+	BitField< 2, 1, u32> yuv;                  // if set, color conversion from RGB to YUV
+	BitField< 3, 4, u32> target_pixel_format;  // realformat is (fmt/2)+((fmt&1)*8).... for some reason the msb is the lsb (pattern: cycling right shift)
+	BitField< 7, 2, u32> gamma;                // gamma correction.. 0 = 1.0 ; 1 = 1.7 ; 2 = 2.2 ; 3 is reserved
+	BitField< 9, 1, u32> half_scale;           // "mipmap" filter... 0 = no filter (scale 1:1) ; 1 = box filter (scale 2:1)
+	BitField<10, 1, u32> scale_invert;         // if set vertical scaling is on
+	BitField<11, 1, u32> clear;
+	BitField<12, 2, u32> frame_to_field;       // 0 progressive ; 1 is reserved ; 2 = interlaced (even lines) ; 3 = interlaced 1 (odd lines)
+	BitField<14, 1, u32> copy_to_xfb;
+	BitField<15, 1, u32> intensity_fmt;        // if set, is an intensity format (I4,I8,IA4,IA8)
+	BitField<16, 1, u32> auto_conv;            // if 0 automatic color conversion by texture format and pixel type
+
+	u32 tp_realFormat() const
 	{
-		u32 clamp0 : 1; // if set clamp top
-		u32 clamp1 : 1; // if set clamp bottom
-		u32 yuv : 1; // if set, color conversion from RGB to YUV
-		u32 target_pixel_format : 4; // realformat is (fmt/2)+((fmt&1)*8).... for some reason the msb is the lsb (pattern: cycling right shift)
-		u32 gamma : 2; // gamma correction.. 0 = 1.0 ; 1 = 1.7 ; 2 = 2.2 ; 3 is reserved
-		u32 half_scale : 1; // "mipmap" filter... 0 = no filter (scale 1:1) ; 1 = box filter (scale 2:1)
-		u32 scale_invert : 1; // if set vertical scaling is on
-		u32 clear : 1;
-		u32 frame_to_field : 2; // 0 progressive ; 1 is reserved ; 2 = interlaced (even lines) ; 3 = interlaced 1 (odd lines)
-		u32 copy_to_xfb : 1;
-		u32 intensity_fmt : 1; // if set, is an intensity format (I4,I8,IA4,IA8)
-		u32	auto_conv : 1; // if 0 automatic color conversion by texture format and pixel type
-	};
-	u32 tp_realFormat() {
 		return target_pixel_format / 2 + (target_pixel_format & 1) * 8;
 	}
 };
@@ -993,7 +1039,7 @@ struct BPMemory
 	// indirect matrices (set by GXSetIndTexMtx, selected by TevStageIndirect::mid)
 	// abc form a 2x3 offset matrix, there's 3 such matrices
 	// the 3 offset matrices can either be indirect type, S-type, or T-type
-	// 6bit scale factor s is distributed across IND_MTXA/B/C. 
+	// 6bit scale factor s is distributed across IND_MTXA/B/C.
 	// before using matrices scale by 2^-(s-17)
 	IND_MTX indmtx[3];//06-0e GXSetIndTexMtx, 2x3 matrices
 	IND_IMASK imask;//0f
@@ -1010,7 +1056,7 @@ struct BPMemory
 	ZMode zmode; //40
 	BlendMode blendmode; //41
 	ConstantAlpha dstalpha;  //42
-	PE_CONTROL zcontrol; //43 GXSetZCompLoc, GXPixModeSync
+	PEControl zcontrol; //43 GXSetZCompLoc, GXPixModeSync
 	FieldMask fieldmask; //44
 	u32 drawdone;  //45, bit1=1 if end of list
 	u32 unknown5;  //46 clock?

@@ -1015,7 +1015,7 @@ size_t CSTextureEncoder::Encode(u8* dst, unsigned int dstFormat,
 
 		D3D::context->CSSetUnorderedAccessViews(0, 1, D3D::ToAddr(m_outUav));
 
-		ID3D11ShaderResourceView* pEFB = (srcFormat == PIXELFMT_Z24) ?
+		ID3D11ShaderResourceView* pEFB = (srcFormat == PEControl::Z24) ?
 			FramebufferManager::GetEFBDepthTexture()->GetSRV() :
 			// FIXME: Instead of resolving EFB, it would be better to pick out a
 			// single sample from each pixel. The game may break if it isn't

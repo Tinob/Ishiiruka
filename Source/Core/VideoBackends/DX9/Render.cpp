@@ -411,7 +411,7 @@ u32 Renderer::AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data)
 		pSystemBuf->UnlockRect();
 
 		// if Z is in 16 bit format you must return a 16 bit integer
-		if(bpmem.zcontrol.pixel_format == PIXELFMT_RGB565_Z16) {
+		if(bpmem.zcontrol.pixel_format == PEControl::RGB565_Z16) {
 			z >>= 8;
 		}
 		return z;
@@ -437,15 +437,15 @@ u32 Renderer::AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data)
 		// check what to do with the alpha channel (GX_PokeAlphaRead)
 		PixelEngine::UPEAlphaReadReg alpha_read_mode = PixelEngine::GetAlphaReadMode();
 
-		if (bpmem.zcontrol.pixel_format == PIXELFMT_RGBA6_Z24)
+		if (bpmem.zcontrol.pixel_format == PEControl::RGBA6_Z24)
 		{
 			ret = RGBA8ToRGBA6ToRGBA8(ret);
 		}
-		else if (bpmem.zcontrol.pixel_format == PIXELFMT_RGB565_Z16)
+		else if (bpmem.zcontrol.pixel_format == PEControl::RGB565_Z16)
 		{
 			ret = RGBA8ToRGB565ToRGBA8(ret);
 		}
-		if(bpmem.zcontrol.pixel_format != PIXELFMT_RGBA6_Z24)
+		if(bpmem.zcontrol.pixel_format != PEControl::RGBA6_Z24)
 		{
 			ret |= 0xFF000000;
 		}
@@ -1100,7 +1100,7 @@ void Renderer::ApplyState(bool bUseDstAlpha)
 	if (bUseDstAlpha)
 	{
 		// If we get here we are sure that we are using dst alpha pass. (bpmem.dstalpha.enable)
-		// Alpha write is enabled. (because bpmem.blendmode.alphaupdate && bpmem.zcontrol.pixel_format == PIXELFMT_RGBA6_Z24)
+		// Alpha write is enabled. (because bpmem.blendmode.alphaupdate && bpmem.zcontrol.pixel_format == PEControl::RGBA6_Z24)
 		// We must disable blend because we want to write alpha value directly to the alpha channel without modifications.
 		D3D::ChangeRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_ALPHA);
 		D3D::ChangeRenderState(D3DRS_ALPHABLENDENABLE, false);
@@ -1150,7 +1150,7 @@ void Renderer::_SetColorMask()
 	DWORD color_mask = 0;
 	if (bpmem.alpha_test.TestResult() != AlphaTest::FAIL)
 	{
-		if (bpmem.blendmode.alphaupdate && (bpmem.zcontrol.pixel_format == PIXELFMT_RGBA6_Z24))
+		if (bpmem.blendmode.alphaupdate && (bpmem.zcontrol.pixel_format == PEControl::RGBA6_Z24))
 			color_mask = D3DCOLORWRITEENABLE_ALPHA;
 		if (bpmem.blendmode.colorupdate)
 			color_mask |= D3DCOLORWRITEENABLE_RED | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_BLUE;
@@ -1174,7 +1174,7 @@ void Renderer::_SetBlendMode(bool forceUpdate)
 	m_bBlendModeChanged = false;
 	// Our render target always uses an alpha channel, so we need to override the blend functions to assume a destination alpha of 1 if the render target isn't supposed to have an alpha channel
 	// Example: D3DBLEND_DESTALPHA needs to be D3DBLEND_ONE since the result without an alpha channel is assumed to always be 1.
-	bool target_has_alpha = bpmem.zcontrol.pixel_format == PIXELFMT_RGBA6_Z24;
+	bool target_has_alpha = bpmem.zcontrol.pixel_format == PEControl::RGBA6_Z24;
 	//bDstAlphaPass is taken into account because the ability to disable alpha composition is
 	//really useful for debugging shader and blending errors
 	bool use_DstAlpha = !g_ActiveConfig.bDstAlphaPass && bpmem.dstalpha.enable && bpmem.blendmode.alphaupdate && target_has_alpha;
@@ -1219,8 +1219,8 @@ void Renderer::_SetBlendMode(bool forceUpdate)
 		if (bpmem.blendmode.subtract)
 		{
 			op = D3DBLENDOP_REVSUBTRACT;
-			srcidx = GX_BL_ONE;
-			dstidx = GX_BL_ONE;
+			srcidx = BlendMode::ONE;
+			dstidx = BlendMode::ONE;
 		}
 		D3D::SetRenderState(D3DRS_BLENDOP, op);
 		D3D::SetRenderState(D3DRS_SRCBLEND, d3dSrcFactors[srcidx]);
@@ -1230,17 +1230,17 @@ void Renderer::_SetBlendMode(bool forceUpdate)
 			if (use_DualSource)
 			{			
 				op = D3DBLENDOP_ADD;
-				srcidx = GX_BL_ONE;
-				dstidx = GX_BL_ZERO;
+				srcidx = BlendMode::ONE;
+				dstidx = BlendMode::ZERO;
 			}
 			else
 			{
 				// we can't use D3DBLEND_DESTCOLOR or D3DBLEND_INVDESTCOLOR for source in alpha channel so use their alpha equivalent instead
-				if (srcidx == GX_BL_DSTCLR) srcidx = GX_BL_DSTALPHA;
-				if (srcidx == GX_BL_INVDSTCLR) srcidx = GX_BL_INVDSTALPHA;
+				if (srcidx == BlendMode::DSTCLR) srcidx = BlendMode::DSTALPHA;
+				if (srcidx == BlendMode::INVDSTCLR) srcidx = BlendMode::INVDSTALPHA;
 				// we can't use D3DBLEND_SRCCOLOR or D3DBLEND_INVSRCCOLOR for destination in alpha channel so use their alpha equivalent instead
-				if (dstidx == GX_BL_SRCCLR) dstidx = GX_BL_SRCALPHA;
-				if (dstidx == GX_BL_INVSRCCLR) dstidx = GX_BL_INVSRCALPHA;
+				if (dstidx == BlendMode::SRCCLR) dstidx = BlendMode::SRCALPHA;
+				if (dstidx == BlendMode::INVSRCCLR) dstidx = BlendMode::INVSRCALPHA;
 			}
 			D3D::SetRenderState(D3DRS_BLENDOPALPHA, op);
 			D3D::SetRenderState(D3DRS_SRCBLENDALPHA, d3dSrcFactors[srcidx]);

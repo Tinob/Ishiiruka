@@ -131,7 +131,7 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, u32 dstFormat,
 {
 	g_renderer->ResetAPIState(); // reset any game specific settings
 	
-	const LPDIRECT3DTEXTURE9 read_texture = (srcFormat == PIXELFMT_Z24) ?
+	const LPDIRECT3DTEXTURE9 read_texture = (srcFormat == PEControl::Z24) ?
 		FramebufferManager::GetEFBDepthTexture() :
 		FramebufferManager::GetEFBColorTexture();
 
@@ -167,7 +167,7 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, u32 dstFormat,
 		sourcerect.right = targetSource.right;
 		sourcerect.top = targetSource.top;
 
-		if (srcFormat == PIXELFMT_Z24)
+		if (srcFormat == PEControl::Z24)
 		{
 			if (scaleByHalf || g_ActiveConfig.iMultisampleMode)
 			{
@@ -192,7 +192,7 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, u32 dstFormat,
 		D3D::drawShadedTexQuad(read_texture, &sourcerect, 
 			Renderer::GetTargetWidth(), Renderer::GetTargetHeight(),
 			virtual_width, virtual_height,
-			PixelShaderCache::GetDepthMatrixProgram(SSAAMode, (srcFormat == PIXELFMT_Z24) && bformat != FOURCC_RAWZ),
+			PixelShaderCache::GetDepthMatrixProgram(SSAAMode, (srcFormat == PEControl::Z24) && bformat != FOURCC_RAWZ),
 			VertexShaderCache::GetSimpleVertexShader(SSAAMode));
 
 		Rendersurf->Release();
@@ -205,7 +205,7 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, u32 dstFormat,
 					read_texture,
 					Renderer::GetTargetWidth(), 
 					Renderer::GetTargetHeight(),
-					srcFormat == PIXELFMT_Z24, 
+					srcFormat == PEControl::Z24, 
 					isIntensity, 
 					dstFormat, 
 					scaleByHalf, 

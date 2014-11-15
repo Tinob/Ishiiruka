@@ -38,12 +38,12 @@ namespace EfbInterface
 	{
 			switch (bpmem.zcontrol.pixel_format)
 		{
-		case PIXELFMT_RGB8_Z24:
-		case PIXELFMT_Z24:
-		case PIXELFMT_RGB565_Z16:
+		case PEControl::RGB8_Z24:
+		case PEControl::Z24:
+		case PEControl::RGB565_Z16:
 			// do nothing
 			break;
-		case PIXELFMT_RGBA6_Z24:
+		case PEControl::RGBA6_Z24:
 			{
 				u32 a32 = a;
 				u32 *dst = (u32*)&efb[offset];
@@ -61,8 +61,8 @@ namespace EfbInterface
 	{
 		switch (bpmem.zcontrol.pixel_format)
 		{
-		case PIXELFMT_RGB8_Z24:
-		case PIXELFMT_Z24:
+		case PEControl::RGB8_Z24:
+		case PEControl::Z24:
 			{
 				u32 src = *(u32*)rgb;
 				u32 *dst = (u32*)&efb[offset];
@@ -71,7 +71,7 @@ namespace EfbInterface
 				*dst = val;
 			}
 			break;
-		case PIXELFMT_RGBA6_Z24:
+		case PEControl::RGBA6_Z24:
 			{
 				u32 src = *(u32*)rgb;
 				u32 *dst = (u32*)&efb[offset];
@@ -82,9 +82,9 @@ namespace EfbInterface
 				*dst = val;
 			}
 			break;
-		case PIXELFMT_RGB565_Z16:
+		case PEControl::RGB565_Z16:
 			{
-				INFO_LOG(VIDEO, "PIXELFMT_RGB565_Z16 is not supported correctly yet");
+				INFO_LOG(VIDEO, "PEControl::RGB565_Z16 is not supported correctly yet");
 				u32 src = *(u32*)rgb;
 				u32 *dst = (u32*)&efb[offset];
 				u32 val = *dst & 0xff000000;
@@ -101,8 +101,8 @@ namespace EfbInterface
 	{
 			switch (bpmem.zcontrol.pixel_format)
 		{
-		case PIXELFMT_RGB8_Z24:
-		case PIXELFMT_Z24:
+		case PEControl::RGB8_Z24:
+		case PEControl::Z24:
 			{
 				u32 src = *(u32*)color;
 				u32 *dst = (u32*)&efb[offset];
@@ -111,7 +111,7 @@ namespace EfbInterface
 				*dst = val;
 			}
 			break;
-		case PIXELFMT_RGBA6_Z24:
+		case PEControl::RGBA6_Z24:
 			{
 				u32 src = *(u32*)color;
 				u32 *dst = (u32*)&efb[offset];
@@ -123,9 +123,9 @@ namespace EfbInterface
 				*dst = val;
 			}
 			break;
-		case PIXELFMT_RGB565_Z16:
+		case PEControl::RGB565_Z16:
 			{
-				INFO_LOG(VIDEO, "PIXELFMT_RGB565_Z16 is not supported correctly yet");
+				INFO_LOG(VIDEO, "PEControl::RGB565_Z16 is not supported correctly yet");
 				u32 src = *(u32*)color;
 				u32 *dst = (u32*)&efb[offset];
 				u32 val = *dst & 0xff000000;
@@ -142,8 +142,8 @@ namespace EfbInterface
 	{
 		switch (bpmem.zcontrol.pixel_format)
 		{
-		case PIXELFMT_RGB8_Z24:
-		case PIXELFMT_Z24:
+		case PEControl::RGB8_Z24:
+		case PEControl::Z24:
 			{
 				u32 src = *(u32*)&efb[offset];
 				u32 *dst = (u32*)color;
@@ -151,7 +151,7 @@ namespace EfbInterface
 				*dst = val;
 			}
 			break;
-		case PIXELFMT_RGBA6_Z24:
+		case PEControl::RGBA6_Z24:
 			{
 				u32 src = *(u32*)&efb[offset];
 				color[ALP_C] = Convert6To8(src & 0x3f);
@@ -160,9 +160,9 @@ namespace EfbInterface
 				color[RED_C] = Convert6To8((src >> 18) & 0x3f);
 			}
 			break;
-		case PIXELFMT_RGB565_Z16:
+		case PEControl::RGB565_Z16:
 			{
-				INFO_LOG(VIDEO, "PIXELFMT_RGB565_Z16 is not supported correctly yet");
+				INFO_LOG(VIDEO, "PEControl::RGB565_Z16 is not supported correctly yet");
 				u32 src = *(u32*)&efb[offset];
 				u32 *dst = (u32*)color;
 				u32 val = 0xff | ((src & 0x00ffffff) << 8);
@@ -178,9 +178,9 @@ namespace EfbInterface
 	{
 		switch (bpmem.zcontrol.pixel_format)
 		{
-		case PIXELFMT_RGB8_Z24:
-		case PIXELFMT_RGBA6_Z24:
-		case PIXELFMT_Z24:
+		case PEControl::RGB8_Z24:
+		case PEControl::RGBA6_Z24:
+		case PEControl::Z24:
 			{
 				u32 *dst = (u32*)&efb[offset];
 				u32 val = *dst & 0xff000000;
@@ -188,9 +188,9 @@ namespace EfbInterface
 				*dst = val;				
 			}
 			break;
-		case PIXELFMT_RGB565_Z16:
+		case PEControl::RGB565_Z16:
 			{
-				INFO_LOG(VIDEO, "PIXELFMT_RGB565_Z16 is not supported correctly yet");
+				INFO_LOG(VIDEO, "PEControl::RGB565_Z16 is not supported correctly yet");
 				u32 *dst = (u32*)&efb[offset];
 				u32 val = *dst & 0xff000000;
 				val |= depth & 0x00ffffff;
@@ -208,16 +208,16 @@ namespace EfbInterface
 
 		switch (bpmem.zcontrol.pixel_format)
 		{
-		case PIXELFMT_RGB8_Z24:
-		case PIXELFMT_RGBA6_Z24:
-		case PIXELFMT_Z24:
+		case PEControl::RGB8_Z24:
+		case PEControl::RGBA6_Z24:
+		case PEControl::Z24:
 			{
 				depth = (*(u32*)&efb[offset]) & 0x00ffffff;
 			}
 			break;
-		case PIXELFMT_RGB565_Z16:
+		case PEControl::RGB565_Z16:
 			{
-				INFO_LOG(VIDEO, "PIXELFMT_RGB565_Z16 is not supported correctly yet");
+				INFO_LOG(VIDEO, "PEControl::RGB565_Z16 is not supported correctly yet");
 				depth = (*(u32*)&efb[offset]) & 0x00ffffff;
 			}
 			break;
@@ -510,28 +510,28 @@ namespace EfbInterface
 
 		switch (bpmem.zmode.func)
 		{
-			case COMPARE_NEVER:
+		case ZMode::CompareMode::NEVER:
 				pass = false;
 				break;
-			case COMPARE_LESS:
+		case ZMode::CompareMode::LESS:
 				pass = z < depth;
 				break;
-			case COMPARE_EQUAL:
+		case ZMode::CompareMode::EQUAL:
 				pass = z == depth;
 				break;
-			case COMPARE_LEQUAL:
+		case ZMode::CompareMode::LEQUAL:
 				pass = z <= depth;
 				break;
-			case COMPARE_GREATER:
+		case ZMode::CompareMode::GREATER:
 				pass = z > depth;
 				break;
-			case COMPARE_NEQUAL:
+		case ZMode::CompareMode::NEQUAL:
 				pass = z != depth;
 				break;
-			case COMPARE_GEQUAL:
+		case ZMode::CompareMode::GEQUAL:
 				pass = z >= depth;
 				break;
-			case COMPARE_ALWAYS:
+		case ZMode::CompareMode::ALWAYS:
 				pass = true;
 				break;
 			default:

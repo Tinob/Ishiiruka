@@ -29,16 +29,17 @@ public:
 	static void SetConstants(); // sets pixel shader constants
 
 	// constant management, should be called after memory is committed
-	static void SetColorChanged(int type, int index, bool high);
-	static void SetAlpha(const AlphaTest& alpha);
-	static void SetDestAlpha(const ConstantAlpha& alpha);
+	static void SetTevColor(int index, int component, s32 value);
+	static void SetTevKonstColor(int index, int component, s32 value);
+	static void SetAlpha();
+	static void SetDestAlpha();
 	static void SetTexDims(int texmapid, u32 width, u32 height, u32 wraps, u32 wrapt);
-	static void SetZTextureBias(u32 bias);
+	static void SetZTextureBias();
 	static void SetViewportChanged();
 	static void SetIndMatrixChanged(int matrixidx);
 	static void SetTevKSelChanged(int id);
 	static void SetZTextureTypeChanged();
-	static void SetIndTexScaleChanged(u8 stagemask);
+	static void SetIndTexScaleChanged(bool high);
 	static void SetTexCoordChanged(u8 texmapid);
 	static void SetFogColorChanged();
 	static void SetFogParamChanged();

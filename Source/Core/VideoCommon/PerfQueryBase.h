@@ -29,7 +29,7 @@ public:
 	virtual ~PerfQueryBase() {}
 
 	// Checks if performance queries are enabled in the gameini configuration.
-	bool ShouldEmulate() const;
+	static bool ShouldEmulate();
 
 	// Begin querying the specified value for the following host GPU commands
 	virtual void EnableQuery(PerfQueryGroup type) {}

@@ -359,6 +359,28 @@ void PixelShaderManager::SetPSTextureDims(int texid)
 	PRIM_LOG("texdims%d: %f %f %f %f\n", texid, fdims[0], fdims[1], fdims[2], fdims[3]);
 }
 
+void PixelShaderManager::SetTevColor(int index, int component, s32 value)
+{
+	s32 *c = &lastRGBAfull[0][index][0];
+	if (c[component] != value)
+	{
+		c[component] = value;
+		s_nColorsChanged[0] |= 1 << index;
+		PRIM_LOG("tev color%d: %d %d %d %d\n", index, c[0], c[1], c[2], c[3]);
+	}
+}
+
+void PixelShaderManager::SetTevKonstColor(int index, int component, s32 value)
+{
+	s32 *c = &lastRGBAfull[1][index][0];
+	if (c[component] != value)
+	{
+		c[component] = value;
+		s_nColorsChanged[1] |= 1 << index;
+		PRIM_LOG("tev konst color%d: %d %d %d %d\n", index, c[0], c[1], c[2], c[3]);
+	}
+}
+/*
 // This one is high in profiles (0.5%).
 // TODO: Move conversion out, only store the raw color value
 // and update it when the shader constant is set, only.
@@ -389,21 +411,21 @@ void PixelShaderManager::SetColorChanged(int type, int num, bool high)
 	}
 	PRIM_LOG("pixel %scolor%d: %f %f %f %f\n", type ? "k" : "", num, pf[0], pf[1], pf[2], pf[3]);
 }
-
-void PixelShaderManager::SetAlpha(const AlphaTest& alpha)
+*/
+void PixelShaderManager::SetAlpha()
 {
-	if ((alpha.hex & 0xffff) != lastAlpha)
+	if ((bpmem.alpha_test.hex & 0xffff) != lastAlpha)
 	{
-		lastAlpha = (lastAlpha & ~0xffff) | (alpha.hex & 0xffff);
+		lastAlpha = (lastAlpha & ~0xffff) | (bpmem.alpha_test.hex & 0xffff);
 		s_bAlphaChanged = true;
 	}
 }
 
-void PixelShaderManager::SetDestAlpha(const ConstantAlpha& alpha)
+void PixelShaderManager::SetDestAlpha()
 {
-	if (alpha.alpha != (lastAlpha >> 16))
+	if (bpmem.dstalpha.alpha != (lastAlpha >> 16))
 	{
-		lastAlpha = (lastAlpha & ~0xff0000) | ((alpha.hex & 0xff) << 16);
+		lastAlpha = (lastAlpha & ~0xff0000) | ((bpmem.dstalpha.alpha & 0xff) << 16);
 		s_bAlphaChanged = true;
 	}
 }
@@ -418,12 +440,12 @@ void PixelShaderManager::SetTexDims(int texmapid, u32 width, u32 height, u32 wra
 	}
 }
 
-void PixelShaderManager::SetZTextureBias(u32 bias)
+void PixelShaderManager::SetZTextureBias()
 {
-	if (lastZBias != bias)
+	if (lastZBias != bpmem.ztex1.bias)
 	{
 		s_bZBiasChanged = true;
-		lastZBias = bias;
+		lastZBias = bpmem.ztex1.bias;
 	}
 }
 
@@ -433,9 +455,9 @@ void PixelShaderManager::SetViewportChanged()
 	s_bFogRangeAdjustChanged = true; // TODO: Shouldn't be necessary with an accurate fog range adjust implementation
 }
 
-void PixelShaderManager::SetIndTexScaleChanged(u8 stagemask)
+void PixelShaderManager::SetIndTexScaleChanged(bool high)
 {
-	s_nIndTexScaleChanged |= stagemask;
+	s_nIndTexScaleChanged |= high ? 0x0c : 0x03;
 }
 
 void PixelShaderManager::SetIndMatrixChanged(int matrixidx)

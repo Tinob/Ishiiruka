@@ -24,7 +24,7 @@ void LoadBPReg(u32 value0)
 	BPCmd bp = { opcode, changes, newval };
 
 	//reset the mask register
-	if (opcode != 0xFE)
+	if (opcode != BPMEM_BP_MASK)
 		bpmem.bpMask = 0xFFFFFF;
 
 	BPWritten(bp);
@@ -92,7 +92,7 @@ void GetBPRegInfo(const u8* data, std::string* name, std::string* desc)
 	case BPMEM_ZCOMPARE:
 	{
 		SetRegName(BPMEM_ZCOMPARE);
-		PE_CONTROL config; config.hex = cmddata;
+		PEControl config; config.hex = cmddata;
 		const char* pixel_formats[] = { "RGB8_Z24", "RGBA6_Z24", "RGB565_Z16", "Z24", "Y8", "U8", "V8", "YUV420" };
 		const char* zformats[] = { "linear", "compressed (near)", "compressed (mid)", "compressed (far)", "inv linear", "compressed (inv near)", "compressed (inv mid)", "compressed (inv far)" };
 		*desc = StringFromFormat("EFB pixel format: %s\n"

@@ -529,7 +529,7 @@ void DX9::VertexManager::PrepareShaders(u32 components, const XFRegisters &xfr, 
 		s_Shader_Refresh_Required = false;
 	}
 	const bool useDstAlpha = !g_ActiveConfig.bDstAlphaPass && bpm.dstalpha.enable && bpm.blendmode.alphaupdate &&
-		bpm.zcontrol.pixel_format == PIXELFMT_RGBA6_Z24;
+		bpm.zcontrol.pixel_format == PEControl::RGBA6_Z24;
 	const bool useDualSource = useDstAlpha && g_ActiveConfig.backend_info.bSupportsDualSourceBlend;
 	const bool forced_early_z = bpm.UseEarlyDepthTest() && bpm.zmode.updateenable && bpm.alpha_test.TestResult() == AlphaTest::UNDETERMINED && !g_ActiveConfig.bFastDepthCalc;
 	DSTALPHA_MODE AlphaMode = forced_early_z ? DSTALPHA_NULL : (useDualSource ? DSTALPHA_DUAL_SOURCE_BLEND : DSTALPHA_NONE);
@@ -669,7 +669,7 @@ void VertexManager::vFlush()
 	// set global constants
 	
 	const bool useDstAlpha = !g_ActiveConfig.bDstAlphaPass && bpmem.dstalpha.enable && bpmem.blendmode.alphaupdate &&
-		bpmem.zcontrol.pixel_format == PIXELFMT_RGBA6_Z24;
+		bpmem.zcontrol.pixel_format == PEControl::RGBA6_Z24;
 	const bool useDualSource = useDstAlpha && g_ActiveConfig.backend_info.bSupportsDualSourceBlend;
 	const bool forced_early_z = bpmem.UseEarlyDepthTest() && bpmem.zmode.updateenable && bpmem.alpha_test.TestResult() == AlphaTest::UNDETERMINED && !g_ActiveConfig.bFastDepthCalc;
 	DSTALPHA_MODE AlphaMode = forced_early_z ? DSTALPHA_NULL :( useDualSource ? DSTALPHA_DUAL_SOURCE_BLEND : DSTALPHA_NONE);
