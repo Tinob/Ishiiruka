@@ -510,10 +510,10 @@ void Renderer::UpdateViewport(Matrix44& vpCorrection)
 
 	// TODO: ceil, floor or just cast to int?
 	// TODO: Directly use the floats instead of rounding them?
-	int intendedX = Renderer::EFBToScaledX((int)ceil(xfregs.viewport.xOrig - xfregs.viewport.wd - scissorXOff));
-	int intendedY = Renderer::EFBToScaledY((int)ceil(xfregs.viewport.yOrig + xfregs.viewport.ht - scissorYOff));
-	int intendedWd = Renderer::EFBToScaledX((int)ceil(2.0f * xfregs.viewport.wd));
-	int intendedHt = Renderer::EFBToScaledY((int)ceil(-2.0f * xfregs.viewport.ht));
+	int intendedX = Renderer::EFBToScaledX((int)ceil(xfmem.viewport.xOrig - xfmem.viewport.wd - scissorXOff));
+	int intendedY = Renderer::EFBToScaledY((int)ceil(xfmem.viewport.yOrig + xfmem.viewport.ht - scissorYOff));
+	int intendedWd = Renderer::EFBToScaledX((int)ceil(2.0f * xfmem.viewport.wd));
+	int intendedHt = Renderer::EFBToScaledY((int)ceil(-2.0f * xfmem.viewport.ht));
 	if (intendedWd < 0)
 	{
 		intendedX += intendedWd;
@@ -552,8 +552,8 @@ void Renderer::UpdateViewport(Matrix44& vpCorrection)
 	// Some games set invalid values for z-min and z-max so fix them to the max and min allowed and let the shaders do this work
 	D3D11_VIEWPORT vp = CD3D11_VIEWPORT((float)X, (float)Y,
 										(float)Wd, (float)Ht,
-										0.f,	// (xfregs.viewport.farZ - xfregs.viewport.zRange) / 16777216.0f;
-										1.f);   //  xfregs.viewport.farZ / 16777216.0f;
+										0.f,	// (xfmem.viewport.farZ - xfmem.viewport.zRange) / 16777216.0f;
+										1.f);   //  xfmem.viewport.farZ / 16777216.0f;
 	D3D::context->RSSetViewports(1, &vp);
 }
 

@@ -41,7 +41,7 @@ struct LightingUidData
 #pragma pack()
 
 template<class T, bool Write_Code>
-static void GenerateLightShader(T& object, LightingUidData& uid_data, int index, int litchan_index, const char* lightsName, int coloralpha, const XFRegisters &xfr)
+static void GenerateLightShader(T& object, LightingUidData& uid_data, int index, int litchan_index, const char* lightsName, int coloralpha, const XFMemory &xfr)
 {
 	const LitChannel& chan = (litchan_index > 1) ? xfr.alpha[litchan_index - 2] : xfr.color[litchan_index];
 	uid_data.attnfunc |= chan.attnfunc << (2 * litchan_index);
@@ -119,7 +119,7 @@ static void GenerateLightShader(T& object, LightingUidData& uid_data, int index,
 // inColorName is color in vs and colors_ in ps
 // dest is o.colors_ in vs and colors_ in ps
 template<class T, bool Write_Code>
-static void GenerateLightingShader(T& object, LightingUidData& uid_data, int components, const char* materialsName, const char* lightsName, const char* inColorName, const char* dest, const  XFRegisters &xfr)
+static void GenerateLightingShader(T& object, LightingUidData& uid_data, int components, const char* materialsName, const char* lightsName, const char* inColorName, const char* dest, const  XFMemory &xfr)
 {
 	for (unsigned int j = 0; j < xfr.numChan.numColorChans; j++)
 	{

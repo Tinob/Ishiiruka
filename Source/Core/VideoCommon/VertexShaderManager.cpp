@@ -137,8 +137,7 @@ void VertexShaderManager::Init()
 {
 	Dirty();
 	m_buffer.Clear();
-	memset(&xfregs, 0, sizeof(xfregs));
-	memset(xfmem, 0, sizeof(xfmem));
+	memset(&xfmem, 0, sizeof(xfmem));
 	ResetView();
 
 	// TODO: should these go inside ResetView()?
@@ -220,7 +219,7 @@ void VertexShaderManager::SetConstants()
 	{
 		int startn = nTransformMatricesChanged[0] / 4;
 		int endn = (nTransformMatricesChanged[1] + 3) / 4;
-		const float* pstart = (const float*)&xfmem[startn * 4];
+		const float* pstart = (const float*)&xfmem.posMatrices[startn * 4];
 		m_buffer.SetMultiConstant4v(C_TRANSFORMMATRICES + startn, endn - startn, pstart);
 		nTransformMatricesChanged[0] = nTransformMatricesChanged[1] = -1;
 	}
@@ -229,7 +228,7 @@ void VertexShaderManager::SetConstants()
 	{
 		int startn = nNormalMatricesChanged[0] / 3;
 		int endn = (nNormalMatricesChanged[1] + 2) / 3;
-		const float *pnstart = (const float*)&xfmem[XFMEM_NORMALMATRICES+3*startn];
+		const float *pnstart = (const float*)&xfmem.normalMatrices[3 * startn];
 		m_buffer.SetMultiConstant3v(C_NORMALMATRICES + startn, endn - startn, pnstart);
 		nNormalMatricesChanged[0] = nNormalMatricesChanged[1] = -1;
 	}
@@ -238,7 +237,7 @@ void VertexShaderManager::SetConstants()
 	{
 		int startn = nPostTransformMatricesChanged[0] / 4;
 		int endn = (nPostTransformMatricesChanged[1] + 3 ) / 4;
-		const float* pstart = (const float*)&xfmem[XFMEM_POSTMATRICES + startn * 4];
+		const float* pstart = (const float*)&xfmem.postMatrices[startn * 4];
 		m_buffer.SetMultiConstant4v(C_POSTTRANSFORMMATRICES + startn, endn - startn, pstart);
 		nPostTransformMatricesChanged[0] = nPostTransformMatricesChanged[1] = -1;
 	}
@@ -248,32 +247,35 @@ void VertexShaderManager::SetConstants()
 		// lights don't have a 1 to 1 mapping, the color component needs to be converted to 4 floats
 		int istart = nLightsChanged[0] / 0x10;
 		int iend = (nLightsChanged[1] + 15) / 0x10;
-		const float* xfmemptr = (const float*)&xfmem[0x10 * istart + XFMEM_LIGHTS];
+		
 		for (int i = istart; i < iend; ++i)
 		{
-			u32 color = *(const u32*)(xfmemptr + 3);
+			const Light& light = xfmem.lights[i];
+			// xfmem.light.color is packed as abgr in u8[4], so we have to swap the order
 			m_buffer.SetConstant4(C_LIGHTS + 5 * i,
-				((color >> 24) & 0xFF) * U8_NORM_COEF,
-				((color >> 16) & 0xFF) * U8_NORM_COEF,
-				((color >> 8)  & 0xFF) * U8_NORM_COEF,
-				((color)       & 0xFF) * U8_NORM_COEF);
-			xfmemptr += 4;
-
-			for (int j = 0; j < 4; ++j, xfmemptr += 3)
+				light.color[3] * U8_NORM_COEF,
+				light.color[2] * U8_NORM_COEF,
+				light.color[1] * U8_NORM_COEF,
+				light.color[0] * U8_NORM_COEF);
+			m_buffer.SetConstant3v(C_LIGHTS + 5 * i + 1, light.cosatt);
+			if (fabs(light.distatt[0]) < 0.00001f &&
+				fabs(light.distatt[1]) < 0.00001f &&
+				fabs(light.distatt[2]) < 0.00001f)
 			{
-				if (j == 1 &&
-					fabs(xfmemptr[0]) < 0.00001f &&
-					fabs(xfmemptr[1]) < 0.00001f &&
-					fabs(xfmemptr[2]) < 0.00001f)
-				{
-					// dist attenuation, make sure not equal to 0!!!
-					m_buffer.SetConstant4(C_LIGHTS + 5 * i + j + 1, 0.00001f, xfmemptr[1], xfmemptr[2], 0.0f);
-				}
-				else
-				{
-					m_buffer.SetConstant4v(C_LIGHTS + 5 * i + j + 1, xfmemptr);
-				}
+				// dist attenuation, make sure not equal to 0!!!
+				m_buffer.SetConstant4(C_LIGHTS + 5 * i + 2, 0.00001f, light.distatt[1], light.distatt[2], 0.0f);
 			}
+			else
+			{
+				m_buffer.SetConstant3v(C_LIGHTS + 5 * i + 2, light.distatt);
+			}
+			m_buffer.SetConstant3v(C_LIGHTS + 5 * i + 3, light.dpos);
+			double norm = double(light.ddir[0]) * double(light.ddir[0]) +
+				double(light.ddir[1]) * double(light.ddir[1]) +
+				double(light.ddir[2]) * double(light.ddir[2]);
+			norm = 1.0 / sqrt(norm);
+			float norm_float = static_cast<float>(norm);
+			m_buffer.SetConstant4(C_LIGHTS + 5 * i + 4, light.ddir[0] * norm_float, light.ddir[1] * norm_float, light.ddir[2] * norm_float, 0.0f);
 		}
 
 		nLightsChanged[0] = nLightsChanged[1] = -1;
@@ -286,7 +288,7 @@ void VertexShaderManager::SetConstants()
 		{
 			if (nMaterialsChanged & (1 << i))
 			{
-				u32 data = *(xfregs.ambColor + i);
+				u32 data = *(xfmem.ambColor + i);
 				material[0] = ((data >> 24) & 0xFF) * U8_NORM_COEF;
 				material[1] = ((data >> 16) & 0xFF) * U8_NORM_COEF;
 				material[2] = ((data >>  8) & 0xFF) * U8_NORM_COEF;
@@ -300,7 +302,7 @@ void VertexShaderManager::SetConstants()
 		{
 			if (nMaterialsChanged & (1 << (i + 2)))
 			{
-				u32 data = *(xfregs.matColor + i);
+				u32 data = *(xfmem.matColor + i);
 				material[0] = ((data >> 24) & 0xFF) * U8_NORM_COEF;
 				material[1] = ((data >> 16) & 0xFF) * U8_NORM_COEF;
 				material[2] = ((data >>  8) & 0xFF) * U8_NORM_COEF;
@@ -317,8 +319,8 @@ void VertexShaderManager::SetConstants()
 	{
 		bPosNormalMatrixChanged = false;
 
-		const float *pos = (const float *)xfmem + MatrixIndexA.PosNormalMtxIdx * 4;
-		const float *norm = (const float *)xfmem + XFMEM_NORMALMATRICES + 3 * (MatrixIndexA.PosNormalMtxIdx & 31);
+		const float *pos = (const float *)xfmem.posMatrices + MatrixIndexA.PosNormalMtxIdx * 4;
+		const float *norm = (const float *)xfmem.normalMatrices + 3 * (MatrixIndexA.PosNormalMtxIdx & 31);
 
 		m_buffer.SetMultiConstant4v(C_POSNORMALMATRIX, 3, pos);
 		m_buffer.SetMultiConstant3v(C_POSNORMALMATRIX + 3, 3, norm);
@@ -329,8 +331,10 @@ void VertexShaderManager::SetConstants()
 		bTexMatricesChanged[0] = false;
 		const float *fptrs[] = 
 		{
-			(const float *)xfmem + MatrixIndexA.Tex0MtxIdx * 4, (const float *)xfmem + MatrixIndexA.Tex1MtxIdx * 4,
-			(const float *)xfmem + MatrixIndexA.Tex2MtxIdx * 4, (const float *)xfmem + MatrixIndexA.Tex3MtxIdx * 4
+			(const float *)xfmem.posMatrices + MatrixIndexA.Tex0MtxIdx * 4, 
+			(const float *)xfmem.posMatrices + MatrixIndexA.Tex1MtxIdx * 4,
+			(const float *)xfmem.posMatrices + MatrixIndexA.Tex2MtxIdx * 4, 
+			(const float *)xfmem.posMatrices + MatrixIndexA.Tex3MtxIdx * 4
 		};
 
 		for (int i = 0; i < 4; ++i)
@@ -343,8 +347,10 @@ void VertexShaderManager::SetConstants()
 	{
 		bTexMatricesChanged[1] = false;
 		const float *fptrs[] = {
-			(const float *)xfmem + MatrixIndexB.Tex4MtxIdx * 4, (const float *)xfmem + MatrixIndexB.Tex5MtxIdx * 4,
-			(const float *)xfmem + MatrixIndexB.Tex6MtxIdx * 4, (const float *)xfmem + MatrixIndexB.Tex7MtxIdx * 4
+			(const float *)xfmem.posMatrices + MatrixIndexB.Tex4MtxIdx * 4, 
+			(const float *)xfmem.posMatrices + MatrixIndexB.Tex5MtxIdx * 4,
+			(const float *)xfmem.posMatrices + MatrixIndexB.Tex6MtxIdx * 4, 
+			(const float *)xfmem.posMatrices + MatrixIndexB.Tex7MtxIdx * 4
 		};
 
 		for (int i = 0; i < 4; ++i)
@@ -362,11 +368,11 @@ void VertexShaderManager::SetConstants()
 		// NOTE: If we ever emulate antialiasing, the sample locations set by
 		// BP registers 0x01-0x04 need to be considered here.
 		const float pixel_center_correction = ((g_ActiveConfig.backend_info.APIType & API_D3D9) ? 0.0f : 0.5f) - 7.0f / 12.0f;
-		const float pixel_size_x = 2.f / Renderer::EFBToScaledXf(2.f * xfregs.viewport.wd);
-		const float pixel_size_y = 2.f / Renderer::EFBToScaledXf(2.f * xfregs.viewport.ht);
+		const float pixel_size_x = 2.f / Renderer::EFBToScaledXf(2.f * xfmem.viewport.wd);
+		const float pixel_size_y = 2.f / Renderer::EFBToScaledXf(2.f * xfmem.viewport.ht);
 		m_buffer.SetConstant4(C_DEPTHPARAMS,
-						xfregs.viewport.farZ * U24_NORM_COEF,
-						xfregs.viewport.zRange * U24_NORM_COEF,
+						xfmem.viewport.farZ * U24_NORM_COEF,
+						xfmem.viewport.zRange * U24_NORM_COEF,
 						pixel_center_correction * pixel_size_x,
 						pixel_center_correction * pixel_size_y);
 		// This is so implementation-dependent that we can't have it here.
@@ -378,9 +384,9 @@ void VertexShaderManager::SetConstants()
 	{
 		bProjectionChanged = false;
 		
-		float *rawProjection = xfregs.projection.rawProjection;
+		float *rawProjection = xfmem.projection.rawProjection;
 
-		switch(xfregs.projection.type)
+		switch(xfmem.projection.type)
 		{
 		case GX_PERSPECTIVE:
 
@@ -480,12 +486,12 @@ void VertexShaderManager::SetConstants()
 			break;
 
 		default:
-			ERROR_LOG(VIDEO, "Unknown projection type: %d", xfregs.projection.type);
+			ERROR_LOG(VIDEO, "Unknown projection type: %d", xfmem.projection.type);
 		}
 
 		PRIM_LOG("Projection: %f %f %f %f %f %f\n", rawProjection[0], rawProjection[1], rawProjection[2], rawProjection[3], rawProjection[4], rawProjection[5]);
 
-		if ((g_ActiveConfig.bFreeLook || g_ActiveConfig.i3DStereo ) && xfregs.projection.type == GX_PERSPECTIVE)
+		if ((g_ActiveConfig.bFreeLook || g_ActiveConfig.i3DStereo ) && xfmem.projection.type == GX_PERSPECTIVE)
 		{
 			Matrix44 mtxA;
 			Matrix44 mtxB;

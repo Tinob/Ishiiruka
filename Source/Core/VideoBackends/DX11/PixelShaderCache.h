@@ -23,7 +23,7 @@ public:
 	static void PrepareShader(
 		DSTALPHA_MODE dstAlphaMode,
 		u32 componets,
-		const XFRegisters &xfr,
+		const XFMemory &xfr,
 		const BPMemory &bpm, bool ongputhread);
 	static bool TestShader();
 	static void InsertByteCode(const PixelShaderUid &uid, const void* bytecode, unsigned int bytecodelen);

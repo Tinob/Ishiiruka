@@ -38,7 +38,7 @@ void DefineVSOutputStructMember(T& object, const char* type, const char* name, i
 }
 
 template<class T, API_TYPE api_type>
-inline void GenerateVSOutputStruct(T& object, bool enable_pl, const XFRegisters &xfr)
+inline void GenerateVSOutputStruct(T& object, bool enable_pl, const XFMemory &xfr)
 {
 	object.Write("struct VS_OUTPUT {\n");
 	DefineVSOutputStructMember<T, api_type>(object, "float4", "pos", -1, api_type == API_D3D11 ? "SV_Position" : "POSITION");
@@ -66,7 +66,7 @@ inline void GenerateVSOutputStruct(T& object, bool enable_pl, const XFRegisters 
 }
 
 template<class T, bool Write_Code, API_TYPE api_type>
-inline void GenerateVertexShader(T& out, u32 components, const XFRegisters &xfr, const BPMemory &bpm)
+inline void GenerateVertexShader(T& out, u32 components, const XFMemory &xfr, const BPMemory &bpm)
 {
 	// Non-uid template parameters will write to the dummy data (=> gets optimized out)
 	bool uidPresent = (&out.template GetUidData<vertex_shader_uid_data>() != NULL);
@@ -605,37 +605,37 @@ inline void GenerateVertexShader(T& out, u32 components, const XFRegisters &xfr,
 	}
 }
 
-void GetVertexShaderUidD3D9(VertexShaderUid& object, u32 components, const XFRegisters &xfr, const BPMemory &bpm)
+void GetVertexShaderUidD3D9(VertexShaderUid& object, u32 components, const XFMemory &xfr, const BPMemory &bpm)
 {
 	GenerateVertexShader<VertexShaderUid, false, API_D3D9>(object, components, xfr, bpm);
 }
 
-void GenerateVertexShaderCodeD3D9(ShaderCode& object, u32 components, const XFRegisters &xfr, const BPMemory &bpm)
+void GenerateVertexShaderCodeD3D9(ShaderCode& object, u32 components, const XFMemory &xfr, const BPMemory &bpm)
 {
 	GenerateVertexShader<ShaderCode, true, API_D3D9>(object, components, xfr, bpm);
 }
 
-void GetVertexShaderUidD3D11(VertexShaderUid& object, u32 components, const XFRegisters &xfr, const BPMemory &bpm)
+void GetVertexShaderUidD3D11(VertexShaderUid& object, u32 components, const XFMemory &xfr, const BPMemory &bpm)
 {
 	GenerateVertexShader<VertexShaderUid, false, API_D3D11>(object, components, xfr, bpm);
 }
 
-void GenerateVertexShaderCodeD3D11(ShaderCode& object, u32 components, const XFRegisters &xfr, const BPMemory &bpm)
+void GenerateVertexShaderCodeD3D11(ShaderCode& object, u32 components, const XFMemory &xfr, const BPMemory &bpm)
 {
 	GenerateVertexShader<ShaderCode, true, API_D3D11>(object, components, xfr, bpm);
 }
 
-void GenerateVSOutputStructForGSD3D11(ShaderCode& object, const XFRegisters &xfr)
+void GenerateVSOutputStructForGSD3D11(ShaderCode& object, const XFMemory &xfr)
 {
 	GenerateVSOutputStruct<ShaderCode, API_D3D11>(object, g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting && xfr.numChan.numColorChans > 0, xfr);
 }
 
-void GetVertexShaderUidGL(VertexShaderUid& object, u32 components, const XFRegisters &xfr, const BPMemory &bpm)
+void GetVertexShaderUidGL(VertexShaderUid& object, u32 components, const XFMemory &xfr, const BPMemory &bpm)
 {
 	GenerateVertexShader<VertexShaderUid, false, API_OPENGL>(object, components, xfr, bpm);
 }
 
-void GenerateVertexShaderCodeGL(ShaderCode& object, u32 components, const XFRegisters &xfr, const BPMemory &bpm)
+void GenerateVertexShaderCodeGL(ShaderCode& object, u32 components, const XFMemory &xfr, const BPMemory &bpm)
 {
 	GenerateVertexShader<ShaderCode, true, API_OPENGL>(object, components, xfr, bpm);
 }

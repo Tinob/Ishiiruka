@@ -230,7 +230,7 @@ template<class T, bool Write_Code, API_TYPE ApiType> inline void WriteAlphaTest(
 template<class T, bool Write_Code> inline void WriteFog(T& out, pixel_shader_uid_data& uid_data, const BPMemory &bpm);
 
 template<class T, bool Write_Code, API_TYPE ApiType>
-inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 components, const XFRegisters &xfr, const BPMemory &bpm)
+inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 components, const XFMemory &xfr, const BPMemory &bpm)
 {
 	// Non-uid template parameters will write to the dummy data (=> gets optimized out)
 	pixel_shader_uid_data dummy_data;
@@ -1376,37 +1376,37 @@ static inline void WriteFog(T& out, pixel_shader_uid_data& uid_data, const BPMem
 
 }
 
-void GetPixelShaderUidD3D9(PixelShaderUid& object, DSTALPHA_MODE dstAlphaMode, u32 components, const XFRegisters &xfr, const BPMemory &bpm)
+void GetPixelShaderUidD3D9(PixelShaderUid& object, DSTALPHA_MODE dstAlphaMode, u32 components, const XFMemory &xfr, const BPMemory &bpm)
 {
 	GeneratePixelShader<PixelShaderUid, false, API_D3D9>(object, dstAlphaMode, components, xfr, bpm);
 }
 
-void GeneratePixelShaderCodeD3D9(ShaderCode& object, DSTALPHA_MODE dstAlphaMode, u32 components, const XFRegisters &xfr, const BPMemory &bpm)
+void GeneratePixelShaderCodeD3D9(ShaderCode& object, DSTALPHA_MODE dstAlphaMode, u32 components, const XFMemory &xfr, const BPMemory &bpm)
 {
 	GeneratePixelShader<ShaderCode, true, API_D3D9>(object, dstAlphaMode, components, xfr, bpm);
 }
 
-void GeneratePixelShaderCodeD3D9SM2(ShaderCode& object, DSTALPHA_MODE dstAlphaMode, u32 components, const XFRegisters &xfr, const BPMemory &bpm)
+void GeneratePixelShaderCodeD3D9SM2(ShaderCode& object, DSTALPHA_MODE dstAlphaMode, u32 components, const XFMemory &xfr, const BPMemory &bpm)
 {
 	GeneratePixelShader<ShaderCode, true, API_D3D9_SM20>(object, dstAlphaMode, components, xfr, bpm);
 }
 
-void GetPixelShaderUidD3D11(PixelShaderUid& object, DSTALPHA_MODE dstAlphaMode, u32 components, const XFRegisters &xfr, const BPMemory &bpm)
+void GetPixelShaderUidD3D11(PixelShaderUid& object, DSTALPHA_MODE dstAlphaMode, u32 components, const XFMemory &xfr, const BPMemory &bpm)
 {
 	GeneratePixelShader<PixelShaderUid, false, API_D3D11>(object, dstAlphaMode, components, xfr, bpm);
 }
 
-void GeneratePixelShaderCodeD3D11(ShaderCode& object, DSTALPHA_MODE dstAlphaMode, u32 components, const XFRegisters &xfr, const BPMemory &bpm)
+void GeneratePixelShaderCodeD3D11(ShaderCode& object, DSTALPHA_MODE dstAlphaMode, u32 components, const XFMemory &xfr, const BPMemory &bpm)
 {
 	GeneratePixelShader<ShaderCode, true, API_D3D11>(object, dstAlphaMode, components, xfr, bpm);
 }
 
-void GetPixelShaderUidGL(PixelShaderUid& object, DSTALPHA_MODE dstAlphaMode, u32 components, const XFRegisters &xfr, const BPMemory &bpm)
+void GetPixelShaderUidGL(PixelShaderUid& object, DSTALPHA_MODE dstAlphaMode, u32 components, const XFMemory &xfr, const BPMemory &bpm)
 {
 	GeneratePixelShader<PixelShaderUid, false, API_OPENGL>(object, dstAlphaMode, components, xfr, bpm);
 }
 
-void GeneratePixelShaderCodeGL(ShaderCode& object, DSTALPHA_MODE dstAlphaMode, u32 components, const XFRegisters &xfr, const BPMemory &bpm)
+void GeneratePixelShaderCodeGL(ShaderCode& object, DSTALPHA_MODE dstAlphaMode, u32 components, const XFMemory &xfr, const BPMemory &bpm)
 {
 	GeneratePixelShader<ShaderCode, true, API_OPENGL>(object, dstAlphaMode, components, xfr, bpm);
 }

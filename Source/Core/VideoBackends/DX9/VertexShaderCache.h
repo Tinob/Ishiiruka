@@ -48,7 +48,7 @@ private:
 public:
 	static void Init();
 	static void Shutdown();
-	static void PrepareShader(u32 components, const XFRegisters &xfr, const BPMemory &bpm, bool ongputhread);
+	static void PrepareShader(u32 components, const XFMemory &xfr, const BPMemory &bpm, bool ongputhread);
 	static bool TestShader();
 	static LPDIRECT3DVERTEXSHADER9 GetSimpleVertexShader(int level);
 	static LPDIRECT3DVERTEXSHADER9 GetClearVertexShader();	

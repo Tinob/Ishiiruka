@@ -510,28 +510,28 @@ namespace EfbInterface
 
 		switch (bpmem.zmode.func)
 		{
-		case ZMode::CompareMode::NEVER:
+			case ZMode::CompareMode::NEVER:
 				pass = false;
 				break;
-		case ZMode::CompareMode::LESS:
+			case ZMode::CompareMode::LESS:
 				pass = z < depth;
 				break;
-		case ZMode::CompareMode::EQUAL:
+			case ZMode::CompareMode::EQUAL:
 				pass = z == depth;
 				break;
-		case ZMode::CompareMode::LEQUAL:
+			case ZMode::CompareMode::LEQUAL:
 				pass = z <= depth;
 				break;
-		case ZMode::CompareMode::GREATER:
+			case ZMode::CompareMode::GREATER:
 				pass = z > depth;
 				break;
-		case ZMode::CompareMode::NEQUAL:
+			case ZMode::CompareMode::NEQUAL:
 				pass = z != depth;
 				break;
-		case ZMode::CompareMode::GEQUAL:
+			case ZMode::CompareMode::GEQUAL:
 				pass = z >= depth;
 				break;
-		case ZMode::CompareMode::ALWAYS:
+			case ZMode::CompareMode::ALWAYS:
 				pass = true;
 				break;
 			default:

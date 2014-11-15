@@ -20,7 +20,7 @@ public:
 	void CreateDeviceObjects();
 	void DestroyDeviceObjects();
 	void PrepareShaders(u32 components,
-		const XFRegisters &xfr,
+		const XFMemory &xfr,
 		const BPMemory &bpm,
 		bool fromgputhread = true);
 private:

@@ -57,7 +57,7 @@ public:
 	static void PrepareShader(
 		DSTALPHA_MODE dstAlphaMode,
 		u32 componets,
-		const XFRegisters &xfr,
+		const XFMemory &xfr,
 		const BPMemory &bpm, 
 		bool ongputhread);
 	static bool SetShader(DSTALPHA_MODE dstAlphaMode);

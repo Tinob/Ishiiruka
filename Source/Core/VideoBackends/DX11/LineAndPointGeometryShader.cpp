@@ -269,14 +269,14 @@ void main(point VS_OUTPUT input[1], inout TriangleStream<VS_OUTPUT> outStream)
 		char buffer[16384];
 		ShaderCode code;
 		code.SetBuffer(buffer);
-		GenerateVSOutputStructForGSD3D11(code, xfregs);
+		GenerateVSOutputStructForGSD3D11(code, xfmem);
 		code.Write("\n%s", HEADER_AND_PARAMS_GS_COMMON);
 		code.Write("\n%s", line ? LINE_GS_COMMON : POINT_GS_COMMON);
 
 		INFO_LOG(VIDEO, "Compiling %s geometry shader for components 0x%.08X (num texcoords %d)", type,
-			components, xfregs.numTexGen.numTexGens);
+			components, xfmem.numTexGen.numTexGens);
 
-		auto numTexCoordsStr = std::to_string(xfregs.numTexGen.numTexGens);
+		auto numTexCoordsStr = std::to_string(xfmem.numTexGen.numTexGens);
 		D3D_SHADER_MACRO macros[] = {
 				{ "NUM_TEXCOORDS", numTexCoordsStr.c_str() },
 				{ nullptr, nullptr }

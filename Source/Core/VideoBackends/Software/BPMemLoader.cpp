@@ -171,7 +171,7 @@ void SWBPWritten(int address, int newvalue)
 	case BPMEM_TEV_COLOR_BG + 4: // Reg 3
 	case BPMEM_TEV_COLOR_BG + 6: // Reg 4
 		{
-			int regNum = (address >> 1 ) & 0x3;
+			int regNum = (address >> 1 ) & 0x3;			
 			Rasterizer::SetTevReg(regNum, Tev::GRN_C, bpmem.tevregs[regNum].type_bg > 0, (s16)bpmem.tevregs[regNum].green); // G
 			Rasterizer::SetTevReg(regNum, Tev::BLU_C, bpmem.tevregs[regNum].type_bg > 0, (s16)bpmem.tevregs[regNum].blue); // B
 

@@ -36,7 +36,7 @@ public:
 	static void PrepareForAdditionalData(int primitive, u32 count, u32 stride);
 	static u32 GetRemainingIndices(int primitive);
 
-	virtual void PrepareShaders(u32 components, const XFRegisters &xfr, const BPMemory &bpm, bool ongputhread) = 0;
+	virtual void PrepareShaders(u32 components, const XFMemory &xfr, const BPMemory &bpm, bool ongputhread) = 0;
 	static void Flush();
 
 	virtual ::NativeVertexFormat* CreateNativeVertexFormat() = 0;

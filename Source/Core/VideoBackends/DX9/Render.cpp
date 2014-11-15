@@ -1013,10 +1013,10 @@ void Renderer::UpdateViewport(Matrix44& vpCorrection)
 	int scissorYOff = bpmem.scissorOffset.y * 2;
 
 	// TODO: ceil, floor or just cast to int?
-	int intendedX = EFBToScaledX((int)ceil(xfregs.viewport.xOrig - xfregs.viewport.wd - scissorXOff));
-	int intendedY = EFBToScaledY((int)ceil(xfregs.viewport.yOrig + xfregs.viewport.ht - scissorYOff));
-	int intendedWd = EFBToScaledX((int)ceil(2.0f * xfregs.viewport.wd));
-	int intendedHt = EFBToScaledY((int)ceil(-2.0f * xfregs.viewport.ht));
+	int intendedX = EFBToScaledX((int)ceil(xfmem.viewport.xOrig - xfmem.viewport.wd - scissorXOff));
+	int intendedY = EFBToScaledY((int)ceil(xfmem.viewport.yOrig + xfmem.viewport.ht - scissorYOff));
+	int intendedWd = EFBToScaledX((int)ceil(2.0f * xfmem.viewport.wd));
+	int intendedHt = EFBToScaledY((int)ceil(-2.0f * xfmem.viewport.ht));
 	if (intendedWd < 0)
 	{
 		intendedX += intendedWd;
@@ -1055,8 +1055,8 @@ void Renderer::UpdateViewport(Matrix44& vpCorrection)
 	vp.Height = Ht;
 
 	// Some games set invalids values for z min and z max so fix them to the max an min alowed and let the shaders do this work
-	vp.MinZ = 0.0f; // (xfregs.viewport.farZ - xfregs.viewport.zRange) / 16777216.0f;
-	vp.MaxZ = 1.0f; // xfregs.viewport.farZ / 16777216.0f;
+	vp.MinZ = 0.0f; // (xfmem.viewport.farZ - xfmem.viewport.zRange) / 16777216.0f;
+	vp.MaxZ = 1.0f; // xfmem.viewport.farZ / 16777216.0f;
 	D3D::dev->SetViewport(&vp);
 }
 

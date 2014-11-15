@@ -486,8 +486,8 @@ void VertexManager::Draw()
 void VertexManager::SetPLRasterOffsets()
 {
 	// calculate base values for the offset parameters
-	float vpWidth = 2.0f * xfregs.viewport.wd;
-	float vpHeight = -2.0f * xfregs.viewport.ht;
+	float vpWidth = 2.0f * xfmem.viewport.wd;
+	float vpHeight = -2.0f * xfmem.viewport.ht;
 	vpWidth = vpWidth > 0 ? vpWidth : 640.f;
 	vpHeight = vpHeight > 0 ? vpHeight : 480.f;
 	vpWidth = 1.0f / vpWidth;
@@ -518,7 +518,7 @@ void VertexManager::SetPLRasterOffsets()
 	line_pt_params[PLO_POS_LINE_POSITIVE_Y].y = lsizey;
 }
 
-void DX9::VertexManager::PrepareShaders(u32 components, const XFRegisters &xfr, const BPMemory &bpm, bool ongputhread)
+void DX9::VertexManager::PrepareShaders(u32 components, const XFMemory &xfr, const BPMemory &bpm, bool ongputhread)
 {
 	if (ongputhread)
 	{

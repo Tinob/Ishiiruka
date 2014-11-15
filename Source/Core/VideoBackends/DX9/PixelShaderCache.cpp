@@ -352,7 +352,7 @@ void PixelShaderCache::Shutdown()
 void PixelShaderCache::PrepareShader(
 	DSTALPHA_MODE dstAlphaMode, 
 	u32 components, 
-	const XFRegisters &xfr, 
+	const XFMemory &xfr,
 	const BPMemory &bpm,
 	bool ongputhread)
 {

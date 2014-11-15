@@ -21,7 +21,7 @@ public:
 	void GetElements(NativeVertexFormat* format, D3DVERTEXELEMENT9** elems, int* num);
 	void CreateDeviceObjects();
 	void DestroyDeviceObjects();
-	void PrepareShaders(u32 components, const XFRegisters &xfr, const BPMemory &bpm, bool ongputhread = true);
+	void PrepareShaders(u32 components, const XFMemory &xfr, const BPMemory &bpm, bool ongputhread = true);
 private:
 	u32 m_vertex_buffer_cursor;
 	u32 m_vertex_buffer_size;

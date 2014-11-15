@@ -151,16 +151,16 @@ struct pixel_shader_uid_data
 #define PIXELSHADERGEN_BUFFERSIZE 16768
 typedef ShaderUid<pixel_shader_uid_data> PixelShaderUid;
 
-void GetPixelShaderUidD3D9(PixelShaderUid& object, DSTALPHA_MODE dstAlphaMode, u32 components, const XFRegisters &xfr, const BPMemory &bpm);
+void GetPixelShaderUidD3D9(PixelShaderUid& object, DSTALPHA_MODE dstAlphaMode, u32 components, const XFMemory &xfr, const BPMemory &bpm);
 
-void GeneratePixelShaderCodeD3D9(ShaderCode& object, DSTALPHA_MODE dstAlphaMode, u32 components, const XFRegisters &xfr, const BPMemory &bpm);
+void GeneratePixelShaderCodeD3D9(ShaderCode& object, DSTALPHA_MODE dstAlphaMode, u32 components, const XFMemory &xfr, const BPMemory &bpm);
 
-void GeneratePixelShaderCodeD3D9SM2(ShaderCode& object, DSTALPHA_MODE dstAlphaMode, u32 components, const XFRegisters &xfr, const BPMemory &bpm);
+void GeneratePixelShaderCodeD3D9SM2(ShaderCode& object, DSTALPHA_MODE dstAlphaMode, u32 components, const XFMemory &xfr, const BPMemory &bpm);
 
-void GetPixelShaderUidD3D11(PixelShaderUid& object, DSTALPHA_MODE dstAlphaMode, u32 components, const XFRegisters &xfr, const BPMemory &bpm);
+void GetPixelShaderUidD3D11(PixelShaderUid& object, DSTALPHA_MODE dstAlphaMode, u32 components, const XFMemory &xfr, const BPMemory &bpm);
 
-void GeneratePixelShaderCodeD3D11(ShaderCode& object, DSTALPHA_MODE dstAlphaMode, u32 components, const XFRegisters &xfr, const BPMemory &bpm);
+void GeneratePixelShaderCodeD3D11(ShaderCode& object, DSTALPHA_MODE dstAlphaMode, u32 components, const XFMemory &xfr, const BPMemory &bpm);
 
-void GetPixelShaderUidGL(PixelShaderUid& object, DSTALPHA_MODE dstAlphaMode, u32 components, const XFRegisters &xfr, const BPMemory &bpm);
+void GetPixelShaderUidGL(PixelShaderUid& object, DSTALPHA_MODE dstAlphaMode, u32 components, const XFMemory &xfr, const BPMemory &bpm);
 
-void GeneratePixelShaderCodeGL(ShaderCode& object, DSTALPHA_MODE dstAlphaMode, u32 components, const XFRegisters &xfr, const BPMemory &bpm);
+void GeneratePixelShaderCodeGL(ShaderCode& object, DSTALPHA_MODE dstAlphaMode, u32 components, const XFMemory &xfr, const BPMemory &bpm);

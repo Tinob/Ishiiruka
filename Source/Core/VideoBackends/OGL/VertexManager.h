@@ -34,7 +34,7 @@ public:
 	NativeVertexFormat* CreateNativeVertexFormat();
 	void CreateDeviceObjects();
 	void DestroyDeviceObjects();
-	void PrepareShaders(u32 components, const XFRegisters &xfr, const BPMemory &bpm, bool ongputhread);
+	void PrepareShaders(u32 components, const XFMemory &xfr, const BPMemory &bpm, bool ongputhread);
 	// NativeVertexFormat use this
 	GLuint m_vertex_buffers;
 	GLuint m_index_buffers; 

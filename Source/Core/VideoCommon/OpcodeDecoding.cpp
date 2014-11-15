@@ -34,32 +34,6 @@
 DataReader g_VideoData;
 bool g_bRecordFifoData = false;
 
-#if _M_SSE >= 0x301
-template <int count>
-void ReadU32xn_SSSE3(u32 *bufx16)
-{
-	g_VideoData.ReadU32xN_SSSE3<count>(bufx16);
-}
-
-DataReadU32xNfunc DataReadU32xFuncs_SSSE3[16] = {
-	ReadU32xn_SSSE3<1>,
-	ReadU32xn_SSSE3<2>,
-	ReadU32xn_SSSE3<3>,
-	ReadU32xn_SSSE3<4>,
-	ReadU32xn_SSSE3<5>,
-	ReadU32xn_SSSE3<6>,
-	ReadU32xn_SSSE3<7>,
-	ReadU32xn_SSSE3<8>,
-	ReadU32xn_SSSE3<9>,
-	ReadU32xn_SSSE3<10>,
-	ReadU32xn_SSSE3<11>,
-	ReadU32xn_SSSE3<12>,
-	ReadU32xn_SSSE3<13>,
-	ReadU32xn_SSSE3<14>,
-	ReadU32xn_SSSE3<15>,
-	ReadU32xn_SSSE3<16>
-};
-#endif
 template <int count>
 void ReadU32xn(u32 *bufx16)
 {
@@ -84,6 +58,7 @@ DataReadU32xNfunc DataReadU32xFuncs[16] = {
 	ReadU32xn<15>,
 	ReadU32xn<16>
 };
+
 template<bool sizeCheck>
 inline u32 Decode(const u8* end)
 {
@@ -124,9 +99,7 @@ inline u32 Decode(const u8* end)
 			return 0;
 		cycles = GX_LOAD_XF_REG_BASE_CYCLES + GX_LOAD_XF_REG_TRANSFER_CYCLES * transfer_size;
 		u32 xf_address = Cmd2 & 0xFFFF;
-		GC_ALIGNED128(u32 data_buffer[16]);
-		DataReadU32xFuncs[transfer_size - 1](data_buffer);
-		LoadXFReg(transfer_size, xf_address, data_buffer);
+		LoadXFReg(transfer_size, xf_address);
 
 		INCSTAT(stats.thisFrame.numXFLoads);
 	}
@@ -320,14 +293,6 @@ static void UnknownOpcode(u8 cmd_byte, const void *buffer)
 void OpcodeDecoder_Init()
 {
 	g_VideoData.SetReadPosition(GetVideoBufferStartPtr());
-
-#if _M_SSE >= 0x301
-	if (cpu_info.bSSSE3)
-	{
-		for (int i = 0; i < 16; ++i)
-			DataReadU32xFuncs[i] = DataReadU32xFuncs_SSSE3[i];
-	}
-#endif
 
 	if (g_Config.bEnableOpenCL)
 	{

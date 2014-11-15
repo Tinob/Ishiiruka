@@ -19,7 +19,7 @@ public:
 	static void Shutdown();
 	static bool SetShader(u32 components); // TODO: Should be renamed to LoadShader
 	static void PrepareShader(u32 components, 
-		const XFRegisters &xfr, 
+		const XFMemory &xfr, 
 		const BPMemory &bpm, bool ongputhread);
 	static bool TestShader();
 	static ID3D11VertexShader* GetActiveShader() { return last_entry->shader.get(); }

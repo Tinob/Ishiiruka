@@ -184,7 +184,7 @@ void VertexShaderCache::Shutdown()
 	g_vs_disk_cache.Close();
 }
 
-void VertexShaderCache::PrepareShader(u32 components, const XFRegisters &xfr, const BPMemory &bpm, bool ongputhread)
+void VertexShaderCache::PrepareShader(u32 components, const XFMemory &xfr, const BPMemory &bpm, bool ongputhread)
 {
 	VertexShaderUid uid;
 	GetVertexShaderUidD3D9(uid, components, xfr, bpm);

@@ -188,7 +188,7 @@ void VertexShaderCache::Shutdown()
 
 void VertexShaderCache::PrepareShader(
 	u32 components, 
-	const XFRegisters 
+	const XFMemory 
 	&xfr, 
 	const BPMemory &bpm, 
 	bool ongputhread)

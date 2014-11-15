@@ -138,8 +138,8 @@ void VertexManager::Draw(UINT stride)
 		indexstride += indexcount;
 		float lineWidth = float(bpmem.lineptwidth.linesize) / 6.f;
 		float texOffset = LINE_PT_TEX_OFFSETS[bpmem.lineptwidth.lineoff];
-		float vpWidth = 2.0f * xfregs.viewport.wd;
-		float vpHeight = -2.0f * xfregs.viewport.ht;
+		float vpWidth = 2.0f * xfmem.viewport.wd;
+		float vpHeight = -2.0f * xfmem.viewport.ht;
 
 		bool texOffsetEnable[8];
 
@@ -162,8 +162,8 @@ void VertexManager::Draw(UINT stride)
 		indexstride += indexcount;
 		float pointSize = float(bpmem.lineptwidth.pointsize) / 6.f;
 		float texOffset = LINE_PT_TEX_OFFSETS[bpmem.lineptwidth.pointoff];
-		float vpWidth = 2.0f * xfregs.viewport.wd;
-		float vpHeight = -2.0f * xfregs.viewport.ht;
+		float vpWidth = 2.0f * xfmem.viewport.wd;
+		float vpHeight = -2.0f * xfmem.viewport.ht;
 
 		bool texOffsetEnable[8];
 
@@ -184,7 +184,7 @@ void VertexManager::Draw(UINT stride)
 		((DX11::Renderer*)g_renderer)->RestoreCull();
 }
 
-void VertexManager::PrepareShaders(u32 components, const XFRegisters &xfr, const BPMemory &bpm, bool ongputhread)
+void VertexManager::PrepareShaders(u32 components, const XFMemory &xfr, const BPMemory &bpm, bool ongputhread)
 {
 	if (ongputhread)
 	{

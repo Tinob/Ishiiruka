@@ -100,6 +100,17 @@ public:
 		AddDirtyRegion(const_number, 1);
 	}
 	template<typename T>
+	inline void SetConstant3v(unsigned int const_number, const T *f)
+	{
+		u32 idx = const_number * 4;
+		T* buff = &((T*)m_buffer)[idx];
+		*buff++ = *f++;
+		*buff++ = *f++;
+		*buff++ = *f++;
+		*buff = T(0);
+		AddDirtyRegion(const_number, 1);
+	}
+	template<typename T>
 	inline void SetConstant4v(unsigned int const_number, const T *f)
 	{
 		u32 idx = const_number * 4;

@@ -168,7 +168,7 @@ void PixelShaderManager::SetConstants()
 		// [5] = 16777215 * farz
 
 		//ERROR_LOG("pixel=%x,%x, bias=%x\n", bpmem.zcontrol.pixel_format, bpmem.ztex2.type, lastZBias);
-		m_buffer.SetConstant4<float>(C_ZBIAS + 1, xfregs.viewport.farZ / 16777216.0f, xfregs.viewport.zRange / 16777216.0f, 0.0f, (float)(lastZBias) / 16777215.0f);
+		m_buffer.SetConstant4<float>(C_ZBIAS + 1, xfmem.viewport.farZ / 16777216.0f, xfmem.viewport.zRange / 16777216.0f, 0.0f, (float)(lastZBias) / 16777215.0f);
 		s_bZBiasChanged = s_bDepthRangeChanged = false;
 	}
 
@@ -256,14 +256,14 @@ void PixelShaderManager::SetConstants()
 			//bpmem.fogRange.Base.Center : center of the viewport in x axis. observation: bpmem.fogRange.Base.Center = realcenter + 342;
 			int center = ((u32)bpmem.fogRange.Base.Center) - 342;
 			// normalize center to make calculations easy
-			float ScreenSpaceCenter = center / (2.0f * xfregs.viewport.wd);
+			float ScreenSpaceCenter = center / (2.0f * xfmem.viewport.wd);
 			ScreenSpaceCenter = (ScreenSpaceCenter * 2.0f) - 1.0f;
 			//bpmem.fogRange.K seems to be  a table of precalculated coefficients for the adjust factor
 			//observations: bpmem.fogRange.K[0].LO appears to be the lowest value and bpmem.fogRange.K[4].HI the largest
 			// they always seems to be larger than 256 so my theory is :
 			// they are the coefficients from the center to the border of the screen
 			// so to simplify I use the hi coefficient as K in the shader taking 256 as the scale
-			m_buffer.SetConstant4<float>(C_FOG + 2, ScreenSpaceCenter, (float)Renderer::EFBToScaledX((int)(2.0f * xfregs.viewport.wd)), bpmem.fogRange.K[4].HI / 256.0f, 0.0f);
+			m_buffer.SetConstant4<float>(C_FOG + 2, ScreenSpaceCenter, (float)Renderer::EFBToScaledX((int)(2.0f * xfmem.viewport.wd)), bpmem.fogRange.K[4].HI / 256.0f, 0.0f);
 		}
 		else
 		{
@@ -275,40 +275,42 @@ void PixelShaderManager::SetConstants()
 
 	if (g_ActiveConfig.bEnablePixelLighting 
 		&& g_ActiveConfig.backend_info.bSupportsPixelLighting
-		&& xfregs.numChan.numColorChans > 0)
+		&& xfmem.numChan.numColorChans > 0)
 	{
 		if (nLightsChanged[0] >= 0)
 		{
 			// lights don't have a 1 to 1 mapping, the color component needs to be converted to 4 floats
 			int istart = nLightsChanged[0] / 0x10;
 			int iend = (nLightsChanged[1] + 15) / 0x10;
-			const float* xfmemptr = (const float*)&xfmem[0x10 * istart + XFMEM_LIGHTS];
 
 			for (int i = istart; i < iend; ++i)
 			{
-				u32 color = *(const u32*)(xfmemptr + 3);
+				const Light& light = xfmem.lights[i];
+				
 				m_buffer.SetConstant4<float>(C_PLIGHTS + 5 * i,
-					((color >> 24) & 0xFF) * U8_NORM_COEF,
-					((color >> 16) & 0xFF) * U8_NORM_COEF,
-					((color >> 8) & 0xFF) * U8_NORM_COEF,
-					((color)& 0xFF)* U8_NORM_COEF);
-				xfmemptr += 4;
-
-				for (int j = 0; j < 4; ++j, xfmemptr += 3)
+					light.color[3] * U8_NORM_COEF,
+					light.color[2] * U8_NORM_COEF,
+					light.color[1] * U8_NORM_COEF,
+					light.color[0] * U8_NORM_COEF);
+				m_buffer.SetConstant3v(C_PLIGHTS + 5 * i + 1, light.cosatt);
+				if (fabs(light.distatt[0]) < 0.00001f &&
+					fabs(light.distatt[1]) < 0.00001f &&
+					fabs(light.distatt[2]) < 0.00001f)
 				{
-					if (j == 1 &&
-						fabs(xfmemptr[0]) < 0.00001f &&
-						fabs(xfmemptr[1]) < 0.00001f &&
-						fabs(xfmemptr[2]) < 0.00001f)
-					{
-						// dist attenuation, make sure not equal to 0!!!
-						m_buffer.SetConstant4<float>(C_PLIGHTS + 5 * i + j + 1, 0.00001f, xfmemptr[1], xfmemptr[2], 0.0f);
-					}
-					else
-					{
-						m_buffer.SetConstant4v(C_PLIGHTS + 5 * i + j + 1, xfmemptr);
-					}
+					// dist attenuation, make sure not equal to 0!!!
+					m_buffer.SetConstant4(C_PLIGHTS + 5 * i + 2, 0.00001f, light.distatt[1], light.distatt[2], 0.0f);
 				}
+				else
+				{
+					m_buffer.SetConstant3v(C_PLIGHTS + 5 * i + 2, light.distatt);
+				}
+				m_buffer.SetConstant3v(C_PLIGHTS + 5 * i + 3, light.dpos);
+				double norm = double(light.ddir[0]) * double(light.ddir[0]) +
+					double(light.ddir[1]) * double(light.ddir[1]) +
+					double(light.ddir[2]) * double(light.ddir[2]);
+				norm = 1.0 / sqrt(norm);
+				float norm_float = static_cast<float>(norm);
+				m_buffer.SetConstant4(C_PLIGHTS + 5 * i + 4, light.ddir[0] * norm_float, light.ddir[1] * norm_float, light.ddir[2] * norm_float, 0.0f);
 			}
 
 			nLightsChanged[0] = nLightsChanged[1] = -1;
@@ -320,7 +322,7 @@ void PixelShaderManager::SetConstants()
 			{
 				if (nMaterialsChanged & (1 << i))
 				{
-					u32 data = *(xfregs.ambColor + i);
+					u32 data = *(xfmem.ambColor + i);
 					float* material = m_buffer.GetBufferToUpdate<float>(C_PMATERIALS + i, 1);
 					material[0] = ((data >> 24) & 0xFF) * U8_NORM_COEF;
 					material[1] = ((data >> 16) & 0xFF) * U8_NORM_COEF;
@@ -333,7 +335,7 @@ void PixelShaderManager::SetConstants()
 			{
 				if (nMaterialsChanged & (1 << (i + 2)))
 				{
-					u32 data = *(xfregs.matColor + i);
+					u32 data = *(xfmem.matColor + i);
 					float* material = m_buffer.GetBufferToUpdate<float>(C_PMATERIALS + i + 2, 1);
 					material[0] = ((data >> 24) & 0xFF) * U8_NORM_COEF;
 					material[1] = ((data >> 16) & 0xFF) * U8_NORM_COEF;

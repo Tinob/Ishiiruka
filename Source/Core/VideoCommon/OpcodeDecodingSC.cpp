@@ -26,32 +26,6 @@
 DataReader g_VideoDataSC;
 bool shaderGenDirty = false;
 
-#if _M_SSE >= 0x301
-template <int count>
-void ReadU32xnSC_SSSE3(u32 *bufx16)
-{
-	g_VideoDataSC.ReadU32xN_SSSE3<count>(bufx16);
-}
-
-DataReadU32xNfunc DataReadU32xFuncsSC_SSSE3[16] = {
-	ReadU32xnSC_SSSE3<1>,
-	ReadU32xnSC_SSSE3<2>,
-	ReadU32xnSC_SSSE3<3>,
-	ReadU32xnSC_SSSE3<4>,
-	ReadU32xnSC_SSSE3<5>,
-	ReadU32xnSC_SSSE3<6>,
-	ReadU32xnSC_SSSE3<7>,
-	ReadU32xnSC_SSSE3<8>,
-	ReadU32xnSC_SSSE3<9>,
-	ReadU32xnSC_SSSE3<10>,
-	ReadU32xnSC_SSSE3<11>,
-	ReadU32xnSC_SSSE3<12>,
-	ReadU32xnSC_SSSE3<13>,
-	ReadU32xnSC_SSSE3<14>,
-	ReadU32xnSC_SSSE3<15>,
-	ReadU32xnSC_SSSE3<16>
-};
-#endif
 template <int count>
 void ReadU32xnSC(u32 *bufx16)
 {
@@ -87,8 +61,7 @@ static void DecodeSemiNopSC();
 BPMemory bpmemSC;
 
 // XF Register
-XFRegisters xfregsSC;
-u32 xfmemSC[XFMEM_SIZE];
+XFMemory xfmemSC;
 
 // CP Register
 TVtxDesc g_VtxDescSC;
@@ -110,7 +83,7 @@ void LoadBPRegSC(u32 value0)
 	((u32*)&bpmemSC)[opcode] = newval;
 }
 
-void LoadXFRegSC(u32 transferSize, u32 baseAddress, u32 *pData)
+void LoadXFRegSC(u32 transferSize, u32 baseAddress)
 {
 	// do not allow writes past registers
 	if (baseAddress + transferSize > 0x1058)
@@ -141,17 +114,13 @@ void LoadXFRegSC(u32 transferSize, u32 baseAddress, u32 *pData)
 			transferSize = 0;
 		}
 
-		//XFMemWritten(xfMemTransferSize, xfMemBase);
-		memcpy_gc(&xfmemSC[xfMemBase], pData, xfMemTransferSize * 4);
-
-		pData += xfMemTransferSize;
+		DataReadU32xFuncsSC[xfMemTransferSize - 1](&((u32*)&xfmemSC)[xfMemBase]);
 	}
 
 	// write to XF regs
 	if (transferSize > 0)
 	{
-		//XFRegWrittenSC(transferSize, baseAddress, pData);
-		memcpy_gc((u32*)(&xfregsSC) + (baseAddress - 0x1000), pData, transferSize * 4);
+		DataReadU32xFuncsSC[transferSize - 1](&((u32*)&xfmemSC)[baseAddress]);
 	}
 }
 
@@ -162,7 +131,7 @@ void LoadIndexedXFSC(u32 val, int refarray)
 	int size = ((val >> 12) & 0xF) + 1;
 	//load stuff from array to address in xf mem
 
-	u32* currData = (u32*)(xfmemSC + address);
+	u32* currData = ((u32*)&xfmemSC) + address;
 	u32* newData = (u32*)Memory::GetPointer(arraybasesSC[refarray] + arraystridesSC[refarray] * index);
 	for (int i = 0; i < size; ++i)
 		currData[i] = Common::swap32(newData[i]);
@@ -253,9 +222,7 @@ inline bool DecodeSC(const u8* end)
 		if (sizeCheck && distance < (transfer_size * sizeof(u32)))
 			return false;
 		u32 xf_address = Cmd2 & 0xFFFF;
-		GC_ALIGNED128(u32 data_buffer[16]);
-		DataReadU32xFuncsSC[transfer_size - 1](data_buffer);
-		LoadXFRegSC(transfer_size, xf_address, data_buffer);
+		LoadXFRegSC(transfer_size, xf_address);
 		shaderGenDirty = true;
 	}
 		break;
@@ -329,7 +296,7 @@ inline bool DecodeSC(const u8* end)
 			vertexSize *= numVertices;
 			if (shaderGenDirty)
 			{
-				g_vertex_manager->PrepareShaders(components, xfregsSC, bpmemSC, false);
+				g_vertex_manager->PrepareShaders(components, xfmemSC, bpmemSC, false);
 				shaderGenDirty = false;
 			}
 			if (sizeCheck &&  distance < vertexSize)
@@ -369,14 +336,6 @@ static void InterpretDisplayList(u32 address, u32 size)
 void OpcodeDecoderSC_Init()
 {
 	g_VideoDataSC.SetReadPosition(GetVideoBufferStartPtrSC());
-
-	#if _M_SSE >= 0x301
-		if (cpu_info.bSSSE3)
-		{
-			for (int i = 0; i < 16; ++i)
-				DataReadU32xFuncsSC[i] = DataReadU32xFuncsSC_SSSE3[i];
-		}
-	#endif
 
 	//bpmem Init
 	memset(&bpmemSC, 0, sizeof(bpmemSC));

@@ -408,14 +408,14 @@ void Tev::DrawAlphaCompare(TevStageCombiner::AlphaCombiner &ac)
 static bool AlphaCompare(int alpha, int ref, int comp)
 {
 	switch(comp) {
-	case  ZMode::CompareMode::ALWAYS:  return true;
-	case  ZMode::CompareMode::NEVER:   return false;
-	case  ZMode::CompareMode::LEQUAL:  return alpha <= ref;
-	case  ZMode::CompareMode::LESS:    return alpha < ref;
-	case  ZMode::CompareMode::GEQUAL:  return alpha >= ref;
-	case  ZMode::CompareMode::GREATER: return alpha > ref;
-	case  ZMode::CompareMode::EQUAL:   return alpha == ref;
-	case  ZMode::CompareMode::NEQUAL:  return alpha != ref;
+	case ZMode::CompareMode::ALWAYS:  return true;
+	case ZMode::CompareMode::NEVER:   return false;
+	case ZMode::CompareMode::LEQUAL:  return alpha <= ref;
+	case ZMode::CompareMode::LESS:    return alpha < ref;
+	case ZMode::CompareMode::GEQUAL:  return alpha >= ref;
+	case ZMode::CompareMode::GREATER: return alpha > ref;
+	case ZMode::CompareMode::EQUAL:   return alpha == ref;
+	case ZMode::CompareMode::NEQUAL:  return alpha != ref;
 	}
 	return true;
 }

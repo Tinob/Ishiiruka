@@ -382,7 +382,7 @@ ID3D11PixelShader* PixelShaderCache::GetClearProgram()
 
 ID3D11Buffer* &PixelShaderCache::GetConstantBuffer()
 {
-	bool lightingEnabled = xfregs.numChan.numColorChans > 0;
+	bool lightingEnabled = xfmem.numChan.numColorChans > 0;
 	bool enable_pl = g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting && lightingEnabled;
 	auto &buf = enable_pl ? pscbuf : pscbuf_alt;
 	if (PixelShaderManager::IsDirty() || prevpl != enable_pl)
@@ -520,7 +520,7 @@ void PixelShaderCache::Shutdown()
 
 void PixelShaderCache::PrepareShader(DSTALPHA_MODE dstAlphaMode,
 	u32 components,
-	const XFRegisters &xfr,
+	const XFMemory &xfr,
 	const BPMemory &bpm, bool ongputhread)
 {
 	PixelShaderUid uid;

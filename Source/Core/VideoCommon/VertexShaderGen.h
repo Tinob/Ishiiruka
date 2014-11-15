@@ -101,16 +101,16 @@ struct vertex_shader_uid_data
 #define VERTEXSHADERGEN_BUFFERSIZE 16768
 typedef ShaderUid<vertex_shader_uid_data> VertexShaderUid;
 
-void GetVertexShaderUidD3D9(VertexShaderUid& object, u32 components, const XFRegisters &xfr, const BPMemory &bpm);
+void GetVertexShaderUidD3D9(VertexShaderUid& object, u32 components, const XFMemory &xfr, const BPMemory &bpm);
 
-void GenerateVertexShaderCodeD3D9(ShaderCode& object, u32 components, const XFRegisters &xfr, const BPMemory &bpm);
+void GenerateVertexShaderCodeD3D9(ShaderCode& object, u32 components, const XFMemory &xfr, const BPMemory &bpm);
 
-void GetVertexShaderUidD3D11(VertexShaderUid& object, u32 components, const XFRegisters &xfr, const BPMemory &bpm);
+void GetVertexShaderUidD3D11(VertexShaderUid& object, u32 components, const XFMemory &xfr, const BPMemory &bpm);
 
-void GenerateVertexShaderCodeD3D11(ShaderCode& object, u32 components, const XFRegisters &xfr, const BPMemory &bpm);
+void GenerateVertexShaderCodeD3D11(ShaderCode& object, u32 components, const XFMemory &xfr, const BPMemory &bpm);
 
-void GenerateVSOutputStructForGSD3D11(ShaderCode& object, const XFRegisters &xfr);
+void GenerateVSOutputStructForGSD3D11(ShaderCode& object, const XFMemory &xfr);
 
-void GetVertexShaderUidGL(VertexShaderUid& object, u32 components, const XFRegisters &xfr, const BPMemory &bpm);
+void GetVertexShaderUidGL(VertexShaderUid& object, u32 components, const XFMemory &xfr, const BPMemory &bpm);
 
-void GenerateVertexShaderCodeGL(ShaderCode& object, u32 components, const XFRegisters &xfr, const BPMemory &bpm);
+void GenerateVertexShaderCodeGL(ShaderCode& object, u32 components, const XFMemory &xfr, const BPMemory &bpm);
