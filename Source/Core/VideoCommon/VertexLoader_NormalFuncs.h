@@ -76,7 +76,7 @@ __forceinline u8* IndexedNormalPosition(TPipelineState &pipelinestate)
 {
 	auto const index = pipelinestate.Read<I>();
 	return cached_arraybases[ARRAY_NORMAL]
-		+ (index * arraystrides[ARRAY_NORMAL]) + sizeof(T) * 3 * Offset;
+		+ (index * g_main_cp_state.array_strides[ARRAY_NORMAL]) + sizeof(T) * 3 * Offset;
 }
 
 template <typename I, typename T, int N, int Offset>

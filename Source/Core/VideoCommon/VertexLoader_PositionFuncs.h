@@ -22,7 +22,7 @@ template <typename T>
 __forceinline u8* IndexedDataPosition(TPipelineState &pipelinestate)
 {
 	auto const index = pipelinestate.Read<T>();
-	return cached_arraybases[ARRAY_POSITION] + (index * arraystrides[ARRAY_POSITION]);
+	return cached_arraybases[ARRAY_POSITION] + (index * g_main_cp_state.array_strides[ARRAY_POSITION]);
 }
 
 template <typename T, int N>

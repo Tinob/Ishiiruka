@@ -37,7 +37,7 @@ SWVertexLoader::~SWVertexLoader()
 
 void SWVertexLoader::SetFormat(u8 attributeIndex, u8 primitiveType)
 {
-	m_CurrentVat = &g_VtxAttr[attributeIndex];
+	m_CurrentVat = &g_main_cp_state.vtx_attr[attributeIndex];
 
 	g_PipelineState.posScale = 1.0f / float(1 << m_CurrentVat->g0.PosFrac);
 	g_PipelineState.tcScale[0] = 1.0f / float(1 << m_CurrentVat->g0.Tex0Frac);
@@ -51,20 +51,20 @@ void SWVertexLoader::SetFormat(u8 attributeIndex, u8 primitiveType)
 
 	//TexMtx
 	const u32 tmDesc[8] = {
-		g_VtxDesc.Tex0MatIdx, g_VtxDesc.Tex1MatIdx, g_VtxDesc.Tex2MatIdx, g_VtxDesc.Tex3MatIdx,
-		g_VtxDesc.Tex4MatIdx, g_VtxDesc.Tex5MatIdx, g_VtxDesc.Tex6MatIdx, g_VtxDesc.Tex7MatIdx
+		g_main_cp_state.vtx_desc.Tex0MatIdx, g_main_cp_state.vtx_desc.Tex1MatIdx, g_main_cp_state.vtx_desc.Tex2MatIdx, g_main_cp_state.vtx_desc.Tex3MatIdx,
+		g_main_cp_state.vtx_desc.Tex4MatIdx, g_main_cp_state.vtx_desc.Tex5MatIdx, g_main_cp_state.vtx_desc.Tex6MatIdx, g_main_cp_state.vtx_desc.Tex7MatIdx
 	};
 
 	// Colors
-	const u32 colDesc[2] = {g_VtxDesc.Color0, g_VtxDesc.Color1};
+	const u32 colDesc[2] = {g_main_cp_state.vtx_desc.Color0, g_main_cp_state.vtx_desc.Color1};
 	g_PipelineState.colElements[0] = m_CurrentVat->g0.Color0Elements;
 	g_PipelineState.colElements[1] = m_CurrentVat->g0.Color1Elements;
 	const u32 colComp[2] = {m_CurrentVat->g0.Color0Comp, m_CurrentVat->g0.Color1Comp};
 
 	// TextureCoord
 	const u32 tcDesc[8] = {
-		g_VtxDesc.Tex0Coord, g_VtxDesc.Tex1Coord, g_VtxDesc.Tex2Coord, g_VtxDesc.Tex3Coord,
-		g_VtxDesc.Tex4Coord, g_VtxDesc.Tex5Coord, g_VtxDesc.Tex6Coord, (const u32)((g_VtxDesc.Hex >> 31) & 3)
+		g_main_cp_state.vtx_desc.Tex0Coord, g_main_cp_state.vtx_desc.Tex1Coord, g_main_cp_state.vtx_desc.Tex2Coord, g_main_cp_state.vtx_desc.Tex3Coord,
+		g_main_cp_state.vtx_desc.Tex4Coord, g_main_cp_state.vtx_desc.Tex5Coord, g_main_cp_state.vtx_desc.Tex6Coord, (const u32)((g_main_cp_state.vtx_desc.Hex >> 31) & 3)
 	};
 	const u32 tcElements[8] = {
 		m_CurrentVat->g0.Tex0CoordElements, m_CurrentVat->g1.Tex1CoordElements, m_CurrentVat->g1.Tex2CoordElements, 
@@ -87,15 +87,15 @@ void SWVertexLoader::SetFormat(u8 attributeIndex, u8 primitiveType)
 
 	// Reset vertex
 	// matrix index from xf regs or cp memory?
-	if (swxfregs.MatrixIndexA.PosNormalMtxIdx != MatrixIndexA.PosNormalMtxIdx ||
-		swxfregs.MatrixIndexA.Tex0MtxIdx != MatrixIndexA.Tex0MtxIdx ||
-		swxfregs.MatrixIndexA.Tex1MtxIdx != MatrixIndexA.Tex1MtxIdx ||
-		swxfregs.MatrixIndexA.Tex2MtxIdx != MatrixIndexA.Tex2MtxIdx ||
-		swxfregs.MatrixIndexA.Tex3MtxIdx != MatrixIndexA.Tex3MtxIdx ||
-		swxfregs.MatrixIndexB.Tex4MtxIdx != MatrixIndexB.Tex4MtxIdx ||
-		swxfregs.MatrixIndexB.Tex5MtxIdx != MatrixIndexB.Tex5MtxIdx ||
-		swxfregs.MatrixIndexB.Tex6MtxIdx != MatrixIndexB.Tex6MtxIdx ||
-		swxfregs.MatrixIndexB.Tex7MtxIdx != MatrixIndexB.Tex7MtxIdx)
+	if (swxfregs.MatrixIndexA.PosNormalMtxIdx != g_main_cp_state.matrix_index_a.PosNormalMtxIdx ||
+		swxfregs.MatrixIndexA.Tex0MtxIdx != g_main_cp_state.matrix_index_a.Tex0MtxIdx ||
+		swxfregs.MatrixIndexA.Tex1MtxIdx != g_main_cp_state.matrix_index_a.Tex1MtxIdx ||
+		swxfregs.MatrixIndexA.Tex2MtxIdx != g_main_cp_state.matrix_index_a.Tex2MtxIdx ||
+		swxfregs.MatrixIndexA.Tex3MtxIdx != g_main_cp_state.matrix_index_a.Tex3MtxIdx ||
+		swxfregs.MatrixIndexB.Tex4MtxIdx != g_main_cp_state.matrix_index_b.Tex4MtxIdx ||
+		swxfregs.MatrixIndexB.Tex5MtxIdx != g_main_cp_state.matrix_index_b.Tex5MtxIdx ||
+		swxfregs.MatrixIndexB.Tex6MtxIdx != g_main_cp_state.matrix_index_b.Tex6MtxIdx ||
+		swxfregs.MatrixIndexB.Tex7MtxIdx != g_main_cp_state.matrix_index_b.Tex7MtxIdx)
 	{
 		WARN_LOG(VIDEO, "Matrix indices don't match");
 
@@ -116,18 +116,18 @@ void SWVertexLoader::SetFormat(u8 attributeIndex, u8 primitiveType)
 	m_Vertex.texMtx[6] = swxfregs.MatrixIndexB.Tex6MtxIdx;
 	m_Vertex.texMtx[7] = swxfregs.MatrixIndexB.Tex7MtxIdx;
 #else
-	m_Vertex.posMtx = MatrixIndexA.PosNormalMtxIdx;
-	m_Vertex.texMtx[0] = MatrixIndexA.Tex0MtxIdx;
-	m_Vertex.texMtx[1] = MatrixIndexA.Tex1MtxIdx;
-	m_Vertex.texMtx[2] = MatrixIndexA.Tex2MtxIdx;
-	m_Vertex.texMtx[3] = MatrixIndexA.Tex3MtxIdx;
-	m_Vertex.texMtx[4] = MatrixIndexB.Tex4MtxIdx;
-	m_Vertex.texMtx[5] = MatrixIndexB.Tex5MtxIdx;
-	m_Vertex.texMtx[6] = MatrixIndexB.Tex6MtxIdx;
-	m_Vertex.texMtx[7] = MatrixIndexB.Tex7MtxIdx;
+	m_Vertex.posMtx = g_main_cp_state.matrix_index_a.PosNormalMtxIdx;
+	m_Vertex.texMtx[0] = g_main_cp_state.matrix_index_a.Tex0MtxIdx;
+	m_Vertex.texMtx[1] = g_main_cp_state.matrix_index_a.Tex1MtxIdx;
+	m_Vertex.texMtx[2] = g_main_cp_state.matrix_index_a.Tex2MtxIdx;
+	m_Vertex.texMtx[3] = g_main_cp_state.matrix_index_a.Tex3MtxIdx;
+	m_Vertex.texMtx[4] = g_main_cp_state.matrix_index_b.Tex4MtxIdx;
+	m_Vertex.texMtx[5] = g_main_cp_state.matrix_index_b.Tex5MtxIdx;
+	m_Vertex.texMtx[6] = g_main_cp_state.matrix_index_b.Tex6MtxIdx;
+	m_Vertex.texMtx[7] = g_main_cp_state.matrix_index_b.Tex7MtxIdx;
 #endif
 
-	if (g_VtxDesc.PosMatIdx != NOT_PRESENT)
+	if (g_main_cp_state.vtx_desc.PosMatIdx != NOT_PRESENT)
 	{
 		AddAttributeLoader(LoadPosMtx);
 		m_VertexSize++;
@@ -143,17 +143,17 @@ void SWVertexLoader::SetFormat(u8 attributeIndex, u8 primitiveType)
 	}
 
 	// Write vertex position loader
-	m_positionLoader = VertexLoader_Position::GetFunction(g_VtxDesc.Position, m_CurrentVat->g0.PosFormat, m_CurrentVat->g0.PosElements);
-	m_VertexSize += VertexLoader_Position::GetSize(g_VtxDesc.Position, m_CurrentVat->g0.PosFormat, m_CurrentVat->g0.PosElements);
+	m_positionLoader = VertexLoader_Position::GetFunction(g_main_cp_state.vtx_desc.Position, m_CurrentVat->g0.PosFormat, m_CurrentVat->g0.PosElements);
+	m_VertexSize += VertexLoader_Position::GetSize(g_main_cp_state.vtx_desc.Position, m_CurrentVat->g0.PosFormat, m_CurrentVat->g0.PosElements);
 	AddAttributeLoader(LoadPosition);
 
 	// Normals
-	if (g_VtxDesc.Normal != NOT_PRESENT)
+	if (g_main_cp_state.vtx_desc.Normal != NOT_PRESENT)
 	{
-		m_VertexSize += VertexLoader_Normal::GetSize(g_VtxDesc.Normal,
+		m_VertexSize += VertexLoader_Normal::GetSize(g_main_cp_state.vtx_desc.Normal,
 			m_CurrentVat->g0.NormalFormat, m_CurrentVat->g0.NormalElements, m_CurrentVat->g0.NormalIndex3);
 		
-		m_normalLoader = VertexLoader_Normal::GetFunction(g_VtxDesc.Normal,
+		m_normalLoader = VertexLoader_Normal::GetFunction(g_main_cp_state.vtx_desc.Normal,
 			m_CurrentVat->g0.NormalFormat, m_CurrentVat->g0.NormalElements, m_CurrentVat->g0.NormalIndex3);
 		
 		if (m_normalLoader == 0)
@@ -232,8 +232,8 @@ void SWVertexLoader::SetFormat(u8 attributeIndex, u8 primitiveType)
 
 	// special case if only pos and tex coord 0 and tex coord input is AB11
 	m_TexGenSpecialCase =
-		((g_VtxDesc.Hex & 0x60600L) == g_VtxDesc.Hex) && // only pos and tex coord 0
-		(g_VtxDesc.Tex0Coord != NOT_PRESENT) &&
+		((g_main_cp_state.vtx_desc.Hex & 0x60600L) == g_main_cp_state.vtx_desc.Hex) && // only pos and tex coord 0
+		(g_main_cp_state.vtx_desc.Tex0Coord != NOT_PRESENT) &&
 		(swxfregs.texMtxInfo[0].projection == XF_TEXPROJ_ST);
 
 	m_SetupUnit->Init(primitiveType);
@@ -252,7 +252,7 @@ void SWVertexLoader::LoadVertex()
 	// transform input data
 	TransformUnit::TransformPosition(&m_Vertex, outVertex);
 
-	if (g_VtxDesc.Normal != NOT_PRESENT)
+	if (g_main_cp_state.vtx_desc.Normal != NOT_PRESENT)
 	{
 		TransformUnit::TransformNormal(&m_Vertex, m_CurrentVat->g0.NormalElements, outVertex);
 	}

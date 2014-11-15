@@ -341,10 +341,10 @@ void OpcodeDecoderSC_Init()
 	memset(&bpmemSC, 0, sizeof(bpmemSC));
 	bpmemSC.bpMask = 0xFFFFFF;
 
-	memset(arraybasesSC, 0, sizeof(arraybases));
-	memset(arraystridesSC, 0, sizeof(arraystrides));
-	//memset(&MatrixIndexA, 0, sizeof(MatrixIndexA));
-	//memset(&MatrixIndexB, 0, sizeof(MatrixIndexB));
+	memset(arraybasesSC, 0, sizeof(g_main_cp_state.array_bases));
+	memset(arraystridesSC, 0, sizeof(g_main_cp_state.array_strides));
+	//memset(&g_main_cp_state.matrix_index_a, 0, sizeof(g_main_cp_state.matrix_index_a));
+	//memset(&g_main_cp_state.matrix_index_b, 0, sizeof(g_main_cp_state.matrix_index_b));
 	memset(&g_VtxDescSC, 0, sizeof(g_VtxDescSC));
 	memset(g_VtxAttrSC, 0, sizeof(g_VtxAttrSC));
 	s_vtxattr_dirty = 0xFF;

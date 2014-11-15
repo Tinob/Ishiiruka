@@ -30,7 +30,7 @@ template <typename T>
 __forceinline u8* IndexedTCoordPosition(TPipelineState &pipelinestate)
 {
 	auto const index = pipelinestate.Read<T>();
-	return cached_arraybases[ARRAY_TEXCOORD0 + pipelinestate.tcIndex] + (index * arraystrides[ARRAY_TEXCOORD0 + pipelinestate.tcIndex]);
+	return cached_arraybases[ARRAY_TEXCOORD0 + pipelinestate.tcIndex] + (index * g_main_cp_state.array_strides[ARRAY_TEXCOORD0 + pipelinestate.tcIndex]);
 }
 
 template <typename I, typename T, s32 N>

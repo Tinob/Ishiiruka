@@ -109,7 +109,7 @@ template <typename T>
 __forceinline u8* IndexedColorPosition(TPipelineState &pipelinestate)
 {
 	auto const index = pipelinestate.Read<T>();
-	return cached_arraybases[ARRAY_COLOR + pipelinestate.colIndex] + (index * arraystrides[ARRAY_COLOR + pipelinestate.colIndex]);
+	return cached_arraybases[ARRAY_COLOR + pipelinestate.colIndex] + (index * g_main_cp_state.array_strides[ARRAY_COLOR + pipelinestate.colIndex]);
 }
 
 template <typename I>

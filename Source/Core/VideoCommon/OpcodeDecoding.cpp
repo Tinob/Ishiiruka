@@ -180,13 +180,13 @@ inline u32 Decode(const u8* end)
 			parameters.buf_size = distance;			
 			parameters.primitive = (cmd_byte & GX_PRIMITIVE_MASK) >> GX_PRIMITIVE_SHIFT;
 			parameters.vtx_attr_group = cmd_byte & GX_VAT_MASK;
-			parameters.needloaderrefresh = (g_attr_dirty & (1 << parameters.vtx_attr_group)) != 0;
+			parameters.needloaderrefresh = (g_main_cp_state.attr_dirty & (1 << parameters.vtx_attr_group)) != 0;
 			parameters.skip_draw = (bpmem.genMode.cullmode == 3 && parameters.primitive < 5) || g_bSkipCurrentFrame;
-			parameters.VtxDesc = &g_VtxDesc;
-			parameters.VtxAttr = &g_VtxAttr[parameters.vtx_attr_group];
+			parameters.VtxDesc = &g_main_cp_state.vtx_desc;
+			parameters.VtxAttr = &g_main_cp_state.vtx_attr[parameters.vtx_attr_group];
 			parameters.source = g_VideoData.GetReadPosition();
 			parameters.destination = VertexManager::s_pCurBufferPointer;
-			g_attr_dirty &= ~(1 << parameters.vtx_attr_group);
+			g_main_cp_state.attr_dirty &= ~(1 << parameters.vtx_attr_group);
 			u32 readsize = 0;
 			u32 writesize = 0;
 			if (VertexLoaderManager::ConvertVertices(parameters, readsize, writesize))
@@ -306,12 +306,20 @@ void ResetStates()
 	memset(&bpmem, 0, sizeof(bpmem));
 	bpmem.bpMask = 0xFFFFFF;
 
-	memset(arraybases, 0, sizeof(arraybases));
-	memset(arraystrides, 0, sizeof(arraystrides));
-	memset(&MatrixIndexA, 0, sizeof(MatrixIndexA));
-	memset(&MatrixIndexB, 0, sizeof(MatrixIndexB));
-	memset(&g_VtxDesc, 0, sizeof(g_VtxDesc));
-	memset(g_VtxAttr, 0, sizeof(g_VtxAttr));
+	memset(g_main_cp_state.array_bases, 0, sizeof(g_main_cp_state.array_bases));
+	memset(g_main_cp_state.array_strides, 0, sizeof(g_main_cp_state.array_strides));
+	memset(&g_main_cp_state.matrix_index_a, 0, sizeof(g_main_cp_state.matrix_index_a));
+	memset(&g_main_cp_state.matrix_index_b, 0, sizeof(g_main_cp_state.matrix_index_b));
+	memset(&g_main_cp_state.vtx_desc, 0, sizeof(g_main_cp_state.vtx_desc));
+	memset(g_main_cp_state.vtx_attr, 0, sizeof(g_main_cp_state.vtx_attr));
+	/*
+		memset(g_main_cp_state.array_bases, 0, sizeof(g_main_cp_state.array_bases));
+	memset(g_main_cp_state.array_strides, 0, sizeof(g_main_cp_state.array_strides));
+	memset(&g_main_cp_state.matrix_index_a, 0, sizeof(g_main_cp_state.matrix_index_a));
+	memset(&g_main_cp_state.matrix_index_b, 0, sizeof(g_main_cp_state.matrix_index_b));
+	memset(&g_main_cp_state.vtx_desc, 0, sizeof(g_VtxDesc));
+	memset(g_main_cp_state.vtx_attrAttr, 0, sizeof(g_VtxAttr));
+	*/
 }
 
 void OpcodeDecoder_Shutdown()

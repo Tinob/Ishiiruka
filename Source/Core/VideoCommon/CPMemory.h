@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "Common/Common.h"
+#include "Common/CommonTypes.h"
 
 // Vertex array numbers
 enum
@@ -244,12 +244,6 @@ union TMatrixIndexB
 
 #pragma pack()
 
-extern u32 arraybases[16];
-extern u8 *cached_arraybases[16];
-extern u32 arraystrides[16];
-extern TMatrixIndexA MatrixIndexA;
-extern TMatrixIndexB MatrixIndexB;
-
 struct VAT
 {
 	UVAT_group0 g0;
@@ -257,9 +251,30 @@ struct VAT
 	UVAT_group2 g2;
 };
 
-extern TVtxDesc g_VtxDesc;
-extern VAT g_VtxAttr[8];
-extern int g_attr_dirty;  // bitfield 
+class VertexLoader;
+
+// STATE_TO_SAVE
+struct CPState final
+{
+	u32 array_bases[16];
+	u32 array_strides[16];
+	TMatrixIndexA matrix_index_a;
+	TMatrixIndexB matrix_index_b;
+	TVtxDesc vtx_desc;
+	// Most games only use the first VtxAttr and simply reconfigure it all the time as needed.
+	VAT vtx_attr[8];
+
+	// Attributes that actually belong to VertexLoaderManager:
+	u32 attr_dirty;
+	VertexLoader* vertex_loaders[8];
+};
+
+extern CPState g_main_cp_state;
+extern u8 *cached_arraybases[16];
+class PointerWrap;
+
+extern void DoCPState(PointerWrap& p);
+
 // Might move this into its own file later.
 void LoadCPReg(u32 SubCmd, u32 Value);
 
