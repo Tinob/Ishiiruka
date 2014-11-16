@@ -931,11 +931,7 @@ void SetPixelShader(LPDIRECT3DPIXELSHADER9 shader)
 void ChangePixelShader(LPDIRECT3DPIXELSHADER9 shader)
 {
 	dev->SetPixelShader(shader);
-	if (shader != m_PixelShader  || m_PixelShaderChanged)
-	{
-		dev->SetPixelShader(shader);
-		m_PixelShaderChanged = true;
-	}
+	m_PixelShaderChanged = true;
 }
 
 void SetStreamSource(UINT StreamNumber,IDirect3DVertexBuffer9* pStreamData,UINT OffsetInBytes,UINT Stride)

@@ -26,6 +26,37 @@ namespace DX9
 
 namespace TextureConverter
 {
+struct XFBReadBuffer
+{
+	LPDIRECT3DTEXTURE9 XFBMEMTexture;
+	LPDIRECT3DTEXTURE9 XFBTexture;
+	LPDIRECT3DSURFACE9 ReadSurface;
+	LPDIRECT3DSURFACE9 WriteSurface;
+	int Width;
+	int Height;
+	void Clear()
+	{
+		XFBTexture = nullptr;
+		XFBMEMTexture = nullptr;
+		ReadSurface = nullptr;
+		WriteSurface = nullptr;
+		Width = 0;
+		Height = 0;
+	}
+	void Release()
+	{
+		if (ReadSurface)
+			ReadSurface->Release();
+		if (WriteSurface)
+			WriteSurface->Release();
+		if (XFBTexture)
+			XFBTexture->Release();
+		if (XFBMEMTexture)
+			XFBMEMTexture->Release();
+		Clear();
+	}
+};
+
 struct TransformBuffer
 {
 	LPDIRECT3DTEXTURE9 FBTexture;
@@ -34,13 +65,37 @@ struct TransformBuffer
 	int Width;
 	int Height;
 	u32 hits;
+	void Clear()
+	{
+		FBTexture = nullptr;
+		RenderSurface = nullptr;
+		ReadSurface = nullptr;
+		Width = 0;
+		Height = 0;
+	}
+	void Release()
+	{
+		if (RenderSurface != nullptr)
+			RenderSurface->Release();
+
+		if (ReadSurface != nullptr)
+			ReadSurface->Release();
+
+		if (FBTexture != nullptr)
+			FBTexture->Release();
+		Clear();
+	}
 };
 const u32 NUM_TRANSFORM_BUFFERS = 16;
 static TransformBuffer TrnBuffers[NUM_TRANSFORM_BUFFERS];
 static u32 WorkingBuffers = 0;
 
-static LPDIRECT3DPIXELSHADER9 s_rgbToYuyvProgram = NULL;
-static LPDIRECT3DPIXELSHADER9 s_yuyvToRgbProgram = NULL;
+const u32 NUM_XFBREAD_BUFFER = 4;
+static XFBReadBuffer XReadBuffers[NUM_XFBREAD_BUFFER];
+static u32 xfreadBuffers = 0;
+
+static LPDIRECT3DPIXELSHADER9 s_rgbToYuyvProgram = nullptr;
+static LPDIRECT3DPIXELSHADER9 s_yuyvToRgbProgram = nullptr;
 
 // Not all slots are taken - but who cares.
 const u32 NUM_ENCODING_PROGRAMS = 64;
@@ -122,7 +177,7 @@ LPDIRECT3DPIXELSHADER9 GetOrCreateEncodingShader(u32 format)
 		{
 			// we already failed to create a shader for this format,
 			// so instead of re-trying and showing the same error message every frame, just return.
-			return NULL;
+			return nullptr;
 		}
 
 		const char* shader = TextureConversionShader::GenerateEncodingShader(format,API_D3D9);
@@ -147,55 +202,49 @@ LPDIRECT3DPIXELSHADER9 GetOrCreateEncodingShader(u32 format)
 
 void Init()
 {
+	CreateRgbToYuyvProgram();
+	CreateYuyvToRgbProgram();
+	xfreadBuffers = 0;
+	WorkingBuffers = 0;
 	for (unsigned int i = 0; i < NUM_ENCODING_PROGRAMS; i++)
 	{
-		s_encodingPrograms[i] = NULL;
+		s_encodingPrograms[i] = nullptr;
 		s_encodingProgramsFailed[i] = false;
 	}
 	for (unsigned int i = 0; i < NUM_TRANSFORM_BUFFERS; i++)
 	{
-		TrnBuffers[i].FBTexture = NULL;
-		TrnBuffers[i].RenderSurface = NULL;
-		TrnBuffers[i].ReadSurface = NULL;
-		TrnBuffers[i].Width = 0;
-		TrnBuffers[i].Height = 0;
+		TrnBuffers[i].Clear();
 	}
-	CreateRgbToYuyvProgram();
-	CreateYuyvToRgbProgram();
+	for (unsigned int i = 0; i < NUM_XFBREAD_BUFFER; i++)
+	{
+		XReadBuffers[i].Clear();
+	}
 }
 
 void Shutdown()
 {
 	if(s_rgbToYuyvProgram)
 		s_rgbToYuyvProgram->Release();
-	s_rgbToYuyvProgram = NULL;
+	s_rgbToYuyvProgram = nullptr;
 	if(s_yuyvToRgbProgram)
 		s_yuyvToRgbProgram->Release();
-	s_yuyvToRgbProgram=NULL;
+	s_yuyvToRgbProgram = nullptr;
 
 	for (unsigned int i = 0; i < NUM_ENCODING_PROGRAMS; i++)
 	{
 		if(s_encodingPrograms[i]) 
 			s_encodingPrograms[i]->Release();
-		s_encodingPrograms[i] = NULL;
+		s_encodingPrograms[i] = nullptr;
 	}
 	for (unsigned int i = 0; i < NUM_TRANSFORM_BUFFERS; i++)
 	{
-		if(TrnBuffers[i].RenderSurface != NULL)
-			TrnBuffers[i].RenderSurface->Release();
-		TrnBuffers[i].RenderSurface = NULL;
-
-		if(TrnBuffers[i].ReadSurface != NULL)
-			TrnBuffers[i].ReadSurface->Release();
-		TrnBuffers[i].ReadSurface = NULL;
-
-		if(TrnBuffers[i].FBTexture != NULL)
-			TrnBuffers[i].FBTexture->Release();
-		TrnBuffers[i].FBTexture = NULL;		
-		
-		TrnBuffers[i].Width = 0;
-		TrnBuffers[i].Height = 0;
+		TrnBuffers[i].Release();
 	}
+	for (unsigned int i = 0; i < NUM_XFBREAD_BUFFER; i++)
+	{
+		XReadBuffers[i].Release();
+	}
+	xfreadBuffers = 0;
 	WorkingBuffers = 0;
 }
 
@@ -205,11 +254,10 @@ void EncodeToRamUsingShader(LPDIRECT3DPIXELSHADER9 shader, LPDIRECT3DTEXTURE9 sr
 	HRESULT hr;
 	u32 index =0;
 	while(index < WorkingBuffers && (TrnBuffers[index].Width != dstWidth || TrnBuffers[index].Height != dstHeight))
-		index++;
-	
-	LPDIRECT3DSURFACE9  s_texConvReadSurface = NULL;
-	LPDIRECT3DSURFACE9 Rendersurf = NULL;
-	
+		index++;	
+	LPDIRECT3DSURFACE9  s_texConvReadSurface = nullptr;
+	LPDIRECT3DSURFACE9 Rendersurf = nullptr;
+	TransformBuffer &currentbuffer = TrnBuffers[index];
 	if (index >= WorkingBuffers)
 	{
 		if (WorkingBuffers < NUM_TRANSFORM_BUFFERS)
@@ -226,39 +274,26 @@ void EncodeToRamUsingShader(LPDIRECT3DPIXELSHADER9 shader, LPDIRECT3DTEXTURE9 sr
 					hits = TrnBuffers[index].hits;					
 				}
 			}
-		}			
-		if (TrnBuffers[index].RenderSurface != NULL)
-		{
-			TrnBuffers[index].RenderSurface->Release();
-			TrnBuffers[index].RenderSurface = NULL;
 		}
-		if (TrnBuffers[index].ReadSurface != NULL)
-		{
-			TrnBuffers[index].ReadSurface->Release();
-			TrnBuffers[index].ReadSurface = NULL;
-		}
-		if (TrnBuffers[index].FBTexture != NULL)
-		{
-			TrnBuffers[index].FBTexture->Release();
-			TrnBuffers[index].FBTexture = NULL;
-		}
-		TrnBuffers[index].hits = 0;
-		TrnBuffers[index].Width = dstWidth;
-		TrnBuffers[index].Height = dstHeight;
+		currentbuffer = TrnBuffers[index];
+		currentbuffer.Release();
+		currentbuffer.hits = 0;
+		currentbuffer.Width = dstWidth;
+		currentbuffer.Height = dstHeight;
 		D3D::dev->CreateTexture(dstWidth, dstHeight, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8,
-		                                 D3DPOOL_DEFAULT, &TrnBuffers[index].FBTexture, NULL);
-		TrnBuffers[index].FBTexture->GetSurfaceLevel(0,&TrnBuffers[index].RenderSurface);
-		D3D::dev->CreateOffscreenPlainSurface(dstWidth, dstHeight, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &TrnBuffers[index].ReadSurface, NULL );
+		                                 D3DPOOL_DEFAULT, &currentbuffer.FBTexture, nullptr);
+		currentbuffer.FBTexture->GetSurfaceLevel(0,&currentbuffer.RenderSurface);
+		D3D::dev->CreateOffscreenPlainSurface(dstWidth, dstHeight, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &currentbuffer.ReadSurface, nullptr );
 	}
 	else
 	{
-		TrnBuffers[index].hits++;
+		currentbuffer.hits++;
 	}
 
-	s_texConvReadSurface = TrnBuffers[index].ReadSurface;
-	Rendersurf = TrnBuffers[index].RenderSurface;
+	s_texConvReadSurface = currentbuffer.ReadSurface;
+	Rendersurf = currentbuffer.RenderSurface;
 
-	hr = D3D::dev->SetDepthStencilSurface(NULL);
+	hr = D3D::dev->SetDepthStencilSurface(nullptr);
 	hr = D3D::dev->SetRenderTarget(0, Rendersurf);	
 
 	if (linearFilter)
@@ -418,13 +453,26 @@ void DecodeToTexture(u32 xfbAddr, int srcWidth, int srcHeight, LPDIRECT3DTEXTURE
 	}
 
 	int srcFmtWidth = srcWidth / 2;
-
+	XFBReadBuffer &ReadBuffer = XReadBuffers[xfreadBuffers];
+	if (ReadBuffer.Width != srcFmtWidth || ReadBuffer.Height != srcHeight)
+	{
+		ReadBuffer.Release();
+		ReadBuffer.Width = srcFmtWidth;
+		ReadBuffer.Height = srcHeight;
+		ReadBuffer.XFBMEMTexture = D3D::CreateTexture2D(srcFmtWidth, srcHeight, D3DFMT_A8R8G8B8, 1, D3DPOOL_SYSTEMMEM);
+		ReadBuffer.XFBTexture = D3D::CreateTexture2D(srcFmtWidth, srcHeight, D3DFMT_A8R8G8B8);
+		ReadBuffer.XFBMEMTexture->GetSurfaceLevel(0, &ReadBuffer.ReadSurface);
+		ReadBuffer.XFBTexture->GetSurfaceLevel(0, &ReadBuffer.WriteSurface);
+	}
+	D3D::ReplaceTexture2D(ReadBuffer.XFBMEMTexture, srcAddr, srcFmtWidth, srcHeight, srcFmtWidth, D3DFMT_A8R8G8B8, false);
+	RECT srcr{ 0, 0, srcFmtWidth, srcHeight };
+	POINT dstp{ 0, 0 };
+	D3D::dev->UpdateSurface(ReadBuffer.ReadSurface, &srcr, ReadBuffer.WriteSurface, &dstp);
 	g_renderer->ResetAPIState(); // reset any game specific settings
-	LPDIRECT3DTEXTURE9 s_srcTexture = D3D::CreateTexture2D(srcFmtWidth, srcHeight, D3DFMT_A8R8G8B8);
-	D3D::ReplaceTexture2D(s_srcTexture, srcAddr, srcFmtWidth, srcHeight, srcFmtWidth, D3DFMT_A8R8G8B8, false);
-	LPDIRECT3DSURFACE9 Rendersurf = NULL;
+	
+	LPDIRECT3DSURFACE9 Rendersurf = nullptr;
 	destTexture->GetSurfaceLevel(0,&Rendersurf);
-	D3D::dev->SetDepthStencilSurface(NULL);
+	D3D::dev->SetDepthStencilSurface(nullptr);
 	D3D::dev->SetRenderTarget(0, Rendersurf);
 
 	D3DVIEWPORT9 vp;
@@ -463,7 +511,7 @@ void DecodeToTexture(u32 xfbAddr, int srcWidth, int srcHeight, LPDIRECT3DTEXTURE
 		(float)srcHeight);
 	D3D::dev->SetPixelShaderConstantF(C_COLORMATRIX, PixelShaderManager::GetBuffer(), 2);
 	D3D::drawShadedTexQuad(
-		s_srcTexture,
+		ReadBuffer.XFBTexture,
 		&sourcerect,
 		1,
 		1,
@@ -475,12 +523,12 @@ void DecodeToTexture(u32 xfbAddr, int srcWidth, int srcHeight, LPDIRECT3DTEXTURE
 
 	D3D::RefreshSamplerState(0, D3DSAMP_MINFILTER);
 	D3D::RefreshSamplerState(0, D3DSAMP_MAGFILTER);
-	D3D::SetTexture(0,NULL);
+	D3D::SetTexture(0,nullptr);
 	D3D::dev->SetRenderTarget(0, FramebufferManager::GetEFBColorRTSurface());
 	D3D::dev->SetDepthStencilSurface(FramebufferManager::GetEFBDepthRTSurface());	
 	g_renderer->RestoreAPIState();
 	Rendersurf->Release();
-	s_srcTexture->Release();
+	xfreadBuffers = (xfreadBuffers + 1) % NUM_XFBREAD_BUFFER;
 }
 
 }  // namespace
