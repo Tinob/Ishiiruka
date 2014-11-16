@@ -1,6 +1,4 @@
-
-#ifndef _FRAMEBUFFERMANAGERBASE_H
-#define _FRAMEBUFFERMANAGERBASE_H
+#pragma once
 
 #include <list>
 
@@ -48,7 +46,7 @@ public:
 	virtual ~FramebufferManagerBase();
 
 	static void CopyToXFB(u32 xfbAddr, u32 fbWidth, u32 fbHeight, const EFBRectangle& sourceRc,float Gamma);
-	static const XFBSourceBase* const* GetXFBSource(u32 xfbAddr, u32 fbWidth, u32 fbHeight, u32 &xfbCount);
+	static const XFBSourceBase* const* GetXFBSource(u32 xfbAddr, u32 fbWidth, u32 fbHeight, u32* xfbCount);
 
 	static void SetLastXfbWidth(unsigned int width) { s_last_xfb_width = width; }
 	static void SetLastXfbHeight(unsigned int height) { s_last_xfb_height = height; }
@@ -61,7 +59,7 @@ public:
 protected:
 	struct VirtualXFB
 	{
-		VirtualXFB() : xfbSource(NULL) {}
+		VirtualXFB() : xfbSource(nullptr) {}
 
 		// Address and size in GameCube RAM
 		u32 xfbAddr;
@@ -86,8 +84,8 @@ private:
 	virtual void CopyToRealXFB(u32 xfbAddr, u32 fbWidth, u32 fbHeight, const EFBRectangle& sourceRc,float Gamma = 1.0f) = 0;
 	static void CopyToVirtualXFB(u32 xfbAddr, u32 fbWidth, u32 fbHeight, const EFBRectangle& sourceRc,float Gamma = 1.0f);
 
-	static const XFBSourceBase* const* GetRealXFBSource(u32 xfbAddr, u32 fbWidth, u32 fbHeight, u32 &xfbCount);
-	static const XFBSourceBase* const* GetVirtualXFBSource(u32 xfbAddr, u32 fbWidth, u32 fbHeight, u32 &xfbCount);
+	static const XFBSourceBase* const* GetRealXFBSource(u32 xfbAddr, u32 fbWidth, u32 fbHeight, u32* xfbCount);
+	static const XFBSourceBase* const* GetVirtualXFBSource(u32 xfbAddr, u32 fbWidth, u32 fbHeight, u32* xfbCount);
 
 	static XFBSourceBase *m_realXFBSource; // Only used in Real XFB mode
 	static VirtualXFBListType m_virtualXFBList; // Only used in Virtual XFB mode
@@ -99,5 +97,3 @@ private:
 };
 
 extern FramebufferManagerBase *g_framebuffer_manager;
-
-#endif

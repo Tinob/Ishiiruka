@@ -2,17 +2,15 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _TEXTURECACHEBASE_H
-#define _TEXTURECACHEBASE_H
-
+#pragma once
 #include <map>
 
-#include "VideoCommon/VideoCommon.h"
-#include "VideoCommon/TextureDecoder.h"
-#include "VideoCommon/BPMemory.h"
+#include "Common/CommonTypes.h"
 #include "Common/Thread.h"
 
-#include "Common/CommonTypes.h"
+#include "VideoCommon/BPMemory.h"
+#include "VideoCommon/TextureDecoder.h"
+#include "VideoCommon/VideoCommon.h"
 
 struct VideoConfig;
 
@@ -126,10 +124,14 @@ private:
 	static PC_TexFormat LoadCustomTexture(u64 tex_hash, s32 texformat, u32 level, u32& width, u32& height, u32 &nummipsinbuffer, bool rgbaonly);
 	static void DumpTexture(TCacheEntryBase* entry, u32 level);
 
+	static TCacheEntryBase* AllocateRenderTarget(unsigned int width, unsigned int height);
+	static void FreeRenderTarget(TCacheEntryBase* entry);
+
 	typedef std::map<u32, TCacheEntryBase*> TexCache;
+	typedef std::vector<TCacheEntryBase*> RenderTargetPool;
 
 	static TexCache textures;
-
+	static RenderTargetPool render_target_pool;
 	// Backup configuration values
 	static struct BackupConfig
 	{
@@ -146,5 +148,3 @@ private:
 };
 
 extern TextureCache *g_texture_cache;
-
-#endif

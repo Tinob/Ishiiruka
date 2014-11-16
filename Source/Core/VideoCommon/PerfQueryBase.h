@@ -1,5 +1,4 @@
-#ifndef _PERFQUERY_BASE_H_
-#define _PERFQUERY_BASE_H_
+#pragma once
 
 #include "Common/CommonTypes.h"
 
@@ -53,5 +52,3 @@ public:
 };
 
 extern PerfQueryBase* g_perf_query;
-
-#endif // _PERFQUERY_H_

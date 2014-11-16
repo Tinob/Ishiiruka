@@ -12,34 +12,40 @@
 // Next frame, that one is scanned out and the other one gets the copy. = double buffering.
 // ---------------------------------------------------------------------------------------------
 
-
-#include "VideoCommon/RenderBase.h"
-#include "Common/Atomic.h"
-#include "VideoCommon/BPMemory.h"
-#include "VideoCommon/CommandProcessor.h"
-#include "VideoCommon/CPMemory.h"
-#include "VideoCommon/MainBase.h"
-#include "VideoCommon/VideoConfig.h"
-#include "VideoCommon/FramebufferManagerBase.h"
-#include "VideoCommon/TextureCacheBase.h"
-#include "VideoCommon/Fifo.h"
-#include "VideoCommon/OpcodeDecoding.h"
-#include "Common/Timer.h"
-#include "Common/StringUtil.h"
-#include "Core/Host.h"
-#include "VideoCommon/XFMemory.h"
-#include "Core/FifoPlayer/FifoRecorder.h"
-#include "VideoCommon/AVIDump.h"
-#include "VideoCommon/VertexShaderManager.h"
-
 #include <cmath>
 #include <string>
 
+#include "Common/Atomic.h"
+#include "Common/StringUtil.h"
+#include "Common/Timer.h"
+
+#include "Core/ConfigManager.h"
+#include "Core/Core.h"
+#include "Core/Host.h"
+#include "Core/FifoPlayer/FifoRecorder.h"
+
+#include "VideoCommon/AVIDump.h"
+#include "VideoCommon/BPMemory.h"
+#include "VideoCommon/CommandProcessor.h"
+#include "VideoCommon/CPMemory.h"
+#include "VideoCommon/Debugger.h"
+#include "VideoCommon/Fifo.h"
+#include "VideoCommon/FPSCounter.h"
+#include "VideoCommon/FramebufferManagerBase.h"
+#include "VideoCommon/MainBase.h"
+#include "VideoCommon/OpcodeDecoding.h"
+#include "VideoCommon/RenderBase.h"
+#include "VideoCommon/Statistics.h"
+#include "VideoCommon/TextureCacheBase.h"
+#include "VideoCommon/VideoConfig.h"
+#include "VideoCommon/VertexShaderManager.h"
+#include "VideoCommon/XFMemory.h"
+
 // TODO: Move these out of here.
 int frameCount;
-int OSDChoice, OSDTime;
-
-Renderer *g_renderer = NULL;
+int OSDChoice;
+static int OSDTime;
+Renderer *g_renderer = nullptr;
 
 std::mutex Renderer::s_criticalScreenshot;
 std::string Renderer::s_sScreenshotName;
@@ -59,9 +65,8 @@ TargetRectangle Renderer::target_rc;
 int Renderer::s_LastEFBScale;
 
 bool Renderer::XFBWrited;
-bool Renderer::s_EnableDLCachingAfterRecording;
 
-unsigned int Renderer::prev_efb_format = (unsigned int)-1;
+PEControl::PixelFormat Renderer::prev_efb_format = PEControl::INVALID_FMT;
 unsigned int Renderer::efb_scale_numeratorX = 1;
 unsigned int Renderer::efb_scale_numeratorY = 1;
 unsigned int Renderer::efb_scale_denominatorX = 1;
@@ -87,7 +92,7 @@ Renderer::Renderer()
 Renderer::~Renderer()
 {
 	// invalidate previous efb format
-	prev_efb_format = (unsigned int)-1;
+	prev_efb_format = PEControl::INVALID_FMT;
 
 	efb_scale_numeratorX = efb_scale_numeratorY = efb_scale_denominatorX = efb_scale_denominatorY = ssaa_multiplier = 1;
 
@@ -117,9 +122,9 @@ void Renderer::RenderToXFB(u32 xfbAddr, u32 fbWidth, u32 fbHeight, const EFBRect
 	}
 	else
 	{
-		g_renderer->Swap(xfbAddr, fbWidth, fbHeight,sourceRc,Gamma);
+		Swap(xfbAddr, fbWidth, fbWidth, fbHeight, sourceRc, Gamma);
 		Common::AtomicIncrement(s_EFB_PCache_Frame);
-		Common::AtomicStoreRelease(s_swapRequested, false);
+		s_swapRequested.Clear();
 	}
 }
 
@@ -494,18 +499,10 @@ void Renderer::CheckFifoRecording()
 	{
 		if (!wasRecording)
 		{
-			// Disable display list caching because the recorder does not handle it
-			s_EnableDLCachingAfterRecording = g_ActiveConfig.bDlistCachingEnable;
-			g_ActiveConfig.bDlistCachingEnable = false;
-
 			RecordVideoMemory();
 		}
 
 		FifoRecorder::GetInstance().EndFrame(CommandProcessor::fifo.CPBase, CommandProcessor::fifo.CPEnd);
-	}
-	else if (wasRecording)
-	{
-		g_ActiveConfig.bDlistCachingEnable = s_EnableDLCachingAfterRecording;
 	}
 }
 
@@ -529,4 +526,22 @@ void UpdateViewport(Matrix44& vpCorrection)
 {
 	if (xfmem.viewport.wd != 0 && xfmem.viewport.ht != 0)
 		g_renderer->UpdateViewport(vpCorrection);
+}
+
+
+void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, const EFBRectangle& rc, float Gamma)
+{
+	// TODO: merge more generic parts into VideoCommon
+	g_renderer->SwapImpl(xfbAddr, fbWidth, fbStride, fbHeight, rc, Gamma);
+
+	frameCount++;
+	GFX_DEBUGGER_PAUSE_AT(NEXT_FRAME, true);
+
+	// Begin new frame
+	// Set default viewport and scissor, for the clear to work correctly
+	// New frame
+	stats.ResetFrame();
+
+	Core::Callback_VideoCopiedToXFB(XFBWrited || (g_ActiveConfig.bUseXFB && g_ActiveConfig.bUseRealXFB));
+	XFBWrited = false;
 }

@@ -12,17 +12,17 @@
 // Next frame, that one is scanned out and the other one gets the copy. = double buffering.
 // ---------------------------------------------------------------------------------------------
 
-#ifndef _COMMON_RENDERBASE_H_
-#define _COMMON_RENDERBASE_H_
-
-#include "VideoCommon/VideoCommon.h"
-#include "Common/Thread.h"
-#include "Common/MathUtil.h"
-#include "VideoCommon/NativeVertexFormat.h"
-#include "VideoCommon/FramebufferManagerBase.h"
-#include "VideoCommon/BPMemory.h"
+#pragma once
 
 #include <string>
+
+#include "Common/MathUtil.h"
+#include "Common/Thread.h"
+#include "VideoCommon/BPMemory.h"
+#include "VideoCommon/FPSCounter.h"
+#include "VideoCommon/FramebufferManagerBase.h"
+#include "VideoCommon/NativeVertexFormat.h"
+#include "VideoCommon/VideoCommon.h"
 
 // TODO: Move these out of here.
 extern int frameCount;
@@ -106,14 +106,15 @@ public:
 	virtual void RestoreAPIState() = 0;
 
 	// Finish up the current frame, print some stats
-	virtual void Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight, const EFBRectangle& rc,float Gamma = 1.0f) = 0;
+	static void Swap(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, const EFBRectangle& rc, float Gamma = 1.0f);
+	virtual void SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, const EFBRectangle& rc, float Gamma = 1.0f) = 0;
 
 	virtual void UpdateViewport(Matrix44& vpCorrection) = 0;
 
 	virtual bool SaveScreenshot(const std::string &filename, const TargetRectangle &rc) = 0;
 
-	static unsigned int GetPrevPixelFormat() { return prev_efb_format; }
-	static void StorePixelFormat(unsigned int new_format) { prev_efb_format = new_format; }
+	static PEControl::PixelFormat GetPrevPixelFormat() { return prev_efb_format; }
+	static void StorePixelFormat(PEControl::PixelFormat new_format) { prev_efb_format = new_format; }
 
 	// Max height/width
 	virtual int GetMaxTextureSize() = 0;
@@ -152,10 +153,8 @@ protected:
 
 	static bool XFBWrited;
 
-	static bool s_EnableDLCachingAfterRecording;
-
 private:
-	static unsigned int prev_efb_format;
+	static PEControl::PixelFormat prev_efb_format;
 	static unsigned int efb_scale_numeratorX;
 	static unsigned int efb_scale_numeratorY;
 	static unsigned int efb_scale_denominatorX;
@@ -166,5 +165,3 @@ private:
 extern Renderer *g_renderer;
 
 void UpdateViewport(Matrix44& vpCorrection);
-
-#endif // _COMMON_RENDERBASE_H_

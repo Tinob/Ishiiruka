@@ -204,9 +204,7 @@ void VideoBackend::Video_Prepare()
 
 	g_renderer = new Renderer;
 
-	s_efbAccessRequested = false;
-	s_FifoShuttingDown = false;
-	s_swapRequested = false;
+	s_swapRequested.Clear();
 
 	CommandProcessor::Init();
 	PixelEngine::Init();
@@ -245,9 +243,7 @@ void VideoBackend::Video_Cleanup() {
 	
 	if (g_renderer)
 	{
-		s_efbAccessRequested = false;
-		s_FifoShuttingDown = false;
-		s_swapRequested = false;
+		s_swapRequested.Clear();
 
 		Fifo_Shutdown();
 

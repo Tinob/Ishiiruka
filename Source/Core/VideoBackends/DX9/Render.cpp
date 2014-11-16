@@ -575,7 +575,7 @@ bool Renderer::SaveScreenshot(const std::string &filename, const TargetRectangle
 }
 
 // This function has the final picture. We adjust the aspect ratio here.
-void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& rc,float Gamma)
+void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, const EFBRectangle& rc, float Gamma)
 {
 	if (g_bSkipCurrentFrame || (!XFBWrited && !g_ActiveConfig.RealXFBEnabled()) || !fbWidth || !fbHeight)
 	{
@@ -587,7 +587,7 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 	}
 
 	u32 xfbCount = 0;
-	const XFBSourceBase* const* xfbSourceList = FramebufferManager::GetXFBSource(xfbAddr, fbWidth, fbHeight, xfbCount);
+	const XFBSourceBase* const* xfbSourceList = FramebufferManager::GetXFBSource(xfbAddr, fbWidth, fbHeight, &xfbCount);
 	if ((!xfbSourceList || xfbCount == 0) && g_ActiveConfig.bUseXFB && !g_ActiveConfig.bUseRealXFB)
 	{
 		if (g_ActiveConfig.bDumpFrames && !frame_data.empty())
@@ -697,12 +697,12 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 				// use virtual xfb with offset
 				int xfbHeight = xfbSource->srcHeight;
 				int xfbWidth = xfbSource->srcWidth;
-				int hOffset = ((s32)xfbSource->srcAddr - (s32)xfbAddr) / ((s32)fbWidth * 2);
+				int hOffset = ((s32)xfbSource->srcAddr - (s32)xfbAddr) / ((s32)fbStride * 2);
 
 				drawRc.bottom = 1.0f - (2.0f * (hOffset) / (float)fbHeight);
 				drawRc.top = 1.0f - (2.0f * (hOffset + xfbHeight) / (float)fbHeight);
-				drawRc.left = -(xfbWidth / (float)fbWidth);
-				drawRc.right = (xfbWidth / (float)fbWidth);
+				drawRc.left = -(xfbWidth / (float)fbStride);
+				drawRc.right = (xfbWidth / (float)fbStride);
 
 				// The following code disables auto stretch.  Kept for reference.
 				// scale draw area for a 1 to 1 pixel mapping with the draw target
@@ -854,8 +854,7 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 	}
 
 	OSD::DrawMessages();
-	D3D::EndFrame();
-	++frameCount;
+	D3D::EndFrame();	
 
 	GFX_DEBUGGER_PAUSE_AT(NEXT_FRAME, true);
 	
@@ -939,17 +938,11 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbHeight,const EFBRectangle& r
 		s_fps = UpdateFPSCounter();
 
 	// Begin new frame
-	// Set default viewport and scissor, for the clear to work correctly
-	// New frame
-	stats.ResetFrame();
 	D3D::BeginFrame();
 	RestoreAPIState();
 
 	D3D::dev->SetRenderTarget(0, FramebufferManager::GetEFBColorRTSurface());
-	D3D::dev->SetDepthStencilSurface(FramebufferManager::GetEFBDepthRTSurface());	
-
-	Core::Callback_VideoCopiedToXFB(XFBWrited || (g_ActiveConfig.bUseXFB && g_ActiveConfig.bUseRealXFB));
-	XFBWrited = false;
+	D3D::dev->SetDepthStencilSurface(FramebufferManager::GetEFBDepthRTSurface());
 }
 
 // ALWAYS call RestoreAPIState for each ResetAPIState call you're doing

@@ -21,7 +21,8 @@ extern s32 frameCount;
 
 enum
 {
-	TEXTURE_KILL_THRESHOLD = 1200,
+	TEXTURE_KILL_THRESHOLD = 600,
+	RENDER_TARGET_KILL_THRESHOLD = 6,
 };
 
 TextureCache *g_texture_cache;
@@ -30,6 +31,7 @@ GC_ALIGNED16(u8 *TextureCache::bufferstart) = NULL;
 u32 TextureCache::temp_size;
 
 TextureCache::TexCache TextureCache::textures;
+TextureCache::RenderTargetPool TextureCache::render_target_pool;
 
 TextureCache::BackupConfig TextureCache::backup_config;
 
@@ -62,13 +64,17 @@ void TextureCache::RequestInvalidateTextureCache()
 
 void TextureCache::Invalidate()
 {
-	TexCache::iterator
-		iter = textures.begin(),
-		tcend = textures.end();
-	for (; iter != tcend; ++iter)
-		delete iter->second;
-
+	for (auto& tex : textures)
+	{
+		delete tex.second;
+	}
 	textures.clear();
+
+	for (auto& rt : render_target_pool)
+	{
+		delete rt;
+	}
+	render_target_pool.clear();
 }
 
 TextureCache::~TextureCache()
@@ -77,7 +83,7 @@ TextureCache::~TextureCache()
 	if (TextureCache::temp)
 	{
 		FreeAlignedMemory(TextureCache::temp);
-		TextureCache::temp = NULL;
+		TextureCache::temp = nullptr;
 	}
 }
 
@@ -131,8 +137,7 @@ void TextureCache::Cleanup()
 	TexCache::iterator tcend = textures.end();
 	while (iter != tcend)
 	{
-		if (	frameCount > TEXTURE_KILL_THRESHOLD + iter->second->frameCount
-			
+		if (frameCount > TEXTURE_KILL_THRESHOLD + iter->second->frameCount
 			// EFB copies living on the host GPU are unrecoverable and thus shouldn't be deleted
 			&& ! iter->second->IsEfbCopy() )
 		{
@@ -142,6 +147,21 @@ void TextureCache::Cleanup()
 		else
 		{
 			++iter;
+		}
+	}
+	for (size_t i = 0; i < render_target_pool.size();)
+	{
+		auto rt = render_target_pool[i];
+
+		if (frameCount > RENDER_TARGET_KILL_THRESHOLD + rt->frameCount)
+		{
+			delete rt;
+			render_target_pool[i] = render_target_pool.back();
+			render_target_pool.pop_back();
+		}
+		else
+		{
+			++i;
 		}
 	}
 }
@@ -327,7 +347,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 	u32 const tlutaddr, s32 const tlutfmt, bool const use_mipmaps, u32 maxlevel, bool const from_tmem)
 {
 	if (0 == address)
-		return NULL;
+		return nullptr;
 
 	// TexelSizeInNibbles(format) * width * height / 16;
 	const u32 bsw = TexDecoder_GetBlockWidthInTexels(texformat) - 1;
@@ -425,7 +445,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 		{
 			// delete the texture and make a new one
 			delete entry;
-			entry = NULL;
+			entry = nullptr;
 		}
 	}
 	bool using_custom_texture = false;
@@ -881,17 +901,25 @@ void TextureCache::CopyRenderTargetToTexture(u32 dstAddr, u32 dstFormat, u32 src
 		}
 		else if (!(entry->type == TCET_EC_VRAM && entry->virtual_width == scaled_tex_w && entry->virtual_height == scaled_tex_h))
 		{
-			// delete it and recreate it as a render target
-			delete entry;
-			entry = NULL;
+			if (entry->type == TCET_EC_VRAM)
+			{
+				// try to re-use this render target later
+				FreeRenderTarget(entry);
+			}
+			else
+			{
+				// remove it and recreate it as a render target
+				delete entry;
+			}
+
+			entry = nullptr;
 		}
 	}
 
-	if (NULL == entry)
+	if (nullptr == entry)
 	{
 		// create the texture
-		entry = g_texture_cache->CreateRenderTargetTexture(scaled_tex_w, scaled_tex_h);
-		textures[dstAddr] = entry;
+		textures[dstAddr] = entry = AllocateRenderTarget(scaled_tex_w, scaled_tex_h);
 
 		// TODO: Using the wrong dstFormat, dumb...
 		entry->SetGeneralParameters(dstAddr, 0, dstFormat, 1);
@@ -903,4 +931,27 @@ void TextureCache::CopyRenderTargetToTexture(u32 dstAddr, u32 dstFormat, u32 src
 	entry->frameCount = frameCount;
 
 	entry->FromRenderTarget(dstAddr, dstFormat, srcFormat, srcRect, isIntensity, scaleByHalf, cbufid, colmat);
+}
+
+TextureCache::TCacheEntryBase* TextureCache::AllocateRenderTarget(unsigned int width, unsigned int height)
+{
+	for (size_t i = 0; i < render_target_pool.size(); ++i)
+	{
+		auto rt = render_target_pool[i];
+
+		if (rt->virtual_width != width || rt->virtual_height != height)
+			continue;
+
+		render_target_pool[i] = render_target_pool.back();
+		render_target_pool.pop_back();
+
+		return rt;
+	}
+
+	return g_texture_cache->CreateRenderTargetTexture(width, height);
+}
+
+void TextureCache::FreeRenderTarget(TCacheEntryBase* entry)
+{
+	render_target_pool.push_back(entry);
 }
