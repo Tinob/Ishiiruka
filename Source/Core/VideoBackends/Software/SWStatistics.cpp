@@ -2,7 +2,8 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include "SWStatistics.h"
+#include <cstring>
+#include "VideoBackends/Software/SWStatistics.h"
 
 SWStatistics swstats;
 

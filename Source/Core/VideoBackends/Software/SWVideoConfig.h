@@ -2,8 +2,7 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _VIDEOSOFTWARE_CONFIG_H_
-#define _VIDEOSOFTWARE_CONFIG_H_
+#pragma once
 
 #include "Common/Common.h"
 
@@ -19,9 +18,10 @@ struct SWVideoConfig : NonCopyable
 	// General
 	bool bFullscreen;
 	bool bHideCursor;
-	bool renderToMainframe;	
+	bool renderToMainframe;
 
 	bool bHwRasterizer;
+	bool bBypassXFB;
 
 	// Emulation features
 	bool bZComploc;
@@ -31,7 +31,6 @@ struct SWVideoConfig : NonCopyable
 
 	bool bDumpTextures;
 	bool bDumpObjects;
-	bool bDumpFrames;
 
 	// Debug only
 	bool bDumpTevStages;
@@ -42,5 +41,3 @@ struct SWVideoConfig : NonCopyable
 };
 
 extern SWVideoConfig g_SWVideoConfig;
-
-#endif  // _VIDEOSOFTWARE_CONFIG_H_

@@ -2,12 +2,12 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include "SetupUnit.h"
-
-#include "CPMemLoader.h"
-#include "OpcodeDecoder.h"
-#include "SWStatistics.h"
-#include "Clipper.h"
+#include "Common/ChunkFile.h"
+#include "VideoBackends/Software/Clipper.h"
+#include "VideoBackends/Software/CPMemLoader.h"
+#include "VideoBackends/Software/OpcodeDecoder.h"
+#include "VideoBackends/Software/SetupUnit.h"
+#include "VideoBackends/Software/SWStatistics.h"
 
 
 void SetupUnit::Init(u8 primitiveType)
@@ -23,7 +23,7 @@ void SetupUnit::Init(u8 primitiveType)
 
 void SetupUnit::SetupVertex()
 {
-	switch(m_PrimType)
+	switch (m_PrimType)
 	{
 	case GX_DRAW_QUADS:
 		SetupQuad();
@@ -54,8 +54,8 @@ void SetupUnit::SetupVertex()
 }
 
 
-	void SetupUnit::SetupQuad()
-	{
+void SetupUnit::SetupQuad()
+{
 	if (m_VertexCounter < 2)
 	{
 		m_VertexCounter++;
@@ -103,7 +103,7 @@ void SetupUnit::SetupTriStrip()
 	m_VertPointer[2 - (m_VertexCounter & 1)] = m_VertPointer[0];
 	m_VertWritePointer = m_VertPointer[0];
 
-	m_VertPointer[0] = &m_Vertices[(m_VertexCounter + 1) % 3];  
+	m_VertPointer[0] = &m_Vertices[(m_VertexCounter + 1) % 3];
 }
 
 void SetupUnit::SetupTriFan()

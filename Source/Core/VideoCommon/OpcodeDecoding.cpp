@@ -31,7 +31,6 @@
 #include "VideoCommon/VideoConfig.h"
 #include "VideoCommon/XFMemory.h"
 
-DataReader g_VideoData;
 bool g_bRecordFifoData = false;
 
 template <int count>
@@ -184,8 +183,7 @@ inline u32 Decode(const u8* end)
 			parameters.skip_draw = (bpmem.genMode.cullmode == 3 && parameters.primitive < 5) || g_bSkipCurrentFrame;
 			parameters.VtxDesc = &g_main_cp_state.vtx_desc;
 			parameters.VtxAttr = &g_main_cp_state.vtx_attr[parameters.vtx_attr_group];
-			parameters.source = g_VideoData.GetReadPosition();
-			parameters.destination = VertexManager::s_pCurBufferPointer;
+			parameters.source = g_VideoData.GetReadPosition();			
 			g_main_cp_state.attr_dirty &= ~(1 << parameters.vtx_attr_group);
 			u32 readsize = 0;
 			u32 writesize = 0;
@@ -235,8 +233,7 @@ static u32 InterpretDisplayList(u32 address, u32 size)
 		while (g_VideoData.GetReadPosition() < end)
 		{
 			cycles += Decode<false>(end);			
-		}
-		INCSTAT(stats.numDListsCalled);
+		}		
 		INCSTAT(stats.thisFrame.numDListsCalled);
 		// un-swap
 		Statistics::SwapDL();
@@ -251,7 +248,7 @@ static u32 InterpretDisplayList(u32 address, u32 size)
 static void UnknownOpcode(u8 cmd_byte, const void *buffer)
 {
 	// TODO(Omega): Maybe dump FIFO to file on this error
-	std::string temp = StringFromFormat(
+	PanicAlert(
 		"GFX FIFO: Unknown Opcode (0x%x @ %p).\n"
 		"This means one of the following:\n"
 		"* The emulated GPU got desynced, disabling dual core can help\n"
@@ -261,12 +258,10 @@ static void UnknownOpcode(u8 cmd_byte, const void *buffer)
 		"Dolphin will now likely crash or hang. Enjoy.",
 		cmd_byte,
 		buffer);
-	Host_SysMessage(temp.c_str());
-	INFO_LOG(VIDEO, "%s", temp.c_str());
 	{
 		SCPFifoStruct &fifo = CommandProcessor::fifo;
 
-		std::string tmp = StringFromFormat(
+		PanicAlert(
 			"Illegal command %02x\n"
 			"CPBase: 0x%08x\n"
 			"CPEnd: 0x%08x\n"
@@ -284,9 +279,6 @@ static void UnknownOpcode(u8 cmd_byte, const void *buffer)
 			, fifo.CPWritePointer, fifo.CPReadPointer, fifo.CPBreakpoint, fifo.bFF_GPReadEnable ? "true" : "false"
 			, fifo.bFF_BPEnable ? "true" : "false", fifo.bFF_BPInt ? "true" : "false"
 			, fifo.bFF_Breakpoint ? "true" : "false");
-
-		Host_SysMessage(tmp.c_str());
-		INFO_LOG(VIDEO, "%s", tmp.c_str());
 	}
 }
 

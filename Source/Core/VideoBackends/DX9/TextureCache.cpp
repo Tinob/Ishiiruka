@@ -64,14 +64,14 @@ void TextureCache::TCacheEntry::Bind(u32 stage)
 	D3D::SetTexture(stage, texture);
 }
 
-bool TextureCache::TCacheEntry::Save(const char filename[], u32 level)
+bool TextureCache::TCacheEntry::Save(const std::string& filename, u32 level)
 {
 	IDirect3DSurface9* surface;
 	HRESULT hr = texture->GetSurfaceLevel(level, &surface);
 	if (FAILED(hr))
 		return false;
 
-	hr = PD3DXSaveSurfaceToFileA(filename, D3DXIFF_PNG, surface, NULL, NULL);
+	hr = PD3DXSaveSurfaceToFileA(filename.c_str(), D3DXIFF_PNG, surface, NULL, NULL);
 	surface->Release();
 
 	return SUCCEEDED(hr);
@@ -112,7 +112,7 @@ void TextureCache::TCacheEntry::Load(const u8* src, u32 width, u32 height,
 }
 
 void TextureCache::TCacheEntry::Load(const u8* src, u32 width, u32 height, u32 expandedWidth,
-	u32 expandedHeight, const s32 texformat, const u32 tlutaddr, const s32 tlutfmt, u32 level)
+	u32 expandedHeight, const s32 texformat, const u32 tlutaddr, const TlutFormat tlutfmt, u32 level)
 {
 	pcformat = TexDecoder_Decode(TextureCache::temp, src, expandedWidth, expandedHeight, texformat, tlutaddr, tlutfmt, false, compressed);
 	ReplaceTexture(TextureCache::temp, width, height, expandedWidth, level);
@@ -125,7 +125,7 @@ void TextureCache::TCacheEntry::LoadFromTmem(const u8* ar_src, const u8* gb_src,
 }
 
 void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, u32 dstFormat,
-	u32 srcFormat, const EFBRectangle& srcRect,
+	PEControl::PixelFormat srcFormat, const EFBRectangle& srcRect,
 	bool isIntensity, bool scaleByHalf, u32 cbufid,
 	const float *colmat)
 {
@@ -232,7 +232,7 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, u32 dstFormat,
 	g_renderer->RestoreAPIState();
 }
 
-PC_TexFormat TextureCache::GetNativeTextureFormat(const s32 texformat, const s32 tlutfmt, u32 width, u32 height)
+PC_TexFormat TextureCache::GetNativeTextureFormat(const s32 texformat, const TlutFormat tlutfmt, u32 width, u32 height)
 {
 	const bool compressed_supported = ((width & 3) == 0) && ((height & 3) == 0);
 	return GetPC_TexFormat(texformat, tlutfmt, compressed_supported);

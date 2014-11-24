@@ -27,19 +27,15 @@
 #include "DolphinWX/HotkeyDlg.h"
 #include "DolphinWX/WXInputBase.h"
 
-class wxWindow;
-
-BEGIN_EVENT_TABLE(HotkeyConfigDialog,wxDialog)
-	EVT_COMMAND_RANGE(0, NUM_HOTKEYS - 1, wxEVT_BUTTON, HotkeyConfigDialog::OnButtonClick)
-	EVT_TIMER(wxID_ANY, HotkeyConfigDialog::OnButtonTimer)
-END_EVENT_TABLE()
-
 HotkeyConfigDialog::HotkeyConfigDialog(wxWindow *parent, wxWindowID id, const wxString &title,
 		const wxPoint &position, const wxSize& size, long style)
 : wxDialog(parent, id, title, position, size, style)
 , m_ButtonMappingTimer(this)
 {
 	CreateHotkeyGUIControls();
+
+	Bind(wxEVT_BUTTON, &HotkeyConfigDialog::OnButtonClick, this, 0, NUM_HOTKEYS - 1);
+	Bind(wxEVT_TIMER, &HotkeyConfigDialog::OnButtonTimer, this);
 
 	g_Pressed = 0;
 	g_Modkey = 0;
@@ -230,6 +226,17 @@ void HotkeyConfigDialog::CreateHotkeyGUIControls()
 		_("Toggle Frame limit"),
 		_("Increase Frame limit"),
 		_("Decrease Frame limit"),
+
+		_("Freelook Increase Speed"),
+		_("Freelook Decrease Speed"),
+		_("Freelook Reset Speed"),
+		_("Freelook Move Up"),
+		_("Freelook Move Down"),
+		_("Freelook Move Left"),
+		_("Freelook Move Right"),
+		_("Freelook Zoom In"),
+		_("Freelook Zoom Out"),
+		_("Freelook Reset"),
 
 		_("Load State Slot 1"),
 		_("Load State Slot 2"),

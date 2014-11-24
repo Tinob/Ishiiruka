@@ -59,18 +59,12 @@ unsigned int VideoBackend::PeekMessages()
 	return TRUE;
 }
 
-void VideoBackend::UpdateFPSDisplay(const std::string& text)
-{
-	std::string str = StringFromFormat("%s | DX9 | %s", scm_rev_str, text.c_str());
-	SetWindowTextA((HWND)m_window_handle, str.c_str());
-}
-
-std::string VideoBackend::GetName()
+std::string VideoBackend::GetName() const
 {
 	return "DX9";
 }
 
-std::string VideoBackend::GetDisplayName()
+std::string VideoBackend::GetDisplayName() const
 {
 	return "Direct3D9";
 }
@@ -102,7 +96,8 @@ void InitBackendInfo()
 	g_Config.backend_info.bSupportsPixelLighting = C_PENVCONST_END <= maxConstants;
 	g_Config.backend_info.bSupportsEarlyZ = true;
 	g_Config.backend_info.bNeedBlendIndices = true;
-
+	g_Config.backend_info.bSupportsOversizedViewports = false;
+	g_Config.backend_info.bSupportsBBox = false;
 	// adapters
 	g_Config.backend_info.Adapters.clear();
 	for (int i = 0; i < DX9::D3D::GetNumAdapters(); ++i)
@@ -133,7 +128,7 @@ void VideoBackend::ShowConfig(void* parent)
 #endif
 }
 
-bool VideoBackend::Initialize(void *&window_handle)
+bool VideoBackend::Initialize(void *window_handle)
 {
 	InitializeShared();
 	InitBackendInfo();

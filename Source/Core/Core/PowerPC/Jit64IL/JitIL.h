@@ -30,7 +30,6 @@
 #include "Core/PowerPC/PPCTables.h"
 #include "Core/PowerPC/Jit64/JitAsm.h"
 #include "Core/PowerPC/JitCommon/Jit_Util.h"
-#include "Core/PowerPC/JitCommon/JitBackpatch.h"
 #include "Core/PowerPC/JitCommon/JitBase.h"
 #include "Core/PowerPC/JitCommon/JitCache.h"
 #include "Core/PowerPC/JitILCommon/IR.h"
@@ -47,6 +46,9 @@ public:
 	// Initialization, etc
 
 	void Init() override;
+
+	void EnableBlockLink();
+
 	void Shutdown() override;
 
 	// Jit!

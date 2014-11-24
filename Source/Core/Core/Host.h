@@ -26,7 +26,6 @@
 bool Host_UIHasFocus();
 bool Host_RendererHasFocus();
 void Host_ConnectWiimote(int wm_idx, bool connect);
-void Host_GetRenderWindowSize(int& x, int& y, int& width, int& height);
 void Host_Message(int Id);
 void Host_NotifyMapLoaded();
 void Host_RefreshDSPDebuggerWindow();
@@ -34,7 +33,6 @@ void Host_RequestRenderWindowSize(int width, int height);
 void Host_RequestFullscreen(bool enable_fullscreen);
 void Host_SetStartupDebuggingParameters();
 void Host_SetWiiMoteConnectionState(int _State);
-void Host_SysMessage(const char *fmt, ...);
 void Host_UpdateDisasmDialog();
 void Host_UpdateMainFrame();
 void Host_UpdateTitle(const std::string& title);

@@ -10,6 +10,7 @@
 #include "Core/Core.h"
 #include "Core/HW/Memmap.h"
 
+#include "VideoCommon/BoundingBox.h"
 #include "VideoCommon/BPFunctions.h"
 #include "VideoCommon/BPStructs.h"
 #include "VideoCommon/Fifo.h"
@@ -288,7 +289,7 @@ void BPWritten(const BPCmd& bp)
 			// here. Not sure if there's a better spot to put this.
 			// the number of lines copied is determined by the y scale * source efb height
 
-			PixelEngine::bbox_active = false;
+			BoundingBox::active = false;
 
 			float yScale;
 			if (PE_copy.scale_invert)
@@ -429,13 +430,16 @@ void BPWritten(const BPCmd& bp)
 	case BPMEM_CLEARBBOX2:
 		// Don't compute bounding box if this frame is being skipped!
 		// Wrong but valid values are better than bogus values...
-		if (g_ActiveConfig.bUseBBox && !g_bSkipCurrentFrame)
+		if (!g_bSkipCurrentFrame)
 		{
 			u8 offset = bp.address & 2;
 
-			PixelEngine::bbox[offset] = bp.newvalue & 0x3ff;
-			PixelEngine::bbox[offset | 1] = bp.newvalue >> 10;
-			PixelEngine::bbox_active = true;
+			BoundingBox::coords[offset] = bp.newvalue & 0x3ff;
+			BoundingBox::coords[offset + 1] = bp.newvalue >> 10;
+			BoundingBox::active = true;
+
+			g_renderer->BBoxWrite(offset, bp.newvalue & 0x3ff);
+			g_renderer->BBoxWrite(offset + 1, bp.newvalue >> 10);
 		}
 		return;
 	case BPMEM_TEXINVALIDATE:

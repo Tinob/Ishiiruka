@@ -179,6 +179,9 @@ void CFrame::OnToggleWindow(wxCommandEvent& event)
 		case IDM_REGISTERWINDOW:
 			g_pCodeWindow->ToggleRegisterWindow(bShow);
 			break;
+		case IDM_WATCHWINDOW:
+			g_pCodeWindow->ToggleWatchWindow(bShow);
+			break;
 		case IDM_BREAKPOINTWINDOW:
 			g_pCodeWindow->ToggleBreakPointWindow(bShow);
 			break;
@@ -208,6 +211,7 @@ void CFrame::ClosePages()
 	{
 		g_pCodeWindow->ToggleCodeWindow(false);
 		g_pCodeWindow->ToggleRegisterWindow(false);
+		g_pCodeWindow->ToggleWatchWindow(false);
 		g_pCodeWindow->ToggleBreakPointWindow(false);
 		g_pCodeWindow->ToggleMemoryWindow(false);
 		g_pCodeWindow->ToggleJitWindow(false);
@@ -247,6 +251,8 @@ void CFrame::OnNotebookPageClose(wxAuiNotebookEvent& event)
 		ToggleLogConfigWindow(false);
 	if (Ctrl->GetPage(event.GetSelection())->GetId() == IDM_REGISTERWINDOW)
 		g_pCodeWindow->ToggleRegisterWindow(false);
+	if (Ctrl->GetPage(event.GetSelection())->GetId() == IDM_WATCHWINDOW)
+		g_pCodeWindow->ToggleWatchWindow(false);
 	if (Ctrl->GetPage(event.GetSelection())->GetId() == IDM_BREAKPOINTWINDOW)
 		g_pCodeWindow->ToggleBreakPointWindow(false);
 	if (Ctrl->GetPage(event.GetSelection())->GetId() == IDM_JITWINDOW)
@@ -327,21 +333,21 @@ void CFrame::OnTab(wxAuiNotebookEvent& event)
 	if (!g_pCodeWindow) return;
 
 	// Create the popup menu
-	wxMenu* MenuPopup = new wxMenu;
+	wxMenu MenuPopup;
 
-	wxMenuItem* Item =  new wxMenuItem(MenuPopup, wxID_ANY, _("Select floating windows"));
-	MenuPopup->Append(Item);
+	wxMenuItem* Item =  new wxMenuItem(&MenuPopup, wxID_ANY, _("Select floating windows"));
+	MenuPopup.Append(Item);
 	Item->Enable(false);
-	MenuPopup->Append(new wxMenuItem(MenuPopup));
+	MenuPopup.Append(new wxMenuItem(&MenuPopup));
 
 	for (int i = IDM_LOGWINDOW; i <= IDM_CODEWINDOW; i++)
 	{
 		wxWindow *Win = FindWindowById(i);
 		if (Win && Win->IsEnabled())
 		{
-			Item = new wxMenuItem(MenuPopup, i + IDM_FLOAT_LOGWINDOW - IDM_LOGWINDOW,
+			Item = new wxMenuItem(&MenuPopup, i + IDM_FLOAT_LOGWINDOW - IDM_LOGWINDOW,
 					Win->GetName(), "", wxITEM_CHECK);
-			MenuPopup->Append(Item);
+			MenuPopup.Append(Item);
 			Item->Check(!!FindWindowById(i + IDM_LOGWINDOW_PARENT - IDM_LOGWINDOW));
 		}
 	}
@@ -351,7 +357,7 @@ void CFrame::OnTab(wxAuiNotebookEvent& event)
 	Pt = ScreenToClient(Pt);
 
 	// Show
-	PopupMenu(MenuPopup, Pt);
+	PopupMenu(&MenuPopup, Pt);
 }
 
 void CFrame::OnAllowNotebookDnD(wxAuiNotebookEvent& event)
@@ -548,7 +554,7 @@ void CFrame::OnPerspectiveMenu(wxCommandEvent& event)
 					}
 					else if (dlg.GetValue().Find(",") != -1)
 					{
-						wxMessageBox(_("The name can not contain the character ','"),
+						wxMessageBox(_("The name cannot contain the character ','"),
 								_("Notice"), wxOK, this);
 						wxString Str = dlg.GetValue();
 						Str.Replace(",", "", true);
@@ -556,7 +562,7 @@ void CFrame::OnPerspectiveMenu(wxCommandEvent& event)
 					}
 					else if (dlg.GetValue().IsSameAs(""))
 					{
-						wxMessageBox(_("The name can not be empty"),
+						wxMessageBox(_("The name cannot be empty"),
 								_("Notice"), wxOK, this);
 						dlg.SetValue(DefaultValue);
 					}
@@ -924,11 +930,11 @@ wxFrame* CFrame::CreateParentFrame(wxWindowID Id, const wxString& Title, wxWindo
 wxAuiNotebook* CFrame::CreateEmptyNotebook()
 {
 	const long NOTEBOOK_STYLE = wxAUI_NB_TOP | wxAUI_NB_TAB_SPLIT |
+		wxAUI_NB_TAB_MOVE |
 		wxAUI_NB_TAB_EXTERNAL_MOVE | wxAUI_NB_SCROLL_BUTTONS |
 		wxAUI_NB_WINDOWLIST_BUTTON | wxNO_BORDER;
-	wxAuiNotebook* NB = new wxAuiNotebook(this, wxID_ANY,
-			wxDefaultPosition, wxDefaultSize, NOTEBOOK_STYLE);
-	return NB;
+
+	return new wxAuiNotebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, NOTEBOOK_STYLE);
 }
 
 void CFrame::AddRemoveBlankPage()

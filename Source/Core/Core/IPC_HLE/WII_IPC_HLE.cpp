@@ -138,7 +138,7 @@ void Init()
 	g_DeviceMap[i] = new CWII_IPC_HLE_Device_net_ncd_manage(i, "/dev/net/ncd/manage"); i++;
 	g_DeviceMap[i] = new CWII_IPC_HLE_Device_net_wd_command(i, "/dev/net/wd/command"); i++;
 	g_DeviceMap[i] = new CWII_IPC_HLE_Device_net_ip_top(i, "/dev/net/ip/top"); i++;
-	g_DeviceMap[i] = new CWII_IPC_HLE_Device_net_ssl(i, "/dev/net/ssl"); i++;	
+	g_DeviceMap[i] = new CWII_IPC_HLE_Device_net_ssl(i, "/dev/net/ssl"); i++;
 	g_DeviceMap[i] = new CWII_IPC_HLE_Device_sdio_slot0(i, "/dev/sdio/slot0"); i++;
 	g_DeviceMap[i] = new CWII_IPC_HLE_Device_stub(i, "/dev/sdio/slot1"); i++;
 	#if defined(__LIBUSB__) || defined(_WIN32)
@@ -265,12 +265,8 @@ IWII_IPC_HLE_Device* AccessDeviceByID(u32 _ID)
 IWII_IPC_HLE_Device* CreateFileIO(u32 _DeviceID, const std::string& _rDeviceName)
 {
 	// scan device name and create the right one
-	IWII_IPC_HLE_Device* pDevice = nullptr;
-
 	INFO_LOG(WII_IPC_FILEIO, "IOP: Create FileIO %s", _rDeviceName.c_str());
-	pDevice = new CWII_IPC_HLE_Device_FileIO(_DeviceID, _rDeviceName);
-
-	return pDevice;
+	return new CWII_IPC_HLE_Device_FileIO(_DeviceID, _rDeviceName);
 }
 
 

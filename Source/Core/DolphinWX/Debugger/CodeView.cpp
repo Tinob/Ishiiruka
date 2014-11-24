@@ -58,19 +58,6 @@ enum
 	IDM_ADDFUNCTION,
 };
 
-BEGIN_EVENT_TABLE(CCodeView, wxControl)
-	EVT_ERASE_BACKGROUND(CCodeView::OnErase)
-	EVT_PAINT(CCodeView::OnPaint)
-	EVT_MOUSEWHEEL(CCodeView::OnScrollWheel)
-	EVT_LEFT_DOWN(CCodeView::OnMouseDown)
-	EVT_LEFT_UP(CCodeView::OnMouseUpL)
-	EVT_MOTION(CCodeView::OnMouseMove)
-	EVT_RIGHT_DOWN(CCodeView::OnMouseDown)
-	EVT_RIGHT_UP(CCodeView::OnMouseUpR)
-	EVT_MENU(-1, CCodeView::OnPopupMenu)
-	EVT_SIZE(CCodeView::OnResize)
-END_EVENT_TABLE()
-
 CCodeView::CCodeView(DebugInterface* debuginterface, SymbolDB *symboldb,
 		wxWindow* parent, wxWindowID Id)
 	: wxControl(parent, Id),
@@ -86,6 +73,16 @@ CCodeView::CCodeView(DebugInterface* debuginterface, SymbolDB *symboldb,
 	  m_lx(-1),
 	  m_ly(-1)
 {
+	Bind(wxEVT_ERASE_BACKGROUND, &CCodeView::OnErase, this);
+	Bind(wxEVT_PAINT, &CCodeView::OnPaint, this);
+	Bind(wxEVT_MOUSEWHEEL, &CCodeView::OnScrollWheel, this);
+	Bind(wxEVT_LEFT_DOWN, &CCodeView::OnMouseDown, this);
+	Bind(wxEVT_LEFT_UP, &CCodeView::OnMouseUpL, this);
+	Bind(wxEVT_MOTION, &CCodeView::OnMouseMove, this);
+	Bind(wxEVT_RIGHT_DOWN, &CCodeView::OnMouseDown, this);
+	Bind(wxEVT_RIGHT_UP, &CCodeView::OnMouseUpR, this);
+	Bind(wxEVT_MENU, &CCodeView::OnPopupMenu, this);
+	Bind(wxEVT_SIZE, &CCodeView::OnResize, this);
 }
 
 int CCodeView::YToAddress(int y)
@@ -367,26 +364,26 @@ void CCodeView::OnMouseUpR(wxMouseEvent& event)
 {
 	bool isSymbol = m_symbol_db->GetSymbolFromAddr(m_selection) != nullptr;
 	// popup menu
-	wxMenu* menu = new wxMenu;
+	wxMenu menu;
 	//menu->Append(IDM_GOTOINMEMVIEW, "&Goto in mem view");
-	menu->Append(IDM_FOLLOWBRANCH, _("&Follow branch"))->Enable(AddrToBranch(m_selection) ? true : false);
-	menu->AppendSeparator();
+	menu.Append(IDM_FOLLOWBRANCH, _("&Follow branch"))->Enable(AddrToBranch(m_selection) ? true : false);
+	menu.AppendSeparator();
 #if wxUSE_CLIPBOARD
-	menu->Append(IDM_COPYADDRESS, _("Copy &address"));
-	menu->Append(IDM_COPYFUNCTION, _("Copy &function"))->Enable(isSymbol);
-	menu->Append(IDM_COPYCODE, _("Copy &code line"));
-	menu->Append(IDM_COPYHEX, _("Copy &hex"));
-	menu->AppendSeparator();
+	menu.Append(IDM_COPYADDRESS, _("Copy &address"));
+	menu.Append(IDM_COPYFUNCTION, _("Copy &function"))->Enable(isSymbol);
+	menu.Append(IDM_COPYCODE, _("Copy &code line"));
+	menu.Append(IDM_COPYHEX, _("Copy &hex"));
+	menu.AppendSeparator();
 #endif
-	menu->Append(IDM_RENAMESYMBOL, _("Rename &symbol"))->Enable(isSymbol);
-	menu->AppendSeparator();
-	menu->Append(IDM_RUNTOHERE, _("&Run To Here"))->Enable(Core::IsRunning());
-	menu->Append(IDM_ADDFUNCTION, _("&Add function"))->Enable(Core::IsRunning());
-	menu->Append(IDM_JITRESULTS, _("PPC vs X86"))->Enable(Core::IsRunning());
-	menu->Append(IDM_INSERTBLR, _("Insert &blr"))->Enable(Core::IsRunning());
-	menu->Append(IDM_INSERTNOP, _("Insert &nop"))->Enable(Core::IsRunning());
-	menu->Append(IDM_PATCHALERT, _("Patch alert"))->Enable(Core::IsRunning());
-	PopupMenu(menu);
+	menu.Append(IDM_RENAMESYMBOL, _("Rename &symbol"))->Enable(isSymbol);
+	menu.AppendSeparator();
+	menu.Append(IDM_RUNTOHERE, _("&Run To Here"))->Enable(Core::IsRunning());
+	menu.Append(IDM_ADDFUNCTION, _("&Add function"))->Enable(Core::IsRunning());
+	menu.Append(IDM_JITRESULTS, _("PPC vs X86"))->Enable(Core::IsRunning());
+	menu.Append(IDM_INSERTBLR, _("Insert &blr"))->Enable(Core::IsRunning());
+	menu.Append(IDM_INSERTNOP, _("Insert &nop"))->Enable(Core::IsRunning());
+	menu.Append(IDM_PATCHALERT, _("Patch alert"))->Enable(Core::IsRunning());
+	PopupMenu(&menu);
 	event.Skip();
 }
 

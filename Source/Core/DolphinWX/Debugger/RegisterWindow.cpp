@@ -11,16 +11,9 @@
 #include <wx/string.h>
 #include <wx/windowid.h>
 
+#include "Core/PowerPC/PowerPC.h"
 #include "DolphinWX/Debugger/RegisterView.h"
 #include "DolphinWX/Debugger/RegisterWindow.h"
-
-class wxWindow;
-
-extern const char* GetGRPName(unsigned int index);
-
-BEGIN_EVENT_TABLE(CRegisterWindow, wxPanel)
-END_EVENT_TABLE()
-
 
 CRegisterWindow::CRegisterWindow(wxWindow* parent, wxWindowID id,
 		const wxPoint& position, const wxSize& size,

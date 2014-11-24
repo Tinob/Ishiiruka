@@ -2,10 +2,10 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include "VideoCommon/VideoCommon.h"
-
-#include "CPMemLoader.h"
+#include "Common/CommonFuncs.h"
 #include "Core/HW/Memmap.h"
+#include "VideoBackends/Software/CPMemLoader.h"
+#include "VideoCommon/VideoCommon.h"
 
 
 void SWLoadCPReg(u32 sub_cmd, u32 value)

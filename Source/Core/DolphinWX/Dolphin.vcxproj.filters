@@ -119,15 +119,33 @@
     <ClCompile Include="TASInputDlg.cpp">
       <Filter>GUI</Filter>
     </ClCompile>
-    <ClCompile Include="GLInterface\WGL.cpp" />
-    <ClCompile Include="Cheats\CheatSearchTab.cpp" />
-    <ClCompile Include="Cheats\CheatsWindow.cpp" />
-    <ClCompile Include="Cheats\CreateCodeDialog.cpp" />
-    <ClCompile Include="Cheats\GeckoCodeDiag.cpp" />
+    <ClCompile Include="Debugger\WatchView.cpp">
+      <Filter>GUI\Debugger</Filter>
+    </ClCompile>
+    <ClCompile Include="Debugger\WatchWindow.cpp">
+      <Filter>GUI\Debugger</Filter>
+    </ClCompile>
+    <ClCompile Include="Cheats\CheatSearchTab.cpp">
+      <Filter>GUI\Cheats</Filter>
+    </ClCompile>
+    <ClCompile Include="Cheats\CheatsWindow.cpp">
+      <Filter>GUI\Cheats</Filter>
+    </ClCompile>
+    <ClCompile Include="Cheats\CreateCodeDialog.cpp">
+      <Filter>GUI\Cheats</Filter>
+    </ClCompile>
+    <ClCompile Include="Cheats\GeckoCodeDiag.cpp">
+      <Filter>GUI\Cheats</Filter>
+    </ClCompile>
+    <ClCompile Include="PostProcessingConfigDiag.cpp">
+      <Filter>GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="SoftwareVideoConfigDialog.cpp">
+      <Filter>GUI</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Main.h" />
-    <ClInclude Include="stdafx.h" />
     <ClInclude Include="WXInputBase.h" />
     <ClInclude Include="WxUtils.h" />
     <ClInclude Include="NetWindow.h">
@@ -238,13 +256,30 @@
     <ClInclude Include="TASInputDlg.h">
       <Filter>GUI</Filter>
     </ClInclude>
-    <ClInclude Include="GLInterface\InterfaceBase.h" />
-    <ClInclude Include="GLInterface\WGL.h" />
-    <ClInclude Include="GLInterface\GLInterface.h" />
-    <ClInclude Include="Cheats\CheatSearchTab.h" />
-    <ClInclude Include="Cheats\CheatsWindow.h" />
-    <ClInclude Include="Cheats\CreateCodeDialog.h" />
-    <ClInclude Include="Cheats\GeckoCodeDiag.h" />
+    <ClInclude Include="Debugger\WatchView.h">
+      <Filter>GUI\Debugger</Filter>
+    </ClInclude>
+    <ClInclude Include="Debugger\WatchWindow.h">
+      <Filter>GUI\Debugger</Filter>
+    </ClInclude>
+    <ClInclude Include="Cheats\CheatSearchTab.h">
+      <Filter>GUI\Cheats</Filter>
+    </ClInclude>
+    <ClInclude Include="Cheats\CheatsWindow.h">
+      <Filter>GUI\Cheats</Filter>
+    </ClInclude>
+    <ClInclude Include="Cheats\CreateCodeDialog.h">
+      <Filter>GUI\Cheats</Filter>
+    </ClInclude>
+    <ClInclude Include="Cheats\GeckoCodeDiag.h">
+      <Filter>GUI\Cheats</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcessingConfigDiag.h">
+      <Filter>GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="SoftwareVideoConfigDialog.h">
+      <Filter>GUI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="CMakeLists.txt" />
@@ -276,6 +311,9 @@
     </Filter>
     <Filter Include="GUI\Video">
       <UniqueIdentifier>{ff5180be-244f-4c0e-8a35-bd4bffb6a343}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GUI\Cheats">
+      <UniqueIdentifier>{0901be5b-8b77-4077-b013-9862d302be49}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

@@ -13,16 +13,14 @@ public:
 	const u8 *fifoDirectWrite8;
 	const u8 *fifoDirectWrite16;
 	const u8 *fifoDirectWrite32;
-	const u8 *fifoDirectWriteFloat;
+	const u8 *fifoDirectWrite64;
 
 	const u8 *enterCode;
 
 	const u8 *dispatcherMispredictedBLR;
 	const u8 *dispatcher;
 	const u8 *dispatcherNoCheck;
-	const u8 *dispatcherPcInRSCRATCH;
 
-	const u8 *dispatchPcInRSCRATCH;
 	const u8 *doTiming;
 
 	const u8 *frsqrte;
@@ -58,8 +56,6 @@ protected:
 
 public:
 	void GenFifoWrite(int size);
-	void GenFifoXmm64Write();
-	void GenFifoFloatWrite();
 	void GenFrsqrte();
 	void GenFres();
 };

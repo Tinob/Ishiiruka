@@ -2,59 +2,65 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef STREAMBUFFER_H
-#define STREAMBUFFER_H
+#pragma once
 
+#include <utility>
+#include "VideoBackends/OGL/FramebufferManager.h"
+#include "VideoBackends/OGL/GLUtil.h"
 #include "VideoCommon/VideoCommon.h"
-#include "FramebufferManager.h"
-#include "GLUtil.h"
-
-// glew < 1.8 doesn't support pinned memory
-#ifndef GLEW_AMD_pinned_memory
-#define GLEW_AMD_pinned_memory glewIsSupported("GL_AMD_pinned_memory")
-#define GL_EXTERNAL_VIRTUAL_MEMORY_BUFFER_AMD 0x9160
-#endif
 
 namespace OGL
 {
-enum StreamType {
-	DETECT_MASK = 0x7F,
-	STREAM_DETECT = (1 << 0),
-	MAP_AND_ORPHAN = (1 << 1),
-	MAP_AND_SYNC = (1 << 2),
-	MAP_AND_RISK = (1 << 3),
-	PINNED_MEMORY = (1 << 4),
-	BUFFERSUBDATA = (1 << 5),
-	BUFFERDATA = (1 << 6)
-};
 
-class StreamBuffer {
+class StreamBuffer
+{
 
 public:
-	StreamBuffer(u32 type, size_t size, StreamType uploadType = DETECT_MASK);
-	~StreamBuffer();
-	
-	void Alloc(size_t size, u32 stride = 0);
-	size_t Upload(u8 *data, size_t size);
-	
-	u32 getBuffer() { return m_buffer; }
-	
-private:
-	void Init();
-	void Shutdown();
+	static StreamBuffer* Create(u32 type, u32 size);
+	virtual ~StreamBuffer();
+
+	/* This mapping function will return a pair of:
+	 * - the pointer to the mapped buffer
+	 * - the offset into the real gpu buffer (always multiple of stride)
+	 * On mapping, the maximum of size for allocation has to be set.
+	 * The size really pushed into this fifo only has to be known on Unmapping.
+	 * Mapping invalidates the current buffer content,
+	 * so it isn't allowed to access the old content any more.
+	 */
+	virtual std::pair<u8*, u32> Map(u32 size) = 0;
+	virtual void Unmap(u32 used_size) = 0;
+
+	inline std::pair<u8*, u32> Map(u32 size, u32 stride)
+	{
+		u32 padding = m_iterator % stride;
+		if (padding)
+		{
+			m_iterator += stride - padding;
+		}
+		return Map(size);
+	}
+
+	const u32 m_buffer;
+
+protected:
+	StreamBuffer(u32 type, u32 size);
+	void CreateFences();
 	void DeleteFences();
-	
-	StreamType m_uploadtype;
-	u32 m_buffer;
-	u32 m_buffertype;
-	size_t m_size;
-	u8 *pointer;
-	size_t m_iterator;
-	size_t m_used_iterator;
-	size_t m_free_iterator;
-	GLsync *fences;
+	void AllocMemory(u32 size);
+
+	const u32 m_buffertype;
+	const u32 m_size;
+
+	u32 m_iterator;
+	u32 m_used_iterator;
+	u32 m_free_iterator;
+
+private:
+	static const int SYNC_POINTS = 16;
+	inline int SLOT(u32 x) const { return x >> m_bit_per_slot; }
+	const int m_bit_per_slot;
+
+	GLsync fences[SYNC_POINTS];
 };
 
 }
-
-#endif // STREAMBUFFER_H

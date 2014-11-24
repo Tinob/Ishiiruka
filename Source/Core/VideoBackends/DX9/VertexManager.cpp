@@ -28,8 +28,8 @@ extern NativeVertexFormat *g_nativeVertexFmt;
 namespace DX9
 {
 // This are the initially requeted size for the buffers expresed in elements
-const u32 IBUFFER_SIZE = VertexManager::MAXIBUFFERSIZE * sizeof(u16) * 8;
-const u32 VBUFFER_SIZE = VertexManager::MAXVBUFFERSIZE;
+const u32 MAX_IBUFFER_SIZE = VertexManager::MAXIBUFFERSIZE * sizeof(u16) * 8;
+const u32 MAX_VBUFFER_SIZE = VertexManager::MAXVBUFFERSIZE;
 const u32 MAX_VBUFFER_COUNT = 2;
 // Register count for line/point offset storage
 const u32 LINE_PT_OFFSETS_PARAMS_LEN = C_VENVCONST_END - C_PLOFFSETPARAMS;
@@ -123,13 +123,13 @@ void VertexManager::CreateDeviceObjects()
 {
 	HRESULT hr = S_OK;
 	m_buffers_count = 0;
-	m_vertex_buffers = NULL;
-	m_index_buffers = NULL;
+	m_vertex_buffers = nullptr;
+	m_index_buffers = nullptr;
 	D3DCAPS9 DeviceCaps = D3D::GetCaps();
 	u32 devicevMaxBufferSize =  DeviceCaps.MaxPrimitiveCount * 3 * DeviceCaps.MaxStreamStride;
 	//Calculate Device Dependant size
-	m_vertex_buffer_size = (VBUFFER_SIZE > devicevMaxBufferSize) ? devicevMaxBufferSize : VBUFFER_SIZE;
-	m_index_buffer_size = (IBUFFER_SIZE > DeviceCaps.MaxVertexIndex) ? DeviceCaps.MaxVertexIndex : IBUFFER_SIZE;
+	m_vertex_buffer_size = (MAX_VBUFFER_SIZE > devicevMaxBufferSize) ? devicevMaxBufferSize : MAX_VBUFFER_SIZE;
+	m_index_buffer_size = (MAX_IBUFFER_SIZE > DeviceCaps.MaxVertexIndex) ? DeviceCaps.MaxVertexIndex : MAX_IBUFFER_SIZE;
 	//if device caps are not enough for Vbuffer then fail
 	if (m_index_buffer_size < MAXIBUFFERSIZE || m_vertex_buffer_size < MAXVBUFFERSIZE) return;
 
@@ -139,21 +139,21 @@ void VertexManager::CreateDeviceObjects()
 	bool Fail = false;
 	for (m_current_vertex_buffer = 0; m_current_vertex_buffer < MAX_VBUFFER_COUNT; m_current_vertex_buffer++)
 	{
-		m_vertex_buffers[m_current_vertex_buffer] = NULL;
-		m_index_buffers[m_current_vertex_buffer] = NULL;
+		m_vertex_buffers[m_current_vertex_buffer] = nullptr;
+		m_index_buffers[m_current_vertex_buffer] = nullptr;
 	}
 	for (m_current_vertex_buffer = 0; m_current_vertex_buffer < MAX_VBUFFER_COUNT; m_current_vertex_buffer++)
 	{
-		hr = D3D::dev->CreateVertexBuffer( m_vertex_buffer_size,  D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, 0, D3DPOOL_DEFAULT, &m_vertex_buffers[m_current_vertex_buffer], NULL );
+		hr = D3D::dev->CreateVertexBuffer( m_vertex_buffer_size,  D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, 0, D3DPOOL_DEFAULT, &m_vertex_buffers[m_current_vertex_buffer], nullptr );
 		CHECK(hr,"Create vertex buffer ", m_current_vertex_buffer);
-		hr = D3D::dev->CreateIndexBuffer( m_index_buffer_size * sizeof(u16),  D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, D3DFMT_INDEX16, D3DPOOL_DEFAULT, &m_index_buffers[m_current_vertex_buffer], NULL );		
+		hr = D3D::dev->CreateIndexBuffer( m_index_buffer_size * sizeof(u16),  D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, D3DFMT_INDEX16, D3DPOOL_DEFAULT, &m_index_buffers[m_current_vertex_buffer], nullptr );		
 	}
 	m_buffers_count = m_current_vertex_buffer;
 	m_current_vertex_buffer = 0;
 	m_current_index_buffer = 0;
 	m_index_buffer_cursor = m_index_buffer_size;
 	m_vertex_buffer_cursor = m_vertex_buffer_size;
-	m_current_stride = 0;
+	m_last_stride = 0;
 	g_Config.backend_info.bSupportsEarlyZ = !g_ActiveConfig.bFastDepthCalc;
 	VertexShaderManager::EnableDirtyRegions();
 	PixelShaderManager::EnableDirtyRegions();
@@ -161,8 +161,8 @@ void VertexManager::CreateDeviceObjects()
 
 void VertexManager::DestroyDeviceObjects()
 {
-	D3D::SetStreamSource( 0, NULL, 0, 0);
-	D3D::SetIndices(NULL);
+	D3D::SetStreamSource( 0, nullptr, 0, 0);
+	D3D::SetIndices(nullptr);
 	for (int i = 0; i < MAX_VBUFFER_COUNT; i++)
 	{
 		if(m_vertex_buffers)
@@ -170,7 +170,7 @@ void VertexManager::DestroyDeviceObjects()
 			if (m_vertex_buffers[i])
 			{
 				m_vertex_buffers[i]->Release();
-				m_vertex_buffers[i] = NULL;
+				m_vertex_buffers[i] = nullptr;
 			}
 		}
 		if(m_index_buffers)
@@ -178,7 +178,7 @@ void VertexManager::DestroyDeviceObjects()
 			if (m_index_buffers[i])
 			{
 				m_index_buffers[i]->Release();
-				m_index_buffers[i] = NULL;
+				m_index_buffers[i] = nullptr;
 			}
 		}
 	}
@@ -186,36 +186,46 @@ void VertexManager::DestroyDeviceObjects()
 		delete [] m_vertex_buffers;
 	if(m_index_buffers)
 		delete [] m_index_buffers;
-	m_vertex_buffers = NULL;
-	m_index_buffers = NULL;
+	m_vertex_buffers = nullptr;
+	m_index_buffers = nullptr;
 }
 
-void VertexManager::PrepareDrawBuffers()
+VertexManager::VertexManager()
 {
-	if (!m_buffers_count)
-	{
-		return;
-	}
+	LocalVBuffer.resize(MAXVBUFFERSIZE);
+
+	s_pCurBufferPointer = s_pBaseBufferPointer = &LocalVBuffer[0];
+	s_pEndBufferPointer = s_pBaseBufferPointer + LocalVBuffer.size();
+
+	LocalIBuffer.resize(MAXIBUFFERSIZE);
+}
+
+VertexManager::~VertexManager()
+{
+
+}
+
+void VertexManager::PrepareDrawBuffers(u32 stride)
+{
 	u8* p_vertices_base;
 	u8* p_vertices;
 	u16* p_indices;
-	u16* line_indices =  GetLineIndexBuffer();
-	u16* point_indices =  GetPointIndexBuffer();
-	u16 current_index  = m_num_verts;
-	u32 data_size =  m_num_verts * m_stride;
-	u32 total_data_size = m_total_num_verts * m_stride;
-	if(m_total_index_len)
+	u16* indices =  GetIndexBuffer();
+	u32 total_data_size = m_total_num_verts * stride;
+	u32 data_size = m_num_verts * stride;
+	u16 current_index = m_num_verts;
+	if(m_index_len)
 	{
 		DWORD LockMode = D3DLOCK_NOOVERWRITE;
 		m_vertex_buffer_cursor--;
-		m_vertex_buffer_cursor = m_vertex_buffer_cursor - (m_vertex_buffer_cursor % m_stride) + m_stride;
+		m_vertex_buffer_cursor = m_vertex_buffer_cursor - (m_vertex_buffer_cursor % stride) + stride;
 		if (m_vertex_buffer_cursor > m_vertex_buffer_size - total_data_size)
 		{
 			LockMode = D3DLOCK_DISCARD;
 			m_vertex_buffer_cursor = 0;
 			m_current_vertex_buffer = (m_current_vertex_buffer + 1) % m_buffers_count;		
 		}	
-		if(FAILED(m_vertex_buffers[m_current_vertex_buffer]->Lock(m_vertex_buffer_cursor, total_data_size,(VOID**)(&p_vertices_base), LockMode))) 
+		if (FAILED(m_vertex_buffers[m_current_vertex_buffer]->Lock(m_vertex_buffer_cursor, total_data_size, (VOID**)(&p_vertices_base), LockMode)))
 		{
 			DestroyDeviceObjects();
 			return;
@@ -227,40 +237,34 @@ void VertexManager::PrepareDrawBuffers()
 			m_index_buffer_cursor = 0;
 			m_current_index_buffer = (m_current_index_buffer + 1) % m_buffers_count;		
 		}	
-		if(FAILED(m_index_buffers[m_current_index_buffer]->Lock(m_index_buffer_cursor * sizeof(u16), m_total_index_len * sizeof(u16), (VOID**)(&p_indices), LockMode ))) 
+		if (FAILED(m_index_buffers[m_current_index_buffer]->Lock(m_index_buffer_cursor * sizeof(u16), m_total_index_len * sizeof(u16), (VOID**)(&p_indices), LockMode)))
 		{
 			DestroyDeviceObjects();
 			return;
 		}
-		if(m_triangle_index_len)
-		{		
-			memcpy(p_indices, GetTriangleIndexBuffer(), m_triangle_index_len * sizeof(u16));
-			p_indices += m_triangle_index_len;
-		}
 		memcpy(p_vertices_base, s_pBaseBufferPointer, data_size);
 		p_vertices = p_vertices_base + data_size;
-		if (!m_line_emulation_required && m_line_index_len)
+		if (current_primitive_type == PRIMITIVE_TRIANGLES)
 		{
-			memcpy(p_indices, line_indices, m_line_index_len * sizeof(u16));
-			p_indices += m_line_index_len;
+			memcpy(p_indices, indices, m_index_len * sizeof(u16));
 		}
-		else if(m_line_index_len)
+		else if(current_primitive_type == PRIMITIVE_LINES)
 		{
-			for (u32 i = 0; i < (m_line_index_len - 1); i += 2)
+			for (u32 i = 0; i < (m_index_len - 1); i += 2)
 			{
 				// Get Line Indices
-				u16 first_index = line_indices[i];
-				u16 second_index = line_indices[i + 1];
+				u16 first_index = indices[i];
+				u16 second_index = indices[i + 1];
 				// Get the position in the stream o f the first vertex
-				u32 currentstride = first_index * m_stride;
+				u32 currentstride = first_index * stride;
 				// Get The first vertex Position data
 				Float_3* base_vertex_0 =  (Float_3*)(s_pBaseBufferPointer + currentstride);
 				// Get The blendindices data
-				U8_4* blendindices_vertex_0 =  (U8_4*)(p_vertices_base + currentstride + m_stride - sizeof(U8_4));				
+				U8_4* blendindices_vertex_0 = (U8_4*)(p_vertices_base + currentstride + stride - sizeof(U8_4));
 				// Get The first vertex Position data
-				currentstride = second_index * m_stride;
+				currentstride = second_index * stride;
 				Float_3* base_vertex_1 =  (Float_3*)(s_pBaseBufferPointer + currentstride);				
-				U8_4* blendindices_vertex_1 =  (U8_4*)(p_vertices_base + currentstride + m_stride - sizeof(U8_4));
+				U8_4* blendindices_vertex_1 = (U8_4*)(p_vertices_base + currentstride + stride - sizeof(U8_4));
 
 				// Calculate line orientation
 				// mostly a hack because we are in object space but is better than nothing
@@ -277,11 +281,11 @@ void VertexManager::PrepareDrawBuffers()
 					(positive ? PLO_POS_LINE_POSITIVE_Y : PLO_POS_LINE_NEGATIVE_Y): 
 					(positive ? PLO_POS_LINE_NEGATIVE_X : PLO_POS_LINE_POSITIVE_X);
 
-				memcpy(p_vertices, base_vertex_0, m_stride);
-				p_vertices += m_stride;
+				memcpy(p_vertices, base_vertex_0, stride);
+				p_vertices += stride;
 				U8_4* blendindices_vertex_2 = (U8_4*)(p_vertices - sizeof(U8_4));
-				memcpy(p_vertices, base_vertex_1, m_stride);
-				p_vertices += m_stride;
+				memcpy(p_vertices, base_vertex_1, stride);
+				p_vertices += stride;
 				U8_4* blendindices_vertex_3 = (U8_4*)(p_vertices - sizeof(U8_4));
 				
 				// Setup Blend Indices
@@ -324,31 +328,27 @@ void VertexManager::PrepareDrawBuffers()
 				p_indices++;
 			}
 		}
-		if (!m_point_emulation_required && m_point_index_len)
+		else if (current_primitive_type == PRIMITIVE_POINTS)
 		{
-			memcpy(p_indices, point_indices, m_point_index_len * sizeof(u16));
-		}
-		else if(m_point_index_len)
-		{
-			for (u32 i = 0; i < m_point_index_len; i++)
+			for (u32 i = 0; i < m_index_len; i++)
 			{
 				// Get point indes
-				u16 pointindex = point_indices[i];
+				u16 pointindex = indices[i];
 				// Calculate stream Position
-				int currentstride = pointindex * m_stride;
+				int currentstride = pointindex * stride;
 				// Get data Pointer for vertex replication
 				u8* base_vertex =  s_pBaseBufferPointer + currentstride;
-				U8_4* blendindices_vertex_0 =  (U8_4*)(p_vertices_base + currentstride + m_stride - sizeof(U8_4));
+				U8_4* blendindices_vertex_0 =  (U8_4*)(p_vertices_base + currentstride + stride - sizeof(U8_4));
 				
 				// Generate Extra vertices
-				memcpy(p_vertices, base_vertex, m_stride);
-				p_vertices += m_stride;
+				memcpy(p_vertices, base_vertex, stride);
+				p_vertices += stride;
 				U8_4* blendindices_vertex_1 = (U8_4*)(p_vertices - sizeof(U8_4));
-				memcpy(p_vertices, base_vertex, m_stride);
-				p_vertices += m_stride;
+				memcpy(p_vertices, base_vertex, stride);
+				p_vertices += stride;
 				U8_4* blendindices_vertex_2 = (U8_4*)(p_vertices - sizeof(U8_4));
-				memcpy(p_vertices, base_vertex, m_stride);
-				p_vertices += m_stride;
+				memcpy(p_vertices, base_vertex, stride);
+				p_vertices += stride;
 				U8_4* blendindices_vertex_3 = (U8_4*)(p_vertices - sizeof(U8_4));
 
 				// Setup Blen Indices
@@ -393,10 +393,10 @@ void VertexManager::PrepareDrawBuffers()
 		m_vertex_buffers[m_current_vertex_buffer]->Unlock();
 		m_index_buffers[m_current_index_buffer]->Unlock();
 	}
-	if(m_current_stride != m_stride || m_vertex_buffer_cursor == 0)
+	if(m_last_stride != stride || m_vertex_buffer_cursor == 0)
 	{
-		m_current_stride = m_stride;
-		D3D::SetStreamSource( 0, m_vertex_buffers[m_current_vertex_buffer], 0, m_current_stride);
+		m_last_stride = stride;
+		D3D::SetStreamSource(0, m_vertex_buffers[m_current_vertex_buffer], 0, m_last_stride);
 	}
 	if (m_index_buffer_cursor == 0)
 	{
@@ -407,79 +407,21 @@ void VertexManager::PrepareDrawBuffers()
 	ADDSTAT(stats.thisFrame.bytesIndexStreamed, m_total_index_len);
 }
 
-void VertexManager::Draw()
+void VertexManager::Draw(u32 stride)
 {
 	int StartIndex = m_index_buffer_cursor;
-	int basevertex = m_vertex_buffer_cursor / m_stride;
-	if (m_triangles > 0)
+	int basevertex = m_vertex_buffer_cursor / stride;
+	if (FAILED(D3D::dev->DrawIndexedPrimitive(
+		D3DPT_TRIANGLELIST,
+		basevertex,
+		0,
+		m_total_num_verts,
+		StartIndex,
+		m_primitives)))
 	{
-		if (FAILED(D3D::dev->DrawIndexedPrimitive(
-			D3DPT_TRIANGLELIST,
-			basevertex,
-			0, 
-			m_total_num_verts,
-			StartIndex, 
-			m_triangles )))
-		{
-			DumpBadShaders();
-		}
-		StartIndex += IndexGenerator::GetTriangleindexLen();
-		INCSTAT(stats.thisFrame.numIndexedDrawCalls);
+		DumpBadShaders();
 	}
-	if (m_lines > 0)
-	{
-		if (FAILED(D3D::dev->DrawIndexedPrimitive(
-			D3DPT_LINELIST, 
-			basevertex,
-			0, 
-			m_total_num_verts,
-			StartIndex, 
-			m_lines)))
-		{
-			DumpBadShaders();
-		}
-		StartIndex += m_line_index_len;
-		INCSTAT(stats.thisFrame.numIndexedDrawCalls);
-	}
-	if (m_points > 0)
-	{
-		//DrawIndexedPrimitive does not support point list so we have to draw them using DrawPrimitive
-		if (m_triangles == 0 && m_lines == 0)
-		{
-			// we can draw the entire buffer in a single call because we have points only
-			if (FAILED(D3D::dev->DrawPrimitive(
-					D3DPT_POINTLIST, 
-					basevertex,
-					m_points)))
-				{
-					DumpBadShaders();
-				}
-				INCSTAT(stats.thisFrame.numDrawCalls);
-		}
-		else
-		{
-			// Try to merge points to reduce draw calls
-			u16* PointIndexBuffer = GetPointIndexBuffer();
-			u32 i  = 0;        
-			do
-			{
-				u32 count = i + 1;
-				while (count < m_points && PointIndexBuffer[count - 1] + 1 == PointIndexBuffer[count])
-				{
-					count++;
-				}
-				if (FAILED(D3D::dev->DrawPrimitive(
-					D3DPT_POINTLIST, 
-					basevertex + PointIndexBuffer[i],
-					count - i)))
-				{
-					DumpBadShaders();
-				}
-				INCSTAT(stats.thisFrame.numDrawCalls);
-				i = count;
-			} while (i < m_points);
-		}
-	}
+	INCSTAT(stats.thisFrame.numDrawCalls);
 }
 
 
@@ -545,148 +487,49 @@ void DX9::VertexManager::PrepareShaders(u32 components, const XFMemory &xfr, con
 	}
 }
 
-void VertexManager::vFlush()
+void VertexManager::vFlush(bool useDstAlpha)
 {
 	// initialize all values for the current flush
-	u32 available_index = 65535;
-	m_triangle_index_len = IndexGenerator::GetTriangleindexLen();
-	m_line_index_len = IndexGenerator::GetLineindexLen();
-	m_point_index_len = IndexGenerator::GetPointindexLen();
+	m_index_len = IndexGenerator::GetIndexLen();
 	m_num_verts = IndexGenerator::GetNumVerts();
-	m_triangles = IndexGenerator::GetNumTriangles();
-	m_lines = IndexGenerator::GetNumLines();
-	m_points = IndexGenerator::GetNumPoints();
-	m_stride = g_nativeVertexFmt->GetVertexStride();
-	m_point_emulation_required = false;
-	m_line_emulation_required = false;
-	// Initialize totals using the triangle values as a base
-	m_total_index_len = m_triangle_index_len;
 	m_total_num_verts = m_num_verts;
-	// As we can potentialy generate more indices than what is supported
-	// chek for the index lenght. 
-	available_index -= m_total_index_len;
-	if (m_line_index_len)
+	m_total_index_len = m_index_len;
+	switch (current_primitive_type)
 	{
-		// we can only skip line emulation if the lines have 1 pixel size and no texturing
-		float fratio = Renderer::EFBToScaledXf(1.f);
-		float lsize = bpmem.lineptwidth.linesize * fratio / 6.0f;
-		m_line_emulation_required = m_line_emulation_required || lsize > 1.0f;
+	case PRIMITIVE_POINTS:
+		// We need point emulation so setup values to allow point to triangle translation
+		// 3 extra vertices will be generated for each point
+		m_total_num_verts += m_index_len * 3;
+		// 6 indices for each point
+		m_total_index_len *= 6;
+		break;
+	case PRIMITIVE_LINES:
+		// We need line emulation so transform the values to allow lines to triangle translation
+		// we will generate 2 extra vertex for each line (the same amount of original indices)
+		m_total_num_verts += m_index_len;
+		// for each line, 6 indices will be generated ( 3 times the amount of original indices )
+		m_total_index_len *= 3;
+		break;
+	default:
+		break;
 	}
-
-	u32 usedtextures = 0;
-	for (u32 i = 0; i < (u32)bpmem.genMode.numtevstages + 1; ++i)
-		if (bpmem.tevorders[i / 2].getEnable(i & 1))
-			usedtextures |= 1 << bpmem.tevorders[i/2].getTexMap(i & 1);
-
-	if (bpmem.genMode.numindstages > 0)
-		for (u32 i = 0; i < bpmem.genMode.numtevstages + 1; ++i)
-			if (bpmem.tevind[i].IsActive() && bpmem.tevind[i].bt < bpmem.genMode.numindstages)
-				usedtextures |= 1 << bpmem.tevindref.getTexMap(bpmem.tevind[i].bt);
-
-	for (u32 i = 0; i < 8; ++i)
-	{
-		if (usedtextures & (1 << i))
-		{
-			// check if we use textures in points or lines to enable emulation
-			// we only need to enable emulation for points if the offset is greater than zero
-			if (bpmem.lineptwidth.pointoff)
-			{
-				m_point_emulation_required = m_point_emulation_required || (bpmem.texcoords[i].s.point_offset != 0);
-			}
-			// any textured lines need emulation
-			m_line_emulation_required = m_line_emulation_required || (bpmem.texcoords[i].s.line_offset != 0);
-			u32 stage = i & 3;
-			u32 texindex = i >> 2;
-			g_renderer->SetSamplerState(stage, texindex);
-			FourTexUnits &tex = bpmem.tex[texindex];
-			TextureCache::TCacheEntryBase* tentry = TextureCache::Load(i, 
-				(tex.texImage3[stage].image_base/* & 0x1FFFFF*/) << 5,
-				tex.texImage0[stage].width + 1, tex.texImage0[stage].height + 1,
-				tex.texImage0[stage].format, tex.texTlut[stage].tmem_offset<<9, 
-				tex.texTlut[stage].tlut_format,
-				(tex.texMode0[stage].min_filter & 3) != 0,
-				(tex.texMode1[stage].max_lod + 0xf) / 0x10,
-				tex.texImage1[stage].image_type != 0);
-
-			if (tentry)
-			{
-				// 0s are probably for no manual wrapping needed.
-				PixelShaderManager::SetTexDims(i, tentry->native_width, tentry->native_height, 0, 0);
-			}
-			else
-				ERROR_LOG(VIDEO, "Error loading texture");
-		}
-	}
-	if (m_line_index_len)
-	{
-		if (m_line_emulation_required)
-		{
-			// We need line emulation so transform the values to allow lines to triangle translation
-			// if we generate more indices than what is supported discard the rest ( i know is not the best solution)
-			m_line_index_len = m_line_index_len * 3 > available_index ? available_index / 3 : m_line_index_len;
-			// we will generate 2 extra vertex for each line (the same amount of original indices)
-			m_total_num_verts += m_line_index_len;
-			// for each line, 6 indices will be generated ( 3 times the amount of original indices )
-			m_total_index_len += m_line_index_len * 3;
-			// reduce the amount of available indices
-			available_index -= m_line_index_len * 3;
-			// Generating 2 triangles for each line
-			m_triangles += m_lines * 2;
-			// Reset lines as we are going to emulate them
-			m_lines = 0;
-		}
-		else
-		{
-			// Render lines normally
-			m_total_index_len += m_line_index_len;
-		}
-	}
-	
-	if (m_point_index_len)
-	{
-		if (m_point_emulation_required)
-		{
-			// We need point emulation so setup values to allow point to triangle translation
-			// if we generate more indices than what is supported discard the rest
-			m_point_index_len = m_point_index_len * 6 > available_index ? available_index / 6 : m_point_index_len;
-			// 3 extra vertices will be generated for each point
-			m_total_num_verts += m_point_index_len * 3;
-			// 6 indices for each point
-			m_total_index_len += m_point_index_len * 6;
-			// 2 triangles
-			m_triangles += m_points * 2;
-			// Reset point to emulate them properly
-			m_points = 0;
-		}
-		else
-		{
-			// Render points normally
-			m_total_index_len += m_point_index_len;
-		}
-	}
-	
-
+	m_primitives = m_total_index_len / 3;
+	u32 stride = g_nativeVertexFmt->GetVertexStride();
 	// set global constants
 	
-	const bool useDstAlpha = !g_ActiveConfig.bDstAlphaPass && bpmem.dstalpha.enable && bpmem.blendmode.alphaupdate &&
-		bpmem.zcontrol.pixel_format == PEControl::RGBA6_Z24;
 	const bool useDualSource = useDstAlpha && g_ActiveConfig.backend_info.bSupportsDualSourceBlend;
 	const bool forced_early_z = bpmem.UseEarlyDepthTest() && bpmem.zmode.updateenable && bpmem.alpha_test.TestResult() == AlphaTest::UNDETERMINED && !g_ActiveConfig.bFastDepthCalc;
 	DSTALPHA_MODE AlphaMode = forced_early_z ? DSTALPHA_NULL :( useDualSource ? DSTALPHA_DUAL_SOURCE_BLEND : DSTALPHA_NONE);
-
 	if (!VertexShaderCache::TestShader())
 	{
 		goto shader_fail;
-
 	}
 	if (!PixelShaderCache::SetShader(AlphaMode))
 	{
 		goto shader_fail;
-	}
-
-	VertexShaderManager::SetConstants();
+	}	
 	g_renderer->ApplyState(false);
-	if ((m_line_index_len && m_line_emulation_required) || (m_point_index_len && m_point_emulation_required))
+	if (current_primitive_type != PRIMITIVE_TRIANGLES)
 	{
 		// if we use emulation setup the offsets for the vertex shaders
 		SetPLRasterOffsets();
@@ -702,8 +545,7 @@ void VertexManager::vFlush()
 		}
 		VertexShaderManager::Clear();
 	}
-	g_Config.backend_info.bSupportsEarlyZ = !g_ActiveConfig.bFastDepthCalc;
-	PixelShaderManager::SetConstants();
+	g_Config.backend_info.bSupportsEarlyZ = !g_ActiveConfig.bFastDepthCalc;	
 	if (PixelShaderManager::IsDirty())
 	{
 		const regionvector & regions = PixelShaderManager::GetDirtyRegions();
@@ -715,15 +557,13 @@ void VertexManager::vFlush()
 		}
 		PixelShaderManager::Clear();
 	}
-	PrepareDrawBuffers();
+	PrepareDrawBuffers(stride);
 	if(forced_early_z)
 	{
 		D3D::ChangeRenderState(D3DRS_COLORWRITEENABLE, 0);
 	}
 	g_nativeVertexFmt->SetupVertexPointers();
-	g_perf_query->EnableQuery(bpmem.zcontrol.early_ztest ? PQG_ZCOMP_ZCOMPLOC : PQG_ZCOMP);
-	Draw();
-	g_perf_query->DisableQuery(bpmem.zcontrol.early_ztest ? PQG_ZCOMP_ZCOMPLOC : PQG_ZCOMP);
+	Draw(stride);
 	if (forced_early_z)
 	{
 		D3D::RefreshRenderState(D3DRS_COLORWRITEENABLE);
@@ -734,7 +574,7 @@ void VertexManager::vFlush()
 		{
 			goto shader_fail;
 		}
-		Draw();
+		Draw(stride);
 		D3D::RefreshRenderState(D3DRS_ZWRITEENABLE);
 		D3D::RefreshRenderState(D3DRS_ZFUNC);
 	}
@@ -747,14 +587,19 @@ void VertexManager::vFlush()
 		}
 		// update alpha only
 		g_renderer->ApplyState(true);
-		Draw();		
+		Draw(stride);
 		g_renderer->RestoreState();
 	}
-	GFX_DEBUGGER_PAUSE_AT(NEXT_FLUSH, true);
 
 shader_fail:
 	m_index_buffer_cursor += m_total_index_len;
-	m_vertex_buffer_cursor += (m_total_num_verts) * m_stride;	
+	m_vertex_buffer_cursor += (m_total_num_verts) * stride;
+}
+
+void VertexManager::ResetBuffer(u32 stride)
+{
+	s_pCurBufferPointer = s_pBaseBufferPointer;
+	IndexGenerator::Start(GetIndexBuffer());
 }
 
 }

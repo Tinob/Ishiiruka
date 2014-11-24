@@ -60,6 +60,8 @@ int Renderer::s_target_height;
 int Renderer::s_backbuffer_width;
 int Renderer::s_backbuffer_height;
 
+PostProcessingShaderImplementation* Renderer::m_post_processor;
+
 TargetRectangle Renderer::target_rc;
 
 int Renderer::s_LastEFBScale;
@@ -533,6 +535,9 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, const 
 {
 	// TODO: merge more generic parts into VideoCommon
 	g_renderer->SwapImpl(xfbAddr, fbWidth, fbStride, fbHeight, rc, Gamma);
+
+	if (XFBWrited)
+		g_renderer->m_fps_counter.Update();
 
 	frameCount++;
 	GFX_DEBUGGER_PAUSE_AT(NEXT_FRAME, true);

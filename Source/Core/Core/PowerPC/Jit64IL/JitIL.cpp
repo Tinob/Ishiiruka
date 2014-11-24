@@ -244,13 +244,7 @@ namespace JitILProfiler
 void JitIL::Init()
 {
 	jo.optimizeStack = true;
-	jo.enableBlocklink = true;
-	if (SConfig::GetInstance().m_LocalCoreStartupParameter.bJITNoBlockLinking ||
-		SConfig::GetInstance().m_LocalCoreStartupParameter.bMMU)
-	{
-		// TODO: support block linking with MMU
-		jo.enableBlocklink = false;
-	}
+	EnableBlockLink();
 
 	jo.fpAccurateFcmp = false;
 	jo.optimizeGatherPipe = true;
@@ -509,11 +503,19 @@ const u8* JitIL::DoJit(u32 em_address, PPCAnalyst::CodeBuffer *code_buf, JitBloc
 
 	if (SConfig::GetInstance().m_LocalCoreStartupParameter.bEnableDebugging)
 	{
+		// We can link blocks as long as we are not single stepping and there are no breakpoints here
+		EnableBlockLink();
+
 		// Comment out the following to disable breakpoints (speed-up)
 		if (!Profiler::g_ProfileBlocks)
 		{
 			if (GetState() == CPU_STEPPING)
+			{
 				blockSize = 1;
+
+				// Do not link this block to other blocks While single stepping
+				jo.enableBlocklink = false;
+			}
 			Trace();
 		}
 	}
@@ -525,10 +527,9 @@ const u8* JitIL::DoJit(u32 em_address, PPCAnalyst::CodeBuffer *code_buf, JitBloc
 	jit->js.numLoadStoreInst = 0;
 	jit->js.numFloatingPointInst = 0;
 
-	u32 nextPC = em_address;
 	// Analyze the block, collect all instructions it is made of (including inlining,
 	// if that is enabled), reorder instructions for optimal performance, and join joinable instructions.
-	nextPC = analyzer.Analyze(em_address, &code_block, code_buf, blockSize);
+	u32 nextPC = analyzer.Analyze(em_address, &code_block, code_buf, blockSize);
 
 	PPCAnalyst::CodeOp *ops = code_buf->codebuffer;
 
@@ -648,6 +649,9 @@ const u8* JitIL::DoJit(u32 em_address, PPCAnalyst::CodeBuffer *code_buf, JitBloc
 
 			if (SConfig::GetInstance().m_LocalCoreStartupParameter.bEnableDebugging && breakpoints.IsAddressBreakPoint(ops[i].address) && GetState() != CPU_STEPPING)
 			{
+				// Turn off block linking if there are breakpoints so that the Step Over command does not link this block.
+				jo.enableBlocklink = false;
+
 				ibuild.EmitBreakPointCheck(ibuild.EmitIntConst(ops[i].address));
 			}
 
@@ -701,4 +705,15 @@ const u8* JitIL::DoJit(u32 em_address, PPCAnalyst::CodeBuffer *code_buf, JitBloc
 	}
 
 	return normalEntry;
+}
+
+void JitIL::EnableBlockLink()
+{
+	jo.enableBlocklink = true;
+	if (SConfig::GetInstance().m_LocalCoreStartupParameter.bJITNoBlockLinking ||
+	    SConfig::GetInstance().m_LocalCoreStartupParameter.bMMU)
+	{
+		// TODO: support block linking with MMU
+		jo.enableBlocklink = false;
+	}
 }

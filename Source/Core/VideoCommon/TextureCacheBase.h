@@ -70,17 +70,17 @@ public:
 		virtual ~TCacheEntryBase();
 
 		virtual void Bind(u32 stage) = 0;
-		virtual bool Save(const char filename[], u32 level) = 0;
+		virtual bool Save(const std::string& filename, u32 level) = 0;
 
 		virtual void Load(const u8* src, u32 width, u32 height,
 			u32 expanded_width, u32 level) = 0;
 		virtual void Load(const u8* src, u32 width, u32 height, u32 expandedWidth,
-			u32 expandedHeight, const s32 texformat, const u32 tlutaddr, const s32 tlutfmt, u32 level) = 0;
+			u32 expandedHeight, const s32 texformat, const u32 tlutaddr, const TlutFormat tlutfmt, u32 level) = 0;
 		virtual void LoadFromTmem(const u8* ar_src, const u8* gb_src, u32 width, u32 height,
 			u32 expanded_width, u32 expanded_Height, u32 level) = 0;
-		virtual void FromRenderTarget(u32 dstAddr, u32 dstFormat,
-			u32 srcFormat, const EFBRectangle& srcRect,
-			bool isIntensity, bool scaleByHalf, u32 cbufid,
+		virtual void FromRenderTarget(u32 dstAddr, unsigned int dstFormat,
+			PEControl::PixelFormat srcFormat, const EFBRectangle& srcRect,
+			bool isIntensity, bool scaleByHalf, unsigned int cbufid,
 			const float *colmat) = 0;
 
 		s32 IntersectsMemoryRange(u32 range_address, u32 range_size) const;
@@ -100,14 +100,14 @@ public:
 	static bool Find(u32 start_address, u64 hash);
 
 	virtual PC_TexFormat GetNativeTextureFormat(const s32 texformat, 
-		const s32 tlutfmt, u32 width, u32 height) = 0;
+		const TlutFormat tlutfmt, u32 width, u32 height) = 0;
 	virtual TCacheEntryBase* CreateTexture(u32 width, u32 height,
 		u32 expanded_width, u32 tex_levels, PC_TexFormat pcfmt) = 0;
 	virtual TCacheEntryBase* CreateRenderTargetTexture(u32 scaled_tex_w, u32 scaled_tex_h) = 0;
 
 	static TCacheEntryBase* Load(u32 stage, u32 address, u32 width, u32 height,
-		s32 format, u32 tlutaddr, s32 tlutfmt, bool use_mipmaps, u32 maxlevel, bool from_tmem);
-	static void CopyRenderTargetToTexture(u32 dstAddr, u32 dstFormat, u32 srcFormat,
+		s32 format, const u32 tlutaddr, const TlutFormat tlutfmt, bool use_mipmaps, u32 maxlevel, bool from_tmem);
+	static void CopyRenderTargetToTexture(u32 dstAddr, u32 dstFormat, PEControl::PixelFormat srcFormat,
 		const EFBRectangle& srcRect, bool isIntensity, bool scaleByHalf);
 
 	static void RequestInvalidateTextureCache();

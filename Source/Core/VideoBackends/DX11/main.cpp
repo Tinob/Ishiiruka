@@ -53,18 +53,12 @@ unsigned int VideoBackend::PeekMessages()
 	return TRUE;
 }
 
-void VideoBackend::UpdateFPSDisplay(const std::string& text)
-{
-	std::string str = StringFromFormat("%s | D3D11 | %s", scm_rev_str, text.c_str());
-	SetWindowTextA((HWND)m_window_handle, str.c_str());
-}
-
-std::string VideoBackend::GetName()
+std::string VideoBackend::GetName() const
 {
 	return "DX11";
 }
 
-std::string VideoBackend::GetDisplayName()
+std::string VideoBackend::GetDisplayName() const
 {
 	return "Direct3D11";
 }
@@ -99,6 +93,8 @@ void InitBackendInfo()
 	// not worth the effort, less efficient index generation, too much reset ratio over real primitives
 	g_Config.backend_info.bSupportsPrimitiveRestart = false;
 	g_Config.backend_info.bNeedBlendIndices = false;
+	g_Config.backend_info.bSupportsOversizedViewports = false;
+	g_Config.backend_info.bSupportsBBox = false;
 	IDXGIFactory* factory;
 	IDXGIAdapter* ad;
 	hr = DX11::PCreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&factory);
@@ -155,7 +151,7 @@ void VideoBackend::ShowConfig(void *_hParent)
 #endif
 }
 
-bool VideoBackend::Initialize(void *&window_handle)
+bool VideoBackend::Initialize(void *window_handle)
 {
 	InitializeShared();
 	InitBackendInfo();

@@ -21,6 +21,11 @@ import android.preference.PreferenceManager;
  */
 public final class UserPreferences
 {
+	private UserPreferences()
+	{
+		// Disallows instantiation.
+	}
+
 	/**
 	 * Loads the settings stored in the Dolphin ini config files to the shared preferences of this front-end.
 	 * 
@@ -53,8 +58,8 @@ public final class UserPreferences
 		editor.putBoolean("skipEFBAccess",         getConfig("gfx_opengl.ini", "Hacks", "EFBAccessEnable", "False").equals("True"));
 		editor.putBoolean("ignoreFormatChanges",   getConfig("gfx_opengl.ini", "Hacks", "EFBEmulateFormatChanges", "False").equals("False"));
 
-		String efbCopyOn     = getConfig("gfx_opengl.ini", "Hacks", "EFBCopyEnable", "False");
-		String efbToTexture  = getConfig("gfx_opengl.ini", "Hacks", "EFBToTextureEnable", "False");
+		String efbCopyOn     = getConfig("gfx_opengl.ini", "Hacks", "EFBCopyEnable", "True");
+		String efbToTexture  = getConfig("gfx_opengl.ini", "Hacks", "EFBToTextureEnable", "True");
 		String efbCopyCache  = getConfig("gfx_opengl.ini", "Hacks", "EFBCopyCacheEnable", "False");
 
 		if (efbCopyOn.equals("False"))

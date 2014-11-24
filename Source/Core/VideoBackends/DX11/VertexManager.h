@@ -23,12 +23,16 @@ public:
 		const XFMemory &xfr,
 		const BPMemory &bpm,
 		bool fromgputhread = true);
+protected:
+	virtual void ResetBuffer(u32 stride) override;
+	u16* GetIndexBuffer() { return &LocalIBuffer[0]; }
+
 private:
 
 	void PrepareDrawBuffers(u32 stride);
 	void Draw(u32 stride);
 	// temp
-	void vFlush();
+	void vFlush(bool useDstAlpha);
 
 	u32 m_vertexDrawOffset;
 	u32 m_indexDrawOffset;
@@ -42,6 +46,9 @@ private:
 	D3D::BufferPtr m_buffers[MAX_BUFFER_COUNT];
 
 	LineAndPointGeometryShader m_lineAndPointShader;
+
+	std::vector<u8> LocalVBuffer;
+	std::vector<u16> LocalIBuffer;
 };
 
 }  // namespace

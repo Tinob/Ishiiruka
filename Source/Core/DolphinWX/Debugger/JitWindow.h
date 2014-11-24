@@ -39,7 +39,7 @@ public:
 	std::string DisassembleBlock(u32* address, u32* host_instructions_count, u32* code_size);
 
 private:
-	virtual std::string DisassembleHostBlock(const u8* code_start, const u32 code_size, u32* host_instructions_count) { return ""; }
+	virtual std::string DisassembleHostBlock(const u8* code_start, const u32 code_size, u32* host_instructions_count) { return "(No disassembler)"; }
 };
 
 class HostDisassemblerX86 : public HostDisassembler
@@ -76,8 +76,6 @@ private:
 	wxTextCtrl* ppc_box;
 	wxTextCtrl* x86_box;
 	wxListBox* top_instructions;
-
-	DECLARE_EVENT_TABLE()
 
 	void OnSymbolListChange(wxCommandEvent& event);
 	void OnCallstackListChange(wxCommandEvent& event);

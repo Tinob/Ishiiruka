@@ -4,12 +4,12 @@
 
 #pragma once
 
-#include "Common/Common.h"
+#include "Common/CommonTypes.h"
 
-#include "NativeVertexFormat.h"
-#include "CPMemLoader.h"
-#include "Common/ChunkFile.h"
+#include "VideoBackends/Software/CPMemLoader.h"
+#include "VideoBackends/Software/NativeVertexFormat.h"
 
+class PointerWrap;
 class SetupUnit;
 
 class SWVertexLoader
@@ -25,15 +25,15 @@ class SWVertexLoader
 
 	InputVertexData m_Vertex;
 
-	typedef void(*AttributeLoader)(SWVertexLoader*, InputVertexData*, u8);
+	typedef void (*AttributeLoader)(SWVertexLoader*, InputVertexData*, u8);
 	struct AttrLoaderCall
 	{
 		AttributeLoader loader;
 		u8 index;
 	};
-	AttrLoaderCall m_AttributeLoaders[1 + 8 + 1 + 1 + 2 + 8];
+	AttrLoaderCall m_AttributeLoaders[1+8+1+1+2+8];
 	int m_NumAttributeLoaders;
-	void AddAttributeLoader(AttributeLoader loader, u8 index = 0);
+	void AddAttributeLoader(AttributeLoader loader, u8 index=0);
 
 	// attribute loader functions
 	static void LoadPosMtx(SWVertexLoader *vertexLoader, InputVertexData *vertex, u8 unused);

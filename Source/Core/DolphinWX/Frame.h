@@ -28,7 +28,7 @@
 #include "InputCommon/GCPadStatus.h"
 
 #if defined(HAVE_X11) && HAVE_X11
-#include "DolphinWX/X11Utils.h"
+#include "VideoBackends/OGL/GLInterface/X11Utils.h"
 #endif
 
 // Class declarations
@@ -113,7 +113,6 @@ public:
 	void PostEvent(wxCommandEvent& event);
 	void StatusBarMessage(const char * Text, ...);
 	void ClearStatusBar();
-	void GetRenderWindowSize(int& x, int& y, int& width, int& height);
 	void OnRenderWindowSizeRequest(int width, int height);
 	void BootGame(const std::string& filename);
 	void OnRenderParentClose(wxCloseEvent& event);
@@ -351,6 +350,6 @@ void OnStoppedCallback();
 
 // For TASInputDlg
 void GCTASManipFunction(GCPadStatus* PadStatus, int controllerID);
-void WiiTASManipFunction(u8* data, WiimoteEmu::ReportFeatures rptf, int controllerID);
+void WiiTASManipFunction(u8* data, WiimoteEmu::ReportFeatures rptf, int controllerID, int ext, const wiimote_key key);
 bool TASInputHasFocus();
 extern int g_saveSlot;

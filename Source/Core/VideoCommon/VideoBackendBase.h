@@ -68,8 +68,7 @@ struct SCPFifoStruct
 	volatile u32 bFF_LoWatermark;
 	volatile u32 bFF_HiWatermark;
 
-	// for GP watchdog hack
-	volatile u32 Fake_GPWDToken; // cicular incrementer
+	// for GP watchdog hack	
 	volatile u32 isGpuReadingData;
 };
 
@@ -80,18 +79,16 @@ public:
 
 	virtual void EmuStateChange(EMUSTATE_CHANGE) = 0;
 
-	virtual void UpdateFPSDisplay(const std::string&) = 0;
-
 	virtual unsigned int PeekMessages() = 0;
 
-	virtual bool Initialize(void *&) = 0;
+	virtual bool Initialize(void *window_handle) = 0;
 	virtual void Shutdown() = 0;
 	virtual void RunLoop(bool enable) = 0;
 
-	virtual std::string GetName() = 0;
-	virtual std::string GetDisplayName() { return GetName(); }
+	virtual std::string GetName() const = 0;
+	virtual std::string GetDisplayName() const { return GetName(); }
 
-	virtual void ShowConfig(void*) {}
+	virtual void ShowConfig(void*) = 0;
 
 	virtual void Video_Prepare() = 0;
 	virtual void Video_EnterLoop() = 0;
@@ -103,6 +100,7 @@ public:
 
 	virtual u32 Video_AccessEFB(EFBAccessType, u32, u32, u32) = 0;
 	virtual u32 Video_GetQueryResult(PerfQueryType type) = 0;
+	virtual u16 Video_GetBoundingBox(int index) = 0;
 
 	virtual void Video_AddMessage(const std::string& pstr, unsigned int milliseconds) = 0;
 	virtual void Video_ClearMessages() = 0;
@@ -113,8 +111,6 @@ public:
 	virtual void Video_GatherPipeBursted() = 0;
 
 	virtual bool Video_IsPossibleWaitingSetDrawDone() = 0;
-	virtual bool Video_IsHiWatermarkActive() = 0;
-	virtual void Video_AbortFrame() = 0;
 
 	// Registers MMIO handlers for the CommandProcessor registers.
 	virtual void RegisterCPMMIO(MMIO::Mapping* mmio, u32 base) = 0;
@@ -132,6 +128,8 @@ public:
 	virtual void DoState(PointerWrap &p) = 0;
 	
 	virtual void CheckInvalidState() = 0;
+
+	virtual void UpdateWantDeterminism(bool want) {}
 };
 
 extern std::vector<VideoBackend*> g_available_video_backends;
@@ -140,36 +138,36 @@ extern VideoBackend* g_video_backend;
 // inherited by dx9/dx11/ogl backends
 class VideoBackendHardware : public VideoBackend
 {
-	void RunLoop(bool enable);
-	bool Initialize(void *&) { InitializeShared(); return true; }
+	void RunLoop(bool enable) override;
 
-	void EmuStateChange(EMUSTATE_CHANGE);
+	void EmuStateChange(EMUSTATE_CHANGE) override;
 
-	void Video_EnterLoop();
-	void Video_ExitLoop();
-	void Video_BeginField(u32, u32, u32, u32);
-	void Video_EndField();
+	void Video_EnterLoop() override;
+	void Video_ExitLoop() override;
+	void Video_BeginField(u32, u32, u32, u32) override;
+	void Video_EndField() override;
 
-	u32 Video_AccessEFB(EFBAccessType, u32, u32, u32);
-	u32 Video_GetQueryResult(PerfQueryType type);
-	
-	void Video_AddMessage(const std::string& str, unsigned int milliseconds);
-	void Video_ClearMessages();
-	bool Video_Screenshot(const std::string& filename);
+	u32 Video_AccessEFB(EFBAccessType, u32, u32, u32) override;
+	u32 Video_GetQueryResult(PerfQueryType type) override;
+	u16 Video_GetBoundingBox(int index) override;
 
-	void Video_SetRendering(bool bEnabled);
+	void Video_AddMessage(const std::string& str, unsigned int milliseconds) override;
+	void Video_ClearMessages() override;
+	bool Video_Screenshot(const std::string& filename) override;
 
-	void Video_GatherPipeBursted();
+	void Video_SetRendering(bool bEnabled) override;
 
-	bool Video_IsPossibleWaitingSetDrawDone();
-	bool Video_IsHiWatermarkActive();
-	void Video_AbortFrame();
+	void Video_GatherPipeBursted() override;
+
+	bool Video_IsPossibleWaitingSetDrawDone() override;
 
 	// Registers MMIO handlers for the CommandProcessor registers.
 	void RegisterCPMMIO(MMIO::Mapping* mmio, u32 base) override;
 
-	void PauseAndLock(bool doLock, bool unpauseOnUnlock=true);
-	void DoState(PointerWrap &p);
+	void PauseAndLock(bool doLock, bool unpauseOnUnlock = true) override;
+	void DoState(PointerWrap &p) override;
+
+	void UpdateWantDeterminism(bool want) override;
 	
 	bool m_invalid;
 	u32 m_EFB_PCache_Width;

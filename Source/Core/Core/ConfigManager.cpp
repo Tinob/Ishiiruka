@@ -69,6 +69,18 @@ static const struct
 	{ "ToggleThrottle",      9 /* '\t' */,        0 /* wxMOD_NONE */ },
 	{ "IncreaseFrameLimit",  0,                   0 /* wxMOD_NONE */ },
 	{ "DecreaseFrameLimit",  0,                   0 /* wxMOD_NONE */ },
+
+	{ "FreelookIncreaseSpeed",49 /* '1' */,       4 /* wxMOD_SHIFT */ },
+	{ "FreelookDecreaseSpeed",50 /* '2' */,       4 /* wxMOD_SHIFT */ },
+	{ "FreelookResetSpeed",   70 /* 'F' */,       4 /* wxMOD_SHIFT */ },
+	{ "FreelookUp",           69 /* 'E' */,       4 /* wxMOD_SHIFT */ },
+	{ "FreelookDown",         81 /* 'Q' */,       4 /* wxMOD_SHIFT */ },
+	{ "FreelookLeft",         65 /* 'A' */,       4 /* wxMOD_SHIFT */ },
+	{ "FreelookRight",        68 /* 'D' */,       4 /* wxMOD_SHIFT */ },
+	{ "FreelookZoomIn",       87 /* 'W' */,       4 /* wxMOD_SHIFT */ },
+	{ "FreelookZoomOut",      83 /* 'S' */,       4 /* wxMOD_SHIFT */ },
+	{ "FreelookReset",        82 /* 'R' */,       4 /* wxMOD_SHIFT */ },
+
 	{ "LoadStateSlot1",      340 /* WXK_F1 */,    0 /* wxMOD_NONE */ },
 	{ "LoadStateSlot2",      341 /* WXK_F2 */,    0 /* wxMOD_NONE */ },
 	{ "LoadStateSlot3",      342 /* WXK_F3 */,    0 /* wxMOD_NONE */ },
@@ -178,19 +190,19 @@ void SConfig::SaveGeneralSettings(IniFile& ini)
 	// Clear removed folders
 	int oldPaths;
 	int numPaths = (int)m_ISOFolder.size();
-	general->Get("GCMPathes", &oldPaths, 0);
+	general->Get("ISOPaths", &oldPaths, 0);
 	for (int i = numPaths; i < oldPaths; i++)
 	{
-		ini.DeleteKey("General", StringFromFormat("GCMPath%i", i));
+		ini.DeleteKey("General", StringFromFormat("ISOPath%i", i));
 	}
 
-	general->Set("GCMPathes", numPaths);
+	general->Set("ISOPaths", numPaths);
 	for (int i = 0; i < numPaths; i++)
 	{
-		general->Set(StringFromFormat("GCMPath%i", i), m_ISOFolder[i]);
+		general->Set(StringFromFormat("ISOPath%i", i), m_ISOFolder[i]);
 	}
 
-	general->Set("RecursiveGCMPaths", m_RecursiveISOFolder);
+	general->Set("RecursiveISOPaths", m_RecursiveISOFolder);
 	general->Set("NANDRootPath", m_NANDPath);
 	general->Set("WirelessMac", m_WirelessMac);
 
@@ -262,9 +274,15 @@ void SConfig::SaveGameListSettings(IniFile& ini)
 	gamelist->Set("ListJap", m_ListJap);
 	gamelist->Set("ListPal", m_ListPal);
 	gamelist->Set("ListUsa", m_ListUsa);
+	gamelist->Set("ListAustralia", m_ListAustralia);
 	gamelist->Set("ListFrance", m_ListFrance);
+	gamelist->Set("ListGermany", m_ListGermany);
+	gamelist->Set("ListInternational", m_ListInternational);
 	gamelist->Set("ListItaly", m_ListItaly);
 	gamelist->Set("ListKorea", m_ListKorea);
+	gamelist->Set("ListNetherlands", m_ListNetherlands);
+	gamelist->Set("ListRussia", m_ListRussia);
+	gamelist->Set("ListSpain", m_ListSpain);
 	gamelist->Set("ListTaiwan", m_ListTaiwan);
 	gamelist->Set("ListUnknown", m_ListUnknown);
 	gamelist->Set("ListSort", m_ListSort);
@@ -292,7 +310,7 @@ void SConfig::SaveCoreSettings(IniFile& ini)
 	core->Set("DSPThread", m_LocalCoreStartupParameter.bDSPThread);
 	core->Set("DSPHLE", m_LocalCoreStartupParameter.bDSPHLE);
 	core->Set("SkipIdle", m_LocalCoreStartupParameter.bSkipIdle);
-	core->Set("DefaultGCM", m_LocalCoreStartupParameter.m_strDefaultGCM);
+	core->Set("DefaultISO", m_LocalCoreStartupParameter.m_strDefaultISO);
 	core->Set("DVDRoot", m_LocalCoreStartupParameter.m_strDVDRoot);
 	core->Set("Apploader", m_LocalCoreStartupParameter.m_strApploader);
 	core->Set("EnableCheats", m_LocalCoreStartupParameter.bEnableCheats);
@@ -319,6 +337,7 @@ void SConfig::SaveCoreSettings(IniFile& ini)
 	core->Set("FrameLimit", m_Framelimit);
 	core->Set("FrameSkip", m_FrameSkip);
 	core->Set("GFXBackend", m_LocalCoreStartupParameter.m_strVideoBackend);
+	core->Set("GPUDeterminismMode", m_LocalCoreStartupParameter.m_strGPUDeterminismMode);
 }
 
 void SConfig::SaveMovieSettings(IniFile& ini)
@@ -388,19 +407,19 @@ void SConfig::LoadGeneralSettings(IniFile& ini)
 #endif
 
 	m_ISOFolder.clear();
-	int numGCMPaths;
+	int numISOPaths;
 
-	if (general->Get("GCMPathes", &numGCMPaths, 0))
+	if (general->Get("ISOPaths", &numISOPaths, 0))
 	{
-		for (int i = 0; i < numGCMPaths; i++)
+		for (int i = 0; i < numISOPaths; i++)
 		{
 			std::string tmpPath;
-			general->Get(StringFromFormat("GCMPath%i", i), &tmpPath, "");
+			general->Get(StringFromFormat("ISOPath%i", i), &tmpPath, "");
 			m_ISOFolder.push_back(std::move(tmpPath));
 		}
 	}
 
-	general->Get("RecursiveGCMPaths", &m_RecursiveISOFolder, false);
+	general->Get("RecursiveISOPaths", &m_RecursiveISOFolder, false);
 
 	general->Get("NANDRootPath", &m_NANDPath);
 	m_NANDPath = File::GetUserPath(D_WIIROOT_IDX, m_NANDPath);
@@ -466,21 +485,27 @@ void SConfig::LoadGameListSettings(IniFile& ini)
 {
 	IniFile::Section* gamelist = ini.GetOrCreateSection("GameList");
 
-	gamelist->Get("ListDrives",       &m_ListDrives,  false);
-	gamelist->Get("ListWad",          &m_ListWad,     true);
-	gamelist->Get("ListWii",          &m_ListWii,     true);
-	gamelist->Get("ListGC",           &m_ListGC,      true);
-	gamelist->Get("ListJap",          &m_ListJap,     true);
-	gamelist->Get("ListPal",          &m_ListPal,     true);
-	gamelist->Get("ListUsa",          &m_ListUsa,     true);
+	gamelist->Get("ListDrives",        &m_ListDrives,  false);
+	gamelist->Get("ListWad",           &m_ListWad,     true);
+	gamelist->Get("ListWii",           &m_ListWii,     true);
+	gamelist->Get("ListGC",            &m_ListGC,      true);
+	gamelist->Get("ListJap",           &m_ListJap,     true);
+	gamelist->Get("ListPal",           &m_ListPal,     true);
+	gamelist->Get("ListUsa",           &m_ListUsa,     true);
 
-	gamelist->Get("ListFrance",       &m_ListFrance,  true);
-	gamelist->Get("ListItaly",        &m_ListItaly,   true);
-	gamelist->Get("ListKorea",        &m_ListKorea,   true);
-	gamelist->Get("ListTaiwan",       &m_ListTaiwan,  true);
-	gamelist->Get("ListUnknown",      &m_ListUnknown, true);
-	gamelist->Get("ListSort",         &m_ListSort,       3);
-	gamelist->Get("ListSortSecondary",&m_ListSort2,  0);
+	gamelist->Get("ListAustralia",     &m_ListAustralia,     true);
+	gamelist->Get("ListFrance",        &m_ListFrance,        true);
+	gamelist->Get("ListGermany",       &m_ListGermany,       true);
+	gamelist->Get("ListInternational", &m_ListInternational, true);
+	gamelist->Get("ListItaly",         &m_ListItaly,         true);
+	gamelist->Get("ListKorea",         &m_ListKorea,         true);
+	gamelist->Get("ListNetherlands",   &m_ListNetherlands,   true);
+	gamelist->Get("ListRussia",        &m_ListRussia,        true);
+	gamelist->Get("ListSpain",         &m_ListSpain,         true);
+	gamelist->Get("ListTaiwan",        &m_ListTaiwan,        true);
+	gamelist->Get("ListUnknown",       &m_ListUnknown,       true);
+	gamelist->Get("ListSort",          &m_ListSort,       3);
+	gamelist->Get("ListSortSecondary", &m_ListSort2,      0);
 
 	// Determines if compressed games display in blue
 	gamelist->Get("ColorCompressed", &m_ColorCompressed, true);
@@ -512,7 +537,7 @@ void SConfig::LoadCoreSettings(IniFile& ini)
 	core->Get("DSPHLE",            &m_LocalCoreStartupParameter.bDSPHLE,       true);
 	core->Get("CPUThread",         &m_LocalCoreStartupParameter.bCPUThread,    true);
 	core->Get("SkipIdle",          &m_LocalCoreStartupParameter.bSkipIdle,     true);
-	core->Get("DefaultGCM",        &m_LocalCoreStartupParameter.m_strDefaultGCM);
+	core->Get("DefaultISO",        &m_LocalCoreStartupParameter.m_strDefaultISO);
 	core->Get("DVDRoot",           &m_LocalCoreStartupParameter.m_strDVDRoot);
 	core->Get("Apploader",         &m_LocalCoreStartupParameter.m_strApploader);
 	core->Get("EnableCheats",      &m_LocalCoreStartupParameter.bEnableCheats, false);
@@ -547,6 +572,7 @@ void SConfig::LoadCoreSettings(IniFile& ini)
 	core->Get("FrameLimit",                &m_Framelimit,                                  1); // auto frame limit by default
 	core->Get("FrameSkip",                 &m_FrameSkip,                                   0);
 	core->Get("GFXBackend",                &m_LocalCoreStartupParameter.m_strVideoBackend, "");
+	core->Get("GPUDeterminismMode",        &m_LocalCoreStartupParameter.m_strGPUDeterminismMode, "auto");
 }
 
 void SConfig::LoadMovieSettings(IniFile& ini)

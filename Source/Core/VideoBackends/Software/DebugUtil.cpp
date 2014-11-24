@@ -2,47 +2,60 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include "Common/Common.h"
-
-#include "DebugUtil.h"
-#include "BPMemLoader.h"
-#include "TextureSampler.h"
-#include "SWVideoConfig.h"
-#include "EfbInterface.h"
-#include "SWStatistics.h"
-#include "HwRasterizer.h"
-#include "Common/StringUtil.h"
-#include "SWCommandProcessor.h"
-#include "VideoCommon/ImageWrite.h"
+#include "Common/CommonTypes.h"
 #include "Common/FileUtil.h"
+#include "Common/StringUtil.h"
+
+#include "Core/ConfigManager.h"
+
+#include "VideoBackends/Software/BPMemLoader.h"
+#include "VideoBackends/Software/DebugUtil.h"
+#include "VideoBackends/Software/EfbInterface.h"
+#include "VideoBackends/Software/HwRasterizer.h"
+#include "VideoBackends/Software/SWCommandProcessor.h"
+#include "VideoBackends/Software/SWRenderer.h"
+#include "VideoBackends/Software/SWStatistics.h"
+#include "VideoBackends/Software/SWVideoConfig.h"
+#include "VideoBackends/Software/TextureSampler.h"
+
+#include "VideoCommon/Fifo.h"
+#include "VideoCommon/ImageWrite.h"
+
 
 namespace DebugUtil
 {
 
-u32 skipFrames = 0;
-bool drawingHwTriangles = false;
+static bool drawingHwTriangles = false;
 
-enum { NumObjectBuffers = 40};
+static const int NUM_OBJECT_BUFFERS = 40;
 
-u32 ObjectBuffer[NumObjectBuffers][EFB_WIDTH*EFB_HEIGHT];
-u32 TempBuffer[NumObjectBuffers];
+static u32 *ObjectBuffer[NUM_OBJECT_BUFFERS];
+static u32 TempBuffer[NUM_OBJECT_BUFFERS];
 
-bool DrawnToBuffer[NumObjectBuffers];
-const char* ObjectBufferName[NumObjectBuffers];
-int BufferBase[NumObjectBuffers];
+static bool DrawnToBuffer[NUM_OBJECT_BUFFERS];
+static const char* ObjectBufferName[NUM_OBJECT_BUFFERS];
+static int BufferBase[NUM_OBJECT_BUFFERS];
 
 void Init()
 {
-	for (int i = 0; i < NumObjectBuffers; i++)
+	for (int i = 0; i < NUM_OBJECT_BUFFERS; i++)
 	{
-		memset(ObjectBuffer[i], 0, sizeof(ObjectBuffer[i]));
+		ObjectBuffer[i] = new u32[EFB_WIDTH*EFB_HEIGHT]();
 		DrawnToBuffer[i] = false;
-		ObjectBufferName[i] = 0;
+		ObjectBufferName[i] = nullptr;
 		BufferBase[i] = 0;
 	}
 }
 
-void SaveTexture(const std::string& filename, u32 texmap, s32 mip)
+void Shutdown()
+{
+	for (int i = 0; i < NUM_OBJECT_BUFFERS; i++)
+	{
+		delete[] ObjectBuffer[i];
+	}
+}
+
+static void SaveTexture(const std::string& filename, u32 texmap, s32 mip)
 {
 	FourTexUnits& texUnit = bpmem.tex[(texmap >> 2) & 1];
 	u8 subTexmap = texmap & 3;
@@ -54,33 +67,26 @@ void SaveTexture(const std::string& filename, u32 texmap, s32 mip)
 
 	u8 *data = new u8[width * height * 4];
 
-	GetTextureBGRA(data, texmap, mip, width, height);
+	GetTextureRGBA(data, texmap, mip, width, height);
 
-	(void)TextureToPng(data, width * 4, filename, width, height);
+	TextureToPng(data, width*4, filename, width, height, true);
+	delete[] data;
 
-	delete []data;
 }
 
-void GetTextureBGRA(u8 *dst, u32 texmap, s32 mip, u32 width, u32 height)
+void GetTextureRGBA(u8 *dst, u32 texmap, s32 mip, u32 width, u32 height)
 {
-	u8 sample[4];
-
 	for (u32 y = 0; y < height; y++)
 	{
 		for (u32 x = 0; x < width; x++)
 		{
-			TextureSampler::SampleMip(x << 7, y << 7, mip, false, texmap, sample);
-
-			// RGBA to BGRA
-			*(dst++) = sample[2];
-			*(dst++) = sample[1];
-			*(dst++) = sample[0];
-			*(dst++) = sample[3];
+			TextureSampler::SampleMip(x << 7, y << 7, mip, false, texmap, dst);
+			dst += 4;
 		}
 	}
 }
 
-s32 GetMaxTextureLod(u32 texmap)
+static s32 GetMaxTextureLod(u32 texmap)
 {
 	FourTexUnits& texUnit = bpmem.tex[(texmap >> 2) & 1];
 	u8 subTexmap = texmap & 3;
@@ -89,7 +95,7 @@ s32 GetMaxTextureLod(u32 texmap)
 	u8 mip = maxLod >> 4;
 	u8 fract = maxLod & 0xf;
 
-	if(fract)
+	if (fract)
 		++mip;
 
 	return (s32)mip;
@@ -105,7 +111,7 @@ void DumpActiveTextures()
 		for (s32 mip = 0; mip <= maxLod; ++mip)
 		{
 			SaveTexture(StringFromFormat("%star%i_ind%i_map%i_mip%i.png",
-						File::GetUserPath(D_DUMPTEXTURES_IDX),
+						File::GetUserPath(D_DUMPTEXTURES_IDX).c_str(),
 						swstats.thisFrame.numDrawnObjects, stageNum, texmap, mip), texmap, mip);
 		}
 	}
@@ -122,13 +128,13 @@ void DumpActiveTextures()
 		for (s32 mip = 0; mip <= maxLod; ++mip)
 		{
 			SaveTexture(StringFromFormat("%star%i_stage%i_map%i_mip%i.png",
-						File::GetUserPath(D_DUMPTEXTURES_IDX),
+						File::GetUserPath(D_DUMPTEXTURES_IDX).c_str(),
 						swstats.thisFrame.numDrawnObjects, stageNum, texmap, mip), texmap, mip);
 		}
 	}
 }
 
-void DumpEfb(const char* filename)
+static void DumpEfb(const std::string& filename)
 {
 	u8 *data = new u8[EFB_WIDTH * EFB_HEIGHT * 4];
 	u8 *writePtr = data;
@@ -139,40 +145,23 @@ void DumpEfb(const char* filename)
 		for (int x = 0; x < EFB_WIDTH; x++)
 		{
 			EfbInterface::GetColor(x, y, sample);
-			// ABGR to BGRA
-			*(writePtr++) = sample[1];
-			*(writePtr++) = sample[2];
+			// ABGR to RGBA
 			*(writePtr++) = sample[3];
+			*(writePtr++) = sample[2];
+			*(writePtr++) = sample[1];
 			*(writePtr++) = sample[0];
 		}
 	}
 
-	(void)TextureToPng(data, EFB_WIDTH * 4, filename, EFB_WIDTH, EFB_HEIGHT);
-
-	delete []data;
+	TextureToPng(data, EFB_WIDTH * 4, filename, EFB_WIDTH, EFB_HEIGHT, true);
+	delete[] data;
 }
 
-void DumpDepth(const char* filename)
+
+
+static void DumpColorTexture(const std::string& filename, u32 width, u32 height)
 {
-	u8 *data = new u8[EFB_WIDTH * EFB_HEIGHT * 4];
-	u8 *writePtr = data;
-
-	for (int y = 0; y < EFB_HEIGHT; y++)
-	{
-		for (int x = 0; x < EFB_WIDTH; x++)
-		{
-			u32 depth = EfbInterface::GetDepth(x, y);
-			// depth to bgra
-			*(writePtr++) = (depth >> 16) & 0xff;
-			*(writePtr++) = (depth >> 8) & 0xff;
-			*(writePtr++) = depth & 0xff;
-			*(writePtr++) = 255;
-		}
-	}
-
-	(void)TextureToPng(data, EFB_WIDTH * 4, filename, EFB_WIDTH, EFB_HEIGHT);
-
-	delete []data;
+	TextureToPng(SWRenderer::GetCurrentColorTexture(), width * 4, filename, width, height, true);
 }
 
 void DrawObjectBuffer(s16 x, s16 y, u8 *color, int bufferBase, int subBuffer, const char *name)
@@ -234,7 +223,7 @@ void OnObjectEnd()
 		if (g_SWVideoConfig.bDumpObjects && swstats.thisFrame.numDrawnObjects >= g_SWVideoConfig.drawStart && swstats.thisFrame.numDrawnObjects < g_SWVideoConfig.drawEnd)
 			DumpEfb(StringFromFormat("%sobject%i.png",
 						File::GetUserPath(D_DUMPFRAMES_IDX).c_str(),
-						swstats.thisFrame.numDrawnObjects).c_str());
+						swstats.thisFrame.numDrawnObjects));
 
 		if (g_SWVideoConfig.bHwRasterizer || drawingHwTriangles)
 		{
@@ -242,16 +231,18 @@ void OnObjectEnd()
 			drawingHwTriangles = false;
 		}
 
-		for (int i = 0; i < NumObjectBuffers; i++)
+		for (int i = 0; i < NUM_OBJECT_BUFFERS; i++)
 		{
 			if (DrawnToBuffer[i])
 			{
 				DrawnToBuffer[i] = false;
-				(void)TextureToPng((u8*)ObjectBuffer[i], EFB_WIDTH * 4, StringFromFormat("%sobject%i_%s(%i).png",
-							File::GetUserPath(D_DUMPFRAMES_IDX).c_str(),
-							swstats.thisFrame.numDrawnObjects, ObjectBufferName[i], i - BufferBase[i]),
-						EFB_WIDTH, EFB_HEIGHT);
-				memset(ObjectBuffer[i], 0, sizeof(ObjectBuffer[i]));
+				std::string filename = StringFromFormat("%sobject%i_%s(%i).png",
+					File::GetUserPath(D_DUMPFRAMES_IDX).c_str(),
+					swstats.thisFrame.numDrawnObjects, ObjectBufferName[i], i - BufferBase[i]);
+
+				TextureToPng((u8*)ObjectBuffer[i], EFB_WIDTH * 4, filename, EFB_WIDTH, EFB_HEIGHT, true);
+				memset(ObjectBuffer[i], 0, EFB_WIDTH * EFB_HEIGHT * sizeof(u32));
+
 			}
 		}
 
@@ -259,16 +250,15 @@ void OnObjectEnd()
 	}
 }
 
-void OnFrameEnd()
+// If frame dumping is enabled, dump whatever is drawn to the screen.
+void OnFrameEnd(u32 width, u32 height)
 {
 	if (!g_bSkipCurrentFrame)
 	{
-		if (g_SWVideoConfig.bDumpFrames)
+		if (SConfig::GetInstance().m_DumpFrames)
 		{
-			DumpEfb(StringFromFormat("%sframe%i_color.png",
-						File::GetUserPath(D_DUMPFRAMES_IDX).c_str(), swstats.frameCount).c_str());
-			DumpDepth(StringFromFormat("%sframe%i_depth.png",
-						File::GetUserPath(D_DUMPFRAMES_IDX).c_str(), swstats.frameCount).c_str());
+			DumpColorTexture(StringFromFormat("%sframe%i_color.png",
+					File::GetUserPath(D_DUMPFRAMES_IDX).c_str(), swstats.frameCount), width, height);
 		}
 	}
 }

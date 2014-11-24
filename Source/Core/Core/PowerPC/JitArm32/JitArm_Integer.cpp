@@ -143,6 +143,7 @@ void JitArm::subfic(UGeckoInstruction inst)
 	else
 	{
 		ARMReg tmp = gpr.GetReg();
+		gpr.BindToRegister(d, false);
 		MOVI2R(gpr.R(d), imm);
 		LDRB(tmp, R9, PPCSTATE_OFF(xer_ca));
 		BIC(tmp, tmp, 1);
@@ -252,7 +253,7 @@ void JitArm::arith(UGeckoInstruction inst)
 				Imm[0] = gpr.GetImm(s);
 			}
 			isImm[1] = true;
-			Imm[1] = inst.UIMM << (shiftedImm ? 16 : 0);
+			Imm[1] = inst.UIMM;
 		break;
 		case 27: // xoris
 			shiftedImm = true;
@@ -274,7 +275,7 @@ void JitArm::arith(UGeckoInstruction inst)
 				Imm[0] = gpr.GetImm(s);
 			}
 			isImm[1] = true;
-			Imm[1] = inst.UIMM << (shiftedImm ? 16 : 0);
+			Imm[1] = inst.UIMM;
 			Rc = true;
 		break;
 
@@ -353,7 +354,7 @@ void JitArm::arith(UGeckoInstruction inst)
 			break;
 			case 24:
 			case 25:
-				gpr.SetImmediate(a, Or(Imm[0], Imm[1]));
+				gpr.SetImmediate(a, Or(Imm[0], Imm[1] << (shiftedImm ? 16 : 0)));
 				dest = a;
 			break;
 			case 26:
@@ -363,7 +364,7 @@ void JitArm::arith(UGeckoInstruction inst)
 			break;
 			case 28:
 			case 29:
-				gpr.SetImmediate(a, And(Imm[0], Imm[1]));
+				gpr.SetImmediate(a, And(Imm[0], Imm[1] << (shiftedImm ? 16 : 0)));
 				dest = a;
 			break;
 			case 31: // addcx, addx, subfx
@@ -445,6 +446,7 @@ void JitArm::arith(UGeckoInstruction inst)
 	{
 		case 7:
 		{
+			gpr.BindToRegister(d, d == a);
 			ARMReg rA = gpr.GetReg();
 			RD = gpr.R(d);
 			RA = gpr.R(a);
@@ -456,24 +458,42 @@ void JitArm::arith(UGeckoInstruction inst)
 		case 12:
 		case 13:
 		{
-			ARMReg rA = gpr.GetReg();
+			gpr.BindToRegister(d, d == a);
 			RD = gpr.R(d);
 			RA = gpr.R(a);
-			MOVI2R(rA, Imm[1]);
-			ADDS(RD, RA, rA);
-			gpr.Unlock(rA);
+
+			if (Imm[1] < 256)
+			{
+				ADDS(RD, RA, Imm[1]);
+			}
+			else
+			{
+				ARMReg rA = gpr.GetReg();
+				MOVI2R(rA, Imm[1]);
+				ADDS(RD, RA, rA);
+				gpr.Unlock(rA);
+			}
 		}
 		break;
 		case 14:
 		case 15: // Arg2 is always Imm
 			if (!isImm[0])
 			{
-				ARMReg rA = gpr.GetReg();
+				gpr.BindToRegister(d, d == a);
 				RD = gpr.R(d);
 				RA = gpr.R(a);
-				MOVI2R(rA, Imm[1]);
-				ADD(RD, RA, rA);
-				gpr.Unlock(rA);
+
+				if (Imm[1] < 256)
+				{
+					ADD(RD, RA, Imm[1]);
+				}
+				else
+				{
+					ARMReg rA = gpr.GetReg();
+					MOVI2R(rA, Imm[1]);
+					ADD(RD, RA, rA);
+					gpr.Unlock(rA);
+				}
 			}
 			else
 			{
@@ -484,18 +504,30 @@ void JitArm::arith(UGeckoInstruction inst)
 		case 25:
 		{
 			dest = a;
-			ARMReg rA = gpr.GetReg();
+			gpr.BindToRegister(a, s == a);
 			RS = gpr.R(s);
 			RA = gpr.R(a);
-			MOVI2R(rA, Imm[1]);
-			ORR(RA, RS, rA);
-			gpr.Unlock(rA);
+
+			if (Imm[1] < 256)
+			{
+				// Rotation of encoding 8 is the same as << 16
+				Operand2 imm(Imm[1], shiftedImm ? 8 : 0);
+				ORR(RA, RS, imm);
+			}
+			else
+			{
+				ARMReg rA = gpr.GetReg();
+				MOVI2R(rA, Imm[1] << (shiftedImm ? 16 : 0));
+				ORR(RA, RS, rA);
+				gpr.Unlock(rA);
+			}
 		}
 		break;
 		case 26:
 		case 27:
 		{
 			dest = a;
+			gpr.BindToRegister(a, s == a);
 			ARMReg rA = gpr.GetReg();
 			RS = gpr.R(s);
 			RA = gpr.R(a);
@@ -509,12 +541,23 @@ void JitArm::arith(UGeckoInstruction inst)
 		case 29:
 		{
 			dest = a;
-			ARMReg rA = gpr.GetReg();
+			gpr.BindToRegister(a, s == a);
 			RS = gpr.R(s);
 			RA = gpr.R(a);
-			MOVI2R(rA, Imm[1]);
-			ANDS(RA, RS, rA);
-			gpr.Unlock(rA);
+
+			Operand2 imm_val;
+			if (TryMakeOperand2(Imm[1] << (shiftedImm ? 16 : 0), imm_val))
+			{
+				AND(RA, RS, imm_val);
+			}
+			else
+			{
+				ARMReg rA = gpr.GetReg();
+				MOVI2R(rA, Imm[1]);
+				Operand2 rotated_reg(rA, ST_ROR, shiftedImm ? 16 : 0);
+				AND(RA, RS, rotated_reg);
+				gpr.Unlock(rA);
+			}
 		}
 		break;
 		case 31:
@@ -522,6 +565,7 @@ void JitArm::arith(UGeckoInstruction inst)
 			{
 				case 24:
 					dest = a;
+					gpr.BindToRegister(a, a == s || a == b);
 					RA = gpr.R(a);
 					RS = gpr.R(s);
 					RB = gpr.R(b);
@@ -529,19 +573,22 @@ void JitArm::arith(UGeckoInstruction inst)
 				break;
 				case 28:
 					dest = a;
+					gpr.BindToRegister(a, a == s || a == b);
 					RA = gpr.R(a);
 					RS = gpr.R(s);
 					RB = gpr.R(b);
 					ANDS(RA, RS, RB);
 				break;
 				case 40: // subfx
+					gpr.BindToRegister(d, d == b || d == a);
 					RD = gpr.R(d);
-					RA = gpr.R(a);
 					RB = gpr.R(b);
+					RA = gpr.R(a);
 					SUBS(RD, RB, RA);
 				break;
 				case 60:
 					dest = a;
+					gpr.BindToRegister(a, a == s || a == b);
 					RA = gpr.R(a);
 					RS = gpr.R(s);
 					RB = gpr.R(b);
@@ -549,6 +596,7 @@ void JitArm::arith(UGeckoInstruction inst)
 				break;
 				case 124:
 					dest = a;
+					gpr.BindToRegister(a, a == s || a == b);
 					RA = gpr.R(a);
 					RS = gpr.R(s);
 					RB = gpr.R(b);
@@ -557,6 +605,7 @@ void JitArm::arith(UGeckoInstruction inst)
 				break;
 				case 747:
 				case 235:
+					gpr.BindToRegister(d, d == a || d == b);
 					RD = gpr.R(d);
 					RA = gpr.R(a);
 					RB = gpr.R(b);
@@ -564,6 +613,7 @@ void JitArm::arith(UGeckoInstruction inst)
 				break;
 				case 284:
 					dest = a;
+					gpr.BindToRegister(a, a == s || a == b);
 					RA = gpr.R(a);
 					RS = gpr.R(s);
 					RB = gpr.R(b);
@@ -572,6 +622,7 @@ void JitArm::arith(UGeckoInstruction inst)
 				break;
 				case 316:
 					dest = a;
+					gpr.BindToRegister(a, a == s || a == b);
 					RA = gpr.R(a);
 					RS = gpr.R(s);
 					RB = gpr.R(b);
@@ -581,6 +632,7 @@ void JitArm::arith(UGeckoInstruction inst)
 				{
 					dest = a;
 					ARMReg rA = gpr.GetReg();
+					gpr.BindToRegister(a, a == s || a == b);
 					RA = gpr.R(a);
 					RS = gpr.R(s);
 					RB = gpr.R(b);
@@ -591,6 +643,7 @@ void JitArm::arith(UGeckoInstruction inst)
 				break;
 				case 444:
 					dest = a;
+					gpr.BindToRegister(a, a == s || a == b);
 					RA = gpr.R(a);
 					RS = gpr.R(s);
 					RB = gpr.R(b);
@@ -598,6 +651,7 @@ void JitArm::arith(UGeckoInstruction inst)
 				break;
 				case 476:
 					dest = a;
+					gpr.BindToRegister(a, a == s || a == b);
 					RA = gpr.R(a);
 					RS = gpr.R(s);
 					RB = gpr.R(b);
@@ -606,21 +660,24 @@ void JitArm::arith(UGeckoInstruction inst)
 				break;
 				case 536:
 					dest = a;
+					gpr.BindToRegister(a, a == s || a == b);
 					RA = gpr.R(a);
 					RS = gpr.R(s);
 					RB = gpr.R(b);
-					LSRS(RA,  RS, RB);
+					LSRS(RA, RS, RB);
 				break;
 				case 792:
 					dest = a;
+					gpr.BindToRegister(a, a == s || a == b);
 					RA = gpr.R(a);
 					RS = gpr.R(s);
 					RB = gpr.R(b);
-					ASRS(RA,  RS, RB);
+					ASRS(RA, RS, RB);
 				break;
 				case 10: // addcx
 				case 266:
 				case 778: // both addx
+					gpr.BindToRegister(d, d == a || d == b);
 					RD = gpr.R(d);
 					RA = gpr.R(a);
 					RB = gpr.R(b);
@@ -666,6 +723,7 @@ void JitArm::cntlzwx(UGeckoInstruction inst)
 	JITDISABLE(bJITIntegerOff);
 	u32 a = inst.RA, s = inst.RS;
 
+	gpr.BindToRegister(a, a == s);
 	ARMReg RA = gpr.R(a);
 	ARMReg RS = gpr.R(s);
 	CLZ(RA, RS);
@@ -705,6 +763,8 @@ void JitArm::extshx(UGeckoInstruction inst)
 
 		return;
 	}
+
+	gpr.BindToRegister(a, a == s);
 	ARMReg rA = gpr.R(a);
 	ARMReg rS = gpr.R(s);
 	SXTH(rA, rS);
@@ -726,6 +786,8 @@ void JitArm::extsbx(UGeckoInstruction inst)
 
 		return;
 	}
+
+	gpr.BindToRegister(a, a == s);
 	ARMReg rA = gpr.R(a);
 	ARMReg rS = gpr.R(s);
 	SXTB(rA, rS);
@@ -746,7 +808,14 @@ void JitArm::cmp (UGeckoInstruction inst)
 		return;
 	}
 
-	FALLBACK_IF(true);
+	ARMReg rA = gpr.GetReg();
+	ARMReg RA = gpr.R(a);
+	ARMReg RB = gpr.R(b);
+
+	SUB(rA, RA, RB);
+	ComputeRC(rA, crf);
+
+	gpr.Unlock(rA);
 }
 void JitArm::cmpi(UGeckoInstruction inst)
 {
@@ -759,8 +828,21 @@ void JitArm::cmpi(UGeckoInstruction inst)
 		ComputeRC((s32)gpr.GetImm(a) - inst.SIMM_16, crf);
 		return;
 	}
+	ARMReg rA = gpr.GetReg();
+	ARMReg RA = gpr.R(a);
 
-	FALLBACK_IF(true);
+	if (inst.SIMM_16 >= 0 && inst.SIMM_16 < 256)
+	{
+		SUB(rA, RA, inst.SIMM_16);
+	}
+	else
+	{
+		MOVI2R(rA, inst.SIMM_16);
+		SUB(rA, RA, rA);
+	}
+	ComputeRC(rA, crf);
+
+	gpr.Unlock(rA);
 }
 
 void JitArm::negx(UGeckoInstruction inst)
@@ -768,8 +850,9 @@ void JitArm::negx(UGeckoInstruction inst)
 	INSTRUCTION_START
 	JITDISABLE(bJITIntegerOff);
 
-	ARMReg RA = gpr.R(inst.RA);
+	gpr.BindToRegister(inst.RD, inst.RD == inst.RA);
 	ARMReg RD = gpr.R(inst.RD);
+	ARMReg RA = gpr.R(inst.RA);
 
 	RSB(RD, RA, 0);
 	if (inst.Rc)
@@ -856,6 +939,7 @@ void JitArm::srawix(UGeckoInstruction inst)
 	int s = inst.RS;
 	int amount = inst.SH;
 
+	gpr.BindToRegister(a, a == s);
 	if (amount != 0)
 	{
 		ARMReg RA = gpr.R(a);

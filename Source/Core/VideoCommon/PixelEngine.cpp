@@ -6,19 +6,19 @@
 // http://developer.nvidia.com/object/General_FAQ.html#t6 !!!!!
 
 
-#include "Common/Common.h"
-#include "VideoCommon/VideoCommon.h"
-#include "Common/ChunkFile.h"
 #include "Common/Atomic.h"
-#include "Core/CoreTiming.h"
+#include "Common/ChunkFile.h"
+#include "Common/CommonTypes.h"
 #include "Core/ConfigManager.h"
-
-#include "VideoCommon/PixelEngine.h"
-#include "VideoCommon/RenderBase.h"
-#include "VideoCommon/CommandProcessor.h"
-#include "Core/HW/ProcessorInterface.h"
+#include "Core/CoreTiming.h"
 #include "Core/State.h"
 #include "Core/HW/MMIO.h"
+#include "Core/HW/ProcessorInterface.h"
+#include "VideoCommon/BoundingBox.h"
+#include "VideoCommon/CommandProcessor.h"
+#include "VideoCommon/PixelEngine.h"
+#include "VideoCommon/RenderBase.h"
+#include "VideoCommon/VideoCommon.h"
 
 namespace PixelEngine
 {
@@ -107,9 +107,6 @@ static int et_SetFinishOnMainThread;
 volatile u32 interruptSetToken = 0;
 volatile u32 interruptSetFinish = 0;
 
-u16 bbox[4];
-bool bbox_active;
-
 enum
 {
 	INT_CAUSE_PE_TOKEN    =  0x200, // GP Token
@@ -129,9 +126,6 @@ void DoState(PointerWrap &p)
 	p.Do(g_bSignalFinishInterrupt);
 	p.Do(interruptSetToken);
 	p.Do(interruptSetFinish);
-	
-	p.Do(bbox);
-	p.Do(bbox_active);
 }
 
 void UpdateInterrupts();
@@ -156,13 +150,6 @@ void Init()
 
 	et_SetTokenOnMainThread = CoreTiming::RegisterEvent("SetToken", SetToken_OnMainThread);
 	et_SetFinishOnMainThread = CoreTiming::RegisterEvent("SetFinish", SetFinish_OnMainThread);
-
-	bbox[0] = 0x80;
-	bbox[1] = 0xA0;
-	bbox[2] = 0x80;
-	bbox[3] = 0xA0;
-
-	bbox_active = false;
 }
 
 void RegisterMMIO(MMIO::Mapping* mmio, u32 base)
@@ -245,8 +232,8 @@ void RegisterMMIO(MMIO::Mapping* mmio, u32 base)
 	{
 		mmio->Register(base | (PE_BBOX_LEFT + 2 * i),
 			MMIO::ComplexRead<u16>([i](u32) {
-			bbox_active = false;
-			return bbox[i];
+			BoundingBox::active = false;
+			return g_video_backend->Video_GetBoundingBox(i);
 		}),
 			MMIO::InvalidWrite<u16>()
 			);

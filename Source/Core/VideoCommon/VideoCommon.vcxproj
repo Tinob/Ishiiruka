@@ -42,6 +42,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="AVIDump.cpp" />
+    <ClCompile Include="BoundingBox.cpp" />
     <ClCompile Include="BPFunctions.cpp" />
     <ClCompile Include="BPMemory.cpp" />
     <ClCompile Include="BPStructs.cpp" />
@@ -86,14 +87,15 @@
     <ClCompile Include="PixelEngine.cpp" />
     <ClCompile Include="PixelShaderGen.cpp" />
     <ClCompile Include="PixelShaderManager.cpp" />
+    <ClCompile Include="PostProcessing.cpp" />
     <ClCompile Include="RenderBase.cpp" />
     <ClCompile Include="Statistics.cpp" />
     <ClCompile Include="TextureCacheBase.cpp" />
     <ClCompile Include="TextureConversionShader.cpp" />
+    <ClCompile Include="TextureConversionShaderGL.cpp" />
     <ClCompile Include="TextureUtil.cpp" />
     <ClCompile Include="VertexLoader.cpp" />
     <ClCompile Include="VertexLoaderManager.cpp" />
-    <ClCompile Include="VertexLoader_BBox.cpp" />
     <ClCompile Include="VertexLoader_Color.cpp" />
     <ClCompile Include="VertexLoader_Mtx.cpp" />
     <ClCompile Include="VertexLoader_Normal.cpp" />
@@ -111,6 +113,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AVIDump.h" />
+    <ClInclude Include="BoundingBox.h" />
     <ClInclude Include="BPFunctions.h" />
     <ClInclude Include="BPMemory.h" />
     <ClInclude Include="BPStructs.h" />
@@ -158,6 +161,7 @@
     <ClInclude Include="PixelEngine.h" />
     <ClInclude Include="PixelShaderGen.h" />
     <ClInclude Include="PixelShaderManager.h" />
+    <ClInclude Include="PostProcessing.h" />
     <ClInclude Include="RenderBase.h" />
     <ClInclude Include="ShaderGenCommon.h" />
     <ClInclude Include="Statistics.h" />
@@ -167,7 +171,6 @@
     <ClInclude Include="TextureUtil.h" />
     <ClInclude Include="VertexLoader.h" />
     <ClInclude Include="VertexLoaderManager.h" />
-    <ClInclude Include="VertexLoader_BBox.h" />
     <ClInclude Include="VertexLoader_Color.h" />
     <ClInclude Include="VertexLoader_ColorFuncs.h" />
     <ClInclude Include="VertexLoader_Mtx.h" />

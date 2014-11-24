@@ -3,7 +3,7 @@
 // Refer to the license.txt file included.
 
 #pragma	once
-
+#include <string>
 #include <d3d11_2.h>
 #include "Common/MathUtil.h"
 #include "VideoBackends/DX11/D3DPtr.h"
@@ -43,7 +43,7 @@ namespace D3D
 		int DrawTextScaled(float x, float y,
 							float size,
 							float spacing, u32 dwColor,
-							const char* strText,float scalex, float scaley);
+							const std::string& strText,float scalex, float scaley);
 	};
 
 	extern CD3DFont font;

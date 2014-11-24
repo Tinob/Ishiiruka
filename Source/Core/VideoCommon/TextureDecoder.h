@@ -50,6 +50,13 @@ enum TextureFormat
 	GX_CTF_Z16L  = 0xC | _GX_TF_ZTF | _GX_TF_CTF,
 };
 
+enum TlutFormat
+{
+	GX_TL_IA8 = 0x0,
+	GX_TL_RGB565 = 0x1,
+	GX_TL_RGB5A3 = 0x2,
+};
+
 s32 TexDecoder_GetTexelSizeInNibbles(s32 format);
 s32 TexDecoder_GetTextureSizeInBytes(s32 width, s32 height, s32 format);
 s32 TexDecoder_GetBlockWidthInTexels(u32 format);
@@ -70,11 +77,11 @@ enum PC_TexFormat
 	PC_TEX_FMT_DXT3,
 	PC_TEX_FMT_DXT5,
 };
-PC_TexFormat TexDecoder_Decode(u8 *dst, const u8 *src, s32 width, s32 height, s32 texformat, s32 tlutaddr, s32 tlutfmt, bool rgbaOnly = false, bool compressed_supported = false);
-PC_TexFormat GetPC_TexFormat(s32 texformat, s32 tlutfmt, bool compressed_supported = false);
+PC_TexFormat TexDecoder_Decode(u8 *dst, const u8 *src, s32 width, s32 height, s32 texformat, s32 tlutaddr, TlutFormat tlutfmt, bool rgbaOnly = false, bool compressed_supported = false);
+PC_TexFormat GetPC_TexFormat(s32 texformat, TlutFormat tlutfmt, bool compressed_supported = false);
 PC_TexFormat TexDecoder_DecodeRGBA8FromTmem(u32* dst, const u8 *src_ar, const u8 *src_gb, s32 width, s32 height);
 PC_TexFormat TexDecoder_DecodeBGRA8FromTmem(u32* dst, const u8 *src_ar, const u8 *src_gb, s32 width, s32 height);
-void TexDecoder_DecodeTexel(u8 *dst, const u8 *src, s32 s, s32 t, s32 imageWidth, s32 texformat, s32 tlutaddr, s32 tlutfmt);
+void TexDecoder_DecodeTexel(u8 *dst, const u8 *src, s32 s, s32 t, s32 imageWidth, s32 texformat, s32 tlutaddr, TlutFormat tlutfmt);
 void TexDecoder_DecodeTexelRGBA8FromTmem(u8 *dst, const u8 *src_ar, const u8* src_gb, s32 s, s32 t, s32 imageWidth);
 void TexDecoder_DecodeTexelBGRA8FromTmem(u8 *dst, const u8 *src_ar, const u8* src_gb, s32 s, s32 t, s32 imageWidth);
 void TexDecoder_SetTexFmtOverlayOptions(bool enable, bool center);

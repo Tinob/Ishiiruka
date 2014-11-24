@@ -34,20 +34,20 @@ private:
 		void Load(const u8* src, u32 width, u32 height,
 			u32 expanded_width, u32 level);
 		void Load(const u8* src, u32 width, u32 height, u32 expandedWidth,
-			u32 expandedHeight, const s32 texformat, const u32 tlutaddr, const s32 tlutfmt, u32 level);
+			u32 expandedHeight, const s32 texformat, const u32 tlutaddr, const TlutFormat tlutfmt, u32 level);
 		void LoadFromTmem(const u8* ar_src, const u8* gb_src, u32 width, u32 height,
 			u32 expanded_width, u32 expanded_Height, u32 level);
 
 		void FromRenderTarget(u32 dstAddr, unsigned int dstFormat,
-			unsigned int srcFormat, const EFBRectangle& srcRect,
+			PEControl::PixelFormat srcFormat, const EFBRectangle& srcRect,
 			bool isIntensity, bool scaleByHalf, unsigned int cbufid,
 			const float *colmat);
 
 		void Bind(unsigned int stage);
-		bool Save(const char filename[], unsigned int level);
+		bool Save(const std::string& filename, unsigned int level);
 	};
 	
-	PC_TexFormat GetNativeTextureFormat(const s32 texformat, const s32 tlutfmt, u32 width, u32 height);
+	PC_TexFormat GetNativeTextureFormat(const s32 texformat, const TlutFormat tlutfmt, u32 width, u32 height);
 
 	TextureCache::TCacheEntryBase* CreateTexture(u32 width, u32 height,
 		u32 expanded_width, u32 tex_levels, PC_TexFormat pcfmt);

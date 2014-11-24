@@ -219,7 +219,7 @@ void CD3DFont::SetRenderStates()
 }
 
 
-int CD3DFont::DrawTextScaled(float x, float y, float fXScale, float fYScale, float spacing, u32 dwColor, const char* strText)
+int CD3DFont::DrawTextScaled(float x, float y, float fXScale, float fYScale, float spacing, u32 dwColor, const std::string& Text)
 {
 	if (!m_pVB)
 		return 0;
@@ -240,17 +240,14 @@ int CD3DFont::DrawTextScaled(float x, float y, float fXScale, float fYScale, flo
 	FONT2DVERTEX* pVertices;
 	int dwNumTriangles = 0L;
 	m_pVB->Lock(0, 0, (void**)&pVertices, D3DLOCK_DISCARD);
-
-	const char *oldstrText=strText;
+	
 	//First, let's measure the text
 	float tw=0;
 	float mx=0;
 	float maxx=0;
 
-	while (*strText)
+	for ( char c : Text)
 	{
-		char c = *strText++;
-
 		if (c == ('\n'))
 			mx = 0;
 		if (c < (' '))
@@ -266,16 +263,13 @@ int CD3DFont::DrawTextScaled(float x, float y, float fXScale, float fYScale, flo
 	}
 
 	float offset = -maxx/2;
-	strText = oldstrText;
 
 	float wScale = (fXScale*vpHeight)*invLineHeight;
 	float hScale = (fYScale*vpHeight)*invLineHeight;
 
 	// Let's draw it
-	while (*strText)
+	for (char c : Text)
 	{
-		char c = *strText++;
-
 		if (c == ('\n'))
 		{
 			sx  = fStartX;

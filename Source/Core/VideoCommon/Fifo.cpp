@@ -23,6 +23,7 @@
 #include "VideoCommon/VideoConfig.h"
 
 bool g_bSkipCurrentFrame = false;
+DataReader g_VideoData;
 
 namespace
 {

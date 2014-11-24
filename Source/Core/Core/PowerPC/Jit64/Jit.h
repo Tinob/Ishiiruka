@@ -37,7 +37,6 @@
 #include "Core/PowerPC/Jit64/JitAsm.h"
 #include "Core/PowerPC/Jit64/JitRegCache.h"
 #include "Core/PowerPC/JitCommon/Jit_Util.h"
-#include "Core/PowerPC/JitCommon/JitBackpatch.h"
 #include "Core/PowerPC/JitCommon/JitBase.h"
 #include "Core/PowerPC/JitCommon/JitCache.h"
 
@@ -64,6 +63,11 @@ public:
 	~Jit64() {}
 
 	void Init() override;
+
+	void EnableOptimization();
+
+	void EnableBlockLink();
+
 	void Shutdown() override;
 
 	bool HandleFault(uintptr_t access_address, SContext* ctx) override;
@@ -73,7 +77,7 @@ public:
 	void Jit(u32 em_address) override;
 	const u8* DoJit(u32 em_address, PPCAnalyst::CodeBuffer *code_buffer, JitBlock *b);
 
-	u32 CallerSavedRegistersInUse();
+	BitSet32 CallerSavedRegistersInUse();
 
 	JitBlockCache *GetBlockCache() override { return &blocks; }
 
@@ -132,6 +136,7 @@ public:
 	void GetCRFieldBit(int field, int bit, Gen::X64Reg out, bool negate = false);
 	// Clobbers RDX.
 	void SetCRFieldBit(int field, int bit, Gen::X64Reg in);
+	void ClearCRFieldBit(int field, int bit);
 
 	// Generates a branch that will check if a given bit of a CR register part
 	// is set or not.

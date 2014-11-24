@@ -2,9 +2,8 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _MAIN_H_
-#define _MAIN_H_
+#pragma once
+
+#include <string>
 
 #include "VideoCommon/MainBase.h"
-
-#endif // _MAIN_H_

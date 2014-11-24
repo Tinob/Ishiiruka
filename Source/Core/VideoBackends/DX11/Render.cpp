@@ -181,12 +181,6 @@ void CreateScreenshotTexture(const TargetRectangle& rc)
 
 Renderer::Renderer(void *&window_handle)
 {
-	int x, y, w_temp, h_temp;
-
-	InitFPSCounter();
-
-	Host_GetRenderWindowSize(x, y, w_temp, h_temp);
-
 	D3D::Create((HWND)window_handle);
 
 	s_backbuffer_width = D3D::GetBackBufferWidth();
@@ -935,39 +929,44 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 	}
 
 	// Finish up the current frame, print some stats
-	if (g_ActiveConfig.bShowFPS)
+	if (g_ActiveConfig.bShowFPS || SConfig::GetInstance().m_ShowFrameCount)
 	{
-		char fps[20];
-		StringCchPrintfA(fps, 20, "FPS: %d\n", s_fps);
+		std::string fps = "";
+		if (g_ActiveConfig.bShowFPS)
+			fps = StringFromFormat("FPS: %d", m_fps_counter.m_fps);
+
+		if (g_ActiveConfig.bShowFPS && SConfig::GetInstance().m_ShowFrameCount)
+			fps += " - ";
+		if (SConfig::GetInstance().m_ShowFrameCount)
+		{
+			fps += StringFromFormat("Frame: %d", Movie::g_currentFrame);
+			if (Movie::IsPlayingInput())
+				fps += StringFromFormat(" / %d", Movie::g_totalFrames);
+		}
+
+		fps += "\n";
 		D3D::font.DrawTextScaled(0, 0, 20, 0.0f, 0xFF00FFFF, fps, scalex, scaley);
 	}
 
 	if (SConfig::GetInstance().m_ShowLag)
 	{
-		char lag[10];
-		StringCchPrintfA(lag, 10, "Lag: %" PRIu64 "\n", Movie::g_currentLagCount);
+		std::string lag = StringFromFormat("Lag: %" PRIu64 "\n", Movie::g_currentLagCount);
 		D3D::font.DrawTextScaled(0, 18, 20, 0.0f, 0xFF00FFFF, lag, scalex, scaley);
 	}
 
 	if (g_ActiveConfig.bShowInputDisplay)
 	{
-		char inputDisplay[1000];
-		StringCchPrintfA(inputDisplay, 1000, Movie::GetInputDisplay().c_str());
-		D3D::font.DrawTextScaled(0, 36, 20, 0.0f, 0xFF00FFFF, inputDisplay, scalex, scaley);
+		D3D::font.DrawTextScaled(0, 36, 20, 0.0f, 0xFF00FFFF, Movie::GetInputDisplay(), scalex, scaley);
 	}
 	Renderer::DrawDebugText();
 
 	if (g_ActiveConfig.bOverlayStats)
 	{
-		char buf[32768];
-		Statistics::ToString(buf);
-		D3D::font.DrawTextScaled(0, 36, 20, 0.0f, 0xFF00FFFF, buf, scalex, scaley);
+		D3D::font.DrawTextScaled(0, 36, 20, 0.0f, 0xFF00FFFF, Statistics::ToString(), scalex, scaley);
 	}
 	else if (g_ActiveConfig.bOverlayProjStats)
 	{
-		char buf[32768];
-		Statistics::ToStringProj(buf);
-		D3D::font.DrawTextScaled(0, 36, 20, 0.0f, 0xFF00FFFF, buf, scalex, scaley);
+		D3D::font.DrawTextScaled(0, 36, 20, 0.0f, 0xFF00FFFF, Statistics::ToStringProj(), scalex, scaley);
 	}
 
 	OSD::DrawMessages();
@@ -1008,10 +1007,6 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 		FramebufferManagerBase::SetLastXfbWidth(w);
 		FramebufferManagerBase::SetLastXfbHeight(h);
 	}
-
-	// update FPS counter
-	if (XFBWrited)
-		s_fps = UpdateFPSCounter();
 
 	// Flip/present backbuffer to frontbuffer here
 	D3D::Present();

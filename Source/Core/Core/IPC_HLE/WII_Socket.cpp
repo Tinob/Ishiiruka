@@ -5,8 +5,6 @@
 #include <algorithm>
 
 #include "Core/Core.h"
-#include "Core/Movie.h"
-#include "Core/NetPlayProto.h"
 #include "Core/IPC_HLE/WII_IPC_HLE.h"
 #include "Core/IPC_HLE/WII_IPC_HLE_Device.h"
 #include "Core/IPC_HLE/WII_Socket.h" // No Wii socket support while using NetPlay or TAS
@@ -563,9 +561,7 @@ void WiiSockMan::AddSocket(s32 fd)
 
 s32 WiiSockMan::NewSocket(s32 af, s32 type, s32 protocol)
 {
-	if (NetPlay::IsNetPlayRunning() ||
-	    Movie::IsRecordingInput() ||
-	    Movie::IsPlayingInput())
+	if (Core::g_want_determinism)
 	{
 		return SO_ENOMEM;
 	}
@@ -666,6 +662,13 @@ void WiiSockMan::Convert(sockaddr_in const & from, WiiSockAddrIn& to, s32 addrle
 		to.len = sizeof(WiiSockAddrIn);
 	else
 		to.len = addrlen;
+}
+
+void WiiSockMan::UpdateWantDeterminism(bool want)
+{
+	// If we switched into movie recording, kill existing sockets.
+	if (want)
+		Clean();
 }
 
 #undef ERRORCODE

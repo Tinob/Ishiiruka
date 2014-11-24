@@ -1,0 +1,11 @@
+﻿Build started 8/9/2014 12:51:18 AM.
+     1>Project "D:\Programacion\Dolphin-dx9\Ishiiruka\Ishiiruka\Source\Core\Common\SCMRevGen.vcxproj" on node 2 (Build target(s)).
+     1>PreBuildEvent:
+         cscript /nologo /E:JScript "make_scmrev.h.js"
+         :VCEnd
+         ./scmrev.h current at 0184be3
+     1>Done Building Project "D:\Programacion\Dolphin-dx9\Ishiiruka\Ishiiruka\Source\Core\Common\SCMRevGen.vcxproj" (Build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:01.51

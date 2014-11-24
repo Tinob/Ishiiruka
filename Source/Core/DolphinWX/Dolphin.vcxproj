@@ -72,6 +72,8 @@
     <ClCompile Include="Debugger\DebuggerUIUtil.cpp" />
     <ClCompile Include="Debugger\DSPDebugWindow.cpp" />
     <ClCompile Include="Debugger\DSPRegisterView.cpp" />
+    <ClCompile Include="Debugger\WatchView.cpp" />
+    <ClCompile Include="Debugger\WatchWindow.cpp" />
     <ClCompile Include="FifoPlayerDlg.cpp" />
     <ClCompile Include="Frame.cpp" />
     <ClCompile Include="FrameAui.cpp" />
@@ -98,7 +100,8 @@
     <ClCompile Include="PHackSettings.cpp" />
     <ClCompile Include="Debugger\RegisterView.cpp" />
     <ClCompile Include="Debugger\RegisterWindow.cpp" />
-    <ClCompile Include="GLInterface\WGL.cpp" />
+    <ClCompile Include="PostProcessingConfigDiag.cpp" />
+    <ClCompile Include="SoftwareVideoConfigDialog.cpp" />
     <ClCompile Include="TASInputDlg.cpp" />
     <ClCompile Include="VideoConfigDiag.cpp" />
     <ClCompile Include="WiimoteConfigDiag.cpp" />
@@ -110,6 +113,9 @@
     <ClInclude Include="Cheats\CheatsWindow.h" />
     <ClInclude Include="Cheats\CreateCodeDialog.h" />
     <ClInclude Include="Cheats\GeckoCodeDiag.h" />
+    <ClInclude Include="Debugger\WatchView.h" />
+    <ClInclude Include="Debugger\WatchWindow.h" />
+    <ClInclude Include="PostProcessingConfigDiag.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="AboutDolphin.h" />
     <ClInclude Include="ARCodeAddEdit.h" />
@@ -144,15 +150,12 @@
     <ClInclude Include="PHackSettings.h" />
     <ClInclude Include="Debugger\RegisterView.h" />
     <ClInclude Include="Debugger\RegisterWindow.h" />
-    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="SoftwareVideoConfigDialog.h" />
     <ClInclude Include="TASInputDlg.h" />
     <ClInclude Include="VideoConfigDiag.h" />
     <ClInclude Include="WiimoteConfigDiag.h" />
     <ClInclude Include="WXInputBase.h" />
     <ClInclude Include="WxUtils.h" />
-    <ClInclude Include="GLInterface\GLInterface.h" />
-    <ClInclude Include="GLInterface\InterfaceBase.h" />
-    <ClInclude Include="GLInterface\WGL.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\Installer\Dolphin.ico" />

@@ -2,13 +2,12 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _HW_RASTERIZER_H
-#define _HW_RASTERIZER_H
+#pragma once
 
 #include <map>
 
-#include "BPMemLoader.h"
-#include "../OGL/GLUtil.h"
+#include "VideoBackends/OGL/GLUtil.h"
+#include "VideoBackends/Software/BPMemLoader.h"
 
 struct OutputVertexData;
 
@@ -28,10 +27,10 @@ namespace HwRasterizer
 
 	struct TexCacheEntry
 	{
-		TexImage0 texImage0; 
-		TexImage1 texImage1; 
-		TexImage2 texImage2; 
-		TexImage3 texImage3; 
+		TexImage0 texImage0;
+		TexImage1 texImage1;
+		TexImage2 texImage2;
+		TexImage3 texImage3;
 		TexTLUT texTlut;
 
 		GLuint texture;
@@ -46,5 +45,3 @@ namespace HwRasterizer
 	typedef std::map<u32, TexCacheEntry> TextureCache;
 	static TextureCache textures;
 }
-
-#endif 

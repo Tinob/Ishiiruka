@@ -3,18 +3,18 @@
 // Refer to the license.txt file included.
 
 #include "Common/ChunkFile.h"
-#include "VideoCommon/VideoState.h"
-
+#include "VideoCommon/BoundingBox.h"
 #include "VideoCommon/BPMemory.h"
-#include "VideoCommon/CPMemory.h"
-#include "VideoCommon/XFMemory.h"
-#include "VideoCommon/TextureDecoder.h"
-#include "VideoCommon/Fifo.h"
 #include "VideoCommon/CommandProcessor.h"
+#include "VideoCommon/CPMemory.h"
+#include "VideoCommon/Fifo.h"
 #include "VideoCommon/PixelEngine.h"
 #include "VideoCommon/PixelShaderManager.h"
-#include "VideoCommon/VertexShaderManager.h"
+#include "VideoCommon/TextureDecoder.h"
 #include "VideoCommon/VertexManagerBase.h"
+#include "VideoCommon/VertexShaderManager.h"
+#include "VideoCommon/VideoState.h"
+#include "VideoCommon/XFMemory.h"
 
 static void DoState(PointerWrap &p)
 {
@@ -32,7 +32,7 @@ static void DoState(PointerWrap &p)
 	// Texture decoder
 	p.DoArray(texMem, TMEM_SIZE);
 	p.DoMarker("texMem");
- 
+
 	// FIFO
 	Fifo_DoState(p);
 	p.DoMarker("Fifo");
@@ -52,6 +52,10 @@ static void DoState(PointerWrap &p)
 
 	VertexManager::DoState(p);
 	p.DoMarker("VertexManager");
+
+	BoundingBox::DoState(p);
+	p.DoMarker("BoundingBox");
+
 
 	// TODO: search for more data that should be saved and add it here
 }

@@ -4,22 +4,15 @@
 
 #include <cstddef>
 
-#include "Common/Common.h"
-#include "VideoCommon/VideoConfig.h"
-#include "VideoCommon/OpcodeDecoding.h"
+#include "Common/CommonTypes.h"
 #include "VideoCommon/IndexGenerator.h"
+#include "VideoCommon/OpcodeDecoding.h"
+#include "VideoCommon/VideoConfig.h"
 
 //Init
-u16 *IndexGenerator::s_Triangle_Current;
-u16 *IndexGenerator::s_Triangle_Base;
-u16 *IndexGenerator::s_Line_Current;
-u16 *IndexGenerator::s_Line_Base;
-u16 *IndexGenerator::s_Point_Current;
-u16 *IndexGenerator::s_Point_Base;
-u32 IndexGenerator::numT;
-u32 IndexGenerator::numL;
-u32 IndexGenerator::numP;
-u32 IndexGenerator::index;
+u16 *IndexGenerator::index_buffer_current;
+u16 *IndexGenerator::BASEIptr;
+u32 IndexGenerator::base_index;
 
 static const u16 s_primitive_restart = -1;
 
@@ -48,24 +41,17 @@ void IndexGenerator::Init()
 	primitive_table[GX_DRAW_POINTS] = &IndexGenerator::AddPoints;
 }
 
-void IndexGenerator::Start(u16* Triangleptr, u16* Lineptr, u16* Pointptr)
+void IndexGenerator::Start(u16* Indexptr)
 {
-	s_Triangle_Current = Triangleptr;
-	s_Line_Current = Lineptr;
-	s_Point_Current = Pointptr;
-	s_Triangle_Base = Triangleptr;
-	s_Line_Base = Lineptr;
-	s_Point_Base = Pointptr;
-	index = 0;
-	numT = 0;
-	numL = 0;
-	numP = 0;
+	index_buffer_current = Indexptr;
+	BASEIptr = Indexptr;
+	base_index = 0;
 }
 
 void IndexGenerator::AddIndices(int primitive, u32 numVerts)
 {
 	primitive_table[primitive](numVerts);
-	index += numVerts;
+	base_index += numVerts;
 }
 
 // Triangles
@@ -75,40 +61,38 @@ template <bool pr> __forceinline u16* IndexGenerator::WriteTriangle(u16* ptr, u3
 	*ptr++ = index2;
 	*ptr++ = index3;
 	if(pr)
-		*ptr++ = s_primitive_restart;	
-	++numT;
+		*ptr++ = s_primitive_restart;
 	return ptr;
 }
 
 template <bool pr> void IndexGenerator::AddList(u32 const numVerts)
 {
-	u32 i = index + 2;
-	u32 top = (index + numVerts);
-	u16* ptr = s_Triangle_Current;
+	u32 i = base_index + 2;
+	u32 top = (base_index + numVerts);
+	u16* ptr = index_buffer_current;
 	while (i < top)
 	{
 		ptr = WriteTriangle<pr>(ptr, i - 2, i - 1, i);
 		i += 3;
 	}
-	s_Triangle_Current = ptr;
+	index_buffer_current = ptr;
 }
 
 template <bool pr> void IndexGenerator::AddStrip(u32 const numVerts)
 {
-	u16* ptr = s_Triangle_Current;
-	u32 top = (index + numVerts);
+	u16* ptr = index_buffer_current;
+	u32 top = (base_index + numVerts);
 	if(pr)
 	{
-		for (u32 i = index; i < top; ++i)
+		for (u32 i = base_index; i < top; ++i)
 		{
 			*ptr++ = i;
 		}
 		*ptr++ = s_primitive_restart;
-		numT += numVerts - 2;
 	}
 	else
 	{
-		u32 i = index + 2;		
+		u32 i = base_index + 2;
 		bool wind = false;
 		while (i < top)
 		{
@@ -121,7 +105,7 @@ template <bool pr> void IndexGenerator::AddStrip(u32 const numVerts)
 			++i;
 		}
 	}
-	s_Triangle_Current = ptr;
+	index_buffer_current = ptr;
 }
 
 /**
@@ -145,20 +129,19 @@ template <bool pr> void IndexGenerator::AddStrip(u32 const numVerts)
 
 template <bool pr> void IndexGenerator::AddFan(u32 numVerts)
 {
-	u32 i = index + 2;
-	u32 top = (index + numVerts);
-	u16* ptr = s_Triangle_Current;
+	u32 i = base_index + 2;
+	u32 top = (base_index + numVerts);
+	u16* ptr = index_buffer_current;
 	if(pr)
 	{
 		while (i + 3 <= top)
 		{
 			*ptr++ = i - 1;
 			*ptr++ = i + 0;
-			*ptr++ = index;
+			*ptr++ = base_index;
 			*ptr++ = i + 1;
 			*ptr++ = i + 2;
 			*ptr++ = s_primitive_restart;
-			numT += 3;
 			i += 3;
 		}
 		
@@ -166,20 +149,19 @@ template <bool pr> void IndexGenerator::AddFan(u32 numVerts)
 		{
 			*ptr++ = i - 1;
 			*ptr++ = i + 0;
-			*ptr++ = index;
+			*ptr++ = base_index;
 			*ptr++ = i + 1;
 			*ptr++ = s_primitive_restart;
-			numT += 2;
 			i += 2;
 		}
 	}
 
 	while (i < top)
 	{
-		ptr = WriteTriangle<pr>(ptr, index, i - 1, i);
+		ptr = WriteTriangle<pr>(ptr, base_index, i - 1, i);
 		++i;
 	}
-	s_Triangle_Current = ptr;
+	index_buffer_current = ptr;
 }
 
 /*
@@ -201,9 +183,9 @@ template <bool pr> void IndexGenerator::AddFan(u32 numVerts)
  */
 template <bool pr> void IndexGenerator::AddQuads(u32 numVerts)
 {
-	u32 i = index + 3;
-	u32 top = (index + numVerts);
-	u16* ptr = s_Triangle_Current;
+	u32 i = base_index + 3;
+	u32 top = (base_index + numVerts);
+	u16* ptr = index_buffer_current;
 	while (i < top)
 	{
 		if(pr)
@@ -213,7 +195,6 @@ template <bool pr> void IndexGenerator::AddQuads(u32 numVerts)
 			*ptr++ = i - 3;
 			*ptr++ = i - 0;
 			*ptr++ = s_primitive_restart;
-			numT += 2;
 		}
 		else
 		{
@@ -228,7 +209,7 @@ template <bool pr> void IndexGenerator::AddQuads(u32 numVerts)
 	{
 		ptr = WriteTriangle<pr>(ptr, top - 3, top - 2, top - 1);
 	}
-	s_Triangle_Current = ptr;
+	index_buffer_current = ptr;
 }
 
 template <bool pr> void IndexGenerator::AddQuads_nonstandard(u32 numVerts)
@@ -240,54 +221,51 @@ template <bool pr> void IndexGenerator::AddQuads_nonstandard(u32 numVerts)
 // Lines
 void IndexGenerator::AddLineList(u32 numVerts)
 {
-	u32 i = index + 1;
-	u32 top = (index + numVerts);
-	u16* ptr = s_Line_Current;
+	u32 i = base_index + 1;
+	u32 top = (base_index + numVerts);
+	u16* ptr = index_buffer_current;
 	while (i < top)
 	{
 		*ptr++ = i - 1;
 		*ptr++ = i;
 		i += 2;
 	}
-	numL += (numVerts >> 1);
-	s_Line_Current = ptr;
+	index_buffer_current = ptr;
 }
 
 // shouldn't be used as strips as LineLists are much more common
 // so converting them to lists
 void IndexGenerator::AddLineStrip(u32 numVerts)
 {
-	u32 i = index + 1;
-	u32 top = (index + numVerts);
-	u16* ptr = s_Line_Current;
+	u32 i = base_index + 1;
+	u32 top = (base_index + numVerts);
+	u16* ptr = index_buffer_current;
 	while (i < top)
 	{
 		*ptr++ = i - 1;
 		*ptr++ = i;
 		++i;
-	}
-	numL += numVerts - 1;
-	s_Line_Current = ptr;
+	}	
+	index_buffer_current = ptr;
 }
 
 // Points
 void IndexGenerator::AddPoints(u32 numVerts)
 {
-	u32 i = index;
-	u32 top = (index + numVerts);
-	u16 *ptr = s_Point_Current;
+	u32 i = base_index;
+	u32 top = (base_index + numVerts);
+	u16 *ptr = index_buffer_current;
 	while (i < top)
 	{
 		*ptr++ = i;
 		++i;
 	}
-	numP += numVerts;
-	s_Point_Current = ptr;
+	index_buffer_current = ptr;
 }
 
 
 u32 IndexGenerator::GetRemainingIndices()
 {
 	u32 max_index = 65534; // -1 is reserved for primitive restart (ogl + dx11)
-	return max_index - index;
+	return max_index - base_index;
 }

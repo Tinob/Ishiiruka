@@ -11,6 +11,12 @@
 class NativeVertexFormat;
 class PointerWrap;
 
+enum PrimitiveType {
+	PRIMITIVE_POINTS,
+	PRIMITIVE_LINES,
+	PRIMITIVE_TRIANGLES,
+};
+
 class VertexManager
 {
 private:
@@ -47,27 +53,19 @@ public:
 	
 protected:
 	static bool s_Shader_Refresh_Required;
-	u16* GetTriangleIndexBuffer() { return &TIBuffer[0]; }
-	u16* GetLineIndexBuffer() { return &LIBuffer[0]; }
-	u16* GetPointIndexBuffer() { return &PIBuffer[0]; }
-	u8* GetVertexBuffer() { return &s_pBaseBufferPointer[0]; }
 
-	virtual void vDoState(PointerWrap& p) { DoStateShared(p); }
-	void DoStateShared(PointerWrap& p);
+	virtual void vDoState(PointerWrap& p) {  }
+
+	static PrimitiveType current_primitive_type;
+
+	virtual void ResetBuffer(u32 stride) = 0;
 
 private:
-	bool IsFlushed() const;
-	
-	void ResetBuffer();
-	
+	static bool IsFlushed;
+
 	//virtual void Draw(u32 stride, bool alphapass) = 0;
 	// temp
-	virtual void vFlush() = 0;
-	
-	std::vector<u8> LocalVBuffer;
-	std::vector<u16> TIBuffer;
-	std::vector<u16> LIBuffer;
-	std::vector<u16> PIBuffer;
+	virtual void vFlush(bool useDstAlpha) = 0;
 };
 
 extern VertexManager *g_vertex_manager;

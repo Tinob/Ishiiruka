@@ -687,19 +687,19 @@ inline void DXT1ToDXT3Block(DXT3Block* dst, const DXT1Block* src)
 	*dst = result;
 }
 
-static PC_TexFormat GetPCFormatFromTLUTFormat(s32 tlutfmt)
+static PC_TexFormat GetPCFormatFromTLUTFormat(TlutFormat tlutfmt)
 {
 	switch (tlutfmt)
 	{
-	case 0: return PC_TEX_FMT_IA8;    // IA8
-	case 1: return PC_TEX_FMT_RGB565; // RGB565
-	case 2: return PC_TEX_FMT_BGRA32; // RGB5A3: This TLUT format requires
+	case GX_TL_IA8: return PC_TEX_FMT_IA8;    // IA8
+	case GX_TL_RGB565: return PC_TEX_FMT_RGB565; // RGB565
+	case GX_TL_RGB5A3: return PC_TEX_FMT_BGRA32; // RGB5A3: This TLUT format requires
 									  // extra work to decode.
 	}
 	return PC_TEX_FMT_NONE; // Error
 }
 
-PC_TexFormat GetPC_TexFormat(s32 texformat, s32 tlutfmt, bool compressed_supported)
+PC_TexFormat GetPC_TexFormat(s32 texformat, TlutFormat tlutfmt, bool compressed_supported)
 {
 	switch (texformat)
 	{
@@ -740,7 +740,7 @@ PC_TexFormat GetPC_TexFormat(s32 texformat, s32 tlutfmt, bool compressed_support
 }
 
 //switch endianness, unswizzle
-PC_TexFormat TexDecoder_Decode_real(u8 *dst, const u8 *src, s32 width, s32 height, s32 texformat, s32 tlutaddr, s32 tlutfmt, bool compressed_supported)
+PC_TexFormat TexDecoder_Decode_real(u8 *dst, const u8 *src, s32 width, s32 height, s32 texformat, s32 tlutaddr, TlutFormat tlutfmt, bool compressed_supported)
 {
 	const s32 Wsteps4 = (width + 3) / 4;
 	const s32 Wsteps8 = (width + 7) / 8;
@@ -748,7 +748,7 @@ PC_TexFormat TexDecoder_Decode_real(u8 *dst, const u8 *src, s32 width, s32 heigh
 	switch (texformat)
 	{
 	case GX_TF_C4:
-		if (tlutfmt == 2)
+		if (tlutfmt == GX_TL_RGB5A3)
 		{
 			// Special decoding is required for TLUT format 5A3
 			for (s32 y = 0; y < height; y += 8)
@@ -788,7 +788,7 @@ PC_TexFormat TexDecoder_Decode_real(u8 *dst, const u8 *src, s32 width, s32 heigh
 		}
 		return PC_TEX_FMT_I8;
 	case GX_TF_C8:
-		if (tlutfmt == 2)
+		if (tlutfmt == GX_TL_RGB5A3)
 		{
 			// Special decoding is required for TLUT format 5A3
 			for (s32 y = 0; y < height; y += 4)
@@ -839,7 +839,7 @@ PC_TexFormat TexDecoder_Decode_real(u8 *dst, const u8 *src, s32 width, s32 heigh
 		}
 		return PC_TEX_FMT_IA8;
 	case GX_TF_C14X2: 
-		if (tlutfmt == 2)
+		if (tlutfmt == GX_TL_RGB5A3)
 		{
 			// Special decoding is required for TLUT format 5A3
 			for (s32 y = 0; y < height; y += 4)
@@ -999,7 +999,7 @@ PC_TexFormat TexDecoder_Decode_real(u8 *dst, const u8 *src, s32 width, s32 heigh
 // TODO: complete SSE2 optimization of less often used texture formats.
 // TODO: refactor algorithms using _mm_loadl_epi64 unaligned loads to prefer 128-bit aligned loads.
 
-PC_TexFormat TexDecoder_Decode_RGBA(u32 * dst, const u8 * src, s32 width, s32 height, s32 texformat, s32 tlutaddr, s32 tlutfmt)
+PC_TexFormat TexDecoder_Decode_RGBA(u32 * dst, const u8 * src, s32 width, s32 height, s32 texformat, s32 tlutaddr, TlutFormat tlutfmt)
 {
 	const s32 Wsteps4 = (width + 3) / 4;
 	const s32 Wsteps8 = (width + 7) / 8;
@@ -1007,7 +1007,7 @@ PC_TexFormat TexDecoder_Decode_RGBA(u32 * dst, const u8 * src, s32 width, s32 he
 	switch (texformat)
 	{
 	case GX_TF_C4:
-		if (tlutfmt == 2)
+		if (tlutfmt == GX_TL_RGB5A3)
 		{
 			// Special decoding is required for TLUT format 5A3
 			for (s32 y = 0; y < height; y += 8)
@@ -1015,7 +1015,7 @@ PC_TexFormat TexDecoder_Decode_RGBA(u32 * dst, const u8 * src, s32 width, s32 he
 					for (s32 iy = 0, xStep =  8 * yStep; iy < 8; iy++,xStep++)
 						decodebytesC4_5A3_To_rgba32(dst + (y + iy) * width + x, src + 4 * xStep, tlutaddr);
 		}
-		else if(tlutfmt == 0)
+		else if (tlutfmt == GX_TL_IA8)
 		{
 			for (s32 y = 0; y < height; y += 8)
 				for (s32 x = 0, yStep = (y / 8) * Wsteps8; x < width; x += 8,yStep++)
@@ -1255,7 +1255,7 @@ PC_TexFormat TexDecoder_Decode_RGBA(u32 * dst, const u8 * src, s32 width, s32 he
 		}
 		break;
 	case GX_TF_C8:
-		if (tlutfmt == 2)
+		if (tlutfmt == GX_TL_RGB5A3)
 		{
 			// Special decoding is required for TLUT format 5A3
 			for (s32 y = 0; y < height; y += 4)
@@ -1263,7 +1263,7 @@ PC_TexFormat TexDecoder_Decode_RGBA(u32 * dst, const u8 * src, s32 width, s32 he
 					for (s32 iy = 0, xStep = 4 * yStep; iy < 4; iy++, xStep++)
 						decodebytesC8_5A3_To_RGBA32((u32*)dst + (y + iy) * width + x, src + 8 * xStep, tlutaddr);
 		}
-		else if(tlutfmt == 0)
+		else if (tlutfmt == GX_TL_IA8)
 		{
 			for (s32 y = 0; y < height; y += 4)
 					for (s32 x = 0, yStep = (y / 4) * Wsteps8; x < width; x += 8, yStep++)
@@ -1361,7 +1361,7 @@ PC_TexFormat TexDecoder_Decode_RGBA(u32 * dst, const u8 * src, s32 width, s32 he
 		}
 		break;
 	case GX_TF_C14X2:
-		if (tlutfmt == 2)
+		if (tlutfmt == GX_TL_RGB5A3)
 		{
 			// Special decoding is required for TLUT format 5A3
 			for (s32 y = 0; y < height; y += 4)
@@ -1369,7 +1369,7 @@ PC_TexFormat TexDecoder_Decode_RGBA(u32 * dst, const u8 * src, s32 width, s32 he
 					for (s32 iy = 0, xStep = 4 * yStep; iy < 4; iy++, xStep++)
 						decodebytesC14X2_5A3_To_BGRA32(dst + (y + iy) * width + x, (u16*)(src + 8 * xStep), tlutaddr);
 		}
-		else if (tlutfmt == 0)
+		else if (tlutfmt == GX_TL_IA8)
 		{
 			for (s32 y = 0; y < height; y += 4)
 				for (s32 x = 0, yStep = (y / 4) * Wsteps4; x < width; x += 4, yStep++)
@@ -2047,7 +2047,7 @@ void TexDecoder_SetTexFmtOverlayOptions(bool enable, bool center)
 	TexFmt_Overlay_Center = center;
 }
 
-PC_TexFormat TexDecoder_Decode(u8 *dst, const u8 *src, s32 width, s32 height, s32 texformat, s32 tlutaddr, s32 tlutfmt, bool rgbaOnly, bool compressed_supported)
+PC_TexFormat TexDecoder_Decode(u8 *dst, const u8 *src, s32 width, s32 height, s32 texformat, s32 tlutaddr, TlutFormat tlutfmt, bool rgbaOnly, bool compressed_supported)
 {
 	PC_TexFormat retval = TexDecoder_Decode_OpenCL(dst, src,
 		width, height, texformat, tlutaddr, tlutfmt, rgbaOnly);
@@ -2139,7 +2139,7 @@ PC_TexFormat TexDecoder_Decode(u8 *dst, const u8 *src, s32 width, s32 height, s3
 
 
 
-void TexDecoder_DecodeTexel(u8 *dst, const u8 *src, s32 s, s32 t, s32 imageWidth, s32 texformat, s32 tlutaddr, s32 tlutfmt)
+void TexDecoder_DecodeTexel(u8 *dst, const u8 *src, s32 s, s32 t, s32 imageWidth, s32 texformat, s32 tlutaddr, TlutFormat tlutfmt)
 {
 	/* General formula for computing texture offset
 	// 
@@ -2168,17 +2168,16 @@ void TexDecoder_DecodeTexel(u8 *dst, const u8 *src, s32 s, s32 t, s32 imageWidth
 			u32 offset = base + (blkOff >> 1);
 
 			u8 val = (*(src + offset) >> rs) & 0xF;
-			u16 *tlut = (u16*)(texMem + tlutaddr);
-
+			u16 *tlut = (u16*)(texMem + tlutaddr);			
 			switch (tlutfmt)
 			{
-			case 0:
+			case GX_TL_IA8:
 				*((u32*)dst) = decodeIA8Swapped(tlut[val]);
 				break;
-			case 1:
+			case GX_TL_RGB565:
 				*((u32*)dst) = decode565RGBA(Common::swap16(tlut[val]));
 				break;
-			case 2:
+			case GX_TL_RGB5A3:
 				*((u32*)dst) = decode5A3RGBA(Common::swap16(tlut[val]));
 				break;
 			}
@@ -2237,13 +2236,13 @@ void TexDecoder_DecodeTexel(u8 *dst, const u8 *src, s32 s, s32 t, s32 imageWidth
 
 			switch (tlutfmt)
 			{
-			case 0:
+			case GX_TL_IA8:
 				*((u32*)dst) = decodeIA8Swapped(tlut[val]);
 				break;
-			case 1:
+			case GX_TL_RGB565:
 				*((u32*)dst) = decode565RGBA(Common::swap16(tlut[val]));
 				break;
-			case 2:
+			case GX_TL_RGB5A3:
 				*((u32*)dst) = decode5A3RGBA(Common::swap16(tlut[val]));
 				break;
 			}
@@ -2302,13 +2301,13 @@ void TexDecoder_DecodeTexel(u8 *dst, const u8 *src, s32 s, s32 t, s32 imageWidth
 
 			switch (tlutfmt)
 			{
-			case 0:
+			case GX_TL_IA8:
 				*((u32*)dst) = decodeIA8Swapped(tlut[val]);
 				break;
-			case 1:
+			case GX_TL_RGB565:
 				*((u32*)dst) = decode565RGBA(Common::swap16(tlut[val]));
 				break;
-			case 2:
+			case GX_TL_RGB5A3:
 				*((u32*)dst) = decode5A3RGBA(Common::swap16(tlut[val]));
 				break;
 			}

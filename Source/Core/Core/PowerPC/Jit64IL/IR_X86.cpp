@@ -28,6 +28,7 @@ The register allocation is linear scan allocation.
 
 #include <algorithm>
 
+#include "Common/BitSet.h"
 #include "Common/CPUDetect.h"
 #include "Common/MathUtil.h"
 #include "Core/HW/ProcessorInterface.h"
@@ -58,19 +59,19 @@ struct RegInfo
 	{
 	}
 
-private:
-	RegInfo(RegInfo&); // DO NOT IMPLEMENT
+	private:
+		RegInfo(RegInfo&); // DO NOT IMPLEMENT
 };
 
-static u32 regsInUse(RegInfo& R)
+static BitSet32 regsInUse(RegInfo& R)
 {
-	u32 result = 0;
+	BitSet32 result;
 	for (unsigned i = 0; i < MAX_NUMBER_OF_REGS; i++)
 	{
 		if (R.regs[i] != nullptr)
-			result |= (1 << i);
+			result[i] = true;
 		if (R.fregs[i] != nullptr)
-			result |= (1 << (16 + i));
+			result[16 + i] = true;
 	}
 	return result;
 }
@@ -94,7 +95,7 @@ static unsigned regReadUse(RegInfo& R, InstLoc I)
 }
 
 static u64 SlotSet[1000];
-static u8 GC_ALIGNED16(FSlotSet[16 * 1000]);
+static u8 GC_ALIGNED16(FSlotSet[16*1000]);
 
 static OpArg regLocForSlot(RegInfo& RI, unsigned slot)
 {
@@ -130,7 +131,7 @@ static void regSpill(RegInfo& RI, X64Reg reg)
 
 static OpArg fregLocForSlot(RegInfo& RI, unsigned slot)
 {
-	return M(&FSlotSet[slot * 16]);
+	return M(&FSlotSet[slot*16]);
 }
 
 static unsigned fregCreateSpill(RegInfo& RI, InstLoc I)
@@ -166,12 +167,12 @@ static void fregSpill(RegInfo& RI, X64Reg reg)
 
 // 64-bit - calling conventions differ between linux & windows, so...
 #ifdef _WIN32
-static const X64Reg RegAllocOrder[] = { RSI, RDI, R12, R13, R14, R8, R9, R10, R11 };
+static const X64Reg RegAllocOrder[] = {RSI, RDI, R12, R13, R14, R8, R9, R10, R11};
 #else
-static const X64Reg RegAllocOrder[] = { R12, R13, R14, R8, R9, R10, R11 };
+static const X64Reg RegAllocOrder[] = {R12, R13, R14, R8, R9, R10, R11};
 #endif
 static const int RegAllocSize = sizeof(RegAllocOrder) / sizeof(X64Reg);
-static const X64Reg FRegAllocOrder[] = { XMM6, XMM7, XMM8, XMM9, XMM10, XMM11, XMM12, XMM13, XMM14, XMM15, XMM2, XMM3, XMM4, XMM5 };
+static const X64Reg FRegAllocOrder[] = {XMM6, XMM7, XMM8, XMM9, XMM10, XMM11, XMM12, XMM13, XMM14, XMM15, XMM2, XMM3, XMM4, XMM5};
 static const int FRegAllocSize = sizeof(FRegAllocOrder) / sizeof(X64Reg);
 
 static X64Reg regFindFreeReg(RegInfo& RI)
@@ -430,8 +431,8 @@ static void fregNormalRegClear(RegInfo& RI, InstLoc I)
 }
 
 static void regEmitBinInst(RegInfo& RI, InstLoc I,
-	void (JitIL::*op)(int, const OpArg&, const OpArg&),
-	bool commutable = false)
+                           void (JitIL::*op)(int, const OpArg&, const OpArg&),
+                           bool commutable = false)
 {
 	X64Reg reg;
 	bool commuted = false;
@@ -516,7 +517,7 @@ static void regMarkMemAddress(RegInfo& RI, InstLoc I, InstLoc AI, unsigned OpNum
 
 // in 64-bit build, this returns a completely bizarre address sometimes!
 static std::pair<OpArg, u32> regBuildMemAddress(RegInfo& RI, InstLoc I, InstLoc AI,
-	unsigned OpNum, unsigned Size, X64Reg* dest)
+                                                unsigned OpNum, unsigned Size, X64Reg* dest)
 {
 	if (isImm(*AI))
 	{
@@ -955,9 +956,9 @@ static void DoWriteCode(IRBuilder* ibuild, JitIL* Jit, u32 exitAddress)
 			// calls isn't completely out of the question...
 			regSpillCallerSaved(RI);
 			Jit->MOV(32, PPCSTATE(pc), Imm32(InstLoc));
-			Jit->MOV(32, PPCSTATE(npc), Imm32(InstLoc + 4));
+			Jit->MOV(32, PPCSTATE(npc), Imm32(InstLoc+4));
 			Jit->ABI_CallFunctionC((void*)GetInterpreterOp(InstCode),
-				InstCode);
+					       InstCode);
 			break;
 		}
 		case LoadGReg:
@@ -1037,7 +1038,7 @@ static void DoWriteCode(IRBuilder* ibuild, JitIL* Jit, u32 exitAddress)
 		{
 			unsigned ppcreg = *I >> 16;
 			regStoreInstToConstLoc(RI, 32, getOp1(I),
-				&PowerPC::ppcState.gpr[ppcreg]);
+					       &PowerPC::ppcState.gpr[ppcreg]);
 			regNormalRegClear(RI, I);
 			break;
 		}
@@ -1096,7 +1097,7 @@ static void DoWriteCode(IRBuilder* ibuild, JitIL* Jit, u32 exitAddress)
 		{
 			unsigned srr = *I >> 16;
 			regStoreInstToConstLoc(RI, 32, getOp1(I),
-				&PowerPC::ppcState.spr[SPR_SRR0 + srr]);
+					&PowerPC::ppcState.spr[SPR_SRR0+srr]);
 			regNormalRegClear(RI, I);
 			break;
 		}
@@ -1721,7 +1722,7 @@ static void DoWriteCode(IRBuilder* ibuild, JitIL* Jit, u32 exitAddress)
 				break;
 
 			X64Reg reg = fregURegWithMov(RI, I);
-			static const u32 GC_ALIGNED16(ssSignBits[4]) = { 0x80000000 };
+			static const u32 GC_ALIGNED16(ssSignBits[4]) = {0x80000000};
 			Jit->PXOR(reg, M((void*)&ssSignBits));
 			RI.fregs[reg] = I;
 			fregNormalRegClear(RI, I);
@@ -1733,7 +1734,7 @@ static void DoWriteCode(IRBuilder* ibuild, JitIL* Jit, u32 exitAddress)
 				break;
 
 			X64Reg reg = fregURegWithMov(RI, I);
-			static const u64 GC_ALIGNED16(sdSignBits[2]) = { 0x8000000000000000ULL };
+			static const u64 GC_ALIGNED16(sdSignBits[2]) = {0x8000000000000000ULL};
 			Jit->PXOR(reg, M((void*)&sdSignBits));
 			RI.fregs[reg] = I;
 			fregNormalRegClear(RI, I);
@@ -1745,7 +1746,7 @@ static void DoWriteCode(IRBuilder* ibuild, JitIL* Jit, u32 exitAddress)
 				break;
 
 			X64Reg reg = fregURegWithMov(RI, I);
-			static const u32 GC_ALIGNED16(psSignBits[4]) = { 0x80000000, 0x80000000 };
+			static const u32 GC_ALIGNED16(psSignBits[4]) = {0x80000000, 0x80000000};
 			Jit->PXOR(reg, M((void*)&psSignBits));
 			RI.fregs[reg] = I;
 			fregNormalRegClear(RI, I);
@@ -1792,11 +1793,11 @@ static void DoWriteCode(IRBuilder* ibuild, JitIL* Jit, u32 exitAddress)
 			X64Reg reg = fregFindFreeReg(RI);
 			unsigned ppcreg = *I >> 8;
 			char *p = (char*)&(PowerPC::ppcState.ps[ppcreg][0]);
-			Jit->MOV(32, R(RSCRATCH2), M(p + 4));
+			Jit->MOV(32, R(RSCRATCH2), M(p+4));
 			Jit->AND(32, R(RSCRATCH2), Imm32(0x7ff00000));
 			Jit->CMP(32, R(RSCRATCH2), Imm32(0x38000000));
 			FixupBranch ok = Jit->J_CC(CC_AE);
-			Jit->AND(32, M(p + 4), Imm32(0x80000000));
+			Jit->AND(32, M(p+4), Imm32(0x80000000));
 			Jit->MOV(32, M(p), Imm32(0));
 			Jit->SetJumpTarget(ok);
 			Jit->MOVAPD(reg, PPCSTATE(ps[ppcreg]));
@@ -1807,7 +1808,7 @@ static void DoWriteCode(IRBuilder* ibuild, JitIL* Jit, u32 exitAddress)
 		{
 			unsigned ppcreg = *I >> 16;
 			Jit->MOVAPD(PPCSTATE(ps[ppcreg]),
-				fregEnsureInReg(RI, getOp1(I)));
+				      fregEnsureInReg(RI, getOp1(I)));
 			fregNormalRegClear(RI, I);
 			break;
 		}
@@ -1881,9 +1882,9 @@ static void DoWriteCode(IRBuilder* ibuild, JitIL* Jit, u32 exitAddress)
 			OpArg loc2 = fregLocForInst(RI, getOp2(I));
 			Jit->MOVSD(XMM0, loc1);
 			Jit->UCOMISD(XMM0, loc2);
-			FixupBranch pNan = Jit->J_CC(CC_P);
-			FixupBranch pEqual = Jit->J_CC(CC_Z);
-			FixupBranch pLesser = Jit->J_CC(CC_C);
+			FixupBranch pNan     = Jit->J_CC(CC_P);
+			FixupBranch pEqual   = Jit->J_CC(CC_Z);
+			FixupBranch pLesser  = Jit->J_CC(CC_C);
 			// Greater
 			Jit->MOV(32, R(destreg), Imm32(0x4));
 			FixupBranch continue1 = Jit->J();
@@ -1910,15 +1911,15 @@ static void DoWriteCode(IRBuilder* ibuild, JitIL* Jit, u32 exitAddress)
 				Jit->ABI_CallFunction((void*)checkIsSNAN);
 				Jit->TEST(8, R(ABI_RETURN), R(ABI_RETURN));
 				FixupBranch ok = Jit->J_CC(CC_Z);
-				Jit->OR(32, PPCSTATE(fpscr), Imm32(FPSCR_FX)); // FPSCR.FX = 1;
-				Jit->OR(32, PPCSTATE(fpscr), Imm32(FPSCR_VXSNAN)); // FPSCR.Hex |= mask;
-				Jit->TEST(32, PPCSTATE(fpscr), Imm32(FPSCR_VE));
-				FixupBranch finish0 = Jit->J_CC(CC_NZ);
-				Jit->OR(32, PPCSTATE(fpscr), Imm32(FPSCR_VXVC)); // FPSCR.Hex |= mask;
-				FixupBranch finish1 = Jit->J();
+					Jit->OR(32, PPCSTATE(fpscr), Imm32(FPSCR_FX)); // FPSCR.FX = 1;
+					Jit->OR(32, PPCSTATE(fpscr), Imm32(FPSCR_VXSNAN)); // FPSCR.Hex |= mask;
+					Jit->TEST(32, PPCSTATE(fpscr), Imm32(FPSCR_VE));
+					FixupBranch finish0 = Jit->J_CC(CC_NZ);
+						Jit->OR(32, PPCSTATE(fpscr), Imm32(FPSCR_VXVC)); // FPSCR.Hex |= mask;
+						FixupBranch finish1 = Jit->J();
 				Jit->SetJumpTarget(ok);
-				Jit->OR(32, PPCSTATE(fpscr), Imm32(FPSCR_FX)); // FPSCR.FX = 1;
-				Jit->OR(32, PPCSTATE(fpscr), Imm32(FPSCR_VXVC)); // FPSCR.Hex |= mask;
+					Jit->OR(32, PPCSTATE(fpscr), Imm32(FPSCR_FX)); // FPSCR.FX = 1;
+					Jit->OR(32, PPCSTATE(fpscr), Imm32(FPSCR_VXVC)); // FPSCR.Hex |= mask;
 				Jit->SetJumpTarget(finish0);
 				Jit->SetJumpTarget(finish1);
 			}
@@ -1939,8 +1940,8 @@ static void DoWriteCode(IRBuilder* ibuild, JitIL* Jit, u32 exitAddress)
 				Jit->ABI_CallFunction((void*)checkIsSNAN);
 				Jit->TEST(8, R(ABI_RETURN), R(ABI_RETURN));
 				FixupBranch finish = Jit->J_CC(CC_Z);
-				Jit->OR(32, PPCSTATE(fpscr), Imm32(FPSCR_FX)); // FPSCR.FX = 1;
-				Jit->OR(32, PPCSTATE(fpscr), Imm32(FPSCR_VXVC)); // FPSCR.Hex |= mask;
+					Jit->OR(32, PPCSTATE(fpscr), Imm32(FPSCR_FX)); // FPSCR.FX = 1;
+					Jit->OR(32, PPCSTATE(fpscr), Imm32(FPSCR_VXVC)); // FPSCR.Hex |= mask;
 				Jit->SetJumpTarget(finish);
 			}
 
@@ -2092,12 +2093,12 @@ static void DoWriteCode(IRBuilder* ibuild, JitIL* Jit, u32 exitAddress)
 			RI.Jit->Cleanup(); // is it needed?
 			Jit->ABI_CallFunction((void *)&PowerPC::OnIdleIL);
 
-			Jit->MOV(32, PPCSTATE(pc), Imm32(ibuild->GetImmValue(getOp2(I))));
+			Jit->MOV(32, PPCSTATE(pc), Imm32(ibuild->GetImmValue( getOp2(I) )));
 			Jit->WriteExceptionExit();
 
 			Jit->SetJumpTarget(noidle);
 			if (RI.IInfo[I - RI.FirstI] & 4)
-				regClearInst(RI, getOp1(I));
+					regClearInst(RI, getOp1(I));
 			if (RI.IInfo[I - RI.FirstI] & 8)
 				regClearInst(RI, getOp2(I));
 			break;
@@ -2111,40 +2112,40 @@ static void DoWriteCode(IRBuilder* ibuild, JitIL* Jit, u32 exitAddress)
 				CCFlags flag;
 				switch (getOpcode(*getOp1(I)))
 				{
-				case ICmpEq:
-					flag = CC_NE;
-					break;
-				case ICmpNe:
-					flag = CC_E;
-					break;
-				case ICmpUgt:
-					flag = CC_BE;
-					break;
-				case ICmpUlt:
-					flag = CC_AE;
-					break;
-				case ICmpUge:
-					flag = CC_B;
-					break;
-				case ICmpUle:
-					flag = CC_A;
-					break;
-				case ICmpSgt:
-					flag = CC_LE;
-					break;
-				case ICmpSlt:
-					flag = CC_GE;
-					break;
-				case ICmpSge:
-					flag = CC_L;
-					break;
-				case ICmpSle:
-					flag = CC_G;
-					break;
-				default:
-					PanicAlert("cmpXX");
-					flag = CC_O;
-					break;
+					case ICmpEq:
+						flag = CC_NE;
+						break;
+					case ICmpNe:
+						flag = CC_E;
+						break;
+					case ICmpUgt:
+						flag = CC_BE;
+						break;
+					case ICmpUlt:
+						flag = CC_AE;
+						break;
+					case ICmpUge:
+						flag = CC_B;
+						break;
+					case ICmpUle:
+						flag = CC_A;
+						break;
+					case ICmpSgt:
+						flag = CC_LE;
+						break;
+					case ICmpSlt:
+						flag = CC_GE;
+						break;
+					case ICmpSge:
+						flag = CC_L;
+						break;
+					case ICmpSle:
+						flag = CC_G;
+						break;
+					default:
+						PanicAlert("cmpXX");
+						flag = CC_O;
+						break;
 				}
 				FixupBranch cont = Jit->J_CC(flag);
 				regWriteExit(RI, getOp2(I));

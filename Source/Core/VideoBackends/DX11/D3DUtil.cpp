@@ -309,7 +309,7 @@ int CD3DFont::Shutdown()
 	return S_OK;
 }
 
-int CD3DFont::DrawTextScaled(float x, float y, float size, float spacing, u32 dwColor, const char* strText, float scalex, float scaley)
+int CD3DFont::DrawTextScaled(float x, float y, float size, float spacing, u32 dwColor, const std::string& Text, float scalex, float scaley)
 {
 	if (!m_pVB)
 		return 0;
@@ -322,7 +322,6 @@ int CD3DFont::DrawTextScaled(float x, float y, float size, float spacing, u32 dw
 	// translate starting positions
 	float sx = x * scalex - 1.f;
 	float sy = 1.f - y * scaley;
-	char c;
 
 	// Fill vertex buffer
 	FONT2DVERTEX* pVertices;
@@ -348,7 +347,7 @@ int CD3DFont::DrawTextScaled(float x, float y, float size, float spacing, u32 dw
 	D3D::context->PSSetShaderResources(0, 1, D3D::ToAddr(m_pTexture));
 
 	float fStartX = sx;
-	while (c = *strText++)
+	for (char c : Text)
 	{
 		if (c == ('\n'))
 		{

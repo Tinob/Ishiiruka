@@ -34,6 +34,9 @@ public:
 	void RenderText(const std::string& str, int left, int top, u32 color);
 
 	u32 AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data);
+	
+	u16 BBoxRead(int index) override { return 0; };
+	void BBoxWrite(int index, u16 value) override {};
 
 	void ResetAPIState();
 	void RestoreAPIState();

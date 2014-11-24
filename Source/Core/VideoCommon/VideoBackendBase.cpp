@@ -6,17 +6,15 @@
 
 // TODO: ugly
 #ifdef _WIN32
-#include "../VideoBackends/DX9/VideoBackend.h"
-#include "../VideoBackends/DX11/VideoBackend.h"
+#include "VideoBackends/DX9/VideoBackend.h"
+#include "VideoBackends/DX11/VideoBackend.h"
 #endif
-#if !defined(USE_GLES) || USE_GLES3
-#include "../VideoBackends/OGL/VideoBackend.h"
-#endif
-#include "../VideoBackends/Software/VideoBackend.h"
+#include "VideoBackends/OGL/VideoBackend.h"
+#include "VideoBackends/Software/VideoBackend.h"
 
 std::vector<VideoBackend*> g_available_video_backends;
-VideoBackend* g_video_backend = NULL;
-static VideoBackend* s_default_backend = NULL;
+VideoBackend* g_video_backend = nullptr;
+static VideoBackend* s_default_backend = nullptr;
 
 #ifdef _WIN32
 #include <windows.h>
@@ -35,6 +33,12 @@ static bool IsGteVista()
 
 	return VerifyVersionInfo(&osvi, VER_MAJORVERSION, dwlConditionMask) != FALSE;
 }
+// Nvidia drivers >= v302 will check if the application exports a global
+// variable named NvOptimusEnablement to know if it should run the app in high
+// performance graphics mode or using the IGP.
+extern "C" {
+	__declspec(dllexport) DWORD NvOptimusEnablement = 1;
+}
 #endif
 
 void VideoBackend::PopulateList()
@@ -48,11 +52,10 @@ void VideoBackend::PopulateList()
 		g_available_video_backends.push_back(backends[1] = new DX11::VideoBackend);
 #endif
 // disable OGL video Backend while is merged from master
-#if 0//!defined(USE_GLES) || USE_GLES3
+#if !defined(USE_GLES) || USE_GLES3
 	g_available_video_backends.push_back(backends[2] = new OGL::VideoBackend);
 #endif
-	// disable software video while is merged from master
-	//g_available_video_backends.push_back(backends[3] = new SW::VideoSoftware);
+	g_available_video_backends.push_back(backends[3] = new SW::VideoSoftware);
 
 	for (int i = 0; i < 4; ++i)
 	{
@@ -75,10 +78,10 @@ void VideoBackend::ClearList()
 
 void VideoBackend::ActivateBackend(const std::string& name)
 {
-	if (name.length() == 0) // If NULL, set it to the default backend (expected behavior)
+	if (name.length() == 0) // If nullptr, set it to the default backend (expected behavior)
 		g_video_backend = s_default_backend;
 
-	for (std::vector<VideoBackend*>::const_iterator it = g_available_video_backends.begin(); it != g_available_video_backends.end(); ++it)
-		if (name == (*it)->GetName())
-			g_video_backend = *it;
+	for (VideoBackend* backend : g_available_video_backends)
+		if (name == backend->GetName())
+			g_video_backend = backend;;
 }

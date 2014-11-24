@@ -54,7 +54,6 @@ static u32 s_LastAA;
 static bool IS_AMD;
 static float m_fMaxPointSize;
 static bool s_vsync;
-static char *st;
 static bool s_b3D_RightFrame = false;
 static LPDIRECT3DSURFACE9 ScreenShootMEMSurface = NULL;
 static bool s_last_fullscreen_mode;
@@ -99,16 +98,15 @@ void TeardownDeviceObjects()
 // Init functions
 Renderer::Renderer(void *&window_handle)
 {
-	InitFPSCounter();
-
-	st = new char[32768];
-
-	int fullScreenRes, x, y, w_temp, h_temp;
+	int fullScreenRes, w_temp, h_temp;
 	s_blendMode = 0;
 	// Multisample Anti-aliasing hasn't been implemented yet use supersamling instead
 	int backbuffer_ms_mode = 0;
 
-	Host_GetRenderWindowSize(x, y, w_temp, h_temp);
+	RECT client;
+	GetClientRect((HWND)window_handle, &client);
+	w_temp = client.right - client.left;
+	h_temp = client.bottom - client.top;
 
 	for (fullScreenRes = 0; fullScreenRes < (int)D3D::GetAdapter(g_ActiveConfig.iAdapter).resolutions.size(); fullScreenRes++)
 	{
@@ -203,8 +201,6 @@ Renderer::~Renderer()
 	D3D::EndFrame();
 	D3D::Present();
 	D3D::Close();
-
-	delete[] st;
 }
 
 void Renderer::RenderText(const std::string &text, int left, int top, u32 color)
@@ -819,38 +815,44 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 	}
 
 	// Finish up the current frame, print some stats
-	if (g_ActiveConfig.bShowFPS)
+	if (g_ActiveConfig.bShowFPS || SConfig::GetInstance().m_ShowFrameCount)
 	{
-		char fps[20];
-		StringCchPrintfA(fps, 20, "FPS: %d\n", s_fps);
+		std::string fps = "";
+		if (g_ActiveConfig.bShowFPS)
+			fps = StringFromFormat("FPS: %d", m_fps_counter.m_fps);
+
+		if (g_ActiveConfig.bShowFPS && SConfig::GetInstance().m_ShowFrameCount)
+			fps += " - ";
+		if (SConfig::GetInstance().m_ShowFrameCount)
+		{
+			fps += StringFromFormat("Frame: %d", Movie::g_currentFrame);
+			if (Movie::IsPlayingInput())
+				fps += StringFromFormat(" / %d", Movie::g_totalFrames);
+		}
+		fps += "\n";
 		D3D::font.DrawTextScaled(float(X), float(Y), 20.0f, 20.0f, 0.0f, 0xFF00FFFF, fps);
 	}
 
 	if (SConfig::GetInstance().m_ShowLag)
 	{
-		char lag[10];
-		StringCchPrintfA(lag, 10, "Lag: %" PRIu64 "\n", Movie::g_currentLagCount);
+		std::string lag = StringFromFormat("Lag: %" PRIu64 "\n", Movie::g_currentLagCount);
 		D3D::font.DrawTextScaled(float(X), float(Y + 18), 20.0f, 20.0f, 0.0f, 0xFF00FFFF, lag);
 	}
 
 	if (g_ActiveConfig.bShowInputDisplay)
 	{
-		char inputDisplay[1000];
-		StringCchPrintfA(inputDisplay, 1000, Movie::GetInputDisplay().c_str());
-		D3D::font.DrawTextScaled(float(X), float(Y + 36), 20.0f, 20.0f, 0.0f, 0xFF00FFFF, inputDisplay);
+		D3D::font.DrawTextScaled(float(X), float(Y + 36), 20.0f, 20.0f, 0.0f, 0xFF00FFFF, Movie::GetInputDisplay());
 	}
 
 	Renderer::DrawDebugText();
 
 	if (g_ActiveConfig.bOverlayStats)
 	{
-		Statistics::ToString(st);
-		D3D::font.DrawTextScaled(float(X), float(Y + 36), 20.0f, 20.0f, 0.0f, 0xFF00FFFF, st);
+		D3D::font.DrawTextScaled(float(X), float(Y + 36), 20.0f, 20.0f, 0.0f, 0xFF00FFFF, Statistics::ToString());
 	}
 	else if (g_ActiveConfig.bOverlayProjStats)
 	{
-		Statistics::ToStringProj(st);
-		D3D::font.DrawTextScaled(float(X), float(Y + 36), 20.0f, 20.0f, 0.0f, 0xFF00FFFF, st);
+		D3D::font.DrawTextScaled(float(X), float(Y + 36), 20.0f, 20.0f, 0.0f, 0xFF00FFFF, Statistics::ToStringProj());
 	}
 
 	OSD::DrawMessages();
@@ -933,9 +935,6 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 		m_bLineWidthChanged = true;
 		BPFunctions::SetScissor();
 	}
-
-	if (XFBWrited)
-		s_fps = UpdateFPSCounter();
 
 	// Begin new frame
 	D3D::BeginFrame();

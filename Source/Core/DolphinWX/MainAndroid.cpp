@@ -15,7 +15,6 @@
 // Official SVN repository and contact information can be found at
 // http://code.google.com/p/dolphin-emu/
 
-#include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
 #include <jni.h>
@@ -49,7 +48,6 @@
 #include "VideoCommon/VideoBackendBase.h"
 
 ANativeWindow* surf;
-int g_width, g_height;
 std::string g_filename;
 
 #define DOLPHIN_TAG "Dolphinemu"
@@ -78,14 +76,6 @@ void Host_UpdateMainFrame()
 {
 }
 
-void Host_GetRenderWindowSize(int& x, int& y, int& width, int& height)
-{
-	x = SConfig::GetInstance().m_LocalCoreStartupParameter.iRenderWindowXPos;
-	y = SConfig::GetInstance().m_LocalCoreStartupParameter.iRenderWindowYPos;
-	width = g_width;
-	height = g_height;
-}
-
 void Host_RequestRenderWindowSize(int width, int height) {}
 
 void Host_RequestFullscreen(bool enable_fullscreen) {}
@@ -105,15 +95,6 @@ bool Host_RendererHasFocus()
 }
 
 void Host_ConnectWiimote(int wm_idx, bool connect) {}
-
-void Host_SysMessage(const char *fmt, ...)
-{
-	va_list args;
-
-	va_start(args, fmt);
-	__android_log_vprint(ANDROID_LOG_INFO, DOLPHIN_TAG, fmt, args);
-	va_end(args);
-}
 
 void Host_SetWiiMoteConnectionState(int _State) {}
 
@@ -321,11 +302,6 @@ JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_SetFilename(
 {
 	g_filename = GetJString(env, jFile);
 }
-JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_SetDimensions(JNIEnv *env, jobject obj, jint _width, jint _height)
-{
-	g_width = (int)_width;
-	g_height = (int)_height;
-}
 
 JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_SaveState(JNIEnv *env, jobject obj, jint slot)
 {
@@ -358,6 +334,7 @@ JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_CreateUserFo
 JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_Run(JNIEnv *env, jobject obj, jobject _surf)
 {
 	surf = ANativeWindow_fromSurface(env, _surf);
+
 	// Install our callbacks
 	OSD::AddCallback(OSD::OSD_INIT, ButtonManager::Init);
 	OSD::AddCallback(OSD::OSD_SHUTDOWN, ButtonManager::Shutdown);

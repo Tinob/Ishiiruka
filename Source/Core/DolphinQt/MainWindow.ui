@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>996</width>
-    <height>596</height>
+    <width>992</width>
+    <height>592</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -25,13 +25,13 @@
   <property name="unifiedTitleAndToolBarOnMac">
    <bool>true</bool>
   </property>
-  <widget class="QStackedWidget" name="wgtCentral"/>
+  <widget class="QStackedWidget" name="centralWidget"/>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>996</width>
+     <width>992</width>
      <height>21</height>
     </rect>
    </property>
@@ -39,7 +39,7 @@
     <property name="title">
      <string>Fi&amp;le</string>
     </property>
-    <addaction name="actOpen"/>
+    <addaction name="actionOpen"/>
    </widget>
    <widget class="QMenu" name="mnuEmulation">
     <property name="title">
@@ -65,11 +65,13 @@
     <property name="title">
      <string>Help</string>
     </property>
-    <addaction name="actWebsite"/>
-    <addaction name="actOnlineDocs"/>
-    <addaction name="actGitHub"/>
+    <addaction name="actionWebsite"/>
+    <addaction name="actionOnlineDocs"/>
+    <addaction name="actionGitHub"/>
     <addaction name="separator"/>
-    <addaction name="actAbout"/>
+    <addaction name="actionSystemInfo"/>
+    <addaction name="actionAbout"/>
+    <addaction name="actionAboutQt"/>
    </widget>
    <widget class="QMenu" name="mnuMovie">
     <property name="title">
@@ -87,7 +89,7 @@
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QToolBar" name="toolbar">
    <property name="windowTitle">
-    <string>toolBar</string>
+    <string>Toolbar</string>
    </property>
    <attribute name="toolBarArea">
     <enum>TopToolBarArea</enum>
@@ -95,34 +97,64 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
-   <addaction name="actOpen"/>
+   <addaction name="actionPlay"/>
+   <addaction name="actionStop"/>
   </widget>
-  <action name="actWebsite">
+  <action name="actionWebsite">
    <property name="text">
     <string>&amp;Website</string>
    </property>
   </action>
-  <action name="actOnlineDocs">
+  <action name="actionOnlineDocs">
    <property name="text">
     <string>&amp;Online Documentation</string>
    </property>
   </action>
-  <action name="actGitHub">
+  <action name="actionGitHub">
    <property name="text">
     <string>&amp;Dolphin at GitHub</string>
    </property>
   </action>
-  <action name="actAbout">
+  <action name="actionAbout">
    <property name="text">
     <string>&amp;About</string>
    </property>
+   <property name="menuRole">
+    <enum>QAction::AboutRole</enum>
+   </property>
   </action>
-  <action name="actOpen">
+  <action name="actionOpen">
    <property name="text">
-    <string>Open</string>
+    <string>&amp;Open...</string>
    </property>
    <property name="toolTip">
     <string>Open file...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
+   </property>
+  </action>
+  <action name="actionSystemInfo">
+   <property name="text">
+    <string>&amp;System Information</string>
+   </property>
+  </action>
+  <action name="actionPlay">
+   <property name="text">
+    <string>Play</string>
+   </property>
+  </action>
+  <action name="actionStop">
+   <property name="text">
+    <string>Stop</string>
+   </property>
+  </action>
+  <action name="actionAboutQt">
+   <property name="text">
+    <string>About Qt</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::AboutQtRole</enum>
    </property>
   </action>
  </widget>

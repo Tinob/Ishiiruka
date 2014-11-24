@@ -344,7 +344,7 @@ static TextureCache::TCacheEntryBase* ReturnEntry(u32 stage, TextureCache::TCach
 
 TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 	u32 const address, u32 width, u32 height, s32 const texformat,
-	u32 const tlutaddr, s32 const tlutfmt, bool const use_mipmaps, u32 maxlevel, bool const from_tmem)
+	const u32  tlutaddr, const TlutFormat tlutfmt, bool const use_mipmaps, u32 maxlevel, bool const from_tmem)
 {
 	if (0 == address)
 		return nullptr;
@@ -399,7 +399,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 
 	// D3D doesn't like when the specified mipmap count would require more than one 1x1-sized LOD in the mipmap chain
 	// e.g. 64x64 with 7 LODs would have the mipmap chain 64x64,32x32,16x16,8x8,4x4,2x2,1x1,1x1, so we limit the mipmap count to 6 there
-	while (g_ActiveConfig.backend_info.bUseMinimalMipCount && std::max(expandedWidth, expandedHeight) >> maxlevel == 0)
+	while (g_ActiveConfig.backend_info.bUseMinimalMipCount && std::max(width, height) >> maxlevel == 0)
 		--maxlevel;
 	u32 texLevels = use_mipmaps ? (maxlevel + 1) : 1;
 	TCacheEntryBase *entry = textures[texID];
@@ -605,7 +605,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 	return ReturnEntry(stage, entry);
 }
 
-void TextureCache::CopyRenderTargetToTexture(u32 dstAddr, u32 dstFormat, u32 srcFormat,
+void TextureCache::CopyRenderTargetToTexture(u32 dstAddr, u32 dstFormat, PEControl::PixelFormat srcFormat,
 	const EFBRectangle& srcRect, bool isIntensity, bool scaleByHalf)
 {
 	// Emulation methods:

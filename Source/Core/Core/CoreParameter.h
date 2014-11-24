@@ -43,6 +43,17 @@ enum Hotkey
 	HK_INCREASE_FRAME_LIMIT,
 	HK_DECREASE_FRAME_LIMIT,
 
+	HK_FREELOOK_INCREASE_SPEED,
+	HK_FREELOOK_DECREASE_SPEED,
+	HK_FREELOOK_RESET_SPEED,
+	HK_FREELOOK_UP,
+	HK_FREELOOK_DOWN,
+	HK_FREELOOK_LEFT,
+	HK_FREELOOK_RIGHT,
+	HK_FREELOOK_ZOOM_IN,
+	HK_FREELOOK_ZOOM_OUT,
+	HK_FREELOOK_RESET,
+
 	HK_LOAD_STATE_SLOT_1,
 	HK_LOAD_STATE_SLOT_2,
 	HK_LOAD_STATE_SLOT_3,
@@ -95,6 +106,15 @@ enum Hotkey
 	HK_LOAD_STATE_FILE,
 
 	NUM_HOTKEYS,
+};
+
+enum GPUDeterminismMode
+{
+	GPU_DETERMINISM_AUTO,
+	GPU_DETERMINISM_NONE,
+	// This is currently the only mode.  There will probably be at least
+	// one more at some point.
+	GPU_DETERMINISM_FAKE_COMPLETION,
 };
 
 struct SCoreStartupParameter
@@ -205,12 +225,16 @@ struct SCoreStartupParameter
 	EBootType m_BootType;
 
 	std::string m_strVideoBackend;
+	std::string m_strGPUDeterminismMode;
+
+	// set based on the string version
+	GPUDeterminismMode m_GPUDeterminismMode;
 
 	// files
 	std::string m_strFilename;
 	std::string m_strBootROM;
 	std::string m_strSRAM;
-	std::string m_strDefaultGCM;
+	std::string m_strDefaultISO;
 	std::string m_strDVDRoot;
 	std::string m_strApploader;
 	std::string m_strUniqueID;

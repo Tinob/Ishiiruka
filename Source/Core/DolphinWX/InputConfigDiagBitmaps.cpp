@@ -27,8 +27,6 @@
 #include "InputCommon/ControllerInterface/ControllerInterface.h"
 #include "InputCommon/ControllerInterface/Device.h"
 
-class wxTimerEvent;
-
 static void DrawCenteredRectangle(wxDC &dc, int x, int y, int w, int h)
 {
 	x -= w / 2;
@@ -165,7 +163,7 @@ static void DrawControlGroupBox(wxDC &dc, ControlGroupBox *g)
 		}
 
 		// adjusted dot
-		if (x != 0 && y != 0)
+		if (x != 0 || y != 0)
 		{
 			dc.SetPen(*wxRED_PEN);
 			dc.SetBrush(*wxRED_BRUSH);

@@ -4,8 +4,9 @@
 
 #pragma once
 
+#include "VideoBackends/OGL/GLExtensions/GLExtensions.h"
 #include "VideoCommon/CPMemory.h"
-
+#include "VideoCommon/NativeVertexFormat.h"
 #include "VideoCommon/VertexManagerBase.h"
 
 namespace OGL
@@ -18,9 +19,9 @@ namespace OGL
 		GLVertexFormat();
 		~GLVertexFormat();
 
-		void Initialize(const PortableVertexDeclaration &_vtx_decl) override;
-		void SetupVertexPointers() override;
-		
+		virtual void Initialize(const PortableVertexDeclaration &_vtx_decl) override;
+		virtual void SetupVertexPointers() override;
+
 		GLuint VAO;
 	};
 
@@ -31,19 +32,20 @@ class VertexManager : public ::VertexManager
 public:
 	VertexManager();
 	~VertexManager();
-	NativeVertexFormat* CreateNativeVertexFormat();
-	void CreateDeviceObjects();
-	void DestroyDeviceObjects();
+	NativeVertexFormat* CreateNativeVertexFormat() override;
+	void CreateDeviceObjects() override;
+	void DestroyDeviceObjects() override;
 	void PrepareShaders(u32 components, const XFMemory &xfr, const BPMemory &bpm, bool ongputhread);
 	// NativeVertexFormat use this
 	GLuint m_vertex_buffers;
-	GLuint m_index_buffers; 
+	GLuint m_index_buffers;
 	GLuint m_last_vao;
+protected:
+	virtual void ResetBuffer(u32 stride) override;
 private:
 	void Draw(u32 stride);
-	void vFlush();
+	void vFlush(bool useDstAlpha) override;
 	void PrepareDrawBuffers(u32 stride);
-	NativeVertexFormat *m_CurrentVertexFmt;
 };
 
 }

@@ -1,13 +1,19 @@
 // Copyright 2013 Dolphin Emulator Project
 // Licensed under GPLv2
 // Refer to the license.txt file included.
-// Modified for Ishiiruka by Tino
 
 #pragma once
 
-#include "Vec3.h"
 #include "Common/ChunkFile.h"
-#include "VideoCommon/NativeVertexFormat.h"
+#include "VideoBackends/Software/Vec3.h"
+
+#ifdef WIN32
+#define LOADERDECL __cdecl
+#else
+#define LOADERDECL
+#endif
+
+typedef void (LOADERDECL *TPipelineFunction)();
 
 struct Vec4
 {
@@ -31,7 +37,13 @@ struct InputVertexData
 struct OutputVertexData
 {
 	// components in color channels
-	enum { RED_C, GRN_C, BLU_C, ALP_C };
+	enum
+	{
+		RED_C,
+		GRN_C,
+		BLU_C,
+		ALP_C
+	};
 
 	Vec3 mvPosition;
 	Vec4 projectedPosition;
@@ -78,11 +90,11 @@ struct OutputVertexData
 		mvPosition.DoState(p);
 		p.Do(projectedPosition);
 		screenPosition.DoState(p);
-		for (int i = 0; i < 3;++i)
-			normal[i].DoState(p);
+		for (auto& vec : normal)
+			vec.DoState(p);
 		p.DoArray(color, sizeof color);
-		for (int i = 0; i < 8;++i)
-			texCoords[i].DoState(p);
+		for (auto& vec : texCoords)
+			vec.DoState(p);
 	}
 
 };

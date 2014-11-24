@@ -70,7 +70,7 @@
     <ClInclude Include="GekkoDisassembler.h" />
     <ClInclude Include="Event.h" />
     <ClInclude Include="ThreadPool.h" />
-    <ClInclude Include="ConstantBuffer.h" />
+    <ClInclude Include="BitSet.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BreakPoints.cpp" />

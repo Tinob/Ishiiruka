@@ -168,7 +168,8 @@ bool DSPLLE::Initialize(bool bWii, bool bDSPThread)
 	if (!DSPCore_Init(opts))
 		return false;
 
-	g_dsp.cpu_ram = Memory::GetPointer(0);
+	// DSPLLE directly accesses the fastmem arena.
+	g_dsp.cpu_ram = Memory::base;
 	DSPCore_Reset();
 
 	m_bIsRunning = true;
@@ -301,7 +302,7 @@ void DSPLLE::DSP_Update(int cycles)
 	{
 		while (m_cycle_count > cycles_between_ss_update)
 			m_cycle_count -= cycles_between_ss_update;
-		g_sound_stream->Update();
+		soundStream->Update();
 	}
 */
 	// If we're not on a thread, run cycles here.

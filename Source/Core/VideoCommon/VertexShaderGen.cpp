@@ -110,56 +110,56 @@ inline void GenerateVertexShader(T& out, u32 components, const XFMemory &xfr, co
 #endif
 		buffer[VERTEXSHADERGEN_BUFFERSIZE - 1] = 0x7C;  // canary
 		// uniforms
-		if (g_ActiveConfig.backend_info.bSupportsGLSLUBO)
-			out.Write("layout(std140) uniform VSBlock {\n");
+		if (api_type == API_OPENGL)
+			out.Write("layout(std140%s) uniform VSBlock {\n", g_ActiveConfig.backend_info.bSupportsBindingLayout ? ", binding = 2" : "");
 
-		DeclareUniform<T, api_type>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_POSNORMALMATRIX, "float4", I_POSNORMALMATRIX"[6]");
-		DeclareUniform<T, api_type>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_PROJECTION, "float4", I_PROJECTION"[4]");
-		DeclareUniform<T, api_type>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_MATERIALS, "float4", I_MATERIALS"[4]");
-		DeclareUniform<T, api_type>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_LIGHTS, "float4", I_LIGHTS"[40]");
-		DeclareUniform<T, api_type>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_TEXMATRICES, "float4", I_TEXMATRICES"[24]");
-		DeclareUniform<T, api_type>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_TRANSFORMMATRICES, "float4", I_TRANSFORMMATRICES"[64]");
-		DeclareUniform<T, api_type>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_NORMALMATRICES, "float4", I_NORMALMATRICES"[32]");
-		DeclareUniform<T, api_type>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_POSTTRANSFORMMATRICES, "float4", I_POSTTRANSFORMMATRICES"[64]");
-		DeclareUniform<T, api_type>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_DEPTHPARAMS, "float4", I_DEPTHPARAMS);
-		DeclareUniform<T, api_type>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_PLOFFSETPARAMS, "float4", I_PLOFFSETPARAMS"[13]");
+		DeclareUniform<T, api_type>(out, C_POSNORMALMATRIX, "float4", I_POSNORMALMATRIX"[6]");
+		DeclareUniform<T, api_type>(out, C_PROJECTION, "float4", I_PROJECTION"[4]");
+		DeclareUniform<T, api_type>(out, C_MATERIALS, "float4", I_MATERIALS"[4]");
+		DeclareUniform<T, api_type>(out, C_LIGHTS, "float4", I_LIGHTS"[40]");
+		DeclareUniform<T, api_type>(out, C_TEXMATRICES, "float4", I_TEXMATRICES"[24]");
+		DeclareUniform<T, api_type>(out, C_TRANSFORMMATRICES, "float4", I_TRANSFORMMATRICES"[64]");
+		DeclareUniform<T, api_type>(out, C_NORMALMATRICES, "float4", I_NORMALMATRICES"[32]");
+		DeclareUniform<T, api_type>(out, C_POSTTRANSFORMMATRICES, "float4", I_POSTTRANSFORMMATRICES"[64]");
+		DeclareUniform<T, api_type>(out, C_DEPTHPARAMS, "float4", I_DEPTHPARAMS);
+		DeclareUniform<T, api_type>(out, C_PLOFFSETPARAMS, "float4", I_PLOFFSETPARAMS"[13]");
 
-		if (g_ActiveConfig.backend_info.bSupportsGLSLUBO)
+		if (api_type == API_OPENGL)
 			out.Write("};\n");
 
 		GenerateVSOutputStruct<T, api_type>(out, enable_pl, xfr);
 		if (api_type == API_OPENGL)
 		{
-			out.Write("ATTRIN float4 rawpos; // ATTR%d,\n", SHADER_POSITION_ATTRIB);
+			out.Write("in float4 rawpos; // ATTR%d,\n", SHADER_POSITION_ATTRIB);
 			if (components & VB_HAS_POSMTXIDX)
-				out.Write("ATTRIN float fposmtx; // ATTR%d,\n", SHADER_POSMTX_ATTRIB);
+				out.Write("in float fposmtx; // ATTR%d,\n", SHADER_POSMTX_ATTRIB);
 			if (components & VB_HAS_NRM0)
-				out.Write("ATTRIN float3 rawnorm0; // ATTR%d,\n", SHADER_NORM0_ATTRIB);
+				out.Write("in float3 rawnorm0; // ATTR%d,\n", SHADER_NORM0_ATTRIB);
 			if (components & VB_HAS_NRM1)
-				out.Write("ATTRIN float3 rawnorm1; // ATTR%d,\n", SHADER_NORM1_ATTRIB);
+				out.Write("in float3 rawnorm1; // ATTR%d,\n", SHADER_NORM1_ATTRIB);
 			if (components & VB_HAS_NRM2)
-				out.Write("ATTRIN float3 rawnorm2; // ATTR%d,\n", SHADER_NORM2_ATTRIB);
+				out.Write("in float3 rawnorm2; // ATTR%d,\n", SHADER_NORM2_ATTRIB);
 
 			if (components & VB_HAS_COL0)
-				out.Write("ATTRIN float4 color0; // ATTR%d,\n", SHADER_COLOR0_ATTRIB);
+				out.Write("in float4 color0; // ATTR%d,\n", SHADER_COLOR0_ATTRIB);
 			if (components & VB_HAS_COL1)
-				out.Write("ATTRIN float4 color1; // ATTR%d,\n", SHADER_COLOR1_ATTRIB);
+				out.Write("in float4 color1; // ATTR%d,\n", SHADER_COLOR1_ATTRIB);
 
 			for (int i = 0; i < 8; ++i)
 			{
 				u32 hastexmtx = (components & (VB_HAS_TEXMTXIDX0 << i));
 				if ((components & (VB_HAS_UV0 << i)) || hastexmtx)
-					out.Write("ATTRIN float%d tex%d; // ATTR%d,\n", hastexmtx ? 3 : 2, i, SHADER_TEXTURE0_ATTRIB + i);
+					out.Write("in float%d tex%d; // ATTR%d,\n", hastexmtx ? 3 : 2, i, SHADER_TEXTURE0_ATTRIB + i);
 			}
 
 			// Let's set up attributes
 			if (xfr.numTexGen.numTexGens < 7)
 			{
 				for (int i = 0; i < 8; ++i)
-					out.Write("VARYOUT  float3 uv%d_2;\n", i);
-				out.Write("VARYOUT   float4 clipPos_2;\n");
+					out.Write("centroid out float3 uv%d_2;\n", i);
+				out.Write("centroid out float4 clipPos_2;\n");
 				if (enable_pl)
-					out.Write("VARYOUT   float4 Normal_2;\n");
+					out.Write("centroid out float4 Normal_2;\n");
 			}
 			else
 			{
@@ -167,16 +167,16 @@ inline void GenerateVertexShader(T& out, u32 components, const XFMemory &xfr, co
 				if (enable_pl)
 				{
 					for (int i = 0; i < 8; ++i)
-						out.Write("VARYOUT   float4 uv%d_2;\n", i);
+						out.Write("centroid out float4 uv%d_2;\n", i);
 				}
 				else
 				{
 					for (unsigned int i = 0; i < xfr.numTexGen.numTexGens; ++i)
-						out.Write("VARYOUT   float%d uv%d_2;\n", i < 4 ? 4 : 3, i);
+						out.Write("centroid out float%d uv%d_2;\n", i < 4 ? 4 : 3, i);
 				}
 			}
-			out.Write("VARYOUT   float4 colors_02;\n");
-			out.Write("VARYOUT   float4 colors_12;\n");
+			out.Write("centroid out float4 colors_02;\n");
+			out.Write("centroid out float4 colors_12;\n");
 
 			out.Write("void main()\n{\n");
 		}

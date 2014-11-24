@@ -2,20 +2,25 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _RASTERFONT_H_
-#define _RASTERFONT_H_
+#pragma once
 
-namespace OGL {
+#include <string>
 
-class RasterFont {
+#include "Common/CommonTypes.h"
+
+namespace OGL
+{
+
+class RasterFont
+{
 public:
 	RasterFont();
-	~RasterFont(void);
+	~RasterFont();
 	static int debug;
 
-	void printMultilineText(const char *text, double x, double y, double z, int bbWidth, int bbHeight, u32 color);
+	void printMultilineText(const std::string& text, double x, double y, double z, int bbWidth, int bbHeight, u32 color);
 private:
-	
+
 	u32 VBO;
 	u32 VAO;
 	u32 texture;
@@ -24,5 +29,3 @@ private:
 };
 
 }
-
-#endif // _RASTERFONT_H_

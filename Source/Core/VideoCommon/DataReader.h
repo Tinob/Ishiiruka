@@ -117,3 +117,5 @@ public:
 protected:
 	u8 *Wbuffer;
 };
+
+extern DataReader g_VideoData;

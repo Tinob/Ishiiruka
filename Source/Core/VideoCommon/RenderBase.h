@@ -24,6 +24,8 @@
 #include "VideoCommon/NativeVertexFormat.h"
 #include "VideoCommon/VideoCommon.h"
 
+class PostProcessingShaderImplementation;
+
 // TODO: Move these out of here.
 extern int frameCount;
 extern int OSDChoice;
@@ -100,7 +102,8 @@ public:
 	static void RenderToXFB(u32 xfbAddr, u32 fbWidth, u32 fbHeight, const EFBRectangle& sourceRc,float Gamma = 1.0f);
 
 	virtual u32 AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data) = 0;
-
+	virtual u16 BBoxRead(int index) = 0;
+	virtual void BBoxWrite(int index, u16 value) = 0;
 	// What's the real difference between these? Too similar names.
 	virtual void ResetAPIState() = 0;
 	virtual void RestoreAPIState() = 0;
@@ -116,6 +119,8 @@ public:
 	static PEControl::PixelFormat GetPrevPixelFormat() { return prev_efb_format; }
 	static void StorePixelFormat(PEControl::PixelFormat new_format) { prev_efb_format = new_format; }
 
+
+	PostProcessingShaderImplementation* GetPostProcessor() { return m_post_processor; }
 	// Max height/width
 	virtual int GetMaxTextureSize() = 0;
 protected:
@@ -152,6 +157,10 @@ protected:
 	static int s_LastEFBScale;
 
 	static bool XFBWrited;
+
+	FPSCounter m_fps_counter;
+
+	static PostProcessingShaderImplementation* m_post_processor;
 
 private:
 	static PEControl::PixelFormat prev_efb_format;

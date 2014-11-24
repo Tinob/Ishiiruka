@@ -11,20 +11,17 @@
     <ClCompile Include="HwRasterizer.cpp" />
     <ClCompile Include="SWmain.cpp" />
     <ClCompile Include="OpcodeDecoder.cpp" />
-    <ClCompile Include="SWPixelEngine.cpp" />
     <ClCompile Include="Rasterizer.cpp" />
     <ClCompile Include="RasterFont.cpp" />
     <ClCompile Include="SWRenderer.cpp" />
     <ClCompile Include="SetupUnit.cpp" />
     <ClCompile Include="SWStatistics.cpp" />
-    <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="SWVideoConfig.cpp" />
     <ClCompile Include="Tev.cpp" />
     <ClCompile Include="TextureEncoder.cpp" />
     <ClCompile Include="TextureSampler.cpp" />
     <ClCompile Include="TransformUnit.cpp" />
     <ClCompile Include="SWVertexLoader.cpp" />
-    <ClCompile Include="VideoConfigDialog.cpp" />
     <ClCompile Include="XFMemLoader.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -38,13 +35,11 @@
     <ClInclude Include="HwRasterizer.h" />
     <ClInclude Include="NativeVertexFormat.h" />
     <ClInclude Include="OpcodeDecoder.h" />
-    <ClInclude Include="SWPixelEngine.h" />
     <ClInclude Include="Rasterizer.h" />
     <ClInclude Include="RasterFont.h" />
     <ClInclude Include="SWRenderer.h" />
     <ClInclude Include="SetupUnit.h" />
     <ClInclude Include="SWStatistics.h" />
-    <ClInclude Include="stdafx.h" />
     <ClInclude Include="SWVideoConfig.h" />
     <ClInclude Include="Tev.h" />
     <ClInclude Include="TextureEncoder.h" />
@@ -53,7 +48,6 @@
     <ClInclude Include="Vec3.h" />
     <ClInclude Include="SWVertexLoader.h" />
     <ClInclude Include="VideoBackend.h" />
-    <ClInclude Include="VideoConfigDialog.h" />
     <ClInclude Include="XFMemLoader.h" />
   </ItemGroup>
   <ItemGroup>

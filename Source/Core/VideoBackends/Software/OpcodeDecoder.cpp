@@ -2,24 +2,29 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include "Common/Common.h"
-#include "OpcodeDecoder.h"
-#include "BPMemLoader.h"
-#include "CPMemLoader.h"
-#include "XFMemLoader.h"
-#include "SWVertexLoader.h"
-#include "SWStatistics.h"
-#include "DebugUtil.h"
-#include "SWCommandProcessor.h"
-#include "CPMemLoader.h"
-#include "SWVideoConfig.h"
+#include "Common/ChunkFile.h"
+#include "Common/CommonTypes.h"
 #include "Core/HW/Memmap.h"
+#include "VideoBackends/Software/BPMemLoader.h"
+#include "VideoBackends/Software/CPMemLoader.h"
+#include "VideoBackends/Software/DebugUtil.h"
+#include "VideoBackends/Software/OpcodeDecoder.h"
+#include "VideoBackends/Software/SWCommandProcessor.h"
+#include "VideoBackends/Software/SWStatistics.h"
+#include "VideoBackends/Software/SWVertexLoader.h"
+#include "VideoBackends/Software/SWVideoConfig.h"
+#include "VideoBackends/Software/XFMemLoader.h"
+
+#include "VideoCommon/DataReader.h"
+#include "VideoCommon/Fifo.h"
+#include "VideoCommon/NativeVertexFormat.h"
+#include "VideoCommon/VertexManagerBase.h"
 
 typedef void (*DecodingFunction)(u32);
 
 namespace OpcodeDecoder
 {
-static DecodingFunction currentFunction = NULL;
+static DecodingFunction currentFunction = nullptr;
 static u32 minCommandSize;
 static u16 streamSize;
 static u16 streamAddress;
@@ -43,7 +48,7 @@ void DoState(PointerWrap &p)
 		  ResetDecoding();
 }
 
-void DecodePrimitiveStream(u32 iBufferSize)
+static void DecodePrimitiveStream(u32 iBufferSize)
 {
 	u32 vertexSize = vertexLoader.GetVertexSize();
 
@@ -62,9 +67,11 @@ void DecodePrimitiveStream(u32 iBufferSize)
 	}
 	else
 	{
+		g_PipelineState.SetReadPosition(g_VideoData.GetReadPosition());
 		while (streamSize > 0 && iBufferSize >= vertexSize)
 		{
 			vertexLoader.LoadVertex();
+			g_VideoData.ReadSkip(vertexSize);
 			iBufferSize -= vertexSize;
 			streamSize--;
 		}
@@ -77,9 +84,9 @@ void DecodePrimitiveStream(u32 iBufferSize)
 	}
 }
 
-void ReadXFData(u32 iBufferSize)
+static void ReadXFData(u32 iBufferSize)
 {
-	_assert_msg_(VIDEO, iBufferSize >= (u32)(streamSize * 4), "Underflow during standard opcode decoding"); 
+	_assert_msg_(VIDEO, iBufferSize >= (u32)(streamSize * 4), "Underflow during standard opcode decoding");
 
 	u32 pData[16];
 	for (int i = 0; i < streamSize; i++)
@@ -90,7 +97,7 @@ void ReadXFData(u32 iBufferSize)
 	ResetDecoding();
 }
 
-void ExecuteDisplayList(u32 addr, u32 count)
+static void ExecuteDisplayList(u32 addr, u32 count)
 {
 	const u8 *videoDataSave = g_VideoData.GetReadPosition();
 
@@ -106,17 +113,16 @@ void ExecuteDisplayList(u32 addr, u32 count)
 		u32 readCount = (u32)(g_VideoData.GetReadPosition() - dlStart);
 		dlStart = g_VideoData.GetReadPosition();
 
-		_assert_msg_(VIDEO, count >= readCount, "Display list underrun"); 
+		_assert_msg_(VIDEO, count >= readCount, "Display list underrun");
 
 		count -= readCount;
 	}
-
 	g_VideoData.SetReadPosition(videoDataSave);
 }
 
-void DecodeStandard(u32 bufferSize)
+static void DecodeStandard(u32 bufferSize)
 {
-	_assert_msg_(VIDEO, CommandRunnable(bufferSize), "Underflow during standard opcode decoding"); 
+	_assert_msg_(VIDEO, CommandRunnable(bufferSize), "Underflow during standard opcode decoding");
 
 	int Cmd = g_VideoData.Read<u8>();
 
@@ -139,29 +145,29 @@ void DecodeStandard(u32 bufferSize)
 		DebugUtil::OnObjectBegin();
 	}
 #endif
-	switch(Cmd)
+	switch (Cmd)
 	{
 	case GX_NOP:
 		break;
 
 	case GX_LOAD_CP_REG: //0x08
-	{
-		u32 SubCmd = g_VideoData.Read<u8>();
-		u32 Value = g_VideoData.Read<u32>();
-		SWLoadCPReg(SubCmd, Value);
-	}
-	break;
+		{
+			u32 SubCmd = g_VideoData.Read<u8>();
+			u32 Value = g_VideoData.Read<u32>();
+			SWLoadCPReg(SubCmd, Value);
+		}
+		break;
 
 	case GX_LOAD_XF_REG:
-	{
-		u32 Cmd2 = g_VideoData.Read<u32>();
-		streamSize = ((Cmd2 >> 16) & 15) + 1;
-		streamAddress = Cmd2 & 0xFFFF;
-		currentFunction = ReadXFData;
-		minCommandSize = streamSize * 4;
-		readOpcode = false;
-	}
-	break;
+		{
+			u32 Cmd2 = g_VideoData.Read<u32>();
+			streamSize = ((Cmd2 >> 16) & 15) + 1;
+			streamAddress = Cmd2 & 0xFFFF;
+			currentFunction = ReadXFData;
+			minCommandSize = streamSize * 4;
+			readOpcode = false;
+		}
+		break;
 
 	case GX_LOAD_INDX_A: //used for position matrices
 		SWLoadIndexedXF(g_VideoData.Read<u32>(), 0xC);
@@ -177,38 +183,38 @@ void DecodeStandard(u32 bufferSize)
 		break;
 
 	case GX_CMD_CALL_DL:
-	{
-		u32 dwAddr = g_VideoData.Read<u32>();
-		u32 dwCount = g_VideoData.Read<u32>();
-		ExecuteDisplayList(dwAddr, dwCount);
-	}
-	break;
+		{
+			u32 dwAddr  = g_VideoData.Read<u32>();
+			u32 dwCount = g_VideoData.Read<u32>();
+			ExecuteDisplayList(dwAddr, dwCount);
+		}
+		break;
 
 	case 0x44:
 		// zelda 4 swords calls it and checks the metrics registers after that
 		break;
 
-	case GX_CMD_INVL_VC:// Invalidate	(vertex cache?)	
-		DEBUG_LOG(VIDEO, "Invalidate	(vertex cache?)");
+	case GX_CMD_INVL_VC:// Invalidate (vertex cache?)
+		DEBUG_LOG(VIDEO, "Invalidate  (vertex cache?)");
 		break;
 
 	case GX_LOAD_BP_REG: //0x61
-	{
-		u32 cmd = g_VideoData.Read<u32>();
-		SWLoadBPReg(cmd);
-	}
-	break;
+		{
+			u32 cmd = g_VideoData.Read<u32>();
+			SWLoadBPReg(cmd);
+		}
+		break;
 
-	// draw primitives 
+	// draw primitives
 	default:
-		if (Cmd & 0x80)
+		if ((Cmd & 0xC0) == 0x80)
 		{
 			u8 vatIndex = Cmd & GX_VAT_MASK;
 			u8 primitiveType = (Cmd & GX_PRIMITIVE_MASK) >> GX_PRIMITIVE_SHIFT;
 			vertexLoader.SetFormat(vatIndex, primitiveType);
 
 			// switch to primitive processing
-			streamSize = g_VideoData.Read<u16>();
+			streamSize = g_VideoData.Read<u16>();			
 			currentFunction = DecodePrimitiveStream;
 			minCommandSize = vertexLoader.GetVertexSize();
 			readOpcode = false;
@@ -247,10 +253,10 @@ bool CommandRunnable(u32 iBufferSize)
 
 	if (readOpcode)
 	{
-		u8 Cmd = g_VideoData.Peek<u8>(0);
+		u8 Cmd = g_VideoData.Peek<u8>();
 		u32 minSize = 1;
 
-		switch(Cmd)
+		switch (Cmd)
 		{
 		case GX_LOAD_CP_REG: //0x08
 			minSize = 6;
@@ -281,9 +287,9 @@ bool CommandRunnable(u32 iBufferSize)
 			minSize = 5;
 			break;
 
-		// draw primitives 
+		// draw primitives
 		default:
-			if (Cmd & 0x80)
+			if ((Cmd & 0xC0) == 0x80)
 				minSize = 3;
 			break;
 		}

@@ -339,7 +339,7 @@ namespace VertexLoaderManager
 		s_VertexLoaders[parameters.vtx_attr_group] = GetOrAddLoader(*parameters.VtxDesc, *parameters.VtxAttr);
 	}
 
-	bool ConvertVertices(const VertexLoaderParameters &parameters, u32 &readsize, u32 &writesize)
+	bool ConvertVertices(VertexLoaderParameters &parameters, u32 &readsize, u32 &writesize)
 	{
 		if (parameters.needloaderrefresh)
 		{
@@ -360,12 +360,13 @@ namespace VertexLoaderManager
 			VertexManager::Flush();
 		}
 		VertexManager::PrepareForAdditionalData(parameters.primitive, parameters.count, nativefmt->GetVertexStride());
+		IndexGenerator::AddIndices(parameters.primitive, parameters.count);
+		parameters.destination = VertexManager::s_pCurBufferPointer;
 		writesize = nativefmt->GetVertexStride() * parameters.count;
 		g_nativeVertexFmt = nativefmt;
 		loader->RunVertices(parameters);
 		ADDSTAT(stats.thisFrame.numPrims, parameters.count);
 		INCSTAT(stats.thisFrame.numPrimitiveJoins);
-		IndexGenerator::AddIndices(parameters.primitive, parameters.count);
 		return true;
 	}
 

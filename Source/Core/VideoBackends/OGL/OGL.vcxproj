@@ -12,8 +12,6 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{1909CD2D-1707-456F-86CA-0DF42A727C99}</ProjectGuid>
-    <RootNamespace>OGL</RootNamespace>
-    <ProjectName>OGL</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Configuration">
@@ -37,12 +35,15 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <ItemGroup>
+    <ClCompile Include="BoundingBox.cpp" />
     <ClCompile Include="FramebufferManager.cpp" />
+    <ClCompile Include="GLExtensions\GLExtensions.cpp" />
+    <ClCompile Include="GLInterface\GLInterface.cpp" />
+    <ClCompile Include="GLInterface\WGL.cpp" />
     <ClCompile Include="GLUtil.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="NativeVertexFormat.cpp" />
     <ClCompile Include="PerfQuery.cpp" />
-    <ClCompile Include="PixelShaderCache.cpp" />
     <ClCompile Include="PostProcessing.cpp" />
     <ClCompile Include="ProgramShaderCache.cpp" />
     <ClCompile Include="RasterFont.cpp" />
@@ -52,11 +53,38 @@
     <ClCompile Include="TextureCache.cpp" />
     <ClCompile Include="TextureConverter.cpp" />
     <ClCompile Include="VertexManager.cpp" />
-    <ClCompile Include="VertexShaderCache.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BoundingBox.h" />
     <ClInclude Include="FramebufferManager.h" />
-    <ClInclude Include="Globals.h" />
+    <ClInclude Include="GLExtensions\ARB_blend_func_extended.h" />
+    <ClInclude Include="GLExtensions\ARB_buffer_storage.h" />
+    <ClInclude Include="GLExtensions\ARB_debug_output.h" />
+    <ClInclude Include="GLExtensions\ARB_draw_elements_base_vertex.h" />
+    <ClInclude Include="GLExtensions\ARB_ES2_compatibility.h" />
+    <ClInclude Include="GLExtensions\ARB_framebuffer_object.h" />
+    <ClInclude Include="GLExtensions\ARB_get_program_binary.h" />
+    <ClInclude Include="GLExtensions\ARB_map_buffer_range.h" />
+    <ClInclude Include="GLExtensions\ARB_sampler_objects.h" />
+    <ClInclude Include="GLExtensions\ARB_sample_shading.h" />
+    <ClInclude Include="GLExtensions\ARB_sync.h" />
+    <ClInclude Include="GLExtensions\ARB_uniform_buffer_object.h" />
+    <ClInclude Include="GLExtensions\ARB_vertex_array_object.h" />
+    <ClInclude Include="GLExtensions\ARB_viewport_array.h" />
+    <ClInclude Include="GLExtensions\GLExtensions.h" />
+    <ClInclude Include="GLExtensions\gl_1_1.h" />
+    <ClInclude Include="GLExtensions\gl_1_2.h" />
+    <ClInclude Include="GLExtensions\gl_1_3.h" />
+    <ClInclude Include="GLExtensions\gl_1_4.h" />
+    <ClInclude Include="GLExtensions\gl_1_5.h" />
+    <ClInclude Include="GLExtensions\gl_2_0.h" />
+    <ClInclude Include="GLExtensions\gl_3_0.h" />
+    <ClInclude Include="GLExtensions\gl_3_1.h" />
+    <ClInclude Include="GLExtensions\gl_3_2.h" />
+    <ClInclude Include="GLExtensions\gl_common.h" />
+    <ClInclude Include="GLExtensions\KHR_debug.h" />
+    <ClInclude Include="GLExtensions\NV_primitive_restart.h" />
+    <ClInclude Include="GLInterface\WGL.h" />
     <ClInclude Include="GLUtil.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="PerfQuery.h" />
@@ -72,17 +100,14 @@
     <ClInclude Include="VideoBackend.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="CMakeLists.txt" />
+    <Text Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(ExternalsDir)wxWidgets3\build\msw\wx_base.vcxproj">
-      <Project>{1C8436C9-DBAF-42BE-83BC-CF3EC9175ABE}</Project>
-    </ProjectReference>
     <ProjectReference Include="$(ExternalsDir)zlib\zlib.vcxproj">
-      <Project>{3E1339F5-9311-4122-9442-369702E8FCAD}</Project>
+      <Project>{ff213b23-2c26-4214-9f88-85271e557e87}</Project>
     </ProjectReference>
     <ProjectReference Include="$(CoreDir)VideoCommon\VideoCommon.vcxproj">
-      <Project>{3E5C4E02-1BA9-4776-BDBE-E3F91FFA34CF}</Project>
+      <Project>{3de9ee35-3e91-4f27-a014-2866ad8c3fe3}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

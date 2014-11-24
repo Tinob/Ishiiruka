@@ -64,8 +64,4 @@ void ResetSetFinish(void);
 void ResetSetToken(void);
 UPEAlphaReadReg GetAlphaReadMode();
 
-// Bounding box functionality. Paper Mario (both) are a couple of the few games that use it.
-extern u16 bbox[4];
-extern bool bbox_active;
-
 } // end of namespace PixelEngine

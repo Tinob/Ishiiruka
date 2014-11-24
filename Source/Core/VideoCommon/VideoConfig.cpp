@@ -213,7 +213,6 @@ void VideoConfig::GameIniLoad()
 	CHECK_SETTING("Video", "PH_ZNear", sPhackvalue[0]);
 	CHECK_SETTING("Video", "PH_ZFar", sPhackvalue[1]);
 	CHECK_SETTING("Video", "ZTPSpeedupHack", bZTPSpeedHack);
-	CHECK_SETTING("Video", "UseBBox", bUseBBox);
 	CHECK_SETTING("Video", "PerfQueriesEnable", bPerfQueriesEnable);
 	CHECK_SETTING("Video", "FullAsyncShaderCompilation", bFullAsyncShaderCompilation);
 	CHECK_SETTING("Video", "WaitForShaderCompilation", bWaitForShaderCompilation);
@@ -228,8 +227,7 @@ void VideoConfig::VerifyValidity()
 	if (iAdapter < 0 || iAdapter > ((int)backend_info.Adapters.size() - 1)) iAdapter = 0;
 	if (iMultisampleMode < 0 || iMultisampleMode >= (int)backend_info.AAModes.size()) iMultisampleMode = 0;
 	if (!backend_info.bSupportsFormatReinterpretation) bEFBEmulateFormatChanges = false;
-	if (!backend_info.bSupportsPixelLighting) bEnablePixelLighting = false;
-	if (backend_info.APIType != API_OPENGL) backend_info.bSupportsGLSLUBO = false;
+	if (!backend_info.bSupportsPixelLighting) bEnablePixelLighting = false;	
 	if (backend_info.APIType == API_OPENGL)
 	{
 		//disable until is properly implemneted

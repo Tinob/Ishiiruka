@@ -6,6 +6,7 @@
 #include "Core/Host.h"
 
 #include "VideoCommon/BPMemory.h"
+#include "VideoCommon/BoundingBox.h"
 #include "VideoCommon/Statistics.h"
 #include "VideoCommon/VertexLoader.h"
 #include "VideoCommon/VertexLoader_Color.h"
@@ -13,7 +14,6 @@
 #include "VideoCommon/VertexLoader_Position.h"
 #include "VideoCommon/VertexLoader_TextCoord.h"
 #include "VideoCommon/VertexLoader_Mtx.h"
-#include "VideoCommon/VertexLoader_BBox.h"
 #include "VideoCommon/VertexLoaderManager.h"
 #include "VideoCommon/VideoConfig.h"
 
@@ -153,6 +153,11 @@ void VertexLoader::CompileVertexTranslator()
 	m_VertexSize = 0;
 	// Reset pipeline
 	m_numPipelineStages = 0;
+
+	// Get the pointer to this vertex's buffer data for the bounding box
+	if (!g_ActiveConfig.backend_info.bSupportsBBox)
+		WriteCall(BoundingBox::SetVertexBufferPosition);
+
 	// Colors
 	const u32 col[2] = { m_VtxDesc.Color0, m_VtxDesc.Color1 };
 	// TextureCoord
@@ -168,8 +173,7 @@ void VertexLoader::CompileVertexTranslator()
 
 	// Position in pc vertex format.
 	int nat_offset = 0;
-	PortableVertexDeclaration vtx_decl;
-	memset(&vtx_decl, 0, sizeof(vtx_decl));
+	memset(&m_vtx_decl, 0, sizeof(m_vtx_decl));
 
 	// Position Matrix Index
 	if (m_VtxDesc.PosMatIdx)
@@ -188,23 +192,14 @@ void VertexLoader::CompileVertexTranslator()
 	if (m_VtxDesc.Tex6MatIdx) { m_VertexSize += 1; components |= VB_HAS_TEXMTXIDX6; WriteCall(Vertexloader_Mtx::TexMtx_ReadDirect_UByte); }
 	if (m_VtxDesc.Tex7MatIdx) { m_VertexSize += 1; components |= VB_HAS_TEXMTXIDX7; WriteCall(Vertexloader_Mtx::TexMtx_ReadDirect_UByte); }
 
-	// Write vertex position loader
-	if (g_ActiveConfig.bUseBBox)
-	{
-		WriteCall(VertexLoader_BBox::UpdateBoundingBoxPrepare);
-		WriteCall(VertexLoader_Position::GetFunction(m_VtxDesc.Position, m_VtxAttr.PosFormat, m_VtxAttr.PosElements));
-		WriteCall(VertexLoader_BBox::UpdateBoundingBox);
-	}
-	else
-	{
-		WriteCall(VertexLoader_Position::GetFunction(m_VtxDesc.Position, m_VtxAttr.PosFormat, m_VtxAttr.PosElements));
-	}
+	WriteCall(VertexLoader_Position::GetFunction(m_VtxDesc.Position, m_VtxAttr.PosFormat, m_VtxAttr.PosElements));
+	
 	m_VertexSize += VertexLoader_Position::GetSize(m_VtxDesc.Position, m_VtxAttr.PosFormat, m_VtxAttr.PosElements);
 	nat_offset += 12;
-	vtx_decl.position.components = 3;
-	vtx_decl.position.enable = true;
-	vtx_decl.position.offset = 0;
-	vtx_decl.position.type = FORMAT_FLOAT;
+	m_vtx_decl.position.components = 3;
+	m_vtx_decl.position.enable = true;
+	m_vtx_decl.position.offset = 0;
+	m_vtx_decl.position.type = FORMAT_FLOAT;
 
 	// Normals
 	if (m_VtxDesc.Normal != NOT_PRESENT)
@@ -217,19 +212,18 @@ void VertexLoader::CompileVertexTranslator()
 
 		if (pFunc == 0)
 		{
-			Host_SysMessage(
-				StringFromFormat("VertexLoader_Normal::GetFunction(%i %i %i %i) returned zero!",
+			PanicAlert("VertexLoader_Normal::GetFunction(%i %i %i %i) returned zero!",
 				m_VtxDesc.Normal, m_VtxAttr.NormalFormat,
-				m_VtxAttr.NormalElements, m_VtxAttr.NormalIndex3).c_str());
+				m_VtxAttr.NormalElements, m_VtxAttr.NormalIndex3);
 		}
 		WriteCall(pFunc);
 
 		for (int i = 0; i < (m_VtxAttr.NormalElements ? 3 : 1); i++)
 		{
-			vtx_decl.normals[i].components = 3;
-			vtx_decl.normals[i].enable = true;
-			vtx_decl.normals[i].offset = nat_offset;
-			vtx_decl.normals[i].type = FORMAT_FLOAT;
+			m_vtx_decl.normals[i].components = 3;
+			m_vtx_decl.normals[i].enable = true;
+			m_vtx_decl.normals[i].offset = nat_offset;
+			m_vtx_decl.normals[i].type = FORMAT_FLOAT;
 			nat_offset += 12;
 		}
 
@@ -287,10 +281,10 @@ void VertexLoader::CompileVertexTranslator()
 		if (col[i] != NOT_PRESENT)
 		{
 			components |= VB_HAS_COL0 << i;
-			vtx_decl.colors[i].components = 4;
-			vtx_decl.colors[i].type = FORMAT_UBYTE;
-			vtx_decl.colors[i].offset = nat_offset;
-			vtx_decl.colors[i].enable = true;
+			m_vtx_decl.colors[i].components = 4;
+			m_vtx_decl.colors[i].type = FORMAT_UBYTE;
+			m_vtx_decl.colors[i].offset = nat_offset;
+			m_vtx_decl.colors[i].enable = true;
 			nat_offset += 4;
 		}
 	}
@@ -313,20 +307,20 @@ void VertexLoader::CompileVertexTranslator()
 
 		if (components & (VB_HAS_TEXMTXIDX0 << i))
 		{
-			vtx_decl.texcoords[i].enable = true;
-			vtx_decl.texcoords[i].offset = nat_offset;
-			vtx_decl.texcoords[i].type = FORMAT_FLOAT;
+			m_vtx_decl.texcoords[i].enable = true;
+			m_vtx_decl.texcoords[i].offset = nat_offset;
+			m_vtx_decl.texcoords[i].type = FORMAT_FLOAT;
 			if (tc[i] != NOT_PRESENT)
 			{
 				// if texmtx is included, texcoord will always be 3 floats, z will be the texmtx index
-				vtx_decl.texcoords[i].components = 3;
+				m_vtx_decl.texcoords[i].components = 3;
 				nat_offset += 12;
 				WriteCall(m_VtxAttr.texCoord[i].Elements ? Vertexloader_Mtx::TexMtx_Write_Float : Vertexloader_Mtx::TexMtx_Write_Float2);
 			}
 			else
 			{
 				components |= VB_HAS_UV0 << i; // have to include since using now
-				vtx_decl.texcoords[i].components = 4;
+				m_vtx_decl.texcoords[i].components = 4;
 				nat_offset += 16; // still include the texture coordinate, but this time as 6 + 2 bytes
 				WriteCall(Vertexloader_Mtx::TexMtx_Write_Float4);
 			}
@@ -335,10 +329,10 @@ void VertexLoader::CompileVertexTranslator()
 		{
 			if (tc[i] != NOT_PRESENT)
 			{
-				vtx_decl.texcoords[i].enable = true;
-				vtx_decl.texcoords[i].offset = nat_offset;
-				vtx_decl.texcoords[i].type = FORMAT_FLOAT;
-				vtx_decl.texcoords[i].components = m_VtxAttr.texCoord[i].Elements ? 2 : 1;
+				m_vtx_decl.texcoords[i].enable = true;
+				m_vtx_decl.texcoords[i].offset = nat_offset;
+				m_vtx_decl.texcoords[i].type = FORMAT_FLOAT;
+				m_vtx_decl.texcoords[i].components = m_VtxAttr.texCoord[i].Elements ? 2 : 1;
 				nat_offset += 4 * (m_VtxAttr.texCoord[i].Elements ? 2 : 1);
 			}
 		}
@@ -362,24 +356,27 @@ void VertexLoader::CompileVertexTranslator()
 			}
 		}
 	}
+	// Update the bounding box
+	if (!g_ActiveConfig.backend_info.bSupportsBBox)
+		WriteCall(BoundingBox::Update);
 
 	if (m_VtxDesc.PosMatIdx)
 	{
 		WriteCall(Vertexloader_Mtx::PosMtx_Write);
-		vtx_decl.posmtx.enable = true;
+		m_vtx_decl.posmtx.enable = true;
 	}
 	else
 	{
 		WriteCall(Vertexloader_Mtx::PosMtxDisabled_Write);
 	}
-	vtx_decl.posmtx.components = 4;
-	vtx_decl.posmtx.offset = nat_offset;
-	vtx_decl.posmtx.type = FORMAT_UBYTE;
+	m_vtx_decl.posmtx.components = 4;
+	m_vtx_decl.posmtx.offset = nat_offset;
+	m_vtx_decl.posmtx.type = FORMAT_UBYTE;
 	nat_offset += 4;
 
 	m_native_stride = nat_offset;
-	vtx_decl.stride = m_native_stride;
-	m_NativeFmt = VertexLoaderManager::GetNativeVertexFormat(vtx_decl, components);
+	m_vtx_decl.stride = m_native_stride;
+	m_NativeFmt = VertexLoaderManager::GetNativeVertexFormat(m_vtx_decl, components);
 }
 
 void VertexLoader::WriteCall(TPipelineFunction func)
@@ -401,7 +398,7 @@ void VertexLoader::RunVertices(const VertexLoaderParameters &parameters)
 	m_VtxAttr.texCoord[5].Frac = vat.g2.Tex5Frac;
 	m_VtxAttr.texCoord[6].Frac = vat.g2.Tex6Frac;
 	m_VtxAttr.texCoord[7].Frac = vat.g2.Tex7Frac;
-	g_PipelineState.bUseBBox = g_ActiveConfig.bUseBBox ? 1 : 0;
+	g_PipelineState.bUseBBox = !g_ActiveConfig.backend_info.bSupportsBBox ? 1 : 0;
 	g_PipelineState.posScale = fractionTable[m_VtxAttr.PosFrac];
 	if (m_NativeFmt->m_components & VB_HAS_UVALL)
 		for (int i = 0; i < 8; i++)
@@ -409,7 +406,8 @@ void VertexLoader::RunVertices(const VertexLoaderParameters &parameters)
 	for (int i = 0; i < 2; i++)
 		g_PipelineState.colElements[i] = m_VtxAttr.color[i].Elements;
 	// Prepare bounding box
-	VertexLoader_BBox::SetPrimitive(parameters.primitive);
+	if (!g_ActiveConfig.backend_info.bSupportsBBox)
+		BoundingBox::Prepare(vat, parameters.primitive, m_VtxDesc, m_vtx_decl);
 	g_PipelineState.count = parameters.count;
 	g_PipelineState.Initialize(parameters.source, parameters.destination);
 	s_CurrentVertexLoader = this;

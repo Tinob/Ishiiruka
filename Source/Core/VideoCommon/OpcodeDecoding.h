@@ -84,6 +84,5 @@ void OpcodeDecoder_Shutdown();
 void ResetStates();
 u32 OpcodeDecoder_Run(const u8* end);
 
-extern DataReader g_VideoData;
 typedef void(*DataReadU32xNfunc)(u32 *buf);
 extern DataReadU32xNfunc DataReadU32xFuncs[16];

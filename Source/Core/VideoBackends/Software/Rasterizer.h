@@ -2,11 +2,11 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _RASTERIZER_H_
-#define _RASTERIZER_H_
+#pragma once
 
-#include "NativeVertexFormat.h"
 #include "Common/ChunkFile.h"
+
+struct OutputVertexData;
 
 namespace Rasterizer
 {
@@ -50,5 +50,3 @@ namespace Rasterizer
 
 	void DoState(PointerWrap &p);
 }
-
-#endif

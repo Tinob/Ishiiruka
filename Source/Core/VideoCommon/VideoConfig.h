@@ -133,7 +133,6 @@ struct VideoConfig final
 	std::string sPhackvalue[2];
 	float fAspectRatioHackW, fAspectRatioHackH;
 	bool bZTPSpeedHack; // The Legend of Zelda: Twilight Princess
-	bool bUseBBox;
 	bool bEnablePixelLighting;
 	bool bHackedBufferUpload;
 	bool bFastDepthCalc;
@@ -164,10 +163,12 @@ struct VideoConfig final
 		bool bSupportsPixelLighting;
 		bool bSupportsPrimitiveRestart;
 		bool bSupportsSeparateAlphaFunction;
-		bool bSupportsGLSLUBO; // needed by PixelShaderGen, so must stay in VideoCommon
+		bool bSupportsBindingLayout; // needed by PixelShaderGen, so must stay in VideoCommon
 		bool bSupportsEarlyZ; // needed by PixelShaderGen, so must stay in VideoCommon
 		bool bNeedBlendIndices; // needed by PixelShaderGen, so must stay in VideoCommon
-		bool  bSupportsExclusiveFullscreen;
+		bool bSupportsOversizedViewports;
+		bool bSupportsExclusiveFullscreen;
+		bool bSupportsBBox;
 	} backend_info;
 
 	// Utility

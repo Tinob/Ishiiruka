@@ -2,124 +2,91 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include "ProgramShaderCache.h"
-#include "VideoCommon/DriverDetails.h"
+#include <string>
+
 #include "Common/MathUtil.h"
-#include "StreamBuffer.h"
+#include "Common/StringUtil.h"
+
+#include "VideoBackends/OGL/ProgramShaderCache.h"
+#include "VideoBackends/OGL/Render.h"
+#include "VideoBackends/OGL/StreamBuffer.h"
+
 #include "VideoCommon/Debugger.h"
-#include "VideoCommon/Statistics.h"
+#include "VideoCommon/DriverDetails.h"
 #include "VideoCommon/ImageWrite.h"
-#include "Render.h"
+#include "VideoCommon/PixelShaderManager.h"
+#include "VideoCommon/Statistics.h"
+#include "VideoCommon/VertexShaderManager.h"
 
 namespace OGL
 {
 
 static const u32 UBO_LENGTH = 32*1024*1024;
 
-GLintptr ProgramShaderCache::s_vs_data_size;
-GLintptr ProgramShaderCache::s_ps_data_size;
-GLintptr ProgramShaderCache::s_vs_data_offset;
-u8 *ProgramShaderCache::s_ubo_buffer;
 u32 ProgramShaderCache::s_ubo_buffer_size;
-bool ProgramShaderCache::s_ubo_dirty;
+s32 ProgramShaderCache::s_ubo_align;
 
 static StreamBuffer *s_buffer;
 static int num_failures = 0;
 
-LinearDiskCache<SHADERUID, u8> g_program_disk_cache;
+static LinearDiskCache<SHADERUID, u8> g_program_disk_cache;
 static GLuint CurrentProgram = 0;
 ProgramShaderCache::PCache ProgramShaderCache::pshaders;
 ProgramShaderCache::PCacheEntry* ProgramShaderCache::last_entry;
 SHADERUID ProgramShaderCache::last_uid;
-UidChecker<PixelShaderUid,ShaderCode> ProgramShaderCache::pixel_uid_checker;
-UidChecker<VertexShaderUid,ShaderCode> ProgramShaderCache::vertex_uid_checker;
+UidChecker<PixelShaderUid, ShaderCode> ProgramShaderCache::pixel_uid_checker;
+UidChecker<VertexShaderUid, ShaderCode> ProgramShaderCache::vertex_uid_checker;
 
 static char s_glsl_header[1024] = "";
 
-const char *UniformNames[NUM_UNIFORMS] =
+static std::string GetGLSLVersionString()
 {
-	// PIXEL SHADER UNIFORMS
-	I_COLORS,
-	I_KCOLORS,
-	I_ALPHA,
-	I_TEXDIMS,
-	I_ZBIAS ,
-	I_INDTEXSCALE ,
-	I_INDTEXMTX,
-	I_FOG,
-	I_PLIGHTS,
-	I_PMATERIALS,
-	// VERTEX SHADER UNIFORMS
-	I_POSNORMALMATRIX,
-	I_PROJECTION ,
-	I_MATERIALS,
-	I_LIGHTS,
-	I_TEXMATRICES,
-	I_TRANSFORMMATRICES ,
-	I_NORMALMATRICES ,
-	I_POSTTRANSFORMMATRICES,
-	I_DEPTHPARAMS,
-};
+	GLSL_VERSION v = g_ogl_config.eSupportedGLSLVersion;
+	switch(v)
+	{
+		case GLSLES_300:
+			return "#version 300 es";
+		case GLSLES_310:
+			return "#version 310 es";
+		case GLSL_130:
+			return "#version 130";
+		case GLSL_140:
+			return "#version 140";
+		case GLSL_150:
+			return "#version 150";
+	}
+	// Shouldn't ever hit this
+	return "#version ERROR";
+}
 
 void SHADER::SetProgramVariables()
 {
-	// glsl shader must be bind to set samplers
-	Bind();
-	
-	// Bind UBO 
-	if (g_ActiveConfig.backend_info.bSupportsGLSLUBO)
+	// Bind UBO and texture samplers
+	if (!g_ActiveConfig.backend_info.bSupportsBindingLayout)
 	{
+		// glsl shader must be bind to set samplers if we don't support binding layout
+		Bind();
+
 		GLint PSBlock_id = glGetUniformBlockIndex(glprogid, "PSBlock");
 		GLint VSBlock_id = glGetUniformBlockIndex(glprogid, "VSBlock");
-		
-		if(PSBlock_id != -1)
+
+		if (PSBlock_id != -1)
 			glUniformBlockBinding(glprogid, PSBlock_id, 1);
-		if(VSBlock_id != -1)
+		if (VSBlock_id != -1)
 			glUniformBlockBinding(glprogid, VSBlock_id, 2);
-	}
-	
-	// UBO workaround
-	for (int a = 0; a < NUM_UNIFORMS; ++a)
-	{
-		UniformLocations[a] = glGetUniformLocation(glprogid, UniformNames[a]);
-		UniformSize[a] = 0;
-		if(g_ActiveConfig.backend_info.bSupportsGLSLUBO)
-			break;
-	}
-	if(!g_ActiveConfig.backend_info.bSupportsGLSLUBO)
-	{
-		int max_uniforms = 0;
-		char name[50];
-		int size;
-		
-		glGetProgramiv(glprogid, GL_ACTIVE_UNIFORMS, &max_uniforms);
-		for(int i=0; i<max_uniforms; i++)
+
+		// Bind Texture Sampler
+		for (int a = 0; a <= 9; ++a)
 		{
-			glGetActiveUniform(glprogid, i, sizeof(name), NULL, &size, NULL, name);
-			for (int a = 0; a < NUM_UNIFORMS; ++a)
-			{
-				if(strstr(name, UniformNames[a]))
-				{
-					UniformSize[a] = size;
-					break;
-				}
-			}
+			char name[8];
+			snprintf(name, 8, "samp%d", a);
+
+			// Still need to get sampler locations since we aren't binding them statically in the shaders
+			int loc = glGetUniformLocation(glprogid, name);
+			if (loc != -1)
+				glUniform1i(loc, a);
 		}
 	}
-
-
-	// Bind Texture Sampler
-	for (int a = 0; a <= 9; ++a)
-	{
-		char name[8];
-		snprintf(name, 8, "samp%d", a);
-		
-		// Still need to get sampler locations since we aren't binding them statically in the shaders
-		int loc = glGetUniformLocation(glprogid, name);
-		if (loc != -1)
-			glUniform1i(loc, a);
-	}
-
 }
 
 void SHADER::SetProgramBindings()
@@ -129,24 +96,23 @@ void SHADER::SetProgramBindings()
 		// So we do support extended blending
 		// So we need to set a few more things here.
 		// Bind our out locations
-#ifndef USE_GLES3
 		glBindFragDataLocationIndexed(glprogid, 0, 0, "ocol0");
 		glBindFragDataLocationIndexed(glprogid, 0, 1, "ocol1");
-#endif
 	}
 	// Need to set some attribute locations
 	glBindAttribLocation(glprogid, SHADER_POSITION_ATTRIB, "rawpos");
-	
+
 	glBindAttribLocation(glprogid, SHADER_POSMTX_ATTRIB,   "fposmtx");
-	
+
 	glBindAttribLocation(glprogid, SHADER_COLOR0_ATTRIB,   "color0");
 	glBindAttribLocation(glprogid, SHADER_COLOR1_ATTRIB,   "color1");
-	
+
 	glBindAttribLocation(glprogid, SHADER_NORM0_ATTRIB,    "rawnorm0");
 	glBindAttribLocation(glprogid, SHADER_NORM1_ATTRIB,    "rawnorm1");
 	glBindAttribLocation(glprogid, SHADER_NORM2_ATTRIB,    "rawnorm2");
-	
-	for(int i=0; i<8; i++) {
+
+	for (int i = 0; i < 8; i++)
+	{
 		char attrib_name[8];
 		snprintf(attrib_name, 8, "tex%d", i);
 		glBindAttribLocation(glprogid, SHADER_TEXTURE0_ATTRIB+i, attrib_name);
@@ -155,45 +121,45 @@ void SHADER::SetProgramBindings()
 
 void SHADER::Bind()
 {
-	if(CurrentProgram != glprogid)
+	if (CurrentProgram != glprogid)
 	{
+		INCSTAT(stats.thisFrame.numShaderChanges);
 		glUseProgram(glprogid);
 		CurrentProgram = glprogid;
 	}
 }
 
-
-void ProgramShaderCache::SetMultiPSConstant4fv(unsigned int offset, const float *f, unsigned int count)
-{
-	s_ubo_dirty = true;
-	memcpy(s_ubo_buffer+(offset*4*sizeof(float)), f, count*4*sizeof(float));
-}
-
-void ProgramShaderCache::SetMultiVSConstant4fv(unsigned int offset, const float *f, unsigned int count)
-{
-	s_ubo_dirty = true;
-	memcpy(s_ubo_buffer+(offset*4*sizeof(float))+s_vs_data_offset, f, count*4*sizeof(float));
-}
-
 void ProgramShaderCache::UploadConstants()
 {
-	if(s_ubo_dirty) {
-		s_buffer->Alloc(s_ubo_buffer_size);
-		size_t offset = s_buffer->Upload(s_ubo_buffer, s_ubo_buffer_size);
-		glBindBufferRange(GL_UNIFORM_BUFFER, 1, s_buffer->getBuffer(), offset, s_ps_data_size);
-		glBindBufferRange(GL_UNIFORM_BUFFER, 2, s_buffer->getBuffer(), offset + s_vs_data_offset, s_vs_data_size);
-		s_ubo_dirty = false;
-		
+	if (PixelShaderManager::IsDirty() || VertexShaderManager::IsDirty())
+	{
+		auto buffer = s_buffer->Map(s_ubo_buffer_size, s_ubo_align);
+
+		memcpy(buffer.first,
+			PixelShaderManager::GetBuffer(), PixelShaderManager::ConstantBufferSize * sizeof(float));
+
+		memcpy(buffer.first + ROUND_UP(PixelShaderManager::ConstantBufferSize * sizeof(float), s_ubo_align),
+			VertexShaderManager::GetBuffer(), VertexShaderManager::ConstantBufferSize* sizeof(float));
+
+		s_buffer->Unmap(s_ubo_buffer_size);
+		glBindBufferRange(GL_UNIFORM_BUFFER, 1, s_buffer->m_buffer, buffer.second,
+			PixelShaderManager::ConstantBufferSize * sizeof(float));
+		glBindBufferRange(GL_UNIFORM_BUFFER, 2, s_buffer->m_buffer, buffer.second + ROUND_UP(PixelShaderManager::ConstantBufferSize * sizeof(float), s_ubo_align),
+			VertexShaderManager::ConstantBufferSize* sizeof(float));
+
+		PixelShaderManager::Clear();
+		VertexShaderManager::Clear();
+
 		ADDSTAT(stats.thisFrame.bytesUniformStreamed, s_ubo_buffer_size);
 	}
 }
 
-GLuint ProgramShaderCache::GetCurrentProgram(void)
+GLuint ProgramShaderCache::GetCurrentProgram()
 {
 	return CurrentProgram;
 }
 
-SHADER* ProgramShaderCache::SetShader ( DSTALPHA_MODE dstAlphaMode, u32 components )
+SHADER* ProgramShaderCache::SetShader(DSTALPHA_MODE dstAlphaMode, u32 components)
 {
 	SHADERUID uid;
 	GetShaderId(&uid, dstAlphaMode, components);
@@ -240,43 +206,45 @@ SHADER* ProgramShaderCache::SetShader ( DSTALPHA_MODE dstAlphaMode, u32 componen
 	}
 
 #if defined(_DEBUG) || defined(DEBUGFAST)
-	if (g_ActiveConfig.iLog & CONF_SAVESHADERS) {
+	if (g_ActiveConfig.iLog & CONF_SAVESHADERS)
+	{
 		static int counter = 0;
-		char szTemp[MAX_PATH];
-		sprintf(szTemp, "%svs_%04i.txt", File::GetUserPath(D_DUMP_IDX).c_str(), counter++);
-		SaveData(szTemp, vcode.GetBuffer());
-		sprintf(szTemp, "%sps_%04i.txt", File::GetUserPath(D_DUMP_IDX).c_str(), counter++);
-		SaveData(szTemp, pcode.GetBuffer());
+		std::string filename =  StringFromFormat("%svs_%04i.txt", File::GetUserPath(D_DUMP_IDX).c_str(), counter++);
+		SaveData(filename, vcode.GetBuffer());
+
+		filename = StringFromFormat("%sps_%04i.txt", File::GetUserPath(D_DUMP_IDX).c_str(), counter++);
+		SaveData(filename, pcode.GetBuffer());
 	}
 #endif
 
-	if (!CompileShader(newentry.shader, vcode.GetBuffer(), pcode.GetBuffer())) {
+	if (!CompileShader(newentry.shader, vcode.GetBuffer(), pcode.GetBuffer()))
+	{
 		GFX_DEBUGGER_PAUSE_AT(NEXT_ERROR, true);
-		return NULL;
+		return nullptr;
 	}
 
 	INCSTAT(stats.numPixelShadersCreated);
 	SETSTAT(stats.numPixelShadersAlive, pshaders.size());
 	GFX_DEBUGGER_PAUSE_AT(NEXT_PIXEL_SHADER_CHANGE, true);
-	
+
 	last_entry->shader.Bind();
 	return &last_entry->shader;
 }
 
-bool ProgramShaderCache::CompileShader ( SHADER& shader, const char* vcode, const char* pcode )
+bool ProgramShaderCache::CompileShader(SHADER& shader, const char* vcode, const char* pcode)
 {
 	GLuint vsid = CompileSingleShader(GL_VERTEX_SHADER, vcode);
 	GLuint psid = CompileSingleShader(GL_FRAGMENT_SHADER, pcode);
 
-	if(!vsid || !psid)
+	if (!vsid || !psid)
 	{
 		glDeleteShader(vsid);
 		glDeleteShader(psid);
 		return false;
 	}
-	
-	GLuint pid = shader.glprogid = glCreateProgram();;
-	
+
+	GLuint pid = shader.glprogid = glCreateProgram();
+
 	glAttachShader(pid, vsid);
 	glAttachShader(pid, psid);
 
@@ -284,13 +252,13 @@ bool ProgramShaderCache::CompileShader ( SHADER& shader, const char* vcode, cons
 		glProgramParameteri(pid, GL_PROGRAM_BINARY_RETRIEVABLE_HINT, GL_TRUE);
 
 	shader.SetProgramBindings();
-	
+
 	glLinkProgram(pid);
-	
+
 	// original shaders aren't needed any more
 	glDeleteShader(vsid);
 	glDeleteShader(psid);
-	
+
 	GLint linkStatus;
 	glGetProgramiv(pid, GL_LINK_STATUS, &linkStatus);
 	GLsizei length = 0;
@@ -301,21 +269,23 @@ bool ProgramShaderCache::CompileShader ( SHADER& shader, const char* vcode, cons
 		GLchar* infoLog = new GLchar[length];
 		glGetProgramInfoLog(pid, length, &charsWritten, infoLog);
 		ERROR_LOG(VIDEO, "Program info log:\n%s", infoLog);
-		char szTemp[MAX_PATH];
-		sprintf(szTemp, "%sbad_p_%d.txt", File::GetUserPath(D_DUMP_IDX).c_str(), num_failures++);
+
+		std::string filename = StringFromFormat("%sbad_p_%d.txt", File::GetUserPath(D_DUMP_IDX).c_str(), num_failures++);
 		std::ofstream file;
-		OpenFStream(file, szTemp, std::ios_base::out);
+		OpenFStream(file, filename, std::ios_base::out);
 		file << s_glsl_header << vcode << s_glsl_header << pcode << infoLog;
 		file.close();
-		
-		if(linkStatus != GL_TRUE)
+
+		if (linkStatus != GL_TRUE)
+		{
 			PanicAlert("Failed to link shaders!\nThis usually happens when trying to use Dolphin with an outdated GPU or integrated GPU like the Intel GMA series.\n\nIf you're sure this is Dolphin's error anyway, post the contents of %s along with this error message at the forums.\n\nDebug info (%s, %s, %s):\n%s",
-				szTemp,
+				filename.c_str(),
 				g_ogl_config.gl_vendor,
 				g_ogl_config.gl_renderer,
 				g_ogl_config.gl_version,
 				infoLog);
-		
+		}
+
 		delete [] infoLog;
 	}
 	if (linkStatus != GL_TRUE)
@@ -329,17 +299,17 @@ bool ProgramShaderCache::CompileShader ( SHADER& shader, const char* vcode, cons
 	}
 
 	shader.SetProgramVariables();
-	
+
 	return true;
 }
 
-GLuint ProgramShaderCache::CompileSingleShader (GLuint type, const char* code )
+GLuint ProgramShaderCache::CompileSingleShader(GLuint type, const char* code)
 {
 	GLuint result = glCreateShader(type);
 
 	const char *src[] = {s_glsl_header, code};
-	
-	glShaderSource(result, 2, src, NULL);
+
+	glShaderSource(result, 2, src, nullptr);
 	glCompileShader(result);
 	GLint compileStatus;
 	glGetShaderiv(result, GL_COMPILE_STATUS, &compileStatus);
@@ -354,27 +324,28 @@ GLuint ProgramShaderCache::CompileSingleShader (GLuint type, const char* code )
 		GLsizei charsWritten;
 		GLchar* infoLog = new GLchar[length];
 		glGetShaderInfoLog(result, length, &charsWritten, infoLog);
-		ERROR_LOG(VIDEO, "PS Shader info log:\n%s", infoLog);
-		char szTemp[MAX_PATH];
-		sprintf(szTemp, 
-			"%sbad_%s_%04i.txt", 
-			File::GetUserPath(D_DUMP_IDX).c_str(), 
-			type==GL_VERTEX_SHADER ? "vs" : "ps", 
+		ERROR_LOG(VIDEO, "%s Shader info log:\n%s", type==GL_VERTEX_SHADER ? "VS" : "PS", infoLog);
+
+		std::string filename = StringFromFormat("%sbad_%s_%04i.txt",
+			File::GetUserPath(D_DUMP_IDX).c_str(),
+			type==GL_VERTEX_SHADER ? "vs" : "ps",
 			num_failures++);
 		std::ofstream file;
-		OpenFStream(file, szTemp, std::ios_base::out);
+		OpenFStream(file, filename, std::ios_base::out);
 		file << s_glsl_header << code << infoLog;
 		file.close();
-		
-		if(compileStatus != GL_TRUE)
+
+		if (compileStatus != GL_TRUE)
+		{
 			PanicAlert("Failed to compile %s shader!\nThis usually happens when trying to use Dolphin with an outdated GPU or integrated GPU like the Intel GMA series.\n\nIf you're sure this is Dolphin's error anyway, post the contents of %s along with this error message at the forums.\n\nDebug info (%s, %s, %s):\n%s",
-				type==GL_VERTEX_SHADER ? "vertex" : "pixel",
-				szTemp,
+				type == GL_VERTEX_SHADER ? "vertex" : "pixel",
+				filename.c_str(),
 				g_ogl_config.gl_vendor,
 				g_ogl_config.gl_renderer,
 				g_ogl_config.gl_version,
 				infoLog);
-		
+		}
+
 		delete[] infoLog;
 	}
 	if (compileStatus != GL_TRUE)
@@ -386,7 +357,7 @@ GLuint ProgramShaderCache::CompileSingleShader (GLuint type, const char* code )
 		glDeleteShader(result);
 		return 0;
 	}
-	(void)GL_REPORT_ERROR();
+
 	return result;
 }
 
@@ -407,42 +378,31 @@ void ProgramShaderCache::GetShaderId(SHADERUID* uid, DSTALPHA_MODE dstAlphaMode,
 	}
 }
 
-ProgramShaderCache::PCacheEntry ProgramShaderCache::GetShaderProgram(void)
+ProgramShaderCache::PCacheEntry ProgramShaderCache::GetShaderProgram()
 {
 	return *last_entry;
 }
 
-void ProgramShaderCache::Init(void)
+void ProgramShaderCache::Init()
 {
 	// We have to get the UBO alignment here because
 	// if we generate a buffer that isn't aligned
 	// then the UBO will fail.
-	if (g_ActiveConfig.backend_info.bSupportsGLSLUBO)
-	{
-		GLint Align;
-		glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &Align);
+	glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &s_ubo_align);
 
-		s_ps_data_size = C_PENVCONST_END * sizeof(float) * 4;
-		s_vs_data_size = C_VENVCONST_END * sizeof(float) * 4;
-		s_vs_data_offset = ROUND_UP(s_ps_data_size, Align);
-		s_ubo_buffer_size = ROUND_UP(s_ps_data_size, Align) + ROUND_UP(s_vs_data_size, Align);
+	s_ubo_buffer_size = ROUND_UP(PixelShaderManager::ConstantBufferSize * sizeof(float), s_ubo_align) + ROUND_UP(VertexShaderManager::ConstantBufferSize * sizeof(float), s_ubo_align);
 
-		// We multiply by *4*4 because we need to get down to basic machine units.
-		// So multiply by four to get how many floats we have from vec4s
-		// Then once more to get bytes
-		s_buffer = new StreamBuffer(GL_UNIFORM_BUFFER, UBO_LENGTH);
-		
-		s_ubo_buffer = new u8[s_ubo_buffer_size];
-		memset(s_ubo_buffer, 0, s_ubo_buffer_size);
-		s_ubo_dirty = true;
-	}
+	// We multiply by *4*4 because we need to get down to basic machine units.
+	// So multiply by four to get how many floats we have from vec4s
+	// Then once more to get bytes
+	s_buffer = StreamBuffer::Create(GL_UNIFORM_BUFFER, UBO_LENGTH);
 
 	// Read our shader cache, only if supported
-	if (g_ogl_config.bSupportsGLSLCache)
+	if (g_ogl_config.bSupportsGLSLCache && !g_Config.bEnableShaderDebugging)
 	{
 		GLint Supported;
 		glGetIntegerv(GL_NUM_PROGRAM_BINARY_FORMATS, &Supported);
-		if(!Supported)
+		if (!Supported)
 		{
 			ERROR_LOG(VIDEO, "GL_ARB_get_program_binary is supported, but no binary format is known. So disable shader cache.");
 			g_ogl_config.bSupportsGLSLCache = false;
@@ -450,44 +410,48 @@ void ProgramShaderCache::Init(void)
 		else
 		{
 			if (!File::Exists(File::GetUserPath(D_SHADERCACHE_IDX)))
-				File::CreateDir(File::GetUserPath(D_SHADERCACHE_IDX).c_str());
-		
-			char cache_filename[MAX_PATH];
-			sprintf(cache_filename, "%sogl-%s-shaders.cache", File::GetUserPath(D_SHADERCACHE_IDX).c_str(),
+				File::CreateDir(File::GetUserPath(D_SHADERCACHE_IDX));
+
+			std::string cache_filename = StringFromFormat("%sogl-%s-shaders.cache", File::GetUserPath(D_SHADERCACHE_IDX).c_str(),
 				SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID.c_str());
-			
+
 			ProgramShaderCacheInserter inserter;
 			g_program_disk_cache.OpenAndRead(cache_filename, inserter);
 		}
 		SETSTAT(stats.numPixelShadersAlive, pshaders.size());
 	}
-	
+
 	CreateHeader();
-	
+
 	CurrentProgram = 0;
-	last_entry = NULL;
+	last_entry = nullptr;
 }
 
-void ProgramShaderCache::Shutdown(void)
+void ProgramShaderCache::Shutdown()
 {
 	// store all shaders in cache on disk
-	if (g_ogl_config.bSupportsGLSLCache)
+	if (g_ogl_config.bSupportsGLSLCache && !g_Config.bEnableShaderDebugging)
 	{
-		PCache::iterator iter = pshaders.begin();
-		for (; iter != pshaders.end(); ++iter)
+		for (auto& entry : pshaders)
 		{
-			if(iter->second.in_cache) continue;
-			
+			if (entry.second.in_cache)
+			{
+				continue;
+			}
+
 			GLint binary_size;
-			glGetProgramiv(iter->second.shader.glprogid, GL_PROGRAM_BINARY_LENGTH, &binary_size);
-			if(!binary_size) continue;
-			
+			glGetProgramiv(entry.second.shader.glprogid, GL_PROGRAM_BINARY_LENGTH, &binary_size);
+			if (!binary_size)
+			{
+				continue;
+			}
+
 			u8 *data = new u8[binary_size+sizeof(GLenum)];
 			u8 *binary = data + sizeof(GLenum);
 			GLenum *prog_format = (GLenum*)data;
-			glGetProgramBinary(iter->second.shader.glprogid, binary_size, NULL, prog_format, binary);
-			
-			g_program_disk_cache.Append(iter->first, data, binary_size+sizeof(GLenum));
+			glGetProgramBinary(entry.second.shader.glprogid, binary_size, nullptr, prog_format, binary);
+
+			g_program_disk_cache.Append(entry.first, data, binary_size+sizeof(GLenum));
 			delete [] data;
 		}
 
@@ -496,74 +460,78 @@ void ProgramShaderCache::Shutdown(void)
 	}
 
 	glUseProgram(0);
-	
-	PCache::iterator iter = pshaders.begin();
-	for (; iter != pshaders.end(); ++iter)
-		iter->second.Destroy();
+
+	for (auto& entry : pshaders)
+	{
+		entry.second.Destroy();
+	}
 	pshaders.clear();
 
 	pixel_uid_checker.Invalidate();
 	vertex_uid_checker.Invalidate();
 
-	if (g_ActiveConfig.backend_info.bSupportsGLSLUBO)
-	{
-		delete s_buffer;
-		s_buffer = 0;
-		delete [] s_ubo_buffer;
-		s_ubo_buffer = 0;
-	}
+	delete s_buffer;
+	s_buffer = nullptr;
 }
 
-void ProgramShaderCache::CreateHeader ( void )
+void ProgramShaderCache::CreateHeader()
 {
 	GLSL_VERSION v = g_ogl_config.eSupportedGLSLVersion;
-	snprintf(s_glsl_header, sizeof(s_glsl_header), 
-		"#version %s\n"
-		"%s\n" // default precision
+	snprintf(s_glsl_header, sizeof(s_glsl_header),
+		"%s\n"
 		"%s\n" // ubo
 		"%s\n" // early-z
-		
-		"\n"// A few required defines and ones that will make our lives a lot easier
-		"#define ATTRIN in\n"
-		"#define ATTROUT out\n"
-		"#define VARYIN %s in\n"
-		"#define VARYOUT %s out\n"
+		"%s\n" // 420pack
+		"%s\n" // msaa
+		"%s\n" // sample shading
+		"%s\n" // Sampler binding
+
+		// Precision defines for GLSL ES
+		"%s\n"
+		"%s\n"
 
 		// Silly differences
 		"#define float2 vec2\n"
 		"#define float3 vec3\n"
 		"#define float4 vec4\n"
+		"#define uint2 uvec2\n"
+		"#define uint3 uvec3\n"
+		"#define uint4 uvec4\n"
+		"#define int2 ivec2\n"
+		"#define int3 ivec3\n"
+		"#define int4 ivec4\n"
 
 		// hlsl to glsl function translation
 		"#define frac fract\n"
 		"#define lerp mix\n"
 
-		// texture2d hack
-		"%s\n"
-		"%s\n"
-		"%s\n"
-				
-		, v==GLSLES3 ? "300 es" : v==GLSL_130 ? "130" : v==GLSL_140 ? "140" : "150"
-		, v==GLSLES3 ? "precision highp float;" : ""
-		, g_ActiveConfig.backend_info.bSupportsGLSLUBO && v<GLSL_140 ? "#extension GL_ARB_uniform_buffer_object : enable" : ""
+		// Terrible hacks, look at DriverDetails.h
+		"%s\n" // replace textureSize as constant
+		"%s\n" // wipe out all centroid usages
+
+		, GetGLSLVersionString().c_str()
+		, v<GLSL_140 ? "#extension GL_ARB_uniform_buffer_object : enable" : ""
 		, g_ActiveConfig.backend_info.bSupportsEarlyZ ? "#extension GL_ARB_shader_image_load_store : enable" : ""
-		
-		, DriverDetails::HasBug(DriverDetails::BUG_BROKENCENTROID) ? "" : "centroid"
-		, DriverDetails::HasBug(DriverDetails::BUG_BROKENCENTROID) ? "" : "centroid"
-		
-		, v==GLSLES3 ? "" : v<=GLSL_130 ? "#extension GL_ARB_texture_rectangle : enable" : "#define texture2DRect texture"
-		, v==GLSLES3 ? "#define texture2DRect(samp, uv)  texelFetch(samp, ivec2(floor(uv)), 0)" : ""
-		, v==GLSLES3 ? "#define sampler2DRect sampler2D" : ""
+		, (g_ActiveConfig.backend_info.bSupportsBindingLayout && v < GLSLES_310) ? "#extension GL_ARB_shading_language_420pack : enable" : ""
+		, (g_ogl_config.bSupportsMSAA && v < GLSL_150) ? "#extension GL_ARB_texture_multisample : enable" : ""
+		, (g_ogl_config.bSupportSampleShading) ? "#extension GL_ARB_sample_shading : enable" : ""
+		, g_ActiveConfig.backend_info.bSupportsBindingLayout ? "#define SAMPLER_BINDING(x) layout(binding = x)" : "#define SAMPLER_BINDING(x)"
+
+		, v>=GLSLES_300 ? "precision highp float;" : ""
+		, v>=GLSLES_300 ? "precision highp int;" : ""
+
+		, DriverDetails::HasBug(DriverDetails::BUG_BROKENTEXTURESIZE) ? "#define textureSize(x, y) ivec2(1, 1)" : ""
+		, DriverDetails::HasBug(DriverDetails::BUG_BROKENCENTROID) ? "#define centroid" : ""
 	);
 }
 
 
-void ProgramShaderCache::ProgramShaderCacheInserter::Read ( const SHADERUID& key, const u8* value, u32 value_size )
+void ProgramShaderCache::ProgramShaderCacheInserter::Read(const SHADERUID& key, const u8* value, u32 value_size)
 {
 	const u8 *binary = value+sizeof(GLenum);
 	GLenum *prog_format = (GLenum*)value;
 	GLint binary_size = value_size-sizeof(GLenum);
-	
+
 	PCacheEntry entry;
 	entry.in_cache = 1;
 	entry.shader.glprogid = glCreateProgram();
@@ -578,7 +546,9 @@ void ProgramShaderCache::ProgramShaderCacheInserter::Read ( const SHADERUID& key
 		entry.shader.SetProgramVariables();
 	}
 	else
+	{
 		glDeleteProgram(entry.shader.glprogid);
+	}
 }
 
 

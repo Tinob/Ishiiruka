@@ -2,17 +2,20 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include "VideoCommon/VideoCommon.h"
-#include "VideoCommon/TextureDecoder.h"
-
-#include "BPMemLoader.h"
-#include "EfbCopy.h"
-#include "Rasterizer.h"
-#include "SWPixelEngine.h"
-#include "Tev.h"
-#include "Core/HW/Memmap.h"
-#include "Core/Core.h"
 #include "Core/ConfigManager.h"
+#include "Core/Core.h"
+#include "Core/HW/Memmap.h"
+
+#include "VideoBackends/Software/BPMemLoader.h"
+#include "VideoBackends/Software/EfbCopy.h"
+#include "VideoBackends/Software/EfbInterface.h"
+#include "VideoBackends/Software/Rasterizer.h"
+#include "VideoBackends/Software/Tev.h"
+
+#include "VideoCommon/BoundingBox.h"
+#include "VideoCommon/PixelEngine.h"
+#include "VideoCommon/TextureDecoder.h"
+#include "VideoCommon/VideoCommon.h"
 
 
 void InitBPMemory()
@@ -50,7 +53,7 @@ void SWBPWritten(int address, int newvalue)
 		switch (bpmem.drawdone & 0xFF)
 		{
 		case 0x02:
-			SWPixelEngine::SetFinish(); // may generate interrupt
+			PixelEngine::SetFinish(); // may generate interrupt
 			DEBUG_LOG(VIDEO, "GXSetDrawDone SetPEFinish (value: 0x%02X)", (bpmem.drawdone & 0xFFFF));
 			break;
 
@@ -61,59 +64,43 @@ void SWBPWritten(int address, int newvalue)
 		break;
 	case BPMEM_PE_TOKEN_ID: // Pixel Engine Token ID
 		DEBUG_LOG(VIDEO, "SetPEToken 0x%04x", (bpmem.petoken & 0xFFFF));
-		SWPixelEngine::SetToken(static_cast<u16>(bpmem.petokenint & 0xFFFF), false);
+		PixelEngine::SetToken(static_cast<u16>(bpmem.petokenint & 0xFFFF), false);
 		break;
 	case BPMEM_PE_TOKEN_INT_ID: // Pixel Engine Interrupt Token ID
 		DEBUG_LOG(VIDEO, "SetPEToken + INT 0x%04x", (bpmem.petokenint & 0xFFFF));
-		SWPixelEngine::SetToken(static_cast<u16>(bpmem.petokenint & 0xFFFF), true);
+		PixelEngine::SetToken(static_cast<u16>(bpmem.petokenint & 0xFFFF), true);
 		break;
 	case BPMEM_TRIGGER_EFB_COPY:
 		EfbCopy::CopyEfb();
 		break;
 	case BPMEM_CLEARBBOX1:
-		SWPixelEngine::pereg.boxRight = newvalue >> 10;
-		SWPixelEngine::pereg.boxLeft = newvalue & 0x3ff;
+		BoundingBox::coords[BoundingBox::LEFT] = newvalue >> 10;
+		BoundingBox::coords[BoundingBox::RIGHT] = newvalue & 0x3ff;
 		break;
 	case BPMEM_CLEARBBOX2:
-		SWPixelEngine::pereg.boxBottom = newvalue >> 10;
-		SWPixelEngine::pereg.boxTop = newvalue & 0x3ff;
+		BoundingBox::coords[BoundingBox::TOP] = newvalue >> 10;
+		BoundingBox::coords[BoundingBox::BOTTOM] = newvalue & 0x3ff;
 		break;
 	case BPMEM_CLEAR_PIXEL_PERF:
 		// TODO: I didn't test if the value written to this register affects the amount of cleared registers
-		SWPixelEngine::pereg.perfZcompInputZcomplocLo = 0;
-		SWPixelEngine::pereg.perfZcompInputZcomplocHi = 0;
-		SWPixelEngine::pereg.perfZcompOutputZcomplocLo = 0;
-		SWPixelEngine::pereg.perfZcompOutputZcomplocHi = 0;
-		SWPixelEngine::pereg.perfZcompInputLo = 0;
-		SWPixelEngine::pereg.perfZcompInputHi = 0;
-		SWPixelEngine::pereg.perfZcompOutputLo = 0;
-		SWPixelEngine::pereg.perfZcompOutputHi = 0;
-		SWPixelEngine::pereg.perfBlendInputLo = 0;
-		SWPixelEngine::pereg.perfBlendInputHi = 0;
-		SWPixelEngine::pereg.perfEfbCopyClocksLo = 0;
-		SWPixelEngine::pereg.perfEfbCopyClocksHi = 0;
+		memset(EfbInterface::perf_values, 0, sizeof(EfbInterface::perf_values));
 		break;
 	case BPMEM_LOADTLUT0: // This one updates bpmem.tlutXferSrc, no need to do anything here.
 		break;
 	case BPMEM_LOADTLUT1: // Load a Texture Look Up Table
-		{
-			u32 tlutTMemAddr = (newvalue & 0x3FF) << 9;
-			u32 tlutXferCount = (newvalue & 0x1FFC00) >> 5; 
+	{
+		u32 tlutTMemAddr = (newvalue & 0x3FF) << 9;
+		u32 tlutXferCount = (newvalue & 0x1FFC00) >> 5;
+		u32 addr = bpmem.tmem_config.tlut_src << 5;
 
-			u8 *ptr = 0;
+		// The GameCube ignores the upper bits of this address. Some games (WW, MKDD) set them.
+		if (!SConfig::GetInstance().m_LocalCoreStartupParameter.bWii)
+			addr = addr & 0x01FFFFFF;
 
-			// TODO - figure out a cleaner way.
-			if (SConfig::GetInstance().m_LocalCoreStartupParameter.bWii)
-				ptr = Memory::GetPointer(bpmem.tmem_config.tlut_src << 5);
-			else
-				ptr = Memory::GetPointer((bpmem.tmem_config.tlut_src & 0xFFFFF) << 5);
+		Memory::CopyFromEmu(texMem + tlutTMemAddr, addr, tlutXferCount);
 
-			if (ptr)
-				memcpy_gc(texMem + tlutTMemAddr, ptr, tlutXferCount);
-			else
-				PanicAlert("Invalid palette pointer %08x %08x %08x", bpmem.tmem_config.tlut_src, bpmem.tmem_config.tlut_src << 5, (bpmem.tmem_config.tlut_src & 0xFFFFF)<< 5);
-			break;
-		}
+		break;
+	}
 
 	case BPMEM_PRELOAD_MODE:
 		if (newvalue != 0)
@@ -122,7 +109,7 @@ void SWBPWritten(int address, int newvalue)
 			// NOTE: libogc's implementation of GX_PreloadEntireTexture seems flawed, so it's not necessarily a good reference for RE'ing this feature.
 
 			BPS_TmemConfig& tmem_cfg = bpmem.tmem_config;
-			u8* src_ptr = Memory::GetPointer(tmem_cfg.preload_addr << 5); // TODO: Should we add mask here on GC?
+			u32 src_addr = tmem_cfg.preload_addr << 5; // TODO: Should we add mask here on GC?
 			u32 size = tmem_cfg.preload_tile_info.count * TMEM_LINE_SIZE;
 			u32 tmem_addr_even = tmem_cfg.preload_tmem_even * TMEM_LINE_SIZE;
 
@@ -131,17 +118,19 @@ void SWBPWritten(int address, int newvalue)
 				if (tmem_addr_even + size > TMEM_SIZE)
 					size = TMEM_SIZE - tmem_addr_even;
 
-				memcpy(texMem + tmem_addr_even, src_ptr, size);
+				Memory::CopyFromEmu(texMem + tmem_addr_even, src_addr, size);
 			}
 			else // RGBA8 tiles (and CI14, but that might just be stupid libogc!)
 			{
+				u8* src_ptr = Memory::GetPointer(src_addr);
+
 				// AR and GB tiles are stored in separate TMEM banks => can't use a single memcpy for everything
 				u32 tmem_addr_odd = tmem_cfg.preload_tmem_odd * TMEM_LINE_SIZE;
 
 				for (unsigned int i = 0; i < tmem_cfg.preload_tile_info.count; ++i)
 				{
 					if (tmem_addr_even + TMEM_LINE_SIZE > TMEM_SIZE ||
-						tmem_addr_odd  + TMEM_LINE_SIZE > TMEM_SIZE)
+						tmem_addr_odd + TMEM_LINE_SIZE > TMEM_SIZE)
 						break;
 
 					memcpy(texMem + tmem_addr_even, src_ptr, TMEM_LINE_SIZE);
@@ -152,31 +141,37 @@ void SWBPWritten(int address, int newvalue)
 				}
 			}
 		}
- 		break;
+		break;
 
-	case BPMEM_TEV_COLOR_RA:   // Reg 1
-	case BPMEM_TEV_COLOR_RA + 2: // Reg 2
-	case BPMEM_TEV_COLOR_RA + 4: // Reg 3
-	case BPMEM_TEV_COLOR_RA + 6: // Reg 4
-		{
-			int regNum = (address >> 1 ) & 0x3;
-			Rasterizer::SetTevReg(regNum, Tev::ALP_C, bpmem.tevregs[regNum].type_ra > 0, (s16)bpmem.tevregs[regNum].alpha); // A
-			Rasterizer::SetTevReg(regNum, Tev::RED_C, bpmem.tevregs[regNum].type_ra > 0, (s16)bpmem.tevregs[regNum].red); // R
+	case BPMEM_TEV_COLOR_RA:
+	case BPMEM_TEV_COLOR_RA + 2:
+	case BPMEM_TEV_COLOR_RA + 4:
+	case BPMEM_TEV_COLOR_RA + 6:
+	{
+		int regNum = (address >> 1) & 0x3;
+		TevReg& reg = bpmem.tevregs[regNum];
+		bool is_konst = reg.type_ra != 0;
 
-			break;
-		}
+		Rasterizer::SetTevReg(regNum, Tev::ALP_C, is_konst, static_cast<s16>(reg.alpha));
+		Rasterizer::SetTevReg(regNum, Tev::RED_C, is_konst, static_cast<s16>(reg.red));
 
-	case BPMEM_TEV_COLOR_BG:   // Reg 1
-	case BPMEM_TEV_COLOR_BG + 2: // Reg 2
-	case BPMEM_TEV_COLOR_BG + 4: // Reg 3
-	case BPMEM_TEV_COLOR_BG + 6: // Reg 4
-		{
-			int regNum = (address >> 1 ) & 0x3;			
-			Rasterizer::SetTevReg(regNum, Tev::GRN_C, bpmem.tevregs[regNum].type_bg > 0, (s16)bpmem.tevregs[regNum].green); // G
-			Rasterizer::SetTevReg(regNum, Tev::BLU_C, bpmem.tevregs[regNum].type_bg > 0, (s16)bpmem.tevregs[regNum].blue); // B
+		break;
+	}
 
-			break;
-		}
+	case BPMEM_TEV_COLOR_BG:
+	case BPMEM_TEV_COLOR_BG + 2:
+	case BPMEM_TEV_COLOR_BG + 4:
+	case BPMEM_TEV_COLOR_BG + 6:
+	{
+		int regNum = (address >> 1) & 0x3;
+		TevReg& reg = bpmem.tevregs[regNum];
+		bool is_konst = reg.type_bg != 0;
+
+		Rasterizer::SetTevReg(regNum, Tev::GRN_C, is_konst, static_cast<s16>(reg.green));
+		Rasterizer::SetTevReg(regNum, Tev::BLU_C, is_konst, static_cast<s16>(reg.blue));
+
+		break;
+	}
 
 	}
 }

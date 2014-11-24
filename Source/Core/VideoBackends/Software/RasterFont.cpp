@@ -2,12 +2,10 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include "VideoBackends/OGL/GLUtil.h"
-
 #include <string.h>
 
-#include "RasterFont.h"
-// globals
+#include "VideoBackends/OGL/GLUtil.h"
+#include "VideoBackends/Software/RasterFont.h"
 
 const GLubyte rasters[][13] = {
 	{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
@@ -150,20 +148,18 @@ void RasterFont::printString(const char *s, double x, double y, double z)
 
 	// go to the right spot
 	glRasterPos3d(x, y, z);
-	GL_REPORT_ERRORD();
 
 	glPushAttrib (GL_LIST_BIT);
 	glListBase(fontOffset);
 	glCallLists((GLsizei)strlen(s2), GL_UNSIGNED_BYTE, (GLubyte *) s2);
-	GL_REPORT_ERRORD();
+
 	glPopAttrib();
-	GL_REPORT_ERRORD();
 }
 
 void RasterFont::printCenteredString(const char *s, double y, int screen_width, double z)
 {
 	int length = (int)strlen(s);
-	int x = (int)(screen_width/2.0 - (length/2.0)*char_width);
+	int x = (int)(screen_width/2.0 - (length/2.0) * CHAR_WIDTH);
 	printString(s, x, y, z);
 }
 
@@ -179,7 +175,7 @@ void RasterFont::printMultilineText(const char *text, double start_x, double sta
 		{
 			*t = 0;
 			printString(temp, x, y, z);
-			y -= char_height * 2.0f / bbHeight;
+			y -= CHAR_HEIGHT * 2.0f / bbHeight;
 			x = start_x;
 			t = temp;
 		}
@@ -189,12 +185,12 @@ void RasterFont::printMultilineText(const char *text, double start_x, double sta
 		}
 		else if (*text == '\t')
 		{
-			//todo: add tabs every something like 4*char_width
+			//todo: add tabs every something like 4 * CHAR_WIDTH
 			*t = 0;
 			int cpos = (int)strlen(temp);
 			int newpos = (cpos + 4) & (~3);
 			printString(temp, x, y, z);
-			x = start_x + (char_width*newpos) * 2.0f / bbWidth;
+			x = start_x + (CHAR_WIDTH * newpos) * 2.0f / bbWidth;
 			t = temp;
 			*t++ = ' ';
 		}

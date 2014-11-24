@@ -10,6 +10,7 @@
 #include <cstring>
 #include <functional>
 
+#include "Common/BitSet.h"
 #include "Common/CodeBlock.h"
 #include "Common/CommonTypes.h"
 
@@ -302,7 +303,7 @@ private:
 	void WriteFloatLoadStore(int bits, FloatOp op, FloatOp op_80b, OpArg arg);
 	void WriteNormalOp(XEmitter *emit, int bits, NormalOp op, const OpArg &a1, const OpArg &a2);
 
-	void ABI_CalculateFrameSize(u32 mask, size_t rsp_alignment, size_t needed_frame_size, size_t* shadowp, size_t* subtractionp, size_t* xmm_offsetp);
+	void ABI_CalculateFrameSize(BitSet32 mask, size_t rsp_alignment, size_t needed_frame_size, size_t* shadowp, size_t* subtractionp, size_t* xmm_offsetp);
 
 protected:
 	inline void Write8(u8 value)   {*code++ = value;}
@@ -384,7 +385,7 @@ public:
 	void SetJumpTarget(const FixupBranch &branch);
 
 	void SETcc(CCFlags flag, OpArg dest);
-	// Note: CMOV brings small if any benefit on current cpus.
+	// Note: CMOV brings small if any benefit on current CPUs.
 	void CMOVcc(int bits, X64Reg dest, OpArg src, CCFlags flag);
 
 	// Fences
@@ -870,8 +871,8 @@ public:
 	void ABI_CallFunctionCCCP(const void *func, u32 param1, u32 param2,u32 param3, void *param4);
 	void ABI_CallFunctionPC(const void *func, void *param1, u32 param2);
 	void ABI_CallFunctionPPC(const void *func, void *param1, void *param2, u32 param3);
-	void ABI_CallFunctionAC(const void *func, const OpArg &arg1, u32 param2);
-	void ABI_CallFunctionA(const void *func, const OpArg &arg1);
+	void ABI_CallFunctionAC(int bits, const void *func, const OpArg &arg1, u32 param2);
+	void ABI_CallFunctionA(int bits, const void *func, const OpArg &arg1);
 
 	// Pass a register as a parameter.
 	void ABI_CallFunctionR(const void *func, X64Reg reg1);
@@ -883,8 +884,8 @@ public:
 	// Saves/restores the registers and adjusts the stack to be aligned as
 	// required by the ABI, where the previous alignment was as specified.
 	// Push returns the size of the shadow space, i.e. the offset of the frame.
-	size_t ABI_PushRegistersAndAdjustStack(u32 mask, size_t rsp_alignment, size_t needed_frame_size = 0);
-	void ABI_PopRegistersAndAdjustStack(u32 mask, size_t rsp_alignment, size_t needed_frame_size = 0);
+	size_t ABI_PushRegistersAndAdjustStack(BitSet32 mask, size_t rsp_alignment, size_t needed_frame_size = 0);
+	void ABI_PopRegistersAndAdjustStack(BitSet32 mask, size_t rsp_alignment, size_t needed_frame_size = 0);
 
 	inline int ABI_GetNumXMMRegs() { return 16; }
 

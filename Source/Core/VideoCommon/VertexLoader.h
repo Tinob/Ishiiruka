@@ -4,7 +4,6 @@
 // Modified for Ishiiruka By Tino
 #pragma once
 #include "VideoCommon/NativeVertexFormat.h"
-#include "VideoCommon/OpcodeDecoding.h"
 
 struct VertexLoaderParameters
 {
@@ -63,7 +62,7 @@ private:
 	// PC vertex format
 	NativeVertexFormat *m_NativeFmt;
 	s32 m_native_stride;
-
+	PortableVertexDeclaration m_vtx_decl;
 	// GC vertex format
 	TVtxAttr m_VtxAttr;  // VAT decoded into easy format
 	TVtxDesc m_VtxDesc;  // Not really used currently - or well it is, but could be easily avoided.

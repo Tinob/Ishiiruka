@@ -9,6 +9,7 @@
 #ifdef __APPLE__
 #include <xlocale.h>
 #endif
+#include "VideoCommon/BoundingBox.h"
 #include "VideoCommon/PixelShaderGen.h"
 #include "VideoCommon/XFMemory.h"  // for texture projection mode
 #include "VideoCommon/VideoConfig.h"
@@ -285,8 +286,8 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 		if (ApiType == API_OPENGL)
 		{
 			// Declare samplers
-			for (u32 i = 0; i < 8; ++i)
-				out.Write("uniform sampler2D samp%d;\n", i);
+			for (int i = 0; i < 8; ++i)
+				out.Write("SAMPLER_BINDING(%d) uniform sampler2D samp%d;\n", i, i);
 		}
 		else
 		{
@@ -305,29 +306,37 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 		}
 		out.Write("\n");
 
-		if (g_ActiveConfig.backend_info.bSupportsGLSLUBO)
-			out.Write("layout(std140) uniform PSBlock {\n");
+		if (ApiType == API_OPENGL)
+			out.Write("layout(std140%s) uniform PSBlock {\n", g_ActiveConfig.backend_info.bSupportsBindingLayout ? ", binding = 1" : "");
 
-		DeclareUniform<T, ApiType>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_COLORS, "float4", I_COLORS "[4]");
-		DeclareUniform<T, ApiType>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_KCOLORS, "float4", I_KCOLORS "[4]");
-		DeclareUniform<T, ApiType>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_ALPHA, "float4", I_ALPHA);
-		DeclareUniform<T, ApiType>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_TEXDIMS, "float4", I_TEXDIMS "[8]");
-		DeclareUniform<T, ApiType>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_ZBIAS, "float4", I_ZBIAS "[2]");
-		DeclareUniform<T, ApiType>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_INDTEXSCALE, "float4", I_INDTEXSCALE "[2]");
-		DeclareUniform<T, ApiType>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_INDTEXMTX, "float4", I_INDTEXMTX "[6]");
-		DeclareUniform<T, ApiType>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_FOG, "float4", I_FOG "[3]");
+		DeclareUniform<T, ApiType>(out, C_COLORS, "float4", I_COLORS "[4]");
+		DeclareUniform<T, ApiType>(out, C_KCOLORS, "float4", I_KCOLORS "[4]");
+		DeclareUniform<T, ApiType>(out, C_ALPHA, "float4", I_ALPHA);
+		DeclareUniform<T, ApiType>(out, C_TEXDIMS, "float4", I_TEXDIMS "[8]");
+		DeclareUniform<T, ApiType>(out, C_ZBIAS, "float4", I_ZBIAS "[2]");
+		DeclareUniform<T, ApiType>(out, C_INDTEXSCALE, "float4", I_INDTEXSCALE "[2]");
+		DeclareUniform<T, ApiType>(out, C_INDTEXMTX, "float4", I_INDTEXMTX "[6]");
+		DeclareUniform<T, ApiType>(out, C_FOG, "float4", I_FOG "[3]");
 
 		if (enable_pl)
 		{
-			DeclareUniform<T, ApiType>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_PLIGHTS, "float4", I_PLIGHTS "[40]");
-			DeclareUniform<T, ApiType>(out, g_ActiveConfig.backend_info.bSupportsGLSLUBO, C_PMATERIALS, "float4", I_PMATERIALS "[4]");
+			DeclareUniform<T, ApiType>(out, C_PLIGHTS, "float4", I_PLIGHTS "[40]");
+			DeclareUniform<T, ApiType>(out, C_PMATERIALS, "float4", I_PMATERIALS "[4]");
 		}
 
-		if (g_ActiveConfig.backend_info.bSupportsGLSLUBO)
+		if (ApiType == API_OPENGL)
 			out.Write("};\n");
 
 		if (ApiType == API_OPENGL)
 		{
+			if (g_ActiveConfig.backend_info.bSupportsBBox)
+			{
+				out.Write(
+					"layout(std140, binding = 3) buffer BBox {\n"
+					"\tint4 bbox_data;\n"
+					"};\n"
+					);
+			}
 			out.Write("out vec4 ocol0;\n");
 			if (dstAlphaMode == DSTALPHA_DUAL_SOURCE_BLEND)
 				out.Write("out vec4 ocol1;\n");
@@ -335,8 +344,8 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 			if (per_pixel_depth)
 				out.Write("#define depth gl_FragDepth\n");
 
-			out.Write("VARYIN float4 colors_02;\n");
-			out.Write("VARYIN float4 colors_12;\n");
+			out.Write("centroid in float4 colors_02;\n");
+			out.Write("centroid in float4 colors_12;\n");
 
 			// compute window position if needed because binding semantic WPOS is not widely supported
 			// Let's set up attributes
@@ -344,12 +353,12 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 			{
 				for (u32 i = 0; i < numTexgen; ++i)
 				{
-					out.Write("VARYIN float3 uv%d_2;\n", i);
+					out.Write("centroid in float3 uv%d_2;\n", i);
 				}
-				out.Write("VARYIN float4 clipPos_2;\n");
+				out.Write("centroid in float4 clipPos_2;\n");
 				if (enable_pl)
 				{
-					out.Write("VARYIN float4 Normal_2;\n");
+					out.Write("centroid in float4 Normal_2;\n");
 				}
 			}
 			else
@@ -359,14 +368,14 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 				{
 					for (u32 i = 0; i < 8; ++i)
 					{
-						out.Write("VARYIN float4 uv%d_2;\n", i);
+						out.Write("centroid in float4 uv%d_2;\n", i);
 					}
 				}
 				else
 				{
 					for (u32 i = 0; i < numTexgen; ++i)
 					{
-						out.Write("VARYIN float%d uv%d_2;\n", i < 4 ? 4 : 3, i);
+						out.Write("centroid in float%d uv%d_2;\n", i < 4 ? 4 : 3, i);
 					}
 				}
 				out.Write("float4 clipPos;\n");
@@ -379,6 +388,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 				out.Write("layout(early_fragment_tests) in;\n");
 			}
 			out.Write("void main()\n{\n");
+			out.Write("\tfloat4 rawpos = gl_FragCoord;\n");
 		}
 		else
 		{
@@ -460,7 +470,6 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 		{
 			// On Mali, global variables must be initialized as constants.
 			// This is why we initialize these variables locally instead.
-			out.Write("float4 rawpos = gl_FragCoord;\n");
 			out.Write("float4 colors_0 = colors_02;\n");
 			out.Write("float4 colors_1 = colors_12;\n");
 			// compute window position if needed because binding semantic WPOS is not widely supported
@@ -728,6 +737,16 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 
 	if (Write_Code)
 	{
+		if (g_ActiveConfig.backend_info.bSupportsBBox && BoundingBox::active)
+		{
+			uid_data.bounding_box = true;
+			out.Write(
+				"\tif(bbox_data.x > int(gl_FragCoord.x)) atomicMin(bbox_data.x, int(gl_FragCoord.x));\n"
+				"\tif(bbox_data.y < int(gl_FragCoord.x)) atomicMax(bbox_data.y, int(gl_FragCoord.x));\n"
+				"\tif(bbox_data.z > int(gl_FragCoord.y)) atomicMin(bbox_data.z, int(gl_FragCoord.y));\n"
+				"\tif(bbox_data.w < int(gl_FragCoord.y)) atomicMax(bbox_data.w, int(gl_FragCoord.y));\n"
+				);
+		}
 		out.Write("}\n");
 		if (codebuffer[PIXELSHADERGEN_BUFFERSIZE - 1] != 0x7C)
 			PanicAlert("PixelShader generator - buffer too small, canary has been eaten!");

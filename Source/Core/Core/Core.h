@@ -23,6 +23,8 @@ extern bool g_aspect_wide;
 namespace Core
 {
 
+extern bool g_want_determinism;
+
 bool GetIsFramelimiterTempDisabled();
 void SetIsFramelimiterTempDisabled(bool disable);
 
@@ -43,9 +45,9 @@ void Shutdown();
 std::string StopMessage(bool, std::string);
 
 bool IsRunning();
-bool IsRunningAndStarted(); // is running and the cpu loop has been entered
-bool IsRunningInCurrentThread(); // this tells us whether we are running in the cpu thread.
-bool IsCPUThread(); // this tells us whether we are the cpu thread.
+bool IsRunningAndStarted(); // is running and the CPU loop has been entered
+bool IsRunningInCurrentThread(); // this tells us whether we are running in the CPU thread.
+bool IsCPUThread(); // this tells us whether we are the CPU thread.
 bool IsGPUThread();
 
 void SetState(EState _State);
@@ -78,5 +80,8 @@ bool PauseAndLock(bool doLock, bool unpauseOnUnlock=true);
 // for calling back into UI code without introducing a dependency on it in core
 typedef void(*StoppedCallbackFunc)(void);
 void SetOnStoppedCallback(StoppedCallbackFunc callback);
+
+// Run on the GUI thread when the factors change.
+void UpdateWantDeterminism(bool initial = false);
 
 }  // namespace

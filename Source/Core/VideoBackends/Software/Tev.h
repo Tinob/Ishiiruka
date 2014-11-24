@@ -2,14 +2,14 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _TEV_H_
-#define _TEV_H_
+#pragma once
 
-#include "BPMemLoader.h"
-#include "Common/ChunkFile.h"
+#include "VideoBackends/Software/BPMemLoader.h"
+
+class PointerWrap;
 
 class Tev
-{ 
+{
 	struct InputRegType
 	{
 		unsigned a : 8;
@@ -49,7 +49,7 @@ class Tev
 	{
 		BLU_INP,
 		GRN_INP,
-		RED_INP		
+		RED_INP
 	};
 
 	enum BufferBase
@@ -61,10 +61,10 @@ class Tev
 
 	void SetRasColor(int colorChan, int swaptable);
 
-	void DrawColorRegular(TevStageCombiner::ColorCombiner &cc);
-	void DrawColorCompare(TevStageCombiner::ColorCombiner &cc);
-	void DrawAlphaRegular(TevStageCombiner::AlphaCombiner &ac);
-	void DrawAlphaCompare(TevStageCombiner::AlphaCombiner &ac);
+	void DrawColorRegular(TevStageCombiner::ColorCombiner& cc, const InputRegType inputs[4]);
+	void DrawColorCompare(TevStageCombiner::ColorCombiner& cc, const InputRegType inputs[4]);
+	void DrawAlphaRegular(TevStageCombiner::AlphaCombiner& ac, const InputRegType inputs[4]);
+	void DrawAlphaCompare(TevStageCombiner::AlphaCombiner& ac, const InputRegType inputs[4]);
 
 	void Indirect(unsigned int stageNum, s32 s, s32 t);
 
@@ -77,15 +77,19 @@ public:
 	s32 TextureLod[16];
 	bool TextureLinear[16];
 
+	enum
+	{
+		ALP_C,
+		BLU_C,
+		GRN_C,
+		RED_C
+	};
+
 	void Init();
 
 	void Draw();
 
 	void SetRegColor(int reg, int comp, bool konst, s16 color);
 
-	enum { ALP_C, BLU_C, GRN_C, RED_C };
-
 	void DoState(PointerWrap &p);
 };
-
-#endif

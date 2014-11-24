@@ -13,7 +13,6 @@ class PointerWrap;
 
 extern bool g_bSkipCurrentFrame;
 
-
 void Fifo_Init();
 void Fifo_Shutdown();
 

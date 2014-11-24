@@ -2,6 +2,9 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
+#include <QApplication>
+#include <QFile>
+
 #include "Common/FileUtil.h"
 #include "Core/ConfigManager.h"
 
@@ -18,15 +21,20 @@ void Resources::Init()
 	QString dir = QString::fromStdString(File::GetSysDirectory() + "Resources/");
 
 	m_regions.resize(DiscIO::IVolume::NUMBER_OF_COUNTRIES);
-	m_regions[DiscIO::IVolume::COUNTRY_EUROPE].load(dir + SL("Flag_Europe.png"));
-	m_regions[DiscIO::IVolume::COUNTRY_FRANCE].load(dir + SL("Flag_France.png"));
-	m_regions[DiscIO::IVolume::COUNTRY_RUSSIA].load(dir + SL("Flag_Unknown.png")); // TODO
-	m_regions[DiscIO::IVolume::COUNTRY_USA].load(dir + SL("Flag_USA.png"));
 	m_regions[DiscIO::IVolume::COUNTRY_JAPAN].load(dir + SL("Flag_Japan.png"));
-	m_regions[DiscIO::IVolume::COUNTRY_KOREA].load(dir + SL("Flag_Korea.png"));
+	m_regions[DiscIO::IVolume::COUNTRY_EUROPE].load(dir + SL("Flag_Europe.png"));
+	m_regions[DiscIO::IVolume::COUNTRY_USA].load(dir + SL("Flag_USA.png"));
+
+	m_regions[DiscIO::IVolume::COUNTRY_AUSTRALIA].load(dir + SL("Flag_Australia.png"));
+	m_regions[DiscIO::IVolume::COUNTRY_FRANCE].load(dir + SL("Flag_France.png"));
+	m_regions[DiscIO::IVolume::COUNTRY_GERMANY].load(dir + SL("Flag_Germany.png"));
+	m_regions[DiscIO::IVolume::COUNTRY_INTERNATIONAL].load(dir + SL("Flag_Europe.png")); // Uses European flag as a placeholder
 	m_regions[DiscIO::IVolume::COUNTRY_ITALY].load(dir + SL("Flag_Italy.png"));
+	m_regions[DiscIO::IVolume::COUNTRY_KOREA].load(dir + SL("Flag_Korea.png"));
+	m_regions[DiscIO::IVolume::COUNTRY_NETHERLANDS].load(dir + SL("Flag_Netherlands.png"));
+	m_regions[DiscIO::IVolume::COUNTRY_RUSSIA].load(dir + SL("Flag_Russia.png"));
+	m_regions[DiscIO::IVolume::COUNTRY_SPAIN].load(dir + SL("Flag_Spain.png"));
 	m_regions[DiscIO::IVolume::COUNTRY_TAIWAN].load(dir + SL("Flag_Taiwan.png"));
-	m_regions[DiscIO::IVolume::COUNTRY_SDK].load(dir + SL("Flag_SDK.png"));
 	m_regions[DiscIO::IVolume::COUNTRY_UNKNOWN].load(dir + SL("Flag_Unknown.png"));
 
 	m_platforms.resize(3);
@@ -47,26 +55,40 @@ void Resources::Init()
 	UpdatePixmaps();
 }
 
+// Wrapper for GetImageFilename() so you don't have to to call it directly
+#define GIFN(file) GetImageFilename(SL(file), dir)
+
 void Resources::UpdatePixmaps()
 {
 	QString dir = QString::fromStdString(File::GetThemeDir(SConfig::GetInstance().m_LocalCoreStartupParameter.theme_name));
-	m_pixmaps[TOOLBAR_OPEN].load(dir + SL("open.png"));
-	m_pixmaps[TOOLBAR_REFRESH].load(dir + SL("refresh.png"));
-	m_pixmaps[TOOLBAR_BROWSE].load(dir + SL("browse.png"));
-	m_pixmaps[TOOLBAR_PLAY].load(dir + SL("play.png"));
-	m_pixmaps[TOOLBAR_STOP].load(dir + SL("stop.png"));
-	m_pixmaps[TOOLBAR_PAUSE].load(dir + SL("pause.png"));
-	m_pixmaps[TOOLBAR_FULLSCREEN].load(dir + SL("fullscreen.png"));
-	m_pixmaps[TOOLBAR_SCREENSHOT].load(dir + SL("screenshot.png"));
-	m_pixmaps[TOOLBAR_CONFIGURE].load(dir + SL("config.png"));
-	m_pixmaps[TOOLBAR_PLUGIN_GFX].load(dir + SL("graphics.png"));
-	m_pixmaps[TOOLBAR_PLUGIN_DSP].load(dir + SL("dsp.png"));
-	m_pixmaps[TOOLBAR_PLUGIN_GCPAD].load(dir + SL("gcpad.png"));
-	m_pixmaps[TOOLBAR_PLUGIN_WIIMOTE].load(dir + SL("wiimote.png"));
-	m_pixmaps[TOOLBAR_HELP].load(dir + SL("nobanner.png")); // TODO
+	m_pixmaps[TOOLBAR_OPEN].load(GIFN("open"));
+	m_pixmaps[TOOLBAR_REFRESH].load(GIFN("refresh"));
+	m_pixmaps[TOOLBAR_BROWSE].load(GIFN("browse"));
+	m_pixmaps[TOOLBAR_PLAY].load(GIFN("play"));
+	m_pixmaps[TOOLBAR_STOP].load(GIFN("stop"));
+	m_pixmaps[TOOLBAR_PAUSE].load(GIFN("pause"));
+	m_pixmaps[TOOLBAR_FULLSCREEN].load(GIFN("fullscreen"));
+	m_pixmaps[TOOLBAR_SCREENSHOT].load(GIFN("screenshot"));
+	m_pixmaps[TOOLBAR_CONFIGURE].load(GIFN("config"));
+	m_pixmaps[TOOLBAR_PLUGIN_GFX].load(GIFN("graphics"));
+	m_pixmaps[TOOLBAR_PLUGIN_DSP].load(GIFN("dsp"));
+	m_pixmaps[TOOLBAR_PLUGIN_GCPAD].load(GIFN("gcpad"));
+	m_pixmaps[TOOLBAR_PLUGIN_WIIMOTE].load(GIFN("wiimote"));
+	m_pixmaps[TOOLBAR_HELP].load(GIFN("nobanner")); // TODO
 	// TODO: toolbar[MEMCARD];
 	// TODO: toolbar[HOTKEYS];
-	m_pixmaps[BANNER_MISSING].load(dir + SL("nobanner.png"));
+	m_pixmaps[BANNER_MISSING].load(GIFN("nobanner"));
+}
+
+QString Resources::GetImageFilename(QString name, QString dir)
+{
+	if (qApp->devicePixelRatio() >= 2)
+	{
+		QString fileName = name.prepend(dir).append(SL("@2x.png"));
+		if (QFile::exists(fileName))
+			return fileName;
+	}
+	return name.prepend(dir).append(SL(".png"));
 }
 
 QPixmap& Resources::GetRegionPixmap(DiscIO::IVolume::ECountry region)

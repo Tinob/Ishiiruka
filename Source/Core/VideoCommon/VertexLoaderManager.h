@@ -13,7 +13,7 @@ namespace VertexLoaderManager
 	void Init();
 	void Shutdown();
 	int GetVertexSize(const VertexLoaderParameters &parameters);
-	bool ConvertVertices(const VertexLoaderParameters &parameters, u32 &readsize, u32 &writesize);
+	bool ConvertVertices(VertexLoaderParameters &parameters, u32 &readsize, u32 &writesize);
 	void GetVertexSizeAndComponents(const VertexLoaderParameters &parameters, u32 &vertexsize, u32 &components);
 
 	// For debugging

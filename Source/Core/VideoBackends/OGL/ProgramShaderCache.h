@@ -2,16 +2,13 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef PROGRAM_SHADER_CACHE_H_
-#define PROGRAM_SHADER_CACHE_H_
-
-#include "GLUtil.h"
-
-#include "VideoCommon/PixelShaderGen.h"
-#include "VideoCommon/VertexShaderGen.h"
+#pragma once
 
 #include "Common/LinearDiskCache.h"
 #include "Core/ConfigManager.h"
+#include "VideoBackends/OGL/GLUtil.h"
+#include "VideoCommon/PixelShaderGen.h"
+#include "VideoCommon/VertexShaderGen.h"
 
 namespace OGL
 {
@@ -28,9 +25,15 @@ public:
 
 	bool operator <(const SHADERUID& r) const
 	{
-		if(puid < r.puid) return true;
-		if(r.puid < puid) return false;
-		if(vuid < r.vuid) return true;
+		if (puid < r.puid)
+			return true;
+
+		if (r.puid < puid)
+			return false;
+
+		if (vuid < r.vuid)
+			return true;
+
 		return false;
 	}
 
@@ -41,9 +44,6 @@ public:
 };
 
 
-const int NUM_UNIFORMS = 19;
-extern const char *UniformNames[NUM_UNIFORMS];
-
 struct SHADER
 {
 	SHADER() : glprogid(0) { }
@@ -53,11 +53,9 @@ struct SHADER
 		glprogid = 0;
 	}
 	GLuint glprogid; // opengl program id
-	
+
 	std::string strvprog, strpprog;
-	GLint UniformLocations[NUM_UNIFORMS];
-	u32 UniformSize[NUM_UNIFORMS];
-	
+
 	void SetProgramVariables();
 	void SetProgramBindings();
 	void Bind();
@@ -80,27 +78,24 @@ public:
 
 	typedef std::map<SHADERUID, PCacheEntry> PCache;
 
-	static PCacheEntry GetShaderProgram(void);
-	static GLuint GetCurrentProgram(void);
+	static PCacheEntry GetShaderProgram();
+	static GLuint GetCurrentProgram();
 	static SHADER* SetShader(DSTALPHA_MODE dstAlphaMode, u32 components);
 	static void GetShaderId(SHADERUID *uid, DSTALPHA_MODE dstAlphaMode, u32 components);
-	
+
 	static bool CompileShader(SHADER &shader, const char* vcode, const char* pcode);
 	static GLuint CompileSingleShader(GLuint type, const char *code);
-
-	static void SetMultiPSConstant4fv(unsigned int offset, const float *f, unsigned int count);
-	static void SetMultiVSConstant4fv(unsigned int offset, const float *f, unsigned int count);
 	static void UploadConstants();
 
-	static void Init(void);
-	static void Shutdown(void);
-	static void CreateHeader(void);
+	static void Init();
+	static void Shutdown();
+	static void CreateHeader();
 
 private:
 	class ProgramShaderCacheInserter : public LinearDiskCacheReader<SHADERUID, u8>
 	{
 	public:
-		void Read(const SHADERUID &key, const u8 *value, u32 value_size);
+		void Read(const SHADERUID &key, const u8 *value, u32 value_size) override;
 	};
 
 	static PCache pshaders;
@@ -110,13 +105,8 @@ private:
 	static UidChecker<PixelShaderUid,ShaderCode> pixel_uid_checker;
 	static UidChecker<VertexShaderUid,ShaderCode> vertex_uid_checker;
 
-	static GLintptr s_vs_data_size;
-	static GLintptr s_ps_data_size;
-	static GLintptr s_vs_data_offset;
-	static u8 *s_ubo_buffer;
 	static u32 s_ubo_buffer_size;
-	static bool s_ubo_dirty;
+	static s32 s_ubo_align;
 };
 
 }  // namespace OGL
-#endif

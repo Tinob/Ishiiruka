@@ -1,63 +1,61 @@
+#pragma once
 
-#ifndef SW_VIDEO_BACKEND_H_
-#define SW_VIDEO_BACKEND_H_
-
+#include <string>
 #include "VideoCommon/VideoBackendBase.h"
+
+namespace MMIO { class Mapping; }
 
 namespace SW
 {
 
 class VideoSoftware : public VideoBackend
 {
-	bool Initialize(void *&);
-	void Shutdown();
+	bool Initialize(void *window_handle) override;
+	void Shutdown() override;
 
-	std::string GetName();
+	std::string GetName() const override;
+	std::string GetDisplayName() const override;
 
-	void EmuStateChange(EMUSTATE_CHANGE newState);
+	void EmuStateChange(EMUSTATE_CHANGE newState) override;
 
-	void RunLoop(bool enable);
+	void RunLoop(bool enable) override;
 
-	void ShowConfig(void* parent);
+	void ShowConfig(void* parent) override;
 
-	void Video_Prepare();
-	void Video_Cleanup();
+	void Video_Prepare() override;
+	void Video_Cleanup() override;
 
-	void Video_EnterLoop();
-	void Video_ExitLoop();
-	void Video_BeginField(u32, u32, u32, u32);
-	void Video_EndField();
-	
-	u32 Video_AccessEFB(EFBAccessType, u32, u32, u32);
-	u32 Video_GetQueryResult(PerfQueryType type);
+	void Video_EnterLoop() override;
+	void Video_ExitLoop() override;
+	void Video_BeginField(u32, u32, u32, u32) override;
+	void Video_EndField() override;
 
-	void Video_AddMessage(const std::string& str, unsigned int milliseconds);
-	void Video_ClearMessages();
-	bool Video_Screenshot(const std::string& filename);
+	u32 Video_AccessEFB(EFBAccessType, u32, u32, u32) override;
+	u32 Video_GetQueryResult(PerfQueryType type) override;
+	u16 Video_GetBoundingBox(int index) override;
+
+	void Video_AddMessage(const std::string& msg, unsigned int milliseconds) override;
+	void Video_ClearMessages() override;
+	bool Video_Screenshot(const std::string& filename) override;
 
 	int Video_LoadTexture(char *imagedata, u32 width, u32 height);
 	void Video_DeleteTexture(int texID);
 	void Video_DrawTexture(int texID, float *coords);
 
-	void Video_SetRendering(bool bEnabled);
+	void Video_SetRendering(bool bEnabled) override;
 
-	void Video_GatherPipeBursted();
-	bool Video_IsHiWatermarkActive();
-	bool Video_IsPossibleWaitingSetDrawDone();
-	void Video_AbortFrame();
+	void Video_GatherPipeBursted() override;
+	bool Video_IsPossibleWaitingSetDrawDone() override;
 
 	void RegisterCPMMIO(MMIO::Mapping* mmio, u32 base) override;
 
-	void UpdateFPSDisplay(const std::string&);
-	unsigned int PeekMessages();
+	unsigned int PeekMessages() override;
 
-	void PauseAndLock(bool doLock, bool unpauseOnUnlock=true);
-	void DoState(PointerWrap &p);
-	
+	void PauseAndLock(bool doLock, bool unpauseOnUnlock=true) override;
+	void DoState(PointerWrap &p) override;
+
 public:
-	void CheckInvalidState();
+	void CheckInvalidState() override;
 };
 
 }
-
-#endif
