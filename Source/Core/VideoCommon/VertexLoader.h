@@ -50,7 +50,6 @@ public:
 	// For debugging / profiling
 	void AppendToString(std::string *dest) const;
 	void GetName(std::string *dest) const;
-	void DumpCode(std::string *dest) const;
 
 	u64 GetNumLoadedVerts() const { return m_numLoadedVertices; }
 	bool IsPrecompiled();	

@@ -91,137 +91,6 @@ static TPipelineFunction tableReadPosition[4][5][2] = {
 		},
 };
 
-static const char* tableReadPositionSTR[4][5][2] =
-{
-	{
-		{ NULL, NULL },
-		{ NULL, NULL },
-		{ NULL, NULL },
-		{ NULL, NULL },
-		{ NULL, NULL }
-	},
-	{
-		{ "\t_Pos_ReadDirect<u8, 2>(pipelinestate);\n", "\t_Pos_ReadDirect<u8, 3>(pipelinestate);\n" },
-		{ "\t_Pos_ReadDirect<s8, 2>(pipelinestate);\n", "\t_Pos_ReadDirect<s8, 3>(pipelinestate);\n" },
-		{
-			"#if _M_SSE >= 0x401\n"
-			"\tif (iSSE >= 0x401)\n"
-			"\t{\n\t\t_Pos_ReadDirect_16x2_SSE4<false>(pipelinestate);\n\t}\n\telse\n"
-			"#endif\n"
-			"\t{\n\t\t_Pos_ReadDirect<u16, 2>(pipelinestate);\n\t}\n",
-			"#if _M_SSE >= 0x401\n"
-			"\tif (iSSE >= 0x401)\n"
-			"\t{\n\t\t_Pos_ReadDirect_16x3_SSE4<false>(pipelinestate);\n\t}\n\telse\n"
-			"#endif\n"
-			"\t{\n\t\t_Pos_ReadDirect<u16, 3>(pipelinestate);\n\t}\n"
-		},
-		{
-			"#if _M_SSE >= 0x401\n"
-			"\tif (iSSE >= 0x401)\n"
-			"\t{\n\t\t_Pos_ReadDirect_16x2_SSE4<true>(pipelinestate);\n\t}\n\telse\n"
-			"#endif\n"
-			"\t{\n\t\t_Pos_ReadDirect<s16, 2>(pipelinestate);\n\t}\n",
-			"#if _M_SSE >= 0x401\n"
-			"\tif (iSSE >= 0x401)\n"
-			"\t{\n\t\t_Pos_ReadDirect_16x3_SSE4<true>(pipelinestate);\n\t}\n\telse\n"
-			"#endif\n"
-			"\t{\n\t\t_Pos_ReadDirect<s16, 3>(pipelinestate);\n\t}\n"
-		},
-		{
-			"#if _M_SSE >= 0x301\n"
-			"\tif (iSSE >= 0x301)\n"
-			"\t{\n\t\t_Pos_ReadDirect_Float_SSSE3<false>(pipelinestate);\n\t}\n\telse\n"
-			"#endif\n"
-			"\t{\n\t\t_Pos_ReadDirect<float, 2>(pipelinestate);\n\t}\n",
-			"#if _M_SSE >= 0x301\n"
-			"\tif (iSSE >= 0x301)\n"
-			"\t{\n\t\t_Pos_ReadDirect_Float_SSSE3<true>(pipelinestate);\n\t}\n\telse\n"
-			"#endif\n"
-			"\t{\n\t\t_Pos_ReadDirect<float, 3>(pipelinestate);\n\t}\n"
-		}
-	},
-	{
-		{ "\t_Pos_ReadIndex<u8, u8, 2>(pipelinestate);\n", "\t_Pos_ReadIndex<u8, u8, 3>(pipelinestate);\n" },
-		{ "\t_Pos_ReadIndex<u8, s8, 2>(pipelinestate);\n", "\t_Pos_ReadIndex<u8, s8, 3>(pipelinestate);\n" },
-		{
-			"#if _M_SSE >= 0x401\n"
-			"\tif (iSSE >= 0x401)\n"
-			"\t{\n\t\t_Pos_ReadIndex_16x2_SSE4<u8, false>(pipelinestate);\n\t}\n\telse\n"
-			"#endif\n"
-			"\t{\n\t\t_Pos_ReadIndex<u8, u16, 2>(pipelinestate);\n\t}\n",
-			"#if _M_SSE >= 0x401\n"
-			"\tif (iSSE >= 0x401)\n"
-			"\t{\n\t\t_Pos_ReadIndex_16x3_SSE4<u8, false>(pipelinestate);\n\t}\n\telse\n"
-			"#endif\n"
-			"\t{\n\t\t_Pos_ReadIndex<u8, u16, 3>(pipelinestate);\n\t}\n"
-		},
-		{
-			"#if _M_SSE >= 0x401\n"
-			"\tif (iSSE >= 0x401)\n"
-			"\t{\n\t\t_Pos_ReadIndex_16x2_SSE4<u8, true>(pipelinestate);\n\t}\n\telse\n"
-			"#endif\n"
-			"\t{\n\t\t_Pos_ReadIndex<u8, s16, 2>(pipelinestate);\n\t}\n",
-			"#if _M_SSE >= 0x401\n"
-			"\tif (iSSE >= 0x401)\n"
-			"\t{\n\t\t_Pos_ReadIndex_16x3_SSE4<u8, true>(pipelinestate);\n\t}\n\telse\n"
-			"#endif\n"
-			"\t{\n\t\t_Pos_ReadIndex<u8, s16, 3>(pipelinestate);\n\t}\n"
-		},
-		{
-			"#if _M_SSE >= 0x301\n"
-			"\tif (iSSE >= 0x301)\n"
-			"\t{\n\t\t_Pos_ReadIndex_Float_SSSE3<u8, false>(pipelinestate);\n\t}\n\telse\n"
-			"#endif\n"
-			"\t{\n\t\t_Pos_ReadIndex<u8, float, 2>(pipelinestate);\n\t}\n",
-			"#if _M_SSE >= 0x301\n"
-			"\tif (iSSE >= 0x301)\n"
-			"\t{\n\t\t_Pos_ReadIndex_Float_SSSE3<u8, true>(pipelinestate);\n\t}\n\telse\n"
-			"#endif\n"
-			"\t{\n\t\t_Pos_ReadIndex<u8, float, 3>(pipelinestate);\n\t}\n"
-		}
-	},
-	{
-		{ "\t_Pos_ReadIndex<u16, u8, 2>(pipelinestate);\n", "\t_Pos_ReadIndex<u16, u8, 3>(pipelinestate);\n" },
-		{ "\t_Pos_ReadIndex<u16, s8, 2>(pipelinestate);\n", "\t_Pos_ReadIndex<u16, s8, 3>(pipelinestate);\n" },
-		{
-			"#if _M_SSE >= 0x401\n"
-			"\tif (iSSE >= 0x401)\n"
-			"\t{\n\t\t_Pos_ReadIndex_16x2_SSE4<u16, false>(pipelinestate);\n\t}\n\telse\n"
-			"#endif\n"
-			"\t{\n\t\t_Pos_ReadIndex<u16, u16, 2>(pipelinestate);\n\t}\n",
-			"#if _M_SSE >= 0x401\n"
-			"\tif (iSSE >= 0x401)\n"
-			"\t{\n\t\t_Pos_ReadIndex_16x3_SSE4<u16, false>(pipelinestate);\n\t}\n\telse\n"
-			"#endif\n"
-			"\t{\n\t\t_Pos_ReadIndex<u16, u16, 3>(pipelinestate);\n\t}\n",
-		},
-		{
-			"#if _M_SSE >= 0x401\n"
-			"\tif (iSSE >= 0x401)\n"
-			"\t{\n\t\t_Pos_ReadIndex_16x2_SSE4<u16, true>(pipelinestate);\n\t}\n\telse\n"
-			"#endif\n"
-			"\t{\n\t\t_Pos_ReadIndex<u16, s16, 2>(pipelinestate);\n\t}\n",
-			"#if _M_SSE >= 0x401\n"
-			"\tif (iSSE >= 0x401)\n"
-			"\t{\n\t\t_Pos_ReadIndex_16x3_SSE4<u16, true>(pipelinestate);\n\t}\n\telse\n"
-			"#endif\n"
-			"\t{\n\t\t_Pos_ReadIndex<u16, s16, 3>(pipelinestate);\n\t}\n",
-		},
-		{
-			"#if _M_SSE >= 0x301\n"
-			"\tif (iSSE >= 0x301)\n"
-			"\t{\n\t\t_Pos_ReadIndex_Float_SSSE3<u16, false>(pipelinestate);\n\t}\n\telse\n"
-			"#endif\n"
-			"\t{\n\t\t_Pos_ReadIndex<u16, float, 2>(pipelinestate);\n\t}\n",
-			"#if _M_SSE >= 0x301\n"
-			"\tif (iSSE >= 0x301)\n"
-			"\t{\n\t\t_Pos_ReadIndex_Float_SSSE3<u16, true>(pipelinestate);\n\t}\n\telse\n"
-			"#endif\n"
-			"\t{\n\t\t_Pos_ReadIndex<u16, float, 3>(pipelinestate);\n\t}\n"
-		}
-	}
-};
-
 static int tableReadPositionVertexSize[4][5][2] = {
 		{
 			{ 0, 0 }, { 0, 0 }, { 0, 0 }, { 0, 0 }, { 0, 0 }
@@ -236,7 +105,6 @@ static int tableReadPositionVertexSize[4][5][2] = {
 			{ 2, 2 }, { 2, 2 }, { 2, 2 }, { 2, 2 }, { 2, 2 }
 		},
 };
-
 
 void VertexLoader_Position::Init(void)
 {
@@ -287,9 +155,4 @@ u32 VertexLoader_Position::GetSize(u32 _type, u32 _format, u32 _elements)
 TPipelineFunction VertexLoader_Position::GetFunction(u32 _type, u32 _format, u32 _elements)
 {
 	return tableReadPosition[_type][_format][_elements];
-}
-
-void VertexLoader_Position::GetFunctionSTR(std::string *dest, u32 _type, u32 _format, u32 _elements)
-{
-	dest->append(tableReadPositionSTR[_type][_format][_elements]);
 }

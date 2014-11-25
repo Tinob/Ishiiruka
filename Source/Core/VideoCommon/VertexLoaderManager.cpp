@@ -81,7 +81,6 @@ namespace VertexLoaderManager
 		struct codeentry
 		{
 			std::string name;
-			std::string text;
 			std::string conf;
 			u64 num_verts;
 			std::string hash;
@@ -98,7 +97,7 @@ namespace VertexLoaderManager
 		return std::string(hexString);
 	}
 
-	void DumpLoadersCode(bool btemplated)
+	void DumpLoadersCode()
 	{
 		std::vector<codeentry> entries;
 		for (VertexLoaderMap::const_iterator iter = s_VertexLoaderMap.begin(); iter != s_VertexLoaderMap.end(); ++iter)
@@ -112,8 +111,7 @@ namespace VertexLoaderManager
 				e.conf.append(", ");
 				e.conf.append(To_HexString(iter->first.GetElement(2)));
 				e.conf.append(", ");
-				e.conf.append(To_HexString(iter->first.GetElement(3)));
-				iter->second->DumpCode(&e.text);
+				e.conf.append(To_HexString(iter->first.GetElement(3)));				
 				iter->second->GetName(&e.name);
 				e.num_verts = iter->second->GetNumLoadedVerts();
 				e.hash = std::to_string(iter->first.GetHash());
@@ -152,28 +150,13 @@ namespace VertexLoaderManager
 		sourcecode.append(gamename);
 		sourcecode.append("_pvt.h\"\n");
 		sourcecode.append("#include \"VideoCommon/VertexLoader_Template.h\"\n\n");
-		if (!btemplated)
-		{
-			for (std::vector<codeentry>::const_iterator iter = entries.begin(); iter != entries.end(); ++iter)
-			{
-				sourcecode.append(iter->text);
-			}
-		}
 		sourcecode.append("\n\nvoid G_");
 		sourcecode.append(gamename);
 		sourcecode.append("_pvt::Initialize(std::map<u64, TCompiledLoaderFunction> &pvlmap)\n{\n");
 		for (std::vector<codeentry>::const_iterator iter = entries.begin(); iter != entries.end(); ++iter)
 		{
 			sourcecode.append("\t// ");
-			if (btemplated)
-			{
-				sourcecode.append(iter->name);
-			}
-			else
-			{
-				sourcecode.append("Configuration: ");
-				sourcecode.append(iter->conf);
-			}
+			sourcecode.append(iter->name);
 			sourcecode.append("\n// num_verts= ");
 			sourcecode.append(std::to_string(iter->num_verts));
 			sourcecode.append("\n#if _M_SSE >= 0x401\n");
@@ -182,18 +165,10 @@ namespace VertexLoaderManager
 			sourcecode.append("\t\tpvlmap[");
 			sourcecode.append(iter->hash);
 			sourcecode.append("] = ");
-			if (btemplated)
-			{
-				sourcecode.append("TemplatedLoader");
-				sourcecode.append("<0x401, ");
-				sourcecode.append(iter->conf);
-				sourcecode.append(">;\n");
-			}
-			else
-			{
-				sourcecode.append(iter->name);
-				sourcecode.append("<0x401>;\n");
-			}
+			sourcecode.append("TemplatedLoader");
+			sourcecode.append("<0x401, ");
+			sourcecode.append(iter->conf);
+			sourcecode.append(">;\n");
 			sourcecode.append("\t}\n\telse\n");
 			sourcecode.append("#endif\n");
 			sourcecode.append("#if _M_SSE >= 0x301\n");
@@ -202,36 +177,20 @@ namespace VertexLoaderManager
 			sourcecode.append("\t\tpvlmap[");
 			sourcecode.append(iter->hash);
 			sourcecode.append("] = ");
-			if (btemplated)
-			{
-				sourcecode.append("TemplatedLoader");
-				sourcecode.append("<0x301, ");
-				sourcecode.append(iter->conf);
-				sourcecode.append(">;\n");
-			}
-			else
-			{
-				sourcecode.append(iter->name);
-				sourcecode.append("<0x301>;\n");
-			}
+			sourcecode.append("TemplatedLoader");
+			sourcecode.append("<0x301, ");
+			sourcecode.append(iter->conf);
+			sourcecode.append(">;\n");
 			sourcecode.append("\t}\n\telse\n");
 			sourcecode.append("#endif\n");
 			sourcecode.append("\t{\n");
 			sourcecode.append("\t\tpvlmap[");
 			sourcecode.append(iter->hash);
 			sourcecode.append("] = ");
-			if (btemplated)
-			{
-				sourcecode.append("TemplatedLoader");
-				sourcecode.append("<0, ");
-				sourcecode.append(iter->conf);
-				sourcecode.append(">;\n");
-			}
-			else
-			{
-				sourcecode.append(iter->name);
-				sourcecode.append("<0>;\n");
-			}
+			sourcecode.append("TemplatedLoader");
+			sourcecode.append("<0, ");
+			sourcecode.append(iter->conf);
+			sourcecode.append(">;\n");
 			sourcecode.append("\t}\n");
 		}
 		sourcecode.append("}\n");
@@ -295,7 +254,7 @@ namespace VertexLoaderManager
 	void Shutdown()
 	{
 		if (s_VertexLoaderMap.size() > 0 && g_ActiveConfig.bDumpVertexLoaders)
-			DumpLoadersCode(true);
+			DumpLoadersCode();
 		for (auto& p : s_VertexLoaderMap)
 		{
 			delete p.second;

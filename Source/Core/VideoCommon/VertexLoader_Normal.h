@@ -17,9 +17,6 @@ public:
 	// GetFunction
 	static TPipelineFunction GetFunction(u32 _type, u32 _format, u32 _elements, u32 _index3);
 
-	// Append FunctionString
-	static void GetFunctionSTR(std::string *dest, u32 _type, u32 _format, u32 _elements, u32 _index3);
-
 private:
 	static bool Initialized;
 };

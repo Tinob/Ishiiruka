@@ -15,11 +15,4 @@ public:
 	static void LOADERDECL TexMtx_Write_Float();
 	static void LOADERDECL TexMtx_Write_Float2();
 	static void LOADERDECL TexMtx_Write_Float4();
-	static void PosMtx_ReadDirect_UByteSTR(std::string *dest);
-	static void PosMtx_WriteSTR(std::string *dest);
-	static void PosMtxDisabled_WriteSTR(std::string *dest);
-	static void TexMtx_ReadDirect_UByteSTR(std::string *dest);
-	static void TexMtx_Write_FloatSTR(std::string *dest);
-	static void TexMtx_Write_Float2STR(std::string *dest);
-	static void TexMtx_Write_Float4STR(std::string *dest);
 };
