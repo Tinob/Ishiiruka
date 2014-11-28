@@ -803,7 +803,7 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, co
 				// having x as the number to mask stored in a float
 				// nb as the number of bits to mask
 				// and n the (wordlen - nb) in this case (8 - nb)
-				// then result = floor(x * (255.0f/(2^n))) * ((2^n) / 255.0f)
+				// then result = trunc(x * /(2^n)) * (2^n)
 				// so for nb = 3 bit this will be n = 5  result = floor(x * (255.0/32.0)) * (32.0/255.0f);
 				// to optimize a litle al the coeficient are precalculated to avoid slowing thigs more than needed
 
@@ -1017,7 +1017,7 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, co
 		if (Write_Code)
 		{
 			out.Write("konst_t = float4(%s,%s);\n", tevKSelTableC[kc], tevKSelTableA[ka]);
-			TevOverflowState[tevSources::KONST] = kc > 7 || ka > 7;
+			TevOverflowState[tevSources::KONST] = kc > 11 || ka > 15;
 		}
 	}
 	if (Write_Code)
@@ -1040,11 +1040,8 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, co
 		{
 			out.Write("tin_c.a = tin_c.a+trunc(tin_c.a*(1.0/128.0));\n");
 		}
-
-		if (!(cc.d == TEVCOLORARG_ZERO && cc.op == TEVOP_ADD && !(cc.shift & 3)) || !(ac.d == TEVALPHAARG_ZERO && ac.op == TEVOP_ADD && !(ac.shift & 3)))
-		{
-			out.Write("tin_d = float4(%s,%s);\n", tevCInputTable[cc.d], tevAInputTable[ac.d]);
-		}
+		out.Write("tin_d = float4(%s,%s);\n", tevCInputTable[cc.d], tevAInputTable[ac.d]);
+		
 		TevOverflowState[tevCOutputSourceMap[cc.dest]] = !cc.clamp;
 		TevOverflowState[tevAOutputSourceMap[ac.dest]] = !ac.clamp;
 
@@ -1060,7 +1057,7 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, co
 		{
 			//compare color combiner goes here
 			int cmp = (cc.shift << 1) | cc.op; // comparemode stored here
-			WriteTevCompare(out, 1, cmp);
+			WriteTevCompare(out, 0, cmp);
 		}
 		if (cc.clamp)
 		{
@@ -1082,7 +1079,7 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, co
 		{
 			//compare alpha combiner goes here			
 			int cmp = (ac.shift << 1) | ac.op; // comparemode stored here
-			WriteTevCompare(out, 0, cmp);
+			WriteTevCompare(out, 1, cmp);
 		}
 		if (ac.clamp)
 		{
@@ -1141,33 +1138,18 @@ static inline void WriteTevRegular(T& out, const char* components, int bias, int
 	// - c is scaled from 0..255 to 0..256, which allows dividing the result by 256 instead of 255
 	// - if scale is bigger than one, it is moved inside the lerp calculation for increased accuracy
 	// - a rounding bias is added before dividing by 256
-	bool d_component_used = !(d == TEVARG_ZERO && op == TEVOP_ADD && !(shift & 3));
-	bool right_side_zero = (a == b && a == c &&  a == TEVARG_ZERO);
-	out.Write("%s", shift == 3 ? "trunc(" : "");
-	if (d_component_used)
+	out.Write("%s(", shift == 3 ? "trunc" : "");
+	out.Write("(((tin_d%s%s)%s)", components, tevBiasTable[bias], tevScaleTableLeft[shift]);
+	out.Write(" %s ", tevOpTable[op]);
+	if (a == b || c == TEVARG_ZERO)
 	{
-		out.Write("(((tin_d%s%s)%s)", components, tevBiasTable[bias], tevScaleTableLeft[shift]);
-		if (!right_side_zero)
-		{
-			out.Write(" %s ", tevOpTable[op]);
-		}
-	}
-
-	if (right_side_zero && !d_component_used)
-	{
-		out.Write("float4(0.0,0.0,0.0,0.0)%s", components);
-	}
-	else if (right_side_zero)
-	{
-		// no need to write here, we use only d component
-	}
-	else if (a == b || c == TEVARG_ZERO)
-	{
-		out.Write("(tin_a%s%s)", components, tevScaleTableLeft[shift]);
+		out.Write("trunc((((tin_a%s*256.0)%s)%s)*(1.0/256.0))",
+			components, tevScaleTableLeft[shift], tevLerpBias[2 * op + (shift != 3)]);
 	}
 	else if (c == TEVARG_ONE)
 	{
-		out.Write("(tin_b%s%s)", components, tevScaleTableLeft[shift]);
+		out.Write("trunc((((tin_b%s*256.0)%s)%s)*(1.0/256.0))",
+			components, tevScaleTableLeft[shift], tevLerpBias[2 * op + (shift != 3)]);
 	}
 	else if (a == TEVARG_ZERO)
 	{
@@ -1187,8 +1169,7 @@ static inline void WriteTevRegular(T& out, const char* components, int bias, int
 			components, components, components, components,
 			tevScaleTableLeft[shift], tevLerpBias[2 * op + (shift != 3)]);
 	}
-	out.Write("%s%s", d_component_used ? ")" : "", tevScaleTableRight[shift]);
-	out.Write("%s", shift == 3 ? ")" : "");
+	out.Write(")%s)",tevScaleTableRight[shift]);
 }
 
 template<class T>
@@ -1196,16 +1177,14 @@ static inline void WriteTevCompare(T& out, int components, int cmp)
 {
 	static const char *TEVCMPComponents[] =
 	{
-		".a",
 		".rgb",
-		""
+		".a"
 	};
 
 	static const char *TEVCMPZero[] =
 	{
-		"0.0",
 		"float3(0.0,0.0,0.0)",
-		"float4(0.0,0.0,0.0,0.0)"
+		"0.0"
 	};
 
 	static const char *TEVCMPOPTable[] =
@@ -1216,25 +1195,24 @@ static inline void WriteTevCompare(T& out, int components, int cmp)
 		"((abs(dot(tin_a.rgb, c16) - dot(tin_b.rgb, c16)) < 0.5) ? tin_c%s : %s)", // TEVCMP_GR16_EQ
 		"((dot(tin_a.rgb, c24) >=  (dot(tin_b.rgb, c24) + 0.5)) ? tin_c%s : %s)", // TEVCMP_BGR24_GT
 		"((abs(dot(tin_a.rgb, c24) - dot(tin_b.rgb, c24)) < 0.5) ? tin_c%s : %s)", // TEVCMP_BGR24_EQ
-
+		// Only for RGB
 		"(max(sign(tin_a.rgb - tin_b.rgb - 0.5), float3(0.0,0.0,0.0)) * tin_c.rgb)", // TEVCMP_RGB8_GT
 		"((float3(1.0,1.0,1.0) - max(sign(abs(tin_a.rgb - tin_b.rgb) - 0.5),float3(0.0,0.0,0.0))) * tin_c.rgb)", // TEVCMP_RGB8_EQ
-
+		// Only for ALPHA
 		"((tin_a.a >= (tin_b.a + 0.5)) ? tin_c.a : 0.0)", // TEVCMP_A8_GT
 		"((abs(tin_a.a - tin_b.a) < 0.5) ? tin_c.a : 0.0)", // TEVCMP_A8_EQ
-
-		"(max(sign(tin_a - tin_b - 0.5), float4(0.0,0.0,0.0,0.0)) * tin_c)", // TEVCMP_RGBA8_GT
-		"((float4(1.0,1.0,1.0,1.0) - max(sign(abs(tin_a - tin_b) - 0.5),float3(0.0,0.0,0.0,0.0))) * tin_c)" // TEVCMP_RGBA8_EQ
 	};
 	out.Write("tin_d%s+", TEVCMPComponents[components]);
 	if (cmp < 6)
 	{
+		// same function for alpha and rgb
 		out.Write(TEVCMPOPTable[cmp], TEVCMPComponents[components], TEVCMPZero[components]);
 	}
 	else
 	{
-		cmp += components == 0 ? 2 : (components == 3 ? 4 : 0);
-		out.Write(TEVCMPOPTable[cmp]);
+		// if rgb just use the regular cmp
+		// for alpha use the last 2 functions
+		out.Write(TEVCMPOPTable[cmp + (components << 1)]);
 	}
 }
 
