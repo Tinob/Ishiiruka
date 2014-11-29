@@ -21,10 +21,29 @@ void LOADERDECL Pos_ReadIndex()
 }
 
 #if _M_SSE >= 0x301
-template <typename I, bool three>
-void LOADERDECL Pos_ReadIndex_Float_SSSE3()
+
+template <bool three>
+void LOADERDECL Pos_ReadDirect_UByte_SSSE3()
 {
-	_Pos_ReadIndex_Float_SSSE3<I, three>(g_PipelineState);
+	_Pos_ReadDirect_UByte_SSSE3<three>(g_PipelineState);
+}
+
+template <bool three>
+void LOADERDECL Pos_ReadDirect_SByte_SSSE3()
+{
+	_Pos_ReadDirect_SByte_SSSE3<three>(g_PipelineState);
+}
+
+template <bool three>
+void LOADERDECL Pos_ReadDirect_UShort_SSSE3()
+{
+	_Pos_ReadDirect_UShort_SSSE3<three>(g_PipelineState);
+}
+
+template <bool three>
+void LOADERDECL Pos_ReadDirect_Short_SSSE3()
+{
+	_Pos_ReadDirect_Short_SSSE3<three>(g_PipelineState);
 }
 
 template <bool three>
@@ -32,31 +51,35 @@ void LOADERDECL Pos_ReadDirect_Float_SSSE3()
 {
 	_Pos_ReadDirect_Float_SSSE3<three>(g_PipelineState);
 }
-#endif
 
-#if _M_SSE >= 0x401
-template <typename I, bool Signed>
-void LOADERDECL Pos_ReadIndex_16x2_SSE4()
+template <typename I, bool three>
+void LOADERDECL Pos_ReadIndex_UByte_SSSE3()
 {
-	_Pos_ReadIndex_16x2_SSE4<I, Signed>(g_PipelineState);
+	_Pos_ReadIndex_UByte_SSSE3<I, three>(g_PipelineState);
 }
 
-template <typename I, bool Signed>
-void LOADERDECL Pos_ReadIndex_16x3_SSE4()
+template <typename I, bool three>
+void LOADERDECL Pos_ReadIndex_SByte_SSSE3()
 {
-	_Pos_ReadIndex_16x3_SSE4<I, Signed>(g_PipelineState);
+	_Pos_ReadIndex_SByte_SSSE3<I, three>(g_PipelineState);
 }
 
-template <bool Signed>
-void LOADERDECL Pos_ReadDirect_16x2_SSE4()
+template <typename I, bool three>
+void LOADERDECL Pos_ReadIndex_UShort_SSSE3()
 {
-	_Pos_ReadDirect_16x2_SSE4<Signed>(g_PipelineState);
+	_Pos_ReadIndex_UShort_SSSE3<I, three>(g_PipelineState);
 }
 
-template <bool Signed>
-void LOADERDECL Pos_ReadDirect_16x3_SSE4()
+template <typename I, bool three>
+void LOADERDECL Pos_ReadIndex_Short_SSSE3()
 {
-	_Pos_ReadDirect_16x3_SSE4<Signed>(g_PipelineState);
+	_Pos_ReadIndex_Short_SSSE3<I, three>(g_PipelineState);
+}
+
+template <typename I, bool three>
+void LOADERDECL Pos_ReadIndex_Float_SSSE3()
+{
+	_Pos_ReadIndex_Float_SSSE3<I, three>(g_PipelineState);
 }
 #endif
 
@@ -117,33 +140,43 @@ void VertexLoader_Position::Init(void)
 
 	if (cpu_info.bSSSE3)
 	{
+		tableReadPosition[DIRECT][FORMAT_UBYTE][POS_ELEMENTS_2] = Pos_ReadDirect_UByte_SSSE3<false>;
+		tableReadPosition[DIRECT][FORMAT_BYTE][POS_ELEMENTS_2] = Pos_ReadDirect_SByte_SSSE3<false>;
+		tableReadPosition[DIRECT][FORMAT_USHORT][POS_ELEMENTS_2] = Pos_ReadDirect_UShort_SSSE3<false>;
+		tableReadPosition[DIRECT][FORMAT_SHORT][POS_ELEMENTS_2] = Pos_ReadDirect_Short_SSSE3<false>;
 		tableReadPosition[DIRECT][FORMAT_FLOAT][POS_ELEMENTS_2] = Pos_ReadDirect_Float_SSSE3<false>;
+
+		tableReadPosition[DIRECT][FORMAT_UBYTE][POS_ELEMENTS_3] = Pos_ReadDirect_UByte_SSSE3<true>;
+		tableReadPosition[DIRECT][FORMAT_BYTE][POS_ELEMENTS_3] = Pos_ReadDirect_SByte_SSSE3<true>;
+		tableReadPosition[DIRECT][FORMAT_USHORT][POS_ELEMENTS_3] = Pos_ReadDirect_UShort_SSSE3<true>;
+		tableReadPosition[DIRECT][FORMAT_SHORT][POS_ELEMENTS_3] = Pos_ReadDirect_Short_SSSE3<true>;
 		tableReadPosition[DIRECT][FORMAT_FLOAT][POS_ELEMENTS_3] = Pos_ReadDirect_Float_SSSE3<true>;
+
+		tableReadPosition[INDEX8][FORMAT_UBYTE][POS_ELEMENTS_2] = Pos_ReadIndex_UByte_SSSE3<u8, false>;
+		tableReadPosition[INDEX8][FORMAT_BYTE][POS_ELEMENTS_2] = Pos_ReadIndex_SByte_SSSE3<u8, false>;
+		tableReadPosition[INDEX8][FORMAT_USHORT][POS_ELEMENTS_2] = Pos_ReadIndex_UShort_SSSE3<u8, false>;
+		tableReadPosition[INDEX8][FORMAT_SHORT][POS_ELEMENTS_2] = Pos_ReadIndex_Short_SSSE3<u8, false>;
 		tableReadPosition[INDEX8][FORMAT_FLOAT][POS_ELEMENTS_2] = Pos_ReadIndex_Float_SSSE3<u8, false>;
+
+		tableReadPosition[INDEX8][FORMAT_UBYTE][POS_ELEMENTS_3] = Pos_ReadIndex_UByte_SSSE3<u8, true>;
+		tableReadPosition[INDEX8][FORMAT_BYTE][POS_ELEMENTS_3] = Pos_ReadIndex_SByte_SSSE3<u8, true>;
+		tableReadPosition[INDEX8][FORMAT_USHORT][POS_ELEMENTS_3] = Pos_ReadIndex_UShort_SSSE3<u8, true>;
+		tableReadPosition[INDEX8][FORMAT_SHORT][POS_ELEMENTS_3] = Pos_ReadIndex_Short_SSSE3<u8, true>;
 		tableReadPosition[INDEX8][FORMAT_FLOAT][POS_ELEMENTS_3] = Pos_ReadIndex_Float_SSSE3<u8, true>;
+
+		tableReadPosition[INDEX16][FORMAT_UBYTE][POS_ELEMENTS_2] = Pos_ReadIndex_UByte_SSSE3<u16, false>;
+		tableReadPosition[INDEX16][FORMAT_BYTE][POS_ELEMENTS_2] = Pos_ReadIndex_SByte_SSSE3<u16, false>;
+		tableReadPosition[INDEX16][FORMAT_USHORT][POS_ELEMENTS_2] = Pos_ReadIndex_UShort_SSSE3<u16, false>;
+		tableReadPosition[INDEX16][FORMAT_SHORT][POS_ELEMENTS_2] = Pos_ReadIndex_Short_SSSE3<u16, false>;
 		tableReadPosition[INDEX16][FORMAT_FLOAT][POS_ELEMENTS_2] = Pos_ReadIndex_Float_SSSE3<u16, false>;
+
+		tableReadPosition[INDEX16][FORMAT_UBYTE][POS_ELEMENTS_3] = Pos_ReadIndex_UByte_SSSE3<u16, true>;
+		tableReadPosition[INDEX16][FORMAT_BYTE][POS_ELEMENTS_3] = Pos_ReadIndex_SByte_SSSE3<u16, true>;
+		tableReadPosition[INDEX16][FORMAT_USHORT][POS_ELEMENTS_3] = Pos_ReadIndex_UShort_SSSE3<u16, true>;
+		tableReadPosition[INDEX16][FORMAT_SHORT][POS_ELEMENTS_3] = Pos_ReadIndex_Short_SSSE3<u16, true>;
 		tableReadPosition[INDEX16][FORMAT_FLOAT][POS_ELEMENTS_3] = Pos_ReadIndex_Float_SSSE3<u16, true>;
 	}
 
-#endif
-#if _M_SSE >= 0x401
-	if (cpu_info.bSSE4_1)
-	{
-		tableReadPosition[DIRECT][FORMAT_USHORT][POS_ELEMENTS_2] = Pos_ReadDirect_16x2_SSE4<false>;
-		tableReadPosition[DIRECT][FORMAT_USHORT][POS_ELEMENTS_3] = Pos_ReadDirect_16x3_SSE4<false>;
-		tableReadPosition[DIRECT][FORMAT_SHORT][POS_ELEMENTS_2] = Pos_ReadDirect_16x2_SSE4<true>;
-		tableReadPosition[DIRECT][FORMAT_SHORT][POS_ELEMENTS_3] = Pos_ReadDirect_16x3_SSE4<true>;
-
-		tableReadPosition[INDEX8][FORMAT_USHORT][POS_ELEMENTS_2] = Pos_ReadIndex_16x2_SSE4<u8, false>;
-		tableReadPosition[INDEX8][FORMAT_USHORT][POS_ELEMENTS_3] = Pos_ReadIndex_16x3_SSE4<u8, false>;
-		tableReadPosition[INDEX8][FORMAT_SHORT][POS_ELEMENTS_2] = Pos_ReadIndex_16x2_SSE4<u8, true>;
-		tableReadPosition[INDEX8][FORMAT_SHORT][POS_ELEMENTS_3] = Pos_ReadIndex_16x3_SSE4<u8, true>;
-
-		tableReadPosition[INDEX16][FORMAT_USHORT][POS_ELEMENTS_2] = Pos_ReadIndex_16x2_SSE4<u16, false>;
-		tableReadPosition[INDEX16][FORMAT_USHORT][POS_ELEMENTS_3] = Pos_ReadIndex_16x3_SSE4<u16, false>;
-		tableReadPosition[INDEX16][FORMAT_SHORT][POS_ELEMENTS_2] = Pos_ReadIndex_16x2_SSE4<u16, true>;
-		tableReadPosition[INDEX16][FORMAT_SHORT][POS_ELEMENTS_3] = Pos_ReadIndex_16x3_SSE4<u16, true>;
-	}
 #endif
 }
 

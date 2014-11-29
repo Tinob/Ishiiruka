@@ -47,14 +47,48 @@ __forceinline void _TexCoord_ReadIndex(TPipelineState &pipelinestate)
 }
 
 #if _M_SSE >= 0x301
-template <typename I>
-__forceinline void _TexCoord_ReadIndex_Float2_SSSE3(TPipelineState &pipelinestate)
-{
-	static_assert(!std::numeric_limits<I>::is_signed, "Only unsigned I is sane!");
 
-	const __m128i *pData = (const __m128i *)IndexedTCoordPosition<I>(pipelinestate);
-	Float2ToFloat2sse3((__m128i *)pipelinestate.GetWritePosition(), pData);
+__forceinline void _TexCoord_ReadDirect_UByte2_SSSE3(TPipelineState &pipelinestate)
+{
+	const u32* pData = reinterpret_cast<const u32 *>(pipelinestate.GetReadPosition());
+	const __m128 scale = _mm_set_ps1(pipelinestate.tcScale[pipelinestate.tcIndex]);
+	__m64* dst = reinterpret_cast<__m64 *>(pipelinestate.GetWritePosition());
+	UByte2ToFloat2_SSSE3(pData, scale, dst);
 	pipelinestate.WriteSkip(sizeof(float) * 2);
+	pipelinestate.ReadSkip(2);
+	++pipelinestate.tcIndex;
+}
+
+__forceinline void _TexCoord_ReadDirect_SByte2_SSSE3(TPipelineState &pipelinestate)
+{
+	const u32* pData = reinterpret_cast<const u32 *>(pipelinestate.GetReadPosition());
+	const __m128 scale = _mm_set_ps1(pipelinestate.tcScale[pipelinestate.tcIndex]);
+	__m64* dst = reinterpret_cast<__m64 *>(pipelinestate.GetWritePosition());
+	SByte2ToFloat2_SSSE3(pData, scale, dst);
+	pipelinestate.WriteSkip(sizeof(float) * 2);
+	pipelinestate.ReadSkip(2);
+	++pipelinestate.tcIndex;
+}
+
+__forceinline void _TexCoord_ReadDirect_UShort2_SSSE3(TPipelineState &pipelinestate)
+{
+	const u32* pData = reinterpret_cast<const u32 *>(pipelinestate.GetReadPosition());
+	const __m128 scale = _mm_set_ps1(pipelinestate.tcScale[pipelinestate.tcIndex]);
+	__m64* dst = reinterpret_cast<__m64 *>(pipelinestate.GetWritePosition());
+	UShort2ToFloat2_SSSE3(pData, scale, dst);
+	pipelinestate.WriteSkip(sizeof(float) * 2);
+	pipelinestate.ReadSkip(2 * sizeof(u16));
+	++pipelinestate.tcIndex;
+}
+
+__forceinline void _TexCoord_ReadDirect_Short2_SSSE3(TPipelineState &pipelinestate)
+{
+	const u32* pData = reinterpret_cast<const u32 *>(pipelinestate.GetReadPosition());
+	const __m128 scale = _mm_set_ps1(pipelinestate.tcScale[pipelinestate.tcIndex]);
+	__m64* dst = reinterpret_cast<__m64 *>(pipelinestate.GetWritePosition());
+	Short2ToFloat2_SSSE3(pData, scale, dst);
+	pipelinestate.WriteSkip(sizeof(float) * 2);
+	pipelinestate.ReadSkip(2 * sizeof(s16));
 	++pipelinestate.tcIndex;
 }
 
@@ -67,42 +101,67 @@ __forceinline void _TexCoord_ReadDirect_Float2_SSSE3(TPipelineState &pipelinesta
 	++pipelinestate.tcIndex;
 }
 
-#endif
-
-#if _M_SSE >= 0x401
-template <typename I, bool Signed>
-__forceinline void _TexCoord_ReadIndex_16x2_SSE4(TPipelineState &pipelinestate)
+template <typename I>
+__forceinline void _TexCoord_ReadIndex_UByte2_SSSE3(TPipelineState &pipelinestate)
 {
 	static_assert(!std::numeric_limits<I>::is_signed, "Only unsigned I is sane!");
-	// Heavy in ZWW
-	const s32 Data = *((const s32*)IndexedTCoordPosition<I>(pipelinestate));
-	if (Signed)
-	{
-		Short2ToFloat2sse4((__m64*)pipelinestate.GetWritePosition(), Data, &pipelinestate.tcScale[pipelinestate.tcIndex]);
-	}
-	else
-	{
-		UShort2ToFloat2sse4((__m64*)pipelinestate.GetWritePosition(), Data, &pipelinestate.tcScale[pipelinestate.tcIndex]);
-	}
+
+	const u32 *pData = reinterpret_cast<const u32 *>(IndexedTCoordPosition<I>(pipelinestate));
+	const __m128 scale = _mm_set_ps1(pipelinestate.tcScale[pipelinestate.tcIndex]);
+	__m64* dst = reinterpret_cast<__m64 *>(pipelinestate.GetWritePosition());
+	UByte2ToFloat2_SSSE3(pData, scale, dst);
 	pipelinestate.WriteSkip(sizeof(float) * 2);
 	++pipelinestate.tcIndex;
 }
 
-template <bool Signed>
-__forceinline void _TexCoord_ReadDirect_16x2_SSE4(TPipelineState &pipelinestate)
+template <typename I>
+__forceinline void _TexCoord_ReadIndex_SByte2_SSSE3(TPipelineState &pipelinestate)
 {
-	const s32 Data = *((const s32*)pipelinestate.GetReadPosition());
-	if (Signed)
-	{
-		Short2ToFloat2sse4((__m64*)pipelinestate.GetWritePosition(), Data, &pipelinestate.tcScale[pipelinestate.tcIndex]);
-	}
-	else
-	{
-		UShort2ToFloat2sse4((__m64*)pipelinestate.GetWritePosition(), Data, &pipelinestate.tcScale[pipelinestate.tcIndex]);
-	}
+	static_assert(!std::numeric_limits<I>::is_signed, "Only unsigned I is sane!");
+
+	const u32 *pData = reinterpret_cast<const u32 *>(IndexedTCoordPosition<I>(pipelinestate));
+	const __m128 scale = _mm_set_ps1(pipelinestate.tcScale[pipelinestate.tcIndex]);
+	__m64* dst = reinterpret_cast<__m64 *>(pipelinestate.GetWritePosition());
+	SByte2ToFloat2_SSSE3(pData, scale, dst);
 	pipelinestate.WriteSkip(sizeof(float) * 2);
 	++pipelinestate.tcIndex;
-	pipelinestate.ReadSkip(sizeof(s32));
+}
+
+template <typename I>
+__forceinline void _TexCoord_ReadIndex_UShort2_SSSE3(TPipelineState &pipelinestate)
+{
+	static_assert(!std::numeric_limits<I>::is_signed, "Only unsigned I is sane!");
+
+	const u32 *pData = reinterpret_cast<const u32 *>(IndexedTCoordPosition<I>(pipelinestate));
+	const __m128 scale = _mm_set_ps1(pipelinestate.tcScale[pipelinestate.tcIndex]);
+	__m64* dst = reinterpret_cast<__m64 *>(pipelinestate.GetWritePosition());
+	UShort2ToFloat2_SSSE3(pData, scale, dst);
+	pipelinestate.WriteSkip(sizeof(float) * 2);
+	++pipelinestate.tcIndex;
+}
+
+template <typename I>
+__forceinline void _TexCoord_ReadIndex_Short2_SSSE3(TPipelineState &pipelinestate)
+{
+	static_assert(!std::numeric_limits<I>::is_signed, "Only unsigned I is sane!");
+
+	const u32 *pData = reinterpret_cast<const u32 *>(IndexedTCoordPosition<I>(pipelinestate));
+	const __m128 scale = _mm_set_ps1(pipelinestate.tcScale[pipelinestate.tcIndex]);
+	__m64* dst = reinterpret_cast<__m64 *>(pipelinestate.GetWritePosition());
+	Short2ToFloat2_SSSE3(pData, scale, dst);
+	pipelinestate.WriteSkip(sizeof(float) * 2);
+	++pipelinestate.tcIndex;
+}
+
+template <typename I>
+__forceinline void _TexCoord_ReadIndex_Float2_SSSE3(TPipelineState &pipelinestate)
+{
+	static_assert(!std::numeric_limits<I>::is_signed, "Only unsigned I is sane!");
+
+	const __m128i *pData = (const __m128i *)IndexedTCoordPosition<I>(pipelinestate);
+	Float2ToFloat2sse3((__m128i *)pipelinestate.GetWritePosition(), pData);
+	pipelinestate.WriteSkip(sizeof(float) * 2);
+	++pipelinestate.tcIndex;
 }
 #endif
 

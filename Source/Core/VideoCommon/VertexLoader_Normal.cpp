@@ -58,6 +58,47 @@ namespace
 	};
 
 #if _M_SSE >= 0x301
+
+	template <int N>
+	struct Normal_Direct_UByte_SSSE3
+	{
+		static void LOADERDECL function()
+		{
+			_Normal_Direct_UByte_SSSE3<N>(g_PipelineState);
+		}
+		static const int size = sizeof(u8) * N * 3;
+	};
+
+	template <int N>
+	struct Normal_Direct_SByte_SSSE3
+	{
+		static void LOADERDECL function()
+		{
+			_Normal_Direct_SByte_SSSE3<N>(g_PipelineState);
+		}
+		static const int size = sizeof(s8) * N * 3;
+	};
+
+	template <int N>
+	struct Normal_Direct_UShort_SSSE3
+	{
+		static void LOADERDECL function()
+		{
+			_Normal_Direct_UShort_SSSE3<N>(g_PipelineState);
+		}
+		static const int size = sizeof(u16) * N * 3;
+	};
+
+	template <int N>
+	struct Normal_Direct_Short_SSSE3
+	{
+		static void LOADERDECL function()
+		{
+			_Normal_Direct_Short_SSSE3<N>(g_PipelineState);
+		}
+		static const int size = sizeof(s16) * N * 3;
+	};
+
 	template <int N>
 	struct Normal_Direct_FLOAT_SSSE3
 	{
@@ -66,6 +107,50 @@ namespace
 			_Normal_Direct_FLOAT_SSSE3<N>(g_PipelineState);
 		}
 		static const int size = sizeof(float) * N * 3;
+	};
+
+	template <typename I, int N>
+	struct Normal_Index_UByte_SSSE3
+	{
+		static void LOADERDECL function()
+		{
+			_Normal_Index_UByte_SSSE3<I, N>(g_PipelineState);
+		}
+
+		static const int size = sizeof(I);
+	};
+
+	template <typename I, int N>
+	struct Normal_Index_SByte_SSSE3
+	{
+		static void LOADERDECL function()
+		{
+			_Normal_Index_SByte_SSSE3<I, N>(g_PipelineState);
+		}
+
+		static const int size = sizeof(I);
+	};
+
+	template <typename I, int N>
+	struct Normal_Index_UShort_SSSE3
+	{
+		static void LOADERDECL function()
+		{
+			_Normal_Index_UShort_SSSE3<I, N>(g_PipelineState);
+		}
+
+		static const int size = sizeof(I);
+	};
+
+	template <typename I, int N>
+	struct Normal_Index_Short_SSSE3
+	{
+		static void LOADERDECL function()
+		{
+			_Normal_Index_Short_SSSE3<I, N>(g_PipelineState);
+		}
+
+		static const int size = sizeof(I);
 	};
 
 	template <typename I, int N>
@@ -80,6 +165,46 @@ namespace
 	};
 
 	template <typename I>
+	struct Normal_Index3_UByte_SSSE3
+	{
+		static void LOADERDECL function()
+		{
+			_Normal_Index3_UByte_SSSE3<I>(g_PipelineState);
+		}
+		static const int size = sizeof(I) * 3;
+	};
+
+	template <typename I>
+	struct Normal_Index3_SByte_SSSE3
+	{
+		static void LOADERDECL function()
+		{
+			_Normal_Index3_SByte_SSSE3<I>(g_PipelineState);
+		}
+		static const int size = sizeof(I) * 3;
+	};
+
+	template <typename I>
+	struct Normal_Index3_UShort_SSSE3
+	{
+		static void LOADERDECL function()
+		{
+			_Normal_Index3_UShort_SSSE3<I>(g_PipelineState);
+		}
+		static const int size = sizeof(I) * 3;
+	};
+
+	template <typename I>
+	struct Normal_Index3_Short_SSSE3
+	{
+		static void LOADERDECL function()
+		{
+			_Normal_Index3_Short_SSSE3<I>(g_PipelineState);
+		}
+		static const int size = sizeof(I) * 3;
+	};
+
+	template <typename I>
 	struct Normal_Index3_FLOAT_SSSE3
 	{
 		static void LOADERDECL function()
@@ -89,77 +214,6 @@ namespace
 		static const int size = sizeof(I) * 3;
 	};
 #endif
-
-#if _M_SSE >= 0x401
-
-	template <int N>
-	struct Normal_Direct_S16_SSSE4
-	{
-		static void LOADERDECL function()
-		{
-			_Normal_Direct_S16_SSSE4<N>(g_PipelineState);
-		}
-
-		static const int size = sizeof(s16) * N * 3;
-	};
-
-	template <int N>
-	struct Normal_Direct_U16_SSSE4
-	{
-		static void LOADERDECL function()
-		{
-			_Normal_Direct_U16_SSSE4<N>(g_PipelineState);
-		}
-
-		static const int size = sizeof(u16) * N * 3;
-	};
-
-	template <typename I, int N>
-	struct Normal_Index_S16_SSE4
-	{
-		static void LOADERDECL function()
-		{
-			_Normal_Index_S16_SSE4<I, N>(g_PipelineState);
-		}
-
-		static const int size = sizeof(I);
-	};
-
-	template <typename I, int N>
-	struct Normal_Index_U16_SSE4
-	{
-		static void LOADERDECL function()
-		{
-			_Normal_Index_U16_SSE4<I, N>(g_PipelineState);
-		}
-
-		static const int size = sizeof(I);
-	};
-
-	template <typename I>
-	struct Normal_Index3_S16_SSE4
-	{
-		static void LOADERDECL function()
-		{
-			_Normal_Index3_S16_SSE4<I>(g_PipelineState);
-		}
-
-		static const int size = sizeof(I) * 3;
-	};
-
-	template <typename I>
-	struct Normal_Index3_U16_SSE4
-	{
-		static void LOADERDECL function()
-		{
-			_Normal_Index3_U16_SSE4<I>(g_PipelineState);
-		}
-
-		static const int size = sizeof(I) * 3;
-	};
-#endif
-
-
 }
 
 void VertexLoader_Normal::Init(void)
@@ -238,67 +292,77 @@ void VertexLoader_Normal::Init(void)
 	m_Table[INDEX16][NRM_INDICES3][NRM_NBT3][FORMAT_SHORT] = Normal_Index_Indices3<u16, s16>();
 	m_Table[INDEX16][NRM_INDICES3][NRM_NBT3][FORMAT_FLOAT] = Normal_Index_Indices3<u16, float>();
 
-
 #if _M_SSE >= 0x301
 	if (cpu_info.bSSSE3)
 	{
+		m_Table[DIRECT][NRM_INDICES1][NRM_NBT][FORMAT_UBYTE] = Normal_Direct_UByte_SSSE3<1>();
+		m_Table[DIRECT][NRM_INDICES1][NRM_NBT][FORMAT_BYTE] = Normal_Direct_SByte_SSSE3<1>();
+		m_Table[DIRECT][NRM_INDICES1][NRM_NBT][FORMAT_USHORT] = Normal_Direct_UShort_SSSE3<1>();
+		m_Table[DIRECT][NRM_INDICES1][NRM_NBT][FORMAT_SHORT] = Normal_Direct_Short_SSSE3<1>();
 		m_Table[DIRECT][NRM_INDICES1][NRM_NBT][FORMAT_FLOAT] = Normal_Direct_FLOAT_SSSE3<1>();
+		m_Table[DIRECT][NRM_INDICES1][NRM_NBT3][FORMAT_UBYTE] = Normal_Direct_UByte_SSSE3<3>();
+		m_Table[DIRECT][NRM_INDICES1][NRM_NBT3][FORMAT_BYTE] = Normal_Direct_SByte_SSSE3<3>();
+		m_Table[DIRECT][NRM_INDICES1][NRM_NBT3][FORMAT_USHORT] = Normal_Direct_UShort_SSSE3<3>();
+		m_Table[DIRECT][NRM_INDICES1][NRM_NBT3][FORMAT_SHORT] = Normal_Direct_Short_SSSE3<3>();
 		m_Table[DIRECT][NRM_INDICES1][NRM_NBT3][FORMAT_FLOAT] = Normal_Direct_FLOAT_SSSE3<3>();
 
 		// Same as above
+		m_Table[DIRECT][NRM_INDICES3][NRM_NBT][FORMAT_UBYTE] = Normal_Direct_UByte_SSSE3<1>();
+		m_Table[DIRECT][NRM_INDICES3][NRM_NBT][FORMAT_BYTE] = Normal_Direct_SByte_SSSE3<1>();
+		m_Table[DIRECT][NRM_INDICES3][NRM_NBT][FORMAT_USHORT] = Normal_Direct_UShort_SSSE3<1>();
+		m_Table[DIRECT][NRM_INDICES3][NRM_NBT][FORMAT_SHORT] = Normal_Direct_Short_SSSE3<1>();
 		m_Table[DIRECT][NRM_INDICES3][NRM_NBT][FORMAT_FLOAT] = Normal_Direct_FLOAT_SSSE3<1>();
+		m_Table[DIRECT][NRM_INDICES3][NRM_NBT3][FORMAT_UBYTE] = Normal_Direct_UByte_SSSE3<3>();
+		m_Table[DIRECT][NRM_INDICES3][NRM_NBT3][FORMAT_BYTE] = Normal_Direct_SByte_SSSE3<3>();
+		m_Table[DIRECT][NRM_INDICES3][NRM_NBT3][FORMAT_USHORT] = Normal_Direct_UShort_SSSE3<3>();
+		m_Table[DIRECT][NRM_INDICES3][NRM_NBT3][FORMAT_SHORT] = Normal_Direct_Short_SSSE3<3>();
 		m_Table[DIRECT][NRM_INDICES3][NRM_NBT3][FORMAT_FLOAT] = Normal_Direct_FLOAT_SSSE3<3>();
 
+		m_Table[INDEX8][NRM_INDICES1][NRM_NBT][FORMAT_UBYTE] = Normal_Index_UByte_SSSE3<u8, 1>();
+		m_Table[INDEX8][NRM_INDICES1][NRM_NBT][FORMAT_BYTE] = Normal_Index_SByte_SSSE3<u8, 1>();
+		m_Table[INDEX8][NRM_INDICES1][NRM_NBT][FORMAT_USHORT] = Normal_Index_UShort_SSSE3<u8, 1>();
+		m_Table[INDEX8][NRM_INDICES1][NRM_NBT][FORMAT_SHORT] = Normal_Index_Short_SSSE3<u8, 1>();
 		m_Table[INDEX8][NRM_INDICES1][NRM_NBT][FORMAT_FLOAT] = Normal_Index_FLOAT_SSSE3<u8, 1>();
+		m_Table[INDEX8][NRM_INDICES1][NRM_NBT3][FORMAT_UBYTE] = Normal_Index_UByte_SSSE3<u8, 3>();
+		m_Table[INDEX8][NRM_INDICES1][NRM_NBT3][FORMAT_BYTE] = Normal_Index_SByte_SSSE3<u8, 3>();
+		m_Table[INDEX8][NRM_INDICES1][NRM_NBT3][FORMAT_USHORT] = Normal_Index_UShort_SSSE3<u8, 3>();
+		m_Table[INDEX8][NRM_INDICES1][NRM_NBT3][FORMAT_SHORT] = Normal_Index_Short_SSSE3<u8, 3>();
 		m_Table[INDEX8][NRM_INDICES1][NRM_NBT3][FORMAT_FLOAT] = Normal_Index_FLOAT_SSSE3<u8, 3>();
 
 		// Same as above for NRM_NBT
-		m_Table[INDEX8][NRM_INDICES3][NRM_NBT][FORMAT_FLOAT] = Normal_Index_FLOAT_SSSE3<u8, 1>();
+		m_Table[INDEX8][NRM_INDICES3][NRM_NBT][FORMAT_UBYTE] = Normal_Index_UByte_SSSE3<u8, 1>();
+		m_Table[INDEX8][NRM_INDICES3][NRM_NBT][FORMAT_BYTE] = Normal_Index_SByte_SSSE3<u8, 1>();
+		m_Table[INDEX8][NRM_INDICES3][NRM_NBT][FORMAT_USHORT] = Normal_Index_UShort_SSSE3<u8, 1>();
+		m_Table[INDEX8][NRM_INDICES3][NRM_NBT][FORMAT_SHORT] = Normal_Index_Short_SSSE3<u8, 1>();
+		m_Table[INDEX8][NRM_INDICES3][NRM_NBT][FORMAT_FLOAT] = Normal_Index_FLOAT_SSSE3<u8, 1>();		
+		m_Table[INDEX8][NRM_INDICES3][NRM_NBT3][FORMAT_UBYTE] = Normal_Index3_UByte_SSSE3<u8>();
+		m_Table[INDEX8][NRM_INDICES3][NRM_NBT3][FORMAT_BYTE] = Normal_Index3_SByte_SSSE3<u8>();
+		m_Table[INDEX8][NRM_INDICES3][NRM_NBT3][FORMAT_USHORT] = Normal_Index3_UShort_SSSE3<u8>();
+		m_Table[INDEX8][NRM_INDICES3][NRM_NBT3][FORMAT_SHORT] = Normal_Index3_Short_SSSE3<u8>();
 		m_Table[INDEX8][NRM_INDICES3][NRM_NBT3][FORMAT_FLOAT] = Normal_Index3_FLOAT_SSSE3<u8>();
 
+		m_Table[INDEX16][NRM_INDICES1][NRM_NBT][FORMAT_UBYTE] = Normal_Index_UByte_SSSE3<u16, 1>();
+		m_Table[INDEX16][NRM_INDICES1][NRM_NBT][FORMAT_BYTE] = Normal_Index_SByte_SSSE3<u16, 1>();
+		m_Table[INDEX16][NRM_INDICES1][NRM_NBT][FORMAT_USHORT] = Normal_Index_UShort_SSSE3<u16, 1>();
+		m_Table[INDEX16][NRM_INDICES1][NRM_NBT][FORMAT_SHORT] = Normal_Index_Short_SSSE3<u16, 1>();
 		m_Table[INDEX16][NRM_INDICES1][NRM_NBT][FORMAT_FLOAT] = Normal_Index_FLOAT_SSSE3<u16, 1>();
+		m_Table[INDEX16][NRM_INDICES1][NRM_NBT3][FORMAT_UBYTE] = Normal_Index_UByte_SSSE3<u16, 3>();
+		m_Table[INDEX16][NRM_INDICES1][NRM_NBT3][FORMAT_BYTE] = Normal_Index_SByte_SSSE3<u16, 3>();
+		m_Table[INDEX16][NRM_INDICES1][NRM_NBT3][FORMAT_USHORT] = Normal_Index_UShort_SSSE3<u16, 3>();
+		m_Table[INDEX16][NRM_INDICES1][NRM_NBT3][FORMAT_SHORT] = Normal_Index_Short_SSSE3<u16, 3>();
 		m_Table[INDEX16][NRM_INDICES1][NRM_NBT3][FORMAT_FLOAT] = Normal_Index_FLOAT_SSSE3<u16, 3>();
 
 		// Same as above for NRM_NBT
+		m_Table[INDEX16][NRM_INDICES3][NRM_NBT][FORMAT_UBYTE] = Normal_Index_UByte_SSSE3<u16, 1>();
+		m_Table[INDEX16][NRM_INDICES3][NRM_NBT][FORMAT_BYTE] = Normal_Index_SByte_SSSE3<u16, 1>();
+		m_Table[INDEX16][NRM_INDICES3][NRM_NBT][FORMAT_USHORT] = Normal_Index_UShort_SSSE3<u16, 1>();
+		m_Table[INDEX16][NRM_INDICES3][NRM_NBT][FORMAT_SHORT] = Normal_Index_Short_SSSE3<u16, 1>();
 		m_Table[INDEX16][NRM_INDICES3][NRM_NBT][FORMAT_FLOAT] = Normal_Index_FLOAT_SSSE3<u16, 1>();
+		m_Table[INDEX16][NRM_INDICES3][NRM_NBT3][FORMAT_UBYTE] = Normal_Index3_UByte_SSSE3<u16>();
+		m_Table[INDEX16][NRM_INDICES3][NRM_NBT3][FORMAT_BYTE] = Normal_Index3_SByte_SSSE3<u16>();
+		m_Table[INDEX16][NRM_INDICES3][NRM_NBT3][FORMAT_USHORT] = Normal_Index3_UShort_SSSE3<u16>();
+		m_Table[INDEX16][NRM_INDICES3][NRM_NBT3][FORMAT_SHORT] = Normal_Index3_Short_SSSE3<u16>();
 		m_Table[INDEX16][NRM_INDICES3][NRM_NBT3][FORMAT_FLOAT] = Normal_Index3_FLOAT_SSSE3<u16>();
-	}
-#endif
-#if _M_SSE >= 0x401
-	if (cpu_info.bSSE4_1)
-	{
-		m_Table[DIRECT][NRM_INDICES1][NRM_NBT][FORMAT_USHORT] = Normal_Direct_U16_SSSE4<1>();
-		m_Table[DIRECT][NRM_INDICES1][NRM_NBT][FORMAT_SHORT] = Normal_Direct_S16_SSSE4<1>();
-		m_Table[DIRECT][NRM_INDICES1][NRM_NBT3][FORMAT_USHORT] = Normal_Direct_U16_SSSE4<3>();
-		m_Table[DIRECT][NRM_INDICES1][NRM_NBT3][FORMAT_SHORT] = Normal_Direct_S16_SSSE4<3>();
-
-		// Same as above
-		m_Table[DIRECT][NRM_INDICES3][NRM_NBT][FORMAT_USHORT] = Normal_Direct_U16_SSSE4<1>();
-		m_Table[DIRECT][NRM_INDICES3][NRM_NBT][FORMAT_SHORT] = Normal_Direct_S16_SSSE4<1>();
-		m_Table[DIRECT][NRM_INDICES3][NRM_NBT3][FORMAT_USHORT] = Normal_Direct_U16_SSSE4<3>();
-		m_Table[DIRECT][NRM_INDICES3][NRM_NBT3][FORMAT_SHORT] = Normal_Direct_S16_SSSE4<3>();
-
-		m_Table[INDEX8][NRM_INDICES1][NRM_NBT][FORMAT_USHORT] = Normal_Index_U16_SSE4<u8, 1>();
-		m_Table[INDEX8][NRM_INDICES1][NRM_NBT][FORMAT_SHORT] = Normal_Index_S16_SSE4<u8, 1>();
-		m_Table[INDEX8][NRM_INDICES1][NRM_NBT3][FORMAT_USHORT] = Normal_Index_U16_SSE4<u8, 3>();
-		m_Table[INDEX8][NRM_INDICES1][NRM_NBT3][FORMAT_SHORT] = Normal_Index_S16_SSE4<u8, 3>();
-
-		// Same as above for NRM_NBT
-		m_Table[INDEX8][NRM_INDICES3][NRM_NBT][FORMAT_USHORT] = Normal_Index_U16_SSE4<u8, 1>();
-		m_Table[INDEX8][NRM_INDICES3][NRM_NBT][FORMAT_SHORT] = Normal_Index_S16_SSE4<u8, 1>();
-		m_Table[INDEX8][NRM_INDICES3][NRM_NBT3][FORMAT_USHORT] = Normal_Index3_U16_SSE4<u8>();
-		m_Table[INDEX8][NRM_INDICES3][NRM_NBT3][FORMAT_SHORT] = Normal_Index3_S16_SSE4<u8>();
-
-		m_Table[INDEX16][NRM_INDICES1][NRM_NBT][FORMAT_USHORT] = Normal_Index_U16_SSE4<u16, 1>();
-		m_Table[INDEX16][NRM_INDICES1][NRM_NBT][FORMAT_SHORT] = Normal_Index_S16_SSE4<u16, 1>();
-		m_Table[INDEX16][NRM_INDICES1][NRM_NBT3][FORMAT_USHORT] = Normal_Index_U16_SSE4<u16, 3>();
-		m_Table[INDEX16][NRM_INDICES1][NRM_NBT3][FORMAT_SHORT] = Normal_Index_S16_SSE4<u16, 3>();
-
-		// Same as above for NRM_NBT
-		m_Table[INDEX16][NRM_INDICES3][NRM_NBT][FORMAT_USHORT] = Normal_Index_U16_SSE4<u16, 1>();
-		m_Table[INDEX16][NRM_INDICES3][NRM_NBT][FORMAT_SHORT] = Normal_Index_S16_SSE4<u16, 1>();
-		m_Table[INDEX16][NRM_INDICES3][NRM_NBT3][FORMAT_USHORT] = Normal_Index3_U16_SSE4<u16>();
-		m_Table[INDEX16][NRM_INDICES3][NRM_NBT3][FORMAT_SHORT] = Normal_Index3_S16_SSE4<u16>();
 	}
 #endif
 

@@ -47,17 +47,78 @@ __forceinline void _Pos_ReadIndex(TPipelineState &pipelinestate)
 }
 
 #if _M_SSE >= 0x301
-template <typename I, bool three>
-__forceinline void _Pos_ReadIndex_Float_SSSE3(TPipelineState &pipelinestate)
+template <bool three>
+__forceinline void _Pos_ReadDirect_UByte_SSSE3(TPipelineState &pipelinestate)
 {
-	const __m128i* pData = (const __m128i*)IndexedDataPosition<I>(pipelinestate);
+	const u32* pData = reinterpret_cast<const u32*>(pipelinestate.GetReadPosition());
+	const __m128 scale = _mm_set_ps1(pipelinestate.posScale);
+	float* dst = reinterpret_cast<float*>(pipelinestate.GetWritePosition());
 	if (three)
 	{
-		Float3ToFloat3sse3((__m128i*)pipelinestate.GetWritePosition(), pData);
+		pipelinestate.ReadSkip(3);
+		UByte3ToFloat3_SSSE3(pData, scale, dst);
 	}
 	else
 	{
-		Float2ToFloat3sse3((__m128i*)pipelinestate.GetWritePosition(), pData);
+		pipelinestate.ReadSkip(2);
+		UByte2ToFloat3_SSSE3(pData, scale, dst);
+	}
+	pipelinestate.WriteSkip(sizeof(float) * 3);
+}
+
+template <bool three>
+__forceinline void _Pos_ReadDirect_SByte_SSSE3(TPipelineState &pipelinestate)
+{
+	const u32* pData = reinterpret_cast<const u32*>(pipelinestate.GetReadPosition());
+	const __m128 scale = _mm_set_ps1(pipelinestate.posScale);
+	float* dst = reinterpret_cast<float*>(pipelinestate.GetWritePosition());
+	if (three)
+	{
+		pipelinestate.ReadSkip(3);
+		SByte3ToFloat3_SSSE3(pData, scale, dst);
+	}
+	else
+	{
+		pipelinestate.ReadSkip(2);
+		SByte2ToFloat3_SSSE3(pData, scale, dst);
+	}
+	pipelinestate.WriteSkip(sizeof(float) * 3);
+}
+
+template <bool three>
+__forceinline void _Pos_ReadDirect_UShort_SSSE3(TPipelineState &pipelinestate)
+{
+	const u8* pData = pipelinestate.GetReadPosition();
+	const __m128 scale = _mm_set_ps1(pipelinestate.posScale);
+	float* dst = reinterpret_cast<float*>(pipelinestate.GetWritePosition());
+	if (three)
+	{
+		pipelinestate.ReadSkip(3 * sizeof(u16));
+		UShort3ToFloat3_SSSE3(reinterpret_cast<const __m128i*>(pData), scale, dst);
+	}
+	else
+	{
+		pipelinestate.ReadSkip(2 * sizeof(u16));
+		UShort2ToFloat3_SSSE3(reinterpret_cast<const u32*>(pData), scale, dst);
+	}
+	pipelinestate.WriteSkip(sizeof(float) * 3);
+}
+
+template <bool three>
+__forceinline void _Pos_ReadDirect_Short_SSSE3(TPipelineState &pipelinestate)
+{
+	const u8* pData = pipelinestate.GetReadPosition();
+	const __m128 scale = _mm_set_ps1(pipelinestate.posScale);
+	float* dst = reinterpret_cast<float*>(pipelinestate.GetWritePosition());
+	if (three)
+	{
+		pipelinestate.ReadSkip(3 * sizeof(s16));
+		Short3ToFloat3_SSSE3(reinterpret_cast<const __m128i*>(pData), scale, dst);
+	}
+	else
+	{
+		pipelinestate.ReadSkip(2 * sizeof(s16));
+		Short2ToFloat3_SSSE3(reinterpret_cast<const u32*>(pData), scale, dst);
 	}
 	pipelinestate.WriteSkip(sizeof(float) * 3);
 }
@@ -65,83 +126,106 @@ __forceinline void _Pos_ReadIndex_Float_SSSE3(TPipelineState &pipelinestate)
 template <bool three>
 __forceinline void _Pos_ReadDirect_Float_SSSE3(TPipelineState &pipelinestate)
 {
-	const __m128i* pData = (const __m128i*)pipelinestate.GetReadPosition();
+	const __m128i* pData = reinterpret_cast<const __m128i*>(pipelinestate.GetReadPosition());
+	__m128i* dst = reinterpret_cast<__m128i*>(pipelinestate.GetWritePosition());
 	if (three)
 	{
 		pipelinestate.ReadSkip(sizeof(float) * 3);
-		Float3ToFloat3sse3((__m128i*)pipelinestate.GetWritePosition(), pData);
+		Float3ToFloat3sse3(dst, pData);
 	}
 	else
 	{
 		pipelinestate.ReadSkip(sizeof(float) * 2);
-		Float2ToFloat3sse3((__m128i*)pipelinestate.GetWritePosition(), pData);
-	}
-	pipelinestate.WriteSkip(sizeof(float) * 3);
-}
-#endif
-
-#if _M_SSE >= 0x401
-template <typename I, bool Signed>
-__forceinline void _Pos_ReadIndex_16x2_SSE4(TPipelineState &pipelinestate)
-{
-	const s32 Data = *((const s32*)IndexedDataPosition<I>(pipelinestate));
-	if (Signed)
-	{
-		Short2ToFloat3sse4((float*)pipelinestate.GetWritePosition(), Data, &pipelinestate.posScale);
-	}
-	else
-	{
-		UShort2ToFloat3sse4((float*)pipelinestate.GetWritePosition(), Data, &pipelinestate.posScale);
+		Float2ToFloat3sse3(dst, pData);
 	}
 	pipelinestate.WriteSkip(sizeof(float) * 3);
 }
 
-template <typename I, bool Signed>
-__forceinline void _Pos_ReadIndex_16x3_SSE4(TPipelineState &pipelinestate)
+template <typename I, bool three>
+__forceinline void _Pos_ReadIndex_UByte_SSSE3(TPipelineState &pipelinestate)
 {
-	const __m128i* pData = (const __m128i*)IndexedDataPosition<I>(pipelinestate);
-	if (Signed)
+	const u32* pData = reinterpret_cast<const u32*>(IndexedDataPosition<I>(pipelinestate));
+	float* dst = reinterpret_cast<float*>(pipelinestate.GetWritePosition());
+	const __m128 scale = _mm_set_ps1(pipelinestate.posScale);
+	if (three)
 	{
-		Short3ToFloat3sse4((float*)pipelinestate.GetWritePosition(), pData, &pipelinestate.posScale);
+		UByte3ToFloat3_SSSE3(pData, scale, dst);
 	}
 	else
 	{
-		UShort3ToFloat3sse4((float*)pipelinestate.GetWritePosition(), pData, &pipelinestate.posScale);
+		UByte2ToFloat3_SSSE3(pData, scale, dst);
 	}
 	pipelinestate.WriteSkip(sizeof(float) * 3);
 }
 
-template <bool Signed>
-__forceinline void _Pos_ReadDirect_16x2_SSE4(TPipelineState &pipelinestate)
+template <typename I, bool three>
+__forceinline void _Pos_ReadIndex_SByte_SSSE3(TPipelineState &pipelinestate)
 {
-	const s32 Data = *((const s32*)pipelinestate.GetReadPosition());
-	pipelinestate.ReadSkip(sizeof(s16) * 2);
-	if (Signed)
+	const u32* pData = reinterpret_cast<const u32*>(IndexedDataPosition<I>(pipelinestate));
+	float* dst = reinterpret_cast<float*>(pipelinestate.GetWritePosition());
+	const __m128 scale = _mm_set_ps1(pipelinestate.posScale);
+	if (three)
 	{
-		Short2ToFloat3sse4((float*)pipelinestate.GetWritePosition(), Data, &pipelinestate.posScale);
+		SByte3ToFloat3_SSSE3(pData, scale, dst);
 	}
 	else
 	{
-		UShort2ToFloat3sse4((float*)pipelinestate.GetWritePosition(), Data, &pipelinestate.posScale);
+		SByte2ToFloat3_SSSE3(pData, scale, dst);
 	}
 	pipelinestate.WriteSkip(sizeof(float) * 3);
 }
 
-template <bool Signed>
-__forceinline void _Pos_ReadDirect_16x3_SSE4(TPipelineState &pipelinestate)
+template <typename I, bool three>
+__forceinline void _Pos_ReadIndex_UShort_SSSE3(TPipelineState &pipelinestate)
 {
-	const __m128i* pData = (const __m128i*)pipelinestate.GetReadPosition();
-	pipelinestate.ReadSkip(sizeof(s16) * 3);
-	if (Signed)
+	const u8* pData = IndexedDataPosition<I>(pipelinestate);
+	float* dst = reinterpret_cast<float*>(pipelinestate.GetWritePosition());
+	const __m128 scale = _mm_set_ps1(pipelinestate.posScale);
+	if (three)
 	{
-		Short3ToFloat3sse4((float*)pipelinestate.GetWritePosition(), pData, &pipelinestate.posScale);
+		UShort3ToFloat3_SSSE3(reinterpret_cast<const __m128i*>(pData), scale, dst);
 	}
 	else
 	{
-		UShort3ToFloat3sse4((float*)pipelinestate.GetWritePosition(), pData, &pipelinestate.posScale);
+		UShort2ToFloat3_SSSE3(reinterpret_cast<const u32*>(pData), scale, dst);
 	}
 	pipelinestate.WriteSkip(sizeof(float) * 3);
 }
+
+template <typename I, bool three>
+__forceinline void _Pos_ReadIndex_Short_SSSE3(TPipelineState &pipelinestate)
+{
+	const u8* pData = IndexedDataPosition<I>(pipelinestate);
+	float* dst = reinterpret_cast<float*>(pipelinestate.GetWritePosition());
+	const __m128 scale = _mm_set_ps1(pipelinestate.posScale);
+	if (three)
+	{
+		Short3ToFloat3_SSSE3(reinterpret_cast<const __m128i*>(pData), scale, dst);
+	}
+	else
+	{
+		Short2ToFloat3_SSSE3(reinterpret_cast<const u32*>(pData), scale, dst);
+	}
+	pipelinestate.WriteSkip(sizeof(float) * 3);
+}
+
+template <typename I, bool three>
+__forceinline void _Pos_ReadIndex_Float_SSSE3(TPipelineState &pipelinestate)
+{
+	const __m128i* pData = reinterpret_cast<const __m128i*>(IndexedDataPosition<I>(pipelinestate));
+	__m128i* dst = reinterpret_cast<__m128i*>(pipelinestate.GetWritePosition());
+	if (three)
+	{
+		Float3ToFloat3sse3(dst, pData);
+	}
+	else
+	{
+		Float2ToFloat3sse3(dst, pData);
+	}
+	pipelinestate.WriteSkip(sizeof(float) * 3);
+}
+
+
 #endif
 
 enum EPosElements

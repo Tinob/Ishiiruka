@@ -156,22 +156,54 @@ __forceinline void PosFunction_DIRECT(TPipelineState &pipelinestate)
 	switch (_format)
 	{
 	case FORMAT_UBYTE:
-		_Pos_ReadDirect<u8, N>(pipelinestate);
-		break;
-	case FORMAT_BYTE:
-		_Pos_ReadDirect<s8, N>(pipelinestate);
-		break;
-	case FORMAT_USHORT:
-#if _M_SSE >= 0x401
-		if (iSSE >= 0x401)
+#if _M_SSE >= 0x301
+		if (iSSE >= 0x301)
 		{
 			if (N == 2)
 			{
-				_Pos_ReadDirect_16x2_SSE4<false>(pipelinestate);
+				_Pos_ReadDirect_UByte_SSSE3<false>(pipelinestate);
 			}
 			else
 			{
-				_Pos_ReadDirect_16x3_SSE4<false>(pipelinestate);
+				_Pos_ReadDirect_UByte_SSSE3<true>(pipelinestate);
+			}
+		}
+		else
+#endif
+		{
+			_Pos_ReadDirect<u8, N>(pipelinestate);
+		}
+		break;
+	case FORMAT_BYTE:
+#if _M_SSE >= 0x301
+		if (iSSE >= 0x301)
+		{
+			if (N == 2)
+			{
+				_Pos_ReadDirect_SByte_SSSE3<false>(pipelinestate);
+			}
+			else
+			{
+				_Pos_ReadDirect_SByte_SSSE3<true>(pipelinestate);
+			}
+		}
+		else
+#endif
+		{
+			_Pos_ReadDirect<s8, N>(pipelinestate);
+		}
+		break;
+	case FORMAT_USHORT:
+#if _M_SSE >= 0x301
+		if (iSSE >= 0x301)
+		{
+			if (N == 2)
+			{
+				_Pos_ReadDirect_UShort_SSSE3<false>(pipelinestate);
+			}
+			else
+			{
+				_Pos_ReadDirect_UShort_SSSE3<true>(pipelinestate);
 			}
 		}
 		else
@@ -181,16 +213,16 @@ __forceinline void PosFunction_DIRECT(TPipelineState &pipelinestate)
 		}
 		break;
 	case FORMAT_SHORT:
-#if _M_SSE >= 0x401
-		if (iSSE >= 0x401)
+#if _M_SSE >= 0x301
+		if (iSSE >= 0x301)
 		{
 			if (N == 2)
 			{
-				_Pos_ReadDirect_16x2_SSE4<true>(pipelinestate);
+				_Pos_ReadDirect_Short_SSSE3<false>(pipelinestate);
 			}
 			else
 			{
-				_Pos_ReadDirect_16x3_SSE4<true>(pipelinestate);
+				_Pos_ReadDirect_Short_SSSE3<true>(pipelinestate);
 			}
 		}
 		else
@@ -229,22 +261,54 @@ __forceinline void PosFunction_Index(TPipelineState &pipelinestate)
 	switch (_format)
 	{
 	case FORMAT_UBYTE:
-		_Pos_ReadIndex<I, u8, N>(pipelinestate);
-		break;
-	case FORMAT_BYTE:
-		_Pos_ReadIndex<I, s8, N>(pipelinestate);
-		break;
-	case FORMAT_USHORT:
-#if _M_SSE >= 0x401
-		if (iSSE >= 0x401)
+#if _M_SSE >= 0x301
+		if (iSSE >= 0x301)
 		{
 			if (N == 2)
 			{
-				_Pos_ReadIndex_16x2_SSE4<I, false>(pipelinestate);
+				_Pos_ReadIndex_UByte_SSSE3<I, false>(pipelinestate);
 			}
 			else
 			{
-				_Pos_ReadIndex_16x3_SSE4<I, false>(pipelinestate);
+				_Pos_ReadIndex_UByte_SSSE3<I, true>(pipelinestate);
+			}
+		}
+		else
+#endif
+		{
+			_Pos_ReadIndex<I, u8, N>(pipelinestate);
+		}
+		break;
+	case FORMAT_BYTE:
+#if _M_SSE >= 0x301
+		if (iSSE >= 0x301)
+		{
+			if (N == 2)
+			{
+				_Pos_ReadIndex_SByte_SSSE3<I, false>(pipelinestate);
+			}
+			else
+			{
+				_Pos_ReadIndex_SByte_SSSE3<I, true>(pipelinestate);
+			}
+		}
+		else
+#endif
+		{
+			_Pos_ReadIndex<I, s8, N>(pipelinestate);
+		}
+		break;
+	case FORMAT_USHORT:
+#if _M_SSE >= 0x301
+		if (iSSE >= 0x301)
+		{
+			if (N == 2)
+			{
+				_Pos_ReadIndex_UShort_SSSE3<I, false>(pipelinestate);
+			}
+			else
+			{
+				_Pos_ReadIndex_UShort_SSSE3<I, true>(pipelinestate);
 			}
 		}
 		else
@@ -254,16 +318,16 @@ __forceinline void PosFunction_Index(TPipelineState &pipelinestate)
 		}
 		break;
 	case FORMAT_SHORT:
-#if _M_SSE >= 0x401
-		if (iSSE >= 0x401)
+#if _M_SSE >= 0x301
+		if (iSSE >= 0x301)
 		{
 			if (N == 2)
 			{
-				_Pos_ReadIndex_16x2_SSE4<I, true>(pipelinestate);
+				_Pos_ReadIndex_Short_SSSE3<I, false>(pipelinestate);
 			}
 			else
 			{
-				_Pos_ReadIndex_16x3_SSE4<I, true>(pipelinestate);
+				_Pos_ReadIndex_Short_SSSE3<I, true>(pipelinestate);
 			}
 		}
 		else
@@ -319,16 +383,34 @@ __forceinline void NormalFunction_DIRECT(TPipelineState &pipelinestate)
 	switch (_format)
 	{
 	case FORMAT_UBYTE:
-		_Normal_Direct<u8, N>(pipelinestate);
+#if _M_SSE >= 0x301
+		if (iSSE >= 0x301)
+		{
+			_Normal_Direct_UByte_SSSE3<N>(pipelinestate);
+		}
+		else
+#endif
+		{
+			_Normal_Direct<u8, N>(pipelinestate);
+		}
 		break;
 	case FORMAT_BYTE:
-		_Normal_Direct<s8, N>(pipelinestate);
+#if _M_SSE >= 0x301
+		if (iSSE >= 0x301)
+		{
+			_Normal_Direct_SByte_SSSE3<N>(pipelinestate);
+		}
+		else
+#endif
+		{
+			_Normal_Direct<s8, N>(pipelinestate);
+		}
 		break;
 	case FORMAT_USHORT:
-#if _M_SSE >= 0x401
-		if (iSSE >= 0x401)
+#if _M_SSE >= 0x301
+		if (iSSE >= 0x301)
 		{
-			_Normal_Direct_U16_SSSE4<N>(pipelinestate);
+			_Normal_Direct_UShort_SSSE3<N>(pipelinestate);
 		}
 		else
 #endif
@@ -337,10 +419,10 @@ __forceinline void NormalFunction_DIRECT(TPipelineState &pipelinestate)
 		}
 		break;
 	case FORMAT_SHORT:
-#if _M_SSE >= 0x401
-		if (iSSE >= 0x401)
+#if _M_SSE >= 0x301
+		if (iSSE >= 0x301)
 		{
-			_Normal_Direct_S16_SSSE4<N>(pipelinestate);
+			_Normal_Direct_Short_SSSE3<N>(pipelinestate);
 		}
 		else
 #endif
@@ -371,16 +453,34 @@ __forceinline void NormalFunction_Index(TPipelineState &pipelinestate)
 	switch (_format)
 	{
 	case FORMAT_UBYTE:
-		_Normal_Index_Offset<I, u8, N, 0>(pipelinestate);
+#if _M_SSE >= 0x301
+		if (iSSE >= 0x301)
+		{
+			_Normal_Index_UByte_SSSE3<I, N>(pipelinestate);
+		}
+		else
+#endif
+		{
+			_Normal_Index_Offset<I, u8, N, 0>(pipelinestate);
+		}
 		break;
 	case FORMAT_BYTE:
-		_Normal_Index_Offset<I, s8, N, 0>(pipelinestate);
+#if _M_SSE >= 0x301
+		if (iSSE >= 0x301)
+		{
+			_Normal_Index_SByte_SSSE3<I, N>(pipelinestate);
+		}
+		else
+#endif
+		{
+			_Normal_Index_Offset<I, s8, N, 0>(pipelinestate);
+		}
 		break;
 	case FORMAT_USHORT:
-#if _M_SSE >= 0x401
-		if (iSSE >= 0x401)
+#if _M_SSE >= 0x301
+		if (iSSE >= 0x301)
 		{
-			_Normal_Index_U16_SSE4<I, N>(pipelinestate);
+			_Normal_Index_UShort_SSSE3<I, N>(pipelinestate);
 		}
 		else
 #endif
@@ -389,10 +489,10 @@ __forceinline void NormalFunction_Index(TPipelineState &pipelinestate)
 		}
 		break;
 	case FORMAT_SHORT:
-#if _M_SSE >= 0x401
-		if (iSSE >= 0x401)
+#if _M_SSE >= 0x301
+		if (iSSE >= 0x301)
 		{
-			_Normal_Index_S16_SSE4<I, N>(pipelinestate);
+			_Normal_Index_Short_SSSE3<I, N>(pipelinestate);
 		}
 		else
 #endif
@@ -423,16 +523,34 @@ __forceinline void NormalFunction_Index3(TPipelineState &pipelinestate)
 	switch (_format)
 	{
 	case FORMAT_UBYTE:
-		_Normal_Index_Offset3<I, u8>(pipelinestate);
+#if _M_SSE >= 0x301
+		if (iSSE >= 0x301)
+		{
+			_Normal_Index3_UByte_SSSE3<I>(pipelinestate);
+		}
+		else
+#endif
+		{
+			_Normal_Index_Offset3<I, u8>(pipelinestate);
+		}
 		break;
 	case FORMAT_BYTE:
-		_Normal_Index_Offset3<I, s8>(pipelinestate);
+#if _M_SSE >= 0x301
+		if (iSSE >= 0x301)
+		{
+			_Normal_Index3_SByte_SSSE3<I>(pipelinestate);
+		}
+		else
+#endif
+		{
+			_Normal_Index_Offset3<I, s8>(pipelinestate);
+		}
 		break;
 	case FORMAT_USHORT:
-#if _M_SSE >= 0x401
-		if (iSSE >= 0x401)
+#if _M_SSE >= 0x301
+		if (iSSE >= 0x301)
 		{
-			_Normal_Index3_U16_SSE4<I>(pipelinestate);
+			_Normal_Index3_UShort_SSSE3<I>(pipelinestate);
 		}
 		else
 #endif
@@ -441,10 +559,10 @@ __forceinline void NormalFunction_Index3(TPipelineState &pipelinestate)
 		}
 		break;
 	case FORMAT_SHORT:
-#if _M_SSE >= 0x401
-		if (iSSE >= 0x401)
+#if _M_SSE >= 0x301
+		if (iSSE >= 0x301)
 		{
-			_Normal_Index3_S16_SSE4<I>(pipelinestate);
+			_Normal_Index3_Short_SSSE3<I>(pipelinestate);
 		}
 		else
 #endif
@@ -552,16 +670,34 @@ __forceinline void TexCoordFunction_DIRECT(TPipelineState &pipelinestate)
 	switch (_format)
 	{
 	case FORMAT_UBYTE:
-		_TexCoord_ReadDirect<u8, N>(pipelinestate);
+#if _M_SSE >= 0x301
+		if (iSSE >= 0x301 && N == 2)
+		{
+			_TexCoord_ReadDirect_UByte2_SSSE3(pipelinestate);
+		}
+		else
+#endif
+		{
+			_TexCoord_ReadDirect<u8, N>(pipelinestate);
+		}
 		break;
 	case FORMAT_BYTE:
-		_TexCoord_ReadDirect<s8, N>(pipelinestate);
+#if _M_SSE >= 0x301
+		if (iSSE >= 0x301 && N == 2)
+		{
+			_TexCoord_ReadDirect_SByte2_SSSE3(pipelinestate);
+		}
+		else
+#endif
+		{
+			_TexCoord_ReadDirect<s8, N>(pipelinestate);
+		}
 		break;
 	case FORMAT_USHORT:
-#if _M_SSE >= 0x401
-		if (iSSE >= 0x401 && N == 2)
+#if _M_SSE >= 0x301
+		if (iSSE >= 0x301 && N == 2)
 		{
-			_TexCoord_ReadDirect_16x2_SSE4<false>(pipelinestate);
+			_TexCoord_ReadDirect_UShort2_SSSE3(pipelinestate);
 		}
 		else
 #endif
@@ -570,10 +706,10 @@ __forceinline void TexCoordFunction_DIRECT(TPipelineState &pipelinestate)
 		}
 		break;
 	case FORMAT_SHORT:
-#if _M_SSE >= 0x401
-		if (iSSE >= 0x401 && N == 2)
+#if _M_SSE >= 0x301
+		if (iSSE >= 0x301 && N == 2)
 		{
-			_TexCoord_ReadDirect_16x2_SSE4<true>(pipelinestate);
+			_TexCoord_ReadDirect_Short2_SSSE3(pipelinestate);
 		}
 		else
 #endif
@@ -604,16 +740,34 @@ __forceinline void TexCoordFunction_Index(TPipelineState &pipelinestate)
 	switch (_format)
 	{
 	case FORMAT_UBYTE:
-		_TexCoord_ReadIndex<I, u8, N>(pipelinestate);
+#if _M_SSE >= 0x301
+		if (iSSE >= 0x301 && N == 2)
+		{
+			_TexCoord_ReadIndex_UByte2_SSSE3<I>(pipelinestate);
+		}
+		else
+#endif
+		{
+			_TexCoord_ReadIndex<I, u8, N>(pipelinestate);
+		}
 		break;
 	case FORMAT_BYTE:
-		_TexCoord_ReadIndex<I, s8, N>(pipelinestate);
+#if _M_SSE >= 0x301
+		if (iSSE >= 0x301 && N == 2)
+		{
+			_TexCoord_ReadIndex_SByte2_SSSE3<I>(pipelinestate);
+		}
+		else
+#endif
+		{
+			_TexCoord_ReadIndex<I, s8, N>(pipelinestate);
+		}
 		break;
 	case FORMAT_USHORT:
-#if _M_SSE >= 0x401
-		if (iSSE >= 0x401 && N == 2)
+#if _M_SSE >= 0x301
+		if (iSSE >= 0x301 && N == 2)
 		{
-			_TexCoord_ReadIndex_16x2_SSE4<I, false>(pipelinestate);
+			_TexCoord_ReadIndex_UShort2_SSSE3<I>(pipelinestate);
 		}
 		else
 #endif
@@ -622,10 +776,10 @@ __forceinline void TexCoordFunction_Index(TPipelineState &pipelinestate)
 		}
 		break;
 	case FORMAT_SHORT:
-#if _M_SSE >= 0x401
-		if (iSSE >= 0x401 && N == 2)
+#if _M_SSE >= 0x301
+		if (iSSE >= 0x301 && N == 2)
 		{
-			_TexCoord_ReadIndex_16x2_SSE4<I, true>(pipelinestate);
+			_TexCoord_ReadIndex_Short2_SSSE3<I>(pipelinestate);
 		}
 		else
 #endif
