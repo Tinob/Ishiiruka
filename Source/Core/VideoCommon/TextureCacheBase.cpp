@@ -27,7 +27,6 @@ enum
 
 TextureCache *g_texture_cache;
 GC_ALIGNED16(u8 *TextureCache::temp) = NULL;
-GC_ALIGNED16(u8 *TextureCache::bufferstart) = NULL;
 u32 TextureCache::temp_size;
 
 TextureCache::TexCache TextureCache::textures;
@@ -277,12 +276,19 @@ PC_TexFormat TextureCache::LoadCustomTexture(u64 tex_hash, s32 texformat, u32 le
 	PC_TexFormat ret = HiresTextures::GetHiresTex(key, &newWidth, &newHeight, &required_size, &nummipsinbuffer, texformat, temp_size, temp, rgbaonly);
 	if (ret == PC_TEX_FMT_NONE && temp_size < required_size)
 	{
-		// Allocate more memory and try again
-		// TODO: Should probably check if newWidth and newHeight are texture dimensions which are actually supported by the current video backend
-		temp_size = required_size;
-		FreeAlignedMemory(TextureCache::temp);
-		TextureCache::temp = (u8*)AllocateAlignedMemory(temp_size, 16);
-		ret = HiresTextures::GetHiresTex(key, &newWidth, &newHeight, &required_size, &nummipsinbuffer, texformat, temp_size, temp, rgbaonly);
+		
+		u32 maxsize = (u32)g_renderer->GetMaxTextureSize();
+		if (newWidth <= maxsize && newHeight <= maxsize)
+		{
+			// Allocate more memory and try again
+			while (temp_size < required_size)
+			{
+				temp_size *= 4;
+			}
+			FreeAlignedMemory(TextureCache::temp);
+			TextureCache::temp = (u8*)AllocateAlignedMemory(temp_size, 16);
+			ret = HiresTextures::GetHiresTex(key, &newWidth, &newHeight, &required_size, &nummipsinbuffer, texformat, temp_size, temp, rgbaonly);
+		}
 	}
 
 	if (ret != PC_TEX_FMT_NONE)
@@ -452,7 +458,6 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 	bool using_custom_lods = using_custom_texture;
 	u32 nummipsinbuffer = 0;
 	bool bUseRGBATextures = false;
-	TextureCache::bufferstart = TextureCache::temp;
 	if (g_ActiveConfig.bHiresTextures)
 	{
 		// This function may modify width/height.
@@ -519,7 +524,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 	// load texture
 	if (using_custom_texture)
 	{
-		entry->Load(TextureCache::bufferstart, width, height, expandedWidth, 0);
+		entry->Load(TextureCache::temp, width, height, expandedWidth, 0);
 	}
 	else
 	{
@@ -576,10 +581,11 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 		}
 		else if (using_custom_lods)
 		{
+			u8 *Bufferptr = TextureCache::temp;
 			if (nummipsinbuffer > 0)
 			{
 				texLevels = std::min(texLevels, nummipsinbuffer);
-				TextureCache::bufferstart += TextureUtil::GetTextureSizeInBytes(width, height, pcfmt);
+				Bufferptr += TextureUtil::GetTextureSizeInBytes(width, height, pcfmt);
 			}
 			for (; level != texLevels; ++level)
 			{
@@ -590,10 +596,10 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 					u32 nmips = 0;
 					LoadCustomTexture(tex_hash, texformat, level, mip_width, mip_height, nmips, bUseRGBATextures);
 				}
-				entry->Load(TextureCache::bufferstart, mip_width, mip_height, mip_width, level);
+				entry->Load(Bufferptr, mip_width, mip_height, mip_width, level);
 				if (nummipsinbuffer > 0)
 				{
-					TextureCache::bufferstart += TextureUtil::GetTextureSizeInBytes(mip_width, mip_height, pcfmt);
+					Bufferptr += TextureUtil::GetTextureSizeInBytes(mip_width, mip_height, pcfmt);
 				}
 			}
 		}

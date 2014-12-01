@@ -89,8 +89,14 @@ void TextureCache::TCacheEntry::ReplaceTexture(const u8* src, u32 width, u32 hei
 			s_memPoolTexture[pcformat]->Release();
 			s_memPoolTexture[pcformat] = nullptr;
 		}
-		s_memPoolTextureW[pcformat] = std::max(width, s_memPoolTextureW[pcformat]);
-		s_memPoolTextureH[pcformat] = std::max(height, s_memPoolTextureH[pcformat]);
+		u32 max = std::max(width, height);
+		u32 nextsize = s_memPoolTextureW[pcformat];
+		while (nextsize < max)
+		{
+			nextsize *= 2;
+		}
+		s_memPoolTextureW[pcformat] = nextsize;
+		s_memPoolTextureH[pcformat] = nextsize;
 		s_memPoolTexture[pcformat] = D3D::CreateTexture2D(s_memPoolTextureW[pcformat], s_memPoolTextureH[pcformat], d3d_fmt, 1, D3DPOOL_SYSTEMMEM);
 	}
 	D3D::ReplaceTexture2D(s_memPoolTexture[pcformat], src, width, height, expanded_width, d3d_fmt, swap_r_b);

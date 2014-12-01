@@ -32,6 +32,7 @@ private:
 		int gl_iformat;
 		int gl_type;
 		int m_num_levels;
+		void SetFormat();
 		//TexMode0 mode; // current filter and clamp modes that texture is set to
 		//TexMode1 mode1; // current filter and clamp modes that texture is set to
 

@@ -116,69 +116,8 @@ PC_TexFormat TextureCache::GetNativeTextureFormat(const s32 texformat, const Tlu
 	return pcfmt;
 }
 
-TextureCache::TCacheEntryBase* TextureCache::CreateTexture(u32 width, u32 height,
-	u32 expanded_width, u32 tex_levels, PC_TexFormat pcfmt)
+void TextureCache::TCacheEntry::SetFormat()
 {
-	TCacheEntry &entry = *new TCacheEntry;
-	entry.gl_format = 0;
-	entry.gl_iformat = 0;
-	entry.gl_type = 0;
-	entry.compressed = false;
-	entry.m_num_levels = tex_levels;
-	return &entry;
-}
-
-void TextureCache::TCacheEntry::Load(const u8* src, u32 width, u32 height,
-	u32 expanded_width, u32 level)
-{
-	glActiveTexture(GL_TEXTURE0 + 9);
-	glBindTexture(GL_TEXTURE_2D, texture);
-	if(level == 0)
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, m_num_levels - 1);
-
-	u32 blocksize = (pcformat == PC_TEX_FMT_DXT1) ? 8u : 16u;
-	switch (pcformat)
-	{
-	case PC_TEX_FMT_DXT1:
-	case PC_TEX_FMT_DXT3:
-	case PC_TEX_FMT_DXT5:
-	{
-		if (expanded_width != width)
-		{
-			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-			glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_WIDTH, 4);
-			glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_HEIGHT, 4);
-			glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_DEPTH, 1);
-			glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_SIZE, blocksize);
-			glPixelStorei(GL_UNPACK_ROW_LENGTH, expanded_width);
-		}
-		glCompressedTexImage2D(GL_TEXTURE_2D, level, gl_iformat,
-			width, height, 0, ((width + 3) >> 2) * ((height + 3) >> 2) * blocksize, src);
-		if (expanded_width != width)
-		{
-			glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-			glPixelStorei(GL_UNPACK_ALIGNMENT, 0);
-			glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_WIDTH, 0);
-			glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_HEIGHT, 0);
-			glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_DEPTH, 0);
-			glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_SIZE, 0);
-		}
-	}
-	break;
-	default:
-		if (expanded_width != width)
-			glPixelStorei(GL_UNPACK_ROW_LENGTH, expanded_width);
-		glTexImage2D(GL_TEXTURE_2D, level, gl_iformat, width, height, 0, gl_format, gl_type, src);
-		if (expanded_width != width)
-			glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-		break;
-	}
-	TextureCache::SetStage();
-}
-void TextureCache::TCacheEntry::Load(const u8* src, u32 width, u32 height, u32 expandedWidth,
-	u32 expandedHeight, const s32 texformat, const u32 tlutaddr, const TlutFormat tlutfmt, u32 level)
-{
-	pcformat = TexDecoder_Decode(TextureCache::temp, src, expandedWidth, expandedHeight, texformat, tlutaddr, tlutfmt, PC_TEX_FMT_RGBA32 == pcformat, compressed);
 	switch (pcformat)
 	{
 	default:
@@ -242,11 +181,76 @@ void TextureCache::TCacheEntry::Load(const u8* src, u32 width, u32 height, u32 e
 		compressed = true;
 		break;
 	}
+}
+
+TextureCache::TCacheEntryBase* TextureCache::CreateTexture(u32 width, u32 height,
+	u32 expanded_width, u32 tex_levels, PC_TexFormat pcfmt)
+{
+	TCacheEntry &entry = *new TCacheEntry;
+	entry.pcformat = pcfmt;
+	entry.SetFormat();
+	entry.m_num_levels = tex_levels;
+	return &entry;
+}
+
+void TextureCache::TCacheEntry::Load(const u8* src, u32 width, u32 height,
+	u32 expanded_width, u32 level)
+{
+	glActiveTexture(GL_TEXTURE0 + 9);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	if(level == 0)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, m_num_levels - 1);
+
+	u32 blocksize = (pcformat == PC_TEX_FMT_DXT1) ? 8u : 16u;
+	switch (pcformat)
+	{
+	case PC_TEX_FMT_DXT1:
+	case PC_TEX_FMT_DXT3:
+	case PC_TEX_FMT_DXT5:
+	{
+		if (expanded_width != width)
+		{
+			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+			glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_WIDTH, 4);
+			glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_HEIGHT, 4);
+			glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_DEPTH, 1);
+			glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_SIZE, blocksize);
+			glPixelStorei(GL_UNPACK_ROW_LENGTH, expanded_width);
+		}
+		glCompressedTexImage2D(GL_TEXTURE_2D, level, gl_iformat,
+			width, height, 0, ((width + 3) >> 2) * ((height + 3) >> 2) * blocksize, src);
+		if (expanded_width != width)
+		{
+			glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+			glPixelStorei(GL_UNPACK_ALIGNMENT, 0);
+			glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_WIDTH, 0);
+			glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_HEIGHT, 0);
+			glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_DEPTH, 0);
+			glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_SIZE, 0);
+		}
+	}
+	break;
+	default:
+		if (expanded_width != width)
+			glPixelStorei(GL_UNPACK_ROW_LENGTH, expanded_width);
+		glTexImage2D(GL_TEXTURE_2D, level, gl_iformat, width, height, 0, gl_format, gl_type, src);
+		if (expanded_width != width)
+			glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+		break;
+	}
+	TextureCache::SetStage();
+}
+void TextureCache::TCacheEntry::Load(const u8* src, u32 width, u32 height, u32 expandedWidth,
+	u32 expandedHeight, const s32 texformat, const u32 tlutaddr, const TlutFormat tlutfmt, u32 level)
+{
+	pcformat = TexDecoder_Decode(TextureCache::temp, src, expandedWidth, expandedHeight, texformat, tlutaddr, tlutfmt, PC_TEX_FMT_RGBA32 == pcformat, compressed);
+	SetFormat();
 	Load(TextureCache::temp, width, height, expandedWidth, level);
 }
 void TextureCache::TCacheEntry::LoadFromTmem(const u8* ar_src, const u8* gb_src, u32 width, u32 height,
 	u32 expanded_width, u32 expanded_Height, u32 level)
 {
+	pcformat = PC_TexFormat::PC_TEX_FMT_RGBA32;
 	gl_format = GL_RGBA;
 	gl_iformat = GL_RGBA;
 	gl_type = GL_UNSIGNED_BYTE;

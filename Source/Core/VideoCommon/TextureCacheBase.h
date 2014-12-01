@@ -115,8 +115,7 @@ public:
 	virtual void LoadLut(u32 lutFmt, void* addr, u32 size) {}	
 	
 protected:
-	static  GC_ALIGNED16(u8 *temp);
-	static  GC_ALIGNED16(u8 *bufferstart);
+	static  GC_ALIGNED16(u8 *temp);	
 	static u32 temp_size;
 	TextureCache();
 private:
