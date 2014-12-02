@@ -382,7 +382,11 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 		src_data = &texMem[bpmem.tex[stage / 4].texImage1[stage % 4].tmem_even * TMEM_LINE_SIZE];
 	else
 		src_data = Memory::GetPointer(address);
-
+	if (src_data == nullptr)
+	{
+		ERROR_LOG(VIDEO, "TextureCache::Load has an address in Wii memory (%8x) but not in real memory (NULL)!", address);
+		return nullptr;
+	}
 	// TODO: This doesn't hash GB tiles for preloaded RGBA8 textures (instead, it's hashing more data from the low tmem bank than it should)
 	tex_hash = GetHash64(src_data, texture_size, g_ActiveConfig.iSafeTextureCache_ColorSamples);
 	if (isPaletteTexture)
