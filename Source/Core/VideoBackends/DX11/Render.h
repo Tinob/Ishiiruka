@@ -35,8 +35,8 @@ public:
 
 	u32 AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data);
 	
-	u16 BBoxRead(int index) override { return 0; };
-	void BBoxWrite(int index, u16 value) override {};
+	u16 BBoxRead(int index) override;
+	void BBoxWrite(int index, u16 value);
 
 	void ResetAPIState();
 	void RestoreAPIState();

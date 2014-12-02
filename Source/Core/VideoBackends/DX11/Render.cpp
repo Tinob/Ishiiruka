@@ -13,7 +13,7 @@
 #include "Core/Core.h"
 #include "Core/Host.h"
 #include "Core/Movie.h"
-
+#include "VideoBackends/DX11/BoundingBox.h"
 #include "VideoBackends/DX11/D3DBase.h"
 #include "VideoBackends/DX11/D3DPtr.h"
 #include "VideoBackends/DX11/D3DUtil.h"
@@ -182,7 +182,8 @@ void CreateScreenshotTexture(const TargetRectangle& rc)
 Renderer::Renderer(void *&window_handle)
 {
 	D3D::Create((HWND)window_handle);
-
+	g_ActiveConfig.backend_info.bSupportedFormats[PC_TEX_FMT_BGRA32] = D3D::BGRATexturesSupported();
+	g_ActiveConfig.backend_info.bSupportsBBox = D3D::GetFeatureLevel() >= D3D_FEATURE_LEVEL_11_0;
 	s_backbuffer_width = D3D::GetBackBufferWidth();
 	s_backbuffer_height = D3D::GetBackBufferHeight();
 
@@ -454,8 +455,6 @@ u32 Renderer::AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data)
 
 		// TODO: The first five PE registers may change behavior of EFB pokes, this isn't implemented, yet.
 		ResetAPIState();
-
-		D3D::context->OMSetRenderTargets(1, &FramebufferManager::GetEFBColorTexture()->GetRTV(), nullptr);
 		D3D::drawColorQuad(rgbaColor, (float)RectToLock.left   * 2.f / (float)Renderer::GetTargetWidth()  - 1.f,
 									- (float)RectToLock.top	* 2.f / (float)Renderer::GetTargetHeight() + 1.f,
 									  (float)RectToLock.right  * 2.f / (float)Renderer::GetTargetWidth()  - 1.f,
@@ -1372,6 +1371,45 @@ void Renderer::SetInterlacingMode()
 int Renderer::GetMaxTextureSize()
 {
 	return DX11::D3D::GetMaxTextureSize();
+}
+
+u16 Renderer::BBoxRead(int index)
+{
+	// Here we get the min/max value of the truncated position of the upscaled and swapped framebuffer.
+	// So we have to correct them to the unscaled EFB sizes.
+	int value = BoundingBox::Get(index);
+	
+	if (index < 2)
+	{
+		// left/right
+		value = value * EFB_WIDTH / s_target_width;
+	}
+	else
+	{
+		// up/down -- we have to swap up and down
+		value = value * EFB_HEIGHT / s_target_height;		
+	}
+	if (index & 1)
+	value++; // fix max values to describe the outer border
+	
+	return value;
+}
+
+void Renderer::BBoxWrite(int index, u16 _value)
+{
+	int value = _value; // u16 isn't enough to multiply by the efb width
+	if (index & 1)
+		value--;
+	if (index < 2)
+	{
+		value = value * s_target_width / EFB_WIDTH;
+	}
+	else
+	{
+		value = value * s_target_height / EFB_HEIGHT;
+	}
+	
+	BoundingBox::Set(index, value);
 }
 
 }  // namespace DX11

@@ -193,7 +193,14 @@ public:
 		std::array<ID3D11ShaderResourceView*, 8> nils;
 		nils.fill(nullptr);
 		PSSetShaderResources(0, 8, nils.data());
-		m_ctx->OMSetRenderTargets(NumViews, ppRenderTargetViews, pDepthStencilView);
+		m_ctx->OMSetRenderTargetsAndUnorderedAccessViews(
+			NumViews, 
+			ppRenderTargetViews, 
+			pDepthStencilView, 
+			0, 
+			D3D11_KEEP_UNORDERED_ACCESS_VIEWS, 
+			nullptr, 
+			nullptr);
 	}
 
 	inline void IASetVertexBuffers(
@@ -433,6 +440,36 @@ public:
 			pSrcData,
 			SrcRowPitch,
 			SrcDepthPitch);
+	}
+
+	inline void OMSetRenderTargetsAndUnorderedAccessViews(
+		UINT NumViews,
+		ID3D11RenderTargetView *const *ppRenderTargetViews,
+		ID3D11DepthStencilView *pDepthStencilView,
+		UINT UAVStartSlot,
+		UINT NumUAVs,
+		ID3D11UnorderedAccessView *const *ppUnorderedAccessView,
+		const UINT *pUAVInitialCounts
+		)
+	{
+		m_ctx->OMSetRenderTargetsAndUnorderedAccessViews(
+			NumViews,
+			ppRenderTargetViews,
+			pDepthStencilView,
+			UAVStartSlot,
+			NumUAVs,
+			ppUnorderedAccessView,
+			pUAVInitialCounts);
+	}
+
+	void ClearUnorderedAccessViewFloat(
+		ID3D11UnorderedAccessView *pUnorderedAccessView,
+		const FLOAT Values[4]
+		)
+	{
+		m_ctx->ClearUnorderedAccessViewFloat(
+			pUnorderedAccessView,
+			Values);
 	}
 
 	inline void UpdateSubresource1(

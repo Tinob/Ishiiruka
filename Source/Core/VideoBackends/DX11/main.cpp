@@ -26,15 +26,16 @@
 #include "Common/IniFile.h"
 #include "DolphinWX/VideoConfigDiag.h"
 
-#include "D3DUtil.h"
-#include "D3DBase.h"
-#include "PerfQuery.h"
-#include "PixelShaderCache.h"
-#include "TextureCache.h"
-#include "VertexManager.h"
-#include "VertexShaderCache.h"
+#include "VideoBackends/DX11/BoundingBox.h"
+#include "VideoBackends/DX11/D3DUtil.h"
+#include "VideoBackends/DX11/D3DBase.h"
+#include "VideoBackends/DX11/PerfQuery.h"
+#include "VideoBackends/DX11/PixelShaderCache.h"
+#include "VideoBackends/DX11/TextureCache.h"
+#include "VideoBackends/DX11/VertexManager.h"
+#include "VideoBackends/DX11/VertexShaderCache.h"
 
-#include "VideoBackend.h"
+#include "VideoBackends/DX11/VideoBackend.h"
 #include "Core/ConfigManager.h"
 
 namespace DX11
@@ -74,7 +75,7 @@ void InitBackendInfo()
 	}
 
 	g_Config.backend_info.APIType = API_D3D11;
-	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_BGRA32] = D3D::BGRATexturesSupported();
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_BGRA32] = false;
 	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_RGBA32] = true;
 	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_I4_AS_I8] = false;
 	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_IA4_AS_IA8] = false;
@@ -94,7 +95,8 @@ void InitBackendInfo()
 	g_Config.backend_info.bSupportsPrimitiveRestart = false;
 	g_Config.backend_info.bNeedBlendIndices = false;
 	g_Config.backend_info.bSupportsOversizedViewports = false;
-	g_Config.backend_info.bSupportsBBox = false;
+	g_Config.backend_info.bSupportsBBox = true;
+
 	IDXGIFactory* factory;
 	IDXGIAdapter* ad;
 	hr = DX11::PCreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&factory);
@@ -197,7 +199,7 @@ void VideoBackend::Video_Prepare()
 	PixelShaderManager::Init();
 	CommandProcessor::Init();
 	PixelEngine::Init();
-
+	BoundingBox::Init();
 	// Tell the host that the window is ready
 	Host_Message(WM_USER_CREATE);
 }
@@ -223,6 +225,7 @@ void VideoBackend::Shutdown()
 		D3D::ShutdownUtils();
 		PixelShaderCache::Shutdown();
 		VertexShaderCache::Shutdown();
+		BoundingBox::Shutdown();
 		delete g_perf_query;
 		delete g_vertex_manager;
 		delete g_texture_cache;
