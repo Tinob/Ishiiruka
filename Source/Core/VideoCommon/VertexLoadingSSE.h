@@ -30,7 +30,7 @@ __forceinline void UByte2ToFloat2_SSSE3(const u32* pData, __m128 scale, __m64* p
 	coords = _mm_shuffle_epi8(coords, kMask8to32l_2);
 	__m128 out = _mm_cvtepi32_ps(coords);
 	out = _mm_mul_ps(out, scale);
-	_mm_storel_pi((__m64*)pDest, out);
+	_mm_storel_pi(pDest, out);
 }
 __forceinline void UByte2ToFloat3_SSSE3(const u32* pData, __m128 scale, float* pDest)
 {
