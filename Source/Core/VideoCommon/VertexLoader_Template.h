@@ -842,8 +842,8 @@ __forceinline void TexCoordElement(TPipelineState &pipelinestate)
 			if (iSSE >= 0x200)
 			{
 				__m128 output = _mm_cvtsi32_ss(_mm_castsi128_ps(_mm_setzero_si128()), pipelinestate.curtexmtx[pipelinestate.texmtxwrite++]);
-				_mm_storeu_ps((float*)pipelinestate.GetWritePosition(), _mm_shuffle_ps(output, output, 0xE1));
-				pipelinestate.WriteSkip(sizeof(float) * 4);
+				_mm_storeu_ps((float*)pipelinestate.GetWritePosition(), _mm_shuffle_ps(output, output, 0x45));
+				pipelinestate.WriteSkip(sizeof(float) * 3);
 			}
 			else			
 #endif
@@ -851,7 +851,6 @@ __forceinline void TexCoordElement(TPipelineState &pipelinestate)
 				pipelinestate.Write(0.f);
 				pipelinestate.Write(0.f);
 				pipelinestate.Write(float(pipelinestate.curtexmtx[pipelinestate.texmtxwrite++]));
-				pipelinestate.Write(0.f);
 			}
 		}
 	}

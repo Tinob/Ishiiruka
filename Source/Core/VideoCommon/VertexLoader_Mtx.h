@@ -14,5 +14,5 @@ public:
 	static void LOADERDECL TexMtx_ReadDirect_UByte();
 	static void LOADERDECL TexMtx_Write_Float();
 	static void LOADERDECL TexMtx_Write_Float2();
-	static void LOADERDECL TexMtx_Write_Float4();
+	static void LOADERDECL TexMtx_Write_Float3();
 };
