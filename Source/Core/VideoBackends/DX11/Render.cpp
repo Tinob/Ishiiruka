@@ -1375,7 +1375,7 @@ int Renderer::GetMaxTextureSize()
 
 u16 Renderer::BBoxRead(int index)
 {
-	// Here we get the min/max value of the truncated position of the upscaled and swapped framebuffer.
+	// Here we get the min/max value of the truncated position of the upscaled framebuffer.
 	// So we have to correct them to the unscaled EFB sizes.
 	int value = BoundingBox::Get(index);
 	
@@ -1386,7 +1386,7 @@ u16 Renderer::BBoxRead(int index)
 	}
 	else
 	{
-		// up/down -- we have to swap up and down
+		// up/down
 		value = value * EFB_HEIGHT / s_target_height;		
 	}
 	if (index & 1)
