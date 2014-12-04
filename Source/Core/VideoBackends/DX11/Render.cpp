@@ -182,8 +182,8 @@ void CreateScreenshotTexture(const TargetRectangle& rc)
 Renderer::Renderer(void *&window_handle)
 {
 	D3D::Create((HWND)window_handle);
-	g_ActiveConfig.backend_info.bSupportedFormats[PC_TEX_FMT_BGRA32] = D3D::BGRATexturesSupported();
-	g_ActiveConfig.backend_info.bSupportsBBox = D3D::GetFeatureLevel() >= D3D_FEATURE_LEVEL_11_0;
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_BGRA32] = g_ActiveConfig.backend_info.bSupportedFormats[PC_TEX_FMT_BGRA32] = D3D::BGRATexturesSupported();
+	g_Config.backend_info.bSupportsBBox = g_ActiveConfig.backend_info.bSupportsBBox = D3D::GetFeatureLevel() >= D3D_FEATURE_LEVEL_11_0;
 	s_backbuffer_width = D3D::GetBackBufferWidth();
 	s_backbuffer_height = D3D::GetBackBufferHeight();
 
@@ -1377,7 +1377,7 @@ u16 Renderer::BBoxRead(int index)
 {
 	// Here we get the min/max value of the truncated position of the upscaled framebuffer.
 	// So we have to correct them to the unscaled EFB sizes.
-	int value = BoundingBox::Get(index);
+	int value = BBox::Get(index);
 	
 	if (index < 2)
 	{
@@ -1409,7 +1409,7 @@ void Renderer::BBoxWrite(int index, u16 _value)
 		value = value * s_target_height / EFB_HEIGHT;
 	}
 	
-	BoundingBox::Set(index, value);
+	BBox::Set(index, value);
 }
 
 }  // namespace DX11

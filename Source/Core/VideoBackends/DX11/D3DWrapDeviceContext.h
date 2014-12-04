@@ -189,18 +189,7 @@ public:
 		ID3D11RenderTargetView *const *ppRenderTargetViews,
 		ID3D11DepthStencilView *pDepthStencilView)
 	{
-		// OMSetRenderTargets will unbind SRVs if they are in conflict with the new RTVs or DSV.
-		std::array<ID3D11ShaderResourceView*, 8> nils;
-		nils.fill(nullptr);
-		PSSetShaderResources(0, 8, nils.data());
-		m_ctx->OMSetRenderTargetsAndUnorderedAccessViews(
-			NumViews, 
-			ppRenderTargetViews, 
-			pDepthStencilView, 
-			0, 
-			D3D11_KEEP_UNORDERED_ACCESS_VIEWS, 
-			nullptr, 
-			nullptr);
+		m_ctx->OMSetRenderTargets(NumViews, ppRenderTargetViews, pDepthStencilView);
 	}
 
 	inline void IASetVertexBuffers(

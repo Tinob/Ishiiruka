@@ -15,12 +15,12 @@ static D3D::BufferPtr s_bbox_Readbuffer;
 static D3D::UavPtr  s_bbox_uav;
 static ID3D11UnorderedAccessView* s_bbox_uavval;
 
-ID3D11UnorderedAccessView* &BoundingBox::GetUAV()
+ID3D11UnorderedAccessView* BBox::GetUAV()
 {
 	return s_bbox_uavval;
 }
 
-void BoundingBox::Init()
+void BBox::Init()
 {
 	if (g_ActiveConfig.backend_info.bSupportsBBox)
 	{
@@ -49,12 +49,11 @@ void BoundingBox::Init()
 		UAVdesc.Buffer.NumElements = 4;
 		hr = D3D::device->CreateUnorderedAccessView(s_bbox_buffer.get(), &UAVdesc, ToAddr(s_bbox_uav));
 		CHECK(SUCCEEDED(hr), "create bbox UAV");
-		s_bbox_uavval = s_bbox_uav.get();
-		D3D::context->OMSetRenderTargetsAndUnorderedAccessViews(D3D11_KEEP_RENDER_TARGETS_AND_DEPTH_STENCIL, nullptr, nullptr, 2, 1, &s_bbox_uavval, nullptr);
+		s_bbox_uavval = s_bbox_uav.get();		
 	}
 }
 
-void BoundingBox::Shutdown()
+void BBox::Shutdown()
 {
 	s_bbox_buffer.reset();
 	s_bbox_Readbuffer.reset();
@@ -62,13 +61,13 @@ void BoundingBox::Shutdown()
 	s_bbox_uavval = nullptr;
 }
 
-void BoundingBox::Set(int index, int value)
+void BBox::Set(int index, int value)
 {
 	D3D11_BOX box{ index * sizeof(s32), 0, 0, (index + 1) * sizeof(s32), 1, 1 };
 	D3D::context->UpdateSubresource(s_bbox_buffer.get(), 0, &box, &value, 0, 0);
 }
 
-int BoundingBox::Get(int index)
+int BBox::Get(int index)
 {
 	int data = 0;
 	D3D::context->CopyResource(s_bbox_Readbuffer.get(), s_bbox_buffer.get());

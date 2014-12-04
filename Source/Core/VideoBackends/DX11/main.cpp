@@ -95,7 +95,7 @@ void InitBackendInfo()
 	g_Config.backend_info.bSupportsPrimitiveRestart = false;
 	g_Config.backend_info.bNeedBlendIndices = false;
 	g_Config.backend_info.bSupportsOversizedViewports = false;
-	g_Config.backend_info.bSupportsBBox = true;
+	g_Config.backend_info.bSupportsBBox = false;
 
 	IDXGIFactory* factory;
 	IDXGIAdapter* ad;
@@ -199,7 +199,7 @@ void VideoBackend::Video_Prepare()
 	PixelShaderManager::Init();
 	CommandProcessor::Init();
 	PixelEngine::Init();
-	BoundingBox::Init();
+	BBox::Init();
 	// Tell the host that the window is ready
 	Host_Message(WM_USER_CREATE);
 }
@@ -225,7 +225,7 @@ void VideoBackend::Shutdown()
 		D3D::ShutdownUtils();
 		PixelShaderCache::Shutdown();
 		VertexShaderCache::Shutdown();
-		BoundingBox::Shutdown();
+		BBox::Shutdown();
 		delete g_perf_query;
 		delete g_vertex_manager;
 		delete g_texture_cache;

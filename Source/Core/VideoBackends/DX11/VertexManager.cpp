@@ -2,12 +2,14 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
+#include "VideoBackends/DX11/BoundingBox.h"
 #include "VideoBackends/DX11/D3DBase.h"
 #include "VideoBackends/DX11/PixelShaderCache.h"
 #include "VideoBackends/DX11/Render.h"
 #include "VideoBackends/DX11/VertexManager.h"
 #include "VideoBackends/DX11/VertexShaderCache.h"
 
+#include "VideoCommon/BoundingBox.h"
 #include "VideoCommon/BPMemory.h"
 #include "VideoCommon/Debugger.h"
 #include "VideoCommon/IndexGenerator.h"
@@ -209,7 +211,11 @@ void VertexManager::vFlush(bool useDstAlpha)
 	{
 		return;
 	}
-
+	if (g_ActiveConfig.backend_info.bSupportsBBox && BoundingBox::active)
+	{
+		ID3D11UnorderedAccessView* uav = BBox::GetUAV();
+		D3D::context->OMSetRenderTargetsAndUnorderedAccessViews(D3D11_KEEP_RENDER_TARGETS_AND_DEPTH_STENCIL, nullptr, nullptr, 2, 1, &uav, nullptr);
+	}
 	unsigned int stride = g_nativeVertexFmt->GetVertexStride();
 	PrepareDrawBuffers(stride);
 	g_nativeVertexFmt->SetupVertexPointers();
