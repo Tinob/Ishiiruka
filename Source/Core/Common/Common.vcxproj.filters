@@ -13,6 +13,7 @@
     <ClInclude Include="Atomic_GCC.h" />
     <ClInclude Include="Atomic_Win32.h" />
     <ClInclude Include="BitField.h" />
+    <ClInclude Include="BitSet.h" />
     <ClInclude Include="BreakPoints.h" />
     <ClInclude Include="CDUtils.h" />
     <ClInclude Include="ChunkFile.h" />
@@ -41,6 +42,7 @@
     <ClInclude Include="NandPaths.h" />
     <ClInclude Include="Network.h" />
     <ClInclude Include="PcapFile.h" />
+    <ClInclude Include="Profiler.h" />
     <ClInclude Include="SDCardUtil.h" />
     <ClInclude Include="SettingsHandler.h" />
     <ClInclude Include="StdMakeUnique.h" />
@@ -70,7 +72,6 @@
     <ClInclude Include="GekkoDisassembler.h" />
     <ClInclude Include="Event.h" />
     <ClInclude Include="ThreadPool.h" />
-    <ClInclude Include="BitSet.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BreakPoints.cpp" />
@@ -89,6 +90,7 @@
     <ClCompile Include="NandPaths.cpp" />
     <ClCompile Include="Network.cpp" />
     <ClCompile Include="PcapFile.cpp" />
+    <ClCompile Include="Profiler.cpp" />
     <ClCompile Include="SDCardUtil.cpp" />
     <ClCompile Include="SettingsHandler.cpp" />
     <ClCompile Include="StringUtil.cpp" />

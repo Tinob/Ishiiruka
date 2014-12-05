@@ -29,6 +29,7 @@
 #include "DolphinWX/Main.h"
 #include "DolphinWX/VideoConfigDiag.h"
 #include "DolphinWX/WxUtils.h"
+#include "VideoCommon/PostProcessing.h"
 #include "VideoCommon/VideoBackendBase.h"
 #include "VideoCommon/VideoConfig.h"
 
@@ -42,7 +43,7 @@ template class BoolSetting<wxRadioButton>;
 
 template <>
 SettingCheckBox::BoolSetting(wxWindow* parent, const wxString& label, const wxString& tooltip, bool &setting, bool reverse, long style)
-	: wxCheckBox(parent, -1, label, wxDefaultPosition, wxDefaultSize, style)
+	: wxCheckBox(parent, wxID_ANY, label, wxDefaultPosition, wxDefaultSize, style)
 	, m_setting(setting)
 	, m_reverse(reverse)
 {
@@ -53,7 +54,7 @@ SettingCheckBox::BoolSetting(wxWindow* parent, const wxString& label, const wxSt
 
 template <>
 SettingRadioButton::BoolSetting(wxWindow* parent, const wxString& label, const wxString& tooltip, bool &setting, bool reverse, long style)
-	: wxRadioButton(parent, -1, label, wxDefaultPosition, wxDefaultSize, style)
+	: wxRadioButton(parent, wxID_ANY, label, wxDefaultPosition, wxDefaultSize, style)
 	, m_setting(setting)
 	, m_reverse(reverse)
 {
@@ -63,7 +64,7 @@ SettingRadioButton::BoolSetting(wxWindow* parent, const wxString& label, const w
 }
 
 SettingChoice::SettingChoice(wxWindow* parent, int &setting, const wxString& tooltip, int num, const wxString choices[], long style)
-	: wxChoice(parent, -1, wxDefaultPosition, wxDefaultSize, num, choices)
+	: wxChoice(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, num, choices)
 	, m_setting(setting)
 {
 	SetToolTip(tooltip);
@@ -150,7 +151,10 @@ static wxString opencl_desc = wxTRANSLATE("[EXPERIMENTAL]\nAims to speed up emul
 static wxString ppshader_desc = wxTRANSLATE("Apply a post-processing effect after finishing a frame.\n\nIf unsure, select (off).");
 static wxString cache_efb_copies_desc = wxTRANSLATE("Slightly speeds up EFB to RAM copies by sacrificing emulation accuracy.\nSometimes also increases visual quality.\nIf you're experiencing any issues, try raising texture cache accuracy or disable this option.\n\nIf unsure, leave this unchecked.");
 static wxString shader_errors_desc = wxTRANSLATE("Usually if shader compilation fails, an error message is displayed.\nHowever, one may skip the popups to allow interruption free gameplay by checking this option.\n\nIf unsure, leave this unchecked.");
-
+static wxString stereo_3d_desc = wxTRANSLATE("Select the stereoscopic 3D  mode, stereoscopy allows you to get a better feeling of depth if you have the necessary hardware.\nSide-by-Side and Top-and-Bottom are used by most 3D TVs.\nAnaglyph is used for Red-Cyan colored glasses.\nHeavily decreases emulation speed and sometimes causes issues.\n\nIf unsure, select Off.");
+static wxString stereo_separation_desc = wxTRANSLATE("Control the separation distance, this is the distance between the virtual cameras.\nA higher value creates a stronger feeling of depth while a lower value is more comfortable.");
+static wxString stereo_convergence_desc = wxTRANSLATE("Control the convergence distance, this controls the apparant distance of virtual objects.\nA higher value creates stronger out-of-screen effects while a lower value is more comfortable.");
+static wxString stereo_swap_desc = wxTRANSLATE("Swap the left and right eye, mostly useful if you want to view side-by-side cross-eyed.\n\nIf unsure, leave this unchecked.");
 
 // Search for available resolutions - TODO: Move to Common?
 static  wxArrayString GetListOfResolutions()
@@ -211,7 +215,7 @@ static  wxArrayString GetListOfResolutions()
 }
 
 VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title, const std::string& _ininame)
-	: wxDialog(parent, -1,
+	: wxDialog(parent, wxID_ANY,
 		wxString::Format(_("Dolphin %s Graphics Configuration"), wxGetTranslation(StrToWxStr(title))),
 		wxDefaultPosition, wxDefaultSize)
 	, vconfig(g_Config)
@@ -221,7 +225,7 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title, con
 
 	Bind(wxEVT_UPDATE_UI, &VideoConfigDiag::OnUpdateUI, this);
 
-	wxNotebook* const notebook = new wxNotebook(this, -1, wxDefaultPosition, wxDefaultSize);
+	wxNotebook* const notebook = new wxNotebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
 
 	// -- GENERAL --
 	{
@@ -271,7 +275,7 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title, con
 
 		choice_adapter->Select(vconfig.iAdapter);
 
-		szr_basic->Add(new wxStaticText(page_general, -1, _("Adapter:")), 1, wxALIGN_CENTER_VERTICAL, 5);
+		szr_basic->Add(new wxStaticText(page_general, wxID_ANY, _("Adapter:")), 1, wxALIGN_CENTER_VERTICAL, 5);
 		szr_basic->Add(choice_adapter, 1, 0, 0);
 	}
 
@@ -309,7 +313,7 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title, con
 	{
 	const wxString ar_choices[] = { _("Auto"), _("Force 16:9"), _("Force 4:3"), _("Stretch to Window") };
 
-	szr_display->Add(new wxStaticText(page_general, -1, _("Aspect Ratio:")), 1, wxALIGN_CENTER_VERTICAL, 0);
+	szr_display->Add(new wxStaticText(page_general, wxID_ANY, _("Aspect Ratio:")), 1, wxALIGN_CENTER_VERTICAL, 0);
 	wxChoice* const choice_aspect = CreateChoice(page_general, vconfig.iAspectRatio, wxGetTranslation(ar_desc),
 														sizeof(ar_choices)/sizeof(*ar_choices), ar_choices);
 	szr_display->Add(choice_aspect, 1, 0, 0);
@@ -359,7 +363,7 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title, con
 
 	// -- ENHANCEMENTS --
 	{
-	wxPanel* const page_enh = new wxPanel(notebook, -1, wxDefaultPosition);
+	wxPanel* const page_enh = new wxPanel(notebook);
 	notebook->AddPage(page_enh, _("Enhancements"));
 	wxBoxSizer* const szr_enh_main = new wxBoxSizer(wxVERTICAL);
 
@@ -379,11 +383,13 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title, con
 
 	szr_enh->Add(new wxStaticText(page_enh, wxID_ANY, _("Internal Resolution:")), 1, wxALIGN_CENTER_VERTICAL, 0);
 	szr_enh->Add(choice_efbscale);
+	if (vconfig.iEFBScale > 7)
+		choice_efbscale->SetSelection(8);
 	}
-
+	
 	// AA
 	{
-	text_aamode = new wxStaticText(page_enh, -1, _("Anti-Aliasing:"));
+	text_aamode = new wxStaticText(page_enh, wxID_ANY, _("Anti-Aliasing:"));
 	choice_aamode = CreateChoice(page_enh, vconfig.iMultisampleMode, wxGetTranslation(aa_desc));
 
 	std::vector<std::string>::const_iterator
@@ -400,32 +406,47 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title, con
 	// AF
 	{
 	const wxString af_choices[] = {wxT("1x"), wxT("2x"), wxT("4x"), wxT("8x"), wxT("16x")};
-	szr_enh->Add(new wxStaticText(page_enh, -1, _("Anisotropic Filtering:")), 1, wxALIGN_CENTER_VERTICAL, 0);
+	szr_enh->Add(new wxStaticText(page_enh, wxID_ANY, _("Anisotropic Filtering:")), 1, wxALIGN_CENTER_VERTICAL, 0);
 	szr_enh->Add(CreateChoice(page_enh, vconfig.iMaxAnisotropy, wxGetTranslation(af_desc), 5, af_choices));
 	}
 
 	// postproc shader
 	if (vconfig.backend_info.PPShaders.size())
 	{
-		wxChoice *const choice_ppshader = new wxChoice(page_enh, -1, wxDefaultPosition);
+		wxFlexGridSizer* const szr_pp = new wxFlexGridSizer(3, 5, 5);
+		choice_ppshader = new wxChoice(page_enh, wxID_ANY);
 		RegisterControl(choice_ppshader, wxGetTranslation(ppshader_desc));
 		choice_ppshader->AppendString(_("(off)"));
 
-		std::vector<std::string>::const_iterator
-			it = vconfig.backend_info.PPShaders.begin(),
-			itend = vconfig.backend_info.PPShaders.end();
-		for (; it != itend; ++it)
-			choice_ppshader->AppendString(StrToWxStr(*it));
+		button_config_pp = new wxButton(page_enh, wxID_ANY, _("Config"));
+
+		for (const std::string& shader : vconfig.backend_info.PPShaders)
+		{
+			choice_ppshader->AppendString(StrToWxStr(shader));
+		}
 
 		if (vconfig.sPostProcessingShader.empty())
 			choice_ppshader->Select(0);
 		else
 			choice_ppshader->SetStringSelection(StrToWxStr(vconfig.sPostProcessingShader));
 
-		choice_ppshader->Bind(wxEVT_COMMAND_CHOICE_SELECTED, &VideoConfigDiag::Event_PPShader, this);
+		// Should the configuration button be loaded by default?
+		PostProcessingShaderConfiguration postprocessing_shader;
+		postprocessing_shader.LoadShader(vconfig.sPostProcessingShader);
+		button_config_pp->Enable(postprocessing_shader.HasOptions());
 
-		szr_enh->Add(new wxStaticText(page_enh, -1, _("Post-Processing Effect:")), 1, wxALIGN_CENTER_VERTICAL, 0);
-		szr_enh->Add(choice_ppshader);
+		choice_ppshader->Bind(wxEVT_CHOICE, &VideoConfigDiag::Event_PPShader, this);
+		button_config_pp->Bind(wxEVT_BUTTON, &VideoConfigDiag::Event_ConfigurePPShader, this);
+
+		szr_enh->Add(new wxStaticText(page_enh, wxID_ANY, _("Post-Processing Effect:")), 1, wxALIGN_CENTER_VERTICAL, 0);
+		szr_pp->Add(choice_ppshader);
+		szr_pp->Add(button_config_pp);
+		szr_enh->Add(szr_pp);
+	}
+	else
+	{
+		choice_ppshader = nullptr;
+		button_config_pp = nullptr;
 	}
 
 	// Scaled copy, PL, Bilinear filter, 3D Vision
@@ -436,17 +457,47 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title, con
 	szr_enh->Add(CreateCheckBox(page_enh, _("Widescreen Hack"), wxGetTranslation(ws_hack_desc), vconfig.bWidescreenHack));
 	szr_enh->Add(CreateCheckBox(page_enh, _("Disable Fog"), wxGetTranslation(disable_fog_desc), vconfig.bDisableFog));
 
-	// TODO: Add anaglyph 3d here
-
 	wxStaticBoxSizer* const group_enh = new wxStaticBoxSizer(wxVERTICAL, page_enh, _("Enhancements"));
 	group_enh->Add(szr_enh, 1, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 5);
 	szr_enh_main->Add(group_enh, 0, wxEXPAND | wxALL, 5);
 
+	// - stereoscopy
+
+	if (vconfig.backend_info.bSupportsStereoscopy && vconfig.iStereoMode > 0)
+	{
+		wxFlexGridSizer* const szr_stereo = new wxFlexGridSizer(2, 5, 5);
+
+		const wxString stereo_choices[] = { "Off", "Side-by-Side", "Top-and-Bottom", "Anaglyph" };
+		szr_stereo->Add(new wxStaticText(page_enh, wxID_ANY, _("Stereoscopic 3D Mode:")), 1, wxALIGN_CENTER_VERTICAL, 0);
+		szr_stereo->Add(CreateChoice(page_enh, vconfig.iStereoMode, wxGetTranslation(stereo_3d_desc), 4, stereo_choices));
+
+		wxSlider* const sep_slider = new wxSlider(page_enh, wxID_ANY, vconfig.iStereoSeparation, 0, 100, wxDefaultPosition, wxDefaultSize);
+		sep_slider->Bind(wxEVT_SLIDER, &VideoConfigDiag::Event_StereoSep, this);
+		RegisterControl(sep_slider, wxGetTranslation(stereo_separation_desc));
+
+		szr_stereo->Add(new wxStaticText(page_enh, wxID_ANY, _("Separation:")), 1, wxALIGN_CENTER_VERTICAL, 0);
+		szr_stereo->Add(sep_slider, 0, wxEXPAND | wxRIGHT);
+
+		wxSlider* const conv_slider = new wxSlider(page_enh, wxID_ANY, vconfig.iStereoConvergence, 0, 500, wxDefaultPosition, wxDefaultSize);
+		conv_slider->Bind(wxEVT_SLIDER, &VideoConfigDiag::Event_StereoFoc, this);
+		RegisterControl(conv_slider, wxGetTranslation(stereo_convergence_desc));
+
+		szr_stereo->Add(new wxStaticText(page_enh, wxID_ANY, _("Convergence:")), 1, wxALIGN_CENTER_VERTICAL, 0);
+		szr_stereo->Add(conv_slider, 0, wxEXPAND | wxRIGHT);
+
+		szr_stereo->Add(CreateCheckBox(page_enh, _("Swap Eyes"), wxGetTranslation(stereo_swap_desc), vconfig.bStereoSwapEyes));
+
+		wxStaticBoxSizer* const group_stereo = new wxStaticBoxSizer(wxVERTICAL, page_enh, _("Stereoscopy"));
+		group_stereo->Add(szr_stereo, 1, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 5);
+		szr_enh_main->Add(group_stereo, 0, wxEXPAND | wxALL, 5);
+	}
 
 	szr_enh_main->AddStretchSpacer();
 	CreateDescriptionArea(page_enh, szr_enh_main);
 	page_enh->SetSizerAndFit(szr_enh_main);
 	}
+
+
 
 
 	// -- SPEED HACKS --
@@ -785,6 +836,28 @@ void VideoConfigDiag::Event_PPShader(wxCommandEvent &ev)
 
 	ev.Skip();
 }
+
+void VideoConfigDiag::Event_ConfigurePPShader(wxCommandEvent &ev)
+{
+	PostProcessingConfigDiag dialog(this, vconfig.sPostProcessingShader);
+	dialog.ShowModal();
+
+	ev.Skip();
+}
+
+void VideoConfigDiag::Event_StereoSep(wxCommandEvent &ev)
+{
+	vconfig.iStereoSeparation = ev.GetInt();
+
+	ev.Skip();
+}
+
+void VideoConfigDiag::Event_StereoFoc(wxCommandEvent &ev)
+{
+	vconfig.iStereoConvergence = ev.GetInt();
+
+	ev.Skip();
+}
 // Enables/disables UI elements depending on current config
 void VideoConfigDiag::OnUpdateUI(wxUpdateUIEvent& ev)
 {
@@ -811,6 +884,12 @@ void VideoConfigDiag::OnUpdateUI(wxUpdateUIEvent& ev)
 	// XFB
 	virtual_xfb->Enable(vconfig.bUseXFB);
 	real_xfb->Enable(vconfig.bUseXFB);
+	
+	// PP Shaders
+	if (choice_ppshader)
+		choice_ppshader->Enable(vconfig.iStereoMode != STEREO_ANAGLYPH);
+	if (button_config_pp)
+		button_config_pp->Enable(vconfig.iStereoMode != STEREO_ANAGLYPH);
 
 	// OGL Hacked buffer
 	hacked_buffer_upload->Enable(Core::GetState() == Core::CORE_UNINITIALIZED && vconfig.backend_info.APIType == API_OPENGL);

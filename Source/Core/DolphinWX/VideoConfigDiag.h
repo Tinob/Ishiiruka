@@ -21,8 +21,8 @@
 #include <wx/spinctrl.h>
 
 #include "Common/MsgHandler.h"
-#include "DolphinWX\WxUtils.h"
-
+#include "DolphinWX/WxUtils.h"
+#include "DolphinWX/PostProcessingConfigDiag.h"
 template <typename W>
 class BoolSetting : public W
 {
@@ -85,7 +85,9 @@ protected:
 	void Event_Stc(wxCommandEvent &ev);
 
 	void Event_PPShader(wxCommandEvent &ev);
-
+	void Event_ConfigurePPShader(wxCommandEvent &ev);
+	void Event_StereoSep(wxCommandEvent &ev);
+	void Event_StereoFoc(wxCommandEvent &ev);
 	void Event_ClickClose(wxCommandEvent&);
 	void Event_Close(wxCloseEvent&);
 
@@ -125,7 +127,11 @@ protected:
 
 	SettingRadioButton* virtual_xfb;
 	SettingRadioButton* real_xfb;
+	
+	wxButton* button_config_pp;
 
+	wxChoice* choice_ppshader;
+	
 	std::map<wxWindow*, wxString> ctrl_descs; // maps setting controls to their descriptions
 	std::map<wxWindow*, wxStaticText*> desc_texts; // maps dialog tabs (which are the parents of the setting controls) to their description text objects
 

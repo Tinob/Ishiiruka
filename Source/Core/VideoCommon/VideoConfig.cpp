@@ -42,6 +42,11 @@ VideoConfig::VideoConfig()
 	}
 	backend_info.bUseMinimalMipCount = false;
 	backend_info.bSupportsExclusiveFullscreen = false;
+
+	// Game-specific stereoscopy settings
+	bStereoMonoEFBDepth = false;
+	iStereoSeparationPercent = 100;
+	iStereoConvergencePercent = 100;
 }
 
 void VideoConfig::Load(const std::string& ini_file)
@@ -73,9 +78,6 @@ void VideoConfig::Load(const std::string& ini_file)
 	settings->Get("DumpFrames", &bDumpFrames, 0);
 	settings->Get("FreeLook", &bFreeLook, 0);
 	settings->Get("UseFFV1", &bUseFFV1, 0);
-	settings->Get("Stereo3D", &i3DStereo, 0);
-	settings->Get("Stereo3DSeparation", &i3DStereoSeparation, 200);
-	settings->Get("Stereo3DFocalAngle", &i3DStereoFocalAngle, 0);
 	settings->Get("EnablePixelLighting", &bEnablePixelLighting, 0);
 	settings->Get("HackedBufferUpload", &bHackedBufferUpload, 0);
 	settings->Get("FastDepthCalc", &bFastDepthCalc, true);
@@ -95,6 +97,10 @@ void VideoConfig::Load(const std::string& ini_file)
 	enhancements->Get("ForceFiltering", &bForceFiltering, 0);
 	enhancements->Get("MaxAnisotropy", &iMaxAnisotropy, 0);  // NOTE - this is x in (1 << x)
 	enhancements->Get("PostProcessingShader", &sPostProcessingShader, "");
+	enhancements->Get("StereoMode", &iStereoMode, 0);
+	enhancements->Get("StereoSeparation", &iStereoSeparation, 20);
+	enhancements->Get("StereoConvergence", &iStereoConvergence, 20);
+	enhancements->Get("StereoSwapEyes", &bStereoSwapEyes, false);
 
 	IniFile::Section* hacks = iniFile.GetOrCreateSection("Hacks");
 	hacks->Get("EFBAccessEnable", &bEFBAccessEnable, true);
@@ -155,9 +161,6 @@ void VideoConfig::GameIniLoad()
 	CHECK_SETTING("Video_Settings", "UseRealXFB", bUseRealXFB);
 	CHECK_SETTING("Video_Settings", "SafeTextureCacheColorSamples", iSafeTextureCache_ColorSamples);
 	CHECK_SETTING("Video_Settings", "HiresTextures", bHiresTextures);
-	CHECK_SETTING("Video_Settings", "Stereo3D", i3DStereo);
-	CHECK_SETTING("Video_Settings", "Stereo3DSeparation", i3DStereoSeparation);
-	CHECK_SETTING("Video_Settings", "Stereo3DAngle", i3DStereoFocalAngle);
 	CHECK_SETTING("Video_Settings", "EnablePixelLighting", bEnablePixelLighting);
 	CHECK_SETTING("Video_Settings", "HackedBufferUpload", bHackedBufferUpload);
 	CHECK_SETTING("Video_Settings", "FastDepthCalc", bFastDepthCalc);
@@ -196,6 +199,14 @@ void VideoConfig::GameIniLoad()
 	CHECK_SETTING("Video_Enhancements", "ForceFiltering", bForceFiltering);
 	CHECK_SETTING("Video_Enhancements", "MaxAnisotropy", iMaxAnisotropy);  // NOTE - this is x in (1 << x)
 	CHECK_SETTING("Video_Enhancements", "PostProcessingShader", sPostProcessingShader);
+	CHECK_SETTING("Video_Enhancements", "StereoMode", iStereoMode);
+	CHECK_SETTING("Video_Enhancements", "StereoSeparation", iStereoSeparation);
+	CHECK_SETTING("Video_Enhancements", "StereoConvergence", iStereoConvergence);
+	CHECK_SETTING("Video_Enhancements", "StereoSwapEyes", bStereoSwapEyes);
+
+	CHECK_SETTING("Video_Stereoscopy", "StereoMonoEFBDepth", bStereoMonoEFBDepth);
+	CHECK_SETTING("Video_Stereoscopy", "StereoSeparationPercent", iStereoSeparationPercent);
+	CHECK_SETTING("Video_Stereoscopy", "StereoConvergencePercent", iStereoConvergencePercent);
 
 	CHECK_SETTING("Video_Hacks", "EFBAccessEnable", bEFBAccessEnable);
 	CHECK_SETTING("Video_Hacks", "EFBFastAccess", bEFBFastAccess);
@@ -228,6 +239,7 @@ void VideoConfig::VerifyValidity()
 	if (iMultisampleMode < 0 || iMultisampleMode >= (int)backend_info.AAModes.size()) iMultisampleMode = 0;
 	if (!backend_info.bSupportsFormatReinterpretation) bEFBEmulateFormatChanges = false;
 	if (!backend_info.bSupportsPixelLighting) bEnablePixelLighting = false;	
+	if (!backend_info.bSupportsStereoscopy) iStereoMode = 0;
 	if (backend_info.APIType == API_OPENGL)
 	{
 		//disable until is properly implemneted
@@ -265,9 +277,6 @@ void VideoConfig::Save(const std::string& ini_file)
 	settings->Set("DumpFrames", bDumpFrames);
 	settings->Set("FreeLook", bFreeLook);
 	settings->Set("UseFFV1", bUseFFV1);
-	settings->Set("Stereo3D", i3DStereo);
-	settings->Set("Stereo3DSeparation", i3DStereoSeparation);
-	settings->Set("Stereo3DFocalAngle", i3DStereoFocalAngle);
 	settings->Set("EnablePixelLighting", bEnablePixelLighting);
 	settings->Set("HackedBufferUpload", bHackedBufferUpload);
 	settings->Set("FastDepthCalc", bFastDepthCalc);
@@ -288,6 +297,10 @@ void VideoConfig::Save(const std::string& ini_file)
 	enhancements->Set("ForceFiltering", bForceFiltering);
 	enhancements->Set("MaxAnisotropy", iMaxAnisotropy);
 	enhancements->Set("PostProcessingShader", sPostProcessingShader);
+	enhancements->Set("StereoMode", iStereoMode);
+	enhancements->Set("StereoSeparation", iStereoSeparation);
+	enhancements->Set("StereoConvergence", iStereoConvergence);
+	enhancements->Set("StereoSwapEyes", bStereoSwapEyes);
 
 	IniFile::Section* hacks = iniFile.GetOrCreateSection("Hacks");
 	hacks->Set("EFBAccessEnable", bEFBAccessEnable);

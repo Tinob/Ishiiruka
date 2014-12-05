@@ -348,10 +348,10 @@ protected:
 	inline void Write32(u32 value) {*(u32*)code = value; code+=4;}
 
 public:
-	ARMXEmitter() : code(0), startcode(0), lastCacheFlushEnd(0) {
+	ARMXEmitter() : code(nullptr), startcode(nullptr), lastCacheFlushEnd(nullptr) {
 		condition = CC_AL << 28;
 	}
-	ARMXEmitter(u8 *code_ptr) {
+	ARMXEmitter(u8* code_ptr) {
 		code = code_ptr;
 		lastCacheFlushEnd = code_ptr;
 		startcode = code_ptr;

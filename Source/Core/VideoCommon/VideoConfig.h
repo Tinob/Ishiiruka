@@ -46,11 +46,12 @@ enum EFBScale
 	SCALE_6X,
 };
 
-enum Stereo3DMode {
-	STEREO3D_NONE = 0,
-	STEREO3D_ANAGLYPH = 1,
-	STEREO3D_TOPBOTTOM = 2,
-	STEREO3D_SYDEBYSIDE = 3
+enum StereoMode
+{
+	STEREO_OFF = 0,
+	STEREO_SBS,
+	STEREO_TAB,
+	STEREO_ANAGLYPH
 };
 
 class IniFile;
@@ -86,6 +87,10 @@ struct VideoConfig final
 	bool bForceFiltering;
 	int iMaxAnisotropy;
 	std::string sPostProcessingShader;
+	int iStereoMode;
+	int iStereoSeparation;
+	int iStereoConvergence;
+	bool bStereoSwapEyes;
 
 	// Information
 	bool bShowFPS;
@@ -110,9 +115,6 @@ struct VideoConfig final
 	bool bDumpFrames;
 	bool bUseFFV1;
 	bool bFreeLook;
-	int i3DStereo; // 0: disabled, 1: Anaglyph, 2: Top/Bottom
-	int i3DStereoSeparation;
-	int i3DStereoFocalAngle;
 	bool bBorderlessFullscreen;
 
 	// Hacks
@@ -141,6 +143,11 @@ struct VideoConfig final
 	int iLog; // CONF_ bits
 	int iSaveTargetId; // TODO: Should be dropped
 
+	// Stereoscopy
+	bool bStereoMonoEFBDepth;
+	int iStereoSeparationPercent;
+	int iStereoConvergencePercent;
+
 	// D3D only config, mostly to be merged into the above
 	int iAdapter;
 
@@ -167,8 +174,10 @@ struct VideoConfig final
 		bool bSupportsEarlyZ; // needed by PixelShaderGen, so must stay in VideoCommon
 		bool bNeedBlendIndices; // needed by PixelShaderGen, so must stay in VideoCommon
 		bool bSupportsOversizedViewports;
+		bool bSupportsStereoscopy;
 		bool bSupportsExclusiveFullscreen;
 		bool bSupportsBBox;
+		bool bSupportsGSInstancing; // Needed by GeometryShaderGen, so must stay in VideoCommon
 	} backend_info;
 
 	// Utility

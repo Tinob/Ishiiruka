@@ -9,7 +9,7 @@ using namespace ArmGen;
 
 ArmRegCache::ArmRegCache()
 {
-	emit = 0;
+	emit = nullptr;
 }
 
 void ArmRegCache::Init(ARMXEmitter *emitter)
@@ -54,7 +54,7 @@ ARMReg *ArmRegCache::GetPPCAllocationOrder(int &count)
 	// the ppc side.
 	static ARMReg allocationOrder[] =
 	{
-		R0, R1, R2, R3, R4, R5, R6, R7, R8
+		R0, R1, R2, R3, R4, R5, R6, R7
 	};
 	count = sizeof(allocationOrder) / sizeof(const int);
 	return allocationOrder;

@@ -607,15 +607,15 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 	int Width  = Tr.right - Tr.left;
 	int Height = Tr.bottom - Tr.top;
 	
-	if(g_ActiveConfig.i3DStereo) {		
+	if(g_ActiveConfig.iStereoMode) {		
 		VertexShaderManager::ResetView();
 		if(s_b3D_RightFrame)
 		{
-			if (g_ActiveConfig.i3DStereo == STEREO3D_ANAGLYPH)
+			if (g_ActiveConfig.iStereoMode == STEREO_ANAGLYPH)
 			{
 				D3D::SetRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_BLUE | D3DCOLORWRITEENABLE_GREEN);
 			}
-			else if (g_ActiveConfig.i3DStereo == STEREO3D_TOPBOTTOM)
+			else if (g_ActiveConfig.iStereoMode == STEREO_TAB)
 			{
 				Y =  (Y / 2) + (s_backbuffer_height / 2);
 				Height = Height / 2;				
@@ -625,16 +625,16 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 				X = X / 2 + (s_backbuffer_width / 2);
 				Width = Width / 2;				
 			}			
-			VertexShaderManager::TranslateView(-0.001f * g_ActiveConfig.i3DStereoSeparation,0.0f);
-			VertexShaderManager::RotateView(-0.0001f *g_ActiveConfig.i3DStereoFocalAngle,0.0f);
+			VertexShaderManager::TranslateView(-0.001f * g_ActiveConfig.iStereoSeparation,0.0f);
+			VertexShaderManager::RotateView(-0.0001f *g_ActiveConfig.iStereoConvergence,0.0f);
 		}
 		else
 		{
-			if (g_ActiveConfig.i3DStereo == STEREO3D_ANAGLYPH)
+			if (g_ActiveConfig.iStereoMode == STEREO_ANAGLYPH)
 			{
 				D3D::SetRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_RED);
 			}
-			else if (g_ActiveConfig.i3DStereo == STEREO3D_TOPBOTTOM)
+			else if (g_ActiveConfig.iStereoMode == STEREO_TAB)
 			{
 				Y =  Y / 2;
 				Height = Height / 2;
@@ -644,8 +644,8 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 				X = X / 2;
 				Width = Width / 2;
 			}
-			VertexShaderManager::TranslateView(0.001f *g_ActiveConfig.i3DStereoSeparation,0.0f);
-			VertexShaderManager::RotateView(0.0001f * g_ActiveConfig.i3DStereoFocalAngle,0.0f);
+			VertexShaderManager::TranslateView(0.001f *g_ActiveConfig.iStereoSeparation, 0.0f);
+			VertexShaderManager::RotateView(0.0001f * g_ActiveConfig.iStereoConvergence, 0.0f);
 		}
 		s_b3D_RightFrame = !s_b3D_RightFrame;		
 	}	
@@ -732,7 +732,7 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 	D3D::RefreshSamplerState(0, D3DSAMP_MINFILTER);
 	D3D::RefreshSamplerState(0, D3DSAMP_MAGFILTER);
 
-	if(g_ActiveConfig.i3DStereo == STEREO3D_ANAGLYPH)
+	if(g_ActiveConfig.iStereoMode == STEREO_ANAGLYPH)
 	{
 		DWORD color_mask = D3DCOLORWRITEENABLE_ALPHA | D3DCOLORWRITEENABLE_RED | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_BLUE;
 		D3D::SetRenderState(D3DRS_COLORWRITEENABLE, color_mask);

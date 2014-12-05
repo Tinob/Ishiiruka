@@ -1,18 +1,119 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="GUI">
+      <UniqueIdentifier>{0c0288ac-1168-4534-b3d3-051b9981f842}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GUI\Cheats">
+      <UniqueIdentifier>{20acf084-7e31-4b1e-beec-b99bac38a681}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GUI\Debugger">
+      <UniqueIdentifier>{ef70fd67-8f30-467a-8af0-ea0d48837f04}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GUI\InputConfig">
+      <UniqueIdentifier>{d0d9afb4-2b02-45c4-b6fc-91b9ae53a18c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GUI\NetPlay">
+      <UniqueIdentifier>{fb02111e-3fe2-4ded-a594-7a56048f97b5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GUI\Video">
+      <UniqueIdentifier>{80626e3b-e13b-41c3-bd63-4ef1faf92924}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Misc">
+      <UniqueIdentifier>{4352dc64-398e-4a96-ba4a-824dffa2004c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources">
+      <UniqueIdentifier>{d6bc4dd6-06ed-46ad-b327-04afb26e10ec}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="MainNoGUI.cpp" />
     <ClCompile Include="WXInputBase.cpp" />
     <ClCompile Include="WxUtils.cpp" />
-    <ClCompile Include="NetWindow.cpp">
-      <Filter>GUI\NetPlay</Filter>
+    <ClCompile Include="Cheats\CheatsWindow.cpp">
+      <Filter>GUI\Cheats</Filter>
+    </ClCompile>
+    <ClCompile Include="Cheats\CreateCodeDialog.cpp">
+      <Filter>GUI\Cheats</Filter>
+    </ClCompile>
+    <ClCompile Include="Cheats\CheatSearchTab.cpp">
+      <Filter>GUI\Cheats</Filter>
+    </ClCompile>
+    <ClCompile Include="Cheats\GeckoCodeDiag.cpp">
+      <Filter>GUI\Cheats</Filter>
+    </ClCompile>
+    <ClCompile Include="Debugger\BreakpointDlg.cpp">
+      <Filter>GUI\Debugger</Filter>
+    </ClCompile>
+    <ClCompile Include="Debugger\BreakpointView.cpp">
+      <Filter>GUI\Debugger</Filter>
+    </ClCompile>
+    <ClCompile Include="Debugger\BreakpointWindow.cpp">
+      <Filter>GUI\Debugger</Filter>
+    </ClCompile>
+    <ClCompile Include="Debugger\CodeView.cpp">
+      <Filter>GUI\Debugger</Filter>
+    </ClCompile>
+    <ClCompile Include="Debugger\CodeWindow.cpp">
+      <Filter>GUI\Debugger</Filter>
+    </ClCompile>
+    <ClCompile Include="Debugger\CodeWindowFunctions.cpp">
+      <Filter>GUI\Debugger</Filter>
+    </ClCompile>
+    <ClCompile Include="Debugger\DebuggerUIUtil.cpp">
+      <Filter>GUI\Debugger</Filter>
+    </ClCompile>
+    <ClCompile Include="Debugger\MemoryView.cpp">
+      <Filter>GUI\Debugger</Filter>
+    </ClCompile>
+    <ClCompile Include="Debugger\MemoryCheckDlg.cpp">
+      <Filter>GUI\Debugger</Filter>
+    </ClCompile>
+    <ClCompile Include="Debugger\DSPDebugWindow.cpp">
+      <Filter>GUI\Debugger</Filter>
+    </ClCompile>
+    <ClCompile Include="Debugger\DSPRegisterView.cpp">
+      <Filter>GUI\Debugger</Filter>
+    </ClCompile>
+    <ClCompile Include="Debugger\JitWindow.cpp">
+      <Filter>GUI\Debugger</Filter>
+    </ClCompile>
+    <ClCompile Include="Debugger\MemoryWindow.cpp">
+      <Filter>GUI\Debugger</Filter>
+    </ClCompile>
+    <ClCompile Include="Debugger\RegisterView.cpp">
+      <Filter>GUI\Debugger</Filter>
+    </ClCompile>
+    <ClCompile Include="Debugger\RegisterWindow.cpp">
+      <Filter>GUI\Debugger</Filter>
+    </ClCompile>
+    <ClCompile Include="Debugger\WatchView.cpp">
+      <Filter>GUI\Debugger</Filter>
+    </ClCompile>
+    <ClCompile Include="Debugger\WatchWindow.cpp">
+      <Filter>GUI\Debugger</Filter>
     </ClCompile>
     <ClCompile Include="InputConfigDiag.cpp">
       <Filter>GUI\InputConfig</Filter>
     </ClCompile>
     <ClCompile Include="InputConfigDiagBitmaps.cpp">
       <Filter>GUI\InputConfig</Filter>
+    </ClCompile>
+    <ClCompile Include="NetWindow.cpp">
+      <Filter>GUI\NetPlay</Filter>
+    </ClCompile>
+    <ClCompile Include="Debugger\DebuggerPanel.cpp">
+      <Filter>GUI\Video</Filter>
+    </ClCompile>
+    <ClCompile Include="PostProcessingConfigDiag.cpp">
+      <Filter>GUI\Video</Filter>
+    </ClCompile>
+    <ClCompile Include="VideoConfigDiag.cpp">
+      <Filter>GUI\Video</Filter>
+    </ClCompile>
+    <ClCompile Include="ISOFile.cpp">
+      <Filter>Misc</Filter>
     </ClCompile>
     <ClCompile Include="AboutDolphin.cpp">
       <Filter>GUI</Filter>
@@ -21,6 +122,9 @@
       <Filter>GUI</Filter>
     </ClCompile>
     <ClCompile Include="ConfigMain.cpp">
+      <Filter>GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="FifoPlayerDlg.cpp">
       <Filter>GUI</Filter>
     </ClCompile>
     <ClCompile Include="Frame.cpp">
@@ -41,6 +145,9 @@
     <ClCompile Include="ISOProperties.cpp">
       <Filter>GUI</Filter>
     </ClCompile>
+    <ClCompile Include="LogConfigWindow.cpp">
+      <Filter>GUI</Filter>
+    </ClCompile>
     <ClCompile Include="LogWindow.cpp">
       <Filter>GUI</Filter>
     </ClCompile>
@@ -50,97 +157,13 @@
     <ClCompile Include="PatchAddEdit.cpp">
       <Filter>GUI</Filter>
     </ClCompile>
-    <ClCompile Include="WiimoteConfigDiag.cpp">
-      <Filter>GUI</Filter>
-    </ClCompile>
-    <ClCompile Include="ISOFile.cpp">
-      <Filter>Misc</Filter>
-    </ClCompile>
-    <ClCompile Include="PHackSettings.cpp">
-      <Filter>GUI</Filter>
-    </ClCompile>
-    <ClCompile Include="Debugger\DebuggerUIUtil.cpp">
-      <Filter>GUI\Debugger</Filter>
-    </ClCompile>
-    <ClCompile Include="VideoConfigDiag.cpp">
-      <Filter>GUI\Video</Filter>
-    </ClCompile>
-    <ClCompile Include="Debugger\CodeView.cpp">
-      <Filter>GUI\Debugger</Filter>
-    </ClCompile>
-    <ClCompile Include="Debugger\MemoryView.cpp">
-      <Filter>GUI\Debugger</Filter>
-    </ClCompile>
-    <ClCompile Include="Debugger\DebuggerPanel.cpp">
-      <Filter>GUI\Video</Filter>
-    </ClCompile>
-    <ClCompile Include="Debugger\BreakpointDlg.cpp">
-      <Filter>GUI\Debugger</Filter>
-    </ClCompile>
-    <ClCompile Include="Debugger\BreakpointWindow.cpp">
-      <Filter>GUI\Debugger</Filter>
-    </ClCompile>
-    <ClCompile Include="Debugger\CodeWindow.cpp">
-      <Filter>GUI\Debugger</Filter>
-    </ClCompile>
-    <ClCompile Include="Debugger\CodeWindowFunctions.cpp">
-      <Filter>GUI\Debugger</Filter>
-    </ClCompile>
-    <ClCompile Include="Debugger\DSPDebugWindow.cpp">
-      <Filter>GUI\Debugger</Filter>
-    </ClCompile>
-    <ClCompile Include="Debugger\JitWindow.cpp">
-      <Filter>GUI\Debugger</Filter>
-    </ClCompile>
-    <ClCompile Include="Debugger\MemoryCheckDlg.cpp">
-      <Filter>GUI\Debugger</Filter>
-    </ClCompile>
-    <ClCompile Include="Debugger\MemoryWindow.cpp">
-      <Filter>GUI\Debugger</Filter>
-    </ClCompile>
-    <ClCompile Include="Debugger\RegisterWindow.cpp">
-      <Filter>GUI\Debugger</Filter>
-    </ClCompile>
-    <ClCompile Include="Debugger\RegisterView.cpp">
-      <Filter>GUI\Debugger</Filter>
-    </ClCompile>
-    <ClCompile Include="Debugger\DSPRegisterView.cpp">
-      <Filter>GUI\Debugger</Filter>
-    </ClCompile>
-    <ClCompile Include="Debugger\BreakpointView.cpp">
-      <Filter>GUI\Debugger</Filter>
-    </ClCompile>
-    <ClCompile Include="LogConfigWindow.cpp">
-      <Filter>GUI</Filter>
-    </ClCompile>
-    <ClCompile Include="FifoPlayerDlg.cpp">
-      <Filter>GUI</Filter>
-    </ClCompile>
     <ClCompile Include="TASInputDlg.cpp">
       <Filter>GUI</Filter>
     </ClCompile>
-    <ClCompile Include="Debugger\WatchView.cpp">
-      <Filter>GUI\Debugger</Filter>
-    </ClCompile>
-    <ClCompile Include="Debugger\WatchWindow.cpp">
-      <Filter>GUI\Debugger</Filter>
-    </ClCompile>
-    <ClCompile Include="Cheats\CheatSearchTab.cpp">
-      <Filter>GUI\Cheats</Filter>
-    </ClCompile>
-    <ClCompile Include="Cheats\CheatsWindow.cpp">
-      <Filter>GUI\Cheats</Filter>
-    </ClCompile>
-    <ClCompile Include="Cheats\CreateCodeDialog.cpp">
-      <Filter>GUI\Cheats</Filter>
-    </ClCompile>
-    <ClCompile Include="Cheats\GeckoCodeDiag.cpp">
-      <Filter>GUI\Cheats</Filter>
-    </ClCompile>
-    <ClCompile Include="PostProcessingConfigDiag.cpp">
-      <Filter>GUI</Filter>
-    </ClCompile>
     <ClCompile Include="SoftwareVideoConfigDialog.cpp">
+      <Filter>GUI\Video</Filter>
+    </ClCompile>
+    <ClCompile Include="ControllerConfigDiag.cpp">
       <Filter>GUI</Filter>
     </ClCompile>
   </ItemGroup>
@@ -148,19 +171,97 @@
     <ClInclude Include="Main.h" />
     <ClInclude Include="WXInputBase.h" />
     <ClInclude Include="WxUtils.h" />
-    <ClInclude Include="NetWindow.h">
-      <Filter>GUI\NetPlay</Filter>
+    <ClInclude Include="Cheats\CheatSearchTab.h">
+      <Filter>GUI\Cheats</Filter>
+    </ClInclude>
+    <ClInclude Include="Cheats\CheatsWindow.h">
+      <Filter>GUI\Cheats</Filter>
+    </ClInclude>
+    <ClInclude Include="Cheats\CreateCodeDialog.h">
+      <Filter>GUI\Cheats</Filter>
+    </ClInclude>
+    <ClInclude Include="Cheats\GeckoCodeDiag.h">
+      <Filter>GUI\Cheats</Filter>
+    </ClInclude>
+    <ClInclude Include="Debugger\BreakpointDlg.h">
+      <Filter>GUI\Debugger</Filter>
+    </ClInclude>
+    <ClInclude Include="Debugger\BreakpointView.h">
+      <Filter>GUI\Debugger</Filter>
+    </ClInclude>
+    <ClInclude Include="Debugger\BreakpointWindow.h">
+      <Filter>GUI\Debugger</Filter>
+    </ClInclude>
+    <ClInclude Include="Debugger\CodeView.h">
+      <Filter>GUI\Debugger</Filter>
+    </ClInclude>
+    <ClInclude Include="Debugger\CodeWindow.h">
+      <Filter>GUI\Debugger</Filter>
+    </ClInclude>
+    <ClInclude Include="Debugger\DebuggerUIUtil.h">
+      <Filter>GUI\Debugger</Filter>
+    </ClInclude>
+    <ClInclude Include="Debugger\MemoryView.h">
+      <Filter>GUI\Debugger</Filter>
+    </ClInclude>
+    <ClInclude Include="Debugger\MemoryCheckDlg.h">
+      <Filter>GUI\Debugger</Filter>
+    </ClInclude>
+    <ClInclude Include="Debugger\DSPDebugWindow.h">
+      <Filter>GUI\Debugger</Filter>
+    </ClInclude>
+    <ClInclude Include="Debugger\DSPRegisterView.h">
+      <Filter>GUI\Debugger</Filter>
+    </ClInclude>
+    <ClInclude Include="Debugger\JitWindow.h">
+      <Filter>GUI\Debugger</Filter>
+    </ClInclude>
+    <ClInclude Include="Debugger\MemoryWindow.h">
+      <Filter>GUI\Debugger</Filter>
+    </ClInclude>
+    <ClInclude Include="Debugger\RegisterView.h">
+      <Filter>GUI\Debugger</Filter>
+    </ClInclude>
+    <ClInclude Include="Debugger\RegisterWindow.h">
+      <Filter>GUI\Debugger</Filter>
+    </ClInclude>
+    <ClInclude Include="Debugger\WatchView.h">
+      <Filter>GUI\Debugger</Filter>
+    </ClInclude>
+    <ClInclude Include="Debugger\WatchWindow.h">
+      <Filter>GUI\Debugger</Filter>
     </ClInclude>
     <ClInclude Include="InputConfigDiag.h">
       <Filter>GUI\InputConfig</Filter>
     </ClInclude>
-    <ClInclude Include="ARCodeAddEdit.h">
-      <Filter>GUI</Filter>
+    <ClInclude Include="NetWindow.h">
+      <Filter>GUI\NetPlay</Filter>
+    </ClInclude>
+    <ClInclude Include="Debugger\DebuggerPanel.h">
+      <Filter>GUI\Video</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcessingConfigDiag.h">
+      <Filter>GUI\Video</Filter>
+    </ClInclude>
+    <ClInclude Include="VideoConfigDiag.h">
+      <Filter>GUI\Video</Filter>
+    </ClInclude>
+    <ClInclude Include="ISOFile.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Resources</Filter>
     </ClInclude>
     <ClInclude Include="AboutDolphin.h">
       <Filter>GUI</Filter>
     </ClInclude>
+    <ClInclude Include="ARCodeAddEdit.h">
+      <Filter>GUI</Filter>
+    </ClInclude>
     <ClInclude Include="ConfigMain.h">
+      <Filter>GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="FifoPlayerDlg.h">
       <Filter>GUI</Filter>
     </ClInclude>
     <ClInclude Include="Frame.h">
@@ -178,6 +279,9 @@
     <ClInclude Include="ISOProperties.h">
       <Filter>GUI</Filter>
     </ClInclude>
+    <ClInclude Include="LogConfigWindow.h">
+      <Filter>GUI</Filter>
+    </ClInclude>
     <ClInclude Include="LogWindow.h">
       <Filter>GUI</Filter>
     </ClInclude>
@@ -187,138 +291,25 @@
     <ClInclude Include="PatchAddEdit.h">
       <Filter>GUI</Filter>
     </ClInclude>
-    <ClInclude Include="WiimoteConfigDiag.h">
-      <Filter>GUI</Filter>
-    </ClInclude>
-    <ClInclude Include="ISOFile.h">
-      <Filter>Misc</Filter>
-    </ClInclude>
-    <ClInclude Include="resource.h">
-      <Filter>Resources</Filter>
-    </ClInclude>
-    <ClInclude Include="PHackSettings.h">
-      <Filter>GUI</Filter>
-    </ClInclude>
-    <ClInclude Include="Debugger\DebuggerUIUtil.h">
-      <Filter>GUI\Debugger</Filter>
-    </ClInclude>
-    <ClInclude Include="VideoConfigDiag.h">
-      <Filter>GUI\Video</Filter>
-    </ClInclude>
-    <ClInclude Include="Debugger\CodeView.h">
-      <Filter>GUI\Debugger</Filter>
-    </ClInclude>
-    <ClInclude Include="Debugger\MemoryView.h">
-      <Filter>GUI\Debugger</Filter>
-    </ClInclude>
-    <ClInclude Include="Debugger\DebuggerPanel.h">
-      <Filter>GUI\Video</Filter>
-    </ClInclude>
-    <ClInclude Include="Debugger\BreakpointDlg.h">
-      <Filter>GUI\Debugger</Filter>
-    </ClInclude>
-    <ClInclude Include="Debugger\BreakpointWindow.h">
-      <Filter>GUI\Debugger</Filter>
-    </ClInclude>
-    <ClInclude Include="Debugger\CodeWindow.h">
-      <Filter>GUI\Debugger</Filter>
-    </ClInclude>
-    <ClInclude Include="Debugger\DSPDebugWindow.h">
-      <Filter>GUI\Debugger</Filter>
-    </ClInclude>
-    <ClInclude Include="Debugger\JitWindow.h">
-      <Filter>GUI\Debugger</Filter>
-    </ClInclude>
-    <ClInclude Include="Debugger\MemoryCheckDlg.h">
-      <Filter>GUI\Debugger</Filter>
-    </ClInclude>
-    <ClInclude Include="Debugger\MemoryWindow.h">
-      <Filter>GUI\Debugger</Filter>
-    </ClInclude>
-    <ClInclude Include="Debugger\RegisterWindow.h">
-      <Filter>GUI\Debugger</Filter>
-    </ClInclude>
-    <ClInclude Include="Debugger\RegisterView.h">
-      <Filter>GUI\Debugger</Filter>
-    </ClInclude>
-    <ClInclude Include="Debugger\DSPRegisterView.h">
-      <Filter>GUI\Debugger</Filter>
-    </ClInclude>
-    <ClInclude Include="Debugger\BreakpointView.h">
-      <Filter>GUI\Debugger</Filter>
-    </ClInclude>
-    <ClInclude Include="LogConfigWindow.h">
-      <Filter>GUI</Filter>
-    </ClInclude>
-    <ClInclude Include="FifoPlayerDlg.h">
-      <Filter>GUI</Filter>
-    </ClInclude>
     <ClInclude Include="TASInputDlg.h">
       <Filter>GUI</Filter>
     </ClInclude>
-    <ClInclude Include="Debugger\WatchView.h">
-      <Filter>GUI\Debugger</Filter>
-    </ClInclude>
-    <ClInclude Include="Debugger\WatchWindow.h">
-      <Filter>GUI\Debugger</Filter>
-    </ClInclude>
-    <ClInclude Include="Cheats\CheatSearchTab.h">
-      <Filter>GUI\Cheats</Filter>
-    </ClInclude>
-    <ClInclude Include="Cheats\CheatsWindow.h">
-      <Filter>GUI\Cheats</Filter>
-    </ClInclude>
-    <ClInclude Include="Cheats\CreateCodeDialog.h">
-      <Filter>GUI\Cheats</Filter>
-    </ClInclude>
-    <ClInclude Include="Cheats\GeckoCodeDiag.h">
-      <Filter>GUI\Cheats</Filter>
-    </ClInclude>
-    <ClInclude Include="PostProcessingConfigDiag.h">
-      <Filter>GUI</Filter>
-    </ClInclude>
     <ClInclude Include="SoftwareVideoConfigDialog.h">
+      <Filter>GUI\Video</Filter>
+    </ClInclude>
+    <ClInclude Include="ControllerConfigDiag.h">
       <Filter>GUI</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="CMakeLists.txt" />
-    <None Include="..\..\..\Installer\Dolphin.ico">
-      <Filter>Resources</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Filter Include="GUI">
-      <UniqueIdentifier>{2f20d058-1119-4738-bda8-90fe900e8d69}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GUI\InputConfig">
-      <UniqueIdentifier>{70eb2f12-fab7-4953-8ad1-a981837c3a7e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GUI\NetPlay">
-      <UniqueIdentifier>{38fc863a-0392-4c5d-ab28-7fe1f70e8a70}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GUI\Saves">
-      <UniqueIdentifier>{3727fb17-2efd-43ce-b71f-d110f0f40474}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Misc">
-      <UniqueIdentifier>{0721c9ae-4d49-49d6-997b-3731f8ab64cc}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Resources">
-      <UniqueIdentifier>{9dd3ef96-b03a-4c14-9d35-6a4850acd430}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GUI\Debugger">
-      <UniqueIdentifier>{8ab1ce40-f5e7-47b8-9706-59c924af4eaa}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GUI\Video">
-      <UniqueIdentifier>{ff5180be-244f-4c0e-8a35-bd4bffb6a343}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GUI\Cheats">
-      <UniqueIdentifier>{0901be5b-8b77-4077-b013-9862d302be49}</UniqueIdentifier>
-    </Filter>
+    <Text Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="DolphinWX.rc">
       <Filter>Resources</Filter>
     </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="$(CoreDir)..\..\Installer\Dolphin.ico" />
   </ItemGroup>
 </Project>
