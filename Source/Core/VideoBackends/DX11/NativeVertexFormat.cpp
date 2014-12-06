@@ -136,7 +136,7 @@ void D3DVertexFormat::SetupVertexPointers()
 
 		HRESULT hr = DX11::D3D::device->CreateInputLayout(m_elems, m_num_elems, vs_bytecode.Data(), vs_bytecode.Size(), D3D::ToAddr(m_layout));
 		if (FAILED(hr)) PanicAlert("Failed to create input layout, %s %d\n", __FILE__, __LINE__);
-		DX11::D3D::SetDebugObjectName((ID3D11DeviceChild*)m_layout.get(), "input layout used to emulate the GX pipeline");
+		DX11::D3D::SetDebugObjectName(m_layout.get(), "input layout used to emulate the GX pipeline");
 	}
 	DX11::D3D::context->IASetInputLayout(m_layout.get());
 }

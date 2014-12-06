@@ -118,22 +118,22 @@ void VertexShaderCache::Init()
 	D3D11_BUFFER_DESC cbdesc = CD3D11_BUFFER_DESC(cbsize, D3D11_BIND_CONSTANT_BUFFER, D3D11_USAGE_DYNAMIC, D3D11_CPU_ACCESS_WRITE);
 	HRESULT hr = D3D::device->CreateBuffer(&cbdesc, NULL, &vscbuf);
 	CHECK(hr==S_OK, "Create vertex shader constant buffer (size=%u)", cbsize);
-	D3D::SetDebugObjectName((ID3D11DeviceChild*)vscbuf, "vertex shader constant buffer used to emulate the GX pipeline");
+	D3D::SetDebugObjectName(vscbuf, "vertex shader constant buffer used to emulate the GX pipeline");
 
 	D3DBlob blob;
 	D3D::CompileShader(D3D::ShaderType::Vertex, simple_shader_code, blob);
 	D3D::device->CreateInputLayout(simpleelems, 2, blob.Data(), blob.Size(), D3D::ToAddr(SimpleLayout));
 	SimpleVertexShader = D3D::CreateVertexShaderFromByteCode(blob);
 	if (SimpleLayout == NULL || SimpleVertexShader == NULL) PanicAlert("Failed to create simple vertex shader or input layout at %s %d\n", __FILE__, __LINE__);	
-	D3D::SetDebugObjectName((ID3D11DeviceChild*)SimpleVertexShader.get(), "simple vertex shader");
-	D3D::SetDebugObjectName((ID3D11DeviceChild*)SimpleLayout.get(), "simple input layout");
+	D3D::SetDebugObjectName(SimpleVertexShader.get(), "simple vertex shader");
+	D3D::SetDebugObjectName(SimpleLayout.get(), "simple input layout");
 
 	D3D::CompileShader(D3D::ShaderType::Vertex, clear_shader_code, blob);
 	D3D::device->CreateInputLayout(clearelems, 2, blob.Data(), blob.Size(), D3D::ToAddr(ClearLayout));
 	ClearVertexShader = D3D::CreateVertexShaderFromByteCode(blob);
 	if (ClearLayout == NULL || ClearVertexShader == NULL) PanicAlert("Failed to create clear vertex shader or input layout at %s %d\n", __FILE__, __LINE__);
-	D3D::SetDebugObjectName((ID3D11DeviceChild*)ClearVertexShader.get(), "clear vertex shader");
-	D3D::SetDebugObjectName((ID3D11DeviceChild*)ClearLayout.get(), "clear input layout");
+	D3D::SetDebugObjectName(ClearVertexShader.get(), "clear vertex shader");
+	D3D::SetDebugObjectName(ClearLayout.get(), "clear input layout");
 
 	Clear();
 
@@ -301,7 +301,7 @@ void VertexShaderCache::PushByteCode(const VertexShaderUid &uid, D3DBlob&& bcode
 	if (entry->shader)
 	{
 		// TODO: Somehow make the debug name a bit more specific
-		D3D::SetDebugObjectName((ID3D11DeviceChild*)entry->shader.get(), "a vertex shader of VertexShaderCache");
+		D3D::SetDebugObjectName(entry->shader.get(), "a vertex shader of VertexShaderCache");
 		INCSTAT(stats.numVertexShadersCreated);
 		SETSTAT(stats.numVertexShadersAlive, (int)vshaders.size());
 	}

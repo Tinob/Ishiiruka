@@ -223,8 +223,8 @@ TextureCache::TCacheEntryBase* TextureCache::CreateTexture(u32 width, u32 height
 	entry->convertrgb565 = convertrgb565;
 	entry->compressed = compressed;
 	// TODO: better debug names
-	D3D::SetDebugObjectName((ID3D11DeviceChild*)entry->texture->GetTex(), "a texture of the TextureCache");
-	D3D::SetDebugObjectName((ID3D11DeviceChild*)entry->texture->GetSRV(), "shader resource view of a texture of the TextureCache");
+	D3D::SetDebugObjectName(entry->texture->GetTex(), "a texture of the TextureCache");
+	D3D::SetDebugObjectName(entry->texture->GetSRV(), "shader resource view of a texture of the TextureCache");
 
 	SAFE_RELEASE(pTexture);
 	return entry;
@@ -251,7 +251,7 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, unsigned int dstFo
 			data.pSysMem = colmat;
 			HRESULT hr = D3D::device->CreateBuffer(&cbdesc, &data, D3D::ToAddr(efbcopycbuf[cbufid]));
 			CHECK(SUCCEEDED(hr), "Create efb copy constant buffer %d", cbufid);
-			D3D::SetDebugObjectName((ID3D11DeviceChild*)efbcopycbuf[cbufid].get(), "a constant buffer used in TextureCache::CopyRenderTargetToTexture");
+			D3D::SetDebugObjectName(efbcopycbuf[cbufid].get(), "a constant buffer used in TextureCache::CopyRenderTargetToTexture");
 		}
 		D3D::context->PSSetConstantBuffers(0, 1, D3D::ToAddr(efbcopycbuf[cbufid]));
 

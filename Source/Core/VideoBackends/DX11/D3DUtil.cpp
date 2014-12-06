@@ -217,7 +217,7 @@ int CD3DFont::Init()
 		PanicAlert("Failed to create font texture");
 		return hr;
 	}
-	D3D::SetDebugObjectName((ID3D11DeviceChild*)buftex, "texture of a CD3DFont object");
+	D3D::SetDebugObjectName(buftex, "texture of a CD3DFont object");
 
 	// Lock the surface and write the alpha values for the set pixels
 	D3D11_MAPPED_SUBRESOURCE texmap;
@@ -249,14 +249,14 @@ int CD3DFont::Init()
 	// setup device objects for drawing
 	m_pshader = D3D::CompileAndCreatePixelShader(fontpixshader);
 	if (m_pshader == nullptr) PanicAlert("Failed to create pixel shader, %s %d\n", __FILE__, __LINE__);
-	D3D::SetDebugObjectName((ID3D11DeviceChild*)m_pshader.get(), "pixel shader of a CD3DFont object");
+	D3D::SetDebugObjectName(m_pshader.get(), "pixel shader of a CD3DFont object");
 
 	D3DBlob vsbytecode;
 	D3D::CompileShader(DX11::D3D::ShaderType::Vertex,  fontvertshader, vsbytecode);
 	if (vsbytecode.Data() == nullptr) PanicAlert("Failed to compile vertex shader, %s %d\n", __FILE__, __LINE__);
 	m_vshader = D3D::CreateVertexShaderFromByteCode(vsbytecode);
 	if (m_vshader.get() == nullptr) PanicAlert("Failed to create vertex shader, %s %d\n", __FILE__, __LINE__);
-	D3D::SetDebugObjectName((ID3D11DeviceChild*)m_vshader.get(), "vertex shader of a CD3DFont object");
+	D3D::SetDebugObjectName(m_vshader.get(), "vertex shader of a CD3DFont object");
 
 	const D3D11_INPUT_ELEMENT_DESC desc[] =
 	{
@@ -280,12 +280,12 @@ int CD3DFont::Init()
 	blenddesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
 	hr = D3D::device->CreateBlendState(&blenddesc, ToAddr(m_blendstate));
 	CHECK(hr==S_OK, "Create font blend state");
-	D3D::SetDebugObjectName((ID3D11DeviceChild*)m_blendstate.get(), "blend state of a CD3DFont object");
+	D3D::SetDebugObjectName(m_blendstate.get(), "blend state of a CD3DFont object");
 
 	D3D11_RASTERIZER_DESC rastdesc = CD3D11_RASTERIZER_DESC(D3D11_FILL_SOLID, D3D11_CULL_NONE, false, 0, 0.f, 0.f, false, false, false, false);
 	hr = D3D::device->CreateRasterizerState(&rastdesc, ToAddr(m_raststate));
 	CHECK(hr==S_OK, "Create font rasterizer state");
-	D3D::SetDebugObjectName((ID3D11DeviceChild*)m_raststate.get(), "rasterizer state of a CD3DFont object");
+	D3D::SetDebugObjectName(m_raststate.get(), "rasterizer state of a CD3DFont object");
 
 	D3D11_BUFFER_DESC vbdesc = CD3D11_BUFFER_DESC(MAX_NUM_VERTICES*sizeof(FONT2DVERTEX), D3D11_BIND_VERTEX_BUFFER, D3D11_USAGE_DYNAMIC, D3D11_CPU_ACCESS_WRITE);
 	if (FAILED(hr = device->CreateBuffer(&vbdesc, nullptr, ToAddr(m_pVB))))
@@ -293,7 +293,7 @@ int CD3DFont::Init()
 		PanicAlert("Failed to create font vertex buffer at %s, line %d\n", __FILE__, __LINE__);
 		return hr;
 	}
-	D3D::SetDebugObjectName((ID3D11DeviceChild*)m_pVB.get(), "vertex buffer of a CD3DFont object");
+	D3D::SetDebugObjectName(m_pVB.get(), "vertex buffer of a CD3DFont object");
 	return S_OK;
 }
 
@@ -452,12 +452,12 @@ void InitUtils()
 	D3D11_SAMPLER_DESC samDesc = CD3D11_SAMPLER_DESC(D3D11_FILTER_MIN_MAG_MIP_POINT, D3D11_TEXTURE_ADDRESS_BORDER, D3D11_TEXTURE_ADDRESS_BORDER, D3D11_TEXTURE_ADDRESS_BORDER, 0.f, 1, D3D11_COMPARISON_ALWAYS, border, 0.f, 0.f);
 	HRESULT hr = D3D::device->CreateSamplerState(&samDesc,ToAddr(point_copy_sampler));
 	if (FAILED(hr)) PanicAlert("Failed to create sampler state at %s %d\n", __FILE__, __LINE__);
-	else SetDebugObjectName((ID3D11DeviceChild*)point_copy_sampler.get(), "point copy sampler state");
+	else SetDebugObjectName(point_copy_sampler.get(), "point copy sampler state");
 
 	samDesc = CD3D11_SAMPLER_DESC(D3D11_FILTER_MIN_MAG_MIP_LINEAR, D3D11_TEXTURE_ADDRESS_BORDER, D3D11_TEXTURE_ADDRESS_BORDER, D3D11_TEXTURE_ADDRESS_BORDER, 0.f, 1, D3D11_COMPARISON_ALWAYS, border, 0.f, 0.f);
 	hr = D3D::device->CreateSamplerState(&samDesc, ToAddr(linear_copy_sampler));
 	if (FAILED(hr)) PanicAlert("Failed to create sampler state at %s %d\n", __FILE__, __LINE__);
-	else SetDebugObjectName((ID3D11DeviceChild*)linear_copy_sampler.get(), "linear copy sampler state");
+	else SetDebugObjectName(linear_copy_sampler.get(), "linear copy sampler state");
 
 	// cached data used to avoid unnecessarily reloading the vertex buffers
 	memset(&tex_quad_data, 0, sizeof(tex_quad_data));

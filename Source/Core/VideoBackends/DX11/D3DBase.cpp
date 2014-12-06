@@ -336,7 +336,7 @@ HRESULT Create(HWND wnd)
 	hr = factory->MakeWindowAssociation(wnd, DXGI_MWA_NO_WINDOW_CHANGES);
 	if (FAILED(hr)) MessageBox(wnd, _T("Failed to associate the window"), _T("Dolphin Direct3D 11 backend"), MB_OK | MB_ICONERROR);
 
-	SetDebugObjectName((ID3D11DeviceChild*)context, "device context");
+	SetDebugObjectName(context, "device context");
 	SAFE_RELEASE(factory);
 	SAFE_RELEASE(output);
 	SAFE_RELEASE(adapter);
@@ -354,8 +354,8 @@ HRESULT Create(HWND wnd)
 	backbuf = new D3DTexture2D(buf, D3D11_BIND_RENDER_TARGET);
 	SAFE_RELEASE(buf);
 	CHECK(backbuf != nullptr, "Create back buffer texture");
-	SetDebugObjectName((ID3D11DeviceChild*)backbuf->GetTex(), "backbuffer texture");
-	SetDebugObjectName((ID3D11DeviceChild*)backbuf->GetRTV(), "backbuffer render target view");
+	SetDebugObjectName(backbuf->GetTex(), "backbuffer texture");
+	SetDebugObjectName(backbuf->GetRTV(), "backbuffer render target view");
 
 	context->OMSetRenderTargets(1, &backbuf->GetRTV(), nullptr);
 
@@ -600,8 +600,8 @@ void Reset()
 	backbuf = new D3DTexture2D(buf, D3D11_BIND_RENDER_TARGET);
 	SAFE_RELEASE(buf);
 	CHECK(backbuf != nullptr, "Create back buffer texture");
-	SetDebugObjectName((ID3D11DeviceChild*)backbuf->GetTex(), "backbuffer texture");
-	SetDebugObjectName((ID3D11DeviceChild*)backbuf->GetRTV(), "backbuffer render target view");
+	SetDebugObjectName(backbuf->GetTex(), "backbuffer texture");
+	SetDebugObjectName(backbuf->GetRTV(), "backbuffer render target view");
 }
 
 bool BeginFrame()
