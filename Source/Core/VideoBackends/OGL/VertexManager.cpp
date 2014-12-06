@@ -10,6 +10,7 @@
 #include "Common/MemoryUtil.h"
 #include "Common/StringUtil.h"
 
+#include "VideoBackends/OGL/BoundingBox.h"
 #include "VideoBackends/OGL/main.h"
 #include "VideoBackends/OGL/ProgramShaderCache.h"
 #include "VideoBackends/OGL/Render.h"
@@ -138,7 +139,7 @@ void VertexManager::vFlush(bool useDstAlpha)
 		glBindVertexArray(nativeVertexFmt->VAO);
 		m_last_vao = nativeVertexFmt->VAO;
 	}
-
+	BBox::Update();
 	PrepareDrawBuffers(stride);
 
 	// Makes sure we can actually do Dual source blending

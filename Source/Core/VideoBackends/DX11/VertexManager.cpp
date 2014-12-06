@@ -211,11 +211,7 @@ void VertexManager::vFlush(bool useDstAlpha)
 	{
 		return;
 	}
-	if (g_ActiveConfig.backend_info.bSupportsBBox && BoundingBox::active)
-	{
-		ID3D11UnorderedAccessView* uav = BBox::GetUAV();
-		D3D::context->OMSetRenderTargetsAndUnorderedAccessViews(D3D11_KEEP_RENDER_TARGETS_AND_DEPTH_STENCIL, nullptr, nullptr, 2, 1, &uav, nullptr);
-	}
+	BBox::Update();
 	unsigned int stride = g_nativeVertexFmt->GetVertexStride();
 	PrepareDrawBuffers(stride);
 	g_nativeVertexFmt->SetupVertexPointers();

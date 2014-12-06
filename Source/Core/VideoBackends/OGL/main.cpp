@@ -216,7 +216,7 @@ void VideoBackend::Video_Prepare()
 	Renderer::Init();
 	VertexLoaderManager::Init();
 	TextureConverter::Init();
-	BoundingBox::Init();
+	BBox::Init();
 
 	// Notify the core that the video backend is ready
 	Host_Message(WM_USER_CREATE);
@@ -241,7 +241,7 @@ void VideoBackend::Video_Cleanup()
 		// The following calls are NOT Thread Safe
 		// And need to be called from the video thread
 		Renderer::Shutdown();
-		BoundingBox::Shutdown();
+		BBox::Shutdown();
 		TextureConverter::Shutdown();
 		VertexLoaderManager::Shutdown();
 		delete g_sampler_cache;

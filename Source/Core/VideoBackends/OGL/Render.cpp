@@ -1176,7 +1176,7 @@ u16 Renderer::BBoxRead(int index)
 
 	// Here we get the min/max value of the truncated position of the upscaled and swapped framebuffer.
 	// So we have to correct them to the unscaled EFB sizes.
-	int value = BoundingBox::Get(swapped_index);
+	int value = BBox::Get(swapped_index);
 
 	if (index < 2)
 	{
@@ -1211,7 +1211,7 @@ void Renderer::BBoxWrite(int index, u16 _value)
 		value = value * s_target_height / EFB_HEIGHT;
 	}
 
-	BoundingBox::Set(index, value);
+	BBox::Set(index, value);
 }
 
 void Renderer::UpdateViewport(Matrix44& vpCorrection)

@@ -182,8 +182,7 @@ void CreateScreenshotTexture(const TargetRectangle& rc)
 Renderer::Renderer(void *&window_handle)
 {
 	D3D::Create((HWND)window_handle);
-	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_BGRA32] = g_ActiveConfig.backend_info.bSupportedFormats[PC_TEX_FMT_BGRA32] = D3D::BGRATexturesSupported();
-	g_Config.backend_info.bSupportsBBox = g_ActiveConfig.backend_info.bSupportsBBox = D3D::GetFeatureLevel() >= D3D_FEATURE_LEVEL_11_0;
+	
 	s_backbuffer_width = D3D::GetBackBufferWidth();
 	s_backbuffer_height = D3D::GetBackBufferHeight();
 
@@ -1408,7 +1407,6 @@ void Renderer::BBoxWrite(int index, u16 _value)
 	{
 		value = value * s_target_height / EFB_HEIGHT;
 	}
-	
 	BBox::Set(index, value);
 }
 

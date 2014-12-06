@@ -6,49 +6,71 @@
 #include "VideoBackends/OGL/GLUtil.h"
 
 #include "VideoCommon/VideoConfig.h"
+#include "VideoCommon/BoundingBox.h"
 
 static GLuint s_bbox_buffer_id;
+static GC_ALIGNED128(s32 s_values[4]);
+static bool s_cpu_dirty;
+static bool s_gpu_dirty;
 
 namespace OGL
 {
 
-void BoundingBox::Init()
+void BBox::Init()
 {
 	if (g_ActiveConfig.backend_info.bSupportsBBox)
 	{
-		int initial_values[4] = {0,0,0,0};
+		s_values[0] = s_values[1] = s_values[2] = s_values[3] = 0;
 		glGenBuffers(1, &s_bbox_buffer_id);
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, s_bbox_buffer_id);
-		glBufferData(GL_SHADER_STORAGE_BUFFER, 4 * sizeof(s32), initial_values, GL_DYNAMIC_DRAW);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, 4 * sizeof(s32), s_values, GL_DYNAMIC_DRAW);
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, s_bbox_buffer_id);
+		s_cpu_dirty = true;
+		s_gpu_dirty = true;
 	}
 }
 
-void BoundingBox::Shutdown()
+void BBox::Shutdown()
 {
 	if (g_ActiveConfig.backend_info.bSupportsBBox)
 		glDeleteBuffers(1, &s_bbox_buffer_id);
 }
 
-void BoundingBox::Set(int index, int value)
+void BBox::Update()
 {
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, s_bbox_buffer_id);
-	glBufferSubData(GL_SHADER_STORAGE_BUFFER, index * sizeof(int), sizeof(int), &value);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+	if (g_ActiveConfig.backend_info.bSupportsBBox 
+		&& BoundingBox::active
+		&& s_cpu_dirty)
+	{
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, s_bbox_buffer_id);
+		glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, 4 * sizeof(s32), s_values);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+		s_cpu_dirty = false;
+		s_gpu_dirty = true;
+	}
 }
 
-int BoundingBox::Get(int index)
+void BBox::Set(s32 index, s32 value)
 {
-	int data = 0;
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, s_bbox_buffer_id);
-	void* ptr = glMapBufferRange(GL_SHADER_STORAGE_BUFFER, index * sizeof(int), sizeof(int), GL_MAP_READ_BIT);
-	if (ptr)
+	s_values[index] = value;
+	s_cpu_dirty = true;
+}
+
+s32 BBox::Get(s32 index)
+{
+	if (s_gpu_dirty)
 	{
-		data = *(int*)ptr;
-		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, s_bbox_buffer_id);
+		void* ptr = glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, 4 * sizeof(s32), GL_MAP_READ_BIT);
+		if (ptr)
+		{
+			memcpy(s_values, ptr, 4 * sizeof(s32));
+			glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+		}
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+		s_gpu_dirty = false;
 	}
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-	return data;
+	return s_values[index];
 }
 
 };
