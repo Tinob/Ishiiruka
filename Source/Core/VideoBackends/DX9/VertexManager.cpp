@@ -270,16 +270,17 @@ void VertexManager::PrepareDrawBuffers(u32 stride)
 				// mostly a hack because we are in object space but is better than nothing
 				float dx = base_vertex_1->x - base_vertex_0->x;
 				float dy = base_vertex_1->y - base_vertex_0->y;
-				bool horizontal = fabs(dx) > fabs(dy);
-				bool positive =  horizontal ? dx > 0 : dy > 0;				
+				bool vertical = fabs(dy) >  fabs(dx);
+				bool positive = vertical ? dy >= 0 : dx >= 0;
 				
 				// setup offset index acording to line orientation
-				u8 idx0 = horizontal ? 
-					(positive ? PLO_POS_LINE_NEGATIVE_Y : PLO_POS_LINE_POSITIVE_Y):
-					(positive ? PLO_POS_LINE_POSITIVE_X : PLO_POS_LINE_NEGATIVE_X);
-				u8 idx1 = horizontal ? 
-					(positive ? PLO_POS_LINE_POSITIVE_Y : PLO_POS_LINE_NEGATIVE_Y): 
-					(positive ? PLO_POS_LINE_NEGATIVE_X : PLO_POS_LINE_POSITIVE_X);
+				u8 idx0 = vertical ?
+					(positive ? PLO_POS_LINE_POSITIVE_X : PLO_POS_LINE_NEGATIVE_X) :
+					(positive ? PLO_POS_LINE_NEGATIVE_Y : PLO_POS_LINE_POSITIVE_Y);
+				u8 idx1 = vertical ?
+					(positive ? PLO_POS_LINE_NEGATIVE_X : PLO_POS_LINE_POSITIVE_X) :
+					(positive ? PLO_POS_LINE_POSITIVE_Y : PLO_POS_LINE_NEGATIVE_Y);
+					
 
 				memcpy(p_vertices, base_vertex_0, stride);
 				p_vertices += stride;
@@ -533,6 +534,8 @@ void VertexManager::vFlush(bool useDstAlpha)
 	{
 		// if we use emulation setup the offsets for the vertex shaders
 		SetPLRasterOffsets();
+		// Disable Culling
+		D3D::ChangeRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
 	}
 	if (VertexShaderManager::IsDirty())
 	{
@@ -590,7 +593,10 @@ void VertexManager::vFlush(bool useDstAlpha)
 		Draw(stride);
 		g_renderer->RestoreState();
 	}
-
+	if (current_primitive_type != PRIMITIVE_TRIANGLES)
+	{
+		D3D::RefreshRenderState(D3DRS_CULLMODE);
+	}
 shader_fail:
 	m_index_buffer_cursor += m_total_index_len;
 	m_vertex_buffer_cursor += (m_total_num_verts) * stride;
