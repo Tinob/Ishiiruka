@@ -137,7 +137,6 @@ EVT_CHECKBOX(ID_NTSCJ, CConfigMain::CoreSettingsChanged)
 
 
 EVT_RADIOBOX(ID_DSPENGINE, CConfigMain::AudioSettingsChanged)
-EVT_CHECKBOX(ID_DSPTHREAD, CConfigMain::AudioSettingsChanged)
 EVT_CHECKBOX(ID_ENABLE_THROTTLE, CConfigMain::AudioSettingsChanged)
 EVT_CHECKBOX(ID_DPL2DECODER, CConfigMain::AudioSettingsChanged)
 EVT_CHECKBOX(ID_TIMESTRETCHING, CConfigMain::AudioSettingsChanged)
@@ -229,7 +228,6 @@ void CConfigMain::UpdateGUI()
 
 		// Disable stuff on AudioPage
 		DSPEngine->Disable();
-		DSPThread->Disable();
 		DPL2Decoder->Disable();
 		TimeStretching->Disable();
 		Latency->Disable();
@@ -364,7 +362,6 @@ void CConfigMain::InitializeGUIValues()
 	VolumeSlider->Enable(SupportsVolumeChanges(SConfig::GetInstance().sBackend));
 	VolumeSlider->SetValue(SConfig::GetInstance().m_Volume);
 	VolumeText->SetLabel(wxString::Format("%d %%", SConfig::GetInstance().m_Volume));
-	DSPThread->SetValue(startup_params.bDSPThread);
 	TimeStretching->SetValue(startup_params.bTimeStretching);	
 	DPL2Decoder->SetValue(startup_params.bDPL2Decoder);
 	Latency->SetValue(startup_params.iLatency);
@@ -473,7 +470,6 @@ void CConfigMain::InitializeGUITooltips()
 	InterfaceLang->SetToolTip(_("Change the language of the user interface.\nRequires restart."));
 
 	// Audio tooltips
-	DSPThread->SetToolTip(_("Run DSP LLE on a dedicated thread (not recommended: might cause freezes)."));
 	BackendSelection->SetToolTip(_("Changing this will have no effect while the emulator is running!"));
 
 	// GameCube - Devices
@@ -604,7 +600,6 @@ void CConfigMain::CreateGUIControls()
 
 	// Audio page
 	DSPEngine = new wxRadioBox(AudioPage, ID_DSPENGINE, _("DSP Emulator Engine"), wxDefaultPosition, wxDefaultSize, arrayStringFor_DSPEngine, 0, wxRA_SPECIFY_ROWS);
-	DSPThread = new wxCheckBox(AudioPage, ID_DSPTHREAD, _("DSPLLE on Separate Thread"));
 	DPL2Decoder = new wxCheckBox(AudioPage, ID_DPL2DECODER, _("Dolby Pro Logic II decoder"));
 	TimeStretching = new wxCheckBox(AudioPage, ID_TIMESTRETCHING, _("Time Stretching"));
 	VolumeSlider = new wxSlider(AudioPage, ID_VOLUME, 0, 1, 100, wxDefaultPosition, wxDefaultSize, wxSL_VERTICAL|wxSL_INVERSE);
@@ -625,7 +620,6 @@ void CConfigMain::CreateGUIControls()
 	// Create sizer and add items to dialog
 	wxStaticBoxSizer *sbAudioSettings = new wxStaticBoxSizer(wxVERTICAL, AudioPage, _("Sound Settings"));
 	sbAudioSettings->Add(DSPEngine, 0, wxALL | wxEXPAND, 5);
-	sbAudioSettings->Add(DSPThread, 0, wxALL, 5);
 	sbAudioSettings->Add(DPL2Decoder, 0, wxALL, 5);
 	sbAudioSettings->Add(TimeStretching, 0, wxALL, 5);
 
@@ -899,10 +893,6 @@ void CConfigMain::AudioSettingsChanged(wxCommandEvent& event)
 		SConfig::GetInstance().m_Volume = VolumeSlider->GetValue();
 		AudioCommon::UpdateSoundStream();
 		VolumeText->SetLabel(wxString::Format("%d %%", VolumeSlider->GetValue()));
-		break;
-
-	case ID_DSPTHREAD:
-		SConfig::GetInstance().m_LocalCoreStartupParameter.bDSPThread = DSPThread->IsChecked();
 		break;
 
 	case ID_DPL2DECODER:

@@ -333,7 +333,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 			{
 				out.Write(
 					"layout(std140, binding = 3) buffer BBox {\n"
-					"\tint4 bbox_data;\n"
+					"\tint bbox_data[4];\n"
 					"};\n"
 					);
 			}
@@ -749,24 +749,13 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 		if (g_ActiveConfig.backend_info.bSupportsBBox && BoundingBox::active)
 		{
 			uid_data.bounding_box = true;
-			if (ApiType == API_OPENGL)
-			{
-				out.Write(
-					"\tif(bbox_data.x > int(gl_FragCoord.x)) atomicMin(bbox_data.x, int(gl_FragCoord.x));\n"
-					"\tif(bbox_data.y < int(gl_FragCoord.x)) atomicMax(bbox_data.y, int(gl_FragCoord.x));\n"
-					"\tif(bbox_data.z > int(gl_FragCoord.y)) atomicMin(bbox_data.z, int(gl_FragCoord.y));\n"
-					"\tif(bbox_data.w < int(gl_FragCoord.y)) atomicMax(bbox_data.w, int(gl_FragCoord.y));\n"
-					);
-			}
-			else
-			{
-				out.Write(
-					"\tif(bbox_data[0] > int(rawpos.x)) InterlockedMin(bbox_data[0], int(rawpos.x));\n"
-					"\tif(bbox_data[1] < int(rawpos.x)) InterlockedMax(bbox_data[1], int(rawpos.x));\n"
-					"\tif(bbox_data[2] > int(rawpos.y)) InterlockedMin(bbox_data[2], int(rawpos.y));\n"
-					"\tif(bbox_data[3] < int(rawpos.y)) InterlockedMax(bbox_data[3], int(rawpos.y));\n"
-					);
-			}
+			const char* atomic_op = ApiType == API_OPENGL ? "atomic" : "Interlocked";
+			out.Write(
+				"\tif(bbox_data[0] > int(rawpos.x)) %sMin(bbox_data[0], int(rawpos.x));\n"
+				"\tif(bbox_data[1] < int(rawpos.x)) %sMax(bbox_data[1], int(rawpos.x));\n"
+				"\tif(bbox_data[2] > int(rawpos.y)) %sMin(bbox_data[2], int(rawpos.y));\n"
+				"\tif(bbox_data[3] < int(rawpos.y)) %sMax(bbox_data[3], int(rawpos.y));\n",
+				atomic_op, atomic_op, atomic_op, atomic_op);
 		}
 		out.Write("}\n");
 		if (codebuffer[PIXELSHADERGEN_BUFFERSIZE - 1] != 0x7C)
