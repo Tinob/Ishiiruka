@@ -72,6 +72,7 @@ struct TransformBuffer
 		ReadSurface = nullptr;
 		Width = 0;
 		Height = 0;
+		hits = 0;
 	}
 	void Release()
 	{
@@ -257,7 +258,7 @@ void EncodeToRamUsingShader(LPDIRECT3DPIXELSHADER9 shader, LPDIRECT3DTEXTURE9 sr
 		index++;	
 	LPDIRECT3DSURFACE9  s_texConvReadSurface = nullptr;
 	LPDIRECT3DSURFACE9 Rendersurf = nullptr;
-	TransformBuffer &currentbuffer = TrnBuffers[index];
+	TransformBuffer &currentbuffer = TrnBuffers[0];
 	if (index >= WorkingBuffers)
 	{
 		if (WorkingBuffers < NUM_TRANSFORM_BUFFERS)
@@ -265,21 +266,21 @@ void EncodeToRamUsingShader(LPDIRECT3DPIXELSHADER9 shader, LPDIRECT3DTEXTURE9 sr
 		if (index >= WorkingBuffers)
 		{
 			index = 0;
-			u32 hits = TrnBuffers[index].hits;
+			u32 hits = TrnBuffers[index].hits;			
 			for (u32 i = 0; i < WorkingBuffers; i++)
 			{
-				if (TrnBuffers[index].hits < hits)
+				if (TrnBuffers[i].hits < hits)
 				{
 					index = i;
-					hits = TrnBuffers[index].hits;					
+					hits = TrnBuffers[index].hits;
 				}
+				TrnBuffers[i].hits = 0;
 			}
 		}
 		currentbuffer = TrnBuffers[index];
 		currentbuffer.Release();
-		currentbuffer.hits = 0;
 		currentbuffer.Width = dstWidth;
-		currentbuffer.Height = dstHeight;
+		currentbuffer.Height = dstHeight;		
 		D3D::dev->CreateTexture(dstWidth, dstHeight, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8,
 		                                 D3DPOOL_DEFAULT, &currentbuffer.FBTexture, nullptr);
 		currentbuffer.FBTexture->GetSurfaceLevel(0,&currentbuffer.RenderSurface);
@@ -287,6 +288,7 @@ void EncodeToRamUsingShader(LPDIRECT3DPIXELSHADER9 shader, LPDIRECT3DTEXTURE9 sr
 	}
 	else
 	{
+		currentbuffer = TrnBuffers[index];
 		currentbuffer.hits++;
 	}
 
