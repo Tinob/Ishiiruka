@@ -108,6 +108,7 @@ struct SConfig : NonCopyable
 
 	// Input settings
 	bool m_BackgroundInput;
+	bool m_GameCubeAdapter;
 
 	SysConf* m_SYSCONF;
 
