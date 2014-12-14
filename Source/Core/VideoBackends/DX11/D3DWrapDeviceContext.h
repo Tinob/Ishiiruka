@@ -189,6 +189,9 @@ public:
 		ID3D11RenderTargetView *const *ppRenderTargetViews,
 		ID3D11DepthStencilView *pDepthStencilView)
 	{
+		std::array<ID3D11ShaderResourceView*, 8> nils;
+		nils.fill(nullptr);
+		PSSetShaderResources(0, 8, nils.data());
 		m_ctx->OMSetRenderTargets(NumViews, ppRenderTargetViews, pDepthStencilView);
 	}
 
@@ -441,6 +444,9 @@ public:
 		const UINT *pUAVInitialCounts
 		)
 	{
+		std::array<ID3D11ShaderResourceView*, 8> nils;
+		nils.fill(nullptr);
+		PSSetShaderResources(0, 8, nils.data());
 		m_ctx->OMSetRenderTargetsAndUnorderedAccessViews(
 			NumViews,
 			ppRenderTargetViews,
