@@ -283,11 +283,11 @@ void CSTextureDecoder::Init()
 {
 	m_ready = false;
 
-	auto rawBd = CD3D11_BUFFER_DESC(2<<20,D3D11_BIND_SHADER_RESOURCE);	
+	auto rawBd = CD3D11_BUFFER_DESC(1024*1024*4,D3D11_BIND_SHADER_RESOURCE);	
 	HRESULT hr = D3D::device->CreateBuffer(&rawBd, nullptr, ToAddr(m_rawDataRsc));
 	CHECK(SUCCEEDED(hr), "create texture decoder input buffer");
 	D3D::SetDebugObjectName(m_rawDataRsc.get(), "texture decoder input buffer");
-	auto outUavDesc = CD3D11_SHADER_RESOURCE_VIEW_DESC(m_rawDataRsc.get(),DXGI_FORMAT_R32_UINT,0,(2<<20)/4,0);
+	auto outUavDesc = CD3D11_SHADER_RESOURCE_VIEW_DESC(m_rawDataRsc.get(), DXGI_FORMAT_R32_UINT, 0, (rawBd.ByteWidth) / 4, 0);
 	hr = D3D::device->CreateShaderResourceView(m_rawDataRsc.get(),&outUavDesc,ToAddr(m_rawDataSrv));
 	CHECK(SUCCEEDED(hr), "create texture decoder input buffer srv");
 	D3D::SetDebugObjectName(m_rawDataSrv.get(), "texture decoder input buffer srv");
@@ -444,7 +444,7 @@ void CSTextureDecoder::LoadLut(u32 lutFmt, void* addr, u32 size )
 }
 bool CSTextureDecoder::Decode(const u8* src, u32 srcsize, u32 srcFmt, u32 w, u32 h, u32 level, D3DTexture2D& dstTexture)
 {
-	if (!m_ready) // Make sure we initialized OK
+	if (!m_ready || w < 64 || h < 64) // Make sure we initialized OK and texture size is big enough
 		return false;
 
 	if (!SetStaticShader(TextureFormat(srcFmt),m_lutFmt,0)) 
