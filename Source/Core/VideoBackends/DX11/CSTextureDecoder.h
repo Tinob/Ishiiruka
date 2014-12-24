@@ -29,15 +29,6 @@ public:
 private:
 
 	bool m_ready{};
-
-	struct PoolKey {
-		u32 w_;
-		u32 h_;
-		bool operator<(PoolKey const & o) const {
-			return w_ < o.w_
-				|| w_ == o.w_ && h_ < o.h_;
-		}
-	};
 	struct PoolValue {
 		D3D::Texture2dPtr m_rsc;
 		D3D::UavPtr m_uav;
@@ -45,10 +36,11 @@ private:
 		PoolValue( PoolValue && o) : m_rsc{std::move(o.m_rsc)}, m_uav{std::move(o.m_uav)} {}
 	};
 
-	using TexturePool = std::map<PoolKey,PoolValue>;
+	using TexturePool = std::vector<PoolValue>;
 	TexturePool m_pool;
-
-	
+#define MAX_POOL_SIZE 16
+	u32 m_pool_idx;
+	u32 m_Pool_size;
 
 	//D3D::UniquePtr<ID3D11Buffer> m_encodeParams;
 
@@ -74,6 +66,9 @@ private:
 
 	D3D::BufferPtr m_lutRsc;
 	D3D::SrvPtr m_lutSrv;
+
+	D3D::BufferPtr m_params;
+
 	u32 m_lutFmt{};
 
 	ComboMap m_staticShaders;
