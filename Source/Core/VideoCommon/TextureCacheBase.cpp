@@ -28,7 +28,9 @@ enum
 TextureCache *g_texture_cache;
 GC_ALIGNED16(u8 *TextureCache::temp) = NULL;
 u32 TextureCache::temp_size;
-
+u32 TextureCache::s_prev_tlut_address = 0;
+u64 TextureCache::s_prev_tlut_hash = 0;
+u32 TextureCache::s_prev_tlut_size = 0;
 TextureCache::TexCache TextureCache::textures;
 TextureCache::RenderTargetPool TextureCache::render_target_pool;
 
@@ -389,11 +391,17 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 	}
 	// TODO: This doesn't hash GB tiles for preloaded RGBA8 textures (instead, it's hashing more data from the low tmem bank than it should)
 	tex_hash = GetHash64(src_data, texture_size, g_ActiveConfig.iSafeTextureCache_ColorSamples);
+	const u32 palette_size = std::min(TexDecoder_GetPaletteSize(texformat), (s32)(TMEM_SIZE - tlutaddr));
+	bool palette_upload_required = false;
 	if (isPaletteTexture)
 	{
-		const u32 palette_size = TexDecoder_GetPaletteSize(texformat);
 		tlut_hash = GetHash64(&texMem[tlutaddr], palette_size, g_ActiveConfig.iSafeTextureCache_ColorSamples);
-
+		palette_upload_required = s_prev_tlut_address != tlutaddr
+			|| s_prev_tlut_hash != tlut_hash
+			|| s_prev_tlut_size != palette_size;
+		s_prev_tlut_address = tlutaddr;
+		s_prev_tlut_hash = tlut_hash;
+		s_prev_tlut_size = palette_size;
 		// NOTE: For non-paletted textures, texID is equal to the texture address.
 		//		A paletted texture, however, may have multiple texIDs assigned though depending on the currently used tlut.
 		//		This (changing texID depending on the tlut_hash) is a trick to get around
@@ -491,9 +499,9 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 			}
 		}
 	}
-	if (isPaletteTexture && !using_custom_texture) 
+	if (isPaletteTexture && palette_upload_required && !using_custom_texture)
 	{
-		g_texture_cache->LoadLut(tlutfmt, &texMem[tlutaddr], TexDecoder_GetPaletteSize(texformat));
+		g_texture_cache->LoadLut(tlutfmt, &texMem[tlutaddr], palette_size);
 	}
 	if (pcfmt == PC_TEX_FMT_NONE)
 	{
