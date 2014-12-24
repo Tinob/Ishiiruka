@@ -95,6 +95,8 @@ void InitBackendInfo()
 	g_Config.backend_info.bSupportsPrimitiveRestart = false;
 	g_Config.backend_info.bNeedBlendIndices = false;
 	g_Config.backend_info.bSupportsOversizedViewports = false;
+	g_Config.backend_info.bSupportsStereoscopy = false;
+	g_Config.backend_info.bSupports3DVision = false;
 
 	IDXGIFactory* factory;
 	IDXGIAdapter* ad;
@@ -149,7 +151,8 @@ void InitBackendInfo()
 void VideoBackend::ShowConfig(void *_hParent)
 {
 #if defined(HAVE_WX) && HAVE_WX
-	InitBackendInfo();
+	if (!s_BackendInitialized)
+		InitBackendInfo();
 	VideoConfigDiag diag((wxWindow*)_hParent, _trans("Direct3D11"), "gfx_dx11");
 	diag.ShowModal();
 #endif

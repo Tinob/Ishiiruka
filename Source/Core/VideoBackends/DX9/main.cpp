@@ -98,6 +98,8 @@ void InitBackendInfo()
 	g_Config.backend_info.bNeedBlendIndices = true;
 	g_Config.backend_info.bSupportsOversizedViewports = false;
 	g_Config.backend_info.bSupportsBBox = false;
+	g_Config.backend_info.bSupportsStereoscopy = true;
+	g_Config.backend_info.bSupports3DVision = false;
 	// adapters
 	g_Config.backend_info.Adapters.clear();
 	for (int i = 0; i < DX9::D3D::GetNumAdapters(); ++i)

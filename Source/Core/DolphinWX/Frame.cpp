@@ -259,7 +259,7 @@ EVT_MENU(IDM_TOGGLE_DUMPFRAMES, CFrame::OnToggleDumpFrames)
 EVT_MENU(IDM_TOGGLE_DUMPAUDIO, CFrame::OnToggleDumpAudio)
 EVT_MENU(wxID_PREFERENCES, CFrame::OnConfigMain)
 EVT_MENU(IDM_CONFIG_GFX_BACKEND, CFrame::OnConfigGFX)
-EVT_MENU(IDM_CONFIG_DSP_EMULATOR, CFrame::OnConfigDSP)
+EVT_MENU(IDM_CONFIG_AUDIO, CFrame::OnConfigAudio)
 EVT_MENU(IDM_CONFIG_CONTROLLERS, CFrame::OnConfigControllers)
 EVT_MENU(IDM_CONFIG_HOTKEYS, CFrame::OnConfigHotkey)
 
@@ -577,7 +577,8 @@ void CFrame::OnClose(wxCloseEvent& event)
 	else
 	{
 		// Close the log window now so that its settings are saved
-		m_LogWindow->Close();
+		if (m_LogWindow)
+			m_LogWindow->Close();
 		m_LogWindow = nullptr;
 	}
 

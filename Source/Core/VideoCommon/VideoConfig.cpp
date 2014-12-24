@@ -133,6 +133,7 @@ void VideoConfig::Load(const std::string& ini_file)
 	// triplicated for each video backend.
 	if (bEnableShaderDebugging)
 		OSD::AddMessage("Warning: Shader Debugging is enabled, performance will suffer heavily", 15000);
+	VerifyValidity();
 }
 
 void VideoConfig::GameIniLoad()
@@ -239,7 +240,11 @@ void VideoConfig::VerifyValidity()
 	if (iMultisampleMode < 0 || iMultisampleMode >= (int)backend_info.AAModes.size()) iMultisampleMode = 0;
 	if (!backend_info.bSupportsFormatReinterpretation) bEFBEmulateFormatChanges = false;
 	if (!backend_info.bSupportsPixelLighting) bEnablePixelLighting = false;	
-	if (!backend_info.bSupportsStereoscopy) iStereoMode = 0;
+	if (iStereoMode > 0 && !(backend_info.bSupportsGeometryShaders || backend_info.bSupportsStereoscopy))
+	{
+		OSD::AddMessage("Stereoscopic 3D isn't supported by your GPU, support for OpenGL 3.2 is required.", 10000);
+		iStereoMode = 0;
+	}
 	if (backend_info.APIType == API_OPENGL)
 	{
 		//disable until is properly implemneted

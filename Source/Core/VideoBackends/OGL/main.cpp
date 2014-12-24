@@ -149,6 +149,8 @@ static void InitBackendInfo()
 	//g_Config.backend_info.bSupportsEarlyZ = true; // is gpu dependent and must be set in renderer
 	g_Config.backend_info.bSupportsOversizedViewports = true;
 	g_Config.backend_info.bNeedBlendIndices = false;
+	g_Config.backend_info.bSupportsStereoscopy = false;
+	g_Config.backend_info.bSupports3DVision = false;
 	g_Config.backend_info.Adapters.clear();
 
 	// aamodes
@@ -161,7 +163,8 @@ static void InitBackendInfo()
 
 void VideoBackend::ShowConfig(void *_hParent)
 {
-	InitBackendInfo();
+	if (!s_BackendInitialized)
+		InitBackendInfo();
 	Host_ShowVideoConfig(_hParent, GetDisplayName(), "gfx_opengl");
 }
 

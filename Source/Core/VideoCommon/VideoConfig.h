@@ -51,7 +51,8 @@ enum StereoMode
 	STEREO_OFF = 0,
 	STEREO_SBS,
 	STEREO_TAB,
-	STEREO_ANAGLYPH
+	STEREO_ANAGLYPH,
+	STEREO_3DVISION
 };
 
 class IniFile;
@@ -175,6 +176,8 @@ struct VideoConfig final
 		bool bNeedBlendIndices; // needed by PixelShaderGen, so must stay in VideoCommon
 		bool bSupportsOversizedViewports;
 		bool bSupportsStereoscopy;
+		bool bSupportsGeometryShaders;
+		bool bSupports3DVision;
 		bool bSupportsExclusiveFullscreen;
 		bool bSupportsBBox;
 		bool bSupportsGSInstancing; // Needed by GeometryShaderGen, so must stay in VideoCommon

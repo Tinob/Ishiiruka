@@ -263,10 +263,7 @@ static void InitDriverInfo()
 	{
 		case DriverDetails::VENDOR_QUALCOMM:
 		{
-			if (std::string::npos != srenderer.find("Adreno (TM) 3"))
-				driver = DriverDetails::DRIVER_QUALCOMM_3XX;
-			else
-				driver = DriverDetails::DRIVER_QUALCOMM_2XX;
+			driver = DriverDetails::DRIVER_QUALCOMM;
 			double glVersion;
 			sscanf(g_ogl_config.gl_version, "OpenGL ES %lg V@%lg", &glVersion, &version);
 		}
@@ -275,28 +272,19 @@ static void InitDriverInfo()
 			// Currently the Mali-T line has two families in it.
 			// Mali-T6xx and Mali-T7xx
 			// These two families are similar enough that they share bugs in their drivers.
-			if (std::string::npos != srenderer.find("Mali-T"))
-			{
-				driver = DriverDetails::DRIVER_ARM_MIDGARD;
-				// Mali drivers provide no way to explicitly find out what video driver is running.
-				// This is similar to how we can't find the Nvidia driver version in Windows.
-				// Good thing is that ARM introduces a new video driver about once every two years so we can
-				// find the driver version by the features it exposes.
-				// r2p0 - No OpenGL ES 3.0 support (We don't support this)
-				// r3p0 - OpenGL ES 3.0 support
-				// r4p0 - Supports 'GL_EXT_shader_pixel_local_storage' extension.
+			// Mali drivers provide no way to explicitly find out what video driver is running.
+			// This is similar to how we can't find the Nvidia driver version in Windows.
+			// Good thing is that ARM introduces a new video driver about once every two years so we can
+			// find the driver version by the features it exposes.
+			// r2p0 - No OpenGL ES 3.0 support (We don't support this)
+			// r3p0 - OpenGL ES 3.0 support
+			// r4p0 - Supports 'GL_EXT_shader_pixel_local_storage' extension.
 
-				if (GLExtensions::Supports("GL_EXT_shader_pixel_local_storage"))
-					version = 400;
-				else
-					version = 300;
-			}
-			else if (std::string::npos != srenderer.find("Mali-4") ||
-			         std::string::npos != srenderer.find("Mali-3") ||
-			         std::string::npos != srenderer.find("Mali-2"))
-			{
-				driver = DriverDetails::DRIVER_ARM_UTGARD;
-			}
+			driver = DriverDetails::DRIVER_ARM;
+			if (GLExtensions::Supports("GL_EXT_shader_pixel_local_storage"))
+				version = 400;
+			else
+				version = 300;
 		break;
 		case DriverDetails::VENDOR_MESA:
 		{
@@ -472,7 +460,9 @@ Renderer::Renderer()
 				((GLExtensions::Version() >= 310) || GLExtensions::Supports("GL_NV_primitive_restart"));
 	g_Config.backend_info.bSupportsEarlyZ = GLExtensions::Supports("GL_ARB_shader_image_load_store");
 	g_Config.backend_info.bSupportsBBox = GLExtensions::Supports("GL_ARB_shader_storage_buffer_object");
-
+	g_Config.backend_info.bSupportsGSInstancing = GLExtensions::Supports("GL_ARB_gpu_shader5");
+	g_Config.backend_info.bSupportsGeometryShaders = (GLExtensions::Version() >= 320) &&
+		!DriverDetails::HasBug(DriverDetails::BUG_INTELBROKENINTERFACEBLOCKS);
 	// Desktop OpenGL supports the binding layout if it supports 420pack
 	// OpenGL ES 3.1 supports it implicitly without an extension
 	g_Config.backend_info.bSupportsBindingLayout = GLExtensions::Supports("GL_ARB_shading_language_420pack");
@@ -493,12 +483,15 @@ Renderer::Renderer()
 		if (strstr(g_ogl_config.glsl_version, "3.0"))
 		{
 			g_ogl_config.eSupportedGLSLVersion = GLSLES_300;
+			g_ogl_config.bSupportsAEP = false;
+			g_Config.backend_info.bSupportsGeometryShaders = false;
 		}
 		else
 		{
 			g_ogl_config.eSupportedGLSLVersion = GLSLES_310;
 			g_Config.backend_info.bSupportsBindingLayout = true;
 			g_Config.backend_info.bSupportsEarlyZ = true;
+			g_Config.backend_info.bSupportsGeometryShaders = g_ogl_config.bSupportsAEP;
 		}
 	}
 	else
@@ -514,11 +507,13 @@ Renderer::Renderer()
 		{
 			g_ogl_config.eSupportedGLSLVersion = GLSL_130;
 			g_Config.backend_info.bSupportsEarlyZ = false; // layout keyword is only supported on glsl150+
+			g_Config.backend_info.bSupportsGeometryShaders = false; // geometry shaders are only supported on glsl150+
 		}
 		else if (strstr(g_ogl_config.glsl_version, "1.40"))
 		{
 			g_ogl_config.eSupportedGLSLVersion = GLSL_140;
 			g_Config.backend_info.bSupportsEarlyZ = false; // layout keyword is only supported on glsl150+
+			g_Config.backend_info.bSupportsGeometryShaders = false; // geometry shaders are only supported on glsl150+
 		}
 		else
 		{
@@ -529,6 +524,8 @@ Renderer::Renderer()
 		g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_I8] = true;
 		g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_IA8] = true;
 		g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_RGB565] = true;
+		// Desktop OpenGL can't have the Android Extension Pack
+		g_ogl_config.bSupportsAEP = false;
 	}
 
 	if (GLExtensions::Supports("GL_KHR_debug"))
