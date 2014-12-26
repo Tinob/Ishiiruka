@@ -333,7 +333,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 			{
 				out.Write(
 					"layout(std140, binding = 3) buffer BBox {\n"
-					"\tint bbox_data[4];\n"
+					"\tint4 bbox_data;\n"
 					"};\n"
 					);
 			}
