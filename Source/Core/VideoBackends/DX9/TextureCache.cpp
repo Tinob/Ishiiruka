@@ -49,10 +49,10 @@ static const D3DFORMAT PC_TexFormat_To_D3DFORMAT[11]
 	D3DFMT_DXT3,//PC_TEX_FMT_DXT3
 	D3DFMT_DXT5,//PC_TEX_FMT_DXT5
 };
-
-static LPDIRECT3DTEXTURE9 s_memPoolTexture[11];
-static u32 s_memPoolTextureW[11];
-static u32 s_memPoolTextureH[11];
+#define MEM_TEXTURE_POOL_SIZE 11
+static LPDIRECT3DTEXTURE9 s_memPoolTexture[MEM_TEXTURE_POOL_SIZE];
+static u32 s_memPoolTextureW[MEM_TEXTURE_POOL_SIZE];
+static u32 s_memPoolTextureH[MEM_TEXTURE_POOL_SIZE];
 
 TextureCache::TCacheEntry::~TCacheEntry()
 {
@@ -271,7 +271,7 @@ TextureCache::TCacheEntryBase* TextureCache::CreateRenderTargetTexture(
 
 TextureCache::TextureCache()
 {
-	for (size_t i = 0; i < 10; i++)
+	for (size_t i = 0; i < MEM_TEXTURE_POOL_SIZE; i++)
 	{
 		s_memPoolTexture[i] = nullptr;
 		s_memPoolTextureW[i] = 1024u;
@@ -281,7 +281,7 @@ TextureCache::TextureCache()
 
 TextureCache::~TextureCache()
 {
-	for (size_t i = 0; i < 10; i++)
+	for (size_t i = 0; i < MEM_TEXTURE_POOL_SIZE; i++)
 	{
 		if (s_memPoolTexture[i])
 		{
