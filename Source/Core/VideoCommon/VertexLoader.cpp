@@ -148,6 +148,15 @@ bool VertexLoader::IsPrecompiled()
 	return m_Isprecompiled;
 }
 
+static void LOADERDECL SkipVertex()
+{
+	if (g_PipelineState.flags & TPS_SKIP_VERTEX)
+	{
+		// reset the output buffer
+		g_PipelineState.SetWritePosition(g_PipelineState.GetWritePosition() - g_PipelineState.stride);
+	}
+}
+
 void VertexLoader::CompileVertexTranslator()
 {
 	m_VertexSize = 0;
@@ -373,7 +382,10 @@ void VertexLoader::CompileVertexTranslator()
 	m_vtx_decl.posmtx.offset = nat_offset;
 	m_vtx_decl.posmtx.type = FORMAT_UBYTE;
 	nat_offset += 4;
-
+	if (m_VtxDesc.Position & 2)
+	{
+		WriteCall(SkipVertex);
+	}
 	m_native_stride = nat_offset;
 	m_vtx_decl.stride = m_native_stride;
 	m_NativeFmt = VertexLoaderManager::GetNativeVertexFormat(m_vtx_decl, components);
@@ -398,7 +410,8 @@ void VertexLoader::RunVertices(const VertexLoaderParameters &parameters)
 	m_VtxAttr.texCoord[5].Frac = vat.g2.Tex5Frac;
 	m_VtxAttr.texCoord[6].Frac = vat.g2.Tex6Frac;
 	m_VtxAttr.texCoord[7].Frac = vat.g2.Tex7Frac;
-	g_PipelineState.bUseBBox = !g_ActiveConfig.backend_info.bSupportsBBox ? 1 : 0;
+	g_PipelineState.flags = g_ActiveConfig.backend_info.bSupportsBBox ? TPS_NONE : TPS_USE_BBOX;
+	g_PipelineState.stride = m_native_stride;
 	g_PipelineState.posScale = fractionTable[m_VtxAttr.PosFrac];
 	if (m_NativeFmt->m_components & VB_HAS_UVALL)
 		for (int i = 0; i < 8; i++)
@@ -421,6 +434,7 @@ void LOADERDECL VertexLoader::ConvertVertices(TPipelineState& pipelinestate)
 	s32 count = pipelinestate.count;
 	while (count)
 	{
+		pipelinestate.flags |= ~TPS_SKIP_VERTEX;
 		pipelinestate.tcIndex = 0;
 		pipelinestate.colIndex = 0;
 		pipelinestate.texmtxwrite = pipelinestate.texmtxread = 0;

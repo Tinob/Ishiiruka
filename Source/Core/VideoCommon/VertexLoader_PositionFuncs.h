@@ -22,6 +22,7 @@ template <typename T>
 __forceinline u8* IndexedDataPosition(TPipelineState &pipelinestate)
 {
 	auto const index = pipelinestate.Read<T>();
+	pipelinestate.flags |= ((index == std::numeric_limits<T>::max()) ? TPS_SKIP_VERTEX : TPS_NONE);
 	return cached_arraybases[ARRAY_POSITION] + (index * g_main_cp_state.array_strides[ARRAY_POSITION]);
 }
 

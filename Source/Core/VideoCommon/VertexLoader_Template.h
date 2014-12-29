@@ -863,6 +863,10 @@ void TemplatedLoader(TPipelineState& pipelinestate)
 	pipelinestate.curposmtx = 0;
 	while (loopcount)
 	{
+		if (VtxDesc & 0x200)
+		{
+			pipelinestate.flags |= ~TPS_SKIP_VERTEX;
+		}
 		pipelinestate.tcIndex = 0;
 		pipelinestate.colIndex = 0;
 		pipelinestate.texmtxwrite = pipelinestate.texmtxread = 0;
@@ -904,7 +908,7 @@ void TemplatedLoader(TPipelineState& pipelinestate)
 		}
 
 		// Write vertex position loader
-		if (pipelinestate.bUseBBox)
+		if (pipelinestate.flags & TPS_USE_BBOX)
 		{
 			BoundingBox::SetVertexBufferPosition(pipelinestate);
 		}
@@ -1030,11 +1034,19 @@ void TemplatedLoader(TPipelineState& pipelinestate)
 				static_cast<ETcoordElements>((VAT2 & maskTex7CoordElements) >> strideTex7CoordElements),
 				static_cast<bool>((VtxDesc & maskTex7MatIdx) == maskTex7MatIdx)>(pipelinestate);
 		}
-		if (pipelinestate.bUseBBox)
+		if (pipelinestate.flags & TPS_USE_BBOX)
 		{
 			BoundingBox::Update();
 		}
 		pipelinestate.Write<u32>((u32)pipelinestate.curposmtx);
+		if (VtxDesc & 0x200)
+		{
+			if (pipelinestate.flags & TPS_SKIP_VERTEX)
+			{
+				// reset the output buffer
+				pipelinestate.SetWritePosition(pipelinestate.GetWritePosition() - pipelinestate.stride);
+			}
+		}
 		--loopcount;
 	}
 }

@@ -48,6 +48,13 @@ enum
 #define LOADERDECL
 #endif
 
+enum PipelineStateFlags : u8
+{
+	TPS_NONE = 0,
+	TPS_USE_BBOX = 1,
+	TPS_SKIP_VERTEX = 2,
+};
+
 class TPipelineState : public DataReader, public DataWriter
 {
 public:
@@ -63,6 +70,7 @@ public:
 	}
 	void Clear()
 	{
+		stride = 0;
 		curposmtx = 0;
 		memset(curtexmtx, 0, sizeof(curtexmtx));
 		texmtxwrite = 0;
@@ -74,16 +82,18 @@ public:
 		posScale = 0.0f;
 		memset(tcScale, 0, sizeof(tcScale));
 		count = 0;
+		flags = 0;
 	}
 	float posScale;
 	float tcScale[8];
 	s32 count;
+	s32 stride;
 	u8 colIndex;
 	u8 tcIndex;
 	u8 curposmtx;
 	u8 texmtxwrite;
 	u8 texmtxread;
-	u8 bUseBBox;
+	u8 flags;
 	u8 colElements[2];
 	u8 curtexmtx[8];
 };
