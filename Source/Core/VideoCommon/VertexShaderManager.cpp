@@ -27,7 +27,7 @@ ConstatBuffer VertexShaderManager::m_buffer(VertexShaderManager::vsconstants, Ve
 float GC_ALIGNED16(g_fProjectionMatrix[16]);
 
 // track changes
-static bool bTexMatricesChanged[2], bPosNormalMatrixChanged, bProjectionChanged, bViewportChanged;
+static bool bTexMatricesChanged[2], bProjectionChanged, bViewportChanged;
 static int nMaterialsChanged;
 static int nTransformMatricesChanged[2]; // min,max
 static int nNormalMatricesChanged[2]; // min,max
@@ -199,7 +199,6 @@ void VertexShaderManager::Dirty()
 	nLightsChanged[0] = 0; 
 	nLightsChanged[1] = 0x80;
 
-	bPosNormalMatrixChanged = true;
 	bTexMatricesChanged[0] = true;
 	bTexMatricesChanged[1] = true;
 
@@ -310,17 +309,6 @@ void VertexShaderManager::SetConstants()
 		}
 
 		nMaterialsChanged = 0;
-	}
-
-	if (bPosNormalMatrixChanged)
-	{
-		bPosNormalMatrixChanged = false;
-
-		const float *pos = (const float *)xfmem.posMatrices + g_main_cp_state.matrix_index_a.PosNormalMtxIdx * 4;
-		const float *norm = (const float *)xfmem.normalMatrices + 3 * (g_main_cp_state.matrix_index_a.PosNormalMtxIdx & 31);
-
-		m_buffer.SetMultiConstant4v(C_POSNORMALMATRIX, 3, pos);
-		m_buffer.SetMultiConstant3v(C_POSNORMALMATRIX + 3, 3, norm);
 	}
 
 	if (bTexMatricesChanged[0])
@@ -517,14 +505,6 @@ void VertexShaderManager::SetConstants()
 
 void VertexShaderManager::InvalidateXFRange(int start, int end)
 {
-	if (((u32)start >= (u32)g_main_cp_state.matrix_index_a.PosNormalMtxIdx * 4 &&
-		 (u32)start <  (u32)g_main_cp_state.matrix_index_a.PosNormalMtxIdx * 4 + 12) ||
-		((u32)start >= XFMEM_NORMALMATRICES + ((u32)g_main_cp_state.matrix_index_a.PosNormalMtxIdx & 31) * 3 &&
-		 (u32)start <  XFMEM_NORMALMATRICES + ((u32)g_main_cp_state.matrix_index_a.PosNormalMtxIdx & 31) * 3 + 9))
-	{
-		bPosNormalMatrixChanged = true;
-	}
-
 	if (((u32)start >= (u32)g_main_cp_state.matrix_index_a.Tex0MtxIdx*4 && (u32)start < (u32)g_main_cp_state.matrix_index_a.Tex0MtxIdx*4+12) ||
 		((u32)start >= (u32)g_main_cp_state.matrix_index_a.Tex1MtxIdx*4 && (u32)start < (u32)g_main_cp_state.matrix_index_a.Tex1MtxIdx*4+12) ||
 		((u32)start >= (u32)g_main_cp_state.matrix_index_a.Tex2MtxIdx*4 && (u32)start < (u32)g_main_cp_state.matrix_index_a.Tex2MtxIdx*4+12) ||
@@ -611,9 +591,7 @@ void VertexShaderManager::SetTexMatrixChangedA(u32 Value)
 {
 	if (g_main_cp_state.matrix_index_a.Hex != Value)
 	{
-		VertexManager::Flush();
-		if (g_main_cp_state.matrix_index_a.PosNormalMtxIdx != (Value&0x3f))
-			bPosNormalMatrixChanged = true;
+		VertexManager::Flush();		
 		bTexMatricesChanged[0] = true;
 		g_main_cp_state.matrix_index_a.Hex = Value;
 	}

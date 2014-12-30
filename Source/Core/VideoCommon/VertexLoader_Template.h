@@ -860,12 +860,11 @@ template <int iSSE, u32 VtxDesc, u32 VAT0, u32 VAT1, u32 VAT2>
 void TemplatedLoader(TPipelineState& pipelinestate)
 {
 	u32 loopcount = pipelinestate.count;
-	pipelinestate.curposmtx = 0;
 	while (loopcount)
 	{
 		if (VtxDesc & 0x200)
 		{
-			pipelinestate.flags |= ~TPS_SKIP_VERTEX;
+			pipelinestate.flags &= ~TPS_SKIP_VERTEX;
 		}
 		pipelinestate.tcIndex = 0;
 		pipelinestate.colIndex = 0;

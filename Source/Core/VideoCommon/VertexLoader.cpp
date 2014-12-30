@@ -188,7 +188,6 @@ void VertexLoader::CompileVertexTranslator()
 	if (m_VtxDesc.PosMatIdx)
 	{
 		WriteCall(Vertexloader_Mtx::PosMtx_ReadDirect_UByte);
-		components |= VB_HAS_POSMTXIDX;
 		m_VertexSize += 1;
 	}
 
@@ -369,15 +368,8 @@ void VertexLoader::CompileVertexTranslator()
 	if (!g_ActiveConfig.backend_info.bSupportsBBox)
 		WriteCall(BoundingBox::Update);
 
-	if (m_VtxDesc.PosMatIdx)
-	{
-		WriteCall(Vertexloader_Mtx::PosMtx_Write);
-		m_vtx_decl.posmtx.enable = true;
-	}
-	else
-	{
-		WriteCall(Vertexloader_Mtx::PosMtxDisabled_Write);
-	}
+	WriteCall(Vertexloader_Mtx::PosMtx_Write);
+	m_vtx_decl.posmtx.enable = true;
 	m_vtx_decl.posmtx.components = 4;
 	m_vtx_decl.posmtx.offset = nat_offset;
 	m_vtx_decl.posmtx.type = FORMAT_UBYTE;
@@ -413,6 +405,7 @@ void VertexLoader::RunVertices(const VertexLoaderParameters &parameters)
 	g_PipelineState.flags = g_ActiveConfig.backend_info.bSupportsBBox ? TPS_NONE : TPS_USE_BBOX;
 	g_PipelineState.stride = m_native_stride;
 	g_PipelineState.posScale = fractionTable[m_VtxAttr.PosFrac];
+	g_PipelineState.curposmtx = g_main_cp_state.matrix_index_a.PosNormalMtxIdx;
 	if (m_NativeFmt->m_components & VB_HAS_UVALL)
 		for (int i = 0; i < 8; i++)
 			g_PipelineState.tcScale[i] = fractionTable[m_VtxAttr.texCoord[i].Frac];

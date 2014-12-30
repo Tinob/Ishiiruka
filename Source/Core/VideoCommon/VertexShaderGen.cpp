@@ -113,7 +113,6 @@ inline void GenerateVertexShader(T& out, u32 components, const XFMemory &xfr, co
 		if (api_type == API_OPENGL)
 			out.Write("layout(std140%s) uniform VSBlock {\n", g_ActiveConfig.backend_info.bSupportsBindingLayout ? ", binding = 2" : "");
 
-		DeclareUniform<T, api_type>(out, C_POSNORMALMATRIX, "float4", I_POSNORMALMATRIX"[6]");
 		DeclareUniform<T, api_type>(out, C_PROJECTION, "float4", I_PROJECTION"[4]");
 		DeclareUniform<T, api_type>(out, C_MATERIALS, "float4", I_MATERIALS"[4]");
 		DeclareUniform<T, api_type>(out, C_LIGHTS, "float4", I_LIGHTS"[40]");
@@ -131,8 +130,7 @@ inline void GenerateVertexShader(T& out, u32 components, const XFMemory &xfr, co
 		if (api_type == API_OPENGL)
 		{
 			out.Write("in float4 rawpos; // ATTR%d,\n", SHADER_POSITION_ATTRIB);
-			if (components & VB_HAS_POSMTXIDX)
-				out.Write("in float fposmtx; // ATTR%d,\n", SHADER_POSMTX_ATTRIB);
+			out.Write("in float fposmtx; // ATTR%d,\n", SHADER_POSMTX_ATTRIB);
 			if (components & VB_HAS_NRM0)
 				out.Write("in float3 rawnorm0; // ATTR%d,\n", SHADER_NORM0_ATTRIB);
 			if (components & VB_HAS_NRM1)
@@ -201,8 +199,7 @@ inline void GenerateVertexShader(T& out, u32 components, const XFMemory &xfr, co
 				if ((components & (VB_HAS_UV0 << i)) || hastexmtx)
 					out.Write("  float%d tex%d : TEXCOORD%d,\n", hastexmtx ? 3 : 2, i, i);
 			}
-			if (components & VB_HAS_POSMTXIDX || api_type & API_D3D9)
-				out.Write("  float4 blend_indices : BLENDINDICES,\n");
+			out.Write("  float4 blend_indices : BLENDINDICES,\n");
 
 			out.Write("  float4 rawpos : POSITION) {\n");
 		}
@@ -212,54 +209,41 @@ inline void GenerateVertexShader(T& out, u32 components, const XFMemory &xfr, co
 			out.Write("int4 indices = D3DCOLORtoUBYTE4(blend_indices);\n");
 		}
 		// transforms
-		if (components & VB_HAS_POSMTXIDX)
+		if (api_type & API_D3D9)
 		{
-			if (api_type & API_D3D9)
-			{
-				out.Write("int posmtx = indices.x;\n");
-			}
-			else if (api_type == API_D3D11)
-			{
-				out.Write("int posmtx = blend_indices.x * 255.0;\n");
-			}
-			else
-			{
-				out.Write("int posmtx = int(fposmtx);\n");
-			}
-
-			if ((DriverDetails::HasBug(DriverDetails::BUG_NODYNUBOACCESS) && !DriverDetails::HasBug(DriverDetails::BUG_ANNIHILATEDUBOS)))
-			{
-				// This'll cause issues, but  it can't be helped
-				out.Write("float4 pos = float4(dot(" I_TRANSFORMMATRICES"[0], rawpos), dot(" I_TRANSFORMMATRICES"[1], rawpos), dot(" I_TRANSFORMMATRICES"[2], rawpos), 1);\n");
-				if (components & VB_HAS_NRMALL)
-					out.Write("float3 N0 = " I_NORMALMATRICES"[0].xyz, N1 = " I_NORMALMATRICES"[1].xyz, N2 = " I_NORMALMATRICES"[2].xyz;\n");
-			}
-			else
-			{
-				out.Write("float4 pos = float4(dot(" I_TRANSFORMMATRICES"[posmtx], rawpos), dot(" I_TRANSFORMMATRICES"[posmtx+1], rawpos), dot(" I_TRANSFORMMATRICES"[posmtx+2], rawpos), 1);\n");
-
-				if (components & VB_HAS_NRMALL) {
-					out.Write("int normidx = posmtx >= 32 ? (posmtx-32) : posmtx;\n");
-					out.Write("float3 N0 = " I_NORMALMATRICES"[normidx].xyz, N1 = " I_NORMALMATRICES"[normidx+1].xyz, N2 = " I_NORMALMATRICES"[normidx+2].xyz;\n");
-				}
-			}
-			if (components & VB_HAS_NRM0)
-				out.Write("float3 _norm0 = normalize(float3(dot(N0, rawnorm0), dot(N1, rawnorm0), dot(N2, rawnorm0)));\n");
-			if (components & VB_HAS_NRM1)
-				out.Write("float3 _norm1 = float3(dot(N0, rawnorm1), dot(N1, rawnorm1), dot(N2, rawnorm1));\n");
-			if (components & VB_HAS_NRM2)
-				out.Write("float3 _norm2 = float3(dot(N0, rawnorm2), dot(N1, rawnorm2), dot(N2, rawnorm2));\n");
+			out.Write("int posmtx = indices.x;\n");
+		}
+		else if (api_type == API_D3D11)
+		{
+			out.Write("int posmtx = blend_indices.x * 255.0;\n");
 		}
 		else
 		{
-			out.Write("float4 pos = float4(dot(" I_POSNORMALMATRIX"[0], rawpos), dot(" I_POSNORMALMATRIX"[1], rawpos), dot(" I_POSNORMALMATRIX"[2], rawpos), 1.0);\n");
-			if (components & VB_HAS_NRM0)
-				out.Write("float3 _norm0 = normalize(float3(dot(" I_POSNORMALMATRIX"[3].xyz, rawnorm0), dot(" I_POSNORMALMATRIX"[4].xyz, rawnorm0), dot(" I_POSNORMALMATRIX"[5].xyz, rawnorm0)));\n");
-			if (components & VB_HAS_NRM1)
-				out.Write("float3 _norm1 = float3(dot(" I_POSNORMALMATRIX"[3].xyz, rawnorm1), dot(" I_POSNORMALMATRIX"[4].xyz, rawnorm1), dot(" I_POSNORMALMATRIX"[5].xyz, rawnorm1));\n");
-			if (components & VB_HAS_NRM2)
-				out.Write("float3 _norm2 = float3(dot(" I_POSNORMALMATRIX"[3].xyz, rawnorm2), dot(" I_POSNORMALMATRIX"[4].xyz, rawnorm2), dot(" I_POSNORMALMATRIX"[5].xyz, rawnorm2));\n");
+			out.Write("int posmtx = int(fposmtx);\n");
 		}
+
+		if ((DriverDetails::HasBug(DriverDetails::BUG_NODYNUBOACCESS) && !DriverDetails::HasBug(DriverDetails::BUG_ANNIHILATEDUBOS)))
+		{
+			// This'll cause issues, but  it can't be helped
+			out.Write("float4 pos = float4(dot(" I_TRANSFORMMATRICES"[0], rawpos), dot(" I_TRANSFORMMATRICES"[1], rawpos), dot(" I_TRANSFORMMATRICES"[2], rawpos), 1);\n");
+			if (components & VB_HAS_NRMALL)
+				out.Write("float3 N0 = " I_NORMALMATRICES"[0].xyz, N1 = " I_NORMALMATRICES"[1].xyz, N2 = " I_NORMALMATRICES"[2].xyz;\n");
+		}
+		else
+		{
+			out.Write("float4 pos = float4(dot(" I_TRANSFORMMATRICES"[posmtx], rawpos), dot(" I_TRANSFORMMATRICES"[posmtx+1], rawpos), dot(" I_TRANSFORMMATRICES"[posmtx+2], rawpos), 1);\n");
+
+			if (components & VB_HAS_NRMALL) {
+				out.Write("int normidx = posmtx >= 32 ? (posmtx-32) : posmtx;\n");
+				out.Write("float3 N0 = " I_NORMALMATRICES"[normidx].xyz, N1 = " I_NORMALMATRICES"[normidx+1].xyz, N2 = " I_NORMALMATRICES"[normidx+2].xyz;\n");
+			}
+		}
+		if (components & VB_HAS_NRM0)
+			out.Write("float3 _norm0 = normalize(float3(dot(N0, rawnorm0), dot(N1, rawnorm0), dot(N2, rawnorm0)));\n");
+		if (components & VB_HAS_NRM1)
+			out.Write("float3 _norm1 = float3(dot(N0, rawnorm1), dot(N1, rawnorm1), dot(N2, rawnorm1));\n");
+		if (components & VB_HAS_NRM2)
+			out.Write("float3 _norm2 = float3(dot(N0, rawnorm2), dot(N1, rawnorm2), dot(N2, rawnorm2));\n");
 
 		if (!(components & VB_HAS_NRM0))
 			out.Write("float3 _norm0 = float3(0.0, 0.0, 0.0);\n");

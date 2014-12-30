@@ -14,11 +14,6 @@ void LOADERDECL Vertexloader_Mtx::PosMtx_Write()
 	g_PipelineState.Write<u32>(g_PipelineState.curposmtx);
 }
 
-void LOADERDECL Vertexloader_Mtx::PosMtxDisabled_Write()
-{
-	g_PipelineState.Write<u32>(0);
-}
-
 void LOADERDECL Vertexloader_Mtx::TexMtx_ReadDirect_UByte()
 {
 	g_PipelineState.curtexmtx[g_PipelineState.texmtxread++] = g_PipelineState.Read<u8>() & 0x3f;

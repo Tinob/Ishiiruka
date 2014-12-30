@@ -88,7 +88,7 @@ void LOADERDECL Update()
 
 	// Feed vertex position and matrix
 	myVertex.position = Vec3((const float *)bufferPos);
-	myVertex.posMtx = vertexDesc.PosMatIdx ? pState->curposmtx : g_main_cp_state.matrix_index_a.PosNormalMtxIdx;
+	myVertex.posMtx = pState->curposmtx;
 
 	// Transform position
 	TransformUnit::TransformPosition(&myVertex, outVertex);
