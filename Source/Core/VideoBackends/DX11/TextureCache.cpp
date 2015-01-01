@@ -9,6 +9,7 @@
 #include "VideoBackends/DX11/PixelShaderCache.h"
 #include "VideoBackends/DX11/CSTextureDecoder.h"
 #include "VideoBackends/DX11/CSTextureEncoder.h"
+#include "VideoBackends/DX11/PSTextureEncoder.h"
 #include "VideoBackends/DX11/TextureCache.h"
 #include "VideoBackends/DX11/TextureEncoder.h"
 #include "VideoBackends/DX11/VertexShaderCache.h"
@@ -304,10 +305,15 @@ TextureCache::TCacheEntryBase* TextureCache::CreateRenderTargetTexture(
 
 TextureCache::TextureCache()
 {
-	// FIXME: Is it safe here?
-	s_encoder = new CSTextureEncoder;
+	if (D3D::GetFeatureLevel() < D3D_FEATURE_LEVEL_11_0)
+	{
+		s_encoder = new PSTextureEncoder;
+	}
+	else
+	{
+		s_encoder = new CSTextureEncoder;
+	}
 	s_encoder->Init();
-
 	s_decoder = new CSTextureDecoder;
 	s_decoder->Init();
 }

@@ -62,6 +62,9 @@
     <ClCompile Include="BoundingBox.cpp">
       <Filter>Render</Filter>
     </ClCompile>
+    <ClCompile Include="PSTextureEncoder.cpp">
+      <Filter>Render</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Globals.h" />
@@ -131,6 +134,9 @@
       <Filter>Render</Filter>
     </ClInclude>
     <ClInclude Include="BoundingBox.h">
+      <Filter>Render</Filter>
+    </ClInclude>
+    <ClInclude Include="PSTextureEncoder.h">
       <Filter>Render</Filter>
     </ClInclude>
   </ItemGroup>
