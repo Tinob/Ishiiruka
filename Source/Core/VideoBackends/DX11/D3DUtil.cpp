@@ -9,7 +9,7 @@
 #include "PixelShaderCache.h"
 #include "VertexShaderCache.h"
 #include "D3DShader.h"
-#include "GfxState.h"
+#include "D3DState.h"
 
 namespace DX11
 {
@@ -335,16 +335,15 @@ int CD3DFont::DrawTextScaled(float x, float y, float size, float spacing, u32 dw
 	// set general pipeline state
 	D3D::stateman->PushBlendState(m_blendstate.get());
 	D3D::stateman->PushRasterizerState(m_raststate.get());
-	D3D::stateman->Apply();
 
-	D3D::context->PSSetShader(m_pshader.get(), nullptr, 0);
-	D3D::context->VSSetShader(m_vshader.get(), nullptr, 0);
-	D3D::context->GSSetShader(nullptr, nullptr, 0);
+	D3D::stateman->SetPixelShader(m_pshader.get());
+	D3D::stateman->SetVertexShader(m_vshader.get());
+	D3D::stateman->SetGeometryShader(nullptr);
+	
 
-
-	D3D::context->IASetInputLayout(m_InputLayout.get());
-	D3D::context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	D3D::context->PSSetShaderResources(0, 1, D3D::ToAddr(m_pTexture));
+	D3D::stateman->SetInputLayout(m_InputLayout.get());
+	D3D::stateman->SetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	D3D::stateman->SetTexture(0, m_pTexture.get());
 
 	float fStartX = sx;
 	for (char c : Text)
@@ -383,7 +382,9 @@ int CD3DFont::DrawTextScaled(float x, float y, float size, float spacing, u32 dw
 		{
 			context->Unmap(m_pVB.get(), 0);
 
-			D3D::context->IASetVertexBuffers(0, 1, D3D::ToAddr(m_pVB), &stride, &bufoffset);
+			D3D::stateman->SetVertexBuffer(m_pVB.get(), stride, bufoffset);
+
+			D3D::stateman->Apply();
 			D3D::context->Draw(3 * dwNumTriangles, 0);
 
 			dwNumTriangles = 0;
@@ -399,11 +400,15 @@ int CD3DFont::DrawTextScaled(float x, float y, float size, float spacing, u32 dw
 	context->Unmap(m_pVB.get(), 0);
 	if (dwNumTriangles > 0)
 	{
-		D3D::context->IASetVertexBuffers(0, 1, D3D::ToAddr(m_pVB), &stride, &bufoffset);
+		D3D::stateman->SetVertexBuffer(m_pVB.get(), stride, bufoffset);
+
+		D3D::stateman->Apply();
 		D3D::context->Draw(3 * dwNumTriangles, 0);
 	}
 	D3D::stateman->PopBlendState();
 	D3D::stateman->PopRasterizerState();
+	D3D::stateman->SetTexture(0, nullptr); // immediately unbind the texture
+	D3D::stateman->Apply();
 	return S_OK;
 }
 
@@ -485,12 +490,12 @@ void ShutdownUtils()
 
 void SetPointCopySampler()
 {
-	D3D::context->PSSetSamplers(0, 1, D3D::ToAddr(point_copy_sampler));
+	D3D::stateman->SetSampler(0, point_copy_sampler.get());
 }
 
 void SetLinearCopySampler()
 {
-	D3D::context->PSSetSamplers(0, 1, D3D::ToAddr(linear_copy_sampler));
+	D3D::stateman->SetSampler(0, linear_copy_sampler.get());
 }
 
 void drawShadedTexQuad(
@@ -499,7 +504,7 @@ void drawShadedTexQuad(
 	int SourceWidth,
 	int SourceHeight,
 	ID3D11PixelShader* PShader,
-	ID3D11VertexShader* Vshader,
+	ID3D11VertexShader* VShader,
 	ID3D11InputLayout* layout,
 	float Gamma)
 {
@@ -534,20 +539,18 @@ void drawShadedTexQuad(
 	}
 	UINT stride = sizeof(STQVertex);
 	UINT offset = 0;
-
-	D3D::context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-	D3D::context->IASetInputLayout(layout);
-	D3D::context->IASetVertexBuffers(0, 1, &util_vbuf->GetBuffer(), &stride, &offset);
-	D3D::context->PSSetShader(PShader, nullptr, 0);
-	D3D::context->PSSetShaderResources(0, 1, &texture);
-	D3D::context->VSSetShader(Vshader, nullptr, 0);
-	D3D::context->GSSetShader(nullptr, nullptr, 0);
+	D3D::stateman->SetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+	D3D::stateman->SetInputLayout(layout);
+	D3D::stateman->SetVertexBuffer(util_vbuf->GetBuffer(), stride, offset);
+	D3D::stateman->SetPixelShader(PShader);
+	D3D::stateman->SetTexture(0, texture);
+	D3D::stateman->SetVertexShader(VShader);
+	D3D::stateman->SetGeometryShader(nullptr);
 
 	D3D::stateman->Apply();
 	D3D::context->Draw(4, stq_offset);
-
-	ID3D11ShaderResourceView* texres = nullptr;
-	context->PSSetShaderResources(0, 1, &texres); // immediately unbind the texture
+	D3D::stateman->SetTexture(0, nullptr); // immediately unbind the texture
+	D3D::stateman->Apply();
 }
 
 void drawShadedTexSubQuad(
@@ -557,7 +560,7 @@ void drawShadedTexSubQuad(
 	int SourceHeight,
 	const MathUtil::Rectangle<float>* rDest,
 	ID3D11PixelShader* PShader,
-	ID3D11VertexShader* Vshader,
+	ID3D11VertexShader* VShader,
 	ID3D11InputLayout* layout,
 	float Gamma)
 {
@@ -595,19 +598,19 @@ void drawShadedTexSubQuad(
 	UINT stride = sizeof(STSQVertex);
 	UINT offset = 0;
 
-	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-	context->IASetVertexBuffers(0, 1, &util_vbuf->GetBuffer(), &stride, &offset);
-	context->IASetInputLayout(layout);
-	context->PSSetShaderResources(0, 1, &texture);
-	context->PSSetShader(PShader, nullptr, 0);
-	context->VSSetShader(Vshader, nullptr, 0);
-	context->GSSetShader(nullptr, nullptr, 0);
+	stateman->SetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+	stateman->SetVertexBuffer(util_vbuf->GetBuffer(), stride, offset);
+	stateman->SetInputLayout(layout);
+	stateman->SetTexture(0, texture);
+	stateman->SetPixelShader(PShader);
+	stateman->SetVertexShader(VShader);
+	D3D::stateman->SetGeometryShader(nullptr);
 
 	stateman->Apply();
 	context->Draw(4, stsq_offset);
 
-	ID3D11ShaderResourceView* texres = nullptr;
-	context->PSSetShaderResources(0, 1, &texres); // immediately unbind the texture
+	stateman->SetTexture(0, nullptr); // immediately unbind the texture
+	stateman->Apply();
 }
 
 // Fills a certain area of the current render target with the specified color
@@ -636,16 +639,14 @@ void drawColorQuad(u32 Color, float x1, float y1, float x2, float y2)
 		draw_quad_data.col = Color;
 	}
 
-	context->VSSetShader(VertexShaderCache::GetClearVertexShader(), nullptr, 0);
-	context->PSSetShader(PixelShaderCache::GetClearProgram(), nullptr, 0);
-	context->GSSetShader(nullptr, nullptr, 0);
-
-	context->IASetInputLayout(VertexShaderCache::GetClearInputLayout());
+	stateman->SetVertexShader(VertexShaderCache::GetClearVertexShader());
+	stateman->SetPixelShader(PixelShaderCache::GetClearProgram());
+	stateman->SetInputLayout(VertexShaderCache::GetClearInputLayout());
 
 	UINT stride = sizeof(ColVertex);
 	UINT offset = 0;
-	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-	context->IASetVertexBuffers(0, 1, &util_vbuf->GetBuffer(), &stride, &offset);
+	stateman->SetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+	stateman->SetVertexBuffer(util_vbuf->GetBuffer(), stride, offset);
 
 	stateman->Apply();
 	context->Draw(4, cq_offset);
@@ -673,16 +674,15 @@ void drawClearQuad(
 		clear_quad_data.col = Color;
 		clear_quad_data.z = z;
 	}
-	context->VSSetShader(Vshader, nullptr, 0);
-	context->PSSetShader(PShader, nullptr, 0);
-	context->GSSetShader(nullptr, nullptr, 0);
-
-	context->IASetInputLayout(layout);
+	stateman->SetVertexShader(VertexShaderCache::GetClearVertexShader());
+	stateman->SetPixelShader(PixelShaderCache::GetClearProgram());
+	stateman->SetInputLayout(VertexShaderCache::GetClearInputLayout());
 
 	UINT stride = sizeof(ClearVertex);
 	UINT offset = 0;
-	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-	context->IASetVertexBuffers(0, 1, &util_vbuf->GetBuffer(), &stride, &offset);
+	stateman->SetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+	stateman->SetVertexBuffer(util_vbuf->GetBuffer(), stride, offset);
+
 	stateman->Apply();
 	context->Draw(4, clearq_offset);
 }

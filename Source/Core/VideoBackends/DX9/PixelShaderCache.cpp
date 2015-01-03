@@ -431,7 +431,6 @@ void PixelShaderCache::PrepareShader(
 			{
 				u32 code_hash = HashAdler32((const u8 *)wunit->code.data(), wunit->codesize);
 				unique_shaders.insert(code_hash);
-				SETSTAT(stats.numUniquePixelShaders, unique_shaders.size());
 				entry->code = wunit->code.data();
 			}
 			if (g_ActiveConfig.iLog & CONF_SAVESHADERS) {

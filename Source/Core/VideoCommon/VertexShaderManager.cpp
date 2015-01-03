@@ -63,7 +63,6 @@ namespace
 // Control Variables
 static ProjectionHack g_ProjHack1;
 static ProjectionHack g_ProjHack2;
-static bool g_ProjHack3;
 } // Namespace
 
 float PHackValue(std::string sValue)
@@ -130,7 +129,6 @@ void UpdateProjectionHack(int iPhackvalue[], std::string sPhackvalue[])
 	// Set the projections hacks
 	g_ProjHack1 = ProjectionHack(fhacksign1, fhackvalue1);
 	g_ProjHack2 = ProjectionHack(fhacksign2, fhackvalue2);
-	g_ProjHack3 = bProjHack3;
 }
 
 void VertexShaderManager::Init()
@@ -436,15 +434,11 @@ void VertexShaderManager::SetConstants()
 			g_fProjectionMatrix[12] = 0.0f;
 			g_fProjectionMatrix[13] = 0.0f;
 
-			/*
-			projection hack for metroid other m...attempt to remove black projection layer from cut scenes.
-			g_fProjectionMatrix[15] = 1.0f was the default setting before
-			this hack was added...setting g_fProjectionMatrix[14] to -1 might make the hack more stable, needs more testing.
-			Only works for OGL and DX9...this is not helping DX11
-			*/
-
 			g_fProjectionMatrix[14] = 0.0f;
-			g_fProjectionMatrix[15] = (g_ProjHack3 && rawProjection[0] == 2.0f ? 0.0f : 1.0f);  //causes either the efb copy or bloom layer not to show if proj hack enabled
+
+			// Hack to fix depth clipping precision issues (such as Sonic Unleashed UI)
+			// Turn it off for Nvidia 3D Vision, because it can't handle such a projection matrix
+			g_fProjectionMatrix[15] = (g_ActiveConfig.iStereoMode == STEREO_3DVISION) ? 1.0f : 1.0f + FLT_EPSILON;
 
 			SETSTAT_FT(stats.g2proj_0, g_fProjectionMatrix[0]);
 			SETSTAT_FT(stats.g2proj_1, g_fProjectionMatrix[1]);

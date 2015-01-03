@@ -89,7 +89,7 @@ struct VideoConfig final
 	int iMaxAnisotropy;
 	std::string sPostProcessingShader;
 	int iStereoMode;
-	int iStereoSeparation;
+	int iStereoDepth;
 	int iStereoConvergence;
 	bool bStereoSwapEyes;
 
@@ -146,7 +146,7 @@ struct VideoConfig final
 
 	// Stereoscopy
 	bool bStereoMonoEFBDepth;
-	int iStereoSeparationPercent;
+	int iStereoDepthPercentage;
 	int iStereoConvergencePercent;
 
 	// D3D only config, mostly to be merged into the above

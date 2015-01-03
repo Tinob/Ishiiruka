@@ -8,7 +8,7 @@
 #include "D3DBlob.h"
 #include "D3DShader.h"
 #include "Render.h"
-#include "GfxState.h"
+#include "D3DState.h"
 #include "FramebufferManager.h"
 
 namespace DX11
@@ -279,23 +279,22 @@ void XFBEncoder::Encode(u8* dst, u32 width, u32 height, const EFBRectangle& srcR
 
 	// Set up all the state for XFB encoding
 
-	D3D::context->PSSetShader(m_pShader.get(), nullptr, 0);
-	D3D::context->VSSetShader(m_vShader.get(), nullptr, 0);
-	D3D::context->GSSetShader(nullptr, nullptr, 0);
+	D3D::stateman->SetPixelShader(m_pShader.get());
+	D3D::stateman->SetVertexShader(m_vShader.get());
+	D3D::stateman->SetGeometryShader(nullptr);
 
 	D3D::stateman->PushBlendState(m_xfbEncodeBlendState.get());
 	D3D::stateman->PushDepthState(m_xfbEncodeDepthState.get());
 	D3D::stateman->PushRasterizerState(m_xfbEncodeRastState.get());
-	D3D::stateman->Apply();
-	D3D::context->OMSetRenderTargets(1, D3D::ToAddr(m_outRTV), nullptr);
-	D3D11_VIEWPORT vp = CD3D11_VIEWPORT(0.f, 0.f, FLOAT(width/2), FLOAT(height));
+
+	D3D11_VIEWPORT vp = CD3D11_VIEWPORT(0.f, 0.f, FLOAT(width / 2), FLOAT(height));
 	D3D::context->RSSetViewports(1, &vp);
 
-	D3D::context->IASetInputLayout(m_quadLayout.get());
-	D3D::context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+	D3D::stateman->SetInputLayout(m_quadLayout.get());
+	D3D::stateman->SetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 	UINT stride = sizeof(QuadVertex);
 	UINT offset = 0;
-	D3D::context->IASetVertexBuffers(0, 1, D3D::ToAddr(m_quad), &stride, &offset);
+	D3D::stateman->SetVertexBuffer(m_quad.get(), stride, offset);
 
 	TargetRectangle targetRect = g_renderer->ConvertEFBRectangle(srcRect);
 
@@ -309,42 +308,41 @@ void XFBEncoder::Encode(u8* dst, u32 width, u32 height, const EFBRectangle& srcR
 	params.Gamma = gamma;
 	D3D::context->UpdateSubresource(m_encodeParams.get(), 0, nullptr, &params, 0, 0);
 
-	D3D::context->VSSetConstantBuffers(0, 1, D3D::ToAddr(m_encodeParams));
+	D3D::context->OMSetRenderTargets(1, D3D::ToAddr(m_outRTV), nullptr);
 
-	ID3D11ShaderResourceView* pEFB = FramebufferManager::GetEFBColorTexture()->GetSRV();
+	ID3D11ShaderResourceView* pEFB = FramebufferManager::GetResolvedEFBColorTexture()->GetSRV();
 
-	D3D::context->PSSetConstantBuffers(0, 1, D3D::ToAddr(m_encodeParams));
-	D3D::context->PSSetShaderResources(0, 1, &pEFB);
-	D3D::context->PSSetSamplers(0, 1, D3D::ToAddr(m_efbSampler));
+	D3D::stateman->SetVertexConstants(m_encodeParams.get());
+	D3D::stateman->SetPixelConstants(m_encodeParams.get());
+	D3D::stateman->SetTexture(0, pEFB);
+	D3D::stateman->SetSampler(0, m_efbSampler.get());
 
 	// Encode!
 
+	D3D::stateman->Apply();
 	D3D::context->Draw(4, 0);
 
 	// Copy to staging buffer
 
-	D3D11_BOX srcBox = CD3D11_BOX(0, 0, 0, width/2, height, 1);
+	D3D11_BOX srcBox = CD3D11_BOX(0, 0, 0, width / 2, height, 1);
 	D3D::context->CopySubresourceRegion(m_outStage.get(), 0, 0, 0, 0, m_out.get(), 0, &srcBox);
 
 	// Clean up state
 
-	IUnknown* nullDummy = nullptr;
-
-	D3D::context->PSSetSamplers(0, 1, (ID3D11SamplerState**)&nullDummy);
-	D3D::context->PSSetShaderResources(0, 1, (ID3D11ShaderResourceView**)&nullDummy);
-	D3D::context->PSSetConstantBuffers(0, 1, (ID3D11Buffer**)&nullDummy);
-
 	D3D::context->OMSetRenderTargets(0, nullptr, nullptr);
 
-	D3D::context->VSSetConstantBuffers(0, 1, (ID3D11Buffer**)&nullDummy);
+	D3D::stateman->SetSampler(0, nullptr);
+	D3D::stateman->SetTexture(0, nullptr);
+	D3D::stateman->SetPixelConstants(nullptr);
+	D3D::stateman->SetVertexConstants(nullptr);
+
+	D3D::stateman->SetPixelShader(nullptr);
+	D3D::stateman->SetVertexShader(nullptr);
 
 	D3D::stateman->PopRasterizerState();
 	D3D::stateman->PopDepthState();
 	D3D::stateman->PopBlendState();
 
-	D3D::context->PSSetShader(nullptr, nullptr, 0);
-	D3D::context->VSSetShader(nullptr, nullptr, 0);
-	D3D::context->GSSetShader(nullptr, nullptr, 0);
 	// Transfer staging buffer to GameCube/Wii RAM
 
 	D3D11_MAPPED_SUBRESOURCE map = { 0 };
@@ -354,8 +352,8 @@ void XFBEncoder::Encode(u8* dst, u32 width, u32 height, const EFBRectangle& srcR
 	u8* src = (u8*)map.pData;
 	for (unsigned int y = 0; y < height; ++y)
 	{
-		memcpy(dst, src, 2*width);
-		dst += bpmem.copyMipMapStrideChannels*32;
+		memcpy(dst, src, 2 * width);
+		dst += bpmem.copyMipMapStrideChannels * 32;
 		src += map.RowPitch;
 	}
 

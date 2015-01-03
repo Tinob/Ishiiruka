@@ -81,8 +81,8 @@ static const struct
 	{ "FreelookZoomOut",      83 /* 'S' */,       4 /* wxMOD_SHIFT */ },
 	{ "FreelookReset",        82 /* 'R' */,       4 /* wxMOD_SHIFT */ },
 
-	{ "IncreaseSeparation",  0,                   0 /* wxMOD_NONE */ },
-	{ "DecreaseSeparation",  0,                   0 /* wxMOD_NONE */ },
+	{ "IncreaseDepth",       0,                   0 /* wxMOD_NONE */ },
+	{ "DecreaseDepth",       0,                   0 /* wxMOD_NONE */ },
 	{ "IncreaseConvergence", 0,                   0 /* wxMOD_NONE */ },
 	{ "DecreaseConvergence", 0,                   0 /* wxMOD_NONE */ },
 
@@ -314,6 +314,7 @@ void SConfig::SaveCoreSettings(IniFile& ini)
 	core->Set("CPUThread", m_LocalCoreStartupParameter.bCPUThread);
 	core->Set("DSPHLE", m_LocalCoreStartupParameter.bDSPHLE);
 	core->Set("SkipIdle", m_LocalCoreStartupParameter.bSkipIdle);
+	core->Set("SyncOnSkipIdle", m_LocalCoreStartupParameter.bSyncGPUOnSkipIdleHack);
 	core->Set("DefaultISO", m_LocalCoreStartupParameter.m_strDefaultISO);
 	core->Set("DVDRoot", m_LocalCoreStartupParameter.m_strDVDRoot);
 	core->Set("Apploader", m_LocalCoreStartupParameter.m_strApploader);
@@ -541,6 +542,7 @@ void SConfig::LoadCoreSettings(IniFile& ini)
 	core->Get("DSPHLE",            &m_LocalCoreStartupParameter.bDSPHLE,       true);
 	core->Get("CPUThread",         &m_LocalCoreStartupParameter.bCPUThread,    true);
 	core->Get("SkipIdle",          &m_LocalCoreStartupParameter.bSkipIdle,     true);
+	core->Get("SyncOnSkipIdle",    &m_LocalCoreStartupParameter.bSyncGPUOnSkipIdleHack, true);
 	core->Get("DefaultISO",        &m_LocalCoreStartupParameter.m_strDefaultISO);
 	core->Get("DVDRoot",           &m_LocalCoreStartupParameter.m_strDVDRoot);
 	core->Get("Apploader",         &m_LocalCoreStartupParameter.m_strApploader);

@@ -35,7 +35,7 @@ public:
 private:
 	enum
 	{
-		DVD_BANNER_WIDTH = 96,
+		DVD_BANNER_WIDTH  = 96,
 		DVD_BANNER_HEIGHT = 32
 	};
 
@@ -69,7 +69,7 @@ private:
 	static const u32 BNR2_SIZE = sizeof(DVDBanner);
 
 	template <u32 N>
-	std::string GetDecodedString(const char(&data)[N])
+	std::string GetDecodedString(const char (&data)[N])
 	{
 		auto const string_decoder = CVolumeGC::GetStringDecoder(m_country);
 

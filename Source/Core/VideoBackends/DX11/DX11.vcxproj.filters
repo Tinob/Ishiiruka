@@ -17,9 +17,6 @@
     <ClCompile Include="D3DUtil.cpp">
       <Filter>D3D</Filter>
     </ClCompile>
-    <ClCompile Include="GfxState.cpp">
-      <Filter>D3D</Filter>
-    </ClCompile>
     <ClCompile Include="FramebufferManager.cpp">
       <Filter>Render</Filter>
     </ClCompile>
@@ -65,6 +62,9 @@
     <ClCompile Include="PSTextureEncoder.cpp">
       <Filter>Render</Filter>
     </ClCompile>
+    <ClCompile Include="D3DState.cpp">
+      <Filter>D3D</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Globals.h" />
@@ -83,9 +83,6 @@
       <Filter>D3D</Filter>
     </ClInclude>
     <ClInclude Include="D3DTexture.h">
-      <Filter>D3D</Filter>
-    </ClInclude>
-    <ClInclude Include="GfxState.h">
       <Filter>D3D</Filter>
     </ClInclude>
     <ClInclude Include="FramebufferManager.h">
@@ -138,6 +135,9 @@
     </ClInclude>
     <ClInclude Include="PSTextureEncoder.h">
       <Filter>Render</Filter>
+    </ClInclude>
+    <ClInclude Include="D3DState.h">
+      <Filter>D3D</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

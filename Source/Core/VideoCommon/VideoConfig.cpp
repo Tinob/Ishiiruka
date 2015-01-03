@@ -45,7 +45,7 @@ VideoConfig::VideoConfig()
 
 	// Game-specific stereoscopy settings
 	bStereoMonoEFBDepth = false;
-	iStereoSeparationPercent = 100;
+	iStereoDepthPercentage = 100;
 	iStereoConvergencePercent = 100;
 }
 
@@ -98,7 +98,7 @@ void VideoConfig::Load(const std::string& ini_file)
 	enhancements->Get("MaxAnisotropy", &iMaxAnisotropy, 0);  // NOTE - this is x in (1 << x)
 	enhancements->Get("PostProcessingShader", &sPostProcessingShader, "");
 	enhancements->Get("StereoMode", &iStereoMode, 0);
-	enhancements->Get("StereoSeparation", &iStereoSeparation, 20);
+	enhancements->Get("StereoDepth", &iStereoDepth, 20);
 	enhancements->Get("StereoConvergence", &iStereoConvergence, 20);
 	enhancements->Get("StereoSwapEyes", &bStereoSwapEyes, false);
 
@@ -201,12 +201,12 @@ void VideoConfig::GameIniLoad()
 	CHECK_SETTING("Video_Enhancements", "MaxAnisotropy", iMaxAnisotropy);  // NOTE - this is x in (1 << x)
 	CHECK_SETTING("Video_Enhancements", "PostProcessingShader", sPostProcessingShader);
 	CHECK_SETTING("Video_Enhancements", "StereoMode", iStereoMode);
-	CHECK_SETTING("Video_Enhancements", "StereoSeparation", iStereoSeparation);
+	CHECK_SETTING("Video_Enhancements", "StereoDepth", iStereoDepth);
 	CHECK_SETTING("Video_Enhancements", "StereoConvergence", iStereoConvergence);
 	CHECK_SETTING("Video_Enhancements", "StereoSwapEyes", bStereoSwapEyes);
 
 	CHECK_SETTING("Video_Stereoscopy", "StereoMonoEFBDepth", bStereoMonoEFBDepth);
-	CHECK_SETTING("Video_Stereoscopy", "StereoSeparationPercent", iStereoSeparationPercent);
+	CHECK_SETTING("Video_Stereoscopy", "StereoDepthPercentage", iStereoDepthPercentage);
 	CHECK_SETTING("Video_Stereoscopy", "StereoConvergencePercent", iStereoConvergencePercent);
 
 	CHECK_SETTING("Video_Hacks", "EFBAccessEnable", bEFBAccessEnable);
@@ -240,10 +240,18 @@ void VideoConfig::VerifyValidity()
 	if (iMultisampleMode < 0 || iMultisampleMode >= (int)backend_info.AAModes.size()) iMultisampleMode = 0;
 	if (!backend_info.bSupportsFormatReinterpretation) bEFBEmulateFormatChanges = false;
 	if (!backend_info.bSupportsPixelLighting) bEnablePixelLighting = false;	
-	if (iStereoMode > 0 && !(backend_info.bSupportsGeometryShaders || backend_info.bSupportsStereoscopy))
+	if (iStereoMode > 0)
 	{
-		OSD::AddMessage("Stereoscopic 3D isn't supported by your GPU, support for OpenGL 3.2 is required.", 10000);
-		iStereoMode = 0;
+		if (!(backend_info.bSupportsGeometryShaders || backend_info.bSupportsStereoscopy))
+		{
+			OSD::AddMessage("Stereoscopic 3D isn't supported by your GPU, support for OpenGL 3.2 is required.", 10000);
+			iStereoMode = 0;
+		}
+		if (bUseXFB && bUseRealXFB)
+		{
+			OSD::AddMessage("Stereoscopic 3D isn't supported with Real XFB, turning off stereoscopy.", 10000);
+			iStereoMode = 0;
+		}
 	}
 	if (backend_info.APIType == API_OPENGL)
 	{
@@ -303,7 +311,7 @@ void VideoConfig::Save(const std::string& ini_file)
 	enhancements->Set("MaxAnisotropy", iMaxAnisotropy);
 	enhancements->Set("PostProcessingShader", sPostProcessingShader);
 	enhancements->Set("StereoMode", iStereoMode);
-	enhancements->Set("StereoSeparation", iStereoSeparation);
+	enhancements->Set("StereoDepth", iStereoDepth);
 	enhancements->Set("StereoConvergence", iStereoConvergence);
 	enhancements->Set("StereoSwapEyes", bStereoSwapEyes);
 

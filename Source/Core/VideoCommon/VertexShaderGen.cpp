@@ -173,8 +173,8 @@ inline void GenerateVertexShader(T& out, u32 components, const XFMemory &xfr, co
 						out.Write("centroid out float%d uv%d_2;\n", i < 4 ? 4 : 3, i);
 				}
 			}
-			out.Write("centroid out float4 colors_02;\n");
-			out.Write("centroid out float4 colors_12;\n");
+			out.Write("centroid out float4 colors_0;\n");
+			out.Write("centroid out float4 colors_1;\n");
 
 			out.Write("void main()\n{\n");
 		}
@@ -565,8 +565,8 @@ inline void GenerateVertexShader(T& out, u32 components, const XFMemory &xfr, co
 						out.Write("  uv%d_2%s = o.tex%d;\n", i, i < 4 ? ".xyzw" : ".xyz", i);
 				}
 			}
-			out.Write("colors_02 = o.colors_0;\n");
-			out.Write("colors_12 = o.colors_1;\n");
+			out.Write("colors_0 = o.colors_0;\n");
+			out.Write("colors_1 = o.colors_1;\n");
 			out.Write("gl_Position = o.pos;\n");
 			out.Write("}\n");
 		}

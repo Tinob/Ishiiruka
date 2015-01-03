@@ -4,6 +4,7 @@
 
 #include "VideoBackends/DX11/BoundingBox.h"
 #include "VideoBackends/DX11/D3DBase.h"
+#include "VideoBackends/DX11/D3DState.h"
 #include "VideoBackends/DX11/PixelShaderCache.h"
 #include "VideoBackends/DX11/Render.h"
 #include "VideoBackends/DX11/VertexManager.h"
@@ -120,8 +121,11 @@ void VertexManager::Draw(UINT stride)
 	u32 components = g_nativeVertexFmt->m_components;
 	u32 indices = IndexGenerator::GetIndexLen();
 
-	D3D::context->IASetVertexBuffers(0, 1, D3D::ToAddr(m_buffers[m_currentBuffer]), &stride, &m_vertexDrawOffset);
-	D3D::context->IASetIndexBuffer(m_buffers[m_currentBuffer].get(), DXGI_FORMAT_R16_UINT, m_indexDrawOffset);
+	D3D::stateman->SetVertexBuffer(m_buffers[m_currentBuffer].get(), stride, 0);
+	D3D::stateman->SetIndexBuffer(m_buffers[m_currentBuffer].get());
+
+	u32 baseVertex = m_vertexDrawOffset / stride;
+	u32 startIndex = m_indexDrawOffset / sizeof(u16);
 		
 	if (current_primitive_type == PRIMITIVE_TRIANGLES)
 	{
@@ -129,11 +133,8 @@ void VertexManager::Draw(UINT stride)
 		D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP :
 		D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
-		D3D::context->IASetPrimitiveTopology(pt);
-		D3D::context->GSSetShader(nullptr, nullptr, 0);
-
-		D3D::context->DrawIndexed(indices, 0, 0);
-		INCSTAT(stats.thisFrame.numDrawCalls);
+		D3D::stateman->SetPrimitiveTopology(pt);
+		D3D::stateman->SetGeometryShader(nullptr);
 	}
 	else if (current_primitive_type == PRIMITIVE_LINES)
 	{
@@ -147,16 +148,10 @@ void VertexManager::Draw(UINT stride)
 		for (int i = 0; i < 8; ++i)
 			texOffsetEnable[i] = bpmem.texcoords[i].s.line_offset;
 
-		if (m_lineAndPointShader.SetLineShader(g_nativeVertexFmt->m_components, lineWidth,
-			texOffset, vpWidth, vpHeight, texOffsetEnable))
-		{
-			((DX11::Renderer*)g_renderer)->ApplyCullDisable();
-			D3D::context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
-			D3D::context->DrawIndexed(indices, 0, 0);
-			INCSTAT(stats.thisFrame.numDrawCalls);
-
-			D3D::context->GSSetShader(nullptr, nullptr, 0);
-		}
+		m_lineAndPointShader.SetLineShader(g_nativeVertexFmt->m_components, lineWidth,
+			texOffset, vpWidth, vpHeight, texOffsetEnable);
+		((DX11::Renderer*)g_renderer)->ApplyCullDisable();
+		D3D::stateman->SetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
 	}
 	else
 	{
@@ -170,19 +165,21 @@ void VertexManager::Draw(UINT stride)
 		for (int i = 0; i < 8; ++i)
 			texOffsetEnable[i] = bpmem.texcoords[i].s.point_offset;
 
-		if (m_lineAndPointShader.SetPointShader(g_nativeVertexFmt->m_components, pointSize,
-			texOffset, vpWidth, vpHeight, texOffsetEnable))
-		{
-			D3D::context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
-			D3D::context->DrawIndexed(indices, 0, 0);
-			INCSTAT(stats.thisFrame.numDrawCalls);
-
-			D3D::context->GSSetShader(nullptr, nullptr, 0);
-		}
+		m_lineAndPointShader.SetPointShader(g_nativeVertexFmt->m_components, pointSize,
+			texOffset, vpWidth, vpHeight, texOffsetEnable);
+		((DX11::Renderer*)g_renderer)->ApplyCullDisable();
+		D3D::stateman->SetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
 	}
+
+	D3D::stateman->Apply();
+	D3D::context->DrawIndexed(indices, startIndex, baseVertex);
+	INCSTAT(stats.thisFrame.numDrawCalls);
 	
 	if (current_primitive_type != PRIMITIVE_TRIANGLES)
+	{
+		D3D::stateman->SetGeometryShader(nullptr);
 		((DX11::Renderer*)g_renderer)->RestoreCull();
+	}
 }
 
 void VertexManager::PrepareShaders(u32 components, const XFMemory &xfr, const BPMemory &bpm, bool ongputhread)

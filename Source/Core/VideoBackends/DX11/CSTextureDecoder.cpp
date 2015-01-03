@@ -8,7 +8,7 @@
 #include "VideoBackends/DX11/D3DBase.h"
 #include "VideoBackends/DX11/D3DShader.h"
 #include "VideoBackends/DX11/FramebufferManager.h"
-#include "VideoBackends/DX11/GfxState.h"
+#include "VideoBackends/DX11/D3DState.h"
 #include "VideoBackends/DX11/CSTextureDecoder.h"
 #include "VideoBackends/DX11/Render.h"
 #include "VideoBackends/DX11/TextureCache.h"
@@ -451,6 +451,10 @@ ID3D11ComputeShader* CSTextureDecoder::InsertShader( ComboKey const &key, u8 con
 
 void CSTextureDecoder::LoadLut(u32 lutFmt, void* addr, u32 size ) 
 {
+	if (!m_ready)
+	{
+		return;
+	}
 	D3D11_BOX box{0,0,0,size,1,1};
 	D3D::context->UpdateSubresource(m_lutRsc.get(),0,&box,addr,0,0);
 	m_lutFmt = lutFmt;
@@ -489,7 +493,7 @@ bool CSTextureDecoder::Decode(const u8* src, u32 srcsize, u32 srcFmt, u32 w, u32
 	D3D11_BOX box{ 0, 0, 0, srcsize, 1, 1 };
 	D3D::context->UpdateSubresource(m_rawDataRsc.get(), 0, &box, src, 0, 0);
 	ID3D11UnorderedAccessView* uav = m_pool[m_pool_idx].m_uav.get();
-	D3D::context->CSSetUnorderedAccessViews(0, 1, &uav);
+	D3D::context->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
 
 	ID3D11ShaderResourceView* srvs[] = { m_rawDataSrv.get(), m_lutSrv.get() };	
 	D3D::context->CSSetShaderResources(0, 2, srvs);
@@ -503,7 +507,7 @@ bool CSTextureDecoder::Decode(const u8* src, u32 srcsize, u32 srcFmt, u32 w, u32
 	D3D::context->Dispatch((w + 7) / 8, (h + 7) / 8, 1);
 
 	uav = nullptr;
-	D3D::context->CSSetUnorderedAccessViews(0, 1, &uav);
+	D3D::context->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
 	D3D11_BOX pSrcBox;
 	pSrcBox.left = 0;
 	pSrcBox.top = 0;
@@ -559,7 +563,7 @@ bool CSTextureDecoder::DecodeRGBAFromTMEM( u8 const * ar_src, u8 const * bg_src,
 	D3D::context->UpdateSubresource(m_rawDataRsc.get(), 0, &box2, bg_src, 0, 0);
 
 	ID3D11UnorderedAccessView* uav = m_pool[m_pool_idx].m_uav.get();
-	D3D::context->CSSetUnorderedAccessViews(0, 1, &uav);
+	D3D::context->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
 
 	ID3D11ShaderResourceView* srvs[] = { m_rawDataSrv.get() };
 	D3D::context->CSSetShaderResources(0, 1, srvs);
@@ -573,7 +577,7 @@ bool CSTextureDecoder::DecodeRGBAFromTMEM( u8 const * ar_src, u8 const * bg_src,
 	D3D::context->Dispatch((w + 7) / 8, (h + 7) / 8, 1);
 
 	uav = nullptr;
-	D3D::context->CSSetUnorderedAccessViews(0, 1, &uav);
+	D3D::context->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
 	D3D11_BOX pSrcBox;
 	pSrcBox.left = 0;
 	pSrcBox.top = 0;

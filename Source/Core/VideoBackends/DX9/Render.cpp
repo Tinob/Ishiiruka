@@ -625,7 +625,7 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 				X = X / 2 + (s_backbuffer_width / 2);
 				Width = Width / 2;				
 			}			
-			VertexShaderManager::TranslateView(-0.001f * g_ActiveConfig.iStereoSeparation,0.0f);
+			VertexShaderManager::TranslateView(-0.001f * g_ActiveConfig.iStereoDepth,0.0f);
 			VertexShaderManager::RotateView(-0.0001f *g_ActiveConfig.iStereoConvergence,0.0f);
 		}
 		else
@@ -644,7 +644,7 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 				X = X / 2;
 				Width = Width / 2;
 			}
-			VertexShaderManager::TranslateView(0.001f *g_ActiveConfig.iStereoSeparation, 0.0f);
+			VertexShaderManager::TranslateView(0.001f *g_ActiveConfig.iStereoDepth, 0.0f);
 			VertexShaderManager::RotateView(0.0001f * g_ActiveConfig.iStereoConvergence, 0.0f);
 		}
 		s_b3D_RightFrame = !s_b3D_RightFrame;		

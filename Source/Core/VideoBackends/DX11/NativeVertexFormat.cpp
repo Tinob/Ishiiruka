@@ -4,6 +4,7 @@
 
 #include "VideoBackends/DX11/D3DBase.h"
 #include "VideoBackends/DX11/D3DBlob.h"
+#include "VideoBackends/DX11/D3DState.h"
 #include "VideoBackends/DX11/VertexManager.h"
 #include "VideoBackends/DX11/VertexShaderCache.h"
 #include "VideoCommon/NativeVertexFormat.h"
@@ -138,7 +139,7 @@ void D3DVertexFormat::SetupVertexPointers()
 		if (FAILED(hr)) PanicAlert("Failed to create input layout, %s %d\n", __FILE__, __LINE__);
 		DX11::D3D::SetDebugObjectName(m_layout.get(), "input layout used to emulate the GX pipeline");
 	}
-	DX11::D3D::context->IASetInputLayout(m_layout.get());
+	DX11::D3D::stateman->SetInputLayout(m_layout.get());
 }
 
 } // namespace DX11

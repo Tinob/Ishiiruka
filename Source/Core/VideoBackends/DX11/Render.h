@@ -1,7 +1,6 @@
+#pragma once
 
-#ifndef _RENDER_H_
-#define _RENDER_H_
-
+#include <string>
 #include "VideoCommon/RenderBase.h"
 
 namespace DX11
@@ -13,45 +12,44 @@ public:
 	Renderer(void *&window_handle);
 	~Renderer();
 
-	void SetColorMask();
-	void SetBlendMode(bool forceUpdate);
-	void SetScissorRect(const TargetRectangle& rc);
-	void SetGenerationMode();
-	void SetDepthMode();
-	void SetLogicOpMode();
-	void SetDitherMode();
-	void SetLineWidth();
-	void SetSamplerState(int stage,int texindex);
-	void SetInterlacingMode();
+	void SetColorMask() override;
+	void SetBlendMode(bool forceUpdate) override;
+	void SetScissorRect(const TargetRectangle& rc) override;
+	void SetGenerationMode() override;
+	void SetDepthMode() override;
+	void SetLogicOpMode() override;
+	void SetDitherMode() override;
+	void SetLineWidth() override {};
+	void SetSamplerState(int stage, int texindex) override;
+	void SetInterlacingMode() override;
 
 	// TODO: Fix confusing names (see ResetAPIState and RestoreAPIState)
-	void ApplyState(bool bUseDstAlpha);
-	void RestoreState();
+	void ApplyState(bool bUseDstAlpha) override;
+	void RestoreState() override;
 
 	void ApplyCullDisable();
 	void RestoreCull();
 
-	void RenderText(const std::string& str, int left, int top, u32 color);
+	void RenderText(const std::string& str, int left, int top, u32 color) override;
 
-	u32 AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data);
-	
+	u32 AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data) override;	
 	u16 BBoxRead(int index) override;
-	void BBoxWrite(int index, u16 value);
+	void BBoxWrite(int index, u16 value) override;
 
-	void ResetAPIState();
-	void RestoreAPIState();
+	void ResetAPIState() override;
+	void RestoreAPIState() override;
 
-	TargetRectangle ConvertEFBRectangle(const EFBRectangle& rc);
+	TargetRectangle ConvertEFBRectangle(const EFBRectangle& rc) override;
 
-	void SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, const EFBRectangle& rc, float Gamma = 1.0f);
+	void SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, const EFBRectangle& rc, float Gamma = 1.0f) override;
 
-	void ClearScreen(const EFBRectangle& rc, bool colorEnable, bool alphaEnable, bool zEnable, u32 color, u32 z);
+	void ClearScreen(const EFBRectangle& rc, bool colorEnable, bool alphaEnable, bool zEnable, u32 color, u32 z) override;
 
-	void ReinterpretPixelData(unsigned int convtype);
+	void ReinterpretPixelData(unsigned int convtype) override;
 
 	void UpdateViewport(Matrix44& vpCorrection);
 
-	bool SaveScreenshot(const std::string &filename, const TargetRectangle &rc);
+	bool SaveScreenshot(const std::string &filename, const TargetRectangle &rc) override;
 
 	static bool CheckForResize();
 
@@ -59,5 +57,3 @@ public:
 };
 
 }
-
-#endif

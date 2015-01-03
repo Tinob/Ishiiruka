@@ -8,7 +8,7 @@
 #include "VideoBackends/DX11/D3DPtr.h"
 #include "VideoBackends/DX11/D3DBase.h"
 #include "VideoBackends/DX11/D3DTexture.h"
-#include "VideoBackends/DX11/GfxState.h"
+#include "VideoBackends/DX11/D3DState.h"
 
 #include "VideoCommon/VideoConfig.h"
 #include "VideoCommon/TextureDecoder.h"
@@ -29,10 +29,9 @@ int d3d_dll_ref = 0;
 namespace D3D
 {
 const DXGI_FORMAT DXGI_BaseFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
-ID3D11Device* device = NULL;
-ID3D11Device1* device1 = nullptr;
-WrapDeviceContext context;
-IDXGISwapChain* swapchain = NULL;
+ID3D11Device* device = nullptr;
+ID3D11DeviceContext* context;
+IDXGISwapChain* swapchain = nullptr;
 D3D_FEATURE_LEVEL featlevel;
 D3DTexture2D* backbuf = nullptr;
 HWND hWnd;
@@ -133,7 +132,7 @@ std::vector<DXGI_SAMPLE_DESC> EnumAAModes(IDXGIAdapter* adapter)
 	{
 		hr = PD3D11CreateDevice(adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, D3D11_CREATE_DEVICE_SINGLETHREADED, &supported_feature_levels[1] , NUM_SUPPORTED_FEATURE_LEVELS - 1, D3D11_SDK_VERSION, &device, &feat_level, &context);
 	}
-	if (FAILED(hr) || feat_level == D3D_FEATURE_LEVEL_10_0)
+	if (FAILED(hr) || feat_level < D3D_FEATURE_LEVEL_11_0)
 	{
 		DXGI_SAMPLE_DESC desc;
 		desc.Count = 1;
@@ -249,7 +248,7 @@ HRESULT Create(HWND wnd)
 	mode_desc.Height = out_desc.DesktopCoordinates.bottom - out_desc.DesktopCoordinates.top;
 	mode_desc.Format = DXGI_BaseFormat;
 	mode_desc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
-	hr = output->FindClosestMatchingMode(&mode_desc, &swap_chain_desc.BufferDesc, NULL);
+	hr = output->FindClosestMatchingMode(&mode_desc, &swap_chain_desc.BufferDesc, nullptr);
 	if (FAILED(hr)) MessageBox(wnd, _T("Failed to find a supported video mode"), _T("Dolphin Direct3D 11 backend"), MB_OK | MB_ICONERROR);	
 	if (swap_chain_desc.Windowed)
 	{
@@ -324,12 +323,6 @@ HRESULT Create(HWND wnd)
 		return E_FAIL;
 	}
 
-	if (featlevel >= D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_11_1)
-	{
-		device->QueryInterface( __uuidof(ID3D11Device1), (void**)&device1);
-		context->InitContext1();
-	}
-
 	// prevent DXGI from responding to Alt+Enter, unfortunately DXGI_MWA_NO_ALT_ENTER
 	// does not work so we disable all monitoring of window messages. However this
 	// may make it more difficult for DXGI to handle display mode changes.
@@ -372,8 +365,6 @@ HRESULT Create(HWND wnd)
 	return S_OK;
 }
 
-void ReleaseStates();
-
 void Close()
 {
 	// we can't release the swapchain while in fullscreen.
@@ -385,12 +376,7 @@ void Close()
 	SAFE_RELEASE(swapchain);
 	SAFE_DELETE(stateman);
 	context->Flush();  // immediately destroy device objects
-	ReleaseStates();
 	SAFE_RELEASE(context);
-	if (device1 != nullptr)
-	{
-		device1->Release();
-	}
 	ULONG references = device->Release();
 	if (references)
 	{
@@ -468,111 +454,6 @@ unsigned int GetMaxTextureSize()
 	}
 }
 
-template <typename T>
-struct HashDesc {
-	std::size_t operator() (T const & val) {
-#if 0
-		if (cpu_info.bSSE4_2) // sse crc32 version
-		{
-			return std::size_t(GetCRC32((u8 const*)&val, sizeof(val), 0));
-		}
-		else
-#endif
-		{
-			return GetMurmurHash3((u8 const*)&val, sizeof(val), 0);
-		}
-	}
-};
-
-struct PassHash {
-	std::size_t operator()(size_t val) const { return val; }
-};
-
-std::unordered_map<size_t, D3D::BlendStatePtr, PassHash> bstates_;
-std::unordered_map<size_t, D3D::SamplerStatePtr, PassHash> sstates_;
-std::unordered_map<size_t, D3D::RasterizerStatePtr, PassHash> rstates_;
-std::unordered_map<size_t, D3D::DepthStencilStatePtr, PassHash> dstates_;
-
-ID3D11RasterizerState* GetRasterizerState(PackedD3DRasterisationDesc const& desc, char const* debugNameOnCreation) {
-	auto crc = HashDesc<decltype(desc)>{}(desc);
-	auto it = rstates_.find(crc);
-	if (it != rstates_.end()) {
-		return it->second.get();
-	}
-	ID3D11RasterizerState* state;
-	auto d3ddesc = desc.Unpack();
-	auto hr = D3D::device->CreateRasterizerState(&d3ddesc, &state);
-	if (FAILED(hr))
-		PanicAlert("Failed to create rasterizer state at %s %d\n", __FILE__, __LINE__);
-	D3D::SetDebugObjectName(state, debugNameOnCreation);
-	rstates_.emplace(crc, D3D::RasterizerStatePtr(state));
-	return state;
-}
-
-ID3D11BlendState* GetBlendState(PackedD3DBlendDesc const& desc, char const* debugNameOnCreation) {
-	auto crc = HashDesc<decltype(desc)>{}(desc);
-	auto it = bstates_.find(crc);
-	if (it != bstates_.end()) {
-		return it->second.get();
-	}
-	ID3D11BlendState* state;
-	if (device1 && desc.LogicOpEnable) {
-		auto d3ddesc = desc.Unpack1();
-		auto hr = D3D::device1->CreateBlendState1(&d3ddesc, (ID3D11BlendState1**)&state);
-		if (FAILED(hr))
-			PanicAlert("Failed to create blend state at %s %d\n", __FILE__, __LINE__);
-		D3D::SetDebugObjectName(state, debugNameOnCreation);
-		bstates_.emplace(crc, D3D::BlendStatePtr(state));
-		return state;
-	}
-	else {
-		auto d3ddesc = desc.Unpack();
-		auto hr = D3D::device->CreateBlendState(&d3ddesc, &state);
-		if (FAILED(hr))
-			PanicAlert("Failed to create blend state at %s %d\n", __FILE__, __LINE__);
-		D3D::SetDebugObjectName(state, debugNameOnCreation);
-		bstates_.emplace(crc, D3D::BlendStatePtr(state));
-		return state;
-	}
-}
-
-ID3D11DepthStencilState* GetDepthStencilState(D3D11_DEPTH_STENCIL_DESC const& desc, char const* debugNameOnCreation) {
-	auto crc = HashDesc<decltype(desc)>{}(desc);
-	auto it = dstates_.find(crc);
-	if (it != dstates_.end()) {
-		return it->second.get();
-	}
-	ID3D11DepthStencilState* state;
-	auto hr = D3D::device->CreateDepthStencilState(&desc, &state);
-	if (FAILED(hr))
-		PanicAlert("Failed to create depth stencil state at %s %d\n", __FILE__, __LINE__);
-	D3D::SetDebugObjectName(state, debugNameOnCreation);
-	dstates_.emplace(crc, D3D::DepthStencilStatePtr(state));
-	return state;
-}
-
-ID3D11SamplerState* GetSamplerState(D3D11_SAMPLER_DESC const& desc, char const* debugNameOnCreation) {
-	auto crc = HashDesc<decltype(desc)>{}(desc);
-	auto it = sstates_.find(crc);
-	if (it != sstates_.end()) {
-		return it->second.get();
-	}
-	ID3D11SamplerState* state;
-	auto hr = D3D::device->CreateSamplerState(&desc, &state);
-	if (FAILED(hr))
-		PanicAlert("Failed to create sampler state at %s %d\n", __FILE__, __LINE__);
-	D3D::SetDebugObjectName(state, debugNameOnCreation);
-	sstates_.emplace(crc, D3D::SamplerStatePtr(state));
-	return state;
-}
-
-void ReleaseStates() {	
-	sstates_.clear();
-	dstates_.clear();
-	bstates_.clear();
-	rstates_.clear();
-}
-
 void Reset()
 {
 	// release all back buffer references
@@ -591,7 +472,6 @@ void Reset()
 	if (FAILED(hr))
 	{
 		MessageBox(hWnd, _T("Failed to get swapchain buffer"), _T("Dolphin Direct3D 11 backend"), MB_OK | MB_ICONERROR);
-		ReleaseStates();
 		SAFE_RELEASE(device);
 		SAFE_RELEASE(context);
 		SAFE_RELEASE(swapchain);

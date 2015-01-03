@@ -2,15 +2,17 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include "Television.h"
+#include <vector>
+
+#include "Core/HW/Memmap.h"
 
 #include "VideoCommon/VideoConfig.h"
-#include "D3DBase.h"
-#include "D3DShader.h"
-#include "D3DUtil.h"
-#include "VertexShaderCache.h"
-#include "Core/HW/Memmap.h"
-#include <vector>
+#include "VideoBackends/DX11/D3DBase.h"
+#include "VideoBackends/DX11/D3DShader.h"
+#include "VideoBackends/DX11/D3DState.h"
+#include "VideoBackends/DX11/D3DUtil.h"
+#include "VideoBackends/DX11/Television.h"
+#include "VideoBackends/DX11/VertexShaderCache.h"
 
 namespace DX11
 {
@@ -148,7 +150,7 @@ void Television::Render()
 
 		MathUtil::Rectangle<float> sourceRc(0.f, 0.f, float(m_curWidth), float(m_curHeight));
 		MathUtil::Rectangle<float> destRc(-1.f, 1.f, 1.f, -1.f);
-		D3D::context->PSSetSamplers(0, 1, D3D::ToAddr(m_samplerState));
+		D3D::stateman->SetSampler(0, m_samplerState.get());
 
 		D3D::drawShadedTexSubQuad(
 			m_yuyvTextureSRV.get(), &sourceRc,

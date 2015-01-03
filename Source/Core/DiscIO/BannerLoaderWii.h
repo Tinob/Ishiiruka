@@ -33,7 +33,7 @@ private:
 	enum
 	{
 		TEXTURE_SIZE = 192 * 64 * 2,
-		ICON_SIZE = 48 * 48 * 2,
+		ICON_SIZE    = 48 * 48 * 2,
 		COMMENT_SIZE = 32
 	};
 

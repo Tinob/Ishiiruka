@@ -4,6 +4,7 @@
 
 #include "Core/HW/Memmap.h"
 #include "VideoBackends/DX11/D3DBase.h"
+#include "VideoBackends/DX11/D3DState.h"
 #include "VideoBackends/DX11/D3DUtil.h"
 #include "VideoBackends/DX11/FramebufferManager.h"
 #include "VideoBackends/DX11/PixelShaderCache.h"
@@ -32,7 +33,7 @@ TextureCache::TCacheEntry::~TCacheEntry()
 
 void TextureCache::TCacheEntry::Bind(unsigned int stage)
 {
-	D3D::context->PSSetShaderResources(stage, 1, &texture->GetSRV());
+	D3D::stateman->SetTexture(stage, texture->GetSRV());
 }
 
 bool TextureCache::TCacheEntry::Save(const std::string& filename, unsigned int level)
@@ -254,7 +255,7 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, unsigned int dstFo
 			CHECK(SUCCEEDED(hr), "Create efb copy constant buffer %d", cbufid);
 			D3D::SetDebugObjectName(efbcopycbuf[cbufid].get(), "a constant buffer used in TextureCache::CopyRenderTargetToTexture");
 		}
-		D3D::context->PSSetConstantBuffers(0, 1, D3D::ToAddr(efbcopycbuf[cbufid]));
+		D3D::stateman->SetPixelConstants(efbcopycbuf[cbufid].get());
 
 		const TargetRectangle targetSource = g_renderer->ConvertEFBRectangle(srcRect);
 		// TODO: try targetSource.asRECT();
@@ -266,6 +267,9 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, unsigned int dstFo
 		else
 			D3D::SetPointCopySampler();
 
+		// if texture is currently in use, it needs to be temporarily unset
+		u32 textureSlotMask = D3D::stateman->UnsetTexture(texture->GetSRV());
+
 		// Create texture copy
 		D3D::drawShadedTexQuad(
 			(srcFormat == PEControl::Z24) ? FramebufferManager::GetEFBDepthTexture()->GetSRV() : FramebufferManager::GetEFBColorTexture()->GetSRV(),
@@ -276,6 +280,9 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, unsigned int dstFo
 		D3D::context->OMSetRenderTargets(1, &FramebufferManager::GetEFBColorTexture()->GetRTV(), FramebufferManager::GetEFBDepthTexture()->GetDSV());
 	
 		g_renderer->RestoreAPIState();
+
+		// Restore old texture in all previously used slots, if any
+		D3D::stateman->SetTextureByMask(textureSlotMask, texture->GetSRV());
 	}
 
 	if (!g_ActiveConfig.bCopyEFBToTexture)

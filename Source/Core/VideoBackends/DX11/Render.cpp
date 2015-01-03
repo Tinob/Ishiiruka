@@ -16,9 +16,10 @@
 #include "VideoBackends/DX11/BoundingBox.h"
 #include "VideoBackends/DX11/D3DBase.h"
 #include "VideoBackends/DX11/D3DPtr.h"
+#include "VideoBackends/DX11/D3DState.h"
 #include "VideoBackends/DX11/D3DUtil.h"
 #include "VideoBackends/DX11/FramebufferManager.h"
-#include "VideoBackends/DX11/GfxState.h"
+
 #include "VideoBackends/DX11/PixelShaderCache.h"
 #include "VideoBackends/DX11/Render.h"
 #include "VideoBackends/DX11/Television.h"
@@ -39,9 +40,7 @@
 namespace DX11
 {
 
-static int s_fps = 0;
-
-static u32 s_LastAA = 0;
+static u32 s_last_multisample_mode = 0;
 
 static Television s_television;
 
@@ -60,12 +59,14 @@ static D3D::Texture2dPtr s_screenshot_texture;
 // GX pipeline state
 struct
 {
-	D3D11_SAMPLER_DESC sampdc[8];
-	D3D::PackedD3DBlendDesc blenddc;
-	D3D11_DEPTH_STENCIL_DESC depthdc;
-	D3D::PackedD3DRasterisationDesc rastdc;
+	SamplerState sampler[8];
+	BlendState blend;
+	ZMode zmode;
+	RasterizerState raster;
+
 } gx_state;
 
+StateCache gx_state_cache;
 
 void SetupDeviceObjects()
 {
@@ -84,19 +85,19 @@ void SetupDeviceObjects()
 	D3D::SetDebugObjectName(access_efb_cbuf.get(), "constant buffer for Renderer::AccessEFB");
 
 	D3D11_DEPTH_STENCIL_DESC ddesc;
-	ddesc.DepthEnable	  = FALSE;
-	ddesc.DepthWriteMask   = D3D11_DEPTH_WRITE_MASK_ZERO;
-	ddesc.DepthFunc		= D3D11_COMPARISON_ALWAYS;
-	ddesc.StencilEnable	= FALSE;
-	ddesc.StencilReadMask  = D3D11_DEFAULT_STENCIL_READ_MASK;
-	ddesc.StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
+	ddesc.DepthEnable		= FALSE;
+	ddesc.DepthWriteMask	= D3D11_DEPTH_WRITE_MASK_ZERO;
+	ddesc.DepthFunc			= D3D11_COMPARISON_ALWAYS;
+	ddesc.StencilEnable		= FALSE;
+	ddesc.StencilReadMask	= D3D11_DEFAULT_STENCIL_READ_MASK;
+	ddesc.StencilWriteMask	= D3D11_DEFAULT_STENCIL_WRITE_MASK;
 	hr = D3D::device->CreateDepthStencilState(&ddesc, D3D::ToAddr(cleardepthstates[0]));
 	CHECK(hr==S_OK, "Create depth state for Renderer::ClearScreen");
-	ddesc.DepthWriteMask   = D3D11_DEPTH_WRITE_MASK_ALL;
-	ddesc.DepthEnable	  = TRUE;
+	ddesc.DepthWriteMask	= D3D11_DEPTH_WRITE_MASK_ALL;
+	ddesc.DepthEnable		= TRUE;
 	hr = D3D::device->CreateDepthStencilState(&ddesc, D3D::ToAddr(cleardepthstates[1]));
 	CHECK(hr==S_OK, "Create depth state for Renderer::ClearScreen");
-	ddesc.DepthWriteMask   = D3D11_DEPTH_WRITE_MASK_ZERO;
+	ddesc.DepthWriteMask	= D3D11_DEPTH_WRITE_MASK_ZERO;
 	hr = D3D::device->CreateDepthStencilState(&ddesc, D3D::ToAddr(cleardepthstates[2]));
 	CHECK(hr==S_OK, "Create depth state for Renderer::ClearScreen");
 	D3D::SetDebugObjectName(cleardepthstates[0].get(), "depth state for Renderer::ClearScreen (depth buffer disabled)");
@@ -132,12 +133,12 @@ void SetupDeviceObjects()
 	hr = D3D::device->CreateBlendState(&blenddesc, D3D::ToAddr(clearblendstates[3]));
 	CHECK(hr==S_OK, "Create blend state for Renderer::ClearScreen");
 
-	ddesc.DepthEnable	   = FALSE;
+	ddesc.DepthEnable		= FALSE;
 	ddesc.DepthWriteMask	= D3D11_DEPTH_WRITE_MASK_ZERO;
-	ddesc.DepthFunc		 = D3D11_COMPARISON_LESS;
-	ddesc.StencilEnable	 = FALSE;
-	ddesc.StencilReadMask   = D3D11_DEFAULT_STENCIL_READ_MASK;
-	ddesc.StencilWriteMask  = D3D11_DEFAULT_STENCIL_WRITE_MASK;
+	ddesc.DepthFunc			= D3D11_COMPARISON_LESS;
+	ddesc.StencilEnable		= FALSE;
+	ddesc.StencilReadMask	= D3D11_DEFAULT_STENCIL_READ_MASK;
+	ddesc.StencilWriteMask	= D3D11_DEFAULT_STENCIL_WRITE_MASK;
 	hr = D3D::device->CreateDepthStencilState(&ddesc, D3D::ToAddr(resetdepthstate));
 	CHECK(hr==S_OK, "Create depth state for Renderer::ResetAPIState");
 	D3D::SetDebugObjectName(resetdepthstate.get(), "depth stencil state for Renderer::ResetAPIState");
@@ -169,6 +170,8 @@ void TeardownDeviceObjects()
 	s_screenshot_texture.reset();
 
 	s_television.Shutdown();
+	
+	gx_state_cache.Clear();
 }
 
 void CreateScreenshotTexture(const TargetRectangle& rc)
@@ -191,7 +194,7 @@ Renderer::Renderer(void *&window_handle)
 
 	UpdateDrawRectangle(s_backbuffer_width, s_backbuffer_height);
 
-	s_LastAA = g_ActiveConfig.iMultisampleMode;
+	s_last_multisample_mode = g_ActiveConfig.iMultisampleMode;
 	s_LastEFBScale = g_ActiveConfig.iEFBScale;
 	s_last_fullscreen_mode = g_ActiveConfig.bFullscreen;
 	CalculateTargetSize(s_backbuffer_width, s_backbuffer_height);
@@ -200,38 +203,23 @@ Renderer::Renderer(void *&window_handle)
 
 
 	// Setup GX pipeline state
-	memset(&gx_state.blenddc, 0, sizeof(gx_state.blenddc));
-	gx_state.blenddc.AlphaToCoverageEnable = FALSE;
-	gx_state.blenddc.IndependentBlendEnable = FALSE;
-	gx_state.blenddc.RenderTarget[0].BlendEnable = FALSE;
-	gx_state.blenddc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
-	gx_state.blenddc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
-	gx_state.blenddc.RenderTarget[0].DestBlend = D3D11_BLEND_ZERO;
-	gx_state.blenddc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
-	gx_state.blenddc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
-	gx_state.blenddc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
-	gx_state.blenddc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+	gx_state.blend.blend_enable = false;
+	gx_state.blend.write_mask = D3D11_COLOR_WRITE_ENABLE_ALL;
+	gx_state.blend.src_blend = D3D11_BLEND_ONE;
+	gx_state.blend.dst_blend = D3D11_BLEND_ZERO;
+	gx_state.blend.blend_op = D3D11_BLEND_OP_ADD;
+	gx_state.blend.use_dst_alpha = false;
 
-	memset(&gx_state.depthdc, 0, sizeof(gx_state.depthdc));
-	gx_state.depthdc.DepthEnable        = TRUE;
-	gx_state.depthdc.DepthWriteMask     = D3D11_DEPTH_WRITE_MASK_ALL;
-	gx_state.depthdc.DepthFunc          = D3D11_COMPARISON_LESS;
-	gx_state.depthdc.StencilEnable      = FALSE;
-	gx_state.depthdc.StencilReadMask    = D3D11_DEFAULT_STENCIL_READ_MASK;
-	gx_state.depthdc.StencilWriteMask   = D3D11_DEFAULT_STENCIL_WRITE_MASK;
-
-	// TODO: Do we need to enable multisampling here?
-	gx_state.rastdc = CD3D11_RASTERIZER_DESC(D3D11_FILL_SOLID, D3D11_CULL_NONE, false, 0, 0.f, 0, false, true, false, false);
-
-	for (unsigned int k = 0;k < 8;k++)
+	for (unsigned int k = 0; k < 8; k++)
 	{
-		float border[4] = {0.f, 0.f, 0.f, 0.f};
-		gx_state.sampdc[k] = CD3D11_SAMPLER_DESC(D3D11_FILTER_MIN_MAG_MIP_LINEAR, D3D11_TEXTURE_ADDRESS_CLAMP, D3D11_TEXTURE_ADDRESS_CLAMP, D3D11_TEXTURE_ADDRESS_CLAMP,
-											0.f, 1 << g_ActiveConfig.iMaxAnisotropy,
-											D3D11_COMPARISON_ALWAYS, border,
-											-D3D11_FLOAT32_MAX, D3D11_FLOAT32_MAX);
-		if(g_ActiveConfig.iMaxAnisotropy != 0) gx_state.sampdc[k].Filter = D3D11_FILTER_ANISOTROPIC;
+		gx_state.sampler[k].packed = 0;
 	}
+
+	gx_state.zmode.testenable = false;
+	gx_state.zmode.updateenable = false;
+	gx_state.zmode.func = ZMode::NEVER;
+
+	gx_state.raster.cull_mode = D3D11_CULL_NONE;
 
 	// Clear EFB textures
 	float ClearColor[4] = { 0.f, 0.f, 0.f, 1.f };
@@ -311,7 +299,7 @@ void Renderer::SetColorMask()
 		if (bpmem.blendmode.colorupdate)
 			color_mask |= D3D11_COLOR_WRITE_ENABLE_RED | D3D11_COLOR_WRITE_ENABLE_GREEN | D3D11_COLOR_WRITE_ENABLE_BLUE;
 	}
-	gx_state.blenddc.RenderTarget[0].RenderTargetWriteMask = color_mask;
+	gx_state.blend.write_mask = color_mask;
 }
 
 // This function allows the CPU to directly access the EFB.
@@ -376,7 +364,7 @@ u32 Renderer::AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data)
 		D3D::context->OMSetRenderTargets(1, &FramebufferManager::GetEFBDepthReadTexture()->GetRTV(), nullptr);
 		D3D11_VIEWPORT vp = CD3D11_VIEWPORT(0.f, 0.f, 1.f, 1.f);
 		D3D::context->RSSetViewports(1, &vp);
-		D3D::context->PSSetConstantBuffers(0, 1, D3D::ToAddr(access_efb_cbuf));
+		D3D::stateman->SetPixelConstants(0, access_efb_cbuf.get());
 		D3D::SetPointCopySampler();
 		D3D::drawShadedTexQuad(FramebufferManager::GetEFBDepthTexture()->GetSRV(),
 								&RectToLock,
@@ -607,56 +595,6 @@ void Renderer::ReinterpretPixelData(unsigned int convtype)
 	D3D::context->OMSetRenderTargets(1, &FramebufferManager::GetEFBColorTexture()->GetRTV(), FramebufferManager::GetEFBDepthTexture()->GetDSV());
 }
 
-void SetSrcBlend(D3D11_BLEND val)
-{
-	// Colors should blend against SRC_ALPHA
-	if (val == D3D11_BLEND_SRC1_ALPHA)
-		val = D3D11_BLEND_SRC_ALPHA;
-	else if (val == D3D11_BLEND_INV_SRC1_ALPHA)
-		val = D3D11_BLEND_INV_SRC_ALPHA;
-
-	if (val == D3D11_BLEND_SRC_COLOR)
-		gx_state.blenddc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_SRC_ALPHA;
-	else if (val == D3D11_BLEND_INV_SRC_COLOR)
-		gx_state.blenddc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA;
-	else if (val == D3D11_BLEND_DEST_COLOR)
-		gx_state.blenddc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_DEST_ALPHA;
-	else if (val == D3D11_BLEND_INV_DEST_COLOR)
-		gx_state.blenddc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_INV_DEST_ALPHA;
-	else
-		gx_state.blenddc.RenderTarget[0].SrcBlendAlpha = val;
-
-	gx_state.blenddc.RenderTarget[0].SrcBlend = val;
-}
-
-void SetDestBlend(D3D11_BLEND val)
-{
-	// Colors should blend against SRC_ALPHA
-	if (val == D3D11_BLEND_SRC1_ALPHA)
-		val = D3D11_BLEND_SRC_ALPHA;
-	else if (val == D3D11_BLEND_INV_SRC1_ALPHA)
-		val = D3D11_BLEND_INV_SRC_ALPHA;
-
-	if (val == D3D11_BLEND_SRC_COLOR)
-		gx_state.blenddc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_SRC_ALPHA;
-	else if (val == D3D11_BLEND_INV_SRC_COLOR)
-		gx_state.blenddc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA;
-	else if (val == D3D11_BLEND_DEST_COLOR)
-		gx_state.blenddc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_DEST_ALPHA;
-	else if (val == D3D11_BLEND_INV_DEST_COLOR)
-		gx_state.blenddc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_INV_DEST_ALPHA;
-	else
-		gx_state.blenddc.RenderTarget[0].DestBlendAlpha = val;
-
-	gx_state.blenddc.RenderTarget[0].DestBlend = val;
-}
-
-void SetBlendOp(D3D11_BLEND_OP val)
-{
-	gx_state.blenddc.RenderTarget[0].BlendOp = val;
-	gx_state.blenddc.RenderTarget[0].BlendOpAlpha = val;
-}
-
 void Renderer::SetBlendMode(bool forceUpdate)
 {
 	// Our render target always uses an alpha channel, so we need to override the blend functions to assume a destination alpha of 1 if the render target isn't supposed to have an alpha channel
@@ -685,24 +623,24 @@ void Renderer::SetBlendMode(bool forceUpdate)
 		(target_has_alpha) ? D3D11_BLEND_INV_DEST_ALPHA : D3D11_BLEND_ZERO
 	};
 
-	if (bpmem.blendmode.logicopenable && !forceUpdate)
+	if (bpmem.blendmode.logicopenable && !bpmem.blendmode.blendenable && !forceUpdate)
 		return;
 
 	if (bpmem.blendmode.subtract)
 	{
-		gx_state.blenddc.RenderTarget[0].BlendEnable = true;
-		SetBlendOp(D3D11_BLEND_OP_REV_SUBTRACT);
-		SetSrcBlend(D3D11_BLEND_ONE);
-		SetDestBlend(D3D11_BLEND_ONE);
+		gx_state.blend.blend_enable = true;
+		gx_state.blend.blend_op = D3D11_BLEND_OP_REV_SUBTRACT;
+		gx_state.blend.src_blend = D3D11_BLEND_ONE;
+		gx_state.blend.dst_blend = D3D11_BLEND_ONE;
 	}
 	else
 	{
-		gx_state.blenddc.RenderTarget[0].BlendEnable = bpmem.blendmode.blendenable;
+		gx_state.blend.blend_enable = (u32)bpmem.blendmode.blendenable;
 		if (bpmem.blendmode.blendenable)
 		{
-			SetBlendOp(D3D11_BLEND_OP_ADD);
-			SetSrcBlend(d3dSrcFactors[bpmem.blendmode.srcfactor]);
-			SetDestBlend(d3dDestFactors[bpmem.blendmode.dstfactor]);
+			gx_state.blend.blend_op = D3D11_BLEND_OP_ADD;
+			gx_state.blend.src_blend = d3dSrcFactors[bpmem.blendmode.srcfactor];
+			gx_state.blend.dst_blend = d3dDestFactors[bpmem.blendmode.dstfactor];
 		}
 	}
 }
@@ -1014,9 +952,9 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 		windowResized ||
 		fullscreen_changed ||
 		s_LastEFBScale != g_ActiveConfig.iEFBScale ||
-		s_LastAA != g_ActiveConfig.iMultisampleMode)
+		s_last_multisample_mode != g_ActiveConfig.iMultisampleMode)
 	{
-		s_LastAA = g_ActiveConfig.iMultisampleMode;
+		s_last_multisample_mode = g_ActiveConfig.iMultisampleMode;
 		PixelShaderCache::InvalidateMSAAShaders();
 
 		if (windowResized || fullscreen_changed)
@@ -1081,40 +1019,17 @@ void Renderer::RestoreAPIState()
 
 void Renderer::ApplyState(bool bUseDstAlpha)
 {
-	if (bUseDstAlpha)
+	gx_state.blend.use_dst_alpha = bUseDstAlpha;
+	D3D::stateman->PushBlendState(gx_state_cache.Get(gx_state.blend));
+	D3D::stateman->PushDepthState(gx_state_cache.Get(gx_state.zmode));
+	D3D::stateman->PushRasterizerState(gx_state_cache.Get(gx_state.raster));
+
+	for (unsigned int stage = 0; stage < 8; stage++)
 	{
-		// Colors should blend against SRC1_ALPHA
-		if (gx_state.blenddc.RenderTarget[0].SrcBlend == D3D11_BLEND_SRC_ALPHA)
-			gx_state.blenddc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC1_ALPHA;
-		else if (gx_state.blenddc.RenderTarget[0].SrcBlend == D3D11_BLEND_INV_SRC_ALPHA)
-			gx_state.blenddc.RenderTarget[0].SrcBlend = D3D11_BLEND_INV_SRC1_ALPHA;
-
-		// Colors should blend against SRC1_ALPHA
-		if (gx_state.blenddc.RenderTarget[0].DestBlend == D3D11_BLEND_SRC_ALPHA)
-			gx_state.blenddc.RenderTarget[0].DestBlend = D3D11_BLEND_SRC1_ALPHA;
-		else if (gx_state.blenddc.RenderTarget[0].DestBlend == D3D11_BLEND_INV_SRC_ALPHA)
-			gx_state.blenddc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC1_ALPHA;
-
-		gx_state.blenddc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
-		gx_state.blenddc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
-		gx_state.blenddc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+		// TODO: cache SamplerState directly, not d3d object
+		gx_state.sampler[stage].max_anisotropy = g_ActiveConfig.iMaxAnisotropy;
+		D3D::stateman->SetSampler(stage, gx_state_cache.Get(gx_state.sampler[stage]));
 	}
-
-	D3D::stateman->PushBlendState(D3D::GetBlendState(gx_state.blenddc, "blend state used to emulate the GX pipeline"));
-	D3D::stateman->PushDepthState(D3D::GetDepthStencilState(gx_state.depthdc, "depth-stencil state used to emulate the GX pipeline"));
-
-	gx_state.rastdc.FillMode = (g_ActiveConfig.bWireFrame) ? D3D11_FILL_WIREFRAME : D3D11_FILL_SOLID;
-	D3D::stateman->PushRasterizerState(D3D::GetRasterizerState(gx_state.rastdc, "rasterizer state used to emulate the GX pipeline"));
-	
-	std::array<ID3D11SamplerState*, 8> samplerstate;
-	for (unsigned int stage = 0; stage < samplerstate.size(); stage++) 
-	{
-		if (g_ActiveConfig.iMaxAnisotropy > 0)
-			gx_state.sampdc[stage].Filter = D3D11_FILTER_ANISOTROPIC;
-		samplerstate[stage] = D3D::GetSamplerState(gx_state.sampdc[stage], "sampler state used to emulate the GX pipeline");
-	}
-	D3D::context->PSSetSamplers(0, 8, samplerstate.data());
-	D3D::stateman->Apply();
 
 	if (bUseDstAlpha)
 	{
@@ -1123,11 +1038,13 @@ void Renderer::ApplyState(bool bUseDstAlpha)
 		SetLogicOpMode();
 	}
 
-	D3D::context->PSSetConstantBuffers(0, 1, &PixelShaderCache::GetConstantBuffer());
-	D3D::context->VSSetConstantBuffers(0, 1, &VertexShaderCache::GetConstantBuffer());
+	ID3D11Buffer* vertexConstants = VertexShaderCache::GetConstantBuffer();
 
-	D3D::context->PSSetShader(PixelShaderCache::GetActiveShader(), nullptr, 0);
-	D3D::context->VSSetShader(VertexShaderCache::GetActiveShader(), nullptr, 0);
+	D3D::stateman->SetPixelConstants(PixelShaderCache::GetConstantBuffer(), g_ActiveConfig.bEnablePixelLighting ? vertexConstants : nullptr);
+	D3D::stateman->SetVertexConstants(vertexConstants);
+
+	D3D::stateman->SetPixelShader(PixelShaderCache::GetActiveShader());
+	D3D::stateman->SetVertexShader(VertexShaderCache::GetActiveShader());
 }
 
 void Renderer::RestoreState()
@@ -1139,10 +1056,11 @@ void Renderer::RestoreState()
 
 void Renderer::ApplyCullDisable()
 {
-	auto rastDesc = gx_state.rastdc;
-	rastDesc.CullMode = D3D11_CULL_NONE;
-	D3D::stateman->PushRasterizerState(D3D::GetRasterizerState(rastDesc));
-	D3D::stateman->Apply();
+	RasterizerState rast = gx_state.raster;
+	rast.cull_mode = D3D11_CULL_NONE;
+
+	ID3D11RasterizerState* raststate = gx_state_cache.Get(rast);
+	D3D::stateman->PushRasterizerState(raststate);
 }
 
 void Renderer::RestoreCull()
@@ -1161,55 +1079,36 @@ void Renderer::SetGenerationMode()
 	};
 
 	// rastdc.FrontCounterClockwise must be false for this to work
-	gx_state.rastdc.CullMode = d3dCullModes[bpmem.genMode.cullmode];
+	// TODO: GX_CULL_ALL not supported, yet!
+	gx_state.raster.cull_mode = d3dCullModes[bpmem.genMode.cullmode];
 }
 
 void Renderer::SetDepthMode()
 {
-	const D3D11_COMPARISON_FUNC d3dCmpFuncs[8] =
-	{
-		D3D11_COMPARISON_NEVER,
-		D3D11_COMPARISON_LESS,
-		D3D11_COMPARISON_EQUAL,
-		D3D11_COMPARISON_LESS_EQUAL,
-		D3D11_COMPARISON_GREATER,
-		D3D11_COMPARISON_NOT_EQUAL,
-		D3D11_COMPARISON_GREATER_EQUAL,
-		D3D11_COMPARISON_ALWAYS
-	};
-
-	if (bpmem.zmode.testenable)
-	{
-		gx_state.depthdc.DepthEnable = TRUE;
-		gx_state.depthdc.DepthWriteMask = bpmem.zmode.updateenable ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO;
-		gx_state.depthdc.DepthFunc = d3dCmpFuncs[bpmem.zmode.func];
-	}
-	else
-	{
-		// if the test is disabled write is disabled too
-		gx_state.depthdc.DepthEnable = FALSE;
-		gx_state.depthdc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
-	}
+	gx_state.zmode = bpmem.zmode;
 }
 
 void Renderer::SetLogicOpMode()
 {
-	//		0	0x00
-	//		1	Source & destination
-	//		2	Source & ~destination
-	//		3	Source
-	//		4	~Source & destination
-	//		5	Destination
-	//		6	Source ^ destination =  Source & ~destination | ~Source & destination
-	//		7	Source | destination
-	//		8	~(Source | destination)
-	//		9	~(Source ^ destination) = ~Source & ~destination | Source & destination
-	//		10	~Destination
-	//		11	Source | ~destination
-	//		12	~Source
-	//		13	~Source | destination
-	//		14	~(Source & destination)
-	//		15	0xff
+	// D3D11 doesn't support logic blending, so this is a huge hack
+	// TODO: Make use of D3D11.1's logic blending support
+
+	// 0   0x00
+	// 1   Source & destination
+	// 2   Source & ~destination
+	// 3   Source
+	// 4   ~Source & destination
+	// 5   Destination
+	// 6   Source ^ destination =  Source & ~destination | ~Source & destination
+	// 7   Source | destination
+	// 8   ~(Source | destination)
+	// 9   ~(Source ^ destination) = ~Source & ~destination | Source & destination
+	// 10  ~Destination
+	// 11  Source | ~destination
+	// 12  ~Source
+	// 13  ~Source | destination
+	// 14  ~(Source & destination)
+	// 15  0xff
 	const D3D11_BLEND_OP d3dLogicOps[16] =
 	{
 		D3D11_BLEND_OP_ADD,//0
@@ -1244,7 +1143,7 @@ void Renderer::SetLogicOpMode()
 		D3D11_BLEND_INV_DEST_COLOR,//10
 		D3D11_BLEND_ONE,//11
 		D3D11_BLEND_INV_SRC_COLOR,//12
-		D3D11_BLEND_INV_SRC_COLOR,//13 
+		D3D11_BLEND_INV_SRC_COLOR,//13
 		D3D11_BLEND_INV_DEST_COLOR,//14
 		D3D11_BLEND_ONE//15
 	};
@@ -1263,16 +1162,17 @@ void Renderer::SetLogicOpMode()
 		D3D11_BLEND_INV_DEST_COLOR,//10
 		D3D11_BLEND_INV_DEST_COLOR,//11
 		D3D11_BLEND_INV_SRC_COLOR,//12
-		D3D11_BLEND_ONE,//13 
+		D3D11_BLEND_ONE,//13
 		D3D11_BLEND_INV_SRC_COLOR,//14
 		D3D11_BLEND_ONE//15
 	};
-	if (bpmem.blendmode.logicopenable)
+
+	if (bpmem.blendmode.logicopenable && !bpmem.blendmode.blendenable)
 	{
-		gx_state.blenddc.RenderTarget[0].BlendEnable = true;
-		SetBlendOp(d3dLogicOps[bpmem.blendmode.logicmode]);
-		SetSrcBlend(d3dLogicOpSrcFactors[bpmem.blendmode.logicmode]);
-		SetDestBlend(d3dLogicOpDestFactors[bpmem.blendmode.logicmode]);
+		gx_state.blend.blend_enable = true;
+		gx_state.blend.blend_op = d3dLogicOps[bpmem.blendmode.logicmode];
+		gx_state.blend.src_blend = d3dLogicOpSrcFactors[bpmem.blendmode.logicmode];
+		gx_state.blend.dst_blend = d3dLogicOpDestFactors[bpmem.blendmode.logicmode];
 	}
 	else
 	{
@@ -1285,81 +1185,31 @@ void Renderer::SetDitherMode()
 	// TODO: Set dither mode to bpmem.blendmode.dither
 }
 
-void Renderer::SetLineWidth()
-{
-	// TODO
-}
-
 void Renderer::SetSamplerState(int stage, int texindex)
 {
-#define TEXF_NONE   0
-#define TEXF_POINT  1
-#define TEXF_LINEAR 2
-	const unsigned int d3dMipFilters[4] =
-	{
-		TEXF_NONE,
-		TEXF_POINT,
-		TEXF_LINEAR,
-		TEXF_NONE, //reserved
-	};
-	const D3D11_TEXTURE_ADDRESS_MODE d3dClamps[4] =
-	{
-		D3D11_TEXTURE_ADDRESS_CLAMP,
-		D3D11_TEXTURE_ADDRESS_WRAP,
-		D3D11_TEXTURE_ADDRESS_MIRROR,
-		D3D11_TEXTURE_ADDRESS_WRAP //reserved
-	};
-
 	const FourTexUnits &tex = bpmem.tex[texindex];
 	const TexMode0 &tm0 = tex.texMode0[stage];
 	const TexMode1 &tm1 = tex.texMode1[stage];
-	
-	unsigned int mip = d3dMipFilters[tm0.min_filter & 3];
 
-	if (texindex) stage += 4;
+	if (texindex)
+		stage += 4;
 
 	if (g_ActiveConfig.bForceFiltering)
 	{
-		gx_state.sampdc[stage].Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+		gx_state.sampler[stage].min_filter = 6; // 4 (linear mip) | 2 (linear min)
+		gx_state.sampler[stage].mag_filter = 1; // linear mag
 	}
-	else if (tm0.min_filter & 4) // linear min filter
+	else
 	{
-		if (tm0.mag_filter) // linear mag filter
-		{
-			if (mip == TEXF_NONE) gx_state.sampdc[stage].Filter = D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT;
-			else if (mip == TEXF_POINT) gx_state.sampdc[stage].Filter = D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT;
-			else if (mip == TEXF_LINEAR) gx_state.sampdc[stage].Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-		}
-		else // point mag filter
-		{
-			if (mip == TEXF_NONE) gx_state.sampdc[stage].Filter = D3D11_FILTER_MIN_LINEAR_MAG_MIP_POINT;
-			else if (mip == TEXF_POINT) gx_state.sampdc[stage].Filter = D3D11_FILTER_MIN_LINEAR_MAG_MIP_POINT;
-			else if (mip == TEXF_LINEAR) gx_state.sampdc[stage].Filter = D3D11_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR;
-		}
-	}
-	else // point min filter
-	{
-		if (tm0.mag_filter) // linear mag filter
-		{
-			if (mip == TEXF_NONE) gx_state.sampdc[stage].Filter = D3D11_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT;
-			else if (mip == TEXF_POINT) gx_state.sampdc[stage].Filter = D3D11_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT;
-			else if (mip == TEXF_LINEAR) gx_state.sampdc[stage].Filter = D3D11_FILTER_MIN_POINT_MAG_MIP_LINEAR;
-		}
-		else // point mag filter
-		{
-			if (mip == TEXF_NONE) gx_state.sampdc[stage].Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
-			else if (mip == TEXF_POINT) gx_state.sampdc[stage].Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
-			else if (mip == TEXF_LINEAR) gx_state.sampdc[stage].Filter = D3D11_FILTER_MIN_MAG_POINT_MIP_LINEAR;
-		}
+		gx_state.sampler[stage].min_filter = (u32)tm0.min_filter;
+		gx_state.sampler[stage].mag_filter = (u32)tm0.mag_filter;
 	}
 
-	gx_state.sampdc[stage].AddressU = d3dClamps[tm0.wrap_s];
-	gx_state.sampdc[stage].AddressV = d3dClamps[tm0.wrap_t];
-
-	// When mipfilter is set to "none", just disable mipmapping altogether
-	gx_state.sampdc[stage].MaxLOD = (mip == TEXF_NONE) ? 0.0f : (float)tm1.max_lod/16.f;
-	gx_state.sampdc[stage].MinLOD = (float)tm1.min_lod/16.f;
-	gx_state.sampdc[stage].MipLODBias = (s32)tm0.lod_bias/32.0f;
+	gx_state.sampler[stage].wrap_s = (u32)tm0.wrap_s;
+	gx_state.sampler[stage].wrap_t = (u32)tm0.wrap_t;
+	gx_state.sampler[stage].max_lod = (u32)tm1.max_lod;
+	gx_state.sampler[stage].min_lod = (u32)tm1.min_lod;
+	gx_state.sampler[stage].lod_bias = (s32)tm0.lod_bias;
 }
 
 void Renderer::SetInterlacingMode()

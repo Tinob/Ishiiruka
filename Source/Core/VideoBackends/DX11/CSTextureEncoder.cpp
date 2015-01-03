@@ -9,7 +9,7 @@
 #include "VideoBackends/DX11/D3DBase.h"
 #include "VideoBackends/DX11/D3DShader.h"
 #include "VideoBackends/DX11/FramebufferManager.h"
-#include "VideoBackends/DX11/GfxState.h"
+#include "VideoBackends/DX11/D3DState.h"
 #include "VideoBackends/DX11/CSTextureEncoder.h"
 #include "VideoBackends/DX11/Render.h"
 #include "VideoBackends/DX11/TextureCache.h"
@@ -1013,7 +1013,7 @@ size_t CSTextureEncoder::Encode(u8* dst, unsigned int dstFormat,
 
 		D3D::context->CSSetConstantBuffers(0, 1, D3D::ToAddr(m_encodeParams));
 
-		D3D::context->CSSetUnorderedAccessViews(0, 1, D3D::ToAddr(m_outUav));
+		D3D::context->CSSetUnorderedAccessViews(0, 1, D3D::ToAddr(m_outUav), nullptr);
 
 		ID3D11ShaderResourceView* pEFB = (srcFormat == PEControl::Z24) ?
 			FramebufferManager::GetEFBDepthTexture()->GetSRV() :
@@ -1036,7 +1036,7 @@ size_t CSTextureEncoder::Encode(u8* dst, unsigned int dstFormat,
 		//
 		// Clean up state
 		IUnknown* nullDummy = nullptr;
-		D3D::context->CSSetUnorderedAccessViews(0, 1, (ID3D11UnorderedAccessView**)&nullDummy);
+		D3D::context->CSSetUnorderedAccessViews(0, 1, (ID3D11UnorderedAccessView**)&nullDummy, nullptr);
 		D3D::context->CSSetShaderResources(0, 1, (ID3D11ShaderResourceView**)&nullDummy);
 
 		// Transfer staging buffer to GameCube/Wii RAM

@@ -190,8 +190,8 @@ static const tevSources AInputSourceMap[] =
 
 static const char *tevRasTable[] =
 {
-	"colors_0",
-	"colors_1",
+	"col0",
+	"col1",
 	"float4(0.0,0.0,0.0,0.0)", //2
 	"float4(0.0,0.0,0.0,0.0)", //3
 	"float4(0.0,0.0,0.0,0.0)", //4
@@ -344,8 +344,8 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 			if (per_pixel_depth)
 				out.Write("#define depth gl_FragDepth\n");
 
-			out.Write("centroid in float4 colors_02;\n");
-			out.Write("centroid in float4 colors_12;\n");
+			out.Write("centroid in float4 colors_0;\n");
+			out.Write("centroid in float4 colors_1;\n");
 
 			// compute window position if needed because binding semantic WPOS is not widely supported
 			// Let's set up attributes
@@ -477,10 +477,6 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 
 		if (ApiType == API_OPENGL)
 		{
-			// On Mali, global variables must be initialized as constants.
-			// This is why we initialize these variables locally instead.
-			out.Write("float4 colors_0 = colors_02;\n");
-			out.Write("float4 colors_1 = colors_12;\n");
 			// compute window position if needed because binding semantic WPOS is not widely supported
 			// Let's set up attributes
 			if (numTexgen < 7)
@@ -540,10 +536,21 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 					"float3 ldir, h;\n"
 					"float dist, dist2, attn;\n");
 			}
+			// On GLSL, input variables must not be assigned to.
+			// This is why we declare these variables locally instead.
+			out.Write("\tfloat4 col0, col1;\n");
 		}
 		// Only col0 and col1 are needed so discard the remaining components
 		uid_data.components = components & (VB_HAS_COL0 | VB_HAS_COL1);
-		GenerateLightingShader<T, Write_Code>(out, uid_data.lighting, components, I_PMATERIALS, I_PLIGHTS, "colors_", "colors_", xfr);
+		GenerateLightingShader<T, Write_Code>(out, uid_data.lighting, components, I_PMATERIALS, I_PLIGHTS, "colors_", "col", xfr);
+	}
+	else
+	{
+		if (Write_Code)
+		{
+			out.Write("\tfloat4 col0 = colors_0;\n");
+			out.Write("\tfloat4 col1 = colors_1;\n");
+		}
 	}
 	if (Write_Code)
 	{
@@ -967,12 +974,12 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, co
 			int rasindex = bpm.tevorders[n / 2].getColorChan(n & 1);
 			if (rasindex == 0 && !tevRascolor0_Expanded)
 			{
-				out.Write("colors_0 = round(colors_0 * 255.0);\n");
+				out.Write("col0 = round(col0 * 255.0);\n");
 				tevRascolor0_Expanded = true;
 			}
 			if (rasindex == 1 && !tevRascolor1_Expanded)
 			{
-				out.Write("colors_1 = round(colors_1 * 255.0);\n");
+				out.Write("col1 = round(col1 * 255.0);\n");
 				tevRascolor1_Expanded = true;
 			}
 			out.Write("ras_t = %s.%s;\n", tevRasTable[rasindex], rasswap);

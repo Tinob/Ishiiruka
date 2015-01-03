@@ -6,6 +6,7 @@
 
 #include "VideoBackends/DX11/D3DBase.h"
 #include "VideoBackends/DX11/D3DShader.h"
+#include "VideoBackends/DX11/D3DState.h"
 #include "VideoBackends/DX11/LineAndPointGeometryShader.h"
 #include "VideoCommon/VertexShaderGen.h"
 
@@ -227,8 +228,8 @@ void main(point VS_OUTPUT input[1], inout TriangleStream<VS_OUTPUT> outStream)
 		DEBUG_LOG(VIDEO, "Line params: width %f, texOffset %f, vpWidth %f, vpHeight %f",
 			lineWidth, texOffset, vpWidth, vpHeight);
 
-		D3D::context->GSSetShader(shader, nullptr, 0);
-		D3D::context->GSSetConstantBuffers(0, 1, D3D::ToAddr(m_paramsBuffer));
+		D3D::stateman->SetGeometryShader(shader);
+		D3D::stateman->SetGeometryConstants(m_paramsBuffer.get());
 		return true;
 	}
 
@@ -247,8 +248,8 @@ void main(point VS_OUTPUT input[1], inout TriangleStream<VS_OUTPUT> outStream)
 		DEBUG_LOG(VIDEO, "Point params: size %f, texOffset %f, vpWidth %f, vpHeight %f",
 			pointSize, texOffset, vpWidth, vpHeight);
 
-		D3D::context->GSSetShader(shader, nullptr, 0);
-		D3D::context->GSSetConstantBuffers(0, 1, D3D::ToAddr(m_paramsBuffer));
+		D3D::stateman->SetGeometryShader(shader);
+		D3D::stateman->SetGeometryConstants(m_paramsBuffer.get());
 		return true;
 	}
 

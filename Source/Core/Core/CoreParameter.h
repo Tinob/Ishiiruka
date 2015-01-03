@@ -54,8 +54,8 @@ enum Hotkey
 	HK_FREELOOK_ZOOM_OUT,
 	HK_FREELOOK_RESET,
 
-	HK_INCREASE_SEPARATION,
-	HK_DECREASE_SEPARATION,
+	HK_INCREASE_DEPTH,
+	HK_DECREASE_DEPTH,
 	HK_INCREASE_CONVERGENCE,
 	HK_DECREASE_CONVERGENCE,
 
@@ -163,6 +163,7 @@ struct SCoreStartupParameter
 	bool bDSPThread;
 	bool bDSPHLE;
 	bool bSkipIdle;
+	bool bSyncGPUOnSkipIdleHack;
 	bool bNTSC;
 	bool bForceNTSCJ;
 	bool bHLE_BS2;
@@ -248,6 +249,8 @@ struct SCoreStartupParameter
 	std::string m_strGameIniDefault;
 	std::string m_strGameIniDefaultRevisionSpecific;
 	std::string m_strGameIniLocal;
+
+	std::string m_perfDir;
 
 	// Constructor just calls LoadDefaults
 	SCoreStartupParameter();

@@ -54,7 +54,7 @@ struct RegInfo
 	unsigned exitNumber;
 
 	RegInfo(JitIL* j, InstLoc f, unsigned insts)
-	: Jit(j), Build(nullptr), FirstI(f), IInfo(insts), lastUsed(insts)
+		: Jit(j), Build(nullptr), FirstI(f), IInfo(insts), lastUsed(insts)
 		, regs(), fregs(), numSpills(0), numFSpills(0), exitNumber(0)
 	{
 	}
