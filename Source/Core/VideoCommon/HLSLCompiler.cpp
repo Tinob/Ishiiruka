@@ -92,8 +92,8 @@ bool HLSLAsyncCompiler::NextTask()
 			&unit->shaderbytecode,
 			&unit->error);
 		m_output.push(unit);
-		m_outputsize++;
-		m_inputsize--;
+		m_outputsize.fetch_add(1);
+		m_inputsize.fetch_sub(1);
 		return true;
 	}
 	return false;
