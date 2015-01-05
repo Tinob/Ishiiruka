@@ -45,7 +45,7 @@ public:
 	inline NativeVertexFormat* GetNativeVertexFormat() const { return m_NativeFmt; }
 	inline s32 GetNativeStride() const { return m_native_stride; }
 
-	void RunVertices(const VertexLoaderParameters &parameters);
+	s32 RunVertices(const VertexLoaderParameters &parameters);
 
 	// For debugging / profiling
 	void AppendToString(std::string *dest) const;

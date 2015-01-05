@@ -307,11 +307,10 @@ namespace VertexLoaderManager
 			VertexManager::Flush();
 		}
 		VertexManager::PrepareForAdditionalData(parameters.primitive, parameters.count, nativefmt->GetVertexStride());
-		IndexGenerator::AddIndices(parameters.primitive, parameters.count);
 		parameters.destination = VertexManager::s_pCurBufferPointer;
 		writesize = nativefmt->GetVertexStride() * parameters.count;
 		g_nativeVertexFmt = nativefmt;
-		loader->RunVertices(parameters);
+		IndexGenerator::AddIndices(parameters.primitive, loader->RunVertices(parameters));
 		ADDSTAT(stats.thisFrame.numPrims, parameters.count);
 		INCSTAT(stats.thisFrame.numPrimitiveJoins);
 		return true;

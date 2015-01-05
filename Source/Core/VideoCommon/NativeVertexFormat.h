@@ -87,6 +87,7 @@ public:
 	float posScale;
 	float tcScale[8];
 	s32 count;
+	s32 skippedVertices;
 	s32 stride;
 	u8 colIndex;
 	u8 tcIndex;

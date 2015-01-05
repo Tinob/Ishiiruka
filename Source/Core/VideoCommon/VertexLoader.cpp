@@ -388,7 +388,7 @@ void VertexLoader::WriteCall(TPipelineFunction func)
 	m_PipelineStages[m_numPipelineStages++] = func;
 }
 
-void VertexLoader::RunVertices(const VertexLoaderParameters &parameters)
+s32 VertexLoader::RunVertices(const VertexLoaderParameters &parameters)
 {
 	m_numLoadedVertices += parameters.count;
 	const VAT &vat = *parameters.VtxAttr;
@@ -404,6 +404,7 @@ void VertexLoader::RunVertices(const VertexLoaderParameters &parameters)
 	m_VtxAttr.texCoord[7].Frac = vat.g2.Tex7Frac;
 	g_PipelineState.flags = g_ActiveConfig.backend_info.bSupportsBBox ? TPS_NONE : TPS_USE_BBOX;
 	g_PipelineState.stride = m_native_stride;
+	g_PipelineState.skippedVertices = 0;
 	g_PipelineState.posScale = fractionTable[m_VtxAttr.PosFrac];
 	g_PipelineState.curposmtx = g_main_cp_state.matrix_index_a.PosNormalMtxIdx;
 	if (m_NativeFmt->m_components & VB_HAS_UVALL)
@@ -418,6 +419,7 @@ void VertexLoader::RunVertices(const VertexLoaderParameters &parameters)
 	g_PipelineState.Initialize(parameters.source, parameters.destination);
 	s_CurrentVertexLoader = this;
 	m_CompiledFunction(g_PipelineState);
+	return parameters.count - g_PipelineState.skippedVertices;
 }
 
 void LOADERDECL VertexLoader::ConvertVertices(TPipelineState& pipelinestate)
