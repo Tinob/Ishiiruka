@@ -15,6 +15,8 @@ ThreadPool::ThreadPool() : m_workflag(0), m_workercount(0), m_workers(16)
 #ifdef _WIN32
 		SetThreadPriority(current->native_handle(), THREAD_MODE_BACKGROUND_BEGIN);
 #endif
+		u32 affinity = 1 << (cpu_info.logical_cpu_count - i - 1);
+		SetThreadAffinity(current->native_handle(), affinity);
 	}
 }
 

@@ -43,11 +43,11 @@ namespace Common
 	// yields the cpu based on the contention amount
 	inline void cYield(size_t count)
 	{
-		if (count < 4)
+		if (count < 16)
 		{
 			Common::YieldCPU();
 		}
-		else if (count < 8)
+		else if (count < 32)
 		{
 			SleepCurrentThread(0);
 		}
