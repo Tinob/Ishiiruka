@@ -48,6 +48,7 @@ static Common::FifoQueue<BaseEvent, false> tsQueue;
 // event pools
 static Event *eventPool = nullptr;
 
+float lastOCFactor;
 int slicelength;
 static int maxSliceLength = MAX_SLICE_LENGTH;
 
@@ -82,6 +83,16 @@ static void FreeEvent(Event* ev)
 
 static void EmptyTimedCallback(u64 userdata, int cyclesLate) {}
 
+static int DowncountToCycles(int downcount)
+{
+	return (int)(downcount / lastOCFactor);
+}
+
+static int CyclesToDowncount(int cycles)
+{
+	return (int)(cycles * lastOCFactor);
+}
+
 int RegisterEvent(const std::string& name, TimedCallback callback)
 {
 	EventType type;
@@ -115,7 +126,8 @@ void UnregisterAllEvents()
 
 void Init()
 {
-	PowerPC::ppcState.downcount = maxSliceLength;
+	lastOCFactor = SConfig::GetInstance().m_OCEnable ? SConfig::GetInstance().m_OCFactor : 1.0f;
+	PowerPC::ppcState.downcount = CyclesToDowncount(maxSliceLength);
 	slicelength = maxSliceLength;
 	globalTimer = 0;
 	idledCycles = 0;
@@ -182,6 +194,7 @@ void DoState(PointerWrap &p)
 	p.Do(fakeDecStartTicks);
 	p.Do(fakeTBStartValue);
 	p.Do(fakeTBStartTicks);
+	p.Do(lastOCFactor);
 	p.DoMarker("CoreTimingData");
 
 	MoveEvents();
@@ -338,10 +351,10 @@ void SetMaximumSlice(int maximumSliceLength)
 
 void ForceExceptionCheck(int cycles)
 {
-	if (PowerPC::ppcState.downcount > cycles)
+	if (DowncountToCycles(PowerPC::ppcState.downcount) > cycles)
 	{
-		slicelength -= (PowerPC::ppcState.downcount - cycles); // Account for cycles already executed by adjusting the slicelength
-		PowerPC::ppcState.downcount = cycles;
+		slicelength -= (DowncountToCycles(PowerPC::ppcState.downcount) - cycles); // Account for cycles already executed by adjusting the slicelength
+		PowerPC::ppcState.downcount = CyclesToDowncount(cycles);
 	}
 }
 
@@ -392,9 +405,10 @@ void Advance()
 {
 	MoveEvents();
 
-	int cyclesExecuted = slicelength - PowerPC::ppcState.downcount;
+	int cyclesExecuted = slicelength - DowncountToCycles(PowerPC::ppcState.downcount);
 	globalTimer += cyclesExecuted;
-	PowerPC::ppcState.downcount = slicelength;
+	lastOCFactor = SConfig::GetInstance().m_OCFactor;
+	PowerPC::ppcState.downcount = CyclesToDowncount(slicelength);
 
 	while (first)
 	{
@@ -416,14 +430,14 @@ void Advance()
 	if (!first)
 	{
 		WARN_LOG(POWERPC, "WARNING - no events in queue. Setting downcount to 10000");
-		PowerPC::ppcState.downcount += 10000;
+		PowerPC::ppcState.downcount += CyclesToDowncount(10000);
 	}
 	else
 	{
 		slicelength = (int)(first->time - globalTimer);
 		if (slicelength > maxSliceLength)
 			slicelength = maxSliceLength;
-		PowerPC::ppcState.downcount = slicelength;
+		PowerPC::ppcState.downcount = CyclesToDowncount(slicelength);
 	}
 
 	if (advanceCallback)

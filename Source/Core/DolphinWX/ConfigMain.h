@@ -69,6 +69,7 @@ public:
 		ID_GAMECUBEPAGE,
 		ID_WIIPAGE,
 		ID_PATHSPAGE,
+		ID_ADVANCEDPAGE,
 	};
 
 private:
@@ -77,7 +78,9 @@ private:
 		ID_CPUTHREAD = 1010,
 		ID_IDLESKIP,
 		ID_ENABLECHEATS,
+		ID_ENABLEOVERCLOCK,
 		ID_FRAMELIMIT,
+		ID_OVERCLOCK,
 
 		ID_CPUENGINE,
 
@@ -141,6 +144,9 @@ private:
 	wxCheckBox* SkipIdle;
 	wxCheckBox* EnableCheats;
 	wxChoice* Framelimit;
+	wxSlider* OCSlider;
+	wxStaticText* OCText;
+	wxCheckBox* EnableOC;
 
 	// Advanced
 	wxRadioBox* CPUEngine;
@@ -240,6 +246,7 @@ private:
 	void UpdateGUI();
 	void OnClose(wxCloseEvent& event);
 
+	void UpdateCPUClock();
 	void CoreSettingsChanged(wxCommandEvent& event);
 
 	void DisplaySettingsChanged(wxCommandEvent& event);
@@ -261,7 +268,7 @@ private:
 	void AddRemoveISOPaths(wxCommandEvent& event);
 	void DefaultISOChanged(wxFileDirPickerEvent& event);
 	void DVDRootChanged(wxFileDirPickerEvent& event);
-	void ApploaderPathChanged(wxFileDirPickerEvent& WXUNUSED (event));
+	void ApploaderPathChanged(wxFileDirPickerEvent& WXUNUSED(event));
 	void NANDRootChanged(wxFileDirPickerEvent& event);
 
 private:
