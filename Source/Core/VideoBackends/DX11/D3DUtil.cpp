@@ -35,20 +35,20 @@ public:
 	int AppendData(void* data, int size, int vertex_size)
 	{
 		D3D11_MAPPED_SUBRESOURCE map;
-		if(offset + size >= max_size)
+		if (offset + size >= max_size)
 		{
 			// wrap buffer around and notify observers
 			offset = 0;
 			context->Map(buf, 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
 
-			for(std::list<bool*>::iterator it = observers.begin(); it != observers.end(); ++it)
+			for (std::list<bool*>::iterator it = observers.begin(); it != observers.end(); ++it)
 				**it = true;
 		}
 		else
 		{
 			context->Map(buf, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &map);
 		}
-		offset = ((offset+vertex_size-1)/vertex_size)*vertex_size; // align offset to vertex_size bytes
+		offset = ((offset + vertex_size - 1) / vertex_size)*vertex_size; // align offset to vertex_size bytes
 		memcpy((u8*)map.pData + offset, data, size);
 		context->Unmap(buf, 0);
 
@@ -76,24 +76,24 @@ UtilVertexBuffer* util_vbuf = nullptr;
 
 #define MAX_NUM_VERTICES 50*6
 struct FONT2DVERTEX {
-	float x,y,z;
+	float x, y, z;
 	float col[4];
 	float tu, tv;
 };
 
 inline FONT2DVERTEX InitFont2DVertex(float x, float y, u32 color, float tu, float tv)
 {
-	FONT2DVERTEX v;   v.x=x; v.y=y; v.z=0;  v.tu = tu; v.tv = tv;
+	FONT2DVERTEX v;   v.x = x; v.y = y; v.z = 0;  v.tu = tu; v.tv = tv;
 	v.col[0] = ((float)((color >> 16) & 0xFF)) / 255.f;
-	v.col[1] = ((float)((color >>  8) & 0xFF)) / 255.f;
-	v.col[2] = ((float)((color >>  0) & 0xFF)) / 255.f;
+	v.col[1] = ((float)((color >> 8) & 0xFF)) / 255.f;
+	v.col[2] = ((float)((color >> 0) & 0xFF)) / 255.f;
 	v.col[3] = ((float)((color >> 24) & 0xFF)) / 255.f;
 	return v;
 }
 
 CD3DFont::CD3DFont() : m_dwTexWidth(512), m_dwTexHeight(512)
 {
-	
+
 }
 
 const char fontpixshader[] = {
@@ -149,12 +149,12 @@ int CD3DFont::Init()
 	unsigned int* pBitmapBits;
 	BITMAPINFO bmi;
 	ZeroMemory(&bmi.bmiHeader, sizeof(BITMAPINFOHEADER));
-	bmi.bmiHeader.biSize        = sizeof(BITMAPINFOHEADER);
-	bmi.bmiHeader.biWidth       =  (int)m_dwTexWidth;
-	bmi.bmiHeader.biHeight      = -(int)m_dwTexHeight;
-	bmi.bmiHeader.biPlanes      = 1;
+	bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+	bmi.bmiHeader.biWidth = (int)m_dwTexWidth;
+	bmi.bmiHeader.biHeight = -(int)m_dwTexHeight;
+	bmi.bmiHeader.biPlanes = 1;
 	bmi.bmiHeader.biCompression = BI_RGB;
-	bmi.bmiHeader.biBitCount    = 32;
+	bmi.bmiHeader.biBitCount = 32;
 
 	// Create a DC and a bitmap for the font
 	HDC hDC = CreateCompatibleDC(nullptr);
@@ -163,9 +163,9 @@ int CD3DFont::Init()
 
 	// create a GDI font
 	HFONT hFont = CreateFont(24, 0, 0, 0, FW_NORMAL, FALSE,
-							FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
-							CLIP_DEFAULT_PRECIS, PROOF_QUALITY,
-							VARIABLE_PITCH, _T("Tahoma"));
+		FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
+		CLIP_DEFAULT_PRECIS, PROOF_QUALITY,
+		VARIABLE_PITCH, _T("Tahoma"));
 	if (nullptr == hFont) return E_FAIL;
 
 	HGDIOBJ hOldbmBitmap = SelectObject(hDC, hbmBitmap);
@@ -173,7 +173,7 @@ int CD3DFont::Init()
 
 	// Set text properties
 	SetTextColor(hDC, 0xFFFFFF);
-	SetBkColor  (hDC, 0);
+	SetBkColor(hDC, 0);
 	SetTextAlign(hDC, TA_TOP);
 
 	TEXTMETRICW tm;
@@ -189,17 +189,17 @@ int CD3DFont::Init()
 		str[0] = c + 32;
 		SIZE size;
 		GetTextExtentPoint32A(hDC, str, 1, &size);
-		if ((int)(x+size.cx+1) > m_dwTexWidth)
+		if ((int)(x + size.cx + 1) > m_dwTexWidth)
 		{
-			x  = 0;
+			x = 0;
 			y += m_LineHeight;
 		}
 
-		ExtTextOutA(hDC, x+1, y+0, ETO_OPAQUE | ETO_CLIPPED, nullptr, str, 1, nullptr);
-		m_fTexCoords[c][0] = ((float)(x+0))/m_dwTexWidth;
-		m_fTexCoords[c][1] = ((float)(y+0))/m_dwTexHeight;
-		m_fTexCoords[c][2] = ((float)(x+0+size.cx))/m_dwTexWidth;
-		m_fTexCoords[c][3] = ((float)(y+0+size.cy))/m_dwTexHeight;
+		ExtTextOutA(hDC, x + 1, y + 0, ETO_OPAQUE | ETO_CLIPPED, nullptr, str, 1, nullptr);
+		m_fTexCoords[c][0] = ((float)(x + 0)) / m_dwTexWidth;
+		m_fTexCoords[c][1] = ((float)(y + 0)) / m_dwTexHeight;
+		m_fTexCoords[c][2] = ((float)(x + 0 + size.cx)) / m_dwTexWidth;
+		m_fTexCoords[c][3] = ((float)(y + 0 + size.cy)) / m_dwTexHeight;
 
 		x += size.cx + 3;  // 3 to work around annoying ij conflict (part of the j ends up with the i)
 	}
@@ -209,8 +209,8 @@ int CD3DFont::Init()
 	//							That way, we can use a static texture
 	ID3D11Texture2D* buftex;
 	D3D11_TEXTURE2D_DESC texdesc = CD3D11_TEXTURE2D_DESC(D3D::GetBaseBufferFormat(), m_dwTexWidth, m_dwTexHeight,
-										1, 1, D3D11_BIND_SHADER_RESOURCE, D3D11_USAGE_DYNAMIC,
-										D3D11_CPU_ACCESS_WRITE);
+		1, 1, D3D11_BIND_SHADER_RESOURCE, D3D11_USAGE_DYNAMIC,
+		D3D11_CPU_ACCESS_WRITE);
 	hr = device->CreateTexture2D(&texdesc, nullptr, &buftex);
 	if (FAILED(hr))
 	{
@@ -252,7 +252,7 @@ int CD3DFont::Init()
 	D3D::SetDebugObjectName(m_pshader.get(), "pixel shader of a CD3DFont object");
 
 	D3DBlob vsbytecode;
-	D3D::CompileShader(DX11::D3D::ShaderType::Vertex,  fontvertshader, vsbytecode);
+	D3D::CompileShader(DX11::D3D::ShaderType::Vertex, fontvertshader, vsbytecode);
 	if (vsbytecode.Data() == nullptr) PanicAlert("Failed to compile vertex shader, %s %d\n", __FILE__, __LINE__);
 	m_vshader = D3D::CreateVertexShaderFromByteCode(vsbytecode);
 	if (m_vshader.get() == nullptr) PanicAlert("Failed to create vertex shader, %s %d\n", __FILE__, __LINE__);
@@ -260,12 +260,12 @@ int CD3DFont::Init()
 
 	const D3D11_INPUT_ELEMENT_DESC desc[] =
 	{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0,  0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "COLOR",    0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 28, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	};
-	hr = D3D::device->CreateInputLayout(desc, 3, vsbytecode.Data(), vsbytecode.Size(),ToAddr(m_InputLayout));
-	if (FAILED(hr)) PanicAlert("Failed to create input layout, %s %d\n", __FILE__, __LINE__);	
+	hr = D3D::device->CreateInputLayout(desc, 3, vsbytecode.Data(), vsbytecode.Size(), ToAddr(m_InputLayout));
+	if (FAILED(hr)) PanicAlert("Failed to create input layout, %s %d\n", __FILE__, __LINE__);
 
 	D3D11_BLEND_DESC blenddesc;
 	blenddesc.AlphaToCoverageEnable = FALSE;
@@ -279,12 +279,12 @@ int CD3DFont::Init()
 	blenddesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA;
 	blenddesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
 	hr = D3D::device->CreateBlendState(&blenddesc, ToAddr(m_blendstate));
-	CHECK(hr==S_OK, "Create font blend state");
+	CHECK(hr == S_OK, "Create font blend state");
 	D3D::SetDebugObjectName(m_blendstate.get(), "blend state of a CD3DFont object");
 
 	D3D11_RASTERIZER_DESC rastdesc = CD3D11_RASTERIZER_DESC(D3D11_FILL_SOLID, D3D11_CULL_NONE, false, 0, 0.f, 0.f, false, false, false, false);
 	hr = D3D::device->CreateRasterizerState(&rastdesc, ToAddr(m_raststate));
-	CHECK(hr==S_OK, "Create font rasterizer state");
+	CHECK(hr == S_OK, "Create font rasterizer state");
 	D3D::SetDebugObjectName(m_raststate.get(), "rasterizer state of a CD3DFont object");
 
 	D3D11_BUFFER_DESC vbdesc = CD3D11_BUFFER_DESC(MAX_NUM_VERTICES*sizeof(FONT2DVERTEX), D3D11_BIND_VERTEX_BUFFER, D3D11_USAGE_DYNAMIC, D3D11_CPU_ACCESS_WRITE);
@@ -339,7 +339,7 @@ int CD3DFont::DrawTextScaled(float x, float y, float size, float spacing, u32 dw
 	D3D::stateman->SetPixelShader(m_pshader.get());
 	D3D::stateman->SetVertexShader(m_vshader.get());
 	D3D::stateman->SetGeometryShader(nullptr);
-	
+
 
 	D3D::stateman->SetInputLayout(m_InputLayout.get());
 	D3D::stateman->SetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -350,7 +350,7 @@ int CD3DFont::DrawTextScaled(float x, float y, float size, float spacing, u32 dw
 	{
 		if (c == ('\n'))
 		{
-			sx  = fStartX;
+			sx = fStartX;
 			sy -= scaley * size;
 		}
 		if (c < (' '))
@@ -362,20 +362,20 @@ int CD3DFont::DrawTextScaled(float x, float y, float size, float spacing, u32 dw
 		float tx2 = m_fTexCoords[c][2];
 		float ty2 = m_fTexCoords[c][3];
 
-		float w = (float)(tx2-tx1) * m_dwTexWidth * scalex * sizeratio;
-		float h = (float)(ty1-ty2) * m_dwTexHeight * scaley * sizeratio;
+		float w = (float)(tx2 - tx1) * m_dwTexWidth * scalex * sizeratio;
+		float h = (float)(ty1 - ty2) * m_dwTexHeight * scaley * sizeratio;
 
 		FONT2DVERTEX v[6];
-		v[0] = InitFont2DVertex(sx,   sy+h, dwColor, tx1, ty2);
-		v[1] = InitFont2DVertex(sx,   sy,   dwColor, tx1, ty1);
-		v[2] = InitFont2DVertex(sx+w, sy+h, dwColor, tx2, ty2);
-		v[3] = InitFont2DVertex(sx+w, sy,   dwColor, tx2, ty1);
+		v[0] = InitFont2DVertex(sx, sy + h, dwColor, tx1, ty2);
+		v[1] = InitFont2DVertex(sx, sy, dwColor, tx1, ty1);
+		v[2] = InitFont2DVertex(sx + w, sy + h, dwColor, tx2, ty2);
+		v[3] = InitFont2DVertex(sx + w, sy, dwColor, tx2, ty1);
 		v[4] = v[2];
 		v[5] = v[1];
 
-		memcpy(pVertices, v, 6*sizeof(FONT2DVERTEX));
+		memcpy(pVertices, v, 6 * sizeof(FONT2DVERTEX));
 
-		pVertices+=6;
+		pVertices += 6;
 		dwNumTriangles += 2;
 
 		if (dwNumTriangles * 3 > (MAX_NUM_VERTICES - 6))
@@ -415,10 +415,10 @@ int CD3DFont::DrawTextScaled(float x, float y, float size, float spacing, u32 dw
 SamplerStatePtr linear_copy_sampler;
 SamplerStatePtr point_copy_sampler;
 
-typedef struct { float x,y,z,u,v,w; } STQVertex;
-typedef struct { float x,y,z,u,v,w; } STSQVertex;
-typedef struct { float x,y,z; u32 col; } ClearVertex;
-typedef struct { float x,y,z; u32 col; } ColVertex;
+typedef struct { float x, y, z, u, v, w; } STQVertex;
+typedef struct { float x, y, z, u, v, w; } STSQVertex;
+typedef struct { float x, y, z; u32 col; } ClearVertex;
+typedef struct { float x, y, z; u32 col; } ColVertex;
 
 struct
 {
@@ -455,7 +455,7 @@ void InitUtils()
 
 	float border[4] = { 0.f, 0.f, 0.f, 0.f };
 	D3D11_SAMPLER_DESC samDesc = CD3D11_SAMPLER_DESC(D3D11_FILTER_MIN_MAG_MIP_POINT, D3D11_TEXTURE_ADDRESS_BORDER, D3D11_TEXTURE_ADDRESS_BORDER, D3D11_TEXTURE_ADDRESS_BORDER, 0.f, 1, D3D11_COMPARISON_ALWAYS, border, 0.f, 0.f);
-	HRESULT hr = D3D::device->CreateSamplerState(&samDesc,ToAddr(point_copy_sampler));
+	HRESULT hr = D3D::device->CreateSamplerState(&samDesc, ToAddr(point_copy_sampler));
 	if (FAILED(hr)) PanicAlert("Failed to create sampler state at %s %d\n", __FILE__, __LINE__);
 	else SetDebugObjectName(point_copy_sampler.get(), "point copy sampler state");
 
@@ -508,8 +508,8 @@ void drawShadedTexQuad(
 	ID3D11InputLayout* layout,
 	float Gamma)
 {
-	float sw = 1.0f /(float) SourceWidth;
-	float sh = 1.0f /(float) SourceHeight;
+	float sw = 1.0f / (float)SourceWidth;
+	float sh = 1.0f / (float)SourceHeight;
 	float u1 = ((float)rSource->left) * sw;
 	float u2 = ((float)rSource->right) * sw;
 	float v1 = ((float)rSource->top) * sh;
@@ -517,10 +517,10 @@ void drawShadedTexQuad(
 	float G = 1.0f / Gamma;
 
 	STQVertex coords[4] = {
-		{-1.0f, 1.0f, 0.0f,  u1, v1, G},
-		{ 1.0f, 1.0f, 0.0f,  u2, v1, G},
-		{-1.0f,-1.0f, 0.0f,  u1, v2, G},
-		{ 1.0f,-1.0f, 0.0f,  u2, v2, G},
+		{ -1.0f, 1.0f, 0.0f, u1, v1, G },
+		{ 1.0f, 1.0f, 0.0f, u2, v1, G },
+		{ -1.0f, -1.0f, 0.0f, u1, v2, G },
+		{ 1.0f, -1.0f, 0.0f, u2, v2, G },
 	};
 
 	// only upload the data to VRAM if it changed
@@ -535,7 +535,7 @@ void drawShadedTexQuad(
 		tex_quad_data.v1 = v1;
 		tex_quad_data.u2 = u2;
 		tex_quad_data.v2 = v2;
-		tex_quad_data.G  =  G;
+		tex_quad_data.G = G;
 	}
 	UINT stride = sizeof(STQVertex);
 	UINT offset = 0;
@@ -564,19 +564,19 @@ void drawShadedTexSubQuad(
 	ID3D11InputLayout* layout,
 	float Gamma)
 {
-	float sw = 1.0f /(float) SourceWidth;
-	float sh = 1.0f /(float) SourceHeight;
-	float u1 = (rSource->left  ) * sw;
-	float u2 = (rSource->right ) * sw;
-	float v1 = (rSource->top   ) * sh;
+	float sw = 1.0f / (float)SourceWidth;
+	float sh = 1.0f / (float)SourceHeight;
+	float u1 = (rSource->left) * sw;
+	float u2 = (rSource->right) * sw;
+	float v1 = (rSource->top) * sh;
 	float v2 = (rSource->bottom) * sh;
 	float G = 1.0f / Gamma;
 
 	STSQVertex coords[4] = {
-		{ rDest->left , rDest->bottom, 0.0f, u1, v2, G},
-		{ rDest->right, rDest->bottom, 0.0f, u2, v2, G},
-		{ rDest->left , rDest->top   , 0.0f, u1, v1, G},
-		{ rDest->right, rDest->top   , 0.0f, u2, v1, G},
+		{ rDest->left, rDest->bottom, 0.0f, u1, v2, G },
+		{ rDest->right, rDest->bottom, 0.0f, u2, v2, G },
+		{ rDest->left, rDest->top, 0.0f, u1, v1, G },
+		{ rDest->right, rDest->top, 0.0f, u2, v1, G },
 	};
 
 	// only upload the data to VRAM if it changed
@@ -592,7 +592,7 @@ void drawShadedTexSubQuad(
 		tex_sub_quad_data.v1 = v1;
 		tex_sub_quad_data.u2 = u2;
 		tex_sub_quad_data.v2 = v2;
-		tex_sub_quad_data.G  = G;
+		tex_sub_quad_data.G = G;
 		memcpy(&tex_sub_quad_data.rdest, &rDest, sizeof(rDest));
 	}
 	UINT stride = sizeof(STSQVertex);
@@ -624,7 +624,7 @@ void drawColorQuad(u32 Color, float x1, float y1, float x2, float y2)
 		{ x2, y1, 0.f, Color },
 	};
 
-	if(cq_observer ||
+	if (cq_observer ||
 		draw_quad_data.x1 != x1 || draw_quad_data.y1 != y1 ||
 		draw_quad_data.x2 != x2 || draw_quad_data.y2 != y2 ||
 		draw_quad_data.col != Color)
@@ -654,16 +654,13 @@ void drawColorQuad(u32 Color, float x1, float y1, float x2, float y2)
 
 void drawClearQuad(
 	u32 Color,
-	float z,
-	ID3D11PixelShader* PShader,
-	ID3D11VertexShader* Vshader,
-	ID3D11InputLayout* layout)
+	float z)
 {
 	ClearVertex coords[4] = {
-		{-1.0f,  1.0f, z, Color},
-		{ 1.0f,  1.0f, z, Color},
-		{-1.0f, -1.0f, z, Color},
-		{ 1.0f, -1.0f, z, Color},
+		{ -1.0f, 1.0f, z, Color },
+		{ 1.0f, 1.0f, z, Color },
+		{ -1.0f, -1.0f, z, Color },
+		{ 1.0f, -1.0f, z, Color },
 	};
 
 	if (clearq_observer || clear_quad_data.col != Color || clear_quad_data.z != z)
@@ -674,6 +671,7 @@ void drawClearQuad(
 		clear_quad_data.col = Color;
 		clear_quad_data.z = z;
 	}
+
 	stateman->SetVertexShader(VertexShaderCache::GetClearVertexShader());
 	stateman->SetPixelShader(PixelShaderCache::GetClearProgram());
 	stateman->SetInputLayout(VertexShaderCache::GetClearInputLayout());
@@ -685,6 +683,8 @@ void drawClearQuad(
 
 	stateman->Apply();
 	context->Draw(4, clearq_offset);
+
+	stateman->SetGeometryShader(nullptr);
 }
 
 }  // namespace D3D
