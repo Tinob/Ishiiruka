@@ -83,6 +83,13 @@ static void FreeEvent(Event* ev)
 
 static void EmptyTimedCallback(u64 userdata, int cyclesLate) {}
 
+// Changing the CPU speed in Dolphin isn't actually done by changing the physical clock rate,
+// but by changing the amount of work done in a particular amount of time. This tends to be more
+// compatible because it stops the games from actually knowing directly that the clock rate has
+// changed, and ensures that anything based on waiting a specific number of cycles still works.
+//
+// Technically it might be more accurate to call this changing the IPC instead of the CPU speed,
+// but the effect is largely the same.
 static int DowncountToCycles(int downcount)
 {
 	return (int)(downcount / lastOCFactor);
@@ -407,7 +414,7 @@ void Advance()
 
 	int cyclesExecuted = slicelength - DowncountToCycles(PowerPC::ppcState.downcount);
 	globalTimer += cyclesExecuted;
-	lastOCFactor = SConfig::GetInstance().m_OCFactor;
+	lastOCFactor = SConfig::GetInstance().m_OCEnable ? SConfig::GetInstance().m_OCFactor : 1.0f;
 	PowerPC::ppcState.downcount = CyclesToDowncount(slicelength);
 
 	while (first)
