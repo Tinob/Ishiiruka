@@ -412,7 +412,7 @@ void ProgramShaderCache::Init()
 			if (!File::Exists(File::GetUserPath(D_SHADERCACHE_IDX)))
 				File::CreateDir(File::GetUserPath(D_SHADERCACHE_IDX));
 
-			std::string cache_filename = StringFromFormat("%sogl-%s-shaders.cache", File::GetUserPath(D_SHADERCACHE_IDX).c_str(),
+			std::string cache_filename = StringFromFormat("%sIOGL-%s-shaders.cache", File::GetUserPath(D_SHADERCACHE_IDX).c_str(),
 				SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID.c_str());
 
 			ProgramShaderCacheInserter inserter;
