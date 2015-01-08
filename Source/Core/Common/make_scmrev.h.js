@@ -2,7 +2,8 @@ var wshShell		= new ActiveXObject("WScript.Shell")
 var oFS				= new ActiveXObject("Scripting.FileSystemObject");
 
 var outfile			= "./scmrev.h";
-var cmd_revision	= " rev-parse HEAD";
+var cmd_revision    = " rev-parse HEAD";
+var cmd_count       = " rev-list --count HEAD ^e1656af8191700f32c18b06d18b9a099d281b95b";
 var cmd_describe	= " describe --always --long --dirty";
 var cmd_branch		= " rev-parse --abbrev-ref HEAD";
 var cmd_lastmodified = " log --pretty=oneline  -n 1 -- ";
@@ -92,7 +93,8 @@ function GetCacheVersion(gitexe) {
 
 // get info from git
 var gitexe = GetGitExe();
-var revision	 = GetFirstStdOutLine(gitexe + cmd_revision);
+var revision = GetFirstStdOutLine(gitexe + cmd_revision);
+var revcount = GetFirstStdOutLine(gitexe + cmd_count);
 var describe	 = GetFirstStdOutLine(gitexe + cmd_describe);
 var branch       = GetFirstStdOutLine(gitexe + cmd_branch);
 var cacheversion = GetCacheVersion(gitexe);
@@ -103,7 +105,7 @@ describe = describe.replace(/(-0)?-[^-]+(-dirty)?$/, '$2');
 
 var out_contents =
 	"#define SCM_REV_STR \"" + revision + "\"\n" +
-	"#define SCM_DESC_STR \"" + describe + "\"\n" +
+	"#define SCM_DESC_STR \"" + revcount + "(" + describe + ")\"\n" +
 	"#define SCM_BRANCH_STR \"" + branch + "\"\n" +
     "#define SCM_CACHE_STR \"" + cacheversion + "\"\n" +
 	"#define SCM_IS_MASTER " + isMaster + "\n";
