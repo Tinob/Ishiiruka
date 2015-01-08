@@ -961,7 +961,7 @@ void Renderer::RestoreAPIState()
 	// Gets us back into a more game-like state.
 	D3D::SetRenderState(D3DRS_FILLMODE, g_ActiveConfig.bWireFrame ? D3DFILL_WIREFRAME : D3DFILL_SOLID);
 	D3D::SetRenderState(D3DRS_SCISSORTESTENABLE, true);	
-	VertexShaderManager::SetViewportChanged();
+	BPFunctions::SetScissor();
 	m_bColorMaskChanged = true;
 	m_bGenerationModeChanged = true;
 	m_bScissorRectChanged = true;
@@ -969,29 +969,8 @@ void Renderer::RestoreAPIState()
 	m_bLogicOpModeChanged = true;
 }
 
-// Viewport correction:
-// Say you want a viewport at (ix, iy) with size (iw, ih),
-// but your viewport must be clamped at (ax, ay) with size (aw, ah).
-// Just multiply the projection matrix with the following to get the same
-// effect:
-// [   (iw/aw)         0     0    ((iw - 2*(ax-ix)) / aw - 1)   ]
-// [         0   (ih/ah)     0   ((-ih + 2*(ay-iy)) / ah + 1)   ]
-// [         0         0     1                              0   ]
-// [         0         0     0                              1   ]
-static void ViewportCorrectionMatrix(Matrix44& result,
-	float ix, float iy, float iw, float ih, // Intended viewport (x, y, width, height)
-	float ax, float ay, float aw, float ah) // Actual viewport (x, y, width, height)
-{
-	Matrix44::LoadIdentity(result);
-	if (aw == 0.f || ah == 0.f)
-		return;
-	result.data[4*0+0] = iw / aw;
-	result.data[4*0+3] = (iw - 2.f * (ax - ix)) / aw - 1.f;
-	result.data[4*1+1] = ih / ah;
-	result.data[4*1+3] = (-ih + 2.f * (ay - iy)) / ah + 1.f;
-}
 // Called from VertexShaderManager
-void Renderer::UpdateViewport(Matrix44& vpCorrection)
+void Renderer::SetViewport()
 {
 	// reversed gxsetviewport(xorig, yorig, width, height, nearz, farz)
 	// [0] = width/2
@@ -1001,44 +980,34 @@ void Renderer::UpdateViewport(Matrix44& vpCorrection)
 	// [4] = yorig + height/2 + 342
 	// [5] = 16777215 * farz
 
+	// D3D crashes for zero viewports
+	if (xfmem.viewport.wd == 0 || xfmem.viewport.ht == 0)
+		return;
+
 	int scissorXOff = bpmem.scissorOffset.x * 2;
 	int scissorYOff = bpmem.scissorOffset.y * 2;
 
 	// TODO: ceil, floor or just cast to int?
-	int intendedX = EFBToScaledX((int)ceil(xfmem.viewport.xOrig - xfmem.viewport.wd - scissorXOff));
-	int intendedY = EFBToScaledY((int)ceil(xfmem.viewport.yOrig + xfmem.viewport.ht - scissorYOff));
-	int intendedWd = EFBToScaledX((int)ceil(2.0f * xfmem.viewport.wd));
-	int intendedHt = EFBToScaledY((int)ceil(-2.0f * xfmem.viewport.ht));
-	if (intendedWd < 0)
+	int X = EFBToScaledX((int)ceil(xfmem.viewport.xOrig - xfmem.viewport.wd - scissorXOff));
+	int Y = EFBToScaledY((int)ceil(xfmem.viewport.yOrig + xfmem.viewport.ht - scissorYOff));
+	int Wd = EFBToScaledX((int)ceil(2.0f * xfmem.viewport.wd));
+	int Ht = EFBToScaledY((int)ceil(-2.0f * xfmem.viewport.ht));
+	if (Wd < 0)
 	{
-		intendedX += intendedWd;
-		intendedWd = -intendedWd;
+		X += Wd;
+		Wd = -Wd;
 	}
-	if (intendedHt < 0)
+	if (Ht < 0)
 	{
-		intendedY += intendedHt;
-		intendedHt = -intendedHt;
+		Y += Ht;
+		Ht = -Ht;
 	}
 
 	// In D3D, the viewport rectangle must fit within the render target.
-	int X = intendedX;
-	if (X < 0)
-		X = 0;
-	int Y = intendedY;
-	if (Y < 0)
-		Y = 0;
-	int Wd = intendedWd;
-	if (X + Wd > GetTargetWidth())
-		Wd = GetTargetWidth() - X;
-	int Ht = intendedHt;
-	if (Y + Ht > GetTargetHeight())
-		Ht = GetTargetHeight() - Y;
-
-	// If GX viewport is off the render target, we must clamp our viewport
-	// within the bounds. Use the correction matrix to compensate.
-	ViewportCorrectionMatrix(vpCorrection,
-		(float)intendedX, (float)intendedY, (float)intendedWd, (float)intendedHt,
-		(float)X, (float)Y, (float)Wd, (float)Ht);
+	X = (X >= 0) ? X : 0;
+	Y = (Y >= 0) ? Y : 0;
+	Wd = (X + Wd <= GetTargetWidth()) ? Wd : (GetTargetWidth() - X);
+	Ht = (Y + Ht <= GetTargetHeight()) ? Ht : (GetTargetHeight() - Y);
 
 	D3DVIEWPORT9 vp;
 	vp.X = X;
@@ -1047,8 +1016,8 @@ void Renderer::UpdateViewport(Matrix44& vpCorrection)
 	vp.Height = Ht;
 
 	// Some games set invalids values for z min and z max so fix them to the max an min alowed and let the shaders do this work
-	vp.MinZ = 0.0f; // (xfmem.viewport.farZ - xfmem.viewport.zRange) / 16777216.0f;
-	vp.MaxZ = 1.0f; // xfmem.viewport.farZ / 16777216.0f;
+	vp.MinZ = std::max(0.0f, std::min(1.0f, (xfmem.viewport.farZ - xfmem.viewport.zRange) / 16777216.0f));
+	vp.MaxZ = std::max(0.0f, std::min(1.0f, xfmem.viewport.farZ / 16777216.0f));
 	D3D::dev->SetViewport(&vp);
 }
 

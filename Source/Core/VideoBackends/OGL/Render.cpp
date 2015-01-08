@@ -1227,7 +1227,7 @@ void Renderer::BBoxWrite(int index, u16 _value)
 	BBox::Set(index, value);
 }
 
-void Renderer::UpdateViewport(Matrix44& vpCorrection)
+void Renderer::SetViewport()
 {
 	// reversed gxsetviewport(xorig, yorig, width, height, nearz, farz)
 	// [0] = width/2
@@ -1763,7 +1763,7 @@ void Renderer::RestoreAPIState()
 	SetDepthMode();
 	SetBlendMode(true);
 	SetLogicOpMode();
-	UpdateViewportWithCorrection();
+	SetViewport();
 
 	if (GLInterface->GetMode() == GLInterfaceMode::MODE_OPENGL)
 		glPolygonMode(GL_FRONT_AND_BACK, g_ActiveConfig.bWireFrame ? GL_LINE : GL_FILL);

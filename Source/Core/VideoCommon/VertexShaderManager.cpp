@@ -42,13 +42,6 @@ static float s_fViewRotation[2];
 const float U8_NORM_COEF = 1 / 255.0f;
 const float U24_NORM_COEF = 1 / 16777216.0f;
 
-void UpdateViewport(Matrix44& vpCorrection);
-
-void UpdateViewportWithCorrection()
-{
-	UpdateViewport(s_viewportCorrection);
-}
-
 struct ProjectionHack
 {
 	float sign;
@@ -129,6 +122,55 @@ void UpdateProjectionHack(int iPhackvalue[], std::string sPhackvalue[])
 	// Set the projections hacks
 	g_ProjHack1 = ProjectionHack(fhacksign1, fhackvalue1);
 	g_ProjHack2 = ProjectionHack(fhacksign2, fhackvalue2);
+}
+
+// Viewport correction :
+// In D3D, the viewport rectangle must fit within the render target.
+// Say you want a viewport at (ix, iy) with size (iw, ih),
+// but your viewport must be clamped at (ax, ay) with size (aw, ah).
+// Just multiply the projection matrix with the following to get the same
+// effect:
+// [   (iw/aw)         0     0    ((iw - 2*(ax-ix)) / aw - 1)   ]
+// [         0   (ih/ah)     0   ((-ih + 2*(ay-iy)) / ah + 1)   ]
+// [         0         0     1                              0   ]
+// [         0         0     0                              1   ]
+static void ViewportCorrectionMatrix(Matrix44& result)
+{
+	int scissorXOff = bpmem.scissorOffset.x * 2;
+	int scissorYOff = bpmem.scissorOffset.y * 2;
+
+	// TODO: ceil, floor or just cast to int?
+	// TODO: Directly use the floats instead of rounding them?
+	float intendedX = xfmem.viewport.xOrig - xfmem.viewport.wd - scissorXOff;
+	float intendedY = xfmem.viewport.yOrig + xfmem.viewport.ht - scissorYOff;
+	float intendedWd = 2.0f * xfmem.viewport.wd;
+	float intendedHt = -2.0f * xfmem.viewport.ht;
+
+	if (intendedWd < 0.f)
+	{
+		intendedX += intendedWd;
+		intendedWd = -intendedWd;
+	}
+	if (intendedHt < 0.f)
+	{
+		intendedY += intendedHt;
+		intendedHt = -intendedHt;
+	}
+
+	// fit to EFB size
+	float X = (intendedX >= 0.f) ? intendedX : 0.f;
+	float Y = (intendedY >= 0.f) ? intendedY : 0.f;
+	float Wd = (X + intendedWd <= EFB_WIDTH) ? intendedWd : (EFB_WIDTH - X);
+	float Ht = (Y + intendedHt <= EFB_HEIGHT) ? intendedHt : (EFB_HEIGHT - Y);
+
+	Matrix44::LoadIdentity(result);
+	if (Wd == 0 || Ht == 0)
+		return;
+
+	result.data[4 * 0 + 0] = intendedWd / Wd;
+	result.data[4 * 0 + 3] = (intendedWd - 2.f * (X - intendedX)) / Wd - 1.f;
+	result.data[4 * 1 + 1] = intendedHt / Ht;
+	result.data[4 * 1 + 3] = (-intendedHt + 2.f * (Y - intendedY)) / Ht + 1.f;
 }
 
 void VertexShaderManager::Init()
@@ -353,14 +395,18 @@ void VertexShaderManager::SetConstants()
 		const float pixel_center_correction = ((g_ActiveConfig.backend_info.APIType & API_D3D9) ? 0.0f : 0.5f) - 7.0f / 12.0f;
 		const float pixel_size_x = 2.f / Renderer::EFBToScaledXf(2.f * xfmem.viewport.wd);
 		const float pixel_size_y = 2.f / Renderer::EFBToScaledXf(2.f * xfmem.viewport.ht);
-		m_buffer.SetConstant4(C_DEPTHPARAMS,
-						xfmem.viewport.farZ * U24_NORM_COEF,
-						xfmem.viewport.zRange * U24_NORM_COEF,
-						pixel_center_correction * pixel_size_x,
-						pixel_center_correction * pixel_size_y);
+		m_buffer.SetConstant4(C_PIXELCENTERCORRECTION,
+			pixel_center_correction * pixel_size_x,
+			pixel_center_correction * pixel_size_y, 0.0f, 0.0f);
 		// This is so implementation-dependent that we can't have it here.
-		UpdateViewport(s_viewportCorrection);
-		bProjectionChanged = true;
+		g_renderer->SetViewport();
+
+		// Update projection if the viewport isn't 1:1 useable
+		if (!g_ActiveConfig.backend_info.bSupportsOversizedViewports)
+		{
+			ViewportCorrectionMatrix(s_viewportCorrection);
+			bProjectionChanged = true;
+		}
 	}
 
 	if (bProjectionChanged)

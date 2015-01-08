@@ -2,15 +2,19 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include "VideoCommon/BPFunctions.h"
 #include "Common/Common.h"
+
+#include "Core/HW/Memmap.h"
+#include "Core/ConfigManager.h"
+
+#include "VideoCommon/BPFunctions.h"
+#include "VideoCommon/PixelShaderManager.h"
 #include "VideoCommon/RenderBase.h"
-#include "VideoCommon/TextureCacheBase.h"
 #include "VideoCommon/VertexManagerBase.h"
 #include "VideoCommon/VertexShaderManager.h"
 #include "VideoCommon/VideoConfig.h"
-#include "Core/HW/Memmap.h"
-#include "Core/ConfigManager.h"
+#include "VideoCommon/TextureCacheBase.h"
+
 
 namespace BPFunctions
 {
@@ -60,6 +64,7 @@ void SetScissor()
 	TargetRectangle trc = g_renderer->ConvertEFBRectangle(rc);	
 	g_renderer->SetScissorRect(trc);
 	VertexShaderManager::SetViewportChanged();
+	PixelShaderManager::SetViewportChanged();
 }
 
 void SetLineWidth()

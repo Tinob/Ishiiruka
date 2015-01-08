@@ -40,6 +40,7 @@ public:
 	void SetLineWidth();
 	void SetSamplerState(int stage,int texindex);
 	void SetInterlacingMode();
+	void SetViewport();
 
 	void ApplyState(bool bUseDstAlpha);
 	void RestoreState();
@@ -61,8 +62,6 @@ public:
 	void ClearScreen(const EFBRectangle& rc, bool colorEnable, bool alphaEnable, bool zEnable, u32 color, u32 z);
 
 	void ReinterpretPixelData(unsigned int convtype);
-
-	void UpdateViewport(Matrix44& vpCorrection);
 
 	bool SaveScreenshot(const std::string &filename, const TargetRectangle &rc);
 

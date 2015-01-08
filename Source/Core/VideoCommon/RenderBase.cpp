@@ -34,6 +34,7 @@
 #include "VideoCommon/FramebufferManagerBase.h"
 #include "VideoCommon/MainBase.h"
 #include "VideoCommon/OpcodeDecoding.h"
+#include "VideoCommon/PixelShaderManager.h"
 #include "VideoCommon/RenderBase.h"
 #include "VideoCommon/Statistics.h"
 #include "VideoCommon/TextureCacheBase.h"
@@ -235,6 +236,7 @@ bool Renderer::CalculateTargetSize(unsigned int framebuffer_width, unsigned int 
 		s_target_width  = newEFBWidth;
 		s_target_height = newEFBHeight;
 		VertexShaderManager::SetViewportChanged();
+		PixelShaderManager::SetViewportChanged();
 		return true;
 	}
 	return false;
@@ -522,12 +524,6 @@ void Renderer::RecordVideoMemory()
 	FillCPMemoryArray(cpmem);
 
 	FifoRecorder::GetInstance().SetVideoMemory(bpmem_ptr, cpmem, xfmem_ptr, xfregs_ptr, xfregs_size);
-}
-
-void UpdateViewport(Matrix44& vpCorrection)
-{
-	if (xfmem.viewport.wd != 0 && xfmem.viewport.ht != 0)
-		g_renderer->UpdateViewport(vpCorrection);
 }
 
 

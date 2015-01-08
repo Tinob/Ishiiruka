@@ -60,7 +60,7 @@ public:
 	void SetLineWidth() override;
 	void SetSamplerState(int stage,int texindex) override;
 	void SetInterlacingMode() override;
-	void UpdateViewport(Matrix44& vpCorrection) override;
+	void SetViewport() override;
 
 	// TODO: Implement and use these
 	void ApplyState(bool bUseDstAlpha) override {}

@@ -120,7 +120,7 @@ inline void GenerateVertexShader(T& out, u32 components, const XFMemory &xfr, co
 		DeclareUniform<T, api_type>(out, C_TRANSFORMMATRICES, "float4", I_TRANSFORMMATRICES"[64]");
 		DeclareUniform<T, api_type>(out, C_NORMALMATRICES, "float4", I_NORMALMATRICES"[32]");
 		DeclareUniform<T, api_type>(out, C_POSTTRANSFORMMATRICES, "float4", I_POSTTRANSFORMMATRICES"[64]");
-		DeclareUniform<T, api_type>(out, C_DEPTHPARAMS, "float4", I_DEPTHPARAMS);
+		DeclareUniform<T, api_type>(out, C_PIXELCENTERCORRECTION, "float4", I_PIXELCENTERCORRECTION);
 		DeclareUniform<T, api_type>(out, C_PLOFFSETPARAMS, "float4", I_PLOFFSETPARAMS"[13]");
 
 		if (api_type == API_OPENGL)
@@ -495,7 +495,7 @@ inline void GenerateVertexShader(T& out, u32 components, const XFMemory &xfr, co
 		//if not early z culling will improve speed
 		if (api_type & API_D3D9 || api_type == API_D3D11)
 		{
-			out.Write("o.pos.z = " I_DEPTHPARAMS".x * o.pos.w + o.pos.z * " I_DEPTHPARAMS".y;\n");
+			out.Write("o.pos.z = o.pos.w + o.pos.z;\n");
 		}
 		else
 		{
@@ -520,7 +520,7 @@ inline void GenerateVertexShader(T& out, u32 components, const XFMemory &xfr, co
 		// which in turn can be critical if it happens for clear quads.
 		// Hence, we compensate for this pixel center difference so that primitives
 		// get rasterized correctly.
-		out.Write("o.pos.xy = o.pos.xy + " I_DEPTHPARAMS".zw;\n");
+		out.Write("o.pos.xy = o.pos.xy + " I_PIXELCENTERCORRECTION".xy;\n");
 
 		if (api_type & API_D3D9)
 		{

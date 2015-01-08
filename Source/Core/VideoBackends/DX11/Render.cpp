@@ -452,30 +452,8 @@ u32 Renderer::AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data)
 	}
 }
 
-// Viewport correction:
-// Say you want a viewport at (ix, iy) with size (iw, ih),
-// but your viewport must be clamped at (ax, ay) with size (aw, ah).
-// Just multiply the projection matrix with the following to get the same
-// effect:
-// [   (iw/aw)         0     0    ((iw - 2*(ax-ix)) / aw - 1)   ]
-// [         0   (ih/ah)     0   ((-ih + 2*(ay-iy)) / ah + 1)   ]
-// [         0         0     1                              0   ]
-// [         0         0     0                              1   ]
-static void ViewportCorrectionMatrix(Matrix44& result,
-	float ix, float iy, float iw, float ih, // Intended viewport (x, y, width, height)
-	float ax, float ay, float aw, float ah) // Actual viewport (x, y, width, height)
-{
-	Matrix44::LoadIdentity(result);
-	if (aw == 0.f || ah == 0.f)
-		return;
-	result.data[4*0+0] = iw / aw;
-	result.data[4*0+3] = (iw - 2.f * (ax - ix)) / aw - 1.f;
-	result.data[4*1+1] = ih / ah;
-	result.data[4*1+3] = (-ih + 2.f * (ay - iy)) / ah + 1.f;
-}
-
 // Called from VertexShaderManager
-void Renderer::UpdateViewport(Matrix44& vpCorrection)
+void Renderer::SetViewport()
 {
 	// reversed gxsetviewport(xorig, yorig, width, height, nearz, farz)
 	// [0] = width/2
@@ -485,55 +463,37 @@ void Renderer::UpdateViewport(Matrix44& vpCorrection)
 	// [4] = yorig + height/2 + 342
 	// [5] = 16777215 * farz
 
+	// D3D crashes for zero viewports
+	if (xfmem.viewport.wd == 0 || xfmem.viewport.ht == 0)
+		return;
+
 	int scissorXOff = bpmem.scissorOffset.x * 2;
 	int scissorYOff = bpmem.scissorOffset.y * 2;
 
-	// TODO: ceil, floor or just cast to int?
-	// TODO: Directly use the floats instead of rounding them?
-	int intendedX = Renderer::EFBToScaledX((int)ceil(xfmem.viewport.xOrig - xfmem.viewport.wd - scissorXOff));
-	int intendedY = Renderer::EFBToScaledY((int)ceil(xfmem.viewport.yOrig + xfmem.viewport.ht - scissorYOff));
-	int intendedWd = Renderer::EFBToScaledX((int)ceil(2.0f * xfmem.viewport.wd));
-	int intendedHt = Renderer::EFBToScaledY((int)ceil(-2.0f * xfmem.viewport.ht));
-	if (intendedWd < 0)
+	float X = Renderer::EFBToScaledXf(xfmem.viewport.xOrig - xfmem.viewport.wd - scissorXOff);
+	float Y = Renderer::EFBToScaledYf(xfmem.viewport.yOrig + xfmem.viewport.ht - scissorYOff);
+	float Wd = Renderer::EFBToScaledXf(2.0f * xfmem.viewport.wd);
+	float Ht = Renderer::EFBToScaledYf(-2.0f * xfmem.viewport.ht);
+	if (Wd < 0.0f)
 	{
-		intendedX += intendedWd;
-		intendedWd = -intendedWd;
+		X += Wd;
+		Wd = -Wd;
 	}
-	if (intendedHt < 0)
+	if (Ht < 0.0f)
 	{
-		intendedY += intendedHt;
-		intendedHt = -intendedHt;
+		Y += Ht;
+		Ht = -Ht;
 	}
 
 	// In D3D, the viewport rectangle must fit within the render target.
-	int X = intendedX;
-	if (X < 0)
-		X = 0;
+	X = (X >= 0.f) ? X : 0.f;
+	Y = (Y >= 0.f) ? Y : 0.f;
+	Wd = (X + Wd <= GetTargetWidth()) ? Wd : (GetTargetWidth() - X);
+	Ht = (Y + Ht <= GetTargetHeight()) ? Ht : (GetTargetHeight() - Y);
 
-	int Y = intendedY;
-	if (Y < 0)
-		Y = 0;
-
-	int Wd = intendedWd;
-	if (X + Wd > GetTargetWidth())
-		Wd = GetTargetWidth() - X;
-	int Ht = intendedHt;
-	if (Y + Ht > GetTargetHeight())
-		Ht = GetTargetHeight() - Y;
-	
-	// If GX viewport is off the render target, we must clamp our viewport
-	// within the bounds. Use the correction matrix to compensate.
-	ViewportCorrectionMatrix(vpCorrection,
-		(float)intendedX, (float)intendedY,
-		(float)intendedWd, (float)intendedHt,
-		(float)X, (float)Y,
-		(float)Wd, (float)Ht);
-
-	// Some games set invalid values for z-min and z-max so fix them to the max and min allowed and let the shaders do this work
-	D3D11_VIEWPORT vp = CD3D11_VIEWPORT((float)X, (float)Y,
-										(float)Wd, (float)Ht,
-										0.f,	// (xfmem.viewport.farZ - xfmem.viewport.zRange) / 16777216.0f;
-										1.f);   //  xfmem.viewport.farZ / 16777216.0f;
+	D3D11_VIEWPORT vp = CD3D11_VIEWPORT(X, Y, Wd, Ht,
+		std::max(0.0f, std::min(1.0f, (xfmem.viewport.farZ - xfmem.viewport.zRange) / 16777216.0f)),
+		std::max(0.0f, std::min(1.0f, xfmem.viewport.farZ / 16777216.0f)));
 	D3D::context->RSSetViewports(1, &vp);
 }
 
@@ -589,7 +549,7 @@ void Renderer::ReinterpretPixelData(unsigned int convtype)
 	D3D::SetPointCopySampler();
 	D3D::drawShadedTexQuad(FramebufferManager::GetEFBColorTexture()->GetSRV(), &source, g_renderer->GetTargetWidth(), g_renderer->GetTargetHeight(), pixel_shader, VertexShaderCache::GetSimpleVertexShader(), VertexShaderCache::GetSimpleInputLayout());
 
-	g_renderer->RestoreAPIState();
+	RestoreAPIState();
 
 	FramebufferManager::SwapReinterpretTexture();
 	D3D::context->OMSetRenderTargets(1, &FramebufferManager::GetEFBColorTexture()->GetRTV(), FramebufferManager::GetEFBDepthTexture()->GetDSV());
@@ -993,10 +953,9 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 	}
 
 	// begin next frame
-	Renderer::RestoreAPIState();
 	D3D::BeginFrame();
 	D3D::context->OMSetRenderTargets(1, &FramebufferManager::GetEFBColorTexture()->GetRTV(), FramebufferManager::GetEFBDepthTexture()->GetDSV());
-	VertexShaderManager::SetViewportChanged();
+	Renderer::RestoreAPIState();
 }
 
 // ALWAYS call RestoreAPIState for each ResetAPIState call you're doing
@@ -1013,7 +972,6 @@ void Renderer::RestoreAPIState()
 	D3D::stateman->PopBlendState();
 	D3D::stateman->PopDepthState();
 	D3D::stateman->PopRasterizerState();
-	VertexShaderManager::SetViewportChanged();
 	BPFunctions::SetScissor();
 }
 
