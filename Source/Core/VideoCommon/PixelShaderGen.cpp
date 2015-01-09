@@ -660,32 +660,6 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 
 	AlphaTest::TEST_RESULT Pretest = bpm.alpha_test.TestResult();
 	uid_data.Pretest = Pretest;
-
-	// NOTE: Fragment may not be discarded if alpha test always fails and early depth test is enabled 
-	// (in this case we need to write a depth value if depth test passes regardless of the alpha testing result)
-	if (Pretest != AlphaTest::PASS)
-		WriteAlphaTest<T, Write_Code, ApiType>(out, uid_data, dstAlphaMode, per_pixel_depth, bpm);
-
-
-	// D3D9 doesn't support readback of depth in pixel shader, so we always have to calculate it again.
-	// This shouldn't be a performance issue as the written depth is usually still from perspective division
-	// but this isn't true for z-textures, so there will be depth issues between enabled and disabled z-textures fragments
-	if ((ApiType == API_OPENGL || ApiType == API_D3D11) && g_ActiveConfig.bFastDepthCalc)
-	{
-		if (Write_Code)
-		{
-			out.Write("float zCoord = rawpos.z;\n");
-		}
-	}
-	else
-	{
-		// the screen space depth value = far z + (clip z / clip w) * z range
-		if (Write_Code)
-		{
-			out.Write("float zCoord = " I_ZBIAS "[1].x + (clipPos.z / clipPos.w) * " I_ZBIAS "[1].y;\n");
-		}
-	}
-
 	// depth texture can safely be ignored if the result won't be written to the depth buffer (early_ztest) and isn't used for fog either
 	const bool skip_ztexture = !per_pixel_depth && !bpm.fog.c_proj_fsel.fsel;
 
@@ -696,28 +670,40 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 	uid_data.early_ztest = bpm.UseEarlyDepthTest();
 	uid_data.fog_fsel = bpm.fog.c_proj_fsel.fsel;
 
-	// Note: z-textures are not written to depth buffer if early depth test is used
-	if (per_pixel_depth && bpm.UseEarlyDepthTest() && Write_Code)
-		out.Write("depth = zCoord;\n");
-
-	// Note: depth texture output is only written to depth buffer if late depth test is used
-	// theoretical final depth value is used for fog calculation, though, so we have to emulate ztextures anyway
-	if (bpm.ztex2.op != ZTEXTURE_DISABLE && !skip_ztexture)
+	// NOTE: Fragment may not be discarded if alpha test always fails and early depth test is enabled 
+	// (in this case we need to write a depth value if depth test passes regardless of the alpha testing result)
+	if (Pretest != AlphaTest::PASS)
+		WriteAlphaTest<T, Write_Code, ApiType>(out, uid_data, dstAlphaMode, per_pixel_depth, bpm);
+	if (Write_Code)
 	{
-		// use the texture input of the last texture stage (tex_t), hopefully this has been read and is in correct format...
-		if (Write_Code)
+		// D3D9 doesn't support readback of depth in pixel shader, so we always have to calculate it again.
+		// This shouldn't be a performance issue as the written depth is usually still from perspective division
+		// but this isn't true for z-textures, so there will be depth issues between enabled and disabled z-textures fragments
+		if ((ApiType == API_OPENGL || ApiType == API_D3D11) && g_ActiveConfig.bFastDepthCalc)
 		{
+			out.Write("float zCoord = rawpos.z;\n");
+		}
+		else
+		{
+			// the screen space depth value = far z + (clip z / clip w) * z range
+			out.Write("float zCoord = " I_ZBIAS "[1].x + (clipPos.z / clipPos.w) * " I_ZBIAS "[1].y;\n");
+		}
+		// Note: z-textures are not written to depth buffer if early depth test is used
+		if (per_pixel_depth && bpm.UseEarlyDepthTest())
+			out.Write("depth = zCoord;\n");
+		// Note: depth texture output is only written to depth buffer if late depth test is used
+		// theoretical final depth value is used for fog calculation, though, so we have to emulate ztextures anyway
+		if (bpm.ztex2.op != ZTEXTURE_DISABLE && !skip_ztexture)
+		{
+			// use the texture input of the last texture stage (tex_t), hopefully this has been read and is in correct format...
 			out.Write("zCoord = dot(" I_ZBIAS"[0].xyzw, tex_t.xyzw * (1.0/255.0)) + " I_ZBIAS "[1].w %s;\n",
 				(bpm.ztex2.op == ZTEXTURE_ADD) ? "+ zCoord" : "");
 			// U24 overflow emulation disabled because problems caused by float rounding
-			//out.Write("zCoord = CHK_O_U24(zCoord);\n");		
+			//out.Write("zCoord = CHK_O_U24(zCoord);\n");
 		}
-
+		if (per_pixel_depth && bpm.UseLateDepthTest())
+			out.Write("depth = zCoord;\n");
 	}
-
-	if (per_pixel_depth && bpm.UseLateDepthTest() && Write_Code)
-		out.Write("depth = zCoord;\n");
-
 	if (dstAlphaMode == DSTALPHA_ALPHA_PASS)
 	{
 		if (Write_Code)
@@ -729,11 +715,10 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 		if (Write_Code)
 			out.Write("ocol0 = prev * (1.0/255.0);\n");
 	}
-
-	// Use dual-source color blending to perform dst alpha in a single pass
-	if (dstAlphaMode == DSTALPHA_DUAL_SOURCE_BLEND)
+	if (Write_Code)
 	{
-		if (Write_Code)
+		// Use dual-source color blending to perform dst alpha in a single pass
+		if (dstAlphaMode == DSTALPHA_DUAL_SOURCE_BLEND)
 		{
 			if (ApiType & API_D3D9)
 			{
@@ -751,11 +736,11 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 		}
 	}
 
-	if (Write_Code)
+	if (g_ActiveConfig.backend_info.bSupportsBBox && BoundingBox::active)
 	{
-		if (g_ActiveConfig.backend_info.bSupportsBBox && BoundingBox::active)
+		uid_data.bounding_box = true;
+		if (Write_Code)
 		{
-			uid_data.bounding_box = true;
 			const char* atomic_op = ApiType == API_OPENGL ? "atomic" : "Interlocked";
 			out.Write(
 				"\tif(bbox_data[0] > int(rawpos.x)) %sMin(bbox_data[0], int(rawpos.x));\n"
@@ -764,6 +749,10 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 				"\tif(bbox_data[3] < int(rawpos.y)) %sMax(bbox_data[3], int(rawpos.y));\n",
 				atomic_op, atomic_op, atomic_op, atomic_op);
 		}
+	}
+
+	if (Write_Code)
+	{
 		out.Write("}\n");
 		if (codebuffer[PIXELSHADERGEN_BUFFERSIZE - 1] != 0x7C)
 			PanicAlert("PixelShader generator - buffer too small, canary has been eaten!");
