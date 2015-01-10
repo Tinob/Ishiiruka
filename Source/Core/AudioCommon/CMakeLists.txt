@@ -32,11 +32,8 @@ if(PULSEAUDIO_FOUND)
 endif(PULSEAUDIO_FOUND)
 
 if(WIN32)
-	set(SRCS ${SRCS} DSoundStream.cpp)
 	set(SRCS ${SRCS} XAudio2Stream.cpp)
-endif(WIN32)
-
-if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+elseif(APPLE)
 	set(SRCS ${SRCS} CoreAudioSoundStream.cpp)
 endif()
 

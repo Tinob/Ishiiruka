@@ -709,6 +709,8 @@
     <ClCompile Include="IPC_HLE\WII_IPC_HLE_WiiSpeak.cpp">
       <Filter>IPC HLE %28IOS/Starlet%29</Filter>
     </ClCompile>
+    <ClCompile Include="HW\SI_GCAdapter.cpp" />
+    <ClCompile Include="PowerPC\JitCommon\JitBackpatch.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BootManager.h" />
@@ -718,7 +720,6 @@
     <ClInclude Include="CoreTiming.h" />
     <ClInclude Include="ec_wii.h" />
     <ClInclude Include="Host.h" />
-    <ClCompile Include="MachineContext.h" />
     <ClInclude Include="MemTools.h" />
     <ClInclude Include="Movie.h" />
     <ClInclude Include="NetPlayClient.h" />
@@ -1203,6 +1204,11 @@
     </ClInclude>
     <ClInclude Include="PowerPC\JitILCommon\IR.h">
       <Filter>PowerPC\JitILCommon</Filter>
+    </ClInclude>
+    <ClInclude Include="HW\SI_GCAdapter.h" />
+    <ClInclude Include="MachineContext.h" />
+    <ClInclude Include="IPC_HLE\WII_IPC_HLE_WiiSpeak.h">
+      <Filter>IPC HLE %28IOS/Starlet%29</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

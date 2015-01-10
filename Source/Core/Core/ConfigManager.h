@@ -105,12 +105,14 @@ struct SConfig : NonCopyable
 	bool m_DSPEnableJIT;
 	bool m_DSPCaptureLog;
 	bool m_DumpAudio;
+	bool m_IsMuted;
 	int m_Volume;
 	std::string sBackend;
 
 	// Input settings
 	bool m_BackgroundInput;
 	bool m_GameCubeAdapter;
+	bool m_GameCubeAdapterThread;
 
 	SysConf* m_SYSCONF;
 

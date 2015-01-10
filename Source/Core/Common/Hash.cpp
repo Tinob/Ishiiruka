@@ -511,20 +511,16 @@ u64 GetHash64(const u8 *src, int len, u32 samples)
 }
 
 // sets the hash function used for the texture cache
-void SetHash64Function(bool useHiresTextures)
+void SetHash64Function()
 {
-	if (useHiresTextures)
-	{
-		ptrHashFunction = &GetHashHiresTexture;
-	}
 #if _M_SSE >= 0x402
 	// sse4.2 crc32 version used only on intel, in amd is slower than murmurhash3
-	else if (cpu_info.vendor == VENDOR_INTEL && cpu_info.bSSE4_2) 
+	if (cpu_info.vendor == VENDOR_INTEL && cpu_info.bSSE4_2) 
 	{
 		ptrHashFunction = &GetCRC32;
 	}
-#endif
 	else
+#endif
 	{
 		ptrHashFunction = &GetMurmurHash3;
 	}

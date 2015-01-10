@@ -2,35 +2,48 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include "VideoCommon/HiresTextures.h"
-
-#include <cstring>
-#include <utility>
 #include <algorithm>
+#include <cstring>
+#include <string>
+#include <utility>
 #include <SOIL/SOIL.h>
-#include "Common/CommonPaths.h"
-#include "Common/FileUtil.h"
-#include "Common/FileSearch.h"
-#include "Common/StringUtil.h"
-#include "DDSLoader.h"
-#include <iostream>
-#include <unordered_map>
 
-namespace HiresTextures
+#include "Common/CommonPaths.h"
+#include "Common/FileSearch.h"
+#include "Common/FileUtil.h"
+#include "Common/StringUtil.h"
+
+#include "Core/ConfigManager.h"
+
+#include "VideoCommon/DDSLoader.h"
+#include "VideoCommon/HiresTextures.h"
+#include "VideoCommon/TextureUtil.h"
+#include "VideoCommon/VideoConfig.h"
+
+HiresTexture::HiresTextureCache HiresTexture::textureMap;
+
+__forceinline u64 GetTextureKey(u64 Hash, u64 format)
 {
-	
-	std::unordered_map<u64, std::pair<std::string, std::string>> textureMap;
-	u32 texturecount;
-void Init(const char *gameCode)
+	return  (Hash << 32) | format;
+}
+
+__forceinline u64 GetTextureHash(const u8* texture, size_t texture_size, const u8* tlut, size_t tlut_size)
+{
+	u64 tex_hash = GetHashHiresTexture(texture, (int)texture_size, g_ActiveConfig.iSafeTextureCache_ColorSamples);
+	if (tlut_size)
+	{
+		u64 tlut_hash = GetHashHiresTexture(tlut, (int)tlut_size, g_ActiveConfig.iSafeTextureCache_ColorSamples);
+		tex_hash ^= tlut_hash;
+	}
+	return tex_hash;
+}
+
+void HiresTexture::Init(const std::string& gameCode)
 {
 	textureMap.clear();
-	texturecount = 0;
 	CFileSearch::XStringVector Directories;
-	//Directories.push_back(File::GetUserPath(D_HIRESTEXTURES_IDX));
-	char szDir[MAX_PATH];
-	sprintf(szDir, "%s%s", File::GetUserPath(D_HIRESTEXTURES_IDX).c_str(), gameCode);
-	Directories.push_back(std::string(szDir));
-	
+	std::string szDir = StringFromFormat("%s%s", File::GetUserPath(D_HIRESTEXTURES_IDX).c_str(), gameCode.c_str());
+	Directories.push_back(szDir);
 
 	for (u32 i = 0; i < Directories.size(); i++)
 	{
@@ -57,15 +70,10 @@ void Init(const char *gameCode)
 
 	CFileSearch::XStringVector Extensions;
 	Extensions.push_back("*.png");
-	Extensions.push_back("*.PNG");
 	Extensions.push_back("*.bmp");
-	Extensions.push_back("*.BMP");
 	Extensions.push_back("*.tga");
-	Extensions.push_back("*.TGA");
 	Extensions.push_back("*.dds");
-	Extensions.push_back("*.DDS");
 	Extensions.push_back("*.jpg"); // Why not? Could be useful for large photo-like textures
-	Extensions.push_back("*.JPG");
 	CFileSearch FileSearch(Extensions, Directories);
 	const CFileSearch::XStringVector& rFilenames = FileSearch.GetFileNames();
 	std::string code(gameCode);
@@ -86,153 +94,219 @@ void Init(const char *gameCode)
 			}
 			if (nameparts.size() >= 3)
 			{
+				if (nameparts[0].compare(code) != 0)
+				{
+					continue;
+				}
 				u32 hash = 0;
 				u32 format = 0;
-				u32 mip = 0;
+				u32 level = 0;
 				sscanf(nameparts[1].c_str(), "%x", &hash);
 				sscanf(nameparts[2].c_str(), "%i", &format);
 				if (nameparts.size() > 3 && nameparts[3].size() > 3)
 				{
-					sscanf(nameparts[3].substr(3, std::string::npos).c_str(), "%i", &mip);
+					sscanf(nameparts[3].substr(3, std::string::npos).c_str(), "%i", &level);
 				}
-				u64 key = ((u64)hash) | (((u64)format) << 32) | (((u64)mip) << 48);
-				if (nameparts[0].compare(code) == 0 && textureMap.find(key) == textureMap.end())
+				u64 key = GetTextureKey(hash, format);
+				HiresTextureCache::iterator iter = textureMap.find(key);
+				u32 min_item_size = level + 1;
+				if (iter == textureMap.end())
 				{
-					texturecount++;
-					textureMap.insert(std::map<u64, std::pair<std::string, std::string>>::value_type(key, Pair));
+					HiresTextureCacheItem item(min_item_size);
+					item[level] = Pair;
+					textureMap.insert(HiresTextureCache::value_type(key, item));
+				}
+				else
+				{
+					if (iter->second.size() < min_item_size)
+					{
+						iter->second.resize(min_item_size);
+					}
+					iter->second[level] = Pair;
 				}
 			}
-			
 		}
 	}
 }
 
-bool HiresTexExists(u64 key)
+std::string HiresTexture::GenBaseName(const u8* texture, size_t texture_size, const u8* tlut, size_t tlut_size, u32 width, u32 height, int format)
 {
-	if (texturecount > 0)
-	{
-		return textureMap.find(key) != textureMap.end();
-	}
-	return false;
+	u64 hash = GetTextureHash(texture, texture_size, tlut, tlut_size);
+	return StringFromFormat("%s_%08x_%i", SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID.c_str(), (u32)hash, (u16)format);
 }
 
-struct LoadImageInfo
-{
-	u8* dst;
-	const char* Path;
-	u32 *pWidth;
-	u32 *pHeight;
-	u32 *required_size;
-	u32 data_size;
-	s32 forcedchannels;
-	s32 formatBPP;
-	PC_TexFormat desiredTex;
-	u32 *nummipmaps;
-};
 
-inline PC_TexFormat LoadImageFromFile_Soil(LoadImageInfo &ImgInfo)
+
+inline void LoadImageFromFile_Soil(ImageLoaderParams &ImgInfo)
 {
 	int width;
 	int height;
 	int channels;
-	PC_TexFormat returnTex = PC_TEX_FMT_NONE;
+	ImgInfo.resultTex = PC_TEX_FMT_NONE;
 	u8* temp = SOIL_load_image(ImgInfo.Path, &width, &height, &channels, ImgInfo.forcedchannels);
-	if (temp == NULL)
+	if (temp == nullptr)
 	{
-		return PC_TEX_FMT_NONE;
+		return;
 	}
-	*ImgInfo.pWidth = width;
-	*ImgInfo.pHeight = height;
-	u32 datasize = width * height * ImgInfo.formatBPP;
-	*ImgInfo.required_size = datasize;
-	if (ImgInfo.data_size >= datasize)
+	ImgInfo.Width = width;
+	ImgInfo.Height = height;
+	ImgInfo.data_size = width * height * ImgInfo.formatBPP;
+	ImgInfo.dst = ImgInfo.request_buffer_delegate(ImgInfo.data_size);
+	if (ImgInfo.dst != nullptr)
 	{
-		memcpy(ImgInfo.dst, temp, datasize);
-		returnTex = ImgInfo.desiredTex;		
+		ImgInfo.resultTex = ImgInfo.desiredTex;
+		memcpy(ImgInfo.dst, temp, ImgInfo.data_size);
 	}
 	SOIL_free_image_data(temp);
-	return returnTex;
+	return;
 }
 
 
-inline PC_TexFormat LoadImageFromFile_DDS(LoadImageInfo &ImgInfo)
+inline void LoadImageFromFile_DDS(ImageLoaderParams &ImgInfo)
 {
-	PC_TexFormat returnTex = PC_TEX_FMT_NONE;
-	DDSCompression ddsc = DDSLoader::Load_Image(ImgInfo.Path, ImgInfo.pWidth, ImgInfo.pHeight, ImgInfo.dst, ImgInfo.data_size, ImgInfo.required_size, ImgInfo.nummipmaps);
+	DDSCompression ddsc = DDSLoader::Load_Image(ImgInfo);
 	if (ddsc != DDSCompression::DDSC_NONE)
 	{
 		switch (ddsc)
 		{
 		case DDSC_DXT1:
-			returnTex = PC_TEX_FMT_DXT1;
+			ImgInfo.resultTex = PC_TEX_FMT_DXT1;
 			break;
 		case DDSC_DXT3:
-			returnTex = PC_TEX_FMT_DXT3;
+			ImgInfo.resultTex = PC_TEX_FMT_DXT3;
 			break;
 		case DDSC_DXT5:
-			returnTex = PC_TEX_FMT_DXT5;
+			ImgInfo.resultTex = PC_TEX_FMT_DXT5;
 			break;
 		default:
 			break;
 		}
 	}
-	return returnTex;
 }
 
-PC_TexFormat GetHiresTex(u64 key, u32 *pWidth, u32 *pHeight, u32 *required_size, u32 *numMips, s32 texformat, u32 data_size, u8 *dst, bool rgbaonly)
+HiresTexture* HiresTexture::Search(
+	const u8* texture, 
+	size_t texture_size, 
+	const u8* tlut, 
+	size_t tlut_size, 
+	u32 width, 
+	u32 height, 
+	s32 format,
+	bool rgbaonly,
+	std::function<u8*(size_t)> request_buffer_delegate)
 {
-	if (texturecount == 0)
+	if (textureMap.size() == 0)
 	{
-		return PC_TEX_FMT_NONE;
+		return nullptr;
 	}
-	auto iter = textureMap.find(key);
+	u64 hash = GetTextureHash(texture, texture_size, tlut, tlut_size);
+	u64 key = GetTextureKey(hash, format);
+	HiresTextureCache::iterator iter = textureMap.find(key);
 	if (iter == textureMap.end())
-		return PC_TEX_FMT_NONE;
-	LoadImageInfo imgInfo;
-	*required_size = data_size;
-	imgInfo.data_size = data_size;
-	imgInfo.dst = dst;
-	imgInfo.Path = iter->second.first.c_str();
-	imgInfo.pHeight = pHeight;
-	imgInfo.pWidth = pWidth;
-	imgInfo.required_size = required_size;
-	imgInfo.nummipmaps = numMips;
-	PC_TexFormat returnTex = PC_TEX_FMT_NONE;	
+	{
+		return nullptr;
+	}
+	HiresTextureCacheItem& current = iter->second;
+	if (current.size() == 0)
+	{
+		return nullptr;
+	}
+	// First level is mandatory
+	if (current[0].first.size() == 0)
+	{
+		return nullptr;
+	}
+	HiresTexture* ret = nullptr;	
 	std::string ddscode(".dds");
 	std::string cddscode(".DDS");
-	if (iter->second.second.compare(ddscode) == 0 || iter->second.second.compare(cddscode) == 0)
+	u8* buffer_pointer;
+	u32 maxwidth;
+	u32 maxheight;
+	for (size_t level = 0; level < current.size(); level++)
 	{
-		// We have a dds, try to load compressed data
-		returnTex = LoadImageFromFile_DDS(imgInfo);
-	}
-	else
-	{
-		texformat = rgbaonly ? GX_TF_RGBA8 : texformat;
-		switch (texformat)
+		ImageLoaderParams imgInfo;
+		imgInfo.dst = nullptr;
+		imgInfo.Path = current[0].first.c_str();
+		if (level == 0)
 		{
-		case GX_TF_IA4:
-		case GX_TF_IA8:
-			imgInfo.desiredTex = PC_TEX_FMT_IA8;
-			imgInfo.forcedchannels = SOIL_LOAD_LA;
-			imgInfo.formatBPP = 2;
-			break;
-		default:
-			imgInfo.desiredTex = PC_TEX_FMT_RGBA32;
-			imgInfo.forcedchannels = SOIL_LOAD_RGBA;
-			imgInfo.formatBPP = 4;
+			imgInfo.request_buffer_delegate = [&](size_t requiredsize)
+			{
+				// Pre allocate space for the textures and potetially all the posible mip levels 
+				return request_buffer_delegate(requiredsize * 2);
+			};
+		}
+		else
+		{
+			imgInfo.request_buffer_delegate = [&](size_t requiredsize)
+			{
+				// just return the pointer to pack the textures in a single buffer.
+				return buffer_pointer;
+			};
+		}
+		if (current[0].second.compare(ddscode) == 0 || current[0].second.compare(cddscode) == 0)
+		{
+			LoadImageFromFile_DDS(imgInfo);
+		}
+		else
+		{
+			format = rgbaonly ? GX_TF_RGBA8 : format;
+			switch (format)
+			{
+			case GX_TF_IA4:
+			case GX_TF_IA8:
+				imgInfo.desiredTex = PC_TEX_FMT_IA8;
+				imgInfo.forcedchannels = SOIL_LOAD_LA;
+				imgInfo.formatBPP = 2;
+				break;
+			default:
+				imgInfo.desiredTex = PC_TEX_FMT_RGBA32;
+				imgInfo.forcedchannels = SOIL_LOAD_RGBA;
+				imgInfo.formatBPP = 4;
+				break;
+			}
+			LoadImageFromFile_Soil(imgInfo);
+		}
+		if (imgInfo.dst == nullptr || imgInfo.resultTex == PC_TEX_FMT_NONE)
+		{
+			ERROR_LOG(VIDEO, "Custom texture %s failed to load level %i", imgInfo.Path, level);
 			break;
 		}
-		returnTex = LoadImageFromFile_Soil(imgInfo);
+		if (level == 0)
+		{
+			ret = new HiresTexture();
+			ret->m_format = imgInfo.resultTex;			
+			ret->m_width = maxwidth = imgInfo.Width;
+			ret->m_height = maxheight = imgInfo.Height;
+		}
+		else
+		{
+			if (maxwidth != imgInfo.Width
+				|| maxheight != imgInfo.Height
+				|| ret->m_format != imgInfo.resultTex)
+			{
+				ERROR_LOG(VIDEO, 
+					"Custom texture %s invalid level %i size: %i %i required: %i %i format: %i", 
+					imgInfo.Path, 
+					level, 
+					imgInfo.Width, 
+					imgInfo.Height, 
+					maxwidth, 
+					maxheight,
+					ret->m_format);
+				break;
+			}
+		}
+		ret->m_levels++;
+		buffer_pointer = imgInfo.dst + imgInfo.data_size;
+		maxwidth = maxwidth >> 1;
+		maxheight = maxheight >> 1;
+		if (imgInfo.nummipmaps > 0)
+		{
+			// Using a dds with packed levels
+			// Generate Levels
+			ret->m_levels = imgInfo.nummipmaps;
+			break;
+		}
 	}
-	if (returnTex == PC_TEX_FMT_NONE)
-	{
-		ERROR_LOG(VIDEO, "Custom texture %s failed to load", imgInfo.Path);
-	}
-	else
-	{
-		INFO_LOG(VIDEO, "Loading custom texture from %s", imgInfo.Path);
-	}
-	return returnTex;
-}
-
+	return ret;
 }

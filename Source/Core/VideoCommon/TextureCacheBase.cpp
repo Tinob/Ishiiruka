@@ -26,8 +26,8 @@ enum
 };
 
 TextureCache *g_texture_cache;
-GC_ALIGNED16(u8 *TextureCache::temp) = NULL;
-u32 TextureCache::temp_size;
+GC_ALIGNED16(u8 *TextureCache::temp) = nullptr;
+size_t TextureCache::temp_size;
 u32 TextureCache::s_prev_tlut_address = 0;
 u64 TextureCache::s_prev_tlut_hash = 0;
 u32 TextureCache::s_prev_tlut_size = 0;
@@ -42,6 +42,16 @@ TextureCache::TCacheEntryBase::~TCacheEntryBase()
 {
 }
 
+void TextureCache::CheckTempSize(size_t required_size)
+{
+	if (required_size <= temp_size)
+		return;
+
+	temp_size = required_size;
+	FreeAlignedMemory(temp);
+	temp = (u8*)AllocateAlignedMemory(temp_size, 16);
+}
+
 TextureCache::TextureCache()
 {
 	temp_size = 2048 * 2048 * 4;
@@ -51,9 +61,9 @@ TextureCache::TextureCache()
 	TexDecoder_SetTexFmtOverlayOptions(g_ActiveConfig.bTexFmtOverlayEnable, g_ActiveConfig.bTexFmtOverlayCenter);
 
 	if(g_ActiveConfig.bHiresTextures && !g_ActiveConfig.bDumpTextures)
-		HiresTextures::Init(SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID.c_str());
+		HiresTexture::Init(SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID);
 
-	SetHash64Function(g_ActiveConfig.bHiresTextures || g_ActiveConfig.bDumpTextures);
+	SetHash64Function();
 
 	invalidate_texture_cache_requested = false;
 }
@@ -101,10 +111,6 @@ void TextureCache::OnConfigChanged(VideoConfig& config)
 		{
 			g_texture_cache->Invalidate();
 
-			if(g_ActiveConfig.bHiresTextures)
-				HiresTextures::Init(SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID.c_str());
-
-			SetHash64Function(g_ActiveConfig.bHiresTextures || g_ActiveConfig.bDumpTextures);
 			TexDecoder_SetTexFmtOverlayOptions(g_ActiveConfig.bTexFmtOverlayEnable, g_ActiveConfig.bTexFmtOverlayCenter);
 
 			invalidate_texture_cache_requested = false;
@@ -247,92 +253,23 @@ void TextureCache::ClearRenderTargets()
 	}
 }
 
-bool TextureCache::CheckForCustomTextureLODs(u64 tex_hash, s32 texformat, u32 levels)
+void TextureCache::DumpTexture(TCacheEntryBase* entry, std::string basename, u32 level)
 {
-	if (levels == 1)
-		return false;
-	u32 tex_hash_u32 = tex_hash & 0x00000000FFFFFFFFLL;	
-	// Just checking if the necessary files exist, if they can't be loaded or have incorrect dimensions LODs will be black
-	for (u32 level = 1; level < levels; ++level)
-	{
-		u64 key = ((u64)tex_hash_u32) | (((u64)texformat) << 32) | (((u64)level) << 48);
-		if (!HiresTextures::HiresTexExists(key))
-		{
-			if (level > 1)
-				WARN_LOG(VIDEO, "Couldn't find custom texture LOD with index %i (filename: %x), disabling custom LODs for this texture", level, tex_hash_u32);
-			return false;
-		}
-	}
-	return true;
-}
-
-PC_TexFormat TextureCache::LoadCustomTexture(u64 tex_hash, s32 texformat, u32 level, u32& width, u32& height, u32 &nummipsinbuffer, bool rgbaonly)
-{
-	char texPathTemp[MAX_PATH];
-	u32 newWidth = 0;
-	u32 newHeight = 0;
-	u32 tex_hash_u32 = tex_hash & 0x00000000FFFFFFFFLL;
-	u64 key = ((u64)tex_hash_u32) | (((u64)texformat) << 32) | (((u64)level) << 48);	
-
-	u32 required_size = 0;
-	PC_TexFormat ret = HiresTextures::GetHiresTex(key, &newWidth, &newHeight, &required_size, &nummipsinbuffer, texformat, temp_size, temp, rgbaonly);
-	if (ret == PC_TEX_FMT_NONE && temp_size < required_size)
-	{
-		
-		u32 maxsize = (u32)g_renderer->GetMaxTextureSize();
-		if (newWidth <= maxsize && newHeight <= maxsize)
-		{
-			// Allocate more memory and try again
-			while (temp_size < required_size)
-			{
-				temp_size *= 4;
-			}
-			FreeAlignedMemory(TextureCache::temp);
-			TextureCache::temp = (u8*)AllocateAlignedMemory(temp_size, 16);
-			ret = HiresTextures::GetHiresTex(key, &newWidth, &newHeight, &required_size, &nummipsinbuffer, texformat, temp_size, temp, rgbaonly);
-		}
-	}
-
-	if (ret != PC_TEX_FMT_NONE)
-	{
-		if (level > 0 && (newWidth != width || newHeight != height))
-		{
-			ERROR_LOG(VIDEO, "Invalid custom texture size %dx%d for texture %s. This mipmap layer _must_ be %dx%d.", newWidth, newHeight, texPathTemp, width, height);
-			return PC_TEX_FMT_NONE;
-		}
-		width = newWidth;
-		height = newHeight;
-	}
-	return ret;
-}
-
-void TextureCache::DumpTexture(TCacheEntryBase* entry, u32 level)
-{
-	char szTemp[MAX_PATH];
 	std::string szDir = File::GetUserPath(D_DUMPTEXTURES_IDX) +
 		SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID;
 
 	// make sure that the directory exists
-	if (false == File::Exists(szDir) || false == File::IsDirectory(szDir))
-		File::CreateDir(szDir.c_str());
+	if (!File::Exists(szDir) || !File::IsDirectory(szDir))
+		File::CreateDir(szDir);
 
-	// For compatibility with old texture packs, don't print the LOD index for level 0.
-	 // TODO: TLUT format should actually be stored in filename? :/
-	if (level == 0)
+	if (level > 0)
 	{
-		sprintf(szTemp, "%s/%s_%08x_%i.png", szDir.c_str(),
-				SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID.c_str(),
-				(u32) (entry->hash & 0x00000000FFFFFFFFLL), entry->format & 0xFFFF);
+		basename += StringFromFormat("_mip%i", level);
 	}
-	else
-	{
-		sprintf(szTemp, "%s/%s_%08x_%i_mip%i.png", szDir.c_str(),
-				SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID.c_str(),
-				(u32) (entry->hash & 0x00000000FFFFFFFFLL), entry->format & 0xFFFF, level);
-	}
+	std::string filename = szDir + "/" + basename + ".png";
 
-	if (false == File::Exists(szTemp))
-		entry->Save(szTemp, level);
+	if (!File::Exists(filename))
+		entry->Save(filename, level);
 }
 
 static u32 CalculateLevelSize(u32 level_0_size, u32 level)
@@ -466,40 +403,41 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 			entry = nullptr;
 		}
 	}
-	bool using_custom_texture = false;
-	bool using_custom_lods = using_custom_texture;
-	u32 nummipsinbuffer = 0;
-	bool bUseRGBATextures = false;
+	std::unique_ptr<HiresTexture> hires_tex;
+	const bool buserRGBAtextures = (g_ActiveConfig.backend_info.APIType & API_D3D9) == 0;
 	if (g_ActiveConfig.bHiresTextures)
 	{
-		// This function may modify width/height.
-		// This is the only Format apart from rgba that is produced by the custom texture loader 
-		// so if  is not suported just output rgba
-		bUseRGBATextures = !g_ActiveConfig.backend_info.bSupportedFormats[PC_TEX_FMT_IA8];
-		pcfmt = LoadCustomTexture(tex_hash, texformat, 0, width, height, nummipsinbuffer, bUseRGBATextures);
-		if (pcfmt != PC_TEX_FMT_NONE)
+		hires_tex.reset(HiresTexture::Search(
+			src_data, texture_size,
+			&texMem[tlutaddr], palette_size,
+			width, height,
+			texformat, 
+			buserRGBAtextures,
+			[](size_t required_size)
+			{
+				TextureCache::CheckTempSize(required_size);
+				return TextureCache::temp;
+			}
+			));
+		if (hires_tex)
 		{
-			if (expandedWidth != width || expandedHeight != height)
+			if (hires_tex->m_width != width || hires_tex->m_height != height)
 			{
-				expandedWidth = width;
-				expandedHeight = height;
-
-				// If we thought we could reuse the texture before, make sure to delete it now!
-				delete entry;
-				entry = NULL;
+				width = hires_tex->m_width;
+				height = hires_tex->m_height;
+				// If we thought we could reuse the texture before, make sure to pool it now!
+				if (entry)
+				{
+					delete entry;
+					entry = nullptr;
+				}
 			}
-			using_custom_texture = true;
-			if (nummipsinbuffer == 0)
-			{
-				using_custom_lods = CheckForCustomTextureLODs(tex_hash, texformat, texLevels);
-			}
-			else
-			{
-				using_custom_lods = true;
-			}
+			expandedWidth = hires_tex->m_width;
+			expandedHeight = hires_tex->m_height;
+			pcfmt = hires_tex->m_format;
 		}
 	}
-	if (isPaletteTexture && palette_upload_required && !using_custom_texture)
+	if (isPaletteTexture && palette_upload_required && !hires_tex)
 	{
 		g_texture_cache->LoadLut(tlutfmt, &texMem[tlutaddr], palette_size);
 	}
@@ -508,6 +446,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 		pcfmt = g_texture_cache->GetNativeTextureFormat(texformat, tlutfmt, width, height);
 	}
 	// Only load native mips if their dimensions fit to our virtual texture dimensions
+	const bool using_custom_lods = hires_tex && hires_tex->m_levels >= texLevels;
 	const bool use_native_mips = use_mipmaps && !using_custom_lods && (width == nativeW && height == nativeH);
 	texLevels = (use_native_mips || using_custom_lods) ? texLevels : 1; // TODO: Should be forced to 1 for non-pow2 textures (e.g. efb copies with automatically adjusted IR)
 	
@@ -528,13 +467,13 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 	entry->SetGeneralParameters(address, texture_size, full_format, entry->num_mipmaps);
 	entry->SetDimensions(nativeW, nativeH, width, height);
 	entry->hash = tex_hash;
-	entry->custom_texture = using_custom_texture;
+	entry->custom_texture = !!hires_tex;
 	if (entry->IsEfbCopy() && !g_ActiveConfig.bCopyEFBToTexture)
 		entry->type = TCET_EC_DYNAMIC;
 	else
 		entry->type = TCET_NORMAL;
 	// load texture
-	if (using_custom_texture)
+	if (hires_tex)
 	{
 		entry->Load(TextureCache::temp, width, height, expandedWidth, 0);
 	}
@@ -553,9 +492,17 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 		}
 	}	
 	
-
-	if (g_ActiveConfig.bDumpTextures && !using_custom_texture)
-		DumpTexture(entry, 0);
+	std::string basename = "";
+	if (g_ActiveConfig.bDumpTextures && !hires_tex)
+	{
+		basename = HiresTexture::GenBaseName(
+			src_data, texture_size,
+			&texMem[tlutaddr], palette_size,
+			width, height,
+			texformat
+			);
+		DumpTexture(entry, basename, 0);
+	}
 
 	u32 level = 1;
 	// load mips - TODO: Loading mipmaps from tmem is untested!
@@ -588,29 +535,21 @@ TextureCache::TCacheEntryBase* TextureCache::Load(u32 const stage,
 				mip_src_data += TexDecoder_GetTextureSizeInBytes(expanded_mip_width, expanded_mip_height, texformat);
 
 				if (g_ActiveConfig.bDumpTextures)
-					DumpTexture(entry, level);
+					DumpTexture(entry, basename, level);
 			}
 		}
 		else if (using_custom_lods)
 		{
 			u8 *Bufferptr = TextureCache::temp;
-			if (nummipsinbuffer > 0)
+			if (hires_tex->m_levels > 1)
 			{
-				texLevels = std::min(texLevels, nummipsinbuffer);
+				texLevels = std::min(texLevels, hires_tex->m_levels);
 				Bufferptr += TextureUtil::GetTextureSizeInBytes(width, height, pcfmt);
-			}
-			for (; level != texLevels; ++level)
-			{
-				u32 mip_width = CalculateLevelSize(width, level);
-				u32 mip_height = CalculateLevelSize(height, level);
-				if (nummipsinbuffer == 0)
+				for (; level != texLevels; ++level)
 				{
-					u32 nmips = 0;
-					LoadCustomTexture(tex_hash, texformat, level, mip_width, mip_height, nmips, bUseRGBATextures);
-				}
-				entry->Load(Bufferptr, mip_width, mip_height, mip_width, level);
-				if (nummipsinbuffer > 0)
-				{
+					u32 mip_width = CalculateLevelSize(width, level);
+					u32 mip_height = CalculateLevelSize(height, level);
+					entry->Load(Bufferptr, mip_width, mip_height, mip_width, level);
 					Bufferptr += TextureUtil::GetTextureSizeInBytes(mip_width, mip_height, pcfmt);
 				}
 			}

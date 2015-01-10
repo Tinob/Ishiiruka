@@ -115,13 +115,12 @@ public:
 	virtual void LoadLut(u32 lutFmt, void* addr, u32 size) {}	
 	
 protected:
-	static  GC_ALIGNED16(u8 *temp);	
-	static u32 temp_size;
+	static GC_ALIGNED16(u8 *temp);	
+	static size_t temp_size;
 	TextureCache();
 private:
-	static bool CheckForCustomTextureLODs(u64 tex_hash, s32 texformat, u32 levels);
-	static PC_TexFormat LoadCustomTexture(u64 tex_hash, s32 texformat, u32 level, u32& width, u32& height, u32 &nummipsinbuffer, bool rgbaonly);
-	static void DumpTexture(TCacheEntryBase* entry, u32 level);
+	static void CheckTempSize(size_t required_size);
+	static void DumpTexture(TCacheEntryBase* entry, std::string basename, u32 level);
 	static u32 s_prev_tlut_address;
 	static u32 s_prev_tlut_size;
 	static u64 s_prev_tlut_hash;
