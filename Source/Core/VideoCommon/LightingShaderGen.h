@@ -63,7 +63,7 @@ static void GenerateLightShader(T& object, LightingUidData& uid_data, int index,
 				break;
 			case LIGHTDIF_SIGN:
 			case LIGHTDIF_CLAMP:
-				object.Write("ldir = normalize(" LIGHT_POS".xyz - pos.xyz);\n", LIGHT_POS_PARAMS(lightsName, index));
+				object.Write("ldir = normalize(0.00001*(" LIGHT_POS".xyz - pos.xyz));\n", LIGHT_POS_PARAMS(lightsName, index));
 				object.Write("lacc.%s += %sdot(ldir, _norm0)) * " LIGHT_COL";\n",
 					swizzle, chan.diffusefunc != LIGHTDIF_SIGN ? "max(0.0," : "(", LIGHT_COL_PARAMS(lightsName, index, swizzle));
 				break;
@@ -72,6 +72,7 @@ static void GenerateLightShader(T& object, LightingUidData& uid_data, int index,
 		}
 		else // spec and spot
 		{
+			int diffn = chan.diffusefunc;
 			if (chan.attnfunc == 3)
 			{ // spot
 				object.Write("ldir = " LIGHT_POS".xyz - pos.xyz;\n", LIGHT_POS_PARAMS(lightsName, index));
@@ -84,17 +85,24 @@ static void GenerateLightShader(T& object, LightingUidData& uid_data, int index,
 				object.Write("attn = max(0.0, " LIGHT_COSATT".x + " LIGHT_COSATT".y*attn + " LIGHT_COSATT".z*attn*attn) / dot(" LIGHT_DISTATT".xyz, float3(1.0,dist,dist2));\n",
 					LIGHT_COSATT_PARAMS(lightsName, index), LIGHT_COSATT_PARAMS(lightsName, index), LIGHT_COSATT_PARAMS(lightsName, index), LIGHT_DISTATT_PARAMS(lightsName, index));
 			}
-			else if (chan.attnfunc == 1)
+			else if (chan.attnfunc == 1 && chan.diffusefunc == 0)
 			{ // specular
-				object.Write("ldir = normalize(" LIGHT_POS".xyz);\n", LIGHT_POS_PARAMS(lightsName, index));
+				object.Write("ldir = normalize(0.00001*" LIGHT_POS".xyz);\n", LIGHT_POS_PARAMS(lightsName, index));
 				object.Write("attn = (dot(_norm0,ldir) >= 0.0) ? max(0.0, dot(_norm0, normalize(" LIGHT_DIR".xyz))) : 0.0;\n", LIGHT_DIR_PARAMS(lightsName, index));
 				// attn*attn may overflow
 				object.Write("attn = max(0.0, " LIGHT_COSATT".x + " LIGHT_COSATT".y*attn + " LIGHT_COSATT".z*attn*attn) / (" LIGHT_DISTATT".x + " LIGHT_DISTATT".y*attn + " LIGHT_DISTATT".z*attn*attn);\n",
 					LIGHT_COSATT_PARAMS(lightsName, index), LIGHT_COSATT_PARAMS(lightsName, index), LIGHT_COSATT_PARAMS(lightsName, index),
 					LIGHT_DISTATT_PARAMS(lightsName, index), LIGHT_DISTATT_PARAMS(lightsName, index), LIGHT_DISTATT_PARAMS(lightsName, index));
+				diffn = LIGHTDIF_NONE;
 			}
-
-			switch (chan.diffusefunc)
+			else 
+			{
+				object.Write("ldir = normalize(" LIGHT_POS".xyz);\n", LIGHT_POS_PARAMS(lightsName, index));
+				object.Write("attn = (dot(_norm0,ldir) >= 0.0) ? max(0.0, dot(_norm0, (" LIGHT_DIR".xyz))) : 0.0;\n", LIGHT_DIR_PARAMS(lightsName, index));
+				object.Write("attn = 1.0 + 3*attn*attn / ( 32 - 31*attn*attn);\n");
+				diffn = LIGHTDIF_CLAMP;
+			}
+			switch (diffn)
 			{
 			case LIGHTDIF_NONE:
 				object.Write("lacc.%s += attn * " LIGHT_COL";\n", swizzle, LIGHT_COL_PARAMS(lightsName, index, swizzle));
