@@ -5,9 +5,11 @@
 #include <d3dx9.h>
 #include <string>
 
+#include "VideoBackends/DX9/D3DShader.h"
+
 #include "VideoCommon/VideoConfig.h"
 #include "VideoCommon/HLSLCompiler.h"
-#include "D3DShader.h"
+
 
 namespace DX9
 {

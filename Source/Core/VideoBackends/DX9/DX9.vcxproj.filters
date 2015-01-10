@@ -2,7 +2,6 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="FramebufferManager.cpp">
       <Filter>Render</Filter>
     </ClCompile>
@@ -44,9 +43,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Globals.h" />
     <ClInclude Include="main.h" />
-    <ClInclude Include="stdafx.h" />
     <ClInclude Include="VideoBackend.h" />
     <ClInclude Include="FramebufferManager.h">
       <Filter>Render</Filter>

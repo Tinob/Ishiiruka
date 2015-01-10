@@ -6,7 +6,12 @@
 #include "Common/Hash.h"
 #include "Common/FileUtil.h"
 #include "Common/LinearDiskCache.h"
+
 #include "Core/ConfigManager.h"
+
+#include "VideoBackends/DX9/D3DBase.h"
+#include "VideoBackends/DX9/D3DShader.h"
+#include "VideoBackends/DX9/PixelShaderCache.h"
 
 #include "VideoCommon/Statistics.h"
 #include "VideoCommon/VideoConfig.h"
@@ -19,10 +24,6 @@
 #include "VideoCommon/Debugger.h"
 #include "VideoCommon/HLSLCompiler.h"
 
-#include "Globals.h"
-#include "D3DBase.h"
-#include "D3DShader.h"
-#include "PixelShaderCache.h"
 namespace DX9
 {
 

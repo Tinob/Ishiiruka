@@ -13,10 +13,9 @@
 #include "VideoCommon/VertexLoader.h"
 #include "VideoCommon/HLSLCompiler.h"
 
-#include "Globals.h"
-#include "D3DBase.h"
-#include "D3DShader.h"
-#include "VertexShaderCache.h"
+#include "VideoBackends/DX9/D3DBase.h"
+#include "VideoBackends/DX9/D3DShader.h"
+#include "VideoBackends/DX9/VertexShaderCache.h"
 
 
 namespace DX9

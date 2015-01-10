@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "D3DBase.h"
+#include "VideoBackends/DX9/D3DBase.h"
 #include "VideoCommon/FramebufferManagerBase.h"
 
 // On the GameCube, the game sends a request for the graphics processor to

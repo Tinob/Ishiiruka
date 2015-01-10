@@ -7,7 +7,8 @@
 #include <unordered_map>
 #include <string>
 
-#include "D3DBase.h"
+#include "VideoBackends/DX9/D3DBase.h"
+
 #include "VideoCommon/VertexShaderGen.h"
 
 namespace DX9

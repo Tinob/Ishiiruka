@@ -2,12 +2,12 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include "D3DBase.h"
-#include "VideoCommon/VideoConfig.h"
-#include "Render.h"
-#include "VideoCommon/XFStructs.h"
 #include "Common/StringUtil.h"
+#include "VideoBackends/DX9/D3DBase.h"
+#include "VideoBackends/DX9/Render.h"
+#include "VideoCommon/VideoConfig.h"
 #include "VideoCommon/VideoCommon.h"
+#include "VideoCommon/XFStructs.h"
 
 D3DXSAVESURFACETOFILEATYPE PD3DXSaveSurfaceToFileA = nullptr;
 D3DXSAVETEXTURETOFILEATYPE PD3DXSaveTextureToFileA = nullptr;

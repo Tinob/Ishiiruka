@@ -6,7 +6,9 @@
 
 #include <math.h>
 #include <string>
-#include "D3DBase.h"
+
+#include "VideoBackends/DX9/D3DBase.h"
+
 #include "Common/MathUtil.h"
 
 namespace DX9

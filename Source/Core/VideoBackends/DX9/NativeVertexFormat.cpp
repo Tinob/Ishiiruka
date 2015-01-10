@@ -2,16 +2,16 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include "D3DBase.h"
-
+#include "Common/MemoryUtil.h"
 #include "Common/x64Emitter.h"
 #include "Common/x64ABI.h"
-#include "Common/MemoryUtil.h"
-#include "VideoCommon/VertexShaderGen.h"
+
+#include "VideoBackends/DX9/D3DBase.h"
+#include "VideoBackends/DX9/VertexManager.h"
 
 #include "VideoCommon/CPMemory.h"
 #include "VideoCommon/NativeVertexFormat.h"
-#include "VertexManager.h"
+#include "VideoCommon/VertexShaderGen.h"
 
 namespace DX9
 {

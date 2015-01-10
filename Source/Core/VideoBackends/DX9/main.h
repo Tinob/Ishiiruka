@@ -2,13 +2,11 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef MAIN_H
-#define MAIN_H
+#pragma once
 
 #include <string>
 
-#include "VideoBackend.h"
-#include "Render.h"
-#include "VideoCommon/MainBase.h"
+#include "VideoBackends/DX9/Render.h"
+#include "VideoBackends/DX9/VideoBackend.h"
 
-#endif
+#include "VideoCommon/MainBase.h"

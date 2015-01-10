@@ -2,24 +2,26 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-// Fast image conversion using OpenGL shaders.
-// This kind of stuff would be a LOT nicer with OpenCL.
-
-#include "TextureConverter.h"
-#include "VideoCommon/TextureConversionShader.h"
-#include "PixelShaderCache.h"
-#include "VideoCommon/PixelShaderManager.h"
-#include "VideoCommon/VertexShaderManager.h"
-#include "VertexShaderCache.h"
-#include "FramebufferManager.h"
-#include "Globals.h"
-#include "VideoCommon/VideoConfig.h"
-#include "VideoCommon/ImageWrite.h"
-#include "Render.h"
-#include "TextureCache.h"
+// Fast image conversion using HLSL shaders.
+// This kind of stuff would be a LOT nicer with OpenCL opr DirectCompute.
 #include "Math.h"
+
 #include "Common/FileUtil.h"
+
 #include "Core/HW/Memmap.h"
+
+#include "VideoBackends/DX9/FramebufferManager.h"
+#include "VideoBackends/DX9/PixelShaderCache.h"
+#include "VideoBackends/DX9/Render.h"
+#include "VideoBackends/DX9/TextureCache.h"
+#include "VideoBackends/DX9/TextureConverter.h"
+#include "VideoBackends/DX9/VertexShaderCache.h"
+
+#include "VideoCommon/ImageWrite.h"
+#include "VideoCommon/PixelShaderManager.h"
+#include "VideoCommon/TextureConversionShader.h"
+#include "VideoCommon/VertexShaderManager.h"
+#include "VideoCommon/VideoConfig.h"
 
 namespace DX9
 {

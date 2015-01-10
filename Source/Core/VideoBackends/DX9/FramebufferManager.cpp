@@ -2,14 +2,16 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include "D3DBase.h"
-#include "Render.h"
-#include "FramebufferManager.h"
-#include "VideoCommon/VideoConfig.h"
-#include "PixelShaderCache.h"
-#include "VertexShaderCache.h"
-#include "TextureConverter.h"
 #include "Core/HW/Memmap.h"
+
+#include "VideoBackends/DX9/D3DBase.h"
+#include "VideoBackends/DX9/FramebufferManager.h"
+#include "VideoBackends/DX9/PixelShaderCache.h"
+#include "VideoBackends/DX9/Render.h"
+#include "VideoBackends/DX9/TextureConverter.h"
+#include "VideoBackends/DX9/VertexShaderCache.h"
+
+#include "VideoCommon/VideoConfig.h"
 
 namespace DX9
 {

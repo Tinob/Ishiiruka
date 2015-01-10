@@ -2,14 +2,14 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _TEXTURECONVERTER_H_
-#define _TEXTURECONVERTER_H_
+#pragma once
+
+#include "VideoBackends/DX9/D3DBase.h"
+#include "VideoBackends/DX9/D3DShader.h"
+#include "VideoBackends/DX9/D3DTexture.h"
+#include "VideoBackends/DX9/D3DUtil.h"
 
 #include "VideoCommon/VideoCommon.h"
-#include "D3DBase.h"
-#include "D3DTexture.h"
-#include "D3DUtil.h"
-#include "D3DShader.h"
 
 namespace DX9
 {
@@ -34,5 +34,3 @@ int EncodeToRamFromTexture(u32 address,LPDIRECT3DTEXTURE9 source_texture, u32 So
 }
 
 }  // namespace DX9
-
-#endif // _TEXTURECONVERTER_H_

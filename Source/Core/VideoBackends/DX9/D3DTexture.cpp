@@ -2,8 +2,8 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include "D3DBase.h"
-#include "D3DTexture.h"
+#include "VideoBackends/DX9/D3DBase.h"
+#include "VideoBackends/DX9/D3DTexture.h"
 #include "VideoCommon/TextureUtil.h"
 
 namespace DX9

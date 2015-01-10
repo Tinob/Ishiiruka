@@ -33,6 +33,7 @@
 #include "VideoCommon/ImageWrite.h"
 #include "VideoCommon/OnScreenDisplay.h"
 #include "VideoCommon/PixelEngine.h"
+#include "VideoCommon/PixelShaderManager.h"
 #include "VideoCommon/Statistics.h"
 #include "VideoCommon/VertexShaderManager.h"
 #include "VideoCommon/VideoConfig.h"
@@ -198,7 +199,6 @@ Renderer::Renderer(void *&window_handle)
 	s_LastEFBScale = g_ActiveConfig.iEFBScale;
 	s_last_fullscreen_mode = g_ActiveConfig.bFullscreen;
 	CalculateTargetSize(s_backbuffer_width, s_backbuffer_height);
-
 	SetupDeviceObjects();
 
 
@@ -947,7 +947,7 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 
 		delete g_framebuffer_manager;
 		g_framebuffer_manager = new FramebufferManager;
-		float clear_col[4] = { 0.f, 0.f, 0.f, 1.f };
+		float clear_col[4] = { 0.f, 0.f, 0.f, 1.f };		
 		D3D::context->ClearRenderTargetView(FramebufferManager::GetEFBColorTexture()->GetRTV(), clear_col);
 		D3D::context->ClearDepthStencilView(FramebufferManager::GetEFBDepthTexture()->GetDSV(), D3D11_CLEAR_DEPTH, 1.f, 0);
 	}
@@ -996,10 +996,8 @@ void Renderer::ApplyState(bool bUseDstAlpha)
 		SetLogicOpMode();
 	}
 
-	ID3D11Buffer* vertexConstants = VertexShaderCache::GetConstantBuffer();
-
-	D3D::stateman->SetPixelConstants(PixelShaderCache::GetConstantBuffer(), g_ActiveConfig.bEnablePixelLighting ? vertexConstants : nullptr);
-	D3D::stateman->SetVertexConstants(vertexConstants);
+	D3D::stateman->SetPixelConstants(PixelShaderCache::GetConstantBuffer());
+	D3D::stateman->SetVertexConstants(VertexShaderCache::GetConstantBuffer());
 
 	D3D::stateman->SetPixelShader(PixelShaderCache::GetActiveShader());
 	D3D::stateman->SetVertexShader(VertexShaderCache::GetActiveShader());

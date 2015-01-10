@@ -5,44 +5,45 @@
 #include <list>
 #include <d3dx9.h>
 #include <cinttypes>
+
 #include "Common/StringUtil.h"
 #include "Common/Common.h"
 #include "Common/Atomic.h"
 #include "Common/FileUtil.h"
 #include "Common/Thread.h"
 #include "Common/Timer.h"
-#include "VideoCommon/Statistics.h"
-#include "Core/Host.h"
 
-#include "VideoCommon/VideoConfig.h"
-#include "main.h"
-#include "VertexManager.h"
-#include "VideoCommon/PixelEngine.h"
-#include "Render.h"
-#include "VideoCommon/OpcodeDecoding.h"
-#include "VideoCommon/BPStructs.h"
-#include "VideoCommon/XFStructs.h"
-#include "D3DUtil.h"
-#include "VideoCommon/VertexShaderManager.h"
-#include "VideoCommon/PixelShaderManager.h"
-#include "VertexShaderCache.h"
-#include "PixelShaderCache.h"
-#include "VideoCommon/VertexLoaderManager.h"
-#include "TextureCache.h"
-#include "VideoCommon/AVIDump.h"
-#include "VideoCommon/OnScreenDisplay.h"
-#include "FramebufferManager.h"
-#include "VideoCommon/Fifo.h"
-#include "TextureConverter.h"
-#include "VideoCommon/Debugger.h"
 #include "Core/Core.h"
-#include "Core/Movie.h"
-#include "VideoCommon/BPFunctions.h"
-#include "VideoCommon/FPSCounter.h"
 #include "Core/ConfigManager.h"
-#include "PerfQuery.h"
-#include <strsafe.h>
+#include "Core/Host.h"
+#include "Core/Movie.h"
 
+#include "VideoBackends/DX9/D3DUtil.h"
+#include "VideoBackends/DX9/FramebufferManager.h"
+#include "VideoBackends/DX9/main.h"
+#include "VideoBackends/DX9/PerfQuery.h"
+#include "VideoBackends/DX9/PixelShaderCache.h"
+#include "VideoBackends/DX9/Render.h"
+#include "VideoBackends/DX9/VertexManager.h"
+#include "VideoBackends/DX9/VertexShaderCache.h"
+#include "VideoBackends/DX9/TextureCache.h"
+#include "VideoBackends/DX9/TextureConverter.h"
+
+#include "VideoCommon/AVIDump.h"
+#include "VideoCommon/Debugger.h"
+#include "VideoCommon/Fifo.h"
+#include "VideoCommon/FPSCounter.h"
+#include "VideoCommon/BPFunctions.h"
+#include "VideoCommon/BPStructs.h"
+#include "VideoCommon/OnScreenDisplay.h"
+#include "VideoCommon/OpcodeDecoding.h"
+#include "VideoCommon/PixelEngine.h"
+#include "VideoCommon/PixelShaderManager.h"
+#include "VideoCommon/Statistics.h"
+#include "VideoCommon/VertexLoaderManager.h"
+#include "VideoCommon/VertexShaderManager.h"
+#include "VideoCommon/VideoConfig.h"
+#include "VideoCommon/XFStructs.h"
 
 namespace DX9
 {
@@ -904,6 +905,7 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 
 		D3D::dev->SetRenderTarget(0, D3D::GetBackBufferSurface());
 		D3D::dev->SetDepthStencilSurface(D3D::GetBackBufferDepthSurface());
+
 		if (windowResized || fullscreen_changed)
 		{
 			// Apply fullscreen state

@@ -1,6 +1,8 @@
+// Copyright 2013 Dolphin Emulator Project
+// Licensed under GPLv2
+// Refer to the license.txt file included.
 
-#ifndef _RENDER_H_
-#define _RENDER_H_
+#pragma once
 
 #include "VideoCommon/RenderBase.h"
 
@@ -71,5 +73,3 @@ public:
 };
 
 }  // namespace DX9
-
-#endif

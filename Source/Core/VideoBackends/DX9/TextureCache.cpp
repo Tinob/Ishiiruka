@@ -4,31 +4,31 @@
 
 #include <d3dx9.h>
 
-#include "Globals.h"
-#include "VideoCommon/Statistics.h"
+#include "Common/CommonPaths.h"
 #include "Common/MemoryUtil.h"
 #include "Common/Hash.h"
-#include "Core/HW/Memmap.h"
-
-#include "Common/CommonPaths.h"
 #include "Common/FileUtil.h"
 
-#include "D3DBase.h"
-#include "D3DTexture.h"
-#include "D3DUtil.h"
-#include "FramebufferManager.h"
-#include "PixelShaderCache.h"
-#include "VideoCommon/PixelShaderManager.h"
-#include "VideoCommon/VertexShaderManager.h"
-#include "VertexShaderCache.h"
+#include "Core/HW/Memmap.h"
 
-#include "Render.h"
+#include "VideoBackends/DX9/D3DBase.h"
+#include "VideoBackends/DX9/D3DTexture.h"
+#include "VideoBackends/DX9/D3DUtil.h"
+#include "VideoBackends/DX9/FramebufferManager.h"
+#include "VideoBackends/DX9/PixelShaderCache.h"
+#include "VideoBackends/DX9/Render.h"
+#include "VideoBackends/DX9/TextureCache.h"
+#include "VideoBackends/DX9/TextureConverter.h"
+#include "VideoBackends/DX9/VertexShaderCache.h"
 
-#include "VideoCommon/TextureDecoder.h"
-#include "TextureCache.h"
-#include "VideoCommon/HiresTextures.h"
-#include "TextureConverter.h"
+#include "VideoCommon/VideoConfig.h"
 #include "VideoCommon/Debugger.h"
+#include "VideoCommon/HiresTextures.h"
+#include "VideoCommon/PixelShaderManager.h"
+#include "VideoCommon/Statistics.h"
+#include "VideoCommon/TextureDecoder.h"
+#include "VideoCommon/VertexShaderManager.h"
+
 
 extern s32 frameCount;
 

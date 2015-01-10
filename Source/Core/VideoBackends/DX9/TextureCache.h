@@ -2,17 +2,15 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _TEXTURECACHE_H
-#define _TEXTURECACHE_H
-
+#pragma once
 
 #include <map>
 
-#include "D3DBase.h"
-#include "VideoCommon/VideoCommon.h"
-#include "VideoCommon/BPMemory.h"
+#include "VideoBackends/DX9/D3DBase.h"
 
+#include "VideoCommon/BPMemory.h"
 #include "VideoCommon/TextureCacheBase.h"
+#include "VideoCommon/VideoCommon.h"
 
 namespace DX9
 {
@@ -61,5 +59,3 @@ private:
 };
 
 }
-
-#endif

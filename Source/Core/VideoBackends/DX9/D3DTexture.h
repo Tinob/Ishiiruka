@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "D3DBase.h"
+#include "VideoBackends/DX9/D3DBase.h"
 
 namespace DX9
 {

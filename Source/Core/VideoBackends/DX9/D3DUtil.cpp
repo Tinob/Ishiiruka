@@ -5,11 +5,11 @@
 #include "Common/Common.h"
 #include "Common/StringUtil.h"
 
-#include "D3DBase.h"
-#include "D3DUtil.h"
-#include "Render.h"
-#include "PixelShaderCache.h"
-#include "VertexShaderCache.h"
+#include "VideoBackends/DX9/D3DBase.h"
+#include "VideoBackends/DX9/D3DUtil.h"
+#include "VideoBackends/DX9/PixelShaderCache.h"
+#include "VideoBackends/DX9/Render.h"
+#include "VideoBackends/DX9/VertexShaderCache.h"
 
 namespace DX9
 {

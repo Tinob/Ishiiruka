@@ -1,6 +1,8 @@
+// Copyright 2013 Dolphin Emulator Project
+// Licensed under GPLv2
+// Refer to the license.txt file included.
 
-#ifndef DX9_VIDEO_BACKEND_H_
-#define DX9_VIDEO_BACKEND_H_
+#pragma once
 
 #include "VideoCommon/VideoBackendBase.h"
 
@@ -25,5 +27,3 @@ class VideoBackend : public VideoBackendHardware
 };
 
 }
-
-#endif

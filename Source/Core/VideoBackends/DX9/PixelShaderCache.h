@@ -8,10 +8,11 @@
 
 #include "Common/Common.h"
 #include "Common/LinearDiskCache.h"
+
+#include "VideoBackends/DX9/D3DBase.h"
+
 #include "VideoCommon/PixelShaderGen.h"
 #include "VideoCommon/VertexShaderGen.h"
-
-#include "D3DBase.h"
 
 namespace DX9
 {

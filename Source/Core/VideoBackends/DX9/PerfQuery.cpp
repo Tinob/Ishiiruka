@@ -1,7 +1,12 @@
-#include "VideoCommon/RenderBase.h"
+// Copyright 2013 Dolphin Emulator Project
+// Licensed under GPLv2
+// Refer to the license.txt file included.#include "VideoCommon/RenderBase.h"
 
-#include "D3DBase.h"
-#include "PerfQuery.h"
+#include "VideoBackends/DX9/D3DBase.h"
+#include "VideoBackends/DX9/PerfQuery.h"
+
+#include "VideoCommon/RenderBase.h"
+#include "VideoCommon/VideoCommon.h"
 
 namespace DX9 {
 
