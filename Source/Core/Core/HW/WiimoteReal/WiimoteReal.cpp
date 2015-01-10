@@ -116,7 +116,8 @@ void Wiimote::ClearReadQueue()
 
 	// The "Clear" function isn't thread-safe :/
 	while (m_read_reports.Pop(rpt))
-	{}
+	{
+	}
 }
 
 void Wiimote::ControlChannel(const u16 channel, const void* const data, const u32 size)
@@ -174,8 +175,8 @@ void Wiimote::InterruptChannel(const u16 channel, const void* const _data, const
 		}
 	}
 	else if (rpt[1] == WM_WRITE_SPEAKER_DATA &&
-	         (!SConfig::GetInstance().m_WiimoteEnableSpeaker ||
-	         (!wm->m_status.speaker || wm->m_speaker_mute)))
+		(!SConfig::GetInstance().m_WiimoteEnableSpeaker ||
+		(!wm->m_status.speaker || wm->m_speaker_mute)))
 	{
 		// Translate speaker data reports into rumble reports.
 		rpt[1] = WM_RUMBLE;
@@ -195,13 +196,13 @@ bool Wiimote::Read()
 	if (result > 0 && m_channel > 0)
 	{
 		if (SConfig::GetInstance().m_LocalCoreStartupParameter.iBBDumpPort > 0 &&
-		    m_index == WIIMOTE_BALANCE_BOARD)
+			m_index == WIIMOTE_BALANCE_BOARD)
 		{
 			static sf::UdpSocket Socket;
 			Socket.send((char*)rpt.data(),
-			            rpt.size(),
-			            sf::IpAddress::LocalHost,
-		                SConfig::GetInstance().m_LocalCoreStartupParameter.iBBDumpPort);
+				rpt.size(),
+				sf::IpAddress::LocalHost,
+				SConfig::GetInstance().m_LocalCoreStartupParameter.iBBDumpPort);
 		}
 
 		// Add it to queue
@@ -307,22 +308,22 @@ void Wiimote::Prepare(int _index)
 bool Wiimote::PrepareOnThread()
 {
 	// core buttons, no continuous reporting
-	u8 static const mode_report[] = {WM_SET_REPORT | WM_BT_OUTPUT, WM_REPORT_MODE, 0, WM_REPORT_CORE};
+	u8 static const mode_report[] = { WM_SET_REPORT | WM_BT_OUTPUT, WM_REPORT_MODE, 0, WM_REPORT_CORE };
 
 	// Set the active LEDs and turn on rumble.
-	u8 static const led_report[] = {WM_SET_REPORT | WM_BT_OUTPUT, WM_LEDS, u8(WIIMOTE_LED_1 << (m_index%WIIMOTE_BALANCE_BOARD) | 0x1)};
+	u8 static const led_report[] = { WM_SET_REPORT | WM_BT_OUTPUT, WM_LEDS, u8(WIIMOTE_LED_1 << (m_index%WIIMOTE_BALANCE_BOARD) | 0x1) };
 
 	// Turn off rumble
-	u8 static const rumble_report[] = {WM_SET_REPORT | WM_BT_OUTPUT, WM_RUMBLE, 0};
+	u8 static const rumble_report[] = { WM_SET_REPORT | WM_BT_OUTPUT, WM_RUMBLE, 0 };
 
 	// Request status report
-	u8 static const req_status_report[] = {WM_SET_REPORT | WM_BT_OUTPUT, WM_REQUEST_STATUS, 0};
+	u8 static const req_status_report[] = { WM_SET_REPORT | WM_BT_OUTPUT, WM_REQUEST_STATUS, 0 };
 	// TODO: check for sane response?
 
 	return (IOWrite(mode_report, sizeof(mode_report)) &&
-	        IOWrite(led_report, sizeof(led_report)) &&
-	        (SLEEP(200), IOWrite(rumble_report, sizeof(rumble_report))) &&
-	        IOWrite(req_status_report, sizeof(req_status_report)));
+		IOWrite(led_report, sizeof(led_report)) &&
+		(SLEEP(200), IOWrite(rumble_report, sizeof(rumble_report))) &&
+		IOWrite(req_status_report, sizeof(req_status_report)));
 }
 
 void Wiimote::EmuStart()
@@ -530,6 +531,13 @@ void Wiimote::ThreadFunc()
 
 	bool ok = ConnectInternal();
 
+	if (!ok)
+	{
+		// try again, it might take a moment to settle
+		Common::SleepCurrentThread(100);
+		ok = ConnectInternal();
+	}
+
 	SetReady();
 
 	if (!ok)
@@ -563,7 +571,7 @@ void LoadSettings()
 	IniFile inifile;
 	inifile.Load(ini_filename);
 
-	for (unsigned int i=0; i<MAX_WIIMOTES; ++i)
+	for (unsigned int i = 0; i<MAX_WIIMOTES; ++i)
 	{
 		std::string secname("Wiimote");
 		secname += (char)('1' + i);
@@ -852,7 +860,7 @@ bool IsValidBluetoothName(const std::string& name)
 bool IsBalanceBoardName(const std::string& name)
 {
 	return
-	"Nintendo RVL-WBC-01" == name;
+		"Nintendo RVL-WBC-01" == name;
 }
 
 }; // end of namespace
