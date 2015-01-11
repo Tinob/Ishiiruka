@@ -220,6 +220,8 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, u32 dstFormat,
 		u8* dst = Memory::GetPointer(addr);
 		u64 hash = GetHash64(dst,encoded_size,g_ActiveConfig.iSafeTextureCache_ColorSamples);
 
+		size_in_bytes = (u32)encoded_size;
+
 		// Mark texture entries in destination address range dynamic unless caching is enabled and the texture entry is up to date
 		if (!g_ActiveConfig.bEFBCopyCacheEnable)
 			TextureCache::MakeRangeDynamic(addr,encoded_size);
@@ -245,7 +247,7 @@ PC_TexFormat TextureCache::GetNativeTextureFormat(const s32 texformat, const Tlu
 }
 
 TextureCache::TCacheEntryBase* TextureCache::CreateTexture(u32 width, u32 height,
-	u32 expanded_width, u32 tex_levels, PC_TexFormat pcfmt)
+	u32 tex_levels, PC_TexFormat pcfmt)
 {
 	// if no rgba support so swap is needed
 	bool swap_r_b = !g_ActiveConfig.backend_info.bSupportedFormats[PC_TEX_FMT_RGBA32] && pcfmt == PC_TEX_FMT_RGBA32;

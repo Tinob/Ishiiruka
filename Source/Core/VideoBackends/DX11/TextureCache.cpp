@@ -170,7 +170,7 @@ PC_TexFormat TextureCache::GetNativeTextureFormat(const s32 texformat, const Tlu
 }
 
 TextureCache::TCacheEntryBase* TextureCache::CreateTexture(u32 width, u32 height,
-	u32 expanded_width, u32 tex_levels, PC_TexFormat pcfmt)
+	u32 tex_levels, PC_TexFormat pcfmt)
 {
 	bool swaprg = false;
 	bool convertrgb565 = false;
@@ -291,6 +291,8 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, unsigned int dstFo
 		size_t encoded_size = s_encoder->Encode(dst, dstFormat, srcFormat, srcRect, isIntensity, scaleByHalf);
 
 		u64 hash = GetHash64(dst, (int)encoded_size, g_ActiveConfig.iSafeTextureCache_ColorSamples);
+		
+		size_in_bytes = (u32)encoded_size;
 
 		// Mark texture entries in destination address range dynamic unless caching is enabled and the texture entry is up to date
 		if (!g_ActiveConfig.bEFBCopyCacheEnable)

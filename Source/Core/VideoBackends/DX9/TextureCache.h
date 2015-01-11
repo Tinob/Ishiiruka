@@ -53,7 +53,7 @@ private:
 	PC_TexFormat GetNativeTextureFormat(const s32 texformat, const TlutFormat tlutfmt, u32 width, u32 height);
 
 	TCacheEntryBase* CreateTexture(u32 width, u32 height,
-		u32 expanded_width, u32 tex_levels, PC_TexFormat pcfmt);
+		u32 tex_levels, PC_TexFormat pcfmt);
 
 	TCacheEntryBase* CreateRenderTargetTexture(u32 scaled_tex_w, u32 scaled_tex_h);
 };

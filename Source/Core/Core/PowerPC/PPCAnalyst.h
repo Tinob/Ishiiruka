@@ -79,11 +79,11 @@ struct BlockRegStats
 	bool any;
 	bool anyTimer;
 
-	int GetTotalNumAccesses(int reg) {return numReads[reg] + numWrites[reg];}
+	int GetTotalNumAccesses(int reg) { return numReads[reg] + numWrites[reg]; }
 	int GetUseRange(int reg)
 	{
 		return std::max(lastRead[reg], lastWrite[reg]) -
-			   std::min(firstRead[reg], firstWrite[reg]);
+			std::min(firstRead[reg], firstWrite[reg]);
 	}
 
 	bool IsUsed(int reg)
@@ -154,6 +154,12 @@ struct CodeBlock
 
 	// Did we have a memory_exception?
 	bool m_memory_exception;
+
+	// Which GQRs this block uses, if any.
+	BitSet8 m_gqr_used;
+
+	// Which GQRs this block modifies, if any.
+	BitSet8 m_gqr_modified;
 };
 
 class PPCAnalyzer

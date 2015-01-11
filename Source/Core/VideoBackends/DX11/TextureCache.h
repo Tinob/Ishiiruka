@@ -50,7 +50,7 @@ private:
 	PC_TexFormat GetNativeTextureFormat(const s32 texformat, const TlutFormat tlutfmt, u32 width, u32 height);
 
 	TextureCache::TCacheEntryBase* CreateTexture(u32 width, u32 height,
-		u32 expanded_width, u32 tex_levels, PC_TexFormat pcfmt);
+		u32 tex_levels, PC_TexFormat pcfmt);
 
 	TCacheEntryBase* CreateRenderTargetTexture(unsigned int scaled_tex_w, unsigned int scaled_tex_h);
 	u64 EncodeToRamFromTexture(u32 address, void* source_texture, u32 SourceW, u32 SourceH, bool bFromZBuffer, bool bIsIntensityFmt, u32 copyfmt, int bScaleByHalf, const EFBRectangle& source) {return 0;};

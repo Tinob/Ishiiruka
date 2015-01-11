@@ -31,7 +31,6 @@ public:
 		u32 addr;
 		u32 size_in_bytes;
 		u64 hash;
-		//u32 pal_hash;
 		u32 format;
 		PC_TexFormat pcformat;
 		enum TexCacheEntryType type;
@@ -60,10 +59,9 @@ public:
 			virtual_height = _virtual_height;
 		}
 
-		void SetHashes(u64 _hash/*, u32 _pal_hash*/)
+		void SetHashes(u64 _hash)
 		{
 			hash = _hash;
-			//pal_hash = _pal_hash;
 		}
 
 
@@ -102,7 +100,7 @@ public:
 	virtual PC_TexFormat GetNativeTextureFormat(const s32 texformat, 
 		const TlutFormat tlutfmt, u32 width, u32 height) = 0;
 	virtual TCacheEntryBase* CreateTexture(u32 width, u32 height,
-		u32 expanded_width, u32 tex_levels, PC_TexFormat pcfmt) = 0;
+		u32 tex_levels, PC_TexFormat pcfmt) = 0;
 	virtual TCacheEntryBase* CreateRenderTargetTexture(u32 scaled_tex_w, u32 scaled_tex_h) = 0;
 
 	static TCacheEntryBase* Load(u32 stage, u32 address, u32 width, u32 height,

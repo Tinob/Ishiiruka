@@ -37,7 +37,7 @@ bool ToggleFullscreen(Display *dpy, Window win)
 
 	// Send the event
 	if (!XSendEvent(dpy, DefaultRootWindow(dpy), False,
-	                SubstructureRedirectMask | SubstructureNotifyMask, &event))
+		SubstructureRedirectMask | SubstructureNotifyMask, &event))
 	{
 		ERROR_LOG(VIDEO, "Failed to switch fullscreen/windowed mode.");
 		return false;
@@ -56,12 +56,12 @@ void InhibitScreensaver(Display *dpy, Window win, bool suspend)
 		(char *)"xdg-screensaver",
 		(char *)(suspend ? "suspend" : "resume"),
 		id,
-		nullptr};
+		nullptr };
 	pid_t pid;
 	if (!posix_spawnp(&pid, "xdg-screensaver", nullptr, nullptr, argv, environ))
 	{
 		int status;
-		while (waitpid (pid, &status, 0) == -1);
+		while (waitpid(pid, &status, 0) == -1);
 
 		DEBUG_LOG(VIDEO, "Started xdg-screensaver (PID = %d)", (int)pid);
 	}
@@ -79,7 +79,7 @@ XRRConfiguration::XRRConfiguration(Display *_dpy, Window _win)
 	int XRRMajorVersion, XRRMinorVersion;
 
 	if (!XRRQueryVersion(dpy, &XRRMajorVersion, &XRRMinorVersion) ||
-	    (XRRMajorVersion < 1 || (XRRMajorVersion == 1 && XRRMinorVersion < 3)))
+		(XRRMajorVersion < 1 || (XRRMajorVersion == 1 && XRRMinorVersion < 3)))
 	{
 		WARN_LOG(VIDEO, "XRRExtension not supported.");
 		bValid = false;
@@ -133,8 +133,9 @@ void XRRConfiguration::Update()
 	// Get the resolution setings for fullscreen mode
 	unsigned int fullWidth, fullHeight;
 	char *output_name = nullptr;
+	char auxFlag = '\0';
 	if (SConfig::GetInstance().m_LocalCoreStartupParameter.strFullscreenResolution.find(':') ==
-			std::string::npos)
+		std::string::npos)
 	{
 		fullWidth = fb_width;
 		fullHeight = fb_height;
@@ -142,8 +143,9 @@ void XRRConfiguration::Update()
 	else
 	{
 		sscanf(SConfig::GetInstance().m_LocalCoreStartupParameter.strFullscreenResolution.c_str(),
-				"%m[^:]: %ux%u", &output_name, &fullWidth, &fullHeight);
+			"%m[^:]: %ux%u%c", &output_name, &fullWidth, &fullHeight, &auxFlag);
 	}
+	bool want_interlaced = ('i' == auxFlag);
 
 	for (int i = 0; i < screenResources->noutput; i++)
 	{
@@ -171,7 +173,8 @@ void XRRConfiguration::Update()
 							if (output_info->modes[j] == screenResources->modes[k].id)
 							{
 								if (fullWidth == screenResources->modes[k].width &&
-										fullHeight == screenResources->modes[k].height)
+									fullHeight == screenResources->modes[k].height &&
+									want_interlaced == !!(screenResources->modes[k].modeFlags & RR_Interlace))
 								{
 									fullMode = screenResources->modes[k].id;
 									if (crtcInfo->x + (int)screenResources->modes[k].width > fs_fb_width)
@@ -210,7 +213,7 @@ void XRRConfiguration::Update()
 	else
 	{
 		ERROR_LOG(VIDEO, "Failed to obtain fullscreen size.\n"
-				"Using current desktop resolution for fullscreen.");
+			"Using current desktop resolution for fullscreen.");
 	}
 }
 
@@ -225,16 +228,16 @@ void XRRConfiguration::ToggleDisplayMode(bool bFullscreen)
 	if (bFullscreen)
 	{
 		XRRSetCrtcConfig(dpy, screenResources, outputInfo->crtc, CurrentTime,
-				crtcInfo->x, crtcInfo->y, fullMode, crtcInfo->rotation,
-				crtcInfo->outputs, crtcInfo->noutput);
+			crtcInfo->x, crtcInfo->y, fullMode, crtcInfo->rotation,
+			crtcInfo->outputs, crtcInfo->noutput);
 		XRRSetScreenSize(dpy, win, fs_fb_width, fs_fb_height, fs_fb_width_mm, fs_fb_height_mm);
 		bIsFullscreen = true;
 	}
 	else
 	{
 		XRRSetCrtcConfig(dpy, screenResources, outputInfo->crtc, CurrentTime,
-				crtcInfo->x, crtcInfo->y, crtcInfo->mode, crtcInfo->rotation,
-				crtcInfo->outputs, crtcInfo->noutput);
+			crtcInfo->x, crtcInfo->y, crtcInfo->mode, crtcInfo->rotation,
+			crtcInfo->outputs, crtcInfo->noutput);
 		XRRSetScreenSize(dpy, win, fb_width, fb_height, fb_width_mm, fb_height_mm);
 		bIsFullscreen = false;
 	}
@@ -261,9 +264,10 @@ void XRRConfiguration::AddResolutions(std::vector<std::string>& resos)
 				{
 					if (output_info->modes[j] == screenResources->modes[k].id)
 					{
+						bool interlaced = !!(screenResources->modes[k].modeFlags & RR_Interlace);
 						const std::string strRes =
 							std::string(output_info->name) + ": " +
-							std::string(screenResources->modes[k].name);
+							std::string(screenResources->modes[k].name) + (interlaced ? "i" : "");
 						// Only add unique resolutions
 						if (std::find(resos.begin(), resos.end(), strRes) == resos.end())
 						{

@@ -184,7 +184,7 @@ void TextureCache::TCacheEntry::SetFormat()
 }
 
 TextureCache::TCacheEntryBase* TextureCache::CreateTexture(u32 width, u32 height,
-	u32 expanded_width, u32 tex_levels, PC_TexFormat pcfmt)
+	u32 tex_levels, PC_TexFormat pcfmt)
 {
 	TCacheEntry &entry = *new TCacheEntry;
 	entry.pcformat = pcfmt;
@@ -343,6 +343,8 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, unsigned int dstFo
 
 		u8* dst = Memory::GetPointer(addr);
 		u64 const new_hash = GetHash64(dst, encoded_size, g_ActiveConfig.iSafeTextureCache_ColorSamples);
+
+		size_in_bytes = (u32)encoded_size;
 
 		// Mark texture entries in destination address range dynamic unless caching is enabled and the texture entry is up to date
 		if (!g_ActiveConfig.bEFBCopyCacheEnable)

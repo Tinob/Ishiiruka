@@ -15,6 +15,7 @@
 #include "Core/PatchEngine.h"
 #include "Core/HLE/HLE.h"
 #include "Core/HW/ProcessorInterface.h"
+#include "Core/PowerPC/JitInterface.h"
 #include "Core/PowerPC/Profiler.h"
 #include "Core/PowerPC/Jit64/Jit.h"
 #include "Core/PowerPC/Jit64/Jit64_Tables.h"
@@ -74,25 +75,25 @@ using namespace PowerPC;
 
 // Optimization Ideas -
 /*
-  * Assume SP is in main RAM (in Wii mode too?) - partly done
-  * Assume all floating point loads and double precision loads+stores are to/from main ram
-    (single precision stores can be used in write gather pipe, specialized fast check added)
-  * AMD only - use movaps instead of movapd when loading ps from memory?
-  * HLE functions like floorf, sin, memcpy, etc - they can be much faster
-  * ABI optimizations - drop F0-F13 on blr, for example. Watch out for context switching.
-    CR2-CR4 are non-volatile, rest of CR is volatile -> dropped on blr.
-	R5-R12 are volatile -> dropped on blr.
-  * classic inlining across calls.
-  * Track which registers a block clobbers without using, then take advantage of this knowledge
-    when compiling a block that links to that block.
-  * Track more dependencies between instructions, e.g. avoiding PPC_FP code, single/double
-    conversion, movddup on non-paired singles, etc where possible.
-  * Support loads/stores directly from xmm registers in jit_util and the backpatcher; this might
-    help AMD a lot since gpr/xmm transfers are slower there.
-  * Smarter register allocation in general; maybe learn to drop values once we know they won't be
-    used again before being overwritten?
-  * More flexible reordering; there's limits to how far we can go because of exception handling
-    and such, but it's currently limited to integer ops only. This can definitely be made better.
+* Assume SP is in main RAM (in Wii mode too?) - partly done
+* Assume all floating point loads and double precision loads+stores are to/from main ram
+(single precision stores can be used in write gather pipe, specialized fast check added)
+* AMD only - use movaps instead of movapd when loading ps from memory?
+* HLE functions like floorf, sin, memcpy, etc - they can be much faster
+* ABI optimizations - drop F0-F13 on blr, for example. Watch out for context switching.
+CR2-CR4 are non-volatile, rest of CR is volatile -> dropped on blr.
+R5-R12 are volatile -> dropped on blr.
+* classic inlining across calls.
+* Track which registers a block clobbers without using, then take advantage of this knowledge
+when compiling a block that links to that block.
+* Track more dependencies between instructions, e.g. avoiding PPC_FP code, single/double
+conversion, movddup on non-paired singles, etc where possible.
+* Support loads/stores directly from xmm registers in jit_util and the backpatcher; this might
+help AMD a lot since gpr/xmm transfers are slower there.
+* Smarter register allocation in general; maybe learn to drop values once we know they won't be
+used again before being overwritten?
+* More flexible reordering; there's limits to how far we can go because of exception handling
+and such, but it's currently limited to integer ops only. This can definitely be made better.
 */
 
 // The BLR optimization is nice, but it means that JITted code can overflow the
@@ -493,11 +494,11 @@ void Jit64::Trace()
 void Jit64::Jit(u32 em_address)
 {
 	if (GetSpaceLeft() < 0x10000 ||
-	    farcode.GetSpaceLeft() < 0x10000 ||
-	    trampolines.GetSpaceLeft() < 0x10000 ||
-	    blocks.IsFull() ||
-	    SConfig::GetInstance().m_LocalCoreStartupParameter.bJITNoBlockCache ||
-	    m_clear_cache_asap)
+		farcode.GetSpaceLeft() < 0x10000 ||
+		trampolines.GetSpaceLeft() < 0x10000 ||
+		blocks.IsFull() ||
+		SConfig::GetInstance().m_LocalCoreStartupParameter.bJITNoBlockCache ||
+		m_clear_cache_asap)
 	{
 		ClearCache();
 	}
@@ -605,6 +606,35 @@ const u8* Jit64::DoJit(u32 em_address, PPCAnalyst::CodeBuffer *code_buf, JitBloc
 	js.skipnext = false;
 	js.carryFlagSet = false;
 	js.carryFlagInverted = false;
+	js.assumeNoPairedQuantize = false;
+
+	// If the block only uses one GQR and the GQR is zero at compile time, make a guess that the block
+	// never uses quantized loads/stores. Many paired-heavy games use largely float loads and stores,
+	// which are significantly faster when inlined (especially in MMU mode, where this lets them use
+	// fastmem).
+	// Insert a check that the GQR is still zero at the start of the block in case our guess turns out
+	// wrong.
+	// TODO: support any other constant GQR value, not merely zero/unquantized: we can optimize quantized
+	// loadstores too, it'd just be more code.
+	if (code_block.m_gqr_used.Count() == 1 && js.pairedQuantizeAddresses.find(js.blockStart) == js.pairedQuantizeAddresses.end())
+	{
+		int gqr = *code_block.m_gqr_used.begin();
+		if (!code_block.m_gqr_modified[gqr] && !GQR(gqr))
+		{
+			CMP(32, PPCSTATE(spr[SPR_GQR0 + gqr]), Imm8(0));
+			FixupBranch failure = J_CC(CC_NZ, true);
+			SwitchToFarCode();
+			SetJumpTarget(failure);
+			MOV(32, PPCSTATE(pc), Imm32(js.blockStart));
+			ABI_PushRegistersAndAdjustStack({}, 0);
+			ABI_CallFunctionC((void *)&JitInterface::CompileExceptionCheck, (u32)JitInterface::ExceptionType::EXCEPTIONS_PAIRED_QUANTIZE);
+			ABI_PopRegistersAndAdjustStack({}, 0);
+			JMP(asm_routines.dispatcher, true);
+			SwitchToNearCode();
+			js.assumeNoPairedQuantize = true;
+		}
+	}
+
 	// Translate instructions
 	for (u32 i = 0; i < code_block.m_num_instructions; i++)
 	{
