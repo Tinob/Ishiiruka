@@ -607,7 +607,25 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 	int Y = Tr.top;
 	int Width  = Tr.right - Tr.left;
 	int Height = Tr.bottom - Tr.top;
-	
+	if (X < 0)
+	{
+		Width = std::min(Width - X, s_backbuffer_width);
+		X = 0;
+	}
+	if (Y < 0)
+	{
+		Height = std::min(Height - Y, s_backbuffer_height);
+		Y = 0;
+	}
+	if (Width > s_backbuffer_width)
+	{
+		Width = s_backbuffer_width;
+	}
+
+	if (Height > s_backbuffer_height)
+	{
+		Height = s_backbuffer_height;
+	}
 	if(g_ActiveConfig.iStereoMode) {		
 		VertexShaderManager::ResetView();
 		if(s_b3D_RightFrame)
