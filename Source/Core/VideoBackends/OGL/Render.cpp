@@ -712,38 +712,8 @@ void Renderer::Init()
 }
 
 // Create On-Screen-Messages
-void Renderer::DrawDebugInfo()
+void Renderer::ShowEfbCopyRegions()
 {
-	// Reset viewport for drawing text
-	glViewport(0, 0, GLInterface->GetBackBufferWidth(), GLInterface->GetBackBufferHeight());
-
-	// Draw various messages on the screen, like FPS, statistics, etc.
-	std::string debug_info;
-
-	if (g_ActiveConfig.bShowFPS || SConfig::GetInstance().m_ShowFrameCount)
-	{
-		std::string fps = "";
-		if (g_ActiveConfig.bShowFPS)
-			debug_info += StringFromFormat("FPS: %d", m_fps_counter.m_fps);
-
-		if (g_ActiveConfig.bShowFPS && SConfig::GetInstance().m_ShowFrameCount)
-			debug_info += " - ";
-		if (SConfig::GetInstance().m_ShowFrameCount)
-		{
-			debug_info += StringFromFormat("Frame: %llu", (unsigned long long) Movie::g_currentFrame);
-			if (Movie::IsPlayingInput())
-				debug_info += StringFromFormat(" / %llu", (unsigned long long) Movie::g_totalFrames);
-		}
-
-		debug_info += "\n";
-	}
-
-	if (SConfig::GetInstance().m_ShowLag)
-		debug_info += StringFromFormat("Lag: %" PRIu64 "\n", Movie::g_currentLagCount);
-
-	if (SConfig::GetInstance().m_ShowInputDisplay)
-		debug_info += Movie::GetInputDisplay();
-
 	if (GLInterface->GetMode() == GLInterfaceMode::MODE_OPENGL && g_ActiveConfig.bShowEFBCopyRegions)
 	{
 		// Set Line Size
@@ -757,15 +727,15 @@ void Renderer::DrawDebugInfo()
 
 		// Draw EFB copy regions rectangles
 		int a = 0;
-		GLfloat color[3] = {0.0f, 1.0f, 1.0f};
+		GLfloat color[3] = { 0.0f, 1.0f, 1.0f };
 
 		for (const EFBRectangle& rect : stats.efb_regions)
 		{
 			GLfloat halfWidth = EFB_WIDTH / 2.0f;
 			GLfloat halfHeight = EFB_HEIGHT / 2.0f;
-			GLfloat x =  (GLfloat) -1.0f + ((GLfloat)rect.left / halfWidth);
-			GLfloat y =  (GLfloat) 1.0f - ((GLfloat)rect.top / halfHeight);
-			GLfloat x2 = (GLfloat) -1.0f + ((GLfloat)rect.right / halfWidth);
+			GLfloat x = (GLfloat)-1.0f + ((GLfloat)rect.left / halfWidth);
+			GLfloat y = (GLfloat) 1.0f - ((GLfloat)rect.top / halfHeight);
+			GLfloat x2 = (GLfloat)-1.0f + ((GLfloat)rect.right / halfWidth);
 			GLfloat y2 = (GLfloat) 1.0f - ((GLfloat)rect.bottom / halfHeight);
 
 			Vertices[a++] = x;
@@ -855,29 +825,14 @@ void Renderer::DrawDebugInfo()
 
 		s_ShowEFBCopyRegions.Bind();
 		glBindVertexArray(s_ShowEFBCopyRegions_VAO);
-		GLsizei count = static_cast<GLsizei>(stats.efb_regions.size() * 2*6);
+		GLsizei count = static_cast<GLsizei>(stats.efb_regions.size() * 2 * 6);
 		glDrawArrays(GL_LINES, 0, count);
-
-		// Restore Line Size
-		SetLineWidth();
 
 		// Clear stored regions
 		stats.efb_regions.clear();
 	}
-
-	if (g_ActiveConfig.bOverlayStats)
-		debug_info += Statistics::ToString();
-
-	if (g_ActiveConfig.bOverlayProjStats)
-		debug_info += Statistics::ToStringProj();
-
-	if (!debug_info.empty())
-	{
-		// Render a shadow, and then the text.
-		Renderer::RenderText(debug_info, 21, 21, 0xDD000000);
-		Renderer::RenderText(debug_info, 20, 20, 0xFF00FFFF);
-	}
 }
+
 
 void Renderer::RenderText(const std::string& text, int left, int top, u32 color)
 {
@@ -1692,8 +1647,9 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 	{
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-		DrawDebugInfo();
+		// Reset viewport for drawing text
+		glViewport(0, 0, GLInterface->GetBackBufferWidth(), GLInterface->GetBackBufferHeight());
+		ShowEfbCopyRegions();
 		DrawDebugText();
 
 		// Do our OSD callbacks

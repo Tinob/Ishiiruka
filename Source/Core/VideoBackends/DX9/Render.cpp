@@ -207,6 +207,7 @@ Renderer::~Renderer()
 void Renderer::RenderText(const std::string &text, int left, int top, u32 color)
 {
 	TargetRectangle trc = GetTargetRectangle();
+	D3D::font.DrawTextScaled((float)(trc.left + left + 1), (float)(trc.top + top + 1), 20, 20, 0.0f, color & 0xFF000000, text.c_str());
 	D3D::font.DrawTextScaled((float)(trc.left + left), (float)(trc.top + top), 20, 20, 0.0f, color, text.c_str());
 }
 
@@ -833,47 +834,7 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 		bLastFrameDumped = false;
 	}
 
-	// Finish up the current frame, print some stats
-	if (g_ActiveConfig.bShowFPS || SConfig::GetInstance().m_ShowFrameCount)
-	{
-		std::string fps = "";
-		if (g_ActiveConfig.bShowFPS)
-			fps = StringFromFormat("FPS: %d", m_fps_counter.m_fps);
-
-		if (g_ActiveConfig.bShowFPS && SConfig::GetInstance().m_ShowFrameCount)
-			fps += " - ";
-		if (SConfig::GetInstance().m_ShowFrameCount)
-		{
-			fps += StringFromFormat("Frame: %d", Movie::g_currentFrame);
-			if (Movie::IsPlayingInput())
-				fps += StringFromFormat(" / %d", Movie::g_totalFrames);
-		}
-		fps += "\n";
-		D3D::font.DrawTextScaled(float(X), float(Y), 20.0f, 20.0f, 0.0f, 0xFF00FFFF, fps);
-	}
-
-	if (SConfig::GetInstance().m_ShowLag)
-	{
-		std::string lag = StringFromFormat("Lag: %" PRIu64 "\n", Movie::g_currentLagCount);
-		D3D::font.DrawTextScaled(float(X), float(Y + 18), 20.0f, 20.0f, 0.0f, 0xFF00FFFF, lag);
-	}
-
-	if (g_ActiveConfig.bShowInputDisplay)
-	{
-		D3D::font.DrawTextScaled(float(X), float(Y + 36), 20.0f, 20.0f, 0.0f, 0xFF00FFFF, Movie::GetInputDisplay());
-	}
-
 	Renderer::DrawDebugText();
-
-	if (g_ActiveConfig.bOverlayStats)
-	{
-		D3D::font.DrawTextScaled(float(X), float(Y + 36), 20.0f, 20.0f, 0.0f, 0xFF00FFFF, Statistics::ToString());
-	}
-	else if (g_ActiveConfig.bOverlayProjStats)
-	{
-		D3D::font.DrawTextScaled(float(X), float(Y + 36), 20.0f, 20.0f, 0.0f, 0xFF00FFFF, Statistics::ToStringProj());
-	}
-
 	OSD::DrawMessages();
 	D3D::EndFrame();	
 
