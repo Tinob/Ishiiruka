@@ -714,6 +714,8 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 			sourceRc.right = (float)xfbSource->texWidth;
 			sourceRc.bottom = (float)xfbSource->texHeight;
 
+			sourceRc.right -= Renderer::EFBToScaledX(fbStride - fbWidth);
+
 			MathUtil::Rectangle<float> drawRc;
 
 			if (g_ActiveConfig.bUseRealXFB)
