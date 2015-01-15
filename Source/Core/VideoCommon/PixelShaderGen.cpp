@@ -271,27 +271,24 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 		&& bpm.UseEarlyDepthTest() 
 		&& (g_ActiveConfig.bFastDepthCalc || Pretest == AlphaTest::UNDETERMINED)
 		&& !bpm.genMode.zfreeze;
-	const bool per_pixel_depth =
-		bpm.zmode.testenable &&
-		((bpm.ztex2.op != ZTEXTURE_DISABLE && bpm.UseLateDepthTest())
+	const bool per_pixel_depth = bpm.zmode.testenable
+		&& ((bpm.ztex2.op != ZTEXTURE_DISABLE && bpm.UseLateDepthTest())
 		|| (!g_ActiveConfig.bFastDepthCalc && !forced_early_z)
 		|| bpm.genMode.zfreeze);
 	bool lightingEnabled = xfr.numChan.numColorChans > 0;
 	bool enable_pl = g_ActiveConfig.bEnablePixelLighting 
 		&& g_ActiveConfig.backend_info.bSupportsPixelLighting 
 		&& lightingEnabled;
-	uid_data.pixel_lighting = enable_pl;
+	
+	uid_data.per_pixel_depth = per_pixel_depth;	
 	uid_data.dstAlphaMode = dstAlphaMode;
-	uid_data.genMode_numindstages = bpm.genMode.numindstages;
-	uid_data.genMode_numtevstages = bpm.genMode.numtevstages;
+	uid_data.pixel_lighting = enable_pl;	
 	uid_data.genMode_numtexgens = bpm.genMode.numtexgens;
 	uid_data.zfreeze = bpm.genMode.zfreeze;
 	if (Write_Code)
 	{
 		InitializeRegisterState();
-		out.Write("//Pixel Shader for TEV stages\n");
-		out.Write("//%i TEV stages, %i texgens, %i IND stages\n",
-			numStages, numTexgen, bpm.genMode.numindstages);
+		out.Write("//Pixel Shader for TEV stages\n");		
 		out.Write(headerUtil);
 
 		if (ApiType == API_OPENGL)
@@ -601,7 +598,11 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 			}
 		}
 	}
-
+	
+	uid_data.genMode_numtevstages = bpm.genMode.numtevstages;
+	uid_data.genMode_numindstages = bpm.genMode.numindstages;
+	out.Write("//%i TEV stages, %i texgens, %i IND stages\n",
+		numStages, numTexgen, bpm.genMode.numindstages);
 	// indirect texture map lookup
 	int nIndirectStagesUsed = 0;
 	if (bpm.genMode.numindstages > 0)
@@ -679,8 +680,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 	// depth texture can safely be ignored if the result won't be written to the depth buffer (early_ztest) and isn't used for fog either
 	const bool skip_ztexture = !per_pixel_depth && !bpm.fog.c_proj_fsel.fsel;
 
-	uid_data.ztex_op = bpm.ztex2.op;
-	uid_data.per_pixel_depth = per_pixel_depth;
+	uid_data.ztex_op = bpm.ztex2.op;	
 	uid_data.forced_early_z = forced_early_z;
 	uid_data.fast_depth_calc = g_ActiveConfig.bFastDepthCalc;
 	uid_data.early_ztest = bpm.UseEarlyDepthTest();

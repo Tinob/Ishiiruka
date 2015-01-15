@@ -23,7 +23,6 @@ static bool s_bFogColorChanged;
 static bool s_bFogParamChanged;
 static bool s_bFogRangeAdjustChanged;
 static bool s_bViewPortChanged;
-static bool s_bEFBScaleChanged;
 static int nLightsChanged[2]; // min,max
 static int lastRGBAfull[2][4][4];
 static u8 s_nTexDimsChanged;
@@ -52,7 +51,7 @@ void PixelShaderManager::Dirty()
 	s_nTexDimsChanged = 0xFF;
 	s_nIndTexScaleChanged = 0xFF;
 	s_nIndTexMtxChanged = 15;
-	s_bEFBScaleChanged = s_bAlphaChanged = s_bZBiasChanged = s_bZTextureTypeChanged = s_bViewPortChanged = true;
+	s_bAlphaChanged = s_bZBiasChanged = s_bZTextureTypeChanged = s_bViewPortChanged = true;
 	s_bFogRangeAdjustChanged = s_bFogColorChanged = s_bFogParamChanged = true;
 	nLightsChanged[0] = 0; nLightsChanged[1] = 0x80;
 	nMaterialsChanged = 15;
@@ -275,14 +274,6 @@ void PixelShaderManager::SetConstants()
 		s_bFogRangeAdjustChanged = false;
 	}
 
-	if (s_bEFBScaleChanged)
-	{
-		m_buffer.SetConstant4<float>(C_EFBSCALE,
-			1.0f / float(Renderer::EFBToScaledXf(1)),
-			1.0f / float(Renderer::EFBToScaledYf(1)), 0.0f, 0.0f);
-		s_bEFBScaleChanged = false;
-	}
-
 	if (g_ActiveConfig.bEnablePixelLighting 
 		&& g_ActiveConfig.backend_info.bSupportsPixelLighting
 		&& xfmem.numChan.numColorChans > 0)
@@ -503,7 +494,9 @@ void PixelShaderManager::SetMaterialColorChanged(int index)
 
 void PixelShaderManager::SetEfbScaleChanged()
 {
-	s_bEFBScaleChanged = true;
+	m_buffer.SetConstant4<float>(C_EFBSCALE,
+			1.0f / float(Renderer::EFBToScaledXf(1)),
+			1.0f / float(Renderer::EFBToScaledYf(1)), 0.0f, 0.0f);
 	s_bViewPortChanged = true;
 }
 

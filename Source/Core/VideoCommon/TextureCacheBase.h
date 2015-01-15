@@ -60,6 +60,7 @@ public:
 		{
 			native_width = _native_width;
 			native_height = _native_height;
+			native_levels = _native_levels;
 		}
 
 		void SetHashes(u64 _hash)

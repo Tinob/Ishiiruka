@@ -381,10 +381,14 @@ TextureCache::TCacheEntryBase* TextureCache::Load(const u32 stage)
 		}
 
 		// 2. b) For normal textures, all texture parameters need to match
-		if (address == entry->addr && tex_hash == entry->hash && full_format == entry->format &&
+		if (address == entry->addr && 
+			tex_hash == entry->hash && 
+			full_format == entry->format &&
 			// If we are using custom textures the number of levels will be incorrect
 			// so ingnore it and reuse the texture
-			(entry->native_levels >= tex_levels || entry->custom_texture) && entry->native_width == nativeW && entry->native_height == nativeH)
+			(entry->native_levels >= tex_levels || entry->custom_texture) && 
+			entry->native_width == nativeW && 
+			entry->native_height == nativeH)
 		{
 			return ReturnEntry(stage, entry);
 		}
@@ -398,7 +402,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(const u32 stage)
 			width == entry->config.width &&
 			height == entry->config.height && 
 			full_format == entry->format && 
-			entry->config.levels >= tex_levels) ||
+			entry->config.levels >= texLevels) ||
 			(entry->type == TCET_EC_DYNAMIC && 
 			entry->native_width == width && 
 			entry->native_height == height)) &&
@@ -458,7 +462,15 @@ TextureCache::TCacheEntryBase* TextureCache::Load(const u32 stage)
 	// Only load native mips if their dimensions fit to our virtual texture dimensions
 	const bool using_custom_lods = hires_tex && hires_tex->m_levels >= texLevels;
 	const bool use_native_mips = use_mipmaps && !using_custom_lods && (width == nativeW && height == nativeH);
-	texLevels = (use_native_mips || using_custom_lods) ? texLevels : 1; // TODO: Should be forced to 1 for non-pow2 textures (e.g. efb copies with automatically adjusted IR)
+	// TODO: Should be forced to 1 for non-pow2 textures (e.g. efb copies with automatically adjusted IR)
+	if (!(use_native_mips || using_custom_lods))
+	{
+		texLevels = 1;
+	}
+	else if (using_custom_lods)
+	{
+		texLevels = hires_tex->m_levels;
+	}
 	
 	if (entry && entry->config.levels != texLevels)
 	{
@@ -503,7 +515,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(const u32 stage)
 				expandedHeight, 0);
 		}
 	}	
-	
+
 	std::string basename = "";
 	if (g_ActiveConfig.bDumpTextures && !hires_tex)
 	{
