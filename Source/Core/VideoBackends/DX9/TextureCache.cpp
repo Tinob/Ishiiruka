@@ -153,15 +153,15 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, u32 dstFormat,
 		// Stretch picture with increased internal resolution
 		vp.X = 0;
 		vp.Y = 0;
-		vp.Width  = virtual_width;
-		vp.Height = virtual_height;
+		vp.Width  = config.width;
+		vp.Height = config.height;
 		vp.MinZ = 0.0f;
 		vp.MaxZ = 1.0f;
 		D3D::dev->SetViewport(&vp);
 		RECT destrect;
-		destrect.bottom = virtual_height;
+		destrect.bottom = config.height;
 		destrect.left = 0;
-		destrect.right = virtual_width;
+		destrect.right = config.width;
 		destrect.top = 0;
 
 		PixelShaderManager::SetColorMatrix(colmat); // set transformation
@@ -197,7 +197,7 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, u32 dstFormat,
 
 		D3D::drawShadedTexQuad(read_texture, &sourcerect, 
 			Renderer::GetTargetWidth(), Renderer::GetTargetHeight(),
-			virtual_width, virtual_height,
+			config.width, config.height,
 			PixelShaderCache::GetDepthMatrixProgram(SSAAMode, (srcFormat == PEControl::Z24) && bformat != FOURCC_RAWZ),
 			VertexShaderCache::GetSimpleVertexShader(SSAAMode));
 
@@ -249,10 +249,14 @@ PC_TexFormat TextureCache::GetNativeTextureFormat(const s32 texformat, const Tlu
 TextureCache::TCacheEntryBase* TextureCache::CreateTexture(u32 width, u32 height,
 	u32 tex_levels, PC_TexFormat pcfmt)
 {
+	TCacheEntryConfig config;
+	config.width = width;
+	config.height = height;
+	config.levels = tex_levels;
 	// if no rgba support so swap is needed
 	bool swap_r_b = !g_ActiveConfig.backend_info.bSupportedFormats[PC_TEX_FMT_RGBA32] && pcfmt == PC_TEX_FMT_RGBA32;
 	D3DFORMAT d3d_fmt = swap_r_b ? D3DFMT_A8R8G8B8 : PC_TexFormat_To_D3DFORMAT[pcfmt];
-	TCacheEntry* entry = new TCacheEntry(D3D::CreateTexture2D(width, height, d3d_fmt, tex_levels));
+	TCacheEntry* entry = new TCacheEntry(config, D3D::CreateTexture2D(width, height, d3d_fmt, tex_levels));
 	entry->swap_r_b = swap_r_b;
 	entry->d3d_fmt = d3d_fmt;
 	entry->compressed = d3d_fmt == D3DFMT_DXT1
@@ -262,13 +266,18 @@ TextureCache::TCacheEntryBase* TextureCache::CreateTexture(u32 width, u32 height
 }
 
 TextureCache::TCacheEntryBase* TextureCache::CreateRenderTargetTexture(
-	u32 scaled_tex_w, u32 scaled_tex_h)
+	u32 scaled_tex_w, u32 scaled_tex_h, u32 layers)
 {
+	TCacheEntryConfig config;
+	config.width = scaled_tex_w;
+	config.height = scaled_tex_h;
+	config.layers = layers;
+	config.rendertarget = true;
 	LPDIRECT3DTEXTURE9 texture;
 	D3D::dev->CreateTexture(scaled_tex_w, scaled_tex_h, 1, D3DUSAGE_RENDERTARGET,
 		D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &texture, 0);
 	
-	return new TCacheEntry(texture);
+	return new TCacheEntry(config, texture);
 }
 
 TextureCache::TextureCache()

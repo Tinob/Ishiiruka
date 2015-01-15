@@ -842,7 +842,7 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 
 	GFX_DEBUGGER_PAUSE_AT(NEXT_FRAME, true);
 	
-	TextureCache::Cleanup();
+	TextureCache::Cleanup(frameCount);
 	// Flip/present backbuffer to frontbuffer here
 	D3D::Present();
 	// Enable configuration changes

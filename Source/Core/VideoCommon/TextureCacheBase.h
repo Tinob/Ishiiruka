@@ -23,9 +23,17 @@ public:
 		TCET_EC_VRAM,		// EFB copy which sits in VRAM and is ready to be used
 		TCET_EC_DYNAMIC,	// EFB copy which sits in RAM and needs to be decoded before being used
 	};
+	struct TCacheEntryConfig
+	{
+		TCacheEntryConfig() : width(0), height(0), levels(1), layers(1), rendertarget(false) {}
+		
+		u32 width, height;
+		u32 levels, layers;
+		bool rendertarget;
+	};
 	struct TCacheEntryBase
 	{
-#define TEXHASH_INVALID 0
+		const TCacheEntryConfig config;
 
 		// common members
 		u32 addr;
@@ -35,28 +43,23 @@ public:
 		PC_TexFormat pcformat;
 		enum TexCacheEntryType type;
 
-		u32 num_mipmaps;
+		u32 native_levels;
 		u32 native_width, native_height; // Texture dimensions from the GameCube's point of view
-		u32 virtual_width, virtual_height; // Texture dimensions from OUR point of view - for hires textures or scaled EFB copies
-
 		// used to delete textures which haven't been used for TEXTURE_KILL_THRESHOLD frames
 		s32 frameCount;
 		bool custom_texture;
 
-		void SetGeneralParameters(u32 _addr, u32 _size, u32 _format, u32 _num_mipmaps)
+		void SetGeneralParameters(u32 _addr, u32 _size, u32 _format)
 		{
 			addr = _addr;
 			size_in_bytes = _size;
 			format = _format;
-			num_mipmaps = _num_mipmaps;
 		}
 
-		void SetDimensions(u32 _native_width, u32 _native_height, u32 _virtual_width, u32 _virtual_height)
+		void SetDimensions(u32 _native_width, u32 _native_height, u32 _native_levels)
 		{
 			native_width = _native_width;
 			native_height = _native_height;
-			virtual_width = _virtual_width;
-			virtual_height = _virtual_height;
 		}
 
 		void SetHashes(u64 _hash)
@@ -64,7 +67,7 @@ public:
 			hash = _hash;
 		}
 
-
+		TCacheEntryBase(const TCacheEntryConfig& c) : config(c) {}
 		virtual ~TCacheEntryBase();
 
 		virtual void Bind(u32 stage) = 0;
@@ -81,7 +84,7 @@ public:
 			bool isIntensity, bool scaleByHalf, unsigned int cbufid,
 			const float *colmat) = 0;
 
-		s32 IntersectsMemoryRange(u32 range_address, u32 range_size) const;
+		bool OverlapsMemoryRange(u32 range_address, u32 range_size) const;
 
 		bool IsEfbCopy() { return (type == TCET_EC_VRAM || type == TCET_EC_DYNAMIC); }
 	};
@@ -89,7 +92,9 @@ public:
 	virtual ~TextureCache(); // needs virtual for DX11 dtor
 
 	static void OnConfigChanged(VideoConfig& config);
-	static void Cleanup();
+	// Removes textures which aren't used for more than TEXTURE_KILL_THRESHOLD frames,
+	// frameCount is the current frame number.
+	static void Cleanup(int frameCount);
 
 	static void Invalidate();
 	static void InvalidateRange(u32 start_address, u32 size);
@@ -101,10 +106,9 @@ public:
 		const TlutFormat tlutfmt, u32 width, u32 height) = 0;
 	virtual TCacheEntryBase* CreateTexture(u32 width, u32 height,
 		u32 tex_levels, PC_TexFormat pcfmt) = 0;
-	virtual TCacheEntryBase* CreateRenderTargetTexture(u32 scaled_tex_w, u32 scaled_tex_h) = 0;
+	virtual TCacheEntryBase* CreateRenderTargetTexture(u32 scaled_tex_w, u32 scaled_tex_h, u32 layers) = 0;
 
-	static TCacheEntryBase* Load(u32 stage, u32 address, u32 width, u32 height,
-		s32 format, const u32 tlutaddr, const TlutFormat tlutfmt, bool use_mipmaps, u32 maxlevel, bool from_tmem);
+	static TCacheEntryBase* Load(const u32 stage);
 	static void CopyRenderTargetToTexture(u32 dstAddr, u32 dstFormat, PEControl::PixelFormat srcFormat,
 		const EFBRectangle& srcRect, bool isIntensity, bool scaleByHalf);
 
@@ -122,7 +126,7 @@ private:
 	static u32 s_prev_tlut_address;
 	static u32 s_prev_tlut_size;
 	static u64 s_prev_tlut_hash;
-	static TCacheEntryBase* AllocateRenderTarget(unsigned int width, unsigned int height);
+	static TCacheEntryBase* AllocateRenderTarget(u32 width, u32 height, u32 layers);
 	static void FreeRenderTarget(TCacheEntryBase* entry);
 
 	typedef std::map<u32, TCacheEntryBase*> TexCache;
@@ -134,10 +138,6 @@ private:
 	static struct BackupConfig
 	{
 		s32 s_colorsamples;
-		bool s_copy_efb_to_texture;
-		bool s_copy_efb_scaled;
-		bool s_copy_efb;
-		s32 s_efb_scale;
 		bool s_texfmt_overlay;
 		bool s_texfmt_overlay_center;
 		bool s_hires_textures;

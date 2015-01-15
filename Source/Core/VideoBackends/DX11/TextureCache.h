@@ -26,7 +26,7 @@ private:
 		bool convertrgb565;
 		bool compressed;
 
-		TCacheEntry(D3DTexture2D *_tex) : 
+		TCacheEntry(const TCacheEntryConfig& config, D3DTexture2D *_tex) : TCacheEntryBase(config),
 			texture(_tex), swap_rg(false), convertrgb565(false), compressed(false)
 		{}
 		~TCacheEntry();
@@ -38,13 +38,13 @@ private:
 		void LoadFromTmem(const u8* ar_src, const u8* gb_src, u32 width, u32 height,
 			u32 expanded_width, u32 expanded_Height, u32 level);
 
-		void FromRenderTarget(u32 dstAddr, unsigned int dstFormat,
+		void FromRenderTarget(u32 dstAddr, u32 dstFormat,
 			PEControl::PixelFormat srcFormat, const EFBRectangle& srcRect,
-			bool isIntensity, bool scaleByHalf, unsigned int cbufid,
+			bool isIntensity, bool scaleByHalf, u32 cbufid,
 			const float *colmat);
 
-		void Bind(unsigned int stage);
-		bool Save(const std::string& filename, unsigned int level);
+		void Bind(u32 stage);
+		bool Save(const std::string& filename, u32 level);
 	};
 	
 	PC_TexFormat GetNativeTextureFormat(const s32 texformat, const TlutFormat tlutfmt, u32 width, u32 height);
@@ -52,7 +52,7 @@ private:
 	TextureCache::TCacheEntryBase* CreateTexture(u32 width, u32 height,
 		u32 tex_levels, PC_TexFormat pcfmt);
 
-	TCacheEntryBase* CreateRenderTargetTexture(unsigned int scaled_tex_w, unsigned int scaled_tex_h);
+	TCacheEntryBase* CreateRenderTargetTexture(u32 scaled_tex_w, u32 scaled_tex_h, u32 layers);
 	u64 EncodeToRamFromTexture(u32 address, void* source_texture, u32 SourceW, u32 SourceH, bool bFromZBuffer, bool bIsIntensityFmt, u32 copyfmt, int bScaleByHalf, const EFBRectangle& source) {return 0;};
 	void LoadLut(u32 lutFmt, void* addr, u32 size) override;
 };

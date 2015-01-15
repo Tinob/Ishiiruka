@@ -18,7 +18,7 @@ class TextureCache : public ::TextureCache
 {
 public:
 	TextureCache();
-	static void DisableStage(unsigned int stage);
+	static void DisableStage(u32 stage);
 	static void SetStage();
 
 private:
@@ -36,7 +36,7 @@ private:
 		//TexMode0 mode; // current filter and clamp modes that texture is set to
 		//TexMode1 mode1; // current filter and clamp modes that texture is set to
 
-		TCacheEntry();
+		TCacheEntry(const TCacheEntryConfig& config);
 		~TCacheEntry();
 
 		void Load(const u8* src, u32 width, u32 height,
@@ -46,13 +46,13 @@ private:
 		void LoadFromTmem(const u8* ar_src, const u8* gb_src, u32 width, u32 height,
 			u32 expanded_width, u32 expanded_Height, u32 level);
 
-		void FromRenderTarget(u32 dstAddr, unsigned int dstFormat,
+		void FromRenderTarget(u32 dstAddr, u32 dstFormat,
 			PEControl::PixelFormat srcFormat, const EFBRectangle& srcRect,
-			bool isIntensity, bool scaleByHalf, unsigned int cbufid,
+			bool isIntensity, bool scaleByHalf, u32 cbufid,
 			const float *colmat) override;
 
-		void Bind(unsigned int stage) override;
-		bool Save(const std::string& filename, unsigned int level) override;
+		void Bind(u32 stage) override;
+		bool Save(const std::string& filename, u32 level) override;
 	};
 
 	~TextureCache();
@@ -62,9 +62,9 @@ private:
 	TCacheEntryBase* CreateTexture(u32 width, u32 height,
 		u32 tex_levels, PC_TexFormat pcfmt);
 
-	TCacheEntryBase* CreateRenderTargetTexture(unsigned int scaled_tex_w, unsigned int scaled_tex_h);
+	TCacheEntryBase* CreateRenderTargetTexture(u32 scaled_tex_w, u32 scaled_tex_h, u32 layers);
 };
 
-bool SaveTexture(const std::string& filename, u32 textarget, u32 tex, int virtual_width, int virtual_height, unsigned int level);
+bool SaveTexture(const std::string& filename, u32 textarget, u32 tex, int virtual_width, int virtual_height, u32 level);
 
 }
