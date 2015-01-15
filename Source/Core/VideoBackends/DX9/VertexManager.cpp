@@ -475,6 +475,7 @@ void DX9::VertexManager::PrepareShaders(u32 components, const XFMemory &xfr, con
 		bpm.zcontrol.pixel_format == PEControl::RGBA6_Z24;
 	const bool useDualSource = useDstAlpha && g_ActiveConfig.backend_info.bSupportsDualSourceBlend;
 	const bool forced_early_z = bpm.UseEarlyDepthTest() && bpm.zmode.updateenable && bpm.alpha_test.TestResult() == AlphaTest::UNDETERMINED && !g_ActiveConfig.bFastDepthCalc;
+	g_Config.backend_info.bSupportsEarlyZ = !g_ActiveConfig.bFastDepthCalc;
 	DSTALPHA_MODE AlphaMode = forced_early_z ? DSTALPHA_NULL : (useDualSource ? DSTALPHA_DUAL_SOURCE_BLEND : DSTALPHA_NONE);
 	VertexShaderCache::PrepareShader(components, xfr, bpm, ongputhread);
 	PixelShaderCache::PrepareShader(AlphaMode, components, xfr, bpm, ongputhread);
@@ -493,6 +494,22 @@ void VertexManager::vFlush(bool useDstAlpha)
 	// initialize all values for the current flush
 	m_index_len = IndexGenerator::GetIndexLen();
 	m_num_verts = IndexGenerator::GetNumVerts();
+	u32 stride = g_nativeVertexFmt->GetVertexStride();
+	if (current_primitive_type == PRIMITIVE_TRIANGLES)
+	{
+		if (bpmem.genMode.zfreeze)
+		{
+			SetZSlope();
+		}
+		else if (m_index_len >= 3)
+		{
+			CalculateZSlope(stride, GetIndexBuffer() + m_index_len - 3);
+		}
+
+		// if cull mode is CULL_ALL, ignore triangles and quads
+		if (bpmem.genMode.cullmode == GenMode::CULL_ALL)
+			return;
+	}
 	m_total_num_verts = m_num_verts;
 	m_total_index_len = m_index_len;
 	switch (current_primitive_type)
@@ -515,7 +532,6 @@ void VertexManager::vFlush(bool useDstAlpha)
 		break;
 	}
 	m_primitives = m_total_index_len / 3;
-	u32 stride = g_nativeVertexFmt->GetVertexStride();
 	// set global constants
 	
 	const bool useDualSource = useDstAlpha && g_ActiveConfig.backend_info.bSupportsDualSourceBlend;
@@ -547,8 +563,7 @@ void VertexManager::vFlush(bool useDstAlpha)
 			DX9::D3D::dev->SetVertexShaderConstantF(region.first, &buffer[region.first * 4], region.second - region.first + 1);
 		}
 		VertexShaderManager::Clear();
-	}
-	g_Config.backend_info.bSupportsEarlyZ = !g_ActiveConfig.bFastDepthCalc;	
+	}	
 	if (PixelShaderManager::IsDirty())
 	{
 		const regionvector & regions = PixelShaderManager::GetDirtyRegions();

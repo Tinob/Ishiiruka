@@ -17,6 +17,8 @@
 #define I_INDTEXSCALE "cindscale"
 #define I_INDTEXMTX   "cindmtx"
 #define I_FOG         "cfog"
+#define I_ZSLOPE      "czslope"
+#define I_EFBSCALE    "cefbscale"
 #define I_PLIGHTS     "cPLights"
 #define I_PMATERIALS  "cPmtrl"
 
@@ -29,8 +31,10 @@
 #define C_INDTEXSCALE	(C_ZBIAS + 2)			//19
 #define C_INDTEXMTX		(C_INDTEXSCALE + 2)		//21
 #define C_FOG			(C_INDTEXMTX + 6)		//27
+#define C_ZSLOPE		(C_FOG + 3)				//30
+#define C_EFBSCALE		(C_ZSLOPE + 1)			//31
 
-#define C_PLIGHTS		(C_FOG + 3)
+#define C_PLIGHTS		(C_EFBSCALE + 1)
 #define C_PMATERIALS	(C_PLIGHTS + 40)
 #define C_PENVCONST_END (C_PMATERIALS + 4)
 
@@ -81,7 +85,8 @@ struct pixel_shader_uid_data
 	// TODO: Optimize field order for easy access!
 	LightingUidData lighting;
 
-	u32 components : 23;
+	u32 components : 22;
+	u32 zfreeze : 1;
 	u32 pixel_lighting : 1;
 
 	u32 dstAlphaMode : 2;

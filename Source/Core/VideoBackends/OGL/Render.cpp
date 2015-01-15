@@ -43,6 +43,7 @@
 #include "VideoCommon/ImageWrite.h"
 #include "VideoCommon/OnScreenDisplay.h"
 #include "VideoCommon/PixelEngine.h"
+#include "VideoCommon/PixelShaderManager.h"
 #include "VideoCommon/Statistics.h"
 #include "VideoCommon/VertexLoader.h"
 #include "VideoCommon/VertexLoaderManager.h"
@@ -456,8 +457,6 @@ Renderer::Renderer()
 	}
 
 	g_Config.backend_info.bSupportsDualSourceBlend = GLExtensions::Supports("GL_ARB_blend_func_extended");
-	g_Config.backend_info.bSupportsPrimitiveRestart = !DriverDetails::HasBug(DriverDetails::BUG_PRIMITIVERESTART) &&
-				((GLExtensions::Version() >= 310) || GLExtensions::Supports("GL_NV_primitive_restart"));
 	g_Config.backend_info.bSupportsEarlyZ = GLExtensions::Supports("GL_ARB_shader_image_load_store");
 	g_Config.backend_info.bSupportsBBox = GLExtensions::Supports("GL_ARB_shader_storage_buffer_object");
 	g_Config.backend_info.bSupportsGSInstancing = GLExtensions::Supports("GL_ARB_gpu_shader5");
@@ -605,7 +604,7 @@ Renderer::Renderer()
 
 	s_LastEFBScale = g_ActiveConfig.iEFBScale;
 	CalculateTargetSize(s_backbuffer_width, s_backbuffer_height);
-
+	PixelShaderManager::SetEfbScaleChanged();
 	// Because of the fixed framebuffer size we need to disable the resolution
 	// options while running
 	g_Config.bRunning = true;
@@ -1684,6 +1683,7 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 			delete g_framebuffer_manager;
 			g_framebuffer_manager = new FramebufferManager(s_target_width, s_target_height,
 				s_MSAASamples);
+			PixelShaderManager::SetEfbScaleChanged();
 		}
 	}
 

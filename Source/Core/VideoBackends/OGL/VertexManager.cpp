@@ -42,6 +42,7 @@ static StreamBuffer *s_vertexBuffer;
 static StreamBuffer *s_indexBuffer;
 static size_t s_baseVertex;
 static size_t s_index_offset;
+static u16* s_index_buffer_base;
 VertexManager::VertexManager()
 {
 	CreateDeviceObjects();
@@ -89,7 +90,8 @@ void VertexManager::ResetBuffer(u32 stride)
 	s_baseVertex = buffer.second / stride;
 
 	buffer = s_indexBuffer->Map(MAXIBUFFERSIZE * sizeof(u16));
-	IndexGenerator::Start((u16*)buffer.first);
+	s_index_buffer_base = (u16*)buffer.first;
+	IndexGenerator::Start(s_index_buffer_base);
 	s_index_offset = buffer.second;
 }
 
@@ -141,6 +143,22 @@ void VertexManager::vFlush(bool useDstAlpha)
 	}
 	BBox::Update();
 	PrepareDrawBuffers(stride);
+	if (current_primitive_type == PRIMITIVE_TRIANGLES)
+	{
+		if (bpmem.genMode.zfreeze)
+		{
+			SetZSlope();
+		}
+		else if (IndexGenerator::GetIndexLen() >= 3)
+		{
+			CalculateZSlope(stride, s_index_buffer_base + IndexGenerator::GetIndexLen() - 3);
+		}
+
+		// if cull mode is CULL_ALL, ignore triangles and quads
+		if (bpmem.genMode.cullmode == GenMode::CULL_ALL)
+			return;
+	}
+	
 
 	// Makes sure we can actually do Dual source blending
 	bool dualSourcePossible = g_ActiveConfig.backend_info.bSupportsDualSourceBlend;

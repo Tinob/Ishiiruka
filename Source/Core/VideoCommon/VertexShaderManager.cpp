@@ -704,6 +704,30 @@ void VertexShaderManager::ResetView()
 	bProjectionChanged = true;
 }
 
+void VertexShaderManager::TransformToClipSpace(const void* data, s32 stride, float *out)
+{
+	// First 3 floats
+	const float* possrc = (const float *)data;
+	float pos[3];
+	pos[0] = possrc[0];
+	pos[1] = possrc[1];
+	pos[2] = possrc[2];
+
+	const int mtx_idx = *((const u32*)(((const u8*)data) + stride - sizeof(u32)));
+	const float *world_matrix = ((const float *)xfmem.posMatrices) + mtx_idx * 4;
+	const float *proj_matrix = &g_fProjectionMatrix[0];
+	float t[3];
+	t[0] = pos[0] * world_matrix[0] + pos[1] * world_matrix[1] + pos[2] * world_matrix[2] + world_matrix[3];
+	t[1] = pos[0] * world_matrix[4] + pos[1] * world_matrix[5] + pos[2] * world_matrix[6] + world_matrix[7];
+	t[2] = pos[0] * world_matrix[8] + pos[1] * world_matrix[9] + pos[2] * world_matrix[10] + world_matrix[11];
+	// TODO: this requires g_fProjectionMatrix to be up to date, which is not really a good design decision.
+	out[0] = t[0] * proj_matrix[0] + t[1] * proj_matrix[1] + t[2] * proj_matrix[2] + proj_matrix[3];
+	out[1] = t[0] * proj_matrix[4] + t[1] * proj_matrix[5] + t[2] * proj_matrix[6] + proj_matrix[7];
+	out[2] = t[0] * proj_matrix[8] + t[1] * proj_matrix[9] + t[2] * proj_matrix[10] + proj_matrix[11];
+	out[3] = t[0] * proj_matrix[12] + t[1] * proj_matrix[13] + t[2] * proj_matrix[14] + proj_matrix[15];
+}
+
+
 void VertexShaderManager::DoState(PointerWrap &p)
 {
 	p.Do(g_fProjectionMatrix);

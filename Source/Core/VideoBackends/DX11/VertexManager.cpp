@@ -200,6 +200,22 @@ void VertexManager::PrepareShaders(u32 components, const XFMemory &xfr, const BP
 
 void VertexManager::vFlush(bool useDstAlpha)
 {
+	u32 stride = g_nativeVertexFmt->GetVertexStride();
+	if (current_primitive_type == PRIMITIVE_TRIANGLES)
+	{
+		if (bpmem.genMode.zfreeze)
+		{
+			SetZSlope();
+		}
+		else if (IndexGenerator::GetIndexLen() >= 3)
+		{
+			CalculateZSlope(stride, GetIndexBuffer() + IndexGenerator::GetIndexLen() - 3);
+		}
+
+		// if cull mode is CULL_ALL, ignore triangles and quads
+		if (bpmem.genMode.cullmode == GenMode::CULL_ALL)
+			return;
+	}
 	if (!PixelShaderCache::TestShader())
 	{
 		return;
@@ -209,7 +225,7 @@ void VertexManager::vFlush(bool useDstAlpha)
 		return;
 	}
 	BBox::Update();
-	unsigned int stride = g_nativeVertexFmt->GetVertexStride();
+	
 	PrepareDrawBuffers(stride);
 	g_nativeVertexFmt->SetupVertexPointers();
 	g_renderer->ApplyState(useDstAlpha);

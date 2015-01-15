@@ -19,10 +19,11 @@ static int s_nIndTexMtxChanged;
 static bool s_bAlphaChanged;
 static bool s_bZBiasChanged;
 static bool s_bZTextureTypeChanged;
-static bool s_bDepthRangeChanged;
 static bool s_bFogColorChanged;
 static bool s_bFogParamChanged;
 static bool s_bFogRangeAdjustChanged;
+static bool s_bViewPortChanged;
+static bool s_bEFBScaleChanged;
 static int nLightsChanged[2]; // min,max
 static int lastRGBAfull[2][4][4];
 static u8 s_nTexDimsChanged;
@@ -51,7 +52,7 @@ void PixelShaderManager::Dirty()
 	s_nTexDimsChanged = 0xFF;
 	s_nIndTexScaleChanged = 0xFF;
 	s_nIndTexMtxChanged = 15;
-	s_bAlphaChanged = s_bZBiasChanged = s_bZTextureTypeChanged = s_bDepthRangeChanged = true;
+	s_bEFBScaleChanged = s_bAlphaChanged = s_bZBiasChanged = s_bZTextureTypeChanged = s_bViewPortChanged = true;
 	s_bFogRangeAdjustChanged = s_bFogColorChanged = s_bFogParamChanged = true;
 	nLightsChanged[0] = 0; nLightsChanged[1] = 0x80;
 	nMaterialsChanged = 15;
@@ -154,7 +155,7 @@ void PixelShaderManager::SetConstants()
 		s_bZTextureTypeChanged = false;
 	}
 
-	if (s_bZBiasChanged || s_bDepthRangeChanged)
+	if (s_bZBiasChanged || s_bViewPortChanged)
 	{
 		// reversed gxsetviewport(xorig, yorig, width, height, nearz, farz)
 		// [0] = width/2
@@ -165,8 +166,12 @@ void PixelShaderManager::SetConstants()
 		// [5] = 16777215 * farz
 
 		//ERROR_LOG("pixel=%x,%x, bias=%x\n", bpmem.zcontrol.pixel_format, bpmem.ztex2.type, lastZBias);
-		m_buffer.SetConstant4<float>(C_ZBIAS + 1, xfmem.viewport.farZ / 16777216.0f, xfmem.viewport.zRange / 16777216.0f, 0.0f, (float)(lastZBias) / 16777215.0f);
-		s_bZBiasChanged = s_bDepthRangeChanged = false;
+		m_buffer.SetConstant4<float>(C_ZBIAS + 1,
+			static_cast<float>(static_cast<u32>(xfmem.viewport.farZ)),
+			static_cast<float>(static_cast<u32>(xfmem.viewport.zRange)),
+			0.0f,
+			(float)(lastZBias) / 16777215.0f);
+		s_bZBiasChanged = false;
 	}
 
 	// indirect incoming texture scales
@@ -246,7 +251,7 @@ void PixelShaderManager::SetConstants()
 		s_bFogParamChanged = false;
 	}
 
-	if (s_bFogRangeAdjustChanged)
+	if (s_bFogRangeAdjustChanged || s_bViewPortChanged)
 	{
 		if (!g_ActiveConfig.bDisableFog && bpmem.fogRange.Base.Enabled == 1)
 		{
@@ -268,6 +273,14 @@ void PixelShaderManager::SetConstants()
 		}
 
 		s_bFogRangeAdjustChanged = false;
+	}
+
+	if (s_bEFBScaleChanged)
+	{
+		m_buffer.SetConstant4<float>(C_EFBSCALE,
+			1.0f / float(Renderer::EFBToScaledXf(1)),
+			1.0f / float(Renderer::EFBToScaledYf(1)), 0.0f, 0.0f);
+		s_bEFBScaleChanged = false;
 	}
 
 	if (g_ActiveConfig.bEnablePixelLighting 
@@ -379,38 +392,7 @@ void PixelShaderManager::SetTevKonstColor(int index, int component, s32 value)
 		PRIM_LOG("tev konst color%d: %d %d %d %d\n", index, c[0], c[1], c[2], c[3]);
 	}
 }
-/*
-// This one is high in profiles (0.5%).
-// TODO: Move conversion out, only store the raw color value
-// and update it when the shader constant is set, only.
-// TODO: Conversion should be checked in the context of tev_fixes..
-void PixelShaderManager::SetColorChanged(int type, int num, bool high)
-{
-	int *pf = &lastRGBAfull[type][num][0];
-	if (!high)
-	{
-		if (pf[0] != bpmem.tevregs[num].low.a
-		|| pf[3] != bpmem.tevregs[num].low.b)
-		{
-			pf[0] = bpmem.tevregs[num].low.a;
-			pf[3] = bpmem.tevregs[num].low.b;
-			s_nColorsChanged[type] |= 1 << num;
-		}
-		
-	}
-	else
-	{
-		if (pf[1] != bpmem.tevregs[num].high.b
-		|| pf[2] != bpmem.tevregs[num].high.a)
-		{
-			pf[1] = bpmem.tevregs[num].high.b;
-			pf[2] = bpmem.tevregs[num].high.a;
-			s_nColorsChanged[type] |= 1 << num;
-		}
-	}
-	PRIM_LOG("pixel %scolor%d: %f %f %f %f\n", type ? "k" : "", num, pf[0], pf[1], pf[2], pf[3]);
-}
-*/
+
 void PixelShaderManager::SetAlpha()
 {
 	if ((bpmem.alpha_test.hex & 0xffff) != lastAlpha)
@@ -450,8 +432,7 @@ void PixelShaderManager::SetZTextureBias()
 
 void PixelShaderManager::SetViewportChanged()
 {
-	s_bDepthRangeChanged = true;
-	s_bFogRangeAdjustChanged = true; // TODO: Shouldn't be necessary with an accurate fog range adjust implementation
+	s_bViewPortChanged = true;
 }
 
 void PixelShaderManager::SetIndTexScaleChanged(bool high)
@@ -518,6 +499,21 @@ void PixelShaderManager::InvalidateXFRange(int start, int end)
 void PixelShaderManager::SetMaterialColorChanged(int index)
 {
 	nMaterialsChanged |= (1 << index);
+}
+
+void PixelShaderManager::SetEfbScaleChanged()
+{
+	s_bEFBScaleChanged = true;
+	s_bViewPortChanged = true;
+}
+
+void PixelShaderManager::SetZSlope(float dfdx, float dfdy, float f0)
+{
+	m_buffer.SetConstant4(C_ZSLOPE, 
+		dfdx, 
+		dfdy, 
+		f0, 
+		0.0f);
 }
 
 void PixelShaderManager::DoState(PointerWrap &p)

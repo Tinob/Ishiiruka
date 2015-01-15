@@ -180,7 +180,7 @@ inline u32 Decode(const u8* end)
 			parameters.primitive = (cmd_byte & GX_PRIMITIVE_MASK) >> GX_PRIMITIVE_SHIFT;
 			parameters.vtx_attr_group = cmd_byte & GX_VAT_MASK;
 			parameters.needloaderrefresh = (g_main_cp_state.attr_dirty & (1 << parameters.vtx_attr_group)) != 0;
-			parameters.skip_draw = (bpmem.genMode.cullmode == 3 && parameters.primitive < 5) || g_bSkipCurrentFrame;
+			parameters.skip_draw = g_bSkipCurrentFrame;
 			parameters.VtxDesc = &g_main_cp_state.vtx_desc;
 			parameters.VtxAttr = &g_main_cp_state.vtx_attr[parameters.vtx_attr_group];
 			parameters.source = g_VideoData.GetReadPosition();			

@@ -17,6 +17,13 @@ enum PrimitiveType {
 	PRIMITIVE_TRIANGLES,
 };
 
+struct Slope
+{
+	float dfdx;
+	float dfdy;
+	float f0;
+};
+
 class VertexManager
 {
 private:
@@ -47,12 +54,17 @@ public:
 
 	virtual ::NativeVertexFormat* CreateNativeVertexFormat() = 0;
 
+	static void CalculateZSlope(u32 stride, const u16* indices);
+	static void SetZSlope();
+
 	static void DoState(PointerWrap& p);
 	virtual void CreateDeviceObjects(){};
 	virtual void DestroyDeviceObjects(){};
 	
 protected:
 	static bool s_Shader_Refresh_Required;
+	static bool s_Zslope_Refresh_Required;
+	static Slope s_ZSlope;
 
 	virtual void vDoState(PointerWrap& p) {  }
 

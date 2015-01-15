@@ -229,6 +229,7 @@ template<class T, bool Write_Code, API_TYPE ApiType> inline void WriteStage(T& o
 template<class T, bool Write_Code, API_TYPE ApiType> inline void SampleTexture(T& out, const char *texcoords, const char *texswap, int texmap);
 template<class T, bool Write_Code, API_TYPE ApiType> inline void WriteAlphaTest(T& out, pixel_shader_uid_data& uid_data, DSTALPHA_MODE dstAlphaMode, bool per_pixel_depth, const BPMemory &bpm);
 template<class T, bool Write_Code> inline void WriteFog(T& out, pixel_shader_uid_data& uid_data, const BPMemory &bpm);
+template<class T, bool Write_Code, API_TYPE ApiType> inline void WritePerPixelDepth(T& out, const BPMemory &bpm);
 
 template<class T, bool Write_Code, API_TYPE ApiType>
 inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 components, const XFMemory &xfr, const BPMemory &bpm)
@@ -265,16 +266,26 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 
 	u32 numStages = bpm.genMode.numtevstages + 1;
 	u32 numTexgen = bpm.genMode.numtexgens;
-
-	const bool forced_early_z = g_ActiveConfig.backend_info.bSupportsEarlyZ && bpm.UseEarlyDepthTest();
-	const bool per_pixel_depth = (bpm.ztex2.op != ZTEXTURE_DISABLE && bpm.UseLateDepthTest()) || (!g_ActiveConfig.bFastDepthCalc && bpm.zmode.testenable && !forced_early_z && dstAlphaMode != DSTALPHA_NULL);
+	const AlphaTest::TEST_RESULT Pretest = bpm.alpha_test.TestResult();
+	const bool forced_early_z = g_ActiveConfig.backend_info.bSupportsEarlyZ 
+		&& bpm.UseEarlyDepthTest() 
+		&& (g_ActiveConfig.bFastDepthCalc || Pretest == AlphaTest::UNDETERMINED)
+		&& !bpm.genMode.zfreeze;
+	const bool per_pixel_depth =
+		bpm.zmode.testenable &&
+		((bpm.ztex2.op != ZTEXTURE_DISABLE && bpm.UseLateDepthTest())
+		|| (!g_ActiveConfig.bFastDepthCalc && !forced_early_z)
+		|| bpm.genMode.zfreeze);
 	bool lightingEnabled = xfr.numChan.numColorChans > 0;
-	bool enable_pl = g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting && lightingEnabled;
+	bool enable_pl = g_ActiveConfig.bEnablePixelLighting 
+		&& g_ActiveConfig.backend_info.bSupportsPixelLighting 
+		&& lightingEnabled;
 	uid_data.pixel_lighting = enable_pl;
 	uid_data.dstAlphaMode = dstAlphaMode;
 	uid_data.genMode_numindstages = bpm.genMode.numindstages;
 	uid_data.genMode_numtevstages = bpm.genMode.numtevstages;
 	uid_data.genMode_numtexgens = bpm.genMode.numtexgens;
+	uid_data.zfreeze = bpm.genMode.zfreeze;
 	if (Write_Code)
 	{
 		InitializeRegisterState();
@@ -317,6 +328,8 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 		DeclareUniform<T, ApiType>(out, C_INDTEXSCALE, "float4", I_INDTEXSCALE "[2]");
 		DeclareUniform<T, ApiType>(out, C_INDTEXMTX, "float4", I_INDTEXMTX "[6]");
 		DeclareUniform<T, ApiType>(out, C_FOG, "float4", I_FOG "[3]");
+		DeclareUniform<T, ApiType>(out, C_ZSLOPE, "float4", I_ZSLOPE);
+		DeclareUniform<T, ApiType>(out, C_EFBSCALE, "float4", I_EFBSCALE);
 
 		if (enable_pl)
 		{
@@ -455,6 +468,10 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 		}
 		if (dstAlphaMode == DSTALPHA_NULL)
 		{
+			if (per_pixel_depth)
+			{
+				WritePerPixelDepth<T, Write_Code, ApiType>(out, bpm);
+			}
 			out.Write("ocol0 = float4(0.0,0.0,0.0,0.0);\n");
 			out.Write("}\n");
 			if (codebuffer[PIXELSHADERGEN_BUFFERSIZE - 1] != 0x7C)
@@ -538,7 +555,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 			}
 			// On GLSL, input variables must not be assigned to.
 			// This is why we declare these variables locally instead.
-			out.Write("\tfloat4 col0, col1;\n");
+			out.Write("\tfloat4 col0 = float4(0.0,0.0,0.0,0.0), col1 = float4(0.0,0.0,0.0,0.0);\n");
 		}
 		// Only col0 and col1 are needed so discard the remaining components
 		uid_data.components = components & (VB_HAS_COL0 | VB_HAS_COL1);
@@ -658,7 +675,6 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 			out.Write("prev = CHK_O_U8(prev);\n");
 	}
 
-	AlphaTest::TEST_RESULT Pretest = bpm.alpha_test.TestResult();
 	uid_data.Pretest = Pretest;
 	// depth texture can safely be ignored if the result won't be written to the depth buffer (early_ztest) and isn't used for fog either
 	const bool skip_ztexture = !per_pixel_depth && !bpm.fog.c_proj_fsel.fsel;
@@ -674,6 +690,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 	// (in this case we need to write a depth value if depth test passes regardless of the alpha testing result)
 	if (Pretest != AlphaTest::PASS)
 		WriteAlphaTest<T, Write_Code, ApiType>(out, uid_data, dstAlphaMode, per_pixel_depth, bpm);
+
 	if (Write_Code)
 	{
 		// D3D9 doesn't support readback of depth in pixel shader, so we always have to calculate it again.
@@ -686,11 +703,13 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 		else
 		{
 			// the screen space depth value = far z + (clip z / clip w) * z range
-			out.Write("float zCoord = " I_ZBIAS "[1].x + (clipPos.z / clipPos.w) * " I_ZBIAS "[1].y;\n");
+			out.Write("float zCoord = round(" I_ZBIAS "[1].x + ((clipPos.z / clipPos.w) * " I_ZBIAS "[1].y)) / float(0xFFFFFF);\n");
 		}
 		// Note: z-textures are not written to depth buffer if early depth test is used
 		if (per_pixel_depth && bpm.UseEarlyDepthTest())
-			out.Write("depth = zCoord;\n");
+		{
+			WritePerPixelDepth<T, Write_Code, ApiType>(out, bpm);
+		}
 		// Note: depth texture output is only written to depth buffer if late depth test is used
 		// theoretical final depth value is used for fog calculation, though, so we have to emulate ztextures anyway
 		if (bpm.ztex2.op != ZTEXTURE_DISABLE && !skip_ztexture)
@@ -702,7 +721,9 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 			//out.Write("zCoord = CHK_O_U24(zCoord);\n");
 		}
 		if (per_pixel_depth && bpm.UseLateDepthTest())
-			out.Write("depth = zCoord;\n");
+		{
+			WritePerPixelDepth<T, Write_Code, ApiType>(out, bpm);
+		}
 	}
 	if (dstAlphaMode == DSTALPHA_ALPHA_PASS)
 	{
@@ -1268,7 +1289,10 @@ static inline void WriteAlphaTest(T& out, pixel_shader_uid_data& uid_data, DSTAL
 	uid_data.alpha_test_comp0 = bpm.alpha_test.comp0;
 	uid_data.alpha_test_comp1 = bpm.alpha_test.comp1;
 	uid_data.alpha_test_logic = bpm.alpha_test.logic;
-	uid_data.alpha_test_use_zcomploc_hack = bpm.UseEarlyDepthTest() && bpm.zmode.updateenable && !g_ActiveConfig.backend_info.bSupportsEarlyZ;
+	uid_data.alpha_test_use_zcomploc_hack = bpm.UseEarlyDepthTest()
+		&& bpm.zmode.updateenable
+		&& !g_ActiveConfig.backend_info.bSupportsEarlyZ
+		&& !bpm.genMode.zfreeze; // Might not be neccessary
 	if (Write_Code)
 	{
 		// using discard then return works the same in cg and dx9 but not in dx11
@@ -1377,6 +1401,25 @@ static inline void WriteFog(T& out, pixel_shader_uid_data& uid_data, const BPMem
 		out.Write("prev.rgb = round(lerp(prev.rgb, " I_FOG "[0].rgb, fog));\n");
 	}
 
+}
+
+template<class T, bool Write_Code, API_TYPE ApiType>
+inline void WritePerPixelDepth(T& out, const BPMemory &bpm)
+{
+	if (bpm.genMode.zfreeze)
+	{
+		out.Write("\tfloat2 screenpos = rawpos.xy * " I_EFBSCALE".xy;\n");
+
+		// Opengl has reversed vertical screenspace coordiantes
+		if (ApiType == API_OPENGL)
+			out.Write("\tscreenpos.y = %i - screenpos.y - 1;\n", EFB_HEIGHT);
+
+		out.Write("\tdepth = (" I_ZSLOPE".z + " I_ZSLOPE".x * screenpos.x + " I_ZSLOPE".y * screenpos.y) / float(0xFFFFFF);\n");
+	}
+	else
+	{
+		out.Write("\tdepth = zCoord;\n");
+	}
 }
 
 void GetPixelShaderUidD3D9(PixelShaderUid& object, DSTALPHA_MODE dstAlphaMode, u32 components, const XFMemory &xfr, const BPMemory &bpm)

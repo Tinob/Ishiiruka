@@ -147,6 +147,10 @@ static void InitBackendInfo()
 	g_Config.backend_info.bSupportsExclusiveFullscreen = false;
 	//g_Config.backend_info.bSupportsDualSourceBlend = true; // is gpu dependent and must be set in renderer
 	//g_Config.backend_info.bSupportsEarlyZ = true; // is gpu dependent and must be set in renderer
+	// Disable primitive restar the ratio of resets is to hi
+	// to give any adventages and this interferes with
+	// zfreeze implementation
+	g_Config.backend_info.bSupportsPrimitiveRestart = false; 
 	g_Config.backend_info.bSupportsOversizedViewports = true;
 	g_Config.backend_info.bNeedBlendIndices = false;
 	g_Config.backend_info.bSupportsStereoscopy = false;

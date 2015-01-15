@@ -137,6 +137,7 @@ Renderer::Renderer(void *&window_handle)
 
 	s_LastEFBScale = g_ActiveConfig.iEFBScale;
 	CalculateTargetSize(s_backbuffer_width, s_backbuffer_height, SupersampleCoeficient);
+	PixelShaderManager::SetEfbScaleChanged();
 
 	// Make sure to use valid texture sizes
 	D3D::FixTextureSize(s_target_width, s_target_height);
@@ -902,7 +903,7 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 
 		s_LastEFBScale = g_ActiveConfig.iEFBScale;
 		CalculateTargetSize(s_backbuffer_width, s_backbuffer_height, SupersampleCoeficient);
-
+		PixelShaderManager::SetEfbScaleChanged();
 		D3D::dev->SetRenderTarget(0, D3D::GetBackBufferSurface());
 		D3D::dev->SetDepthStencilSurface(D3D::GetBackBufferDepthSurface());
 

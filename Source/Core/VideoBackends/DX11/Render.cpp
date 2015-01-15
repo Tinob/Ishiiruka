@@ -199,6 +199,7 @@ Renderer::Renderer(void *&window_handle)
 	s_LastEFBScale = g_ActiveConfig.iEFBScale;
 	s_last_fullscreen_mode = g_ActiveConfig.bFullscreen;
 	CalculateTargetSize(s_backbuffer_width, s_backbuffer_height);
+	PixelShaderManager::SetEfbScaleChanged();
 	SetupDeviceObjects();
 
 
@@ -942,7 +943,7 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 
 		s_LastEFBScale = g_ActiveConfig.iEFBScale;
 		CalculateTargetSize(s_backbuffer_width, s_backbuffer_height);
-
+		PixelShaderManager::SetEfbScaleChanged();
 		D3D::context->OMSetRenderTargets(1, &D3D::GetBackBuffer()->GetRTV(), nullptr);
 
 		delete g_framebuffer_manager;
