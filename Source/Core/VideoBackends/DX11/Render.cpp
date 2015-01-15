@@ -250,7 +250,7 @@ void Renderer::RenderText(const std::string& text, int left, int top, u32 color)
 	float scalex = 1 / (float)nBackbufferWidth * 2.f;
 	float scaley = 1 / (float)nBackbufferHeight * 2.f;
 	
-
+	D3D::font.DrawTextScaled((float)left + 1, (float)top + 1, 20.f, 0.0f, color & 0xFF000000, text.c_str(), scalex, scaley);
 	D3D::font.DrawTextScaled((float)left, (float)top, 20.f, 0.0f, color, text.c_str(), scalex, scaley);
 }
 
@@ -715,6 +715,8 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 			sourceRc.right = (float)xfbSource->texWidth;
 			sourceRc.bottom = (float)xfbSource->texHeight;
 
+			sourceRc.right -= Renderer::EFBToScaledX(fbStride - fbWidth);
+
 			MathUtil::Rectangle<float> drawRc;
 
 			if (g_ActiveConfig.bUseRealXFB)
@@ -824,52 +826,12 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 		}
 		bLastFrameDumped = false;
 	}
-
-	// Finish up the current frame, print some stats
-	if (g_ActiveConfig.bShowFPS || SConfig::GetInstance().m_ShowFrameCount)
-	{
-		std::string fps = "";
-		if (g_ActiveConfig.bShowFPS)
-			fps = StringFromFormat("FPS: %d", m_fps_counter.m_fps);
-
-		if (g_ActiveConfig.bShowFPS && SConfig::GetInstance().m_ShowFrameCount)
-			fps += " - ";
-		if (SConfig::GetInstance().m_ShowFrameCount)
-		{
-			fps += StringFromFormat("Frame: %d", Movie::g_currentFrame);
-			if (Movie::IsPlayingInput())
-				fps += StringFromFormat(" / %d", Movie::g_totalFrames);
-		}
-
-		fps += "\n";
-		D3D::font.DrawTextScaled(0, 0, 20, 0.0f, 0xFF00FFFF, fps, scalex, scaley);
-	}
-
-	if (SConfig::GetInstance().m_ShowLag)
-	{
-		std::string lag = StringFromFormat("Lag: %" PRIu64 "\n", Movie::g_currentLagCount);
-		D3D::font.DrawTextScaled(0, 18, 20, 0.0f, 0xFF00FFFF, lag, scalex, scaley);
-	}
-
-	if (g_ActiveConfig.bShowInputDisplay)
-	{
-		D3D::font.DrawTextScaled(0, 36, 20, 0.0f, 0xFF00FFFF, Movie::GetInputDisplay(), scalex, scaley);
-	}
+	
 	Renderer::DrawDebugText();
-
-	if (g_ActiveConfig.bOverlayStats)
-	{
-		D3D::font.DrawTextScaled(0, 36, 20, 0.0f, 0xFF00FFFF, Statistics::ToString(), scalex, scaley);
-	}
-	else if (g_ActiveConfig.bOverlayProjStats)
-	{
-		D3D::font.DrawTextScaled(0, 36, 20, 0.0f, 0xFF00FFFF, Statistics::ToStringProj(), scalex, scaley);
-	}
-
 	OSD::DrawMessages();
 	D3D::EndFrame();
 
-	TextureCache::Cleanup();
+	TextureCache::Cleanup(frameCount);
 
 	// Enable configuration changes
 	UpdateActiveConfig();

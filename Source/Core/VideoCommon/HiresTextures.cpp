@@ -21,6 +21,7 @@
 #include "VideoCommon/VideoConfig.h"
 
 HiresTexture::HiresTextureCache HiresTexture::textureMap;
+bool HiresTexture::s_initialized = false;
 
 __forceinline u64 GetTextureKey(u64 Hash, u64 format)
 {
@@ -38,8 +39,13 @@ __forceinline u64 GetTextureHash(const u8* texture, size_t texture_size, const u
 	return tex_hash;
 }
 
-void HiresTexture::Init(const std::string& gameCode)
+void HiresTexture::Init(const std::string& gameCode, bool force_reload)
 {
+	if (!force_reload && s_initialized)
+	{
+		return;
+	}
+	s_initialized = true;
 	textureMap.clear();
 	CFileSearch::XStringVector Directories;
 	std::string szDir = StringFromFormat("%s%s", File::GetUserPath(D_HIRESTEXTURES_IDX).c_str(), gameCode.c_str());

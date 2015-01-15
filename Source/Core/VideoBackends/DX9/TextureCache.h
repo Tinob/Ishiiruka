@@ -28,7 +28,7 @@ private:
 		D3DFORMAT d3d_fmt;
 		bool swap_r_b;
 		bool compressed;
-		TCacheEntry(LPDIRECT3DTEXTURE9 _tex) : texture(_tex) {}
+		TCacheEntry(const TCacheEntryConfig& config, LPDIRECT3DTEXTURE9 _tex) : TCacheEntryBase(config), texture(_tex) {}
 		~TCacheEntry();
 		
 		void ReplaceTexture(const u8* src, u32 width, u32 height,
@@ -55,7 +55,7 @@ private:
 	TCacheEntryBase* CreateTexture(u32 width, u32 height,
 		u32 tex_levels, PC_TexFormat pcfmt);
 
-	TCacheEntryBase* CreateRenderTargetTexture(u32 scaled_tex_w, u32 scaled_tex_h);
+	TCacheEntryBase* CreateRenderTargetTexture(u32 scaled_tex_w, u32 scaled_tex_h, u32 layers);
 };
 
 }

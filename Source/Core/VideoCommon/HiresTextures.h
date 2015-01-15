@@ -14,7 +14,7 @@
 class HiresTexture
 {
 public:
-	static void Init(const std::string& gameCode);
+	static void Init(const std::string& gameCode, bool force_reload = false);
 	
 	static HiresTexture* Search(
 		const u8* texture, size_t texture_size,
@@ -39,4 +39,5 @@ private:
 	typedef std::vector<std::pair<std::string, std::string>> HiresTextureCacheItem;
 	typedef std::unordered_map<u64, HiresTextureCacheItem> HiresTextureCache;
 	static HiresTextureCache textureMap;
+	static bool s_initialized;
 };

@@ -47,7 +47,7 @@ static u32 s_DepthCbufid;
 static u32 s_Textures[8];
 static u32 s_ActiveTexture;
 
-bool SaveTexture(const std::string& filename, u32 textarget, u32 tex, int virtual_width, int virtual_height, unsigned int level)
+bool SaveTexture(const std::string& filename, u32 textarget, u32 tex, int virtual_width, int virtual_height, u32 level)
 {
 	if (GLInterface->GetMode() != GLInterfaceMode::MODE_OPENGL)
 		return false;
@@ -81,14 +81,15 @@ TextureCache::TCacheEntry::~TCacheEntry()
 	}
 }
 
-TextureCache::TCacheEntry::TCacheEntry()
+TextureCache::TCacheEntry::TCacheEntry(const TCacheEntryConfig& _config)
+: TCacheEntryBase(_config)
 {
 	glGenTextures(1, &texture);
 
 	framebuffer = 0;
 }
 
-void TextureCache::TCacheEntry::Bind(unsigned int stage)
+void TextureCache::TCacheEntry::Bind(u32 stage)
 {
 	if (s_Textures[stage] != texture)
 	{
@@ -103,9 +104,9 @@ void TextureCache::TCacheEntry::Bind(unsigned int stage)
 	}
 }
 
-bool TextureCache::TCacheEntry::Save(const std::string& filename, unsigned int level)
+bool TextureCache::TCacheEntry::Save(const std::string& filename, u32 level)
 {
-	return SaveTexture(filename, GL_TEXTURE_2D, texture, virtual_width, virtual_height, level);
+	return SaveTexture(filename, GL_TEXTURE_2D, texture, config.width, config.height, level);
 }
 
 PC_TexFormat TextureCache::GetNativeTextureFormat(const s32 texformat, const TlutFormat tlutfmt, u32 width, u32 height)
@@ -186,7 +187,11 @@ void TextureCache::TCacheEntry::SetFormat()
 TextureCache::TCacheEntryBase* TextureCache::CreateTexture(u32 width, u32 height,
 	u32 tex_levels, PC_TexFormat pcfmt)
 {
-	TCacheEntry &entry = *new TCacheEntry;
+	TCacheEntryConfig config;
+	config.width = width;
+	config.height = height;
+	config.levels = tex_levels;
+	TCacheEntry &entry = *new TCacheEntry(config);
 	entry.pcformat = pcfmt;
 	entry.SetFormat();
 	entry.m_num_levels = tex_levels;
@@ -259,9 +264,14 @@ void TextureCache::TCacheEntry::LoadFromTmem(const u8* ar_src, const u8* gb_src,
 }
 
 TextureCache::TCacheEntryBase* TextureCache::CreateRenderTargetTexture(
-	unsigned int scaled_tex_w, unsigned int scaled_tex_h)
+	u32 scaled_tex_w, u32 scaled_tex_h, u32 layers)
 {
-	TCacheEntry *const entry = new TCacheEntry;
+	TCacheEntryConfig config;
+	config.width = scaled_tex_w;
+	config.height = scaled_tex_h;
+	config.layers = layers;
+	config.rendertarget = true;
+	TCacheEntry *const entry = new TCacheEntry(config);
 	glActiveTexture(GL_TEXTURE0 + 9);
 	glBindTexture(GL_TEXTURE_2D, entry->texture);
 
@@ -284,9 +294,9 @@ TextureCache::TCacheEntryBase* TextureCache::CreateRenderTargetTexture(
 	return entry;
 }
 
-void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, unsigned int dstFormat,
+void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, u32 dstFormat,
 	PEControl::PixelFormat srcFormat, const EFBRectangle& srcRect,
-	bool isIntensity, bool scaleByHalf, unsigned int cbufid,
+	bool isIntensity, bool scaleByHalf, u32 cbufid,
 	const float *colmat)
 {
 	g_renderer->ResetAPIState(); // reset any game specific settings
@@ -303,7 +313,7 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, unsigned int dstFo
 		glActiveTexture(GL_TEXTURE0 + 9);
 		glBindTexture(GL_TEXTURE_2D, read_texture);
 
-		glViewport(0, 0, virtual_width, virtual_height);
+		glViewport(0, 0, config.width, config.height);
 
 		GLuint uniform_location;
 		if (srcFormat == PEControl::Z24)
@@ -361,7 +371,7 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, unsigned int dstFo
 	{
 		static int count = 0;
 		SaveTexture(StringFromFormat("%sefb_frame_%i.png", File::GetUserPath(D_DUMPTEXTURES_IDX).c_str(),
-			count++), GL_TEXTURE_2D, texture, virtual_width, virtual_height, 0);
+			count++), GL_TEXTURE_2D, texture, config.width, config.height, 0);
 	}
 
 	g_renderer->RestoreAPIState();
@@ -448,7 +458,7 @@ TextureCache::~TextureCache()
 	s_DepthMatrixProgram.Destroy();
 }
 
-void TextureCache::DisableStage(unsigned int stage)
+void TextureCache::DisableStage(u32 stage)
 {
 }
 

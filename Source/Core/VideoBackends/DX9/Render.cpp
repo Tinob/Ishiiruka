@@ -208,6 +208,7 @@ Renderer::~Renderer()
 void Renderer::RenderText(const std::string &text, int left, int top, u32 color)
 {
 	TargetRectangle trc = GetTargetRectangle();
+	D3D::font.DrawTextScaled((float)(trc.left + left + 1), (float)(trc.top + top + 1), 20, 20, 0.0f, color & 0xFF000000, text.c_str());
 	D3D::font.DrawTextScaled((float)(trc.left + left), (float)(trc.top + top), 20, 20, 0.0f, color, text.c_str());
 }
 
@@ -608,7 +609,25 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 	int Y = Tr.top;
 	int Width  = Tr.right - Tr.left;
 	int Height = Tr.bottom - Tr.top;
-	
+	if (X < 0)
+	{
+		Width = std::min(Width - X, s_backbuffer_width);
+		X = 0;
+	}
+	if (Y < 0)
+	{
+		Height = std::min(Height - Y, s_backbuffer_height);
+		Y = 0;
+	}
+	if (Width > s_backbuffer_width)
+	{
+		Width = s_backbuffer_width;
+	}
+
+	if (Height > s_backbuffer_height)
+	{
+		Height = s_backbuffer_height;
+	}
 	if(g_ActiveConfig.iStereoMode) {		
 		VertexShaderManager::ResetView();
 		if(s_b3D_RightFrame)
@@ -680,6 +699,8 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 			sourceRc.top = 0;
 			sourceRc.right = (float)xfbSource->texWidth;
 			sourceRc.bottom = (float)xfbSource->texHeight;
+
+			sourceRc.right -= Renderer::EFBToScaledX(fbStride - fbWidth);
 
 			MathUtil::Rectangle<float> drawRc;
 
@@ -816,53 +837,13 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 		bLastFrameDumped = false;
 	}
 
-	// Finish up the current frame, print some stats
-	if (g_ActiveConfig.bShowFPS || SConfig::GetInstance().m_ShowFrameCount)
-	{
-		std::string fps = "";
-		if (g_ActiveConfig.bShowFPS)
-			fps = StringFromFormat("FPS: %d", m_fps_counter.m_fps);
-
-		if (g_ActiveConfig.bShowFPS && SConfig::GetInstance().m_ShowFrameCount)
-			fps += " - ";
-		if (SConfig::GetInstance().m_ShowFrameCount)
-		{
-			fps += StringFromFormat("Frame: %d", Movie::g_currentFrame);
-			if (Movie::IsPlayingInput())
-				fps += StringFromFormat(" / %d", Movie::g_totalFrames);
-		}
-		fps += "\n";
-		D3D::font.DrawTextScaled(float(X), float(Y), 20.0f, 20.0f, 0.0f, 0xFF00FFFF, fps);
-	}
-
-	if (SConfig::GetInstance().m_ShowLag)
-	{
-		std::string lag = StringFromFormat("Lag: %" PRIu64 "\n", Movie::g_currentLagCount);
-		D3D::font.DrawTextScaled(float(X), float(Y + 18), 20.0f, 20.0f, 0.0f, 0xFF00FFFF, lag);
-	}
-
-	if (g_ActiveConfig.bShowInputDisplay)
-	{
-		D3D::font.DrawTextScaled(float(X), float(Y + 36), 20.0f, 20.0f, 0.0f, 0xFF00FFFF, Movie::GetInputDisplay());
-	}
-
 	Renderer::DrawDebugText();
-
-	if (g_ActiveConfig.bOverlayStats)
-	{
-		D3D::font.DrawTextScaled(float(X), float(Y + 36), 20.0f, 20.0f, 0.0f, 0xFF00FFFF, Statistics::ToString());
-	}
-	else if (g_ActiveConfig.bOverlayProjStats)
-	{
-		D3D::font.DrawTextScaled(float(X), float(Y + 36), 20.0f, 20.0f, 0.0f, 0xFF00FFFF, Statistics::ToStringProj());
-	}
-
 	OSD::DrawMessages();
 	D3D::EndFrame();	
 
 	GFX_DEBUGGER_PAUSE_AT(NEXT_FRAME, true);
 	
-	TextureCache::Cleanup();
+	TextureCache::Cleanup(frameCount);
 	// Flip/present backbuffer to frontbuffer here
 	D3D::Present();
 	// Enable configuration changes

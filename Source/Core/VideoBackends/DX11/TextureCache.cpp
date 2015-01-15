@@ -31,12 +31,12 @@ TextureCache::TCacheEntry::~TCacheEntry()
 	texture->Release();
 }
 
-void TextureCache::TCacheEntry::Bind(unsigned int stage)
+void TextureCache::TCacheEntry::Bind(u32 stage)
 {
 	D3D::stateman->SetTexture(stage, texture->GetSRV());
 }
 
-bool TextureCache::TCacheEntry::Save(const std::string& filename, unsigned int level)
+bool TextureCache::TCacheEntry::Save(const std::string& filename, u32 level)
 {
 	// TODO: Somehow implement this (D3DX11 doesn't support dumping individual LODs)
 	static bool warn_once = true;
@@ -217,8 +217,12 @@ TextureCache::TCacheEntryBase* TextureCache::CreateTexture(u32 width, u32 height
 	ID3D11Texture2D *pTexture;
 	const HRESULT hr = D3D::device->CreateTexture2D(&texdesc, NULL, &pTexture);
 	CHECK(SUCCEEDED(hr), "Create texture of the TextureCache");
+	TCacheEntryConfig config;
+	config.width = width;
+	config.height = height;
+	config.levels = tex_levels;
 
-	TCacheEntry* const entry = new TCacheEntry(new D3DTexture2D(pTexture, D3D11_BIND_SHADER_RESOURCE));
+	TCacheEntry* const entry = new TCacheEntry(config, new D3DTexture2D(pTexture, D3D11_BIND_SHADER_RESOURCE));
 	entry->usage = usage;
 	entry->DXGI_format = format;
 	entry->swap_rg = swaprg;
@@ -232,9 +236,9 @@ TextureCache::TCacheEntryBase* TextureCache::CreateTexture(u32 width, u32 height
 	return entry;
 }
 
-void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, unsigned int dstFormat,
+void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, u32 dstFormat,
 	PEControl::PixelFormat srcFormat, const EFBRectangle& srcRect,
-	bool isIntensity, bool scaleByHalf, unsigned int cbufid,
+	bool isIntensity, bool scaleByHalf, u32 cbufid,
 	const float *colmat)
 {
 	if (type != TCET_EC_DYNAMIC || g_ActiveConfig.bCopyEFBToTexture)
@@ -242,7 +246,7 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, unsigned int dstFo
 		g_renderer->ResetAPIState();
 		D3D::context->OMSetRenderTargets(1, &texture->GetRTV(), nullptr);
 		// stretch picture with increased internal resolution
-		const D3D11_VIEWPORT vp = CD3D11_VIEWPORT(0.f, 0.f, (float)virtual_width, (float)virtual_height);
+		const D3D11_VIEWPORT vp = CD3D11_VIEWPORT(0.f, 0.f, (float)config.width, (float)config.height);
 		D3D::context->RSSetViewports(1, &vp);
 
 		// set transformation
@@ -305,9 +309,14 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, unsigned int dstFo
 }
 
 TextureCache::TCacheEntryBase* TextureCache::CreateRenderTargetTexture(
-	unsigned int scaled_tex_w, unsigned int scaled_tex_h)
+	u32 scaled_tex_w, u32 scaled_tex_h, u32 layers)
 {
-	return new TCacheEntry(D3DTexture2D::Create(scaled_tex_w, scaled_tex_h,
+	TCacheEntryConfig config;
+	config.width = scaled_tex_w;
+	config.height = scaled_tex_h;
+	config.layers = layers;
+	config.rendertarget = true;
+	return new TCacheEntry(config, D3DTexture2D::Create(scaled_tex_w, scaled_tex_h,
 		(D3D11_BIND_FLAG)((int)D3D11_BIND_RENDER_TARGET | (int)D3D11_BIND_SHADER_RESOURCE),
 		D3D11_USAGE_DEFAULT, DXGI_FORMAT_R8G8B8A8_UNORM));
 }
@@ -329,7 +338,7 @@ TextureCache::TextureCache()
 
 TextureCache::~TextureCache()
 {
-	for (unsigned int k = 0; k < MAX_COPY_BUFFERS; ++k)
+	for (u32 k = 0; k < MAX_COPY_BUFFERS; ++k)
 		efbcopycbuf[k].reset();
 
 	s_encoder->Shutdown();

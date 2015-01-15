@@ -40,7 +40,6 @@ VideoConfig::VideoConfig()
 	{
 		backend_info.bSupportedFormats[i] = false;
 	}
-	backend_info.bUseMinimalMipCount = false;
 	backend_info.bSupportsExclusiveFullscreen = false;
 
 	// Game-specific stereoscopy settings
