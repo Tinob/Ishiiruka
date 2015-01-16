@@ -174,7 +174,7 @@ bool WiimoteLinux::ConnectInternal()
 	// Output channel
 	addr.l2_psm = htobs(WM_OUTPUT_CHANNEL);
 	if ((m_cmd_sock = socket(AF_BLUETOOTH, SOCK_SEQPACKET, BTPROTO_L2CAP)) == -1 ||
-		connect(m_cmd_sock, (sockaddr*)&addr, sizeof(addr)) < 0)
+	                  connect(m_cmd_sock, (sockaddr*)&addr, sizeof(addr)) < 0)
 	{
 		WARN_LOG(WIIMOTE, "Unable to open output socket to wiimote: %s", strerror(errno));
 		close(m_cmd_sock);
@@ -185,7 +185,7 @@ bool WiimoteLinux::ConnectInternal()
 	// Input channel
 	addr.l2_psm = htobs(WM_INPUT_CHANNEL);
 	if ((m_int_sock = socket(AF_BLUETOOTH, SOCK_SEQPACKET, BTPROTO_L2CAP)) == -1 ||
-		connect(m_int_sock, (sockaddr*)&addr, sizeof(addr)) < 0)
+	                  connect(m_int_sock, (sockaddr*)&addr, sizeof(addr)) < 0)
 	{
 		WARN_LOG(WIIMOTE, "Unable to open input socket from wiimote: %s", strerror(errno));
 		close(m_int_sock);
@@ -262,7 +262,7 @@ int WiimoteLinux::IORead(u8* buf)
 		{
 			// This can happen if the bluetooth dongle is disconnected
 			ERROR_LOG(WIIMOTE, "Bluetooth appears to be disconnected.  "
-				"Wiimote %i will be disconnected.", m_index + 1);
+					"Wiimote %i will be disconnected.", m_index + 1);
 		}
 
 		r = 0;

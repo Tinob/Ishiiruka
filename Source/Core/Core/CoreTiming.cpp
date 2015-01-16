@@ -477,7 +477,7 @@ void Idle()
 		}
 	}
 
-	idledCycles += PowerPC::ppcState.downcount;
+	idledCycles += DowncountToCycles(PowerPC::ppcState.downcount);
 	PowerPC::ppcState.downcount = 0;
 
 	Advance();

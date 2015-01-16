@@ -24,11 +24,11 @@ int CSIDevice_GCSteeringWheel::RunBuffer(u8* _pBuffer, int _iLength)
 		*(u32*)&_pBuffer[0] = SI_GC_STEERING;
 		break;
 
-		// Seen in F-Zero GX
+	// Seen in F-Zero GX
 	case CMD_MOTOR_OFF:
 		break;
 
-		// DEFAULT
+	// DEFAULT
 	default:
 	{
 		return CSIDevice_GCController::RunBuffer(_pBuffer, _iLength);

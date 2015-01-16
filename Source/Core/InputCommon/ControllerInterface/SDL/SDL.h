@@ -12,14 +12,14 @@
 
 
 #if SDL_VERSION_ATLEAST(1, 3, 0)
-	#define USE_SDL_HAPTIC
+#define USE_SDL_HAPTIC
 #endif
 
 #ifdef USE_SDL_HAPTIC
-	#include <SDL_haptic.h>
-	#define SDL_INIT_FLAGS  SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC
+#include <SDL_haptic.h>
+#define SDL_INIT_FLAGS  SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC
 #else
-	#define SDL_INIT_FLAGS  SDL_INIT_JOYSTICK
+#define SDL_INIT_FLAGS  SDL_INIT_JOYSTICK
 #endif
 
 namespace ciface
@@ -27,7 +27,7 @@ namespace ciface
 namespace SDL
 {
 
-void Init( std::vector<Core::Device*>& devices );
+void Init(std::vector<Core::Device*>& devices);
 
 class Joystick : public Core::Device
 {
@@ -40,8 +40,8 @@ private:
 		Button(u8 index, SDL_Joystick* js) : m_js(js), m_index(index) {}
 		ControlState GetState() const override;
 	private:
-		 SDL_Joystick* const m_js;
-		 const u8 m_index;
+		SDL_Joystick* const m_js;
+		const u8 m_index;
 	};
 
 	class Axis : public Core::Device::Input
@@ -77,10 +77,13 @@ private:
 
 	protected:
 		void Update();
+		virtual void SetSDLHapticEffect(ControlState state) = 0;
 
 		SDL_HapticEffect m_effect;
 		SDL_Haptic* m_haptic;
 		int m_id;
+	private:
+		virtual void SetState(ControlState state) override final;
 	};
 
 	class ConstantEffect : public HapticEffect
@@ -88,7 +91,8 @@ private:
 	public:
 		ConstantEffect(SDL_Haptic* haptic) : HapticEffect(haptic) {}
 		std::string GetName() const override;
-		void SetState(ControlState state) override;
+	private:
+		void SetSDLHapticEffect(ControlState state) override;
 	};
 
 	class RampEffect : public HapticEffect
@@ -96,7 +100,35 @@ private:
 	public:
 		RampEffect(SDL_Haptic* haptic) : HapticEffect(haptic) {}
 		std::string GetName() const override;
-		void SetState(ControlState state) override;
+	private:
+		void SetSDLHapticEffect(ControlState state) override;
+	};
+
+	class SineEffect : public HapticEffect
+	{
+	public:
+		SineEffect(SDL_Haptic* haptic) : HapticEffect(haptic) {}
+		std::string GetName() const override;
+	private:
+		void SetSDLHapticEffect(ControlState state) override;
+	};
+
+	class TriangleEffect : public HapticEffect
+	{
+	public:
+		TriangleEffect(SDL_Haptic* haptic) : HapticEffect(haptic) {}
+		std::string GetName() const override;
+	private:
+		void SetSDLHapticEffect(ControlState state) override;
+	};
+
+	class LeftRightEffect : public HapticEffect
+	{
+	public:
+		LeftRightEffect(SDL_Haptic* haptic) : HapticEffect(haptic) {}
+		std::string GetName() const override;
+	private:
+		void SetSDLHapticEffect(ControlState state) override;
 	};
 #endif
 

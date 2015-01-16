@@ -12,10 +12,10 @@ private:
 	// Commands
 	enum EBufferCommands
 	{
-		CMD_RESET = 0x00,
-		CMD_ORIGIN = 0x41,
+		CMD_RESET       = 0x00,
+		CMD_ORIGIN      = 0x41,
 		CMD_RECALIBRATE = 0x42,
-		CMD_MOTOR_OFF = 0xff,
+		CMD_MOTOR_OFF   = 0xff,
 	};
 
 	enum EDirectCommands

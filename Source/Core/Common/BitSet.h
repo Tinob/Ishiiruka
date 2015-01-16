@@ -16,10 +16,10 @@ static inline int CountSetBits(T v)
 	// from https://graphics.stanford.edu/~seander/bithacks.html
 	// GCC has this built in, but MSVC's intrinsic will only emit the actual
 	// POPCNT instruction, which we're not depending on
-	v = v - ((v >> 1) & (T)~(T)0 / 3);
-	v = (v & (T)~(T)0 / 15 * 3) + ((v >> 2) & (T)~(T)0 / 15 * 3);
-	v = (v + (v >> 4)) & (T)~(T)0 / 255 * 15;
-	return (T)(v * ((T)~(T)0 / 255)) >> (sizeof(T) - 1) * 8;
+	v = v - ((v >> 1) & (T)~(T)0/3);
+	v = (v & (T)~(T)0/15*3) + ((v >> 2) & (T)~(T)0/15*3);
+	v = (v + (v >> 4)) & (T)~(T)0/255*15;
+	return (T)(v * ((T)~(T)0/255)) >> (sizeof(T) - 1) * 8;
 }
 static inline int LeastSignificantSetBit(u8 val)
 {
@@ -148,7 +148,7 @@ public:
 
 	static BitSet AllTrue(size_t count)
 	{
-		return BitSet(count == sizeof(IntTy) * 8 ? ~(IntTy)0 : (((IntTy)1 << count) - 1));
+		return BitSet(count == sizeof(IntTy)*8 ? ~(IntTy)0 : (((IntTy)1 << count) - 1));
 	}
 
 	Ref operator[](size_t bit) { return Ref(this, (IntTy)1 << bit); }

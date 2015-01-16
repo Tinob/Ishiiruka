@@ -610,7 +610,7 @@ void CConfigMain::CreateGUIControls()
 	DSPEngine = new wxRadioBox(AudioPage, ID_DSPENGINE, _("DSP Emulator Engine"), wxDefaultPosition, wxDefaultSize, arrayStringFor_DSPEngine, 0, wxRA_SPECIFY_ROWS);
 	DPL2Decoder = new wxCheckBox(AudioPage, ID_DPL2DECODER, _("Dolby Pro Logic II decoder"));
 	TimeStretching = new wxCheckBox(AudioPage, ID_TIMESTRETCHING, _("Time Stretching"));
-	VolumeSlider = new wxSlider(AudioPage, ID_VOLUME, 0, 1, 100, wxDefaultPosition, wxDefaultSize, wxSL_VERTICAL|wxSL_INVERSE);
+	VolumeSlider = new wxSlider(AudioPage, ID_VOLUME, 0, 0, 100, wxDefaultPosition, wxDefaultSize, wxSL_VERTICAL|wxSL_INVERSE);
 	VolumeText = new wxStaticText(AudioPage, wxID_ANY, "");
 	BackendSelection = new wxChoice(AudioPage, ID_BACKEND, wxDefaultPosition, wxDefaultSize, wxArrayBackends, 0, wxDefaultValidator, wxEmptyString);
 	Latency = new wxSpinCtrl(AudioPage, ID_LATENCY, "", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 30);
@@ -801,14 +801,14 @@ void CConfigMain::CreateGUIControls()
 	EnableOC = new wxCheckBox(AdvancedPage, ID_ENABLEOVERCLOCK, _("Enable CPU Clock Override"));
 	OCSlider = new wxSlider(AdvancedPage, ID_OVERCLOCK, 100, 0, 150, wxDefaultPosition, wxDefaultSize, wxSL_HORIZONTAL);
 	wxStaticText* OCDescription = new wxStaticText(AdvancedPage, wxID_ANY,
-		("Higher values can make variable-framerate games\n"
-		"run at a higher framerate, at the expense of CPU.\n"
-		"Lower values can make variable-framerate games\n"
-		"run at a lower framerate, saving CPU.\n\n"
-		"WARNING: Changing this from the default (100%)\n"
-		"can and will break games and cause glitches.\n"
-		"Do so at your own risk. Please do not report\n"
-		"bugs that occur with a non-default clock.\n"));
+	  _("Higher values can make variable-framerate games\n"
+	    "run at a higher framerate, at the expense of CPU.\n"
+	    "Lower values can make variable-framerate games\n"
+	    "run at a lower framerate, saving CPU.\n\n"
+	    "WARNING: Changing this from the default (100%)\n"
+	    "can and will break games and cause glitches.\n"
+	    "Do so at your own risk. Please do not report\n"
+	    "bugs that occur with a non-default clock.\n"));
 	OCText = new wxStaticText(AdvancedPage, wxID_ANY, "");
 	bOverclockEnable->Add(EnableOC);
 	bOverclock->Add(OCSlider, 1, wxALL, 5);

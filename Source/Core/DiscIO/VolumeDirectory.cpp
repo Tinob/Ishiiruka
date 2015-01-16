@@ -24,7 +24,7 @@ namespace DiscIO
 {
 
 CVolumeDirectory::CVolumeDirectory(const std::string& _rDirectory, bool _bIsWii,
-	const std::string& _rApploader, const std::string& _rDOL)
+								   const std::string& _rApploader, const std::string& _rDOL)
 	: m_totalNameSize(0)
 	, m_dataStartAddress(-1)
 	, m_diskHeader(DISKHEADERINFO_ADDRESS)
@@ -194,7 +194,7 @@ void CVolumeDirectory::SetName(const std::string& name)
 {
 	size_t length = name.length();
 	if (length > MAX_NAME_LENGTH)
-		length = MAX_NAME_LENGTH;
+	    length = MAX_NAME_LENGTH;
 
 	memcpy(&m_diskHeader[0x20], name.c_str(), length);
 	m_diskHeader[length + 0x20] = 0;
@@ -357,7 +357,7 @@ void CVolumeDirectory::BuildFST()
 }
 
 void CVolumeDirectory::WriteToBuffer(u64 _SrcStartAddress, u64 _SrcLength, const u8* _Src,
-	u64& _Address, u64& _Length, u8*& _pBuffer) const
+									 u64& _Address, u64& _Length, u8*& _pBuffer) const
 {
 	if (_Length == 0)
 		return;
@@ -403,7 +403,7 @@ void CVolumeDirectory::Write32(u32 data, u32 offset, std::vector<u8>* const buff
 	(*buffer)[offset++] = (data >> 24);
 	(*buffer)[offset++] = (data >> 16) & 0xff;
 	(*buffer)[offset++] = (data >> 8) & 0xff;
-	(*buffer)[offset] = (data)& 0xff;
+	(*buffer)[offset] = (data) & 0xff;
 }
 
 void CVolumeDirectory::WriteEntryData(u32& entryOffset, u8 type, u32 nameOffset, u64 dataOffset, u32 length)
@@ -412,7 +412,7 @@ void CVolumeDirectory::WriteEntryData(u32& entryOffset, u8 type, u32 nameOffset,
 
 	m_FSTData[entryOffset++] = (nameOffset >> 16) & 0xff;
 	m_FSTData[entryOffset++] = (nameOffset >> 8) & 0xff;
-	m_FSTData[entryOffset++] = (nameOffset)& 0xff;
+	m_FSTData[entryOffset++] = (nameOffset) & 0xff;
 
 	Write32((u32)(dataOffset >> m_addressShift), entryOffset, &m_FSTData);
 	entryOffset += 4;

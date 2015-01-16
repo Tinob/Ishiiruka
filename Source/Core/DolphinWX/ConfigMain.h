@@ -144,13 +144,13 @@ private:
 	wxCheckBox* SkipIdle;
 	wxCheckBox* EnableCheats;
 	wxChoice* Framelimit;
-	wxSlider* OCSlider;
-	wxStaticText* OCText;
-	wxCheckBox* EnableOC;
 
 	// Advanced
 	wxRadioBox* CPUEngine;
 	wxCheckBox* _NTSCJ;
+	wxSlider* OCSlider;
+	wxStaticText* OCText;
+	wxCheckBox* EnableOC;
 
 
 	wxBoxSizer* sDisplayPage; // Display settings
@@ -268,7 +268,7 @@ private:
 	void AddRemoveISOPaths(wxCommandEvent& event);
 	void DefaultISOChanged(wxFileDirPickerEvent& event);
 	void DVDRootChanged(wxFileDirPickerEvent& event);
-	void ApploaderPathChanged(wxFileDirPickerEvent& WXUNUSED(event));
+	void ApploaderPathChanged(wxFileDirPickerEvent& WXUNUSED (event));
 	void NANDRootChanged(wxFileDirPickerEvent& event);
 
 private:

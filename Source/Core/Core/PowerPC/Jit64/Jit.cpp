@@ -75,25 +75,25 @@ using namespace PowerPC;
 
 // Optimization Ideas -
 /*
-* Assume SP is in main RAM (in Wii mode too?) - partly done
-* Assume all floating point loads and double precision loads+stores are to/from main ram
-(single precision stores can be used in write gather pipe, specialized fast check added)
-* AMD only - use movaps instead of movapd when loading ps from memory?
-* HLE functions like floorf, sin, memcpy, etc - they can be much faster
-* ABI optimizations - drop F0-F13 on blr, for example. Watch out for context switching.
-CR2-CR4 are non-volatile, rest of CR is volatile -> dropped on blr.
-R5-R12 are volatile -> dropped on blr.
-* classic inlining across calls.
-* Track which registers a block clobbers without using, then take advantage of this knowledge
-when compiling a block that links to that block.
-* Track more dependencies between instructions, e.g. avoiding PPC_FP code, single/double
-conversion, movddup on non-paired singles, etc where possible.
-* Support loads/stores directly from xmm registers in jit_util and the backpatcher; this might
-help AMD a lot since gpr/xmm transfers are slower there.
-* Smarter register allocation in general; maybe learn to drop values once we know they won't be
-used again before being overwritten?
-* More flexible reordering; there's limits to how far we can go because of exception handling
-and such, but it's currently limited to integer ops only. This can definitely be made better.
+  * Assume SP is in main RAM (in Wii mode too?) - partly done
+  * Assume all floating point loads and double precision loads+stores are to/from main ram
+    (single precision stores can be used in write gather pipe, specialized fast check added)
+  * AMD only - use movaps instead of movapd when loading ps from memory?
+  * HLE functions like floorf, sin, memcpy, etc - they can be much faster
+  * ABI optimizations - drop F0-F13 on blr, for example. Watch out for context switching.
+    CR2-CR4 are non-volatile, rest of CR is volatile -> dropped on blr.
+	R5-R12 are volatile -> dropped on blr.
+  * classic inlining across calls.
+  * Track which registers a block clobbers without using, then take advantage of this knowledge
+    when compiling a block that links to that block.
+  * Track more dependencies between instructions, e.g. avoiding PPC_FP code, single/double
+    conversion, movddup on non-paired singles, etc where possible.
+  * Support loads/stores directly from xmm registers in jit_util and the backpatcher; this might
+    help AMD a lot since gpr/xmm transfers are slower there.
+  * Smarter register allocation in general; maybe learn to drop values once we know they won't be
+    used again before being overwritten?
+  * More flexible reordering; there's limits to how far we can go because of exception handling
+    and such, but it's currently limited to integer ops only. This can definitely be made better.
 */
 
 // The BLR optimization is nice, but it means that JITted code can overflow the
@@ -494,11 +494,11 @@ void Jit64::Trace()
 void Jit64::Jit(u32 em_address)
 {
 	if (GetSpaceLeft() < 0x10000 ||
-		farcode.GetSpaceLeft() < 0x10000 ||
-		trampolines.GetSpaceLeft() < 0x10000 ||
-		blocks.IsFull() ||
-		SConfig::GetInstance().m_LocalCoreStartupParameter.bJITNoBlockCache ||
-		m_clear_cache_asap)
+	    farcode.GetSpaceLeft() < 0x10000 ||
+	    trampolines.GetSpaceLeft() < 0x10000 ||
+	    blocks.IsFull() ||
+	    SConfig::GetInstance().m_LocalCoreStartupParameter.bJITNoBlockCache ||
+	    m_clear_cache_asap)
 	{
 		ClearCache();
 	}
@@ -522,6 +522,7 @@ void Jit64::Jit(u32 em_address)
 				jo.enableBlocklink = false;
 				analyzer.ClearOption(PPCAnalyst::PPCAnalyzer::OPTION_CONDITIONAL_CONTINUE);
 				analyzer.ClearOption(PPCAnalyst::PPCAnalyzer::OPTION_BRANCH_MERGE);
+				analyzer.ClearOption(PPCAnalyst::PPCAnalyzer::OPTION_CROR_MERGE);
 				analyzer.ClearOption(PPCAnalyst::PPCAnalyzer::OPTION_CARRY_MERGE);
 			}
 			Trace();
@@ -603,7 +604,7 @@ const u8* Jit64::DoJit(u32 em_address, PPCAnalyst::CodeBuffer *code_buf, JitBloc
 	if (!SConfig::GetInstance().m_LocalCoreStartupParameter.bEnableDebugging)
 		js.downcountAmount += PatchEngine::GetSpeedhackCycles(code_block.m_address);
 
-	js.skipnext = false;
+	js.skipInstructions = 0;
 	js.carryFlagSet = false;
 	js.carryFlagInverted = false;
 	js.assumeNoPairedQuantize = false;
@@ -651,12 +652,9 @@ const u8* Jit64::DoJit(u32 em_address, PPCAnalyst::CodeBuffer *code_buf, JitBloc
 
 		if (i == (code_block.m_num_instructions - 1))
 		{
-			// WARNING - cmp->branch merging will screw this up.
-			js.isLastInstruction = true;
-			js.next_inst = 0;
-			js.next_inst_bp = false;
 			if (Profiler::g_ProfileBlocks)
 			{
+				// WARNING - cmp->branch merging will screw this up.
 				PROFILER_VPUSH;
 				// get end tic
 				PROFILER_QUERY_PERFORMANCE_COUNTER(&b->ticStop);
@@ -664,14 +662,7 @@ const u8* Jit64::DoJit(u32 em_address, PPCAnalyst::CodeBuffer *code_buf, JitBloc
 				PROFILER_UPDATE_TIME(b);
 				PROFILER_VPOP;
 			}
-		}
-		else
-		{
-			// help peephole optimizations
-			js.next_inst = ops[i + 1].inst;
-			js.next_compilerPC = ops[i + 1].address;
-			js.next_op = &ops[i + 1];
-			js.next_inst_bp = SConfig::GetInstance().m_LocalCoreStartupParameter.bEnableDebugging && breakpoints.IsAddressBreakPoint(ops[i + 1].address);
+			js.isLastInstruction = true;
 		}
 
 		if (jo.optimizeGatherPipe && js.fifoBytesThisBlock >= 32)
@@ -856,11 +847,8 @@ const u8* Jit64::DoJit(u32 em_address, PPCAnalyst::CodeBuffer *code_buf, JitBloc
 			//NOTICE_LOG(DYNA_REC, "Unflushed register: %s", ppc_inst.c_str());
 		}
 #endif
-		if (js.skipnext)
-		{
-			js.skipnext = false;
-			i++; // Skip next instruction
-		}
+		i += js.skipInstructions;
+		js.skipInstructions = 0;
 	}
 
 	u32 function = HLE::GetFunctionIndex(js.blockStart);
@@ -919,5 +907,6 @@ void Jit64::EnableOptimization()
 {
 	analyzer.SetOption(PPCAnalyst::PPCAnalyzer::OPTION_CONDITIONAL_CONTINUE);
 	analyzer.SetOption(PPCAnalyst::PPCAnalyzer::OPTION_BRANCH_MERGE);
+	analyzer.SetOption(PPCAnalyst::PPCAnalyzer::OPTION_CROR_MERGE);
 	analyzer.SetOption(PPCAnalyst::PPCAnalyzer::OPTION_CARRY_MERGE);
 }

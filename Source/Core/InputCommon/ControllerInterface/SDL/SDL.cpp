@@ -18,6 +18,11 @@ namespace ciface
 namespace SDL
 {
 
+// 10ms = 100Hz which homebrew docs very roughly imply is within WiiMote normal
+// range, used for periodic haptic effects though often ignored by devices
+static const u16 RUMBLE_PERIOD = 10;
+static const u16 RUMBLE_LENGTH_MAX = 500; // ms: enough to span multiple frames at low FPS, but still finite
+
 static std::string GetJoystickName(int index)
 {
 #if SDL_VERSION_ATLEAST(2, 0, 0)
@@ -27,13 +32,13 @@ static std::string GetJoystickName(int index)
 #endif
 }
 
-void Init( std::vector<Core::Device*>& devices )
+void Init(std::vector<Core::Device*>& devices)
 {
 	// this is used to number the joysticks
 	// multiple joysticks with the same name shall get unique ids starting at 0
 	std::map<std::string, int> name_counts;
 
-	if (SDL_Init( SDL_INIT_FLAGS ) >= 0)
+	if (SDL_Init(SDL_INIT_FLAGS) >= 0)
 	{
 		// joysticks
 		for (int i = 0; i < SDL_NumJoysticks(); ++i)
@@ -44,7 +49,7 @@ void Init( std::vector<Core::Device*>& devices )
 				Joystick* js = new Joystick(dev, i, name_counts[GetJoystickName(i)]++);
 				// only add if it has some inputs/outputs
 				if (js->Inputs().size() || js->Outputs().size())
-					devices.push_back( js );
+					devices.push_back(js);
 				else
 					delete js;
 			}
@@ -68,10 +73,10 @@ Joystick::Joystick(SDL_Joystick* const joystick, const int sdl_index, const unsi
 	std::transform(lcasename.begin(), lcasename.end(), lcasename.begin(), tolower);
 
 	if ((std::string::npos != lcasename.find("xbox 360")) &&
-	    (10 == SDL_JoystickNumButtons(joystick)) &&
-	    (5 == SDL_JoystickNumAxes(joystick)) &&
-	    (1 == SDL_JoystickNumHats(joystick)) &&
-	    (0 == SDL_JoystickNumBalls(joystick)))
+		(10 == SDL_JoystickNumButtons(joystick)) &&
+		(5 == SDL_JoystickNumAxes(joystick)) &&
+		(1 == SDL_JoystickNumHats(joystick)) &&
+		(0 == SDL_JoystickNumBalls(joystick)))
 	{
 		// this device won't be used
 		return;
@@ -79,9 +84,9 @@ Joystick::Joystick(SDL_Joystick* const joystick, const int sdl_index, const unsi
 #endif
 
 	if (SDL_JoystickNumButtons(joystick) > 255 ||
-	    SDL_JoystickNumAxes(joystick) > 255 ||
-	    SDL_JoystickNumHats(joystick) > 255 ||
-	    SDL_JoystickNumBalls(joystick) > 255)
+		SDL_JoystickNumAxes(joystick) > 255 ||
+		SDL_JoystickNumHats(joystick) > 255 ||
+		SDL_JoystickNumBalls(joystick) > 255)
 	{
 		// This device is invalid, don't use it
 		// Some crazy devices(HP webcam 2100) end up as HID devices
@@ -111,13 +116,13 @@ Joystick::Joystick(SDL_Joystick* const joystick, const int sdl_index, const unsi
 
 #ifdef USE_SDL_HAPTIC
 	// try to get supported ff effects
-	m_haptic = SDL_HapticOpenFromJoystick( m_joystick );
+	m_haptic = SDL_HapticOpenFromJoystick(m_joystick);
 	if (m_haptic)
 	{
 		//SDL_HapticSetGain( m_haptic, 1000 );
 		//SDL_HapticSetAutocenter( m_haptic, 0 );
 
-		const unsigned int supported_effects = SDL_HapticQuery( m_haptic );
+		const unsigned int supported_effects = SDL_HapticQuery(m_haptic);
 
 		// constant effect
 		if (supported_effects & SDL_HAPTIC_CONSTANT)
@@ -126,6 +131,18 @@ Joystick::Joystick(SDL_Joystick* const joystick, const int sdl_index, const unsi
 		// ramp effect
 		if (supported_effects & SDL_HAPTIC_RAMP)
 			AddOutput(new RampEffect(m_haptic));
+
+		// sine effect
+		if (supported_effects & SDL_HAPTIC_SINE)
+			AddOutput(new SineEffect(m_haptic));
+
+		// triangle effect
+		if (supported_effects & SDL_HAPTIC_TRIANGLE)
+			AddOutput(new TriangleEffect(m_haptic));
+
+		// left-right effect
+		if (supported_effects & SDL_HAPTIC_LEFTRIGHT)
+			AddOutput(new LeftRightEffect(m_haptic));
 	}
 #endif
 
@@ -178,36 +195,81 @@ std::string Joystick::RampEffect::GetName() const
 	return "Ramp";
 }
 
-void Joystick::ConstantEffect::SetState(ControlState state)
+std::string Joystick::SineEffect::GetName() const
 {
+	return "Sine";
+}
+
+std::string Joystick::TriangleEffect::GetName() const
+{
+	return "Triangle";
+}
+
+std::string Joystick::LeftRightEffect::GetName() const
+{
+	return "LeftRight";
+}
+
+void Joystick::HapticEffect::SetState(ControlState state)
+{
+	memset(&m_effect, 0, sizeof(m_effect));
 	if (state)
 	{
-		m_effect.type = SDL_HAPTIC_CONSTANT;
-		m_effect.constant.length = SDL_HAPTIC_INFINITY;
+		SetSDLHapticEffect(state);
 	}
 	else
 	{
+		// this module uses type==0 to indicate 'off'
 		m_effect.type = 0;
 	}
-
-	m_effect.constant.level = (Sint16)(state * 0x7FFF);
 	Update();
 }
 
-void Joystick::RampEffect::SetState(ControlState state)
+void Joystick::ConstantEffect::SetSDLHapticEffect(ControlState state)
 {
-	if (state)
-	{
-		m_effect.type = SDL_HAPTIC_RAMP;
-		m_effect.ramp.length = SDL_HAPTIC_INFINITY;
-	}
-	else
-	{
-		m_effect.type = 0;
-	}
+	m_effect.type = SDL_HAPTIC_CONSTANT;
+	m_effect.constant.length = RUMBLE_LENGTH_MAX;
+	m_effect.constant.level = (Sint16)(state * 0x7FFF);
+}
 
+void Joystick::RampEffect::SetSDLHapticEffect(ControlState state)
+{
+	m_effect.type = SDL_HAPTIC_RAMP;
+	m_effect.ramp.length = RUMBLE_LENGTH_MAX;
 	m_effect.ramp.start = (Sint16)(state * 0x7FFF);
-	Update();
+}
+
+void Joystick::SineEffect::SetSDLHapticEffect(ControlState state)
+{
+	m_effect.type = SDL_HAPTIC_SINE;
+	m_effect.periodic.period = RUMBLE_PERIOD;
+	m_effect.periodic.magnitude = (Sint16)(state * 0x7FFF);
+	m_effect.periodic.offset = 0;
+	m_effect.periodic.phase = 18000;
+	m_effect.periodic.length = RUMBLE_LENGTH_MAX;
+	m_effect.periodic.delay = 0;
+	m_effect.periodic.attack_length = 0;
+}
+
+void Joystick::TriangleEffect::SetSDLHapticEffect(ControlState state)
+{
+	m_effect.type = SDL_HAPTIC_TRIANGLE;
+	m_effect.periodic.period = RUMBLE_PERIOD;
+	m_effect.periodic.magnitude = (Sint16)(state * 0x7FFF);
+	m_effect.periodic.offset = 0;
+	m_effect.periodic.phase = 18000;
+	m_effect.periodic.length = RUMBLE_LENGTH_MAX;
+	m_effect.periodic.delay = 0;
+	m_effect.periodic.attack_length = 0;
+}
+
+void Joystick::LeftRightEffect::SetSDLHapticEffect(ControlState state)
+{
+	m_effect.type = SDL_HAPTIC_LEFTRIGHT;
+	m_effect.leftright.length = RUMBLE_LENGTH_MAX;
+	// max ranges tuned to 'feel' similar in magnitude to triangle/sine on xbox360 controller
+	m_effect.leftright.large_magnitude = (Uint16)(state * 0x4000);
+	m_effect.leftright.small_magnitude = (Uint16)(state * 0xFFFF);
 }
 #endif
 

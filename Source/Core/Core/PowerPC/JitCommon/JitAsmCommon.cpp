@@ -12,7 +12,7 @@
 #define QUANTIZED_REGS_TO_SAVE \
 	(ABI_ALL_CALLER_SAVED & ~BitSet32 { \
 		RSCRATCH, RSCRATCH2, RSCRATCH_EXTRA, XMM0+16, XMM1+16 \
-		})
+	})
 
 #define QUANTIZED_REGS_TO_SAVE_LOAD (QUANTIZED_REGS_TO_SAVE | BitSet32 { RSCRATCH2 })
 
@@ -196,9 +196,9 @@ const u8 GC_ALIGNED16(pbswapShuffle2x4[16]) = { 3, 2, 1, 0, 7, 6, 5, 4, 8, 9, 10
 
 static const float GC_ALIGNED16(m_quantizeTableS[]) =
 {
-	(1ULL << 0), (1ULL << 0), (1ULL << 1), (1ULL << 1), (1ULL << 2), (1ULL << 2), (1ULL << 3), (1ULL << 3),
-	(1ULL << 4), (1ULL << 4), (1ULL << 5), (1ULL << 5), (1ULL << 6), (1ULL << 6), (1ULL << 7), (1ULL << 7),
-	(1ULL << 8), (1ULL << 8), (1ULL << 9), (1ULL << 9), (1ULL << 10), (1ULL << 10), (1ULL << 11), (1ULL << 11),
+	(1ULL <<  0), (1ULL <<  0), (1ULL <<  1), (1ULL <<  1), (1ULL <<  2), (1ULL <<  2), (1ULL <<  3), (1ULL <<  3),
+	(1ULL <<  4), (1ULL <<  4), (1ULL <<  5), (1ULL <<  5), (1ULL <<  6), (1ULL <<  6), (1ULL <<  7), (1ULL <<  7),
+	(1ULL <<  8), (1ULL <<  8), (1ULL <<  9), (1ULL <<  9), (1ULL << 10), (1ULL << 10), (1ULL << 11), (1ULL << 11),
 	(1ULL << 12), (1ULL << 12), (1ULL << 13), (1ULL << 13), (1ULL << 14), (1ULL << 14), (1ULL << 15), (1ULL << 15),
 	(1ULL << 16), (1ULL << 16), (1ULL << 17), (1ULL << 17), (1ULL << 18), (1ULL << 18), (1ULL << 19), (1ULL << 19),
 	(1ULL << 20), (1ULL << 20), (1ULL << 21), (1ULL << 21), (1ULL << 22), (1ULL << 22), (1ULL << 23), (1ULL << 23),
@@ -215,20 +215,20 @@ static const float GC_ALIGNED16(m_quantizeTableS[]) =
 	1.0 / (1ULL << 16), 1.0 / (1ULL << 16), 1.0 / (1ULL << 15), 1.0 / (1ULL << 15),
 	1.0 / (1ULL << 14), 1.0 / (1ULL << 14), 1.0 / (1ULL << 13), 1.0 / (1ULL << 13),
 	1.0 / (1ULL << 12), 1.0 / (1ULL << 12), 1.0 / (1ULL << 11), 1.0 / (1ULL << 11),
-	1.0 / (1ULL << 10), 1.0 / (1ULL << 10), 1.0 / (1ULL << 9), 1.0 / (1ULL << 9),
-	1.0 / (1ULL << 8), 1.0 / (1ULL << 8), 1.0 / (1ULL << 7), 1.0 / (1ULL << 7),
-	1.0 / (1ULL << 6), 1.0 / (1ULL << 6), 1.0 / (1ULL << 5), 1.0 / (1ULL << 5),
-	1.0 / (1ULL << 4), 1.0 / (1ULL << 4), 1.0 / (1ULL << 3), 1.0 / (1ULL << 3),
-	1.0 / (1ULL << 2), 1.0 / (1ULL << 2), 1.0 / (1ULL << 1), 1.0 / (1ULL << 1),
+	1.0 / (1ULL << 10), 1.0 / (1ULL << 10), 1.0 / (1ULL <<  9), 1.0 / (1ULL <<  9),
+	1.0 / (1ULL <<  8), 1.0 / (1ULL <<  8), 1.0 / (1ULL <<  7), 1.0 / (1ULL <<  7),
+	1.0 / (1ULL <<  6), 1.0 / (1ULL <<  6), 1.0 / (1ULL <<  5), 1.0 / (1ULL <<  5),
+	1.0 / (1ULL <<  4), 1.0 / (1ULL <<  4), 1.0 / (1ULL <<  3), 1.0 / (1ULL <<  3),
+	1.0 / (1ULL <<  2), 1.0 / (1ULL <<  2), 1.0 / (1ULL <<  1), 1.0 / (1ULL <<  1),
 };
 
 static const float GC_ALIGNED16(m_dequantizeTableS[]) =
 {
-	1.0 / (1ULL << 0), 1.0 / (1ULL << 0), 1.0 / (1ULL << 1), 1.0 / (1ULL << 1),
-	1.0 / (1ULL << 2), 1.0 / (1ULL << 2), 1.0 / (1ULL << 3), 1.0 / (1ULL << 3),
-	1.0 / (1ULL << 4), 1.0 / (1ULL << 4), 1.0 / (1ULL << 5), 1.0 / (1ULL << 5),
-	1.0 / (1ULL << 6), 1.0 / (1ULL << 6), 1.0 / (1ULL << 7), 1.0 / (1ULL << 7),
-	1.0 / (1ULL << 8), 1.0 / (1ULL << 8), 1.0 / (1ULL << 9), 1.0 / (1ULL << 9),
+	1.0 / (1ULL <<  0), 1.0 / (1ULL <<  0), 1.0 / (1ULL <<  1), 1.0 / (1ULL <<  1),
+	1.0 / (1ULL <<  2), 1.0 / (1ULL <<  2), 1.0 / (1ULL <<  3), 1.0 / (1ULL <<  3),
+	1.0 / (1ULL <<  4), 1.0 / (1ULL <<  4), 1.0 / (1ULL <<  5), 1.0 / (1ULL <<  5),
+	1.0 / (1ULL <<  6), 1.0 / (1ULL <<  6), 1.0 / (1ULL <<  7), 1.0 / (1ULL <<  7),
+	1.0 / (1ULL <<  8), 1.0 / (1ULL <<  8), 1.0 / (1ULL <<  9), 1.0 / (1ULL <<  9),
 	1.0 / (1ULL << 10), 1.0 / (1ULL << 10), 1.0 / (1ULL << 11), 1.0 / (1ULL << 11),
 	1.0 / (1ULL << 12), 1.0 / (1ULL << 12), 1.0 / (1ULL << 13), 1.0 / (1ULL << 13),
 	1.0 / (1ULL << 14), 1.0 / (1ULL << 14), 1.0 / (1ULL << 15), 1.0 / (1ULL << 15),
@@ -245,12 +245,12 @@ static const float GC_ALIGNED16(m_dequantizeTableS[]) =
 	(1ULL << 24), (1ULL << 24), (1ULL << 23), (1ULL << 23), (1ULL << 22), (1ULL << 22), (1ULL << 21), (1ULL << 21),
 	(1ULL << 20), (1ULL << 20), (1ULL << 19), (1ULL << 19), (1ULL << 18), (1ULL << 18), (1ULL << 17), (1ULL << 17),
 	(1ULL << 16), (1ULL << 16), (1ULL << 15), (1ULL << 15), (1ULL << 14), (1ULL << 14), (1ULL << 13), (1ULL << 13),
-	(1ULL << 12), (1ULL << 12), (1ULL << 11), (1ULL << 11), (1ULL << 10), (1ULL << 10), (1ULL << 9), (1ULL << 9),
-	(1ULL << 8), (1ULL << 8), (1ULL << 7), (1ULL << 7), (1ULL << 6), (1ULL << 6), (1ULL << 5), (1ULL << 5),
-	(1ULL << 4), (1ULL << 4), (1ULL << 3), (1ULL << 3), (1ULL << 2), (1ULL << 2), (1ULL << 1), (1ULL << 1),
+	(1ULL << 12), (1ULL << 12), (1ULL << 11), (1ULL << 11), (1ULL << 10), (1ULL << 10), (1ULL <<  9), (1ULL <<  9),
+	(1ULL <<  8), (1ULL <<  8), (1ULL <<  7), (1ULL <<  7), (1ULL <<  6), (1ULL <<  6), (1ULL <<  5), (1ULL <<  5),
+	(1ULL <<  4), (1ULL <<  4), (1ULL <<  3), (1ULL <<  3), (1ULL <<  2), (1ULL <<  2), (1ULL <<  1), (1ULL <<  1),
 };
 
-static const float GC_ALIGNED16(m_65535[4]) = { 65535.0f, 65535.0f, 65535.0f, 65535.0f };
+static const float GC_ALIGNED16(m_65535[4]) = {65535.0f, 65535.0f, 65535.0f, 65535.0f};
 static const float GC_ALIGNED16(m_32767) = 32767.0f;
 static const float GC_ALIGNED16(m_m32768) = -32768.0f;
 static const float GC_ALIGNED16(m_255) = 255.0f;

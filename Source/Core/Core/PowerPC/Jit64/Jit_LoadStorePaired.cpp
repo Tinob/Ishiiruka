@@ -20,7 +20,7 @@ using namespace Gen;
 void Jit64::psq_stXX(UGeckoInstruction inst)
 {
 	INSTRUCTION_START
-		JITDISABLE(bJITLoadStorePairedOff);
+	JITDISABLE(bJITLoadStorePairedOff);
 
 	s32 offset = inst.SIMM_12;
 	bool indexed = inst.OPCD == 4;
@@ -38,7 +38,10 @@ void Jit64::psq_stXX(UGeckoInstruction inst)
 		int storeOffset = 0;
 		gpr.BindToRegister(a, true, update);
 		X64Reg addr = gpr.RX(a);
-		if (update && js.memcheck)
+		// TODO: this is kind of ugly :/ we should probably create a universal load/store address calculation
+		// function that handles all these weird cases, e.g. how non-fastmem loadstores clobber addresses.
+		bool storeAddress = (update && js.memcheck) || !SConfig::GetInstance().m_LocalCoreStartupParameter.bFastmem;
+		if (storeAddress)
 		{
 			addr = RSCRATCH2;
 			MOV(32, R(addr), gpr.R(a));
@@ -86,11 +89,11 @@ void Jit64::psq_stXX(UGeckoInstruction inst)
 		}
 
 		BitSet32 registersInUse = CallerSavedRegistersInUse();
-		if (update && js.memcheck)
+		if (update && storeAddress)
 			registersInUse[addr] = true;
 		SafeWriteRegToReg(RSCRATCH, addr, w ? 32 : 64, storeOffset, registersInUse);
 		MemoryExceptionCheck();
-		if (update && js.memcheck)
+		if (update && storeAddress)
 			MOV(32, gpr.R(a), R(addr));
 		gpr.UnlockAll();
 		fpr.UnlockAll();
@@ -154,7 +157,7 @@ void Jit64::psq_stXX(UGeckoInstruction inst)
 void Jit64::psq_lXX(UGeckoInstruction inst)
 {
 	INSTRUCTION_START
-		JITDISABLE(bJITLoadStorePairedOff);
+	JITDISABLE(bJITLoadStorePairedOff);
 
 	s32 offset = inst.SIMM_12;
 	bool indexed = inst.OPCD == 4;

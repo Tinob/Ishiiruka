@@ -14,9 +14,9 @@ protected:
 	// Commands
 	enum EBufferCommands
 	{
-		CMD_RESET = 0x00,
-		CMD_DIRECT = 0x40,
-		CMD_ORIGIN = 0x41,
+		CMD_RESET       = 0x00,
+		CMD_DIRECT      = 0x40,
+		CMD_ORIGIN      = 0x41,
 		CMD_RECALIBRATE = 0x42,
 	};
 
@@ -47,11 +47,11 @@ protected:
 		{
 			u32 Parameter1 : 8;
 			u32 Parameter2 : 8;
-			u32 Command : 8;
-		u32: 8;
+			u32 Command    : 8;
+			u32            : 8;
 		};
-		UCommand()            { Hex = 0; }
-		UCommand(u32 _iValue) { Hex = _iValue; }
+		UCommand()            {Hex = 0;}
+		UCommand(u32 _iValue) {Hex = _iValue;}
 	};
 
 	enum EButtonCombo
