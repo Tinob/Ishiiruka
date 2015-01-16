@@ -122,6 +122,7 @@ static wxString efb_copy_desc = wxTRANSLATE("Disable emulation of EFB copies.\nT
 static wxString efb_copy_texture_desc = wxTRANSLATE("Store EFB copies in GPU texture objects.\nThis is not so accurate, but it works well enough for most games and gives a great speedup over EFB to RAM.\n\nIf unsure, leave this checked.");
 static wxString efb_copy_ram_desc = wxTRANSLATE("Accurately emulate EFB copies.\nSome games depend on this for certain graphical effects or gameplay functionality.\n\nIf unsure, check EFB to Texture instead.");
 static wxString stc_desc = wxTRANSLATE("The safer you adjust this, the less likely the emulator will be missing any texture updates from RAM.\n\nIf unsure, use the rightmost value.");
+static wxString bbox_desc = wxTRANSLATE("Selects wish implementation is used to emulate Bounding Box. By Default GPU will be used if supported.");
 static wxString wireframe_desc = wxTRANSLATE("Render the scene as a wireframe.\n\nIf unsure, leave this unchecked.");
 static wxString disable_fog_desc = wxTRANSLATE("Makes distant objects more visible by removing fog, thus increasing the overall detail.\nDisabling fog will break some games which rely on proper fog emulation.\n\nIf unsure, leave this unchecked.");
 static wxString disable_dstalpha_desc = wxTRANSLATE("Disables emulation of a hardware feature called destination alpha, which is used in many games for various graphical effects.\n\nIf unsure, leave this unchecked.");
@@ -155,6 +156,7 @@ static wxString stereo_3d_desc = wxTRANSLATE("Select the stereoscopic 3D  mode, 
 static wxString stereo_separation_desc = wxTRANSLATE("Control the separation distance, this is the distance between the virtual cameras.\nA higher value creates a stronger feeling of depth while a lower value is more comfortable.");
 static wxString stereo_convergence_desc = wxTRANSLATE("Control the convergence distance, this controls the apparant distance of virtual objects.\nA higher value creates stronger out-of-screen effects while a lower value is more comfortable.");
 static wxString stereo_swap_desc = wxTRANSLATE("Swap the left and right eye, mostly useful if you want to view side-by-side cross-eyed.\n\nIf unsure, leave this unchecked.");
+static const char *s_bbox_mode_text[] = { "Disabled", "CPU", "GPU" };
 
 // Search for available resolutions - TODO: Move to Common?
 static  wxArrayString GetListOfResolutions()
@@ -557,7 +559,6 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title, con
 	szr_safetex->Add(new wxStaticText(page_hacks, wxID_ANY, _("Fast")), 0, wxRIGHT|wxTOP|wxBOTTOM, 5);
 	szr_hacks->Add(szr_safetex, 0, wxEXPAND | wxALL, 5);
 	}
-
 	// - XFB
 	{
 	wxStaticBoxSizer* const group_xfb = new wxStaticBoxSizer(wxHORIZONTAL, page_hacks, _("External Frame Buffer"));
@@ -572,7 +573,28 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title, con
 	group_xfb->Add(real_xfb, 0, wxRIGHT, 5);
 	szr_hacks->Add(group_xfb, 0, wxEXPAND | wxALL, 5);
 	}	// xfb
+	// Bounding Box
+	{
+	wxStaticBoxSizer* const group_bbox = new wxStaticBoxSizer(wxHORIZONTAL, page_hacks, _("Bounding Box"));
 
+	wxSlider* const bbox_slider = new wxSlider(
+		page_hacks,
+		wxID_ANY, 0, 0,
+		(vconfig.backend_info.APIType & API_D3D9) == 0 ? 2 : 1,
+		wxDefaultPosition, wxDefaultSize, wxSL_HORIZONTAL | wxSL_BOTTOM);
+	bbox_slider->Bind(wxEVT_COMMAND_SLIDER_UPDATED, &VideoConfigDiag::Event_Bbox, this);
+	RegisterControl(bbox_slider, wxGetTranslation(bbox_desc));
+
+
+
+	group_bbox->Add(new wxStaticText(page_hacks, wxID_ANY, _("Mode:")), 0, wxALL, 5);
+	group_bbox->AddStretchSpacer(0);
+	group_bbox->Add(bbox_slider, 3, wxRIGHT, 0);
+	group_bbox->Add(text_bboxmode = new wxStaticText(page_hacks, wxID_ANY, _("GPU")), 1, wxRIGHT | wxTOP | wxBOTTOM, 5);
+	szr_hacks->Add(group_bbox, 0, wxEXPAND | wxALL, 5);
+	bbox_slider->SetValue(vconfig.iBBoxMode);
+	text_bboxmode->SetLabel(wxGetTranslation(s_bbox_mode_text[vconfig.iBBoxMode]));
+	}
 	// - other hacks
 	{
 	wxGridSizer* const szr_other = new wxGridSizer(2, 5, 5);	
@@ -826,6 +848,13 @@ void VideoConfigDiag::Event_Stc(wxCommandEvent &ev)
 	int samples[] = { 0, 512, 128 };
 	vconfig.iSafeTextureCache_ColorSamples = samples[ev.GetInt()];
 
+	ev.Skip();
+}
+
+void VideoConfigDiag::Event_Bbox(wxCommandEvent &ev)
+{
+	vconfig.iBBoxMode =ev.GetInt();
+	text_bboxmode->SetLabel(wxGetTranslation(s_bbox_mode_text[vconfig.iBBoxMode]));
 	ev.Skip();
 }
 

@@ -64,7 +64,9 @@ void BBox::Shutdown()
 
 void BBox::Update()
 {
-	if (g_ActiveConfig.backend_info.bSupportsBBox && BoundingBox::active)
+	if (g_ActiveConfig.backend_info.bSupportsBBox 
+		&& BoundingBox::active 
+		&& g_ActiveConfig.iBBoxMode == BBoxGPU)
 	{
 		if (s_cpu_dirty)
 		{
@@ -85,7 +87,7 @@ void BBox::Set(s32 index, s32 value)
 
 s32 BBox::Get(s32 index)
 {
-	if (s_gpu_dirty)
+	if (s_gpu_dirty && g_ActiveConfig.iBBoxMode == BBoxGPU)
 	{
 		D3D::context->CopyResource(s_bbox_staging_buffer.get(), s_bbox_buffer.get());
 		D3D11_MAPPED_SUBRESOURCE map;

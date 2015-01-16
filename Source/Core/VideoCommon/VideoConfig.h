@@ -55,6 +55,15 @@ enum StereoMode
 	STEREO_3DVISION
 };
 
+enum BBoxMode : s32
+{
+	BBoxNone = 0,
+	BBoxCPU = 1,
+	BBoxGPU = 2
+};
+	
+
+
 class IniFile;
 
 // NEVER inherit from this class.
@@ -139,6 +148,7 @@ struct VideoConfig final
 	bool bEnablePixelLighting;
 	bool bHackedBufferUpload;
 	bool bFastDepthCalc;
+	int iBBoxMode;
 	//for dx9-backend
 	bool bForceDualSourceBlend;
 	int iLog; // CONF_ bits

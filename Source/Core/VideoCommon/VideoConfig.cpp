@@ -114,6 +114,7 @@ void VideoConfig::Load(const std::string& ini_file)
 	hacks->Get("FullAsyncShaderCompilation", &bFullAsyncShaderCompilation, false);
 	hacks->Get("WaitForShaderCompilation", &bWaitForShaderCompilation, false);
 	hacks->Get("PredictiveFifo", &bPredictiveFifo, false);
+	hacks->Get("BoundingBoxMode", &iBBoxMode, (int)BBoxMode::BBoxGPU);
 	// Load common settings
 	iniFile.Load(File::GetUserPath(F_DOLPHINCONFIG_IDX));
 	IniFile::Section* interface = iniFile.GetOrCreateSection("Interface");
@@ -216,6 +217,7 @@ void VideoConfig::GameIniLoad()
 	CHECK_SETTING("Video_Hacks", "EFBScaledCopy", bCopyEFBScaled);
 	CHECK_SETTING("Video_Hacks", "EFBCopyCacheEnable", bEFBCopyCacheEnable);
 	CHECK_SETTING("Video_Hacks", "EFBEmulateFormatChanges", bEFBEmulateFormatChanges);
+	CHECK_SETTING("Video_Hacks", "BoundingBoxMode", iBBoxMode);
 
 	CHECK_SETTING("Video", "ProjectionHack", iPhackvalue[0]);
 	CHECK_SETTING("Video", "PH_SZNear", iPhackvalue[1]);
@@ -259,6 +261,15 @@ void VideoConfig::VerifyValidity()
 		bFullAsyncShaderCompilation = false;
 		bWaitForShaderCompilation = false;
 	}
+	if (iBBoxMode > BBoxGPU || iBBoxMode < BBoxNone)
+	{
+		iBBoxMode = BBoxGPU;
+	}
+	if (backend_info.APIType & API_D3D9 && iBBoxMode == BBoxGPU)
+	{
+		iBBoxMode = BBoxCPU;
+	}
+	
 }
 
 void VideoConfig::Save(const std::string& ini_file)
@@ -327,6 +338,7 @@ void VideoConfig::Save(const std::string& ini_file)
 	hacks->Set("FullAsyncShaderCompilation", bFullAsyncShaderCompilation);
 	hacks->Set("WaitForShaderCompilation", bWaitForShaderCompilation);
 	hacks->Set("PredictiveFifo", bPredictiveFifo);
+	hacks->Set("BoundingBoxMode", iBBoxMode);
 
 	iniFile.Save(ini_file);
 }

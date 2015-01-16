@@ -279,7 +279,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 	bool enable_pl = g_ActiveConfig.bEnablePixelLighting 
 		&& g_ActiveConfig.backend_info.bSupportsPixelLighting 
 		&& lightingEnabled;
-	
+	uid_data.bounding_box = g_ActiveConfig.backend_info.bSupportsBBox && BoundingBox::active && g_ActiveConfig.iBBoxMode == BBoxGPU;
 	uid_data.per_pixel_depth = per_pixel_depth;	
 	uid_data.dstAlphaMode = dstAlphaMode;
 	uid_data.pixel_lighting = enable_pl;	
@@ -339,7 +339,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 
 		if (ApiType == API_OPENGL)
 		{
-			if (g_ActiveConfig.backend_info.bSupportsBBox && BoundingBox::active)
+			if (uid_data.bounding_box)
 			{
 				out.Write(
 					"layout(std140, binding = 3) buffer BBox {\n"
@@ -404,7 +404,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 		{
 			if (ApiType == API_D3D11)
 			{
-				if (g_ActiveConfig.backend_info.bSupportsBBox && BoundingBox::active)
+				if (uid_data.bounding_box)
 				{
 					out.Write(
 						"globallycoherent RWBuffer<int> bbox_data : register(u2);\n"
@@ -757,9 +757,9 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 		}
 	}
 
-	if (g_ActiveConfig.backend_info.bSupportsBBox && BoundingBox::active)
+	if (uid_data.bounding_box)
 	{
-		uid_data.bounding_box = true;
+		
 		if (Write_Code)
 		{
 			const char* atomic_op = ApiType == API_OPENGL ? "atomic" : "Interlocked";

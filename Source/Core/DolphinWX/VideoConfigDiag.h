@@ -83,6 +83,7 @@ protected:
 	void Event_ProgressiveScan(wxCommandEvent &ev);
 
 	void Event_Stc(wxCommandEvent &ev);
+	void Event_Bbox(wxCommandEvent &ev);
 
 	void Event_PPShader(wxCommandEvent &ev);
 	void Event_ConfigurePPShader(wxCommandEvent &ev);
@@ -109,6 +110,7 @@ protected:
 	wxChoice* choice_backend;
 	wxChoice* choice_display_resolution;
 	wxStaticText* text_aamode;
+	wxStaticText* text_bboxmode;
 	SettingChoice* choice_aamode;
 
 	SettingCheckBox* pixel_lighting;

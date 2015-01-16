@@ -164,7 +164,7 @@ void VertexLoader::CompileVertexTranslator()
 	m_numPipelineStages = 0;
 
 	// Get the pointer to this vertex's buffer data for the bounding box
-	if (!g_ActiveConfig.backend_info.bSupportsBBox)
+	if (!(g_ActiveConfig.backend_info.bSupportsBBox && g_ActiveConfig.iBBoxMode == BBoxGPU))
 		WriteCall(BoundingBox::SetVertexBufferPosition);
 
 	// Colors
@@ -365,7 +365,7 @@ void VertexLoader::CompileVertexTranslator()
 		}
 	}
 	// Update the bounding box
-	if (!g_ActiveConfig.backend_info.bSupportsBBox)
+	if (!(g_ActiveConfig.backend_info.bSupportsBBox && g_ActiveConfig.iBBoxMode == BBoxGPU))
 		WriteCall(BoundingBox::Update);
 
 	WriteCall(Vertexloader_Mtx::PosMtx_Write);
@@ -402,7 +402,7 @@ s32 VertexLoader::RunVertices(const VertexLoaderParameters &parameters)
 	m_VtxAttr.texCoord[5].Frac = vat.g2.Tex5Frac;
 	m_VtxAttr.texCoord[6].Frac = vat.g2.Tex6Frac;
 	m_VtxAttr.texCoord[7].Frac = vat.g2.Tex7Frac;
-	g_PipelineState.flags = g_ActiveConfig.backend_info.bSupportsBBox ? TPS_NONE : TPS_USE_BBOX;
+	g_PipelineState.flags = g_ActiveConfig.iBBoxMode == BBoxCPU ? TPS_USE_BBOX : TPS_NONE;	
 	g_PipelineState.stride = m_native_stride;
 	g_PipelineState.skippedVertices = 0;
 	g_PipelineState.posScale = fractionTable[m_VtxAttr.PosFrac];
@@ -413,7 +413,7 @@ s32 VertexLoader::RunVertices(const VertexLoaderParameters &parameters)
 	for (int i = 0; i < 2; i++)
 		g_PipelineState.colElements[i] = m_VtxAttr.color[i].Elements;
 	// Prepare bounding box
-	if (!g_ActiveConfig.backend_info.bSupportsBBox)
+	if (g_ActiveConfig.iBBoxMode == BBoxCPU)
 		BoundingBox::Prepare(vat, parameters.primitive, m_VtxDesc, m_vtx_decl);
 	g_PipelineState.count = parameters.count;
 	g_PipelineState.Initialize(parameters.source, parameters.destination);

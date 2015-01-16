@@ -39,6 +39,7 @@ void BBox::Shutdown()
 void BBox::Update()
 {
 	if (g_ActiveConfig.backend_info.bSupportsBBox 
+		&& g_ActiveConfig.iBBoxMode == BBoxGPU
 		&& BoundingBox::active
 		&& s_cpu_dirty)
 	{
@@ -58,7 +59,7 @@ void BBox::Set(s32 index, s32 value)
 
 s32 BBox::Get(s32 index)
 {
-	if (s_gpu_dirty)
+	if (s_gpu_dirty && g_ActiveConfig.iBBoxMode == BBoxGPU)
 	{
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, s_bbox_buffer_id);
 		void* ptr = glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, 4 * sizeof(s32), GL_MAP_READ_BIT);
