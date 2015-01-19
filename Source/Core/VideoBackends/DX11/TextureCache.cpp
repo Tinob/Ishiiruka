@@ -116,7 +116,7 @@ void TextureCache::TCacheEntry::Load(const u8* src, u32 width, u32 height, u32 e
 			texformat,
 			tlutaddr,
 			tlutfmt,
-			PC_TEX_FMT_RGBA32 == pcformat,
+			PC_TEX_FMT_RGBA32 == config.pcformat,
 			compressed);
 		D3D::ReplaceTexture2D(
 			texture->GetTex(),
@@ -169,9 +169,14 @@ PC_TexFormat TextureCache::GetNativeTextureFormat(const s32 texformat, const Tlu
 	return pcfmt;
 }
 
-TextureCache::TCacheEntryBase* TextureCache::CreateTexture(u32 width, u32 height,
-	u32 tex_levels, PC_TexFormat pcfmt)
+TextureCache::TCacheEntryBase* TextureCache::CreateTexture(const TCacheEntryConfig& config)
 {
+	if (config.rendertarget)
+	{
+		return new TCacheEntry(config, D3DTexture2D::Create(config.width, config.height,
+			(D3D11_BIND_FLAG)((int)D3D11_BIND_RENDER_TARGET | (int)D3D11_BIND_SHADER_RESOURCE),
+			D3D11_USAGE_DEFAULT, DXGI_FORMAT_R8G8B8A8_UNORM));
+	}
 	bool swaprg = false;
 	bool convertrgb565 = false;
 	static const DXGI_FORMAT PC_TexFormat_To_DXGIFORMAT[11]
@@ -188,7 +193,7 @@ TextureCache::TCacheEntryBase* TextureCache::CreateTexture(u32 width, u32 height
 		DXGI_FORMAT_BC2_UNORM,//PC_TEX_FMT_DXT3
 		DXGI_FORMAT_BC3_UNORM,//PC_TEX_FMT_DXT5
 	};
-	DXGI_FORMAT format = PC_TexFormat_To_DXGIFORMAT[pcfmt];
+	DXGI_FORMAT format = PC_TexFormat_To_DXGIFORMAT[config.pcformat];
 	bool bgrasupported = D3D::BGRATexturesSupported();
 	if (format == DXGI_FORMAT_B8G8R8A8_UNORM && !bgrasupported)
 	{
@@ -206,22 +211,18 @@ TextureCache::TCacheEntryBase* TextureCache::CreateTexture(u32 width, u32 height
 	D3D11_USAGE usage = D3D11_USAGE_DEFAULT;
 	D3D11_CPU_ACCESS_FLAG cpu_access = (D3D11_CPU_ACCESS_FLAG)0;
 
-	if (tex_levels == 1 || format == DXGI_FORMAT_B5G6R5_UNORM)
+	if (config.levels == 1 || format == DXGI_FORMAT_B5G6R5_UNORM)
 	{
 		usage = D3D11_USAGE_DYNAMIC;
 		cpu_access = D3D11_CPU_ACCESS_WRITE;
 	}
 	const D3D11_TEXTURE2D_DESC texdesc = CD3D11_TEXTURE2D_DESC(format,
-		width, height, 1, tex_levels, D3D11_BIND_SHADER_RESOURCE, usage, cpu_access);
+		config.width, config.height, 1, config.levels, D3D11_BIND_SHADER_RESOURCE, usage, cpu_access);
 
 	ID3D11Texture2D *pTexture;
 	const HRESULT hr = D3D::device->CreateTexture2D(&texdesc, NULL, &pTexture);
 	CHECK(SUCCEEDED(hr), "Create texture of the TextureCache");
-	TCacheEntryConfig config;
-	config.width = width;
-	config.height = height;
-	config.levels = tex_levels;
-
+	
 	TCacheEntry* const entry = new TCacheEntry(config, new D3DTexture2D(pTexture, D3D11_BIND_SHADER_RESOURCE));
 	entry->usage = usage;
 	entry->DXGI_format = format;
@@ -306,19 +307,6 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, u32 dstFormat,
 
 		this->hash = hash;
 	}
-}
-
-TextureCache::TCacheEntryBase* TextureCache::CreateRenderTargetTexture(
-	u32 scaled_tex_w, u32 scaled_tex_h, u32 layers)
-{
-	TCacheEntryConfig config;
-	config.width = scaled_tex_w;
-	config.height = scaled_tex_h;
-	config.layers = layers;
-	config.rendertarget = true;
-	return new TCacheEntry(config, D3DTexture2D::Create(scaled_tex_w, scaled_tex_h,
-		(D3D11_BIND_FLAG)((int)D3D11_BIND_RENDER_TARGET | (int)D3D11_BIND_SHADER_RESOURCE),
-		D3D11_USAGE_DEFAULT, DXGI_FORMAT_R8G8B8A8_UNORM));
 }
 
 TextureCache::TextureCache()

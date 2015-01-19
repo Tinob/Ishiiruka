@@ -25,22 +25,45 @@ public:
 	};
 	struct TCacheEntryConfig
 	{
-		TCacheEntryConfig() : width(0), height(0), levels(1), layers(1), rendertarget(false) {}
+		TCacheEntryConfig() : width(0), height(0), levels(1), layers(1), rendertarget(false), pcformat(PC_TEX_FMT_NONE) {}
 		
 		u32 width, height;
 		u32 levels, layers;
 		bool rendertarget;
+		PC_TexFormat pcformat;
+		bool operator == (const TCacheEntryConfig& b) const
+		{
+			return width == b.width 
+				&& height == b.height 
+				&& levels == b.levels 
+				&& layers == b.layers 
+				&& rendertarget == b.rendertarget
+				&& pcformat == b.pcformat;
+		}
+		
+		struct Hasher
+		{
+			size_t operator()(const TextureCache::TCacheEntryConfig& c) const
+			{
+				return (u64)c.rendertarget << 56	// 1 bit
+					| (u64)c.pcformat << 48			// 8 bits
+					| (u64)c.layers << 40			// 8 bits 
+					| (u64)c.levels << 32			// 8 bits 
+					| (u64)c.height << 16			// 16 bits 
+					| (u64)c.width;					// 16 bits
+			}
+		};
 	};
+
 	struct TCacheEntryBase
 	{
-		const TCacheEntryConfig config;
+		TCacheEntryConfig config;
 
 		// common members
 		u32 addr;
 		u32 size_in_bytes;
 		u64 hash;
-		u32 format;
-		PC_TexFormat pcformat;
+		u32 format;		
 		enum TexCacheEntryType type;
 
 		u32 native_levels;
@@ -105,9 +128,7 @@ public:
 
 	virtual PC_TexFormat GetNativeTextureFormat(const s32 texformat, 
 		const TlutFormat tlutfmt, u32 width, u32 height) = 0;
-	virtual TCacheEntryBase* CreateTexture(u32 width, u32 height,
-		u32 tex_levels, PC_TexFormat pcfmt) = 0;
-	virtual TCacheEntryBase* CreateRenderTargetTexture(u32 scaled_tex_w, u32 scaled_tex_h, u32 layers) = 0;
+	virtual TCacheEntryBase* CreateTexture(const TCacheEntryConfig& config) = 0;
 
 	static TCacheEntryBase* Load(const u32 stage);
 	static void CopyRenderTargetToTexture(u32 dstAddr, u32 dstFormat, PEControl::PixelFormat srcFormat,
@@ -127,14 +148,14 @@ private:
 	static u32 s_prev_tlut_address;
 	static u32 s_prev_tlut_size;
 	static u64 s_prev_tlut_hash;
-	static TCacheEntryBase* AllocateRenderTarget(u32 width, u32 height, u32 layers);
-	static void FreeRenderTarget(TCacheEntryBase* entry);
+	static TCacheEntryBase* AllocateTexture(const TCacheEntryConfig& config);
+	static void FreeTexture(TCacheEntryBase* entry);
 
 	typedef std::map<u32, TCacheEntryBase*> TexCache;
-	typedef std::vector<TCacheEntryBase*> RenderTargetPool;
+	typedef std::unordered_multimap<TCacheEntryConfig, TCacheEntryBase*, TCacheEntryConfig::Hasher> TexPool;
 
 	static TexCache textures;
-	static RenderTargetPool render_target_pool;
+	static TexPool texture_pool;
 	// Backup configuration values
 	static struct BackupConfig
 	{

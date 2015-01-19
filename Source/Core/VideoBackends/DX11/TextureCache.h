@@ -49,10 +49,8 @@ private:
 	
 	PC_TexFormat GetNativeTextureFormat(const s32 texformat, const TlutFormat tlutfmt, u32 width, u32 height);
 
-	TextureCache::TCacheEntryBase* CreateTexture(u32 width, u32 height,
-		u32 tex_levels, PC_TexFormat pcfmt);
+	TextureCache::TCacheEntryBase* CreateTexture(const TCacheEntryConfig& config);
 
-	TCacheEntryBase* CreateRenderTargetTexture(u32 scaled_tex_w, u32 scaled_tex_h, u32 layers);
 	u64 EncodeToRamFromTexture(u32 address, void* source_texture, u32 SourceW, u32 SourceH, bool bFromZBuffer, bool bIsIntensityFmt, u32 copyfmt, int bScaleByHalf, const EFBRectangle& source) {return 0;};
 	void LoadLut(u32 lutFmt, void* addr, u32 size) override;
 };

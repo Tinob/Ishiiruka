@@ -30,8 +30,7 @@ private:
 
 		int gl_format;
 		int gl_iformat;
-		int gl_type;
-		int m_num_levels;
+		int gl_type;		
 		void SetFormat();
 		//TexMode0 mode; // current filter and clamp modes that texture is set to
 		//TexMode1 mode1; // current filter and clamp modes that texture is set to
@@ -59,10 +58,7 @@ private:
 
 	PC_TexFormat GetNativeTextureFormat(const s32 texformat, const TlutFormat tlutfmt, u32 width, u32 height);
 
-	TCacheEntryBase* CreateTexture(u32 width, u32 height,
-		u32 tex_levels, PC_TexFormat pcfmt);
-
-	TCacheEntryBase* CreateRenderTargetTexture(u32 scaled_tex_w, u32 scaled_tex_h, u32 layers);
+	TCacheEntryBase* CreateTexture(const TCacheEntryConfig& config) override;
 };
 
 bool SaveTexture(const std::string& filename, u32 textarget, u32 tex, int virtual_width, int virtual_height, u32 level);

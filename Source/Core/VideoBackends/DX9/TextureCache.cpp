@@ -80,28 +80,28 @@ bool TextureCache::TCacheEntry::Save(const std::string& filename, u32 level)
 void TextureCache::TCacheEntry::ReplaceTexture(const u8* src, u32 width, u32 height,
 	u32 expanded_width, u32 level)
 {
-	d3d_fmt = PC_TexFormat_To_D3DFORMAT[pcformat];
+	d3d_fmt = PC_TexFormat_To_D3DFORMAT[config.pcformat];
 	d3d_fmt = swap_r_b ? D3DFMT_A8R8G8B8 : d3d_fmt;
-	if (s_memPoolTexture[pcformat] == nullptr || width > s_memPoolTextureW[pcformat] || height > s_memPoolTextureH[pcformat])
+	if (s_memPoolTexture[config.pcformat] == nullptr || width > s_memPoolTextureW[config.pcformat] || height > s_memPoolTextureH[config.pcformat])
 	{
-		if (s_memPoolTexture[pcformat] != nullptr)
+		if (s_memPoolTexture[config.pcformat] != nullptr)
 		{
-			s_memPoolTexture[pcformat]->Release();
-			s_memPoolTexture[pcformat] = nullptr;
+			s_memPoolTexture[config.pcformat]->Release();
+			s_memPoolTexture[config.pcformat] = nullptr;
 		}
 		u32 max = std::max(width, height);
-		u32 nextsize = s_memPoolTextureW[pcformat];
+		u32 nextsize = s_memPoolTextureW[config.pcformat];
 		while (nextsize < max)
 		{
 			nextsize *= 2;
 		}
-		s_memPoolTextureW[pcformat] = nextsize;
-		s_memPoolTextureH[pcformat] = nextsize;
-		s_memPoolTexture[pcformat] = D3D::CreateTexture2D(s_memPoolTextureW[pcformat], s_memPoolTextureH[pcformat], d3d_fmt, 1, D3DPOOL_SYSTEMMEM);
+		s_memPoolTextureW[config.pcformat] = nextsize;
+		s_memPoolTextureH[config.pcformat] = nextsize;
+		s_memPoolTexture[config.pcformat] = D3D::CreateTexture2D(s_memPoolTextureW[config.pcformat], s_memPoolTextureH[config.pcformat], d3d_fmt, 1, D3DPOOL_SYSTEMMEM);
 	}
-	D3D::ReplaceTexture2D(s_memPoolTexture[pcformat], src, width, height, expanded_width, d3d_fmt, swap_r_b);
+	D3D::ReplaceTexture2D(s_memPoolTexture[config.pcformat], src, width, height, expanded_width, d3d_fmt, swap_r_b);
 	PDIRECT3DSURFACE9 srcsurf;
-	s_memPoolTexture[pcformat]->GetSurfaceLevel(0, &srcsurf);
+	s_memPoolTexture[config.pcformat]->GetSurfaceLevel(0, &srcsurf);
 	PDIRECT3DSURFACE9 dstsurface;
 	texture->GetSurfaceLevel(level, &dstsurface);
 	RECT srcr{ 0, 0, width, height };
@@ -120,7 +120,7 @@ void TextureCache::TCacheEntry::Load(const u8* src, u32 width, u32 height,
 void TextureCache::TCacheEntry::Load(const u8* src, u32 width, u32 height, u32 expandedWidth,
 	u32 expandedHeight, const s32 texformat, const u32 tlutaddr, const TlutFormat tlutfmt, u32 level)
 {
-	pcformat = TexDecoder_Decode(TextureCache::temp, src, expandedWidth, expandedHeight, texformat, tlutaddr, tlutfmt, false, compressed);
+	config.pcformat = TexDecoder_Decode(TextureCache::temp, src, expandedWidth, expandedHeight, texformat, tlutaddr, tlutfmt, false, compressed);
 	ReplaceTexture(TextureCache::temp, width, height, expandedWidth, level);
 }
 void TextureCache::TCacheEntry::LoadFromTmem(const u8* ar_src, const u8* gb_src, u32 width, u32 height,
@@ -246,38 +246,27 @@ PC_TexFormat TextureCache::GetNativeTextureFormat(const s32 texformat, const Tlu
 	return GetPC_TexFormat(texformat, tlutfmt, compressed_supported);
 }
 
-TextureCache::TCacheEntryBase* TextureCache::CreateTexture(u32 width, u32 height,
-	u32 tex_levels, PC_TexFormat pcfmt)
+TextureCache::TCacheEntryBase* TextureCache::CreateTexture(const TCacheEntryConfig& config)
 {
-	TCacheEntryConfig config;
-	config.width = width;
-	config.height = height;
-	config.levels = tex_levels;
+	if (config.rendertarget)
+	{
+		LPDIRECT3DTEXTURE9 texture;
+		D3D::dev->CreateTexture(config.width, config.height, 1, D3DUSAGE_RENDERTARGET,
+			D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &texture, 0);
+		TCacheEntry* entry = new TCacheEntry(config, texture);
+		entry->d3d_fmt = D3DFMT_A8R8G8B8;
+		return entry;
+	}
 	// if no rgba support so swap is needed
-	bool swap_r_b = !g_ActiveConfig.backend_info.bSupportedFormats[PC_TEX_FMT_RGBA32] && pcfmt == PC_TEX_FMT_RGBA32;
-	D3DFORMAT d3d_fmt = swap_r_b ? D3DFMT_A8R8G8B8 : PC_TexFormat_To_D3DFORMAT[pcfmt];
-	TCacheEntry* entry = new TCacheEntry(config, D3D::CreateTexture2D(width, height, d3d_fmt, tex_levels));
+	bool swap_r_b = !g_ActiveConfig.backend_info.bSupportedFormats[PC_TEX_FMT_RGBA32] && config.pcformat == PC_TEX_FMT_RGBA32;
+	D3DFORMAT d3d_fmt = swap_r_b ? D3DFMT_A8R8G8B8 : PC_TexFormat_To_D3DFORMAT[config.pcformat];
+	TCacheEntry* entry = new TCacheEntry(config, D3D::CreateTexture2D(config.width, config.height, d3d_fmt, config.levels));
 	entry->swap_r_b = swap_r_b;
 	entry->d3d_fmt = d3d_fmt;
 	entry->compressed = d3d_fmt == D3DFMT_DXT1
 		|| d3d_fmt == D3DFMT_DXT3
 		|| d3d_fmt == D3DFMT_DXT5;
 	return entry;
-}
-
-TextureCache::TCacheEntryBase* TextureCache::CreateRenderTargetTexture(
-	u32 scaled_tex_w, u32 scaled_tex_h, u32 layers)
-{
-	TCacheEntryConfig config;
-	config.width = scaled_tex_w;
-	config.height = scaled_tex_h;
-	config.layers = layers;
-	config.rendertarget = true;
-	LPDIRECT3DTEXTURE9 texture;
-	D3D::dev->CreateTexture(scaled_tex_w, scaled_tex_h, 1, D3DUSAGE_RENDERTARGET,
-		D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &texture, 0);
-	
-	return new TCacheEntry(config, texture);
 }
 
 TextureCache::TextureCache()

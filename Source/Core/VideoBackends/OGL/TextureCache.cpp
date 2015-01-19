@@ -119,11 +119,11 @@ PC_TexFormat TextureCache::GetNativeTextureFormat(const s32 texformat, const Tlu
 
 void TextureCache::TCacheEntry::SetFormat()
 {
-	switch (pcformat)
+	switch (config.pcformat)
 	{
 	default:
 	case PC_TEX_FMT_NONE:
-		PanicAlert("Invalid PC texture format %i", pcformat);
+		PanicAlert("Invalid PC texture format %i", config.pcformat);
 	case PC_TEX_FMT_BGRA32:
 		gl_format = GL_BGRA;
 		gl_iformat = GL_RGBA;
@@ -184,30 +184,46 @@ void TextureCache::TCacheEntry::SetFormat()
 	}
 }
 
-TextureCache::TCacheEntryBase* TextureCache::CreateTexture(u32 width, u32 height,
-	u32 tex_levels, PC_TexFormat pcfmt)
+TextureCache::TCacheEntryBase* TextureCache::CreateTexture(const TCacheEntryConfig& config)
 {
-	TCacheEntryConfig config;
-	config.width = width;
-	config.height = height;
-	config.levels = tex_levels;
-	TCacheEntry &entry = *new TCacheEntry(config);
-	entry.pcformat = pcfmt;
-	entry.SetFormat();
-	entry.m_num_levels = tex_levels;
-	return &entry;
+	TCacheEntry* entry = new TCacheEntry(config);	
+	
+	glActiveTexture(GL_TEXTURE0 + 9);
+	glBindTexture(GL_TEXTURE_2D, entry->texture);	
+	if (config.rendertarget)
+	{
+		entry->config.levels = 1;
+		entry->gl_format = GL_RGBA;
+		entry->gl_iformat = GL_RGBA;
+		entry->gl_type = GL_UNSIGNED_BYTE;
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+
+		glTexImage2D(GL_TEXTURE_2D, 0, entry->gl_iformat, config.width, config.height, 0, entry->gl_format, entry->gl_type, nullptr);
+		glBindTexture(GL_TEXTURE_2D, 0);
+
+		glGenFramebuffers(1, &entry->framebuffer);
+		FramebufferManager::SetFramebuffer(entry->framebuffer);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, entry->texture, 0);		
+	}
+	else
+	{
+		entry->SetFormat();
+	}
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, config.levels - 1);
+
+	SetStage();
+	return entry;
 }
 
 void TextureCache::TCacheEntry::Load(const u8* src, u32 width, u32 height,
 	u32 expanded_width, u32 level)
 {
 	glActiveTexture(GL_TEXTURE0 + 9);
-	glBindTexture(GL_TEXTURE_2D, texture);
-	if(level == 0)
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, m_num_levels - 1);
+	glBindTexture(GL_TEXTURE_2D, texture);	
 
-	u32 blocksize = (pcformat == PC_TEX_FMT_DXT1) ? 8u : 16u;
-	switch (pcformat)
+	u32 blocksize = (config.pcformat == PC_TEX_FMT_DXT1) ? 8u : 16u;
+	switch (config.pcformat)
 	{
 	case PC_TEX_FMT_DXT1:
 	case PC_TEX_FMT_DXT3:
@@ -248,50 +264,19 @@ void TextureCache::TCacheEntry::Load(const u8* src, u32 width, u32 height,
 void TextureCache::TCacheEntry::Load(const u8* src, u32 width, u32 height, u32 expandedWidth,
 	u32 expandedHeight, const s32 texformat, const u32 tlutaddr, const TlutFormat tlutfmt, u32 level)
 {
-	pcformat = TexDecoder_Decode(TextureCache::temp, src, expandedWidth, expandedHeight, texformat, tlutaddr, tlutfmt, PC_TEX_FMT_RGBA32 == pcformat, compressed);
+	config.pcformat = TexDecoder_Decode(TextureCache::temp, src, expandedWidth, expandedHeight, texformat, tlutaddr, tlutfmt, PC_TEX_FMT_RGBA32 == config.pcformat, compressed);
 	SetFormat();
 	Load(TextureCache::temp, width, height, expandedWidth, level);
 }
 void TextureCache::TCacheEntry::LoadFromTmem(const u8* ar_src, const u8* gb_src, u32 width, u32 height,
 	u32 expanded_width, u32 expanded_Height, u32 level)
 {
-	pcformat = PC_TexFormat::PC_TEX_FMT_RGBA32;
+	config.pcformat = PC_TexFormat::PC_TEX_FMT_RGBA32;
 	gl_format = GL_RGBA;
 	gl_iformat = GL_RGBA;
 	gl_type = GL_UNSIGNED_BYTE;
 	TexDecoder_DecodeRGBA8FromTmem((u32*)TextureCache::temp, ar_src, gb_src, expanded_width, expanded_Height);
 	Load(TextureCache::temp, width, height, expanded_width, level);
-}
-
-TextureCache::TCacheEntryBase* TextureCache::CreateRenderTargetTexture(
-	u32 scaled_tex_w, u32 scaled_tex_h, u32 layers)
-{
-	TCacheEntryConfig config;
-	config.width = scaled_tex_w;
-	config.height = scaled_tex_h;
-	config.layers = layers;
-	config.rendertarget = true;
-	TCacheEntry *const entry = new TCacheEntry(config);
-	glActiveTexture(GL_TEXTURE0 + 9);
-	glBindTexture(GL_TEXTURE_2D, entry->texture);
-
-	const GLenum
-		gl_format = GL_RGBA,
-		gl_iformat = GL_RGBA,
-		gl_type = GL_UNSIGNED_BYTE;
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-
-	glTexImage2D(GL_TEXTURE_2D, 0, gl_iformat, scaled_tex_w, scaled_tex_h, 0, gl_format, gl_type, nullptr);
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-	glGenFramebuffers(1, &entry->framebuffer);
-	FramebufferManager::SetFramebuffer(entry->framebuffer);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, entry->texture, 0);
-
-	SetStage();
-
-	return entry;
 }
 
 void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, u32 dstFormat,
