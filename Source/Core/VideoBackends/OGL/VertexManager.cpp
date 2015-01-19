@@ -131,6 +131,11 @@ void VertexManager::PrepareShaders(u32 components, const XFMemory &xfr, const BP
 
 }
 
+u16* VertexManager::GetIndexBuffer()
+{
+	return s_index_buffer_base;
+}
+
 void VertexManager::vFlush(bool useDstAlpha)
 {
 	GLVertexFormat *nativeVertexFmt = (GLVertexFormat*)g_nativeVertexFmt;
@@ -143,22 +148,6 @@ void VertexManager::vFlush(bool useDstAlpha)
 	}
 	BBox::Update();
 	PrepareDrawBuffers(stride);
-	if (current_primitive_type == PRIMITIVE_TRIANGLES)
-	{
-		if (bpmem.genMode.zfreeze)
-		{
-			SetZSlope();
-		}
-		else if (IndexGenerator::GetIndexLen() >= 3)
-		{
-			CalculateZSlope(stride, s_index_buffer_base + IndexGenerator::GetIndexLen() - 3);
-		}
-
-		// if cull mode is CULL_ALL, ignore triangles and quads
-		if (bpmem.genMode.cullmode == GenMode::CULL_ALL)
-			return;
-	}
-	
 
 	// Makes sure we can actually do Dual source blending
 	bool dualSourcePossible = g_ActiveConfig.backend_info.bSupportsDualSourceBlend;

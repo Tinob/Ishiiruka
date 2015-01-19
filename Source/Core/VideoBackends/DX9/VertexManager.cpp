@@ -493,23 +493,7 @@ void VertexManager::vFlush(bool useDstAlpha)
 {
 	// initialize all values for the current flush
 	m_index_len = IndexGenerator::GetIndexLen();
-	m_num_verts = IndexGenerator::GetNumVerts();
-	u32 stride = g_nativeVertexFmt->GetVertexStride();
-	if (current_primitive_type == PRIMITIVE_TRIANGLES)
-	{
-		if (bpmem.genMode.zfreeze)
-		{
-			SetZSlope();
-		}
-		else if (m_index_len >= 3)
-		{
-			CalculateZSlope(stride, GetIndexBuffer() + m_index_len - 3);
-		}
-
-		// if cull mode is CULL_ALL, ignore triangles and quads
-		if (bpmem.genMode.cullmode == GenMode::CULL_ALL)
-			return;
-	}
+	m_num_verts = IndexGenerator::GetNumVerts();	
 	m_total_num_verts = m_num_verts;
 	m_total_index_len = m_index_len;
 	switch (current_primitive_type)
@@ -575,6 +559,7 @@ void VertexManager::vFlush(bool useDstAlpha)
 		}
 		PixelShaderManager::Clear();
 	}
+	u32 stride = g_nativeVertexFmt->GetVertexStride();
 	PrepareDrawBuffers(stride);
 	if(forced_early_z)
 	{

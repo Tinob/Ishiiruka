@@ -220,7 +220,25 @@ void VertexManager::Flush()
 	// set global constants
 	VertexShaderManager::SetConstants();
 	PixelShaderManager::SetConstants();
+	if (current_primitive_type == PRIMITIVE_TRIANGLES)
+	{
+		if (bpmem.genMode.zfreeze)
+		{
+			SetZSlope();
+		}
+		else if (IndexGenerator::GetIndexLen() >= 3)
+		{
+			u32 stride = g_nativeVertexFmt->GetVertexStride();
+			CalculateZSlope(stride, g_vertex_manager->GetIndexBuffer() + IndexGenerator::GetIndexLen() - 3);
+		}
 
+		// if cull mode is CULL_ALL, ignore triangles and quads
+		if (bpmem.genMode.cullmode == GenMode::CULL_ALL)
+		{
+			IsFlushed = true;
+			return;
+		}
+	}
 	if (PerfQueryBase::ShouldEmulate())
 		g_perf_query->EnableQuery(bpmem.zcontrol.early_ztest ? PQG_ZCOMP_ZCOMPLOC : PQG_ZCOMP);
 	g_vertex_manager->vFlush(useDstAlpha);

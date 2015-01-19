@@ -52,10 +52,7 @@ public:
 	virtual void PrepareShaders(u32 components, const XFMemory &xfr, const BPMemory &bpm, bool ongputhread) = 0;
 	static void Flush();
 
-	virtual ::NativeVertexFormat* CreateNativeVertexFormat() = 0;
-
-	static void CalculateZSlope(u32 stride, const u16* indices);
-	static void SetZSlope();
+	virtual ::NativeVertexFormat* CreateNativeVertexFormat() = 0;	
 
 	static void DoState(PointerWrap& p);
 	virtual void CreateDeviceObjects(){};
@@ -66,6 +63,9 @@ protected:
 	static bool s_Zslope_Refresh_Required;
 	static Slope s_ZSlope;
 
+	static void CalculateZSlope(u32 stride, const u16* indices);
+	static void SetZSlope();
+
 	virtual void vDoState(PointerWrap& p) {  }
 
 	static PrimitiveType current_primitive_type;
@@ -75,9 +75,8 @@ protected:
 private:
 	static bool IsFlushed;
 
-	//virtual void Draw(u32 stride, bool alphapass) = 0;
-	// temp
 	virtual void vFlush(bool useDstAlpha) = 0;
+	virtual u16* GetIndexBuffer() = 0;
 };
 
 extern VertexManager *g_vertex_manager;
