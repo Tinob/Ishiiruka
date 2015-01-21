@@ -72,6 +72,7 @@
     <ClInclude Include="GekkoDisassembler.h" />
     <ClInclude Include="Event.h" />
     <ClInclude Include="ThreadPool.h" />
+    <ClInclude Include="JitRegister.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BreakPoints.cpp" />
@@ -119,6 +120,7 @@
     <ClCompile Include="XSaveWorkaround.cpp" />
     <ClCompile Include="GekkoDisassembler.cpp" />
     <ClCompile Include="ThreadPool.cpp" />
+    <ClCompile Include="JitRegister.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />

@@ -206,6 +206,9 @@
     <ProjectReference Include="$(CoreDir)Common\Common.vcxproj">
       <Project>{C87A4178-44F6-49B2-B7AA-C79AF1B8C534}</Project>
     </ProjectReference>
+    <ProjectReference Include="$(ExternalsDir)xxhash\xxhash.vcxproj">
+      <Project>{677EA016-1182-440C-9345-DC88D1E98C0C}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
