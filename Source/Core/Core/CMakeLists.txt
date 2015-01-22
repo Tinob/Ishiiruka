@@ -97,6 +97,8 @@ set(SRCS	ActionReplay.cpp
 			HW/EXI_DeviceIPL.cpp
 			HW/EXI_DeviceMemoryCard.cpp
 			HW/EXI_DeviceMic.cpp
+			HW/GCKeyboard.cpp
+			HW/GCKeyboardEmu.cpp
 			HW/GCMemcard.cpp
 			HW/GCMemcardDirectory.cpp
 			HW/GCMemcardRaw.cpp
@@ -116,6 +118,7 @@ set(SRCS	ActionReplay.cpp
 			HW/SI_DeviceGBA.cpp
 			HW/SI_DeviceGCController.cpp
 			HW/SI_DeviceGCSteeringWheel.cpp
+			HW/SI_DeviceKeyboard.cpp
 			HW/Sram.cpp
 			HW/StreamADPCM.cpp
 			HW/SystemTimers.cpp
@@ -165,6 +168,7 @@ set(SRCS	ActionReplay.cpp
 			PowerPC/Interpreter/Interpreter_Paired.cpp
 			PowerPC/Interpreter/Interpreter_SystemRegisters.cpp
 			PowerPC/Interpreter/Interpreter_Tables.cpp
+			PowerPC/JitCommon/JitAsmCommon.cpp
 			PowerPC/JitCommon/JitBase.cpp
 			PowerPC/JitCommon/JitCache.cpp
 			PowerPC/JitILCommon/IR.cpp
@@ -195,7 +199,6 @@ if(_M_X86)
 			PowerPC/Jit64/Jit_Paired.cpp
 			PowerPC/Jit64/JitRegCache.cpp
 			PowerPC/Jit64/Jit_SystemRegisters.cpp
-			PowerPC/JitCommon/JitAsmCommon.cpp
 			PowerPC/JitCommon/JitBackpatch.cpp
 			PowerPC/JitCommon/Jit_Util.cpp
 			PowerPC/JitCommon/TrampolineCache.cpp)
@@ -230,6 +233,7 @@ elseif(_M_ARM_64)
 	         PowerPC/JitArm64/JitArm64_LoadStore.cpp
 	         PowerPC/JitArm64/JitArm64_LoadStoreFloating.cpp
 	         PowerPC/JitArm64/JitArm64_Paired.cpp
+	         PowerPC/JitArm64/JitArm64_LoadStorePaired.cpp
 	         PowerPC/JitArm64/JitArm64_SystemRegisters.cpp
 	         PowerPC/JitArm64/JitArm64_Tables.cpp)
 endif()

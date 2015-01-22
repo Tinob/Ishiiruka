@@ -79,6 +79,7 @@ struct VideoConfig final
 
 	// General
 	bool bVSync;
+	bool bExclusiveMode;
 	bool bFullscreen;
 	bool bRunning;
 	bool bWidescreenHack;

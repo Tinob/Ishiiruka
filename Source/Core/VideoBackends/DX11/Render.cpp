@@ -45,7 +45,7 @@ static u32 s_last_multisample_mode = 0;
 
 static Television s_television;
 
-static bool s_last_fullscreen_mode = false;
+static bool s_last_xfb_mode = false;
 
 D3D::BufferPtr access_efb_cbuf;
 D3D::BlendStatePtr clearblendstates[4];
@@ -197,7 +197,7 @@ Renderer::Renderer(void *&window_handle)
 
 	s_last_multisample_mode = g_ActiveConfig.iMultisampleMode;
 	s_LastEFBScale = g_ActiveConfig.iEFBScale;
-	s_last_fullscreen_mode = g_ActiveConfig.bFullscreen;
+	s_last_xfb_mode = g_ActiveConfig.bUseRealXFB;
 	CalculateTargetSize(s_backbuffer_width, s_backbuffer_height);
 	PixelShaderManager::SetEfbScaleChanged();
 	SetupDeviceObjects();
@@ -843,20 +843,7 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 	const bool fullscreen = g_ActiveConfig.bFullscreen &&
 		!SConfig::GetInstance().m_LocalCoreStartupParameter.bRenderToMain;
 
-	bool fullscreen_changed = s_last_fullscreen_mode != fullscreen;
-	bool fullscreen_state;
-	if (SUCCEEDED(D3D::GetFullscreenState(&fullscreen_state)))
-	{
-		if (fullscreen_state != fullscreen && Host_RendererHasFocus())
-		{
-			// The current fullscreen state does not match the configuration,
-			// this may happen when the renderer frame loses focus. When the
-			// render frame is in focus again we can re-apply the configuration.
-			fullscreen_changed = true;
-		}
-	}
-
-	bool xfbchanged = false;
+	bool xfbchanged = s_last_xfb_mode != g_ActiveConfig.bUseRealXFB;
 
 	if (FramebufferManagerBase::LastXfbWidth() != fbWidth || FramebufferManagerBase::LastXfbHeight() != fbHeight)
 	{
@@ -870,6 +857,30 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 	// Flip/present backbuffer to frontbuffer here
 	D3D::Present();
 
+	// Check exclusive fullscreen state
+	bool exclusive_mode, fullscreen_changed = false;
+	if (SUCCEEDED(D3D::GetFullscreenState(&exclusive_mode)))
+	{
+		if (fullscreen && !exclusive_mode)
+		{
+			if (g_Config.bExclusiveMode)
+				OSD::AddMessage("Lost exclusive fullscreen.");
+
+			// Exclusive fullscreen is enabled in the configuration, but we're
+			// not in exclusive mode. Either exclusive fullscreen was turned on
+			// or the render frame lost focus. When the render frame is in focus
+			// we can apply exclusive mode.
+			fullscreen_changed = Host_RendererHasFocus();
+
+			g_Config.bExclusiveMode = false;
+		}
+		else if (!fullscreen && exclusive_mode)
+		{
+			// Exclusive fullscreen is disabled, but we're still in exclusive mode.
+			fullscreen_changed = true;
+		}
+	}
+
 	// resize the back buffers NOW to avoid flickering
 	if (xfbchanged ||
 		windowResized ||
@@ -877,6 +888,7 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 		s_LastEFBScale != g_ActiveConfig.iEFBScale ||
 		s_last_multisample_mode != g_ActiveConfig.iMultisampleMode)
 	{
+		s_last_xfb_mode = g_ActiveConfig.bUseRealXFB;
 		s_last_multisample_mode = g_ActiveConfig.iMultisampleMode;
 		PixelShaderCache::InvalidateMSAAShaders();
 
@@ -885,14 +897,16 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 			// Apply fullscreen state
 			if (fullscreen_changed)
 			{
-				s_last_fullscreen_mode = fullscreen;
+				g_Config.bExclusiveMode = fullscreen;
+
+				if (fullscreen)
+					OSD::AddMessage("Entered exclusive fullscreen.");
+
 				D3D::SetFullscreenState(fullscreen);
 
-				// Notify the host that it is safe to exit fullscreen
-				if (!fullscreen)
-				{
+				// If fullscreen is disabled we can safely notify the UI to exit fullscreen.
+				if (!g_ActiveConfig.bFullscreen)
 					Host_RequestFullscreen(false);
-				}
 			}
 			// TODO: Aren't we still holding a reference to the back buffer right now?
 			D3D::Reset();

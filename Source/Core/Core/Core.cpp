@@ -39,6 +39,7 @@
 #include "Core/HW/CPU.h"
 #include "Core/HW/DSP.h"
 #include "Core/HW/EXI.h"
+#include "Core/HW/GCKeyboard.h"
 #include "Core/HW/GCPad.h"
 #include "Core/HW/GPFifo.h"
 #include "Core/HW/HW.h"
@@ -360,13 +361,20 @@ void EmuThread()
 		return;
 	}
 
-	Pad::Initialize(s_window_handle);
+	for (unsigned int port_num = 0; port_num < 4; port_num++)
+	{
+		if (SConfig::GetInstance().m_SIDevice[port_num] == SIDEVICE_GC_KEYBOARD)
+			Keyboard::Initialize(s_window_handle);
+		else
+			Pad::Initialize(s_window_handle);
+	}
+
 	// Load and Init Wiimotes - only if we are booting in Wii mode
 	if (core_parameter.bWii)
 	{
 		Wiimote::Initialize(s_window_handle, !s_state_filename.empty());
 
-		// Activate wiimotes which don't have source set to "None"
+		// Activate Wiimotes which don't have source set to "None"
 		for (unsigned int i = 0; i != MAX_BBMOTES; ++i)
 			if (g_wiimote_sources[i])
 				GetUsbPointer()->AccessWiiMote(i | 0x100)->Activate(true);
@@ -432,7 +440,7 @@ void EmuThread()
 		// The EmuThread is thus an idle thread, which sleeps while
 		// waiting for the program to terminate. Without this extra
 		// thread, the video backend window hangs in single core mode
-		// because noone is pumping messages.
+		// because no one is pumping messages.
 		Common::SetCurrentThreadName("Emuthread - Idle");
 
 		// Spawn the CPU+GPU thread
@@ -475,7 +483,13 @@ void EmuThread()
 	INFO_LOG(CONSOLE, "%s", StopMessage(false, "Shutting down HW").c_str());
 	HW::Shutdown();
 	INFO_LOG(CONSOLE, "%s", StopMessage(false, "HW shutdown").c_str());
-	Pad::Shutdown();
+	for (unsigned int port_num = 0; port_num < 4; port_num++)
+	{
+		if (SConfig::GetInstance().m_SIDevice[port_num] == SIDEVICE_GC_KEYBOARD)
+			Keyboard::Shutdown();
+		else
+			Pad::Shutdown();
+	}
 	Wiimote::Shutdown();
 	g_video_backend->Shutdown();
 	AudioCommon::ShutdownSoundStream();
