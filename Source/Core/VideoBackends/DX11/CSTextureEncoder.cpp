@@ -111,19 +111,19 @@ return (a << 16) | b;
 }
 
 uint Float8ToUint3(float v) {
-return (uint)round(v*255.0) >> 5;
+return (uint)(v*255.0) >> 5;
 }
 
 uint Float8ToUint4(float v) {
-return (uint)round(v*255.0) >> 4;
+return (uint)(v*255.0) >> 4;
 }
 
 uint Float8ToUint5(float v) {
-return (uint)round(v*255.0) >> 3;
+return (uint)(v*255.0) >> 3;
 }
 
 uint Float8ToUint6(float v) {
-return (uint)round(v*255.0) >> 2;
+return (uint)(v*255.0) >> 2;
 }
 
 uint EncodeRGB5A3(float4 pixel) {
@@ -175,7 +175,7 @@ float4 Fetch_3(float2 coord)
 {
 float2 texCoord = CalcTexCoord(coord);
 
-uint depth24 = 0xFFFFFF - 0xFFFFFF * EFBTexture.SampleLevel(EFBSampler, texCoord,0).r;
+uint depth24 = 0xFFFFFF * EFBTexture.SampleLevel(EFBSampler, texCoord,0).r;
 uint4 bytes = uint4(
 	(depth24 >> 16) & 0xFF, // r
 	(depth24 >> 8) & 0xFF,  // g
@@ -394,10 +394,10 @@ float4 sampleE = SampleEFB(subBlockUL+float2(6,1));
 float4 sampleF = SampleEFB(subBlockUL+float2(7,1));
 
 uint4 dw4 = UINT4_8888_BE(
-	round(255*float4(sample0.r, sample4.r, sample8.r, sampleC.r)),
-	round(255*float4(sample1.r, sample5.r, sample9.r, sampleD.r)),
-	round(255*float4(sample2.r, sample6.r, sampleA.r, sampleE.r)),
-	round(255*float4(sample3.r, sample7.r, sampleB.r, sampleF.r))
+	255*float4(sample0.r, sample4.r, sample8.r, sampleC.r),
+	255*float4(sample1.r, sample5.r, sample9.r, sampleD.r),
+	255*float4(sample2.r, sample6.r, sampleA.r, sampleE.r),
+	255*float4(sample3.r, sample7.r, sampleB.r, sampleF.r)
 	);
 
 return dw4;
@@ -474,10 +474,10 @@ float4 sample6 = SampleEFB(subBlockUL+float2(2,1));
 float4 sample7 = SampleEFB(subBlockUL+float2(3,1));
 
 uint4 dw4 = UINT4_8888_BE(
-	round(255*float4(sample0.a, sample2.a, sample4.a, sample6.a)),
-	round(255*float4(sample0.r, sample2.r, sample4.r, sample6.r)),
-	round(255*float4(sample1.a, sample3.a, sample5.a, sample7.a)),
-	round(255*float4(sample1.r, sample3.r, sample5.r, sample7.r))
+	255*float4(sample0.a, sample2.a, sample4.a, sample6.a),
+	255*float4(sample0.r, sample2.r, sample4.r, sample6.r),
+	255*float4(sample1.a, sample3.a, sample5.a, sample7.a),
+	255*float4(sample1.r, sample3.r, sample5.r, sample7.r)
 	);
 
 return dw4;
@@ -553,20 +553,20 @@ if (cacheCoord.x % 4 < 2)
 {
 	// First cache line gets AR
 	dw4 = UINT4_8888_BE(
-		round(255*float4(sample0.a, sample2.a, sample4.a, sample6.a)),
-		round(255*float4(sample0.r, sample2.r, sample4.r, sample6.r)),
-		round(255*float4(sample1.a, sample3.a, sample5.a, sample7.a)),
-		round(255*float4(sample1.r, sample3.r, sample5.r, sample7.r))
+		255*float4(sample0.a, sample2.a, sample4.a, sample6.a),
+		255*float4(sample0.r, sample2.r, sample4.r, sample6.r),
+		255*float4(sample1.a, sample3.a, sample5.a, sample7.a),
+		255*float4(sample1.r, sample3.r, sample5.r, sample7.r)
 		);
 }
 else
 {
 	// Second cache line gets GB
 	dw4 = UINT4_8888_BE(
-		round(255*float4(sample0.g, sample2.g, sample4.g, sample6.g)),
-		round(255*float4(sample0.b, sample2.b, sample4.b, sample6.b)),
-		round(255*float4(sample1.g, sample3.g, sample5.g, sample7.g)),
-		round(255*float4(sample1.b, sample3.b, sample5.b, sample7.b))
+		255*float4(sample0.g, sample2.g, sample4.g, sample6.g),
+		255*float4(sample0.b, sample2.b, sample4.b, sample6.b),
+		255*float4(sample1.g, sample3.g, sample5.g, sample7.g),
+		255*float4(sample1.b, sample3.b, sample5.b, sample7.b)
 		);
 }
 
@@ -598,10 +598,10 @@ float4 sampleE = SampleEFB(subBlockUL+float2(6,1));
 float4 sampleF = SampleEFB(subBlockUL+float2(7,1));
 
 uint4 dw4 = UINT4_8888_BE(
-	round(255*float4(sample0.a, sample4.a, sample8.a, sampleC.a)),
-	round(255*float4(sample1.a, sample5.a, sample9.a, sampleD.a)),
-	round(255*float4(sample2.a, sample6.a, sampleA.a, sampleE.a)),
-	round(255*float4(sample3.a, sample7.a, sampleB.a, sampleF.a))
+	255*float4(sample0.a, sample4.a, sample8.a, sampleC.a),
+	255*float4(sample1.a, sample5.a, sample9.a, sampleD.a),
+	255*float4(sample2.a, sample6.a, sampleA.a, sampleE.a),
+	255*float4(sample3.a, sample7.a, sampleB.a, sampleF.a)
 	);
 
 return dw4;
@@ -632,10 +632,10 @@ float4 sampleE = SampleEFB(subBlockUL+float2(6,1));
 float4 sampleF = SampleEFB(subBlockUL+float2(7,1));
 
 uint4 dw4 = UINT4_8888_BE(
-	round(255*float4(sample0.r, sample4.r, sample8.r, sampleC.r)),
-	round(255*float4(sample1.r, sample5.r, sample9.r, sampleD.r)),
-	round(255*float4(sample2.r, sample6.r, sampleA.r, sampleE.r)),
-	round(255*float4(sample3.r, sample7.r, sampleB.r, sampleF.r))
+	255*float4(sample0.r, sample4.r, sample8.r, sampleC.r),
+	255*float4(sample1.r, sample5.r, sample9.r, sampleD.r),
+	255*float4(sample2.r, sample6.r, sampleA.r, sampleE.r),
+	255*float4(sample3.r, sample7.r, sampleB.r, sampleF.r)
 	);
 
 return dw4;
@@ -667,10 +667,10 @@ float4 sampleE = SampleEFB(subBlockUL+float2(6,1));
 float4 sampleF = SampleEFB(subBlockUL+float2(7,1));
 
 uint4 dw4 = UINT4_8888_BE(
-	round(255*float4(sample0.g, sample4.g, sample8.g, sampleC.g)),
-	round(255*float4(sample1.g, sample5.g, sample9.g, sampleD.g)),
-	round(255*float4(sample2.g, sample6.g, sampleA.g, sampleE.g)),
-	round(255*float4(sample3.g, sample7.g, sampleB.g, sampleF.g))
+	255*float4(sample0.g, sample4.g, sample8.g, sampleC.g),
+	255*float4(sample1.g, sample5.g, sample9.g, sampleD.g),
+	255*float4(sample2.g, sample6.g, sampleA.g, sampleE.g),
+	255*float4(sample3.g, sample7.g, sampleB.g, sampleF.g)
 	);
 
 return dw4;
@@ -701,10 +701,10 @@ float4 sampleE = SampleEFB(subBlockUL+float2(6,1));
 float4 sampleF = SampleEFB(subBlockUL+float2(7,1));
 
 uint4 dw4 = UINT4_8888_BE(
-	round(255*float4(sample0.b, sample4.b, sample8.b, sampleC.b)),
-	round(255*float4(sample1.b, sample5.b, sample9.b, sampleD.b)),
-	round(255*float4(sample2.b, sample6.b, sampleA.b, sampleE.b)),
-	round(255*float4(sample3.b, sample7.b, sampleB.b, sampleF.b))
+	255*float4(sample0.b, sample4.b, sample8.b, sampleC.b),
+	255*float4(sample1.b, sample5.b, sample9.b, sampleD.b),
+	255*float4(sample2.b, sample6.b, sampleA.b, sampleE.b),
+	255*float4(sample3.b, sample7.b, sampleB.b, sampleF.b)
 	);
 
 return dw4;
@@ -727,10 +727,10 @@ float4 sample6 = SampleEFB(subBlockUL+float2(2,1));
 float4 sample7 = SampleEFB(subBlockUL+float2(3,1));
 
 uint4 dw4 = UINT4_8888_BE(
-	round(255*float4(sample0.g, sample2.g, sample4.g, sample6.g)),
-	round(255*float4(sample0.r, sample2.r, sample4.r, sample6.r)),
-	round(255*float4(sample1.g, sample3.g, sample5.g, sample7.g)),
-	round(255*float4(sample1.r, sample3.r, sample5.r, sample7.r))
+	255*float4(sample0.g, sample2.g, sample4.g, sample6.g),
+	255*float4(sample0.r, sample2.r, sample4.r, sample6.r),
+	255*float4(sample1.g, sample3.g, sample5.g, sample7.g),
+	255*float4(sample1.r, sample3.r, sample5.r, sample7.r)
 	);
 
 return dw4;
@@ -754,10 +754,10 @@ float4 sample6 = SampleEFB(subBlockUL+float2(2,1));
 float4 sample7 = SampleEFB(subBlockUL+float2(3,1));
 
 uint4 dw4 = UINT4_8888_BE(
-	round(255*float4(sample0.b, sample2.b, sample4.b, sample6.b)),
-	round(255*float4(sample0.g, sample2.g, sample4.g, sample6.g)),
-	round(255*float4(sample1.b, sample3.b, sample5.b, sample7.b)),
-	round(255*float4(sample1.g, sample3.g, sample5.g, sample7.g))
+	255*float4(sample0.b, sample2.b, sample4.b, sample6.b),
+	255*float4(sample0.g, sample2.g, sample4.g, sample6.g),
+	255*float4(sample1.b, sample3.b, sample5.b, sample7.b),
+	255*float4(sample1.g, sample3.g, sample5.g, sample7.g)
 	);
 
 return dw4;
