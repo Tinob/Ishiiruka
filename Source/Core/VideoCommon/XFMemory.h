@@ -43,9 +43,10 @@
 #define LIGHTDIF_SIGN  1
 #define LIGHTDIF_CLAMP 2
 
-#define LIGHTATTN_SPEC 1 // specular attenuation
-#define LIGHTATTN_SPOT 3 // distance/spotlight attenuation
-#define LIGHTATTN_NONE 2
+#define LIGHTATTN_NONE 0 // no attenuation
+#define LIGHTATTN_SPEC 1 // point light attenuation
+#define LIGHTATTN_DIR  2 // directional light attenuation
+#define LIGHTATTN_SPOT 3 // spot light attenuation
 
 #define GX_PERSPECTIVE  0
 #define GX_ORTHOGRAPHIC 1

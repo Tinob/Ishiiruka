@@ -59,52 +59,36 @@ static void GenerateLightShader(T& object,
 			swizzle = "xyz";
 		else if (coloralpha == 2)
 			swizzle = "w";
-		const bool use_diffuse = chan.diffusefunc != LIGHTDIF_NONE;
-		const bool use_attenuation = chan.attnfunc & 1;
-		if (use_diffuse || use_attenuation)
+
+		object.Write("ldir = " LIGHT_POS".xyz - pos.xyz;\n",
+			LIGHT_POS_PARAMS(lightsName, index));
+
+		switch (chan.attnfunc)
 		{
-			object.Write("ldir = " LIGHT_POS".xyz - pos.xyz;\n",
-				LIGHT_POS_PARAMS(lightsName, index));
+		case LIGHTATTN_NONE:
+		case LIGHTATTN_DIR:
+			object.Write("ldir = normalize(ldir);\n");
+			object.Write("attn = 1.0f;\n");
+			break;
+		case LIGHTATTN_SPEC:
+			object.Write("ldir = normalize(ldir);\n");
+			object.Write("attn = (dot(_norm0, ldir) >= 0.0) ? max(0.0, dot(_norm0, " LIGHT_DIR".xyz)) : 0.0;\n", LIGHT_DIR_PARAMS(lightsName, index));
+			object.Write("attn = max(0.0f, dot(" LIGHT_COSATT".xyz, float3(1.0, attn, attn*attn))) / dot(%s(" LIGHT_DISTATT".xyz), float3(1.0, attn, attn*attn));\n",
+				LIGHT_COSATT_PARAMS(lightsName, index),
+				(chan.diffusefunc == LIGHTDIF_NONE) ? "" : "normalize",
+				LIGHT_DISTATT_PARAMS(lightsName, index));
+			break;
+		case LIGHTATTN_SPOT:
+			object.Write("dist2 = dot(ldir, ldir);\n"
+				"dist = sqrt(dist2);\n"
+				"ldir = ldir / dist;\n"
+				"attn = max(0.0, dot(ldir, " LIGHT_DIR".xyz));\n", LIGHT_DIR_PARAMS(lightsName, index));
+			// attn*attn may overflow
+			object.Write("attn = max(0.0, dot(" LIGHT_COSATT".xyz, float3(1.0, attn, attn*attn))) / dot(" LIGHT_DISTATT".xyz, float3(1.0,dist,dist2));\n",
+				LIGHT_COSATT_PARAMS(lightsName, index), LIGHT_DISTATT_PARAMS(lightsName, index));
+			break;
 		}
 
-		if (use_attenuation)
-		{
-			if (chan.attnfunc == LIGHTATTN_SPOT)
-			{
-				object.Write("dist2 = dot(ldir, ldir);\n"
-					"dist = sqrt(dist2);\n"
-					"ldir = ldir / dist;\n"
-					"attn = max(0.0, dot(ldir, " LIGHT_DIR".xyz));\n",
-					LIGHT_DIR_PARAMS(lightsName, index));				
-			}
-			else // LIGHTATTN_SPEC
-			{
-				object.Write("ldir = normalize(ldir);\n");
-				object.Write("attn = (dot(_norm0,ldir) > 0.0) ? max(0.0, dot(_norm0, " LIGHT_DIR".xyz)) : 0.0;\n",
-					LIGHT_DIR_PARAMS(lightsName, index));
-				object.Write("dist2 = attn * attn;\n"
-					"dist = attn;\n");
-			}
-			if (chan.attnfunc == LIGHTATTN_SPEC && use_diffuse)
-			{
-				// Hack To handle Mario Power Tennis Ligthing problems
-				object.Write("attn = 1.0 + 3*attn*attn / ( 8 - 7*attn*attn);\n");
-			}
-			else
-			{
-				// attn*attn may overflow
-				object.Write("attn = max(0.0, dot(" LIGHT_COSATT".xyz, float3(1.0, attn, attn*attn))) / dot(" LIGHT_DISTATT".xyz, float3(1.0,dist,dist2));\n",
-					LIGHT_COSATT_PARAMS(lightsName, index), LIGHT_DISTATT_PARAMS(lightsName, index));
-			}
-		}
-		else
-		{
-			if (use_diffuse)
-			{
-				object.Write("ldir = normalize(ldir);\n");
-			}
-			object.Write("attn = 1.0;\n");
-		}
 		switch (chan.diffusefunc)
 		{
 		case LIGHTDIF_NONE:
