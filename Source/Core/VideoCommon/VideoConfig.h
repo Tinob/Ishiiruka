@@ -122,6 +122,7 @@ struct VideoConfig final
 	bool bDumpTextures;
 	bool bDumpVertexLoaders;
 	bool bHiresTextures;
+	bool bConvertHiresTextures;
 	bool bDumpEFBTarget;
 	bool bDumpFrames;
 	bool bUseFFV1;

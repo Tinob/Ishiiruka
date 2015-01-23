@@ -55,6 +55,18 @@ struct ImageLoaderParams
 	PC_TexFormat desiredTex;
 	PC_TexFormat resultTex;
 	u32 nummipmaps;
+	ImageLoaderParams()
+	{
+		Path = nullptr;
+		Width = 0;
+		Height = 0;
+		data_size = 0;
+		forcedchannels = 0;
+		formatBPP = 0;
+		desiredTex = PC_TexFormat::PC_TEX_FMT_NONE;
+		resultTex = PC_TexFormat::PC_TEX_FMT_NONE;
+		nummipmaps = 0;
+	}
 };
 
 class DDSLoader

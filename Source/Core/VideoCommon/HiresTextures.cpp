@@ -3,9 +3,12 @@
 // Refer to the license.txt file included.
 
 #include <algorithm>
+#include <cinttypes>
+
 #include <cstring>
 #include <string>
 #include <utility>
+#include <xxhash.h>
 #include <SOIL/SOIL.h>
 
 #include "Common/CommonPaths.h"
@@ -17,27 +20,18 @@
 
 #include "VideoCommon/DDSLoader.h"
 #include "VideoCommon/HiresTextures.h"
+#include "VideoCommon/OnScreenDisplay.h"
 #include "VideoCommon/TextureUtil.h"
 #include "VideoCommon/VideoConfig.h"
 
-HiresTexture::HiresTextureCache HiresTexture::textureMap;
-bool HiresTexture::s_initialized = false;
+typedef std::vector<std::pair<std::string, std::string>> HiresTextureCacheItem;
+typedef std::unordered_map<std::string, HiresTextureCacheItem> HiresTextureCache;
+static HiresTextureCache s_textureMap;
+static bool s_initialized = false;
+static bool s_check_native_format;
+static bool s_check_new_format;
 
-__forceinline u64 GetTextureKey(u64 Hash, u64 format)
-{
-	return  (Hash << 32) | format;
-}
-
-__forceinline u64 GetTextureHash(const u8* texture, size_t texture_size, const u8* tlut, size_t tlut_size)
-{
-	u64 tex_hash = GetHashHiresTexture(texture, (int)texture_size, g_ActiveConfig.iSafeTextureCache_ColorSamples);
-	if (tlut_size)
-	{
-		u64 tlut_hash = GetHashHiresTexture(tlut, (int)tlut_size, g_ActiveConfig.iSafeTextureCache_ColorSamples);
-		tex_hash ^= tlut_hash;
-	}
-	return tex_hash;
-}
+static const std::string s_format_prefix = "tex1_";
 
 void HiresTexture::Init(const std::string& gameCode, bool force_reload)
 {
@@ -46,7 +40,9 @@ void HiresTexture::Init(const std::string& gameCode, bool force_reload)
 		return;
 	}
 	s_initialized = true;
-	textureMap.clear();
+	s_check_native_format = false;
+	s_check_new_format = false;
+	s_textureMap.clear();
 	CFileSearch::XStringVector Directories;
 	std::string szDir = StringFromFormat("%s%s", File::GetUserPath(D_HIRESTEXTURES_IDX).c_str(), gameCode.c_str());
 	Directories.push_back(szDir);
@@ -55,79 +51,85 @@ void HiresTexture::Init(const std::string& gameCode, bool force_reload)
 	{
 		File::FSTEntry FST_Temp;
 		File::ScanDirectoryTree(Directories[i], FST_Temp);
-		for (u32 j = 0; j < FST_Temp.children.size(); j++)
+		for (auto& entry : FST_Temp.children)
 		{
-			if (FST_Temp.children.at(j).isDirectory)
+			if (entry.isDirectory)
 			{
 				bool duplicate = false;
-				for (u32 k = 0; k < Directories.size(); k++)
+				for (auto& Directory : Directories)
 				{
-					if (strcmp(Directories[k].c_str(), FST_Temp.children.at(j).physicalName.c_str()) == 0)
+					if (Directory == entry.physicalName)
 					{
 						duplicate = true;
 						break;
 					}
 				}
 				if (!duplicate)
-					Directories.push_back(FST_Temp.children.at(j).physicalName.c_str());
+					Directories.push_back(entry.physicalName);
 			}
 		}
 	}
 
-	CFileSearch::XStringVector Extensions;
-	Extensions.push_back("*.png");
-	Extensions.push_back("*.bmp");
-	Extensions.push_back("*.tga");
-	Extensions.push_back("*.dds");
-	Extensions.push_back("*.jpg"); // Why not? Could be useful for large photo-like textures
+	CFileSearch::XStringVector Extensions = {
+		"*.png",
+		"*.bmp",
+		"*.tga",
+		"*.dds",
+		"*.jpg" // Why not? Could be useful for large photo-like textures
+	};
+
 	CFileSearch FileSearch(Extensions, Directories);
 	const CFileSearch::XStringVector& rFilenames = FileSearch.GetFileNames();
-	std::string code(gameCode);
 
+	const std::string code = StringFromFormat("%s_", gameCode.c_str());
+	const std::string miptag = "mip";
 	if (rFilenames.size() > 0)
 	{
 		for (u32 i = 0; i < rFilenames.size(); i++)
 		{
 			std::string FileName;
 			std::string Extension;			
-			SplitPath(rFilenames[i], NULL, &FileName, &Extension);
-			std::pair<std::string, std::string> Pair(rFilenames[i], Extension);
-			std::vector<std::string> nameparts;
-			std::istringstream issfilename(FileName);
-			std::string nameitem;
-			while (std::getline(issfilename, nameitem, '_')) {
-				nameparts.push_back(nameitem);
-			}
-			if (nameparts.size() >= 3)
+			SplitPath(rFilenames[i], nullptr, &FileName, &Extension);
+			bool newformat = false;
+			if (FileName.substr(0, code.length()) == code)
 			{
-				if (nameparts[0].compare(code) != 0)
+				s_check_native_format = true;				
+			}
+			else if (FileName.substr(0, s_format_prefix.length()) == s_format_prefix)
+			{
+				s_check_new_format = true;
+				newformat = true;
+			}
+			else
+			{
+				// Discard wrong files
+				continue;
+			}
+			std::pair<std::string, std::string> Pair(rFilenames[i], Extension);
+			u32 level = 0;
+			size_t idx = FileName.find_last_of('_');
+			std::string miplevel = FileName.substr(idx + 1, std::string::npos);
+			if (miplevel.substr(0, miptag.length()) == miptag)
+			{
+				sscanf(miplevel.substr(3, std::string::npos).c_str(), "%i", &level);
+				FileName = FileName.substr(0, idx);
+			}
+			HiresTextureCache::iterator iter = s_textureMap.find(FileName);
+			u32 min_item_size = level + 1;
+			if (iter == s_textureMap.end())
+			{
+				HiresTextureCacheItem item(min_item_size);
+				item[level] = Pair;
+				s_textureMap.insert(HiresTextureCache::value_type(FileName, item));
+			}
+			else
+			{
+				if (iter->second.size() < min_item_size)
 				{
-					continue;
+					iter->second.resize(min_item_size);
 				}
-				u32 hash = 0;
-				u32 format = 0;
-				u32 level = 0;
-				sscanf(nameparts[1].c_str(), "%x", &hash);
-				sscanf(nameparts[2].c_str(), "%i", &format);
-				if (nameparts.size() > 3 && nameparts[3].size() > 3)
+				if (iter->second[level].first.size() == 0)
 				{
-					sscanf(nameparts[3].substr(3, std::string::npos).c_str(), "%i", &level);
-				}
-				u64 key = GetTextureKey(hash, format);
-				HiresTextureCache::iterator iter = textureMap.find(key);
-				u32 min_item_size = level + 1;
-				if (iter == textureMap.end())
-				{
-					HiresTextureCacheItem item(min_item_size);
-					item[level] = Pair;
-					textureMap.insert(HiresTextureCache::value_type(key, item));
-				}
-				else
-				{
-					if (iter->second.size() < min_item_size)
-					{
-						iter->second.resize(min_item_size);
-					}
 					iter->second[level] = Pair;
 				}
 			}
@@ -135,10 +137,127 @@ void HiresTexture::Init(const std::string& gameCode, bool force_reload)
 	}
 }
 
-std::string HiresTexture::GenBaseName(const u8* texture, size_t texture_size, const u8* tlut, size_t tlut_size, u32 width, u32 height, int format)
+std::string HiresTexture::GenBaseName(
+	const u8* texture, size_t texture_size,
+	const u8* tlut, size_t tlut_size,
+	u32 width, u32 height,
+	int format,
+	bool has_mipmaps,
+	bool dump)
 {
-	u64 hash = GetTextureHash(texture, texture_size, tlut, tlut_size);
-	return StringFromFormat("%s_%08x_%i", SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID.c_str(), (u32)hash, (u16)format);
+	std::string name = "";
+	bool convert = false;
+	HiresTextureCache::iterator convert_iter;
+	if (!dump && s_check_native_format)
+	{
+		// try to load the old format first
+		u64 tex_hash = GetHashHiresTexture(texture, (int)texture_size, g_ActiveConfig.iSafeTextureCache_ColorSamples);
+		u64 tlut_hash = 0;
+		if(tlut_size)
+			tlut_hash = GetHashHiresTexture(tlut, (int)tlut_size, g_ActiveConfig.iSafeTextureCache_ColorSamples);
+		name = StringFromFormat("%s_%08x_%i", SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID.c_str(), (u32)(tex_hash ^ tlut_hash), (u16)format);
+		convert_iter = s_textureMap.find(name);
+		if (convert_iter != s_textureMap.end())
+		{
+			if (g_ActiveConfig.bConvertHiresTextures)
+				convert = true;
+			else
+				return name;
+		}
+	}
+	if (dump || s_check_new_format || convert)
+	{
+		// checking for min/max on paletted textures
+		u32 min = 0xffff;
+		u32 max = 0;
+		switch (tlut_size)
+		{
+		case 0: break;
+		case 16 * 2:
+			for (size_t i = 0; i < texture_size; i++)
+			{
+				min = std::min<u32>(min, texture[i] & 0xf);
+				min = std::min<u32>(min, texture[i] >> 4);
+				max = std::max<u32>(max, texture[i] & 0xf);
+				max = std::max<u32>(max, texture[i] >> 4);
+			}
+			break;
+		case 256 * 2:
+			for (size_t i = 0; i < texture_size; i++)
+			{
+				min = std::min<u32>(min, texture[i]);
+				max = std::max<u32>(max, texture[i]);
+			}
+			break;
+		case 16384 * 2:
+			for (size_t i = 0; i < texture_size / 2; i++)
+			{
+				min = std::min<u32>(min, Common::swap16(((u16*)texture)[i]) & 0x3fff);
+				max = std::max<u32>(max, Common::swap16(((u16*)texture)[i]) & 0x3fff);
+			}
+			break;
+		}
+		if (tlut_size > 0)
+		{
+			tlut_size = 2 * (max + 1 - min);
+			tlut += 2 * min;
+		}
+		u64 tex_hash = XXH64(texture, texture_size);
+		u64 tlut_hash = 0;
+		if(tlut_size)
+			tlut_hash = XXH64(tlut, tlut_size);
+		std::string basename = s_format_prefix + StringFromFormat("%dx%d%s_%016" PRIx64, width, height, has_mipmaps ? "_m" : "", tex_hash);
+		std::string tlutname = tlut_size ? StringFromFormat("_%016" PRIx64, tlut_hash) : "";
+		std::string formatname = StringFromFormat("_%d", format);
+		std::string fullname = basename + tlutname + formatname;
+		if (convert)
+		{
+			// new texture
+			if (s_textureMap.find(fullname) == s_textureMap.end())
+			{
+				HiresTextureCacheItem newitem;
+				newitem.resize(convert_iter->second.size());
+				for (int level = 0; level < convert_iter->second.size(); level++)
+				{
+					std::string newname = fullname;
+					if (level)
+						newname += StringFromFormat("_mip%d", level);
+					newname += convert_iter->second[level].second;
+					std::string &src = convert_iter->second[level].first;
+					size_t postfix = src.find(name);
+					std::string dst = src.substr(0, postfix) + newname;
+					if (File::Rename(src, dst))
+					{
+						s_check_new_format = true;
+						OSD::AddMessage(StringFromFormat("Rename custom texture %s to %s", src.c_str(), dst.c_str()), 5000);
+					}
+					else
+					{
+						ERROR_LOG(VIDEO, "rename failed");
+					}
+					newitem[level] = std::pair<std::string, std::string>(dst, convert_iter->second[level].second);
+				}
+				s_textureMap.insert(HiresTextureCache::value_type(fullname, newitem));
+			}
+			else
+			{
+				for (int level = 0; level < convert_iter->second.size(); level++)
+				{
+					if (File::Delete(convert_iter->second[level].first))
+					{
+						OSD::AddMessage(StringFromFormat("Delete double old custom texture %s", convert_iter->second[level].first.c_str()), 5000);
+					}
+					else
+					{
+						ERROR_LOG(VIDEO, "delete failed");
+					}
+				}				
+			}
+			s_textureMap.erase(name);
+		}
+		return fullname;
+	}
+	return name;
 }
 
 
@@ -199,16 +318,23 @@ HiresTexture* HiresTexture::Search(
 	u32 height, 
 	s32 format,
 	bool rgbaonly,
+	bool has_mipmaps,
 	std::function<u8*(size_t)> request_buffer_delegate)
 {
-	if (textureMap.size() == 0)
+	if (s_textureMap.size() == 0)
 	{
 		return nullptr;
 	}
-	u64 hash = GetTextureHash(texture, texture_size, tlut, tlut_size);
-	u64 key = GetTextureKey(hash, format);
-	HiresTextureCache::iterator iter = textureMap.find(key);
-	if (iter == textureMap.end())
+	std::string basename = GenBaseName(texture,
+		texture_size,
+		tlut,
+		tlut_size,
+		width,
+		height,
+		format,
+		has_mipmaps);
+	HiresTextureCache::iterator iter = s_textureMap.find(basename);
+	if (iter == s_textureMap.end())
 	{
 		return nullptr;
 	}
