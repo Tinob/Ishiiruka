@@ -318,7 +318,6 @@ TextureCache::TCacheEntryBase* TextureCache::Load(const u32 stage)
 	u32 texID = address;
 	// Hash assigned to texcache entry (also used to generate filenames used for texture dumping and custom texture lookup)
 	u64 tex_hash = TEXHASH_INVALID;
-	u64 tlut_hash = TEXHASH_INVALID;
 
 	u32 full_format = texformat;
 	PC_TexFormat pcfmt = PC_TEX_FMT_NONE;
@@ -345,33 +344,32 @@ TextureCache::TCacheEntryBase* TextureCache::Load(const u32 stage)
 	bool palette_upload_required = false;
 	if (isPaletteTexture)
 	{
-		tlut_hash = GetHash64(&texMem[tlutaddr], palette_size, g_ActiveConfig.iSafeTextureCache_ColorSamples);
+		u64 tlut_hash = GetHash64(&texMem[tlutaddr], palette_size, g_ActiveConfig.iSafeTextureCache_ColorSamples);
 		palette_upload_required = s_prev_tlut_address != tlutaddr
 			|| s_prev_tlut_hash != tlut_hash
 			|| s_prev_tlut_size != palette_size;
 		s_prev_tlut_address = tlutaddr;
 		s_prev_tlut_hash = tlut_hash;
 		s_prev_tlut_size = palette_size;
-		// NOTE: For non-paletted textures, texID is equal to the texture address.
-		//		A paletted texture, however, may have multiple texIDs assigned though depending on the currently used tlut.
-		//		This (changing texID depending on the tlut_hash) is a trick to get around
-		//		an issue with Metroid Prime's fonts (it has multiple sets of fonts on each other
-		//		stored in a single texture and uses the palette to make different characters
-		//		visible or invisible. Thus, unless we want to recreate the textures for every drawn character,
-		//		we must make sure that a paletted texture gets assigned multiple IDs for each tlut used.
-		//
-		// TODO: Because texID isn't always the same as the address now, CopyRenderTargetToTexture might be broken now
-		u32 temp_texID = texID;
-		texID ^= ((u32)tlut_hash) ^(u32)(tlut_hash >> 32);
+
+		// Mix the tlut hash into the texture hash. So we only have to compare it one.
 		tex_hash ^= tlut_hash;
 
-		// Don't change the texID depending on the tlut_hash for paletted textures that are efb copies and don't have
-		// an entry in the cache for texID ^ tlut_hash. This makes those textures less broken when using efb to texture.
+		// NOTE: For non-paletted textures, texID is equal to the texture address.
+		// A paletted texture, however, may have multiple texIDs assigned though depending on the currently used tlut.
+		// This (changing texID depending on the tlut_hash) is a trick to get around
+		// an issue with Metroid Prime's fonts (it has multiple sets of fonts on each other
+		// stored in a single texture and uses the palette to make different characters
+		// visible or invisible. Thus, unless we want to recreate the textures for every drawn character,
+		// we must make sure that a paletted texture gets assigned multiple IDs for each tlut used.
+		//
+		// EFB copys however didn't know anything about the tlut, so don't change the texID if there
+		// already is an efb copy at this source. This makes those textures less broken when using efb to texture.
 		// Examples are the mini map in Twilight Princess and objects on the targetting computer in Rogue Squadron 2(RS2).
 		// TODO: Convert those textures using the right palette, so they display correctly
-		auto iter = textures.find(temp_texID);
-		if (iter != textures.end() && iter->second->IsEfbCopy() && textures.find(texID) == textures.end())
-			texID = temp_texID;
+		auto iter = textures.find(texID);
+		if (iter == textures.end() || !iter->second->IsEfbCopy())
+			texID ^= ((u32)tlut_hash) ^ (u32)(tlut_hash >> 32);
 	}
 
 	// GPUs don't like when the specified mipmap count would require more than one 1x1-sized LOD in the mipmap chain
