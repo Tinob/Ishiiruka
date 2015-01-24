@@ -10,7 +10,7 @@
 
 namespace
 {
-const size_t BUFFER_SAMPLES = 512; // ~10 ms - needs to be at least 240 for surround
+	const size_t BUFFER_SAMPLES = 512; // ~10 ms - needs to be at least 240 for surround
 }
 
 PulseAudio::PulseAudio(CMixer *mixer)
@@ -23,7 +23,7 @@ PulseAudio::PulseAudio(CMixer *mixer)
 bool PulseAudio::Start()
 {
 	m_stereo = !SConfig::GetInstance().m_LocalCoreStartupParameter.bDPL2Decoder;
-	m_channels = m_stereo ? 2 : 6; // will tell PA we use a Stereo or 5.1 channel setup
+	m_channels = m_stereo ? 2 : 5; // will tell PA we use a Stereo or 5.0 channel setup
 
 	NOTICE_LOG(AUDIO, "PulseAudio backend using %d channels", m_channels);
 
@@ -103,15 +103,13 @@ bool PulseAudio::PulseInit()
 		ss.format = PA_SAMPLE_FLOAT32NE;
 		m_bytespersample = sizeof(float);
 
-		// DPL2Decode output: LEFTFRONT, RIGHTFRONT, CENTREFRONT, (sub), LEFTREAR, RIGHTREAR
 		channel_map_p = &channel_map; // explicit channel map:
-		channel_map.channels = 6;
+		channel_map.channels = 5;
 		channel_map.map[0] = PA_CHANNEL_POSITION_FRONT_LEFT;
 		channel_map.map[1] = PA_CHANNEL_POSITION_FRONT_RIGHT;
 		channel_map.map[2] = PA_CHANNEL_POSITION_FRONT_CENTER;
-		channel_map.map[3] = PA_CHANNEL_POSITION_LFE;
-		channel_map.map[4] = PA_CHANNEL_POSITION_REAR_LEFT;
-		channel_map.map[5] = PA_CHANNEL_POSITION_REAR_RIGHT;
+		channel_map.map[3] = PA_CHANNEL_POSITION_REAR_LEFT;
+		channel_map.map[4] = PA_CHANNEL_POSITION_REAR_RIGHT;
 	}
 	ss.channels = m_channels;
 	ss.rate = m_mixer->GetSampleRate();
@@ -187,7 +185,7 @@ void PulseAudio::WriteCallback(pa_stream* s, size_t length)
 	if (m_stereo)
 	{
 		// use the raw s16 stereo mix
-		m_mixer->Mix((s16*) buffer, frames);
+		m_mixer->Mix((s16*)buffer, frames);
 	}
 	else
 	{
@@ -197,14 +195,27 @@ void PulseAudio::WriteCallback(pa_stream* s, size_t length)
 
 		float floatbuffer_stereo[frames * 2];
 		// s16 to float
-		for (int i=0; i < frames * 2; ++i)
+		for (int i = 0; i < frames * 2; ++i)
 		{
 			floatbuffer_stereo[i] = s16buffer_stereo[i] / float(1 << 15);
 		}
 
-		if (m_channels == 6) // Extract dpl2/5.1 Surround
+		if (m_channels == 5) // Extract dpl2/5.0 Surround
 		{
-			DPL2Decode(floatbuffer_stereo, frames, (float*)buffer);
+			float floatbuffer_6chan[frames * 6];
+			// DPL2Decode output: LEFTFRONT, RIGHTFRONT, CENTREFRONT, (sub), LEFTREAR, RIGHTREAR
+			DPL2Decode(floatbuffer_stereo, frames, floatbuffer_6chan);
+
+			// Discard the subwoofer channel - DPL2Decode generates a pretty
+			// good 5.0 but not a good 5.1 output.
+			const int dpl2_to_5chan[] = { 0, 1, 2, 4, 5 };
+			for (int i = 0; i < frames; ++i)
+			{
+				for (int j = 0; j < m_channels; ++j)
+				{
+					((float*)buffer)[m_channels * i + j] = floatbuffer_6chan[6 * i + dpl2_to_5chan[j]];
+				}
+			}
 		}
 		else
 		{
@@ -220,18 +231,18 @@ void PulseAudio::WriteCallback(pa_stream* s, size_t length)
 
 void PulseAudio::StateCallback(pa_context* c, void* userdata)
 {
-	PulseAudio* p = (PulseAudio*) userdata;
+	PulseAudio* p = (PulseAudio*)userdata;
 	p->StateCallback(c);
 }
 
 void PulseAudio::UnderflowCallback(pa_stream* s, void* userdata)
 {
-	PulseAudio* p = (PulseAudio*) userdata;
+	PulseAudio* p = (PulseAudio*)userdata;
 	p->UnderflowCallback(s);
 }
 
 void PulseAudio::WriteCallback(pa_stream* s, size_t length, void* userdata)
 {
-	PulseAudio* p = (PulseAudio*) userdata;
+	PulseAudio* p = (PulseAudio*)userdata;
 	p->WriteCallback(s, length);
 }

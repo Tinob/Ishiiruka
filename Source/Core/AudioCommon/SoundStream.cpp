@@ -203,6 +203,14 @@ void SoundStream::SoundLoop()
 				{
 					numsamples = sTouch.receiveSamples(dpl2buffer, numsamples);
 					DPL2Decode(dpl2buffer, numsamples, samplebuffer);
+					// zero-out the subwoofer channel - DPL2Decode generates a pretty
+					// good 5.0 but not a good 5.1 output.  Sadly there is not a 5.0
+					// AL_FORMAT_50CHN32 to make this super-explicit.
+					// DPL2Decode output: LEFTFRONT, RIGHTFRONT, CENTREFRONT, (sub), LEFTREAR, RIGHTREAR
+					for (u32 i = 0; i < numsamples; ++i)
+					{
+						samplebuffer[i*SOUND_SAMPLES_SURROUND + 3 /*sub/lfe*/] = 0.0f;
+					}
 				}
 				else
 				{
