@@ -998,10 +998,18 @@ void Renderer::SetViewport()
 	vp.Y = Y;
 	vp.Width = Wd;
 	vp.Height = Ht;
-
-	// Some games set invalids values for z min and z max so fix them to the max an min alowed and let the shaders do this work
-	vp.MinZ = std::max(0.0f, std::min(1.0f, (xfmem.viewport.farZ - xfmem.viewport.zRange) / 16777216.0f));
-	vp.MaxZ = std::max(0.0f, std::min(1.0f, xfmem.viewport.farZ / 16777216.0f));
+	const bool nonStandartViewport = xfmem.viewport.zRange < 0 || xfmem.viewport.farZ < 0 || xfmem.viewport.farZ > 16777216.0f;
+	if (nonStandartViewport)
+	{
+		vp.MinZ = 0.0f;
+		vp.MaxZ = 1.0f;
+	}
+	else
+	{
+		// Some games set invalids values for z min and z max so fix them to the max an min alowed and let the shaders do this work
+		vp.MinZ = std::max(0.0f, std::min(1.0f, (xfmem.viewport.farZ - xfmem.viewport.zRange) / 16777216.0f));
+		vp.MaxZ = std::max(0.0f, std::min(1.0f, xfmem.viewport.farZ / 16777216.0f));
+	}
 	D3D::dev->SetViewport(&vp);
 }
 

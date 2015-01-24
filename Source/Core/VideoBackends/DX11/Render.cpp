@@ -493,8 +493,14 @@ void Renderer::SetViewport()
 	Ht = (Y + Ht <= GetTargetHeight()) ? Ht : (GetTargetHeight() - Y);
 
 	D3D11_VIEWPORT vp = CD3D11_VIEWPORT(X, Y, Wd, Ht,
-		std::max(0.0f, std::min(1.0f, (xfmem.viewport.farZ - xfmem.viewport.zRange) / 16777216.0f)),
-		std::max(0.0f, std::min(1.0f, xfmem.viewport.farZ / 16777216.0f)));
+		0.0f,
+		1.0f);
+	const bool nonStandartViewport = xfmem.viewport.zRange < 0 || xfmem.viewport.farZ < 0 || xfmem.viewport.farZ > 16777216.0f;
+	if (!nonStandartViewport)
+	{
+		vp.MinDepth = std::max(0.0f, std::min(1.0f, (xfmem.viewport.farZ - xfmem.viewport.zRange) / 16777216.0f));
+		vp.MaxDepth = std::max(0.0f, std::min(1.0f, xfmem.viewport.farZ / 16777216.0f));
+	}	
 	D3D::context->RSSetViewports(1, &vp);
 }
 
