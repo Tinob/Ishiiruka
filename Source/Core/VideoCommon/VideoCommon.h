@@ -2,13 +2,7 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#ifndef _VIDEOCOMMON_H
-#define _VIDEOCOMMON_H
-
-#ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#endif
+#pragma once
 
 #include "Common/Common.h"
 #include "Common/MathUtil.h"
@@ -141,5 +135,3 @@ struct s_svar
 	const unsigned int reg;
 	const unsigned int size;
 };
-
-#endif  // _VIDEOCOMMON_H

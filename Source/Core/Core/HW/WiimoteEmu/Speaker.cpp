@@ -30,13 +30,13 @@ static const s32 yamaha_indexscale[] = {
 
 static s16 av_clip16(s32 a)
 {
-	if ((a + 32768) & ~65535) return (a >> 31) ^ 32767;
+	if ((a+32768) & ~65535) return (a>>31) ^ 32767;
 	else                    return a;
 }
 
 static s32 av_clip(s32 a, s32 amin, s32 amax)
 {
-	if (a < amin) return amin;
+	if      (a < amin) return amin;
 	else if (a > amax) return amax;
 	else               return a;
 }
@@ -54,7 +54,7 @@ static s16 adpcm_yamaha_expand_nibble(ADPCMState& s, u8 nibble)
 std::ofstream ofile;
 WaveFileWriter wav;
 
-void stopdamnwav(){ wav.Stop(); ofile.close(); }
+void stopdamnwav(){wav.Stop();ofile.close();}
 #endif
 
 void Wiimote::SpeakerData(wm_speaker_data* sd)
@@ -135,7 +135,7 @@ void Wiimote::SpeakerData(wm_speaker_data* sd)
 		OpenFStream(ofile, "rmtdump.bin", ofile.binary | ofile.out);
 		wav.Start("rmtdump.wav", 6000/*Common::swap16(m_reg_speaker.sample_rate)*/);
 	}
-	wav.AddMonoSamples(samples.get(), sd->length * 2);
+	wav.AddMonoSamples(samples.get(), sd->length*2);
 	if (ofile.good())
 	{
 		for (int i = 0; i < sd->length; i++)

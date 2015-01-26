@@ -236,6 +236,7 @@
     <ClCompile Include="PowerPC\Jit64\Jit_LoadStorePaired.cpp" />
     <ClCompile Include="PowerPC\Jit64\Jit_Paired.cpp" />
     <ClCompile Include="PowerPC\Jit64\Jit_SystemRegisters.cpp" />
+    <ClCompile Include="PowerPC\Jit64Common\Jit64AsmCommon.cpp" />
     <ClCompile Include="PowerPC\JitCommon\JitAsmCommon.cpp" />
     <ClCompile Include="PowerPC\JitCommon\JitBackpatch.cpp" />
     <ClCompile Include="PowerPC\JitCommon\JitBase.cpp" />

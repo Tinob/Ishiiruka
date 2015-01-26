@@ -478,11 +478,12 @@ void EmuThread()
 	INFO_LOG(CONSOLE, "%s", StopMessage(false, "Shutting down HW").c_str());
 	HW::Shutdown();
 	INFO_LOG(CONSOLE, "%s", StopMessage(false, "HW shutdown").c_str());
-	
+
+	Wiimote::Shutdown();
+
 	Keyboard::Shutdown();
 	Pad::Shutdown();
 
-	Wiimote::Shutdown();
 	g_video_backend->Shutdown();
 	AudioCommon::ShutdownSoundStream();
 
