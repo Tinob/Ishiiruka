@@ -432,7 +432,7 @@ HiresTexture* HiresTexture::Search(
 		buffer_pointer = imgInfo.dst + imgInfo.data_size;
 		maxwidth = maxwidth >> 1;
 		maxheight = maxheight >> 1;
-		if (imgInfo.nummipmaps > 0)
+		if (imgInfo.nummipmaps > 1)
 		{
 			// Using a dds with packed levels
 			// Generate Levels
