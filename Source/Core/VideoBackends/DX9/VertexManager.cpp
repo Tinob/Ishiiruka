@@ -60,7 +60,7 @@ const u32 LINE_PT_OFFSETS_PARAMS_LEN = C_VENVCONST_END - C_PLOFFSETPARAMS;
 
 typedef struct Float_3
 {
-	float x,y,z;
+	float x, y, z;
 }Float_3;
 
 typedef struct Float_4
@@ -79,22 +79,22 @@ typedef struct Float_4
 		z = 0.f;
 		w = 0.f;
 	}
-	float x,y,z,w;
+	float x, y, z, w;
 }Float_4;
 
 typedef struct U8_4
 {
-	u8 x,y,z,w;
+	u8 x, y, z, w;
 }U8_4;
 
 static const float LINE_PT_TEX_OFFSETS[8] = {
-	0.f, 
-	0.0625f, 
-	0.125f, 
-	0.25f, 
-	0.5f, 
-	1.f, 
-	1.f, 
+	0.f,
+	0.0625f,
+	0.125f,
+	0.25f,
+	0.5f,
+	1.f,
+	1.f,
 	1.f
 };
 
@@ -126,7 +126,7 @@ void VertexManager::CreateDeviceObjects()
 	m_vertex_buffers = nullptr;
 	m_index_buffers = nullptr;
 	D3DCAPS9 DeviceCaps = D3D::GetCaps();
-	u32 devicevMaxBufferSize =  DeviceCaps.MaxPrimitiveCount * 3 * DeviceCaps.MaxStreamStride;
+	u32 devicevMaxBufferSize = DeviceCaps.MaxPrimitiveCount * 3 * DeviceCaps.MaxStreamStride;
 	//Calculate Device Dependant size
 	m_vertex_buffer_size = (MAX_VBUFFER_SIZE > devicevMaxBufferSize) ? devicevMaxBufferSize : MAX_VBUFFER_SIZE;
 	m_index_buffer_size = (MAX_IBUFFER_SIZE > DeviceCaps.MaxVertexIndex) ? DeviceCaps.MaxVertexIndex : MAX_IBUFFER_SIZE;
@@ -144,9 +144,9 @@ void VertexManager::CreateDeviceObjects()
 	}
 	for (m_current_vertex_buffer = 0; m_current_vertex_buffer < MAX_VBUFFER_COUNT; m_current_vertex_buffer++)
 	{
-		hr = D3D::dev->CreateVertexBuffer( m_vertex_buffer_size,  D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, 0, D3DPOOL_DEFAULT, &m_vertex_buffers[m_current_vertex_buffer], nullptr );
-		CHECK(hr,"Create vertex buffer ", m_current_vertex_buffer);
-		hr = D3D::dev->CreateIndexBuffer( m_index_buffer_size * sizeof(u16),  D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, D3DFMT_INDEX16, D3DPOOL_DEFAULT, &m_index_buffers[m_current_vertex_buffer], nullptr );		
+		hr = D3D::dev->CreateVertexBuffer(m_vertex_buffer_size, D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, 0, D3DPOOL_DEFAULT, &m_vertex_buffers[m_current_vertex_buffer], nullptr);
+		CHECK(hr, "Create vertex buffer ", m_current_vertex_buffer);
+		hr = D3D::dev->CreateIndexBuffer(m_index_buffer_size * sizeof(u16), D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, D3DFMT_INDEX16, D3DPOOL_DEFAULT, &m_index_buffers[m_current_vertex_buffer], nullptr);
 	}
 	m_buffers_count = m_current_vertex_buffer;
 	m_current_vertex_buffer = 0;
@@ -161,11 +161,11 @@ void VertexManager::CreateDeviceObjects()
 
 void VertexManager::DestroyDeviceObjects()
 {
-	D3D::SetStreamSource( 0, nullptr, 0, 0);
+	D3D::SetStreamSource(0, nullptr, 0, 0);
 	D3D::SetIndices(nullptr);
 	for (int i = 0; i < MAX_VBUFFER_COUNT; i++)
 	{
-		if(m_vertex_buffers)
+		if (m_vertex_buffers)
 		{
 			if (m_vertex_buffers[i])
 			{
@@ -173,7 +173,7 @@ void VertexManager::DestroyDeviceObjects()
 				m_vertex_buffers[i] = nullptr;
 			}
 		}
-		if(m_index_buffers)
+		if (m_index_buffers)
 		{
 			if (m_index_buffers[i])
 			{
@@ -182,10 +182,10 @@ void VertexManager::DestroyDeviceObjects()
 			}
 		}
 	}
-	if(m_vertex_buffers)
-		delete [] m_vertex_buffers;
-	if(m_index_buffers)
-		delete [] m_index_buffers;
+	if (m_vertex_buffers)
+		delete[] m_vertex_buffers;
+	if (m_index_buffers)
+		delete[] m_index_buffers;
 	m_vertex_buffers = nullptr;
 	m_index_buffers = nullptr;
 }
@@ -210,11 +210,11 @@ void VertexManager::PrepareDrawBuffers(u32 stride)
 	u8* p_vertices_base;
 	u8* p_vertices;
 	u16* p_indices;
-	u16* indices =  GetIndexBuffer();
+	u16* indices = GetIndexBuffer();
 	u32 total_data_size = m_total_num_verts * stride;
 	u32 data_size = m_num_verts * stride;
 	u16 current_index = m_num_verts;
-	if(m_index_len)
+	if (m_index_len)
 	{
 		DWORD LockMode = D3DLOCK_NOOVERWRITE;
 		m_vertex_buffer_cursor--;
@@ -223,8 +223,8 @@ void VertexManager::PrepareDrawBuffers(u32 stride)
 		{
 			LockMode = D3DLOCK_DISCARD;
 			m_vertex_buffer_cursor = 0;
-			m_current_vertex_buffer = (m_current_vertex_buffer + 1) % m_buffers_count;		
-		}	
+			m_current_vertex_buffer = (m_current_vertex_buffer + 1) % m_buffers_count;
+		}
 		if (FAILED(m_vertex_buffers[m_current_vertex_buffer]->Lock(m_vertex_buffer_cursor, total_data_size, (VOID**)(&p_vertices_base), LockMode)))
 		{
 			DestroyDeviceObjects();
@@ -235,8 +235,8 @@ void VertexManager::PrepareDrawBuffers(u32 stride)
 		{
 			LockMode = D3DLOCK_DISCARD;
 			m_index_buffer_cursor = 0;
-			m_current_index_buffer = (m_current_index_buffer + 1) % m_buffers_count;		
-		}	
+			m_current_index_buffer = (m_current_index_buffer + 1) % m_buffers_count;
+		}
 		if (FAILED(m_index_buffers[m_current_index_buffer]->Lock(m_index_buffer_cursor * sizeof(u16), m_total_index_len * sizeof(u16), (VOID**)(&p_indices), LockMode)))
 		{
 			DestroyDeviceObjects();
@@ -248,7 +248,7 @@ void VertexManager::PrepareDrawBuffers(u32 stride)
 		{
 			memcpy(p_indices, indices, m_index_len * sizeof(u16));
 		}
-		else if(current_primitive_type == PRIMITIVE_LINES)
+		else if (current_primitive_type == PRIMITIVE_LINES)
 		{
 			for (u32 i = 0; i < (m_index_len - 1); i += 2)
 			{
@@ -258,29 +258,29 @@ void VertexManager::PrepareDrawBuffers(u32 stride)
 				// Get the position in the stream o f the first vertex
 				u32 currentstride = first_index * stride;
 				// Get The first vertex Position data
-				Float_3* base_vertex_0 =  (Float_3*)(s_pBaseBufferPointer + currentstride);
+				Float_3* base_vertex_0 = (Float_3*)(s_pBaseBufferPointer + currentstride);
 				// Get The blendindices data
 				U8_4* blendindices_vertex_0 = (U8_4*)(p_vertices_base + currentstride + stride - sizeof(U8_4));
 				// Get The first vertex Position data
 				currentstride = second_index * stride;
-				Float_3* base_vertex_1 =  (Float_3*)(s_pBaseBufferPointer + currentstride);				
+				Float_3* base_vertex_1 = (Float_3*)(s_pBaseBufferPointer + currentstride);
 				U8_4* blendindices_vertex_1 = (U8_4*)(p_vertices_base + currentstride + stride - sizeof(U8_4));
 
 				// Calculate line orientation
 				// mostly a hack because we are in object space but is better than nothing
 				float dx = base_vertex_1->x - base_vertex_0->x;
 				float dy = base_vertex_1->y - base_vertex_0->y;
-				bool vertical = fabs(dy) >  fabs(dx);
-				bool positive = vertical ? dy >= 0 : dx >= 0;
-				
+				bool horizontal = fabs(dx) > fabs(dy);
+				bool positive = horizontal ? dx > 0 : dy > 0;
+
 				// setup offset index acording to line orientation
-				u8 idx0 = vertical ?
-					(positive ? PLO_POS_LINE_POSITIVE_X : PLO_POS_LINE_NEGATIVE_X) :
-					(positive ? PLO_POS_LINE_NEGATIVE_Y : PLO_POS_LINE_POSITIVE_Y);
-				u8 idx1 = vertical ?
-					(positive ? PLO_POS_LINE_NEGATIVE_X : PLO_POS_LINE_POSITIVE_X) :
-					(positive ? PLO_POS_LINE_POSITIVE_Y : PLO_POS_LINE_NEGATIVE_Y);
-					
+				u8 idx0 = horizontal ?
+					(positive ? PLO_POS_LINE_NEGATIVE_Y : PLO_POS_LINE_POSITIVE_Y) :
+					(positive ? PLO_POS_LINE_POSITIVE_X : PLO_POS_LINE_NEGATIVE_X);
+				u8 idx1 = horizontal ?
+					(positive ? PLO_POS_LINE_POSITIVE_Y : PLO_POS_LINE_NEGATIVE_Y) :
+					(positive ? PLO_POS_LINE_NEGATIVE_X : PLO_POS_LINE_POSITIVE_X);
+
 
 				memcpy(p_vertices, base_vertex_0, stride);
 				p_vertices += stride;
@@ -288,7 +288,7 @@ void VertexManager::PrepareDrawBuffers(u32 stride)
 				memcpy(p_vertices, base_vertex_1, stride);
 				p_vertices += stride;
 				U8_4* blendindices_vertex_3 = (U8_4*)(p_vertices - sizeof(U8_4));
-				
+
 				// Setup Blend Indices
 				blendindices_vertex_0->y = PLO_TEX_MASK_LINE_0_3;
 				blendindices_vertex_0->z = idx0;
@@ -297,7 +297,7 @@ void VertexManager::PrepareDrawBuffers(u32 stride)
 				blendindices_vertex_1->y = PLO_TEX_MASK_LINE_0_3;
 				blendindices_vertex_1->z = idx0;
 				blendindices_vertex_1->w = PLO_ZERO;
-				
+
 				blendindices_vertex_2->y = PLO_TEX_MASK_LINE_0_3;
 				blendindices_vertex_2->z = idx1;
 				blendindices_vertex_2->w = PLO_TEX_LINE;
@@ -305,26 +305,26 @@ void VertexManager::PrepareDrawBuffers(u32 stride)
 				blendindices_vertex_3->y = PLO_TEX_MASK_LINE_0_3;
 				blendindices_vertex_3->z = idx1;
 				blendindices_vertex_3->w = PLO_TEX_LINE;
-				
+
 
 				// Setup new triangle indices
 				*p_indices = first_index;
 				p_indices++;
-				
+
 				*p_indices = current_index;
 				current_index++;
 				p_indices++;
-				
+
 				*p_indices = current_index;
 				p_indices++;
-				
+
 				*p_indices = current_index;
 				current_index++;
 				p_indices++;
-				
+
 				*p_indices = second_index;
 				p_indices++;
-				
+
 				*p_indices = first_index;
 				p_indices++;
 			}
@@ -338,9 +338,9 @@ void VertexManager::PrepareDrawBuffers(u32 stride)
 				// Calculate stream Position
 				int currentstride = pointindex * stride;
 				// Get data Pointer for vertex replication
-				u8* base_vertex =  s_pBaseBufferPointer + currentstride;
-				U8_4* blendindices_vertex_0 =  (U8_4*)(p_vertices_base + currentstride + stride - sizeof(U8_4));
-				
+				u8* base_vertex = s_pBaseBufferPointer + currentstride;
+				U8_4* blendindices_vertex_0 = (U8_4*)(p_vertices_base + currentstride + stride - sizeof(U8_4));
+
 				// Generate Extra vertices
 				memcpy(p_vertices, base_vertex, stride);
 				p_vertices += stride;
@@ -360,7 +360,7 @@ void VertexManager::PrepareDrawBuffers(u32 stride)
 				blendindices_vertex_1->y = PLO_TEX_MASK_POINT_0_3;
 				blendindices_vertex_1->z = PLO_POS_POINT_LEFT_BOTTOM;
 				blendindices_vertex_1->w = PLO_TEX_POINT_X;
-				
+
 				blendindices_vertex_2->y = PLO_TEX_MASK_POINT_0_3;
 				blendindices_vertex_2->z = PLO_POS_POINT_RIGHT_TOP;
 				blendindices_vertex_2->w = PLO_TEX_POINT_Y;
@@ -372,17 +372,17 @@ void VertexManager::PrepareDrawBuffers(u32 stride)
 				// Setup new triangle indices
 				*p_indices = pointindex; // Left Top
 				p_indices++;
-				
+
 				*p_indices = current_index; // Left Bottom
 				current_index++;
 				p_indices++;
-				
+
 				*p_indices = current_index; // Right Top
 				p_indices++;
-				
+
 				*p_indices = current_index; // Right Top
 				p_indices++;
-				
+
 				*p_indices = current_index - 1; // Left Bottom
 				p_indices++;
 				current_index++;
@@ -394,7 +394,7 @@ void VertexManager::PrepareDrawBuffers(u32 stride)
 		m_vertex_buffers[m_current_vertex_buffer]->Unlock();
 		m_index_buffers[m_current_index_buffer]->Unlock();
 	}
-	if(m_last_stride != stride || m_vertex_buffer_cursor == 0)
+	if (m_last_stride != stride || m_vertex_buffer_cursor == 0)
 	{
 		m_last_stride = stride;
 		D3D::SetStreamSource(0, m_vertex_buffers[m_current_vertex_buffer], 0, m_last_stride);
@@ -493,7 +493,7 @@ void VertexManager::vFlush(bool useDstAlpha)
 {
 	// initialize all values for the current flush
 	m_index_len = IndexGenerator::GetIndexLen();
-	m_num_verts = IndexGenerator::GetNumVerts();	
+	m_num_verts = IndexGenerator::GetNumVerts();
 	m_total_num_verts = m_num_verts;
 	m_total_index_len = m_index_len;
 	switch (current_primitive_type)
@@ -517,10 +517,10 @@ void VertexManager::vFlush(bool useDstAlpha)
 	}
 	m_primitives = m_total_index_len / 3;
 	// set global constants
-	
+
 	const bool useDualSource = useDstAlpha && g_ActiveConfig.backend_info.bSupportsDualSourceBlend;
 	const bool forced_early_z = bpmem.UseEarlyDepthTest() && bpmem.zmode.updateenable && bpmem.alpha_test.TestResult() == AlphaTest::UNDETERMINED && !g_ActiveConfig.bFastDepthCalc;
-	DSTALPHA_MODE AlphaMode = forced_early_z ? DSTALPHA_NULL :( useDualSource ? DSTALPHA_DUAL_SOURCE_BLEND : DSTALPHA_NONE);
+	DSTALPHA_MODE AlphaMode = forced_early_z ? DSTALPHA_NULL : (useDualSource ? DSTALPHA_DUAL_SOURCE_BLEND : DSTALPHA_NONE);
 	if (!VertexShaderCache::TestShader())
 	{
 		goto shader_fail;
@@ -528,7 +528,7 @@ void VertexManager::vFlush(bool useDstAlpha)
 	if (!PixelShaderCache::SetShader(AlphaMode))
 	{
 		goto shader_fail;
-	}	
+	}
 	g_renderer->ApplyState(false);
 	if (current_primitive_type != PRIMITIVE_TRIANGLES)
 	{
@@ -547,7 +547,7 @@ void VertexManager::vFlush(bool useDstAlpha)
 			DX9::D3D::dev->SetVertexShaderConstantF(region.first, &buffer[region.first * 4], region.second - region.first + 1);
 		}
 		VertexShaderManager::Clear();
-	}	
+	}
 	if (PixelShaderManager::IsDirty())
 	{
 		const regionvector & regions = PixelShaderManager::GetDirtyRegions();
@@ -561,7 +561,7 @@ void VertexManager::vFlush(bool useDstAlpha)
 	}
 	u32 stride = g_nativeVertexFmt->GetVertexStride();
 	PrepareDrawBuffers(stride);
-	if(forced_early_z)
+	if (forced_early_z)
 	{
 		D3D::ChangeRenderState(D3DRS_COLORWRITEENABLE, 0);
 	}
@@ -599,7 +599,7 @@ void VertexManager::vFlush(bool useDstAlpha)
 	}
 shader_fail:
 	m_index_buffer_cursor += m_total_index_len;
-	m_vertex_buffer_cursor += (m_total_num_verts) * stride;
+	m_vertex_buffer_cursor += (m_total_num_verts)* stride;
 }
 
 void VertexManager::ResetBuffer(u32 stride)
