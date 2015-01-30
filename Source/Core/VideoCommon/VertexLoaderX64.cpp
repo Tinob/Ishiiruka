@@ -86,7 +86,7 @@ OpArg VertexLoaderX64::GetVertexAddr(int array, u64 attribute)
 	}
 }
 
-int VertexLoaderX64::ReadVertex(OpArg data, u64 attribute, int format, int count_in, int count_out, bool dequantize, u8 scaling_exponent, AttributeFormat* native_format)
+int VertexLoaderX64::ReadVertex(OpArg data, u64 attribute, int format, int count_in, int count_out, bool dequantize, u8 scaling_index, AttributeFormat* native_format)
 {
 	static const __m128i shuffle_lut[5][3] = {
 		{ _mm_set_epi32(0xFFFFFFFFL, 0xFFFFFFFFL, 0xFFFFFFFFL, 0xFFFFFF00L),  // 1x u8
@@ -130,7 +130,7 @@ int VertexLoaderX64::ReadVertex(OpArg data, u64 attribute, int format, int count
 		CVTDQ2PS(coords, R(coords));
 
 		if (dequantize)
-			MULPS(coords, M(&scale_factors[scaling_exponent]));
+			MULPS(coords, M(&scale_factors[scaling_index]));
 	}
 
 	OpArg dest = MDisp(dst_reg, m_dst_ofs);
