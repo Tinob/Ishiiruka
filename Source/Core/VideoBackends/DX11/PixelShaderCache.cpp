@@ -26,11 +26,11 @@ bool prevpl = false;
 namespace DX11
 {
 
-PixelShaderCache::PSCache PixelShaderCache::PixelShaders;
-const PixelShaderCache::PSCacheEntry* PixelShaderCache::last_entry;
-PixelShaderUid PixelShaderCache::last_uid;
-PixelShaderUid PixelShaderCache::external_last_uid;
-UidChecker<PixelShaderUid,ShaderCode> PixelShaderCache::pixel_uid_checker;
+PixelShaderCache::PSCache PixelShaderCache::s_pixel_shaders;
+const PixelShaderCache::PSCacheEntry* PixelShaderCache::s_last_entry;
+PixelShaderUid PixelShaderCache::s_last_uid;
+PixelShaderUid PixelShaderCache::s_external_last_uid;
+UidChecker<PixelShaderUid,ShaderCode> PixelShaderCache::s_pixel_uid_checker;
 static HLSLAsyncCompiler *Compiler;
 static Common::SpinLock<true> PixelShadersLock;
 
@@ -469,7 +469,7 @@ void PixelShaderCache::Init()
 	if (g_Config.bEnableShaderDebugging)
 		Clear();
 
-	last_entry = nullptr;
+	s_last_entry = nullptr;
 	PixelShaderManager::DisableDirtyRegions();
 }
 
@@ -477,13 +477,13 @@ void PixelShaderCache::Init()
 void PixelShaderCache::Clear()
 {
 	PixelShadersLock.lock();
-	for (PSCache::iterator iter = PixelShaders.begin(); iter != PixelShaders.end(); iter++)
+	for (PSCache::iterator iter = s_pixel_shaders.begin(); iter != s_pixel_shaders.end(); iter++)
 		iter->second.Destroy();
-	PixelShaders.clear();
+	s_pixel_shaders.clear();
 	PixelShadersLock.unlock();
-	pixel_uid_checker.Invalidate();
+	s_pixel_uid_checker.Invalidate();
 
-	last_entry = nullptr;
+	s_last_entry = nullptr;
 }
 
 // Used in Swap() when AA mode has changed
@@ -533,34 +533,34 @@ void PixelShaderCache::PrepareShader(DSTALPHA_MODE dstAlphaMode,
 		{
 			ShaderCode code;
 			GeneratePixelShaderCodeD3D11(code, dstAlphaMode, components, xfr, bpm);
-			pixel_uid_checker.AddToIndexAndCheck(code, uid, "Pixel", "p");
+			s_pixel_uid_checker.AddToIndexAndCheck(code, uid, "Pixel", "p");
 		}
 #endif
 		// Check if the shader is already set
-		if (last_entry)
+		if (s_last_entry)
 		{
-			if (uid == last_uid)
+			if (uid == s_last_uid)
 			{
 				return;
 			}
 		}
-		last_uid = uid;
+		s_last_uid = uid;
 		GFX_DEBUGGER_PAUSE_AT(NEXT_PIXEL_SHADER_CHANGE, true);
 	}
 	else
 	{
-		if (external_last_uid == uid)
+		if (s_external_last_uid == uid)
 		{
 			return;
 		}
-		external_last_uid = uid;
+		s_external_last_uid = uid;
 	}
 	PixelShadersLock.lock();
-	PSCacheEntry* entry = &PixelShaders[uid];
+	PSCacheEntry* entry = &s_pixel_shaders[uid];
 	PixelShadersLock.unlock();
 	if (ongputhread)
 	{
-		last_entry = entry;
+		s_last_entry = entry;
 	}
 	// Compile only when we have a new instance
 	if (entry->initialized.test_and_set())
@@ -614,7 +614,7 @@ void PixelShaderCache::PrepareShader(DSTALPHA_MODE dstAlphaMode,
 bool PixelShaderCache::TestShader()
 {
 	int count = 0;
-	while (!last_entry->compiled)
+	while (!s_last_entry->compiled)
 	{
 		Compiler->ProcCompilationResults();
 		if (g_ActiveConfig.bFullAsyncShaderCompilation)
@@ -623,7 +623,7 @@ bool PixelShaderCache::TestShader()
 		}
 		Common::cYield(count++);
 	}
-	return last_entry->shader != nullptr && last_entry->compiled;
+	return s_last_entry->shader != nullptr && s_last_entry->compiled;
 }
 
 void PixelShaderCache::PushByteCode(const PixelShaderUid &uid, const void* bytecode, unsigned int bytecodelen, PixelShaderCache::PSCacheEntry* entry)
@@ -635,13 +635,13 @@ void PixelShaderCache::PushByteCode(const PixelShaderUid &uid, const void* bytec
 		// TODO: Somehow make the debug name a bit more specific
 		D3D::SetDebugObjectName(entry->shader.get(), "a pixel shader of PixelShaderCache");
 		INCSTAT(stats.numPixelShadersCreated);
-		SETSTAT(stats.numPixelShadersAlive, PixelShaders.size());
+		SETSTAT(stats.numPixelShadersAlive, s_pixel_shaders.size());
 	}
 }
 
 void PixelShaderCache::InsertByteCode(const PixelShaderUid &uid, const void* bytecode, unsigned int bytecodelen)
 {
-	PSCacheEntry* entry = &PixelShaders[uid];
+	PSCacheEntry* entry = &s_pixel_shaders[uid];
 	entry->initialized.test_and_set();
 	PushByteCode(uid, bytecode, bytecodelen, entry);
 }

@@ -28,7 +28,7 @@ public:
 	static bool TestShader();
 	static void InsertByteCode(const PixelShaderUid &uid, const void* bytecode, unsigned int bytecodelen);
 
-	static ID3D11PixelShader* GetActiveShader() { return last_entry->shader.get(); }
+	static ID3D11PixelShader* GetActiveShader() { return s_last_entry->shader.get(); }
 	static ID3D11Buffer* &GetConstantBuffer();
 
 	static ID3D11PixelShader* GetColorMatrixProgram(bool multisampled);
@@ -57,11 +57,11 @@ private:
 	static inline void PushByteCode(const PixelShaderUid &uid, const void* bytecode, unsigned int bytecodelen, PSCacheEntry* entry);
 	typedef std::unordered_map<PixelShaderUid, PSCacheEntry, PixelShaderUid::ShaderUidHasher> PSCache;
 
-	static PSCache PixelShaders;
-	static const PSCacheEntry* last_entry;
-	static PixelShaderUid last_uid;
-	static PixelShaderUid external_last_uid;
-	static UidChecker<PixelShaderUid,ShaderCode> pixel_uid_checker;
+	static PSCache s_pixel_shaders;
+	static const PSCacheEntry* s_last_entry;
+	static PixelShaderUid s_last_uid;
+	static PixelShaderUid s_external_last_uid;
+	static UidChecker<PixelShaderUid,ShaderCode> s_pixel_uid_checker;
 };
 
 }  // namespace DX11

@@ -22,8 +22,8 @@ public:
 		const XFMemory &xfr, 
 		const BPMemory &bpm, bool ongputhread);
 	static bool TestShader();
-	static ID3D11VertexShader* GetActiveShader() { return last_entry->shader.get(); }
-	static D3DBlob const& GetActiveShaderBytecode() { return last_entry->bytecode; }
+	static ID3D11VertexShader* GetActiveShader() { return s_last_entry->shader.get(); }
+	static D3DBlob const& GetActiveShaderBytecode() { return s_last_entry->bytecode; }
 	static ID3D11Buffer* &GetConstantBuffer();
 
 	static ID3D11VertexShader* GetSimpleVertexShader();
@@ -60,11 +60,11 @@ private:
 	static inline void PushByteCode(const VertexShaderUid &uid, D3DBlob&& bcodeblob, VSCacheEntry* entry);
 	typedef std::unordered_map<VertexShaderUid, VSCacheEntry, VertexShaderUid::ShaderUidHasher> VSCache;
 	
-	static VSCache vshaders;
-	static const VSCacheEntry* last_entry;
-	static VertexShaderUid last_uid;
-	static VertexShaderUid external_last_uid;
-	static UidChecker<VertexShaderUid,ShaderCode> vertex_uid_checker;
+	static VSCache s_vshaders;
+	static const VSCacheEntry* s_last_entry;
+	static VertexShaderUid s_last_uid;
+	static VertexShaderUid s_external_last_uid;
+	static UidChecker<VertexShaderUid,ShaderCode> s_vertex_uid_checker;
 };
 
 }  // namespace DX11

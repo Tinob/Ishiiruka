@@ -18,11 +18,11 @@
 
 namespace DX11 {
 
-VertexShaderCache::VSCache VertexShaderCache::vshaders;
-const VertexShaderCache::VSCacheEntry *VertexShaderCache::last_entry;
-VertexShaderUid VertexShaderCache::last_uid;
-VertexShaderUid VertexShaderCache::external_last_uid;
-UidChecker<VertexShaderUid,ShaderCode> VertexShaderCache::vertex_uid_checker;
+VertexShaderCache::VSCache VertexShaderCache::s_vshaders;
+const VertexShaderCache::VSCacheEntry *VertexShaderCache::s_last_entry;
+VertexShaderUid VertexShaderCache::s_last_uid;
+VertexShaderUid VertexShaderCache::s_external_last_uid;
+UidChecker<VertexShaderUid,ShaderCode> VertexShaderCache::s_vertex_uid_checker;
 static HLSLAsyncCompiler *Compiler;
 static Common::SpinLock<true> vshadersLock;
 
@@ -154,20 +154,20 @@ void VertexShaderCache::Init()
 	if (g_Config.bEnableShaderDebugging)
 		Clear();
 
-	last_entry = NULL;
+	s_last_entry = NULL;
 	VertexShaderManager::DisableDirtyRegions();
 }
 
 void VertexShaderCache::Clear()
 {
 	vshadersLock.lock();
-	for (VSCache::iterator iter = vshaders.begin(); iter != vshaders.end(); ++iter)
+	for (VSCache::iterator iter = s_vshaders.begin(); iter != s_vshaders.end(); ++iter)
 		iter->second.Destroy();
-	vshaders.clear();
+	s_vshaders.clear();
 	vshadersLock.unlock();
-	vertex_uid_checker.Invalidate();
+	s_vertex_uid_checker.Invalidate();
 
-	last_entry = NULL;
+	s_last_entry = NULL;
 }
 
 void VertexShaderCache::Shutdown()
@@ -203,33 +203,33 @@ void VertexShaderCache::PrepareShader(
 		{
 			ShaderCode code;
 			GenerateVertexShaderCodeD3D11(code, components, xfr, bpm);
-			vertex_uid_checker.AddToIndexAndCheck(code, uid, "Vertex", "v");
+			s_vertex_uid_checker.AddToIndexAndCheck(code, uid, "Vertex", "v");
 		}
 	#endif
-		if (last_entry)
+		if (s_last_entry)
 		{
-			if (uid == last_uid)
+			if (uid == s_last_uid)
 			{
 				return;
 			}
 		}
-		last_uid = uid;
+		s_last_uid = uid;
 		GFX_DEBUGGER_PAUSE_AT(NEXT_VERTEX_SHADER_CHANGE, true);
 	}
 	else
 	{
-		if (external_last_uid == uid)
+		if (s_external_last_uid == uid)
 		{
 			return;
 		}
-		external_last_uid = uid;
+		s_external_last_uid = uid;
 	}
 	vshadersLock.lock();
-	VSCacheEntry* entry = &vshaders[uid];
+	VSCacheEntry* entry = &s_vshaders[uid];
 	vshadersLock.unlock();
 	if (ongputhread)
 	{
-		last_entry = entry;
+		s_last_entry = entry;
 	}
 	// Compile only when we have a new instance
 	if (entry->initialized.test_and_set())
@@ -280,7 +280,7 @@ void VertexShaderCache::PrepareShader(
 bool VertexShaderCache::TestShader()
 {
 	int count = 0;
-	while (!last_entry->compiled)
+	while (!s_last_entry->compiled)
 	{
 		Compiler->ProcCompilationResults();
 		if (g_ActiveConfig.bFullAsyncShaderCompilation)
@@ -289,7 +289,7 @@ bool VertexShaderCache::TestShader()
 		}
 		Common::cYield(count++);
 	}
-	return last_entry->shader != nullptr && last_entry->compiled;
+	return s_last_entry->shader != nullptr && s_last_entry->compiled;
 }
 
 
@@ -303,13 +303,13 @@ void VertexShaderCache::PushByteCode(const VertexShaderUid &uid, D3DBlob&& bcode
 		// TODO: Somehow make the debug name a bit more specific
 		D3D::SetDebugObjectName(entry->shader.get(), "a vertex shader of VertexShaderCache");
 		INCSTAT(stats.numVertexShadersCreated);
-		SETSTAT(stats.numVertexShadersAlive, (int)vshaders.size());
+		SETSTAT(stats.numVertexShadersAlive, (int)s_vshaders.size());
 	}
 }
 
 void VertexShaderCache::InsertByteCode(const VertexShaderUid &uid, D3DBlob&& bcodeblob)
 {
-	VSCacheEntry* entry = &vshaders[uid];
+	VSCacheEntry* entry = &s_vshaders[uid];
 	entry->initialized.test_and_set();
 	PushByteCode(uid, std::move(bcodeblob), entry);
 }
