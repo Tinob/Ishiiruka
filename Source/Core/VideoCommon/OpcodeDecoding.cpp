@@ -173,29 +173,38 @@ inline u32 Decode(const u8* end)
 			// load vertices
 			if (sizeCheck && distance < GX_DRAW_PRIMITIVES_SIZE)
 				return 0;
-			VertexLoaderParameters parameters;
-			parameters.count = g_VideoData.Read<u16>();
+			
+			u32 count = g_VideoData.Read<u16>();
 			distance -= GX_DRAW_PRIMITIVES_SIZE;
-			parameters.buf_size = distance;			
-			parameters.primitive = (cmd_byte & GX_PRIMITIVE_MASK) >> GX_PRIMITIVE_SHIFT;
-			parameters.vtx_attr_group = cmd_byte & GX_VAT_MASK;
-			parameters.needloaderrefresh = (g_main_cp_state.attr_dirty & (1 << parameters.vtx_attr_group)) != 0;
-			parameters.skip_draw = g_bSkipCurrentFrame;
-			parameters.VtxDesc = &g_main_cp_state.vtx_desc;
-			parameters.VtxAttr = &g_main_cp_state.vtx_attr[parameters.vtx_attr_group];
-			parameters.source = g_VideoData.GetReadPosition();			
-			g_main_cp_state.attr_dirty &= ~(1 << parameters.vtx_attr_group);
-			u32 readsize = 0;
-			u32 writesize = 0;
-			if (VertexLoaderManager::ConvertVertices(parameters, readsize, writesize))
+			if (count)
 			{
-				cycles = GX_DRAW_PRIMITIVES_CYCLES;
-				g_VideoData.ReadSkip(readsize);
-				VertexManager::s_pCurBufferPointer += writesize;
+				VertexLoaderParameters parameters;
+				parameters.count = count;				
+				parameters.buf_size = distance;
+				parameters.primitive = (cmd_byte & GX_PRIMITIVE_MASK) >> GX_PRIMITIVE_SHIFT;
+				parameters.vtx_attr_group = cmd_byte & GX_VAT_MASK;
+				parameters.needloaderrefresh = (g_main_cp_state.attr_dirty & (1 << parameters.vtx_attr_group)) != 0;
+				parameters.skip_draw = g_bSkipCurrentFrame;
+				parameters.VtxDesc = &g_main_cp_state.vtx_desc;
+				parameters.VtxAttr = &g_main_cp_state.vtx_attr[parameters.vtx_attr_group];
+				parameters.source = g_VideoData.GetReadPosition();
+				g_main_cp_state.attr_dirty &= ~(1 << parameters.vtx_attr_group);
+				u32 readsize = 0;
+				u32 writesize = 0;
+				if (VertexLoaderManager::ConvertVertices(parameters, readsize, writesize))
+				{
+					cycles = GX_NOP_CYCLES + GX_DRAW_PRIMITIVES_CYCLES * parameters.count;
+					g_VideoData.ReadSkip(readsize);
+					VertexManager::s_pCurBufferPointer += writesize;
+				}
+				else
+				{
+					return 0;
+				}
 			}
 			else
 			{
-				return 0;
+				cycles = GX_NOP_CYCLES;
 			}
 		}
 		else

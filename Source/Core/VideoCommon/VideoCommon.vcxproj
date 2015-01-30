@@ -95,7 +95,10 @@
     <ClCompile Include="TextureConversionShaderGL.cpp" />
     <ClCompile Include="TextureUtil.cpp" />
     <ClCompile Include="VertexLoader.cpp" />
+    <ClCompile Include="VertexLoaderBase.cpp" />
+    <ClCompile Include="VertexLoaderCompiled.cpp" />
     <ClCompile Include="VertexLoaderManager.cpp" />
+    <ClCompile Include="VertexLoaderX64.cpp" />
     <ClCompile Include="VertexLoader_Color.cpp" />
     <ClCompile Include="VertexLoader_Mtx.cpp" />
     <ClCompile Include="VertexLoader_Normal.cpp" />
@@ -170,7 +173,10 @@
     <ClInclude Include="TextureDecoder.h" />
     <ClInclude Include="TextureUtil.h" />
     <ClInclude Include="VertexLoader.h" />
+    <ClInclude Include="VertexLoaderBase.h" />
+    <ClInclude Include="VertexLoaderCompiled.h" />
     <ClInclude Include="VertexLoaderManager.h" />
+    <ClInclude Include="VertexLoaderX64.h" />
     <ClInclude Include="VertexLoader_Color.h" />
     <ClInclude Include="VertexLoader_ColorFuncs.h" />
     <ClInclude Include="VertexLoader_Mtx.h" />

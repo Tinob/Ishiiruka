@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "VideoCommon/VertexLoader.h"
+#include "VideoCommon/NativeVertexFormat.h"
 
 // Bounding Box manager
 

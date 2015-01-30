@@ -196,6 +196,15 @@
     <ClCompile Include="TextureConversionShaderGL.cpp">
       <Filter>Shader Generators</Filter>
     </ClCompile>
+    <ClCompile Include="VertexLoaderBase.cpp">
+      <Filter>Vertex Loading</Filter>
+    </ClCompile>
+    <ClCompile Include="VertexLoaderCompiled.cpp">
+      <Filter>Vertex Loading</Filter>
+    </ClCompile>
+    <ClCompile Include="VertexLoaderX64.cpp">
+      <Filter>Vertex Loading</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommandProcessor.h" />
@@ -420,6 +429,15 @@
     </ClInclude>
     <ClInclude Include="PostProcessing.h">
       <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="VertexLoaderBase.h">
+      <Filter>Vertex Loading</Filter>
+    </ClInclude>
+    <ClInclude Include="VertexLoaderCompiled.h">
+      <Filter>Vertex Loading</Filter>
+    </ClInclude>
+    <ClInclude Include="VertexLoaderX64.h">
+      <Filter>Vertex Loading</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

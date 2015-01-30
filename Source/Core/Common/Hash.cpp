@@ -86,11 +86,11 @@ u32 HashAdler32(const u8* data, size_t len)
 
 // Stupid hash - but can't go back now :)
 // Don't use for new things. At least it's reasonably fast.
-u32 HashEctor(const u8* ptr, int length)
+u32 HashEctor(const u8* ptr, u32 length)
 {
 	u32 crc = 0;
 
-	for (int i = 0; i < length; i++)
+	for (u32 i = 0; i < length; i++)
 	{
 		crc ^= ptr[i];
 		crc = (crc << 3) | (crc >> 29);
@@ -103,7 +103,7 @@ u32 HashEctor(const u8* ptr, int length)
 #if _ARCH_64
 
 // CRC32 hash using the SSE4.2 instruction
-u64 GetCRC32(const u8 *src, int len, u32 samples)
+u64 GetCRC32(const u8 *src, u32 len, u32 samples)
 {
 #if _M_SSE >= 0x402
 	u64 h[4] = { len, 0, 0, 0 };
@@ -137,7 +137,7 @@ u64 GetCRC32(const u8 *src, int len, u32 samples)
 #endif
 }
 
-u64 GetXXHash(const u8 *src, int len, u32 samples)
+u64 GetXXHash(const u8 *src, u32 len, u32 samples)
 {
 	return XXH64(src, len, samples);
 }
@@ -149,7 +149,7 @@ u64 GetXXHash(const u8 *src, int len, u32 samples)
  * changed, make sure this one is still used when the legacy parameter is
  * true.
  */
-u64 GetHashHiresTexture(const u8 *src, int len, u32 samples)
+u64 GetHashHiresTexture(const u8 *src, u32 len, u32 samples)
 {
 	const u64 m = 0xc6a4a7935bd1e995;
 	u64 h = len * m;
@@ -193,7 +193,7 @@ u64 GetHashHiresTexture(const u8 *src, int len, u32 samples)
 }
 #else
 // CRC32 hash using the SSE4.2 instruction
-u64 GetCRC32(const u8 *src, int len, u32 samples)
+u64 GetCRC32(const u8 *src, u32 len, u32 samples)
 {
 #if _M_SSE >= 0x402
 	u32 h = len;
@@ -226,7 +226,7 @@ u64 GetXXHash(const u8 *src, int len, u32 samples)
  * 64-bit version. Until someone can make a new version of the 32-bit one that
  * makes identical hashes, this is just a c/p of the 64-bit one.
  */
-u64 GetHashHiresTexture(const u8 *src, int len, u32 samples)
+u64 GetHashHiresTexture(const u8 *src, u32 len, u32 samples)
 {
 	const u64 m = 0xc6a4a7935bd1e995ULL;
 	u64 h = len * m;
@@ -270,9 +270,9 @@ u64 GetHashHiresTexture(const u8 *src, int len, u32 samples)
 }
 #endif
 
-static u64(*ptrHashFunction)(const u8 *src, int len, u32 samples) = &GetXXHash;
+static u64(*ptrHashFunction)(const u8 *src, u32 len, u32 samples) = &GetXXHash;
 
-u64 GetHash64(const u8 *src, int len, u32 samples)
+u64 GetHash64(const u8 *src, u32 len, u32 samples)
 {
 	return ptrHashFunction(src, len, samples);
 }

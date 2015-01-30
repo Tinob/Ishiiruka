@@ -52,7 +52,7 @@ enum GxOpcodesCycles : u32
 	GX_CMD_UNKNOWN_METRICS_CYCLES = 6,
 	GX_CMD_INVL_VC_CYCLES = 6,
 	GX_LOAD_BP_REG_CYCLES = 12,
-	GX_DRAW_PRIMITIVES_CYCLES = 1600
+	GX_DRAW_PRIMITIVES_CYCLES = 12 // 4 GPU ticks per vertex, 3 CPU ticks per GPU tick
 };
 
 enum

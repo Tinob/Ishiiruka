@@ -97,7 +97,7 @@ void D3DVertexFormat::Initialize(const PortableVertexDeclaration &_vtx_decl)
 	if (format->enable)
 	{
 		// So, here we go. First position:		
-		m_elements[elem_idx].Offset = 0;  // Positions are always first, at position 0. Always float3.
+		m_elements[elem_idx].Offset = format->offset;
 		m_elements[elem_idx].Type = D3DDECLTYPE_FLOAT3;
 		m_elements[elem_idx].Usage = D3DDECLUSAGE_POSITION;
 		++elem_idx;
@@ -142,11 +142,14 @@ void D3DVertexFormat::Initialize(const PortableVertexDeclaration &_vtx_decl)
 		}
 	}
 
-	m_elements[elem_idx].Offset = _vtx_decl.posmtx.offset;
-	m_elements[elem_idx].Usage = D3DDECLUSAGE_BLENDINDICES;
-	m_elements[elem_idx].Type = D3DDECLTYPE_D3DCOLOR;
-	m_elements[elem_idx].UsageIndex = 0;
-	++elem_idx;
+	if (_vtx_decl.posmtx.enable)
+	{
+		m_elements[elem_idx].Offset = _vtx_decl.posmtx.offset;
+		m_elements[elem_idx].Usage = D3DDECLUSAGE_BLENDINDICES;
+		m_elements[elem_idx].Type = D3DDECLTYPE_D3DCOLOR;
+		m_elements[elem_idx].UsageIndex = 0;
+		++elem_idx;
+	}
 
 	// End marker
 	m_elements[elem_idx].Stream = 0xff;

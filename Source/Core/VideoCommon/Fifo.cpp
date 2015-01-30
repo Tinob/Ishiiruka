@@ -80,11 +80,11 @@ void Fifo_PauseAndLock(bool doLock, bool unpauseOnUnlock)
 
 void Fifo_Init()
 {
-	videoBuffer = (u8*)AllocateMemoryPages(FIFO_SIZE);
+	videoBuffer = (u8*)AllocateMemoryPages(FIFO_SIZE + 16);
 	size = 0;
 	GpuRunningState = false;
 	Common::AtomicStore(CommandProcessor::VITicks, CommandProcessor::m_cpClockOrigin);
-	videoBufferSC = (u8*)AllocateMemoryPages(FIFO_SIZE);
+	videoBufferSC = (u8*)AllocateMemoryPages(FIFO_SIZE + 16);
 	sizeSC = 0;
 	CPReadFifoSC = -1;
 	CPBaseFifoSC = -1;
@@ -94,8 +94,8 @@ void Fifo_Init()
 void Fifo_Shutdown()
 {
 	if (GpuRunningState) PanicAlert("Fifo shutting down while active");
-	FreeMemoryPages(videoBuffer, FIFO_SIZE);
-	FreeMemoryPages(videoBufferSC, FIFO_SIZE);
+	FreeMemoryPages(videoBuffer, FIFO_SIZE + 16);
+	FreeMemoryPages(videoBufferSC, FIFO_SIZE + 16);
 	videoBuffer = nullptr;
 	videoBufferSC = nullptr;
 }
