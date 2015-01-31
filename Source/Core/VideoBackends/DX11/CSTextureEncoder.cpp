@@ -1046,7 +1046,7 @@ size_t CSTextureEncoder::Encode(u8* dst, unsigned int dstFormat,
 		D3D11_MAPPED_SUBRESOURCE map = { 0 };
 		while ((hr = D3D::context->Map(m_outStage.get(), 0, D3D11_MAP_READ, D3D11_MAP_FLAG_DO_NOT_WAIT, &map)) != S_OK && hr == DXGI_ERROR_WAS_STILL_DRAWING)
 		{
-			//D3D::context->Flush();
+			Common::YieldCPU();
 		}
 
 		CHECK(SUCCEEDED(hr), "map staging buffer (0x%x)", hr);
