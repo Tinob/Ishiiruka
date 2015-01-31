@@ -717,8 +717,8 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 			// use the texture input of the last texture stage (tex_t), hopefully this has been read and is in correct format...
 			out.Write("zCoord = dot(" I_ZBIAS"[0].xyzw, tex_t.xyzw * (1.0/255.0)) + " I_ZBIAS "[1].w %s;\n",
 				(bpm.ztex2.op == ZTEXTURE_ADD) ? "+ zCoord" : "");
-			// U24 overflow emulation
-			out.Write("zCoord = zCoord > 1.0f ? (zCoord - 1.0f) : zCoord;\n");
+			// U24 overflow emulation : disabled find out why this make nvidia compiler crasy
+			// out.Write("zCoord = zCoord > 1.0f ? (zCoord - 1.0f) : zCoord;\n");
 		}
 		if (per_pixel_depth && bpm.UseLateDepthTest())
 		{
