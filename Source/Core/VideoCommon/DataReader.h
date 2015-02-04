@@ -86,7 +86,7 @@ public:
 		Rbuffer = (const u8*)src;
 	}
 protected:
-	const u8 *Rbuffer;
+	const u8* __restrict Rbuffer;
 };
 
 class DataWriter
@@ -115,7 +115,7 @@ public:
 		Wbuffer = destination;
 	}
 protected:
-	u8 *Wbuffer;
+	u8* __restrict Wbuffer;
 };
 
 extern DataReader g_VideoData;
