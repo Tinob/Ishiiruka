@@ -115,9 +115,6 @@
     <ClInclude Include="PerfQuery.h">
       <Filter>Render</Filter>
     </ClInclude>
-    <ClInclude Include="D3DWrapDeviceContext.h">
-      <Filter>D3D</Filter>
-    </ClInclude>
     <ClInclude Include="LineAndPointGeometryShader.h">
       <Filter>Render</Filter>
     </ClInclude>

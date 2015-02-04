@@ -27,7 +27,7 @@ protected:
 	virtual void ResetBuffer(u32 stride) override;
 	virtual u16* GetIndexBuffer() override { return &LocalIBuffer[0]; }
 private:
-	
+
 	void PrepareDrawBuffers(u32 stride);
 	void Draw(u32 stride);
 	// temp

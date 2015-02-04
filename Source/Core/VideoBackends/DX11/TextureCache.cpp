@@ -245,7 +245,6 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, u32 dstFormat,
 	if (type != TCET_EC_DYNAMIC || g_ActiveConfig.bCopyEFBToTexture)
 	{
 		g_renderer->ResetAPIState();
-		D3D::context->OMSetRenderTargets(1, &texture->GetRTV(), nullptr);
 		// stretch picture with increased internal resolution
 		const D3D11_VIEWPORT vp = CD3D11_VIEWPORT(0.f, 0.f, (float)config.width, (float)config.height);
 		D3D::context->RSSetViewports(1, &vp);
@@ -274,7 +273,7 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, u32 dstFormat,
 
 		// if texture is currently in use, it needs to be temporarily unset
 		u32 textureSlotMask = D3D::stateman->UnsetTexture(texture->GetSRV());
-
+		D3D::context->OMSetRenderTargets(1, &texture->GetRTV(), nullptr);
 		// Create texture copy
 		D3D::drawShadedTexQuad(
 			(srcFormat == PEControl::Z24) ? FramebufferManager::GetEFBDepthTexture()->GetSRV() : FramebufferManager::GetEFBColorTexture()->GetSRV(),
@@ -285,9 +284,6 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, u32 dstFormat,
 		D3D::context->OMSetRenderTargets(1, &FramebufferManager::GetEFBColorTexture()->GetRTV(), FramebufferManager::GetEFBDepthTexture()->GetDSV());
 	
 		g_renderer->RestoreAPIState();
-
-		// Restore old texture in all previously used slots, if any
-		D3D::stateman->SetTextureByMask(textureSlotMask, texture->GetSRV());
 	}
 
 	if (!g_ActiveConfig.bCopyEFBToTexture)

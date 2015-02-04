@@ -82,7 +82,6 @@
     <ClInclude Include="D3DState.h" />
     <ClInclude Include="D3DTexture.h" />
     <ClInclude Include="D3DUtil.h" />
-    <ClInclude Include="D3DWrapDeviceContext.h" />
     <ClInclude Include="FramebufferManager.h" />
     <ClInclude Include="Globals.h" />
     <ClInclude Include="LineAndPointGeometryShader.h" />

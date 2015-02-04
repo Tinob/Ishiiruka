@@ -115,8 +115,6 @@ namespace D3D
 				m_dirtyFlags |= DirtyFlag_Texture0 << index;
 			
 			m_pending.textures[index] = texture;
-			// Add this line to fix Mario sunshine is broken on master to
-			D3D::context->PSSetShaderResources(index, 1, &texture);
 		}
 
 		void SetSampler(u32 index, ID3D11SamplerState* sampler)

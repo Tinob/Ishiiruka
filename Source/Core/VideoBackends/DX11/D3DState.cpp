@@ -155,8 +155,7 @@ namespace D3D
 				// TODO: bit scan through dirty flags
 				if (m_current.textures[i] != m_pending.textures[i])
 				{
-					// commnet this line to fix Mario sunshine is broken on master
-					//D3D::context->PSSetShaderResources(i, 1, &m_pending.textures[i]);
+					D3D::context->PSSetShaderResources(i, 1, &m_pending.textures[i]);
 					m_current.textures[i] = m_pending.textures[i];
 				}
 			}

@@ -1155,7 +1155,7 @@ void Renderer::_SetBlendMode(bool forceUpdate)
 		(target_has_alpha) ? D3DBLEND_INVDESTALPHA : D3DBLEND_ZERO
 	};
 
-	if (bpmem.blendmode.logicopenable)
+	if (bpmem.blendmode.logicopenable && !bpmem.blendmode.blendenable && !forceUpdate)
 	{
 		D3D::SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE , false);
 		return;
