@@ -21,8 +21,8 @@ public:
 	static void DoState(PointerWrap &p);
 	static float* GetBufferToUpdate(u32 const_number, u32 size);
 	static const float* GetBuffer();
-	static bool IsDirty();
-	static void Clear();
+	static inline bool IsDirty() { return m_buffer.IsDirty(); }
+	static inline void Clear() { m_buffer.Clear(); }
 	static void EnableDirtyRegions();
 	static void DisableDirtyRegions();
 	static const regionvector &GetDirtyRegions();

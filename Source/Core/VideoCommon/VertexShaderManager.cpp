@@ -201,19 +201,9 @@ float* VertexShaderManager::GetBufferToUpdate(u32 const_number, u32 size)
 	return m_buffer.GetBufferToUpdate<float>(const_number, size);
 }
 
-bool VertexShaderManager::IsDirty()
-{
-	return m_buffer.IsDirty();
-}
-
 const regionvector &VertexShaderManager::GetDirtyRegions()
 {
 	return m_buffer.GetRegions();
-}
-
-void VertexShaderManager::Clear()
-{
-	m_buffer.Clear();
 }
 
 void VertexShaderManager::EnableDirtyRegions()

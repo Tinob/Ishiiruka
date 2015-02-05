@@ -68,7 +68,7 @@ VertexManager::VertexManager()
 	s_pEndBufferPointer = s_pBaseBufferPointer + LocalVBuffer.size();
 
 	LocalIBuffer.resize(MAXIBUFFERSIZE);
-
+	m_index_buffer_start = &LocalIBuffer[0];
 	CreateDeviceObjects();
 }
 
@@ -108,7 +108,7 @@ void VertexManager::PrepareDrawBuffers(u32 stride)
 
 	D3D::context->Map(m_buffers[m_currentBuffer].get(), 0, MapType, 0, &map);
 	u8* mappedData = reinterpret_cast<u8*>(map.pData);
-	memcpy(mappedData + m_indexDrawOffset, GetIndexBuffer(), indexBufferSize);
+	memcpy(mappedData + m_indexDrawOffset, m_index_buffer_start, indexBufferSize);
 	memcpy(mappedData + m_vertexDrawOffset, s_pBaseBufferPointer, vertexBufferSize);
 	D3D::context->Unmap(m_buffers[m_currentBuffer].get(), 0);
 
@@ -227,7 +227,7 @@ void VertexManager::vFlush(bool useDstAlpha)
 void VertexManager::ResetBuffer(u32 stride)
 {
 	s_pCurBufferPointer = s_pBaseBufferPointer;
-	IndexGenerator::Start(GetIndexBuffer());
+	IndexGenerator::Start(m_index_buffer_start);
 }
 
 }  // namespace

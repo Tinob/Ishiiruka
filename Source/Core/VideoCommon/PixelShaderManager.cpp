@@ -72,19 +72,9 @@ float* PixelShaderManager::GetBufferToUpdate(u32 const_number, u32 size)
 	return m_buffer.GetBufferToUpdate<float>(const_number, size);
 }
 
-bool PixelShaderManager::IsDirty()
-{
-	return m_buffer.IsDirty();
-}
-
 const regionvector &PixelShaderManager::GetDirtyRegions()
 {
 	return m_buffer.GetRegions();
-}
-
-void PixelShaderManager::Clear()
-{
-	m_buffer.Clear();
 }
 
 void PixelShaderManager::EnableDirtyRegions()
