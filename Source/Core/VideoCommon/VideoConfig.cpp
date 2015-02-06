@@ -240,6 +240,8 @@ void VideoConfig::GameIniLoad()
 
 void VideoConfig::VerifyValidity()
 {
+	// Disable while is unstable
+	bEnableOpenCL = false;
 	// TODO: Check iMaxAnisotropy value
 	if (iAdapter < 0 || iAdapter > ((int)backend_info.Adapters.size() - 1)) iAdapter = 0;
 	if (iMultisampleMode < 0 || iMultisampleMode >= (int)backend_info.AAModes.size()) iMultisampleMode = 0;
