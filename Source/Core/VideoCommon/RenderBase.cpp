@@ -103,7 +103,7 @@ Renderer::~Renderer()
 	efb_scale_numeratorX = efb_scale_numeratorY = efb_scale_denominatorX = efb_scale_denominatorY = ssaa_multiplier = 1;
 
 #if defined _WIN32 || defined HAVE_LIBAV
-	if (g_ActiveConfig.bDumpFrames && bLastFrameDumped && bAVIDumping)
+	if (SConfig::GetInstance().m_DumpFrames && bLastFrameDumped && bAVIDumping)
 		AVIDump::Stop();
 #else
 	if (pFrameDump.IsOpen())

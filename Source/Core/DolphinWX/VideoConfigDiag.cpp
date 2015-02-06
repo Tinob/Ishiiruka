@@ -643,7 +643,6 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title, con
 	szr_utility->Add(CreateCheckBox(page_advanced, _("Dump Vertex Loaders"), wxGetTranslation(dump_VertexTranslators_desc), vconfig.bDumpVertexLoaders));
 	szr_utility->Add(CreateCheckBox(page_advanced, _("Load Custom Textures"), wxGetTranslation(load_hires_textures_desc), vconfig.bHiresTextures));
 	szr_utility->Add(CreateCheckBox(page_advanced, _("Dump EFB Target"), wxGetTranslation(dump_efb_desc), vconfig.bDumpEFBTarget));
-	szr_utility->Add(CreateCheckBox(page_advanced, _("Dump Frames"), wxGetTranslation(dump_frames_desc), vconfig.bDumpFrames));
 	szr_utility->Add(CreateCheckBox(page_advanced, _("Free Look"), wxGetTranslation(free_look_desc), vconfig.bFreeLook));
 #if !defined WIN32 && defined HAVE_LIBAV
 	szr_utility->Add(CreateCheckBox(page_advanced, _("Frame Dumps use FFV1"), wxGetTranslation(use_ffv1_desc), vconfig.bUseFFV1));

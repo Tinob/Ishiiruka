@@ -578,7 +578,7 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 {
 	if (g_bSkipCurrentFrame || (!XFBWrited && !g_ActiveConfig.RealXFBEnabled()) || !fbWidth || !fbHeight)
 	{
-		if (g_ActiveConfig.bDumpFrames && !frame_data.empty())
+		if (SConfig::GetInstance().m_DumpFrames && !frame_data.empty())
 			AVIDump::AddFrame(&frame_data[0], fbWidth, fbHeight);
 
 		Core::Callback_VideoCopiedToXFB(false);
@@ -589,7 +589,7 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 	const XFBSourceBase* const* xfbSourceList = FramebufferManager::GetXFBSource(xfbAddr, fbStride, fbHeight, &xfbCount);
 	if ((!xfbSourceList || xfbCount == 0) && g_ActiveConfig.bUseXFB && !g_ActiveConfig.bUseRealXFB)
 	{
-		if (g_ActiveConfig.bDumpFrames && !frame_data.empty())
+		if (SConfig::GetInstance().m_DumpFrames && !frame_data.empty())
 			AVIDump::AddFrame(&frame_data[0], fbWidth, fbHeight);
 
 		Core::Callback_VideoCopiedToXFB(false);
@@ -783,7 +783,7 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 
 	// Dump frames
 	static int w = 0, h = 0;
-	if (g_ActiveConfig.bDumpFrames)
+	if (SConfig::GetInstance().m_DumpFrames)
 	{
 		static int s_recordWidth;
 		static int s_recordHeight;
