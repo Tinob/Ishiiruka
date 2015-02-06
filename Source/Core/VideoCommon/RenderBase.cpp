@@ -68,7 +68,7 @@ PostProcessingShaderImplementation* Renderer::m_post_processor;
 
 TargetRectangle Renderer::target_rc;
 
-int Renderer::s_LastEFBScale;
+int Renderer::s_last_efb_scale;
 
 bool Renderer::XFBWrited;
 
@@ -178,14 +178,14 @@ bool Renderer::CalculateTargetSize(unsigned int framebuffer_width, unsigned int 
 	int newEFBWidth, newEFBHeight;
 
 	// TODO: Ugly. Clean up
-	switch (s_LastEFBScale)
+	switch (s_last_efb_scale)
 	{
 		case SCALE_AUTO:
 		case SCALE_AUTO_INTEGRAL:
 			newEFBWidth = FramebufferManagerBase::ScaleToVirtualXfbWidth(EFB_WIDTH, framebuffer_width);
 			newEFBHeight = FramebufferManagerBase::ScaleToVirtualXfbHeight(EFB_HEIGHT, framebuffer_height);
 
-			if (s_LastEFBScale == SCALE_AUTO_INTEGRAL)
+			if (s_last_efb_scale == SCALE_AUTO_INTEGRAL)
 			{
 				newEFBWidth = ((newEFBWidth - 1) / EFB_WIDTH + 1) * EFB_WIDTH;
 				newEFBHeight = ((newEFBHeight - 1) / EFB_HEIGHT + 1) * EFB_HEIGHT;
@@ -215,7 +215,7 @@ bool Renderer::CalculateTargetSize(unsigned int framebuffer_width, unsigned int 
 			efb_scale_denominatorX = efb_scale_denominatorY = 2;
 			break;
 		default:
-			efb_scale_numeratorX = efb_scale_numeratorY = s_LastEFBScale - 3;
+			efb_scale_numeratorX = efb_scale_numeratorY = s_last_efb_scale - 3;
 			efb_scale_denominatorX = efb_scale_denominatorY = 1;			
 			break;
 	}
@@ -227,7 +227,7 @@ bool Renderer::CalculateTargetSize(unsigned int framebuffer_width, unsigned int 
 		efb_scale_denominatorX = efb_scale_denominatorY = 1;
 	}
 
-	if (s_LastEFBScale > SCALE_AUTO_INTEGRAL)
+	if (s_last_efb_scale > SCALE_AUTO_INTEGRAL)
 		CalculateTargetScale(EFB_WIDTH, EFB_HEIGHT, newEFBWidth, newEFBHeight);
 
 	newEFBWidth *= multiplier;

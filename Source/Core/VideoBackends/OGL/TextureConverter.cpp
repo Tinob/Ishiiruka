@@ -35,7 +35,7 @@ static GLuint s_texConvFrameBuffer[2] = { 0, 0 };
 static GLuint s_srcTexture = 0; // for decoding from RAM
 static GLuint s_dstTexture = 0; // for encoding to RAM
 
-const int renderBufferWidth = 1024;
+const int renderBufferWidth = EFB_WIDTH * 4;
 const int renderBufferHeight = 1024;
 
 static SHADER s_rgbToYuyvProgram;
@@ -222,6 +222,8 @@ static void EncodeToRamUsingShader(GLuint srcTexture,
 	// attach render buffer as color destination
 	FramebufferManager::SetFramebuffer(s_texConvFrameBuffer[0]);
 
+	OpenGL_BindAttributelessVAO();
+
 	// set source texture
 	glActiveTexture(GL_TEXTURE0 + 9);
 	glBindTexture(GL_TEXTURE_2D, srcTexture);
@@ -361,6 +363,8 @@ void DecodeToTexture(u32 xfbAddr, int srcWidth, int srcHeight, GLuint destTextur
 	}
 
 	g_renderer->ResetAPIState(); // reset any game specific settings
+
+	OpenGL_BindAttributelessVAO();
 
 	// switch to texture converter frame buffer
 	// attach destTexture as color destination

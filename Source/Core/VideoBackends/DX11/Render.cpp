@@ -196,7 +196,7 @@ Renderer::Renderer(void *&window_handle)
 	UpdateDrawRectangle(s_backbuffer_width, s_backbuffer_height);
 
 	s_last_multisample_mode = g_ActiveConfig.iMultisampleMode;
-	s_LastEFBScale = g_ActiveConfig.iEFBScale;
+	s_last_efb_scale = g_ActiveConfig.iEFBScale;
 	s_last_xfb_mode = g_ActiveConfig.bUseRealXFB;
 	CalculateTargetSize(s_backbuffer_width, s_backbuffer_height);
 	PixelShaderManager::SetEfbScaleChanged();
@@ -891,7 +891,7 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 	if (xfbchanged ||
 		windowResized ||
 		fullscreen_changed ||
-		s_LastEFBScale != g_ActiveConfig.iEFBScale ||
+		s_last_efb_scale != g_ActiveConfig.iEFBScale ||
 		s_last_multisample_mode != g_ActiveConfig.iMultisampleMode)
 	{
 		s_last_xfb_mode = g_ActiveConfig.bUseRealXFB;
@@ -923,7 +923,7 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 
 		UpdateDrawRectangle(s_backbuffer_width, s_backbuffer_height);
 
-		s_LastEFBScale = g_ActiveConfig.iEFBScale;
+		s_last_efb_scale = g_ActiveConfig.iEFBScale;
 		CalculateTargetSize(s_backbuffer_width, s_backbuffer_height);
 		PixelShaderManager::SetEfbScaleChanged();
 		D3D::context->OMSetRenderTargets(1, &D3D::GetBackBuffer()->GetRTV(), nullptr);

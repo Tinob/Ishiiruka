@@ -135,7 +135,7 @@ Renderer::Renderer(void *&window_handle)
 	s_LastAA = g_ActiveConfig.iMultisampleMode;
 	int SupersampleCoeficient = (s_LastAA % 3) + 1;
 
-	s_LastEFBScale = g_ActiveConfig.iEFBScale;
+	s_last_efb_scale = g_ActiveConfig.iEFBScale;
 	CalculateTargetSize(s_backbuffer_width, s_backbuffer_height, SupersampleCoeficient);
 	PixelShaderManager::SetEfbScaleChanged();
 
@@ -873,7 +873,7 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 	if (xfbchanged 
 		|| windowResized 
 		|| fullscreen_changed
-		|| s_LastEFBScale != g_ActiveConfig.iEFBScale 
+		|| s_last_efb_scale != g_ActiveConfig.iEFBScale 
 		|| s_LastAA != newAA)
 	{
 		s_LastAA = newAA;
@@ -882,7 +882,7 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 
 		int SupersampleCoeficient = (s_LastAA % 3) + 1;
 
-		s_LastEFBScale = g_ActiveConfig.iEFBScale;
+		s_last_efb_scale = g_ActiveConfig.iEFBScale;
 		CalculateTargetSize(s_backbuffer_width, s_backbuffer_height, SupersampleCoeficient);
 		PixelShaderManager::SetEfbScaleChanged();
 		D3D::dev->SetRenderTarget(0, D3D::GetBackBufferSurface());

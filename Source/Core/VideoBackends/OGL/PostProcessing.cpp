@@ -18,7 +18,7 @@
 namespace OGL
 {
 
-static char s_vertex_workaround_shader[] =
+static const char s_vertex_workaround_shader[] =
 	"in vec4 rawpos;\n"
 	"out vec2 uv0;\n"
 	"uniform vec4 src_rect;\n"
@@ -27,7 +27,7 @@ static char s_vertex_workaround_shader[] =
 	"	uv0 = rawpos.zw * src_rect.zw + src_rect.xy;\n"
 	"}\n";
 
-static char s_vertex_shader[] =
+static const char s_vertex_shader[] =
 	"out vec2 uv0;\n"
 	"uniform vec4 src_rect;\n"
 	"void main(void) {\n"
@@ -36,7 +36,7 @@ static char s_vertex_shader[] =
 	"	uv0 = rawpos * src_rect.zw + src_rect.xy;\n"
 	"}\n";
 
-OpenGLPostProcessing::OpenGLPostProcessing()
+OpenGLPostProcessing::OpenGLPostProcessing() : m_initialized(false)
 {
 	CreateHeader();
 
@@ -46,8 +46,6 @@ OpenGLPostProcessing::OpenGLPostProcessing()
 		glGenBuffers(1, &m_attribute_vbo);
 		glGenVertexArrays(1, &m_attribute_vao);
 	}
-
-	m_initialized = false;
 }
 
 OpenGLPostProcessing::~OpenGLPostProcessing()
@@ -72,6 +70,8 @@ void OpenGLPostProcessing::BlitFromTexture(TargetRectangle src, TargetRectangle 
 
 	if (m_attribute_workaround)
 		glBindVertexArray(m_attribute_vao);
+	else
+		OpenGL_BindAttributelessVAO();
 
 	m_shader.Bind();
 
