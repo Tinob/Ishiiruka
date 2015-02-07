@@ -9,6 +9,7 @@ set(SRCS	ActionReplay.cpp
 			ec_wii.cpp
 			GeckoCodeConfig.cpp
 			GeckoCode.cpp
+			HotkeyManager.cpp
 			MemTools.cpp
 			Movie.cpp
 			NetPlayClient.cpp
@@ -237,6 +238,7 @@ elseif(_M_ARM_64)
 	         PowerPC/JitArm64/JitArm64_Paired.cpp
 	         PowerPC/JitArm64/JitArm64_LoadStorePaired.cpp
 	         PowerPC/JitArm64/JitArm64_SystemRegisters.cpp
+	         PowerPC/JitArm64/Jit_Util.cpp
 	         PowerPC/JitArm64/JitArm64_Tables.cpp)
 endif()
 

@@ -921,6 +921,9 @@
     <ClInclude Include="HW\EXI_DeviceAD16.h">
       <Filter>HW %28Flipper/Hollywood%29\EXI - Expansion Interface</Filter>
     </ClInclude>
+    <ClInclude Include="HW\EXI_DeviceAGP.h">
+      <Filter>HW %28Flipper/Hollywood%29\EXI - Expansion Interface</Filter>
+    </ClInclude>
     <ClInclude Include="HW\EXI_DeviceAMBaseboard.h">
       <Filter>HW %28Flipper/Hollywood%29\EXI - Expansion Interface</Filter>
     </ClInclude>
@@ -1236,9 +1239,6 @@
       <Filter>HW %28Flipper/Hollywood%29\GCKeyboard</Filter>
     </ClInclude>
     <ClInclude Include="PowerPC\Jit64Common\Jit64AsmCommon.h" />
-    <ClInclude Include="HW\EXI_DeviceAGP.h">
-      <Filter>HW %28Flipper/Hollywood%29\EXI - Expansion Interface</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />
