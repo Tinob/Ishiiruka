@@ -116,6 +116,10 @@ static void AudioDMACallback(u64 userdata, int cyclesLate)
 {
 	int fields = VideoInterface::GetNumFields();
 	int period = CPU_CORE_CLOCK / (AudioInterface::GetAIDSampleRate() * 4 / 32 * fields);
+	if (SConfig::GetInstance().m_LocalCoreStartupParameter.bHalfAudioRate)
+	{
+		period *= 2;
+	}
 	DSP::UpdateAudioDMA();  // Push audio to speakers.
 	CoreTiming::ScheduleEvent(period - cyclesLate, et_AudioDMA);
 }
@@ -247,7 +251,10 @@ void Init()
 
 	// System internal sample rate is fixed at 32KHz * 4 (16bit Stereo) / 32 bytes DMA
 	AUDIO_DMA_PERIOD = CPU_CORE_CLOCK / (AudioInterface::GetAIDSampleRate() * 4 / 32);
-
+	if (SConfig::GetInstance().m_LocalCoreStartupParameter.bHalfAudioRate)
+	{
+		AUDIO_DMA_PERIOD *= 2;
+	}
 	// Emulated gekko <-> flipper bus speed ratio (CPU clock / flipper clock)
 	CP_PERIOD = GetTicksPerSecond() / 10000;
 
