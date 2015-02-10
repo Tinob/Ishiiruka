@@ -44,6 +44,8 @@ enum EFBScale
 	SCALE_4X,
 	SCALE_5X,
 	SCALE_6X,
+	SCALE_7X,
+	SCALE_8X
 };
 
 enum StereoMode
