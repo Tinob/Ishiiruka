@@ -410,10 +410,8 @@ void CISOProperties::CreateGUIControls(bool IsWad)
 	DCBZOFF->SetToolTip(_("Bypass the clearing of the data cache by the DCBZ instruction. Usually leave this option disabled."));
 	FPRF = new wxCheckBox(m_GameConfig, ID_MMU, _("Enable FPRF"), wxDefaultPosition, wxDefaultSize, GetElementStyle("Core", "FPRF"));
 	FPRF->SetToolTip(_("Enables Floating Point Result Flag calculation, needed for a few games. (ON = Compatible, OFF = Fast)"));
-	VBeam = new wxCheckBox(m_GameConfig, ID_VBEAM, _("VBeam Speed Hack"), wxDefaultPosition, wxDefaultSize, GetElementStyle("Core", "VBeam"));
-	VBeam->SetToolTip(_("Doubles the emulated GPU clock rate. May speed up some games (ON = Fast, OFF = Compatible)"));
-	HAudio = new wxCheckBox(m_GameConfig, ID_HALFAUDIO, _("Half Audio Speed Hack"), wxDefaultPosition, wxDefaultSize, GetElementStyle("Core", "HalfAudioRate"));
-	HAudio->SetToolTip(_("Halfs the emulated Audio DMA rate. Only used in games played at doubled speed (ON = 1/2x Rate, OFF = Compatible)"));
+	DVideo = new wxCheckBox(m_GameConfig, ID_DVIDEO, _("Double Video Rate Hack"), wxDefaultPosition, wxDefaultSize, GetElementStyle("Core", "DoubleVideoRate"));
+	DVideo->SetToolTip(_("Double the rate of video interruptions (ON = Fast, OFF = Compatible)"));
 	SyncGPU = new wxCheckBox(m_GameConfig, ID_SYNCGPU, _("Synchronize GPU thread"), wxDefaultPosition, wxDefaultSize, GetElementStyle("Core", "SyncGPU"));
 	SyncGPU->SetToolTip(_("Synchronizes the GPU and CPU threads to help prevent random freezes in Dual Core mode. (ON = Compatible, OFF = Fast)"));
 	FastDiscSpeed = new wxCheckBox(m_GameConfig, ID_DISCSPEED, _("Speed up Disc Transfer Rate"), wxDefaultPosition, wxDefaultSize, GetElementStyle("Core", "FastDiscSpeed"));
@@ -473,8 +471,7 @@ void CISOProperties::CreateGUIControls(bool IsWad)
 	sbCoreOverrides->Add(MMU, 0, wxLEFT, 5);
 	sbCoreOverrides->Add(DCBZOFF, 0, wxLEFT, 5);
 	sbCoreOverrides->Add(FPRF, 0, wxLEFT, 5);
-	sbCoreOverrides->Add(VBeam, 0, wxLEFT, 5);
-	sbCoreOverrides->Add(HAudio, 0, wxLEFT, 5);
+	sbCoreOverrides->Add(DVideo, 0, wxLEFT, 5);
 	sbCoreOverrides->Add(SyncGPU, 0, wxLEFT, 5);
 	sbCoreOverrides->Add(FastDiscSpeed, 0, wxLEFT, 5);
 	sbCoreOverrides->Add(BlockMerging, 0, wxLEFT, 5);
@@ -1066,8 +1063,7 @@ void CISOProperties::LoadGameConfig()
 	SetCheckboxValueFromGameini("Core", "BAT", BAT);
 	SetCheckboxValueFromGameini("Core", "DCBZ", DCBZOFF);
 	SetCheckboxValueFromGameini("Core", "FPRF", FPRF);
-	SetCheckboxValueFromGameini("Core", "VBeam", VBeam);
-	SetCheckboxValueFromGameini("Core", "HalfAudioRate", HAudio);
+	SetCheckboxValueFromGameini("Core", "DoubleVideoRate", DVideo);
 	SetCheckboxValueFromGameini("Core", "SyncGPU", SyncGPU);
 	SetCheckboxValueFromGameini("Core", "FastDiscSpeed", FastDiscSpeed);
 	SetCheckboxValueFromGameini("Core", "BlockMerging", BlockMerging);
@@ -1164,8 +1160,7 @@ bool CISOProperties::SaveGameConfig()
 	SaveGameIniValueFrom3StateCheckbox("Core", "BAT", BAT);
 	SaveGameIniValueFrom3StateCheckbox("Core", "DCBZ", DCBZOFF);
 	SaveGameIniValueFrom3StateCheckbox("Core", "FPRF", FPRF);
-	SaveGameIniValueFrom3StateCheckbox("Core", "VBeam", VBeam);
-	SaveGameIniValueFrom3StateCheckbox("Core", "HalfAudioRate", HAudio);
+	SaveGameIniValueFrom3StateCheckbox("Core", "DoubleVideoRate", DVideo);
 	SaveGameIniValueFrom3StateCheckbox("Core", "SyncGPU", SyncGPU);
 	SaveGameIniValueFrom3StateCheckbox("Core", "FastDiscSpeed", FastDiscSpeed);
 	SaveGameIniValueFrom3StateCheckbox("Core", "BlockMerging", BlockMerging);
