@@ -112,11 +112,16 @@ u32 CMixer::MixerFifo::AvailableSamples()
 
 u32 CMixer::AvailableSamples()
 {
-	return std::max(
-		std::max(
-			m_dma_mixer.AvailableSamples(), 
-			m_streaming_mixer.AvailableSamples()
-		),m_wiimote_speaker_mixer.AvailableSamples());
+	u32 samples = m_dma_mixer.AvailableSamples();
+	if (samples == 0)
+	{
+		samples = m_streaming_mixer.AvailableSamples();
+	}
+	if (samples == 0)
+	{
+		samples = m_wiimote_speaker_mixer.AvailableSamples();
+	}
+	return samples;
 }
 
 unsigned int CMixer::Mix(short* samples, unsigned int num_samples, bool consider_framelimit)
