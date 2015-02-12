@@ -630,12 +630,16 @@ void VideoThrottle()
 	}
 
 	s_drawn_video++;
+	bool update_ss_speed = true;
+	if (SConfig::GetInstance().m_LocalCoreStartupParameter.bDoubleVideoRate)
+	{
+		update_ss_speed = s_drawn_video & 1;
+	}
 	// Update the audio timestretcher with the current speed
-	if (g_sound_stream)
+	if (g_sound_stream && update_ss_speed)
 	{
 		float Speed = (float)(s_drawn_video * 1000.0 / (VideoInterface::TargetRefreshRate * ElapseTime));
-		CMixer* pMixer = g_sound_stream->GetMixer();
-		pMixer->UpdateSpeed((float)Speed);
+		g_sound_stream->GetMixer()->UpdateSpeed((float)Speed);
 	}
 }
 
