@@ -498,7 +498,10 @@ void PixelShaderCache::InvalidateMSAAShaders()
 
 void PixelShaderCache::Shutdown()
 {
-	Compiler->WaitForFinish();
+	if (Compiler)
+	{
+		Compiler->WaitForFinish();
+	}
 	SAFE_RELEASE(pscbuf);
 	SAFE_RELEASE(pscbuf_alt);
 

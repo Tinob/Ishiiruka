@@ -322,7 +322,10 @@ void PixelShaderCache::Clear()
 
 void PixelShaderCache::Shutdown()
 {
-	Compiler->WaitForFinish();
+	if (Compiler)
+	{
+		Compiler->WaitForFinish();
+	}
 	for(int copyMatrixType = 0; copyMatrixType < NUM_COPY_TYPES; copyMatrixType++)
 		for(int depthType = 0; depthType < NUM_DEPTH_CONVERSION_TYPES; depthType++)
 			for(int ssaaMode = 0; ssaaMode < MAX_SSAA_SHADERS; ssaaMode++)

@@ -172,7 +172,10 @@ void VertexShaderCache::Clear()
 
 void VertexShaderCache::Shutdown()
 {
-	Compiler->WaitForFinish();
+	if (Compiler)
+	{
+		Compiler->WaitForFinish();
+	}
 	SAFE_RELEASE(vscbuf);
 
 	SimpleVertexShader.reset();

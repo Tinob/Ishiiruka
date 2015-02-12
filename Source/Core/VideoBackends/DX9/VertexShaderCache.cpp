@@ -166,7 +166,10 @@ void VertexShaderCache::Clear()
 
 void VertexShaderCache::Shutdown()
 {
-	Compiler->WaitForFinish();
+	if (Compiler)
+	{
+		Compiler->WaitForFinish();
+	}
 	for (int i = 0; i < MAX_SSAA_SHADERS; i++)
 	{
 		if (SimpleVertexShader[i])
