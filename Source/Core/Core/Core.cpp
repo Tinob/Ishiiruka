@@ -81,7 +81,7 @@ void Callback_WiimoteInterruptChannel(int _number, u16 _channelID, const void* _
 // Function declarations
 void EmuThread();
 
-static bool s_is_stopping = false;
+static volatile bool s_is_stopping = false;
 static bool s_hardware_initialized = false;
 static bool s_is_started = false;
 static void* s_window_handle = nullptr;
@@ -237,6 +237,12 @@ void Stop()  // - Hammertime!
 		INFO_LOG(CONSOLE, "%s", StopMessage(true, "Wait for Video Loop to exit ...").c_str());
 
 		g_video_backend->Video_ExitLoop();
+		// Wait for EmuThread to finish to avoid modifications
+		// to the global states in different threads
+		while (s_is_stopping)
+		{
+			Common::SleepCurrentThread(1);
+		}
 	}
 }
 
