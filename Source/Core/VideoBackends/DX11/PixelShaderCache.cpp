@@ -5,23 +5,21 @@
 #include "Common/FileUtil.h"
 #include "Common/LinearDiskCache.h"
 
+#include "Core/ConfigManager.h"
+
 #include "VideoCommon/Debugger.h"
 #include "VideoCommon/Statistics.h"
 #include "VideoCommon/VideoConfig.h"
 #include "VideoCommon/HLSLCompiler.h"
 #include "VideoCommon/PixelShaderManager.h"
 
-#include "D3DBase.h"
-#include "D3DShader.h"
-#include "Globals.h"
-#include "VideoCommon/PixelShaderGen.h"
-#include "PixelShaderCache.h"
+#include "VideoBackends/DX11/D3DBase.h"
+#include "VideoBackends/DX11/D3DShader.h"
+#include "VideoBackends/DX11/Globals.h"
+#include "VideoBackends/DX11/PixelShaderCache.h"
+#include "VideoBackends/DX11/VertexShaderCache.h"
 
-#include "Core/ConfigManager.h"
-
-extern int frameCount;
-
-bool prevpl = false;
+static bool s_previus_per_pixel_lighting = false;
 
 namespace DX11
 {
@@ -31,8 +29,8 @@ const PixelShaderCache::PSCacheEntry* PixelShaderCache::s_last_entry;
 PixelShaderUid PixelShaderCache::s_last_uid;
 PixelShaderUid PixelShaderCache::s_external_last_uid;
 UidChecker<PixelShaderUid,ShaderCode> PixelShaderCache::s_pixel_uid_checker;
-static HLSLAsyncCompiler *Compiler;
-static Common::SpinLock<true> PixelShadersLock;
+static HLSLAsyncCompiler *s_compiler;
+static Common::SpinLock<true> s_pixel_shaders_lock;
 
 LinearDiskCache<PixelShaderUid, u8> g_ps_disk_cache;
 
@@ -385,11 +383,11 @@ ID3D11Buffer* &PixelShaderCache::GetConstantBuffer()
 	bool lightingEnabled = xfmem.numChan.numColorChans > 0;
 	bool enable_pl = g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting && lightingEnabled;
 	auto &buf = enable_pl ? pscbuf : pscbuf_alt;
-	if (PixelShaderManager::IsDirty() || prevpl != enable_pl)
+	if (PixelShaderManager::IsDirty() || s_previus_per_pixel_lighting != enable_pl)
 	{
 		int sz = enable_pl ? PixelShaderManager::ConstantBufferSize : C_PLIGHTS * 4;
 		sz *= sizeof(float);
-		prevpl = enable_pl;
+		s_previus_per_pixel_lighting = enable_pl;
 		// TODO: divide the global variables of the generated shaders into about 5 constant buffers to speed this up
 		D3D11_MAPPED_SUBRESOURCE map;
 		D3D::context->Map(buf, 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
@@ -413,8 +411,8 @@ public:
 
 void PixelShaderCache::Init()
 {
-	Compiler = &HLSLAsyncCompiler::getInstance();
-	PixelShadersLock.unlock();
+	s_compiler = &HLSLAsyncCompiler::getInstance();
+	s_pixel_shaders_lock.unlock();
 	unsigned int cbsize = PixelShaderManager::ConstantBufferSize * sizeof(float); // is always a multiple of 16	
 	D3D11_BUFFER_DESC cbdesc = CD3D11_BUFFER_DESC(cbsize, 
 		D3D11_BIND_CONSTANT_BUFFER, 
@@ -462,9 +460,9 @@ void PixelShaderCache::Init()
 	sprintf(cache_filename, "%sIDX11-%s-ps.cache", File::GetUserPath(D_SHADERCACHE_IDX).c_str(),
 			SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID.c_str());
 	PixelShaderCacheInserter inserter;
-	PixelShadersLock.lock();
+	s_pixel_shaders_lock.lock();
 	g_ps_disk_cache.OpenAndRead(cache_filename, inserter);
-	PixelShadersLock.unlock();
+	s_pixel_shaders_lock.unlock();
 
 	if (g_Config.bEnableShaderDebugging)
 		Clear();
@@ -476,11 +474,11 @@ void PixelShaderCache::Init()
 // ONLY to be used during shutdown.
 void PixelShaderCache::Clear()
 {
-	PixelShadersLock.lock();
+	s_pixel_shaders_lock.lock();
 	for (PSCache::iterator iter = s_pixel_shaders.begin(); iter != s_pixel_shaders.end(); iter++)
 		iter->second.Destroy();
 	s_pixel_shaders.clear();
-	PixelShadersLock.unlock();
+	s_pixel_shaders_lock.unlock();
 	s_pixel_uid_checker.Invalidate();
 
 	s_last_entry = nullptr;
@@ -498,9 +496,9 @@ void PixelShaderCache::InvalidateMSAAShaders()
 
 void PixelShaderCache::Shutdown()
 {
-	if (Compiler)
+	if (s_compiler)
 	{
-		Compiler->WaitForFinish();
+		s_compiler->WaitForFinish();
 	}
 	SAFE_RELEASE(pscbuf);
 	SAFE_RELEASE(pscbuf_alt);
@@ -530,7 +528,7 @@ void PixelShaderCache::PrepareShader(DSTALPHA_MODE dstAlphaMode,
 	GetPixelShaderUidD3D11(uid, dstAlphaMode, components, xfr, bpm);
 	if (ongputhread)
 	{
-		Compiler->ProcCompilationResults();
+		s_compiler->ProcCompilationResults();
 #if defined(_DEBUG) || defined(DEBUGFAST)
 		if (g_ActiveConfig.bEnableShaderDebugging)
 		{
@@ -558,9 +556,9 @@ void PixelShaderCache::PrepareShader(DSTALPHA_MODE dstAlphaMode,
 		}
 		s_external_last_uid = uid;
 	}
-	PixelShadersLock.lock();
+	s_pixel_shaders_lock.lock();
 	PSCacheEntry* entry = &s_pixel_shaders[uid];
-	PixelShadersLock.unlock();
+	s_pixel_shaders_lock.unlock();
 	if (ongputhread)
 	{
 		s_last_entry = entry;
@@ -572,7 +570,7 @@ void PixelShaderCache::PrepareShader(DSTALPHA_MODE dstAlphaMode,
 	}
 	// Need to compile a new shader
 	ShaderCode code;
-	ShaderCompilerWorkUnit *wunit = Compiler->NewUnit(PIXELSHADERGEN_BUFFERSIZE);
+	ShaderCompilerWorkUnit *wunit = s_compiler->NewUnit(PIXELSHADERGEN_BUFFERSIZE);
 	code.SetBuffer(wunit->code.data());
 	GeneratePixelShaderCodeD3D11(code, dstAlphaMode, components, xfr, bpm);
 	wunit->codesize = (u32)code.BufferSize();
@@ -587,7 +585,7 @@ void PixelShaderCache::PrepareShader(DSTALPHA_MODE dstAlphaMode,
 			const u8* bytecode = (const u8*)shaderBuffer->GetBufferPointer();
 			u32 bytecodelen = (u32)shaderBuffer->GetBufferSize();
 			g_ps_disk_cache.Append(uid, bytecode, bytecodelen);
-			PushByteCode(uid, bytecode, bytecodelen, entry);
+			PushByteCode(bytecode, bytecodelen, entry);
 #if defined(_DEBUG) || defined(DEBUGFAST)
 			if (g_ActiveConfig.bEnableShaderDebugging)
 			{
@@ -603,6 +601,7 @@ void PixelShaderCache::PrepareShader(DSTALPHA_MODE dstAlphaMode,
 			std::ofstream file;
 			OpenFStream(file, szTemp, std::ios_base::out);
 			file << ((const char *)wunit->code.data());
+			file << ((const char *)wunit->error->GetBufferPointer());
 			file.close();
 
 			PanicAlert("Failed to compile pixel shader!\nThis usually happens when trying to use Dolphin with an outdated GPU or integrated GPU like the Intel GMA series.\n\nIf you're sure this is Dolphin's error anyway, post the contents of %s along with this error message at the forums.\n\nDebug info (%s):\n%s",
@@ -611,7 +610,7 @@ void PixelShaderCache::PrepareShader(DSTALPHA_MODE dstAlphaMode,
 				(char*)wunit->error->GetBufferPointer());
 		}
 	};
-	Compiler->CompileShaderAsync(wunit);
+	s_compiler->CompileShaderAsync(wunit);
 }
 
 bool PixelShaderCache::TestShader()
@@ -619,7 +618,7 @@ bool PixelShaderCache::TestShader()
 	int count = 0;
 	while (!s_last_entry->compiled)
 	{
-		Compiler->ProcCompilationResults();
+		s_compiler->ProcCompilationResults();
 		if (g_ActiveConfig.bFullAsyncShaderCompilation)
 		{
 			break;
@@ -629,7 +628,7 @@ bool PixelShaderCache::TestShader()
 	return s_last_entry->shader != nullptr && s_last_entry->compiled;
 }
 
-void PixelShaderCache::PushByteCode(const PixelShaderUid &uid, const void* bytecode, unsigned int bytecodelen, PixelShaderCache::PSCacheEntry* entry)
+void PixelShaderCache::PushByteCode(const void* bytecode, unsigned int bytecodelen, PixelShaderCache::PSCacheEntry* entry)
 {
 	entry->shader = std::move(D3D::CreatePixelShaderFromByteCode(bytecode, bytecodelen));
 	entry->compiled = true;
@@ -646,7 +645,7 @@ void PixelShaderCache::InsertByteCode(const PixelShaderUid &uid, const void* byt
 {
 	PSCacheEntry* entry = &s_pixel_shaders[uid];
 	entry->initialized.test_and_set();
-	PushByteCode(uid, bytecode, bytecodelen, entry);
+	PushByteCode(bytecode, bytecodelen, entry);
 }
 
 }  // DX11

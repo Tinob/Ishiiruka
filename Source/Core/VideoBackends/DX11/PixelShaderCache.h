@@ -54,7 +54,7 @@ private:
 		}
 		void Destroy() { shader.reset(); }
 	};
-	static inline void PushByteCode(const PixelShaderUid &uid, const void* bytecode, unsigned int bytecodelen, PSCacheEntry* entry);
+	static inline void PushByteCode(const void* bytecode, unsigned int bytecodelen, PSCacheEntry* entry);
 	typedef std::unordered_map<PixelShaderUid, PSCacheEntry, PixelShaderUid::ShaderUidHasher> PSCache;
 
 	static PSCache s_pixel_shaders;

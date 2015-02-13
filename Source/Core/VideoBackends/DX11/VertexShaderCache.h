@@ -57,7 +57,7 @@ private:
 			bytecode = nullptr;
 		}
 	};
-	static inline void PushByteCode(const VertexShaderUid &uid, D3DBlob&& bcodeblob, VSCacheEntry* entry);
+	static inline void PushByteCode(D3DBlob&& bcodeblob, VSCacheEntry* entry);
 	typedef std::unordered_map<VertexShaderUid, VSCacheEntry, VertexShaderUid::ShaderUidHasher> VSCache;
 	
 	static VSCache s_vshaders;

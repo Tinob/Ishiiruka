@@ -5,16 +5,17 @@
 #include "Common/FileUtil.h"
 #include "Common/LinearDiskCache.h"
 
+#include "Core/ConfigManager.h"
+
 #include "VideoCommon/Debugger.h"
+#include "VideoCommon/HLSLCompiler.h"
 #include "VideoCommon/Statistics.h"
 #include "VideoCommon/VertexShaderGen.h"
-#include "VideoCommon/HLSLCompiler.h"
 #include "VideoCommon/VertexShaderManager.h"
-#include "D3DShader.h"
-#include "Globals.h"
-#include "VertexShaderCache.h"
 
-#include "Core/ConfigManager.h"
+#include "VideoBackends/DX11/D3DShader.h"
+#include "VideoBackends/DX11/Globals.h"
+#include "VideoBackends/DX11/VertexShaderCache.h"
 
 namespace DX11 {
 
@@ -23,20 +24,21 @@ const VertexShaderCache::VSCacheEntry *VertexShaderCache::s_last_entry;
 VertexShaderUid VertexShaderCache::s_last_uid;
 VertexShaderUid VertexShaderCache::s_external_last_uid;
 UidChecker<VertexShaderUid,ShaderCode> VertexShaderCache::s_vertex_uid_checker;
-static HLSLAsyncCompiler *Compiler;
-static Common::SpinLock<true> vshadersLock;
 
-static D3D::VertexShaderPtr SimpleVertexShader;
-static D3D::VertexShaderPtr ClearVertexShader;
-static D3D::InputLayoutPtr SimpleLayout;
-static D3D::InputLayoutPtr ClearLayout;
+static HLSLAsyncCompiler *s_compiler;
+static Common::SpinLock<true> s_vshaders_lock;
+
+static D3D::VertexShaderPtr s_simple_vertex_shader;
+static D3D::VertexShaderPtr s_clear_vertex_shader;
+static D3D::InputLayoutPtr s_simple_layout;
+static D3D::InputLayoutPtr s_clear_layout;
 
 LinearDiskCache<VertexShaderUid, u8> g_vs_disk_cache;
 
-ID3D11VertexShader* VertexShaderCache::GetSimpleVertexShader() { return SimpleVertexShader.get(); }
-ID3D11VertexShader* VertexShaderCache::GetClearVertexShader() { return ClearVertexShader.get(); }
-ID3D11InputLayout* VertexShaderCache::GetSimpleInputLayout() { return SimpleLayout.get(); }
-ID3D11InputLayout* VertexShaderCache::GetClearInputLayout() { return ClearLayout.get(); }
+ID3D11VertexShader* VertexShaderCache::GetSimpleVertexShader() { return s_simple_vertex_shader.get(); }
+ID3D11VertexShader* VertexShaderCache::GetClearVertexShader() { return s_clear_vertex_shader.get(); }
+ID3D11InputLayout* VertexShaderCache::GetSimpleInputLayout() { return s_simple_layout.get(); }
+ID3D11InputLayout* VertexShaderCache::GetClearInputLayout() { return s_clear_layout.get(); }
 
 ID3D11Buffer* vscbuf = nullptr;
 
@@ -100,8 +102,8 @@ const char clear_shader_code[] = {
 
 void VertexShaderCache::Init()
 {
-	vshadersLock.unlock();
-	Compiler = &HLSLAsyncCompiler::getInstance();
+	s_vshaders_lock.unlock();
+	s_compiler = &HLSLAsyncCompiler::getInstance();
 	const D3D11_INPUT_ELEMENT_DESC simpleelems[2] =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0,  0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -116,24 +118,24 @@ void VertexShaderCache::Init()
 
 	unsigned int cbsize = VertexShaderManager::ConstantBufferSize * sizeof(float); // is always multiple of 16
 	D3D11_BUFFER_DESC cbdesc = CD3D11_BUFFER_DESC(cbsize, D3D11_BIND_CONSTANT_BUFFER, D3D11_USAGE_DYNAMIC, D3D11_CPU_ACCESS_WRITE);
-	HRESULT hr = D3D::device->CreateBuffer(&cbdesc, NULL, &vscbuf);
+	HRESULT hr = D3D::device->CreateBuffer(&cbdesc, nullptr, &vscbuf);
 	CHECK(hr==S_OK, "Create vertex shader constant buffer (size=%u)", cbsize);
 	D3D::SetDebugObjectName(vscbuf, "vertex shader constant buffer used to emulate the GX pipeline");
 
 	D3DBlob blob;
 	D3D::CompileShader(D3D::ShaderType::Vertex, simple_shader_code, blob);
-	D3D::device->CreateInputLayout(simpleelems, 2, blob.Data(), blob.Size(), D3D::ToAddr(SimpleLayout));
-	SimpleVertexShader = D3D::CreateVertexShaderFromByteCode(blob);
-	if (SimpleLayout == NULL || SimpleVertexShader == NULL) PanicAlert("Failed to create simple vertex shader or input layout at %s %d\n", __FILE__, __LINE__);	
-	D3D::SetDebugObjectName(SimpleVertexShader.get(), "simple vertex shader");
-	D3D::SetDebugObjectName(SimpleLayout.get(), "simple input layout");
+	D3D::device->CreateInputLayout(simpleelems, 2, blob.Data(), blob.Size(), D3D::ToAddr(s_simple_layout));
+	s_simple_vertex_shader = D3D::CreateVertexShaderFromByteCode(blob);
+	if (s_simple_layout == nullptr || s_simple_vertex_shader == nullptr) PanicAlert("Failed to create simple vertex shader or input layout at %s %d\n", __FILE__, __LINE__);	
+	D3D::SetDebugObjectName(s_simple_vertex_shader.get(), "simple vertex shader");
+	D3D::SetDebugObjectName(s_simple_layout.get(), "simple input layout");
 
 	D3D::CompileShader(D3D::ShaderType::Vertex, clear_shader_code, blob);
-	D3D::device->CreateInputLayout(clearelems, 2, blob.Data(), blob.Size(), D3D::ToAddr(ClearLayout));
-	ClearVertexShader = D3D::CreateVertexShaderFromByteCode(blob);
-	if (ClearLayout == NULL || ClearVertexShader == NULL) PanicAlert("Failed to create clear vertex shader or input layout at %s %d\n", __FILE__, __LINE__);
-	D3D::SetDebugObjectName(ClearVertexShader.get(), "clear vertex shader");
-	D3D::SetDebugObjectName(ClearLayout.get(), "clear input layout");
+	D3D::device->CreateInputLayout(clearelems, 2, blob.Data(), blob.Size(), D3D::ToAddr(s_clear_layout));
+	s_clear_vertex_shader = D3D::CreateVertexShaderFromByteCode(blob);
+	if (s_clear_layout == nullptr || s_clear_vertex_shader == nullptr) PanicAlert("Failed to create clear vertex shader or input layout at %s %d\n", __FILE__, __LINE__);
+	D3D::SetDebugObjectName(s_clear_vertex_shader.get(), "clear vertex shader");
+	D3D::SetDebugObjectName(s_clear_layout.get(), "clear input layout");
 
 	Clear();
 
@@ -147,42 +149,42 @@ void VertexShaderCache::Init()
 	sprintf(cache_filename, "%sIDX11-%s-vs.cache", File::GetUserPath(D_SHADERCACHE_IDX).c_str(),
 			SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID.c_str());
 	VertexShaderCacheInserter inserter;
-	vshadersLock.lock();
+	s_vshaders_lock.lock();
 	g_vs_disk_cache.OpenAndRead(cache_filename, inserter);
-	vshadersLock.unlock();
+	s_vshaders_lock.unlock();
 
 	if (g_Config.bEnableShaderDebugging)
 		Clear();
 
-	s_last_entry = NULL;
+	s_last_entry = nullptr;
 	VertexShaderManager::DisableDirtyRegions();
 }
 
 void VertexShaderCache::Clear()
 {
-	vshadersLock.lock();
+	s_vshaders_lock.lock();
 	for (VSCache::iterator iter = s_vshaders.begin(); iter != s_vshaders.end(); ++iter)
 		iter->second.Destroy();
 	s_vshaders.clear();
-	vshadersLock.unlock();
+	s_vshaders_lock.unlock();
 	s_vertex_uid_checker.Invalidate();
 
-	s_last_entry = NULL;
+	s_last_entry = nullptr;
 }
 
 void VertexShaderCache::Shutdown()
 {
-	if (Compiler)
+	if (s_compiler)
 	{
-		Compiler->WaitForFinish();
+		s_compiler->WaitForFinish();
 	}
 	SAFE_RELEASE(vscbuf);
 
-	SimpleVertexShader.reset();
-	ClearVertexShader.reset();
+	s_simple_vertex_shader.reset();
+	s_clear_vertex_shader.reset();
 
-	SimpleLayout.reset();
-	ClearLayout.reset();
+	s_simple_layout.reset();
+	s_clear_layout.reset();
 
 	Clear();
 	g_vs_disk_cache.Sync();
@@ -200,7 +202,7 @@ void VertexShaderCache::PrepareShader(
 	GetVertexShaderUidD3D11(uid, components, xfr, bpm);
 	if (ongputhread)
 	{
-		Compiler->ProcCompilationResults();
+		s_compiler->ProcCompilationResults();
 	#if defined(_DEBUG) || defined(DEBUGFAST)
 		if (g_ActiveConfig.bEnableShaderDebugging)
 		{
@@ -227,9 +229,9 @@ void VertexShaderCache::PrepareShader(
 		}
 		s_external_last_uid = uid;
 	}
-	vshadersLock.lock();
+	s_vshaders_lock.lock();
 	VSCacheEntry* entry = &s_vshaders[uid];
-	vshadersLock.unlock();
+	s_vshaders_lock.unlock();
 	if (ongputhread)
 	{
 		s_last_entry = entry;
@@ -240,7 +242,7 @@ void VertexShaderCache::PrepareShader(
 		return;
 	}
 	ShaderCode code;
-	ShaderCompilerWorkUnit *wunit = Compiler->NewUnit(VERTEXSHADERGEN_BUFFERSIZE);
+	ShaderCompilerWorkUnit *wunit = s_compiler->NewUnit(VERTEXSHADERGEN_BUFFERSIZE);
 	code.SetBuffer(wunit->code.data());
 	GenerateVertexShaderCodeD3D11(code, components, xfr, bpm);
 	wunit->codesize = (u32)code.BufferSize();
@@ -252,7 +254,7 @@ void VertexShaderCache::PrepareShader(
 		if (SUCCEEDED(wunit->cresult))
 		{
 			g_vs_disk_cache.Append(uid, (const u8*)wunit->shaderbytecode->GetBufferPointer(), (u32)wunit->shaderbytecode->GetBufferSize());
-			PushByteCode(uid, D3DBlob(D3D::UniquePtr<ID3D10Blob>(wunit->shaderbytecode)), entry);
+			PushByteCode(D3DBlob(D3D::UniquePtr<ID3D10Blob>(wunit->shaderbytecode)), entry);
 			wunit->shaderbytecode = nullptr;
 #if defined(_DEBUG) || defined(DEBUGFAST)
 			if (g_ActiveConfig.bEnableShaderDebugging)
@@ -277,7 +279,7 @@ void VertexShaderCache::PrepareShader(
 				(char*)wunit->error->GetBufferPointer());
 		}
 	};
-	Compiler->CompileShaderAsync(wunit);
+	s_compiler->CompileShaderAsync(wunit);
 }
 
 bool VertexShaderCache::TestShader()
@@ -285,7 +287,7 @@ bool VertexShaderCache::TestShader()
 	int count = 0;
 	while (!s_last_entry->compiled)
 	{
-		Compiler->ProcCompilationResults();
+		s_compiler->ProcCompilationResults();
 		if (g_ActiveConfig.bFullAsyncShaderCompilation)
 		{
 			break;
@@ -296,7 +298,7 @@ bool VertexShaderCache::TestShader()
 }
 
 
-void VertexShaderCache::PushByteCode(const VertexShaderUid &uid, D3DBlob&& bcodeblob, VSCacheEntry* entry)
+void VertexShaderCache::PushByteCode(D3DBlob&& bcodeblob, VSCacheEntry* entry)
 {
 	entry->shader = std::move(D3D::CreateVertexShaderFromByteCode(bcodeblob));
 	entry->compiled = true;
@@ -314,6 +316,6 @@ void VertexShaderCache::InsertByteCode(const VertexShaderUid &uid, D3DBlob&& bco
 {
 	VSCacheEntry* entry = &s_vshaders[uid];
 	entry->initialized.test_and_set();
-	PushByteCode(uid, std::move(bcodeblob), entry);
+	PushByteCode(std::move(bcodeblob), entry);
 }
 }  // namespace DX11
