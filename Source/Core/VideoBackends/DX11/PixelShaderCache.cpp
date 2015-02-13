@@ -19,7 +19,7 @@
 #include "VideoBackends/DX11/PixelShaderCache.h"
 #include "VideoBackends/DX11/VertexShaderCache.h"
 
-static bool s_previus_per_pixel_lighting = false;
+static bool s_previous_per_pixel_lighting = false;
 
 namespace DX11
 {
@@ -383,11 +383,11 @@ ID3D11Buffer* &PixelShaderCache::GetConstantBuffer()
 	bool lightingEnabled = xfmem.numChan.numColorChans > 0;
 	bool enable_pl = g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting && lightingEnabled;
 	auto &buf = enable_pl ? pscbuf : pscbuf_alt;
-	if (PixelShaderManager::IsDirty() || s_previus_per_pixel_lighting != enable_pl)
+	if (PixelShaderManager::IsDirty() || s_previous_per_pixel_lighting != enable_pl)
 	{
 		int sz = enable_pl ? PixelShaderManager::ConstantBufferSize : C_PLIGHTS * 4;
 		sz *= sizeof(float);
-		s_previus_per_pixel_lighting = enable_pl;
+		s_previous_per_pixel_lighting = enable_pl;
 		// TODO: divide the global variables of the generated shaders into about 5 constant buffers to speed this up
 		D3D11_MAPPED_SUBRESOURCE map;
 		D3D::context->Map(buf, 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
