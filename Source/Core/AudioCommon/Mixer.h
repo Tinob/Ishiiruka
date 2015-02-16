@@ -49,7 +49,6 @@ public:
 	void SetStreamingVolume(unsigned int lvolume, unsigned int rvolume);
 	void SetWiimoteSpeakerVolume(unsigned int lvolume, unsigned int rvolume);
 
-	void SetThrottle(bool use) { m_throttle = use; }
 	virtual void StartLogDTKAudio(const std::string& filename)
 	{
 		if (!m_log_dtk_audio)
@@ -155,8 +154,6 @@ protected:
 
 	bool m_log_dtk_audio;
 	bool m_log_dsp_audio;
-
-	bool m_throttle;
 
 	std::mutex m_csMixing;
 

@@ -47,9 +47,9 @@ unsigned int CMixer::MixerFifo::Mix(short* samples, unsigned int numSamples, boo
 
 	u32 framelimit = SConfig::GetInstance().m_Framelimit;
 	float aid_sample_rate = m_input_sample_rate + offset;
-	if (consider_framelimit && framelimit > 2)
+	if (consider_framelimit && framelimit > 1)
 	{
-		aid_sample_rate = aid_sample_rate * (framelimit - 2) * 5 / VideoInterface::TargetRefreshRate;
+		aid_sample_rate = aid_sample_rate * (framelimit - 1) * 5 / VideoInterface::TargetRefreshRate;
 	}
 
 	const u32 ratio = (u32)( 65536.0f * aid_sample_rate / (float)m_mixer->m_sampleRate );
@@ -178,20 +178,6 @@ void CMixer::MixerFifo::PushSamples(const short *samples, unsigned int num_sampl
 
 void CMixer::PushSamples(const short *samples, unsigned int num_samples)
 {
-	if (m_throttle)
-	{
-		// The auto throttle function. This loop will put a ceiling on the CPU MHz.
-		while (num_samples + m_dma_mixer.AvailableSamples() >= MAX_SAMPLES)
-		{
-			if (*PowerPC::GetStatePtr() != PowerPC::CPU_RUNNING || g_sound_stream->IsMuted())
-				break;
-			// Shortcut key for Throttle Skipping
-			if (Core::GetIsFramelimiterTempDisabled())
-				break;
-			Common::SleepCurrentThread(1);
-			g_sound_stream->Update();
-		}
-	}
 	m_dma_mixer.PushSamples(samples, num_samples);
 	if (m_log_dsp_audio)
 		g_wave_writer_dsp.AddStereoSamplesBE(samples, num_samples);

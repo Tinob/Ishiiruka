@@ -157,7 +157,6 @@ namespace AudioCommon
 	{
 		if (g_sound_stream)
 		{
-			g_sound_stream->GetMixer()->SetThrottle(SConfig::GetInstance().m_Framelimit == 2);
 			int volume = SConfig::GetInstance().m_IsMuted ? 0 : SConfig::GetInstance().m_Volume;
 			g_sound_stream->SetVolume(volume);
 		}

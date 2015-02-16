@@ -253,9 +253,8 @@ void CConfigMain::InitializeGUILists()
 	// General page
 	// Framelimit
 	arrayStringFor_Framelimit.Add(_("Off"));
-	arrayStringFor_Framelimit.Add(_("Auto"));
-	arrayStringFor_Framelimit.Add(_("Audio"));
-	for (int i = 10; i <= 120; i += 5) // from 10 to 120
+	arrayStringFor_Framelimit.Add(_("Auto"));	
+	for (int i = 5; i <= 120; i += 5) // from 5 to 120
 		arrayStringFor_Framelimit.Add(wxString::Format("%i", i));
 
 	// Emulator Engine
