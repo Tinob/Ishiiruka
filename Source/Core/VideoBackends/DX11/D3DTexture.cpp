@@ -154,20 +154,24 @@ ID3D11Texture2D* &D3DTexture2D::GetTex() { return tex; }
 ID3D11ShaderResourceView* &D3DTexture2D::GetSRV() { return srv; }
 ID3D11RenderTargetView* &D3DTexture2D::GetRTV() { return rtv; }
 ID3D11DepthStencilView* &D3DTexture2D::GetDSV() { return dsv; }
+ID3D11UnorderedAccessView* &D3DTexture2D::GetUAV() { return uav; }
 
 D3DTexture2D::D3DTexture2D(ID3D11Texture2D* texptr, D3D11_BIND_FLAG bind,
 							DXGI_FORMAT srv_format, DXGI_FORMAT dsv_format, DXGI_FORMAT rtv_format, bool multisampled)
-							: ref(1), tex(texptr), srv(NULL), rtv(NULL), dsv(NULL)
+							: ref(1), tex(texptr), srv(NULL), rtv(NULL), dsv(NULL), uav(NULL)
 {
 	D3D11_SRV_DIMENSION srv_dim = multisampled ? D3D11_SRV_DIMENSION_TEXTURE2DMS : D3D11_SRV_DIMENSION_TEXTURE2D;
 	D3D11_DSV_DIMENSION dsv_dim = multisampled ? D3D11_DSV_DIMENSION_TEXTURE2DMS : D3D11_DSV_DIMENSION_TEXTURE2D;
 	D3D11_RTV_DIMENSION rtv_dim = multisampled ? D3D11_RTV_DIMENSION_TEXTURE2DMS : D3D11_RTV_DIMENSION_TEXTURE2D;
+	D3D11_UAV_DIMENSION uav_dim = multisampled ? D3D11_UAV_DIMENSION_TEXTURE2DARRAY : D3D11_UAV_DIMENSION_TEXTURE2D;
 	D3D11_SHADER_RESOURCE_VIEW_DESC srv_desc = CD3D11_SHADER_RESOURCE_VIEW_DESC(srv_dim, srv_format);
 	D3D11_DEPTH_STENCIL_VIEW_DESC dsv_desc = CD3D11_DEPTH_STENCIL_VIEW_DESC(dsv_dim, dsv_format);
 	D3D11_RENDER_TARGET_VIEW_DESC rtv_desc = CD3D11_RENDER_TARGET_VIEW_DESC(rtv_dim, rtv_format);
+	D3D11_UNORDERED_ACCESS_VIEW_DESC uav_desc = CD3D11_UNORDERED_ACCESS_VIEW_DESC(uav_dim, rtv_format);
 	if (bind & D3D11_BIND_SHADER_RESOURCE) D3D::device->CreateShaderResourceView(tex, &srv_desc, &srv);
 	if (bind & D3D11_BIND_RENDER_TARGET) D3D::device->CreateRenderTargetView(tex, &rtv_desc, &rtv);
 	if (bind & D3D11_BIND_DEPTH_STENCIL) D3D::device->CreateDepthStencilView(tex, &dsv_desc, &dsv);
+	if (bind & D3D11_BIND_UNORDERED_ACCESS) D3D::device->CreateUnorderedAccessView(tex, &uav_desc, &uav);
 	tex->AddRef();
 }
 
@@ -177,6 +181,7 @@ D3DTexture2D::~D3DTexture2D()
 	SAFE_RELEASE(rtv);
 	SAFE_RELEASE(dsv);
 	SAFE_RELEASE(tex);
+	SAFE_RELEASE(uav);
 }
 
 }  // namespace DX11

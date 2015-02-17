@@ -71,6 +71,9 @@
     <ClCompile Include="BoundingBox.cpp">
       <Filter>Render</Filter>
     </ClCompile>
+    <ClCompile Include="Depalettizer.cpp">
+      <Filter>Render</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="VertexManager.h">
@@ -194,6 +197,9 @@
       <Filter>GLInterface</Filter>
     </ClInclude>
     <ClInclude Include="BoundingBox.h">
+      <Filter>Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Depalettizer.h">
       <Filter>Render</Filter>
     </ClInclude>
   </ItemGroup>

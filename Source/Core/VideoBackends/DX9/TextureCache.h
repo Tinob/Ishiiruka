@@ -46,6 +46,8 @@ private:
 			bool isIntensity, bool scaleByHalf, u32 cbufid,
 			const float *colmat);
 
+		bool PalettizeFromBase(const TCacheEntryBase* base_entry, s32 texformat);
+
 		void Bind(u32 stage);
 		bool Save(const std::string& filename, u32 level);
 	};
@@ -53,6 +55,7 @@ private:
 	PC_TexFormat GetNativeTextureFormat(const s32 texformat, const TlutFormat tlutfmt, u32 width, u32 height);
 
 	TCacheEntryBase* CreateTexture(const TCacheEntryConfig& config);
+	void LoadLut(u32 lutFmt, void* addr, u32 size);
 };
 
 }

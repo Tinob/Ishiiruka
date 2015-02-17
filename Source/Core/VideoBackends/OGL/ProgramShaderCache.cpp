@@ -303,13 +303,19 @@ bool ProgramShaderCache::CompileShader(SHADER& shader, const char* vcode, const 
 	return true;
 }
 
-GLuint ProgramShaderCache::CompileSingleShader(GLuint type, const char* code)
+GLuint ProgramShaderCache::CompileSingleShader(GLuint type, const char* code, const char **macros,
+	const u32 count)
 {
 	GLuint result = glCreateShader(type);
 
-	const char *src[] = {s_glsl_header, code};
-
-	glShaderSource(result, 2, src, nullptr);
+	const char **src = new const char *[count + 2];
+	src[0] = s_glsl_header;
+	for (size_t i = 0; i < count; i++)
+	{
+		src[i + 1] = macros[i];
+	}
+	src[count + 2 - 1] = code;
+	glShaderSource(result, count + 2, src, nullptr);
 	glCompileShader(result);
 	GLint compileStatus;
 	glGetShaderiv(result, GL_COMPILE_STATUS, &compileStatus);

@@ -7,11 +7,13 @@
 #include "VideoBackends/DX11/D3DPtr.h"
 #include "VideoBackends/DX11/D3DBase.h"
 #include "VideoBackends/DX11/D3DShader.h"
+#include "VideoBackends/DX11/D3DUtil.h"
 #include "VideoBackends/DX11/FramebufferManager.h"
 #include "VideoBackends/DX11/D3DState.h"
 #include "VideoBackends/DX11/CSTextureDecoder.h"
 #include "VideoBackends/DX11/Render.h"
 #include "VideoBackends/DX11/TextureCache.h"
+#include "VideoBackends/DX11/VertexShaderCache.h"
 
 
 namespace DX11
@@ -23,6 +25,7 @@ static const char DECODER_CS[] = R"HLSL(
 
 Buffer<uint> rawData_ : register(t0);
 Buffer<uint> lutData_ : register(t1);
+Texture2D<float4> sourceData_ : register(t2);
 
 RWTexture2D<uint4> dstTexture_ : register(u0);
 
@@ -263,10 +266,16 @@ uint4 DecodeRGBA8FromTMEM( uint2 st ) {
 	return uint4( (ar&0x00ff)>>0, (gb&0xff00)>>8, (gb&0x00ff)>>0, (ar&0xff00)>>8);
 }
 
+uint4 DepalettizeC4( uint2 st ) {
+	uint idx = uint(round(sourceData_.Load(int3(st.xy, 0)).r * 15.0));
+	return LUT_FUNC(idx);
+}
 
-#ifndef FMT
-#error no fmt
-#endif 
+uint4 DepalettizeC8( uint2 st ) {
+	uint idx = uint(round(sourceData_.Load(int3(st.xy, 0)).r * 255.0));
+	return LUT_FUNC(idx);	
+}
+
 [numthreads(8,8,1)]
 void main(in uint3 groupIdx : SV_GroupID, in uint3 subgroup : SV_GroupThreadID) {
 	uint2 st = groupIdx.xy * 8 + subgroup.xy;
@@ -274,6 +283,74 @@ void main(in uint3 groupIdx : SV_GroupID, in uint3 subgroup : SV_GroupThreadID) 
 	{
 		dstTexture_[st] = DECODER_FUNC( st ); 
 	}
+}
+//
+)HLSL";
+
+static const char DEPALETTIZE_SHADER[] = R"HLSL(
+//
+
+#ifndef NUM_COLORS
+#error NUM_COLORS was not defined
+#endif
+
+#ifndef LUT_FUNC
+#error LUT_FUNC not set
+#endif
+
+Texture2D<float4> sourceData_ : register(t0);
+
+Buffer<uint> lutData_ : register(t1);
+
+float4 Read5A3( uint v ) {
+	if (v&0x8000) {
+		uint r = (v&0x7C00)>>7; r |= r>>5;
+		uint g = (v&0x03E0)>>2;	g |= g>>5;
+		uint b = (v&0x001F)<<3;	b |= b>>5;
+		return float4(r,g,b,255)/ 255.0;
+	} else {
+		uint a = (v&0x7000)>>7; a |= (a>>3) | (a>>6);
+		uint r = (v&0x0F00)>>4; r |= r>>4;
+		uint g = (v&0x00F0)>>0; g |= g>>4;
+		uint b = (v&0x000F)<<4; b |= b>>4;
+		return float4(r,g,b,a) / 255.0;
+	}
+}
+
+float4 Read565( uint v ) {
+	uint b = (v&0x1F)<<3; b |= b >> 5;
+	uint g = (v&0x7E0)>>3; g |= g >> 6;
+	uint r = (v&0xF800)>>8; r |= r >> 5;
+	return float4(r,g,b,255)/255.0;
+}
+
+
+float4 ReadLutIA8( uint idx ) {
+	uint v = lutData_[idx];
+	//v = ((v&0xff)<<8)| ((v&0xff00)>>8); // findout why byteswap is not needed in IA8 tlut reads
+	return float4( uint(v&0xff).xxx, (v&0xff00)>>8 ) / 255.0;
+}
+
+float4 ReadLut565( uint idx ) {
+	uint v = lutData_[idx];
+	v = ((v&0xff)<<8)| ((v&0xff00)>>8);
+  return Read565(v);
+}
+
+float4 ReadLut5A3( uint idx ) {
+	uint v = lutData_[idx];
+	v = ((v&0xff)<<8)| ((v&0xff00)>>8);
+	return Read5A3(v);
+}
+
+void main(out float4 ocol0 : SV_Target, in float4 pos : SV_Position)
+{	
+#if NUM_COLORS == 16
+	uint idx = uint(round(sourceData_.Load(int3(pos.xy, 0)).r * 15.0));
+#else
+	uint idx = uint(round(sourceData_.Load(int3(pos.xy, 0)).r * 255.0));
+#endif
+	ocol0 = LUT_FUNC(idx);
 }
 //
 )HLSL";
@@ -325,6 +402,13 @@ void CSTextureDecoder::Shutdown()
 	m_lutSrv.reset();
 	m_lutRsc.reset();
 	m_params.reset();
+	for (size_t i = 0; i < 3; i++)
+	{
+		for (size_t j = 0; j < 2; j++)
+		{
+			m_depalettize_shaders[i][j].reset();
+		}
+	}
 	m_ready = false;
 }
 
@@ -371,23 +455,9 @@ char const* DecFunc[] = {
 "DecodeRGBA8FromTMEM",//
 };
 
-char const* valType[] = {
-"1",
-"2",
-"3",
-"4",
-"5",
-"6",
-"7",
-"8",
-"9",
-"10",
-"11",
-"12",
-"13",
-"14",
-"15",
-"16",
+char const* DepalettizeFuncs[] = {
+"DepalettizeC4",
+"DepalettizeC8"
 };
 
 char const* LutFunc[] = {
@@ -396,18 +466,18 @@ char const* LutFunc[] = {
 "ReadLut5A3",
 };
 
-bool CSTextureDecoder::SetStaticShader(TextureFormat srcFmt, u32 lutFmt, u32 dstFmt ) 
+bool CSTextureDecoder::SetStaticShader(u32 srcFmt, u32 lutFmt) 
 {
-	if (!DecFuncSupported[u32(srcFmt) & 0xF])
+	if (!DecFuncSupported[srcFmt & 0xF])
 	{
 		return false;
 	}
-	u32 rawFmt = (u32(srcFmt)&0xF);
-	if (rawFmt < GX_TF_C4 || rawFmt > GX_TF_C14X2 ) 
+	u32 rawFmt = (srcFmt & 0xF);
+	if (rawFmt < GX_TF_C4 || rawFmt > GX_TF_C14X2)
 	{
 		lutFmt = 0;
 	}
-	auto key = MakeComboKey(srcFmt,lutFmt,dstFmt);
+	auto key = MakeComboKey(srcFmt,lutFmt);
 
 	auto it = m_staticShaders.find(key);
 
@@ -421,9 +491,8 @@ bool CSTextureDecoder::SetStaticShader(TextureFormat srcFmt, u32 lutFmt, u32 dst
 	
 	D3D_SHADER_MACRO macros[] = 
 	{
-		{ "DECODER_FUNC", DecFunc[u32(srcFmt) & 0xF] },
-		{ "LUT_FUNC", LutFunc[u32(lutFmt) & 0xF] },
-		{ "FMT", valType[u32(srcFmt) & 0xF] },
+		{ "DECODER_FUNC", DecFunc[rawFmt] },
+		{ "LUT_FUNC", LutFunc[lutFmt & 0xF] },		
 		{ nullptr, nullptr }
 	};
 
@@ -438,6 +507,77 @@ bool CSTextureDecoder::SetStaticShader(TextureFormat srcFmt, u32 lutFmt, u32 dst
 	HRESULT hr = D3D::device->CreateComputeShader(bytecode.Data(), bytecode.Size(), nullptr, ToAddr(result) );
 	CHECK(SUCCEEDED(hr), "create efb encoder pixel shader");
 	D3D::context->CSSetShader(result.get(),nullptr, 0);
+
+	return bool(result);
+}
+
+ID3D11PixelShader* CSTextureDecoder::GetDepalettizerPShader(BaseType srcFmt, u32 lutFmt)
+{
+	switch (srcFmt)
+	{
+
+	case Unorm4:
+		if (!m_depalettize_shaders[lutFmt][Unorm4])
+		{
+			D3D_SHADER_MACRO macros[] = {
+				{ "NUM_COLORS", "16" },
+				{ "LUT_FUNC", LutFunc[lutFmt & 0xF] },
+				{ NULL, NULL }
+			};
+			m_depalettize_shaders[lutFmt][Unorm4] = D3D::CompileAndCreatePixelShader(DEPALETTIZE_SHADER, macros);
+		}
+		return m_depalettize_shaders[lutFmt][Unorm4].get();
+
+	case Unorm8:
+		if (!m_depalettize_shaders[lutFmt][Unorm8])
+		{
+			D3D_SHADER_MACRO macros[] = {
+				{ "NUM_COLORS", "256" },
+				{ "LUT_FUNC", LutFunc[lutFmt & 3] },
+				{ NULL, NULL }
+			};
+			m_depalettize_shaders[lutFmt][Unorm8] = D3D::CompileAndCreatePixelShader(DEPALETTIZE_SHADER, macros);
+		}
+		return m_depalettize_shaders[lutFmt][Unorm8].get();	
+	default:
+		_assert_msg_(VIDEO, 0, "Invalid depalettizer base type");
+		return NULL;
+	}
+}
+
+bool CSTextureDecoder::SetDepalettizeShader(BaseType srcFmt, u32 lutFmt)
+{
+	u32 rawFmt = u32(srcFmt) + 16;
+	auto key = MakeComboKey(rawFmt, lutFmt);
+
+	auto it = m_staticShaders.find(key);
+
+	if (it != m_staticShaders.end())
+	{
+		D3D::context->CSSetShader(it->second.get(), nullptr, 0);
+		return bool(it->second);
+	}
+
+	// Shader permutation not found, so compile it
+
+	D3D_SHADER_MACRO macros[] =
+	{
+		{ "DECODER_FUNC", DepalettizeFuncs[u32(srcFmt) & 1] },
+		{ "LUT_FUNC", LutFunc[lutFmt & 3] },
+		{ nullptr, nullptr }
+	};
+
+	D3DBlob bytecode = nullptr;
+	if (!D3D::CompileShader(D3D::ShaderType::Compute, DECODER_CS, bytecode, macros)) {
+		WARN_LOG(VIDEO, "noooo");
+	}
+
+	m_shaderCache.Append(key, bytecode.Data(), u32(bytecode.Size()));
+
+	auto & result = m_staticShaders[key];
+	HRESULT hr = D3D::device->CreateComputeShader(bytecode.Data(), bytecode.Size(), nullptr, ToAddr(result));
+	CHECK(SUCCEEDED(hr), "create efb encoder pixel shader");
+	D3D::context->CSSetShader(result.get(), nullptr, 0);
 
 	return bool(result);
 }
@@ -461,10 +601,10 @@ void CSTextureDecoder::LoadLut(u32 lutFmt, void* addr, u32 size )
 }
 bool CSTextureDecoder::Decode(const u8* src, u32 srcsize, u32 srcFmt, u32 w, u32 h, u32 level, D3DTexture2D& dstTexture)
 {
-	if (!m_ready || w < 64 || h < 64) // Make sure we initialized OK and texture size is big enough
+	if (!m_ready || w < 32 || h < 32) // Make sure we initialized OK and texture size is big enough
 		return false;
 
-	if (!SetStaticShader(TextureFormat(srcFmt),m_lutFmt,0)) 
+	if (!SetStaticShader(srcFmt,m_lutFmt)) 
 	{
 		return false;
 	}
@@ -526,7 +666,7 @@ bool CSTextureDecoder::DecodeRGBAFromTMEM( u8 const * ar_src, u8 const * bg_src,
 	if (!m_ready) // Make sure we initialized OK
 		return false;
 
-	if (!SetStaticShader(TextureFormat(0xf),0,0)) 
+	if (!SetStaticShader(0xf,0)) 
 	{
 		return false;
 	}
@@ -587,6 +727,71 @@ bool CSTextureDecoder::DecodeRGBAFromTMEM( u8 const * ar_src, u8 const * bg_src,
 	pSrcBox.back = 1;
 	D3D::context->CopySubresourceRegion(dstTexture.GetTex(), 0, 0, 0, 0, m_pool[m_pool_idx].m_rsc.get(), 0, &pSrcBox);
 	m_pool_idx++;
+	return true;
+}
+
+bool CSTextureDecoder::Depalettize(D3DTexture2D& dstTexture, D3DTexture2D& srcTexture, BaseType baseType, u32 width, u32 height)
+{
+	if (true/*D3D::GetFeatureLevel() < D3D_FEATURE_LEVEL_11_0*/) // Disable compute shader path, is not working
+	{
+		ID3D11PixelShader* shader = GetDepalettizerPShader(baseType, m_lutFmt);
+		if (!shader)
+		{
+			return false;
+		}
+
+		g_renderer->ResetAPIState();
+		D3D::stateman->Apply();
+
+		D3D11_VIEWPORT vp = CD3D11_VIEWPORT(0.f, 0.f, FLOAT(width), FLOAT(height));
+		D3D::context->RSSetViewports(1, &vp);
+
+		D3D::context->OMSetRenderTargets(1, &dstTexture.GetRTV(), NULL);
+		D3D::context->PSSetShaderResources(1, 1, D3D::ToAddr(m_lutSrv));
+		D3D11_RECT rsource = { 0, 0, width, height };
+		D3D::drawShadedTexQuad(
+			srcTexture.GetSRV(),
+			&rsource,
+			width, height,
+			shader, 
+			VertexShaderCache::GetSimpleVertexShader(),
+			VertexShaderCache::GetSimpleInputLayout()
+			);
+
+		ID3D11ShaderResourceView* nullDummy = NULL;
+		D3D::context->PSSetShaderResources(0, 1, &nullDummy);
+		D3D::context->PSSetShaderResources(1, 1, &nullDummy);
+
+		g_renderer->RestoreAPIState();
+		D3D::context->OMSetRenderTargets(1,
+			&FramebufferManager::GetEFBColorTexture()->GetRTV(),
+			FramebufferManager::GetEFBDepthTexture()->GetDSV());
+	}
+	else
+	{
+		if (!SetDepalettizeShader(baseType, m_lutFmt))
+		{
+			return false;
+		}
+		ID3D11UnorderedAccessView* uav = dstTexture.GetUAV();
+		D3D::context->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
+
+		ID3D11ShaderResourceView* srvs[] = { nullptr, m_lutSrv.get(), srcTexture.GetSRV() };
+		D3D::context->CSSetShaderResources(0, 3, srvs);
+
+		D3D11_MAPPED_SUBRESOURCE map;
+		D3D::context->Map(m_params.get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
+		((u32*)map.pData)[0] = width;
+		((u32*)map.pData)[1] = height;
+		D3D::context->Unmap(m_params.get(), 0);
+		D3D::context->CSSetConstantBuffers(0, 1, D3D::ToAddr(m_params));
+
+		D3D::context->Dispatch((width + 7) / 8, (height + 7) / 8, 1);
+		uav = nullptr;
+		D3D::context->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
+		ID3D11ShaderResourceView* srv = nullptr;
+		D3D::context->CSSetShaderResources(2, 1, &srv);
+	}
 	return true;
 }
 

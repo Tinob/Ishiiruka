@@ -43,6 +43,8 @@ private:
 			bool isIntensity, bool scaleByHalf, u32 cbufid,
 			const float *colmat);
 
+		bool PalettizeFromBase(const TCacheEntryBase* base_entry, s32 texformat);
+
 		void Bind(u32 stage);
 		bool Save(const std::string& filename, u32 level);
 	};

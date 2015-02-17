@@ -84,7 +84,7 @@ public:
 	static void GetShaderId(SHADERUID *uid, DSTALPHA_MODE dstAlphaMode, u32 components);
 
 	static bool CompileShader(SHADER &shader, const char* vcode, const char* pcode);
-	static GLuint CompileSingleShader(GLuint type, const char *code);
+	static GLuint CompileSingleShader(GLuint type, const char* code, const char **macros = nullptr, const u32 count = 0);
 	static void UploadConstants();
 
 	static void Init();

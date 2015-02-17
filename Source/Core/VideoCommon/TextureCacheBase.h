@@ -4,6 +4,7 @@
 
 #pragma once
 #include <map>
+#include <unordered_map>
 
 #include "Common/CommonTypes.h"
 #include "Common/Thread.h"
@@ -26,21 +27,21 @@ public:
 	struct TCacheEntryConfig
 	{
 		TCacheEntryConfig() : width(0), height(0), levels(1), layers(1), rendertarget(false), pcformat(PC_TEX_FMT_NONE) {}
-		
+
 		u32 width, height;
 		u32 levels, layers;
 		bool rendertarget;
 		PC_TexFormat pcformat;
 		bool operator == (const TCacheEntryConfig& b) const
 		{
-			return width == b.width 
-				&& height == b.height 
-				&& levels == b.levels 
-				&& layers == b.layers 
+			return width == b.width
+				&& height == b.height
+				&& levels == b.levels
+				&& layers == b.layers
 				&& rendertarget == b.rendertarget
 				&& pcformat == b.pcformat;
 		}
-		
+
 		struct Hasher
 		{
 			size_t operator()(const TextureCache::TCacheEntryConfig& c) const
@@ -63,7 +64,7 @@ public:
 		u32 addr;
 		u32 size_in_bytes;
 		u64 hash;
-		u32 format;		
+		u32 format;
 		enum TexCacheEntryType type;
 
 		u32 native_levels;
@@ -107,7 +108,7 @@ public:
 			PEControl::PixelFormat srcFormat, const EFBRectangle& srcRect,
 			bool isIntensity, bool scaleByHalf, unsigned int cbufid,
 			const float *colmat) = 0;
-
+		virtual bool PalettizeFromBase(const TCacheEntryBase* base_entry, s32 texformat) = 0;
 		bool OverlapsMemoryRange(u32 range_address, u32 range_size) const;
 
 		bool IsEfbCopy() { return (type == TCET_EC_VRAM || type == TCET_EC_DYNAMIC); }
@@ -126,7 +127,7 @@ public:
 	static void ClearRenderTargets();	// currently only used by OGL
 	static bool Find(u32 start_address, u64 hash);
 
-	virtual PC_TexFormat GetNativeTextureFormat(const s32 texformat, 
+	virtual PC_TexFormat GetNativeTextureFormat(const s32 texformat,
 		const TlutFormat tlutfmt, u32 width, u32 height) = 0;
 	virtual TCacheEntryBase* CreateTexture(const TCacheEntryConfig& config) = 0;
 
@@ -135,11 +136,11 @@ public:
 		const EFBRectangle& srcRect, bool isIntensity, bool scaleByHalf);
 
 	static void RequestInvalidateTextureCache();
-	
-	virtual void LoadLut(u32 lutFmt, void* addr, u32 size) {}	
-	
+
+	virtual void LoadLut(u32 lutFmt, void* addr, u32 size) = 0;
+
 protected:
-	static GC_ALIGNED16(u8 *temp);	
+	static GC_ALIGNED16(u8 *temp);
 	static size_t temp_size;
 	TextureCache();
 private:
@@ -151,7 +152,8 @@ private:
 	static TCacheEntryBase* AllocateTexture(const TCacheEntryConfig& config);
 	static void FreeTexture(TCacheEntryBase* entry);
 
-	typedef std::map<u32, TCacheEntryBase*> TexCache;
+	typedef std::map<u64, TCacheEntryBase*> TexGroupCache;
+	typedef std::map<u32, TexGroupCache> TexCache;
 	typedef std::unordered_multimap<TCacheEntryConfig, TCacheEntryBase*, TCacheEntryConfig::Hasher> TexPool;
 
 	static TexCache textures;

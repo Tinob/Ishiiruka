@@ -25,6 +25,7 @@ public:
 	bool FormatSupported(u32 srcFmt);
 	bool Decode(const u8* src, u32 srcsize, u32 srcFmt, u32 w, u32 h, u32 levels, D3DTexture2D& dstTexture) override;
 	bool DecodeRGBAFromTMEM( u8 const * ar_src, u8 const * bg_src, u32 width, u32 height, D3DTexture2D& dstTexture) override;
+	bool Depalettize(D3DTexture2D& dstTexture, D3DTexture2D& srcTexture, BaseType baseType, u32 width, u32 height) override;
 	void LoadLut(u32 lutFmt, void* addr, u32 size ) override;
 private:
 
@@ -47,16 +48,16 @@ private:
 	// Stuff only used in static-linking mode (SM4.0-compatible)
 
 	bool InitStaticMode();
-	bool SetStaticShader(TextureFormat srcFmt, u32 lutFmt, u32 dstFmt);
+	bool SetStaticShader(u32 srcFmt, u32 lutFmt);
+	bool SetDepalettizeShader(BaseType srcFmt, u32 lutFmt);
 
 	typedef unsigned int ComboKey; // Key for a shader combination
 
 	ID3D11ComputeShader* InsertShader( ComboKey const &key, u8 const *data, u32 sz);
 
-	ComboKey MakeComboKey(TextureFormat srcFmt, u32 lutFmt, u32 dstFmt)
+	ComboKey MakeComboKey(u32 srcFmt, u32 lutFmt)
 	{
-		u32 rawFmt = (u32(srcFmt)&0xF);
-		return rawFmt | ((lutFmt&0xF)<<16);
+		return srcFmt | ((lutFmt&0xF)<<16);
 	}
 
 	typedef std::map<ComboKey, D3D::ComputeShaderPtr> ComboMap;
@@ -87,6 +88,8 @@ private:
 	friend ShaderCacheInserter;
 
 	LinearDiskCache<ComboKey, u8> m_shaderCache;
+	D3D::PixelShaderPtr m_depalettize_shaders[3][2];
+	ID3D11PixelShader* GetDepalettizerPShader(BaseType baseType, u32 lutfmt);
 };
 
 }

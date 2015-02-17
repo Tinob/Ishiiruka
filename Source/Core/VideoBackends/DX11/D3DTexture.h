@@ -32,6 +32,7 @@ public:
 	ID3D11ShaderResourceView* &GetSRV();
 	ID3D11RenderTargetView* &GetRTV();
 	ID3D11DepthStencilView* &GetDSV();
+	ID3D11UnorderedAccessView* &GetUAV();
 
 private:
 	~D3DTexture2D();
@@ -40,6 +41,7 @@ private:
 	ID3D11ShaderResourceView* srv;
 	ID3D11RenderTargetView* rtv;
 	ID3D11DepthStencilView* dsv;
+	ID3D11UnorderedAccessView* uav;
 	D3D11_BIND_FLAG bindflags;
 	UINT ref;
 };

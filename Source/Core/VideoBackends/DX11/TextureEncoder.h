@@ -101,6 +101,12 @@ namespace DX11
 	// The maximum amount of data that the texture encoder can generate in one call
 	static const UINT MAX_BYTES_PER_ENCODE = MAX_BYTES_PER_BLOCK_ROW*(EFB_HEIGHT / 4);
 
+	enum BaseType
+	{
+		Unorm4 = 0,
+		Unorm8
+	};
+
 	class TextureEncoder
 	{
 
@@ -129,6 +135,7 @@ namespace DX11
 		virtual bool FormatSupported(u32 srcFmt) = 0;
 		virtual bool Decode(const u8* src, u32 srcsize, u32 srcFmt, u32 w, u32 h, u32 levels, D3DTexture2D& dstTexture) = 0;
 		virtual bool DecodeRGBAFromTMEM(u8 const * ar_src, u8 const * bg_src, u32 width, u32 height, D3DTexture2D& dstTexture) = 0;
+		virtual bool Depalettize(D3DTexture2D& dstTexture, D3DTexture2D& srcTexture, BaseType baseType, u32 width, u32 height) = 0;
 		virtual void LoadLut(u32 lutFmt, void* addr, u32 size) = 0;
 
 	};

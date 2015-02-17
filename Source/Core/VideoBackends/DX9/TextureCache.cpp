@@ -20,6 +20,7 @@
 #include "VideoBackends/DX9/TextureCache.h"
 #include "VideoBackends/DX9/TextureConverter.h"
 #include "VideoBackends/DX9/VertexShaderCache.h"
+#include "VideoBackends/DX9/Depalettizer.h"
 
 #include "VideoCommon/VideoConfig.h"
 #include "VideoCommon/Debugger.h"
@@ -53,6 +54,8 @@ static const D3DFORMAT PC_TexFormat_To_D3DFORMAT[11]
 static LPDIRECT3DTEXTURE9 s_memPoolTexture[MEM_TEXTURE_POOL_SIZE];
 static u32 s_memPoolTextureW[MEM_TEXTURE_POOL_SIZE];
 static u32 s_memPoolTextureH[MEM_TEXTURE_POOL_SIZE];
+
+static Depalettizer *s_depaletizer = nullptr;
 
 TextureCache::TCacheEntry::~TCacheEntry()
 {
@@ -240,6 +243,18 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, u32 dstFormat,
 	g_renderer->RestoreAPIState();
 }
 
+bool TextureCache::TCacheEntry::PalettizeFromBase(const TCacheEntryBase* base_entry, s32 texformat)
+{
+	Depalettizer::BaseType baseType = Depalettizer::Unorm8;
+	if (texformat == GX_TF_C4)
+		baseType = Depalettizer::Unorm4;
+	else if (texformat == GX_TF_C8)
+		baseType = Depalettizer::Unorm8;
+	else
+		return false;
+	return s_depaletizer->Depalettize(texture, ((TextureCache::TCacheEntry*)base_entry)->texture, baseType);
+}
+
 PC_TexFormat TextureCache::GetNativeTextureFormat(const s32 texformat, const TlutFormat tlutfmt, u32 width, u32 height)
 {
 	const bool compressed_supported = ((width & 3) == 0) && ((height & 3) == 0);
@@ -269,6 +284,11 @@ TextureCache::TCacheEntryBase* TextureCache::CreateTexture(const TCacheEntryConf
 	return entry;
 }
 
+void TextureCache::LoadLut(u32 lutFmt, void* addr, u32 size)
+{
+	s_depaletizer->UploadPalette(lutFmt, addr, size);
+}
+
 TextureCache::TextureCache()
 {
 	for (size_t i = 0; i < MEM_TEXTURE_POOL_SIZE; i++)
@@ -277,6 +297,7 @@ TextureCache::TextureCache()
 		s_memPoolTextureW[i] = 1024u;
 		s_memPoolTextureH[i] = 1024u;
 	}
+	s_depaletizer = new Depalettizer();
 }
 
 TextureCache::~TextureCache()
@@ -288,6 +309,11 @@ TextureCache::~TextureCache()
 			s_memPoolTexture[i]->Release();
 			s_memPoolTexture[i] = nullptr;
 		}
+	}
+	if (s_depaletizer)
+	{
+		delete s_depaletizer;
+		s_depaletizer = nullptr;
 	}
 }
 

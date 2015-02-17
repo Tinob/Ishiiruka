@@ -41,6 +41,9 @@
     <ClCompile Include="PerfQuery.cpp">
       <Filter>Render</Filter>
     </ClCompile>
+    <ClCompile Include="Depalettizer.cpp">
+      <Filter>Render</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="main.h" />
@@ -79,6 +82,9 @@
       <Filter>D3D</Filter>
     </ClInclude>
     <ClInclude Include="PerfQuery.h">
+      <Filter>Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Depalettizer.h">
       <Filter>Render</Filter>
     </ClInclude>
   </ItemGroup>

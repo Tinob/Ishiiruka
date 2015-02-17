@@ -173,8 +173,13 @@ TextureCache::TCacheEntryBase* TextureCache::CreateTexture(const TCacheEntryConf
 {
 	if (config.rendertarget)
 	{
+		int flags = ((int)D3D11_BIND_RENDER_TARGET | (int)D3D11_BIND_SHADER_RESOURCE);
+		if (D3D::GetFeatureLevel() >= D3D_FEATURE_LEVEL_11_0)
+		{
+			flags |= D3D11_BIND_UNORDERED_ACCESS;
+		}
 		return new TCacheEntry(config, D3DTexture2D::Create(config.width, config.height,
-			(D3D11_BIND_FLAG)((int)D3D11_BIND_RENDER_TARGET | (int)D3D11_BIND_SHADER_RESOURCE),
+			(D3D11_BIND_FLAG)flags,
 			D3D11_USAGE_DEFAULT, DXGI_FORMAT_R8G8B8A8_UNORM));
 	}
 	bool swaprg = false;
@@ -303,6 +308,18 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, u32 dstFormat,
 
 		this->hash = hash;
 	}
+}
+
+bool TextureCache::TCacheEntry::PalettizeFromBase(const TCacheEntryBase* base_entry, s32 texformat)
+{
+	BaseType baseType = Unorm4;
+	if (texformat == GX_TF_C4)
+		baseType = Unorm4;
+	else if (texformat == GX_TF_C8)
+		baseType = Unorm8;
+	else
+		return false;
+	return s_decoder->Depalettize(*texture, *((TextureCache::TCacheEntry*)base_entry)->texture, baseType, base_entry->config.width, base_entry->config.height);
 }
 
 TextureCache::TextureCache()

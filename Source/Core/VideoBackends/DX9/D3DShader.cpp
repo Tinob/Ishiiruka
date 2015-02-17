@@ -2,14 +2,12 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include <d3dx9.h>
 #include <string>
 
 #include "VideoBackends/DX9/D3DShader.h"
 
 #include "VideoCommon/VideoConfig.h"
 #include "VideoCommon/HLSLCompiler.h"
-
 
 namespace DX9
 {
@@ -28,8 +26,14 @@ LPDIRECT3DVERTEXSHADER9 CreateVertexShaderFromByteCode(const u8 *bytecode, u32 l
 	return v_shader;
 }
 
+enum ShaderType
+{
+	vertex_shaer,
+	pixel_shader
+};
+
 // code->bytecode.
-bool CompileVertexShader(const char *code, u32 len, u8 **bytecode, u32 *bytecodelen)
+bool CompileShader(const char *code, u32 len, u8 **bytecode, u32 *bytecodelen, ShaderType shader_type, const D3D_SHADER_MACRO* macros)
 {
 	ID3DBlob* shaderBuffer = NULL;
 	ID3DBlob* errorBuffer = NULL;
@@ -38,10 +42,10 @@ bool CompileVertexShader(const char *code, u32 len, u8 **bytecode, u32 *bytecode
 		code,
 		len,
 		nullptr,
-		nullptr,
+		macros,
 		nullptr,
 		"main",
-		D3D::VertexShaderVersionString(),
+		shader_type == vertex_shaer ? D3D::VertexShaderVersionString() : D3D::PixelShaderVersionString(),
 		D3DCOMPILE_SKIP_VALIDATION | D3DCOMPILE_OPTIMIZATION_LEVEL3,
 		0,
 		&shaderBuffer,
@@ -51,16 +55,17 @@ bool CompileVertexShader(const char *code, u32 len, u8 **bytecode, u32 *bytecode
 	{
 		static u32 num_failures = 0;
 		char szTemp[MAX_PATH];
-		sprintf(szTemp, "%sbad_vs_%04i.txt", File::GetUserPath(D_DUMP_IDX).c_str(), num_failures++);
+		sprintf(szTemp, "%sbad_%s_%04i.txt", File::GetUserPath(D_DUMP_IDX).c_str(), shader_type == vertex_shaer ? "vs" : "ps" , num_failures++);
 		std::ofstream file;
 		OpenFStream(file, szTemp, std::ios_base::out);
 		file << code;
 		file.close();
 
-		PanicAlert("Failed to compile vertex shader!\nThis usually happens when trying to use Dolphin with an outdated GPU or integrated GPU like the Intel GMA series.\n\nIf you're sure this is Dolphin's error anyway, post the contents of %s along with this error message at the forums.\n\nDebug info (%s):\n%s",
-						szTemp,
-						D3D::VertexShaderVersionString(),
-						(char*)errorBuffer->GetBufferPointer());
+		PanicAlert("Failed to compile %s shader!\nThis usually happens when trying to use Dolphin with an outdated GPU or integrated GPU like the Intel GMA series.\n\nIf you're sure this is Dolphin's error anyway, post the contents of %s along with this error message at the forums.\n\nDebug info (%s):\n%s",
+			shader_type == vertex_shaer ? "vertex" : "pixel",
+			szTemp,
+			shader_type == vertex_shaer ? D3D::VertexShaderVersionString() : D3D::PixelShaderVersionString(),
+			(char*)errorBuffer->GetBufferPointer());
 
 		*bytecode = NULL;
 		*bytecodelen = 0;
@@ -78,6 +83,12 @@ bool CompileVertexShader(const char *code, u32 len, u8 **bytecode, u32 *bytecode
 	if (errorBuffer)
 		errorBuffer->Release();
 	return SUCCEEDED(hr) ? true : false;
+}
+
+// code->bytecode.
+bool CompileVertexShader(const char *code, u32 len, u8 **bytecode, u32 *bytecodelen, const D3D_SHADER_MACRO* macros)
+{
+	return CompileShader(code, len, bytecode, bytecodelen, vertex_shaer, macros);
 }
 
 // bytecode->shader
@@ -92,65 +103,16 @@ LPDIRECT3DPIXELSHADER9 CreatePixelShaderFromByteCode(const u8 *bytecode, u32 len
 }
 
 // code->bytecode
-bool CompilePixelShader(const char *code, u32 len, u8 **bytecode, u32 *bytecodelen)
+bool CompilePixelShader(const char *code, u32 len, u8 **bytecode, u32 *bytecodelen, const D3D_SHADER_MACRO* macros)
 {
-	ID3DBlob* shaderBuffer = 0;
-	ID3DBlob* errorBuffer = 0;
-
-	// Someone:
-	// For some reason, I had this kind of errors : "Shader uses texture addressing operations
-	// in a dependency chain that is too complex for the target shader model (ps_2_0) to handle."
-	HRESULT hr = HLSLCompiler::getInstance().CompileShader(
-		code,
-		len,
-		nullptr,
-		nullptr,
-		nullptr,
-		"main",
-		D3D::PixelShaderVersionString(),
-		D3DCOMPILE_SKIP_VALIDATION | D3DCOMPILE_OPTIMIZATION_LEVEL3,
-		0,
-		&shaderBuffer,
-		&errorBuffer);;
-
-	if (FAILED(hr))
-	{
-		static u32 num_failures = 0;
-		char szTemp[MAX_PATH];
-		sprintf(szTemp, "%sbad_ps_%04i.txt", File::GetUserPath(D_DUMP_IDX).c_str(), num_failures++);
-		std::ofstream file;
-		OpenFStream(file, szTemp, std::ios_base::out);
-		file << code;
-		file.close();
-
-		PanicAlert("Failed to compile pixel shader!\nThis usually happens when trying to use Dolphin with an outdated GPU or integrated GPU like the Intel GMA series.\n\nIf you're sure this is Dolphin's error anyway, post the contents of %s along with this error message at the forums.\n\nDebug info (%s):\n%s",
-						szTemp,
-						D3D::PixelShaderVersionString(),
-						(char*)errorBuffer->GetBufferPointer());
-
-		*bytecode = NULL;
-		*bytecodelen = 0;
-	}
-	else
-	{
-		*bytecodelen = (u32)shaderBuffer->GetBufferSize();
-		*bytecode = new u8[*bytecodelen];
-		memcpy(*bytecode, shaderBuffer->GetBufferPointer(), *bytecodelen);
-	}
-
-	//cleanup
-	if (shaderBuffer)
-		shaderBuffer->Release();
-	if (errorBuffer)
-		errorBuffer->Release();
-	return SUCCEEDED(hr) ? true : false;
+	return CompileShader(code, len, bytecode, bytecodelen, pixel_shader, macros);
 }
 
-LPDIRECT3DVERTEXSHADER9 CompileAndCreateVertexShader(const char *code, u32 len)
+LPDIRECT3DVERTEXSHADER9 CompileAndCreateVertexShader(const char *code, u32 len, const D3D_SHADER_MACRO* macros)
 {
 	u8 *bytecode;
 	u32 bytecodelen;
-	if (CompileVertexShader(code, len, &bytecode, &bytecodelen))
+	if (CompileVertexShader(code, len, &bytecode, &bytecodelen, macros))
 	{
 		LPDIRECT3DVERTEXSHADER9 v_shader = CreateVertexShaderFromByteCode(bytecode, len);
 		delete [] bytecode;
@@ -159,11 +121,11 @@ LPDIRECT3DVERTEXSHADER9 CompileAndCreateVertexShader(const char *code, u32 len)
 	return NULL;
 }
 
-LPDIRECT3DPIXELSHADER9 CompileAndCreatePixelShader(const char* code, u32 len)
+LPDIRECT3DPIXELSHADER9 CompileAndCreatePixelShader(const char* code, u32 len, const D3D_SHADER_MACRO* macros)
 {
 	u8 *bytecode;
 	u32 bytecodelen;
-	if (CompilePixelShader(code, len, &bytecode, &bytecodelen))
+	if (CompilePixelShader(code, len, &bytecode, &bytecodelen, macros))
 	{
 		LPDIRECT3DPIXELSHADER9 p_shader = CreatePixelShaderFromByteCode(bytecode, len);
 		delete [] bytecode;

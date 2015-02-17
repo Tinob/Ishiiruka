@@ -18,6 +18,7 @@
 
 #include "Core/HW/Memmap.h"
 
+#include "VideoBackends/OGL/Depalettizer.h"
 #include "VideoBackends/OGL/FramebufferManager.h"
 #include "VideoBackends/OGL/GLInterfaceBase.h"
 #include "VideoBackends/OGL/ProgramShaderCache.h"
@@ -46,6 +47,8 @@ static u32 s_DepthCbufid;
 
 static u32 s_Textures[8];
 static u32 s_ActiveTexture;
+
+static Depalettizer *s_depaletizer = nullptr;
 
 bool SaveTexture(const std::string& filename, u32 textarget, u32 tex, int virtual_width, int virtual_height, u32 level)
 {
@@ -364,6 +367,18 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, u32 dstFormat,
 	g_renderer->RestoreAPIState();
 }
 
+bool TextureCache::TCacheEntry::PalettizeFromBase(const TCacheEntryBase* base_entry, s32 texformat)
+{
+	Depalettizer::BaseType baseType = Depalettizer::Unorm8;
+	if (texformat == GX_TF_C4)
+		baseType = Depalettizer::Unorm4;
+	else if (texformat == GX_TF_C8)
+		baseType = Depalettizer::Unorm8;
+	else
+		return false;
+	return s_depaletizer->Depalettize(baseType, texture, ((TextureCache::TCacheEntry*)base_entry)->texture, config.width, config.height);
+}
+
 TextureCache::TextureCache()
 {
 	const char *pColorMatrixProg =
@@ -436,6 +451,7 @@ TextureCache::TextureCache()
 	s_ActiveTexture = -1;
 	for (auto& gtex : s_Textures)
 		gtex = -1;
+	s_depaletizer = new Depalettizer();
 }
 
 
@@ -443,6 +459,16 @@ TextureCache::~TextureCache()
 {
 	s_ColorMatrixProgram.Destroy();
 	s_DepthMatrixProgram.Destroy();
+	if (s_depaletizer)
+	{
+		delete s_depaletizer;
+		s_depaletizer = nullptr;
+	}
+}
+
+void TextureCache::LoadLut(u32 lutFmt, void* addr, u32 size)
+{
+	s_depaletizer->UploadPalette(lutFmt, addr, size);
 }
 
 void TextureCache::DisableStage(u32 stage)

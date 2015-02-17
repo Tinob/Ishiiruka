@@ -50,6 +50,8 @@ private:
 			bool isIntensity, bool scaleByHalf, u32 cbufid,
 			const float *colmat) override;
 
+		bool PalettizeFromBase(const TCacheEntryBase* base_entry, s32 texformat);
+
 		void Bind(u32 stage) override;
 		bool Save(const std::string& filename, u32 level) override;
 	};
@@ -59,6 +61,8 @@ private:
 	PC_TexFormat GetNativeTextureFormat(const s32 texformat, const TlutFormat tlutfmt, u32 width, u32 height);
 
 	TCacheEntryBase* CreateTexture(const TCacheEntryConfig& config) override;
+
+	void LoadLut(u32 lutFmt, void* addr, u32 size);
 };
 
 bool SaveTexture(const std::string& filename, u32 textarget, u32 tex, int virtual_width, int virtual_height, u32 level);
