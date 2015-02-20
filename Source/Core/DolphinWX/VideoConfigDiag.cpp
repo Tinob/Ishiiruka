@@ -150,7 +150,6 @@ static wxString free_look_desc = wxTRANSLATE("This feature allows you to change 
 static wxString crop_desc = wxTRANSLATE("Crop the picture from 4:3 to 5:4 or from 16:9 to 16:10.\n\nIf unsure, leave this unchecked.");
 static wxString opencl_desc = wxTRANSLATE("[EXPERIMENTAL]\nAims to speed up emulation by offloading texture decoding to the GPU using the OpenCL framework.\nHowever, right now it's known to cause texture defects in various games. Also it's slower than regular CPU texture decoding in most cases.\n\nIf unsure, leave this unchecked.");
 static wxString ppshader_desc = wxTRANSLATE("Apply a post-processing effect after finishing a frame.\n\nIf unsure, select (off).");
-static wxString cache_efb_copies_desc = wxTRANSLATE("Slightly speeds up EFB to RAM copies by sacrificing emulation accuracy.\nSometimes also increases visual quality.\nIf you're experiencing any issues, try raising texture cache accuracy or disable this option.\n\nIf unsure, leave this unchecked.");
 static wxString shader_errors_desc = wxTRANSLATE("Usually if shader compilation fails, an error message is displayed.\nHowever, one may skip the popups to allow interruption free gameplay by checking this option.\n\nIf unsure, leave this unchecked.");
 static wxString stereo_3d_desc = wxTRANSLATE("Select the stereoscopic 3D  mode, stereoscopy allows you to get a better feeling of depth if you have the necessary hardware.\nSide-by-Side and Top-and-Bottom are used by most 3D TVs.\nAnaglyph is used for Red-Cyan colored glasses.\nHeavily decreases emulation speed and sometimes causes issues.\n\nIf unsure, select Off.");
 static wxString stereo_separation_desc = wxTRANSLATE("Control the separation distance, this is the distance between the virtual cameras.\nA higher value creates a stronger feeling of depth while a lower value is more comfortable.");
@@ -522,14 +521,12 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title, con
 
 	SettingCheckBox* efbcopy_disable = CreateCheckBox(page_hacks, _("Disable"), wxGetTranslation(efb_copy_desc), vconfig.bEFBCopyEnable, true);
 	efbcopy_texture = CreateRadioButton(page_hacks, _("Texture"), wxGetTranslation(efb_copy_texture_desc), vconfig.bCopyEFBToTexture, false, wxRB_GROUP);
-	efbcopy_ram = CreateRadioButton(page_hacks, _("RAM"), wxGetTranslation(efb_copy_ram_desc), vconfig.bCopyEFBToTexture, true);
-	cache_efb_copies = CreateCheckBox(page_hacks, _("Enable Cache"), wxGetTranslation(cache_efb_copies_desc), vconfig.bEFBCopyCacheEnable);
+	efbcopy_ram = CreateRadioButton(page_hacks, _("RAM"), wxGetTranslation(efb_copy_ram_desc), vconfig.bCopyEFBToTexture, true);	
 
 	group_efbcopy->Add(efbcopy_disable, 0, wxLEFT | wxRIGHT | wxBOTTOM, 5);
 	group_efbcopy->AddStretchSpacer(1);
 	group_efbcopy->Add(efbcopy_texture, 0, wxRIGHT, 5);
 	group_efbcopy->Add(efbcopy_ram, 0, wxRIGHT, 5);
-	group_efbcopy->Add(cache_efb_copies, 0, wxRIGHT, 5);
 
 	szr_efb->Add(CreateCheckBox(page_hacks, _("Skip EFB Access from CPU"), wxGetTranslation(efb_access_desc), vconfig.bEFBAccessEnable, true), 0, wxBOTTOM | wxLEFT, 5);
 	Fast_efb_cache = CreateCheckBox(page_hacks, _("Fast EFB Access"), wxGetTranslation(efb_fast_access_desc), vconfig.bEFBFastAccess, false);
@@ -907,7 +904,6 @@ void VideoConfigDiag::OnUpdateUI(wxUpdateUIEvent& ev)
 	// EFB copy
 	efbcopy_texture->Enable(vconfig.bEFBCopyEnable);
 	efbcopy_ram->Enable(vconfig.bEFBCopyEnable);
-	cache_efb_copies->Enable(vconfig.bEFBCopyEnable && !vconfig.bCopyEFBToTexture);
 
 	// EFB format change emulation
 	emulate_efb_format_changes->Enable(vconfig.backend_info.bSupportsFormatReinterpretation);

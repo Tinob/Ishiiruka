@@ -327,7 +327,7 @@ float4 Read565( uint v ) {
 
 float4 ReadLutIA8( uint idx ) {
 	uint v = lutData_[idx];
-	//v = ((v&0xff)<<8)| ((v&0xff00)>>8); // findout why byteswap is not needed in IA8 tlut reads
+	v = ((v&0xff)<<8)| ((v&0xff00)>>8); // findout why byteswap is not needed in IA8 tlut reads
 	return float4( uint(v&0xff).xxx, (v&0xff00)>>8 ) / 255.0;
 }
 
@@ -360,30 +360,34 @@ void CSTextureDecoder::Init()
 	m_pool_idx = 0;
 	m_Pool_size = 0;
 	m_ready = false;
-
+	if (D3D::GetFeatureLevel() < D3D_FEATURE_LEVEL_11_0)
+	{
+		// Disable compute shader support on dx10 level hard
+		return;
+	}
 	auto rawBd = CD3D11_BUFFER_DESC(1024*1024*4,D3D11_BIND_SHADER_RESOURCE);	
 	HRESULT hr = D3D::device->CreateBuffer(&rawBd, nullptr, ToAddr(m_rawDataRsc));
-	CHECK(SUCCEEDED(hr), "create texture decoder input buffer");
+	CHECKANDEXIT(SUCCEEDED(hr), "create texture decoder input buffer");
 	D3D::SetDebugObjectName(m_rawDataRsc.get(), "texture decoder input buffer");
 	auto outUavDesc = CD3D11_SHADER_RESOURCE_VIEW_DESC(m_rawDataRsc.get(), DXGI_FORMAT_R32_UINT, 0, (rawBd.ByteWidth) / 4, 0);
 	hr = D3D::device->CreateShaderResourceView(m_rawDataRsc.get(),&outUavDesc,ToAddr(m_rawDataSrv));
-	CHECK(SUCCEEDED(hr), "create texture decoder input buffer srv");
+	CHECKANDEXIT(SUCCEEDED(hr), "create texture decoder input buffer srv");
 	D3D::SetDebugObjectName(m_rawDataSrv.get(), "texture decoder input buffer srv");
 
 	u32 lutMaxEntries = (1 << 15) - 1;
 	auto lutBd = CD3D11_BUFFER_DESC(sizeof(u16)*lutMaxEntries, D3D11_BIND_SHADER_RESOURCE);
 	hr = D3D::device->CreateBuffer(&lutBd, nullptr, ToAddr(m_lutRsc));
-	CHECK(SUCCEEDED(hr), "create texture decoder lut buffer");
+	CHECKANDEXIT(SUCCEEDED(hr), "create texture decoder lut buffer");
 	D3D::SetDebugObjectName(m_lutRsc.get(), "texture decoder lut buffer");
 	auto outlutUavDesc = CD3D11_SHADER_RESOURCE_VIEW_DESC(m_lutRsc.get(), DXGI_FORMAT_R16_UINT, 0, lutMaxEntries, 0);
 	hr = D3D::device->CreateShaderResourceView(m_lutRsc.get(), &outlutUavDesc, ToAddr(m_lutSrv));
-	CHECK(SUCCEEDED(hr), "create texture decoder lut srv");
+	CHECKANDEXIT(SUCCEEDED(hr), "create texture decoder lut srv");
 	D3D::SetDebugObjectName(m_lutSrv.get(), "texture decoder lut srv");
 
 	auto paramBd = CD3D11_BUFFER_DESC(sizeof(u32) * 4, D3D11_BIND_CONSTANT_BUFFER, D3D11_USAGE_DYNAMIC,
 		D3D11_CPU_ACCESS_WRITE);
 	hr = D3D::device->CreateBuffer(&paramBd, nullptr, ToAddr(m_params));
-	CHECK(SUCCEEDED(hr), "create texture decoder params buffer");
+	CHECKANDEXIT(SUCCEEDED(hr), "create texture decoder params buffer");
 	D3D::SetDebugObjectName(m_params.get(), "texture decoder params buffer");
 
 	m_ready = true;
@@ -498,14 +502,21 @@ bool CSTextureDecoder::SetStaticShader(u32 srcFmt, u32 lutFmt)
 
 	D3DBlob bytecode = nullptr;
 	if (!D3D::CompileShader(D3D::ShaderType::Compute, DECODER_CS, bytecode, macros)) {
-		WARN_LOG(VIDEO, "noooo");
+		WARN_LOG(VIDEO, "Unable to compile compute shader");
+		m_ready = false;
+		return false;
 	}
 
 	m_shaderCache.Append(key, bytecode.Data(), u32(bytecode.Size()));
 
 	auto & result = m_staticShaders[key];
 	HRESULT hr = D3D::device->CreateComputeShader(bytecode.Data(), bytecode.Size(), nullptr, ToAddr(result) );
-	CHECK(SUCCEEDED(hr), "create efb encoder pixel shader");
+	CHECK(SUCCEEDED(hr), "create efb encoder compute shader");
+	if (FAILED(hr))
+	{
+		m_ready = false;
+		return false;
+	}
 	D3D::context->CSSetShader(result.get(),nullptr, 0);
 
 	return bool(result);
@@ -576,7 +587,7 @@ bool CSTextureDecoder::SetDepalettizeShader(BaseType srcFmt, u32 lutFmt)
 
 	auto & result = m_staticShaders[key];
 	HRESULT hr = D3D::device->CreateComputeShader(bytecode.Data(), bytecode.Size(), nullptr, ToAddr(result));
-	CHECK(SUCCEEDED(hr), "create efb encoder pixel shader");
+	CHECK(SUCCEEDED(hr), "create depalettizer compute shader");
 	D3D::context->CSSetShader(result.get(), nullptr, 0);
 
 	return bool(result);
@@ -585,7 +596,12 @@ bool CSTextureDecoder::SetDepalettizeShader(BaseType srcFmt, u32 lutFmt)
 ID3D11ComputeShader* CSTextureDecoder::InsertShader( ComboKey const &key, u8 const *data, u32 sz) {
 	auto & result = m_staticShaders[key];
 	HRESULT hr = D3D::device->CreateComputeShader(data, sz, nullptr, ToAddr(result) );
-	CHECK(SUCCEEDED(hr), "create efb encoder pixel shader");
+	CHECK(SUCCEEDED(hr), "create efb encoder compute shader");
+	if (FAILED(hr))
+	{
+		m_ready = false;
+		return nullptr;
+	}
 	return result.get();
 }
 
@@ -732,7 +748,7 @@ bool CSTextureDecoder::DecodeRGBAFromTMEM( u8 const * ar_src, u8 const * bg_src,
 
 bool CSTextureDecoder::Depalettize(D3DTexture2D& dstTexture, D3DTexture2D& srcTexture, BaseType baseType, u32 width, u32 height)
 {
-	if (true/*D3D::GetFeatureLevel() < D3D_FEATURE_LEVEL_11_0*/) // Disable compute shader path, is not working
+	if (true/*D3D::GetFeatureLevel() < D3D_FEATURE_LEVEL_11_0*/) // Disable compute shader support is not working rigth now
 	{
 		ID3D11PixelShader* shader = GetDepalettizerPShader(baseType, m_lutFmt);
 		if (!shader)

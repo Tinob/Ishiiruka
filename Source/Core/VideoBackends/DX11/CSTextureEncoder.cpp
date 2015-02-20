@@ -948,10 +948,8 @@ size_t CSTextureEncoder::Encode(u8* dst, unsigned int dstFormat,
 	correctSrc.ClampUL(0, 0, EFB_WIDTH, EFB_HEIGHT);
 
 	// Validate source rect size
-	if (correctSrc.left >= correctSrc.right || correctSrc.top >= correctSrc.bottom) {
+	if (correctSrc.GetWidth() <= 0 || correctSrc.GetHeight() <= 0)
 		return 0;
-	}
-
 
 	HRESULT hr;
 

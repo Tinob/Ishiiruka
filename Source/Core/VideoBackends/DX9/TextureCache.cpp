@@ -133,7 +133,7 @@ void TextureCache::TCacheEntry::LoadFromTmem(const u8* ar_src, const u8* gb_src,
 	ReplaceTexture(TextureCache::temp, width, height, expanded_width, level);
 }
 
-void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, u32 dstFormat,
+void TextureCache::TCacheEntry::FromRenderTarget(
 	PEControl::PixelFormat srcFormat, const EFBRectangle& srcRect,
 	bool isIntensity, bool scaleByHalf, u32 cbufid,
 	const float *colmat)
@@ -144,94 +144,82 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, u32 dstFormat,
 		FramebufferManager::GetEFBDepthTexture() :
 		FramebufferManager::GetEFBColorTexture();
 
-	if (type != TCET_EC_DYNAMIC || g_ActiveConfig.bCopyEFBToTexture)
+	LPDIRECT3DSURFACE9 Rendersurf = NULL;
+	texture->GetSurfaceLevel(0, &Rendersurf);
+	D3D::dev->SetDepthStencilSurface(NULL);
+	D3D::dev->SetRenderTarget(0, Rendersurf);
+
+	D3DVIEWPORT9 vp;
+
+	// Stretch picture with increased internal resolution
+	vp.X = 0;
+	vp.Y = 0;
+	vp.Width = config.width;
+	vp.Height = config.height;
+	vp.MinZ = 0.0f;
+	vp.MaxZ = 1.0f;
+	D3D::dev->SetViewport(&vp);
+	RECT destrect;
+	destrect.bottom = config.height;
+	destrect.left = 0;
+	destrect.right = config.width;
+	destrect.top = 0;
+
+	PixelShaderManager::SetColorMatrix(colmat); // set transformation
+	D3D::dev->SetPixelShaderConstantF(C_COLORMATRIX, PixelShaderManager::GetBuffer(), 7);
+	TargetRectangle targetSource = g_renderer->ConvertEFBRectangle(srcRect);
+	RECT sourcerect;
+	sourcerect.bottom = targetSource.bottom;
+	sourcerect.left = targetSource.left;
+	sourcerect.right = targetSource.right;
+	sourcerect.top = targetSource.top;
+
+	if (srcFormat == PEControl::Z24)
 	{
-		LPDIRECT3DSURFACE9 Rendersurf = NULL;
-		texture->GetSurfaceLevel(0, &Rendersurf);
-		D3D::dev->SetDepthStencilSurface(NULL);
-		D3D::dev->SetRenderTarget(0, Rendersurf);
-
-		D3DVIEWPORT9 vp;
-
-		// Stretch picture with increased internal resolution
-		vp.X = 0;
-		vp.Y = 0;
-		vp.Width  = config.width;
-		vp.Height = config.height;
-		vp.MinZ = 0.0f;
-		vp.MaxZ = 1.0f;
-		D3D::dev->SetViewport(&vp);
-		RECT destrect;
-		destrect.bottom = config.height;
-		destrect.left = 0;
-		destrect.right = config.width;
-		destrect.top = 0;
-
-		PixelShaderManager::SetColorMatrix(colmat); // set transformation
-		D3D::dev->SetPixelShaderConstantF(C_COLORMATRIX, PixelShaderManager::GetBuffer(), 7);
-		TargetRectangle targetSource = g_renderer->ConvertEFBRectangle(srcRect);
-		RECT sourcerect;
-		sourcerect.bottom = targetSource.bottom;
-		sourcerect.left = targetSource.left;
-		sourcerect.right = targetSource.right;
-		sourcerect.top = targetSource.top;
-
-		if (srcFormat == PEControl::Z24)
-		{
-			if (scaleByHalf || g_ActiveConfig.iMultisampleMode)
-			{
-				D3D::ChangeSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
-				D3D::ChangeSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
-			}
-			else
-			{
-				D3D::ChangeSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
-				D3D::ChangeSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
-			}
-		}
-		else
+		if (scaleByHalf || g_ActiveConfig.iMultisampleMode)
 		{
 			D3D::ChangeSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
 			D3D::ChangeSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
 		}
-
-		D3DFORMAT bformat = FramebufferManager::GetEFBDepthRTSurfaceFormat();
-		s32 SSAAMode = g_ActiveConfig.iMultisampleMode;
-
-		D3D::drawShadedTexQuad(read_texture, &sourcerect, 
-			Renderer::GetTargetWidth(), Renderer::GetTargetHeight(),
-			config.width, config.height,
-			PixelShaderCache::GetDepthMatrixProgram(SSAAMode, (srcFormat == PEControl::Z24) && bformat != FOURCC_RAWZ),
-			VertexShaderCache::GetSimpleVertexShader(SSAAMode));
-
-		Rendersurf->Release();
+		else
+		{
+			D3D::ChangeSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
+			D3D::ChangeSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
+		}
 	}
+	else
+	{
+		D3D::ChangeSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+		D3D::ChangeSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+	}
+
+	D3DFORMAT bformat = FramebufferManager::GetEFBDepthRTSurfaceFormat();
+	s32 SSAAMode = g_ActiveConfig.iMultisampleMode;
+
+	D3D::drawShadedTexQuad(read_texture, &sourcerect,
+		Renderer::GetTargetWidth(), Renderer::GetTargetHeight(),
+		config.width, config.height,
+		PixelShaderCache::GetDepthMatrixProgram(SSAAMode, (srcFormat == PEControl::Z24) && bformat != FOURCC_RAWZ),
+		VertexShaderCache::GetSimpleVertexShader(SSAAMode));
+
+	Rendersurf->Release();
 
 	if (!g_ActiveConfig.bCopyEFBToTexture)
 	{
-		s32 encoded_size = TextureConverter::EncodeToRamFromTexture(
+		size_in_bytes = (u32)TextureConverter::EncodeToRamFromTexture(
 					addr,
 					read_texture,
 					Renderer::GetTargetWidth(), 
 					Renderer::GetTargetHeight(),
 					srcFormat == PEControl::Z24, 
 					isIntensity, 
-					dstFormat, 
+					format, 
 					scaleByHalf, 
 					srcRect);
 
 		u8* dst = Memory::GetPointer(addr);
-		u64 hash = GetHash64(dst,encoded_size,g_ActiveConfig.iSafeTextureCache_ColorSamples);
-
-		size_in_bytes = (u32)encoded_size;
-
-		// Mark texture entries in destination address range dynamic unless caching is enabled and the texture entry is up to date
-		if (!g_ActiveConfig.bEFBCopyCacheEnable)
-			TextureCache::MakeRangeDynamic(addr,encoded_size);
-		else if (!TextureCache::Find(addr, hash))
-			TextureCache::MakeRangeDynamic(addr,encoded_size);
-
-		this->hash = hash;
+		TextureCache::MakeRangeDynamic(addr, size_in_bytes);
+		this->hash = GetHash64(dst, size_in_bytes, g_ActiveConfig.iSafeTextureCache_ColorSamples);
 	}
 	
 	D3D::RefreshSamplerState(0, D3DSAMP_MINFILTER);
@@ -243,8 +231,9 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, u32 dstFormat,
 	g_renderer->RestoreAPIState();
 }
 
-bool TextureCache::TCacheEntry::PalettizeFromBase(const TCacheEntryBase* base_entry, s32 texformat)
+bool TextureCache::TCacheEntry::PalettizeFromBase(const TCacheEntryBase* base_entry)
 {
+	u32 texformat = format & 0xf;
 	Depalettizer::BaseType baseType = Depalettizer::Unorm8;
 	if (texformat == GX_TF_C4)
 		baseType = Depalettizer::Unorm4;

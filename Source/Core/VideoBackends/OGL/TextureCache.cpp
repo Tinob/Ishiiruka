@@ -282,7 +282,7 @@ void TextureCache::TCacheEntry::LoadFromTmem(const u8* ar_src, const u8* gb_src,
 	Load(TextureCache::temp, width, height, expanded_width, level);
 }
 
-void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, u32 dstFormat,
+void TextureCache::TCacheEntry::FromRenderTarget(
 	PEControl::PixelFormat srcFormat, const EFBRectangle& srcRect,
 	bool isIntensity, bool scaleByHalf, u32 cbufid,
 	const float *colmat)
@@ -294,65 +294,53 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, u32 dstFormat,
 		FramebufferManager::ResolveAndGetDepthTarget(srcRect) :
 		FramebufferManager::ResolveAndGetRenderTarget(srcRect);
 
-	if (type != TCET_EC_DYNAMIC || g_ActiveConfig.bCopyEFBToTexture)
+	FramebufferManager::SetFramebuffer(framebuffer);
+
+	OpenGL_BindAttributelessVAO();
+
+	glActiveTexture(GL_TEXTURE0 + 9);
+	glBindTexture(GL_TEXTURE_2D, read_texture);
+
+	glViewport(0, 0, config.width, config.height);
+
+	GLuint uniform_location;
+	if (srcFormat == PEControl::Z24)
 	{
-		FramebufferManager::SetFramebuffer(framebuffer);
-
-		OpenGL_BindAttributelessVAO();
-
-		glActiveTexture(GL_TEXTURE0 + 9);
-		glBindTexture(GL_TEXTURE_2D, read_texture);
-
-		glViewport(0, 0, config.width, config.height);
-
-		GLuint uniform_location;
-		if (srcFormat == PEControl::Z24)
-		{
-			s_DepthMatrixProgram.Bind();
-			if (s_DepthCbufid != cbufid)
-				glUniform4fv(s_DepthMatrixUniform, 5, colmat);
-			s_DepthCbufid = cbufid;
-			uniform_location = s_DepthCopyPositionUniform;
-		}
-		else
-		{
-			s_ColorMatrixProgram.Bind();
-			if (s_ColorCbufid != cbufid)
-				glUniform4fv(s_ColorMatrixUniform, 7, colmat);
-			s_ColorCbufid = cbufid;
-			uniform_location = s_ColorCopyPositionUniform;
-		}
-
-		TargetRectangle R = g_renderer->ConvertEFBRectangle(srcRect);
-		glUniform4f(uniform_location, static_cast<float>(R.left), static_cast<float>(R.top),
-			static_cast<float>(R.right), static_cast<float>(R.bottom));
-
-		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+		s_DepthMatrixProgram.Bind();
+		if (s_DepthCbufid != cbufid)
+			glUniform4fv(s_DepthMatrixUniform, 5, colmat);
+		s_DepthCbufid = cbufid;
+		uniform_location = s_DepthCopyPositionUniform;
 	}
+	else
+	{
+		s_ColorMatrixProgram.Bind();
+		if (s_ColorCbufid != cbufid)
+			glUniform4fv(s_ColorMatrixUniform, 7, colmat);
+		s_ColorCbufid = cbufid;
+		uniform_location = s_ColorCopyPositionUniform;
+	}
+
+	TargetRectangle R = g_renderer->ConvertEFBRectangle(srcRect);
+	glUniform4f(uniform_location, static_cast<float>(R.left), static_cast<float>(R.top),
+		static_cast<float>(R.right), static_cast<float>(R.bottom));
+
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 	if (false == g_ActiveConfig.bCopyEFBToTexture)
 	{
-		int encoded_size = TextureConverter::EncodeToRamFromTexture(
+		size_in_bytes = (u32)TextureConverter::EncodeToRamFromTexture(
 			addr,
 			read_texture,
 			srcFormat == PEControl::Z24,
 			isIntensity,
-			dstFormat,
+			format,
 			scaleByHalf,
 			srcRect);
 
 		u8* dst = Memory::GetPointer(addr);
-		u64 const new_hash = GetHash64(dst, encoded_size, g_ActiveConfig.iSafeTextureCache_ColorSamples);
-
-		size_in_bytes = (u32)encoded_size;
-
-		// Mark texture entries in destination address range dynamic unless caching is enabled and the texture entry is up to date
-		if (!g_ActiveConfig.bEFBCopyCacheEnable)
-			TextureCache::MakeRangeDynamic(addr, encoded_size);
-		else if (!TextureCache::Find(addr, new_hash))
-			TextureCache::MakeRangeDynamic(addr, encoded_size);
-
-		hash = new_hash;
+		TextureCache::MakeRangeDynamic(addr, size_in_bytes);
+		hash = GetHash64(dst, size_in_bytes, g_ActiveConfig.iSafeTextureCache_ColorSamples);;
 	}
 
 	FramebufferManager::SetFramebuffer(0);
@@ -367,8 +355,9 @@ void TextureCache::TCacheEntry::FromRenderTarget(u32 dstAddr, u32 dstFormat,
 	g_renderer->RestoreAPIState();
 }
 
-bool TextureCache::TCacheEntry::PalettizeFromBase(const TCacheEntryBase* base_entry, s32 texformat)
+bool TextureCache::TCacheEntry::PalettizeFromBase(const TCacheEntryBase* base_entry)
 {
+	u32 texformat = format & 0xf;
 	Depalettizer::BaseType baseType = Depalettizer::Unorm8;
 	if (texformat == GX_TF_C4)
 		baseType = Depalettizer::Unorm4;

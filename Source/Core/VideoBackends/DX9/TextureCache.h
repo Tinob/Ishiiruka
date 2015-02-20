@@ -41,12 +41,12 @@ private:
 		void LoadFromTmem(const u8* ar_src, const u8* gb_src, u32 width, u32 height,
 			u32 expanded_width, u32 expanded_Height, u32 level);
 
-		void FromRenderTarget(u32 dstAddr, u32 dstFormat,
+		void FromRenderTarget(
 			PEControl::PixelFormat srcFormat, const EFBRectangle& srcRect,
 			bool isIntensity, bool scaleByHalf, u32 cbufid,
 			const float *colmat);
 
-		bool PalettizeFromBase(const TCacheEntryBase* base_entry, s32 texformat);
+		bool PalettizeFromBase(const TCacheEntryBase* base_entry);
 
 		void Bind(u32 stage);
 		bool Save(const std::string& filename, u32 level);

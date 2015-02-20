@@ -127,10 +127,20 @@ u64 GetCRC32(const u8 *src, u32 len, u32 samples)
 		h[1] = _mm_crc32_u64(h[1], data[Step * 1]);
 	if (data < end - Step * 2)
 		h[2] = _mm_crc32_u64(h[2], data[Step * 2]);
-
 	const u8 *data2 = (const u8*)end;
+	u64 temp = 0;
+	switch (len & 7)
+	{
+	case 7: temp += u64(data2[6]) << 48;
+	case 6: temp += u64(data2[5]) << 40;
+	case 5: temp += u64(data2[4]) << 32;
+	case 4: temp += u64(data2[3]) << 24;
+	case 3: temp += u64(data2[2]) << 16;
+	case 2: temp += u64(data2[1]) << 8;
+	case 1: temp += u64(data2[0]);
+		h[0] = _mm_crc32_u64(h[0], temp);
+	};
 	// FIXME: is there a better way to combine these partial hashes?
-	h[0] = _mm_crc32_u64(h[0], u64(data2[0]));
 	return h[0] + (h[1] << 10) + (h[2] << 21) + (h[3] << 32);
 #else
 	return 0;

@@ -119,7 +119,6 @@ protected:
 
 	SettingRadioButton* efbcopy_texture;
 	SettingRadioButton* efbcopy_ram;
-	SettingCheckBox* cache_efb_copies;
 	SettingCheckBox* Fast_efb_cache;
 	SettingCheckBox* emulate_efb_format_changes;
 	SettingCheckBox* hacked_buffer_upload;

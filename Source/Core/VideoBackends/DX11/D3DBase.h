@@ -18,6 +18,7 @@ namespace DX11
 #define SAFE_DELETE(x) { delete (x); (x) = nullptr; }
 #define SAFE_DELETE_ARRAY(x) { delete[] (x); (x) = nullptr; }
 #define CHECK(cond, Message, ...) if (!(cond)) { PanicAlert(__FUNCTION__ " failed in %s at line %d: " Message, __FILE__, __LINE__, __VA_ARGS__); }
+#define CHECKANDEXIT(cond, Message, ...) if (!(cond)) { PanicAlert(__FUNCTION__ " failed in %s at line %d: " Message, __FILE__, __LINE__, __VA_ARGS__); return;}
 
 class D3DTexture2D;
 

@@ -139,7 +139,6 @@ struct VideoConfig final
 	bool bPredictiveFifo;
 	bool bWaitForShaderCompilation;
 	bool bEFBCopyEnable;
-	bool bEFBCopyCacheEnable;
 	bool bEFBEmulateFormatChanges;
 	bool bCopyEFBToTexture;
 	bool bCopyEFBScaled;

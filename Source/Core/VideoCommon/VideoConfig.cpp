@@ -111,7 +111,6 @@ void VideoConfig::Load(const std::string& ini_file)
 	hacks->Get("EFBCopyEnable", &bEFBCopyEnable, true);
 	hacks->Get("EFBToTextureEnable", &bCopyEFBToTexture, true);
 	hacks->Get("EFBScaledCopy", &bCopyEFBScaled, true);
-	hacks->Get("EFBCopyCacheEnable", &bEFBCopyCacheEnable, false);
 	hacks->Get("EFBEmulateFormatChanges", &bEFBEmulateFormatChanges, false);
 	hacks->Get("ForceDualSourceBlend", &bForceDualSourceBlend, false);
 	hacks->Get("FullAsyncShaderCompilation", &bFullAsyncShaderCompilation, false);
@@ -219,7 +218,6 @@ void VideoConfig::GameIniLoad()
 	CHECK_SETTING("Video_Hacks", "EFBCopyEnable", bEFBCopyEnable);
 	CHECK_SETTING("Video_Hacks", "EFBToTextureEnable", bCopyEFBToTexture);
 	CHECK_SETTING("Video_Hacks", "EFBScaledCopy", bCopyEFBScaled);
-	CHECK_SETTING("Video_Hacks", "EFBCopyCacheEnable", bEFBCopyCacheEnable);
 	CHECK_SETTING("Video_Hacks", "EFBEmulateFormatChanges", bEFBEmulateFormatChanges);
 	CHECK_SETTING("Video_Hacks", "BoundingBoxMode", iBBoxMode);
 
@@ -338,7 +336,6 @@ void VideoConfig::Save(const std::string& ini_file)
 	hacks->Set("EFBCopyEnable", bEFBCopyEnable);
 	hacks->Set("EFBToTextureEnable", bCopyEFBToTexture);
 	hacks->Set("EFBScaledCopy", bCopyEFBScaled);
-	hacks->Set("EFBCopyCacheEnable", bEFBCopyCacheEnable);
 	hacks->Set("EFBEmulateFormatChanges", bEFBEmulateFormatChanges);
 	hacks->Set("ForceDualSourceBlend", bForceDualSourceBlend);
 	hacks->Set("FullAsyncShaderCompilation", bFullAsyncShaderCompilation);
