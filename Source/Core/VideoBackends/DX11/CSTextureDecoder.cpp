@@ -288,71 +288,86 @@ void main(in uint3 groupIdx : SV_GroupID, in uint3 subgroup : SV_GroupThreadID) 
 )HLSL";
 
 static const char DEPALETTIZE_SHADER[] = R"HLSL(
-//
+sampler samp0 : register(s0);
+Texture2D Tex0 : register(t0);
+Buffer<uint> Tex1 : register(t1);
 
-#ifndef NUM_COLORS
-#error NUM_COLORS was not defined
-#endif
+uint Convert3To8(uint v)
+{
+	// Swizzle bits: 00000123 -> 12312312
+	return (v << 5) | (v << 2) | (v >> 1);
+}
 
-#ifndef LUT_FUNC
-#error LUT_FUNC not set
-#endif
+uint Convert4To8(uint v)
+{
+	// Swizzle bits: 00001234 -> 12341234
+	return (v << 4) | v;
+}
 
-Texture2D<float4> sourceData_ : register(t0);
+uint Convert5To8(uint v)
+{
+	// Swizzle bits: 00012345 -> 12345123
+	return (v << 3) | (v >> 2);
+}
 
-Buffer<uint> lutData_ : register(t1);
+uint Convert6To8(uint v)
+{
+	// Swizzle bits: 00123456 -> 12345612
+	return (v << 2) | (v >> 4);
+}
 
-float4 Read5A3( uint v ) {
-	if (v&0x8000) {
-		uint r = (v&0x7C00)>>7; r |= r>>5;
-		uint g = (v&0x03E0)>>2;	g |= g>>5;
-		uint b = (v&0x001F)<<3;	b |= b>>5;
-		return float4(r,g,b,255)/ 255.0;
-	} else {
-		uint a = (v&0x7000)>>7; a |= (a>>3) | (a>>6);
-		uint r = (v&0x0F00)>>4; r |= r>>4;
-		uint g = (v&0x00F0)>>0; g |= g>>4;
-		uint b = (v&0x000F)<<4; b |= b>>4;
-		return float4(r,g,b,a) / 255.0;
+float4 ReadLut5A3(uint val)
+{
+	int r,g,b,a;
+	if ((val&0x8000))
+	{
+		r=Convert5To8((val>>10) & 0x1f);
+		g=Convert5To8((val>>5 ) & 0x1f);
+		b=Convert5To8((val    ) & 0x1f);
+		a=0xFF;
 	}
+	else
+	{
+		a=Convert3To8((val>>12) & 0x7);
+		r=Convert4To8((val>>8 ) & 0xf);
+		g=Convert4To8((val>>4 ) & 0xf);
+		b=Convert4To8((val    ) & 0xf);
+	}
+	return float4(r, g, b, a) / 255;
 }
 
-float4 Read565( uint v ) {
-	uint b = (v&0x1F)<<3; b |= b >> 5;
-	uint g = (v&0x7E0)>>3; g |= g >> 6;
-	uint r = (v&0xF800)>>8; r |= r >> 5;
-	return float4(r,g,b,255)/255.0;
+float4 ReadLut565(uint val)
+{
+	int r, g, b, a;
+	r = Convert5To8((val >> 11) & 0x1f);
+	g = Convert6To8((val >> 5) & 0x3f);
+	b = Convert5To8((val) & 0x1f);
+	a = 0xFF;
+	return float4(r, g, b, a) / 255;
 }
 
-
-float4 ReadLutIA8( uint idx ) {
-	uint v = lutData_[idx];
-	v = ((v&0xff)<<8)| ((v&0xff00)>>8); // findout why byteswap is not needed in IA8 tlut reads
-	return float4( uint(v&0xff).xxx, (v&0xff00)>>8 ) / 255.0;
+float4 ReadLutIA8(uint val)
+{
+	int i = val & 0xFF;
+	int a = val >> 8;
+	return float4(i, i, i, a) / 255;
 }
 
-float4 ReadLut565( uint idx ) {
-	uint v = lutData_[idx];
-	v = ((v&0xff)<<8)| ((v&0xff00)>>8);
-  return Read565(v);
-}
-
-float4 ReadLut5A3( uint idx ) {
-	uint v = lutData_[idx];
-	v = ((v&0xff)<<8)| ((v&0xff00)>>8);
-	return Read5A3(v);
-}
-
-void main(out float4 ocol0 : SV_Target, in float4 pos : SV_Position)
-{	
+void main(
+	out float4 ocol0 : SV_Target,
+	in float4 pos : SV_Position,
+	in float3 uv0 : TEXCOORD0)
+{
 #if NUM_COLORS == 16
-	uint idx = uint(round(sourceData_.Load(int3(pos.xy, 0)).r * 15.0));
+	float Multiply = 15.0;
 #else
-	uint idx = uint(round(sourceData_.Load(int3(pos.xy, 0)).r * 255.0));
+	float Multiply = 255.0;
 #endif
-	ocol0 = LUT_FUNC(idx);
+	uint src = round(Tex0.Sample(samp0,uv0) * Multiply).r;
+	src = Tex1.Load(src);
+	src = ((src << 8) & 0xFF00) | (src >> 8);
+	ocol0 = LUT_FUNC(src);
 }
-//
 )HLSL";
 
 void CSTextureDecoder::Init()
