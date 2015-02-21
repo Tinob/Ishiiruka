@@ -270,7 +270,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 	const bool forced_early_z = g_ActiveConfig.backend_info.bSupportsEarlyZ 
 		&& bpm.UseEarlyDepthTest() 
 		&& (g_ActiveConfig.bFastDepthCalc || Pretest == AlphaTest::UNDETERMINED)
-		&& !bpm.genMode.zfreeze;
+		&& !(bpm.zmode.testenable && bpm.genMode.zfreeze);
 	const bool per_pixel_depth = bpm.zmode.testenable
 		&& ((bpm.ztex2.op != ZTEXTURE_DISABLE && bpm.UseLateDepthTest())
 		|| (!g_ActiveConfig.bFastDepthCalc && !forced_early_z)
