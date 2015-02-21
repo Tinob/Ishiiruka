@@ -136,14 +136,6 @@ struct SCoreStartupParameter
 	bool bAutomaticStart;
 	bool bBootToPause;
 
-	enum
-	{
-		CORE_INTERPRETER,
-		CORE_JIT64,
-		CORE_JITIL64,
-		CORE_JITARM,
-		CORE_JITARM64
-	};
 	int iCPUCore;
 
 	// JIT (shared between JIT and JITIL)
@@ -172,7 +164,6 @@ struct SCoreStartupParameter
 	bool bForceNTSCJ;
 	bool bHLE_BS2;
 	bool bEnableCheats;
-	bool bMergeBlocks;
 	bool bEnableMemcardSaving;
 
 	bool bDPL2Decoder;
@@ -182,7 +173,6 @@ struct SCoreStartupParameter
 	bool bRunCompareServer;
 	bool bRunCompareClient;
 
-	bool bBAT;
 	bool bMMU;
 	bool bDCBZOFF;
 	int iBBDumpPort;
@@ -248,11 +238,8 @@ struct SCoreStartupParameter
 	std::string m_strDVDRoot;
 	std::string m_strApploader;
 	std::string m_strUniqueID;
-	std::string m_strRevisionSpecificUniqueID;
 	std::string m_strName;
-	std::string m_strGameIniDefault;
-	std::string m_strGameIniDefaultRevisionSpecific;
-	std::string m_strGameIniLocal;
+	int m_revision;
 
 	std::string m_perfDir;
 
@@ -262,8 +249,16 @@ struct SCoreStartupParameter
 	void LoadDefaults();
 	bool AutoSetup(EBootBS2 _BootBS2);
 	const std::string &GetUniqueID() const { return m_strUniqueID; }
-	void CheckMemcardPath(std::string& memcardPath, std::string Region, bool isSlotA);
+	void CheckMemcardPath(std::string& memcardPath, std::string gameRegion, bool isSlotA);
+
 	IniFile LoadDefaultGameIni() const;
 	IniFile LoadLocalGameIni() const;
 	IniFile LoadGameIni() const;
+
+	static IniFile LoadDefaultGameIni(const std::string& id, int revision);
+	static IniFile LoadLocalGameIni(const std::string& id, int revision);
+	static IniFile LoadGameIni(const std::string& id, int revision);
+
+private:
+	static void LoadGameIni(IniFile* game_ini, const std::string& path, const std::string& id, int revision);
 };

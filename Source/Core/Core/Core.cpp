@@ -401,7 +401,7 @@ void EmuThread()
 	CBoot::BootUp();
 
 	// Setup our core, but can't use dynarec if we are compare server
-	if (core_parameter.iCPUCore != SCoreStartupParameter::CORE_INTERPRETER
+	if (core_parameter.iCPUCore != PowerPC::CORE_INTERPRETER
 	    && (!core_parameter.bRunCompareServer || core_parameter.bRunCompareClient))
 	{
 		PowerPC::SetMode(PowerPC::MODE_JIT);
@@ -640,7 +640,7 @@ void VideoThrottle()
 	if (SConfig::GetInstance().m_LocalCoreStartupParameter.bDoubleVideoRate)
 	{
 		update_ss_speed = s_drawn_video & 1;
-	}
+}
 	// Update the audio timestretcher with the current speed
 	if (g_sound_stream && update_ss_speed)
 	{

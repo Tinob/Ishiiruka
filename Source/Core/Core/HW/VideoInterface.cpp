@@ -473,7 +473,7 @@ void UpdateParameters()
 	if (SConfig::GetInstance().m_LocalCoreStartupParameter.bDoubleVideoRate)
 	{
 		TargetRefreshRate *= 2;
-	}
+}
 	TicksPerFrame = SystemTimers::GetTicksPerSecond() / TargetRefreshRate;
 }
 

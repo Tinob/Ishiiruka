@@ -136,6 +136,9 @@
     <Filter Include="PowerPC\JitILCommon">
       <UniqueIdentifier>{827afa93-1a80-4835-93ae-b5516d95867f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="PowerPC\Jit64Common">
+      <UniqueIdentifier>{81956f71-d9fe-454f-96a6-855195d611c4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BootManager.cpp" />
@@ -144,6 +147,7 @@
     <ClCompile Include="CoreParameter.cpp" />
     <ClCompile Include="CoreTiming.cpp" />
     <ClCompile Include="ec_wii.cpp" />
+    <ClCompile Include="HotkeyManager.cpp" />
     <ClCompile Include="MemTools.cpp" />
     <ClCompile Include="Movie.cpp" />
     <ClCompile Include="NetPlayClient.cpp" />
@@ -511,9 +515,6 @@
     <ClCompile Include="HW\Memmap.cpp">
       <Filter>HW %28Flipper/Hollywood%29</Filter>
     </ClCompile>
-    <ClCompile Include="HW\MemmapFunctions.cpp">
-      <Filter>HW %28Flipper/Hollywood%29</Filter>
-    </ClCompile>
     <ClCompile Include="HW\MMIO.cpp">
       <Filter>HW %28Flipper/Hollywood%29</Filter>
     </ClCompile>
@@ -718,15 +719,24 @@
     <ClCompile Include="IPC_HLE\WII_IPC_HLE_WiiSpeak.cpp">
       <Filter>IPC HLE %28IOS/Starlet%29</Filter>
     </ClCompile>
-    <ClCompile Include="HW\SI_GCAdapter.cpp" />
-    <ClCompile Include="PowerPC\JitCommon\JitBackpatch.cpp" />
     <ClCompile Include="HW\GCKeyboardEmu.cpp">
       <Filter>HW %28Flipper/Hollywood%29\GCKeyboard</Filter>
     </ClCompile>
     <ClCompile Include="HW\GCKeyboard.cpp">
       <Filter>HW %28Flipper/Hollywood%29\GCKeyboard</Filter>
     </ClCompile>
-    <ClCompile Include="PowerPC\Jit64Common\Jit64AsmCommon.cpp" />
+    <ClCompile Include="PowerPC\MMU.cpp">
+      <Filter>PowerPC</Filter>
+    </ClCompile>
+    <ClCompile Include="HW\SI_GCAdapter.cpp">
+      <Filter>HW %28Flipper/Hollywood%29\SI - Serial Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="PowerPC\JitCommon\JitBackpatch.cpp">
+      <Filter>PowerPC\JitCommon</Filter>
+    </ClCompile>
+    <ClCompile Include="PowerPC\Jit64Common\Jit64AsmCommon.cpp">
+      <Filter>PowerPC\Jit64Common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BootManager.h" />
@@ -736,6 +746,7 @@
     <ClInclude Include="CoreTiming.h" />
     <ClInclude Include="ec_wii.h" />
     <ClInclude Include="Host.h" />
+    <ClInclude Include="HotkeyManager.h" />
     <ClInclude Include="MemTools.h" />
     <ClInclude Include="Movie.h" />
     <ClInclude Include="NetPlayClient.h" />
@@ -1227,7 +1238,6 @@
     <ClInclude Include="PowerPC\JitILCommon\IR.h">
       <Filter>PowerPC\JitILCommon</Filter>
     </ClInclude>
-    <ClInclude Include="HW\SI_GCAdapter.h" />
     <ClInclude Include="MachineContext.h" />
     <ClInclude Include="IPC_HLE\WII_IPC_HLE_WiiSpeak.h">
       <Filter>IPC HLE %28IOS/Starlet%29</Filter>
@@ -1238,7 +1248,12 @@
     <ClInclude Include="HW\GCKeyboard.h">
       <Filter>HW %28Flipper/Hollywood%29\GCKeyboard</Filter>
     </ClInclude>
-    <ClInclude Include="PowerPC\Jit64Common\Jit64AsmCommon.h" />
+    <ClInclude Include="HW\SI_GCAdapter.h">
+      <Filter>HW %28Flipper/Hollywood%29\SI - Serial Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="PowerPC\Jit64Common\Jit64AsmCommon.h">
+      <Filter>PowerPC\Jit64Common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />

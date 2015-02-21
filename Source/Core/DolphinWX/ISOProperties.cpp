@@ -163,11 +163,9 @@ CISOProperties::CISOProperties(const std::string fileName, wxWindow* parent, wxW
 		}
 	}
 
-	// Load game ini
+	// Is it really necessary to use GetTitleID in case GetUniqueID fails?
 	std::string _iniFilename = OpenISO->GetUniqueID();
-	std::string _iniFilenameRevisionSpecific = OpenISO->GetRevisionSpecificUniqueID();
-
-	if (!_iniFilename.length())
+	if (_iniFilename.empty())
 	{
 		u8 title_id[8];
 		if (OpenISO->GetTitleID(title_id))
@@ -176,14 +174,11 @@ CISOProperties::CISOProperties(const std::string fileName, wxWindow* parent, wxW
 		}
 	}
 
+	// Load game INIs
 	GameIniFileDefault = File::GetSysDirectory() + GAMESETTINGS_DIR DIR_SEP + _iniFilename + ".ini";
-	std::string GameIniFileDefaultRevisionSpecific = File::GetSysDirectory() + GAMESETTINGS_DIR DIR_SEP + _iniFilenameRevisionSpecific + ".ini";
 	GameIniFileLocal = File::GetUserPath(D_GAMESETTINGS_IDX) + _iniFilename + ".ini";
-
-	GameIniDefault.Load(GameIniFileDefault);
-	if (_iniFilenameRevisionSpecific != "")
-		GameIniDefault.Load(GameIniFileDefaultRevisionSpecific, true);
-	GameIniLocal.Load(GameIniFileLocal);
+	GameIniDefault = SCoreStartupParameter::LoadDefaultGameIni(_iniFilename, OpenISO->GetRevision());
+	GameIniLocal = SCoreStartupParameter::LoadLocalGameIni(_iniFilename, OpenISO->GetRevision());
 
 	// Setup GUI
 	OpenGameListItem = new GameListItem(fileName);
@@ -404,19 +399,14 @@ void CISOProperties::CreateGUIControls(bool IsWad)
 	SkipIdle = new wxCheckBox(m_GameConfig, ID_IDLESKIP, _("Enable Idle Skipping"), wxDefaultPosition, wxDefaultSize, GetElementStyle("Core", "SkipIdle"));
 	MMU = new wxCheckBox(m_GameConfig, ID_MMU, _("Enable MMU"), wxDefaultPosition, wxDefaultSize, GetElementStyle("Core", "MMU"));
 	MMU->SetToolTip(_("Enables the Memory Management Unit, needed for some games. (ON = Compatible, OFF = Fast)"));
-	BAT = new wxCheckBox(m_GameConfig, ID_MMU, _("Enable BAT"), wxDefaultPosition, wxDefaultSize, GetElementStyle("Core", "BAT"));
-	BAT->SetToolTip(_("Enables Block Address Translation, needed for a few games. Requires MMU. (ON = Compatible, OFF = Fast)"));
 	DCBZOFF = new wxCheckBox(m_GameConfig, ID_DCBZOFF, _("Skip DCBZ clearing"), wxDefaultPosition, wxDefaultSize, GetElementStyle("Core", "DCBZ"));
 	DCBZOFF->SetToolTip(_("Bypass the clearing of the data cache by the DCBZ instruction. Usually leave this option disabled."));
-	FPRF = new wxCheckBox(m_GameConfig, ID_MMU, _("Enable FPRF"), wxDefaultPosition, wxDefaultSize, GetElementStyle("Core", "FPRF"));
+	FPRF = new wxCheckBox(m_GameConfig, ID_FPRF, _("Enable FPRF"), wxDefaultPosition, wxDefaultSize, GetElementStyle("Core", "FPRF"));
 	FPRF->SetToolTip(_("Enables Floating Point Result Flag calculation, needed for a few games. (ON = Compatible, OFF = Fast)"));
-	DVideo = new wxCheckBox(m_GameConfig, ID_DVIDEO, _("Double Video Rate Hack"), wxDefaultPosition, wxDefaultSize, GetElementStyle("Core", "DoubleVideoRate"));
-	DVideo->SetToolTip(_("Double the rate of video interruptions (ON = Fast, OFF = Compatible)"));
 	SyncGPU = new wxCheckBox(m_GameConfig, ID_SYNCGPU, _("Synchronize GPU thread"), wxDefaultPosition, wxDefaultSize, GetElementStyle("Core", "SyncGPU"));
 	SyncGPU->SetToolTip(_("Synchronizes the GPU and CPU threads to help prevent random freezes in Dual Core mode. (ON = Compatible, OFF = Fast)"));
 	FastDiscSpeed = new wxCheckBox(m_GameConfig, ID_DISCSPEED, _("Speed up Disc Transfer Rate"), wxDefaultPosition, wxDefaultSize, GetElementStyle("Core", "FastDiscSpeed"));
 	FastDiscSpeed->SetToolTip(_("Enable fast disc access. Needed for a few games. (ON = Fast, OFF = Compatible)"));
-	BlockMerging = new wxCheckBox(m_GameConfig, ID_MERGEBLOCKS, _("Enable Block Merging"), wxDefaultPosition, wxDefaultSize, GetElementStyle("Core", "BlockMerging"));
 	DSPHLE = new wxCheckBox(m_GameConfig, ID_AUDIO_DSP_HLE, _("DSP HLE emulation (fast)"), wxDefaultPosition, wxDefaultSize, GetElementStyle("Core", "DSPHLE"));
 
 	wxBoxSizer* const sGPUDeterminism = new wxBoxSizer(wxHORIZONTAL);
@@ -467,14 +457,11 @@ void CISOProperties::CreateGUIControls(bool IsWad)
 		new wxStaticBoxSizer(wxVERTICAL, m_GameConfig, _("Core"));
 	sbCoreOverrides->Add(CPUThread, 0, wxLEFT, 5);
 	sbCoreOverrides->Add(SkipIdle, 0, wxLEFT, 5);
-	sbCoreOverrides->Add(BAT, 0, wxLEFT, 5);
 	sbCoreOverrides->Add(MMU, 0, wxLEFT, 5);
 	sbCoreOverrides->Add(DCBZOFF, 0, wxLEFT, 5);
 	sbCoreOverrides->Add(FPRF, 0, wxLEFT, 5);
-	sbCoreOverrides->Add(DVideo, 0, wxLEFT, 5);
 	sbCoreOverrides->Add(SyncGPU, 0, wxLEFT, 5);
 	sbCoreOverrides->Add(FastDiscSpeed, 0, wxLEFT, 5);
-	sbCoreOverrides->Add(BlockMerging, 0, wxLEFT, 5);
 	sbCoreOverrides->Add(DSPHLE, 0, wxLEFT, 5);
 	sbCoreOverrides->Add(sGPUDeterminism, 0, wxEXPAND|wxALL, 5);
 
@@ -512,8 +499,8 @@ void CISOProperties::CreateGUIControls(bool IsWad)
 	EditPatch = new wxButton(m_PatchPage, ID_EDITPATCH, _("Edit..."));
 	wxButton* const AddPatch = new wxButton(m_PatchPage, ID_ADDPATCH, _("Add..."));
 	RemovePatch = new wxButton(m_PatchPage, ID_REMOVEPATCH, _("Remove"));
-	EditPatch->Enable(false);
-	RemovePatch->Enable(false);
+	EditPatch->Disable();
+	RemovePatch->Disable();
 
 	wxBoxSizer* sPatchPage = new wxBoxSizer(wxVERTICAL);
 	sPatches->Add(Patches, 1, wxEXPAND|wxALL, 0);
@@ -533,8 +520,8 @@ void CISOProperties::CreateGUIControls(bool IsWad)
 	EditCheat = new wxButton(m_CheatPage, ID_EDITCHEAT, _("Edit..."));
 	wxButton * const AddCheat = new wxButton(m_CheatPage, ID_ADDCHEAT, _("Add..."));
 	RemoveCheat = new wxButton(m_CheatPage, ID_REMOVECHEAT, _("Remove"));
-	EditCheat->Enable(false);
-	RemoveCheat->Enable(false);
+	EditCheat->Disable();
+	RemoveCheat->Disable();
 
 	wxBoxSizer* sCheatPage = new wxBoxSizer(wxVERTICAL);
 	sCheats->Add(Cheats, 1, wxEXPAND|wxALL, 0);
@@ -1060,13 +1047,10 @@ void CISOProperties::LoadGameConfig()
 	SetCheckboxValueFromGameini("Core", "CPUThread", CPUThread);
 	SetCheckboxValueFromGameini("Core", "SkipIdle", SkipIdle);
 	SetCheckboxValueFromGameini("Core", "MMU", MMU);
-	SetCheckboxValueFromGameini("Core", "BAT", BAT);
 	SetCheckboxValueFromGameini("Core", "DCBZ", DCBZOFF);
 	SetCheckboxValueFromGameini("Core", "FPRF", FPRF);
-	SetCheckboxValueFromGameini("Core", "DoubleVideoRate", DVideo);
 	SetCheckboxValueFromGameini("Core", "SyncGPU", SyncGPU);
 	SetCheckboxValueFromGameini("Core", "FastDiscSpeed", FastDiscSpeed);
-	SetCheckboxValueFromGameini("Core", "BlockMerging", BlockMerging);
 	SetCheckboxValueFromGameini("Core", "DSPHLE", DSPHLE);
 	SetCheckboxValueFromGameini("Wii", "Widescreen", EnableWideScreen);
 	SetCheckboxValueFromGameini("Video_Stereoscopy", "StereoEFBMonoDepth", MonoDepth);
@@ -1157,13 +1141,10 @@ bool CISOProperties::SaveGameConfig()
 	SaveGameIniValueFrom3StateCheckbox("Core", "CPUThread", CPUThread);
 	SaveGameIniValueFrom3StateCheckbox("Core", "SkipIdle", SkipIdle);
 	SaveGameIniValueFrom3StateCheckbox("Core", "MMU", MMU);
-	SaveGameIniValueFrom3StateCheckbox("Core", "BAT", BAT);
 	SaveGameIniValueFrom3StateCheckbox("Core", "DCBZ", DCBZOFF);
 	SaveGameIniValueFrom3StateCheckbox("Core", "FPRF", FPRF);
-	SaveGameIniValueFrom3StateCheckbox("Core", "DoubleVideoRate", DVideo);
 	SaveGameIniValueFrom3StateCheckbox("Core", "SyncGPU", SyncGPU);
 	SaveGameIniValueFrom3StateCheckbox("Core", "FastDiscSpeed", FastDiscSpeed);
-	SaveGameIniValueFrom3StateCheckbox("Core", "BlockMerging", BlockMerging);
 	SaveGameIniValueFrom3StateCheckbox("Core", "DSPHLE", DSPHLE);
 	SaveGameIniValueFrom3StateCheckbox("Wii", "Widescreen", EnableWideScreen);
 	SaveGameIniValueFrom3StateCheckbox("Video_Stereoscopy", "StereoEFBMonoDepth", MonoDepth);
@@ -1429,8 +1410,8 @@ void CISOProperties::PatchButtonClicked(wxCommandEvent& event)
 	Patches->Clear();
 	PatchList_Load();
 
-	EditPatch->Enable(false);
-	RemovePatch->Enable(false);
+	EditPatch->Disable();
+	RemovePatch->Disable();
 }
 
 void CISOProperties::ActionReplayList_Load()
@@ -1509,8 +1490,8 @@ void CISOProperties::ActionReplayButtonClicked(wxCommandEvent& event)
 	Cheats->Clear();
 	ActionReplayList_Load();
 
-	EditCheat->Enable(false);
-	RemoveCheat->Enable(false);
+	EditCheat->Disable();
+	RemoveCheat->Disable();
 }
 
 void CISOProperties::OnChangeBannerLang(wxCommandEvent& event)

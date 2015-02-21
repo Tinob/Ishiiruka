@@ -17,6 +17,7 @@
 #include "Core/Boot/Boot.h"
 #include "Core/Boot/Boot_DOL.h"
 #include "Core/FifoPlayer/FifoDataFile.h"
+#include "Core/PowerPC/PowerPC.h"
 
 #include "DiscIO/NANDContentLoader.h"
 #include "DiscIO/VolumeCreator.h"
@@ -36,10 +37,10 @@ SCoreStartupParameter::SCoreStartupParameter()
   bCPUThread(true), bDSPThread(false), bDSPHLE(true),
   bSkipIdle(true), bSyncGPUOnSkipIdleHack(true), bNTSC(false), bForceNTSCJ(false),
   bHLE_BS2(true), bEnableCheats(false),
-  bMergeBlocks(false), bEnableMemcardSaving(true),
+  bEnableMemcardSaving(true),
   bDPL2Decoder(false), bTimeStretching(false), iLatency(14),
   bRunCompareServer(false), bRunCompareClient(false),
-  bBAT(false), bMMU(false), bDCBZOFF(false),
+  bMMU(false), bDCBZOFF(false),
   iBBDumpPort(0), bDoubleVideoRate(false),
   bSyncGPU(false), bFastDiscSpeed(false),
   SelectedLanguage(0), bWii(false),
@@ -66,7 +67,7 @@ void SCoreStartupParameter::LoadDefaults()
 	iGDBPort = -1;
 	#endif
 
-	iCPUCore = CORE_JIT64;
+	iCPUCore = PowerPC::CORE_JIT64;
 	bCPUThread = false;
 	bSkipIdle = false;
 	bSyncGPUOnSkipIdleHack = true;
@@ -74,14 +75,12 @@ void SCoreStartupParameter::LoadDefaults()
 	bDSPHLE = true;
 	bFastmem = true;
 	bFPRF = false;
-	bBAT = false;
 	bMMU = false;
 	bDCBZOFF = false;
 	iBBDumpPort = -1;
 	bDoubleVideoRate = false;
 	bSyncGPU = false;
 	bFastDiscSpeed = false;
-	bMergeBlocks = false;
 	bEnableMemcardSaving = true;
 	SelectedLanguage = 0;
 	bWii = false;
@@ -109,9 +108,39 @@ void SCoreStartupParameter::LoadDefaults()
 	m_strUniqueID = "00000000";
 }
 
+static const char* GetRegionOfCountry(DiscIO::IVolume::ECountry country)
+{
+	switch (country)
+	{
+	case DiscIO::IVolume::COUNTRY_USA:
+		return USA_DIR;
+
+	case DiscIO::IVolume::COUNTRY_TAIWAN:
+	case DiscIO::IVolume::COUNTRY_KOREA:
+		// TODO: Should these have their own Region Dir?
+	case DiscIO::IVolume::COUNTRY_JAPAN:
+		return JAP_DIR;
+
+	case DiscIO::IVolume::COUNTRY_AUSTRALIA:
+	case DiscIO::IVolume::COUNTRY_EUROPE:
+	case DiscIO::IVolume::COUNTRY_FRANCE:
+	case DiscIO::IVolume::COUNTRY_GERMANY:
+	case DiscIO::IVolume::COUNTRY_INTERNATIONAL:
+	case DiscIO::IVolume::COUNTRY_ITALY:
+	case DiscIO::IVolume::COUNTRY_NETHERLANDS:
+	case DiscIO::IVolume::COUNTRY_RUSSIA:
+	case DiscIO::IVolume::COUNTRY_SPAIN:
+		return EUR_DIR;
+
+	case DiscIO::IVolume::COUNTRY_UNKNOWN:
+	default:
+		return nullptr;
+	}
+}
+
 bool SCoreStartupParameter::AutoSetup(EBootBS2 _BootBS2)
 {
-	std::string Region(EUR_DIR);
+	std::string set_region_dir(EUR_DIR);
 
 	switch (_BootBS2)
 	{
@@ -151,56 +180,27 @@ bool SCoreStartupParameter::AutoSetup(EBootBS2 _BootBS2)
 				}
 				m_strName = pVolume->GetName();
 				m_strUniqueID = pVolume->GetUniqueID();
-				m_strRevisionSpecificUniqueID = pVolume->GetRevisionSpecificUniqueID();
+				m_revision = pVolume->GetRevision();
 
 				// Check if we have a Wii disc
 				bWii = pVolume.get()->IsWiiDisc();
-				switch (pVolume->GetCountry())
+
+				const char* retrieved_region_dir = GetRegionOfCountry(pVolume->GetCountry());
+				if (!retrieved_region_dir)
 				{
-				case DiscIO::IVolume::COUNTRY_USA:
-					bNTSC = true;
-					Region = USA_DIR;
-					break;
-
-				case DiscIO::IVolume::COUNTRY_TAIWAN:
-				case DiscIO::IVolume::COUNTRY_KOREA:
-					// TODO: Should these have their own Region Dir?
-				case DiscIO::IVolume::COUNTRY_JAPAN:
-					bNTSC = true;
-					Region = JAP_DIR;
-					break;
-
-				case DiscIO::IVolume::COUNTRY_AUSTRALIA:
-				case DiscIO::IVolume::COUNTRY_EUROPE:
-				case DiscIO::IVolume::COUNTRY_FRANCE:
-				case DiscIO::IVolume::COUNTRY_INTERNATIONAL:
-				case DiscIO::IVolume::COUNTRY_ITALY:
-				case DiscIO::IVolume::COUNTRY_NETHERLANDS:
-				case DiscIO::IVolume::COUNTRY_RUSSIA:
-				case DiscIO::IVolume::COUNTRY_SPAIN:
-					bNTSC = false;
-					Region = EUR_DIR;
-					break;
-
-				case DiscIO::IVolume::COUNTRY_UNKNOWN:
-				default:
-					if (PanicYesNoT("Your GCM/ISO file seems to be invalid (invalid country)."
-								   "\nContinue with PAL region?"))
-					{
-						bNTSC = false;
-						Region = EUR_DIR;
-						break;
-					}
-					else
-					{
+					if (!PanicYesNoT("Your GCM/ISO file seems to be invalid (invalid country)."
+						"\nContinue with PAL region?"))
 						return false;
-					}
+					retrieved_region_dir = EUR_DIR;
 				}
+
+				set_region_dir = retrieved_region_dir;
+				bNTSC = set_region_dir == USA_DIR || set_region_dir == JAP_DIR;
 			}
 			else if (!strcasecmp(Extension.c_str(), ".elf"))
 			{
 				bWii = CBoot::IsElfWii(m_strFilename);
-				Region = USA_DIR;
+				set_region_dir = USA_DIR;
 				m_BootType = BOOT_ELF;
 				bNTSC = true;
 			}
@@ -208,14 +208,14 @@ bool SCoreStartupParameter::AutoSetup(EBootBS2 _BootBS2)
 			{
 				CDolLoader dolfile(m_strFilename);
 				bWii = dolfile.IsWii();
-				Region = USA_DIR;
+				set_region_dir = USA_DIR;
 				m_BootType = BOOT_DOL;
 				bNTSC = true;
 			}
 			else if (!strcasecmp(Extension.c_str(), ".dff"))
 			{
 				bWii = true;
-				Region = USA_DIR;
+				set_region_dir = USA_DIR;
 				bNTSC = true;
 				m_BootType = BOOT_DFF;
 
@@ -240,37 +240,9 @@ bool SCoreStartupParameter::AutoSetup(EBootBS2 _BootBS2)
 					return false; //do not boot
 				}
 
-				switch (ContentLoader.GetCountry())
-				{
-				case DiscIO::IVolume::COUNTRY_USA:
-					bNTSC = true;
-					Region = USA_DIR;
-					break;
-
-				case DiscIO::IVolume::COUNTRY_TAIWAN:
-				case DiscIO::IVolume::COUNTRY_KOREA:
-					// TODO: Should these have their own Region Dir?
-				case DiscIO::IVolume::COUNTRY_JAPAN:
-					bNTSC = true;
-					Region = JAP_DIR;
-					break;
-
-				case DiscIO::IVolume::COUNTRY_AUSTRALIA:
-				case DiscIO::IVolume::COUNTRY_EUROPE:
-				case DiscIO::IVolume::COUNTRY_FRANCE:
-				case DiscIO::IVolume::COUNTRY_INTERNATIONAL:
-				case DiscIO::IVolume::COUNTRY_ITALY:
-				case DiscIO::IVolume::COUNTRY_RUSSIA:
-					bNTSC = false;
-					Region = EUR_DIR;
-					break;
-
-				case DiscIO::IVolume::COUNTRY_UNKNOWN:
-				default:
-					bNTSC = false;
-					Region = EUR_DIR;
-						break;
-				}
+				const char* retrieved_region_dir = GetRegionOfCountry(ContentLoader.GetCountry());
+				set_region_dir = retrieved_region_dir ? retrieved_region_dir : EUR_DIR;
+				bNTSC = set_region_dir == USA_DIR || set_region_dir == JAP_DIR;
 
 				bWii = true;
 				m_BootType = BOOT_WII_NAND;
@@ -310,35 +282,35 @@ bool SCoreStartupParameter::AutoSetup(EBootBS2 _BootBS2)
 		break;
 
 	case BOOT_BS2_USA:
-		Region = USA_DIR;
+		set_region_dir = USA_DIR;
 		m_strFilename.clear();
 		bNTSC = true;
 		break;
 
 	case BOOT_BS2_JAP:
-		Region = JAP_DIR;
+		set_region_dir = JAP_DIR;
 		m_strFilename.clear();
 		bNTSC = true;
 		break;
 
 	case BOOT_BS2_EUR:
-		Region = EUR_DIR;
+		set_region_dir = EUR_DIR;
 		m_strFilename.clear();
 		bNTSC = false;
 		break;
 	}
 
 	// Setup paths
-	CheckMemcardPath(SConfig::GetInstance().m_strMemoryCardA, Region, true);
-	CheckMemcardPath(SConfig::GetInstance().m_strMemoryCardB, Region, false);
+	CheckMemcardPath(SConfig::GetInstance().m_strMemoryCardA, set_region_dir, true);
+	CheckMemcardPath(SConfig::GetInstance().m_strMemoryCardB, set_region_dir, false);
 	m_strSRAM = File::GetUserPath(F_GCSRAM_IDX);
 	if (!bWii)
 	{
 		if (!bHLE_BS2)
 		{
-			m_strBootROM = File::GetUserPath(D_GCUSER_IDX) + DIR_SEP + Region + DIR_SEP GC_IPL;
+			m_strBootROM = File::GetUserPath(D_GCUSER_IDX) + DIR_SEP + set_region_dir + DIR_SEP GC_IPL;
 			if (!File::Exists(m_strBootROM))
-				m_strBootROM = File::GetSysDirectory() + GC_SYS_DIR + DIR_SEP + Region + DIR_SEP GC_IPL;
+				m_strBootROM = File::GetSysDirectory() + GC_SYS_DIR + DIR_SEP + set_region_dir + DIR_SEP GC_IPL;
 
 			if (!File::Exists(m_strBootROM))
 			{
@@ -403,28 +375,60 @@ void SCoreStartupParameter::CheckMemcardPath(std::string& memcardPath, std::stri
 	}
 }
 
-IniFile SCoreStartupParameter::LoadGameIni() const
-{
-	IniFile game_ini;
-	game_ini.Load(m_strGameIniDefault);
-	if (m_strGameIniDefaultRevisionSpecific != "")
-		game_ini.Load(m_strGameIniDefaultRevisionSpecific, true);
-	game_ini.Load(m_strGameIniLocal, true);
-	return game_ini;
-}
-
 IniFile SCoreStartupParameter::LoadDefaultGameIni() const
 {
 	IniFile game_ini;
-	game_ini.Load(m_strGameIniDefault);
-	if (m_strGameIniDefaultRevisionSpecific != "")
-		game_ini.Load(m_strGameIniDefaultRevisionSpecific, true);
+	LoadGameIni(&game_ini, File::GetSysDirectory() + GAMESETTINGS_DIR DIR_SEP, GetUniqueID(), m_revision);
 	return game_ini;
 }
 
 IniFile SCoreStartupParameter::LoadLocalGameIni() const
 {
 	IniFile game_ini;
-	game_ini.Load(m_strGameIniLocal);
+	LoadGameIni(&game_ini, File::GetUserPath(D_GAMESETTINGS_IDX), GetUniqueID(), m_revision);
 	return game_ini;
+}
+
+IniFile SCoreStartupParameter::LoadGameIni() const
+{
+	IniFile game_ini;
+	LoadGameIni(&game_ini, File::GetSysDirectory() + GAMESETTINGS_DIR DIR_SEP, GetUniqueID(), m_revision);
+	LoadGameIni(&game_ini, File::GetUserPath(D_GAMESETTINGS_IDX), GetUniqueID(), m_revision);
+	return game_ini;
+}
+
+IniFile SCoreStartupParameter::LoadDefaultGameIni(const std::string& id, int revision)
+{
+	IniFile game_ini;
+	LoadGameIni(&game_ini, File::GetSysDirectory() + GAMESETTINGS_DIR DIR_SEP, id, revision);
+	return game_ini;
+}
+
+IniFile SCoreStartupParameter::LoadLocalGameIni(const std::string& id, int revision)
+{
+	IniFile game_ini;
+	LoadGameIni(&game_ini, File::GetUserPath(D_GAMESETTINGS_IDX), id, revision);
+	return game_ini;
+}
+
+IniFile SCoreStartupParameter::LoadGameIni(const std::string& id, int revision)
+{
+	IniFile game_ini;
+	LoadGameIni(&game_ini, File::GetSysDirectory() + GAMESETTINGS_DIR DIR_SEP, id, revision);
+	LoadGameIni(&game_ini, File::GetUserPath(D_GAMESETTINGS_IDX), id, revision);
+	return game_ini;
+}
+
+void SCoreStartupParameter::LoadGameIni(IniFile* game_ini, const std::string& path,
+                                        const std::string& id, int revision)
+{
+	// INIs that match all regions
+	if (id.size() >= 4)
+		game_ini->Load(path + id.substr(0, 3) + ".ini", true);
+
+	// Regular INIs
+	game_ini->Load(path + id + ".ini", true);
+
+	// INIs with specific revisions
+	game_ini->Load(path + id + StringFromFormat("r%d", revision) + ".ini", true);
 }

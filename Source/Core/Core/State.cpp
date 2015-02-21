@@ -64,7 +64,7 @@ static Common::Event g_compressAndDumpStateSyncEvent;
 static std::thread g_save_thread;
 
 // Don't forget to increase this after doing changes on the savestate system
-static const u32 STATE_VERSION = 39;
+static const u32 STATE_VERSION = 40;
 
 enum
 {
@@ -176,7 +176,8 @@ static int GetEmptySlot(std::map<double, int> m)
 				break;
 			}
 		}
-		if (!found) return i;
+		if (!found)
+			return i;
 	}
 	return -1;
 }

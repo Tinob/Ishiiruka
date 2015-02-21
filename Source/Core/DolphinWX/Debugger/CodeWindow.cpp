@@ -298,7 +298,7 @@ void CCodeWindow::StepOver()
 {
 	if (CCPU::IsStepping())
 	{
-		UGeckoInstruction inst = Memory::Read_Instruction(PC);
+		UGeckoInstruction inst = PowerPC::HostRead_Instruction(PC);
 		if (inst.LK)
 		{
 			PowerPC::breakpoints.ClearAllTemporary();
@@ -329,7 +329,7 @@ void CCodeWindow::StepOut()
 		u64 steps = 0;
 		PowerPC::CoreMode oldMode = PowerPC::GetMode();
 		PowerPC::SetMode(PowerPC::MODE_INTERPRETER);
-		UGeckoInstruction inst = Memory::Read_Instruction(PC);
+		UGeckoInstruction inst = PowerPC::HostRead_Instruction(PC);
 		while (inst.hex != 0x4e800020 && steps < timeout) // check for blr
 		{
 			if (inst.LK)
@@ -347,7 +347,7 @@ void CCodeWindow::StepOut()
 				PowerPC::SingleStep();
 				++steps;
 			}
-			inst = Memory::Read_Instruction(PC);
+			inst = PowerPC::HostRead_Instruction(PC);
 		}
 
 		PowerPC::SingleStep();
@@ -436,7 +436,7 @@ void CCodeWindow::CreateMenu(const SCoreStartupParameter& core_startup_parameter
 		" and stepping to work as explained in the Developer Documentation. But it can be very"
 		" slow, perhaps slower than 1 fps."),
 		wxITEM_CHECK);
-	interpreter->Check(core_startup_parameter.iCPUCore == SCoreStartupParameter::CORE_INTERPRETER);
+	interpreter->Check(core_startup_parameter.iCPUCore == PowerPC::CORE_INTERPRETER);
 	pCoreMenu->AppendSeparator();
 
 	pCoreMenu->Append(IDM_JIT_NO_BLOCK_LINKING, _("&JIT Block Linking off"),
@@ -604,7 +604,7 @@ void CCodeWindow::OnJitMenu(wxCommandEvent& event)
 			bool found = false;
 			for (u32 addr = 0x80000000; addr < 0x80180000; addr += 4)
 			{
-				const char *name = PPCTables::GetInstructionName(Memory::ReadUnchecked_U32(addr));
+				const char *name = PPCTables::GetInstructionName(PowerPC::HostRead_U32(addr));
 				if (name && (wx_name == name))
 				{
 					NOTICE_LOG(POWERPC, "Found %s at %08x", wx_name.c_str(), addr);

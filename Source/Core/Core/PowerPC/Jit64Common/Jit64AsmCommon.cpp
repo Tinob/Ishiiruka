@@ -13,7 +13,7 @@
 #define QUANTIZED_REGS_TO_SAVE \
 	(ABI_ALL_CALLER_SAVED & ~BitSet32 { \
 		RSCRATCH, RSCRATCH2, RSCRATCH_EXTRA, XMM0+16, XMM1+16 \
-		})
+	})
 
 #define QUANTIZED_REGS_TO_SAVE_LOAD (QUANTIZED_REGS_TO_SAVE | BitSet32 { RSCRATCH2 })
 
@@ -207,7 +207,7 @@ void CommonAsmRoutines::GenMfcr()
 }
 
 // Safe + Fast Quantizers, originally from JITIL by magumagu
-static const float GC_ALIGNED16(m_65535[4]) = { 65535.0f, 65535.0f, 65535.0f, 65535.0f };
+static const float GC_ALIGNED16(m_65535[4]) = {65535.0f, 65535.0f, 65535.0f, 65535.0f};
 static const float GC_ALIGNED16(m_32767) = 32767.0f;
 static const float GC_ALIGNED16(m_m32768) = -32768.0f;
 static const float GC_ALIGNED16(m_255) = 255.0f;

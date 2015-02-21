@@ -125,7 +125,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PolarSSL", "..\Externals\po
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "miniupnpc", "..\Externals\miniupnpc\miniupnpc.vcxproj", "{A680190D-0764-485B-9CF3-A82C5EDD5715}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libusb-1.0", "..\Externals\libusbx\msvc\libusb_static_2013.vcxproj", "{349EE8F9-7D25-4909-AAF5-FF3FADE72187}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libusb-1.0", "..\Externals\libusb\libusb_static_2013.vcxproj", "{349EE8F9-7D25-4909-AAF5-FF3FADE72187}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Dolphin Core", "Dolphin Core", "{701E4F10-DED0-4ECB-A486-91188247EDBD}"
 EndProject

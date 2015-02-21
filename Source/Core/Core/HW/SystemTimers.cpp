@@ -157,7 +157,7 @@ static void CPCallback(u64 userdata, int cyclesLate)
 static void DecrementerCallback(u64 userdata, int cyclesLate)
 {
 	PowerPC::ppcState.spr[SPR_DEC] = 0xFFFFFFFF;
-	Common::AtomicOr(PowerPC::ppcState.Exceptions, EXCEPTION_DECREMENTER);
+	PowerPC::ppcState.Exceptions |= EXCEPTION_DECREMENTER;
 }
 
 void DecrementerSet()
@@ -194,7 +194,6 @@ static void PatchEngineCallback(u64 userdata, int cyclesLate)
 {
 	// Patch mem and run the Action Replay
 	PatchEngine::ApplyFramePatches();
-	PatchEngine::ApplyARPatches();
 	CoreTiming::ScheduleEvent(VideoInterface::GetTicksPerFrame() - cyclesLate, et_PatchEngine);
 }
 
@@ -246,6 +245,7 @@ void Init()
 
 	// System internal sample rate is fixed at 32KHz * 4 (16bit Stereo) / 32 bytes DMA
 	AUDIO_DMA_PERIOD = CPU_CORE_CLOCK / (AudioInterface::GetAIDSampleRate() * 4 / 32);
+
 	// Emulated gekko <-> flipper bus speed ratio (CPU clock / flipper clock)
 	CP_PERIOD = GetTicksPerSecond() / 10000;
 

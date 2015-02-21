@@ -3,6 +3,7 @@
 // Refer to the license.txt file included.
 
 #pragma once
+#include <stdarg.h>
 #include "Common/CommonTypes.h"
 
 namespace JitRegister
@@ -27,7 +28,7 @@ inline void Register(const void* start, const void* end,
 {
 	va_list args;
 	va_start(args, format);
-	u32 code_size = (u32)((const char*)end - (const char*)start);
+	u32 code_size = (u32) ((const char*) end - (const char*) start);
 	RegisterV(start, code_size, format, args);
 	va_end(args);
 }

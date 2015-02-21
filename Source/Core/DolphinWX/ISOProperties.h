@@ -69,8 +69,8 @@ private:
 	DECLARE_EVENT_TABLE();
 
 	// Core
-	wxCheckBox *CPUThread, *SkipIdle, *MMU, *BAT, *DCBZOFF, *FPRF;
-	wxCheckBox *DVideo, *SyncGPU, *FastDiscSpeed, *BlockMerging, *DSPHLE;
+	wxCheckBox *CPUThread, *SkipIdle, *MMU, *DCBZOFF, *FPRF;
+	wxCheckBox *SyncGPU, *FastDiscSpeed, *DSPHLE;
 
 	wxArrayString arrayStringFor_GPUDeterminism;
 	wxChoice* GPUDeterminism;
@@ -136,10 +136,9 @@ private:
 		ID_IDLESKIP,
 		ID_MMU,
 		ID_DCBZOFF,
-		ID_DVIDEO,
+		ID_FPRF,
 		ID_SYNCGPU,
 		ID_DISCSPEED,
-		ID_MERGEBLOCKS,
 		ID_AUDIO_DSP_HLE,
 		ID_USE_BBOX,
 		ID_ENABLEPROGRESSIVESCAN,

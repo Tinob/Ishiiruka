@@ -52,20 +52,20 @@
   <ItemGroup>
     <Text Include="CMakeLists.txt" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CoreDir)Common\Common.vcxproj">
+      <Project>{2e6c348c-c75c-4d94-8d1e-9c1fcbf3efe4}</Project>
+    </ProjectReference>
+    <ProjectReference Include="$(CoreDir)Core\Core.vcxproj">
+      <Project>{e54cf649-140e-4255-81a5-30a673c1fb36}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
   <!--Copy the .exe to binary output folder-->
   <ItemGroup>
     <SourceFiles Include="$(TargetPath)" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="$(CoreDir)Common\Common.vcxproj">
-      <Project>{c87a4178-44f6-49b2-b7aa-c79af1b8c534}</Project>
-    </ProjectReference>
-    <ProjectReference Include="$(CoreDir)Core\Core.vcxproj">
-      <Project>{8c60e805-0da5-4e25-8f84-038db504bb0d}</Project>
-    </ProjectReference>
   </ItemGroup>
   <Target Name="AfterBuild" Inputs="@(SourceFiles)" Outputs="@(SourceFiles -> '$(BinaryOutputDir)%(Filename)%(Extension)')">
     <Message Text="Copy: @(SourceFiles) -&gt; $(BinaryOutputDir)" Importance="High" />

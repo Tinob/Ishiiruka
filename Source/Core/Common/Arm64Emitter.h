@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <functional>
+
 #include "Common/ArmCommon.h"
 #include "Common/BitSet.h"
 #include "Common/CodeBlock.h"
@@ -76,8 +78,8 @@ enum ARM64Reg
 };
 
 inline bool Is64Bit(ARM64Reg reg) { return reg & 0x20; }
-inline bool IsSingle(ARM64Reg reg) { return reg & 0x40; }
-inline bool IsDouble(ARM64Reg reg) { return reg & 0x80; }
+inline bool IsSingle(ARM64Reg reg) { return (reg & 0xC0) == 0x40; }
+inline bool IsDouble(ARM64Reg reg) { return (reg & 0xC0) == 0x80; }
 inline bool IsQuad(ARM64Reg reg) { return (reg & 0xC0) == 0xC0; }
 inline bool IsVector(ARM64Reg reg) { return (reg & 0xC0) != 0; }
 inline ARM64Reg DecodeReg(ARM64Reg reg) { return (ARM64Reg)(reg & 0x1F); }
@@ -332,6 +334,7 @@ private:
 	void EncodeLogicalImmInst(u32 op, ARM64Reg Rd, ARM64Reg Rn, u32 immr, u32 imms);
 	void EncodeLoadStorePair(u32 op, u32 load, IndexType type, ARM64Reg Rt, ARM64Reg Rt2, ARM64Reg Rn, s32 imm);
 	void EncodeAddressInst(u32 op, ARM64Reg Rd, s32 imm);
+	void EncodeLoadStoreUnscaled(u32 size, u32 op, ARM64Reg Rt, ARM64Reg Rn, s32 imm);
 
 protected:
 	inline void Write32(u32 value)
@@ -477,6 +480,7 @@ public:
 	void MADD(ARM64Reg Rd, ARM64Reg Rn, ARM64Reg Rm, ARM64Reg Ra);
 	void MSUB(ARM64Reg Rd, ARM64Reg Rn, ARM64Reg Rm, ARM64Reg Ra);
 	void SMADDL(ARM64Reg Rd, ARM64Reg Rn, ARM64Reg Rm, ARM64Reg Ra);
+	void SMULL(ARM64Reg Rd, ARM64Reg Rn, ARM64Reg Rm);
 	void SMSUBL(ARM64Reg Rd, ARM64Reg Rn, ARM64Reg Rm, ARM64Reg Ra);
 	void SMULH(ARM64Reg Rd, ARM64Reg Rn, ARM64Reg Rm);
 	void UMADDL(ARM64Reg Rd, ARM64Reg Rn, ARM64Reg Rm, ARM64Reg Ra);
@@ -582,6 +586,17 @@ public:
 	void LDRSW(ARM64Reg Rt, ARM64Reg Rn, ArithOption Rm);
 	void PRFM(ARM64Reg Rt, ARM64Reg Rn, ArithOption Rm);
 
+	// Load/Store register (unscaled offset)
+	void STURB(ARM64Reg Rt, ARM64Reg Rn, s32 imm);
+	void LDURB(ARM64Reg Rt, ARM64Reg Rn, s32 imm);
+	void LDURSB(ARM64Reg Rt, ARM64Reg Rn, s32 imm);
+	void STURH(ARM64Reg Rt, ARM64Reg Rn, s32 imm);
+	void LDURH(ARM64Reg Rt, ARM64Reg Rn, s32 imm);
+	void LDURSH(ARM64Reg Rt, ARM64Reg Rn, s32 imm);
+	void STUR(ARM64Reg Rt, ARM64Reg Rn, s32 imm);
+	void LDUR(ARM64Reg Rt, ARM64Reg Rn, s32 imm);
+	void LDURSW(ARM64Reg Rt, ARM64Reg Rn, s32 imm);
+
 	// Load/Store pair
 	void LDP(IndexType type, ARM64Reg Rt, ARM64Reg Rt2, ARM64Reg Rn, s32 imm);
 	void LDPSW(IndexType type, ARM64Reg Rt, ARM64Reg Rt2, ARM64Reg Rn, s32 imm);
@@ -597,6 +612,29 @@ public:
 	// ABI related
 	void ABI_PushRegisters(BitSet32 registers);
 	void ABI_PopRegisters(BitSet32 registers, BitSet32 ignore_mask = BitSet32(0));
+
+	// Utility to generate a call to a std::function object.
+	//
+	// Unfortunately, calling operator() directly is undefined behavior in C++
+	// (this method might be a thunk in the case of multi-inheritance) so we
+	// have to go through a trampoline function.
+	template <typename T, typename... Args>
+	static void CallLambdaTrampoline(const std::function<T(Args...)>* f,
+	                                 Args... args)
+	{
+		(*f)(args...);
+	}
+
+	// This function expects you to have set up the state.
+	// Overwrites X0 and X30
+	template <typename T, typename... Args>
+	ARM64Reg ABI_SetupLambda(const std::function<T(Args...)>* f)
+	{
+		auto trampoline = &ARM64XEmitter::CallLambdaTrampoline<T, Args...>;
+		MOVI2R(X30, (u64)trampoline);
+		MOVI2R(X0, (u64)const_cast<void*>((const void*)f));
+		return X30;
+	}
 };
 
 class ARM64FloatEmitter
@@ -607,6 +645,10 @@ public:
 	void LDR(u8 size, IndexType type, ARM64Reg Rt, ARM64Reg Rn, s32 imm);
 	void STR(u8 size, IndexType type, ARM64Reg Rt, ARM64Reg Rn, s32 imm);
 
+	// Loadstore unscaled
+	void LDUR(u8 size, ARM64Reg Rt, ARM64Reg Rn, s32 imm);
+	void STUR(u8 size, ARM64Reg Rt, ARM64Reg Rn, s32 imm);
+
 	// Loadstore single structure
 	void LD1(u8 size, ARM64Reg Rt, u8 index, ARM64Reg Rn);
 	void LD1(u8 size, ARM64Reg Rt, u8 index, ARM64Reg Rn, ARM64Reg Rm);
@@ -616,6 +658,7 @@ public:
 
 	// Loadstore multiple structure
 	void LD1(u8 size, u8 count, ARM64Reg Rt, ARM64Reg Rn);
+	void ST1(u8 size, u8 count, ARM64Reg Rt, ARM64Reg Rn);
 
 	// Scalar - 1 Source
 	void FABS(ARM64Reg Rd, ARM64Reg Rn);
@@ -700,6 +743,9 @@ public:
 	void SXTL(u8 src_size, ARM64Reg Rd, ARM64Reg Rn);
 	void UXTL(u8 src_size, ARM64Reg Rd, ARM64Reg Rn);
 
+	// vector x indexed element
+	void FMUL(u8 size, ARM64Reg Rd, ARM64Reg Rn, ARM64Reg Rm, u8 index);
+
 	// ABI related
 	void ABI_PushRegisters(BitSet32 registers);
 	void ABI_PopRegisters(BitSet32 registers, BitSet32 ignore_mask = BitSet32(0));
@@ -725,6 +771,8 @@ private:
 	void EmitShiftImm(bool U, u32 immh, u32 immb, u32 opcode, ARM64Reg Rd, ARM64Reg Rn);
 	void EmitLoadStoreMultipleStructure(u32 size, bool L, u32 opcode, ARM64Reg Rt, ARM64Reg Rn);
 	void EmitScalar1Source(bool M, bool S, u32 type, u32 opcode, ARM64Reg Rd, ARM64Reg Rn);
+	void EmitVectorxElement(bool U, u32 size, bool L, u32 opcode, bool H, ARM64Reg Rd, ARM64Reg Rn, ARM64Reg Rm);
+	void EmitLoadStoreUnscaled(u32 size, u32 op, ARM64Reg Rt, ARM64Reg Rn, s32 imm);
 };
 
 class ARM64CodeBlock : public CodeBlock<ARM64XEmitter>
@@ -733,7 +781,7 @@ private:
 	void PoisonMemory() override
 	{
 		u32* ptr = (u32*)region;
-		u32* maxptr = (u32*)region + region_size;
+		u32* maxptr = (u32*)(region + region_size);
 		// If our memory isn't a multiple of u32 then this won't write the last remaining bytes with anything
 		// Less than optimal, but there would be nothing we could do but throw a runtime warning anyway.
 		// AArch64: 0xD4200000 = BRK 0

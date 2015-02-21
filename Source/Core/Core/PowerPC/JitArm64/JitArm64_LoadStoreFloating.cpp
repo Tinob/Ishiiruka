@@ -181,7 +181,7 @@ void JitArm64::lfXX(UGeckoInstruction inst)
 	fprs_in_use[0] = 0; // Q0
 	fprs_in_use[VD - Q0] = 0;
 
-	if (is_immediate && Memory::IsRAMAddress(imm_addr))
+	if (is_immediate && PowerPC::IsOptimizableRAMAddress(imm_addr))
 	{
 		EmitBackpatchRoutine(this, flags, true, false, VD, XA);
 	}
@@ -390,7 +390,7 @@ void JitArm64::stfXX(UGeckoInstruction inst)
 			}
 			else if (accessSize == 32)
 			{
-				m_float_emit.FCVT(32, 64, Q0, V0);
+				m_float_emit.FCVT(32, 64, D0, EncodeRegToDouble(V0));
 				m_float_emit.REV32(8, D0, D0);
 				m_float_emit.STR(32, INDEX_UNSIGNED, D0, X1, 0);
 			}
@@ -399,7 +399,7 @@ void JitArm64::stfXX(UGeckoInstruction inst)
 			jit->js.fifoBytesThisBlock += accessSize >> 3;
 
 		}
-		else if (Memory::IsRAMAddress(imm_addr))
+		else if (PowerPC::IsOptimizableRAMAddress(imm_addr))
 		{
 			EmitBackpatchRoutine(this, flags, true, false, V0, XA);
 		}

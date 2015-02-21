@@ -28,9 +28,9 @@
 #include "DolphinWX/WXInputBase.h"
 
 HotkeyConfigDialog::HotkeyConfigDialog(wxWindow *parent, wxWindowID id, const wxString &title,
-	const wxPoint &position, const wxSize& size, long style)
-	: wxDialog(parent, id, title, position, size, style)
-	, m_ButtonMappingTimer(this)
+		const wxPoint &position, const wxSize& size, long style)
+: wxDialog(parent, id, title, position, size, style)
+, m_ButtonMappingTimer(this)
 {
 	CreateHotkeyGUIControls();
 
@@ -107,8 +107,8 @@ void HotkeyConfigDialog::OnKeyDown(wxKeyEvent& event)
 
 			// Proceed to apply the binding to the selected button.
 			SetButtonText(ClickedButton->GetId(),
-				WxUtils::WXKeyToString(g_Pressed),
-				WxUtils::WXKeymodToString(g_Modkey));
+					WxUtils::WXKeyToString(g_Pressed),
+					WxUtils::WXKeymodToString(g_Modkey));
 			SaveButtonMapping(ClickedButton->GetId(), g_Pressed, g_Modkey);
 		}
 		EndGetButtons();
@@ -128,7 +128,7 @@ void HotkeyConfigDialog::DoGetButtons(int _GetId)
 	const int TimesPerSecond = 40; // How often to run the check
 
 	// If the Id has changed or the timer is not running we should start one
-	if (GetButtonWaitingID != _GetId || !m_ButtonMappingTimer.IsRunning())
+	if ( GetButtonWaitingID != _GetId || !m_ButtonMappingTimer.IsRunning() )
 	{
 		if (m_ButtonMappingTimer.IsRunning())
 			m_ButtonMappingTimer.Stop();
@@ -185,6 +185,112 @@ void HotkeyConfigDialog::OnButtonClick(wxCommandEvent& event)
 
 #define HOTKEY_NUM_COLUMNS 2
 
+const wxString hkText[] =
+{
+	_("Open"),
+	_("Change Disc"),
+	_("Refresh List"),
+
+	_("Play/Pause"),
+	_("Stop"),
+	_("Reset"),
+	_("Frame Advance"),
+
+	_("Start Recording"),
+	_("Play Recording"),
+	_("Export Recording"),
+	_("Read-only mode"),
+
+	_("Toggle Fullscreen"),
+	_("Take Screenshot"),
+	_("Exit"),
+
+	_("Connect Wiimote 1"),
+	_("Connect Wiimote 2"),
+	_("Connect Wiimote 3"),
+	_("Connect Wiimote 4"),
+	_("Connect Balance Board"),
+
+	_("Volume Down"),
+	_("Volume Up"),
+	_("Volume Toggle Mute"),
+
+	_("Toggle IR"),
+	_("Toggle Aspect Ratio"),
+	_("Toggle EFB Copies"),
+	_("Toggle Fog"),
+	_("Toggle Frame limit"),
+	_("Decrease Frame limit"),
+	_("Increase Frame limit"),
+
+	_("Freelook Decrease Speed"),
+	_("Freelook Increase Speed"),
+	_("Freelook Reset Speed"),
+	_("Freelook Move Up"),
+	_("Freelook Move Down"),
+	_("Freelook Move Left"),
+	_("Freelook Move Right"),
+	_("Freelook Zoom In"),
+	_("Freelook Zoom Out"),
+	_("Freelook Reset"),
+
+	_("Decrease Depth"),
+	_("Increase Depth"),
+	_("Decrease Convergence"),
+	_("Increase Convergence"),
+
+	_("Load State Slot 1"),
+	_("Load State Slot 2"),
+	_("Load State Slot 3"),
+	_("Load State Slot 4"),
+	_("Load State Slot 5"),
+	_("Load State Slot 6"),
+	_("Load State Slot 7"),
+	_("Load State Slot 8"),
+	_("Load State Slot 9"),
+	_("Load State Slot 10"),
+
+	_("Save State Slot 1"),
+	_("Save State Slot 2"),
+	_("Save State Slot 3"),
+	_("Save State Slot 4"),
+	_("Save State Slot 5"),
+	_("Save State Slot 6"),
+	_("Save State Slot 7"),
+	_("Save State Slot 8"),
+	_("Save State Slot 9"),
+	_("Save State Slot 10"),
+
+	_("Select State Slot 1"),
+	_("Select State Slot 2"),
+	_("Select State Slot 3"),
+	_("Select State Slot 4"),
+	_("Select State Slot 5"),
+	_("Select State Slot 6"),
+	_("Select State Slot 7"),
+	_("Select State Slot 8"),
+	_("Select State Slot 9"),
+	_("Select State Slot 10"),
+
+	_("Save to selected slot"),
+	_("Load from selected slot"),
+
+	_("Load State Last 1"),
+	_("Load State Last 2"),
+	_("Load State Last 3"),
+	_("Load State Last 4"),
+	_("Load State Last 5"),
+	_("Load State Last 6"),
+	_("Load State Last 7"),
+	_("Load State Last 8"),
+
+	_("Save Oldest State"),
+	_("Undo Load State"),
+	_("Undo Save State"),
+	_("Save State"),
+	_("Load State"),
+};
+
 void HotkeyConfigDialog::CreateHotkeyGUIControls()
 {
 	const wxString pageNames[] =
@@ -193,116 +299,10 @@ void HotkeyConfigDialog::CreateHotkeyGUIControls()
 		_("State Saves")
 	};
 
-	const wxString hkText[] =
-	{
-		_("Open"),
-		_("Change Disc"),
-		_("Refresh List"),
-
-		_("Play/Pause"),
-		_("Stop"),
-		_("Reset"),
-		_("Frame Advance"),
-
-		_("Start Recording"),
-		_("Play Recording"),
-		_("Export Recording"),
-		_("Read-only mode"),
-
-		_("Toggle Fullscreen"),
-		_("Take Screenshot"),
-		_("Exit"),
-
-		_("Connect Wiimote 1"),
-		_("Connect Wiimote 2"),
-		_("Connect Wiimote 3"),
-		_("Connect Wiimote 4"),
-		_("Connect Balance Board"),
-
-		_("Volume Down"),
-		_("Volume Up"),
-		_("Volume Toggle Mute"),
-
-		_("Toggle IR"),
-		_("Toggle Aspect Ratio"),
-		_("Toggle EFB Copies"),
-		_("Toggle Fog"),
-		_("Toggle Frame limit"),
-		_("Decrease Frame limit"),
-		_("Increase Frame limit"),
-
-		_("Freelook Decrease Speed"),
-		_("Freelook Increase Speed"),
-		_("Freelook Reset Speed"),
-		_("Freelook Move Up"),
-		_("Freelook Move Down"),
-		_("Freelook Move Left"),
-		_("Freelook Move Right"),
-		_("Freelook Zoom In"),
-		_("Freelook Zoom Out"),
-		_("Freelook Reset"),
-
-		_("Decrease Depth"),
-		_("Increase Depth"),
-		_("Decrease Convergence"),
-		_("Increase Convergence"),
-
-		_("Load State Slot 1"),
-		_("Load State Slot 2"),
-		_("Load State Slot 3"),
-		_("Load State Slot 4"),
-		_("Load State Slot 5"),
-		_("Load State Slot 6"),
-		_("Load State Slot 7"),
-		_("Load State Slot 8"),
-		_("Load State Slot 9"),
-		_("Load State Slot 10"),
-
-		_("Save State Slot 1"),
-		_("Save State Slot 2"),
-		_("Save State Slot 3"),
-		_("Save State Slot 4"),
-		_("Save State Slot 5"),
-		_("Save State Slot 6"),
-		_("Save State Slot 7"),
-		_("Save State Slot 8"),
-		_("Save State Slot 9"),
-		_("Save State Slot 10"),
-
-		_("Select State Slot 1"),
-		_("Select State Slot 2"),
-		_("Select State Slot 3"),
-		_("Select State Slot 4"),
-		_("Select State Slot 5"),
-		_("Select State Slot 6"),
-		_("Select State Slot 7"),
-		_("Select State Slot 8"),
-		_("Select State Slot 9"),
-		_("Select State Slot 10"),
-
-		_("Save to selected slot"),
-		_("Load from selected slot"),
-
-		_("Load State Last 1"),
-		_("Load State Last 2"),
-		_("Load State Last 3"),
-		_("Load State Last 4"),
-		_("Load State Last 5"),
-		_("Load State Last 6"),
-		_("Load State Last 7"),
-		_("Load State Last 8"),
-
-		_("Save Oldest State"),
-		_("Undo Load State"),
-		_("Undo Save State"),
-		_("Save State"),
-		_("Load State"),
-	};
-
-	const int page_breaks[3] = { HK_OPEN, HK_LOAD_STATE_SLOT_1, NUM_HOTKEYS };
+	const int page_breaks[3] = {HK_OPEN, HK_LOAD_STATE_SLOT_1, NUM_HOTKEYS};
 
 	// Configuration controls sizes
-	wxSize size(100, 20);
+	wxSize size(100,20);
 	// A small type font
 	wxFont m_SmallFont(7, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
 
@@ -326,9 +326,9 @@ void HotkeyConfigDialog::CreateHotkeyGUIControls()
 			sHotkeys->Add(HeaderSizer, wxGBPosition(0, i), wxDefaultSpan, wxEXPAND | wxLEFT, (i > 0) ? 30 : 1);
 		}
 
-		int column_break = (page_breaks[j + 1] + page_breaks[j] + 1) / 2;
+		int column_break = (page_breaks[j+1] + page_breaks[j] + 1) / 2;
 
-		for (int i = page_breaks[j]; i < page_breaks[j + 1]; i++)
+		for (int i = page_breaks[j]; i < page_breaks[j+1]; i++)
 		{
 			// Text for the action
 			wxStaticText *stHotkeys = new wxStaticText(Page, wxID_ANY, hkText[i]);
@@ -338,17 +338,17 @@ void HotkeyConfigDialog::CreateHotkeyGUIControls()
 			m_Button_Hotkeys[i]->SetFont(m_SmallFont);
 			m_Button_Hotkeys[i]->SetToolTip(_("Left click to detect hotkeys.\nEnter space to clear."));
 			SetButtonText(i,
-				WxUtils::WXKeyToString(SConfig::GetInstance().m_LocalCoreStartupParameter.iHotkey[i]),
-				WxUtils::WXKeymodToString(
-				SConfig::GetInstance().m_LocalCoreStartupParameter.iHotkeyModifier[i]));
+					WxUtils::WXKeyToString(SConfig::GetInstance().m_LocalCoreStartupParameter.iHotkey[i]),
+					WxUtils::WXKeymodToString(
+						SConfig::GetInstance().m_LocalCoreStartupParameter.iHotkeyModifier[i]));
 
 			wxBoxSizer *sHotkey = new wxBoxSizer(wxHORIZONTAL);
 			sHotkey->Add(stHotkeys, 1, wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL | wxALL, 2);
 			sHotkey->Add(m_Button_Hotkeys[i], 0, wxALL, 2);
 			sHotkeys->Add(sHotkey,
-				wxGBPosition((i < column_break) ? i - page_breaks[j] + 1 : i - column_break + 1,
-				(i < column_break) ? 0 : 1),
-				wxDefaultSpan, wxEXPAND | wxLEFT, (i < column_break) ? 1 : 30);
+					wxGBPosition((i < column_break) ? i - page_breaks[j] + 1 : i - column_break + 1,
+						(i < column_break) ? 0 : 1),
+					wxDefaultSpan, wxEXPAND | wxLEFT, (i < column_break) ? 1 : 30);
 		}
 
 		wxStaticBoxSizer *sHotkeyBox = new wxStaticBoxSizer(wxVERTICAL, Page, _("Hotkeys"));
