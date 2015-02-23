@@ -22,7 +22,10 @@
 #include "AudioCommon/AudioCommon.h"
 #include "AudioCommon/SoundStream.h"
 #include "AudioCommon/DPL2Decoder.h"
+
+#include "Common/MathUtil.h"
 #include "Common/StdThread.h"
+
 
 SoundStream::SoundStream(CMixer *mixer) : m_mixer(mixer), threadData(0), m_logAudio(false), m_muted(false), m_enablesoundloop(true)
 {
@@ -83,77 +86,34 @@ void SoundStream::Stop()
 	}
 }
 
-const float shortToFloat = 1.0f / 32768.0f;
-#ifdef _M_ARM
-inline void s16ToFloat(float* dst, const s16* src, u32 count)
-{
-	for (u32 i = 0; i < count; i++)
-	{
-		float fvalue = (float)src[i];
-		fvalue = fvalue * shortToFloat;
-		dst[i] = fvalue;
-	}
-}
-
-inline void floatTos16(s16* dst, const float* src, u32 count)
-{
-	for (u32 i = 0; i < count; i++)
-	{
-		dst[i] = (short)(std::fminf(std::fmaxf(src[i] * 32767.0f, -32768.0f), 32767.0f));
-	}
-}
-#else
-inline void s16ToFloat(float* dst, const s16* src, u32 count)
-{
-	__m128 factor = _mm_set1_ps(shortToFloat);
-	__m128i zero = _mm_setzero_si128();
-	const __m128i* source = (__m128i*)src;
-	const __m128i* end = (__m128i*)(src + count);
-	while (source < end)
-	{
-		__m128i x = _mm_load_si128(source);
-		__m128i mask = _mm_cmplt_epi16(x, zero);
-		__m128i xlo = _mm_unpacklo_epi16(x, mask);
-		__m128i xhi = _mm_unpackhi_epi16(x, mask);
-		__m128 ylo = _mm_cvtepi32_ps(xlo);
-		__m128 yhi = _mm_cvtepi32_ps(xhi);
-		ylo = _mm_mul_ps(ylo, factor);
-		yhi = _mm_mul_ps(yhi, factor);
-		_mm_store_ps(dst, ylo);
-		dst += 4;
-		_mm_store_ps(dst, yhi);
-		dst += 4;
-		source++;
-	}
-}
-
-inline void floatTos16(s16* dst, const float* src, u32 count)
-{
-	__m128 factor = _mm_set1_ps(32768.0f);
-	__m128i* destination = (__m128i*)dst;
-	__m128i* end = (__m128i*)(dst + count);
-	while (destination < end)
-	{
-		__m128 ylo = _mm_load_ps(src);
-		src += 4;
-		__m128 yhi = _mm_load_ps(src);
-		src += 4;
-		ylo = _mm_mul_ps(ylo, factor);
-		yhi = _mm_mul_ps(yhi, factor);
-		__m128i xlo = _mm_cvtps_epi32(ylo);
-		__m128i xhi = _mm_cvtps_epi32(yhi);
-		xlo = _mm_packs_epi32(xlo, xhi);
-		_mm_store_si128(destination, xlo);
-		destination++;
-	}
-}
-#endif 
-
-
-
 GC_ALIGNED16(static short realtimeBuffer[SOUND_MAX_FRAME_SIZE]);
 GC_ALIGNED16(static soundtouch::SAMPLETYPE dpl2buffer[SOUND_MAX_FRAME_SIZE]);
 GC_ALIGNED16(static soundtouch::SAMPLETYPE samplebuffer[SOUND_MAX_FRAME_SIZE]);
+
+float s_dither_prev[SOUND_SAMPLES_SURROUND];
+
+__forceinline void floatTos16(s16* dst, const float *src, u32 numsamples, u32 numchannels)
+{
+	for (u32 i = 0; i < numsamples; i++)
+	{
+		for (u32 j = 0; j < numchannels; j++)
+		{
+			float sample = src[i * numchannels + j] * 32768.0f;
+			TriangleDither(sample, s_dither_prev[j]);
+			MathUtil::Clamp(&sample, -32768.f, 32767.f);
+			dst[i * numchannels + j] = s16(sample);
+		}
+	}
+}
+
+__forceinline void s16ToFloat(float* dst, const s16 *src, u32 numsamples)
+{
+	for (u32 i = 0; i < numsamples; i++)
+	{
+		s16 sample = src[i];
+		dst[i] = Signed16ToFloat(sample);
+	}
+}
 
 // The audio thread.
 void SoundStream::SoundLoop()
@@ -164,6 +124,7 @@ void SoundStream::SoundLoop()
 	memset(realtimeBuffer, 0, SOUND_MAX_FRAME_SIZE * sizeof(u16));
 	memset(dpl2buffer, 0, SOUND_MAX_FRAME_SIZE * sizeof(soundtouch::SAMPLETYPE));
 	memset(samplebuffer, 0, SOUND_MAX_FRAME_SIZE * sizeof(soundtouch::SAMPLETYPE));
+	memset(s_dither_prev, 0, sizeof(s_dither_prev));
 	u32 channelmultiplier = surroundSupported ? SOUND_SAMPLES_SURROUND : SOUND_SAMPLES_STEREO;	
 	if (SConfig::GetInstance().m_LocalCoreStartupParameter.bTimeStretching)
 	{
@@ -185,12 +146,11 @@ void SoundStream::SoundLoop()
 				{
 					rate = 1.0f;
 				}
-				numsamples = m_mixer->Mix(realtimeBuffer, numsamples);				
+				numsamples = m_mixer->Mix(samplebuffer, numsamples);
 				rate *= ratemultiplier;
 				rate = rate < 0.5f ? 0.5f : rate;
 				rate = roundf(rate * 16.0f) / 16.0f;
 				sTouch.setTempo(rate);
-				s16ToFloat(samplebuffer, realtimeBuffer, numsamples * SOUND_SAMPLES_STEREO);
 				sTouch.putSamples(samplebuffer, numsamples);
 			}
 			u32 samplesneeded = SamplesNeeded();
@@ -216,7 +176,7 @@ void SoundStream::SoundLoop()
 				{
 					numsamples = sTouch.receiveSamples(samplebuffer, numsamples);
 				}
-				floatTos16(realtimeBuffer, samplebuffer, numsamples * channelmultiplier);
+				floatTos16(realtimeBuffer, samplebuffer, numsamples, channelmultiplier);
 				WriteSamples(realtimeBuffer, numsamples);
 			}
 			else 
@@ -239,7 +199,7 @@ void SoundStream::SoundLoop()
 				{
 					s16ToFloat(dpl2buffer, realtimeBuffer, numsamples * SOUND_SAMPLES_STEREO);
 					DPL2Decode(dpl2buffer, numsamples, samplebuffer);
-					floatTos16(realtimeBuffer, samplebuffer, numsamples * channelmultiplier);
+					floatTos16(realtimeBuffer, samplebuffer, numsamples, channelmultiplier);
 				}
 				WriteSamples(realtimeBuffer, numsamples);
 			}
