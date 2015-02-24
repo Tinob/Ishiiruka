@@ -160,7 +160,6 @@ void VertexManager::Flush()
 	// loading a state will invalidate BP, so check for it
 	g_video_backend->CheckInvalidState();
 	g_vertex_manager->PrepareShaders(g_nativeVertexFmt->m_components, xfmem, bpmem, true);
-	VideoFifo_CheckEFBAccess();
 
 #if defined(_DEBUG) || defined(DEBUGFAST)
 	PRIM_LOG("frame%d:\n texgen=%d, numchan=%d, dualtex=%d, ztex=%d, cole=%d, alpe=%d, ze=%d", g_ActiveConfig.iSaveTargetId, xfmem.numTexGen.numTexGens,

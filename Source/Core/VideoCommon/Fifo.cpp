@@ -4,6 +4,7 @@
 
 #include "Common/Atomic.h"
 #include "Common/ChunkFile.h"
+#include "Common/CPUDetect.h"
 #include "Common/FPURoundMode.h"
 #include "Common/MemoryUtil.h"
 #include "Common/Thread.h"
@@ -13,6 +14,7 @@
 #include "Core/CoreTiming.h"
 #include "Core/HW/Memmap.h"
 
+#include "VideoCommon/AsyncRequests.h"
 #include "VideoCommon/CommandProcessor.h"
 #include "VideoCommon/DataReader.h"
 #include "VideoCommon/Fifo.h"
@@ -25,34 +27,31 @@
 bool g_bSkipCurrentFrame = false;
 DataReader g_VideoData;
 
-namespace
-{
 static volatile bool GpuRunningState = false;
 static volatile bool EmuRunningState = false;
 static std::mutex m_csHWVidOccupied;
 // STATE_TO_SAVE
-static u8 *videoBuffer;
-static int size = 0;
-static u8 *videoBufferSC;
-static int sizeSC = 0;
+static u8 *s_video_buffer;
+static size_t s_video_buffer_size = 0;
+static u8 *s_video_buffer_SC;
+static size_t s_video_buffer_size_SC = 0;
 
 volatile u32 CPReadFifoSC;
 volatile u32 CPBaseFifoSC;
 volatile u32 CPEndFifoSC;
-}  // namespace
 
-void Fifo_DoState(PointerWrap &p) 
+void Fifo_DoState(PointerWrap &p)
 {
-	p.DoArray(videoBuffer, FIFO_SIZE);
-	p.Do(size);
+	p.DoArray(s_video_buffer, FIFO_SIZE);
+	p.Do(s_video_buffer_size);
 	u8* videodata = const_cast<u8*>(g_VideoData.GetReadPosition());
-	p.DoPointer(videodata, videoBuffer);
+	p.DoPointer(videodata, s_video_buffer);
 	g_VideoData.SetReadPosition(videodata);
 	p.Do(g_bSkipCurrentFrame);
-	p.DoArray(videoBufferSC, FIFO_SIZE);
-	p.Do(sizeSC);
+	p.DoArray(s_video_buffer_SC, FIFO_SIZE);
+	p.Do(s_video_buffer_size_SC);
 	videodata = const_cast<u8*>(g_VideoDataSC.GetReadPosition());
-	p.DoPointer(videodata, videoBufferSC);
+	p.DoPointer(videodata, s_video_buffer_SC);
 	g_VideoDataSC.SetReadPosition(videodata);
 	p.Do(CPReadFifoSC);
 	p.Do(CPBaseFifoSC);
@@ -80,12 +79,12 @@ void Fifo_PauseAndLock(bool doLock, bool unpauseOnUnlock)
 
 void Fifo_Init()
 {
-	videoBuffer = (u8*)AllocateMemoryPages(FIFO_SIZE + 16);
-	size = 0;
+	s_video_buffer = (u8*)AllocateMemoryPages(FIFO_SIZE + 16);
+	s_video_buffer_size = 0;
 	GpuRunningState = false;
 	Common::AtomicStore(CommandProcessor::VITicks, CommandProcessor::m_cpClockOrigin);
-	videoBufferSC = (u8*)AllocateMemoryPages(FIFO_SIZE + 16);
-	sizeSC = 0;
+	s_video_buffer_SC = (u8*)AllocateMemoryPages(FIFO_SIZE + 16);
+	s_video_buffer_size_SC = 0;
 	CPReadFifoSC = -1;
 	CPBaseFifoSC = -1;
 	CPEndFifoSC = -1;
@@ -94,30 +93,30 @@ void Fifo_Init()
 void Fifo_Shutdown()
 {
 	if (GpuRunningState) PanicAlert("Fifo shutting down while active");
-	FreeMemoryPages(videoBuffer, FIFO_SIZE + 16);
-	FreeMemoryPages(videoBufferSC, FIFO_SIZE + 16);
-	videoBuffer = nullptr;
-	videoBufferSC = nullptr;
+	FreeMemoryPages(s_video_buffer, FIFO_SIZE + 16);
+	FreeMemoryPages(s_video_buffer_SC, FIFO_SIZE + 16);
+	s_video_buffer = nullptr;
+	s_video_buffer_SC = nullptr;
 }
 
 u8* GetVideoBufferStartPtr()
 {
-	return videoBuffer;
+	return s_video_buffer;
 }
 
 u8* GetVideoBufferEndPtr()
 {
-	return &videoBuffer[size];
+	return &s_video_buffer[s_video_buffer_size];
 }
 
 u8* GetVideoBufferStartPtrSC()
 {
-	return videoBufferSC;
+	return s_video_buffer_SC;
 }
 
 u8* GetVideoBufferEndPtrSC()
 {
-	return &videoBufferSC[sizeSC];
+	return &s_video_buffer_SC[s_video_buffer_size_SC];
 }
 
 
@@ -133,7 +132,7 @@ void ExitGpuLoop()
 	// This should break the wait loop in CPU thread
 	CommandProcessor::fifo.bFF_GPReadEnable = false;
 	SCPFifoStruct &fifo = CommandProcessor::fifo;
-	while(fifo.isGpuReadingData) Common::YieldCPU();
+	while (fifo.isGpuReadingData) Common::YieldCPU();
 	// Terminate GPU thread loop
 	GpuRunningState = false;
 	EmuRunningState = true;
@@ -146,30 +145,31 @@ void EmulatorState(bool running)
 
 
 // Description: RunGpuLoop() sends data through this function.
-void ReadDataFromFifo(u8* _uData, u32 len)
+void ReadDataFromFifo(u8* _uData)
 {
-	if (size + len >= FIFO_SIZE)
+	size_t len = 32;
+	if (s_video_buffer_size + len >= FIFO_SIZE)
 	{
-		int pos = (int)(g_VideoData.GetReadPosition() - videoBuffer);
-		size -= pos;
-		if (size + len > FIFO_SIZE)
+		size_t pos = g_VideoData.GetReadPosition() - s_video_buffer;
+		s_video_buffer_size -= pos;
+		if (s_video_buffer_size + len > FIFO_SIZE)
 		{
-			PanicAlert("FIFO out of bounds (size = %i, len = %i at %08x)", size, len, pos);
+			PanicAlert("FIFO out of bounds (s_video_buffer_size = %i, len = %i at %08x)", s_video_buffer_size, len, pos);
 		}
-		memmove(&videoBuffer[0], &videoBuffer[pos], size);
-		g_VideoData.SetReadPosition(videoBuffer);
+		memmove(s_video_buffer, s_video_buffer + pos, s_video_buffer_size);
+		g_VideoData.SetReadPosition(s_video_buffer);
 	}
-	// Copy new video instructions to videoBuffer for future use in rendering the new picture
-	memcpy(videoBuffer + size, _uData, len);
-	size += len;
+	// Copy new video instructions to s_video_buffer for future use in rendering the new picture
+	memcpy(s_video_buffer + s_video_buffer_size, _uData, len);
+	s_video_buffer_size += len;
 }
 
 void ResetVideoBuffer()
 {
-	g_VideoData.SetReadPosition(videoBuffer);
-	size = 0;
-	g_VideoDataSC.SetReadPosition(videoBufferSC);
-	sizeSC = 0;
+	g_VideoData.SetReadPosition(s_video_buffer);
+	s_video_buffer_size = 0;
+	g_VideoDataSC.SetReadPosition(s_video_buffer_SC);
+	s_video_buffer_size_SC = 0;
 
 	CPReadFifoSC = -1;
 	CPBaseFifoSC = -1;
@@ -186,11 +186,18 @@ void RunGpuLoop()
 	SCPFifoStruct &fifo = CommandProcessor::fifo;
 	u32 cyclesExecuted = 0;
 
+	// If the host CPU has only two cores, idle loop instead of busy loop
+	// This allows a system that we are maxing out in dual core mode to do other things
+	bool yield_cpu = cpu_info.num_cores <= 2;
+
+	AsyncRequests::GetInstance()->SetEnable(true);
+	AsyncRequests::GetInstance()->SetPassthrough(false);
+
 	while (GpuRunningState)
 	{
 		g_video_backend->PeekMessages();
 
-		VideoFifo_CheckAsyncRequest();
+		AsyncRequests::GetInstance()->PullEvents();
 
 		CommandProcessor::SetCpStatus();
 
@@ -212,15 +219,15 @@ void RunGpuLoop()
 				else
 					readPtr += 32;
 
-				_assert_msg_(COMMANDPROCESSOR, (s32)fifo.CPReadWriteDistance - 32 >= 0 ,
+				_assert_msg_(COMMANDPROCESSOR, (s32)fifo.CPReadWriteDistance - 32 >= 0,
 					"Negative fifo.CPReadWriteDistance = %i in FIFO Loop !\nThat can produce instability in the game. Please report it.", fifo.CPReadWriteDistance - 32);
 
-				ReadDataFromFifo(uData, 32);
+				ReadDataFromFifo(uData);
 
 				cyclesExecuted = OpcodeDecoder_Run(GetVideoBufferEndPtr());
 
 				if (SConfig::GetInstance().m_LocalCoreStartupParameter.bSyncGPU && Common::AtomicLoad(CommandProcessor::VITicks) > cyclesExecuted)
-						Common::AtomicAdd(CommandProcessor::VITicks, -(s32)cyclesExecuted);
+					Common::AtomicAdd(CommandProcessor::VITicks, -(s32)cyclesExecuted);
 
 				Common::AtomicStore(fifo.CPReadPointer, readPtr);
 				Common::AtomicAdd(fifo.CPReadWriteDistance, -32);
@@ -229,11 +236,11 @@ void RunGpuLoop()
 			}
 
 			CommandProcessor::SetCpStatus();
-		
+
 			// This call is pretty important in DualCore mode and must be called in the FIFO Loop.
 			// If we don't, s_swapRequested or s_efbAccessRequested won't be set to false
 			// leading the CPU thread to wait in Video_BeginField or Video_AccessEFB thus slowing things down.
-			VideoFifo_CheckAsyncRequest();		
+			AsyncRequests::GetInstance()->PullEvents();
 			CommandProcessor::isPossibleWaitingSetDrawDone = false;
 		}
 
@@ -244,9 +251,8 @@ void RunGpuLoop()
 			// NOTE(jsd): Calling SwitchToThread() on Windows 7 x64 is a hot spot, according to profiler.
 			// See https://docs.google.com/spreadsheet/ccc?key=0Ah4nh0yGtjrgdFpDeF9pS3V6RUotRVE3S3J4TGM1NlE#gid=0
 			// for benchmark details.
-#if 0
-			Common::YieldCPU();
-#endif
+			if (yield_cpu)
+				Common::YieldCPU();
 		}
 		else
 		{
@@ -260,6 +266,8 @@ void RunGpuLoop()
 			}
 		}
 	}
+	AsyncRequests::GetInstance()->SetEnable(false);
+	AsyncRequests::GetInstance()->SetPassthrough(true);
 }
 
 
@@ -272,13 +280,13 @@ bool AtBreakpoint()
 void RunGpu()
 {
 	SCPFifoStruct &fifo = CommandProcessor::fifo;
-	while (fifo.bFF_GPReadEnable && fifo.CPReadWriteDistance && !AtBreakpoint() )
+	while (fifo.bFF_GPReadEnable && fifo.CPReadWriteDistance && !AtBreakpoint())
 	{
 		u8 *uData = Memory::GetPointer(fifo.CPReadPointer);
 
 		FPURoundMode::SaveSIMDState();
 		FPURoundMode::LoadDefaultSIMDState();
-		ReadDataFromFifo(uData, 32);
+		ReadDataFromFifo(uData);
 		OpcodeDecoder_Run(GetVideoBufferEndPtr());
 		FPURoundMode::LoadSIMDState();
 
@@ -336,18 +344,18 @@ void PreProcessingFifo(bool GPReadEnabled)
 void ReadDataFromPreProcFifo(u8* _uData, u32 len)
 {
 	if (len == 0) return;
-	if (sizeSC + len >= FIFO_SIZE)
+	if (s_video_buffer_size_SC + len >= FIFO_SIZE)
 	{
-		int pos = (int)(g_VideoDataSC.GetReadPosition() - videoBufferSC);
-		sizeSC -= pos;
-		if (sizeSC + len > FIFO_SIZE)
+		int pos = (int)(g_VideoDataSC.GetReadPosition() - s_video_buffer_SC);
+		s_video_buffer_size_SC -= pos;
+		if (s_video_buffer_size_SC + len > FIFO_SIZE)
 		{
-			PanicAlert("FIFO SC out of bounds (size = %i, len = %i at %08x)", sizeSC, len, pos);
+			PanicAlert("FIFO SC out of bounds (s_video_buffer_size = %i, len = %i at %08x)", s_video_buffer_size_SC, len, pos);
 		}
-		memmove(&videoBufferSC[0], &videoBufferSC[pos], sizeSC);
-		g_VideoDataSC.SetReadPosition(videoBufferSC);
+		memmove(&s_video_buffer_SC[0], &s_video_buffer_SC[pos], s_video_buffer_size_SC);
+		g_VideoDataSC.SetReadPosition(s_video_buffer_SC);
 	}
-	// Copy new video instructions to videoBuffer for future use in rendering the new picture
-	memcpy(videoBufferSC + sizeSC, _uData, len);
-	sizeSC += len;
+	// Copy new video instructions to s_video_buffer for future use in rendering the new picture
+	memcpy(s_video_buffer_SC + s_video_buffer_size_SC, _uData, len);
+	s_video_buffer_size_SC += len;
 }

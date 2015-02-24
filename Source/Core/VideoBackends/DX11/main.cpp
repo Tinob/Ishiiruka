@@ -181,9 +181,6 @@ bool VideoBackend::Initialize(void *window_handle)
 
 void VideoBackend::Video_Prepare()
 {
-	// Better be safe...
-	s_swapRequested.Clear();
-
 	// internal interfaces
 	g_renderer = new Renderer(m_window_handle);
 	g_texture_cache = new TextureCache;
@@ -215,8 +212,6 @@ void VideoBackend::Shutdown()
 	// TODO: should be in Video_Cleanup
 	if (g_renderer)
 	{
-		s_swapRequested.Clear();
-
 		// VideoCommon
 		Fifo_Shutdown();
 		CommandProcessor::Shutdown();

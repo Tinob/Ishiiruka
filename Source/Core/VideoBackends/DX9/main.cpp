@@ -163,9 +163,6 @@ bool VideoBackend::Initialize(void *window_handle)
 
 void VideoBackend::Video_Prepare()
 {
-	// Better be safe...
-	s_swapRequested.Clear();
-
 	// internal interfaces
 	g_vertex_manager = new VertexManager;
 	g_perf_query = new PerfQuery;
@@ -192,8 +189,6 @@ void VideoBackend::Shutdown()
 	// TODO: should be in Video_Cleanup
 	if (g_renderer)
 	{
-		s_swapRequested.Clear();
-
 		// VideoCommon
 		Fifo_Shutdown();
 		CommandProcessor::Shutdown();

@@ -118,8 +118,6 @@ void Renderer::RenderToXFB(u32 xfbAddr, u32 fbWidth, u32 fbHeight, const EFBRect
 	if (!fbWidth || !fbHeight)
 		return;
 
-	VideoFifo_CheckEFBAccess();
-	VideoFifo_CheckSwapRequestAt(xfbAddr, fbWidth, fbHeight);
 	XFBWrited = true;
 
 	if (g_ActiveConfig.bUseXFB)
@@ -130,7 +128,6 @@ void Renderer::RenderToXFB(u32 xfbAddr, u32 fbWidth, u32 fbHeight, const EFBRect
 	{
 		Swap(xfbAddr, fbWidth, fbWidth, fbHeight, sourceRc, Gamma);
 		Common::AtomicIncrement(s_EFB_PCache_Frame);
-		s_swapRequested.Clear();
 	}
 }
 
