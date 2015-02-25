@@ -328,8 +328,7 @@ void Renderer::DrawDebugText()
 			ar_text = "Stretch";
 			break;
 		}
-		const char* const efbcopy_text = g_ActiveConfig.bEFBCopyEnable ?
-			(g_ActiveConfig.bCopyEFBToTexture ? "to Texture" : "to RAM") : "Disabled";
+		const char* const efbcopy_text = g_ActiveConfig.bSkipEFBCopyToRam ? "to Texture" : "to RAM";
 		// The rows
 		const std::string lines[] =
 		{

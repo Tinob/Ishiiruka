@@ -108,8 +108,7 @@ void VideoConfig::Load(const std::string& ini_file)
 	hacks->Get("EFBAccessEnable", &bEFBAccessEnable, true);
 	hacks->Get("EFBFastAccess", &bEFBFastAccess, false);
 	hacks->Get("DlistCachingEnable", &bDlistCachingEnable, false);
-	hacks->Get("EFBCopyEnable", &bEFBCopyEnable, true);
-	hacks->Get("EFBToTextureEnable", &bCopyEFBToTexture, true);
+	hacks->Get("EFBToTextureEnable", &bSkipEFBCopyToRam, true);
 	hacks->Get("EFBScaledCopy", &bCopyEFBScaled, true);
 	hacks->Get("EFBEmulateFormatChanges", &bEFBEmulateFormatChanges, false);
 	hacks->Get("ForceDualSourceBlend", &bForceDualSourceBlend, false);
@@ -215,8 +214,7 @@ void VideoConfig::GameIniLoad()
 	CHECK_SETTING("Video_Hacks", "EFBAccessEnable", bEFBAccessEnable);
 	CHECK_SETTING("Video_Hacks", "EFBFastAccess", bEFBFastAccess);
 	CHECK_SETTING("Video_Hacks", "DlistCachingEnable", bDlistCachingEnable);
-	CHECK_SETTING("Video_Hacks", "EFBCopyEnable", bEFBCopyEnable);
-	CHECK_SETTING("Video_Hacks", "EFBToTextureEnable", bCopyEFBToTexture);
+	CHECK_SETTING("Video_Hacks", "EFBToTextureEnable", bSkipEFBCopyToRam);
 	CHECK_SETTING("Video_Hacks", "EFBScaledCopy", bCopyEFBScaled);
 	CHECK_SETTING("Video_Hacks", "EFBEmulateFormatChanges", bEFBEmulateFormatChanges);
 	CHECK_SETTING("Video_Hacks", "BoundingBoxMode", iBBoxMode);
@@ -333,8 +331,7 @@ void VideoConfig::Save(const std::string& ini_file)
 	hacks->Set("EFBAccessEnable", bEFBAccessEnable);
 	hacks->Set("EFBFastAccess", bEFBFastAccess);
 	hacks->Set("DlistCachingEnable", bDlistCachingEnable);
-	hacks->Set("EFBCopyEnable", bEFBCopyEnable);
-	hacks->Set("EFBToTextureEnable", bCopyEFBToTexture);
+	hacks->Set("EFBToTextureEnable", bSkipEFBCopyToRam);
 	hacks->Set("EFBScaledCopy", bCopyEFBScaled);
 	hacks->Set("EFBEmulateFormatChanges", bEFBEmulateFormatChanges);
 	hacks->Set("ForceDualSourceBlend", bForceDualSourceBlend);

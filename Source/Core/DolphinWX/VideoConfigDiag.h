@@ -117,8 +117,6 @@ protected:
 
 	SettingCheckBox* borderless_fullscreen;
 
-	SettingRadioButton* efbcopy_texture;
-	SettingRadioButton* efbcopy_ram;
 	SettingCheckBox* Fast_efb_cache;
 	SettingCheckBox* emulate_efb_format_changes;
 	SettingCheckBox* hacked_buffer_upload;

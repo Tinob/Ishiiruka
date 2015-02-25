@@ -204,7 +204,7 @@ void TextureCache::TCacheEntry::FromRenderTarget(
 
 	Rendersurf->Release();
 
-	if (!g_ActiveConfig.bCopyEFBToTexture)
+	if (!g_ActiveConfig.bSkipEFBCopyToRam)
 	{
 		size_in_bytes = (u32)TextureConverter::EncodeToRamFromTexture(
 					addr,

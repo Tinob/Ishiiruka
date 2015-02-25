@@ -118,9 +118,7 @@ static wxString internal_res_desc = wxTRANSLATE("Specifies the resolution used t
 static wxString efb_access_desc = wxTRANSLATE("Ignore any requests of the CPU to read from or write to the EFB.\nImproves performance in some games, but might disable some gameplay-related features or graphical effects.\n\nIf unsure, leave this unchecked.");
 static wxString efb_fast_access_desc = wxTRANSLATE("Use a fast efb caching method to speed up access. this method is inacurate but will make games run faster and efb reads and writes will still work.");
 static wxString efb_emulate_format_changes_desc = wxTRANSLATE("Ignore any changes to the EFB format.\nImproves performance in many games without any negative effect. Causes graphical defects in a small number of other games though.\n\nIf unsure, leave this checked.");
-static wxString efb_copy_desc = wxTRANSLATE("Disable emulation of EFB copies.\nThese are often used for post-processing or render-to-texture effects, so while checking this setting gives a great speedup it almost always also causes issues.\n\nIf unsure, leave this unchecked.");
-static wxString efb_copy_texture_desc = wxTRANSLATE("Store EFB copies in GPU texture objects.\nThis is not so accurate, but it works well enough for most games and gives a great speedup over EFB to RAM.\n\nIf unsure, leave this checked.");
-static wxString efb_copy_ram_desc = wxTRANSLATE("Accurately emulate EFB copies.\nSome games depend on this for certain graphical effects or gameplay functionality.\n\nIf unsure, check EFB to Texture instead.");
+static wxString skip_efb_copy_to_ram_desc = wxTRANSLATE("Skip GPU synchronizing on EFB copies. Causes graphical defects in a small number of games.\n\nIf unsure, leave this checked.");
 static wxString stc_desc = wxTRANSLATE("The safer you adjust this, the less likely the emulator will be missing any texture updates from RAM.\n\nIf unsure, use the rightmost value.");
 static wxString bbox_desc = wxTRANSLATE("Selects wish implementation is used to emulate Bounding Box. By Default GPU will be used if supported.");
 static wxString wireframe_desc = wxTRANSLATE("Render the scene as a wireframe.\n\nIf unsure, leave this unchecked.");
@@ -515,24 +513,12 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title, con
 
 	// format change emulation
 	emulate_efb_format_changes = CreateCheckBox(page_hacks, _("Ignore Format Changes"), wxGetTranslation(efb_emulate_format_changes_desc), vconfig.bEFBEmulateFormatChanges, true);
-
-	// EFB copies
-	wxStaticBoxSizer* const group_efbcopy = new wxStaticBoxSizer(wxHORIZONTAL, page_hacks, _("EFB Copies"));
-
-	SettingCheckBox* efbcopy_disable = CreateCheckBox(page_hacks, _("Disable"), wxGetTranslation(efb_copy_desc), vconfig.bEFBCopyEnable, true);
-	efbcopy_texture = CreateRadioButton(page_hacks, _("Texture"), wxGetTranslation(efb_copy_texture_desc), vconfig.bCopyEFBToTexture, false, wxRB_GROUP);
-	efbcopy_ram = CreateRadioButton(page_hacks, _("RAM"), wxGetTranslation(efb_copy_ram_desc), vconfig.bCopyEFBToTexture, true);	
-
-	group_efbcopy->Add(efbcopy_disable, 0, wxLEFT | wxRIGHT | wxBOTTOM, 5);
-	group_efbcopy->AddStretchSpacer(1);
-	group_efbcopy->Add(efbcopy_texture, 0, wxRIGHT, 5);
-	group_efbcopy->Add(efbcopy_ram, 0, wxRIGHT, 5);
-
+	
 	szr_efb->Add(CreateCheckBox(page_hacks, _("Skip EFB Access from CPU"), wxGetTranslation(efb_access_desc), vconfig.bEFBAccessEnable, true), 0, wxBOTTOM | wxLEFT, 5);
 	Fast_efb_cache = CreateCheckBox(page_hacks, _("Fast EFB Access"), wxGetTranslation(efb_fast_access_desc), vconfig.bEFBFastAccess, false);
 	szr_efb->Add(Fast_efb_cache, 0, wxBOTTOM | wxLEFT, 5);
 	szr_efb->Add(emulate_efb_format_changes, 0, wxBOTTOM | wxLEFT, 5);
-	szr_efb->Add(group_efbcopy, 0, wxEXPAND | wxALL, 5);
+	szr_efb->Add(CreateCheckBox(page_hacks, _("Skip EFB copies to RAM"), wxGetTranslation(skip_efb_copy_to_ram_desc), vconfig.bSkipEFBCopyToRam), 0, wxBOTTOM | wxLEFT, 5);
 	szr_hacks->Add(szr_efb, 0, wxEXPAND | wxALL, 5);
 
 	// Texture cache
@@ -899,11 +885,7 @@ void VideoConfigDiag::OnUpdateUI(wxUpdateUIEvent& ev)
 
 	// Borderless Fullscreen
 	borderless_fullscreen->Enable(vconfig.backend_info.bSupportsExclusiveFullscreen);
-	borderless_fullscreen->Show(vconfig.backend_info.bSupportsExclusiveFullscreen);
-
-	// EFB copy
-	efbcopy_texture->Enable(vconfig.bEFBCopyEnable);
-	efbcopy_ram->Enable(vconfig.bEFBCopyEnable);
+	borderless_fullscreen->Show(vconfig.backend_info.bSupportsExclusiveFullscreen);	
 
 	// EFB format change emulation
 	emulate_efb_format_changes->Enable(vconfig.backend_info.bSupportsFormatReinterpretation);
