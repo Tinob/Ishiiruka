@@ -277,6 +277,6 @@ DDSCompression DDSLoader::Load_Image(ImageLoaderParams& loader_params)
 	Result = (FourCC == FOURCC_DXT1) ? DDSC_DXT1 : ((FourCC == FOURCC_DXT3) ? DDSC_DXT3 : DDSC_DXT5);
 	loader_params.Width = ddsd.dwWidth;
 	loader_params.Height = ddsd.dwHeight;
-	loader_params.nummipmaps = ddsd.dwMipMapCount;
+	loader_params.nummipmaps = std::min<u32>(IntLog2(std::max(ddsd.dwWidth, ddsd.dwHeight)), ddsd.dwMipMapCount);
 	return Result;
 }
