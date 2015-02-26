@@ -381,9 +381,11 @@ HiresTexture* HiresTexture::Search(
 				return buffer_pointer;
 			};
 		}
+		bool ddsfile = false;
 		if (item.second.compare(ddscode) == 0 || item.second.compare(cddscode) == 0)
 		{
 			LoadImageFromFile_DDS(imgInfo);
+			ddsfile = true;
 		}
 		else
 		{
@@ -412,7 +414,7 @@ HiresTexture* HiresTexture::Search(
 		if (level == 0)
 		{
 			ret = new HiresTexture();
-			ret->m_format = imgInfo.resultTex;			
+			ret->m_format = imgInfo.resultTex;
 			ret->m_width = maxwidth = imgInfo.Width;
 			ret->m_height = maxheight = imgInfo.Height;
 		}
@@ -435,14 +437,24 @@ HiresTexture* HiresTexture::Search(
 			}
 		}
 		ret->m_levels++;
-		buffer_pointer = imgInfo.dst + imgInfo.data_size;
+		if (ddsfile)
+		{
+			buffer_pointer = imgInfo.dst + TextureUtil::GetTextureSizeInBytes(maxwidth, maxheight, imgInfo.resultTex);
+		}
+		else
+		{
+			buffer_pointer = imgInfo.dst + imgInfo.data_size;
+		}
 		maxwidth = std::max(maxwidth >> 1, 1u);
 		maxheight = std::max(maxheight >> 1, 1u);
-		if (imgInfo.nummipmaps > 1)
+		if (ddsfile &&  maxwidth < 4 && maxheight < 4)
 		{
-			// Using a dds with packed levels
-			// Generate Levels
-			ret->m_levels = imgInfo.nummipmaps;
+			return ret;
+		}
+		if (imgInfo.nummipmaps > 0)
+		{
+			// Give priority to load dds with packed levels
+			ret->m_levels = imgInfo.nummipmaps + 1;
 			break;
 		}
 	}
