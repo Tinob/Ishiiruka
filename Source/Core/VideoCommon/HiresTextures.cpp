@@ -359,6 +359,7 @@ HiresTexture* HiresTexture::Search(
 	u8* buffer_pointer;
 	u32 maxwidth;
 	u32 maxheight;
+	bool last_level_is_dds = false;
 	for (size_t level = 0; level < current.size(); level++)
 	{
 		ImageLoaderParams imgInfo;
@@ -381,12 +382,27 @@ HiresTexture* HiresTexture::Search(
 				return buffer_pointer;
 			};
 		}
+		bool ddsfile = false;
 		if (item.second.compare(ddscode) == 0 || item.second.compare(cddscode) == 0)
 		{
+			if (level > 0 && !last_level_is_dds)
+			{
+				// don't give support to mixed formats
+				break;
+			}
 			LoadImageFromFile_DDS(imgInfo);
+			ddsfile = true;
+			last_level_is_dds = true;
+			
 		}
 		else
 		{
+			if (level > 0 && last_level_is_dds)
+			{
+				// don't give support to mixed formats
+				break;
+			}
+			last_level_is_dds = false;
 			format = rgbaonly ? GX_TF_RGBA8 : format;
 			switch (format)
 			{
@@ -412,7 +428,7 @@ HiresTexture* HiresTexture::Search(
 		if (level == 0)
 		{
 			ret = new HiresTexture();
-			ret->m_format = imgInfo.resultTex;			
+			ret->m_format = imgInfo.resultTex;
 			ret->m_width = maxwidth = imgInfo.Width;
 			ret->m_height = maxheight = imgInfo.Height;
 		}
@@ -435,14 +451,24 @@ HiresTexture* HiresTexture::Search(
 			}
 		}
 		ret->m_levels++;
-		buffer_pointer = imgInfo.dst + imgInfo.data_size;
+		if (ddsfile)
+		{
+			buffer_pointer = imgInfo.dst + TextureUtil::GetTextureSizeInBytes(maxwidth, maxheight, imgInfo.resultTex);
+		}
+		else
+		{
+			buffer_pointer = imgInfo.dst + imgInfo.data_size;
+		}
 		maxwidth = std::max(maxwidth >> 1, 1u);
 		maxheight = std::max(maxheight >> 1, 1u);
-		if (imgInfo.nummipmaps > 1)
+		if (ddsfile &&  maxwidth < 4 && maxheight < 4)
 		{
-			// Using a dds with packed levels
-			// Generate Levels
-			ret->m_levels = imgInfo.nummipmaps;
+			return ret;
+		}
+		if (imgInfo.nummipmaps > 0)
+		{
+			// Give priority to load dds with packed levels
+			ret->m_levels = imgInfo.nummipmaps + 1;
 			break;
 		}
 	}
