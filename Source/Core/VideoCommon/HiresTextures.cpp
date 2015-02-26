@@ -271,6 +271,7 @@ inline void LoadImageFromFile_Soil(ImageLoaderParams &ImgInfo)
 	u8* temp = SOIL_load_image(ImgInfo.Path, &width, &height, &channels, ImgInfo.forcedchannels);
 	if (temp == nullptr)
 	{
+		ERROR_LOG(VIDEO, "SOIL_load_image fail.");
 		return;
 	}
 	ImgInfo.Width = width;
@@ -281,6 +282,10 @@ inline void LoadImageFromFile_Soil(ImageLoaderParams &ImgInfo)
 	{
 		ImgInfo.resultTex = ImgInfo.desiredTex;
 		memcpy(ImgInfo.dst, temp, ImgInfo.data_size);
+	}
+	else
+	{
+		ERROR_LOG(VIDEO, "Unable to allocate hd texture buffer.");
 	}
 	SOIL_free_image_data(temp);
 	return;
@@ -357,8 +362,9 @@ HiresTexture* HiresTexture::Search(
 	for (size_t level = 0; level < current.size(); level++)
 	{
 		ImageLoaderParams imgInfo;
+		std::pair<std::string, std::string> &item = current[level];
 		imgInfo.dst = nullptr;
-		imgInfo.Path = current[0].first.c_str();
+		imgInfo.Path = item.first.c_str();
 		if (level == 0)
 		{
 			imgInfo.request_buffer_delegate = [&](size_t requiredsize)
@@ -375,7 +381,7 @@ HiresTexture* HiresTexture::Search(
 				return buffer_pointer;
 			};
 		}
-		if (current[0].second.compare(ddscode) == 0 || current[0].second.compare(cddscode) == 0)
+		if (item.second.compare(ddscode) == 0 || item.second.compare(cddscode) == 0)
 		{
 			LoadImageFromFile_DDS(imgInfo);
 		}
@@ -430,8 +436,8 @@ HiresTexture* HiresTexture::Search(
 		}
 		ret->m_levels++;
 		buffer_pointer = imgInfo.dst + imgInfo.data_size;
-		maxwidth = maxwidth >> 1;
-		maxheight = maxheight >> 1;
+		maxwidth = std::max(maxwidth >> 1, 1u);
+		maxheight = std::max(maxheight >> 1, 1u);
 		if (imgInfo.nummipmaps > 1)
 		{
 			// Using a dds with packed levels
