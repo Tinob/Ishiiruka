@@ -131,7 +131,7 @@ uint4 DecodeC8( uint2 st ) {
 }
 
 uint4 DecodeC14( uint2 st ) {
-	uint v = Decode1Byte(st);
+	uint v = Decode2Bytes(st);
 	return LUT_FUNC(v&0x3FFF);
 }
 
