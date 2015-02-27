@@ -276,7 +276,7 @@ void main(in uint3 groupIdx : SV_GroupID, in uint3 subgroup : SV_GroupThreadID)
 static const char DEPALETTIZE_SHADER[] = R"HLSL(
 Texture2D Tex0 : register(t0);
 Buffer<uint> Tex1 : register(t1);
-#if USE_COMPUTE
+#if USE_COMPUTE == 1
 RWTexture2D<float4> dstTexture_ : register(u0);
 #endif
 uint Convert3To8(uint v)
@@ -320,7 +320,7 @@ float4 ReadLut5A3(uint val)
 		g=Convert4To8((val>>4 ) & 0xf);
 		b=Convert4To8((val    ) & 0xf);
 	}
-	return float4(r, g, b, a) / 255;
+	return float4(r, g, b, a) / 255.0;
 }
 
 float4 ReadLut565(uint val)
@@ -330,14 +330,14 @@ float4 ReadLut565(uint val)
 	g = Convert6To8((val >> 5) & 0x3f);
 	b = Convert5To8((val) & 0x1f);
 	a = 0xFF;
-	return float4(r, g, b, a) / 255;
+	return float4(r, g, b, a) / 255.0;
 }
 
 float4 ReadLutIA8(uint val)
 {
 	int i = val & 0xFF;
 	int a = val >> 8;
-	return float4(i, i, i, a) / 255;
+	return float4(i, i, i, a) / 255.0;
 }
 
 #if USE_COMPUTE
@@ -364,10 +364,10 @@ void main(
 		float Multiply = 255.0;
 #endif
 		uint src = round(Tex0.Load(int3(pos.xy, 0)) * Multiply).r;
-		src = Tex1.Load(src);
+		src = Tex1.Load(src);		
 		src = ((src << 8) & 0xFF00) | (src >> 8);
-#if USE_COMPUTE
-		dstTexture_[pos.xy] = LUT_FUNC( src ); 
+#if USE_COMPUTE == 1
+		dstTexture_[pos.xy] = LUT_FUNC(src);
 #else
 		ocol0 = LUT_FUNC(src);
 #endif
@@ -544,36 +544,16 @@ bool CSTextureDecoder::SetStaticShader(u32 srcFmt, u32 lutFmt)
 
 ID3D11PixelShader* CSTextureDecoder::GetDepalettizerPShader(BaseType srcFmt, u32 lutFmt)
 {
-	switch (srcFmt)
+	if (!m_depalettize_shaders[lutFmt][srcFmt])
 	{
-
-	case Unorm4:
-		if (!m_depalettize_shaders[lutFmt][Unorm4])
-		{
-			D3D_SHADER_MACRO macros[] = {
-				{ "NUM_COLORS", "16" },
-				{ "LUT_FUNC", LutFunc[lutFmt & 0xF] },
-				{ NULL, NULL }
-			};
-			m_depalettize_shaders[lutFmt][Unorm4] = D3D::CompileAndCreatePixelShader(DEPALETTIZE_SHADER, macros);
-		}
-		return m_depalettize_shaders[lutFmt][Unorm4].get();
-
-	case Unorm8:
-		if (!m_depalettize_shaders[lutFmt][Unorm8])
-		{
-			D3D_SHADER_MACRO macros[] = {
-				{ "NUM_COLORS", "256" },
-				{ "LUT_FUNC", LutFunc[lutFmt & 3] },
-				{ NULL, NULL }
-			};
-			m_depalettize_shaders[lutFmt][Unorm8] = D3D::CompileAndCreatePixelShader(DEPALETTIZE_SHADER, macros);
-		}
-		return m_depalettize_shaders[lutFmt][Unorm8].get();	
-	default:
-		_assert_msg_(VIDEO, 0, "Invalid depalettizer base type");
-		return NULL;
+		D3D_SHADER_MACRO macros[] = {
+			{ "NUM_COLORS", DepalettizeColors[srcFmt] },
+			{ "LUT_FUNC", LutFunc[lutFmt & 3] },
+			{ nullptr, nullptr }
+		};
+		m_depalettize_shaders[lutFmt][srcFmt] = D3D::CompileAndCreatePixelShader(DEPALETTIZE_SHADER, macros);
 	}
+	return m_depalettize_shaders[lutFmt][srcFmt].get();
 }
 
 bool CSTextureDecoder::SetDepalettizeShader(BaseType srcFmt, u32 lutFmt)
@@ -594,8 +574,8 @@ bool CSTextureDecoder::SetDepalettizeShader(BaseType srcFmt, u32 lutFmt)
 	D3D_SHADER_MACRO macros[] =
 	{
 		{ "USE_COMPUTE", "1" },
-		{ "NUM_COLORS", DepalettizeColors[u32(srcFmt) & 1] },
-		{ "LUT_FUNC", LutFunc[lutFmt & 3] },
+		{ "NUM_COLORS", DepalettizeColors[srcFmt] },
+		{ "LUT_FUNC", LutFunc[lutFmt] },
 		{ nullptr, nullptr }
 	};
 
@@ -769,7 +749,7 @@ bool CSTextureDecoder::DecodeRGBAFromTMEM( u8 const * ar_src, u8 const * bg_src,
 
 bool CSTextureDecoder::Depalettize(D3DTexture2D& dstTexture, D3DTexture2D& srcTexture, BaseType baseType, u32 width, u32 height)
 {
-	if (D3D::GetFeatureLevel() < D3D_FEATURE_LEVEL_11_0)
+	if (true/*D3D::GetFeatureLevel() < D3D_FEATURE_LEVEL_11_0*/) // Disable compute shader path as it giving me a weird error
 	{
 		ID3D11PixelShader* shader = GetDepalettizerPShader(baseType, m_lutFmt);
 		if (!shader)
