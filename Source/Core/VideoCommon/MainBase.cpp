@@ -190,7 +190,7 @@ u32 VideoBackendHardware::Video_GetQueryResult(PerfQueryType type)
 }
 u16 VideoBackendHardware::Video_GetBoundingBox(int index)
 {
-	if (!g_ActiveConfig.backend_info.bSupportsBBox)
+	if (!g_ActiveConfig.backend_info.bSupportsBBox || g_ActiveConfig.iBBoxMode != BBoxGPU)
 		return BoundingBox::coords[index];
 	AsyncRequests::Event e;
 	u16 result;

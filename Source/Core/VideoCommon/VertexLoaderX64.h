@@ -9,7 +9,7 @@ public:
 protected:
 	bool IsInitialized() override;
 	int RunVertices(const VertexLoaderParameters &parameters) override;
-
+	bool EnviromentIsSupported() override;
 private:
 	u32 m_src_ofs = 0;
 	u32 m_dst_ofs = 0;

@@ -53,7 +53,22 @@ class VertexLoaderBase
 {
 public:
 	static VertexLoaderBase* CreateVertexLoader(const TVtxDesc &vtx_desc, const VAT &vtx_attr);
-	virtual ~VertexLoaderBase() {}
+	virtual ~VertexLoaderBase() 
+	{
+		if (m_fallback != nullptr)
+		{
+			delete m_fallback;
+		}
+	}
+	void SetFallback(VertexLoaderBase* obj)
+	{
+		m_fallback = obj;
+	}
+	VertexLoaderBase* GetFallback()
+	{
+		return m_fallback;
+	}
+	virtual bool EnviromentIsSupported(){ return true; }
 	virtual bool IsPrecompiled(){ return false; }
 	virtual s32 RunVertices(const VertexLoaderParameters &parameters) = 0;
 
@@ -82,4 +97,5 @@ protected:
 	TVtxAttr m_VtxAttr;  // VAT decoded into easy format
 	TVtxDesc m_VtxDesc;  // Not really used currently - or well it is, but could be easily avoided.
 	VAT m_vat;
+	VertexLoaderBase* m_fallback;
 };

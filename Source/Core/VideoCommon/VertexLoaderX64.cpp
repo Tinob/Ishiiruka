@@ -7,8 +7,11 @@
 #include "Common/CPUDetect.h"
 #include "Common/JitRegister.h"
 #include "Common/x64ABI.h"
+#include "VideoCommon/BoundingBox.h"
 #include "VideoCommon/VertexLoaderX64.h"
 #include "VideoCommon/VertexLoaderManager.h"
+#include "VideoCommon/VideoConfig.h"
+
 
 using namespace Gen;
 
@@ -455,6 +458,12 @@ void VertexLoaderX64::GenerateVertexLoader()
 	m_native_stride = m_dst_ofs;
 	m_VertexSize = m_src_ofs;
 	m_native_vtx_decl.stride = m_native_stride;
+}
+
+bool VertexLoaderX64::EnviromentIsSupported()
+{
+	return (g_ActiveConfig.backend_info.bSupportsBBox && g_ActiveConfig.iBBoxMode == BBoxGPU) 
+		|| !BoundingBox::active;
 }
 
 bool VertexLoaderX64::IsInitialized()

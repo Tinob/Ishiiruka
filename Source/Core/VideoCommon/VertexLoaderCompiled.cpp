@@ -101,7 +101,7 @@ s32 VertexLoaderCompiled::RunVertices(const VertexLoaderParameters &parameters)
 		g_PipelineState.tcScale[6] = fractionTable[vat.g2.Tex6Frac];
 		g_PipelineState.tcScale[7] = fractionTable[vat.g2.Tex7Frac];
 	}	
-	g_PipelineState.flags = g_ActiveConfig.iBBoxMode == BBoxCPU ? TPS_USE_BBOX : TPS_NONE;
+	g_PipelineState.flags = g_ActiveConfig.iBBoxMode == BBoxCPU && BoundingBox::active ? TPS_USE_BBOX : TPS_NONE;
 	g_PipelineState.stride = m_native_stride;
 	g_PipelineState.skippedVertices = 0;
 	g_PipelineState.posScale = fractionTable[vat.g0.PosFrac];
@@ -109,7 +109,7 @@ s32 VertexLoaderCompiled::RunVertices(const VertexLoaderParameters &parameters)
 	for (int i = 0; i < 2; i++)
 		g_PipelineState.colElements[i] = m_VtxAttr.color[i].Elements;
 	// Prepare bounding box
-	if (g_ActiveConfig.iBBoxMode == BBoxCPU)
+	if (g_ActiveConfig.iBBoxMode == BBoxCPU && BoundingBox::active)
 		BoundingBox::Prepare(vat, parameters.primitive, m_VtxDesc, m_native_vtx_decl);
 	g_PipelineState.count = parameters.count;
 	g_PipelineState.Initialize(parameters.source, parameters.destination);

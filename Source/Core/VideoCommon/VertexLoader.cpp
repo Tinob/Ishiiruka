@@ -48,8 +48,7 @@ void VertexLoader::CompileVertexTranslator()
 	m_numPipelineStages = 0;
 
 	// Get the pointer to this vertex's buffer data for the bounding box
-	if (!(g_ActiveConfig.backend_info.bSupportsBBox && g_ActiveConfig.iBBoxMode == BBoxGPU))
-		WriteCall(BoundingBox::SetVertexBufferPosition);
+	WriteCall(BoundingBox::SetVertexBufferPosition);
 
 	// Colors
 	const u64 col[2] = { m_VtxDesc.Color0, m_VtxDesc.Color1 };
@@ -243,8 +242,7 @@ void VertexLoader::CompileVertexTranslator()
 		}
 	}
 	// Update the bounding box
-	if (!(g_ActiveConfig.backend_info.bSupportsBBox && g_ActiveConfig.iBBoxMode == BBoxGPU))
-		WriteCall(BoundingBox::Update);
+	WriteCall(BoundingBox::Update);
 
 	WriteCall(Vertexloader_Mtx::PosMtx_Write);
 	m_native_vtx_decl.posmtx.enable = true;

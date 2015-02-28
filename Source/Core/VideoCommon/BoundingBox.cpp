@@ -11,6 +11,7 @@
 #include "VideoCommon/BoundingBox.h"
 #include "VideoCommon/PixelShaderManager.h"
 #include "VideoCommon/VertexManagerBase.h"
+#include "VideoCommon/VideoConfig.h"
 
 
 namespace BoundingBox
@@ -39,7 +40,7 @@ void LOADERDECL SetVertexBufferPosition()
 // Prepares the bounding box for new primitive data
 void Prepare(const VAT & vat, int primitive, const TVtxDesc & vtxDesc, const PortableVertexDeclaration & vtxDecl)
 {
-	if (!active)
+	if (!(active && g_ActiveConfig.iBBoxMode == BBoxCPU))
 		return;
 
 	myVat = vat;
@@ -79,7 +80,7 @@ void Prepare(const VAT & vat, int primitive, const TVtxDesc & vtxDesc, const Por
 // Updates the bounding box
 void LOADERDECL Update()
 {
-	if (!active)
+	if (!(active && g_ActiveConfig.iBBoxMode == BBoxCPU))
 		return;
 
 	// Grab vertex input data and transform to output vertex

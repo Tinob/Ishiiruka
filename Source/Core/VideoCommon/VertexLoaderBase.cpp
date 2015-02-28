@@ -121,6 +121,7 @@ u64 VertexLoaderUID::CalculateHash()
 
 VertexLoaderBase::VertexLoaderBase(const TVtxDesc &vtx_desc, const VAT &vtx_attr)
 {
+	m_fallback = nullptr;
 	m_native_stride = 0;
 	m_numLoadedVertices = 0;
 	m_VertexSize = 0;
@@ -315,7 +316,7 @@ private:
 
 VertexLoaderBase* VertexLoaderBase::CreateVertexLoader(const TVtxDesc& vtx_desc, const VAT& vtx_attr)
 {
-	VertexLoaderBase* loader;
+	VertexLoaderBase* loader = nullptr;
 
 	//#define COMPARE_VERTEXLOADERS
 
@@ -332,22 +333,29 @@ VertexLoaderBase* VertexLoaderBase::CreateVertexLoader(const TVtxDesc& vtx_desc,
 	if (cpu_info.bSSSE3)
 	{
 		loader = new VertexLoaderX64(vtx_desc, vtx_attr);
-		if (loader->IsInitialized())
-			return loader;
-		delete loader;
+		if (!loader->IsInitialized())
+		{
+			delete loader;
+			loader = nullptr;
+		}		
 	}
 #endif
-	loader = new VertexLoaderCompiled(vtx_desc, vtx_attr);
-	if (loader->IsInitialized())
-		return loader;
-	delete loader;
-
-	// last try: The old VertexLoader
-	loader = new VertexLoader(vtx_desc, vtx_attr);
-	if (loader->IsInitialized())
-		return loader;
-	delete loader;
-
-	PanicAlert("No Vertex Loader found.");
-	return nullptr;
+	VertexLoaderBase* fallback = new VertexLoaderCompiled(vtx_desc, vtx_attr);
+	if (!fallback->IsInitialized())
+	{
+		delete fallback;
+		fallback = nullptr;
+	}
+	if (fallback == nullptr)
+	{
+		// last try: The old VertexLoader
+		fallback = new VertexLoader(vtx_desc, vtx_attr);		
+	}
+	if (loader == nullptr)
+	{
+		loader = fallback;
+		fallback = nullptr;
+	}
+	loader->SetFallback(fallback);	
+	return loader;	
 }
