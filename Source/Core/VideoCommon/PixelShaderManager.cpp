@@ -392,9 +392,9 @@ void PixelShaderManager::SetDestAlpha()
 	}
 }
 
-void PixelShaderManager::SetTexDims(int texmapid, u32 width, u32 height, u32 wraps, u32 wrapt)
+void PixelShaderManager::SetTexDims(int texmapid, u32 width, u32 height)
 {
-	u32 wh = width | (height << 16) | (wraps << 28) | (wrapt << 30);
+	u32 wh = width | (height << 16);
 	if (lastTexDims[texmapid] != wh)
 	{
 		lastTexDims[texmapid] = wh;

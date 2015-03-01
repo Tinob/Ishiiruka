@@ -40,7 +40,7 @@ public:
 	void SetLogicOpMode();
 	void SetDitherMode();
 	void SetLineWidth();
-	void SetSamplerState(int stage,int texindex);
+	void SetSamplerState(int stage, int texindex, bool custom_tex);
 	void SetInterlacingMode();
 	void SetViewport();
 

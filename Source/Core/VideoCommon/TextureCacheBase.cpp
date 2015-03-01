@@ -250,8 +250,8 @@ TextureCache::TCacheEntryBase* TextureCache::Load(const u32 stage)
 	const s32 texformat = tex.texImage0[id].format;
 	const u32 tlutaddr = tex.texTlut[id].tmem_offset << 9;
 	const u32 tlutfmt = tex.texTlut[id].tlut_format;
-	u32 tex_levels = (tex.texMode1[id].max_lod + 0xf) / 0x10 + 1;
-	const bool use_mipmaps = (tex.texMode0[id].min_filter & 3) != 0 && tex_levels > 0;
+	const bool use_mipmaps = (tex.texMode0[id].min_filter & 3) != 0;
+	u32 tex_levels = use_mipmaps ? ((tex.texMode1[id].max_lod + 0xf) / 0x10 + 1) : 1;	
 	const bool from_tmem = tex.texImage1[id].image_type != 0;
 
 	if (0 == address)
@@ -474,19 +474,8 @@ TextureCache::TCacheEntryBase* TextureCache::Load(const u32 stage)
 	{
 		pcfmt = g_texture_cache->GetNativeTextureFormat(texformat, (TlutFormat)tlutfmt, width, height);
 	}
-	u32 texLevels = use_mipmaps ? tex_levels : 1;
-	// Only load native mips if their dimensions fit to our virtual texture dimensions
-	const bool using_custom_lods = hires_tex && hires_tex->m_levels >= texLevels;
-	const bool use_native_mips = use_mipmaps && !using_custom_lods && (width == nativeW && height == nativeH);
-	// TODO: Should be forced to 1 for non-pow2 textures (e.g. efb copies with automatically adjusted IR)
-	if (!(use_native_mips || using_custom_lods))
-	{
-		texLevels = 1;
-	}
-	else if (using_custom_lods)
-	{
-		texLevels = hires_tex->m_levels;
-	}
+	// how many levels the allocated texture shall have
+	const u32 texLevels = hires_tex ? hires_tex->m_levels : tex_levels;
 
 	// create the entry/texture
 	TCacheEntryConfig config;
@@ -502,7 +491,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(const u32 stage)
 	entry->SetGeneralParameters(address, texture_size, full_format);
 	entry->SetDimensions(nativeW, nativeH, tex_levels);
 	entry->hash = tex_hash ^ tlut_hash;
-	entry->custom_texture = !!hires_tex;	
+	entry->is_custom_tex = !!hires_tex;
 	entry->is_efb_copy = false;
 
 	// load texture
@@ -537,51 +526,46 @@ TextureCache::TCacheEntryBase* TextureCache::Load(const u32 stage)
 		DumpTexture(entry, basename, 0);
 	}
 
-	u32 level = 1;
-	// load mips - TODO: Loading mipmaps from tmem is untested!
-	if (pcfmt != PC_TEX_FMT_NONE)
+	if (hires_tex)
 	{
-		if (use_native_mips)
+		u8 *Bufferptr = TextureCache::temp;
+		Bufferptr += TextureUtil::GetTextureSizeInBytes(width, height, pcfmt);
+		for (u32 level = 1; level != texLevels; ++level)
 		{
-			src_data += texture_size;
-
-			const u8* ptr_even = NULL;
-			const u8* ptr_odd = NULL;
-			if (from_tmem)
-			{
-				ptr_even = &texMem[bpmem.tex[stage / 4].texImage1[stage % 4].tmem_even * TMEM_LINE_SIZE + texture_size];
-				ptr_odd = &texMem[bpmem.tex[stage / 4].texImage2[stage % 4].tmem_odd * TMEM_LINE_SIZE];
-			}
-
-			for (; level != texLevels; ++level)
-			{
-				const u32 mip_width = CalculateLevelSize(width, level);
-				const u32 mip_height = CalculateLevelSize(height, level);
-				const u32 expanded_mip_width = (mip_width + bsw) & (~bsw);
-				const u32 expanded_mip_height = (mip_height + bsh) & (~bsh);
-
-				const u8*& mip_src_data = from_tmem
-					? ((level % 2) ? ptr_odd : ptr_even)
-					: src_data;
-				entry->Load(mip_src_data, mip_width, mip_height, expanded_mip_width,
-					expanded_mip_height, texformat, tlutaddr, (TlutFormat)tlutfmt, level);
-				mip_src_data += TexDecoder_GetTextureSizeInBytes(expanded_mip_width, expanded_mip_height, texformat);
-
-				if (g_ActiveConfig.bDumpTextures)
-					DumpTexture(entry, basename, level);
-			}
+			u32 mip_width = CalculateLevelSize(width, level);
+			u32 mip_height = CalculateLevelSize(height, level);
+			entry->Load(Bufferptr, mip_width, mip_height, mip_width, level);
+			Bufferptr += TextureUtil::GetTextureSizeInBytes(mip_width, mip_height, pcfmt);
 		}
-		else if (using_custom_lods)
+	}
+	else
+	{
+		src_data += texture_size;
+
+		const u8* ptr_even = NULL;
+		const u8* ptr_odd = NULL;
+		if (from_tmem)
 		{
-			u8 *Bufferptr = TextureCache::temp;
-			Bufferptr += TextureUtil::GetTextureSizeInBytes(width, height, pcfmt);
-			for (; level != texLevels; ++level)
-			{
-				u32 mip_width = CalculateLevelSize(width, level);
-				u32 mip_height = CalculateLevelSize(height, level);
-				entry->Load(Bufferptr, mip_width, mip_height, mip_width, level);
-				Bufferptr += TextureUtil::GetTextureSizeInBytes(mip_width, mip_height, pcfmt);
-			}
+			ptr_even = &texMem[bpmem.tex[stage / 4].texImage1[stage % 4].tmem_even * TMEM_LINE_SIZE + texture_size];
+			ptr_odd = &texMem[bpmem.tex[stage / 4].texImage2[stage % 4].tmem_odd * TMEM_LINE_SIZE];
+		}
+
+		for (u32 level = 1; level != texLevels; ++level)
+		{
+			const u32 mip_width = CalculateLevelSize(width, level);
+			const u32 mip_height = CalculateLevelSize(height, level);
+			const u32 expanded_mip_width = (mip_width + bsw) & (~bsw);
+			const u32 expanded_mip_height = (mip_height + bsh) & (~bsh);
+
+			const u8*& mip_src_data = from_tmem
+				? ((level % 2) ? ptr_odd : ptr_even)
+				: src_data;
+			entry->Load(mip_src_data, mip_width, mip_height, expanded_mip_width,
+				expanded_mip_height, texformat, tlutaddr, (TlutFormat)tlutfmt, level);
+			mip_src_data += TexDecoder_GetTextureSizeInBytes(expanded_mip_width, expanded_mip_height, texformat);
+
+			if (g_ActiveConfig.bDumpTextures)
+				DumpTexture(entry, basename, level);
 		}
 	}
 
@@ -903,6 +887,7 @@ void TextureCache::CopyRenderTargetToTexture(u32 dstAddr, u32 dstFormat, PEContr
 
 	entry->frameCount = FRAMECOUNT_INVALID;
 	entry->is_efb_copy = true;
+	entry->is_custom_tex = false;
 
 	entry->FromRenderTarget(srcFormat, srcRect, isIntensity, scaleByHalf, cbufid, colmat);
 	textures.insert(TexCache::value_type(dstAddr, entry));

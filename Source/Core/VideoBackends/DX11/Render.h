@@ -20,7 +20,7 @@ public:
 	void SetLogicOpMode() override;
 	void SetDitherMode() override;
 	void SetLineWidth() override {};
-	void SetSamplerState(int stage, int texindex) override;
+	void SetSamplerState(int stage, int texindex, bool custom_tex) override;
 	void SetInterlacingMode() override;
 	void SetViewport() override;
 

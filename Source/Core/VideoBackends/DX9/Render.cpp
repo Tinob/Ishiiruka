@@ -1386,7 +1386,7 @@ void Renderer::SetInterlacingMode()
 	// TODO
 }
 
-void Renderer::SetSamplerState(int stage, int texindex)
+void Renderer::SetSamplerState(int stage, int texindex, bool custom_tex)
 {
 	const D3DTEXTUREFILTERTYPE d3dMipFilters[4] =
 	{
