@@ -237,12 +237,6 @@ void Stop()  // - Hammertime!
 		INFO_LOG(CONSOLE, "%s", StopMessage(true, "Wait for Video Loop to exit ...").c_str());
 
 		g_video_backend->Video_ExitLoop();
-		// Wait for EmuThread to finish to avoid modifications
-		// to the global states in different threads
-		while (s_is_stopping)
-		{
-			Common::SleepCurrentThread(1);
-		}
 	}
 }
 
@@ -251,7 +245,7 @@ static void CpuThread()
 {
 	const SCoreStartupParameter& _CoreParameter =
 		SConfig::GetInstance().m_LocalCoreStartupParameter;
-
+	VideoBackend* video_backend = g_video_backend;
 	if (_CoreParameter.bCPUThread)
 	{
 		Common::SetCurrentThreadName("CPU thread");
@@ -259,7 +253,7 @@ static void CpuThread()
 	else
 	{
 		Common::SetCurrentThreadName("CPU-GPU thread");
-		g_video_backend->Video_Prepare();
+		video_backend->Video_Prepare();
 	}
 
 	if (_CoreParameter.bFastmem)
@@ -286,7 +280,7 @@ static void CpuThread()
 	s_is_started = false;
 
 	if (!_CoreParameter.bCPUThread)
-		g_video_backend->Video_Cleanup();
+		video_backend->Video_Cleanup();
 
 	EMM::UninstallExceptionHandler();
 
@@ -296,14 +290,14 @@ static void CpuThread()
 static void FifoPlayerThread()
 {
 	const SCoreStartupParameter& _CoreParameter = SConfig::GetInstance().m_LocalCoreStartupParameter;
-
+	VideoBackend* video_backend = g_video_backend;
 	if (_CoreParameter.bCPUThread)
 	{
 		Common::SetCurrentThreadName("FIFO player thread");
 	}
 	else
 	{
-		g_video_backend->Video_Prepare();
+		video_backend->Video_Prepare();
 		Common::SetCurrentThreadName("FIFO-GPU thread");
 	}
 
@@ -319,7 +313,7 @@ static void FifoPlayerThread()
 	s_is_started = false;
 
 	if (!_CoreParameter.bCPUThread)
-		g_video_backend->Video_Cleanup();
+		video_backend->Video_Cleanup();
 
 	return;
 }
@@ -333,7 +327,7 @@ void EmuThread()
 		SConfig::GetInstance().m_LocalCoreStartupParameter;
 
 	Common::SetCurrentThreadName("Emuthread - Starting");
-
+	VideoBackend* video_backend = g_video_backend;
 	if (SConfig::GetInstance().m_OCEnable)
 		DisplayMessage("WARNING: running at non-native CPU clock! Game may not be stable.", 8000);
 	DisplayMessage(cpu_info.brand_string, 8000);
@@ -344,14 +338,14 @@ void EmuThread()
 
 	HW::Init();
 
-	if (!g_video_backend->Initialize(s_window_handle))
+	if (!video_backend->Initialize(s_window_handle))
 	{
 		PanicAlert("Failed to initialize video backend!");
 		Host_Message(WM_USER_STOP);
 		return;
 	}
 
-	OSD::AddMessage("Dolphin " + g_video_backend->GetName() + " Video Backend.", 5000);
+	OSD::AddMessage("Dolphin " + video_backend->GetName() + " Video Backend.", 5000);
 
 	if (cpu_info.HTT)
 		SConfig::GetInstance().m_LocalCoreStartupParameter.bDSPThread = cpu_info.num_cores > 4;
@@ -361,7 +355,7 @@ void EmuThread()
 	if (!DSP::GetDSPEmulator()->Initialize(core_parameter.bWii, core_parameter.bDSPThread))
 	{
 		HW::Shutdown();
-		g_video_backend->Shutdown();
+		video_backend->Shutdown();
 		PanicAlert("Failed to initialize DSP emulator!");
 		Host_Message(WM_USER_STOP);
 		return;
@@ -429,13 +423,13 @@ void EmuThread()
 		// thread, and then takes over and becomes the video thread
 		Common::SetCurrentThreadName("Video thread");
 
-		g_video_backend->Video_Prepare();
+		video_backend->Video_Prepare();
 
 		// Spawn the CPU thread
 		s_cpu_thread = std::thread(cpuThreadFunc);
 
 		// become the GPU thread
-		g_video_backend->Video_EnterLoop();
+		video_backend->Video_EnterLoop();
 
 		// We have now exited the Video Loop
 		INFO_LOG(CONSOLE, "%s", StopMessage(false, "Video Loop Ended").c_str());
@@ -454,7 +448,7 @@ void EmuThread()
 
 		while (PowerPC::GetState() != PowerPC::CPU_POWERDOWN)
 		{
-			g_video_backend->PeekMessages();
+			video_backend->PeekMessages();
 			Common::SleepCurrentThread(20);
 		}
 	}
@@ -475,7 +469,7 @@ void EmuThread()
 	INFO_LOG(CONSOLE, "%s", StopMessage(true, "CPU thread stopped.").c_str());
 
 	if (core_parameter.bCPUThread)
-		g_video_backend->Video_Cleanup();
+		video_backend->Video_Cleanup();
 
 	VolumeHandler::EjectVolume();
 	FileMon::Close();
@@ -498,13 +492,13 @@ void EmuThread()
 		init_controllers = false;
 	}
 
-	g_video_backend->Shutdown();
+	video_backend->Shutdown();
 	AudioCommon::ShutdownSoundStream();
 
 	INFO_LOG(CONSOLE, "%s", StopMessage(true, "Main Emu thread stopped").c_str());
 
 	// Clear on screen messages that haven't expired
-	g_video_backend->Video_ClearMessages();
+	video_backend->Video_ClearMessages();
 
 	// Reload sysconf file in order to see changes committed during emulation
 	if (core_parameter.bWii)
