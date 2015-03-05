@@ -20,8 +20,8 @@ public:
 
 	void Init();
 	void Shutdown();
-	size_t Encode(u8* dst, unsigned int dstFormat,
-		unsigned int srcFormat, const EFBRectangle& srcRect,
+	size_t Encode(u8* dst, u32 dstFormat,
+		u32 srcFormat, const EFBRectangle& srcRect,
 		bool isIntensity, bool scaleByHalf);
 private:
 
@@ -37,15 +37,15 @@ private:
 	// Stuff only used in static-linking mode (SM4.0-compatible)
 
 	bool InitStaticMode();
-	bool SetStaticShader(unsigned int dstFormat,
-		unsigned int srcFormat, bool isIntensity, bool scaleByHalf);
+	bool SetStaticShader(u32 dstFormat,
+		u32 srcFormat, bool isIntensity, bool scaleByHalf);
 
-	typedef unsigned int ComboKey; // Key for a shader combination
+	typedef u32 ComboKey; // Key for a shader combination
 
 	ID3D11ComputeShader* InsertShader(ComboKey const &key, u8 const *data, u32 sz);
 
-	ComboKey MakeComboKey(unsigned int dstFormat,
-		unsigned int srcFormat, bool isIntensity, bool scaleByHalf, bool model5)
+	ComboKey MakeComboKey(u32 dstFormat,
+		u32 srcFormat, bool isIntensity, bool scaleByHalf, bool model5)
 	{
 		return (model5 ? (1 << 24) : 0) | (dstFormat << 4) | (srcFormat << 2) | (isIntensity ? (1 << 1) : 0)
 			| (scaleByHalf ? (1 << 0) : 0);
@@ -74,8 +74,8 @@ private:
 	// Microsoft fixes their bloody HLSL compiler)
 
 	bool InitDynamicMode();
-	bool SetDynamicShader(unsigned int dstFormat,
-		unsigned int srcFormat, bool isIntensity, bool scaleByHalf);
+	bool SetDynamicShader(u32 dstFormat,
+		u32 srcFormat, bool isIntensity, bool scaleByHalf);
 
 	D3D::ComputeShaderPtr m_dynamicShader;
 	D3D::ClkPtr m_classLinkage;

@@ -1010,8 +1010,8 @@ void PSTextureEncoder::Shutdown()
 	m_out.reset();
 }
 
-size_t PSTextureEncoder::Encode(u8* dst, unsigned int dstFormat,
-	unsigned int srcFormat, const EFBRectangle& srcRect, bool isIntensity,
+size_t PSTextureEncoder::Encode(u8* dst, u32 dstFormat,
+	u32 srcFormat, const EFBRectangle& srcRect, bool isIntensity,
 	bool scaleByHalf)
 {
 	if (!m_ready) // Make sure we initialized OK
@@ -1028,26 +1028,26 @@ size_t PSTextureEncoder::Encode(u8* dst, unsigned int dstFormat,
 
 	HRESULT hr;
 
-	unsigned int blockW = BLOCK_WIDTHS[dstFormat];
-	unsigned int blockH = BLOCK_HEIGHTS[dstFormat];
+	u32 blockW = BLOCK_WIDTHS[dstFormat];
+	u32 blockH = BLOCK_HEIGHTS[dstFormat];
 
 	// Round up source dims to multiple of block size
-	unsigned int actualWidth = correctSrc.GetWidth() / (scaleByHalf ? 2 : 1);
-	actualWidth = (actualWidth + blockW - 1) & ~(blockW - 1);
-	unsigned int actualHeight = correctSrc.GetHeight() / (scaleByHalf ? 2 : 1);
-	actualHeight = (actualHeight + blockH - 1) & ~(blockH - 1);
+	u32 width = correctSrc.GetWidth() >> (scaleByHalf ? 1 : 0);
+	u32 expandedWidth = (width + blockW - 1) & ~(blockW - 1);
+	u32 height = correctSrc.GetHeight() >> (scaleByHalf ? 1 : 0);
+	u32 expandedHeight = (height + blockH - 1) & ~(blockH - 1);
 
-	unsigned int numBlocksX = actualWidth / blockW;
-	unsigned int numBlocksY = actualHeight / blockH;
+	u32 numBlocksX = expandedWidth / blockW;
+	u32 numBlocksY = expandedHeight / blockH;
 
-	unsigned int cacheLinesPerRow;
+	u32 cacheLinesPerRow;
 	if (dstFormat == 0x6) // RGBA takes two cache lines per block; all others take one
 		cacheLinesPerRow = numBlocksX * 2;
 	else
 		cacheLinesPerRow = numBlocksX;
 	_assert_msg_(VIDEO, cacheLinesPerRow * 32 <= MAX_BYTES_PER_BLOCK_ROW, "cache lines per row sanity check");
 
-	unsigned int totalCacheLines = cacheLinesPerRow * numBlocksY;
+	u32 totalCacheLines = cacheLinesPerRow * numBlocksY;
 	_assert_msg_(VIDEO, totalCacheLines * 32 <= MAX_BYTES_PER_ENCODE, "total encode size sanity check");
 
 	size_t encodeSize = 0;
@@ -1146,7 +1146,7 @@ size_t PSTextureEncoder::Encode(u8* dst, unsigned int dstFormat,
 		CHECK(SUCCEEDED(hr), "map staging buffer");
 
 		u8* src = (u8*)map.pData;
-		for (unsigned int y = 0; y < numBlocksY; ++y)
+		for (u32 y = 0; y < numBlocksY; ++y)
 		{
 			memcpy(dst, src, cacheLinesPerRow * 32);
 			dst += bpmem.copyMipMapStrideChannels * 32;
@@ -1186,7 +1186,7 @@ static const char* INTENSITY_FUNC_NAMES[2] = {
 	"Intensity_0", "Intensity_1"
 };
 
-bool PSTextureEncoder::SetStaticShader(unsigned int dstFormat, unsigned int srcFormat,
+bool PSTextureEncoder::SetStaticShader(u32 dstFormat, u32 srcFormat,
 	bool isIntensity, bool scaleByHalf)
 {
 	size_t fetchNum = srcFormat;
@@ -1343,8 +1343,8 @@ static const char* INTENSITY_CLASS_NAMES[2] = {
 	"cIntensity_0", "cIntensity_1"
 };
 
-bool PSTextureEncoder::SetDynamicShader(unsigned int dstFormat,
-	unsigned int srcFormat, bool isIntensity, bool scaleByHalf)
+bool PSTextureEncoder::SetDynamicShader(u32 dstFormat,
+	u32 srcFormat, bool isIntensity, bool scaleByHalf)
 {
 	size_t fetchNum = srcFormat;
 	size_t scaledFetchNum = scaleByHalf ? 1 : 0;
