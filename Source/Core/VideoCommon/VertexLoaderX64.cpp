@@ -460,7 +460,7 @@ void VertexLoaderX64::GenerateVertexLoader()
 	m_native_vtx_decl.stride = m_native_stride;
 }
 
-bool VertexLoaderX64::EnviromentIsSupported()
+bool VertexLoaderX64::EnvironmentIsSupported()
 {
 	return (g_ActiveConfig.backend_info.bSupportsBBox && g_ActiveConfig.iBBoxMode == BBoxGPU) 
 		|| !BoundingBox::active;

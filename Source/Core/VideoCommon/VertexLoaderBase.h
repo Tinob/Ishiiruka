@@ -68,7 +68,7 @@ public:
 	{
 		return m_fallback;
 	}
-	virtual bool EnviromentIsSupported(){ return true; }
+	virtual bool EnvironmentIsSupported(){ return true; }
 	virtual bool IsPrecompiled(){ return false; }
 	virtual s32 RunVertices(const VertexLoaderParameters &parameters) = 0;
 

@@ -214,7 +214,11 @@ namespace VertexLoaderManager
 		{
 			VertexLoaderBase *loader = VertexLoaderBase::CreateVertexLoader(VtxDesc, VtxAttr);
 			loader->m_native_vertex_format = GetNativeVertexFormat(loader->m_native_vtx_decl, loader->m_native_components);
-			loader->GetFallback()->m_native_vertex_format = loader->m_native_vertex_format;			
+			VertexLoaderBase * fallback = loader->GetFallback();
+			if (fallback)
+			{
+				fallback->m_native_vertex_format = loader->m_native_vertex_format;
+			}
 			s_VertexLoaderMap[uid] = loader;
 			INCSTAT(stats.numVertexLoaders);
 			return loader;
@@ -244,7 +248,7 @@ namespace VertexLoaderManager
 			UpdateLoader(parameters);
 		}
 		auto loader = g_main_cp_state.vertex_loaders[parameters.vtx_attr_group];
-		if (!loader->EnviromentIsSupported())
+		if (!loader->EnvironmentIsSupported())
 		{
 			loader = loader->GetFallback();
 		}
