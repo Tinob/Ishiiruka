@@ -20,8 +20,7 @@ public:
 		const u8* texture, size_t texture_size,
 		const u8* tlut, size_t tlut_size,
 		u32 width, u32 height,
-		int format, 
-		bool rgbaonly,
+		int format,
 		bool has_mipmaps,		
 		std::function<u8*(size_t)> request_buffer_delegate
 		);

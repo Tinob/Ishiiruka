@@ -88,6 +88,7 @@
     <ClCompile Include="PixelEngine.cpp" />
     <ClCompile Include="PixelShaderGen.cpp" />
     <ClCompile Include="PixelShaderManager.cpp" />
+    <ClCompile Include="PNGLoader.cpp" />
     <ClCompile Include="PostProcessing.cpp" />
     <ClCompile Include="RenderBase.cpp" />
     <ClCompile Include="Statistics.cpp" />
@@ -125,7 +126,7 @@
     <ClInclude Include="CommandProcessor.h" />
     <ClInclude Include="CPMemory.h" />
     <ClInclude Include="DataReader.h" />
-    <ClInclude Include="DDSLoader.h" />
+    <ClInclude Include="ImageLoader.h" />
     <ClInclude Include="Debugger.h" />
     <ClInclude Include="DriverDetails.h" />
     <ClInclude Include="Fifo.h" />
@@ -207,9 +208,6 @@
   <ItemGroup>
     <ProjectReference Include="$(ExternalsDir)CLRun\clrun\CLRun.vcxproj">
       <Project>{AA862E5E-A993-497A-B6A0-0E8E94B10050}</Project>
-    </ProjectReference>
-    <ProjectReference Include="$(ExternalsDir)SOIL\SOIL.vcxproj">
-      <Project>{8544F1FF-F2A5-42D8-A568-C56B5D3B4181}</Project>
     </ProjectReference>
     <ProjectReference Include="$(CoreDir)Common\Common.vcxproj">
       <Project>{C87A4178-44F6-49B2-B7AA-C79AF1B8C534}</Project>

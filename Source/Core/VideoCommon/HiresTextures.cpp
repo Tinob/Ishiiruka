@@ -4,12 +4,10 @@
 
 #include <algorithm>
 #include <cinttypes>
-
 #include <cstring>
 #include <string>
 #include <utility>
 #include <xxhash.h>
-#include <SOIL/SOIL.h>
 
 #include "Common/CommonPaths.h"
 #include "Common/FileSearch.h"
@@ -18,13 +16,13 @@
 
 #include "Core/ConfigManager.h"
 
-#include "VideoCommon/DDSLoader.h"
+#include "VideoCommon/ImageLoader.h"
 #include "VideoCommon/HiresTextures.h"
 #include "VideoCommon/OnScreenDisplay.h"
 #include "VideoCommon/TextureUtil.h"
 #include "VideoCommon/VideoConfig.h"
 
-typedef std::vector<std::pair<std::string, std::string>> HiresTextureCacheItem;
+typedef std::vector<std::pair<std::string, bool>> HiresTextureCacheItem;
 typedef std::unordered_map<std::string, HiresTextureCacheItem> HiresTextureCache;
 static HiresTextureCache s_textureMap;
 static bool s_initialized = false;
@@ -69,13 +67,11 @@ void HiresTexture::Init(const std::string& gameCode, bool force_reload)
 			}
 		}
 	}
-
+	std::string ddscode(".dds");
+	std::string cddscode(".DDS");
 	CFileSearch::XStringVector Extensions = {
 		"*.png",
-		"*.bmp",
-		"*.tga",
-		"*.dds",
-		"*.jpg" // Why not? Could be useful for large photo-like textures
+		"*.dds"
 	};
 
 	CFileSearch FileSearch(Extensions, Directories);
@@ -91,6 +87,7 @@ void HiresTexture::Init(const std::string& gameCode, bool force_reload)
 			std::string Extension;			
 			SplitPath(rFilenames[i], nullptr, &FileName, &Extension);
 			bool newformat = false;
+			bool dds_file = Extension.compare(ddscode) == 0 || Extension.compare(cddscode) == 0;
 			if (FileName.substr(0, code.length()) == code)
 			{
 				s_check_native_format = true;				
@@ -105,7 +102,7 @@ void HiresTexture::Init(const std::string& gameCode, bool force_reload)
 				// Discard wrong files
 				continue;
 			}
-			std::pair<std::string, std::string> Pair(rFilenames[i], Extension);
+			std::pair<std::string, bool> Pair(rFilenames[i], dds_file);
 			u32 level = 0;
 			size_t idx = FileName.find_last_of('_');
 			std::string miplevel = FileName.substr(idx + 1, std::string::npos);
@@ -235,7 +232,7 @@ std::string HiresTexture::GenBaseName(
 					{
 						ERROR_LOG(VIDEO, "rename failed");
 					}
-					newitem[level] = std::pair<std::string, std::string>(dst, convert_iter->second[level].second);
+					newitem[level] = std::pair<std::string, bool>(dst, convert_iter->second[level].second);
 				}
 				s_textureMap.insert(HiresTextureCache::value_type(fullname, newitem));
 			}
@@ -260,41 +257,17 @@ std::string HiresTexture::GenBaseName(
 	return name;
 }
 
-
-
-inline void LoadImageFromFile_Soil(ImageLoaderParams &ImgInfo)
+inline void ReadPNG(ImageLoaderParams &ImgInfo)
 {
-	int width;
-	int height;
-	int channels;
-	ImgInfo.resultTex = PC_TEX_FMT_NONE;
-	u8* temp = SOIL_load_image(ImgInfo.Path, &width, &height, &channels, ImgInfo.forcedchannels);
-	if (temp == nullptr)
+	if (ImageLoader::ReadPNG(ImgInfo))
 	{
-		ERROR_LOG(VIDEO, "SOIL_load_image fail.");
-		return;
+		ImgInfo.resultTex = PC_TEX_FMT_RGBA32;
 	}
-	ImgInfo.Width = width;
-	ImgInfo.Height = height;
-	ImgInfo.data_size = width * height * ImgInfo.formatBPP;
-	ImgInfo.dst = ImgInfo.request_buffer_delegate(ImgInfo.data_size);
-	if (ImgInfo.dst != nullptr)
-	{
-		ImgInfo.resultTex = ImgInfo.desiredTex;
-		memcpy(ImgInfo.dst, temp, ImgInfo.data_size);
-	}
-	else
-	{
-		ERROR_LOG(VIDEO, "Unable to allocate hd texture buffer.");
-	}
-	SOIL_free_image_data(temp);
-	return;
 }
 
-
-inline void LoadImageFromFile_DDS(ImageLoaderParams &ImgInfo)
+inline void ReadDDS(ImageLoaderParams &ImgInfo)
 {
-	DDSCompression ddsc = DDSLoader::Load_Image(ImgInfo);
+	DDSCompression ddsc = ImageLoader::ReadDDS(ImgInfo);
 	if (ddsc != DDSCompression::DDSC_NONE)
 	{
 		switch (ddsc)
@@ -322,7 +295,6 @@ HiresTexture* HiresTexture::Search(
 	u32 width, 
 	u32 height, 
 	s32 format,
-	bool rgbaonly,
 	bool has_mipmaps,
 	std::function<u8*(size_t)> request_buffer_delegate)
 {
@@ -353,9 +325,7 @@ HiresTexture* HiresTexture::Search(
 	{
 		return nullptr;
 	}
-	HiresTexture* ret = nullptr;	
-	std::string ddscode(".dds");
-	std::string cddscode(".DDS");
+	HiresTexture* ret = nullptr;
 	u8* buffer_pointer;
 	u32 maxwidth;
 	u32 maxheight;
@@ -363,7 +333,7 @@ HiresTexture* HiresTexture::Search(
 	for (size_t level = 0; level < current.size(); level++)
 	{
 		ImageLoaderParams imgInfo;
-		std::pair<std::string, std::string> &item = current[level];
+		std::pair<std::string, bool> &item = current[level];
 		imgInfo.dst = nullptr;
 		imgInfo.Path = item.first.c_str();
 		if (level == 0)
@@ -383,17 +353,16 @@ HiresTexture* HiresTexture::Search(
 			};
 		}
 		bool ddsfile = false;
-		if (item.second.compare(ddscode) == 0 || item.second.compare(cddscode) == 0)
+		if (item.second)
 		{
 			if (level > 0 && !last_level_is_dds)
 			{
 				// don't give support to mixed formats
 				break;
 			}
-			LoadImageFromFile_DDS(imgInfo);
 			ddsfile = true;
 			last_level_is_dds = true;
-			
+			ReadDDS(imgInfo);
 		}
 		else
 		{
@@ -403,22 +372,7 @@ HiresTexture* HiresTexture::Search(
 				break;
 			}
 			last_level_is_dds = false;
-			format = rgbaonly ? GX_TF_RGBA8 : format;
-			switch (format)
-			{
-			case GX_TF_IA4:
-			case GX_TF_IA8:
-				imgInfo.desiredTex = PC_TEX_FMT_IA8;
-				imgInfo.forcedchannels = SOIL_LOAD_LA;
-				imgInfo.formatBPP = 2;
-				break;
-			default:
-				imgInfo.desiredTex = PC_TEX_FMT_RGBA32;
-				imgInfo.forcedchannels = SOIL_LOAD_RGBA;
-				imgInfo.formatBPP = 4;
-				break;
-			}
-			LoadImageFromFile_Soil(imgInfo);
+			ReadPNG(imgInfo);
 		}
 		if (imgInfo.dst == nullptr || imgInfo.resultTex == PC_TEX_FMT_NONE)
 		{

@@ -437,8 +437,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(const u32 stage)
 		textures.erase(oldest_entry);
 	}	
 
-	std::unique_ptr<HiresTexture> hires_tex;
-	const bool buserRGBAtextures = (g_ActiveConfig.backend_info.APIType & API_D3D9) == 0;
+	std::unique_ptr<HiresTexture> hires_tex;	
 	if (g_ActiveConfig.bHiresTextures)
 	{
 		hires_tex.reset(HiresTexture::Search(
@@ -446,7 +445,6 @@ TextureCache::TCacheEntryBase* TextureCache::Load(const u32 stage)
 			&texMem[tlutaddr], palette_size,
 			width, height,
 			texformat,
-			buserRGBAtextures,
 			use_mipmaps,
 			[](size_t required_size)
 		{

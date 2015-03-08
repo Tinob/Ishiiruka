@@ -208,6 +208,9 @@
     <ClCompile Include="AsyncRequests.cpp">
       <Filter>Util</Filter>
     </ClCompile>
+    <ClCompile Include="PNGLoader.cpp">
+      <Filter>Util</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommandProcessor.h" />
@@ -340,9 +343,6 @@
       <Filter>Shader Generators</Filter>
     </ClInclude>
     <ClInclude Include="DriverDetails.h" />
-    <ClInclude Include="DDSLoader.h">
-      <Filter>Util</Filter>
-    </ClInclude>
     <ClInclude Include="TextureUtil.h">
       <Filter>Util</Filter>
     </ClInclude>
@@ -443,6 +443,9 @@
       <Filter>Vertex Loading</Filter>
     </ClInclude>
     <ClInclude Include="AsyncRequests.h">
+      <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="ImageLoader.h">
       <Filter>Util</Filter>
     </ClInclude>
   </ItemGroup>

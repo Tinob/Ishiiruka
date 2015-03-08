@@ -29,7 +29,7 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#include "DDSLoader.h"
+#include "ImageLoader.h"
 #include "Common/Common.h"
 #define MAKEFOURCC(ch0, ch1, ch2, ch3)                              \
 	((DWORD)(BYTE)(ch0) | ((DWORD)(BYTE)(ch1) << 8) |   \
@@ -172,7 +172,7 @@ typedef struct _DDSHeader {
 	u32      dwTextureStage;
 } DDSHeader;
 
-DDSCompression DDSLoader::Load_Image(ImageLoaderParams& loader_params)
+DDSCompression ImageLoader::ReadDDS(ImageLoaderParams& loader_params)
 {
 	DDSCompression Result = DDSC_NONE;
 	DDSHeader ddsd;

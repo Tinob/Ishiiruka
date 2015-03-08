@@ -69,8 +69,9 @@ struct ImageLoaderParams
 	}
 };
 
-class DDSLoader
+class ImageLoader
 {
 public:
-	static DDSCompression Load_Image(ImageLoaderParams& loader_params);
+	static DDSCompression ReadDDS(ImageLoaderParams& loader_params);
+	static bool ReadPNG(ImageLoaderParams& loader_params);
 };

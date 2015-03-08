@@ -15,7 +15,6 @@ set(SRCS GLExtensions/GLExtensions.cpp
 	   VertexManager.cpp)
 
 set(LIBS	videocommon
-			SOIL
 			common
 			dl
 			${X11_LIBRARIES})
