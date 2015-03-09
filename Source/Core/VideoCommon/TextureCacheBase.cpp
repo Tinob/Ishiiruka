@@ -24,9 +24,14 @@ u64 TextureCache::s_prev_tlut_hash = 0;
 u32 TextureCache::s_prev_tlut_size = 0;
 TextureCache::TexCache TextureCache::textures;
 TextureCache::TexPool  TextureCache::texture_pool;
+// Pool to save hires textures to avoid unnesessary reloads
+TextureCache::HiresTexPool TextureCache::hires_texture_pool;
 TextureCache::TCacheEntryBase* TextureCache::bound_textures[8];
 
+
 TextureCache::BackupConfig TextureCache::backup_config;
+// Small counter to track the amount of memory currently used on the gpu
+size_t TextureCache::texture_pool_memory_usage = 0;
 
 bool invalidate_texture_cache_requested;
 
@@ -56,7 +61,7 @@ TextureCache::TextureCache()
 		HiresTexture::Init(SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID, true);
 
 	SetHash64Function();
-
+	texture_pool_memory_usage = 0;
 	invalidate_texture_cache_requested = false;
 }
 
@@ -75,24 +80,40 @@ void TextureCache::Invalidate()
 	textures.clear();
 }
 
+void TextureCache::InvalidateHiresCache()
+{
+	for (auto& tex : hires_texture_pool)
+	{
+		texture_pool_memory_usage -= tex.second->native_size_in_bytes;
+		delete tex.second;
+	}
+	hires_texture_pool.clear();
+}
+
 TextureCache::~TextureCache()
 {
 	UnbindTextures();
 	for (auto& tex : textures)
 	{
+		if (tex.second->is_custom_tex)
+		{
+			hires_texture_pool.erase(tex.second->basename);
+		}
 		delete tex.second;
 	}
 	textures.clear();
+	InvalidateHiresCache();
 	for (auto& rt : texture_pool)
 	{
 		delete rt.second;
 	}
 	texture_pool.clear();
+	texture_pool_memory_usage = 0;
 	if (TextureCache::temp)
 	{
 		FreeAlignedMemory(TextureCache::temp);
 		TextureCache::temp = nullptr;
-	}
+	}	
 }
 
 void TextureCache::OnConfigChanged(VideoConfig& config)
@@ -110,9 +131,17 @@ void TextureCache::OnConfigChanged(VideoConfig& config)
 
 			TexDecoder_SetTexFmtOverlayOptions(g_ActiveConfig.bTexFmtOverlayEnable, g_ActiveConfig.bTexFmtOverlayCenter);
 
-			if (config.bHiresTextures != backup_config.s_hires_textures && config.bHiresTextures)
-				HiresTexture::Init(SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID);
-
+			if (config.bHiresTextures != backup_config.s_hires_textures)
+			{
+				if (config.bHiresTextures)
+				{
+					HiresTexture::Init(SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID);
+				}
+				else
+				{
+					InvalidateHiresCache();
+				}
+			}
 			invalidate_texture_cache_requested = false;
 		}
 	}
@@ -125,6 +154,19 @@ void TextureCache::OnConfigChanged(VideoConfig& config)
 
 void TextureCache::Cleanup(int _frameCount)
 {
+	int texture_kill_threshold = TEXTURE_KILL_THRESHOLD;
+	int pool_kill_threshold = TEXTURE_POOL_KILL_THRESHOLD;
+	if (texture_pool_memory_usage < (TEXTURE_POOL_MEMORY_LIMIT / 2))
+	{
+		// if we are using less than a half of the memory limit don't bother cleaning.
+		return;
+	}
+	else if (texture_pool_memory_usage < TEXTURE_POOL_MEMORY_LIMIT)
+	{
+		// if we are using less than the memory limit increase kill threshold
+		texture_kill_threshold *= 32;
+		pool_kill_threshold *= 10;
+	}
 	TexCache::iterator iter = textures.begin();
 	TexCache::iterator tcend = textures.end();
 	while (iter != tcend)
@@ -133,7 +175,7 @@ void TextureCache::Cleanup(int _frameCount)
 		{
 			iter->second->frameCount = _frameCount;
 		}
-		if (_frameCount > TEXTURE_KILL_THRESHOLD + iter->second->frameCount &&
+		if (_frameCount > texture_kill_threshold + iter->second->frameCount &&
 			// EFB copies living on the host GPU are unrecoverable and thus shouldn't be deleted
 			!iter->second->IsEfbCopy())
 		{
@@ -153,14 +195,38 @@ void TextureCache::Cleanup(int _frameCount)
 		{
 			iter2->second->frameCount = _frameCount;
 		}
-		if (_frameCount > TEXTURE_POOL_KILL_THRESHOLD + iter2->second->frameCount)
+		if (_frameCount > pool_kill_threshold + iter2->second->frameCount)
 		{
+			texture_pool_memory_usage -= iter2->second->native_size_in_bytes;
 			delete iter2->second;
 			iter2 = texture_pool.erase(iter2);
 		}
 		else
 		{
 			++iter2;
+		}
+	}
+	if (g_ActiveConfig.bHiresTextures && texture_pool_memory_usage > TEXTURE_POOL_MEMORY_LIMIT)
+	{
+		// We are using to much memory so we will have to clean hires textures if they are not used
+		HiresTexPool::iterator iter_hrt = hires_texture_pool.begin();
+		HiresTexPool::iterator hrtend = hires_texture_pool.end();
+		while (iter_hrt != hrtend)
+		{
+			if (iter_hrt->second->frameCount == FRAMECOUNT_INVALID)
+			{
+				iter_hrt->second->frameCount = _frameCount;
+			}
+			if (_frameCount > HIRES_POOL_KILL_THRESHOLD + iter2->second->frameCount)
+			{
+				texture_pool_memory_usage -= iter_hrt->second->native_size_in_bytes;
+				delete iter2->second;
+				iter_hrt = hires_texture_pool.erase(iter_hrt);
+			}
+			else
+			{
+				++iter_hrt;
+			}
 		}
 	}
 }
@@ -437,20 +503,32 @@ TextureCache::TCacheEntryBase* TextureCache::Load(const u32 stage)
 		textures.erase(oldest_entry);
 	}	
 
-	std::unique_ptr<HiresTexture> hires_tex;	
-	if (g_ActiveConfig.bHiresTextures)
+	std::unique_ptr<HiresTexture> hires_tex;
+	std::string basename;
+	if (g_ActiveConfig.bHiresTextures || g_ActiveConfig.bDumpTextures)
 	{
-		hires_tex.reset(HiresTexture::Search(
+		basename = HiresTexture::GenBaseName(
 			src_data, texture_size,
 			&texMem[tlutaddr], palette_size,
 			width, height,
 			texformat,
-			use_mipmaps,
-			[](size_t required_size)
+			use_mipmaps, g_ActiveConfig.bDumpTextures);
+	}
+	if (g_ActiveConfig.bHiresTextures)
+	{
+		HiresTexPool::iterator hriter = hires_texture_pool.find(basename);
+		if (hriter != hires_texture_pool.end())
 		{
-			TextureCache::CheckTempSize(required_size);
-			return TextureCache::temp;
+			textures.insert(TexCache::value_type(address, hriter->second));
+			return ReturnEntry(stage, hriter->second);
 		}
+		hires_tex.reset(HiresTexture::Search(
+			basename,
+			[](size_t required_size)
+			{
+				TextureCache::CheckTempSize(required_size);
+				return TextureCache::temp;
+			}
 		));
 		if (hires_tex)
 		{
@@ -488,8 +566,8 @@ TextureCache::TCacheEntryBase* TextureCache::Load(const u32 stage)
 
 	entry->SetGeneralParameters(address, texture_size, full_format);
 	entry->SetDimensions(nativeW, nativeH, tex_levels);
+	entry->SetHiresParams(!!hires_tex, basename);
 	entry->hash = tex_hash ^ tlut_hash;
-	entry->is_custom_tex = !!hires_tex;
 	entry->is_efb_copy = false;
 
 	// load texture
@@ -512,15 +590,9 @@ TextureCache::TCacheEntryBase* TextureCache::Load(const u32 stage)
 		}
 	}
 
-	std::string basename = "";
+	
 	if (g_ActiveConfig.bDumpTextures && !hires_tex)
 	{
-		basename = HiresTexture::GenBaseName(
-			src_data, texture_size,
-			&texMem[tlutaddr], palette_size,
-			width, height,
-			texformat,
-			use_mipmaps, true);
 		DumpTexture(entry, basename, 0);
 	}
 
@@ -885,7 +957,7 @@ void TextureCache::CopyRenderTargetToTexture(u32 dstAddr, u32 dstFormat, PEContr
 
 	entry->frameCount = FRAMECOUNT_INVALID;
 	entry->is_efb_copy = true;
-	entry->is_custom_tex = false;
+	entry->SetHiresParams(false, "");
 
 	entry->FromRenderTarget(srcFormat, srcRect, isIntensity, scaleByHalf, cbufid, colmat);
 	textures.insert(TexCache::value_type(dstAddr, entry));
@@ -901,11 +973,20 @@ TextureCache::TCacheEntryBase* TextureCache::AllocateTexture(const TCacheEntryCo
 		return entry;
 	}
 	INCSTAT(stats.numTexturesCreated);
+	texture_pool_memory_usage += config.GetSizeInBytes();
 	return g_texture_cache->CreateTexture(config);
 }
 
 void TextureCache::FreeTexture(TCacheEntryBase* entry)
 {
 	entry->frameCount = FRAMECOUNT_INVALID;
-	texture_pool.insert(TexPool::value_type(entry->config, entry));
+	if (entry->is_custom_tex)
+	{
+		hires_texture_pool[entry->basename] = entry;
+	}
+	else
+	{
+		texture_pool.insert(TexPool::value_type(entry->config, entry));
+	}
+	
 }

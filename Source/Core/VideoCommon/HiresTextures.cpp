@@ -145,7 +145,7 @@ std::string HiresTexture::GenBaseName(
 	std::string name = "";
 	bool convert = false;
 	HiresTextureCache::iterator convert_iter;
-	if (!dump && s_check_native_format)
+	if ((!dump || convert) && s_check_native_format)
 	{
 		// try to load the old format first
 		u64 tex_hash = GetHashHiresTexture(texture, (int)texture_size, g_ActiveConfig.iSafeTextureCache_ColorSamples);
@@ -288,28 +288,13 @@ inline void ReadDDS(ImageLoaderParams &ImgInfo)
 }
 
 HiresTexture* HiresTexture::Search(
-	const u8* texture, 
-	size_t texture_size, 
-	const u8* tlut, 
-	size_t tlut_size, 
-	u32 width, 
-	u32 height, 
-	s32 format,
-	bool has_mipmaps,
+	const std::string& basename,
 	std::function<u8*(size_t)> request_buffer_delegate)
 {
 	if (s_textureMap.size() == 0)
 	{
 		return nullptr;
-	}
-	std::string basename = GenBaseName(texture,
-		texture_size,
-		tlut,
-		tlut_size,
-		width,
-		height,
-		format,
-		has_mipmaps);
+	}	
 	HiresTextureCache::iterator iter = s_textureMap.find(basename);
 	if (iter == s_textureMap.end())
 	{
@@ -341,7 +326,7 @@ HiresTexture* HiresTexture::Search(
 			imgInfo.request_buffer_delegate = [&](size_t requiredsize)
 			{
 				// Pre allocate space for the textures and potetially all the posible mip levels 
-				return request_buffer_delegate(requiredsize * 2);
+				return request_buffer_delegate((requiredsize * 4) / 3);
 			};
 		}
 		else

@@ -16,12 +16,7 @@ class HiresTexture
 public:
 	static void Init(const std::string& gameCode, bool force_reload = false);
 	
-	static HiresTexture* Search(
-		const u8* texture, size_t texture_size,
-		const u8* tlut, size_t tlut_size,
-		u32 width, u32 height,
-		int format,
-		bool has_mipmaps,		
+	static HiresTexture* Search(const std::string& basename,		
 		std::function<u8*(size_t)> request_buffer_delegate
 		);
 
