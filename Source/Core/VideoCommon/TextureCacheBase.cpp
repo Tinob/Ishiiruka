@@ -93,15 +93,7 @@ void TextureCache::InvalidateHiresCache()
 TextureCache::~TextureCache()
 {
 	UnbindTextures();
-	for (auto& tex : textures)
-	{
-		if (tex.second->is_custom_tex)
-		{
-			hires_texture_pool.erase(tex.second->basename);
-		}
-		delete tex.second;
-	}
-	textures.clear();
+	Invalidate();
 	InvalidateHiresCache();
 	for (auto& rt : texture_pool)
 	{
@@ -217,10 +209,10 @@ void TextureCache::Cleanup(int _frameCount)
 			{
 				iter_hrt->second->frameCount = _frameCount;
 			}
-			if (_frameCount > HIRES_POOL_KILL_THRESHOLD + iter2->second->frameCount)
+			if (_frameCount > HIRES_POOL_KILL_THRESHOLD + iter_hrt->second->frameCount)
 			{
 				texture_pool_memory_usage -= iter_hrt->second->native_size_in_bytes;
-				delete iter2->second;
+				delete iter_hrt->second;
 				iter_hrt = hires_texture_pool.erase(iter_hrt);
 			}
 			else
