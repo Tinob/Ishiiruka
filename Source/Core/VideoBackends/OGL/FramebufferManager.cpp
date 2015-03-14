@@ -276,7 +276,7 @@ GLuint FramebufferManager::GetEFBColorTexture(const EFBRectangle& sourceRc)
 		// required.
 
 		TargetRectangle targetRc = g_renderer->ConvertEFBRectangle(sourceRc);
-		targetRc.ClampLL(0, 0, m_targetWidth, m_targetHeight);
+		targetRc.ClampUL(0, 0, m_targetWidth, m_targetHeight);
 
 		// Resolve.
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, m_efbFramebuffer);
@@ -305,7 +305,7 @@ GLuint FramebufferManager::GetEFBDepthTexture(const EFBRectangle& sourceRc)
 		// Transfer the EFB to a resolved texture.
 
 		TargetRectangle targetRc = g_renderer->ConvertEFBRectangle(sourceRc);
-		targetRc.ClampLL(0, 0, m_targetWidth, m_targetHeight);
+		targetRc.ClampUL(0, 0, m_targetWidth, m_targetHeight);
 
 		// Resolve.
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, m_efbFramebuffer);
