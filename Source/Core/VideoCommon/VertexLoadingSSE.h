@@ -4,12 +4,8 @@
 // Added for Ishiiruka by Tino
 #pragma once
 #include "Common/Common.h"
-#if _M_SSE >= 0x401
-#include <smmintrin.h>
-#include <emmintrin.h>
-#elif _M_SSE >= 0x301 && !(defined __GNUC__ && !defined __SSSE3__)
-#include <tmmintrin.h>
-#endif
+#include "Common/CPUDetect.h"
+#include "Common/Intrinsics.h"
 
 #if _M_SSE >= 0x301
 static const __m128i kMaskSwap32_2 = _mm_set_epi32(0xFFFFFFFFL, 0xFFFFFFFFL, 0x04050607L, 0x00010203L);

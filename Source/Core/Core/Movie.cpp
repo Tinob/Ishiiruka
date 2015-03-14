@@ -452,7 +452,7 @@ bool BeginRecordingInput(int controllers)
 	if (NetPlay::IsNetPlayRunning())
 	{
 		s_bNetPlay = true;
-		s_recordingStartTime = NETPLAY_INITIAL_GCTIME;
+		s_recordingStartTime = g_netplay_initial_gctime;
 	}
 	else
 	{
@@ -1211,6 +1211,7 @@ void SaveRecording(const std::string& filename)
 	strncpy((char *)header.videoBackend, s_videoBackend.c_str(),ArraySize(header.videoBackend));
 	header.CPUCore = s_iCPUCore;
 	header.bEFBAccessEnable = g_ActiveConfig.bEFBAccessEnable;
+	header.bEFBCopyEnable = true;
 	header.bSkipEFBCopyToRam = g_ActiveConfig.bSkipEFBCopyToRam;
 	header.bEFBCopyCacheEnable = false;
 	header.bEFBEmulateFormatChanges = g_ActiveConfig.bEFBEmulateFormatChanges;

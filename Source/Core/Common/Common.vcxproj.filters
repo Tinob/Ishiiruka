@@ -71,6 +71,9 @@
     </ClInclude>
     <ClInclude Include="GekkoDisassembler.h" />
     <ClInclude Include="Event.h" />
+    <ClInclude Include="JitRegister.h" />
+    <ClInclude Include="TraversalClient.h" />
+    <ClInclude Include="TraversalProto.h" />
     <ClInclude Include="ThreadPool.h" />
   </ItemGroup>
   <ItemGroup>
@@ -118,7 +121,10 @@
     </ClCompile>
     <ClCompile Include="XSaveWorkaround.cpp" />
     <ClCompile Include="GekkoDisassembler.cpp" />
-    <ClCompile Include="ThreadPool.cpp" />  </ItemGroup>
+    <ClCompile Include="JitRegister.cpp" />
+    <ClCompile Include="TraversalClient.cpp" />
+    <ClCompile Include="ThreadPool.cpp" /> 
+  </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />
   </ItemGroup>

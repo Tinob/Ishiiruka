@@ -36,6 +36,7 @@
       <AdditionalIncludeDirectories>$(ExternalsDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>$(ExternalsDir)Bochs_disasm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>$(ExternalsDir)CLRun\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ExternalsDir)enet\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>$(ExternalsDir)GL;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>$(ExternalsDir)libusb\libusb;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>$(ExternalsDir)libpng\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>

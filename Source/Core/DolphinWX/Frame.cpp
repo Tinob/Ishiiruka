@@ -278,7 +278,11 @@ EVT_MENU(IDM_CONFIG_MENU_COMMANDS, CFrame::OnConfigMenuCommands)
 EVT_MENU(IDM_SAVE_PERSPECTIVE, CFrame::OnPerspectiveMenu)
 EVT_MENU(IDM_EDIT_PERSPECTIVES, CFrame::OnPerspectiveMenu)
 // Drop down
-EVT_MENU(IDM_PERSPECTIVES_ADD_PANE, CFrame::OnPerspectiveMenu)
+EVT_MENU(IDM_PERSPECTIVES_ADD_PANE_TOP, CFrame::OnPerspectiveMenu)
+EVT_MENU(IDM_PERSPECTIVES_ADD_PANE_BOTTOM, CFrame::OnPerspectiveMenu)
+EVT_MENU(IDM_PERSPECTIVES_ADD_PANE_LEFT, CFrame::OnPerspectiveMenu)
+EVT_MENU(IDM_PERSPECTIVES_ADD_PANE_RIGHT, CFrame::OnPerspectiveMenu)
+EVT_MENU(IDM_PERSPECTIVES_ADD_PANE_CENTER, CFrame::OnPerspectiveMenu)
 EVT_MENU_RANGE(IDM_PERSPECTIVES_0, IDM_PERSPECTIVES_100, CFrame::OnSelectPerspective)
 EVT_MENU(IDM_ADD_PERSPECTIVE, CFrame::OnPerspectiveMenu)
 EVT_MENU(IDM_TAB_SPLIT, CFrame::OnPerspectiveMenu)
@@ -291,7 +295,7 @@ EVT_MENU(IDM_BROWSE, CFrame::OnBrowse)
 EVT_MENU(IDM_MEMCARD, CFrame::OnMemcard)
 EVT_MENU(IDM_IMPORT_SAVE, CFrame::OnImportSave)
 EVT_MENU(IDM_EXPORT_ALL_SAVE, CFrame::OnExportAllSaves)
-EVT_MENU(IDM_CHEATS, CFrame::OnShow_CheatsWindow)
+EVT_MENU(IDM_CHEATS, CFrame::OnShowCheatsWindow)
 EVT_MENU(IDM_CHANGE_DISC, CFrame::OnChangeDisc)
 EVT_MENU(IDM_MENU_INSTALL_WAD, CFrame::OnInstallWAD)
 EVT_MENU(IDM_LIST_INSTALL_WAD, CFrame::OnInstallWAD)
@@ -309,8 +313,8 @@ EVT_MENU_RANGE(IDM_SHOW_SYSTEM, IDM_SHOW_STATE, CFrame::OnChangeColumnsVisible)
 EVT_MENU(IDM_PURGE_CACHE, CFrame::GameListChanged)
 
 EVT_MENU(IDM_SAVE_FIRST_STATE, CFrame::OnSaveFirstState)
-EVT_MENU(IDM_UNDO_LOAD_STATE,     CFrame::OnUndoLoadState)
-EVT_MENU(IDM_UNDO_SAVE_STATE,     CFrame::OnUndoSaveState)
+EVT_MENU(IDM_UNDO_LOAD_STATE, CFrame::OnUndoLoadState)
+EVT_MENU(IDM_UNDO_SAVE_STATE, CFrame::OnUndoSaveState)
 EVT_MENU(IDM_LOAD_STATE_FILE, CFrame::OnLoadStateFromFile)
 EVT_MENU(IDM_SAVE_STATE_FILE, CFrame::OnSaveStateToFile)
 EVT_MENU(IDM_SAVE_SELECTED_SLOT, CFrame::OnSaveCurrentSlot)
@@ -506,25 +510,19 @@ CFrame::CFrame(wxFrame* parent,
 		g_pCodeWindow->UpdateButtonStates();
 
 	// check if game is running
-	m_bHotkeysInit = InitControllers();
+	InitControllers();
 
-	m_poll_hotkey_timer = new wxTimer(this);
+	m_poll_hotkey_timer.SetOwner(this);
 	Bind(wxEVT_TIMER, &CFrame::PollHotkeys, this);
-	m_poll_hotkey_timer->Start(1000 / 60, wxTIMER_CONTINUOUS);
+	m_poll_hotkey_timer.Start(1000 / 60, wxTIMER_CONTINUOUS);
 }
 // Destructor
 CFrame::~CFrame()
 {
-	m_poll_hotkey_timer->Stop();
-
-	if (m_bHotkeysInit)
-	{
-		Wiimote::Shutdown();
-		Keyboard::Shutdown();
-		Pad::Shutdown();
-		HotkeyManagerEmu::Shutdown();
-		m_bHotkeysInit = false;
-	}
+	Wiimote::Shutdown();
+	Keyboard::Shutdown();
+	Pad::Shutdown();
+	HotkeyManagerEmu::Shutdown();
 
 	drives.clear();
 
@@ -577,13 +575,7 @@ void CFrame::OnActive(wxActivateEvent& event)
 		if (event.GetActive() && event.GetEventObject() == m_RenderFrame)
 		{
 			if (SConfig::GetInstance().m_LocalCoreStartupParameter.bRenderToMain)
-			{
-#ifdef __WXMSW__
-				::SetFocus((HWND)m_RenderParent->GetHandle());
-#else
 				m_RenderParent->SetFocus();
-#endif
-			}
 
 			if (SConfig::GetInstance().m_LocalCoreStartupParameter.bHideCursor &&
 					Core::GetState() == Core::CORE_RUN)
@@ -872,7 +864,7 @@ bool CFrame::UIHasFocus()
 	return (focusWindow != nullptr);
 }
 
-void CFrame::OnGameListCtrl_ItemActivated(wxListEvent& WXUNUSED (event))
+void CFrame::OnGameListCtrl_ItemActivated(wxListEvent& WXUNUSED(event))
 {
 	// Show all platforms and regions if...
 	// 1. All platforms are set to hide
@@ -891,7 +883,7 @@ void CFrame::OnGameListCtrl_ItemActivated(wxListEvent& WXUNUSED (event))
 		SConfig::GetInstance().m_ListAustralia &&
 		SConfig::GetInstance().m_ListFrance &&
 		SConfig::GetInstance().m_ListGermany &&
-		SConfig::GetInstance().m_ListInternational &&
+		SConfig::GetInstance().m_ListWorld &&
 		SConfig::GetInstance().m_ListItaly &&
 		SConfig::GetInstance().m_ListKorea &&
 		SConfig::GetInstance().m_ListNetherlands &&
@@ -909,7 +901,7 @@ void CFrame::OnGameListCtrl_ItemActivated(wxListEvent& WXUNUSED (event))
 		SConfig::GetInstance().m_ListAustralia =
 		SConfig::GetInstance().m_ListFrance =
 		SConfig::GetInstance().m_ListGermany =
-		SConfig::GetInstance().m_ListInternational =
+		SConfig::GetInstance().m_ListWorld =
 		SConfig::GetInstance().m_ListItaly =
 		SConfig::GetInstance().m_ListKorea =
 		SConfig::GetInstance().m_ListNetherlands =
@@ -927,7 +919,7 @@ void CFrame::OnGameListCtrl_ItemActivated(wxListEvent& WXUNUSED (event))
 		GetMenuBar()->FindItem(IDM_LIST_AUSTRALIA)->Check(true);
 		GetMenuBar()->FindItem(IDM_LIST_FRANCE)->Check(true);
 		GetMenuBar()->FindItem(IDM_LIST_GERMANY)->Check(true);
-		GetMenuBar()->FindItem(IDM_LIST_INTERNATIONAL)->Check(true);
+		GetMenuBar()->FindItem(IDM_LIST_WORLD)->Check(true);
 		GetMenuBar()->FindItem(IDM_LIST_ITALY)->Check(true);
 		GetMenuBar()->FindItem(IDM_LIST_KOREA)->Check(true);
 		GetMenuBar()->FindItem(IDM_LIST_NETHERLANDS)->Check(true);
@@ -949,7 +941,7 @@ void CFrame::OnGameListCtrl_ItemActivated(wxListEvent& WXUNUSED (event))
 	}
 }
 
-static bool IsHotkey(wxKeyEvent &event, int Id, bool keyUp = false)
+static bool IsHotkey(wxKeyEvent &event, int id, bool held = false)
 {
 	if (Core::GetState() == Core::CORE_UNINITIALIZED)
 		return false;
@@ -957,10 +949,12 @@ static bool IsHotkey(wxKeyEvent &event, int Id, bool keyUp = false)
 	// Input event hotkey
 	if (event.GetKeyCode() == WXK_NONE)
 	{
-		return HotkeyManagerEmu::IsPressed(Id, keyUp);
+		return HotkeyManagerEmu::IsPressed(id, held);
 	}
 
-	return false;
+	return (event.GetKeyCode() != WXK_NONE &&
+		event.GetKeyCode() == SConfig::GetInstance().m_LocalCoreStartupParameter.iHotkey[id] &&
+		event.GetModifiers() == SConfig::GetInstance().m_LocalCoreStartupParameter.iHotkeyModifier[id]);
 }
 
 int GetCmdForHotkey(unsigned int key)
@@ -1112,7 +1106,7 @@ void CFrame::OnKeyDown(wxKeyEvent& event)
 
 void CFrame::OnKeyUp(wxKeyEvent& event)
 {
-	if(Core::IsRunning() && (RendererHasFocus() || TASInputHasFocus()))
+	if (Core::IsRunning() && (RendererHasFocus() || TASInputHasFocus()))
 	{
 		if (IsHotkey(event, HK_TOGGLE_THROTTLE))
 		{
@@ -1197,12 +1191,12 @@ void CFrame::DoFullscreen(bool enable_fullscreen)
 	ToggleDisplayMode(enable_fullscreen);
 
 #if defined(__APPLE__)
-	NSView *view = (NSView *) m_RenderFrame->GetHandle();
+	NSView *view = (NSView *)m_RenderFrame->GetHandle();
 	NSWindow *window = [view window];
 
 	if (enable_fullscreen != RendererIsFullscreen())
 	{
-		[window toggleFullScreen:nil];
+		[window toggleFullScreen : nil];
 	}
 #else
 	if (enable_fullscreen)
@@ -1275,14 +1269,15 @@ const CGameListCtrl *CFrame::GetGameListCtrl() const
 
 void CFrame::PollHotkeys(wxTimerEvent& event)
 {
+	if (!HotkeyManagerEmu::IsEnabled())
+		return;
+
 	if (Core::GetState() == Core::CORE_UNINITIALIZED || Core::GetState() == Core::CORE_PAUSE)
-	{
-		m_bHotkeysInit = InitControllers();
 		g_controller_interface.UpdateInput();
-	}
 
 	if (Core::GetState() != Core::CORE_STOPPING)
 	{
+		HotkeyManagerEmu::GetStatus();
 		wxKeyEvent keyevent = 0;
 
 		if (IsHotkey(keyevent, HK_TOGGLE_THROTTLE))
@@ -1379,24 +1374,26 @@ void CFrame::ParseHotkeys(wxKeyEvent &event)
 	{
 		State::Load(g_saveSlot);
 	}
-	else if (IsHotkey(event, HK_DECREASE_DEPTH))
+	else if (IsHotkey(event, HK_DECREASE_DEPTH, true))
 	{
 		if (--g_Config.iStereoDepth < 0)
 			g_Config.iStereoDepth = 0;
 	}
-	else if (IsHotkey(event, HK_INCREASE_DEPTH))
+	else if (IsHotkey(event, HK_INCREASE_DEPTH, true))
 	{
 		if (++g_Config.iStereoDepth > 100)
 			g_Config.iStereoDepth = 100;
 	}
-	else if (IsHotkey(event, HK_DECREASE_CONVERGENCE))
+	else if (IsHotkey(event, HK_DECREASE_CONVERGENCE, true))
 	{
-		if (--g_Config.iStereoConvergence < 0)
+		g_Config.iStereoConvergence -= 5;
+		if (g_Config.iStereoConvergence < 0)
 			g_Config.iStereoConvergence = 0;
 	}
-	else if (IsHotkey(event, HK_INCREASE_CONVERGENCE))
+	else if (IsHotkey(event, HK_INCREASE_CONVERGENCE, true))
 	{
-		if (++g_Config.iStereoConvergence > 500)
+		g_Config.iStereoConvergence += 5;
+		if (g_Config.iStereoConvergence > 500)
 			g_Config.iStereoConvergence = 500;
 	}
 
@@ -1413,25 +1410,26 @@ void CFrame::ParseHotkeys(wxKeyEvent &event)
 		}
 
 		unsigned int i = NUM_HOTKEYS;
-		if (!SConfig::GetInstance().m_LocalCoreStartupParameter.bRenderToMain || TASInputHasFocus())
+		for (i = 0; i < NUM_HOTKEYS; i++)
 		{
-			for (i = 0; i < NUM_HOTKEYS; i++)
+			bool held = false;
+			if (i == HK_FRAME_ADVANCE)
+				held = true;
+
+			if (IsHotkey(event, i, held))
 			{
-				if (IsHotkey(event, i))
+				int cmd = GetCmdForHotkey(i);
+				if (cmd >= 0)
 				{
-					int cmd = GetCmdForHotkey(i);
-					if (cmd >= 0)
+					wxCommandEvent evt(wxEVT_MENU, cmd);
+					wxMenuItem* item = GetMenuBar()->FindItem(cmd);
+					if (item && item->IsCheckable())
 					{
-						wxCommandEvent evt(wxEVT_MENU, cmd);
-						wxMenuItem *item = GetMenuBar()->FindItem(cmd);
-						if (item && item->IsCheckable())
-						{
-							item->wxMenuItemBase::Toggle();
-							evt.SetInt(item->IsChecked());
-						}
-						GetEventHandler()->AddPendingEvent(evt);
-						break;
+						item->wxMenuItemBase::Toggle();
+						evt.SetInt(item->IsChecked());
 					}
+					GetEventHandler()->AddPendingEvent(evt);
+					break;
 				}
 			}
 		}
@@ -1451,37 +1449,34 @@ void CFrame::ParseHotkeys(wxKeyEvent &event)
 	// Actually perform the Wiimote connection or disconnection
 	if (Core::GetState() != Core::CORE_UNINITIALIZED)
 	{
-		if (WiimoteId >= 0)
+		if (WiimoteId >= 0 && SConfig::GetInstance().m_LocalCoreStartupParameter.bWii)
 		{
 			wxCommandEvent evt;
 			evt.SetId(IDM_CONNECT_WIIMOTE1 + WiimoteId);
 			OnConnectWiimote(evt);
 		}
 
-		if (g_Config.bFreeLook)
-		{
-			static float debugSpeed = 1.0f;
+		static float debugSpeed = 1.0f;
 
-			if (IsHotkey(event, HK_FREELOOK_DECREASE_SPEED))
-				debugSpeed /= 2.0f;
-			else if (IsHotkey(event, HK_FREELOOK_INCREASE_SPEED))
-				debugSpeed *= 2.0f;
-			else if (IsHotkey(event, HK_FREELOOK_RESET_SPEED))
-				debugSpeed = 1.0f;
-			else if (IsHotkey(event, HK_FREELOOK_UP))
-				VertexShaderManager::TranslateView(0.0f, 0.0f, -debugSpeed);
-			else if (IsHotkey(event, HK_FREELOOK_DOWN))
-				VertexShaderManager::TranslateView(0.0f, 0.0f, debugSpeed);
-			else if (IsHotkey(event, HK_FREELOOK_LEFT))
-				VertexShaderManager::TranslateView(debugSpeed, 0.0f);
-			else if (IsHotkey(event, HK_FREELOOK_RIGHT))
-				VertexShaderManager::TranslateView(-debugSpeed, 0.0f);
-			else if (IsHotkey(event, HK_FREELOOK_ZOOM_IN))
-				VertexShaderManager::TranslateView(0.0f, debugSpeed);
-			else if (IsHotkey(event, HK_FREELOOK_ZOOM_OUT))
-				VertexShaderManager::TranslateView(0.0f, -debugSpeed);
-			else if (IsHotkey(event, HK_FREELOOK_RESET))
-				VertexShaderManager::ResetView();
-		}
+		if (IsHotkey(event, HK_FREELOOK_DECREASE_SPEED, true))
+			debugSpeed /= 1.1f;
+		else if (IsHotkey(event, HK_FREELOOK_INCREASE_SPEED, true))
+			debugSpeed *= 1.1f;
+		else if (IsHotkey(event, HK_FREELOOK_RESET_SPEED, true))
+			debugSpeed = 1.0f;
+		else if (IsHotkey(event, HK_FREELOOK_UP, true))
+			VertexShaderManager::TranslateView(0.0f, 0.0f, -debugSpeed);
+		else if (IsHotkey(event, HK_FREELOOK_DOWN, true))
+			VertexShaderManager::TranslateView(0.0f, 0.0f, debugSpeed);
+		else if (IsHotkey(event, HK_FREELOOK_LEFT, true))
+			VertexShaderManager::TranslateView(debugSpeed, 0.0f);
+		else if (IsHotkey(event, HK_FREELOOK_RIGHT, true))
+			VertexShaderManager::TranslateView(-debugSpeed, 0.0f);
+		else if (IsHotkey(event, HK_FREELOOK_ZOOM_IN, true))
+			VertexShaderManager::TranslateView(0.0f, debugSpeed);
+		else if (IsHotkey(event, HK_FREELOOK_ZOOM_OUT, true))
+			VertexShaderManager::TranslateView(0.0f, -debugSpeed);
+		else if (IsHotkey(event, HK_FREELOOK_RESET, true))
+			VertexShaderManager::ResetView();
 	}
 }

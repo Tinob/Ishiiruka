@@ -18,6 +18,7 @@
 #include <wx/mstream.h>
 #include <wx/panel.h>
 #include <wx/string.h>
+#include <wx/timer.h>
 #include <wx/toplevel.h>
 #include <wx/windowid.h>
 
@@ -47,8 +48,6 @@ class wxAuiNotebook;
 class wxAuiNotebookEvent;
 class wxListEvent;
 class wxMenuItem;
-class wxTimer;
-class wxTimerEvent;
 class wxWindow;
 
 class CRenderFrame : public wxFrame
@@ -177,7 +176,6 @@ private:
 	bool m_bGameLoading;
 	bool m_bClosing;
 	bool m_confirmStop;
-	bool m_bHotkeysInit;
 
 	std::vector<std::string> drives;
 
@@ -198,7 +196,24 @@ private:
 		EToolbar_Max
 	};
 
-	wxTimer* m_poll_hotkey_timer;
+	enum
+	{
+		Toolbar_Delete,
+		Toolbar_Add_BP,
+		Toolbar_Add_MC,
+		Num_Bitmaps
+	};
+
+	enum
+	{
+		ADD_PANE_TOP,
+		ADD_PANE_BOTTOM,
+		ADD_PANE_LEFT,
+		ADD_PANE_RIGHT,
+		ADD_PANE_CENTER
+	};
+
+	wxTimer m_poll_hotkey_timer;
 
 	wxBitmap m_Bitmaps[EToolbar_Max];
 	wxBitmap m_BitmapsMenu[EToolbar_Max];
@@ -241,7 +256,7 @@ private:
 			const wxString& title = "",
 			wxWindow * = nullptr);
 	wxString AuiFullscreen, AuiCurrent;
-	void AddPane();
+	void AddPane(int dir);
 	void UpdateCurrentPerspective();
 	void SaveIniPerspectives();
 	void LoadIniPerspectives();
@@ -327,7 +342,7 @@ private:
 
 	void OnNetPlay(wxCommandEvent& event);
 
-	void OnShow_CheatsWindow(wxCommandEvent& event);
+	void OnShowCheatsWindow(wxCommandEvent& event);
 	void OnLoadWiiMenu(wxCommandEvent& event);
 	void OnInstallWAD(wxCommandEvent& event);
 	void OnFifoPlayer(wxCommandEvent& event);

@@ -439,10 +439,12 @@ u32 GetXFBAddressBottom()
 void UpdateParameters()
 {
 	fields = m_DisplayControlRegister.NIN ? 2 : 1;
+
 	switch (m_DisplayControlRegister.FMT)
 	{
 	case 0: // NTSC
 		TargetRefreshRate = NTSC_FIELD_RATE;
+		TicksPerFrame = SystemTimers::GetTicksPerSecond() / NTSC_FIELD_RATE;
 		s_lineCount = NTSC_LINE_COUNT;
 		s_upperFieldBegin = NTSC_UPPER_BEGIN;
 		s_lowerFieldBegin = NTSC_LOWER_BEGIN;
@@ -450,6 +452,7 @@ void UpdateParameters()
 
 	case 2: // PAL-M
 		TargetRefreshRate = NTSC_FIELD_RATE;
+		TicksPerFrame = SystemTimers::GetTicksPerSecond() / NTSC_FIELD_RATE;
 		s_lineCount = PAL_LINE_COUNT;
 		s_upperFieldBegin = PAL_UPPER_BEGIN;
 		s_lowerFieldBegin = PAL_LOWER_BEGIN;
@@ -457,6 +460,7 @@ void UpdateParameters()
 
 	case 1: // PAL
 		TargetRefreshRate = PAL_FIELD_RATE;
+		TicksPerFrame = SystemTimers::GetTicksPerSecond() / PAL_FIELD_RATE;
 		s_lineCount = PAL_LINE_COUNT;
 		s_upperFieldBegin = PAL_UPPER_BEGIN;
 		s_lowerFieldBegin = PAL_LOWER_BEGIN;
@@ -470,11 +474,6 @@ void UpdateParameters()
 		PanicAlert("Unknown Video Format - CVideoInterface");
 		break;
 	}
-	if (SConfig::GetInstance().m_LocalCoreStartupParameter.bDoubleVideoRate)
-	{
-		TargetRefreshRate *= 2;
-}
-	TicksPerFrame = SystemTimers::GetTicksPerSecond() / TargetRefreshRate;
 }
 
 unsigned int GetTicksPerLine()

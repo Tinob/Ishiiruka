@@ -21,8 +21,6 @@ enum ControllerTypes
 
 static bool s_detected = false;
 static libusb_device_handle* s_handle = nullptr;
-static libusb_transfer* s_irq_transfer_read = nullptr;
-static libusb_transfer* s_irq_transfer_write = nullptr;
 static u8 s_controller_type[MAX_SI_CHANNELS] = { CONTROLLER_NONE, CONTROLLER_NONE, CONTROLLER_NONE, CONTROLLER_NONE };
 static u8 s_controller_rumble[4];
 
@@ -42,26 +40,6 @@ static u8 s_endpoint_in = 0;
 static u8 s_endpoint_out = 0;
 
 static u64 s_last_init = 0;
-
-#if defined(_WIN32)
-#define LIBUSB_CALL WINAPI
-#else
-#define LIBUSB_CALL
-#endif
-extern "C"
-{
-	void LIBUSB_CALL read_callback(libusb_transfer* transfer);
-}
-
-static void HandleEvents()
-{
-	timeval tv = {1, 0};
-	while (s_adapter_thread_running.IsSet())
-	{
-		libusb_handle_events_timeout_completed(s_libusb_context, &tv, NULL);
-		Common::YieldCPU();
-	}
-}
 
 static void Read()
 {
@@ -126,7 +104,7 @@ void Setup()
 		int dRet = libusb_get_device_descriptor(device, &desc);
 		if (dRet)
 		{
-			// could not aquire the descriptor, no point in trying to use it.
+			// could not acquire the descriptor, no point in trying to use it.
 			ERROR_LOG(SERIALINTERFACE, "libusb_get_device_descriptor failed with error: %d", dRet);
 			continue;
 		}
@@ -165,36 +143,33 @@ void Setup()
 					if (ret == LIBUSB_ERROR_NOT_SUPPORTED)
 						s_libusb_driver_not_supported = true;
 				}
-				Shutdown();
 			}
 			else if ((ret = libusb_kernel_driver_active(s_handle, 0)) == 1)
 			{
 				if ((ret = libusb_detach_kernel_driver(s_handle, 0)) && ret != LIBUSB_ERROR_NOT_SUPPORTED)
 				{
 					ERROR_LOG(SERIALINTERFACE, "libusb_detach_kernel_driver failed with error: %d", ret);
-					Shutdown();
-				}
-				else
-				{
-					AddGCAdapter(device);
 				}
 			}
-			else if ((ret != 0 && ret != LIBUSB_ERROR_NOT_SUPPORTED))
+			// this split is needed so that we don't avoid claiming the interface when
+			// detaching the kernel driver is successful
+			if (ret != 0 && ret != LIBUSB_ERROR_NOT_SUPPORTED)
 			{
-				ERROR_LOG(SERIALINTERFACE, "libusb_kernel_driver_active error ret = %d", ret);
-				Shutdown();
+				continue;
 			}
 			else if ((ret = libusb_claim_interface(s_handle, 0)))
 			{
 				ERROR_LOG(SERIALINTERFACE, "libusb_claim_interface failed with error: %d", ret);
-				Shutdown();
 			}
 			else
 			{
 				AddGCAdapter(device);
+				break;
 			}
 		}
 	}
+	if (!s_detected)
+		Shutdown();
 
 	libusb_free_device_list(list, 1);
 }
@@ -225,28 +200,14 @@ void AddGCAdapter(libusb_device* device)
 	unsigned char payload = 0x13;
 	libusb_interrupt_transfer(s_handle, s_endpoint_out, &payload, sizeof(payload), &tmp, 16);
 
-	if (SConfig::GetInstance().m_GameCubeAdapterThread)
-	{
-		s_adapter_thread_running.Set(true);
-		s_adapter_thread = std::thread(Read);
-	}
-	else
-	{
-		s_irq_transfer_read = libusb_alloc_transfer(0);
-		s_irq_transfer_write = libusb_alloc_transfer(0);
-		libusb_fill_interrupt_transfer(s_irq_transfer_read, s_handle, s_endpoint_in, s_controller_payload_swap, sizeof(s_controller_payload_swap), read_callback, NULL, 0);
-		libusb_submit_transfer(s_irq_transfer_read);
-
-		s_adapter_thread_running.Set(true);
-		s_adapter_thread = std::thread(HandleEvents);
-	}
+	s_adapter_thread_running.Set(true);
+	s_adapter_thread = std::thread(Read);
 
 	s_detected = true;
 }
 
 void Shutdown()
 {
-
 	Reset();
 
 	if (s_libusb_context)
@@ -260,33 +221,17 @@ void Shutdown()
 
 void Reset()
 {
-	if (!SConfig::GetInstance().m_GameCubeAdapter)
+	if (!s_detected)
 		return;
-
-	if (!SConfig::GetInstance().m_GameCubeAdapterThread)
-	{
-
-		if (s_irq_transfer_read)
-			libusb_cancel_transfer(s_irq_transfer_read);
-		if (s_irq_transfer_write)
-			libusb_cancel_transfer(s_irq_transfer_write);
-	}
 
 	if (s_adapter_thread_running.TestAndClear())
 	{
 		s_adapter_thread.join();
 	}
 
-	if (!SConfig::GetInstance().m_GameCubeAdapterThread)
-	{
-		libusb_free_transfer(s_irq_transfer_read);
-		libusb_free_transfer(s_irq_transfer_write);
-	}
-
 	if (s_handle)
 	{
 		libusb_release_interface(s_handle, 0);
-		libusb_reset_device(s_handle);
 		libusb_close(s_handle);
 		s_handle = nullptr;
 	}
@@ -304,9 +249,15 @@ void Input(int chan, GCPadStatus* pad)
 	if (s_handle == nullptr)
 	{
 		if (s_detected)
+		{
 			Init();
+			if (s_handle == nullptr)
+				return;
+		}
 		else
+		{
 			return;
+		}
 	}
 
 	u8 controller_payload_copy[37];
@@ -331,6 +282,7 @@ void Input(int chan, GCPadStatus* pad)
 
 		if (s_controller_type[chan] != CONTROLLER_NONE)
 		{
+			memset(pad, 0, sizeof(*pad));
 			u8 b1 = controller_payload_copy[1 + (9 * chan) + 1];
 			u8 b2 = controller_payload_copy[1 + (9 * chan) + 2];
 
@@ -372,44 +324,24 @@ void Output(int chan, u8 rumble_command)
 		unsigned char rumble[5] = { 0x11, s_controller_rumble[0], s_controller_rumble[1], s_controller_rumble[2], s_controller_rumble[3] };
 		int size = 0;
 
-		if (SConfig::GetInstance().m_GameCubeAdapterThread)
+		libusb_interrupt_transfer(s_handle, s_endpoint_out, rumble, sizeof(rumble), &size, 16);
+		// Netplay sends invalid data which results in size = 0x00.  Ignore it.
+		if (size != 0x05 && size != 0x00)
 		{
-			libusb_interrupt_transfer(s_handle, s_endpoint_out, rumble, sizeof(rumble), &size, 16);
-			if (size != 0x05)
-			{
-				INFO_LOG(SERIALINTERFACE, "error writing rumble (size: %d)", size);
-				Shutdown();
-			}
-		}
-		else
-		{
-			libusb_fill_interrupt_transfer(s_irq_transfer_write, s_handle, s_endpoint_out, rumble, sizeof(rumble), NULL, &size, 16);
-			libusb_submit_transfer(s_irq_transfer_write);
+			INFO_LOG(SERIALINTERFACE, "error writing rumble (size: %d)", size);
+			Shutdown();
 		}
 	}
 }
 
 bool IsDetected()
 {
-	return s_handle != nullptr;
+	return s_detected;
 }
 
 bool IsDriverDetected()
 {
 	return !s_libusb_driver_not_supported;
-}
-
-void LIBUSB_CALL read_callback(libusb_transfer *transfer)
-{
-	if (transfer->status == LIBUSB_TRANSFER_COMPLETED)
-	{
-		{
-		std::lock_guard<std::mutex> lk(s_mutex);
-		s_controller_payload_size = transfer->actual_length;
-		memcpy(s_controller_payload, s_controller_payload_swap, s_controller_payload_size);
-		}
-		libusb_submit_transfer(s_irq_transfer_read);
-	}
 }
 
 } // end of namespace SI_GCAdapter

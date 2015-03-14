@@ -20,6 +20,11 @@
 
 #include "Common/IniFile.h"
 #include "Core/ActionReplay.h"
+#include "DiscIO/Filesystem.h"
+#include "DiscIO/Volume.h"
+#include "DiscIO/VolumeCreator.h"
+#include "DolphinWX/ARCodeAddEdit.h"
+#include "DolphinWX/PatchAddEdit.h"
 
 class GameListItem;
 class wxButton;
@@ -36,6 +41,13 @@ namespace DiscIO { struct SFileInfo; }
 namespace Gecko { class CodeConfigPanel; }
 
 extern std::vector<ActionReplay::ARCode> arCodes;
+
+struct WiiPartition
+{
+	DiscIO::IVolume *Partition;
+	DiscIO::IFileSystem *FileSystem;
+	std::vector<const DiscIO::SFileInfo *> Files;
+};
 
 struct PHackData
 {
@@ -55,7 +67,7 @@ public:
 			const wxString& title = _("Properties"),
 			const wxPoint& pos = wxDefaultPosition,
 			const wxSize& size = wxDefaultSize,
-			long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER);
+			long style = wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER);
 	virtual ~CISOProperties();
 
 	bool bRefreshList;
@@ -68,9 +80,18 @@ public:
 private:
 	DECLARE_EVENT_TABLE();
 
+	std::vector<WiiPartition> WiiDisc;
+
+	DiscIO::IVolume *OpenISO;
+	DiscIO::IFileSystem *pFileSystem;
+
+	std::vector<PatchEngine::Patch> onFrame;
+	std::vector<ActionReplay::ARCode> arCodes;
+	PHackData m_PHack_Data;
+
 	// Core
 	wxCheckBox *CPUThread, *SkipIdle, *MMU, *DCBZOFF, *FPRF;
-	wxCheckBox *DVideo, *SyncGPU, *FastDiscSpeed, *DSPHLE;
+	wxCheckBox *SyncGPU, *FastDiscSpeed, *DSPHLE;
 
 	wxArrayString arrayStringFor_GPUDeterminism;
 	wxChoice* GPUDeterminism;
@@ -137,7 +158,6 @@ private:
 		ID_MMU,
 		ID_DCBZOFF,
 		ID_FPRF,
-		ID_DVIDEO,
 		ID_SYNCGPU,
 		ID_DISCSPEED,
 		ID_AUDIO_DSP_HLE,
@@ -221,8 +241,8 @@ private:
 
 	IniFile GameIniDefault;
 	IniFile GameIniLocal;
-	std::string GameIniFileDefault;
 	std::string GameIniFileLocal;
+	std::string game_id;
 
 	std::set<std::string> DefaultPatches;
 	std::set<std::string> DefaultCheats;

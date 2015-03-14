@@ -26,7 +26,7 @@
 #include "DolphinQt/Utils/Resources.h"
 #include "DolphinQt/Utils/Utils.h"
 
-static const u32 CACHE_REVISION = 0x004;
+static const u32 CACHE_REVISION = 0x005;
 static const u32 DATASTREAM_REVISION = 15; // Introduced in Qt 5.2
 
 static QStringList VectorToStringList(std::vector<std::string> vec, bool trim = false)
@@ -68,7 +68,7 @@ GameFile::GameFile(const QString& fileName)
 
 			m_volume_names = VectorToStringList(volume->GetNames());
 
-			m_country  = volume->GetCountry();
+			m_country = volume->GetCountry();
 			m_file_size = volume->GetRawSize();
 			m_volume_size = volume->GetSize();
 

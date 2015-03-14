@@ -81,6 +81,8 @@
     <ClInclude Include="Thread.h" />
     <ClInclude Include="ThreadPool.h" />
     <ClInclude Include="Timer.h" />
+    <ClInclude Include="TraversalClient.h" />
+    <ClInclude Include="TraversalProto.h" />
     <ClInclude Include="x64ABI.h" />
     <ClInclude Include="x64Analyzer.h" />
     <ClInclude Include="x64Emitter.h" />
@@ -118,6 +120,7 @@
     <ClCompile Include="Thread.cpp" />
     <ClCompile Include="ThreadPool.cpp" />
     <ClCompile Include="Timer.cpp" />
+    <ClCompile Include="TraversalClient.cpp" />
     <ClCompile Include="Version.cpp" />
     <ClCompile Include="x64ABI.cpp" />
     <ClCompile Include="x64Analyzer.cpp" />
@@ -134,10 +137,13 @@
     <Text Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(ExternalsDir)enet\enet.vcxproj">
+      <Project>{cbc76802-c128-4b17-bf6c-23b08c313e5e}</Project>
+    </ProjectReference>
     <ProjectReference Include="$(ExternalsDir)polarssl\visualc\PolarSSL.vcxproj">
       <Project>{bdb6578b-0691-4e80-a46c-df21639fd3b8}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\Externals\xxhash\xxhash.vcxproj">
+    <ProjectReference Include="$(ExternalsDir)xxhash\xxhash.vcxproj">
       <Project>{677ea016-1182-440c-9345-dc88d1e98c0c}</Project>
     </ProjectReference>
     <ProjectReference Include="SCMRevGen.vcxproj">

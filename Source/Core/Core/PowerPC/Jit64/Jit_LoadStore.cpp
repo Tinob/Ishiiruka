@@ -234,7 +234,7 @@ void Jit64::lXXx(UGeckoInstruction inst)
 				}
 				else if (gpr.R(a).IsSimpleReg() && gpr.R(b).IsSimpleReg())
 				{
-					LEA(32, RSCRATCH2, MComplex(gpr.RX(a), gpr.RX(b), SCALE_1, 0));
+					LEA(32, RSCRATCH2, MRegSum(gpr.RX(a), gpr.RX(b)));
 				}
 				else
 				{
@@ -451,7 +451,7 @@ void Jit64::stXx(UGeckoInstruction inst)
 
 	if (gpr.R(a).IsSimpleReg() && gpr.R(b).IsSimpleReg())
 	{
-		LEA(32, RSCRATCH2, MComplex(gpr.RX(a), gpr.RX(b), SCALE_1, 0));
+		LEA(32, RSCRATCH2, MRegSum(gpr.RX(a), gpr.RX(b)));
 	}
 	else
 	{
@@ -527,7 +527,7 @@ void Jit64::lmw(UGeckoInstruction inst)
 		ADD(32, R(RSCRATCH2), gpr.R(inst.RA));
 	for (int i = inst.RD; i < 32; i++)
 	{
-		SafeLoadToReg(RSCRATCH, R(RSCRATCH2), 32, (i - inst.RD) * 4, CallerSavedRegistersInUse() | BitSet32 { RSCRATCH_EXTRA }, false);
+		SafeLoadToReg(RSCRATCH, R(RSCRATCH2), 32, (i - inst.RD) * 4, CallerSavedRegistersInUse() | BitSet32 { RSCRATCH2 }, false);
 		gpr.BindToRegister(i, false, true);
 		MOV(32, gpr.R(i), R(RSCRATCH));
 	}

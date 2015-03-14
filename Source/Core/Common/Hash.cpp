@@ -3,14 +3,14 @@
 // Refer to the license.txt file included.
 
 #include <algorithm>
+#include "xxhash.h"
 #include "Common/Common.h"
 #include "Common/CommonFuncs.h"
-#include "Common/Hash.h"
-#include "xxhash.h"
-#if _M_SSE >= 0x402
 #include "Common/CPUDetect.h"
-#include <nmmintrin.h>
-#endif
+#include "Common/Hash.h"
+#include "Common/Intrinsics.h"
+
+
 
 // uint32_t
 // WARNING - may read one more byte!

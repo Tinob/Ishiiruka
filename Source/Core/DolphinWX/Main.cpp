@@ -135,8 +135,6 @@ bool DolphinApp::OnInit()
 	Bind(wxEVT_QUERY_END_SESSION, &DolphinApp::OnEndSession, this);
 	Bind(wxEVT_END_SESSION, &DolphinApp::OnEndSession, this);
 
-	InitLanguageSupport();
-
 	// Declarations and definitions
 	bool UseDebugger = false;
 	bool UseLogger = false;
@@ -229,12 +227,7 @@ bool DolphinApp::OnInit()
 	selectAudioEmulation = parser.Found("audio_emulation", &audioEmulationName);
 	selectPerfDir = parser.Found("perf_dir", &perfDir);
 	playMovie = parser.Found("movie", &movieFile);
-
-	if (parser.Found("user", &userPath))
-	{
-		File::CreateFullPath(WxStrToStr(userPath) + DIR_SEP);
-		File::GetUserPath(D_USER_IDX, userPath.ToStdString() + DIR_SEP);
-	}
+	parser.Found("user", &userPath);
 #endif // wxUSE_CMDLINE_PARSER
 
 	// Register message box and translation handlers
@@ -249,7 +242,9 @@ bool DolphinApp::OnInit()
 	wxHandleFatalExceptions(true);
 #endif
 
+	UICommon::SetUserDirectory(userPath.ToStdString());
 	UICommon::CreateDirectories();
+	InitLanguageSupport();	// The language setting is loaded from the user directory
 	UICommon::Init();
 
 	if (selectPerfDir)
@@ -420,7 +415,6 @@ void DolphinApp::OnFatalException()
 {
 	WiimoteReal::Shutdown();
 }
-
 
 // ------------
 // Talk to GUI

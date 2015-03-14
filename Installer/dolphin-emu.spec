@@ -1,4 +1,4 @@
-﻿#
+#
 # Spec file for package Dolphin Emulator
 #
 # Copyright © 2014 Markus S. <kamikazow@web.de>
