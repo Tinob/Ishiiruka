@@ -456,7 +456,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(const u32 stage)
 		}
 		++iter;
 	}
-
+	std::string basename;
 	if (unconverted_copy != textures.end())
 	{
 		// Perform palette decoding.
@@ -495,8 +495,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(const u32 stage)
 		textures.erase(oldest_entry);
 	}	
 
-	std::unique_ptr<HiresTexture> hires_tex;
-	std::string basename;
+	std::unique_ptr<HiresTexture> hires_tex;	
 	if (g_ActiveConfig.bHiresTextures || g_ActiveConfig.bDumpTextures)
 	{
 		basename = HiresTexture::GenBaseName(
@@ -949,7 +948,6 @@ void TextureCache::CopyRenderTargetToTexture(u32 dstAddr, u32 dstFormat, PEContr
 
 	entry->frameCount = FRAMECOUNT_INVALID;
 	entry->is_efb_copy = true;
-	entry->SetHiresParams(false, "");
 
 	entry->FromRenderTarget(srcFormat, srcRect, isIntensity, scaleByHalf, cbufid, colmat);
 	textures.insert(TexCache::value_type(dstAddr, entry));

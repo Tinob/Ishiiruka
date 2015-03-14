@@ -133,7 +133,7 @@ public:
 			basename = _basename;
 		}
 
-		TCacheEntryBase(const TCacheEntryConfig& c) : config(c) 
+		TCacheEntryBase(const TCacheEntryConfig& c) : config(c), is_custom_tex(false), basename()
 		{
 			native_size_in_bytes = config.GetSizeInBytes();
 		}
