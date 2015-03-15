@@ -105,49 +105,119 @@ int VertexLoaderX64::ReadVertex(OpArg data, u64 attribute, int format, int count
 	};	
 
 	X64Reg coords = XMM0;
-
 	int elem_size = 1 << (format / 2);
 	int load_bytes = elem_size * count_in;
-	if (load_bytes > 8)
-		MOVDQU(coords, data);
-	else if (load_bytes > 4)
-		MOVQ_xmm(coords, data);
-	else
-		MOVD_xmm(coords, data);
+	OpArg dest = MDisp(dst_reg, m_dst_ofs);
+	
+	native_format->components = count_out;
+	native_format->enable = true;
+	native_format->offset = m_dst_ofs;
+	native_format->type = FORMAT_FLOAT;
 
-	PSHUFB(coords, M(&shuffle_lut[format][count_in - 1]));
+	m_dst_ofs += sizeof(float) * count_out;
 
-	if (format != FORMAT_FLOAT)
+	if (attribute == DIRECT)
+		m_src_ofs += load_bytes;
+
+	if (cpu_info.bSSSE3)
 	{
-		// Sign extend
+		if (load_bytes > 8)
+			MOVDQU(coords, data);
+		else if (load_bytes > 4)
+			MOVQ_xmm(coords, data);
+		else
+			MOVD_xmm(coords, data);
+		PSHUFB(coords, M(&shuffle_lut[format][count_in - 1]));
+		// Sign-extend.
 		if (format == FORMAT_BYTE)
 			PSRAD(coords, 24);
 		if (format == FORMAT_SHORT)
 			PSRAD(coords, 16);
-
+	}
+	else
+	{
+		// SSE2
+		switch (format)
+		{
+		case FORMAT_UBYTE:
+			MOVD_xmm(coords, data);
+			PXOR(XMM1, R(XMM1));
+			PUNPCKLBW(coords, R(XMM1));
+			PUNPCKLWD(coords, R(XMM1));
+			break;
+		case FORMAT_BYTE:
+			MOVD_xmm(coords, data);
+			PUNPCKLBW(coords, R(coords));
+			PUNPCKLWD(coords, R(coords));
+			PSRAD(coords, 24);
+			break;
+		case FORMAT_USHORT:
+		case FORMAT_SHORT:
+			switch (count_in)
+			{
+			case 1:
+				LoadAndSwap(16, scratch3, data);
+				MOVD_xmm(coords, R(scratch3)); // .......X
+				break;
+			case 2:
+				LoadAndSwap(32, scratch3, data);
+				MOVD_xmm(coords, R(scratch3)); // ......XY
+				PSHUFLW(coords, R(coords), 0xC5); // .....Y.X
+				break;
+			case 3:
+				LoadAndSwap(64, scratch3, data);
+				MOVQ_xmm(coords, R(scratch3)); // ....XYZ.
+				PUNPCKLQDQ(coords, R(coords)); // XYZ.XYZ.
+				PSHUFLW(coords, R(coords), 0xE7); // XYZ..Y.X
+				PSHUFHW(coords, R(coords), 0xE5); // ...Z.Y.X
+				break;
+			}
+			if (format == FORMAT_SHORT)
+			{
+				PSLLD(coords, 16);
+				PSRAD(coords, 16);
+			}
+			else
+			{
+				static const __m128i mask = _mm_set1_epi32(0x0000FFFF);
+				PAND(coords, M(&mask));
+			}
+			break;
+		case FORMAT_FLOAT:
+			{
+				int i = 0;
+				for (; i < count_in; i++)
+				{
+					LoadAndSwap(32, scratch3, data);
+					MOV(32, dest, R(scratch3));
+					data.offset += sizeof(float);
+					dest.offset += sizeof(float);
+				}
+				if (count_out > count_in)
+				{
+					XOR(32, R(scratch3), R(scratch3));
+					for (; i < count_out; i++)
+					{
+						MOV(32, dest, R(scratch3));
+						dest.offset += sizeof(float);
+					}
+				}
+				return load_bytes;
+			}
+		}
+	}
+	if (format != FORMAT_FLOAT)
+	{
 		CVTDQ2PS(coords, R(coords));
-
 		if (dequantize)
 			MULPS(coords, M(&scale_factors[scaling_index]));
 	}
-
-	OpArg dest = MDisp(dst_reg, m_dst_ofs);
 	switch (count_out)
 	{
 	case 1: MOVSS(dest, coords); break;
 	case 2: MOVLPS(dest, coords); break;
 	case 3: MOVUPS(dest, coords); break;
 	}
-
-	native_format->components = count_out;
-	native_format->enable = true;
-	native_format->offset = m_dst_ofs;
-	native_format->type = FORMAT_FLOAT;
-	m_dst_ofs += sizeof(float) * count_out;
-
-	if (attribute == DIRECT)
-		m_src_ofs += load_bytes;
-
 	return load_bytes;
 }
 
@@ -401,7 +471,7 @@ void VertexLoaderX64::GenerateVertexLoader()
 				m_native_vtx_decl.texcoords[i].offset = m_dst_ofs;
 				PXOR(XMM0, R(XMM0));
 				CVTSI2SS(XMM0, R(scratch1));
-				SHUFPS(XMM0, R(XMM0), 0x45);
+				SHUFPS(XMM0, R(XMM0), 0x45); // 000X -> 0X00
 				MOVUPS(MDisp(dst_reg, m_dst_ofs), XMM0);
 				m_dst_ofs += sizeof(float) * 3;
 			}
@@ -459,12 +529,6 @@ bool VertexLoaderX64::EnvironmentIsSupported()
 {
 	return (g_ActiveConfig.backend_info.bSupportsBBox && g_ActiveConfig.iBBoxMode == BBoxGPU) 
 		|| !BoundingBox::active;
-}
-
-bool VertexLoaderX64::IsInitialized()
-{
-	// Uses PSHUFB.
-	return cpu_info.bSSSE3;
 }
 
 int VertexLoaderX64::RunVertices(const VertexLoaderParameters &parameters)

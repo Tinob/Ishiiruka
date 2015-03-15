@@ -7,7 +7,7 @@ public:
 	VertexLoaderX64(const TVtxDesc& vtx_desc, const VAT& vtx_att);
 
 protected:
-	bool IsInitialized() override;
+	bool IsInitialized() override { return true; }
 	int RunVertices(const VertexLoaderParameters &parameters) override;
 	bool EnvironmentIsSupported() override;
 private:

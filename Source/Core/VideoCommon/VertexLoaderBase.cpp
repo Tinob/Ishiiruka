@@ -330,15 +330,12 @@ VertexLoaderBase* VertexLoaderBase::CreateVertexLoader(const TVtxDesc& vtx_desc,
 		return loader;
 	delete loader;
 #elif defined(_M_X86_64)
-	if (cpu_info.bSSSE3)
+	loader = new VertexLoaderX64(vtx_desc, vtx_attr);
+	if (!loader->IsInitialized())
 	{
-		loader = new VertexLoaderX64(vtx_desc, vtx_attr);
-		if (!loader->IsInitialized())
-		{
-			delete loader;
-			loader = nullptr;
-		}		
-	}
+		delete loader;
+		loader = nullptr;
+	}	
 #endif
 	VertexLoaderBase* fallback = new VertexLoaderCompiled(vtx_desc, vtx_attr);
 	if (!fallback->IsInitialized())
