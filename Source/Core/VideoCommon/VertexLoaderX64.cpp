@@ -205,6 +205,26 @@ int VertexLoaderX64::ReadVertex(OpArg data, u64 attribute, int format, int count
 				return load_bytes;
 			}
 		}
+		if (count_out > count_in)
+		{
+			switch (count_in)
+			{
+			case 1:
+			{
+				static const __m128i mask = _mm_set_epi32(0, 0, 0, 0xFFFFFFFF);
+				PAND(coords, M(&mask));
+				break;
+			}
+			case 2:
+			{
+				static const __m128i mask = _mm_set_epi32(0, 0, 0xFFFFFFFF, 0xFFFFFFFF);
+				PAND(coords, M(&mask));
+				break;
+			}
+			default:
+				break;
+			}
+		}
 	}
 	if (format != FORMAT_FLOAT)
 	{
