@@ -10,8 +10,6 @@
 
 using namespace Gen;
 
-#define VERTEX_LOADER_REGS {XMM0+16}
-
 static const X64Reg src_reg = ABI_PARAM1;
 static const X64Reg dst_reg = ABI_PARAM2;
 static const X64Reg scratch1 = RAX;
@@ -86,7 +84,7 @@ OpArg VertexLoaderX64::GetVertexAddr(int array, u64 attribute)
 
 int VertexLoaderX64::ReadVertex(OpArg data, u64 attribute, int format, int count_in, int count_out, bool dequantize, u8 scaling_index, AttributeFormat* native_format)
 {
-	static const __m128i shuffle_lut[5][3] = {
+	static const __m128i shuffle_lut[4][3] = {
 		{ _mm_set_epi32(0xFFFFFFFFL, 0xFFFFFFFFL, 0xFFFFFFFFL, 0xFFFFFF00L),  // 1x u8
 		_mm_set_epi32(0xFFFFFFFFL, 0xFFFFFFFFL, 0xFFFFFF01L, 0xFFFFFF00L),  // 2x u8
 		_mm_set_epi32(0xFFFFFFFFL, 0xFFFFFF02L, 0xFFFFFF01L, 0xFFFFFF00L) }, // 3x u8
@@ -98,10 +96,7 @@ int VertexLoaderX64::ReadVertex(OpArg data, u64 attribute, int format, int count
 		_mm_set_epi32(0xFFFFFFFFL, 0xFFFF0405L, 0xFFFF0203L, 0xFFFF0001L) }, // 3x u16
 		{ _mm_set_epi32(0xFFFFFFFFL, 0xFFFFFFFFL, 0xFFFFFFFFL, 0x0001FFFFL),  // 1x s16
 		_mm_set_epi32(0xFFFFFFFFL, 0xFFFFFFFFL, 0x0203FFFFL, 0x0001FFFFL),  // 2x s16
-		_mm_set_epi32(0xFFFFFFFFL, 0x0405FFFFL, 0x0203FFFFL, 0x0001FFFFL) }, // 3x s16
-		{ _mm_set_epi32(0xFFFFFFFFL, 0xFFFFFFFFL, 0xFFFFFFFFL, 0x00010203L),  // 1x float
-		_mm_set_epi32(0xFFFFFFFFL, 0xFFFFFFFFL, 0x04050607L, 0x00010203L),  // 2x float
-		_mm_set_epi32(0xFFFFFFFFL, 0x08090A0BL, 0x04050607L, 0x00010203L) }, // 3x float
+		_mm_set_epi32(0xFFFFFFFFL, 0x0405FFFFL, 0x0203FFFFL, 0x0001FFFFL) } // 3x s16
 	};	
 
 	X64Reg coords = XMM0;
@@ -119,6 +114,28 @@ int VertexLoaderX64::ReadVertex(OpArg data, u64 attribute, int format, int count
 	if (attribute == DIRECT)
 		m_src_ofs += load_bytes;
 
+	if (format == FORMAT_FLOAT)
+	{
+		int i = 0;
+		for (; i < count_in; i++)
+		{
+			LoadAndSwap(32, scratch3, data);
+			MOV(32, dest, R(scratch3));
+			data.offset += sizeof(float);
+			dest.offset += sizeof(float);
+		}
+		if (count_out > count_in)
+		{
+			XOR(32, R(scratch3), R(scratch3));
+			for (; i < count_out; i++)
+			{
+				MOV(32, dest, R(scratch3));
+				dest.offset += sizeof(float);
+			}
+		}
+		return load_bytes;
+	}
+
 	if (cpu_info.bSSSE3)
 	{
 		if (load_bytes > 8)
@@ -127,7 +144,9 @@ int VertexLoaderX64::ReadVertex(OpArg data, u64 attribute, int format, int count
 			MOVQ_xmm(coords, data);
 		else
 			MOVD_xmm(coords, data);
+
 		PSHUFB(coords, M(&shuffle_lut[format][count_in - 1]));
+
 		// Sign-extend.
 		if (format == FORMAT_BYTE)
 			PSRAD(coords, 24);
@@ -137,13 +156,14 @@ int VertexLoaderX64::ReadVertex(OpArg data, u64 attribute, int format, int count
 	else
 	{
 		// SSE2
+		X64Reg temp = XMM1;
 		switch (format)
 		{
 		case FORMAT_UBYTE:
 			MOVD_xmm(coords, data);
-			PXOR(XMM1, R(XMM1));
-			PUNPCKLBW(coords, R(XMM1));
-			PUNPCKLWD(coords, R(XMM1));
+			PXOR(temp, R(temp));
+			PUNPCKLBW(coords, R(temp));
+			PUNPCKLWD(coords, R(temp));
 			break;
 		case FORMAT_BYTE:
 			MOVD_xmm(coords, data);
@@ -162,48 +182,20 @@ int VertexLoaderX64::ReadVertex(OpArg data, u64 attribute, int format, int count
 			case 2:
 				LoadAndSwap(32, scratch3, data);
 				MOVD_xmm(coords, R(scratch3)); // ......XY
-				PSHUFLW(coords, R(coords), 0xC5); // .....Y.X
+				PSHUFLW(coords, R(coords), 0x24); // .....Y.X
 				break;
 			case 3:
 				LoadAndSwap(64, scratch3, data);
 				MOVQ_xmm(coords, R(scratch3)); // ....XYZ.
-				PUNPCKLQDQ(coords, R(coords)); // XYZ.XYZ.
-				PSHUFLW(coords, R(coords), 0xE7); // XYZ..Y.X
-				PSHUFHW(coords, R(coords), 0xE5); // ...Z.Y.X
+				PUNPCKLQDQ(coords, R(coords)); // XYZ.XYZ.				
+				PSHUFLW(coords, R(coords), 0xAC); // ...Z.Y.X
 				break;
 			}
 			if (format == FORMAT_SHORT)
-			{
-				PSLLD(coords, 16);
 				PSRAD(coords, 16);
-			}
 			else
-			{
-				static const __m128i mask = _mm_set1_epi32(0x0000FFFF);
-				PAND(coords, M(&mask));
-			}
-			break;
-		case FORMAT_FLOAT:
-			{
-				int i = 0;
-				for (; i < count_in; i++)
-				{
-					LoadAndSwap(32, scratch3, data);
-					MOV(32, dest, R(scratch3));
-					data.offset += sizeof(float);
-					dest.offset += sizeof(float);
-				}
-				if (count_out > count_in)
-				{
-					XOR(32, R(scratch3), R(scratch3));
-					for (; i < count_out; i++)
-					{
-						MOV(32, dest, R(scratch3));
-						dest.offset += sizeof(float);
-					}
-				}
-				return load_bytes;
-			}
+				PSRLD(coords, 16);
+			break;		
 		}
 		if (count_out > count_in)
 		{
@@ -226,18 +218,19 @@ int VertexLoaderX64::ReadVertex(OpArg data, u64 attribute, int format, int count
 			}
 		}
 	}
-	if (format != FORMAT_FLOAT)
-	{
-		CVTDQ2PS(coords, R(coords));
-		if (dequantize)
-			MULPS(coords, M(&scale_factors[scaling_index]));
-	}
+	
+	CVTDQ2PS(coords, R(coords));
+	
+	if (dequantize)
+		MULPS(coords, M(&scale_factors[scaling_index]));
+
 	switch (count_out)
 	{
 	case 1: MOVSS(dest, coords); break;
 	case 2: MOVLPS(dest, coords); break;
 	case 3: MOVUPS(dest, coords); break;
 	}
+
 	return load_bytes;
 }
 
@@ -389,7 +382,10 @@ void VertexLoaderX64::ReadColor(OpArg data, u64 attribute, int format)
 
 void VertexLoaderX64::GenerateVertexLoader()
 {
-	ABI_PushRegistersAndAdjustStack(VERTEX_LOADER_REGS, 8);
+	BitSet32 xmm_regs;
+	xmm_regs[XMM0 + 16] = true;
+	xmm_regs[XMM1 + 16] = !cpu_info.bSSSE3;
+	ABI_PushRegistersAndAdjustStack(xmm_regs, 8);
 
 	// Backup count since we're going to count it down.
 	PUSH(32, R(ABI_PARAM3));
@@ -525,7 +521,7 @@ void VertexLoaderX64::GenerateVertexLoader()
 	// Get the original count.
 	POP(32, R(ABI_RETURN));
 
-	ABI_PopRegistersAndAdjustStack(VERTEX_LOADER_REGS, 8);
+	ABI_PopRegistersAndAdjustStack(xmm_regs, 8);
 
 	if (m_VtxDesc.Position & MASKINDEXED)
 	{
