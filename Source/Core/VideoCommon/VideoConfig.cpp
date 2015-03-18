@@ -80,8 +80,7 @@ void VideoConfig::Load(const std::string& ini_file)
 	settings->Get("DumpEFBTarget", &bDumpEFBTarget, 0);
 	settings->Get("FreeLook", &bFreeLook, 0);
 	settings->Get("UseFFV1", &bUseFFV1, 0);
-	settings->Get("EnablePixelLighting", &bEnablePixelLighting, 0);
-	settings->Get("HackedBufferUpload", &bHackedBufferUpload, 0);
+	settings->Get("EnablePixelLighting", &bEnablePixelLighting, 0);	
 	settings->Get("FastDepthCalc", &bFastDepthCalc, true);
 	settings->Get("MSAA", &iMultisampleMode, 0);
 	settings->Get("EFBScale", &iEFBScale, (int) SCALE_1X); // native
@@ -164,8 +163,7 @@ void VideoConfig::GameIniLoad()
 	CHECK_SETTING("Video_Settings", "SafeTextureCacheColorSamples", iSafeTextureCache_ColorSamples);
 	CHECK_SETTING("Video_Settings", "HiresTextures", bHiresTextures);
 	CHECK_SETTING("Video_Settings", "ConvertHiresTextures", bConvertHiresTextures);
-	CHECK_SETTING("Video_Settings", "EnablePixelLighting", bEnablePixelLighting);
-	CHECK_SETTING("Video_Settings", "HackedBufferUpload", bHackedBufferUpload);
+	CHECK_SETTING("Video_Settings", "EnablePixelLighting", bEnablePixelLighting);	
 	CHECK_SETTING("Video_Settings", "FastDepthCalc", bFastDepthCalc);
 	CHECK_SETTING("Video_Settings", "MSAA", iMultisampleMode);
 	int tmp = -9000;
@@ -302,8 +300,7 @@ void VideoConfig::Save(const std::string& ini_file)
 	settings->Set("DumpEFBTarget", bDumpEFBTarget);
 	settings->Set("FreeLook", bFreeLook);
 	settings->Set("UseFFV1", bUseFFV1);
-	settings->Set("EnablePixelLighting", bEnablePixelLighting);
-	settings->Set("HackedBufferUpload", bHackedBufferUpload);
+	settings->Set("EnablePixelLighting", bEnablePixelLighting);	
 	settings->Set("FastDepthCalc", bFastDepthCalc);
 	settings->Set("ShowEFBCopyRegions", bShowEFBCopyRegions);
 	settings->Set("MSAA", iMultisampleMode);

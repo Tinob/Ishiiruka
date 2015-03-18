@@ -587,8 +587,7 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title, con
 	szr_other->Add(CreateCheckBox(page_hacks, _("Fast Depth Calculation"), wxGetTranslation(fast_depth_calc_desc), vconfig.bFastDepthCalc));
 	szr_other->Add(Predictive_FIFO = CreateCheckBox(page_hacks, _("Predictive FIFO"), wxGetTranslation(predictiveFifo_desc), vconfig.bPredictiveFifo));
 	szr_other->Add(Wait_For_Shaders = CreateCheckBox(page_hacks, _("Wait for Shader Compilation"), wxGetTranslation(waitforshadercompilation_desc), vconfig.bWaitForShaderCompilation));
-	szr_other->Add(Async_Shader_compilation = CreateCheckBox(page_hacks, _("Full Async Shader Compilation"), wxGetTranslation(fullAsyncShaderCompilation_desc), vconfig.bFullAsyncShaderCompilation));
-	szr_other->Add(hacked_buffer_upload = CreateCheckBox(page_hacks, _("Vertex Streaming Hack"), wxGetTranslation(hacked_buffer_upload_desc), vconfig.bHackedBufferUpload));
+	szr_other->Add(Async_Shader_compilation = CreateCheckBox(page_hacks, _("Full Async Shader Compilation"), wxGetTranslation(fullAsyncShaderCompilation_desc), vconfig.bFullAsyncShaderCompilation));	
 	wxStaticBoxSizer* const group_other = new wxStaticBoxSizer(wxVERTICAL, page_hacks, _("Other"));
 	group_other->Add(szr_other, 1, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 5);
 	szr_hacks->Add(group_other, 0, wxEXPAND | wxALL, 5);
@@ -900,10 +899,6 @@ void VideoConfigDiag::OnUpdateUI(wxUpdateUIEvent& ev)
 		choice_ppshader->Enable(vconfig.iStereoMode != STEREO_ANAGLYPH);
 	if (button_config_pp)
 		button_config_pp->Enable(vconfig.iStereoMode != STEREO_ANAGLYPH);
-
-	// OGL Hacked buffer
-	hacked_buffer_upload->Enable(Core::GetState() == Core::CORE_UNINITIALIZED && vconfig.backend_info.APIType == API_OPENGL);
-	hacked_buffer_upload->Show(vconfig.backend_info.APIType == API_OPENGL);
 
 	// Predictive Fifo
 	Async_Shader_compilation->Show(vconfig.backend_info.APIType != API_OPENGL);

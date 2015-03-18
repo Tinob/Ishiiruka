@@ -119,7 +119,6 @@ protected:
 
 	SettingCheckBox* Fast_efb_cache;
 	SettingCheckBox* emulate_efb_format_changes;
-	SettingCheckBox* hacked_buffer_upload;
 	SettingCheckBox* Async_Shader_compilation;
 	SettingCheckBox* Predictive_FIFO;
 	SettingCheckBox* Wait_For_Shaders;
