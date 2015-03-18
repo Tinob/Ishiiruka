@@ -1,12 +1,8 @@
+#include "Common/CPUDetect.h"
+#include "Common/Intrinsics.h"
 #include "VideoCommon/TextureUtil.h"
 #include "VideoCommon/LookUpTables.h"
-#include "Common/CPUDetect.h"
-#if _M_SSE >= 0x401
-#include <smmintrin.h>
-#include <emmintrin.h>
-#elif _M_SSE >= 0x301 && !(defined __GNUC__ && !defined __SSSE3__)
-#include <tmmintrin.h>
-#endif
+
 namespace TextureUtil
 {
 
