@@ -208,7 +208,6 @@ void VertexManager::Flush()
 			const TextureCache::TCacheEntryBase* tentry = TextureCache::Load(i);
 			if (tentry)
 			{
-				// 0s are probably for no manual wrapping needed.
 				PixelShaderManager::SetTexDims(i, tentry->native_width, tentry->native_height);
 				g_renderer->SetSamplerState(i & 3, i >> 2, tentry->is_custom_tex);
 			}
@@ -223,14 +222,14 @@ void VertexManager::Flush()
 	PixelShaderManager::SetConstants();
 	if (current_primitive_type == PRIMITIVE_TRIANGLES)
 	{
+		const PortableVertexDeclaration &vtx_dcl = g_nativeVertexFmt->GetVertexDeclaration();
 		if (bpmem.genMode.zfreeze)
 		{
 			SetZSlope();
 		}
 		else if (IndexGenerator::GetIndexLen() >= 3)
 		{
-			u32 stride = g_nativeVertexFmt->GetVertexStride();
-			CalculateZSlope(stride, g_vertex_manager->GetIndexBuffer() + IndexGenerator::GetIndexLen() - 3);
+			CalculateZSlope(vtx_dcl, g_vertex_manager->GetIndexBuffer() + IndexGenerator::GetIndexLen() - 3);
 		}
 
 		// if cull mode is CULL_ALL, ignore triangles and quads
@@ -259,39 +258,46 @@ void VertexManager::DoState(PointerWrap& p)
 	g_vertex_manager->vDoState(p);
 }
 
-void VertexManager::CalculateZSlope(u32 stride, const u16* indices)
+void VertexManager::CalculateZSlope(const PortableVertexDeclaration &vert_decl, const u16* indices)
 {
 	float out[12];
-	float viewOffset[2] = { xfmem.viewport.xOrig - 342, xfmem.viewport.yOrig - 342 };
+	float viewOffset[2] = { 
+		xfmem.viewport.xOrig - bpmem.scissorOffset.x * 2,
+		xfmem.viewport.yOrig - bpmem.scissorOffset.y * 2
+	};
+
 	// Lookup vertices of the last rendered triangle and software-transform them
 	// This allows us to determine the depth slope, which will be used if zfreeze
 	// is enabled in the following flush.
-	for (unsigned int i = 0; i < 3; ++i)
+	float *vout = out;
+	for (u32 i = 0; i < 3; ++i, vout += 4)
 	{
-		u8* vtx_ptr = s_pBaseBufferPointer + stride * indices[i];
-		VertexShaderManager::TransformToClipSpace(vtx_ptr, stride, &out[i * 4]);
-		float w = 1.0f / out[3 + i * 4];
+		u8* vtx_ptr = s_pBaseBufferPointer + vert_decl.stride * indices[i];
+		VertexShaderManager::TransformToClipSpace(vtx_ptr, vert_decl, vout);
+		float w = 1.0f / vout[3];
 		// Transform to Screenspace
-		out[0 + i * 4] = out[0 + i * 4] * w * xfmem.viewport.wd + viewOffset[0];
-		out[1 + i * 4] = out[1 + i * 4] * w * xfmem.viewport.ht + viewOffset[1];
-		out[2 + i * 4] = out[2 + i * 4] * w * xfmem.viewport.zRange + xfmem.viewport.farZ;
+		vout[0] = vout[0] * w * xfmem.viewport.wd + viewOffset[0];
+		vout[1] = vout[1] * w * xfmem.viewport.ht + viewOffset[1];
+		vout[2] = vout[2] * w * xfmem.viewport.zRange + xfmem.viewport.farZ;
 	}
+
 	float dx31 = out[8] - out[0];
 	float dx12 = out[0] - out[4];
 	float dy12 = out[1] - out[5];
 	float dy31 = out[9] - out[1];
+	float c = -dx12 * dy31 - dx31 * -dy12;
+	
+	if (c == 0)
+		return;
+
 	float DF31 = out[10] - out[2];
 	float DF21 = out[6] - out[2];
 	float a = DF31 * -dy12 - DF21 * dy31;
 	float b = dx31 * DF21 + dx12 * DF31;
-	float c = -dx12 * dy31 - dx31 * -dy12;
-	if (abs(c) > FLT_EPSILON)
-	{
-		s_ZSlope.dfdx = -a / c;
-		s_ZSlope.dfdy = -b / c;
-		s_ZSlope.f0 = out[2] - (out[0] * s_ZSlope.dfdx + out[1] * s_ZSlope.dfdy);
-		s_Zslope_Refresh_Required = true;
-	}
+	s_ZSlope.dfdx = -a / c;
+	s_ZSlope.dfdy = -b / c;
+	s_ZSlope.f0 = out[2] - (out[0] * s_ZSlope.dfdx + out[1] * s_ZSlope.dfdy);
+	s_Zslope_Refresh_Required = true;
 }
 
 void VertexManager::SetZSlope()

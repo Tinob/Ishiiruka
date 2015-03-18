@@ -217,7 +217,7 @@ namespace VertexLoaderManager
 			VertexLoaderBase * fallback = loader->GetFallback();
 			if (fallback)
 			{
-				fallback->m_native_vertex_format = loader->m_native_vertex_format;
+				fallback->m_native_vertex_format = GetNativeVertexFormat(fallback->m_native_vtx_decl, fallback->m_native_components);
 			}
 			s_VertexLoaderMap[uid] = loader;
 			INCSTAT(stats.numVertexLoaders);

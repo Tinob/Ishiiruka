@@ -5,6 +5,7 @@
 
 #include "Common/Common.h"
 #include "VideoCommon/BPMemory.h"
+#include "VideoCommon/NativeVertexFormat.h"
 #include "VideoCommon/XFMemory.h"
 
 
@@ -63,7 +64,7 @@ protected:
 	static bool s_Zslope_Refresh_Required;
 	static Slope s_ZSlope;
 
-	static void CalculateZSlope(u32 stride, const u16* indices);
+	static void CalculateZSlope(const PortableVertexDeclaration &vert_decl, const u16* indices);
 	static void SetZSlope();
 
 	virtual void vDoState(PointerWrap& p) {  }

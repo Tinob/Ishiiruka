@@ -6,15 +6,12 @@
 
 #include "VideoBackends/OGL/GLExtensions/GLExtensions.h"
 #include "VideoCommon/CPMemory.h"
-#include "VideoCommon/NativeVertexFormat.h"
 #include "VideoCommon/VertexManagerBase.h"
 
 namespace OGL
 {
 	class GLVertexFormat : public NativeVertexFormat
 	{
-		PortableVertexDeclaration vtx_decl;
-
 	public:
 		GLVertexFormat();
 		~GLVertexFormat();

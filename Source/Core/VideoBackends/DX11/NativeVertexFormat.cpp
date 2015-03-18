@@ -63,19 +63,19 @@ DXGI_FORMAT VarToD3D(EVTXComponentFormat t, int size)
 
 void D3DVertexFormat::Initialize(const PortableVertexDeclaration &_vtx_decl)
 {
-	vertex_stride = _vtx_decl.stride;
+	vtx_decl = _vtx_decl;
 	memset(m_elems, 0, sizeof(m_elems));
-	const AttributeFormat* format = &_vtx_decl.position;
+	const AttributeFormat* format = &vtx_decl.position;
 
 	m_elems[m_num_elems].SemanticName = "POSITION";
 	m_elems[m_num_elems].AlignedByteOffset = format->offset;
-	m_elems[m_num_elems].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+	m_elems[m_num_elems].Format = VarToD3D(format->type, format->components);
 	m_elems[m_num_elems].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
 	++m_num_elems;
 
 	for (int i = 0; i < 3; i++)
 	{
-		format = &_vtx_decl.normals[i];
+		format = &vtx_decl.normals[i];
 		if (format->enable)
 		{
 			m_elems[m_num_elems].SemanticName = "NORMAL";
@@ -89,7 +89,7 @@ void D3DVertexFormat::Initialize(const PortableVertexDeclaration &_vtx_decl)
 
 	for (int i = 0; i < 2; i++)
 	{
-		format = &_vtx_decl.colors[i];
+		format = &vtx_decl.colors[i];
 		if (format->enable)
 		{
 			m_elems[m_num_elems].SemanticName = "COLOR";
@@ -103,7 +103,7 @@ void D3DVertexFormat::Initialize(const PortableVertexDeclaration &_vtx_decl)
 
 	for (int i = 0; i < 8; i++)
 	{
-		format = &_vtx_decl.texcoords[i];
+		format = &vtx_decl.texcoords[i];
 		if (format->enable)
 		{
 			m_elems[m_num_elems].SemanticName = "TEXCOORD";
@@ -115,7 +115,7 @@ void D3DVertexFormat::Initialize(const PortableVertexDeclaration &_vtx_decl)
 		}
 	}
 	
-	format = &_vtx_decl.posmtx;
+	format = &vtx_decl.posmtx;
 	if (format->enable)
  	{
 		m_elems[m_num_elems].SemanticName = "BLENDINDICES";

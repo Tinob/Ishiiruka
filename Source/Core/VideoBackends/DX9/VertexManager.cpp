@@ -15,7 +15,6 @@
 #include "VideoCommon/Debugger.h"
 #include "VideoCommon/Fifo.h"
 #include "VideoCommon/IndexGenerator.h"
-#include "VideoCommon/NativeVertexFormat.h"
 #include "VideoCommon/OpcodeDecoding.h"
 #include "VideoCommon/PixelShaderManager.h"
 #include "VideoCommon/Statistics.h"
@@ -58,10 +57,10 @@ const u32 LINE_PT_OFFSETS_PARAMS_LEN = C_VENVCONST_END - C_PLOFFSETPARAMS;
 #define PLO_POS_LINE_POSITIVE_Y 12
 
 
-typedef struct Float_3
+typedef struct Float_2
 {
-	float x, y, z;
-}Float_3;
+	float x, y;
+}Float_2;
 
 typedef struct Float_4
 {
@@ -258,12 +257,12 @@ void VertexManager::PrepareDrawBuffers(u32 stride)
 				// Get the position in the stream o f the first vertex
 				u32 currentstride = first_index * stride;
 				// Get The first vertex Position data
-				Float_3* base_vertex_0 = (Float_3*)(s_pBaseBufferPointer + currentstride);
+				Float_2* base_vertex_0 = (Float_2*)(s_pBaseBufferPointer + currentstride);
 				// Get The blendindices data
 				U8_4* blendindices_vertex_0 = (U8_4*)(p_vertices_base + currentstride + stride - sizeof(U8_4));
 				// Get The first vertex Position data
 				currentstride = second_index * stride;
-				Float_3* base_vertex_1 = (Float_3*)(s_pBaseBufferPointer + currentstride);
+				Float_2* base_vertex_1 = (Float_2*)(s_pBaseBufferPointer + currentstride);
 				U8_4* blendindices_vertex_1 = (U8_4*)(p_vertices_base + currentstride + stride - sizeof(U8_4));
 
 				// Calculate line orientation

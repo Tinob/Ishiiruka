@@ -87,25 +87,25 @@ D3DDECLTYPE VarToD3D(EVTXComponentFormat t, int size)
 
 void D3DVertexFormat::Initialize(const PortableVertexDeclaration &_vtx_decl)
 {
-	vertex_stride = _vtx_decl.stride;
+	vtx_decl = _vtx_decl;
 	memset(m_elements, 0, sizeof(m_elements));
 
 	// There's only one stream and it's 0, so the above memset takes care of that - no need to set Stream.
 	// Same for method.
-	const AttributeFormat* format = &_vtx_decl.position;
+	const AttributeFormat* format = &vtx_decl.position;
 	int elem_idx = 0;
 	if (format->enable)
 	{
 		// So, here we go. First position:		
 		m_elements[elem_idx].Offset = format->offset;
-		m_elements[elem_idx].Type = D3DDECLTYPE_FLOAT3;
+		m_elements[elem_idx].Type = VarToD3D(format->type, format->components);
 		m_elements[elem_idx].Usage = D3DDECLUSAGE_POSITION;
 		++elem_idx;
 	}
 
 	for (int i = 0; i < 3; i++)
 	{
-		format = &_vtx_decl.normals[i];
+		format = &vtx_decl.normals[i];
 		if (format->enable)
 		{
 			m_elements[elem_idx].Offset = format->offset;
@@ -118,7 +118,7 @@ void D3DVertexFormat::Initialize(const PortableVertexDeclaration &_vtx_decl)
 
 	for (int i = 0; i < 2; i++)
 	{
-		format = &_vtx_decl.colors[i];
+		format = &vtx_decl.colors[i];
 		if (format->enable)
 		{
 			m_elements[elem_idx].Offset = format->offset;
@@ -131,7 +131,7 @@ void D3DVertexFormat::Initialize(const PortableVertexDeclaration &_vtx_decl)
 
 	for (int i = 0; i < 8; i++)
 	{
-		format = &_vtx_decl.texcoords[i];
+		format = &vtx_decl.texcoords[i];
 		if (format->enable)
 		{
 			m_elements[elem_idx].Offset = format->offset;
@@ -142,9 +142,9 @@ void D3DVertexFormat::Initialize(const PortableVertexDeclaration &_vtx_decl)
 		}
 	}
 
-	if (_vtx_decl.posmtx.enable)
+	if (vtx_decl.posmtx.enable)
 	{
-		m_elements[elem_idx].Offset = _vtx_decl.posmtx.offset;
+		m_elements[elem_idx].Offset = vtx_decl.posmtx.offset;
 		m_elements[elem_idx].Usage = D3DDECLUSAGE_BLENDINDICES;
 		m_elements[elem_idx].Type = D3DDECLTYPE_D3DCOLOR;
 		m_elements[elem_idx].UsageIndex = 0;

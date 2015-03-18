@@ -39,11 +39,11 @@ public:
 	static void TranslateView(float x, float y, float z = 0.0f);
 	static void RotateView(float x, float y);
 	static void ResetView();
-	// data: raw vertex data, first 12 bytes 3 floats with the position last 4 bytes posmtx
+	// data: raw vertex data
 	// out: 4 floats which will be initialized with the corresponding clip space coordinates
 	// NOTE: g_fProjectionMatrix must be up to date when this is called
 	// (i.e. VertexShaderManager::SetConstants needs to be called before using this!)
-	static void TransformToClipSpace(const void* data, s32 stride, float *out);
+	static void TransformToClipSpace(const u8* data, const PortableVertexDeclaration &vtx_dcl, float *out);
 private:
 	static float vsconstants[ConstantBufferSize];
 	static ConstatBuffer m_buffer;

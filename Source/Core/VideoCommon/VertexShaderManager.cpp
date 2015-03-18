@@ -697,16 +697,16 @@ void VertexShaderManager::ResetView()
 	bProjectionChanged = true;
 }
 
-void VertexShaderManager::TransformToClipSpace(const void* data, s32 stride, float *out)
+void VertexShaderManager::TransformToClipSpace(const u8* data, const PortableVertexDeclaration &vtx_dcl, float *out)
 {
 	// First 3 floats
-	const float* possrc = (const float *)data;
+	const float* possrc = (const float*)(data + vtx_dcl.position.offset);
 	float pos[3];
 	pos[0] = possrc[0];
 	pos[1] = possrc[1];
 	pos[2] = possrc[2];
 
-	const int mtx_idx = *((const u32*)(((const u8*)data) + stride - sizeof(u32)));
+	const int mtx_idx = *((const u32*)(data + vtx_dcl.posmtx.offset));
 	const float *world_matrix = ((const float *)xfmem.posMatrices) + mtx_idx * 4;
 	const float *proj_matrix = &g_fProjectionMatrix[0];
 	float t[3];
