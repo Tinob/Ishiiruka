@@ -176,7 +176,6 @@ struct VideoConfig final
 		std::vector<std::string> PPShaders; // post-processing shaders
 		bool bSupportedFormats[16]; // used for D3D9 in TextureCache		
 		bool bSupportsDualSourceBlend; // only supported by D3D11 and OpenGL
-		bool bSupportsFormatReinterpretation;
 		bool bSupportsPixelLighting;
 		bool bSupportsPrimitiveRestart;
 		bool bSupportsSeparateAlphaFunction;

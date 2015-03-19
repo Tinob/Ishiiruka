@@ -33,10 +33,11 @@ static u32 lastZBias;
 static int nMaterialsChanged;
 const float U8_NORM_COEF = 1 / 255.0f;
 const float U24_NORM_COEF = 1 / 16777216.0f;
+static bool s_use_integer_constants = false;
 
-
-void PixelShaderManager::Init()
+void PixelShaderManager::Init(bool use_integer_constants)
 {
+	s_use_integer_constants = use_integer_constants;
 	m_buffer.Clear();
 	lastAlpha = 0;
 	memset(lastTexDims, 0, sizeof(lastTexDims));
@@ -98,7 +99,10 @@ void PixelShaderManager::SetConstants()
 				if ((s_nColorsChanged[i] & (1 << j)))
 				{
 					int* src = &lastRGBAfull[i][j][0];
-					m_buffer.SetConstant4<float>(baseind + j, (float)src[0], (float)src[1], (float)src[2], (float)src[3]);
+					if (s_use_integer_constants)
+						m_buffer.SetConstant4v<int>(baseind + j, src);
+					else
+						m_buffer.SetConstant4<float>(baseind + j, (float)src[0], (float)src[1], (float)src[2], (float)src[3]);
 					s_nColorsChanged[i] &= ~(1 << j);
 				}
 			}
@@ -119,27 +123,52 @@ void PixelShaderManager::SetConstants()
 
 	if (s_bAlphaChanged)
 	{
-		m_buffer.SetConstant4<float>(C_ALPHA, ((float)(lastAlpha & 0xff)), ((float)((lastAlpha >> 8) & 0xff)), 0.0f, ((float)((lastAlpha >> 16) & 0xff)));
+		if (s_use_integer_constants)
+			m_buffer.SetConstant4<int>(C_ALPHA, lastAlpha & 0xff, (lastAlpha >> 8) & 0xff, 0, (lastAlpha >> 16) & 0xff);
+		else
+			m_buffer.SetConstant4<float>(C_ALPHA, ((float)(lastAlpha & 0xff)), ((float)((lastAlpha >> 8) & 0xff)), 0.0f, ((float)((lastAlpha >> 16) & 0xff)));
 		s_bAlphaChanged = false;
 	}
 
 	if (s_bZTextureTypeChanged)
 	{
-		float *ftemp = m_buffer.GetBufferToUpdate<float>(C_ZBIAS, 1);
-		switch (bpmem.ztex2.type)
+		if (s_use_integer_constants)
 		{
-		case 0:
-			// 8 bits
-			ftemp[0] = 0; ftemp[1] = 0; ftemp[2] = 0; ftemp[3] = 255.0f / 16777215.0f;
-			break;
-		case 1:
-			// 16 bits
-			ftemp[0] = 255.0f / 16777215.0f; ftemp[1] = 0; ftemp[2] = 0; ftemp[3] = 65280.0f / 16777215.0f;
-			break;
-		case 2:
-			// 24 bits
-			ftemp[0] = 16711680.0f / 16777215.0f; ftemp[1] = 65280.0f / 16777215.0f; ftemp[2] = 255.0f / 16777215.0f; ftemp[3] = 0;
-			break;
+			int *temp = m_buffer.GetBufferToUpdate<int>(C_ZBIAS, 1);
+			switch (bpmem.ztex2.type)
+			{
+			case TEV_ZTEX_TYPE_U8:
+				// 8 bits
+				temp[0] = 0; temp[1] = 0; temp[2] = 0; temp[3] = 1;
+				break;
+			case TEV_ZTEX_TYPE_U16:
+				// 16 bits
+				temp[0] = 1; temp[1] = 0; temp[2] = 0; temp[3] = 256;
+				break;
+			case TEV_ZTEX_TYPE_U24:
+				// 24 bits
+				temp[0] = 65536; temp[1] =256; temp[2] = 1; temp[3] = 0;
+				break;
+			}
+		}
+		else
+		{
+			float *ftemp = m_buffer.GetBufferToUpdate<float>(C_ZBIAS, 1);
+			switch (bpmem.ztex2.type)
+			{
+			case TEV_ZTEX_TYPE_U8:
+				// 8 bits
+				ftemp[0] = 0; ftemp[1] = 0; ftemp[2] = 0; ftemp[3] = 255.0f / 16777215.0f;
+				break;
+			case TEV_ZTEX_TYPE_U16:
+				// 16 bits
+				ftemp[0] = 255.0f / 16777215.0f; ftemp[1] = 0; ftemp[2] = 0; ftemp[3] = 65280.0f / 16777215.0f;
+				break;
+			case TEV_ZTEX_TYPE_U24:
+				// 24 bits
+				ftemp[0] = 16711680.0f / 16777215.0f; ftemp[1] = 65280.0f / 16777215.0f; ftemp[2] = 255.0f / 16777215.0f; ftemp[3] = 0;
+				break;
+			}
 		}
 		s_bZTextureTypeChanged = false;
 	}
@@ -155,11 +184,22 @@ void PixelShaderManager::SetConstants()
 		// [5] = 16777215 * farz
 
 		//ERROR_LOG("pixel=%x,%x, bias=%x\n", bpmem.zcontrol.pixel_format, bpmem.ztex2.type, lastZBias);
-		m_buffer.SetConstant4<float>(C_ZBIAS + 1,
-			static_cast<float>(static_cast<u32>(xfmem.viewport.farZ)),
-			static_cast<float>(static_cast<u32>(xfmem.viewport.zRange)),
-			0.0f,
-			(float)(lastZBias) / 16777215.0f);
+		if (s_use_integer_constants)
+		{
+			m_buffer.SetConstant4<int>(C_ZBIAS + 1,
+				static_cast<u32>(xfmem.viewport.farZ),
+				static_cast<u32>(xfmem.viewport.zRange),
+				0,
+				lastZBias);
+		}
+		else
+		{
+			m_buffer.SetConstant4<float>(C_ZBIAS + 1,
+				static_cast<float>(static_cast<u32>(xfmem.viewport.farZ)),
+				static_cast<float>(static_cast<u32>(xfmem.viewport.zRange)),
+				0.0f,
+				(float)(lastZBias) / 16777215.0f);
+		}
 		s_bZBiasChanged = false;
 	}
 
@@ -169,20 +209,42 @@ void PixelShaderManager::SetConstants()
 		// set as two sets of vec4s, each containing S and T of two ind stages.
 		if (s_nIndTexScaleChanged & 0x03)
 		{
-			float *f = m_buffer.GetBufferToUpdate<float>(C_INDTEXSCALE, 1);
-			f[0] = (float)bpmem.texscale[0].ss0;
-			f[1] = (float)bpmem.texscale[0].ts0;
-			f[2] = (float)bpmem.texscale[0].ss1;
-			f[3] = (float)bpmem.texscale[0].ts1;
+			if (s_use_integer_constants)
+			{
+				int *i = m_buffer.GetBufferToUpdate<int>(C_INDTEXSCALE, 1);
+				i[0] = bpmem.texscale[0].ss0;
+				i[1] = bpmem.texscale[0].ts0;
+				i[2] = bpmem.texscale[0].ss1;
+				i[3] = bpmem.texscale[0].ts1;
+			}
+			else
+			{
+				float *f = m_buffer.GetBufferToUpdate<float>(C_INDTEXSCALE, 1);
+				f[0] = (float)bpmem.texscale[0].ss0;
+				f[1] = (float)bpmem.texscale[0].ts0;
+				f[2] = (float)bpmem.texscale[0].ss1;
+				f[3] = (float)bpmem.texscale[0].ts1;
+			}
 		}
 
 		if (s_nIndTexScaleChanged & 0x0c)
 		{
-			float *f = m_buffer.GetBufferToUpdate<float>(C_INDTEXSCALE + 1, 1);
-			f[0] = (float)bpmem.texscale[1].ss0;
-			f[1] = (float)bpmem.texscale[1].ts0;
-			f[2] = (float)bpmem.texscale[1].ss1;
-			f[3] = (float)bpmem.texscale[1].ts1;
+			if (s_use_integer_constants)
+			{
+				int *i = m_buffer.GetBufferToUpdate<int>(C_INDTEXSCALE + 1, 1);
+				i[0] = bpmem.texscale[1].ss0;
+				i[1] = bpmem.texscale[1].ts0;
+				i[2] = bpmem.texscale[1].ss1;
+				i[3] = bpmem.texscale[1].ts1;
+			}
+			else
+			{
+				float *f = m_buffer.GetBufferToUpdate<float>(C_INDTEXSCALE + 1, 1);
+				f[0] = (float)bpmem.texscale[1].ss0;
+				f[1] = (float)bpmem.texscale[1].ts0;
+				f[2] = (float)bpmem.texscale[1].ss1;
+				f[3] = (float)bpmem.texscale[1].ts1;
+			}
 		}
 		s_nIndTexScaleChanged = 0;
 	}
@@ -197,17 +259,32 @@ void PixelShaderManager::SetConstants()
 					((u32)bpmem.indmtx[i].col1.s1 << 2) |
 					((u32)bpmem.indmtx[i].col2.s2 << 4);
 				scale = 17 - scale;
-				m_buffer.SetConstant4<float>(C_INDTEXMTX + 2 * i,
-					(float)bpmem.indmtx[i].col0.ma,
-					(float)bpmem.indmtx[i].col1.mc,
-					(float)bpmem.indmtx[i].col2.me,
-					(float)scale);
-				m_buffer.SetConstant4<float>(C_INDTEXMTX + 2 * i + 1,
-					(float)bpmem.indmtx[i].col0.mb,
-					(float)bpmem.indmtx[i].col1.md,
-					(float)bpmem.indmtx[i].col2.mf,
-					(float)scale);
-
+				if (s_use_integer_constants)
+				{
+					m_buffer.SetConstant4<int>(C_INDTEXMTX + 2 * i,
+						bpmem.indmtx[i].col0.ma,
+						bpmem.indmtx[i].col1.mc,
+						bpmem.indmtx[i].col2.me,
+						scale);
+					m_buffer.SetConstant4<int>(C_INDTEXMTX + 2 * i + 1,
+						bpmem.indmtx[i].col0.mb,
+						bpmem.indmtx[i].col1.md,
+						bpmem.indmtx[i].col2.mf,
+						scale);
+				}
+				else
+				{
+					m_buffer.SetConstant4<float>(C_INDTEXMTX + 2 * i,
+						(float)bpmem.indmtx[i].col0.ma,
+						(float)bpmem.indmtx[i].col1.mc,
+						(float)bpmem.indmtx[i].col2.me,
+						(float)scale);
+					m_buffer.SetConstant4<float>(C_INDTEXMTX + 2 * i + 1,
+						(float)bpmem.indmtx[i].col0.mb,
+						(float)bpmem.indmtx[i].col1.md,
+						(float)bpmem.indmtx[i].col2.mf,
+						(float)scale);
+				}
 				PRIM_LOG("indmtx%d: scale=%f, mat=(%f %f %f; %f %f %f)\n",
 					i, scale,
 					bpmem.indmtx[i].col0.ma, bpmem.indmtx[i].col1.mc, bpmem.indmtx[i].col2.me,
@@ -220,7 +297,10 @@ void PixelShaderManager::SetConstants()
 
 	if (s_bFogColorChanged)
 	{
-		m_buffer.SetConstant4<float>(C_FOG, (float)bpmem.fog.color.r, (float)bpmem.fog.color.g, (float)bpmem.fog.color.b, 0.0f);
+		if (s_use_integer_constants)
+			m_buffer.SetConstant4<int>(C_FOGCOLOR, bpmem.fog.color.r, bpmem.fog.color.g, bpmem.fog.color.b, 0);
+		else
+			m_buffer.SetConstant4<float>(C_FOGCOLOR, (float)bpmem.fog.color.r, (float)bpmem.fog.color.g, (float)bpmem.fog.color.b, 0.0f);
 		s_bFogColorChanged = false;
 	}
 
@@ -228,15 +308,24 @@ void PixelShaderManager::SetConstants()
 	{
 		if (!g_ActiveConfig.bDisableFog)
 		{
-			//downscale magnitude to 0.24 bits
-			float b = (float)bpmem.fog.b_magnitude / 0xFFFFFF;
-
-			float b_shf = (1.0f / (float)(1 << bpmem.fog.b_shift));
-			m_buffer.SetConstant4<float>(C_FOG + 1, bpmem.fog.a.GetA(), b, bpmem.fog.c_proj_fsel.GetC(), b_shf);
+			if (s_use_integer_constants)
+			{
+				m_buffer.SetConstant4<int>(C_FOGI, 0, bpmem.fog.b_magnitude, 0, bpmem.fog.b_shift);
+			}
+			else
+			{
+				//downscale magnitude to 0.24 bits
+				float b = (float)bpmem.fog.b_magnitude / float(0xFFFFFF);
+				float b_shf = (1.0f / (float)(1 << bpmem.fog.b_shift));
+				m_buffer.SetConstant4<float>(C_FOGI, 0.0f, b, 0.0f, b_shf);
+			}
+			m_buffer.SetConstant4<float>(C_FOGF + 1, bpmem.fog.a.GetA(), 0, bpmem.fog.c_proj_fsel.GetC(), 0);
 		}
 		else
-			m_buffer.SetConstant4<float>(C_FOG + 1, 0.0f, 1.0f, 0.0f, 1.0f);
-
+		{
+			m_buffer.SetConstant4<float>(C_FOGF + 1, 0.0f, 1.0f, 0.0f, 1.0f);
+			m_buffer.SetConstant4<float>(C_FOGI, 0.0f, 1.0f, 0.0f, 1.0f);
+		}
 		s_bFogParamChanged = false;
 	}
 
@@ -254,11 +343,15 @@ void PixelShaderManager::SetConstants()
 			// they always seems to be larger than 256 so my theory is :
 			// they are the coefficients from the center to the border of the screen
 			// so to simplify I use the hi coefficient as K in the shader taking 256 as the scale
-			m_buffer.SetConstant4<float>(C_FOG + 2, ScreenSpaceCenter, (float)Renderer::EFBToScaledX((int)(2.0f * xfmem.viewport.wd)), bpmem.fogRange.K[4].HI / 256.0f, 0.0f);
+			m_buffer.SetConstant4<float>(C_FOGF
+				, ScreenSpaceCenter
+				, (float)Renderer::EFBToScaledX((int)(2.0f * xfmem.viewport.wd))
+				, bpmem.fogRange.K[4].HI / 256.0f
+				, 0.0f);
 		}
 		else
 		{
-			m_buffer.SetConstant4<float>(C_FOG + 2, 0.0f, 1.0f, 1.0f, 0.0f); // Need to update these values for older hardware that fails to divide by zero in shaders.
+			m_buffer.SetConstant4<float>(C_FOGF, 0.0f, 1.0f, 1.0f, 0.0f); // Need to update these values for older hardware that fails to divide by zero in shaders.
 		}
 
 		s_bFogRangeAdjustChanged = false;

@@ -886,8 +886,6 @@ void VideoConfigDiag::OnUpdateUI(wxUpdateUIEvent& ev)
 	borderless_fullscreen->Enable(vconfig.backend_info.bSupportsExclusiveFullscreen);
 	borderless_fullscreen->Show(vconfig.backend_info.bSupportsExclusiveFullscreen);	
 
-	// EFB format change emulation
-	emulate_efb_format_changes->Enable(vconfig.backend_info.bSupportsFormatReinterpretation);
 	// EFB Access Cache
 	Fast_efb_cache->Show(vconfig.bEFBAccessEnable);
 	// XFB

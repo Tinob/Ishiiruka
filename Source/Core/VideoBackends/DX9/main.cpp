@@ -91,7 +91,6 @@ void InitBackendInfo()
 	g_Config.backend_info.bSupportsSeparateAlphaFunction = (device_caps.PrimitiveMiscCaps & D3DPMISCCAPS_SEPARATEALPHABLEND) == D3DPMISCCAPS_SEPARATEALPHABLEND;
 	// Dual source blend disabled by default until a proper method to test for support is found	
 	g_Config.backend_info.bSupportsDualSourceBlend = false;	
-	g_Config.backend_info.bSupportsFormatReinterpretation = true;
 	g_Config.backend_info.bSupportsPixelLighting = C_PENVCONST_END <= maxConstants;
 	g_Config.backend_info.bSupportsEarlyZ = true;
 	g_Config.backend_info.bNeedBlendIndices = true;
@@ -175,7 +174,7 @@ void VideoBackend::Video_Prepare()
 	VertexLoaderManager::Init();
 	OpcodeDecoder_Init();
 	VertexShaderManager::Init();
-	PixelShaderManager::Init();
+	PixelShaderManager::Init(false);
 	CommandProcessor::Init();
 	PixelEngine::Init();
 	// Notify the core that the video backend is ready

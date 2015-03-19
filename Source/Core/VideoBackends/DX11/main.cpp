@@ -88,7 +88,6 @@ void InitBackendInfo()
 
 	g_Config.backend_info.bSupportsExclusiveFullscreen = true;
 	g_Config.backend_info.bSupportsDualSourceBlend = true;
-	g_Config.backend_info.bSupportsFormatReinterpretation = true;
 	g_Config.backend_info.bSupportsPixelLighting = true;
 	// not worth the effort, less efficient index generation, too much reset ratio over real primitives
 	g_Config.backend_info.bSupportsPrimitiveRestart = false;
@@ -197,7 +196,7 @@ void VideoBackend::Video_Prepare()
 	VertexLoaderManager::Init();
 	OpcodeDecoder_Init();
 	VertexShaderManager::Init();
-	PixelShaderManager::Init();
+	PixelShaderManager::Init(true);
 	CommandProcessor::Init();
 	PixelEngine::Init();
 	BBox::Init();

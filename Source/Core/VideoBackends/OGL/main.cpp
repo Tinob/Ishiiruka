@@ -215,7 +215,7 @@ void VideoBackend::Video_Prepare()
 	OpcodeDecoder_Init();
 	IndexGenerator::Init();
 	VertexShaderManager::Init();
-	PixelShaderManager::Init();
+	PixelShaderManager::Init(true);
 	ProgramShaderCache::Init();
 	g_texture_cache = new TextureCache();
 	g_sampler_cache = new SamplerCache();
