@@ -220,72 +220,75 @@ static const tevSources tevCOutputSourceMap[] = { tevSources::CPREV, tevSources:
 static const char *tevAOutputTable[] = { "prev.a", "c0.a", "c1.a", "c2.a" };
 static const tevSources tevAOutputSourceMap[] = { tevSources::APREV, tevSources::A0, tevSources::A1, tevSources::A2 };
 
-static const char* headerUtil = 
-"float4 CHK_O_U8(float4 x)\n{\nreturn frac(((x) + 1024.0) * (1.0/256.0)) * 256.0;\n}\n"
-"float2 BSH(float2 x, float2 n)\n"
-"{\n"
-"float2 z = exp2(-n);\n"
-"float2 y = (1.0f / z) - 1.0;\n"
-"x.x = (x.x - ((z.x < 1.0 && x.x < 0.0) ? y.x : 0.0)) * z.x;\n"
-"x.y = (x.y - ((z.y < 1.0 && x.y < 0.0) ? y.y : 0.0)) * z.y;\n"
-"return trunc(x);\n"
-"}\n"
-"float2 BSH(float2 x, float n)\n"
-"{\n"
-"float2 z = exp2(-float2(n, n));\n"
-"float2 y = (1.0f / z) - 1.0;\n"
-"x.x = (x.x - ((z.x < 1.0 && x.x < 0.0) ? y.x : 0.0)) * z.x;\n"
-"x.y = (x.y - ((z.y < 1.0 && x.y < 0.0) ? y.y : 0.0)) * z.y;\n"
-"return trunc(x);\n"
-"}\n"
+static const char* headerUtil = R"hlsl(
+float4 CHK_O_U8(float4 x)
+{ 
+	return frac(((x) + 1024.0) * (1.0/256.0)) * 256.0;
+}
+#define BSHR(x, n) floor((x) * exp2(-(n)))
+float2 BSH(float2 x, float n)
+{
+	float z = exp2(-n);
+	if (z < 1.0)
+	{
+		float y = (1.0 / z);
+		if (x.x < 0.0)
+			x.x = 1.0 + x.x - y;
+		if (x.y < 0.0)
+			x.y = 1.0 + x.y - y;
+	}
+	return trunc(x * z);
+}
 // remainder implementation with the restriction that "y" must be always greater than 0
-"float remainder(float x, float y)\n"
-"{\n"
-"y = (x < 0.0) ? (-y) : y;\n"
-"return frac(x/y)*y;\n"
-"}\n";
+float remainder(float x, float y)
+{
+	y = (x < 0.0) ? (-y) : y;
+	return frac(x/y)*y;
+}
+)hlsl";
 
-static const char* headerUtilI = 
-"int4 CHK_O_U8(int4 x)\n{\nreturn x & 255;\n}\n"
-"int2 BSH(int2 x, int2 n)\n"
-"{\n"
-"return int2(n.x >= 0 ? (x.x >> n.x) : (x.x << (-n.x)),n.y >= 0 ? (x.y >> n.y) : (x.y << (-n.y)));\n"
-"}\n"
-"int2 BSH(int2 x, int n)\n"
-"{\n"
-"if(n >= 0)\n"
-"{\n"
-"return x >> n;\n"
-"}\n"
-"else\n"
-"{\n"
-"return x << (-n);\n"
-"}\n"
-"}\n"
-"int remainder(int x, int y)\n"
-"{\n"
-"return x %% y;\n"
-"}\n"
+static const char* headerUtilI = R"hlsl(
+int4 CHK_O_U8(int4 x)
+{
+	return x & 255;
+}
+#define BSHR(x, n) ((x) >> (n))
+int2 BSH(int2 x, int n)
+{
+	if(n >= 0)
+	{
+		return x >> n;
+	}
+	else
+	{
+		return x << (-n);
+	}
+}
+int remainder(int x, int y)
+{
+	return x %% y;
+}
 // dot product for integer vectors
-"int idot(int3 x, int3 y)\n"
-"{\n"
-"\tint3 tmp = x * y;\n"
-"\treturn tmp.x + tmp.y + tmp.z;\n"
-"}\n"
-"int idot(int4 x, int4 y)\n"
-"{\n"
-"\tint4 tmp = x * y;\n"
-"\treturn tmp.x + tmp.y + tmp.z + tmp.w;\n"
-"}\n\n"
+int idot(int3 x, int3 y)
+{
+	int3 tmp = x * y;
+	return tmp.x + tmp.y + tmp.z;
+}
+int idot(int4 x, int4 y)
+{
+	int4 tmp = x * y;
+	return tmp.x + tmp.y + tmp.z + tmp.w;
+}
 // rounding + casting to integer at once in a single function
-"int  iround(float  x) { return int (round(x)); }\n"
-"int2 iround(float2 x) { return int2(round(x)); }\n"
-"int3 iround(float3 x) { return int3(round(x)); }\n"
-"int4 iround(float4 x) { return int4(round(x)); }\n\n"
-"int  itrunc(float  x) { return int (trunc(x)); }\n"
-"int2 itrunc(float2 x) { return int2(trunc(x)); }\n"
-"int3 itrunc(float3 x) { return int3(trunc(x)); }\n"
-"int4 itrunc(float4 x) { return int4(trunc(x)); }\n\n";
+int  iround(float  x) { return int (round(x)); }
+int2 iround(float2 x) { return int2(round(x)); }
+int3 iround(float3 x) { return int3(round(x)); }
+int4 iround(float4 x) { return int4(round(x)); }
+int  itrunc(float  x) { return int (trunc(x)); }
+int2 itrunc(float2 x) { return int2(trunc(x)); }
+int3 itrunc(float3 x) { return int3(trunc(x)); }
+int4 itrunc(float4 x) { return int4(trunc(x)); }
+)hlsl";
 
 static char text[PIXELSHADERGEN_BUFFERSIZE];
 
@@ -728,7 +731,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 			{
 				if (texcoord < numTexgen)
 				{
-					out.Write("t_coord = BSH(wu2(uv%d.xy) , " I_INDTEXSCALE"[%d].%s);\n", texcoord, i / 2, (i & 1) ? "zw" : "xy");
+					out.Write("t_coord = BSHR(wu2(uv%d.xy) , " I_INDTEXSCALE"[%d].%s);\n", texcoord, i / 2, (i & 1) ? "zw" : "xy");
 				}
 				else
 				{
@@ -1057,7 +1060,7 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, co
 							n, mtxidx, n, mtxidx + 1, n);
 					}
 					
-					out.Write("indtevtrans%d = BSH(indtevtrans%d, wu(3));\n", n, n);
+					out.Write("indtevtrans%d = BSHR(indtevtrans%d, wu(3));\n", n, n);
 					out.Write("indtevtrans%d = BSH(indtevtrans%d, " I_INDTEXMTX "[%d].w);\n", n, n, mtxidx);
 				}
 				else if (bpm.tevind[n].mid <= 7 && bHasTexCoord)
@@ -1065,7 +1068,7 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, co
 					_assert_(bpm.tevind[n].mid >= 5);
 					int mtxidx = 2 * (bpm.tevind[n].mid - 5);
 					out.Write("wu2 indtevtrans%d = wu2(uv%d.xy * indtevcrd%d.xx);\n", n, texcoord, n);
-					out.Write("indtevtrans%d = BSH(indtevtrans%d, wu(8));\n", n, n);
+					out.Write("indtevtrans%d = BSHR(indtevtrans%d, wu(8));\n", n, n);
 					out.Write("indtevtrans%d = BSH(indtevtrans%d, " I_INDTEXMTX "[%d].w);\n", n, n, mtxidx);
 				}
 				else if (bpm.tevind[n].mid <= 11 && bHasTexCoord)
@@ -1073,7 +1076,7 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, co
 					_assert_(bpm.tevind[n].mid >= 9);
 					int mtxidx = 2 * (bpm.tevind[n].mid - 9);
 					out.Write("wu2 indtevtrans%d = wu2(uv%d.xy * indtevcrd%d.yy);\n", n, texcoord, n);
-					out.Write("indtevtrans%d = BSH(indtevtrans%d, wu(8));\n", n, n);
+					out.Write("indtevtrans%d = BSHR(indtevtrans%d, wu(8));\n", n, n);
 					out.Write("indtevtrans%d = BSH(indtevtrans%d, " I_INDTEXMTX "[%d].w);\n", n, n, mtxidx);
 				}
 				else
