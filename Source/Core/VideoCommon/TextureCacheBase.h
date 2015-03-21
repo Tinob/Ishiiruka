@@ -64,7 +64,7 @@ public:
 			}
 			if (levels > 1)
 			{
-				result += result / 3;
+				result += result * 2;
 			}
 			return result;
 		}

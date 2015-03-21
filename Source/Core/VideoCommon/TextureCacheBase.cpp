@@ -150,14 +150,9 @@ void TextureCache::Cleanup(int _frameCount)
 	int pool_kill_threshold = TEXTURE_POOL_KILL_THRESHOLD;
 	if (texture_pool_memory_usage < (TEXTURE_POOL_MEMORY_LIMIT / 2))
 	{
-		// if we are using less than a half of the memory limit don't bother cleaning.
-		return;
-	}
-	else if (texture_pool_memory_usage < TEXTURE_POOL_MEMORY_LIMIT)
-	{
 		// if we are using less than the memory limit increase kill threshold
-		texture_kill_threshold *= 32;
-		pool_kill_threshold *= 10;
+		texture_kill_threshold *= 16;
+		pool_kill_threshold *= 5;
 	}
 	TexCache::iterator iter = textures.begin();
 	TexCache::iterator tcend = textures.end();
