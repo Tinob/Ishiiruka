@@ -88,7 +88,7 @@ public:
 
 private:
 	XFBSourceBase* CreateXFBSource(unsigned int target_width, unsigned int target_height);
-	void GetTargetSize(unsigned int *width, unsigned int *height, const EFBRectangle& sourceRc);
+	void GetTargetSize(unsigned int *width, unsigned int *height);
 
 	void CopyToRealXFB(u32 xfbAddr, u32 fbWidth, u32 fbHeight, const EFBRectangle& sourceRc,float Gamma);
 
@@ -120,6 +120,10 @@ private:
 		D3DFORMAT depth_surface_Format;//Format of the Depth Surface
 		D3DFORMAT depth_ReadBuffer_Format;//Format of the Depth color Read Surface
 	} s_efb;
+
+	static u32 m_target_width;
+	static u32 m_target_height;
+
 };
 
 }  // namespace DX9

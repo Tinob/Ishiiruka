@@ -685,17 +685,9 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 
 	// Prepare to copy the XFBs to our backbuffer
 	UpdateDrawRectangle(s_backbuffer_width, s_backbuffer_height);
-	const TargetRectangle Tr = GetTargetRectangle();
-	int X = Tr.left;
-	int Y = Tr.top;
-	int Width  = Tr.right - Tr.left;
-	int Height = Tr.bottom - Tr.top;
-	float scalex = 1 / (float)Width * 2.f;
-	float scaley = 1 / (float)Height * 2.f;
-	D3D::context->OMSetRenderTargets(1, &D3D::GetBackBuffer()->GetRTV(), nullptr);
-	D3D11_VIEWPORT vp = CD3D11_VIEWPORT((float)X, (float)Y, (float)Width, (float)Height);
-	D3D::context->RSSetViewports(1, &vp);
+	const TargetRectangle targetRc = GetTargetRectangle();
 	
+	D3D::context->OMSetRenderTargets(1, &D3D::GetBackBuffer()->GetRTV(), nullptr);
 
 	// activate linear filtering for the buffer copies
 	D3D::SetLinearCopySampler();
@@ -703,46 +695,34 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 	if (g_ActiveConfig.bUseXFB && g_ActiveConfig.bUseRealXFB)
 	{
 		// TODO: Television should be used to render Virtual XFB mode as well.
+		D3D11_VIEWPORT vp = CD3D11_VIEWPORT((float)targetRc.left, (float)targetRc.top, (float)targetRc.GetWidth(), (float)targetRc.GetHeight());
+		D3D::context->RSSetViewports(1, &vp);
+
 		s_television.Submit(xfbAddr, fbStride, fbWidth, fbHeight);
 		s_television.Render();
 	}
-	else if(g_ActiveConfig.bUseXFB)
+	else
 	{
-		const XFBSourceBase* xfbSource;
-
-		// draw each xfb source
-		for (u32 i = 0; i < xfbCount; ++i)
+		if (g_ActiveConfig.bUseXFB)
 		{
-			xfbSource = xfbSourceList[i];
-			MathUtil::Rectangle<float> sourceRc;
-			
-			sourceRc.left = 0;
-			sourceRc.top = 0;
-			sourceRc.right = (float)xfbSource->texWidth;
-			sourceRc.bottom = (float)xfbSource->texHeight;
+			const XFBSource* xfbSource;
 
-			sourceRc.right -= Renderer::EFBToScaledX(fbStride - fbWidth);
-
-			MathUtil::Rectangle<float> drawRc;
-
-			if (g_ActiveConfig.bUseRealXFB)
+			// draw each xfb source
+			for (u32 i = 0; i < xfbCount; ++i)
 			{
-				drawRc.top = 1;
-				drawRc.bottom = -1;
-				drawRc.left = -1;
-				drawRc.right = 1;
-			}
-			else
-			{
+				xfbSource = (const XFBSource*)xfbSourceList[i];
+
+				TargetRectangle drawRc;
+
 				// use virtual xfb with offset
 				int xfbHeight = xfbSource->srcHeight;
 				int xfbWidth = xfbSource->srcWidth;
 				int hOffset = ((s32)xfbSource->srcAddr - (s32)xfbAddr) / ((s32)fbStride * 2);
 
-				drawRc.top = 1.0f - (2.0f * (hOffset) / (float)fbHeight);
-				drawRc.bottom = 1.0f - (2.0f * (hOffset + xfbHeight) / (float)fbHeight);
-				drawRc.left = -(xfbWidth / (float)fbStride);
-				drawRc.right = (xfbWidth / (float)fbStride);
+				drawRc.top = targetRc.top + hOffset * targetRc.GetHeight() / (s32)fbHeight;
+				drawRc.bottom = targetRc.top + (hOffset + xfbHeight) * targetRc.GetHeight() / (s32)fbHeight;
+				drawRc.left = targetRc.left + (targetRc.GetWidth() - xfbWidth * targetRc.GetWidth() / (s32)fbStride) / 2;
+				drawRc.right = targetRc.left + (targetRc.GetWidth() + xfbWidth * targetRc.GetWidth() / (s32)fbStride) / 2;
 
 				// The following code disables auto stretch.  Kept for reference.
 				// scale draw area for a 1 to 1 pixel mapping with the draw target
@@ -752,20 +732,29 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 				//drawRc.bottom *= vScale;
 				//drawRc.left *= hScale;
 				//drawRc.right *= hScale;
+
+				TargetRectangle sourceRc;
+				sourceRc.left = 0;
+				sourceRc.top = 0;
+				sourceRc.right = (int)xfbSource->texWidth;
+				sourceRc.bottom = (int)xfbSource->texHeight;
+
+				sourceRc.right -= Renderer::EFBToScaledX(fbStride - fbWidth);
+
+				BlitScreen(sourceRc, drawRc, xfbSource->tex, xfbSource->texWidth, xfbSource->texHeight, Gamma);
 			}
-
-			xfbSource->Draw(sourceRc, drawRc, 0, 0);
 		}
-	}
-	else
-	{
-		TargetRectangle targetRc = Renderer::ConvertEFBRectangle(rc);
+		else
+		{
+			TargetRectangle sourceRc = Renderer::ConvertEFBRectangle(rc);
 
-		// TODO: Improve sampling algorithm for the pixel shader so that we can use the multisampled EFB texture as source
-		D3DTexture2D* read_texture = FramebufferManager::GetResolvedEFBColorTexture();
-		D3D::drawShadedTexQuad(read_texture->GetSRV(), targetRc.AsRECT(), Renderer::GetTargetWidth(), Renderer::GetTargetHeight(), PixelShaderCache::GetColorCopyProgram(false),VertexShaderCache::GetSimpleVertexShader(), VertexShaderCache::GetSimpleInputLayout(), Gamma);
+			// TODO: Improve sampling algorithm for the pixel shader so that we can use the multisampled EFB texture as source
+			D3DTexture2D* read_texture = FramebufferManager::GetResolvedEFBColorTexture();
+			BlitScreen(sourceRc, targetRc, read_texture, GetTargetWidth(), GetTargetHeight(), Gamma);
+		}
+		D3D11_VIEWPORT vp = CD3D11_VIEWPORT((float)targetRc.left, (float)targetRc.top, (float)targetRc.GetWidth(), (float)targetRc.GetHeight());
+		D3D::context->RSSetViewports(1, &vp);
 	}
-
 	// done with drawing the game stuff, good moment to save a screenshot
 	if (s_bScreenshot)
 	{
@@ -781,9 +770,9 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 		static int s_recordHeight;
 
 		if (!s_screenshot_texture)
-			CreateScreenshotTexture(GetTargetRectangle());
+			CreateScreenshotTexture(targetRc);
 
-		D3D11_BOX box = CD3D11_BOX(GetTargetRectangle().left, GetTargetRectangle().top, 0, GetTargetRectangle().right, GetTargetRectangle().bottom, 1);
+		D3D11_BOX box = CD3D11_BOX(targetRc.left, targetRc.top, 0, targetRc.right, targetRc.bottom, 1);
 		D3D::context->CopySubresourceRegion(s_screenshot_texture.get(), 0, 0, 0, 0, (ID3D11Resource*)D3D::GetBackBuffer()->GetTex(), 0, &box);
 		if (!bLastFrameDumped)
 		{
@@ -1203,6 +1192,13 @@ void Renderer::BBoxWrite(int index, u16 _value)
 		value = value * s_target_height / EFB_HEIGHT;
 	}
 	BBox::Set(index, value);
+}
+
+void Renderer::BlitScreen(TargetRectangle src, TargetRectangle dst, D3DTexture2D* src_texture, u32 src_width, u32 src_height, float Gamma)
+{
+	D3D11_VIEWPORT vp = CD3D11_VIEWPORT((float)dst.left, (float)dst.top, (float)dst.GetWidth(), (float)dst.GetHeight());
+	D3D::context->RSSetViewports(1, &vp);
+	D3D::drawShadedTexQuad(src_texture->GetSRV(), src.AsRECT(), src_width, src_height, PixelShaderCache::GetColorCopyProgram(false), VertexShaderCache::GetSimpleVertexShader(), VertexShaderCache::GetSimpleInputLayout(), Gamma);
 }
 
 }  // namespace DX11

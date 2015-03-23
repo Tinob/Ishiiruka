@@ -1,11 +1,6 @@
 // Copyright 2013 Dolphin Emulator Project
 // Licensed under GPLv2
 // Refer to the license.txt file included.
+#pragma once
 
-#ifndef MAIN_H
-#define MAIN_H
-
-#include "Render.h"
 #include "VideoCommon/MainBase.h"
-
-#endif

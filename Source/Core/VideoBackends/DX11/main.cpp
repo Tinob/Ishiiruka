@@ -31,6 +31,7 @@
 #include "VideoBackends/DX11/D3DBase.h"
 #include "VideoBackends/DX11/PerfQuery.h"
 #include "VideoBackends/DX11/PixelShaderCache.h"
+#include "VideoBackends/DX11/Render.h"
 #include "VideoBackends/DX11/TextureCache.h"
 #include "VideoBackends/DX11/VertexManager.h"
 #include "VideoBackends/DX11/VertexShaderCache.h"

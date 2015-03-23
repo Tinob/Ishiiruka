@@ -145,7 +145,7 @@ void FramebufferManagerBase::CopyToVirtualXFB(u32 xfbAddr, u32 fbWidth, u32 fbHe
 		m_virtualXFBList.splice(m_virtualXFBList.begin(), m_virtualXFBList, vxfb);
 
 	unsigned int target_width, target_height;
-	g_framebuffer_manager->GetTargetSize(&target_width, &target_height, sourceRc);
+	g_framebuffer_manager->GetTargetSize(&target_width, &target_height);
 
 	// recreate if needed
 	if (vxfb->xfbSource && (vxfb->xfbSource->texWidth != target_width || vxfb->xfbSource->texHeight != target_height))

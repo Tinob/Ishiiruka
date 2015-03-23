@@ -49,8 +49,6 @@ struct XFBSource : public XFBSourceBase
 	XFBSource(D3DTexture2D *_tex) : tex(_tex) {}
 	~XFBSource() { tex->Release(); }
 
-	void Draw(const MathUtil::Rectangle<float> &sourcerc,
-		const MathUtil::Rectangle<float> &drawrc, int width, int height) const;
 	void DecodeToTexture(u32 xfbAddr, u32 fbWidth, u32 fbHeight);
 	void CopyEFB(float Gamma);
 
@@ -83,7 +81,7 @@ public:
 
 private:
 	XFBSourceBase* CreateXFBSource(unsigned int target_width, unsigned int target_height);
-	void GetTargetSize(unsigned int *width, unsigned int *height, const EFBRectangle& sourceRc);
+	void GetTargetSize(unsigned int *width, unsigned int *height);
 
 	void CopyToRealXFB(u32 xfbAddr, u32 fbWidth, u32 fbHeight, const EFBRectangle& sourceRc,float Gamma);
 
@@ -101,6 +99,10 @@ private:
 		D3DTexture2D* resolved_color_tex;
 		D3DTexture2D* resolved_depth_tex;
 	} m_efb;
+
+	static u32 m_target_width;
+	static u32 m_target_height;
+
 };
 
 }  // namespace DX11

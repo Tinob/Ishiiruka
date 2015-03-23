@@ -29,19 +29,21 @@ inline void GetSurface(IDirect3DTexture9* texture, IDirect3DSurface9** surface)
 }
 
 FramebufferManager::Efb FramebufferManager::s_efb;
+u32 FramebufferManager::m_target_width;
+u32 FramebufferManager::m_target_height;
 
 FramebufferManager::FramebufferManager()
 {
 	bool depth_textures_supported = true;
-	int target_width = Renderer::GetTargetWidth();
-	int target_height = Renderer::GetTargetHeight();
+	m_target_width = Renderer::GetTargetWidth();
+	m_target_height = Renderer::GetTargetHeight();
 	s_efb.color_surface_Format = D3DFMT_A8R8G8B8;
 
 	// EFB color texture - primary render target
-	HRESULT hr = D3D::dev->CreateTexture(target_width, target_height, 1, D3DUSAGE_RENDERTARGET, s_efb.color_surface_Format, 
+	HRESULT hr = D3D::dev->CreateTexture(m_target_width, m_target_height, 1, D3DUSAGE_RENDERTARGET, s_efb.color_surface_Format, 
 										D3DPOOL_DEFAULT, &s_efb.color_texture, NULL);
 	GetSurface(s_efb.color_texture, &s_efb.color_surface);
-	CHECK(hr, "Create color texture (size: %dx%d; hr=%#x)", target_width, target_height, hr);
+	CHECK(hr, "Create color texture (size: %dx%d; hr=%#x)", m_target_width, m_target_height, hr);
 
 	// Render buffer for AccessEFB (color data)
 	hr = D3D::dev->CreateTexture(1, 1, 1, D3DUSAGE_RENDERTARGET, s_efb.color_surface_Format, 
@@ -66,10 +68,10 @@ FramebufferManager::FramebufferManager()
 	if (depth_textures_supported)
 	{
 		// EFB depth buffer - primary depth buffer
-		hr = D3D::dev->CreateTexture(target_width, target_height, 1, D3DUSAGE_DEPTHSTENCIL, s_efb.depth_surface_Format, 
+		hr = D3D::dev->CreateTexture(m_target_width, m_target_height, 1, D3DUSAGE_DEPTHSTENCIL, s_efb.depth_surface_Format, 
 									 D3DPOOL_DEFAULT, &s_efb.depth_texture, NULL);
 		GetSurface(s_efb.depth_texture, &s_efb.depth_surface);
-		CHECK(hr, "Framebuffer depth texture (size: %dx%d; hr=%#x)", target_width, target_height, hr);
+		CHECK(hr, "Framebuffer depth texture (size: %dx%d; hr=%#x)", m_target_width, m_target_height, hr);
 
 		// Render buffer for AccessEFB (depth data)
 		D3DFORMAT DepthTexFormats[2];
@@ -97,15 +99,15 @@ FramebufferManager::FramebufferManager()
 	else if (s_efb.depth_surface_Format)
 	{
 		// just create a depth surface
-		hr = D3D::dev->CreateDepthStencilSurface(target_width, target_height, s_efb.depth_surface_Format, D3DMULTISAMPLE_NONE, 0, FALSE, &s_efb.depth_surface, NULL);
-		CHECK(hr, "Framebuffer depth surface (size: %dx%d; hr=%#x)", target_width, target_height, hr);
+		hr = D3D::dev->CreateDepthStencilSurface(m_target_width, m_target_height, s_efb.depth_surface_Format, D3DMULTISAMPLE_NONE, 0, FALSE, &s_efb.depth_surface, NULL);
+		CHECK(hr, "Framebuffer depth surface (size: %dx%d; hr=%#x)", m_target_width, m_target_height, hr);
 	}
 
 	// ReinterpretPixelData - EFB color data will be copy-converted to this texture and the buffers are swapped then
-	hr = D3D::dev->CreateTexture(target_width, target_height, 1, D3DUSAGE_RENDERTARGET, s_efb.color_surface_Format,
+	hr = D3D::dev->CreateTexture(m_target_width, m_target_height, 1, D3DUSAGE_RENDERTARGET, s_efb.color_surface_Format,
 										D3DPOOL_DEFAULT, &s_efb.color_reinterpret_texture, NULL);
 	GetSurface(s_efb.color_reinterpret_texture, &s_efb.color_reinterpret_surface);
-	CHECK(hr, "Create color reinterpret texture (size: %dx%d; hr=%#x)", target_width, target_height, hr);
+	CHECK(hr, "Create color reinterpret texture (size: %dx%d; hr=%#x)", m_target_width, m_target_height, hr);
 }
 
 FramebufferManager::~FramebufferManager()
@@ -136,17 +138,10 @@ XFBSourceBase* FramebufferManager::CreateXFBSource(unsigned int target_width, un
 	return new XFBSource(tex);
 }
 
-void FramebufferManager::GetTargetSize(unsigned int *width, unsigned int *height, const EFBRectangle& sourceRc)
+void FramebufferManager::GetTargetSize(unsigned int *width, unsigned int *height)
 {
-	TargetRectangle targetSource;
-
-	targetSource.top = ScaleToVirtualXfbHeight(sourceRc.top, Renderer::GetBackbufferHeight());
-	targetSource.bottom = ScaleToVirtualXfbHeight(sourceRc.bottom, Renderer::GetBackbufferHeight());
-	targetSource.left = ScaleToVirtualXfbWidth(sourceRc.left, Renderer::GetBackbufferWidth());
-	targetSource.right = ScaleToVirtualXfbWidth(sourceRc.right, Renderer::GetBackbufferWidth());
-
-	*width = targetSource.right - targetSource.left;
-	*height = targetSource.bottom - targetSource.top;
+	*width = m_target_width;
+	*height = m_target_height;
 }
 
 void XFBSource::Draw(const MathUtil::Rectangle<float> &sourcerc,
