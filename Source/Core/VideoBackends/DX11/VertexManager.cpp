@@ -136,7 +136,7 @@ void VertexManager::Draw(UINT stride)
 	{
 		auto pt = g_ActiveConfig.backend_info.bSupportsPrimitiveRestart ?
 		D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP :
-															D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
 		D3D::stateman->SetPrimitiveTopology(pt);
 		D3D::stateman->SetGeometryShader(nullptr);
