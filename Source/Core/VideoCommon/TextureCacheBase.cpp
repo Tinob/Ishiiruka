@@ -147,12 +147,10 @@ void TextureCache::OnConfigChanged(VideoConfig& config)
 void TextureCache::Cleanup(int _frameCount)
 {
 	int texture_kill_threshold = TEXTURE_KILL_THRESHOLD;
-	int pool_kill_threshold = TEXTURE_POOL_KILL_THRESHOLD;
 	if (texture_pool_memory_usage < (TEXTURE_POOL_MEMORY_LIMIT / 2))
 	{
 		// if we are using less than the memory limit increase kill threshold
-		texture_kill_threshold *= 16;
-		pool_kill_threshold *= 5;
+		texture_kill_threshold *= TEXTURE_KILL_MULTIPLIER;
 	}
 	TexCache::iterator iter = textures.begin();
 	TexCache::iterator tcend = textures.end();
@@ -182,7 +180,7 @@ void TextureCache::Cleanup(int _frameCount)
 		{
 			iter2->second->frameCount = _frameCount;
 		}
-		if (_frameCount > pool_kill_threshold + iter2->second->frameCount)
+		if (_frameCount > TEXTURE_POOL_KILL_THRESHOLD + iter2->second->frameCount)
 		{
 			texture_pool_memory_usage -= iter2->second->native_size_in_bytes;
 			delete iter2->second;

@@ -20,10 +20,11 @@ enum TextureCacheParams
 	// ugly
 	TEXHASH_INVALID = 0,
 	FRAMECOUNT_INVALID = 0,
+	TEXTURE_KILL_MULTIPLIER = 2,
 	TEXTURE_KILL_THRESHOLD = 120,
 	TEXTURE_POOL_KILL_THRESHOLD = 12,
-	HIRES_POOL_KILL_THRESHOLD = 4096,
-	TEXTURE_POOL_MEMORY_LIMIT = 512 * 1024 * 1024
+	HIRES_POOL_KILL_THRESHOLD = 600,
+	TEXTURE_POOL_MEMORY_LIMIT = 128 * 1024 * 1024
 };
 
 class TextureCache
@@ -62,10 +63,11 @@ public:
 			default:
 				break;
 			}
-			if (levels > 1)
+			if (levels > 1 || rendertarget)
 			{
 				result += result * 2;
 			}
+			result = std::max(result, 4096u);
 			return result;
 		}
 
