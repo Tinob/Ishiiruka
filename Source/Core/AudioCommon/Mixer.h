@@ -149,6 +149,7 @@ protected:
 			, m_fraction(0)
 		{
 			srand((u32)time(nullptr));
+			m_float_buffer.fill(0.0f);
 		}
 
 		virtual void Interpolate(u32 left_input_index, float* left_output, float* right_output) = 0;
