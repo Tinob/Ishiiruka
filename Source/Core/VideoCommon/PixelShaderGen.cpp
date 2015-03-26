@@ -190,27 +190,14 @@ static const tevSources AInputSourceMap[] =
 
 static const char *tevRasTable[] =
 {
-	"col0",
-	"col1",
-	"float4(0.0,0.0,0.0,0.0)", //2
-	"float4(0.0,0.0,0.0,0.0)", //3
-	"float4(0.0,0.0,0.0,0.0)", //4
-	"float4(a_bump,a_bump,a_bump,a_bump)", // use bump alpha
-	"(float4(1.0,1.0,1.0,1.0)*(a_bump+trunc(a_bump/32.0)))", //normalized
-	"float4(0.0,0.0,0.0,0.0)", // zero
-};
-
-
-static const char *tevRasTableI[] =
-{
-	"int4(col0)",
-	"int4(col1)",
-	"int4(0,0,0,0)", //2
-	"int4(0,0,0,0)", //3
-	"int4(0,0,0,0)", //4
-	"int4(a_bump,a_bump,a_bump,a_bump)", // use bump alpha
-	"(int4(1,1,1,1)*(a_bump|(a_bump>>5)))", //normalized
-	"int4(0,0,0,0)", // zero
+	"wu4(col0)",
+	"wu4(col1)",
+	"wu4(0,0,0,0)", //2
+	"wu4(0,0,0,0)", //3
+	"wu4(0,0,0,0)", //4
+	"wu4(a_bump,a_bump,a_bump,a_bump)", // use bump alpha
+	"(wu4(1,1,1,1)*BOR(a_bump, BSHR(a_bump, 5)))", //normalized
+	"wu4(0,0,0,0)", // zero
 };
 
 //static const char *tevTexFunc[] = { "tex2D", "texRECT" };
@@ -225,6 +212,7 @@ float4 CHK_O_U8(float4 x)
 { 
 	return frac(((x) + 1024.0) * (1.0/256.0)) * 256.0;
 }
+#define BOR(x, n) ((x) + (n))
 #define BSHR(x, n) floor((x) * exp2(-(n)))
 float2 BSH(float2 x, float n)
 {
@@ -245,6 +233,11 @@ float remainder(float x, float y)
 	y = (x < 0.0) ? (-y) : y;
 	return frac(x/y)*y;
 }
+// rounding + casting to integer at once in a single function
+wu  wuround(float  x) { return wu(round(x)); }
+wu2 wuround(float2 x) { return wu2(round(x)); }
+wu3 wuround(float3 x) { return wu3(round(x)); }
+wu4 wuround(float4 x) { return wu4(round(x)); }
 )hlsl";
 
 static const char* headerUtilI = R"hlsl(
@@ -252,6 +245,7 @@ int4 CHK_O_U8(int4 x)
 {
 	return x & 255;
 }
+#define BOR(x, n) ((x) | (n))
 #define BSHR(x, n) ((x) >> (n))
 int2 BSH(int2 x, int n)
 {
@@ -280,20 +274,16 @@ int idot(int4 x, int4 y)
 	return tmp.x + tmp.y + tmp.z + tmp.w;
 }
 // rounding + casting to integer at once in a single function
-int  iround(float  x) { return int (round(x)); }
-int2 iround(float2 x) { return int2(round(x)); }
-int3 iround(float3 x) { return int3(round(x)); }
-int4 iround(float4 x) { return int4(round(x)); }
-int  itrunc(float  x) { return int (trunc(x)); }
-int2 itrunc(float2 x) { return int2(trunc(x)); }
-int3 itrunc(float3 x) { return int3(trunc(x)); }
-int4 itrunc(float4 x) { return int4(trunc(x)); }
+wu  wuround(float  x) { return wu(round(x)); }
+wu2 wuround(float2 x) { return wu2(round(x)); }
+wu3 wuround(float3 x) { return wu3(round(x)); }
+wu4 wuround(float4 x) { return wu4(round(x)); }
 )hlsl";
 
 static char text[PIXELSHADERGEN_BUFFERSIZE];
 
 template<class T, bool Write_Code, API_TYPE ApiType, bool use_integer_math> inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, const char swapModeTable[4][5], const BPMemory &bpm);
-template<class T, bool use_integer_math, API_TYPE ApiType> inline void SampleTexture(T& out, const char *texcoords, const char *texswap, int texmap);
+template<class T, API_TYPE ApiType> inline void SampleTexture(T& out, const char *texcoords, const char *texswap, int texmap);
 template<class T, bool Write_Code, API_TYPE ApiType, bool use_integer_math> inline void WriteAlphaTest(T& out, pixel_shader_uid_data& uid_data, DSTALPHA_MODE dstAlphaMode, bool per_pixel_depth, const BPMemory &bpm);
 template<class T, bool Write_Code, bool use_integer_math> inline void WriteFog(T& out, pixel_shader_uid_data& uid_data, const BPMemory &bpm);
 template<class T, bool use_integer_math, API_TYPE ApiType> inline void WritePerPixelDepth(T& out, const BPMemory &bpm);
@@ -738,7 +728,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 					out.Write("t_coord = wu2(0,0);\n");
 				}
 				out.Write("wu3 indtex%d = ", i);
-				SampleTexture<T, Use_integer_math, ApiType>(out, "(float2(t_coord)/128.0)", "abg", texmap);
+				SampleTexture<T, ApiType>(out, "(float2(t_coord)/128.0)", "abg", texmap);
 			}
 		}
 	}
@@ -803,7 +793,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 		if ((ApiType == API_OPENGL || ApiType == API_D3D11) && g_ActiveConfig.bFastDepthCalc)
 		{
 			if (Use_integer_math)
-				out.Write("wu zCoord = iround(rawpos.z * float(0xFFFFFF));\n");
+				out.Write("wu zCoord = wuround(rawpos.z * float(0xFFFFFF));\n");
 			else
 				out.Write("wu zCoord = wu(rawpos.z);\n");
 		}
@@ -811,7 +801,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 		{
 			// the screen space depth value = far z + (clip z / clip w) * z range
 			if (Use_integer_math)
-				out.Write("wu zCoord = " I_ZBIAS"[1].x + iround((clipPos.z / clipPos.w) * float(" I_ZBIAS"[1].y));\n");
+				out.Write("wu zCoord = " I_ZBIAS"[1].x + wuround((clipPos.z / clipPos.w) * float(" I_ZBIAS"[1].y));\n");
 			else
 				out.Write("wu zCoord = round(" I_ZBIAS "[1].x + ((clipPos.z / clipPos.w) * " I_ZBIAS "[1].y)) / float(0xFFFFFF);\n");
 			
@@ -941,8 +931,8 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, co
 			{
 				if (use_integer_math)
 				{
-					const char *tevIndAlphaSel[] = { "", "x", "y", "z" };
-					const char *tevIndAlphaMask[] = { "248", "224", "240", "248" }; // 0b11111000, 0b11100000, 0b11110000, 0b11111000
+					static const char *tevIndAlphaSel[] = { "", "x", "y", "z" };
+					static const char *tevIndAlphaMask[] = { "248", "224", "240", "248" }; // 0b11111000, 0b11100000, 0b11110000, 0b11111000
 					out.Write("a_bump = indtex%d.%s & %s;\n",
 						bpm.tevind[n].bt,
 						tevIndAlphaSel[bpm.tevind[n].bs],
@@ -990,7 +980,7 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, co
 			{
 				if (use_integer_math)
 				{
-					const char *tevIndFmtMask[] = { "255", "31", "15", "7" };
+					static const char *tevIndFmtMask[] = { "255", "31", "15", "7" };
 					out.Write("wu3 indtevcrd%d = indtex%d & %s;\n", n, bpmem.tevind[n].bt, tevIndFmtMask[bpmem.tevind[n].fmt]);
 				}
 				else
@@ -1151,10 +1141,7 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, co
 				out.Write("col1 = round(col1 * 255.0);\n");
 				tevRascolor1_Expanded = true;
 			}
-			if (use_integer_math)
-				out.Write("ras_t = %s.%s;\n", tevRasTableI[rasindex], rasswap);
-			else
-				out.Write("ras_t = %s.%s;\n", tevRasTable[rasindex], rasswap);
+			out.Write("ras_t = %s.%s;\n", tevRasTable[rasindex], rasswap);
 			TevOverflowState[tevSources::RASC] = rasindex < 2;
 			TevOverflowState[tevSources::RASA] = rasindex < 2;
 		}
@@ -1189,7 +1176,7 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, co
 		if (Write_Code)
 			out.Write("tex_t = ");
 
-		SampleTexture<T, use_integer_math, ApiType>(out, "(float2(tevcoord.xy) * (1.0/128.0))", texswap, texmap);
+		SampleTexture<T, ApiType>(out, "(float2(tevcoord.xy) * (1.0/128.0))", texswap, texmap);
 	}
 	else if (Write_Code)
 	{
@@ -1217,27 +1204,11 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, co
 
 		bool normalize_c_rgb = cc.c != TEVCOLORARG_ZERO &&  cc.bias != TevBias_COMPARE;
 		bool normalize_c_a = ac.c != TEVALPHAARG_ZERO &&  ac.bias != TevBias_COMPARE;
-		if (normalize_c_rgb && normalize_c_a)
+		if (normalize_c_rgb || normalize_c_a)
 		{
-			if (use_integer_math)
-				out.Write("tin_c = tin_c | (tin_c >> 7);\n");
-			else
-				out.Write("tin_c = tin_c+trunc(tin_c*(1.0/128.0));\n");
-		}
-		else if (normalize_c_rgb)
-		{
-			if (use_integer_math)
-				out.Write("tin_c.rgb = tin_c.rgb | (tin_c.rgb >> 7);\n");
-			else
-				out.Write("tin_c.rgb = tin_c.rgb+trunc(tin_c.rgb*(1.0/128.0));\n");
-		}
-		else if (normalize_c_a)
-		{
-			if (use_integer_math)
-				out.Write("tin_c.a = tin_c.a | (tin_c.a >> 7);\n");
-			else
-				out.Write("tin_c.a = tin_c.a + trunc(tin_c.a*(1.0/128.0));\n");
-		}
+			const char* cswisle = normalize_c_rgb && normalize_c_a ? "" : (normalize_c_rgb ? ".rgb" : ".a");
+			out.Write("tin_c%s = BOR(tin_c%s, BSHR(tin_c%s, 7));\n", cswisle, cswisle, cswisle);
+		}		
 		out.Write("tin_d = wu4(%s,%s);\n", tevCInputTable[cc.d], tevAInputTable[ac.d]);
 		
 		TevOverflowState[tevCOutputSourceMap[cc.dest]] = !cc.clamp;
@@ -1549,27 +1520,15 @@ static inline void WriteTevCompare(T& out, int components, int cmp)
 	}
 }
 
-template<class T, bool use_integer_math, API_TYPE ApiType>
+template<class T, API_TYPE ApiType>
 void SampleTexture(T& out, const char *texcoords, const char *texswap, int texmap)
 {
-	if (use_integer_math)
+	if (ApiType == API_D3D11)
 	{
-		if (ApiType == API_D3D11)
-		{
-			out.Write("iround((Tex%d.Sample(samp%d,%s.xy * " I_TEXDIMS"[%d].xy)).%s * 255.0);\n", texmap, texmap, texcoords, texmap, texswap);
-		}
-		else
-			out.Write("iround(%s(samp%d,%s.xy * " I_TEXDIMS"[%d].xy).%s * 255.0);\n", ApiType == API_OPENGL ? "texture" : "tex2D", texmap, texcoords, texmap, texswap);
+		out.Write("wuround((Tex%d.Sample(samp%d,%s.xy * " I_TEXDIMS"[%d].xy)).%s * 255.0);\n", texmap, texmap, texcoords, texmap, texswap);
 	}
 	else
-	{
-		if (ApiType == API_D3D11)
-		{
-			out.Write("round((Tex%d.Sample(samp%d,%s.xy * " I_TEXDIMS"[%d].xy)).%s * 255.0);\n", texmap, texmap, texcoords, texmap, texswap);
-		}
-		else
-			out.Write("round(%s(samp%d,%s.xy * " I_TEXDIMS"[%d].xy).%s * 255.0);\n", ApiType == API_OPENGL ? "texture" : "tex2D", texmap, texcoords, texmap, texswap);
-	}
+		out.Write("wuround(%s(samp%d,%s.xy * " I_TEXDIMS"[%d].xy).%s * 255.0);\n", ApiType == API_OPENGL ? "texture" : "tex2D", texmap, texcoords, texmap, texswap);
 }
 
 static const char *tevAlphaFuncsTable[] =
@@ -1736,16 +1695,8 @@ static inline void WriteFog(T& out, pixel_shader_uid_data& uid_data, const BPMem
 			if (bpm.fog.c_proj_fsel.fsel != 2 && out.GetBuffer() != NULL)
 				WARN_LOG(VIDEO, "Unknown Fog Type! %08x", bpm.fog.c_proj_fsel.fsel);
 		}
-		if (use_integer_math)
-		{
-			out.Write("int ifog = iround(fog * 256.0);\n");
-			out.Write("prev.rgb = (prev.rgb * (256 - ifog) + " I_FOGCOLOR".rgb * ifog) >> 8;\n");
-		}
-		else
-		{
-			out.Write("fog = round(fog * 256.0);\n");
-			out.Write("prev.rgb = trunc((prev.rgb * (256.0 - fog) + " I_FOGCOLOR".rgb * fog) * (1.0/256.0));\n");
-		}	
+		out.Write("wu ifog = wu(round(fog * 256.0));\n");
+		out.Write("prev.rgb = BSHR(prev.rgb * (wu(256) - ifog) + " I_FOGCOLOR".rgb * ifog, wu(8));\n");
 	}
 
 }
