@@ -660,7 +660,6 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title, con
 #if defined WIN32
 	// Borderless Fullscreen
 	borderless_fullscreen = CreateCheckBox(page_advanced, _("Borderless Fullscreen"), wxGetTranslation(borderless_fullscreen_desc), vconfig.bBorderlessFullscreen);
-	borderless_fullscreen->Show(vconfig.backend_info.bSupportsExclusiveFullscreen);
 	szr_misc->Add(borderless_fullscreen);
 #endif
 	wxStaticBoxSizer* const group_misc = new wxStaticBoxSizer(wxVERTICAL, page_advanced, _("Misc"));
@@ -883,8 +882,8 @@ void VideoConfigDiag::OnUpdateUI(wxUpdateUIEvent& ev)
 	pixel_lighting->Enable(vconfig.backend_info.bSupportsPixelLighting);
 
 	// Borderless Fullscreen
-	borderless_fullscreen->Enable(vconfig.backend_info.bSupportsExclusiveFullscreen);
-	borderless_fullscreen->Show(vconfig.backend_info.bSupportsExclusiveFullscreen);	
+	borderless_fullscreen->Enable((vconfig.backend_info.APIType & API_D3D9) == 0);
+	borderless_fullscreen->Show((vconfig.backend_info.APIType & API_D3D9) == 0);
 
 	// EFB Access Cache
 	Fast_efb_cache->Show(vconfig.bEFBAccessEnable);
