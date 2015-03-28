@@ -125,7 +125,7 @@ const char depth_matrix_program_code[] = {
 	"	float4 texcol = Tex0.Sample(samp0,uv0);\n"
 
 	// 255.99998474121 = 16777215/16777216*256
-	"	float workspace = texcol.x * 255.99998474121;\n"
+	"	float workspace = (1.0 - texcol.x) * 255.99998474121;\n"
 
 	"	texcol.x = floor(workspace);\n"         // x component
 
@@ -165,7 +165,7 @@ const char depth_matrix_program_msaa[] = {
 	"	texcol /= samples;\n"
 
 	// 255.99998474121 = 16777215/16777216*256
-	"	float workspace = texcol.x * 255.99998474121;\n"
+	"	float workspace = (1.0 - texcol.x) * 255.99998474121;\n"
 
 	"	texcol.x = floor(workspace);\n"         // x component
 

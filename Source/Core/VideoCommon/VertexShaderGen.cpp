@@ -495,7 +495,7 @@ inline void GenerateVertexShader(T& out, u32 components, const XFMemory &xfr, co
 		//if not early z culling will improve speed
 		if (api_type & API_D3D9 || api_type == API_D3D11)
 		{
-			out.Write("o.pos.z = " I_DEPTHPARAMS".x * o.pos.w + o.pos.z * " I_DEPTHPARAMS".y;\n");
+			out.Write("o.pos.z = -((" I_DEPTHPARAMS".x - 1.0) * o.pos.w + o.pos.z * " I_DEPTHPARAMS".y);\n");
 		}
 		else
 		{

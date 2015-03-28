@@ -175,7 +175,7 @@ float4 Fetch_3(float2 coord)
 {
 float2 texCoord = CalcTexCoord(coord);
 
-uint depth24 = 0xFFFFFF * EFBTexture.SampleLevel(EFBSampler, texCoord,0).r;
+uint depth24 = 0xFFFFFF - (0xFFFFFF * EFBTexture.SampleLevel(EFBSampler, texCoord,0).r);
 uint4 bytes = uint4(
 	(depth24 >> 16) & 0xFF, // r
 	(depth24 >> 8) & 0xFF,  // g

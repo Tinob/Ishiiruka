@@ -461,15 +461,19 @@ void WriteZ8Encoder(char* p, const char* multiplier)
 	WRITE(p, " float depth;\n");
 
 	WriteSampleColor(p, "b", "depth", 0);
+	WRITE(p, " depth = 1.0f - depth;\n");
 	WRITE(p, "ocol0.b = frac(depth * %s);\n", multiplier);
 
 	WriteSampleColor(p, "b", "depth", 1);
+	WRITE(p, " depth = 1.0f - depth;\n");
 	WRITE(p, "ocol0.g = frac(depth * %s);\n", multiplier);
 
 	WriteSampleColor(p, "b", "depth", 2);
+	WRITE(p, " depth = 1.0f - depth;\n");
 	WRITE(p, "ocol0.r = frac(depth * %s);\n", multiplier);
 
 	WriteSampleColor(p, "b", "depth", 3);
+	WRITE(p, " depth = 1.0f - depth;\n");
 	WRITE(p, "ocol0.a = frac(depth * %s);\n", multiplier);
 
 	WriteEncoderEnd(p);
@@ -485,7 +489,7 @@ void WriteZ16Encoder(char* p)
 	// byte order is reversed
 
 	WriteSampleColor(p, "b", "depth", 0);
-
+	WRITE(p, " depth = 1.0f - depth;\n");
 	WRITE(p, "  depth *= 16777215.0f;\n");
 	WRITE(p, "  expanded.r = floor(depth / (256.0f * 256.0f));\n");
 	WRITE(p, "  depth -= expanded.r * 256.0f * 256.0f;\n");
@@ -495,7 +499,7 @@ void WriteZ16Encoder(char* p)
 	WRITE(p, "  ocol0.g = expanded.r / 255.0f;\n");
 
 	WriteSampleColor(p, "b", "depth", 1);
-
+	WRITE(p, " depth = 1.0f - depth;\n");
 	WRITE(p, "  depth *= 16777215.0f;\n");
 	WRITE(p, "  expanded.r = floor(depth / (256.0f * 256.0f));\n");
 	WRITE(p, "  depth -= expanded.r * 256.0f * 256.0f;\n");
@@ -517,7 +521,7 @@ void WriteZ16LEncoder(char* p)
 	// byte order is reversed
 
 	WriteSampleColor(p, "b", "depth", 0);
-
+	WRITE(p, " depth = 1.0f - depth;\n");
 	WRITE(p, "  depth *= 16777215.0f;\n");
 	WRITE(p, "  expanded.r = floor(depth / (256.0f * 256.0f));\n");
 	WRITE(p, "  depth -= expanded.r * 256.0f * 256.0f;\n");
@@ -529,7 +533,7 @@ void WriteZ16LEncoder(char* p)
 	WRITE(p, "  ocol0.g = expanded.g / 255.0f;\n");
 	
 	WriteSampleColor(p, "b", "depth", 1);
-
+	WRITE(p, " depth = 1.0f - depth;\n");
 	WRITE(p, "  depth *= 16777215.0f;\n");
 	WRITE(p, "  expanded.r = floor(depth / (256.0f * 256.0f));\n");
 	WRITE(p, "  depth -= expanded.r * 256.0f * 256.0f;\n");
@@ -555,7 +559,9 @@ void WriteZ24Encoder(char* p)
 	WRITE(p, "  float3 expanded1;\n");
 
 	WriteSampleColor(p, "b", "depth0", 0);
+	WRITE(p, " depth0 = 1.0f - depth0;\n");
 	WriteSampleColor(p, "b", "depth1", 1);
+	WRITE(p, " depth1 = 1.0f - depth1;\n");
 
 	for (int i = 0; i < 2; i++)
 	{

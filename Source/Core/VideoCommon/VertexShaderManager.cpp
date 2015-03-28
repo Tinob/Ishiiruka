@@ -385,10 +385,23 @@ void VertexShaderManager::SetConstants()
 		const float pixel_center_correction = ((g_ActiveConfig.backend_info.APIType & API_D3D9) ? 0.0f : 0.5f) - 7.0f / 12.0f;
 		const float pixel_size_x = 2.f / Renderer::EFBToScaledXf(2.f * xfmem.viewport.wd);
 		const float pixel_size_y = 2.f / Renderer::EFBToScaledXf(2.f * xfmem.viewport.ht);
-		const bool nonStandartViewport = xfmem.viewport.zRange < 0 || xfmem.viewport.farZ < 0 || xfmem.viewport.farZ > 16777216.0f;
+		float nearz = xfmem.viewport.farZ - xfmem.viewport.zRange;
+		float farz = xfmem.viewport.farZ;
+		const bool nonStandartViewport = (g_ActiveConfig.backend_info.APIType != API_OPENGL)
+			&& (nearz < 0.f || farz > 16777216.0f || nearz >= 16777216.0f || farz <= 0.f);
+		float rangez = 1.0f;
+		if (nonStandartViewport)
+		{
+			farz *= U24_NORM_COEF;
+			rangez = xfmem.viewport.zRange * U24_NORM_COEF;
+		}
+		else
+		{
+			farz = 1.0f;
+		}
 		m_buffer.SetConstant4(C_DEPTHPARAMS,
-			(nonStandartViewport ? xfmem.viewport.farZ * U24_NORM_COEF : 1.0f),
-			(nonStandartViewport ? xfmem.viewport.zRange * U24_NORM_COEF : 1.0f),
+			farz,
+			rangez,
 			pixel_center_correction * pixel_size_x,
 			pixel_center_correction * pixel_size_y);
 		// This is so implementation-dependent that we can't have it here.

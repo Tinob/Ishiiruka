@@ -406,7 +406,7 @@ u32 Renderer::AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data)
 		// EFB data successfully retrieved, now get the pixel data
 		D3DLOCKED_RECT drect;
 		pSystemBuf->LockRect(&drect, &RectToLock, D3DLOCK_READONLY);
-		u32 z = ((u32*)drect.pBits)[6];	// 24 bit depth value
+		u32 z = 0xFFFFFF - ((u32*)drect.pBits)[6];	// 24 bit depth value
 		pSystemBuf->UnlockRect();
 
 		// if Z is in 16 bit format you must return a 16 bit integer
@@ -480,7 +480,7 @@ u32 Renderer::AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data)
 		vp.MinZ = 0.0;
 		vp.MaxZ = 1.0;
 		D3D::dev->SetViewport(&vp);
-		D3D::drawClearQuad(0, (poke_data & 0xFFFFFF) / float(0xFFFFFF), PixelShaderCache::GetClearProgram(), VertexShaderCache::GetClearVertexShader());
+		D3D::drawClearQuad(0, (0xFFFFFF - (poke_data & 0xFFFFFF)) / float(0xFFFFFF), PixelShaderCache::GetClearProgram(), VertexShaderCache::GetClearVertexShader());
 		RestoreAPIState();
 		return poke_data;
 	}	
@@ -515,7 +515,7 @@ void Renderer::ClearScreen(const EFBRectangle& rc, bool colorEnable, bool alphaE
 	vp.MinZ = 0.0;
 	vp.MaxZ = 1.0;
 	D3D::dev->SetViewport(&vp);
-	D3D::drawClearQuad(color, (z & 0xFFFFFF) / float(0xFFFFFF), PixelShaderCache::GetClearProgram(), VertexShaderCache::GetClearVertexShader());
+	D3D::drawClearQuad(color, (0xFFFFFF - (z & 0xFFFFFF)) / float(0xFFFFFF), PixelShaderCache::GetClearProgram(), VertexShaderCache::GetClearVertexShader());
 	RestoreAPIState();
 }
 
@@ -998,7 +998,10 @@ void Renderer::SetViewport()
 	vp.Y = Y;
 	vp.Width = Wd;
 	vp.Height = Ht;
-	const bool nonStandartViewport = xfmem.viewport.zRange < 0 || xfmem.viewport.farZ < 0 || xfmem.viewport.farZ > 16777216.0f;
+	float nearz = xfmem.viewport.farZ - xfmem.viewport.zRange;
+	float farz = xfmem.viewport.farZ;
+
+	const bool nonStandartViewport = (nearz < 0.f || farz > 16777216.0f || nearz >= 16777216.0f || farz <= 0.f);
 	if (nonStandartViewport)
 	{
 		vp.MinZ = 0.0f;
@@ -1007,8 +1010,8 @@ void Renderer::SetViewport()
 	else
 	{
 		// Some games set invalids values for z min and z max so fix them to the max an min alowed and let the shaders do this work
-		vp.MinZ = std::max(0.0f, std::min(1.0f, (xfmem.viewport.farZ - xfmem.viewport.zRange) / 16777216.0f));
-		vp.MaxZ = std::max(0.0f, std::min(1.0f, xfmem.viewport.farZ / 16777216.0f));
+		vp.MaxZ = 1.0f - std::max(0.0f, std::min(1.0f, nearz / 16777216.0f));
+		vp.MinZ = 1.0f - std::max(0.0f, std::min(1.0f, farz / 16777216.0f));
 	}
 	D3D::dev->SetViewport(&vp);
 }
@@ -1231,12 +1234,12 @@ void Renderer::_SetDepthMode()
 	const D3DCMPFUNC d3dCmpFuncs[8] =
 	{
 		D3DCMP_NEVER,
-		D3DCMP_LESS,
-		D3DCMP_EQUAL,
-		D3DCMP_LESSEQUAL,
 		D3DCMP_GREATER,
-		D3DCMP_NOTEQUAL,
+		D3DCMP_EQUAL,
 		D3DCMP_GREATEREQUAL,
+		D3DCMP_LESS,
+		D3DCMP_NOTEQUAL,
+		D3DCMP_LESSEQUAL,
 		D3DCMP_ALWAYS
 	};
 

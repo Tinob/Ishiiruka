@@ -1,7 +1,7 @@
 // Copyright 2013 Dolphin Emulator Project
 // Licensed under GPLv2
 // Refer to the license.txt file included.
- 
+
 #include <stdio.h>
 #include <cmath>
 #include <assert.h>
@@ -324,8 +324,8 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 	u32 numStages = bpm.genMode.numtevstages + 1;
 	u32 numTexgen = bpm.genMode.numtexgens;
 	const AlphaTest::TEST_RESULT Pretest = bpm.alpha_test.TestResult();
-	const bool forced_early_z = g_ActiveConfig.backend_info.bSupportsEarlyZ 
-		&& bpm.UseEarlyDepthTest() 
+	const bool forced_early_z = g_ActiveConfig.backend_info.bSupportsEarlyZ
+		&& bpm.UseEarlyDepthTest()
 		&& (g_ActiveConfig.bFastDepthCalc || Pretest == AlphaTest::UNDETERMINED)
 		&& !(bpm.zmode.testenable && bpm.genMode.zfreeze);
 	const bool per_pixel_depth = bpm.zmode.testenable
@@ -333,19 +333,19 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 		|| (!g_ActiveConfig.bFastDepthCalc && !forced_early_z)
 		|| bpm.genMode.zfreeze);
 	bool lightingEnabled = xfr.numChan.numColorChans > 0;
-	bool enable_pl = g_ActiveConfig.bEnablePixelLighting 
-		&& g_ActiveConfig.backend_info.bSupportsPixelLighting 
+	bool enable_pl = g_ActiveConfig.bEnablePixelLighting
+		&& g_ActiveConfig.backend_info.bSupportsPixelLighting
 		&& lightingEnabled;
 	uid_data.bounding_box = g_ActiveConfig.backend_info.bSupportsBBox && BoundingBox::active && g_ActiveConfig.iBBoxMode == BBoxGPU;
-	uid_data.per_pixel_depth = per_pixel_depth;	
+	uid_data.per_pixel_depth = per_pixel_depth;
 	uid_data.dstAlphaMode = dstAlphaMode;
-	uid_data.pixel_lighting = enable_pl;	
+	uid_data.pixel_lighting = enable_pl;
 	uid_data.genMode_numtexgens = bpm.genMode.numtexgens;
 	uid_data.zfreeze = bpm.genMode.zfreeze;
 	if (Write_Code)
 	{
 		InitializeRegisterState();
-		out.Write("//Pixel Shader for TEV stages\n");		
+		out.Write("//Pixel Shader for TEV stages\n");
 		if (Use_integer_math)
 		{
 			out.Write("#define wu int\n");
@@ -378,10 +378,10 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 				out.Write("#define wu2 float2\n");
 				out.Write("#define wu3 float3\n");
 				out.Write("#define wu4 float4\n");
-			}			
+			}
 			out.Write(headerUtil);
 		}
-		
+
 
 		if (ApiType == API_OPENGL)
 		{
@@ -692,7 +692,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 			}
 		}
 	}
-	
+
 	uid_data.genMode_numtevstages = bpm.genMode.numtevstages;
 	uid_data.genMode_numindstages = bpm.genMode.numindstages;
 	out.Write("//%i TEV stages, %i texgens, %i IND stages\n",
@@ -774,7 +774,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 	// depth texture can safely be ignored if the result won't be written to the depth buffer (early_ztest) and isn't used for fog either
 	const bool skip_ztexture = !per_pixel_depth && !bpm.fog.c_proj_fsel.fsel;
 
-	uid_data.ztex_op = bpm.ztex2.op;	
+	uid_data.ztex_op = bpm.ztex2.op;
 	uid_data.forced_early_z = forced_early_z;
 	uid_data.fast_depth_calc = g_ActiveConfig.bFastDepthCalc;
 	uid_data.early_ztest = bpm.UseEarlyDepthTest();
@@ -793,7 +793,9 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 		if ((ApiType == API_OPENGL || ApiType == API_D3D11) && g_ActiveConfig.bFastDepthCalc)
 		{
 			if (Use_integer_math)
-				out.Write("wu zCoord = wuround(rawpos.z * float(0xFFFFFF));\n");
+			{
+				out.Write("wu zCoord = %s wuround(rawpos.z * float(0xFFFFFF));\n", ApiType == API_OPENGL ? "" : "0xFFFFFF - ");
+			}
 			else
 				out.Write("wu zCoord = wu(rawpos.z);\n");
 		}
@@ -804,8 +806,6 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 				out.Write("wu zCoord = " I_ZBIAS"[1].x + wuround((clipPos.z / clipPos.w) * float(" I_ZBIAS"[1].y));\n");
 			else
 				out.Write("wu zCoord = round(" I_ZBIAS "[1].x + ((clipPos.z / clipPos.w) * " I_ZBIAS "[1].y)) / float(0xFFFFFF);\n");
-			
-			
 		}
 		// Note: z-textures are not written to depth buffer if early depth test is used
 		if (per_pixel_depth && bpm.UseEarlyDepthTest())
@@ -829,9 +829,9 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 					(bpm.ztex2.op == ZTEXTURE_ADD) ? "+ zCoord" : "");
 				// U24 overflow emulation : disabled find out why this make nvidia compiler crasy
 				// out.Write("zCoord = zCoord > 1.0f ? (zCoord - 1.0f) : zCoord;\n");
-				
+
 			}
-			
+
 		}
 		if (per_pixel_depth && bpm.UseLateDepthTest())
 		{
@@ -872,7 +872,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 
 	if (uid_data.bounding_box)
 	{
-		
+
 		if (Write_Code)
 		{
 			const char* atomic_op = ApiType == API_OPENGL ? "atomic" : "Interlocked";
@@ -1022,7 +1022,7 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, co
 							bpm.tevind[n].bt);
 					}
 				}
-				
+
 
 
 				static const char *tevIndBiasField[] = { "", "x", "y", "xy", "z", "xz", "yz", "xyz" }; // indexed by bias
@@ -1049,7 +1049,7 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, co
 						out.Write("wu2 indtevtrans%d = round(wu2(dot(" I_INDTEXMTX "[%d].xyz, indtevcrd%d), dot(" I_INDTEXMTX "[%d].xyz, indtevcrd%d)));\n",
 							n, mtxidx, n, mtxidx + 1, n);
 					}
-					
+
 					out.Write("indtevtrans%d = BSHR(indtevtrans%d, wu(3));\n", n, n);
 					out.Write("indtevtrans%d = BSH(indtevtrans%d, " I_INDTEXMTX "[%d].w);\n", n, n, mtxidx);
 				}
@@ -1208,9 +1208,9 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, co
 		{
 			const char* cswisle = normalize_c_rgb && normalize_c_a ? "" : (normalize_c_rgb ? ".rgb" : ".a");
 			out.Write("tin_c%s = BOR(tin_c%s, BSHR(tin_c%s, 7));\n", cswisle, cswisle, cswisle);
-		}		
+		}
 		out.Write("tin_d = wu4(%s,%s);\n", tevCInputTable[cc.d], tevAInputTable[ac.d]);
-		
+
 		TevOverflowState[tevCOutputSourceMap[cc.dest]] = !cc.clamp;
 		TevOverflowState[tevAOutputSourceMap[ac.dest]] = !ac.clamp;
 
@@ -1224,7 +1224,7 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, co
 				WriteTevRegularI<TEVCOLORARG_ZERO, TEVCOLORARG_ONE>(out, ".rgb", cc.bias, cc.op, cc.clamp, cc.shift, cc.a, cc.b, cc.c, cc.d);
 			else
 				WriteTevRegular<TEVCOLORARG_ZERO, TEVCOLORARG_ONE>(out, ".rgb", cc.bias, cc.op, cc.clamp, cc.shift, cc.a, cc.b, cc.c, cc.d);
-			
+
 		}
 		else
 		{
@@ -1251,7 +1251,7 @@ static inline void WriteStage(T& out, pixel_shader_uid_data& uid_data, int n, co
 			// 8 is used because alpha stage don't have ONE input so a number outside range is used
 			if (use_integer_math)
 				WriteTevRegularI<TEVALPHAARG_ZERO, 8>(out, ".a", ac.bias, ac.op, ac.clamp, ac.shift, ac.a, ac.b, ac.c, ac.d);
-			else			
+			else
 				WriteTevRegular<TEVALPHAARG_ZERO, 8>(out, ".a", ac.bias, ac.op, ac.clamp, ac.shift, ac.a, ac.b, ac.c, ac.d);
 		}
 		else
@@ -1429,7 +1429,7 @@ static inline void WriteTevRegular(T& out, const char* components, int bias, int
 			components, components, components, components,
 			tevScaleTableLeft[shift], tevLerpBias[2 * op + (shift != 3)]);
 	}
-	out.Write(")%s)",tevScaleTableRight[shift]);
+	out.Write(")%s)", tevScaleTableRight[shift]);
 }
 
 template<class T>
@@ -1710,16 +1710,21 @@ inline void WritePerPixelDepth(T& out, const BPMemory &bpm)
 
 		// Opengl has reversed vertical screenspace coordiantes
 		if (ApiType == API_OPENGL)
+		{
 			out.Write("\tscreenpos.y = %i - screenpos.y - 1;\n", EFB_HEIGHT);
-
-		out.Write("\tdepth = (" I_ZSLOPE".z + " I_ZSLOPE".x * screenpos.x + " I_ZSLOPE".y * screenpos.y) / float(0xFFFFFF);\n");
+			out.Write("\tdepth = (" I_ZSLOPE".z + " I_ZSLOPE".x * screenpos.x + " I_ZSLOPE".y * screenpos.y) / float(0xFFFFFF);\n");
+		}
+		else
+		{
+			out.Write("\tdepth = (0xFFFFFF - (" I_ZSLOPE".z + " I_ZSLOPE".x * screenpos.x + " I_ZSLOPE".y * screenpos.y)) / float(0xFFFFFF);\n");
+		}
 	}
 	else
 	{
 		if (use_integer_math)
-			out.Write("\tdepth = float(zCoord) / float(0xFFFFFF);\n");
+			out.Write("\tdepth = float(%szCoord) / float(0xFFFFFF);\n", ApiType == API_OPENGL ? "" : "0xFFFFFF - ");
 		else
-			out.Write("\tdepth = zCoord;\n");
+			out.Write("\tdepth = %s zCoord;\n", ApiType == API_OPENGL ? "" : "1.0 - ");
 	}
 }
 

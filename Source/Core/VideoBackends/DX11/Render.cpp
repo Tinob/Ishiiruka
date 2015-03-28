@@ -136,7 +136,7 @@ void SetupDeviceObjects()
 
 	ddesc.DepthEnable		= FALSE;
 	ddesc.DepthWriteMask	= D3D11_DEPTH_WRITE_MASK_ZERO;
-	ddesc.DepthFunc			= D3D11_COMPARISON_LESS;
+	ddesc.DepthFunc			= D3D11_COMPARISON_GREATER;
 	ddesc.StencilEnable		= FALSE;
 	ddesc.StencilReadMask	= D3D11_DEFAULT_STENCIL_READ_MASK;
 	ddesc.StencilWriteMask	= D3D11_DEFAULT_STENCIL_WRITE_MASK;
@@ -387,7 +387,7 @@ u32 Renderer::AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data)
 		// read the data from system memory
 		D3D::context->Map(read_tex, 0, D3D11_MAP_READ, 0, &map);
 
-		float val = *(float*)map.pData;
+		float val = 1.0f - *(float*)map.pData;
 		u32 ret = 0;
 		if(bpmem.zcontrol.pixel_format == PEControl::RGB565_Z16)
 		{
@@ -495,11 +495,14 @@ void Renderer::SetViewport()
 	D3D11_VIEWPORT vp = CD3D11_VIEWPORT(X, Y, Wd, Ht,
 		0.0f,
 		1.0f);
-	const bool nonStandartViewport = xfmem.viewport.zRange < 0 || xfmem.viewport.farZ < 0 || xfmem.viewport.farZ > 16777216.0f;
+	float nearz = xfmem.viewport.farZ - xfmem.viewport.zRange;
+	float farz = xfmem.viewport.farZ;
+
+	const bool nonStandartViewport = (nearz < 0.f || farz > 16777216.0f || nearz >= 16777216.0f || farz <= 0.f);
 	if (!nonStandartViewport)
 	{
-		vp.MinDepth = std::max(0.0f, std::min(1.0f, (xfmem.viewport.farZ - xfmem.viewport.zRange) / 16777216.0f));
-		vp.MaxDepth = std::max(0.0f, std::min(1.0f, xfmem.viewport.farZ / 16777216.0f));
+		vp.MaxDepth = 1.0f - std::max(0.0f, std::min(1.0f, nearz / 16777216.0f));
+		vp.MinDepth = 1.0f - std::max(0.0f, std::min(1.0f, farz / 16777216.0f));
 	}	
 	D3D::context->RSSetViewports(1, &vp);
 }
@@ -525,7 +528,7 @@ void Renderer::ClearScreen(const EFBRectangle& rc, bool colorEnable, bool alphaE
 
 	// Color is passed in bgra mode so we need to convert it to rgba
 	u32 rgbaColor = (color & 0xFF00FF00) | ((color >> 16) & 0xFF) | ((color << 16) & 0xFF0000);
-	D3D::drawClearQuad(rgbaColor, (z & 0xFFFFFF) / float(0xFFFFFF));
+	D3D::drawClearQuad(rgbaColor, (0xFFFFFF - (z & 0xFFFFFF)) / float(0xFFFFFF));
 
 	D3D::stateman->PopDepthState();
 	D3D::stateman->PopBlendState();
