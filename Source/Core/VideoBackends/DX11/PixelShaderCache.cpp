@@ -125,26 +125,14 @@ const char depth_matrix_program_code[] = {
 	"	float4 texcol = Tex0.Sample(samp0,uv0);\n"
 
 	// 255.99998474121 = 16777215/16777216*256
-	"	float workspace = (1.0 - texcol.x) * 255.99998474121;\n"
-
-	"	texcol.x = floor(workspace);\n"         // x component
-
-	"	workspace = workspace - texcol.x;\n"    // subtract x component out
-	"	workspace = workspace * 256.0;\n"       // shift left 8 bits
-	"	texcol.y = floor(workspace);\n"         // y component
-
-	"	workspace = workspace - texcol.y;\n"    // subtract y component out
-	"	workspace = workspace * 256.0;\n"       // shift left 8 bits
-	"	texcol.z = floor(workspace);\n"         // z component
-
-	"	texcol.w = texcol.x;\n"                 // duplicate x into w
-
+	"	int workspace = int(round((1.0 - texcol.x) * 16777215.0f));\n"
+	"	texcol.z = float(workspace & 255);\n"   // z component
+	"	workspace = workspace >> 8;\n"
+	"	texcol.y = float(workspace & 255);\n"   // y component
+	"	workspace = workspace >> 8;\n"
+	"	texcol.x = float(workspace & 255);\n"   // x component
+	"	texcol.w = float(workspace & 240);\n"    // w component
 	"	texcol = texcol / 255.0;\n"             // normalize components to [0.0..1.0]
-
-	"	texcol.w = texcol.w * 15.0;\n"
-	"	texcol.w = floor(texcol.w);\n"
-	"	texcol.w = texcol.w / 15.0;\n"          // w component
-
 	"	ocol0 = float4(dot(texcol,cColMatrix[0]),dot(texcol,cColMatrix[1]),dot(texcol,cColMatrix[2]),dot(texcol,cColMatrix[3])) + cColMatrix[4];\n"
 	"}\n"
 };
@@ -164,27 +152,14 @@ const char depth_matrix_program_msaa[] = {
 	"		texcol += Tex0.Load(int2(uv0.x*(width), uv0.y*(height)), i);\n"
 	"	texcol /= samples;\n"
 
-	// 255.99998474121 = 16777215/16777216*256
-	"	float workspace = (1.0 - texcol.x) * 255.99998474121;\n"
-
-	"	texcol.x = floor(workspace);\n"         // x component
-
-	"	workspace = workspace - texcol.x;\n"    // subtract x component out
-	"	workspace = workspace * 256.0;\n"       // shift left 8 bits
-	"	texcol.y = floor(workspace);\n"         // y component
-
-	"	workspace = workspace - texcol.y;\n"    // subtract y component out
-	"	workspace = workspace * 256.0;\n"       // shift left 8 bits
-	"	texcol.z = floor(workspace);\n"         // z component
-
-	"	texcol.w = texcol.x;\n"                 // duplicate x into w
-
+	"	int workspace = int(round((1.0 - texcol.x) * 16777215.0f));\n"
+	"	texcol.z = float(workspace & 255);\n"   // z component
+	"	workspace = workspace >> 8;\n"
+	"	texcol.y = float(workspace & 255);\n"   // y component
+	"	workspace = workspace >> 8;\n"
+	"	texcol.x = float(workspace & 255);\n"   // y component
+	"	texcol.w = float(workspace & 240);\n"    // w component
 	"	texcol = texcol / 255.0;\n"             // normalize components to [0.0..1.0]
-
-	"	texcol.w = texcol.w * 15.0;\n"
-	"	texcol.w = floor(texcol.w);\n"
-	"	texcol.w = texcol.w / 15.0;\n"          // w component
-
 	"	ocol0 = float4(dot(texcol,cColMatrix[0]),dot(texcol,cColMatrix[1]),dot(texcol,cColMatrix[2]),dot(texcol,cColMatrix[3])) + cColMatrix[4];\n"
 	"}\n"
 };
