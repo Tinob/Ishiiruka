@@ -415,14 +415,14 @@ int CD3DFont::DrawTextScaled(float x, float y, float size, float spacing, u32 dw
 SamplerStatePtr linear_copy_sampler;
 SamplerStatePtr point_copy_sampler;
 
-typedef struct { float x, y, z, u, v, w; } STQVertex;
+typedef struct { float x, y, z, u0, v0, w, u1, v1; } STQVertex;
 typedef struct { float x, y, z, u, v, w; } STSQVertex;
 typedef struct { float x, y, z; u32 col; } ClearVertex;
 typedef struct { float x, y, z; u32 col; } ColVertex;
 
 struct
 {
-	float u1, v1, u2, v2, G;
+	float u1, v1, u2, v2, G, u3, v3;
 } tex_quad_data;
 
 struct
@@ -502,14 +502,18 @@ void drawShadedTexQuad(
 	ID3D11ShaderResourceView* texture,
 	const D3D11_RECT* rSource,
 	int SourceWidth,
-	int SourceHeight,
+	int SourceHeight,	
 	ID3D11PixelShader* PShader,
 	ID3D11VertexShader* VShader,
 	ID3D11InputLayout* layout,
-	float Gamma)
+	float Gamma,
+	int DestWidth,
+	int DestHeight)
 {
 	float sw = 1.0f / (float)SourceWidth;
 	float sh = 1.0f / (float)SourceHeight;
+	float dw = 1.0f / (float)SourceWidth;
+	float dh = 1.0f / (float)SourceHeight;
 	float u1 = ((float)rSource->left) * sw;
 	float u2 = ((float)rSource->right) * sw;
 	float v1 = ((float)rSource->top) * sh;
@@ -517,16 +521,17 @@ void drawShadedTexQuad(
 	float G = 1.0f / Gamma;
 
 	STQVertex coords[4] = {
-		{ -1.0f, 1.0f, 0.0f, u1, v1, G },
-		{ 1.0f, 1.0f, 0.0f, u2, v1, G },
-		{ -1.0f, -1.0f, 0.0f, u1, v2, G },
-		{ 1.0f, -1.0f, 0.0f, u2, v2, G },
+		{ -1.0f, 1.0f, 0.0f, u1, v1, G, dw, dh },
+		{ 1.0f, 1.0f, 0.0f, u2, v1, G, dw, dh },
+		{ -1.0f, -1.0f, 0.0f, u1, v2, G, dw, dh },
+		{ 1.0f, -1.0f, 0.0f, u2, v2, G, dw, dh },
 	};
 
 	// only upload the data to VRAM if it changed
 	if (stq_observer ||
 		tex_quad_data.u1 != u1 || tex_quad_data.v1 != v1 ||
-		tex_quad_data.u2 != u2 || tex_quad_data.v2 != v2 || tex_quad_data.G != G)
+		tex_quad_data.u2 != u2 || tex_quad_data.v2 != v2 ||
+		tex_quad_data.u3 != dw || tex_quad_data.v3 != dh || tex_quad_data.G != G)
 	{
 		stq_offset = util_vbuf->AppendData(coords, sizeof(coords), sizeof(STQVertex));
 		stq_observer = false;
@@ -535,6 +540,8 @@ void drawShadedTexQuad(
 		tex_quad_data.v1 = v1;
 		tex_quad_data.u2 = u2;
 		tex_quad_data.v2 = v2;
+		tex_quad_data.u3 = dw;
+		tex_quad_data.v3 = dh;
 		tex_quad_data.G = G;
 	}
 	UINT stride = sizeof(STQVertex);

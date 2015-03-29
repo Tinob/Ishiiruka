@@ -28,7 +28,7 @@ VertexShaderUid VertexShaderCache::external_last_uid;
 UidChecker<VertexShaderUid,ShaderCode> VertexShaderCache::vertex_uid_checker;
 static HLSLAsyncCompiler *Compiler;
 static Common::SpinLock<true> vshaderslock;
-#define MAX_SSAA_SHADERS 3
+#define MAX_SSAA_SHADERS 2
 
 static LPDIRECT3DVERTEXSHADER9 SimpleVertexShader[MAX_SSAA_SHADERS];
 static LPDIRECT3DVERTEXSHADER9 ClearVertexShader;
@@ -37,7 +37,7 @@ LinearDiskCache<VertexShaderUid, u8> g_vs_disk_cache;
 
 LPDIRECT3DVERTEXSHADER9 VertexShaderCache::GetSimpleVertexShader(int level)
 {
-	return SimpleVertexShader[level % MAX_SSAA_SHADERS];
+	return SimpleVertexShader[level ? 1 : 0];
 }
 
 LPDIRECT3DVERTEXSHADER9 VertexShaderCache::GetClearVertexShader()
@@ -104,31 +104,11 @@ void VertexShaderCache::Init()
 		"OUT.vPosition = inPosition;\n"
 		"OUT.vTexCoord  = inTEX0.xyyx;\n"
 		"OUT.vTexCoord1 = inTEX2.x;\n"
-		"OUT.vTexCoord2 = inTEX0.xyyx + (float4(-0.495f,-0.495f, 0.495f,-0.495f) * inTEX1.xyyx);\n"
-		"OUT.vTexCoord3 = inTEX0.xyyx + (float4( 0.495f, 0.495f,-0.495f, 0.495f) * inTEX1.xyyx);\n"	
+		"OUT.vTexCoord2 = inTEX0.xyyx + (float4(-0.375f,-0.125f,-0.375f, 0.125f) * inTEX1.xyyx);\n"
+		"OUT.vTexCoord3 = inTEX0.xyyx + (float4( 0.375f, 0.125f, 0.375f,-0.125f) * inTEX1.xyyx);\n"	
 		"return OUT;\n"
 		"}\0";
 	SimpleVertexShader[1] = D3D::CompileAndCreateVertexShader(code, (int)strlen(code));
-
-	code = "struct VSOUTPUT\n"
-		"{\n"
-		"float4 vPosition   : POSITION;\n"
-		"float4 vTexCoord   : TEXCOORD0;\n"
-		"float  vTexCoord1   : TEXCOORD1;\n"
-		"float4 vTexCoord2   : TEXCOORD2;\n"   
-		"float4 vTexCoord3   : TEXCOORD3;\n"
-		"};\n"
-		"VSOUTPUT main(float4 inPosition : POSITION,float2 inTEX0 : TEXCOORD0,float2 inTEX1 : TEXCOORD1,float inTEX2 : TEXCOORD2)\n"
-		"{\n"
-		"VSOUTPUT OUT;"
-		"OUT.vPosition = inPosition;\n"
-		"OUT.vTexCoord  = inTEX0.xyyx;\n"
-		"OUT.vTexCoord1 = inTEX2.x;\n"
-		"OUT.vTexCoord2 = inTEX0.xyyx + (float4(-0.9f,-0.45f, 0.9f,-0.45f) * inTEX1.xyyx);\n"
-		"OUT.vTexCoord3 = inTEX0.xyyx + (float4( 0.9f, 0.45f,-0.9f, 0.45f) * inTEX1.xyyx);\n"	
-		"return OUT;\n"
-		"}\0";
-	SimpleVertexShader[2] = D3D::CompileAndCreateVertexShader(code, (int)strlen(code));
 
 	Clear();	
 

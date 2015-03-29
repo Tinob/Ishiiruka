@@ -29,13 +29,14 @@ static HLSLAsyncCompiler *s_compiler;
 static Common::SpinLock<true> s_vshaders_lock;
 
 static D3D::VertexShaderPtr s_simple_vertex_shader;
+static D3D::VertexShaderPtr s_simple_vertex_shader_ssaa;
 static D3D::VertexShaderPtr s_clear_vertex_shader;
 static D3D::InputLayoutPtr s_simple_layout;
 static D3D::InputLayoutPtr s_clear_layout;
 
 LinearDiskCache<VertexShaderUid, u8> g_vs_disk_cache;
 
-ID3D11VertexShader* VertexShaderCache::GetSimpleVertexShader() { return s_simple_vertex_shader.get(); }
+ID3D11VertexShader* VertexShaderCache::GetSimpleVertexShader(bool ssaa) { return ssaa ? s_simple_vertex_shader_ssaa.get()  : s_simple_vertex_shader.get(); }
 ID3D11VertexShader* VertexShaderCache::GetClearVertexShader() { return s_clear_vertex_shader.get(); }
 ID3D11InputLayout* VertexShaderCache::GetSimpleInputLayout() { return s_simple_layout.get(); }
 ID3D11InputLayout* VertexShaderCache::GetClearInputLayout() { return s_clear_layout.get(); }
@@ -85,6 +86,27 @@ const char simple_shader_code[] = {
 	"}\n"
 };
 
+const char simple_shader_code_ssaa[] = {
+	"struct VSOUTPUT\n"
+	"{\n"
+	"float4 vPosition : SV_Position;\n"
+	"float2 vTexCoord : TEXCOORD0;\n"
+	"float vTexCoord1 : TEXCOORD1;\n"
+	"float4 vTexCoord2 : TEXCOORD2;\n"
+	"float4 vTexCoord3 : TEXCOORD3;\n"
+	"};\n"
+	"VSOUTPUT main(float4 inPosition : POSITION,float3 inTEX0 : TEXCOORD0, float2 inTEX1 : TEXCOORD1)\n"
+	"{\n"
+	"VSOUTPUT OUT;\n"
+	"OUT.vPosition = inPosition;\n"
+	"OUT.vTexCoord = inTEX0.xy;\n"
+	"OUT.vTexCoord1 = inTEX0.z;\n"
+	"OUT.vTexCoord2 = inTEX0.xyyx + (float4(-0.375f,-0.125f,-0.375f, 0.125f) * inTEX1.xyyx);\n"
+	"OUT.vTexCoord3 = inTEX0.xyyx + (float4( 0.375f, 0.125f, 0.375f,-0.125f) * inTEX1.xyyx);\n"
+	"return OUT;\n"
+	"}\n"
+};
+
 const char clear_shader_code[] = {
 	"struct VSOUTPUT\n"
 	"{\n"
@@ -104,11 +126,12 @@ void VertexShaderCache::Init()
 {
 	s_vshaders_lock.unlock();
 	s_compiler = &HLSLAsyncCompiler::getInstance();
-	const D3D11_INPUT_ELEMENT_DESC simpleelems[2] =
+	const D3D11_INPUT_ELEMENT_DESC simpleelems[4] =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0,  0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		
+		{ "TEXCOORD", 1, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 2, DXGI_FORMAT_R32G32_FLOAT, 0, 32, D3D11_INPUT_PER_VERTEX_DATA, 0 },		
 	};
 	const D3D11_INPUT_ELEMENT_DESC clearelems[2] =
 	{
@@ -124,16 +147,26 @@ void VertexShaderCache::Init()
 
 	D3DBlob blob;
 	D3D::CompileShader(D3D::ShaderType::Vertex, simple_shader_code, blob);
-	D3D::device->CreateInputLayout(simpleelems, 2, blob.Data(), blob.Size(), D3D::ToAddr(s_simple_layout));
+	D3D::device->CreateInputLayout(simpleelems, 4, blob.Data(), blob.Size(), D3D::ToAddr(s_simple_layout));
 	s_simple_vertex_shader = D3D::CreateVertexShaderFromByteCode(blob);
-	if (s_simple_layout == nullptr || s_simple_vertex_shader == nullptr) PanicAlert("Failed to create simple vertex shader or input layout at %s %d\n", __FILE__, __LINE__);	
-	D3D::SetDebugObjectName(s_simple_vertex_shader.get(), "simple vertex shader");
+	D3D::CompileShader(D3D::ShaderType::Vertex, simple_shader_code_ssaa, blob);
+	s_simple_vertex_shader_ssaa = D3D::CreateVertexShaderFromByteCode(blob);
+	
+	if (s_simple_layout == nullptr ||
+		s_simple_vertex_shader == nullptr ||
+		s_simple_vertex_shader_ssaa == nullptr)
+		PanicAlert("Failed to create simple vertex shader or input layout at %s %d\n", __FILE__, __LINE__);
+	
 	D3D::SetDebugObjectName(s_simple_layout.get(), "simple input layout");
+	D3D::SetDebugObjectName(s_simple_vertex_shader.get(), "simple vertex shader");
+	D3D::SetDebugObjectName(s_simple_vertex_shader_ssaa.get(), "simple vertex shader ssaa");
 
 	D3D::CompileShader(D3D::ShaderType::Vertex, clear_shader_code, blob);
 	D3D::device->CreateInputLayout(clearelems, 2, blob.Data(), blob.Size(), D3D::ToAddr(s_clear_layout));
 	s_clear_vertex_shader = D3D::CreateVertexShaderFromByteCode(blob);
-	if (s_clear_layout == nullptr || s_clear_vertex_shader == nullptr) PanicAlert("Failed to create clear vertex shader or input layout at %s %d\n", __FILE__, __LINE__);
+	if (s_clear_layout == nullptr ||
+		s_clear_vertex_shader == nullptr)
+		PanicAlert("Failed to create clear vertex shader or input layout at %s %d\n", __FILE__, __LINE__);
 	D3D::SetDebugObjectName(s_clear_vertex_shader.get(), "clear vertex shader");
 	D3D::SetDebugObjectName(s_clear_layout.get(), "clear input layout");
 
@@ -181,6 +214,7 @@ void VertexShaderCache::Shutdown()
 	SAFE_RELEASE(vscbuf);
 
 	s_simple_vertex_shader.reset();
+	s_simple_vertex_shader_ssaa.reset();
 	s_clear_vertex_shader.reset();
 
 	s_simple_layout.reset();

@@ -57,11 +57,13 @@ void SetLinearCopySampler();
 void drawShadedTexQuad(ID3D11ShaderResourceView* texture,
 	const D3D11_RECT* rSource,
 	int SourceWidth,
-	int SourceHeight,
+	int SourceHeight,	
 	ID3D11PixelShader* PShader,
 	ID3D11VertexShader* VShader,
 	ID3D11InputLayout* layout,
-	float Gamma = 1.0f);
+	float Gamma = 1.0f,
+	int DestWidth = 1,
+	int DestHeight = 1);
 void drawClearQuad(u32 Color, float z);
 void drawColorQuad(u32 Color, float x1, float y1, float x2, float y2);
 }

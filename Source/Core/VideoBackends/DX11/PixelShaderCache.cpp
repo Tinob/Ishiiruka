@@ -35,7 +35,7 @@ static Common::SpinLock<true> s_pixel_shaders_lock;
 LinearDiskCache<PixelShaderUid, u8> g_ps_disk_cache;
 
 D3D::PixelShaderPtr s_ColorMatrixProgram[2];
-D3D::PixelShaderPtr s_ColorCopyProgram[2];
+D3D::PixelShaderPtr s_ColorCopyProgram[3];
 D3D::PixelShaderPtr s_DepthMatrixProgram[2];
 D3D::PixelShaderPtr s_ClearProgram;
 D3D::PixelShaderPtr s_rgba6_to_rgb8[2];
@@ -61,6 +61,20 @@ const char color_copy_program_code[] = {
 	"in float4 pos : SV_Position,\n"
 	"in float2 uv0 : TEXCOORD0){\n"
 	"ocol0 = Tex0.Sample(samp0,uv0);\n"
+	"}\n"
+};
+
+const char color_copy_program_code_ssaa[] = {
+	"sampler samp0 : register(s0);\n"
+	"Texture2D Tex0 : register(t0);\n"
+	"void main(\n"
+	"out float4 ocol0 : SV_Target,\n"
+	"in float4 pos : SV_Position,\n"
+	"in float2 uv0 : TEXCOORD0,\n"
+	"in float uv1  : TEXCOORD1,\n"
+	"in float4 uv2 : TEXCOORD2,\n"
+	"in float4 uv3 : TEXCOORD3){\n"
+	"ocol0 = (Tex0.Sample(samp0,uv2.xy) + Tex0.Sample(samp0,uv2.wz) + Tex0.Sample(samp0,uv3.xy) + Tex0.Sample(samp0,uv3.wz)) * 0.25;\n"
 	"}\n"
 };
 
@@ -300,10 +314,16 @@ ID3D11PixelShader* PixelShaderCache::ReinterpRGB8ToRGBA6(bool multisampled)
 	return s_rgb8_to_rgba6[1].get();
 }
 
-ID3D11PixelShader* PixelShaderCache::GetColorCopyProgram(bool multisampled)
+ID3D11PixelShader* PixelShaderCache::GetColorCopyProgram(bool multisampled, bool ssaa)
 {
-	if (!multisampled || D3D::GetAAMode(g_ActiveConfig.iMultisampleMode).Count == 1) return s_ColorCopyProgram[0].get();
-	else if (s_ColorCopyProgram[1]) return s_ColorCopyProgram[1].get();
+	if (!multisampled || D3D::GetAAMode(g_ActiveConfig.iMultisampleMode).Count == 1)
+	{
+		return ssaa ? s_ColorCopyProgram[2].get() : s_ColorCopyProgram[0].get();
+	}
+	else if (s_ColorCopyProgram[1])
+	{
+		return s_ColorCopyProgram[1].get();
+	}
 	else
 	{
 		// create MSAA shader for current AA mode
@@ -412,6 +432,10 @@ void PixelShaderCache::Init()
 	s_ColorCopyProgram[0] = D3D::CompileAndCreatePixelShader(color_copy_program_code);
 	CHECK(s_ColorCopyProgram[0]!=nullptr, "Create color copy pixel shader");
 	D3D::SetDebugObjectName(s_ColorCopyProgram[0].get(), "color copy pixel shader");
+
+	s_ColorCopyProgram[2] = D3D::CompileAndCreatePixelShader(color_copy_program_code_ssaa);
+	CHECK(s_ColorCopyProgram[2] != nullptr, "Create color copy pixel shader SSAA");
+	D3D::SetDebugObjectName(s_ColorCopyProgram[2].get(), "color copy pixel shader SSAA");
 
 	// used for color conversion
 	s_ColorMatrixProgram[0] = D3D::CompileAndCreatePixelShader(color_matrix_program_code);

@@ -557,7 +557,14 @@ void Renderer::ReinterpretPixelData(unsigned int convtype)
 	D3D::context->RSSetViewports(1, &vp);
 	
 	D3D::SetPointCopySampler();
-	D3D::drawShadedTexQuad(FramebufferManager::GetEFBColorTexture()->GetSRV(), &source, g_renderer->GetTargetWidth(), g_renderer->GetTargetHeight(), pixel_shader, VertexShaderCache::GetSimpleVertexShader(), VertexShaderCache::GetSimpleInputLayout());
+	D3D::drawShadedTexQuad(
+		FramebufferManager::GetEFBColorTexture()->GetSRV(),
+		&source,
+		g_renderer->GetTargetWidth(),
+		g_renderer->GetTargetHeight(), 
+		pixel_shader, 
+		VertexShaderCache::GetSimpleVertexShader(), 
+		VertexShaderCache::GetSimpleInputLayout());
 
 	RestoreAPIState();
 
@@ -1201,7 +1208,18 @@ void Renderer::BlitScreen(TargetRectangle src, TargetRectangle dst, D3DTexture2D
 {
 	D3D11_VIEWPORT vp = CD3D11_VIEWPORT((float)dst.left, (float)dst.top, (float)dst.GetWidth(), (float)dst.GetHeight());
 	D3D::context->RSSetViewports(1, &vp);
-	D3D::drawShadedTexQuad(src_texture->GetSRV(), src.AsRECT(), src_width, src_height, PixelShaderCache::GetColorCopyProgram(false), VertexShaderCache::GetSimpleVertexShader(), VertexShaderCache::GetSimpleInputLayout(), Gamma);
+	bool ssaa = src.GetWidth() > dst.GetWidth() && src.GetHeight() > dst.GetHeight();
+	D3D::drawShadedTexQuad(
+		src_texture->GetSRV(), 
+		src.AsRECT(), 
+		src_width, 
+		src_height, 
+		PixelShaderCache::GetColorCopyProgram(false, ssaa), 
+		VertexShaderCache::GetSimpleVertexShader(ssaa), 
+		VertexShaderCache::GetSimpleInputLayout(), 
+		Gamma, 
+		dst.GetWidth(), 
+		dst.GetHeight());
 }
 
 }  // namespace DX11
