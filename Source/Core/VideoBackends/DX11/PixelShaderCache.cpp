@@ -59,8 +59,9 @@ const char color_copy_program_code[] = {
 	"void main(\n"
 	"out float4 ocol0 : SV_Target,\n"
 	"in float4 pos : SV_Position,\n"
-	"in float2 uv0 : TEXCOORD0){\n"
-	"ocol0 = Tex0.Sample(samp0,uv0);\n"
+	"in float2 uv0 : TEXCOORD0,\n"
+	"in float uv1 : TEXCOORD1){\n"
+	"ocol0 = pow(Tex0.Sample(samp0,uv0), uv1.xxxx);\n"
 	"}\n"
 };
 
@@ -74,7 +75,7 @@ const char color_copy_program_code_ssaa[] = {
 	"in float uv1  : TEXCOORD1,\n"
 	"in float4 uv2 : TEXCOORD2,\n"
 	"in float4 uv3 : TEXCOORD3){\n"
-	"ocol0 = (Tex0.Sample(samp0,uv2.xy) + Tex0.Sample(samp0,uv2.wz) + Tex0.Sample(samp0,uv3.xy) + Tex0.Sample(samp0,uv3.wz)) * 0.25;\n"
+	"ocol0 = pow((Tex0.Sample(samp0,uv2.xy) + Tex0.Sample(samp0,uv2.wz) + Tex0.Sample(samp0,uv3.xy) + Tex0.Sample(samp0,uv3.wz)) * 0.25, uv1.xxxx);\n"
 	"}\n"
 };
 
@@ -85,13 +86,15 @@ const char color_copy_program_code_msaa[] = {
 	"void main(\n"
 	"out float4 ocol0 : SV_Target,\n"
 	"in float4 pos : SV_Position,\n"
-	"in float2 uv0 : TEXCOORD0){\n"
+	"in float2 uv0 : TEXCOORD0,\n"
+	"in float uv1 : TEXCOORD1){\n"
 	"int width, height, samples;\n"
 	"Tex0.GetDimensions(width, height, samples);\n"
 	"ocol0 = 0;\n"
 	"for(int i = 0; i < samples; ++i)\n"
 	"	ocol0 += Tex0.Load(int2(uv0.x*(width), uv0.y*(height)), i);\n"
 	"ocol0 /= samples;\n"
+	"ocol0 = pow(ocol0, uv1.xxxx);\n"
 	"}\n"
 };
 
