@@ -32,6 +32,7 @@
 #include "VideoCommon/XFMemory.h"
 
 bool g_bRecordFifoData = false;
+static bool s_bFifoErrorSeen = false;
 
 template <int count>
 void ReadU32xn(u32 *bufx16)
@@ -76,7 +77,13 @@ inline u32 Decode(const u8* end)
 		cycles = GX_NOP_CYCLES; // Hm, this means that we scan over nop streams pretty slowly...
 	}
 	break;
-	case GX_LOAD_CP_REG: //0x08
+	case GX_UNKNOWN_RESET:
+	{
+		cycles = GX_NOP_CYCLES; // Datel software uses this command
+		DEBUG_LOG(VIDEO, "GX Reset?: %08x", cmd_byte);		
+	}
+	break;
+	case GX_LOAD_CP_REG:
 	{
 		if (sizeCheck && distance < GX_LOAD_CP_REG_SIZE)
 			return 0;
@@ -156,7 +163,7 @@ inline u32 Decode(const u8* end)
 		DEBUG_LOG(VIDEO, "Invalidate (vertex cache?)");
 	}
 	break;
-	case GX_LOAD_BP_REG: //0x61
+	case GX_LOAD_BP_REG:
 	{
 		if (sizeCheck && distance < GX_LOAD_BP_REG_SIZE)
 			return 0;
@@ -209,7 +216,10 @@ inline u32 Decode(const u8* end)
 		}
 		else
 		{
-			UnknownOpcode(cmd_byte, opcodeStart);
+			if (!s_bFifoErrorSeen)
+				UnknownOpcode(cmd_byte, opcodeStart);
+			ERROR_LOG(VIDEO, "FIFO: Unknown Opcode(0x%02x @ %p)", cmd_byte, opcodeStart);
+			s_bFifoErrorSeen = true;
 			g_VideoData.SetReadPosition(end);
 			cycles = 1;
 		}
@@ -258,12 +268,13 @@ static void UnknownOpcode(u8 cmd_byte, const void *buffer)
 {
 	// TODO(Omega): Maybe dump FIFO to file on this error
 	PanicAlert(
-		"GFX FIFO: Unknown Opcode (0x%x @ %p).\n"
+		"GFX FIFO: Unknown Opcode (0x%02x @ %p).\n"
 		"This means one of the following:\n"
 		"* The emulated GPU got desynced, disabling dual core can help\n"
 		"* Command stream corrupted by some spurious memory bug\n"
 		"* This really is an unknown opcode (unlikely)\n"
 		"* Some other sort of bug\n\n"
+		"Further errors will be sent to the Video Backend log and\n"
 		"Dolphin will now likely crash or hang. Enjoy.",
 		cmd_byte,
 		buffer);
@@ -293,6 +304,7 @@ static void UnknownOpcode(u8 cmd_byte, const void *buffer)
 
 void OpcodeDecoder_Init()
 {
+	s_bFifoErrorSeen = false;
 	g_VideoData.SetReadPosition(GetVideoBufferStartPtr());
 
 	if (g_Config.bEnableOpenCL)
@@ -313,14 +325,6 @@ void ResetStates()
 	memset(&g_main_cp_state.matrix_index_b, 0, sizeof(g_main_cp_state.matrix_index_b));
 	memset(&g_main_cp_state.vtx_desc, 0, sizeof(g_main_cp_state.vtx_desc));
 	memset(g_main_cp_state.vtx_attr, 0, sizeof(g_main_cp_state.vtx_attr));
-	/*
-		memset(g_main_cp_state.array_bases, 0, sizeof(g_main_cp_state.array_bases));
-	memset(g_main_cp_state.array_strides, 0, sizeof(g_main_cp_state.array_strides));
-	memset(&g_main_cp_state.matrix_index_a, 0, sizeof(g_main_cp_state.matrix_index_a));
-	memset(&g_main_cp_state.matrix_index_b, 0, sizeof(g_main_cp_state.matrix_index_b));
-	memset(&g_main_cp_state.vtx_desc, 0, sizeof(g_VtxDesc));
-	memset(g_main_cp_state.vtx_attrAttr, 0, sizeof(g_VtxAttr));
-	*/
 }
 
 void OpcodeDecoder_Shutdown()

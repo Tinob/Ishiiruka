@@ -65,7 +65,6 @@
 #include "DiscIO/NANDContentLoader.h"
 
 #include "DolphinWX/AboutDolphin.h"
-#include "DolphinWX/ConfigMain.h"
 #include "DolphinWX/ControllerConfigDiag.h"
 #include "DolphinWX/FifoPlayerDlg.h"
 #include "DolphinWX/Frame.h"
@@ -81,6 +80,7 @@
 #include "DolphinWX/WXInputBase.h"
 #include "DolphinWX/WxUtils.h"
 #include "DolphinWX/Cheats/CheatsWindow.h"
+#include "DolphinWX/Config/ConfigMain.h"
 #include "DolphinWX/Debugger/BreakpointWindow.h"
 #include "DolphinWX/Debugger/CodeWindow.h"
 #include "DolphinWX/Debugger/WatchWindow.h"
@@ -1073,13 +1073,15 @@ void CFrame::StartGame(const std::string& filename)
 
 		m_RenderParent->SetFocus();
 
-		wxTheApp->Bind(wxEVT_KEY_DOWN,    &CFrame::OnKeyDown, this);
-		wxTheApp->Bind(wxEVT_KEY_UP,      &CFrame::OnKeyUp,   this);
-		wxTheApp->Bind(wxEVT_RIGHT_DOWN,  &CFrame::OnMouse,   this);
-		wxTheApp->Bind(wxEVT_RIGHT_UP,    &CFrame::OnMouse,   this);
-		wxTheApp->Bind(wxEVT_MIDDLE_DOWN, &CFrame::OnMouse,   this);
-		wxTheApp->Bind(wxEVT_MIDDLE_UP,   &CFrame::OnMouse,   this);
-		wxTheApp->Bind(wxEVT_MOTION,      &CFrame::OnMouse,   this);
+		wxTheApp->Bind(wxEVT_KEY_DOWN,     &CFrame::OnKeyDown,     this);
+		wxTheApp->Bind(wxEVT_KEY_UP,       &CFrame::OnKeyUp,       this);
+		wxTheApp->Bind(wxEVT_RIGHT_DOWN,   &CFrame::OnMouse,       this);
+		wxTheApp->Bind(wxEVT_RIGHT_UP,     &CFrame::OnMouse,       this);
+		wxTheApp->Bind(wxEVT_MIDDLE_DOWN,  &CFrame::OnMouse,       this);
+		wxTheApp->Bind(wxEVT_MIDDLE_UP,    &CFrame::OnMouse,       this);
+		wxTheApp->Bind(wxEVT_MOTION,       &CFrame::OnMouse,       this);
+		wxTheApp->Bind(wxEVT_SET_FOCUS,    &CFrame::OnFocusChange, this);
+		wxTheApp->Bind(wxEVT_KILL_FOCUS,   &CFrame::OnFocusChange, this);
 		m_RenderParent->Bind(wxEVT_SIZE, &CFrame::OnRenderParentResize, this);
 	}
 

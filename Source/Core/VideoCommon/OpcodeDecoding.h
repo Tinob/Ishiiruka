@@ -9,6 +9,7 @@
 enum GxOpCodes : u8
 {
 	GX_NOP = 0x00,
+	GX_UNKNOWN_RESET = 0x01,
 	GX_LOAD_CP_REG = 0x08,
 	GX_LOAD_XF_REG = 0x10,
 	GX_LOAD_INDX_A = 0x20,

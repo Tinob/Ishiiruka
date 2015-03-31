@@ -358,15 +358,15 @@ bool CFrame::InitControllers()
 	{
 #if defined(HAVE_X11) && HAVE_X11
 		Window win = X11Utils::XWindowFromHandle(GetHandle());
-		HotkeyManagerEmu::Initialize(reinterpret_cast<void*>(win));
 		Pad::Initialize(reinterpret_cast<void*>(win));
 		Keyboard::Initialize(reinterpret_cast<void*>(win));
 		Wiimote::Initialize(reinterpret_cast<void*>(win));
+		HotkeyManagerEmu::Initialize(reinterpret_cast<void*>(win));
 #else
-		HotkeyManagerEmu::Initialize(reinterpret_cast<void*>(GetHandle()));
 		Pad::Initialize(reinterpret_cast<void*>(GetHandle()));
 		Keyboard::Initialize(reinterpret_cast<void*>(GetHandle()));
 		Wiimote::Initialize(reinterpret_cast<void*>(GetHandle()));
+		HotkeyManagerEmu::Initialize(reinterpret_cast<void*>(GetHandle()));
 #endif
 		return true;
 	}
@@ -432,7 +432,7 @@ CFrame::CFrame(wxFrame* parent,
 	m_GameListCtrl = new CGameListCtrl(m_Panel, wxID_ANY,
 	        wxDefaultPosition, wxDefaultSize,
 	        wxLC_REPORT | wxSUNKEN_BORDER | wxLC_ALIGN_LEFT);
-	m_GameListCtrl->Bind(wxEVT_LIST_ITEM_ACTIVATED, &CFrame::OnGameListCtrl_ItemActivated, this);
+	m_GameListCtrl->Bind(wxEVT_LIST_ITEM_ACTIVATED, &CFrame::OnGameListCtrlItemActivated, this);
 
 	wxBoxSizer *sizerPanel = new wxBoxSizer(wxHORIZONTAL);
 	sizerPanel->Add(m_GameListCtrl, 1, wxEXPAND | wxALL);
@@ -864,7 +864,7 @@ bool CFrame::UIHasFocus()
 	return (focusWindow != nullptr);
 }
 
-void CFrame::OnGameListCtrl_ItemActivated(wxListEvent& WXUNUSED(event))
+void CFrame::OnGameListCtrlItemActivated(wxListEvent& WXUNUSED(event))
 {
 	// Show all platforms and regions if...
 	// 1. All platforms are set to hide
@@ -1171,6 +1171,35 @@ void CFrame::OnMouse(wxMouseEvent& event)
 			lastMouse[0] = event.GetX();
 			lastMouse[1] = event.GetY();
 		}
+	}
+
+	event.Skip();
+}
+
+void CFrame::OnFocusChange(wxFocusEvent& event)
+{
+	if (SConfig::GetInstance().m_PauseOnFocusLost)
+	{
+		if (RendererHasFocus())
+		{
+			if (Core::GetState() == Core::CORE_PAUSE)
+			{
+				Core::SetState(Core::CORE_RUN);
+				if (SConfig::GetInstance().m_LocalCoreStartupParameter.bHideCursor)
+					m_RenderParent->SetCursor(wxCURSOR_BLANK);
+			}
+		}
+		else
+		{
+			if (Core::GetState() == Core::CORE_RUN)
+			{
+				Core::SetState(Core::CORE_PAUSE);
+				if (SConfig::GetInstance().m_LocalCoreStartupParameter.bHideCursor)
+					m_RenderParent->SetCursor(wxNullCursor);
+				Core::UpdateTitle();
+			}
+		}
+		UpdateGUI();
 	}
 
 	event.Skip();

@@ -65,7 +65,7 @@ bool TextureCache::TCacheEntry::Save(const std::string& filename, u32 level)
 		D3D::context->CopyResource(pNewTexture, pSurface);
 
 		D3D11_MAPPED_SUBRESOURCE map;
-		HRESULT hr = D3D::context->Map(pNewTexture, 0, D3D11_MAP_READ_WRITE, 0, &map);
+		hr = D3D::context->Map(pNewTexture, 0, D3D11_MAP_READ_WRITE, 0, &map);
 		if (SUCCEEDED(hr))
 		{
 			saved_png = TextureToPng((u8*)map.pData, map.RowPitch, filename, desc.Width, desc.Height);
