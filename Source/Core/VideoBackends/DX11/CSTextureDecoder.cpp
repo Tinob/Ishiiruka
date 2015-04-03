@@ -9,11 +9,13 @@
 #include "VideoBackends/DX11/D3DShader.h"
 #include "VideoBackends/DX11/D3DUtil.h"
 #include "VideoBackends/DX11/FramebufferManager.h"
+#include "VideoBackends/DX11/GeometryShaderCache.h"
 #include "VideoBackends/DX11/D3DState.h"
 #include "VideoBackends/DX11/CSTextureDecoder.h"
 #include "VideoBackends/DX11/Render.h"
 #include "VideoBackends/DX11/TextureCache.h"
 #include "VideoBackends/DX11/VertexShaderCache.h"
+
 
 
 namespace DX11
@@ -274,11 +276,9 @@ void main(in uint3 groupIdx : SV_GroupID, in uint3 subgroup : SV_GroupThreadID)
 )HLSL";
 
 static const char DEPALETTIZE_SHADER[] = R"HLSL(
-Texture2D Tex0 : register(t0);
+Texture2DArray Tex0 : register(t0);
 Buffer<uint> Tex1 : register(t1);
-#if USE_COMPUTE == 1
-RWTexture2D<float4> dstTexture_ : register(u0);
-#endif
+
 uint Convert3To8(uint v)
 {
 	// Swizzle bits: 00000123 -> 12312312
@@ -340,38 +340,21 @@ float4 ReadLutIA8(uint val)
 	return float4(i, i, i, a) / 255.0;
 }
 
-#if USE_COMPUTE
-[numthreads(8,8,1)]
-void main(
-	in uint3 groupIdx : SV_GroupID, 
-	in uint3 subgroup : SV_GroupThreadID) 
-{
-	uint2 pos = groupIdx.xy * 8 + subgroup.xy;
-	uint2 dims_;
-	dstTexture_.GetDimensions(dims_.x,dims_.y);	
-	if ( all( pos < dims_) ) 	
-#else
 void main(
 	out float4 ocol0 : SV_Target,
 	in float4 pos : SV_Position,
 	in float3 uv0 : TEXCOORD0)
 {
-#endif
-	{
+	
 #if NUM_COLORS == 16
-		float Multiply = 15.0;
+	float Multiply = 15.0;
 #else
-		float Multiply = 255.0;
+	float Multiply = 255.0;
 #endif
-		uint src = round(Tex0.Load(int3(pos.xy, 0)) * Multiply).r;
-		src = Tex1.Load(src);		
-		src = ((src << 8) & 0xFF00) | (src >> 8);
-#if USE_COMPUTE == 1
-		dstTexture_[pos.xy] = LUT_FUNC(src);
-#else
-		ocol0 = LUT_FUNC(src);
-#endif
-	}
+	uint src = round(Tex0.Load(int4(pos.xy, uv0.z, 0)) * Multiply).r;
+	src = Tex1.Load(src);		
+	src = ((src << 8) & 0xFF00) | (src >> 8);
+	ocol0 = LUT_FUNC(src);
 }
 )HLSL";
 
@@ -556,43 +539,6 @@ ID3D11PixelShader* CSTextureDecoder::GetDepalettizerPShader(BaseType srcFmt, u32
 	return m_depalettize_shaders[lutFmt][srcFmt].get();
 }
 
-bool CSTextureDecoder::SetDepalettizeShader(BaseType srcFmt, u32 lutFmt)
-{
-	u32 rawFmt = u32(srcFmt) + 16;
-	auto key = MakeComboKey(rawFmt, lutFmt);
-
-	auto it = m_staticShaders.find(key);
-
-	if (it != m_staticShaders.end())
-	{
-		D3D::context->CSSetShader(it->second.get(), nullptr, 0);
-		return bool(it->second);
-	}
-
-	// Shader permutation not found, so compile it
-
-	D3D_SHADER_MACRO macros[] =
-	{
-		{ "USE_COMPUTE", "1" },
-		{ "NUM_COLORS", DepalettizeColors[srcFmt] },
-		{ "LUT_FUNC", LutFunc[lutFmt] },
-		{ nullptr, nullptr }
-	};
-
-	D3DBlob bytecode = nullptr;
-	if (!D3D::CompileShader(D3D::ShaderType::Compute, DEPALETTIZE_SHADER, bytecode, macros)) {
-		WARN_LOG(VIDEO, "Unable to compile Depalettize compute shader");
-	}
-
-	m_shaderCache.Append(key, bytecode.Data(), u32(bytecode.Size()));
-
-	auto & result = m_staticShaders[key];
-	HRESULT hr = D3D::device->CreateComputeShader(bytecode.Data(), bytecode.Size(), nullptr, ToAddr(result));
-	CHECK(SUCCEEDED(hr), "create depalettizer compute shader");
-	D3D::context->CSSetShader(result.get(), nullptr, 0);
-
-	return bool(result);
-}
 
 ID3D11ComputeShader* CSTextureDecoder::InsertShader( ComboKey const &key, u8 const *data, u32 sz) {
 	auto & result = m_staticShaders[key];
@@ -679,8 +625,7 @@ bool CSTextureDecoder::Decode(const u8* src, u32 srcsize, u32 srcFmt, u32 w, u32
 
 bool CSTextureDecoder::DecodeRGBAFromTMEM( u8 const * ar_src, u8 const * bg_src, u32 w, u32 h, D3DTexture2D& dstTexture) 
 {
-
-	if (!m_ready) // Make sure we initialized OK
+if (!m_ready) // Make sure we initialized OK
 		return false;
 
 	if (!SetStaticShader(0xf,0)) 
@@ -749,56 +694,37 @@ bool CSTextureDecoder::DecodeRGBAFromTMEM( u8 const * ar_src, u8 const * bg_src,
 
 bool CSTextureDecoder::Depalettize(D3DTexture2D& dstTexture, D3DTexture2D& srcTexture, BaseType baseType, u32 width, u32 height)
 {
-	if (true/*D3D::GetFeatureLevel() < D3D_FEATURE_LEVEL_11_0*/) // Disable compute shader path as it giving me a weird error
+	ID3D11PixelShader* shader = GetDepalettizerPShader(baseType, m_lutFmt);
+	if (!shader)
 	{
-		ID3D11PixelShader* shader = GetDepalettizerPShader(baseType, m_lutFmt);
-		if (!shader)
-		{
-			return false;
-		}
-
-		g_renderer->ResetAPIState();		
-
-		D3D11_VIEWPORT vp = CD3D11_VIEWPORT(0.f, 0.f, FLOAT(width), FLOAT(height));
-		D3D::context->RSSetViewports(1, &vp);
-
-		D3D::stateman->SetTexture(1, m_lutSrv.get());
-		D3D11_RECT rsource = { 0, 0, width, height };
-
-		D3D::context->OMSetRenderTargets(1, &dstTexture.GetRTV(), nullptr);
-		
-		D3D::drawShadedTexQuad(
-			srcTexture.GetSRV(),
-			&rsource,
-			width, height,
-			shader, 
-			VertexShaderCache::GetSimpleVertexShader(),
-			VertexShaderCache::GetSimpleInputLayout()
-			);
-		
-		D3D::stateman->SetTexture(1, nullptr);
-		D3D::context->OMSetRenderTargets(1,
-			&FramebufferManager::GetEFBColorTexture()->GetRTV(),
-			FramebufferManager::GetEFBDepthTexture()->GetDSV());
-		g_renderer->RestoreAPIState();
+		return false;
 	}
-	else
-	{
-		if (!SetDepalettizeShader(baseType, m_lutFmt))
-		{
-			return false;
-		}
-		D3D::context->CSSetUnorderedAccessViews(0, 1, &dstTexture.GetUAV(), nullptr);
 
-		ID3D11ShaderResourceView* srvs[] = { srcTexture.GetSRV(), m_lutSrv.get() };
-		D3D::context->CSSetShaderResources(0, 2, srvs);		
+	g_renderer->ResetAPIState();
 
-		D3D::context->Dispatch((width + 7) / 8, (height + 7) / 8, 1);
-		ID3D11UnorderedAccessView* uav = nullptr;
-		D3D::context->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
-		ID3D11ShaderResourceView* srv = nullptr;
-		D3D::context->CSSetShaderResources(0, 1, &srv);
-	}
+	D3D11_VIEWPORT vp = CD3D11_VIEWPORT(0.f, 0.f, FLOAT(width), FLOAT(height));
+	D3D::context->RSSetViewports(1, &vp);
+
+	D3D::stateman->SetTexture(1, m_lutSrv.get());
+	D3D11_RECT rsource = { 0, 0, width, height };
+
+	D3D::context->OMSetRenderTargets(1, &dstTexture.GetRTV(), nullptr);
+
+	D3D::drawShadedTexQuad(
+		srcTexture.GetSRV(),
+		&rsource,
+		width, height,
+		shader,
+		VertexShaderCache::GetSimpleVertexShader(),
+		VertexShaderCache::GetSimpleInputLayout(),
+		GeometryShaderCache::GetCopyGeometryShader()
+		);
+
+	D3D::stateman->SetTexture(1, nullptr);
+	D3D::context->OMSetRenderTargets(1,
+		&FramebufferManager::GetEFBColorTexture()->GetRTV(),
+		FramebufferManager::GetEFBDepthTexture()->GetDSV());
+	g_renderer->RestoreAPIState();
 	return true;
 }
 

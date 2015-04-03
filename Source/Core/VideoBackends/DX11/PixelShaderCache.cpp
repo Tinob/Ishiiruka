@@ -405,8 +405,8 @@ ID3D11PixelShader* PixelShaderCache::ReinterpRGBA6ToRGB8(bool multisampled)
 	else if (!s_rgba6_to_rgb8[1])
 	{
 		// create MSAA shader for current AA mode
-		char buf[1024];
-		const int l = sprintf_s(buf, 1024, reint_rgba6_to_rgb8_msaa, D3D::GetAAMode(g_ActiveConfig.iMultisampleMode).Count);
+		char buf[2048];
+		const int l = sprintf_s(buf, 2048, reint_rgba6_to_rgb8_msaa, D3D::GetAAMode(g_ActiveConfig.iMultisampleMode).Count);
 
 		s_rgba6_to_rgb8[1] = D3D::CompileAndCreatePixelShader(buf);
 
@@ -431,8 +431,8 @@ ID3D11PixelShader* PixelShaderCache::ReinterpRGB8ToRGBA6(bool multisampled)
 	else if (!s_rgb8_to_rgba6[1])
 	{
 		// create MSAA shader for current AA mode
-		char buf[1024];
-		const int l = sprintf_s(buf, 1024, reint_rgb8_to_rgba6_msaa_code, D3D::GetAAMode(g_ActiveConfig.iMultisampleMode).Count);
+		char buf[2048];
+		const int l = sprintf_s(buf, 2048, reint_rgb8_to_rgba6_msaa_code, D3D::GetAAMode(g_ActiveConfig.iMultisampleMode).Count);
 
 		s_rgb8_to_rgba6[1] = D3D::CompileAndCreatePixelShader(buf);
 
@@ -471,8 +471,8 @@ ID3D11PixelShader* PixelShaderCache::GetColorMatrixProgram(bool multisampled)
 	else
 	{
 		// create MSAA shader for current AA mode
-		char buf[1024];
-		int l = sprintf_s(buf, 1024, color_matrix_program_code_msaa, D3D::GetAAMode(g_ActiveConfig.iMultisampleMode).Count);
+		char buf[2048];
+		int l = sprintf_s(buf, 2048, color_matrix_program_code_msaa, D3D::GetAAMode(g_ActiveConfig.iMultisampleMode).Count);
 		s_ColorMatrixProgram[1] = D3D::CompileAndCreatePixelShader(buf);
 		CHECK(s_ColorMatrixProgram[1]!=nullptr, "Create color matrix MSAA pixel shader");
 		D3D::SetDebugObjectName(s_ColorMatrixProgram[1].get(), "color matrix MSAA pixel shader");
@@ -487,8 +487,8 @@ ID3D11PixelShader* PixelShaderCache::GetDepthMatrixProgram(bool multisampled)
 	else
 	{
 		// create MSAA shader for current AA mode
-		char buf[1024];
-		int l = sprintf_s(buf, 1024, depth_matrix_program_msaa, D3D::GetAAMode(g_ActiveConfig.iMultisampleMode).Count);
+		char buf[2048];
+		int l = sprintf_s(buf, 2048, depth_matrix_program_msaa, D3D::GetAAMode(g_ActiveConfig.iMultisampleMode).Count);
 		s_DepthMatrixProgram[1] = D3D::CompileAndCreatePixelShader(buf);
 		CHECK(s_DepthMatrixProgram[1]!=nullptr, "Create depth matrix MSAA pixel shader");
 		D3D::SetDebugObjectName(s_DepthMatrixProgram[1].get(), "depth matrix MSAA pixel shader");
