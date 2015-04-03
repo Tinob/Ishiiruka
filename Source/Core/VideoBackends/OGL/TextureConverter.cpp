@@ -31,7 +31,7 @@ namespace TextureConverter
 
 using OGL::TextureCache;
 
-static GLuint s_texConvFrameBuffer[2] = { 0, 0 };
+static GLuint s_texConvFrameBuffer[2] = {0,0};
 static GLuint s_srcTexture = 0; // for decoding from RAM
 static GLuint s_dstTexture = 0; // for encoding to RAM
 
@@ -53,40 +53,40 @@ static GLuint s_PBO = 0; // for readback with different strides
 static void CreatePrograms()
 {
 	/* TODO: Accuracy Improvements
-	*
-	* This shader doesn't really match what the GameCube does internally in the
-	* copy pipeline.
-	*  1. It uses Opengl's built in filtering when yscaling, someone could work
-	*     out how the copypipeline does it's filtering and implement it correctly
-	*     in this shader.
-	*  2. Deflickering isn't implemented, a futher filtering over 3 lines.
-	*     Isn't really needed on non-interlaced monitors (and would lower quality;
-	*     But hey, accuracy!)
-	*  3. Flipper's YUYV conversion implements a 3 pixel horizontal blur on the
-	*     UV channels, centering the U channel on the Left pixel and the V channel
-	*     on the Right pixel.
-	*     The current implementation Centers both UV channels at the same place
-	*     inbetween the two Pixels, and only blurs over these two pixels.
-	*/
+	 *
+	 * This shader doesn't really match what the GameCube does internally in the
+	 * copy pipeline.
+	 *  1. It uses OpenGL's built in filtering when yscaling, someone could work
+	 *     out how the copypipeline does it's filtering and implement it correctly
+	 *     in this shader.
+	 *  2. Deflickering isn't implemented, a futher filtering over 3 lines.
+	 *     Isn't really needed on non-interlaced monitors (and would lower quality;
+	 *     But hey, accuracy!)
+	 *  3. Flipper's YUYV conversion implements a 3 pixel horizontal blur on the
+	 *     UV channels, centering the U channel on the Left pixel and the V channel
+	 *     on the Right pixel.
+	 *     The current implementation Centers both UV channels at the same place
+	 *     inbetween the two Pixels, and only blurs over these two pixels.
+	 */
 	// Output is BGRA because that is slightly faster than RGBA.
 	const char *VProgramRgbToYuyv =
 		"out vec2 uv0;\n"
 		"uniform vec4 copy_position;\n" // left, top, right, bottom
-		"SAMPLER_BINDING(9) uniform sampler2D samp9;\n"
+		"SAMPLER_BINDING(9) uniform sampler2DArray samp9;\n"
 		"void main()\n"
 		"{\n"
 		"	vec2 rawpos = vec2(gl_VertexID&1, gl_VertexID&2);\n"
 		"	gl_Position = vec4(rawpos*2.0-1.0, 0.0, 1.0);\n"
-		"	uv0 = mix(copy_position.xy, copy_position.zw, rawpos) / vec2(textureSize(samp9, 0));\n"
+		"	uv0 = mix(copy_position.xy, copy_position.zw, rawpos) / vec2(textureSize(samp9, 0).xy);\n"
 		"}\n";
 	const char *FProgramRgbToYuyv =
-		"SAMPLER_BINDING(9) uniform sampler2D samp9;\n"
+		"SAMPLER_BINDING(9) uniform sampler2DArray samp9;\n"
 		"in vec2 uv0;\n"
 		"out vec4 ocol0;\n"
 		"void main()\n"
 		"{\n"
-		"	vec3 c0 = texture(samp9, (uv0 - dFdx(uv0) * 0.25)).rgb;\n"
-		"	vec3 c1 = texture(samp9, (uv0 + dFdx(uv0) * 0.25)).rgb;\n"
+		"	vec3 c0 = texture(samp9, vec3(uv0 - dFdx(uv0) * 0.25, 0.0)).rgb;\n"
+		"	vec3 c1 = texture(samp9, vec3(uv0 + dFdx(uv0) * 0.25, 0.0)).rgb;\n"
 		"	vec3 c01 = (c0 + c1) * 0.5;\n"
 		"	vec3 y_const = vec3(0.257,0.504,0.098);\n"
 		"	vec3 u_const = vec3(-0.148,-0.291,0.439);\n"
@@ -98,12 +98,12 @@ static void CreatePrograms()
 	s_rgbToYuyvUniform_loc = glGetUniformLocation(s_rgbToYuyvProgram.glprogid, "copy_position");
 
 	/* TODO: Accuracy Improvements
-	*
-	* The YVYU to RGB conversion here matches the RGB to YUYV done above, but
-	* if a game modifies or adds images to the XFB then it should be using the
-	* same algorithm as the flipper, and could result in slight color inaccuracies
-	* when run back through this shader.
-	*/
+	 *
+	 * The YVYU to RGB conversion here matches the RGB to YUYV done above, but
+	 * if a game modifies or adds images to the XFB then it should be using the
+	 * same algorithm as the flipper, and could result in slight color inaccuracies
+	 * when run back through this shader.
+	 */
 	const char *VProgramYuyvToRgb =
 		"void main()\n"
 		"{\n"
@@ -117,7 +117,7 @@ static void CreatePrograms()
 		"void main()\n"
 		"{\n"
 		"	ivec2 uv = ivec2(gl_FragCoord.xy);\n"
-		// We switch top/bottom here. TODO: move this to screen blit.
+			// We switch top/bottom here. TODO: move this to screen blit.
 		"	ivec2 ts = textureSize(samp9, 0);\n"
 		"	vec4 c0 = texelFetch(samp9, ivec2(uv.x>>1, ts.y-uv.y-1), 0);\n"
 		"	float y = mix(c0.b, c0.r, (uv.x & 1) == 1);\n"
@@ -213,8 +213,8 @@ void Shutdown()
 }
 
 static void EncodeToRamUsingShader(GLuint srcTexture,
-	u8* destAddr, int dstWidth, int dstHeight, int readStride,
-	bool linearFilter)
+						u8* destAddr, int dstWidth, int dstHeight, int readStride,
+						bool linearFilter)
 {
 
 
@@ -225,18 +225,18 @@ static void EncodeToRamUsingShader(GLuint srcTexture,
 	OpenGL_BindAttributelessVAO();
 
 	// set source texture
-	glActiveTexture(GL_TEXTURE0 + 9);
-	glBindTexture(GL_TEXTURE_2D, srcTexture);
+	glActiveTexture(GL_TEXTURE0+9);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, srcTexture);
 
 	if (linearFilter)
 	{
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	}
 	else
 	{
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	}
 
 	glViewport(0, 0, (GLsizei)dstWidth, (GLsizei)dstHeight);
@@ -247,7 +247,7 @@ static void EncodeToRamUsingShader(GLuint srcTexture,
 	// TODO: make this less slow.
 
 	int writeStride = bpmem.copyMipMapStrideChannels * 32;
-	int dstSize = dstWidth*dstHeight * 4;
+	int dstSize = dstWidth*dstHeight*4;
 	int readHeight = readStride / dstWidth / 4; // 4 bytes per pixel
 	int readLoops = dstHeight / readHeight;
 
@@ -279,7 +279,7 @@ static void EncodeToRamUsingShader(GLuint srcTexture,
 	}
 }
 
-int EncodeToRamFromTexture(u32 address, GLuint source_texture, bool bFromZBuffer, bool bIsIntensityFmt, u32 copyfmt, int bScaleByHalf, const EFBRectangle& source)
+int EncodeToRamFromTexture(u32 address,GLuint source_texture, bool bFromZBuffer, bool bIsIntensityFmt, u32 copyfmt, int bScaleByHalf, const EFBRectangle& source)
 {
 	u32 format = copyfmt;
 
@@ -308,7 +308,6 @@ int EncodeToRamFromTexture(u32 address, GLuint source_texture, bool bFromZBuffer
 
 	u16 blkW = TexDecoder_GetBlockWidthInTexels(format) - 1;
 	u16 blkH = TexDecoder_GetBlockHeightInTexels(format) - 1;
-	u16 samples = TextureConversionShader::GetEncodedSampleCount(format);
 
 	// only copy on cache line boundaries
 	// extra pixels are copied but not displayed in the resulting texture
@@ -320,14 +319,16 @@ int EncodeToRamFromTexture(u32 address, GLuint source_texture, bool bFromZBuffer
 		source.left, source.top,
 		expandedWidth, bScaleByHalf ? 2 : 1);
 
-	int cacheBytes = 32;
+	unsigned int numBlocksX = expandedWidth / TexDecoder_GetBlockWidthInTexels(format);
+	unsigned int numBlocksY = expandedHeight / TexDecoder_GetBlockHeightInTexels(format);
+	unsigned int cacheLinesPerRow;
 	if ((format & 0x0f) == 6)
-		cacheBytes = 64;
+		cacheLinesPerRow = numBlocksX * 2;
+	else
+		cacheLinesPerRow = numBlocksX;
 
-	int readStride = (expandedWidth * cacheBytes) /
-		TexDecoder_GetBlockWidthInTexels(format);
 	EncodeToRamUsingShader(source_texture,
-		dest_ptr, expandedWidth / samples, expandedHeight, readStride,
+		dest_ptr, cacheLinesPerRow * 8, numBlocksY, cacheLinesPerRow * 32,
 		bScaleByHalf > 0 && !bFromZBuffer);
 	return size_in_bytes; // TODO: D3D11 is calculating this value differently!
 
@@ -345,7 +346,7 @@ void EncodeToRamYUYV(GLuint srcTexture, const TargetRectangle& sourceRc, u8* des
 	// We enable linear filtering, because the GameCube does filtering in the vertical direction when
 	// yscale is enabled.
 	// Otherwise we get jaggies when a game uses yscaling (most PAL games)
-	EncodeToRamUsingShader(srcTexture, destAddr, dstWidth / 2, dstHeight, dstWidth*dstHeight * 2, true);
+	EncodeToRamUsingShader(srcTexture, destAddr, dstWidth / 2, dstHeight, dstWidth*dstHeight*2, true);
 	FramebufferManager::SetFramebuffer(0);
 	TextureCache::DisableStage(0);
 	g_renderer->RestoreAPIState();
@@ -369,11 +370,11 @@ void DecodeToTexture(u32 xfbAddr, int srcWidth, int srcHeight, GLuint destTextur
 	// switch to texture converter frame buffer
 	// attach destTexture as color destination
 	FramebufferManager::SetFramebuffer(s_texConvFrameBuffer[1]);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, destTexture, 0);
+	FramebufferManager::FramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_ARRAY, destTexture, 0);
 
 	// activate source texture
 	// set srcAddr as data for source texture
-	glActiveTexture(GL_TEXTURE0 + 9);
+	glActiveTexture(GL_TEXTURE0+9);
 	glBindTexture(GL_TEXTURE_2D, s_srcTexture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, srcWidth / 2, srcHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, srcAddr);
 

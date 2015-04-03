@@ -342,6 +342,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 	uid_data.pixel_lighting = enable_pl;
 	uid_data.genMode_numtexgens = bpm.genMode.numtexgens;
 	uid_data.zfreeze = bpm.genMode.zfreeze;
+	uid_data.stereo = g_ActiveConfig.iStereoMode > 0;
 	if (Write_Code)
 	{
 		InitializeRegisterState();
@@ -387,7 +388,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 		{
 			// Declare samplers
 			for (int i = 0; i < 8; ++i)
-				out.Write("SAMPLER_BINDING(%d) uniform sampler2D samp%d;\n", i, i);
+				out.Write("SAMPLER_BINDING(%d) uniform sampler2DArray samp%d;\n", i, i);
 		}
 		else
 		{
@@ -400,7 +401,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 				out.Write("\n");
 				for (u32 i = 0; i < 8; ++i)
 				{
-					out.Write("Texture2D Tex%d : register(t%d);\n", i, i);
+					out.Write("Texture2DArray Tex%d : register(t%d);\n", i, i);
 				}
 			}
 		}
@@ -429,10 +430,8 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 		}
 
 		if (ApiType == API_OPENGL)
-			out.Write("};\n");
-
-		if (ApiType == API_OPENGL)
 		{
+			out.Write("};\n");
 			if (uid_data.bounding_box)
 			{
 				out.Write(
@@ -448,43 +447,55 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 			if (per_pixel_depth)
 				out.Write("#define depth gl_FragDepth\n");
 
-			out.Write("centroid in float4 colors_0;\n");
-			out.Write("centroid in float4 colors_1;\n");
-
-			// compute window position if needed because binding semantic WPOS is not widely supported
-			// Let's set up attributes
-			if (numTexgen < 7)
+			if (g_ActiveConfig.backend_info.bSupportsGeometryShaders)
 			{
-				for (u32 i = 0; i < numTexgen; ++i)
-				{
-					out.Write("centroid in float3 uv%d_2;\n", i);
-				}
-				out.Write("centroid in float4 clipPos_2;\n");
-				if (enable_pl)
-				{
-					out.Write("centroid in float4 Normal_2;\n");
-				}
+				out.Write("in VertexData {\n");
+				GenerateVSOutputMembers<T, ApiType>(out, enable_pl, xfr, g_ActiveConfig.backend_info.bSupportsBindingLayout ? "centroid" : "centroid in");
+
+				if (g_ActiveConfig.iStereoMode > 0)
+					out.Write("\tflat int layer;\n");
+
+				out.Write("};\n");
 			}
 			else
 			{
-				// wpos is in w of first 4 texcoords
-				if (enable_pl)
+
+				out.Write("centroid in float4 colors_0;\n");
+				out.Write("centroid in float4 colors_1;\n");
+
+				// compute window position if needed because binding semantic WPOS is not widely supported
+				// Let's set up attributes
+				if (numTexgen < 7)
 				{
-					for (u32 i = 0; i < 8; ++i)
+					for (u32 i = 0; i < numTexgen; ++i)
 					{
-						out.Write("centroid in float4 uv%d_2;\n", i);
+						out.Write("centroid in float3 uv%d_2;\n", i);
+					}
+					out.Write("centroid in float4 clipPos_2;\n");
+					if (enable_pl)
+					{
+						out.Write("centroid in float4 Normal_2;\n");
 					}
 				}
 				else
 				{
-					for (u32 i = 0; i < numTexgen; ++i)
+					// wpos is in w of first 4 texcoords
+					if (enable_pl)
 					{
-						out.Write("centroid in float%d uv%d_2;\n", i < 4 ? 4 : 3, i);
+						for (u32 i = 0; i < 8; ++i)
+						{
+							out.Write("centroid in float4 uv%d_2;\n", i);
+						}
 					}
+					else
+					{
+						for (u32 i = 0; i < numTexgen; ++i)
+						{
+							out.Write("centroid in float%d uv%d_2;\n", i < 4 ? 4 : 3, i);
+						}
+					}					
 				}
-				out.Write("float4 clipPos;\n");
 			}
-
 			if (forced_early_z)
 			{
 				// HACK: This doesn't force the driver to write to depth buffer if alpha test fails.
@@ -492,6 +503,10 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 				out.Write("layout(early_fragment_tests) in;\n");
 			}
 			out.Write("void main()\n{\n");
+			if (numTexgen >= 7)
+			{
+				out.Write("float4 clipPos;\n");
+			}
 			out.Write("\tfloat4 rawpos = gl_FragCoord;\n");
 		}
 		else
@@ -538,6 +553,8 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 				out.Write(",\n  in %s float4 clipPos : TEXCOORD%d", optCentroid, numTexgen);
 				if (enable_pl)
 					out.Write(",\n  in %s float4 Normal : TEXCOORD%d", optCentroid, numTexgen + 1);
+				if (g_ActiveConfig.iStereoMode > 0)
+					out.Write(",\n  in uint layer : SV_RenderTargetArrayIndex\n");
 				out.Write("        ) {\n");
 			}
 			else
@@ -553,6 +570,8 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 					for (u32 i = 0; i < numTexgen; ++i)
 						out.Write(",\n  in float%d uv%d : TEXCOORD%d", i < 4 ? 4 : 3, i, i);
 				}
+				if (g_ActiveConfig.iStereoMode > 0)
+					out.Write(",\n  in uint layer : SV_RenderTargetArrayIndex\n");
 				out.Write("        ) {\n");
 				out.Write("float4 clipPos = float4(0.0,0.0,0.0,0.0);");
 			}
@@ -593,7 +612,14 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 				{
 					for (u32 i = 0; i < numTexgen; ++i)
 					{
-						out.Write("float3 uv%d = uv%d_2;\n", i, i);
+						if (g_ActiveConfig.backend_info.bSupportsGeometryShaders)
+						{
+							out.Write("float3 uv%d = tex%d;\n", i, i);
+						}
+						else
+						{
+							out.Write("float3 uv%d = uv%d_2;\n", i, i);
+						}
 					}
 				}
 				out.Write("float4 clipPos = clipPos_2;\n");
@@ -609,14 +635,28 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 				{
 					for (u32 i = 0; i < 8; ++i)
 					{
-						out.Write("float4 uv%d = uv%d_2;\n", i, i);
+						if (g_ActiveConfig.backend_info.bSupportsGeometryShaders)
+						{
+							out.Write("float4 uv%d = tex%d;\n", i, i);
+						}
+						else
+						{
+							out.Write("float4 uv%d = uv%d_2;\n", i, i);
+						}
 					}
 				}
 				else
 				{
 					for (u32 i = 0; i < numTexgen; ++i)
 					{
-						out.Write("float%d uv%d = uv%d_2;\n", i < 4 ? 4 : 3, i, i);
+						if (g_ActiveConfig.backend_info.bSupportsGeometryShaders)
+						{
+							out.Write("float%d uv%d = tex%d;\n", i < 4 ? 4 : 3, i, i);
+						}
+						else
+						{
+							out.Write("float%d uv%d = uv%d_2;\n", i < 4 ? 4 : 3, i, i);
+						}
 					}
 				}
 			}
@@ -1525,10 +1565,16 @@ void SampleTexture(T& out, const char *texcoords, const char *texswap, int texma
 {
 	if (ApiType == API_D3D11)
 	{
-		out.Write("wuround((Tex%d.Sample(samp%d,%s.xy * " I_TEXDIMS"[%d].xy)).%s * 255.0);\n", texmap, texmap, texcoords, texmap, texswap);
+		out.Write("wuround((Tex%d.Sample(samp%d, float3(%s.xy * " I_TEXDIMS"[%d].xy, %s))).%s * 255.0);\n", texmap, texmap, texcoords, texmap, g_ActiveConfig.iStereoMode > 0 ? "layer" : "0.0", texswap);
+	}
+	else if (ApiType == API_OPENGL)
+	{
+		out.Write("wuround(texture(samp%d,float3(%s.xy * " I_TEXDIMS"[%d].xy, %s)).%s * 255.0);\n", texmap, texcoords, texmap, g_ActiveConfig.iStereoMode > 0 ? "layer" : "0.0", texswap);
 	}
 	else
-		out.Write("wuround(%s(samp%d,%s.xy * " I_TEXDIMS"[%d].xy).%s * 255.0);\n", ApiType == API_OPENGL ? "texture" : "tex2D", texmap, texcoords, texmap, texswap);
+	{
+		out.Write("wuround(tex2D(samp%d,%s.xy * " I_TEXDIMS"[%d].xy).%s * 255.0);\n", texmap, texcoords, texmap, texswap);
+	}
 }
 
 static const char *tevAlphaFuncsTable[] =

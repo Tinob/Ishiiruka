@@ -129,7 +129,7 @@ FramebufferManager::~FramebufferManager()
 	s_efb.depth_ReadBuffer_Format = D3DFMT_UNKNOWN;
 }
 
-XFBSourceBase* FramebufferManager::CreateXFBSource(unsigned int target_width, unsigned int target_height)
+XFBSourceBase* FramebufferManager::CreateXFBSource(u32 target_width, u32 target_height, u32 layers)
 {
 	LPDIRECT3DTEXTURE9 tex;
 	D3D::dev->CreateTexture(target_width, target_height, 1, D3DUSAGE_RENDERTARGET,
@@ -138,7 +138,7 @@ XFBSourceBase* FramebufferManager::CreateXFBSource(unsigned int target_width, un
 	return new XFBSource(tex);
 }
 
-void FramebufferManager::GetTargetSize(unsigned int *width, unsigned int *height)
+void FramebufferManager::GetTargetSize(u32 *width, u32 *height)
 {
 	*width = m_target_width;
 	*height = m_target_height;

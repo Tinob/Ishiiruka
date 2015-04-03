@@ -37,12 +37,13 @@ void SamplerCache::SetSamplerState(int stage, const TexMode0& tm0, const TexMode
 		params.tm0.min_filter |= 0x4;
 		params.tm0.mag_filter |= 0x1;
 	}
-	
+
 	// custom textures may have higher resolution, so disable the max_lod
 	if (custom_tex)
 	{
 		params.tm1.max_lod = 255;
 	}
+
 	// TODO: Should keep a circular buffer for each stage of recently used samplers.
 
 	auto& active_sampler = m_active_samplers[stage];

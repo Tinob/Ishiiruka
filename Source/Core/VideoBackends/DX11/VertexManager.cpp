@@ -5,6 +5,7 @@
 #include "VideoBackends/DX11/BoundingBox.h"
 #include "VideoBackends/DX11/D3DBase.h"
 #include "VideoBackends/DX11/D3DState.h"
+#include "VideoBackends/DX11/GeometryShaderCache.h"
 #include "VideoBackends/DX11/PixelShaderCache.h"
 #include "VideoBackends/DX11/Render.h"
 #include "VideoBackends/DX11/VertexManager.h"
@@ -46,14 +47,10 @@ void VertexManager::CreateDeviceObjects()
 
 	m_currentBuffer = 0;
 	m_bufferCursor = MAX_BUFFER_SIZE;
-
-	m_lineAndPointShader.Init();
 }
 
 void VertexManager::DestroyDeviceObjects()
 {
-	m_lineAndPointShader.Shutdown();
-
 	for (int i = 0; i < MAX_BUFFER_COUNT; i++)
 	{
 		m_buffers[i].reset();
@@ -118,10 +115,6 @@ void VertexManager::PrepareDrawBuffers(u32 stride)
 	ADDSTAT(stats.thisFrame.bytesIndexStreamed, indexBufferSize);
 }
 
-static const float LINE_PT_TEX_OFFSETS[8] = {
-	0.f, 0.0625f, 0.125f, 0.25f, 0.5f, 1.f, 1.f, 1.f
-};
-
 void VertexManager::Draw(UINT stride)
 {
 	u32 components = g_nativeVertexFmt->m_components;
@@ -138,42 +131,17 @@ void VertexManager::Draw(UINT stride)
 		D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP :
 		D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
-		D3D::stateman->SetPrimitiveTopology(pt);
-		D3D::stateman->SetGeometryShader(nullptr);
+		D3D::stateman->SetPrimitiveTopology(pt);		
 	}
 	else if (current_primitive_type == PRIMITIVE_LINES)
 	{
-		float lineWidth = float(bpmem.lineptwidth.linesize) / 6.f;
-		float texOffset = LINE_PT_TEX_OFFSETS[bpmem.lineptwidth.lineoff];
-		float vpWidth = 2.0f * xfmem.viewport.wd;
-		float vpHeight = -2.0f * xfmem.viewport.ht;
-
-		bool texOffsetEnable[8];
-
-		for (int i = 0; i < 8; ++i)
-			texOffsetEnable[i] = bpmem.texcoords[i].s.line_offset;
-
-		m_lineAndPointShader.SetLineShader(g_nativeVertexFmt->m_components, lineWidth,
-			texOffset, vpWidth, vpHeight, texOffsetEnable);
-		((DX11::Renderer*)g_renderer)->ApplyCullDisable();
 		D3D::stateman->SetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
+		((DX11::Renderer*)g_renderer)->ApplyCullDisable();
 	}
 	else
 	{
-		float pointSize = float(bpmem.lineptwidth.pointsize) / 6.f;
-		float texOffset = LINE_PT_TEX_OFFSETS[bpmem.lineptwidth.pointoff];
-		float vpWidth = 2.0f * xfmem.viewport.wd;
-		float vpHeight = -2.0f * xfmem.viewport.ht;
-
-		bool texOffsetEnable[8];
-
-		for (int i = 0; i < 8; ++i)
-			texOffsetEnable[i] = bpmem.texcoords[i].s.point_offset;
-
-		m_lineAndPointShader.SetPointShader(g_nativeVertexFmt->m_components, pointSize,
-			texOffset, vpWidth, vpHeight, texOffsetEnable);
-		((DX11::Renderer*)g_renderer)->ApplyCullDisable();
 		D3D::stateman->SetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
+		((DX11::Renderer*)g_renderer)->ApplyCullDisable();
 	}
 
 	D3D::stateman->Apply();
@@ -182,12 +150,11 @@ void VertexManager::Draw(UINT stride)
 
 	if (current_primitive_type != PRIMITIVE_TRIANGLES)
 	{
-		D3D::stateman->SetGeometryShader(nullptr);
 		((DX11::Renderer*)g_renderer)->RestoreCull();
 	}
 }
 
-void VertexManager::PrepareShaders(u32 components, const XFMemory &xfr, const BPMemory &bpm, bool ongputhread)
+void VertexManager::PrepareShaders(u32 primitive, u32 components, const XFMemory &xfr, const BPMemory &bpm, bool ongputhread)
 {
 	if (ongputhread)
 	{
@@ -200,19 +167,28 @@ void VertexManager::PrepareShaders(u32 components, const XFMemory &xfr, const BP
 	bool useDstAlpha = !g_ActiveConfig.bDstAlphaPass && bpm.dstalpha.enable && bpm.blendmode.alphaupdate &&
 		bpm.zcontrol.pixel_format == PEControl::RGBA6_Z24;
 	VertexShaderCache::PrepareShader(components, xfr, bpm, ongputhread);
+	GeometryShaderCache::PrepareShader(primitive, xfr, bpm, ongputhread);
 	PixelShaderCache::PrepareShader(useDstAlpha ? DSTALPHA_DUAL_SOURCE_BLEND : DSTALPHA_NONE, components, xfr, bpm, ongputhread);
 }
 
 void VertexManager::vFlush(bool useDstAlpha)
 {
-	if (!PixelShaderCache::TestShader())
-	{
-		return;
-	}
 	if (!VertexShaderCache::TestShader())
 	{
 		return;
 	}
+	if (g_ActiveConfig.iStereoMode > 0 || current_primitive_type != PrimitiveType::PRIMITIVE_TRIANGLES)
+	{
+		if (!GeometryShaderCache::TestShader())
+		{
+			return;
+		}
+	}
+	if (!PixelShaderCache::TestShader())
+	{
+		return;
+	}
+	
 	BBox::Update();
 	u32 stride = g_nativeVertexFmt->GetVertexStride();
 	PrepareDrawBuffers(stride);

@@ -2,6 +2,7 @@
 
 #include "VideoCommon/BPStructs.h"
 #include "VideoCommon/Debugger.h"
+#include "VideoCommon/GeometryShaderManager.h"
 #include "VideoCommon/IndexGenerator.h"
 #include "VideoCommon/MainBase.h"
 #include "VideoCommon/NativeVertexFormat.h"
@@ -41,6 +42,11 @@ static const PrimitiveType primitive_from_gx[8] = {
 	PRIMITIVE_LINES,     // GX_DRAW_LINE_STRIP
 	PRIMITIVE_POINTS,    // GX_DRAW_POINTS
 };
+
+u32 VertexManager::GetPrimitiveType(int primitive)
+{
+	return primitive_from_gx[primitive & 7];
+}
 
 VertexManager::VertexManager()
 {
@@ -159,7 +165,7 @@ void VertexManager::Flush()
 		bpmem.zcontrol.pixel_format == PEControl::RGBA6_Z24;
 	// loading a state will invalidate BP, so check for it
 	g_video_backend->CheckInvalidState();
-	g_vertex_manager->PrepareShaders(g_nativeVertexFmt->m_components, xfmem, bpmem, true);
+	g_vertex_manager->PrepareShaders(current_primitive_type, g_nativeVertexFmt->m_components, xfmem, bpmem, true);
 
 #if defined(_DEBUG) || defined(DEBUGFAST)
 	PRIM_LOG("frame%d:\n texgen=%d, numchan=%d, dualtex=%d, ztex=%d, cole=%d, alpe=%d, ze=%d", g_ActiveConfig.iSaveTargetId, xfmem.numTexGen.numTexGens,
@@ -219,6 +225,7 @@ void VertexManager::Flush()
 
 	// set global constants
 	VertexShaderManager::SetConstants();
+	GeometryShaderManager::SetConstants();
 	PixelShaderManager::SetConstants();
 	if (current_primitive_type == PRIMITIVE_TRIANGLES)
 	{

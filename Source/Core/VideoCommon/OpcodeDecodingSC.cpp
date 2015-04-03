@@ -296,7 +296,11 @@ inline bool DecodeSC(const u8* end)
 			vertexSize *= numVertices;
 			if (shaderGenDirty)
 			{
-				g_vertex_manager->PrepareShaders(components, xfmemSC, bpmemSC, false);
+				g_vertex_manager->PrepareShaders(VertexManager::GetPrimitiveType((cmd_byte & GX_PRIMITIVE_MASK) >> GX_PRIMITIVE_SHIFT), 
+					components, 
+					xfmemSC, 
+					bpmemSC, 
+					false);
 				shaderGenDirty = false;
 			}
 			if (sizeCheck &&  distance < vertexSize)

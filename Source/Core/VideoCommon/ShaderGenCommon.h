@@ -13,6 +13,7 @@
 #include "Common/CommonTypes.h"
 #include "Common/Hash.h"
 #include "VideoCommon/VideoCommon.h"
+#include "VideoCommon/XFMemory.h"
 
 /**
 * Common interface for classes that need to go through the shader generation path (GenerateVertexShader, GeneratePixelShader)
@@ -246,3 +247,78 @@ private:
 	std::map<UidT, std::string> m_shaders;
 	std::vector<UidT> m_uids;
 };
+
+
+template<class T, API_TYPE api_type>
+void DefineVSOutputStructMember(T& object, const char* qualifier, const char* type, const char* name, const char* sufix, int var_index, const char* semantic, int semantic_index = -1)
+{
+	if (qualifier != nullptr)
+		object.Write("\t%s %s %s%s", qualifier, type, name, sufix);
+	else
+		object.Write("\t%s %s%s", type, name, sufix);
+
+	if (var_index != -1)
+		object.Write("%d", var_index);
+
+	if (api_type == API_OPENGL)
+		object.Write(";\n");
+	else
+	{
+		if (semantic_index != -1)
+			object.Write(" : %s%d;\n", semantic, semantic_index);
+		else
+			object.Write(" : %s;\n", semantic);
+	}
+}
+
+template<class T, API_TYPE api_type>
+inline void GenerateVSOutputMembers(T& object, bool enable_pl, const XFMemory &xfr, const char* qualifier = nullptr)
+{
+	DefineVSOutputStructMember<T, api_type>(object, qualifier, "float4", "pos", "", -1, api_type == API_D3D11 ? "SV_Position" : "POSITION");
+	DefineVSOutputStructMember<T, api_type>(object, qualifier, "float4", "colors_", "", 0, "COLOR", 0);
+	DefineVSOutputStructMember<T, api_type>(object, qualifier, "float4", "colors_", "", 1, "COLOR", 1);
+
+	if (xfr.numTexGen.numTexGens < 7)
+	{
+		for (unsigned int i = 0; i < xfr.numTexGen.numTexGens; ++i)
+			DefineVSOutputStructMember<T, api_type>(object, qualifier, "float3", "tex", "", i, "TEXCOORD", i);
+		const char * sufix = (api_type == API_OPENGL) ? "_2" : "";
+		DefineVSOutputStructMember<T, api_type>(object, qualifier, "float4", "clipPos", sufix, -1, "TEXCOORD", xfr.numTexGen.numTexGens);
+
+		if (enable_pl)
+			DefineVSOutputStructMember<T, api_type>(object, qualifier, "float4", "Normal", sufix, -1, "TEXCOORD", xfr.numTexGen.numTexGens + 1);
+	}
+	else
+	{
+		// Store clip position in the w component of first 4 texcoords
+		int num_texcoords = enable_pl ? 8 : xfr.numTexGen.numTexGens;
+		for (int i = 0; i < num_texcoords; ++i)
+			DefineVSOutputStructMember<T, api_type>(object, qualifier, (enable_pl || i < 4) ? "float4" : "float3", "tex", "", i, "TEXCOORD", i);
+	}
+}
+
+template<class T, API_TYPE api_type>
+static inline void AssignVSOutputMembers(T& object, const char* a, const char* b, bool enable_pl, const XFMemory &xfr)
+{
+	object.Write("\t%s.pos = %s.pos;\n", a, b);
+	object.Write("\t%s.colors_0 = %s.colors_0;\n", a, b);
+	object.Write("\t%s.colors_1 = %s.colors_1;\n", a, b);
+
+	if (xfr.numTexGen.numTexGens < 7)
+	{
+		for (unsigned int i = 0; i < xfr.numTexGen.numTexGens; ++i)
+			object.Write("\t%s.tex%d = %s.tex%d;\n", a, i, b, i);
+		const char * sufix = (api_type == API_OPENGL) ? "_2" : "";
+		object.Write("\t%s.clipPos%s = %s.clipPos%s;\n", a, sufix, b, sufix);
+
+		if (enable_pl)
+			object.Write("\t%s.Normal%s = %s.Normal%s;\n", a, sufix, b, sufix);
+	}
+	else
+	{
+		// Store clip position in the w component of first 4 texcoords
+		int num_texcoords = enable_pl ? 8 : xfr.numTexGen.numTexGens;
+		for (int i = 0; i < num_texcoords; ++i)
+			object.Write("\t%s.tex%d = %s.tex%d;\n", a, i, b, i);
+	}
+}

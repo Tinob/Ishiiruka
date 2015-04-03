@@ -47,13 +47,14 @@ namespace OGL
 
 struct XFBSource : public XFBSourceBase
 {
-	XFBSource(GLuint tex) : texture(tex) {}
+	XFBSource(GLuint tex, int layers) : texture(tex), m_layers(layers) {}
 	~XFBSource();
 
 	void CopyEFB(float Gamma) override;
 	void DecodeToTexture(u32 xfbAddr, u32 fbWidth, u32 fbHeight) override;
 
 	const GLuint texture;
+	const int m_layers;
 };
 
 class FramebufferManager : public FramebufferManagerBase
@@ -67,13 +68,14 @@ public:
 	static GLuint GetEFBColorTexture(const EFBRectangle& sourceRc);
 	static GLuint GetEFBDepthTexture(const EFBRectangle& sourceRc);
 
-	static GLuint GetEFBFramebuffer() { return m_efbFramebuffer; }
+	static GLuint GetEFBFramebuffer(unsigned int layer = 0) { return (layer < m_EFBLayers) ? m_efbFramebuffer[layer] : m_efbFramebuffer[m_EFBLayers - 1]; }
 	static GLuint GetXFBFramebuffer() { return m_xfbFramebuffer; }
 
 	// Resolved framebuffer is only used in MSAA mode.
-	static GLuint GetResolvedFramebuffer() { return m_resolvedFramebuffer; }
+	static GLuint GetResolvedFramebuffer() { return m_resolvedFramebuffer[0]; }
 
 	static void SetFramebuffer(GLuint fb);
+	static void FramebufferTexture(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
 
 	// If in MSAA mode, this will perform a resolve of the specified rectangle, and return the resolve target as a texture ID.
 	// Thus, this call may be expensive. Don't repeat it unnecessarily.
@@ -90,7 +92,7 @@ public:
 	static void ReinterpretPixelData(unsigned int convtype);
 
 private:
-	XFBSourceBase* CreateXFBSource(unsigned int target_width, unsigned int target_height) override;
+	XFBSourceBase* CreateXFBSource(unsigned int target_width, unsigned int target_height, unsigned int layers) override;
 	void GetTargetSize(unsigned int *width, unsigned int *height) override;
 
 	void CopyToRealXFB(u32 xfbAddr, u32 fbWidth, u32 fbHeight, const EFBRectangle& sourceRc,float Gamma) override;
@@ -100,15 +102,14 @@ private:
 	static int m_msaaSamples;
 
 	static GLenum m_textureType;
-
-	static GLuint m_efbFramebuffer;
+	static GLuint* m_efbFramebuffer;
 	static GLuint m_xfbFramebuffer;
 	static GLuint m_efbColor;
 	static GLuint m_efbDepth;
 	static GLuint m_efbColorSwap;// will be hot swapped with m_efbColor when reinterpreting EFB pixel formats
 
 	// Only used in MSAA mode, TODO: try to avoid them
-	static GLuint m_resolvedFramebuffer;
+	static GLuint* m_resolvedFramebuffer;
 	static GLuint m_resolvedColorTexture;
 	static GLuint m_resolvedDepthTexture;
 

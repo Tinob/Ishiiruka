@@ -29,6 +29,7 @@
 #include "VideoBackends/DX11/BoundingBox.h"
 #include "VideoBackends/DX11/D3DUtil.h"
 #include "VideoBackends/DX11/D3DBase.h"
+#include "VideoBackends/DX11/GeometryShaderCache.h"
 #include "VideoBackends/DX11/PerfQuery.h"
 #include "VideoBackends/DX11/PixelShaderCache.h"
 #include "VideoBackends/DX11/Render.h"
@@ -94,8 +95,9 @@ void InitBackendInfo()
 	g_Config.backend_info.bSupportsPrimitiveRestart = false;
 	g_Config.backend_info.bNeedBlendIndices = false;
 	g_Config.backend_info.bSupportsOversizedViewports = false;
-	g_Config.backend_info.bSupportsStereoscopy = false;
-	g_Config.backend_info.bSupports3DVision = false;
+	g_Config.backend_info.bSupportsGeometryShaders = true;
+	g_Config.backend_info.bSupports3DVision = true;
+	g_Config.backend_info.bSupportsPostProcessing = false;
 
 	IDXGIFactory* factory;
 	IDXGIAdapter* ad;
@@ -132,6 +134,8 @@ void InitBackendInfo()
 			g_Config.backend_info.bSupportsEarlyZ = shader_model_5_supported;
 			// Requires full UAV functionality (only available in shader model 5)
 			g_Config.backend_info.bSupportsBBox = shader_model_5_supported;
+			// Requires the instance attribute (only available in shader model 5)
+			g_Config.backend_info.bSupportsGSInstancing = shader_model_5_supported;
 		}
 
 		g_Config.backend_info.Adapters.push_back(UTF16ToUTF8(desc.Description));
@@ -142,6 +146,7 @@ void InitBackendInfo()
 
 	// Clear ppshaders string vector
 	g_Config.backend_info.PPShaders.clear();
+	g_Config.backend_info.AnaglyphShaders.clear();
 
 	DX11::D3D::UnloadDXGI();
 	DX11::D3D::UnloadD3D();
@@ -197,6 +202,7 @@ void VideoBackend::Video_Prepare()
 	VertexLoaderManager::Init();
 	OpcodeDecoder_Init();
 	VertexShaderManager::Init();
+	GeometryShaderCache::Init();
 	PixelShaderManager::Init(true);
 	CommandProcessor::Init();
 	PixelEngine::Init();
@@ -223,6 +229,7 @@ void VideoBackend::Shutdown()
 		// internal interfaces
 		D3D::ShutdownUtils();
 		PixelShaderCache::Shutdown();
+		GeometryShaderCache::Shutdown();
 		VertexShaderCache::Shutdown();
 		BBox::Shutdown();
 		delete g_perf_query;

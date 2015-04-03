@@ -46,13 +46,14 @@ namespace DX11 {
 
 struct XFBSource : public XFBSourceBase
 {
-	XFBSource(D3DTexture2D *_tex) : tex(_tex) {}
+	XFBSource(D3DTexture2D *_tex, int slices) : tex(_tex), m_slices(slices) {}
 	~XFBSource() { tex->Release(); }
 
 	void DecodeToTexture(u32 xfbAddr, u32 fbWidth, u32 fbHeight);
 	void CopyEFB(float Gamma);
 
 	D3DTexture2D* const tex;
+	const int m_slices;
 };
 
 class FramebufferManager : public FramebufferManagerBase
@@ -80,10 +81,10 @@ public:
 	}
 
 private:
-	XFBSourceBase* CreateXFBSource(unsigned int target_width, unsigned int target_height);
-	void GetTargetSize(unsigned int *width, unsigned int *height);
+	XFBSourceBase* CreateXFBSource(u32 target_width, u32 target_height, u32 layers) override;
+	void GetTargetSize(u32 *width, u32 *height) override;
 
-	void CopyToRealXFB(u32 xfbAddr, u32 fbWidth, u32 fbHeight, const EFBRectangle& sourceRc,float Gamma);
+	void CopyToRealXFB(u32 xfbAddr, u32 fbWidth, u32 fbHeight, const EFBRectangle& sourceRc, float Gamma) override;
 
 	static struct Efb
 	{
@@ -98,6 +99,8 @@ private:
 
 		D3DTexture2D* resolved_color_tex;
 		D3DTexture2D* resolved_depth_tex;
+		
+		int slices;
 	} m_efb;
 
 	static u32 m_target_width;

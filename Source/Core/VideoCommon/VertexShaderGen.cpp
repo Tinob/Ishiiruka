@@ -19,51 +19,6 @@
 
 static char text[VERTEXSHADERGEN_BUFFERSIZE];
 static const char *texOffsetMemberSelector[] = { "x", "y", "z", "w" };
-template<class T, API_TYPE api_type>
-void DefineVSOutputStructMember(T& object, const char* type, const char* name, int var_index, const char* semantic, int semantic_index = -1)
-{
-	object.Write("  %s %s", type, name);
-	if (var_index != -1)
-		object.Write("%d", var_index);
-
-	if (api_type == API_OPENGL)
-		object.Write(";\n");
-	else
-	{
-		if (semantic_index != -1)
-			object.Write(" : %s%d;\n", semantic, semantic_index);
-		else
-			object.Write(" : %s;\n", semantic);
-	}
-}
-
-template<class T, API_TYPE api_type>
-inline void GenerateVSOutputStruct(T& object, bool enable_pl, const XFMemory &xfr)
-{
-	object.Write("struct VS_OUTPUT {\n");
-	DefineVSOutputStructMember<T, api_type>(object, "float4", "pos", -1, api_type == API_D3D11 ? "SV_Position" : "POSITION");
-	DefineVSOutputStructMember<T, api_type>(object, "float4", "colors_", 0, "COLOR", 0);
-	DefineVSOutputStructMember<T, api_type>(object, "float4", "colors_", 1, "COLOR", 1);
-
-	if (xfr.numTexGen.numTexGens < 7)
-	{
-		for (unsigned int i = 0; i < xfr.numTexGen.numTexGens; ++i)
-			DefineVSOutputStructMember<T, api_type>(object, "float3", "tex", i, "TEXCOORD", i);
-
-		DefineVSOutputStructMember<T, api_type>(object, "float4", "clipPos", -1, "TEXCOORD", xfr.numTexGen.numTexGens);
-
-		if (enable_pl)
-			DefineVSOutputStructMember<T, api_type>(object, "float4", "Normal", -1, "TEXCOORD", xfr.numTexGen.numTexGens + 1);
-	}
-	else
-	{
-		// Store clip position in the w component of first 4 texcoords
-		int num_texcoords = enable_pl ? 8 : xfr.numTexGen.numTexGens;
-		for (int i = 0; i < num_texcoords; ++i)
-			DefineVSOutputStructMember<T, api_type>(object, (enable_pl || i < 4) ? "float4" : "float3", "tex", i, "TEXCOORD", i);
-	}
-	object.Write("};\n");
-}
 
 template<class T, bool Write_Code, API_TYPE api_type>
 inline void GenerateVertexShader(T& out, u32 components, const XFMemory &xfr, const BPMemory &bpm)
@@ -126,7 +81,10 @@ inline void GenerateVertexShader(T& out, u32 components, const XFMemory &xfr, co
 		if (api_type == API_OPENGL)
 			out.Write("};\n");
 
-		GenerateVSOutputStruct<T, api_type>(out, enable_pl, xfr);
+		out.Write("struct VS_OUTPUT {\n");
+		GenerateVSOutputMembers<T, api_type>(out, enable_pl, xfr);
+		out.Write("};\n");
+
 		if (api_type == API_OPENGL)
 		{
 			out.Write("in float4 rawpos; // ATTR%d,\n", SHADER_POSITION_ATTRIB);
@@ -150,31 +108,41 @@ inline void GenerateVertexShader(T& out, u32 components, const XFMemory &xfr, co
 					out.Write("in float%d tex%d; // ATTR%d,\n", hastexmtx ? 3 : 2, i, SHADER_TEXTURE0_ATTRIB + i);
 			}
 
-			// Let's set up attributes
-			if (xfr.numTexGen.numTexGens < 7)
+			if (g_ActiveConfig.backend_info.bSupportsGeometryShaders)
 			{
-				for (int i = 0; i < 8; ++i)
-					out.Write("centroid out float3 uv%d_2;\n", i);
-				out.Write("centroid out float4 clipPos_2;\n");
-				if (enable_pl)
-					out.Write("centroid out float4 Normal_2;\n");
+				out.Write("out VertexData {\n");
+				GenerateVSOutputMembers<T, api_type>(out, enable_pl, xfr, g_ActiveConfig.backend_info.bSupportsBindingLayout ? "centroid" : "centroid out");
+				out.Write("} vs;\n");
 			}
 			else
 			{
-				// wpos is in w of first 4 texcoords
-				if (enable_pl)
+
+				// Let's set up attributes
+				if (xfr.numTexGen.numTexGens < 7)
 				{
 					for (int i = 0; i < 8; ++i)
-						out.Write("centroid out float4 uv%d_2;\n", i);
+						out.Write("centroid out float3 uv%d_2;\n", i);
+					out.Write("centroid out float4 clipPos_2;\n");
+					if (enable_pl)
+						out.Write("centroid out float4 Normal_2;\n");
 				}
 				else
 				{
-					for (unsigned int i = 0; i < xfr.numTexGen.numTexGens; ++i)
-						out.Write("centroid out float%d uv%d_2;\n", i < 4 ? 4 : 3, i);
+					// wpos is in w of first 4 texcoords
+					if (enable_pl)
+					{
+						for (int i = 0; i < 8; ++i)
+							out.Write("centroid out float4 uv%d_2;\n", i);
+					}
+					else
+					{
+						for (unsigned int i = 0; i < xfr.numTexGen.numTexGens; ++i)
+							out.Write("centroid out float%d uv%d_2;\n", i < 4 ? 4 : 3, i);
+					}
 				}
+				out.Write("centroid out float4 colors_0;\n");
+				out.Write("centroid out float4 colors_1;\n");
 			}
-			out.Write("centroid out float4 colors_0;\n");
-			out.Write("centroid out float4 colors_1;\n");
 
 			out.Write("void main()\n{\n");
 		}
@@ -453,7 +421,7 @@ inline void GenerateVertexShader(T& out, u32 components, const XFMemory &xfr, co
 		// clipPos/w needs to be done in pixel shader, not here
 		if (xfr.numTexGen.numTexGens < 7)
 		{
-			out.Write("o.clipPos = float4(pos.x,pos.y,o.pos.z,o.pos.w);\n");
+			out.Write("o.clipPos%s = float4(pos.x,pos.y,o.pos.z,o.pos.w);\n", (api_type == API_OPENGL) ? "_2" : "");
 		}
 		else
 		{
@@ -467,7 +435,7 @@ inline void GenerateVertexShader(T& out, u32 components, const XFMemory &xfr, co
 		{
 			if (xfr.numTexGen.numTexGens < 7)
 			{
-				out.Write("o.Normal = float4(_norm0.x,_norm0.y,_norm0.z,pos.z);\n");
+				out.Write("o.Normal%s = float4(_norm0.x,_norm0.y,_norm0.z,pos.z);\n", (api_type == API_OPENGL) ? "_2" : "");
 			}
 			else
 			{
@@ -533,40 +501,43 @@ inline void GenerateVertexShader(T& out, u32 components, const XFMemory &xfr, co
 
 		if (api_type == API_OPENGL)
 		{
-			// Bit ugly here
-			// TODO: Make pretty
-			// Will look better when we bind uniforms in GLSL 1.3
-			// clipPos/w needs to be done in pixel shader, not here
-
-			if (xfr.numTexGen.numTexGens < 7)
+			if (g_ActiveConfig.backend_info.bSupportsGeometryShaders)
 			{
-				for (unsigned int i = 0; i < 8; ++i)
-				{
-					if (i < xfr.numTexGen.numTexGens)
-						out.Write(" uv%d_2.xyz =  o.tex%d;\n", i, i);
-					else
-						out.Write(" uv%d_2.xyz =  float3(0.0, 0.0, 0.0);\n", i);
-				}
-				out.Write("  clipPos_2 = o.clipPos;\n");
-				if (enable_pl)
-					out.Write("  Normal_2 = o.Normal;\n");
+				AssignVSOutputMembers<T, api_type>(out, "vs", "o", enable_pl, xfr);
 			}
 			else
 			{
-				// clip position is in w of first 4 texcoords
-				if (enable_pl)
+
+				if (xfr.numTexGen.numTexGens < 7)
 				{
-					for (int i = 0; i < 8; ++i)
-						out.Write(" uv%d_2 = o.tex%d;\n", i, i);
+					for (unsigned int i = 0; i < 8; ++i)
+					{
+						if (i < xfr.numTexGen.numTexGens)
+							out.Write(" uv%d_2.xyz =  o.tex%d;\n", i, i);
+						else
+							out.Write(" uv%d_2.xyz =  float3(0.0, 0.0, 0.0);\n", i);
+					}
+					out.Write("  clipPos_2 = o.clipPos;\n");
+					if (enable_pl)
+						out.Write("  Normal_2 = o.Normal;\n");
 				}
 				else
 				{
-					for (unsigned int i = 0; i < xfr.numTexGen.numTexGens; ++i)
-						out.Write("  uv%d_2%s = o.tex%d;\n", i, i < 4 ? ".xyzw" : ".xyz", i);
+					// clip position is in w of first 4 texcoords
+					if (enable_pl)
+					{
+						for (int i = 0; i < 8; ++i)
+							out.Write(" uv%d_2 = o.tex%d;\n", i, i);
+					}
+					else
+					{
+						for (unsigned int i = 0; i < xfr.numTexGen.numTexGens; ++i)
+							out.Write("  uv%d_2%s = o.tex%d;\n", i, i < 4 ? ".xyzw" : ".xyz", i);
+					}
 				}
+				out.Write("colors_0 = o.colors_0;\n");
+				out.Write("colors_1 = o.colors_1;\n");
 			}
-			out.Write("colors_0 = o.colors_0;\n");
-			out.Write("colors_1 = o.colors_1;\n");
 			out.Write("gl_Position = o.pos;\n");
 			out.Write("}\n");
 		}
@@ -607,11 +578,6 @@ void GetVertexShaderUidD3D11(VertexShaderUid& object, u32 components, const XFMe
 void GenerateVertexShaderCodeD3D11(ShaderCode& object, u32 components, const XFMemory &xfr, const BPMemory &bpm)
 {
 	GenerateVertexShader<ShaderCode, true, API_D3D11>(object, components, xfr, bpm);
-}
-
-void GenerateVSOutputStructForGSD3D11(ShaderCode& object, const XFMemory &xfr)
-{
-	GenerateVSOutputStruct<ShaderCode, API_D3D11>(object, g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting && xfr.numChan.numColorChans > 0, xfr);
 }
 
 void GetVertexShaderUidGL(VertexShaderUid& object, u32 components, const XFMemory &xfr, const BPMemory &bpm)

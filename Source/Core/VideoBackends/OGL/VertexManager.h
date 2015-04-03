@@ -6,6 +6,7 @@
 
 #include "VideoBackends/OGL/GLExtensions/GLExtensions.h"
 #include "VideoCommon/CPMemory.h"
+#include "VideoCommon/NativeVertexFormat.h"
 #include "VideoCommon/VertexManagerBase.h"
 
 namespace OGL
@@ -32,7 +33,7 @@ public:
 	NativeVertexFormat* CreateNativeVertexFormat() override;
 	void CreateDeviceObjects() override;
 	void DestroyDeviceObjects() override;
-	void PrepareShaders(u32 components, const XFMemory &xfr, const BPMemory &bpm, bool ongputhread);
+	void PrepareShaders(u32 primitive, u32 components, const XFMemory &xfr, const BPMemory &bpm, bool ongputhread);
 	// NativeVertexFormat use this
 	GLuint m_vertex_buffers;
 	GLuint m_index_buffers;

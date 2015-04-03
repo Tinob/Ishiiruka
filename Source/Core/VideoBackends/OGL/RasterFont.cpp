@@ -118,7 +118,7 @@ static const u8 rasters[CHAR_COUNT][CHAR_HEIGHT] = {
 
 static const char *s_vertexShaderSrc =
 	"uniform vec2 charSize;\n"
-	"uniform vec2 offset;\n"
+	"uniform vec2 offset;"
 	"in vec2 rawpos;\n"
 	"in vec2 tex0;\n"
 	"out vec2 uv0;\n"
@@ -267,11 +267,11 @@ void RasterFont::printMultilineText(const std::string& text, double start_x, dou
 
 	// shadows
 	glUniform2f(uniform_offset_id, 2.0f / GLfloat(bbWidth), -2.0f / GLfloat(bbHeight));
-	glUniform4f(uniform_color_id, 0.0f, 0.0f, 0.0f, GLfloat((color >> 24) & 0xff) / 255.f);
-	glDrawArrays(GL_TRIANGLES, 0, usage / 4);
+	glUniform4f(uniform_color_id, 0.0f, 0.0f, 0.0f, GLfloat((color>>24)&0xff)/255.f);
+	glDrawArrays(GL_TRIANGLES, 0, usage/4);
 
 	glUniform2f(uniform_offset_id, 0.0f, 0.0f);
-	glUniform4f(uniform_color_id, GLfloat((color >> 16) & 0xff) / 255.f, GLfloat((color >> 8) & 0xff) / 255.f, GLfloat((color >> 0) & 0xff) / 255.f, GLfloat((color >> 24) & 0xff) / 255.f);
+	glUniform4f(uniform_color_id, GLfloat((color>>16)&0xff)/255.f,GLfloat((color>>8)&0xff)/255.f,GLfloat((color>>0)&0xff)/255.f,GLfloat((color>>24)&0xff)/255.f);
 	glDrawArrays(GL_TRIANGLES, 0, usage/4);
 }
 

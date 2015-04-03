@@ -26,7 +26,7 @@ public:
 		const XFMemory &xfr,
 		const BPMemory &bpm, bool ongputhread);
 	static bool TestShader();
-	static void InsertByteCode(const PixelShaderUid &uid, const void* bytecode, unsigned int bytecodelen);
+	static void InsertByteCode(const PixelShaderUid &uid, const void* bytecode, u32 bytecodelen);
 
 	static ID3D11PixelShader* GetActiveShader() { return s_last_entry->shader.get(); }
 	static ID3D11Buffer* &GetConstantBuffer();
@@ -35,6 +35,8 @@ public:
 	static ID3D11PixelShader* GetColorCopyProgram(bool multisampled, bool ssaa = false);
 	static ID3D11PixelShader* GetDepthMatrixProgram(bool multisampled);
 	static ID3D11PixelShader* GetClearProgram();
+	static ID3D11PixelShader* GetAnaglyphProgram(bool ssaa = false);
+	static ID3D11PixelShader* GetInterlacedProgram(bool ssaa = false);
 	static ID3D11PixelShader* ReinterpRGBA6ToRGB8(bool multisampled);
 	static ID3D11PixelShader* ReinterpRGB8ToRGBA6(bool multisampled);
 
@@ -54,7 +56,7 @@ private:
 		}
 		void Destroy() { shader.reset(); }
 	};
-	static inline void PushByteCode(const void* bytecode, unsigned int bytecodelen, PSCacheEntry* entry);
+	static inline void PushByteCode(const void* bytecode, u32 bytecodelen, PSCacheEntry* entry);
 	typedef std::unordered_map<PixelShaderUid, PSCacheEntry, PixelShaderUid::ShaderUidHasher> PSCache;
 
 	static PSCache s_pixel_shaders;

@@ -53,14 +53,14 @@ static const char DEPALETTIZE_FS[] = R"GLSL(
 #endif
 
 // Uniforms
-SAMPLER_BINDING(9) uniform sampler2D u_Base;
+SAMPLER_BINDING(9) uniform sampler2DArray u_Base;
 SAMPLER_BINDING(10) uniform sampler1D u_Palette;
 
 // Shader entry point
 void main()
 {
-	float sample = texture2D(u_Base, gl_TexCoord[0].xy).r;
-	float index = round(sample * (NUM_COLORS-1));
+	float src = texture(u_Base, vec3(gl_TexCoord[0].xy, 0)).r;
+	float index = round(src * (NUM_COLORS-1));
 	gl_FragColor = texture1D(u_Palette, (index + 0.5) / NUM_COLORS);
 }
 //
@@ -114,7 +114,7 @@ bool Depalettizer::Depalettize(BaseType source_type, GLuint dstTex, GLuint baseT
 
 	// Bind destination texture to the framebuffer
 	FramebufferManager::SetFramebuffer(m_fbo);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, dstTex, 0);
+	FramebufferManager::FramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_ARRAY, dstTex, 0);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 	// Bind fragment program and uniforms
@@ -122,8 +122,8 @@ bool Depalettizer::Depalettize(BaseType source_type, GLuint dstTex, GLuint baseT
 
 	// Bind base texture to sampler 9
 	glActiveTexture(GL_TEXTURE9);
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, baseTex);
+	glEnable(GL_TEXTURE_2D_ARRAY);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, baseTex);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
@@ -151,8 +151,8 @@ bool Depalettizer::Depalettize(BaseType source_type, GLuint dstTex, GLuint baseT
 	glDisable(GL_TEXTURE_1D);
 
 	glActiveTexture(GL_TEXTURE9);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glDisable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+	glDisable(GL_TEXTURE_2D_ARRAY);
 
 	glUseProgram(0);
 

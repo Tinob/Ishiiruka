@@ -8,6 +8,7 @@
 #include "Core/ConfigManager.h"
 
 #include "VideoCommon/BPFunctions.h"
+#include "VideoCommon/GeometryShaderManager.h"
 #include "VideoCommon/PixelShaderManager.h"
 #include "VideoCommon/RenderBase.h"
 #include "VideoCommon/VertexManagerBase.h"
@@ -64,12 +65,13 @@ void SetScissor()
 	TargetRectangle trc = g_renderer->ConvertEFBRectangle(rc);	
 	g_renderer->SetScissorRect(trc);
 	VertexShaderManager::SetViewportChanged();
+	GeometryShaderManager::SetViewportChanged();
 	PixelShaderManager::SetViewportChanged();
 }
 
 void SetLineWidth()
 {
-	g_renderer->SetLineWidth();
+	GeometryShaderManager::SetLinePtWidthChanged();
 }
 
 void SetDepthMode()

@@ -65,6 +65,7 @@ Make AA apply instantly during gameplay if possible
 #include "VideoCommon/BPStructs.h"
 #include "VideoCommon/CommandProcessor.h"
 #include "VideoCommon/Fifo.h"
+#include "VideoCommon/GeometryShaderManager.h"
 #include "VideoCommon/ImageWrite.h"
 #include "VideoCommon/IndexGenerator.h"
 #include "VideoCommon/LookUpTables.h"
@@ -73,7 +74,6 @@ Make AA apply instantly during gameplay if possible
 #include "VideoCommon/OpcodeDecoding.h"
 #include "VideoCommon/PixelEngine.h"
 #include "VideoCommon/PixelShaderManager.h"
-#include "VideoCommon/VertexLoader.h"
 #include "VideoCommon/VertexLoaderManager.h"
 #include "VideoCommon/VertexShaderManager.h"
 #include "VideoCommon/VideoConfig.h"
@@ -95,14 +95,14 @@ std::string VideoBackend::GetDisplayName() const
 		return "OpenGL";
 }
 
-static void GetShaders(std::vector<std::string> &shaders)
+static void GetShaders(std::vector<std::string> &shaders, const std::string &sub_dir = "")
 {
 	std::set<std::string> already_found;
 
 	shaders.clear();
-	static const std::string directories[] = {
-		File::GetUserPath(D_SHADERS_IDX),
-		File::GetSysDirectory() + SHADERS_DIR DIR_SEP,
+	const std::string directories[] = {
+		File::GetUserPath(D_SHADERS_IDX) + sub_dir,
+		File::GetSysDirectory() + SHADERS_DIR DIR_SEP + sub_dir,
 	};
 	for (auto& directory : directories)
 	{
@@ -144,16 +144,12 @@ static void InitBackendInfo()
 	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT3] = true;
 	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT5] = true;
 	g_Config.backend_info.bSupportsExclusiveFullscreen = false;
-	//g_Config.backend_info.bSupportsDualSourceBlend = true; // is gpu dependent and must be set in renderer
-	//g_Config.backend_info.bSupportsEarlyZ = true; // is gpu dependent and must be set in renderer
-	// Disable primitive restar the ratio of resets is to hi
-	// to give any adventages and this interferes with
-	// zfreeze implementation
 	g_Config.backend_info.bSupportsPrimitiveRestart = false; 
 	g_Config.backend_info.bSupportsOversizedViewports = true;
-	g_Config.backend_info.bNeedBlendIndices = false;
-	g_Config.backend_info.bSupportsStereoscopy = false;
+	g_Config.backend_info.bSupportsGeometryShaders = true;
 	g_Config.backend_info.bSupports3DVision = false;
+	g_Config.backend_info.bSupportsPostProcessing = true;
+	g_Config.backend_info.bSupportsPixelLighting = true;
 	g_Config.backend_info.Adapters.clear();
 
 	// aamodes
@@ -162,6 +158,7 @@ static void InitBackendInfo()
 
 	// pp shaders
 	GetShaders(g_Config.backend_info.PPShaders);
+	GetShaders(g_Config.backend_info.AnaglyphShaders, std::string(ANAGLYPH_DIR DIR_SEP));
 }
 
 void VideoBackend::ShowConfig(void *_hParent)
@@ -210,12 +207,13 @@ void VideoBackend::Video_Prepare()
 
 	BPInit();
 	g_vertex_manager = new VertexManager;
-	g_perf_query = new PerfQuery;
+	g_perf_query = GetPerfQuery();
 	Fifo_Init(); // must be done before OpcodeDecoder_Init()
 	OpcodeDecoder_Init();
 	IndexGenerator::Init();
 	VertexShaderManager::Init();
 	PixelShaderManager::Init(true);
+	GeometryShaderManager::Init();
 	ProgramShaderCache::Init();
 	g_texture_cache = new TextureCache();
 	g_sampler_cache = new SamplerCache();
@@ -259,6 +257,7 @@ void VideoBackend::Video_Cleanup()
 		ProgramShaderCache::Shutdown();
 		VertexShaderManager::Shutdown();
 		PixelShaderManager::Shutdown();
+		GeometryShaderManager::Shutdown();
 		delete g_perf_query;
 		g_perf_query = nullptr;
 		delete g_vertex_manager;

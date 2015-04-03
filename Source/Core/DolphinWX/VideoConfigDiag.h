@@ -87,8 +87,9 @@ protected:
 
 	void Event_PPShader(wxCommandEvent &ev);
 	void Event_ConfigurePPShader(wxCommandEvent &ev);
-	void Event_StereoSep(wxCommandEvent &ev);
-	void Event_StereoFoc(wxCommandEvent &ev);
+	void Event_StereoDepth(wxCommandEvent &ev);
+	void Event_StereoConvergence(wxCommandEvent &ev);
+	void Event_StereoMode(wxCommandEvent &ev);
 	void Event_ClickClose(wxCommandEvent&);
 	void Event_Close(wxCloseEvent&);
 
@@ -106,16 +107,25 @@ protected:
 	void Evt_EnterControl(wxMouseEvent& ev);
 	void Evt_LeaveControl(wxMouseEvent& ev);
 	void CreateDescriptionArea(wxPanel* const page, wxBoxSizer* const sizer);
+	void PopulatePostProcessingShaders();
 
 	wxChoice* choice_backend;
+	wxChoice* choice_adapter;
 	wxChoice* choice_display_resolution;
+
+	wxStaticText* label_backend;
+	wxStaticText* label_adapter;
+
 	wxStaticText* text_aamode;
 	wxStaticText* text_bboxmode;
 	SettingChoice* choice_aamode;
 
+	wxStaticText* label_display_resolution;
+
 	SettingCheckBox* pixel_lighting;
 
 	SettingCheckBox* borderless_fullscreen;
+	SettingCheckBox* render_to_main_checkbox;
 
 	SettingCheckBox* Fast_efb_cache;
 	SettingCheckBox* emulate_efb_format_changes;
@@ -127,6 +137,8 @@ protected:
 	SettingRadioButton* real_xfb;
 	
 	wxButton* button_config_pp;
+
+	wxCheckBox* progressive_scan_checkbox;
 
 	wxChoice* choice_ppshader;
 	

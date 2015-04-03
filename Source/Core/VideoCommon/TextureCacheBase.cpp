@@ -136,12 +136,21 @@ void TextureCache::OnConfigChanged(VideoConfig& config)
 			}
 			invalidate_texture_cache_requested = false;
 		}
+
+		if ((config.iStereoMode > 0) != backup_config.s_stereo_3d ||
+			config.bStereoEFBMonoDepth != backup_config.s_efb_mono_depth)
+		{
+			g_texture_cache->DeleteShaders();
+			g_texture_cache->CompileShaders();
+		}
 	}
 
 	backup_config.s_colorsamples = config.iSafeTextureCache_ColorSamples;
 	backup_config.s_texfmt_overlay = config.bTexFmtOverlayEnable;
 	backup_config.s_texfmt_overlay_center = config.bTexFmtOverlayCenter;
 	backup_config.s_hires_textures = config.bHiresTextures;
+	backup_config.s_stereo_3d = config.iStereoMode > 0;
+	backup_config.s_efb_mono_depth = config.bStereoEFBMonoDepth;
 }
 
 void TextureCache::Cleanup(int _frameCount)
@@ -929,7 +938,7 @@ void TextureCache::CopyRenderTargetToTexture(u32 dstAddr, u32 dstFormat, PEContr
 	config.rendertarget = true;
 	config.width = scaled_tex_w;
 	config.height = scaled_tex_h;
-	config.layers = 1; // FramebufferManagerBase::GetEFBLayers();
+	config.layers = FramebufferManagerBase::GetEFBLayers();
 	
 	TCacheEntryBase* entry = AllocateTexture(config);
 

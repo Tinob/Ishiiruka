@@ -31,6 +31,7 @@ struct VideoConfig
 	bool bSupportOGL31;
 	bool bSupportViewportFloat;
 	bool bSupportsAEP;
+	bool bSupportsDebug;
 
 	const char* gl_vendor;
 	const char* gl_renderer;
@@ -57,7 +58,6 @@ public:
 	void SetDepthMode() override;
 	void SetLogicOpMode() override;
 	void SetDitherMode() override;
-	void SetLineWidth() override;
 	void SetSamplerState(int stage, int texindex, bool custom_tex) override;
 	void SetInterlacingMode() override;
 	void SetViewport() override;
@@ -71,10 +71,10 @@ public:
 	void FlipImageData(u8 *data, int w, int h, int pixel_width = 3);
 
 	u32 AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data) override;
-	
+
 	u16 BBoxRead(int index) override;
 	void BBoxWrite(int index, u16 value) override;
-	
+
 	void ResetAPIState() override;
 	void RestoreAPIState() override;
 
@@ -92,6 +92,8 @@ public:
 
 private:
 	void UpdateEFBCache(EFBAccessType type, u32 cacheRectIdx, const EFBRectangle& efbPixelRc, const TargetRectangle& targetPixelRc, const u32* data);
+
+	void BlitScreen(TargetRectangle src, TargetRectangle dst, GLuint src_texture, int src_width, int src_height);
 };
 
 }

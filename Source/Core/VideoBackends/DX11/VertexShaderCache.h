@@ -26,7 +26,7 @@ public:
 	static D3DBlob const& GetActiveShaderBytecode() { return s_last_entry->bytecode; }
 	static ID3D11Buffer* &GetConstantBuffer();
 
-	static ID3D11VertexShader* GetSimpleVertexShader(bool ssaa = false);
+	static ID3D11VertexShader* GetSimpleVertexShader();
 	static ID3D11VertexShader* GetClearVertexShader();
 	static ID3D11InputLayout* GetSimpleInputLayout();
 	static ID3D11InputLayout* GetClearInputLayout();

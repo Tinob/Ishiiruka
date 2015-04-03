@@ -63,6 +63,8 @@ private:
 	TCacheEntryBase* CreateTexture(const TCacheEntryConfig& config) override;
 
 	void LoadLut(u32 lutFmt, void* addr, u32 size);
+	void CompileShaders() override;
+	void DeleteShaders() override;
 };
 
 bool SaveTexture(const std::string& filename, u32 textarget, u32 tex, int virtual_width, int virtual_height, u32 level);

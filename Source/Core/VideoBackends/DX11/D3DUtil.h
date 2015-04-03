@@ -61,7 +61,9 @@ void drawShadedTexQuad(ID3D11ShaderResourceView* texture,
 	ID3D11PixelShader* PShader,
 	ID3D11VertexShader* VShader,
 	ID3D11InputLayout* layout,
+	ID3D11GeometryShader* GShader = nullptr,
 	float Gamma = 1.0f,
+	u32 slice = 0,
 	int DestWidth = 1,
 	int DestHeight = 1);
 void drawClearQuad(u32 Color, float z);

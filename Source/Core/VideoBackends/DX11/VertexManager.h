@@ -5,7 +5,6 @@
 #pragma once
 
 #include "VideoCommon/VertexManagerBase.h"
-#include "VideoBackends/DX11/LineAndPointGeometryShader.h"
 
 namespace DX11
 {
@@ -19,7 +18,8 @@ public:
 	NativeVertexFormat* CreateNativeVertexFormat();
 	void CreateDeviceObjects();
 	void DestroyDeviceObjects();
-	void PrepareShaders(u32 components,
+	void PrepareShaders(u32 primitive,
+		u32 components,
 		const XFMemory &xfr,
 		const BPMemory &bpm,
 		bool fromgputhread = true);
@@ -43,8 +43,6 @@ private:
 	const u32 MAX_VBUFFER_SIZE = VertexManager::MAXVBUFFERSIZE;
 	const u32 MAX_BUFFER_SIZE = MAX_IBUFFER_SIZE + MAX_VBUFFER_SIZE;
 	D3D::BufferPtr m_buffers[MAX_BUFFER_COUNT];
-
-	LineAndPointGeometryShader m_lineAndPointShader;
 
 	std::vector<u8> LocalVBuffer;
 	std::vector<u16> LocalIBuffer;

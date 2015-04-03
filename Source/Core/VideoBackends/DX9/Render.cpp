@@ -193,8 +193,6 @@ Renderer::Renderer(void *&window_handle)
 	m_bGenerationModeChanged = false;
 	m_bDepthModeChanged = false;
 	m_bLogicOpModeChanged = false;
-	m_bLineWidthChanged = false;
-	
 }
 
 Renderer::~Renderer()
@@ -683,7 +681,7 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 	D3D::ChangeSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
 	D3D::ChangeSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
 
-	const XFBSourceBase* xfbSource = NULL;
+	const XFBSource* xfbSource = NULL;
 
 	if(g_ActiveConfig.bUseXFB)
 	{
@@ -691,7 +689,7 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 		// Render to the real buffer now.
 		for (u32 i = 0; i < xfbCount; ++i)
 		{
-			xfbSource = xfbSourceList[i];
+			xfbSource = (XFBSource*)xfbSourceList[i];
 
 			MathUtil::Rectangle<float> sourceRc;
 
@@ -916,7 +914,6 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 		D3D::dev->SetRenderTarget(0, FramebufferManager::GetEFBColorRTSurface());
 		D3D::dev->SetDepthStencilSurface(FramebufferManager::GetEFBDepthRTSurface());
 		D3D::dev->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(0,0,0), 1.0f, 0);
-		m_bLineWidthChanged = true;
 		BPFunctions::SetScissor();
 	}
 
@@ -1046,11 +1043,6 @@ void Renderer::ApplyState(bool bUseDstAlpha)
 	if(m_bScissorRectChanged)
 	{
 		_SetScissorRect();
-	}
-
-	if(m_bLineWidthChanged)
-	{
-		_SetLineWidth();
 	}
 
 	if (bUseDstAlpha)
@@ -1362,26 +1354,6 @@ void Renderer::SetDitherMode()
 	// should be reduced to the decired precision and then
 	// a postproccesing shader should be used to emulate the correct
 	// dithering matrix and the aproximation equation	
-}
-
-void Renderer::SetLineWidth()
-{
-	m_bLineWidthChanged = true;
-}
-
-void Renderer::_SetLineWidth()
-{
-	m_bLineWidthChanged = false;
-	float fratio = Renderer::EFBToScaledXf(1.f);
-	float psize = bpmem.lineptwidth.pointsize * fratio / 6.0f;
-	psize = psize > 0 ? psize : 1.0f;
-	if (psize > m_fMaxPointSize)
-	{
-		psize = m_fMaxPointSize;
-	}
-	D3D::SetRenderState(D3DRS_POINTSIZE, *((DWORD*)&psize));
-	D3D::SetRenderState(D3DRS_POINTSIZE_MIN, *((DWORD*)&psize));
-	D3D::SetRenderState(D3DRS_POINTSIZE_MAX, *((DWORD*)&psize));
 }
 
 void Renderer::SetInterlacingMode()

@@ -19,15 +19,13 @@ private:
 	bool m_bGenerationModeChanged;
 	bool m_bDepthModeChanged;
 	bool m_bLogicOpModeChanged;
-	bool m_bLineWidthChanged;
 
 	void _SetColorMask();
 	void _SetBlendMode(bool forceUpdate);
 	void _SetScissorRect();
 	void _SetGenerationMode();
 	void _SetDepthMode();
-	void _SetLogicOpMode();	
-	void _SetLineWidth();
+	void _SetLogicOpMode();
 public:
 	Renderer(void *&window_handle);
 	~Renderer();
@@ -39,7 +37,6 @@ public:
 	void SetDepthMode();
 	void SetLogicOpMode();
 	void SetDitherMode();
-	void SetLineWidth();
 	void SetSamplerState(int stage, int texindex, bool custom_tex);
 	void SetInterlacingMode();
 	void SetViewport();

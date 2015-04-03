@@ -35,6 +35,7 @@
 #include "VideoCommon/Fifo.h"
 #include "VideoCommon/FPSCounter.h"
 #include "VideoCommon/FramebufferManagerBase.h"
+#include "VideoCommon/GeometryShaderManager.h"
 #include "VideoCommon/MainBase.h"
 #include "VideoCommon/OpcodeDecoding.h"
 #include "VideoCommon/PixelShaderManager.h"
@@ -136,7 +137,7 @@ int Renderer::EFBToScaledX(int x)
 	switch (g_ActiveConfig.iEFBScale)
 	{
 	case SCALE_AUTO: // fractional
-			return (int)ssaa_multiplier * FramebufferManagerBase::ScaleToVirtualXfbWidth(x, s_backbuffer_width);
+			return (int)ssaa_multiplier * FramebufferManagerBase::ScaleToVirtualXfbWidth(x);
 
 		default:
 			return x * (int)ssaa_multiplier * (int)efb_scale_numeratorX / (int)efb_scale_denominatorX;
@@ -148,7 +149,7 @@ int Renderer::EFBToScaledY(int y)
 	switch (g_ActiveConfig.iEFBScale)
 	{
 		case SCALE_AUTO: // fractional
-			return (int)ssaa_multiplier * FramebufferManagerBase::ScaleToVirtualXfbHeight(y, s_backbuffer_height);
+			return (int)ssaa_multiplier * FramebufferManagerBase::ScaleToVirtualXfbHeight(y);
 
 		default:
 			return y * (int)ssaa_multiplier * (int)efb_scale_numeratorY / (int)efb_scale_denominatorY;
@@ -179,8 +180,8 @@ bool Renderer::CalculateTargetSize(unsigned int framebuffer_width, unsigned int 
 	{
 		case SCALE_AUTO:
 		case SCALE_AUTO_INTEGRAL:
-			newEFBWidth = FramebufferManagerBase::ScaleToVirtualXfbWidth(EFB_WIDTH, framebuffer_width);
-			newEFBHeight = FramebufferManagerBase::ScaleToVirtualXfbHeight(EFB_HEIGHT, framebuffer_height);
+			newEFBWidth = FramebufferManagerBase::ScaleToVirtualXfbWidth(EFB_WIDTH);
+			newEFBHeight = FramebufferManagerBase::ScaleToVirtualXfbHeight(EFB_HEIGHT);
 
 			if (s_last_efb_scale == SCALE_AUTO_INTEGRAL)
 			{
@@ -236,10 +237,47 @@ bool Renderer::CalculateTargetSize(unsigned int framebuffer_width, unsigned int 
 		s_target_width  = newEFBWidth;
 		s_target_height = newEFBHeight;
 		VertexShaderManager::SetViewportChanged();
+		GeometryShaderManager::SetViewportChanged();
 		PixelShaderManager::SetViewportChanged();
 		return true;
 	}
 	return false;
+}
+
+void Renderer::ConvertStereoRectangle(const TargetRectangle& rc, TargetRectangle& leftRc, TargetRectangle& rightRc)
+{
+	// Resize target to half its original size
+	TargetRectangle drawRc = rc;
+	if (g_ActiveConfig.iStereoMode == STEREO_TAB)
+	{
+		// The height may be negative due to flipped rectangles
+		int height = rc.bottom - rc.top;
+		drawRc.top += height / 4;
+		drawRc.bottom -= height / 4;
+	}
+	else
+	{
+		int width = rc.right - rc.left;
+		drawRc.left += width / 4;
+		drawRc.right -= width / 4;
+	}
+
+	// Create two target rectangle offset to the sides of the backbuffer
+	leftRc = drawRc, rightRc = drawRc;
+	if (g_ActiveConfig.iStereoMode == STEREO_TAB)
+	{
+		leftRc.top -= s_backbuffer_height / 4;
+		leftRc.bottom -= s_backbuffer_height / 4;
+		rightRc.top += s_backbuffer_height / 4;
+		rightRc.bottom += s_backbuffer_height / 4;
+	}
+	else
+	{
+		leftRc.left -= s_backbuffer_width / 4;
+		leftRc.right -= s_backbuffer_width / 4;
+		rightRc.left += s_backbuffer_width / 4;
+		rightRc.right += s_backbuffer_width / 4;
+	}
 }
 
 void Renderer::SetScreenshot(const std::string& filename)

@@ -47,9 +47,6 @@
     <ClCompile Include="PerfQuery.cpp">
       <Filter>Render</Filter>
     </ClCompile>
-    <ClCompile Include="LineAndPointGeometryShader.cpp">
-      <Filter>Render</Filter>
-    </ClCompile>
     <ClCompile Include="CSTextureEncoder.cpp">
       <Filter>Render</Filter>
     </ClCompile>
@@ -64,6 +61,9 @@
     </ClCompile>
     <ClCompile Include="D3DState.cpp">
       <Filter>D3D</Filter>
+    </ClCompile>
+    <ClCompile Include="GeometryShaderCache.cpp">
+      <Filter>Render</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -115,9 +115,6 @@
     <ClInclude Include="PerfQuery.h">
       <Filter>Render</Filter>
     </ClInclude>
-    <ClInclude Include="LineAndPointGeometryShader.h">
-      <Filter>Render</Filter>
-    </ClInclude>
     <ClInclude Include="D3DPtr.h">
       <Filter>D3D</Filter>
     </ClInclude>
@@ -135,6 +132,9 @@
     </ClInclude>
     <ClInclude Include="D3DState.h">
       <Filter>D3D</Filter>
+    </ClInclude>
+    <ClInclude Include="GeometryShaderCache.h">
+      <Filter>Render</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -13,6 +13,7 @@
 
 #include "VideoCommon/Debugger.h"
 #include "VideoCommon/DriverDetails.h"
+#include "VideoCommon/GeometryShaderManager.h"
 #include "VideoCommon/ImageWrite.h"
 #include "VideoCommon/PixelShaderManager.h"
 #include "VideoCommon/Statistics.h"
@@ -36,6 +37,7 @@ ProgramShaderCache::PCacheEntry* ProgramShaderCache::last_entry;
 SHADERUID ProgramShaderCache::last_uid;
 UidChecker<PixelShaderUid, ShaderCode> ProgramShaderCache::pixel_uid_checker;
 UidChecker<VertexShaderUid, ShaderCode> ProgramShaderCache::vertex_uid_checker;
+UidChecker<GeometryShaderUid, ShaderCode> ProgramShaderCache::geometry_uid_checker;
 
 static char s_glsl_header[1024] = "";
 
@@ -54,9 +56,10 @@ static std::string GetGLSLVersionString()
 			return "#version 140";
 		case GLSL_150:
 			return "#version 150";
+		default:
+			// Shouldn't ever hit this
+			return "#version ERROR";
 	}
-	// Shouldn't ever hit this
-	return "#version ERROR";
 }
 
 void SHADER::SetProgramVariables()
@@ -69,11 +72,14 @@ void SHADER::SetProgramVariables()
 
 		GLint PSBlock_id = glGetUniformBlockIndex(glprogid, "PSBlock");
 		GLint VSBlock_id = glGetUniformBlockIndex(glprogid, "VSBlock");
+		GLint GSBlock_id = glGetUniformBlockIndex(glprogid, "GSBlock");
 
 		if (PSBlock_id != -1)
 			glUniformBlockBinding(glprogid, PSBlock_id, 1);
 		if (VSBlock_id != -1)
 			glUniformBlockBinding(glprogid, VSBlock_id, 2);
+		if (GSBlock_id != -1)
+			glUniformBlockBinding(glprogid, GSBlock_id, 3);
 
 		// Bind Texture Sampler
 		for (int a = 0; a <= 9; ++a)
@@ -131,24 +137,32 @@ void SHADER::Bind()
 
 void ProgramShaderCache::UploadConstants()
 {
-	if (PixelShaderManager::IsDirty() || VertexShaderManager::IsDirty())
+	if (PixelShaderManager::IsDirty() || VertexShaderManager::IsDirty() || GeometryShaderManager::IsDirty())
 	{
 		auto buffer = s_buffer->Map(s_ubo_buffer_size, s_ubo_align);
-
-		memcpy(buffer.first,
-			PixelShaderManager::GetBuffer(), PixelShaderManager::ConstantBufferSize * sizeof(float));
-
-		memcpy(buffer.first + ROUND_UP(PixelShaderManager::ConstantBufferSize * sizeof(float), s_ubo_align),
-			VertexShaderManager::GetBuffer(), VertexShaderManager::ConstantBufferSize* sizeof(float));
+		u8* dst = buffer.first;		
+		size_t pixel_buffer_size = PixelShaderManager::ConstantBufferSize * sizeof(float);
+		memcpy(buffer.first, PixelShaderManager::GetBuffer(), pixel_buffer_size);
+		dst += ROUND_UP(pixel_buffer_size, s_ubo_align);
+		size_t vertex_buffer_size = VertexShaderManager::ConstantBufferSize * sizeof(float);
+		memcpy(dst, VertexShaderManager::GetBuffer(), vertex_buffer_size);
+		dst += ROUND_UP(vertex_buffer_size, s_ubo_align);
+		memcpy(dst, &GeometryShaderManager::constants, sizeof(GeometryShaderConstants));
 
 		s_buffer->Unmap(s_ubo_buffer_size);
-		glBindBufferRange(GL_UNIFORM_BUFFER, 1, s_buffer->m_buffer, buffer.second,
-			PixelShaderManager::ConstantBufferSize * sizeof(float));
-		glBindBufferRange(GL_UNIFORM_BUFFER, 2, s_buffer->m_buffer, buffer.second + ROUND_UP(PixelShaderManager::ConstantBufferSize * sizeof(float), s_ubo_align),
-			VertexShaderManager::ConstantBufferSize* sizeof(float));
+		glBindBufferRange(GL_UNIFORM_BUFFER, 1, s_buffer->m_buffer, 
+			buffer.second, 
+			pixel_buffer_size);
+		glBindBufferRange(GL_UNIFORM_BUFFER, 2, s_buffer->m_buffer, 
+			buffer.second + ROUND_UP(pixel_buffer_size, s_ubo_align), 
+			vertex_buffer_size);
+		glBindBufferRange(GL_UNIFORM_BUFFER, 3, s_buffer->m_buffer,
+			buffer.second + ROUND_UP(pixel_buffer_size, s_ubo_align) + ROUND_UP(vertex_buffer_size, s_ubo_align),
+			sizeof(GeometryShaderConstants));
 
 		PixelShaderManager::Clear();
 		VertexShaderManager::Clear();
+		GeometryShaderManager::Clear();
 
 		ADDSTAT(stats.thisFrame.bytesUniformStreamed, s_ubo_buffer_size);
 	}
@@ -159,10 +173,10 @@ GLuint ProgramShaderCache::GetCurrentProgram()
 	return CurrentProgram;
 }
 
-SHADER* ProgramShaderCache::SetShader(DSTALPHA_MODE dstAlphaMode, u32 components)
+SHADER* ProgramShaderCache::SetShader(DSTALPHA_MODE dstAlphaMode, u32 components, u32 primitive_type)
 {
 	SHADERUID uid;
-	GetShaderId(&uid, dstAlphaMode, components);
+	GetShaderId(&uid, dstAlphaMode, components, primitive_type);
 
 	// Check if the shader is already set
 	if (last_entry)
@@ -196,13 +210,17 @@ SHADER* ProgramShaderCache::SetShader(DSTALPHA_MODE dstAlphaMode, u32 components
 
 	ShaderCode vcode;
 	ShaderCode pcode;
+	ShaderCode gcode;
 	GenerateVertexShaderCodeGL(vcode, components, xfmem, bpmem);
 	GeneratePixelShaderCodeGL(pcode, dstAlphaMode, components, xfmem, bpmem);
+	if (g_ActiveConfig.backend_info.bSupportsGeometryShaders && !uid.guid.GetUidData().IsPassthrough())
+		GenerateGeometryShaderCode(gcode, primitive_type, API_OPENGL, xfmem, bpmem);
 
 	if (g_ActiveConfig.bEnableShaderDebugging)
 	{
 		newentry.shader.strvprog = vcode.GetBuffer();
 		newentry.shader.strpprog = pcode.GetBuffer();
+		newentry.shader.strgprog = gcode.GetBuffer();
 	}
 
 #if defined(_DEBUG) || defined(DEBUGFAST)
@@ -214,10 +232,16 @@ SHADER* ProgramShaderCache::SetShader(DSTALPHA_MODE dstAlphaMode, u32 components
 
 		filename = StringFromFormat("%sps_%04i.txt", File::GetUserPath(D_DUMP_IDX).c_str(), counter++);
 		SaveData(filename, pcode.GetBuffer());
+
+		if (gcode.GetBuffer() != nullptr)
+		{
+			filename = StringFromFormat("%sgs_%04i.txt", File::GetUserPath(D_DUMP_IDX).c_str(), counter++);
+			SaveData(filename, gcode.GetBuffer());
+		}
 	}
 #endif
 
-	if (!CompileShader(newentry.shader, vcode.GetBuffer(), pcode.GetBuffer()))
+	if (!CompileShader(newentry.shader, vcode.GetBuffer(), pcode.GetBuffer(), gcode.GetBuffer()))
 	{
 		GFX_DEBUGGER_PAUSE_AT(NEXT_ERROR, true);
 		return nullptr;
@@ -231,15 +255,21 @@ SHADER* ProgramShaderCache::SetShader(DSTALPHA_MODE dstAlphaMode, u32 components
 	return &last_entry->shader;
 }
 
-bool ProgramShaderCache::CompileShader(SHADER& shader, const char* vcode, const char* pcode)
+bool ProgramShaderCache::CompileShader(SHADER& shader, const char* vcode, const char* pcode, const char* gcode)
 {
 	GLuint vsid = CompileSingleShader(GL_VERTEX_SHADER, vcode);
 	GLuint psid = CompileSingleShader(GL_FRAGMENT_SHADER, pcode);
 
-	if (!vsid || !psid)
+	// Optional geometry shader
+	GLuint gsid = 0;
+	if (gcode)
+		gsid = CompileSingleShader(GL_GEOMETRY_SHADER, gcode);
+
+	if (!vsid || !psid || (gcode && !gsid))
 	{
 		glDeleteShader(vsid);
 		glDeleteShader(psid);
+		glDeleteShader(gsid);
 		return false;
 	}
 
@@ -247,6 +277,8 @@ bool ProgramShaderCache::CompileShader(SHADER& shader, const char* vcode, const 
 
 	glAttachShader(pid, vsid);
 	glAttachShader(pid, psid);
+	if (gsid)
+		glAttachShader(pid, gsid);
 
 	if (g_ogl_config.bSupportsGLSLCache)
 		glProgramParameteri(pid, GL_PROGRAM_BINARY_RETRIEVABLE_HINT, GL_TRUE);
@@ -258,6 +290,7 @@ bool ProgramShaderCache::CompileShader(SHADER& shader, const char* vcode, const 
 	// original shaders aren't needed any more
 	glDeleteShader(vsid);
 	glDeleteShader(psid);
+	glDeleteShader(gsid);
 
 	GLint linkStatus;
 	glGetProgramiv(pid, GL_LINK_STATUS, &linkStatus);
@@ -273,7 +306,10 @@ bool ProgramShaderCache::CompileShader(SHADER& shader, const char* vcode, const 
 		std::string filename = StringFromFormat("%sbad_p_%d.txt", File::GetUserPath(D_DUMP_IDX).c_str(), num_failures++);
 		std::ofstream file;
 		OpenFStream(file, filename, std::ios_base::out);
-		file << s_glsl_header << vcode << s_glsl_header << pcode << infoLog;
+		file << s_glsl_header << vcode << s_glsl_header << pcode;
+		if (gcode)
+			file << s_glsl_header << gcode;
+		file << infoLog;
 		file.close();
 
 		if (linkStatus != GL_TRUE)
@@ -330,11 +366,11 @@ GLuint ProgramShaderCache::CompileSingleShader(GLuint type, const char* code, co
 		GLsizei charsWritten;
 		GLchar* infoLog = new GLchar[length];
 		glGetShaderInfoLog(result, length, &charsWritten, infoLog);
-		ERROR_LOG(VIDEO, "%s Shader info log:\n%s", type==GL_VERTEX_SHADER ? "VS" : "PS", infoLog);
+		ERROR_LOG(VIDEO, "%s Shader info log:\n%s", type==GL_VERTEX_SHADER ? "VS" : type==GL_FRAGMENT_SHADER ? "PS" : "GS", infoLog);
 
 		std::string filename = StringFromFormat("%sbad_%s_%04i.txt",
 			File::GetUserPath(D_DUMP_IDX).c_str(),
-			type==GL_VERTEX_SHADER ? "vs" : "ps",
+			type==GL_VERTEX_SHADER ? "vs" : type==GL_FRAGMENT_SHADER ? "ps" : "gs",
 			num_failures++);
 		std::ofstream file;
 		OpenFStream(file, filename, std::ios_base::out);
@@ -344,7 +380,7 @@ GLuint ProgramShaderCache::CompileSingleShader(GLuint type, const char* code, co
 		if (compileStatus != GL_TRUE)
 		{
 			PanicAlert("Failed to compile %s shader!\nThis usually happens when trying to use Dolphin with an outdated GPU or integrated GPU like the Intel GMA series.\n\nIf you're sure this is Dolphin's error anyway, post the contents of %s along with this error message at the forums.\n\nDebug info (%s, %s, %s):\n%s",
-				type == GL_VERTEX_SHADER ? "vertex" : "pixel",
+				type == GL_VERTEX_SHADER ? "vertex" : type==GL_FRAGMENT_SHADER ? "pixel" : "geometry",
 				filename.c_str(),
 				g_ogl_config.gl_vendor,
 				g_ogl_config.gl_renderer,
@@ -367,10 +403,11 @@ GLuint ProgramShaderCache::CompileSingleShader(GLuint type, const char* code, co
 	return result;
 }
 
-void ProgramShaderCache::GetShaderId(SHADERUID* uid, DSTALPHA_MODE dstAlphaMode, u32 components)
+void ProgramShaderCache::GetShaderId(SHADERUID* uid, DSTALPHA_MODE dstAlphaMode, u32 components, u32 primitive_type)
 {
 	GetPixelShaderUidGL(uid->puid, dstAlphaMode, components, xfmem, bpmem);
 	GetVertexShaderUidGL(uid->vuid, components, xfmem, bpmem);
+	GetGeometryShaderUid(uid->guid, primitive_type, API_OPENGL, xfmem, bpmem);
 
 	if (g_ActiveConfig.bEnableShaderDebugging)
 	{
@@ -381,6 +418,10 @@ void ProgramShaderCache::GetShaderId(SHADERUID* uid, DSTALPHA_MODE dstAlphaMode,
 		ShaderCode vcode;
 		GenerateVertexShaderCodeGL(vcode, components, xfmem, bpmem);
 		vertex_uid_checker.AddToIndexAndCheck(vcode, uid->vuid, "Vertex", "v");
+
+		ShaderCode gcode;
+		GenerateGeometryShaderCode(gcode, primitive_type, API_OPENGL, xfmem, bpmem);
+		geometry_uid_checker.AddToIndexAndCheck(gcode, uid->guid, "Geometry", "g");
 	}
 }
 
@@ -396,7 +437,9 @@ void ProgramShaderCache::Init()
 	// then the UBO will fail.
 	glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &s_ubo_align);
 
-	s_ubo_buffer_size = ROUND_UP(PixelShaderManager::ConstantBufferSize * sizeof(float), s_ubo_align) + ROUND_UP(VertexShaderManager::ConstantBufferSize * sizeof(float), s_ubo_align);
+	s_ubo_buffer_size = ROUND_UP(PixelShaderManager::ConstantBufferSize * sizeof(float), s_ubo_align)
+	+ ROUND_UP(VertexShaderManager::ConstantBufferSize * sizeof(float), s_ubo_align)
+	+ ROUND_UP(sizeof(GeometryShaderConstants), s_ubo_align);
 
 	// We multiply by *4*4 because we need to get down to basic machine units.
 	// So multiply by four to get how many floats we have from vec4s
@@ -440,25 +483,33 @@ void ProgramShaderCache::Shutdown()
 	{
 		for (auto& entry : pshaders)
 		{
+			// Clear any prior error code
+			glGetError();
+
 			if (entry.second.in_cache)
 			{
 				continue;
 			}
 
-			GLint binary_size;
+			GLint link_status = GL_FALSE, delete_status = GL_TRUE, binary_size = 0;
+			glGetProgramiv(entry.second.shader.glprogid, GL_LINK_STATUS, &link_status);
+			glGetProgramiv(entry.second.shader.glprogid, GL_DELETE_STATUS, &delete_status);
 			glGetProgramiv(entry.second.shader.glprogid, GL_PROGRAM_BINARY_LENGTH, &binary_size);
-			if (!binary_size)
+			if (glGetError() != GL_NO_ERROR || link_status == GL_FALSE || delete_status == GL_TRUE || !binary_size)
 			{
 				continue;
 			}
 
-			u8 *data = new u8[binary_size+sizeof(GLenum)];
-			u8 *binary = data + sizeof(GLenum);
-			GLenum *prog_format = (GLenum*)data;
+			std::vector<u8> data(binary_size + sizeof(GLenum));
+			u8* binary = &data[sizeof(GLenum)];
+			GLenum* prog_format = (GLenum*)&data[0];
 			glGetProgramBinary(entry.second.shader.glprogid, binary_size, nullptr, prog_format, binary);
+			if (glGetError() != GL_NO_ERROR)
+			{
+				continue;
+			}
 
-			g_program_disk_cache.Append(entry.first, data, binary_size+sizeof(GLenum));
-			delete [] data;
+			g_program_disk_cache.Append(entry.first, &data[0], binary_size + sizeof(GLenum));
 		}
 
 		g_program_disk_cache.Sync();
@@ -483,6 +534,8 @@ void ProgramShaderCache::Shutdown()
 void ProgramShaderCache::CreateHeader()
 {
 	GLSL_VERSION v = g_ogl_config.eSupportedGLSLVersion;
+	bool is_glsles = v >= GLSLES_300;
+
 	snprintf(s_glsl_header, sizeof(s_glsl_header),
 		"%s\n"
 		"%s\n" // ubo
@@ -492,8 +545,12 @@ void ProgramShaderCache::CreateHeader()
 		"%s\n" // sample shading
 		"%s\n" // Sampler binding
 		"%s\n" // storage buffer
+		"%s\n" // shader5
+		"%s\n" // AEP
+		"%s\n" // texture buffer
 
 		// Precision defines for GLSL ES
+		"%s\n"
 		"%s\n"
 		"%s\n"
 
@@ -518,15 +575,19 @@ void ProgramShaderCache::CreateHeader()
 
 		, GetGLSLVersionString().c_str()
 		, v<GLSL_140 ? "#extension GL_ARB_uniform_buffer_object : enable" : ""
-		, g_ActiveConfig.backend_info.bSupportsEarlyZ ? "#extension GL_ARB_shader_image_load_store : enable" : ""
+		, !is_glsles && g_ActiveConfig.backend_info.bSupportsEarlyZ ? "#extension GL_ARB_shader_image_load_store : enable" : ""
 		, (g_ActiveConfig.backend_info.bSupportsBindingLayout && v < GLSLES_310) ? "#extension GL_ARB_shading_language_420pack : enable" : ""
 		, (g_ogl_config.bSupportsMSAA && v < GLSL_150) ? "#extension GL_ARB_texture_multisample : enable" : ""
 		, (g_ogl_config.bSupportSampleShading) ? "#extension GL_ARB_sample_shading : enable" : ""
 		, g_ActiveConfig.backend_info.bSupportsBindingLayout ? "#define SAMPLER_BINDING(x) layout(binding = x)" : "#define SAMPLER_BINDING(x)"
 		, g_ActiveConfig.backend_info.bSupportsBBox ? "#extension GL_ARB_shader_storage_buffer_object : enable" : ""
+		, g_ActiveConfig.backend_info.bSupportsGSInstancing ? "#extension GL_ARB_gpu_shader5 : enable" : ""
+		, g_ogl_config.bSupportsAEP ? "#extension GL_ANDROID_extension_pack_es31a : enable" : ""
+		, v<GLSL_140 && g_ActiveConfig.backend_info.bSupportsPaletteConversion ? "#extension GL_ARB_texture_buffer_object : enable" : ""
 
-		, v>=GLSLES_300 ? "precision highp float;" : ""
-		, v>=GLSLES_300 ? "precision highp int;" : ""
+		, is_glsles ? "precision highp float;" : ""
+		, is_glsles ? "precision highp int;" : ""
+		, is_glsles ? "precision highp sampler2DArray;" : ""
 
 		, DriverDetails::HasBug(DriverDetails::BUG_BROKENTEXTURESIZE) ? "#define textureSize(x, y) ivec2(1, 1)" : ""
 		, DriverDetails::HasBug(DriverDetails::BUG_BROKENCENTROID) ? "#define centroid" : ""

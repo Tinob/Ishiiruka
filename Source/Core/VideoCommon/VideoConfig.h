@@ -54,7 +54,8 @@ enum StereoMode
 	STEREO_SBS,
 	STEREO_TAB,
 	STEREO_ANAGLYPH,
-	STEREO_3DVISION
+	STEREO_INTERLACED,
+	STEREO_3DVISION,	
 };
 
 enum BBoxMode : s32
@@ -155,9 +156,9 @@ struct VideoConfig final
 	int iSaveTargetId; // TODO: Should be dropped
 
 	// Stereoscopy
-	bool bStereoMonoEFBDepth;
+	bool bStereoEFBMonoDepth;
 	int iStereoDepthPercentage;
-	int iStereoConvergencePercent;
+	int iStereoConvergenceMinimum;
 
 	// D3D only config, mostly to be merged into the above
 	int iAdapter;
@@ -174,6 +175,8 @@ struct VideoConfig final
 		std::vector<std::string> Adapters; // for D3D9 and D3D11
 		std::vector<std::string> AAModes;
 		std::vector<std::string> PPShaders; // post-processing shaders
+		std::vector<std::string> AnaglyphShaders; // anaglyph shaders
+
 		bool bSupportedFormats[16]; // used for D3D9 in TextureCache		
 		bool bSupportsDualSourceBlend; // only supported by D3D11 and OpenGL
 		bool bSupportsPixelLighting;
@@ -183,12 +186,13 @@ struct VideoConfig final
 		bool bSupportsEarlyZ; // needed by PixelShaderGen, so must stay in VideoCommon
 		bool bNeedBlendIndices; // needed by PixelShaderGen, so must stay in VideoCommon
 		bool bSupportsOversizedViewports;
-		bool bSupportsStereoscopy;
+		bool bSupportsPostProcessing;
 		bool bSupportsGeometryShaders;
 		bool bSupports3DVision;
 		bool bSupportsExclusiveFullscreen;
 		bool bSupportsBBox;
 		bool bSupportsGSInstancing; // Needed by GeometryShaderGen, so must stay in VideoCommon
+		bool bSupportsPaletteConversion;
 	} backend_info;
 
 	// Utility

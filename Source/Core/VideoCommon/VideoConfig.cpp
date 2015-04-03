@@ -46,9 +46,9 @@ VideoConfig::VideoConfig()
 	backend_info.bSupportsExclusiveFullscreen = false;
 
 	// Game-specific stereoscopy settings
-	bStereoMonoEFBDepth = false;
+	bStereoEFBMonoDepth = false;
 	iStereoDepthPercentage = 100;
-	iStereoConvergencePercent = 100;
+	iStereoConvergenceMinimum = 0;
 }
 
 void VideoConfig::Load(const std::string& ini_file)
@@ -205,9 +205,9 @@ void VideoConfig::GameIniLoad()
 	CHECK_SETTING("Video_Enhancements", "StereoConvergence", iStereoConvergence);
 	CHECK_SETTING("Video_Enhancements", "StereoSwapEyes", bStereoSwapEyes);
 
-	CHECK_SETTING("Video_Stereoscopy", "StereoMonoEFBDepth", bStereoMonoEFBDepth);
+	CHECK_SETTING("Video_Stereoscopy", "StereoEFBMonoDepth", bStereoEFBMonoDepth);
 	CHECK_SETTING("Video_Stereoscopy", "StereoDepthPercentage", iStereoDepthPercentage);
-	CHECK_SETTING("Video_Stereoscopy", "StereoConvergencePercent", iStereoConvergencePercent);
+	CHECK_SETTING("Video_Stereoscopy", "StereoConvergenceMinimum", iStereoConvergenceMinimum);
 
 	CHECK_SETTING("Video_Hacks", "EFBAccessEnable", bEFBAccessEnable);
 	CHECK_SETTING("Video_Hacks", "EFBFastAccess", bEFBFastAccess);
@@ -242,7 +242,7 @@ void VideoConfig::VerifyValidity()
 	if (!backend_info.bSupportsPixelLighting) bEnablePixelLighting = false;	
 	if (iStereoMode > 0)
 	{
-		if (!(backend_info.bSupportsGeometryShaders || backend_info.bSupportsStereoscopy))
+		if (!backend_info.bSupportsGeometryShaders)
 		{
 			OSD::AddMessage("Stereoscopic 3D isn't supported by your GPU, support for OpenGL 3.2 is required.", 10000);
 			iStereoMode = 0;

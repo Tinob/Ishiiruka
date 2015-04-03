@@ -89,9 +89,10 @@ struct pixel_shader_uid_data
 	// TODO: Optimize field order for easy access!
 	LightingUidData lighting;
 
-	u32 components : 22;
+	u32 components : 21;
 	u32 zfreeze : 1;
 	u32 pixel_lighting : 1;
+	u32 stereo : 1;
 
 	u32 dstAlphaMode : 2;
 	u32 Pretest : 2;

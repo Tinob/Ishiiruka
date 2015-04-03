@@ -5,6 +5,7 @@
 #include "Common/Common.h"
 #include "Core/HW/Memmap.h"
 #include "VideoCommon/CPMemory.h"
+#include "VideoCommon/GeometryShaderManager.h"
 #include "VideoCommon/VideoCommon.h"
 #include "VideoCommon/XFMemory.h"
 #include "VideoCommon/VertexManagerBase.h"
@@ -111,6 +112,7 @@ void XFRegWritten(int transferSize, u32 baseAddress)
 		case XFMEM_SETVIEWPORT+5:
 			VertexManager::Flush();
 			VertexShaderManager::SetViewportChanged();
+			GeometryShaderManager::SetViewportChanged();
 			PixelShaderManager::SetViewportChanged();
 
 			nextAddress = XFMEM_SETVIEWPORT + 6;
@@ -125,6 +127,7 @@ void XFRegWritten(int transferSize, u32 baseAddress)
 		case XFMEM_SETPROJECTION+6:
 			VertexManager::Flush();
 			VertexShaderManager::SetProjectionChanged();
+			GeometryShaderManager::SetProjectionChanged();
 
 			nextAddress = XFMEM_SETPROJECTION + 7;
 			break;

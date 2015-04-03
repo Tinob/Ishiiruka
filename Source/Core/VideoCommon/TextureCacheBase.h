@@ -174,6 +174,9 @@ public:
 		const TlutFormat tlutfmt, u32 width, u32 height) = 0;
 	virtual TCacheEntryBase* CreateTexture(const TCacheEntryConfig& config) = 0;
 
+	virtual void CompileShaders() = 0; // currently only implemented by OGL
+	virtual void DeleteShaders() = 0; // currently only implemented by OGL
+
 	static TCacheEntryBase* Load(const u32 stage);
 	static void UnbindTextures();
 	static void BindTextures();
@@ -216,6 +219,8 @@ private:
 		bool s_texfmt_overlay;
 		bool s_texfmt_overlay_center;
 		bool s_hires_textures;
+		bool s_stereo_3d;
+		bool s_efb_mono_depth;
 	} backup_config;
 };
 

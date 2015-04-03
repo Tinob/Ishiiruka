@@ -1,3 +1,7 @@
+// Copyright 2013 Dolphin Emulator Project
+// Licensed under GPLv2
+// Refer to the license.txt file included.
+
 #pragma once
 
 #include <list>
@@ -13,10 +17,6 @@ struct XFBSourceBase
 {
 	virtual ~XFBSourceBase() {}
 
-	// TODO: only DX9 uses the width/height params
-	virtual void Draw(const MathUtil::Rectangle<float> &sourcerc,
-		const MathUtil::Rectangle<float> &drawrc, int width, int height) const {};
-
 	virtual void DecodeToTexture(u32 xfbAddr, u32 fbWidth, u32 fbHeight) = 0;
 
 	virtual void CopyEFB(float Gamma) = 0;
@@ -25,8 +25,8 @@ struct XFBSourceBase
 	u32 srcWidth;
 	u32 srcHeight;
 
-	unsigned int texWidth;
-	unsigned int texHeight;
+	u32 texWidth;
+	u32 texHeight;
 
 	// TODO: only used by OGL
 	TargetRectangle sourceRc;
@@ -48,13 +48,15 @@ public:
 	static void CopyToXFB(u32 xfbAddr, u32 fbWidth, u32 fbHeight, const EFBRectangle& sourceRc,float Gamma);
 	static const XFBSourceBase* const* GetXFBSource(u32 xfbAddr, u32 fbWidth, u32 fbHeight, u32* xfbCount);
 
-	static void SetLastXfbWidth(unsigned int width) { s_last_xfb_width = width; }
-	static void SetLastXfbHeight(unsigned int height) { s_last_xfb_height = height; }
-	static unsigned int LastXfbWidth() { return s_last_xfb_width; }
-	static unsigned int LastXfbHeight() { return s_last_xfb_height; }
+	static void SetLastXfbWidth(u32 width) { s_last_xfb_width = width; }
+	static void SetLastXfbHeight(u32 height) { s_last_xfb_height = height; }
+	static u32 LastXfbWidth() { return s_last_xfb_width; }
+	static u32 LastXfbHeight() { return s_last_xfb_height; }
 
-	static int ScaleToVirtualXfbWidth(int x, unsigned int backbuffer_width);
-	static int ScaleToVirtualXfbHeight(int y, unsigned int backbuffer_height);
+	static int ScaleToVirtualXfbWidth(int x);
+	static int ScaleToVirtualXfbHeight(int y);
+
+	static u32 GetEFBLayers() { return m_EFBLayers; }
 
 protected:
 	struct VirtualXFB
@@ -71,10 +73,12 @@ protected:
 
 	typedef std::list<VirtualXFB> VirtualXFBListType;
 
+	static u32 m_EFBLayers;
+
 private:
-	virtual XFBSourceBase* CreateXFBSource(unsigned int target_width, unsigned int target_height) = 0;
+	virtual XFBSourceBase* CreateXFBSource(u32 target_width, u32 target_height, u32 layers) = 0;
 	// TODO: figure out why OGL is different for this guy
-	virtual void GetTargetSize(unsigned int *width, unsigned int *height) = 0;
+	virtual void GetTargetSize(u32 *width, u32 *height) = 0;
 
 	static VirtualXFBListType::iterator FindVirtualXFB(u32 xfbAddr, u32 width, u32 height);
 
@@ -92,8 +96,8 @@ private:
 
 	static const XFBSourceBase* m_overlappingXFBArray[MAX_VIRTUAL_XFB];
 
-	static unsigned int s_last_xfb_width;
-	static unsigned int s_last_xfb_height;
+	static u32 s_last_xfb_width;
+	static u32 s_last_xfb_height;
 };
 
 extern FramebufferManagerBase *g_framebuffer_manager;

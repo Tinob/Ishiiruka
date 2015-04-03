@@ -12,6 +12,8 @@ const XFBSourceBase* FramebufferManagerBase::m_overlappingXFBArray[MAX_VIRTUAL_X
 unsigned int FramebufferManagerBase::s_last_xfb_width = 1;
 unsigned int FramebufferManagerBase::s_last_xfb_height = 1;
 
+unsigned int FramebufferManagerBase::m_EFBLayers = 1;
+
 FramebufferManagerBase::FramebufferManagerBase()
 {
 	m_realXFBSource = nullptr;
@@ -54,7 +56,7 @@ const XFBSourceBase* const* FramebufferManagerBase::GetRealXFBSource(u32 xfbAddr
 	}
 
 	if (!m_realXFBSource)
-		m_realXFBSource = g_framebuffer_manager->CreateXFBSource(fbWidth, fbHeight);
+		m_realXFBSource = g_framebuffer_manager->CreateXFBSource(fbWidth, fbHeight, 1);
 
 	m_realXFBSource->srcAddr = xfbAddr;
 
@@ -127,9 +129,7 @@ void FramebufferManagerBase::CopyToVirtualXFB(u32 xfbAddr, u32 fbWidth, u32 fbHe
 		if (m_virtualXFBList.size() < MAX_VIRTUAL_XFB)
 		{
 			// create a new Virtual XFB and place it at the front of the list
-			VirtualXFB v;
-			memset(&v, 0, sizeof v);
-			m_virtualXFBList.push_front(v);
+			m_virtualXFBList.emplace_front();
 			vxfb = m_virtualXFBList.begin();
 		}
 		else
@@ -156,7 +156,7 @@ void FramebufferManagerBase::CopyToVirtualXFB(u32 xfbAddr, u32 fbWidth, u32 fbHe
 
 	if (!vxfb->xfbSource)
 	{
-		vxfb->xfbSource = g_framebuffer_manager->CreateXFBSource(target_width, target_height);
+		vxfb->xfbSource = g_framebuffer_manager->CreateXFBSource(target_width, target_height, m_EFBLayers);
 		vxfb->xfbSource->texWidth = target_width;
 		vxfb->xfbSource->texHeight = target_height;
 	}
@@ -232,7 +232,7 @@ void FramebufferManagerBase::ReplaceVirtualXFB()
 	}
 }
 
-int FramebufferManagerBase::ScaleToVirtualXfbWidth(int x, unsigned int backbuffer_width)
+int FramebufferManagerBase::ScaleToVirtualXfbWidth(int x)
 {
 	if (g_ActiveConfig.RealXFBEnabled())
 		return x;
@@ -240,7 +240,7 @@ int FramebufferManagerBase::ScaleToVirtualXfbWidth(int x, unsigned int backbuffe
 	return x * (int)Renderer::GetTargetRectangle().GetWidth() / (int)FramebufferManagerBase::LastXfbWidth();
 }
 
-int FramebufferManagerBase::ScaleToVirtualXfbHeight(int y, unsigned int backbuffer_height)
+int FramebufferManagerBase::ScaleToVirtualXfbHeight(int y)
 {
 	if (g_ActiveConfig.RealXFBEnabled())
 		return y;

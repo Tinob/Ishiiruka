@@ -56,6 +56,8 @@ private:
 
 	TCacheEntryBase* CreateTexture(const TCacheEntryConfig& config);
 	void LoadLut(u32 lutFmt, void* addr, u32 size);
+	void CompileShaders() override { }
+	void DeleteShaders() override { }
 };
 
 }

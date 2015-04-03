@@ -3,13 +3,19 @@
 // Refer to the license.txt file included.
 
 #include <list>
+#include <cctype>
+#include <list>
+#include <string>
 
-#include "D3DBase.h"
-#include "D3DUtil.h"
-#include "PixelShaderCache.h"
-#include "VertexShaderCache.h"
-#include "D3DShader.h"
-#include "D3DState.h"
+#include "VideoBackends/DX11/D3DBase.h"
+#include "VideoBackends/DX11/D3DShader.h"
+#include "VideoBackends/DX11/D3DState.h"
+#include "VideoBackends/DX11/D3DUtil.h"
+#include "VideoBackends/DX11/GeometryShaderCache.h"
+#include "VideoBackends/DX11/PixelShaderCache.h"
+#include "VideoBackends/DX11/VertexShaderCache.h"
+
+#include "VideoCommon/VideoConfig.h"
 
 namespace DX11
 {
@@ -415,21 +421,13 @@ int CD3DFont::DrawTextScaled(float x, float y, float size, float spacing, u32 dw
 SamplerStatePtr linear_copy_sampler;
 SamplerStatePtr point_copy_sampler;
 
-typedef struct { float x, y, z, u0, v0, w, u1, v1; } STQVertex;
-typedef struct { float x, y, z, u, v, w; } STSQVertex;
-typedef struct { float x, y, z; u32 col; } ClearVertex;
-typedef struct { float x, y, z; u32 col; } ColVertex;
+struct STQVertex { float x, y, z, u0, v0, s, u1, v1, g; };
+struct ColVertex { float x, y, z; u32 col; };
 
 struct
 {
-	float u1, v1, u2, v2, G, u3, v3;
+	float u1, v1, u2, v2, S, u3, v3, G;
 } tex_quad_data;
-
-struct
-{
-	MathUtil::Rectangle<float> rdest;
-	float u1, v1, u2, v2, G;
-} tex_sub_quad_data;
 
 struct
 {
@@ -465,8 +463,7 @@ void InitUtils()
 	else SetDebugObjectName(linear_copy_sampler.get(), "linear copy sampler state");
 
 	// cached data used to avoid unnecessarily reloading the vertex buffers
-	memset(&tex_quad_data, 0, sizeof(tex_quad_data));
-	memset(&tex_sub_quad_data, 0, sizeof(tex_sub_quad_data));
+	memset(&tex_quad_data, 0, sizeof(tex_quad_data));	
 	memset(&draw_quad_data, 0, sizeof(draw_quad_data));
 	memset(&clear_quad_data, 0, sizeof(clear_quad_data));
 
@@ -506,7 +503,9 @@ void drawShadedTexQuad(
 	ID3D11PixelShader* PShader,
 	ID3D11VertexShader* VShader,
 	ID3D11InputLayout* layout,
+	ID3D11GeometryShader* GShader,
 	float Gamma,
+	u32 slice,
 	int DestWidth,
 	int DestHeight)
 {
@@ -519,19 +518,21 @@ void drawShadedTexQuad(
 	float v1 = ((float)rSource->top) * sh;
 	float v2 = ((float)rSource->bottom) * sh;
 	float G = 1.0f / Gamma;
+	float S = (float)slice;
 
 	STQVertex coords[4] = {
-		{ -1.0f, 1.0f, 0.0f, u1, v1, G, dw, dh },
-		{ 1.0f, 1.0f, 0.0f, u2, v1, G, dw, dh },
-		{ -1.0f, -1.0f, 0.0f, u1, v2, G, dw, dh },
-		{ 1.0f, -1.0f, 0.0f, u2, v2, G, dw, dh },
+		{ -1.0f,  1.0f, 0.0f, u1, v1, S, dw, dh, G },
+		{  1.0f,  1.0f, 0.0f, u2, v1, S, dw, dh, G },
+		{ -1.0f, -1.0f, 0.0f, u1, v2, S, dw, dh, G },
+		{  1.0f, -1.0f, 0.0f, u2, v2, S, dw, dh, G },
 	};
 
 	// only upload the data to VRAM if it changed
 	if (stq_observer ||
 		tex_quad_data.u1 != u1 || tex_quad_data.v1 != v1 ||
 		tex_quad_data.u2 != u2 || tex_quad_data.v2 != v2 ||
-		tex_quad_data.u3 != dw || tex_quad_data.v3 != dh || tex_quad_data.G != G)
+		tex_quad_data.u3 != dw || tex_quad_data.v3 != dh || 
+		tex_quad_data.S != S || tex_quad_data.G != G)
 	{
 		stq_offset = util_vbuf->AppendData(coords, sizeof(coords), sizeof(STQVertex));
 		stq_observer = false;
@@ -542,6 +543,7 @@ void drawShadedTexQuad(
 		tex_quad_data.v2 = v2;
 		tex_quad_data.u3 = dw;
 		tex_quad_data.v3 = dh;
+		tex_quad_data.S = S;
 		tex_quad_data.G = G;
 	}
 	UINT stride = sizeof(STQVertex);
@@ -552,12 +554,14 @@ void drawShadedTexQuad(
 	D3D::stateman->SetPixelShader(PShader);
 	D3D::stateman->SetTexture(0, texture);
 	D3D::stateman->SetVertexShader(VShader);
-	D3D::stateman->SetGeometryShader(nullptr);
+	D3D::stateman->SetGeometryShader(GShader);
 
 	D3D::stateman->Apply();
 	D3D::context->Draw(4, stq_offset);
 	D3D::stateman->SetTexture(0, nullptr); // immediately unbind the texture
 	D3D::stateman->Apply();
+
+	stateman->SetGeometryShader(nullptr);
 }
 
 // Fills a certain area of the current render target with the specified color
@@ -587,6 +591,7 @@ void drawColorQuad(u32 Color, float x1, float y1, float x2, float y2)
 	}
 
 	stateman->SetVertexShader(VertexShaderCache::GetClearVertexShader());
+	stateman->SetGeometryShader(g_ActiveConfig.iStereoMode > 0 ? GeometryShaderCache::GetClearGeometryShader() : nullptr);
 	stateman->SetPixelShader(PixelShaderCache::GetClearProgram());
 	stateman->SetInputLayout(VertexShaderCache::GetClearInputLayout());
 
@@ -597,13 +602,15 @@ void drawColorQuad(u32 Color, float x1, float y1, float x2, float y2)
 
 	stateman->Apply();
 	context->Draw(4, cq_offset);
+
+	stateman->SetGeometryShader(nullptr);
 }
 
 void drawClearQuad(
 	u32 Color,
 	float z)
 {
-	ClearVertex coords[4] = {
+	ColVertex coords[4] = {
 		{ -1.0f, 1.0f, z, Color },
 		{ 1.0f, 1.0f, z, Color },
 		{ -1.0f, -1.0f, z, Color },
@@ -612,7 +619,7 @@ void drawClearQuad(
 
 	if (clearq_observer || clear_quad_data.col != Color || clear_quad_data.z != z)
 	{
-		clearq_offset = util_vbuf->AppendData(coords, sizeof(coords), sizeof(ClearVertex));
+		clearq_offset = util_vbuf->AppendData(coords, sizeof(coords), sizeof(ColVertex));
 		clearq_observer = false;
 
 		clear_quad_data.col = Color;
@@ -620,10 +627,11 @@ void drawClearQuad(
 	}
 
 	stateman->SetVertexShader(VertexShaderCache::GetClearVertexShader());
+	stateman->SetGeometryShader(GeometryShaderCache::GetClearGeometryShader());
 	stateman->SetPixelShader(PixelShaderCache::GetClearProgram());
 	stateman->SetInputLayout(VertexShaderCache::GetClearInputLayout());
 
-	UINT stride = sizeof(ClearVertex);
+	UINT stride = sizeof(ColVertex);
 	UINT offset = 0;
 	stateman->SetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 	stateman->SetVertexBuffer(util_vbuf->GetBuffer(), stride, offset);

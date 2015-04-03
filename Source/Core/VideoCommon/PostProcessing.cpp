@@ -13,6 +13,8 @@
 #include "VideoCommon/VideoConfig.h"
 
 
+static const char s_default_shader[] = "void main() { SetOutput(Sample()); }\n";
+
 PostProcessingShaderImplementation::PostProcessingShaderImplementation()
 {
 	m_timer.Start();
@@ -30,20 +32,29 @@ std::string PostProcessingShaderConfiguration::LoadShader(std::string shader)
 		shader = g_ActiveConfig.sPostProcessingShader;
 	m_current_shader = shader;
 
+	const std::string sub_dir = (g_Config.iStereoMode == STEREO_ANAGLYPH || g_Config.iStereoMode == STEREO_INTERLACED) ? ANAGLYPH_DIR DIR_SEP : "";
+
 	// loading shader code
 	std::string code;
-	std::string path = File::GetUserPath(D_SHADERS_IDX) + shader + ".glsl";
+	std::string path = File::GetUserPath(D_SHADERS_IDX) + sub_dir + shader + ".glsl";
 
-	if (!File::Exists(path))
+	if (shader == "")
 	{
-		// Fallback to shared user dir
-		path = File::GetSysDirectory() + SHADERS_DIR DIR_SEP + shader + ".glsl";
+		code = s_default_shader;
 	}
-
-	if (!File::ReadFileToString(path, code))
+	else
 	{
-		ERROR_LOG(VIDEO, "Post-processing shader not found: %s", path.c_str());
-		return "";
+		if (!File::Exists(path))
+		{
+			// Fallback to shared user dir
+			path = File::GetSysDirectory() + SHADERS_DIR DIR_SEP + sub_dir + shader + ".glsl";
+		}
+
+		if (!File::ReadFileToString(path, code))
+		{
+			ERROR_LOG(VIDEO, "Post-processing shader not found: %s", path.c_str());
+			code = s_default_shader;
+		}
 	}
 
 	LoadOptions(code);
@@ -63,14 +74,14 @@ void PostProcessingShaderConfiguration::LoadOptions(const std::string& code)
 	m_any_options_dirty = true;
 
 	if (configuration_start == std::string::npos ||
-	    configuration_end == std::string::npos)
+		configuration_end == std::string::npos)
 	{
 		// Issue loading configuration or there isn't one.
 		return;
 	}
 
 	std::string configuration_string = code.substr(configuration_start + config_start_delimiter.size(),
-	                                               configuration_end - configuration_start - config_start_delimiter.size());
+		configuration_end - configuration_start - config_start_delimiter.size());
 
 	std::istringstream in(configuration_string);
 
@@ -90,9 +101,9 @@ void PostProcessingShaderConfiguration::LoadOptions(const std::string& code)
 		{
 #ifndef _WIN32
 			// Check for CRLF eol and convert it to LF
-			if (!line.empty() && line.at(line.size()-1) == '\r')
+			if (!line.empty() && line.at(line.size() - 1) == '\r')
 			{
-				line.erase(line.size()-1);
+				line.erase(line.size() - 1);
 			}
 #endif
 
@@ -118,7 +129,7 @@ void PostProcessingShaderConfiguration::LoadOptions(const std::string& code)
 						IniFile::ParseLine(line, &key, &value);
 
 						if (!(key == "" && value == ""))
-							current_strings->m_options.push_back(std::make_pair(key, value));
+							current_strings->m_options.emplace_back(key, value);
 					}
 				}
 			}
@@ -152,9 +163,9 @@ void PostProcessingShaderConfiguration::LoadOptions(const std::string& code)
 				option.m_dependent_option = string_option.second;
 			}
 			else if (string_option.first == "MinValue" ||
-			         string_option.first == "MaxValue" ||
-			         string_option.first == "DefaultValue" ||
-			         string_option.first == "StepAmount")
+				string_option.first == "MaxValue" ||
+				string_option.first == "DefaultValue" ||
+				string_option.first == "StepAmount")
 			{
 				std::vector<s32>* output_integer = nullptr;
 				std::vector<float>* output_float = nullptr;
@@ -214,7 +225,7 @@ void PostProcessingShaderConfiguration::LoadOptionsConfiguration()
 		{
 		case ConfigurationOption::OptionType::OPTION_BOOL:
 			ini.GetOrCreateSection(section)->Get(it.second.m_option_name, &it.second.m_bool_value, it.second.m_bool_value);
-		break;
+			break;
 		case ConfigurationOption::OptionType::OPTION_INTEGER:
 		{
 			std::string value;
@@ -254,16 +265,22 @@ void PostProcessingShaderConfiguration::SaveOptionsConfiguration()
 		{
 			std::string value = "";
 			for (size_t i = 0; i < it.second.m_integer_values.size(); ++i)
-				value += StringFromFormat("%d%s", it.second.m_integer_values[i], i == (it.second.m_integer_values.size() - 1) ? "": ", ");
+				value += StringFromFormat("%d%s", it.second.m_integer_values[i], i == (it.second.m_integer_values.size() - 1) ? "" : ", ");
 			ini.GetOrCreateSection(section)->Set(it.second.m_option_name, value);
 		}
 		break;
 		case ConfigurationOption::OptionType::OPTION_FLOAT:
 		{
-			std::string value = "";
+			std::ostringstream value;
+			value.imbue(std::locale("C"));
+
 			for (size_t i = 0; i < it.second.m_float_values.size(); ++i)
-				value += StringFromFormat("%f%s", it.second.m_float_values[i], i == (it.second.m_float_values.size() - 1) ? "": ", ");
-			ini.GetOrCreateSection(section)->Set(it.second.m_option_name, value);
+			{
+				value << it.second.m_float_values[i];
+				if (i != (it.second.m_float_values.size() - 1))
+					value << ", ";
+			}
+			ini.GetOrCreateSection(section)->Set(it.second.m_option_name, value.str());
 		}
 		break;
 		}

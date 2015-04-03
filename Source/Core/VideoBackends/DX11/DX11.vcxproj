@@ -58,7 +58,7 @@
     <ClCompile Include="D3DTexture.cpp" />
     <ClCompile Include="D3DUtil.cpp" />
     <ClCompile Include="FramebufferManager.cpp" />
-    <ClCompile Include="LineAndPointGeometryShader.cpp" />
+    <ClCompile Include="GeometryShaderCache.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="NativeVertexFormat.cpp" />
     <ClCompile Include="PerfQuery.cpp" />
@@ -83,8 +83,8 @@
     <ClInclude Include="D3DTexture.h" />
     <ClInclude Include="D3DUtil.h" />
     <ClInclude Include="FramebufferManager.h" />
+    <ClInclude Include="GeometryShaderCache.h" />
     <ClInclude Include="Globals.h" />
-    <ClInclude Include="LineAndPointGeometryShader.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="PerfQuery.h" />
     <ClInclude Include="PixelShaderCache.h" />

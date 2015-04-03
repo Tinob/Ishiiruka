@@ -211,6 +211,12 @@
     <ClCompile Include="PNGLoader.cpp">
       <Filter>Util</Filter>
     </ClCompile>
+    <ClCompile Include="GeometryShaderGen.cpp">
+      <Filter>Shader Generators</Filter>
+    </ClCompile>
+    <ClCompile Include="GeometryShaderManager.cpp">
+      <Filter>Shader Managers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommandProcessor.h" />
@@ -447,6 +453,15 @@
     </ClInclude>
     <ClInclude Include="ImageLoader.h">
       <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="GeometryShaderGen.h">
+      <Filter>Shader Generators</Filter>
+    </ClInclude>
+    <ClInclude Include="GeometryShaderManager.h">
+      <Filter>Shader Managers</Filter>
+    </ClInclude>
+    <ClInclude Include="ConstantManager.h">
+      <Filter>Shader Managers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

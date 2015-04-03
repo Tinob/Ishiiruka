@@ -202,6 +202,9 @@
     <ClInclude Include="Depalettizer.h">
       <Filter>Render</Filter>
     </ClInclude>
+    <ClInclude Include="GLExtensions\NV_occlusion_query_samples.h">
+      <Filter>GLExtensions</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />

@@ -55,6 +55,8 @@
     <ClCompile Include="Fifo.cpp" />
     <ClCompile Include="FPSCounter.cpp" />
     <ClCompile Include="FramebufferManagerBase.cpp" />
+    <ClCompile Include="GeometryShaderGen.cpp" />
+    <ClCompile Include="GeometryShaderManager.cpp" />
     <ClCompile Include="G_G4BP08_pvt.cpp" />
     <ClCompile Include="G_GB4P51_pvt.cpp" />
     <ClCompile Include="G_GFZE01_pvt.cpp" />
@@ -124,8 +126,11 @@
     <ClInclude Include="BPMemory.h" />
     <ClInclude Include="BPStructs.h" />
     <ClInclude Include="CommandProcessor.h" />
+    <ClInclude Include="ConstantManager.h" />
     <ClInclude Include="CPMemory.h" />
     <ClInclude Include="DataReader.h" />
+    <ClInclude Include="GeometryShaderGen.h" />
+    <ClInclude Include="GeometryShaderManager.h" />
     <ClInclude Include="ImageLoader.h" />
     <ClInclude Include="Debugger.h" />
     <ClInclude Include="DriverDetails.h" />

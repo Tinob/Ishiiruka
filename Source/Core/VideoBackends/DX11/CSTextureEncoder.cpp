@@ -69,7 +69,7 @@ struct // Should match EFBEncodeParams above
 } Params;
 }
 
-Texture2D EFBTexture : register(t0);
+Texture2DArray EFBTexture : register(t0);
 sampler EFBSampler : register(s0);
 
 // Constants
@@ -151,31 +151,30 @@ return lerp(float2(Params.TexLeft,Params.TexTop), float2(Params.TexRight,Params.
 
 float4 Fetch_0(float2 coord)
 {
-float2 texCoord = CalcTexCoord(coord);
-float4 result = EFBTexture.SampleLevel(EFBSampler, texCoord,0);
+float3 texCoord = float3(CalcTexCoord(coord), 0.0);
+float4 result = EFBTexture.SampleLevel(EFBSampler, texCoord, 0);
 result.a = 1.0;
 return result;
 }
 
 float4 Fetch_1(float2 coord)
 {
-float2 texCoord = CalcTexCoord(coord);
-return EFBTexture.SampleLevel(EFBSampler, texCoord,0);
+float3 texCoord = float3(CalcTexCoord(coord), 0.0);
+return EFBTexture.SampleLevel(EFBSampler, texCoord, 0);
 }
 
 float4 Fetch_2(float2 coord)
 {
-float2 texCoord = CalcTexCoord(coord);
-float4 result = EFBTexture.SampleLevel(EFBSampler, texCoord,0);
+float3 texCoord = float3(CalcTexCoord(coord), 0.0);
+float4 result = EFBTexture.SampleLevel(EFBSampler, texCoord, 0);
 result.a = 1.0;
 return result;
 }
 
 float4 Fetch_3(float2 coord)
 {
-float2 texCoord = CalcTexCoord(coord);
-
-uint depth24 = 0xFFFFFF - (0xFFFFFF * EFBTexture.SampleLevel(EFBSampler, texCoord,0).r);
+float3 texCoord = float3(CalcTexCoord(coord), 0.0);
+uint depth24 = 0xFFFFFF - (0xFFFFFF * EFBTexture.SampleLevel(EFBSampler, texCoord, 0).r);
 uint4 bytes = uint4(
 	(depth24 >> 16) & 0xFF, // r
 	(depth24 >> 8) & 0xFF,  // g

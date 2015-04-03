@@ -49,7 +49,7 @@ SettingCheckBox::BoolSetting(wxWindow* parent, const wxString& label, const wxSt
 {
 	SetToolTip(tooltip);
 	SetValue(m_setting ^ m_reverse);
-	Bind(wxEVT_COMMAND_CHECKBOX_CLICKED, &SettingCheckBox::UpdateValue, this);
+	Bind(wxEVT_CHECKBOX, &SettingCheckBox::UpdateValue, this);
 }
 
 template <>
@@ -60,7 +60,7 @@ SettingRadioButton::BoolSetting(wxWindow* parent, const wxString& label, const w
 {
 	SetToolTip(tooltip);
 	SetValue(m_setting ^ m_reverse);
-	Bind(wxEVT_COMMAND_RADIOBUTTON_SELECTED, &SettingRadioButton::UpdateValue, this);
+	Bind(wxEVT_RADIOBUTTON, &SettingRadioButton::UpdateValue, this);
 }
 
 SettingChoice::SettingChoice(wxWindow* parent, int &setting, const wxString& tooltip, int num, const wxString choices[], long style)
@@ -69,7 +69,7 @@ SettingChoice::SettingChoice(wxWindow* parent, int &setting, const wxString& too
 {
 	SetToolTip(tooltip);
 	Select(m_setting);
-	Bind(wxEVT_COMMAND_CHOICE_SELECTED, &SettingChoice::UpdateValue, this);
+	Bind(wxEVT_CHOICE, &SettingChoice::UpdateValue, this);
 }
 
 void SettingChoice::UpdateValue(wxCommandEvent& ev)
@@ -224,7 +224,7 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title, con
 
 	Bind(wxEVT_UPDATE_UI, &VideoConfigDiag::OnUpdateUI, this);
 
-	wxNotebook* const notebook = new wxNotebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
+	wxNotebook* const notebook = new wxNotebook(this, wxID_ANY);
 
 	// -- GENERAL --
 	{
@@ -238,43 +238,36 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title, con
 
 	// backend
 	{
-	wxStaticText* const label_backend = new wxStaticText(page_general, wxID_ANY, _("Backend:"));
+	label_backend = new wxStaticText(page_general, wxID_ANY, _("Backend:"));
 	choice_backend = new wxChoice(page_general, wxID_ANY, wxDefaultPosition);
 	RegisterControl(choice_backend, wxGetTranslation(backend_desc));
 
-	std::vector<VideoBackend*>::const_iterator
-			it = g_available_video_backends.begin(),
-			itend = g_available_video_backends.end();
-	for (; it != itend; ++it)
-		choice_backend->AppendString(wxGetTranslation(StrToWxStr((*it)->GetDisplayName())));
+	for (const VideoBackend* backend : g_available_video_backends)
+	{
+		choice_backend->AppendString(wxGetTranslation(StrToWxStr(backend->GetDisplayName())));
+	}
 
 	choice_backend->SetStringSelection(wxGetTranslation(StrToWxStr(g_video_backend->GetDisplayName())));
-	choice_backend->Bind(wxEVT_COMMAND_CHOICE_SELECTED, &VideoConfigDiag::Event_Backend, this);
+	choice_backend->Bind(wxEVT_CHOICE, &VideoConfigDiag::Event_Backend, this);
 
 	szr_basic->Add(label_backend, 1, wxALIGN_CENTER_VERTICAL, 5);
 	szr_basic->Add(choice_backend, 1, 0, 0);
-
-	if (Core::IsRunning())
-	{
-		label_backend->Disable();
-		choice_backend->Disable();
-	}
 	}
 
 	// adapter (D3D only)
 	if (vconfig.backend_info.Adapters.size())
 	{
-		wxChoice* const choice_adapter = CreateChoice(page_general, vconfig.iAdapter, wxGetTranslation(adapter_desc));
+		choice_adapter = CreateChoice(page_general, vconfig.iAdapter, wxGetTranslation(adapter_desc));
 
-		std::vector<std::string>::const_iterator
-			it = vconfig.backend_info.Adapters.begin(),
-			itend = vconfig.backend_info.Adapters.end();
-		for (; it != itend; ++it)
-			choice_adapter->AppendString(StrToWxStr(*it));
+		for (const std::string& adapter : vconfig.backend_info.Adapters)
+		{
+			choice_adapter->AppendString(StrToWxStr(adapter));
+		}
 
 		choice_adapter->Select(vconfig.iAdapter);
 
-		szr_basic->Add(new wxStaticText(page_general, wxID_ANY, _("Adapter:")), 1, wxALIGN_CENTER_VERTICAL, 5);
+		label_adapter = new wxStaticText(page_general, wxID_ANY, _("Adapter:"));
+		szr_basic->Add(label_adapter, 1, wxALIGN_CENTER_VERTICAL, 5);
 		szr_basic->Add(choice_adapter, 1, 0, 0);
 	}
 
@@ -290,21 +283,15 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title, con
 		wxArrayString res_list = GetListOfResolutions();
 		if (res_list.empty())
 			res_list.Add(_("<No resolutions found>"));
-		wxStaticText* const label_display_resolution = new wxStaticText(page_general, wxID_ANY, _("Fullscreen resolution:"));
+		label_display_resolution = new wxStaticText(page_general, wxID_ANY, _("Fullscreen resolution:"));
 		choice_display_resolution = new wxChoice(page_general, wxID_ANY, wxDefaultPosition, wxDefaultSize, res_list);
 		RegisterControl(choice_display_resolution, wxGetTranslation(display_res_desc));
-		choice_display_resolution->Bind(wxEVT_COMMAND_CHOICE_SELECTED, &VideoConfigDiag::Event_DisplayResolution, this);
+		choice_display_resolution->Bind(wxEVT_CHOICE, &VideoConfigDiag::Event_DisplayResolution, this);
 
 		choice_display_resolution->SetStringSelection(StrToWxStr(SConfig::GetInstance().m_LocalCoreStartupParameter.strFullscreenResolution));
 
 		szr_display->Add(label_display_resolution, 1, wxALIGN_CENTER_VERTICAL, 0);
 		szr_display->Add(choice_display_resolution);
-
-		if (Core::IsRunning())
-		{
-			label_display_resolution->Disable();
-			choice_display_resolution->Disable();
-		}
 	}
 #endif
 
@@ -329,16 +316,11 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title, con
 	wxFlexGridSizer* const szr_other = new wxFlexGridSizer(2, 5, 5);
 
 	{
-	SettingCheckBox* render_to_main_cb;
 	szr_other->Add(CreateCheckBox(page_general, _("Show FPS"), wxGetTranslation(show_fps_desc), vconfig.bShowFPS));
 	szr_other->Add(CreateCheckBox(page_general, _("Auto adjust Window Size"), wxGetTranslation(auto_window_size_desc), SConfig::GetInstance().m_LocalCoreStartupParameter.bRenderWindowAutoSize));
 	szr_other->Add(CreateCheckBox(page_general, _("Keep window on top"), wxGetTranslation(keep_window_on_top_desc), SConfig::GetInstance().m_LocalCoreStartupParameter.bKeepWindowOnTop));
 	szr_other->Add(CreateCheckBox(page_general, _("Hide Mouse Cursor"), wxGetTranslation(hide_mouse_cursor_desc), SConfig::GetInstance().m_LocalCoreStartupParameter.bHideCursor));
-	szr_other->Add(render_to_main_cb = CreateCheckBox(page_general, _("Render to Main Window"), wxGetTranslation(render_to_main_win_desc), SConfig::GetInstance().m_LocalCoreStartupParameter.bRenderToMain));
-
-	if (Core::IsRunning())
-		render_to_main_cb->Disable();
-
+	szr_other->Add(render_to_main_checkbox = CreateCheckBox(page_general, _("Render to Main Window"), wxGetTranslation(render_to_main_win_desc), SConfig::GetInstance().m_LocalCoreStartupParameter.bRenderToMain));
 	}
 
 
@@ -394,11 +376,10 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title, con
 	text_aamode = new wxStaticText(page_enh, wxID_ANY, _("Anti-Aliasing:"));
 	choice_aamode = CreateChoice(page_enh, vconfig.iMultisampleMode, wxGetTranslation(aa_desc));
 
-	std::vector<std::string>::const_iterator
-		it = vconfig.backend_info.AAModes.begin(),
-		itend = vconfig.backend_info.AAModes.end();
-	for (; it != itend; ++it)
-		choice_aamode->AppendString(wxGetTranslation(StrToWxStr(*it)));
+	for (const std::string& mode : vconfig.backend_info.AAModes)
+	{
+		choice_aamode->AppendString(wxGetTranslation(StrToWxStr(mode)));
+	}
 
 	choice_aamode->Select(vconfig.iMultisampleMode);
 	szr_enh->Add(text_aamode, 1, wxALIGN_CENTER_VERTICAL, 0);
@@ -418,24 +399,9 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title, con
 		wxFlexGridSizer* const szr_pp = new wxFlexGridSizer(3, 5, 5);
 		choice_ppshader = new wxChoice(page_enh, wxID_ANY);
 		RegisterControl(choice_ppshader, wxGetTranslation(ppshader_desc));
-		choice_ppshader->AppendString(_("(off)"));
-
 		button_config_pp = new wxButton(page_enh, wxID_ANY, _("Config"));
 
-		for (const std::string& shader : vconfig.backend_info.PPShaders)
-		{
-			choice_ppshader->AppendString(StrToWxStr(shader));
-		}
-
-		if (vconfig.sPostProcessingShader.empty())
-			choice_ppshader->Select(0);
-		else
-			choice_ppshader->SetStringSelection(StrToWxStr(vconfig.sPostProcessingShader));
-
-		// Should the configuration button be loaded by default?
-		PostProcessingShaderConfiguration postprocessing_shader;
-		postprocessing_shader.LoadShader(vconfig.sPostProcessingShader);
-		button_config_pp->Enable(postprocessing_shader.HasOptions());
+		PopulatePostProcessingShaders();
 
 		choice_ppshader->Bind(wxEVT_CHOICE, &VideoConfigDiag::Event_PPShader, this);
 		button_config_pp->Bind(wxEVT_BUTTON, &VideoConfigDiag::Event_ConfigurePPShader, this);
@@ -465,23 +431,26 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title, con
 
 	// - stereoscopy
 
-	if (vconfig.backend_info.bSupportsStereoscopy && vconfig.iStereoMode > 0)
+	if (vconfig.backend_info.bSupportsGeometryShaders)
 	{
 		wxFlexGridSizer* const szr_stereo = new wxFlexGridSizer(2, 5, 5);
 
-		const wxString stereo_choices[] = { "Off", "Side-by-Side", "Top-and-Bottom", "Anaglyph", "Nvidia 3D Vision" };
 		szr_stereo->Add(new wxStaticText(page_enh, wxID_ANY, _("Stereoscopic 3D Mode:")), 1, wxALIGN_CENTER_VERTICAL, 0);
-		szr_stereo->Add(CreateChoice(page_enh, vconfig.iStereoMode, wxGetTranslation(stereo_3d_desc), vconfig.backend_info.bSupports3DVision ? 5 : 4, stereo_choices));
+
+		const wxString stereo_choices[] = { "Off", "Side-by-Side", "Top-and-Bottom", "Anaglyph", "Interlaced", "Nvidia 3D Vision" };
+		wxChoice* stereo_choice = CreateChoice(page_enh, vconfig.iStereoMode, wxGetTranslation(stereo_3d_desc), vconfig.backend_info.bSupports3DVision ? ArraySize(stereo_choices) : ArraySize(stereo_choices) - 1, stereo_choices);
+		stereo_choice->Bind(wxEVT_CHOICE, &VideoConfigDiag::Event_StereoMode, this);
+		szr_stereo->Add(stereo_choice);
 
 		wxSlider* const sep_slider = new wxSlider(page_enh, wxID_ANY, vconfig.iStereoDepth, 0, 100, wxDefaultPosition, wxDefaultSize);
-		sep_slider->Bind(wxEVT_SLIDER, &VideoConfigDiag::Event_StereoSep, this);
+		sep_slider->Bind(wxEVT_SLIDER, &VideoConfigDiag::Event_StereoDepth, this);
 		RegisterControl(sep_slider, wxGetTranslation(stereo_separation_desc));
 
 		szr_stereo->Add(new wxStaticText(page_enh, wxID_ANY, _("Separation:")), 1, wxALIGN_CENTER_VERTICAL, 0);
 		szr_stereo->Add(sep_slider, 0, wxEXPAND | wxRIGHT);
 
 		wxSlider* const conv_slider = new wxSlider(page_enh, wxID_ANY, vconfig.iStereoConvergence, 0, 500, wxDefaultPosition, wxDefaultSize);
-		conv_slider->Bind(wxEVT_SLIDER, &VideoConfigDiag::Event_StereoFoc, this);
+		conv_slider->Bind(wxEVT_SLIDER, &VideoConfigDiag::Event_StereoConvergence, this);
 		RegisterControl(conv_slider, wxGetTranslation(stereo_convergence_desc));
 
 		szr_stereo->Add(new wxStaticText(page_enh, wxID_ANY, _("Convergence:")), 1, wxALIGN_CENTER_VERTICAL, 0);
@@ -645,17 +614,15 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title, con
 
 	// Progressive Scan
 	{
-	wxCheckBox* const cb_prog_scan = new wxCheckBox(page_advanced, wxID_ANY, _("Enable Progressive Scan"));
-	RegisterControl(cb_prog_scan, wxGetTranslation(prog_scan_desc));
-	cb_prog_scan->Bind(wxEVT_COMMAND_CHECKBOX_CLICKED, &VideoConfigDiag::Event_ProgressiveScan, this);
-	if (Core::IsRunning())
-		cb_prog_scan->Disable();
+	progressive_scan_checkbox = new wxCheckBox(page_advanced, wxID_ANY, _("Enable Progressive Scan"));
+	RegisterControl(progressive_scan_checkbox, wxGetTranslation(prog_scan_desc));
+	progressive_scan_checkbox->Bind(wxEVT_CHECKBOX, &VideoConfigDiag::Event_ProgressiveScan, this);
 
-	cb_prog_scan->SetValue(SConfig::GetInstance().m_LocalCoreStartupParameter.bProgressive);
+	progressive_scan_checkbox->SetValue(SConfig::GetInstance().m_LocalCoreStartupParameter.bProgressive);
 	// A bit strange behavior, but this needs to stay in sync with the main progressive boolean; TODO: Is this still necessary?
 	SConfig::GetInstance().m_SYSCONF->SetData("IPL.PGS", SConfig::GetInstance().m_LocalCoreStartupParameter.bProgressive);
 
-	szr_misc->Add(cb_prog_scan);
+	szr_misc->Add(progressive_scan_checkbox);
 	}
 #if defined WIN32
 	// Borderless Fullscreen
@@ -847,6 +814,11 @@ void VideoConfigDiag::Event_PPShader(wxCommandEvent &ev)
 	else
 		vconfig.sPostProcessingShader.clear();
 
+	// Should we enable the configuration button?
+	PostProcessingShaderConfiguration postprocessing_shader;
+	postprocessing_shader.LoadShader(vconfig.sPostProcessingShader);
+	button_config_pp->Enable(postprocessing_shader.HasOptions());
+
 	ev.Skip();
 }
 
@@ -858,19 +830,31 @@ void VideoConfigDiag::Event_ConfigurePPShader(wxCommandEvent &ev)
 	ev.Skip();
 }
 
-void VideoConfigDiag::Event_StereoSep(wxCommandEvent &ev)
+void VideoConfigDiag::Event_StereoDepth(wxCommandEvent &ev)
 {
 	vconfig.iStereoDepth = ev.GetInt();
 
 	ev.Skip();
 }
 
-void VideoConfigDiag::Event_StereoFoc(wxCommandEvent &ev)
+void VideoConfigDiag::Event_StereoConvergence(wxCommandEvent &ev)
 {
 	vconfig.iStereoConvergence = ev.GetInt();
 
 	ev.Skip();
 }
+
+void VideoConfigDiag::Event_StereoMode(wxCommandEvent &ev)
+{
+	if (vconfig.backend_info.bSupportsPostProcessing)
+	{
+		// Anaglyph overrides post-processing shaders
+		choice_ppshader->Clear();
+	}
+
+	ev.Skip();
+}
+
 // Enables/disables UI elements depending on current config
 void VideoConfigDiag::OnUpdateUI(wxUpdateUIEvent& ev)
 {
@@ -891,11 +875,9 @@ void VideoConfigDiag::OnUpdateUI(wxUpdateUIEvent& ev)
 	virtual_xfb->Enable(vconfig.bUseXFB);
 	real_xfb->Enable(vconfig.bUseXFB);
 	
-	// PP Shaders
-	if (choice_ppshader)
-		choice_ppshader->Enable(vconfig.iStereoMode != STEREO_ANAGLYPH);
-	if (button_config_pp)
-		button_config_pp->Enable(vconfig.iStereoMode != STEREO_ANAGLYPH);
+	// Repopulating the post-processing shaders can't be done from an event
+	if (choice_ppshader && choice_ppshader->IsEmpty())
+		PopulatePostProcessingShaders();
 
 	// Predictive Fifo
 	Async_Shader_compilation->Show(vconfig.backend_info.APIType != API_OPENGL);
@@ -906,5 +888,69 @@ void VideoConfigDiag::OnUpdateUI(wxUpdateUIEvent& ev)
 	Wait_For_Shaders->Enable(WaitForShaderCompilationenabled);
 	Async_Shader_compilation->Enable(!vconfig.bWaitForShaderCompilation);
 	Predictive_FIFO->Enable(!vconfig.bWaitForShaderCompilation);
+
+	// Things which shouldn't be changed during emulation
+	if (Core::IsRunning())
+	{
+		choice_backend->Disable();
+		label_backend->Disable();
+
+		// D3D only
+		if (vconfig.backend_info.Adapters.size())
+		{
+			choice_adapter->Disable();
+			label_adapter->Disable();
+		}
+
+#ifndef __APPLE__
+		// This isn't supported on OS X.
+
+		choice_display_resolution->Disable();
+		label_display_resolution->Disable();
+#endif
+
+		progressive_scan_checkbox->Disable();
+		render_to_main_checkbox->Disable();
+	}
+
 	ev.Skip();
+}
+
+void VideoConfigDiag::PopulatePostProcessingShaders()
+{
+	std::vector<std::string> &shaders = (vconfig.iStereoMode == STEREO_ANAGLYPH || vconfig.iStereoMode == STEREO_INTERLACED) ?
+		vconfig.backend_info.AnaglyphShaders : vconfig.backend_info.PPShaders;
+
+	if (shaders.empty())
+		return;
+
+	choice_ppshader->AppendString(_("(off)"));
+
+	for (const std::string& shader : shaders)
+	{
+		choice_ppshader->AppendString(StrToWxStr(shader));
+	}
+
+	if (!choice_ppshader->SetStringSelection(StrToWxStr(vconfig.sPostProcessingShader)))
+	{
+		// Invalid shader, reset it to default
+		choice_ppshader->Select(0);
+		vconfig.sPostProcessingShader.clear();
+	}
+
+	if (vconfig.iStereoMode == STEREO_ANAGLYPH)
+	{
+		vconfig.sPostProcessingShader = "dubois";
+		choice_ppshader->SetStringSelection(StrToWxStr(vconfig.sPostProcessingShader));
+	}
+	else if (vconfig.iStereoMode == STEREO_INTERLACED)
+	{
+		vconfig.sPostProcessingShader = "interlaced";
+		choice_ppshader->SetStringSelection(StrToWxStr(vconfig.sPostProcessingShader));
+	}
+
+	// Should the configuration button be loaded by default?
+	PostProcessingShaderConfiguration postprocessing_shader;
+	postprocessing_shader.LoadShader(vconfig.sPostProcessingShader);
+	button_config_pp->Enable(postprocessing_shader.HasOptions());
 }

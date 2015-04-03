@@ -15,6 +15,7 @@
 #include "Common/StringUtil.h"
 #include "Common/Thread.h"
 #include "Common/Timer.h"
+#include "Common/Logging/LogManager.h"
 
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
@@ -87,6 +88,7 @@ static RasterFont* s_pfont = nullptr;
 // 1 for no MSAA. Use s_MSAASamples > 1 to check for MSAA.
 static int s_MSAASamples = 1;
 static int s_last_multisample_mode = 0;
+static bool s_last_stereo_mode = false;
 static bool s_last_xfb_mode = false;
 
 static u32 s_blendMode;
@@ -272,6 +274,7 @@ static void InitDriverInfo()
 			// Currently the Mali-T line has two families in it.
 			// Mali-T6xx and Mali-T7xx
 			// These two families are similar enough that they share bugs in their drivers.
+			//
 			// Mali drivers provide no way to explicitly find out what video driver is running.
 			// This is similar to how we can't find the Nvidia driver version in Windows.
 			// Good thing is that ARM introduces a new video driver about once every two years so we can
@@ -326,9 +329,9 @@ static void InitDriverInfo()
 			int glrelease = 0;
 			int major = 0;
 			int minor = 0;
-			// TODO: this is known to be broken on windows
-			// nvidia seems to have removed their driver version from this string, so we can't get it.
-			// hopefully we'll never have to workaround nvidia bugs
+			// TODO: this is known to be broken on Windows
+			// Nvidia seems to have removed their driver version from this string, so we can't get it.
+			// hopefully we'll never have to workaround Nvidia bugs
 			sscanf(g_ogl_config.gl_version, "%d.%d.%d NVIDIA %d.%d", &glmajor, &glminor, &glrelease, &major, &minor);
 			version = 100*major + minor;
 		}
@@ -456,10 +459,14 @@ Renderer::Renderer()
 	}
 
 	g_Config.backend_info.bSupportsDualSourceBlend = GLExtensions::Supports("GL_ARB_blend_func_extended");
+	//g_Config.backend_info.bSupportsPrimitiveRestart = !DriverDetails::HasBug(DriverDetails::BUG_PRIMITIVERESTART) &&
+	//			((GLExtensions::Version() >= 310) || GLExtensions::Supports("GL_NV_primitive_restart"));
 	g_Config.backend_info.bSupportsEarlyZ = GLExtensions::Supports("GL_ARB_shader_image_load_store");
 	g_Config.backend_info.bSupportsBBox = GLExtensions::Supports("GL_ARB_shader_storage_buffer_object");
 	g_Config.backend_info.bSupportsGSInstancing = GLExtensions::Supports("GL_ARB_gpu_shader5");
-	g_Config.backend_info.bSupportsGeometryShaders = (GLExtensions::Version() >= 320);
+	g_Config.backend_info.bSupportsGeometryShaders = GLExtensions::Version() >= 320;
+	g_Config.backend_info.bSupportsPaletteConversion = GLExtensions::Supports("GL_ARB_texture_buffer_object");
+
 	// Desktop OpenGL supports the binding layout if it supports 420pack
 	// OpenGL ES 3.1 supports it implicitly without an extension
 	g_Config.backend_info.bSupportsBindingLayout = GLExtensions::Supports("GL_ARB_shading_language_420pack");
@@ -468,16 +475,15 @@ Renderer::Renderer()
 	g_ogl_config.bSupportsGLPinnedMemory = GLExtensions::Supports("GL_AMD_pinned_memory");
 	g_ogl_config.bSupportsGLSync = GLExtensions::Supports("GL_ARB_sync");
 	g_ogl_config.bSupportsGLBaseVertex = GLExtensions::Supports("GL_ARB_draw_elements_base_vertex") ||
-													GLExtensions::Supports("GL_EXT_draw_elements_base_vertex") ||
-													GLExtensions::Supports("GL_OES_draw_elements_base_vertex");
-
+	                                     GLExtensions::Supports("GL_EXT_draw_elements_base_vertex") ||
+	                                     GLExtensions::Supports("GL_OES_draw_elements_base_vertex");
 	g_ogl_config.bSupportsGLBufferStorage = GLExtensions::Supports("GL_ARB_buffer_storage") ||
-													GLExtensions::Supports("GL_EXT_buffer_storage");
-
+	                                        GLExtensions::Supports("GL_EXT_buffer_storage");;
 	g_ogl_config.bSupportsMSAA = GLExtensions::Supports("GL_ARB_texture_multisample");
 	g_ogl_config.bSupportSampleShading = GLExtensions::Supports("GL_ARB_sample_shading");
 	g_ogl_config.bSupportOGL31 = GLExtensions::Version() >= 310;
 	g_ogl_config.bSupportViewportFloat = GLExtensions::Supports("GL_ARB_viewport_array");
+	g_ogl_config.bSupportsDebug = GLExtensions::Supports("GL_KHR_debug") || GLExtensions::Supports("GL_ARB_debug_output");
 
 	if (GLInterface->GetMode() == GLInterfaceMode::MODE_OPENGLES3)
 	{
@@ -494,6 +500,7 @@ Renderer::Renderer()
 			g_Config.backend_info.bSupportsBindingLayout = true;
 			g_Config.backend_info.bSupportsEarlyZ = true;
 			g_Config.backend_info.bSupportsGeometryShaders = g_ogl_config.bSupportsAEP;
+			//g_Config.backend_info.bSupportsPaletteConversion = GLExtensions::Supports("GL_EXT_texture_buffer");
 		}
 	}
 	else
@@ -528,19 +535,23 @@ Renderer::Renderer()
 		g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_RGB565] = true;
 		// Desktop OpenGL can't have the Android Extension Pack
 		g_ogl_config.bSupportsAEP = false;
-	}
-
-	if (GLExtensions::Supports("GL_KHR_debug"))
+	}	
+	if (g_ogl_config.bSupportsDebug)
 	{
-		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, true);
-		glDebugMessageCallback( ErrorCallback, nullptr );
-		glEnable( GL_DEBUG_OUTPUT );
-	}
-	else if (GLExtensions::Supports("GL_ARB_debug_output"))
-	{
-		glDebugMessageControlARB(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, true);
-		glDebugMessageCallbackARB( ErrorCallback, nullptr );
-		glEnable( GL_DEBUG_OUTPUT );
+		if (GLExtensions::Supports("GL_KHR_debug"))
+		{
+			glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, true);
+			glDebugMessageCallback(ErrorCallback, nullptr);
+		}
+		else
+		{
+			glDebugMessageControlARB(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, true);
+			glDebugMessageCallbackARB(ErrorCallback, nullptr);
+		}
+		if (LogManager::GetInstance()->IsEnabled(LogTypes::VIDEO, LogTypes::LERROR))
+			glEnable(GL_DEBUG_OUTPUT);
+		else
+			glDisable(GL_DEBUG_OUTPUT);
 	}
 
 	int samples;
@@ -551,7 +562,7 @@ Renderer::Renderer()
 		// It also isn't useful as we don't render anything to the default framebuffer.
 		// We also try to get a non-msaa fb, so this only happens when forced by the driver.
 		PanicAlert("MSAA on default framebuffer isn't supported.\n"
-			"Please avoid forcing dolphin to use MSAA by the driver.\n"
+			"Please avoid forcing Dolphin to use MSAA by the driver.\n"
 			"%d samples on default framebuffer found.", samples);
 		bSuccess = false;
 	}
@@ -575,7 +586,7 @@ Renderer::Renderer()
 				g_ogl_config.gl_renderer,
 				g_ogl_config.gl_version), 5000);
 
-	WARN_LOG(VIDEO,"Missing OGL Extensions: %s%s%s%s%s%s%s%s%s%s",
+	WARN_LOG(VIDEO,"Missing OGL Extensions: %s%s%s%s%s%s%s%s%s%s%s",
 			g_ActiveConfig.backend_info.bSupportsDualSourceBlend ? "" : "DualSourceBlend ",
 			g_ActiveConfig.backend_info.bSupportsPrimitiveRestart ? "" : "PrimitiveRestart ",
 			g_ActiveConfig.backend_info.bSupportsEarlyZ ? "" : "EarlyZ ",
@@ -585,12 +596,16 @@ Renderer::Renderer()
 			g_ogl_config.bSupportsGLBufferStorage ? "" : "BufferStorage ",
 			g_ogl_config.bSupportsGLSync ? "" : "Sync ",
 			g_ogl_config.bSupportsMSAA ? "" : "MSAA ",
-			g_ogl_config.bSupportSampleShading ? "" : "SSAA "
+			g_ogl_config.bSupportSampleShading ? "" : "SSAA ",
+			g_ActiveConfig.backend_info.bSupportsGSInstancing ? "" : "GSInstancing "
 			);
 
 	s_last_multisample_mode = g_ActiveConfig.iMultisampleMode;
 	s_MSAASamples = GetNumMSAASamples(s_last_multisample_mode);
 	ApplySSAASettings();
+
+	s_last_stereo_mode = g_ActiveConfig.iStereoMode > 0;
+	s_last_xfb_mode = g_ActiveConfig.bUseRealXFB;
 
 	// Decide framebuffer size
 	s_backbuffer_width = (int)GLInterface->GetBackBufferWidth();
@@ -608,7 +623,9 @@ Renderer::Renderer()
 
 	s_last_efb_scale = g_ActiveConfig.iEFBScale;
 	CalculateTargetSize(s_backbuffer_width, s_backbuffer_height);
+
 	PixelShaderManager::SetEfbScaleChanged();
+
 	// Because of the fixed framebuffer size we need to disable the resolution
 	// options while running
 	g_Config.bRunning = true;
@@ -677,7 +694,7 @@ void Renderer::Shutdown()
 
 	delete m_post_processor;
 	m_post_processor = nullptr;
-	
+
 	OpenGL_DeleteAttributelessVAO();
 }
 
@@ -734,15 +751,15 @@ void Renderer::ShowEfbCopyRegions()
 
 		// Draw EFB copy regions rectangles
 		int a = 0;
-		GLfloat color[3] = { 0.0f, 1.0f, 1.0f };
+		GLfloat color[3] = {0.0f, 1.0f, 1.0f};
 
 		for (const EFBRectangle& rect : stats.efb_regions)
 		{
 			GLfloat halfWidth = EFB_WIDTH / 2.0f;
 			GLfloat halfHeight = EFB_HEIGHT / 2.0f;
-			GLfloat x = (GLfloat)-1.0f + ((GLfloat)rect.left / halfWidth);
-			GLfloat y = (GLfloat) 1.0f - ((GLfloat)rect.top / halfHeight);
-			GLfloat x2 = (GLfloat)-1.0f + ((GLfloat)rect.right / halfWidth);
+			GLfloat x =  (GLfloat) -1.0f + ((GLfloat)rect.left / halfWidth);
+			GLfloat y =  (GLfloat) 1.0f - ((GLfloat)rect.top / halfHeight);
+			GLfloat x2 = (GLfloat) -1.0f + ((GLfloat)rect.right / halfWidth);
 			GLfloat y2 = (GLfloat) 1.0f - ((GLfloat)rect.bottom / halfHeight);
 
 			Vertices[a++] = x;
@@ -832,14 +849,13 @@ void Renderer::ShowEfbCopyRegions()
 
 		s_ShowEFBCopyRegions.Bind();
 		glBindVertexArray(s_ShowEFBCopyRegions_VAO);
-		GLsizei count = static_cast<GLsizei>(stats.efb_regions.size() * 2 * 6);
+		GLsizei count = static_cast<GLsizei>(stats.efb_regions.size() * 2*6);
 		glDrawArrays(GL_LINES, 0, count);
 
 		// Clear stored regions
 		stats.efb_regions.clear();
 	}
 }
-
 
 void Renderer::RenderText(const std::string& text, int left, int top, u32 color)
 {
@@ -1271,6 +1287,22 @@ void Renderer::ClearScreen(const EFBRectangle& rc, bool colorEnable, bool alphaE
 	ClearEFBCache();
 }
 
+void Renderer::BlitScreen(TargetRectangle src, TargetRectangle dst, GLuint src_texture, int src_width, int src_height)
+{
+	if (g_ActiveConfig.iStereoMode == STEREO_SBS || g_ActiveConfig.iStereoMode == STEREO_TAB)
+	{
+		TargetRectangle leftRc, rightRc;
+		ConvertStereoRectangle(dst, leftRc, rightRc);
+
+		m_post_processor->BlitFromTexture(src, leftRc, src_texture, src_width, src_height, 0);
+		m_post_processor->BlitFromTexture(src, rightRc, src_texture, src_width, src_height, 1);
+	}
+	else
+	{
+		m_post_processor->BlitFromTexture(src, dst, src_texture, src_width, src_height);
+	}
+}
+
 void Renderer::ReinterpretPixelData(unsigned int convtype)
 {
 	if (convtype == 0 || convtype == 2)
@@ -1401,6 +1433,14 @@ static void DumpFrame(const std::vector<u8>& data, int w, int h)
 // This function has the final picture. We adjust the aspect ratio here.
 void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, const EFBRectangle& rc, float Gamma)
 {
+	if (g_ogl_config.bSupportsDebug)
+	{
+		if (LogManager::GetInstance()->IsEnabled(LogTypes::VIDEO, LogTypes::LERROR))
+			glEnable(GL_DEBUG_OUTPUT);
+		else
+			glDisable(GL_DEBUG_OUTPUT);
+	}
+
 	static int w = 0, h = 0;
 	if (g_bSkipCurrentFrame || (!XFBWrited && !g_ActiveConfig.RealXFBEnabled()) || !fbWidth || !fbHeight)
 	{
@@ -1474,7 +1514,7 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 
 			sourceRc.right -= Renderer::EFBToScaledX(fbStride - fbWidth);
 
-			m_post_processor->BlitFromTexture(sourceRc, drawRc, xfbSource->texture, xfbSource->texWidth, xfbSource->texHeight);
+			BlitScreen(sourceRc, drawRc, xfbSource->texture, xfbSource->texWidth, xfbSource->texHeight);
 		}
 	}
 	else
@@ -1483,9 +1523,8 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 
 		// for msaa mode, we must resolve the efb content to non-msaa
 		GLuint tex = FramebufferManager::ResolveAndGetRenderTarget(rc);
-
-			m_post_processor->BlitFromTexture(targetRc, flipped_trc, tex, s_target_width, s_target_height);
-		}
+		BlitScreen(targetRc, flipped_trc, tex, s_target_width, s_target_height);
+	}
 
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 
@@ -1633,12 +1672,15 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 		s_last_efb_scale = g_ActiveConfig.iEFBScale;
 	}
 
-	if (xfbchanged || WindowResized || (s_last_multisample_mode != g_ActiveConfig.iMultisampleMode))
+	if (xfbchanged || WindowResized || (s_last_multisample_mode != g_ActiveConfig.iMultisampleMode) || (s_last_stereo_mode != (g_ActiveConfig.iStereoMode > 0)))
 	{
+		s_last_xfb_mode = g_ActiveConfig.bUseRealXFB;
+
 		UpdateDrawRectangle(s_backbuffer_width, s_backbuffer_height);
 
-		if (CalculateTargetSize(s_backbuffer_width, s_backbuffer_height) || s_last_multisample_mode != g_ActiveConfig.iMultisampleMode)
+		if (CalculateTargetSize(s_backbuffer_width, s_backbuffer_height) || s_last_multisample_mode != g_ActiveConfig.iMultisampleMode || s_last_stereo_mode != (g_ActiveConfig.iStereoMode > 0))
 		{
+			s_last_stereo_mode = g_ActiveConfig.iStereoMode > 0;
 			s_last_multisample_mode = g_ActiveConfig.iMultisampleMode;
 			s_MSAASamples = GetNumMSAASamples(s_last_multisample_mode);
 			ApplySSAASettings();
@@ -1646,6 +1688,7 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 			delete g_framebuffer_manager;
 			g_framebuffer_manager = new FramebufferManager(s_target_width, s_target_height,
 				s_MSAASamples);
+
 			PixelShaderManager::SetEfbScaleChanged();
 		}
 	}
@@ -1655,8 +1698,10 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 	{
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 		// Reset viewport for drawing text
 		glViewport(0, 0, GLInterface->GetBackBufferWidth(), GLInterface->GetBackBufferHeight());
+
 		ShowEfbCopyRegions();
 		DrawDebugText();
 
@@ -1728,9 +1773,6 @@ void Renderer::RestoreAPIState()
 	SetBlendMode(true);
 	SetLogicOpMode();
 	SetViewport();
-
-	if (GLInterface->GetMode() == GLInterfaceMode::MODE_OPENGL)
-		glPolygonMode(GL_FRONT_AND_BACK, g_ActiveConfig.bWireFrame ? GL_LINE : GL_FILL);
 
 	VertexManager *vm = (OGL::VertexManager*)g_vertex_manager;
 	glBindBuffer(GL_ARRAY_BUFFER, vm->m_vertex_buffers);
@@ -1826,17 +1868,6 @@ void Renderer::SetDitherMode()
 		glEnable(GL_DITHER);
 	else
 		glDisable(GL_DITHER);
-}
-
-void Renderer::SetLineWidth()
-{
-	float fratio = xfmem.viewport.wd != 0 ?
-		((float)Renderer::GetTargetWidth() / EFB_WIDTH) : 1.0f;
-	if (bpmem.lineptwidth.linesize > 0)
-		// scale by ratio of widths
-		glLineWidth((float)bpmem.lineptwidth.linesize * fratio / 6.0f);
-	if (GLInterface->GetMode() == GLInterfaceMode::MODE_OPENGL && bpmem.lineptwidth.pointsize > 0)
-		glPointSize((float)bpmem.lineptwidth.pointsize * fratio / 6.0f);
 }
 
 void Renderer::SetSamplerState(int stage, int texindex, bool custom_tex)
