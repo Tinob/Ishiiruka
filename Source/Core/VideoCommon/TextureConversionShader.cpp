@@ -23,7 +23,7 @@
 static char text[16384];
 static bool IntensityConstantAdded =  false;
 
-namespace TextureConversionShaderDX
+namespace TextureConversionShaderLegacy
 {
 
 const char* WriteRegister(const char *prefix, const u32 num)

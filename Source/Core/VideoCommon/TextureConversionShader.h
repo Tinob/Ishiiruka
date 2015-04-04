@@ -41,13 +41,13 @@ namespace TextureConversionShader
 	}
 }
 
-namespace TextureConversionShaderDX
+namespace TextureConversionShaderLegacy
 {
 const char *GenerateEncodingShader(u32 format);
 void SetShaderParameters(float width, float height, float offsetX, float offsetY, float widthStride, float heightStride, float buffW = 0.0f, float buffH = 0.0f);
 }
 
-namespace TextureConversionShaderGL
+namespace TextureConversionShader
 {
-const char *GenerateEncodingShader(u32 format);
+const char *GenerateEncodingShader(u32 format, API_TYPE ApiType = API_OPENGL);
 }

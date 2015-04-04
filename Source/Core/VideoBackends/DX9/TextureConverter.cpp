@@ -183,7 +183,7 @@ LPDIRECT3DPIXELSHADER9 GetOrCreateEncodingShader(u32 format)
 			return nullptr;
 		}
 
-		const char* shader = TextureConversionShaderDX::GenerateEncodingShader(format);
+		const char* shader = TextureConversionShaderLegacy::GenerateEncodingShader(format);
 
 #if defined(_DEBUG) || defined(DEBUGFAST)
 		if (g_ActiveConfig.iLog & CONF_SAVESHADERS && shader) {
@@ -401,7 +401,7 @@ int EncodeToRamFromTexture(u32 address,LPDIRECT3DTEXTURE9 source_texture, u32 So
 	s32 expandedHeight = (height + blkH) & (~blkH);
 
 	float sampleStride = bScaleByHalf ? 2.f : 1.f;
-	TextureConversionShaderDX::SetShaderParameters(
+	TextureConversionShaderLegacy::SetShaderParameters(
 		(float)expandedWidth,
 		(float)Renderer::EFBToScaledY(expandedHeight), // TODO: Why do we scale this?
 		(float)Renderer::EFBToScaledX(source.left),
@@ -427,7 +427,7 @@ int EncodeToRamFromTexture(u32 address,LPDIRECT3DTEXTURE9 source_texture, u32 So
 
 void EncodeToRamYUYV(LPDIRECT3DTEXTURE9 srcTexture, const TargetRectangle& sourceRc, u8* destAddr, int dstWidth, int dstHeight,float Gamma)
 {
-	TextureConversionShaderDX::SetShaderParameters(
+	TextureConversionShaderLegacy::SetShaderParameters(
 		(float)dstWidth, 
 		(float)dstHeight, 
 		0.0f,
@@ -504,7 +504,7 @@ void DecodeToTexture(u32 xfbAddr, int srcWidth, int srcHeight, LPDIRECT3DTEXTURE
 	D3D::ChangeSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
 	D3D::ChangeSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
 		
-	TextureConversionShaderDX::SetShaderParameters(
+	TextureConversionShaderLegacy::SetShaderParameters(
 		(float)srcFmtWidth,
 		(float)srcHeight,
 		0.0f,
