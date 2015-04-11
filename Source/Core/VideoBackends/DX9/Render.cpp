@@ -404,7 +404,8 @@ u32 Renderer::AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data)
 		// EFB data successfully retrieved, now get the pixel data
 		D3DLOCKED_RECT drect;
 		pSystemBuf->LockRect(&drect, &RectToLock, D3DLOCK_READONLY);
-		u32 z = 0xFFFFFF - ((u32*)drect.pBits)[6];	// 24 bit depth value
+		// depth in the buffer is inverted, but the output is corrected by the depth matrix program
+		u32 z = ((u32*)drect.pBits)[6];	// 24 bit depth value
 		pSystemBuf->UnlockRect();
 
 		// if Z is in 16 bit format you must return a 16 bit integer
