@@ -911,6 +911,7 @@ void VideoConfigDiag::OnUpdateUI(wxUpdateUIEvent& ev)
 
 		progressive_scan_checkbox->Disable();
 		render_to_main_checkbox->Disable();
+		Predictive_FIFO->Disable();
 	}
 
 	ev.Skip();

@@ -216,7 +216,7 @@ void GeometryShaderCache::PrepareShader(
 	const BPMemory &bpm, bool ongputhread)
 {
 	GeometryShaderUid uid;
-	GetGeometryShaderUid(uid, primitive_type, API_D3D11, xfmem, bpmem);
+	GetGeometryShaderUid(uid, primitive_type, API_D3D11, xfr, bpm);
 	if (ongputhread)
 	{
 		s_compiler->ProcCompilationResults();
@@ -224,7 +224,7 @@ void GeometryShaderCache::PrepareShader(
 		if (g_ActiveConfig.bEnableShaderDebugging)
 		{
 			ShaderCode code;
-			GenerateGeometryShaderCode(code, primitive_type, API_D3D11, xfmem, bpmem);
+			GenerateGeometryShaderCode(code, primitive_type, API_D3D11, xfr, bpm);
 			geometry_uid_checker.AddToIndexAndCheck(code, uid, "Geometry", "g");
 		}
 #endif
@@ -273,7 +273,7 @@ void GeometryShaderCache::PrepareShader(
 	ShaderCode code;
 	ShaderCompilerWorkUnit *wunit = s_compiler->NewUnit(GEOMETRYSHADERGEN_BUFFERSIZE);
 	code.SetBuffer(wunit->code.data());
-	GenerateGeometryShaderCode(code, primitive_type, API_D3D11, xfmem, bpmem);
+	GenerateGeometryShaderCode(code, primitive_type, API_D3D11, xfr, bpm);
 	wunit->codesize = (u32)code.BufferSize();
 	wunit->entrypoint = "main";
 	wunit->flags = D3DCOMPILE_SKIP_VALIDATION | D3DCOMPILE_OPTIMIZATION_LEVEL3;
