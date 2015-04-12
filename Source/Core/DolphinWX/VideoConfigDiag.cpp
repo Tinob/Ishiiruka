@@ -887,8 +887,6 @@ void VideoConfigDiag::OnUpdateUI(wxUpdateUIEvent& ev)
 	vconfig.bWaitForShaderCompilation = vconfig.bWaitForShaderCompilation && WaitForShaderCompilationenabled;
 	Wait_For_Shaders->Enable(WaitForShaderCompilationenabled);
 	Async_Shader_compilation->Enable(!vconfig.bWaitForShaderCompilation);
-	Predictive_FIFO->Enable(!vconfig.bWaitForShaderCompilation);
-
 	// Things which shouldn't be changed during emulation
 	if (Core::IsRunning())
 	{
@@ -912,6 +910,10 @@ void VideoConfigDiag::OnUpdateUI(wxUpdateUIEvent& ev)
 		progressive_scan_checkbox->Disable();
 		render_to_main_checkbox->Disable();
 		Predictive_FIFO->Disable();
+	}
+	else
+	{
+		Predictive_FIFO->Enable(!vconfig.bWaitForShaderCompilation);
 	}
 
 	ev.Skip();
