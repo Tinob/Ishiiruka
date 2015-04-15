@@ -31,7 +31,7 @@ static u32 lastAlpha;
 static u32 lastTexDims[8]; // width | height << 16 | wrap_s << 28 | wrap_t << 30
 static u32 lastZBias;
 static int nMaterialsChanged;
-const float U8_NORM_COEF = 1 / 255.0f;
+
 const float U24_NORM_COEF = 1 / 16777216.0f;
 static bool s_use_integer_constants = false;
 
@@ -372,10 +372,10 @@ void PixelShaderManager::SetConstants()
 				const Light& light = xfmem.lights[i];
 				
 				m_buffer.SetConstant4<float>(C_PLIGHTS + 5 * i,
-					light.color[3] * U8_NORM_COEF,
-					light.color[2] * U8_NORM_COEF,
-					light.color[1] * U8_NORM_COEF,
-					light.color[0] * U8_NORM_COEF);
+					float(light.color[3]),
+					float(light.color[2]),
+					float(light.color[1]),
+					float(light.color[0]));
 				m_buffer.SetConstant3v(C_PLIGHTS + 5 * i + 1, light.cosatt);
 				if (fabs(light.distatt[0]) < 0.00001f &&
 					fabs(light.distatt[1]) < 0.00001f &&
@@ -407,11 +407,11 @@ void PixelShaderManager::SetConstants()
 				if (nMaterialsChanged & (1 << i))
 				{
 					u32 data = *(xfmem.ambColor + i);
-					float* material = m_buffer.GetBufferToUpdate<float>(C_PMATERIALS + i, 1);
-					material[0] = ((data >> 24) & 0xFF) * U8_NORM_COEF;
-					material[1] = ((data >> 16) & 0xFF) * U8_NORM_COEF;
-					material[2] = ((data >> 8) & 0xFF) * U8_NORM_COEF;
-					material[3] = (data & 0xFF) * U8_NORM_COEF;
+					m_buffer.SetConstant4<float>(C_PMATERIALS + i,
+						float((data >> 24) & 0xFF),
+						float((data >> 16) & 0xFF),
+						float((data >> 8) & 0xFF),
+						float(data & 0xFF));
 				}
 			}
 
@@ -420,11 +420,11 @@ void PixelShaderManager::SetConstants()
 				if (nMaterialsChanged & (1 << (i + 2)))
 				{
 					u32 data = *(xfmem.matColor + i);
-					float* material = m_buffer.GetBufferToUpdate<float>(C_PMATERIALS + i + 2, 1);
-					material[0] = ((data >> 24) & 0xFF) * U8_NORM_COEF;
-					material[1] = ((data >> 16) & 0xFF) * U8_NORM_COEF;
-					material[2] = ((data >> 8) & 0xFF) * U8_NORM_COEF;
-					material[3] = (data & 0xFF) * U8_NORM_COEF;
+					m_buffer.SetConstant4<float>(C_PMATERIALS + i + 2,
+						float((data >> 24) & 0xFF),
+						float((data >> 16) & 0xFF),
+						float((data >> 8) & 0xFF),
+						float(data & 0xFF));
 				}
 			}
 			nMaterialsChanged = 0;

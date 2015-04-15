@@ -39,7 +39,7 @@ static Matrix33 s_viewRotationMatrix;
 static Matrix33 s_viewInvRotationMatrix;
 static float s_fViewTranslationVector[3];
 static float s_fViewRotation[2];
-const float U8_NORM_COEF = 1 / 255.0f;
+
 const float U24_NORM_COEF = 1 / 16777216.0f;
 
 struct ProjectionHack
@@ -278,11 +278,11 @@ void VertexShaderManager::SetConstants()
 		{
 			const Light& light = xfmem.lights[i];
 			// xfmem.light.color is packed as abgr in u8[4], so we have to swap the order
-			m_buffer.SetConstant4(C_LIGHTS + 5 * i,
-				light.color[3] * U8_NORM_COEF,
-				light.color[2] * U8_NORM_COEF,
-				light.color[1] * U8_NORM_COEF,
-				light.color[0] * U8_NORM_COEF);
+			m_buffer.SetConstant4<float>(C_LIGHTS + 5 * i,
+				float(light.color[3]),
+				float(light.color[2]),
+				float(light.color[1]),
+				float(light.color[0]));
 			m_buffer.SetConstant3v(C_LIGHTS + 5 * i + 1, light.cosatt);
 			if (fabs(light.distatt[0]) < 0.00001f &&
 				fabs(light.distatt[1]) < 0.00001f &&
@@ -309,18 +309,16 @@ void VertexShaderManager::SetConstants()
 
 	if (nMaterialsChanged)
 	{
-		float GC_ALIGNED16(material[4]);
 		for (int i = 0; i < 2; ++i)
 		{
 			if (nMaterialsChanged & (1 << i))
 			{
 				u32 data = *(xfmem.ambColor + i);
-				material[0] = ((data >> 24) & 0xFF) * U8_NORM_COEF;
-				material[1] = ((data >> 16) & 0xFF) * U8_NORM_COEF;
-				material[2] = ((data >>  8) & 0xFF) * U8_NORM_COEF;
-				material[3] = ( data        & 0xFF) * U8_NORM_COEF;
-
-				m_buffer.SetConstant4v(C_MATERIALS + i, material);
+				m_buffer.SetConstant4<float>(C_MATERIALS + i,
+					float((data >> 24) & 0xFF),
+					float((data >> 16) & 0xFF),
+					float((data >>  8) & 0xFF),
+					float( data        & 0xFF));
 			}
 		}
 		
@@ -329,12 +327,11 @@ void VertexShaderManager::SetConstants()
 			if (nMaterialsChanged & (1 << (i + 2)))
 			{
 				u32 data = *(xfmem.matColor + i);
-				material[0] = ((data >> 24) & 0xFF) * U8_NORM_COEF;
-				material[1] = ((data >> 16) & 0xFF) * U8_NORM_COEF;
-				material[2] = ((data >>  8) & 0xFF) * U8_NORM_COEF;
-				material[3] = ( data        & 0xFF) * U8_NORM_COEF;
-
-				m_buffer.SetConstant4v(C_MATERIALS + i + 2, material);
+				m_buffer.SetConstant4<float>(C_MATERIALS + i + 2,
+					float((data >> 24) & 0xFF),
+					float((data >> 16) & 0xFF),
+					float((data >>  8) & 0xFF),
+					float( data        & 0xFF));
 			}
 		}
 
@@ -344,34 +341,19 @@ void VertexShaderManager::SetConstants()
 	if (bTexMatricesChanged[0])
 	{
 		bTexMatricesChanged[0] = false;
-		const float *fptrs[] = 
-		{
-			(const float *)xfmem.posMatrices + g_main_cp_state.matrix_index_a.Tex0MtxIdx * 4, 
-			(const float *)xfmem.posMatrices + g_main_cp_state.matrix_index_a.Tex1MtxIdx * 4,
-			(const float *)xfmem.posMatrices + g_main_cp_state.matrix_index_a.Tex2MtxIdx * 4, 
-			(const float *)xfmem.posMatrices + g_main_cp_state.matrix_index_a.Tex3MtxIdx * 4
-		};
-
-		for (int i = 0; i < 4; ++i)
-		{
-			m_buffer.SetMultiConstant4v(C_TEXMATRICES + 3 * i, 3, fptrs[i]);
-		}
+		m_buffer.SetMultiConstant4v(C_TEXMATRICES + 3 * 0, 3, (const float *)xfmem.posMatrices + g_main_cp_state.matrix_index_a.Tex0MtxIdx * 4);
+		m_buffer.SetMultiConstant4v(C_TEXMATRICES + 3 * 1, 3, (const float *)xfmem.posMatrices + g_main_cp_state.matrix_index_a.Tex1MtxIdx * 4);
+		m_buffer.SetMultiConstant4v(C_TEXMATRICES + 3 * 2, 3, (const float *)xfmem.posMatrices + g_main_cp_state.matrix_index_a.Tex2MtxIdx * 4);
+		m_buffer.SetMultiConstant4v(C_TEXMATRICES + 3 * 3, 3, (const float *)xfmem.posMatrices + g_main_cp_state.matrix_index_a.Tex3MtxIdx * 4);
 	}
 
 	if (bTexMatricesChanged[1])
 	{
 		bTexMatricesChanged[1] = false;
-		const float *fptrs[] = {
-			(const float *)xfmem.posMatrices + g_main_cp_state.matrix_index_b.Tex4MtxIdx * 4, 
-			(const float *)xfmem.posMatrices + g_main_cp_state.matrix_index_b.Tex5MtxIdx * 4,
-			(const float *)xfmem.posMatrices + g_main_cp_state.matrix_index_b.Tex6MtxIdx * 4, 
-			(const float *)xfmem.posMatrices + g_main_cp_state.matrix_index_b.Tex7MtxIdx * 4
-		};
-
-		for (int i = 0; i < 4; ++i)
-		{
-			m_buffer.SetMultiConstant4v(C_TEXMATRICES + 3 * i + 12, 3, fptrs[i]);
-		}
+		m_buffer.SetMultiConstant4v(C_TEXMATRICES + 3 * 0 + 12, 3, (const float *)xfmem.posMatrices + g_main_cp_state.matrix_index_b.Tex4MtxIdx * 4);
+		m_buffer.SetMultiConstant4v(C_TEXMATRICES + 3 * 1 + 12, 3, (const float *)xfmem.posMatrices + g_main_cp_state.matrix_index_b.Tex5MtxIdx * 4);
+		m_buffer.SetMultiConstant4v(C_TEXMATRICES + 3 * 2 + 12, 3, (const float *)xfmem.posMatrices + g_main_cp_state.matrix_index_b.Tex6MtxIdx * 4);
+		m_buffer.SetMultiConstant4v(C_TEXMATRICES + 3 * 3 + 12, 3, (const float *)xfmem.posMatrices + g_main_cp_state.matrix_index_b.Tex7MtxIdx * 4);
 	}
 
 	if (bViewportChanged)

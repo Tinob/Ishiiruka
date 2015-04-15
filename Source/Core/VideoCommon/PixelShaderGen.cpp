@@ -683,6 +683,10 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 				out.Write("float4 mat, lacc;\n"
 					"float3 ldir, h;\n"
 					"float dist, dist2, attn;\n");
+				if (Use_integer_math)
+				{
+					out.Write("int4 ilacc;\n");
+				}
 			}
 			// On GLSL, input variables must not be assigned to.
 			// This is why we declare these variables locally instead.
@@ -690,7 +694,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 		}
 		// Only col0 and col1 are needed so discard the remaining components
 		uid_data.components = components & (VB_HAS_COL0 | VB_HAS_COL1);
-		GenerateLightingShader<T, Write_Code>(out, uid_data.lighting, components, I_PMATERIALS, I_PLIGHTS, "colors_", "col", xfr);
+		GenerateLightingShader<T, Write_Code>(out, uid_data.lighting, components, I_PMATERIALS, I_PLIGHTS, "colors_", "col", xfr, Use_integer_math);
 	}
 	else
 	{
@@ -728,7 +732,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 					out.Write("if (uv%d.z != 0.0)", i);
 					out.Write("\tuv%d.xy = uv%d.xy / uv%d.z;\n", i, i, i);
 				}
-				out.Write("uv%d.xy = round(128.0 * uv%d.xy * " I_TEXDIMS"[%d].zw);\n", i, i, i);
+				out.Write("uv%d.xy = trunc(128.0 * uv%d.xy * " I_TEXDIMS"[%d].zw);\n", i, i, i);
 			}
 		}
 	}

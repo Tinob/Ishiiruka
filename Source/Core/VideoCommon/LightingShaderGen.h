@@ -114,7 +114,7 @@ static void GenerateLightShader(T& object,
 // inColorName is color in vs and colors_ in ps
 // dest is o.colors_ in vs and colors_ in ps
 template<class T, bool Write_Code>
-static void GenerateLightingShader(T& object, LightingUidData& uid_data, int components, const char* materialsName, const char* lightsName, const char* inColorName, const char* dest, const  XFMemory &xfr)
+static void GenerateLightingShader(T& object, LightingUidData& uid_data, int components, const char* materialsName, const char* lightsName, const char* inColorName, const char* dest, const  XFMemory &xfr, bool use_integer_math)
 {
 	for (unsigned int j = 0; j < xfr.numChan.numColorChans; j++)
 	{
@@ -127,11 +127,11 @@ static void GenerateLightingShader(T& object, LightingUidData& uid_data, int com
 			if (color.matsource) // from vertex
 			{
 				if (components & (VB_HAS_COL0 << j))
-					object.Write("mat = %s%d;\n", inColorName, j);
+					object.Write("mat = round(%s%d * 255.0);\n", inColorName, j);
 				else if (components & VB_HAS_COL0)
-					object.Write("mat = %s0;\n", inColorName);
+					object.Write("mat = round(%s0 * 255.0);\n", inColorName);
 				else
-					object.Write("mat = float4(1.0,1.0,1.0,1.0);\n");
+					object.Write("mat = float4(255.0,255.0,255.0,255.0);\n");
 			}
 			else // from color
 			{
@@ -148,14 +148,14 @@ static void GenerateLightingShader(T& object, LightingUidData& uid_data, int com
 				if (color.ambsource) // from vertex
 				{
 					if (components & (VB_HAS_COL0 << j))
-						object.Write("lacc = %s%d;\n", inColorName, j);
+						object.Write("lacc = round(%s%d * 255.0);\n", inColorName, j);
 					else if (components & VB_HAS_COL0)
-						object.Write("lacc = %s0;\n", inColorName);
+						object.Write("lacc = round(%s0 * 255.0);\n", inColorName);
 					else
 						// TODO: this isn't verified. Here we want to read the ambient from the vertex,
 						// but the vertex itself has no color. So we don't know which value to read.
 						// Returing 1.0 is the same as disabled lightning, so this could be fine
-						object.Write("lacc = float4(1.0,1.0,1.0,1.0);\n");
+						object.Write("lacc = float4(255.0,255.0,255.0,255.0);\n");
 				}
 				else // from color
 				{
@@ -165,7 +165,7 @@ static void GenerateLightingShader(T& object, LightingUidData& uid_data, int com
 		}
 		else if (Write_Code)
 		{
-			object.Write("lacc = float4(1.0,1.0,1.0,1.0);\n");
+			object.Write("lacc = float4(255.0,255.0,255.0,255.0);\n");
 		}
 
 		// check if alpha is different
@@ -177,10 +177,10 @@ static void GenerateLightingShader(T& object, LightingUidData& uid_data, int com
 				if (alpha.matsource) // from vertex
 				{
 					if (components & (VB_HAS_COL0 << j))
-						object.Write("mat.w = %s%d.w;\n", inColorName, j);
+						object.Write("mat.w = round(%s%d.w * 255.0);\n", inColorName, j);
 					else if (components & VB_HAS_COL0)
-						object.Write("mat.w = %s0.w;\n", inColorName);
-					else object.Write("mat.w = 1.0;\n");
+						object.Write("mat.w = round(%s0.w * 255.0);\n", inColorName);
+					else object.Write("mat.w = 255.0;\n");
 				}
 				else // from color
 				{
@@ -199,12 +199,12 @@ static void GenerateLightingShader(T& object, LightingUidData& uid_data, int com
 				if (alpha.ambsource) // from vertex
 				{
 					if (components & (VB_HAS_COL0 << j))
-						object.Write("lacc.w = %s%d.w;\n", inColorName, j);
+						object.Write("lacc.w = round(%s%d.w * 255.0);\n", inColorName, j);
 					else if (components & VB_HAS_COL0)
-						object.Write("lacc.w = %s0.w;\n", inColorName);
+						object.Write("lacc.w = round(%s0.w * 255.0);\n", inColorName);
 					else
 						// TODO: The same for alpha: We want to read from vertex, but the vertex has no color
-						object.Write("lacc.w = 1.0;\n");
+						object.Write("lacc.w = 255.0;\n");
 				}
 				else // from color
 				{
@@ -214,7 +214,7 @@ static void GenerateLightingShader(T& object, LightingUidData& uid_data, int com
 		}
 		else if (Write_Code)
 		{
-			object.Write("lacc.w = 1.0;\n");
+			object.Write("lacc.w = 255.0;\n");
 		}
 
 		if (color.enablelighting && alpha.enablelighting)
@@ -267,7 +267,19 @@ static void GenerateLightingShader(T& object, LightingUidData& uid_data, int com
 		}
 		if (Write_Code)
 		{
-			object.Write("%s%d = mat * clamp(lacc,0.0,1.0);\n", dest, j);
+			if (use_integer_math)
+			{
+				object.Write("ilacc = int4(round(lacc));\n");
+				object.Write("ilacc = clamp(ilacc, 0, 255);\n");
+				object.Write("ilacc += ilacc >> 7;\n");
+				object.Write("%s%d = float4((int4(mat) * ilacc) >> 8) / 255.0;\n", dest, j);
+			}
+			else
+			{
+				object.Write("lacc = clamp(lacc, 0.0, 255.0);\n");
+				object.Write("lacc = lacc + floor(lacc / 128.0);\n");
+				object.Write("%s%d = floor((mat * lacc)/256.0)/255.0;\n", dest, j);
+			}			
 			object.Write("}\n");
 		}
 	}

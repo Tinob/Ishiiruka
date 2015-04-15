@@ -21,7 +21,7 @@ static char text[VERTEXSHADERGEN_BUFFERSIZE];
 static const char *texOffsetMemberSelector[] = { "x", "y", "z", "w" };
 
 template<class T, bool Write_Code, API_TYPE api_type>
-inline void GenerateVertexShader(T& out, u32 components, const XFMemory &xfr, const BPMemory &bpm)
+inline void GenerateVertexShader(T& out, u32 components, const XFMemory &xfr, const BPMemory &bpm, bool use_integer_math)
 {
 	// Non-uid template parameters will write to the dummy data (=> gets optimized out)
 	bool uidPresent = (&out.template GetUidData<vertex_shader_uid_data>() != NULL);
@@ -228,6 +228,10 @@ inline void GenerateVertexShader(T& out, u32 components, const XFMemory &xfr, co
 			out.Write("float4 mat, lacc;\n"
 				"float3 ldir, h;\n"
 				"float dist, dist2, attn;\n");
+			if (use_integer_math)
+			{
+				out.Write("int4 ilacc;\n");
+			}
 		}
 		if (!lightingEnabled)
 		{
@@ -243,7 +247,7 @@ inline void GenerateVertexShader(T& out, u32 components, const XFMemory &xfr, co
 		}
 	}
 	if (needLightShader)
-		GenerateLightingShader<T, Write_Code>(out, uid_data.lighting, components, I_MATERIALS, I_LIGHTS, "color", "o.colors_", xfr);
+		GenerateLightingShader<T, Write_Code>(out, uid_data.lighting, components, I_MATERIALS, I_LIGHTS, "color", "o.colors_", xfr, use_integer_math);
 
 	// special case if only pos and tex coord 0 and tex coord input is AB11
 	// donko - this has caused problems in some games. removed for now.
@@ -562,30 +566,30 @@ inline void GenerateVertexShader(T& out, u32 components, const XFMemory &xfr, co
 
 void GetVertexShaderUidD3D9(VertexShaderUid& object, u32 components, const XFMemory &xfr, const BPMemory &bpm)
 {
-	GenerateVertexShader<VertexShaderUid, false, API_D3D9>(object, components, xfr, bpm);
+	GenerateVertexShader<VertexShaderUid, false, API_D3D9>(object, components, xfr, bpm, false);
 }
 
 void GenerateVertexShaderCodeD3D9(ShaderCode& object, u32 components, const XFMemory &xfr, const BPMemory &bpm)
 {
-	GenerateVertexShader<ShaderCode, true, API_D3D9>(object, components, xfr, bpm);
+	GenerateVertexShader<ShaderCode, true, API_D3D9>(object, components, xfr, bpm, false);
 }
 
 void GetVertexShaderUidD3D11(VertexShaderUid& object, u32 components, const XFMemory &xfr, const BPMemory &bpm)
 {
-	GenerateVertexShader<VertexShaderUid, false, API_D3D11>(object, components, xfr, bpm);
+	GenerateVertexShader<VertexShaderUid, false, API_D3D11>(object, components, xfr, bpm, true);
 }
 
 void GenerateVertexShaderCodeD3D11(ShaderCode& object, u32 components, const XFMemory &xfr, const BPMemory &bpm)
 {
-	GenerateVertexShader<ShaderCode, true, API_D3D11>(object, components, xfr, bpm);
+	GenerateVertexShader<ShaderCode, true, API_D3D11>(object, components, xfr, bpm, true);
 }
 
 void GetVertexShaderUidGL(VertexShaderUid& object, u32 components, const XFMemory &xfr, const BPMemory &bpm)
 {
-	GenerateVertexShader<VertexShaderUid, false, API_OPENGL>(object, components, xfr, bpm);
+	GenerateVertexShader<VertexShaderUid, false, API_OPENGL>(object, components, xfr, bpm, true);
 }
 
 void GenerateVertexShaderCodeGL(ShaderCode& object, u32 components, const XFMemory &xfr, const BPMemory &bpm)
 {
-	GenerateVertexShader<ShaderCode, true, API_OPENGL>(object, components, xfr, bpm);
+	GenerateVertexShader<ShaderCode, true, API_OPENGL>(object, components, xfr, bpm, true);
 }
