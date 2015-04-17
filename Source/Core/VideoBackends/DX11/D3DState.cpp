@@ -84,17 +84,9 @@ namespace D3D
 		if (!m_dirtyFlags)
 		{
 			return;
-		}
+		}		
 
-		const u32 dirtyTextures = DirtyFlag_Texture0 | DirtyFlag_Texture1 | DirtyFlag_Texture2 | DirtyFlag_Texture3
-			| DirtyFlag_Texture4 | DirtyFlag_Texture5 | DirtyFlag_Texture6 | DirtyFlag_Texture7;
-		const u32 dirtySamplers = DirtyFlag_Sampler0 | DirtyFlag_Sampler1 | DirtyFlag_Sampler2 | DirtyFlag_Sampler3
-			| DirtyFlag_Sampler4 | DirtyFlag_Sampler5 | DirtyFlag_Sampler6 | DirtyFlag_Sampler7;
-		const u32 dirtyConstants = DirtyFlag_PixelConstants | DirtyFlag_VertexConstants | DirtyFlag_GeometryConstants;
-		const u32 dirtyShaders = DirtyFlag_PixelShader | DirtyFlag_VertexShader | DirtyFlag_GeometryShader;
-		const u32 dirtyBuffers = DirtyFlag_VertexBuffer | DirtyFlag_IndexBuffer;
-
-		if (m_dirtyFlags & dirtyConstants)
+		if (m_dirtyFlags & DirtyFlag_Constants)
 		{
 			if (m_current.pixelConstants[0] != m_pending.pixelConstants[0] ||
 				m_current.pixelConstants[1] != m_pending.pixelConstants[1])
@@ -117,7 +109,7 @@ namespace D3D
 			}
 		}
 
-		if (m_dirtyFlags & (dirtyBuffers | DirtyFlag_InputAssembler))
+		if (m_dirtyFlags & (DirtyFlag_Buffers | DirtyFlag_InputAssembler))
 		{
 			if (m_current.vertexBuffer != m_pending.vertexBuffer ||
 				m_current.vertexBufferStride != m_pending.vertexBufferStride ||
@@ -147,34 +139,32 @@ namespace D3D
 				m_current.inputLayout = m_pending.inputLayout;
 			}
 		}
-
-		if (m_dirtyFlags & dirtyTextures)
+		u32 dirty_elements = m_dirtyFlags & DirtyFlag_Textures;
+		if (dirty_elements)
 		{
-			for (int i = 0; i < 8; ++i)
+			while (dirty_elements)
 			{
-				// TODO: bit scan through dirty flags
-				if (m_current.textures[i] != m_pending.textures[i])
-				{
-					D3D::context->PSSetShaderResources(i, 1, &m_pending.textures[i]);
-					m_current.textures[i] = m_pending.textures[i];
-				}
+				unsigned long index;
+				_BitScanForward(&index, dirty_elements);
+				D3D::context->PSSetShaderResources(index, 1, &m_pending.textures[index]);
+				m_current.textures[index] = m_pending.textures[index];
+				dirty_elements &= ~(1 << index);
+			}
+		}
+		dirty_elements = (m_dirtyFlags & DirtyFlag_Samplers) >> 8;
+		if (dirty_elements)
+		{
+			while (dirty_elements)
+			{
+				unsigned long index;
+				_BitScanForward(&index, dirty_elements);
+				D3D::context->PSSetSamplers(index, 1, &m_pending.samplers[index]);
+				m_current.samplers[index] = m_pending.samplers[index];
+				dirty_elements &= ~(1 << index);
 			}
 		}
 
-		if (m_dirtyFlags & dirtySamplers)
-		{
-			for (int i = 0; i < 8; ++i)
-			{
-				// TODO: bit scan through dirty flags
-				if (m_current.samplers[i] != m_pending.samplers[i])
-				{
-					D3D::context->PSSetSamplers(i, 1, &m_pending.samplers[i]);
-					m_current.samplers[i] = m_pending.samplers[i];
-				}
-			}
-		}
-
-		if (m_dirtyFlags & dirtyShaders)
+		if (m_dirtyFlags & DirtyFlag_Sahders)
 		{
 			if (m_current.pixelShader != m_pending.pixelShader)
 			{

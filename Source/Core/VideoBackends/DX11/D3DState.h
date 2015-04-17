@@ -244,6 +244,7 @@ namespace D3D
 			DirtyFlag_Texture5 = 1 << 5,
 			DirtyFlag_Texture6 = 1 << 6,
 			DirtyFlag_Texture7 = 1 << 7,
+			DirtyFlag_Textures = 0xFF,
 
 			DirtyFlag_Sampler0 = 1 << 8,
 			DirtyFlag_Sampler1 = 1 << 9,
@@ -253,17 +254,21 @@ namespace D3D
 			DirtyFlag_Sampler5 = 1 << 13,
 			DirtyFlag_Sampler6 = 1 << 14,
 			DirtyFlag_Sampler7 = 1 << 15,
+			DirtyFlag_Samplers = 0xFF00,
 
 			DirtyFlag_PixelConstants = 1 << 16,
 			DirtyFlag_VertexConstants = 1 << 17,
 			DirtyFlag_GeometryConstants = 1 << 18,
+			DirtyFlag_Constants = 1 << 16 | 1 << 17 | 1 << 18,
 
 			DirtyFlag_VertexBuffer = 1 << 19,
 			DirtyFlag_IndexBuffer = 1 << 20,
+			DirtyFlag_Buffers = 1 << 19 | 1 << 20,
 
 			DirtyFlag_PixelShader = 1 << 21,
 			DirtyFlag_VertexShader = 1 << 22,
 			DirtyFlag_GeometryShader = 1 << 23,
+			DirtyFlag_Sahders = 1 << 21 | 1 << 22 | 1 << 23,
 
 			DirtyFlag_InputAssembler = 1 << 24,
 		};
