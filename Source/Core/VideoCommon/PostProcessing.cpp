@@ -13,7 +13,7 @@
 #include "VideoCommon/VideoConfig.h"
 
 
-static const char s_default_shader[] = "void main() { SetOutput(Sample()); }\n";
+static const char s_default_shader[] = "void main() { SetOutput(ApplyGCGamma(Sample())); }\n";
 
 PostProcessingShaderImplementation::PostProcessingShaderImplementation()
 {
@@ -57,13 +57,13 @@ std::string PostProcessingShaderConfiguration::LoadShader(std::string shader)
 		}
 	}
 
-	LoadOptions(code);
+	code = LoadOptions(code);
 	LoadOptionsConfiguration();
 
 	return code;
 }
 
-void PostProcessingShaderConfiguration::LoadOptions(const std::string& code)
+std::string PostProcessingShaderConfiguration::LoadOptions(const std::string& code)
 {
 	const std::string config_start_delimiter = "[configuration]";
 	const std::string config_end_delimiter = "[/configuration]";
@@ -72,12 +72,12 @@ void PostProcessingShaderConfiguration::LoadOptions(const std::string& code)
 
 	m_options.clear();
 	m_any_options_dirty = true;
-
+	m_requires_depth_input = code.find("SampleDepth") != std::string::npos;
 	if (configuration_start == std::string::npos ||
 		configuration_end == std::string::npos)
 	{
 		// Issue loading configuration or there isn't one.
-		return;
+		return code;
 	}
 
 	std::string configuration_string = code.substr(configuration_start + config_start_delimiter.size(),
@@ -211,6 +211,7 @@ void PostProcessingShaderConfiguration::LoadOptions(const std::string& code)
 		}
 		m_options[option.m_option_name] = option;
 	}
+	return code.substr(0, configuration_start) + code.substr(configuration_end + config_end_delimiter.size());
 }
 
 void PostProcessingShaderConfiguration::LoadOptionsConfiguration()

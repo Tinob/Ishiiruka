@@ -60,9 +60,11 @@ OpenGLPostProcessing::~OpenGLPostProcessing()
 	}
 }
 
-void OpenGLPostProcessing::BlitFromTexture(TargetRectangle src, TargetRectangle dst,
-                                           int src_texture, int src_width, int src_height, int layer)
+void OpenGLPostProcessing::BlitFromTexture(const TargetRectangle &src, const TargetRectangle &dst,
+	void* src_texture_ptr, void* src_depth_texture_ptr, int src_width, int src_height, int layer, float gamma)
 {
+	int src_texture = *((int*)src_texture_ptr);
+	int src_texture_depth = *((int*)src_depth_texture_ptr);
 	ApplyShader();
 
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
@@ -81,6 +83,7 @@ void OpenGLPostProcessing::BlitFromTexture(TargetRectangle src, TargetRectangle 
 		    src.GetWidth() / (float) src_width, src.GetHeight() / (float) src_height);
 	glUniform1ui(m_uniform_time, (GLuint)m_timer.GetTimeElapsed());
 	glUniform1i(m_uniform_layer, layer);
+	glUniform1f(m_uniform_gamma, gamma);
 
 	if (m_config.IsDirty())
 	{
@@ -156,7 +159,15 @@ void OpenGLPostProcessing::BlitFromTexture(TargetRectangle src, TargetRectangle 
 	glBindTexture(GL_TEXTURE_2D_ARRAY, src_texture);
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glActiveTexture(GL_TEXTURE0 + 10);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, src_texture_depth);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glActiveTexture(GL_TEXTURE0 + 9);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+	glActiveTexture(GL_TEXTURE0 + 10);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 }
 
 void OpenGLPostProcessing::ApplyShader()
@@ -181,13 +192,16 @@ void OpenGLPostProcessing::ApplyShader()
 	if (!ProgramShaderCache::CompileShader(m_shader, vertex_shader, code.c_str()))
 	{
 		ERROR_LOG(VIDEO, "Failed to compile post-processing shader %s", m_config.GetShader().c_str());
+		g_Config.sPostProcessingShader.clear();
 		g_ActiveConfig.sPostProcessingShader.clear();
 		code = m_config.LoadShader();
+		code = LoadShaderOptions(code);
 		ProgramShaderCache::CompileShader(m_shader, vertex_shader, code.c_str());
 	}
 
 	// read uniform locations
 	m_uniform_resolution = glGetUniformLocation(m_shader.glprogid, "resolution");
+	m_uniform_gamma = glGetUniformLocation(m_shader.glprogid, "native_gamma");
 	m_uniform_time = glGetUniformLocation(m_shader.glprogid, "time");
 	m_uniform_src_rect = glGetUniformLocation(m_shader.glprogid, "src_rect");
 	m_uniform_layer = glGetUniformLocation(m_shader.glprogid, "layer");
@@ -219,74 +233,122 @@ void OpenGLPostProcessing::ApplyShader()
 
 void OpenGLPostProcessing::CreateHeader()
 {
-	m_glsl_header =
-		// Required variables
-		// Shouldn't be accessed directly by the PP shader
-		// Texture sampler
-		"SAMPLER_BINDING(8) uniform sampler2D samp8;\n"
-		"SAMPLER_BINDING(9) uniform sampler2DArray samp9;\n"
+	m_glsl_header = R"GLSL(
+// Required variables
+// Shouldn't be accessed directly by the PP shader
+// Texture sampler
+SAMPLER_BINDING(8) uniform sampler2D samp8;
+SAMPLER_BINDING(9) uniform sampler2DArray samp9;
+SAMPLER_BINDING(10) uniform sampler2DArray samp10;
 
-		// Output variable
-		"out float4 ocol0;\n"
-		// Input coordinates
-		"in float2 uv0;\n"
-		// Resolution
-		"uniform float4 resolution;\n"
-		// Time
-		"uniform uint time;\n"
-		// Layer
-		"uniform int layer;\n"
+// Output variable
+out float4 ocol0;
+// Input coordinates
+in float2 uv0;
+// Resolution
+uniform float4 resolution;
+// Time
+uniform uint time;
+// Layer
+uniform int layer;
+// Gamma
+uniform float native_gamma;
 
-		// Interfacing functions
-		"float4 Sample()\n"
-		"{\n"
-			"\treturn texture(samp9, float3(uv0, layer));\n"
-		"}\n"
+// Interfacing functions		
+float2 GetFragmentCoord()
+{
+	return gl_FragCoord.xy;
+}
 
-		"float4 SampleLocation(float2 location)\n"
-		"{\n"
-			"\treturn texture(samp9, float3(location, layer));\n"
-		"}\n"
+float4 Sample(float2 location, int l)
+{
+	return texture(samp9, float3(location, l));
+}
 
-		"float4 SampleLayer(int layer)\n"
-		"{\n"
-			"\treturn texture(samp9, float3(uv0, layer));\n"
-		"}\n"
+float SampleDepth(float2 location, int l)
+{
+	/*float Znear = 0.001;
+	float Zfar = 1.0;
+	float A  = (1 - ( Zfar / Znear ))/2;
+	float B = (1 + ( Zfar / Znear ))/2;*/
+	float A  = -499.5;
+	float B = 500.5;
+	float depth = texture(samp10, float3(location, l)).x;
+	depth = 1 / (A * depth + B);
+	return depth;
+}
 
-		"#define SampleOffset(offset) textureOffset(samp9, float3(uv0, layer), offset)\n"
+float4 Sample()
+{
+	return Sample(uv0, layer);
+}
 
-		"float4 SampleFontLocation(float2 location)\n"
-		"{\n"
-			"\treturn texture(samp8, location);\n"
-		"}\n"
+float SampleDepth()
+{
+	return SampleDepth(uv0, layer);
+}
 
-		"float2 GetResolution()\n"
-		"{\n"
-			"\treturn resolution.xy;\n"
-		"}\n"
+float4 SampleLocation(float2 location)
+{
+	return Sample(location, layer);
+}
 
-		"float2 GetInvResolution()\n"
-		"{\n"
-			"\treturn resolution.zw;\n"
-		"}\n"
+float SampleDepthLocation(float2 location)
+{
+	return SampleDepth(location, layer);
+}
 
-		"float2 GetCoordinates()\n"
-		"{\n"
-			"\treturn uv0;\n"
-		"}\n"
+float4 SampleLayer(int l)
+{
+	return Sample(uv0, l);
+}
 
-		"uint GetTime()\n"
-		"{\n"
-			"\treturn time;\n"
-		"}\n"
+float SampleDepthLayer(int l)
+{
+	return SampleDepth(uv0, l);
+}
 
-		"void SetOutput(float4 color)\n"
-		"{\n"
-			"\tocol0 = color;\n"
-		"}\n"
+#define SampleOffset(offset) textureOffset(samp9, float3(uv0, layer), offset)
+#define SampleDepthOffset(offset) textureOffset(samp10, float3(uv0, layer), offset).x
 
-		"#define GetOption(x) (option_##x)\n"
-		"#define OptionEnabled(x) (option_##x != 0)\n";
+float4 SampleFontLocation(float2 location)
+{
+	return texture(samp8, location);
+}
+
+float4 ApplyGCGamma(float4 col)
+{
+	return pow(col, float4(native_gamma, native_gamma, native_gamma, native_gamma));
+}
+
+float2 GetResolution()
+{
+	return resolution.xy;
+}
+
+float2 GetInvResolution()
+{
+	return resolution.zw;
+}
+
+float2 GetCoordinates()
+{
+	return uv0;
+}
+
+uint GetTime()
+{
+	return time;
+}
+
+void SetOutput(float4 color)
+{
+	ocol0 = color;
+}
+
+#define GetOption(x) (option_##x)
+#define OptionEnabled(x) (option_##x != 0)
+)GLSL";
 }
 
 std::string OpenGLPostProcessing::LoadShaderOptions(const std::string& code)

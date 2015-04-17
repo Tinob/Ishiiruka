@@ -93,7 +93,7 @@ public:
 private:
 	void UpdateEFBCache(EFBAccessType type, u32 cacheRectIdx, const EFBRectangle& efbPixelRc, const TargetRectangle& targetPixelRc, const u32* data);
 
-	void BlitScreen(TargetRectangle src, TargetRectangle dst, GLuint src_texture, int src_width, int src_height);
+	void BlitScreen(TargetRectangle src, TargetRectangle dst, GLuint src_texture, GLuint src_depth_texture, int src_width, int src_height, float gamma = 1.0f);
 };
 
 }

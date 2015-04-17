@@ -2,5 +2,5 @@
 
 void main()
 {
-	SetOutput(SampleLayer(int(gl_FragCoord.y) & 1));
+	SetOutput(SampleLayer(int(GetFragmentCoord().y) & 1));
 }

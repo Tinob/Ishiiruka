@@ -49,7 +49,7 @@ public:
 
 	typedef std::map<std::string, ConfigurationOption> ConfigMap;
 
-	PostProcessingShaderConfiguration() : m_current_shader("") {}
+	PostProcessingShaderConfiguration() : m_current_shader(""), m_requires_depth_input(false){}
 	virtual ~PostProcessingShaderConfiguration() {}
 
 	// Loads the configuration with a shader
@@ -71,13 +71,14 @@ public:
 	void SetOptionf(std::string option, int index, float value);
 	void SetOptioni(std::string option, int index, s32 value);
 	void SetOptionb(std::string option, bool value);
-
+	inline bool IsDepthInputRequired(){ return m_requires_depth_input; }
 private:
 	bool m_any_options_dirty;
+	bool m_requires_depth_input;
 	std::string m_current_shader;
 	ConfigMap m_options;
 
-	void LoadOptions(const std::string& code);
+	std::string LoadOptions(const std::string& code);
 	void LoadOptionsConfiguration();
 };
 
@@ -90,8 +91,8 @@ public:
 	PostProcessingShaderConfiguration* GetConfig() { return &m_config; }
 
 	// Should be implemented by the backends for backend specific code
-	virtual void BlitFromTexture(TargetRectangle src, TargetRectangle dst,
-		int src_texture, int src_width, int src_height, int layer = 0) = 0;
+	virtual void BlitFromTexture(const TargetRectangle &src, const TargetRectangle &dst,
+		void* src_texture_ptr, void* src_depth_texture_ptr, int src_width, int src_height, int layer = 0, float gamma = 1.0) = 0;
 	virtual void ApplyShader() = 0;
 
 protected:

@@ -22,14 +22,15 @@ public:
 	OpenGLPostProcessing();
 	~OpenGLPostProcessing();
 
-	void BlitFromTexture(TargetRectangle src, TargetRectangle dst,
-	                     int src_texture, int src_width, int src_height, int layer) override;
+	void BlitFromTexture(const TargetRectangle &src, const TargetRectangle &dst,
+		void* src_texture_ptr, void* src_depth_texture_ptr, int src_width, int src_height, int layer, float gamma) override;
 	void ApplyShader() override;
 
 private:
 	bool m_initialized;
 	SHADER m_shader;
 	GLuint m_uniform_resolution;
+	GLuint m_uniform_gamma;
 	GLuint m_uniform_src_rect;
 	GLuint m_uniform_time;
 	GLuint m_uniform_layer;

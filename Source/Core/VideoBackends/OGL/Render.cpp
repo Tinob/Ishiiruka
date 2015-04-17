@@ -1287,19 +1287,19 @@ void Renderer::ClearScreen(const EFBRectangle& rc, bool colorEnable, bool alphaE
 	ClearEFBCache();
 }
 
-void Renderer::BlitScreen(TargetRectangle src, TargetRectangle dst, GLuint src_texture, int src_width, int src_height)
+void Renderer::BlitScreen(TargetRectangle src, TargetRectangle dst, GLuint src_texture, GLuint src_depth_texture, int src_width, int src_height, float gamma)
 {
 	if (g_ActiveConfig.iStereoMode == STEREO_SBS || g_ActiveConfig.iStereoMode == STEREO_TAB)
 	{
 		TargetRectangle leftRc, rightRc;
 		ConvertStereoRectangle(dst, leftRc, rightRc);
 
-		m_post_processor->BlitFromTexture(src, leftRc, src_texture, src_width, src_height, 0);
-		m_post_processor->BlitFromTexture(src, rightRc, src_texture, src_width, src_height, 1);
+		m_post_processor->BlitFromTexture(src, leftRc, &src_texture, &src_depth_texture, src_width, src_height, 0, gamma);
+		m_post_processor->BlitFromTexture(src, rightRc, &src_texture, &src_depth_texture, src_width, src_height, 1, gamma);
 	}
 	else
 	{
-		m_post_processor->BlitFromTexture(src, dst, src_texture, src_width, src_height);
+		m_post_processor->BlitFromTexture(src, dst, &src_texture, &src_depth_texture, src_width, src_height, 0, gamma);
 	}
 }
 
@@ -1514,7 +1514,7 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 
 			sourceRc.right -= Renderer::EFBToScaledX(fbStride - fbWidth);
 
-			BlitScreen(sourceRc, drawRc, xfbSource->texture, xfbSource->texWidth, xfbSource->texHeight);
+			BlitScreen(sourceRc, drawRc, xfbSource->texture, 0, xfbSource->texWidth, xfbSource->texHeight);
 		}
 	}
 	else
@@ -1523,7 +1523,12 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 
 		// for msaa mode, we must resolve the efb content to non-msaa
 		GLuint tex = FramebufferManager::ResolveAndGetRenderTarget(rc);
-		BlitScreen(targetRc, flipped_trc, tex, s_target_width, s_target_height);
+		GLuint depthtex = 0; 
+		if (m_post_processor->GetConfig()->IsDepthInputRequired())
+		{
+			depthtex = FramebufferManager::ResolveAndGetDepthTarget(rc);
+		}
+		BlitScreen(targetRc, flipped_trc, tex, depthtex, s_target_width, s_target_height);
 	}
 
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
