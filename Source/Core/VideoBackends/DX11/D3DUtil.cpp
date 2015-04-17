@@ -23,59 +23,46 @@ namespace DX11
 namespace D3D
 {
 
-// Ring buffer class, shared between the draw* functions
-class UtilVertexBuffer
+UtilVertexBuffer::UtilVertexBuffer(int size) : buf(nullptr), offset(0), max_size(size)
 {
-public:
-	UtilVertexBuffer(int size) : buf(nullptr), offset(0), max_size(size)
+	D3D11_BUFFER_DESC desc = CD3D11_BUFFER_DESC(max_size, D3D11_BIND_VERTEX_BUFFER, D3D11_USAGE_DYNAMIC, D3D11_CPU_ACCESS_WRITE);
+	device->CreateBuffer(&desc, nullptr, &buf);
+}
+
+UtilVertexBuffer::~UtilVertexBuffer()
+{
+	buf->Release();
+}
+
+// returns vertex offset to the new data
+int UtilVertexBuffer::AppendData(void* data, int size, int vertex_size)
+{
+	D3D11_MAPPED_SUBRESOURCE map;
+	if (offset + size >= max_size)
 	{
-		D3D11_BUFFER_DESC desc = CD3D11_BUFFER_DESC(max_size, D3D11_BIND_VERTEX_BUFFER, D3D11_USAGE_DYNAMIC, D3D11_CPU_ACCESS_WRITE);
-		device->CreateBuffer(&desc, nullptr, &buf);
+		// wrap buffer around and notify observers
+		offset = 0;
+		context->Map(buf, 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
+
+		for (std::list<bool*>::iterator it = observers.begin(); it != observers.end(); ++it)
+			**it = true;
 	}
-	~UtilVertexBuffer()
+	else
 	{
-		buf->Release();
+		context->Map(buf, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &map);
 	}
+	offset = ((offset + vertex_size - 1) / vertex_size)*vertex_size; // align offset to vertex_size bytes
+	memcpy((u8*)map.pData + offset, data, size);
+	context->Unmap(buf, 0);
 
-	// returns vertex offset to the new data
-	int AppendData(void* data, int size, int vertex_size)
-	{
-		D3D11_MAPPED_SUBRESOURCE map;
-		if (offset + size >= max_size)
-		{
-			// wrap buffer around and notify observers
-			offset = 0;
-			context->Map(buf, 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
+	offset += size;
+	return (offset - size) / vertex_size;
+}
 
-			for (std::list<bool*>::iterator it = observers.begin(); it != observers.end(); ++it)
-				**it = true;
-		}
-		else
-		{
-			context->Map(buf, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &map);
-		}
-		offset = ((offset + vertex_size - 1) / vertex_size)*vertex_size; // align offset to vertex_size bytes
-		memcpy((u8*)map.pData + offset, data, size);
-		context->Unmap(buf, 0);
-
-		offset += size;
-		return (offset - size) / vertex_size;
-	}
-
-	void AddWrapObserver(bool* observer)
-	{
-		observers.push_back(observer);
-	}
-
-	inline ID3D11Buffer* &GetBuffer() { return buf; }
-
-private:
-	ID3D11Buffer* buf;
-	int offset;
-	int max_size;
-
-	std::list<bool*> observers;
-};
+void UtilVertexBuffer::AddWrapObserver(bool* observer)
+{
+	observers.push_back(observer);
+}
 
 CD3DFont font;
 UtilVertexBuffer* util_vbuf = nullptr;
@@ -103,7 +90,7 @@ CD3DFont::CD3DFont() : m_dwTexWidth(512), m_dwTexHeight(512)
 }
 
 const char fontpixshader[] = {
-	"Texture2D tex2D;\n"
+	"Texture2D tex2D : register(t8);\n"
 	"SamplerState linearSampler\n"
 	"{\n"
 	"	Filter = MIN_MAG_MIP_LINEAR;\n"
@@ -300,6 +287,8 @@ int CD3DFont::Init()
 		return hr;
 	}
 	D3D::SetDebugObjectName(m_pVB.get(), "vertex buffer of a CD3DFont object");
+	ID3D11ShaderResourceView* view = m_pTexture.get();
+	D3D::context->PSSetShaderResources(8, 1, &view);
 	return S_OK;
 }
 
@@ -348,8 +337,7 @@ int CD3DFont::DrawTextScaled(float x, float y, float size, float spacing, u32 dw
 
 
 	D3D::stateman->SetInputLayout(m_InputLayout.get());
-	D3D::stateman->SetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	D3D::stateman->SetTexture(0, m_pTexture.get());
+	D3D::stateman->SetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);	
 
 	float fStartX = sx;
 	for (char c : Text)
@@ -412,8 +400,7 @@ int CD3DFont::DrawTextScaled(float x, float y, float size, float spacing, u32 dw
 		D3D::context->Draw(3 * dwNumTriangles, 0);
 	}
 	D3D::stateman->PopBlendState();
-	D3D::stateman->PopRasterizerState();
-	D3D::stateman->SetTexture(0, nullptr); // immediately unbind the texture
+	D3D::stateman->PopRasterizerState();	
 	D3D::stateman->Apply();
 	return S_OK;
 }
@@ -493,6 +480,16 @@ void SetPointCopySampler()
 void SetLinearCopySampler()
 {
 	D3D::stateman->SetSampler(0, linear_copy_sampler.get());
+}
+
+ID3D11SamplerState* GetPointCopySampler()
+{
+	return point_copy_sampler.get();
+}
+
+ID3D11SamplerState* GetLinearCopySampler()
+{
+	return linear_copy_sampler.get();
 }
 
 void drawShadedTexQuad(

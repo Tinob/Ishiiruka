@@ -46,6 +46,28 @@ public:
 		const std::string& strText, float scalex, float scaley);
 };
 
+// Ring buffer class, shared between the draw* functions
+class UtilVertexBuffer
+{
+public:
+	UtilVertexBuffer(int size);
+	~UtilVertexBuffer();
+
+	// returns vertex offset to the new data
+	int AppendData(void* data, int size, int vertex_size);
+
+	void AddWrapObserver(bool* observer);
+
+	inline ID3D11Buffer* &GetBuffer() { return buf; }
+
+private:
+	ID3D11Buffer* buf;
+	int offset;
+	int max_size;
+
+	std::list<bool*> observers;
+};
+
 extern CD3DFont font;
 
 void InitUtils();
@@ -53,6 +75,10 @@ void ShutdownUtils();
 
 void SetPointCopySampler();
 void SetLinearCopySampler();
+
+ID3D11SamplerState* GetPointCopySampler();
+
+ID3D11SamplerState* GetLinearCopySampler();
 
 void drawShadedTexQuad(ID3D11ShaderResourceView* texture,
 	const D3D11_RECT* rSource,
