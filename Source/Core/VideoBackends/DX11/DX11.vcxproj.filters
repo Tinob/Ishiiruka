@@ -65,6 +65,9 @@
     <ClCompile Include="GeometryShaderCache.cpp">
       <Filter>Render</Filter>
     </ClCompile>
+    <ClCompile Include="PostProcessing.cpp">
+      <Filter>Render</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Globals.h" />
@@ -134,6 +137,9 @@
       <Filter>D3D</Filter>
     </ClInclude>
     <ClInclude Include="GeometryShaderCache.h">
+      <Filter>Render</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcessing.h">
       <Filter>Render</Filter>
     </ClInclude>
   </ItemGroup>
