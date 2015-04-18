@@ -268,7 +268,7 @@ namespace D3D
 			DirtyFlag_PixelShader = 1 << 21,
 			DirtyFlag_VertexShader = 1 << 22,
 			DirtyFlag_GeometryShader = 1 << 23,
-			DirtyFlag_Sahders = 1 << 21 | 1 << 22 | 1 << 23,
+			DirtyFlag_Shaders = 1 << 21 | 1 << 22 | 1 << 23,
 
 			DirtyFlag_InputAssembler = 1 << 24,
 		};

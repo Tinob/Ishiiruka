@@ -164,7 +164,7 @@ namespace D3D
 			}
 		}
 
-		if (m_dirtyFlags & DirtyFlag_Sahders)
+		if (m_dirtyFlags & DirtyFlag_Shaders)
 		{
 			if (m_current.pixelShader != m_pending.pixelShader)
 			{
