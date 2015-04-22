@@ -247,7 +247,7 @@ Texture2DArray Tex10 : register(t10);
 cbuffer ParamBuffer : register(b0) 
 {
 	uint Time;
-	int Layer;
+	int layer;
 	float native_gamma;
 	float padding;
 	float4 resolution;
@@ -261,80 +261,76 @@ float2 GetFragmentCoord()
 {
 	return fragment_pos.xy;
 }
-float4 Sample(float2 location, int layer)
+float4 Sample(float2 location, int l)
 {
-	return Tex9.Sample(samp9, float3(location, layer));
+	return Tex9.Sample(samp9, float3(location, l));
 }
-float SampleDepth(float2 location, int layer)
+float4 SampleLocationOffset(float2 location, int2 offset)
+{
+	return Tex9.Sample(samp9, float3(location, layer), offset);
+}
+float SampleDepth(float2 location, int l)
 {
 	/*float Znear = 0.001;
 	float Zfar = 1.0;
 	float A  = (1 - ( Zfar / Znear ))/2;
 	float B = (1 + ( Zfar / Znear ))/2;*/
-	float A  = -499.5;
-	float B = 500.5;
-	float depth = 1.0 - Tex10.Sample(samp10, float3(location, layer)).x;
+	float A = -499.5;
+	float B =  500.5;
+	float depth = 1.0 - Tex10.Sample(samp10, float3(location, l)).x;
 	depth = 1.0 / (A * depth + B);
 	return depth;
 }
-float4 Sample()
+float SampleDepthLoacationOffset(float2 location, int2 offset)
 {
-	return Sample(uv0, Layer);
+	float A = -499.5;
+	float B =  500.5;
+	float depth = 1.0 - Tex10.Sample(samp10, float3(location, layer), offset).x;
+	depth = 1.0 / (A * depth + B);
+	return depth;
 }
-float SampleDepth()
-{ 
-	return SampleDepth(uv0, Layer);
-}
-float4 SampleLocation(float2 location)
-{
-	return Sample(location, Layer);
-}
-float SampleDepthLocation(float2 location)
-{
-	return SampleDepth(location, Layer);
-}
-float4 SampleLayer(int layer)
-{
-	return Sample(uv0, layer);
-}
-float SampleDepthLayer(int layer) { return SampleDepth(uv0, layer); }
-#define SampleOffset(offset) Tex9.Sample(samp9, float3(uv0, Layer), offset)
-#define SampleDepthOffset(offset) Tex10.Sample(samp10, float3(uv0, Layer), offset).x
 
-float4 SampleFontLocation(float2 location)
-{
-	return Tex8.Sample(samp8, location);
-}
+float4 Sample() { return Sample(uv0, layer); }
+float4 SampleOffset(int2 offset) { return SampleLocationOffset(uv0, offset); }
+float SampleDepth() { return SampleDepth(uv0, layer); }
+float SampleDepthOffset(int2 offset) { return SampleDepthLoacationOffset(uv0, offset); }
+float4 SampleLocation(float2 location) { return Sample(location, layer); }
+float SampleDepthLocation(float2 location) { return SampleDepth(location, layer); }
+float4 SampleLayer(int l) { return Sample(uv0, l); }
+float SampleDepthLayer(int l) { return SampleDepth(uv0, l); }
+float4 SampleFontLocation(float2 location) { return Tex8.Sample(samp8, location); }
 
 float4 ApplyGCGamma(float4 col)
 {
 	return pow(col, native_gamma);
 }
-
 float2 GetResolution()
 {
 	return resolution.xy;
 }
-
 float2 GetInvResolution()
 {
 	return resolution.zw;
 }
-
 float2 GetCoordinates()
 {
 	return uv0;
 }
-
+float2 GetSourceTextureSize()
+{
+	uint Width, Height, Elements, NumberOfLevels;
+	Tex9.GetDimensions(0, Width, Height, Elements, NumberOfLevels);
+	return float2(Width, Height);
+}
 uint GetTime()
 {
 	return Time;
 }
 
 #define SetOutput(color) ocol0 = color
-
+#define mult(a, b) mul(b, a)
 #define GetOption(x) (option_##x)
-#define OptionEnabled(x) (option_##x != 0);
+#define OptionEnabled(x) (option_##x != 0)
 )hlsl";
 
 static const std::string s_hlsl_entry = "void main(\n"

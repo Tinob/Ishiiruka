@@ -563,12 +563,19 @@ void ProgramShaderCache::CreateHeader()
 		"#define uint4 uvec4\n"
 		"#define int2 ivec2\n"
 		"#define int3 ivec3\n"
-		"#define int4 ivec4\n"
+		"#define int4 ivec4\n"		
+		"#define float1x1 mat1\n"
+		"#define float2x2 mat2\n"
+		"#define float3x3 mat3\n"
+		"#define float4x4 mat4\n"
+		"#define float4x3 mat4x3\n"
+		"#define float3x4 mat3x4\n"
 
 		// hlsl to glsl function translation
 		"#define frac fract\n"
 		"#define lerp mix\n"
-
+		"#define saturate(x) clamp(x, 0.0, 1.0)\n"
+		"#define mul(x, y) (y * x)\n"
 		// Terrible hacks, look at DriverDetails.h
 		"%s\n" // replace textureSize as constant
 		"%s\n" // wipe out all centroid usages

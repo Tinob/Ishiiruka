@@ -265,87 +265,62 @@ float4 Sample(float2 location, int l)
 	return texture(samp9, float3(location, l));
 }
 
+#define SampleLocationOffset(location, offset) textureOffset(samp9, float3(location, layer), offset);
+
 float SampleDepth(float2 location, int l)
 {
 	/*float Znear = 0.001;
 	float Zfar = 1.0;
 	float A  = (1 - ( Zfar / Znear ))/2;
 	float B = (1 + ( Zfar / Znear ))/2;*/
-	float A  = -499.5;
-	float B = 500.5;
+	float A = -499.5;
+	float B =  500.5;
 	float depth = texture(samp10, float3(location, l)).x;
 	depth = 1 / (A * depth + B);
 	return depth;
 }
 
-float4 Sample()
-{
-	return Sample(uv0, layer);
-}
-
-float SampleDepth()
-{
-	return SampleDepth(uv0, layer);
-}
-
-float4 SampleLocation(float2 location)
-{
-	return Sample(location, layer);
-}
-
-float SampleDepthLocation(float2 location)
-{
-	return SampleDepth(location, layer);
-}
-
-float4 SampleLayer(int l)
-{
-	return Sample(uv0, l);
-}
-
-float SampleDepthLayer(int l)
-{
-	return SampleDepth(uv0, l);
-}
-
+#define SampleDepthLocationOffset(location, offset) (1 / (-499.5 * textureOffset(samp10, float3(location, layer), offset).x + 500.5))
 #define SampleOffset(offset) textureOffset(samp9, float3(uv0, layer), offset)
-#define SampleDepthOffset(offset) textureOffset(samp10, float3(uv0, layer), offset).x
+#define SampleDepthOffset(offset) (1 / (-499.5 * textureOffset(samp10, float3(uv0, layer), offset).x + 500.5))
 
-float4 SampleFontLocation(float2 location)
-{
-	return texture(samp8, location);
-}
+float4 Sample(){ return Sample(uv0, layer); }
+float SampleDepth() { return SampleDepth(uv0, layer); }
+float4 SampleLocation(float2 location) { return Sample(location, layer); }
+float SampleDepthLocation(float2 location) { return SampleDepth(location, layer); }
+float4 SampleLayer(int l) { return Sample(uv0, l); }
+float SampleDepthLayer(int l) { return SampleDepth(uv0, l); }
+float4 SampleFontLocation(float2 location) { return texture(samp8, location); }
 
 float4 ApplyGCGamma(float4 col)
 {
 	return pow(col, float4(native_gamma, native_gamma, native_gamma, native_gamma));
 }
-
 float2 GetResolution()
 {
 	return resolution.xy;
 }
-
 float2 GetInvResolution()
 {
 	return resolution.zw;
 }
-
 float2 GetCoordinates()
 {
 	return uv0;
 }
-
+float2 GetSourceTextureSize()
+{
+	return textureSize(samp9, 0).xy;
+}
 uint GetTime()
 {
 	return time;
 }
-
 void SetOutput(float4 color)
 {
 	ocol0 = color;
 }
-
+#define mult(a, b) (a * b)
 #define GetOption(x) (option_##x)
 #define OptionEnabled(x) (option_##x != 0)
 )GLSL";
