@@ -721,8 +721,8 @@ DependentOption = M_DITHER_PASS
 
 #define FIX(c) max(abs(c), 1e-5)
 
-const float Epsilon = 1e-10;
-const float3 lumCoeff = float3(0.2126729, 0.7151522, 0.0721750);
+#define Epsilon (1e-10)
+#define lumCoeff float3(0.2126729, 0.7151522, 0.0721750)
 
 float ColorLuminance(float3 color)
 {
@@ -1644,8 +1644,7 @@ float4 CelPass(float4 color)
 [FILM GRAIN CODE SECTION]
 ------------------------------------------------------------------------------*/
 
-const float permTexUnit = 1.0 / 256.0;
-const float permTexUnitHalf = 0.5 / 256.0;
+
 
 float Fade(float t)
 {
@@ -1679,6 +1678,9 @@ float4 Randomize(float2 texcoord)
 
 float PerNoise(float3 p)
 {
+	const float permTexUnit = 1.0 / 256.0;
+	const float permTexUnitHalf = 0.5 / 256.0;
+
 	float3 pf = frac(p);
 	float3 pi = permTexUnit * floor(p) + permTexUnitHalf;
 
@@ -1736,11 +1738,13 @@ float4 GrainPass(float4 color)
 	}
 
 	//noisiness response curve based on scene luminance
-	float luminance = lerp(0.0, dot(color.rgb, lumCoeff), GetOption(E_LUMA_AMOUNT));
+	float lamount = GetOption(E_LUMA_AMOUNT);	
+	float luminance = ColorLuminance(color.rgb);
+	luminance = lerp(0.0, luminance, lamount);
 	float lum = smoothstep(0.2, 0.0, luminance);
 	lum += luminance;
-
-	noise = lerp(noise, float3(0.0, 0.0, 0.0), pow(lum, 4.0));
+	lum = pow(lum, 4.0);
+	noise = lerp(noise, float3(0.0, 0.0, 0.0), lum);
 	color.rgb = color.rgb + noise * GetOption(B_GRAIN_AMOUNT);
 
 	return color;
