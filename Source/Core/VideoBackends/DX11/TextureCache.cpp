@@ -277,6 +277,7 @@ void TextureCache::TCacheEntry::FromRenderTarget(
 
 	// if texture is currently in use, it needs to be temporarily unset
 	u32 textureSlotMask = D3D::stateman->UnsetTexture(texture->GetSRV());
+	D3D::stateman->Apply();
 	D3D::context->OMSetRenderTargets(1, &texture->GetRTV(), nullptr);
 	// Create texture copy
 	D3D::drawShadedTexQuad(
