@@ -369,9 +369,6 @@ TextureCache::TCacheEntryBase* TextureCache::Load(const u32 stage)
 		palette_upload_required = s_prev_tlut_address != tlutaddr
 			|| s_prev_tlut_hash != tlut_hash
 			|| s_prev_tlut_size != palette_size;
-		s_prev_tlut_address = tlutaddr;
-		s_prev_tlut_hash = tlut_hash;
-		s_prev_tlut_size = palette_size;
 	}
 
 	// GPUs don't like when the specified mipmap count would require more than one 1x1-sized LOD in the mipmap chain
@@ -473,6 +470,10 @@ TextureCache::TCacheEntryBase* TextureCache::Load(const u32 stage)
 
 		if (palette_upload_required)
 		{
+			palette_upload_required = false;
+			s_prev_tlut_address = tlutaddr;
+			s_prev_tlut_hash = tlut_hash;
+			s_prev_tlut_size = palette_size;
 			g_texture_cache->LoadLut(tlutfmt, &texMem[tlutaddr], palette_size);
 		}
 
@@ -537,6 +538,10 @@ TextureCache::TCacheEntryBase* TextureCache::Load(const u32 stage)
 	}
 	if (isPaletteTexture && palette_upload_required && !hires_tex)
 	{
+		palette_upload_required = false;
+		s_prev_tlut_address = tlutaddr;
+		s_prev_tlut_hash = tlut_hash;
+		s_prev_tlut_size = palette_size;
 		g_texture_cache->LoadLut(tlutfmt, &texMem[tlutaddr], palette_size);
 	}
 	if (pcfmt == PC_TEX_FMT_NONE)
