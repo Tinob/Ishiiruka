@@ -1271,6 +1271,7 @@ void Renderer::BlitScreen(TargetRectangle src, TargetRectangle dst, D3DTexture2D
 
 		m_post_processor->BlitFromTexture(src, dst, src_texture, src_depth_texture, src_width, src_height, 0, Gamma);
 		dst.left += s_backbuffer_width;
+		dst.right += s_backbuffer_width;
 		m_post_processor->BlitFromTexture(src, dst, src_texture, src_depth_texture, src_width, src_height, 1, Gamma);
 		// Copy the left eye to the backbuffer, if Nvidia 3D Vision is enabled it should
 		// recognize the signature and automatically include the right eye frame.
