@@ -209,7 +209,15 @@ std::string PostProcessingShaderConfiguration::LoadOptions(const std::string& co
 				}
 			}
 		}
-		m_options[option.m_option_name] = option;
+		if (option.m_float_values.size() == 0 && option.m_integer_values.size() == 0)
+		{
+			option.m_integer_values.resize(std::max(option.m_integer_min_values.size(), option.m_integer_max_values.size()));
+			option.m_integer_values.resize(std::max(option.m_float_min_values.size(), option.m_float_max_values.size()));
+		}
+		if (option.m_float_values.size() != 0 
+			|| option.m_integer_values.size() != 0
+			|| option.m_type == ConfigurationOption::OptionType::OPTION_BOOL)
+			m_options[option.m_option_name] = option;
 	}
 	return code.substr(0, configuration_start) + code.substr(configuration_end + config_end_delimiter.size());
 }

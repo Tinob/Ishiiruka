@@ -366,7 +366,7 @@ std::string DX11PostProcessing::LoadShaderOptions(const std::string& code)
 			else if (it.second.m_type == PostProcessingShaderConfiguration::ConfigurationOption::OptionType::OPTION_INTEGER)
 			{
 				u32 count = static_cast<u32>(it.second.m_integer_values.size());
-				if (count == 1)
+				if (count < 2)
 					hlsl_options += StringFromFormat("int     option_%s;\n", it.first.c_str());
 				else
 					hlsl_options += StringFromFormat("int%d   option_%s;\n", count, it.first.c_str());
@@ -375,7 +375,7 @@ std::string DX11PostProcessing::LoadShaderOptions(const std::string& code)
 			else if (it.second.m_type == PostProcessingShaderConfiguration::ConfigurationOption::OptionType::OPTION_FLOAT)
 			{
 				u32 count = static_cast<u32>(it.second.m_float_values.size());
-				if (count == 1)
+				if (count < 2)
 					hlsl_options += StringFromFormat("float   option_%s;\n", it.first.c_str());
 				else
 					hlsl_options += StringFromFormat("float%d option_%s;\n", count, it.first.c_str());
