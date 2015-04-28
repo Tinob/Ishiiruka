@@ -14,7 +14,7 @@ MinValue = 0.0, 0.0
 MaxValue = 1.0, 1.0
 DefaultValue = 0.5, 0.5
 StepAmount = 0.01, 0.01
-[/ configuration]
+[/configuration]
 
 void main()
 {
