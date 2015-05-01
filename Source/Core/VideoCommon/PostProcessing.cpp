@@ -209,15 +209,29 @@ std::string PostProcessingShaderConfiguration::LoadOptions(const std::string& co
 				}
 			}
 		}
-		if (option.m_float_values.size() == 0 && option.m_integer_values.size() == 0)
+		if (option.m_type == ConfigurationOption::OptionType::OPTION_INTEGER)
 		{
-			option.m_integer_values.resize(std::max(option.m_integer_min_values.size(), option.m_integer_max_values.size()));
-			option.m_integer_values.resize(std::max(option.m_float_min_values.size(), option.m_float_max_values.size()));
+			size_t array_size = std::max(option.m_integer_min_values.size(), option.m_integer_max_values.size());
+			array_size = std::max(array_size, option.m_integer_step_values.size());
+			array_size = std::max(array_size, option.m_integer_values.size());
+			array_size = std::max(array_size, size_t(1));
+			if (option.m_integer_min_values.size() < array_size) option.m_integer_min_values.resize(array_size);
+			if (option.m_integer_max_values.size() < array_size) option.m_integer_max_values.resize(array_size);
+			if (option.m_integer_step_values.size() < array_size) option.m_integer_step_values.resize(array_size);
+			if (option.m_integer_values.size() < array_size) option.m_integer_values.resize(array_size);
 		}
-		if (option.m_float_values.size() != 0 
-			|| option.m_integer_values.size() != 0
-			|| option.m_type == ConfigurationOption::OptionType::OPTION_BOOL)
-			m_options[option.m_option_name] = option;
+		else if (option.m_type == ConfigurationOption::OptionType::OPTION_FLOAT)
+		{
+			size_t array_size = std::max(option.m_float_min_values.size(), option.m_float_max_values.size());
+			array_size = std::max(array_size, option.m_float_step_values.size());
+			array_size = std::max(array_size, option.m_float_values.size());
+			array_size = std::max(array_size, size_t(1));
+			if (option.m_float_min_values.size() < array_size) option.m_float_min_values.resize(array_size);
+			if (option.m_float_max_values.size() < array_size) option.m_float_max_values.resize(array_size);
+			if (option.m_float_step_values.size() < array_size) option.m_float_step_values.resize(array_size);
+			if (option.m_float_values.size() < array_size) option.m_float_values.resize(array_size);
+		}
+		m_options[option.m_option_name] = option;
 	}
 	return code.substr(0, configuration_start) + code.substr(configuration_end + config_end_delimiter.size());
 }
