@@ -66,7 +66,7 @@ template <typename N>
 static bool TryParse(const std::string &str, N *const output)
 {
 	std::istringstream iss(str);
-	iss.imbue(std::locale(".1252"));
+	iss.imbue(std::locale("C"));
 	N tmp = 0;
 	if (iss >> tmp)
 	{
