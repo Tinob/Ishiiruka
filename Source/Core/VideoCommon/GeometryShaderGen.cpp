@@ -249,7 +249,7 @@ static inline void GenerateGeometryShader(T& out, u32 primitive_type, const XFMe
 		out.Write("\tif (" I_TEXOFFSET"[2] != 0) {\n");
 		out.Write("\tfloat texOffset = 1.0 / float(" I_TEXOFFSET"[2]);\n");
 
-		for (unsigned int i = 0; i < bpmem.genMode.numtexgens; ++i)
+		for (unsigned int i = 0; i < bpm.genMode.numtexgens; ++i)
 		{
 			out.Write("\tif (((" I_TEXOFFSET"[0] >> %d) & 0x1) != 0)\n", i);
 			out.Write("\t\tr.tex%d.x += texOffset;\n", i);
@@ -274,7 +274,7 @@ static inline void GenerateGeometryShader(T& out, u32 primitive_type, const XFMe
 		out.Write("\tif (" I_TEXOFFSET"[3] != 0) {\n");
 		out.Write("\tfloat2 texOffset = float2(1.0 / float(" I_TEXOFFSET"[3]), 1.0 / float(" I_TEXOFFSET"[3]));\n");
 
-		for (unsigned int i = 0; i < bpmem.genMode.numtexgens; ++i)
+		for (unsigned int i = 0; i < bpm.genMode.numtexgens; ++i)
 		{
 			out.Write("\tif (((" I_TEXOFFSET"[1] >> %d) & 0x1) != 0) {\n", i);
 			out.Write("\t\tll.tex%d.xy += float2(0,1) * texOffset;\n", i);
