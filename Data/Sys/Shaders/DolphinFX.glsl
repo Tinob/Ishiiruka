@@ -1664,11 +1664,11 @@ float2 CoordRot(float2 tc, float angle)
 	return float2(rotX, rotY);
 }
 
-float4 Randomize(float2 texcoord)
+float4 Perm(float2 texcoord)
 {
-	float noise = (frac(sin(dot(texcoord, float2(12.9898, 78.233)*2.0)) * 43758.5453));
+	float noise = RandomSeedfloat(texcoord);
 
-	float noiseR = frac(noise) * 2.0 - 1.0;
+	float noiseR = noise * 2.0 - 1.0;
 	float noiseG = frac(noise * 1.2154) * 2.0 - 1.0;
 	float noiseB = frac(noise * 1.3453) * 2.0 - 1.0;
 	float noiseA = frac(noise * 1.3647) * 2.0 - 1.0;
@@ -1685,31 +1685,31 @@ float PerNoise(float3 p)
 	float3 pi = permTexUnit * floor(p) + permTexUnitHalf;
 
 	// Noise contributions from (x=0, y=0), z=0 and z=1
-	float perm00 = Randomize(pi.xy).a;
-	float3  grad000 = Randomize(float2(perm00, pi.z)).rgb * 4.0 - 1.0;
+	float perm00 = Perm(pi.xy).a;
+	float3  grad000 = Perm(float2(perm00, pi.z)).rgb * 4.0 - 1.0;
 	float n000 = dot(grad000, pf);
-	float3  grad001 = Randomize(float2(perm00, pi.z + permTexUnit)).rgb * 4.0 - 1.0;
+	float3  grad001 = Perm(float2(perm00, pi.z + permTexUnit)).rgb * 4.0 - 1.0;
 	float n001 = dot(grad001, pf - float3(0.0, 0.0, 1.0));
 
 	// Noise contributions from (x=0, y=1), z=0 and z=1
-	float perm01 = Randomize(pi.xy + float2(0.0, permTexUnit)).a;
-	float3  grad010 = Randomize(float2(perm01, pi.z)).rgb * 4.0 - 1.0;
+	float perm01 = Perm(pi.xy + float2(0.0, permTexUnit)).a;
+	float3  grad010 = Perm(float2(perm01, pi.z)).rgb * 4.0 - 1.0;
 	float n010 = dot(grad010, pf - float3(0.0, 1.0, 0.0));
-	float3  grad011 = Randomize(float2(perm01, pi.z + permTexUnit)).rgb * 4.0 - 1.0;
+	float3  grad011 = Perm(float2(perm01, pi.z + permTexUnit)).rgb * 4.0 - 1.0;
 	float n011 = dot(grad011, pf - float3(0.0, 1.0, 1.0));
 
 	// Noise contributions from (x=1, y=0), z=0 and z=1
-	float perm10 = Randomize(pi.xy + float2(permTexUnit, 0.0)).a;
-	float3  grad100 = Randomize(float2(perm10, pi.z)).rgb * 4.0 - 1.0;
+	float perm10 = Perm(pi.xy + float2(permTexUnit, 0.0)).a;
+	float3  grad100 = Perm(float2(perm10, pi.z)).rgb * 4.0 - 1.0;
 	float n100 = dot(grad100, pf - float3(1.0, 0.0, 0.0));
-	float3  grad101 = Randomize(float2(perm10, pi.z + permTexUnit)).rgb * 4.0 - 1.0;
+	float3  grad101 = Perm(float2(perm10, pi.z + permTexUnit)).rgb * 4.0 - 1.0;
 	float n101 = dot(grad101, pf - float3(1.0, 0.0, 1.0));
 
 	// Noise contributions from (x=1, y=1), z=0 and z=1
-	float perm11 = Randomize(pi.xy + float2(permTexUnit, permTexUnit)).a;
-	float3  grad110 = Randomize(float2(perm11, pi.z)).rgb * 4.0 - 1.0;
+	float perm11 = Perm(pi.xy + float2(permTexUnit, permTexUnit)).a;
+	float3  grad110 = Perm(float2(perm11, pi.z)).rgb * 4.0 - 1.0;
 	float n110 = dot(grad110, pf - float3(1.0, 1.0, 0.0));
-	float3  grad111 = Randomize(float2(perm11, pi.z + permTexUnit)).rgb * 4.0 - 1.0;
+	float3  grad111 = Perm(float2(perm11, pi.z + permTexUnit)).rgb * 4.0 - 1.0;
 	float n111 = dot(grad111, pf - float3(1.0, 1.0, 1.0));
 
 	float4 n_x = lerp(float4(n000, n001, n010, n011), float4(n100, n101, n110, n111), Fade(pf.x));
@@ -1826,24 +1826,13 @@ float4 ScanlinesPass(float4 color)
 [DITHERING CODE SECTION]
 ------------------------------------------------------------------------------*/
 
-float Random(float2 texcoord)
-{
-	float2 tex = CoordRot(texcoord, GetTime());
-
-	float seed = dot(tex, float2(12.9898, 78.233));
-	float sine = sin(seed);
-	float noise = frac(sine * 43758.5453);
-
-	return noise;
-}
-
 float4 DitherPass(float4 color)
 {
 	float ditherBits = 8.0;
 	float2 fragcoord = GetFragmentCoord();
 	if (GetOption(A_DITHER_TYPE) == 1) {  //random dithering
-
-		float noise = Random(fragcoord.xy);
+		
+		float noise = Rndfloat();
 		float ditherShift = (1.0 / (pow(2.0, ditherBits) - 1.0));
 		float ditherHalfShift = (ditherShift * 0.5);
 		ditherShift = ditherShift * noise - ditherHalfShift;
@@ -2149,7 +2138,7 @@ float4 FxaaPass(float4 color)
 void main()
 {
 	float4 color = Sample();
-
+	Randomize();
 	if (!OptionEnabled(DISABLE_EFFECTS))
 	{
 		if (OptionEnabled(A_FXAA_PASS)) { color = FxaaPass(color); }

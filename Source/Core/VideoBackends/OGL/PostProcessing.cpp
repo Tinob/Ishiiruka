@@ -323,6 +323,78 @@ void SetOutput(float4 color)
 #define mult(a, b) (a * b)
 #define GetOption(x) (option_##x)
 #define OptionEnabled(x) (option_##x != 0)
+//Random
+float global_rnd_state;
+float RandomSeedfloat(float2 seed)
+{
+	float noise = frac(sin(dot(seed, float2(12.9898, 78.233)*2.0)) * 43758.5453);
+	return noise;
+}
+
+void rnd_advance()
+{
+    global_rnd_state = RandomSeedfloat(uv0 + global_rnd_state);
+}
+
+uint RandomSeeduint(float2 seed)
+{
+	float noise = RandomSeedfloat(seed);
+	return uint(noise * 0xFFFFFF);
+}
+
+void Randomize()
+{
+	global_rnd_state = frac(float(GetTime())*0.0001);
+}
+
+uint Rndint()
+{
+	rnd_advance();
+	return uint(global_rnd_state * 0xFFFFFF);
+}
+
+float Rndfloat()
+{
+	rnd_advance();
+	return global_rnd_state;
+}
+
+float2 Rndfloat2()
+{
+	float2 val;
+	rnd_advance();
+	val.x = global_rnd_state;
+	rnd_advance();
+	val.y = global_rnd_state;
+	return val;
+}
+
+float3 Rndfloat3()
+{
+	float3 val;
+	rnd_advance();
+	val.x = global_rnd_state;
+	rnd_advance();
+	val.y = global_rnd_state;
+	rnd_advance();
+	val.z = global_rnd_state;
+	return val;
+}
+
+float4 Rndfloat4()
+{
+	float4 val;
+	rnd_advance();
+	val.x = global_rnd_state;
+	rnd_advance();
+	val.y = global_rnd_state;
+	rnd_advance();
+	val.z = global_rnd_state;
+	rnd_advance();
+	val.w = global_rnd_state;
+	return val;
+}
+
 )GLSL";
 }
 
