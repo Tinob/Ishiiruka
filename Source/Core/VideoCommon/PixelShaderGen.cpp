@@ -1501,7 +1501,7 @@ static inline void WriteTevCompareI(T& out, int components, int cmp)
 		"((idot(tin_a.rgb, c24) == idot(tin_b.rgb, c24)) ? tin_c%s : %s)", // TEVCMP_BGR24_EQ
 		// Only for RGB
 		"(max(sign(tin_a.rgb - tin_b.rgb - 0.5), int3(0,0,0)) * tin_c.rgb)", // TEVCMP_RGB8_GT
-		"((int3(1,1,1) - sign(abs(tevin_a.rgb - tevin_b.rgb))) * tevin_c.rgb)", // TEVCMP_RGB8_EQ
+		"((int3(1,1,1) - sign(abs(tin_a.rgb - tin_b.rgb))) * tin_c.rgb)", // TEVCMP_RGB8_EQ
 		// Only for ALPHA
 		"((tin_a.a  > tin_b.a) ? tin_c.a : 0)", // TEVCMP_A8_GT
 		"((tin_a.a == tin_b.a) ? tin_c.a : 0)", // TEVCMP_A8_EQ
