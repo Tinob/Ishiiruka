@@ -255,15 +255,15 @@ SHADER* ProgramShaderCache::SetShader(DSTALPHA_MODE dstAlphaMode, u32 components
 	return &last_entry->shader;
 }
 
-bool ProgramShaderCache::CompileShader(SHADER& shader, const char* vcode, const char* pcode, const char* gcode)
+bool ProgramShaderCache::CompileShader(SHADER& shader, const char* vcode, const char* pcode, const char* gcode, const char **macros, const u32 macro_count)
 {
-	GLuint vsid = CompileSingleShader(GL_VERTEX_SHADER, vcode);
-	GLuint psid = CompileSingleShader(GL_FRAGMENT_SHADER, pcode);
+	GLuint vsid = CompileSingleShader(GL_VERTEX_SHADER, vcode, macros, macro_count);
+	GLuint psid = CompileSingleShader(GL_FRAGMENT_SHADER, pcode, macros, macro_count);
 
 	// Optional geometry shader
 	GLuint gsid = 0;
 	if (gcode)
-		gsid = CompileSingleShader(GL_GEOMETRY_SHADER, gcode);
+		gsid = CompileSingleShader(GL_GEOMETRY_SHADER, gcode, macros, macro_count);
 
 	if (!vsid || !psid || (gcode && !gsid))
 	{

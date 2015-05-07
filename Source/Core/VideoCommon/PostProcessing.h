@@ -47,7 +47,14 @@ public:
 		bool m_dirty;
 	};
 
+	struct StageOption
+	{
+		std::string m_stage_entry_point;
+		float m_outputScale;
+	};
+
 	typedef std::map<std::string, ConfigurationOption> ConfigMap;
+	typedef std::vector<StageOption> StageList;
 
 	PostProcessingShaderConfiguration() : m_current_shader(""), m_requires_depth_input(false){}
 	virtual ~PostProcessingShaderConfiguration() {}
@@ -65,6 +72,7 @@ public:
 
 	bool HasOptions() { return m_options.size() > 0; }
 	ConfigMap& GetOptions() { return m_options; }
+	const StageList& GetStages() { return m_stages; }
 	const ConfigurationOption& GetOption(const std::string& option) { return m_options[option]; }
 
 	// For updating option's values
@@ -77,7 +85,7 @@ private:
 	bool m_requires_depth_input;
 	std::string m_current_shader;
 	ConfigMap m_options;
-
+	StageList m_stages;
 	std::string LoadOptions(const std::string& code);
 	void LoadOptionsConfiguration();
 };

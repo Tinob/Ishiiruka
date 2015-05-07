@@ -69,7 +69,7 @@ std::string PostProcessingShaderConfiguration::LoadOptions(const std::string& co
 	const std::string config_end_delimiter = "[/configuration]";
 	size_t configuration_start = code.find(config_start_delimiter);
 	size_t configuration_end = code.find(config_end_delimiter);
-
+	m_stages.clear();
 	m_options.clear();
 	m_any_options_dirty = true;
 	m_requires_depth_input = code.find("SampleDepth") != std::string::npos;
@@ -77,6 +77,11 @@ std::string PostProcessingShaderConfiguration::LoadOptions(const std::string& co
 		configuration_end == std::string::npos)
 	{
 		// Issue loading configuration or there isn't one.
+		//Add Default Stage
+		StageOption option;
+		option.m_stage_entry_point = "main";
+		option.m_outputScale = 1.0f;
+		m_stages.push_back(option);
 		return code;
 	}
 
@@ -92,6 +97,7 @@ std::string PostProcessingShaderConfiguration::LoadOptions(const std::string& co
 	};
 
 	std::vector<GLSLStringOption> option_strings;
+	std::vector<GLSLStringOption> stage_strings;
 	GLSLStringOption* current_strings = nullptr;
 	while (!in.eof())
 	{
@@ -117,8 +123,16 @@ std::string PostProcessingShaderConfiguration::LoadOptions(const std::string& co
 					{
 						// New section!
 						std::string sub = line.substr(1, endpos - 1);
-						option_strings.push_back({ sub });
-						current_strings = &option_strings.back();
+						if (sub == "Stage")
+						{
+							stage_strings.push_back({ sub });
+							current_strings = &stage_strings.back();
+						}
+						else
+						{
+							option_strings.push_back({ sub });
+							current_strings = &option_strings.back();
+						}
 					}
 				}
 				else
@@ -134,6 +148,35 @@ std::string PostProcessingShaderConfiguration::LoadOptions(const std::string& co
 				}
 			}
 		}
+	}
+
+	if (stage_strings.size() > 0)
+	{
+		for (const auto& it : stage_strings)
+		{
+			StageOption option;
+			option.m_outputScale = 1.0f;
+			for (const auto& string_option : it.m_options)
+			{
+				if (string_option.first == "EntryPoint")
+				{
+					option.m_stage_entry_point = string_option.second;
+				}
+				else if (string_option.first == "OutputScale")
+				{
+					TryParse(string_option.second, &option.m_outputScale);
+				}
+			}
+			m_stages.push_back(option);
+		}
+	}
+	else
+	{
+		//Add Default Stage
+		StageOption option;
+		option.m_stage_entry_point = "main";
+		option.m_outputScale = 1.0f;
+		m_stages.push_back(option);
 	}
 
 	for (const auto& it : option_strings)

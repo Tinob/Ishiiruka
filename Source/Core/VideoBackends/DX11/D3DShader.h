@@ -33,21 +33,26 @@ bool CompileShader(
 	ShaderType type, 
 	const std::string& code,
 	D3DBlob& blob, 
-	const D3D_SHADER_MACRO* pDefines = nullptr);
+	const D3D_SHADER_MACRO* pDefines = nullptr,
+	const char* pEntry = nullptr);
 
 // Utility functions
 VertexShaderPtr CompileAndCreateVertexShader(
 	const std::string& code,
-	const D3D_SHADER_MACRO* pDefines = nullptr);
+	const D3D_SHADER_MACRO* pDefines = nullptr,
+	const char* pEntry = nullptr);
 GeometryShaderPtr CompileAndCreateGeometryShader(
 	const std::string& code,
-	const D3D_SHADER_MACRO* pDefines = nullptr);
+	const D3D_SHADER_MACRO* pDefines = nullptr,
+	const char* pEntry = nullptr);
 PixelShaderPtr CompileAndCreatePixelShader(
 	const std::string& code,
-	const D3D_SHADER_MACRO* pDefines = nullptr);
+	const D3D_SHADER_MACRO* pDefines = nullptr,
+	const char* pEntry = nullptr);
 ComputeShaderPtr CompileAndCreateComputeShader(
 	const std::string& code,
-	const D3D_SHADER_MACRO* pDefines = nullptr);
+	const D3D_SHADER_MACRO* pDefines = nullptr,
+	const char* pEntry = nullptr);
 
 inline VertexShaderPtr CreateVertexShaderFromByteCode(D3DBlob& bytecode)
 {

@@ -67,7 +67,8 @@ bool CompileShader(
 	ShaderType type,
 	const std::string& code,
 	D3DBlob& blob,
-	const D3D_SHADER_MACRO* pDefines)
+	const D3D_SHADER_MACRO* pDefines,
+	const char* pEntry)
 {
 	char const *profile = nullptr;
 	char const *sufix = nullptr;
@@ -102,7 +103,7 @@ bool CompileShader(
 	ID3DBlobPtr shaderBuffer;
 	ID3DBlobPtr errorBuffer;
 	HRESULT hr = HLSLCompiler::getInstance().CompileShader(code.c_str(),
-		code.length(), nullptr, pDefines, nullptr, "main", profile,
+		code.length(), nullptr, pDefines, nullptr, pEntry != nullptr ? pEntry : "main", profile,
 		flags, 0, ToAddr(shaderBuffer), ToAddr(errorBuffer));
 
 	if (errorBuffer)
@@ -136,40 +137,40 @@ bool CompileShader(
 	return SUCCEEDED(hr);
 }
 
-VertexShaderPtr CompileAndCreateVertexShader(const std::string& code, const D3D_SHADER_MACRO* pDefines)
+VertexShaderPtr CompileAndCreateVertexShader(const std::string& code, const D3D_SHADER_MACRO* pDefines, const char* pEntry)
 {
 	D3DBlob blob;
-	if (CompileShader(DX11::D3D::ShaderType::Vertex, code, blob, pDefines))
+	if (CompileShader(DX11::D3D::ShaderType::Vertex, code, blob, pDefines, pEntry))
 	{
 		return CreateVertexShaderFromByteCode(blob);
 	}
 	return nullptr;
 }
 
-GeometryShaderPtr CompileAndCreateGeometryShader(const std::string& code, const D3D_SHADER_MACRO* pDefines)
+GeometryShaderPtr CompileAndCreateGeometryShader(const std::string& code, const D3D_SHADER_MACRO* pDefines, const char* pEntry)
 {
 	D3DBlob blob;
-	if (CompileShader(DX11::D3D::ShaderType::Geometry, code, blob, pDefines))
+	if (CompileShader(DX11::D3D::ShaderType::Geometry, code, blob, pDefines, pEntry))
 	{
 		return CreateGeometryShaderFromByteCode(blob);
 	}
 	return nullptr;
 }
 
-PixelShaderPtr CompileAndCreatePixelShader(const std::string& code, const D3D_SHADER_MACRO* pDefines)
+PixelShaderPtr CompileAndCreatePixelShader(const std::string& code, const D3D_SHADER_MACRO* pDefines, const char* pEntry)
 {
 	D3DBlob blob;
-	if (CompileShader(DX11::D3D::ShaderType::Pixel, code, blob, pDefines))
+	if (CompileShader(DX11::D3D::ShaderType::Pixel, code, blob, pDefines, pEntry))
 	{
 		return CreatePixelShaderFromByteCode(blob);
 	}
 	return nullptr;
 }
 
-ComputeShaderPtr CompileAndCreateComputeShader(const std::string& code, const D3D_SHADER_MACRO* pDefines)
+ComputeShaderPtr CompileAndCreateComputeShader(const std::string& code, const D3D_SHADER_MACRO* pDefines, const char* pEntry)
 {
 	D3DBlob blob;
-	if (CompileShader(DX11::D3D::ShaderType::Compute, code, blob, pDefines))
+	if (CompileShader(DX11::D3D::ShaderType::Compute, code, blob, pDefines, pEntry))
 	{
 		return CreateComputeShaderFromByteCode(blob);
 	}

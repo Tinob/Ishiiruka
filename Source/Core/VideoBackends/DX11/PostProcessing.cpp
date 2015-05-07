@@ -26,6 +26,7 @@ struct paramsStruct
 	float native_gamma;
 	float padding;
 	float resolution[4];
+	float targetscale[4];
 };
 
 struct STVertex { float x, y, z, u0, v0; };
@@ -38,6 +39,7 @@ cbuffer ParamBuffer : register(b0)
 	float native_gamma;
 	float padding;
 	float4 resolution;
+	float4 targetscale;
 }
 
 struct VSOUTPUT
@@ -58,7 +60,7 @@ VSOUTPUT main(float4 inPosition : POSITION,float2 inTEX0 : TEXCOORD0)
 })hlsl";
 
 DX11PostProcessing::DX11PostProcessing()
-	: m_initialized(false), m_vertexbuffer(0x4000)
+	: m_initialized(false), m_vertexbuffer(0x4000), m_prev_height(0), m_prev_width(0)
 {
 	const D3D11_INPUT_ELEMENT_DESC simpleelems[3] =
 	{
@@ -83,16 +85,25 @@ DX11PostProcessing::DX11PostProcessing()
 	D3D::SetDebugObjectName(m_params.get(), "Post processing constant buffer");
 	ID3D11SamplerState* samplers[] = { 
 		D3D::GetLinearCopySampler(), 
-		D3D::GetPointCopySampler()
+		D3D::GetPointCopySampler(),
+		D3D::GetLinearCopySampler()
 	};
-	D3D::context->PSSetSamplers(9, 2, samplers);
+	D3D::context->PSSetSamplers(9, 3, samplers);
 	m_vertex_buffer_observer = true;
 	m_vertexbuffer.AddWrapObserver(&m_vertex_buffer_observer);
 }
 
 DX11PostProcessing::~DX11PostProcessing()
 {
-	m_pshader.reset();
+	for (size_t i = 0; i < m_stageOutput.size(); i++)
+	{
+		m_stageOutput[i]->Release();
+	}
+	for (auto& shader : m_pshader)
+	{
+		shader.reset();
+	}
+	m_pshader.clear();
 	m_vshader.reset();
 	m_layout.reset();
 	m_params.reset();
@@ -105,9 +116,48 @@ void DX11PostProcessing::BlitFromTexture(const TargetRectangle &src, const Targe
 	D3DTexture2D* src_texture = ((D3DTexture2D*)src_texture_ptr);
 	D3DTexture2D* src_texture_depth = ((D3DTexture2D*)src_depth_texture_ptr);
 	ApplyShader();
-	D3D11_VIEWPORT vp = CD3D11_VIEWPORT((float)dst.left, (float)dst.top, (float)dst.GetWidth(), (float)dst.GetHeight());
-	D3D::context->RSSetViewports(1, &vp);
-
+	D3D11_MAPPED_SUBRESOURCE map;
+	if (m_config.IsDirty() && m_config.HasOptions())
+	{
+		D3D::context->Map(m_options.get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
+		u8* dstdata = (u8*)map.pData;
+		u32 buffer_size = 0;
+		for (auto& it : m_config.GetOptions())
+		{
+			u32 needed_size = 0;
+			switch (it.second.m_type)
+			{
+			case PostProcessingShaderConfiguration::ConfigurationOption::OptionType::OPTION_BOOL:
+				*((int*)dstdata) = it.second.m_bool_value;
+				needed_size = sizeof(int);
+				break;
+			case PostProcessingShaderConfiguration::ConfigurationOption::OptionType::OPTION_INTEGER:
+				needed_size = (u32)(it.second.m_integer_values.size() * sizeof(int));
+				memcpy(dstdata, it.second.m_integer_values.data(), needed_size);
+				break;
+			case PostProcessingShaderConfiguration::ConfigurationOption::OptionType::OPTION_FLOAT:
+				needed_size = (u32)(it.second.m_float_values.size() * sizeof(int));
+				memcpy(dstdata, it.second.m_float_values.data(), needed_size);
+				break;
+			}
+			u32 remaining = ((buffer_size + 15) & (~15)) - buffer_size;
+			if (remaining < needed_size)
+			{
+				// Padding needed to compensate contant buffer padding to 16 bytes
+				buffer_size += remaining;
+				dstdata += remaining;
+			}
+			buffer_size += needed_size;
+			dstdata += needed_size;
+			it.second.m_dirty = false;
+		}
+		D3D::context->Unmap(m_options.get(), 0);
+		m_config.SetDirty(false);
+	}
+	paramsStruct params;
+	params.native_gamma = 1.0f / gamma;
+	params.Layer = layer;
+	params.Time = (u32)m_timer.GetTimeElapsed();
 	float sw = 1.0f / (float)src_width;
 	float sh = 1.0f / (float)src_height;
 	float u0 = ((float)src.left) * sw;
@@ -115,14 +165,18 @@ void DX11PostProcessing::BlitFromTexture(const TargetRectangle &src, const Targe
 	float v0 = ((float)src.top) * sh;
 	float v1 = ((float)src.bottom) * sh;
 
-	paramsStruct params;
-	params.native_gamma = 1.0f / gamma;
-	params.Layer = layer;
-	params.Time = (u32)m_timer.GetTimeElapsed();
+
 	params.resolution[0] = (float)src_width;
 	params.resolution[1] = (float)src_height;
 	params.resolution[2] = sw;
 	params.resolution[3] = sh;
+	params.targetscale[0] = u0;
+	params.targetscale[1] = v0;
+	params.targetscale[2] = 1.0f / (u1-u0);
+	params.targetscale[3] = 1.0f / (v1-v0);
+	D3D::context->Map(m_params.get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
+	memcpy(map.pData, &params, sizeof(params));
+	D3D::context->Unmap(m_params.get(), 0);
 
 	STVertex coords[4] = {
 		{ -1.0f, 1.0f, 0.0f, u0, v0 },
@@ -133,79 +187,136 @@ void DX11PostProcessing::BlitFromTexture(const TargetRectangle &src, const Targe
 	if (m_vertex_buffer_observer || pu0 != u0 || pu1 != u1 || pv0 != v0 || pv1 != v1)
 	{
 		m_vertex_buffer_offset = m_vertexbuffer.AppendData(coords, sizeof(coords), sizeof(STVertex));
+		m_vertex_buffer_observer = false;
 		pu0 = u0;
 		pu1 = u1;
 		pv0 = v0;
 		pv1 = v1;
-	}
-	
-
-	D3D11_MAPPED_SUBRESOURCE map;
-	D3D::context->Map(m_params.get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
-	memcpy(map.pData, &params, sizeof(params));
-	D3D::context->Unmap(m_params.get(), 0);
-
-	if (m_config.IsDirty() && m_config.HasOptions())
-	{
-		D3D::context->Map(m_options.get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
-		u8* dst = (u8*)map.pData;
-		u32 buffer_size = 0;
-		for (auto& it : m_config.GetOptions())
-		{
-			u32 needed_size = 0;
-			switch (it.second.m_type)
-			{
-			case PostProcessingShaderConfiguration::ConfigurationOption::OptionType::OPTION_BOOL:
-				*((int*)dst) = it.second.m_bool_value;
-				needed_size = sizeof(int);
-				break;
-			case PostProcessingShaderConfiguration::ConfigurationOption::OptionType::OPTION_INTEGER:				
-				needed_size = (u32)(it.second.m_integer_values.size() * sizeof(int));
-				memcpy(dst, it.second.m_integer_values.data(), needed_size);
-				break;
-			case PostProcessingShaderConfiguration::ConfigurationOption::OptionType::OPTION_FLOAT:
-				needed_size = (u32)(it.second.m_float_values.size() * sizeof(int));
-				memcpy(dst, it.second.m_float_values.data(), needed_size);
-				break;
-			}
-			u32 remaining = ((buffer_size + 15) & (~15)) - buffer_size;
-			if (remaining < needed_size)
-			{
-				// Padding needed to compensate contant buffer padding to 16 bytes
-				buffer_size += remaining;
-				dst += remaining;
-			}
-			buffer_size += needed_size;
-			dst += needed_size;
-			it.second.m_dirty = false;
-		}
-		D3D::context->Unmap(m_options.get(), 0);
-		m_config.SetDirty(false);
 	}
 	D3D::stateman->SetVertexConstants(m_params.get());
 	D3D::stateman->SetPixelConstants(m_params.get(), m_options.get());
 	D3D::stateman->SetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 	D3D::stateman->SetInputLayout(m_layout.get());
 	D3D::stateman->SetVertexBuffer(m_vertexbuffer.GetBuffer(), sizeof(STVertex), 0);
-	D3D::stateman->SetPixelShader(m_pshader.get());
-	ID3D11ShaderResourceView* views[2] = {
+
+	ID3D11ShaderResourceView* views[3] = {
 		src_texture->GetSRV(),
+		nullptr,
 		nullptr
 	};
-	
+
 	if (src_texture_depth != nullptr)
 	{
-		views[1] = src_texture_depth->GetSRV();	
+		views[1] = src_texture_depth->GetSRV();
 	}
-	D3D::context->PSSetShaderResources(9, 2, views);
 	D3D::stateman->SetVertexShader(m_vshader.get());
 	D3D::stateman->SetGeometryShader(nullptr);
-
-	D3D::stateman->Apply();
-	D3D::context->Draw(4, m_vertex_buffer_offset);
+	D3D::context->PSSetShaderResources(9, 2, views);
+	ID3D11RenderTargetView* OutRTV = nullptr;
+	const auto& stages = m_config.GetStages();
+	size_t finalstage = stages.size() - 1;
+	if (finalstage > 0)
+	{
+		D3D::context->OMGetRenderTargets(1, &OutRTV, nullptr);
+		if (m_prev_width != dst.GetWidth() 
+			|| m_prev_height != dst.GetHeight() 
+			|| m_stageOutput.size() != finalstage)
+		{
+			m_prev_width = dst.GetWidth();
+			m_prev_height = dst.GetHeight();
+			for (size_t i = 0; i < m_stageOutput.size(); i++)
+			{
+				m_stageOutput[i]->Release();
+				m_stageOutput[i] = nullptr;
+			}
+			m_stageOutput.resize(finalstage);
+			for (size_t i = 0; i < finalstage; i++)
+			{
+				u32 stage_width = (u32)(m_prev_width * stages[i].m_outputScale);
+				u32 stage_height = (u32)(m_prev_height * stages[i].m_outputScale);
+				int flags = ((int)D3D11_BIND_RENDER_TARGET | (int)D3D11_BIND_SHADER_RESOURCE);
+				m_stageOutput[i] = D3DTexture2D::Create(
+					stage_width,
+					stage_height,
+					(D3D11_BIND_FLAG)flags,
+					D3D11_USAGE_DEFAULT, DXGI_FORMAT_R8G8B8A8_UNORM);
+			}
+		}
+	}
+	for (size_t i = 0; i < stages.size(); i++)
+	{
+		D3D11_VIEWPORT vp;
+		if (i == finalstage)
+		{
+			if (OutRTV != nullptr)
+			{
+				D3D::context->OMSetRenderTargets(1, &OutRTV, nullptr);
+				OutRTV->Release();
+			}
+			vp = CD3D11_VIEWPORT((float)dst.left, (float)dst.top, (float)dst.GetWidth(), (float)dst.GetHeight());
+		}
+		else
+		{
+			D3D::context->OMSetRenderTargets(1, &m_stageOutput[i]->GetRTV(), nullptr);
+			vp = CD3D11_VIEWPORT(0.0f, 0.0f, m_prev_width * stages[i].m_outputScale, m_prev_height * stages[i].m_outputScale);
+		}
+		D3D::context->RSSetViewports(1, &vp);
+		D3D::stateman->SetPixelShader(m_pshader[i].get());
+		bool prev_stage_output_required = i > 0 && finalstage > 0;
+		if (prev_stage_output_required)
+		{
+			views[2] = m_stageOutput[i - 1]->GetSRV();
+			D3D::context->PSSetShaderResources(11, 1, &views[2]);
+		}
+		D3D::stateman->Apply();
+		D3D::context->Draw(4, m_vertex_buffer_offset);
+		if (prev_stage_output_required)
+		{
+			views[2] = nullptr;
+			D3D::context->PSSetShaderResources(11, 1, &views[2]);
+		}
+	}
 	views[0] = nullptr;
 	views[1] = nullptr;
 	D3D::context->PSSetShaderResources(9, 2, views);
+}
+
+static const std::string s_hlsl_entry = "(\n"
+"out float4 ocol0 : SV_Target,\n"
+"in float4 frag_pos : SV_Position,\n"
+"in float2 _uv0 : TEXCOORD0,\n"
+"in float4 _uv1 : TEXCOORD1,\n"
+"in float4 _uv2 : TEXCOORD2)\n"
+"{\n"
+"fragment_pos = frag_pos;\n"
+"uv0 = _uv0;\n"
+"uv1 = _uv1;\n"
+"uv2 = _uv2;\n";
+
+std::string DX11PostProcessing::InitStages(const std::string &code)
+{
+	std::string result = code;
+	const auto& stages = m_config.GetStages();
+	m_pshader.resize(stages.size());
+	for (auto& stage : stages)
+	{
+		std::string glslentry = "void ";
+		glslentry += stage.m_stage_entry_point;
+		size_t entryPointStart = result.find(glslentry);
+		if (entryPointStart == std::string::npos)
+		{
+			result = "";
+			break;
+		}
+		size_t entryPointEnd = result.find("{", entryPointStart);
+		if (entryPointEnd == std::string::npos)
+		{
+			result = "";
+			break;
+		}
+		result = result.substr(0, entryPointStart + glslentry.size()) + s_hlsl_entry + result.substr(entryPointEnd + 1);
+	}
+	return result;
 }
 
 void DX11PostProcessing::ApplyShader()
@@ -213,25 +324,50 @@ void DX11PostProcessing::ApplyShader()
 	// shader didn't changed
 	if (m_initialized && m_config.GetShader() == g_ActiveConfig.sPostProcessingShader)
 		return;
-
-	m_pshader.reset();
-
+	for (size_t i = 0; i < m_stageOutput.size(); i++)
+	{
+		m_stageOutput[i]->Release();
+		m_stageOutput[i] = nullptr;
+	}
+	m_stageOutput.resize(0);
+	for (auto& shader : m_pshader)
+	{
+		shader.reset();
+	}
+	
 	// load shader code
 	std::string code = m_config.LoadShader();
+	code = InitStages(code);
 	code = LoadShaderOptions(code);
-
-	m_pshader = D3D::CompileAndCreatePixelShader(code);
-
+	
+	m_initialized = true;
+	const auto& stages = m_config.GetStages();
 	// and compile it
-	if (!m_pshader)
+	for (size_t i = 0; i < stages.size(); i++)
 	{
-		ERROR_LOG(VIDEO, "Failed to compile post-processing shader %s", m_config.GetShader().c_str());
+		m_pshader[i] = D3D::CompileAndCreatePixelShader(code, nullptr, stages[i].m_stage_entry_point.c_str());
+		if (!m_pshader[i])
+		{
+			ERROR_LOG(VIDEO, "Failed to compile post-processing shader %s", m_config.GetShader().c_str());
+			m_initialized = false;
+			break;
+		}
+	}
+	
+	if (!m_initialized)
+	{
+		// Erro COmpilling so fallback to default
 		g_Config.sPostProcessingShader.clear();
 		g_ActiveConfig.sPostProcessingShader.clear();
-		code = LoadShaderOptions(m_config.LoadShader());
-		m_pshader = D3D::CompileAndCreatePixelShader(code);
+		for (auto& shader : m_pshader)
+		{
+			shader.reset();
+		}
+		m_pshader.resize(1);
+		code = LoadShaderOptions(InitStages(m_config.LoadShader()));
+		m_pshader[0] = D3D::CompileAndCreatePixelShader(code);
+		m_initialized = true;
 	}
-	m_initialized = true;
 }
 
 static const std::string s_hlsl_header = R"hlsl(
@@ -241,9 +377,12 @@ static const std::string s_hlsl_header = R"hlsl(
 sampler samp8 : register(s8);
 sampler samp9 : register(s9);
 sampler samp10 : register(s10);
+sampler samp11 : register(s11);
 Texture2D Tex8 : register(t8);
 Texture2DArray Tex9 : register(t9);
 Texture2DArray Tex10 : register(t10);
+Texture2DArray Tex11 : register(t11);
+
 cbuffer ParamBuffer : register(b0) 
 {
 	uint Time;
@@ -251,6 +390,7 @@ cbuffer ParamBuffer : register(b0)
 	float native_gamma;
 	float padding;
 	float4 resolution;
+	float4 targetscale;
 }
 
 // Globals
@@ -268,6 +408,14 @@ float4 Sample(float2 location, int l)
 float4 SampleLocationOffset(float2 location, int2 offset)
 {
 	return Tex9.Sample(samp9, float3(location, layer), offset);
+}
+float4 SamplePrev(float2 location)
+{
+	return Tex11.Sample(samp11, float3((location - targetscale.xy) * targetscale.zw, 0));
+}
+float4 SamplePrevLocationOffset(float2 location, int2 offset)
+{
+	return Tex11.Sample(samp11, float3((location - targetscale.xy) * targetscale.zw , 0), offset);
 }
 float SampleDepth(float2 location, int l)
 {
@@ -292,10 +440,13 @@ float SampleDepthLoacationOffset(float2 location, int2 offset)
 
 float4 Sample() { return Sample(uv0, layer); }
 float4 SampleOffset(int2 offset) { return SampleLocationOffset(uv0, offset); }
+float4 SamplePrev() { return SamplePrev(uv0); }
+float4 SamplePrevOffset(int2 offset) { return SamplePrevLocationOffset(uv0, offset); }
 float SampleDepth() { return SampleDepth(uv0, layer); }
 float SampleDepthOffset(int2 offset) { return SampleDepthLoacationOffset(uv0, offset); }
 float4 SampleLocation(float2 location) { return Sample(location, layer); }
 float SampleDepthLocation(float2 location) { return SampleDepth(location, layer); }
+float4 SamplePrevLocation(float2 location) { return SamplePrev(location); }
 float4 SampleLayer(int l) { return Sample(uv0, l); }
 float SampleDepthLayer(int l) { return SampleDepth(uv0, l); }
 float4 SampleFontLocation(float2 location) { return Tex8.Sample(samp8, location); }
@@ -407,20 +558,6 @@ float4 Rndfloat4()
 
 )hlsl";
 
-static const std::string s_hlsl_entry = "void main(\n"
-"out float4 ocol0 : SV_Target,\n"
-"in float4 frag_pos : SV_Position,\n"
-"in float2 _uv0 : TEXCOORD0,\n"
-"in float4 _uv1 : TEXCOORD1,\n"
-"in float4 _uv2 : TEXCOORD2)\n"
-"{\n"
-"fragment_pos = frag_pos;\n"
-"uv0 = _uv0;\n"
-"uv1 = _uv1;\n"
-"uv2 = _uv2;\n";
-
-static const std::string glslentry = "void main()";
-
 std::string DX11PostProcessing::LoadShaderOptions(const std::string& code)
 {
 	m_options.reset();
@@ -477,19 +614,7 @@ std::string DX11PostProcessing::LoadShaderOptions(const std::string& code)
 			hlsl_options = "";
 		}
 	}
-	
-	size_t entryPointStart = code.find(glslentry);
-	if (entryPointStart == std::string::npos)
-	{
-		return "";
-	}
-	size_t entryPointEnd = code.find("{", entryPointStart);
-	if (entryPointEnd == std::string::npos)
-	{
-		return "";
-	}
-	std::string newcode = code.substr(0, entryPointStart) + s_hlsl_entry + code.substr(entryPointEnd + 1);
-	return s_hlsl_header + hlsl_options + newcode;
+	return s_hlsl_header + hlsl_options + code;
 }
 
 }  // namespace OGL

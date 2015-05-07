@@ -4,12 +4,12 @@
 
 #pragma once
 
-#include <string>
-#include <unordered_map>
+#include <vector>
 
 #include "VideoBackends/DX11/D3DBase.h"
 #include "VideoBackends/DX11/D3DShader.h"
 #include "VideoBackends/DX11/D3DUtil.h"
+#include "VideoBackends/DX11/D3DTexture.h"
 
 #include "VideoCommon/PostProcessing.h"
 #include "VideoCommon/VideoCommon.h"
@@ -27,13 +27,17 @@ namespace DX11
 		void ApplyShader() override;
 
 	private:
+		std::string InitStages(const std::string &code);
+		u32 m_prev_width;
+		u32 m_prev_height;
 		bool m_initialized;
 		D3D::UtilVertexBuffer m_vertexbuffer;
 		int m_vertex_buffer_offset;
 		bool m_vertex_buffer_observer;
 		float pu0, pu1, pv0, pv1;
 		D3D::VertexShaderPtr m_vshader;
-		D3D::PixelShaderPtr m_pshader;
+		std::vector<D3D::PixelShaderPtr> m_pshader;
+		std::vector<D3DTexture2D*> m_stageOutput;
 		D3D::InputLayoutPtr m_layout;
 		D3D::BufferPtr m_params;
 		D3D::BufferPtr m_options;
