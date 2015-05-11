@@ -10,15 +10,6 @@ MaxValue = 2
 StepAmount = 1
 DefaultValue = 1
 
-[OptionRangeInteger]
-GUIName = SSAO Quality
-OptionName = B_SSAO_SAMPLES
-MinValue = 16
-MaxValue = 64
-StepAmount = 4
-DefaultValue = 16
-DependentOption = A_SSAO_MODE
-
 [OptionRangeFloat]
 GUIName = Sample Range
 OptionName = C_SAMPLE_RANGE
@@ -268,7 +259,7 @@ void SSAO()
 		uint rndidx = fragcoord.y * 4 + fragcoord.x;
 		float3 vRandom = float3(rndNorm[rndidx], 0);
 		float fAO = 0;
-		const int NUMSAMPLES = GetOption(B_SSAO_SAMPLES);
+		#define NUMSAMPLES = 16;
 		for(int s = 0; s < NUMSAMPLES; s++) 
 		{
 			float3 offset = PoissonDisc[s];

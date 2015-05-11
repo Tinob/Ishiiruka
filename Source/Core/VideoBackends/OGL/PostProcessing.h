@@ -29,8 +29,10 @@ public:
 
 private:
 	void DestroyStageOutput();
-	u32 m_prev_width;
-	u32 m_prev_height;
+	u32 m_prev_dst_width;
+	u32 m_prev_dst_height;
+	u32 m_prev_src_width;
+	u32 m_prev_src_height;
 	bool m_initialized;
 	struct ShaderInstance
 	{

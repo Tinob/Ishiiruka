@@ -947,7 +947,7 @@ float4 LanczosScalerPass(float4 color)
 
 float4 SampleBilinear(float2 texcoord)
 {
-	float2 texSize = GetSourceTextureSize();
+	float2 texSize = GetResolution();
 	float texelSizeX = 1.0 / texSize.x;
 	float texelSizeY = 1.0 / texSize.y;
 
@@ -1447,7 +1447,7 @@ float Cubic(float coeff)
 
 float4 SampleBicubic(float2 texcoord)
 {
-	float2 texSize = GetSourceTextureSize();
+	float2 texSize = GetResolution();
 	float texelSizeX = (1.0 / texSize.x) * GetOption(C_SHARPEN_BIAS);
 	float texelSizeY = (1.0 / texSize.y) * GetOption(C_SHARPEN_BIAS);
 
@@ -1611,7 +1611,7 @@ float4 CelPass(float4 color)
 	}
 
 	float3 shadedColor = (sum / NUM);
-	float2 texSize = GetSourceTextureSize();
+	float2 texSize = GetResolution();
 	float2 pixel = (1.0 / texSize.xy) * GetOption(C_EDGE_THICKNESS);
 
 	float edgeX = dot(SampleLocation(GetCoordinates() + pixel).rgb, lumCoeff);
@@ -2124,7 +2124,7 @@ float4 FxaaPixelShader(float2 RcpFrame, float Subpix, float EdgeThreshold, float
 
 float4 FxaaPass(float4 color)
 {
-	color = FxaaPixelShader(1.0 / GetSourceTextureSize(), GetOption(A_FXAA_SUBPIX_MAX), GetOption(B_FXAA_EDGE_THRESHOLD), 0.000);
+	color = FxaaPixelShader(1.0 / GetResolution(), GetOption(A_FXAA_SUBPIX_MAX), GetOption(B_FXAA_EDGE_THRESHOLD), 0.000);
 
 	return color;
 }

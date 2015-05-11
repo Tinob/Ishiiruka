@@ -156,6 +156,7 @@ std::string PostProcessingShaderConfiguration::LoadOptions(const std::string& co
 		{
 			StageOption option;
 			option.m_outputScale = 1.0f;
+			option.m_use_source_resolution = false;			
 			for (const auto& string_option : it.m_options)
 			{
 				if (string_option.first == "EntryPoint")
@@ -166,6 +167,31 @@ std::string PostProcessingShaderConfiguration::LoadOptions(const std::string& co
 				{
 					TryParse(string_option.second, &option.m_outputScale);
 				}
+				else if (string_option.first == "UseSourceResolution")
+				{
+					TryParse(string_option.second, &option.m_use_source_resolution);
+				}
+				else if (string_option.first == "Inputs" && m_stages.size() > 0)
+				{
+					TryParseVector(string_option.second, &option.m_inputs);
+					//allow only as much inputs as previous stages and no more than 4
+					size_t stage_limit = std::min(m_stages.size(), size_t(4));
+					if (option.m_inputs.size() > stage_limit)
+						option.m_inputs.erase(option.m_inputs.begin() + stage_limit, option.m_inputs.end());
+					for (u32& it : option.m_inputs)
+					{
+						// Allow only inputs from previous stages
+						if (it >= m_stages.size())
+						{
+							it = u32(m_stages.size() - 1);
+						}
+					}
+				}
+			}
+			if (m_stages.size() > 0 && option.m_inputs.size() == 0)
+			{
+				// by default if no input is defined we bind the previous stage as input 0
+				option.m_inputs.push_back(u32(m_stages.size() - 1));
 			}
 			m_stages.push_back(option);
 		}

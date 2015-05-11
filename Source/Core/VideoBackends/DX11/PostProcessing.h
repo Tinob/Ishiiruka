@@ -28,8 +28,11 @@ namespace DX11
 
 	private:
 		std::string InitStages(const std::string &code);
-		u32 m_prev_width;
-		u32 m_prev_height;
+		u32 m_prev_dst_width;
+		u32 m_prev_dst_height;
+		u32 m_prev_src_width;
+		u32 m_prev_src_height;
+		u32 m_prev_samples;
 		bool m_initialized;
 		D3D::UtilVertexBuffer m_vertexbuffer;
 		int m_vertex_buffer_offset;

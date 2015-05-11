@@ -51,6 +51,8 @@ public:
 	{
 		std::string m_stage_entry_point;
 		float m_outputScale;
+		std::vector<u32> m_inputs;
+		bool m_use_source_resolution;
 	};
 
 	typedef std::map<std::string, ConfigurationOption> ConfigMap;

@@ -37,7 +37,7 @@ static const char s_vertex_shader[] =
 	"}\n";
 
 OpenGLPostProcessing::OpenGLPostProcessing()
-	: m_initialized(false), m_prev_height(0), m_prev_width(0)
+	: m_initialized(false), m_prev_dst_height(0), m_prev_dst_width(0), m_prev_src_height(0), m_prev_src_width(0)
 {
 	CreateHeader();
 
@@ -104,18 +104,24 @@ void OpenGLPostProcessing::BlitFromTexture(const TargetRectangle &src, const Tar
 	const auto& stages = m_config.GetStages();
 	size_t finalstage = stages.size() - 1;
 	if (finalstage > 0 &&
-		(m_prev_width != dst.GetWidth()
-		|| m_prev_height != dst.GetHeight()
+		(m_prev_dst_width != dst.GetWidth()
+		|| m_prev_dst_height != dst.GetHeight()
+		|| m_prev_src_width != src.GetWidth()
+		|| m_prev_src_height != src.GetHeight()
 		|| m_stageOutput.size() != finalstage))
 	{
-		m_prev_width = dst.GetWidth();
-		m_prev_height = dst.GetHeight();
+		m_prev_dst_width = dst.GetWidth();
+		m_prev_dst_height = dst.GetHeight();
+		m_prev_src_width = src.GetWidth();
+		m_prev_src_height = src.GetHeight();
 		DestroyStageOutput();
 		m_stageOutput.resize(finalstage);
 		for (size_t i = 0; i < finalstage; i++)
 		{
-			u32 stage_width = (u32)(dst.GetWidth() * stages[i].m_outputScale);
-			u32 stage_height = (u32)(dst.GetHeight() * stages[i].m_outputScale);
+			u32 stage_width = stages[i].m_use_source_resolution ? m_prev_src_width : m_prev_dst_width;
+			u32 stage_height = stages[i].m_use_source_resolution ? m_prev_src_height : m_prev_dst_height;
+			stage_width = (u32)(stage_width * stages[i].m_outputScale);
+			stage_height = (u32)(stage_height * stages[i].m_outputScale);
 			auto &stage_output = m_stageOutput[i];
 			glGenTextures(1, &stage_output.first);
 			glActiveTexture(GL_TEXTURE0 + 11);
@@ -138,7 +144,11 @@ void OpenGLPostProcessing::BlitFromTexture(const TargetRectangle &src, const Tar
 		else
 		{
 			FramebufferManager::SetFramebuffer(m_stageOutput[i].second);
-			glViewport(0, 0, (GLsizei)(dst.GetWidth() * stages[i].m_outputScale), (GLsizei)(dst.GetHeight()* stages[i].m_outputScale));
+			u32 stage_width = stages[i].m_use_source_resolution ? src.GetWidth() : dst.GetWidth();
+			u32 stage_height = stages[i].m_use_source_resolution ? src.GetHeight() : dst.GetHeight();
+			stage_width = (u32)(stage_width * stages[i].m_outputScale);
+			stage_height = (u32)(stage_height * stages[i].m_outputScale);
+			glViewport(0, 0, (GLsizei)(stage_width), (GLsizei)(stage_height));
 		}
 		ShaderInstance& currentshader = m_shaders[i];
 		currentshader.shader.Bind();
@@ -218,14 +228,20 @@ void OpenGLPostProcessing::BlitFromTexture(const TargetRectangle &src, const Tar
 		bool prev_stage_output_required = i > 0 && finalstage > 0;
 		if (prev_stage_output_required)
 		{
-			glActiveTexture(GL_TEXTURE0 + 11);
-			glBindTexture(GL_TEXTURE_2D_ARRAY, m_stageOutput[i - 1].first);
+			for (size_t stageidx = 0; stageidx < stages[i].m_inputs.size(); stageidx++)
+			{
+				glActiveTexture(GL_TEXTURE0 + 11 + GLenum(stageidx));
+				glBindTexture(GL_TEXTURE_2D_ARRAY, m_stageOutput[stages[i].m_inputs[stageidx]].first);
+			}
 		}
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 		if (prev_stage_output_required)
 		{
-			glActiveTexture(GL_TEXTURE0 + 11);
-			glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+			for (size_t stageidx = 0; stageidx < stages[i].m_inputs.size(); stageidx++)
+			{
+				glActiveTexture(GL_TEXTURE0 + 11 + GLenum(stageidx));
+				glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+			}
 		}
 	}
 	if (m_config.IsDirty())
@@ -345,6 +361,9 @@ SAMPLER_BINDING(8) uniform sampler2D samp8;
 SAMPLER_BINDING(9) uniform sampler2DArray samp9;
 SAMPLER_BINDING(10) uniform sampler2DArray samp10;
 SAMPLER_BINDING(11) uniform sampler2DArray samp11;
+SAMPLER_BINDING(12) uniform sampler2DArray samp12;
+SAMPLER_BINDING(13) uniform sampler2DArray samp13;
+SAMPLER_BINDING(14) uniform sampler2DArray samp14;
 
 // Output variable
 out float4 ocol0;
@@ -374,19 +393,50 @@ float4 Sample(float2 location, int l)
 
 float4 SampleLocationOffset(float2 location, int2 offset)
 { 
-	return texture(samp9, float3(location + offset *  resolution.zw, layer));
+	return texture(samp9, float3(location + offset * resolution.zw, layer));
 }
 
-float4 SamplePrev(float2 location)
+float4 SamplePrev(int idx, float2 location)
 {
-	return texture(samp11, float3((location - src_rect.xy) / src_rect.zw, 0));
+	if (idx == 0)
+	{
+		return texture(samp11, float3((location - src_rect.xy) / src_rect.zw, 0));
+	}
+	else if (idx == 1)
+	{
+		return texture(samp12, float3((location - src_rect.xy) / src_rect.zw, 0));
+	}
+	else if (idx == 2)
+	{
+		return texture(samp13, float3((location - src_rect.xy) / src_rect.zw, 0));
+	}
+	else
+	{
+		return texture(samp14, float3((location - src_rect.xy) / src_rect.zw, 0));
+	}
 }
 
-float4 SamplePrevLocationOffset(float2 location, int2 offset)
+float4 SamplePrevLocationOffset(int idx, float2 location, int2 offset)
 {
 	float2 newlocation = (location - src_rect.xy) / src_rect.zw;
 	newlocation += offset / (src_rect.zw * resolution.xy);
-	return texture(samp11, float3(newlocation, 0));
+	if (idx == 0)
+	{
+		return texture(samp11, float3(newlocation, 0));
+	}
+	else if (idx == 1)
+	{
+		return texture(samp12, float3(newlocation, 0));
+	}
+	else if (idx == 2)
+	{
+		return texture(samp13, float3(newlocation, 0));
+	}
+	else
+	{
+		return texture(samp14, float3(newlocation, 0));
+	}
+	
 }
 
 float SampleDepth(float2 location, int l)
@@ -418,7 +468,12 @@ float4 SampleOffset(int2 offset)
 
 float4 SamplePrevOffset(int2 offset)
 {
-	return SamplePrevLocationOffset(uv0, offset);
+	return SamplePrevLocationOffset(0, uv0, offset);
+}
+
+float4 SamplePrevOffset(int idx, int2 offset)
+{
+	return SamplePrevLocationOffset(idx, uv0, offset);
 }
 
 float SampleDepthOffset(int2 offset)
@@ -427,10 +482,12 @@ float SampleDepthOffset(int2 offset)
 }
 
 float4 Sample(){ return Sample(uv0, layer); }
-float4 SamplePrev(){ return SamplePrev(uv0); }
+float4 SamplePrev(){ return SamplePrev(0, uv0); }
+float4 SamplePrev(int idx){ return SamplePrev(idx, uv0); }
 float SampleDepth() { return SampleDepth(uv0, layer); }
 float4 SampleLocation(float2 location) { return Sample(location, layer); }
-float4 SamplePrevLocation(float2 location) { return SamplePrev(location); }
+float4 SamplePrevLocation(float2 location) { return SamplePrev(0, location); }
+float4 SamplePrevLocation(int idx, float2 location) { return SamplePrev(idx, location); }
 float SampleDepthLocation(float2 location) { return SampleDepth(location, layer); }
 float4 SampleLayer(int l) { return Sample(uv0, l); }
 float SampleDepthLayer(int l) { return SampleDepth(uv0, l); }
@@ -451,10 +508,6 @@ float2 GetInvResolution()
 float2 GetCoordinates()
 {
 	return uv0;
-}
-float2 GetSourceTextureSize()
-{
-	return textureSize(samp9, 0).xy;
 }
 uint GetTime()
 {

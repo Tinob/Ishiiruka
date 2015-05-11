@@ -794,11 +794,11 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 			TargetRectangle sourceRc = Renderer::ConvertEFBRectangle(rc);
 
 			// TODO: Improve sampling algorithm for the pixel shader so that we can use the multisampled EFB texture as source
-			D3DTexture2D* read_texture = FramebufferManager::GetResolvedEFBColorTexture();
+			D3DTexture2D* read_texture = FramebufferManager::GetEFBColorTexture();
 			D3DTexture2D* read_depth_texture = nullptr;
 			if (m_post_processor->GetConfig()->IsDepthInputRequired())
 			{
-				read_depth_texture = FramebufferManager::GetResolvedEFBDepthTexture();
+				read_depth_texture = FramebufferManager::GetEFBDepthTexture();
 			}
 			BlitScreen(sourceRc, targetRc, read_texture, read_depth_texture, GetTargetWidth(), GetTargetHeight(), Gamma);
 		}
