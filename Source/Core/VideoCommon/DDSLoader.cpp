@@ -248,14 +248,9 @@ DDSCompression ImageLoader::ReadDDS(ImageLoaderParams& loader_params)
 
 	//
 	// How big will the buffer need to be to load all of the pixel data 
-	// including mip-maps?
-	//
-	if (ddsd.dwLinearSize == 0)
-	{
-		// Buffer size is not preset so calculate it
-		ddsd.dwLinearSize = ((ddsd.dwWidth + 3) >> 2)*((ddsd.dwHeight + 3) >> 2)*block_size;
-	}
-
+	// including mip-maps?	
+	ddsd.dwLinearSize = ((ddsd.dwWidth + 3) >> 2)*((ddsd.dwHeight + 3) >> 2)*block_size;
+	
 	if (ddsd.dwMipMapCount > 1)
 		bufferSize = ddsd.dwLinearSize * factor;
 	else
@@ -269,10 +264,23 @@ DDSCompression ImageLoader::ReadDDS(ImageLoaderParams& loader_params)
 		return Result;
 	}
 
-	fread(loader_params.dst, 1, bufferSize, pFile);
-
+	u32 readedsize = (u32)fread(loader_params.dst, 1, bufferSize, pFile);
 	// Close the file
 	fclose(pFile);
+	if (readedsize < bufferSize)
+	{
+		// if the size readed is less than the size calculated then
+		// some of the header values are wrong we have to fallback
+		// to just load the available data
+		if (readedsize < ddsd.dwLinearSize)
+		{
+			// Invalid file just discard
+			return DDSC_NONE;
+		}
+		// Just load the first level
+		ddsd.dwMipMapCount = 0;
+	}
+	
 	u32 FourCC = ddsd.ddpfPixelFormat.dwFourCC;
 	Result = (FourCC == FOURCC_DXT1) ? DDSC_DXT1 : ((FourCC == FOURCC_DXT3) ? DDSC_DXT3 : DDSC_DXT5);
 	loader_params.Width = ddsd.dwWidth;
