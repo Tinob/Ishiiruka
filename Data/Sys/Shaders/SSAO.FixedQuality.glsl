@@ -1,5 +1,6 @@
 // Simple SSAO
-
+// Change this to increase SSAO Quality
+#define NUMSAMPLES 16
 /*
 [configuration]
 [OptionRangeInteger]
@@ -258,8 +259,7 @@ void SSAO()
 		uint2 fragcoord = uint2(GetFragmentCoord()) & 3;
 		uint rndidx = fragcoord.y * 4 + fragcoord.x;
 		float3 vRandom = float3(rndNorm[rndidx], 0);
-		float fAO = 0;
-		#define NUMSAMPLES = 16;
+		float fAO = 0;		
 		for(int s = 0; s < NUMSAMPLES; s++) 
 		{
 			float3 offset = PoissonDisc[s];

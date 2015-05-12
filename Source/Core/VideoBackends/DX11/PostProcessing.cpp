@@ -458,7 +458,6 @@ float SampleDepthLoacationOffset(float2 location, int2 offset)
 }
 )hlsl";
 
-
 static const std::string s_hlsl_header_MSAA = R"hlsl(
 // Required variables
 // Shouldn't be accessed directly by the PP shader
@@ -467,7 +466,7 @@ sampler samp8 : register(s8);
 sampler samp9 : register(s9);
 sampler samp10 : register(s10);
 Texture2D Tex8 : register(t8);
-Texture2DMSArray<float4, %d> Tex9 : register(t9);
+Texture2DArray Tex9 : register(t9);
 Texture2DMSArray<float4, %d> Tex10 : register(t10);
 Texture2DArray Tex11[4] : register(t11);
 
@@ -491,21 +490,11 @@ float2 GetFragmentCoord()
 }
 float4 Sample(float2 location, int l)
 {
-	const int samples = %d;
-	float4 color = 0;
-	for(int i = 0; i < samples; ++i)
-		color += Tex9.Load(int3(resolution.xy * location, l), i);
-	color /= samples;
-	return color;
+	return Tex9.Sample(samp9, float3(location, l));
 }
 float4 SampleLocationOffset(float2 location, int2 offset)
 {
-	const int samples = %d;
-	float4 color = 0;
-	for(int i = 0; i < samples; ++i)
-		color += Tex9.Load(int3(int2(resolution.xy * location), layer), i, offset);
-	color /= samples;
-	return color;
+	return Tex9.Sample(samp9, float3(location, layer), offset);
 }
 float4 SamplePrev(int idx, float2 location)
 {
@@ -523,12 +512,7 @@ float SampleDepth(float2 location, int l)
 	float B = (1 + ( Zfar / Znear ))/2;*/
 	float A = -499.5;
 	float B =  500.5;
-	const int samples = %d;
-	float d = 0;
-	for(int i = 0; i < samples; ++i)
-		d += Tex10.Load(int3(int2(resolution.xy * location), l), i).x;
-	d /= samples;
-	float depth = 1.0 - d;
+	float depth = 1.0 - Tex10.Load(int3(int2(resolution.xy * location), l), 0).x;
 	depth = 1.0 / (A * depth + B);
 	return depth;
 }
@@ -537,16 +521,11 @@ float SampleDepthLoacationOffset(float2 location, int2 offset)
 	float A = -499.5;
 	float B =  500.5;
 	const int samples = %d;
-	float d = 0;
-	for(int i = 0; i < samples; ++i)
-		d += Tex10.Load(int3(int2(resolution.xy * location), layer), i, offset).x;
-	d /= samples;
-	float depth = 1.0 - d;
+	float depth = 1.0 - Tex10.Load(int3(int2(resolution.xy * location), layer), 0, offset).x;
 	depth = 1.0 / (A * depth + B);
 	return depth;
 }
 )hlsl";
-
 
 static const std::string s_hlsl_interface = R"hlsl(
 float4 Sample() { return Sample(uv0, layer); }
@@ -730,7 +709,7 @@ std::string DX11PostProcessing::LoadShaderOptions(const std::string& code)
 	}
 	else
 	{
-		header = StringFromFormat(s_hlsl_header_MSAA.c_str(), s, s, s, s, s, s);
+		header = StringFromFormat(s_hlsl_header_MSAA.c_str(), s);
 	}
 	return header + s_hlsl_interface + hlsl_options + code;
 }
