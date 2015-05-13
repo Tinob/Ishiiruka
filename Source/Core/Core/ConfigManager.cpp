@@ -68,6 +68,9 @@ static const struct
 	{ "VolumeUp",              0,                    0 /* wxMOD_NONE */    },
 	{ "VolumeToggleMute",      0,                    0 /* wxMOD_NONE */    },
 
+	{ "IncreaseIR",            0,                    0 /* wxMOD_NONE */    },
+	{ "DecreaseIR",            0,                    0 /* wxMOD_NONE */    },
+
 	{ "ToggleIR",              0,                    0 /* wxMOD_NONE */    },
 	{ "ToggleAspectRatio",     0,                    0 /* wxMOD_NONE */    },
 	{ "ToggleEFBCopies",       0,                    0 /* wxMOD_NONE */    },
@@ -218,6 +221,9 @@ void SConfig::SaveGeneralSettings(IniFile& ini)
 	general->Set("WirelessMac", m_WirelessMac);
 
 #ifdef USE_GDBSTUB
+#ifndef _WIN32
+	general->Set("GDBSocket", m_LocalCoreStartupParameter.gdb_socket);
+#endif
 	general->Set("GDBPort", m_LocalCoreStartupParameter.iGDBPort);
 #endif
 }
@@ -289,13 +295,13 @@ void SConfig::SaveGameListSettings(IniFile& ini)
 	gamelist->Set("ListAustralia", m_ListAustralia);
 	gamelist->Set("ListFrance", m_ListFrance);
 	gamelist->Set("ListGermany", m_ListGermany);
-	gamelist->Set("ListWorld", m_ListWorld);
 	gamelist->Set("ListItaly", m_ListItaly);
 	gamelist->Set("ListKorea", m_ListKorea);
 	gamelist->Set("ListNetherlands", m_ListNetherlands);
 	gamelist->Set("ListRussia", m_ListRussia);
 	gamelist->Set("ListSpain", m_ListSpain);
 	gamelist->Set("ListTaiwan", m_ListTaiwan);
+	gamelist->Set("ListWorld", m_ListWorld);
 	gamelist->Set("ListUnknown", m_ListUnknown);
 	gamelist->Set("ListSort", m_ListSort);
 	gamelist->Set("ListSortSecondary", m_ListSort2);
@@ -304,7 +310,7 @@ void SConfig::SaveGameListSettings(IniFile& ini)
 
 	gamelist->Set("ColumnPlatform", m_showSystemColumn);
 	gamelist->Set("ColumnBanner", m_showBannerColumn);
-	gamelist->Set("ColumnNotes", m_showNotesColumn);
+	gamelist->Set("ColumnNotes", m_showMakerColumn);
 	gamelist->Set("ColumnID", m_showIDColumn);
 	gamelist->Set("ColumnRegion", m_showRegionColumn);
 	gamelist->Set("ColumnSize", m_showSizeColumn);
@@ -355,6 +361,7 @@ void SConfig::SaveCoreSettings(IniFile& ini)
 	core->Set("GFXBackend", m_LocalCoreStartupParameter.m_strVideoBackend);
 	core->Set("GPUDeterminismMode", m_LocalCoreStartupParameter.m_strGPUDeterminismMode);
 	core->Set("GameCubeAdapter", m_GameCubeAdapter);
+	core->Set("AdapterRumble", m_AdapterRumble);
 }
 
 void SConfig::SaveMovieSettings(IniFile& ini)
@@ -421,6 +428,9 @@ void SConfig::LoadGeneralSettings(IniFile& ini)
 	general->Get("ShowLag", &m_ShowLag, false);
 	general->Get("ShowFrameCount", &m_ShowFrameCount, false);
 #ifdef USE_GDBSTUB
+#ifndef _WIN32
+	general->Get("GDBSocket", &m_LocalCoreStartupParameter.gdb_socket, "");
+#endif
 	general->Get("GDBPort", &(m_LocalCoreStartupParameter.iGDBPort), -1);
 #endif
 
@@ -445,7 +455,7 @@ void SConfig::LoadGeneralSettings(IniFile& ini)
 			std::string tmpPath;
 			general->Get(StringFromFormat("GCMPath%i", i), &tmpPath, "");
 			bool found = false;
-			for (int j = 0; j < m_ISOFolder.size(); ++j)
+			for (size_t j = 0; j < m_ISOFolder.size(); ++j)
 			{
 				if (m_ISOFolder[j] == tmpPath)
 				{
@@ -540,13 +550,13 @@ void SConfig::LoadGameListSettings(IniFile& ini)
 	gamelist->Get("ListAustralia",     &m_ListAustralia,     true);
 	gamelist->Get("ListFrance",        &m_ListFrance,        true);
 	gamelist->Get("ListGermany",       &m_ListGermany,       true);
-	gamelist->Get("ListWorld",         &m_ListWorld,         true);
 	gamelist->Get("ListItaly",         &m_ListItaly,         true);
 	gamelist->Get("ListKorea",         &m_ListKorea,         true);
 	gamelist->Get("ListNetherlands",   &m_ListNetherlands,   true);
 	gamelist->Get("ListRussia",        &m_ListRussia,        true);
 	gamelist->Get("ListSpain",         &m_ListSpain,         true);
 	gamelist->Get("ListTaiwan",        &m_ListTaiwan,        true);
+	gamelist->Get("ListWorld",         &m_ListWorld,         true);
 	gamelist->Get("ListUnknown",       &m_ListUnknown,       true);
 	gamelist->Get("ListSort",          &m_ListSort,       3);
 	gamelist->Get("ListSortSecondary", &m_ListSort2,      0);
@@ -557,7 +567,7 @@ void SConfig::LoadGameListSettings(IniFile& ini)
 	// Gamelist columns toggles
 	gamelist->Get("ColumnPlatform",   &m_showSystemColumn,  true);
 	gamelist->Get("ColumnBanner",     &m_showBannerColumn,  true);
-	gamelist->Get("ColumnNotes",      &m_showNotesColumn,   true);
+	gamelist->Get("ColumnNotes",      &m_showMakerColumn,   true);
 	gamelist->Get("ColumnID",         &m_showIDColumn,      false);
 	gamelist->Get("ColumnRegion",     &m_showRegionColumn,  true);
 	gamelist->Get("ColumnSize",       &m_showSizeColumn,    true);
@@ -624,6 +634,7 @@ void SConfig::LoadCoreSettings(IniFile& ini)
 	core->Get("GFXBackend",                &m_LocalCoreStartupParameter.m_strVideoBackend, "");
 	core->Get("GPUDeterminismMode",        &m_LocalCoreStartupParameter.m_strGPUDeterminismMode, "auto");
 	core->Get("GameCubeAdapter",           &m_GameCubeAdapter,                             true);
+	core->Get("AdapterRumble",             &m_AdapterRumble,                               true);
 }
 
 void SConfig::LoadMovieSettings(IniFile& ini)

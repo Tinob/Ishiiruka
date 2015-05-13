@@ -2,9 +2,11 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
+#include "Common/ChunkFile.h"
 #include "Common/CommonTypes.h"
 #include "Common/FileUtil.h"
 #include "Common/NandPaths.h"
+#include "Common/StdMakeUnique.h"
 #include "Common/StringUtil.h"
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
@@ -246,12 +248,12 @@ CEXIMemoryCard::~CEXIMemoryCard()
 	CoreTiming::RemoveEvent(et_transfer_complete);
 }
 
-bool CEXIMemoryCard::UseDelayedTransferCompletion()
+bool CEXIMemoryCard::UseDelayedTransferCompletion() const
 {
 	return true;
 }
 
-bool CEXIMemoryCard::IsPresent()
+bool CEXIMemoryCard::IsPresent() const
 {
 	return true;
 }

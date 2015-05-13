@@ -2,8 +2,9 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
+#include "Common/ChunkFile.h"
+#include "Common/Logging/Log.h"
 #include "Core/Core.h"
-
 #include "Core/HW/EXI.h"
 #include "Core/HW/EXI_Device.h"
 #include "Core/HW/EXI_DeviceAMBaseboard.h"
@@ -21,7 +22,7 @@ void CEXIAMBaseboard::SetCS(int cs)
 		m_position = 0;
 }
 
-bool CEXIAMBaseboard::IsPresent()
+bool CEXIAMBaseboard::IsPresent() const
 {
 	return true;
 }

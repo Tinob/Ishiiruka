@@ -6,13 +6,15 @@
 
 #include "Core/HW/EXI_Device.h"
 
+class PointerWrap;
+
 class CEXIAMBaseboard : public IEXIDevice
 {
 public:
 	CEXIAMBaseboard();
 
 	virtual void SetCS(int _iCS) override;
-	virtual bool IsPresent() override;
+	virtual bool IsPresent() const override;
 	virtual bool IsInterruptSet() override;
 	virtual void DoState(PointerWrap &p) override;
 

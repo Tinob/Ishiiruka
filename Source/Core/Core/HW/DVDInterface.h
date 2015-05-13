@@ -5,9 +5,11 @@
 #pragma once
 
 #include <string>
+
 #include "Common/CommonTypes.h"
 
 class PointerWrap;
+namespace DiscIO { class IVolume; }
 namespace MMIO { class Mapping; }
 
 namespace DVDInterface
@@ -77,7 +79,7 @@ enum DICommand
 	DVDLowAudioBufferConfig = 0xe4
 };
 
-enum DIInterruptType
+enum DIInterruptType : int
 {
 	INT_DEINT = 0,
 	INT_TCINT = 1,
@@ -91,6 +93,12 @@ void DoState(PointerWrap &p);
 
 void RegisterMMIO(MMIO::Mapping* mmio, u32 base);
 
+// Direct disc access
+const DiscIO::IVolume& GetVolume();
+bool SetVolumeName(const std::string& disc_path);
+bool SetVolumeDirectory(const std::string& disc_path, bool is_wii, const std::string& apploader_path = "", const std::string& DOL_path = "");
+bool VolumeIsValid();
+
 // Disc detection and swapping
 void SetDiscInside(bool _DiscInside);
 bool IsDiscInside();
@@ -99,6 +107,7 @@ void ChangeDisc(const std::string& fileName);
 // DVD Access Functions
 bool DVDRead(u64 _iDVDOffset, u32 _iRamAddress, u32 _iLength, bool decrypt);
 extern bool g_bStream;
+bool ChangePartition(u64 offset);
 void ExecuteCommand(u32 command_0, u32 command_1, u32 command_2, u32 output_address, u32 output_length,
                     bool write_to_DIIMMBUF, int callback_event_type);
 

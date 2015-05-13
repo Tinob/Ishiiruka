@@ -2,8 +2,10 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
+#include <string>
+#include <vector>
+
 #include "Core/ConfigManager.h"
-#include "Core/CoreParameter.h"
 #include "Core/HotkeyManager.h"
 
 const std::string hotkey_labels[] =
@@ -35,6 +37,9 @@ const std::string hotkey_labels[] =
 	_trans("Volume Down"),
 	_trans("Volume Up"),
 	_trans("Volume Toggle Mute"),
+
+	_trans("Increase IR"),
+	_trans("Decrease IR"),
 
 	_trans("Toggle IR"),
 	_trans("Toggle Aspect Ratio"),

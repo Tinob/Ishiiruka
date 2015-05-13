@@ -9,21 +9,14 @@
 #include <utility>
 #include <wx/app.h>
 #include <wx/buffer.h>
-#include <wx/chartype.h>
 #include <wx/cmdline.h>
-#include <wx/defs.h>
-#include <wx/event.h>
-#include <wx/gdicmn.h>
 #include <wx/image.h>
 #include <wx/imagpng.h>
 #include <wx/intl.h>
 #include <wx/language.h>
 #include <wx/msgdlg.h>
-#include <wx/setup.h>
-#include <wx/string.h>
 #include <wx/thread.h>
 #include <wx/timer.h>
-#include <wx/translation.h>
 #include <wx/utils.h>
 #include <wx/window.h>
 
@@ -60,7 +53,6 @@
 #endif
 
 #ifdef _WIN32
-#include <shellapi.h>
 
 #ifndef SM_XVIRTUALSCREEN
 #define SM_XVIRTUALSCREEN 76
@@ -372,7 +364,6 @@ void DolphinApp::OnEndSession(wxCloseEvent& event)
 
 int DolphinApp::OnExit()
 {
-	Core::Shutdown();
 	UICommon::Shutdown();
 
 	delete m_locale;

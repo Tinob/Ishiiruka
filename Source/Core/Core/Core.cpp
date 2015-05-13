@@ -23,6 +23,7 @@
 
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
+#include "Core/CoreParameter.h"
 #include "Core/CoreTiming.h"
 #include "Core/DSPEmulator.h"
 #include "Core/Host.h"
@@ -31,10 +32,8 @@
 #include "Core/NetPlayProto.h"
 #include "Core/PatchEngine.h"
 #include "Core/State.h"
-#include "Core/VolumeHandler.h"
 #include "Core/Boot/Boot.h"
 #include "Core/FifoPlayer/FifoPlayer.h"
-
 #include "Core/HW/AudioInterface.h"
 #include "Core/HW/CPU.h"
 #include "Core/HW/DSP.h"
@@ -49,6 +48,7 @@
 #include "Core/HW/VideoInterface.h"
 #include "Core/HW/Wiimote.h"
 #include "Core/IPC_HLE/WII_IPC_HLE_Device_usb.h"
+#include "Core/IPC_HLE/WII_IPC_HLE_WiiMote.h"
 #include "Core/IPC_HLE/WII_Socket.h"
 #include "Core/PowerPC/JitInterface.h"
 #include "Core/PowerPC/PowerPC.h"
@@ -58,7 +58,7 @@
 #endif
 
 #include "DiscIO/FileMonitor.h"
-
+#include "InputCommon/ControllerInterface/ControllerInterface.h"
 #include "VideoCommon/OnScreenDisplay.h"
 #include "VideoCommon/VideoBackendBase.h"
 
@@ -140,6 +140,9 @@ std::string StopMessage(bool bMainThread, std::string Message)
 
 void DisplayMessage(const std::string& message, int time_in_ms)
 {
+	if (!IsRunning())
+		return;
+
 	// Actually displaying non-ASCII could cause things to go pear-shaped
 	for (const char& c : message)
 	{
@@ -267,6 +270,8 @@ void Stop()  // - Hammertime!
 
 		g_video_backend->Video_ExitLoop();
 	}
+	if (s_emu_thread.joinable())
+		s_emu_thread.join();
 }
 
 static void DeclareAsCPUThread()
@@ -321,6 +326,14 @@ static void CpuThread()
 
 
 	#ifdef USE_GDBSTUB
+	#ifndef _WIN32
+	if (!_CoreParameter.gdb_socket.empty())
+	{
+		gdb_init_local(_CoreParameter.gdb_socket.data());
+		gdb_break();
+	}
+	else
+	#endif
 	if (_CoreParameter.iGDBPort > 0)
 	{
 		gdb_init(_CoreParameter.iGDBPort);
@@ -358,6 +371,7 @@ static void FifoPlayerThread()
 	}
 
 	s_is_started = true;
+	DeclareAsCPUThread();
 
 	// Enter CPU run loop. When we leave it - we are done.
 	if (FifoPlayer::GetInstance().Open(_CoreParameter.m_strFilename))
@@ -366,6 +380,7 @@ static void FifoPlayerThread()
 		FifoPlayer::GetInstance().Close();
 	}
 
+	UndeclareAsCPUThread();
 	s_is_started = false;
 
 	if (!_CoreParameter.bCPUThread)
@@ -542,7 +557,6 @@ void EmuThread()
 	if (core_parameter.bCPUThread)
 		video_backend->Video_Cleanup();
 
-	VolumeHandler::EjectVolume();
 	FileMon::Close();
 
 	// Stop audio thread - Actually this does nothing when using HLE
@@ -794,12 +808,6 @@ void UpdateTitle()
 	// This is our final "frame counter" string
 	std::string SMessage = StringFromFormat("%s | %s", SSettings.c_str(), SFPS.c_str());
 	Host_UpdateTitle(SMessage);
-}
-
-void Shutdown()
-{
-	if (s_emu_thread.joinable())
-		s_emu_thread.join();
 }
 
 void SetOnStoppedCallback(StoppedCallbackFunc callback)

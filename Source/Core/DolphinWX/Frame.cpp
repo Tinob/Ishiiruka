@@ -11,28 +11,17 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include <wx/chartype.h>
-#include <wx/defs.h>
-#include <wx/event.h>
 #include <wx/filename.h>
 #include <wx/frame.h>
-#include <wx/gdicmn.h>
 #include <wx/icon.h>
 #include <wx/listbase.h>
 #include <wx/menu.h>
-#include <wx/menuitem.h>
-#include <wx/mousestate.h>
 #include <wx/msgdlg.h>
 #include <wx/panel.h>
 #include <wx/sizer.h>
 #include <wx/statusbr.h>
-#include <wx/string.h>
 #include <wx/textctrl.h>
 #include <wx/thread.h>
-#include <wx/toplevel.h>
-#include <wx/translation.h>
-#include <wx/window.h>
-#include <wx/windowid.h>
 #include <wx/aui/auibook.h>
 #include <wx/aui/framemanager.h>
 
@@ -883,13 +872,13 @@ void CFrame::OnGameListCtrlItemActivated(wxListEvent& WXUNUSED(event))
 		SConfig::GetInstance().m_ListAustralia &&
 		SConfig::GetInstance().m_ListFrance &&
 		SConfig::GetInstance().m_ListGermany &&
-		SConfig::GetInstance().m_ListWorld &&
 		SConfig::GetInstance().m_ListItaly &&
 		SConfig::GetInstance().m_ListKorea &&
 		SConfig::GetInstance().m_ListNetherlands &&
 		SConfig::GetInstance().m_ListRussia &&
 		SConfig::GetInstance().m_ListSpain &&
 		SConfig::GetInstance().m_ListTaiwan &&
+		SConfig::GetInstance().m_ListWorld &&
 		SConfig::GetInstance().m_ListUnknown)))
 	{
 		SConfig::GetInstance().m_ListGC =
@@ -901,13 +890,13 @@ void CFrame::OnGameListCtrlItemActivated(wxListEvent& WXUNUSED(event))
 		SConfig::GetInstance().m_ListAustralia =
 		SConfig::GetInstance().m_ListFrance =
 		SConfig::GetInstance().m_ListGermany =
-		SConfig::GetInstance().m_ListWorld =
 		SConfig::GetInstance().m_ListItaly =
 		SConfig::GetInstance().m_ListKorea =
 		SConfig::GetInstance().m_ListNetherlands =
 		SConfig::GetInstance().m_ListRussia =
 		SConfig::GetInstance().m_ListSpain =
 		SConfig::GetInstance().m_ListTaiwan =
+		SConfig::GetInstance().m_ListWorld =
 		SConfig::GetInstance().m_ListUnknown = true;
 
 		GetMenuBar()->FindItem(IDM_LIST_GC)->Check(true);
@@ -919,13 +908,13 @@ void CFrame::OnGameListCtrlItemActivated(wxListEvent& WXUNUSED(event))
 		GetMenuBar()->FindItem(IDM_LIST_AUSTRALIA)->Check(true);
 		GetMenuBar()->FindItem(IDM_LIST_FRANCE)->Check(true);
 		GetMenuBar()->FindItem(IDM_LIST_GERMANY)->Check(true);
-		GetMenuBar()->FindItem(IDM_LIST_WORLD)->Check(true);
 		GetMenuBar()->FindItem(IDM_LIST_ITALY)->Check(true);
 		GetMenuBar()->FindItem(IDM_LIST_KOREA)->Check(true);
 		GetMenuBar()->FindItem(IDM_LIST_NETHERLANDS)->Check(true);
 		GetMenuBar()->FindItem(IDM_LIST_RUSSIA)->Check(true);
 		GetMenuBar()->FindItem(IDM_LIST_SPAIN)->Check(true);
 		GetMenuBar()->FindItem(IDM_LIST_TAIWAN)->Check(true);
+		GetMenuBar()->FindItem(IDM_LIST_WORLD)->Check(true);
 		GetMenuBar()->FindItem(IDM_LIST_UNKNOWN)->Check(true);
 
 		m_GameListCtrl->Update();
@@ -1363,6 +1352,18 @@ void CFrame::ParseHotkeys(wxKeyEvent &event)
 		// Toggle native resolution
 		if (++g_Config.iEFBScale > SCALE_4X)
 			g_Config.iEFBScale = SCALE_AUTO;
+	}
+	else if (IsHotkey(event, HK_INCREASE_IR))
+	{
+		OSDChoice = 1;
+		if (++g_Config.iEFBScale > SCALE_8X)
+			g_Config.iEFBScale = SCALE_8X;
+	}
+	else if (IsHotkey(event, HK_DECREASE_IR))
+	{
+		OSDChoice = 1;
+		if (--g_Config.iEFBScale < SCALE_1X)
+			g_Config.iEFBScale = SCALE_1X;
 	}
 	else if (IsHotkey(event, HK_TOGGLE_AR))
 	{

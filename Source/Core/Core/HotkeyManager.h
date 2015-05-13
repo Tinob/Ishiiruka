@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "Core/CoreParameter.h"
+#include <string>
 #include "InputCommon/InputConfig.h"
 
 struct HotkeyStatus
@@ -39,6 +39,4 @@ namespace HotkeyManagerEmu
 	bool IsEnabled();
 	void Enable(bool enable_toggle);
 	bool IsPressed(int Id, bool held);
-
-	static bool enabled;
 }

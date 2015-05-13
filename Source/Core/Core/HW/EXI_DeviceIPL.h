@@ -7,7 +7,8 @@
 #include <string>
 
 #include "Core/HW/EXI_Device.h"
-#include "Core/HW/Sram.h"
+
+class PointerWrap;
 
 class CEXIIPL : public IEXIDevice
 {
@@ -16,7 +17,7 @@ public:
 	virtual ~CEXIIPL();
 
 	virtual void SetCS(int _iCS) override;
-	bool IsPresent() override;
+	bool IsPresent() const override;
 	void DoState(PointerWrap &p) override;
 
 	static u32 GetGCTime();

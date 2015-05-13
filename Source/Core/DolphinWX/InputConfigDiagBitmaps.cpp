@@ -9,16 +9,12 @@
 #include <vector>
 #include <wx/bitmap.h>
 #include <wx/brush.h>
-#include <wx/chartype.h>
 #include <wx/colour.h>
 #include <wx/dcmemory.h>
-#include <wx/defs.h>
 #include <wx/font.h>
-#include <wx/gdicmn.h>
 #include <wx/notebook.h>
 #include <wx/pen.h>
 #include <wx/statbmp.h>
-#include <wx/string.h>
 
 #include "DolphinWX/InputConfigDiag.h"
 #include "DolphinWX/WxUtils.h"
@@ -452,11 +448,6 @@ void InputConfigDialog::UpdateBitmaps(wxTimerEvent& WXUNUSED(event))
 	wxFont small_font(6, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD);
 
 	g_controller_interface.UpdateInput();
-
-	// don't want game thread updating input when we are using it here
-	std::unique_lock<std::recursive_mutex> lk(g_controller_interface.update_lock, std::try_to_lock);
-	if (!lk.owns_lock())
-		return;
 
 	GamepadPage* const current_page = (GamepadPage*)m_pad_notebook->GetPage(m_pad_notebook->GetSelection());
 

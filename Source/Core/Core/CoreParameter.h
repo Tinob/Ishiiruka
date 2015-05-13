@@ -7,6 +7,7 @@
 #include <string>
 
 #include "Common/IniFile.h"
+#include "DiscIO/Volume.h"
 
 enum Hotkey
 {
@@ -37,6 +38,9 @@ enum Hotkey
 	HK_VOLUME_DOWN,
 	HK_VOLUME_UP,
 	HK_VOLUME_TOGGLE_MUTE,
+
+	HK_INCREASE_IR,
+	HK_DECREASE_IR,
 
 	HK_TOGGLE_IR,
 	HK_TOGGLE_AR,
@@ -132,6 +136,9 @@ struct SCoreStartupParameter
 	bool bEnableDebugging;
 	#ifdef USE_GDBSTUB
 	int  iGDBPort;
+	#ifndef _WIN32
+	std::string gdb_socket;
+	#endif
 	#endif
 	bool bAutomaticStart;
 	bool bBootToPause;
@@ -250,6 +257,7 @@ struct SCoreStartupParameter
 	bool AutoSetup(EBootBS2 _BootBS2);
 	const std::string &GetUniqueID() const { return m_strUniqueID; }
 	void CheckMemcardPath(std::string& memcardPath, std::string gameRegion, bool isSlotA);
+	DiscIO::IVolume::ELanguage GetCurrentLanguage(bool wii) const;
 
 	IniFile LoadDefaultGameIni() const;
 	IniFile LoadLocalGameIni() const;

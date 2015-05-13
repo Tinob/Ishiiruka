@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "Core/DSP/DSPTables.h"
+#include "Core/DSP/DSPCommon.h"
 
 #define DSP_REG_MASK    0x1f
 
@@ -21,8 +21,6 @@ void HandleLoop();
 int RunCyclesThread(int cycles);
 int RunCycles(int cycles);
 int RunCyclesDebug(int cycles);
-
-void Stop();
 
 void WriteCR(u16 val);
 u16  ReadCR();

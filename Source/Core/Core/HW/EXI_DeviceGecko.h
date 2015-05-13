@@ -5,12 +5,13 @@
 #pragma once
 
 #include <deque>
+#include <memory>
+#include <mutex>
 #include <queue>
-
+#include <thread>
 #include <SFML/Network.hpp>
 
-#include "Common/Thread.h"
-
+#include "Common/CommonTypes.h"
 #include "Core/HW/EXI_Device.h"
 
 class GeckoSockServer
@@ -49,7 +50,7 @@ class CEXIGecko
 {
 public:
 	CEXIGecko() {}
-	bool IsPresent() override { return true; }
+	bool IsPresent() const override { return true; }
 	void ImmReadWrite(u32 &_uData, u32 _uSize) override;
 
 private:

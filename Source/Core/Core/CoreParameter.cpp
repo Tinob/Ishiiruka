@@ -65,6 +65,9 @@ void SCoreStartupParameter::LoadDefaults()
 
 	#ifdef USE_GDBSTUB
 	iGDBPort = -1;
+	#ifndef _WIN32
+	gdb_socket = "";
+	#endif
 	#endif
 
 	iCPUCore = PowerPC::CORE_JIT64;
@@ -125,11 +128,11 @@ static const char* GetRegionOfCountry(DiscIO::IVolume::ECountry country)
 	case DiscIO::IVolume::COUNTRY_EUROPE:
 	case DiscIO::IVolume::COUNTRY_FRANCE:
 	case DiscIO::IVolume::COUNTRY_GERMANY:
-	case DiscIO::IVolume::COUNTRY_WORLD:
 	case DiscIO::IVolume::COUNTRY_ITALY:
 	case DiscIO::IVolume::COUNTRY_NETHERLANDS:
 	case DiscIO::IVolume::COUNTRY_RUSSIA:
 	case DiscIO::IVolume::COUNTRY_SPAIN:
+	case DiscIO::IVolume::COUNTRY_WORLD:
 		return EUR_DIR;
 
 	case DiscIO::IVolume::COUNTRY_UNKNOWN:
@@ -373,6 +376,20 @@ void SCoreStartupParameter::CheckMemcardPath(std::string& memcardPath, std::stri
 			memcardPath = filename.replace(filename.size()-ext.size(), ext.size(), ext);
 		}
 	}
+}
+
+DiscIO::IVolume::ELanguage SCoreStartupParameter::GetCurrentLanguage(bool wii) const
+{
+	DiscIO::IVolume::ELanguage language;
+	if (wii)
+		language = (DiscIO::IVolume::ELanguage)SConfig::GetInstance().m_SYSCONF->GetData<u8>("IPL.LNG");
+	else
+		language = (DiscIO::IVolume::ELanguage)(SConfig::GetInstance().m_LocalCoreStartupParameter.SelectedLanguage + 1);
+
+	// Get rid of invalid values (probably doesn't matter, but might as well do it)
+	if (language > DiscIO::IVolume::ELanguage::LANGUAGE_UNKNOWN || language < 0)
+		language = DiscIO::IVolume::ELanguage::LANGUAGE_UNKNOWN;
+	return language;
 }
 
 IniFile SCoreStartupParameter::LoadDefaultGameIni() const

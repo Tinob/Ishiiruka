@@ -2,13 +2,9 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
-#include <wx/chartype.h>
 #include <wx/colour.h>
-#include <wx/defs.h>
 #include <wx/grid.h>
 #include <wx/menu.h>
-#include <wx/string.h>
-#include <wx/windowid.h>
 
 #include "Common/CommonTypes.h"
 #include "Common/GekkoDisassembler.h"
@@ -241,7 +237,6 @@ wxGridCellAttr *CRegTable::GetAttr(int row, int col, wxGridCellAttr::wxAttrKind)
 	}
 
 	attr->SetTextColour(red ? *wxRED : *wxBLACK);
-	attr->IncRef();
 	return attr;
 }
 
@@ -263,8 +258,8 @@ CRegisterView::CRegisterView(wxWindow *parent, wxWindowID id)
 
 void CRegisterView::Update()
 {
-	ForceRefresh();
 	m_register_table->UpdateCachedRegs();
+	ForceRefresh();
 }
 
 void CRegisterView::OnMouseDownR(wxGridEvent& event)

@@ -12,19 +12,19 @@
 #include "Core/PowerPC/JitCommon/JitBase.h"
 #include "Core/PowerPC/JitCommon/JitCache.h"
 
-bool BreakPoints::IsAddressBreakPoint(u32 _iAddress)
+bool BreakPoints::IsAddressBreakPoint(u32 address) const
 {
 	for (const TBreakPoint& bp : m_BreakPoints)
-		if (bp.iAddress == _iAddress)
+		if (bp.iAddress == address)
 			return true;
 
 	return false;
 }
 
-bool BreakPoints::IsTempBreakPoint(u32 _iAddress)
+bool BreakPoints::IsTempBreakPoint(u32 address) const
 {
 	for (const TBreakPoint& bp : m_BreakPoints)
-		if (bp.iAddress == _iAddress && bp.bTemporary)
+		if (bp.iAddress == address && bp.bTemporary)
 			return true;
 
 	return false;
@@ -165,8 +165,13 @@ void MemChecks::AddFromStrings(const TMemChecksStr& mcstrs)
 
 void MemChecks::Add(const TMemCheck& _rMemoryCheck)
 {
+	bool had_any = HasAny();
 	if (GetMemCheck(_rMemoryCheck.StartAddress) == nullptr)
 		m_MemChecks.push_back(_rMemoryCheck);
+	// If this is the first one, clear the JIT cache so it can switch to
+	// watchpoint-compatible code.
+	if (!had_any)
+		jit->ClearCache();
 }
 
 void MemChecks::Remove(u32 _Address)
@@ -179,6 +184,8 @@ void MemChecks::Remove(u32 _Address)
 			return;
 		}
 	}
+	if (!HasAny())
+		jit->ClearCache();
 }
 
 TMemCheck *MemChecks::GetMemCheck(u32 address)
@@ -200,7 +207,7 @@ TMemCheck *MemChecks::GetMemCheck(u32 address)
 	return nullptr;
 }
 
-void TMemCheck::Action(DebugInterface *debug_interface, u32 iValue, u32 addr, bool write, int size, u32 pc)
+bool TMemCheck::Action(DebugInterface *debug_interface, u32 iValue, u32 addr, bool write, int size, u32 pc)
 {
 	if ((write && OnWrite) || (!write && OnRead))
 	{
@@ -213,9 +220,9 @@ void TMemCheck::Action(DebugInterface *debug_interface, u32 iValue, u32 addr, bo
 				);
 		}
 
-		if (Break)
-			debug_interface->BreakNow();
+		return true;
 	}
+	return false;
 }
 
 

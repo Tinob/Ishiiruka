@@ -26,12 +26,12 @@
 #include "Core/DSP/DSPAnalyzer.h"
 #include "Core/DSP/DSPCore.h"
 #include "Core/DSP/DSPHWInterface.h"
+#include "Core/DSP/DSPInterpreter.h"
 #include "Core/DSP/DSPIntUtil.h"
+#include "Core/DSP/DSPMemoryMap.h"
 #include "Core/DSP/DSPTables.h"
 
 namespace DSPInterpreter {
-
-static volatile u32 gdsp_running;
 
 // NOTE: These have nothing to do with g_dsp.r.cr !
 
@@ -223,11 +223,6 @@ int RunCycles(int cycles)
 			// it just won't call this function anymore.
 		}
 	}
-}
-
-void Stop()
-{
-	gdsp_running = false;
 }
 
 }  // namespace

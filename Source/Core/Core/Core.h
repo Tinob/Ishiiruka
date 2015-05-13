@@ -15,7 +15,6 @@
 #include <vector>
 
 #include "Common/CommonTypes.h"
-#include "Core/CoreParameter.h"
 
 // TODO: ugly, remove
 extern bool g_aspect_wide;
@@ -40,7 +39,6 @@ enum EState
 
 bool Init();
 void Stop();
-void Shutdown();
 
 std::string StopMessage(bool, std::string);
 

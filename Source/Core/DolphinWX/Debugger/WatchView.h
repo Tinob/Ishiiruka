@@ -6,14 +6,9 @@
 
 #include <array>
 #include <string>
-#include <wx/defs.h>
 #include <wx/grid.h>
-#include <wx/string.h>
-#include <wx/windowid.h>
 
 #include "Common/CommonTypes.h"
-
-class wxWindow;
 
 class CWatchTable : public wxGridTableBase
 {
@@ -46,10 +41,11 @@ class CWatchView : public wxGrid
 public:
 	CWatchView(wxWindow* parent, wxWindowID id = wxID_ANY);
 	void Update() override;
+
+private:
 	void OnMouseDownR(wxGridEvent& event);
 	void OnPopupMenu(wxCommandEvent& event);
 
-private:
 	u32 m_selectedAddress = 0;
 	u32 m_selectedRow = 0;
 	CWatchTable* m_watch_table;

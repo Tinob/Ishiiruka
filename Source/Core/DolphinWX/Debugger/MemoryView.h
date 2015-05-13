@@ -5,27 +5,17 @@
 #pragma once
 
 #include <wx/control.h>
-#include <wx/event.h>
-
 #include "Common/CommonTypes.h"
 
 class DebugInterface;
-class wxWindow;
 
 class CMemoryView : public wxControl
 {
 public:
 	CMemoryView(DebugInterface* debuginterface, wxWindow* parent);
-	void OnPaint(wxPaintEvent& event);
-	void OnMouseDownL(wxMouseEvent& event);
-	void OnMouseMove(wxMouseEvent& event);
-	void OnMouseUpL(wxMouseEvent& event);
-	void OnMouseDownR(wxMouseEvent& event);
-	void OnScrollWheel(wxMouseEvent& event);
-	void OnPopupMenu(wxCommandEvent& event);
 
-	u32 GetSelection() { return selection ; }
-	int GetMemoryType() { return memory; }
+	u32 GetSelection() const { return selection ; }
+	int GetMemoryType() const { return memory; }
 
 	void Center(u32 addr)
 	{
@@ -36,6 +26,14 @@ public:
 	int curAddress; // Will be accessed by parent
 
 private:
+	void OnPaint(wxPaintEvent& event);
+	void OnMouseDownL(wxMouseEvent& event);
+	void OnMouseMove(wxMouseEvent& event);
+	void OnMouseUpL(wxMouseEvent& event);
+	void OnMouseDownR(wxMouseEvent& event);
+	void OnScrollWheel(wxMouseEvent& event);
+	void OnPopupMenu(wxCommandEvent& event);
+
 	int YToAddress(int y);
 	void OnResize(wxSizeEvent& event);
 

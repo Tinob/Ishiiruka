@@ -3,24 +3,15 @@
 // Refer to the license.txt file included.
 
 #include <cstddef>
-#include <wx/app.h>
 #include <wx/button.h>
-#include <wx/chartype.h>
-#include <wx/defs.h>
 #include <wx/dialog.h>
-#include <wx/event.h>
 #include <wx/font.h>
 #include <wx/gbsizer.h>
-#include <wx/gdicmn.h>
 #include <wx/notebook.h>
 #include <wx/panel.h>
-#include <wx/setup.h>
 #include <wx/sizer.h>
 #include <wx/stattext.h>
-#include <wx/string.h>
 #include <wx/timer.h>
-#include <wx/translation.h>
-#include <wx/windowid.h>
 
 #include "Core/ConfigManager.h"
 #include "Core/CoreParameter.h"
@@ -57,7 +48,6 @@ void HotkeyConfigDialog::SaveButtonMapping(int Id, int Key, int Modkey)
 
 void HotkeyConfigDialog::EndGetButtons()
 {
-	wxTheApp->Unbind(wxEVT_KEY_DOWN, &HotkeyConfigDialog::OnKeyDown, this);
 	m_ButtonMappingTimer.Stop();
 	GetButtonWaitingTimer = 0;
 	GetButtonWaitingID = 0;
@@ -171,8 +161,6 @@ void HotkeyConfigDialog::OnButtonClick(wxCommandEvent& event)
 	if (m_ButtonMappingTimer.IsRunning())
 		return;
 
-	wxTheApp->Bind(wxEVT_KEY_DOWN, &HotkeyConfigDialog::OnKeyDown, this);
-
 	// Get the button
 	ClickedButton = (wxButton *)event.GetEventObject();
 	SetEscapeId(wxID_CANCEL);
@@ -214,6 +202,9 @@ const wxString hkText[] =
 	_("Volume Down"),
 	_("Volume Up"),
 	_("Volume Toggle Mute"),
+
+	_("Increase IR"),
+	_("Decrease IR"),
 
 	_("Toggle IR"),
 	_("Toggle Aspect Ratio"),
@@ -337,6 +328,7 @@ void HotkeyConfigDialog::CreateHotkeyGUIControls()
 			m_Button_Hotkeys[i] = new wxButton(Page, i, wxEmptyString, wxDefaultPosition, size);
 			m_Button_Hotkeys[i]->SetFont(m_SmallFont);
 			m_Button_Hotkeys[i]->SetToolTip(_("Left click to detect hotkeys.\nEnter space to clear."));
+			m_Button_Hotkeys[i]->Bind(wxEVT_KEY_DOWN, &HotkeyConfigDialog::OnKeyDown, this);
 			SetButtonText(i,
 					WxUtils::WXKeyToString(SConfig::GetInstance().m_LocalCoreStartupParameter.iHotkey[i]),
 					WxUtils::WXKeymodToString(

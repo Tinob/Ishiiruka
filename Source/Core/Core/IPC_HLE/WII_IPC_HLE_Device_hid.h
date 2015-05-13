@@ -5,8 +5,10 @@
 #pragma once
 
 #include <list>
+#include <map>
+#include <mutex>
+#include <thread>
 
-#include "Common/Thread.h"
 #include "Core/IPC_HLE/WII_IPC_HLE.h"
 #include "Core/IPC_HLE/WII_IPC_HLE_Device.h"
 
@@ -117,7 +119,7 @@ private:
 
 	u32 deviceCommandAddress;
 	void FillOutDevices(u32 BufferOut, u32 BufferOutSize);
-	int GetAvaiableDevNum(u16 idVendor, u16 idProduct, u8 bus, u8 port, u16 check);
+	int GetAvailableDevNum(u16 idVendor, u16 idProduct, u8 bus, u8 port, u16 check);
 	bool ClaimDevice(libusb_device_handle* dev);
 
 	void ConvertDeviceToWii(WiiHIDDeviceDescriptor* dest, const libusb_device_descriptor* src);

@@ -5,14 +5,9 @@
 #pragma once
 
 #include <cstring>
-#include <wx/defs.h>
 #include <wx/grid.h>
-#include <wx/string.h>
-#include <wx/windowid.h>
 
 #include "Common/CommonTypes.h"
-
-class wxWindow;
 
 // New register view:
 // R0  0x8000000    F0   0.0000       F0_PS1 0.0000
@@ -71,10 +66,11 @@ class CRegisterView : public wxGrid
 public:
 	CRegisterView(wxWindow* parent, wxWindowID id = wxID_ANY);
 	void Update() override;
+
+private:
 	void OnMouseDownR(wxGridEvent& event);
 	void OnPopupMenu(wxCommandEvent& event);
 
-private:
 	u32 m_selectedAddress = 0;
 
 	// Owned by wx. Deleted implicitly upon destruction.

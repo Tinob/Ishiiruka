@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "Common/SysConf.h"
-#include "Core/Boot/Boot.h"
+#include "Core/CoreParameter.h"
 #include "Core/HW/EXI_Device.h"
 #include "Core/HW/SI_Device.h"
 
@@ -71,13 +71,13 @@ struct SConfig : NonCopyable
 	bool m_ListAustralia;
 	bool m_ListFrance;
 	bool m_ListGermany;
-	bool m_ListWorld;
 	bool m_ListItaly;
 	bool m_ListKorea;
 	bool m_ListNetherlands;
 	bool m_ListRussia;
 	bool m_ListSpain;
 	bool m_ListTaiwan;
+	bool m_ListWorld;
 	bool m_ListUnknown;
 	int m_ListSort;
 	int m_ListSort2;
@@ -85,7 +85,7 @@ struct SConfig : NonCopyable
 	// Game list column toggles
 	bool m_showSystemColumn;
 	bool m_showBannerColumn;
-	bool m_showNotesColumn;
+	bool m_showMakerColumn;
 	bool m_showIDColumn;
 	bool m_showRegionColumn;
 	bool m_showSizeColumn;
@@ -117,6 +117,7 @@ struct SConfig : NonCopyable
 	// Input settings
 	bool m_BackgroundInput;
 	bool m_GameCubeAdapter;
+	bool m_AdapterRumble;
 
 	SysConf* m_SYSCONF;
 
