@@ -140,7 +140,7 @@ void DX11PostProcessing::BlitFromTexture(const TargetRectangle &src, const Targe
 				break;
 			}
 			u32 remaining = ((buffer_size + 15) & (~15)) - buffer_size;
-			if (remaining < needed_size)
+			if (remaining < needed_size && buffer_size > 0)
 			{
 				// Padding needed to compensate contant buffer padding to 16 bytes
 				buffer_size += remaining;
@@ -201,7 +201,7 @@ void DX11PostProcessing::BlitFromTexture(const TargetRectangle &src, const Targe
 	ID3D11ShaderResourceView* views[6] = {
 		src_texture->GetSRV(),
 		nullptr,
-		nullptr,
+		src_texture->GetSRV(),
 		nullptr,
 		nullptr,
 		nullptr
@@ -213,7 +213,7 @@ void DX11PostProcessing::BlitFromTexture(const TargetRectangle &src, const Targe
 	}
 	D3D::stateman->SetVertexShader(m_vshader.get());
 	D3D::stateman->SetGeometryShader(nullptr);
-	D3D::context->PSSetShaderResources(9, 2, views);
+	D3D::context->PSSetShaderResources(9, 3, views);
 	ID3D11RenderTargetView* OutRTV = nullptr;
 	const auto& stages = m_config.GetStages();
 	size_t finalstage = stages.size() - 1;
@@ -297,7 +297,8 @@ void DX11PostProcessing::BlitFromTexture(const TargetRectangle &src, const Targe
 	}
 	views[0] = nullptr;
 	views[1] = nullptr;
-	D3D::context->PSSetShaderResources(9, 2, views);
+	views[2] = nullptr;
+	D3D::context->PSSetShaderResources(9, 3, views);
 }
 
 static const std::string s_hlsl_entry = "(\n"
@@ -428,13 +429,21 @@ float4 SampleLocationOffset(float2 location, int2 offset)
 {
 	return Tex9.Sample(samp9, float3(location, layer), offset);
 }
+float2 FromSRCCoords(float2 location)
+{
+	return (location - targetscale.xy) * targetscale.zw;
+}
+float2 ToSRCCoords(float2 location)
+{
+	return location / targetscale.zw + targetscale.xy;
+}
 float4 SamplePrev(int idx, float2 location)
 {
-	return Tex11[idx].Sample(samp9, float3((location - targetscale.xy) * targetscale.zw, 0));
+	return Tex11[idx].Sample(samp9, float3(FromSRCCoords(location), 0));
 }
 float4 SamplePrevLocationOffset(int idx, float2 location, int2 offset)
 {
-	return Tex11[idx].Sample(samp9, float3((location - targetscale.xy) * targetscale.zw , 0), offset);
+	return Tex11[idx].Sample(samp9, float3(FromSRCCoords(location), 0), offset);
 }
 float SampleDepth(float2 location, int l)
 {
@@ -496,13 +505,21 @@ float4 SampleLocationOffset(float2 location, int2 offset)
 {
 	return Tex9.Sample(samp9, float3(location, layer), offset);
 }
+float2 FromSRCCoords(float2 location)
+{
+	return (location - targetscale.xy) * targetscale.zw;
+}
+float2 ToSRCCoords(float2 location)
+{
+	return location / targetscale.zw + targetscale.xy;
+}
 float4 SamplePrev(int idx, float2 location)
 {
-	return Tex11[idx].Sample(samp9, float3((location - targetscale.xy) * targetscale.zw, 0));
+	return Tex11[idx].Sample(samp9, float3(FromSRCCoords(location), 0));
 }
 float4 SamplePrevLocationOffset(int idx, float2 location, int2 offset)
 {
-	return Tex11[idx].Sample(samp9, float3((location - targetscale.xy) * targetscale.zw , 0), offset);
+	return Tex11[idx].Sample(samp9, float3(FromSRCCoords(location), 0), offset);
 }
 float SampleDepth(float2 location, int l)
 {
@@ -680,7 +697,7 @@ std::string DX11PostProcessing::LoadShaderOptions(const std::string& code)
 				needed_size = sizeof(float) * count;
 			}
 			u32 remaining = ((buffer_size + 15) & (~15)) - buffer_size;
-			if (remaining < needed_size)
+			if (remaining < needed_size && buffer_size > 0)
 			{
 				// Padding needed to compensate contant buffer padding to 16 bytes
 				buffer_size += remaining;

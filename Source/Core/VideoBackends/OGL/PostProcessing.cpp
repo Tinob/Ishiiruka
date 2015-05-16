@@ -101,6 +101,10 @@ void OpenGLPostProcessing::BlitFromTexture(const TargetRectangle &src, const Tar
 	glBindTexture(GL_TEXTURE_2D_ARRAY, src_texture_depth);
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glActiveTexture(GL_TEXTURE0 + 11);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, src_texture);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	const auto& stages = m_config.GetStages();
 	size_t finalstage = stages.size() - 1;
 	if (finalstage > 0 &&
@@ -256,6 +260,8 @@ void OpenGLPostProcessing::BlitFromTexture(const TargetRectangle &src, const Tar
 	glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 	glActiveTexture(GL_TEXTURE0 + 10);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+	glActiveTexture(GL_TEXTURE0 + 11);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 }
 
 void OpenGLPostProcessing::ApplyShader()
@@ -395,30 +401,38 @@ float4 SampleLocationOffset(float2 location, int2 offset)
 { 
 	return texture(samp9, float3(location + offset * resolution.zw, layer));
 }
-
+float2 FromSRCCoords(float2 location)
+{
+	return (location - src_rect.xy) / src_rect.zw;
+}
+float2 ToSRCCoords(float2 location)
+{
+	return location * src_rect.zw + src_rect.xy;
+}
 float4 SamplePrev(int idx, float2 location)
 {
+	float2 newlocation = FromSRCCoords(location);
 	if (idx == 0)
 	{
-		return texture(samp11, float3((location - src_rect.xy) / src_rect.zw, 0));
+		return texture(samp11, float3(newlocation, 0));
 	}
 	else if (idx == 1)
 	{
-		return texture(samp12, float3((location - src_rect.xy) / src_rect.zw, 0));
+		return texture(samp12, float3(newlocation, 0));
 	}
 	else if (idx == 2)
 	{
-		return texture(samp13, float3((location - src_rect.xy) / src_rect.zw, 0));
+		return texture(samp13, float3(newlocation, 0));
 	}
 	else
 	{
-		return texture(samp14, float3((location - src_rect.xy) / src_rect.zw, 0));
+		return texture(samp14, float3(newlocation, 0));
 	}
 }
 
 float4 SamplePrevLocationOffset(int idx, float2 location, int2 offset)
 {
-	float2 newlocation = (location - src_rect.xy) / src_rect.zw;
+	float2 newlocation = FromSRCCoords(location);
 	newlocation += offset / (src_rect.zw * resolution.xy);
 	if (idx == 0)
 	{
