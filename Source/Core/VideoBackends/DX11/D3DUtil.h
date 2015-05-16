@@ -68,6 +68,27 @@ private:
 	std::list<bool*> observers;
 };
 
+// Ring Constant buffer class, only works as a ring if
+// platform supports it
+class ConstantStreamBuffer
+{
+public:
+	ConstantStreamBuffer(int size);
+	~ConstantStreamBuffer();
+
+	// returns vertex offset to the new data
+	int AppendData(void* data, int size);
+
+	inline ID3D11Buffer* &GetBuffer() { return  buf; }
+
+private:
+	ID3D11Buffer* buf;
+	int offset;
+	int max_size;
+	bool m_use_partial_buffer_update;
+	bool m_need_init;
+};
+
 extern CD3DFont font;
 
 void InitUtils();

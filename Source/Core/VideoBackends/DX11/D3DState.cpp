@@ -40,6 +40,7 @@ namespace D3D
 		, m_pending()
 		, m_current()
 	{
+		use_partial_buffer_update = D3D::SupportPartialContantBufferUpdate();
 	}
 
 	void StateManager::PushBlendState(const ID3D11BlendState* state) { m_blendStates.push(AutoBlendState(state)); }
@@ -88,32 +89,79 @@ namespace D3D
 
 		if (m_dirtyFlags & DirtyFlag_Constants)
 		{
-			if (m_current.pixelConstants[0] != m_pending.pixelConstants[0] ||
-				m_current.pixelConstants[1] != m_pending.pixelConstants[1])
+			if (use_partial_buffer_update)
 			{
-				D3D::context->PSSetConstantBuffers(0, m_pending.pixelConstants[1] ? 2 : 1, m_pending.pixelConstants);
-				m_current.pixelConstants[0] = m_pending.pixelConstants[0];
-				m_current.pixelConstants[1] = m_pending.pixelConstants[1];
+				if (m_dirtyFlags & DirtyFlag_PixelConstants)
+				{
+					if (m_pending.pixelConstantsSize[0] == 0 && m_pending.pixelConstantsSize[1] == 0)
+					{
+						D3D::context->PSSetConstantBuffers(0,  m_pending.pixelConstants[1] ? 2 : 1, m_pending.pixelConstants);
+					}
+					else
+					{
+						D3D::context1->PSSetConstantBuffers1(0, 1, m_pending.pixelConstants, m_pending.pixelConstantsOffset, m_pending.pixelConstantsSize);
+					}
+					m_current.pixelConstants[0] = m_pending.pixelConstants[0];
+					m_current.pixelConstantsOffset[0] = m_pending.pixelConstantsOffset[0];
+					m_current.pixelConstantsSize[0] = m_pending.pixelConstantsSize[0];
+					m_current.pixelConstants[1] = m_pending.pixelConstants[1];
+					m_current.pixelConstantsOffset[1] = m_pending.pixelConstantsOffset[1];
+					m_current.pixelConstantsSize[1] = m_pending.pixelConstantsSize[1];
+				}
+				if (m_dirtyFlags & DirtyFlag_VertexConstants)
+				{
+					if (m_pending.vertexConstantsSize == 0)
+					{
+						D3D::context1->VSSetConstantBuffers(0, 1, &m_pending.vertexConstants);
+					}
+					else
+					{
+						D3D::context1->VSSetConstantBuffers1(0, 1, &m_pending.vertexConstants, &m_pending.vertexConstantsOffset, &m_pending.vertexConstantsSize);
+					}
+					m_current.vertexConstants = m_pending.vertexConstants;
+					m_current.vertexConstantsOffset = m_pending.vertexConstantsOffset;
+					m_current.vertexConstantsSize = m_pending.vertexConstantsSize;
+				}
+				if (m_dirtyFlags & DirtyFlag_GeometryConstants)
+				{
+					if (m_pending.geometryConstantsSize == 0)
+					{
+						D3D::context->GSSetConstantBuffers(0, 1, &m_pending.geometryConstants);
+					}
+					else
+					{
+						D3D::context1->GSSetConstantBuffers1(0, 1, &m_pending.geometryConstants, &m_pending.geometryConstantsOffset, &m_pending.geometryConstantsSize);
+					}
+					m_current.geometryConstants = m_pending.geometryConstants;
+					m_current.geometryConstantsOffset = m_pending.geometryConstantsOffset;
+					m_current.geometryConstantsSize = m_pending.geometryConstantsSize;
+				}
 			}
-
-			if (m_current.vertexConstants != m_pending.vertexConstants)
+			else
 			{
-				D3D::context->VSSetConstantBuffers(0, 1, &m_pending.vertexConstants);
-				m_current.vertexConstants = m_pending.vertexConstants;
+				if (m_dirtyFlags & DirtyFlag_PixelConstants)
+				{
+					D3D::context->PSSetConstantBuffers(0,  m_pending.pixelConstants[1] ? 2 : 1, m_pending.pixelConstants);
+					m_current.pixelConstants[0] = m_pending.pixelConstants[0];
+					m_current.pixelConstants[1] = m_pending.pixelConstants[1];
+				}
+				if (m_dirtyFlags & DirtyFlag_VertexConstants)
+				{
+					D3D::context->VSSetConstantBuffers(0, 1, &m_pending.vertexConstants);
+					m_current.vertexConstants = m_pending.vertexConstants;
+				}
+				if (m_dirtyFlags & DirtyFlag_GeometryConstants)
+				{
+					D3D::context->GSSetConstantBuffers(0, 1, &m_pending.geometryConstants);
+					m_current.geometryConstants = m_pending.geometryConstants;
+				}
 			}
-
-			if (m_current.geometryConstants != m_pending.geometryConstants)
-			{
-				D3D::context->GSSetConstantBuffers(0, 1, &m_pending.geometryConstants);
-				m_current.geometryConstants = m_pending.geometryConstants;
-			}
+			
 		}
 
 		if (m_dirtyFlags & (DirtyFlag_Buffers | DirtyFlag_InputAssembler))
 		{
-			if (m_current.vertexBuffer != m_pending.vertexBuffer ||
-				m_current.vertexBufferStride != m_pending.vertexBufferStride ||
-				m_current.vertexBufferOffset != m_pending.vertexBufferOffset)
+			if (m_dirtyFlags & DirtyFlag_VertexBuffer)
 			{
 				D3D::context->IASetVertexBuffers(0, 1, &m_pending.vertexBuffer, &m_pending.vertexBufferStride, &m_pending.vertexBufferOffset);
 				m_current.vertexBuffer = m_pending.vertexBuffer;
@@ -121,7 +169,7 @@ namespace D3D
 				m_current.vertexBufferOffset = m_pending.vertexBufferOffset;
 			}
 
-			if (m_current.indexBuffer != m_pending.indexBuffer)
+			if (m_dirtyFlags & DirtyFlag_IndexBuffer)
 			{
 				D3D::context->IASetIndexBuffer(m_pending.indexBuffer, DXGI_FORMAT_R16_UINT, 0);
 				m_current.indexBuffer = m_pending.indexBuffer;

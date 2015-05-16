@@ -9,6 +9,7 @@
 
 #include "VideoBackends/DX11/D3DBase.h"
 #include "VideoBackends/DX11/D3DShader.h"
+#include "VideoBackends/DX11/D3DUtil.h"
 #include "VideoBackends/DX11/Globals.h"
 #include "VideoBackends/DX11/PixelShaderCache.h"
 #include "VideoBackends/DX11/VertexShaderCache.h"
@@ -44,9 +45,10 @@ D3D::PixelShaderPtr s_InterlacedProgram;
 D3D::PixelShaderPtr s_InterlacedProgramssaa;
 D3D::PixelShaderPtr s_rgba6_to_rgb8[2];
 D3D::PixelShaderPtr s_rgb8_to_rgba6[2];
-ID3D11Buffer* pscbuf;
-ID3D11Buffer* pscbuf_alt;
-
+D3D::ConstantStreamBuffer* pscbuf;
+D3D::ConstantStreamBuffer* pscbuf_alt;
+static UINT s_pscbuf_offset = 0;
+static UINT s_pscbuf_size = 0;
 const char* clear_program_code = R"hlsl(
 	void main(
 	out float4 ocol0 : SV_Target,
@@ -511,25 +513,23 @@ ID3D11PixelShader* PixelShaderCache::GetInterlacedProgram(bool ssaa)
 	return ssaa ? s_InterlacedProgramssaa.get() : s_InterlacedProgram.get();
 }
 
-ID3D11Buffer* &PixelShaderCache::GetConstantBuffer()
+std::tuple<ID3D11Buffer*, UINT, UINT> PixelShaderCache::GetConstantBuffer()
 {
 	bool lightingEnabled = xfmem.numChan.numColorChans > 0;
 	bool enable_pl = g_ActiveConfig.bEnablePixelLighting && g_ActiveConfig.backend_info.bSupportsPixelLighting && lightingEnabled;
-	auto &buf = enable_pl ? pscbuf : pscbuf_alt;
+	D3D::ConstantStreamBuffer* buf = enable_pl ? pscbuf_alt : pscbuf;
 	if (PixelShaderManager::IsDirty() || s_previous_per_pixel_lighting != enable_pl)
 	{
 		int sz = enable_pl ? PixelShaderManager::ConstantBufferSize : C_PLIGHTS * 4;
 		sz *= sizeof(float);
 		s_previous_per_pixel_lighting = enable_pl;
 		// TODO: divide the global variables of the generated shaders into about 5 constant buffers to speed this up
-		D3D11_MAPPED_SUBRESOURCE map;
-		D3D::context->Map(buf, 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
-		memcpy(map.pData, PixelShaderManager::GetBuffer(), sz);
-		D3D::context->Unmap(buf, 0);
+		s_pscbuf_offset = buf->AppendData((void*)PixelShaderManager::GetBuffer(), sz);
 		PixelShaderManager::Clear();
 		ADDSTAT(stats.thisFrame.bytesUniformStreamed, sz);
+		s_pscbuf_size = (UINT)(((sz + 255) & (~255)) / 16);// transform to aligned buffer units
 	}
-	return buf;
+	return std::tuple<ID3D11Buffer*, UINT, UINT>(buf->GetBuffer(), s_pscbuf_offset, s_pscbuf_size);
 }
 
 // this class will load the precompiled shaders into our cache
@@ -546,20 +546,24 @@ void PixelShaderCache::Init()
 {
 	s_compiler = &HLSLAsyncCompiler::getInstance();
 	s_pixel_shaders_lock.unlock();
-	u32 cbsize = PixelShaderManager::ConstantBufferSize * sizeof(float); // is always a multiple of 16	
-	D3D11_BUFFER_DESC cbdesc = CD3D11_BUFFER_DESC(cbsize, 
-		D3D11_BIND_CONSTANT_BUFFER, 
-		D3D11_USAGE_DYNAMIC, 
-		D3D11_CPU_ACCESS_WRITE);
-	D3D::device->CreateBuffer(&cbdesc, nullptr, &pscbuf);
-	CHECK(pscbuf!=nullptr, "Create pixel shader constant buffer");
-	D3D::SetDebugObjectName(pscbuf, "pixel shader constant buffer used to emulate the GX pipeline");
-	cbsize = C_PLIGHTS * 4 * sizeof(float);
-	cbdesc.ByteWidth = cbsize;
-	D3D::device->CreateBuffer(&cbdesc, nullptr, &pscbuf_alt);
-	CHECK(pscbuf != nullptr, "Create pixel shader constant buffer");
-	D3D::SetDebugObjectName(pscbuf_alt, "pixel shader constant buffer used to emulate the GX pipeline");
-
+	bool use_partial_buffer_update = D3D::SupportPartialContantBufferUpdate();
+	u32 cbsize = use_partial_buffer_update ? 4 * 1024 * 1024 : C_PLIGHTS * 4 * sizeof(float); // is always a multiple of 16	
+	pscbuf = new D3D::ConstantStreamBuffer(cbsize);
+	ID3D11Buffer* buf = pscbuf->GetBuffer();
+	CHECK(buf != nullptr, "Create pixel shader constant buffer");
+	D3D::SetDebugObjectName(buf, "pixel shader constant buffer used to emulate the GX pipeline");
+	if (use_partial_buffer_update)
+	{
+		pscbuf_alt = pscbuf;
+	}
+	else
+	{
+		cbsize = PixelShaderManager::ConstantBufferSize * sizeof(float);
+		pscbuf_alt = new D3D::ConstantStreamBuffer(cbsize);
+		buf = pscbuf_alt->GetBuffer();
+		CHECK(buf != nullptr, "Create pixel shader constant buffer");
+		D3D::SetDebugObjectName(buf, "pixel shader constant buffer used to emulate the GX pipeline");
+	}
 
 	// used when drawing clear quads
 	s_ClearProgram = D3D::CompileAndCreatePixelShader(clear_program_code);	
@@ -650,10 +654,16 @@ void PixelShaderCache::InvalidateMSAAShaders()
 
 void PixelShaderCache::Shutdown()
 {
-	
-	SAFE_RELEASE(pscbuf);
-	SAFE_RELEASE(pscbuf_alt);
-
+	if (pscbuf != nullptr)
+	{
+		delete pscbuf;
+	}
+	if (!D3D::SupportPartialContantBufferUpdate())
+	{
+		delete pscbuf_alt;
+	}
+	pscbuf = nullptr;
+	pscbuf_alt = nullptr;
 	s_ClearProgram.reset();
 	s_AnaglyphProgram.reset();
 	s_AnaglyphProgramssaa.reset();

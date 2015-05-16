@@ -40,6 +40,7 @@ void Close();
 extern ID3D11Device* device;
 extern ID3D11Device1* device1;
 extern ID3D11DeviceContext* context;
+extern ID3D11DeviceContext1* context1;
 extern HWND hWnd;
 extern bool bFrameInProgress;
 
@@ -61,7 +62,7 @@ bool BGRATexturesSupported();
 bool BGRA565TexturesSupported();
 
 unsigned int GetMaxTextureSize();
-
+bool SupportPartialContantBufferUpdate();
 HRESULT SetFullscreenState(bool enable_fullscreen);
 HRESULT GetFullscreenState(bool* fullscreen_state);
 

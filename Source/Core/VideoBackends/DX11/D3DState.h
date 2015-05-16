@@ -125,13 +125,41 @@ namespace D3D
 			m_pending.samplers[index] = sampler;
 		}
 
+		void SetPixelConstants(std::tuple<ID3D11Buffer*, UINT, UINT> &buffer0)
+		{
+			if (m_current.pixelConstants[0] != std::get<0>(buffer0) 
+				|| m_current.pixelConstantsOffset[0] != std::get<1>(buffer0)
+				|| m_current.pixelConstantsSize[0] != std::get<2>(buffer0))
+				m_dirtyFlags |= DirtyFlag_PixelConstants;
+
+			m_pending.pixelConstants[0] = std::get<0>(buffer0);
+			m_pending.pixelConstantsOffset[0] = std::get<1>(buffer0);
+			m_pending.pixelConstantsSize[0] = std::get<2>(buffer0);
+		}
+
 		void SetPixelConstants(ID3D11Buffer* buffer0, ID3D11Buffer* buffer1 = nullptr)
 		{
 			if (m_current.pixelConstants[0] != buffer0 || m_current.pixelConstants[1] != buffer1)
 				m_dirtyFlags |= DirtyFlag_PixelConstants;
 
 			m_pending.pixelConstants[0] = buffer0;
+			m_pending.pixelConstantsOffset[0] = 0;
+			m_pending.pixelConstantsSize[0] = 0;
 			m_pending.pixelConstants[1] = buffer1;
+			m_pending.pixelConstantsOffset[1] = 0;
+			m_pending.pixelConstantsSize[1] = 0;
+		}
+
+		void SetVertexConstants(std::tuple<ID3D11Buffer*, UINT, UINT> &buffer)
+		{
+			if (m_current.vertexConstants != std::get<0>(buffer)
+				|| m_current.vertexConstantsOffset != std::get<1>(buffer)
+				|| m_current.vertexConstantsSize != std::get<2>(buffer))
+				m_dirtyFlags |= DirtyFlag_VertexConstants;
+
+			m_pending.vertexConstants = std::get<0>(buffer);
+			m_pending.vertexConstantsOffset = std::get<1>(buffer);
+			m_pending.vertexConstantsSize = std::get<2>(buffer);
 		}
 
 		void SetVertexConstants(ID3D11Buffer* buffer)
@@ -140,6 +168,20 @@ namespace D3D
 				m_dirtyFlags |= DirtyFlag_VertexConstants;
 
 			m_pending.vertexConstants = buffer;
+			m_pending.vertexConstantsOffset = 0;
+			m_pending.vertexConstantsSize = 0;
+		}
+
+		void SetGeometryConstants(std::tuple<ID3D11Buffer*, UINT, UINT> &buffer)
+		{
+			if (m_current.geometryConstants != std::get<0>(buffer)
+				|| m_current.geometryConstantsOffset != std::get<1>(buffer)
+				|| m_current.geometryConstantsSize != std::get<2>(buffer))
+				m_dirtyFlags |= DirtyFlag_GeometryConstants;
+
+			m_pending.geometryConstants = std::get<0>(buffer);
+			m_pending.geometryConstantsOffset = std::get<1>(buffer);
+			m_pending.geometryConstantsSize = std::get<2>(buffer);
 		}
 
 		void SetGeometryConstants(ID3D11Buffer* buffer)
@@ -148,6 +190,8 @@ namespace D3D
 				m_dirtyFlags |= DirtyFlag_GeometryConstants;
 
 			m_pending.geometryConstants = buffer;
+			m_pending.geometryConstantsOffset = 0;
+			m_pending.geometryConstantsSize = 0;
 		}
 
 		void SetVertexBuffer(ID3D11Buffer* buffer, u32 stride, u32 offset)
@@ -274,14 +318,20 @@ namespace D3D
 		};
 
 		u32 m_dirtyFlags;
-
+		bool use_partial_buffer_update;
 		struct Resources
 		{
 			ID3D11ShaderResourceView* textures[8];
 			ID3D11SamplerState* samplers[8];
 			ID3D11Buffer* pixelConstants[2];
+			UINT pixelConstantsOffset[2];
+			UINT pixelConstantsSize[2];
 			ID3D11Buffer* vertexConstants;
+			UINT vertexConstantsOffset;
+			UINT vertexConstantsSize;
 			ID3D11Buffer* geometryConstants;
+			UINT geometryConstantsOffset;
+			UINT geometryConstantsSize;
 			ID3D11Buffer* vertexBuffer;
 			ID3D11Buffer* indexBuffer;
 			u32 vertexBufferStride;

@@ -30,9 +30,12 @@ namespace D3D
 {
 const DXGI_FORMAT DXGI_BaseFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 ID3D11Device* device = nullptr;
+ID3D11Device1* device1 = nullptr;
 ID3D11DeviceContext* context;
+ID3D11DeviceContext1* context1;
 IDXGISwapChain* swapchain = nullptr;
 D3D_FEATURE_LEVEL featlevel;
+bool partial_buffer_update_supported = false;
 D3DTexture2D* backbuf = nullptr;
 HWND hWnd;
 
@@ -56,6 +59,11 @@ bool bFrameInProgress = false;
 D3D_FEATURE_LEVEL GetFeatureLevel()
 {
 	return featlevel;
+}
+
+bool SupportPartialContantBufferUpdate()
+{
+	return partial_buffer_update_supported;
 }
 
 HRESULT LoadDXGI()
@@ -344,6 +352,26 @@ HRESULT Create(HWND wnd)
 		SAFE_RELEASE(swapchain);
 		return E_FAIL;
 	}
+	if (featlevel >= D3D_FEATURE_LEVEL_11_1)
+	{
+		if (FAILED(device->QueryInterface(__uuidof(ID3D11Device1), (void**)&device1)))
+		{
+			device1 = nullptr;
+		}
+		if (device1 != nullptr)
+		{
+			context->QueryInterface(__uuidof(ID3D11DeviceContext1), (void**)&context1);
+		}
+	}
+	if (device1 != nullptr && context1 != nullptr)
+	{
+		D3D11_FEATURE_DATA_D3D11_OPTIONS options;
+		hr = device1->CheckFeatureSupport(D3D11_FEATURE_D3D11_OPTIONS, &options, sizeof(options));
+		partial_buffer_update_supported = SUCCEEDED(hr) 
+			&& options.MapNoOverwriteOnDynamicConstantBuffer
+			&& options.ConstantBufferOffsetting
+			&& options.ConstantBufferPartialUpdate;
+	}
 	backbuf = new D3DTexture2D(buf, D3D11_BIND_RENDER_TARGET);
 	SAFE_RELEASE(buf);
 	CHECK(backbuf != nullptr, "Create back buffer texture");
@@ -377,6 +405,7 @@ void Close()
 	SAFE_DELETE(stateman);
 	context->Flush();  // immediately destroy device objects
 	SAFE_RELEASE(context);
+	context1 = nullptr;
 	ULONG references = device->Release();
 	if (references)
 	{
@@ -386,6 +415,7 @@ void Close()
 	{
 		NOTICE_LOG(VIDEO, "Successfully released all device references!");
 	}
+	device1 = nullptr;
 	device = nullptr;
 
 	// unload DLLs

@@ -14,6 +14,7 @@
 #include "VideoCommon/VertexShaderManager.h"
 
 #include "VideoBackends/DX11/D3DShader.h"
+#include "VideoBackends/DX11/D3DUtil.h"
 #include "VideoBackends/DX11/Globals.h"
 #include "VideoBackends/DX11/VertexShaderCache.h"
 
@@ -40,22 +41,22 @@ ID3D11VertexShader* VertexShaderCache::GetClearVertexShader() { return s_clear_v
 ID3D11InputLayout* VertexShaderCache::GetSimpleInputLayout() { return s_simple_layout.get(); }
 ID3D11InputLayout* VertexShaderCache::GetClearInputLayout() { return s_clear_layout.get(); }
 
-ID3D11Buffer* vscbuf = nullptr;
+D3D::ConstantStreamBuffer* vscbuf = nullptr;
+static UINT s_vscbuf_offset = 0;
+static UINT s_vscbuf_size = 0;
 
-ID3D11Buffer* &VertexShaderCache::GetConstantBuffer()
+std::tuple<ID3D11Buffer*, UINT, UINT> VertexShaderCache::GetConstantBuffer()
 {
 	// TODO: divide the global variables of the generated shaders into about 5 constant buffers to speed this up
 	if (VertexShaderManager::IsDirty())
 	{
-		D3D11_MAPPED_SUBRESOURCE map;
-		D3D::context->Map(vscbuf, 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
 		const size_t size = sizeof(float) * VertexShaderManager::ConstantBufferSize;
-		memcpy(map.pData, VertexShaderManager::GetBuffer(), size);
-		D3D::context->Unmap(vscbuf, 0);
+		s_vscbuf_offset = vscbuf->AppendData((void*)VertexShaderManager::GetBuffer(), size);
 		VertexShaderManager::Clear();
 		ADDSTAT(stats.thisFrame.bytesUniformStreamed, size);
+		s_vscbuf_size = (UINT)(((size + 255) & (~255)) / 16);// transform to aligned buffer units
 	}
-	return vscbuf;
+	return std::tuple<ID3D11Buffer*, UINT, UINT>(vscbuf->GetBuffer(), s_vscbuf_offset, s_vscbuf_size);
 }
 
 // this class will load the precompiled shaders into our cache
@@ -118,12 +119,14 @@ void VertexShaderCache::Init()
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0,  0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	};
-
-	unsigned int cbsize = VertexShaderManager::ConstantBufferSize * sizeof(float); // is always multiple of 16
-	D3D11_BUFFER_DESC cbdesc = CD3D11_BUFFER_DESC(cbsize, D3D11_BIND_CONSTANT_BUFFER, D3D11_USAGE_DYNAMIC, D3D11_CPU_ACCESS_WRITE);
-	HRESULT hr = D3D::device->CreateBuffer(&cbdesc, nullptr, &vscbuf);
-	CHECK(hr==S_OK, "Create vertex shader constant buffer (size=%u)", cbsize);
-	D3D::SetDebugObjectName(vscbuf, "vertex shader constant buffer used to emulate the GX pipeline");
+	
+	bool use_partial_buffer_update = D3D::SupportPartialContantBufferUpdate();
+	unsigned int cbsize = use_partial_buffer_update ? 4 * 1024 * 1024 : VertexShaderManager::ConstantBufferSize * sizeof(float); // is always multiple of 16
+	vscbuf = new D3D::ConstantStreamBuffer(cbsize);
+	ID3D11Buffer* buf = vscbuf->GetBuffer();
+	
+	CHECK(buf != nullptr, "Create vertex shader constant buffer (size=%u)", cbsize);
+	D3D::SetDebugObjectName(buf, "vertex shader constant buffer used to emulate the GX pipeline");
 
 	D3DBlob blob;
 	D3D::CompileShader(D3D::ShaderType::Vertex, simple_shader_code, blob);
@@ -186,7 +189,10 @@ void VertexShaderCache::Shutdown()
 	{
 		s_compiler->WaitForFinish();
 	}
-	SAFE_RELEASE(vscbuf);
+	if (vscbuf != nullptr)
+	{
+		delete vscbuf;
+	}
 
 	s_simple_vertex_shader.reset();
 	s_clear_vertex_shader.reset();

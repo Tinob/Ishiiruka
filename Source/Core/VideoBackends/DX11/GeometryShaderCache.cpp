@@ -13,6 +13,7 @@
 #include "VideoBackends/DX11/D3DBase.h"
 #include "VideoBackends/DX11/D3DPtr.h"
 #include "VideoBackends/DX11/D3DShader.h"
+#include "VideoBackends/DX11/D3DUtil.h"
 #include "VideoBackends/DX11/FramebufferManager.h"
 #include "VideoBackends/DX11/GeometryShaderCache.h"
 #include "VideoBackends/DX11/Globals.h"
@@ -47,22 +48,22 @@ ID3D11GeometryShader* GeometryShaderCache::GetCopyGeometryShader()
 	return (g_ActiveConfig.iStereoMode > 0) ? CopyGeometryShader.get() : nullptr;
 }
 
-ID3D11Buffer* gscbuf = nullptr;
+D3D::ConstantStreamBuffer* gscbuf = nullptr;
+static UINT s_gscbuf_offset = 0;
+static UINT s_gscbuf_size = 0;
 
-ID3D11Buffer* &GeometryShaderCache::GetConstantBuffer()
+std::tuple<ID3D11Buffer*, UINT, UINT>  GeometryShaderCache::GetConstantBuffer()
 {
 	// TODO: divide the global variables of the generated shaders into about 5 constant buffers to speed this up
 	if (GeometryShaderManager::IsDirty())
 	{
-		D3D11_MAPPED_SUBRESOURCE map;
-		D3D::context->Map(gscbuf, 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
-		memcpy(map.pData, &GeometryShaderManager::constants, sizeof(GeometryShaderConstants));
-		D3D::context->Unmap(gscbuf, 0);
+		s_gscbuf_size = sizeof(GeometryShaderConstants);
+		s_gscbuf_offset = gscbuf->AppendData((void*)&GeometryShaderManager::constants, s_gscbuf_size);
 		GeometryShaderManager::Clear();
-
-		ADDSTAT(stats.thisFrame.bytesUniformStreamed, sizeof(GeometryShaderConstants));
+		ADDSTAT(stats.thisFrame.bytesUniformStreamed, s_gscbuf_size);
+		s_gscbuf_size = (UINT)(((s_gscbuf_size + 255) & (~255)) / 16);
 	}
-	return gscbuf;
+	return std::tuple<ID3D11Buffer*, UINT, UINT>(gscbuf->GetBuffer(), s_gscbuf_offset, s_gscbuf_size);
 }
 
 // this class will load the precompiled shaders into our cache
@@ -149,22 +150,22 @@ void GeometryShaderCache::Init()
 {
 	s_compiler = &HLSLAsyncCompiler::getInstance();
 	s_geometry_shaders_lock.unlock();
-
-	u32 gbsize = ROUND_UP(sizeof(GeometryShaderConstants), 16); // must be a multiple of 16
-	D3D11_BUFFER_DESC gbdesc = CD3D11_BUFFER_DESC(gbsize, D3D11_BIND_CONSTANT_BUFFER, D3D11_USAGE_DYNAMIC, D3D11_CPU_ACCESS_WRITE);
-	HRESULT hr = D3D::device->CreateBuffer(&gbdesc, nullptr, &gscbuf);
-	CHECK(hr == S_OK, "Create geometry shader constant buffer (size=%u)", gbsize);
-	D3D::SetDebugObjectName((ID3D11DeviceChild*)gscbuf, "geometry shader constant buffer used to emulate the GX pipeline");
+	bool use_partial_buffer_update = D3D::SupportPartialContantBufferUpdate();
+	u32 gbsize = use_partial_buffer_update ? 4 * 1024 * 1024 : ROUND_UP(sizeof(GeometryShaderConstants), 16); // must be a multiple of 16
+	gscbuf = new D3D::ConstantStreamBuffer(gbsize);
+	ID3D11Buffer* buf = gscbuf->GetBuffer();
+	CHECK(buf != nullptr, "Create geometry shader constant buffer (size=%u)", gbsize);
+	D3D::SetDebugObjectName(buf, "geometry shader constant buffer used to emulate the GX pipeline");
 
 	// used when drawing clear quads
 	ClearGeometryShader = D3D::CompileAndCreateGeometryShader(gs_clear_shader_code);
 	CHECK(ClearGeometryShader != nullptr, "Create clear geometry shader");
-	D3D::SetDebugObjectName((ID3D11DeviceChild*)ClearGeometryShader.get(), "clear geometry shader");
+	D3D::SetDebugObjectName(ClearGeometryShader.get(), "clear geometry shader");
 
 	// used for buffer copy
 	CopyGeometryShader = D3D::CompileAndCreateGeometryShader(gs_copy_shader_code);
 	CHECK(CopyGeometryShader != nullptr, "Create copy geometry shader");
-	D3D::SetDebugObjectName((ID3D11DeviceChild*)CopyGeometryShader.get(), "copy geometry shader");
+	D3D::SetDebugObjectName(CopyGeometryShader.get(), "copy geometry shader");
 	
 	Clear();
 
@@ -200,7 +201,11 @@ void GeometryShaderCache::Shutdown()
 	{
 		s_compiler->WaitForFinish();
 	}
-	SAFE_RELEASE(gscbuf);
+	if (gscbuf != nullptr)
+	{
+		delete gscbuf;
+		gscbuf = nullptr;
+	}
 
 	ClearGeometryShader.reset();
 	CopyGeometryShader.reset();
