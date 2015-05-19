@@ -834,7 +834,25 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 		// D3D9 doesn't support readback of depth in pixel shader, so we always have to calculate it again.
 		// This shouldn't be a performance issue as the written depth is usually still from perspective division
 		// but this isn't true for z-textures, so there will be depth issues between enabled and disabled z-textures fragments
-		if ((ApiType == API_OPENGL || ApiType == API_D3D11) && g_ActiveConfig.bFastDepthCalc)
+		if (bpm.genMode.zfreeze)
+		{
+			out.Write("\tfloat2 screenpos = rawpos.xy * " I_EFBSCALE".xy;\n");
+
+			// Opengl has reversed vertical screenspace coordiantes
+			if (ApiType == API_OPENGL)
+			{
+				out.Write("\tscreenpos.y = %i - screenpos.y - 1;\n", EFB_HEIGHT);
+			}
+			if (Use_integer_math)
+			{
+				out.Write("wu zCoord = wu(" I_ZSLOPE".z + " I_ZSLOPE".x * screenpos.x + " I_ZSLOPE".y * screenpos.y);\n");
+			}
+			else
+			{
+				out.Write("wu zCoord = (" I_ZSLOPE".z + " I_ZSLOPE".x * screenpos.x + " I_ZSLOPE".y * screenpos.y) / float(0xFFFFFF);\n");
+			}
+		}
+		else if ((ApiType == API_OPENGL || ApiType == API_D3D11) && g_ActiveConfig.bFastDepthCalc)
 		{
 			if (Use_integer_math)
 			{
@@ -854,7 +872,10 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 		// Note: z-textures are not written to depth buffer if early depth test is used
 		if (per_pixel_depth && bpm.UseEarlyDepthTest())
 		{
-			WritePerPixelDepth<T, Use_integer_math, ApiType>(out, bpm);
+			if (Use_integer_math)
+				out.Write("\tdepth = float(%szCoord) / float(0xFFFFFF);\n", ApiType == API_OPENGL ? "" : "0xFFFFFF - ");
+			else
+				out.Write("\tdepth = %s zCoord;\n", ApiType == API_OPENGL ? "" : "1.0 - ");
 		}
 		// Note: depth texture output is only written to depth buffer if late depth test is used
 		// theoretical final depth value is used for fog calculation, though, so we have to emulate ztextures anyway
@@ -873,13 +894,14 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 					(bpm.ztex2.op == ZTEXTURE_ADD) ? "+ zCoord" : "");
 				// U24 overflow emulation : disabled find out why this make nvidia compiler crasy
 				// out.Write("zCoord = zCoord > 1.0f ? (zCoord - 1.0f) : zCoord;\n");
-
 			}
-
 		}
 		if (per_pixel_depth && bpm.UseLateDepthTest())
 		{
-			WritePerPixelDepth<T, Use_integer_math, ApiType>(out, bpm);
+			if (Use_integer_math)
+				out.Write("\tdepth = float(%szCoord) / float(0xFFFFFF);\n", ApiType == API_OPENGL ? "" : "0xFFFFFF - ");
+			else
+				out.Write("\tdepth = %s zCoord;\n", ApiType == API_OPENGL ? "" : "1.0 - ");
 		}
 	}
 	if (dstAlphaMode == DSTALPHA_ALPHA_PASS)
