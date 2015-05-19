@@ -45,6 +45,7 @@ public:
 		std::string m_option_name;
 		std::string m_dependent_option;
 		bool m_dirty;
+		bool m_resolve_at_compilation;
 	};
 
 	struct StageOption
@@ -58,7 +59,7 @@ public:
 	typedef std::map<std::string, ConfigurationOption> ConfigMap;
 	typedef std::vector<StageOption> StageList;
 
-	PostProcessingShaderConfiguration() : m_current_shader(""), m_requires_depth_input(false){}
+	PostProcessingShaderConfiguration() : m_current_shader(""), m_requires_depth_input(false), m_requires_recompilation(true){}
 	virtual ~PostProcessingShaderConfiguration() {}
 
 	// Loads the configuration with a shader
@@ -71,6 +72,8 @@ public:
 
 	bool IsDirty() { return m_any_options_dirty; }
 	void SetDirty(bool dirty) { m_any_options_dirty = dirty; }
+	bool NeedRecompile() { return m_requires_recompilation; }
+	void SetRecompile(bool recompile) { m_requires_recompilation = recompile; }
 
 	bool HasOptions() { return m_options.size() > 0; }
 	ConfigMap& GetOptions() { return m_options; }
@@ -82,9 +85,11 @@ public:
 	void SetOptioni(std::string option, int index, s32 value);
 	void SetOptionb(std::string option, bool value);
 	inline bool IsDepthInputRequired(){ return m_requires_depth_input; }
+	void PrintCompilationTimeOptions(std::string &options);
 private:
 	bool m_any_options_dirty;
 	bool m_requires_depth_input;
+	bool m_requires_recompilation;
 	std::string m_current_shader;
 	ConfigMap m_options;
 	StageList m_stages;

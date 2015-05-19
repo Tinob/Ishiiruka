@@ -95,6 +95,7 @@ private:
 	void Event_Close(wxCloseEvent&);
 	void Event_ClickClose(wxCommandEvent&);
 	void Event_Slider(wxCommandEvent &ev);
+	void Event_Slider_Finish(wxScrollEvent &ev);
 	void Event_CheckBox(wxCommandEvent &ev);
 
 	const std::string& m_shader;

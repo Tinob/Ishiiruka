@@ -166,6 +166,10 @@ void OpenGLPostProcessing::BlitFromTexture(const TargetRectangle &src, const Tar
 		{
 			for (auto& it : m_config.GetOptions())
 			{
+				if (it.second.m_resolve_at_compilation)
+				{
+					continue;
+				}
 				if (it.second.m_dirty)
 				{
 					switch (it.second.m_type)
@@ -267,8 +271,11 @@ void OpenGLPostProcessing::BlitFromTexture(const TargetRectangle &src, const Tar
 void OpenGLPostProcessing::ApplyShader()
 {
 	// shader didn't changed
-	if (m_initialized && m_config.GetShader() == g_ActiveConfig.sPostProcessingShader)
+	if (m_initialized 
+		&& m_config.GetShader() == g_ActiveConfig.sPostProcessingShader
+		&& !m_config.NeedRecompile())
 		return;
+	m_config.SetRecompile(false);
 	DestroyStageOutput();
 	m_stageOutput.resize(0);
 	for (auto& shader : m_shaders)
@@ -615,6 +622,10 @@ std::string OpenGLPostProcessing::LoadShaderOptions(const std::string& code)
 
 	for (const auto& it : m_config.GetOptions())
 	{
+		if (it.second.m_resolve_at_compilation)
+		{
+			continue;
+		}
 		if (it.second.m_type == PostProcessingShaderConfiguration::ConfigurationOption::OptionType::OPTION_BOOL)
 		{
 			glsl_options += StringFromFormat("uniform int     option_%s;\n", it.first.c_str());
@@ -636,7 +647,7 @@ std::string OpenGLPostProcessing::LoadShaderOptions(const std::string& code)
 				glsl_options += StringFromFormat("uniform float%d option_%s;\n", count, it.first.c_str());
 		}
 	}
-
+	m_config.PrintCompilationTimeOptions(glsl_options);
 	return m_glsl_header + glsl_options + code;
 }
 

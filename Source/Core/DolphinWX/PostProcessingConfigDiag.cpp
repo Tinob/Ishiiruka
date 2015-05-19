@@ -184,7 +184,7 @@ void PostProcessingConfigDiag::ConfigGrouping::GenerateUI(PostProcessingConfigDi
 				steps = ceil(range / (double)m_config_option->m_integer_step_values[i]);
 
 				// Default value is just the currently set value here
-				current_value = m_config_option->m_integer_values[i];
+				current_value = (m_config_option->m_integer_values[i] - m_config_option->m_integer_min_values[i]) / m_config_option->m_integer_step_values[i];
 				string_value = std::to_string(m_config_option->m_integer_values[i]);
 			}
 			else
@@ -194,7 +194,7 @@ void PostProcessingConfigDiag::ConfigGrouping::GenerateUI(PostProcessingConfigDi
 				steps = ceil(range / m_config_option->m_float_step_values[i]);
 
 				// We need to convert our default float value from a float to the nearest step value range
-				current_value = (m_config_option->m_float_values[i] / m_config_option->m_float_step_values[i]);
+				current_value = ((m_config_option->m_float_values[i] - m_config_option->m_float_min_values[i]) / m_config_option->m_float_step_values[i]);
 				string_value = std::to_string(m_config_option->m_float_values[i]);
 			}
 
@@ -209,6 +209,8 @@ void PostProcessingConfigDiag::ConfigGrouping::GenerateUI(PostProcessingConfigDi
 			// This won't be a memory leak, it'll be destroyed on dialog close.
 			slider->Bind(wxEVT_SLIDER, &PostProcessingConfigDiag::Event_Slider,
 					 dialog, wxID_ANY, wxID_ANY, new UserEventData(m_option));
+			slider->Bind(wxEVT_SCROLL_THUMBRELEASE, &PostProcessingConfigDiag::Event_Slider_Finish,
+				dialog, wxID_ANY, wxID_ANY, new UserEventData(m_option));
 
 			m_option_sliders.push_back(slider);
 			m_option_text_ctrls.push_back(text_ctrl);
@@ -267,12 +269,18 @@ void PostProcessingConfigDiag::Event_CheckBox(wxCommandEvent &ev)
 	ev.Skip();
 }
 
-void PostProcessingConfigDiag::Event_Slider(wxCommandEvent &ev)
+void PostProcessingConfigDiag::Event_Slider_Finish(wxScrollEvent &ev)
 {
 	UserEventData* config_option = (UserEventData*)ev.GetEventUserData();
 	ConfigGrouping* config = m_config_map[config_option->GetData()];
 
 	const auto& option_data = m_post_processor->GetOption(config->GetOption());
+	if (!option_data.m_resolve_at_compilation)
+	{
+		// Just handle options that must be resolved at compilation time
+		ev.Skip();
+		return;
+	}
 
 	size_t vector_size = 0;
 	if (option_data.m_type == PostProcessingShaderConfiguration::ConfigurationOption::OptionType::OPTION_INTEGER)
@@ -289,13 +297,47 @@ void PostProcessingConfigDiag::Event_Slider(wxCommandEvent &ev)
 		if (option_data.m_type == PostProcessingShaderConfiguration::ConfigurationOption::OptionType::OPTION_INTEGER)
 		{
 			s32 value = option_data.m_integer_step_values[i] * current_step + option_data.m_integer_min_values[i];
-			m_post_processor->SetOptioni(config->GetOption(), i, value);
-			string_value = std::to_string(value);
+			m_post_processor->SetOptioni(config->GetOption(), i, value);			
 		}
 		else
 		{
 			float value = option_data.m_float_step_values[i] * current_step + option_data.m_float_min_values[i];
 			m_post_processor->SetOptionf(config->GetOption(), i, value);
+		}
+	}
+	ev.Skip();
+}
+
+void PostProcessingConfigDiag::Event_Slider(wxCommandEvent &ev)
+{
+	UserEventData* config_option = (UserEventData*)ev.GetEventUserData();
+	ConfigGrouping* config = m_config_map[config_option->GetData()];
+
+	const auto& option_data = m_post_processor->GetOption(config->GetOption());
+	size_t vector_size = 0;
+	if (option_data.m_type == PostProcessingShaderConfiguration::ConfigurationOption::OptionType::OPTION_INTEGER)
+		vector_size = option_data.m_integer_values.size();
+	else
+		vector_size = option_data.m_float_values.size();
+
+	for (size_t i = 0; i < vector_size; ++i)
+	{
+		// Got to do this garbage again.
+		// Convert current step in to the real range value
+		int current_step = config->GetSliderValue(i);
+		std::string string_value;
+		if (option_data.m_type == PostProcessingShaderConfiguration::ConfigurationOption::OptionType::OPTION_INTEGER)
+		{
+			s32 value = option_data.m_integer_step_values[i] * current_step + option_data.m_integer_min_values[i];
+			if (!option_data.m_resolve_at_compilation)
+				m_post_processor->SetOptioni(config->GetOption(), i, value);
+			string_value = std::to_string(value);
+		}
+		else
+		{
+			float value = option_data.m_float_step_values[i] * current_step + option_data.m_float_min_values[i];
+			if (!option_data.m_resolve_at_compilation)
+				m_post_processor->SetOptionf(config->GetOption(), i, value);
 			string_value = std::to_string(value);
 		}
 		// Update the text box to include the new value

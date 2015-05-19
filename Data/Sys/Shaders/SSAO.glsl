@@ -18,6 +18,7 @@ MaxValue = 64
 StepAmount = 4
 DefaultValue = 16
 DependentOption = A_SSAO_MODE
+ResolveAtCompilation = True
 
 [OptionRangeFloat]
 GUIName = Sample Range
@@ -268,8 +269,7 @@ void SSAO()
 		uint rndidx = fragcoord.y * 4 + fragcoord.x;
 		float3 vRandom = float3(rndNorm[rndidx], 0);
 		float fAO = 0;
-		const int NUMSAMPLES = GetOption(B_SSAO_SAMPLES);
-		for(int s = 0; s < NUMSAMPLES; s++) 
+		for(int s = 0; s < B_SSAO_SAMPLES; s++) 
 		{
 			float3 offset = PoissonDisc[s];
 			float3 vReflRay = reflect(offset, vRandom);
@@ -286,7 +286,7 @@ void SSAO()
 			if ( fDepthDelta > GetOption(F_MIN_DEPTH) && fDepthDelta < GetOption(E_MAX_DEPTH))
 				fAO += pow(1 - fDepthDelta, 2.5);
 		}
-		Occlusion = saturate(1 - (fAO / float(NUMSAMPLES)) + GetOption(C_SAMPLE_RANGE));
+		Occlusion = saturate(1 - (fAO / float(B_SSAO_SAMPLES)) + GetOption(C_SAMPLE_RANGE));
 	}
 	SetOutput(float4(Occlusion,Occlusion,Occlusion,Occlusion));
 }

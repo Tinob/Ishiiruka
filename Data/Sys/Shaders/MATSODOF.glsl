@@ -94,6 +94,7 @@ MaxValue = 10
 DefaultValue = 4
 StepAmount = 1
 DependentOption = MATSODOF
+ResolveAtCompilation = True
 
 [OptionRangeInteger]
 GUIName = Bokeh Angle
@@ -143,7 +144,7 @@ float4 GetMatsoDOFBlur(int axis, float2 coord)
 	depthdiff = (scenedepth < scenefocus) ? pow(depthdiff, GetOption(DOF_NEARBLURCURVE))*(1.0f+pow(abs(0.5f-coord.x)*depthdiff+0.1f,2.0)*GetOption(DOF_VIGNETTE)) : depthdiff;
 	depthdiff = (scenedepth > scenefocus) ? pow(depthdiff, GetOption(DOF_FARBLURCURVE)) : depthdiff;	
 
-	float2 discRadius = depthdiff * GetOption(DOF_BLURRADIUS)*GetInvResolution()*0.5/GetOption(iMatsoDOFBokehQuality);
+	float2 discRadius = depthdiff * GetOption(DOF_BLURRADIUS)*GetInvResolution()*0.5/float(iMatsoDOFBokehQuality);
 
 	int passnumber=1;
 
@@ -152,7 +153,7 @@ float4 GetMatsoDOFBlur(int axis, float2 coord)
 	float2 tdirs[4] = { float2(-0.306, 0.739), float2(0.306, 0.739), float2(-0.739, 0.306), float2(-0.739, -0.306) };
 	float wValue = (1.0 + pow(length(tcol.rgb) + 0.1, GetOption(fMatsoDOFBokehCurve))) * (1.0 - GetOption(fMatsoDOFBokehLight));	// special recipe from papa Matso ;)
 
-	for(int i = -GetOption(iMatsoDOFBokehQuality); i < GetOption(iMatsoDOFBokehQuality); i++)
+	for(int i = -iMatsoDOFBokehQuality; i < iMatsoDOFBokehQuality; i++)
 	{
 		float2 taxis =  tdirs[axis];
 
@@ -162,7 +163,7 @@ float4 GetMatsoDOFBlur(int axis, float2 coord)
 		float2 tdir = float(i) * taxis * discRadius;
 		float2 tcoord = coord.xy + tdir.xy;
 		float4 ct;
-		if(GetOption(bMatsoDOFChromaEnable) == 1)
+		if(OptionEnabled(bMatsoDOFChromaEnable))
 		{
 			ct = GetMatsoDOFCA(tcoord.xy, discRadius.x);
 		}

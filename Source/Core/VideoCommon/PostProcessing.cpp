@@ -209,7 +209,7 @@ std::string PostProcessingShaderConfiguration::LoadOptions(const std::string& co
 	{
 		ConfigurationOption option;
 		option.m_dirty = true;
-
+		option.m_resolve_at_compilation = false;
 		if (it.m_type == "OptionBool")
 			option.m_type = ConfigurationOption::OptionType::OPTION_BOOL;
 		else if (it.m_type == "OptionRangeFloat")
@@ -230,6 +230,10 @@ std::string PostProcessingShaderConfiguration::LoadOptions(const std::string& co
 			else if (string_option.first == "DependentOption")
 			{
 				option.m_dependent_option = string_option.second;
+			}
+			else if (string_option.first == "ResolveAtCompilation")
+			{
+				TryParse(string_option.second, &option.m_resolve_at_compilation);
 			}
 			else if (string_option.first == "MinValue" ||
 				string_option.first == "MaxValue" ||
@@ -303,6 +307,92 @@ std::string PostProcessingShaderConfiguration::LoadOptions(const std::string& co
 		m_options[option.m_option_name] = option;
 	}
 	return code.substr(0, configuration_start) + code.substr(configuration_end + config_end_delimiter.size());
+}
+
+void PostProcessingShaderConfiguration::PrintCompilationTimeOptions(std::string &options)
+{
+	for (auto& it : m_options)
+	{
+		if (!it.second.m_resolve_at_compilation)
+		{
+			continue;
+		}
+		it.second.m_dirty = false;
+		if (it.second.m_type == PostProcessingShaderConfiguration::ConfigurationOption::OptionType::OPTION_BOOL)
+		{
+			options += StringFromFormat("#define %s %d\n", it.first.c_str(), it.second.m_bool_value ? 1 : 0);
+		}
+		else if (it.second.m_type == PostProcessingShaderConfiguration::ConfigurationOption::OptionType::OPTION_INTEGER)
+		{
+			u32 count = static_cast<u32>(it.second.m_integer_values.size());
+			switch (count)
+			{
+			case 1:
+				options += StringFromFormat("#define %s %d\n",
+					it.first.c_str(),
+					it.second.m_integer_values[0]);
+				break;
+			case 2:
+				options += StringFromFormat("#define %s int2(%d,%d)\n",
+					it.first.c_str(),
+					it.second.m_integer_values[0],
+					it.second.m_integer_values[1]);
+				break;
+			case 3:
+				options += StringFromFormat("#define %s int3(%d,%d,%d)\n",
+					it.first.c_str(),
+					it.second.m_integer_values[0],
+					it.second.m_integer_values[1],
+					it.second.m_integer_values[2]);
+				break;
+			case 4:
+				options += StringFromFormat("#define %s int4(%d,%d,%d, %d)\n",
+					it.first.c_str(),
+					it.second.m_integer_values[0],
+					it.second.m_integer_values[1],
+					it.second.m_integer_values[2],
+					it.second.m_integer_values[3]);
+				break;
+			default:
+				break;
+			}
+		}
+		else if (it.second.m_type == PostProcessingShaderConfiguration::ConfigurationOption::OptionType::OPTION_FLOAT)
+		{
+			u32 count = static_cast<u32>(it.second.m_float_values.size());
+			switch (count)
+			{
+			case 1:
+				options += StringFromFormat("#define %s %f\n",
+					it.first.c_str(),
+					it.second.m_float_values[0]);
+				break;
+			case 2:
+				options += StringFromFormat("#define %s float2(%f,%f)\n",
+					it.first.c_str(),
+					it.second.m_float_values[0],
+					it.second.m_float_values[1]);
+				break;
+			case 3:
+				options += StringFromFormat("#define %s float3(%f,%f,%f)\n",
+					it.first.c_str(),
+					it.second.m_float_values[0],
+					it.second.m_float_values[1],
+					it.second.m_float_values[2]);
+				break;
+			case 4:
+				options += StringFromFormat("#define %s float4(%f,%f,%f,%f)\n",
+					it.first.c_str(),
+					it.second.m_float_values[0],
+					it.second.m_float_values[1],
+					it.second.m_float_values[2],
+					it.second.m_float_values[3]);
+				break;
+			default:
+				break;
+			}
+		}
+	}
 }
 
 void PostProcessingShaderConfiguration::LoadOptionsConfiguration()
@@ -390,6 +480,8 @@ void PostProcessingShaderConfiguration::SetOptionf(std::string option, int index
 	auto it = m_options.find(option);
 
 	it->second.m_float_values[index] = value;
+	if (it->second.m_resolve_at_compilation)
+		m_requires_recompilation = true;
 	it->second.m_dirty = true;
 	m_any_options_dirty = true;
 }
@@ -399,6 +491,8 @@ void PostProcessingShaderConfiguration::SetOptioni(std::string option, int index
 	auto it = m_options.find(option);
 
 	it->second.m_integer_values[index] = value;
+	if (it->second.m_resolve_at_compilation)
+		m_requires_recompilation = true;
 	it->second.m_dirty = true;
 	m_any_options_dirty = true;
 }
@@ -408,6 +502,8 @@ void PostProcessingShaderConfiguration::SetOptionb(std::string option, bool valu
 	auto it = m_options.find(option);
 
 	it->second.m_bool_value = value;
+	if (it->second.m_resolve_at_compilation)
+		m_requires_recompilation = true;
 	it->second.m_dirty = true;
 	m_any_options_dirty = true;
 }

@@ -123,6 +123,10 @@ void DX11PostProcessing::BlitFromTexture(const TargetRectangle &src, const Targe
 		u32 buffer_size = 0;
 		for (auto& it : m_config.GetOptions())
 		{
+			if (it.second.m_resolve_at_compilation)
+			{
+				continue;
+			}
 			u32 needed_size = 0;
 			switch (it.second.m_type)
 			{
@@ -342,8 +346,12 @@ std::string DX11PostProcessing::InitStages(const std::string &code)
 void DX11PostProcessing::ApplyShader()
 {
 	// shader didn't changed
-	if (m_initialized && m_config.GetShader() == g_ActiveConfig.sPostProcessingShader && m_prev_samples == D3D::GetAAMode(g_ActiveConfig.iMultisampleMode).Count)
+	if (m_initialized 
+		&& m_config.GetShader() == g_ActiveConfig.sPostProcessingShader 
+		&& m_prev_samples == D3D::GetAAMode(g_ActiveConfig.iMultisampleMode).Count
+		&& !m_config.NeedRecompile())
 		return;
+	m_config.SetRecompile(false);
 	m_prev_samples = D3D::GetAAMode(g_ActiveConfig.iMultisampleMode).Count;
 	for (size_t i = 0; i < m_stageOutput.size(); i++)
 	{
@@ -672,6 +680,10 @@ std::string DX11PostProcessing::LoadShaderOptions(const std::string& code)
 		u32 buffer_size = 0;
 		for (const auto& it : m_config.GetOptions())
 		{
+			if (it.second.m_resolve_at_compilation)
+			{
+				continue;
+			}
 			u32 needed_size = 0;
 			if (it.second.m_type == PostProcessingShaderConfiguration::ConfigurationOption::OptionType::OPTION_BOOL)
 			{
@@ -705,6 +717,7 @@ std::string DX11PostProcessing::LoadShaderOptions(const std::string& code)
 			buffer_size += needed_size;
 		}
 		hlsl_options += "}\n";
+		m_config.PrintCompilationTimeOptions(hlsl_options);
 		if (buffer_size > 0)
 		{
 			buffer_size = (buffer_size + 15) & (~15);
