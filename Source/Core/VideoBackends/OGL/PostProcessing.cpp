@@ -140,7 +140,12 @@ void OpenGLPostProcessing::BlitFromTexture(const TargetRectangle &src, const Tar
 	}
 	for (size_t i = 0; i < stages.size(); i++)
 	{
-		if (i == finalstage)
+		const auto& stage = stages[i];
+		if (!stage.m_isEnabled)
+		{
+			continue;
+		}
+		if (i == m_config.GetLastActiveStage())
 		{
 			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 			glViewport(dst.left, dst.bottom, dst.GetWidth(), dst.GetHeight());
@@ -148,10 +153,10 @@ void OpenGLPostProcessing::BlitFromTexture(const TargetRectangle &src, const Tar
 		else
 		{
 			FramebufferManager::SetFramebuffer(m_stageOutput[i].second);
-			u32 stage_width = stages[i].m_use_source_resolution ? src.GetWidth() : dst.GetWidth();
-			u32 stage_height = stages[i].m_use_source_resolution ? src.GetHeight() : dst.GetHeight();
-			stage_width = (u32)(stage_width * stages[i].m_outputScale);
-			stage_height = (u32)(stage_height * stages[i].m_outputScale);
+			u32 stage_width = stage.m_use_source_resolution ? src.GetWidth() : dst.GetWidth();
+			u32 stage_height = stage.m_use_source_resolution ? src.GetHeight() : dst.GetHeight();
+			stage_width = (u32)(stage_width * stage.m_outputScale);
+			stage_height = (u32)(stage_height * stage.m_outputScale);
 			glViewport(0, 0, (GLsizei)(stage_width), (GLsizei)(stage_height));
 		}
 		ShaderInstance& currentshader = m_shaders[i];
@@ -236,16 +241,21 @@ void OpenGLPostProcessing::BlitFromTexture(const TargetRectangle &src, const Tar
 		bool prev_stage_output_required = i > 0 && finalstage > 0;
 		if (prev_stage_output_required)
 		{
-			for (size_t stageidx = 0; stageidx < stages[i].m_inputs.size(); stageidx++)
+			for (size_t stageidx = 0; stageidx < stage.m_inputs.size(); stageidx++)
 			{
+				u32 originalidx = stage.m_inputs[stageidx];
+				while (!stages[originalidx].m_isEnabled && originalidx > 0)
+				{
+					originalidx--;
+				}
 				glActiveTexture(GL_TEXTURE0 + 11 + GLenum(stageidx));
-				glBindTexture(GL_TEXTURE_2D_ARRAY, m_stageOutput[stages[i].m_inputs[stageidx]].first);
+				glBindTexture(GL_TEXTURE_2D_ARRAY, m_stageOutput[originalidx].first);
 			}
 		}
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 		if (prev_stage_output_required)
 		{
-			for (size_t stageidx = 0; stageidx < stages[i].m_inputs.size(); stageidx++)
+			for (size_t stageidx = 0; stageidx < stage.m_inputs.size(); stageidx++)
 			{
 				glActiveTexture(GL_TEXTURE0 + 11 + GLenum(stageidx));
 				glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
@@ -275,7 +285,11 @@ void OpenGLPostProcessing::ApplyShader()
 		&& m_config.GetShader() == g_ActiveConfig.sPostProcessingShader
 		&& !m_config.NeedRecompile())
 		return;
-	m_config.SetRecompile(false);
+	if (m_config.NeedRecompile())
+	{
+		m_config.SaveOptionsConfiguration();
+		m_config.SetRecompile(false);
+	}
 	DestroyStageOutput();
 	m_stageOutput.resize(0);
 	for (auto& shader : m_shaders)

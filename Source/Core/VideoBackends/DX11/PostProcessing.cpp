@@ -109,53 +109,67 @@ DX11PostProcessing::~DX11PostProcessing()
 	m_options.reset();
 }
 
+void DX11PostProcessing::UpdateConfiguration()
+{
+	D3D11_MAPPED_SUBRESOURCE map;
+	D3D::context->Map(m_options.get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
+	u8* dstdata = (u8*)map.pData;
+	u32 buffer_size = 0;
+	for (auto& it : m_config.GetOptions())
+	{
+		if (it.second.m_resolve_at_compilation)
+		{
+			continue;
+		}
+		u32 needed_size = 0;
+		void* source = nullptr;
+		switch (it.second.m_type)
+		{
+		case PostProcessingShaderConfiguration::ConfigurationOption::OptionType::OPTION_BOOL:
+			needed_size = sizeof(int);
+			break;
+		case PostProcessingShaderConfiguration::ConfigurationOption::OptionType::OPTION_INTEGER:
+			source = it.second.m_integer_values.data();
+			needed_size = (u32)(it.second.m_integer_values.size() * sizeof(int));
+			break;
+		case PostProcessingShaderConfiguration::ConfigurationOption::OptionType::OPTION_FLOAT:
+			source = it.second.m_float_values.data();
+			needed_size = (u32)(it.second.m_float_values.size() * sizeof(float));
+			break;
+		}
+		u32 remaining = ((buffer_size + 15) & (~15)) - buffer_size;
+		if (remaining < needed_size && remaining > 0)
+		{
+			// Padding needed to compensate contant buffer padding to 16 bytes
+			buffer_size += remaining;
+			dstdata += remaining;
+		}
+		if (source != nullptr)
+		{
+			memcpy(dstdata, source, needed_size);
+		}
+		else
+		{
+			*((int*)dstdata) = it.second.m_bool_value ? 1 : 0;
+		}
+		buffer_size += needed_size;
+		dstdata += needed_size;
+		it.second.m_dirty = false;
+	}
+	D3D::context->Unmap(m_options.get(), 0);
+	m_config.SetDirty(false);
+}
+
 void DX11PostProcessing::BlitFromTexture(const TargetRectangle &src, const TargetRectangle &dst,
 	void* src_texture_ptr, void* src_depth_texture_ptr, int src_width, int src_height, int layer, float gamma)
 {
 	D3DTexture2D* src_texture = ((D3DTexture2D*)src_texture_ptr);
 	D3DTexture2D* src_texture_depth = ((D3DTexture2D*)src_depth_texture_ptr);
 	ApplyShader();
-	D3D11_MAPPED_SUBRESOURCE map;
-	if (m_config.IsDirty() && m_config.HasOptions())
+	
+	if (m_config.HasOptions() && m_config.IsDirty())
 	{
-		D3D::context->Map(m_options.get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
-		u8* dstdata = (u8*)map.pData;
-		u32 buffer_size = 0;
-		for (auto& it : m_config.GetOptions())
-		{
-			if (it.second.m_resolve_at_compilation)
-			{
-				continue;
-			}
-			u32 needed_size = 0;
-			switch (it.second.m_type)
-			{
-			case PostProcessingShaderConfiguration::ConfigurationOption::OptionType::OPTION_BOOL:
-				*((int*)dstdata) = it.second.m_bool_value;
-				needed_size = sizeof(int);
-				break;
-			case PostProcessingShaderConfiguration::ConfigurationOption::OptionType::OPTION_INTEGER:
-				needed_size = (u32)(it.second.m_integer_values.size() * sizeof(int));
-				memcpy(dstdata, it.second.m_integer_values.data(), needed_size);
-				break;
-			case PostProcessingShaderConfiguration::ConfigurationOption::OptionType::OPTION_FLOAT:
-				needed_size = (u32)(it.second.m_float_values.size() * sizeof(int));
-				memcpy(dstdata, it.second.m_float_values.data(), needed_size);
-				break;
-			}
-			u32 remaining = ((buffer_size + 15) & (~15)) - buffer_size;
-			if (remaining < needed_size && buffer_size > 0)
-			{
-				// Padding needed to compensate contant buffer padding to 16 bytes
-				buffer_size += remaining;
-				dstdata += remaining;
-			}
-			buffer_size += needed_size;
-			dstdata += needed_size;
-			it.second.m_dirty = false;
-		}
-		D3D::context->Unmap(m_options.get(), 0);
-		m_config.SetDirty(false);
+		UpdateConfiguration();
 	}
 	paramsStruct params;
 	params.native_gamma = 1.0f / gamma;
@@ -177,6 +191,7 @@ void DX11PostProcessing::BlitFromTexture(const TargetRectangle &src, const Targe
 	params.targetscale[1] = v0;
 	params.targetscale[2] = 1.0f / (u1-u0);
 	params.targetscale[3] = 1.0f / (v1-v0);
+	D3D11_MAPPED_SUBRESOURCE map;
 	D3D::context->Map(m_params.get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
 	memcpy(map.pData, &params, sizeof(params));
 	D3D::context->Unmap(m_params.get(), 0);
@@ -243,10 +258,11 @@ void DX11PostProcessing::BlitFromTexture(const TargetRectangle &src, const Targe
 			m_stageOutput.resize(finalstage);
 			for (size_t i = 0; i < finalstage; i++)
 			{
-				u32 stage_width = stages[i].m_use_source_resolution ? m_prev_src_width : m_prev_dst_width;
-				u32 stage_height = stages[i].m_use_source_resolution ? m_prev_src_height : m_prev_dst_height;
-				stage_width = (u32)(stage_width * stages[i].m_outputScale);
-				stage_height = (u32)(stage_height * stages[i].m_outputScale);
+				const auto& stage = stages[i];
+				u32 stage_width = stage.m_use_source_resolution ? m_prev_src_width : m_prev_dst_width;
+				u32 stage_height = stage.m_use_source_resolution ? m_prev_src_height : m_prev_dst_height;
+				stage_width = (u32)(stage_width * stage.m_outputScale);
+				stage_height = (u32)(stage_height * stage.m_outputScale);
 				int flags = ((int)D3D11_BIND_RENDER_TARGET | (int)D3D11_BIND_SHADER_RESOURCE);
 				m_stageOutput[i] = D3DTexture2D::Create(
 					stage_width,
@@ -258,8 +274,13 @@ void DX11PostProcessing::BlitFromTexture(const TargetRectangle &src, const Targe
 	}
 	for (size_t i = 0; i < stages.size(); i++)
 	{
+		const auto& stage = stages[i];
+		if (!stage.m_isEnabled)
+		{
+			continue;
+		}
 		D3D11_VIEWPORT vp;
-		if (i == finalstage)
+		if (i == m_config.GetLastActiveStage())
 		{
 			if (OutRTV != nullptr)
 			{
@@ -271,10 +292,10 @@ void DX11PostProcessing::BlitFromTexture(const TargetRectangle &src, const Targe
 		else
 		{
 			D3D::context->OMSetRenderTargets(1, &m_stageOutput[i]->GetRTV(), nullptr);
-			float stage_width = (float)(stages[i].m_use_source_resolution ? m_prev_src_width : m_prev_dst_width);
-			float stage_height = (float)(stages[i].m_use_source_resolution ? m_prev_src_height : m_prev_dst_height);
-			stage_width = stage_width * stages[i].m_outputScale;
-			stage_height = stage_height * stages[i].m_outputScale;
+			float stage_width = (float)(stage.m_use_source_resolution ? m_prev_src_width : m_prev_dst_width);
+			float stage_height = (float)(stage.m_use_source_resolution ? m_prev_src_height : m_prev_dst_height);
+			stage_width = stage_width * stage.m_outputScale;
+			stage_height = stage_height * stage.m_outputScale;
 			vp = CD3D11_VIEWPORT(0.0f, 0.0f, stage_width, stage_height);
 		}
 		D3D::context->RSSetViewports(1, &vp);
@@ -282,21 +303,26 @@ void DX11PostProcessing::BlitFromTexture(const TargetRectangle &src, const Targe
 		bool prev_stage_output_required = i > 0 && finalstage > 0;
 		if (prev_stage_output_required)
 		{
-			for (size_t stageidx = 0; stageidx < stages[i].m_inputs.size(); stageidx++)
+			for (size_t stageidx = 0; stageidx < stage.m_inputs.size(); stageidx++)
 			{
-				views[2 + stageidx] = m_stageOutput[stages[i].m_inputs[stageidx]]->GetSRV();
+				u32 originalidx = stage.m_inputs[stageidx];
+				while (!stages[originalidx].m_isEnabled && originalidx > 0)
+				{
+					originalidx--;
+				}
+				views[2 + stageidx] = m_stageOutput[originalidx]->GetSRV();
 			}
-			D3D::context->PSSetShaderResources(11, UINT(stages[i].m_inputs.size()), &views[2]);
+			D3D::context->PSSetShaderResources(11, UINT(stage.m_inputs.size()), &views[2]);
 		}
 		D3D::stateman->Apply();
 		D3D::context->Draw(4, m_vertex_buffer_offset);
 		if (prev_stage_output_required)
 		{
-			for (size_t stageidx = 0; stageidx < stages[i].m_inputs.size(); stageidx++)
+			for (size_t stageidx = 0; stageidx < stage.m_inputs.size(); stageidx++)
 			{
 				views[2 + stageidx] = nullptr;
 			}
-			D3D::context->PSSetShaderResources(11, UINT(stages[i].m_inputs.size()), &views[2]);
+			D3D::context->PSSetShaderResources(11, UINT(stage.m_inputs.size()), &views[2]);
 		}
 	}
 	views[0] = nullptr;
@@ -351,12 +377,16 @@ void DX11PostProcessing::ApplyShader()
 		&& m_prev_samples == D3D::GetAAMode(g_ActiveConfig.iMultisampleMode).Count
 		&& !m_config.NeedRecompile())
 		return;
-	m_config.SetRecompile(false);
-	m_prev_samples = D3D::GetAAMode(g_ActiveConfig.iMultisampleMode).Count;
-	for (size_t i = 0; i < m_stageOutput.size(); i++)
+	if (m_config.NeedRecompile())
 	{
-		m_stageOutput[i]->Release();
-		m_stageOutput[i] = nullptr;
+		m_config.SaveOptionsConfiguration();
+		m_config.SetRecompile(false);
+	}
+	m_prev_samples = D3D::GetAAMode(g_ActiveConfig.iMultisampleMode).Count;
+	for (auto& stageoutput : m_stageOutput)
+	{
+		stageoutput->Release();
+		stageoutput = nullptr;
 	}
 	m_stageOutput.resize(0);
 	for (auto& shader : m_pshader)
@@ -676,8 +706,9 @@ std::string DX11PostProcessing::LoadShaderOptions(const std::string& code)
 	std::string hlsl_options = "";
 	if (m_config.HasOptions())
 	{
-		hlsl_options = "cbuffer OptionBuffer : register(b1) {";
+		hlsl_options = "cbuffer OptionBuffer : register(b1) {\n";
 		u32 buffer_size = 0;
+		u32 paddingcount = 0;
 		for (const auto& it : m_config.GetOptions())
 		{
 			if (it.second.m_resolve_at_compilation)
@@ -685,35 +716,41 @@ std::string DX11PostProcessing::LoadShaderOptions(const std::string& code)
 				continue;
 			}
 			u32 needed_size = 0;
-			if (it.second.m_type == PostProcessingShaderConfiguration::ConfigurationOption::OptionType::OPTION_BOOL)
+			u32 count = 1;
+			u32 typeindex = 0;
+			const char* dtype[] = { "int", "float" };
+			if (it.second.m_type == PostProcessingShaderConfiguration::ConfigurationOption::OptionType::OPTION_INTEGER)
 			{
-				hlsl_options += StringFromFormat("int     option_%s;\n", it.first.c_str());
-				needed_size = sizeof(int);
-			}
-			else if (it.second.m_type == PostProcessingShaderConfiguration::ConfigurationOption::OptionType::OPTION_INTEGER)
-			{
-				u32 count = static_cast<u32>(it.second.m_integer_values.size());
-				if (count < 2)
-					hlsl_options += StringFromFormat("int     option_%s;\n", it.first.c_str());
-				else
-					hlsl_options += StringFromFormat("int%d   option_%s;\n", count, it.first.c_str());
+				count = static_cast<u32>(it.second.m_integer_values.size());
 				needed_size = sizeof(int) * count;
 			}
 			else if (it.second.m_type == PostProcessingShaderConfiguration::ConfigurationOption::OptionType::OPTION_FLOAT)
 			{
-				u32 count = static_cast<u32>(it.second.m_float_values.size());
-				if (count < 2)
-					hlsl_options += StringFromFormat("float   option_%s;\n", it.first.c_str());
-				else
-					hlsl_options += StringFromFormat("float%d option_%s;\n", count, it.first.c_str());
+				count = static_cast<u32>(it.second.m_float_values.size());
+				typeindex = 1;
 				needed_size = sizeof(float) * count;
 			}
-			u32 remaining = ((buffer_size + 15) & (~15)) - buffer_size;
-			if (remaining < needed_size && buffer_size > 0)
+			else
 			{
+				// PostProcessingShaderConfiguration::ConfigurationOption::OptionType::OPTION_BOOL
+				needed_size = sizeof(int);
+			}
+			u32 remaining = ((buffer_size + 15) & (~15)) - buffer_size;
+			if (remaining < needed_size && remaining > 0)
+			{
+				u32 padelements = remaining / 4;
+				if (padelements < 2)
+					hlsl_options += StringFromFormat("int	padding_%d;\n", paddingcount);
+				else
+					hlsl_options += StringFromFormat("int%d	padding_%d;\n", padelements, paddingcount);
 				// Padding needed to compensate contant buffer padding to 16 bytes
 				buffer_size += remaining;
+				paddingcount++;
 			}
+			if (count < 2)
+				hlsl_options += StringFromFormat("%s	option_%s;\n", dtype[typeindex], it.first.c_str());
+			else
+				hlsl_options += StringFromFormat("%s%d	option_%s;\n", dtype[typeindex], count, it.first.c_str());
 			buffer_size += needed_size;
 		}
 		hlsl_options += "}\n";

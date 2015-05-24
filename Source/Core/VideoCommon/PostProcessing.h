@@ -53,7 +53,26 @@ public:
 		std::string m_stage_entry_point;
 		float m_outputScale;
 		std::vector<u32> m_inputs;
+		std::vector<const ConfigurationOption*> m_dependent_options;
 		bool m_use_source_resolution;
+		bool m_isEnabled;
+		void CheckEnabled()
+		{
+			if (m_dependent_options.size() > 0)
+			{
+				for (const auto& option : m_dependent_options)
+				{
+					if (option->m_bool_value)
+					{
+						m_isEnabled = true;
+						return;
+					}
+				}
+				m_isEnabled = false;
+				return;
+			}
+			m_isEnabled = true;
+		}
 	};
 
 	typedef std::map<std::string, ConfigurationOption> ConfigMap;
@@ -70,12 +89,12 @@ public:
 	void ReloadShader();
 	std::string GetShader() { return m_current_shader; }
 
-	bool IsDirty() { return m_any_options_dirty; }
+	bool IsDirty() const { return m_any_options_dirty; }
 	void SetDirty(bool dirty) { m_any_options_dirty = dirty; }
 	bool NeedRecompile() { return m_requires_recompilation; }
 	void SetRecompile(bool recompile) { m_requires_recompilation = recompile; }
 
-	bool HasOptions() { return m_options.size() > 0; }
+	bool HasOptions() const { return m_options.size() > 0; }
 	ConfigMap& GetOptions() { return m_options; }
 	const StageList& GetStages() { return m_stages; }
 	const ConfigurationOption& GetOption(const std::string& option) { return m_options[option]; }
@@ -84,12 +103,15 @@ public:
 	void SetOptionf(std::string option, int index, float value);
 	void SetOptioni(std::string option, int index, s32 value);
 	void SetOptionb(std::string option, bool value);
+	void CheckStages();
 	inline bool IsDepthInputRequired(){ return m_requires_depth_input; }
+	inline u32 GetLastActiveStage() const { return m_last_stage; }
 	void PrintCompilationTimeOptions(std::string &options);
 private:
 	bool m_any_options_dirty;
 	bool m_requires_depth_input;
 	bool m_requires_recompilation;
+	u32 m_last_stage;
 	std::string m_current_shader;
 	ConfigMap m_options;
 	StageList m_stages;

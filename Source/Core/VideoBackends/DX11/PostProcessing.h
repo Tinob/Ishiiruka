@@ -28,6 +28,7 @@ namespace DX11
 
 	private:
 		std::string InitStages(const std::string &code);
+		void UpdateConfiguration();
 		u32 m_prev_dst_width;
 		u32 m_prev_dst_height;
 		u32 m_prev_src_width;

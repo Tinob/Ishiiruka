@@ -2,13 +2,17 @@
 
 /*
 [configuration]
-[OptionRangeInteger]
-GUIName = SSAO Mode
-OptionName = A_SSAO_MODE
-MinValue = 0
-MaxValue = 2
-StepAmount = 1
-DefaultValue = 1
+[OptionBool]
+GUIName = SSAO
+OptionName = A_SSAO_ENABLED
+DefaultValue = True
+ResolveAtCompilation = True
+
+[OptionBool]
+GUIName = Ambient Only
+OptionName = A_SSAO_ONLY
+DefaultValue = False
+DependentOption = A_SSAO_ENABLED
 
 [OptionRangeInteger]
 GUIName = SSAO Quality
@@ -17,7 +21,7 @@ MinValue = 16
 MaxValue = 64
 StepAmount = 4
 DefaultValue = 16
-DependentOption = A_SSAO_MODE
+DependentOption = A_SSAO_ENABLED
 ResolveAtCompilation = True
 
 [OptionRangeFloat]
@@ -27,7 +31,7 @@ MinValue = 0.001
 MaxValue = 0.04
 StepAmount = 0.0001
 DefaultValue = 0.01
-DependentOption = A_SSAO_MODE
+DependentOption = A_SSAO_ENABLED
 
 [OptionRangeFloat]
 GUIName = Filter Limit
@@ -36,7 +40,7 @@ MinValue = 0.001
 MaxValue = 0.01
 StepAmount = 0.0001
 DefaultValue = 0.002
-DependentOption = A_SSAO_MODE
+DependentOption = A_SSAO_ENABLED
 
 [OptionRangeFloat]
 GUIName = Max Depth
@@ -45,7 +49,7 @@ MinValue = 0.0001
 MaxValue = 0.02
 StepAmount = 0.0001
 DefaultValue = 0.015
-DependentOption = A_SSAO_MODE
+DependentOption = A_SSAO_ENABLED
 
 [OptionRangeFloat]
 GUIName = Min Depth
@@ -54,7 +58,7 @@ MinValue = 0.0
 MaxValue = 0.02
 StepAmount = 0.0001
 DefaultValue = 0.0002
-DependentOption = A_SSAO_MODE
+DependentOption = A_SSAO_ENABLED
 
 [OptionBool]
 GUIName = Depth Of Field
@@ -78,12 +82,15 @@ StepAmount = 0.01, 0.01
 DependentOption = G_DOF
 [Stage]
 EntryPoint = SSAO
+DependentOption = A_SSAO_ENABLED
 [Stage]
 EntryPoint = BlurH
+DependentOption = A_SSAO_ENABLED
 [Stage]
 EntryPoint = Merger
 [Stage]
 EntryPoint = DOF
+DependentOption = G_DOF
 [/configuration]
 */
 float3 GetNormalFromDepth(float fDepth) 
@@ -129,21 +136,16 @@ void BlurH()
 
 void Merger()
 {
+	float4 value = float4(1.0,1.0,1.0,1.0);
+	if (GetOption(A_SSAO_ONLY) == 0)
+	{
+		value = Sample();
+	}
+#if A_SSAO_ENABLED == 1
 	float depth = SampleDepth();
 	float4 blur = BlurPrev(int2(0,1), depth);
-	float4 value = float4(blur.wwww);
-	if(GetOption(A_SSAO_MODE) < 2)
-	{
-		float4 color = Sample();
-		if(GetOption(A_SSAO_MODE) == 0)
-		{
-			value = color;
-		}
-		else
-		{
-			value *= color;
-		}
-	}	
+	value *= blur.wwww;
+#endif
 	SetOutput(value);
 }
 
