@@ -1,5 +1,5 @@
 // Copyright 2013 Dolphin Emulator Project
-// Licensed under GPLv2
+// Licensed under GPLv2+
 // Refer to the license.txt file included.
 // Modified for Ishiiruka by Tino
 
@@ -93,7 +93,7 @@ namespace VertexLoaderManager
 		std::string filename = StringFromFormat("%sG_%s_pvt.h", File::GetUserPath(D_DUMP_IDX), LastGameCode);		
 		std::string header;
 		header.append("// Copyright 2013 Dolphin Emulator Project\n");
-		header.append("// Licensed under GPLv2\n");
+		header.append("// Licensed under GPLv2+\n");
 		header.append("// Refer to the license.txt file included.\n");
 		header.append("// Added for Ishiiruka by Tino\n");
 		header.append("#pragma once\n");

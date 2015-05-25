@@ -1,39 +1,38 @@
 package org.dolphinemu.dolphinemu.activities;
 
 import android.app.Activity;
+import android.app.LoaderManager;
+import android.content.CursorLoader;
 import android.content.Intent;
-import android.content.SharedPreferences;
+import android.content.Loader;
+import android.database.Cursor;
 import android.os.Bundle;
-import android.os.Environment;
-import android.preference.PreferenceManager;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.Toolbar;
 
-import org.dolphinemu.dolphinemu.AssetCopyService;
-import org.dolphinemu.dolphinemu.NativeLibrary;
 import org.dolphinemu.dolphinemu.R;
 import org.dolphinemu.dolphinemu.adapters.GameAdapter;
-import org.dolphinemu.dolphinemu.model.Game;
-import org.dolphinemu.dolphinemu.model.GcGame;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import org.dolphinemu.dolphinemu.model.GameDatabase;
+import org.dolphinemu.dolphinemu.model.GameProvider;
+import org.dolphinemu.dolphinemu.services.AssetCopyService;
 
 /**
  * The main Activity of the Lollipop style UI. Shows a grid of games on tablets & landscape phones,
  * shows a list of games on portrait phones.
  */
-public final class GameGridActivity extends Activity
+public final class GameGridActivity extends Activity implements LoaderManager.LoaderCallbacks<Cursor>
 {
 	private static final int REQUEST_ADD_DIRECTORY = 1;
+
+	private static final int LOADER_ID_GAMES = 1;
+	// TODO When each platform has its own tab, there should be a LOADER_ID for each platform.
 
 	private GameAdapter mAdapter;
 
@@ -61,7 +60,8 @@ public final class GameGridActivity extends Activity
 		recyclerView.addItemDecoration(new GameAdapter.SpacesItemDecoration(8));
 
 		// Create an adapter that will relate the dataset to the views on-screen.
-		mAdapter = new GameAdapter(getGameList());
+		getLoaderManager().initLoader(LOADER_ID_GAMES, null, this);
+		mAdapter = new GameAdapter();
 		recyclerView.setAdapter(mAdapter);
 
 		buttonAddDirectory.setOnClickListener(new View.OnClickListener()
@@ -89,8 +89,8 @@ public final class GameGridActivity extends Activity
 	 * Callback from AddDirectoryActivity. Applies any changes necessary to the GameGridActivity.
 	 *
 	 * @param requestCode An int describing whether the Activity that is returning did so successfully.
-	 * @param resultCode An int describing what Activity is giving us this callback.
-	 * @param result The information the returning Activity is providing us.
+	 * @param resultCode  An int describing what Activity is giving us this callback.
+	 * @param result      The information the returning Activity is providing us.
 	 */
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent result)
@@ -102,20 +102,7 @@ public final class GameGridActivity extends Activity
 			// other activities might use this callback in the future (don't forget to change Javadoc!)
 			if (requestCode == REQUEST_ADD_DIRECTORY)
 			{
-				// Get the path the user selected in AddDirectoryActivity.
-				String path = result.getStringExtra(AddDirectoryActivity.KEY_CURRENT_PATH);
-
-				// Store this path as a preference.
-				// TODO Use SQLite instead.
-				SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-				SharedPreferences.Editor editor = prefs.edit();
-
-				editor.putString(AddDirectoryActivity.KEY_CURRENT_PATH, path);
-
-				// Using commit, not apply, in order to block so the next method has the correct data to load.
-				editor.commit();
-
-				mAdapter.setGameList(getGameList());
+				getLoaderManager().restartLoader(LOADER_ID_GAMES, null, this);
 			}
 		}
 	}
@@ -126,57 +113,98 @@ public final class GameGridActivity extends Activity
 		MenuInflater inflater = getMenuInflater();
 		inflater.inflate(R.menu.menu_game_grid, menu);
 		return true;
+	}
+
+	/**
+	 * Called by the framework whenever any actionbar/toolbar icon is clicked.
+	 *
+	 * @param item The icon that was clicked on.
+	 * @return True if the event was handled, false to bubble it up to the OS.
+	 */
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item)
+	{
+		switch (item.getItemId())
+		{
+			case R.id.menu_settings:
+				// Launch the Settings Actvity.
+				Intent settings = new Intent(this, SettingsActivity.class);
+				startActivity(settings);
+				return true;
+		}
+
+		return false;
+	}
+
+
+	/**
+	 * Callback that's invoked when the system has initialized the Loader and
+	 * is ready to start the query. This usually happens when initLoader() is
+	 * called. Here, we use it to make a DB query for games.
+	 *
+	 * @param id   The ID value passed to the initLoader() call that triggered this.
+	 * @param args The args bundle supplied by the caller.
+	 * @return A new Loader instance that is ready to start loading.
+	 */
+	@Override
+	public Loader<Cursor> onCreateLoader(int id, Bundle args)
+	{
+		Log.d("DolphinEmu", "Creating loader with id: " + id);
+
+		// Take action based on the ID of the Loader that's being created.
+		switch (id)
+		{
+			case LOADER_ID_GAMES:
+				// TODO Play some sort of load-starting animation; maybe fade the list out.
+
+				return new CursorLoader(
+						this,                           // Parent activity context
+						GameProvider.URI_GAME,          // URI of table to query
+						null,                           // Return all columns
+						null,                           // No selection clause
+						null,                           // No selection arguments
+						GameDatabase.KEY_GAME_TITLE + " asc"   // Sort by game name, ascending order
+				);
+
+			default:
+				Log.e("DolphinEmu", "Bad ID passed in.");
+				return null;
+		}
+	}
+
+	/**
+	 * Callback that's invoked when the Loader returned in onCreateLoader is finished
+	 * with its task. In this case, the game DB query is finished, so we should put the results
+	 * on screen.
+	 *
+	 * @param loader The loader that finished.
+	 * @param data   The data the Loader loaded.
+	 */
+	@Override
+	public void onLoadFinished(Loader<Cursor> loader, Cursor data)
+	{
+		int id = loader.getId();
+		Log.d("DolphinEmu", "Loader finished with id: " + id);
+
+		// TODO When each platform has its own tab, this should just call into those tabs instead.
+		switch (id)
+		{
+			case LOADER_ID_GAMES:
+				mAdapter.swapCursor(data);
+				// TODO Play some sort of load-finished animation; maybe fade the list in.
+				break;
+
+			default:
+				Log.e("DolphinEmu", "Bad ID passed in.");
+		}
 
 	}
 
-	// TODO Replace all of this with a SQLite database
-	private ArrayList<Game> getGameList()
+	@Override
+	public void onLoaderReset(Loader<Cursor> loader)
 	{
-		ArrayList<Game> gameList = new ArrayList<Game>();
+		Log.d("DolphinEmu", "Loader resetting.");
 
-		final String DefaultDir = Environment.getExternalStorageDirectory() + File.separator + "dolphin-emu";
-
-		NativeLibrary.SetUserDirectory(DefaultDir);
-
-		// Extensions to filter by.
-		Set<String> exts = new HashSet<String>(Arrays.asList(".dff", ".dol", ".elf", ".gcm", ".gcz", ".iso", ".wad", ".wbfs"));
-
-		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-
-		String path = prefs.getString(AddDirectoryActivity.KEY_CURRENT_PATH, "/");
-
-		File currentDir = new File(path);
-		File[] dirs = currentDir.listFiles();
-		try
-		{
-			for (File entry : dirs)
-			{
-				if (!entry.isHidden() && !entry.isDirectory())
-				{
-					String entryName = entry.getName();
-
-					// Check that the file has an appropriate extension before trying to read out of it.
-					if (exts.contains(entryName.toLowerCase().substring(entryName.lastIndexOf('.'))))
-					{
-						GcGame game = new GcGame(NativeLibrary.GetTitle(entry.getAbsolutePath()),
-								NativeLibrary.GetDescription(entry.getAbsolutePath()).replace("\n", " "),
-								// TODO Some games might actually not be from this region, believe it or not.
-								"United States",
-								entry.getAbsolutePath(),
-								NativeLibrary.GetGameId(entry.getAbsolutePath()),
-								NativeLibrary.GetDate(entry.getAbsolutePath()));
-
-						gameList.add(game);
-					}
-
-				}
-
-			}
-		} catch (Exception ignored)
-		{
-
-		}
-
-		return gameList;
+		// TODO ¯\_(ツ)_/¯
 	}
 }

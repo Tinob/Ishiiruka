@@ -1,9 +1,10 @@
-// Copyright 2013 Dolphin Emulator Project
-// Licensed under GPLv2
+// Copyright 2009 Dolphin Emulator Project
+// Licensed under GPLv2+
 // Refer to the license.txt file included.
 
 #pragma once
 
+#include <atomic>
 #include <array>
 #include <mutex>
 #include <string>
@@ -131,8 +132,8 @@ public:
 
 	std::mutex& MixerCritical() { return m_cs_mixing; }
 
-	float GetCurrentSpeed() const { return m_speed; }
-	void UpdateSpeed(volatile float val) { m_speed = val; }
+	float GetCurrentSpeed() const { return m_speed.load(); }
+	void UpdateSpeed(float val) { m_speed.store(val); }
 
 protected:
 	class MixerFifo
@@ -165,12 +166,12 @@ protected:
 
 		std::array<float, MAX_SAMPLES * 2> m_float_buffer;
 
-		volatile u32 m_write_index;
-		volatile u32 m_read_index;
+		std::atomic<u32> m_write_index;
+		std::atomic<u32> m_read_index;
 
 		// Volume ranges from 0-255
-		volatile s32 m_lvolume;
-		volatile s32 m_rvolume;
+		std::atomic<s32> m_lvolume;
+		std::atomic<s32> m_rvolume;
 
 		float m_num_left_i;
 		float m_fraction;
@@ -207,7 +208,7 @@ protected:
 
 	std::mutex m_cs_mixing;
 
-	volatile float m_speed; // Current rate of the emulation (1.0 = 100% speed)
+	std::atomic<float> m_speed; // Current rate of the emulation (1.0 = 100% speed)
 
 private:
 

@@ -1,5 +1,5 @@
-// Copyright 2014 Dolphin Emulator Project
-// Licensed under GPLv2
+// Copyright 2013 Dolphin Emulator Project
+// Licensed under GPLv2+
 // Refer to the license.txt file included.
 
 #pragma once
@@ -108,7 +108,7 @@ namespace ButtonManager
 	void Init();
 	bool GetButtonPressed(int padID, ButtonType button);
 	float GetAxisValue(int padID, ButtonType axis);
-	bool GamepadEvent(std::string dev, int button, int action);
-	void GamepadAxisEvent(std::string dev, int axis, float value);
+	bool GamepadEvent(const std::string& dev, int button, int action);
+	void GamepadAxisEvent(const std::string& dev, int axis, float value);
 	void Shutdown();
 }

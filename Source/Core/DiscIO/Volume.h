@@ -1,5 +1,5 @@
-// Copyright 2013 Dolphin Emulator Project
-// Licensed under GPLv2
+// Copyright 2008 Dolphin Emulator Project
+// Licensed under GPLv2+
 // Refer to the license.txt file included.
 
 #pragma once
@@ -76,7 +76,7 @@ public:
 	virtual std::string GetUniqueID() const = 0;
 	virtual std::string GetMakerID() const = 0;
 	virtual int GetRevision() const = 0;
-	virtual std::string GetName() const = 0;
+	virtual std::string GetInternalName() const = 0;
 	virtual std::map<ELanguage, std::string> GetNames() const = 0;
 	virtual std::map<ELanguage, std::string> GetDescriptions() const { return std::map<ELanguage, std::string>(); }
 	virtual std::string GetCompany() const { return std::string(); }

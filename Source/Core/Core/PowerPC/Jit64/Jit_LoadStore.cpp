@@ -1,5 +1,5 @@
-// Copyright 2013 Dolphin Emulator Project
-// Licensed under GPLv2
+// Copyright 2008 Dolphin Emulator Project
+// Licensed under GPLv2+
 // Refer to the license.txt file included.
 
 // TODO(ector): Tons of pshufb optimization of the loads/stores, for SSSE3+, possibly SSE4, only.
@@ -336,15 +336,15 @@ void Jit64::dcbz(UGeckoInstruction inst)
 	// Should this code ever run? I can't find any games that use DCBZ on non-physical addresses, but
 	// supposedly there are, at least for some MMU titles. Let's be careful and support it to be sure.
 	SwitchToFarCode();
-	SetJumpTarget(slow);
-	MOV(32, M(&PC), Imm32(jit->js.compilerPC));
-	BitSet32 registersInUse = CallerSavedRegistersInUse();
-	ABI_PushRegistersAndAdjustStack(registersInUse, 0);
-	ABI_CallFunctionR((void *)&PowerPC::ClearCacheLine, RSCRATCH);
-	ABI_PopRegistersAndAdjustStack(registersInUse, 0);
-	FixupBranch exit = J(true);
-
+		SetJumpTarget(slow);
+		MOV(32, M(&PC), Imm32(jit->js.compilerPC));
+		BitSet32 registersInUse = CallerSavedRegistersInUse();
+		ABI_PushRegistersAndAdjustStack(registersInUse, 0);
+		ABI_CallFunctionR((void *)&PowerPC::ClearCacheLine, RSCRATCH);
+		ABI_PopRegistersAndAdjustStack(registersInUse, 0);
+		FixupBranch exit = J(true);
 	SwitchToNearCode();
+
 	// Mask out the address so we don't write to MEM1 out of bounds
 	// FIXME: Work out why the AGP disc writes out of bounds
 	if (!SConfig::GetInstance().m_LocalCoreStartupParameter.bWii)

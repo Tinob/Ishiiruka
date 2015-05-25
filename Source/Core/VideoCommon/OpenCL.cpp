@@ -1,5 +1,5 @@
 // Copyright 2013 Dolphin Emulator Project
-// Licensed under GPLv2
+// Licensed under GPLv2+
 // Refer to the license.txt file included.
 
 // TODO: Make a more centralized version of this (for now every backend that will use it will create its own context, which is weird). An object maybe?

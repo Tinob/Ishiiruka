@@ -1,5 +1,5 @@
-// Copyright 2013 Dolphin Emulator Project
-// Licensed under GPLv2
+// Copyright 2008 Dolphin Emulator Project
+// Licensed under GPLv2+
 // Refer to the license.txt file included.
 
 // Most of the code in this file is from:
@@ -7,6 +7,7 @@
 // Copyright (C) 2003-2004 Parasyte
 
 #include <algorithm>
+#include <cstring>
 
 #ifdef _WIN32
 #include <windows.h>

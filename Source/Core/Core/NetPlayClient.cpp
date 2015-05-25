@@ -1,5 +1,5 @@
-// Copyright 2013 Dolphin Emulator Project
-// Licensed under GPLv2
+// Copyright 2010 Dolphin Emulator Project
+// Licensed under GPLv2+
 // Refer to the license.txt file included.
 
 #include "Common/ENetUtil.h"
@@ -392,10 +392,10 @@ unsigned int NetPlayClient::OnData(sf::Packet& packet)
 			packet >> tmp;
 			g_NetPlaySettings.m_EXIDevice[1] = (TEXIDevices)tmp;
 
-			u32 x, y;
-			packet >> x;
-			packet >> y;
-			g_netplay_initial_gctime = x | ((u64)y >> 32);
+			u32 time_low, time_high;
+			packet >> time_low;
+			packet >> time_high;
+			g_netplay_initial_gctime = time_low | ((u64)time_high << 32);
 		}
 
 		m_dialog->OnMsgStartGame();

@@ -1,5 +1,5 @@
-// Copyright 2013 Dolphin Emulator Project
-// Licensed under GPLv2
+// Copyright 2008 Dolphin Emulator Project
+// Licensed under GPLv2+
 // Refer to the license.txt file included.
 
 // This audio backend uses XAudio2 via XAudio2_7.dll
@@ -61,7 +61,7 @@ private:
 	u32 samplesize;
 
 public:
-	XAudio2_7(CMixer *mixer);
+	XAudio2_7();
 	virtual ~XAudio2_7();
 
 	virtual bool Start();
@@ -76,8 +76,7 @@ public:
 #else
 
 public:
-	XAudio2_7(CMixer *mixer)
-		: SoundStream(mixer)
+	XAudio2_7()
 	{}
 
 #endif

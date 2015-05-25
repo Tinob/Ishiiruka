@@ -1,5 +1,5 @@
-// Copyright 2013 Dolphin Emulator Project
-// Licensed under GPLv2
+// Copyright 2009 Dolphin Emulator Project
+// Licensed under GPLv2+
 // Refer to the license.txt file included.
 
 #include "AudioCommon/AlsaSoundStream.h"
@@ -10,26 +10,29 @@
 #define BUFFER_SIZE_MAX 8192
 #define BUFFER_SIZE_BYTES (BUFFER_SIZE_MAX*2*2)
 
-AlsaSound::AlsaSound(CMixer *mixer) : SoundStream(mixer), thread_data(0), handle(nullptr), frames_to_deliver(FRAME_COUNT_MIN)
+AlsaSound::AlsaSound()
+	: m_thread_status(ALSAThreadStatus::STOPPED)
+	, handle(nullptr)
+	, frames_to_deliver(FRAME_COUNT_MIN)
 {
 	mix_buffer = new u8[BUFFER_SIZE_BYTES];
 }
 
 AlsaSound::~AlsaSound()
 {
-	delete [] mix_buffer;
+	delete[] mix_buffer;
 }
 
 bool AlsaSound::Start()
 {
+	m_thread_status.store(ALSAThreadStatus::RUNNING);
 	thread = std::thread(&AlsaSound::SoundLoop, this);
-	thread_data = 0;
 	return true;
 }
 
 void AlsaSound::Stop()
 {
-	thread_data = 1;
+	m_thread_status.store(ALSAThreadStatus::STOPPING);
 	thread.join();
 }
 
@@ -42,11 +45,11 @@ void AlsaSound::Update()
 void AlsaSound::SoundLoop()
 {
 	if (!AlsaInit()) {
-		thread_data = 2;
+		m_thread_status.store(ALSAThreadStatus::STOPPED);
 		return;
 	}
 	Common::SetCurrentThreadName("Audio thread - alsa");
-	while (!thread_data)
+	while (m_thread_status.load() == ALSAThreadStatus::RUNNING)
 	{
 		m_mixer->Mix(reinterpret_cast<short *>(mix_buffer), frames_to_deliver);
 		int rc = m_muted ? 1337 : snd_pcm_writei(handle, mix_buffer, frames_to_deliver);
@@ -61,7 +64,7 @@ void AlsaSound::SoundLoop()
 		}
 	}
 	AlsaShutdown();
-	thread_data = 2;
+	m_thread_status.store(ALSAThreadStatus::STOPPED);
 }
 
 bool AlsaSound::AlsaInit()
@@ -71,7 +74,7 @@ bool AlsaSound::AlsaInit()
 	int dir;
 	snd_pcm_sw_params_t *swparams;
 	snd_pcm_hw_params_t *hwparams;
-	snd_pcm_uframes_t buffer_size,buffer_size_max;
+	snd_pcm_uframes_t buffer_size, buffer_size_max;
 	unsigned int periods;
 
 	err = snd_pcm_open(&handle, "default", SND_PCM_STREAM_PLAYBACK, 0);

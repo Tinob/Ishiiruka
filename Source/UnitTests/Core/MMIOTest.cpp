@@ -1,3 +1,7 @@
+// Copyright 2014 Dolphin Emulator Project
+// Licensed under GPLv2+
+// Refer to the license.txt file included.
+
 #include <unordered_set>
 #include <gtest/gtest.h>
 
@@ -108,12 +112,12 @@ TEST_F(MappingTest, ReadWriteComplex)
 
 	m_mapping->Register(0x0C001234,
 		MMIO::ComplexRead<u8>([&read_called](u32 addr) {
-			EXPECT_EQ(0x0C001234, addr);
+			EXPECT_EQ(0x0C001234u, addr);
 			read_called = true;
 			return 0x12;
 		}),
 		MMIO::ComplexWrite<u8>([&write_called](u32 addr, u8 val) {
-			EXPECT_EQ(0x0C001234, addr);
+			EXPECT_EQ(0x0C001234u, addr);
 			EXPECT_EQ(0x34, val);
 			write_called = true;
 		})

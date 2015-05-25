@@ -1,5 +1,5 @@
-// Copyright 2013 Dolphin Emulator Project
-// Licensed under GPLv2
+// Copyright 2008 Dolphin Emulator Project
+// Licensed under GPLv2+
 // Refer to the license.txt file included.
 
 #pragma once
@@ -45,9 +45,8 @@ protected:
 	virtual void WriteSamples(s16 *src, u32 numsamples) override;
 	virtual bool SupportSurroundOutput() override;
 public:
-	DSound(CMixer *mixer, void *_hWnd)
-		: SoundStream(mixer)
-		, bufferSize(0)
+	DSound(void *_hWnd)
+		: bufferSize(0)
 		, currentPos(0)
 		, lastPos(0)
 		, dsBuffer(0)
@@ -65,8 +64,7 @@ public:
 
 #else
 public:
-	DSound(CMixer *mixer, void *_hWnd)
-		: SoundStream(mixer)
+	DSound(void *_hWnd)
 	{}
 #endif
 };

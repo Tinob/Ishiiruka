@@ -1,5 +1,5 @@
-// Copyright 2013 Dolphin Emulator Project
-// Licensed under GPLv2
+// Copyright 2008 Dolphin Emulator Project
+// Licensed under GPLv2+
 // Refer to the license.txt file included.
 // Modified For Ishiiruka By Tino
 
@@ -64,8 +64,8 @@ void CMixer::MixerFifo::Mix(float* samples, u32 numSamples, bool consider_framel
 {
 	u32 current_sample = 0;
 	// Cache access in non-volatile variable so interpolation loop can be optimized
-	u32 read_index = Common::AtomicLoad(m_read_index);
-	const u32 write_index = Common::AtomicLoad(m_write_index);
+	u32 read_index = m_read_index.load();
+	const u32 write_index = m_write_index.load();
 	// Sync input rate by fifo size
 	float num_left = (float)(((write_index - read_index) & INDEX_MASK) / 2);
 	m_num_left_i = (num_left + m_num_left_i * (CONTROL_AVG - 1)) / CONTROL_AVG;
@@ -82,8 +82,8 @@ void CMixer::MixerFifo::Mix(float* samples, u32 numSamples, bool consider_framel
 	// e.g. going from 32khz to 48khz is 1 / (3 / 2) = 2 / 3
 	// note because of syncing and framelimit, ratio will rarely be exactly 2 / 3
 	float ratio = aid_sample_rate / (float)m_mixer->m_sample_rate;
-	float l_volume = (float)m_lvolume / 255.f;
-	float r_volume = (float)m_rvolume / 255.f;
+	float l_volume = (float)m_lvolume.load() / 256.f;
+	float r_volume = (float)m_rvolume.load() / 256.f;
 	// for each output sample pair (left and right),
 	// linear interpolate between current and next sample
 	// increment output sample position
@@ -110,12 +110,12 @@ void CMixer::MixerFifo::Mix(float* samples, u32 numSamples, bool consider_framel
 		samples[current_sample + 1] += s[1];
 	}
 	// update read index
-	Common::AtomicStore(m_read_index, read_index);
+	m_read_index.store(read_index);
 }
 
 u32 CMixer::MixerFifo::AvailableSamples()
 {
-	return ((Common::AtomicLoad(m_write_index) - Common::AtomicLoad(m_read_index)) & INDEX_MASK) * 48000 / (2 * m_input_sample_rate);
+	return ((m_write_index.load() - m_read_index.load()) & INDEX_MASK) * 48000 / (2 * m_input_sample_rate);
 }
 
 u32 CMixer::AvailableSamples()
@@ -187,10 +187,10 @@ void CMixer::MixerFifo::PushSamples(const s16* samples, u32 num_samples)
 	// Cache access in non-volatile variable
 	// indexR isn't allowed to cache in the audio throttling loop as it
 	// needs to get updates to not deadlock.
-	u32 current_write_index = Common::AtomicLoad(m_write_index);
+	u32 current_write_index = m_write_index.load();
 	// Check if we have enough free space
 	// indexW == m_indexR results in empty buffer, so indexR must always be smaller than indexW
-	if (num_samples * 2 + ((current_write_index - Common::AtomicLoad(m_read_index)) & INDEX_MASK) >= MAX_SAMPLES * 2)
+	if (num_samples * 2 + ((current_write_index - m_read_index.load()) & INDEX_MASK) >= MAX_SAMPLES * 2)
 		return;
 	// AyuanX: Actual re-sampling work has been moved to sound thread
 	// to alleviate the workload on main thread
@@ -199,7 +199,7 @@ void CMixer::MixerFifo::PushSamples(const s16* samples, u32 num_samples)
 	{
 		m_float_buffer[(current_write_index + i) & INDEX_MASK] = Signed16ToFloat(Common::swap16(samples[i]));
 	}
-	Common::AtomicAdd(m_write_index, num_samples * 2);
+	m_write_index.fetch_add(num_samples * 2);
 	return;
 }
 
@@ -262,12 +262,12 @@ void CMixer::MixerFifo::SetInputSampleRate(u32 rate)
 
 void CMixer::MixerFifo::SetVolume(u32 lvolume, u32 rvolume)
 {
-	m_lvolume = lvolume;
-	m_rvolume = rvolume;
+	m_lvolume.store(lvolume + (lvolume >> 7));
+	m_rvolume.store(rvolume + (rvolume >> 7));
 }
 
 void CMixer::MixerFifo::GetVolume(u32* lvolume, u32* rvolume) const
 {
-	*lvolume = m_lvolume;
-	*rvolume = m_rvolume;
+	*lvolume = m_lvolume.load();
+	*rvolume = m_rvolume.load();
 }

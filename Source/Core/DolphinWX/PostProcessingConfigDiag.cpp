@@ -1,5 +1,5 @@
-// Copyright 2013 Dolphin Emulator Project
-// Licensed under GPLv2
+// Copyright 2014 Dolphin Emulator Project
+// Licensed under GPLv2+
 // Refer to the license.txt file included.
 
 #include <math.h>
@@ -297,7 +297,7 @@ void PostProcessingConfigDiag::Event_Slider_Finish(wxScrollEvent &ev)
 		if (option_data.m_type == PostProcessingShaderConfiguration::ConfigurationOption::OptionType::OPTION_INTEGER)
 		{
 			s32 value = option_data.m_integer_step_values[i] * current_step + option_data.m_integer_min_values[i];
-			m_post_processor->SetOptioni(config->GetOption(), i, value);			
+			m_post_processor->SetOptioni(config->GetOption(), i, value);
 		}
 		else
 		{
@@ -337,7 +337,7 @@ void PostProcessingConfigDiag::Event_Slider(wxCommandEvent &ev)
 		{
 			float value = option_data.m_float_step_values[i] * current_step + option_data.m_float_min_values[i];
 			if (!option_data.m_resolve_at_compilation)
-				m_post_processor->SetOptionf(config->GetOption(), i, value);
+			m_post_processor->SetOptionf(config->GetOption(), i, value);
 			string_value = std::to_string(value);
 		}
 		// Update the text box to include the new value

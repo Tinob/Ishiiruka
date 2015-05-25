@@ -1,5 +1,5 @@
-// Copyright 2013 Dolphin Emulator Project
-// Licensed under GPLv2
+// Copyright 2008 Dolphin Emulator Project
+// Licensed under GPLv2+
 // Refer to the license.txt file included.
 
 // Note that this file *and this file only* must include XAudio2.h from the old
@@ -184,9 +184,8 @@ bool XAudio2_7::InitLibrary()
 	return m_xaudio2_dll != nullptr;
 }
 
-XAudio2_7::XAudio2_7(CMixer *mixer)
-	: SoundStream(mixer)
-	, m_mastering_voice(nullptr)
+XAudio2_7::XAudio2_7()
+	: m_mastering_voice(nullptr)
 	, m_volume(1.0f)
 	, m_cleanup_com(SUCCEEDED(CoInitializeEx(nullptr, COINIT_MULTITHREADED)))
 {
@@ -214,7 +213,7 @@ bool XAudio2_7::Start()
 
 	// XAudio2 master voice
 	// XAUDIO2_DEFAULT_CHANNELS instead of 2 for expansion?
-	if (FAILED(hr = m_xaudio2->CreateMasteringVoice(&m_mastering_voice, 2, m_mixer->GetSampleRate())))
+	if (FAILED(hr = m_xaudio2->CreateMasteringVoice(&m_mastering_voice, 2, GetMixer()->GetSampleRate())))
 	{
 		PanicAlertT("XAudio2_7 master voice creation failed: %#X", hr);
 		Stop();
@@ -225,7 +224,7 @@ bool XAudio2_7::Start()
 	m_mastering_voice->SetVolume(m_volume);
 
 	m_voice_context = std::unique_ptr<StreamingVoiceContext2_7>
-		(new StreamingVoiceContext2_7(m_xaudio2.get(), m_mixer, SupportSurroundOutput(), !m_enablesoundloop));
+		(new StreamingVoiceContext2_7(m_xaudio2.get(), GetMixer(), SupportSurroundOutput(), !m_enablesoundloop));
 
 	return SoundStream::Start();
 }

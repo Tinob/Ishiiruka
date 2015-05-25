@@ -1,5 +1,5 @@
-// Copyright 2013 Dolphin Emulator Project
-// Licensed under GPLv2
+// Copyright 2008 Dolphin Emulator Project
+// Licensed under GPLv2+
 // Refer to the license.txt file included.
 
 // Enable define below to enable oprofile integration. For this to work,
@@ -36,7 +36,7 @@ using namespace Gen;
 			return;
 		}
 
-		JitRegister::Init();
+		JitRegister::Init(SConfig::GetInstance().m_LocalCoreStartupParameter.m_perfDir);
 
 		iCache.fill(JIT_ICACHE_INVALID_BYTE);
 		iCacheEx.fill(JIT_ICACHE_INVALID_BYTE);

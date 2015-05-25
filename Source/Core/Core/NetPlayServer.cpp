@@ -1,5 +1,5 @@
-// Copyright 2013 Dolphin Emulator Project
-// Licensed under GPLv2
+// Copyright 2010 Dolphin Emulator Project
+// Licensed under GPLv2+
 // Refer to the license.txt file included.
 
 #include <string>
@@ -657,7 +657,7 @@ bool NetPlayServer::StartGame()
 	*spac << m_settings.m_EXIDevice[0];
 	*spac << m_settings.m_EXIDevice[1];
 	*spac << (u32)g_netplay_initial_gctime;
-	*spac << (u32)g_netplay_initial_gctime << 32;
+	*spac << (u32)(g_netplay_initial_gctime >> 32);
 
 	SendAsyncToClients(spac);
 

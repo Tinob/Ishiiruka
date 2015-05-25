@@ -1,5 +1,5 @@
-// Copyright 2013 Dolphin Emulator Project
-// Licensed under GPLv2
+// Copyright 2009 Dolphin Emulator Project
+// Licensed under GPLv2+
 // Refer to the license.txt file included.
 
 #include "AudioCommon/DPL2Decoder.h"
@@ -13,9 +13,8 @@ namespace
 	const size_t BUFFER_SAMPLES = 512; // ~10 ms - needs to be at least 240 for surround
 }
 
-PulseAudio::PulseAudio(CMixer *mixer)
-	: SoundStream(mixer)
-	, m_thread()
+PulseAudio::PulseAudio()
+	: m_thread()
 	, m_run_thread()
 {
 }

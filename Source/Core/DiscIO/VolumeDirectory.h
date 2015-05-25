@@ -1,5 +1,5 @@
-// Copyright 2013 Dolphin Emulator Project
-// Licensed under GPLv2
+// Copyright 2008 Dolphin Emulator Project
+// Licensed under GPLv2+
 // Refer to the license.txt file included.
 
 #pragma once
@@ -40,7 +40,7 @@ public:
 	std::string GetMakerID() const override;
 
 	int GetRevision() const override { return 0; }
-	std::string GetName() const override;
+	std::string GetInternalName() const override;
 	std::map<IVolume::ELanguage, std::string> GetNames() const override;
 	void SetName(const std::string&);
 

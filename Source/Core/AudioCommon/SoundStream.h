@@ -1,8 +1,9 @@
-// Copyright 2013 Dolphin Emulator Project
-// Licensed under GPLv2
+// Copyright 2009 Dolphin Emulator Project
+// Licensed under GPLv2+
 // Refer to the license.txt file included.
 
 #pragma once
+#include <atomic>
 #include <memory>
 
 #include "AudioCommon/Mixer.h"
@@ -27,10 +28,8 @@ class SoundStream
 {
 protected:
 	bool m_enablesoundloop;
-	CMixer *m_mixer;
-	// We set this to shut down the sound thread.
-	// 0=keep playing, 1=stop playing NOW.
-	volatile int threadData;
+	std::unique_ptr<CMixer> m_mixer;
+	std::atomic<bool> threadData;
 	bool m_logAudio;
 	WaveFileWriter g_wave_writer;
 	bool m_muted;
@@ -41,18 +40,17 @@ protected:
 	virtual void WriteSamples(s16 *src, u32 numsamples){}
 	virtual bool SupportSurroundOutput(){ return false; };
 public:
-	SoundStream(CMixer *mixer);
+	SoundStream();
 	~SoundStream();
 
 	static  bool isValid() { return false; }
-	virtual CMixer *GetMixer() const { return m_mixer; }
+	CMixer *GetMixer() const { return m_mixer.get(); }
 	virtual bool Start();
 	virtual void SetVolume(int) {}	
 	virtual void Stop();
 	virtual void Clear(bool mute);
 	virtual void Update() {};
 	bool IsMuted() const { return m_muted; }
-	virtual void StartLogAudio(const char *filename);
-
-	virtual void StopLogAudio();
+	void StartLogAudio(const char *filename);
+	void StopLogAudio();
 };

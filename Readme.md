@@ -4,7 +4,7 @@
 
 Dolphin is an emulator for running GameCube, Wii, and Triforce games on
 Windows, Linux, OS X, and recent Android devices. It's licensed under
-the terms of the GNU General Public License, version 2 (GPLv2).
+the terms of the GNU General Public License, version 2 or later (GPLv2+).
 
 Please read the [FAQ](https://dolphin-emu.org/docs/faq/) before using Dolphin.
 
@@ -55,23 +55,19 @@ the Android UI. Import the Gradle project located in `./Source/Android`, and the
 Gradle task `assembleDebug` to build, or `installDebug` to install the UI onto a connected device.
 
 In order to launch the app, you must build and include the native Dolphin libraries into the UI project.
-Building native code requires the [Android NDK](https://developer.android.com/tools/sdk/ndk/index.html).
+(Building native code requires the [Android NDK](https://developer.android.com/tools/sdk/ndk/index.html).)
+Android Studio will do this for you if you create `Source/Android/build.properties`, and place the
+following inside:
 
-### Build Steps:
-1. `mkdir Build-Android-<abi>`
-2. `cd Build-Android-<abi>`
-3. `cmake -DANDROID=True -DANDROID_NDK=<ndk-path> -DANDROID_NATIVE_API_LEVEL=android-18 -DANDROID_TOOLCHAIN_NAME=<toolchain> -DANDROID_ABI=<abi> -DCMAKE_TOOLCHAIN_FILE=../Source/Android/android.toolchain.cmake -DGIT_EXECUTABLE=<git-path> ..`
-4. `make`
+```
+makeArgs=<make-args>
+```
 
-Replace `<git-path>` with the absolute path to your machine's Git executable, <ndk-path> with the absolute
-path to where you installed your NDK, and the rest depending on which platform the Android device you are
-targeting uses:
-
-|Platform                 | abi         | toolchain                 |
-|-------------------------|-------------|---------------------------|
-|ARM 32-bit (most devices)| armeabi-v7a | arm-linux-androideabi-4.9 |
-|ARM 64-bit (i.e. Nexus 9)| arm64-v8a   | aarch64-linux-android-4.9 |
-|Intel 64-bit             | x86_64      | x86_64-4.9                |
+Replace `<make-args>` with any arguments you want to pass to `make`, and then execute the
+`assembleDebug` or `installDebug` task corresponding to the hardware platform you are targeting.
+For example, to deploy to a Nexus 9, which runs the AArch64 architecture, execute `installArm_64Debug`.
+A list of available tasks can be found in Android Studio in the Gradle tray, located at the top-right
+corner of the IDE by default.
 
 The native libraries will be compiled, and copied into `./Source/Android/app/libs`. Android Studio
 and Gradle will include any libraries in that folder into the APK at build time.
@@ -114,12 +110,17 @@ is intended for debugging purposes only.
 * `GC/font_sjis.bin`: font dumps
 * `GC/dsp_coef.bin`: DSP dumps
 * `GC/dsp_rom.bin`: DSP dumps
+* `Wii/clientca.pem`: Wii network certificate
+* `Wii/clientcacakey.pem`: Wii network certificate
+* `Wii/rootca.pem`: Wii network certificate
 
 The DSP dumps included with Dolphin have been written from scratch and do not
 contain any copyrighted material. They should work for most purposes, however
 some games implement copy protection by checksumming the dumps. You will need
 to dump the DSP files from a console and replace the default dumps if you want
 to fix those issues.
+
+Wii network certificates must be extracted from a Wii IOS. A guide for that can be found [here](https://wiki.dolphin-emu.org/index.php?title=Wii_Network_Guide).
 
 ## Folder Structure
 These folders are installed read-only and should not be changed:

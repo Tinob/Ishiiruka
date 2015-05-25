@@ -1,5 +1,5 @@
-// Copyright 2013 Dolphin Emulator Project
-// Licensed under GPLv2
+// Copyright 2008 Dolphin Emulator Project
+// Licensed under GPLv2+
 // Refer to the license.txt file included.
 
 #pragma once
@@ -29,9 +29,8 @@ protected:
 	virtual void WriteSamples(s16 *src, u32 numsamples) override;
 	virtual bool SupportSurroundOutput() override;
 public:
-	OpenALStream(CMixer *mixer, void *hWnd = nullptr)
-		: SoundStream(mixer)
-		, uiSource(0)
+	OpenALStream(void *hWnd = nullptr)
+		: uiSource(0)
 	{}
 
 	~OpenALStream() {}
@@ -52,8 +51,7 @@ private:
 	u32 samplesize;
 #else
 public:
-	OpenALStream(CMixer *mixer)
-		: SoundStream(mixer)
+	OpenALStream()
 	{}
 #endif // HAVE_OPENAL
 };

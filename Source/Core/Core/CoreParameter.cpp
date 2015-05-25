@@ -1,5 +1,5 @@
-// Copyright 2013 Dolphin Emulator Project
-// Licensed under GPLv2
+// Copyright 2008 Dolphin Emulator Project
+// Licensed under GPLv2+
 // Refer to the license.txt file included.
 
 #include <cinttypes>
@@ -181,7 +181,7 @@ bool SCoreStartupParameter::AutoSetup(EBootBS2 _BootBS2)
 								m_strFilename.c_str());
 					return false;
 				}
-				m_strName = pVolume->GetName();
+				m_strName = pVolume->GetInternalName();
 				m_strUniqueID = pVolume->GetUniqueID();
 				m_revision = pVolume->GetRevision();
 
@@ -252,7 +252,7 @@ bool SCoreStartupParameter::AutoSetup(EBootBS2 _BootBS2)
 
 				if (pVolume)
 				{
-					m_strName = pVolume->GetName();
+					m_strName = pVolume->GetInternalName();
 					m_strUniqueID = pVolume->GetUniqueID();
 				}
 				else

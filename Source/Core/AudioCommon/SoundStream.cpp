@@ -24,23 +24,21 @@
 #include "AudioCommon/DPL2Decoder.h"
 
 #include "Common/MathUtil.h"
-#include "Common/StdThread.h"
 
-
-SoundStream::SoundStream(CMixer *mixer) : m_mixer(mixer), threadData(0), m_logAudio(false), m_muted(false), m_enablesoundloop(true)
+SoundStream::SoundStream() : m_mixer(new CMixer(48000)), threadData(true), m_logAudio(false), m_muted(false), m_enablesoundloop(true)
 {
 
 }
 
-SoundStream::~SoundStream() 
+SoundStream::~SoundStream()
 {
-	delete m_mixer; 
+	m_mixer.reset();
 }
 
 void SoundStream::StartLogAudio(const char *filename) {
 	if (!m_logAudio) {
 		m_logAudio = true;
-		g_wave_writer.Start(filename, m_mixer->GetSampleRate());
+		g_wave_writer.Start(filename, GetMixer()->GetSampleRate());
 		g_wave_writer.SetSkipSilence(false);
 		NOTICE_LOG(DSPHLE, "Starting Audio logging");
 	}
@@ -60,7 +58,7 @@ void SoundStream::StopLogAudio() {
 	}
 }
 bool SoundStream::Start()
-{ 
+{
 	if (m_enablesoundloop)
 	{
 		DPL2Reset();
@@ -81,7 +79,7 @@ void SoundStream::Stop()
 {
 	if (m_enablesoundloop)
 	{
-		threadData = 1;
+		threadData.store(false);
 		thread.get()->join();
 	}
 }
@@ -119,34 +117,35 @@ __forceinline void s16ToFloat(float* dst, const s16 *src, u32 numsamples)
 void SoundStream::SoundLoop()
 {
 	Common::SetCurrentThreadName("Audio thread");
-	InitializeSoundLoop();	
+	InitializeSoundLoop();
 	bool surroundSupported = SupportSurroundOutput() && SConfig::GetInstance().m_LocalCoreStartupParameter.bDPL2Decoder;
 	memset(realtimeBuffer, 0, SOUND_MAX_FRAME_SIZE * sizeof(u16));
 	memset(dpl2buffer, 0, SOUND_MAX_FRAME_SIZE * sizeof(soundtouch::SAMPLETYPE));
 	memset(samplebuffer, 0, SOUND_MAX_FRAME_SIZE * sizeof(soundtouch::SAMPLETYPE));
 	memset(s_dither_prev, 0, sizeof(s_dither_prev));
-	u32 channelmultiplier = surroundSupported ? SOUND_SAMPLES_SURROUND : SOUND_SAMPLES_STEREO;	
+	u32 channelmultiplier = surroundSupported ? SOUND_SAMPLES_SURROUND : SOUND_SAMPLES_STEREO;
+	CMixer* mixer = GetMixer();
 	if (SConfig::GetInstance().m_LocalCoreStartupParameter.bTimeStretching)
 	{
 		float ratemultiplier = 1.0f;
 		soundtouch::SoundTouch sTouch;
 		sTouch.setChannels(2);
-		sTouch.setSampleRate(m_mixer->GetSampleRate());
+		sTouch.setSampleRate(mixer->GetSampleRate());
 		sTouch.setTempo(1.0);
 		sTouch.setSetting(SETTING_USE_QUICKSEEK, 0);
 		sTouch.setSetting(SETTING_USE_AA_FILTER, 1);
-		while (!threadData)
+		while (threadData.load())
 		{
-			u32 availablesamples = m_mixer->AvailableSamples();
+			u32 availablesamples = mixer->AvailableSamples();
 			u32 numsamples = std::min(availablesamples, 400u);
 			if (numsamples == 400u)
 			{
-				float rate = m_mixer->GetCurrentSpeed();
+				float rate = mixer->GetCurrentSpeed();
 				if (rate <= 0)
 				{
 					rate = 1.0f;
 				}
-				numsamples = m_mixer->Mix(samplebuffer, numsamples);
+				numsamples = mixer->Mix(samplebuffer, numsamples);
 				rate *= ratemultiplier;
 				rate = rate < 0.5f ? 0.5f : rate;
 				rate = roundf(rate * 16.0f) / 16.0f;
@@ -179,7 +178,7 @@ void SoundStream::SoundLoop()
 				floatTos16(realtimeBuffer, samplebuffer, numsamples, channelmultiplier);
 				WriteSamples(realtimeBuffer, numsamples);
 			}
-			else 
+			else
 			{
 				Common::SleepCurrentThread(1);
 			}
@@ -187,14 +186,14 @@ void SoundStream::SoundLoop()
 	}
 	else
 	{
-		while (!threadData)
+		while (threadData.load())
 		{
 			u32 neededsamples = std::min(SamplesNeeded(), SOUND_FRAME_SIZE);
-			u32 availablesamples = m_mixer->AvailableSamples() & (~(0xF));
+			u32 availablesamples = mixer->AvailableSamples() & (~(0xF));
 			if (neededsamples == SOUND_FRAME_SIZE && availablesamples > 0)
 			{
 				u32 numsamples = std::min(availablesamples, neededsamples);
-				numsamples = m_mixer->Mix(realtimeBuffer, numsamples);
+				numsamples = mixer->Mix(realtimeBuffer, numsamples);
 				if (surroundSupported)
 				{
 					s16ToFloat(dpl2buffer, realtimeBuffer, numsamples * SOUND_SAMPLES_STEREO);

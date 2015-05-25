@@ -1,6 +1,7 @@
-
-#ifndef _CONFIG_DIAG_H_
-#define _CONFIG_DIAG_H_
+// Copyright 2010 Dolphin Emulator Project
+// Licensed under GPLv2+
+// Refer to the license.txt file included.
+#pragma once
 
 #include <vector>
 #include <string>
@@ -148,5 +149,3 @@ protected:
 	VideoConfig &vconfig;
 	std::string ininame;
 };
-
-#endif

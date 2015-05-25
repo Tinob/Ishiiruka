@@ -1,5 +1,5 @@
-// Copyright 2014 Dolphin Emulator Project
-// Licensed under GPLv2
+// Copyright 2013 Dolphin Emulator Project
+// Licensed under GPLv2+
 // Refer to the license.txt file included.
 
 #include <unordered_map>
@@ -58,7 +58,7 @@ namespace ButtonManager
 		TRIGGER_R
 	};
 
-	static void AddBind(std::string dev, sBind *bind)
+	static void AddBind(const std::string& dev, sBind *bind)
 	{
 		auto it = m_controllers.find(dev);
 		if (it != m_controllers.end())
@@ -156,7 +156,7 @@ namespace ButtonManager
 		}
 		return value;
 	}
-	bool GamepadEvent(std::string dev, int button, int action)
+	bool GamepadEvent(const std::string& dev, int button, int action)
 	{
 		auto it = m_controllers.find(dev);
 		if (it != m_controllers.end())
@@ -165,7 +165,7 @@ namespace ButtonManager
 		m_controllers[dev] = new InputDevice(dev);
 		return m_controllers[dev]->PressEvent(button, action);
 	}
-	void GamepadAxisEvent(std::string dev, int axis, float value)
+	void GamepadAxisEvent(const std::string& dev, int axis, float value)
 	{
 		auto it = m_controllers.find(dev);
 		if (it != m_controllers.end())
