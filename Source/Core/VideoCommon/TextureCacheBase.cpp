@@ -57,8 +57,7 @@ TextureCache::TextureCache()
 
 	TexDecoder_SetTexFmtOverlayOptions(g_ActiveConfig.bTexFmtOverlayEnable, g_ActiveConfig.bTexFmtOverlayCenter);
 
-	if (g_ActiveConfig.bHiresTextures && !g_ActiveConfig.bDumpTextures)
-		HiresTexture::Init(SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID, true);
+	HiresTexture::Init();
 
 	SetHash64Function();
 	texture_pool_memory_usage = 0;
@@ -92,6 +91,7 @@ void TextureCache::InvalidateHiresCache()
 
 TextureCache::~TextureCache()
 {
+	HiresTexture::Shutdown();
 	UnbindTextures();
 	Invalidate();
 	InvalidateHiresCache();
@@ -123,13 +123,11 @@ void TextureCache::OnConfigChanged(VideoConfig& config)
 
 			TexDecoder_SetTexFmtOverlayOptions(g_ActiveConfig.bTexFmtOverlayEnable, g_ActiveConfig.bTexFmtOverlayCenter);
 
-			if (config.bHiresTextures != backup_config.s_hires_textures)
+			if (config.bHiresTextures != backup_config.s_hires_textures ||
+				config.bCacheHiresTextures != backup_config.s_cache_hires_textures)
 			{
-				if (config.bHiresTextures)
-				{
-					HiresTexture::Init(SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID);
-				}
-				else
+				HiresTexture::Update();
+				if (!config.bHiresTextures)
 				{
 					InvalidateHiresCache();
 				}
@@ -149,6 +147,7 @@ void TextureCache::OnConfigChanged(VideoConfig& config)
 	backup_config.s_texfmt_overlay = config.bTexFmtOverlayEnable;
 	backup_config.s_texfmt_overlay_center = config.bTexFmtOverlayCenter;
 	backup_config.s_hires_textures = config.bHiresTextures;
+	backup_config.s_cache_hires_textures = config.bCacheHiresTextures;
 	backup_config.s_stereo_3d = config.iStereoMode > 0;
 	backup_config.s_efb_mono_depth = config.bStereoEFBMonoDepth;
 }
@@ -498,7 +497,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(const u32 stage)
 		textures.erase(oldest_entry);
 	}	
 
-	std::unique_ptr<HiresTexture> hires_tex;	
+	std::shared_ptr<HiresTexture> hires_tex;	
 	if (g_ActiveConfig.bHiresTextures || g_ActiveConfig.bDumpTextures)
 	{
 		basename = HiresTexture::GenBaseName(
@@ -516,14 +515,14 @@ TextureCache::TCacheEntryBase* TextureCache::Load(const u32 stage)
 			textures.insert(TexCache::value_type(address, hriter->second));
 			return ReturnEntry(stage, hriter->second);
 		}
-		hires_tex.reset(HiresTexture::Search(
+		hires_tex = HiresTexture::Search(
 			basename,
 			[](size_t required_size)
 			{
 				TextureCache::CheckTempSize(required_size);
 				return TextureCache::temp;
 			}
-		));
+		);
 		if (hires_tex)
 		{
 			if (hires_tex->m_width != width || hires_tex->m_height != height)

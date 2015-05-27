@@ -137,6 +137,7 @@ static wxString fullAsyncShaderCompilation_desc = _("Make shader compilation pro
 static wxString waitforshadercompilation_desc = _("Wait for shader compilation in the cpu to avoid fifo problems. This option prevents loops in F-Zero, Metroid Prime fifo resets and others.");
 static wxString predictiveFifo_desc = _("Generate a secondary fifo to predict resource usage and improve loading time.");
 static wxString load_hires_textures_desc = _("Load custom textures from User/Load/Textures/<game_id>/\n\nIf unsure, leave this unchecked.");
+static wxString cache_hires_textures_desc = _("Cache custom textures to system RAM on startup.\nThis can require exponentially more RAM but fixes possible stuttering.\n\nIf unsure, leave this unchecked.");
 static wxString dump_efb_desc = _("Dump the contents of EFB copies to User/Dump/Textures/\n\nIf unsure, leave this unchecked.");
 static wxString dump_frames_desc = _("Dump all rendered frames to an AVI file in User/Dump/Frames/\n\nIf unsure, leave this unchecked.");
 #if !defined WIN32 && defined HAVE_LIBAV
@@ -592,6 +593,8 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title, con
 	szr_utility->Add(CreateCheckBox(page_advanced, _("Dump Textures"), (dump_textures_desc), vconfig.bDumpTextures));
 	szr_utility->Add(CreateCheckBox(page_advanced, _("Dump Vertex Loaders"), (dump_VertexTranslators_desc), vconfig.bDumpVertexLoaders));
 	szr_utility->Add(CreateCheckBox(page_advanced, _("Load Custom Textures"), (load_hires_textures_desc), vconfig.bHiresTextures));
+	cache_hires_textures = CreateCheckBox(page_advanced, _("Prefetch Custom Textures"), cache_hires_textures_desc, vconfig.bCacheHiresTextures);
+	szr_utility->Add(cache_hires_textures);
 	szr_utility->Add(CreateCheckBox(page_advanced, _("Dump EFB Target"), (dump_efb_desc), vconfig.bDumpEFBTarget));
 	szr_utility->Add(CreateCheckBox(page_advanced, _("Free Look"), (free_look_desc), vconfig.bFreeLook));
 #if !defined WIN32 && defined HAVE_LIBAV
@@ -872,6 +875,9 @@ void VideoConfigDiag::OnUpdateUI(wxUpdateUIEvent& ev)
 	// XFB
 	virtual_xfb->Enable(vconfig.bUseXFB);
 	real_xfb->Enable(vconfig.bUseXFB);
+
+	// custom textures
+	cache_hires_textures->Enable(vconfig.bHiresTextures);
 	
 	// Repopulating the post-processing shaders can't be done from an event
 	if (choice_ppshader && choice_ppshader->IsEmpty())

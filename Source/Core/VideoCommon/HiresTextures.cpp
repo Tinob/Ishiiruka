@@ -5,14 +5,20 @@
 #include <algorithm>
 #include <cinttypes>
 #include <cstring>
+#include <mutex>
 #include <string>
+#include <thread>
 #include <utility>
 #include <xxhash.h>
 
 #include "Common/CommonPaths.h"
 #include "Common/FileSearch.h"
 #include "Common/FileUtil.h"
+#include "Common/Flag.h"
+#include "Common/MemoryUtil.h"
 #include "Common/StringUtil.h"
+#include "Common/Thread.h"
+#include "Common/Timer.h"
 
 #include "Core/ConfigManager.h"
 
@@ -25,23 +31,66 @@
 typedef std::vector<std::pair<std::string, bool>> HiresTextureCacheItem;
 typedef std::unordered_map<std::string, HiresTextureCacheItem> HiresTextureCache;
 static HiresTextureCache s_textureMap;
-static bool s_initialized = false;
+
+static std::unordered_map<std::string, std::shared_ptr<HiresTexture>> s_textureCache;
+static std::mutex s_textureCacheMutex;
+static Common::Flag s_textureCacheAbortLoading;
+
 static bool s_check_native_format;
 static bool s_check_new_format;
+static std::atomic<size_t> size_sum;
+static size_t max_mem = 0;
+static std::thread s_prefetcher;
 
 static const std::string s_format_prefix = "tex1_";
 
-void HiresTexture::Init(const std::string& gameCode, bool force_reload)
+void HiresTexture::Init()
 {
-	if (!force_reload && s_initialized)
+	size_sum.store(0);
+	max_mem = MemPhysical() / 2;
+	Update();
+}
+
+void HiresTexture::Shutdown()
+{
+	if (s_prefetcher.joinable())
 	{
-		return;
+		s_textureCacheAbortLoading.Set();
+		s_prefetcher.join();
 	}
-	s_initialized = true;
+
+	s_textureMap.clear();
+	s_textureCache.clear();
+}
+
+void HiresTexture::Update()
+{
 	s_check_native_format = false;
 	s_check_new_format = false;
+
+	if (s_prefetcher.joinable())
+	{
+		s_textureCacheAbortLoading.Set();
+		s_prefetcher.join();
+	}
+
+	if (!g_ActiveConfig.bHiresTextures)
+	{
+		s_textureMap.clear();
+		s_textureCache.clear();
+		size_sum.store(0);
+		return;
+	}
+
+	if (!g_ActiveConfig.bCacheHiresTextures)
+	{
+		s_textureCache.clear();
+		size_sum.store(0);
+	}
+	
 	s_textureMap.clear();
 	CFileSearch::XStringVector Directories;
+	const std::string& gameCode = SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID;
 	std::string szDir = StringFromFormat("%s%s", File::GetUserPath(D_HIRESTEXTURES_IDX).c_str(), gameCode.c_str());
 	Directories.push_back(szDir);
 
@@ -79,59 +128,117 @@ void HiresTexture::Init(const std::string& gameCode, bool force_reload)
 
 	const std::string code = StringFromFormat("%s_", gameCode.c_str());
 	const std::string miptag = "mip";
-	if (rFilenames.size() > 0)
+	for (u32 i = 0; i < rFilenames.size(); i++)
 	{
-		for (u32 i = 0; i < rFilenames.size(); i++)
+		std::string FileName;
+		std::string Extension;
+		SplitPath(rFilenames[i], nullptr, &FileName, &Extension);
+		bool newformat = false;
+		bool dds_file = Extension.compare(ddscode) == 0 || Extension.compare(cddscode) == 0;
+		if (FileName.substr(0, code.length()) == code)
 		{
-			std::string FileName;
-			std::string Extension;			
-			SplitPath(rFilenames[i], nullptr, &FileName, &Extension);
-			bool newformat = false;
-			bool dds_file = Extension.compare(ddscode) == 0 || Extension.compare(cddscode) == 0;
-			if (FileName.substr(0, code.length()) == code)
+			s_check_native_format = true;
+		}
+		else if (FileName.substr(0, s_format_prefix.length()) == s_format_prefix)
+		{
+			s_check_new_format = true;
+			newformat = true;
+		}
+		else
+		{
+			// Discard wrong files
+			continue;
+		}
+		std::pair<std::string, bool> Pair(rFilenames[i], dds_file);
+		u32 level = 0;
+		size_t idx = FileName.find_last_of('_');
+		std::string miplevel = FileName.substr(idx + 1, std::string::npos);
+		if (miplevel.substr(0, miptag.length()) == miptag)
+		{
+			sscanf(miplevel.substr(3, std::string::npos).c_str(), "%i", &level);
+			FileName = FileName.substr(0, idx);
+		}
+		HiresTextureCache::iterator iter = s_textureMap.find(FileName);
+		u32 min_item_size = level + 1;
+		if (iter == s_textureMap.end())
+		{
+			HiresTextureCacheItem item(min_item_size);
+			item[level] = Pair;
+			s_textureMap.insert(HiresTextureCache::value_type(FileName, item));
+		}
+		else
+		{
+			if (iter->second.size() < min_item_size)
 			{
-				s_check_native_format = true;				
+				iter->second.resize(min_item_size);
 			}
-			else if (FileName.substr(0, s_format_prefix.length()) == s_format_prefix)
+			if (iter->second[level].first.size() == 0)
 			{
-				s_check_new_format = true;
-				newformat = true;
-			}
-			else
-			{
-				// Discard wrong files
-				continue;
-			}
-			std::pair<std::string, bool> Pair(rFilenames[i], dds_file);
-			u32 level = 0;
-			size_t idx = FileName.find_last_of('_');
-			std::string miplevel = FileName.substr(idx + 1, std::string::npos);
-			if (miplevel.substr(0, miptag.length()) == miptag)
-			{
-				sscanf(miplevel.substr(3, std::string::npos).c_str(), "%i", &level);
-				FileName = FileName.substr(0, idx);
-			}
-			HiresTextureCache::iterator iter = s_textureMap.find(FileName);
-			u32 min_item_size = level + 1;
-			if (iter == s_textureMap.end())
-			{
-				HiresTextureCacheItem item(min_item_size);
-				item[level] = Pair;
-				s_textureMap.insert(HiresTextureCache::value_type(FileName, item));
-			}
-			else
-			{
-				if (iter->second.size() < min_item_size)
-				{
-					iter->second.resize(min_item_size);
-				}
-				if (iter->second[level].first.size() == 0)
-				{
-					iter->second[level] = Pair;
-				}
+				iter->second[level] = Pair;
 			}
 		}
 	}
+
+	if (g_ActiveConfig.bCacheHiresTextures)
+	{
+		// remove cached but deleted textures
+		auto iter = s_textureCache.begin();
+		while (iter != s_textureCache.end())
+		{
+			if (s_textureMap.find(iter->first) == s_textureMap.end())
+			{
+				size_sum.fetch_sub(iter->second->m_cached_data_size);
+				iter = s_textureCache.erase(iter);
+			}
+			else
+			{
+				iter++;
+			}
+		}
+		s_textureCacheAbortLoading.Clear();
+		s_prefetcher = std::thread(Prefetch);
+	}
+}
+
+void HiresTexture::Prefetch()
+{
+	Common::SetCurrentThreadName("Prefetcher");
+
+	u32 starttime = Common::Timer::GetTimeMs();
+	for (const auto& entry : s_textureMap)
+	{
+		const std::string& base_filename = entry.first;
+
+		std::unique_lock<std::mutex> lk(s_textureCacheMutex);
+
+		auto iter = s_textureCache.find(base_filename);
+		if (iter == s_textureCache.end())
+		{
+			lk.unlock();
+			std::shared_ptr<HiresTexture> ptr(Load(base_filename, [](size_t requested_size)
+			{
+				return new u8[requested_size];
+			}, true));
+			lk.lock();
+			size_sum.fetch_add(ptr.get()->m_cached_data_size);
+			iter = s_textureCache.insert(iter, std::make_pair(base_filename, ptr));
+		}
+
+		if (s_textureCacheAbortLoading.IsSet())
+		{
+			return;
+		}
+
+		if (size_sum.load() > max_mem)
+		{
+			g_Config.bCacheHiresTextures = false;
+
+			OSD::AddMessage(StringFromFormat("Custom Textures prefetching after %.1f MB aborted, not enough RAM available", size_sum / (1024.0 * 1024.0)), 10000);
+			return;
+		}
+	}
+	u32 stoptime = Common::Timer::GetTimeMs();
+	OSD::AddMessage(StringFromFormat("Custom Textures loaded, %.1f MB in %.1f s", size_sum / (1024.0 * 1024.0), (stoptime - starttime) / 1000.0), 10000);
 }
 
 std::string HiresTexture::GenBaseName(
@@ -287,9 +394,46 @@ inline void ReadDDS(ImageLoaderParams &ImgInfo)
 	}
 }
 
-HiresTexture* HiresTexture::Search(
+std::shared_ptr<HiresTexture> HiresTexture::Search(
 	const std::string& basename,
 	std::function<u8*(size_t)> request_buffer_delegate)
+{
+	if (g_ActiveConfig.bCacheHiresTextures && size_sum.load() < max_mem)
+	{
+		std::unique_lock<std::mutex> lk(s_textureCacheMutex);
+
+		auto iter = s_textureCache.find(basename);
+		if (iter != s_textureCache.end())
+		{
+			HiresTexture* current = iter->second.get();
+			u8* dst = request_buffer_delegate(current->m_cached_data_size);
+			memcpy(dst, current->m_cached_data.get(), current->m_cached_data_size);
+			return iter->second;
+		}
+		lk.unlock();
+		std::shared_ptr<HiresTexture> ptr(Load(basename, [](size_t requested_size)
+		{
+			return new u8[requested_size];
+		}, true));
+		lk.lock();
+		if (ptr)
+		{
+			s_textureCache[basename] = ptr;
+			HiresTexture* current = ptr.get();
+			size_sum.fetch_add(current->m_cached_data_size);
+			u8* dst = request_buffer_delegate(current->m_cached_data_size);
+			memcpy(dst, current->m_cached_data.get(), current->m_cached_data_size);
+		}
+		return ptr;
+	}
+	else
+	{
+		return std::shared_ptr<HiresTexture> (Load(basename, request_buffer_delegate, false));
+	}
+}
+
+HiresTexture* HiresTexture::Load(const std::string& basename,
+	std::function<u8*(size_t)> request_buffer_delegate, bool cacheresult)
 {
 	if (s_textureMap.size() == 0)
 	{
@@ -315,6 +459,8 @@ HiresTexture* HiresTexture::Search(
 	u32 maxwidth;
 	u32 maxheight;
 	bool last_level_is_dds = false;
+	bool allocated_data = false;
+	bool mipmapsize_included = false;
 	for (size_t level = 0; level < current.size(); level++)
 	{
 		ImageLoaderParams imgInfo;
@@ -323,15 +469,21 @@ HiresTexture* HiresTexture::Search(
 		imgInfo.Path = item.first.c_str();
 		if (level == 0)
 		{
-			imgInfo.request_buffer_delegate = [&](size_t requiredsize)
+			imgInfo.request_buffer_delegate = [&](size_t requiredsize, bool mipmapsincluded)
 			{
+				allocated_data = true;
+				mipmapsize_included = mipmapsincluded;
 				// Pre allocate space for the textures and potetially all the posible mip levels 
-				return request_buffer_delegate((requiredsize * 4) / 3);
+				if (current.size() > 1 && !mipmapsincluded)
+				{
+					return request_buffer_delegate((requiredsize * 4) / 3);
+				}
+				return request_buffer_delegate(requiredsize);
 			};
 		}
 		else
 		{
-			imgInfo.request_buffer_delegate = [&](size_t requiredsize)
+			imgInfo.request_buffer_delegate = [buffer_pointer](size_t requiredsize, bool mipmapsincluded)
 			{
 				// just return the pointer to pack the textures in a single buffer.
 				return buffer_pointer;
@@ -361,6 +513,10 @@ HiresTexture* HiresTexture::Search(
 		}
 		if (imgInfo.dst == nullptr || imgInfo.resultTex == PC_TEX_FMT_NONE)
 		{
+			if (allocated_data && cacheresult && imgInfo.dst != nullptr)
+			{
+				delete [] imgInfo.dst;
+			}
 			ERROR_LOG(VIDEO, "Custom texture %s failed to load level %i", imgInfo.Path, level);
 			break;
 		}
@@ -370,6 +526,18 @@ HiresTexture* HiresTexture::Search(
 			ret->m_format = imgInfo.resultTex;
 			ret->m_width = maxwidth = imgInfo.Width;
 			ret->m_height = maxheight = imgInfo.Height;
+			if (cacheresult)
+			{
+				ret->m_cached_data.reset(imgInfo.dst);
+				if (current.size() > 1 && !mipmapsize_included)
+				{
+					ret->m_cached_data_size = (imgInfo.data_size * 4) / 3;
+				}
+				else
+				{
+					ret->m_cached_data_size = imgInfo.data_size;
+				}
+			}
 		}
 		else
 		{

@@ -22,7 +22,9 @@
 #include "Core/Host.h"
 #include "Core/State.h"
 #include "Core/HW/Wiimote.h"
+#include "Core/PowerPC/JitInterface.h"
 #include "Core/PowerPC/PowerPC.h"
+#include "Core/PowerPC/Profiler.h"
 
 #include "DiscIO/VolumeCreator.h"
 
@@ -34,6 +36,11 @@
 ANativeWindow* surf;
 std::string g_filename;
 std::string g_set_userpath = "";
+
+// PanicAlert
+static bool g_alert_available = false;
+static std::string g_alert_message = "";
+static Common::Event g_alert_event;
 
 #define DOLPHIN_TAG "DolphinEmuNative"
 
@@ -90,9 +97,13 @@ void Host_SetWiiMoteConnectionState(int _State) {}
 
 void Host_ShowVideoConfig(void*, const std::string&, const std::string&) {}
 
-static bool MsgAlert(const char* caption, const char* text, bool /*yes_no*/, int /*Style*/)
+static bool MsgAlert(const char* caption, const char* text, bool yes_no, int /*Style*/)
 {
-	__android_log_print(ANDROID_LOG_INFO, DOLPHIN_TAG, "%s:%s", caption, text);
+	g_alert_message = std::string(text);
+	g_alert_available = true;
+	// XXX: Uncomment next line when the Android UI actually handles messages
+	// g_alert_event.Wait()
+	g_alert_available = false;
 	return false;
 }
 
@@ -299,10 +310,9 @@ static std::string GetCompany(std::string filename)
 	DiscIO::IVolume* pVolume = DiscIO::CreateVolumeFromFilename(filename);
 	if (pVolume != nullptr)
 	{
-		std::string date = pVolume->GetCompany();
-		__android_log_print(ANDROID_LOG_INFO, DOLPHIN_TAG, "Company: %s", date.c_str());
-
-		return date;
+		std::string company = DiscIO::GetCompanyFromID(pVolume->GetMakerID());
+		__android_log_print(ANDROID_LOG_INFO, DOLPHIN_TAG, "Company: %s", company.c_str());
+		return company;
 	}
 	return std::string ("");
 }
@@ -365,7 +375,14 @@ JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_LoadState(JN
 JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_CreateUserFolders(JNIEnv *env, jobject obj);
 JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_SetUserDirectory(JNIEnv *env, jobject obj, jstring jDirectory);
 JNIEXPORT jstring JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_GetUserDirectory(JNIEnv *env, jobject obj);
+JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_SetProfiling(JNIEnv *env, jobject obj, jboolean enable);
+JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_WriteProfileResults(JNIEnv *env, jobject obj);
 JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_Run(JNIEnv *env, jobject obj, jobject _surf);
+
+// MsgAlert
+JNIEXPORT jboolean JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_HasAlertMsg(JNIEnv *env, jobject obj);
+JNIEXPORT jstring JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_GetAlertMsg(JNIEnv *env, jobject obj);
+JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_ClearAlertMsg(JNIEnv *env, jobject obj);
 
 JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_UnPauseEmulation(JNIEnv *env, jobject obj)
 {
@@ -544,6 +561,36 @@ JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_SetUserDirec
 JNIEXPORT jstring JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_GetUserDirectory(JNIEnv *env, jobject obj)
 {
 	return env->NewStringUTF(File::GetUserPath(D_USER_IDX).c_str());
+}
+
+JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_SetProfiling(JNIEnv *env, jobject obj, jboolean enable)
+{
+	Core::SetState(Core::CORE_PAUSE);
+	JitInterface::ClearCache();
+	Profiler::g_ProfileBlocks = enable;
+	Core::SetState(Core::CORE_RUN);
+}
+
+JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_WriteProfileResults(JNIEnv *env, jobject obj)
+{
+	std::string filename = File::GetUserPath(D_DUMP_IDX) + "Debug/profiler.txt";
+	File::CreateFullPath(filename);
+	JitInterface::WriteProfileResults(filename);
+}
+
+JNIEXPORT jboolean JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_HasAlertMsg(JNIEnv *env, jobject obj)
+{
+	return g_alert_available;
+}
+
+JNIEXPORT jstring JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_GetAlertMsg(JNIEnv *env, jobject obj)
+{
+	return env->NewStringUTF(g_alert_message.c_str());
+}
+
+JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_ClearAlertMsg(JNIEnv *env, jobject obj)
+{
+	g_alert_event.Set(); // Kick the alert
 }
 
 JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_Run(JNIEnv *env, jobject obj, jobject _surf)

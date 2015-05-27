@@ -136,6 +136,8 @@ protected:
 
 	SettingRadioButton* virtual_xfb;
 	SettingRadioButton* real_xfb;
+
+	SettingCheckBox* cache_hires_textures;
 	
 	wxButton* button_config_pp;
 

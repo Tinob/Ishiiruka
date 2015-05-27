@@ -44,7 +44,7 @@ enum DDSCompression
 };
 struct ImageLoaderParams
 {
-	std::function<u8*(size_t)> request_buffer_delegate;
+	std::function<u8*(size_t, bool)> request_buffer_delegate;
 	u8* dst;
 	const char* Path;
 	u32 Width;

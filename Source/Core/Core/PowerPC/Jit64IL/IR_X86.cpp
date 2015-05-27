@@ -45,8 +45,19 @@ struct RegInfo
 	JitIL *Jit;
 	IRBuilder* Build;
 	InstLoc FirstI;
+
+	// IInfo contains (per instruction)
+	// Bits 0-1: Saturating count of number of instructions referencing this instruction.
+	// Bits 2-3: single bit per operand marking if this is the last instruction to reference that operand's result.
+	//           Used to decide if we should free any registers associated with the operands after this instruction
+	//           and if we can clobber the operands registers.
+	//           Warning, Memory instruction use these bits slightly differently.
+	// Bits 15-31: Spill location
 	std::vector<unsigned> IInfo;
+
+	// The last instruction which uses the result of this instruction. Used by the register allocator.
 	std::vector<InstLoc> lastUsed;
+
 	InstLoc regs[MAX_NUMBER_OF_REGS];
 	InstLoc fregs[MAX_NUMBER_OF_REGS];
 	unsigned numSpills;
@@ -414,6 +425,8 @@ static X64Reg regBinLHSReg(RegInfo& RI, InstLoc I)
 	return reg;
 }
 
+// Clear any registers which end their lifetime at I
+// Don't use this for special instructions like memory load/stores
 static void regNormalRegClear(RegInfo& RI, InstLoc I)
 {
 	if (RI.IInfo[I - RI.FirstI] & 4)
@@ -422,6 +435,7 @@ static void regNormalRegClear(RegInfo& RI, InstLoc I)
 		regClearInst(RI, getOp2(I));
 }
 
+// Clear any floating point registers which end their lifetime at I
 static void fregNormalRegClear(RegInfo& RI, InstLoc I)
 {
 	if (RI.IInfo[I - RI.FirstI] & 4)
@@ -1565,7 +1579,6 @@ static void DoWriteCode(IRBuilder* ibuild, JitIL* Jit, u32 exitAddress)
 			RI.Jit->SafeLoadToReg(RSCRATCH2, info.first, 32, info.second, regsInUse(RI), false);
 			Jit->MOVD_xmm(reg, R(RSCRATCH2));
 			RI.fregs[reg] = I;
-			regNormalRegClear(RI, I);
 			break;
 		}
 		case LoadDouble:
@@ -1579,7 +1592,6 @@ static void DoWriteCode(IRBuilder* ibuild, JitIL* Jit, u32 exitAddress)
 			RI.Jit->SafeLoadToReg(RSCRATCH2, info.first, 64, info.second, regsInUse(RI), false);
 			Jit->MOVQ_xmm(reg, R(RSCRATCH2));
 			RI.fregs[reg] = I;
-			regNormalRegClear(RI, I);
 			break;
 		}
 		case LoadPaired:
@@ -1626,8 +1638,6 @@ static void DoWriteCode(IRBuilder* ibuild, JitIL* Jit, u32 exitAddress)
 
 			if (RI.IInfo[I - RI.FirstI] & 4)
 				fregClearInst(RI, getOp1(I));
-			if (RI.IInfo[I - RI.FirstI] & 8)
-				regClearInst(RI, getOp2(I));
 			break;
 		}
 		case StoreDouble:
@@ -1648,8 +1658,6 @@ static void DoWriteCode(IRBuilder* ibuild, JitIL* Jit, u32 exitAddress)
 
 			if (RI.IInfo[I - RI.FirstI] & 4)
 				fregClearInst(RI, getOp1(I));
-			if (RI.IInfo[I - RI.FirstI] & 8)
-				regClearInst(RI, getOp2(I));
 			break;
 		}
 		case StorePaired:

@@ -219,6 +219,7 @@ private:
 		bool s_texfmt_overlay;
 		bool s_texfmt_overlay_center;
 		bool s_hires_textures;
+		bool s_cache_hires_textures;
 		bool s_stereo_3d;
 		bool s_efb_mono_depth;
 	} backup_config;

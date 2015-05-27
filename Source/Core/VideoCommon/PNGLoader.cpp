@@ -74,7 +74,7 @@ bool ImageLoader::ReadPNG(ImageLoaderParams &ImgInfo)
 	ImgInfo.Width = width;
 	ImgInfo.Height = height;
 	ImgInfo.data_size = width * height * 4;
-	ImgInfo.dst = ImgInfo.request_buffer_delegate(ImgInfo.data_size);
+	ImgInfo.dst = ImgInfo.request_buffer_delegate(ImgInfo.data_size, false);
 	std::vector<u8*> row_pointers(height);
 	u8* row_pointer = ImgInfo.dst;
 	for (unsigned i = 0; i < height; ++i)
