@@ -179,7 +179,7 @@ void HiresTexture::Update()
 		}
 	}
 
-	if (g_ActiveConfig.bCacheHiresTextures)
+	if (g_ActiveConfig.bCacheHiresTextures && s_textureMap.size() > 0)
 	{
 		// remove cached but deleted textures
 		auto iter = s_textureCache.begin();
@@ -215,13 +215,16 @@ void HiresTexture::Prefetch()
 		if (iter == s_textureCache.end())
 		{
 			lk.unlock();
-			std::shared_ptr<HiresTexture> ptr(Load(base_filename, [](size_t requested_size)
+			HiresTexture* ptr = Load(base_filename, [](size_t requested_size)
 			{
 				return new u8[requested_size];
-			}, true));
+			}, true);
 			lk.lock();
-			size_sum.fetch_add(ptr.get()->m_cached_data_size);
-			iter = s_textureCache.insert(iter, std::make_pair(base_filename, ptr));
+			if (ptr != nullptr)
+			{
+				size_sum.fetch_add(ptr->m_cached_data_size);
+				iter = s_textureCache.insert(iter, std::make_pair(base_filename, std::shared_ptr<HiresTexture>(ptr)));
+			}
 		}
 
 		if (s_textureCacheAbortLoading.IsSet())
