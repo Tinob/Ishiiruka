@@ -490,7 +490,7 @@ static void regEmitBinInst(RegInfo& RI, InstLoc I,
 	regNormalRegClear(RI, I);
 }
 
-static void fregEmitBinInst(RegInfo& RI, InstLoc I, void (JitIL::*op)(X64Reg, OpArg))
+static void fregEmitBinInst(RegInfo& RI, InstLoc I, void (JitIL::*op)(X64Reg, const OpArg&))
 {
 	X64Reg reg;
 
@@ -642,7 +642,7 @@ static void regEmitMemStore(RegInfo& RI, InstLoc I, unsigned Size)
 		regClearInst(RI, getOp1(I));
 }
 
-static void regEmitShiftInst(RegInfo& RI, InstLoc I, void (JitIL::*op)(int, OpArg, OpArg))
+static void regEmitShiftInst(RegInfo& RI, InstLoc I, void (JitIL::*op)(int, const OpArg&, const OpArg&))
 {
 	X64Reg reg = regBinLHSReg(RI, I);
 

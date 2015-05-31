@@ -5,12 +5,13 @@
 #pragma once
 
 #include <map>
+#include <mutex>
 #include <queue>
 #include <sstream>
+#include <thread>
 #include <SFML/Network/Packet.hpp>
 #include "Common/CommonTypes.h"
 #include "Common/FifoQueue.h"
-#include "Common/Thread.h"
 #include "Common/TraversalClient.h"
 #include "Core/NetPlayProto.h"
 #include "InputCommon/GCPadStatus.h"
@@ -48,7 +49,7 @@ public:
 	void ThreadFunc();
 	void SendAsync(sf::Packet* packet);
 
-	NetPlayClient(const std::string& address, const u16 port, NetPlayUI* dialog, const std::string& name, bool traversal, std::string centralServer, u16 centralPort);
+	NetPlayClient(const std::string& address, const u16 port, NetPlayUI* dialog, const std::string& name, bool traversal, const std::string& centralServer, u16 centralPort);
 	~NetPlayClient();
 
 	void GetPlayerList(std::string& list, std::vector<int>& pid_list);

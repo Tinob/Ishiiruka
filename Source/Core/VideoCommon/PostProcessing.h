@@ -100,9 +100,9 @@ public:
 	const ConfigurationOption& GetOption(const std::string& option) { return m_options[option]; }
 
 	// For updating option's values
-	void SetOptionf(std::string option, int index, float value);
-	void SetOptioni(std::string option, int index, s32 value);
-	void SetOptionb(std::string option, bool value);
+	void SetOptionf(const std::string& option, int index, float value);
+	void SetOptioni(const std::string& option, int index, s32 value);
+	void SetOptionb(const std::string& option, bool value);
 	void CheckStages();
 	inline bool IsDepthInputRequired(){ return m_requires_depth_input; }
 	inline u32 GetLastActiveStage() const { return m_last_stage; }

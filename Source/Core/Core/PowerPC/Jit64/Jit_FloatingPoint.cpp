@@ -16,8 +16,8 @@ static const u64 GC_ALIGNED16(psAbsMask[2])  = {0x7FFFFFFFFFFFFFFFULL, 0xFFFFFFF
 static const u64 GC_ALIGNED16(psAbsMask2[2]) = {0x7FFFFFFFFFFFFFFFULL, 0x7FFFFFFFFFFFFFFFULL};
 static const double GC_ALIGNED16(half_qnan_and_s32_max[2]) = {0x7FFFFFFF, -0x80000};
 
-void Jit64::fp_tri_op(int d, int a, int b, bool reversible, bool single, void (XEmitter::*avxOp)(X64Reg, X64Reg, OpArg),
-                      void (XEmitter::*sseOp)(X64Reg, OpArg), bool packed, bool roundRHS)
+void Jit64::fp_tri_op(int d, int a, int b, bool reversible, bool single, void (XEmitter::*avxOp)(X64Reg, X64Reg, const OpArg&),
+                      void (XEmitter::*sseOp)(X64Reg, const OpArg&), bool packed, bool roundRHS)
 {
 	fpr.Lock(d, a, b);
 	fpr.BindToRegister(d, d == a || d == b || !single);
@@ -282,9 +282,9 @@ void Jit64::fselx(UGeckoInstruction inst)
 	// negative/positive zero and NaN properly.
 	// (a >= -0.0 ? c : b) transforms into (0 > a ? b : c), hence the NLE.
 	if (packed)
-		CMPPD(XMM0, fpr.R(a), NLE);
+		CMPPD(XMM0, fpr.R(a), CMP_NLE);
 	else
-		CMPSD(XMM0, fpr.R(a), NLE);
+		CMPSD(XMM0, fpr.R(a), CMP_NLE);
 
 	if (cpu_info.bSSE4_1)
 	{

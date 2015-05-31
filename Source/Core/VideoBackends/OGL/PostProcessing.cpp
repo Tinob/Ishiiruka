@@ -10,6 +10,7 @@
 #include "VideoBackends/OGL/GLUtil.h"
 #include "VideoBackends/OGL/PostProcessing.h"
 #include "VideoBackends/OGL/ProgramShaderCache.h"
+#include "VideoBackends/OGL/SamplerCache.h"
 
 #include "VideoCommon/DriverDetails.h"
 #include "VideoCommon/VideoCommon.h"
@@ -93,18 +94,15 @@ void OpenGLPostProcessing::BlitFromTexture(const TargetRectangle &src, const Tar
 	else
 		OpenGL_BindAttributelessVAO();		
 
-	glActiveTexture(GL_TEXTURE0+9);
+	glActiveTexture(GL_TEXTURE9);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, src_texture);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glActiveTexture(GL_TEXTURE0 + 10);
+	g_sampler_cache->BindLinearSampler(9);
+	glActiveTexture(GL_TEXTURE10);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, src_texture_depth);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glActiveTexture(GL_TEXTURE0 + 11);
-	glBindTexture(GL_TEXTURE_2D_ARRAY, src_texture);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	g_sampler_cache->BindNearestSampler(10);
+	glActiveTexture(GL_TEXTURE11);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, src_texture); 
+	g_sampler_cache->BindLinearSampler(11);
 	const auto& stages = m_config.GetStages();
 	size_t finalstage = stages.size() - 1;
 	if (finalstage > 0 &&
@@ -128,7 +126,7 @@ void OpenGLPostProcessing::BlitFromTexture(const TargetRectangle &src, const Tar
 			stage_height = (u32)(stage_height * stages[i].m_outputScale);
 			auto &stage_output = m_stageOutput[i];
 			glGenTextures(1, &stage_output.first);
-			glActiveTexture(GL_TEXTURE0 + 11);
+			glActiveTexture(GL_TEXTURE11);
 			glBindTexture(GL_TEXTURE_2D_ARRAY, stage_output.first);
 			glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, 0);
 			glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, stage_width, stage_height, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
@@ -248,7 +246,7 @@ void OpenGLPostProcessing::BlitFromTexture(const TargetRectangle &src, const Tar
 				{
 					originalidx--;
 				}
-				glActiveTexture(GL_TEXTURE0 + 11 + GLenum(stageidx));
+				glActiveTexture(GL_TEXTURE11 + GLenum(stageidx));
 				glBindTexture(GL_TEXTURE_2D_ARRAY, m_stageOutput[originalidx].first);
 			}
 		}
@@ -257,7 +255,7 @@ void OpenGLPostProcessing::BlitFromTexture(const TargetRectangle &src, const Tar
 		{
 			for (size_t stageidx = 0; stageidx < stage.m_inputs.size(); stageidx++)
 			{
-				glActiveTexture(GL_TEXTURE0 + 11 + GLenum(stageidx));
+				glActiveTexture(GL_TEXTURE11 + GLenum(stageidx));
 				glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 			}
 		}
@@ -270,11 +268,11 @@ void OpenGLPostProcessing::BlitFromTexture(const TargetRectangle &src, const Tar
 		}
 		m_config.SetDirty(false);
 	}
-	glActiveTexture(GL_TEXTURE0 + 9);
+	glActiveTexture(GL_TEXTURE9);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
-	glActiveTexture(GL_TEXTURE0 + 10);
+	glActiveTexture(GL_TEXTURE10);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
-	glActiveTexture(GL_TEXTURE0 + 11);
+	glActiveTexture(GL_TEXTURE11);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 }
 

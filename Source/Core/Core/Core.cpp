@@ -127,15 +127,15 @@ void SetIsFramelimiterTempDisabled(bool disable)
 }
 
 std::string GetStateFileName() { return s_state_filename; }
-void SetStateFileName(std::string val) { s_state_filename = val; }
+void SetStateFileName(const std::string& val) { s_state_filename = val; }
 
 // Display messages and return values
 
 // Formatted stop message
-std::string StopMessage(bool bMainThread, std::string Message)
+std::string StopMessage(bool main_thread, const std::string& message)
 {
 	return StringFromFormat("Stop [%s %i]\t%s\t%s",
-		bMainThread ? "Main Thread" : "Video Thread", Common::CurrentThreadId(), MemUsage().c_str(), Message.c_str());
+		main_thread ? "Main Thread" : "Video Thread", Common::CurrentThreadId(), MemUsage().c_str(), message.c_str());
 }
 
 void DisplayMessage(const std::string& message, int time_in_ms)
@@ -384,7 +384,7 @@ static void FifoPlayerThread()
 	s_is_started = false;
 
 	if (!_CoreParameter.bCPUThread)
-		video_backend->Video_Cleanup();
+		g_video_backend->Video_Cleanup();
 
 	return;
 }
@@ -690,7 +690,6 @@ bool PauseAndLock(bool doLock, bool unpauseOnUnlock)
 	ExpansionInterface::PauseAndLock(doLock, unpauseOnUnlock);
 
 	// audio has to come after CPU, because CPU thread can wait for audio thread (m_throttle).
-	AudioCommon::PauseAndLock(doLock, unpauseOnUnlock);
 	DSP::GetDSPEmulator()->PauseAndLock(doLock, unpauseOnUnlock);
 
 	// video has to come after CPU, because CPU thread can wait for video thread (s_efbAccessRequested).

@@ -785,6 +785,9 @@ PFNGLENDOCCLUSIONQUERYNVPROC glEndOcclusionQueryNV;
 PFNGLGETOCCLUSIONQUERYIVNVPROC glGetOcclusionQueryivNV;
 PFNGLGETOCCLUSIONQUERYUIVNVPROC glGetOcclusionQueryuivNV;
 
+// ARB_clip_control
+PFNGLCLIPCONTROLPROC glClipControl;
+
 // Creates a GLFunc object that requires a feature
 #define GLFUNC_REQUIRES(x, y) { (void**)&x, #x, y }
 // Creates a GLFunc object with a different function suffix
@@ -1024,237 +1027,237 @@ const GLFunc gl_function_array[] =
 	GLFUNC_ALWAYS_REQUIRED(glVertexAttribPointer),
 
 	// gl_3_0
-	GLFUNC_REQUIRES(glBeginConditionalRender,      "VERSION_3_0"),
-	GLFUNC_REQUIRES(glBeginTransformFeedback,      "VERSION_3_0"),
-	GLFUNC_REQUIRES(glBindFragDataLocation,        "VERSION_3_0"),
-	GLFUNC_REQUIRES(glClampColor,                  "VERSION_3_0"),
-	GLFUNC_REQUIRES(glClearBufferfi,               "VERSION_3_0"),
-	GLFUNC_REQUIRES(glClearBufferfv,               "VERSION_3_0"),
-	GLFUNC_REQUIRES(glClearBufferiv,               "VERSION_3_0"),
-	GLFUNC_REQUIRES(glClearBufferuiv,              "VERSION_3_0"),
-	GLFUNC_REQUIRES(glColorMaski,                  "VERSION_3_0"),
-	GLFUNC_REQUIRES(glDisablei,                    "VERSION_3_0"),
-	GLFUNC_REQUIRES(glEnablei,                     "VERSION_3_0"),
-	GLFUNC_REQUIRES(glEndConditionalRender,        "VERSION_3_0"),
-	GLFUNC_REQUIRES(glEndTransformFeedback,        "VERSION_3_0"),
-	GLFUNC_REQUIRES(glGetBooleani_v,               "VERSION_3_0"),
-	GLFUNC_REQUIRES(glGetFragDataLocation,         "VERSION_3_0"),
-	GLFUNC_REQUIRES(glGetStringi,                  "VERSION_3_0"),
-	GLFUNC_REQUIRES(glGetTexParameterIiv,          "VERSION_3_0"),
-	GLFUNC_REQUIRES(glGetTexParameterIuiv,         "VERSION_3_0"),
+	GLFUNC_REQUIRES(glBeginConditionalRender, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glBeginTransformFeedback, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glBindFragDataLocation, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glClampColor, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glClearBufferfi, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glClearBufferfv, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glClearBufferiv, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glClearBufferuiv, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glColorMaski, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glDisablei, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glEnablei, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glEndConditionalRender, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glEndTransformFeedback, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glGetBooleani_v, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glGetFragDataLocation, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glGetStringi, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glGetTexParameterIiv, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glGetTexParameterIuiv, "VERSION_3_0"),
 	GLFUNC_REQUIRES(glGetTransformFeedbackVarying, "VERSION_3_0"),
-	GLFUNC_REQUIRES(glGetUniformuiv,               "VERSION_3_0"),
-	GLFUNC_REQUIRES(glGetVertexAttribIiv,          "VERSION_3_0"),
-	GLFUNC_REQUIRES(glGetVertexAttribIuiv,         "VERSION_3_0"),
-	GLFUNC_REQUIRES(glIsEnabledi,                  "VERSION_3_0"),
-	GLFUNC_REQUIRES(glTexParameterIiv,             "VERSION_3_0"),
-	GLFUNC_REQUIRES(glTexParameterIuiv,            "VERSION_3_0"),
-	GLFUNC_REQUIRES(glTransformFeedbackVaryings,   "VERSION_3_0"),
-	GLFUNC_REQUIRES(glUniform1ui,                  "VERSION_3_0"),
-	GLFUNC_REQUIRES(glUniform1uiv,                 "VERSION_3_0"),
-	GLFUNC_REQUIRES(glUniform2ui,                  "VERSION_3_0"),
-	GLFUNC_REQUIRES(glUniform2uiv,                 "VERSION_3_0"),
-	GLFUNC_REQUIRES(glUniform3ui,                  "VERSION_3_0"),
-	GLFUNC_REQUIRES(glUniform3uiv,                 "VERSION_3_0"),
-	GLFUNC_REQUIRES(glUniform4ui,                  "VERSION_3_0"),
-	GLFUNC_REQUIRES(glUniform4uiv,                 "VERSION_3_0"),
-	GLFUNC_REQUIRES(glVertexAttribI1i,             "VERSION_3_0"),
-	GLFUNC_REQUIRES(glVertexAttribI1iv,            "VERSION_3_0"),
-	GLFUNC_REQUIRES(glVertexAttribI1ui,            "VERSION_3_0"),
-	GLFUNC_REQUIRES(glVertexAttribI1uiv,           "VERSION_3_0"),
-	GLFUNC_REQUIRES(glVertexAttribI2i,             "VERSION_3_0"),
-	GLFUNC_REQUIRES(glVertexAttribI2iv,            "VERSION_3_0"),
-	GLFUNC_REQUIRES(glVertexAttribI2ui,            "VERSION_3_0"),
-	GLFUNC_REQUIRES(glVertexAttribI2uiv,           "VERSION_3_0"),
-	GLFUNC_REQUIRES(glVertexAttribI3i,             "VERSION_3_0"),
-	GLFUNC_REQUIRES(glVertexAttribI3iv,            "VERSION_3_0"),
-	GLFUNC_REQUIRES(glVertexAttribI3ui,            "VERSION_3_0"),
-	GLFUNC_REQUIRES(glVertexAttribI3uiv,           "VERSION_3_0"),
-	GLFUNC_REQUIRES(glVertexAttribI4bv,            "VERSION_3_0"),
-	GLFUNC_REQUIRES(glVertexAttribI4i,             "VERSION_3_0"),
-	GLFUNC_REQUIRES(glVertexAttribI4iv,            "VERSION_3_0"),
-	GLFUNC_REQUIRES(glVertexAttribI4sv,            "VERSION_3_0"),
-	GLFUNC_REQUIRES(glVertexAttribI4ubv,           "VERSION_3_0"),
-	GLFUNC_REQUIRES(glVertexAttribI4ui,            "VERSION_3_0"),
-	GLFUNC_REQUIRES(glVertexAttribI4uiv,           "VERSION_3_0"),
-	GLFUNC_REQUIRES(glVertexAttribI4usv,           "VERSION_3_0"),
-	GLFUNC_REQUIRES(glVertexAttribIPointer,        "VERSION_3_0"),
+	GLFUNC_REQUIRES(glGetUniformuiv, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glGetVertexAttribIiv, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glGetVertexAttribIuiv, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glIsEnabledi, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glTexParameterIiv, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glTexParameterIuiv, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glTransformFeedbackVaryings, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glUniform1ui, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glUniform1uiv, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glUniform2ui, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glUniform2uiv, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glUniform3ui, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glUniform3uiv, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glUniform4ui, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glUniform4uiv, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glVertexAttribI1i, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glVertexAttribI1iv, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glVertexAttribI1ui, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glVertexAttribI1uiv, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glVertexAttribI2i, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glVertexAttribI2iv, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glVertexAttribI2ui, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glVertexAttribI2uiv, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glVertexAttribI3i, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glVertexAttribI3iv, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glVertexAttribI3ui, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glVertexAttribI3uiv, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glVertexAttribI4bv, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glVertexAttribI4i, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glVertexAttribI4iv, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glVertexAttribI4sv, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glVertexAttribI4ubv, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glVertexAttribI4ui, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glVertexAttribI4uiv, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glVertexAttribI4usv, "VERSION_3_0"),
+	GLFUNC_REQUIRES(glVertexAttribIPointer, "VERSION_3_0"),
 
 	// gl_3_1
-	GLFUNC_REQUIRES(glDrawArraysInstanced,   "VERSION_3_1"),
+	GLFUNC_REQUIRES(glDrawArraysInstanced, "VERSION_3_1"),
 	GLFUNC_REQUIRES(glDrawElementsInstanced, "VERSION_3_1"),
 	GLFUNC_REQUIRES(glPrimitiveRestartIndex, "VERSION_3_1"),
-	GLFUNC_REQUIRES(glTexBuffer,             "VERSION_3_1"),
+	GLFUNC_REQUIRES(glTexBuffer, "VERSION_3_1"),
 
 	// gl_3_2
-	GLFUNC_REQUIRES(glFramebufferTexture,     "VERSION_3_2"),
+	GLFUNC_REQUIRES(glFramebufferTexture, "VERSION_3_2"),
 	GLFUNC_REQUIRES(glGetBufferParameteri64v, "VERSION_3_2"),
-	GLFUNC_REQUIRES(glGetInteger64i_v,        "VERSION_3_2"),
+	GLFUNC_REQUIRES(glGetInteger64i_v, "VERSION_3_2"),
 
 	// ARB_uniform_buffer_object
-	GLFUNC_REQUIRES(glBindBufferBase,            "GL_ARB_uniform_buffer_object"),
-	GLFUNC_REQUIRES(glBindBufferRange,           "GL_ARB_uniform_buffer_object"),
+	GLFUNC_REQUIRES(glBindBufferBase, "GL_ARB_uniform_buffer_object"),
+	GLFUNC_REQUIRES(glBindBufferRange, "GL_ARB_uniform_buffer_object"),
 	GLFUNC_REQUIRES(glGetActiveUniformBlockName, "GL_ARB_uniform_buffer_object"),
-	GLFUNC_REQUIRES(glGetActiveUniformBlockiv,   "GL_ARB_uniform_buffer_object"),
-	GLFUNC_REQUIRES(glGetActiveUniformName,      "GL_ARB_uniform_buffer_object"),
-	GLFUNC_REQUIRES(glGetActiveUniformsiv,       "GL_ARB_uniform_buffer_object"),
-	GLFUNC_REQUIRES(glGetIntegeri_v,             "GL_ARB_uniform_buffer_object"),
-	GLFUNC_REQUIRES(glGetUniformBlockIndex,      "GL_ARB_uniform_buffer_object"),
-	GLFUNC_REQUIRES(glGetUniformIndices,         "GL_ARB_uniform_buffer_object"),
-	GLFUNC_REQUIRES(glUniformBlockBinding,       "GL_ARB_uniform_buffer_object"),
+	GLFUNC_REQUIRES(glGetActiveUniformBlockiv, "GL_ARB_uniform_buffer_object"),
+	GLFUNC_REQUIRES(glGetActiveUniformName, "GL_ARB_uniform_buffer_object"),
+	GLFUNC_REQUIRES(glGetActiveUniformsiv, "GL_ARB_uniform_buffer_object"),
+	GLFUNC_REQUIRES(glGetIntegeri_v, "GL_ARB_uniform_buffer_object"),
+	GLFUNC_REQUIRES(glGetUniformBlockIndex, "GL_ARB_uniform_buffer_object"),
+	GLFUNC_REQUIRES(glGetUniformIndices, "GL_ARB_uniform_buffer_object"),
+	GLFUNC_REQUIRES(glUniformBlockBinding, "GL_ARB_uniform_buffer_object"),
 
 	// ARB_sampler_objects
-	GLFUNC_REQUIRES(glBindSampler,             "GL_ARB_sampler_objects"),
-	GLFUNC_REQUIRES(glDeleteSamplers,          "GL_ARB_sampler_objects"),
-	GLFUNC_REQUIRES(glGenSamplers,             "GL_ARB_sampler_objects"),
-	GLFUNC_REQUIRES(glGetSamplerParameterIiv,  "GL_ARB_sampler_objects"),
+	GLFUNC_REQUIRES(glBindSampler, "GL_ARB_sampler_objects"),
+	GLFUNC_REQUIRES(glDeleteSamplers, "GL_ARB_sampler_objects"),
+	GLFUNC_REQUIRES(glGenSamplers, "GL_ARB_sampler_objects"),
+	GLFUNC_REQUIRES(glGetSamplerParameterIiv, "GL_ARB_sampler_objects"),
 	GLFUNC_REQUIRES(glGetSamplerParameterIuiv, "GL_ARB_sampler_objects"),
-	GLFUNC_REQUIRES(glGetSamplerParameterfv,   "GL_ARB_sampler_objects"),
-	GLFUNC_REQUIRES(glGetSamplerParameteriv,   "GL_ARB_sampler_objects"),
-	GLFUNC_REQUIRES(glIsSampler,               "GL_ARB_sampler_objects"),
-	GLFUNC_REQUIRES(glSamplerParameterIiv,     "GL_ARB_sampler_objects"),
-	GLFUNC_REQUIRES(glSamplerParameterIuiv,    "GL_ARB_sampler_objects"),
-	GLFUNC_REQUIRES(glSamplerParameterf,       "GL_ARB_sampler_objects"),
-	GLFUNC_REQUIRES(glSamplerParameterfv,      "GL_ARB_sampler_objects"),
-	GLFUNC_REQUIRES(glSamplerParameteri,       "GL_ARB_sampler_objects"),
-	GLFUNC_REQUIRES(glSamplerParameteriv,      "GL_ARB_sampler_objects"),
+	GLFUNC_REQUIRES(glGetSamplerParameterfv, "GL_ARB_sampler_objects"),
+	GLFUNC_REQUIRES(glGetSamplerParameteriv, "GL_ARB_sampler_objects"),
+	GLFUNC_REQUIRES(glIsSampler, "GL_ARB_sampler_objects"),
+	GLFUNC_REQUIRES(glSamplerParameterIiv, "GL_ARB_sampler_objects"),
+	GLFUNC_REQUIRES(glSamplerParameterIuiv, "GL_ARB_sampler_objects"),
+	GLFUNC_REQUIRES(glSamplerParameterf, "GL_ARB_sampler_objects"),
+	GLFUNC_REQUIRES(glSamplerParameterfv, "GL_ARB_sampler_objects"),
+	GLFUNC_REQUIRES(glSamplerParameteri, "GL_ARB_sampler_objects"),
+	GLFUNC_REQUIRES(glSamplerParameteriv, "GL_ARB_sampler_objects"),
 
 	// ARB_map_buffer_range
 	GLFUNC_REQUIRES(glFlushMappedBufferRange, "GL_ARB_map_buffer_range"),
-	GLFUNC_REQUIRES(glMapBufferRange,         "GL_ARB_map_buffer_range"),
+	GLFUNC_REQUIRES(glMapBufferRange, "GL_ARB_map_buffer_range"),
 
 	// ARB_vertex_array_object
-	GLFUNC_REQUIRES(glBindVertexArray,    "GL_ARB_vertex_array_object"),
+	GLFUNC_REQUIRES(glBindVertexArray, "GL_ARB_vertex_array_object"),
 	GLFUNC_REQUIRES(glDeleteVertexArrays, "GL_ARB_vertex_array_object"),
-	GLFUNC_REQUIRES(glGenVertexArrays,    "GL_ARB_vertex_array_object"),
-	GLFUNC_REQUIRES(glIsVertexArray,      "GL_ARB_vertex_array_object"),
+	GLFUNC_REQUIRES(glGenVertexArrays, "GL_ARB_vertex_array_object"),
+	GLFUNC_REQUIRES(glIsVertexArray, "GL_ARB_vertex_array_object"),
 
 	// APPLE_vertex_array_object
-	GLFUNC_SUFFIX(glBindVertexArray,    APPLE, "GL_APPLE_vertex_array_object !GL_ARB_vertex_array_object"),
+	GLFUNC_SUFFIX(glBindVertexArray, APPLE, "GL_APPLE_vertex_array_object !GL_ARB_vertex_array_object"),
 	GLFUNC_SUFFIX(glDeleteVertexArrays, APPLE, "GL_APPLE_vertex_array_object !GL_ARB_vertex_array_object"),
-	GLFUNC_SUFFIX(glGenVertexArrays,    APPLE, "GL_APPLE_vertex_array_object !GL_ARB_vertex_array_object"),
-	GLFUNC_SUFFIX(glIsVertexArray,      APPLE, "GL_APPLE_vertex_array_object !GL_ARB_vertex_array_object"),
+	GLFUNC_SUFFIX(glGenVertexArrays, APPLE, "GL_APPLE_vertex_array_object !GL_ARB_vertex_array_object"),
+	GLFUNC_SUFFIX(glIsVertexArray, APPLE, "GL_APPLE_vertex_array_object !GL_ARB_vertex_array_object"),
 
 	// ARB_framebuffer_object
-	GLFUNC_REQUIRES(glBindFramebuffer,                     "GL_ARB_framebuffer_object"),
-	GLFUNC_REQUIRES(glBindRenderbuffer,                    "GL_ARB_framebuffer_object"),
-	GLFUNC_REQUIRES(glBlitFramebuffer,                     "GL_ARB_framebuffer_object"),
-	GLFUNC_REQUIRES(glCheckFramebufferStatus,              "GL_ARB_framebuffer_object"),
-	GLFUNC_REQUIRES(glDeleteFramebuffers,                  "GL_ARB_framebuffer_object"),
-	GLFUNC_REQUIRES(glDeleteRenderbuffers,                 "GL_ARB_framebuffer_object"),
-	GLFUNC_REQUIRES(glFramebufferRenderbuffer,             "GL_ARB_framebuffer_object"),
-	GLFUNC_REQUIRES(glFramebufferTexture1D,                "GL_ARB_framebuffer_object"),
-	GLFUNC_REQUIRES(glFramebufferTexture2D,                "GL_ARB_framebuffer_object"),
-	GLFUNC_REQUIRES(glFramebufferTexture3D,                "GL_ARB_framebuffer_object"),
-	GLFUNC_REQUIRES(glFramebufferTextureLayer,             "GL_ARB_framebuffer_object"),
-	GLFUNC_REQUIRES(glGenFramebuffers,                     "GL_ARB_framebuffer_object"),
-	GLFUNC_REQUIRES(glGenRenderbuffers,                    "GL_ARB_framebuffer_object"),
-	GLFUNC_REQUIRES(glGenerateMipmap,                      "GL_ARB_framebuffer_object"),
+	GLFUNC_REQUIRES(glBindFramebuffer, "GL_ARB_framebuffer_object"),
+	GLFUNC_REQUIRES(glBindRenderbuffer, "GL_ARB_framebuffer_object"),
+	GLFUNC_REQUIRES(glBlitFramebuffer, "GL_ARB_framebuffer_object"),
+	GLFUNC_REQUIRES(glCheckFramebufferStatus, "GL_ARB_framebuffer_object"),
+	GLFUNC_REQUIRES(glDeleteFramebuffers, "GL_ARB_framebuffer_object"),
+	GLFUNC_REQUIRES(glDeleteRenderbuffers, "GL_ARB_framebuffer_object"),
+	GLFUNC_REQUIRES(glFramebufferRenderbuffer, "GL_ARB_framebuffer_object"),
+	GLFUNC_REQUIRES(glFramebufferTexture1D, "GL_ARB_framebuffer_object"),
+	GLFUNC_REQUIRES(glFramebufferTexture2D, "GL_ARB_framebuffer_object"),
+	GLFUNC_REQUIRES(glFramebufferTexture3D, "GL_ARB_framebuffer_object"),
+	GLFUNC_REQUIRES(glFramebufferTextureLayer, "GL_ARB_framebuffer_object"),
+	GLFUNC_REQUIRES(glGenFramebuffers, "GL_ARB_framebuffer_object"),
+	GLFUNC_REQUIRES(glGenRenderbuffers, "GL_ARB_framebuffer_object"),
+	GLFUNC_REQUIRES(glGenerateMipmap, "GL_ARB_framebuffer_object"),
 	GLFUNC_REQUIRES(glGetFramebufferAttachmentParameteriv, "GL_ARB_framebuffer_object"),
-	GLFUNC_REQUIRES(glGetRenderbufferParameteriv,          "GL_ARB_framebuffer_object"),
-	GLFUNC_REQUIRES(glIsFramebuffer,                       "GL_ARB_framebuffer_object"),
-	GLFUNC_REQUIRES(glIsRenderbuffer,                      "GL_ARB_framebuffer_object"),
-	GLFUNC_REQUIRES(glRenderbufferStorage,                 "GL_ARB_framebuffer_object"),
-	GLFUNC_REQUIRES(glRenderbufferStorageMultisample,      "GL_ARB_framebuffer_object"),
+	GLFUNC_REQUIRES(glGetRenderbufferParameteriv, "GL_ARB_framebuffer_object"),
+	GLFUNC_REQUIRES(glIsFramebuffer, "GL_ARB_framebuffer_object"),
+	GLFUNC_REQUIRES(glIsRenderbuffer, "GL_ARB_framebuffer_object"),
+	GLFUNC_REQUIRES(glRenderbufferStorage, "GL_ARB_framebuffer_object"),
+	GLFUNC_REQUIRES(glRenderbufferStorageMultisample, "GL_ARB_framebuffer_object"),
 
 	// ARB_get_program_binary
-	GLFUNC_REQUIRES(glGetProgramBinary,  "GL_ARB_get_program_binary"),
-	GLFUNC_REQUIRES(glProgramBinary,     "GL_ARB_get_program_binary"),
+	GLFUNC_REQUIRES(glGetProgramBinary, "GL_ARB_get_program_binary"),
+	GLFUNC_REQUIRES(glProgramBinary, "GL_ARB_get_program_binary"),
 	GLFUNC_REQUIRES(glProgramParameteri, "GL_ARB_get_program_binary"),
 
 	// ARB_sync
 	GLFUNC_REQUIRES(glClientWaitSync, "GL_ARB_sync"),
-	GLFUNC_REQUIRES(glDeleteSync,     "GL_ARB_sync"),
-	GLFUNC_REQUIRES(glFenceSync,      "GL_ARB_sync"),
-	GLFUNC_REQUIRES(glGetInteger64v,  "GL_ARB_sync"),
-	GLFUNC_REQUIRES(glGetSynciv,      "GL_ARB_sync"),
-	GLFUNC_REQUIRES(glIsSync,         "GL_ARB_sync"),
-	GLFUNC_REQUIRES(glWaitSync,       "GL_ARB_sync"),
+	GLFUNC_REQUIRES(glDeleteSync, "GL_ARB_sync"),
+	GLFUNC_REQUIRES(glFenceSync, "GL_ARB_sync"),
+	GLFUNC_REQUIRES(glGetInteger64v, "GL_ARB_sync"),
+	GLFUNC_REQUIRES(glGetSynciv, "GL_ARB_sync"),
+	GLFUNC_REQUIRES(glIsSync, "GL_ARB_sync"),
+	GLFUNC_REQUIRES(glWaitSync, "GL_ARB_sync"),
 
 	// ARB_texture_multisample
 	GLFUNC_REQUIRES(glTexImage2DMultisample, "GL_ARB_texture_multisample"),
 	GLFUNC_REQUIRES(glTexImage3DMultisample, "GL_ARB_texture_multisample"),
-	GLFUNC_REQUIRES(glGetMultisamplefv,      "GL_ARB_texture_multisample"),
-	GLFUNC_REQUIRES(glSampleMaski,           "GL_ARB_texture_multisample"),
+	GLFUNC_REQUIRES(glGetMultisamplefv, "GL_ARB_texture_multisample"),
+	GLFUNC_REQUIRES(glSampleMaski, "GL_ARB_texture_multisample"),
 
 	// ARB_ES2_compatibility
-	GLFUNC_REQUIRES(glClearDepthf,              "GL_ARB_ES2_compatibility"),
-	GLFUNC_REQUIRES(glDepthRangef,              "GL_ARB_ES2_compatibility"),
+	GLFUNC_REQUIRES(glClearDepthf, "GL_ARB_ES2_compatibility"),
+	GLFUNC_REQUIRES(glDepthRangef, "GL_ARB_ES2_compatibility"),
 	GLFUNC_REQUIRES(glGetShaderPrecisionFormat, "GL_ARB_ES2_compatibility"),
-	GLFUNC_REQUIRES(glReleaseShaderCompiler,    "GL_ARB_ES2_compatibility"),
-	GLFUNC_REQUIRES(glShaderBinary,             "GL_ARB_ES2_compatibility"),
+	GLFUNC_REQUIRES(glReleaseShaderCompiler, "GL_ARB_ES2_compatibility"),
+	GLFUNC_REQUIRES(glShaderBinary, "GL_ARB_ES2_compatibility"),
 
 	// NV_primitive_restart
 	GLFUNC_REQUIRES(glPrimitiveRestartIndexNV, "GL_NV_primitive_restart"),
-	GLFUNC_REQUIRES(glPrimitiveRestartNV,      "GL_NV_primitive_restart"),
+	GLFUNC_REQUIRES(glPrimitiveRestartNV, "GL_NV_primitive_restart"),
 
 	// ARB_blend_func_extended
 	GLFUNC_REQUIRES(glBindFragDataLocationIndexed, "GL_ARB_blend_func_extended"),
-	GLFUNC_REQUIRES(glGetFragDataIndex,            "GL_ARB_blend_func_extended"),
+	GLFUNC_REQUIRES(glGetFragDataIndex, "GL_ARB_blend_func_extended"),
 
 	// ARB_viewport_array
-	GLFUNC_REQUIRES(glDepthRangeArrayv,  "GL_ARB_viewport_array"),
+	GLFUNC_REQUIRES(glDepthRangeArrayv, "GL_ARB_viewport_array"),
 	GLFUNC_REQUIRES(glDepthRangeIndexed, "GL_ARB_viewport_array"),
-	GLFUNC_REQUIRES(glGetDoublei_v,      "GL_ARB_viewport_array"),
-	GLFUNC_REQUIRES(glGetFloati_v,       "GL_ARB_viewport_array"),
-	GLFUNC_REQUIRES(glScissorArrayv,     "GL_ARB_viewport_array"),
-	GLFUNC_REQUIRES(glScissorIndexed,    "GL_ARB_viewport_array"),
-	GLFUNC_REQUIRES(glScissorIndexedv,   "GL_ARB_viewport_array"),
-	GLFUNC_REQUIRES(glViewportArrayv,    "GL_ARB_viewport_array"),
-	GLFUNC_REQUIRES(glViewportIndexedf,  "GL_ARB_viewport_array"),
+	GLFUNC_REQUIRES(glGetDoublei_v, "GL_ARB_viewport_array"),
+	GLFUNC_REQUIRES(glGetFloati_v, "GL_ARB_viewport_array"),
+	GLFUNC_REQUIRES(glScissorArrayv, "GL_ARB_viewport_array"),
+	GLFUNC_REQUIRES(glScissorIndexed, "GL_ARB_viewport_array"),
+	GLFUNC_REQUIRES(glScissorIndexedv, "GL_ARB_viewport_array"),
+	GLFUNC_REQUIRES(glViewportArrayv, "GL_ARB_viewport_array"),
+	GLFUNC_REQUIRES(glViewportIndexedf, "GL_ARB_viewport_array"),
 	GLFUNC_REQUIRES(glViewportIndexedfv, "GL_ARB_viewport_array"),
 
 	// ARB_draw_elements_base_vertex
-	GLFUNC_REQUIRES(glDrawElementsBaseVertex,          "GL_ARB_draw_elements_base_vertex"),
+	GLFUNC_REQUIRES(glDrawElementsBaseVertex, "GL_ARB_draw_elements_base_vertex"),
 	GLFUNC_REQUIRES(glDrawElementsInstancedBaseVertex, "GL_ARB_draw_elements_base_vertex"),
-	GLFUNC_REQUIRES(glDrawRangeElementsBaseVertex,     "GL_ARB_draw_elements_base_vertex"),
-	GLFUNC_REQUIRES(glMultiDrawElementsBaseVertex,     "GL_ARB_draw_elements_base_vertex"),
+	GLFUNC_REQUIRES(glDrawRangeElementsBaseVertex, "GL_ARB_draw_elements_base_vertex"),
+	GLFUNC_REQUIRES(glMultiDrawElementsBaseVertex, "GL_ARB_draw_elements_base_vertex"),
 
 	// OES_draw_elements_base_vertex
-	GLFUNC_SUFFIX(glDrawElementsBaseVertex,          OES, "GL_OES_draw_elements_base_vertex !GL_ARB_draw_elements_base_vertex"),
+	GLFUNC_SUFFIX(glDrawElementsBaseVertex, OES, "GL_OES_draw_elements_base_vertex !GL_ARB_draw_elements_base_vertex"),
 	GLFUNC_SUFFIX(glDrawElementsInstancedBaseVertex, OES, "GL_OES_draw_elements_base_vertex VERSION_GLES3 !GL_ARB_draw_elements_base_vertex"),
-	GLFUNC_SUFFIX(glDrawRangeElementsBaseVertex,     OES, "GL_OES_draw_elements_base_vertex VERSION_GLES3 !GL_ARB_draw_elements_base_vertex"),
-	GLFUNC_SUFFIX(glMultiDrawElementsBaseVertex,     OES, "GL_OES_draw_elements_base_vertex GL_EXT_multi_draw_arrays !GL_ARB_draw_elements_base_vertex"),
+	GLFUNC_SUFFIX(glDrawRangeElementsBaseVertex, OES, "GL_OES_draw_elements_base_vertex VERSION_GLES3 !GL_ARB_draw_elements_base_vertex"),
+	GLFUNC_SUFFIX(glMultiDrawElementsBaseVertex, OES, "GL_OES_draw_elements_base_vertex GL_EXT_multi_draw_arrays !GL_ARB_draw_elements_base_vertex"),
 
 	// EXT_draw_elements_base_vertex
-	GLFUNC_SUFFIX(glDrawElementsBaseVertex,          EXT, "GL_EXT_draw_elements_base_vertex !GL_OES_draw_elements_base_vertex !GL_ARB_draw_elements_base_vertex"),
+	GLFUNC_SUFFIX(glDrawElementsBaseVertex, EXT, "GL_EXT_draw_elements_base_vertex !GL_OES_draw_elements_base_vertex !GL_ARB_draw_elements_base_vertex"),
 	GLFUNC_SUFFIX(glDrawElementsInstancedBaseVertex, EXT, "GL_EXT_draw_elements_base_vertex VERSION_GLES3 !GL_OES_draw_elements_base_vertex !GL_ARB_draw_elements_base_vertex"),
-	GLFUNC_SUFFIX(glDrawRangeElementsBaseVertex,     EXT, "GL_EXT_draw_elements_base_vertex VERSION_GLES3 !GL_OES_draw_elements_base_vertex !GL_ARB_draw_elements_base_vertex"),
-	GLFUNC_SUFFIX(glMultiDrawElementsBaseVertex,     EXT, "GL_EXT_draw_elements_base_vertex GL_EXT_multi_draw_arrays !GL_OES_draw_elements_base_vertex !GL_ARB_draw_elements_base_vertex"),
+	GLFUNC_SUFFIX(glDrawRangeElementsBaseVertex, EXT, "GL_EXT_draw_elements_base_vertex VERSION_GLES3 !GL_OES_draw_elements_base_vertex !GL_ARB_draw_elements_base_vertex"),
+	GLFUNC_SUFFIX(glMultiDrawElementsBaseVertex, EXT, "GL_EXT_draw_elements_base_vertex GL_EXT_multi_draw_arrays !GL_OES_draw_elements_base_vertex !GL_ARB_draw_elements_base_vertex"),
 
 	// ARB_sample_shading
 	GLFUNC_REQUIRES(glMinSampleShadingARB, "GL_ARB_sample_shading"),
 
 	// ARB_debug_output
 	GLFUNC_REQUIRES(glDebugMessageCallbackARB, "GL_ARB_debug_output"),
-	GLFUNC_REQUIRES(glDebugMessageControlARB,  "GL_ARB_debug_output"),
-	GLFUNC_REQUIRES(glDebugMessageInsertARB,   "GL_ARB_debug_output"),
-	GLFUNC_REQUIRES(glGetDebugMessageLogARB,   "GL_ARB_debug_output"),
+	GLFUNC_REQUIRES(glDebugMessageControlARB, "GL_ARB_debug_output"),
+	GLFUNC_REQUIRES(glDebugMessageInsertARB, "GL_ARB_debug_output"),
+	GLFUNC_REQUIRES(glGetDebugMessageLogARB, "GL_ARB_debug_output"),
 
 	// KHR_debug
 	GLFUNC_SUFFIX(glDebugMessageCallback, KHR, "GL_KHR_debug VERSION_GLES3"),
-	GLFUNC_SUFFIX(glDebugMessageControl,  KHR, "GL_KHR_debug VERSION_GLES3"),
-	GLFUNC_SUFFIX(glDebugMessageInsert,   KHR, "GL_KHR_debug VERSION_GLES3"),
-	GLFUNC_SUFFIX(glGetDebugMessageLog,   KHR, "GL_KHR_debug VERSION_GLES3"),
-	GLFUNC_SUFFIX(glGetObjectLabel,       KHR, "GL_KHR_debug VERSION_GLES3"),
-	GLFUNC_SUFFIX(glGetObjectPtrLabel,    KHR, "GL_KHR_debug VERSION_GLES3"),
-	GLFUNC_SUFFIX(glObjectLabel,          KHR, "GL_KHR_debug VERSION_GLES3"),
-	GLFUNC_SUFFIX(glObjectPtrLabel,       KHR, "GL_KHR_debug VERSION_GLES3"),
-	GLFUNC_SUFFIX(glPopDebugGroup,        KHR, "GL_KHR_debug VERSION_GLES3"),
-	GLFUNC_SUFFIX(glPushDebugGroup,       KHR, "GL_KHR_debug VERSION_GLES3"),
+	GLFUNC_SUFFIX(glDebugMessageControl, KHR, "GL_KHR_debug VERSION_GLES3"),
+	GLFUNC_SUFFIX(glDebugMessageInsert, KHR, "GL_KHR_debug VERSION_GLES3"),
+	GLFUNC_SUFFIX(glGetDebugMessageLog, KHR, "GL_KHR_debug VERSION_GLES3"),
+	GLFUNC_SUFFIX(glGetObjectLabel, KHR, "GL_KHR_debug VERSION_GLES3"),
+	GLFUNC_SUFFIX(glGetObjectPtrLabel, KHR, "GL_KHR_debug VERSION_GLES3"),
+	GLFUNC_SUFFIX(glObjectLabel, KHR, "GL_KHR_debug VERSION_GLES3"),
+	GLFUNC_SUFFIX(glObjectPtrLabel, KHR, "GL_KHR_debug VERSION_GLES3"),
+	GLFUNC_SUFFIX(glPopDebugGroup, KHR, "GL_KHR_debug VERSION_GLES3"),
+	GLFUNC_SUFFIX(glPushDebugGroup, KHR, "GL_KHR_debug VERSION_GLES3"),
 	GLFUNC_REQUIRES(glDebugMessageCallback, "GL_KHR_debug !VERSION_GLES3"),
-	GLFUNC_REQUIRES(glDebugMessageControl,  "GL_KHR_debug !VERSION_GLES3"),
-	GLFUNC_REQUIRES(glDebugMessageInsert,   "GL_KHR_debug !VERSION_GLES3"),
-	GLFUNC_REQUIRES(glGetDebugMessageLog,   "GL_KHR_debug !VERSION_GLES3"),
-	GLFUNC_REQUIRES(glGetObjectLabel,       "GL_KHR_debug !VERSION_GLES3"),
-	GLFUNC_REQUIRES(glGetObjectPtrLabel,    "GL_KHR_debug !VERSION_GLES3"),
-	GLFUNC_REQUIRES(glObjectLabel,          "GL_KHR_debug !VERSION_GLES3"),
-	GLFUNC_REQUIRES(glObjectPtrLabel,       "GL_KHR_debug !VERSION_GLES3"),
-	GLFUNC_REQUIRES(glPopDebugGroup,        "GL_KHR_debug !VERSION_GLES3"),
-	GLFUNC_REQUIRES(glPushDebugGroup,       "GL_KHR_debug !VERSION_GLES3"),
+	GLFUNC_REQUIRES(glDebugMessageControl, "GL_KHR_debug !VERSION_GLES3"),
+	GLFUNC_REQUIRES(glDebugMessageInsert, "GL_KHR_debug !VERSION_GLES3"),
+	GLFUNC_REQUIRES(glGetDebugMessageLog, "GL_KHR_debug !VERSION_GLES3"),
+	GLFUNC_REQUIRES(glGetObjectLabel, "GL_KHR_debug !VERSION_GLES3"),
+	GLFUNC_REQUIRES(glGetObjectPtrLabel, "GL_KHR_debug !VERSION_GLES3"),
+	GLFUNC_REQUIRES(glObjectLabel, "GL_KHR_debug !VERSION_GLES3"),
+	GLFUNC_REQUIRES(glObjectPtrLabel, "GL_KHR_debug !VERSION_GLES3"),
+	GLFUNC_REQUIRES(glPopDebugGroup, "GL_KHR_debug !VERSION_GLES3"),
+	GLFUNC_REQUIRES(glPushDebugGroup, "GL_KHR_debug !VERSION_GLES3"),
 
 	// ARB_buffer_storage
-	GLFUNC_REQUIRES(glBufferStorage,         "GL_ARB_buffer_storage"),
+	GLFUNC_REQUIRES(glBufferStorage, "GL_ARB_buffer_storage"),
 	GLFUNC_REQUIRES(glNamedBufferStorageEXT, "GL_ARB_buffer_storage GL_EXT_direct_state_access"),
 
 	// EXT_buffer_storage
@@ -1264,13 +1267,16 @@ const GLFunc gl_function_array[] =
 	GLFUNC_SUFFIX(glFramebufferTexture, EXT, "GL_EXT_geometry_shader !VERSION_3_2"),
 
 	// NV_occlusion_query_samples
-	GLFUNC_REQUIRES(glGenOcclusionQueriesNV,    "GL_NV_occlusion_query_samples"),
+	GLFUNC_REQUIRES(glGenOcclusionQueriesNV, "GL_NV_occlusion_query_samples"),
 	GLFUNC_REQUIRES(glDeleteOcclusionQueriesNV, "GL_NV_occlusion_query_samples"),
-	GLFUNC_REQUIRES(glIsOcclusionQueryNV,       "GL_NV_occlusion_query_samples"),
-	GLFUNC_REQUIRES(glBeginOcclusionQueryNV,    "GL_NV_occlusion_query_samples"),
-	GLFUNC_REQUIRES(glEndOcclusionQueryNV,      "GL_NV_occlusion_query_samples"),
-	GLFUNC_REQUIRES(glGetOcclusionQueryivNV,    "GL_NV_occlusion_query_samples"),
-	GLFUNC_REQUIRES(glGetOcclusionQueryuivNV,   "GL_NV_occlusion_query_samples"),
+	GLFUNC_REQUIRES(glIsOcclusionQueryNV, "GL_NV_occlusion_query_samples"),
+	GLFUNC_REQUIRES(glBeginOcclusionQueryNV, "GL_NV_occlusion_query_samples"),
+	GLFUNC_REQUIRES(glEndOcclusionQueryNV, "GL_NV_occlusion_query_samples"),
+	GLFUNC_REQUIRES(glGetOcclusionQueryivNV, "GL_NV_occlusion_query_samples"),
+	GLFUNC_REQUIRES(glGetOcclusionQueryuivNV, "GL_NV_occlusion_query_samples"),
+
+	// ARB_clip_control
+	GLFUNC_REQUIRES(glClipControl, "GL_ARB_clip_control"),
 
 	// gl_1_1
 	// OpenGL 1.1 is at the end due to a bug in Android's EGL stack.
@@ -1654,7 +1660,7 @@ namespace GLExtensions
 				"GL_ARB_ES2_compatibility",
 				"VERSION_GLES3",
 				"VERSION_3_0",
-				};
+			};
 			for (auto it : gles3exts)
 				m_extension_list[it] = true;
 		}
@@ -1668,213 +1674,213 @@ namespace GLExtensions
 			// This has intentional fall through
 			switch (_GLVersion)
 			{
-				default:
-				case 450:
-				{
-					std::string gl450exts[] = {
-						"GL_ARB_ES3_1_compatibility",
-						"GL_ARB_clip_control",
-						"GL_ARB_conditional_render_inverted",
-						"GL_ARB_cull_distance",
-						"GL_ARB_derivative_control",
-						"GL_ARB_direct_state_access",
-						"GL_ARB_get_texture_sub_image",
-						"GL_ARB_robustness",
-						"GL_ARB_shader_texture_image_samples",
-						"GL_ARB_texture_barrier",
-						"VERSION_4_5",
-					};
-					for (auto it : gl450exts)
-						m_extension_list[it] = true;
-				}
-				case 440:
-				{
-					std::string gl440exts[] = {
-						"GL_ARB_buffer_storage",
-						"GL_ARB_clear_texture",
-						"GL_ARB_enhanced_layouts",
-						"GL_ARB_multi_bind",
-						"GL_ARB_query_buffer_object",
-						"GL_ARB_texture_mirror_clamp_to_edge",
-						"GL_ARB_texture_stencil8",
-						"GL_ARB_vertex_type_10f_11f_11f_rev",
-						"VERSION_4_4",
-					};
-					for (auto it : gl440exts)
-						m_extension_list[it] = true;
-				}
-				case 430:
-				{
-					std::string gl430exts[] = {
-						"GL_ARB_ES3_compatibility",
-						"GL_ARB_arrays_of_arrays",
-						"GL_ARB_clear_buffer_object",
-						"GL_ARB_compute_shader",
-						"GL_ARB_copy_image",
-						"GL_ARB_explicit_uniform_location",
-						"GL_ARB_fragment_layer_viewport",
-						"GL_ARB_framebuffer_no_attachments",
-						"GL_ARB_internalformat_query2",
-						"GL_ARB_invalidate_subdata",
-						"GL_ARB_multi_draw_indirect",
-						"GL_ARB_program_interface_query",
-						"GL_ARB_shader_image_size",
-						"GL_ARB_shader_storage_buffer_object",
-						"GL_ARB_stencil_texturing",
-						"GL_ARB_texture_buffer_range",
-						"GL_ARB_texture_query_levels",
-						"GL_ARB_texture_storage_multisample",
-						"GL_ARB_texture_view",
-						"GL_ARB_vertex_attrib_binding",
-						"VERSION_4_3",
-					};
-					for (auto it : gl430exts)
-						m_extension_list[it] = true;
-				}
-				case 420:
-				{
-					std::string gl420exts[] = {
-						"GL_ARB_base_instance",
-						"GL_ARB_compressed_texture_pixel_storage",
-						"GL_ARB_conservative_depth",
-						"GL_ARB_internalformat_query",
-						"GL_ARB_map_buffer_alignment",
-						"GL_ARB_shader_atomic_counters",
-						"GL_ARB_shader_image_load_store",
-						"GL_ARB_shading_language_420pack",
-						"GL_ARB_shading_language_packing",
-						"GL_ARB_texture_compression_BPTC",
-						"GL_ARB_texture_storage",
-						"GL_ARB_transform_feedback_instanced",
-						"VERSION_4_2",
-					};
-					for (auto it : gl420exts)
-						m_extension_list[it] = true;
-				}
-				case 410:
-				{
-					std::string gl410exts[] = {
-						"GL_ARB_ES2_compatibility",
-						"GL_ARB_get_program_binary",
-						"GL_ARB_separate_shader_objects",
-						"GL_ARB_shader_precision",
-						"GL_ARB_vertex_attrib_64_bit",
-						"GL_ARB_viewport_array",
-						"VERSION_4_1",
-					};
-					for (auto it : gl410exts)
-						m_extension_list[it] = true;
-				}
-				case 400:
-				{
-					std::string gl400exts[] = {
-						"GL_ARB_draw_indirect",
-						"GL_ARB_gpu_shader5",
-						"GL_ARB_gpu_shader_fp64",
-						"GL_ARB_sample_shading",
-						"GL_ARB_shader_subroutine",
-						"GL_ARB_tessellation_shader",
-						"GL_ARB_texture_buffer_object_rgb32",
-						"GL_ARB_texture_cube_map_array",
-						"GL_ARB_texture_gather",
-						"GL_ARB_texture_query_lod",
-						"GL_ARB_transform_feedback2",
-						"GL_ARB_transform_feedback3",
-						"VERSION_4_0",
-					};
-					for (auto it : gl400exts)
-						m_extension_list[it] = true;
-				}
-				case 330:
-				{
-					std::string gl330exts[] = {
-						"GL_ARB_shader_bit_encoding",
-						"GL_ARB_blend_func_extended",
-						"GL_ARB_explicit_attrib_location",
-						"GL_ARB_occlusion_query2",
-						"GL_ARB_sampler_objects",
-						"GL_ARB_texture_swizzle",
-						"GL_ARB_timer_query",
-						"GL_ARB_instanced_arrays",
-						"GL_ARB_texture_rgb10_a2ui",
-						"GL_ARB_vertex_type_2_10_10_10_rev",
-						"VERSION_3_3",
-					};
-					for (auto it : gl330exts)
-						m_extension_list[it] = true;
-				}
-				case 320:
-				{
-					std::string gl320exts[] = {
-						"GL_ARB_geometry_shader4",
-						"GL_ARB_sync",
-						"GL_ARB_vertex_array_bgra",
-						"GL_ARB_draw_elements_base_vertex",
-						"GL_ARB_seamless_cube_map",
-						"GL_ARB_texture_multisample",
-						"GL_ARB_fragment_coord_conventions",
-						"GL_ARB_provoking_vertex",
-						"GL_ARB_depth_clamp",
-						"VERSION_3_2",
-					};
-					for (auto it : gl320exts)
-						m_extension_list[it] = true;
-				}
-				case 310:
-				{
-					// Can't add NV_primitive_restart since function name changed
-					std::string gl310exts[] = {
-						"GL_ARB_draw_instanced",
-						"GL_ARB_copy_buffer",
-						"GL_ARB_texture_buffer_object",
-						"GL_ARB_texture_rectangle",
-						"GL_ARB_uniform_buffer_object",
-						//"GL_NV_primitive_restart",
-						"VERSION_3_1",
-					};
-					for (auto it : gl310exts)
-						m_extension_list[it] = true;
-				}
-				case 300:
-				{
-					// Quite a lot of these had their names changed when merged in to core
-					// Disable the ones that have
-					std::string gl300exts[] = {
-						"GL_ARB_map_buffer_range",
-						//"GL_EXT_gpu_shader4",
-						//"GL_APPLE_flush_buffer_range",
-						"GL_ARB_color_buffer_float",
-						//"GL_NV_depth_buffer_float",
-						"GL_ARB_texture_float",
-						//"GL_EXT_packed_float",
-						//"GL_EXT_texture_shared_exponent",
-						"GL_ARB_half_float_pixel",
-						//"GL_NV_half_float",
-						"GL_ARB_framebuffer_object",
-						//"GL_EXT_framebuffer_sRGB",
-						"GL_ARB_texture_float",
-						//"GL_EXT_texture_integer",
-						//"GL_EXT_draw_buffers2",
-						//"GL_EXT_texture_integer",
-						//"GL_EXT_texture_array",
-						//"GL_EXT_texture_compression_rgtc",
-						//"GL_EXT_transform_feedback",
-						"GL_ARB_vertex_array_object",
-						//"GL_NV_conditional_render",
-						"VERSION_3_0",
-					};
-					for (auto it : gl300exts)
-						m_extension_list[it] = true;
-				}
-				case 210:
-				case 200:
-				case 150:
-				case 140:
-				case 130:
-				case 121:
-				case 120:
-				case 110:
-				case 100:
+			default:
+			case 450:
+			{
+				std::string gl450exts[] = {
+					"GL_ARB_ES3_1_compatibility",
+					"GL_ARB_clip_control",
+					"GL_ARB_conditional_render_inverted",
+					"GL_ARB_cull_distance",
+					"GL_ARB_derivative_control",
+					"GL_ARB_direct_state_access",
+					"GL_ARB_get_texture_sub_image",
+					"GL_ARB_robustness",
+					"GL_ARB_shader_texture_image_samples",
+					"GL_ARB_texture_barrier",
+					"VERSION_4_5",
+				};
+				for (auto it : gl450exts)
+					m_extension_list[it] = true;
+			}
+			case 440:
+			{
+				std::string gl440exts[] = {
+					"GL_ARB_buffer_storage",
+					"GL_ARB_clear_texture",
+					"GL_ARB_enhanced_layouts",
+					"GL_ARB_multi_bind",
+					"GL_ARB_query_buffer_object",
+					"GL_ARB_texture_mirror_clamp_to_edge",
+					"GL_ARB_texture_stencil8",
+					"GL_ARB_vertex_type_10f_11f_11f_rev",
+					"VERSION_4_4",
+				};
+				for (auto it : gl440exts)
+					m_extension_list[it] = true;
+			}
+			case 430:
+			{
+				std::string gl430exts[] = {
+					"GL_ARB_ES3_compatibility",
+					"GL_ARB_arrays_of_arrays",
+					"GL_ARB_clear_buffer_object",
+					"GL_ARB_compute_shader",
+					"GL_ARB_copy_image",
+					"GL_ARB_explicit_uniform_location",
+					"GL_ARB_fragment_layer_viewport",
+					"GL_ARB_framebuffer_no_attachments",
+					"GL_ARB_internalformat_query2",
+					"GL_ARB_invalidate_subdata",
+					"GL_ARB_multi_draw_indirect",
+					"GL_ARB_program_interface_query",
+					"GL_ARB_shader_image_size",
+					"GL_ARB_shader_storage_buffer_object",
+					"GL_ARB_stencil_texturing",
+					"GL_ARB_texture_buffer_range",
+					"GL_ARB_texture_query_levels",
+					"GL_ARB_texture_storage_multisample",
+					"GL_ARB_texture_view",
+					"GL_ARB_vertex_attrib_binding",
+					"VERSION_4_3",
+				};
+				for (auto it : gl430exts)
+					m_extension_list[it] = true;
+			}
+			case 420:
+			{
+				std::string gl420exts[] = {
+					"GL_ARB_base_instance",
+					"GL_ARB_compressed_texture_pixel_storage",
+					"GL_ARB_conservative_depth",
+					"GL_ARB_internalformat_query",
+					"GL_ARB_map_buffer_alignment",
+					"GL_ARB_shader_atomic_counters",
+					"GL_ARB_shader_image_load_store",
+					"GL_ARB_shading_language_420pack",
+					"GL_ARB_shading_language_packing",
+					"GL_ARB_texture_compression_BPTC",
+					"GL_ARB_texture_storage",
+					"GL_ARB_transform_feedback_instanced",
+					"VERSION_4_2",
+				};
+				for (auto it : gl420exts)
+					m_extension_list[it] = true;
+			}
+			case 410:
+			{
+				std::string gl410exts[] = {
+					"GL_ARB_ES2_compatibility",
+					"GL_ARB_get_program_binary",
+					"GL_ARB_separate_shader_objects",
+					"GL_ARB_shader_precision",
+					"GL_ARB_vertex_attrib_64_bit",
+					"GL_ARB_viewport_array",
+					"VERSION_4_1",
+				};
+				for (auto it : gl410exts)
+					m_extension_list[it] = true;
+			}
+			case 400:
+			{
+				std::string gl400exts[] = {
+					"GL_ARB_draw_indirect",
+					"GL_ARB_gpu_shader5",
+					"GL_ARB_gpu_shader_fp64",
+					"GL_ARB_sample_shading",
+					"GL_ARB_shader_subroutine",
+					"GL_ARB_tessellation_shader",
+					"GL_ARB_texture_buffer_object_rgb32",
+					"GL_ARB_texture_cube_map_array",
+					"GL_ARB_texture_gather",
+					"GL_ARB_texture_query_lod",
+					"GL_ARB_transform_feedback2",
+					"GL_ARB_transform_feedback3",
+					"VERSION_4_0",
+				};
+				for (auto it : gl400exts)
+					m_extension_list[it] = true;
+			}
+			case 330:
+			{
+				std::string gl330exts[] = {
+					"GL_ARB_shader_bit_encoding",
+					"GL_ARB_blend_func_extended",
+					"GL_ARB_explicit_attrib_location",
+					"GL_ARB_occlusion_query2",
+					"GL_ARB_sampler_objects",
+					"GL_ARB_texture_swizzle",
+					"GL_ARB_timer_query",
+					"GL_ARB_instanced_arrays",
+					"GL_ARB_texture_rgb10_a2ui",
+					"GL_ARB_vertex_type_2_10_10_10_rev",
+					"VERSION_3_3",
+				};
+				for (auto it : gl330exts)
+					m_extension_list[it] = true;
+			}
+			case 320:
+			{
+				std::string gl320exts[] = {
+					"GL_ARB_geometry_shader4",
+					"GL_ARB_sync",
+					"GL_ARB_vertex_array_bgra",
+					"GL_ARB_draw_elements_base_vertex",
+					"GL_ARB_seamless_cube_map",
+					"GL_ARB_texture_multisample",
+					"GL_ARB_fragment_coord_conventions",
+					"GL_ARB_provoking_vertex",
+					"GL_ARB_depth_clamp",
+					"VERSION_3_2",
+				};
+				for (auto it : gl320exts)
+					m_extension_list[it] = true;
+			}
+			case 310:
+			{
+				// Can't add NV_primitive_restart since function name changed
+				std::string gl310exts[] = {
+					"GL_ARB_draw_instanced",
+					"GL_ARB_copy_buffer",
+					"GL_ARB_texture_buffer_object",
+					"GL_ARB_texture_rectangle",
+					"GL_ARB_uniform_buffer_object",
+					//"GL_NV_primitive_restart",
+					"VERSION_3_1",
+				};
+				for (auto it : gl310exts)
+					m_extension_list[it] = true;
+			}
+			case 300:
+			{
+				// Quite a lot of these had their names changed when merged in to core
+				// Disable the ones that have
+				std::string gl300exts[] = {
+					"GL_ARB_map_buffer_range",
+					//"GL_EXT_gpu_shader4",
+					//"GL_APPLE_flush_buffer_range",
+					"GL_ARB_color_buffer_float",
+					//"GL_NV_depth_buffer_float",
+					"GL_ARB_texture_float",
+					//"GL_EXT_packed_float",
+					//"GL_EXT_texture_shared_exponent",
+					"GL_ARB_half_float_pixel",
+					//"GL_NV_half_float",
+					"GL_ARB_framebuffer_object",
+					//"GL_EXT_framebuffer_sRGB",
+					"GL_ARB_texture_float",
+					//"GL_EXT_texture_integer",
+					//"GL_EXT_draw_buffers2",
+					//"GL_EXT_texture_integer",
+					//"GL_EXT_texture_array",
+					//"GL_EXT_texture_compression_rgtc",
+					//"GL_EXT_transform_feedback",
+					"GL_ARB_vertex_array_object",
+					//"GL_NV_conditional_render",
+					"VERSION_3_0",
+				};
+				for (auto it : gl300exts)
+					m_extension_list[it] = true;
+			}
+			case 210:
+			case 200:
+			case 150:
+			case 140:
+			case 130:
+			case 121:
+			case 120:
+			case 110:
+			case 100:
 				break;
 			}
 		}
@@ -1902,7 +1908,7 @@ namespace GLExtensions
 			_GLVersion = 330; // Get all the fun things
 	}
 
-	static void* GetFuncAddress(std::string name, void **func)
+	static void* GetFuncAddress(const std::string& name, void **func)
 	{
 		*func = GLInterface->GetFuncAddress(name);
 		if (*func == nullptr)

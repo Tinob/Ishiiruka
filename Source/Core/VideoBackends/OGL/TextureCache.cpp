@@ -23,6 +23,7 @@
 #include "VideoBackends/OGL/GLInterfaceBase.h"
 #include "VideoBackends/OGL/ProgramShaderCache.h"
 #include "VideoBackends/OGL/Render.h"
+#include "VideoBackends/OGL/SamplerCache.h"
 #include "VideoBackends/OGL/StreamBuffer.h"
 #include "VideoBackends/OGL/TextureCache.h"
 #include "VideoBackends/OGL/TextureConverter.h"
@@ -65,10 +66,9 @@ bool SaveTexture(const std::string& filename, u32 textarget, u32 tex, int virtua
 	int width = std::max(virtual_width >> level, 1);
 	int height = std::max(virtual_height >> level, 1);
 	std::vector<u8> data(width * height * 4);
-	glActiveTexture(GL_TEXTURE0 + 9);
+	glActiveTexture(GL_TEXTURE9);
 	glBindTexture(textarget, tex);
 	glGetTexImage(textarget, level, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
-	glBindTexture(textarget, 0);
 	TextureCache::SetStage();
 
 	return TextureToPng(data.data(), width * 4, filename, width, height, true);
@@ -199,7 +199,7 @@ TextureCache::TCacheEntryBase* TextureCache::CreateTexture(const TCacheEntryConf
 {
 	TCacheEntry* entry = new TCacheEntry(config);	
 	
-	glActiveTexture(GL_TEXTURE0 + 9);
+	glActiveTexture(GL_TEXTURE9);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, entry->texture);	
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, config.levels - 1);
 
@@ -305,9 +305,12 @@ void TextureCache::TCacheEntry::FromRenderTarget(
 
 	OpenGL_BindAttributelessVAO();
 
-	glActiveTexture(GL_TEXTURE0 + 9);
+	glActiveTexture(GL_TEXTURE9);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, read_texture);
-
+	if (scaleByHalf)
+		g_sampler_cache->BindLinearSampler(9);
+	else
+		g_sampler_cache->BindNearestSampler(9);
 	glViewport(0, 0, config.width, config.height);
 
 	GLuint uniform_location;
@@ -379,9 +382,10 @@ bool TextureCache::TCacheEntry::PalettizeFromBase(const TCacheEntryBase* base_en
 	}
 	g_renderer->ResetAPIState();
 
-	glActiveTexture(GL_TEXTURE0 + 9);
+	glActiveTexture(GL_TEXTURE9);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, ((TextureCache::TCacheEntry*)base_entry)->texture);
-
+	g_sampler_cache->BindLinearSampler(9);
+	
 	FramebufferManager::SetFramebuffer(framebuffer);
 	glViewport(0, 0, config.width, config.height);
 	s_palette_pixel_shader[s_last_TlutFormat].Bind();
@@ -391,9 +395,9 @@ bool TextureCache::TCacheEntry::PalettizeFromBase(const TCacheEntryBase* base_en
 	glUniform1f(s_palette_multiplier_uniform[s_last_TlutFormat], texformat == GX_TF_C4 ? 15.0f : 255.0f);
 	glUniform4f(s_palette_copy_position_uniform[s_last_TlutFormat], 0.0f, 0.0f, (float)config.width, (float)config.height);
 
-	glActiveTexture(GL_TEXTURE0 + 10);
+	glActiveTexture(GL_TEXTURE10);
 	glBindTexture(GL_TEXTURE_BUFFER, s_palette_resolv_texture);
-
+	g_sampler_cache->BindNearestSampler(10);
 	OpenGL_BindAttributelessVAO();
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 

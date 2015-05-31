@@ -13,7 +13,7 @@ using namespace Gen;
 void Jit64::ps_mr(UGeckoInstruction inst)
 {
 	INSTRUCTION_START
-		JITDISABLE(bJITPairedOff);
+	JITDISABLE(bJITPairedOff);
 	FALLBACK_IF(inst.Rc);
 
 	int d = inst.FD;
@@ -28,7 +28,7 @@ void Jit64::ps_mr(UGeckoInstruction inst)
 void Jit64::ps_sum(UGeckoInstruction inst)
 {
 	INSTRUCTION_START
-		JITDISABLE(bJITPairedOff);
+	JITDISABLE(bJITPairedOff);
 	FALLBACK_IF(inst.Rc);
 
 	int d = inst.FD;
@@ -77,7 +77,7 @@ void Jit64::ps_sum(UGeckoInstruction inst)
 void Jit64::ps_muls(UGeckoInstruction inst)
 {
 	INSTRUCTION_START
-		JITDISABLE(bJITPairedOff);
+	JITDISABLE(bJITPairedOff);
 	FALLBACK_IF(inst.Rc);
 
 	int d = inst.FD;
@@ -109,7 +109,7 @@ void Jit64::ps_muls(UGeckoInstruction inst)
 void Jit64::ps_mergeXX(UGeckoInstruction inst)
 {
 	INSTRUCTION_START
-		JITDISABLE(bJITPairedOff);
+	JITDISABLE(bJITPairedOff);
 	FALLBACK_IF(inst.Rc);
 
 	int d = inst.FD;
@@ -141,7 +141,7 @@ void Jit64::ps_mergeXX(UGeckoInstruction inst)
 void Jit64::ps_rsqrte(UGeckoInstruction inst)
 {
 	INSTRUCTION_START
-		JITDISABLE(bJITFloatingPointOff);
+	JITDISABLE(bJITFloatingPointOff);
 	FALLBACK_IF(inst.Rc);
 	int b = inst.FB;
 	int d = inst.FD;
@@ -168,7 +168,7 @@ void Jit64::ps_rsqrte(UGeckoInstruction inst)
 void Jit64::ps_res(UGeckoInstruction inst)
 {
 	INSTRUCTION_START
-		JITDISABLE(bJITFloatingPointOff);
+	JITDISABLE(bJITFloatingPointOff);
 	FALLBACK_IF(inst.Rc);
 	int b = inst.FB;
 	int d = inst.FD;
@@ -195,7 +195,7 @@ void Jit64::ps_res(UGeckoInstruction inst)
 void Jit64::ps_cmpXX(UGeckoInstruction inst)
 {
 	INSTRUCTION_START
-		JITDISABLE(bJITFloatingPointOff);
+	JITDISABLE(bJITFloatingPointOff);
 
 	FloatCompare(inst, !!(inst.SUBOP10 & 64));
 }

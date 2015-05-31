@@ -699,7 +699,7 @@ void VertexShaderManager::TransformToClipSpace(const u8* data, const PortableVer
 	float pos[3];
 	pos[0] = possrc[0];
 	pos[1] = possrc[1];
-	pos[2] = possrc[2];
+	pos[2] = vtx_dcl.position.components == 3 ? possrc[2] : 0;
 
 	const int mtx_idx = *((const u32*)(data + vtx_dcl.posmtx.offset));
 	const float *world_matrix = ((const float *)xfmem.posMatrices) + mtx_idx * 4;
