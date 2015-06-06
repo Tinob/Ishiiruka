@@ -20,11 +20,16 @@ void DoCPState(PointerWrap& p)
 	p.Do(g_main_cp_state.vtx_desc.Hex);
 	p.DoArray(g_main_cp_state.vtx_attr, 8);
 	p.DoMarker("CP Memory");
+	if (p.mode == PointerWrap::MODE_READ)
+	{
+		g_main_cp_state.bases_dirty = true;
+	}
 }
 
 void MarkAllAttrDirty()
 {
 	g_main_cp_state.attr_dirty = 0xff;
+	g_main_cp_state.bases_dirty = true;
 }
 
 void LoadCPReg(u32 sub_cmd, u32 value)
@@ -43,12 +48,14 @@ void LoadCPReg(u32 sub_cmd, u32 value)
 		g_main_cp_state.vtx_desc.Hex &= ~0x1FFFF;  // keep the Upper bits
 		g_main_cp_state.vtx_desc.Hex |= value;
 		g_main_cp_state.attr_dirty = 0xFF;
+		g_main_cp_state.bases_dirty = true;
 		break;
 
 	case 0x60:
 		g_main_cp_state.vtx_desc.Hex &= 0x1FFFF;  // keep the lower 17Bits
 		g_main_cp_state.vtx_desc.Hex |= (u64)value << 17;
 		g_main_cp_state.attr_dirty = 0xFF;
+		g_main_cp_state.bases_dirty = true;
 		break;
 
 	case 0x70:
@@ -72,7 +79,7 @@ void LoadCPReg(u32 sub_cmd, u32 value)
 		// Pointers to vertex arrays in GC RAM
 	case 0xA0:
 		g_main_cp_state.array_bases[sub_cmd & 0xF] = value;
-		cached_arraybases[sub_cmd & 0xF] = Memory::GetPointer(value);
+		g_main_cp_state.bases_dirty = true;
 		break;
 
 	case 0xB0:
@@ -101,12 +108,3 @@ void FillCPMemoryArray(u32 *memory)
 		memory[0xB0 + i] = g_main_cp_state.array_strides[i];
 	}
 }
-
-void RecomputeCachedArraybases()
-{
-	for (int i = 0; i < 16; i++)
-	{
-		cached_arraybases[i] = Memory::GetPointer(g_main_cp_state.array_bases[i]);
-	}
-}
-

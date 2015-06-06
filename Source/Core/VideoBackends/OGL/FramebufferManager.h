@@ -1,4 +1,4 @@
-// Copyright 2013 Dolphin Emulator Project
+// Copyright 2009 Dolphin Emulator Project
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
@@ -91,6 +91,8 @@ public:
 	// convtype=0 -> rgb8->rgba6, convtype=2 -> rgba6->rgb8
 	static void ReinterpretPixelData(unsigned int convtype);
 
+	static void PokeEFB(EFBAccessType type, const std::vector<EfbPokeData>& data);
+
 private:
 	XFBSourceBase* CreateXFBSource(unsigned int target_width, unsigned int target_height, unsigned int layers) override;
 	void GetTargetSize(unsigned int *width, unsigned int *height) override;
@@ -115,6 +117,11 @@ private:
 
 	// For pixel format draw
 	static SHADER m_pixel_format_shaders[2];
+
+	// For EFB pokes
+	static GLuint m_EfbPokes_VBO;
+	static GLuint m_EfbPokes_VAO;
+	static SHADER m_EfbPokes;
 };
 
 }  // namespace OGL

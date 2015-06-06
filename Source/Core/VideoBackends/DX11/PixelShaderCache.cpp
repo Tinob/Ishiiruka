@@ -39,10 +39,6 @@ D3D::PixelShaderPtr s_ColorMatrixProgram[2];
 D3D::PixelShaderPtr s_ColorCopyProgram[3];
 D3D::PixelShaderPtr s_DepthMatrixProgram[2];
 D3D::PixelShaderPtr s_ClearProgram;
-D3D::PixelShaderPtr s_AnaglyphProgram;
-D3D::PixelShaderPtr s_AnaglyphProgramssaa;
-D3D::PixelShaderPtr s_InterlacedProgram;
-D3D::PixelShaderPtr s_InterlacedProgramssaa;
 D3D::PixelShaderPtr s_rgba6_to_rgb8[2];
 D3D::PixelShaderPtr s_rgb8_to_rgba6[2];
 D3D::ConstantStreamBuffer* pscbuf;
@@ -115,91 +111,6 @@ void main(
 }
 )hlsl";
 
-// Anaglyph Red-Cyan shader based on Dubois algorithm
-// Constants taken from the paper:
-// "Conversion of a Stereo Pair to Anaglyph with
-// the Least-Squares Projection Method"
-// Eric Dubois, March 2009
-const char* anaglyph_program_code = R"hlsl(
-sampler samp0 : register(s0);
-Texture2DArray Tex0 : register(t0);
-void main(
-	out float4 ocol0 : SV_Target,
-	in float4 pos : SV_Position,
-	in float3 uv0 : TEXCOORD0,
-	in float  uv1 : TEXCOORD1,
-	in float4 uv2 : TEXCOORD2,
-	in float4 uv3 : TEXCOORD3)
-{
-	float4 c0 = pow(Tex0.Sample(samp0, float3(uv0.xy, 0.0)), uv1);
-	float4 c1 = pow(Tex0.Sample(samp0, float3(uv0.xy, 1.0)), uv1);
-	ocol0 = float4(pow(0.7 * c0.g + 0.3 * c0.b, 1.5), c1.gba);
-}
-)hlsl";
-
-const char* anaglyph_program_code_ssaa = R"hlsl(
-sampler samp0 : register(s0);
-Texture2DArray Tex0 : register(t0);
-void main(
-	out float4 ocol0 : SV_Target,
-	in float4 pos : SV_Position,
-	in float3 uv0 : TEXCOORD0,
-	in float  uv1 : TEXCOORD1,
-	in float4 uv2 : TEXCOORD2,
-	in float4 uv3 : TEXCOORD3)
-{
-	float4 c0 = Tex0.Sample(samp0,float3(uv2.xy, 0.0));
-	c0 += Tex0.Sample(samp0,float3(uv2.wz, 0.0));
-	c0 += Tex0.Sample(samp0,float3(uv3.xy, 0.0));
-	c0 += Tex0.Sample(samp0,float3(uv3.wz, 0.0));
-	c0 =  pow(c0 * 0.25, uv1);
-	float4 c1 = Tex0.Sample(samp0,float3(uv2.xy, 1.0));
-	c1 += Tex0.Sample(samp0,float3(uv2.wz, 1.0));
-	c1 += Tex0.Sample(samp0,float3(uv3.xy, 1.0));
-	c1 += Tex0.Sample(samp0,float3(uv3.wz, 1.0));
-	c1 =  pow(c1 * 0.25, uv1);
-	ocol0 = float4(pow(0.7 * c0.g + 0.3 * c0.b, 1.5), c1.gba);
-}
-)hlsl";
-
-
-const char* interlaced_program_code = R"hlsl(
-sampler samp0 : register(s0);
-Texture2DArray Tex0 : register(t0);
-void main(
-	out float4 ocol0 : SV_Target,
-	in float4 pos : SV_Position,
-	in float3 uv0 : TEXCOORD0,
-	in float  uv1 : TEXCOORD1,
-	in float4 uv2 : TEXCOORD2,
-	in float4 uv3 : TEXCOORD3)
-{
-	float slice = float(int(pos.y) & 1);
-	ocol0 =  pow(Tex0.Sample(samp0, float3(uv0.xy, slice)), uv1);
-}
-)hlsl";
-
-const char* interlaced_program_code_ssaa = R"hlsl(
-sampler samp0 : register(s0);
-Texture2DArray Tex0 : register(t0);
-void main(
-out float4 ocol0 : SV_Target,
-in float4 pos : SV_Position,
-in float3 uv0 : TEXCOORD0,
-in float  uv1 : TEXCOORD1,
-in float4 uv2 : TEXCOORD2,
-in float4 uv3 : TEXCOORD3)
-{
-	float slice = float(int(pos.y) & 1);
-	ocol0 =  Tex0.Sample(samp0,float3(uv2.xy, slice));
-	ocol0 += Tex0.Sample(samp0,float3(uv2.wz, slice));
-	ocol0 += Tex0.Sample(samp0,float3(uv3.xy, slice));
-	ocol0 += Tex0.Sample(samp0,float3(uv3.wz, slice));
-	ocol0 =  pow(ocol0 * 0.25, uv1);
-}
-)hlsl";
-
-
 const char* color_matrix_program_code = R"hlsl(
 sampler samp0 : register(s0);
 Texture2DArray Tex0 : register(t0);
@@ -254,13 +165,13 @@ void main(
 	in float4 uv3 : TEXCOORD3)
 {
 	float4 texcol = Tex0.Sample(samp0,uv0);
-	int workspace = int(round((1.0 - texcol.x) * 16777215.0f));
-	texcol.z = float(workspace & 255);   // z component
-	workspace = workspace >> 8;
-	texcol.y = float(workspace & 255);   // y component
-	workspace = workspace >> 8;
-	texcol.x = float(workspace & 255);   // x component
-	texcol.w = float(workspace & 240);    // w component
+	int depth = clamp(int((1.0 - texcol.x) * 16777216.0), 0, 0xFFFFFF);
+	texcol.z = float(depth & 255);   // z component
+	depth = depth >> 8;
+	texcol.y = float(depth & 255);   // y component
+	depth = depth >> 8;
+	texcol.x = float(depth & 255);   // x component
+	texcol.w = float(depth & 240);    // w component
 	texcol = texcol / 255.0;             // normalize components to [0.0..1.0]
 	ocol0 = float4(dot(texcol,cColMatrix[0]),dot(texcol,cColMatrix[1]),dot(texcol,cColMatrix[2]),dot(texcol,cColMatrix[3])) + cColMatrix[4];
 }
@@ -284,13 +195,13 @@ void main(
 	for(int i = 0; i < samples; ++i)
 		texcol += Tex0.Load(int3(uv0.x*(width), uv0.y*(height), uv0.z), i);
 	texcol /= samples;
-	int workspace = int(round((1.0 - texcol.x) * 16777215.0f));
-	texcol.z = float(workspace & 255);   // z component
-	workspace = workspace >> 8;
-	texcol.y = float(workspace & 255);   // y component
-	workspace = workspace >> 8;
-	texcol.x = float(workspace & 255);   // y component
-	texcol.w = float(workspace & 240);    // w component
+	int depth = clamp(int((1.0 - texcol.x) * 16777216.0), 0, 0xFFFFFF);
+	texcol.z = float(depth & 255);   // z component
+	depth = depth >> 8;
+	texcol.y = float(depth & 255);   // y component
+	depth = depth >> 8;
+	texcol.x = float(depth & 255);   // y component
+	texcol.w = float(depth & 240);    // w component
 	texcol = texcol / 255.0;             // normalize components to [0.0..1.0]
 	ocol0 = float4(dot(texcol,cColMatrix[0]),dot(texcol,cColMatrix[1]),dot(texcol,cColMatrix[2]),dot(texcol,cColMatrix[3])) + cColMatrix[4];
 }
@@ -503,16 +414,6 @@ ID3D11PixelShader* PixelShaderCache::GetClearProgram()
 	return s_ClearProgram.get();
 }
 
-ID3D11PixelShader* PixelShaderCache::GetAnaglyphProgram(bool ssaa)
-{
-	return ssaa ? s_AnaglyphProgramssaa.get() : s_AnaglyphProgram.get();
-}
-
-ID3D11PixelShader* PixelShaderCache::GetInterlacedProgram(bool ssaa)
-{
-	return ssaa ? s_InterlacedProgramssaa.get() : s_InterlacedProgram.get();
-}
-
 std::tuple<ID3D11Buffer*, UINT, UINT> PixelShaderCache::GetConstantBuffer()
 {
 	bool lightingEnabled = xfmem.numChan.numColorChans > 0;
@@ -569,24 +470,6 @@ void PixelShaderCache::Init()
 	s_ClearProgram = D3D::CompileAndCreatePixelShader(clear_program_code);	
 	CHECK(s_ClearProgram!=nullptr, "Create clear pixel shader");
 	D3D::SetDebugObjectName(s_ClearProgram.get(), "clear pixel shader");
-
-	// used for anaglyph stereoscopy
-	s_AnaglyphProgram = D3D::CompileAndCreatePixelShader(anaglyph_program_code);
-	CHECK(s_AnaglyphProgram != nullptr, "Create anaglyph pixel shader");
-	D3D::SetDebugObjectName((ID3D11DeviceChild*)s_AnaglyphProgram.get(), "anaglyph pixel shader");
-
-	s_AnaglyphProgramssaa = D3D::CompileAndCreatePixelShader(anaglyph_program_code_ssaa);
-	CHECK(s_AnaglyphProgramssaa != nullptr, "Create anaglyph ssaa pixel shader");
-	D3D::SetDebugObjectName((ID3D11DeviceChild*)s_AnaglyphProgramssaa.get(), "anaglyph ssaa pixel shader");
-
-	// used for interlaced stereoscopy
-	s_InterlacedProgram = D3D::CompileAndCreatePixelShader(interlaced_program_code);
-	CHECK(s_InterlacedProgram != nullptr, "Create interlaced pixel shader");
-	D3D::SetDebugObjectName((ID3D11DeviceChild*)s_InterlacedProgram.get(), "interlaced pixel shader");
-
-	s_InterlacedProgramssaa = D3D::CompileAndCreatePixelShader(interlaced_program_code_ssaa);
-	CHECK(s_InterlacedProgramssaa != nullptr, "Create interlaced ssaa pixel shader");
-	D3D::SetDebugObjectName((ID3D11DeviceChild*)s_InterlacedProgramssaa.get(), "interlaced ssaa pixel shader");
 
 	// used when copying/resolving the color buffer
 	s_ColorCopyProgram[0] = D3D::CompileAndCreatePixelShader(color_copy_program_code);
@@ -665,10 +548,6 @@ void PixelShaderCache::Shutdown()
 	pscbuf = nullptr;
 	pscbuf_alt = nullptr;
 	s_ClearProgram.reset();
-	s_AnaglyphProgram.reset();
-	s_AnaglyphProgramssaa.reset();
-	s_InterlacedProgram.reset();
-	s_InterlacedProgramssaa.reset();
 	for (auto & p : s_ColorCopyProgram)
 		p.reset();
 	for (auto & p : s_ColorMatrixProgram)

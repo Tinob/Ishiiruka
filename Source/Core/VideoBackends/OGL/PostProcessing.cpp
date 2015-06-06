@@ -481,7 +481,7 @@ float SampleDepth(float2 location, int l)
 	float A = -499.5;
 	float B =  500.5;
 	float depth = texture(samp10, float3(location, l)).x;
-	depth = 1 / (A * depth + B);
+	depth = 1.0 / (A * depth + B);
 	return depth;
 }
 
@@ -490,7 +490,7 @@ float SampleDepthLocationOffset(float2 location, int2 offset)
 	float A = -499.5;
 	float B =  500.5;
 	float depth = texture(samp10, float3(location + offset * resolution.zw, layer)).x;
-	depth = 1 / (A * depth + B);
+	depth = 1.0 / (A * depth + B);
 	return depth;	
 }
 

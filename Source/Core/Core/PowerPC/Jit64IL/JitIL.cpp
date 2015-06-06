@@ -250,7 +250,7 @@ void JitIL::Init()
 	UpdateMemoryOptions();
 
 	trampolines.Init(jo.memcheck ? TRAMPOLINE_CODE_SIZE_MMU : TRAMPOLINE_CODE_SIZE);
-	AllocCodeSpace(CODE_SIZE);
+	AllocCodeSpace(CODE_SIZE, PPCSTATE_BASE);
 	blocks.Init();
 	asm_routines.Init(nullptr);
 
@@ -661,7 +661,7 @@ const u8* JitIL::DoJit(u32 em_address, PPCAnalyst::CodeBuffer *code_buf, JitBloc
 	// Perform actual code generation
 	WriteCode(nextPC);
 
-	b->codeSize = (u32)(GetCodePtr() - normalEntry);
+	b->codeSize = (u32)(GetCodePtr() - start);
 	b->originalSize = code_block.m_num_instructions;
 
 #ifdef JIT_LOG_X86

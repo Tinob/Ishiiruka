@@ -187,16 +187,16 @@ void PixelShaderManager::SetConstants()
 		if (s_use_integer_constants)
 		{
 			m_buffer.SetConstant4<int>(C_ZBIAS + 1,
-				static_cast<u32>(xfmem.viewport.farZ),
-				static_cast<u32>(xfmem.viewport.zRange),
+				(u32)xfmem.viewport.farZ,
+				(u32)xfmem.viewport.zRange,
 				0,
 				lastZBias);
 		}
 		else
 		{
 			m_buffer.SetConstant4<float>(C_ZBIAS + 1,
-				static_cast<float>(static_cast<u32>(xfmem.viewport.farZ)),
-				static_cast<float>(static_cast<u32>(xfmem.viewport.zRange)),
+				xfmem.viewport.farZ,
+				xfmem.viewport.zRange,
 				0.0f,
 				(float)(lastZBias) / 16777215.0f);
 		}

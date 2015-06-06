@@ -20,14 +20,16 @@ void DSPEmitter::dsp_reg_stack_push(int stack_reg)
 	AND(8, R(AL), Imm8(DSP_STACK_MASK));
 	MOV(8, M(&g_dsp.reg_stack_ptr[stack_reg]), R(AL));
 
-	X64Reg tmp1;
+	X64Reg tmp1, tmp2;
 	gpr.getFreeXReg(tmp1);
+	gpr.getFreeXReg(tmp2);
 	//g_dsp.reg_stack[stack_reg][g_dsp.reg_stack_ptr[stack_reg]] = g_dsp.r[DSP_REG_ST0 + stack_reg];
 	MOV(16, R(tmp1), M(&g_dsp.r.st[stack_reg]));
 	MOVZX(64, 8, RAX, R(AL));
-	MOV(16, MComplex(EAX, EAX, 1,
-			 PtrOffset(&g_dsp.reg_stack[stack_reg][0],nullptr)), R(tmp1));
+	MOV(64, R(tmp2), ImmPtr(g_dsp.reg_stack[stack_reg]));
+	MOV(16, MComplex(tmp2, EAX, SCALE_2, 0), R(tmp1));
 	gpr.putXReg(tmp1);
+	gpr.putXReg(tmp2);
 }
 
 //clobbers:
@@ -37,13 +39,15 @@ void DSPEmitter::dsp_reg_stack_pop(int stack_reg)
 {
 	//g_dsp.r[DSP_REG_ST0 + stack_reg] = g_dsp.reg_stack[stack_reg][g_dsp.reg_stack_ptr[stack_reg]];
 	MOV(8, R(AL), M(&g_dsp.reg_stack_ptr[stack_reg]));
-	X64Reg tmp1;
+	X64Reg tmp1, tmp2;
 	gpr.getFreeXReg(tmp1);
+	gpr.getFreeXReg(tmp2);
 	MOVZX(64, 8, RAX, R(AL));
-	MOV(16, R(tmp1), MComplex(EAX, EAX, 1,
-				  PtrOffset(&g_dsp.reg_stack[stack_reg][0],nullptr)));
+	MOV(64, R(tmp2), ImmPtr(g_dsp.reg_stack[stack_reg]));
+	MOV(16, R(tmp1), MComplex(tmp2, EAX, SCALE_2, 0));
 	MOV(16, M(&g_dsp.r.st[stack_reg]), R(tmp1));
 	gpr.putXReg(tmp1);
+	gpr.putXReg(tmp2);
 
 	//g_dsp.reg_stack_ptr[stack_reg]--;
 	//g_dsp.reg_stack_ptr[stack_reg] &= DSP_STACK_MASK;
@@ -759,7 +763,7 @@ void DSPEmitter::get_acc_l(int _reg, X64Reg acl, bool sign)
 	gpr.readReg(_reg+DSP_REG_ACL0, acl, sign?SIGN:ZERO);
 }
 
-void DSPEmitter::set_acc_l(int _reg, OpArg arg)
+void DSPEmitter::set_acc_l(int _reg, const OpArg& arg)
 {
 	//	return g_dsp.r[DSP_REG_ACM0 + _reg];
 	gpr.writeReg(_reg+DSP_REG_ACL0,arg);
@@ -773,7 +777,7 @@ void DSPEmitter::get_acc_m(int _reg, X64Reg acm, bool sign)
 }
 
 // In: s16 in AX
-void DSPEmitter::set_acc_m(int _reg, OpArg arg)
+void DSPEmitter::set_acc_m(int _reg, const OpArg& arg)
 {
 	//	return g_dsp.r.ac[_reg].m;
 	gpr.writeReg(_reg+DSP_REG_ACM0,arg);
@@ -787,7 +791,7 @@ void DSPEmitter::get_acc_h(int _reg, X64Reg ach, bool sign)
 }
 
 // In: s16 in AX
-void DSPEmitter::set_acc_h(int _reg, OpArg arg)
+void DSPEmitter::set_acc_h(int _reg, const OpArg& arg)
 {
 	//	return g_dsp.r[DSP_REG_ACM0 + _reg];
 	gpr.writeReg(_reg+DSP_REG_ACH0,arg);

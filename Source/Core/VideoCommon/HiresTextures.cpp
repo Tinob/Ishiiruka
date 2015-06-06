@@ -89,42 +89,16 @@ void HiresTexture::Update()
 	}
 	
 	s_textureMap.clear();
-	CFileSearch::XStringVector Directories;
 	const std::string& gameCode = SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID;
-	std::string szDir = StringFromFormat("%s%s", File::GetUserPath(D_HIRESTEXTURES_IDX).c_str(), gameCode.c_str());
-	Directories.push_back(szDir);
-
-	for (u32 i = 0; i < Directories.size(); i++)
-	{
-		File::FSTEntry FST_Temp;
-		File::ScanDirectoryTree(Directories[i], FST_Temp);
-		for (auto& entry : FST_Temp.children)
-		{
-			if (entry.isDirectory)
-			{
-				bool duplicate = false;
-				for (auto& Directory : Directories)
-				{
-					if (Directory == entry.physicalName)
-					{
-						duplicate = true;
-						break;
-					}
-				}
-				if (!duplicate)
-					Directories.push_back(entry.physicalName);
-			}
-		}
-	}
+	std::string szDir = StringFromFormat("%s%s", File::GetUserPath(D_HIRESTEXTURES_IDX).c_str(), gameCode.c_str());	
 	std::string ddscode(".dds");
 	std::string cddscode(".DDS");
-	CFileSearch::XStringVector Extensions = {
+	std::vector<std::string> Extensions = {
 		"*.png",
 		"*.dds"
 	};
 
-	CFileSearch FileSearch(Extensions, Directories);
-	const CFileSearch::XStringVector& rFilenames = FileSearch.GetFileNames();
+	auto rFilenames = DoFileSearch(Extensions, { szDir }, /*recursive*/ true);
 
 	const std::string code = StringFromFormat("%s_", gameCode.c_str());
 	const std::string miptag = "mip";

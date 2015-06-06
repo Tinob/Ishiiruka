@@ -27,26 +27,19 @@ public:
 	QString GetDescription(DiscIO::IVolume::ELanguage language) const;
 	QString GetDescription() const;
 	QString GetCompany() const;
-	int GetRevision() const { return m_revision; }
+	u16 GetRevision() const { return m_revision; }
 	const QString GetUniqueID() const { return m_unique_id; }
 	const QString GetWiiFSPath() const;
 	DiscIO::IVolume::ECountry GetCountry() const { return m_country; }
-	int GetPlatform() const { return m_platform; }
+	DiscIO::IVolume::EPlatform GetPlatform() const { return m_platform; }
 	const QString GetIssues() const { return m_issues; }
 	int GetEmuState() const { return m_emu_state; }
 	bool IsCompressed() const { return m_compressed; }
 	u64 GetFileSize() const { return m_file_size; }
 	u64 GetVolumeSize() const { return m_volume_size; }
-	bool IsDiscTwo() const { return m_is_disc_two; }
+	// 0 is the first disc, 1 is the second disc
+	u8 GetDiscNumber() const { return m_disc_number; }
 	const QPixmap GetBitmap() const { return m_banner; }
-
-	enum
-	{
-		GAMECUBE_DISC = 0,
-		WII_DISC,
-		WII_WAD,
-		NUMBER_OF_PLATFORMS
-	};
 
 private:
 	QString m_file_name;
@@ -65,13 +58,13 @@ private:
 	quint64 m_volume_size = 0;
 
 	DiscIO::IVolume::ECountry m_country;
-	int m_platform;
-	int m_revision = 0;
+	DiscIO::IVolume::EPlatform m_platform;
+	u16 m_revision = 0;
 
 	QPixmap m_banner;
 	bool m_valid = false;
 	bool m_compressed = false;
-	bool m_is_disc_two = false;
+	u8 m_disc_number = 0;
 
 	bool LoadFromCache();
 	void SaveToCache();

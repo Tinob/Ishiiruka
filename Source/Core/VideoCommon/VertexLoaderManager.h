@@ -21,4 +21,6 @@ namespace VertexLoaderManager
 
 	// For debugging
 	void AppendListToString(std::string *dest);
+
+	void UpdateVertexArrayPointers();
 };

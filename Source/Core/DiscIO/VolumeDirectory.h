@@ -39,7 +39,7 @@ public:
 
 	std::string GetMakerID() const override;
 
-	int GetRevision() const override { return 0; }
+	u16 GetRevision() const override { return 0; }
 	std::string GetInternalName() const override;
 	std::map<IVolume::ELanguage, std::string> GetNames() const override;
 	void SetName(const std::string&);
@@ -47,7 +47,7 @@ public:
 	u32 GetFSTSize() const override;
 
 	std::string GetApploaderDate() const override;
-	bool IsWiiDisc() const override;
+	EPlatform GetVolumeType() const override;
 
 	ECountry GetCountry() const override;
 
@@ -75,12 +75,12 @@ private:
 	void Write32(u32 data, u32 offset, std::vector<u8>* const buffer);
 
 	// FST creation
-	void WriteEntryData(u32& entryOffset, u8 type, u32 nameOffset, u64 dataOffset, u32 length);
+	void WriteEntryData(u32& entryOffset, u8 type, u32 nameOffset, u64 dataOffset, u64 length);
 	void WriteEntryName(u32& nameOffset, const std::string& name);
 	void WriteEntry(const File::FSTEntry& entry, u32& fstOffset, u32& nameOffset, u64& dataOffset, u32 parentEntryNum);
 
 	// returns number of entries found in _Directory
-	u32 AddDirectoryEntries(const std::string& _Directory, File::FSTEntry& parentEntry);
+	u64 AddDirectoryEntries(const std::string& _Directory, File::FSTEntry& parentEntry);
 
 	std::string m_rootDirectory;
 

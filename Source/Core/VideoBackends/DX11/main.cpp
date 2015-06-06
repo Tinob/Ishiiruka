@@ -3,9 +3,11 @@
 // Refer to the license.txt file included.
 
 #include <wx/wx.h>
+#include <regex>
 
 #include "Common/Logging/LogManager.h"
 #include "Common/CommonPaths.h"
+#include "Common/FileSearch.h"
 
 #include "VideoCommon/BPStructs.h"
 #include "VideoCommon/CommandProcessor.h"
@@ -67,39 +69,16 @@ std::string VideoBackend::GetDisplayName() const
 	return "Direct3D11";
 }
 
-static void GetShaders(std::vector<std::string> &shaders, const std::string &sub_dir = "")
+static std::vector<std::string> GetShaders(const std::string &sub_dir = "")
 {
-	std::set<std::string> already_found;
-
-	shaders.clear();
-	const std::string directories[] = {
+	std::vector<std::string> paths = DoFileSearch({ "*.glsl" }, {
 		File::GetUserPath(D_SHADERS_IDX) + sub_dir,
-		File::GetSysDirectory() + SHADERS_DIR DIR_SEP + sub_dir,
-	};
-	for (auto& directory : directories)
-	{
-		if (!File::IsDirectory(directory))
-			continue;
-
-		File::FSTEntry entry;
-		File::ScanDirectoryTree(directory, entry);
-		for (auto& file : entry.children)
-		{
-			std::string name = file.virtualName;
-			if (name.size() < 5)
-				continue;
-			if (strcasecmp(name.substr(name.size() - 5).c_str(), ".glsl"))
-				continue;
-
-			name = name.substr(0, name.size() - 5);
-			if (already_found.find(name) != already_found.end())
-				continue;
-
-			already_found.insert(name);
-			shaders.push_back(name);
-		}
-	}
-	std::sort(shaders.begin(), shaders.end());
+		File::GetSysDirectory() + SHADERS_DIR DIR_SEP + sub_dir
+	});
+	std::vector<std::string> result;
+	for (std::string path : paths)
+		result.push_back(std::regex_replace(path, std::regex("^.*/(.*)\\.glsl$"), "$1"));
+	return result;
 }
 
 void InitBackendInfo()
@@ -134,6 +113,7 @@ void InitBackendInfo()
 	g_Config.backend_info.bSupportsGeometryShaders = true;
 	g_Config.backend_info.bSupports3DVision = true;
 	g_Config.backend_info.bSupportsPostProcessing = true;
+	g_Config.backend_info.bSupportsClipControl = false;
 
 	IDXGIFactory* factory;
 	IDXGIAdapter* ad;
@@ -181,8 +161,8 @@ void InitBackendInfo()
 	factory->Release();
 
 	// pp shaders
-	GetShaders(g_Config.backend_info.PPShaders);
-	GetShaders(g_Config.backend_info.AnaglyphShaders, std::string(ANAGLYPH_DIR DIR_SEP));
+	g_Config.backend_info.PPShaders = GetShaders("");
+	g_Config.backend_info.AnaglyphShaders = GetShaders(ANAGLYPH_DIR DIR_SEP);
 
 	DX11::D3D::UnloadDXGI();
 	DX11::D3D::UnloadD3D();

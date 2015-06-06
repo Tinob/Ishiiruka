@@ -99,6 +99,7 @@ void InitBackendInfo()
 	g_Config.backend_info.bSupportsGeometryShaders = false;
 	g_Config.backend_info.bSupports3DVision = false;
 	g_Config.backend_info.bSupportsPostProcessing = false;
+	g_Config.backend_info.bSupportsClipControl = false;
 	// adapters
 	g_Config.backend_info.Adapters.clear();
 	for (int i = 0; i < DX9::D3D::GetNumAdapters(); ++i)

@@ -514,7 +514,7 @@ void Renderer::ClearScreen(const EFBRectangle& rc, bool colorEnable, bool alphaE
 	vp.MinZ = 0.0;
 	vp.MaxZ = 1.0;
 	D3D::dev->SetViewport(&vp);
-	D3D::drawClearQuad(color, (0xFFFFFF - (z & 0xFFFFFF)) / float(0xFFFFFF), PixelShaderCache::GetClearProgram(), VertexShaderCache::GetClearVertexShader());
+	D3D::drawClearQuad(color, 1.0f - ((z & 0xFFFFFF) / 16777216.0f), PixelShaderCache::GetClearProgram(), VertexShaderCache::GetClearVertexShader());
 	RestoreAPIState();
 }
 
@@ -996,7 +996,8 @@ void Renderer::SetViewport()
 	vp.Y = Y;
 	vp.Width = Wd;
 	vp.Height = Ht;
-	float nearz = xfmem.viewport.farZ - xfmem.viewport.zRange;
+
+	float nearz = xfmem.viewport.farZ - MathUtil::Clamp<float>(xfmem.viewport.zRange, 0.0f, 16777215.0f);
 	float farz = xfmem.viewport.farZ;
 
 	const bool nonStandartViewport = (nearz < 0.f || farz > 16777216.0f || nearz >= 16777216.0f || farz <= 0.f);
@@ -1008,8 +1009,8 @@ void Renderer::SetViewport()
 	else
 	{
 		// Some games set invalids values for z min and z max so fix them to the max an min alowed and let the shaders do this work
-		vp.MaxZ = 1.0f - std::max(0.0f, std::min(1.0f, nearz / 16777216.0f));
-		vp.MinZ = 1.0f - std::max(0.0f, std::min(1.0f, farz / 16777216.0f));
+		vp.MaxZ = 1.0f - (MathUtil::Clamp<float>(nearz, 0.0f, 16777215.0f) / 16777216.0f);
+		vp.MinZ = 1.0f - (MathUtil::Clamp<float>(farz, 0.0f, 16777215.0f) / 16777216.0f);
 	}
 	D3D::dev->SetViewport(&vp);
 }

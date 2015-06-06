@@ -35,8 +35,6 @@ public:
 	static ID3D11PixelShader* GetColorCopyProgram(bool multisampled, bool ssaa = false);
 	static ID3D11PixelShader* GetDepthMatrixProgram(bool multisampled);
 	static ID3D11PixelShader* GetClearProgram();
-	static ID3D11PixelShader* GetAnaglyphProgram(bool ssaa = false);
-	static ID3D11PixelShader* GetInterlacedProgram(bool ssaa = false);
 	static ID3D11PixelShader* ReinterpRGBA6ToRGB8(bool multisampled);
 	static ID3D11PixelShader* ReinterpRGB8ToRGBA6(bool multisampled);
 

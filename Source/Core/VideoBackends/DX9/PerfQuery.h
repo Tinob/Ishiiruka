@@ -38,10 +38,6 @@ private:
 
 	ActiveQuery m_query_buffer[PERF_QUERY_BUFFER_SIZE];
 	int m_query_read_pos;
-
-	// TODO: sloppy
-	volatile int m_query_count;
-	volatile u32 m_results[PQG_NUM_MEMBERS];
 };
 
 } // namespace

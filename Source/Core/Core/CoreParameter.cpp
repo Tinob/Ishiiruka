@@ -186,7 +186,7 @@ bool SCoreStartupParameter::AutoSetup(EBootBS2 _BootBS2)
 				m_revision = pVolume->GetRevision();
 
 				// Check if we have a Wii disc
-				bWii = pVolume.get()->IsWiiDisc();
+				bWii = pVolume.get()->GetVolumeType() == DiscIO::IVolume::WII_DISC;
 
 				const char* retrieved_region_dir = GetRegionOfCountry(pVolume->GetCountry());
 				if (!retrieved_region_dir)
@@ -407,7 +407,7 @@ IniFile SCoreStartupParameter::LoadGameIni() const
 	return LoadGameIni(GetUniqueID(), m_revision);
 }
 
-IniFile SCoreStartupParameter::LoadDefaultGameIni(const std::string& id, int revision)
+IniFile SCoreStartupParameter::LoadDefaultGameIni(const std::string& id, u16 revision)
 {
 	IniFile game_ini;
 	for (const std::string& filename : GetGameIniFilenames(id, revision))
@@ -415,7 +415,7 @@ IniFile SCoreStartupParameter::LoadDefaultGameIni(const std::string& id, int rev
 	return game_ini;
 }
 
-IniFile SCoreStartupParameter::LoadLocalGameIni(const std::string& id, int revision)
+IniFile SCoreStartupParameter::LoadLocalGameIni(const std::string& id, u16 revision)
 {
 	IniFile game_ini;
 	for (const std::string& filename : GetGameIniFilenames(id, revision))
@@ -423,7 +423,7 @@ IniFile SCoreStartupParameter::LoadLocalGameIni(const std::string& id, int revis
 	return game_ini;
 }
 
-IniFile SCoreStartupParameter::LoadGameIni(const std::string& id, int revision)
+IniFile SCoreStartupParameter::LoadGameIni(const std::string& id, u16 revision)
 {
 	IniFile game_ini;
 	for (const std::string& filename : GetGameIniFilenames(id, revision))
@@ -434,7 +434,7 @@ IniFile SCoreStartupParameter::LoadGameIni(const std::string& id, int revision)
 }
 
 // Returns all possible filenames in ascending order of priority
-std::vector<std::string> SCoreStartupParameter::GetGameIniFilenames(const std::string& id, int revision)
+std::vector<std::string> SCoreStartupParameter::GetGameIniFilenames(const std::string& id, u16 revision)
 {
 	std::vector<std::string> filenames;
 

@@ -1,4 +1,4 @@
-// Copyright 2013 Dolphin Emulator Project
+// Copyright 2011 Dolphin Emulator Project
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
@@ -37,7 +37,7 @@ ProgramShaderCache::PCacheEntry* ProgramShaderCache::last_entry;
 SHADERUID ProgramShaderCache::last_uid;
 UidChecker<PixelShaderUid, ShaderCode> ProgramShaderCache::pixel_uid_checker;
 UidChecker<VertexShaderUid, ShaderCode> ProgramShaderCache::vertex_uid_checker;
-UidChecker<GeometryShaderUid, ShaderCode> ProgramShaderCache::geometry_uid_checker;
+UidChecker<GeometryShaderUid,ShaderCode> ProgramShaderCache::geometry_uid_checker;
 
 static char s_glsl_header[1024] = "";
 
@@ -158,7 +158,7 @@ void ProgramShaderCache::UploadConstants()
 			vertex_buffer_size);
 		glBindBufferRange(GL_UNIFORM_BUFFER, 3, s_buffer->m_buffer,
 			buffer.second + ROUND_UP(pixel_buffer_size, s_ubo_align) + ROUND_UP(vertex_buffer_size, s_ubo_align),
-			sizeof(GeometryShaderConstants));
+					sizeof(GeometryShaderConstants));
 
 		PixelShaderManager::Clear();
 		VertexShaderManager::Clear();
@@ -314,12 +314,10 @@ bool ProgramShaderCache::CompileShader(SHADER& shader, const char* vcode, const 
 
 		if (linkStatus != GL_TRUE)
 		{
-			PanicAlert("Failed to link shaders!\nThis usually happens when trying to use Dolphin with an outdated GPU or integrated GPU like the Intel GMA series.\n\nIf you're sure this is Dolphin's error anyway, post the contents of %s along with this error message at the forums.\n\nDebug info (%s, %s, %s):\n%s",
-				filename.c_str(),
-				g_ogl_config.gl_vendor,
-				g_ogl_config.gl_renderer,
-				g_ogl_config.gl_version,
-				infoLog);
+			PanicAlert("Failed to link shaders: %s\n"
+			           "Debug info (%s, %s, %s):\n%s",
+			           filename.c_str(),
+			           g_ogl_config.gl_vendor, g_ogl_config.gl_renderer, g_ogl_config.gl_version, infoLog);
 		}
 
 		delete [] infoLog;
@@ -379,13 +377,11 @@ GLuint ProgramShaderCache::CompileSingleShader(GLuint type, const char* code, co
 
 		if (compileStatus != GL_TRUE)
 		{
-			PanicAlert("Failed to compile %s shader!\nThis usually happens when trying to use Dolphin with an outdated GPU or integrated GPU like the Intel GMA series.\n\nIf you're sure this is Dolphin's error anyway, post the contents of %s along with this error message at the forums.\n\nDebug info (%s, %s, %s):\n%s",
-				type == GL_VERTEX_SHADER ? "vertex" : type==GL_FRAGMENT_SHADER ? "pixel" : "geometry",
-				filename.c_str(),
-				g_ogl_config.gl_vendor,
-				g_ogl_config.gl_renderer,
-				g_ogl_config.gl_version,
-				infoLog);
+			PanicAlert("Failed to compile %s shader: %s\n"
+			           "Debug info (%s, %s, %s):\n%s",
+			           type == GL_VERTEX_SHADER ? "vertex" : type==GL_FRAGMENT_SHADER ? "pixel" : "geometry",
+			           filename.c_str(),
+			           g_ogl_config.gl_vendor, g_ogl_config.gl_renderer, g_ogl_config.gl_version, infoLog);
 		}
 
 		delete[] infoLog;
@@ -563,7 +559,7 @@ void ProgramShaderCache::CreateHeader()
 		"#define uint4 uvec4\n"
 		"#define int2 ivec2\n"
 		"#define int3 ivec3\n"
-		"#define int4 ivec4\n"		
+		"#define int4 ivec4\n"
 		"#define float1x1 mat1\n"
 		"#define float2x2 mat2\n"
 		"#define float3x3 mat3\n"

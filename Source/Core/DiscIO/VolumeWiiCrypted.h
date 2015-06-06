@@ -30,14 +30,14 @@ public:
 	virtual std::unique_ptr<u8[]> GetTMD(u32 *_sz) const override;
 	std::string GetUniqueID() const override;
 	std::string GetMakerID() const override;
-	int GetRevision() const override;
+	u16 GetRevision() const override;
 	std::string GetInternalName() const override;
 	std::map<IVolume::ELanguage, std::string> GetNames() const override;
 	u32 GetFSTSize() const override;
 	std::string GetApploaderDate() const override;
+	u8 GetDiscNumber() const override;
 
-	bool IsDiscTwo() const override;
-	bool IsWiiDisc() const override;
+	EPlatform GetVolumeType() const override;
 	bool SupportsIntegrityCheck() const override { return true; }
 	bool CheckIntegrity() const override;
 	bool ChangePartition(u64 offset) override;

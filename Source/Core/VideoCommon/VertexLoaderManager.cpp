@@ -9,6 +9,8 @@
 
 
 #include "Core/ConfigManager.h"
+#include "Core/HW/Memmap.h"
+
 #include "Common/ThreadPool.h"
 
 #include "VideoCommon/IndexGenerator.h"
@@ -33,7 +35,7 @@ namespace VertexLoaderManager
 	static VertexLoaderMap s_VertexLoaderMap;
 	static NativeVertexLoaderMap s_native_vertex_map;
 	// TODO - change into array of pointers. Keep a map of all seen so far.
-
+	
 	namespace
 	{
 		struct entry
@@ -177,7 +179,6 @@ namespace VertexLoaderManager
 		MarkAllAttrDirty();
 		for (VertexLoaderBase*& vertexLoader : g_main_cp_state.vertex_loaders)
 			vertexLoader = nullptr;
-		RecomputeCachedArraybases();
 		LastGameCode = SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID;
 	}
 
@@ -191,6 +192,27 @@ namespace VertexLoaderManager
 		}
 		s_VertexLoaderMap.clear();
 		s_native_vertex_map.clear();
+	}
+
+	void UpdateVertexArrayPointers()
+	{
+		// Anything to update?
+		if (!g_main_cp_state.bases_dirty)
+			return;
+
+		// Some games such as Burnout 2 can put invalid addresses into
+		// the array base registers. (see issue 8591)
+		// But the vertex arrays with invalid addresses aren't actually enabled.
+		// Note: Only array bases 0 through 11 are used by the Vertex loaders.
+		//       12 through 15 are used for loading data into xfmem.
+		for (int i = 0; i < 12; i++)
+		{
+			// Only update the array base if the vertex description states we are going to use it.
+			if (g_main_cp_state.vtx_desc.GetVertexArrayStatus(i) >= 0x2)
+				cached_arraybases[i] = Memory::GetPointer(g_main_cp_state.array_bases[i]);
+		}
+
+		g_main_cp_state.bases_dirty = false;
 	}
 
 	inline NativeVertexFormat* GetNativeVertexFormat(const PortableVertexDeclaration& format, u32 components)
@@ -259,6 +281,8 @@ namespace VertexLoaderManager
 		{
 			return true;
 		}
+		// Lookup pointers for any vertex arrays.
+		UpdateVertexArrayPointers();
 		NativeVertexFormat *nativefmt = loader->m_native_vertex_format;
 		// Flush if our vertex format is different from the currently set.
 		if (g_nativeVertexFmt != nullptr && g_nativeVertexFmt != nativefmt)

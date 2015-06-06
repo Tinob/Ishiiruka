@@ -30,13 +30,13 @@ public:
 	bool GetTitleID(u8* _pBuffer) const override;
 	std::string GetUniqueID() const override;
 	std::string GetMakerID() const override;
-	int GetRevision() const override;
+	u16 GetRevision() const override;
 	std::string GetInternalName() const override { return ""; }
 	std::map<IVolume::ELanguage, std::string> GetNames() const override;
 	u32 GetFSTSize() const override { return 0; }
 	std::string GetApploaderDate() const override { return ""; }
 
-	bool IsWadFile() const override;
+	EPlatform GetVolumeType() const override;
 
 	ECountry GetCountry() const override;
 	u64 GetSize() const override;

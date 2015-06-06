@@ -40,7 +40,7 @@ static Matrix33 s_viewInvRotationMatrix;
 static float s_fViewTranslationVector[3];
 static float s_fViewRotation[2];
 
-const float U24_NORM_COEF = 1 / 16777216.0f;
+const float U24_NORM_COEF = 1.0f / 16777216.0f;
 
 struct ProjectionHack
 {
@@ -427,7 +427,7 @@ void VertexShaderManager::SetConstants()
 			g_fProjectionMatrix[13] = 0.0f;
 			// donkopunchstania: GC GPU rounds differently?
 			// -(1 + epsilon) so objects are clipped as they are on the real HW
-			g_fProjectionMatrix[14] = -1.00000011921f;
+			g_fProjectionMatrix[14] = -1.0f;
 			g_fProjectionMatrix[15] = 0.0f;
 
 			SETSTAT_FT(stats.gproj_0, g_fProjectionMatrix[0]);

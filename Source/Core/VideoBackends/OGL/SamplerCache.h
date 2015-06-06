@@ -22,6 +22,7 @@ public:
 	void Clear();
 	void BindNearestSampler(int stage);
 	void BindLinearSampler(int stage);
+
 private:
 	struct Params
 	{

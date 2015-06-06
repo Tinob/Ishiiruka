@@ -476,8 +476,6 @@ void SConfig::LoadGeneralSettings(IniFile& ini)
 
 	general->Get("NANDRootPath", &m_NANDPath);
 	File::SetUserPath(D_WIIROOT_IDX, m_NANDPath);
-	DiscIO::cUIDsys::AccessInstance().UpdateLocation();
-	DiscIO::CSharedContent::AccessInstance().UpdateLocation();
 	general->Get("WirelessMac", &m_WirelessMac);
 }
 
@@ -511,9 +509,9 @@ void SConfig::LoadHotkeySettings(IniFile& ini)
 	for (int i = 0; i < NUM_HOTKEYS; i++)
 	{
 		hotkeys->Get(g_HKData[i].IniText,
-		    &m_LocalCoreStartupParameter.iHotkey[i], g_HKData[i].DefaultKey);
+		    &m_LocalCoreStartupParameter.iHotkey[i], 0);
 		hotkeys->Get(std::string(g_HKData[i].IniText) + "Modifier",
-		    &m_LocalCoreStartupParameter.iHotkeyModifier[i], g_HKData[i].DefaultModifier);
+		    &m_LocalCoreStartupParameter.iHotkeyModifier[i], 0);
 	}
 }
 

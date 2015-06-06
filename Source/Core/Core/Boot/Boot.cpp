@@ -179,13 +179,14 @@ bool CBoot::Load_BS2(const std::string& _rBootROMFilename)
 		ipl_region = EUR_DIR;
 		break;
 	default:
-		PanicAlert("IPL with unknown hash %x", ipl_hash);
+		PanicAlertT("IPL with unknown hash %x", ipl_hash);
 		break;
 	}
 
 	std::string BootRegion = _rBootROMFilename.substr(_rBootROMFilename.find_last_of(DIR_SEP) - 3, 3);
 	if (BootRegion != ipl_region)
-		PanicAlert("%s IPL found in %s directory. The disc may not be recognized", ipl_region.c_str(), BootRegion.c_str());
+		PanicAlertT("%s IPL found in %s directory. The disc might not be recognized",
+		            ipl_region.c_str(), BootRegion.c_str());
 
 	// Run the descrambler over the encrypted section containing BS1/BS2
 	CEXIIPL::Descrambler((u8*)data.data() + 0x100, 0x1AFE00);
@@ -225,7 +226,11 @@ bool CBoot::BootUp()
 	NOTICE_LOG(BOOT, "Booting %s", _StartupPara.m_strFilename.c_str());
 
 	g_symbolDB.Clear();
-	VideoInterface::Preset(_StartupPara.bNTSC);
+
+	// PAL Wii uses NTSC framerate and linecount in 60Hz modes
+	const bool bPAL60 = _StartupPara.bWii && SConfig::GetInstance().m_SYSCONF->GetData<u8>("IPL.E60");
+	VideoInterface::Preset(_StartupPara.bNTSC || bPAL60);
+
 	switch (_StartupPara.m_BootType)
 	{
 	// GCM and Wii
@@ -238,7 +243,7 @@ bool CBoot::BootUp()
 
 		const DiscIO::IVolume& pVolume = DVDInterface::GetVolume();
 
-		if (pVolume.IsWiiDisc() != _StartupPara.bWii)
+		if ((pVolume.GetVolumeType() == DiscIO::IVolume::WII_DISC) != _StartupPara.bWii)
 		{
 			PanicAlertT("Warning - starting ISO in wrong console mode!");
 		}
@@ -254,7 +259,7 @@ bool CBoot::BootUp()
 			WII_IPC_HLE_Interface::ES_DIVerify(tmd_buf.get(), tmd_size);
 		}
 
-		_StartupPara.bWii = pVolume.IsWiiDisc();
+		_StartupPara.bWii = pVolume.GetVolumeType() == DiscIO::IVolume::WII_DISC;
 
 		// HLE BS2 or not
 		if (_StartupPara.bHLE_BS2)
@@ -313,7 +318,8 @@ bool CBoot::BootUp()
 		{
 			BS2Success = EmulatedBS2(dolWii);
 		}
-		else if ((!DVDInterface::VolumeIsValid() || !DVDInterface::GetVolume().IsWiiDisc()) && !_StartupPara.m_strDefaultISO.empty())
+		else if ((!DVDInterface::VolumeIsValid() || DVDInterface::GetVolume().GetVolumeType() != DiscIO::IVolume::WII_DISC) &&
+		         !_StartupPara.m_strDefaultISO.empty())
 		{
 			DVDInterface::SetVolumeName(_StartupPara.m_strDefaultISO);
 			BS2Success = EmulatedBS2(dolWii);

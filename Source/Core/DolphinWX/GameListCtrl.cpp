@@ -85,8 +85,8 @@ static int CompareGameListItems(const GameListItem* iso1, const GameListItem* is
 		sortData = -sortData;
 	}
 
-	DiscIO::IVolume::ELanguage languageOne = SConfig::GetInstance().m_LocalCoreStartupParameter.GetCurrentLanguage(iso1->GetPlatform() != GameListItem::GAMECUBE_DISC);
-	DiscIO::IVolume::ELanguage languageOther = SConfig::GetInstance().m_LocalCoreStartupParameter.GetCurrentLanguage(iso2->GetPlatform() != GameListItem::GAMECUBE_DISC);
+	DiscIO::IVolume::ELanguage languageOne = SConfig::GetInstance().m_LocalCoreStartupParameter.GetCurrentLanguage(iso1->GetPlatform() != DiscIO::IVolume::GAMECUBE_DISC);
+	DiscIO::IVolume::ELanguage languageOther = SConfig::GetInstance().m_LocalCoreStartupParameter.GetCurrentLanguage(iso2->GetPlatform() != DiscIO::IVolume::GAMECUBE_DISC);
 
 	switch (sortData)
 	{
@@ -97,8 +97,8 @@ static int CompareGameListItems(const GameListItem* iso1, const GameListItem* is
 					return t * (iso1->GetUniqueID() > iso2->GetUniqueID() ? 1 : -1);
 				if (iso1->GetRevision() != iso2->GetRevision())
 					return t * (iso1->GetRevision() > iso2->GetRevision() ? 1 : -1);
-				if (iso1->IsDiscTwo() != iso2->IsDiscTwo())
-					return t * (iso1->IsDiscTwo() ? 1 : -1);
+				if (iso1->GetDiscNumber() != iso2->GetDiscNumber())
+					return t * (iso1->GetDiscNumber() > iso2->GetDiscNumber() ? 1 : -1);
 			}
 			return strcasecmp(iso1->GetName(languageOne).c_str(),
 			                  iso2->GetName(languageOther).c_str()) * t;
@@ -415,8 +415,12 @@ void CGameListCtrl::InsertItemInReportView(long _Index)
 	if (gameini.GetIfExists("EmuState", "Title", &title))
 		name = title;
 
-	if (rISOFile.IsDiscTwo() && name.Lower().find("disc 2") == std::string::npos && name.Lower().find("disc2") == std::string::npos)
-		name = wxString::Format(_("%s (Disc 2)"), name.c_str());
+	int disc_number = rISOFile.GetDiscNumber() + 1;
+	if (disc_number > 1 && name.Lower().find(wxString::Format("disc %i", disc_number)) == std::string::npos
+	                    && name.Lower().find(wxString::Format("disc%i", disc_number)) == std::string::npos)
+	{
+		name = wxString::Format(_("%s (Disc %i)"), name.c_str(), disc_number);
+	}
 
 	SetItem(_Index, COLUMN_TITLE, name, -1);
 	SetItem(_Index, COLUMN_MAKER, StrToWxStr(rISOFile.GetCompany()), -1);
@@ -466,35 +470,7 @@ void CGameListCtrl::ScanForISOs()
 {
 	ClearIsoFiles();
 
-	CFileSearch::XStringVector Directories(SConfig::GetInstance().m_ISOFolder);
-
-	if (SConfig::GetInstance().m_RecursiveISOFolder)
-	{
-		for (u32 i = 0; i < Directories.size(); i++)
-		{
-			File::FSTEntry FST_Temp;
-			File::ScanDirectoryTree(Directories[i], FST_Temp);
-			for (auto& Entry : FST_Temp.children)
-			{
-				if (Entry.isDirectory)
-				{
-					bool duplicate = false;
-					for (auto& Directory : Directories)
-					{
-						if (Directory == Entry.physicalName)
-						{
-							duplicate = true;
-							break;
-						}
-					}
-					if (!duplicate)
-						Directories.push_back(Entry.physicalName);
-				}
-			}
-		}
-	}
-
-	CFileSearch::XStringVector Extensions;
+	std::vector<std::string> Extensions;
 
 	if (SConfig::GetInstance().m_ListGC)
 		Extensions.push_back("*.gcm");
@@ -508,8 +484,7 @@ void CGameListCtrl::ScanForISOs()
 	if (SConfig::GetInstance().m_ListWad)
 		Extensions.push_back("*.wad");
 
-	CFileSearch FileSearch(Extensions, Directories);
-	const CFileSearch::XStringVector& rFilenames = FileSearch.GetFileNames();
+	auto rFilenames = DoFileSearch(Extensions, SConfig::GetInstance().m_ISOFolder, SConfig::GetInstance().m_RecursiveISOFolder);
 
 	if (rFilenames.size() > 0)
 	{
@@ -544,11 +519,11 @@ void CGameListCtrl::ScanForISOs()
 
 				switch(iso_file->GetPlatform())
 				{
-					case GameListItem::WII_DISC:
+					case DiscIO::IVolume::WII_DISC:
 						if (!SConfig::GetInstance().m_ListWii)
 							list = false;
 						break;
-					case GameListItem::WII_WAD:
+					case DiscIO::IVolume::WII_WAD:
 						if (!SConfig::GetInstance().m_ListWad)
 							list = false;
 						break;
@@ -867,7 +842,7 @@ void CGameListCtrl::OnRightClick(wxMouseEvent& event)
 			popupMenu.Append(IDM_GAME_WIKI, _("&Wiki"));
 			popupMenu.AppendSeparator();
 
-			if (selected_iso->GetPlatform() != GameListItem::GAMECUBE_DISC)
+			if (selected_iso->GetPlatform() != DiscIO::IVolume::GAMECUBE_DISC)
 			{
 				popupMenu.Append(IDM_OPEN_SAVE_FOLDER, _("Open Wii &save folder"));
 				popupMenu.Append(IDM_EXPORT_SAVE, _("Export Wii save (Experimental)"));
@@ -883,7 +858,7 @@ void CGameListCtrl::OnRightClick(wxMouseEvent& event)
 			popupMenu.AppendSeparator();
 			popupMenu.Append(IDM_DELETE_ISO, _("&Delete ISO..."));
 
-			if (selected_iso->GetPlatform() != GameListItem::WII_WAD)
+			if (selected_iso->GetPlatform() != DiscIO::IVolume::WII_WAD)
 			{
 				if (selected_iso->IsCompressed())
 					popupMenu.Append(IDM_COMPRESS_ISO, _("Decompress ISO..."));
@@ -895,8 +870,8 @@ void CGameListCtrl::OnRightClick(wxMouseEvent& event)
 			{
 				popupMenu.Append(IDM_LIST_INSTALL_WAD, _("Install to Wii Menu"));
 			}
-			if (selected_iso->GetPlatform() == GameListItem::GAMECUBE_DISC ||
-				selected_iso->GetPlatform() == GameListItem::WII_DISC)
+			if (selected_iso->GetPlatform() == DiscIO::IVolume::GAMECUBE_DISC ||
+				selected_iso->GetPlatform() == DiscIO::IVolume::WII_DISC)
 			{
 				wxMenuItem* changeDiscItem = popupMenu.Append(IDM_LIST_CHANGE_DISC, _("Change &Disc"));
 				changeDiscItem->Enable(Core::IsRunning());
@@ -1104,7 +1079,7 @@ void CGameListCtrl::CompressSelection(bool _compress)
 		for (u32 i = 0; i < m_numberItem; i++)
 		{
 			const GameListItem* iso = GetSelectedISO();
-			if (iso->GetPlatform() == GameListItem::WII_WAD || iso->GetFileName().rfind(".wbfs") != std::string::npos)
+			if (iso->GetPlatform() == DiscIO::IVolume::WII_WAD || iso->GetFileName().rfind(".wbfs") != std::string::npos)
 				continue;
 
 			if (!iso->IsCompressed() && _compress)
@@ -1129,7 +1104,7 @@ void CGameListCtrl::CompressSelection(bool _compress)
 
 				all_good &= DiscIO::CompressFileToBlob(iso->GetFileName(),
 						OutputFileName,
-						(iso->GetPlatform() == GameListItem::WII_DISC) ? 1 : 0,
+						(iso->GetPlatform() == DiscIO::IVolume::WII_DISC) ? 1 : 0,
 						16384, &MultiCompressCB, &progressDialog);
 			}
 			else if (iso->IsCompressed() && !_compress)
@@ -1137,7 +1112,7 @@ void CGameListCtrl::CompressSelection(bool _compress)
 				std::string FileName, FileExt;
 				SplitPath(iso->GetFileName(), nullptr, &FileName, &FileExt);
 				m_currentFilename = FileName;
-				if (iso->GetPlatform() == GameListItem::WII_DISC)
+				if (iso->GetPlatform() == DiscIO::IVolume::WII_DISC)
 					FileName.append(".iso");
 				else
 					FileName.append(".gcm");
@@ -1190,7 +1165,7 @@ void CGameListCtrl::OnCompressISO(wxCommandEvent& WXUNUSED (event))
 		if (iso->IsCompressed())
 		{
 			wxString FileType;
-			if (iso->GetPlatform() == GameListItem::WII_DISC)
+			if (iso->GetPlatform() == DiscIO::IVolume::WII_DISC)
 				FileType = _("All Wii ISO files (iso)") + "|*.iso";
 			else
 				FileType = _("All GameCube GCM files (gcm)") + "|*.gcm";
@@ -1245,7 +1220,7 @@ void CGameListCtrl::OnCompressISO(wxCommandEvent& WXUNUSED (event))
 	else
 		all_good = DiscIO::CompressFileToBlob(iso->GetFileName(),
 				WxStrToStr(path),
-				(iso->GetPlatform() == GameListItem::WII_DISC) ? 1 : 0,
+				(iso->GetPlatform() == DiscIO::IVolume::WII_DISC) ? 1 : 0,
 				16384, &CompressCB, &dialog);
 	}
 

@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include <mutex>
 #include <string>
 
 #include "Common/MathUtil.h"
@@ -25,6 +26,12 @@
 #include "VideoCommon/VideoCommon.h"
 
 class PostProcessingShaderImplementation;
+
+struct EfbPokeData
+{
+	u16 x, y;
+	u32 data;
+};
 
 // TODO: Move these out of here.
 extern int frameCount;
@@ -103,6 +110,7 @@ public:
 	static void RenderToXFB(u32 xfbAddr, u32 fbWidth, u32 fbHeight, const EFBRectangle& sourceRc,float Gamma = 1.0f);
 
 	virtual u32 AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data) = 0;
+	virtual void PokeEFB(EFBAccessType type, const std::vector<EfbPokeData>& data);
 	virtual u16 BBoxRead(int index) = 0;
 	virtual void BBoxWrite(int index, u16 value) = 0;
 	// What's the real difference between these? Too similar names.

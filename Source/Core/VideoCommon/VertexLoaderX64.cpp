@@ -18,6 +18,14 @@ static const X64Reg scratch3 = ABI_PARAM4;
 static const X64Reg count_reg = R10;
 static const X64Reg skipped_reg = R11;
 static const u32 MASKINDEXED = INDEX8 & INDEX16;
+static const X64Reg base_reg = RBX;
+
+static const u8* memory_base_ptr = (u8*)&g_main_cp_state.array_strides;
+
+static OpArg MPIC(const void* ptr)
+{
+	return MDisp(base_reg, (s32)((u8*)ptr - memory_base_ptr));
+}
 
 static __m128 scale_factors[13] = {
 	_mm_set_ps1(0.0f),
@@ -72,8 +80,8 @@ OpArg VertexLoaderX64::GetVertexAddr(int array, u64 attribute)
 			m_skip_vertex = J_CC(CC_E, true);
 		}
 		// TODO: Move cached_arraybases into CPState and use MDisp() relative to a constant register loaded with &g_main_cp_state.
-		IMUL(32, scratch1, M(&g_main_cp_state.array_strides[array]));
-		MOV(64, R(scratch2), M(&cached_arraybases[array]));
+		IMUL(32, scratch1, MPIC(&g_main_cp_state.array_strides[array]));
+		MOV(64, R(scratch2), MPIC(&cached_arraybases[array]));
 		return MRegSum(scratch1, scratch2);
 	}
 	else
@@ -145,7 +153,7 @@ int VertexLoaderX64::ReadVertex(OpArg data, u64 attribute, int format, int count
 		else
 			MOVD_xmm(coords, data);
 
-		PSHUFB(coords, M(&shuffle_lut[format][count_in - 1]));
+		PSHUFB(coords, MPIC(&shuffle_lut[format][count_in - 1]));
 
 		// Sign-extend.
 		if (format == FORMAT_BYTE)
@@ -204,13 +212,13 @@ int VertexLoaderX64::ReadVertex(OpArg data, u64 attribute, int format, int count
 			case 1:
 			{
 				static const __m128i mask = _mm_set_epi32(0, 0, 0, 0xFFFFFFFF);
-				PAND(coords, M(&mask));
+				PAND(coords, MPIC(&mask));
 				break;
 			}
 			case 2:
 			{
 				static const __m128i mask = _mm_set_epi32(0, 0, 0xFFFFFFFF, 0xFFFFFFFF);
-				PAND(coords, M(&mask));
+				PAND(coords, MPIC(&mask));
 				break;
 			}
 			default:
@@ -222,7 +230,7 @@ int VertexLoaderX64::ReadVertex(OpArg data, u64 attribute, int format, int count
 	CVTDQ2PS(coords, R(coords));
 	
 	if (dequantize)
-		MULPS(coords, M(&scale_factors[scaling_index]));
+		MULPS(coords, MPIC(&scale_factors[scaling_index]));
 
 	switch (count_out)
 	{
@@ -382,16 +390,17 @@ void VertexLoaderX64::ReadColor(OpArg data, u64 attribute, int format)
 
 void VertexLoaderX64::GenerateVertexLoader()
 {
-	BitSet32 xmm_regs;
-	xmm_regs[XMM0 + 16] = true;
-	xmm_regs[XMM1 + 16] = !cpu_info.bSSSE3;
-	ABI_PushRegistersAndAdjustStack(xmm_regs, 8);
+	BitSet32 regs = { src_reg, dst_reg, scratch1, scratch2, scratch3, count_reg, skipped_reg, base_reg };
+	regs &= ABI_ALL_CALLEE_SAVED;
+	ABI_PushRegistersAndAdjustStack(regs, 0);
 
 	// Backup count since we're going to count it down.
 	PUSH(32, R(ABI_PARAM3));
 
 	// ABI_PARAM3 is one of the lower registers, so free it for scratch2.
 	MOV(32, R(count_reg), R(ABI_PARAM3));
+
+	MOV(64, R(base_reg), R(ABI_PARAM4));
 
 	if (m_VtxDesc.Position & MASKINDEXED)
 		XOR(32, R(skipped_reg), R(skipped_reg));
@@ -521,7 +530,7 @@ void VertexLoaderX64::GenerateVertexLoader()
 	// Get the original count.
 	POP(32, R(ABI_RETURN));
 
-	ABI_PopRegistersAndAdjustStack(xmm_regs, 8);
+	ABI_PopRegistersAndAdjustStack(regs, 0);
 
 	if (m_VtxDesc.Position & MASKINDEXED)
 	{
@@ -563,5 +572,5 @@ int VertexLoaderX64::RunVertices(const VertexLoaderParameters &parameters)
 		scale_factors[12] = _mm_set_ps1(fractionTable[vat.g2.Tex7Frac]);
 	}
 	m_numLoadedVertices += parameters.count;
-	return ((int(*)(const u8* src, u8* dst, int count))region)(parameters.source, parameters.destination, parameters.count);
+	return ((int(*)(const u8* src, u8* dst, int count, const void*))region)(parameters.source, parameters.destination, parameters.count, memory_base_ptr);
 }

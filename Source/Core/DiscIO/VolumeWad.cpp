@@ -103,7 +103,7 @@ bool CVolumeWAD::GetTitleID(u8* _pBuffer) const
 	return true;
 }
 
-int CVolumeWAD::GetRevision() const
+u16 CVolumeWAD::GetRevision() const
 {
 	u16 revision;
 	if (!m_pReader->Read(m_tmd_offset + 0x1dc, 2, (u8*)&revision))
@@ -112,9 +112,9 @@ int CVolumeWAD::GetRevision() const
 	return Common::swap16(revision);
 }
 
-bool CVolumeWAD::IsWadFile() const
+IVolume::EPlatform CVolumeWAD::GetVolumeType() const
 {
-	return true;
+	return WII_WAD;
 }
 
 std::map<IVolume::ELanguage, std::string> CVolumeWAD::GetNames() const

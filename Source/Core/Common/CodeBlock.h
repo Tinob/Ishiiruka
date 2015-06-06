@@ -28,10 +28,10 @@ public:
 	virtual ~CodeBlock() { if (region) FreeCodeSpace(); }
 
 	// Call this before you generate any code.
-	void AllocCodeSpace(int size)
+	void AllocCodeSpace(int size, void* hint = nullptr)
 	{
 		region_size = size;
-		region = (u8*)AllocateExecutableMemory(region_size);
+		region = (u8*)AllocateExecutableMemory(region_size, hint);
 		T::SetCodePtr(region);
 	}
 
@@ -51,7 +51,7 @@ public:
 		region_size = 0;
 	}
 
-	bool IsInSpace(u8 *ptr)
+	bool IsInSpace(u8 *ptr) const
 	{
 		return (ptr >= region) && (ptr < (region + region_size));
 	}

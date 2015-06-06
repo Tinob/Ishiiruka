@@ -35,7 +35,7 @@
 #include "DolphinWX/ISOFile.h"
 #include "DolphinWX/WxUtils.h"
 
-static const u32 CACHE_REVISION = 0x123;
+static const u32 CACHE_REVISION = 0x124;
 
 #define DVD_BANNER_WIDTH 96
 #define DVD_BANNER_HEIGHT 32
@@ -82,10 +82,7 @@ GameListItem::GameListItem(const std::string& _rFileName)
 
 		if (pVolume != nullptr)
 		{
-			if (!pVolume->IsWadFile())
-				m_Platform = pVolume->IsWiiDisc() ? WII_DISC : GAMECUBE_DISC;
-			else
-				m_Platform = WII_WAD;
+			m_Platform = pVolume->GetVolumeType();
 
 			m_names = pVolume->GetNames();
 			m_descriptions = pVolume->GetDescriptions();
@@ -97,7 +94,7 @@ GameListItem::GameListItem(const std::string& _rFileName)
 
 			m_UniqueID = pVolume->GetUniqueID();
 			m_BlobCompressed = DiscIO::IsCompressedBlob(_rFileName);
-			m_IsDiscTwo = pVolume->IsDiscTwo();
+			m_disc_number = pVolume->GetDiscNumber();
 			m_Revision = pVolume->GetRevision();
 
 			std::vector<u32> Buffer = pVolume->GetBanner(&m_ImageWidth, &m_ImageHeight);
@@ -183,7 +180,7 @@ void GameListItem::DoState(PointerWrap &p)
 	p.Do(m_ImageWidth);
 	p.Do(m_ImageHeight);
 	p.Do(m_Platform);
-	p.Do(m_IsDiscTwo);
+	p.Do(m_disc_number);
 	p.Do(m_Revision);
 }
 
@@ -217,7 +214,8 @@ std::string GameListItem::GetDescription(DiscIO::IVolume::ELanguage language) co
 
 std::string GameListItem::GetDescription() const
 {
-	return GetDescription(SConfig::GetInstance().m_LocalCoreStartupParameter.GetCurrentLanguage(m_Platform != GAMECUBE_DISC));
+	bool wii = m_Platform != DiscIO::IVolume::GAMECUBE_DISC;
+	return GetDescription(SConfig::GetInstance().m_LocalCoreStartupParameter.GetCurrentLanguage(wii));
 }
 
 std::string GameListItem::GetName(DiscIO::IVolume::ELanguage language) const
@@ -227,7 +225,8 @@ std::string GameListItem::GetName(DiscIO::IVolume::ELanguage language) const
 
 std::string GameListItem::GetName() const
 {
-	std::string name = GetName(SConfig::GetInstance().m_LocalCoreStartupParameter.GetCurrentLanguage(m_Platform != GAMECUBE_DISC));
+	bool wii = m_Platform != DiscIO::IVolume::GAMECUBE_DISC;
+	std::string name = GetName(SConfig::GetInstance().m_LocalCoreStartupParameter.GetCurrentLanguage(wii));
 	if (name.empty())
 	{
 		// No usable name, return filename (better than nothing)
@@ -252,15 +251,15 @@ const std::string GameListItem::GetWiiFSPath() const
 	if (iso == nullptr)
 		return ret;
 
-	if (iso->IsWiiDisc() || iso->IsWadFile())
+	if (iso->GetVolumeType() != DiscIO::IVolume::GAMECUBE_DISC)
 	{
 		u64 title = 0;
 
 		iso->GetTitleID((u8*)&title);
 		title = Common::swap64(title);
 
-		const std::string path = StringFromFormat("%stitle/%08x/%08x/data/",
-				File::GetUserPath(D_WIIUSER_IDX).c_str(), (u32)(title>>32), (u32)title);
+		const std::string path = StringFromFormat("%s/title/%08x/%08x/data/",
+				File::GetUserPath(D_WIIROOT_IDX).c_str(), (u32)(title>>32), (u32)title);
 
 		if (!File::Exists(path))
 			File::CreateFullPath(path);

@@ -841,7 +841,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 			// Opengl has reversed vertical screenspace coordiantes
 			if (ApiType == API_OPENGL)
 			{
-				out.Write("\tscreenpos.y = %i - screenpos.y - 1;\n", EFB_HEIGHT);
+				out.Write("\tscreenpos.y = %i - screenpos.y;\n", EFB_HEIGHT);
 			}
 			if (Use_integer_math)
 			{
@@ -849,14 +849,14 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 			}
 			else
 			{
-				out.Write("wu zCoord = (" I_ZSLOPE".z + " I_ZSLOPE".x * screenpos.x + " I_ZSLOPE".y * screenpos.y) / float(0xFFFFFF);\n");
+				out.Write("wu zCoord = (" I_ZSLOPE".z + " I_ZSLOPE".x * screenpos.x + " I_ZSLOPE".y * screenpos.y) / 16777216.0;\n");
 			}
 		}
 		else if ((ApiType == API_OPENGL || ApiType == API_D3D11) && g_ActiveConfig.bFastDepthCalc)
 		{
 			if (Use_integer_math)
 			{
-				out.Write("wu zCoord = %s wuround(rawpos.z * float(0xFFFFFF));\n", ApiType == API_OPENGL ? "" : "0xFFFFFF - ");
+				out.Write("wu zCoord = wuround((%srawpos.z) * 16777216.0);\n", ApiType == API_OPENGL ? "" : "1.0 - ");
 			}
 			else
 				out.Write("wu zCoord = wu(rawpos.z);\n");
@@ -867,13 +867,21 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 			if (Use_integer_math)
 				out.Write("wu zCoord = " I_ZBIAS"[1].x + wuround((clipPos.z / clipPos.w) * float(" I_ZBIAS"[1].y));\n");
 			else
-				out.Write("wu zCoord = round(" I_ZBIAS "[1].x + ((clipPos.z / clipPos.w) * " I_ZBIAS "[1].y)) / float(0xFFFFFF);\n");
+				out.Write("wu zCoord = round(" I_ZBIAS "[1].x + ((clipPos.z / clipPos.w) * " I_ZBIAS "[1].y)) / 16777216.0;\n");
+		}
+		if (Use_integer_math)
+		{
+			out.Write("zCoord = clamp(zCoord, 0, 0xFFFFFF);\n");
+		}
+		else
+		{
+			out.Write("zCoord = clamp(zCoord, 0.0, 1.0);\n");
 		}
 		// Note: z-textures are not written to depth buffer if early depth test is used
 		if (per_pixel_depth && bpm.UseEarlyDepthTest())
 		{
 			if (Use_integer_math)
-				out.Write("\tdepth = float(%szCoord) / float(0xFFFFFF);\n", ApiType == API_OPENGL ? "" : "0xFFFFFF - ");
+				out.Write("\tdepth = %s(float(zCoord) / 16777216.0);\n", ApiType == API_OPENGL ? "" : "1.0 - ");
 			else
 				out.Write("\tdepth = %s zCoord;\n", ApiType == API_OPENGL ? "" : "1.0 - ");
 		}
@@ -899,7 +907,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 		if (per_pixel_depth && bpm.UseLateDepthTest())
 		{
 			if (Use_integer_math)
-				out.Write("\tdepth = float(%szCoord) / float(0xFFFFFF);\n", ApiType == API_OPENGL ? "" : "0xFFFFFF - ");
+				out.Write("\tdepth = %s(float(zCoord) / 16777216.0);\n", ApiType == API_OPENGL ? "" : "1.0 - ");
 			else
 				out.Write("\tdepth = %s zCoord;\n", ApiType == API_OPENGL ? "" : "1.0 - ");
 		}
@@ -1677,7 +1685,7 @@ static inline void WriteAlphaTest(T& out, pixel_shader_uid_data& uid_data, DSTAL
 		if (dstAlphaMode == DSTALPHA_DUAL_SOURCE_BLEND)
 			out.Write("ocol1 = float4(0.0,0.0,0.0,0.0);\n");
 		if (per_pixel_depth)
-			out.Write("depth = 1.f;\n");
+			out.Write("depth = %s;\n", (ApiType == API_OPENGL) ? "1.0" : "0.0");
 
 		// HAXX: zcomploc (aka early_ztest) is a way to control whether depth test is done before
 		// or after texturing and alpha test. PC graphics APIs have no way to support this
@@ -1731,7 +1739,7 @@ static inline void WriteFog(T& out, pixel_shader_uid_data& uid_data, const BPMem
 			// perspective
 			// ze = A/(B - (Zs >> B_SHF)
 			if (use_integer_math)
-				out.Write("float ze = (" I_FOGF "[1].x * 16777215.0) / float(" I_FOGI ".y - (zCoord >> " I_FOGI ".w));\n");
+				out.Write("float ze = (" I_FOGF "[1].x * 16777216.0) / float(" I_FOGI ".y - (zCoord >> " I_FOGI ".w));\n");
 			else
 				out.Write("float ze = " I_FOGF "[1].x / (" I_FOGI ".y - (zCoord * " I_FOGI ".w));\n");
 		}
@@ -1740,7 +1748,7 @@ static inline void WriteFog(T& out, pixel_shader_uid_data& uid_data, const BPMem
 			// orthographic
 			// ze = a*Zs	(here, no B_SHF)
 			if (use_integer_math)
-				out.Write("float ze = " I_FOGF "[1].x * (float(zCoord) / 16777215.0);\n");
+				out.Write("float ze = " I_FOGF "[1].x * (float(zCoord) / 16777216.0);\n");
 			else
 				out.Write("float ze = " I_FOGF "[1].x * zCoord;\n");
 		}
@@ -1784,17 +1792,17 @@ inline void WritePerPixelDepth(T& out, const BPMemory &bpm)
 		if (ApiType == API_OPENGL)
 		{
 			out.Write("\tscreenpos.y = %i - screenpos.y - 1;\n", EFB_HEIGHT);
-			out.Write("\tdepth = (" I_ZSLOPE".z + " I_ZSLOPE".x * screenpos.x + " I_ZSLOPE".y * screenpos.y) / float(0xFFFFFF);\n");
+			out.Write("\tdepth = (" I_ZSLOPE".z + " I_ZSLOPE".x * screenpos.x + " I_ZSLOPE".y * screenpos.y) / 16777216.0;\n");
 		}
 		else
 		{
-			out.Write("\tdepth = (0xFFFFFF - (" I_ZSLOPE".z + " I_ZSLOPE".x * screenpos.x + " I_ZSLOPE".y * screenpos.y)) / float(0xFFFFFF);\n");
+			out.Write("\tdepth = 1.0 - ((" I_ZSLOPE".z + " I_ZSLOPE".x * screenpos.x + " I_ZSLOPE".y * screenpos.y) / 16777216.0);\n");
 		}
 	}
 	else
 	{
 		if (use_integer_math)
-			out.Write("\tdepth = float(%szCoord) / float(0xFFFFFF);\n", ApiType == API_OPENGL ? "" : "0xFFFFFF - ");
+			out.Write("\tdepth = %s(float(zCoord) / 16777216.0);\n", ApiType == API_OPENGL ? "" : "1.0 - ");
 		else
 			out.Write("\tdepth = %s zCoord;\n", ApiType == API_OPENGL ? "" : "1.0 - ");
 	}

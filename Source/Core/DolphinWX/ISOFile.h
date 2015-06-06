@@ -31,30 +31,23 @@ public:
 	std::string GetDescription() const;
 	std::vector<DiscIO::IVolume::ELanguage> GetLanguages() const;
 	std::string GetCompany() const;
-	int GetRevision() const { return m_Revision; }
+	u16 GetRevision() const { return m_Revision; }
 	const std::string& GetUniqueID() const {return m_UniqueID;}
 	const std::string GetWiiFSPath() const;
 	DiscIO::IVolume::ECountry GetCountry() const {return m_Country;}
-	int GetPlatform() const {return m_Platform;}
+	DiscIO::IVolume::EPlatform GetPlatform() const { return m_Platform; }
 	const std::string& GetIssues() const { return m_issues; }
 	int GetEmuState() const { return m_emu_state; }
 	bool IsCompressed() const {return m_BlobCompressed;}
 	u64 GetFileSize() const {return m_FileSize;}
 	u64 GetVolumeSize() const {return m_VolumeSize;}
-	bool IsDiscTwo() const {return m_IsDiscTwo;}
+	// 0 is the first disc, 1 is the second disc
+	u8 GetDiscNumber() const {return m_disc_number;}
 #if defined(HAVE_WX) && HAVE_WX
 	const wxBitmap& GetBitmap() const {return m_Bitmap;}
 #endif
 
 	void DoState(PointerWrap &p);
-
-	enum
-	{
-		GAMECUBE_DISC = 0,
-		WII_DISC,
-		WII_WAD,
-		NUMBER_OF_PLATFORMS
-	};
 
 private:
 	std::string m_FileName;
@@ -72,8 +65,8 @@ private:
 	u64 m_VolumeSize;
 
 	DiscIO::IVolume::ECountry m_Country;
-	int m_Platform;
-	int m_Revision;
+	DiscIO::IVolume::EPlatform m_Platform;
+	u16 m_Revision;
 
 #if defined(HAVE_WX) && HAVE_WX
 	wxBitmap m_Bitmap;
@@ -82,7 +75,7 @@ private:
 	bool m_BlobCompressed;
 	std::vector<u8> m_pImage;
 	int m_ImageWidth, m_ImageHeight;
-	bool m_IsDiscTwo;
+	u8 m_disc_number;
 
 	bool LoadFromCache();
 	void SaveToCache();

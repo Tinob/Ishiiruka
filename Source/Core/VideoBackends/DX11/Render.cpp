@@ -7,6 +7,8 @@
 #include <string>
 #include <strsafe.h>
 #include <array>
+
+#include "Common/MathUtil.h"
 #include "Common/Timer.h"
 
 #include "Core/ConfigManager.h"
@@ -421,21 +423,20 @@ u32 Renderer::AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data)
 
 		// read the data from system memory
 		D3D::context->Map(read_tex, 0, D3D11_MAP_READ, 0, &map);
-
+		// depth buffer is inverted in the d3d backend
 		float val = 1.0f - *(float*)map.pData;
 		u32 ret = 0;
 		if(bpmem.zcontrol.pixel_format == PEControl::RGB565_Z16)
 		{
 			// if Z is in 16 bit format you must return a 16 bit integer
-			ret = ((u32)(val * 0xffff));
+			ret = MathUtil::Clamp<u32>((u32)(val * 65536.0f), 0, 0xFFFF);
 		}
 		else
 		{
-			ret = ((u32)(val * 0xffffff));
+			ret = MathUtil::Clamp<u32>((u32)(val * 16777216.0f), 0, 0xFFFFFF);
 		}
 		D3D::context->Unmap(read_tex, 0);
 
-		// TODO: in RE0 this value is often off by one in Video_DX9 (where this code is derived from), which causes lighting to disappear
 		return ret;
 	}
 	else if (type == PEEK_COLOR)
@@ -530,14 +531,14 @@ void Renderer::SetViewport()
 	D3D11_VIEWPORT vp = CD3D11_VIEWPORT(X, Y, Wd, Ht,
 		0.0f,
 		1.0f);
-	float nearz = xfmem.viewport.farZ - xfmem.viewport.zRange;
+	float nearz = xfmem.viewport.farZ - MathUtil::Clamp<float>(xfmem.viewport.zRange, 0.0f, 16777215.0f);
 	float farz = xfmem.viewport.farZ;
 
 	const bool nonStandartViewport = (nearz < 0.f || farz > 16777216.0f || nearz >= 16777216.0f || farz <= 0.f);
 	if (!nonStandartViewport)
 	{
-		vp.MaxDepth = 1.0f - std::max(0.0f, std::min(1.0f, nearz / 16777216.0f));
-		vp.MinDepth = 1.0f - std::max(0.0f, std::min(1.0f, farz / 16777216.0f));
+		vp.MaxDepth = 1.0f - (MathUtil::Clamp<float>(nearz, 0.0f, 16777215.0f) / 16777216.0f);
+		vp.MinDepth = 1.0f - (MathUtil::Clamp<float>(farz, 0.0f, 16777215.0f) / 16777216.0f);
 	}	
 	D3D::context->RSSetViewports(1, &vp);
 }
@@ -563,7 +564,7 @@ void Renderer::ClearScreen(const EFBRectangle& rc, bool colorEnable, bool alphaE
 
 	// Color is passed in bgra mode so we need to convert it to rgba
 	u32 rgbaColor = (color & 0xFF00FF00) | ((color >> 16) & 0xFF) | ((color << 16) & 0xFF0000);
-	D3D::drawClearQuad(rgbaColor, (0xFFFFFF - (z & 0xFFFFFF)) / float(0xFFFFFF));
+	D3D::drawClearQuad(rgbaColor, 1.0f - ((z & 0xFFFFFF) / 16777216.0f));
 
 	D3D::stateman->PopDepthState();
 	D3D::stateman->PopBlendState();

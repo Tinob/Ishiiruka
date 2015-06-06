@@ -27,7 +27,7 @@ public:
 	bool Read(u64 _Offset, u64 _Length, u8* _pBuffer, bool decrypt = false) const override;
 	std::string GetUniqueID() const override;
 	std::string GetMakerID() const override;
-	int GetRevision() const override;
+	u16 GetRevision() const override;
 	virtual std::string GetInternalName() const override;
 	std::map<ELanguage, std::string> GetNames() const override;
 	std::map<ELanguage, std::string> GetDescriptions() const override;
@@ -35,9 +35,9 @@ public:
 	std::vector<u32> GetBanner(int* width, int* height) const override;
 	u32 GetFSTSize() const override;
 	std::string GetApploaderDate() const override;
+	u8 GetDiscNumber() const override;
 
-	bool IsDiscTwo() const override;
-
+	EPlatform GetVolumeType() const override;
 	ECountry GetCountry() const override;
 	u64 GetSize() const override;
 	u64 GetRawSize() const override;
