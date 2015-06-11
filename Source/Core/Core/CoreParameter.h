@@ -111,6 +111,8 @@ enum Hotkey
 	HK_LOAD_LAST_STATE_6,
 	HK_LOAD_LAST_STATE_7,
 	HK_LOAD_LAST_STATE_8,
+	HK_LOAD_LAST_STATE_9,
+	HK_LOAD_LAST_STATE_10,
 
 	HK_SAVE_FIRST_STATE,
 	HK_UNDO_LOAD_STATE,
@@ -161,6 +163,7 @@ struct SCoreStartupParameter
 
 	bool bFastmem;
 	bool bFPRF;
+	bool bAccurateNaNs;
 
 	bool bCPUThread;
 	bool bDSPThread;
@@ -184,8 +187,12 @@ struct SCoreStartupParameter
 	bool bDCBZOFF;
 	int iBBDumpPort;
 	bool bDoubleVideoRate;
-	bool bSyncGPU;
 	bool bFastDiscSpeed;
+
+	bool bSyncGPU;
+	int iSyncGpuMaxDistance;
+	int iSyncGpuMinDistance;
+	float fSyncGpuOverclock;
 
 	int SelectedLanguage;
 
@@ -194,10 +201,6 @@ struct SCoreStartupParameter
 	// Interface settings
 	bool bConfirmStop, bHideCursor, bAutoHideCursor, bUsePanicHandlers, bOnScreenDisplayMessages;
 	std::string theme_name;
-
-	// Hotkeys
-	int iHotkey[NUM_HOTKEYS];
-	int iHotkeyModifier[NUM_HOTKEYS];
 
 	// Display settings
 	std::string strFullscreenResolution;

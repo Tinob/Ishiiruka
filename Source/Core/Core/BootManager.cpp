@@ -47,7 +47,7 @@ namespace BootManager
 // Apply fire liberally
 struct ConfigCache
 {
-	bool valid, bCPUThread, bSkipIdle, bFPRF, bMMU, bDCBZOFF, m_EnableJIT, bDSPThread,
+	bool valid, bCPUThread, bSkipIdle, bSyncGPUOnSkipIdleHack, bFPRF, bAccurateNaNs, bMMU, bDCBZOFF, m_EnableJIT, bDSPThread,
 	bDoubleVideoRate, bSyncGPU, bFastDiscSpeed, bDSPHLE, bHLE_BS2, bProgressive;
 	int iCPUCore, Volume;
 	int iWiimoteSource[MAX_BBMOTES];
@@ -103,8 +103,10 @@ bool BootCore(const std::string& _rFilename)
 		config_cache.valid = true;
 		config_cache.bCPUThread = StartUp.bCPUThread;
 		config_cache.bSkipIdle = StartUp.bSkipIdle;
+		config_cache.bSyncGPUOnSkipIdleHack = StartUp.bSyncGPUOnSkipIdleHack;
 		config_cache.iCPUCore = StartUp.iCPUCore;
 		config_cache.bFPRF = StartUp.bFPRF;
+		config_cache.bAccurateNaNs = StartUp.bAccurateNaNs;
 		config_cache.bMMU = StartUp.bMMU;
 		config_cache.bDCBZOFF = StartUp.bDCBZOFF;
 		config_cache.bDoubleVideoRate = StartUp.bDoubleVideoRate;
@@ -144,7 +146,9 @@ bool BootCore(const std::string& _rFilename)
 
 		core_section->Get("CPUThread",        &StartUp.bCPUThread, StartUp.bCPUThread);
 		core_section->Get("SkipIdle",         &StartUp.bSkipIdle, StartUp.bSkipIdle);
+		core_section->Get("SyncOnSkipIdle",   &StartUp.bSyncGPUOnSkipIdleHack, StartUp.bSyncGPUOnSkipIdleHack);
 		core_section->Get("FPRF",             &StartUp.bFPRF, StartUp.bFPRF);
+		core_section->Get("AccurateNaNs",     &StartUp.bAccurateNaNs, StartUp.bAccurateNaNs);
 		core_section->Get("MMU",              &StartUp.bMMU, StartUp.bMMU);
 		core_section->Get("DCBZ",             &StartUp.bDCBZOFF, StartUp.bDCBZOFF);
 		core_section->Get("DoubleVideoRate",  &StartUp.bDoubleVideoRate, StartUp.bDoubleVideoRate);
@@ -270,8 +274,10 @@ void Stop()
 		config_cache.valid = false;
 		StartUp.bCPUThread = config_cache.bCPUThread;
 		StartUp.bSkipIdle = config_cache.bSkipIdle;
+		StartUp.bSyncGPUOnSkipIdleHack = config_cache.bSyncGPUOnSkipIdleHack;
 		StartUp.iCPUCore = config_cache.iCPUCore;
 		StartUp.bFPRF = config_cache.bFPRF;
+		StartUp.bAccurateNaNs = config_cache.bAccurateNaNs;
 		StartUp.bMMU = config_cache.bMMU;
 		StartUp.bDCBZOFF = config_cache.bDCBZOFF;
 		StartUp.bDoubleVideoRate = config_cache.bDoubleVideoRate;

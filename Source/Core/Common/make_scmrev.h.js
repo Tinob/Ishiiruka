@@ -93,7 +93,7 @@ var revcount = GetFirstStdOutLine(gitexe + cmd_count);
 var describe = GetFirstStdOutLine(gitexe + cmd_describe);
 var branch = GetFirstStdOutLine(gitexe + cmd_branch);
 var cacheversion = GetCacheVersion(gitexe);
-var isMaster = +("master" == branch);
+var isStable	= +("master" == branch || "stable" == branch);
 
 // remove hash (and trailing "-0" if needed) from description
 describe = describe.replace(/(-0)?-[^-]+(-dirty)?$/, '$2');
@@ -103,7 +103,7 @@ var out_contents =
 	"#define SCM_DESC_STR \"" + revcount + "(" + describe + ")\"\n" +
 	"#define SCM_BRANCH_STR \"" + branch + "\"\n" +
     "#define SCM_CACHE_STR \"" + cacheversion + "\"\n" +
-	"#define SCM_IS_MASTER " + isMaster + "\n";
+	"#define SCM_IS_MASTER " + isStable + "\n";
 
 // check if file needs updating
 if (out_contents == GetFileContents(outfile))

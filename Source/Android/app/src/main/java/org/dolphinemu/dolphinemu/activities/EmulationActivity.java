@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.Menu;
@@ -17,13 +18,15 @@ import android.view.View;
 import org.dolphinemu.dolphinemu.NativeLibrary;
 import org.dolphinemu.dolphinemu.R;
 import org.dolphinemu.dolphinemu.fragments.EmulationFragment;
-import org.dolphinemu.dolphinemu.settings.input.InputConfigFragment;
 
 import java.util.List;
 
 public final class EmulationActivity extends Activity
 {
 	private View mDecorView;
+
+	private boolean mDeviceHasTouchScreen;
+	private boolean mSystemUiVisible;
 
 	/**
 	 * Handlers are a way to pass a message to an Activity telling it to do something
@@ -44,6 +47,8 @@ public final class EmulationActivity extends Activity
 	{
 		super.onCreate(savedInstanceState);
 
+		mDeviceHasTouchScreen = getPackageManager().hasSystemFeature("android.hardware.touchscreen");
+
 		// Get a handle to the Window containing the UI.
 		mDecorView = getWindow().getDecorView();
 
@@ -59,9 +64,9 @@ public final class EmulationActivity extends Activity
 					@Override
 					public void onSystemUiVisibilityChange(int flags)
 					{
-						boolean visible = (flags & View.SYSTEM_UI_FLAG_HIDE_NAVIGATION) == 0;
+						mSystemUiVisible = (flags & View.SYSTEM_UI_FLAG_HIDE_NAVIGATION) == 0;
 
-						if (visible)
+						if (mSystemUiVisible)
 						{
 							getActionBar().show();
 							hideSystemUiAfterDelay();
@@ -92,6 +97,23 @@ public final class EmulationActivity extends Activity
 	}
 
 	@Override
+	protected void onStart()
+	{
+		super.onStart();
+		Log.d("DolphinEmu", "EmulationActivity starting.");
+		NativeLibrary.setEmulationActivity(this);
+	}
+
+	@Override
+	protected void onStop()
+	{
+		super.onStop();
+		Log.d("DolphinEmu", "EmulationActivity stopping.");
+
+		NativeLibrary.setEmulationActivity(null);
+	}
+
+	@Override
 	protected void onPostCreate(Bundle savedInstanceState)
 	{
 		super.onPostCreate(savedInstanceState);
@@ -114,6 +136,20 @@ public final class EmulationActivity extends Activity
 			// If the window loses focus (i.e. a dialog box, or a popup menu is on screen
 			// stop hiding the UI.
 			mSystemUiHider.removeMessages(0);
+		}
+	}
+
+	@Override
+	public void onBackPressed()
+	{
+		if (!mDeviceHasTouchScreen && !mSystemUiVisible)
+		{
+			showSystemUI();
+		}
+		else
+		{
+			// Let the system handle it; i.e. quit the activity TODO or show "are you sure?" dialog.
+			super.onBackPressed();
 		}
 	}
 
@@ -237,7 +273,7 @@ public final class EmulationActivity extends Activity
 				return false;
 		}
 		InputDevice input = event.getDevice();
-		boolean handled = NativeLibrary.onGamePadEvent(InputConfigFragment.getInputDesc(input), event.getKeyCode(), action);
+		boolean handled = NativeLibrary.onGamePadEvent(input.getDescriptor(), event.getKeyCode(), action);
 		return handled;
 	}
 
@@ -258,7 +294,7 @@ public final class EmulationActivity extends Activity
 
 		for (InputDevice.MotionRange range : motions)
 		{
-			NativeLibrary.onGamePadMoveEvent(InputConfigFragment.getInputDesc(input), range.getAxis(), event.getAxisValue(range.getAxis()));
+			NativeLibrary.onGamePadMoveEvent(input.getDescriptor(), range.getAxis(), event.getAxisValue(range.getAxis()));
 		}
 
 		return true;
@@ -275,6 +311,8 @@ public final class EmulationActivity extends Activity
 
 	private void hideSystemUI()
 	{
+		mSystemUiVisible = false;
+
 		mDecorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
 				View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
 				View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
@@ -285,8 +323,12 @@ public final class EmulationActivity extends Activity
 
 	private void showSystemUI()
 	{
+		mSystemUiVisible = true;
+
 		mDecorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
 				View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
 				View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+
+		hideSystemUiAfterDelay();
 	}
 }

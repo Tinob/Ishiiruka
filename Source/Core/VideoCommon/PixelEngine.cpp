@@ -10,6 +10,7 @@
 #include "Common/ChunkFile.h"
 #include "Common/CommonTypes.h"
 #include "Core/ConfigManager.h"
+#include "Core/Core.h"
 #include "Core/CoreTiming.h"
 #include "Core/State.h"
 #include "Core/HW/MMIO.h"
@@ -292,6 +293,7 @@ void SetFinish_OnMainThread(u64 userdata, int cyclesLate)
 	UpdateInterrupts();
 	CommandProcessor::interruptFinishWaiting = false;
 	CommandProcessor::isPossibleWaitingSetDrawDone = false;
+	Core::FrameUpdateOnCPUThread();
 }
 
 // SetToken

@@ -5,8 +5,10 @@ import android.app.LoaderManager;
 import android.content.CursorLoader;
 import android.content.Intent;
 import android.content.Loader;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -17,6 +19,7 @@ import android.view.View;
 import android.widget.ImageButton;
 import android.widget.Toolbar;
 
+import org.dolphinemu.dolphinemu.NativeLibrary;
 import org.dolphinemu.dolphinemu.R;
 import org.dolphinemu.dolphinemu.adapters.GameAdapter;
 import org.dolphinemu.dolphinemu.model.GameDatabase;
@@ -48,9 +51,10 @@ public final class GameGridActivity extends Activity implements LoaderManager.Lo
 		ImageButton buttonAddDirectory = (ImageButton) findViewById(R.id.button_add_directory);
 		RecyclerView recyclerView = (RecyclerView) findViewById(R.id.grid_games);
 
-		// use this setting to improve performance if you know that changes
-		// in content do not change the layout size of the RecyclerView
-		//mRecyclerView.setHasFixedSize(true);
+		// TODO Rather than calling into native code, this should use the commented line below.
+		// String versionName = BuildConfig.VERSION_NAME;
+		String versionName = NativeLibrary.GetVersionString();
+		toolbar.setSubtitle(versionName);
 
 		// Specifying the LayoutManager determines how the RecyclerView arranges views.
 		RecyclerView.LayoutManager layoutManager = new GridLayoutManager(this,
@@ -79,9 +83,16 @@ public final class GameGridActivity extends Activity implements LoaderManager.Lo
 		// Stuff in this block only happens when this activity is newly created (i.e. not a rotation)
 		if (savedInstanceState == null)
 		{
-			// Copy assets into appropriate locations.
-			Intent copyAssets = new Intent(this, AssetCopyService.class);
-			startService(copyAssets);
+			SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+			boolean assetsCopied = preferences.getBoolean("assetsCopied", false);
+
+			// Only perform these extensive copy operations once.
+			if (!assetsCopied)
+			{
+				// Copy assets into appropriate locations.
+				Intent copyAssets = new Intent(this, AssetCopyService.class);
+				startService(copyAssets);
+			}
 		}
 	}
 
@@ -130,6 +141,12 @@ public final class GameGridActivity extends Activity implements LoaderManager.Lo
 				// Launch the Settings Actvity.
 				Intent settings = new Intent(this, SettingsActivity.class);
 				startActivity(settings);
+				return true;
+
+			case R.id.menu_refresh:
+				getContentResolver().insert(GameProvider.URI_REFRESH, null);
+				getLoaderManager().restartLoader(LOADER_ID_GAMES, null, this);
+
 				return true;
 		}
 

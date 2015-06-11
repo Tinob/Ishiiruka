@@ -18,27 +18,19 @@
 #include "DolphinWX/Config/GeneralConfigPane.h"
 #include "DolphinWX/Debugger/CodeWindow.h"
 
-
-struct CPUCore
+GeneralConfigPane::GeneralConfigPane(wxWindow* parent, wxWindowID id)
+	: wxPanel(parent, id)
 {
-	int CPUid;
-	wxString name;
-};
-static const CPUCore cpu_cores[] = {
+	cpu_cores = {
 		{ 0, _("Interpreter (VERY slow)") },
 #ifdef _M_X86_64
 		{ 1, _("JIT Recompiler (recommended)") },
 		{ 2, _("JITIL Recompiler (slower, experimental)") },
-#elif defined(_M_ARM_32)
-		{ 3, _("Arm JIT (experimental)") },
 #elif defined(_M_ARM_64)
 		{ 4, _("Arm64 JIT (experimental)") },
 #endif
-};
+	};
 
-GeneralConfigPane::GeneralConfigPane(wxWindow* parent, wxWindowID id)
-	: wxPanel(parent, id)
-{
 	InitializeGUI();
 	LoadGUIValues();
 	RefreshGUI();
@@ -105,7 +97,7 @@ void GeneralConfigPane::LoadGUIValues()
 	m_force_ntscj_checkbox->SetValue(startup_params.bForceNTSCJ);
 	m_frame_limit_choice->SetSelection(SConfig::GetInstance().m_Framelimit);
 
-	for (size_t i = 0; i < (sizeof(cpu_cores) / sizeof(CPUCore)); ++i)
+	for (size_t i = 0; i < cpu_cores.size(); ++i)
 	{
 		if (cpu_cores[i].CPUid == startup_params.iCPUCore)
 			m_cpu_engine_radiobox->SetSelection(i);

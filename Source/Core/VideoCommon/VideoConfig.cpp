@@ -116,6 +116,11 @@ void VideoConfig::Load(const std::string& ini_file)
 	hacks->Get("WaitForShaderCompilation", &bWaitForShaderCompilation, false);
 	hacks->Get("PredictiveFifo", &bPredictiveFifo, false);
 	hacks->Get("BoundingBoxMode", &iBBoxMode, (int)BBoxMode::BBoxGPU);
+
+	// hacks which are disabled by default
+	iPhackvalue[0] = 0;
+	bPerfQueriesEnable = false;
+
 	// Load common settings
 	iniFile.Load(File::GetUserPath(F_DOLPHINCONFIG_IDX));
 	IniFile::Section* interface = iniFile.GetOrCreateSection("Interface");

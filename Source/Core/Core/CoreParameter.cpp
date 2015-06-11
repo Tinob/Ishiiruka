@@ -33,7 +33,7 @@ SCoreStartupParameter::SCoreStartupParameter()
   bJITPairedOff(false), bJITSystemRegistersOff(false),
   bJITBranchOff(false),
   bJITILTimeProfiling(false), bJITILOutputIR(false),
-  bFPRF(false),
+  bFPRF(false), bAccurateNaNs(false),
   bCPUThread(true), bDSPThread(false), bDSPHLE(true),
   bSkipIdle(true), bSyncGPUOnSkipIdleHack(true), bNTSC(false), bForceNTSCJ(false),
   bHLE_BS2(true), bEnableCheats(false),
@@ -42,7 +42,7 @@ SCoreStartupParameter::SCoreStartupParameter()
   bRunCompareServer(false), bRunCompareClient(false),
   bMMU(false), bDCBZOFF(false),
   iBBDumpPort(0), bDoubleVideoRate(false),
-  bSyncGPU(false), bFastDiscSpeed(false),
+  bFastDiscSpeed(false), bSyncGPU(false),
   SelectedLanguage(0), bWii(false),
   bConfirmStop(false), bHideCursor(false),
   bAutoHideCursor(false), bUsePanicHandlers(true), bOnScreenDisplayMessages(true),
@@ -78,6 +78,7 @@ void SCoreStartupParameter::LoadDefaults()
 	bDSPHLE = true;
 	bFastmem = true;
 	bFPRF = false;
+	bAccurateNaNs = false;
 	bMMU = false;
 	bDCBZOFF = false;
 	iBBDumpPort = -1;

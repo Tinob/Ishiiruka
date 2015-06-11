@@ -12,9 +12,13 @@ android {
 
     defaultConfig {
         applicationId "org.dolphinemu.dolphinemu"
-        minSdkVersion 18
+        minSdkVersion 21
         targetSdkVersion 21
+
+        // TODO This should be set to the Buildbot build number for release builds, and be "1" for debug builds.
         versionCode 13
+
+        // TODO This should be set to the string currently provided by NativeLibrary.GetVersionString().
         versionName "0.13"
     }
 
@@ -52,16 +56,6 @@ android {
     // Define product flavors, which can be split into categories. Common examples
     // of product flavors are paid vs. free, ARM vs. x86, etc.
     productFlavors {
-        arm {
-            // This flavor is mutually exclusive against any flavor in the same dimension.
-            flavorDimension "abi"
-
-            // When building this flavor, only include native libs from the specified folder.
-            ndk {
-                abiFilter "armeabi-v7a"
-            }
-        }
-
         arm_64 {
             flavorDimension "abi"
             ndk {
@@ -171,7 +165,7 @@ String getNdkPath() {
         def stdout = new ByteArrayOutputStream()
 
         exec {
-            // ndk-build.cmd is a file unique to the root directory of android-ndk-r10d.
+            // ndk-build.cmd is a file unique to the root directory of android-ndk-r10e.
             commandLine 'locate', 'ndk-build.cmd'
             standardOutput = stdout
         }
