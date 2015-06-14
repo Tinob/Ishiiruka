@@ -6,8 +6,10 @@
 
 #include "Common/CommonPaths.h"
 #include "Common/FileUtil.h"
-#include "Common/IniFile.h"
 #include "Common/StringUtil.h"
+
+#include "Core/ConfigManager.h"
+#include "Core/Core.h"
 
 #include "VideoCommon/PostProcessing.h"
 #include "VideoCommon/VideoConfig.h"
@@ -408,23 +410,19 @@ void PostProcessingShaderConfiguration::PrintCompilationTimeOptions(std::string 
 	}
 }
 
-void PostProcessingShaderConfiguration::LoadOptionsConfiguration()
+void PostProcessingShaderConfiguration::LoadOptionsConfigurationFromSection(IniFile::Section* section)
 {
-	IniFile ini;
-	ini.Load(File::GetUserPath(F_DOLPHINCONFIG_IDX));
-	std::string section = m_current_shader + "-options";
-
 	for (auto& it : m_options)
 	{
 		switch (it.second.m_type)
 		{
 		case ConfigurationOption::OptionType::OPTION_BOOL:
-			ini.GetOrCreateSection(section)->Get(it.second.m_option_name, &it.second.m_bool_value, it.second.m_bool_value);
+			section->Get(it.second.m_option_name, &it.second.m_bool_value, it.second.m_bool_value);
 			break;
 		case ConfigurationOption::OptionType::OPTION_INTEGER:
 		{
 			std::string value;
-			ini.GetOrCreateSection(section)->Get(it.second.m_option_name, &value);
+			section->Get(it.second.m_option_name, &value);
 			if (value != "")
 				TryParseVector(value, &it.second.m_integer_values);
 		}
@@ -432,11 +430,36 @@ void PostProcessingShaderConfiguration::LoadOptionsConfiguration()
 		case ConfigurationOption::OptionType::OPTION_FLOAT:
 		{
 			std::string value;
-			ini.GetOrCreateSection(section)->Get(it.second.m_option_name, &value);
+			section->Get(it.second.m_option_name, &value);
 			if (value != "")
 				TryParseVector(value, &it.second.m_float_values);
 		}
 		break;
+		}
+	}
+}
+
+void PostProcessingShaderConfiguration::LoadOptionsConfiguration()
+{
+	if (m_current_shader != "")
+	{
+		IniFile ini;
+		ini.Load(File::GetUserPath(F_DOLPHINCONFIG_IDX));
+		IniFile::Section* section = ini.GetOrCreateSection(m_current_shader + "-options");
+		// Load Global Setings
+		LoadOptionsConfigurationFromSection(section);
+		if (Core::IsRunningAndStarted())
+		{
+			std::string PresetPath = File::GetUserPath(D_PPSHADERSPRESETS_IDX);
+			PresetPath += SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID + DIR_SEP;
+			PresetPath += m_current_shader + ".ini";
+			if (File::Exists(PresetPath))
+			{
+				//Override with specific game settings
+				ini.Load(PresetPath);
+				IniFile::Section* section = ini.GetOrCreateSection("options");
+				LoadOptionsConfigurationFromSection(section);
+			}
 		}
 	}
 	CheckStages();
@@ -444,9 +467,35 @@ void PostProcessingShaderConfiguration::LoadOptionsConfiguration()
 
 void PostProcessingShaderConfiguration::SaveOptionsConfiguration()
 {
+	if (m_current_shader == "")
+	{
+		return;
+	}
+	std::string file_path;
 	IniFile ini;
-	ini.Load(File::GetUserPath(F_DOLPHINCONFIG_IDX));
-	std::string section = m_current_shader + "-options";
+	IniFile::Section* section = nullptr;
+	if (Core::IsRunningAndStarted())
+	{
+		file_path = File::GetUserPath(D_PPSHADERSPRESETS_IDX);
+		if (!File::Exists(file_path))
+		{
+			File::CreateDir(file_path);
+		}
+		file_path += SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID + DIR_SEP;
+		if (!File::Exists(file_path))
+		{
+			File::CreateDir(file_path);
+		}
+		file_path += m_current_shader + ".ini";
+		ini.Load(file_path);
+		section = ini.GetOrCreateSection("options");
+	}
+	else
+	{
+		file_path = File::GetUserPath(F_DOLPHINCONFIG_IDX);
+		ini.Load(file_path);
+		section = ini.GetOrCreateSection(m_current_shader + "-options");
+	}
 
 	for (auto& it : m_options)
 	{
@@ -454,7 +503,7 @@ void PostProcessingShaderConfiguration::SaveOptionsConfiguration()
 		{
 		case ConfigurationOption::OptionType::OPTION_BOOL:
 		{
-			ini.GetOrCreateSection(section)->Set(it.second.m_option_name, it.second.m_bool_value);
+			section->Set(it.second.m_option_name, it.second.m_bool_value);
 		}
 		break;
 		case ConfigurationOption::OptionType::OPTION_INTEGER:
@@ -462,7 +511,7 @@ void PostProcessingShaderConfiguration::SaveOptionsConfiguration()
 			std::string value = "";
 			for (size_t i = 0; i < it.second.m_integer_values.size(); ++i)
 				value += StringFromFormat("%d%s", it.second.m_integer_values[i], i == (it.second.m_integer_values.size() - 1) ? "" : ", ");
-			ini.GetOrCreateSection(section)->Set(it.second.m_option_name, value);
+			section->Set(it.second.m_option_name, value);
 		}
 		break;
 		case ConfigurationOption::OptionType::OPTION_FLOAT:
@@ -476,12 +525,12 @@ void PostProcessingShaderConfiguration::SaveOptionsConfiguration()
 				if (i != (it.second.m_float_values.size() - 1))
 					value << ", ";
 			}
-			ini.GetOrCreateSection(section)->Set(it.second.m_option_name, value.str());
+			section->Set(it.second.m_option_name, value.str());
 		}
 		break;
 		}
 	}
-	ini.Save(File::GetUserPath(F_DOLPHINCONFIG_IDX));
+	ini.Save(file_path);
 }
 
 void PostProcessingShaderConfiguration::ReloadShader()

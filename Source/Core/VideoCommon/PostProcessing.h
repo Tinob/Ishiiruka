@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "Common/IniFile.h"
 #include "Common/StringUtil.h"
 #include "Common/Timer.h"
 
@@ -116,6 +117,7 @@ private:
 	ConfigMap m_options;
 	StageList m_stages;
 	std::string LoadOptions(const std::string& code);
+	void LoadOptionsConfigurationFromSection(IniFile::Section* section);
 	void LoadOptionsConfiguration();
 };
 
