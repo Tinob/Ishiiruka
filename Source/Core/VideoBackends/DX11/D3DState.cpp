@@ -296,7 +296,7 @@ ID3D11SamplerState* StateCache::Get(SamplerState state)
 	if (state.max_anisotropy)
 	{
 		sampdc.Filter = D3D11_FILTER_ANISOTROPIC;
-		sampdc.MaxAnisotropy = (u32)state.max_anisotropy;
+		sampdc.MaxAnisotropy = 1 << (u32)state.max_anisotropy;
 	}
 	else if (state.min_filter & 4) // linear min filter
 	{
