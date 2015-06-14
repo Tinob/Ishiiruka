@@ -54,6 +54,18 @@
 
 #ifdef _WIN32
 
+// Applications exporting this symbol with this value will be automatically
+// directed to the high-performance GPU on Nvidia Optimus systems with
+// up-to-date drivers
+//
+__declspec(dllexport) DWORD NvOptimusEnablement = 1;
+
+// Applications exporting this symbol with this value will be automatically
+// directed to the high-performance GPU on AMD PowerXpress systems with
+// up-to-date drivers
+//
+__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+
 #ifndef SM_XVIRTUALSCREEN
 #define SM_XVIRTUALSCREEN 76
 #endif
