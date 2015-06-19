@@ -118,14 +118,14 @@ void SoundStream::SoundLoop()
 {
 	Common::SetCurrentThreadName("Audio thread");
 	InitializeSoundLoop();
-	bool surroundSupported = SupportSurroundOutput() && SConfig::GetInstance().m_LocalCoreStartupParameter.bDPL2Decoder;
+	bool surroundSupported = SupportSurroundOutput() && SConfig::GetInstance().bDPL2Decoder;
 	memset(realtimeBuffer, 0, SOUND_MAX_FRAME_SIZE * sizeof(u16));
 	memset(dpl2buffer, 0, SOUND_MAX_FRAME_SIZE * sizeof(soundtouch::SAMPLETYPE));
 	memset(samplebuffer, 0, SOUND_MAX_FRAME_SIZE * sizeof(soundtouch::SAMPLETYPE));
 	memset(s_dither_prev, 0, sizeof(s_dither_prev));
 	u32 channelmultiplier = surroundSupported ? SOUND_SAMPLES_SURROUND : SOUND_SAMPLES_STEREO;
 	CMixer* mixer = GetMixer();
-	if (SConfig::GetInstance().m_LocalCoreStartupParameter.bTimeStretching)
+	if (SConfig::GetInstance().bTimeStretching)
 	{
 		float ratemultiplier = 1.0f;
 		soundtouch::SoundTouch sTouch;

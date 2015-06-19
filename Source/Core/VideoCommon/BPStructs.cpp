@@ -330,7 +330,7 @@ void BPWritten(const BPCmd& bp)
 		u32 addr = bpmem.tmem_config.tlut_src << 5;
 
 		// The GameCube ignores the upper bits of this address. Some games (WW, MKDD) set them.
-		if (!SConfig::GetInstance().m_LocalCoreStartupParameter.bWii)
+		if (!SConfig::GetInstance().bWii)
 			addr = addr & 0x01FFFFFF;
 
 		Memory::CopyFromEmu(texMem + tlutTMemAddr, addr, tlutXferCount);

@@ -173,11 +173,11 @@ private:
 		u32 all_ones = (1ULL << sbits) - 1;
 		if ((all_ones & mask) == all_ones)
 		{
-			MoveOpArgToReg(sbits, MatR(RSCRATCH));
+			MoveOpArgToReg(sbits, MDisp(RSCRATCH, 0));
 		}
 		else
 		{
-			m_code->MOVZX(32, sbits, m_dst_reg, MatR(RSCRATCH));
+			m_code->MOVZX(32, sbits, m_dst_reg, MDisp(RSCRATCH, 0));
 			m_code->AND(32, R(m_dst_reg), Imm32(mask));
 			if (m_sign_extend)
 				m_code->MOVSX(32, sbits, m_dst_reg, R(m_dst_reg));
@@ -250,7 +250,7 @@ FixupBranch EmuCodeBlock::CheckIfSafeAddress(const OpArg& reg_value, X64Reg reg_
 	// assuming they'll never do an invalid memory access.
 	// The slightly more complex check needed for Wii games using the space just above MEM1 isn't
 	// implemented here yet, since there are no known working Wii MMU games to test it with.
-	if (jit->jo.memcheck && !SConfig::GetInstance().m_LocalCoreStartupParameter.bWii)
+	if (jit->jo.memcheck && !SConfig::GetInstance().bWii)
 	{
 		if (scratch == reg_addr)
 			PUSH(scratch);

@@ -72,7 +72,7 @@ StreamingVoiceContext::StreamingVoiceContext(IXAudio2 *pXAudio2, CMixer *pMixer,
 	m_bufferAddress(nullptr),
 	m_directstreaming(directstreaming)
 {
-	m_buffercount = m_directstreaming ? NUM_BUFFERS : SConfig::GetInstance().m_LocalCoreStartupParameter.iLatency + SOUND_BUFFER_COUNT;
+	m_buffercount = m_directstreaming ? NUM_BUFFERS : SConfig::GetInstance().iLatency + SOUND_BUFFER_COUNT;
 	m_bufferReady = new std::atomic<u32>[m_buffercount];
 	m_safebufferReady.reset(m_bufferReady);
 	m_bufferAddress = new PBYTE[m_buffercount];
@@ -202,7 +202,7 @@ XAudio2::XAudio2()
 	, m_volume(1.0f)
 	, m_cleanup_com(SUCCEEDED(CoInitializeEx(nullptr, COINIT_MULTITHREADED)))
 {
-	m_enablesoundloop = SConfig::GetInstance().m_LocalCoreStartupParameter.bTimeStretching || SConfig::GetInstance().m_LocalCoreStartupParameter.bDPL2Decoder;
+	m_enablesoundloop = SConfig::GetInstance().bTimeStretching || SConfig::GetInstance().bDPL2Decoder;
 }
 
 XAudio2::~XAudio2()
@@ -261,7 +261,7 @@ void XAudio2::WriteSamples(s16 *src, u32 numsamples)
 
 bool XAudio2::SupportSurroundOutput()
 {
-	bool surround_capable = SConfig::GetInstance().m_LocalCoreStartupParameter.bDPL2Decoder;
+	bool surround_capable = SConfig::GetInstance().bDPL2Decoder;
 	return surround_capable;
 }
 

@@ -36,7 +36,7 @@ void AddMessage(const std::string& str, u32 ms)
 
 void DrawMessages()
 {
-	if(!SConfig::GetInstance().m_LocalCoreStartupParameter.bOnScreenDisplayMessages)
+	if(!SConfig::GetInstance().bOnScreenDisplayMessages)
 		return;
 
 	int left = 1, top = 15;

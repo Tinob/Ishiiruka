@@ -295,7 +295,7 @@ void PixelShaderCache::Init()
 
 	char cache_filename[MAX_PATH];
 	sprintf(cache_filename, "%sIDX9-%s-ps.cache", File::GetUserPath(D_SHADERCACHE_IDX).c_str(),
-		SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID.c_str());
+		SConfig::GetInstance().m_strUniqueID.c_str());
 	PixelShaderCacheInserter inserter;
 	PixelShadersLock.lock();
 	g_ps_disk_cache.OpenAndRead(cache_filename, inserter);

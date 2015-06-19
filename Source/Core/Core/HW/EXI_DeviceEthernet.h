@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <atomic>
+
 #ifdef _WIN32
 #include <Windows.h>
 #endif
@@ -325,10 +327,10 @@ public:
 	DWORD mMtu;
 	OVERLAPPED mReadOverlapped;
 	static VOID CALLBACK ReadWaitCallback(PVOID lpParameter, BOOLEAN TimerFired);
-#elif defined(__linux__) || defined(__APPLE__)
+#elif defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
 	int fd;
 	std::thread readThread;
-	volatile bool readEnabled;
+	std::atomic<bool> readEnabled;
 #endif
 
 };

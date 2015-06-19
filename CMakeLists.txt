@@ -11,7 +11,6 @@ option(USE_UPNP "Enables UPnP port mapping support" ON)
 option(DISABLE_WX "Disable wxWidgets (use Qt or CLI interface)" OFF)
 option(ENABLE_QT "Enable Qt (use the experimental Qt interface)" OFF)
 option(ENABLE_PCH "Use PCH to speed up compilation" ON)
-option(ENABLE_PIE "Build a Position-Independent Executable (PIE)" ON)
 option(ENABLE_LTO "Enables Link Time Optimization" OFF)
 option(ENABLE_GENERIC "Enables generic build that should run on any little-endian host" OFF)
 if(APPLE)
@@ -52,7 +51,6 @@ if (APPLE)
 	endif()
 endif()
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/CMakeTests)
-set(DOLPHIN_IS_STABLE FALSE)
 # Libraries to link
 set(LIBS)
 
@@ -126,7 +124,7 @@ endif()
 # version number
 set(DOLPHIN_VERSION_MAJOR "4")
 set(DOLPHIN_VERSION_MINOR "0")
-if(DOLPHIN_IS_STABLE)
+if(DOLPHIN_WC_BRANCH STREQUAL "stable")
 	set(DOLPHIN_VERSION_PATCH "0")
 else()
 	set(DOLPHIN_VERSION_PATCH ${DOLPHIN_WC_REVISION})
@@ -150,6 +148,7 @@ endif()
 if(NOT ENABLE_GENERIC)
 	if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "^x86" OR
 	   ${CMAKE_SYSTEM_PROCESSOR} MATCHES "i.86" OR
+	   ${CMAKE_SYSTEM_PROCESSOR} MATCHES "amd64" OR
 	   APPLE)
 		if(_ARCH_64)
 			set(_M_X86 1)
@@ -214,11 +213,6 @@ check_and_add_flag(VISIBILITY_INLINES_HIDDEN -fvisibility-inlines-hidden)
 
 if(UNIX AND NOT APPLE)
 	check_and_add_flag(VISIBILITY_HIDDEN -fvisibility=hidden)
-endif()
-
-if(ENABLE_PIE)
-	add_definitions(-fPIE)
-	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pie")
 endif()
 
 if(ENABLE_LTO)
@@ -817,17 +811,17 @@ endif()
 ########################################
 # Pre-build events: Define configuration variables and write SCM info header
 #
-if(DOLPHIN_WC_BRANCH STREQUAL "master")
-	set(DOLPHIN_WC_IS_MASTER "1")
+if(DOLPHIN_WC_BRANCH STREQUAL "master" OR DOLPHIN_WC_BRANCH STREQUAL "stable")
+	set(DOLPHIN_WC_IS_STABLE "1")
 else()
-	set(DOLPHIN_WC_IS_MASTER "0")
+	set(DOLPHIN_WC_IS_STABLE "0")
 endif()
 
 file(WRITE ${PROJECT_BINARY_DIR}/Source/Core/Common/scmrev.h
 	"#define SCM_REV_STR \"" ${DOLPHIN_WC_REVISION} "\"\n"
 	"#define SCM_DESC_STR \"" ${DOLPHIN_WC_DESCRIBE} "\"\n"
 	"#define SCM_BRANCH_STR \"" ${DOLPHIN_WC_BRANCH} "\"\n"
-	"#define SCM_IS_MASTER " ${DOLPHIN_WC_IS_MASTER} "\n"
+	"#define SCM_IS_MASTER " ${DOLPHIN_WC_IS_STABLE} "\n"
 	)
 include_directories("${PROJECT_BINARY_DIR}/Source/Core/Common")
 

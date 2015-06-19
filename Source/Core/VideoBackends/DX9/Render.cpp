@@ -254,7 +254,7 @@ void Renderer::CheckForResize(bool &resized, bool &fullscreen, bool &fullscreenc
 		client_width >= 4 && client_height >= 4;
 	
 	fullscreen = g_ActiveConfig.bFullscreen &&
-		!SConfig::GetInstance().m_LocalCoreStartupParameter.bRenderToMain;
+		!SConfig::GetInstance().bRenderToMain;
 
 	fullscreencahnged = s_last_fullscreen_mode != fullscreen;
 

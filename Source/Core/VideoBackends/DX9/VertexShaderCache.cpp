@@ -120,7 +120,7 @@ void VertexShaderCache::Init()
 
 	char cache_filename[MAX_PATH];
 	sprintf(cache_filename, "%sIDX9-%s-vs.cache", File::GetUserPath(D_SHADERCACHE_IDX).c_str(),
-		SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID.c_str());
+		SConfig::GetInstance().m_strUniqueID.c_str());
 	VertexShaderCacheInserter inserter;
 	vshaderslock.lock();
 	g_vs_disk_cache.OpenAndRead(cache_filename, inserter);

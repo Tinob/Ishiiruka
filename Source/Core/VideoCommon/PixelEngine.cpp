@@ -243,7 +243,7 @@ void RegisterMMIO(MMIO::Mapping* mmio, u32 base)
 
 bool AllowIdleSkipping()
 {
-	return !SConfig::GetInstance().m_LocalCoreStartupParameter.bCPUThread || (!m_Control.PETokenEnable && !m_Control.PEFinishEnable);
+	return !SConfig::GetInstance().bCPUThread || (!m_Control.PETokenEnable && !m_Control.PEFinishEnable);
 }
 
 void UpdateInterrupts()
@@ -305,7 +305,7 @@ void SetToken(const u16 _token, const int _bSetTokenAcknowledge)
 		Common::AtomicStore(*(volatile u32*)&g_bSignalTokenInterrupt, 1);
 	}
 
-	if (!SConfig::GetInstance().m_LocalCoreStartupParameter.bCPUThread)
+	if (!SConfig::GetInstance().bCPUThread)
 		CoreTiming::ScheduleEvent(0, et_SetTokenOnMainThread, _token | (_bSetTokenAcknowledge << 16));
 	else
 		CoreTiming::ScheduleEvent_Threadsafe(0, et_SetTokenOnMainThread, _token | (_bSetTokenAcknowledge << 16));
@@ -316,7 +316,7 @@ void SetToken(const u16 _token, const int _bSetTokenAcknowledge)
 void SetFinish()
 {
 	CommandProcessor::interruptFinishWaiting = true;
-	if (!SConfig::GetInstance().m_LocalCoreStartupParameter.bCPUThread)
+	if (!SConfig::GetInstance().bCPUThread)
 		CoreTiming::ScheduleEvent(0, et_SetFinishOnMainThread, 0);
 	else
 		CoreTiming::ScheduleEvent_Threadsafe(0, et_SetFinishOnMainThread, 0);

@@ -28,7 +28,7 @@ bool DSound::CreateBuffer()
 	// Fill out DSound buffer description.
 	dsbdesc.dwSize  = sizeof(DSBUFFERDESC);
 	dsbdesc.dwFlags = DSBCAPS_GETCURRENTPOSITION2 | DSBCAPS_CTRLVOLUME | DSBCAPS_GLOBALFOCUS;
-	dsbdesc.dwBufferBytes = bufferSize = SOUND_FRAME_SIZE * SOUND_SAMPLES_STEREO * (SConfig::GetInstance().m_LocalCoreStartupParameter.iLatency + SOUND_BUFFER_COUNT) * sizeof(s16);
+	dsbdesc.dwBufferBytes = bufferSize = SOUND_FRAME_SIZE * SOUND_SAMPLES_STEREO * (SConfig::GetInstance().iLatency + SOUND_BUFFER_COUNT) * sizeof(s16);
 	dsbdesc.lpwfxFormat = (WAVEFORMATEX *)&pcmwf;
 	dsbdesc.guid3DAlgorithm = DS3DALG_DEFAULT;
 

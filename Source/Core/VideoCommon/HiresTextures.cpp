@@ -89,7 +89,7 @@ void HiresTexture::Update()
 	}
 	
 	s_textureMap.clear();
-	const std::string& gameCode = SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID;
+	const std::string& gameCode = SConfig::GetInstance().m_strUniqueID;
 	std::string szDir = StringFromFormat("%s%s", File::GetUserPath(D_HIRESTEXTURES_IDX).c_str(), gameCode.c_str());	
 	std::string ddscode(".dds");
 	std::string cddscode(".DDS");
@@ -236,7 +236,7 @@ std::string HiresTexture::GenBaseName(
 		u64 tlut_hash = 0;
 		if(tlut_size)
 			tlut_hash = GetHashHiresTexture(tlut, (int)tlut_size, g_ActiveConfig.iSafeTextureCache_ColorSamples);
-		name = StringFromFormat("%s_%08x_%i", SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID.c_str(), (u32)(tex_hash ^ tlut_hash), (u16)format);
+		name = StringFromFormat("%s_%08x_%i", SConfig::GetInstance().m_strUniqueID.c_str(), (u32)(tex_hash ^ tlut_hash), (u16)format);
 		convert_iter = s_textureMap.find(name);
 		if (convert_iter != s_textureMap.end())
 		{

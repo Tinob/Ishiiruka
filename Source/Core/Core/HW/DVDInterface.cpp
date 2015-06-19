@@ -399,7 +399,7 @@ static void DTKStreamingCallback(u64 userdata, int cyclesLate)
 	short tempPCM[NUM_SAMPLES * 2];
 	unsigned samples_processed = NUM_SAMPLES;
 	const bool bStreaming = g_bStream && AudioInterface::IsPlaying();
-	const bool bTimeStretching = SConfig::GetInstance().m_LocalCoreStartupParameter.bTimeStretching;
+	const bool bTimeStretching = SConfig::GetInstance().bTimeStretching;
 	if (bStreaming)
 	{
 		samples_processed = ProcessDTKSamples(tempPCM, NUM_SAMPLES);
@@ -509,7 +509,7 @@ void EjectDiscCallback(u64 userdata, int cyclesLate)
 
 void InsertDiscCallback(u64 userdata, int cyclesLate)
 {
-	std::string& SavedFileName = SConfig::GetInstance().m_LocalCoreStartupParameter.m_strFilename;
+	std::string& SavedFileName = SConfig::GetInstance().m_strFilename;
 	std::string *_FileName = (std::string *)userdata;
 
 	if (!SetVolumeName(*_FileName))
@@ -706,7 +706,7 @@ DVDReadCommand ExecuteReadCommand(u64 DVD_offset, u32 output_address, u32 DVD_le
 		DVD_length = output_length;
 	}
 
-	if (SConfig::GetInstance().m_LocalCoreStartupParameter.bFastDiscSpeed)
+	if (SConfig::GetInstance().bFastDiscSpeed)
 		// An optional hack to speed up loading times
 		*ticks_until_completion = output_length * (SystemTimers::GetTicksPerSecond() / BUFFER_TRANSFER_RATE);
 	else

@@ -179,7 +179,7 @@ namespace VertexLoaderManager
 		MarkAllAttrDirty();
 		for (VertexLoaderBase*& vertexLoader : g_main_cp_state.vertex_loaders)
 			vertexLoader = nullptr;
-		LastGameCode = SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID;
+		LastGameCode = SConfig::GetInstance().m_strUniqueID;
 	}
 
 	void Shutdown()

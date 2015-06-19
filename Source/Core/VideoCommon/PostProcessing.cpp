@@ -451,7 +451,7 @@ void PostProcessingShaderConfiguration::LoadOptionsConfiguration()
 		if (Core::IsRunningAndStarted())
 		{
 			std::string PresetPath = File::GetUserPath(D_PPSHADERSPRESETS_IDX);
-			PresetPath += SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID + DIR_SEP;
+			PresetPath += SConfig::GetInstance().m_strUniqueID + DIR_SEP;
 			PresetPath += m_current_shader + ".ini";
 			if (File::Exists(PresetPath))
 			{
@@ -481,7 +481,7 @@ void PostProcessingShaderConfiguration::SaveOptionsConfiguration()
 		{
 			File::CreateDir(file_path);
 		}
-		file_path += SConfig::GetInstance().m_LocalCoreStartupParameter.m_strUniqueID + DIR_SEP;
+		file_path += SConfig::GetInstance().m_strUniqueID + DIR_SEP;
 		if (!File::Exists(file_path))
 		{
 			File::CreateDir(file_path);

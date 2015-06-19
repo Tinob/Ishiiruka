@@ -42,7 +42,7 @@
 #define S_ISDIR(m)  (((m)&S_IFMT) == S_IFDIR)
 #endif
 
-#ifdef BSD4_4
+#if defined BSD4_4 || defined __FreeBSD__
 #define stat64 stat
 #define fstat64 fstat
 #endif
@@ -774,7 +774,6 @@ static void RebuildUserDirectories(unsigned int dir_index)
 		s_user_paths[D_SCREENSHOTS_IDX]    = s_user_paths[D_USER_IDX] + SCREENSHOTS_DIR DIR_SEP;
 		s_user_paths[D_LOAD_IDX]           = s_user_paths[D_USER_IDX] + LOAD_DIR DIR_SEP;
 		s_user_paths[D_HIRESTEXTURES_IDX]  = s_user_paths[D_LOAD_IDX] + HIRES_TEXTURES_DIR DIR_SEP;
-		s_user_paths[D_PPSHADERSPRESETS_IDX] = s_user_paths[D_LOAD_IDX] + PPS_PRESETS_DIR DIR_SEP;
 		s_user_paths[D_DUMP_IDX]           = s_user_paths[D_USER_IDX] + DUMP_DIR DIR_SEP;
 		s_user_paths[D_DUMPFRAMES_IDX]     = s_user_paths[D_DUMP_IDX] + DUMP_FRAMES_DIR DIR_SEP;
 		s_user_paths[D_DUMPAUDIO_IDX]      = s_user_paths[D_DUMP_IDX] + DUMP_AUDIO_DIR DIR_SEP;
@@ -820,7 +819,6 @@ static void RebuildUserDirectories(unsigned int dir_index)
 
 	case D_LOAD_IDX:
 		s_user_paths[D_HIRESTEXTURES_IDX]  = s_user_paths[D_LOAD_IDX] + HIRES_TEXTURES_DIR DIR_SEP;
-		s_user_paths[D_PPSHADERSPRESETS_IDX] = s_user_paths[D_LOAD_IDX] + PPS_PRESETS_DIR DIR_SEP;
 		break;
 	}
 }

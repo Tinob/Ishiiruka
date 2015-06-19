@@ -43,18 +43,6 @@
 // to address as much as possible in a one-byte offset form.
 #define RPPCSTATE RBP
 
-namespace Gen
-{
-
-inline OpArg MPIC(const void* address, X64Reg scale_reg, int scale = SCALE_1)
-{
-	ptrdiff_t offset = PPCSTATE_OFS(address);
-	_dbg_assert_(DYNA_REC, FitsInS32(offset));
-	return MComplex(RPPCSTATE, scale_reg, scale, offset);
-}
-
-}
-
 // Use these to control the instruction selection
 // #define INSTRUCTION_START FallBackToInterpreter(inst); return;
 // #define INSTRUCTION_START PPCTables::CountInstruction(inst);
@@ -62,8 +50,8 @@ inline OpArg MPIC(const void* address, X64Reg scale_reg, int scale = SCALE_1)
 
 #define FALLBACK_IF(cond) do { if (cond) { FallBackToInterpreter(inst); return; } } while (0)
 
-#define JITDISABLE(setting) FALLBACK_IF(SConfig::GetInstance().m_LocalCoreStartupParameter.bJITOff || \
-                                        SConfig::GetInstance().m_LocalCoreStartupParameter.setting)
+#define JITDISABLE(setting) FALLBACK_IF(SConfig::GetInstance().bJITOff || \
+                                        SConfig::GetInstance().setting)
 
 class JitBase : public CPUCoreBase
 {

@@ -209,7 +209,7 @@ void RunGpuLoop()
 			fifo.isGpuReadingData = true;
 			CommandProcessor::isPossibleWaitingSetDrawDone = fifo.bFF_GPLinkEnable ? true : false;
 
-			if (!SConfig::GetInstance().m_LocalCoreStartupParameter.bSyncGPU || Common::AtomicLoad(CommandProcessor::VITicks) > CommandProcessor::m_cpClockOrigin)
+			if (!SConfig::GetInstance().bSyncGPU || Common::AtomicLoad(CommandProcessor::VITicks) > CommandProcessor::m_cpClockOrigin)
 			{
 				u32 readPtr = fifo.CPReadPointer;
 				u8 *uData = Memory::GetPointer(readPtr);
@@ -226,7 +226,7 @@ void RunGpuLoop()
 
 				cyclesExecuted = OpcodeDecoder_Run(GetVideoBufferEndPtr());
 
-				if (SConfig::GetInstance().m_LocalCoreStartupParameter.bSyncGPU && Common::AtomicLoad(CommandProcessor::VITicks) > cyclesExecuted)
+				if (SConfig::GetInstance().bSyncGPU && Common::AtomicLoad(CommandProcessor::VITicks) > cyclesExecuted)
 					Common::AtomicAdd(CommandProcessor::VITicks, -(s32)cyclesExecuted);
 
 				Common::AtomicStore(fifo.CPReadPointer, readPtr);
