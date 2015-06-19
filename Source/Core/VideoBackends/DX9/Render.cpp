@@ -740,7 +740,7 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 		TargetRectangle targetRc = ConvertEFBRectangle(rc);
 		LPDIRECT3DTEXTURE9 read_texture = FramebufferManager::GetEFBColorTexture();
 		int multisamplemode = g_ActiveConfig.iMultisampleMode;		
-		if (multisamplemode == 0)
+		if (multisamplemode == 0 && g_ActiveConfig.bUseScalingFilter)
 		{
 			multisamplemode = std::max(std::min((targetRc.GetWidth() / Width) - 1, 2), 0);
 		}

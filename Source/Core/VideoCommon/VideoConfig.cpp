@@ -49,6 +49,7 @@ VideoConfig::VideoConfig()
 	bStereoEFBMonoDepth = false;
 	iStereoDepthPercentage = 100;
 	iStereoConvergenceMinimum = 0;
+	bUseScalingFilter = false;
 }
 
 void VideoConfig::Load(const std::string& ini_file)
@@ -103,7 +104,8 @@ void VideoConfig::Load(const std::string& ini_file)
 	enhancements->Get("StereoDepth", &iStereoDepth, 20);
 	enhancements->Get("StereoConvergence", &iStereoConvergence, 20);
 	enhancements->Get("StereoSwapEyes", &bStereoSwapEyes, false);
-
+	enhancements->Get("UseScalingFilter", &bUseScalingFilter, false);
+	
 	IniFile::Section* hacks = iniFile.GetOrCreateSection("Hacks");
 	hacks->Get("EFBAccessEnable", &bEFBAccessEnable, true);
 	hacks->Get("EFBFastAccess", &bEFBFastAccess, false);
@@ -211,6 +213,7 @@ void VideoConfig::GameIniLoad()
 	CHECK_SETTING("Video_Enhancements", "StereoDepth", iStereoDepth);
 	CHECK_SETTING("Video_Enhancements", "StereoConvergence", iStereoConvergence);
 	CHECK_SETTING("Video_Enhancements", "StereoSwapEyes", bStereoSwapEyes);
+	CHECK_SETTING("Video_Enhancements", "UseScalingFilter", bUseScalingFilter);
 
 	CHECK_SETTING("Video_Stereoscopy", "StereoEFBMonoDepth", bStereoEFBMonoDepth);
 	CHECK_SETTING("Video_Stereoscopy", "StereoDepthPercentage", iStereoDepthPercentage);
@@ -330,6 +333,8 @@ void VideoConfig::Save(const std::string& ini_file)
 	enhancements->Set("StereoDepth", iStereoDepth);
 	enhancements->Set("StereoConvergence", iStereoConvergence);
 	enhancements->Set("StereoSwapEyes", bStereoSwapEyes);
+	enhancements->Set("UseScalingFilter", bUseScalingFilter);
+	
 
 	IniFile::Section* hacks = iniFile.GetOrCreateSection("Hacks");
 	hacks->Set("EFBAccessEnable", bEFBAccessEnable);

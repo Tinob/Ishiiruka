@@ -111,6 +111,7 @@ static wxString pixel_lighting_desc = _("Calculate lighting of 3D graphics per-p
 static wxString hacked_buffer_upload_desc = _("Uses unsafe operations to speed up vertex streaming in OpenGL. There are no known problems on supported GPUs, but it will cause severe stability and graphical issues otherwise.\n\nIf unsure, leave this unchecked.");
 static wxString fast_depth_calc_desc = _("Use a less accurate algorithm to calculate depth values.\nCauses issues in a few games but might give a decent speedup.\n\nIf unsure, leave this checked.");
 static wxString force_filtering_desc = _("Force texture filtering even if the emulated game explicitly disabled it.\nImproves texture quality slightly but causes glitches in some games.\n\nIf unsure, leave this unchecked.");
+static wxString Use_Scaling_filter_desc = _("Use filtering when efb scaled size is larger than the target resolution.");
 static wxString borderless_fullscreen_desc = _("Implement fullscreen mode with a borderless window spanning the whole screen instead of using exclusive mode.\nAllows for faster transitions between fullscreen and windowed mode, but increases input latency, makes movement less smooth and slightly decreases performance.\nExclusive mode is required to support Nvidia 3D Vision in the Direct3D backend.\n\nIf unsure, leave this unchecked.");
 static wxString internal_res_desc = _("Specifies the resolution used to render at. A high resolution will improve visual quality a lot but is also quite heavy on performance and might cause glitches in certain games.\n\"Multiple of 640x528\" is a bit slower than \"Window Size\" but yields less issues. Generally speaking, the lower the internal resolution is, the better your performance will be.\n\nIf unsure, select 640x528.");
 static wxString efb_access_desc = _("Ignore any requests of the CPU to read from or write to the EFB.\nImproves performance in some games, but might disable some gameplay-related features or graphical effects.\n\nIf unsure, leave this unchecked.");
@@ -420,6 +421,7 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title, con
 	szr_enh->Add(CreateCheckBox(page_enh, _("Scaled EFB Copy"), (scaled_efb_copy_desc), vconfig.bCopyEFBScaled));
 	szr_enh->Add(pixel_lighting = CreateCheckBox(page_enh, _("Per-Pixel Lighting"), (pixel_lighting_desc), vconfig.bEnablePixelLighting));
 	szr_enh->Add(CreateCheckBox(page_enh, _("Force Texture Filtering"), (force_filtering_desc), vconfig.bForceFiltering));
+	szr_enh->Add(Scaling_filter = CreateCheckBox(page_enh, _("Use Scaling Filter"), (Use_Scaling_filter_desc), vconfig.bUseScalingFilter));
 
 	szr_enh->Add(CreateCheckBox(page_enh, _("Widescreen Hack"), (ws_hack_desc), vconfig.bWidescreenHack));
 	szr_enh->Add(CreateCheckBox(page_enh, _("Disable Fog"), (disable_fog_desc), vconfig.bDisableFog));
@@ -870,6 +872,10 @@ void VideoConfigDiag::OnUpdateUI(wxUpdateUIEvent& ev)
 	borderless_fullscreen->Enable((vconfig.backend_info.APIType & API_D3D9) == 0);
 	borderless_fullscreen->Show((vconfig.backend_info.APIType & API_D3D9) == 0);
 
+	Scaling_filter->Enable(vconfig.backend_info.APIType != API_OPENGL);
+	Scaling_filter->Show(vconfig.backend_info.APIType != API_OPENGL);
+
+	
 	// EFB Access Cache
 	Fast_efb_cache->Show(vconfig.bEFBAccessEnable);
 	// XFB

@@ -105,6 +105,7 @@ struct VideoConfig final
 	int iStereoDepth;
 	int iStereoConvergence;
 	bool bStereoSwapEyes;
+	bool bUseScalingFilter;
 
 	// Information
 	bool bShowFPS;

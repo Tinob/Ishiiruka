@@ -20,13 +20,14 @@ struct paramsStruct
 {
 	// Time
 	u32 Time;
+	u32 ScalingFilter;
 	// Layer
 	int Layer;
 	// Gamma
-	float native_gamma;
-	float padding;
+	float native_gamma;	
 	float resolution[4];
 	float targetscale[4];
+	float dstscale[4];
 };
 
 struct STVertex { float x, y, z, u0, v0; };
@@ -35,11 +36,13 @@ static const char* vertex_shader_code = R"hlsl(
 cbuffer ParamBuffer : register(b0) 
 {
 	uint Time;
+	uint ScalingFilter;
 	int Layer;
 	float native_gamma;
-	float padding;
+	
 	float4 resolution;
 	float4 targetscale;
+	float4 dstscale;
 }
 
 struct VSOUTPUT
@@ -54,8 +57,8 @@ VSOUTPUT main(float4 inPosition : POSITION,float2 inTEX0 : TEXCOORD0)
 	VSOUTPUT OUT;
 	OUT.vPosition = inPosition;
 	OUT.vTexCoord = inTEX0;
-	OUT.vTexCoord1 = inTEX0.xyyx + (float4(-0.375f,-0.125f,-0.375f, 0.125f) * resolution.zwwz);
-	OUT.vTexCoord2 = inTEX0.xyyx + (float4( 0.375f, 0.125f, 0.375f,-0.125f) * resolution.zwwz);
+	OUT.vTexCoord1 = inTEX0.xyyx + (float4(-0.375f,-0.125f,-0.375f, 0.125f) * dstscale.zwwz);
+	OUT.vTexCoord2 = inTEX0.xyyx + (float4( 0.375f, 0.125f, 0.375f,-0.125f) * dstscale.zwwz);
 	return OUT;
 })hlsl";
 
@@ -175,6 +178,7 @@ void DX11PostProcessing::BlitFromTexture(const TargetRectangle &src, const Targe
 	params.native_gamma = 1.0f / gamma;
 	params.Layer = layer;
 	params.Time = (u32)m_timer.GetTimeElapsed();
+	params.ScalingFilter = (src.GetWidth() > dst.GetWidth() && src.GetHeight() > dst.GetHeight() && g_ActiveConfig.bUseScalingFilter) ? 1u : 0;
 	float sw = 1.0f / (float)src_width;
 	float sh = 1.0f / (float)src_height;
 	float u0 = ((float)src.left) * sw;
@@ -191,6 +195,11 @@ void DX11PostProcessing::BlitFromTexture(const TargetRectangle &src, const Targe
 	params.targetscale[1] = v0;
 	params.targetscale[2] = 1.0f / (u1-u0);
 	params.targetscale[3] = 1.0f / (v1-v0);
+	params.dstscale[0] = float(dst.GetWidth());
+	params.dstscale[1] = float(dst.GetHeight());
+	params.dstscale[2] = 1.0f / params.dstscale[0];
+	params.dstscale[3] = 1.0f / params.dstscale[1];
+
 	D3D11_MAPPED_SUBRESOURCE map;
 	D3D::context->Map(m_params.get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
 	memcpy(map.pData, &params, sizeof(params));
@@ -444,11 +453,12 @@ Texture2DArray Tex11[4] : register(t11);
 cbuffer ParamBuffer : register(b0) 
 {
 	uint Time;
+	uint ScalingFilter;
 	int layer;
 	float native_gamma;
-	float padding;
 	float4 resolution;
 	float4 targetscale;
+	float4 dstscale;
 }
 
 // Globals
@@ -520,11 +530,12 @@ Texture2DArray Tex11[4] : register(t11);
 cbuffer ParamBuffer : register(b0) 
 {
 	uint Time;
+	uint ScalingFilter;
 	int layer;
 	float native_gamma;
-	float padding;
 	float4 resolution;
 	float4 targetscale;
+	float4 dstscale;
 }
 
 // Globals
@@ -583,7 +594,19 @@ float SampleDepthLoacationOffset(float2 location, int2 offset)
 )hlsl";
 
 static const std::string s_hlsl_interface = R"hlsl(
-float4 Sample() { return Sample(uv0, layer); }
+float4 Sample() 
+{ 
+	float4 outputcolor = Sample(uv0, layer);
+	if (ScalingFilter != 0)
+	{
+		outputcolor += Sample(uv1.xy, layer);
+		outputcolor += Sample(uv1.wz, layer);
+		outputcolor += Sample(uv2.xy, layer);
+		outputcolor += Sample(uv2.wz, layer);
+		outputcolor *= 0.2;
+	}
+	return outputcolor;
+}
 float4 SampleOffset(int2 offset) { return SampleLocationOffset(uv0, offset); }
 float4 SamplePrev() { return SamplePrev(0, uv0); }
 float4 SamplePrev(int idx) { return SamplePrev(idx, uv0); }
