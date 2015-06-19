@@ -26,7 +26,7 @@ namespace DiscIO
 {
 
 CVolumeWiiCrypted::CVolumeWiiCrypted(IBlobReader* _pReader, u64 _VolumeOffset,
-									 const unsigned char* _pVolumeKey)
+	const unsigned char* _pVolumeKey)
 	: m_pReader(_pReader),
 	m_AES_ctx(new aes_context),
 	m_pBuffer(nullptr),
@@ -68,7 +68,7 @@ bool CVolumeWiiCrypted::Read(u64 _ReadOffset, u64 _Length, u8* _pBuffer, bool de
 	while (_Length > 0)
 	{
 		// Calculate block offset
-		u64 Block  = _ReadOffset / s_block_data_size;
+		u64 Block = _ReadOffset / s_block_data_size;
 		u64 Offset = _ReadOffset % s_block_data_size;
 
 		if (m_LastDecryptedBlockOffset != Block)
@@ -82,7 +82,7 @@ bool CVolumeWiiCrypted::Read(u64 _ReadOffset, u64 _Length, u8* _pBuffer, bool de
 			// but that won't affect anything, because we won't
 			// use the content of m_pBuffer anymore after this
 			aes_crypt_cbc(m_AES_ctx.get(), AES_DECRYPT, s_block_data_size, m_pBuffer + 0x3D0,
-			              m_pBuffer + s_block_header_size, m_LastDecryptedBlock);
+				m_pBuffer + s_block_header_size, m_LastDecryptedBlock);
 			m_LastDecryptedBlockOffset = Block;
 
 			// The only thing we currently use from the 0x000 - 0x3FF part
@@ -97,8 +97,8 @@ bool CVolumeWiiCrypted::Read(u64 _ReadOffset, u64 _Length, u8* _pBuffer, bool de
 		memcpy(_pBuffer, &m_LastDecryptedBlock[Offset], (size_t)CopySize);
 
 		// Update offsets
-		_Length     -= CopySize;
-		_pBuffer    += CopySize;
+		_Length -= CopySize;
+		_pBuffer += CopySize;
 		_ReadOffset += CopySize;
 	}
 
@@ -144,14 +144,12 @@ std::string CVolumeWiiCrypted::GetUniqueID() const
 	if (m_pReader == nullptr)
 		return std::string();
 
-	char ID[7];
+	char ID[6];
 
 	if (!Read(0, 6, (u8*)ID, false))
 		return std::string();
 
-	ID[6] = '\0';
-
-	return ID;
+	return DecodeString(ID);
 }
 
 
@@ -171,14 +169,12 @@ std::string CVolumeWiiCrypted::GetMakerID() const
 	if (m_pReader == nullptr)
 		return std::string();
 
-	char makerID[3];
+	char makerID[2];
 
 	if (!Read(0x4, 0x2, (u8*)&makerID, false))
 		return std::string();
 
-	makerID[2] = '\0';
-
-	return makerID;
+	return DecodeString(makerID);
 }
 
 u16 CVolumeWiiCrypted::GetRevision() const
@@ -233,9 +229,7 @@ std::string CVolumeWiiCrypted::GetApploaderDate() const
 	if (!Read(0x2440, 0x10, (u8*)&date, true))
 		return std::string();
 
-	date[10] = '\0';
-
-	return date;
+	return DecodeString(date);
 }
 
 IVolume::EPlatform CVolumeWiiCrypted::GetVolumeType() const

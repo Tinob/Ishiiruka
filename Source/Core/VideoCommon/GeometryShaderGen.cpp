@@ -110,7 +110,7 @@ static inline void GenerateGeometryShader(T& out, u32 primitive_type, const XFMe
 			out.Write("#define InstanceID gl_InvocationID\n");
 
 		out.Write("in VertexData {\n");
-		GenerateVSOutputMembers<T, ApiType>(out, lightingEnabled, xfr);
+		GenerateVSOutputMembers<T, ApiType>(out, lightingEnabled, xfr, g_ActiveConfig.backend_info.bSupportsBindingLayout ? "centroid" : "centroid in");
 		out.Write("} vs[%d];\n", vertex_in);
 
 		out.Write("out VertexData {\n");
