@@ -147,8 +147,13 @@ void FramebufferManager::GetTargetSize(u32 *width, u32 *height)
 void XFBSource::Draw(const MathUtil::Rectangle<float> &sourcerc,
 	const MathUtil::Rectangle<float> &drawrc, int width, int height) const
 {
+	int multisamplemode = g_ActiveConfig.iMultisampleMode;
+	if (multisamplemode == 0 && g_ActiveConfig.bUseScalingFilter)
+	{
+		multisamplemode = std::max(std::min((int)(sourcerc.GetWidth() / drawrc.GetWidth()) - 1, 2), 0);
+	}
 	D3D::drawShadedTexSubQuad(texture, &sourcerc, texWidth, texHeight, &drawrc, width , height,
-		PixelShaderCache::GetColorCopyProgram(0), VertexShaderCache::GetSimpleVertexShader(0));
+		PixelShaderCache::GetColorCopyProgram(multisamplemode), VertexShaderCache::GetSimpleVertexShader(multisamplemode));
 }
 
 void XFBSource::DecodeToTexture(u32 xfbAddr, u32 fbWidth, u32 fbHeight)
@@ -196,6 +201,12 @@ void XFBSource::CopyEFB(float Gamma)
 
 	D3D::ChangeSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
 	D3D::ChangeSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+	
+	int multisamplemode = g_ActiveConfig.iMultisampleMode;
+	if (multisamplemode == 0 && g_ActiveConfig.bUseScalingFilter)
+	{
+		multisamplemode = std::max(std::min((int)((sourcerect.right - sourcerect.left) / texWidth) - 1, 2), 0);
+	}
 
 	D3D::drawShadedTexQuad(
 		FramebufferManager::GetEFBColorTexture(), 
@@ -204,8 +215,8 @@ void XFBSource::CopyEFB(float Gamma)
 		Renderer::GetTargetHeight(), 
 		texWidth, 
 		texHeight, 
-		PixelShaderCache::GetColorCopyProgram( g_ActiveConfig.iMultisampleMode), 
-		VertexShaderCache::GetSimpleVertexShader( g_ActiveConfig.iMultisampleMode),
+		PixelShaderCache::GetColorCopyProgram(multisamplemode),
+		VertexShaderCache::GetSimpleVertexShader(multisamplemode),
 		Gamma);
 
 	D3D::RefreshSamplerState(0, D3DSAMP_MINFILTER);

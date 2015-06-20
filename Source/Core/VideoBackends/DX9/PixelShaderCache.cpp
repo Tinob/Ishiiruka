@@ -184,7 +184,7 @@ static LPDIRECT3DPIXELSHADER9 CreateCopyShader(int copyMatrixType, int depthConv
 			"in float uv1 : TEXCOORD1,\n"
 			"in float4 uv2 : TEXCOORD2,\n"
 			"in float4 uv3 : TEXCOORD3){\n"
-			"float4 texcol = (tex2D(samp0,uv2.xy) + tex2D(samp0,uv2.wz) + tex2D(samp0,uv3.xy) + tex2D(samp0,uv3.wz))*0.25f;\n");
+			"float4 texcol = (tex2D(samp0,uv0.xy) + tex2D(samp0,uv2.xy) + tex2D(samp0,uv2.wz) + tex2D(samp0,uv3.xy) + tex2D(samp0,uv3.wz))*0.2f;\n");
 		break;
 	}
 

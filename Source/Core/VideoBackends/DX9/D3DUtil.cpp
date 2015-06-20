@@ -367,10 +367,10 @@ void drawShadedTexQuad(IDirect3DTexture9 *texture,
 	float g = 1.0f/Gamma;
 
 	const struct Q2DVertex { float x,y,z,rhw,u,v,w,h,G; } coords[4] = {
-		{-1.0f - dw,-1.0f + dh, 0.0f,1.0f, u1, v2, sw, sh, g},
-		{-1.0f - dw, 1.0f + dh, 0.0f,1.0f, u1, v1, sw, sh, g},
-		{ 1.0f - dw,-1.0f + dh, 0.0f,1.0f, u2, v2, sw, sh, g},
-		{ 1.0f - dw, 1.0f + dh, 0.0f,1.0f, u2, v1, sw, sh, g}
+		{-1.0f - dw,-1.0f + dh, 0.0f,1.0f, u1, v2, dw, dh, g},
+		{-1.0f - dw, 1.0f + dh, 0.0f,1.0f, u1, v1, dw, dh, g},
+		{ 1.0f - dw,-1.0f + dh, 0.0f,1.0f, u2, v2, dw, dh, g},
+		{ 1.0f - dw, 1.0f + dh, 0.0f,1.0f, u2, v1, dw, dh, g}
 	};
 	D3D::ChangeVertexShader(Vshader);
 	D3D::ChangePixelShader(PShader);
@@ -403,10 +403,10 @@ void drawShadedTexSubQuad(IDirect3DTexture9 *texture,
 	float g = 1.0f/Gamma;
 
 	struct Q2DVertex { float x,y,z,rhw,u,v,w,h,G; } coords[4] = {
-		{ rDest->left  - dw , rDest->top    + dh, 1.0f,1.0f, u1, v2, sw, sh, g},
-		{ rDest->left  - dw , rDest->bottom + dh, 1.0f,1.0f, u1, v1, sw, sh, g},
-		{ rDest->right - dw , rDest->top    + dh, 1.0f,1.0f, u2, v2, sw, sh, g},
-		{ rDest->right - dw , rDest->bottom + dh, 1.0f,1.0f, u2, v1, sw, sh, g}
+		{ rDest->left  - dw , rDest->top    + dh, 1.0f,1.0f, u1, v2, dw, dh, g},
+		{ rDest->left  - dw , rDest->bottom + dh, 1.0f,1.0f, u1, v1, dw, dh, g},
+		{ rDest->right - dw , rDest->top    + dh, 1.0f,1.0f, u2, v2, dw, dh, g},
+		{ rDest->right - dw , rDest->bottom + dh, 1.0f,1.0f, u2, v1, dw, dh, g}
 	};
 	D3D::ChangeVertexShader(Vshader);
 	D3D::ChangePixelShader(PShader);
