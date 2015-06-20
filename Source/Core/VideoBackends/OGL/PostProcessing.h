@@ -42,6 +42,8 @@ private:
 		GLuint m_uniform_src_rect;
 		GLuint m_uniform_time;
 		GLuint m_uniform_layer;
+		GLuint m_uniform_dstscale;
+		GLuint m_uniform_ScalingFilter;
 		std::unordered_map<std::string, GLuint> m_uniform_bindings;
 	};
 	std::vector<ShaderInstance> m_shaders;

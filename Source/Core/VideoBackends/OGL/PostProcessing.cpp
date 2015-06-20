@@ -22,19 +22,29 @@ namespace OGL
 static const char s_vertex_workaround_shader[] =
 	"in vec4 rawpos;\n"
 	"out vec2 uv0;\n"
+	"out vec4 uv1;\n"
+	"out vec4 uv2;\n"
 	"uniform vec4 src_rect;\n"
+	"uniform vec4 dstscale;\n"
 	"void main(void) {\n"
 	"	gl_Position = vec4(rawpos.xy, 0.0, 1.0);\n"
 	"	uv0 = rawpos.zw * src_rect.zw + src_rect.xy;\n"
+	"	uv1 = uv0.xyyx + (vec4(-0.375f, -0.125f, -0.375f, 0.125f) * dstscale.zwwz);\n"
+	"	uv2 = uv0.xyyx + (vec4(0.375f, 0.125f, 0.375f, -0.125f) * dstscale.zwwz);\n"
 	"}\n";
 
 static const char s_vertex_shader[] =
 	"out vec2 uv0;\n"
+	"out vec4 uv1;\n"
+	"out vec4 uv2;\n"
 	"uniform vec4 src_rect;\n"
+	"uniform vec4 dstscale;\n"
 	"void main(void) {\n"
 	"	vec2 rawpos = vec2(gl_VertexID&1, gl_VertexID&2);\n"
 	"	gl_Position = vec4(rawpos*2.0-1.0, 0.0, 1.0);\n"
 	"	uv0 = rawpos * src_rect.zw + src_rect.xy;\n"
+	"	uv1 = uv0.xyyx + (vec4(-0.375f, -0.125f, -0.375f, 0.125f) * dstscale.zwwz);\n"
+	"	uv2 = uv0.xyyx + (vec4(0.375f, 0.125f, 0.375f, -0.125f) * dstscale.zwwz);\n"
 	"}\n";
 
 OpenGLPostProcessing::OpenGLPostProcessing()
@@ -165,6 +175,13 @@ void OpenGLPostProcessing::BlitFromTexture(const TargetRectangle &src, const Tar
 		glUniform1ui(currentshader.m_uniform_time, (GLuint)m_timer.GetTimeElapsed());
 		glUniform1i(currentshader.m_uniform_layer, layer);
 		glUniform1f(currentshader.m_uniform_gamma, gamma);
+		glUniform4f(currentshader.m_uniform_dstscale, 
+			float(dst.GetWidth()), 
+			float(dst.GetHeight()), 
+			1.0f / float(dst.GetWidth()), 
+			1.0f / float(dst.GetHeight()));
+		glUniform1i(currentshader.m_uniform_ScalingFilter, 
+			(src.GetWidth() > dst.GetWidth() && src.GetHeight() > dst.GetHeight() && g_ActiveConfig.bUseScalingFilter) ? 1u : 0);
 		if (m_config.IsDirty())
 		{
 			for (auto& it : m_config.GetOptions())
@@ -345,6 +362,8 @@ void OpenGLPostProcessing::ApplyShader()
 		shader.m_uniform_time = glGetUniformLocation(shader.shader.glprogid, "time");
 		shader.m_uniform_src_rect = glGetUniformLocation(shader.shader.glprogid, "src_rect");
 		shader.m_uniform_layer = glGetUniformLocation(shader.shader.glprogid, "layer");
+		shader.m_uniform_dstscale = glGetUniformLocation(shader.shader.glprogid, "dstscale");
+		shader.m_uniform_ScalingFilter = glGetUniformLocation(shader.shader.glprogid, "ScalingFilter");
 		shader.m_uniform_bindings.clear();
 		for (const auto& it : m_config.GetOptions())
 		{
@@ -394,6 +413,8 @@ SAMPLER_BINDING(14) uniform sampler2DArray samp14;
 out float4 ocol0;
 // Input coordinates
 in float2 uv0;
+in float4 uv1;
+in float4 uv2;
 // Resolution
 uniform float4 resolution;
 // Time
@@ -404,6 +425,8 @@ uniform int layer;
 uniform float native_gamma;
 // Source Rect
 uniform vec4 src_rect;
+
+uniform int ScalingFilter;
 
 // Interfacing functions		
 float2 GetFragmentCoord()
@@ -514,7 +537,19 @@ float SampleDepthOffset(int2 offset)
 	return SampleDepthLocationOffset(uv0, offset);
 }
 
-float4 Sample(){ return Sample(uv0, layer); }
+float4 Sample()
+{ 
+	float4 outputcolor = Sample(uv0, layer);
+	if (ScalingFilter != 0)
+	{
+		outputcolor += Sample(uv1.xy, layer);
+		outputcolor += Sample(uv1.wz, layer);
+		outputcolor += Sample(uv2.xy, layer);
+		outputcolor += Sample(uv2.wz, layer);
+		outputcolor *= 0.2;
+	}
+	return outputcolor;
+}
 float4 SamplePrev(){ return SamplePrev(0, uv0); }
 float4 SamplePrev(int idx){ return SamplePrev(idx, uv0); }
 float SampleDepth() { return SampleDepth(uv0, layer); }
