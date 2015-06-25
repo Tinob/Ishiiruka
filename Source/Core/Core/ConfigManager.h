@@ -92,6 +92,7 @@ struct SConfig : NonCopyable
 
 	bool bDPL2Decoder;
 	bool bTimeStretching;
+	bool bWiiSpeakSupport;
 	int iLatency;
 
 	bool bRunCompareServer;

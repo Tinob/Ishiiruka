@@ -105,6 +105,7 @@ static void EnqueueEvent(u64 userdata, int cycles_late = 0)
 
 void Init()
 {
+	bool Wee_speeak_support = SConfig::GetInstance().bWiiSpeakSupport;
 	_dbg_assert_msg_(WII_IPC_HLE, g_DeviceMap.empty(), "DeviceMap isn't empty on init");
 	CWII_IPC_HLE_Device_es::m_ContentFile = "";
 
@@ -115,12 +116,18 @@ void Init()
 
 	u32 i = 0;
 	// Build hardware devices
-	g_DeviceMap[i] = new CWII_IPC_HLE_Device_usb_oh0(i, std::string("/dev/usb/oh0")); i++;
-	g_DeviceMap[i] = new CWII_IPC_HLE_Device_usb_ven(i, std::string("/dev/usb/ven")); i++;
+	if (Wee_speeak_support)
+	{
+		g_DeviceMap[i] = new CWII_IPC_HLE_Device_usb_oh0(i, std::string("/dev/usb/oh0")); i++;
+		g_DeviceMap[i] = new CWII_IPC_HLE_Device_usb_ven(i, std::string("/dev/usb/ven")); i++;
+	}
 	g_DeviceMap[i] = new CWII_IPC_HLE_Device_usb_kbd(i, std::string("/dev/usb/kbd")); i++;
 	g_DeviceMap[i] = new CWII_IPC_HLE_Device_usb_oh1_57e_305(i, "/dev/usb/oh1/57e/305"); i++;
-	g_DeviceMap[i] = new CWII_IPC_HLE_Device_usb_oh0_57e_308(i, std::string("/dev/usb/oh0/57e/308")); i++; // Wii Speak
-	g_DeviceMap[i] = new CWII_IPC_HLE_Device_usb_oh0_46d_a03(i, std::string("/dev/usb/oh0/46d/a03")); i++; // Logitech Vantage USB Microphone
+	if (Wee_speeak_support)
+	{
+		g_DeviceMap[i] = new CWII_IPC_HLE_Device_usb_oh0_57e_308(i, std::string("/dev/usb/oh0/57e/308")); i++; // Wii Speak
+		g_DeviceMap[i] = new CWII_IPC_HLE_Device_usb_oh0_46d_a03(i, std::string("/dev/usb/oh0/46d/a03")); i++; // Logitech Vantage USB Microphone
+	}
 	g_DeviceMap[i] = new CWII_IPC_HLE_Device_stm_immediate(i, "/dev/stm/immediate"); i++;
 	g_DeviceMap[i] = new CWII_IPC_HLE_Device_stm_eventhook(i, "/dev/stm/eventhook"); i++;
 	g_DeviceMap[i] = new CWII_IPC_HLE_Device_fs(i, "/dev/fs"); i++;

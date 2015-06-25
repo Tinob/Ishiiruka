@@ -40,6 +40,7 @@ void WiiConfigPane::InitializeGUI()
 	m_system_language_strings.Add(_("Korean"));
 
 	m_screensaver_checkbox = new wxCheckBox(this, wxID_ANY, _("Enable Screen Saver"));
+	m_wiispeak_checkbox = new wxCheckBox(this, wxID_ANY, _("Enable Wii Speak Dummy Support"));
 	m_pal60_mode_checkbox = new wxCheckBox(this, wxID_ANY, _("Use PAL60 Mode (EuRGB60)"));
 	m_aspect_ratio_choice = new wxChoice(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_aspect_ratio_strings);
 	m_system_language_choice = new wxChoice(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_system_language_strings);
@@ -47,6 +48,7 @@ void WiiConfigPane::InitializeGUI()
 	m_connect_keyboard_checkbox = new wxCheckBox(this, wxID_ANY, _("Connect USB Keyboard"));
 
 	m_screensaver_checkbox->Bind(wxEVT_CHECKBOX, &WiiConfigPane::OnScreenSaverCheckBoxChanged, this);
+	m_wiispeak_checkbox->Bind(wxEVT_CHECKBOX, &WiiConfigPane::OnWiiSpeakCheckBoxChanged, this);
 	m_pal60_mode_checkbox->Bind(wxEVT_CHECKBOX, &WiiConfigPane::OnPAL60CheckBoxChanged, this);
 	m_aspect_ratio_choice->Bind(wxEVT_CHOICE, &WiiConfigPane::OnAspectRatioChoiceChanged, this);
 	m_system_language_choice->Bind(wxEVT_CHOICE, &WiiConfigPane::OnSystemLanguageChoiceChanged, this);
@@ -54,6 +56,7 @@ void WiiConfigPane::InitializeGUI()
 	m_connect_keyboard_checkbox->Bind(wxEVT_CHECKBOX, &WiiConfigPane::OnConnectKeyboardCheckBoxChanged, this);
 
 	m_screensaver_checkbox->SetToolTip(_("Dims the screen after five minutes of inactivity."));
+	m_wiispeak_checkbox->SetToolTip(_("Adds Dummy Support for WiiSpeak to allow games that requires it to boot properly."));
 	m_pal60_mode_checkbox->SetToolTip(_("Sets the Wii display mode to 60Hz (480i) instead of 50Hz (576i) for PAL games.\nMay not work for all games."));
 	m_system_language_choice->SetToolTip(_("Sets the Wii system language."));
 	m_sd_card_checkbox->SetToolTip(_("Saved to /Wii/sd.raw (default size is 128mb)"));
@@ -65,7 +68,7 @@ void WiiConfigPane::InitializeGUI()
 	misc_settings_grid_sizer->Add(new wxStaticText(this, wxID_ANY, _("Aspect Ratio:")), wxGBPosition(2, 0), wxDefaultSpan, wxALIGN_CENTER_VERTICAL | wxALL, 5);
 	misc_settings_grid_sizer->Add(m_aspect_ratio_choice, wxGBPosition(2, 1), wxDefaultSpan, wxALL, 5);
 	misc_settings_grid_sizer->Add(new wxStaticText(this, wxID_ANY, _("System Language:")), wxGBPosition(3, 0), wxDefaultSpan, wxALIGN_CENTER_VERTICAL | wxALL, 5);
-	misc_settings_grid_sizer->Add(m_system_language_choice, wxGBPosition(3, 1), wxDefaultSpan, wxALL, 5);
+	misc_settings_grid_sizer->Add(m_system_language_choice, wxGBPosition(3, 1), wxDefaultSpan, wxALL, 5);	
 
 	wxStaticBoxSizer* const misc_settings_static_sizer = new wxStaticBoxSizer(wxVERTICAL, this, _("Misc Settings"));
 	misc_settings_static_sizer->Add(misc_settings_grid_sizer);
@@ -73,6 +76,7 @@ void WiiConfigPane::InitializeGUI()
 	wxStaticBoxSizer* const device_settings_sizer = new wxStaticBoxSizer(wxVERTICAL, this, _("Device Settings"));
 	device_settings_sizer->Add(m_sd_card_checkbox, 0, wxALL, 5);
 	device_settings_sizer->Add(m_connect_keyboard_checkbox, 0, wxALL, 5);
+	device_settings_sizer->Add(m_wiispeak_checkbox, 0, wxALL, 5);
 
 	wxBoxSizer* const main_sizer = new wxBoxSizer(wxVERTICAL);
 	main_sizer->Add(misc_settings_static_sizer, 0, wxEXPAND | wxALL, 5);
@@ -89,6 +93,7 @@ void WiiConfigPane::LoadGUIValues()
 	m_system_language_choice->SetSelection(SConfig::GetInstance().m_SYSCONF->GetData<u8>("IPL.LNG"));
 
 	m_sd_card_checkbox->SetValue(SConfig::GetInstance().m_WiiSDCard);
+	m_wiispeak_checkbox->SetValue(SConfig::GetInstance().bWiiSpeakSupport);
 	m_connect_keyboard_checkbox->SetValue(SConfig::GetInstance().m_WiiKeyboard);
 }
 
@@ -96,6 +101,7 @@ void WiiConfigPane::RefreshGUI()
 {
 	if (Core::IsRunning())
 	{
+		m_wiispeak_checkbox->Disable();
 		m_screensaver_checkbox->Disable();
 		m_pal60_mode_checkbox->Disable();
 		m_aspect_ratio_choice->Disable();
@@ -138,6 +144,11 @@ void WiiConfigPane::OnSystemLanguageChoiceChanged(wxCommandEvent& event)
 void WiiConfigPane::OnAspectRatioChoiceChanged(wxCommandEvent& event)
 {
 	SConfig::GetInstance().m_SYSCONF->SetData("IPL.AR", m_aspect_ratio_choice->GetSelection());
+}
+
+void WiiConfigPane::OnWiiSpeakCheckBoxChanged(wxCommandEvent& event)
+{
+	SConfig::GetInstance().bWiiSpeakSupport = m_wiispeak_checkbox->IsChecked();
 }
 
 // Change from IPL.LNG value to IPL.SADR country code.
