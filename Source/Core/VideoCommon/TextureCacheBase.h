@@ -104,6 +104,7 @@ public:
 		u32 size_in_bytes;
 		u32 native_size_in_bytes;
 		u64 hash;
+		u64 base_hash;
 		u32 format;
 		bool is_efb_copy;
 
@@ -136,6 +137,12 @@ public:
 		{
 			is_custom_tex = _is_custom_tex;
 			basename = _basename;
+		}
+
+		void SetHashes(u64 _hash, u64 _base_hash)
+		{
+			hash = _hash;
+			base_hash = _base_hash;
 		}
 
 		TCacheEntryBase(const TCacheEntryConfig& c) : config(c), is_custom_tex(false), basename()

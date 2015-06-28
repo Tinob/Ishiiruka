@@ -360,6 +360,7 @@ void TextureCache::TCacheEntry::FromRenderTarget(
 		size_in_bytes = (u32)s_encoder->Encode(dst, format, srcFormat, srcRect, isIntensity, scaleByHalf);
 		TextureCache::MakeRangeDynamic(addr, size_in_bytes);
 		hash = GetHash64(dst, size_in_bytes, g_ActiveConfig.iSafeTextureCache_ColorSamples);
+		base_hash = hash;
 	}
 }
 

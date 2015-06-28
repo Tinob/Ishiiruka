@@ -414,7 +414,8 @@ void TextureCache::TCacheEntry::FromRenderTarget(
 
 		u8* dst = Memory::GetPointer(addr);
 		TextureCache::MakeRangeDynamic(addr, size_in_bytes);
-		hash = GetHash64(dst, size_in_bytes, g_ActiveConfig.iSafeTextureCache_ColorSamples);;
+		hash = GetHash64(dst, size_in_bytes, g_ActiveConfig.iSafeTextureCache_ColorSamples);
+		base_hash = hash;
 	}
 
 	FramebufferManager::SetFramebuffer(0);

@@ -288,6 +288,7 @@ void TextureCache::TCacheEntry::FromRenderTarget(
 		u8* dst = Memory::GetPointer(addr);
 		TextureCache::MakeRangeDynamic(addr, size_in_bytes);
 		this->hash = GetHash64(dst, size_in_bytes, g_ActiveConfig.iSafeTextureCache_ColorSamples);
+		this->base_hash = this->hash;
 	}
 	
 	D3D::RefreshSamplerState(0, D3DSAMP_MINFILTER);

@@ -498,8 +498,13 @@ TextureCache::TCacheEntryBase* TextureCache::Load(const u32 stage)
 				return ReturnEntry(stage, entry);
 			}
 		}
-		// Find the entry which hasn't been used for the longest time
-		if (entry->frameCount != FRAMECOUNT_INVALID && entry->frameCount < temp_frameCount)
+		// Find the entry which hasn't been used for the longest time. Some games create
+		// animations by only changing the palette. Keeping all these textures in the cache
+		// improves the performance a lot for these games, so ignore paletted textures with
+		// the same base texture here. Example: Sonic the Fighters (inside Sonic Gems
+		// Collection) loops a 64 frames animation and some others
+		if (entry->frameCount != FRAMECOUNT_INVALID && entry->frameCount < temp_frameCount &&
+		!(isPaletteTexture && entry->base_hash == tex_hash))
 		{
 			temp_frameCount = entry->frameCount;
 			oldest_entry = iter;
@@ -515,7 +520,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(const u32 stage)
 
 		decoded_entry->SetGeneralParameters(address, texture_size, full_format);
 		decoded_entry->SetDimensions(entry->native_width, entry->native_height, 1);
-		decoded_entry->hash = full_hash;
+		entry->SetHashes(full_hash, tex_hash);
 		decoded_entry->frameCount = FRAMECOUNT_INVALID;
 		decoded_entry->is_efb_copy = false;
 
@@ -642,7 +647,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(const u32 stage)
 	entry->SetGeneralParameters(address, texture_size, full_format);
 	entry->SetDimensions(nativeW, nativeH, tex_levels);
 	entry->SetHiresParams(!!hires_tex, basename);
-	entry->hash = full_hash;
+	entry->SetHashes(full_hash, tex_hash);
 	entry->is_efb_copy = false;
 
 	// load texture
@@ -1027,7 +1032,7 @@ void TextureCache::CopyRenderTargetToTexture(u32 dstAddr, u32 dstFormat, PEContr
 	// TODO: Using the wrong dstFormat, dumb...
 	entry->SetGeneralParameters(dstAddr, 0, dstFormat);
 	entry->SetDimensions(tex_w, tex_h, 1);
-	entry->hash = TEXHASH_INVALID;
+	entry->SetHashes(TEXHASH_INVALID, TEXHASH_INVALID);
 
 	entry->frameCount = FRAMECOUNT_INVALID;
 	entry->is_efb_copy = true;
