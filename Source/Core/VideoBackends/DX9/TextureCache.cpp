@@ -80,6 +80,74 @@ bool TextureCache::TCacheEntry::Save(const std::string& filename, u32 level)
 	return SUCCEEDED(hr);
 }
 
+void TextureCache::TCacheEntry::DoPartialTextureUpdate(TCacheEntryBase* entry_, u32 x, u32 y)
+{
+	TCacheEntry* entry = (TCacheEntry*)entry_;
+	if (entry->d3d_fmt != d3d_fmt || d3d_fmt != D3DFMT_A8R8G8B8)
+	{
+		return;
+	}
+	u32 w = native_width;
+	u32 h = native_height;
+	if (g_ActiveConfig.bCopyEFBScaled)
+	{
+		w = Renderer::EFBToScaledX(w);
+		h = Renderer::EFBToScaledY(h);
+	}
+	u32 max = g_renderer->GetMaxTextureSize();
+	if (max < w || max < h)
+	{
+		return;
+	}
+	LPDIRECT3DSURFACE9 srcsurf = nullptr;
+	LPDIRECT3DSURFACE9 dstsurf = nullptr;
+	if (!config.rendertarget || config.width != w || config.height != h)
+	{
+		config.width = w;
+		config.height = h;
+		config.rendertarget = true;
+		LPDIRECT3DTEXTURE9 text;		
+		D3D::dev->CreateTexture(w, h, 1, D3DUSAGE_RENDERTARGET,
+			D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &text, 0);
+		texture->GetSurfaceLevel(0, &srcsurf);
+		text->GetSurfaceLevel(0, &dstsurf);
+		HRESULT hr = D3D::dev->StretchRect(srcsurf, nullptr, dstsurf, nullptr, D3DTEXF_LINEAR);
+		_assert_msg_(VIDEO, SUCCEEDED(hr), "Failed updating texture");
+		srcsurf->Release();
+		texture->Release();
+		texture = text;
+		srcsurf = nullptr;
+	}
+	else
+	{
+		texture->GetSurfaceLevel(0, &dstsurf);
+	}
+	entry->texture->GetSurfaceLevel(0, &srcsurf);
+	if (srcsurf != nullptr && dstsurf != nullptr)
+	{
+		RECT dst;
+		dst.left = x;
+		dst.top = y;
+		if (g_ActiveConfig.bCopyEFBScaled)
+		{
+			dst.left = Renderer::EFBToScaledX(dst.left);
+			dst.top = Renderer::EFBToScaledY(dst.top);
+		}
+		dst.right = dst.left + entry->config.width - 1;
+		dst.bottom = dst.top + entry->config.height - 1;
+		HRESULT hr = D3D::dev->StretchRect(srcsurf, nullptr, dstsurf, &dst, D3DTEXF_POINT);
+		_assert_msg_(VIDEO, SUCCEEDED(hr), "Failed updating texture");
+	}
+	if (srcsurf != nullptr)
+	{
+		srcsurf->Release();
+	}
+	if (dstsurf != nullptr)
+	{
+		dstsurf->Release();
+	}
+}
+
 void TextureCache::TCacheEntry::ReplaceTexture(const u8* src, u32 width, u32 height,
 	u32 expanded_width, u32 level)
 {

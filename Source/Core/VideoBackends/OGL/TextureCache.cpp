@@ -37,12 +37,13 @@
 
 namespace OGL
 {
-
+static SHADER s_ColorCopyProgram;
 static SHADER s_ColorMatrixProgram;
 static SHADER s_DepthMatrixProgram;
 static GLuint s_ColorMatrixUniform;
 static GLuint s_DepthMatrixUniform;
 static GLuint s_ColorCopyPositionUniform;
+static GLuint s_ColorMatrixPositionUniform;
 static GLuint s_DepthCopyPositionUniform;
 static u32 s_ColorCbufid;
 static u32 s_DepthCbufid;
@@ -226,6 +227,69 @@ TextureCache::TCacheEntryBase* TextureCache::CreateTexture(const TCacheEntryConf
 	return entry;
 }
 
+void TextureCache::TCacheEntry::DoPartialTextureUpdate(TCacheEntryBase* entry_, u32 x, u32 y)
+{
+
+	TCacheEntry* entry = (TCacheEntry*)entry_;
+	u32 w = native_width;
+	u32 h = native_height;
+	if (g_ActiveConfig.bCopyEFBScaled)
+	{
+		w = Renderer::EFBToScaledX(w);
+		h = Renderer::EFBToScaledY(h);
+	}
+	u32 max = g_renderer->GetMaxTextureSize();
+	if (max < w || max < h)
+	{
+		return;
+	}
+	if (!config.rendertarget || config.width != w || config.height != h)
+	{
+		GLuint text = 0;
+		GLuint fb = 0;
+		g_renderer->ResetAPIState();
+		glActiveTexture(GL_TEXTURE10);
+		glGenTextures(1, &text);
+		glBindTexture(GL_TEXTURE_2D_ARRAY, text);
+		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, 0);
+		glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, w, h, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+		glGenFramebuffers(1, &fb);
+		FramebufferManager::SetFramebuffer(fb);
+		FramebufferManager::FramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_ARRAY, text, 0);
+		glActiveTexture(GL_TEXTURE9);
+		glBindTexture(GL_TEXTURE_2D_ARRAY, texture);
+		g_sampler_cache->BindLinearSampler(9);
+		glViewport(0, 0, w, h);
+		s_ColorCopyProgram.Bind();
+		glUniform4f(s_ColorCopyPositionUniform, 0.0f, 0.0f,
+		(float)config.width, (float)config.height);
+
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+		FramebufferManager::SetFramebuffer(0);
+		g_renderer->RestoreAPIState();
+		config.width = w;
+		config.height = h;
+		config.rendertarget = true;
+		for (auto& gtex : s_Textures)
+			if (gtex == texture)
+				gtex = text;
+		glDeleteTextures(1, &texture);
+		if (framebuffer)
+		{
+			glDeleteFramebuffers(1, &framebuffer);
+			framebuffer = 0;
+		}
+		texture = text;
+		framebuffer = fb;
+	}
+	if (g_ActiveConfig.bCopyEFBScaled)
+	{
+		x = Renderer::EFBToScaledX(x);
+		y = Renderer::EFBToScaledY(y);
+	}
+	glCopyImageSubData(entry->texture, GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, texture, GL_TEXTURE_2D_ARRAY, 0, x, y, 0, entry->config.width, entry->config.height, 1);
+}
+
 void TextureCache::TCacheEntry::Load(const u8* src, u32 width, u32 height,
 	u32 expanded_width, u32 level)
 {
@@ -328,7 +392,7 @@ void TextureCache::TCacheEntry::FromRenderTarget(
 		if (s_ColorCbufid != cbufid)
 			glUniform4fv(s_ColorMatrixUniform, 7, colmat);
 		s_ColorCbufid = cbufid;
-		uniform_location = s_ColorCopyPositionUniform;
+		uniform_location = s_ColorMatrixPositionUniform;
 	}
 
 	TargetRectangle R = g_renderer->ConvertEFBRectangle(srcRect);
@@ -428,6 +492,17 @@ TextureCache::TextureCache()
 
 void TextureCache::CompileShaders()
 {
+	const char *pColorCopyProg =
+		"SAMPLER_BINDING(9) uniform sampler2DArray samp9;\n"
+		"uniform vec4 colmat[7];\n"
+		"in vec3 f_uv0;\n"
+		"out vec4 ocol0;\n"
+		"\n"
+		"void main(){\n"
+		"	vec4 texcol = texture(samp9, f_uv0);\n"		
+		"	ocol0 = texcol;\n"
+		"}\n";
+
 	const char *pColorMatrixProg =
 		"SAMPLER_BINDING(9) uniform sampler2DArray samp9;\n"
 		"uniform vec4 colmat[7];\n"
@@ -494,7 +569,8 @@ void TextureCache::CompileShaders()
 
 	const char* prefix = (GProgram == nullptr) ? "f" : "v";
 	const char* depth_layer = (g_ActiveConfig.bStereoEFBMonoDepth) ? "0.0" : "f_uv0.z";
-
+	
+	ProgramShaderCache::CompileShader(s_ColorCopyProgram, StringFromFormat(VProgram, prefix, prefix).c_str(), pColorCopyProg, GProgram);
 	ProgramShaderCache::CompileShader(s_ColorMatrixProgram, StringFromFormat(VProgram, prefix, prefix).c_str(), pColorMatrixProg, GProgram);
 	ProgramShaderCache::CompileShader(s_DepthMatrixProgram, StringFromFormat(VProgram, prefix, prefix).c_str(), StringFromFormat(pDepthMatrixProg, depth_layer).c_str(), GProgram);
 
@@ -503,7 +579,8 @@ void TextureCache::CompileShaders()
 	s_ColorCbufid = -1;
 	s_DepthCbufid = -1;
 
-	s_ColorCopyPositionUniform = glGetUniformLocation(s_ColorMatrixProgram.glprogid, "copy_position");
+	s_ColorCopyPositionUniform = glGetUniformLocation(s_ColorCopyProgram.glprogid, "copy_position");
+	s_ColorMatrixPositionUniform = glGetUniformLocation(s_ColorMatrixProgram.glprogid, "copy_position");
 	s_DepthCopyPositionUniform = glGetUniformLocation(s_DepthMatrixProgram.glprogid, "copy_position");
 
 	std::string palette_shader =
@@ -619,6 +696,7 @@ void TextureCache::CompileShaders()
 
 void TextureCache::DeleteShaders()
 {
+	s_ColorCopyProgram.Destroy();
 	s_ColorMatrixProgram.Destroy();
 	s_DepthMatrixProgram.Destroy();
 

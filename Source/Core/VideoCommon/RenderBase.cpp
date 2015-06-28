@@ -55,6 +55,8 @@ Renderer *g_renderer = nullptr;
 std::mutex Renderer::s_criticalScreenshot;
 std::string Renderer::s_sScreenshotName;
 
+Common::Event Renderer::s_screenshotCompleted;
+
 volatile bool Renderer::s_bScreenshot;
 
 // The framebuffer size
@@ -293,7 +295,6 @@ void Renderer::DrawDebugText()
 	std::string final_yellow, final_cyan;
 	if (g_ActiveConfig.bShowFPS || SConfig::GetInstance().m_ShowFrameCount)
 	{
-		std::string fps = "";
 		if (g_ActiveConfig.bShowFPS)
 			final_cyan += StringFromFormat("FPS: %d", g_renderer->m_fps_counter.m_fps);
 		if (g_ActiveConfig.bShowFPS && SConfig::GetInstance().m_ShowFrameCount)

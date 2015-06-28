@@ -211,6 +211,9 @@
     <ClInclude Include="GLExtensions\ARB_clip_control.h">
       <Filter>GLExtensions</Filter>
     </ClInclude>
+    <ClInclude Include="GLExtensions\ARB_copy_image.h">
+      <Filter>GLExtensions</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />

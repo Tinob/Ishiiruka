@@ -114,6 +114,7 @@ void InitBackendInfo()
 	g_Config.backend_info.bSupports3DVision = true;
 	g_Config.backend_info.bSupportsPostProcessing = true;
 	g_Config.backend_info.bSupportsClipControl = false;
+	g_Config.backend_info.bSupportsCopySubImage = true;
 
 	IDXGIFactory* factory;
 	IDXGIAdapter* ad;

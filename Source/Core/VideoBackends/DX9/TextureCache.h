@@ -23,13 +23,15 @@ public:
 private:
 	struct TCacheEntry : TCacheEntryBase
 	{
-		const LPDIRECT3DTEXTURE9 texture;
+		LPDIRECT3DTEXTURE9 texture;
 
 		D3DFORMAT d3d_fmt;
 		bool swap_r_b;
 		bool compressed;
 		TCacheEntry(const TCacheEntryConfig& config, LPDIRECT3DTEXTURE9 _tex) : TCacheEntryBase(config), texture(_tex) {}
 		~TCacheEntry();
+
+		void DoPartialTextureUpdate(TCacheEntryBase* entry, u32 x, u32 y) override;
 		
 		void ReplaceTexture(const u8* src, u32 width, u32 height,
 			u32 expanded_width, u32 level);

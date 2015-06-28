@@ -112,8 +112,11 @@ public:
 		
 		// used to delete textures which haven't been used for TEXTURE_KILL_THRESHOLD frames
 		s32 frameCount;
+		// Keep an iterator to the entry in textures_by_hash, so it does not need to be searched when removing the cache entry
+		std::multimap<u64, TCacheEntryBase*>::iterator textures_by_hash_iter;
 		bool is_custom_tex;
 		std::string basename;
+		u32 copyMipMapStrideChannels;
 
 		void SetGeneralParameters(u32 _addr, u32 _size, u32 _format)
 		{
@@ -144,6 +147,8 @@ public:
 		virtual void Bind(u32 stage) = 0;
 		virtual bool Save(const std::string& filename, u32 level) = 0;
 
+		virtual void DoPartialTextureUpdate(TCacheEntryBase* entry, u32 x, u32 y) = 0;
+
 		virtual void Load(const u8* src, u32 width, u32 height,
 			u32 expanded_width, u32 level) = 0;
 		virtual void Load(const u8* src, u32 width, u32 height, u32 expandedWidth,
@@ -156,6 +161,8 @@ public:
 			const float *colmat) = 0;
 		virtual bool PalettizeFromBase(const TCacheEntryBase* base_entry) = 0;
 		bool OverlapsMemoryRange(u32 range_address, u32 range_size) const;
+
+		void DoPartialTextureUpdates();
 
 		bool IsEfbCopy() { return is_efb_copy; }
 	};
@@ -192,6 +199,10 @@ protected:
 	static size_t temp_size;
 	TextureCache();
 private:
+	typedef std::multimap<u64, TCacheEntryBase*> TexCache;
+	typedef std::unordered_multimap<TCacheEntryConfig, TCacheEntryBase*, TCacheEntryConfig::Hasher> TexPool;
+	typedef std::unordered_map<std::string, TCacheEntryBase*> HiresTexPool;
+
 	static void CheckTempSize(size_t required_size);
 	static void DumpTexture(TCacheEntryBase* entry, std::string basename, u32 level);
 	static void InvalidateHiresCache();
@@ -199,14 +210,13 @@ private:
 	static u32 s_prev_tlut_size;
 	static u64 s_prev_tlut_hash;
 	static TCacheEntryBase* AllocateTexture(const TCacheEntryConfig& config);
-	static void FreeTexture(TCacheEntryBase* entry);
+	static TextureCache::TexCache::iterator FreeTexture(TexCache::iterator t_iter);
 	static TCacheEntryBase* ReturnEntry(unsigned int stage, TCacheEntryBase* entry);
 
-	typedef std::multimap<u32, TCacheEntryBase*> TexCache;
-	typedef std::unordered_multimap<TCacheEntryConfig, TCacheEntryBase*, TCacheEntryConfig::Hasher> TexPool;
-	typedef std::unordered_map<std::string, TCacheEntryBase*> HiresTexPool;
+	
 
-	static TexCache textures;
+	static TexCache textures_by_address;
+	static TexCache textures_by_hash;
 	static TexPool texture_pool;
 	static size_t texture_pool_memory_usage;
 	static HiresTexPool hires_texture_pool;

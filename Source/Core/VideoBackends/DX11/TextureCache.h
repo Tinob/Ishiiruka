@@ -19,7 +19,7 @@ public:
 private:
 	struct TCacheEntry : TCacheEntryBase
 	{
-		D3DTexture2D *const texture;
+		D3DTexture2D *texture;
 		DXGI_FORMAT DXGI_format;
 		D3D11_USAGE usage;
 		bool swap_rg;
@@ -30,6 +30,8 @@ private:
 			texture(_tex), swap_rg(false), convertrgb565(false), compressed(false)
 		{}
 		~TCacheEntry();
+
+		void DoPartialTextureUpdate(TCacheEntryBase* entry, u32 x, u32 y) override;
 
 		void Load(const u8* src, u32 width, u32 height,
 			u32 expanded_width, u32 level);

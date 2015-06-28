@@ -17,6 +17,7 @@
 #include <mutex>
 #include <string>
 
+#include "Common/Event.h"
 #include "Common/MathUtil.h"
 #include "Common/Thread.h"
 #include "VideoCommon/BPMemory.h"
@@ -130,6 +131,9 @@ public:
 	PostProcessingShaderImplementation* GetPostProcessor() { return m_post_processor; }
 	// Max height/width
 	virtual int GetMaxTextureSize() = 0;
+
+	static Common::Event s_screenshotCompleted;
+
 protected:
 
 	static void CalculateTargetScale(int x, int y, int &scaledX, int &scaledY);

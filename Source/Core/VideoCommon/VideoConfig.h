@@ -196,6 +196,7 @@ struct VideoConfig final
 		bool bSupportsGSInstancing; // Needed by GeometryShaderGen, so must stay in VideoCommon
 		bool bSupportsPaletteConversion;
 		bool bSupportsClipControl; // Needed by VertexShaderGen, so must stay in VideoCommon
+		bool bSupportsCopySubImage; // Needed for partial texture updates
 	} backend_info;
 
 	// Utility

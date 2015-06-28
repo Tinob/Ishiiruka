@@ -288,12 +288,14 @@ bool DolphinApp::OnInit()
 	return true;
 }
 
+#ifdef __APPLE__
 void DolphinApp::MacOpenFile(const wxString &fileName)
 {
 	FileToLoad = fileName;
 	LoadFile = true;
 	main_frame->BootGame(WxStrToStr(FileToLoad));
 }
+#endif
 
 void DolphinApp::AfterInit()
 {
@@ -344,8 +346,13 @@ void DolphinApp::InitLanguageSupport()
 	{
 		m_locale = new wxLocale(language);
 
+		// Specify where dolphins *.gmo files are located on each operating system
 #ifdef _WIN32
 		m_locale->AddCatalogLookupPathPrefix(StrToWxStr(File::GetExeDirectory() + DIR_SEP "Languages"));
+#elif defined(__LINUX__)
+		m_locale->AddCatalogLookupPathPrefix(StrToWxStr(DATA_DIR "../locale"));
+#elif defined(__APPLE__)
+		m_locale->AddCatalogLookupPathPrefix(StrToWxStr(File::GetBundleDirectory() + "Contents/Resources"));
 #endif
 
 		m_locale->AddCatalog("dolphin-emu");
