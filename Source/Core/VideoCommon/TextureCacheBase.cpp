@@ -63,6 +63,7 @@ TextureCache::TextureCache()
 	SetHash64Function();
 	texture_pool_memory_usage = 0;
 	invalidate_texture_cache_requested = false;
+	UnbindTextures();
 }
 
 void TextureCache::RequestInvalidateTextureCache()
@@ -1057,7 +1058,7 @@ TextureCache::TCacheEntryBase* TextureCache::AllocateTexture(const TCacheEntryCo
 		entry = g_texture_cache->CreateTexture(config);
 		INCSTAT(stats.numTexturesCreated);
 	}
-	entry->textures_by_hash_iter = textures_by_address.end();
+	entry->textures_by_hash_iter = textures_by_hash.end();
 	return entry;
 }
 
@@ -1065,17 +1066,17 @@ TextureCache::TexCache::iterator TextureCache::FreeTexture(TexCache::iterator it
 {
 	TCacheEntryBase* entry = iter->second;
 	entry->frameCount = FRAMECOUNT_INVALID;
+	if (entry->textures_by_hash_iter != textures_by_hash.end())
+	{
+		textures_by_hash.erase(entry->textures_by_hash_iter);
+		entry->textures_by_hash_iter = textures_by_hash.end();
+	}
 	if (entry->is_custom_tex)
 	{
 		hires_texture_pool[entry->basename] = entry;
 	}
 	else
 	{
-		if (entry->textures_by_hash_iter != textures_by_address.end())
-		{
-			textures_by_hash.erase(entry->textures_by_hash_iter);
-			entry->textures_by_hash_iter = textures_by_address.end();
-		}
 		texture_pool.insert(TexPool::value_type(entry->config, entry));
 	}
 	return textures_by_address.erase(iter);
