@@ -52,7 +52,11 @@ bool TextureCache::TCacheEntry::Save(const std::string& filename, u32 level)
 	ID3D11Texture2D* pSurface = texture->GetTex();
 	D3D11_TEXTURE2D_DESC desc;
 	pSurface->GetDesc(&desc);
-
+	if (desc.Format != DXGI_FORMAT_R8G8B8A8_UNORM)
+	{
+		// Do not support compressed texture dump right now
+		return false;
+	}
 	desc.BindFlags = 0;
 	desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
 	desc.Usage = D3D11_USAGE_STAGING;

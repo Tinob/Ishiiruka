@@ -669,13 +669,13 @@ TextureCache::TCacheEntryBase* TextureCache::Load(const u32 stage)
 			entry->LoadFromTmem(src_data, src_data_gb, width, height, expandedWidth,
 				expandedHeight, 0);
 		}
+		if (g_ActiveConfig.bDumpTextures)
+		{
+			DumpTexture(entry, basename, 0);
+		}
 	}
 
-	
-	if (g_ActiveConfig.bDumpTextures && !hires_tex)
-	{
-		DumpTexture(entry, basename, 0);
-	}
+
 
 	if (hires_tex)
 	{
