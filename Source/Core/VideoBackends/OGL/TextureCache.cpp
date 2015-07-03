@@ -227,67 +227,53 @@ TextureCache::TCacheEntryBase* TextureCache::CreateTexture(const TCacheEntryConf
 	return entry;
 }
 
-void TextureCache::TCacheEntry::DoPartialTextureUpdate(TCacheEntryBase* entry_, u32 x, u32 y)
+void TextureCache::TCacheEntry::CopyRectangleFromTexture(
+	const TCacheEntryBase* source,
+	const MathUtil::Rectangle<int> &srcrect,
+	const MathUtil::Rectangle<int> &dstrect)
 {
-
-	TCacheEntry* entry = (TCacheEntry*)entry_;
-	u32 w = native_width;
-	u32 h = native_height;
-	if (g_ActiveConfig.bCopyEFBScaled)
+	TCacheEntry* srcentry = (TCacheEntry*)source;
+	if (srcrect.GetWidth() == dstrect.GetWidth()
+		&& srcrect.GetHeight() == dstrect.GetHeight()
+		&& g_ActiveConfig.backend_info.bSupportsCopySubImage)
 	{
-		w = Renderer::EFBToScaledX(w);
-		h = Renderer::EFBToScaledY(h);
+		glCopyImageSubData(
+			srcentry->texture,
+			GL_TEXTURE_2D_ARRAY,
+			0,
+			srcrect.left,
+			srcrect.top,
+			0,
+			texture,
+			GL_TEXTURE_2D_ARRAY,
+			0,
+			dstrect.left,
+			dstrect.top,
+			0,
+			dstrect.GetWidth(),
+			dstrect.GetHeight(),
+			1);
+		return;
 	}
-	u32 max = g_renderer->GetMaxTextureSize();
-	if (max < w || max < h)
+	else if (!config.rendertarget)
 	{
 		return;
 	}
-	if (!config.rendertarget || config.width != w || config.height != h)
-	{
-		GLuint text = 0;
-		GLuint fb = 0;
-		g_renderer->ResetAPIState();
-		glActiveTexture(GL_TEXTURE10);
-		glGenTextures(1, &text);
-		glBindTexture(GL_TEXTURE_2D_ARRAY, text);
-		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, 0);
-		glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, w, h, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-		glGenFramebuffers(1, &fb);
-		FramebufferManager::SetFramebuffer(fb);
-		FramebufferManager::FramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_ARRAY, text, 0);
-		glActiveTexture(GL_TEXTURE9);
-		glBindTexture(GL_TEXTURE_2D_ARRAY, texture);
-		g_sampler_cache->BindLinearSampler(9);
-		glViewport(0, 0, w, h);
-		s_ColorCopyProgram.Bind();
-		glUniform4f(s_ColorCopyPositionUniform, 0.0f, 0.0f,
-		(float)config.width, (float)config.height);
-
-		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-		FramebufferManager::SetFramebuffer(0);
-		g_renderer->RestoreAPIState();
-		config.width = w;
-		config.height = h;
-		config.rendertarget = true;
-		for (auto& gtex : s_Textures)
-			if (gtex == texture)
-				gtex = text;
-		glDeleteTextures(1, &texture);
-		if (framebuffer)
-		{
-			glDeleteFramebuffers(1, &framebuffer);
-			framebuffer = 0;
-		}
-		texture = text;
-		framebuffer = fb;
-	}
-	if (g_ActiveConfig.bCopyEFBScaled)
-	{
-		x = Renderer::EFBToScaledX(x);
-		y = Renderer::EFBToScaledY(y);
-	}
-	glCopyImageSubData(entry->texture, GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, texture, GL_TEXTURE_2D_ARRAY, 0, x, y, 0, entry->config.width, entry->config.height, 1);
+	g_renderer->ResetAPIState();
+	FramebufferManager::SetFramebuffer(framebuffer);
+	glActiveTexture(GL_TEXTURE9);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, srcentry->texture);
+	g_sampler_cache->BindLinearSampler(9);
+	glViewport(dstrect.left, dstrect.top, dstrect.GetWidth(), dstrect.GetHeight());
+	s_ColorCopyProgram.Bind();
+	glUniform4f(s_ColorCopyPositionUniform,
+		float(srcrect.left),
+		float(srcrect.top),
+		float(srcrect.GetWidth()),
+		float(srcrect.GetHeight()));
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	FramebufferManager::SetFramebuffer(0);
+	g_renderer->RestoreAPIState();
 }
 
 void TextureCache::TCacheEntry::Load(const u8* src, u32 width, u32 height,

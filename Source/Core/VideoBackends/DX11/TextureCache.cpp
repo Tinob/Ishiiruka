@@ -86,66 +86,67 @@ void TextureCache::LoadLut(u32 lutFmt, void* addr, u32 size) {
 	s_decoder->LoadLut(lutFmt, addr, size);
 }
 
-void TextureCache::TCacheEntry::DoPartialTextureUpdate(TCacheEntryBase* entry_, u32 x, u32 y)
+void TextureCache::TCacheEntry::CopyRectangleFromTexture(
+	const TCacheEntryBase* source,
+	const MathUtil::Rectangle<int> &srcrect,
+	const MathUtil::Rectangle<int> &dstrect)
 {
-	TCacheEntry* entry = (TCacheEntry*)entry_;
-	u32 w = native_width;
-	u32 h = native_height;
-	if (g_ActiveConfig.bCopyEFBScaled)
+	TCacheEntry* srcentry = (TCacheEntry*)source;
+	if (srcrect.GetWidth() == dstrect.GetWidth()
+		&& srcrect.GetHeight() == dstrect.GetHeight())
 	{
-		w = Renderer::EFBToScaledX(w);
-		h = Renderer::EFBToScaledY(h);
+		const D3D11_BOX *psrcbox = nullptr;
+		D3D11_BOX srcbox;
+		if (srcrect.left != 0 || srcrect.top != 0)
+		{
+			srcbox.left = srcrect.left;
+			srcbox.top = srcrect.top;
+			srcbox.right = srcrect.right;
+			srcbox.bottom = srcrect.bottom;
+			psrcbox = &srcbox;
+		}
+		D3D::context->CopySubresourceRegion(
+			texture->GetTex(),
+			0,
+			dstrect.left,
+			dstrect.top,
+			0,
+			srcentry->texture->GetTex(),
+			0,
+			psrcbox);
+		return;
 	}
-	u32 max = g_renderer->GetMaxTextureSize();
-	if (max < w || max < h)
+	else if (!config.rendertarget)
 	{
 		return;
 	}
-	if (!config.rendertarget || config.width != w || config.height != h)
-	{
-		int flags = ((int)D3D11_BIND_RENDER_TARGET | (int)D3D11_BIND_SHADER_RESOURCE);
-		if (D3D::GetFeatureLevel() >= D3D_FEATURE_LEVEL_11_0)
-		{
-			flags |= D3D11_BIND_UNORDERED_ACCESS;
-		}
-		DX11::D3DTexture2D* text = D3DTexture2D::Create(w, h,
-			(D3D11_BIND_FLAG)flags,
-			D3D11_USAGE_DEFAULT, DXGI_FORMAT_R8G8B8A8_UNORM, 1, 1);
-		g_renderer->ResetAPIState(); // reset any game specific settings
+	g_renderer->ResetAPIState(); // reset any game specific settings
 
-		const D3D11_VIEWPORT vp = CD3D11_VIEWPORT(0.f, 0.f, (float)w, (float)h);
+	const D3D11_VIEWPORT vp = CD3D11_VIEWPORT(
+		float(dstrect.left),
+		float(dstrect.top),
+		float(dstrect.GetWidth()),
+		float(dstrect.GetHeight()));
 
-		D3D::context->OMSetRenderTargets(1, &text->GetRTV(), nullptr);
-		D3D::context->RSSetViewports(1, &vp);
-		D3D::SetLinearCopySampler();
-		D3D11_RECT srcRC;
-		srcRC.left = 0;
-		srcRC.right = config.width - 1;
-		srcRC.top = 0;
-		srcRC.bottom = config.height - 1;
-		D3D::drawShadedTexQuad(texture->GetSRV(), &srcRC,
-			config.width, config.height,
-			PixelShaderCache::GetColorCopyProgram(true, false), 
-			VertexShaderCache::GetSimpleVertexShader(),
-			VertexShaderCache::GetSimpleInputLayout(), nullptr, 1.0, 0, w, h);
+	D3D::context->OMSetRenderTargets(1, &texture->GetRTV(), nullptr);
+	D3D::context->RSSetViewports(1, &vp);
+	D3D::SetLinearCopySampler();
+	D3D11_RECT srcRC;
+	srcRC.left = srcrect.left;
+	srcRC.right = srcrect.right;
+	srcRC.top = srcrect.top;
+	srcRC.bottom = srcrect.bottom;
+	D3D::drawShadedTexQuad(srcentry->texture->GetSRV(), &srcRC,
+		srcentry->config.width, srcentry->config.height,
+		PixelShaderCache::GetColorCopyProgram(false),
+		VertexShaderCache::GetSimpleVertexShader(),
+		VertexShaderCache::GetSimpleInputLayout(), nullptr, 1.0, 0);
 
-		D3D::context->OMSetRenderTargets(1, 
-			&FramebufferManager::GetEFBColorTexture()->GetRTV(),
-			FramebufferManager::GetEFBDepthTexture()->GetDSV());
+	D3D::context->OMSetRenderTargets(1,
+		&FramebufferManager::GetEFBColorTexture()->GetRTV(),
+		FramebufferManager::GetEFBDepthTexture()->GetDSV());
 
-		g_renderer->RestoreAPIState();
-		config.width = w;
-		config.height = h;
-		config.rendertarget = true;
-		texture->Release();
-		texture = text;
-	}
-	if (g_ActiveConfig.bCopyEFBScaled)
-	{
-		x = Renderer::EFBToScaledX(x);
-		y = Renderer::EFBToScaledY(y);
-	}
-	D3D::context->CopySubresourceRegion(texture->GetTex(), 0, x, y, 0, entry->texture->GetTex(), 0, nullptr);
+	g_renderer->RestoreAPIState();
 }
 
 void TextureCache::TCacheEntry::Load(const u8* src, u32 width, u32 height,

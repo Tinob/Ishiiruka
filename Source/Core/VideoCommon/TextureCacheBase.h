@@ -154,7 +154,10 @@ public:
 		virtual void Bind(u32 stage) = 0;
 		virtual bool Save(const std::string& filename, u32 level) = 0;
 
-		virtual void DoPartialTextureUpdate(TCacheEntryBase* entry, u32 x, u32 y) = 0;
+		virtual void CopyRectangleFromTexture(
+			const TCacheEntryBase* source,
+			const MathUtil::Rectangle<int> &srcrect,
+			const MathUtil::Rectangle<int> &dstrect) = 0;
 
 		virtual void Load(const u8* src, u32 width, u32 height,
 			u32 expanded_width, u32 level) = 0;
@@ -168,8 +171,6 @@ public:
 			const float *colmat) = 0;
 		virtual bool PalettizeFromBase(const TCacheEntryBase* base_entry) = 0;
 		bool OverlapsMemoryRange(u32 range_address, u32 range_size) const;
-
-		void DoPartialTextureUpdates();
 
 		bool IsEfbCopy() { return is_efb_copy; }
 	};
@@ -211,6 +212,7 @@ private:
 	typedef std::unordered_map<std::string, TCacheEntryBase*> HiresTexPool;
 
 	static void CheckTempSize(size_t required_size);
+	static TCacheEntryBase* DoPartialTextureUpdates(TexCache::iterator iter);
 	static void DumpTexture(TCacheEntryBase* entry, std::string basename, u32 level);
 	static void InvalidateHiresCache();
 	static u32 s_prev_tlut_address;

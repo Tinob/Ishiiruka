@@ -31,7 +31,10 @@ private:
 		TCacheEntry(const TCacheEntryConfig& config, LPDIRECT3DTEXTURE9 _tex) : TCacheEntryBase(config), texture(_tex) {}
 		~TCacheEntry();
 
-		void DoPartialTextureUpdate(TCacheEntryBase* entry, u32 x, u32 y) override;
+		void CopyRectangleFromTexture(
+			const TCacheEntryBase* source,
+			const MathUtil::Rectangle<int> &srcrect,
+			const MathUtil::Rectangle<int> &dstrect) override;
 		
 		void ReplaceTexture(const u8* src, u32 width, u32 height,
 			u32 expanded_width, u32 level);
