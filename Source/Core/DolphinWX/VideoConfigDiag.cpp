@@ -117,7 +117,7 @@ static wxString internal_res_desc = _("Specifies the resolution used to render a
 static wxString efb_access_desc = _("Ignore any requests of the CPU to read from or write to the EFB.\nImproves performance in some games, but might disable some gameplay-related features or graphical effects.\n\nIf unsure, leave this unchecked.");
 static wxString efb_fast_access_desc = _("Use a fast efb caching method to speed up access. This method is inaccurate but will make games run faster and efb reads and writes will still work.");
 static wxString efb_emulate_format_changes_desc = _("Ignore any changes to the EFB format.\nImproves performance in many games without any negative effect. Causes graphical defects in a small number of other games though.\n\nIf unsure, leave this checked.");
-static wxString skip_efb_copy_to_ram_desc = _("Skip GPU synchronizing on EFB copies. Causes graphical defects in a small number of games.\n\nIf unsure, leave this checked.");
+static wxString skip_efb_copy_to_ram_desc = wxTRANSLATE("Stores EFB Copies exclusively on the GPU, bypassing system memory. Causes graphical defects in a small number of games.\n\nEnabled = EFB Copies to Texture\nDisabled = EFB Copies to RAM (and Texture)\n\nIf unsure, leave this checked.");
 static wxString stc_desc = _("The safer you adjust this, the less likely the emulator will be missing any texture updates from RAM.\n\nIf unsure, use the rightmost value.");
 static wxString bbox_desc = _("Selects wish implementation is used to emulate Bounding Box. By Default GPU will be used if supported.");
 static wxString wireframe_desc = _("Render the scene as a wireframe.\n\nIf unsure, leave this unchecked.");

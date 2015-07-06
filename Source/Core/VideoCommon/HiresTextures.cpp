@@ -138,7 +138,7 @@ void HiresTexture::Update()
 		{
 			HiresTextureCacheItem item(min_item_size);
 			item[level] = Pair;
-			s_textureMap.insert(HiresTextureCache::value_type(FileName, item));
+			s_textureMap.emplace(FileName, item);
 		}
 		else
 		{
@@ -318,7 +318,7 @@ std::string HiresTexture::GenBaseName(
 					}
 					newitem[level] = std::pair<std::string, bool>(dst, convert_iter->second[level].second);
 				}
-				s_textureMap.insert(HiresTextureCache::value_type(fullname, newitem));
+				s_textureMap.emplace(fullname, newitem);
 			}
 			else
 			{

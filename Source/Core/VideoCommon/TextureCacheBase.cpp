@@ -586,7 +586,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(const u32 stage)
 			g_texture_cache->LoadLut(tlutfmt, &texMem[tlutaddr], palette_size);
 		}
 
-		textures_by_address.insert(TexCache::value_type((u64)address, decoded_entry));
+		textures_by_address.emplace((u64)address, decoded_entry);
 
 		// If supported palettize, if not return the original entry
 		if (decoded_entry->PalettizeFromBase(entry))
@@ -644,7 +644,7 @@ TextureCache::TCacheEntryBase* TextureCache::Load(const u32 stage)
 		HiresTexPool::iterator hriter = hires_texture_pool.find(basename);
 		if (hriter != hires_texture_pool.end())
 		{
-			textures_by_address.insert(TexCache::value_type(address, hriter->second));
+			textures_by_address.emplace(address, hriter->second);
 			return ReturnEntry(stage, hriter->second);
 		}
 		hires_tex = HiresTexture::Search(
@@ -691,11 +691,11 @@ TextureCache::TCacheEntryBase* TextureCache::Load(const u32 stage)
 	TCacheEntryBase* entry = AllocateTexture(config);
 	GFX_DEBUGGER_PAUSE_AT(NEXT_NEW_TEXTURE, true);
 
-	iter = textures_by_address.insert(TexCache::value_type((u64)address, entry));
+	iter = textures_by_address.emplace((u64)address, entry);
 	if (g_ActiveConfig.iSafeTextureCache_ColorSamples == 0 ||
 		std::max(texture_size, palette_size) <= (u32)g_ActiveConfig.iSafeTextureCache_ColorSamples * 8)
 	{
-		entry->textures_by_hash_iter = textures_by_hash.insert(TexCache::value_type(full_hash, entry));
+		entry->textures_by_hash_iter = textures_by_hash.emplace(full_hash, entry);
 	}
 
 	entry->SetGeneralParameters(address, texture_size, full_format);
@@ -1093,7 +1093,7 @@ void TextureCache::CopyRenderTargetToTexture(u32 dstAddr, u32 dstFormat, PEContr
 	entry->copyMipMapStrideChannels = bpmem.copyMipMapStrideChannels;
 
 	entry->FromRenderTarget(srcFormat, srcRect, isIntensity, scaleByHalf, cbufid, colmat);
-	textures_by_address.insert(TexCache::value_type(dstAddr, entry));
+	textures_by_address.emplace(dstAddr, entry);
 }
 
 TextureCache::TCacheEntryBase* TextureCache::AllocateTexture(const TCacheEntryConfig& config)
@@ -1130,7 +1130,7 @@ TextureCache::TexCache::iterator TextureCache::FreeTexture(TexCache::iterator it
 	}
 	else
 	{
-		texture_pool.insert(TexPool::value_type(entry->config, entry));
+		texture_pool.emplace(entry->config, entry);
 	}
 	return textures_by_address.erase(iter);
 }

@@ -18,15 +18,6 @@
 
 using namespace Arm64Gen;
 
-void JitArm64::icbi(UGeckoInstruction inst)
-{
-	gpr.Flush(FlushMode::FLUSH_ALL);
-	fpr.Flush(FlushMode::FLUSH_ALL);
-
-	FallBackToInterpreter(inst);
-	WriteExit(js.compilerPC + 4);
-}
-
 void JitArm64::SafeLoadToReg(u32 dest, s32 addr, s32 offsetReg, u32 flags, s32 offset, bool update)
 {
 	// We want to make sure to not get LR as a temp register
@@ -426,7 +417,7 @@ void JitArm64::lXX(UGeckoInstruction inst)
 		ARM64Reg WA = gpr.GetReg();
 		ARM64Reg XA = EncodeRegTo64(WA);
 
-		MOVI2R(XA, (u64)&PowerPC::OnIdle);
+		MOVI2R(XA, (u64)&CoreTiming::Idle);
 		BLR(XA);
 
 		gpr.Unlock(WA);

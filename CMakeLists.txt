@@ -13,6 +13,18 @@ option(ENABLE_QT "Enable Qt (use the experimental Qt interface)" OFF)
 option(ENABLE_PCH "Use PCH to speed up compilation" ON)
 option(ENABLE_LTO "Enables Link Time Optimization" OFF)
 option(ENABLE_GENERIC "Enables generic build that should run on any little-endian host" OFF)
+
+# Enable SDL for default on operating systems that aren't OSX, Android, Linux or Windows.
+if(NOT APPLE AND NOT ANDROID AND NOT ${CMAKE_SYSTEM_NAME} STREQUAL "Linux" AND NOT MSVC)
+	option(ENABLE_SDL "Enables SDL as a generic controller backend" ON)
+else()
+	option(ENABLE_SDL "Enables SDL as a generic controller backend" OFF)
+endif()
+
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" AND NOT ANDROID)
+	option(ENABLE_EVDEV "Enables the evdev controller backend" ON)
+endif()
+
 if(APPLE)
 	option(OSX_USE_DEFAULT_SEARCH_PATH "Don't prioritize system library paths" OFF)
 endif()
@@ -300,6 +312,14 @@ if(WIN32)
 	add_definitions(-D_CRT_SECURE_NO_DEPRECATE)
 endif(WIN32)
 
+# Dolphin requires threads.
+# The Apple build may not need an explicit flag because one of the
+# frameworks may already provide it.
+# But for non-OSX systems, we will use the CMake Threads package.
+IF(NOT APPLE)
+  FIND_PACKAGE(Threads)
+ENDIF(NOT APPLE)
+
 if(NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE "Release" CACHE STRING
 		"Build type (Release/Debug/RelWithDebInfo/MinSizeRe)" FORCE)
@@ -469,7 +489,7 @@ if(NOT ANDROID)
 	if(ENCODE_FRAMEDUMPS)
 		check_libav()
 		if(LIBAV_FOUND)
-			LIST(APPEND LIBS ${LIBAV_LIBRARIES})
+			LIST(APPEND LIBS ${LIBAV_LDFLAGS})
 		endif()
 
 	endif()
@@ -506,6 +526,19 @@ endif()
 if(USE_EGL)
 	message("EGL OpenGL interface enabled")
 	add_definitions(-DUSE_EGL=1)
+endif()
+
+if(ENABLE_EVDEV)
+	include(FindLibudev REQUIRED)
+	include(FindLibevdev REQUIRED)
+	if(LIBUDEV_FOUND AND LIBEVDEV_FOUND)
+		message("libevdev/libudev found, enabling evdev controller backend")
+		add_definitions(-DHAVE_LIBUDEV=1)
+		add_definitions(-DHAVE_LIBEVDEV=1)
+		include_directories(${LIBUDEV_INCLUDE_DIR} ${LIBEVDEV_INCLUDE_DIR})
+	else()
+		message(FATAL_ERROR "Couldn't find libevdev and/or libudev. Can't build evdev controller backend.\nDisable ENABLE_EVDEV if you wish to build without controller support")
+	endif()
 endif()
 
 ########################################
@@ -614,26 +647,21 @@ if(OPENAL_FOUND)
 	endif()
 endif()
 
-if(NOT ANDROID)
-	if(NOT APPLE)
-		include(FindSDL2 OPTIONAL)
-	endif()
+if(ENABLE_SDL)
+	include(FindSDL2 OPTIONAL)
 	if(SDL2_FOUND)
 		message("Using shared SDL2")
 		add_definitions(-DHAVE_SDL=1)
 		include_directories(${SDL2_INCLUDE_DIR})
 	else(SDL2_FOUND)
 		# SDL2 not found, try SDL
-		if(NOT APPLE)
-			include(FindSDL OPTIONAL)
-		endif()
+		include(FindSDL OPTIONAL)
 		if(SDL_FOUND)
 			message("Using shared SDL")
 			add_definitions(-DHAVE_SDL=1)
 			include_directories(${SDL_INCLUDE_DIR})
 		else(SDL_FOUND)
 			message("SDL NOT found, disabling SDL input")
-			add_definitions(-DHAVE_SDL=0)
 		endif(SDL_FOUND)
 	endif(SDL2_FOUND)
 endif()
@@ -781,7 +809,7 @@ if(NOT DISABLE_WX AND NOT ANDROID)
 			message(FATAL_ERROR "wxWidgets in Externals is not compatible with your platform")
 		endif()
 
-		include_directories(
+		include_directories(SYSTEM
 			Externals/wxWidgets3
 			Externals/wxWidgets3/include)
 		add_subdirectory(Externals/wxWidgets3)

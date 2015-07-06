@@ -52,7 +52,7 @@ static GekkoOPTemplate primarytable[] =
 	{14, &JitArm64::arith_imm},                 // addi
 	{15, &JitArm64::arith_imm},                 // addis
 
-	{20, &JitArm64::FallBackToInterpreter},     // rlwimix
+	{20, &JitArm64::rlwimix},                   // rlwimix
 	{21, &JitArm64::rlwinmx},                   // rlwinmx
 	{23, &JitArm64::FallBackToInterpreter},     // rlwnmx
 
@@ -302,7 +302,7 @@ static GekkoOPTemplate table31[] =
 
 	{4,   &JitArm64::twx},                      // tw
 	{598, &JitArm64::DoNothing},                // sync
-	{982, &JitArm64::icbi},                     // icbi
+	{982, &JitArm64::FallBackToInterpreter},    // icbi
 
 	// Unused instructions on GC
 	{310, &JitArm64::FallBackToInterpreter},    // eciwx

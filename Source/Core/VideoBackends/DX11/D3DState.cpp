@@ -351,9 +351,12 @@ ID3D11SamplerState* StateCache::Get(SamplerState state)
 	ID3D11SamplerState* res = nullptr;
 
 	HRESULT hr = D3D::device->CreateSamplerState(&sampdc, &res);
-	if (FAILED(hr)) PanicAlert("Fail %s %d\n", __FILE__, __LINE__);
-	D3D::SetDebugObjectName((ID3D11DeviceChild*)res, "sampler state used to emulate the GX pipeline");
-	m_sampler.insert(std::make_pair(state.packed, std::move(D3D::SamplerStatePtr(res))));
+	if (SUCCEEDED(hr))
+		D3D::SetDebugObjectName((ID3D11DeviceChild*)res, "sampler state used to emulate the GX pipeline");
+	else
+		PanicAlert("Fail %s %d\n", __FILE__, __LINE__);
+	
+	m_sampler.emplace(state.packed, std::move(D3D::SamplerStatePtr(res)));
 
 	return res;
 }
@@ -430,9 +433,12 @@ ID3D11BlendState* StateCache::Get(BlendState state)
 	ID3D11BlendState* res = nullptr;
 
 	HRESULT hr = D3D::device->CreateBlendState(&blenddc, &res);
-	if (FAILED(hr)) PanicAlert("Failed to create blend state at %s %d\n", __FILE__, __LINE__);
-	D3D::SetDebugObjectName((ID3D11DeviceChild*)res, "blend state used to emulate the GX pipeline");
-	m_blend.insert(std::make_pair(state.packed, std::move(D3D::BlendStatePtr(res))));
+	if (SUCCEEDED(hr))
+		D3D::SetDebugObjectName((ID3D11DeviceChild*)res, "blend state used to emulate the GX pipeline");
+	else
+		PanicAlert("Failed to create blend state at %s %d\n", __FILE__, __LINE__);
+	
+	m_blend.emplace(state.packed, std::move(D3D::BlendStatePtr(res)));
 
 	return res;
 }
@@ -451,9 +457,12 @@ ID3D11RasterizerState* StateCache::Get(RasterizerState state)
 	ID3D11RasterizerState* res = nullptr;
 
 	HRESULT hr = D3D::device->CreateRasterizerState(&rastdc, &res);
-	if (FAILED(hr)) PanicAlert("Failed to create rasterizer state at %s %d\n", __FILE__, __LINE__);
-	D3D::SetDebugObjectName((ID3D11DeviceChild*)res, "rasterizer state used to emulate the GX pipeline");
-	m_raster.insert(std::make_pair(state.packed, std::move(D3D::RasterizerStatePtr(res))));
+	if (SUCCEEDED(hr))
+		D3D::SetDebugObjectName((ID3D11DeviceChild*)res, "rasterizer state used to emulate the GX pipeline");
+	else
+		PanicAlert("Failed to create rasterizer state at %s %d\n", __FILE__, __LINE__);
+	
+	m_raster.emplace(state.packed, std::move(D3D::RasterizerStatePtr(res)));
 
 	return res;
 }
@@ -502,10 +511,11 @@ ID3D11DepthStencilState* StateCache::Get(ZMode state)
 	ID3D11DepthStencilState* res = nullptr;
 
 	HRESULT hr = D3D::device->CreateDepthStencilState(&depthdc, &res);
-	if (SUCCEEDED(hr)) D3D::SetDebugObjectName((ID3D11DeviceChild*)res, "depth-stencil state used to emulate the GX pipeline");
-	else PanicAlert("Failed to create depth state at %s %d\n", __FILE__, __LINE__);
-
-	m_depth.insert(std::make_pair(state.hex, std::move(D3D::DepthStencilStatePtr(res))));
+	if (SUCCEEDED(hr)) 
+		D3D::SetDebugObjectName((ID3D11DeviceChild*)res, "depth-stencil state used to emulate the GX pipeline");
+	else
+		PanicAlert("Failed to create depth state at %s %d\n", __FILE__, __LINE__);
+	m_depth.emplace(state.hex, std::move(D3D::DepthStencilStatePtr(res)));
 
 	return res;
 }
