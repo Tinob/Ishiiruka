@@ -71,9 +71,15 @@ GUIName = MATSO DOF
 OptionName = MATSODOF
 DefaultValue = True
 
+[OptionBool]
+GUIName = Use depth range focus
+OptionName = DOF_A_FOCUSPOINT_RANGE
+DefaultValue = false
+DependentOption = MATSODOF
+
 [OptionRangeFloat]
 GUIName = Focus Point
-OptionName = DOF_FOCUSPOINT
+OptionName = DOF_B_FOCUSPOINT
 MinValue = 0.0, 0.0
 MaxValue = 1.0, 1.0
 DefaultValue = 0.5, 0.5
@@ -359,28 +365,28 @@ EntryPoint = PS_DOF_MatsoDOF4
 DependentOption = MATSODOF
 [/configuration]
 */
-float3 GetNormalFromDepth(float fDepth) 
-{ 
-  	float depth1 = SampleDepthOffset(int2(0, 1));
-  	float depth2 = SampleDepthOffset(int2(1, 0));
+float3 GetNormalFromDepth(float fDepth)
+{
+	float depth1 = SampleDepthOffset(int2(0, 1));
+	float depth2 = SampleDepthOffset(int2(1, 0));
 	float2 invres = GetInvResolution();
-  	float3 p1 = float3(0,invres.y, depth1 - fDepth);
-  	float3 p2 = float3(invres.x, 0, depth2 - fDepth);
-  
-  	float3 normal = cross(p1, p2);
-  	normal.z = -normal.z;
-  
-  	return normalize(normal);
+	float3 p1 = float3(0, invres.y, depth1 - fDepth);
+	float3 p2 = float3(invres.x, 0, depth2 - fDepth);
+
+	float3 normal = cross(p1, p2);
+	normal.z = -normal.z;
+
+	return normalize(normal);
 }
 #define FILTER_RADIUS 4
 
 float BilateralR(int2 offsetmask, float depth)
-{	
+{
 	float limit = GetOption(D_FILTER_LIMIT);
 	float count = 1.0;
 	float value = SamplePrev().r;
-	
-	for(int i = 1; i < (FILTER_RADIUS + 1); i++)
+
+	for (int i = 1; i < (FILTER_RADIUS + 1); i++)
 	{
 		int2 offset = offsetmask * i;
 		float Weight = min(sign(limit - abs(SampleDepthOffset(offset) - depth)) + 1.0, 1.0);
@@ -388,7 +394,7 @@ float BilateralR(int2 offsetmask, float depth)
 		count += Weight;
 		offset = -offset;
 		Weight = min(sign(limit - abs(SampleDepthOffset(offset) - depth)) + 1.0, 1.0);
-		value +=  SamplePrevOffset(offset).r * Weight;
+		value += SamplePrevOffset(offset).r * Weight;
 		count += Weight;
 	}
 	return value / count;
@@ -396,7 +402,7 @@ float BilateralR(int2 offsetmask, float depth)
 
 void BlurH()
 {
-	SetOutput(float4(1,1,1,1) * BilateralR(int2(1,0), SampleDepth()));
+	SetOutput(float4(1, 1, 1, 1) * BilateralR(int2(1, 0), SampleDepth()));
 }
 
 float4 SSAO()
@@ -470,55 +476,56 @@ float4 SSAO()
 
 	const float2 rndNorm[] =
 	{
-		 float2(0.505277f, 0.862957f),
-		 float2(-0.554562f, 0.832142f),
-		 float2(0.663051f, 0.748574f),
-		 float2(-0.584629f, -0.811301f),
-		 float2(-0.702343f, 0.711838f),
-		 float2(0.843108f, -0.537744f),
-		 float2(0.85856f, 0.512713f),
-		 float2(0.506966f, -0.861966f),
-		 float2(0.614758f, -0.788716f),
-		 float2(0.993426f, -0.114472f),
-		 float2(-0.676375f, 0.736558f),
-		 float2(-0.891668f, 0.45269f),
-		 float2(0.226367f, 0.974042f),
-		 float2(-0.853615f, -0.520904f),
-		 float2(0.467359f, 0.884067f),
-		 float2(-0.997111f, 0.0759529f),
+		float2(0.505277f, 0.862957f),
+		float2(-0.554562f, 0.832142f),
+		float2(0.663051f, 0.748574f),
+		float2(-0.584629f, -0.811301f),
+		float2(-0.702343f, 0.711838f),
+		float2(0.843108f, -0.537744f),
+		float2(0.85856f, 0.512713f),
+		float2(0.506966f, -0.861966f),
+		float2(0.614758f, -0.788716f),
+		float2(0.993426f, -0.114472f),
+		float2(-0.676375f, 0.736558f),
+		float2(-0.891668f, 0.45269f),
+		float2(0.226367f, 0.974042f),
+		float2(-0.853615f, -0.520904f),
+		float2(0.467359f, 0.884067f),
+		float2(-0.997111f, 0.0759529f),
 	};
 
 	float2 coords = GetCoordinates();
 	float fCurrDepth = SampleDepth();
 	float Occlusion = 1.0;
-	if(fCurrDepth<0.9999) 
+	if (fCurrDepth < 0.9999)
 	{
+		float sample_range = GetOption(C_SAMPLE_RANGE) * fCurrDepth;
 		float3 vViewNormal = GetNormalFromDepth(fCurrDepth);
 		uint2 fragcoord = uint2(GetFragmentCoord()) & 3;
 		uint rndidx = fragcoord.y * 4 + fragcoord.x;
 		float3 vRandom = float3(rndNorm[rndidx], 0);
 		float fAO = 0;
 		const int NUMSAMPLES = B_SSAO_SAMPLES;
-		for(int s = 0; s < NUMSAMPLES; s++) 
+		for (int s = 0; s < NUMSAMPLES; s++)
 		{
 			float3 offset = PoissonDisc[s];
 			float3 vReflRay = reflect(offset, vRandom);
-		
-			float fFlip = sign(dot(vViewNormal,vReflRay));
-        	vReflRay   *= fFlip;
-		
-			float sD = fCurrDepth - (vReflRay.z * GetOption(C_SAMPLE_RANGE));
-			float fSampleDepth = SampleDepthLocation(saturate(coords + (GetOption(C_SAMPLE_RANGE) * vReflRay.xy / fCurrDepth)));
+
+			float fFlip = sign(dot(vViewNormal, vReflRay));
+			vReflRay *= fFlip;
+			
+			float sD = fCurrDepth - (vReflRay.z * sample_range);
+			float fSampleDepth = SampleDepthLocation(saturate(coords + (sample_range * vReflRay.xy / fCurrDepth)));
 			float fDepthDelta = saturate(sD - fSampleDepth);
 
-			fDepthDelta *= 1-smoothstep(0,GetOption(E_MAX_DEPTH),fDepthDelta);
+			fDepthDelta *= 1 - smoothstep(0, GetOption(E_MAX_DEPTH), fDepthDelta);
 
-			if ( fDepthDelta > GetOption(F_MIN_DEPTH) && fDepthDelta < GetOption(E_MAX_DEPTH))
+			if (fDepthDelta > GetOption(F_MIN_DEPTH) && fDepthDelta < GetOption(E_MAX_DEPTH))
 				fAO += pow(1 - fDepthDelta, 2.5);
 		}
-		Occlusion = saturate(1 - (fAO / float(NUMSAMPLES)) + GetOption(C_SAMPLE_RANGE));
+		Occlusion = saturate(1.0 - (fAO / float(NUMSAMPLES)));
 	}
-	return float4(Occlusion,Occlusion,Occlusion,Occlusion);
+	return float4(Occlusion, Occlusion, Occlusion, Occlusion);
 }
 
 void AmbientOcclusion()
@@ -526,7 +533,7 @@ void AmbientOcclusion()
 #if A_SSAO_ENABLED != 0
 	float4 value = SSAO();
 #else
-	float4 value = float4(1.0,1.0,1.0,1.0);
+	float4 value = float4(1.0, 1.0, 1.0, 1.0);
 #endif 
 	SetOutput(value);
 }
@@ -537,15 +544,15 @@ void AmbientOcclusion()
 
 float4 GetMatsoDOFCA(float2 tex, float CoC)
 {
-	float3 ChromaPOW = float3(1,1,1) * GetOption(fMatsoDOFChromaPow) * CoC;
+	float3 ChromaPOW = float3(1, 1, 1) * GetOption(fMatsoDOFChromaPow) * CoC;
 	float3 chroma = pow(float3(0.5, 1.0, 1.5), ChromaPOW) * 0.5;
 	tex = (2.0 * tex - 1.0);
 	float2 tr = (tex * chroma.r) + 0.5;
 	float2 tg = (tex * chroma.g) + 0.5;
 	float2 tb = (tex * chroma.b) + 0.5;
-	
+
 	float3 color = float3(SamplePrevLocation(tr).r, SamplePrevLocation(tg).g, SamplePrevLocation(tb).b) * (1.0 - CoC);
-	
+
 	return float4(color, 1.0);
 }
 
@@ -553,32 +560,46 @@ float4 GetMatsoDOFBlur(int axis, float2 coord)
 {
 	float4 tcol = SamplePrevLocation(coord);
 	float scenedepth = SampleDepth();
-	float scenefocus =  SampleDepthLocation(GetOption(DOF_FOCUSPOINT));
-	
-	float depthdiff = abs(scenedepth-scenefocus);
-	depthdiff = (scenedepth < scenefocus) ? pow(depthdiff, GetOption(DOF_NEARBLURCURVE))*(1.0f+pow(abs(0.5f-coord.x)*depthdiff+0.1f,2.0)*GetOption(DOF_VIGNETTE)) : depthdiff;
-	depthdiff = (scenedepth > scenefocus) ? pow(depthdiff, GetOption(DOF_FARBLURCURVE)) : depthdiff;	
+	float scenefocus = 0.0f;
+	if (OptionEnabled(DOF_A_FOCUSPOINT_RANGE))
+	{
+		scenefocus = GetOption(DOF_B_FOCUSPOINT).x;
+	}
+	else
+	{
+		scenefocus = SampleDepthLocation(GetOption(DOF_B_FOCUSPOINT));
+	}
+	float depthdiff = abs(scenedepth - scenefocus);
+	if (OptionEnabled(DOF_A_FOCUSPOINT_RANGE))
+	{
+		if (abs(depthdiff) < GetOption(DOF_B_FOCUSPOINT).y)
+		{
+			depthdiff *= 0.5f * depthdiff * depthdiff;
+		}
+	}
+	depthdiff = (scenedepth < scenefocus) ? pow(depthdiff, GetOption(DOF_NEARBLURCURVE))*(1.0f + pow(abs(0.5f - coord.x)*depthdiff + 0.1f, 2.0)*GetOption(DOF_VIGNETTE)) : depthdiff;
+	depthdiff = (scenedepth > scenefocus) ? pow(depthdiff, GetOption(DOF_FARBLURCURVE)) : depthdiff;
 
-	float2 discRadius = depthdiff * GetOption(DOF_BLURRADIUS)*GetInvResolution()*0.5/float(iMatsoDOFBokehQuality);
+	float2 discRadius = depthdiff * GetOption(DOF_BLURRADIUS)*GetInvResolution()*0.5 / float(iMatsoDOFBokehQuality);
 
-	int passnumber=1;
+	int passnumber = 1;
 
 	float sf = 0;
 
 	float2 tdirs[4] = { float2(-0.306, 0.739), float2(0.306, 0.739), float2(-0.739, 0.306), float2(-0.739, -0.306) };
 	float wValue = (1.0 + pow(length(tcol.rgb) + 0.1, GetOption(fMatsoDOFBokehCurve))) * (1.0 - GetOption(fMatsoDOFBokehLight));	// special recipe from papa Matso ;)
 
-	for(int i = -iMatsoDOFBokehQuality; i < iMatsoDOFBokehQuality; i++)
+	for (int i = -iMatsoDOFBokehQuality; i < iMatsoDOFBokehQuality; i++)
 	{
-		float2 taxis =  tdirs[axis];
+		float2 taxis = tdirs[axis];
 
-		taxis.x = cos(GetOption(fMatsoDOFBokehAngle)*PIOVER180)*taxis.x-sin(GetOption(fMatsoDOFBokehAngle)*PIOVER180)*taxis.y;
-		taxis.y = sin(GetOption(fMatsoDOFBokehAngle)*PIOVER180)*taxis.x+cos(GetOption(fMatsoDOFBokehAngle)*PIOVER180)*taxis.y;
-		
+		taxis.x = cos(GetOption(fMatsoDOFBokehAngle)*PIOVER180)*taxis.x - sin(GetOption(fMatsoDOFBokehAngle)*PIOVER180)*taxis.y;
+		taxis.y = sin(GetOption(fMatsoDOFBokehAngle)*PIOVER180)*taxis.x + cos(GetOption(fMatsoDOFBokehAngle)*PIOVER180)*taxis.y;
+
 		float2 tdir = float(i) * taxis * discRadius;
 		float2 tcoord = coord.xy + tdir.xy;
 		float4 ct;
-		if(OptionEnabled(bMatsoDOFChromaEnable))
+		if (OptionEnabled(bMatsoDOFChromaEnable))
 		{
 			ct = GetMatsoDOFCA(tcoord.xy, discRadius.x);
 		}
@@ -587,7 +608,7 @@ float4 GetMatsoDOFBlur(int axis, float2 coord)
 			ct = SamplePrevLocation(tcoord.xy);
 		}
 		float w = 0.0;
-		float b = dot(ct.rgb,float3(0.333,0.333,0.333)) + length(ct.rgb) + 0.1;
+		float b = dot(ct.rgb, float3(0.333, 0.333, 0.333)) + length(ct.rgb) + 0.1;
 		w = pow(b, GetOption(fMatsoDOFBokehCurve)) + abs(float(i));
 		tcol += ct * w;
 		wValue += w;
@@ -610,12 +631,12 @@ void PS_DOF_MatsoDOF2()
 
 void PS_DOF_MatsoDOF3()
 {
-	SetOutput(GetMatsoDOFBlur(0, GetCoordinates()));	
+	SetOutput(GetMatsoDOFBlur(0, GetCoordinates()));
 }
 
 void PS_DOF_MatsoDOF4()
 {
-	SetOutput(GetMatsoDOFBlur(1, GetCoordinates()));	
+	SetOutput(GetMatsoDOFBlur(1, GetCoordinates()));
 }
 
 
@@ -823,13 +844,13 @@ float4 VibrancePass(float4 color)
 
 void Merger()
 {
-	float4 value = float4(1.0,1.0,1.0,1.0);
+	float4 value = float4(1.0, 1.0, 1.0, 1.0);
 	if (GetOption(A_SSAO_ONLY) == 0)
 	{
 		value = Sample();
 	}
 #if A_SSAO_ENABLED != 0
-	float blur = BilateralR(int2(0,1), SampleDepth());
+	float blur = BilateralR(int2(0, 1), SampleDepth());
 	value *= blur;
 #endif
 	if (OptionEnabled(H_PIXEL_VIBRANCE)) { value = VibrancePass(value); }
@@ -843,12 +864,12 @@ void Merger()
 
 float4 Gauss1dPrev(float2 location, float2 baseoffset)
 {
-	const float offset[] = { 0, 1.4 , 4459.0/1365.0, 539.0/105.0 };
-	const float weight[] = { 0.20947265625 , 0.30548095703125 , 0.08331298828125 , 0.00640869140625 };
+	const float offset[] = { 0, 1.4, 4459.0 / 1365.0, 539.0 / 105.0 };
+	const float weight[] = { 0.20947265625, 0.30548095703125, 0.08331298828125, 0.00640869140625 };
 	float4 Color = SamplePrevLocation(location) * weight[0];
-	float4 power = float4(1,1,1,1) * GetOption(B_BLOOMPOWER);
+	float4 power = float4(1, 1, 1, 1) * GetOption(B_BLOOMPOWER);
 	baseoffset *= GetInvResolution() * GetOption(A_BLOOMWIDTH);
-	for(int i = 1; i < 4; i++)
+	for (int i = 1; i < 4; i++)
 	{
 		float4 color0 = SamplePrevLocation(location + offset[i] * baseoffset);
 		float4 color1 = SamplePrevLocation(location - offset[i] * baseoffset);
