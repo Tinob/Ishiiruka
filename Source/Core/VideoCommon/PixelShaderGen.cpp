@@ -493,7 +493,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 						{
 							out.Write("centroid in float%d uv%d_2;\n", i < 4 ? 4 : 3, i);
 						}
-					}					
+					}
 				}
 			}
 			if (forced_early_z)

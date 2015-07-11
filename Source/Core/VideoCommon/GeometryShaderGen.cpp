@@ -35,7 +35,7 @@ static inline void GenerateGeometryShader(T& out, u32 primitive_type, const XFMe
 	geometry_shader_uid_data dummy_data;
 	bool uidPresent = (&out.template GetUidData<geometry_shader_uid_data>() != nullptr);
 	geometry_shader_uid_data& uid_data = uidPresent ? out.template GetUidData<geometry_shader_uid_data>() : dummy_data;
-	
+
 	if (uidPresent)
 	{
 		out.ClearUID();
@@ -98,7 +98,7 @@ static inline void GenerateGeometryShader(T& out, u32 primitive_type, const XFMe
 		"\tint4 " I_TEXOFFSET";\n"
 		"};\n");
 
-	
+
 
 	out.Write("struct VS_OUTPUT {\n");
 	GenerateVSOutputMembers<T, ApiType>(out, lightingEnabled, xfr);

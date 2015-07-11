@@ -465,7 +465,7 @@ inline void GenerateVertexShader(T& out, u32 components, const XFMemory &xfr, co
 
 		//write the true depth value, if the game uses depth textures pixel shaders will override with the correct values
 		//if not early z culling will improve speed
-		if(g_ActiveConfig.backend_info.bSupportsClipControl)
+		if (g_ActiveConfig.backend_info.bSupportsClipControl)
 		{
 			out.Write("o.pos.z = -o.pos.z;\n");
 		}
