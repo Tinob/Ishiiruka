@@ -980,8 +980,8 @@ public:
 	void ABI_CallLambdaC(const std::function<T(Args...)>* f, u32 p1)
 	{
 		// Double casting is required by VC++ for some reason.
-		auto trampoline = (void(*)())&XEmitter::CallLambdaTrampoline<T, Args...>;
-		ABI_CallFunctionPC((void*)trampoline, const_cast<void*>((const void*)f), p1);
+		void* trampoline = (void*)((T(*)(Args...))&XEmitter::CallLambdaTrampoline<T, Args...>);
+		ABI_CallFunctionPC(trampoline, const_cast<void*>((const void*)f), p1);
 	}
 };  // class XEmitter
 

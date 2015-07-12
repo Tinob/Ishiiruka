@@ -135,10 +135,24 @@ std::vector<DXGI_SAMPLE_DESC> EnumAAModes(IDXGIAdapter* adapter)
 	ID3D11Device* _device;
 	ID3D11DeviceContext* _context;
 	D3D_FEATURE_LEVEL feat_level;
-	HRESULT hr = PD3D11CreateDevice(adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, D3D11_CREATE_DEVICE_SINGLETHREADED, supported_feature_levels, NUM_SUPPORTED_FEATURE_LEVELS, D3D11_SDK_VERSION, &_device, &feat_level, &_context);
+	HRESULT hr = PD3D11CreateDevice(
+		adapter,
+		D3D_DRIVER_TYPE_UNKNOWN,
+		nullptr,
+		D3D11_CREATE_DEVICE_SINGLETHREADED,
+		supported_feature_levels,
+		NUM_SUPPORTED_FEATURE_LEVELS,
+		D3D11_SDK_VERSION, &_device, &feat_level, &_context);
 	if (FAILED(hr))
 	{
-		hr = PD3D11CreateDevice(adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, D3D11_CREATE_DEVICE_SINGLETHREADED, &supported_feature_levels[1] , NUM_SUPPORTED_FEATURE_LEVELS - 1, D3D11_SDK_VERSION, &_device, &feat_level, &_context);
+		hr = PD3D11CreateDevice(
+			adapter,
+			D3D_DRIVER_TYPE_UNKNOWN,
+			nullptr,
+			D3D11_CREATE_DEVICE_SINGLETHREADED,
+			&supported_feature_levels[0],
+			NUM_SUPPORTED_FEATURE_LEVELS - 1,
+			D3D11_SDK_VERSION, &_device, &feat_level, &_context);
 	}
 	if (FAILED(hr) || feat_level < D3D_FEATURE_LEVEL_11_0)
 	{
@@ -171,10 +185,24 @@ std::vector<DXGI_SAMPLE_DESC> EnumAAModes(IDXGIAdapter* adapter)
 D3D_FEATURE_LEVEL GetFeatureLevel(IDXGIAdapter* adapter)
 {
 	D3D_FEATURE_LEVEL feat_level = D3D_FEATURE_LEVEL_9_1;
-	HRESULT hr = PD3D11CreateDevice(adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, D3D11_CREATE_DEVICE_SINGLETHREADED, supported_feature_levels, NUM_SUPPORTED_FEATURE_LEVELS, D3D11_SDK_VERSION, nullptr, &feat_level, nullptr);
+	HRESULT hr = PD3D11CreateDevice(
+		adapter,
+		D3D_DRIVER_TYPE_UNKNOWN,
+		nullptr,
+		D3D11_CREATE_DEVICE_SINGLETHREADED,
+		supported_feature_levels,
+		NUM_SUPPORTED_FEATURE_LEVELS,
+		D3D11_SDK_VERSION, nullptr, &feat_level, nullptr);
 	if (FAILED(hr))
 	{
-		hr = PD3D11CreateDevice(adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, D3D11_CREATE_DEVICE_SINGLETHREADED, &supported_feature_levels[1], NUM_SUPPORTED_FEATURE_LEVELS - 1, D3D11_SDK_VERSION, nullptr, &feat_level, nullptr);
+		hr = PD3D11CreateDevice(
+			adapter,
+			D3D_DRIVER_TYPE_UNKNOWN,
+			nullptr,
+			D3D11_CREATE_DEVICE_SINGLETHREADED,
+			&supported_feature_levels[1],
+			NUM_SUPPORTED_FEATURE_LEVELS - 1,
+			D3D11_SDK_VERSION, nullptr, &feat_level, nullptr);
 	}
 	return feat_level;
 }
@@ -265,58 +293,68 @@ HRESULT Create(HWND wnd)
 		swap_chain_desc.BufferDesc.Width = xres;
 		swap_chain_desc.BufferDesc.Height = yres;
 	}
-
 #if defined(_DEBUG)
 	// Creating debug devices can sometimes fail if the user doesn't have the correct
 	// version of the DirectX SDK. If it does, simply fallback to a non-debug device.
-{
 	hr = PD3D11CreateDeviceAndSwapChain(adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr,
 		D3D11_CREATE_DEVICE_SINGLETHREADED | D3D11_CREATE_DEVICE_DEBUG,
 		supported_feature_levels, NUM_SUPPORTED_FEATURE_LEVELS,
 		D3D11_SDK_VERSION, &swap_chain_desc, &swapchain, &device,
 		&featlevel, &context);
-	ID3D11Debug *d3dDebug = nullptr;
-	if (SUCCEEDED(device->QueryInterface(__uuidof(ID3D11Debug), (void**)&d3dDebug)))
-	{
-		ID3D11InfoQueue *d3dInfoQueue = nullptr;
-		if (SUCCEEDED(d3dDebug->QueryInterface(__uuidof(ID3D11InfoQueue), (void**)&d3dInfoQueue)))
-		{
-
-			d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_CORRUPTION, true);
-			d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_ERROR, true);
-			d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_WARNING, true);
-			D3D11_MESSAGE_ID hide[] =
-			{
-			D3D11_MESSAGE_ID_SETPRIVATEDATA_CHANGINGPARAMS,
-			D3D11_MESSAGE_ID_DEVICE_DRAW_SAMPLER_NOT_SET
-			// Add more message IDs here as needed
-			};
-
-			D3D11_INFO_QUEUE_FILTER filter;
-			memset(&filter, 0, sizeof(filter));
-			filter.DenyList.NumIDs = _countof(hide);
-			filter.DenyList.pIDList = hide;
-			d3dInfoQueue->AddStorageFilterEntries(&filter);
-			
-			d3dInfoQueue->Release();
-
-		}
-		d3dDebug->Release();
-	}
-}
 	if (FAILED(hr))
+	{
+		hr = PD3D11CreateDeviceAndSwapChain(adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr,
+			D3D11_CREATE_DEVICE_SINGLETHREADED | D3D11_CREATE_DEVICE_DEBUG,
+			&supported_feature_levels[1], NUM_SUPPORTED_FEATURE_LEVELS - 1,
+			D3D11_SDK_VERSION, &swap_chain_desc, &swapchain, &device,
+			&featlevel, &context);
+	}
+	if (SUCCEEDED(hr))
+	{
+		ID3D11Debug *d3dDebug = nullptr;
+		if (SUCCEEDED(device->QueryInterface(__uuidof(ID3D11Debug), (void**)&d3dDebug)))
+		{
+			ID3D11InfoQueue *d3dInfoQueue = nullptr;
+			if (SUCCEEDED(d3dDebug->QueryInterface(__uuidof(ID3D11InfoQueue), (void**)&d3dInfoQueue)))
+			{
+
+				d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_CORRUPTION, true);
+				d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_ERROR, true);
+				d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_WARNING, true);
+				D3D11_MESSAGE_ID hide[] =
+				{
+					D3D11_MESSAGE_ID_SETPRIVATEDATA_CHANGINGPARAMS,
+					D3D11_MESSAGE_ID_DEVICE_DRAW_SAMPLER_NOT_SET
+					// Add more message IDs here as needed
+				};
+
+				D3D11_INFO_QUEUE_FILTER filter;
+				memset(&filter, 0, sizeof(filter));
+				filter.DenyList.NumIDs = _countof(hide);
+				filter.DenyList.pIDList = hide;
+				d3dInfoQueue->AddStorageFilterEntries(&filter);
+
+				d3dInfoQueue->Release();
+
+			}
+			d3dDebug->Release();
+		}
+	}
+	else	
 #endif
 	{
 		hr = PD3D11CreateDeviceAndSwapChain(adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr,
 			D3D11_CREATE_DEVICE_SINGLETHREADED,
-			supported_feature_levels, NUM_SUPPORTED_FEATURE_LEVELS,
+			supported_feature_levels,
+			NUM_SUPPORTED_FEATURE_LEVELS,
 			D3D11_SDK_VERSION, &swap_chain_desc, &swapchain, &device,
 			&featlevel, &context);
 		if (FAILED(hr))
 		{
 			hr = PD3D11CreateDeviceAndSwapChain(adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr,
 				D3D11_CREATE_DEVICE_SINGLETHREADED,
-				&supported_feature_levels[1], NUM_SUPPORTED_FEATURE_LEVELS - 1,
+				&supported_feature_levels[1],
+				NUM_SUPPORTED_FEATURE_LEVELS - 1,
 				D3D11_SDK_VERSION, &swap_chain_desc, &swapchain, &device,
 				&featlevel, &context);
 		}

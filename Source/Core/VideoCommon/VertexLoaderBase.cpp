@@ -207,7 +207,7 @@ std::string VertexLoaderBase::GetName() const
 			m_VtxAttr.NormalElements, m_VtxAttr.NormalIndex3, posMode[m_VtxDesc.Normal], posFormats[m_VtxAttr.NormalFormat]));
 	}
 
-	u32 color_mode[2] = { m_VtxDesc.Color0, m_VtxDesc.Color1 };
+	u64 color_mode[2] = { m_VtxDesc.Color0, m_VtxDesc.Color1 };
 	for (int i = 0; i < 2; i++)
 	{
 		if (color_mode[i])
@@ -215,11 +215,11 @@ std::string VertexLoaderBase::GetName() const
 			dest.append(StringFromFormat("C%i_%i_%s_%s_", i, m_VtxAttr.color[i].Elements, posMode[color_mode[i]], colorFormat[m_VtxAttr.color[i].Comp]));
 		}
 	}
-	const u32 tex_mode[8] = {
+	const u64 tex_mode[8] = {
 		m_VtxDesc.Tex0Coord, m_VtxDesc.Tex1Coord, m_VtxDesc.Tex2Coord, m_VtxDesc.Tex3Coord,
-		m_VtxDesc.Tex4Coord, m_VtxDesc.Tex5Coord, m_VtxDesc.Tex6Coord, (const u32)((m_VtxDesc.Hex >> 31) & 3)
+		m_VtxDesc.Tex4Coord, m_VtxDesc.Tex5Coord, m_VtxDesc.Tex6Coord, (const u64)((m_VtxDesc.Hex >> 31) & 3)
 	};
-	const u32 tex_mtxidx[8] = {
+	const u64 tex_mtxidx[8] = {
 		m_VtxDesc.Tex0MatIdx, m_VtxDesc.Tex1MatIdx, m_VtxDesc.Tex2MatIdx, m_VtxDesc.Tex3MatIdx,
 		m_VtxDesc.Tex4MatIdx, m_VtxDesc.Tex5MatIdx, m_VtxDesc.Tex6MatIdx, m_VtxDesc.Tex7MatIdx
 	};

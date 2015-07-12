@@ -27,10 +27,6 @@ inline void GenerateVertexShader(T& out, u32 components, const XFMemory &xfr, co
 	bool uidPresent = (&out.template GetUidData<vertex_shader_uid_data>() != NULL);
 	vertex_shader_uid_data dummy_data;
 	vertex_shader_uid_data& uid_data = uidPresent ? out.template GetUidData<vertex_shader_uid_data>() : dummy_data;
-#ifndef ANDROID
-	locale_t locale;
-	locale_t old_locale;
-#endif
 	if (uidPresent)
 	{
 		out.ClearUID();
@@ -59,10 +55,6 @@ inline void GenerateVertexShader(T& out, u32 components, const XFMemory &xfr, co
 			out.SetBuffer(text);
 		}
 
-#ifndef ANDROID	
-		locale = newlocale(LC_NUMERIC_MASK, "C", NULL); // New locale for compilation
-		old_locale = uselocale(locale); // Apply the locale for this thread		
-#endif
 		buffer[VERTEXSHADERGEN_BUFFERSIZE - 1] = 0x7C;  // canary
 		// uniforms
 		if (api_type == API_OPENGL)
@@ -556,11 +548,6 @@ inline void GenerateVertexShader(T& out, u32 components, const XFMemory &xfr, co
 
 		if (buffer[VERTEXSHADERGEN_BUFFERSIZE - 1] != 0x7C)
 			PanicAlert("VertexShader generator - buffer too small, canary has been eaten!");
-
-#ifndef ANDROID
-		uselocale(old_locale); // restore locale
-		freelocale(locale);
-#endif		
 	}
 	if (uidPresent)
 	{

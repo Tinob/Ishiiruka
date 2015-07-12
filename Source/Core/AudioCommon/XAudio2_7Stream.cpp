@@ -60,7 +60,7 @@ void StreamingVoiceContext2_7::SubmitBuffer(u32 index, u32 sizeinbytes)
 	m_bufferReady[index].store(0);
 	XAUDIO2_BUFFER buf = {};
 	buf.AudioBytes = sizeinbytes;
-	buf.pContext = (void*)index;
+	buf.pContext = (void*)size_t(index);
 	buf.pAudioData = m_bufferAddress[index];
 
 	m_source_voice->SubmitSourceBuffer(&buf);
@@ -140,7 +140,7 @@ void StreamingVoiceContext2_7::OnBufferEnd(void* context)
 {
 	if (!m_source_voice)
 		return;
-	u32 index = (u32)context;
+	u32 index = (u32)((size_t)context);
 	if (m_directstreaming)
 	{
 		m_mixer->Mix((s16*)m_bufferAddress[index], SAMPLES_PER_BUFFER);

@@ -706,7 +706,7 @@ bool CSTextureDecoder::Depalettize(D3DTexture2D& dstTexture, D3DTexture2D& srcTe
 	D3D::context->RSSetViewports(1, &vp);
 
 	D3D::stateman->SetTexture(1, m_lutSrv.get());
-	D3D11_RECT rsource = { 0, 0, width, height };
+	D3D11_RECT rsource = { 0, 0, LONG(width), LONG(height) };
 
 	D3D::context->OMSetRenderTargets(1, &dstTexture.GetRTV(), nullptr);
 

@@ -295,10 +295,7 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 	pixel_shader_uid_data dummy_data;
 	bool uidPresent = (&out.template GetUidData<pixel_shader_uid_data>() != NULL);
 	pixel_shader_uid_data& uid_data = uidPresent ? out.template GetUidData<pixel_shader_uid_data>() : dummy_data;
-#ifndef ANDROID	
-	locale_t locale;
-	locale_t old_locale;
-#endif
+
 	char* codebuffer = nullptr;
 	if (Write_Code)
 	{
@@ -309,11 +306,6 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 			out.SetBuffer(codebuffer);
 		}
 		codebuffer[PIXELSHADERGEN_BUFFERSIZE - 1] = 0x7C;  // canary
-#ifndef ANDROID			
-		locale = newlocale(LC_NUMERIC_MASK, "C", NULL); // New locale for compilation
-		old_locale = uselocale(locale); // Apply the locale for this thread			
-#endif
-
 	}
 
 	if (uidPresent)
@@ -586,11 +578,6 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 			out.Write("}\n");
 			if (codebuffer[PIXELSHADERGEN_BUFFERSIZE - 1] != 0x7C)
 				PanicAlert("PixelShader generator - buffer too small, canary has been eaten!");
-
-#ifndef ANDROID
-			uselocale(old_locale); // restore locale
-			freelocale(locale);
-#endif
 			return;
 		}
 
@@ -964,11 +951,6 @@ inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, u32 componen
 		out.Write("}\n");
 		if (codebuffer[PIXELSHADERGEN_BUFFERSIZE - 1] != 0x7C)
 			PanicAlert("PixelShader generator - buffer too small, canary has been eaten!");
-
-#ifndef ANDROID
-		uselocale(old_locale); // restore locale
-		freelocale(locale);
-#endif
 	}
 
 	if (uidPresent)
