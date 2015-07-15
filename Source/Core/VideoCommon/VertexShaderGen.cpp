@@ -274,7 +274,8 @@ inline void GenerateVertexShader(T& out, u32 components, const XFMemory &xfr, co
 			switch (texinfo.sourcerow)
 			{
 			case XF_SRCGEOM_INROW:
-				_assert_(texinfo.inputform == XF_TEXINPUT_ABC1);
+				// The following assert was triggered in Super Smash Bros. Project M 3.6.
+				//_assert_(texinfo.inputform == XF_TEXINPUT_ABC1);
 				out.Write("coord = rawpos;\n"); // pos.w is 1
 				break;
 			case XF_SRCNORMAL_INROW:
@@ -328,7 +329,8 @@ inline void GenerateVertexShader(T& out, u32 components, const XFMemory &xfr, co
 			}
 			else
 			{
-				_assert_(0); // should have normals
+				// The following assert was triggered in House of the Dead Overkill and Star Wars Rogue Squadron 2
+				//_assert_(0); // should have normals
 				uid_data.texMtxInfo[i].embosssourceshift = xfr.texMtxInfo[i].embosssourceshift;
 				if (Write_Code)
 				{

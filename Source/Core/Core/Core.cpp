@@ -679,7 +679,7 @@ void SaveScreenShot()
 		SetState(CORE_RUN);
 }
 
-void SaveScreenShot(const std::string name)
+void SaveScreenShot(const std::string& name)
 {
 	const bool bPaused = (GetState() == CORE_PAUSE);
 
