@@ -265,13 +265,15 @@ void SSAO()
 	float Occlusion = 1.0;
 	if(fCurrDepth<0.9999) 
 	{
+		float sample_range = GetOption(C_SAMPLE_RANGE) / (1.0 + fCurrDepth * fCurrDepth);
 		float3 vViewNormal = GetNormalFromDepth(fCurrDepth);
 		Randomize();
 		uint2 fragcoord = uint2(GetFragmentCoord()) & 3;
 		uint rndidx = fragcoord.y * 4 + fragcoord.x;
 		float3 vRandom = float3(rndNorm[rndidx], 0);
 		float fAO = 0;
-		for(int s = 0; s < B_SSAO_SAMPLES; s++) 
+		const int NUMSAMPLES = B_SSAO_SAMPLES;
+		for (int s = 0; s < NUMSAMPLES; s++)
 		{
 			float3 offset = PoissonDisc[s];
 			float3 vReflRay = reflect(offset, vRandom);
@@ -279,8 +281,8 @@ void SSAO()
 			float fFlip = sign(dot(vViewNormal,vReflRay));
         	vReflRay   *= fFlip;
 		
-			float sD = fCurrDepth - (vReflRay.z * GetOption(C_SAMPLE_RANGE));
-			float fSampleDepth = SampleDepthLocation(saturate(coords + (GetOption(C_SAMPLE_RANGE) * vReflRay.xy / fCurrDepth)));
+			float sD = fCurrDepth - (vReflRay.z * sample_range);
+			float fSampleDepth = SampleDepthLocation(saturate(coords + (sample_range * vReflRay.xy / fCurrDepth)));
 			float fDepthDelta = saturate(sD - fSampleDepth);
 
 			fDepthDelta *= 1-smoothstep(0,GetOption(E_MAX_DEPTH),fDepthDelta);
@@ -288,7 +290,7 @@ void SSAO()
 			if ( fDepthDelta > GetOption(F_MIN_DEPTH) && fDepthDelta < GetOption(E_MAX_DEPTH))
 				fAO += pow(1 - fDepthDelta, 2.5);
 		}
-		Occlusion = saturate(1 - (fAO / float(B_SSAO_SAMPLES)) + GetOption(C_SAMPLE_RANGE));
+		Occlusion = saturate(1.0 - (fAO / float(NUMSAMPLES)));
 	}
 	SetOutput(float4(Occlusion,Occlusion,Occlusion,Occlusion));
 }
