@@ -265,7 +265,7 @@ void SSAO()
 	float Occlusion = 1.0;
 	if(fCurrDepth<0.9999) 
 	{
-		float sample_range = GetOption(C_SAMPLE_RANGE) / (1.0 + fCurrDepth * fCurrDepth);
+		float sample_range = GetOption(C_SAMPLE_RANGE) * fCurrDepth;
 		float3 vViewNormal = GetNormalFromDepth(fCurrDepth);
 		Randomize();
 		uint2 fragcoord = uint2(GetFragmentCoord()) & 3;

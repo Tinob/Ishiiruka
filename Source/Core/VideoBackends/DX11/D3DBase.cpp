@@ -150,7 +150,7 @@ std::vector<DXGI_SAMPLE_DESC> EnumAAModes(IDXGIAdapter* adapter)
 			D3D_DRIVER_TYPE_UNKNOWN,
 			nullptr,
 			D3D11_CREATE_DEVICE_SINGLETHREADED,
-			&supported_feature_levels[0],
+			&supported_feature_levels[1],
 			NUM_SUPPORTED_FEATURE_LEVELS - 1,
 			D3D11_SDK_VERSION, &_device, &feat_level, &_context);
 	}
