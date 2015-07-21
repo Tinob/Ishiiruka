@@ -7,6 +7,7 @@
 
 #include "VideoBackends/OGL/FramebufferManager.h"
 #include "VideoBackends/OGL/GLInterfaceBase.h"
+#include "VideoBackends/OGL/PostProcessing.h"
 #include "VideoBackends/OGL/Render.h"
 #include "VideoBackends/OGL/SamplerCache.h"
 #include "VideoBackends/OGL/TextureConverter.h"
@@ -557,6 +558,10 @@ void FramebufferManager::ReinterpretPixelData(unsigned int convtype)
 XFBSource::~XFBSource()
 {
 	glDeleteTextures(1, &texture);
+	if (depthtexture)
+	{
+		glDeleteTextures(1, &depthtexture);
+	}
 }
 
 void XFBSource::DecodeToTexture(u32 xfbAddr, u32 fbWidth, u32 fbHeight)
@@ -570,17 +575,31 @@ void XFBSource::CopyEFB(float Gamma)
 
 	// Copy EFB data to XFB and restore render target again
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, FramebufferManager::GetXFBFramebuffer());
+	bool depth_copy_required = g_renderer->GetPostProcessor()->GetConfig()->IsDepthInputRequired();
+	if (depth_copy_required && !depthtexture)
+	{
+		glGenTextures(1, &depthtexture);
 
+		glActiveTexture(GL_TEXTURE9);
+		glBindTexture(GL_TEXTURE_2D_ARRAY, depthtexture);
+		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, 0);
+		glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_DEPTH_COMPONENT32F, texWidth, texHeight, m_layers, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, nullptr);
+	}
 	for (int i = 0; i < m_layers; i++)
 	{
 		// Bind EFB and texture layer
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, FramebufferManager::GetEFBFramebuffer(i));
 		glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture, 0, i);
-
+		GLbitfield mask = GL_COLOR_BUFFER_BIT;
+		if (depth_copy_required)
+		{
+			glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthtexture, 0, i);
+			mask |= GL_DEPTH_BUFFER_BIT;
+		}
 		glBlitFramebuffer(
 			0, 0, texWidth, texHeight,
 			0, 0, texWidth, texHeight,
-			GL_COLOR_BUFFER_BIT, GL_NEAREST
+			mask, GL_NEAREST
 		);
 	}
 

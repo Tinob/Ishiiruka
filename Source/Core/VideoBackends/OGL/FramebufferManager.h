@@ -47,13 +47,17 @@ namespace OGL
 
 struct XFBSource : public XFBSourceBase
 {
-	XFBSource(GLuint tex, int layers) : texture(tex), m_layers(layers) {}
+	XFBSource(GLuint tex, int layers) :
+		texture(tex),
+		m_layers(layers),
+		depthtexture(0){}
 	~XFBSource();
 
 	void CopyEFB(float Gamma) override;
 	void DecodeToTexture(u32 xfbAddr, u32 fbWidth, u32 fbHeight) override;
 
 	const GLuint texture;
+	GLuint depthtexture;
 	const int m_layers;
 };
 

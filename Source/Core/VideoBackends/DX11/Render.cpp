@@ -804,14 +804,14 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 				//drawRc.right *= hScale;
 
 				TargetRectangle sourceRc;
-				sourceRc.left = 0;
-				sourceRc.top = 0;
-				sourceRc.right = (int)xfbSource->texWidth;
-				sourceRc.bottom = (int)xfbSource->texHeight;
+				sourceRc.left = xfbSource->sourceRc.left;
+				sourceRc.right = xfbSource->sourceRc.right;
+				sourceRc.top = xfbSource->sourceRc.top;
+				sourceRc.bottom = xfbSource->sourceRc.bottom;
 
 				sourceRc.right -= Renderer::EFBToScaledX(fbStride - fbWidth);
 
-				BlitScreen(sourceRc, drawRc, xfbSource->tex, nullptr, xfbSource->texWidth, xfbSource->texHeight, Gamma);
+				BlitScreen(sourceRc, drawRc, xfbSource->tex, xfbSource->depthtex, xfbSource->texWidth, xfbSource->texHeight, Gamma);
 			}
 		}
 		else

@@ -56,8 +56,8 @@ void ShaderCompilerWorkUnit::Release()
 
 HLSLAsyncCompiler::HLSLAsyncCompiler() :
 m_repositoryIndex(0),
-m_input(128),
-m_output(128),
+m_input(256),
+m_output(256),
 m_inputsize(0),
 m_outputsize(0)
 {

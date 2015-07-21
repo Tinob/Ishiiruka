@@ -46,13 +46,24 @@ namespace DX11 {
 
 struct XFBSource : public XFBSourceBase
 {
-	XFBSource(D3DTexture2D *_tex, int slices) : tex(_tex), m_slices(slices) {}
-	~XFBSource() { tex->Release(); }
+	XFBSource(D3DTexture2D *_tex, int slices) : 
+		tex(_tex),
+		m_slices(slices),
+		depthtex(nullptr){}
+	~XFBSource() {
+		tex->Release(); 
+		if (depthtex)
+		{
+			depthtex->Release();
+		}
+	}
 
 	void DecodeToTexture(u32 xfbAddr, u32 fbWidth, u32 fbHeight);
 	void CopyEFB(float Gamma);
-
+	u32 m_target_width;
+	u32 m_target_height;
 	D3DTexture2D* const tex;
+	D3DTexture2D* depthtex;
 	const int m_slices;
 };
 

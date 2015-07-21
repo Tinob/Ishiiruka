@@ -6,6 +6,8 @@
 #include "Common/FileUtil.h"
 #include "Common/StringUtil.h"
 
+#include "Core/Core.h"
+
 #include "VideoBackends/DX11/D3DTexture.h"
 #include "VideoBackends/DX11/D3DState.h"
 #include "VideoBackends/DX11/FramebufferManager.h"
@@ -380,10 +382,11 @@ std::string DX11PostProcessing::InitStages(const std::string &code)
 
 void DX11PostProcessing::ApplyShader()
 {
+	u32 new_samples = g_ActiveConfig.bUseXFB ? 1 : D3D::GetAAMode(g_ActiveConfig.iMultisampleMode).Count;
 	// shader didn't changed
 	if (m_initialized 
 		&& m_config.GetShader() == g_ActiveConfig.sPostProcessingShader 
-		&& m_prev_samples == D3D::GetAAMode(g_ActiveConfig.iMultisampleMode).Count
+		&& m_prev_samples == new_samples
 		&& !m_config.NeedRecompile())
 		return;
 	if (m_config.NeedRecompile())
@@ -391,7 +394,7 @@ void DX11PostProcessing::ApplyShader()
 		m_config.SaveOptionsConfiguration();
 		m_config.SetRecompile(false);
 	}
-	m_prev_samples = D3D::GetAAMode(g_ActiveConfig.iMultisampleMode).Count;
+	m_prev_samples = new_samples;
 	for (auto& stageoutput : m_stageOutput)
 	{
 		stageoutput->Release();
@@ -411,6 +414,9 @@ void DX11PostProcessing::ApplyShader()
 	m_initialized = true;
 	const auto& stages = m_config.GetStages();
 	// and compile it
+	// Pause everything while compiling or the fifo will 
+	// desync especially while using xfb.
+	bool wasunpaused = Core::PauseAndLock(true);
 	for (size_t i = 0; i < stages.size(); i++)
 	{
 		m_pshader[i] = D3D::CompileAndCreatePixelShader(code, nullptr, stages[i].m_stage_entry_point.c_str());
@@ -421,7 +427,7 @@ void DX11PostProcessing::ApplyShader()
 			break;
 		}
 	}
-	
+	Core::PauseAndLock(false, wasunpaused);
 	if (!m_initialized)
 	{
 		// Erro COmpilling so fallback to default

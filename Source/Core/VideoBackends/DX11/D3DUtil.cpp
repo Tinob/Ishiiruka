@@ -546,10 +546,17 @@ void drawShadedTexQuad(
 	float sh = 1.0f / (float)SourceHeight;
 	float dw = 1.0f / (float)SourceWidth;
 	float dh = 1.0f / (float)SourceHeight;
-	float u1 = ((float)rSource->left) * sw;
-	float u2 = ((float)rSource->right) * sw;
-	float v1 = ((float)rSource->top) * sh;
-	float v2 = ((float)rSource->bottom) * sh;
+	float u1 = 0.f;
+	float u2 = 1.f;
+	float v1 = 0.f;
+	float v2 = 1.f;
+	if (rSource != nullptr)
+	{
+		u1 = ((float)rSource->left) * sw;
+		u2 = ((float)rSource->right) * sw;
+		v1 = ((float)rSource->top) * sh;
+		v2 = ((float)rSource->bottom) * sh;
+	}
 	float G = 1.0f / Gamma;
 	float S = (float)slice;
 

@@ -1496,7 +1496,7 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 
 			sourceRc.right -= Renderer::EFBToScaledX(fbStride - fbWidth);
 
-			BlitScreen(sourceRc, drawRc, xfbSource->texture, 0, xfbSource->texWidth, xfbSource->texHeight);
+			BlitScreen(sourceRc, drawRc, xfbSource->texture, xfbSource->depthtexture, xfbSource->texWidth, xfbSource->texHeight);
 		}
 	}
 	else
