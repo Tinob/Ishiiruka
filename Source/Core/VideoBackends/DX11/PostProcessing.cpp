@@ -6,8 +6,6 @@
 #include "Common/FileUtil.h"
 #include "Common/StringUtil.h"
 
-#include "Core/Core.h"
-
 #include "VideoBackends/DX11/D3DTexture.h"
 #include "VideoBackends/DX11/D3DState.h"
 #include "VideoBackends/DX11/FramebufferManager.h"
@@ -414,9 +412,6 @@ void DX11PostProcessing::ApplyShader()
 	m_initialized = true;
 	const auto& stages = m_config.GetStages();
 	// and compile it
-	// Pause everything while compiling or the fifo will 
-	// desync especially while using xfb.
-	bool wasunpaused = Core::PauseAndLock(true);
 	for (size_t i = 0; i < stages.size(); i++)
 	{
 		m_pshader[i] = D3D::CompileAndCreatePixelShader(code, nullptr, stages[i].m_stage_entry_point.c_str());
@@ -427,7 +422,6 @@ void DX11PostProcessing::ApplyShader()
 			break;
 		}
 	}
-	Core::PauseAndLock(false, wasunpaused);
 	if (!m_initialized)
 	{
 		// Erro COmpilling so fallback to default

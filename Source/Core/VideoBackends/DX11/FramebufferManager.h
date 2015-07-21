@@ -60,8 +60,6 @@ struct XFBSource : public XFBSourceBase
 
 	void DecodeToTexture(u32 xfbAddr, u32 fbWidth, u32 fbHeight);
 	void CopyEFB(float Gamma);
-	u32 m_target_width;
-	u32 m_target_height;
 	D3DTexture2D* const tex;
 	D3DTexture2D* depthtex;
 	const int m_slices;
