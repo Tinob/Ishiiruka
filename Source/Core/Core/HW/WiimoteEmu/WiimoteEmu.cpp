@@ -6,6 +6,7 @@
 
 #include "Common/ChunkFile.h"
 #include "Common/CommonTypes.h"
+#include "Common/MathUtil.h"
 #include "Common/Timer.h"
 #include "Core/ConfigManager.h"
 #include "Core/Host.h"
@@ -249,6 +250,7 @@ void Wiimote::Reset()
 
 Wiimote::Wiimote( const unsigned int index )
 	: m_index(index)
+	, m_last_connect_request_counter(0)
 	, ir_sin(0)
 	, ir_cos(1)
 // , m_sound_stream( nullptr )
@@ -403,18 +405,9 @@ void Wiimote::GetAccelData(u8* const data, const ReportFeatures& rptf)
 	s16 y = (s16)(4 * (m_accel.y * ACCEL_RANGE + ACCEL_ZERO_G));
 	s16 z = (s16)(4 * (m_accel.z * ACCEL_RANGE + ACCEL_ZERO_G));
 
-	if (x > 1024)
-		x = 1024;
-	else if (x < 0)
-		x = 0;
-	if (y > 1024)
-		y = 1024;
-	else if (y < 0)
-		y = 0;
-	if (z > 1024)
-		z = 1024;
-	else if (z < 0)
-		z = 0;
+	x = MathUtil::Clamp<s16>(x, 0, 1024);
+	y = MathUtil::Clamp<s16>(y, 0, 1024);
+	z = MathUtil::Clamp<s16>(z, 0, 1024);
 
 	accel.x = (x >> 2) & 0xFF;
 	accel.y = (y >> 2) & 0xFF;
@@ -873,6 +866,27 @@ void Wiimote::InterruptChannel(const u16 _channelID, const void* _pData, u32 _Si
 	default:
 		PanicAlert("HidInput: Unknown type 0x%02x and param 0x%02x", hidp->type, hidp->param);
 		break;
+	}
+}
+
+void Wiimote::ConnectOnInput()
+{
+	if (m_last_connect_request_counter > 0)
+	{
+		--m_last_connect_request_counter;
+		return;
+	}
+
+	u16 buttons = 0;
+	m_buttons->GetState(&buttons, button_bitmasks);
+	m_dpad->GetState(&buttons, dpad_bitmasks);
+
+	if (buttons != 0)
+	{
+		Host_ConnectWiimote(m_index, true);
+		// arbitrary value so it doesn't try to send multiple requests before Dolphin can react
+		// if Wiimotes are polled at 200Hz then this results in one request being sent per 500ms
+		m_last_connect_request_counter = 100;
 	}
 }
 

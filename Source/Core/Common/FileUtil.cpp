@@ -98,7 +98,7 @@ bool IsDirectory(const std::string &filename)
 	if (result < 0)
 	{
 		WARN_LOG(COMMON, "IsDirectory: stat failed on %s: %s",
-			filename.c_str(), GetLastErrorMsg().c_str());
+				 filename.c_str(), GetLastErrorMsg().c_str());
 		return false;
 	}
 
@@ -130,14 +130,14 @@ bool Delete(const std::string &filename)
 	if (!DeleteFile(UTF8ToTStr(filename).c_str()))
 	{
 		WARN_LOG(COMMON, "Delete: DeleteFile failed on %s: %s",
-			filename.c_str(), GetLastErrorMsg().c_str());
+				 filename.c_str(), GetLastErrorMsg().c_str());
 		return false;
 	}
 #else
 	if (unlink(filename.c_str()) == -1)
 	{
 		WARN_LOG(COMMON, "Delete: unlink failed on %s: %s",
-			filename.c_str(), GetLastErrorMsg().c_str());
+				 filename.c_str(), GetLastErrorMsg().c_str());
 		return false;
 	}
 #endif
@@ -244,7 +244,7 @@ bool DeleteDir(const std::string &filename)
 bool Rename(const std::string &srcFilename, const std::string &destFilename)
 {
 	INFO_LOG(COMMON, "Rename: %s --> %s",
-		srcFilename.c_str(), destFilename.c_str());
+			srcFilename.c_str(), destFilename.c_str());
 #ifdef _WIN32
 	auto sf = UTF8ToTStr(srcFilename);
 	auto df = UTF8ToTStr(destFilename);
@@ -263,7 +263,7 @@ bool Rename(const std::string &srcFilename, const std::string &destFilename)
 		return true;
 #endif
 	ERROR_LOG(COMMON, "Rename: failed %s --> %s: %s",
-		srcFilename.c_str(), destFilename.c_str(), GetLastErrorMsg().c_str());
+			  srcFilename.c_str(), destFilename.c_str(), GetLastErrorMsg().c_str());
 	return false;
 }
 
@@ -306,13 +306,13 @@ bool RenameSync(const std::string &srcFilename, const std::string &destFilename)
 bool Copy(const std::string &srcFilename, const std::string &destFilename)
 {
 	INFO_LOG(COMMON, "Copy: %s --> %s",
-		srcFilename.c_str(), destFilename.c_str());
+			srcFilename.c_str(), destFilename.c_str());
 #ifdef _WIN32
 	if (CopyFile(UTF8ToTStr(srcFilename).c_str(), UTF8ToTStr(destFilename).c_str(), FALSE))
 		return true;
 
 	ERROR_LOG(COMMON, "Copy: failed %s --> %s: %s",
-		srcFilename.c_str(), destFilename.c_str(), GetLastErrorMsg().c_str());
+			srcFilename.c_str(), destFilename.c_str(), GetLastErrorMsg().c_str());
 	return false;
 #else
 
@@ -327,7 +327,7 @@ bool Copy(const std::string &srcFilename, const std::string &destFilename)
 	if (!input.is_open())
 	{
 		ERROR_LOG(COMMON, "Copy: input failed %s --> %s: %s",
-			srcFilename.c_str(), destFilename.c_str(), GetLastErrorMsg().c_str());
+				srcFilename.c_str(), destFilename.c_str(), GetLastErrorMsg().c_str());
 		return false;
 	}
 
@@ -337,7 +337,7 @@ bool Copy(const std::string &srcFilename, const std::string &destFilename)
 	if (!output.IsOpen())
 	{
 		ERROR_LOG(COMMON, "Copy: output failed %s --> %s: %s",
-			srcFilename.c_str(), destFilename.c_str(), GetLastErrorMsg().c_str());
+				srcFilename.c_str(), destFilename.c_str(), GetLastErrorMsg().c_str());
 		return false;
 	}
 
@@ -349,8 +349,8 @@ bool Copy(const std::string &srcFilename, const std::string &destFilename)
 		if (!input)
 		{
 			ERROR_LOG(COMMON,
-				"Copy: failed reading from source, %s --> %s: %s",
-				srcFilename.c_str(), destFilename.c_str(), GetLastErrorMsg().c_str());
+					"Copy: failed reading from source, %s --> %s: %s",
+					srcFilename.c_str(), destFilename.c_str(), GetLastErrorMsg().c_str());
 			return false;
 		}
 
@@ -358,8 +358,8 @@ bool Copy(const std::string &srcFilename, const std::string &destFilename)
 		if (!output.WriteBytes(buffer, BSIZE))
 		{
 			ERROR_LOG(COMMON,
-				"Copy: failed writing to output, %s --> %s: %s",
-				srcFilename.c_str(), destFilename.c_str(), GetLastErrorMsg().c_str());
+					"Copy: failed writing to output, %s --> %s: %s",
+					srcFilename.c_str(), destFilename.c_str(), GetLastErrorMsg().c_str());
 			return false;
 		}
 	}
@@ -391,12 +391,12 @@ u64 GetSize(const std::string &filename)
 #endif
 	{
 		DEBUG_LOG(COMMON, "GetSize: %s: %lld",
-			filename.c_str(), (long long)buf.st_size);
+				filename.c_str(), (long long)buf.st_size);
 		return buf.st_size;
 	}
 
 	ERROR_LOG(COMMON, "GetSize: Stat failed %s: %s",
-		filename.c_str(), GetLastErrorMsg().c_str());
+			filename.c_str(), GetLastErrorMsg().c_str());
 	return 0;
 }
 
@@ -421,7 +421,7 @@ u64 GetSize(FILE *f)
 	if (fseeko(f, 0, SEEK_END) != 0)
 	{
 		ERROR_LOG(COMMON, "GetSize: seek failed %p: %s",
-			f, GetLastErrorMsg().c_str());
+			  f, GetLastErrorMsg().c_str());
 		return 0;
 	}
 
@@ -429,7 +429,7 @@ u64 GetSize(FILE *f)
 	if ((size != pos) && (fseeko(f, pos, SEEK_SET) != 0))
 	{
 		ERROR_LOG(COMMON, "GetSize: seek failed %p: %s",
-			f, GetLastErrorMsg().c_str());
+			  f, GetLastErrorMsg().c_str());
 		return 0;
 	}
 
@@ -444,7 +444,7 @@ bool CreateEmptyFile(const std::string &filename)
 	if (!File::IOFile(filename, "wb"))
 	{
 		ERROR_LOG(COMMON, "CreateEmptyFile: failed %s: %s",
-			filename.c_str(), GetLastErrorMsg().c_str());
+				  filename.c_str(), GetLastErrorMsg().c_str());
 		return false;
 	}
 
@@ -481,37 +481,37 @@ FSTEntry ScanDirectoryTree(const std::string &directory, bool recursive)
 
 	DIR *dirp = opendir(directory.c_str());
 	if (!dirp)
-		return parent_entry;
+			return parent_entry;
 
-	// non Windows loop
-	while (!readdir_r(dirp, &dirent, &result) && result)
-	{
-		const std::string virtual_name(result->d_name);
-#endif
-		if (virtual_name == "." || virtual_name == "..")
-			continue;
-		auto physical_name = directory + DIR_SEP + virtual_name;
-		FSTEntry entry;
-		entry.isDirectory = IsDirectory(physical_name);
-		if (entry.isDirectory)
+		// non Windows loop
+		while (!readdir_r(dirp, &dirent, &result) && result)
 		{
-			if (recursive)
-				entry = ScanDirectoryTree(physical_name, true);
+			const std::string virtual_name(result->d_name);
+	#endif
+			if (virtual_name == "." || virtual_name == "..")
+				continue;
+			auto physical_name = directory + DIR_SEP + virtual_name;
+			FSTEntry entry;
+			entry.isDirectory = IsDirectory(physical_name);
+			if (entry.isDirectory)
+			{
+				if (recursive)
+					entry = ScanDirectoryTree(physical_name, true);
+				else
+					entry.size = 0;
+			}
 			else
-				entry.size = 0;
-		}
-		else
-		{
-			entry.size = GetSize(physical_name);
-		}
-		entry.virtualName = virtual_name;
-		entry.physicalName = physical_name;
+			{
+				entry.size = GetSize(physical_name);
+			}
+			entry.virtualName = virtual_name;
+			entry.physicalName = physical_name;
 
-		++parent_entry.size;
-		// Push into the tree
-		parent_entry.children.push_back(entry);
-#ifdef _WIN32
-	} while (FindNextFile(hFind, &ffd) != 0);
+			++parent_entry.size;
+			// Push into the tree
+			parent_entry.children.push_back(entry);
+	#ifdef _WIN32
+		} while (FindNextFile(hFind, &ffd) != 0);
 	FindClose(hFind);
 #else
 	}
@@ -556,7 +556,7 @@ bool DeleteDirRecursively(const std::string &directory)
 		// check for "." and ".."
 		if (((virtualName[0] == '.') && (virtualName[1] == '\0')) ||
 			((virtualName[0] == '.') && (virtualName[1] == '.') &&
-			(virtualName[2] == '\0')))
+			 (virtualName[2] == '\0')))
 			continue;
 
 		std::string newPath = directory + DIR_SEP_CHR + virtualName;
@@ -564,9 +564,9 @@ bool DeleteDirRecursively(const std::string &directory)
 		{
 			if (!DeleteDirRecursively(newPath))
 			{
-#ifndef _WIN32
+				#ifndef _WIN32
 				closedir(dirp);
-#endif
+				#endif
 
 				return false;
 			}
@@ -575,9 +575,9 @@ bool DeleteDirRecursively(const std::string &directory)
 		{
 			if (!File::Delete(newPath))
 			{
-#ifndef _WIN32
+				#ifndef _WIN32
 				closedir(dirp);
-#endif
+				#endif
 
 				return false;
 			}
@@ -653,7 +653,7 @@ std::string GetCurrentDir()
 	if (!(dir = __getcwd(nullptr, 0)))
 	{
 		ERROR_LOG(COMMON, "GetCurrentDirectory failed: %s",
-			GetLastErrorMsg().c_str());
+				GetLastErrorMsg().c_str());
 		return nullptr;
 	}
 	std::string strDir = dir;
@@ -685,7 +685,7 @@ std::string CreateTempDir()
 	dir = ReplaceAll(dir, "\\", DIR_SEP);
 	return dir;
 #else
-	const char* base = getenv("TMPDIR") ? : "/tmp";
+	const char* base = getenv("TMPDIR") ?: "/tmp";
 	std::string path = std::string(base) + "/DolphinWii.XXXXXX";
 	if (!mkdtemp(&path[0]))
 		return "";
@@ -731,8 +731,12 @@ std::string& GetExeDirectory()
 	if (DolphinPath.empty())
 	{
 		TCHAR Dolphin_exe_Path[2048];
+		TCHAR Dolphin_exe_Clean_Path[MAX_PATH];
 		GetModuleFileName(nullptr, Dolphin_exe_Path, 2048);
-		DolphinPath = TStrToUTF8(Dolphin_exe_Path);
+		if (_tfullpath(Dolphin_exe_Clean_Path, Dolphin_exe_Path, MAX_PATH) != nullptr)
+			DolphinPath = TStrToUTF8(Dolphin_exe_Clean_Path);
+		else
+			DolphinPath = TStrToUTF8(Dolphin_exe_Path);
 		DolphinPath = DolphinPath.substr(0, DolphinPath.find_last_of('\\'));
 	}
 	return DolphinPath;
@@ -762,64 +766,64 @@ static void RebuildUserDirectories(unsigned int dir_index)
 	switch (dir_index)
 	{
 	case D_USER_IDX:
-		s_user_paths[D_GCUSER_IDX] = s_user_paths[D_USER_IDX] + GC_USER_DIR DIR_SEP;
-		s_user_paths[D_WIIROOT_IDX] = s_user_paths[D_USER_IDX] + WII_USER_DIR;
-		s_user_paths[D_CONFIG_IDX] = s_user_paths[D_USER_IDX] + CONFIG_DIR DIR_SEP;
-		s_user_paths[D_GAMESETTINGS_IDX] = s_user_paths[D_USER_IDX] + GAMESETTINGS_DIR DIR_SEP;
-		s_user_paths[D_MAPS_IDX] = s_user_paths[D_USER_IDX] + MAPS_DIR DIR_SEP;
-		s_user_paths[D_CACHE_IDX] = s_user_paths[D_USER_IDX] + CACHE_DIR DIR_SEP;
-		s_user_paths[D_SHADERCACHE_IDX] = s_user_paths[D_USER_IDX] + SHADERCACHE_DIR DIR_SEP;
-		s_user_paths[D_SHADERS_IDX] = s_user_paths[D_USER_IDX] + SHADERS_DIR DIR_SEP;
-		s_user_paths[D_STATESAVES_IDX] = s_user_paths[D_USER_IDX] + STATESAVES_DIR DIR_SEP;
-		s_user_paths[D_SCREENSHOTS_IDX] = s_user_paths[D_USER_IDX] + SCREENSHOTS_DIR DIR_SEP;
-		s_user_paths[D_LOAD_IDX] = s_user_paths[D_USER_IDX] + LOAD_DIR DIR_SEP;
-		s_user_paths[D_HIRESTEXTURES_IDX] = s_user_paths[D_LOAD_IDX] + HIRES_TEXTURES_DIR DIR_SEP;
+		s_user_paths[D_GCUSER_IDX]         = s_user_paths[D_USER_IDX] + GC_USER_DIR DIR_SEP;
+		s_user_paths[D_WIIROOT_IDX]        = s_user_paths[D_USER_IDX] + WII_USER_DIR;
+		s_user_paths[D_CONFIG_IDX]         = s_user_paths[D_USER_IDX] + CONFIG_DIR DIR_SEP;
+		s_user_paths[D_GAMESETTINGS_IDX]   = s_user_paths[D_USER_IDX] + GAMESETTINGS_DIR DIR_SEP;
+		s_user_paths[D_MAPS_IDX]           = s_user_paths[D_USER_IDX] + MAPS_DIR DIR_SEP;
+		s_user_paths[D_CACHE_IDX]          = s_user_paths[D_USER_IDX] + CACHE_DIR DIR_SEP;
+		s_user_paths[D_SHADERCACHE_IDX]    = s_user_paths[D_USER_IDX] + SHADERCACHE_DIR DIR_SEP;
+		s_user_paths[D_SHADERS_IDX]        = s_user_paths[D_USER_IDX] + SHADERS_DIR DIR_SEP;
+		s_user_paths[D_STATESAVES_IDX]     = s_user_paths[D_USER_IDX] + STATESAVES_DIR DIR_SEP;
+		s_user_paths[D_SCREENSHOTS_IDX]    = s_user_paths[D_USER_IDX] + SCREENSHOTS_DIR DIR_SEP;
+		s_user_paths[D_LOAD_IDX]           = s_user_paths[D_USER_IDX] + LOAD_DIR DIR_SEP;
+		s_user_paths[D_HIRESTEXTURES_IDX]  = s_user_paths[D_LOAD_IDX] + HIRES_TEXTURES_DIR DIR_SEP;
 		s_user_paths[D_PPSHADERSPRESETS_IDX] = s_user_paths[D_LOAD_IDX] + PPS_PRESETS_DIR DIR_SEP;
-		s_user_paths[D_DUMP_IDX] = s_user_paths[D_USER_IDX] + DUMP_DIR DIR_SEP;
-		s_user_paths[D_DUMPFRAMES_IDX] = s_user_paths[D_DUMP_IDX] + DUMP_FRAMES_DIR DIR_SEP;
-		s_user_paths[D_DUMPAUDIO_IDX] = s_user_paths[D_DUMP_IDX] + DUMP_AUDIO_DIR DIR_SEP;
-		s_user_paths[D_DUMPTEXTURES_IDX] = s_user_paths[D_DUMP_IDX] + DUMP_TEXTURES_DIR DIR_SEP;
-		s_user_paths[D_DUMPDSP_IDX] = s_user_paths[D_DUMP_IDX] + DUMP_DSP_DIR DIR_SEP;
-		s_user_paths[D_LOGS_IDX] = s_user_paths[D_USER_IDX] + LOGS_DIR DIR_SEP;
-		s_user_paths[D_MAILLOGS_IDX] = s_user_paths[D_LOGS_IDX] + MAIL_LOGS_DIR DIR_SEP;
-		s_user_paths[D_THEMES_IDX] = s_user_paths[D_USER_IDX] + THEMES_DIR DIR_SEP;
-		s_user_paths[F_DOLPHINCONFIG_IDX] = s_user_paths[D_CONFIG_IDX] + DOLPHIN_CONFIG;
+		s_user_paths[D_DUMP_IDX]           = s_user_paths[D_USER_IDX] + DUMP_DIR DIR_SEP;
+		s_user_paths[D_DUMPFRAMES_IDX]     = s_user_paths[D_DUMP_IDX] + DUMP_FRAMES_DIR DIR_SEP;
+		s_user_paths[D_DUMPAUDIO_IDX]      = s_user_paths[D_DUMP_IDX] + DUMP_AUDIO_DIR DIR_SEP;
+		s_user_paths[D_DUMPTEXTURES_IDX]   = s_user_paths[D_DUMP_IDX] + DUMP_TEXTURES_DIR DIR_SEP;
+		s_user_paths[D_DUMPDSP_IDX]        = s_user_paths[D_DUMP_IDX] + DUMP_DSP_DIR DIR_SEP;
+		s_user_paths[D_LOGS_IDX]           = s_user_paths[D_USER_IDX] + LOGS_DIR DIR_SEP;
+		s_user_paths[D_MAILLOGS_IDX]       = s_user_paths[D_LOGS_IDX] + MAIL_LOGS_DIR DIR_SEP;
+		s_user_paths[D_THEMES_IDX]         = s_user_paths[D_USER_IDX] + THEMES_DIR DIR_SEP;
+		s_user_paths[F_DOLPHINCONFIG_IDX]  = s_user_paths[D_CONFIG_IDX] + DOLPHIN_CONFIG;
 		s_user_paths[F_DEBUGGERCONFIG_IDX] = s_user_paths[D_CONFIG_IDX] + DEBUGGER_CONFIG;
-		s_user_paths[F_LOGGERCONFIG_IDX] = s_user_paths[D_CONFIG_IDX] + LOGGER_CONFIG;
-		s_user_paths[F_MAINLOG_IDX] = s_user_paths[D_LOGS_IDX] + MAIN_LOG;
-		s_user_paths[F_RAMDUMP_IDX] = s_user_paths[D_DUMP_IDX] + RAM_DUMP;
-		s_user_paths[F_ARAMDUMP_IDX] = s_user_paths[D_DUMP_IDX] + ARAM_DUMP;
-		s_user_paths[F_FAKEVMEMDUMP_IDX] = s_user_paths[D_DUMP_IDX] + FAKEVMEM_DUMP;
-		s_user_paths[F_GCSRAM_IDX] = s_user_paths[D_GCUSER_IDX] + GC_SRAM;
+		s_user_paths[F_LOGGERCONFIG_IDX]   = s_user_paths[D_CONFIG_IDX] + LOGGER_CONFIG;
+		s_user_paths[F_MAINLOG_IDX]        = s_user_paths[D_LOGS_IDX] + MAIN_LOG;
+		s_user_paths[F_RAMDUMP_IDX]        = s_user_paths[D_DUMP_IDX] + RAM_DUMP;
+		s_user_paths[F_ARAMDUMP_IDX]       = s_user_paths[D_DUMP_IDX] + ARAM_DUMP;
+		s_user_paths[F_FAKEVMEMDUMP_IDX]   = s_user_paths[D_DUMP_IDX] + FAKEVMEM_DUMP;
+		s_user_paths[F_GCSRAM_IDX]         = s_user_paths[D_GCUSER_IDX] + GC_SRAM;
 		break;
 
 	case D_CONFIG_IDX:
-		s_user_paths[F_DOLPHINCONFIG_IDX] = s_user_paths[D_CONFIG_IDX] + DOLPHIN_CONFIG;
+		s_user_paths[F_DOLPHINCONFIG_IDX]  = s_user_paths[D_CONFIG_IDX] + DOLPHIN_CONFIG;
 		s_user_paths[F_DEBUGGERCONFIG_IDX] = s_user_paths[D_CONFIG_IDX] + DEBUGGER_CONFIG;
-		s_user_paths[F_LOGGERCONFIG_IDX] = s_user_paths[D_CONFIG_IDX] + LOGGER_CONFIG;
+		s_user_paths[F_LOGGERCONFIG_IDX]   = s_user_paths[D_CONFIG_IDX] + LOGGER_CONFIG;
 		break;
 
 	case D_GCUSER_IDX:
-		s_user_paths[F_GCSRAM_IDX] = s_user_paths[D_GCUSER_IDX] + GC_SRAM;
+		s_user_paths[F_GCSRAM_IDX]         = s_user_paths[D_GCUSER_IDX] + GC_SRAM;
 		break;
 
 	case D_DUMP_IDX:
-		s_user_paths[D_DUMPFRAMES_IDX] = s_user_paths[D_DUMP_IDX] + DUMP_FRAMES_DIR DIR_SEP;
-		s_user_paths[D_DUMPAUDIO_IDX] = s_user_paths[D_DUMP_IDX] + DUMP_AUDIO_DIR DIR_SEP;
-		s_user_paths[D_DUMPTEXTURES_IDX] = s_user_paths[D_DUMP_IDX] + DUMP_TEXTURES_DIR DIR_SEP;
-		s_user_paths[D_DUMPDSP_IDX] = s_user_paths[D_DUMP_IDX] + DUMP_DSP_DIR DIR_SEP;
-		s_user_paths[F_RAMDUMP_IDX] = s_user_paths[D_DUMP_IDX] + RAM_DUMP;
-		s_user_paths[F_ARAMDUMP_IDX] = s_user_paths[D_DUMP_IDX] + ARAM_DUMP;
-		s_user_paths[F_FAKEVMEMDUMP_IDX] = s_user_paths[D_DUMP_IDX] + FAKEVMEM_DUMP;
+		s_user_paths[D_DUMPFRAMES_IDX]     = s_user_paths[D_DUMP_IDX] + DUMP_FRAMES_DIR DIR_SEP;
+		s_user_paths[D_DUMPAUDIO_IDX]      = s_user_paths[D_DUMP_IDX] + DUMP_AUDIO_DIR DIR_SEP;
+		s_user_paths[D_DUMPTEXTURES_IDX]   = s_user_paths[D_DUMP_IDX] + DUMP_TEXTURES_DIR DIR_SEP;
+		s_user_paths[D_DUMPDSP_IDX]        = s_user_paths[D_DUMP_IDX] + DUMP_DSP_DIR DIR_SEP;
+		s_user_paths[F_RAMDUMP_IDX]        = s_user_paths[D_DUMP_IDX] + RAM_DUMP;
+		s_user_paths[F_ARAMDUMP_IDX]       = s_user_paths[D_DUMP_IDX] + ARAM_DUMP;
+		s_user_paths[F_FAKEVMEMDUMP_IDX]   = s_user_paths[D_DUMP_IDX] + FAKEVMEM_DUMP;
 		break;
 
 	case D_LOGS_IDX:
-		s_user_paths[D_MAILLOGS_IDX] = s_user_paths[D_LOGS_IDX] + MAIL_LOGS_DIR DIR_SEP;
-		s_user_paths[F_MAINLOG_IDX] = s_user_paths[D_LOGS_IDX] + MAIN_LOG;
+		s_user_paths[D_MAILLOGS_IDX]       = s_user_paths[D_LOGS_IDX] + MAIL_LOGS_DIR DIR_SEP;
+		s_user_paths[F_MAINLOG_IDX]        = s_user_paths[D_LOGS_IDX] + MAIN_LOG;
 		break;
 
 	case D_LOAD_IDX:
-		s_user_paths[D_HIRESTEXTURES_IDX] = s_user_paths[D_LOAD_IDX] + HIRES_TEXTURES_DIR DIR_SEP;
+		s_user_paths[D_HIRESTEXTURES_IDX]  = s_user_paths[D_LOAD_IDX] + HIRES_TEXTURES_DIR DIR_SEP;
 		s_user_paths[D_PPSHADERSPRESETS_IDX] = s_user_paths[D_LOAD_IDX] + PPS_PRESETS_DIR DIR_SEP;
 		break;
 	}
@@ -990,7 +994,7 @@ bool IOFile::Resize(u64 size)
 		// TODO: handle 64bit and growing
 		ftruncate(fileno(m_file), size)
 #endif
-		)
+	)
 		m_good = false;
 
 	return m_good;
