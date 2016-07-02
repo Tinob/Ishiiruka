@@ -147,6 +147,65 @@ void FindFilename(u64 offset)
 	CheckFile(filename, pFileSystem->GetFileSize(filename));
 }
 
+const char* GetFileName(u64 offset)
+{
+	// Don't do anything if a game is not running
+	if (Core::GetState() != Core::CORE_RUN)
+		return NULL;
+
+	// Or if the log is unselected
+	if (!LogManager::GetInstance()->IsEnabled(LogTypes::FILEMON, LogTypes::LWARNING))
+		return NULL;
+
+	// Or if we don't have file access
+	if (!FileAccess)
+		return NULL;
+
+	if (!pFileSystem || ISOFile != SConfig::GetInstance().m_LastFilename)
+	{
+		FileAccess = false;
+		ReadFileSystem(SConfig::GetInstance().m_LastFilename);
+		ISOFile = SConfig::GetInstance().m_LastFilename;
+		INFO_LOG(FILEMON, "Opening '%s'", ISOFile.c_str());
+		return NULL;
+	}
+
+	const std::string filename = pFileSystem->GetFileName(offset);
+
+	if (filename.empty())
+		return NULL;
+
+	return filename.c_str();
+}
+
+u64 GetFileStartAddress(u64 offset)
+{
+	// Don't do anything if a game is not running
+	if (Core::GetState() != Core::CORE_RUN)
+		return NULL;
+
+	// Or if the log is unselected
+	if (!LogManager::GetInstance()->IsEnabled(LogTypes::FILEMON, LogTypes::LWARNING))
+		return NULL;
+
+	// Or if we don't have file access
+	if (!FileAccess)
+		return NULL;
+
+	if (!pFileSystem || ISOFile != SConfig::GetInstance().m_LastFilename)
+	{
+		FileAccess = false;
+		ReadFileSystem(SConfig::GetInstance().m_LastFilename);
+		ISOFile = SConfig::GetInstance().m_LastFilename;
+		INFO_LOG(FILEMON, "Opening '%s'", ISOFile.c_str());
+		return NULL;
+	}
+
+	u64 fileStartAddress = pFileSystem->GetFileStartAddress(offset);
+
+	return fileStartAddress;
+}
+
 void Close()
 {
 	if (OpenISO != nullptr)

@@ -26,6 +26,7 @@ public:
 	u64 GetFileSize(const std::string& _rFullPath) override;
 	const std::vector<SFileInfo>& GetFileList() override;
 	const std::string GetFileName(u64 _Address) override;
+	u64 GetFileStartAddress(u64 _Address) override;
 	u64 ReadFile(const std::string& _rFullPath, u8* _pBuffer, u64 _MaxBufferSize, u64 _OffsetInFile) override;
 	bool ExportFile(const std::string& _rFullPath, const std::string&_rExportFilename) override;
 	bool ExportApploader(const std::string& _rExportFolder) const override;

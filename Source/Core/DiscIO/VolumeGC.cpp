@@ -8,6 +8,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <io.h>
 
 #include "Common/ColorUtil.h"
 #include "Common/CommonTypes.h"
@@ -32,11 +33,61 @@ CVolumeGC::~CVolumeGC()
 
 bool CVolumeGC::Read(u64 _Offset, u64 _Length, u8* _pBuffer, bool decrypt) const
 {
+	//WARN_LOG(VIDEO, "Load from offset %i, size %i", _Offset, _Length);
+
 	if (decrypt)
 		PanicAlertT("Tried to decrypt data from a non-Wii volume");
 
 	if (m_pReader == nullptr)
 		return false;
+
+	const char* fileName = FileMon::GetFileName(_Offset);
+	u64 fileAddress = FileMon::GetFileStartAddress(_Offset);
+
+	if (fileName != NULL)
+	{
+		char filePathNew[512];
+
+		sprintf((char*)&filePathNew, "ISO/%s", fileName);
+
+		if (access((char*)&filePathNew, 0) != -1)
+		{
+			FILE* newFile = fopen((char*)&filePathNew, "rb");
+
+			u64 fileRelOffset = _Offset - fileAddress;
+
+			WARN_LOG(VIDEO, "Loading custom file from %s. File offset: %i.", &filePathNew, fileRelOffset);
+
+			if (newFile)
+			{
+				// Get file size
+				fseek(newFile, 0, SEEK_END);
+				int fileSize = ftell(newFile);
+				fseek(newFile, 0, SEEK_SET);
+
+				fseek(newFile, (long)fileRelOffset, SEEK_SET);
+
+				if (_Length > fileSize)
+				{
+					fread(_pBuffer, fileSize, 1, newFile);
+				}
+				else
+				{
+					fread(_pBuffer, _Length, 1, newFile);
+				}
+			}
+
+			fclose(newFile);
+
+			return true;
+		}
+		else
+		{
+			//WARN_LOG(VIDEO, "Tried to load file from %s, but did not exist.", &filePathNew);
+		}
+
+		//WARN_LOG(VIDEO, fileName);
+	}
 
 	FileMon::FindFilename(_Offset);
 

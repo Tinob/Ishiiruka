@@ -16,5 +16,7 @@ void ReadFileSystem(const std::string& file);
 void CheckFile(const std::string& file, u64 size);
 void FindFilename(u64 offset);
 void Close();
+const char* GetFileName(u64 offset);
+u64 GetFileStartAddress(u64 offset);
 
 }

@@ -8,6 +8,7 @@
 #include <cstring>
 #include <string>
 #include <vector>
+#include <io.h>
 
 #include "Common/CommonTypes.h"
 #include "Common/FileUtil.h"
@@ -62,6 +63,23 @@ const std::string CFileSystemGCWii::GetFileName(u64 _Address)
 	}
 
 	return "";
+}
+
+u64 CFileSystemGCWii::GetFileStartAddress(u64 _Address)
+{
+	if (!m_Initialized)
+		InitFileSystem();
+
+	for (auto& fileInfo : m_FileInfoVector)
+	{
+		if ((fileInfo.m_Offset <= _Address) &&
+			((fileInfo.m_Offset + fileInfo.m_FileSize) > _Address))
+		{
+			return fileInfo.m_Offset;
+		}
+	}
+
+	return -1;
 }
 
 u64 CFileSystemGCWii::ReadFile(const std::string& _rFullPath, u8* _pBuffer, u64 _MaxBufferSize, u64 _OffsetInFile)
@@ -180,6 +198,42 @@ u32 CFileSystemGCWii::GetBootDOLSize(u64 dol_offset) const
 
 bool CFileSystemGCWii::GetBootDOL(u8* &buffer, u32 DolSize) const
 {
+	char filePathNew[512];
+
+	strcpy((char*)&filePathNew, "ISO/&&systemdata/Start.dol");
+
+	if (access((char*)&filePathNew, 0) != -1)
+	{
+		FILE* newFile = fopen((char*)&filePathNew, "rb");
+
+		u64 fileRelOffset = 0;
+
+		WARN_LOG(VIDEO, "Loading custom DOL file from ISO/&&systemData/Start.dol");
+
+		if (newFile)
+		{
+			// Get file size
+			fseek(newFile, 0, SEEK_END);
+			int fileSize = ftell(newFile);
+			fseek(newFile, 0, SEEK_SET);
+
+			fseek(newFile, (long)fileRelOffset, SEEK_SET);
+
+			if ((int)DolSize > fileSize)
+			{
+				fread(buffer, fileSize, 1, newFile);
+			}
+			else
+			{
+				fread(buffer, DolSize, 1, newFile);
+			}
+		}
+
+		fclose(newFile);
+
+		return true;
+	}
+
 	u32 DolOffset = m_rVolume->Read32(0x420, m_Wii) << GetOffsetShift();
 	return m_rVolume->Read(DolOffset, DolSize, buffer, m_Wii);
 }

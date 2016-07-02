@@ -33,4 +33,9 @@ IFileSystem* CreateFileSystem(const IVolume* _rVolume)
 	return pFileSystem;
 }
 
+u64 IFileSystem::GetFileStartAddress(u64 _Address)
+{
+	return u64();
+}
+
 } // namespace
