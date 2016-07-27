@@ -22,10 +22,10 @@
 #include "VideoCommon/RenderBase.h"
 #include "VideoCommon/Statistics.h"
 
-alignas(16) float VertexShaderManager::vsconstants[VertexShaderManager::ConstantBufferSize];
+alignas(256) float VertexShaderManager::vsconstants[VertexShaderManager::ConstantBufferSize];
 ConstatBuffer VertexShaderManager::m_buffer(VertexShaderManager::vsconstants, VertexShaderManager::ConstantBufferSize);
 
-alignas(16) float g_fProjectionMatrix[16];
+alignas(256) float g_fProjectionMatrix[16];
 
 // track changes
 bool VertexShaderManager::bProjectionChanged;

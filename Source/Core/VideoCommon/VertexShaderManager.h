@@ -66,6 +66,6 @@ private:
 	static bool bProjectionChanged;
 	static bool bViewportChanged;
 	static int s_materials_changed;
-	alignas(16) static float vsconstants[ConstantBufferSize];
+	alignas(256) static float vsconstants[ConstantBufferSize];
 	static ConstatBuffer m_buffer;
 };

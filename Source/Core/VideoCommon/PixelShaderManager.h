@@ -103,6 +103,6 @@ private:
 	static u8 s_nIndTexScaleChanged;
 	static int s_materials_changed;
 	static void SetPSTextureDims(int texid);
-	alignas(16) static float psconstants[ConstantBufferSize];
+	alignas(256) static float psconstants[ConstantBufferSize];
 	static ConstatBuffer m_buffer;
 };
