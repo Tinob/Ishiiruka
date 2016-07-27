@@ -275,7 +275,7 @@ void GatherPipeBursted()
 {
 	if (IsOnThread())
 		SetCPStatusFromCPU();
-	
+
 	ProcessFifoEvents();
 	// if we aren't linked, we don't care about gather pipe data
 	if (!m_CPCtrlReg.GPLinkEnable)
@@ -370,37 +370,24 @@ void SetInterruptFinishWaiting(bool waiting)
 void SetCPStatusFromGPU()
 {
 	// breakpoint
-	if (fifo.bFF_BPEnable)
+	u32 old_break_point = fifo.bFF_Breakpoint;
+	u32 break_point = fifo.bFF_BPEnable && (fifo.CPBreakpoint == fifo.CPReadPointer);
+
+	if (break_point != old_break_point)
 	{
-		if (fifo.CPBreakpoint == fifo.CPReadPointer)
-		{
-			if (!fifo.bFF_Breakpoint)
-			{
-				INFO_LOG(COMMANDPROCESSOR, "Hit breakpoint at %i", fifo.CPReadPointer);
-				fifo.bFF_Breakpoint = true;
-			}
-		}
-		else
-		{
-			if (fifo.bFF_Breakpoint)
-				INFO_LOG(COMMANDPROCESSOR, "Cleared breakpoint at %i", fifo.CPReadPointer);
-			fifo.bFF_Breakpoint = false;
-		}
-	}
-	else
-	{
-		if (fifo.bFF_Breakpoint)
-			INFO_LOG(COMMANDPROCESSOR, "Cleared breakpoint at %i", fifo.CPReadPointer);
-		fifo.bFF_Breakpoint = false;
+		fifo.bFF_Breakpoint = break_point;
+		INFO_LOG(COMMANDPROCESSOR, break_point ? "Hit breakpoint at %i" : "Cleared breakpoint at %i", fifo.CPReadPointer);
 	}
 
 	// overflow & underflow check
-	fifo.bFF_HiWatermark = (fifo.CPReadWriteDistance > fifo.CPHiWatermark);
-	fifo.bFF_LoWatermark = (fifo.CPReadWriteDistance < fifo.CPLoWatermark);
+	u32 HiWatermark = (fifo.CPReadWriteDistance > fifo.CPHiWatermark);
+	u32 LoWatermark = (fifo.CPReadWriteDistance < fifo.CPLoWatermark);
+	fifo.bFF_HiWatermark = HiWatermark;
+	fifo.bFF_LoWatermark = LoWatermark;
 
-	bool bpInt = fifo.bFF_Breakpoint && fifo.bFF_BPInt;
-	bool ovfInt = fifo.bFF_HiWatermark && fifo.bFF_HiWatermarkInt;
-	bool undfInt = fifo.bFF_LoWatermark && fifo.bFF_LoWatermarkInt;
+	bool bpInt = break_point && fifo.bFF_BPInt;
+	bool ovfInt = HiWatermark && fifo.bFF_HiWatermarkInt;
+	bool undfInt = LoWatermark && fifo.bFF_LoWatermarkInt;
 
 	bool interrupt = (bpInt || ovfInt || undfInt) && m_CPCtrlReg.GPReadEnable;
 

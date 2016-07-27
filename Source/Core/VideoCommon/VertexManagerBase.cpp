@@ -72,41 +72,34 @@ inline u32 GetRemainingSize()
 inline u32 GetRemainingIndices(int primitive)
 {
 	u32 index_len = VertexManagerBase::MAXIBUFFERSIZE - IndexGenerator::GetIndexLen();
-
-	switch (primitive)
+	if (primitive == GX_DRAW_TRIANGLE_STRIP || primitive == GX_DRAW_TRIANGLE_FAN)
 	{
-	case GX_DRAW_QUADS:
-	case GX_DRAW_QUADS_2:
-		return index_len / 6 * 4;
-	case GX_DRAW_TRIANGLES:
-		return index_len;
-	case GX_DRAW_TRIANGLE_STRIP:
 		return index_len / 3 + 2;
-	case GX_DRAW_TRIANGLE_FAN:
-		return index_len / 3 + 2;
-	case GX_DRAW_LINES:
-		return index_len;
-	case GX_DRAW_LINE_STRIP:
-		return index_len / 2 + 1;
-	case GX_DRAW_POINTS:
-		return index_len;
-	default:
-		return 0;
 	}
+	if (primitive < GX_DRAW_TRIANGLES)
+	{
+		return index_len / 6 * 4;
+	}
+	else if (primitive == GX_DRAW_LINE_STRIP)
+	{
+		return index_len / 2 + 1;
+	}
+	return index_len;
 }
 
 void VertexManagerBase::PrepareForAdditionalData(int primitive, u32 count, u32 stride)
 {
 	// The SSE vertex loader can write up to 4 bytes past the end
 	u32 const needed_vertex_bytes = count * stride + 4;
+	PrimitiveType primitive_type = current_primitive_type;
+	current_primitive_type = primitive_from_gx[primitive];
+	u32 max_index_size = std::min(IndexGenerator::GetRemainingIndices(), GetRemainingIndices(primitive));
 
 	// We can't merge different kinds of primitives, so we have to flush here
-	if (current_primitive_type != primitive_from_gx[primitive])
-		Flush();
-	current_primitive_type = primitive_from_gx[primitive];
 	// Check for size in buffer, if the buffer gets full, call Flush()
-	if (!IsFlushed && (count > IndexGenerator::GetRemainingIndices() ||
-		count > GetRemainingIndices(primitive) || needed_vertex_bytes > GetRemainingSize()))
+	if (count > max_index_size
+		|| needed_vertex_bytes > GetRemainingSize()
+		|| current_primitive_type != primitive_type)
 	{
 		Flush();
 #if defined(_DEBUG) || defined(DEBUGFAST)
