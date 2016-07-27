@@ -1016,17 +1016,26 @@ void Renderer::ApplyState(bool bUseDstAlpha)
 	}
 	D3D::BufferDescriptor vbuffer = VertexShaderCache::GetConstantBuffer();
 	D3D::BufferDescriptor pbuffer = PixelShaderCache::GetConstantBuffer();
+	ID3D11GeometryShader* geometry_shader = GeometryShaderCache::GetActiveShader();
+	ID3D11HullShader* hull_shader = HullDomainShaderCache::GetActiveHullShader();
+
 	D3D::stateman->SetVertexConstants(vbuffer);
-	D3D::stateman->SetGeometryConstants(GeometryShaderCache::GetConstantBuffer());
-	D3D::stateman->SetHullDomainConstants(0, HullDomainShaderCache::GetConstantBuffer());
-	D3D::stateman->SetHullDomainConstants(1, vbuffer);
-	D3D::stateman->SetHullDomainConstants(2, pbuffer);
+	if (geometry_shader)
+	{
+		D3D::stateman->SetGeometryConstants(GeometryShaderCache::GetConstantBuffer());
+	}
+	if (hull_shader)
+	{
+		D3D::stateman->SetHullDomainConstants(0, HullDomainShaderCache::GetConstantBuffer());
+		D3D::stateman->SetHullDomainConstants(1, vbuffer);
+		D3D::stateman->SetHullDomainConstants(2, pbuffer);
+	}
 	D3D::stateman->SetPixelConstants(0, pbuffer);
 	D3D::stateman->SetPixelConstants(1, vbuffer);
 
 	D3D::stateman->SetVertexShader(VertexShaderCache::GetActiveShader());
-	D3D::stateman->SetGeometryShader(GeometryShaderCache::GetActiveShader());
-	D3D::stateman->SetHullShader(HullDomainShaderCache::GetActiveHullShader());
+	D3D::stateman->SetGeometryShader(geometry_shader);
+	D3D::stateman->SetHullShader(hull_shader);
 	D3D::stateman->SetDomainShader(HullDomainShaderCache::GetActiveDomainShader());
 	D3D::stateman->SetPixelShader(PixelShaderCache::GetActiveShader());
 
