@@ -363,9 +363,7 @@ void JitBlockCache::WriteLinkBlock(const JitBlock::LinkData& source, const JitBl
 
 void JitBlockCache::WriteDestroyBlock(const JitBlock& block)
 {
-	// Only clear the entry points as we might still be within this block.
 	XEmitter emit((u8*)block.checkedEntry);
-	emit.INT3();
-	XEmitter emit2((u8*)block.normalEntry);
-	emit2.INT3();
+	emit.MOV(32, PPCSTATE(pc), Imm32(block.effectiveAddress));
+	emit.JMP(jit->GetAsmRoutines()->dispatcher, true);
 }
