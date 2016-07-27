@@ -123,6 +123,8 @@ struct VideoConfig final
 	int iTessellationDisplacementIntensity;
 	// Information
 	bool bShowFPS;
+	bool bShowNetPlayPing;
+	bool bShowNetPlayMessages;
 	bool bShowInputDisplay;
 	bool bOverlayStats;
 	bool bOverlayProjStats;

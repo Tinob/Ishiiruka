@@ -139,10 +139,22 @@ static wxString bbox_desc = _("Selects wish implementation is used to emulate Bo
 static wxString wireframe_desc = _("Render the scene as a wireframe.\n\nIf unsure, leave this unchecked.");
 static wxString disable_fog_desc = _("Makes distant objects more visible by removing fog, thus increasing the overall detail.\nDisabling fog will break some games which rely on proper fog emulation.\n\nIf unsure, leave this unchecked.");
 static wxString disable_dstalpha_desc = _("Disables emulation of a hardware feature called destination alpha, which is used in many games for various graphical effects.\n\nIf unsure, leave this unchecked.");
-static wxString show_fps_desc = _("Show the number of frames rendered per second as a measure of emulation speed.\n\nIf unsure, leave this unchecked.");
-static wxString log_fps_to_file_desc = _("Log the number of frames rendered per second to User/Logs/fps.txt. Use this feature when you want to measure the performance of Dolphin.\n\nIf unsure, leave this unchecked.");
+static wxString show_fps_desc =
+wxTRANSLATE("Show the number of frames rendered per second as a measure of "
+	"emulation speed.\n\nIf unsure, leave this unchecked.");
+static wxString show_netplay_ping_desc =
+wxTRANSLATE("Show the players' maximum Ping while playing on "
+	"NetPlay.\n\nIf unsure, leave this unchecked.");
+static wxString log_render_time_to_file_desc =
+wxTRANSLATE("Log the render time of every frame to User/Logs/render_time.txt. Use this "
+	"feature when you want to measure the performance of Dolphin.\n\nIf "
+	"unsure, leave this unchecked.");
+static wxString show_stats_desc =
+wxTRANSLATE("Show various rendering statistics.\n\nIf unsure, leave this unchecked.");
+static wxString show_netplay_messages_desc =
+wxTRANSLATE("When playing on NetPlay, show chat messages, buffer changes and "
+	"desync alerts.\n\nIf unsure, leave this unchecked.");
 static wxString show_input_display_desc = _("Display the inputs read by the emulator.\n\nIf unsure, leave this unchecked.");
-static wxString show_stats_desc = _("Show various statistics.\n\nIf unsure, leave this unchecked.");
 static wxString texfmt_desc = _("Modify textures to show the format they're encoded in. Needs an emulation reset in most cases.\n\nIf unsure, leave this unchecked.");
 static wxString xfb_desc = _("Disable any XFB emulation.\nSpeeds up emulation a lot but causes heavy glitches in many games which rely on them (especially homebrew applications).\n\nIf unsure, leave this checked.");
 static wxString xfb_virtual_desc = _("Emulate XFBs using GPU texture objects.\nFixes many games which don't work without XFB emulation while not being as slow as real XFB emulation. However, it may still fail for a lot of other games (especially homebrew applications).\n\nIf unsure, leave this checked.");
@@ -354,7 +366,13 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
 
 			{
 				szr_other->Add(CreateCheckBox(page_general, _("Show FPS"), (show_fps_desc), vconfig.bShowFPS));
+				szr_other->Add(CreateCheckBox(page_general, _("Show NetPlay Ping"),
+					wxGetTranslation(show_netplay_ping_desc),
+					vconfig.bShowNetPlayPing));
 				szr_other->Add(CreateCheckBox(page_general, _("Auto adjust Window Size"), (auto_window_size_desc), SConfig::GetInstance().bRenderWindowAutoSize));
+				szr_other->Add(CreateCheckBox(page_general, _("Show NetPlay Messages"),
+					wxGetTranslation(show_netplay_messages_desc),
+					vconfig.bShowNetPlayMessages));
 				szr_other->Add(CreateCheckBox(page_general, _("Keep window on top"), (keep_window_on_top_desc), SConfig::GetInstance().bKeepWindowOnTop));
 				szr_other->Add(CreateCheckBox(page_general, _("Hide Mouse Cursor"), (hide_mouse_cursor_desc), SConfig::GetInstance().bHideCursor));
 				szr_other->Add(render_to_main_checkbox = CreateCheckBox(page_general, _("Render to Main Window"), (render_to_main_win_desc), SConfig::GetInstance().bRenderToMain));

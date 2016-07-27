@@ -73,6 +73,8 @@ void VideoConfig::Load(const std::string& ini_file)
 	settings->Get("UseRealXFB", &bUseRealXFB, 0);
 	settings->Get("SafeTextureCacheColorSamples", &iSafeTextureCache_ColorSamples, 128);
 	settings->Get("ShowFPS", &bShowFPS, false);
+	settings->Get("ShowNetPlayPing", &bShowNetPlayPing, false);
+	settings->Get("ShowNetPlayMessages", &bShowNetPlayMessages, false);
 	settings->Get("LogRenderTimeToFile", &bLogRenderTimeToFile, false);
 	settings->Get("ShowInputDisplay", &bShowInputDisplay, false);
 	settings->Get("OverlayStats", &bOverlayStats, false);
@@ -407,6 +409,8 @@ void VideoConfig::Save(const std::string& ini_file)
 	settings->Set("UseRealXFB", bUseRealXFB);
 	settings->Set("SafeTextureCacheColorSamples", iSafeTextureCache_ColorSamples);
 	settings->Set("ShowFPS", bShowFPS);
+	settings->Set("ShowNetPlayPing", bShowNetPlayPing);
+	settings->Set("ShowNetPlayMessages", bShowNetPlayMessages);
 	settings->Set("LogRenderTimeToFile", bLogRenderTimeToFile);
 	settings->Set("ShowInputDisplay", bShowInputDisplay);
 	settings->Set("OverlayStats", bOverlayStats);

@@ -256,6 +256,7 @@ EVT_MENU(IDM_TOGGLE_PAUSE_MOVIE, CFrame::OnTogglePauseMovie)
 EVT_MENU(IDM_SHOW_LAG, CFrame::OnShowLag)
 EVT_MENU(IDM_SHOW_FRAME_COUNT, CFrame::OnShowFrameCount)
 EVT_MENU(IDM_SHOW_INPUT_DISPLAY, CFrame::OnShowInputDisplay)
+EVT_MENU(IDM_SHOW_RTC_DISPLAY, CFrame::OnShowRTCDisplay)
 EVT_MENU(IDM_FRAMESTEP, CFrame::OnFrameStep)
 EVT_MENU(IDM_SCREENSHOT, CFrame::OnScreenshot)
 EVT_MENU(IDM_TOGGLE_DUMP_FRAMES, CFrame::OnToggleDumpFrames)
@@ -1541,14 +1542,14 @@ void CFrame::ParseHotkeys()
 			g_Config.iStereoMode = STEREO_SBS;
 		else
 			g_Config.iStereoMode = STEREO_OFF;
-	}
+		}
 	if (IsHotkey(HK_TOGGLE_STEREO_TAB))
 	{
 		if (g_Config.iStereoMode != STEREO_TAB)
 			g_Config.iStereoMode = STEREO_TAB;
 		else
 			g_Config.iStereoMode = STEREO_OFF;
-	}
+		}
 	if (IsHotkey(HK_TOGGLE_STEREO_ANAGLYPH))
 	{
 		if (g_Config.iStereoMode != STEREO_SHADER || g_Config.sStereoShader != "Anaglyph/dubois")
@@ -1560,14 +1561,14 @@ void CFrame::ParseHotkeys()
 		}
 		else
 			g_Config.iStereoMode = STEREO_OFF;
-	}
+		}
 	if (IsHotkey(HK_TOGGLE_STEREO_3DVISION))
 	{
 		if (g_Config.iStereoMode != STEREO_3DVISION)
 			g_Config.iStereoMode = STEREO_3DVISION;
 		else
 			g_Config.iStereoMode = STEREO_OFF;
-	}
+		}
 
 	if (IsHotkey(HK_DECREASE_DEPTH, true))
 	{

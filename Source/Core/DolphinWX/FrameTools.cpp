@@ -206,6 +206,8 @@ wxMenuBar* CFrame::CreateMenu()
 	movieMenu->Check(IDM_RECORD_READ_ONLY, true);
 	movieMenu->AppendCheckItem(IDM_SHOW_INPUT_DISPLAY, _("Show Input Display"));
 	movieMenu->Check(IDM_SHOW_INPUT_DISPLAY, SConfig::GetInstance().m_ShowInputDisplay);
+	movieMenu->AppendCheckItem(IDM_SHOW_RTC_DISPLAY, _("Show System Clock"));
+	movieMenu->Check(IDM_SHOW_RTC_DISPLAY, SConfig::GetInstance().m_ShowRTC);
 	movieMenu->AppendSeparator();
 	movieMenu->AppendCheckItem(IDM_TOGGLE_DUMP_FRAMES, _("Dump Frames"));
 	movieMenu->Check(IDM_TOGGLE_DUMP_FRAMES, SConfig::GetInstance().m_DumpFrames);
@@ -271,7 +273,7 @@ wxMenuBar* CFrame::CreateMenu()
 		static const wxString menu_text[] =
 		{
 		_("&Registers"), _("&Watch"), _("&Breakpoints"),
-		_("&Memory"),    _("&JIT"),   _("&Sound"),
+																				 _("&Memory"),    _("&JIT"),   _("&Sound"),
 		_("&Video")
 		};
 
@@ -757,6 +759,12 @@ void CFrame::OnShowFrameCount(wxCommandEvent& WXUNUSED(event))
 void CFrame::OnShowInputDisplay(wxCommandEvent& WXUNUSED(event))
 {
 	SConfig::GetInstance().m_ShowInputDisplay = !SConfig::GetInstance().m_ShowInputDisplay;
+	SConfig::GetInstance().SaveSettings();
+}
+
+void CFrame::OnShowRTCDisplay(wxCommandEvent& WXUNUSED(event))
+{
+	SConfig::GetInstance().m_ShowRTC = !SConfig::GetInstance().m_ShowRTC;
 	SConfig::GetInstance().SaveSettings();
 }
 
