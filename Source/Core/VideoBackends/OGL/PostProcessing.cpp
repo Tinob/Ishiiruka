@@ -526,7 +526,7 @@ void OGLPostProcessor::CopyTexture(const TargetRectangle& dst_rect, uintptr_t ds
 	for (int i = 0; i < layers_to_copy; i++)
 	{
 		int layer = (src_layer < 0) ? i : src_layer;
-		if (g_ogl_config.bSupportsCopySubImage && dst_texture != 0 && !(force_shader_copy || scaling))
+		if (g_ogl_config.bSupportsCopySubImage && dst_texture != 0 && !(force_shader_copy || scaling || is_depth_texture))
 		{
 			// use (ARB|NV)_copy_image, but only for non-window-framebuffer cases
 			glCopyImageSubData(src_texture, GL_TEXTURE_2D_ARRAY, 0, src_rect.left, src_rect.bottom, layer,

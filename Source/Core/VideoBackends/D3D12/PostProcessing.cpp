@@ -502,7 +502,7 @@ void D3DPostProcessor::PostProcessEFB(const TargetRectangle* src_rect)
 
 	// Copy back to EFB buffer when multisampling is enabled
 	if (g_ActiveConfig.iMultisamples > 1)
-		CopyTexture(target_rect, reinterpret_cast<uintptr_t>(FramebufferManager::GetEFBColorTexture()), target_rect, reinterpret_cast<uintptr_t>(color_texture), target_size, -1, true);
+		CopyTexture(target_rect, reinterpret_cast<uintptr_t>(FramebufferManager::GetEFBColorTexture()), target_rect, reinterpret_cast<uintptr_t>(color_texture), target_size, -1);
 
 	g_renderer->RestoreAPIState();
 }
@@ -539,7 +539,7 @@ void D3DPostProcessor::CopyTexture(const TargetRectangle& dst_rect, uintptr_t ds
 	D3DTexture2D* src_texture = reinterpret_cast<D3DTexture2D*>(src_tex);
 	// If the dimensions are the same, we can copy instead of using a shader.
 	bool scaling = (dst_rect.GetWidth() != src_rect.GetWidth() || dst_rect.GetHeight() != src_rect.GetHeight());
-	if (!scaling && !force_shader_copy)
+	if (!scaling && !force_shader_copy && !is_depth_texture)
 	{
 		D3D12_BOX srcbox = {
 			static_cast<UINT>(src_rect.left),
