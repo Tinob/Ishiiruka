@@ -263,7 +263,7 @@ void OGLPostProcessingShader::Draw(PostProcessor* p,
 	OpenGL_BindAttributelessVAO();
 
 	// Determine whether we can skip the final copy by writing directly to the output texture, if the last pass is not scaled.
-	bool skip_final_copy = !IsLastPassScaled() && (dst_texture != src_texture || !m_last_pass_uses_color_buffer);
+	bool skip_final_copy = !IsLastPassScaled() && (dst_texture != src_texture || !m_last_pass_uses_color_buffer) && !m_prev_frame_enabled;
 
 	// If the last pass is not at full scale, we can't skip the copy.
 	if (m_passes[m_last_pass_index].output_size != src_size)
@@ -335,7 +335,13 @@ void OGLPostProcessingShader::Draw(PostProcessor* p,
 				glBindTexture(GL_TEXTURE_2D_ARRAY, src_depth_texture);
 				input_sizes[i] = src_size;
 				break;
-
+			case POST_PROCESSING_INPUT_TYPE_PASS_FRAME_OUTPUT:
+				if (m_prev_frame_enabled)
+				{
+					glBindTexture(GL_TEXTURE_2D_ARRAY, static_cast<GLuint>(GetPrevFrame(input.frame_index)->GetInternalObject()));
+					input_sizes[i] = m_prev_frame_size;
+				}
+				break;
 			default:
 				TextureCacheBase::TCacheEntryBase* input_texture = input.texture != nullptr ? input.texture : input.prev_texture;
 				if (input_texture != nullptr)
@@ -370,6 +376,16 @@ void OGLPostProcessingShader::Draw(PostProcessor* p,
 	if (!skip_final_copy)
 	{
 		RenderPassData& final_pass = m_passes[m_last_pass_index];
+		if (m_prev_frame_enabled)
+		{
+			m_prev_frame_index = (m_prev_frame_index + 1) % m_prev_frame_texture.size();
+			TargetRectangle dst;
+			dst.left = 0;
+			dst.right = m_prev_frame_size.width;
+			dst.top = m_prev_frame_size.height;
+			dst.bottom = 0;
+			parent->CopyTexture(dst, GetPrevFrame(0)->GetInternalObject(), output_rect, final_pass.output_texture->GetInternalObject(), final_pass.output_size, src_layer, false, true);
+		}
 		parent->CopyTexture(dst_rect, dst_texture, output_rect, final_pass.output_texture->GetInternalObject(), final_pass.output_size, src_layer);
 	}
 }
