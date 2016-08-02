@@ -128,8 +128,10 @@ bool PostProcessingShaderConfiguration::LoadShader(const std::string& sub_dir, c
 	m_any_options_dirty = false;
 	m_compile_time_constants_dirty = false;
 	m_requires_depth_buffer = false;
-	m_frame_output.output_scale = 1.0;
-	m_frame_output.count = 0;
+	m_frame_output.color_output_scale = 1.0;
+	m_frame_output.depth_scale = 1.0;
+	m_frame_output.depth_count = 0;
+	m_frame_output.color_count = 0;
 	// special case: default shader, no path, use inbuilt code
 	if (name.empty())
 	{
@@ -351,8 +353,14 @@ bool PostProcessingShaderConfiguration::ParseFrameBlock(const ConfigBlock& block
 		const std::string& value = option.second;
 		if (key == "OutputScale")
 		{
-			TryParse(value, &m_frame_output.output_scale);
-			if (m_frame_output.output_scale <= 0.0f)
+			TryParse(value, &m_frame_output.color_output_scale);
+			if (m_frame_output.color_output_scale <= 0.0f)
+				return false;
+		}
+		else if (key == "DepthOutputScale")
+		{
+			TryParse(value, &m_frame_output.depth_scale);
+			if (m_frame_output.depth_scale <= 0.0f)
 				return false;
 		}
 		else if (key == "Count")
@@ -361,7 +369,15 @@ bool PostProcessingShaderConfiguration::ParseFrameBlock(const ConfigBlock& block
 			TryParse(value, &count);
 			if (count <= 0)
 				return false;
-			m_frame_output.count = std::max(m_frame_output.count, count + 1);
+			m_frame_output.color_count = std::max(m_frame_output.color_count, count + 1);
+		}
+		else if (key == "DepthCount")
+		{
+			int count = 0;
+			TryParse(value, &count);
+			if (count <= 0)
+				return false;
+			m_frame_output.depth_count = std::max(m_frame_output.depth_count, count + 1);
 		}
 		else
 		{
@@ -610,7 +626,17 @@ bool PostProcessingShaderConfiguration::ParsePassBlock(const std::string& dirnam
 						ERROR_LOG(VIDEO, "Post processing configuration error: Out-of-range frame reference: %u", input->pass_output_index);
 						return false;
 					}
-					m_frame_output.count = std::max(m_frame_output.count, static_cast<int>(input->pass_output_index) + 2);
+					m_frame_output.color_count = std::max(m_frame_output.color_count, static_cast<int>(input->pass_output_index) + 2);
+				}
+				else if (value.compare(0, 5, "DepthFrame") == 0)
+				{
+					input->type = POST_PROCESSING_INPUT_TYPE_PASS_DEPTH_FRAME_OUTPUT;
+					if (!TryParse(value.substr(5), &input->pass_output_index))
+					{
+						ERROR_LOG(VIDEO, "Post processing configuration error: Out-of-range frame reference: %u", input->pass_output_index);
+						return false;
+					}
+					m_frame_output.depth_count = std::max(m_frame_output.depth_count, static_cast<int>(input->pass_output_index) + 2);
 				}
 				else
 				{
@@ -922,7 +948,8 @@ PostProcessingShader::~PostProcessingShader()
 {
 	for (size_t i = 0; i < m_prev_frame_texture.size(); i++)
 	{
-		m_prev_frame_texture[i].release();
+		m_prev_frame_texture[i].color_frame.release();
+		m_prev_frame_texture[i].depth_frame.release();
 	}
 	for (RenderPassData& pass : m_passes)
 	{
@@ -1100,24 +1127,33 @@ void PostProcessingShader::LinkPassOutputs()
 bool PostProcessingShader::ResizeOutputTextures(const TargetSize& new_size)
 {
 	const PostProcessingShaderConfiguration::FrameOutput& frameoutput = m_config->GetFrameOutput();
-	m_prev_frame_size = PostProcessor::ScaleTargetSize(new_size, frameoutput.output_scale);
-	m_prev_frame_enabled = frameoutput.count > 0;
+	m_prev_frame_size = PostProcessor::ScaleTargetSize(new_size, frameoutput.color_output_scale);
+	m_prev_depth_frame_size = PostProcessor::ScaleTargetSize(new_size, frameoutput.depth_scale);
+	m_prev_frame_enabled = frameoutput.color_count > 0;
+	m_prev_depth_enabled = frameoutput.depth_count > 0;
 	for (size_t i = 0; i < m_prev_frame_texture.size(); i++)
 	{
-		m_prev_frame_texture[i].release();
+		m_prev_frame_texture[i].color_frame.release();
+		m_prev_frame_texture[i].depth_frame.release();
 	}
-	m_prev_frame_texture.resize(frameoutput.count);
+	m_prev_frame_texture.resize(std::max(frameoutput.color_count, frameoutput.depth_count));
 	TextureCacheBase::TCacheEntryConfig config;
 	config.width = m_prev_frame_size.width;
 	config.height = m_prev_frame_size.height;
-	config.pcformat = PC_TexFormat::PC_TEX_FMT_RGBA32;
+	
 	config.rendertarget = true;
 	config.layers = m_internal_layers;
 
-	for (size_t i = 0; i < frameoutput.count; i++)
+	for (size_t i = 0; i < m_prev_frame_texture.size(); i++)
 	{
-		m_prev_frame_texture[i].reset(g_texture_cache->CreateTexture(config));
+		config.pcformat = PC_TexFormat::PC_TEX_FMT_RGBA32;
+		if (i < frameoutput.color_count)
+			m_prev_frame_texture[i].color_frame.reset(g_texture_cache->CreateTexture(config));
+		config.pcformat = PC_TexFormat::PC_TEX_FMT_R32;
+		if (i < frameoutput.depth_count)
+			m_prev_frame_texture[i].depth_frame.reset(g_texture_cache->CreateTexture(config));
 	}
+	config.pcformat = PC_TexFormat::PC_TEX_FMT_RGBA32;
 	for (size_t pass_index = 0; pass_index < m_passes.size(); pass_index++)
 	{
 		RenderPassData& pass = m_passes[pass_index];
