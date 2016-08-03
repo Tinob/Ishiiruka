@@ -39,7 +39,7 @@ enum
 
 enum
 {
-	INITIAL_PAD_BUFFER_SIZE = 5
+	INITIAL_PAD_BUFFER_SIZE = 20
 };
 
 enum class ChatMessageType
