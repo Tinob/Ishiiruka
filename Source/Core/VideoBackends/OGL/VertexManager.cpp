@@ -35,7 +35,7 @@ static std::unique_ptr<StreamBuffer> s_indexBuffer;
 static size_t s_baseVertex;
 static size_t s_index_offset;
 static u16* s_index_buffer_base;
-VertexManager::VertexManager()
+VertexManager::VertexManager() : m_cpu_v_buffer(MAX_VBUFFER_SIZE), m_cpu_i_buffer(MAX_IBUFFER_SIZE)
 {
 	CreateDeviceObjects();
 }
@@ -76,15 +76,26 @@ void VertexManager::PrepareDrawBuffers(u32 stride)
 
 void VertexManager::ResetBuffer(u32 stride)
 {
-	auto buffer = s_vertexBuffer->Map(MAXVBUFFERSIZE, stride);
-	s_pCurBufferPointer = s_pBaseBufferPointer = buffer.first;
-	s_pEndBufferPointer = buffer.first + MAXVBUFFERSIZE;
-	s_baseVertex = buffer.second / stride;
+	if (s_cull_all)
+	{
+		// This buffer isn't getting sent to the GPU. Just allocate it on the cpu.
+		s_pCurBufferPointer = s_pBaseBufferPointer = m_cpu_v_buffer.data();
+		s_pEndBufferPointer = s_pBaseBufferPointer + m_cpu_v_buffer.size();
+		s_index_buffer_base = (u16*)m_cpu_i_buffer.data();
+		IndexGenerator::Start((u16*)m_cpu_i_buffer.data());
+	}
+	else
+	{
+		auto buffer = s_vertexBuffer->Map(MAXVBUFFERSIZE, stride);
+		s_pCurBufferPointer = s_pBaseBufferPointer = buffer.first;
+		s_pEndBufferPointer = buffer.first + MAXVBUFFERSIZE;
+		s_baseVertex = buffer.second / stride;
 
-	buffer = s_indexBuffer->Map(MAXIBUFFERSIZE * sizeof(u16));
-	s_index_buffer_base = (u16*)buffer.first;
-	IndexGenerator::Start(s_index_buffer_base);
-	s_index_offset = buffer.second;
+		buffer = s_indexBuffer->Map(MAXIBUFFERSIZE * sizeof(u16));
+		s_index_buffer_base = (u16*)buffer.first;
+		IndexGenerator::Start(s_index_buffer_base);
+		s_index_offset = buffer.second;
+	}
 }
 
 void VertexManager::Draw(u32 stride)
