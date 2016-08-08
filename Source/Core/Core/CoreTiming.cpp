@@ -295,6 +295,26 @@ void ClearPendingEvents()
 	}
 }
 
+static Event* AddEventToQueueEx(Event* before_evt, Event* ne)
+{
+	Event* prev = nullptr;
+	Event** pNext = !before_evt || ne->time < before_evt->time ? &first : &before_evt->next;
+	for (;;)
+	{
+		Event*& next = *pNext;
+		if (!next || ne->time < next->time)
+		{
+			ne->next = next;
+			next = ne;
+			prev = next;
+			break;
+		}
+		prev = next;
+		pNext = &prev->next;
+	}
+	return prev;
+}
+
 static void AddEventToQueue(Event* ne)
 {
 	Event* prev = nullptr;
@@ -406,6 +426,7 @@ void ForceExceptionCheck(s64 cycles)
 
 void MoveEvents()
 {
+	Event* before_evt = nullptr;
 	BaseEvent sevt;
 	while (tsQueue.Pop(sevt))
 	{
@@ -413,7 +434,7 @@ void MoveEvents()
 		evt->time = sevt.time;
 		evt->userdata = sevt.userdata;
 		evt->type = sevt.type;
-		AddEventToQueue(evt);
+		before_evt = AddEventToQueueEx(before_evt, evt);
 	}
 }
 

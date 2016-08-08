@@ -273,7 +273,7 @@ wxMenuBar* CFrame::CreateMenu()
 		static const wxString menu_text[] =
 		{
 		_("&Registers"), _("&Watch"), _("&Breakpoints"),
-																				 _("&Memory"),    _("&JIT"),   _("&Sound"),
+		_("&Memory"),    _("&JIT"),   _("&Sound"),
 		_("&Video")
 		};
 
@@ -1135,10 +1135,17 @@ void CFrame::DoStop()
 			// Pause the state during confirmation and restore it afterwards
 			Core::EState state = Core::GetState();
 
+			// Do not pause if netplay is running as CPU thread might be blocked
+			// waiting on inputs
+			bool should_pause = !NetPlayDialog::GetNetPlayClient();
+
 			// If exclusive fullscreen is not enabled then we can pause the emulation
 			// before we've exited fullscreen. If not then we need to exit fullscreen first.
-			if (!RendererIsFullscreen() || !g_Config.ExclusiveFullscreenEnabled() ||
-				SConfig::GetInstance().bRenderToMain)
+			should_pause =
+				should_pause && (!RendererIsFullscreen() || !g_Config.ExclusiveFullscreenEnabled() ||
+					SConfig::GetInstance().bRenderToMain);
+
+			if (should_pause)
 			{
 				Core::SetState(Core::CORE_PAUSE);
 			}
@@ -1152,7 +1159,9 @@ void CFrame::DoStop()
 			HotkeyManagerEmu::Enable(true);
 			if (Ret != wxID_YES)
 			{
-				Core::SetState(state);
+				if (should_pause)
+					Core::SetState(state);
+
 				m_confirmStop = false;
 				return;
 			}
@@ -1288,7 +1297,7 @@ void CFrame::OnStop(wxCommandEvent& WXUNUSED(event))
 void CFrame::OnReset(wxCommandEvent& WXUNUSED(event))
 {
 	if (Movie::IsRecordingInput())
-		Movie::g_bReset = true;
+		Movie::SetReset(true);
 	ProcessorInterface::ResetButton_Tap();
 }
 
@@ -1667,9 +1676,9 @@ void CFrame::OnFrameSkip(wxCommandEvent& event)
 
 void CFrame::OnSelectSlot(wxCommandEvent& event)
 {
-	g_saveSlot = event.GetId() - IDM_SELECT_SLOT_1 + 1;
-	Core::DisplayMessage(StringFromFormat("Selected slot %d - %s", g_saveSlot,
-		State::GetInfoStringOfSlot(g_saveSlot).c_str()),
+	m_saveSlot = event.GetId() - IDM_SELECT_SLOT_1 + 1;
+	Core::DisplayMessage(StringFromFormat("Selected slot %d - %s", m_saveSlot,
+		State::GetInfoStringOfSlot(m_saveSlot).c_str()),
 		2500);
 }
 
@@ -1677,7 +1686,7 @@ void CFrame::OnLoadCurrentSlot(wxCommandEvent& event)
 {
 	if (Core::IsRunningAndStarted())
 	{
-		State::Load(g_saveSlot);
+		State::Load(m_saveSlot);
 	}
 }
 
@@ -1685,7 +1694,7 @@ void CFrame::OnSaveCurrentSlot(wxCommandEvent& event)
 {
 	if (Core::IsRunningAndStarted())
 	{
-		State::Save(g_saveSlot);
+		State::Save(m_saveSlot);
 	}
 }
 

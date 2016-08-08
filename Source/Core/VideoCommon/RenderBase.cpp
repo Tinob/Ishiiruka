@@ -316,16 +316,16 @@ void Renderer::DrawDebugText()
 			final_cyan += " - ";
 		if (SConfig::GetInstance().m_ShowFrameCount)
 		{
-			final_cyan += StringFromFormat("Frame: %llu", (unsigned long long) Movie::g_currentFrame);
+			final_cyan += StringFromFormat("Frame: %llu", Movie::GetCurrentFrame());
 			if (Movie::IsPlayingInput())
-				final_cyan += StringFromFormat(" / %llu", (unsigned long long) Movie::g_totalFrames);
+				final_cyan += StringFromFormat(" / %llu", Movie::GetTotalFrames());
 		}
 		final_cyan += "\n";
 		final_yellow += "\n";
 	}
 	if (SConfig::GetInstance().m_ShowLag)
 	{
-		final_cyan += StringFromFormat("Lag: %" PRIu64 "\n", Movie::g_currentLagCount);
+		final_cyan += StringFromFormat("Lag: %" PRIu64 "\n", Movie::GetCurrentLagCount());
 		final_yellow += "\n";
 	}
 	if (SConfig::GetInstance().m_ShowInputDisplay)

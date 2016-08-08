@@ -2,6 +2,7 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include <algorithm>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -12,7 +13,6 @@
 
 namespace Gecko
 {
-
 void LoadCodes(const IniFile& globalIni, const IniFile& localIni, std::vector<GeckoCode>& gcodes)
 {
 	const IniFile* inis[2] = { &globalIni, &localIni };
@@ -24,16 +24,16 @@ void LoadCodes(const IniFile& globalIni, const IniFile& localIni, std::vector<Ge
 
 		GeckoCode gcode;
 
+		lines.erase(std::remove_if(lines.begin(), lines.end(),
+			[](const auto& line) { return line.empty() || line[0] == '#'; }),
+			lines.end());
+
 		for (auto& line : lines)
 		{
-			if (line.empty())
-				continue;
-
 			std::istringstream ss(line);
 
 			switch ((line)[0])
 			{
-
 				// enabled or disabled code
 			case '+':
 				ss.seekg(1);
@@ -67,7 +67,6 @@ void LoadCodes(const IniFile& globalIni, const IniFile& localIni, std::vector<Ge
 			}
 			break;
 			}
-
 		}
 
 		// add the last code
@@ -97,7 +96,8 @@ void LoadCodes(const IniFile& globalIni, const IniFile& localIni, std::vector<Ge
 }
 
 // used by the SaveGeckoCodes function
-static void SaveGeckoCode(std::vector<std::string>& lines, std::vector<std::string>& enabledLines, const GeckoCode& gcode)
+static void SaveGeckoCode(std::vector<std::string>& lines, std::vector<std::string>& enabledLines,
+	const GeckoCode& gcode)
 {
 	if (gcode.enabled)
 		enabledLines.push_back("$" + gcode.name);
@@ -124,10 +124,10 @@ static void SaveGeckoCode(std::vector<std::string>& lines, std::vector<std::stri
 	// save all the code lines
 	for (const GeckoCode::Code& code : gcode.codes)
 	{
-		//ss << std::hex << codes_iter->address << ' ' << codes_iter->data;
-		//lines.push_back(StringFromFormat("%08X %08X", codes_iter->address, codes_iter->data));
+		// ss << std::hex << codes_iter->address << ' ' << codes_iter->data;
+		// lines.push_back(StringFromFormat("%08X %08X", codes_iter->address, codes_iter->data));
 		lines.push_back(code.original_line);
-		//ss.clear();
+		// ss.clear();
 	}
 
 	// save the notes
@@ -148,5 +148,4 @@ void SaveCodes(IniFile& inifile, const std::vector<GeckoCode>& gcodes)
 	inifile.SetLines("Gecko", lines);
 	inifile.SetLines("Gecko_Enabled", enabledLines);
 }
-
 }

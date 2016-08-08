@@ -359,7 +359,7 @@ static void DTKStreamingCallback(u64 userdata, s64 cyclesLate)
 	}
 
 	if (bStreaming || !bTimeStretching)
-		g_sound_stream->GetMixer()->PushStreamingSamples(tempPCM, samples_processed);
+	g_sound_stream->GetMixer()->PushStreamingSamples(tempPCM, samples_processed);
 
 	int ticks_to_dtk = int(SystemTimers::GetTicksPerSecond() * u64(samples_processed) / 48000);
 	CoreTiming::ScheduleEvent(ticks_to_dtk - cyclesLate, s_dtk);
@@ -495,7 +495,6 @@ void ChangeDiscAsCPU(const std::string& newFileName)
 	CoreTiming::ScheduleEvent(500000000, s_insert_disc, (u64)_FileName);
 	if (Movie::IsRecordingInput())
 	{
-		Movie::g_bDiscChange = true;
 		std::string fileName = newFileName;
 		auto sizeofpath = fileName.find_last_of("/\\") + 1;
 		if (fileName.substr(sizeofpath).length() > 40)
@@ -504,7 +503,7 @@ void ChangeDiscAsCPU(const std::string& newFileName)
 				"The filename of the disc image must not be longer than 40 characters.",
 				newFileName.c_str());
 		}
-		Movie::g_discChange = fileName.substr(sizeofpath);
+		Movie::SignalDiscChange(fileName.substr(sizeofpath));
 	}
 }
 

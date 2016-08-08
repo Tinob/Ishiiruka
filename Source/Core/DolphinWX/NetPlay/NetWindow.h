@@ -39,7 +39,7 @@ enum
 
 enum
 {
-	INITIAL_PAD_BUFFER_SIZE = 20
+	INITIAL_PAD_BUFFER_SIZE = 5
 };
 
 enum class ChatMessageType
@@ -112,7 +112,7 @@ private:
 	void OnPlayerSelect(wxCommandEvent& event);
 	void GetNetSettings(NetSettings& settings);
 	std::string FindCurrentGame();
-	std::string FindGame(const std::string& game);
+	std::string FindGame(const std::string& game) override;
 	void AddChatMessage(ChatMessageType type, const std::string& msg);
 
 	void OnCopyIP(wxCommandEvent&);
