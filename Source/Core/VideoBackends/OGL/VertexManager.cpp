@@ -147,7 +147,8 @@ void VertexManager::vFlush(bool useDstAlpha)
 {
 	GLVertexFormat *nativeVertexFmt = (GLVertexFormat*)VertexLoaderManager::GetCurrentVertexFormat();
 	u32 stride = nativeVertexFmt->GetVertexStride();
-
+	// setup the pointers
+	nativeVertexFmt->SetupVertexPointers();
 	if (m_last_vao != nativeVertexFmt->VAO)
 	{
 		glBindVertexArray(nativeVertexFmt->VAO);
@@ -173,8 +174,7 @@ void VertexManager::vFlush(bool useDstAlpha)
 	// upload global constants
 	ProgramShaderCache::UploadConstants();
 
-	// setup the pointers
-	nativeVertexFmt->SetupVertexPointers();
+	
 
 	Draw(stride);
 

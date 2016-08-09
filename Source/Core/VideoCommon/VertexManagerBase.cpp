@@ -100,18 +100,18 @@ void VertexManagerBase::PrepareForAdditionalData(int primitive, u32 count, u32 s
 	if (count > max_index_size
 		|| needed_vertex_bytes > GetRemainingSize()
 		|| current_primitive_type != primitive_type)
-	{
-		Flush();
+	{		
 #if defined(_DEBUG) || defined(DEBUGFAST)
 		if (count > IndexGenerator::GetRemainingIndices())
 			ERROR_LOG(VIDEO, "Too little remaining index values. Use 32-bit or reset them on flush.");
 		if (count > GetRemainingIndices(primitive))
 			ERROR_LOG(VIDEO, "VertexManagerBase: Buffer not large enough for all indices! "
 				"Increase MAXIBUFFERSIZE or we need primitive breaking after all.");
-		if (needed_vertex_bytes > GetRemainingSize())
+		if (s_pCurBufferPointer && needed_vertex_bytes > GetRemainingSize())
 			ERROR_LOG(VIDEO, "VertexManagerBase: Buffer not large enough for all vertices! "
 				"Increase MAXVBUFFERSIZE or we need primitive breaking after all.");
 #endif
+		Flush();
 	}
 	s_cull_all = bpmem.genMode.cullmode == GenMode::CULL_ALL && primitive < 5;
 	// need to alloc new buffer
