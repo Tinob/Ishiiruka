@@ -542,6 +542,10 @@ Renderer::Renderer()
 		g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_IA8] = true;
 		g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_RGB565] = true;
 #endif
+		g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT1] = GLExtensions::Supports("GL_EXT_texture_compression_s3tc");
+		g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT3] = g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT1];
+		g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT5] = g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT1];
+		
 		// Desktop OpenGL can't have the Android Extension Pack
 		g_ogl_config.bSupportsAEP = false;
 	}
