@@ -2068,7 +2068,7 @@ float2 GetInvResolution() { return GetInvInputResolution(COLOR_BUFFER_INPUT_INDE
 // Variable wrappers
 float4 ApplyGCGamma(float4 col) { return pow(col, float4(u_native_gamma, u_native_gamma, u_native_gamma, u_native_gamma)); }
 //Random
-float global_rnd_state;
+float global_rnd_state = 1.0;
 float RandomSeedfloat(float2 seed)
 {
 	float noise = frac(sin(dot(seed, float2(12.9898, 78.233)*2.0)) * 43758.5453);

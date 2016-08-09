@@ -512,7 +512,7 @@ inline void GenerateVertexShader(ShaderCode& out, const vertex_shader_uid_data& 
 				}
 				out.Write("  clipPos_2 = o.clipPos_2;\n");
 				if (uid_data.pixel_lighting)
-					out.Write("  Normal_2 = o.Normal;\n");
+					out.Write("  Normal_2 = o.Normal_2;\n");
 			}
 			else
 			{
