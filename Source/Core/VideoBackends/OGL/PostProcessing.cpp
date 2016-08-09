@@ -243,8 +243,6 @@ void OGLPostProcessingShader::MapAndUpdateConfigurationBuffer()
 
 		glBindBufferRange(GL_UNIFORM_BUFFER, UNIFORM_BUFFER_BIND_POINT + 1, buffer->m_uniform_buffer->m_buffer, mapped_buffer.second, buffer_size);
 
-		ProgramShaderCache::BindUniformBuffer();
-
 		ADDSTAT(stats.thisFrame.bytesUniformStreamed, buffer_size);
 	}
 }
@@ -419,7 +417,6 @@ OGLPostProcessor::~OGLPostProcessor()
 		glBindBuffer(GL_UNIFORM_BUFFER, m_uniform_buffer->m_buffer);
 		m_uniform_buffer.reset();
 	}
-	ProgramShaderCache::BindUniformBuffer();
 }
 
 bool OGLPostProcessor::Initialize()
@@ -614,8 +611,6 @@ void OGLPostProcessor::MapAndUpdateUniformBuffer(
 		m_uniform_buffer->Unmap(POST_PROCESSING_CONTANTS_BUFFER_SIZE);
 
 		glBindBufferRange(GL_UNIFORM_BUFFER, UNIFORM_BUFFER_BIND_POINT, m_uniform_buffer->m_buffer, mapped_buffer.second, POST_PROCESSING_CONTANTS_BUFFER_SIZE);
-
-		ProgramShaderCache::BindUniformBuffer();
 
 		ADDSTAT(stats.thisFrame.bytesUniformStreamed, POST_PROCESSING_CONTANTS_BUFFER_SIZE);
 	}

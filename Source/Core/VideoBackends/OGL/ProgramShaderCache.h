@@ -114,7 +114,6 @@ public:
 	static void CreateHeader();
 
 	static u32 GetUniformBufferAlignment();
-	static void BindUniformBuffer();
 
 private:
 	class ProgramShaderCacheInserter : public LinearDiskCacheReader<SHADERUID, u8>

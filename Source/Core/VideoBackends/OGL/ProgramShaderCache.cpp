@@ -151,6 +151,7 @@ void ProgramShaderCache::UploadConstants()
 {
 	if (VertexShaderManager::IsDirty())
 	{
+		glBindBuffer(GL_UNIFORM_BUFFER, s_v_buffer->m_buffer);
 		auto buffer = s_v_buffer->Map(s_v_ubo_buffer_size, s_ubo_align);
 		size_t vertex_buffer_size = VertexShaderManager::ConstantBufferSize * sizeof(float);
 		memcpy(buffer.first, VertexShaderManager::GetBuffer(), vertex_buffer_size);
@@ -164,6 +165,7 @@ void ProgramShaderCache::UploadConstants()
 	}
 	if (PixelShaderManager::IsDirty())
 	{
+		glBindBuffer(GL_UNIFORM_BUFFER, s_p_buffer->m_buffer);
 		auto buffer = s_p_buffer->Map(s_p_ubo_buffer_size, s_ubo_align);
 		size_t pixel_buffer_size = C_PCONST_END * 4 * sizeof(float);
 		memcpy(buffer.first, PixelShaderManager::GetBuffer(), pixel_buffer_size);
@@ -178,6 +180,7 @@ void ProgramShaderCache::UploadConstants()
 	}
 	if (GeometryShaderManager::IsDirty())
 	{
+		glBindBuffer(GL_UNIFORM_BUFFER, s_g_buffer->m_buffer);
 		auto buffer = s_g_buffer->Map(s_g_ubo_buffer_size, s_ubo_align);
 		memcpy(buffer.first, &GeometryShaderManager::constants, sizeof(GeometryShaderConstants));
 
@@ -570,19 +573,19 @@ void ProgramShaderCache::CreateHeader()
 		break;
 	}
 
-	std::string earlyz_string = "";
+	std::string earlyz_string = "#define FORCE_EARLY_Z \n";
 	if (g_ActiveConfig.backend_info.bSupportsEarlyZ)
 	{
 		if (g_ogl_config.bSupportsEarlyFragmentTests)
 		{
-			earlyz_string = "#define FORCE_EARLY_Z layout(early_fragment_tests) in\n";
+			earlyz_string = "#define FORCE_EARLY_Z layout(early_fragment_tests) in;\n";
 			if (!is_glsles) // GLES supports this by default
 				earlyz_string += "#extension GL_ARB_shader_image_load_store : enable\n";
 		}
 		else if (g_ogl_config.bSupportsConservativeDepth)
 		{
 			// See PixelShaderGen for details about this fallback.
-			earlyz_string = "#define FORCE_EARLY_Z layout(depth_unchanged) out float gl_FragDepth\n";
+			earlyz_string = "#define FORCE_EARLY_Z layout(depth_unchanged) out float gl_FragDepth;\n";
 			earlyz_string += "#extension GL_ARB_conservative_depth : enable\n";
 		}
 	}
@@ -660,11 +663,6 @@ void ProgramShaderCache::CreateHeader()
 		, (is_glsles && g_ActiveConfig.backend_info.bSupportsPaletteConversion) ? "precision highp usamplerBuffer;" : ""
 		, v > GLSLES_300 ? "precision highp sampler2DMS;" : ""
 	);
-}
-
-void ProgramShaderCache::BindUniformBuffer()
-{
-	glBindBuffer(GL_UNIFORM_BUFFER, s_p_buffer->m_buffer);
 }
 
 u32 ProgramShaderCache::GetUniformBufferAlignment()
