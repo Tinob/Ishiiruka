@@ -128,6 +128,11 @@ TextureCache::TCacheEntry::TCacheEntry(const TCacheEntryConfig& _config)
 
 void TextureCache::TCacheEntry::Bind(u32 stage, u32 last_texture)
 {
+	if (nrm_texture && g_ActiveConfig.HiresMaterialMapsEnabled())
+	{
+		glActiveTexture(GL_TEXTURE8 + stage);
+		glBindTexture(GL_TEXTURE_2D_ARRAY, nrm_texture);
+	}
 	if (s_Textures[stage] != texture)
 	{
 		if (s_ActiveTexture != stage)
@@ -138,12 +143,6 @@ void TextureCache::TCacheEntry::Bind(u32 stage, u32 last_texture)
 
 		glBindTexture(GL_TEXTURE_2D_ARRAY, texture);
 		s_Textures[stage] = texture;
-	}
-	if (nrm_texture && g_ActiveConfig.HiresMaterialMapsEnabled())
-	{
-		glActiveTexture(GL_TEXTURE8 + stage);
-		s_ActiveTexture = 8 + stage;
-		glBindTexture(GL_TEXTURE_2D_ARRAY, nrm_texture);
 	}
 }
 
@@ -162,6 +161,7 @@ PC_TexFormat TextureCache::GetNativeTextureFormat(const s32 texformat, const Tlu
 
 void TextureCache::TCacheEntry::SetFormat()
 {
+	compressed = false;
 	switch (config.pcformat)
 	{
 	default:
@@ -240,10 +240,9 @@ TextureCache::TCacheEntryBase* TextureCache::CreateTexture(const TCacheEntryConf
 	glActiveTexture(GL_TEXTURE9);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, entry->texture);
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, config.levels - 1);
-
+	entry->SetFormat();
 	if (config.rendertarget)
 	{
-		entry->SetFormat();
 		for (u32 level = 0; level < config.levels; level++)
 		{
 			glTexImage3D(GL_TEXTURE_2D_ARRAY, level, entry->gl_format, config.width, config.height, config.layers, 0, entry->gl_iformat, entry->gl_type, nullptr);
@@ -256,14 +255,11 @@ TextureCache::TCacheEntryBase* TextureCache::CreateTexture(const TCacheEntryConf
 	{
 		if (config.materialmap)
 		{
-			glGenTextures(1, &entry->nrm_texture);
-			glActiveTexture(GL_TEXTURE9);
+			glGenTextures(1, &entry->nrm_texture);			
 			glBindTexture(GL_TEXTURE_2D_ARRAY, entry->nrm_texture);
 			glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, config.levels - 1);
 		}
-		entry->SetFormat();
 	}
-
 	TextureCache::SetStage();
 	return entry;
 }
@@ -356,12 +352,14 @@ void TextureCache::TCacheEntry::Load(const u8* src, u32 width, u32 height,
 	}
 	break;
 	default:
+	{
 		if (expanded_width != width)
 			glPixelStorei(GL_UNPACK_ROW_LENGTH, expanded_width);
 		glTexImage3D(GL_TEXTURE_2D_ARRAY, level, gl_iformat, width, height, 1, 0, gl_format, gl_type, src);
 		if (expanded_width != width)
 			glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-		break;
+	}
+	break;
 	}
 	TextureCache::SetStage();
 }
