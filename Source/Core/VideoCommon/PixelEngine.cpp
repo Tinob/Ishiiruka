@@ -103,10 +103,10 @@ static UPEDstAlphaConfReg  m_DstAlphaConf;
 static UPEAlphaModeConfReg m_AlphaModeConf;
 static UPEAlphaReadReg     m_AlphaRead;
 static UPECtrlReg          m_Control;
-//static u16                 m_Token; // token value most recently encountered
+static std::atomic<u16> s_Token;
 
-static std::atomic<u32> s_signal_token_interrupt;
-static std::atomic<u32> s_signal_finish_interrupt;
+static bool s_signal_token_interrupt;
+static bool s_signal_finish_interrupt;
 
 static int et_SetTokenOnMainThread;
 static int et_SetFinishOnMainThread;
@@ -125,7 +125,7 @@ void DoState(PointerWrap &p)
 	p.Do(m_AlphaModeConf);
 	p.Do(m_AlphaRead);
 	p.DoPOD(m_Control);
-
+	p.Do(s_Token);
 	p.Do(s_signal_token_interrupt);
 	p.Do(s_signal_finish_interrupt);
 }
@@ -145,8 +145,8 @@ void Init()
 	m_AlphaModeConf.Hex = 0;
 	m_AlphaRead.Hex = 0;
 
-	s_signal_token_interrupt.store(0);
-	s_signal_finish_interrupt.store(0);
+	s_signal_token_interrupt = false;
+	s_signal_finish_interrupt = false;
 
 	et_SetTokenOnMainThread = CoreTiming::RegisterEvent("SetToken", SetToken_OnMainThread);
 	et_SetFinishOnMainThread = CoreTiming::RegisterEvent("SetFinish", SetFinish_OnMainThread);
@@ -214,10 +214,10 @@ void RegisterMMIO(MMIO::Mapping* mmio, u32 base)
 		UPECtrlReg tmpCtrl(val);
 
 		if (tmpCtrl.PEToken)
-			s_signal_token_interrupt.store(0);
+			s_signal_token_interrupt = false;
 
 		if (tmpCtrl.PEFinish)
-			s_signal_finish_interrupt.store(0);
+			s_signal_finish_interrupt = false;
 
 		m_Control.PETokenEnable = tmpCtrl.PETokenEnable;
 		m_Control.PEFinishEnable = tmpCtrl.PEFinishEnable;
@@ -231,7 +231,7 @@ void RegisterMMIO(MMIO::Mapping* mmio, u32 base)
 
 	// Token register, readonly.
 	mmio->Register(base | PE_TOKEN_REG,
-		MMIO::DirectRead<u16>(&CommandProcessor::fifo.PEToken),
+		MMIO::ComplexRead<u16>([](u32) { return s_Token.load(); }),
 		MMIO::InvalidWrite<u16>()
 	);
 
@@ -252,45 +252,24 @@ void RegisterMMIO(MMIO::Mapping* mmio, u32 base)
 static void UpdateInterrupts()
 {
 	// check if there is a token-interrupt
-	UpdateTokenInterrupt((s_signal_token_interrupt.load() & m_Control.PETokenEnable) != 0);
+	ProcessorInterface::SetInterrupt(INT_CAUSE_PE_TOKEN,
+		s_signal_token_interrupt && m_Control.PETokenEnable);
 
 	// check if there is a finish-interrupt
-	UpdateFinishInterrupt((s_signal_finish_interrupt.load() & m_Control.PEFinishEnable) != 0);
+	ProcessorInterface::SetInterrupt(INT_CAUSE_PE_FINISH,
+		s_signal_finish_interrupt && m_Control.PEFinishEnable);
 }
-
-static void UpdateTokenInterrupt(bool active)
-{
-	ProcessorInterface::SetInterrupt(INT_CAUSE_PE_TOKEN, active);
-}
-
-static void UpdateFinishInterrupt(bool active)
-{
-	ProcessorInterface::SetInterrupt(INT_CAUSE_PE_FINISH, active);
-}
-
-// TODO(mb2): Refactor SetTokenINT_OnMainThread(u64 userdata, int cyclesLate).
-//            Think about the right order between tokenVal and tokenINT... one day maybe.
-//            Cleanup++
 
 // Called only if BPMEM_PE_TOKEN_INT_ID is ack by GP
 static void SetToken_OnMainThread(u64 userdata, s64 cyclesLate)
 {
-	// XXX: No 16-bit atomic store available, so cheat and use 32-bit.
-	// That's what we've always done. We're counting on fifo.PEToken to be
-	// 4-byte padded.
-	Common::AtomicStore(*(volatile u32*)&CommandProcessor::fifo.PEToken, userdata & 0xffff);
-	INFO_LOG(PIXELENGINE, "VIDEO Backend raises INT_CAUSE_PE_TOKEN (btw, token: %04x)", CommandProcessor::fifo.PEToken);
-	if (userdata >> 16)
-	{
-		s_signal_token_interrupt.store(1);
-		UpdateInterrupts();
-	}
-	CommandProcessor::SetInterruptTokenWaiting(false);
+	s_signal_token_interrupt = true;
+	UpdateInterrupts();
 }
 
 static void SetFinish_OnMainThread(u64 userdata, s64 cyclesLate)
 {
-	s_signal_finish_interrupt.store(1);
+	s_signal_finish_interrupt = true;
 	UpdateInterrupts();
 	CommandProcessor::SetInterruptFinishWaiting(false);
 
@@ -301,17 +280,16 @@ static void SetFinish_OnMainThread(u64 userdata, s64 cyclesLate)
 // THIS IS EXECUTED FROM VIDEO THREAD
 void SetToken(const u16 _token, const int _bSetTokenAcknowledge)
 {
+	INFO_LOG(PIXELENGINE, "VIDEO Backend raises INT_CAUSE_PE_TOKEN (btw, token: %04x)", _token);
+	s_Token.store(_token);
+	CommandProcessor::SetInterruptTokenWaiting(true);
 	if (_bSetTokenAcknowledge) // set token INT
 	{
-		s_signal_token_interrupt.store(1);
+		if (!SConfig::GetInstance().bCPUThread || Fifo::UseDeterministicGPUThread())
+			CoreTiming::ScheduleEvent(0, et_SetTokenOnMainThread, _token | (_bSetTokenAcknowledge << 16));
+		else
+			CoreTiming::ScheduleEvent_Threadsafe(0, et_SetTokenOnMainThread, _token | (_bSetTokenAcknowledge << 16));
 	}
-
-	CommandProcessor::SetInterruptTokenWaiting(true);
-
-	if (!SConfig::GetInstance().bCPUThread || Fifo::UseDeterministicGPUThread())
-		CoreTiming::ScheduleEvent(0, et_SetTokenOnMainThread, _token | (_bSetTokenAcknowledge << 16));
-	else
-		CoreTiming::ScheduleEvent_Threadsafe(0, et_SetTokenOnMainThread, _token | (_bSetTokenAcknowledge << 16));
 }
 
 // SetFinish
