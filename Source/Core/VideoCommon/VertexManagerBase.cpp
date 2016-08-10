@@ -84,22 +84,24 @@ inline u32 GetRemainingIndices(int primitive)
 	{
 		return index_len / 2 + 1;
 	}
-	return index_len;
+	else if (primitive <= GX_DRAW_POINTS)
+	{
+		return index_len;
+	}
+	return 0;
 }
 
 void VertexManagerBase::PrepareForAdditionalData(int primitive, u32 count, u32 stride)
 {
 	// The SSE vertex loader can write up to 4 bytes past the end
 	u32 const needed_vertex_bytes = count * stride + 4;
-	PrimitiveType primitive_type = current_primitive_type;
-	current_primitive_type = primitive_from_gx[primitive];
 	u32 max_index_size = std::min(IndexGenerator::GetRemainingIndices(), GetRemainingIndices(primitive));
 
 	// We can't merge different kinds of primitives, so we have to flush here
 	// Check for size in buffer, if the buffer gets full, call Flush()
 	if (count > max_index_size
 		|| needed_vertex_bytes > GetRemainingSize()
-		|| current_primitive_type != primitive_type)
+		|| current_primitive_type != primitive_from_gx[primitive])
 	{		
 #if defined(_DEBUG) || defined(DEBUGFAST)
 		if (count > IndexGenerator::GetRemainingIndices())
@@ -113,6 +115,7 @@ void VertexManagerBase::PrepareForAdditionalData(int primitive, u32 count, u32 s
 #endif
 		Flush();
 	}
+	current_primitive_type = primitive_from_gx[primitive];
 	s_cull_all = bpmem.genMode.cullmode == GenMode::CULL_ALL && primitive < 5;
 	// need to alloc new buffer
 	if (IsFlushed)
