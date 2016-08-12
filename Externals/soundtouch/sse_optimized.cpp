@@ -259,7 +259,6 @@ uint FIRFilterSSE::evaluateFilterStereo(float *dest, const float *source, uint n
     assert(((ulongptr)filterCoeffsAlign) % 16 == 0);
 
     // filter is evaluated for two stereo samples with each iteration, thus use of 'j += 2'
-    #pragma omp parallel for
     for (j = 0; j < count; j += 2)
     {
         const float *pSrc;
@@ -268,8 +267,7 @@ uint FIRFilterSSE::evaluateFilterStereo(float *dest, const float *source, uint n
         __m128 sum1, sum2;
         uint i;
 
-        pSrc = (const float*)source + j * 2;      // source audio data
-        pDest = dest + j * 2;                     // destination audio data
+        pSrc = (const float*)source;      // source audio data
         pFil = (const __m128*)filterCoeffsAlign;  // filter coefficients. NOTE: Assumes coefficients 
                                                   // are aligned to 16-byte boundary
         sum1 = sum2 = _mm_setzero_ps();
@@ -302,10 +300,12 @@ uint FIRFilterSSE::evaluateFilterStereo(float *dest, const float *source, uint n
         // to sum the two hi- and lo-floats of these registers together.
 
         // post-shuffle & add the filtered values and store to dest.
-        _mm_storeu_ps(pDest, _mm_add_ps(
+        _mm_storeu_ps(dest, _mm_add_ps(
                     _mm_shuffle_ps(sum1, sum2, _MM_SHUFFLE(1,0,3,2)),   // s2_1 s2_0 s1_3 s1_2
                     _mm_shuffle_ps(sum1, sum2, _MM_SHUFFLE(3,2,1,0))    // s2_3 s2_2 s1_1 s1_0
                     ));
+				source += 4;
+				dest += 4;
     }
 
     // Ideas for further improvement:
