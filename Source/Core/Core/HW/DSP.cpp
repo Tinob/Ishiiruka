@@ -465,7 +465,7 @@ static void GenerateDSPInterrupt(u64 DSPIntType, s64 cyclesLate)
 void GenerateDSPInterruptFromDSPEmu(DSPInterruptType type)
 {
 	// TODO: Maybe rethink this? ScheduleEvent_Threadsafe_Immediate has unpredictable timing.
-	CoreTiming::ScheduleEvent_Threadsafe_Immediate(et_GenerateDSPInterrupt, type);
+	CoreTiming::ScheduleEvent(0, et_GenerateDSPInterrupt, type, CoreTiming::FromThread::ANY);
 }
 
 // called whenever SystemTimers thinks the DSP deserves a few more cycles

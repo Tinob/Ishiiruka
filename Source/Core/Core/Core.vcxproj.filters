@@ -384,9 +384,6 @@
     <ClCompile Include="HW\EXI_DeviceAGP.cpp">
       <Filter>HW %28Flipper/Hollywood%29\EXI - Expansion Interface</Filter>
     </ClCompile>
-    <ClCompile Include="HW\EXI_DeviceAMBaseboard.cpp">
-      <Filter>HW %28Flipper/Hollywood%29\EXI - Expansion Interface</Filter>
-    </ClCompile>
     <ClCompile Include="HW\EXI_DeviceEthernet.cpp">
       <Filter>HW %28Flipper/Hollywood%29\EXI - Expansion Interface</Filter>
     </ClCompile>
@@ -436,9 +433,6 @@
       <Filter>HW %28Flipper/Hollywood%29\SI - Serial Interface</Filter>
     </ClCompile>
     <ClCompile Include="HW\SI_Device.cpp">
-      <Filter>HW %28Flipper/Hollywood%29\SI - Serial Interface</Filter>
-    </ClCompile>
-    <ClCompile Include="HW\SI_DeviceAMBaseboard.cpp">
       <Filter>HW %28Flipper/Hollywood%29\SI - Serial Interface</Filter>
     </ClCompile>
     <ClCompile Include="HW\SI_DeviceDanceMat.cpp">
@@ -932,9 +926,6 @@
     <ClInclude Include="HW\EXI_DeviceAGP.h">
       <Filter>HW %28Flipper/Hollywood%29\EXI - Expansion Interface</Filter>
     </ClInclude>
-    <ClInclude Include="HW\EXI_DeviceAMBaseboard.h">
-      <Filter>HW %28Flipper/Hollywood%29\EXI - Expansion Interface</Filter>
-    </ClInclude>
     <ClInclude Include="HW\EXI_DeviceEthernet.h">
       <Filter>HW %28Flipper/Hollywood%29\EXI - Expansion Interface</Filter>
     </ClInclude>
@@ -984,9 +975,6 @@
       <Filter>HW %28Flipper/Hollywood%29\SI - Serial Interface</Filter>
     </ClInclude>
     <ClInclude Include="HW\SI_Device.h">
-      <Filter>HW %28Flipper/Hollywood%29\SI - Serial Interface</Filter>
-    </ClInclude>
-    <ClInclude Include="HW\SI_DeviceAMBaseboard.h">
       <Filter>HW %28Flipper/Hollywood%29\SI - Serial Interface</Filter>
     </ClInclude>
     <ClInclude Include="HW\SI_DeviceDanceMat.h">
@@ -1252,6 +1240,7 @@
       <Filter>PowerPC\Jit64Common</Filter>
     </ClInclude>
     <ClInclude Include="Analytics.h" />
+    <ClInclude Include="IPC_HLE\WII_IPC_HLE_WiiSpeak.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />

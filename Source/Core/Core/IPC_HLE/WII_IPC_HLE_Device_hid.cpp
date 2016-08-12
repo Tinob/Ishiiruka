@@ -40,7 +40,8 @@ void CWII_IPC_HLE_Device_hid::checkUsbUpdates(CWII_IPC_HLE_Device_hid* hid)
 				// Return value
 				Memory::Write_U32(0, hid->deviceCommandAddress + 4);
 
-				WII_IPC_HLE_Interface::EnqueueReply_Threadsafe(hid->deviceCommandAddress);
+				WII_IPC_HLE_Interface::EnqueueReply(hid->deviceCommandAddress, 0,
+					CoreTiming::FromThread::NON_CPU);
 				hid->deviceCommandAddress = 0;
 			}
 		}
@@ -68,7 +69,7 @@ void CWII_IPC_HLE_Device_hid::handleUsbUpdates(struct libusb_transfer* transfer)
 	// Return value
 	Memory::Write_U32(ret, replyAddress + 4);
 
-	WII_IPC_HLE_Interface::EnqueueReply_Threadsafe(replyAddress);
+	WII_IPC_HLE_Interface::EnqueueReply(replyAddress, 0, CoreTiming::FromThread::NON_CPU);
 	// DEBUG_LOG(WII_IPC_HID, "OMG OMG OMG I GOT A CALLBACK, IMMA BE FAMOUS %d %d %d",
 	// transfer->actual_length, transfer->length, transfer->status);
 }

@@ -1,10 +1,10 @@
-# Dolphin - A GameCube / Wii / Triforce Emulator
+# Dolphin - A GameCube / Wii Emulator
 
 [Homepage](https://dolphin-emu.org/) | [Project Site](https://github.com/dolphin-emu/dolphin) | [Forums](https://forums.dolphin-emu.org/) | [Wiki](https://wiki.dolphin-emu.org/) | [Issue Tracker](https://bugs.dolphin-emu.org/projects/emulator/issues) | [Coding Style](https://github.com/dolphin-emu/dolphin/blob/master/Contributing.md) | [Transifex Page](https://www.transifex.com/projects/p/dolphin-emu/)
 
-Dolphin is an emulator for running GameCube, Wii, and Triforce games on
-Windows, Linux, OS X, and recent Android devices. It's licensed under
-the terms of the GNU General Public License, version 2 or later (GPLv2+).
+Dolphin is an emulator for running GameCube and Wii games on Windows,
+Linux, OS X, and recent Android devices. It's licensed under the terms
+of the GNU General Public License, version 2 or later (GPLv2+).
 
 Please read the [FAQ](https://dolphin-emu.org/docs/faq/) before using Dolphin.
 
@@ -13,7 +13,7 @@ Please read the [FAQ](https://dolphin-emu.org/docs/faq/) before using Dolphin.
 * OS
     * Windows (7 SP1 or higher is officially supported, but Vista SP2 might also work).
     * Linux.
-    * OS X (10.9 Mavericks or higher).
+    * OS X (10.10 Yosemite or higher).
     * Unix-like systems other than Linux are not officially supported but might work.
 * Processor
     * A CPU with SSE2 support.
@@ -39,7 +39,7 @@ Visual Studio 2015 Update 2 is a hard requirement. Other compilers might be
 able to build Dolphin on Windows but have not been tested and are not
 recommended to be used. Git and Windows 10 SDK 10.0.10586.0 must be installed.
 
-An installer can be created by using the `Installer_x64.nsi` script in the
+An installer can be created by using the `Installer.nsi` script in the
 Installer directory. This will require the Nullsoft Scriptable Install System
 (NSIS) to be installed. Creating an installer is not necessary to run Dolphin
 since the Binary directory contains a working Dolphin distribution.
@@ -50,15 +50,45 @@ bundled with Dolphin and used if they're not installed on your system. CMake
 will inform you if a bundled library is used or if you need to install any
 missing packages yourself.
 
-### Build Steps:
-1. `mkdir Build`
-2. `cd Build`
+### OS X Build Steps:
+1. `mkdir build`
+2. `cd build`
 3. `cmake ..`
 4. `make`
 
-On OS X, an application bundle will be created in `./Binaries`.
+An application bundle will be created in `./Binaries`.
 
-On Linux, it's strongly recommended to perform a global installation via `sudo make install`.
+### Linux Global Build Steps:
+
+To install to your system.
+
+1. `mkdir build`
+2. `cd build`
+3. `cmake ..`
+4. `make`
+5. `sudo make install`
+
+### Linux Local Build Steps:
+
+Useful for development as root access is not required.
+
+1. `mkdir Build`
+2. `cd Build`
+3. `cmake .. -DLINUX_LOCAL_DEV=true`
+4. `make`
+5. `ln -s ../../Data/Sys Binaries/`
+
+### Linux Portable Build Steps:
+
+Can be stored on external storage and used on different Linux systems.
+Or useful for having multiple distinct Dolphin setups for testing/development/TAS.
+
+1. `mkdir Build`
+2. `cd Build`
+3. `cmake .. -DLINUX_LOCAL_DEV=true`
+4. `make`
+5. `cp -r ../Data/Sys/ Binaries/`
+6. `touch Binaries/portable.txt`
 
 ## Building for Android
 
