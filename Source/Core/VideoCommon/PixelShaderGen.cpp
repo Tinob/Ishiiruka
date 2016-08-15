@@ -923,7 +923,7 @@ inline void WriteTevRegularI(T& out, const char* components, int bias, int op, i
 	}
 	else
 	{
-		out.Write("((((tin_a%s*256 + (tin_b%s - tin_a%s) * tin_c%s)%s)%s) >> 8)",
+		out.Write("(((((tin_a%s<<8) + (tin_b%s - tin_a%s) * tin_c%s)%s)%s) >> 8)",
 			components, components, components, components,
 			tevScaleTableLeft[shift], tevLerpBias[2 * op + (shift != 3)]);
 	}
@@ -1422,7 +1422,7 @@ inline void WriteStage(ShaderCode& out, const pixel_shader_uid_data& uid_data, i
 	if (normalize_c_rgb || normalize_c_a)
 	{
 		const char* cswisle = normalize_c_rgb && normalize_c_a ? "" : (normalize_c_rgb ? ".rgb" : ".a");
-		out.Write("tin_c%s = BOR(tin_c%s, BSHR(tin_c%s, 7));\n", cswisle, cswisle, cswisle);
+		out.Write("tin_c%s = tin_c%s + BSHR(tin_c%s, 7);\n", cswisle, cswisle, cswisle);
 	}
 	out.Write("tin_d = wu4(%s,%s);\n", tevCInputTable[cc.d], tevAInputTable[ac.d]);
 
