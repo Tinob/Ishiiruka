@@ -176,6 +176,7 @@ struct VideoConfig final
 	int iRimBase;
 	int iSpecularMultiplier;
 	bool bLastStoryEFBToRam;
+	bool bForceLogicOpBlend;
 
 	bool bSimBumpEnabled;
 	int iSimBumpDetailBlend;

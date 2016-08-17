@@ -1233,10 +1233,14 @@ void Renderer::_SetLogicOpMode()
 
 	if (bpmem.blendmode.logicopenable && !bpmem.blendmode.blendenable)
 	{
-		D3D::SetRenderState(D3DRS_ALPHABLENDENABLE, true);
-		D3D::SetRenderState(D3DRS_BLENDOP, d3dLogicOpop[bpmem.blendmode.logicmode]);
-		D3D::SetRenderState(D3DRS_SRCBLEND, d3dLogicOpSrcFactors[bpmem.blendmode.logicmode]);
-		D3D::SetRenderState(D3DRS_DESTBLEND, d3dLogicOpDestFactors[bpmem.blendmode.logicmode]);
+		bool logicopenabled = bpmem.blendmode.logicmode != BlendMode::LogicOp::COPY;
+		D3D::SetRenderState(D3DRS_ALPHABLENDENABLE, logicopenabled);
+		if (logicopenabled)
+		{
+			D3D::SetRenderState(D3DRS_BLENDOP, d3dLogicOpop[bpmem.blendmode.logicmode]);
+			D3D::SetRenderState(D3DRS_SRCBLEND, d3dLogicOpSrcFactors[bpmem.blendmode.logicmode]);
+			D3D::SetRenderState(D3DRS_DESTBLEND, d3dLogicOpDestFactors[bpmem.blendmode.logicmode]);
+		}
 	}
 	else
 	{

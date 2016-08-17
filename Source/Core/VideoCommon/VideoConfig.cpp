@@ -167,7 +167,8 @@ void VideoConfig::Load(const std::string& ini_file)
 	hacks->Get("BoundingBoxMode", &iBBoxMode, (int)BBoxMode::BBoxNone);
 	hacks->Get("ViewportCorrection", &bViewportCorrection, false);
 	hacks->Get("LastStoryEFBToRam", &bLastStoryEFBToRam, false);
-
+	hacks->Get("ForceLogicOpBlend", &bForceLogicOpBlend, false);
+	
 
 	// hacks which are disabled by default
 	iPhackvalue[0] = 0;
@@ -504,6 +505,7 @@ void VideoConfig::Save(const std::string& ini_file)
 	hacks->Set("BoundingBoxMode", iBBoxMode);
 	hacks->Set("ViewportCorrection", bViewportCorrection);
 	hacks->Set("LastStoryEFBToRam", bLastStoryEFBToRam);
+	hacks->Set("ForceLogicOpBlend", bForceLogicOpBlend);
 
 
 	iniFile.Save(ini_file);

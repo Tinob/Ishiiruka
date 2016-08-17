@@ -451,6 +451,24 @@ ID3D11BlendState* StateCache::Get(BlendState state)
 	if (it != m_blend.end())
 		return it->second.get();
 
+	if (state.logic_op_enabled && !state.use_dst_alpha)
+	{
+		D3D11_BLEND_DESC1 blenddc = CD3D11_BLEND_DESC1(CD3D11_DEFAULT());
+		blenddc.RenderTarget[0].LogicOpEnable = true;
+		blenddc.RenderTarget[0].LogicOp = state.logic_op;
+		ID3D11BlendState1* res = nullptr;
+
+		HRESULT hr = D3D::device1->CreateBlendState1(&blenddc, &res);
+		if (SUCCEEDED(hr))
+			D3D::SetDebugObjectName((ID3D11DeviceChild*)res, "blend state used to emulate the GX pipeline");
+		else
+			PanicAlert("Failed to create blend state at %s %d\n", __FILE__, __LINE__);
+
+		m_blend.emplace(state.packed, std::move(D3D::BlendStatePtr(res)));
+
+		return res;
+	}
+
 	D3D11_BLEND_DESC blenddc = CD3D11_BLEND_DESC(CD3D11_DEFAULT());
 
 	blenddc.AlphaToCoverageEnable = FALSE;

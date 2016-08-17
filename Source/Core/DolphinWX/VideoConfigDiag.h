@@ -165,6 +165,7 @@ protected:
 	SettingCheckBox* Async_Shader_compilation;
 	SettingCheckBox* Compute_Shader_decoding;
 	SettingCheckBox* Compute_Shader_encoding;
+	SettingCheckBox* Forced_LogicOp;
 	SettingCheckBox* Predictive_FIFO;
 	SettingCheckBox* Wait_For_Shaders;
 	SettingCheckBox* vieport_correction;

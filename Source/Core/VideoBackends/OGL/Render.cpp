@@ -1675,8 +1675,15 @@ void Renderer::SetLogicOpMode()
 				GL_NAND,
 				GL_SET
 			};
-			glEnable(GL_COLOR_LOGIC_OP);
-			glLogicOp(glLogicOpCodes[bpmem.blendmode.logicmode]);
+			if (bpmem.blendmode.logicmode != BlendMode::LogicOp::COPY)
+			{
+				glEnable(GL_COLOR_LOGIC_OP);
+				glLogicOp(glLogicOpCodes[bpmem.blendmode.logicmode]);
+			}
+			else
+			{
+				glDisable(GL_COLOR_LOGIC_OP);
+			}
 		}
 		else
 		{
@@ -1752,14 +1759,21 @@ void Renderer::SetLogicOpMode()
 				GL_ONE_MINUS_DST_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE,
 				GL_ONE_MINUS_SRC_ALPHA,GL_ONE
 			};
-			GLenum equation = glLogicOpop[bpmem.blendmode.logicmode];
-			GLenum srcFactor = glLogicOpSrcFactors[bpmem.blendmode.logicmode];
-			GLenum dstFactor = glLogicOpDestFactors[bpmem.blendmode.logicmode];
-			GLenum srcFactorAlpha = glLogicOpSrcFactorsAlpha[bpmem.blendmode.logicmode];
-			GLenum dstFactorAlpha = glLogicOpDestFactorsAlpha[bpmem.blendmode.logicmode];
-			glEnable(GL_BLEND);
-			glBlendEquationSeparate(equation, equation);
-			glBlendFuncSeparate(srcFactor, dstFactor, srcFactorAlpha, dstFactorAlpha);
+			if (bpmem.blendmode.logicmode != BlendMode::LogicOp::COPY)
+			{
+				GLenum equation = glLogicOpop[bpmem.blendmode.logicmode];
+				GLenum srcFactor = glLogicOpSrcFactors[bpmem.blendmode.logicmode];
+				GLenum dstFactor = glLogicOpDestFactors[bpmem.blendmode.logicmode];
+				GLenum srcFactorAlpha = glLogicOpSrcFactorsAlpha[bpmem.blendmode.logicmode];
+				GLenum dstFactorAlpha = glLogicOpDestFactorsAlpha[bpmem.blendmode.logicmode];
+				glEnable(GL_BLEND);
+				glBlendEquationSeparate(equation, equation);
+				glBlendFuncSeparate(srcFactor, dstFactor, srcFactorAlpha, dstFactorAlpha);
+			}
+			else
+			{
+				glDisable(GL_BLEND);
+			}
 		}
 	}
 	else

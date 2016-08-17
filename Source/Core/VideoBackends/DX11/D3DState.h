@@ -35,7 +35,8 @@ union BlendState
 	BitField<8, 5, D3D11_BLEND> src_blend;
 	BitField<13, 5, D3D11_BLEND> dst_blend;
 	BitField<18, 1, u32> use_dst_alpha;
-
+	BitField<19, 1, u32> logic_op_enabled;
+	BitField<20, 4, D3D11_LOGIC_OP> logic_op;
 	u32 packed;
 };
 

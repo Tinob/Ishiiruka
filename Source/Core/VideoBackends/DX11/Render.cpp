@@ -1011,7 +1011,6 @@ void Renderer::ApplyState(bool bUseDstAlpha)
 	if (bUseDstAlpha)
 	{
 		// restore actual state
-		SetBlendMode(false);
 		SetLogicOpMode();
 	}
 	D3D::BufferDescriptor vbuffer = VertexShaderCache::GetConstantBuffer();
@@ -1085,9 +1084,6 @@ void Renderer::SetDepthMode()
 
 void Renderer::SetLogicOpMode()
 {
-	// D3D11 doesn't support logic blending, so this is a huge hack
-	// TODO: Make use of D3D11.1's logic blending support
-
 	// 0   0x00
 	// 1   Source & destination
 	// 2   Source & ~destination
@@ -1104,73 +1100,103 @@ void Renderer::SetLogicOpMode()
 	// 13  ~Source | destination
 	// 14  ~(Source & destination)
 	// 15  0xff
+
+	const D3D11_LOGIC_OP  d3d_111_logic_op[16] =
+	{
+		D3D11_LOGIC_OP_CLEAR,
+		D3D11_LOGIC_OP_AND,
+		D3D11_LOGIC_OP_AND_REVERSE,
+		D3D11_LOGIC_OP_COPY,
+		D3D11_LOGIC_OP_AND_INVERTED,
+		D3D11_LOGIC_OP_NOOP,
+		D3D11_LOGIC_OP_XOR,
+		D3D11_LOGIC_OP_OR,
+		D3D11_LOGIC_OP_NOR,
+		D3D11_LOGIC_OP_EQUIV,
+		D3D11_LOGIC_OP_INVERT,
+		D3D11_LOGIC_OP_OR_REVERSE,
+		D3D11_LOGIC_OP_COPY_INVERTED,
+		D3D11_LOGIC_OP_OR_INVERTED,
+		D3D11_LOGIC_OP_NAND,
+		D3D11_LOGIC_OP_SET
+	};
+	// fallbacks for devices that does not support logic blending
 	const D3D11_BLEND_OP d3dLogicOps[16] =
 	{
-		D3D11_BLEND_OP_ADD,//0
-		D3D11_BLEND_OP_ADD,//1
-		D3D11_BLEND_OP_SUBTRACT,//2
-		D3D11_BLEND_OP_ADD,//3
-		D3D11_BLEND_OP_REV_SUBTRACT,//4
-		D3D11_BLEND_OP_ADD,//5
-		D3D11_BLEND_OP_MAX,//6
-		D3D11_BLEND_OP_ADD,//7
-		D3D11_BLEND_OP_MAX,//8
-		D3D11_BLEND_OP_MAX,//9
-		D3D11_BLEND_OP_ADD,//10
-		D3D11_BLEND_OP_ADD,//11
-		D3D11_BLEND_OP_ADD,//12
-		D3D11_BLEND_OP_ADD,//13
-		D3D11_BLEND_OP_ADD,//14
-		D3D11_BLEND_OP_ADD//15
+		D3D11_BLEND_OP_ADD,
+		D3D11_BLEND_OP_ADD,
+		D3D11_BLEND_OP_SUBTRACT,
+		D3D11_BLEND_OP_ADD,
+		D3D11_BLEND_OP_REV_SUBTRACT,
+		D3D11_BLEND_OP_ADD,
+		D3D11_BLEND_OP_MAX,
+		D3D11_BLEND_OP_ADD,
+		D3D11_BLEND_OP_MAX,
+		D3D11_BLEND_OP_MAX,
+		D3D11_BLEND_OP_ADD,
+		D3D11_BLEND_OP_ADD,
+		D3D11_BLEND_OP_ADD,
+		D3D11_BLEND_OP_ADD,
+		D3D11_BLEND_OP_ADD,
+		D3D11_BLEND_OP_ADD
 	};
 	const D3D11_BLEND d3dLogicOpSrcFactors[16] =
 	{
-		D3D11_BLEND_ZERO,//0
-		D3D11_BLEND_DEST_COLOR,//1
-		D3D11_BLEND_ONE,//2
-		D3D11_BLEND_ONE,//3
-		D3D11_BLEND_DEST_COLOR,//4
-		D3D11_BLEND_ZERO,//5
-		D3D11_BLEND_INV_DEST_COLOR,//6
-		D3D11_BLEND_INV_DEST_COLOR,//7
-		D3D11_BLEND_INV_SRC_COLOR,//8
-		D3D11_BLEND_INV_SRC_COLOR,//9
-		D3D11_BLEND_INV_DEST_COLOR,//10
-		D3D11_BLEND_ONE,//11
-		D3D11_BLEND_INV_SRC_COLOR,//12
-		D3D11_BLEND_INV_SRC_COLOR,//13
-		D3D11_BLEND_INV_DEST_COLOR,//14
-		D3D11_BLEND_ONE//15
+		D3D11_BLEND_ZERO,
+		D3D11_BLEND_DEST_COLOR,
+		D3D11_BLEND_ONE,
+		D3D11_BLEND_ONE,
+		D3D11_BLEND_DEST_COLOR,
+		D3D11_BLEND_ZERO,
+		D3D11_BLEND_INV_DEST_COLOR,
+		D3D11_BLEND_INV_DEST_COLOR,
+		D3D11_BLEND_INV_SRC_COLOR,
+		D3D11_BLEND_INV_SRC_COLOR,
+		D3D11_BLEND_INV_DEST_COLOR,
+		D3D11_BLEND_ONE,
+		D3D11_BLEND_INV_SRC_COLOR,
+		D3D11_BLEND_INV_SRC_COLOR,
+		D3D11_BLEND_INV_DEST_COLOR,
+		D3D11_BLEND_ONE
 	};
 	const D3D11_BLEND d3dLogicOpDestFactors[16] =
 	{
-		D3D11_BLEND_ZERO,//0
-		D3D11_BLEND_ZERO,//1
-		D3D11_BLEND_INV_SRC_COLOR,//2
-		D3D11_BLEND_ZERO,//3
-		D3D11_BLEND_ONE,//4
-		D3D11_BLEND_ONE,//5
-		D3D11_BLEND_INV_SRC_COLOR,//6
-		D3D11_BLEND_ONE,//7
-		D3D11_BLEND_INV_DEST_COLOR,//8
-		D3D11_BLEND_SRC_COLOR,//9
-		D3D11_BLEND_INV_DEST_COLOR,//10
-		D3D11_BLEND_INV_DEST_COLOR,//11
-		D3D11_BLEND_INV_SRC_COLOR,//12
-		D3D11_BLEND_ONE,//13
-		D3D11_BLEND_INV_SRC_COLOR,//14
-		D3D11_BLEND_ONE//15
+		D3D11_BLEND_ZERO,
+		D3D11_BLEND_ZERO,
+		D3D11_BLEND_INV_SRC_COLOR,
+		D3D11_BLEND_ZERO,
+		D3D11_BLEND_ONE,
+		D3D11_BLEND_ONE,
+		D3D11_BLEND_INV_SRC_COLOR,
+		D3D11_BLEND_ONE,
+		D3D11_BLEND_INV_DEST_COLOR,
+		D3D11_BLEND_SRC_COLOR,
+		D3D11_BLEND_INV_DEST_COLOR,
+		D3D11_BLEND_INV_DEST_COLOR,
+		D3D11_BLEND_INV_SRC_COLOR,
+		D3D11_BLEND_ONE,
+		D3D11_BLEND_INV_SRC_COLOR,
+		D3D11_BLEND_ONE
 	};
 
-	if (bpmem.blendmode.logicopenable && !bpmem.blendmode.blendenable)
+	if (bpmem.blendmode.logicopenable
+		&& !bpmem.blendmode.blendenable)
 	{
-		gx_state.blend.blend_enable = true;
-		gx_state.blend.blend_op = d3dLogicOps[bpmem.blendmode.logicmode];
-		gx_state.blend.src_blend = d3dLogicOpSrcFactors[bpmem.blendmode.logicmode];
-		gx_state.blend.dst_blend = d3dLogicOpDestFactors[bpmem.blendmode.logicmode];
+		bool logicopenabled = bpmem.blendmode.logicmode != BlendMode::LogicOp::COPY;
+		gx_state.blend.blend_enable = logicopenabled;
+		gx_state.blend.logic_op_enabled = logicopenabled && (D3D::GetLogicOpSupported() || g_ActiveConfig.bForceLogicOpBlend);
+		if (logicopenabled)
+		{
+			gx_state.blend.logic_op = d3d_111_logic_op[bpmem.blendmode.logicmode];
+			// Set blending fallbacks in case device does not support logic blending
+			gx_state.blend.blend_op = d3dLogicOps[bpmem.blendmode.logicmode];
+			gx_state.blend.src_blend = d3dLogicOpSrcFactors[bpmem.blendmode.logicmode];
+			gx_state.blend.dst_blend = d3dLogicOpDestFactors[bpmem.blendmode.logicmode];
+		}
 	}
 	else
 	{
+		gx_state.blend.logic_op_enabled = false;
 		SetBlendMode(true);
 	}
 }

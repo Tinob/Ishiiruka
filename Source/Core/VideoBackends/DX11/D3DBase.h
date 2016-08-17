@@ -49,6 +49,7 @@ void EndFrame();
 void Present();
 
 D3D_FEATURE_LEVEL GetFeatureLevel();
+bool GetLogicOpSupported();
 unsigned int GetBackBufferWidth();
 unsigned int GetBackBufferHeight();
 D3DTexture2D* &GetBackBuffer();

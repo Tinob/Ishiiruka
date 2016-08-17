@@ -179,11 +179,11 @@ static wxString free_look_desc = _("This feature allows you to change the game's
 static wxString shader_precompile_desc = _("If a database of shader for the current game exists, precompile all known shaders to void issues and stutering during gameplay. This option will increase startup time but will improve gaming experience. Warning: with a clean shader cache dx9 can have up to 20 minutes shader compilation time in some games.");
 static wxString crop_desc = _("Crop the picture from its native aspect ratio to 4:3 or 16:9.\n\nIf unsure, leave this unchecked.");
 static wxString opencl_desc = _("[EXPERIMENTAL]\nAims to speed up emulation by offloading texture decoding to the GPU using the OpenCL framework.\nHowever, right now it's known to cause texture defects in various games. Also it's slower than regular CPU texture decoding in most cases.\n\nIf unsure, leave this unchecked.");
-static wxString pptrigger_desc = _("Determines when to apply post-processing.\nOn Swap will apply post-processing before presenting to the screen. On Projection applies post-processing before the game draws 2D elements on the screen. However, this may not work with all games. On EFB Copy applies post-processing when an EFB copy of a perspective scene is requested. This may work for for other games. After blit will apply post processing after bliting reducig gpu usage when suing High efb scales.\n\nIf unsure, select On Swap.");
+static wxString pptrigger_desc = _("Determines when to apply post-processing.\nOn Swap will apply post-processing before presenting to the screen. On Projection applies post-processing before the game draws 2D elements on the screen. However, this may not work with all games. On EFB Copy applies post-processing when an EFB copy of a perspective scene is requested. This may work for for other games. After blit will apply post processing after bliting reducing gpu usage when using High efb scales.\n\nIf unsure, select On Swap.");
 static wxString ppshader_list_desc = _("Applies post-processing effects when the trigger chosen in the occurs, by default this is at the end of a frame.\n\nPost-processing is performed at the selected internal resolution.\n\nIf unsure, leave the list empty.");
 static wxString ppshader_options_desc = _("Some effects offer user-tweakable options. This will open a dialog where you can change the values of these options.");
-static wxString scalingshader_desc = wxTRANSLATE("Use a custom shader for resizing from internal resolution to display resolution. This shader can also perform additional post-processing effects.\n\nIf unsure, select (default).");
-static wxString scalingshader_options_desc = wxTRANSLATE("Some filters offer user-tweakable options. This will open a dialog where you can change the values of these options.");
+static wxString scalingshader_desc = _("Use a custom shader for resizing from internal resolution to display resolution. This shader can also perform additional post-processing effects.\n\nIf unsure, select (default).");
+static wxString scalingshader_options_desc = _("Some filters offer user-tweakable options. This will open a dialog where you can change the values of these options.");
 static wxString shader_errors_desc = _("Usually if shader compilation fails, an error message is displayed.\nHowever, one may skip the popups to allow interruption free gameplay by checking this option.\n\nIf unsure, leave this unchecked.");
 static wxString stereo_3d_desc = _("Select the stereoscopic 3D  mode, stereoscopy allows you to get a better feeling of depth if you have the necessary hardware.\nSide-by-Side and Top-and-Bottom are used by most 3D TVs.\nAnaglyph is used for Red-Cyan colored glasses.\nHeavily decreases emulation speed and sometimes causes issues.\n\nIf unsure, select Off.");
 static wxString stereo_separation_desc = _("Control the separation distance, this is the distance between the virtual cameras.\nA higher value creates a stronger feeling of depth while a lower value is more comfortable.");
@@ -200,7 +200,8 @@ static wxString Tessellation_round_desc = _("Select the intensity of the roundin
 static wxString Tessellation_displacement_desc = _("Select the intensity of the displacement effect when using custom materials.");
 static wxString scaling_factor_desc = _("Multiplier applied to the texture size.");
 static wxString texture_deposterize_desc = _("Decrease some gradient's artifacts caused by scaling.");
-static wxString stereoshader_desc = wxTRANSLATE("Selects which shader will be used to transform the two images when stereoscopy is enabled.");
+static wxString stereoshader_desc = _("Selects which shader will be used to transform the two images when stereoscopy is enabled.");
+static wxString forcedLogivOp_desc = _("Force Logic blending support.\nBy default dx11/12 supports logic op blending only on UINT formats, but in some drivers UNORM is also supported but is not detectable.\nThis option will allow you to test if your driver really supports logic blending, but it will crash the emulator if enabled in a platform that does not support it.\n\nIf unsure, leave this unchecked.");
 // Search for available resolutions - TODO: Move to Common?
 static  wxArrayString GetListOfResolutions()
 {
@@ -862,6 +863,7 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
 			// Disable while i fix opencl
 			//szr_other->Add(CreateCheckBox(page_hacks, _("OpenCL Texture Decoder"), (opencl_desc), vconfig.bEnableOpenCL));	
 			szr_other->Add(CreateCheckBox(page_hacks, _("Fast Depth Calculation"), (fast_depth_calc_desc), vconfig.bFastDepthCalc));
+			szr_other->Add(Forced_LogicOp = CreateCheckBox(page_hacks, _("Force Logic Blending"), (forcedLogivOp_desc), vconfig.bForceLogicOpBlend));
 			//szr_other->Add(Predictive_FIFO = CreateCheckBox(page_hacks, _("Predictive FIFO"), (predictiveFifo_desc), vconfig.bPredictiveFifo));
 			//szr_other->Add(Wait_For_Shaders = CreateCheckBox(page_hacks, _("Wait for Shader Compilation"), (waitforshadercompilation_desc), vconfig.bWaitForShaderCompilation));
 			szr_other->Add(Async_Shader_compilation = CreateCheckBox(page_hacks, _("Full Async Shader Compilation"), (fullAsyncShaderCompilation_desc), vconfig.bFullAsyncShaderCompilation));
@@ -1456,6 +1458,8 @@ void VideoConfigDiag::OnUpdateUI(wxUpdateUIEvent& ev)
 	Async_Shader_compilation->Show(vconfig.backend_info.APIType != API_OPENGL);
 	Compute_Shader_decoding->Show(vconfig.backend_info.bSupportsComputeTextureDecoding);
 	Compute_Shader_encoding->Show(vconfig.backend_info.bSupportsComputeTextureEncoding);
+	Forced_LogicOp->Show(vconfig.backend_info.APIType == API_D3D11);
+
 	/*Predictive_FIFO->Show(vconfig.backend_info.APIType != API_OPENGL);
 	Wait_For_Shaders->Show(vconfig.backend_info.APIType != API_OPENGL);
 	bool WaitForShaderCompilationenabled = vconfig.bPredictiveFifo && !vconfig.bFullAsyncShaderCompilation;

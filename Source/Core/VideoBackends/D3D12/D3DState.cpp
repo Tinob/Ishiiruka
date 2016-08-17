@@ -278,41 +278,42 @@ D3D12_BLEND_DESC StateCache::GetDesc(BlendState state)
 		FALSE, // BOOL AlphaToCoverageEnable;
 		FALSE, // BOOL IndependentBlendEnable;
 		{
-			state.blend_enable,   // BOOL BlendEnable;
-			FALSE,                // BOOL LogicOpEnable;
+			state.blend_enable && !(state.logic_op_enabled && !state.use_dst_alpha),	// BOOL BlendEnable;
+			state.logic_op_enabled && !state.use_dst_alpha,	// BOOL LogicOpEnable;
 			state.src_blend,      // D3D12_BLEND SrcBlend;
 			state.dst_blend,      // D3D12_BLEND DestBlend;
 			state.blend_op,       // D3D12_BLEND_OP BlendOp;
 			state.src_blend,      // D3D12_BLEND SrcBlendAlpha;
 			state.dst_blend,      // D3D12_BLEND DestBlendAlpha;
 			state.blend_op,       // D3D12_BLEND_OP BlendOpAlpha;
-			D3D12_LOGIC_OP_NOOP,  // D3D12_LOGIC_OP LogicOp
+			state.logic_op,       // D3D12_LOGIC_OP LogicOp
 			state.write_mask      // UINT8 RenderTargetWriteMask;
 		}
 	};
-
-	blenddc.RenderTarget[0].SrcBlendAlpha = GetBlendingAlpha(blenddc.RenderTarget[0].SrcBlend);
-	blenddc.RenderTarget[0].DestBlendAlpha = GetBlendingAlpha(blenddc.RenderTarget[0].DestBlend);
-
-	if (state.use_dst_alpha)
+	if (blenddc.RenderTarget[0].BlendEnable)
 	{
-		// Colors should blend against SRC1_ALPHA
-		if (blenddc.RenderTarget[0].SrcBlend == D3D12_BLEND_SRC_ALPHA)
-			blenddc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC1_ALPHA;
-		else if (blenddc.RenderTarget[0].SrcBlend == D3D12_BLEND_INV_SRC_ALPHA)
-			blenddc.RenderTarget[0].SrcBlend = D3D12_BLEND_INV_SRC1_ALPHA;
+		blenddc.RenderTarget[0].SrcBlendAlpha = GetBlendingAlpha(blenddc.RenderTarget[0].SrcBlend);
+		blenddc.RenderTarget[0].DestBlendAlpha = GetBlendingAlpha(blenddc.RenderTarget[0].DestBlend);
 
-		// Colors should blend against SRC1_ALPHA
-		if (blenddc.RenderTarget[0].DestBlend == D3D12_BLEND_SRC_ALPHA)
-			blenddc.RenderTarget[0].DestBlend = D3D12_BLEND_SRC1_ALPHA;
-		else if (blenddc.RenderTarget[0].DestBlend == D3D12_BLEND_INV_SRC_ALPHA)
-			blenddc.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC1_ALPHA;
+		if (state.use_dst_alpha)
+		{
+			// Colors should blend against SRC1_ALPHA
+			if (blenddc.RenderTarget[0].SrcBlend == D3D12_BLEND_SRC_ALPHA)
+				blenddc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC1_ALPHA;
+			else if (blenddc.RenderTarget[0].SrcBlend == D3D12_BLEND_INV_SRC_ALPHA)
+				blenddc.RenderTarget[0].SrcBlend = D3D12_BLEND_INV_SRC1_ALPHA;
 
-		blenddc.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
-		blenddc.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
-		blenddc.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
+			// Colors should blend against SRC1_ALPHA
+			if (blenddc.RenderTarget[0].DestBlend == D3D12_BLEND_SRC_ALPHA)
+				blenddc.RenderTarget[0].DestBlend = D3D12_BLEND_SRC1_ALPHA;
+			else if (blenddc.RenderTarget[0].DestBlend == D3D12_BLEND_INV_SRC_ALPHA)
+				blenddc.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC1_ALPHA;
+
+			blenddc.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
+			blenddc.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
+			blenddc.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
+		}
 	}
-
 	return blenddc;
 }
 
