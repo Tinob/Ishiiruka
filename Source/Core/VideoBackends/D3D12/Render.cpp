@@ -531,10 +531,7 @@ void Renderer::ClearScreen(const EFBRectangle& rc, bool color_enable, bool alpha
 		blend_desc = &s_clear_blend_descs[CLEAR_BLEND_DESC_ALL_CHANNELS_DISABLED];
 
 	D3D12_DEPTH_STENCIL_DESC *depth_stencil_desc = nullptr;
-	if (s_target_dirty)
-	{
-		FramebufferManager::RestoreEFBRenderTargets();
-	}
+
 	// EXISTINGD3D11TODO: Should we enable Z testing here?
 	/*if (!bpmem.zmode.testenable) depth_stencil_desc = &s_clear_depth_descs[CLEAR_DEPTH_DESC_DEPTH_DISABLED];
 	else */if (z_enable)
@@ -548,6 +545,12 @@ void Renderer::ClearScreen(const EFBRectangle& rc, bool color_enable, bool alpha
 		depth_stencil_desc = &s_clear_depth_descs[CLEAR_DEPTH_DESC_DEPTH_ENABLED_WRITES_DISABLED];
 	}
 	FramebufferManager::GetEFBColorTexture()->TransitionToResourceState(D3D::current_command_list, D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+	if (s_target_dirty)
+	{
+		FramebufferManager::RestoreEFBRenderTargets();
+	}
+
 	// Update the view port for clearing the picture
 	TargetRectangle target_rc = Renderer::ConvertEFBRectangle(rc);
 
@@ -559,7 +562,6 @@ void Renderer::ClearScreen(const EFBRectangle& rc, bool color_enable, bool alpha
 
 	// Restores proper viewport/scissor settings.
 	RestoreAPIState();
-	s_target_dirty = false;
 	FramebufferManager::InvalidateEFBCache();
 }
 
@@ -1195,14 +1197,7 @@ void Renderer::ApplyState(bool use_dst_alpha)
 		D3D::command_list_mgr->SetCommandListDirtyState(COMMAND_LIST_STATE_PSO, false);
 	}
 	FramebufferManager::InvalidateEFBCache();
-	if (gx_state.zmode.testenable && gx_state.zmode.updateenable)
-	{
-		FramebufferManager::GetEFBDepthTexture()->TransitionToResourceState(D3D::current_command_list, D3D12_RESOURCE_STATE_DEPTH_WRITE);
-	}
-	else
-	{
-		FramebufferManager::GetEFBDepthTexture()->TransitionToResourceState(D3D::current_command_list, D3D12_RESOURCE_STATE_DEPTH_READ);
-	}
+	FramebufferManager::GetEFBDepthTexture()->TransitionToResourceState(D3D::current_command_list, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 	FramebufferManager::GetEFBColorTexture()->TransitionToResourceState(D3D::current_command_list, D3D12_RESOURCE_STATE_RENDER_TARGET);
 }
 

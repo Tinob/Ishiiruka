@@ -203,7 +203,7 @@ bool TextureCache::TCacheEntry::Save(const std::string& filename, unsigned int l
 			dst_location.PlacedFootprint.Footprint.Height
 		);
 	}
-
+	m_texture->TransitionToResourceState(D3D::current_command_list, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 	D3D12_RANGE write_range = {};
 	s_texture_cache_entry_readback_buffer->Unmap(0, &write_range);
 	return saved;
@@ -260,7 +260,7 @@ void TextureCache::TCacheEntry::CopyRectangleFromTexture(
 		StaticShaderCache::GetSimpleVertexShader(),
 		StaticShaderCache::GetSimpleVertexShaderInputLayout(), StaticShaderCache::GetCopyGeometryShader(), 0,
 		DXGI_FORMAT_R8G8B8A8_UNORM, false, m_texture->GetMultisampled());
-
+	m_texture->TransitionToResourceState(D3D::current_command_list, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 	g_renderer->RestoreAPIState();
 }
 
@@ -478,6 +478,7 @@ void TextureCache::TCacheEntry::FromRenderTarget(u8* dst, PEControl::PixelFormat
 		StaticShaderCache::GetCopyGeometryShader(),
 		0, DXGI_FORMAT_R8G8B8A8_UNORM, false, m_texture->GetMultisampled()
 	);
+	m_texture->TransitionToResourceState(D3D::current_command_list, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 	g_renderer->RestoreAPIState();
 }
 
@@ -683,7 +684,7 @@ bool TextureCache::Palettize(TCacheEntryBase* entry, const TCacheEntryBase* unco
 		true,
 		static_cast<TCacheEntry*>(entry)->m_texture->GetMultisampled()
 	);
-
+	static_cast<TCacheEntry*>(entry)->m_texture->TransitionToResourceState(D3D::current_command_list, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 	g_renderer->RestoreAPIState();
 	return true;
 }
