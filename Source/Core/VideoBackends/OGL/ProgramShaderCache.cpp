@@ -488,7 +488,14 @@ void ProgramShaderCache::Init()
 		pshaders->ForEachMostUsedByCategory(gameid,
 			[](const SHADERUID& item)
 		{
-			CompileShader(item);
+			const pixel_shader_uid_data& uid_data = item.puid.GetUidData();
+
+				
+			if ((!uid_data.stereo || g_ActiveConfig.backend_info.bSupportsGeometryShaders)
+				&&(!uid_data.bounding_box || g_ActiveConfig.backend_info.bSupportsBBox))
+			{
+				CompileShader(item);
+			}
 		},
 			[](PCacheEntry& entry)
 		{
