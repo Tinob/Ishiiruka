@@ -57,6 +57,7 @@ struct HSOutput
 	float4 pos: BEZIERPOS;
 	float4 colors_0: COLOR0;
 	float4 colors_1: COLOR1;
+	float2 clipDist: SV_ClipDistance0;
 };
 
 [domain("tri")]
@@ -91,6 +92,11 @@ static const char* s_hlsl_ds_str = R"hlsl(
 float3 PrjToPlane(float3 planeNormal, float3 planePoint, float3 pointToProject)
 {
 return pointToProject - dot(pointToProject-planePoint, planeNormal) * planeNormal;
+}
+
+float BInterpolate(float v0, float v1, float v2, float3 barycentric)
+{
+return barycentric.z * v0 + barycentric.x * v1 + barycentric.y * v2;
 }
 
 float2 BInterpolate(float2 v0, float2 v1, float2 v2, float3 barycentric)
@@ -480,6 +486,7 @@ inline void GenerateTessellationShader(ShaderCode& out, const Tessellation_shade
 		}
 		out.Write("result.colors_0 = patch[id].colors_0;\n"
 			"result.colors_1 = patch[id].colors_1;\n"
+			"result.clipDist = patch[id].clipDist;\n"
 			"return result;\n}\n");
 		out.Write(s_hlsl_constant_header_str);
 		out.Write(
@@ -653,7 +660,8 @@ inline void GenerateTessellationShader(ShaderCode& out, const Tessellation_shade
 			"result.pos = float4(dot(" I_PROJECTION "[0], pos), dot(" I_PROJECTION "[1], pos), dot(" I_PROJECTION "[2], pos), dot(" I_PROJECTION "[3], pos));\n"
 			"result.pos.xy = result.pos.xy + result.pos.w * " I_DEPTHPARAMS".zw;\n"
 			"result.colors_0 = BInterpolate(patch[0].colors_0, patch[1].colors_0, patch[2].colors_0, bCoords);\n"
-			"result.colors_1 = BInterpolate(patch[0].colors_1, patch[1].colors_1, patch[2].colors_1, bCoords);\n");
+			"result.colors_1 = BInterpolate(patch[0].colors_1, patch[1].colors_1, patch[2].colors_1, bCoords);\n"
+			"result.clipDist = BInterpolate(patch[0].clipDist, patch[1].clipDist, patch[2].clipDist, bCoords);\n");
 		if (uid_data.numTexGens < 7)
 		{
 			out.Write("result.clipPos = float4(position.xy, result.pos.zw);\n");
@@ -676,7 +684,7 @@ inline void GenerateTessellationShader(ShaderCode& out, const Tessellation_shade
 			else
 				out.Write("result.tex7.w = position.z;\n");
 		}
-		out.Write("result.pos.z = -((" I_DEPTHPARAMS".x - 1.0) * result.pos.w + result.pos.z * " I_DEPTHPARAMS".y);\n");
+		out.Write("result.pos.z = result.pos.w * " I_DEPTHPARAMS ".x - result.pos.z * " I_DEPTHPARAMS ".y;\n");
 		out.Write("return result;\n}");
 	}
 

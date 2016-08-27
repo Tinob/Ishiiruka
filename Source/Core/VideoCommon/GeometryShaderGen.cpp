@@ -6,6 +6,7 @@
 #include <cstring>
 
 #include "Common/CommonTypes.h"
+#include "VideoCommon/DriverDetails.h"
 #include "VideoCommon/GeometryShaderGen.h"
 #include "VideoCommon/LightingShaderGen.h"
 #include "VideoCommon/VertexShaderGen.h"
@@ -50,6 +51,11 @@ inline void EmitVertex(ShaderCode& out, const geometry_shader_uid_data& uid_data
 	if (ApiType == API_OPENGL)
 	{
 		out.Write("\tgl_Position = %s.pos;\n", vertex);
+		if (g_ActiveConfig.backend_info.bSupportsDepthClamp)
+		{
+			out.Write("\tgl_ClipDistance[0] = %s.clipDist0;\n", vertex);
+			out.Write("\tgl_ClipDistance[1] = %s.clipDist1;\n", vertex);
+		}
 		AssignVSOutputMembers<ApiType>(out, "ps", vertex, uid_data.pixel_lighting, uid_data.numTexGens);
 	}
 	else
@@ -235,6 +241,14 @@ inline void GenerateGeometryShader(ShaderCode& out, const geometry_shader_uid_da
 	{
 		out.Write("\tVS_OUTPUT f;\n");
 		AssignVSOutputMembers<ApiType>(out, "f", "vs[i]", uid_data.pixel_lighting, uid_data.numTexGens);
+		if (g_ActiveConfig.backend_info.bSupportsDepthClamp &&
+			DriverDetails::HasBug(DriverDetails::BUG_BROKENCLIPDISTANCE))
+		{
+			// On certain GPUs we have to consume the clip distance from the vertex shader
+			// or else the other vertex shader outputs will get corrupted.
+			out.Write("\tf.clipDist0 = gl_in[i].gl_ClipDistance[0];\n");
+			out.Write("\tf.clipDist1 = gl_in[i].gl_ClipDistance[1];\n");
+		}
 	}
 	else
 	{

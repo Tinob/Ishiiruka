@@ -165,7 +165,6 @@ void VideoConfig::Load(const std::string& ini_file)
 	hacks->Get("EnableComputeTextureEncoding", &bEnableComputeTextureEncoding, false);
 	hacks->Get("PredictiveFifo", &bPredictiveFifo, false);
 	hacks->Get("BoundingBoxMode", &iBBoxMode, (int)BBoxMode::BBoxNone);
-	hacks->Get("ViewportCorrection", &bViewportCorrection, false);
 	hacks->Get("LastStoryEFBToRam", &bLastStoryEFBToRam, false);
 	hacks->Get("ForceLogicOpBlend", &bForceLogicOpBlend, false);
 	
@@ -306,7 +305,6 @@ void VideoConfig::GameIniLoad()
 	CHECK_SETTING("Video_Hacks", "EFBScaledCopy", bCopyEFBScaled);
 	CHECK_SETTING("Video_Hacks", "EFBEmulateFormatChanges", bEFBEmulateFormatChanges);
 	CHECK_SETTING("Video_Hacks", "BoundingBoxMode", iBBoxMode);
-	CHECK_SETTING("Video_Hacks", "ViewportCorrection", bViewportCorrection);
 	CHECK_SETTING("Video_Hacks", "LastStoryEFBToRam", bLastStoryEFBToRam);
 
 
@@ -503,7 +501,6 @@ void VideoConfig::Save(const std::string& ini_file)
 	hacks->Set("EnableComputeTextureEncoding", bEnableComputeTextureEncoding);
 	hacks->Set("PredictiveFifo", bPredictiveFifo);
 	hacks->Set("BoundingBoxMode", iBBoxMode);
-	hacks->Set("ViewportCorrection", bViewportCorrection);
 	hacks->Set("LastStoryEFBToRam", bLastStoryEFBToRam);
 	hacks->Set("ForceLogicOpBlend", bForceLogicOpBlend);
 

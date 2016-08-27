@@ -168,7 +168,6 @@ protected:
 	SettingCheckBox* Forced_LogicOp;
 	SettingCheckBox* Predictive_FIFO;
 	SettingCheckBox* Wait_For_Shaders;
-	SettingCheckBox* vieport_correction;
 	SettingRadioButton* virtual_xfb;
 	SettingRadioButton* real_xfb;
 

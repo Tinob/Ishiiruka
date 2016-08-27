@@ -227,7 +227,8 @@ protected:
 	FPSCounter m_fps_counter;
 
 	static std::unique_ptr<PostProcessor> m_post_processor;
-
+	
+	static const float GX_MAX_DEPTH;
 private:
 	static PEControl::PixelFormat prev_efb_format;
 	static unsigned int efb_scale_numeratorX;

@@ -79,7 +79,7 @@ struct
 {
 	SamplerState sampler[8];
 	BlendState blend;
-	ZMode zmode;
+	DepthState zmode;
 	RasterizerState raster;
 
 } gx_state;
@@ -266,6 +266,7 @@ Renderer::Renderer(void *&window_handle)
 	gx_state.zmode.testenable = false;
 	gx_state.zmode.updateenable = false;
 	gx_state.zmode.func = ZMode::NEVER;
+	gx_state.zmode.reversed_depth = false;
 
 	gx_state.raster.cull_mode = D3D11_CULL_NONE;
 
@@ -491,19 +492,12 @@ void Renderer::SetViewport()
 	Wd = (X + Wd <= GetTargetWidth()) ? Wd : (GetTargetWidth() - X);
 	Ht = (Y + Ht <= GetTargetHeight()) ? Ht : (GetTargetHeight() - Y);
 
-	D3D11_VIEWPORT vp = CD3D11_VIEWPORT(X, Y, Wd, Ht,
-		0.0f,
-		1.0f);
-	float nearz = xfmem.viewport.farZ - MathUtil::Clamp<float>(xfmem.viewport.zRange, 0.0f, 16777216.0f);
-	float farz = xfmem.viewport.farZ;
-
-	const bool nonStandartViewport = g_ActiveConfig.bViewportCorrection && (nearz < 0.f || farz > 16777216.0f || nearz >= 16777216.0f || farz <= 0.f);
-	if (!nonStandartViewport)
-	{
-		vp.MaxDepth = 1.0f - (MathUtil::Clamp<float>(nearz, 0.0f, 16777215.0f) / 16777216.0f);
-		vp.MinDepth = 1.0f - (MathUtil::Clamp<float>(farz, 0.0f, 16777215.0f) / 16777216.0f);
-	}
+	// We do depth clipping and depth range in the vertex shader instead of relying
+	// on the graphics API. However we still need to ensure depth values don't exceed
+	// the maximum value supported by the console GPU.
+	D3D11_VIEWPORT vp = CD3D11_VIEWPORT(X, Y, Wd, Ht, 1.0f - GX_MAX_DEPTH, D3D11_MAX_DEPTH);
 	D3D::context->RSSetViewports(1, &vp);
+	gx_state.zmode.reversed_depth = xfmem.viewport.zRange < 0;
 }
 
 void Renderer::ClearScreen(const EFBRectangle& rc, bool colorEnable, bool alphaEnable, bool zEnable, u32 color, u32 z)
@@ -527,7 +521,14 @@ void Renderer::ClearScreen(const EFBRectangle& rc, bool colorEnable, bool alphaE
 
 	// Color is passed in bgra mode so we need to convert it to rgba
 	u32 rgbaColor = (color & 0xFF00FF00) | ((color >> 16) & 0xFF) | ((color << 16) & 0xFF0000);
-	D3D::drawClearQuad(rgbaColor, 1.0f - ((z & 0xFFFFFF) / 16777216.0f));
+	if (xfmem.viewport.zRange < 0)
+	{
+		D3D::drawClearQuad(rgbaColor, (z & 0xFFFFFF) / 16777216.0f);
+	}
+	else
+	{
+		D3D::drawClearQuad(rgbaColor, 1.0f - ((z & 0xFFFFFF) / 16777216.0f));
+	}
 
 	D3D::stateman->PopDepthState();
 	D3D::stateman->PopBlendState();
@@ -1079,7 +1080,9 @@ void Renderer::SetGenerationMode()
 
 void Renderer::SetDepthMode()
 {
-	gx_state.zmode.hex = bpmem.zmode.hex;
+	gx_state.zmode.testenable = (u32)bpmem.zmode.testenable;
+	gx_state.zmode.func = bpmem.zmode.func;
+	gx_state.zmode.updateenable = (u32)bpmem.zmode.updateenable;
 }
 
 void Renderer::SetLogicOpMode()

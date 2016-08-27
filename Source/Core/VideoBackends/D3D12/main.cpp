@@ -98,7 +98,7 @@ void VideoBackend::InitBackendInfo()
 	g_Config.backend_info.bSupportsGeometryShaders = true;
 	g_Config.backend_info.bSupports3DVision = true;
 	g_Config.backend_info.bSupportsPostProcessing = true;
-	g_Config.backend_info.bSupportsClipControl = false;
+	g_Config.backend_info.bSupportsClipControl = true;
 	g_Config.backend_info.bSupportsNormalMaps = true;
 	g_Config.backend_info.bSupportsEarlyZ = true;
 	g_Config.backend_info.bSupportsBBox = true;
@@ -108,6 +108,7 @@ void VideoBackend::InitBackendInfo()
 	g_Config.backend_info.bSupportsSSAA = true;
 	g_Config.backend_info.bSupportsComputeTextureDecoding = false;
 	g_Config.backend_info.bSupportsComputeTextureEncoding = false;
+	g_Config.backend_info.bSupportsDepthClamp = true;
 	IDXGIFactory* factory;
 	IDXGIAdapter* ad;
 	hr = create_dxgi_factory(__uuidof(IDXGIFactory), (void**)&factory);

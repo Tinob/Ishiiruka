@@ -89,11 +89,12 @@ void VideoBackend::InitBackendInfo()
 	g_Config.backend_info.bSupportsGeometryShaders = false;
 	g_Config.backend_info.bSupports3DVision = false;
 	g_Config.backend_info.bSupportsPostProcessing = false;
-	g_Config.backend_info.bSupportsClipControl = false;
+	g_Config.backend_info.bSupportsClipControl = true;
 	g_Config.backend_info.bSupportsSSAA = false;
 	g_Config.backend_info.bSupportsTessellation = false;
 	g_Config.backend_info.bSupportsComputeTextureDecoding = false;
 	g_Config.backend_info.bSupportsComputeTextureEncoding = false;
+	g_Config.backend_info.bSupportsDepthClamp = true;
 	// adapters
 	g_Config.backend_info.Adapters.clear();
 	for (int i = 0; i < DX9::D3D::GetNumAdapters(); ++i)

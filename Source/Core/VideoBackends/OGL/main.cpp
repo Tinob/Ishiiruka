@@ -120,6 +120,7 @@ void VideoBackend::InitBackendInfo()
 	g_Config.backend_info.bSupportsTessellation = false;
 	g_Config.backend_info.bSupportsComputeTextureDecoding = false;
 	g_Config.backend_info.bSupportsComputeTextureEncoding = false;
+	g_Config.backend_info.bSupportsDepthClamp = true;
 	g_Config.backend_info.Adapters.clear();
 
 	// aamodes

@@ -92,7 +92,7 @@ static struct
 {
 	SamplerState sampler[16];
 	BlendState blend;
-	ZMode zmode;
+	DepthState zmode;
 	RasterizerState raster;
 
 } gx_state;
@@ -269,6 +269,7 @@ Renderer::Renderer(void*& window_handle)
 	gx_state.zmode.testenable = false;
 	gx_state.zmode.updateenable = false;
 	gx_state.zmode.func = ZMode::NEVER;
+	gx_state.zmode.reversed_depth = false;
 
 	gx_state.raster.cull_mode = D3D12_CULL_MODE_NONE;
 
@@ -504,16 +505,8 @@ void Renderer::SetViewport()
 	width = (x + width <= GetTargetWidth()) ? width : (GetTargetWidth() - x);
 	height = (y + height <= GetTargetHeight()) ? height : (GetTargetHeight() - y);
 
-	s_vp = { x, y, width, height, 0.0f, 1.0f };
-	float nearz = xfmem.viewport.farZ - MathUtil::Clamp<float>(xfmem.viewport.zRange, 0.0f, 16777216.0f);
-	float farz = xfmem.viewport.farZ;
-
-	const bool nonStandartViewport = g_ActiveConfig.bViewportCorrection && (nearz < 0.f || farz > 16777216.0f || nearz >= 16777216.0f || farz <= 0.f);
-	if (!nonStandartViewport)
-	{
-		s_vp.MaxDepth = 1.0f - (MathUtil::Clamp<float>(nearz, 0.0f, 16777215.0f) / 16777216.0f);
-		s_vp.MinDepth = 1.0f - (MathUtil::Clamp<float>(farz, 0.0f, 16777215.0f) / 16777216.0f);
-	}
+	s_vp = { x, y, width, height, 1.0f - GX_MAX_DEPTH, D3D12_MAX_DEPTH };
+	gx_state.zmode.reversed_depth = xfmem.viewport.zRange < 0;
 	s_viewport_dirty = true;
 }
 
@@ -558,7 +551,15 @@ void Renderer::ClearScreen(const EFBRectangle& rc, bool color_enable, bool alpha
 
 	// Color is passed in bgra mode so we need to convert it to rgba
 	u32 rgba_color = (color & 0xFF00FF00) | ((color >> 16) & 0xFF) | ((color << 16) & 0xFF0000);
-	D3D::DrawClearQuad(rgba_color, 1.0f - (z & 0xFFFFFF) / 16777216.0f, blend_desc, depth_stencil_desc, FramebufferManager::GetEFBColorTexture()->GetMultisampled());
+	if (xfmem.viewport.zRange < 0)
+	{
+		D3D::DrawClearQuad(rgba_color, (z & 0xFFFFFFu) / 16777216.0f, blend_desc, depth_stencil_desc, FramebufferManager::GetEFBColorTexture()->GetMultisampled());
+	}
+	else
+	{
+		D3D::DrawClearQuad(rgba_color, 1.0f - (z & 0xFFFFFFu) / 16777216.0f, blend_desc, depth_stencil_desc, FramebufferManager::GetEFBColorTexture()->GetMultisampled());
+	}
+	
 
 	// Restores proper viewport/scissor settings.
 	RestoreAPIState();
@@ -1233,7 +1234,9 @@ void Renderer::SetGenerationMode()
 
 void Renderer::SetDepthMode()
 {
-	gx_state.zmode.hex = bpmem.zmode.hex;
+	gx_state.zmode.testenable = (u32)bpmem.zmode.testenable;
+	gx_state.zmode.func = bpmem.zmode.func;
+	gx_state.zmode.updateenable = (u32)bpmem.zmode.updateenable;
 
 	D3D::command_list_mgr->SetCommandListDirtyState(COMMAND_LIST_STATE_PSO, true);
 }

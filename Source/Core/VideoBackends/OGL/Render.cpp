@@ -426,6 +426,9 @@ Renderer::Renderer()
 	// OpenGL ES 3.1 supports it implicitly without an extension
 	g_Config.backend_info.bSupportsBindingLayout = GLExtensions::Supports("GL_ARB_shading_language_420pack");
 
+	// Clip distance support is useless without a method to clamp the depth range
+	g_Config.backend_info.bSupportsDepthClamp = GLExtensions::Supports("GL_ARB_depth_clamp");
+
 	g_ogl_config.bSupportsGLSLCache = GLExtensions::Supports("GL_ARB_get_program_binary");
 	g_ogl_config.bSupportsGLPinnedMemory = GLExtensions::Supports("GL_AMD_pinned_memory");
 	g_ogl_config.bSupportsGLSync = GLExtensions::Supports("GL_ARB_sync");
@@ -454,6 +457,11 @@ Renderer::Renderer()
 
 		g_ogl_config.bSupportsGLSLCache = true;
 		g_ogl_config.bSupportsGLSync = true;
+
+
+		// TODO: Implement support for GL_EXT_clip_cull_distance when there is an extension for
+		// depth clamping.
+		g_Config.backend_info.bSupportsDepthClamp = false;
 
 		if (strstr(g_ogl_config.glsl_version, "3.0"))
 		{
@@ -545,7 +553,7 @@ Renderer::Renderer()
 		g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT1] = GLExtensions::Supports("GL_EXT_texture_compression_s3tc");
 		g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT3] = g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT1];
 		g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT5] = g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT1];
-		
+
 		// Desktop OpenGL can't have the Android Extension Pack
 		g_ogl_config.bSupportsAEP = false;
 	}
@@ -603,7 +611,7 @@ Renderer::Renderer()
 		g_ogl_config.gl_renderer,
 		g_ogl_config.gl_version), 5000);
 
-	WARN_LOG(VIDEO, "Missing OGL Extensions: %s%s%s%s%s%s%s%s%s%s%s%s",
+	WARN_LOG(VIDEO, "Missing OGL Extensions: %s%s%s%s%s%s%s%s%s%s%s%s%s",
 		g_ActiveConfig.backend_info.bSupportsDualSourceBlend ? "" : "DualSourceBlend ",
 		g_ActiveConfig.backend_info.bSupportsEarlyZ ? "" : "EarlyZ ",
 		g_ogl_config.bSupportsGLPinnedMemory ? "" : "PinnedMemory ",
@@ -615,7 +623,8 @@ Renderer::Renderer()
 		g_ActiveConfig.backend_info.bSupportsSSAA ? "" : "SSAA ",
 		g_ActiveConfig.backend_info.bSupportsGSInstancing ? "" : "GSInstancing ",
 		g_ActiveConfig.backend_info.bSupportsClipControl ? "" : "ClipControl ",
-		g_ogl_config.bSupportsCopySubImage ? "" : "CopyImageSubData "
+		g_ogl_config.bSupportsCopySubImage ? "" : "CopyImageSubData ",
+		g_ActiveConfig.backend_info.bSupportsDepthClamp ? "" : "DepthClamp "
 	);
 
 	s_last_multisamples = g_ActiveConfig.iMultisamples;
@@ -659,6 +668,13 @@ Renderer::Renderer()
 	glClearDepthf(1.0f);
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
+
+	if (g_ActiveConfig.backend_info.bSupportsDepthClamp)
+	{
+		glEnable(GL_CLIP_DISTANCE0);
+		glEnable(GL_CLIP_DISTANCE1);
+		glEnable(GL_DEPTH_CLAMP);
+	}
 
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);  // 4-byte pixel alignment
 
@@ -1050,7 +1066,21 @@ void Renderer::SetViewport()
 		};
 		glViewport(iceilf(X), iceilf(Y), iceilf(Width), iceilf(Height));
 	}
-	glDepthRangef(GLFar, GLNear);
+	// Set the reversed depth range. If we do depth clipping and depth range in the
+	// vertex shader we only need to ensure depth values don't exceed the maximum
+	// value supported by the console GPU. If not, we simply clamp the near/far values
+	// themselves to the maximum value as done above.
+	if (g_ActiveConfig.backend_info.bSupportsDepthClamp)
+	{
+		if (xfmem.viewport.zRange < 0.0f)
+			glDepthRangef(0.0f, GX_MAX_DEPTH);
+		else
+			glDepthRangef(GX_MAX_DEPTH, 0.0f);
+	}
+	else
+	{
+		glDepthRangef(GLFar, GLNear);
+	}
 }
 
 void Renderer::ClearScreen(const EFBRectangle& rc, bool colorEnable, bool alphaEnable, bool zEnable, u32 color, u32 z)
@@ -1582,6 +1612,11 @@ void Renderer::ResetAPIState()
 	glDisable(GL_BLEND);
 	if (GLInterface->GetMode() == GLInterfaceMode::MODE_OPENGL)
 		glDisable(GL_COLOR_LOGIC_OP);
+	if (g_ActiveConfig.backend_info.bSupportsDepthClamp)
+	{
+		glDisable(GL_CLIP_DISTANCE0);
+		glDisable(GL_CLIP_DISTANCE1);
+	}
 	glDepthMask(GL_FALSE);
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 }
@@ -1590,6 +1625,11 @@ void Renderer::RestoreAPIState()
 {
 	// Gets us back into a more game-like state.
 	glEnable(GL_SCISSOR_TEST);
+	if (g_ActiveConfig.backend_info.bSupportsDepthClamp)
+	{
+		glEnable(GL_CLIP_DISTANCE0);
+		glEnable(GL_CLIP_DISTANCE1);
+	}
 	SetGenerationMode();
 	BPFunctions::SetScissor();
 	SetColorMask();

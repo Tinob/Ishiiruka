@@ -193,8 +193,8 @@ void PixelShaderManager::SetConstants()
 		if (s_use_integer_constants)
 		{
 			m_buffer.SetConstant4<int>(C_ZBIAS + 1,
-				(u32)xfmem.viewport.farZ,
-				(u32)xfmem.viewport.zRange,
+				(int)xfmem.viewport.farZ,
+				(int)xfmem.viewport.zRange,
 				0,
 				lastZBias);
 		}

@@ -793,10 +793,6 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
 		szr_efb->Add(Fast_efb_cache, 0, wxBOTTOM | wxLEFT, 5);
 		szr_efb->Add(emulate_efb_format_changes, 0, wxBOTTOM | wxLEFT, 5);
 		szr_efb->Add(CreateCheckBox(page_hacks, _("Store EFB copies to Texture Only"), (skip_efb_copy_to_ram_desc), vconfig.bSkipEFBCopyToRam), 0, wxBOTTOM | wxLEFT, 5);
-#if defined WIN32
-		vieport_correction = CreateCheckBox(page_hacks, _("Viewport Correction"), (viewport_correction_desc), vconfig.bViewportCorrection, false);
-		szr_efb->Add(vieport_correction, 0, wxBOTTOM | wxLEFT, 5);
-#endif	
 		szr_hacks->Add(szr_efb, 0, wxEXPAND | wxALL, 5);
 
 		// Texture cache
@@ -1438,9 +1434,7 @@ void VideoConfigDiag::OnUpdateUI(wxUpdateUIEvent& ev)
 #if defined WIN32
 	// Borderless Fullscreen
 	borderless_fullscreen->Enable((vconfig.backend_info.APIType & API_D3D9) == 0);
-	borderless_fullscreen->Show((vconfig.backend_info.APIType & API_D3D9) == 0);
-	// Viewport correction
-	vieport_correction->Show(vconfig.backend_info.APIType != API_OPENGL);
+	borderless_fullscreen->Show((vconfig.backend_info.APIType & API_D3D9) == 0);	
 #endif	
 	// EFB Access Cache
 	Fast_efb_cache->Show(vconfig.bEFBAccessEnable);

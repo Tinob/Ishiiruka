@@ -421,20 +421,31 @@ void VertexShaderManager::SetConstants()
 		const float pixel_center_correction = ((g_ActiveConfig.backend_info.APIType & API_D3D9) ? 0.0f : 0.5f) - 7.0f / 12.0f;
 		const float pixel_size_x = 2.f / Renderer::EFBToScaledXf(2.f * xfmem.viewport.wd);
 		const float pixel_size_y = 2.f / Renderer::EFBToScaledXf(2.f * xfmem.viewport.ht);
-		float nearz = xfmem.viewport.farZ - xfmem.viewport.zRange;
+		float rangez = xfmem.viewport.zRange;
 		float farz = xfmem.viewport.farZ;
-		const bool nonStandartViewport = (g_ActiveConfig.backend_info.APIType != API_OPENGL && g_ActiveConfig.bViewportCorrection)
-			&& (nearz < 0.f || farz > 16777216.0f || nearz >= 16777216.0f || farz <= 0.f);
-		float rangez = 1.0f;
-		if (nonStandartViewport)
+		if (g_ActiveConfig.backend_info.APIType & API_D3D9)
 		{
-			farz *= U24_NORM_COEF;
-			rangez = xfmem.viewport.zRange * U24_NORM_COEF;
+			if (rangez >= 0.0f)
+			{
+				rangez = 16777215.0f;
+				farz = 16777215.0f;
+			}
+			rangez = rangez / 16777215.0f;
+			farz = 1.0f - (farz / 16777215.0f);
 		}
 		else
 		{
-			farz = 1.0f;
+			rangez = abs(rangez) / 16777215.0f;
+			if (xfmem.viewport.zRange < 0.0f)
+			{
+				farz = farz / 16777215.0f;
+			}
+			else
+			{
+				farz = 1.0f - (farz / 16777215.0f);
+			}
 		}
+
 		m_buffer.SetConstant4(C_DEPTHPARAMS,
 			farz,
 			rangez,

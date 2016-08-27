@@ -186,7 +186,6 @@ struct VideoConfig final
 
 	bool bFastDepthCalc;
 	int iBBoxMode;
-	bool bViewportCorrection;
 	//for dx9-backend
 	bool bForceDualSourceBlend;
 	int iLog; // CONF_ bits
@@ -245,6 +244,7 @@ struct VideoConfig final
 		bool bSupportsSSAA;
 		bool bSupportsTessellation;
 		bool bSupportsScaling;
+		bool bSupportsDepthClamp;  // Needed by VertexShaderGen, so must stay in VideoCommon
 		bool bSupportsComputeTextureDecoding;
 		bool bSupportsComputeTextureEncoding;
 	} backend_info;

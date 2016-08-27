@@ -65,8 +65,8 @@ public:
 		blend_state.hex = key.blend_state_hex;
 		desc.BlendState = StateCache::GetDesc(blend_state);
 
-		ZMode depth_stencil_state = {};
-		depth_stencil_state.hex = key.depth_stencil_state_hex;
+		DepthState depth_stencil_state = {};
+		depth_stencil_state.packed = key.depth_stencil_state_hex;
 		desc.DepthStencilState = StateCache::GetDesc(depth_stencil_state);
 
 		RasterizerState rasterizer_state = {};
@@ -102,7 +102,7 @@ public:
 
 		SmallPsoDesc small_desc = {};
 		small_desc.blend_state.hex = key.blend_state_hex;
-		small_desc.depth_stencil_state.hex = key.depth_stencil_state_hex;
+		small_desc.depth_stencil_state.packed = key.depth_stencil_state_hex;
 		small_desc.rasterizer_state.hex = key.rasterizer_state_hex;
 		small_desc.gs_bytecode = desc.GS;
 		small_desc.vs_bytecode = desc.VS;
@@ -326,7 +326,7 @@ D3D12_RASTERIZER_DESC StateCache::GetDesc(RasterizerState state)
 		0,
 		0.f,
 		0,
-		true,
+		false,
 		true,
 		false,
 		0,
@@ -334,7 +334,7 @@ D3D12_RASTERIZER_DESC StateCache::GetDesc(RasterizerState state)
 	};
 }
 
-inline D3D12_DEPTH_STENCIL_DESC StateCache::GetDesc(ZMode state)
+inline D3D12_DEPTH_STENCIL_DESC StateCache::GetDesc(DepthState state)
 {
 	D3D12_DEPTH_STENCIL_DESC depthdc;
 
@@ -358,11 +358,23 @@ inline D3D12_DEPTH_STENCIL_DESC StateCache::GetDesc(ZMode state)
 		D3D12_COMPARISON_FUNC_ALWAYS
 	};
 
+	const D3D12_COMPARISON_FUNC d3dInvCmpFuncs[8] =
+	{
+		D3D12_COMPARISON_FUNC_NEVER,
+		D3D12_COMPARISON_FUNC_LESS_EQUAL,
+		D3D12_COMPARISON_FUNC_EQUAL,
+		D3D12_COMPARISON_FUNC_LESS,
+		D3D12_COMPARISON_FUNC_GREATER_EQUAL,
+		D3D12_COMPARISON_FUNC_NOT_EQUAL,
+		D3D12_COMPARISON_FUNC_GREATER,
+		D3D12_COMPARISON_FUNC_ALWAYS
+	};
+
 	if (state.testenable)
 	{
 		depthdc.DepthEnable = TRUE;
 		depthdc.DepthWriteMask = state.updateenable ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
-		depthdc.DepthFunc = d3dCmpFuncs[state.func];
+		depthdc.DepthFunc = state.reversed_depth ? d3dInvCmpFuncs[state.func] : d3dCmpFuncs[state.func];
 	}
 	else
 	{
@@ -441,7 +453,7 @@ HRESULT StateCache::GetPipelineStateObjectFromCache(const SmallPsoDesc& pso_desc
 		// This contains all of the information needed to reconstruct a PSO at startup.
 		SmallPsoDiskDesc disk_desc = {};
 		disk_desc.blend_state_hex = pso_desc.blend_state.hex;
-		disk_desc.depth_stencil_state_hex = pso_desc.depth_stencil_state.hex;
+		disk_desc.depth_stencil_state_hex = pso_desc.depth_stencil_state.packed;
 		disk_desc.rasterizer_state_hex = pso_desc.rasterizer_state.hex;
 		disk_desc.gs_uid = *gs_uid;
 		disk_desc.ps_uid = *ps_uid;
