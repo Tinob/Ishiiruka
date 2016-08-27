@@ -89,32 +89,32 @@ void TASInputDlg::CreateBaseLayout()
 }
 
 const int TASInputDlg::m_gc_pad_buttons_bitmask[12] = {
-		PAD_BUTTON_DOWN, PAD_BUTTON_UP, PAD_BUTTON_LEFT, PAD_BUTTON_RIGHT,
-		PAD_BUTTON_A,    PAD_BUTTON_B,  PAD_BUTTON_X,    PAD_BUTTON_Y,
-		PAD_TRIGGER_Z,   PAD_TRIGGER_L, PAD_TRIGGER_R,   PAD_BUTTON_START };
+	PAD_BUTTON_DOWN, PAD_BUTTON_UP, PAD_BUTTON_LEFT, PAD_BUTTON_RIGHT,
+	PAD_BUTTON_A,    PAD_BUTTON_B,  PAD_BUTTON_X,    PAD_BUTTON_Y,
+	PAD_TRIGGER_Z,   PAD_TRIGGER_L, PAD_TRIGGER_R,   PAD_BUTTON_START };
 
 const int TASInputDlg::m_wii_buttons_bitmask[11] = {
-		WiimoteEmu::Wiimote::PAD_DOWN,    WiimoteEmu::Wiimote::PAD_UP,
-		WiimoteEmu::Wiimote::PAD_LEFT,    WiimoteEmu::Wiimote::PAD_RIGHT,
-		WiimoteEmu::Wiimote::BUTTON_A,    WiimoteEmu::Wiimote::BUTTON_B,
-		WiimoteEmu::Wiimote::BUTTON_ONE,  WiimoteEmu::Wiimote::BUTTON_TWO,
-		WiimoteEmu::Wiimote::BUTTON_PLUS, WiimoteEmu::Wiimote::BUTTON_MINUS,
-		WiimoteEmu::Wiimote::BUTTON_HOME,
+	WiimoteEmu::Wiimote::PAD_DOWN,    WiimoteEmu::Wiimote::PAD_UP,
+	WiimoteEmu::Wiimote::PAD_LEFT,    WiimoteEmu::Wiimote::PAD_RIGHT,
+	WiimoteEmu::Wiimote::BUTTON_A,    WiimoteEmu::Wiimote::BUTTON_B,
+	WiimoteEmu::Wiimote::BUTTON_ONE,  WiimoteEmu::Wiimote::BUTTON_TWO,
+	WiimoteEmu::Wiimote::BUTTON_PLUS, WiimoteEmu::Wiimote::BUTTON_MINUS,
+	WiimoteEmu::Wiimote::BUTTON_HOME,
 };
 
 const int TASInputDlg::m_cc_buttons_bitmask[15] = {
-		WiimoteEmu::Classic::PAD_DOWN,    WiimoteEmu::Classic::PAD_UP,
-		WiimoteEmu::Classic::PAD_LEFT,    WiimoteEmu::Classic::PAD_RIGHT,
-		WiimoteEmu::Classic::BUTTON_A,    WiimoteEmu::Classic::BUTTON_B,
-		WiimoteEmu::Classic::BUTTON_X,    WiimoteEmu::Classic::BUTTON_Y,
-		WiimoteEmu::Classic::BUTTON_PLUS, WiimoteEmu::Classic::BUTTON_MINUS,
-		WiimoteEmu::Classic::TRIGGER_L,   WiimoteEmu::Classic::TRIGGER_R,
-		WiimoteEmu::Classic::BUTTON_ZR,   WiimoteEmu::Classic::BUTTON_ZL,
-		WiimoteEmu::Classic::BUTTON_HOME,
+	WiimoteEmu::Classic::PAD_DOWN,    WiimoteEmu::Classic::PAD_UP,
+	WiimoteEmu::Classic::PAD_LEFT,    WiimoteEmu::Classic::PAD_RIGHT,
+	WiimoteEmu::Classic::BUTTON_A,    WiimoteEmu::Classic::BUTTON_B,
+	WiimoteEmu::Classic::BUTTON_X,    WiimoteEmu::Classic::BUTTON_Y,
+	WiimoteEmu::Classic::BUTTON_PLUS, WiimoteEmu::Classic::BUTTON_MINUS,
+	WiimoteEmu::Classic::TRIGGER_L,   WiimoteEmu::Classic::TRIGGER_R,
+	WiimoteEmu::Classic::BUTTON_ZR,   WiimoteEmu::Classic::BUTTON_ZL,
+	WiimoteEmu::Classic::BUTTON_HOME,
 };
 
 const std::string TASInputDlg::m_cc_button_names[] = {
-		"Down", "Up", "Left", "Right", "A", "B", "X", "Y", "+", "-", "L", "R", "ZR", "ZL", "Home" };
+	"Down", "Up", "Left", "Right", "A", "B", "X", "Y", "+", "-", "L", "R", "ZR", "ZL", "Home" };
 
 void TASInputDlg::CreateWiiLayout(int num)
 {
@@ -506,6 +506,7 @@ void TASInputDlg::ResetValues()
 		if (button != nullptr)
 		{
 			button->value = false;
+			button->is_checked = false;
 			button->checkbox->SetValue(false);
 		}
 	}
@@ -524,6 +525,7 @@ void TASInputDlg::ResetValues()
 		for (Button& button : m_cc_buttons)
 		{
 			button.value = false;
+			button.is_checked = false;
 			button.checkbox->SetValue(false);
 		}
 
@@ -1069,21 +1071,8 @@ void TASInputDlg::OnMouseDownL(wxMouseEvent& event)
 
 void TASInputDlg::SetTurbo(wxMouseEvent& event)
 {
-	Button* button = nullptr;
-
-	for (Button* const btn : m_buttons)
-	{
-		if (btn != nullptr && event.GetId() == btn->id)
-			button = btn;
-	}
-	if (m_ext == 2)
-	{
-		for (size_t i = 0; i < ArraySize(m_cc_buttons); ++i)
-		{
-			if (event.GetId() == m_cc_buttons[i].id)
-				button = &m_cc_buttons[i];
-		}
-	}
+	auto cbox = static_cast<wxCheckBox*>(event.GetEventObject());
+	auto button = static_cast<Button*>(cbox->GetClientData());
 
 	if (event.LeftDown())
 	{
@@ -1097,6 +1086,7 @@ void TASInputDlg::SetTurbo(wxMouseEvent& event)
 	if (button)
 	{
 		button->checkbox->SetValue(true);
+		button->is_checked = true;
 		button->turbo_on = !button->turbo_on;
 	}
 

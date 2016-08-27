@@ -523,12 +523,14 @@ void ControlDialog::DetectControl(wxCommandEvent& event)
 
 void GamepadPage::DetectControl(wxCommandEvent& event)
 {
-	ControlButton* btn = (ControlButton*)event.GetEventObject();
-	if (DetectButton(btn) && m_iterate == true)
+	auto* btn = static_cast<ControlButton*>(event.GetEventObject());
+	if (DetectButton(btn) && m_iterate)
 	{
 		auto it = std::find(control_buttons.begin(), control_buttons.end(), btn);
+		// it can and will be control_buttons.end() for any control that is in the exclude list.
+		if (it == control_buttons.end())
+			return;
 
-		// std find will never return end since btn will always be found in control_buttons
 		++it;
 		for (; it != control_buttons.end(); ++it)
 		{
@@ -775,7 +777,7 @@ ControlGroupBox::ControlGroupBox(ControllerEmu::ControlGroup* const group, wxWin
 	static_bitmap = nullptr;
 	const std::vector<std::string> exclude_buttons = { "Mic", "Modifier" };
 	const std::vector<std::string> exclude_groups = { "IR",          "Swing",     "Tilt",  "Shake",
-																									 "UDP Wiimote", "Extension", "Rumble" };
+		"UDP Wiimote", "Extension", "Rumble" };
 
 	wxFont m_SmallFont(7, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
 	for (auto& control : group->controls)
