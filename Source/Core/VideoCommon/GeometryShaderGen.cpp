@@ -53,8 +53,8 @@ inline void EmitVertex(ShaderCode& out, const geometry_shader_uid_data& uid_data
 		out.Write("\tgl_Position = %s.pos;\n", vertex);
 		if (g_ActiveConfig.backend_info.bSupportsDepthClamp)
 		{
-			out.Write("\tgl_ClipDistance[0] = %s.clipDist0;\n", vertex);
-			out.Write("\tgl_ClipDistance[1] = %s.clipDist1;\n", vertex);
+			out.Write("\tgl_ClipDistance[0] = %s.clipDist.x;\n", vertex);
+			out.Write("\tgl_ClipDistance[1] = %s.clipDist.y;\n", vertex);
 		}
 		AssignVSOutputMembers<ApiType>(out, "ps", vertex, uid_data.pixel_lighting, uid_data.numTexGens);
 	}
@@ -246,8 +246,8 @@ inline void GenerateGeometryShader(ShaderCode& out, const geometry_shader_uid_da
 		{
 			// On certain GPUs we have to consume the clip distance from the vertex shader
 			// or else the other vertex shader outputs will get corrupted.
-			out.Write("\tf.clipDist0 = gl_in[i].gl_ClipDistance[0];\n");
-			out.Write("\tf.clipDist1 = gl_in[i].gl_ClipDistance[1];\n");
+			out.Write("\tf.clipDist.x = gl_in[i].gl_ClipDistance[0];\n");
+			out.Write("\tf.clipDist.y = gl_in[i].gl_ClipDistance[1];\n");
 		}
 	}
 	else

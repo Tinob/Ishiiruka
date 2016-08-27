@@ -236,8 +236,8 @@ inline void AssignVSOutputMembers(ShaderCode& object, const char* a, const char*
 	}
 	if (!(api_type & API_D3D9))
 	{
-		object.Write("\t%s.clipDist0 = %s.clipDist0;\n", a, b);
-		object.Write("\t%s.clipDist1 = %s.clipDist1;\n", a, b);
+		object.Write("\t%s.clipDist.x = %s.clipDist.x;\n", a, b);
+		object.Write("\t%s.clipDist.y = %s.clipDist.y;\n", a, b);
 	}
 }
 
