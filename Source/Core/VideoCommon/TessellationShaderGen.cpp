@@ -57,7 +57,7 @@ struct HSOutput
 	float4 pos: BEZIERPOS;
 	float4 colors_0: COLOR0;
 	float4 colors_1: COLOR1;
-	float2 clipDist: SV_ClipDistance0;
+	float2 clipDist: TANGENT;
 };
 
 [domain("tri")]
