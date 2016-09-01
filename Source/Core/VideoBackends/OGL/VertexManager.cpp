@@ -1,4 +1,4 @@
-// Copyright 2013 Dolphin Emulator Project
+// Copyright 2008 Dolphin Emulator Project
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
@@ -9,8 +9,8 @@
 
 #include "Common/CommonTypes.h"
 #include "Common/FileUtil.h"
-#include "Common/StringUtil.h"
 #include "Common/GL/GLExtensions/GLExtensions.h"
+#include "Common/StringUtil.h"
 
 #include "VideoBackends/OGL/BoundingBox.h"
 #include "VideoBackends/OGL/ProgramShaderCache.h"
@@ -26,7 +26,7 @@
 
 namespace OGL
 {
-//This are the initially requested size for the buffers expressed in bytes
+// This are the initially requested size for the buffers expressed in bytes
 const u32 MAX_IBUFFER_SIZE = 2 * 1024 * 1024;
 const u32 MAX_VBUFFER_SIZE = 32 * 1024 * 1024;
 
@@ -145,7 +145,7 @@ u16* VertexManager::GetIndexBuffer()
 }
 void VertexManager::vFlush(bool useDstAlpha)
 {
-	GLVertexFormat *nativeVertexFmt = (GLVertexFormat*)VertexLoaderManager::GetCurrentVertexFormat();
+	GLVertexFormat* nativeVertexFmt = (GLVertexFormat*)VertexLoaderManager::GetCurrentVertexFormat();
 	u32 stride = nativeVertexFmt->GetVertexStride();
 	// setup the pointers
 	nativeVertexFmt->SetupVertexPointers();
@@ -179,7 +179,7 @@ void VertexManager::vFlush(bool useDstAlpha)
 	Draw(stride);
 
 	// run through vertex groups again to set alpha
-	if (useDstAlpha && !dualSourcePossible)
+	if (useDstAlpha && (!dualSourcePossible || (bpmem.blendmode.logicopenable && !bpmem.blendmode.blendenable)))
 	{
 		ProgramShaderCache::SetShader(PSRM_ALPHA_PASS, VertexLoaderManager::g_current_components, current_primitive_type);
 
@@ -187,6 +187,7 @@ void VertexManager::vFlush(bool useDstAlpha)
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
 
 		glDisable(GL_BLEND);
+		glDisable(GL_COLOR_LOGIC_OP);
 
 		Draw(stride);
 
@@ -195,11 +196,12 @@ void VertexManager::vFlush(bool useDstAlpha)
 
 		if (bpmem.blendmode.blendenable || bpmem.blendmode.subtract)
 			glEnable(GL_BLEND);
+		if (bpmem.blendmode.logicopenable && !bpmem.blendmode.blendenable)
+			glEnable(GL_COLOR_LOGIC_OP);
 	}
 	g_Config.iSaveTargetId++;
 
 	ClearEFBCache();
 }
-
 
 }  // namespace

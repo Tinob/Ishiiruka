@@ -2,8 +2,6 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
-
-
 // OpenGL Backend Documentation
 /*
 
@@ -35,11 +33,11 @@ addition to the one for display.
 Make AA apply instantly during gameplay if possible
 
 */
+
 #include <memory>
 #include <string>
 #include <vector>
 
-#include "Common/Atomic.h"
 #include "Common/CommonPaths.h"
 #include "Common/FileSearch.h"
 #include "Common/GL/GLInterfaceBase.h"
@@ -73,7 +71,6 @@ Make AA apply instantly during gameplay if possible
 
 namespace OGL
 {
-
 // Draw messages on top of the screen
 unsigned int VideoBackend::PeekMessages()
 {
@@ -121,9 +118,10 @@ void VideoBackend::InitBackendInfo()
 	g_Config.backend_info.bSupportsComputeTextureDecoding = false;
 	g_Config.backend_info.bSupportsComputeTextureEncoding = false;
 	g_Config.backend_info.bSupportsDepthClamp = true;
+
 	g_Config.backend_info.Adapters.clear();
 
-	// aamodes
+	// aamodes - 1 is to stay consistent with D3D (means no AA)
 	g_Config.backend_info.AAModes = { 1, 2, 4, 8 };
 }
 
@@ -219,5 +217,4 @@ void VideoBackend::Video_Cleanup()
 	g_renderer.reset();
 	GLInterface->ClearCurrent();
 }
-
 }
