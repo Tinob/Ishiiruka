@@ -541,7 +541,7 @@ void Renderer::ClearScreen(const EFBRectangle& rc, bool colorEnable, bool alphaE
 void Renderer::ReinterpretPixelData(unsigned int convtype)
 {
 	// TODO: MSAA support..
-	D3D11_RECT source = CD3D11_RECT(0, 0, g_renderer->GetTargetWidth(), g_renderer->GetTargetHeight());
+	D3D11_RECT source = CD3D11_RECT(0, 0, GetTargetWidth(), GetTargetHeight());
 
 	ID3D11PixelShader* pixel_shader;
 	if (convtype == 0) pixel_shader = PixelShaderCache::ReinterpRGB8ToRGBA6(true);
@@ -553,17 +553,17 @@ void Renderer::ReinterpretPixelData(unsigned int convtype)
 	}
 
 	// convert data and set the target texture as our new EFB
-	g_renderer->ResetAPIState();
+	ResetAPIState();
 	D3D::context->OMSetRenderTargets(1, &FramebufferManager::GetEFBColorTempTexture()->GetRTV(), nullptr);
-	D3D11_VIEWPORT vp = CD3D11_VIEWPORT(0.f, 0.f, (float)g_renderer->GetTargetWidth(), (float)g_renderer->GetTargetHeight());
+	D3D11_VIEWPORT vp = CD3D11_VIEWPORT(0.f, 0.f, (float)GetTargetWidth(), (float)GetTargetHeight());
 	D3D::context->RSSetViewports(1, &vp);
 
 	D3D::SetPointCopySampler();
 	D3D::drawShadedTexQuad(
 		FramebufferManager::GetEFBColorTexture()->GetSRV(),
 		&source,
-		g_renderer->GetTargetWidth(),
-		g_renderer->GetTargetHeight(),
+		GetTargetWidth(),
+		GetTargetHeight(),
 		pixel_shader,
 		VertexShaderCache::GetSimpleVertexShader(),
 		VertexShaderCache::GetSimpleInputLayout());

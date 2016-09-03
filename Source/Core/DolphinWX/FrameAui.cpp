@@ -18,6 +18,7 @@
 #include <wx/aui/auibar.h>
 #include <wx/aui/auibook.h>
 #include <wx/aui/framemanager.h>
+#include <wx/aui/dockart.h>
 
 #include "Common/CommonTypes.h"
 #include "Common/FileUtil.h"
@@ -32,6 +33,8 @@
 #include "DolphinWX/LogWindow.h"
 #include "DolphinWX/WxUtils.h"
 #include "DolphinWX/Debugger/CodeWindow.h"
+#include "DolphinWX/WxUtils.h"
+#include "DolphinWX/Debugger/DebuggerUIUtil.h"
 
 // ------------
 // Aui events
@@ -622,6 +625,7 @@ void CFrame::TogglePaneStyle(bool On, int EventId)
 			Pane.Dockable(!m_bNoDocking);
 		}
 	}
+	m_Mgr->GetArtProvider()->SetFont(wxAUI_DOCKART_CAPTION_FONT, DebuggerFont);
 	m_Mgr->Update();
 }
 

@@ -370,7 +370,7 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
 				szr_other->Add(CreateCheckBox(page_general, _("Show NetPlay Ping"),
 					wxGetTranslation(show_netplay_ping_desc),
 					vconfig.bShowNetPlayPing));
-				szr_other->Add(CreateCheckBox(page_general, _("Auto adjust Window Size"), (auto_window_size_desc), SConfig::GetInstance().bRenderWindowAutoSize));
+				szr_other->Add(CreateCheckBox(page_general, _("Auto Adjust Window Size"), (auto_window_size_desc), SConfig::GetInstance().bRenderWindowAutoSize));
 				szr_other->Add(CreateCheckBox(page_general, _("Show NetPlay Messages"),
 					wxGetTranslation(show_netplay_messages_desc),
 					vconfig.bShowNetPlayMessages));
@@ -912,7 +912,7 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
 			szr_utility->Add(shaderprecompile = CreateCheckBox(page_advanced, _("Compile Shaders on Startup"), (shader_precompile_desc), vconfig.bCompileShaderOnStartup));
 
 #if !defined WIN32 && defined HAVE_LIBAV
-			szr_utility->Add(CreateCheckBox(page_advanced, _("Frame Dumps use FFV1"), (use_ffv1_desc), vconfig.bUseFFV1));
+			szr_utility->Add(CreateCheckBox(page_advanced, _("Frame Dumps Use FFV1"), (use_ffv1_desc), vconfig.bUseFFV1));
 #endif
 
 			wxStaticBoxSizer* const group_utility = new wxStaticBoxSizer(wxVERTICAL, page_advanced, _("Utility"));

@@ -418,7 +418,7 @@ void Renderer::ClearScreen(const EFBRectangle& rc, bool colorEnable, bool alphaE
 void Renderer::ReinterpretPixelData(unsigned int convtype)
 {
 	RECT source;
-	SetRect(&source, 0, 0, g_renderer->GetTargetWidth(), g_renderer->GetTargetHeight());
+	SetRect(&source, 0, 0, GetTargetWidth(), GetTargetHeight());
 
 	LPDIRECT3DPIXELSHADER9 pixel_shader;
 	if (convtype == 0) pixel_shader = PixelShaderCache::ReinterpRGB8ToRGBA6();
@@ -430,24 +430,24 @@ void Renderer::ReinterpretPixelData(unsigned int convtype)
 	}
 
 	// convert data and set the target texture as our new EFB
-	g_renderer->ResetAPIState();
+	ResetAPIState();
 	D3D::dev->SetRenderTarget(0, FramebufferManager::GetEFBColorReinterpretSurface());
 	D3DVIEWPORT9 vp;
 	vp.X = 0;
 	vp.Y = 0;
-	vp.Width = g_renderer->GetTargetWidth();
-	vp.Height = g_renderer->GetTargetHeight();
+	vp.Width = GetTargetWidth();
+	vp.Height = GetTargetHeight();
 	vp.MinZ = 0.0;
 	vp.MaxZ = 1.0;
 	D3D::dev->SetViewport(&vp);
 	D3D::ChangeSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
 	D3D::drawShadedTexQuad(FramebufferManager::GetEFBColorTexture(), &source,
-		g_renderer->GetTargetWidth(), g_renderer->GetTargetHeight(),
-		g_renderer->GetTargetWidth(), g_renderer->GetTargetHeight(),
+		GetTargetWidth(), GetTargetHeight(),
+		GetTargetWidth(), GetTargetHeight(),
 		pixel_shader, VertexShaderCache::GetSimpleVertexShader(0));
 	FramebufferManager::SwapReinterpretTexture();
 	D3D::RefreshSamplerState(0, D3DSAMP_MINFILTER);
-	g_renderer->RestoreAPIState();
+	RestoreAPIState();
 	FramebufferManager::InvalidateEFBCache();
 }
 

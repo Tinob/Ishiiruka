@@ -532,9 +532,6 @@ TextureCacheBase::TCacheEntryBase* TextureCacheBase::Load(const u32 stage)
 	u32 tex_levels = use_mipmaps ? ((tex.texMode1[id].max_lod + 0xf) / 0x10 + 1) : 1;
 	const bool from_tmem = tex.texImage1[id].image_type != 0;
 
-	if (0 == address)
-		return nullptr;
-
 	// TexelSizeInNibbles(format) * width * height / 16;
 	const u32 bsw = TexDecoder_GetBlockWidthInTexels(texformat);
 	const u32 bsh = TexDecoder_GetBlockHeightInTexels(texformat);

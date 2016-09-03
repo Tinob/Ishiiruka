@@ -937,13 +937,13 @@ u32 Renderer::AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data)
 		{
 			if (s_MSAASamples > 1)
 			{
-				g_renderer->ResetAPIState();
+				ResetAPIState();
 
 				// Resolve our rectangle.
 				FramebufferManager::GetEFBDepthTexture(efbPixelRc);
 				glBindFramebuffer(GL_READ_FRAMEBUFFER, FramebufferManager::GetResolvedFramebuffer());
 
-				g_renderer->RestoreAPIState();
+				RestoreAPIState();
 			}
 
 			std::unique_ptr<float[]> depthMap(new float[targetPixelRcWidth * targetPixelRcHeight]);
@@ -976,13 +976,13 @@ u32 Renderer::AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data)
 		{
 			if (s_MSAASamples > 1)
 			{
-				g_renderer->ResetAPIState();
+				ResetAPIState();
 
 				// Resolve our rectangle.
 				FramebufferManager::GetEFBColorTexture(efbPixelRc);
 				glBindFramebuffer(GL_READ_FRAMEBUFFER, FramebufferManager::GetResolvedFramebuffer());
 
-				g_renderer->RestoreAPIState();
+				RestoreAPIState();
 			}
 
 			std::unique_ptr<u32[]> colorMap(new u32[targetPixelRcWidth * targetPixelRcHeight]);
