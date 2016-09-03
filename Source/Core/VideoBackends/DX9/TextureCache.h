@@ -62,7 +62,7 @@ private:
 		}
 	};
 
-	PC_TexFormat GetNativeTextureFormat(const s32 texformat, const TlutFormat tlutfmt, u32 width, u32 height);
+	PC_TexFormat GetNativeTextureFormat(const s32 texformat, const TlutFormat tlutfmt, u32 width, u32 height) override;
 
 	TCacheEntryBase* CreateTexture(const TCacheEntryConfig& config);
 

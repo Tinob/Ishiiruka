@@ -30,7 +30,7 @@ public:
 	NativeVertexFormat* CreateNativeVertexFormat(const PortableVertexDeclaration& vtx_decl) override;
 	void CreateDeviceObjects() override;
 	void DestroyDeviceObjects() override;
-	void PrepareShaders(PrimitiveType primitive, u32 components, const XFMemory &xfr, const BPMemory &bpm, bool ongputhread);
+	void PrepareShaders(PrimitiveType primitive, u32 components, const XFMemory &xfr, const BPMemory &bpm, bool ongputhread) override;
 	// NativeVertexFormat use this
 	GLuint m_vertex_buffers;
 	GLuint m_index_buffers;
