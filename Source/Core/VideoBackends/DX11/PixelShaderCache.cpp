@@ -6,7 +6,7 @@
 #include "Common/LinearDiskCache.h"
 
 #include "Core/ConfigManager.h"
-
+#include "Core/Host.h"
 #include "VideoBackends/DX11/D3DBase.h"
 #include "VideoBackends/DX11/D3DShader.h"
 #include "VideoBackends/DX11/D3DUtil.h"
@@ -517,10 +517,11 @@ void PixelShaderCache::Init()
 	{
 		size_t shader_count = 0;
 		s_pixel_shaders->ForEachMostUsedByCategory(gameid,
-			[&](const PixelShaderUid& item)
+			[&](const PixelShaderUid& item, size_t total)
 		{
 			CompilePShader(item, true);
 			shader_count++;
+			Host_UpdateTitle(StringFromFormat("Compiling Pixel Shaders %i %%", (shader_count * 100) / total));
 			if ((shader_count & 31) == 0)
 			{
 				s_compiler->WaitForFinish();

@@ -6,6 +6,7 @@
 #include "Common/LinearDiskCache.h"
 
 #include "Core/ConfigManager.h"
+#include "Core/Host.h"
 
 #include "VideoBackends/D3D12/D3DBlob.h"
 #include "VideoBackends/D3D12/D3DCommandListManager.h"
@@ -205,10 +206,11 @@ void ShaderCache::Init()
 	{
 		size_t shader_count = 0;
 		ps_bytecode_cache->ForEachMostUsedByCategory(gameid,
-			[&](const PixelShaderUid& item)
+			[&](const PixelShaderUid& item, size_t total)
 		{
 			HandlePSUIDChange(item, true);
 			shader_count++;
+			Host_UpdateTitle(StringFromFormat("Compiling Pixel Shaders %i %%", (shader_count * 100) / total));
 			if ((shader_count & 31) == 0)
 			{
 				s_compiler->WaitForFinish();
@@ -219,12 +221,13 @@ void ShaderCache::Init()
 			return !entry.m_shader_bytecode.pShaderBytecode;
 		}
 		, true);
-
+		shader_count = 0;
 		vs_bytecode_cache->ForEachMostUsedByCategory(gameid,
-			[&](const VertexShaderUid& item)
+			[&](const VertexShaderUid& item, size_t total)
 		{
 			HandleVSUIDChange(item, true);
 			shader_count++;
+			Host_UpdateTitle(StringFromFormat("Compiling Vertex Shaders %i %%", (shader_count * 100) / total));
 			if ((shader_count & 31) == 0)
 			{
 				s_compiler->WaitForFinish();
@@ -235,12 +238,13 @@ void ShaderCache::Init()
 			return !entry.m_shader_bytecode.pShaderBytecode;
 		}
 		, true);
-
+		shader_count = 0;
 		gs_bytecode_cache->ForEachMostUsedByCategory(gameid,
-			[&](const GeometryShaderUid& item)
+			[&](const GeometryShaderUid& item, size_t total)
 		{
 			HandleGSUIDChange(item, true);
 			shader_count++;
+			Host_UpdateTitle(StringFromFormat("Compiling Geometry Shaders %i %%", (shader_count * 100) / total));
 			if ((shader_count & 31) == 0)
 			{
 				s_compiler->WaitForFinish();
@@ -251,12 +255,13 @@ void ShaderCache::Init()
 			return !entry.m_shader_bytecode.pShaderBytecode;
 		}
 		, true);
-
+		shader_count = 0;
 		ts_bytecode_cache->ForEachMostUsedByCategory(gameid,
-			[&](const TessellationShaderUid& item)
+			[&](const TessellationShaderUid& item, size_t total)
 		{
 			HandleTSUIDChange(item, true);
 			shader_count++;
+			Host_UpdateTitle(StringFromFormat("Compiling Tessellation Shaders %i %%", (shader_count * 100) / total));
 			if ((shader_count & 31) == 0)
 			{
 				s_compiler->WaitForFinish();

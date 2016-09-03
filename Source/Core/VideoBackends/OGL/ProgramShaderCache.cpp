@@ -8,6 +8,8 @@
 #include "Common/MathUtil.h"
 #include "Common/StringUtil.h"
 
+#include "Core/Host.h"
+
 #include "VideoBackends/OGL/ProgramShaderCache.h"
 #include "VideoBackends/OGL/Render.h"
 #include "VideoBackends/OGL/StreamBuffer.h"
@@ -485,12 +487,13 @@ void ProgramShaderCache::Init()
 	last_entry = nullptr;
 	if (g_ActiveConfig.bCompileShaderOnStartup)
 	{
+		size_t shader_count = 0;
 		pshaders->ForEachMostUsedByCategory(gameid,
-			[](const SHADERUID& item)
+			[&](const SHADERUID& item, size_t total)
 		{
 			const pixel_shader_uid_data& uid_data = item.puid.GetUidData();
-
-				
+			shader_count++;
+			Host_UpdateTitle(StringFromFormat("Compiling Shaders %i %%", (shader_count * 100) / total));
 			if ((!uid_data.stereo || g_ActiveConfig.backend_info.bSupportsGeometryShaders)
 				&&(!uid_data.bounding_box || g_ActiveConfig.backend_info.bSupportsBBox))
 			{

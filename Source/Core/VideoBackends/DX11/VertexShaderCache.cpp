@@ -7,6 +7,7 @@
 #include "Common/LinearDiskCache.h"
 
 #include "Core/ConfigManager.h"
+#include "Core/Host.h"
 
 #include "VideoCommon/Debugger.h"
 #include "VideoCommon/HLSLCompiler.h"
@@ -180,10 +181,11 @@ void VertexShaderCache::Init()
 	{
 		size_t shader_count = 0;
 		s_vshaders->ForEachMostUsedByCategory(gameid,
-			[&](const VertexShaderUid& item)
+			[&](const VertexShaderUid& item, size_t total)
 		{
 			CompileVShader(item, true);
 			shader_count++;
+			Host_UpdateTitle(StringFromFormat("Compiling Vertex Shaders %i %%", (shader_count * 100) / total));
 			if ((shader_count & 31) == 0)
 			{
 				s_compiler->WaitForFinish();
