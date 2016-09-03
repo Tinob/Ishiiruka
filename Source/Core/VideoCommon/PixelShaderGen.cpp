@@ -17,6 +17,7 @@
 #include "Common/Logging/Log.h"
 
 #include "VideoCommon/BoundingBox.h"
+#include "VideoCommon/DriverDetails.h"
 #include "VideoCommon/PixelShaderGen.h"
 #include "VideoCommon/VertexShaderGen.h"
 #include "VideoCommon/XFMemory.h"  // for texture projection mode
@@ -719,7 +720,10 @@ inline void WriteAlphaTest(ShaderCode& out, const pixel_shader_uid_data& uid_dat
 		I_ALPHA".g"
 	};
 	// using discard then return works the same in cg and dx9 but not in dx11
-	out.Write("if(!( ");
+	if (DriverDetails::HasBug(DriverDetails::BUG_BROKENNEGATEDBOOLEAN))
+		out.Write("\tif(( ");
+	else
+		out.Write("\tif(!( ");
 
 	// Lookup the first component from the alpha function table
 	int compindex = uid_data.alpha_test_comp0;
@@ -736,7 +740,11 @@ inline void WriteAlphaTest(ShaderCode& out, const pixel_shader_uid_data& uid_dat
 		out.Write(tevAlphaFuncsTableI[compindex], alphaRef[1]);
 	else
 		out.Write(tevAlphaFuncsTable[compindex], alphaRef[1]);
-	out.Write(")) {\n");
+	
+	if (DriverDetails::HasBug(DriverDetails::BUG_BROKENNEGATEDBOOLEAN))
+		out.Write(") == false) {\n");
+	else
+		out.Write(")) {\n");
 
 	out.Write("ocol0 = float4(0.0,0.0,0.0,0.0);\n");
 	if (uid_data.render_mode == PSRM_DUAL_SOURCE_BLEND)
