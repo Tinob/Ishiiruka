@@ -35,7 +35,7 @@ static std::unique_ptr<StreamBuffer> s_indexBuffer;
 static size_t s_baseVertex;
 static size_t s_index_offset;
 static u16* s_index_buffer_base;
-VertexManager::VertexManager() : m_cpu_v_buffer(MAX_VBUFFER_SIZE), m_cpu_i_buffer(MAX_IBUFFER_SIZE)
+VertexManager::VertexManager() : m_cpu_v_buffer(MAXVBUFFERSIZE), m_cpu_i_buffer(MAXIBUFFERSIZE)
 {
 	CreateDeviceObjects();
 }
@@ -66,7 +66,18 @@ void VertexManager::PrepareDrawBuffers(u32 stride)
 {
 	u32 vertex_data_size = IndexGenerator::GetNumVerts() * stride;
 	u32 index_data_size = IndexGenerator::GetIndexLen() * sizeof(u16);
-
+	if (s_vertexBuffer->NeedCPUBuffer())
+	{
+		auto buffer = s_vertexBuffer->Map(MAXVBUFFERSIZE, stride);
+		s_baseVertex = buffer.second / stride;
+		memcpy(buffer.first, m_cpu_v_buffer.data(), vertex_data_size);
+	}
+	if (s_indexBuffer->NeedCPUBuffer())
+	{
+		auto buffer = s_indexBuffer->Map(index_data_size);
+		s_index_offset = buffer.second;
+		memcpy(buffer.first, m_cpu_i_buffer.data(), index_data_size);
+	}
 	s_vertexBuffer->Unmap(vertex_data_size);
 	s_indexBuffer->Unmap(index_data_size);
 
@@ -76,13 +87,10 @@ void VertexManager::PrepareDrawBuffers(u32 stride)
 
 void VertexManager::ResetBuffer(u32 stride)
 {
-	if (s_cull_all)
+	if (s_cull_all || s_vertexBuffer->NeedCPUBuffer())
 	{
-		// This buffer isn't getting sent to the GPU. Just allocate it on the cpu.
 		s_pCurBufferPointer = s_pBaseBufferPointer = m_cpu_v_buffer.data();
 		s_pEndBufferPointer = s_pBaseBufferPointer + m_cpu_v_buffer.size();
-		s_index_buffer_base = (u16*)m_cpu_i_buffer.data();
-		IndexGenerator::Start((u16*)m_cpu_i_buffer.data());
 	}
 	else
 	{
@@ -90,8 +98,16 @@ void VertexManager::ResetBuffer(u32 stride)
 		s_pCurBufferPointer = s_pBaseBufferPointer = buffer.first;
 		s_pEndBufferPointer = buffer.first + MAXVBUFFERSIZE;
 		s_baseVertex = buffer.second / stride;
+	}
 
-		buffer = s_indexBuffer->Map(MAXIBUFFERSIZE * sizeof(u16));
+	if (s_cull_all || s_indexBuffer->NeedCPUBuffer())
+	{
+		s_index_buffer_base = m_cpu_i_buffer.data();
+		IndexGenerator::Start(m_cpu_i_buffer.data());
+	}
+	else
+	{
+		auto buffer = s_indexBuffer->Map(MAXIBUFFERSIZE * sizeof(u16));
 		s_index_buffer_base = (u16*)buffer.first;
 		IndexGenerator::Start(s_index_buffer_base);
 		s_index_offset = buffer.second;
@@ -178,8 +194,9 @@ void VertexManager::vFlush(bool useDstAlpha)
 
 	Draw(stride);
 
+	const bool logic_op_enabled = bpmem.blendmode.logicopenable && bpmem.blendmode.logicmode != BlendMode::LogicOp::COPY && !bpmem.blendmode.blendenable;
 	// run through vertex groups again to set alpha
-	if (useDstAlpha && (!dualSourcePossible || (bpmem.blendmode.logicopenable && !bpmem.blendmode.blendenable)))
+	if (useDstAlpha && (!dualSourcePossible || logic_op_enabled))
 	{
 		ProgramShaderCache::SetShader(PSRM_ALPHA_PASS, VertexLoaderManager::g_current_components, current_primitive_type);
 
@@ -187,7 +204,8 @@ void VertexManager::vFlush(bool useDstAlpha)
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
 
 		glDisable(GL_BLEND);
-		glDisable(GL_COLOR_LOGIC_OP);
+		if (logic_op_enabled)
+			glDisable(GL_COLOR_LOGIC_OP);
 
 		Draw(stride);
 
@@ -196,7 +214,7 @@ void VertexManager::vFlush(bool useDstAlpha)
 
 		if (bpmem.blendmode.blendenable || bpmem.blendmode.subtract)
 			glEnable(GL_BLEND);
-		if (bpmem.blendmode.logicopenable && !bpmem.blendmode.blendenable)
+		if (logic_op_enabled)
 			glEnable(GL_COLOR_LOGIC_OP);
 	}
 	g_Config.iSaveTargetId++;
