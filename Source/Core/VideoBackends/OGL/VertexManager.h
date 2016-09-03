@@ -46,6 +46,6 @@ private:
 
 	// Alternative buffers in CPU memory for primatives we are going to discard.
 	std::vector<u8, Common::aligned_allocator<u8, 16>> m_cpu_v_buffer;
-	std::vector<u16, Common::aligned_allocator<u8, 16>> m_cpu_i_buffer;
+	std::vector<u16, Common::aligned_allocator<u16, 16>> m_cpu_i_buffer;
 };
 }
