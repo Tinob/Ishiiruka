@@ -326,7 +326,7 @@ inline void WriteFetchDisplacement(ShaderCode& out, int n, const Tessellation_sh
 		// ---------
 		// Wrapping
 		// ---------
-		static const char *tevIndWrapStart[] = { "int(0)", "int(256*128)", "int(128*128)", "int(64*128)", "int(32*128)", "int(16*128)", "int(1)" };
+		static const char *tevIndWrapStart[] = { "int(0)", "int(256*128)", "int(128*128)", "int(64*128)", "int(32*128)", "int(16*128)", "int(1)", "int(1)" };
 		// wrap S
 		if (tevind.sw == ITW_OFF)
 			out.Write("wrappedcoord.x = int(uv[%d].x);\n", texcoord);

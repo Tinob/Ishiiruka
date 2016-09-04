@@ -1273,7 +1273,7 @@ inline void WriteFetchStageTexture(ShaderCode& out, const pixel_shader_uid_data&
 		// ---------
 		// Wrapping
 		// ---------
-		static const char *tevIndWrapStart[] = { "wu(0)", "wu(256*128)", "wu(128*128)", "wu(64*128)", "wu(32*128)", "wu(16*128)", "wu(1)" };
+		static const char *tevIndWrapStart[] = { "wu(0)", "wu(256*128)", "wu(128*128)", "wu(64*128)", "wu(32*128)", "wu(16*128)", "wu(1)" , "wu(1)" };
 		// wrap S
 		if (tevind.sw == ITW_OFF)
 			out.Write("wrappedcoord.x = wu(uv%d.x);\n", texcoord);
