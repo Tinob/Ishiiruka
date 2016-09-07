@@ -51,9 +51,9 @@ struct JitBlock
 	u32 originalSize;
 	int runCount;  // for profiling.
 
-	// Whether this struct refers to a valid block. This is mostly useful as
-	// a debugging aid.
-	// FIXME: Change current users of invalid bit to assertions?
+								 // Whether this struct refers to a valid block. This is mostly useful as
+								 // a debugging aid.
+								 // FIXME: Change current users of invalid bit to assertions?
 	bool invalid;
 
 	// Information about exits to a known address from this block.
@@ -122,17 +122,17 @@ private:
 	// It is used to query all blocks which links to an address.
 	std::multimap<u32, int> links_to;  // destination_PC -> number
 
-	// Map indexed by the physical memory location.
-	// It is used to invalidate blocks based on memory location.
+																		 // Map indexed by the physical memory location.
+																		 // It is used to invalidate blocks based on memory location.
 	std::map<std::pair<u32, u32>, u32> block_map;  // (end_addr, start_addr) -> number
 
-	// Map indexed by the physical address of the entry point.
-	// This is used to query the block based on the current PC in a slow way.
-	// TODO: This is redundant with block_map, and both should be a multimap.
+																								 // Map indexed by the physical address of the entry point.
+																								 // This is used to query the block based on the current PC in a slow way.
+																								 // TODO: This is redundant with block_map, and both should be a multimap.
 	std::map<u32, u32> start_block_map;  // start_addr -> number
 
-	// This bitsets shows which cachelines overlap with any blocks.
-	// It is used to provide a fast way to query if no icache invalidation is needed.
+																			 // This bitsets shows which cachelines overlap with any blocks.
+																			 // It is used to provide a fast way to query if no icache invalidation is needed.
 	ValidBlockBitSet valid_block;
 
 	// This array is indexed with the masked PC and likely holds the correct block id.
@@ -159,6 +159,7 @@ public:
 	void FinalizeBlock(int block_num, bool block_link, const u8* code_ptr);
 
 	void Clear();
+	void SchedulateClearCacheThreadSafe();
 	void Init();
 	void Shutdown();
 	void Reset();

@@ -52,7 +52,7 @@ void CBoot::Load_FST(bool _bIsWii)
 
 	const DiscIO::IVolume& volume = DVDInterface::GetVolume();
 
-	// copy first 20 bytes of disc to start of Mem 1
+	// copy first 32 bytes of disc to start of Mem 1
 	DVDRead(/*offset*/ 0, /*address*/ 0, /*length*/ 0x20, false);
 
 	// copy of game id
@@ -240,6 +240,8 @@ bool CBoot::Load_BS2(const std::string& _rBootROMFilename)
 	PowerPC::ppcState.spr[SPR_DBAT1L] = 0x0000002a;
 	PowerPC::ppcState.spr[SPR_DBAT3U] = 0xfff0001f;
 	PowerPC::ppcState.spr[SPR_DBAT3L] = 0xfff00001;
+	PowerPC::DBATUpdated();
+	PowerPC::IBATUpdated();
 	PC = 0x81200150;
 	return true;
 }
@@ -380,6 +382,8 @@ bool CBoot::BootUp()
 			PowerPC::ppcState.spr[SPR_DBAT4L] = 0x10000002;
 			PowerPC::ppcState.spr[SPR_DBAT5U] = 0xd0001fff;
 			PowerPC::ppcState.spr[SPR_DBAT5L] = 0x1000002a;
+			PowerPC::DBATUpdated();
+			PowerPC::IBATUpdated();
 
 			dolLoader.Load();
 			PC = dolLoader.GetEntryPoint();

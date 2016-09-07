@@ -235,11 +235,6 @@ void GetTessellationShaderUID(TessellationShaderUid& out, const XFMemory& xfr, c
 	uid_data.pixel_normals = enablenormalmaps ? 1 : 0;
 	if (enablenormalmaps)
 	{
-		for (u32 i = 0; i < numTexgen; ++i)
-		{
-			// optional perspective divides
-			uid_data.texMtxInfo_n_projection |= xfr.texMtxInfo[i].projection << i;
-		}
 		for (u32 i = 0; i < numindStages; ++i)
 		{
 			if (nIndirectStagesUsed & (1 << i))
@@ -519,26 +514,14 @@ inline void GenerateTessellationShader(ShaderCode& out, const Tessellation_shade
 		}
 		for (u32 i = 0; i < texcount; ++i)
 		{
-
 			out.Write("result.tex%d[i].xyz = patch[i].tex%d.xyz;\n", i, i);
-			if (((uid_data.texMtxInfo_n_projection >> i) & 1) == XF_TEXPROJ_STQ)
-			{
-				out.Write("{\n");
-				out.Write("float2 t0 = patch[i].tex%d.xy;", i);
-				out.Write("if (patch[i].tex%d.z != 0.0) t0 = t0 /patch[i].tex%d.z;", i, i);
-				out.Write("float2 t1 = patch[(i + 1) %% 3].tex%d.xy;", i);
-				out.Write("if (patch[(i + 1) %% 3].tex%d.z != 0.0) t0 = t0 /patch[(i + 1) %% 3].tex%d.z;", i, i);
-				out.Write("result.tex%d[i].w = distance(t0, t1);\n", i);
-				out.Write("}\n");
-			}
-			else
-			{
-				out.Write("{\n");
-				out.Write("float2 t0 = patch[i].tex%d.xy;", i);
-				out.Write("float2 t1 = patch[(i + 1) %% 3].tex%d.xy;", i);
-				out.Write("result.tex%d[i].w = distance(t0, t1);\n", i);
-				out.Write("}\n");
-			}
+			out.Write("{\n");
+			out.Write("float2 t0 = patch[i].tex%d.xy;", i);
+			out.Write("t0 = t0 / ((patch[i].tex%d.z == 0.0) ? 2.0 : patch[i].tex%d.z);", i, i);
+			out.Write("float2 t1 = patch[(i + 1) %% 3].tex%d.xy;", i);
+			out.Write("if (patch[(i + 1) %% 3].tex%d.z != 0.0) t0 = t0 /patch[(i + 1) %% 3].tex%d.z;", i, i);
+			out.Write("result.tex%d[i].w = distance(t0, t1);\n", i);
+			out.Write("}\n");
 		}
 		if (normalpresent)
 		{
@@ -601,8 +584,7 @@ inline void GenerateTessellationShader(ShaderCode& out, const Tessellation_shade
 			{
 				if (((uid_data.texMtxInfo_n_projection >> i) & 1) == XF_TEXPROJ_STQ)
 				{
-					out.Write("if (result.tex%d.z != 0.0)", i);
-					out.Write("\tuv[%d].xy = result.tex%d.xy / result.tex%d.z;\n", i, i, i);
+					out.Write("\tuv[%d].xy = result.tex%d.xy / ((result.tex%d.z == 0.0) ? 2.0 : result.tex%d.z);\n", i, i, i, i);
 				}
 				else
 				{

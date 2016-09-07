@@ -8,10 +8,10 @@
 #include <string>
 
 #include "Common/CommonTypes.h"
+#include "Common/Logging/Log.h"
 #include "Common/MemArena.h"
 #include "Common/MsgHandler.h"
 #include "Common/StringUtil.h"
-#include "Common/Logging/Log.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -19,11 +19,11 @@
 #include <cerrno>
 #include <cstring>
 #include <fcntl.h>
-#include <unistd.h>
 #include <sys/mman.h>
+#include <unistd.h>
 #ifdef ANDROID
-#include <sys/ioctl.h>
 #include <linux/ashmem.h>
+#include <sys/ioctl.h>
 #endif
 #endif
 
@@ -54,7 +54,8 @@ static int AshmemCreateFileMapping(const char* name, size_t size)
 void MemArena::GrabSHMSegment(size_t size)
 {
 #ifdef _WIN32
-	hMemoryMapping = CreateFileMapping(INVALID_HANDLE_VALUE, nullptr, PAGE_READWRITE, 0, (DWORD)(size), nullptr);
+	hMemoryMapping =
+		CreateFileMapping(INVALID_HANDLE_VALUE, nullptr, PAGE_READWRITE, 0, (DWORD)(size), nullptr);
 #elif defined(ANDROID)
 	fd = AshmemCreateFileMapping("Dolphin-emu", size);
 	if (fd < 0)
@@ -83,7 +84,6 @@ void MemArena::GrabSHMSegment(size_t size)
 #endif
 }
 
-
 void MemArena::ReleaseSHMSegment()
 {
 #ifdef _WIN32
@@ -94,17 +94,13 @@ void MemArena::ReleaseSHMSegment()
 #endif
 }
 
-
 void* MemArena::CreateView(s64 offset, size_t size, void* base)
 {
 #ifdef _WIN32
 	return MapViewOfFileEx(hMemoryMapping, FILE_MAP_ALL_ACCESS, 0, (DWORD)((u64)offset), size, base);
 #else
-	void* retval = mmap(
-		base, size,
-		PROT_READ | PROT_WRITE,
-		MAP_SHARED | ((base == nullptr) ? 0 : MAP_FIXED),
-		fd, offset);
+	void* retval = mmap(base, size, PROT_READ | PROT_WRITE,
+		MAP_SHARED | ((base == nullptr) ? 0 : MAP_FIXED), fd, offset);
 
 	if (retval == MAP_FAILED)
 	{
@@ -118,7 +114,6 @@ void* MemArena::CreateView(s64 offset, size_t size, void* base)
 #endif
 }
 
-
 void MemArena::ReleaseView(void* view, size_t size)
 {
 #ifdef _WIN32
@@ -127,7 +122,6 @@ void MemArena::ReleaseView(void* view, size_t size)
 	munmap(view, size);
 #endif
 }
-
 
 u8* MemArena::FindMemoryBase()
 {
@@ -143,7 +137,7 @@ u8* MemArena::FindMemoryBase()
 	return reinterpret_cast<u8*>(0x2300000000ULL);
 #endif
 
-#else // 32 bit
+#else  // 32 bit
 #ifdef ANDROID
 	// Android 4.3 changed how mmap works.
 	// if we map it private and then munmap it, we can't use the base returned.
@@ -162,120 +156,4 @@ u8* MemArena::FindMemoryBase()
 	munmap(base, MemSize);
 	return static_cast<u8*>(base);
 #endif
-}
-
-
-// yeah, this could also be done in like two bitwise ops...
-#define SKIP(a_flags, b_flags) \
-	if (!(a_flags & MV_WII_ONLY) && (b_flags & MV_WII_ONLY)) \
-		continue; \
-	if (!(a_flags & MV_FAKE_VMEM) && (b_flags & MV_FAKE_VMEM)) \
-		continue; \
-
-static bool Memory_TryBase(u8* base, MemoryView* views, int num_views, u32 flags, MemArena* arena)
-{
-	// OK, we know where to find free space. Now grab it!
-	// We just mimic the popular BAT setup.
-
-	int i;
-	for (i = 0; i < num_views; i++)
-	{
-		MemoryView* view = &views[i];
-		void* view_base;
-		bool use_sw_mirror;
-
-		SKIP(flags, view->flags);
-
-#if _ARCH_64
-		// On 64-bit, we map the same file position multiple times, so we
-		// don't need the software fallback for the mirrors.
-		view_base = base + view->virtual_address;
-		use_sw_mirror = false;
-#else
-		// On 32-bit, we don't have the actual address space to store all
-		// the mirrors, so we just map the fallbacks somewhere in our address
-		// space and use the software fallbacks for mirroring.
-		view_base = base + (view->virtual_address & 0x3FFFFFFF);
-		use_sw_mirror = true;
-#endif
-
-		if (use_sw_mirror && (view->flags & MV_MIRROR_PREVIOUS))
-		{
-			view->view_ptr = views[i - 1].view_ptr;
-		}
-		else
-		{
-			view->mapped_ptr = arena->CreateView(view->shm_position, view->size, view_base);
-			view->view_ptr = view->mapped_ptr;
-		}
-
-		if (!view->view_ptr)
-		{
-			// Argh! ERROR! Free what we grabbed so far so we can try again.
-			MemoryMap_Shutdown(views, i + 1, flags, arena);
-			return false;
-		}
-
-		if (view->out_ptr)
-			*(view->out_ptr) = (u8*)view->view_ptr;
-	}
-
-	return true;
-}
-
-static u32 MemoryMap_InitializeViews(MemoryView* views, int num_views, u32 flags)
-{
-	u32 shm_position = 0;
-	u32 last_position = 0;
-
-	for (int i = 0; i < num_views; i++)
-	{
-		// Zero all the pointers to be sure.
-		views[i].mapped_ptr = nullptr;
-
-		SKIP(flags, views[i].flags);
-
-		if (views[i].flags & MV_MIRROR_PREVIOUS)
-			shm_position = last_position;
-		views[i].shm_position = shm_position;
-		last_position = shm_position;
-		shm_position += views[i].size;
-	}
-
-	return shm_position;
-}
-
-u8* MemoryMap_Setup(MemoryView* views, int num_views, u32 flags, MemArena* arena)
-{
-	u32 total_mem = MemoryMap_InitializeViews(views, num_views, flags);
-
-	arena->GrabSHMSegment(total_mem);
-
-	// Now, create views in high memory where there's plenty of space.
-	u8* base = MemArena::FindMemoryBase();
-	// This really shouldn't fail - in 64-bit, there will always be enough
-	// address space.
-	if (!Memory_TryBase(base, views, num_views, flags, arena))
-	{
-		PanicAlert("MemoryMap_Setup: Failed finding a memory base.");
-		exit(0);
-		return nullptr;
-	}
-
-	return base;
-}
-
-void MemoryMap_Shutdown(MemoryView* views, int num_views, u32 flags, MemArena* arena)
-{
-	std::set<void*> freeset;
-	for (int i = 0; i < num_views; i++)
-	{
-		MemoryView* view = &views[i];
-		if (view->mapped_ptr && !freeset.count(view->mapped_ptr))
-		{
-			arena->ReleaseView(view->mapped_ptr, view->size);
-			freeset.insert(view->mapped_ptr);
-			view->mapped_ptr = nullptr;
-		}
-	}
 }

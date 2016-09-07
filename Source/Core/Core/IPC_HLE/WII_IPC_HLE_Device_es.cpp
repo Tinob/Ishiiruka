@@ -962,6 +962,11 @@ IPCCommandResult CWII_IPC_HLE_Device_es::IOCtlV(u32 _CommandAddress)
 					if (pDolLoader->IsValid())
 					{
 						pDolLoader->Load();  // TODO: Check why sysmenu does not load the DOL correctly
+						// WADs start with address translation off at the given entry point.
+						//
+						// The state of other CPU registers (like the BAT registers) doesn't matter much
+						// because the WAD initializes everything itself anyway.
+						MSR = 0;
 						PC = pDolLoader->GetEntryPoint();
 						bSuccess = true;
 					}
@@ -1000,7 +1005,7 @@ IPCCommandResult CWII_IPC_HLE_Device_es::IOCtlV(u32 _CommandAddress)
 				wiiMoteConnected[i] = s_Usb->m_WiiMotes[i].IsConnected();
 
 			WII_IPC_HLE_Interface::Reset(true);
-			WII_IPC_HLE_Interface::Init();
+			WII_IPC_HLE_Interface::Reinit();
 			s_Usb = GetUsbPointer();
 			for (unsigned int i = 0; i < s_Usb->m_WiiMotes.size(); i++)
 			{

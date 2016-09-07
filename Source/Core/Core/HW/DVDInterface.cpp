@@ -238,14 +238,14 @@ static u32 s_error_code = 0;
 static bool s_disc_inside = false;
 static bool s_stream = false;
 static bool s_stop_at_track_end = false;
-static int s_finish_executing_command = 0;
-static int s_dtk = 0;
+static CoreTiming::EventType* s_finish_executing_command;
+static CoreTiming::EventType* s_dtk;
 
 static u64 s_last_read_offset;
 static u64 s_last_read_time;
 
-static int s_eject_disc;
-static int s_insert_disc;
+static CoreTiming::EventType* s_eject_disc;
+static CoreTiming::EventType* s_insert_disc;
 
 static void EjectDiscCallback(u64 userdata, s64 cyclesLate);
 static void InsertDiscCallback(u64 userdata, s64 cyclesLate);
@@ -489,7 +489,7 @@ void ChangeDiscAsCPU(const std::string& newFileName)
 {
 	std::string* _FileName = new std::string(newFileName);
 	CoreTiming::ScheduleEvent(0, s_eject_disc);
-	CoreTiming::ScheduleEvent(500000000, s_insert_disc, (u64)_FileName);
+	CoreTiming::ScheduleEvent(SystemTimers::GetTicksPerSecond(), s_insert_disc, (u64)_FileName);
 	if (Movie::IsRecordingInput())
 	{
 		std::string fileName = newFileName;
@@ -689,17 +689,15 @@ void ExecuteCommand(u32 command_0, u32 command_1, u32 command_2, u32 output_addr
 	{
 		// Seems to be used by both GC and Wii
 	case DVDLowInquiry:
-		{
-			// (shuffle2) Taken from my Wii
-			Memory::Write_U32(0x00000002, output_address);
-			Memory::Write_U32(0x20060526, output_address + 4);
-			// This was in the oubuf even though this cmd is only supposed to reply with 64bits
-			// However, this and other tests strongly suggest that the buffer is static, and it's never -
-			// or rarely cleared.
-			Memory::Write_U32(0x41000000, output_address + 8);
+		// (shuffle2) Taken from my Wii
+		Memory::Write_U32(0x00000002, output_address);
+		Memory::Write_U32(0x20060526, output_address + 4);
+		// This was in the oubuf even though this cmd is only supposed to reply with 64bits
+		// However, this and other tests strongly suggest that the buffer is static, and it's never -
+		// or rarely cleared.
+		Memory::Write_U32(0x41000000, output_address + 8);
 
-			INFO_LOG(DVDINTERFACE, "DVDLowInquiry (Buffer 0x%08x, 0x%x)", output_address, output_length);
-		}
+		INFO_LOG(DVDINTERFACE, "DVDLowInquiry (Buffer 0x%08x, 0x%x)", output_address, output_length);
 		break;
 
 		// Only seems to be used from WII_IPC, not through direct access
@@ -864,12 +862,11 @@ void ExecuteCommand(u32 command_0, u32 command_1, u32 command_2, u32 output_addr
 			break;
 		}
 		break;
+
 		// Seems to be used by both GC and Wii
 	case DVDLowSeek:
-		{
-			// Currently unimplemented
-			INFO_LOG(DVDINTERFACE, "Seek: offset=%09" PRIx64 " (ignoring)", (u64)command_1 << 2);
-		}
+		// Currently unimplemented
+		INFO_LOG(DVDINTERFACE, "Seek: offset=%09" PRIx64 " (ignoring)", (u64)command_1 << 2);
 		break;
 
 		// Probably only used by Wii

@@ -22,6 +22,7 @@ AdvancedConfigPane::AdvancedConfigPane(wxWindow* parent, wxWindowID id) : wxPane
 {
 	InitializeGUI();
 	LoadGUIValues();
+	RefreshGUI();
 }
 
 void AdvancedConfigPane::InitializeGUI()
@@ -137,6 +138,11 @@ void AdvancedConfigPane::OnClockOverrideSliderChanged(wxCommandEvent& event)
 	UpdateCPUClock();
 }
 
+u32 ToSeconds(wxDateTime date)
+{
+	return static_cast<u32>(date.GetValue().GetValue() / 1000);
+}
+
 void AdvancedConfigPane::OnCustomRTCCheckBoxChanged(wxCommandEvent& event)
 {
 	const bool checked = m_custom_rtc_checkbox->IsChecked();
@@ -147,13 +153,13 @@ void AdvancedConfigPane::OnCustomRTCCheckBoxChanged(wxCommandEvent& event)
 
 void AdvancedConfigPane::OnCustomRTCDateChanged(wxCommandEvent& event)
 {
-	m_temp_date = m_custom_rtc_date_picker->GetValue().GetTicks();
+	m_temp_date = ToSeconds(m_custom_rtc_date_picker->GetValue());
 	UpdateCustomRTC(m_temp_date, m_temp_time);
 }
 
 void AdvancedConfigPane::OnCustomRTCTimeChanged(wxCommandEvent& event)
 {
-	m_temp_time = m_custom_rtc_time_picker->GetValue().GetTicks() - m_temp_date;
+	m_temp_time = ToSeconds(m_custom_rtc_time_picker->GetValue()) - m_temp_date;
 	UpdateCustomRTC(m_temp_date, m_temp_time);
 }
 
@@ -178,15 +184,11 @@ void AdvancedConfigPane::LoadCustomRTC()
 		m_custom_rtc_date_picker->SetValue(custom_rtc);
 		m_custom_rtc_time_picker->SetValue(custom_rtc);
 	}
-	m_temp_date = m_custom_rtc_date_picker->GetValue().GetTicks();
-	m_temp_time = m_custom_rtc_time_picker->GetValue().GetTicks() - m_temp_date;
-	// Limit dates to valid ranges (2000 to 2099 for GC, 2000 to 2035 for Wii)
-	if (SConfig::GetInstance().bWii)
-		m_custom_rtc_date_picker->SetRange(wxDateTime(1, wxDateTime::Jan, 2000),
-			wxDateTime(31, wxDateTime::Dec, 2035));
-	else
-		m_custom_rtc_date_picker->SetRange(wxDateTime(1, wxDateTime::Jan, 2000),
-			wxDateTime(31, wxDateTime::Dec, 2099));
+	m_temp_date = ToSeconds(m_custom_rtc_date_picker->GetValue());
+	m_temp_time = ToSeconds(m_custom_rtc_time_picker->GetValue()) - m_temp_date;
+	// Limit dates to a valid range (Jan 1/2000 to Dec 31/2099)
+	m_custom_rtc_date_picker->SetRange(wxDateTime(1, wxDateTime::Jan, 2000),
+		wxDateTime(31, wxDateTime::Dec, 2099));
 	if (Core::IsRunning())
 	{
 		m_custom_rtc_checkbox->Enable(false);
@@ -203,7 +205,24 @@ void AdvancedConfigPane::LoadCustomRTC()
 void AdvancedConfigPane::UpdateCustomRTC(time_t date, time_t time)
 {
 	wxDateTime custom_rtc(date + time);
-	SConfig::GetInstance().m_customRTCValue = custom_rtc.FromUTC().GetTicks();
+	SConfig::GetInstance().m_customRTCValue = ToSeconds(custom_rtc.FromUTC());
 	m_custom_rtc_date_picker->SetValue(custom_rtc);
 	m_custom_rtc_time_picker->SetValue(custom_rtc);
+}
+
+void AdvancedConfigPane::RefreshGUI()
+{
+	// Don't allow users to edit the RTC while the game is running
+	if (Core::IsRunning())
+	{
+		m_custom_rtc_checkbox->Disable();
+		m_custom_rtc_date_picker->Disable();
+		m_custom_rtc_time_picker->Disable();
+	}
+	// Allow users to edit CPU clock speed in game, but not while needing determinism
+	if (Core::IsRunning() && Core::g_want_determinism)
+	{
+		m_clock_override_checkbox->Disable();
+		m_clock_override_slider->Disable();
+	}
 }

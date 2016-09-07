@@ -531,11 +531,6 @@ void GetPixelShaderUID(PixelShaderUid& out, PIXEL_SHADER_RENDER_MODE render_mode
 			uid_data.pixel_lighting = 3;
 		}
 	}
-	for (u32 i = 0; i < numTexgen; ++i)
-	{
-		// optional perspective divides
-		uid_data.texMtxInfo_n_projection |= xfr.texMtxInfo[i].projection << i;
-	}
 
 	uid_data.genMode_numtevstages = bpm.genMode.numtevstages;
 	uid_data.genMode_numindstages = numindStages;
@@ -1904,11 +1899,7 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
 	{
 		for (u32 i = 0; i < numTexgen; ++i)
 		{
-			if (((uid_data.texMtxInfo_n_projection >> i) & 1) == XF_TEXPROJ_STQ)
-			{
-				out.Write("if (uv%d.z != 0.0)", i);
-				out.Write("\tuv%d.xy = uv%d.xy / uv%d.z;\n", i, i, i);
-			}
+			out.Write("\tuv%d.xy = uv%d.xy / ((uv%d.z == 0.0) ? 2.0 : uv%d.z);\n", i, i, i, i);
 			out.Write("uv%d.xy = trunc(uv%d.xy * " I_TEXDIMS"[%d].zw);\n", i, i, i);
 		}
 	}

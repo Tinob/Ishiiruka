@@ -48,32 +48,32 @@ static const u8 eeprom_data_0[] = {
 static const u8 motion_plus_id[] = { 0x00, 0x00, 0xA6, 0x20, 0x00, 0x05 };
 
 static const u8 eeprom_data_16D0[] = { 0x00, 0x00, 0x00, 0xFF, 0x11, 0xEE, 0x00, 0x00,
-																			0x33, 0xCC, 0x44, 0xBB, 0x00, 0x00, 0x66, 0x99,
-																			0x77, 0x88, 0x00, 0x00, 0x2B, 0x01, 0xE8, 0x13 };
+0x33, 0xCC, 0x44, 0xBB, 0x00, 0x00, 0x66, 0x99,
+0x77, 0x88, 0x00, 0x00, 0x2B, 0x01, 0xE8, 0x13 };
 
 static const ReportFeatures reporting_mode_features[] = {
 	// 0x30: Core Buttons
-	{2, 0, 0, 0, 4},
+	{ 2, 0, 0, 0, 4 },
 	// 0x31: Core Buttons and Accelerometer
-	{2, 4, 0, 0, 7},
+	{ 2, 4, 0, 0, 7 },
 	// 0x32: Core Buttons with 8 Extension bytes
-	{2, 0, 0, 4, 12},
+	{ 2, 0, 0, 4, 12 },
 	// 0x33: Core Buttons and Accelerometer with 12 IR bytes
-	{2, 4, 7, 0, 19},
+	{ 2, 4, 7, 0, 19 },
 	// 0x34: Core Buttons with 19 Extension bytes
-	{2, 0, 0, 4, 23},
+	{ 2, 0, 0, 4, 23 },
 	// 0x35: Core Buttons and Accelerometer with 16 Extension Bytes
-	{2, 4, 0, 7, 23},
+	{ 2, 4, 0, 7, 23 },
 	// 0x36: Core Buttons with 10 IR bytes and 9 Extension Bytes
-	{2, 0, 4, 14, 23},
+	{ 2, 0, 4, 14, 23 },
 	// 0x37: Core Buttons and Accelerometer with 10 IR bytes and 6 Extension Bytes
-	{2, 4, 7, 17, 23},
+	{ 2, 4, 7, 17, 23 },
 
 	// UNSUPPORTED:
 	// 0x3d: 21 Extension Bytes
-	{0, 0, 0, 2, 23},
+	{ 0, 0, 0, 2, 23 },
 	// 0x3e / 0x3f: Interleaved Core Buttons and Accelerometer with 36 IR bytes
-	{0, 0, 0, 0, 23},
+	{ 0, 0, 0, 0, 23 },
 };
 
 void EmulateShake(AccelData* const accel, ControllerEmu::Buttons* const buttons_group,
@@ -154,8 +154,8 @@ void EmulateSwing(AccelData* const accel, ControllerEmu::Force* const swing_grou
 	axis_map[1] = sideways;                          // left|right
 	axis_map[2] = upright ? 2 : (sideways ? 0 : 1);  // forward/backward
 
-	// some orientations have up as positive, some as negative
-	// same with forward
+																									 // some orientations have up as positive, some as negative
+																									 // same with forward
 	if (sideways && !upright)
 		g_dir[axis_map[2]] *= -1;
 	if (!sideways && upright)
@@ -166,16 +166,16 @@ void EmulateSwing(AccelData* const accel, ControllerEmu::Force* const swing_grou
 }
 
 static const u16 button_bitmasks[] = {
-		Wiimote::BUTTON_A,     Wiimote::BUTTON_B,    Wiimote::BUTTON_ONE, Wiimote::BUTTON_TWO,
-		Wiimote::BUTTON_MINUS, Wiimote::BUTTON_PLUS, Wiimote::BUTTON_HOME };
+	Wiimote::BUTTON_A,     Wiimote::BUTTON_B,    Wiimote::BUTTON_ONE, Wiimote::BUTTON_TWO,
+	Wiimote::BUTTON_MINUS, Wiimote::BUTTON_PLUS, Wiimote::BUTTON_HOME };
 
 static const u16 dpad_bitmasks[] = { Wiimote::PAD_UP, Wiimote::PAD_DOWN, Wiimote::PAD_LEFT,
-																		Wiimote::PAD_RIGHT };
+Wiimote::PAD_RIGHT };
 static const u16 dpad_sideways_bitmasks[] = { Wiimote::PAD_RIGHT, Wiimote::PAD_LEFT, Wiimote::PAD_UP,
-																						 Wiimote::PAD_DOWN };
+Wiimote::PAD_DOWN };
 
 static const char* const named_buttons[] = {
-		"A", "B", "1", "2", "-", "+", "Home",
+	"A", "B", "1", "2", "-", "+", "Home",
 };
 
 void Wiimote::Reset()
@@ -293,6 +293,16 @@ Wiimote::Wiimote(const unsigned int index)
 	m_options->numeric_settings.emplace_back(
 		std::make_unique<ControlGroup::NumericSetting>(_trans("Battery"), 95.0 / 100, 0, 255));
 
+	// hotkeys
+	groups.emplace_back(m_hotkeys = new ModifySettingsButton(_trans("Hotkeys")));
+	// hotkeys to temporarily modify the Wiimote orientation (sideways, upright)
+	// this setting modifier is toggled
+	m_hotkeys->AddInput(_trans("Sideways Toggle"), true);
+	m_hotkeys->AddInput(_trans("Upright Toggle"), true);
+	// this setting modifier is not toggled
+	m_hotkeys->AddInput(_trans("Sideways Hold"), false);
+	m_hotkeys->AddInput(_trans("Upright Hold"), false);
+
 	// TODO: This value should probably be re-read if SYSCONF gets changed
 	m_sensor_bar_on_top = SConfig::GetInstance().m_SYSCONF->GetData<u8>("BT.BAR") != 0;
 
@@ -361,7 +371,10 @@ void Wiimote::UpdateButtonsStatus()
 {
 	// update buttons in status struct
 	m_status.buttons.hex = 0;
-	const bool is_sideways = m_options->boolean_settings[1]->GetValue();
+	const bool sideways_modifier_toggle = m_hotkeys->getSettingsModifier()[0];
+	const bool sideways_modifier_switch = m_hotkeys->getSettingsModifier()[2];
+	const bool is_sideways = m_options->boolean_settings[1]->GetValue() ^ sideways_modifier_toggle ^
+		sideways_modifier_switch;
 	m_buttons->GetState(&m_status.buttons.hex, button_bitmasks);
 	m_dpad->GetState(&m_status.buttons.hex, is_sideways ? dpad_sideways_bitmasks : dpad_bitmasks);
 }
@@ -380,8 +393,14 @@ void Wiimote::GetButtonData(u8* const data)
 
 void Wiimote::GetAccelData(u8* const data, const ReportFeatures& rptf)
 {
-	const bool is_sideways = m_options->boolean_settings[1]->GetValue();
-	const bool is_upright = m_options->boolean_settings[2]->GetValue();
+	const bool sideways_modifier_toggle = m_hotkeys->getSettingsModifier()[0];
+	const bool upright_modifier_toggle = m_hotkeys->getSettingsModifier()[1];
+	const bool sideways_modifier_switch = m_hotkeys->getSettingsModifier()[2];
+	const bool upright_modifier_switch = m_hotkeys->getSettingsModifier()[3];
+	const bool is_sideways = m_options->boolean_settings[1]->GetValue() ^ sideways_modifier_toggle ^
+		sideways_modifier_switch;
+	const bool is_upright = m_options->boolean_settings[2]->GetValue() ^ upright_modifier_toggle ^
+		upright_modifier_switch;
 
 	EmulateTilt(&m_accel, m_tilt, is_sideways, is_upright);
 	EmulateSwing(&m_accel, m_swing, is_sideways, is_upright);
@@ -575,7 +594,7 @@ void Wiimote::GetExtData(u8* const data)
 	// i think it should be unencrpyted in the register, encrypted when read.
 	memcpy(m_reg_ext.controller_data, data, sizeof(wm_nc));  // TODO: Should it be nc specific?
 
-	// motionplus pass-through modes
+																													 // motionplus pass-through modes
 	if (m_motion_plus_active)
 	{
 		switch (m_reg_motion_plus.ext_identifier[0x4])
@@ -651,7 +670,10 @@ void Wiimote::Update()
 
 		auto lock = ControllerEmu::GetStateLock();
 
-		// core buttons
+		// hotkey/settings modifier
+		m_hotkeys->GetState();  // data is later accessed in UpdateButtonsStatus and GetAccelData
+
+														// core buttons
 		if (rptf.core)
 			GetButtonData(data + rptf.core);
 
@@ -917,7 +939,7 @@ void Wiimote::LoadDefaults(const ControllerInterface& ciface)
 	m_buttons->SetControlExpression(6, "!`Alt_L` & Return");  // Home
 #endif
 
-	// Shake
+																														// Shake
 	for (int i = 0; i < 3; ++i)
 		m_shake->SetControlExpression(i, "Click 2");
 
@@ -945,8 +967,8 @@ void Wiimote::LoadDefaults(const ControllerInterface& ciface)
 	m_dpad->SetControlExpression(3, "Right");  // Right
 #endif
 
-	// ugly stuff
-	// enable nunchuk
+																						 // ugly stuff
+																						 // enable nunchuk
 	m_extension->switch_extension = 1;
 
 	// set nunchuk defaults
