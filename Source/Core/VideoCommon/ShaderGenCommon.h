@@ -48,6 +48,7 @@ public:
 	{
 		if (HASH == 0)
 		{
+			data.ClearUnused();
 			HASH = (std::size_t)GetHash64(reinterpret_cast<u8*>(&data) + data.StartValue(), data.NumValues(), 0);
 		}
 	}

@@ -206,11 +206,14 @@ void ShaderCache::Init()
 	{
 		size_t shader_count = 0;
 		ps_bytecode_cache->ForEachMostUsedByCategory(gameid,
-			[&](const PixelShaderUid& item, size_t total)
+			[&](const PixelShaderUid& it, size_t total)
 		{
+			PixelShaderUid item = it;
+			item.ClearHASH();
+			item.CalculateUIDHash();
 			HandlePSUIDChange(item, true);
 			shader_count++;
-			Host_UpdateTitle(StringFromFormat("Compiling Pixel Shaders %i %%", (shader_count * 100) / total));
+			Host_UpdateTitle(StringFromFormat("Compiling Pixel Shaders %i %% (%i/%i)", (shader_count * 100) / total, shader_count, total));
 			if ((shader_count & 31) == 0)
 			{
 				s_compiler->WaitForFinish();
@@ -223,11 +226,14 @@ void ShaderCache::Init()
 		, true);
 		shader_count = 0;
 		vs_bytecode_cache->ForEachMostUsedByCategory(gameid,
-			[&](const VertexShaderUid& item, size_t total)
+			[&](const VertexShaderUid& it, size_t total)
 		{
+			VertexShaderUid item = it;
+			item.ClearHASH();
+			item.CalculateUIDHash();
 			HandleVSUIDChange(item, true);
 			shader_count++;
-			Host_UpdateTitle(StringFromFormat("Compiling Vertex Shaders %i %%", (shader_count * 100) / total));
+			Host_UpdateTitle(StringFromFormat("Compiling Vertex Shaders %i %% (%i/%i)", (shader_count * 100) / total, shader_count, total));
 			if ((shader_count & 31) == 0)
 			{
 				s_compiler->WaitForFinish();
@@ -240,11 +246,14 @@ void ShaderCache::Init()
 		, true);
 		shader_count = 0;
 		gs_bytecode_cache->ForEachMostUsedByCategory(gameid,
-			[&](const GeometryShaderUid& item, size_t total)
+			[&](const GeometryShaderUid& it, size_t total)
 		{
+			GeometryShaderUid item = it;
+			item.ClearHASH();
+			item.CalculateUIDHash();
 			HandleGSUIDChange(item, true);
 			shader_count++;
-			Host_UpdateTitle(StringFromFormat("Compiling Geometry Shaders %i %%", (shader_count * 100) / total));
+			Host_UpdateTitle(StringFromFormat("Compiling Geometry Shaders %i %% (%i/%i)", (shader_count * 100) / total, shader_count, total));
 			if ((shader_count & 31) == 0)
 			{
 				s_compiler->WaitForFinish();
@@ -257,11 +266,14 @@ void ShaderCache::Init()
 		, true);
 		shader_count = 0;
 		ts_bytecode_cache->ForEachMostUsedByCategory(gameid,
-			[&](const TessellationShaderUid& item, size_t total)
+			[&](const TessellationShaderUid& it, size_t total)
 		{
+			TessellationShaderUid item = it;
+			item.ClearHASH();
+			item.CalculateUIDHash();
 			HandleTSUIDChange(item, true);
 			shader_count++;
-			Host_UpdateTitle(StringFromFormat("Compiling Tessellation Shaders %i %%", (shader_count * 100) / total));
+			Host_UpdateTitle(StringFromFormat("Compiling Tessellation Shaders %i %% (%i/%i)", (shader_count * 100) / total, shader_count, total));
 			if ((shader_count & 31) == 0)
 			{
 				s_compiler->WaitForFinish();

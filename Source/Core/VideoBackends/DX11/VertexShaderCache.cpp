@@ -181,11 +181,14 @@ void VertexShaderCache::Init()
 	{
 		size_t shader_count = 0;
 		s_vshaders->ForEachMostUsedByCategory(gameid,
-			[&](const VertexShaderUid& item, size_t total)
+			[&](const VertexShaderUid& it, size_t total)
 		{
+			VertexShaderUid item = it;
+			item.ClearHASH();
+			item.CalculateUIDHash();
 			CompileVShader(item, true);
 			shader_count++;
-			Host_UpdateTitle(StringFromFormat("Compiling Vertex Shaders %i %%", (shader_count * 100) / total));
+			Host_UpdateTitle(StringFromFormat("Compiling Vertex Shaders %i %% (%i/%i)", (shader_count * 100) / total, shader_count, total));
 			if ((shader_count & 31) == 0)
 			{
 				s_compiler->WaitForFinish();

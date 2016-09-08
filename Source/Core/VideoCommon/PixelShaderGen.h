@@ -98,6 +98,11 @@ struct pixel_shader_uid_data
 		return pixel_lighting ? 0 : sizeof(LightingUidData);
 	}
 
+	void ClearUnused()
+	{
+		texMtxInfo_n_projection = 0;
+	}
+
 	// TODO: Optimize field order for easy access!
 	LightingUidData lighting;
 

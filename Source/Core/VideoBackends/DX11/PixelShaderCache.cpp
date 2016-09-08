@@ -517,11 +517,14 @@ void PixelShaderCache::Init()
 	{
 		size_t shader_count = 0;
 		s_pixel_shaders->ForEachMostUsedByCategory(gameid,
-			[&](const PixelShaderUid& item, size_t total)
+			[&](const PixelShaderUid& it, size_t total)
 		{
+			PixelShaderUid item = it;
+			item.ClearHASH();
+			item.CalculateUIDHash();
 			CompilePShader(item, true);
 			shader_count++;
-			Host_UpdateTitle(StringFromFormat("Compiling Pixel Shaders %i %%", (shader_count * 100) / total));
+			Host_UpdateTitle(StringFromFormat("Compiling Pixel Shaders %i %% (%i/%i)", (shader_count * 100) / total, shader_count, total));
 			if ((shader_count & 31) == 0)
 			{
 				s_compiler->WaitForFinish();

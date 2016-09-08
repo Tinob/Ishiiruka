@@ -66,6 +66,9 @@ struct vertex_shader_uid_data
 	{
 		return 0;
 	}
+
+	void ClearUnused(){}
+
 	u32 components : 22;
 	u32 numTexGens : 4;
 	u32 numColorChans : 2;
