@@ -69,7 +69,7 @@ static std::unique_ptr<Depalettizer> s_depaletizer;
 static std::unique_ptr<TextureScaler> s_scaler;
 static std::pair<u8*, u32> s_last_pallet_Buffer;
 static TlutFormat s_last_TlutFormat = TlutFormat::GX_TL_IA8;
-bool SaveTexture(const std::string& filename, u32 textarget, u32 tex, int virtual_width, int virtual_height, u32 level, bool compressed = false)
+bool SaveTexture(const std::string& filename, u32 textarget, u32 tex, int virtual_width, int virtual_height, u32 level, bool compressed)
 {
 	if (GLInterface->GetMode() != GLInterfaceMode::MODE_OPENGL)
 		return false;

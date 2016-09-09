@@ -76,7 +76,7 @@ private:
 		PEControl::PixelFormat srcFormat, const EFBRectangle& srcRect,
 		bool isIntensity, bool scaleByHalf) override;
 	bool Palettize(TCacheEntryBase* entry, const TCacheEntryBase* base_entry) override;
-	void LoadLut(u32 lutFmt, void* addr, u32 size);
+	void LoadLut(u32 lutFmt, void* addr, u32 size) override;
 	void CompileShaders() override;
 	void DeleteShaders() override;
 	void* m_last_addr = {};
@@ -85,6 +85,6 @@ private:
 	u32 m_last_lutFmt = {};
 };
 
-bool SaveTexture(const std::string& filename, u32 textarget, u32 tex, int virtual_width, int virtual_height, u32 level);
+bool SaveTexture(const std::string& filename, u32 textarget, u32 tex, int virtual_width, int virtual_height, u32 level, bool compressed = false);
 
 }

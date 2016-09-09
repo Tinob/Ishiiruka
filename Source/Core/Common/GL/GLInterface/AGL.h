@@ -15,6 +15,7 @@ class cInterfaceAGL : public cInterfaceBase
 private:
 	NSView* cocoaWin;
 	NSOpenGLContext* cocoaCtx;
+
 public:
 	void Swap() override;
 	bool Create(void* window_handle, bool core) override;
@@ -23,5 +24,4 @@ public:
 	void Shutdown() override;
 	void Update() override;
 	void SwapInterval(int interval) override;
-
 };

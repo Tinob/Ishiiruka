@@ -445,9 +445,9 @@ void ProgramShaderCache::Init()
 	s_v_buffer.reset();
 	s_g_buffer.reset();
 
-	s_p_buffer = std::move(StreamBuffer::Create(GL_UNIFORM_BUFFER, s_p_ubo_buffer_size * 1024));
-	s_v_buffer = std::move(StreamBuffer::Create(GL_UNIFORM_BUFFER, s_v_ubo_buffer_size * 1024));
-	s_g_buffer = std::move(StreamBuffer::Create(GL_UNIFORM_BUFFER, s_g_ubo_buffer_size * 1024));
+	s_p_buffer = StreamBuffer::Create(GL_UNIFORM_BUFFER, s_p_ubo_buffer_size * 1024);
+	s_v_buffer = StreamBuffer::Create(GL_UNIFORM_BUFFER, s_v_ubo_buffer_size * 1024);
+	s_g_buffer = StreamBuffer::Create(GL_UNIFORM_BUFFER, s_g_ubo_buffer_size * 1024);
 
 	pKey_t gameid = (pKey_t)GetMurmurHash3(reinterpret_cast<const u8*>(SConfig::GetInstance().m_strUniqueID.data()), (u32)SConfig::GetInstance().m_strUniqueID.size(), 0);
 	pshaders = PCache::Create(
@@ -496,7 +496,7 @@ void ProgramShaderCache::Init()
 			item.puid.CalculateUIDHash();
 			const pixel_shader_uid_data& uid_data = item.puid.GetUidData();
 			shader_count++;
-			Host_UpdateTitle(StringFromFormat("Compiling Shaders %i %% (%i/%i)", (shader_count * 100) / total, shader_count, total));
+			Host_UpdateTitle(StringFromFormat("Compiling Shaders %zu %% (%zu/%zu)", (shader_count * 100) / total, shader_count, total));
 			if ((!uid_data.stereo || g_ActiveConfig.backend_info.bSupportsGeometryShaders)
 				&&(!uid_data.bounding_box || g_ActiveConfig.backend_info.bSupportsBBox))
 			{

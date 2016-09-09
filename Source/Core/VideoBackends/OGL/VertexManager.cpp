@@ -68,7 +68,7 @@ void VertexManager::PrepareDrawBuffers(u32 stride)
 	u32 index_data_size = IndexGenerator::GetIndexLen() * sizeof(u16);
 	if (s_vertexBuffer->NeedCPUBuffer())
 	{
-		auto buffer = s_vertexBuffer->Map(MAXVBUFFERSIZE, stride);
+		auto buffer = s_vertexBuffer->Map(vertex_data_size, stride);
 		s_baseVertex = buffer.second / stride;
 		memcpy(buffer.first, m_cpu_v_buffer.data(), vertex_data_size);
 	}
@@ -94,9 +94,10 @@ void VertexManager::ResetBuffer(u32 stride)
 	}
 	else
 	{
-		auto buffer = s_vertexBuffer->Map(MAXVBUFFERSIZE, stride);
+		u32 size = MAX_PRIMITIVES_PER_COMMAND * stride / 2;
+		auto buffer = s_vertexBuffer->Map(size, stride);
 		s_pCurBufferPointer = s_pBaseBufferPointer = buffer.first;
-		s_pEndBufferPointer = buffer.first + MAXVBUFFERSIZE;
+		s_pEndBufferPointer = buffer.first + size;
 		s_baseVertex = buffer.second / stride;
 	}
 
@@ -107,7 +108,7 @@ void VertexManager::ResetBuffer(u32 stride)
 	}
 	else
 	{
-		auto buffer = s_indexBuffer->Map(MAXIBUFFERSIZE * sizeof(u16));
+		auto buffer = s_indexBuffer->Map(MAX_PRIMITIVES_PER_COMMAND * sizeof(u16) / 2);
 		s_index_buffer_base = (u16*)buffer.first;
 		IndexGenerator::Start(s_index_buffer_base);
 		s_index_offset = buffer.second;
@@ -163,16 +164,7 @@ void VertexManager::vFlush(bool useDstAlpha)
 {
 	GLVertexFormat* nativeVertexFmt = (GLVertexFormat*)VertexLoaderManager::GetCurrentVertexFormat();
 	u32 stride = nativeVertexFmt->GetVertexStride();
-	// setup the pointers
-	nativeVertexFmt->SetupVertexPointers();
-	if (m_last_vao != nativeVertexFmt->VAO)
-	{
-		glBindVertexArray(nativeVertexFmt->VAO);
-		m_last_vao = nativeVertexFmt->VAO;
-	}
 	BBox::Update();
-	PrepareDrawBuffers(stride);
-
 	// Makes sure we can actually do Dual source blending
 	bool dualSourcePossible = g_ActiveConfig.backend_info.bSupportsDualSourceBlend;
 
@@ -190,7 +182,15 @@ void VertexManager::vFlush(bool useDstAlpha)
 	// upload global constants
 	ProgramShaderCache::UploadConstants();
 
-	
+	// setup the pointers
+	nativeVertexFmt->SetupVertexPointers();
+	if (m_last_vao != nativeVertexFmt->VAO)
+	{
+		glBindVertexArray(nativeVertexFmt->VAO);
+		m_last_vao = nativeVertexFmt->VAO;
+	}
+
+	PrepareDrawBuffers(stride);
 
 	Draw(stride);
 

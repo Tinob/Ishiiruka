@@ -5,16 +5,16 @@
 #include <string>
 #include <windows.h>
 
-#include "Common/MsgHandler.h"
 #include "Common/GL/GLInterface/WGL.h"
 #include "Common/Logging/Log.h"
+#include "Common/MsgHandler.h"
 
-static HDC hDC = nullptr;       // Private GDI Device Context
-static HGLRC hRC = nullptr;     // Permanent Rendering Context
-static HINSTANCE dllHandle = nullptr; // Handle to OpenGL32.dll
+static HDC hDC = nullptr;              // Private GDI Device Context
+static HGLRC hRC = nullptr;            // Permanent Rendering Context
+static HINSTANCE dllHandle = nullptr;  // Handle to OpenGL32.dll
 
 // typedef from wglext.h
-typedef BOOL(WINAPI * PFNWGLSWAPINTERVALEXTPROC) (int interval);
+typedef BOOL(WINAPI* PFNWGLSWAPINTERVALEXTPROC)(int interval);
 static PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT = nullptr;
 
 void cInterfaceWGL::SwapInterval(int Interval)
@@ -54,7 +54,7 @@ bool cInterfaceWGL::PeekMessages()
 
 // Create rendering window.
 // Call browser: Core.cpp:EmuThread() > main.cpp:Video_Initialize()
-bool cInterfaceWGL::Create(void *window_handle, bool core)
+bool cInterfaceWGL::Create(void* window_handle, bool core)
 {
 	if (window_handle == nullptr)
 		return false;
@@ -75,29 +75,30 @@ bool cInterfaceWGL::Create(void *window_handle, bool core)
 
 	dllHandle = LoadLibrary(TEXT("OpenGL32.dll"));
 
-	PIXELFORMATDESCRIPTOR pfd =         // pfd Tells Windows How We Want Things To Be
+	PIXELFORMATDESCRIPTOR pfd =  // pfd Tells Windows How We Want Things To Be
 	{
-		sizeof(PIXELFORMATDESCRIPTOR),  // Size Of This Pixel Format Descriptor
-		1,                              // Version Number
-		PFD_DRAW_TO_WINDOW |            // Format Must Support Window
-			PFD_SUPPORT_OPENGL |        // Format Must Support OpenGL
-			PFD_DOUBLEBUFFER,           // Must Support Double Buffering
-		PFD_TYPE_RGBA,                  // Request An RGBA Format
-		32,                             // Select Our Color Depth
-		0, 0, 0, 0, 0, 0,               // Color Bits Ignored
-		0,                              // 8bit Alpha Buffer
-		0,                              // Shift Bit Ignored
-		0,                              // No Accumulation Buffer
-		0, 0, 0, 0,                     // Accumulation Bits Ignored
-		0,                              // 0Bit Z-Buffer (Depth Buffer)
-		0,                              // 0bit Stencil Buffer
-		0,                              // No Auxiliary Buffer
-		PFD_MAIN_PLANE,                 // Main Drawing Layer
-		0,                              // Reserved
-		0, 0, 0                         // Layer Masks Ignored
+			sizeof(PIXELFORMATDESCRIPTOR),  // Size Of This Pixel Format Descriptor
+			1,                              // Version Number
+			PFD_DRAW_TO_WINDOW |            // Format Must Support Window
+					PFD_SUPPORT_OPENGL |        // Format Must Support OpenGL
+					PFD_DOUBLEBUFFER,           // Must Support Double Buffering
+			PFD_TYPE_RGBA,                  // Request An RGBA Format
+			32,                             // Select Our Color Depth
+			0,
+			0, 0, 0, 0, 0,   // Color Bits Ignored
+			0,               // 8bit Alpha Buffer
+			0,               // Shift Bit Ignored
+			0,               // No Accumulation Buffer
+			0, 0, 0, 0,      // Accumulation Bits Ignored
+			0,               // 0Bit Z-Buffer (Depth Buffer)
+			0,               // 0bit Stencil Buffer
+			0,               // No Auxiliary Buffer
+			PFD_MAIN_PLANE,  // Main Drawing Layer
+			0,               // Reserved
+			0, 0, 0          // Layer Masks Ignored
 	};
 
-	int      PixelFormat;               // Holds The Results After Searching For A Match
+	int PixelFormat;  // Holds The Results After Searching For A Match
 
 	if (!(hDC = GetDC(window_handle_reified)))
 	{
@@ -132,7 +133,8 @@ bool cInterfaceWGL::MakeCurrent()
 	if (success)
 	{
 		// Grab the swap interval function pointer
-		wglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC)GLInterface->GetFuncAddress("wglSwapIntervalEXT");
+		wglSwapIntervalEXT =
+			(PFNWGLSWAPINTERVALEXTPROC)GLInterface->GetFuncAddress("wglSwapIntervalEXT");
 	}
 	return success;
 }
@@ -180,5 +182,3 @@ void cInterfaceWGL::Shutdown()
 	}
 	FreeLibrary(dllHandle);
 }
-
-

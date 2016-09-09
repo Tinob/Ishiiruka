@@ -15,8 +15,6 @@ u16 *IndexGenerator::index_buffer_current;
 u16 *IndexGenerator::BASEIptr;
 u32 IndexGenerator::base_index;
 
-static const u16 s_primitive_restart = -1;
-
 static void(*primitive_table[8])(u32);
 
 void IndexGenerator::Init()

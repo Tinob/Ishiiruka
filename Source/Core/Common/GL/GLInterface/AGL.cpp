@@ -12,15 +12,15 @@ void cInterfaceAGL::Swap()
 
 // Create rendering window.
 // Call browser: Core.cpp:EmuThread() > main.cpp:Video_Initialize()
-bool cInterfaceAGL::Create(void *window_handle, bool core)
+bool cInterfaceAGL::Create(void* window_handle, bool core)
 {
 	cocoaWin = reinterpret_cast<NSView*>(window_handle);
 	NSSize size = [cocoaWin frame].size;
 
 	// Enable high-resolution display support.
-	[cocoaWin setWantsBestResolutionOpenGLSurface:YES];
+	[cocoaWin setWantsBestResolutionOpenGLSurface : YES];
 
-	NSWindow *window = [cocoaWin window];
+	NSWindow* window = [cocoaWin window];
 
 	float scale = [window backingScaleFactor];
 	size.width *= scale;
@@ -30,16 +30,18 @@ bool cInterfaceAGL::Create(void *window_handle, bool core)
 	s_backbuffer_width = size.width;
 	s_backbuffer_height = size.height;
 
-	NSOpenGLPixelFormatAttribute attr[] = { NSOpenGLPFADoubleBuffer, NSOpenGLPFAOpenGLProfile, core ? NSOpenGLProfileVersion3_2Core : NSOpenGLProfileVersionLegacy, NSOpenGLPFAAccelerated, 0 };
-	NSOpenGLPixelFormat *fmt = [[NSOpenGLPixelFormat alloc]
-		initWithAttributes: attr];
+	NSOpenGLPixelFormatAttribute attr[] = { NSOpenGLPFADoubleBuffer, NSOpenGLPFAOpenGLProfile,
+																				 core ? NSOpenGLProfileVersion3_2Core :
+																								NSOpenGLProfileVersionLegacy,
+																				 NSOpenGLPFAAccelerated, 0 };
+	NSOpenGLPixelFormat* fmt = [[NSOpenGLPixelFormat alloc] initWithAttributes:attr];
 	if (fmt == nil)
 	{
 		ERROR_LOG(VIDEO, "failed to create pixel format");
 		return false;
 	}
 
-	cocoaCtx = [[NSOpenGLContext alloc] initWithFormat: fmt shareContext: nil];
+	cocoaCtx = [[NSOpenGLContext alloc] initWithFormat:fmt shareContext : nil];
 	[fmt release];
 	if (cocoaCtx == nil)
 	{
@@ -53,9 +55,9 @@ bool cInterfaceAGL::Create(void *window_handle, bool core)
 		return false;
 	}
 
-	[window makeFirstResponder:cocoaWin];
-	[cocoaCtx setView: cocoaWin];
-	[window makeKeyAndOrderFront: nil];
+	[window makeFirstResponder : cocoaWin];
+	[cocoaCtx setView : cocoaWin];
+	[window makeKeyAndOrderFront : nil];
 
 	return true;
 }
@@ -82,15 +84,14 @@ void cInterfaceAGL::Shutdown()
 
 void cInterfaceAGL::Update()
 {
-	NSWindow *window = [cocoaWin window];
+	NSWindow* window = [cocoaWin window];
 	NSSize size = [cocoaWin frame].size;
 
 	float scale = [window backingScaleFactor];
 	size.width *= scale;
 	size.height *= scale;
 
-	if (s_backbuffer_width == size.width &&
-	    s_backbuffer_height == size.height)
+	if (s_backbuffer_width == size.width && s_backbuffer_height == size.height)
 		return;
 
 	s_backbuffer_width = size.width;
@@ -101,6 +102,5 @@ void cInterfaceAGL::Update()
 
 void cInterfaceAGL::SwapInterval(int interval)
 {
-	[cocoaCtx setValues:(GLint *)&interval forParameter:NSOpenGLCPSwapInterval];
+	[cocoaCtx setValues : (GLint*)&interval forParameter : NSOpenGLCPSwapInterval];
 }
-

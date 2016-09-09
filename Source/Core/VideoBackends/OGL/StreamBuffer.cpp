@@ -26,8 +26,8 @@ StreamBuffer::StreamBuffer(u32 type, u32 size, u32 align_size, bool need_cpu_buf
 	: m_buffer(GenBuffer()),
 	m_buffertype(type),
 	m_size(ROUND_UP(ROUND_UP_POW2(size), align_size)),
-	m_bit_per_slot(IntLog2(ROUND_UP(ROUND_UP_POW2(size), align_size) / SYNC_POINTS)),
-	m_need_cpu_buffer(need_cpu_buffer)
+	m_need_cpu_buffer(need_cpu_buffer),
+	m_bit_per_slot(IntLog2(ROUND_UP(ROUND_UP_POW2(size), align_size) / SYNC_POINTS))
 {
 	m_iterator = 0;
 	m_used_iterator = 0;
