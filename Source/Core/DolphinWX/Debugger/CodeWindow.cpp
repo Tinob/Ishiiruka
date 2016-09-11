@@ -8,7 +8,6 @@
 
 // clang-format off
 #include <wx/bitmap.h>
-#include <wx/aui/auibar.h>
 #include <wx/image.h>
 #include <wx/listbox.h>
 #include <wx/menu.h>
@@ -19,6 +18,7 @@
 #include <wx/textdlg.h>
 #include <wx/thread.h>
 #include <wx/toolbar.h>
+#include <wx/aui/auibar.h>
 #include <wx/aui/dockart.h>
 // clang-format on
 
@@ -45,6 +45,7 @@
 #include "DolphinWX/Debugger/JitWindow.h"
 #include "DolphinWX/Debugger/RegisterWindow.h"
 #include "DolphinWX/Debugger/WatchWindow.h"
+#include "DolphinWX/AuiToolBar.h"
 #include "DolphinWX/Frame.h"
 #include "DolphinWX/Globals.h"
 #include "DolphinWX/WxUtils.h"
@@ -74,7 +75,7 @@ CCodeWindow::CCodeWindow(const SConfig& _LocalCoreStartupParameter, CFrame* pare
 	callers = new wxListBox(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0, nullptr, wxLB_SORT);
 	callers->Bind(wxEVT_LISTBOX, &CCodeWindow::OnCallersListChange, this);
 
-	m_aui_toolbar = new wxAuiToolBar(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
+	m_aui_toolbar = new DolphinAuiToolBar(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
 		wxAUI_TB_HORIZONTAL | wxAUI_TB_PLAIN_BACKGROUND);
 
 	wxSearchCtrl* const address_searchctrl = new wxSearchCtrl(m_aui_toolbar, IDM_ADDRBOX);
@@ -150,6 +151,8 @@ void CCodeWindow::OnHostMessage(wxCommandEvent& event)
 		Update();
 		if (codeview)
 			codeview->Center(PC);
+		if (CPU::IsStepping())
+			Parent->UpdateGUI();
 		if (m_RegisterWindow)
 			m_RegisterWindow->NotifyUpdate();
 		if (m_WatchWindow)

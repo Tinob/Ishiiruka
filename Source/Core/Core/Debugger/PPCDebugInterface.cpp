@@ -7,14 +7,14 @@
 #include "Common/GekkoDisassembler.h"
 
 #include "Core/Core.h"
-#include "Core/Host.h"
 #include "Core/Debugger/Debugger_SymbolMap.h"
 #include "Core/Debugger/PPCDebugInterface.h"
 #include "Core/HW/DSP.h"
 #include "Core/HW/Memmap.h"
-#include "Core/PowerPC/PowerPC.h"
-#include "Core/PowerPC/PPCSymbolDB.h"
+#include "Core/Host.h"
 #include "Core/PowerPC/JitCommon/JitBase.h"
+#include "Core/PowerPC/PPCSymbolDB.h"
+#include "Core/PowerPC/PowerPC.h"
 
 std::string PPCDebugInterface::Disassemble(unsigned int address)
 {
@@ -48,7 +48,8 @@ std::string PPCDebugInterface::Disassemble(unsigned int address)
 	}
 }
 
-void PPCDebugInterface::GetRawMemoryString(int memory, unsigned int address, char *dest, int max_size)
+void PPCDebugInterface::GetRawMemoryString(int memory, unsigned int address, char* dest,
+	int max_size)
 {
 	if (IsAlive())
 	{
@@ -79,10 +80,8 @@ unsigned int PPCDebugInterface::ReadExtraMemory(int memory, unsigned int address
 	case 0:
 		return PowerPC::HostRead_U32(address);
 	case 1:
-		return (DSP::ReadARAM(address) << 24) |
-			(DSP::ReadARAM(address + 1) << 16) |
-			(DSP::ReadARAM(address + 2) << 8) |
-			(DSP::ReadARAM(address + 3));
+		return (DSP::ReadARAM(address) << 24) | (DSP::ReadARAM(address + 1) << 16) |
+			(DSP::ReadARAM(address + 2) << 8) | (DSP::ReadARAM(address + 3));
 	default:
 		return 0;
 	}
@@ -138,14 +137,12 @@ void PPCDebugInterface::ClearAllMemChecks()
 
 bool PPCDebugInterface::IsMemCheck(unsigned int address)
 {
-	return (Memory::AreMemoryBreakpointsActivated() &&
-		PowerPC::memchecks.GetMemCheck(address));
+	return (PowerPC::memchecks.HasAny() && PowerPC::memchecks.GetMemCheck(address));
 }
 
 void PPCDebugInterface::ToggleMemCheck(unsigned int address)
 {
-	if (Memory::AreMemoryBreakpointsActivated() &&
-		!PowerPC::memchecks.GetMemCheck(address))
+	if (PowerPC::memchecks.HasAny() && !PowerPC::memchecks.GetMemCheck(address))
 	{
 		// Add Memory Check
 		TMemCheck MemCheck;
@@ -169,7 +166,6 @@ void PPCDebugInterface::InsertBLR(unsigned int address, unsigned int value)
 	PowerPC::ScheduleInvalidateCacheThreadSafe(address);
 }
 
-
 // =======================================================
 // Separate the blocks with colors.
 // -------------
@@ -179,16 +175,15 @@ int PPCDebugInterface::GetColor(unsigned int address)
 		return 0xFFFFFF;
 	if (!PowerPC::HostIsRAMAddress(address))
 		return 0xeeeeee;
-	static const int colors[6] =
-	{
-		0xd0FFFF,  // light cyan
-		0xFFd0d0,  // light red
-		0xd8d8FF,  // light blue
-		0xFFd0FF,  // light purple
-		0xd0FFd0,  // light green
-		0xFFFFd0,  // light yellow
+	static const int colors[6] = {
+			0xd0FFFF,  // light cyan
+			0xFFd0d0,  // light red
+			0xd8d8FF,  // light blue
+			0xFFd0FF,  // light purple
+			0xd0FFd0,  // light green
+			0xFFFFd0,  // light yellow
 	};
-	Symbol *symbol = g_symbolDB.GetSymbolFromAddr(address);
+	Symbol* symbol = g_symbolDB.GetSymbolFromAddr(address);
 	if (!symbol)
 		return 0xFFFFFF;
 	if (symbol->type != Symbol::SYMBOL_FUNCTION)
@@ -196,7 +191,6 @@ int PPCDebugInterface::GetColor(unsigned int address)
 	return colors[symbol->index % 6];
 }
 // =============
-
 
 std::string PPCDebugInterface::GetDescription(unsigned int address)
 {
@@ -215,5 +209,4 @@ void PPCDebugInterface::SetPC(unsigned int address)
 
 void PPCDebugInterface::RunToBreakpoint()
 {
-
 }

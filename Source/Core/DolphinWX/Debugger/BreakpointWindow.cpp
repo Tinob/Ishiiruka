@@ -4,7 +4,6 @@
 
 // clang-format off
 #include <wx/bitmap.h>
-#include <wx/aui/auibar.h>
 #include <wx/aui/framemanager.h>
 #include <wx/image.h>
 #include <wx/listbase.h>
@@ -23,13 +22,14 @@
 #include "DolphinWX/Debugger/BreakpointWindow.h"
 #include "DolphinWX/Debugger/CodeWindow.h"
 #include "DolphinWX/Debugger/MemoryCheckDlg.h"
+#include "DolphinWX/AuiToolBar.h"
 #include "DolphinWX/WxUtils.h"
 
-class CBreakPointBar : public wxAuiToolBar
+class CBreakPointBar : public DolphinAuiToolBar
 {
 public:
 	CBreakPointBar(CBreakPointWindow* parent, const wxWindowID id)
-		: wxAuiToolBar(parent, id, wxDefaultPosition, wxDefaultSize,
+		: DolphinAuiToolBar(parent, id, wxDefaultPosition, wxDefaultSize,
 			wxAUI_TB_DEFAULT_STYLE | wxAUI_TB_TEXT)
 	{
 		SetToolBitmapSize(wxSize(24, 24));
@@ -47,12 +47,8 @@ public:
 		AddTool(ID_ADDBP, "+BP", m_Bitmaps[Toolbar_Add_BP]);
 		Bind(wxEVT_TOOL, &CBreakPointWindow::OnAddBreakPoint, parent, ID_ADDBP);
 
-		// Add memory breakpoints if you can use them
-		if (Memory::AreMemoryBreakpointsActivated())
-		{
-			AddTool(ID_ADDMC, "+MC", m_Bitmaps[Toolbar_Add_MC]);
-			Bind(wxEVT_TOOL, &CBreakPointWindow::OnAddMemoryCheck, parent, ID_ADDMC);
-		}
+		AddTool(ID_ADDMC, "+MC", m_Bitmaps[Toolbar_Add_MC]);
+		Bind(wxEVT_TOOL, &CBreakPointWindow::OnAddMemoryCheck, parent, ID_ADDMC);
 
 		AddTool(ID_LOAD, _("Load"), m_Bitmaps[Toolbar_Delete]);
 		Bind(wxEVT_TOOL, &CBreakPointWindow::Event_LoadAll, parent, ID_LOAD);
