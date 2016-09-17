@@ -269,8 +269,8 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
 		wxDefaultPosition, wxDefaultSize)
 	, vconfig(g_Config)
 {
-	if (File::Exists(File::GetUserPath(D_CONFIG_IDX) + "GFX.ini"))
-		vconfig.Load(File::GetUserPath(D_CONFIG_IDX) + "GFX.ini");
+	//if (File::Exists(File::GetUserPath(D_CONFIG_IDX) + "GFX.ini"))
+	vconfig.Load(File::GetUserPath(D_CONFIG_IDX) + "GFX.ini");
 
 	Bind(wxEVT_UPDATE_UI, &VideoConfigDiag::OnUpdateUI, this);
 
