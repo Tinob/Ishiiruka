@@ -83,6 +83,7 @@ void VideoConfig::Load(const std::string& ini_file)
 	settings->Get("DumpVertexLoader", &bDumpVertexLoaders, 0);
 	settings->Get("HiresTextures", &bHiresTextures, 0);
 	settings->Get("HiresMaterialMaps", &bHiresMaterialMaps, 0);
+	settings->Get("HiresMaterialMapsBuild", &bHiresMaterialMapsBuild, false);
 	settings->Get("ConvertHiresTextures", &bConvertHiresTextures, 0);
 	settings->Get("CacheHiresTextures", &bCacheHiresTextures, 0);
 	settings->Get("CacheHiresTexturesonGPU", &bCacheHiresTexturesGPU, 0);
@@ -418,7 +419,8 @@ void VideoConfig::Save(const std::string& ini_file)
 	settings->Set("DumpVertexLoader", bDumpVertexLoaders);
 	settings->Set("HiresTextures", bHiresTextures);
 	settings->Set("HiresMaterialMaps", bHiresMaterialMaps);
-
+	settings->Set("HiresMaterialMapsBuild", bHiresMaterialMapsBuild);
+	
 	settings->Set("ConvertHiresTextures", bConvertHiresTextures);
 	settings->Set("CacheHiresTextures", bCacheHiresTextures);
 	settings->Set("CacheHiresTexturesonGPU", bCacheHiresTexturesGPU);

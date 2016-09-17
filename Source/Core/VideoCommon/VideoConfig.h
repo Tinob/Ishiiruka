@@ -142,6 +142,7 @@ struct VideoConfig final
 	bool bDumpVertexLoaders;
 	bool bHiresTextures;
 	bool bHiresMaterialMaps;
+	bool bHiresMaterialMapsBuild;
 	bool bConvertHiresTextures;
 	bool bCacheHiresTextures;
 	bool bCacheHiresTexturesGPU;

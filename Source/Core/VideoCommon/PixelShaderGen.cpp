@@ -735,7 +735,7 @@ inline void WriteAlphaTest(ShaderCode& out, const pixel_shader_uid_data& uid_dat
 		out.Write(tevAlphaFuncsTableI[compindex], alphaRef[1]);
 	else
 		out.Write(tevAlphaFuncsTable[compindex], alphaRef[1]);
-	
+
 	if (DriverDetails::HasBug(DriverDetails::BUG_BROKENNEGATEDBOOLEAN))
 		out.Write(") == false) {\n");
 	else
@@ -1320,6 +1320,9 @@ inline void WriteFetchStageTexture(ShaderCode& out, const pixel_shader_uid_data&
 		SampleTexture<ApiType>(out, "stagecoord", "rgba", texmap, uid_data.stereo);
 		if (LoadMaterial)
 		{
+			out.Write("if((" I_FLAGS ".y & %i) != 0)\n{\n", 1 << texmap);
+			out.Write("emmisive_mask += tex_ta[%i].rgb * ((tex_ta[%i].a - 10) / 255.0);\n", n, n);
+			out.Write("tex_ta[%i].a = wu(255.0);\n}\n", n);
 			out.Write("if((" I_FLAGS ".x & %i) != 0)\n{\n", 1 << texmap);
 			out.Write("mapcoord = stagecoord;");
 			out.Write("float4 nrmap = ");
@@ -1928,6 +1931,7 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
 	}
 	if (enablenormalmaps || forcePhong)
 	{
+		out.Write("\tfloat3 emmisive_mask = float3(0.0,0.0,0.0);\n", numStages);
 		out.Write("\tfloat4 normalmap = float4(0.0,0.0,1.0,0.3);\n");
 		out.Write("\tfloat height_map = 0.0, height_map_count = 0.0;\n");
 		out.Write("\tfloat2 mapcoord = float2(0.0,0.0);\n");
@@ -2127,6 +2131,14 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
 			"prev.rgb += wu3(spec.rgb * normalmap.w * " I_PPHONG "[0].w);\n"
 		);
 	}
+
+	if (enablenormalmaps)
+	{
+		out.Write("if(" I_FLAGS ".y != 0)\n{\n");
+		out.Write("prev.rgb += wu3(emmisive_mask);\n");
+		out.Write("}\n");
+	}
+
 	if (render_mode == PSRM_ALPHA_PASS)
 	{
 		out.Write("ocol0 = float4(prev.rgb," I_ALPHA ".a) * (1.0/255.0);\n");

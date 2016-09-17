@@ -171,7 +171,8 @@ void VertexManagerBase::DoFlush()
 					usedtextures |= 1 << bpmem.tevindref.getTexMap(bpmem.tevind[i].bt);
 
 		TextureCacheBase::UnbindTextures();
-		s32 mask = 0;
+		s32 material_mask = 0;
+		s32 emissive_mask = 0;
 		for (unsigned int i = 0; i < 8; i++)
 		{
 			if (usedtextures & (1 << i))
@@ -179,9 +180,10 @@ void VertexManagerBase::DoFlush()
 				const TextureCacheBase::TCacheEntryBase* tentry = TextureCacheBase::Load(i);
 				if (tentry)
 				{
-					if (g_ActiveConfig.HiresMaterialMapsEnabled() && tentry->SupportsMaterialMap())
+					if (g_ActiveConfig.HiresMaterialMapsEnabled())
 					{
-						mask |= 1 << i;
+						material_mask |= ((int)tentry->SupportsMaterialMap()) << i;
+						emissive_mask |= ((int)tentry->emissive_in_alpha) << i;
 					}
 					PixelShaderManager::SetTexDims(i, tentry->native_width, tentry->native_height);
 					g_renderer->SetSamplerState(i & 3, i >> 2, tentry->is_custom_tex);
@@ -192,7 +194,8 @@ void VertexManagerBase::DoFlush()
 		}
 		if (g_ActiveConfig.HiresMaterialMapsEnabled())
 		{
-			PixelShaderManager::SetFlags(0, ~0, mask);
+			PixelShaderManager::SetFlags(0, ~0, material_mask);
+			PixelShaderManager::SetFlags(1, ~0, emissive_mask);
 		}
 		TextureCacheBase::BindTextures();
 	}
