@@ -2,7 +2,6 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
-
 // File description
 // -------------
 // Purpose of this file: Collect boot settings for Core::Init()
@@ -16,7 +15,6 @@
 //                                      EmuThread                Calls CBoot::BootUp
 //               Boot.cpp               CBoot::BootUp()
 //                                      CBoot::EmulatedBS2_Wii() / GC() or Load_BS2()
-
 
 // Includes
 // ----------------
@@ -32,18 +30,17 @@
 #include "Core/BootManager.h"
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
-#include "Core/Host.h"
-#include "Core/Movie.h"
-#include "Core/NetPlayProto.h"
 #include "Core/HW/EXI.h"
 #include "Core/HW/SI.h"
 #include "Core/HW/Sram.h"
 #include "Core/HW/WiimoteReal/WiimoteReal.h"
+#include "Core/Host.h"
+#include "Core/Movie.h"
+#include "Core/NetPlayProto.h"
 #include "VideoCommon/VideoBackendBase.h"
 
 namespace BootManager
 {
-
 // TODO this is an ugly hack which allows us to restore values trampled by per-game settings
 // Apply fire liberally
 struct ConfigCache
@@ -54,7 +51,8 @@ public:
 	// restore values to the configuration from the cache
 	void RestoreConfig(SConfig* config);
 
-	// These store if the relevant setting should be reset back later (true) or if it should be left alone on restore (false)
+	// These store if the relevant setting should be reset back later (true) or if it should be left
+	// alone on restore (false)
 	bool bSetEmulationSpeed;
 	bool bSetVolume;
 	bool bSetFrameSkip;
@@ -169,7 +167,8 @@ void ConfigCache::RestoreConfig(SConfig* config)
 	config->m_SYSCONF->SetData("IPL.PGS", bProgressive);
 	config->m_SYSCONF->SetData("IPL.E60", bPAL60);
 
-	// Only change these back if they were actually set by game ini, since they can be changed while a game is running.
+	// Only change these back if they were actually set by game ini, since they can be changed while a
+	// game is running.
 	if (bSetVolume)
 		config->m_Volume = Volume;
 
@@ -260,7 +259,8 @@ bool BootCore(const std::string& _rFilename)
 		core_section->Get("CPUThread", &StartUp.bCPUThread, StartUp.bCPUThread);
 		core_section->Get("EnableCheats", &StartUp.bEnableCheats, StartUp.bEnableCheats);
 		core_section->Get("SkipIdle", &StartUp.bSkipIdle, StartUp.bSkipIdle);
-		core_section->Get("SyncOnSkipIdle", &StartUp.bSyncGPUOnSkipIdleHack, StartUp.bSyncGPUOnSkipIdleHack);
+		core_section->Get("SyncOnSkipIdle", &StartUp.bSyncGPUOnSkipIdleHack,
+			StartUp.bSyncGPUOnSkipIdleHack);
 		core_section->Get("FPRF", &StartUp.bFPRF, StartUp.bFPRF);
 		core_section->Get("AccurateNaNs", &StartUp.bAccurateNaNs, StartUp.bAccurateNaNs);
 		core_section->Get("MMU", &StartUp.bMMU, StartUp.bMMU);
@@ -276,7 +276,8 @@ bool BootCore(const std::string& _rFilename)
 		core_section->Get("HLE_BS2", &StartUp.bHLE_BS2, StartUp.bHLE_BS2);
 		core_section->Get("ProgressiveScan", &StartUp.bProgressive, StartUp.bProgressive);
 		core_section->Get("PAL60", &StartUp.bPAL60, StartUp.bPAL60);
-		if (core_section->Get("EmulationSpeed", &SConfig::GetInstance().m_EmulationSpeed, SConfig::GetInstance().m_EmulationSpeed))
+		if (core_section->Get("EmulationSpeed", &SConfig::GetInstance().m_EmulationSpeed,
+			SConfig::GetInstance().m_EmulationSpeed))
 			config_cache.bSetEmulationSpeed = true;
 		if (core_section->Get("FrameSkip", &SConfig::GetInstance().m_FrameSkip))
 		{
@@ -284,12 +285,15 @@ bool BootCore(const std::string& _rFilename)
 			Movie::SetFrameSkipping(SConfig::GetInstance().m_FrameSkip);
 		}
 
-		if (dsp_section->Get("Volume", &SConfig::GetInstance().m_Volume, SConfig::GetInstance().m_Volume))
+		if (dsp_section->Get("Volume", &SConfig::GetInstance().m_Volume,
+			SConfig::GetInstance().m_Volume))
 			config_cache.bSetVolume = true;
-		dsp_section->Get("EnableJIT", &SConfig::GetInstance().m_DSPEnableJIT, SConfig::GetInstance().m_DSPEnableJIT);
+		dsp_section->Get("EnableJIT", &SConfig::GetInstance().m_DSPEnableJIT,
+			SConfig::GetInstance().m_DSPEnableJIT);
 		dsp_section->Get("Backend", &SConfig::GetInstance().sBackend, SConfig::GetInstance().sBackend);
 		VideoBackendBase::ActivateBackend(StartUp.m_strVideoBackend);
-		core_section->Get("GPUDeterminismMode", &StartUp.m_strGPUDeterminismMode, StartUp.m_strGPUDeterminismMode);
+		core_section->Get("GPUDeterminismMode", &StartUp.m_strGPUDeterminismMode,
+			StartUp.m_strGPUDeterminismMode);
 
 		for (unsigned int i = 0; i < MAX_SI_CHANNELS; ++i)
 		{
@@ -312,7 +316,8 @@ bool BootCore(const std::string& _rFilename)
 			for (unsigned int i = 0; i < MAX_WIIMOTES; ++i)
 			{
 				controls_section->Get(StringFromFormat("WiimoteSource%u", i), &source, -1);
-				if (source != -1 && g_wiimote_sources[i] != (unsigned)source && source >= WIIMOTE_SRC_NONE && source <= WIIMOTE_SRC_HYBRID)
+				if (source != -1 && g_wiimote_sources[i] != (unsigned)source &&
+					source >= WIIMOTE_SRC_NONE && source <= WIIMOTE_SRC_HYBRID)
 				{
 					config_cache.bSetWiimoteSource[i] = true;
 					g_wiimote_sources[i] = source;
@@ -320,7 +325,8 @@ bool BootCore(const std::string& _rFilename)
 				}
 			}
 			controls_section->Get("WiimoteSourceBB", &source, -1);
-			if (source != -1 && g_wiimote_sources[WIIMOTE_BALANCE_BOARD] != (unsigned)source && (source == WIIMOTE_SRC_NONE || source == WIIMOTE_SRC_REAL))
+			if (source != -1 && g_wiimote_sources[WIIMOTE_BALANCE_BOARD] != (unsigned)source &&
+				(source == WIIMOTE_SRC_NONE || source == WIIMOTE_SRC_REAL))
 			{
 				config_cache.bSetWiimoteSource[WIIMOTE_BALANCE_BOARD] = true;
 				g_wiimote_sources[WIIMOTE_BALANCE_BOARD] = source;
@@ -348,8 +354,10 @@ bool BootCore(const std::string& _rFilename)
 		{
 			if (Movie::IsUsingMemcard(i) && Movie::IsStartingFromClearSave() && !StartUp.bWii)
 			{
-				if (File::Exists(File::GetUserPath(D_GCUSER_IDX) + StringFromFormat("Movie%s.raw", (i == 0) ? "A" : "B")))
-					File::Delete(File::GetUserPath(D_GCUSER_IDX) + StringFromFormat("Movie%s.raw", (i == 0) ? "A" : "B"));
+				if (File::Exists(File::GetUserPath(D_GCUSER_IDX) +
+					StringFromFormat("Movie%s.raw", (i == 0) ? "A" : "B")))
+					File::Delete(File::GetUserPath(D_GCUSER_IDX) +
+						StringFromFormat("Movie%s.raw", (i == 0) ? "A" : "B"));
 			}
 		}
 	}
@@ -379,13 +387,15 @@ bool BootCore(const std::string& _rFilename)
 	}
 
 	// Apply overrides
-	// Some NTSC GameCube games such as Baten Kaitos react strangely to language settings that would be invalid on an NTSC system
+	// Some NTSC GameCube games such as Baten Kaitos react strangely to language settings that would
+	// be invalid on an NTSC system
 	if (!StartUp.bOverrideGCLanguage && StartUp.bNTSC)
 	{
 		StartUp.SelectedLanguage = 0;
 	}
 
-	// Some NTSC Wii games such as Doc Louis's Punch-Out!! and 1942 (Virtual Console) crash if the PAL60 option is enabled
+	// Some NTSC Wii games such as Doc Louis's Punch-Out!! and 1942 (Virtual Console) crash if the
+	// PAL60 option is enabled
 	if (StartUp.bWii && StartUp.bNTSC)
 	{
 		StartUp.bPAL60 = false;
@@ -414,4 +424,4 @@ void Stop()
 	config_cache.RestoreConfig(&StartUp);
 }
 
-} // namespace
+}  // namespace

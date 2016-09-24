@@ -70,7 +70,7 @@ static Common::Event g_compressAndDumpStateSyncEvent;
 static std::thread g_save_thread;
 
 // Don't forget to increase this after doing changes on the savestate system
-static const u32 STATE_VERSION = 57;
+static const u32 STATE_VERSION = 58;
 
 // Maps savestate versions to Dolphin versions.
 // Versions after 42 don't need to be added to this list,
@@ -440,15 +440,15 @@ bool ReadHeader(const std::string& filename, StateHeader& header)
 	return true;
 }
 
-std::string GetInfoStringOfSlot(int slot)
+std::string GetInfoStringOfSlot(int slot, bool translate)
 {
 	std::string filename = MakeStateFilename(slot);
 	if (!File::Exists(filename))
-		return GetStringT("Empty");
+		return translate ? GetStringT("Empty") : "Empty";
 
 	State::StateHeader header;
 	if (!ReadHeader(filename, header))
-		return GetStringT("Unknown");
+		return translate ? GetStringT("Unknown") : "Unknown";
 
 	return Common::Timer::GetDateTimeFormatted(header.time);
 }

@@ -448,7 +448,6 @@ void CISOProperties::CreateGUIControls()
 	sbCoreOverrides->Add(svideorate, 0, wxLEFT, 5);
 	sbCoreOverrides->Add(HalfAudioRate, 0, wxLEFT, 5);
 
-
 	wxStaticBoxSizer* const sbWiiOverrides =
 		new wxStaticBoxSizer(wxVERTICAL, m_GameConfig, _("Wii Console"));
 	if (m_open_iso->GetVolumeType() == DiscIO::Platform::GAMECUBE_DISC)

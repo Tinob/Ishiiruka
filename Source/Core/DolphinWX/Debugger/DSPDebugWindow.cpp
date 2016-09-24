@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <wx/artprov.h>
 #include <wx/aui/auibook.h>
+#include <wx/aui/dockart.h>
 #include <wx/aui/framemanager.h>
 #include <wx/listbox.h>
 #include <wx/panel.h>
@@ -23,6 +24,7 @@
 #include "DolphinWX/Debugger/CodeView.h"
 #include "DolphinWX/Debugger/DSPDebugWindow.h"
 #include "DolphinWX/Debugger/DSPRegisterView.h"
+#include "DolphinWX/Debugger/DebuggerUIUtil.h"
 #include "DolphinWX/Debugger/MemoryView.h"
 #include "DolphinWX/WxUtils.h"
 
@@ -97,6 +99,7 @@ DSPDebuggerLLE::DSPDebuggerLLE(wxWindow* parent, wxWindowID id)
 	m_mgr.AddPane(m_Regs,
 		wxAuiPaneInfo().Right().CloseButton(false).Caption(_("Registers")).Dockable(true));
 
+	m_mgr.GetArtProvider()->SetFont(wxAUI_DOCKART_CAPTION_FONT, DebuggerFont);
 	UpdateState();
 
 	m_mgr.Update();
@@ -224,7 +227,7 @@ void DSPDebuggerLLE::OnSymbolListChange(wxCommandEvent& event)
 		Symbol* pSymbol = static_cast<Symbol*>(m_SymbolList->GetClientData(index));
 		if (pSymbol != nullptr)
 		{
-			if (pSymbol->type == Symbol::SYMBOL_FUNCTION)
+			if (pSymbol->type == Symbol::Type::Function)
 			{
 				JumpToAddress(pSymbol->address);
 			}
