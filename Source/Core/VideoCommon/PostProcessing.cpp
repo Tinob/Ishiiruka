@@ -1702,7 +1702,7 @@ void PostProcessor::PostProcess(TargetRectangle* output_rect, TargetSize* output
 	uintptr_t input_color_texture = m_color_copy_texture->GetInternalObject();
 	uintptr_t input_depth_texture = m_depth_copy_texture->GetInternalObject();
 	// Only copy if the size is different
-	if (src_size != buffer_size)
+	if (src_size != buffer_size || real_dst_texture == src_texture)
 	{
 		CopyTexture(buffer_rect, m_color_copy_texture->GetInternalObject(), src_rect, src_texture, src_size, -1);
 	}
