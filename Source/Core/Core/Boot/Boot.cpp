@@ -17,6 +17,7 @@
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
 #include "Core/Debugger/Debugger_SymbolMap.h"
+#include "Core/GeckoCode.h"
 #include "Core/HLE/HLE.h"
 #include "Core/HW/DVDInterface.h"
 #include "Core/HW/EXI_DeviceIPL.h"
@@ -131,7 +132,7 @@ bool CBoot::FindMapFile(std::string* existing_map_file, std::string* writable_ma
 
 	bool found = false;
 	static const std::string maps_directories[] =
- 	{
+	{
 		File::GetUserPath(D_MAPS_IDX),
 		File::GetSysDirectory() + MAPS_DIR DIR_SEP
 	};
@@ -484,6 +485,10 @@ bool CBoot::BootUp()
 
 	// Not part of the binary itself, but either we or Gecko OS might insert
 	// this, and it doesn't clear the icache properly.
-	HLE::Patch(0x800018a8, "GeckoCodehandler");
+	HLE::Patch(Gecko::ENTRY_POINT, "GeckoCodehandler");
+	if (SConfig::GetInstance().bEnableCheats)
+	{
+		HLE::Patch(Gecko::HLE_TRAMPOLINE_ADDRESS, "GeckoHandlerReturnTrampoline");
+	}
 	return true;
 }

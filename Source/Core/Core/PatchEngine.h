@@ -46,7 +46,7 @@ int GetSpeedhackCycles(const u32 addr);
 void LoadPatchSection(const std::string& section, std::vector<Patch> &patches,
 	IniFile &globalIni, IniFile &localIni);
 void LoadPatches();
-void ApplyFramePatches();
+bool ApplyFramePatches();
 void Shutdown();
 
 inline int GetPatchTypeCharLength(PatchType type)
