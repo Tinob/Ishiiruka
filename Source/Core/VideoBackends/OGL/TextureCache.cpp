@@ -130,6 +130,7 @@ void TextureCache::TCacheEntry::Bind(u32 stage, u32 last_texture)
 {
 	if (nrm_texture && g_ActiveConfig.HiresMaterialMapsEnabled())
 	{
+		s_ActiveTexture = 8;
 		glActiveTexture(GL_TEXTURE8 + stage);
 		glBindTexture(GL_TEXTURE_2D_ARRAY, nrm_texture);
 	}
@@ -243,7 +244,7 @@ TextureCache::TCacheEntryBase* TextureCache::CreateTexture(const TCacheEntryConf
 	entry->SetFormat();
 	if (config.rendertarget)
 	{
-		for (u32 level = 0; level < config.levels; level++)
+		for (u32 level = 0; level <= config.levels; level++)
 		{
 			glTexImage3D(GL_TEXTURE_2D_ARRAY, level, entry->gl_format, config.width, config.height, config.layers, 0, entry->gl_iformat, entry->gl_type, nullptr);
 		}

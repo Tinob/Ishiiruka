@@ -94,10 +94,9 @@ void VertexManager::ResetBuffer(u32 stride)
 	}
 	else
 	{
-		u32 size = MAX_PRIMITIVES_PER_COMMAND * stride / 2;
-		auto buffer = s_vertexBuffer->Map(size, stride);
+		auto buffer = s_vertexBuffer->Map(MAXVBUFFERSIZE, stride);
 		s_pCurBufferPointer = s_pBaseBufferPointer = buffer.first;
-		s_pEndBufferPointer = buffer.first + size;
+		s_pEndBufferPointer = buffer.first + MAXVBUFFERSIZE;
 		s_baseVertex = buffer.second / stride;
 	}
 
@@ -108,7 +107,7 @@ void VertexManager::ResetBuffer(u32 stride)
 	}
 	else
 	{
-		auto buffer = s_indexBuffer->Map(MAX_PRIMITIVES_PER_COMMAND * sizeof(u16) / 2);
+		auto buffer = s_indexBuffer->Map(MAXIBUFFERSIZE * sizeof(u16));
 		s_index_buffer_base = (u16*)buffer.first;
 		IndexGenerator::Start(s_index_buffer_base);
 		s_index_offset = buffer.second;
