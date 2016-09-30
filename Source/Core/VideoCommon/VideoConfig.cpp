@@ -144,6 +144,7 @@ void VideoConfig::Load(const std::string& ini_file)
 	enhancements->Get("TessellationMax", &iTessellationMax, 6);
 	enhancements->Get("TessellationRoundingIntensity", &iTessellationRoundingIntensity, 0);
 	enhancements->Get("TessellationDisplacementIntensity", &iTessellationDisplacementIntensity, 0);
+	enhancements->Get("ForceTrueColor", &bForceTrueColor, true);
 
 	IniFile::Section* stereoscopy = iniFile.GetOrCreateSection("Stereoscopy");
 	stereoscopy->Get("StereoMode", &iStereoMode, 0);
@@ -293,6 +294,7 @@ void VideoConfig::GameIniLoad()
 	CHECK_SETTING("Video_Enhancements", "PostProcessingTrigger", iPostProcessingTrigger);
 	CHECK_SETTING("Video_Enhancements", "PostProcessingShaders", sPostProcessingShaders);
 	CHECK_SETTING("Video_Enhancements", "ScalingShader", sScalingShader);
+	CHECK_SETTING("Video_Enhancements", "ForceTrueColor", bForceTrueColor);
 
 	CHECK_SETTING("Video_Stereoscopy", "StereoMode", iStereoMode);
 	CHECK_SETTING("Video_Stereoscopy", "StereoDepth", iStereoDepth);
@@ -481,6 +483,7 @@ void VideoConfig::Save(const std::string& ini_file)
 	enhancements->Set("TessellationMax", iTessellationMax);
 	enhancements->Set("TessellationRoundingIntensity", iTessellationRoundingIntensity);
 	enhancements->Set("TessellationDisplacementIntensity", iTessellationDisplacementIntensity);
+	enhancements->Set("ForceTrueColor", bForceTrueColor);
 
 	IniFile::Section* stereoscopy = iniFile.GetOrCreateSection("Stereoscopy");
 	stereoscopy->Set("StereoMode", iStereoMode);

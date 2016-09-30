@@ -115,7 +115,9 @@ struct pixel_shader_uid_data
 	u32 ssaa : 1;
 	u32 numColorChans : 2;
 	u32 late_ztest : 1;
-	u32 pad0 : 12;
+	u32 rgba6_format : 1;
+	u32 dither : 1;
+	u32 pad0 : 10;
 
 	u32 render_mode : 2;
 	u32 Pretest : 2;

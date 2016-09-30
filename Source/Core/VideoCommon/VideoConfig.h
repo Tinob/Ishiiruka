@@ -121,6 +121,8 @@ struct VideoConfig final
 	int iTessellationMax;
 	int iTessellationRoundingIntensity;
 	int iTessellationDisplacementIntensity;
+	bool bForceTrueColor;
+
 	// Information
 	bool bShowFPS;
 	bool bShowNetPlayPing;

@@ -254,6 +254,7 @@ float4 CHK_O_U8(float4 x)
 { 
 	return frac(((x) + 1024.0) * (1.0/256.0)) * 256.0;
 }
+#define CAST_TO_U6(x) (floor((x) * 0.25) * 4.0)
 #define BOR(x, n) ((x) + (n))
 #define BSHR(x, n) floor((x) * exp2(-(n)))
 float2 BSH(float2 x, float n)
@@ -287,6 +288,7 @@ int4 CHK_O_U8(int4 x)
 {
 	return x & 255;
 }
+#define CAST_TO_U6(x) ((x) & 252)
 #define BOR(x, n) ((x) | (n))
 #define BSHR(x, n) ((x) >> (n))
 int2 BSH(int2 x, int n)
@@ -490,6 +492,11 @@ void GetPixelShaderUID(PixelShaderUid& out, PIXEL_SHADER_RENDER_MODE render_mode
 	}
 	uid_data.stereo = g_ActiveConfig.iStereoMode > 0;
 	uid_data.bounding_box = g_ActiveConfig.backend_info.bSupportsBBox && BoundingBox::active && g_ActiveConfig.iBBoxMode == BBoxGPU;
+	if (!g_ActiveConfig.bForceTrueColor)
+	{
+		uid_data.rgba6_format = bpmem.zcontrol.pixel_format != PEControl::RGB8_Z24;
+		uid_data.dither = bpmem.blendmode.dither;
+	}
 	if ((g_ActiveConfig.backend_info.APIType & API_D3D9) == 0)
 	{
 		uid_data.msaa = g_ActiveConfig.iMultisamples > 1;
@@ -2124,6 +2131,36 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
 		else
 			out.Write("\tdepth = %s zCoord;\n", ApiType == API_OPENGL ? "" : "1.0 - ");
 	}
+
+	if (render_mode == PSRM_ALPHA_PASS)
+	{
+		out.Write("prev.a = " I_ALPHA ".a;\n");
+	}
+	else
+	{
+		WriteFog<Use_integer_math>(out, uid_data);		
+	}
+
+	if (uid_data.dither && uid_data.rgba6_format)
+	{
+		if (ApiType & API_D3D9)
+		{
+			out.Write("\tfloat2 dither = round(rawpos.xy) % 4;\n");
+			out.Write("\tfloat bayer[16] = {-7.0,1.0,-5.0,3.0,5.0,-3.0,7.0,-1.0,-4.0,4.0,-6.0,2.0,8.0,0.0,6.0,-2.0};\n");
+		}
+		else
+		{
+			out.Write("\tint2 dither = int2(rawpos.xy) & 3;\n");
+			out.Write("\tint bayer[16] = {-7,1,-5,3,5,-3,7,-1,-4,4,-6,2,8,0,6,-2};\n");
+		}
+		out.Write("\tprev.rgb = prev.rgb + bayer[dither.y * 4 + dither.x];\n");
+	}
+
+	if (uid_data.rgba6_format)
+	{
+		out.Write("\tprev = CAST_TO_U6(clamp(prev, 0, 255));\n");
+	}
+
 	if (forcePhong)
 	{
 		out.Write(
@@ -2137,16 +2174,6 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
 		out.Write("if(" I_FLAGS ".y != 0)\n{\n");
 		out.Write("prev.rgb += wu3(emmisive_mask);\n");
 		out.Write("}\n");
-	}
-
-	if (render_mode == PSRM_ALPHA_PASS)
-	{
-		out.Write("ocol0 = float4(prev.rgb," I_ALPHA ".a) * (1.0/255.0);\n");
-	}
-	else
-	{
-		WriteFog<Use_integer_math>(out, uid_data);
-		out.Write("ocol0 = float4(prev) * (1.0/255.0);\n");
 	}
 	// Use dual-source color blending to perform dst alpha in a single pass
 	if (render_mode == PSRM_DUAL_SOURCE_BLEND)
@@ -2163,8 +2190,15 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
 			out.Write("ocol1 = float4(prev) * (1.0/255.0);\n");
 		}
 		// ...and the alpha from ocol0 will be written to the framebuffer.
-		out.Write("ocol0.a = " I_ALPHA ".a*(1.0/255.0);\n");
+		out.Write("prev.a = " I_ALPHA ".a;\n");
+		if (uid_data.rgba6_format)
+		{
+			out.Write("\tprev.a = CAST_TO_U6(prev.a);\n");
+		}
 	}
+
+	out.Write("ocol0 = float4(prev) * (1.0/255.0);\n");
+
 	if (uid_data.bounding_box)
 	{
 		const char* atomic_op = ApiType == API_OPENGL ? "atomic" : "Interlocked";
