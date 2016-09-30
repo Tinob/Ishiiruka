@@ -546,7 +546,7 @@ void PixelShaderManager::SetColorMatrix(const float* pmatrix)
 	s_nColorsChanged[0] = s_nColorsChanged[1] = 15;
 }
 
-void PixelShaderManager::InvalidateXFRange(int start, int end)
+void PixelShaderManager::InvalidateXFRange(u32 start, u32 end)
 {
 	if (start < XFMEM_LIGHTS_END && end > XFMEM_LIGHTS)
 	{

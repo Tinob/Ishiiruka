@@ -581,6 +581,10 @@ void VertexShaderManager::SetConstants()
 
 		PRIM_LOG("Projection: %f %f %f %f %f %f\n", rawProjection[0], rawProjection[1], rawProjection[2], rawProjection[3], rawProjection[4], rawProjection[5]);
 
+		Matrix44 projMtx;
+		Matrix44 correctedMtx;
+		Matrix44::Set(projMtx, g_fProjectionMatrix);
+
 		if ((g_ActiveConfig.bFreeLook || g_ActiveConfig.iStereoMode) && xfmem.projection.type == GX_PERSPECTIVE)
 		{
 			Matrix44 mtxA;
@@ -590,38 +594,48 @@ void VertexShaderManager::SetConstants()
 			Matrix44::Translate(mtxA, s_fViewTranslationVector);
 			Matrix44::LoadMatrix33(mtxB, s_viewRotationMatrix);
 			Matrix44::Multiply(mtxB, mtxA, viewMtx); // view = rotation x translation
-			Matrix44::Set(mtxB, g_fProjectionMatrix);
-			Matrix44::Multiply(mtxB, viewMtx, mtxA); // mtxA = projection x view
-			Matrix44::Multiply(s_viewportCorrection, mtxA, mtxB); // mtxB = viewportCorrection x mtxA
-
-			m_buffer.SetMultiConstant4v(C_PROJECTION, 4, mtxB.data);
+			Matrix44::Multiply(projMtx, viewMtx, mtxA); // mtxA = projection x view
+			Matrix44::Multiply(s_viewportCorrection, mtxA, correctedMtx); // correctedMtx = viewportCorrection x mtxA			
 		}
 		else
 		{
-			Matrix44 projMtx;
-			Matrix44::Set(projMtx, g_fProjectionMatrix);
-
-			Matrix44 correctedMtx;
-			Matrix44::Multiply(s_viewportCorrection, projMtx, correctedMtx);
-			m_buffer.SetMultiConstant4v(C_PROJECTION, 4, correctedMtx.data);
+			Matrix44::Multiply(s_viewportCorrection, projMtx, correctedMtx);  // correctedMtx = viewportCorrection x projMtx			
 		}
+		if (xfmem.viewport.wd < 0.0f)
+		{
+			correctedMtx.data[0] *= -1.0f;
+			correctedMtx.data[1] *= -1.0f;
+			correctedMtx.data[2] *= -1.0f;
+			correctedMtx.data[3] *= -1.0f;
+		}
+		if (xfmem.viewport.ht > 0.0f)
+		{
+			correctedMtx.data[4] *= -1.0f;
+			correctedMtx.data[5] *= -1.0f;
+			correctedMtx.data[6] *= -1.0f;
+			correctedMtx.data[7] *= -1.0f;
+		}
+		m_buffer.SetMultiConstant4v(C_PROJECTION, 4, correctedMtx.data);
 	}
 }
 
-void VertexShaderManager::InvalidateXFRange(int start, int end)
+void VertexShaderManager::InvalidateXFRange(u32 start, u32 end)
 {
-	if (((u32)start >= (u32)g_main_cp_state.matrix_index_a.Tex0MtxIdx * 4 && (u32)start < (u32)g_main_cp_state.matrix_index_a.Tex0MtxIdx * 4 + 12) ||
-		((u32)start >= (u32)g_main_cp_state.matrix_index_a.Tex1MtxIdx * 4 && (u32)start < (u32)g_main_cp_state.matrix_index_a.Tex1MtxIdx * 4 + 12) ||
-		((u32)start >= (u32)g_main_cp_state.matrix_index_a.Tex2MtxIdx * 4 && (u32)start < (u32)g_main_cp_state.matrix_index_a.Tex2MtxIdx * 4 + 12) ||
-		((u32)start >= (u32)g_main_cp_state.matrix_index_a.Tex3MtxIdx * 4 && (u32)start < (u32)g_main_cp_state.matrix_index_a.Tex3MtxIdx * 4 + 12))
+	const TMatrixIndexA& ma = g_main_cp_state.matrix_index_a;
+	const TMatrixIndexB& mb = g_main_cp_state.matrix_index_b;
+
+	if ((start >= ma.Tex0MtxIdx * 4u && start < ma.Tex0MtxIdx * 4u + 12u) ||
+		(start >= ma.Tex1MtxIdx * 4u && start < ma.Tex1MtxIdx * 4u + 12u) ||
+		(start >= ma.Tex2MtxIdx * 4u && start < ma.Tex2MtxIdx * 4u + 12u) ||
+		(start >= ma.Tex3MtxIdx * 4u && start < ma.Tex3MtxIdx * 4u + 12u))
 	{
 		s_tex_matrices_changed[0] = true;
 	}
 
-	if (((u32)start >= (u32)g_main_cp_state.matrix_index_b.Tex4MtxIdx * 4 && (u32)start < (u32)g_main_cp_state.matrix_index_b.Tex4MtxIdx * 4 + 12) ||
-		((u32)start >= (u32)g_main_cp_state.matrix_index_b.Tex5MtxIdx * 4 && (u32)start < (u32)g_main_cp_state.matrix_index_b.Tex5MtxIdx * 4 + 12) ||
-		((u32)start >= (u32)g_main_cp_state.matrix_index_b.Tex6MtxIdx * 4 && (u32)start < (u32)g_main_cp_state.matrix_index_b.Tex6MtxIdx * 4 + 12) ||
-		((u32)start >= (u32)g_main_cp_state.matrix_index_b.Tex7MtxIdx * 4 && (u32)start < (u32)g_main_cp_state.matrix_index_b.Tex7MtxIdx * 4 + 12))
+	if ((start >= mb.Tex4MtxIdx * 4u && start < mb.Tex4MtxIdx * 4u + 12u) ||
+		(start >= mb.Tex5MtxIdx * 4u && start < mb.Tex5MtxIdx * 4u + 12u) ||
+		(start >= mb.Tex6MtxIdx * 4u && start < mb.Tex6MtxIdx * 4u + 12u) ||
+		(start >= mb.Tex7MtxIdx * 4u && start < mb.Tex7MtxIdx * 4u + 12u))
 	{
 		s_tex_matrices_changed[1] = true;
 	}
@@ -635,8 +649,8 @@ void VertexShaderManager::InvalidateXFRange(int start, int end)
 		}
 		else
 		{
-			if (s_transform_matrices_changed[0] > start) s_transform_matrices_changed[0] = start;
-			if (s_transform_matrices_changed[1] < end) s_transform_matrices_changed[1] = end > XFMEM_POSMATRICES_END ? XFMEM_POSMATRICES_END : end;
+			if (s_transform_matrices_changed[0] > static_cast<int>(start)) s_transform_matrices_changed[0] = start;
+			if (s_transform_matrices_changed[1] < static_cast<int>(end)) s_transform_matrices_changed[1] = end > XFMEM_POSMATRICES_END ? XFMEM_POSMATRICES_END : end;
 		}
 	}
 

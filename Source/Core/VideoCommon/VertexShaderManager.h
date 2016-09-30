@@ -34,7 +34,7 @@ public:
 	// constant management
 	static void SetConstants();
 
-	static void InvalidateXFRange(int start, int end);
+	static void InvalidateXFRange(u32 start, u32 end);
 	static void SetTexMatrixChangedA(u32 value);
 	static void SetTexMatrixChangedB(u32 value);
 
