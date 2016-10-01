@@ -430,14 +430,14 @@ void TextureCache::TCacheEntry::FromRenderTarget(u8* dst, PEControl::PixelFormat
 	FramebufferManager::SetFramebuffer(framebuffer);
 
 	OpenGL_BindAttributelessVAO();
-
+	TargetRectangle R = g_renderer->ConvertEFBRectangle(srcRect);
 	glActiveTexture(GL_TEXTURE9);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, read_texture);
 	if (scaleByHalf)
 		g_sampler_cache->BindLinearSampler(9);
 	else
 		g_sampler_cache->BindNearestSampler(9);
-	glViewport(0, 0, config.width, config.height);
+	glViewport(0, 0, R.GetWidth() / (scaleByHalf ? 2 : 1), R.GetHeight() / (scaleByHalf ? 2 : 1));
 
 	GLuint uniform_location;
 	if (srcFormat == PEControl::Z24)
@@ -457,7 +457,7 @@ void TextureCache::TCacheEntry::FromRenderTarget(u8* dst, PEControl::PixelFormat
 		uniform_location = s_ColorMatrixPositionUniform;
 	}
 
-	TargetRectangle R = g_renderer->ConvertEFBRectangle(srcRect);
+	
 	glUniform4f(uniform_location, static_cast<float>(R.left), static_cast<float>(R.top),
 		static_cast<float>(R.right), static_cast<float>(R.bottom));
 

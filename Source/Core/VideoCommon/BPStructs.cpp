@@ -255,9 +255,6 @@ void BPWritten(const BPCmd& bp)
 		// TODO: What's the behavior of out of bound access?
 		srcRect.right = (int)(bpmem.copyTexSrcXY.x + bpmem.copyTexSrcWH.x + 1);
 		srcRect.bottom = (int)(bpmem.copyTexSrcXY.y + bpmem.copyTexSrcWH.y + 1);
-		// fix to avoid crashes in oversized copies while a correct code is implemented
-		srcRect.right = std::min(srcRect.right, static_cast<int>(EFB_WIDTH));
-		srcRect.bottom = std::min(srcRect.bottom, static_cast<int>(EFB_HEIGHT));
 		UPE_Copy PE_copy = bpmem.triggerEFBCopy;
 
 		// Check if we are to copy from the EFB or draw to the XFB

@@ -1242,13 +1242,19 @@ void TextureCacheBase::CopyRenderTargetToTexture(u32 dstAddr, u32 dstFormat, u32
 	const u32 bytes_per_block = baseFormat == GX_TF_RGBA8 ? 64 : 32;
 
 	u32 bytes_per_row = num_blocks_x * bytes_per_block;
-
-	bool copy_to_ram = !g_ActiveConfig.bSkipEFBCopyToRam;
+	// temporal fix for hangs when trying to copy larger buffers that the actual efb size
+	bool copy_to_ram = !g_ActiveConfig.bSkipEFBCopyToRam && srcRect.GetWidth() <= EFB_WIDTH && srcRect.GetHeight() <= EFB_HEIGHT;
 	if (g_ActiveConfig.bLastStoryEFBToRam)
 	{
 		// mimimi085181: Ugly speedhack for the Last Story 
 		copy_to_ram = copy_to_ram || ((tex_w == 64 || tex_w == 128 || tex_w == 256) && !isIntensity && tex_h != 1 && (dstFormat == 6 || dstFormat == 32));
 	}
+	
+	EFBRectangle rectifiedRect;
+	rectifiedRect.left = std::min(srcRect.left, (int)EFB_WIDTH);
+	rectifiedRect.right = std::min(srcRect.right, (int)EFB_WIDTH);
+	rectifiedRect.top = std::min(srcRect.top, (int)EFB_HEIGHT);
+	rectifiedRect.bottom = std::min(srcRect.bottom, (int)EFB_HEIGHT);
 
 	bool copy_to_vram = true;
 	// Only apply triggered post-processing on specific formats, to avoid false positives.
@@ -1257,7 +1263,7 @@ void TextureCacheBase::CopyRenderTargetToTexture(u32 dstAddr, u32 dstFormat, u32
 	{
 		if (srcFormat != PEControl::Z24 && !isIntensity && dstFormat >= 4 && dstFormat <= 6)
 		{
-			const TargetRectangle targetSource = g_renderer->ConvertEFBRectangle(srcRect);
+			const TargetRectangle targetSource = g_renderer->ConvertEFBRectangle(rectifiedRect);
 			g_renderer->GetPostProcessor()->OnEFBCopy(&targetSource);
 		}
 	}
@@ -1350,7 +1356,7 @@ void TextureCacheBase::CopyRenderTargetToTexture(u32 dstAddr, u32 dstFormat, u32
 			entry->SetEfbCopy(dstStride);
 			entry->is_custom_tex = false;
 
-			entry->FromRenderTarget(dst, srcFormat, srcRect, scaleByHalf, cbufid, colmat);
+			entry->FromRenderTarget(dst, srcFormat, rectifiedRect, scaleByHalf, cbufid, colmat);
 
 			u64 hash = entry->CalculateHash();
 			entry->SetHashes(hash, hash);

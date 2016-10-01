@@ -431,6 +431,7 @@ void TextureCache::TCacheEntry::FromRenderTarget(u8* dst, PEControl::PixelFormat
 	D3DTexture2D* efb_tex = (src_format == PEControl::Z24) ?
 		FramebufferManager::GetEFBDepthTexture() :
 		FramebufferManager::GetEFBColorTexture();
+	const TargetRectangle targetSource = g_renderer->ConvertEFBRectangle(src_rect);
 	if (multisampled && scale_by_half)
 	{
 		multisampled = false;
@@ -446,11 +447,11 @@ void TextureCache::TCacheEntry::FromRenderTarget(u8* dst, PEControl::PixelFormat
 		s_efb_copy_last_cbuf_id = cbuf_id;
 	}
 	// stretch picture with increased internal resolution
-	D3D::SetViewportAndScissor(0, 0, config.width, config.height);
+	D3D::SetViewportAndScissor(0, 0, targetSource.GetWidth() / (scale_by_half ? 2 : 1), targetSource.GetHeight() / (scale_by_half ? 2 : 1));
 	D3D::current_command_list->SetGraphicsRootConstantBufferView(DESCRIPTOR_TABLE_PS_CBVONE, s_efb_copy_stream_buffer->GetGPUAddressOfCurrentAllocation());
 	D3D::command_list_mgr->SetCommandListDirtyState(COMMAND_LIST_STATE_PS_CBV, true);
 
-	const TargetRectangle targetSource = g_renderer->ConvertEFBRectangle(src_rect);
+	
 	// TODO: try targetSource.asRECT();
 	const D3D12_RECT sourcerect = CD3DX12_RECT(targetSource.left, targetSource.top, targetSource.right, targetSource.bottom);
 
