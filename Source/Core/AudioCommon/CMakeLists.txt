@@ -24,8 +24,12 @@ endif(AO_FOUND)
 
 if(OPENAL_FOUND)
 	set(SRCS ${SRCS} OpenALStream.cpp aldlist.cpp)
-	set(LIBS ${LIBS} ${OPENAL_LIBRARY} SoundTouch )
+	set(LIBS ${LIBS} ${OPENAL_LIBRARY})
 endif(OPENAL_FOUND)
+
+if(SOUNDTOUCH_FOUND)
+	set(LIBS ${LIBS} SoundTouch )
+endif(SOUNDTOUCH_FOUND)
 
 if(PULSEAUDIO_FOUND)
 	set(SRCS ${SRCS} PulseAudioStream.cpp)
