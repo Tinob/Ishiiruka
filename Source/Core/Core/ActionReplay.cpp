@@ -2,7 +2,6 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
-
 // -----------------------------------------------------------------------------------------
 // Partial Action Replay code system implementation.
 // Will never be able to support some AR codes - specifically those that patch the running
@@ -16,7 +15,8 @@
 // Code Types:
 // (Unconditional) Normal Codes (0): this one has subtypes inside
 // (Conditional) Normal Codes (1 - 7): these just compare values and set the line skip info
-// Zero Codes: any code with no address.  These codes are used to do special operations like memory copy, etc
+// Zero Codes: any code with no address.  These codes are used to do special operations like memory
+// copy, etc
 // -------------------------------------------------------------------------------------------------------------
 
 #include <algorithm>
@@ -30,18 +30,17 @@
 
 #include "Common/CommonTypes.h"
 #include "Common/IniFile.h"
-#include "Common/StringUtil.h"
 #include "Common/Logging/LogManager.h"
+#include "Common/StringUtil.h"
 
-#include "Core/ActionReplay.h"
 #include "Core/ARDecrypt.h"
+#include "Core/ActionReplay.h"
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
 #include "Core/PowerPC/PowerPC.h"
 
 namespace ActionReplay
 {
-
 enum
 {
 	// Zero Code Types
@@ -57,7 +56,7 @@ enum
 	CONDTIONAL_GREATER_THAN_SIGNED = 0x04,
 	CONDTIONAL_LESS_THAN_UNSIGNED = 0x05,
 	CONDTIONAL_GREATER_THAN_UNSIGNED = 0x06,
-	CONDTIONAL_AND = 0x07, // bitwise AND
+	CONDTIONAL_AND = 0x07,  // bitwise AND
 
 	// Conditional Line Counts
 	CONDTIONAL_ONE_LINE = 0x00,
@@ -89,8 +88,7 @@ static bool s_disable_logging = false;
 
 struct ARAddr
 {
-	union
-	{
+	union {
 		u32 address;
 		struct
 		{
@@ -101,16 +99,9 @@ struct ARAddr
 		};
 	};
 
-	ARAddr(const u32 addr) : address(addr)
-	{}
-	u32 GCAddress() const
-	{
-		return gcaddr | 0x80000000;
-	}
-	operator u32() const
-	{
-		return address;
-	}
+	ARAddr(const u32 addr) : address(addr) {}
+	u32 GCAddress() const { return gcaddr | 0x80000000; }
+	operator u32() const { return address; }
 };
 
 // ----------------------
@@ -123,10 +114,8 @@ void ApplyCodes(const std::vector<ARCode>& codes)
 	std::lock_guard<std::mutex> guard(s_lock);
 	s_disable_logging = false;
 	s_active_codes.clear();
-	std::copy_if(codes.begin(), codes.end(), std::back_inserter(s_active_codes), [](const ARCode& code)
-	{
-		return code.active;
-	});
+	std::copy_if(codes.begin(), codes.end(), std::back_inserter(s_active_codes),
+		[](const ARCode& code) { return code.active; });
 	s_active_codes.shrink_to_fit();
 }
 
@@ -195,7 +184,7 @@ std::vector<ARCode> LoadCodes(const IniFile& global_ini, const IniFile& local_in
 				}
 				if (encrypted_lines.size())
 				{
-					DecryptARCode(encrypted_lines, current_code.ops);
+					DecryptARCode(encrypted_lines, &current_code.ops);
 					codes.push_back(current_code);
 					current_code.ops.clear();
 					encrypted_lines.clear();
@@ -234,7 +223,8 @@ std::vector<ARCode> LoadCodes(const IniFile& global_ini, const IniFile& local_in
 				else
 				{
 					SplitString(line, '-', pieces);
-					if (pieces.size() == 3 && pieces[0].size() == 4 && pieces[1].size() == 4 && pieces[2].size() == 5)
+					if (pieces.size() == 3 && pieces[0].size() == 4 && pieces[1].size() == 4 &&
+						pieces[2].size() == 5)
 					{
 						// Encrypted AR code
 						// Decryption is done in "blocks", so we must push blocks into a vector,
@@ -252,7 +242,7 @@ std::vector<ARCode> LoadCodes(const IniFile& global_ini, const IniFile& local_in
 		}
 		if (encrypted_lines.size())
 		{
-			DecryptARCode(encrypted_lines, current_code.ops);
+			DecryptARCode(encrypted_lines, &current_code.ops);
 			codes.push_back(current_code);
 		}
 	}
@@ -281,7 +271,6 @@ void SaveCodes(IniFile* local_ini, const std::vector<ARCode>& codes)
 	local_ini->SetLines("ActionReplay_Enabled", enabled_lines);
 	local_ini->SetLines("ActionReplay", lines);
 }
-
 
 static void LogInfo(const char* format, ...)
 {
@@ -366,7 +355,7 @@ static bool Subtype_RamWriteAndFill(const ARAddr& addr, const u32 data)
 	}
 
 	case DATATYPE_32BIT_FLOAT:
-	case DATATYPE_32BIT: // Dword write
+	case DATATYPE_32BIT:  // Dword write
 		LogInfo("32-bit Write");
 		LogInfo("--------");
 		PowerPC::HostWrite_U32(data, new_addr);
@@ -466,7 +455,8 @@ static bool Subtype_AddCode(const ARAddr& addr, const u32 data)
 		LogInfo("16-bit Add");
 		LogInfo("--------");
 		PowerPC::HostWrite_U16(PowerPC::HostRead_U16(new_addr) + data, new_addr);
-		LogInfo("Wrote %08x to address %08x", PowerPC::HostRead_U16(new_addr) + (data & 0xFFFF), new_addr);
+		LogInfo("Wrote %08x to address %08x", PowerPC::HostRead_U16(new_addr) + (data & 0xFFFF),
+			new_addr);
 		LogInfo("--------");
 		break;
 
@@ -523,11 +513,11 @@ static bool Subtype_MasterCodeAndWriteToCCXXXXXX(const ARAddr& addr, const u32 d
 static bool ZeroCode_FillAndSlide(const u32 val_last, const ARAddr& addr, const u32 data)
 {
 	const u32 new_addr = ARAddr(val_last).GCAddress();
-	const u8  size = ARAddr(val_last).size;
+	const u8 size = ARAddr(val_last).size;
 
 	const s16 addr_incr = static_cast<s16>(data & 0xFFFF);
-	const s8  val_incr = static_cast<s8>(data >> 24);
-	const u8  write_num = static_cast<u8>((data & 0xFF0000) >> 16);
+	const s8 val_incr = static_cast<s8>(data >> 24);
+	const u8 write_num = static_cast<u8>((data & 0xFF0000) >> 16);
 
 	u32 val = addr;
 	u32 curr_addr = new_addr;
@@ -610,7 +600,7 @@ static bool ZeroCode_MemoryCopy(const u32 val_last, const ARAddr& addr, const u3
 	if ((data & ~0x7FFF) == 0x0000)
 	{
 		if ((data >> 24) != 0x0)
-		{ // Memory Copy With Pointers Support
+		{  // Memory Copy With Pointers Support
 			LogInfo("Memory Copy With Pointers Support");
 			LogInfo("--------");
 			for (int i = 0; i < 138; ++i)
@@ -621,7 +611,7 @@ static bool ZeroCode_MemoryCopy(const u32 val_last, const ARAddr& addr, const u3
 			LogInfo("--------");
 		}
 		else
-		{ // Memory Copy Without Pointer Support
+		{  // Memory Copy Without Pointer Support
 			LogInfo("Memory Copy Without Pointers Support");
 			LogInfo("--------");
 			for (int i = 0; i < num_bytes; ++i)
@@ -636,8 +626,8 @@ static bool ZeroCode_MemoryCopy(const u32 val_last, const ARAddr& addr, const u3
 	else
 	{
 		LogInfo("Bad Value");
-		PanicAlertT("Action Replay Error: Invalid value (%08x) in Memory Copy (%s)",
-			(data & ~0x7FFF), s_current_code->name.c_str());
+		PanicAlertT("Action Replay Error: Invalid value (%08x) in Memory Copy (%s)", (data & ~0x7FFF),
+			s_current_code->name.c_str());
 		return false;
 	}
 	return true;
@@ -647,25 +637,25 @@ static bool NormalCode(const ARAddr& addr, const u32 data)
 {
 	switch (addr.subtype)
 	{
-	case SUB_RAM_WRITE: // Ram write (and fill)
+	case SUB_RAM_WRITE:  // Ram write (and fill)
 		LogInfo("Doing Ram Write And Fill");
 		if (!Subtype_RamWriteAndFill(addr, data))
 			return false;
 		break;
 
-	case SUB_WRITE_POINTER: // Write to pointer
+	case SUB_WRITE_POINTER:  // Write to pointer
 		LogInfo("Doing Write To Pointer");
 		if (!Subtype_WriteToPointer(addr, data))
 			return false;
 		break;
 
-	case SUB_ADD_CODE: // Increment Value
+	case SUB_ADD_CODE:  // Increment Value
 		LogInfo("Doing Add Code");
 		if (!Subtype_AddCode(addr, data))
 			return false;
 		break;
 
-	case SUB_MASTER_CODE: // Master Code & Write to CCXXXXXX
+	case SUB_MASTER_CODE:  // Master Code & Write to CCXXXXXX
 		LogInfo("Doing Master Code And Write to CCXXXXXX (ncode not supported)");
 		if (!Subtype_MasterCodeAndWriteToCCXXXXXX(addr, data))
 			return false;
@@ -711,11 +701,12 @@ static bool CompareValues(const u32 val1, const u32 val2, const int type)
 
 	case CONDTIONAL_AND:
 		LogInfo("Type 7: If And");
-		return !!(val1 & val2); // bitwise AND
+		return !!(val1 & val2);  // bitwise AND
 
-	default: LogInfo("Unknown Compare type");
-		PanicAlertT("Action Replay: Invalid Normal Code Type %08x (%s)",
-			type, s_current_code->name.c_str());
+	default:
+		LogInfo("Unknown Compare type");
+		PanicAlertT("Action Replay: Invalid Normal Code Type %08x (%s)", type,
+			s_current_code->name.c_str());
 		return false;
 	}
 }
@@ -758,7 +749,7 @@ static bool ConditionalCode(const ARAddr& addr, const u32 data, int* const pSkip
 		{
 		case CONDTIONAL_ONE_LINE:
 		case CONDTIONAL_TWO_LINES:
-			*pSkipCount = addr.subtype + 1; // Skip 1 or 2 lines
+			*pSkipCount = addr.subtype + 1;  // Skip 1 or 2 lines
 			break;
 
 			// Skip all lines,
@@ -770,8 +761,8 @@ static bool ConditionalCode(const ARAddr& addr, const u32 data, int* const pSkip
 
 		default:
 			LogInfo("Bad Subtype");
-			PanicAlertT("Action Replay: Normal Code %i: Invalid subtype %08x (%s)",
-				1, addr.subtype, s_current_code->name.c_str());
+			PanicAlertT("Action Replay: Normal Code %i: Invalid subtype %08x (%s)", 1, addr.subtype,
+				s_current_code->name.c_str());
 			return false;
 		}
 	}
@@ -805,7 +796,7 @@ static bool RunCodeLocked(const ARCode& arcode)
 		// after a conditional code, skip lines if needed
 		if (skip_count)
 		{
-			if (skip_count > 0) // skip x lines
+			if (skip_count > 0)  // skip x lines
 			{
 				LogInfo("Line skipped");
 				--skip_count;
@@ -814,13 +805,13 @@ static bool RunCodeLocked(const ARCode& arcode)
 			{
 				// skip all lines
 				LogInfo("All Lines skipped");
-				return true; // don't need to iterate through the rest of the ops
+				return true;  // don't need to iterate through the rest of the ops
 			}
 			else if (-CONDTIONAL_ALL_LINES_UNTIL == skip_count)
 			{
 				// skip until a "00000000 40000000" line is reached
 				LogInfo("Line skipped");
-				if (addr == 0 && 0x40000000 == data) // check for an endif line
+				if (addr == 0 && 0x40000000 == data)  // check for an endif line
 					skip_count = 0;
 			}
 
@@ -828,7 +819,7 @@ static bool RunCodeLocked(const ARCode& arcode)
 		}
 
 		LogInfo("--- Running Code: %08x %08x ---", addr.address, data);
-		//LogInfo("Command: %08x", cmd);
+		// LogInfo("Command: %08x", cmd);
 
 		// Do Fill & Slide
 		if (do_fill_and_slide)
@@ -853,18 +844,20 @@ static bool RunCodeLocked(const ARCode& arcode)
 		// ActionReplay program self modification codes
 		if (addr >= 0x00002000 && addr < 0x00003000)
 		{
-			LogInfo("This action replay simulator does not support codes that modify Action Replay itself.");
-			PanicAlertT("This action replay simulator does not support codes that modify Action Replay itself.");
+			LogInfo(
+				"This action replay simulator does not support codes that modify Action Replay itself.");
+			PanicAlertT(
+				"This action replay simulator does not support codes that modify Action Replay itself.");
 			return false;
 		}
 
 		// skip these weird init lines
 		// TODO: Where are the "weird init lines"?
-		//if (iter == code.ops.begin() && cmd == 1)
-		//continue;
+		// if (iter == code.ops.begin() && cmd == 1)
+		// continue;
 
 		// Zero codes
-		if (0x0 == addr) // Check if the code is a zero code
+		if (0x0 == addr)  // Check if the code is a zero code
 		{
 			const u8 zcode = data >> 29;
 
@@ -872,23 +865,25 @@ static bool RunCodeLocked(const ARCode& arcode)
 
 			switch (zcode)
 			{
-			case ZCODE_END: // END OF CODES
+			case ZCODE_END:  // END OF CODES
 				LogInfo("ZCode: End Of Codes");
 				return true;
 
-				// TODO: the "00000000 40000000"(end if) codes fall into this case, I don't think that is correct
-			case ZCODE_NORM: // Normal execution of codes
+				// TODO: the "00000000 40000000"(end if) codes fall into this case, I don't think that is
+				// correct
+			case ZCODE_NORM:  // Normal execution of codes
 				// Todo: Set register 1BB4 to 0
 				LogInfo("ZCode: Normal execution of codes, set register 1BB4 to 0 (zcode not supported)");
 				break;
 
-			case ZCODE_ROW: // Executes all codes in the same row
+			case ZCODE_ROW:  // Executes all codes in the same row
 				// Todo: Set register 1BB4 to 1
-				LogInfo("ZCode: Executes all codes in the same row, Set register 1BB4 to 1 (zcode not supported)");
+				LogInfo("ZCode: Executes all codes in the same row, Set register 1BB4 to 1 (zcode not "
+					"supported)");
 				PanicAlertT("Zero 3 code not supported");
 				return false;
 
-			case ZCODE_04: // Fill & Slide or Memory Copy
+			case ZCODE_04:  // Fill & Slide or Memory Copy
 				if (0x3 == ((data >> 25) & 0x03))
 				{
 					LogInfo("ZCode: Memory Copy");
@@ -944,13 +939,14 @@ void RunAllActive()
 	// are only atomic ops unless contested. It should be rare for this to
 	// be contested.
 	std::lock_guard<std::mutex> guard(s_lock);
-	s_active_codes.erase(std::remove_if(s_active_codes.begin(), s_active_codes.end(), [](const ARCode& code)
-	{
+	s_active_codes.erase(std::remove_if(s_active_codes.begin(), s_active_codes.end(),
+		[](const ARCode& code) {
 		bool success = RunCodeLocked(code);
 		LogInfo("\n");
 		return !success;
-	}), s_active_codes.end());
+	}),
+		s_active_codes.end());
 	s_disable_logging = true;
 }
 
-} // namespace ActionReplay
+}  // namespace ActionReplay

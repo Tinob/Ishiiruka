@@ -41,7 +41,7 @@ ProgramShaderCache::PCache* ProgramShaderCache::pshaders;
 ProgramShaderCache::PCacheEntry* ProgramShaderCache::last_entry;
 SHADERUID ProgramShaderCache::last_uid;
 
-static char s_glsl_header[1024] = "";
+static char s_glsl_header[2048] = "";
 
 static std::string GetGLSLVersionString()
 {
@@ -496,7 +496,7 @@ void ProgramShaderCache::Init()
 			item.puid.CalculateUIDHash();
 			const pixel_shader_uid_data& uid_data = item.puid.GetUidData();
 			shader_count++;
-			Host_UpdateTitle(StringFromFormat("Compiling Shaders %zu %% (%zu/%zu)", (shader_count * 100) / total, shader_count, total));
+			//Host_UpdateTitle(StringFromFormat("Compiling Shaders %zu %% (%zu/%zu)", (shader_count * 100) / total, shader_count, total));
 			if ((!uid_data.stereo || g_ActiveConfig.backend_info.bSupportsGeometryShaders)
 				&&(!uid_data.bounding_box || g_ActiveConfig.backend_info.bSupportsBBox))
 			{
@@ -609,8 +609,8 @@ void ProgramShaderCache::CreateHeader()
 		"%s\n" // early-z
 		"%s\n" // 420pack
 		"%s\n" // msaa
-		"%s\n" // sample shading
-		"%s\n" // Sampler binding
+		"%s\n" // Input/output/sampler binding
+		"%s\n" // Varying location
 		"%s\n" // storage buffer
 		"%s\n" // shader5
 		"%s\n" // SSAA
@@ -621,6 +621,7 @@ void ProgramShaderCache::CreateHeader()
 		"%s\n" // ES dual source blend
 
 		// Precision defines for GLSL ES
+		"%s\n"
 		"%s\n"
 		"%s\n"
 		"%s\n"
@@ -661,7 +662,23 @@ void ProgramShaderCache::CreateHeader()
 		, (g_ActiveConfig.backend_info.bSupportsBindingLayout && v < GLSLES_310) ? "#extension GL_ARB_shading_language_420pack : enable" : ""
 		, (g_ogl_config.bSupportsMSAA && v < GLSL_150) ? "#extension GL_ARB_texture_multisample : enable" : ""
 		, (v < GLSLES_300 && g_ActiveConfig.backend_info.bSupportsSSAA) ? "#extension GL_ARB_sample_shading : enable" : ""
-		, g_ActiveConfig.backend_info.bSupportsBindingLayout ? "#define SAMPLER_BINDING(x) layout(binding = x)" : "#define SAMPLER_BINDING(x)"
+		// Attribute and fragment output bindings are still done via glBindAttribLocation and
+		// glBindFragDataLocation. In the future this could be moved to the layout qualifier
+		// in GLSL, but requires verification of GL_ARB_explicit_attrib_location.
+		, g_ActiveConfig.backend_info.bSupportsBindingLayout ?
+		"#define ATTRIBUTE_LOCATION(x)\n"
+		"#define FRAGMENT_OUTPUT_LOCATION(x)\n"
+		"#define FRAGMENT_OUTPUT_LOCATION_INDEXED(x, y)\n"
+		"#define UBO_BINDING(packing, x) layout(packing, binding = x)\n"
+		"#define SAMPLER_BINDING(x) layout(binding = x)\n"
+		"#define SSBO_BINDING(x) layout(binding = x)\n" :
+		"#define ATTRIBUTE_LOCATION(x)\n"
+		"#define FRAGMENT_OUTPUT_LOCATION(x)\n"
+		"#define FRAGMENT_OUTPUT_LOCATION_INDEXED(x, y)\n"
+		"#define UBO_BINDING(packing, x) layout(packing)\n"
+		"#define SAMPLER_BINDING(x)\n"
+		// Input/output blocks are matched by name during program linking
+		,"#define VARYING_LOCATION(x)\n"
 		, !is_glsles && g_ActiveConfig.backend_info.bSupportsBBox ? "#extension GL_ARB_shader_storage_buffer_object : enable" : ""
 		, !is_glsles && g_ActiveConfig.backend_info.bSupportsGSInstancing ? "#extension GL_ARB_gpu_shader5 : enable" : ""
 		, SupportedESPointSize.c_str()

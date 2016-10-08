@@ -39,7 +39,6 @@ struct EfbPokeData
 
 // TODO: Move these out of here.
 extern int frameCount;
-extern int OSDChoice;
 
 // Renderer really isn't a very good name for this class - it's more like "Misc".
 // The long term goal is to get rid of this class and replace it with others that make
@@ -185,12 +184,12 @@ public:
 		return m_post_processor.get();
 	}
 	// Max height/width
-	virtual int GetMaxTextureSize() = 0;
+	virtual u32 GetMaxTextureSize() = 0;
 
 	static Common::Event s_screenshotCompleted;
 	// Final surface changing
-	static Common::Flag s_SurfaceNeedsChanged;
-	static Common::Event s_ChangedSurface;
+	// This is called when the surface is resized (WX) or the window changes (Android).
+	virtual void ChangeSurface(void* new_surface_handle) {}
 protected:
 
 	static void CalculateTargetScale(int x, int y, int &scaledX, int &scaledY);
@@ -228,6 +227,9 @@ protected:
 
 	static std::unique_ptr<PostProcessor> m_post_processor;
 	
+	static Common::Flag s_surface_needs_change;
+	static Common::Event s_surface_changed;
+	static void* s_new_surface_handle;
 	static const float GX_MAX_DEPTH;
 private:
 	static PEControl::PixelFormat prev_efb_format;

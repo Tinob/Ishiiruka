@@ -20,6 +20,8 @@ elseif(APPLE)
 				ControllerInterface/OSX/OSX.mm
 				ControllerInterface/OSX/OSXKeyboard.mm
 				ControllerInterface/OSX/OSXJoystick.mm
+				ControllerInterface/Quartz/Quartz.mm
+				ControllerInterface/Quartz/QuartzKeyboardAndMouse.mm
 				ControllerInterface/ForceFeedback/ForceFeedbackDevice.cpp)
 	set(LIBS ${LIBS} ${COREFOUNDATION_LIBRARY} ${CARBON_LIBRARY} ${COCOA_LIBRARY})
 elseif(X11_FOUND)
@@ -32,13 +34,12 @@ elseif(ANDROID)
 	         ControllerInterface/Android/Android.cpp)
 endif()
 
-if(LIBUSB_FOUND)
-	set(SRCS	${SRCS}	GCAdapter.cpp)
-elseif(ANDROID)
-	set(SRCS	${SRCS}	GCAdapter_Android.cpp)
+if(ANDROID)
+        set(SRCS        ${SRCS} GCAdapter_Android.cpp)
 else()
-	set(SRCS	${SRCS}	GCAdapter_Null.cpp)
-endif(LIBUSB_FOUND)
+        set(SRCS        ${SRCS} GCAdapter.cpp)
+        set(LIBS ${LIBS} ${LIBUSB_LIBRARIES})
+endif()
 
 if(LIBEVDEV_FOUND AND LIBUDEV_FOUND)
 	set(SRCS ${SRCS} ControllerInterface/evdev/evdev.cpp)

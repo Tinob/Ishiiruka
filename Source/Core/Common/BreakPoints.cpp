@@ -72,9 +72,9 @@ void BreakPoints::Add(const TBreakPoint& bp)
 
 void BreakPoints::Add(u32 em_address, bool temp)
 {
-	if (!IsAddressBreakPoint(em_address)) // only add new addresses
+	if (!IsAddressBreakPoint(em_address))  // only add new addresses
 	{
-		TBreakPoint pt; // breakpoint settings
+		TBreakPoint pt;  // breakpoint settings
 		pt.bOn = true;
 		pt.bTemporary = temp;
 		pt.iAddress = em_address;
@@ -133,9 +133,9 @@ MemChecks::TMemChecksStr MemChecks::GetStrings() const
 	{
 		std::stringstream mc;
 		mc << std::hex << bp.StartAddress;
-		mc << " " << (bp.bRange ? bp.EndAddress : bp.StartAddress) << " " <<
-			(bp.bRange ? "n" : "") << (bp.OnRead ? "r" : "") <<
-			(bp.OnWrite ? "w" : "") << (bp.Log ? "l" : "") << (bp.Break ? "p" : "");
+		mc << " " << (bp.bRange ? bp.EndAddress : bp.StartAddress) << " " << (bp.bRange ? "n" : "")
+			<< (bp.OnRead ? "r" : "") << (bp.OnWrite ? "w" : "") << (bp.Log ? "l" : "")
+			<< (bp.Break ? "p" : "");
 		mcs.push_back(mc.str());
 	}
 
@@ -182,7 +182,7 @@ void MemChecks::Remove(u32 _Address)
 		{
 			m_MemChecks.erase(i);
 			if (!HasAny() && jit)
-				jit->ClearCache();
+				jit->GetBlockCache()->SchedulateClearCacheThreadSafe();
 			return;
 		}
 	}
@@ -207,24 +207,22 @@ TMemCheck* MemChecks::GetMemCheck(u32 address)
 	return nullptr;
 }
 
-bool TMemCheck::Action(DebugInterface* debug_interface, u32 iValue, u32 addr, bool write, int size, u32 pc)
+bool TMemCheck::Action(DebugInterface* debug_interface, u32 iValue, u32 addr, bool write, int size,
+	u32 pc)
 {
 	if ((write && OnWrite) || (!write && OnRead))
 	{
 		if (Log)
 		{
-			INFO_LOG(MEMMAP, "CHK %08x (%s) %s%i %0*x at %08x (%s)",
-				pc, debug_interface->GetDescription(pc).c_str(),
-				write ? "Write" : "Read", size * 8, size * 2, iValue, addr,
-				debug_interface->GetDescription(addr).c_str()
-			);
+			NOTICE_LOG(MEMMAP, "MBP %08x (%s) %s%i %0*x at %08x (%s)", pc,
+				debug_interface->GetDescription(pc).c_str(), write ? "Write" : "Read", size * 8,
+				size * 2, iValue, addr, debug_interface->GetDescription(addr).c_str());
 		}
-
-		return true;
+		if (Break)
+			return true;
 	}
 	return false;
 }
-
 
 bool Watches::IsAddressWatch(u32 _iAddress) const
 {
@@ -272,9 +270,9 @@ void Watches::Add(const TWatch& bp)
 
 void Watches::Add(u32 em_address)
 {
-	if (!IsAddressWatch(em_address)) // only add new addresses
+	if (!IsAddressWatch(em_address))  // only add new addresses
 	{
-		TWatch pt; // breakpoint settings
+		TWatch pt;  // breakpoint settings
 		pt.bOn = true;
 		pt.iAddress = em_address;
 

@@ -35,6 +35,7 @@
 #include "Core/HW/Sram.h"
 #include "Core/HW/WiimoteReal/WiimoteReal.h"
 #include "Core/Host.h"
+#include "Core/IPC_HLE/WII_IPC_HLE_Device_usb_bt_base.h"
 #include "Core/Movie.h"
 #include "Core/NetPlayProto.h"
 #include "VideoCommon/VideoBackendBase.h"
@@ -64,7 +65,6 @@ private:
 	bool valid;
 	bool bCPUThread;
 	bool bEnableCheats;
-	bool bSkipIdle;
 	bool bSyncGPUOnSkipIdleHack;
 	bool bFPRF;
 	bool bAccurateNaNs;
@@ -99,7 +99,6 @@ void ConfigCache::SaveConfig(const SConfig& config)
 
 	bCPUThread = config.bCPUThread;
 	bEnableCheats = config.bEnableCheats;
-	bSkipIdle = config.bSkipIdle;
 	bSyncGPUOnSkipIdleHack = config.bSyncGPUOnSkipIdleHack;
 	bFPRF = config.bFPRF;
 	bAccurateNaNs = config.bAccurateNaNs;
@@ -145,7 +144,6 @@ void ConfigCache::RestoreConfig(SConfig* config)
 
 	config->bCPUThread = bCPUThread;
 	config->bEnableCheats = bEnableCheats;
-	config->bSkipIdle = bSkipIdle;
 	config->bSyncGPUOnSkipIdleHack = bSyncGPUOnSkipIdleHack;
 	config->bFPRF = bFPRF;
 	config->bAccurateNaNs = bAccurateNaNs;
@@ -258,7 +256,6 @@ bool BootCore(const std::string& _rFilename)
 
 		core_section->Get("CPUThread", &StartUp.bCPUThread, StartUp.bCPUThread);
 		core_section->Get("EnableCheats", &StartUp.bEnableCheats, StartUp.bEnableCheats);
-		core_section->Get("SkipIdle", &StartUp.bSkipIdle, StartUp.bSkipIdle);
 		core_section->Get("SyncOnSkipIdle", &StartUp.bSyncGPUOnSkipIdleHack,
 			StartUp.bSyncGPUOnSkipIdleHack);
 		core_section->Get("FPRF", &StartUp.bFPRF, StartUp.bFPRF);
@@ -341,7 +338,6 @@ bool BootCore(const std::string& _rFilename)
 	if (Movie::IsPlayingInput() && Movie::IsConfigSaved())
 	{
 		StartUp.bCPUThread = Movie::IsDualCore();
-		StartUp.bSkipIdle = Movie::IsSkipIdle();
 		StartUp.bDSPHLE = Movie::IsDSPHLE();
 		StartUp.bProgressive = Movie::IsProgressive();
 		StartUp.bPAL60 = Movie::IsPAL60();
@@ -403,6 +399,17 @@ bool BootCore(const std::string& _rFilename)
 
 	SConfig::GetInstance().m_SYSCONF->SetData("IPL.PGS", StartUp.bProgressive);
 	SConfig::GetInstance().m_SYSCONF->SetData("IPL.E60", StartUp.bPAL60);
+
+	if (StartUp.bWii)
+	{
+		// Disable WiiConnect24's standby mode. If it is enabled, it prevents us from receiving
+		// shutdown commands in the State Transition Manager (STM).
+		// TODO: remove this if and once Dolphin supports WC24 standby mode.
+		SConfig::GetInstance().m_SYSCONF->SetData<u8>("IPL.IDL", 0x00);
+		NOTICE_LOG(BOOT, "Disabling WC24 'standby' (shutdown to idle) to avoid hanging on shutdown");
+
+		RestoreBTInfoSection();
+	}
 
 	// Run the game
 	// Init the core

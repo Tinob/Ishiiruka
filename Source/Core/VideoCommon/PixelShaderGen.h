@@ -230,3 +230,5 @@ void GeneratePixelShaderCodeD3D9SM2(ShaderCode& object, const pixel_shader_uid_d
 void GeneratePixelShaderCodeD3D11(ShaderCode& object, const pixel_shader_uid_data& uid_data);
 
 void GeneratePixelShaderCodeGL(ShaderCode& object, const pixel_shader_uid_data& uid_data);
+
+void GeneratePixelShaderCodeVulkan(ShaderCode& object, const pixel_shader_uid_data& uid_data);

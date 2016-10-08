@@ -92,7 +92,7 @@ void SignatureDB::List()
 {
 	for (const auto& entry : database)
 	{
-		INFO_LOG(OSHLE, "%s : %i bytes, hash = %08x", entry.second.name.c_str(), entry.second.size,
+		DEBUG_LOG(OSHLE, "%s : %i bytes, hash = %08x", entry.second.name.c_str(), entry.second.size,
 			entry.first);
 	}
 	INFO_LOG(OSHLE, "%zu functions known in current database.", database.size());

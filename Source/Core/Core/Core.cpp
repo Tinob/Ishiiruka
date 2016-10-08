@@ -38,6 +38,7 @@
 #endif
 #include "Core/Boot/Boot.h"
 #include "Core/FifoPlayer/FifoPlayer.h"
+#include "Core/HLE/HLE.h"
 #include "Core/HW/AudioInterface.h"
 #include "Core/HW/CPU.h"
 #include "Core/HW/DSP.h"
@@ -51,7 +52,7 @@
 #include "Core/HW/SystemTimers.h"
 #include "Core/HW/VideoInterface.h"
 #include "Core/HW/Wiimote.h"
-#include "Core/IPC_HLE/WII_IPC_HLE_Device_usb.h"
+#include "Core/IPC_HLE/WII_IPC_HLE_Device_usb_bt_emu.h"
 #include "Core/IPC_HLE/WII_IPC_HLE_WiiMote.h"
 #include "Core/IPC_HLE/WII_Socket.h"
 #include "Core/Movie.h"
@@ -171,13 +172,6 @@ void DisplayMessage(const std::string& message, int time_in_ms)
 	if (!IsRunning())
 		return;
 
-	// Actually displaying non-ASCII could cause things to go pear-shaped
-	for (const char& c : message)
-	{
-		if (!std::isprint(c))
-			return;
-	}
-
 	OSD::AddMessage(message, time_in_ms);
 	Host_UpdateTitle(message);
 }
@@ -296,7 +290,7 @@ void Stop()  // - Hammertime!
 
 		g_video_backend->Video_ExitLoop();
 	}
-#if defined(__LIBUSB__) || defined(_WIN32)
+#if defined(__LIBUSB__)
 	GCAdapter::ResetRumble();
 #endif
 
@@ -528,7 +522,7 @@ void EmuThread()
 	}
 
 	// Load and Init Wiimotes - only if we are booting in Wii mode
-	if (core_parameter.bWii)
+	if (core_parameter.bWii && !SConfig::GetInstance().m_bt_passthrough_enabled)
 	{
 		if (init_controllers)
 			Wiimote::Initialize(s_window_handle, !s_state_filename.empty() ?
@@ -675,6 +669,7 @@ void EmuThread()
 	INFO_LOG(CONSOLE, "Stop [Video Thread]\t\t---- Shutdown complete ----");
 	Movie::Shutdown();
 	PatchEngine::Shutdown();
+	HLE::Clear();
 
 	s_is_stopping = false;
 
@@ -697,7 +692,7 @@ void SetState(EState state)
 		//   stopped (including the CPU).
 		CPU::EnableStepping(true);  // Break
 		Wiimote::Pause();
-#if defined(__LIBUSB__) || defined(_WIN32)
+#if defined(__LIBUSB__)
 		GCAdapter::ResetRumble();
 #endif
 		break;
@@ -817,7 +812,7 @@ bool PauseAndLock(bool do_lock, bool unpause_on_unlock)
 	// (s_efbAccessRequested).
 	Fifo::PauseAndLock(do_lock, false);
 
-#if defined(__LIBUSB__) || defined(_WIN32)
+#if defined(__LIBUSB__)
 	GCAdapter::ResetRumble();
 #endif
 
@@ -917,8 +912,8 @@ void UpdateTitle()
 			(u32)Movie::GetCurrentFrame(), FPS, VPS, Speed);
 	else if (Movie::IsRecordingInput())
 		SFPS = StringFromFormat("Input: %u - VI: %u - FPS: %.0f - VPS: %.0f - %.0f%%",
-		(u32)Movie::GetCurrentInputCount(), (u32)Movie::GetCurrentFrame(), FPS, VPS,
-			Speed);
+		(u32)Movie::GetCurrentInputCount(), (u32)Movie::GetCurrentFrame(), FPS,
+			VPS, Speed);
 	else
 	{
 		SFPS = StringFromFormat("FPS: %.0f - VPS: %.0f - %.0f%%", FPS, VPS, Speed);
@@ -941,11 +936,9 @@ void UpdateTitle()
 			float TicksPercentage =
 				(float)diff / (float)(SystemTimers::GetTicksPerSecond() / 1000000) * 100;
 
-			SFPS +=
-				StringFromFormat(" | CPU: %s%i MHz [Real: %i + IdleSkip: %i] / %i MHz (%s%3.0f%%)",
-					_CoreParameter.bSkipIdle ? "~" : "", (int)(diff), (int)(diff - idleDiff),
-					(int)(idleDiff), SystemTimers::GetTicksPerSecond() / 1000000,
-					_CoreParameter.bSkipIdle ? "~" : "", TicksPercentage);
+			SFPS += StringFromFormat(" | CPU: ~%i MHz [Real: %i + IdleSkip: %i] / %i MHz (~%3.0f%%)",
+				(int)(diff), (int)(diff - idleDiff), (int)(idleDiff),
+				SystemTimers::GetTicksPerSecond() / 1000000, TicksPercentage);
 		}
 	}
 	// This is our final "frame counter" string
@@ -981,7 +974,7 @@ void UpdateWantDeterminism(bool initial)
 	bool new_want_determinism = Movie::IsMovieActive() || NetPlay::IsNetPlayRunning();
 	if (new_want_determinism != g_want_determinism || initial)
 	{
-		WARN_LOG(COMMON, "Want determinism <- %s", new_want_determinism ? "true" : "false");
+		NOTICE_LOG(COMMON, "Want determinism <- %s", new_want_determinism ? "true" : "false");
 
 		bool was_unpaused = Core::PauseAndLock(true);
 

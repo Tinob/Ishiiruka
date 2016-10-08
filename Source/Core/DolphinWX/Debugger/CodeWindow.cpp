@@ -2,6 +2,7 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include <array>
 #include <cstdio>
 #include <string>
 #include <vector>
@@ -43,6 +44,7 @@
 #include "DolphinWX/Debugger/CodeWindow.h"
 #include "DolphinWX/Debugger/DebuggerUIUtil.h"
 #include "DolphinWX/Debugger/JitWindow.h"
+#include "DolphinWX/Debugger/MemoryWindow.h"
 #include "DolphinWX/Debugger/RegisterWindow.h"
 #include "DolphinWX/Debugger/WatchWindow.h"
 #include "DolphinWX/AuiToolBar.h"
@@ -53,9 +55,8 @@
 CCodeWindow::CCodeWindow(const SConfig& _LocalCoreStartupParameter, CFrame* parent, wxWindowID id,
 	const wxPoint& position, const wxSize& size, long style,
 	const wxString& name)
-	: wxPanel(parent, id, position, size, style, name), Parent(parent), m_RegisterWindow(nullptr),
-	m_WatchWindow(nullptr), m_BreakpointWindow(nullptr), m_MemoryWindow(nullptr),
-	m_JitWindow(nullptr), m_SoundWindow(nullptr), m_VideoWindow(nullptr), codeview(nullptr)
+	: wxPanel(parent, id, position, size, style, name), m_sibling_panels(), Parent(parent),
+	codeview(nullptr)
 {
 	InitBitmaps();
 
@@ -87,21 +88,31 @@ CCodeWindow::CCodeWindow(const SConfig& _LocalCoreStartupParameter, CFrame* pare
 
 	m_aui_manager.SetManagedWindow(this);
 	m_aui_manager.SetFlags(wxAUI_MGR_DEFAULT | wxAUI_MGR_LIVE_RESIZE);
-	m_aui_manager.AddPane(m_aui_toolbar,
-		wxAuiPaneInfo().MinSize(150, -1).ToolbarPane().Top().Floatable(false));
-	m_aui_manager.AddPane(
-		callstack,
-		wxAuiPaneInfo().MinSize(150, 100).Left().CloseButton(false).Floatable(false).Caption(
-			_("Callstack")));
-	m_aui_manager.AddPane(
-		symbols, wxAuiPaneInfo().MinSize(150, 100).Left().CloseButton(false).Floatable(false).Caption(
-			_("Symbols")));
-	m_aui_manager.AddPane(
-		calls, wxAuiPaneInfo().MinSize(150, 100).Left().CloseButton(false).Floatable(false).Caption(
-			_("Function calls")));
-	m_aui_manager.AddPane(
-		callers, wxAuiPaneInfo().MinSize(150, 100).Left().CloseButton(false).Floatable(false).Caption(
-			_("Function callers")));
+	m_aui_manager.AddPane(m_aui_toolbar, wxAuiPaneInfo().ToolbarPane().Top().Floatable(false));
+	m_aui_manager.AddPane(callstack, wxAuiPaneInfo()
+		.MinSize(FromDIP(wxSize(150, 100)))
+		.Left()
+		.CloseButton(false)
+		.Floatable(false)
+		.Caption(_("Callstack")));
+	m_aui_manager.AddPane(symbols, wxAuiPaneInfo()
+		.MinSize(FromDIP(wxSize(150, 100)))
+		.Left()
+		.CloseButton(false)
+		.Floatable(false)
+		.Caption(_("Symbols")));
+	m_aui_manager.AddPane(calls, wxAuiPaneInfo()
+		.MinSize(FromDIP(wxSize(150, 100)))
+		.Left()
+		.CloseButton(false)
+		.Floatable(false)
+		.Caption(_("Function calls")));
+	m_aui_manager.AddPane(callers, wxAuiPaneInfo()
+		.MinSize(FromDIP(wxSize(150, 100)))
+		.Left()
+		.CloseButton(false)
+		.Floatable(false)
+		.Caption(_("Function callers")));
 	m_aui_manager.AddPane(codeview, wxAuiPaneInfo().CenterPane().CloseButton(false).Floatable(false));
 	m_aui_manager.Update();
 
@@ -143,33 +154,30 @@ void CCodeWindow::OnHostMessage(wxCommandEvent& event)
 	{
 	case IDM_NOTIFY_MAP_LOADED:
 		NotifyMapLoaded();
-		if (m_BreakpointWindow)
-			m_BreakpointWindow->NotifyUpdate();
+		if (HasPanel<CBreakPointWindow>())
+			GetPanel<CBreakPointWindow>()->NotifyUpdate();
 		break;
 
 	case IDM_UPDATE_DISASM_DIALOG:
-		Update();
-		if (codeview)
-			codeview->Center(PC);
-		if (CPU::IsStepping())
-			Parent->UpdateGUI();
-		if (m_RegisterWindow)
-			m_RegisterWindow->NotifyUpdate();
-		if (m_WatchWindow)
-			m_WatchWindow->NotifyUpdate();
+		Repopulate();
+		if (HasPanel<CRegisterWindow>())
+			GetPanel<CRegisterWindow>()->NotifyUpdate();
+		if (HasPanel<CWatchWindow>())
+			GetPanel<CWatchWindow>()->NotifyUpdate();
+		if (HasPanel<CMemoryWindow>())
+			GetPanel<CMemoryWindow>()->Refresh();
 		break;
 
 	case IDM_UPDATE_BREAKPOINTS:
-		Update();
-		if (m_BreakpointWindow)
-			m_BreakpointWindow->NotifyUpdate();
+		Repopulate();
+		if (HasPanel<CBreakPointWindow>())
+			GetPanel<CBreakPointWindow>()->NotifyUpdate();
+		if (HasPanel<CMemoryWindow>())
+			GetPanel<CMemoryWindow>()->Refresh();
 		break;
 
 	case IDM_UPDATE_JIT_PANE:
-		// Check if the JIT pane is in the AUI notebook. If not, add it and switch to it.
-		if (!m_JitWindow)
-			ToggleJitWindow(true);
-		m_JitWindow->ViewAddr(codeview->GetSelection());
+		RequirePanel<CJitWindow>()->ViewAddr(codeview->GetSelection());
 		break;
 	}
 }
@@ -197,12 +205,12 @@ void CCodeWindow::OnCodeStep(wxCommandEvent& event)
 
 	case IDM_SKIP:
 		PC += 4;
-		Update();
+		Repopulate();
 		break;
 
 	case IDM_SETPC:
 		PC = codeview->GetSelection();
-		Update();
+		Repopulate();
 		break;
 
 	case IDM_GOTOPC:
@@ -296,13 +304,13 @@ void CCodeWindow::SingleStep()
 {
 	if (CPU::IsStepping())
 	{
+		PowerPC::CoreMode old_mode = PowerPC::GetMode();
+		PowerPC::SetMode(PowerPC::MODE_INTERPRETER);
 		PowerPC::breakpoints.ClearAllTemporary();
-		JitInterface::InvalidateICache(PC, 4, true);
 		CPU::StepOpcode(&sync_event);
-		wxThread::Sleep(20);
-		// need a short wait here
-		JumpToAddress(PC);
-		Update();
+		sync_event.WaitFor(std::chrono::milliseconds(20));
+		PowerPC::SetMode(old_mode);
+		// Will get a IDM_UPDATE_DISASM_DIALOG. Don't update the GUI here.
 	}
 }
 
@@ -316,18 +324,21 @@ void CCodeWindow::StepOver()
 			PowerPC::breakpoints.ClearAllTemporary();
 			PowerPC::breakpoints.Add(PC + 4, true);
 			CPU::EnableStepping(false);
-			JumpToAddress(PC);
-			Update();
 		}
 		else
 		{
 			SingleStep();
 		}
-
-		UpdateButtonStates();
-		// Update all toolbars in the aui manager
-		Parent->UpdateGUI();
 	}
+}
+
+// Returns true on a blr or on a bclr that evaluates to true.
+static bool WillInstructionReturn(UGeckoInstruction inst)
+{
+	bool counter = (inst.BO_2 >> 2 & 1) != 0 || (CTR != 0) != ((inst.BO_2 >> 1 & 1) != 0);
+	bool condition = inst.BO_2 >> 4 != 0 || GetCRBit(inst.BI_2) == (inst.BO_2 >> 3 & 1);
+	bool isBclr = inst.OPCD_7 == 0b010011 && (inst.hex >> 1 & 0b10000) != 0;
+	return isBclr && counter && condition && !inst.LK_3;
 }
 
 void CCodeWindow::StepOut()
@@ -337,13 +348,16 @@ void CCodeWindow::StepOut()
 		CPU::PauseAndLock(true, false);
 		PowerPC::breakpoints.ClearAllTemporary();
 
-		// Keep stepping until the next blr or timeout after one second
+		// Keep stepping until the next return instruction or timeout after one second
 		u64 timeout = SystemTimers::GetTicksPerSecond();
 		u64 steps = 0;
-		PowerPC::CoreMode oldMode = PowerPC::GetMode();
+		PowerPC::CoreMode old_mode = PowerPC::GetMode();
 		PowerPC::SetMode(PowerPC::MODE_INTERPRETER);
 		UGeckoInstruction inst = PowerPC::HostRead_Instruction(PC);
-		while (inst.hex != 0x4e800020 && steps < timeout)  // check for blr
+		// Loop until either the current instruction is a return instruction with no Link flag
+		// or a breakpoint is detected so it can step at the breakpoint.
+		while (!(WillInstructionReturn(inst)) && steps < timeout &&
+			!PowerPC::breakpoints.IsAddressBreakPoint(PC))
 		{
 			if (inst.LK)
 			{
@@ -362,16 +376,19 @@ void CCodeWindow::StepOut()
 			}
 			inst = PowerPC::HostRead_Instruction(PC);
 		}
-
-		PowerPC::SingleStep();
-		PowerPC::SetMode(oldMode);
+		// If the loop stopped because of a breakpoint, we do not want to step to
+		// an instruction after it.
+		if (!PowerPC::breakpoints.IsAddressBreakPoint(PC))
+			PowerPC::SingleStep();
+		PowerPC::SetMode(old_mode);
 		CPU::PauseAndLock(false, false);
 
 		JumpToAddress(PC);
-		Update();
-		Host_UpdateDisasmDialog();
+		{
+			wxCommandEvent ev(wxEVT_HOST_COMMAND, IDM_UPDATE_DISASM_DIALOG);
+			GetEventHandler()->ProcessEvent(ev);
+		}
 
-		UpdateButtonStates();
 		// Update all toolbars in the aui manager
 		Parent->UpdateGUI();
 	}
@@ -383,7 +400,7 @@ void CCodeWindow::ToggleBreakpoint()
 	{
 		if (codeview)
 			codeview->ToggleBreakpoint(codeview->GetSelection());
-		Update();
+		Repopulate();
 	}
 }
 
@@ -664,19 +681,18 @@ bool CCodeWindow::JITNoBlockLinking()
 // Toolbar
 void CCodeWindow::InitBitmaps()
 {
-	m_Bitmaps[Toolbar_Step] = WxUtils::LoadResourceBitmap("toolbar_debugger_step");
-	m_Bitmaps[Toolbar_StepOver] = WxUtils::LoadResourceBitmap("toolbar_debugger_step_over");
-	m_Bitmaps[Toolbar_StepOut] = WxUtils::LoadResourceBitmap("toolbar_debugger_step_out");
-	m_Bitmaps[Toolbar_Skip] = WxUtils::LoadResourceBitmap("toolbar_debugger_skip");
-	m_Bitmaps[Toolbar_GotoPC] = WxUtils::LoadResourceBitmap("toolbar_debugger_goto_pc");
-	m_Bitmaps[Toolbar_SetPC] = WxUtils::LoadResourceBitmap("toolbar_debugger_set_pc");
+	static constexpr std::array<const char* const, Toolbar_Debug_Bitmap_Max> s_image_names{
+			{"toolbar_debugger_step", "toolbar_debugger_step_over", "toolbar_debugger_step_out",
+			 "toolbar_debugger_skip", "toolbar_debugger_goto_pc", "toolbar_debugger_set_pc"} };
+	const wxSize tool_size = Parent->GetToolbarBitmapSize();
+	for (std::size_t i = 0; i < s_image_names.size(); ++i)
+		m_Bitmaps[i] =
+		WxUtils::LoadScaledResourceBitmap(s_image_names[i], Parent, tool_size, wxDefaultSize,
+			WxUtils::LSI_SCALE_DOWN | WxUtils::LSI_ALIGN_CENTER);
 }
 
 void CCodeWindow::PopulateToolbar(wxToolBar* toolBar)
 {
-	int w = m_Bitmaps[0].GetWidth(), h = m_Bitmaps[0].GetHeight();
-
-	toolBar->SetToolBitmapSize(wxSize(w, h));
 	WxUtils::AddToolbarButton(toolBar, IDM_STEP, _("Step"), m_Bitmaps[Toolbar_Step],
 		_("Step into the next instruction"));
 	WxUtils::AddToolbarButton(toolBar, IDM_STEPOVER, _("Step Over"), m_Bitmaps[Toolbar_StepOver],
@@ -693,12 +709,12 @@ void CCodeWindow::PopulateToolbar(wxToolBar* toolBar)
 }
 
 // Update GUI
-void CCodeWindow::Update()
+void CCodeWindow::Repopulate()
 {
 	if (!codeview)
 		return;
 
-	codeview->Refresh();
+	codeview->Center(PC);
 	UpdateCallstack();
 	UpdateButtonStates();
 
@@ -712,40 +728,27 @@ void CCodeWindow::UpdateButtonStates()
 	bool Initialized = (Core::GetState() != Core::CORE_UNINITIALIZED);
 	bool Pause = (Core::GetState() == Core::CORE_PAUSE);
 	bool Stepping = CPU::IsStepping();
+	bool can_step = Initialized && Stepping;
 	wxToolBar* ToolBar = GetToolBar();
 
 	// Toolbar
 	if (!ToolBar)
 		return;
 
-	if (!Initialized)
-	{
-		ToolBar->EnableTool(IDM_STEPOVER, false);
-		ToolBar->EnableTool(IDM_STEPOUT, false);
-		ToolBar->EnableTool(IDM_SKIP, false);
-	}
-	else
-	{
-		if (!Stepping)
-		{
-			ToolBar->EnableTool(IDM_STEPOVER, false);
-			ToolBar->EnableTool(IDM_STEPOUT, false);
-			ToolBar->EnableTool(IDM_SKIP, false);
-		}
-		else
-		{
-			ToolBar->EnableTool(IDM_STEPOVER, true);
-			ToolBar->EnableTool(IDM_STEPOUT, true);
-			ToolBar->EnableTool(IDM_SKIP, true);
-		}
-	}
-
-	ToolBar->EnableTool(IDM_STEP, Initialized && Stepping);
+	ToolBar->EnableTool(IDM_STEP, can_step);
+	ToolBar->EnableTool(IDM_STEPOVER, can_step);
+	ToolBar->EnableTool(IDM_STEPOUT, can_step);
+	ToolBar->EnableTool(IDM_SKIP, can_step);
+	ToolBar->EnableTool(IDM_SETPC, Pause);
 	ToolBar->Realize();
 
 	// Menu bar
 	// ------------------
 	GetMenuBar()->Enable(IDM_INTERPRETER, Pause);  // CPU Mode
+
+	GetMenuBar()->Enable(IDM_STEP, can_step);
+	GetMenuBar()->Enable(IDM_STEPOVER, can_step);
+	GetMenuBar()->Enable(IDM_STEPOUT, can_step);
 
 	GetMenuBar()->Enable(IDM_JIT_NO_BLOCK_CACHE, !Initialized);
 

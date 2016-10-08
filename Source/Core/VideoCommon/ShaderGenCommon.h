@@ -135,7 +135,7 @@ private:
 template<API_TYPE api_type>
 inline void WriteRegister(ShaderCode& object, const char *prefix, const u32 num)
 {
-	if (api_type == API_OPENGL || api_type == API_D3D11)
+	if (!(api_type & API_D3D9))
 		return; // Nothing to do here
 
 	object.Write(" : register(%s%d)", prefix, num);
@@ -144,7 +144,7 @@ inline void WriteRegister(ShaderCode& object, const char *prefix, const u32 num)
 template<API_TYPE api_type>
 inline void WriteLocation(ShaderCode& object)
 {
-	if (api_type == API_OPENGL || api_type == API_D3D11)
+	if (!(api_type & API_D3D9))
 		return;
 
 	object.Write("uniform ");
@@ -170,7 +170,7 @@ inline void DefineVSOutputStructMember(ShaderCode& object, const char* qualifier
 	if (var_index != -1)
 		object.Write("%d", var_index);
 
-	if (api_type == API_OPENGL)
+	if (api_type == API_OPENGL || api_type == API_VULKAN)
 		object.Write(";\n");
 	else
 	{
@@ -192,7 +192,7 @@ inline void GenerateVSOutputMembers(ShaderCode& object, bool enable_pl, u32 numt
 	{
 		for (unsigned int i = 0; i < numtexgens; ++i)
 			DefineVSOutputStructMember<api_type>(object, qualifier, "float3", "tex", "", i, "TEXCOORD", i);
-		const char * sufix = (api_type == API_OPENGL) ? "_2" : "";
+		const char * sufix = (api_type == API_OPENGL || api_type == API_VULKAN) ? "_2" : "";
 		DefineVSOutputStructMember<api_type>(object, qualifier, "float4", "clipPos", sufix, -1, "TEXCOORD", numtexgens);
 
 		if (enable_pl)
@@ -222,7 +222,7 @@ inline void AssignVSOutputMembers(ShaderCode& object, const char* a, const char*
 	{
 		for (unsigned int i = 0; i < numtexgens; ++i)
 			object.Write("\t%s.tex%d = %s.tex%d;\n", a, i, b, i);
-		const char * sufix = (api_type == API_OPENGL) ? "_2" : "";
+		const char * sufix = (api_type == API_OPENGL || api_type == API_VULKAN) ? "_2" : "";
 		object.Write("\t%s.clipPos%s = %s.clipPos%s;\n", a, sufix, b, sufix);
 
 		if (enable_pl)
@@ -257,7 +257,7 @@ inline const char* GetInterpolationQualifier(API_TYPE api_type, bool msaa, bool 
 
 	if (!ssaa)
 	{
-		if (in_out && api_type == API_OPENGL && !g_ActiveConfig.backend_info.bSupportsBindingLayout)
+		if (in_out && (api_type == API_OPENGL || api_type == API_VULKAN) && !g_ActiveConfig.backend_info.bSupportsBindingLayout)
 			return in ? "centroid in" : "centroid out";
 		return "centroid";
 	}

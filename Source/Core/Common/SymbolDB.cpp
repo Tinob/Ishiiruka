@@ -8,17 +8,15 @@
 #include <utility>
 
 #include "Common/CommonTypes.h"
-#include "Common/SymbolDB.h"
 #include "Common/Logging/Log.h"
+#include "Common/SymbolDB.h"
 
 void SymbolDB::List()
 {
 	for (const auto& func : functions)
 	{
-		DEBUG_LOG(OSHLE, "%s @ %08x: %i bytes (hash %08x) : %i calls",
-			func.second.name.c_str(), func.second.address,
-			func.second.size, func.second.hash,
-			func.second.numCalls);
+		DEBUG_LOG(OSHLE, "%s @ %08x: %i bytes (hash %08x) : %i calls", func.second.name.c_str(),
+			func.second.address, func.second.size, func.second.hash, func.second.numCalls);
 	}
 	INFO_LOG(OSHLE, "%zu functions known in this program above.", functions.size());
 }
@@ -43,7 +41,7 @@ Symbol* SymbolDB::GetSymbolFromName(const std::string& name)
 {
 	for (auto& func : functions)
 	{
-		if (func.second.name == name)
+		if (func.second.function_name == name)
 			return &func.second;
 	}
 

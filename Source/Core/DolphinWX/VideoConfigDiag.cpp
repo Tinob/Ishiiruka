@@ -906,10 +906,8 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
 			szr_utility->Add(CreateCheckBox(page_advanced, _("Dump Vertex Loaders"), (dump_VertexTranslators_desc), vconfig.bDumpVertexLoaders));
 			szr_utility->Add(CreateCheckBox(page_advanced, _("Load Custom Textures"), (load_hires_textures_desc), vconfig.bHiresTextures));
 			cache_hires_textures = CreateCheckBox(page_advanced, _("Prefetch Custom Textures"), cache_hires_textures_desc, vconfig.bCacheHiresTextures);
-			cache_hires_texturesGPU = CreateCheckBox(page_advanced, _("Cache Custom Textures on GPU"), cache_hires_textures_gpu_desc, vconfig.bCacheHiresTexturesGPU);
 			hires_texturemaps = CreateCheckBox(page_advanced, _("Load Custom Material Maps"), load_hires_material_maps_desc, vconfig.bHiresMaterialMaps);
 			szr_utility->Add(cache_hires_textures);
-			szr_utility->Add(cache_hires_texturesGPU);
 			szr_utility->Add(hires_texturemaps);
 			szr_utility->Add(CreateCheckBox(page_advanced, _("Dump EFB Target"), (dump_efb_desc), vconfig.bDumpEFBTarget));
 			szr_utility->Add(CreateCheckBox(page_advanced, _("Free Look"), (free_look_desc), vconfig.bFreeLook));
@@ -1438,7 +1436,7 @@ void VideoConfigDiag::OnUpdateUI(wxUpdateUIEvent& ev)
 #if defined WIN32
 	// Borderless Fullscreen
 	borderless_fullscreen->Enable((vconfig.backend_info.APIType & API_D3D9) == 0);
-	borderless_fullscreen->Show((vconfig.backend_info.APIType & API_D3D9) == 0);	
+	borderless_fullscreen->Show((vconfig.backend_info.APIType & API_D3D9) == 0);
 #endif	
 	// EFB Access Cache
 	Fast_efb_cache->Show(vconfig.bEFBAccessEnable);
@@ -1448,7 +1446,6 @@ void VideoConfigDiag::OnUpdateUI(wxUpdateUIEvent& ev)
 
 	// custom textures
 	cache_hires_textures->Enable(vconfig.bHiresTextures);
-	cache_hires_texturesGPU->Enable(vconfig.bHiresTextures);
 	hires_texturemaps->Enable(vconfig.bHiresTextures && vconfig.bEnablePixelLighting);
 	hires_texturemaps->Show(vconfig.backend_info.bSupportsNormalMaps);
 

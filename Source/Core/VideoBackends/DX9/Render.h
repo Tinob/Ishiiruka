@@ -71,7 +71,7 @@ public:
 
 	static void CheckForResize(bool &resized, bool &fullscreen, bool &fullscreencahnged);
 
-	int GetMaxTextureSize() override;
+	u32 GetMaxTextureSize() override;
 };
 
 }  // namespace DX9

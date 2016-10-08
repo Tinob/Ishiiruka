@@ -192,7 +192,12 @@ void VertexManager::vFlush(bool useDstAlpha)
 	PrepareDrawBuffers(stride);
 
 	Draw(stride);
-
+	// If the GPU does not support dual-source blending, we can approximate the effect by drawing
+	// the object a second time, with the write mask set to alpha only using a shader that outputs
+	// the destination/constant alpha value (which would normally be SRC_COLOR.a).
+	//
+	// This is also used when logic ops and destination alpha is enabled, since we can't enable
+	// blending and logic ops concurrently.
 	const bool logic_op_enabled = bpmem.blendmode.logicopenable && bpmem.blendmode.logicmode != BlendMode::LogicOp::COPY && !bpmem.blendmode.blendenable;
 	// run through vertex groups again to set alpha
 	if (useDstAlpha && (!dualSourcePossible || logic_op_enabled))

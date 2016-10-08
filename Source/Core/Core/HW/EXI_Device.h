@@ -23,7 +23,7 @@ enum TEXIDevices : int
 	EXIDEVICE_GECKO,
 	// Only used when creating a device by EXIDevice_Create
 	// Converted to EXIDEVICE_MEMORYCARD internally
-	EXIDEVICE_MEMORYCARDFOLDER,  
+	EXIDEVICE_MEMORYCARDFOLDER,
 	EXIDEVICE_AGP,
 	EXIDEVICE_NONE = (u8)-1
 };

@@ -149,6 +149,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Software", "Core\VideoBacke
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "glslang", "..\Externals\glslang\glslang.vcxproj", "{D178061B-84D3-44F9-BEED-EFD18D9033F0}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Vulkan", "Core\VideoBackends\Vulkan\Vulkan.vcxproj", "{29F29A19-F141-45AD-9679-5A2923B49DA3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -295,6 +297,10 @@ Global
 		{D178061B-84D3-44F9-BEED-EFD18D9033F0}.Debug|x64.Build.0 = Debug|x64
 		{D178061B-84D3-44F9-BEED-EFD18D9033F0}.Release|x64.ActiveCfg = Release|x64
 		{D178061B-84D3-44F9-BEED-EFD18D9033F0}.Release|x64.Build.0 = Release|x64
+		{29F29A19-F141-45AD-9679-5A2923B49DA3}.Debug|x64.ActiveCfg = Debug|x64
+		{29F29A19-F141-45AD-9679-5A2923B49DA3}.Debug|x64.Build.0 = Debug|x64
+		{29F29A19-F141-45AD-9679-5A2923B49DA3}.Release|x64.ActiveCfg = Release|x64
+		{29F29A19-F141-45AD-9679-5A2923B49DA3}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -331,5 +337,6 @@ Global
 		{B441CC62-877E-4B3F-93E0-0DE80544F705} = {39DB5AF5-003D-412B-8FF1-FB195541DB7A}
 		{9E9DA440-E9AD-413C-B648-91030E792211} = {3ECEBBE7-1A0B-4056-99F4-0C0848DA8494}
 		{D178061B-84D3-44F9-BEED-EFD18D9033F0} = {39DB5AF5-003D-412B-8FF1-FB195541DB7A}
+		{29F29A19-F141-45AD-9679-5A2923B49DA3} = {3ECEBBE7-1A0B-4056-99F4-0C0848DA8494}
 	EndGlobalSection
 EndGlobal

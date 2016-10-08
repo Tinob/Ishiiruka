@@ -657,6 +657,11 @@ void SampleTexture(ShaderCode& out, const char *texcoords, const char *texswap, 
 	{
 		out.Write("wuround((Tex[%d].Sample(samp[%d], float3(%s.xy * " I_TEXDIMS"[%d].xy, %s))).%s * 255.0);\n", texmap, texmap, texcoords, texmap, stereo ? "layer" : "0.0", texswap);
 	}
+	else if (ApiType == API_VULKAN)
+	{
+		out.Write("wuround(255.0 * texture(samp%d, float3(%s.xy * " I_TEXDIMS "[%d].xy, %s))).%s;\n",
+			texmap, texcoords, texmap, stereo ? "layer" : "0.0", texswap);
+	}
 	else if (ApiType == API_OPENGL)
 	{
 		out.Write("wuround(texture(samp[%d],float3(%s.xy * " I_TEXDIMS"[%d].xy, %s)).%s * 255.0);\n", texmap, texcoords, texmap, stereo ? "layer" : "0.0", texswap);
@@ -673,6 +678,11 @@ void SampleTextureRAW(ShaderCode& out, const char *texcoords, const char *texswa
 	if (ApiType == API_D3D11)
 	{
 		out.Write("Tex[%d].Sample(samp[%d], float3(%s.xy * " I_TEXDIMS"[%d].xy, %s)).%s;\n", 8 + texmap, texmap, texcoords, texmap, layer, texswap);
+	}
+	else if (ApiType == API_VULKAN)
+	{
+		out.Write("wuround(255.0 * texture(samp%d, float3(%s.xy * " I_TEXDIMS "[%d].xy, %s))).%s;\n",
+			8 + texmap, texcoords, texmap, "0.0", texswap);
 	}
 	else
 	{
@@ -1582,6 +1592,13 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
 		// Declare samplers
 		out.Write("SAMPLER_BINDING(0) uniform sampler2DArray samp[%d];\n", samplercount);
 	}
+	else if (ApiType == API_VULKAN)
+	{
+		for (u32 i = 0; i < samplercount; i++)
+		{
+			out.Write("SAMPLER_BINDING(%i) uniform sampler2DArray samp%i;\n", i , i);
+		}
+	}
 	else
 	{
 		// Declare samplers
@@ -1603,8 +1620,8 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
 	}
 	out.Write("\n");
 
-	if (ApiType == API_OPENGL)
-		out.Write("layout(std140%s) uniform PSBlock {\n", g_ActiveConfig.backend_info.bSupportsBindingLayout ? ", binding = 1" : "");
+	if (ApiType == API_OPENGL || ApiType == API_VULKAN)
+		out.Write("UBO_BINDING(std140, 1) uniform PSBlock {\n");
 	else if (ApiType == API_D3D11)
 		out.Write("cbuffer PSBlock : register(b0) {\n");
 
@@ -1622,17 +1639,17 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
 	DeclareUniform<ApiType>(out, C_FLAGS, "wu4", I_FLAGS);
 	DeclareUniform<ApiType>(out, C_EFBSCALE, "float4", I_EFBSCALE);
 
-	if (ApiType == API_OPENGL || ApiType == API_D3D11)
+	if (!(ApiType & API_D3D9))
 		out.Write("};\n");
 
 	if (enable_pl && render_mode != PSRM_DEPTH_ONLY)
 	{
-		if (ApiType == API_OPENGL)
-			out.Write("layout(std140%s) uniform VSBlock {\n", g_ActiveConfig.backend_info.bSupportsBindingLayout ? ", binding = 2" : "");
+		if (ApiType == API_OPENGL || ApiType == API_VULKAN)
+			out.Write("UBO_BINDING(std140, 2) uniform VSBlock {\n");
 		else if (ApiType == API_D3D11)
 			out.Write("cbuffer VSBlock : register(b1) {\n");
 
-		if (ApiType == API_OPENGL || ApiType == API_D3D11)
+		if (!(ApiType & API_D3D9))
 		{
 			DeclareUniform<ApiType>(out, C_PROJECTION, "float4", I_PROJECTION"[4]");
 			DeclareUniform<ApiType>(out, C_DEPTHPARAMS, "float4", I_DEPTHPARAMS);
@@ -1642,7 +1659,7 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
 		DeclareUniform<ApiType>(out, C_PLIGHTS, "float4", I_LIGHTS "[40]");
 		DeclareUniform<ApiType>(out, C_PPHONG, "float4", I_PPHONG "[2]");
 
-		if (ApiType == API_OPENGL || ApiType == API_D3D11)
+		if (!(ApiType & API_D3D9))
 		{
 			DeclareUniform<ApiType>(out, C_TEXMATRICES, "float4", I_TEXMATRICES"[24]");
 			DeclareUniform<ApiType>(out, C_TRANSFORMMATRICES, "float4", I_TRANSFORMMATRICES"[64]");
@@ -1653,26 +1670,39 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
 		}
 	}
 
-	if (ApiType == API_OPENGL)
+	if (ApiType == API_OPENGL || ApiType == API_VULKAN)
 	{
 		if (uid_data.bounding_box)
 		{
-			out.Write(
-				"layout(std140, binding = 3) buffer BBox {\n"
+			out.Write("SSBO_BINDING(0) buffer BBox {\n"
 				"\tint4 bbox_data;\n"
 				"};\n"
 			);
 		}
-		out.Write("out vec4 ocol0;\n");
 		if (render_mode == PSRM_DUAL_SOURCE_BLEND)
-			out.Write("out vec4 ocol1;\n");
+		{
+			if (DriverDetails::HasBug(DriverDetails::BUG_BROKEN_FRAGMENT_SHADER_INDEX_DECORATION))
+			{
+				out.Write("FRAGMENT_OUTPUT_LOCATION(0) out vec4 ocol0;\n");
+				out.Write("FRAGMENT_OUTPUT_LOCATION(1) out vec4 ocol1;\n");
+			}
+			else
+			{
+				out.Write("FRAGMENT_OUTPUT_LOCATION_INDEXED(0, 0) out vec4 ocol0;\n");
+				out.Write("FRAGMENT_OUTPUT_LOCATION_INDEXED(0, 1) out vec4 ocol1;\n");
+			}
+		}
+		else
+		{
+			out.Write("FRAGMENT_OUTPUT_LOCATION(0) out vec4 ocol0;\n");
+		}
 
 		if (per_pixel_depth)
 			out.Write("#define depth gl_FragDepth\n");
-
-		if (g_ActiveConfig.backend_info.bSupportsGeometryShaders)
+		// We need to always use output blocks for Vulkan, but geometry shaders are also optional.
+		if (g_ActiveConfig.backend_info.bSupportsGeometryShaders || ApiType == API_VULKAN)
 		{
-			out.Write("in VertexData {\n");
+			out.Write("VARYING_LOCATION(0) in VertexData {\n");
 			GenerateVSOutputMembers<ApiType>(out, enable_pl, uid_data.genMode_numtexgens, GetInterpolationQualifier(ApiType, uid_data.msaa, uid_data.ssaa, true, true));
 
 			if (uid_data.stereo)
@@ -1743,7 +1773,7 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
 			// ARB_image_load_store extension yet.
 
 			// This is a #define which signals whatever early-z method the driver supports.
-			out.Write("FORCE_EARLY_Z\n");
+			out.Write("FORCE_EARLY_Z;\n");
 		}
 		out.Write("void main()\n{\n");
 		if (numTexgen >= 7)
@@ -1840,7 +1870,7 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
 		"wu2 wrappedcoord=wu2(0,0), t_coord=wu2(0,0),ittmpexp=wu2(0,0);\n"
 		"wu4 tin_a = wu4(0,0,0,0), tin_b = wu4(0,0,0,0), tin_c = wu4(0,0,0,0), tin_d = wu4(0,0,0,0);\n\n", numStages);
 
-	if (ApiType == API_OPENGL)
+	if (ApiType == API_OPENGL || ApiType == API_VULKAN)
 	{
 		// compute window position if needed because binding semantic WPOS is not widely supported
 		// Let's set up attributes
@@ -1850,7 +1880,7 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
 			{
 				for (u32 i = 0; i < numTexgen; ++i)
 				{
-					if (g_ActiveConfig.backend_info.bSupportsGeometryShaders)
+					if (g_ActiveConfig.backend_info.bSupportsGeometryShaders || ApiType == API_VULKAN)
 					{
 						out.Write("float3 uv%d = tex%d;\n", i, i);
 					}
@@ -1873,7 +1903,7 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
 			{
 				for (u32 i = 0; i < 8; ++i)
 				{
-					if (g_ActiveConfig.backend_info.bSupportsGeometryShaders)
+					if (g_ActiveConfig.backend_info.bSupportsGeometryShaders || ApiType == API_VULKAN)
 					{
 						out.Write("float4 uv%d = tex%d;\n", i, i);
 					}
@@ -1887,7 +1917,7 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
 			{
 				for (u32 i = 0; i < numTexgen; ++i)
 				{
-					if (g_ActiveConfig.backend_info.bSupportsGeometryShaders)
+					if (g_ActiveConfig.backend_info.bSupportsGeometryShaders || ApiType == API_VULKAN)
 					{
 						out.Write("float%d uv%d = tex%d;\n", i < 4 ? 4 : 3, i, i);
 					}
@@ -2068,7 +2098,7 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
 			out.Write("wu zCoord = (" I_ZSLOPE".z + " I_ZSLOPE".x * screenpos.x + " I_ZSLOPE".y * screenpos.y) / 16777216.0;\n");
 		}
 	}
-	else if ((ApiType == API_OPENGL || ApiType == API_D3D11) && g_ActiveConfig.bFastDepthCalc)
+	else if (!(ApiType & API_D3D9) && g_ActiveConfig.bFastDepthCalc)
 	{
 		if (Use_integer_math)
 		{
@@ -2201,7 +2231,7 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
 
 	if (uid_data.bounding_box)
 	{
-		const char* atomic_op = ApiType == API_OPENGL ? "atomic" : "Interlocked";
+		const char* atomic_op = (ApiType == API_OPENGL || ApiType == API_VULKAN) ? "atomic" : "Interlocked";
 		out.Write(
 			"\tif(bbox_data[0] > int(rawpos.x)) %sMin(bbox_data[0], int(rawpos.x));\n"
 			"\tif(bbox_data[1] < int(rawpos.x)) %sMax(bbox_data[1], int(rawpos.x));\n"
@@ -2232,5 +2262,10 @@ void GeneratePixelShaderCodeD3D11(ShaderCode& object, const pixel_shader_uid_dat
 void GeneratePixelShaderCodeGL(ShaderCode& object, const pixel_shader_uid_data& uid_data)
 {
 	GeneratePixelShader<API_OPENGL, true>(object, uid_data);
+}
+
+void GeneratePixelShaderCodeVulkan(ShaderCode& object, const pixel_shader_uid_data& uid_data)
+{
+	GeneratePixelShader<API_VULKAN, true>(object, uid_data);
 }
 

@@ -3,6 +3,9 @@
 // Refer to the license.txt file included.
 
 #include "Core/PowerPC/Interpreter/Interpreter.h"
+
+#include <cstring>
+
 #include "Common/Assert.h"
 #include "Common/CommonTypes.h"
 #include "Common/FPURoundMode.h"
@@ -216,9 +219,12 @@ void Interpreter::mfspr(UGeckoInstruction _inst)
 
 	case SPR_TL:
 	case SPR_TU:
-		*((u64*)&TL) =
-			SystemTimers::GetFakeTimeBase();  // works since we are little endian and TL comes first :)
-		break;
+	{
+		// works since we are little endian and TL comes first :)
+		const u64 time_base = SystemTimers::GetFakeTimeBase();
+		std::memcpy(&TL, &time_base, sizeof(u64));
+	}
+	break;
 
 	case SPR_WPAR:
 	{
@@ -300,7 +306,7 @@ void Interpreter::mtspr(UGeckoInstruction _inst)
 	case SPR_HID4:
 		if (oldValue != rSPR(iIndex))
 		{
-			WARN_LOG(POWERPC, "HID4 updated %x %x", oldValue, rSPR(iIndex));
+			INFO_LOG(POWERPC, "HID4 updated %x %x", oldValue, rSPR(iIndex));
 			PowerPC::IBATUpdated();
 			PowerPC::DBATUpdated();
 		}
@@ -382,7 +388,7 @@ void Interpreter::mtspr(UGeckoInstruction _inst)
 	case SPR_DBAT7U:
 		if (oldValue != rSPR(iIndex))
 		{
-			WARN_LOG(POWERPC, "DBAT updated %d %x %x", iIndex, oldValue, rSPR(iIndex));
+			INFO_LOG(POWERPC, "DBAT updated %d %x %x", iIndex, oldValue, rSPR(iIndex));
 			PowerPC::DBATUpdated();
 		}
 		break;
@@ -405,7 +411,7 @@ void Interpreter::mtspr(UGeckoInstruction _inst)
 	case SPR_IBAT7U:
 		if (oldValue != rSPR(iIndex))
 		{
-			WARN_LOG(POWERPC, "IBAT updated %d %x %x", iIndex, oldValue, rSPR(iIndex));
+			INFO_LOG(POWERPC, "IBAT updated %d %x %x", iIndex, oldValue, rSPR(iIndex));
 			PowerPC::IBATUpdated();
 		}
 		break;

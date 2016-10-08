@@ -63,8 +63,10 @@ private:
 		PEControl::PixelFormat src_format, const EFBRectangle& src_rect,
 		bool is_intensity, bool scale_by_half) override;
 	void LoadLut(u32 lutFmt, void* addr, u32 size) override;
-	void CompileShaders() override
-	{}
+	bool CompileShaders() override
+	{
+		return true;
+	}
 	void DeleteShaders() override
 	{}
 

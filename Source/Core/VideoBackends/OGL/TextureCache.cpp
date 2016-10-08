@@ -558,7 +558,7 @@ TextureCache::TextureCache()
 	s_scaler = std::make_unique<TextureScaler>();
 }
 
-void TextureCache::CompileShaders()
+bool TextureCache::CompileShaders()
 {
 	const char *pColorCopyProg =
 		"SAMPLER_BINDING(9) uniform sampler2DArray samp9;\n"
@@ -637,10 +637,10 @@ void TextureCache::CompileShaders()
 
 	const char* prefix = (GProgram == nullptr) ? "f" : "v";
 	const char* depth_layer = (g_ActiveConfig.bStereoEFBMonoDepth) ? "0.0" : "f_uv0.z";
-
-	ProgramShaderCache::CompileShader(s_ColorCopyProgram, StringFromFormat(VProgram, prefix, prefix).c_str(), pColorCopyProg, GProgram);
-	ProgramShaderCache::CompileShader(s_ColorMatrixProgram, StringFromFormat(VProgram, prefix, prefix).c_str(), pColorMatrixProg, GProgram);
-	ProgramShaderCache::CompileShader(s_DepthMatrixProgram, StringFromFormat(VProgram, prefix, prefix).c_str(), StringFromFormat(pDepthMatrixProg, depth_layer).c_str(), GProgram);
+	bool compiled = true;
+	compiled = compiled && ProgramShaderCache::CompileShader(s_ColorCopyProgram, StringFromFormat(VProgram, prefix, prefix).c_str(), pColorCopyProg, GProgram);
+	compiled = compiled && ProgramShaderCache::CompileShader(s_ColorMatrixProgram, StringFromFormat(VProgram, prefix, prefix).c_str(), pColorMatrixProg, GProgram);
+	compiled = compiled && ProgramShaderCache::CompileShader(s_DepthMatrixProgram, StringFromFormat(VProgram, prefix, prefix).c_str(), StringFromFormat(pDepthMatrixProg, depth_layer).c_str(), GProgram);
 
 	s_ColorMatrixUniform = glGetUniformLocation(s_ColorMatrixProgram.glprogid, "colmat");
 	s_DepthMatrixUniform = glGetUniformLocation(s_DepthMatrixProgram.glprogid, "colmat");
@@ -733,7 +733,7 @@ void TextureCache::CompileShaders()
 
 	if (g_ActiveConfig.backend_info.bSupportsPaletteConversion)
 	{
-		ProgramShaderCache::CompileShader(
+		compiled = compiled && ProgramShaderCache::CompileShader(
 			s_palette_pixel_shader[GX_TL_IA8],
 			StringFromFormat(VProgram, prefix, prefix).c_str(),
 			("#define DECODE DecodePixel_IA8" + palette_shader).c_str(),
@@ -742,7 +742,7 @@ void TextureCache::CompileShaders()
 		s_palette_multiplier_uniform[GX_TL_IA8] = glGetUniformLocation(s_palette_pixel_shader[GX_TL_IA8].glprogid, "multiplier");
 		s_palette_copy_position_uniform[GX_TL_IA8] = glGetUniformLocation(s_palette_pixel_shader[GX_TL_IA8].glprogid, "copy_position");
 
-		ProgramShaderCache::CompileShader(
+		compiled = compiled && ProgramShaderCache::CompileShader(
 			s_palette_pixel_shader[GX_TL_RGB565],
 			StringFromFormat(VProgram, prefix, prefix).c_str(),
 			("#define DECODE DecodePixel_RGB565" + palette_shader).c_str(),
@@ -751,7 +751,7 @@ void TextureCache::CompileShaders()
 		s_palette_multiplier_uniform[GX_TL_RGB565] = glGetUniformLocation(s_palette_pixel_shader[GX_TL_RGB565].glprogid, "multiplier");
 		s_palette_copy_position_uniform[GX_TL_RGB565] = glGetUniformLocation(s_palette_pixel_shader[GX_TL_RGB565].glprogid, "copy_position");
 
-		ProgramShaderCache::CompileShader(
+		compiled = compiled && ProgramShaderCache::CompileShader(
 			s_palette_pixel_shader[GX_TL_RGB5A3],
 			StringFromFormat(VProgram, prefix, prefix).c_str(),
 			("#define DECODE DecodePixel_RGB5A3" + palette_shader).c_str(),
@@ -760,6 +760,7 @@ void TextureCache::CompileShaders()
 		s_palette_multiplier_uniform[GX_TL_RGB5A3] = glGetUniformLocation(s_palette_pixel_shader[GX_TL_RGB5A3].glprogid, "multiplier");
 		s_palette_copy_position_uniform[GX_TL_RGB5A3] = glGetUniformLocation(s_palette_pixel_shader[GX_TL_RGB5A3].glprogid, "copy_position");
 	}
+	return compiled;
 }
 
 void TextureCache::DeleteShaders()

@@ -31,6 +31,7 @@ enum Hotkey
 	HK_SCREENSHOT,
 	HK_EXIT,
 
+	HK_TRIGGER_SYNC_BUTTON,
 	HK_WIIMOTE1_CONNECT,
 	HK_WIIMOTE2_CONNECT,
 	HK_WIIMOTE3_CONNECT,
@@ -136,7 +137,7 @@ enum Hotkey
 struct HotkeyStatus
 {
 	u32 button[(NUM_HOTKEYS + 31) / 32];
-	s8  err;
+	s8 err;
 };
 
 class HotkeyManager : public ControllerEmu

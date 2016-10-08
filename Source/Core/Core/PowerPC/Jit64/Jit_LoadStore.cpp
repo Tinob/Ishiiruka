@@ -117,26 +117,12 @@ void Jit64::lXXx(UGeckoInstruction inst)
 		signExtend = true;
 	}
 
-	// TODO(ector): Make it dynamically enable/disable idle skipping where appropriate
-	// Will give nice boost to dual core mode
-	// (mb2): I agree,
-	// IMHO those Idles should always be skipped and replaced by a more controllable "native" Idle
-	// methode
-	// ... maybe the throttle one already do that :p
-	// TODO: We shouldn't use a debug read here.  It should be possible to get
-	// the following instructions out of the JIT state.
-	if (SConfig::GetInstance().bSkipIdle && CPU::GetState() != CPU::CPU_STEPPING && inst.OPCD == 32 &&
-		MergeAllowedNextInstructions(2) && (inst.hex & 0xFFFF0000) == 0x800D0000 &&
+	if (CPU::GetState() != CPU::CPU_STEPPING && inst.OPCD == 32 && MergeAllowedNextInstructions(2) &&
+		(inst.hex & 0xFFFF0000) == 0x800D0000 &&
 		(js.op[1].inst.hex == 0x28000000 ||
 		(SConfig::GetInstance().bWii && js.op[1].inst.hex == 0x2C000000)) &&
 		js.op[2].inst.hex == 0x4182fff8)
 	{
-		// TODO(LinesPrower):
-		// - Rewrite this!
-		// It seems to be ugly and inefficient, but I don't know JIT stuff enough to make it right
-		// It only demonstrates the idea
-
-		// do our job at first
 		s32 offset = (s32)(s16)inst.SIMM_16;
 		gpr.BindToRegister(a, true, false);
 		gpr.BindToRegister(d, false, true);
@@ -362,7 +348,7 @@ void Jit64::dcbz(UGeckoInstruction inst)
 		FixupBranch slow = J_CC(CC_Z, true);
 
 		// Fast path: compute full address, then zero out 32 bytes of memory.
-		PXOR(XMM0, R(XMM0));
+		XORPS(XMM0, R(XMM0));
 		MOVAPS(MComplex(RMEM, RSCRATCH, SCALE_1, 0), XMM0);
 		MOVAPS(MComplex(RMEM, RSCRATCH, SCALE_1, 16), XMM0);
 
@@ -373,7 +359,7 @@ void Jit64::dcbz(UGeckoInstruction inst)
 	MOV(32, M(&PC), Imm32(jit->js.compilerPC));
 	BitSet32 registersInUse = CallerSavedRegistersInUse();
 	ABI_PushRegistersAndAdjustStack(registersInUse, 0);
-	ABI_CallFunctionR(&PowerPC::ClearCacheLine, RSCRATCH);
+	ABI_CallFunctionR(PowerPC::ClearCacheLine, RSCRATCH);
 	ABI_PopRegistersAndAdjustStack(registersInUse, 0);
 
 	if (UReg_MSR(MSR).DR)
@@ -592,6 +578,6 @@ void Jit64::eieio(UGeckoInstruction inst)
 	// optimizeGatherPipe generally postpones FIFO checks to the end of the JIT block,
 	// which is generally safe. However postponing FIFO writes across eieio instructions
 	// is incorrect (would crash NBA2K11 strap screen if we improve our FIFO detection).
-	if (jo.optimizeGatherPipe && js.fifoBytesThisBlock > 0)
+	if (jo.optimizeGatherPipe && js.fifoBytesSinceCheck > 0)
 		js.mustCheckFifo = true;
 }

@@ -244,6 +244,8 @@ static CoreTiming::EventType* s_dtk;
 static u64 s_last_read_offset;
 static u64 s_last_read_time;
 
+static std::string s_disc_path_to_insert;
+
 static CoreTiming::EventType* s_eject_disc;
 static CoreTiming::EventType* s_insert_disc;
 
@@ -289,9 +291,24 @@ void DoState(PointerWrap& p)
 	p.Do(s_last_read_offset);
 	p.Do(s_last_read_time);
 
+	p.Do(s_disc_path_to_insert);
+
 	p.Do(s_stop_at_track_end);
 
 	DVDThread::DoState(p);
+
+	// s_inserted_volume isn't savestated (because it points to
+	// files on the local system). Instead, we check that
+	// s_disc_inside matches the status of s_inserted_volume.
+	// This won't catch cases of having the wrong disc inserted, though.
+	// TODO: Check the game ID, disc number, revision?
+	if (s_disc_inside != (s_inserted_volume != nullptr))
+	{
+		if (s_disc_inside)
+			PanicAlertT("An inserted disc was expected but not found.");
+		else
+			s_inserted_volume.reset();
+	}
 }
 
 static u32 ProcessDTKSamples(short* tempPCM, u32 num_samples)
@@ -392,6 +409,8 @@ void Init()
 	s_last_read_offset = 0;
 	s_last_read_time = 0;
 
+	s_disc_path_to_insert.clear();
+
 	s_eject_disc = CoreTiming::RegisterEvent("EjectDisc", EjectDiscCallback);
 	s_insert_disc = CoreTiming::RegisterEvent("InsertDisc", InsertDiscCallback);
 
@@ -461,16 +480,16 @@ static void EjectDiscCallback(u64 userdata, s64 cyclesLate)
 static void InsertDiscCallback(u64 userdata, s64 cyclesLate)
 {
 	const std::string& old_path = SConfig::GetInstance().m_strFilename;
-	std::string* new_path = reinterpret_cast<std::string*>(userdata);
 
-	if (!SetVolumeName(*new_path))
+	if (!SetVolumeName(s_disc_path_to_insert))
 	{
 		// Put back the old one
 		SetVolumeName(old_path);
-		PanicAlertT("Invalid file");
+		PanicAlertT("The disc that was about to be inserted couldn't be found.");
 	}
 	SetDiscInside(VolumeIsValid());
-	delete new_path;
+
+	s_disc_path_to_insert.clear();
 }
 
 // Can only be called by the host thread
@@ -487,11 +506,15 @@ void ChangeDiscAsHost(const std::string& new_path)
 // Can only be called by the CPU thread
 void ChangeDiscAsCPU(const std::string& new_path)
 {
-	// TODO: This is bad. Pointers in CoreTiming userdata require
-	// manual memory management and aren't savestate-safe.
-	u64 new_path_pointer = reinterpret_cast<u64>(new std::string(new_path));
+	if (!s_disc_path_to_insert.empty())
+	{
+		PanicAlertT("A disc is already about to be inserted.");
+		return;
+	}
+
+	s_disc_path_to_insert = new_path;
 	CoreTiming::ScheduleEvent(0, s_eject_disc);
-	CoreTiming::ScheduleEvent(SystemTimers::GetTicksPerSecond(), s_insert_disc, new_path_pointer);
+	CoreTiming::ScheduleEvent(SystemTimers::GetTicksPerSecond(), s_insert_disc);
 
 	Movie::SignalDiscChange(new_path);
 }
@@ -723,7 +746,7 @@ void ExecuteCommand(u32 command_0, u32 command_1, u32 command_2, u32 output_addr
 		// Probably only used though WII_IPC
 	case DVDLowGetCoverReg:
 		WriteImmediate(s_DICVR.Hex, output_address, reply_to_ios);
-		INFO_LOG(DVDINTERFACE, "DVDLowGetCoverReg 0x%08x", s_DICVR.Hex);
+		DEBUG_LOG(DVDINTERFACE, "DVDLowGetCoverReg 0x%08x", s_DICVR.Hex);
 		break;
 
 		// Probably only used by Wii
@@ -749,7 +772,7 @@ void ExecuteCommand(u32 command_0, u32 command_1, u32 command_2, u32 output_addr
 
 		// Probably only used by Wii
 	case DVDLowClearCoverInterrupt:
-		INFO_LOG(DVDINTERFACE, "DVDLowClearCoverInterrupt");
+		DEBUG_LOG(DVDINTERFACE, "DVDLowClearCoverInterrupt");
 		s_DICVR.CVRINT = 0;
 		break;
 
@@ -979,7 +1002,7 @@ void ExecuteCommand(u32 command_0, u32 command_1, u32 command_2, u32 output_addr
 			WriteImmediate(s_current_length >> 2, output_address, reply_to_ios);
 			break;
 		default:
-			WARN_LOG(DVDINTERFACE, "(Audio): Subcommand: %02x  Request Audio status %s",
+			INFO_LOG(DVDINTERFACE, "(Audio): Subcommand: %02x  Request Audio status %s",
 				command_0 >> 16 & 0xFF, s_stream ? "on" : "off");
 			break;
 		}
@@ -1009,13 +1032,13 @@ void ExecuteCommand(u32 command_0, u32 command_1, u32 command_2, u32 output_addr
 		{
 			// TODO: What is this actually supposed to do?
 			s_stream = true;
-			WARN_LOG(DVDINTERFACE, "(Audio): Audio enabled");
+			INFO_LOG(DVDINTERFACE, "(Audio): Audio enabled");
 		}
 		else
 		{
 			// TODO: What is this actually supposed to do?
 			s_stream = false;
-			WARN_LOG(DVDINTERFACE, "(Audio): Audio disabled");
+			INFO_LOG(DVDINTERFACE, "(Audio): Audio disabled");
 		}
 		break;
 

@@ -109,6 +109,6 @@ void GenerateVertexShaderCodeD3D9(ShaderCode& object, const vertex_shader_uid_da
 
 void GenerateVertexShaderCodeD3D11(ShaderCode& object, const vertex_shader_uid_data& uid_data);
 
-void GenerateVSOutputStructForGSD3D11(ShaderCode& object, const XFMemory &xfr);
-
 void GenerateVertexShaderCodeGL(ShaderCode& object, const vertex_shader_uid_data& uid_data);
+
+void GenerateVertexShaderCodeVulkan(ShaderCode& object, const vertex_shader_uid_data& uid_data);

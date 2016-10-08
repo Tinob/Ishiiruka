@@ -163,7 +163,9 @@ enum
 	IDM_CONFIG_LOGGER,
 
 	// Views
-	IDM_LOG_WINDOW,
+	// IMPORTANT: Make sure IDM_FLOAT_xxx and IDM_xxx_PARENT are kept in sync!
+	IDM_DEBUG_WINDOW_LIST_START,  // Bookend for doing array lookups
+	IDM_LOG_WINDOW = IDM_DEBUG_WINDOW_LIST_START,
 	IDM_LOG_CONFIG_WINDOW,
 	IDM_REGISTER_WINDOW,
 	IDM_WATCH_WINDOW,
@@ -173,9 +175,10 @@ enum
 	IDM_SOUND_WINDOW,
 	IDM_VIDEO_WINDOW,
 	IDM_CODE_WINDOW,
+	IDM_DEBUG_WINDOW_LIST_END,  // Bookend for doing array lookups
 
 	// List Column Title Toggles
-	IDM_SHOW_SYSTEM,
+	IDM_SHOW_SYSTEM = IDM_DEBUG_WINDOW_LIST_END,
 	IDM_SHOW_BANNER,
 	IDM_SHOW_MAKER,
 	IDM_SHOW_FILENAME,
@@ -285,7 +288,6 @@ enum
 	// --------------------------------------------------------------
 
 	IDM_TOGGLE_DUAL_CORE,  // Other
-	IDM_TOGGLE_SKIP_IDLE,
 	IDM_TOGGLE_TOOLBAR,
 	IDM_TOGGLE_STATUSBAR,
 	IDM_NOTIFY_MAP_LOADED,
@@ -297,6 +299,7 @@ enum
 	IDM_SET_DEFAULT_ISO,
 	IDM_DELETE_ISO,
 	IDM_COMPRESS_ISO,
+	IDM_START_NETPLAY,
 	IDM_MULTI_COMPRESS_ISO,
 	IDM_MULTI_DECOMPRESS_ISO,
 	IDM_UPDATE_DISASM_DIALOG,
@@ -344,6 +347,7 @@ enum
 // custom message macro
 #define EVT_HOST_COMMAND(id, fn) EVT_COMMAND(id, wxEVT_HOST_COMMAND, fn)
 
+// FIXME: This should be changed to wxThreadEvent
 wxDECLARE_EVENT(wxEVT_HOST_COMMAND, wxCommandEvent);
 
 // Sent to wxTheApp

@@ -29,7 +29,7 @@
 #include "Core/HW/Wiimote.h"
 #include "Core/HW/WiimoteEmu/WiimoteEmu.h"
 #include "Core/HW/WiimoteEmu/WiimoteHid.h"
-#include "Core/IPC_HLE/WII_IPC_HLE_Device_usb.h"
+#include "Core/IPC_HLE/WII_IPC_HLE_Device_usb_bt_emu.h"
 #include "Core/IPC_HLE/WII_IPC_HLE_WiiMote.h"
 #include "Core/Movie.h"
 #include "Core/NetPlayProto.h"
@@ -67,7 +67,7 @@ static u64 s_totalLagCount = 0;                               // just stats
 static u64 s_currentInputCount = 0, s_totalInputCount = 0;    // just stats
 static u64 s_totalTickCount = 0, s_tickCountAtLastInput = 0;  // just stats
 static u64 s_recordingStartTime;  // seconds since 1970 that recording started
-static bool s_bSaveConfig = false, s_bSkipIdle = false, s_bDualCore = false;
+static bool s_bSaveConfig = false, s_bDualCore = false;
 static bool s_bProgressive = false, s_bPAL60 = false;
 static bool s_bDSPHLE = false, s_bFastDiscSpeed = false;
 static bool s_bSyncGPU = false, s_bNetPlay = false;
@@ -477,11 +477,6 @@ bool IsPAL60()
 	return s_bPAL60;
 }
 
-bool IsSkipIdle()
-{
-	return s_bSkipIdle;
-}
-
 bool IsDSPHLE()
 {
 	return s_bDSPHLE;
@@ -570,7 +565,8 @@ void ChangeWiiPads(bool instantly)
 	for (int i = 0; i < MAX_WIIMOTES; ++i)
 	{
 		g_wiimote_sources[i] = IsUsingWiimote(i) ? WIIMOTE_SRC_EMU : WIIMOTE_SRC_NONE;
-		GetUsbPointer()->AccessWiiMote(i | 0x100)->Activate(IsUsingWiimote(i));
+		if (!SConfig::GetInstance().m_bt_passthrough_enabled)
+			GetUsbPointer()->AccessWiiMote(i | 0x100)->Activate(IsUsingWiimote(i));
 	}
 }
 
@@ -739,7 +735,6 @@ static void SetInputDisplayString(ControllerState padState, int controllerID)
 	display_str += Analog1DToString(padState.TriggerR, " R");
 	display_str += Analog2DToString(padState.AnalogStickX, padState.AnalogStickY, " ANA");
 	display_str += Analog2DToString(padState.CStickX, padState.CStickY, " C");
-	display_str += '\n';
 
 	std::lock_guard<std::mutex> guard(s_input_display_lock);
 	s_InputDisplay[controllerID] = std::move(display_str);
@@ -784,15 +779,15 @@ static void SetWiiInputDisplayString(int remoteID, u8* const data,
 			display_str += " 2";
 		if (buttons.home)
 			display_str += " HOME";
-	}
 
-	if (accelData)
-	{
-		wm_accel* dt = (wm_accel*)accelData;
-		display_str +=
-			StringFromFormat(" ACC:%d,%d,%d", dt->x << 2 | ((wm_buttons*)coreData)->acc_x_lsb,
-				dt->y << 2 | ((wm_buttons*)coreData)->acc_y_lsb << 1,
-				dt->z << 2 | ((wm_buttons*)coreData)->acc_z_lsb << 1);
+		// A few bits of accelData are actually inside the coreData struct.
+		if (accelData)
+		{
+			wm_accel* dt = (wm_accel*)accelData;
+			display_str += StringFromFormat(" ACC:%d,%d,%d", dt->x << 2 | buttons.acc_x_lsb,
+				dt->y << 2 | buttons.acc_y_lsb << 1,
+				dt->z << 2 | buttons.acc_z_lsb << 1);
+		}
 	}
 
 	if (irData)
@@ -862,8 +857,6 @@ static void SetWiiInputDisplayString(int remoteID, u8* const data,
 		display_str += Analog2DToString(cc.regular_data.lx, cc.regular_data.ly, " ANA", 63);
 		display_str += Analog2DToString(cc.rx1 | (cc.rx2 << 1) | (cc.rx3 << 3), cc.ry, " R-ANA", 31);
 	}
-
-	display_str += '\n';
 
 	std::lock_guard<std::mutex> guard(s_input_display_lock);
 	s_InputDisplay[controllerID] = std::move(display_str);
@@ -951,7 +944,6 @@ void ReadHeader()
 	if (tmpHeader.bSaveConfig)
 	{
 		s_bSaveConfig = true;
-		s_bSkipIdle = tmpHeader.bSkipIdle;
 		s_bDualCore = tmpHeader.bDualCore;
 		s_bProgressive = tmpHeader.bProgressive;
 		s_bPAL60 = tmpHeader.bPAL60;
@@ -1431,7 +1423,7 @@ void SaveRecording(const std::string& filename)
 	header.recordingStartTime = s_recordingStartTime;
 
 	header.bSaveConfig = true;
-	header.bSkipIdle = s_bSkipIdle;
+	header.bSkipIdle = true;
 	header.bDualCore = s_bDualCore;
 	header.bProgressive = s_bProgressive;
 	header.bPAL60 = s_bPAL60;
@@ -1517,7 +1509,6 @@ void SetGraphicsConfig()
 void GetSettings()
 {
 	s_bSaveConfig = true;
-	s_bSkipIdle = SConfig::GetInstance().bSkipIdle;
 	s_bDualCore = SConfig::GetInstance().bCPUThread;
 	s_bProgressive = SConfig::GetInstance().bProgressive;
 	s_bPAL60 = SConfig::GetInstance().bPAL60;

@@ -433,7 +433,7 @@ void VertexShaderManager::SetConstants()
 			rangez = rangez / 16777215.0f;
 			farz = 1.0f - (farz / 16777215.0f);
 		}
-		else
+		else if (g_ActiveConfig.backend_info.bSupportsReversedDepthRange)
 		{
 			rangez = fabs(rangez) / 16777215.0f;
 			if (xfmem.viewport.zRange < 0.0f)
@@ -444,6 +444,11 @@ void VertexShaderManager::SetConstants()
 			{
 				farz = 1.0f - (farz / 16777215.0f);
 			}
+		}
+		else
+		{
+			rangez = rangez / 16777215.0f;
+			farz = 1.0f - (farz / 16777215.0f);
 		}
 
 		m_buffer.SetConstant4(C_DEPTHPARAMS,

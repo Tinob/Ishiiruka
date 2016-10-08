@@ -12,13 +12,12 @@
 #include "Common/CommonPaths.h"
 #include "Common/CommonTypes.h"
 #include "Common/FileUtil.h"
-#include "Common/SysConf.h"
 #include "Common/Logging/Log.h"
+#include "Common/SysConf.h"
 
 #include "Core/Movie.h"
 
 SysConf::SysConf()
-	: m_IsValid(false)
 {
 	UpdateLocation();
 }
@@ -57,7 +56,8 @@ bool SysConf::LoadFromFile(const std::string& filename)
 	u64 size = File::GetSize(filename);
 	if (size != SYSCONF_SIZE)
 	{
-		if (AskYesNoT("Your SYSCONF file is the wrong size.\nIt should be 0x%04x (but is 0x%04" PRIx64 ")\nDo you want to generate a new one?",
+		if (AskYesNoT("Your SYSCONF file is the wrong size.\nIt should be 0x%04x (but is 0x%04" PRIx64
+			")\nDo you want to generate a new one?",
 			SYSCONF_SIZE, size))
 		{
 			GenerateSysConf();
@@ -153,9 +153,13 @@ bool SysConf::LoadFromFileInternal(FILE* fh)
 			curEntry.dataLength = 4;
 			break;
 
+		case Type_LongLong:
+			curEntry.dataLength = 8;
+			break;
+
 		default:
-			PanicAlertT("Unknown entry type %i in SYSCONF (%s@%x)!",
-				curEntry.type, curEntry.name, curEntry.offset);
+			PanicAlertT("Unknown entry type %i in SYSCONF (%s@%x)!", curEntry.type, curEntry.name,
+				curEntry.offset);
 			return false;
 			break;
 		}
@@ -247,12 +251,14 @@ void SysConf::GenerateSysConf()
 
 	// IPL.SADR
 	current_offset += create_item(items[7], Type_BigArray, "IPL.SADR", 0x1007, current_offset);
-	items[7].data[0] = 0x6c; //(Switzerland) TODO should this default be changed?
+	items[7].data[0] = 0x6c;  //(Switzerland) TODO should this default be changed?
 
 	// IPL.CB
 	current_offset += create_item(items[8], Type_Long, "IPL.CB", 4, current_offset);
-	items[8].data[0] = 0x0f; items[8].data[1] = 0x11;
-	items[8].data[2] = 0x14; items[8].data[3] = 0xa6;
+	items[8].data[0] = 0x0f;
+	items[8].data[1] = 0x11;
+	items[8].data[2] = 0x14;
+	items[8].data[3] = 0xa6;
 
 	// BT.SPKV
 	current_offset += create_item(items[9], Type_Byte, "BT.SPKV", 1, current_offset);
@@ -260,7 +266,8 @@ void SysConf::GenerateSysConf()
 
 	// IPL.PC
 	current_offset += create_item(items[10], Type_SmallArray, "IPL.PC", 0x49, current_offset);
-	items[10].data[1] = 0x04; items[10].data[2] = 0x14;
+	items[10].data[1] = 0x04;
+	items[10].data[2] = 0x14;
 
 	// NET.CTPC
 	current_offset += create_item(items[11], Type_Long, "NET.CTPC", 4, current_offset);
@@ -307,7 +314,7 @@ void SysConf::GenerateSysConf()
 
 	// IPL.IDL
 	current_offset += create_item(items[23], Type_SmallArray, "IPL.IDL", 1, current_offset);
-	items[23].data[0] = 0x01;
+	items[23].data[0] = 0x00;
 
 	// IPL.EULA
 	current_offset += create_item(items[24], Type_Bool, "IPL.EULA", 1, current_offset);
@@ -320,7 +327,6 @@ void SysConf::GenerateSysConf()
 	// MPLS.MOVIE
 	current_offset += create_item(items[26], Type_Bool, "MPLS.MOVIE", 1, current_offset);
 	items[26].data[0] = 0x01;
-
 
 	File::CreateFullPath(m_FilenameDefault);
 	File::IOFile g(m_FilenameDefault, "wb");
@@ -373,7 +379,7 @@ void SysConf::GenerateSysConf()
 
 	// Write the footer
 	g.WriteBytes("SCed", 4);
-	
+
 	m_Entries = std::move(items);
 	m_Filename = m_FilenameDefault;
 	m_IsValid = true;
@@ -427,7 +433,8 @@ void SysConf::UpdateLocation()
 	// Note: We don't use the dummy Wii root here (if in use) because this is
 	// all tied up with the configuration code.  In the future this should
 	// probably just be synced with the other settings.
-	m_FilenameDefault = File::GetUserPath(D_WIIROOT_IDX) + DIR_SEP WII_SYSCONF_DIR DIR_SEP WII_SYSCONF;
+	m_FilenameDefault =
+		File::GetUserPath(D_WIIROOT_IDX) + DIR_SEP WII_SYSCONF_DIR DIR_SEP WII_SYSCONF;
 	Reload();
 }
 

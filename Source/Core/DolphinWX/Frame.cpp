@@ -2,10 +2,6 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
-#ifdef __APPLE__
-#include <Cocoa/Cocoa.h>
-#endif
-
 #include <atomic>
 #include <cstddef>
 #include <fstream>
@@ -47,6 +43,8 @@
 #include "Core/HW/GCPad.h"
 #include "Core/HW/Wiimote.h"
 #include "Core/HotkeyManager.h"
+#include "Core/IPC_HLE/WII_IPC_HLE.h"
+#include "Core/IPC_HLE/WII_IPC_HLE_Device_usb_bt_base.h"
 #include "Core/Movie.h"
 #include "Core/State.h"
 
@@ -88,9 +86,7 @@ CRenderFrame::CRenderFrame(wxFrame* parent, wxWindowID id, const wxString& title
 	: wxFrame(parent, id, title, pos, size, style)
 {
 	// Give it an icon
-	wxIcon IconTemp;
-	IconTemp.CopyFromBitmap(WxUtils::LoadResourceBitmap("Dolphin"));
-	SetIcon(IconTemp);
+	SetIcons(WxUtils::GetDolphinIconBundle());
 
 	DragAcceptFiles(true);
 	Bind(wxEVT_DROP_FILES, &CRenderFrame::OnDropFiles, this);
@@ -293,7 +289,6 @@ EVT_MENU(IDM_FIFOPLAYER, CFrame::OnFifoPlayer)
 
 EVT_MENU(IDM_TOGGLE_FULLSCREEN, CFrame::OnToggleFullscreen)
 EVT_MENU(IDM_TOGGLE_DUAL_CORE, CFrame::OnToggleDualCore)
-EVT_MENU(IDM_TOGGLE_SKIP_IDLE, CFrame::OnToggleSkipIdle)
 EVT_MENU(IDM_TOGGLE_TOOLBAR, CFrame::OnToggleToolbar)
 EVT_MENU(IDM_TOGGLE_STATUSBAR, CFrame::OnToggleStatusbar)
 EVT_MENU_RANGE(IDM_LOG_WINDOW, IDM_VIDEO_WINDOW, CFrame::OnToggleWindow)
@@ -326,14 +321,9 @@ EVT_MOVE(CFrame::OnMove)
 EVT_HOST_COMMAND(wxID_ANY, CFrame::OnHostMessage)
 
 EVT_AUI_PANE_CLOSE(CFrame::OnPaneClose)
-EVT_AUINOTEBOOK_PAGE_CLOSE(wxID_ANY, CFrame::OnNotebookPageClose)
-EVT_AUINOTEBOOK_ALLOW_DND(wxID_ANY, CFrame::OnAllowNotebookDnD)
-EVT_AUINOTEBOOK_PAGE_CHANGED(wxID_ANY, CFrame::OnNotebookPageChanged)
-EVT_AUINOTEBOOK_TAB_RIGHT_UP(wxID_ANY, CFrame::OnTab)
 
 // Post events to child panels
 EVT_MENU_RANGE(IDM_INTERPRETER, IDM_ADDRBOX, CFrame::PostEvent)
-EVT_TEXT(IDM_ADDRBOX, CFrame::PostEvent)
 
 END_EVENT_TABLE()
 
@@ -384,26 +374,17 @@ static BOOL WINAPI s_ctrl_handler(DWORD fdwCtrlType)
 }
 #endif
 
-CFrame::CFrame(wxFrame* parent, wxWindowID id, const wxString& title, const wxPoint& pos,
-	const wxSize& size, bool _UseDebugger, bool _BatchMode, bool ShowLogWindow,
-	long style)
-	: CRenderFrame(parent, id, title, pos, size, style), g_pCodeWindow(nullptr),
-	g_NetPlaySetupDiag(nullptr), g_CheatsWindow(nullptr), m_SavedPerspectives(nullptr),
-	m_ToolBar(nullptr), m_GameListCtrl(nullptr), m_Panel(nullptr), m_RenderFrame(nullptr),
-	m_RenderParent(nullptr), m_LogWindow(nullptr), m_LogConfigWindow(nullptr),
-	m_FifoPlayerDlg(nullptr), UseDebugger(_UseDebugger), m_bBatchMode(_BatchMode), m_bEdit(false),
-	m_bTabSplit(false), m_bNoDocking(false), m_bGameLoading(false), m_bClosing(false),
-	m_confirmStop(false), m_menubar_shadow(nullptr)
+CFrame::CFrame(wxFrame* parent, wxWindowID id, const wxString& title, wxRect geometry,
+	bool use_debugger, bool batch_mode, bool show_log_window, long style)
+	: CRenderFrame(parent, id, title, wxDefaultPosition, wxSize(800, 600), style),
+	UseDebugger(use_debugger), m_bBatchMode(batch_mode),
+	m_toolbar_bitmap_size(FromDIP(wxSize(32, 32)))
 {
 	for (int i = 0; i <= IDM_CODE_WINDOW - IDM_LOG_WINDOW; i++)
 		bFloatWindow[i] = false;
 
-	if (ShowLogWindow)
+	if (show_log_window)
 		SConfig::GetInstance().m_InterfaceLogWindow = true;
-
-	// Start debugging maximized
-	if (UseDebugger)
-		this->Maximize(true);
 
 	// Debugger class
 	if (UseDebugger)
@@ -495,14 +476,22 @@ CFrame::CFrame(wxFrame* parent, wxWindowID id, const wxString& title, const wxPo
 			ToggleLogConfigWindow(true);
 	}
 
-	// Set the size of the window after the UI has been built, but before we show it
-	SetSize(size);
+	// Setup the window size.
+	// This has to be done here instead of in Main because the Show() happens here.
+	SetMinSize(FromDIP(wxSize(400, 300)));
+	WxUtils::SetWindowSizeAndFitToScreen(this, geometry.GetPosition(), geometry.GetSize(),
+		FromDIP(wxSize(800, 600)));
 
-	// Show window
-	Show();
+	// Start debugging maximized (Must be after the window has been positioned)
+	if (UseDebugger)
+		Maximize(true);
 
 	// Commit
 	m_Mgr->Update();
+
+	// The window must be shown for m_XRRConfig to be created (wxGTK will not allocate X11
+	// resources until the window is shown for the first time).
+	Show();
 
 #ifdef _WIN32
 	SetToolTip("");
@@ -585,16 +574,6 @@ bool CFrame::RendererIsFullscreen()
 		fullscreen = m_RenderFrame->IsFullScreen();
 	}
 
-#if defined(__APPLE__)
-	if (m_RenderFrame != nullptr)
-	{
-		NSView* view = (NSView*)m_RenderFrame->GetHandle();
-		NSWindow* window = [view window];
-
-		fullscreen = (([window styleMask] & NSFullScreenWindowMask) == NSFullScreenWindowMask);
-	}
-#endif
-
 	return fullscreen;
 }
 
@@ -657,11 +636,10 @@ void CFrame::OnClose(wxCloseEvent& event)
 	}
 	else
 	{
-		// Close the log window now so that its settings are saved
-		if (m_LogWindow)
-			m_LogWindow->Close();
-		m_LogWindow = nullptr;
+		m_LogWindow->SaveSettings();
 	}
+	if (m_LogWindow)
+		m_LogWindow->RemoveAllListeners();
 
 	// Uninit
 	m_Mgr->UnInit();
@@ -698,7 +676,8 @@ void CFrame::OnResize(wxSizeEvent& event)
 {
 	event.Skip();
 
-	if (!IsMaximized() && !(SConfig::GetInstance().bRenderToMain && RendererIsFullscreen()) &&
+	if (!IsMaximized() && !IsIconized() &&
+		!(SConfig::GetInstance().bRenderToMain && RendererIsFullscreen()) &&
 		!(Core::GetState() != Core::CORE_UNINITIALIZED && SConfig::GetInstance().bRenderToMain &&
 			SConfig::GetInstance().bRenderWindowAutoSize))
 	{
@@ -758,6 +737,11 @@ void CFrame::OnHostMessage(wxCommandEvent& event)
 {
 	switch (event.GetId())
 	{
+	case IDM_UPDATE_DISASM_DIALOG:  // For breakpoints causing pausing
+		if (!g_pCodeWindow || Core::GetState() != Core::CORE_PAUSE)
+			return;
+		// fallthrough
+
 	case IDM_UPDATE_GUI:
 		UpdateGUI();
 		break;
@@ -839,33 +823,29 @@ void CFrame::OnHostMessage(wxCommandEvent& event)
 
 void CFrame::OnRenderWindowSizeRequest(int width, int height)
 {
-	if (!Core::IsRunning() || !SConfig::GetInstance().bRenderWindowAutoSize ||
+	if (!SConfig::GetInstance().bRenderWindowAutoSize || !Core::IsRunning() ||
 		RendererIsFullscreen() || m_RenderFrame->IsMaximized())
 		return;
 
-	int old_width, old_height, log_width = 0, log_height = 0;
-	m_RenderFrame->GetClientSize(&old_width, &old_height);
+	wxSize requested_size(width, height);
+	// Convert to window pixels, since the size is from the backend it will be in framebuffer px.
+	requested_size *= 1.0 / m_RenderFrame->GetContentScaleFactor();
+	wxSize old_size;
 
-	// Add space for the log/console/debugger window
-	if (SConfig::GetInstance().bRenderToMain && (SConfig::GetInstance().m_InterfaceLogWindow ||
-		SConfig::GetInstance().m_InterfaceLogConfigWindow) &&
-		!m_Mgr->GetPane("Pane 1").IsFloating())
+	if (!SConfig::GetInstance().bRenderToMain)
 	{
-		switch (m_Mgr->GetPane("Pane 1").dock_direction)
-		{
-		case wxAUI_DOCK_LEFT:
-		case wxAUI_DOCK_RIGHT:
-			log_width = m_Mgr->GetPane("Pane 1").rect.GetWidth();
-			break;
-		case wxAUI_DOCK_TOP:
-		case wxAUI_DOCK_BOTTOM:
-			log_height = m_Mgr->GetPane("Pane 1").rect.GetHeight();
-			break;
-		}
+		old_size = m_RenderFrame->GetClientSize();
+	}
+	else
+	{
+		// Resize for the render panel only, this implicitly retains space for everything else
+		// (i.e. log panel, toolbar, statusbar, etc) without needing to compute for them.
+		old_size = m_RenderParent->GetSize();
 	}
 
-	if (old_width != width + log_width || old_height != height + log_height)
-		m_RenderFrame->SetClientSize(width + log_width, height + log_height);
+	wxSize diff = requested_size - old_size;
+	if (diff != wxSize())
+		m_RenderFrame->SetSize(m_RenderFrame->GetSize() + diff);
 }
 
 bool CFrame::RendererHasFocus()
@@ -948,7 +928,7 @@ void CFrame::OnGameListCtrlItemActivated(wxListEvent& WXUNUSED(event))
 		GetMenuBar()->FindItem(IDM_LIST_WORLD)->Check(true);
 		GetMenuBar()->FindItem(IDM_LIST_UNKNOWN)->Check(true);
 
-		m_GameListCtrl->Update();
+		UpdateGameList();
 	}
 	else if (!m_GameListCtrl->GetISO(0))
 	{
@@ -1285,15 +1265,6 @@ void CFrame::DoFullscreen(bool enable_fullscreen)
 
 	ToggleDisplayMode(enable_fullscreen);
 
-#if defined(__APPLE__)
-	NSView* view = (NSView*)m_RenderFrame->GetHandle();
-	NSWindow* window = [view window];
-
-	if (enable_fullscreen != RendererIsFullscreen())
-	{
-		[window toggleFullScreen : nil];
-	}
-#else
 	if (enable_fullscreen)
 	{
 		m_RenderFrame->ShowFullScreen(true, wxFULLSCREEN_ALL);
@@ -1304,7 +1275,6 @@ void CFrame::DoFullscreen(bool enable_fullscreen)
 		// Therefore we don't exit fullscreen from here if we are in exclusive mode.
 		m_RenderFrame->ShowFullScreen(false, wxFULLSCREEN_ALL);
 	}
-#endif
 
 	if (SConfig::GetInstance().bRenderToMain)
 	{
@@ -1445,6 +1415,14 @@ void CFrame::ParseHotkeys()
 	if (IsHotkey(HK_VOLUME_TOGGLE_MUTE))
 		AudioCommon::ToggleMuteVolume();
 
+	if (SConfig::GetInstance().m_bt_passthrough_enabled)
+	{
+		auto device = WII_IPC_HLE_Interface::GetDeviceByName("/dev/usb/oh1/57e/305");
+		if (device != nullptr)
+			std::static_pointer_cast<CWII_IPC_HLE_Device_usb_oh1_57e_305_base>(device)
+			->UpdateSyncButtonState(IsHotkey(HK_TRIGGER_SYNC_BUTTON, true));
+	}
+
 	// Wiimote connect and disconnect hotkeys
 	int WiimoteId = -1;
 	if (IsHotkey(HK_WIIMOTE1_CONNECT))
@@ -1468,14 +1446,16 @@ void CFrame::ParseHotkeys()
 
 	if (IsHotkey(HK_INCREASE_IR))
 	{
-		OSDChoice = 1;
 		++g_Config.iEFBScale;
+		OSDPrintInternalResolution();
 	}
 	if (IsHotkey(HK_DECREASE_IR))
 	{
-		OSDChoice = 1;
 		if (--g_Config.iEFBScale < SCALE_AUTO)
+		{
 			g_Config.iEFBScale = SCALE_AUTO;
+		}
+		OSDPrintInternalResolution();
 	}
 	if (IsHotkey(HK_TOGGLE_CROP))
 	{
@@ -1483,26 +1463,24 @@ void CFrame::ParseHotkeys()
 	}
 	if (IsHotkey(HK_TOGGLE_AR))
 	{
-		OSDChoice = 2;
 		// Toggle aspect ratio
 		g_Config.iAspectRatio = (g_Config.iAspectRatio + 1) & 3;
+		OSDPrintAspectRatio();
 	}
 	if (IsHotkey(HK_TOGGLE_EFBCOPIES))
 	{
-		OSDChoice = 3;
 		// Toggle EFB copies between EFB2RAM and EFB2Texture
 		g_Config.bSkipEFBCopyToRam = !g_Config.bSkipEFBCopyToRam;
+		OSDPrintEFB();
 	}
 	if (IsHotkey(HK_TOGGLE_FOG))
 	{
-		OSDChoice = 4;
 		g_Config.bDisableFog = !g_Config.bDisableFog;
+		OSDPrintFog();
 	}
 	Core::SetIsThrottlerTempDisabled(IsHotkey(HK_TOGGLE_THROTTLE, true));
 	if (IsHotkey(HK_DECREASE_EMULATION_SPEED))
 	{
-		OSDChoice = 5;
-
 		if (SConfig::GetInstance().m_EmulationSpeed <= 0.0f)
 			SConfig::GetInstance().m_EmulationSpeed = 1.0f;
 		else if (SConfig::GetInstance().m_EmulationSpeed >= 0.2f)
@@ -1513,17 +1491,19 @@ void CFrame::ParseHotkeys()
 		if (SConfig::GetInstance().m_EmulationSpeed >= 0.95f &&
 			SConfig::GetInstance().m_EmulationSpeed <= 1.05f)
 			SConfig::GetInstance().m_EmulationSpeed = 1.0f;
+
+		OSDPrintEmulationSpeed();
 	}
 	if (IsHotkey(HK_INCREASE_EMULATION_SPEED))
 	{
-		OSDChoice = 5;
-
 		if (SConfig::GetInstance().m_EmulationSpeed > 0.0f)
 			SConfig::GetInstance().m_EmulationSpeed += 0.1f;
 
 		if (SConfig::GetInstance().m_EmulationSpeed >= 0.95f &&
 			SConfig::GetInstance().m_EmulationSpeed <= 1.05f)
 			SConfig::GetInstance().m_EmulationSpeed = 1.0f;
+
+		OSDPrintEmulationSpeed();
 	}
 	if (IsHotkey(HK_SAVE_STATE_SLOT_SELECTED))
 	{
@@ -1723,4 +1703,85 @@ void CFrame::HandleSignal(wxTimerEvent& event)
 	if (!s_shutdown_signal_received.TestAndClear())
 		return;
 	Close();
+}
+
+void CFrame::OSDPrintInternalResolution()
+{
+	std::string text;
+	switch (g_Config.iEFBScale)
+	{
+	case SCALE_AUTO:
+		text = "Auto (fractional)";
+		break;
+	case SCALE_AUTO_INTEGRAL:
+		text = "Auto (integral)";
+		break;
+	case SCALE_1X:
+		text = "Native";
+		break;
+	case SCALE_1_5X:
+		text = "1.5x";
+		break;
+	case SCALE_2X:
+		text = "2x";
+		break;
+	case SCALE_2_5X:
+		text = "2.5x";
+		break;
+	default:
+		text = StringFromFormat("%dx", g_Config.iEFBScale - 3);
+		break;
+	}
+
+	OSD::AddMessage("Internal Resolution: " + text);
+}
+
+void CFrame::OSDPrintAspectRatio()
+{
+	std::string text;
+	switch (g_Config.iAspectRatio)
+	{
+	case ASPECT_AUTO:
+		text = "Auto";
+		break;
+	case ASPECT_STRETCH:
+		text = "Stretch";
+		break;
+	case ASPECT_ANALOG:
+	case ASPECT_4_3:
+		text = "Force 4:3";
+		break;
+	case ASPECT_ANALOG_WIDE:
+	case ASPECT_16_9:
+		text = "Force 16:9";
+		break;
+	case ASPECT_16_10:
+		text = "Force 16:10";
+		break;
+	}
+
+	OSD::AddMessage("Aspect Ratio: " + text + (g_Config.bCrop ? " (crop)" : ""));
+}
+
+void CFrame::OSDPrintEFB()
+{
+	OSD::AddMessage(std::string("Copy EFB: ") +
+		(g_Config.bSkipEFBCopyToRam ? "to Texture" : "to RAM"));
+}
+
+void CFrame::OSDPrintFog()
+{
+	OSD::AddMessage(std::string("Fog: ") + (g_Config.bDisableFog ? "Disabled" : "Enabled"));
+}
+
+void CFrame::OSDPrintEmulationSpeed()
+{
+	std::string text = "Speed Limit: ";
+
+	if (SConfig::GetInstance().m_EmulationSpeed <= 0)
+		text += "Unlimited";
+	else
+		text += StringFromFormat("%li%%", std::lround(SConfig::GetInstance().m_EmulationSpeed * 100.f));
+
+	OSD::AddMessage(text);
 }

@@ -32,6 +32,7 @@
 #include "Core/FifoPlayer/FifoRecorder.h"
 #include "Core/HW/VideoInterface.h"
 
+#include "OnScreenDisplay.h"
 #include "VideoCommon/AVIDump.h"
 #include "VideoCommon/BPMemory.h"
 #include "VideoCommon/CommandProcessor.h"
@@ -51,8 +52,6 @@
 
 // TODO: Move these out of here.
 int frameCount;
-int OSDChoice;
-static int OSDTime;
 
 std::unique_ptr<Renderer> g_renderer;
 
@@ -63,10 +62,6 @@ Common::Event Renderer::s_screenshotCompleted;
 
 volatile bool Renderer::s_bScreenshot;
 
-// Final surface changing
-Common::Flag  Renderer::s_SurfaceNeedsChanged;
-Common::Event Renderer::s_ChangedSurface;
-
 // The framebuffer size
 int Renderer::s_target_width;
 int Renderer::s_target_height;
@@ -76,6 +71,11 @@ int Renderer::s_backbuffer_width;
 int Renderer::s_backbuffer_height;
 
 std::unique_ptr<PostProcessor> Renderer::m_post_processor;
+
+// Final surface changing
+Common::Flag Renderer::s_surface_needs_change;
+Common::Event Renderer::s_surface_changed;
+void* Renderer::s_new_surface_handle;
 
 TargetRectangle Renderer::target_rc;
 TargetRectangle Renderer::window_rc;
@@ -112,9 +112,6 @@ Renderer::Renderer()
 #if defined _WIN32 || defined HAVE_LIBAV
 	bAVIDumping = false;
 #endif
-
-	OSDChoice = 0;
-	OSDTime = 0;
 }
 
 Renderer::~Renderer()
@@ -240,11 +237,10 @@ bool Renderer::CalculateTargetSize(unsigned int framebuffer_width, unsigned int 
 		efb_scale_denominatorX = efb_scale_denominatorY = 1;
 		break;
 	}
-	int maxSize;
-	maxSize = GetMaxTextureSize();
-	if ((unsigned)maxSize < EFB_WIDTH * multiplier * efb_scale_numeratorX / efb_scale_denominatorX)
+	const u32 max_size = GetMaxTextureSize();
+	if (max_size < EFB_WIDTH * multiplier * efb_scale_numeratorX / efb_scale_denominatorX)
 	{
-		efb_scale_numeratorX = efb_scale_numeratorY = (maxSize / (EFB_WIDTH * multiplier));
+		efb_scale_numeratorX = efb_scale_numeratorY = (max_size / (EFB_WIDTH * multiplier));
 		efb_scale_denominatorX = efb_scale_denominatorY = 1;
 	}
 
@@ -310,127 +306,47 @@ void Renderer::SetScreenshot(const std::string& filename)
 	s_bScreenshot = true;
 }
 
-// Create On-Screen-Messages
+
 void Renderer::DrawDebugText()
 {
-	std::string final_yellow, final_cyan;
-	if (g_ActiveConfig.bShowFPS || SConfig::GetInstance().m_ShowFrameCount)
+	auto draw_text = [](OSD::MessageType type, const std::string& message) {
+		OSD::AddTypedMessage(type, message, OSD::Duration::SHORT, OSD::Color::CYAN);
+	};
+
+	if (g_ActiveConfig.bShowFPS)
 	{
-		if (g_ActiveConfig.bShowFPS)
-			final_cyan += StringFromFormat("FPS: %u", g_renderer->m_fps_counter.GetFPS());
-		if (g_ActiveConfig.bShowFPS && SConfig::GetInstance().m_ShowFrameCount)
-			final_cyan += " - ";
-		if (SConfig::GetInstance().m_ShowFrameCount)
-		{
-			final_cyan += StringFromFormat("Frame: %llu", Movie::GetCurrentFrame());
-			if (Movie::IsPlayingInput())
-				final_cyan += StringFromFormat(" / %llu", Movie::GetTotalFrames());
-		}
-		final_cyan += "\n";
-		final_yellow += "\n";
-	}
-	if (SConfig::GetInstance().m_ShowLag)
-	{
-		final_cyan += StringFromFormat("Lag: %" PRIu64 "\n", Movie::GetCurrentLagCount());
-		final_yellow += "\n";
-	}
-	if (SConfig::GetInstance().m_ShowInputDisplay)
-	{
-		final_cyan += Movie::GetInputDisplay();
-		final_yellow += "\n";
-	}
-	if (SConfig::GetInstance().m_ShowRTC)
-	{
-		final_cyan += Movie::GetRTCDisplay();
-		final_yellow += "\n";
+		draw_text(OSD::MessageType::FPS,
+			StringFromFormat("FPS: %u", g_renderer->m_fps_counter.GetFPS()));
 	}
 
-	// OSD Menu messages
-	if (OSDChoice > 0)
+	if (SConfig::GetInstance().m_ShowFrameCount)
 	{
-		OSDTime = Common::Timer::GetTimeMs() + 3000;
-		OSDChoice = -OSDChoice;
-	}
-	if ((u32)OSDTime > Common::Timer::GetTimeMs())
-	{
-		std::string res_text;
-		switch (g_ActiveConfig.iEFBScale)
+		draw_text(OSD::MessageType::FrameCount,
+			StringFromFormat("Frame: %" PRIu64, Movie::GetCurrentFrame()));
+
+		if (Movie::IsPlayingInput())
 		{
-		case SCALE_AUTO:
-			res_text = "Auto (fractional)";
-			break;
-		case SCALE_AUTO_INTEGRAL:
-			res_text = "Auto (integral)";
-			break;
-		case SCALE_1X:
-			res_text = "Native";
-			break;
-		case SCALE_1_5X:
-			res_text = "1.5x";
-			break;
-		case SCALE_2X:
-			res_text = "2x";
-			break;
-		case SCALE_2_5X:
-			res_text = "2.5x";
-			break;
-		default:
-			res_text += StringFromFormat("%ix", g_ActiveConfig.iEFBScale - 3);
-			break;
-		}
-		const char* ar_text = "";
-		switch (g_ActiveConfig.iAspectRatio)
-		{
-		case ASPECT_AUTO:
-			ar_text = "Auto";
-			break;
-		case ASPECT_STRETCH:
-			ar_text = "Stretch";
-			break;
-		case ASPECT_ANALOG:
-			ar_text = "Force 4:3";
-			break;
-		case ASPECT_ANALOG_WIDE:
-			ar_text = "Force 16:9";
-		}
-		const char* const efbcopy_text = g_ActiveConfig.bSkipEFBCopyToRam ? "to Texture" : "to RAM";
-		// The rows
-		const std::string lines[] =
-		{
-			std::string("Internal Resolution: ") + res_text,
-			std::string("Aspect Ratio: ") + ar_text + (g_ActiveConfig.bCrop ? " (crop)" : ""),
-			std::string("Copy EFB: ") + efbcopy_text,
-			std::string("Fog: ") + (g_ActiveConfig.bDisableFog ? "Disabled" : "Enabled"),
-			SConfig::GetInstance().m_EmulationSpeed <= 0 ? "Speed Limit: Unlimited" :
-			StringFromFormat("Speed Limit: %li%%", std::lround(SConfig::GetInstance().m_EmulationSpeed * 100.f)),
-		};
-		enum
-		{
-			lines_count = sizeof(lines) / sizeof(*lines)
-		};
-		// The latest changed setting in yellow
-		for (int i = 0; i != lines_count; ++i)
-		{
-			if (OSDChoice == -i - 1)
-				final_yellow += lines[i];
-			final_yellow += '\n';
-		}
-		// The other settings in cyan
-		for (int i = 0; i != lines_count; ++i)
-		{
-			if (OSDChoice != -i - 1)
-				final_cyan += lines[i];
-			final_cyan += '\n';
+			draw_text(OSD::MessageType::MovieInputCount,
+				StringFromFormat("Input: %" PRIu64 " / %" PRIu64, Movie::GetCurrentInputCount(),
+					Movie::GetTotalInputCount()));
 		}
 	}
-	final_cyan += Common::Profiler::ToString();
-	if (g_ActiveConfig.bOverlayStats)
-		final_cyan += Statistics::ToString();
-	if (g_ActiveConfig.bOverlayProjStats)
-		final_cyan += Statistics::ToStringProj();
-	//and then the text
-	g_renderer->RenderText(final_cyan, 20, 20, 0xFF00FFFF);
-	g_renderer->RenderText(final_yellow, 20, 20, 0xFFFFFF00);
+
+	if (SConfig::GetInstance().m_ShowLag)
+	{
+		draw_text(OSD::MessageType::MovieLag,
+			StringFromFormat("Lag: %" PRIu64, Movie::GetCurrentLagCount()));
+	}
+
+	if (SConfig::GetInstance().m_ShowInputDisplay)
+	{
+		draw_text(OSD::MessageType::MovieInput, Movie::GetInputDisplay());
+	}
+
+	if (SConfig::GetInstance().m_ShowRTC)
+	{
+		draw_text(OSD::MessageType::RTC, Movie::GetRTCDisplay());
+	}
 }
 
 void Renderer::UpdateDrawRectangle(int backbuffer_width, int backbuffer_height)

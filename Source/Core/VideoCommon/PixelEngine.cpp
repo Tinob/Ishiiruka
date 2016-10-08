@@ -321,7 +321,7 @@ static inline void RaiseEvent()
 // THIS IS EXECUTED FROM VIDEO THREAD
 void SetToken(const u16 token, const bool interrupt)
 {
-	INFO_LOG(PIXELENGINE, "VIDEO Backend raises INT_CAUSE_PE_TOKEN (btw, token: %04x)", token);
+	DEBUG_LOG(PIXELENGINE, "VIDEO Backend raises INT_CAUSE_PE_TOKEN (btw, token: %04x)", token);
 	std::lock_guard<std::mutex> lk(s_token_finish_mutex);
 	s_token_pending = token;
 	s_token_interrupt_pending |= interrupt;

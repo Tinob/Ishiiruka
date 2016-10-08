@@ -77,7 +77,7 @@ private:
 		bool isIntensity, bool scaleByHalf) override;
 	bool Palettize(TCacheEntryBase* entry, const TCacheEntryBase* base_entry) override;
 	void LoadLut(u32 lutFmt, void* addr, u32 size) override;
-	void CompileShaders() override;
+	bool CompileShaders() override;
 	void DeleteShaders() override;
 	void* m_last_addr = {};
 	u32 m_last_size = {};

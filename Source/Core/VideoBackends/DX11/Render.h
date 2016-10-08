@@ -58,7 +58,7 @@ public:
 
 	static bool CheckForResize();
 
-	int GetMaxTextureSize() override;
+	u32 GetMaxTextureSize() override;
 };
 
 }

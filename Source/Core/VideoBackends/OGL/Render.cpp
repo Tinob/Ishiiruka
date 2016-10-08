@@ -145,7 +145,7 @@ static void APIENTRY ErrorCallback(GLenum source, GLenum type, GLuint id, GLenum
 		WARN_LOG(HOST_GPU, "id: %x, source: %s, type: %s - %s", id, s_source, s_type, message);
 		break;
 	case GL_DEBUG_SEVERITY_LOW_ARB:
-		WARN_LOG(HOST_GPU, "id: %x, source: %s, type: %s - %s", id, s_source, s_type, message);
+		DEBUG_LOG(HOST_GPU, "id: %x, source: %s, type: %s - %s", id, s_source, s_type, message);
 		break;
 	case GL_DEBUG_SEVERITY_NOTIFICATION:
 		DEBUG_LOG(HOST_GPU, "id: %x, source: %s, type: %s - %s", id, s_source, s_type, message);
@@ -327,7 +327,7 @@ static void InitDriverInfo()
 	default:
 		break;
 	}
-	DriverDetails::Init(vendor, driver, version, family);
+	DriverDetails::Init(DriverDetails::API_OPENGL, vendor, driver, version, family);
 }
 
 // Init functions
@@ -1546,9 +1546,9 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight,
 	{
 		if (bLastFrameDumped && bAVIDumping)
 		{
+			AVIDump::Stop();
 			std::vector<u8>().swap(frame_data);
 			w = h = 0;
-			AVIDump::Stop();
 			bAVIDumping = false;
 			OSD::AddMessage("Stop dumping frames", 2000);
 		}
@@ -1643,12 +1643,16 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight,
 	OSD::DoCallbacks(OSD::CallbackType::OnFrame);
 	OSD::DrawMessages();
 
-	if (s_SurfaceNeedsChanged.IsSet())
+#ifdef ANDROID
+	if (s_surface_needs_change.IsSet())
 	{
+		GLInterface->UpdateHandle(s_new_surface_handle);
 		GLInterface->UpdateSurface();
-		s_SurfaceNeedsChanged.Clear();
-		s_ChangedSurface.Set();
+		s_new_surface_handle = nullptr;
+		s_surface_needs_change.Clear();
+		s_surface_changed.Set();
 	}
+#endif
 
 	// Copy the rendered frame to the real window
 	GLInterface->Swap();
@@ -1959,13 +1963,26 @@ bool Renderer::SaveScreenshot(const std::string& filename, const TargetRectangle
 	return TextureToPng(data.get(), W * 4, filename, W, H, false);
 }
 
-int Renderer::GetMaxTextureSize()
+u32 Renderer::GetMaxTextureSize()
 {
 	// Right now nvidia seems to do something very weird if we try to cache GL_MAX_TEXTURE_SIZE in
 	// init. This is a workaround that lets
 	// us keep the perf improvement that caching it gives us.
 	if (s_max_texture_size == 0)
 		glGetIntegerv(GL_MAX_TEXTURE_SIZE, &s_max_texture_size);
-	return s_max_texture_size;
+	return static_cast<u32>(s_max_texture_size);
 }
+
+void Renderer::ChangeSurface(void* new_surface_handle)
+{
+	// Win32 polls the window size when redrawing, X11 runs an event loop in another thread.
+	// This is only necessary for Android at this point, although handling resizes here
+	// would be more efficient than polling.
+#ifdef ANDROID
+	s_new_surface_handle = new_surface_handle;
+	s_surface_needs_change.Set();
+	s_surface_changed.Wait();
+#endif
+}
+
 }

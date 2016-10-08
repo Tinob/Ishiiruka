@@ -718,8 +718,8 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 	{
 		if (bLastFrameDumped && bAVIDumping)
 		{
-			std::vector<u8>().swap(frame_data);
 			AVIDump::Stop();
+			std::vector<u8>().swap(frame_data);
 			bAVIDumping = false;
 			OSD::AddMessage("Stop dumping frames to AVI", 2000);
 		}
@@ -1316,9 +1316,9 @@ void Renderer::SetSamplerState(int stage, int texindex, bool custom_tex)
 	D3D::SetSamplerState(stage, D3DSAMP_MAXMIPLEVEL, tm1.min_lod >> 4);
 }
 
-int Renderer::GetMaxTextureSize()
+u32 Renderer::GetMaxTextureSize()
 {
-	return D3D::GetCaps().MaxTextureWidth;
+	return static_cast<u32>(D3D::GetCaps().MaxTextureWidth); ;
 }
 
 }  // namespace DX9

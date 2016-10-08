@@ -147,7 +147,6 @@ struct VideoConfig final
 	bool bHiresMaterialMapsBuild;
 	bool bConvertHiresTextures;
 	bool bCacheHiresTextures;
-	bool bCacheHiresTexturesGPU;
 	bool bDumpEFBTarget;
 	bool bUseFFV1;
 	bool bFreeLook;
@@ -215,6 +214,16 @@ struct VideoConfig final
 	bool bDumpTevStages;
 	bool bDumpTevTextureFetches;
 
+	// Enable API validation layers, currently only supported with Vulkan.
+	bool bEnableValidationLayer;
+
+	// Multithreaded submission, currently only supported with Vulkan.
+	bool bBackendMultithreading;
+
+	// Early command buffer execution interval in number of draws.
+	// Currently only supported with Vulkan.
+	int iCommandBufferExecuteInterval;
+
 	// Static config per API
 	// TODO: Move this out of VideoConfig
 	struct
@@ -250,6 +259,8 @@ struct VideoConfig final
 		bool bSupportsDepthClamp;  // Needed by VertexShaderGen, so must stay in VideoCommon
 		bool bSupportsComputeTextureDecoding;
 		bool bSupportsComputeTextureEncoding;
+		bool bSupportsMultithreading;
+		bool bSupportsReversedDepthRange;
 	} backend_info;
 
 	// Utility

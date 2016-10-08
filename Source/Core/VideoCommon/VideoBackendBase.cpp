@@ -12,6 +12,7 @@
 #endif
 #include "VideoBackends/OGL/VideoBackend.h"
 #include "VideoBackends/Software/VideoBackend.h"
+#include "VideoBackends/Vulkan/VideoBackend.h"
 
 std::vector<std::unique_ptr<VideoBackendBase>> g_available_video_backends;
 VideoBackendBase* g_video_backend = nullptr;
@@ -26,7 +27,7 @@ static VideoBackendBase* s_default_backend = nullptr;
 
 void VideoBackendBase::PopulateList()
 {
-	// D3D11 > D3D12 > D3D9 > OGL > SW
+	// D3D11 > D3D12 > D3D9 > OGL > VULKAN > SW
 #ifdef _WIN32
 	if (IsWindowsVistaOrGreater())
 	{
@@ -42,10 +43,10 @@ void VideoBackendBase::PopulateList()
 	g_available_video_backends.push_back(std::make_unique<DX9::VideoBackend>());
 #endif
 	// disable OGL video Backend while is merged from master
-#if !defined(USE_GLES) || USE_GLES3
 	g_available_video_backends.push_back(std::make_unique<OGL::VideoBackend>());
-#endif
-	g_available_video_backends.push_back(std::make_unique<SW::VideoSoftware>());
+	g_available_video_backends.push_back(std::make_unique<Vulkan::VideoBackend>());
+	// Disable software video backend as is currently not working
+	//g_available_video_backends.push_back(std::make_unique<SW::VideoSoftware>());
 
 	for (auto& backend : g_available_video_backends)
 	{

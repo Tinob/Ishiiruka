@@ -111,6 +111,8 @@ public:
 
 protected:
 	void InitializeShared();
+	void ShutdownShared();
+	void CleanupShared();
 
 	bool m_initialized = false;
 	bool m_invalid = false;

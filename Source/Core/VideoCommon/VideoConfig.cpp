@@ -54,6 +54,10 @@ VideoConfig::VideoConfig()
 	bTexDeposterize = false;
 	iTexScalingType = 0;
 	iTexScalingFactor = 2;
+	backend_info.bSupportsMultithreading = false;
+
+	bEnableValidationLayer = false;
+	bBackendMultithreading = true;
 }
 
 void VideoConfig::Load(const std::string& ini_file)
@@ -86,7 +90,6 @@ void VideoConfig::Load(const std::string& ini_file)
 	settings->Get("HiresMaterialMapsBuild", &bHiresMaterialMapsBuild, false);
 	settings->Get("ConvertHiresTextures", &bConvertHiresTextures, 0);
 	settings->Get("CacheHiresTextures", &bCacheHiresTextures, 0);
-	settings->Get("CacheHiresTexturesonGPU", &bCacheHiresTexturesGPU, 0);
 	settings->Get("DumpEFBTarget", &bDumpEFBTarget, 0);
 	settings->Get("FreeLook", &bFreeLook, 0);
 	settings->Get("CompileShaderOnStartup", &bCompileShaderOnStartup, 1);
@@ -125,6 +128,10 @@ void VideoConfig::Load(const std::string& ini_file)
 	settings->Get("SWDumpTevTexFetches", &bDumpTevTextureFetches, false);
 	settings->Get("SWDrawStart", &drawStart, 0);
 	settings->Get("SWDrawEnd", &drawEnd, 100000);
+
+	settings->Get("EnableValidationLayer", &bEnableValidationLayer, false);
+	settings->Get("BackendMultithreading", &bBackendMultithreading, true);
+	settings->Get("CommandBufferExecuteInterval", &iCommandBufferExecuteInterval, 100);
 
 	IniFile::Section* enhancements = iniFile.GetOrCreateSection("Enhancements");
 	enhancements->Get("ForceFiltering", &bForceFiltering, 0);
@@ -224,7 +231,6 @@ void VideoConfig::GameIniLoad()
 
 	CHECK_SETTING("Video_Settings", "ConvertHiresTextures", bConvertHiresTextures);
 	CHECK_SETTING("Video_Settings", "CacheHiresTextures", bCacheHiresTextures);
-	CHECK_SETTING("Video_Settings", "CacheHiresTexturesonGPU", bCacheHiresTexturesGPU);
 	CHECK_SETTING("Video_Settings", "EnablePixelLighting", bEnablePixelLighting);
 	CHECK_SETTING("Video_Settings", "ForcedLighting", bForcedLighting);
 
@@ -271,6 +277,8 @@ void VideoConfig::GameIniLoad()
 
 	CHECK_SETTING("Video_Settings", "DisableFog", bDisableFog);
 	CHECK_SETTING("Video_Settings", "EnableOpenCL", bEnableOpenCL);
+	CHECK_SETTING("Video_Settings", "BackendMultithreading", bBackendMultithreading);
+	CHECK_SETTING("Video_Settings", "CommandBufferExecuteInterval", iCommandBufferExecuteInterval);
 
 	// These are not overrides, they are per-game stereoscopy parameters, hence no warning
 	iniFile.GetIfExists("Video_Stereoscopy", "StereoConvergence", &iStereoConvergence, 20);
@@ -425,7 +433,6 @@ void VideoConfig::Save(const std::string& ini_file)
 	
 	settings->Set("ConvertHiresTextures", bConvertHiresTextures);
 	settings->Set("CacheHiresTextures", bCacheHiresTextures);
-	settings->Set("CacheHiresTexturesonGPU", bCacheHiresTexturesGPU);
 	settings->Set("DumpEFBTarget", bDumpEFBTarget);
 	settings->Set("FreeLook", bFreeLook);
 	settings->Set("CompileShaderOnStartup", bCompileShaderOnStartup);
@@ -464,6 +471,10 @@ void VideoConfig::Save(const std::string& ini_file)
 	settings->Set("SWDumpTevTexFetches", bDumpTevTextureFetches);
 	settings->Set("SWDrawStart", drawStart);
 	settings->Set("SWDrawEnd", drawEnd);
+
+	settings->Set("EnableValidationLayer", bEnableValidationLayer);
+	settings->Set("BackendMultithreading", bBackendMultithreading);
+	settings->Set("CommandBufferExecuteInterval", iCommandBufferExecuteInterval);
 
 	IniFile::Section* enhancements = iniFile.GetOrCreateSection("Enhancements");
 	enhancements->Set("ForceFiltering", bForceFiltering);

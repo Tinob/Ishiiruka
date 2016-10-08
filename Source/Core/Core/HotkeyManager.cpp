@@ -10,8 +10,7 @@
 #include "Core/HotkeyManager.h"
 #include "InputCommon/GCPadStatus.h"
 
-const std::string hotkey_labels[] =
-{
+const std::string hotkey_labels[] = {
 		_trans("Open"),
 		_trans("Change Disc"),
 		_trans("Refresh List"),
@@ -33,6 +32,7 @@ const std::string hotkey_labels[] =
 		_trans("Take Screenshot"),
 		_trans("Exit"),
 
+		_trans("Press Sync Button"),
 		_trans("Connect Wiimote 1"),
 		_trans("Connect Wiimote 2"),
 		_trans("Connect Wiimote 3"),

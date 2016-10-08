@@ -3,6 +3,7 @@
 // Refer to the license.txt file included.
 
 #include <cinttypes>
+#include <climits>
 #include <memory>
 
 #include "Common/CDUtils.h"
@@ -27,25 +28,6 @@
 SConfig* SConfig::m_Instance;
 
 SConfig::SConfig()
-	: bEnableDebugging(false), bAutomaticStart(false), bBootToPause(false), bJITNoBlockCache(false),
-	bJITNoBlockLinking(false), bJITOff(false), bJITLoadStoreOff(false),
-	bJITLoadStorelXzOff(false), bJITLoadStorelwzOff(false), bJITLoadStorelbzxOff(false),
-	bJITLoadStoreFloatingOff(false), bJITLoadStorePairedOff(false), bJITFloatingPointOff(false),
-	bJITIntegerOff(false), bJITPairedOff(false), bJITSystemRegistersOff(false),
-	bJITBranchOff(false), bJITILTimeProfiling(false), bJITILOutputIR(false), bFPRF(false),
-	bAccurateNaNs(false), iTimingVariance(40), bCPUThread(true), bDSPThread(false), bDSPHLE(true),
-	bSkipIdle(true), bSyncGPUOnSkipIdleHack(true), bNTSC(false), bForceNTSCJ(false),
-	bHLE_BS2(true), bEnableCheats(false), bEnableMemcardSdWriting(true), bDPL2Decoder(false),
-	iLatency(14), bRunCompareServer(false), bRunCompareClient(false), bMMU(false),
-	bDCBZOFF(false), iBBDumpPort(0), bFastDiscSpeed(false), bSyncGPU(false), SelectedLanguage(0),
-	bOverrideGCLanguage(false), bWii(false), bConfirmStop(false), bHideCursor(false),
-	bTimeStretching(false), bRSHACK(false), bWiiSpeakSupport(false),
-	bAutoHideCursor(false), bUsePanicHandlers(true), bOnScreenDisplayMessages(true),
-	iRenderWindowXPos(-1), iRenderWindowYPos(-1), iRenderWindowWidth(640),
-	iRenderWindowHeight(480), bRenderWindowAutoSize(false), bKeepWindowOnTop(false),
-	bFullscreen(false), bRenderToMain(false), bProgressive(false), bPAL60(false),
-	bDisableScreenSaver(false), iPosX(100), iPosY(100), iWidth(800), iHeight(600),
-	m_analytics_enabled(false), m_analytics_permission_asked(false), bLoopFifoReplay(true)
 {
 	LoadDefaults();
 	// Make sure we have log manager
@@ -74,6 +56,7 @@ void SConfig::SaveSettings()
 	NOTICE_LOG(BOOT, "Saving settings to %s", File::GetUserPath(F_DOLPHINCONFIG_IDX).c_str());
 	IniFile ini;
 	ini.Load(File::GetUserPath(F_DOLPHINCONFIG_IDX));  // load first to not kill unknown stuff
+	m_SYSCONF->Reload();
 
 	SaveGeneralSettings(ini);
 	SaveInterfaceSettings(ini);
@@ -85,6 +68,8 @@ void SConfig::SaveSettings()
 	SaveInputSettings(ini);
 	SaveFifoPlayerSettings(ini);
 	SaveAnalyticsSettings(ini);
+	SaveNetworkSettings(ini);
+	SaveBluetoothPassthroughSettings(ini);
 
 	ini.Save(File::GetUserPath(F_DOLPHINCONFIG_IDX));
 	m_SYSCONF->Save();
@@ -99,6 +84,7 @@ void CreateDumpPath(const std::string& path)
 	File::SetUserPath(D_DUMP_IDX, path + '/');
 	File::CreateFullPath(File::GetUserPath(D_DUMPAUDIO_IDX));
 	File::CreateFullPath(File::GetUserPath(D_DUMPDSP_IDX));
+	File::CreateFullPath(File::GetUserPath(D_DUMPSSL_IDX));
 	File::CreateFullPath(File::GetUserPath(D_DUMPFRAMES_IDX));
 	File::CreateFullPath(File::GetUserPath(D_DUMPTEXTURES_IDX));
 }
@@ -153,17 +139,17 @@ void SConfig::SaveInterfaceSettings(IniFile& ini)
 	interface->Set("OnScreenDisplayMessages", bOnScreenDisplayMessages);
 	interface->Set("HideCursor", bHideCursor);
 	interface->Set("AutoHideCursor", bAutoHideCursor);
-	interface->Set("MainWindowPosX", (iPosX == -32000) ? 0 : iPosX);  // TODO - HAX
-	interface->Set("MainWindowPosY", (iPosY == -32000) ? 0 : iPosY);  // TODO - HAX
+	interface->Set("MainWindowPosX", iPosX);
+	interface->Set("MainWindowPosY", iPosY);
 	interface->Set("MainWindowWidth", iWidth);
 	interface->Set("MainWindowHeight", iHeight);
-	interface->Set("Language", m_InterfaceLanguage);
+	interface->Set("LanguageCode", m_InterfaceLanguage);
 	interface->Set("ShowToolbar", m_InterfaceToolbar);
 	interface->Set("ShowStatusbar", m_InterfaceStatusbar);
 	interface->Set("ShowLogWindow", m_InterfaceLogWindow);
 	interface->Set("ShowLogConfigWindow", m_InterfaceLogConfigWindow);
 	interface->Set("ExtendedFPSInfo", m_InterfaceExtendedFPSInfo);
-	interface->Set("ThemeName40", theme_name);
+	interface->Set("ThemeName", theme_name);
 	interface->Set("PauseOnFocusLost", m_PauseOnFocusLost);
 }
 
@@ -234,7 +220,6 @@ void SConfig::SaveCoreSettings(IniFile& ini)
 	core->Set("Fastmem", bFastmem);
 	core->Set("CPUThread", bCPUThread);
 	core->Set("DSPHLE", bDSPHLE);
-	core->Set("SkipIdle", bSkipIdle);
 	core->Set("SyncOnSkipIdle", bSyncGPUOnSkipIdleHack);
 	core->Set("SyncGPU", bSyncGPU);
 	core->Set("SyncGpuMaxDistance", iSyncGpuMaxDistance);
@@ -322,6 +307,17 @@ void SConfig::SaveFifoPlayerSettings(IniFile& ini)
 	fifoplayer->Set("LoopReplay", bLoopFifoReplay);
 }
 
+void SConfig::SaveNetworkSettings(IniFile& ini)
+{
+	IniFile::Section* network = ini.GetOrCreateSection("Network");
+
+	network->Set("SSLDumpRead", m_SSLDumpRead);
+	network->Set("SSLDumpWrite", m_SSLDumpWrite);
+	network->Set("SSLVerifyCert", m_SSLVerifyCert);
+	network->Set("SSLDumpRootCA", m_SSLDumpRootCA);
+	network->Set("SSLDumpPeerCert", m_SSLDumpPeerCert);
+}
+
 void SConfig::SaveAnalyticsSettings(IniFile& ini)
 {
 	IniFile::Section* analytics = ini.GetOrCreateSection("Analytics");
@@ -329,6 +325,16 @@ void SConfig::SaveAnalyticsSettings(IniFile& ini)
 	analytics->Set("ID", m_analytics_id);
 	analytics->Set("Enabled", m_analytics_enabled);
 	analytics->Set("PermissionAsked", m_analytics_permission_asked);
+}
+
+void SConfig::SaveBluetoothPassthroughSettings(IniFile& ini)
+{
+	IniFile::Section* section = ini.GetOrCreateSection("BluetoothPassthrough");
+
+	section->Set("Enabled", m_bt_passthrough_enabled);
+	section->Set("VID", m_bt_passthrough_vid);
+	section->Set("PID", m_bt_passthrough_pid);
+	section->Set("LinkKeys", m_bt_passthrough_link_keys);
 }
 
 void SConfig::LoadSettings()
@@ -346,7 +352,9 @@ void SConfig::LoadSettings()
 	LoadDSPSettings(ini);
 	LoadInputSettings(ini);
 	LoadFifoPlayerSettings(ini);
+	LoadNetworkSettings(ini);
 	LoadAnalyticsSettings(ini);
+	LoadBluetoothPassthroughSettings(ini);
 
 	m_SYSCONF = new SysConf();
 }
@@ -377,34 +385,8 @@ void SConfig::LoadGeneralSettings(IniFile& ini)
 			m_ISOFolder.push_back(std::move(tmpPath));
 		}
 	}
-	// Check for old file path (Changed in 4.0-4003)
-	// This can probably be removed after 5.0 stable is launched
-	else if (general->Get("GCMPathes", &numISOPaths, 0))
-	{
-		for (int i = 0; i < numISOPaths; i++)
-		{
-			std::string tmpPath;
-			general->Get(StringFromFormat("GCMPath%i", i), &tmpPath, "");
-			bool found = false;
-			for (size_t j = 0; j < m_ISOFolder.size(); ++j)
-			{
-				if (m_ISOFolder[j] == tmpPath)
-				{
-					found = true;
-					break;
-				}
-			}
-			if (!found)
-				m_ISOFolder.push_back(std::move(tmpPath));
-		}
-	}
 
-	if (!general->Get("RecursiveISOPaths", &m_RecursiveISOFolder, false))
-	{
-		// Check for old name
-		general->Get("RecursiveGCMPaths", &m_RecursiveISOFolder, false);
-	}
-
+	general->Get("RecursiveISOPaths", &m_RecursiveISOFolder, false);
 	general->Get("NANDRootPath", &m_NANDPath);
 	File::SetUserPath(D_WIIROOT_IDX, m_NANDPath);
 	general->Get("DumpPath", &m_DumpPath);
@@ -423,17 +405,17 @@ void SConfig::LoadInterfaceSettings(IniFile& ini)
 	interface->Get("OnScreenDisplayMessages", &bOnScreenDisplayMessages, true);
 	interface->Get("HideCursor", &bHideCursor, false);
 	interface->Get("AutoHideCursor", &bAutoHideCursor, false);
-	interface->Get("MainWindowPosX", &iPosX, 100);
-	interface->Get("MainWindowPosY", &iPosY, 100);
-	interface->Get("MainWindowWidth", &iWidth, 800);
-	interface->Get("MainWindowHeight", &iHeight, 600);
-	interface->Get("Language", &m_InterfaceLanguage, 0);
+	interface->Get("MainWindowPosX", &iPosX, INT_MIN);
+	interface->Get("MainWindowPosY", &iPosY, INT_MIN);
+	interface->Get("MainWindowWidth", &iWidth, -1);
+	interface->Get("MainWindowHeight", &iHeight, -1);
+	interface->Get("LanguageCode", &m_InterfaceLanguage, "");
 	interface->Get("ShowToolbar", &m_InterfaceToolbar, true);
 	interface->Get("ShowStatusbar", &m_InterfaceStatusbar, true);
 	interface->Get("ShowLogWindow", &m_InterfaceLogWindow, false);
 	interface->Get("ShowLogConfigWindow", &m_InterfaceLogConfigWindow, false);
 	interface->Get("ExtendedFPSInfo", &m_InterfaceExtendedFPSInfo, false);
-	interface->Get("ThemeName40", &theme_name, DEFAULT_THEME_DIR);
+	interface->Get("ThemeName", &theme_name, DEFAULT_THEME_DIR);
 	interface->Get("PauseOnFocusLost", &m_PauseOnFocusLost, false);
 }
 
@@ -513,7 +495,6 @@ void SConfig::LoadCoreSettings(IniFile& ini)
 	core->Get("DSPHLE", &bDSPHLE, true);
 	core->Get("TimingVariance", &iTimingVariance, 40);
 	core->Get("CPUThread", &bCPUThread, true);
-	core->Get("SkipIdle", &bSkipIdle, true);
 	core->Get("SyncOnSkipIdle", &bSyncGPUOnSkipIdleHack, true);
 	core->Get("DefaultISO", &m_strDefaultISO);
 	core->Get("DVDRoot", &m_strDVDRoot);
@@ -621,6 +602,17 @@ void SConfig::LoadFifoPlayerSettings(IniFile& ini)
 	fifoplayer->Get("LoopReplay", &bLoopFifoReplay, true);
 }
 
+void SConfig::LoadNetworkSettings(IniFile& ini)
+{
+	IniFile::Section* network = ini.GetOrCreateSection("Network");
+
+	network->Get("SSLDumpRead", &m_SSLDumpRead, false);
+	network->Get("SSLDumpWrite", &m_SSLDumpWrite, false);
+	network->Get("SSLVerifyCert", &m_SSLVerifyCert, false);
+	network->Get("SSLDumpRootCA", &m_SSLDumpRootCA, false);
+	network->Get("SSLDumpPeerCert", &m_SSLDumpPeerCert, false);
+}
+
 void SConfig::LoadAnalyticsSettings(IniFile& ini)
 {
 	IniFile::Section* analytics = ini.GetOrCreateSection("Analytics");
@@ -628,6 +620,16 @@ void SConfig::LoadAnalyticsSettings(IniFile& ini)
 	analytics->Get("ID", &m_analytics_id, "");
 	analytics->Get("Enabled", &m_analytics_enabled, false);
 	analytics->Get("PermissionAsked", &m_analytics_permission_asked, false);
+}
+
+void SConfig::LoadBluetoothPassthroughSettings(IniFile& ini)
+{
+	IniFile::Section* section = ini.GetOrCreateSection("BluetoothPassthrough");
+
+	section->Get("Enabled", &m_bt_passthrough_enabled, false);
+	section->Get("VID", &m_bt_passthrough_vid, -1);
+	section->Get("PID", &m_bt_passthrough_pid, -1);
+	section->Get("LinkKeys", &m_bt_passthrough_link_keys, "");
 }
 
 void SConfig::LoadDefaults()
@@ -646,7 +648,6 @@ void SConfig::LoadDefaults()
 	iCPUCore = PowerPC::CORE_JIT64;
 	iTimingVariance = 40;
 	bCPUThread = false;
-	bSkipIdle = false;
 	bSyncGPUOnSkipIdleHack = true;
 	bRunCompareServer = false;
 	bDSPHLE = true;
@@ -671,10 +672,10 @@ void SConfig::LoadDefaults()
 	bWiiSpeakSupport = false;
 	iLatency = 14;
 
-	iPosX = 100;
-	iPosY = 100;
-	iWidth = 800;
-	iHeight = 600;
+	iPosX = INT_MIN;
+	iPosY = INT_MIN;
+	iWidth = -1;
+	iHeight = -1;
 
 	m_analytics_id = "";
 	m_analytics_enabled = false;

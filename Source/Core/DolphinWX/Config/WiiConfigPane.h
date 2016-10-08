@@ -13,8 +13,10 @@ namespace DiscIO
 enum class Language;
 }
 
+class DolphinSlider;
 class wxCheckBox;
 class wxChoice;
+class wxSlider;
 
 class WiiConfigPane final : public wxPanel
 {
@@ -34,10 +36,16 @@ private:
 	void OnAspectRatioChoiceChanged(wxCommandEvent&);
 	void OnWiiSpeakCheckBoxChanged(wxCommandEvent&);
 
+	void OnSensorBarPosChanged(wxCommandEvent&);
+	void OnSensorBarSensChanged(wxCommandEvent&);
+	void OnSpeakerVolumeChanged(wxCommandEvent&);
+	void OnWiimoteMotorChanged(wxCommandEvent&);
+
 	static u8 GetSADRCountryCode(DiscIO::Language language);
 
 	wxArrayString m_system_language_strings;
 	wxArrayString m_aspect_ratio_strings;
+	wxArrayString m_bt_sensor_bar_pos_strings;
 
 	wxCheckBox* m_screensaver_checkbox;
 	wxCheckBox* m_pal60_mode_checkbox;
@@ -46,4 +54,8 @@ private:
 	wxChoice* m_system_language_choice;
 	wxChoice* m_aspect_ratio_choice;
 	wxCheckBox* m_wiispeak_checkbox;
+	wxChoice* m_bt_sensor_bar_pos;
+	DolphinSlider* m_bt_sensor_bar_sens;
+	DolphinSlider* m_bt_speaker_volume;
+	wxCheckBox* m_bt_wiimote_motor;
 };

@@ -849,9 +849,8 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 	{
 		if (bLastFrameDumped && bAVIDumping)
 		{
-			std::vector<u8>().swap(frame_data);
-
 			AVIDump::Stop();
+			std::vector<u8>().swap(frame_data);
 			bAVIDumping = false;
 			OSD::AddMessage("Stop dumping frames to AVI", 2000);
 		}
@@ -1252,7 +1251,7 @@ void Renderer::SetInterlacingMode()
 	// TODO
 }
 
-int Renderer::GetMaxTextureSize()
+u32 Renderer::GetMaxTextureSize()
 {
 	return DX11::D3D::GetMaxTextureSize();
 }

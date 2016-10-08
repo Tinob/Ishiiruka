@@ -120,6 +120,26 @@ void JitArm64::FallBackToInterpreter(UGeckoInstruction inst)
       SetJumpTarget(c);
     }
   }
+
+  if (jo.memcheck && (js.op->opinfo->flags & FL_LOADSTORE))
+  {
+    ARM64Reg WA = gpr.GetReg();
+    LDR(INDEX_UNSIGNED, WA, PPC_REG, PPCSTATE_OFF(Exceptions));
+    FixupBranch noException = TBZ(WA, IntLog2(EXCEPTION_DSI));
+
+    FixupBranch handleException = B();
+    SwitchToFarCode();
+    SetJumpTarget(handleException);
+
+    gpr.Flush(FLUSH_MAINTAIN_STATE);
+    fpr.Flush(FLUSH_MAINTAIN_STATE);
+
+    WriteExceptionExit(js.compilerPC);
+
+    SwitchToNearCode();
+    SetJumpTarget(noException);
+    gpr.Unlock(WA);
+  }
 }
 
 void JitArm64::HLEFunction(UGeckoInstruction inst)
@@ -150,7 +170,7 @@ void JitArm64::Break(UGeckoInstruction inst)
 
 void JitArm64::Cleanup()
 {
-  if (jo.optimizeGatherPipe && js.fifoBytesThisBlock > 0)
+  if (jo.optimizeGatherPipe && js.fifoBytesSinceCheck > 0)
   {
     gpr.Lock(W0);
     MOVP2R(X0, &GPFifo::FastCheckGatherPipe);
@@ -404,7 +424,7 @@ const u8* JitArm64::DoJit(u32 em_address, PPCAnalyst::CodeBuffer* code_buf, JitB
   js.firstFPInstructionFound = false;
   js.assumeNoPairedQuantize = false;
   js.blockStart = em_address;
-  js.fifoBytesThisBlock = 0;
+  js.fifoBytesSinceCheck = 0;
   js.mustCheckFifo = false;
   js.downcountAmount = 0;
   js.skipInstructions = 0;
@@ -492,10 +512,9 @@ const u8* JitArm64::DoJit(u32 em_address, PPCAnalyst::CodeBuffer* code_buf, JitB
     bool gatherPipeIntCheck =
         jit->js.fifoWriteAddresses.find(ops[i].address) != jit->js.fifoWriteAddresses.end();
 
-    if (jo.optimizeGatherPipe && (js.fifoBytesThisBlock >= 32 || js.mustCheckFifo))
+    if (jo.optimizeGatherPipe && (js.fifoBytesSinceCheck >= 32 || js.mustCheckFifo))
     {
-      if (js.fifoBytesThisBlock >= 32)
-        js.fifoBytesThisBlock -= 32;
+      js.fifoBytesSinceCheck = 0;
       js.mustCheckFifo = false;
 
       gpr.Lock(W30);
@@ -598,26 +617,6 @@ const u8* JitArm64::DoJit(u32 em_address, PPCAnalyst::CodeBuffer* code_buf, JitB
       // If we have a register that will never be used again, flush it.
       gpr.StoreRegisters(~ops[i].gprInUse);
       fpr.StoreRegisters(~ops[i].fprInUse);
-
-      if (jo.memcheck && (opinfo->flags & FL_LOADSTORE))
-      {
-        ARM64Reg WA = gpr.GetReg();
-        LDR(INDEX_UNSIGNED, WA, PPC_REG, PPCSTATE_OFF(Exceptions));
-        FixupBranch noException = TBZ(WA, IntLog2(EXCEPTION_DSI));
-
-        FixupBranch handleException = B();
-        SwitchToFarCode();
-        SetJumpTarget(handleException);
-
-        gpr.Flush(FLUSH_MAINTAIN_STATE);
-        fpr.Flush(FLUSH_MAINTAIN_STATE);
-
-        WriteExceptionExit(js.compilerPC);
-
-        SwitchToNearCode();
-        SetJumpTarget(noException);
-        gpr.Unlock(WA);
-      }
     }
 
     i += js.skipInstructions;

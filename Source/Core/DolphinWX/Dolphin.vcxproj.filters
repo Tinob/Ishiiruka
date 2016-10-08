@@ -28,6 +28,9 @@
     <Filter Include="GUI\Config">
       <UniqueIdentifier>{9d8b4144-f335-4fa4-b995-852533298474}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GUI\Widgets">
+      <UniqueIdentifier>{a894e2e3-e577-4b65-8572-055699f23a49}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -121,9 +124,6 @@
     <ClCompile Include="AboutDolphin.cpp">
       <Filter>GUI</Filter>
     </ClCompile>
-    <ClCompile Include="ARCodeAddEdit.cpp">
-      <Filter>GUI</Filter>
-    </ClCompile>
     <ClCompile Include="FifoPlayerDlg.cpp">
       <Filter>GUI</Filter>
     </ClCompile>
@@ -178,6 +178,9 @@
     <ClCompile Include="Config\GameCubeConfigPane.cpp">
       <Filter>GUI\Config</Filter>
     </ClCompile>
+    <ClCompile Include="Config\GCAdapterConfigDiag.cpp">
+      <Filter>GUI\Config</Filter>
+    </ClCompile>
     <ClCompile Include="Config\WiiConfigPane.cpp">
       <Filter>GUI\Config</Filter>
     </ClCompile>
@@ -199,7 +202,18 @@
     <ClCompile Include="NetPlay\PadMapDialog.cpp">
       <Filter>GUI\NetPlay</Filter>
     </ClCompile>
-    <ClCompile Include="Config\GCAdapterConfigDiag.cpp" />
+    <ClCompile Include="Cheats\ActionReplayCodesPanel.cpp">
+      <Filter>GUI\Cheats</Filter>
+    </ClCompile>
+    <ClCompile Include="Cheats\ARCodeAddEdit.cpp">
+      <Filter>GUI\Cheats</Filter>
+    </ClCompile>
+    <ClCompile Include="NetPlay\NetPlayLauncher.cpp">
+      <Filter>GUI\NetPlay</Filter>
+    </ClCompile>
+    <ClCompile Include="DolphinSlider.cpp">
+      <Filter>GUI\Widgets</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Main.h" />
@@ -289,9 +303,6 @@
     <ClInclude Include="AboutDolphin.h">
       <Filter>GUI</Filter>
     </ClInclude>
-    <ClInclude Include="ARCodeAddEdit.h">
-      <Filter>GUI</Filter>
-    </ClInclude>
     <ClInclude Include="FifoPlayerDlg.h">
       <Filter>GUI</Filter>
     </ClInclude>
@@ -343,6 +354,9 @@
     <ClInclude Include="Config\GameCubeConfigPane.h">
       <Filter>GUI\Config</Filter>
     </ClInclude>
+    <ClInclude Include="Config\GCAdapterConfigDiag.h">
+      <Filter>GUI\Config</Filter>
+    </ClInclude>
     <ClInclude Include="Config\WiiConfigPane.h">
       <Filter>GUI\Config</Filter>
     </ClInclude>
@@ -364,7 +378,18 @@
     <ClInclude Include="NetPlay\PadMapDialog.h">
       <Filter>GUI\NetPlay</Filter>
     </ClInclude>
-    <ClInclude Include="Config\GCAdapterConfigDiag.h" />
+    <ClInclude Include="Cheats\ActionReplayCodesPanel.h">
+      <Filter>GUI\Cheats</Filter>
+    </ClInclude>
+    <ClInclude Include="Cheats\ARCodeAddEdit.h">
+      <Filter>GUI\Cheats</Filter>
+    </ClInclude>
+    <ClInclude Include="NetPlay\NetPlayLauncher.h">
+      <Filter>GUI\NetPlay</Filter>
+    </ClInclude>
+    <ClInclude Include="DolphinSlider.h">
+      <Filter>GUI\Widgets</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />

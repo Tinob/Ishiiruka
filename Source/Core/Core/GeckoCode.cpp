@@ -5,11 +5,12 @@
 #include <algorithm>
 #include <iterator>
 #include <mutex>
+#include <tuple>
 #include <vector>
 
+#include "Common/ChunkFile.h"
 #include "Common/CommonPaths.h"
 #include "Common/FileUtil.h"
-#include "Common/Thread.h"
 
 #include "Core/ConfigManager.h"
 #include "Core/GeckoCode.h"
@@ -20,22 +21,32 @@ namespace Gecko
 {
 static constexpr u32 CODE_SIZE = 8;
 
+bool operator==(const GeckoCode& lhs, const GeckoCode& rhs)
+{
+	return lhs.codes == rhs.codes;
+}
+
+bool operator!=(const GeckoCode& lhs, const GeckoCode& rhs)
+{
+	return !operator==(lhs, rhs);
+}
+
+bool operator==(const GeckoCode::Code& lhs, const GeckoCode::Code& rhs)
+{
+	return std::tie(lhs.address, lhs.data) == std::tie(rhs.address, rhs.data);
+}
+
+bool operator!=(const GeckoCode::Code& lhs, const GeckoCode::Code& rhs)
+{
+	return !operator==(lhs, rhs);
+}
+
 // return true if a code exists
 bool GeckoCode::Exist(u32 address, u32 data) const
 {
 	return std::find_if(codes.begin(), codes.end(), [&](const Code& code) {
 		return code.address == address && code.data == data;
 	}) != codes.end();
-}
-
-// return true if the code is identical
-bool GeckoCode::Compare(const GeckoCode& compare) const
-{
-	return codes.size() == compare.codes.size() &&
-		std::equal(codes.begin(), codes.end(), compare.codes.begin(),
-			[](const Code& a, const Code& b) {
-		return a.address == b.address && a.data == b.data;
-	});
 }
 
 enum class Installation
@@ -55,9 +66,12 @@ void SetActiveCodes(const std::vector<GeckoCode>& gcodes)
 	std::lock_guard<std::mutex> lk(s_active_codes_lock);
 
 	s_active_codes.clear();
-	s_active_codes.reserve(gcodes.size());
-	std::copy_if(gcodes.begin(), gcodes.end(), std::back_inserter(s_active_codes),
-		[](const GeckoCode& code) { return code.enabled; });
+	if (SConfig::GetInstance().bEnableCheats)
+	{
+		s_active_codes.reserve(gcodes.size());
+		std::copy_if(gcodes.begin(), gcodes.end(), std::back_inserter(s_active_codes),
+			[](const GeckoCode& code) { return code.enabled; });
+	}
 	s_active_codes.shrink_to_fit();
 
 	s_code_handler_installed = Installation::Uninstalled;
@@ -70,7 +84,7 @@ static Installation InstallCodeHandlerLocked()
 	std::string data;
 	if (!File::ReadFileToString(File::GetSysDirectory() + GECKO_CODE_HANDLER, data))
 	{
-		NOTICE_LOG(ACTIONREPLAY, "Could not enable cheats because " GECKO_CODE_HANDLER " was missing.");
+		ERROR_LOG(ACTIONREPLAY, "Could not enable cheats because " GECKO_CODE_HANDLER " was missing.");
 		return Installation::Failed;
 	}
 
@@ -145,6 +159,7 @@ static Installation InstallCodeHandlerLocked()
 	// Stop code. Tells the handler that this is the end of the list.
 	PowerPC::HostWrite_U32(0xF0000000, next_address);
 	PowerPC::HostWrite_U32(0x00000000, next_address + 4);
+	PowerPC::HostWrite_U32(0, HLE_TRAMPOLINE_ADDRESS);
 
 	// Turn on codes
 	PowerPC::HostWrite_U8(1, INSTALLER_BASE_ADDRESS + 7);
@@ -157,57 +172,75 @@ static Installation InstallCodeHandlerLocked()
 	return Installation::Installed;
 }
 
+// Gecko needs to participate in the savestate system because the handler is embedded within the
+// game directly. The PC may be inside the code handler in the save state and the codehandler.bin
+// on the disk may be different resulting in the PC pointing at a different instruction and then
+// the game malfunctions or crashes. [Also, self-modifying codes will break since the
+// modifications will be reset]
+void DoState(PointerWrap& p)
+{
+	std::lock_guard<std::mutex> codes_lock(s_active_codes_lock);
+	p.Do(s_code_handler_installed);
+	// FIXME: The active codes list will disagree with the embedded GCT
+}
+
+void Shutdown()
+{
+	std::lock_guard<std::mutex> codes_lock(s_active_codes_lock);
+	s_active_codes.clear();
+	s_code_handler_installed = Installation::Uninstalled;
+}
+
 void RunCodeHandler()
 {
 	if (!SConfig::GetInstance().bEnableCheats)
 		return;
 
-	std::lock_guard<std::mutex> codes_lock(s_active_codes_lock);
-	// Don't spam retry if the install failed. The corrupt / missing disk file is not likely to be
-	// fixed within 1 frame of the last error.
-	if (s_active_codes.empty() || s_code_handler_installed == Installation::Failed)
-		return;
-
-	if (s_code_handler_installed != Installation::Installed)
+	// NOTE: Need to release the lock because of GUI deadlocks with PanicAlert in HostWrite_*
 	{
-		s_code_handler_installed = InstallCodeHandlerLocked();
-
-		// A warning was already issued for the install failing
+		std::lock_guard<std::mutex> codes_lock(s_active_codes_lock);
 		if (s_code_handler_installed != Installation::Installed)
-			return;
+		{
+			// Don't spam retry if the install failed. The corrupt / missing disk file is not likely to be
+			// fixed within 1 frame of the last error.
+			if (s_active_codes.empty() || s_code_handler_installed == Installation::Failed)
+				return;
+			s_code_handler_installed = InstallCodeHandlerLocked();
+
+			// A warning was already issued for the install failing
+			if (s_code_handler_installed != Installation::Installed)
+				return;
+		}
 	}
 
-	// If the last block that just executed ended with a BLR instruction then we can intercept it and
-	// redirect control into the Gecko Code Handler. The Code Handler will automatically BLR back to
-	// the original return address (which will still be in the link register).
-	if (PC != LR)
+	// We always do this to avoid problems with the stack since we're branching in random locations.
+	// Even with function call return hooks (PC == LR), hand coded assembler won't necessarily
+	// follow the ABI. [Volatile FPR, GPR, CR may not be volatile]
+	// The codehandler will STMW all of the GPR registers, but we need to fix the Stack's Red
+	// Zone, the LR, PC (return address) and the volatile floating point registers.
+	// Build a function call stack frame.
+	u32 SFP = GPR(1);                     // Stack Frame Pointer
+	GPR(1) -= 256;                        // Stack's Red Zone
+	GPR(1) -= 16 + 2 * 14 * sizeof(u64);  // Our stack frame (HLE_Misc::GeckoReturnTrampoline)
+	GPR(1) -= 8;                          // Fake stack frame for codehandler
+	GPR(1) &= 0xFFFFFFF0;                 // Align stack to 16bytes
+	u32 SP = GPR(1);                      // Stack Pointer
+	PowerPC::HostWrite_U32(SP + 8, SP);
+	// SP + 4 is reserved for the codehandler to save LR to the stack.
+	PowerPC::HostWrite_U32(SFP, SP + 8);  // Real stack frame
+	PowerPC::HostWrite_U32(PC, SP + 12);
+	PowerPC::HostWrite_U32(LR, SP + 16);
+	PowerPC::HostWrite_U32(PowerPC::CompactCR(), SP + 20);
+	// Registers FPR0->13 are volatile
+	for (int i = 0; i < 14; ++i)
 	{
-		// We're at a random address in the middle of something so we have to do this the hard way.
-		// The codehandler will STMW all of the GPR registers, but we need to fix the Stack's Red
-		// Zone, the LR, PC (return address) and the volatile floating point registers.
-		// Build a function call stack frame.
-		u32 SFP = GPR(1);                     // Stack Frame Pointer
-		GPR(1) -= 224;                        // Stack's Red Zone
-		GPR(1) -= 16 + 2 * 14 * sizeof(u64);  // Our stack frame (HLE_Misc::GeckoReturnTrampoline)
-		GPR(1) -= 8;                          // Fake stack frame for codehandler
-		GPR(1) &= 0xFFFFFFF0;                 // Align stack to 16bytes
-		u32 SP = GPR(1);                      // Stack Pointer
-		PowerPC::HostWrite_U32(SP + 8, SP);
-		// SP + 4 is reserved for the codehandler to save LR to the stack.
-		PowerPC::HostWrite_U32(SFP, SP + 8);  // Real stack frame
-		PowerPC::HostWrite_U32(PC, SP + 12);
-		PowerPC::HostWrite_U32(LR, SP + 16);
-		// Registers FPR0->13 are volatile
-		for (int i = 0; i < 14; ++i)
-		{
-			PowerPC::HostWrite_U64(riPS0(i), SP + 24 + 2 * i * sizeof(u64));
-			PowerPC::HostWrite_U64(riPS1(i), SP + 24 + (2 * i + 1) * sizeof(u64));
-		}
-		LR = HLE_TRAMPOLINE_ADDRESS;
-		DEBUG_LOG(ACTIONREPLAY, "GeckoCodes: Initiating phantom branch-and-link. "
-			"PC = 0x%08X, SP = 0x%08X, SFP = 0x%08X",
-			PC, SP, SFP);
+		PowerPC::HostWrite_U64(riPS0(i), SP + 24 + 2 * i * sizeof(u64));
+		PowerPC::HostWrite_U64(riPS1(i), SP + 24 + (2 * i + 1) * sizeof(u64));
 	}
+	DEBUG_LOG(ACTIONREPLAY, "GeckoCodes: Initiating phantom branch-and-link. "
+		"PC = 0x%08X, SP = 0x%08X, SFP = 0x%08X",
+		PC, SP, SFP);
+	LR = HLE_TRAMPOLINE_ADDRESS;
 	PC = NPC = ENTRY_POINT;
 }
 

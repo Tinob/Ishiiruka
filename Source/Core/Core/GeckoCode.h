@@ -9,6 +9,8 @@
 
 #include "Common/CommonTypes.h"
 
+class PointerWrap;
+
 namespace Gecko
 {
 class GeckoCode
@@ -29,9 +31,14 @@ public:
 	bool enabled;
 	bool user_defined;
 
-	bool Compare(const GeckoCode& compare) const;
 	bool Exist(u32 address, u32 data) const;
 };
+
+bool operator==(const GeckoCode& lhs, const GeckoCode& rhs);
+bool operator!=(const GeckoCode& lhs, const GeckoCode& rhs);
+
+bool operator==(const GeckoCode::Code& lhs, const GeckoCode::Code& rhs);
+bool operator!=(const GeckoCode::Code& lhs, const GeckoCode::Code& rhs);
 
 // Installation address for codehandler.bin in the Game's RAM
 constexpr u32 INSTALLER_BASE_ADDRESS = 0x80001800;
@@ -53,5 +60,7 @@ constexpr u32 MAGIC_GAMEID = 0xD01F1BAD;
 
 void SetActiveCodes(const std::vector<GeckoCode>& gcodes);
 void RunCodeHandler();
+void Shutdown();
+void DoState(PointerWrap&);
 
 }  // namespace Gecko

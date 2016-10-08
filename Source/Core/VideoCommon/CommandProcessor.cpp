@@ -274,8 +274,7 @@ void RegisterMMIO(MMIO::Mapping* mmio, u32 base)
 
 void GatherPipeBursted()
 {
-	if (IsOnThread())
-		SetCPStatusFromCPU();
+	SetCPStatusFromCPU();
 
 	ProcessFifoEvents();
 	// if we aren't linked, we don't care about gather pipe data
@@ -333,13 +332,13 @@ void UpdateInterrupts(u64 userdata)
 	if (userdata)
 	{
 		s_interrupt_set.Set();
-		INFO_LOG(COMMANDPROCESSOR, "Interrupt set");
+		DEBUG_LOG(COMMANDPROCESSOR, "Interrupt set");
 		ProcessorInterface::SetInterrupt(INT_CAUSE_CP, true);
 	}
 	else
 	{
 		s_interrupt_set.Clear();
-		INFO_LOG(COMMANDPROCESSOR, "Interrupt cleared");
+		DEBUG_LOG(COMMANDPROCESSOR, "Interrupt cleared");
 		ProcessorInterface::SetInterrupt(INT_CAUSE_CP, false);
 	}
 	CoreTiming::ForceExceptionCheck(0);
@@ -431,7 +430,7 @@ void SetCPStatusFromCPU()
 			if (!interrupt || bpInt || undfInt || ovfInt)
 			{
 				s_interrupt_set.Set(interrupt);
-				INFO_LOG(COMMANDPROCESSOR, "Interrupt set");
+				DEBUG_LOG(COMMANDPROCESSOR, "Interrupt set");
 				ProcessorInterface::SetInterrupt(INT_CAUSE_CP, interrupt);
 			}
 		}
@@ -459,7 +458,7 @@ void SetCpStatusRegister()
 	m_CPStatusReg.UnderflowLoWatermark = fifo.bFF_LoWatermark;
 	m_CPStatusReg.OverflowHiWatermark = fifo.bFF_HiWatermark;
 
-	INFO_LOG(COMMANDPROCESSOR, "\t Read from STATUS_REGISTER : %04x", m_CPStatusReg.Hex);
+	DEBUG_LOG(COMMANDPROCESSOR, "\t Read from STATUS_REGISTER : %04x", m_CPStatusReg.Hex);
 	DEBUG_LOG(
 		COMMANDPROCESSOR, "(r) status: iBP %s | fReadIdle %s | fCmdIdle %s | iOvF %s | iUndF %s",
 		m_CPStatusReg.Breakpoint ? "ON" : "OFF", m_CPStatusReg.ReadIdle ? "ON" : "OFF",

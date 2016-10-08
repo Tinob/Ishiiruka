@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -54,96 +55,110 @@ struct SConfig : NonCopyable
 	bool m_RecursiveISOFolder;
 
 	// Settings
-	bool bEnableDebugging;
+	bool bEnableDebugging = false;
 #ifdef USE_GDBSTUB
 	int iGDBPort;
 #ifndef _WIN32
 	std::string gdb_socket;
 #endif
 #endif
-	bool bAutomaticStart;
-	bool bBootToPause;
+	bool bAutomaticStart = false;
+	bool bBootToPause = false;
 
 	int iCPUCore;
 
 	// JIT (shared between JIT and JITIL)
-	bool bJITNoBlockCache, bJITNoBlockLinking;
-	bool bJITOff;
-	bool bJITLoadStoreOff, bJITLoadStorelXzOff, bJITLoadStorelwzOff, bJITLoadStorelbzxOff;
-	bool bJITLoadStoreFloatingOff;
-	bool bJITLoadStorePairedOff;
-	bool bJITFloatingPointOff;
-	bool bJITIntegerOff;
-	bool bJITPairedOff;
-	bool bJITSystemRegistersOff;
-	bool bJITBranchOff;
-	bool bJITILTimeProfiling;
-	bool bJITILOutputIR;
+	bool bJITNoBlockCache = false;
+	bool bJITNoBlockLinking = false;
+	bool bJITOff = false;
+	bool bJITLoadStoreOff = false;
+	bool bJITLoadStorelXzOff = false;
+	bool bJITLoadStorelwzOff = false;
+	bool bJITLoadStorelbzxOff = false;
+	bool bJITLoadStoreFloatingOff = false;
+	bool bJITLoadStorePairedOff = false;
+	bool bJITFloatingPointOff = false;
+	bool bJITIntegerOff = false;
+	bool bJITPairedOff = false;
+	bool bJITSystemRegistersOff = false;
+	bool bJITBranchOff = false;
+	bool bJITILTimeProfiling = false;
+	bool bJITILOutputIR = false;
 
 	bool bFastmem;
-	bool bFPRF;
-	bool bAccurateNaNs;
+	bool bFPRF = false;
+	bool bAccurateNaNs = false;
 
-	int iTimingVariance;  // in milli secounds
-	bool bCPUThread;
-	bool bDSPThread;
-	bool bDSPHLE;
-	bool bSkipIdle;
-	bool bSyncGPUOnSkipIdleHack;
-	bool bNTSC;
-	bool bForceNTSCJ;
-	bool bHLE_BS2;
-	bool bEnableCheats;
-	bool bEnableMemcardSdWriting;
+	int iTimingVariance = 40;  // in milli secounds
+	bool bCPUThread = true;
+	bool bDSPThread = false;
+	bool bDSPHLE = true;
+	bool bSyncGPUOnSkipIdleHack = true;
+	bool bNTSC = false;
+	bool bForceNTSCJ = false;
+	bool bHLE_BS2 = true;
+	bool bEnableCheats = false;
+	bool bEnableMemcardSdWriting = true;
 
-	bool bDPL2Decoder;
-	bool bTimeStretching;
-	bool bRSHACK;
-	bool bWiiSpeakSupport;
-	int iLatency;
+	bool bDPL2Decoder = false;
+	bool bTimeStretching = false;
+	bool bRSHACK = false;
+	bool bWiiSpeakSupport = false;
+	int iLatency = 14;
 
-	bool bRunCompareServer;
-	bool bRunCompareClient;
+	bool bRunCompareServer = false;
+	bool bRunCompareClient = false;
 
-	bool bMMU;
-	bool bDCBZOFF;
-	int iBBDumpPort;
-	int iVideoRate;
-	bool bHalfAudioRate;
-	bool bFastDiscSpeed;
+	bool bMMU = false;
+	bool bDCBZOFF = false;
+	int iBBDumpPort = 0;
+	bool bFastDiscSpeed = false;
+	int iVideoRate = 1;
+	bool bHalfAudioRate = false;
 
-	bool bSyncGPU;
+	bool bSyncGPU = false;
 	int iSyncGpuMaxDistance;
 	int iSyncGpuMinDistance;
 	float fSyncGpuOverclock;
 
-	int SelectedLanguage;
-	bool bOverrideGCLanguage;
+	int SelectedLanguage = 0;
+	bool bOverrideGCLanguage = false;
 
-	bool bWii;
+	bool bWii = false;
 
 	// Interface settings
-	bool bConfirmStop, bHideCursor, bAutoHideCursor, bUsePanicHandlers, bOnScreenDisplayMessages;
+	bool bConfirmStop = false;
+	bool bHideCursor = false, bAutoHideCursor = false;
+	bool bUsePanicHandlers = true;
+	bool bOnScreenDisplayMessages = true;
 	std::string theme_name;
 
 	// Display settings
 	std::string strFullscreenResolution;
-	int iRenderWindowXPos, iRenderWindowYPos;
-	int iRenderWindowWidth, iRenderWindowHeight;
-	bool bRenderWindowAutoSize, bKeepWindowOnTop;
-	bool bFullscreen, bRenderToMain;
-	bool bProgressive, bPAL60;
-	bool bDisableScreenSaver;
+	int iRenderWindowXPos = std::numeric_limits<int>::min();
+	int iRenderWindowYPos = std::numeric_limits<int>::min();
+	int iRenderWindowWidth = -1;
+	int iRenderWindowHeight = -1;
+	bool bRenderWindowAutoSize = false, bKeepWindowOnTop = false;
+	bool bFullscreen = false, bRenderToMain = false;
+	bool bProgressive = false, bPAL60 = false;
+	bool bDisableScreenSaver = false;
 
 	int iPosX, iPosY, iWidth, iHeight;
 
 	// Analytics settings.
 	std::string m_analytics_id;
-	bool m_analytics_enabled;
-	bool m_analytics_permission_asked;
+	bool m_analytics_enabled = false;
+	bool m_analytics_permission_asked = false;
+
+	// Bluetooth passthrough mode settings
+	bool m_bt_passthrough_enabled = false;
+	int m_bt_passthrough_pid = -1;
+	int m_bt_passthrough_vid = -1;
+	std::string m_bt_passthrough_link_keys;
 
 	// Fifo Player related settings
-	bool bLoopFifoReplay;
+	bool bLoopFifoReplay = true;
 
 	// Custom RTC
 	bool bEnableCustomRTC;
@@ -216,7 +231,7 @@ struct SConfig : NonCopyable
 	std::string m_bba_mac;
 
 	// interface language
-	int m_InterfaceLanguage;
+	std::string m_InterfaceLanguage;
 	float m_EmulationSpeed;
 	bool m_OCEnable;
 	float m_OCFactor;
@@ -289,6 +304,13 @@ struct SConfig : NonCopyable
 	bool m_AdapterRumble[4];
 	bool m_AdapterKonga[4];
 
+	// Network settings
+	bool m_SSLDumpRead;
+	bool m_SSLDumpWrite;
+	bool m_SSLVerifyCert;
+	bool m_SSLDumpRootCA;
+	bool m_SSLDumpPeerCert;
+
 	SysConf* m_SYSCONF;
 
 	// Save settings
@@ -315,7 +337,9 @@ private:
 	void SaveInputSettings(IniFile& ini);
 	void SaveMovieSettings(IniFile& ini);
 	void SaveFifoPlayerSettings(IniFile& ini);
+	void SaveNetworkSettings(IniFile& ini);
 	void SaveAnalyticsSettings(IniFile& ini);
+	void SaveBluetoothPassthroughSettings(IniFile& ini);
 
 	void LoadGeneralSettings(IniFile& ini);
 	void LoadInterfaceSettings(IniFile& ini);
@@ -326,7 +350,9 @@ private:
 	void LoadInputSettings(IniFile& ini);
 	void LoadMovieSettings(IniFile& ini);
 	void LoadFifoPlayerSettings(IniFile& ini);
+	void LoadNetworkSettings(IniFile& ini);
 	void LoadAnalyticsSettings(IniFile& ini);
+	void LoadBluetoothPassthroughSettings(IniFile& ini);
 
 	static SConfig* m_Instance;
 };

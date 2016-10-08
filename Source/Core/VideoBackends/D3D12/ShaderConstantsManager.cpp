@@ -151,7 +151,7 @@ bool ShaderConstantsManager::LoadAndSetPixelShaderConstants()
 
 		PixelShaderManager::Clear();
 
-		ADDSTAT(stats.thisFrame.bytesUniformStreamed, sizeof(PixelShaderConstants));
+		ADDSTAT(stats.thisFrame.bytesUniformStreamed, shader_constant_buffer_sizes[SHADER_STAGE_PIXEL_SHADER]);
 
 		D3D::command_list_mgr->SetCommandListDirtyState(COMMAND_LIST_STATE_PS_CBV, true);
 	}
