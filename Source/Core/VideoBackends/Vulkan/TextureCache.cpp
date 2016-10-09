@@ -186,7 +186,7 @@ TextureCacheBase::TCacheEntryBase* TextureCache::CreateTexture(const TCacheEntry
 		VK_FORMAT_R8G8B8A8_UNORM,//PC_TEX_FMT_I8
 		VK_FORMAT_R8G8B8A8_UNORM,//PC_TEX_FMT_IA8
 		VK_FORMAT_R8G8B8A8_UNORM,//PC_TEX_FMT_RGB565
-		VK_FORMAT_BC1_RGB_UNORM_BLOCK,//PC_TEX_FMT_DXT1
+		VK_FORMAT_BC1_RGBA_UNORM_BLOCK,//PC_TEX_FMT_DXT1
 		VK_FORMAT_BC2_UNORM_BLOCK,//PC_TEX_FMT_DXT3
 		VK_FORMAT_BC3_UNORM_BLOCK,//PC_TEX_FMT_DXT5
 		VK_FORMAT_R32_SFLOAT,//PC_TEX_FMT_R32
@@ -358,7 +358,25 @@ void TextureCache::LoadData(Texture2D* dst, const u8* src, u32 width, u32 height
 	// Can't copy data larger than the texture extents.
 	width = std::max(1u, std::min(width, dst->GetWidth() >> level));
 	height = std::max(1u, std::min(height, dst->GetHeight() >> level));
-
+	u32 block_size = sizeof(u32);
+	u32 block_W = width;
+	u32 block_stride = expanded_width;
+	u32 block_H = height;
+	if (dst->GetFormat() != VK_FORMAT_R8G8B8A8_UNORM 
+		&& dst->GetFormat() != VK_FORMAT_R32_SFLOAT)
+	{
+		if (dst->GetFormat() == VK_FORMAT_BC1_RGBA_UNORM_BLOCK)
+		{
+			block_size = 8;
+		}
+		else
+		{
+			block_size = 16;
+		}
+		block_W = std::max(1u, (block_W + 3) >> 2);
+		block_H = std::max(1u, (block_H + 3) >> 2);
+		block_stride = std::max(1u, (block_stride + 3) >> 2);
+	}
 	// We don't care about the existing contents of the texture, so we set the image layout to
 	// VK_IMAGE_LAYOUT_UNDEFINED here. However, if this texture is being re-used from the texture
 	// pool, it may still be in use. We assume that it's not, as non-efb-copy textures are only
@@ -382,11 +400,11 @@ void TextureCache::LoadData(Texture2D* dst, const u8* src, u32 width, u32 height
 		nullptr, 0, nullptr, 1, &barrier);
 
 	// Does this texture data fit within the streaming buffer?
-	u32 upload_width = width;
-	u32 upload_pitch = upload_width * sizeof(u32);
-	u32 upload_size = upload_pitch * height;
+	u32 upload_width = block_W;
+	u32 upload_pitch = upload_width * block_size;
+	u32 upload_size = upload_pitch * block_H;
 	u32 upload_alignment = static_cast<u32>(g_vulkan_context->GetBufferImageGranularity());
-	u32 source_pitch = expanded_width * 4;
+	u32 source_pitch = block_stride * block_size;
 	if ((upload_size + upload_alignment) <= STAGING_TEXTURE_UPLOAD_THRESHOLD &&
 		(upload_size + upload_alignment) <= MAXIMUM_TEXTURE_UPLOAD_BUFFER_SIZE)
 	{

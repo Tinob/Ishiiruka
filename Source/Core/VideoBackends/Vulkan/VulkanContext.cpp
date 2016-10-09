@@ -248,9 +248,9 @@ void VulkanContext::PopulateBackendInfo(VideoConfig* config)
 	config->backend_info.bSupportedFormats[PC_TEX_FMT_I8] = false;
 	config->backend_info.bSupportedFormats[PC_TEX_FMT_IA8] = false;
 	config->backend_info.bSupportedFormats[PC_TEX_FMT_RGB565] = false;
-	config->backend_info.bSupportedFormats[PC_TEX_FMT_DXT1] = false;
-	config->backend_info.bSupportedFormats[PC_TEX_FMT_DXT3] = false;
-	config->backend_info.bSupportedFormats[PC_TEX_FMT_DXT5] = false;
+	config->backend_info.bSupportedFormats[PC_TEX_FMT_DXT1] = true;
+	config->backend_info.bSupportedFormats[PC_TEX_FMT_DXT3] = true;
+	config->backend_info.bSupportedFormats[PC_TEX_FMT_DXT5] = true;
 	config->backend_info.bSupportsScaling = false;
 	config->backend_info.bSupportsPixelLighting = true;
 	config->backend_info.bNeedBlendIndices = false;
