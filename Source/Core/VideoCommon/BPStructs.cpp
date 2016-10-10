@@ -413,9 +413,6 @@ void BPWritten(const BPCmd& bp)
 		// -------------------------
 	case BPMEM_CLEARBBOX1:
 	case BPMEM_CLEARBBOX2:
-		// Don't compute bounding box if this frame is being skipped!
-		// Wrong but valid values are better than bogus values...
-		if (!Fifo::WillSkipCurrentFrame())
 		{
 			u8 offset = bp.address & 2;
 			BoundingBox::active = true;

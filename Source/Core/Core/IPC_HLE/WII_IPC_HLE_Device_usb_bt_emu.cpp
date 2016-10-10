@@ -4,6 +4,7 @@
 
 #include "Core/HW/WII_IPC.h"
 #include "Common/CommonPaths.h"
+#include "Common/SysConf.h"
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
 #include "Core/CoreTiming.h"
@@ -33,27 +34,23 @@ CWII_IPC_HLE_Device_usb_oh1_57e_305_emu::CWII_IPC_HLE_Device_usb_oh1_57e_305_emu
 	u32 _DeviceID, const std::string& _rDeviceName)
 	: CWII_IPC_HLE_Device_usb_oh1_57e_305_base(_DeviceID, _rDeviceName)
 {
-	SysConf* sysconf;
-	std::unique_ptr<SysConf> owned_sysconf;
+	SysConf sysconf;
 	if (Core::g_want_determinism)
 	{
 		// See SysConf::UpdateLocation for comment about the Future.
-		owned_sysconf.reset(new SysConf());
-		sysconf = owned_sysconf.get();
-		sysconf->LoadFromFile(File::GetUserPath(D_SESSION_WIIROOT_IDX) +
+		sysconf.LoadFromFile(File::GetUserPath(D_SESSION_WIIROOT_IDX) +
 			DIR_SEP WII_SYSCONF_DIR DIR_SEP WII_SYSCONF);
 	}
 	else
 	{
-		sysconf = SConfig::GetInstance().m_SYSCONF;
-		BackUpBTInfoSection();
+		BackUpBTInfoSection(&sysconf);
 	}
 
 	// Activate only first Wiimote by default
 
 	_conf_pads BT_DINF;
 	SetUsbPointer(this);
-	if (!sysconf->GetArrayData("BT.DINF", (u8*)&BT_DINF, sizeof(_conf_pads)))
+	if (!sysconf.GetArrayData("BT.DINF", (u8*)&BT_DINF, sizeof(_conf_pads)))
 	{
 		PanicAlertT("Trying to read from invalid SYSCONF\nWiimote bt ids are not available");
 	}
@@ -88,7 +85,7 @@ CWII_IPC_HLE_Device_usb_oh1_57e_305_emu::CWII_IPC_HLE_Device_usb_oh1_57e_305_emu
 		BT_DINF.num_registered = MAX_BBMOTES;
 		// save now so that when games load sysconf file it includes the new Wiimotes
 		// and the correct order for connected Wiimotes
-		if (!sysconf->SetArrayData("BT.DINF", (u8*)&BT_DINF, sizeof(_conf_pads)) || !sysconf->Save())
+		if (!sysconf.SetArrayData("BT.DINF", (u8*)&BT_DINF, sizeof(_conf_pads)) || !sysconf.Save())
 			PanicAlertT("Failed to write BT.DINF to SYSCONF");
 	}
 
@@ -185,17 +182,17 @@ IPCCommandResult CWII_IPC_HLE_Device_usb_oh1_57e_305_emu::IOCtl(u32 _CommandAddr
 IPCCommandResult CWII_IPC_HLE_Device_usb_oh1_57e_305_emu::IOCtlV(u32 _CommandAddress)
 {
 	/*
-		Memory::Write_U8(255, 0x80149950);  // BTM LOG  // 3 logs L2Cap  // 4 logs l2_csm$
-		Memory::Write_U8(255, 0x80149949);  // Security Manager
-		Memory::Write_U8(255, 0x80149048);  // HID
-		Memory::Write_U8(3, 0x80152058);    // low ??   // >= 4 and you will get a lot of event messages
-		of the same type
-		Memory::Write_U8(1, 0x80152018);    // WUD
-		Memory::Write_U8(1, 0x80151FC8);    // DEBUGPrint
-		Memory::Write_U8(1, 0x80151488);    // WPAD_LOG
-		Memory::Write_U8(1, 0x801514A8);    // USB_LOG
-		Memory::Write_U8(1, 0x801514D8);    // WUD_DEBUGPrint
-		Memory::Write_U8(1, 0x80148E09);    // HID LOG
+	Memory::Write_U8(255, 0x80149950);  // BTM LOG  // 3 logs L2Cap  // 4 logs l2_csm$
+	Memory::Write_U8(255, 0x80149949);  // Security Manager
+	Memory::Write_U8(255, 0x80149048);  // HID
+	Memory::Write_U8(3, 0x80152058);    // low ??   // >= 4 and you will get a lot of event messages
+	of the same type
+	Memory::Write_U8(1, 0x80152018);    // WUD
+	Memory::Write_U8(1, 0x80151FC8);    // DEBUGPrint
+	Memory::Write_U8(1, 0x80151488);    // WPAD_LOG
+	Memory::Write_U8(1, 0x801514A8);    // USB_LOG
+	Memory::Write_U8(1, 0x801514D8);    // WUD_DEBUGPrint
+	Memory::Write_U8(1, 0x80148E09);    // HID LOG
 	*/
 
 	bool _SendReply = false;
@@ -640,9 +637,9 @@ bool CWII_IPC_HLE_Device_usb_oh1_57e_305_emu::SendEventConnectionComplete(const 
 		pWiimote->EventConnectionAccepted();
 
 	static char s_szLinkType[][128] = {
-			{"HCI_LINK_SCO     0x00 - Voice"},
-			{"HCI_LINK_ACL     0x01 - Data"},
-			{"HCI_LINK_eSCO    0x02 - eSCO"},
+		{ "HCI_LINK_SCO     0x00 - Voice" },
+		{ "HCI_LINK_ACL     0x01 - Data" },
+		{ "HCI_LINK_eSCO    0x02 - eSCO" },
 	};
 
 	DEBUG_LOG(WII_IPC_WIIMOTE, "Event: SendEventConnectionComplete");
@@ -676,9 +673,9 @@ bool CWII_IPC_HLE_Device_usb_oh1_57e_305_emu::SendEventRequestConnection(
 	AddEventToQueue(Event);
 
 	static char LinkType[][128] = {
-			{"HCI_LINK_SCO     0x00 - Voice"},
-			{"HCI_LINK_ACL     0x01 - Data"},
-			{"HCI_LINK_eSCO    0x02 - eSCO"},
+		{ "HCI_LINK_SCO     0x00 - Voice" },
+		{ "HCI_LINK_ACL     0x01 - Data" },
+		{ "HCI_LINK_eSCO    0x02 - eSCO" },
 	};
 
 	DEBUG_LOG(WII_IPC_WIIMOTE, "Event: SendEventRequestConnection");
@@ -1348,7 +1345,7 @@ void CWII_IPC_HLE_Device_usb_oh1_57e_305_emu::CommandAcceptCon(const u8* input)
 	const hci_accept_con_cp* accept_connection = reinterpret_cast<const hci_accept_con_cp*>(input);
 
 	static char roles[][128] = {
-			{"Master (0x00)"}, {"Slave (0x01)"},
+		{ "Master (0x00)" },{ "Slave (0x01)" },
 	};
 
 	INFO_LOG(WII_IPC_WIIMOTE, "Command: HCI_CMD_ACCEPT_CON");
@@ -1653,10 +1650,10 @@ void CWII_IPC_HLE_Device_usb_oh1_57e_305_emu::CommandWriteScanEnable(const u8* i
 	reply.status = 0x00;
 
 	static char scanning[][128] = {
-			{"HCI_NO_SCAN_ENABLE"},
-			{"HCI_INQUIRY_SCAN_ENABLE"},
-			{"HCI_PAGE_SCAN_ENABLE"},
-			{"HCI_INQUIRY_AND_PAGE_SCAN_ENABLE"},
+		{ "HCI_NO_SCAN_ENABLE" },
+		{ "HCI_INQUIRY_SCAN_ENABLE" },
+		{ "HCI_PAGE_SCAN_ENABLE" },
+		{ "HCI_INQUIRY_AND_PAGE_SCAN_ENABLE" },
 	};
 
 	DEBUG_LOG(WII_IPC_WIIMOTE, "Command: HCI_CMD_WRITE_SCAN_ENABLE: (0x%02x)",
@@ -1741,9 +1738,9 @@ void CWII_IPC_HLE_Device_usb_oh1_57e_305_emu::CommandWriteInquiryMode(const u8* 
 	reply.status = 0x00;
 
 	static char inquiry_mode_tag[][128] = {
-			{"Standard Inquiry Result event format (default)"},
-			{"Inquiry Result format with RSSI"},
-			{"Inquiry Result with RSSI format or Extended Inquiry Result format"} };
+		{ "Standard Inquiry Result event format (default)" },
+		{ "Inquiry Result format with RSSI" },
+		{ "Inquiry Result with RSSI format or Extended Inquiry Result format" } };
 	INFO_LOG(WII_IPC_WIIMOTE, "Command: HCI_CMD_WRITE_INQUIRY_MODE:");
 	DEBUG_LOG(WII_IPC_WIIMOTE, "  mode: %s", inquiry_mode_tag[inquiry_mode->mode]);
 
@@ -1758,8 +1755,8 @@ void CWII_IPC_HLE_Device_usb_oh1_57e_305_emu::CommandWritePageScanType(const u8*
 	hci_write_page_scan_type_rp reply;
 	reply.status = 0x00;
 
-	static char page_scan_type[][128] = { {"Mandatory: Standard Scan (default)"},
-																			 {"Optional: Interlaced Scan"} };
+	static char page_scan_type[][128] = { { "Mandatory: Standard Scan (default)" },
+	{ "Optional: Interlaced Scan" } };
 
 	INFO_LOG(WII_IPC_WIIMOTE, "Command: HCI_CMD_WRITE_PAGE_SCAN_TYPE:");
 	DEBUG_LOG(WII_IPC_WIIMOTE, "  type: %s", page_scan_type[write_page_scan_type->type]);

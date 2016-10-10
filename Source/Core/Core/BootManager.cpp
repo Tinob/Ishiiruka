@@ -26,7 +26,8 @@
 #include "Common/CommonTypes.h"
 #include "Common/FileUtil.h"
 #include "Common/IniFile.h"
-#include "Common/SysConf.h"
+#include "Common/Logging/Log.h"
+#include "Common/MsgHandler.h"
 #include "Core/BootManager.h"
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
@@ -35,7 +36,6 @@
 #include "Core/HW/Sram.h"
 #include "Core/HW/WiimoteReal/WiimoteReal.h"
 #include "Core/Host.h"
-#include "Core/IPC_HLE/WII_IPC_HLE_Device_usb_bt_base.h"
 #include "Core/Movie.h"
 #include "Core/NetPlayProto.h"
 #include "VideoCommon/VideoBackendBase.h"
@@ -56,7 +56,6 @@ public:
 	// alone on restore (false)
 	bool bSetEmulationSpeed;
 	bool bSetVolume;
-	bool bSetFrameSkip;
 	std::array<bool, MAX_BBMOTES> bSetWiimoteSource;
 	std::array<bool, MAX_SI_CHANNELS> bSetPads;
 	std::array<bool, MAX_EXI_CHANNELS> bSetEXIDevice;
@@ -82,7 +81,6 @@ private:
 	int iSelectedLanguage;
 	int iCPUCore;
 	int Volume;
-	unsigned int frameSkip;
 	float m_EmulationSpeed;
 	bool bTimeStretching;
 	std::string strBackend;
@@ -115,7 +113,6 @@ void ConfigCache::SaveConfig(const SConfig& config)
 	iCPUCore = config.iCPUCore;
 	Volume = config.m_Volume;
 	m_EmulationSpeed = config.m_EmulationSpeed;
-	frameSkip = config.m_FrameSkip;
 	strBackend = config.m_strVideoBackend;
 	sBackend = config.sBackend;
 	m_strGPUDeterminismMode = config.m_strGPUDeterminismMode;
@@ -129,7 +126,6 @@ void ConfigCache::SaveConfig(const SConfig& config)
 
 	bSetEmulationSpeed = false;
 	bSetVolume = false;
-	bSetFrameSkip = false;
 	bSetWiimoteSource.fill(false);
 	bSetPads.fill(false);
 	bSetEXIDevice.fill(false);
@@ -162,9 +158,6 @@ void ConfigCache::RestoreConfig(SConfig* config)
 	config->bHalfAudioRate = bHalfAudioRate;
 	config->bTimeStretching = bTimeStretching;
 
-	config->m_SYSCONF->SetData("IPL.PGS", bProgressive);
-	config->m_SYSCONF->SetData("IPL.E60", bPAL60);
-
 	// Only change these back if they were actually set by game ini, since they can be changed while a
 	// game is running.
 	if (bSetVolume)
@@ -190,12 +183,6 @@ void ConfigCache::RestoreConfig(SConfig* config)
 
 	if (bSetEmulationSpeed)
 		config->m_EmulationSpeed = m_EmulationSpeed;
-
-	if (bSetFrameSkip)
-	{
-		config->m_FrameSkip = frameSkip;
-		Movie::SetFrameSkipping(frameSkip);
-	}
 
 	for (unsigned int i = 0; i < MAX_EXI_CHANNELS; ++i)
 	{
@@ -276,11 +263,6 @@ bool BootCore(const std::string& _rFilename)
 		if (core_section->Get("EmulationSpeed", &SConfig::GetInstance().m_EmulationSpeed,
 			SConfig::GetInstance().m_EmulationSpeed))
 			config_cache.bSetEmulationSpeed = true;
-		if (core_section->Get("FrameSkip", &SConfig::GetInstance().m_FrameSkip))
-		{
-			config_cache.bSetFrameSkip = true;
-			Movie::SetFrameSkipping(SConfig::GetInstance().m_FrameSkip);
-		}
 
 		if (dsp_section->Get("Volume", &SConfig::GetInstance().m_Volume,
 			SConfig::GetInstance().m_Volume))
@@ -306,9 +288,6 @@ bool BootCore(const std::string& _rFilename)
 		// Wii settings
 		if (StartUp.bWii)
 		{
-			// Flush possible changes to SYSCONF to file
-			SConfig::GetInstance().m_SYSCONF->Save();
-
 			int source;
 			for (unsigned int i = 0; i < MAX_WIIMOTES; ++i)
 			{
@@ -397,18 +376,9 @@ bool BootCore(const std::string& _rFilename)
 		StartUp.bPAL60 = false;
 	}
 
-	SConfig::GetInstance().m_SYSCONF->SetData("IPL.PGS", StartUp.bProgressive);
-	SConfig::GetInstance().m_SYSCONF->SetData("IPL.E60", StartUp.bPAL60);
-
 	if (StartUp.bWii)
 	{
-		// Disable WiiConnect24's standby mode. If it is enabled, it prevents us from receiving
-		// shutdown commands in the State Transition Manager (STM).
-		// TODO: remove this if and once Dolphin supports WC24 standby mode.
-		SConfig::GetInstance().m_SYSCONF->SetData<u8>("IPL.IDL", 0x00);
-		NOTICE_LOG(BOOT, "Disabling WC24 'standby' (shutdown to idle) to avoid hanging on shutdown");
-
-		RestoreBTInfoSection();
+		SConfig::GetInstance().SaveSettingsToSysconf();
 	}
 
 	// Run the game
@@ -425,10 +395,14 @@ bool BootCore(const std::string& _rFilename)
 void Stop()
 {
 	Core::Stop();
+	RestoreConfig();
+}
 
-	SConfig& StartUp = SConfig::GetInstance();
-	StartUp.m_strUniqueID = "00000000";
-	config_cache.RestoreConfig(&StartUp);
+void RestoreConfig()
+{
+	SConfig::GetInstance().LoadSettingsFromSysconf();
+	SConfig::GetInstance().m_strUniqueID = "00000000";
+	config_cache.RestoreConfig(&SConfig::GetInstance());
 }
 
 }  // namespace

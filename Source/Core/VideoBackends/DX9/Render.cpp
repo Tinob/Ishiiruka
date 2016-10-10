@@ -451,33 +451,11 @@ void Renderer::ReinterpretPixelData(unsigned int convtype)
 	FramebufferManager::InvalidateEFBCache();
 }
 
-bool Renderer::SaveScreenshot(const std::string &filename, const TargetRectangle &dst_rect)
-{
-	HRESULT hr = D3D::dev->GetRenderTargetData(D3D::GetBackBufferSurface(), ScreenShootMEMSurface);
-	if (FAILED(hr))
-	{
-		PanicAlert("Error dumping surface data.");
-		return false;
-	}
-	hr = PD3DXSaveSurfaceToFileA(filename.c_str(), D3DXIFF_PNG, ScreenShootMEMSurface, NULL, dst_rect.AsRECT());
-	if (FAILED(hr))
-	{
-		PanicAlert("Error saving screen.");
-		return false;
-	}
-	OSD::AddMessage(StringFromFormat("Saved %i x %i %s", dst_rect.GetWidth(), dst_rect.GetHeight(), filename.c_str()));
-
-	return true;
-}
-
 // This function has the final picture. We adjust the aspect ratio here.
 void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, const EFBRectangle& rc, float Gamma)
 {
-	if (Fifo::WillSkipCurrentFrame() || (!XFBWrited && !g_ActiveConfig.RealXFBEnabled()) || !fbWidth || !fbHeight)
+	if ((!XFBWrited && !g_ActiveConfig.RealXFBEnabled()) || !fbWidth || !fbHeight)
 	{
-		if (SConfig::GetInstance().m_DumpFrames && !frame_data.empty())
-			AVIDump::AddFrame(&frame_data[0], fbWidth, fbHeight);
-
 		Core::Callback_VideoCopiedToXFB(false);
 		return;
 	}
@@ -486,9 +464,6 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 	const XFBSourceBase* const* xfbSourceList = FramebufferManager::GetXFBSource(xfbAddr, fbStride, fbHeight, &xfbCount);
 	if ((!xfbSourceList || xfbCount == 0) && g_ActiveConfig.bUseXFB && !g_ActiveConfig.bUseRealXFB)
 	{
-		if (SConfig::GetInstance().m_DumpFrames && !frame_data.empty())
-			AVIDump::AddFrame(&frame_data[0], fbWidth, fbHeight);
-
 		Core::Callback_VideoCopiedToXFB(false);
 		return;
 	}
@@ -669,61 +644,21 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 	vp.MaxZ = 1.0f;
 	D3D::dev->SetViewport(&vp);
 
-	// Save screenshot
-	if (s_bScreenshot)
-	{
-		std::lock_guard<std::mutex> lk(s_criticalScreenshot);
-		SaveScreenshot(s_sScreenshotName, GetTargetRectangle());
-		s_bScreenshot = false;
-	}
-
 	// Dump frames
-	if (SConfig::GetInstance().m_DumpFrames)
+	if (IsFrameDumping())
 	{
 		int source_width = GetTargetRectangle().GetWidth();
 		int source_height = GetTargetRectangle().GetHeight();
 		HRESULT hr = D3D::dev->GetRenderTargetData(D3D::GetBackBufferSurface(), ScreenShootMEMSurface);
-		if (!bLastFrameDumped)
+		D3DLOCKED_RECT rect;
+		if (SUCCEEDED(ScreenShootMEMSurface->LockRect(&rect, GetTargetRectangle().AsRECT(), D3DLOCK_NO_DIRTY_UPDATE | D3DLOCK_NOSYSLOCK | D3DLOCK_READONLY)))
 		{
-			bAVIDumping = AVIDump::Start(source_width, source_height, AVIDump::DumpFormat::FORMAT_BGR);
-			if (!bAVIDumping)
-			{
-				PanicAlert("Error dumping frames to AVI.");
-			}
-			else
-			{
-				std::string msg = StringFromFormat("Dumping Frames to \"%sframedump0.avi\" (%dx%d RGB24)",
-					File::GetUserPath(D_DUMPFRAMES_IDX).c_str(),
-					source_width, source_height);
-				OSD::AddMessage(msg, 2000);
-			}
-		}
-		if (bAVIDumping)
-		{
-			D3DLOCKED_RECT rect;
-			if (SUCCEEDED(ScreenShootMEMSurface->LockRect(&rect, GetTargetRectangle().AsRECT(), D3DLOCK_NO_DIRTY_UPDATE | D3DLOCK_NOSYSLOCK | D3DLOCK_READONLY)))
-			{
-				if (frame_data.capacity() != 3 * source_width * source_height)
-					frame_data.resize(3 * source_width * source_height);
+			DumpFrameData(reinterpret_cast<const u8*>(rect.pBits), source_width, source_height,
+				rect.Pitch, false, true);
+			FinishFrameData();
 
-				formatBufferDump((const u8*)rect.pBits, &frame_data[0], source_width, source_height, rect.Pitch);
-				FlipImageData(&frame_data[0], source_width, source_height);
-				AVIDump::AddFrame(&frame_data[0], GetTargetRectangle().GetWidth(), GetTargetRectangle().GetHeight());
-				ScreenShootMEMSurface->UnlockRect();
-			}
+			ScreenShootMEMSurface->UnlockRect();
 		}
-		bLastFrameDumped = true;
-	}
-	else
-	{
-		if (bLastFrameDumped && bAVIDumping)
-		{
-			AVIDump::Stop();
-			std::vector<u8>().swap(frame_data);
-			bAVIDumping = false;
-			OSD::AddMessage("Stop dumping frames to AVI", 2000);
-		}
-		bLastFrameDumped = false;
 	}
 
 	Renderer::DrawDebugText();

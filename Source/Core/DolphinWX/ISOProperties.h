@@ -81,7 +81,7 @@ private:
 	PHackData m_PHack_Data;
 
 	// Core
-	wxCheckBox *CPUThread, *SkipIdle, *MMU, *DCBZOFF, *FPRF;
+	wxCheckBox *CPUThread, *MMU, *DCBZOFF, *FPRF;
 	wxCheckBox *SyncGPU, *FastDiscSpeed, *DSPHLE, *HalfAudioRate, *TimeStretching;
 	DolphinSlider* DVideo;
 	wxStaticText* label_DVideo;

@@ -9,6 +9,7 @@
 #include "Common/CommonTypes.h"
 #include "Common/FileUtil.h"
 #include "Common/Logging/Log.h"
+#include "Common/MsgHandler.h"
 #include "Common/StringUtil.h"
 #include "Core/ConfigManager.h"
 #include "Core/PowerPC/PPCAnalyst.h"
@@ -54,7 +55,7 @@ Symbol* PPCSymbolDB::AddFunction(u32 startAddr)
 		u32 targetEnd = PPCAnalyst::AnalyzeFunction(startAddr, tempFunc);
 		if (targetEnd == 0)
 			return nullptr;  // found a dud :(
-		// LOG(OSHLE, "Symbol found at %08x", startAddr);
+											 // LOG(OSHLE, "Symbol found at %08x", startAddr);
 		functions[startAddr] = tempFunc;
 		tempFunc.type = Symbol::Type::Function;
 		checksumToFunction[tempFunc.hash] = &(functions[startAddr]);
@@ -447,7 +448,7 @@ bool PPCSymbolDB::SaveMap(const std::string& filename, bool WithCodes) const
 			++itr;
 
 			/* To make nice straight lines we fill out the name with spaces, we also cut off
-				 all names longer than 25 letters */
+			all names longer than 25 letters */
 			std::string TempSym;
 			for (u32 i = 0; i < 25; i++)
 			{

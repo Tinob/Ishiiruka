@@ -49,11 +49,6 @@ public:
 
 	void ReinterpretPixelData(unsigned int convtype) override;
 
-	bool SaveScreenshot(const std::string& filename, const TargetRectangle& rc) override
-	{
-		return false;
-	}
-
 	void ApplyState(bool bUseDstAlpha) override;
 
 	void ResetAPIState() override;
@@ -99,9 +94,6 @@ private:
 		const TargetRectangle& src_rect, const Texture2D* src_tex, bool linear_filter);
 	bool ResizeScreenshotBuffer(u32 new_width, u32 new_height);
 	void DestroyScreenshotResources();
-	void WriteScreenshot();
-	void WriteFrameDump();
-	void StopFrameDump();
 
 	FramebufferManager* m_framebuffer_mgr = nullptr;
 

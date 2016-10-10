@@ -13,11 +13,10 @@ protected:
   virtual ~DebugInterface() {}
 public:
   virtual std::string Disassemble(unsigned int /*address*/) { return "NODEBUGGER"; }
-  virtual void GetRawMemoryString(int /*memory*/, unsigned int /*address*/, char* dest,
-                                  int /*max_size*/)
-  {
-    strcpy(dest, "NODEBUGGER");
-  }
+	virtual std::string GetRawMemoryString(int /*memory*/, unsigned int /*address*/)
+	{
+		return "NODEBUGGER";
+	}
   virtual int GetInstructionSize(int /*instruction*/) { return 1; }
   virtual bool IsAlive() { return true; }
   virtual bool IsBreakpoint(unsigned int /*address*/) { return false; }

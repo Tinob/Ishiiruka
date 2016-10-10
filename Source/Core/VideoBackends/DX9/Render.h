@@ -67,8 +67,6 @@ public:
 
 	void ReinterpretPixelData(unsigned int convtype);
 
-	bool SaveScreenshot(const std::string &filename, const TargetRectangle &rc);
-
 	static void CheckForResize(bool &resized, bool &fullscreen, bool &fullscreencahnged);
 
 	u32 GetMaxTextureSize() override;

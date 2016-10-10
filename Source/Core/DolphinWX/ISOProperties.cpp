@@ -453,9 +453,7 @@ void CISOProperties::CreateGUIControls()
 
 	// Core
 	CPUThread = new wxCheckBox(m_GameConfig, ID_USEDUALCORE, _("Enable Dual Core"), wxDefaultPosition,
-		wxDefaultSize, GetElementStyle("Core", "CPUThread"));
-	SkipIdle = new wxCheckBox(m_GameConfig, ID_IDLESKIP, _("Enable Idle Skipping"), wxDefaultPosition,
-		wxDefaultSize, GetElementStyle("Core", "SkipIdle"));
+		wxDefaultSize, GetElementStyle("Core", "CPUThread"));	
 	MMU = new wxCheckBox(m_GameConfig, ID_MMU, _("Enable MMU"), wxDefaultPosition, wxDefaultSize,
 		GetElementStyle("Core", "MMU"));
 	MMU->SetToolTip(_(
@@ -560,7 +558,6 @@ void CISOProperties::CreateGUIControls()
 	wxStaticBoxSizer* const sbCoreOverrides =
 		new wxStaticBoxSizer(wxVERTICAL, m_GameConfig, _("Core"));
 	sbCoreOverrides->Add(CPUThread, 0, wxLEFT | wxRIGHT, space5);
-	sbCoreOverrides->Add(SkipIdle, 0, wxLEFT | wxRIGHT, space5);
 	sbCoreOverrides->Add(MMU, 0, wxLEFT | wxRIGHT, space5);
 	sbCoreOverrides->Add(DCBZOFF, 0, wxLEFT | wxRIGHT, space5);
 	sbCoreOverrides->Add(FPRF, 0, wxLEFT | wxRIGHT, space5);
@@ -1231,7 +1228,6 @@ void CISOProperties::SetCheckboxValueFromGameini(const char* section, const char
 void CISOProperties::LoadGameConfig()
 {
 	SetCheckboxValueFromGameini("Core", "CPUThread", CPUThread);
-	SetCheckboxValueFromGameini("Core", "SkipIdle", SkipIdle);
 	SetCheckboxValueFromGameini("Core", "MMU", MMU);
 	SetCheckboxValueFromGameini("Core", "DCBZ", DCBZOFF);
 	SetCheckboxValueFromGameini("Core", "FPRF", FPRF);
@@ -1338,7 +1334,6 @@ void CISOProperties::SaveGameIniValueFrom3StateCheckbox(const char* section, con
 bool CISOProperties::SaveGameConfig()
 {
 	SaveGameIniValueFrom3StateCheckbox("Core", "CPUThread", CPUThread);
-	SaveGameIniValueFrom3StateCheckbox("Core", "SkipIdle", SkipIdle);
 	SaveGameIniValueFrom3StateCheckbox("Core", "MMU", MMU);
 	SaveGameIniValueFrom3StateCheckbox("Core", "DCBZ", DCBZOFF);
 	SaveGameIniValueFrom3StateCheckbox("Core", "FPRF", FPRF);

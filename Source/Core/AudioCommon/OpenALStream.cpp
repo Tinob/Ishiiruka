@@ -9,6 +9,7 @@
 #include "AudioCommon/OpenALStream.h"
 #include "Core/Core.h"
 #include "Common/Logging/Log.h"
+#include "Common/MsgHandler.h"
 #include "Core/ConfigManager.h"
 
 #if defined HAVE_OPENAL && HAVE_OPENAL

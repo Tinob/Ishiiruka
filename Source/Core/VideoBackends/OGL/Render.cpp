@@ -32,13 +32,10 @@
 #include "VideoBackends/OGL/TextureCache.h"
 #include "VideoBackends/OGL/VertexManager.h"
 
-#if defined(HAVE_LIBAV) || defined(_WIN32)
 #include "VideoCommon/AVIDump.h"
-#endif
 #include "VideoCommon/BPFunctions.h"
 #include "VideoCommon/DriverDetails.h"
 #include "VideoCommon/Fifo.h"
-#include "VideoCommon/ImageWrite.h"
 #include "VideoCommon/IndexGenerator.h"
 #include "VideoCommon/OnScreenDisplay.h"
 #include "VideoCommon/PixelEngine.h"
@@ -51,7 +48,6 @@ void VideoConfig::UpdateProjectionHack()
 	::UpdateProjectionHack(g_Config.iPhackvalue, g_Config.sPhackvalue);
 }
 
-static int OSDInternalW, OSDInternalH;
 static int s_max_texture_size = 0;
 
 namespace OGL
@@ -333,9 +329,6 @@ static void InitDriverInfo()
 // Init functions
 Renderer::Renderer()
 {
-	OSDInternalW = 0;
-	OSDInternalH = 0;
-
 	s_blendMode = 0;
 
 	bool bSuccess = true;
@@ -1336,16 +1329,6 @@ void Renderer::SetBlendMode(bool forceUpdate)
 	s_blendMode = newval;
 }
 
-static void DumpFrame(const std::vector<u8>& data, int w, int h)
-{
-#if defined(HAVE_LIBAV) || defined(_WIN32)
-	if (SConfig::GetInstance().m_DumpFrames && !data.empty())
-	{
-		AVIDump::AddFrame(&data[0], w, h);
-	}
-#endif
-}
-
 // This function has the final picture. We adjust the aspect ratio here.
 void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight,
 	const EFBRectangle& rc, float Gamma)
@@ -1358,11 +1341,8 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight,
 			glDisable(GL_DEBUG_OUTPUT);
 	}
 
-	static int w = 0, h = 0;
-	if (Fifo::WillSkipCurrentFrame() || (!XFBWrited && !g_ActiveConfig.RealXFBEnabled()) ||
-		!fbWidth || !fbHeight)
+	if ((!XFBWrited && !g_ActiveConfig.RealXFBEnabled()) || !fbWidth || !fbHeight)
 	{
-		DumpFrame(frame_data, w, h);
 		Core::Callback_VideoCopiedToXFB(false);
 		return;
 	}
@@ -1372,7 +1352,6 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight,
 		FramebufferManager::GetXFBSource(xfbAddr, fbStride, fbHeight, &xfbCount);
 	if (g_ActiveConfig.VirtualXFBEnabled() && (!xfbSourceList || xfbCount == 0))
 	{
-		DumpFrame(frame_data, w, h);
 		Core::Callback_VideoCopiedToXFB(false);
 		return;
 	}
@@ -1441,9 +1420,6 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight,
 
 				sourceRc.right -= Renderer::EFBToScaledX(fbStride - fbWidth);
 			}
-			// Tell the OSD Menu about the current internal resolution
-			OSDInternalW = xfbSource->sourceRc.GetWidth();
-			OSDInternalH = xfbSource->sourceRc.GetHeight();
 			TargetSize blit_size(xfbSource->texWidth, xfbSource->texHeight);
 
 			BlitScreen(drawRc, sourceRc, blit_size, xfbSource->texture, xfbSource->depthtexture, Gamma);
@@ -1483,78 +1459,17 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight,
 
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 
-	// Save screenshot
-	if (s_bScreenshot)
+	if (IsFrameDumping())
 	{
-		std::lock_guard<std::mutex> lk(s_criticalScreenshot);
-
-		if (SaveScreenshot(s_sScreenshotName, flipped_trc))
-			OSD::AddMessage("Screenshot saved to " + s_sScreenshotName);
-
-		// Reset settings
-		s_sScreenshotName.clear();
-		s_bScreenshot = false;
-		s_screenshotCompleted.Set();
-	}
-
-	// Frame dumps are handled a little differently in Windows
-#if defined(HAVE_LIBAV) || defined(_WIN32)
-	if (SConfig::GetInstance().m_DumpFrames)
-	{
-		std::lock_guard<std::mutex> lk(s_criticalScreenshot);
-
-		if (frame_data.empty() || w != flipped_trc.GetWidth() || h != flipped_trc.GetHeight())
-		{
-			w = flipped_trc.GetWidth();
-			h = flipped_trc.GetHeight();
-			frame_data.resize(4 * w * h);
-		}
+		std::vector<u8> image(flipped_trc.GetWidth() * flipped_trc.GetHeight() * 4);
 
 		glPixelStorei(GL_PACK_ALIGNMENT, 1);
-		glReadPixels(flipped_trc.left, flipped_trc.bottom, w, h, GL_RGBA, GL_UNSIGNED_BYTE,
-			&frame_data[0]);
-		if (w > 0 && h > 0)
-		{
-			if (!bLastFrameDumped)
-			{
-				bAVIDumping = AVIDump::Start(w, h, AVIDump::DumpFormat::FORMAT_RGBA);
-				if (!bAVIDumping)
-				{
-					OSD::AddMessage("AVIDump Start failed", 2000);
-				}
-				else
-				{
-					OSD::AddMessage(StringFromFormat("Dumping Frames to \"%sframedump0.avi\" (%dx%d RGB24)",
-						File::GetUserPath(D_DUMPFRAMES_IDX).c_str(), w, h),
-						2000);
-				}
-			}
-			if (bAVIDumping)
-			{
-				FlipImageData(&frame_data[0], w, h, 4);
-				AVIDump::AddFrame(&frame_data[0], w, h);
-			}
-
-			bLastFrameDumped = true;
-		}
-		else
-		{
-			NOTICE_LOG(VIDEO, "Error reading framebuffer");
-		}
+		glReadPixels(flipped_trc.left, flipped_trc.bottom, flipped_trc.GetWidth(),
+			flipped_trc.GetHeight(), GL_RGBA, GL_UNSIGNED_BYTE, image.data());
+		DumpFrameData(image.data(), flipped_trc.GetWidth(), flipped_trc.GetHeight(),
+			flipped_trc.GetWidth() * 4, true);
+		FinishFrameData();
 	}
-	else
-	{
-		if (bLastFrameDumped && bAVIDumping)
-		{
-			AVIDump::Stop();
-			std::vector<u8>().swap(frame_data);
-			w = h = 0;
-			bAVIDumping = false;
-			OSD::AddMessage("Stop dumping frames", 2000);
-		}
-		bLastFrameDumped = false;
-	}
-#endif
 	// Finish up the current frame, print some stats
 
 	SetWindowSize(fbStride, fbHeight);
@@ -1948,21 +1863,6 @@ void Renderer::SetInterlacingMode()
 
 namespace OGL
 {
-bool Renderer::SaveScreenshot(const std::string& filename, const TargetRectangle& back_rc)
-{
-	u32 W = back_rc.GetWidth();
-	u32 H = back_rc.GetHeight();
-	std::unique_ptr<u8[]> data(new u8[W * 4 * H]);
-	glPixelStorei(GL_PACK_ALIGNMENT, 1);
-
-	glReadPixels(back_rc.left, back_rc.bottom, W, H, GL_RGBA, GL_UNSIGNED_BYTE, data.get());
-
-	// Turn image upside down
-	FlipImageData(data.get(), W, H, 4);
-
-	return TextureToPng(data.get(), W * 4, filename, W, H, false);
-}
-
 u32 Renderer::GetMaxTextureSize()
 {
 	// Right now nvidia seems to do something very weird if we try to cache GL_MAX_TEXTURE_SIZE in

@@ -35,8 +35,7 @@ namespace Fifo
 {
 
 static constexpr u32 FIFO_SIZE = 2 * 1024 * 1024;
-
-static bool s_skip_current_frame = false;
+static constexpr int GPU_TIME_SLOT_SIZE = 1000;
 
 static Common::BlockingLoop s_gpu_mainloop;
 
@@ -87,7 +86,6 @@ void DoState(PointerWrap &p)
 		// We're good and paused, right?
 		s_video_buffer_seen_ptr = s_video_buffer_pp_read_ptr = s_video_buffer_read_ptr;
 	}
-	p.Do(s_skip_current_frame);
 	p.Do(s_last_sync_gpu_tick);
 }
 
@@ -130,16 +128,6 @@ void Shutdown()
 	s_video_buffer_seen_ptr = nullptr;
 	s_fifo_aux_write_ptr = nullptr;
 	s_fifo_aux_read_ptr = nullptr;
-}
-
-void SetRendering(bool enabled)
-{
-	s_skip_current_frame = !enabled;
-}
-
-bool WillSkipCurrentFrame()
-{
-	return s_skip_current_frame;
 }
 
 // May be executed from any thread, even the graphics thread.
@@ -371,7 +359,8 @@ void RunGpuLoop()
 				{
 					cyclesExecuted = (int)(cyclesExecuted / param.fSyncGpuOverclock);
 					int old = s_sync_ticks.fetch_sub(cyclesExecuted);
-					if (old > 0 && old - (int)cyclesExecuted <= 0)
+					if (old >= param.iSyncGpuMaxDistance &&
+						old - (int)cyclesExecuted < param.iSyncGpuMaxDistance)
 						s_sync_wakeup_event.Set();
 				}
 
@@ -385,7 +374,7 @@ void RunGpuLoop()
 			if (s_sync_ticks.load() > 0)
 			{
 				int old = s_sync_ticks.exchange(0);
-				if (old > 0)
+				if (old >= param.iSyncGpuMaxDistance)
 					s_sync_wakeup_event.Set();
 			}
 
@@ -529,33 +518,26 @@ static int Update(int ticks)
 {
 	const SConfig& param = SConfig::GetInstance();
 
-	// GPU is sleeping, so no need for synchronization
-	if (s_gpu_mainloop.IsDone() || s_use_deterministic_gpu_thread)
-	{
-		if (s_sync_ticks.load() < 0)
-		{
-			int old = s_sync_ticks.fetch_add(ticks);
-			if (old < param.iSyncGpuMinDistance && old + ticks >= param.iSyncGpuMinDistance)
-				RunGpu();
-		}
-		return param.iSyncGpuMaxDistance;
-	}
+	int old = s_sync_ticks.fetch_add(ticks);
+	int now = old + ticks;
+
+	// GPU is idle, so stop polling.
+	if (old >= 0 && s_gpu_mainloop.IsDone())
+		return -1;
 
 	// Wakeup GPU
-	int old = s_sync_ticks.fetch_add(ticks);
-	if (old < param.iSyncGpuMinDistance && old + ticks >= param.iSyncGpuMinDistance)
+	if (old < param.iSyncGpuMinDistance && now >= param.iSyncGpuMinDistance)
 		RunGpu();
 
-	// Wait for GPU
-	if (s_sync_ticks.load() >= param.iSyncGpuMaxDistance)
-	{
-		while (s_sync_ticks.load() > 0)
-		{
-			s_sync_wakeup_event.Wait();
-		}
-	}
+	// If the GPU is still sleeping, wait for a longer time
+	if (now < param.iSyncGpuMinDistance)
+		return GPU_TIME_SLOT_SIZE + param.iSyncGpuMinDistance - now;
 
-	return param.iSyncGpuMaxDistance - s_sync_ticks.load();
+	// Wait for GPU
+	if (now >= param.iSyncGpuMaxDistance)
+		s_sync_wakeup_event.Wait();
+
+	return GPU_TIME_SLOT_SIZE;
 }
 
 static void SyncGPUCallback(u64 userdata, s64 cyclesLate)

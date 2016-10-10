@@ -2,16 +2,15 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Core/Debugger/PPCDebugInterface.h"
+
 #include <string>
 
 #include "Common/GekkoDisassembler.h"
+#include "Common/StringUtil.h"
 
 #include "Core/Core.h"
-#include "Core/Debugger/Debugger_SymbolMap.h"
-#include "Core/Debugger/PPCDebugInterface.h"
 #include "Core/HW/DSP.h"
-#include "Core/HW/Memmap.h"
-#include "Core/Host.h"
 #include "Core/PowerPC/JitCommon/JitBase.h"
 #include "Core/PowerPC/PPCSymbolDB.h"
 #include "Core/PowerPC/PowerPC.h"
@@ -48,24 +47,19 @@ std::string PPCDebugInterface::Disassemble(unsigned int address)
 	}
 }
 
-void PPCDebugInterface::GetRawMemoryString(int memory, unsigned int address, char* dest,
-	int max_size)
+std::string PPCDebugInterface::GetRawMemoryString(int memory, unsigned int address)
 {
 	if (IsAlive())
 	{
-		if (memory || PowerPC::HostIsRAMAddress(address))
-		{
-			snprintf(dest, max_size, "%08X%s", ReadExtraMemory(memory, address), memory ? " (ARAM)" : "");
-		}
-		else
-		{
-			strcpy(dest, memory ? "--ARAM--" : "--------");
-		}
+		const bool is_aram = memory != 0;
+
+		if (is_aram || PowerPC::HostIsRAMAddress(address))
+			return StringFromFormat("%08X%s", ReadExtraMemory(memory, address), is_aram ? " (ARAM)" : "");
+
+		return is_aram ? "--ARAM--" : "--------";
 	}
-	else
-	{
-		strcpy(dest, "<unknwn>");  // bad spelling - 8 chars
-	}
+
+	return "<unknwn>";  // bad spelling - 8 chars
 }
 
 unsigned int PPCDebugInterface::ReadMemory(unsigned int address)
@@ -178,12 +172,12 @@ int PPCDebugInterface::GetColor(unsigned int address)
 	if (!PowerPC::HostIsRAMAddress(address))
 		return 0xeeeeee;
 	static const int colors[6] = {
-			0xd0FFFF,  // light cyan
-			0xFFd0d0,  // light red
-			0xd8d8FF,  // light blue
-			0xFFd0FF,  // light purple
-			0xd0FFd0,  // light green
-			0xFFFFd0,  // light yellow
+		0xd0FFFF,  // light cyan
+		0xFFd0d0,  // light red
+		0xd8d8FF,  // light blue
+		0xFFd0FF,  // light purple
+		0xd0FFd0,  // light green
+		0xFFFFd0,  // light yellow
 	};
 	Symbol* symbol = g_symbolDB.GetSymbolFromAddr(address);
 	if (!symbol)

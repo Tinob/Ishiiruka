@@ -936,9 +936,6 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
 				progressive_scan_checkbox->Bind(wxEVT_CHECKBOX, &VideoConfigDiag::Event_ProgressiveScan, this);
 
 				progressive_scan_checkbox->SetValue(SConfig::GetInstance().bProgressive);
-				// A bit strange behavior, but this needs to stay in sync with the main progressive boolean; TODO: Is this still necessary?
-				SConfig::GetInstance().m_SYSCONF->SetData("IPL.PGS", SConfig::GetInstance().bProgressive);
-
 				szr_misc->Add(progressive_scan_checkbox);
 			}
 #if defined WIN32
@@ -1105,7 +1102,6 @@ void VideoConfigDiag::Event_Adapter(wxCommandEvent &ev)
 
 void VideoConfigDiag::Event_ProgressiveScan(wxCommandEvent &ev)
 {
-	SConfig::GetInstance().m_SYSCONF->SetData("IPL.PGS", ev.GetInt());
 	SConfig::GetInstance().bProgressive = ev.IsChecked();
 
 	ev.Skip();
