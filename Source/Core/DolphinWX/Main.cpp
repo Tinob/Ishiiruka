@@ -95,7 +95,7 @@ bool DolphinApp::OnInit()
 	std::lock_guard<std::mutex> lk(s_init_mutex);
 	if (!wxApp::OnInit())
 		return false;
-
+	wxLog::SetLogLevel(0);
 	Bind(wxEVT_QUERY_END_SESSION, &DolphinApp::OnEndSession, this);
 	Bind(wxEVT_END_SESSION, &DolphinApp::OnEndSession, this);
 	Bind(wxEVT_IDLE, &DolphinApp::OnIdle, this);

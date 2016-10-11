@@ -194,7 +194,7 @@ void GeometryShaderCache::Init()
 			item.CalculateUIDHash();
 			CompileGShader(item, true);
 			shader_count++;
-			Host_UpdateTitle(StringFromFormat("Compiling Geometry Shaders %i %% (%i/%i)", (shader_count * 100) / total, shader_count, total));
+			//Host_UpdateTitle(StringFromFormat("Compiling Geometry Shaders %i %% (%i/%i)", (shader_count * 100) / total, shader_count, total));
 			if ((shader_count & 31) == 0)
 			{
 				s_compiler->WaitForFinish();
