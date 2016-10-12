@@ -605,13 +605,6 @@ Renderer::Renderer()
 			g_ogl_config.eSupportedGLSLVersion = GLSL_400;
 			g_Config.backend_info.bSupportsSSAA = true;
 		}
-#ifdef _WIN32
-		g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_I4_AS_I8] = true;
-		g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_IA4_AS_IA8] = true;
-		g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_I8] = true;
-		g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_IA8] = true;
-		g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_RGB565] = true;
-#endif
 		g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT1] = GLExtensions::Supports("GL_EXT_texture_compression_s3tc");
 		g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT3] = g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT1];
 		g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT5] = g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT1];
