@@ -202,7 +202,6 @@ void VertexShaderCache::Init()
 		s_compiler->WaitForFinish();
 	}
 	s_last_entry = nullptr;
-	VertexShaderManager::DisableDirtyRegions();
 }
 
 void VertexShaderCache::Clear()

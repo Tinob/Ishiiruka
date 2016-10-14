@@ -538,7 +538,6 @@ void PixelShaderCache::Init()
 		s_compiler->WaitForFinish();
 	}
 	s_last_entry = nullptr;
-	PixelShaderManager::DisableDirtyRegions();
 }
 
 // ONLY to be used during shutdown.

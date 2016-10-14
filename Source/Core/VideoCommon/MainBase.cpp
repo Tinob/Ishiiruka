@@ -220,6 +220,11 @@ void VideoBackendBase::InitializeShared()
 	VertexShaderManager::Init();
 	GeometryShaderManager::Init();
 	PixelShaderManager::Init(!(g_ActiveConfig.backend_info.APIType & API_D3D9));
+	if (!(g_ActiveConfig.backend_info.APIType & API_D3D9))
+	{
+		PixelShaderManager::DisableDirtyRegions();
+		VertexShaderManager::DisableDirtyRegions();
+	}
 	TessellationShaderManager::Init();
 
 	// Notify the core that the video backend is ready
