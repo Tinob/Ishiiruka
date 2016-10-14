@@ -663,6 +663,8 @@ if(NOT XXHASH_FOUND)
 	include_directories(Externals/xxhash)
 endif()
 LIST(APPEND LIBS xxhash)
+include_directories(Externals/xbrz)
+LIST(APPEND LIBS xbrz)
 
 # If zlib has already been found on a previous run of cmake don't check again
 # as the check seems to take a long time.
@@ -704,17 +706,15 @@ else()
 	set(PNG png)
 endif()
 
-if(OPENAL_FOUND)
-	if(NOT APPLE)
-		check_lib(SOUNDTOUCH soundtouch SoundTouch soundtouch/SoundTouch.h QUIET)
-	endif()
-	if (SOUNDTOUCH_FOUND)
-		message("Using shared soundtouch")
-	else()
-		message("Using static soundtouch from Externals")
-		add_subdirectory(Externals/soundtouch)
-		include_directories(Externals)
-	endif()
+if(NOT APPLE)
+	check_lib(SOUNDTOUCH soundtouch SoundTouch soundtouch/SoundTouch.h QUIET)
+endif()
+if (SOUNDTOUCH_FOUND)
+	message("Using shared soundtouch")
+else()
+	message("Using static soundtouch from Externals")
+	add_subdirectory(Externals/soundtouch)
+	include_directories(Externals)
 endif()
 
 if(ENABLE_SDL)
@@ -982,6 +982,7 @@ endif()
 
 file(WRITE ${PROJECT_BINARY_DIR}/Source/Core/Common/scmrev.h
 	"#define SCM_REV_STR \"" ${DOLPHIN_WC_REVISION} "\"\n"
+	"#define SCM_CACHE_STR \"" ${DOLPHIN_WC_REVISION} "\"\n"
 	"#define SCM_DESC_STR \"" ${DOLPHIN_WC_DESCRIBE} "\"\n"
 	"#define SCM_BRANCH_STR \"" ${DOLPHIN_WC_BRANCH} "\"\n"
 	"#define SCM_IS_MASTER " ${DOLPHIN_WC_IS_STABLE} "\n"
