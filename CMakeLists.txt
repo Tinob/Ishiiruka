@@ -1016,7 +1016,7 @@ add_definitions(-std=c++1y)
 # These aren't actually needed for C11/C++11
 # but some dependencies require them (LLVM, libav).
 add_definitions(-D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS)
-
+add_subdirectory(Externals/xbrz)
 add_subdirectory(Source)
 
 
