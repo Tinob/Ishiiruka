@@ -226,7 +226,7 @@ bool StateTracker::CheckForShaderChanges(u32 gx_primitive_type, u32 components, 
 
 	if (ps_uid != m_ps_uid)
 	{
-		m_pipeline_state.ps = g_object_cache->GetPixelShaderForUid(ps_uid, dstalpha_mode);
+		m_pipeline_state.ps = g_object_cache->GetPixelShaderForUid(ps_uid);
 		m_ps_uid = ps_uid;
 		changed = true;
 	}

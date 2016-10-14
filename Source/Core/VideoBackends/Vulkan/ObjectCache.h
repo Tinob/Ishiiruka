@@ -15,7 +15,7 @@
 #include "Common/LinearDiskCache.h"
 
 #include "VideoBackends/Vulkan/Constants.h"
-
+#include "VideoCommon/ObjectUsageProfiler.h"
 #include "VideoCommon/GeometryShaderGen.h"
 #include "VideoCommon/PixelShaderGen.h"
 #include "VideoCommon/VertexShaderGen.h"
@@ -101,7 +101,7 @@ public:
 	// Accesses ShaderGen shader caches
 	VkShaderModule GetVertexShaderForUid(const VertexShaderUid& uid);
 	VkShaderModule GetGeometryShaderForUid(const GeometryShaderUid& uid);
-	VkShaderModule GetPixelShaderForUid(const PixelShaderUid& uid, PIXEL_SHADER_RENDER_MODE dstalpha_mode);
+	VkShaderModule GetPixelShaderForUid(const PixelShaderUid& uid);
 
 	// Static samplers
 	VkSampler GetPointSampler() const { return m_point_sampler; }
@@ -133,6 +133,14 @@ public:
 	VkShaderModule GetPassthroughVertexShader() const { return m_passthrough_vertex_shader; }
 	VkShaderModule GetScreenQuadGeometryShader() const { return m_screen_quad_geometry_shader; }
 	VkShaderModule GetPassthroughGeometryShader() const { return m_passthrough_geometry_shader; }
+	class vkShaderItem
+	{
+	public:
+		bool compiled{};
+		std::atomic_flag initialized{};
+		VkShaderModule module = VK_NULL_HANDLE;
+		vkShaderItem() {}
+	};
 private:
 	bool CreatePipelineCache(bool load_from_disk);
 	void DestroyPipelineCache();
@@ -159,16 +167,28 @@ private:
 	std::unique_ptr<VertexFormat> m_utility_shader_vertex_format;
 	std::unique_ptr<StreamBuffer> m_utility_shader_vertex_buffer;
 	std::unique_ptr<StreamBuffer> m_utility_shader_uniform_buffer;
+	
 
-	template <typename Uid>
-	struct ShaderCache
+	void CompileVertexShaderForUid(const VertexShaderUid& uid, vkShaderItem& it);
+	void CompileGeometryShaderForUid(const GeometryShaderUid& uid, vkShaderItem& it);
+	void CompilePixelShaderForUid(const PixelShaderUid& uid, vkShaderItem& it);
+
+	template <typename Uid, typename UidHasher>
+	class ShaderCache
 	{
-		std::map<Uid, VkShaderModule> shader_map;
-		LinearDiskCache<Uid, u32> disk_cache;
+	public:
+		typedef ObjectUsageProfiler<Uid, pKey_t, vkShaderItem, UidHasher> cache_type;
+		std::unique_ptr<cache_type> shader_map{};
+		LinearDiskCache<Uid, u32> disk_cache{};
+		ShaderCache(){}
 	};
-	ShaderCache<VertexShaderUid> m_vs_cache;
-	ShaderCache<GeometryShaderUid> m_gs_cache;
-	ShaderCache<PixelShaderUid> m_ps_cache;
+	typedef ShaderCache<VertexShaderUid, VertexShaderUid::ShaderUidHasher> VShaderCache;
+	typedef ShaderCache<PixelShaderUid, PixelShaderUid::ShaderUidHasher> PShaderCache;
+	typedef ShaderCache<GeometryShaderUid, GeometryShaderUid::ShaderUidHasher> GShaderCache;
+
+	VShaderCache m_vs_cache;
+	GShaderCache m_gs_cache;
+	PShaderCache m_ps_cache;
 
 	std::unordered_map<PipelineInfo, VkPipeline, PipelineInfoHash> m_pipeline_objects;
 	VkPipelineCache m_pipeline_cache = VK_NULL_HANDLE;
