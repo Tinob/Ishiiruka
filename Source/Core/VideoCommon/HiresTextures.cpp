@@ -173,11 +173,11 @@ void HiresTexture::Update()
 	const std::string code = game_id + "_";
 	const std::string miptag = "mip";
 
-	for (u32 i = 0; i < filenames.size(); i++)
+	for (const std::string& fileitem : filenames)
 	{
 		std::string FileName;
 		std::string Extension;
-		SplitPath(filenames[i], nullptr, &FileName, &Extension);
+		SplitPath(fileitem, nullptr, &FileName, &Extension);
 		if (FileName.substr(0, code.length()) == code)
 		{
 			s_check_native_format = true;
@@ -194,12 +194,12 @@ void HiresTexture::Update()
 		size_t map_index = 0;
 		size_t max_type = BuildMaterialMaps ? MapType::emissive : MapType::normal;
 		bool luma_encoded = false;
-		for (size_t i = 1; i <= max_type; i++)
+		for (size_t tag = 1; tag <= max_type; tag++)
 		{
-			if (EndsWith(FileName, s_maps_tags[i]))
+			if (EndsWith(FileName, s_maps_tags[tag]))
 			{
-				map_index = BuildMaterialMaps ? i : MapType::material;
-				FileName = FileName.substr(0, FileName.size() - s_maps_tags[i].size());
+				map_index = BuildMaterialMaps ? tag : MapType::material;
+				FileName = FileName.substr(0, FileName.size() - s_maps_tags[tag].size());
 				break;
 			}
 		}
@@ -216,7 +216,7 @@ void HiresTexture::Update()
 			}
 		}
 		const bool is_compressed = Extension.compare(ddscode) == 0 || Extension.compare(cddscode) == 0;
-		hires_mip_level mip_level_detail(filenames[i], Extension, is_compressed);
+		hires_mip_level mip_level_detail(fileitem, Extension, is_compressed);
 		u32 level = 0;
 		size_t idx = FileName.find_last_of('_');
 		std::string miplevel = FileName.substr(idx + 1, std::string::npos);
@@ -517,17 +517,17 @@ inline bool BuildColor(const HiresTextureCacheItem& item, ImageLoaderParams &Img
 	auto& leveldata = item.maps[MapType::emissive][level];
 	if (ImgInfo.dst != nullptr &&  leveldata.path.size() > 0)
 	{
-		int image_width;
-		int image_height;
+		int image_width, image_height;
 		u8* lumadata = LoadPNG(leveldata.path.c_str(), image_width, image_height);
 		if (lumadata != nullptr)
 		{
-			if (image_width == ImgInfo.Width && image_height == ImgInfo.Height)
+			if (static_cast<u32>(image_width) == ImgInfo.Width
+				&& static_cast<u32>(image_height) == ImgInfo.Height)
 			{
-				for (size_t i = 0; i < image_height; i++)
+				for (int i = 0; i < image_height; i++)
 				{
-					size_t idx = i * image_width * 4;
-					for (size_t j = 0; j < image_width; j++)
+					int idx = i * image_width * 4;
+					for (int j = 0; j < image_width; j++)
 					{
 						int lr = lumadata[idx];
 						int lg = lumadata[idx + 1];
@@ -570,7 +570,9 @@ inline void BuildMaterial(const HiresTextureCacheItem& item, ImageLoaderParams &
 		int image_width;
 		int image_height;
 		bumpdata = LoadPNG(leveldata.path.c_str(), image_width, image_height);
-		if (bumpdata != nullptr && image_width == ImgInfo.Width && image_height == ImgInfo.Height)
+		if (bumpdata != nullptr 
+			&& static_cast<u32>(image_width) == ImgInfo.Width 
+			&& static_cast<u32>(image_height) == ImgInfo.Height)
 		{
 			bump = true;
 		}
@@ -583,7 +585,9 @@ inline void BuildMaterial(const HiresTextureCacheItem& item, ImageLoaderParams &
 		int image_width;
 		int image_height;
 		speculardata = LoadPNG(leveldata.path.c_str(), image_width, image_height);
-		if (speculardata != nullptr && image_width == ImgInfo.Width && image_height == ImgInfo.Height)
+		if (speculardata != nullptr
+			&& static_cast<u32>(image_width) == ImgInfo.Width
+			&& static_cast<u32>(image_height) == ImgInfo.Height)
 		{
 			specular = true;
 		}
