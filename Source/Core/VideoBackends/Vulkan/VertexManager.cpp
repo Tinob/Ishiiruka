@@ -22,9 +22,9 @@
 namespace Vulkan
 {
 // TODO: Clean up this mess
-constexpr size_t INITIAL_VERTEX_BUFFER_SIZE = VertexManager::MAXVBUFFERSIZE * 2;
-constexpr size_t MAX_VERTEX_BUFFER_SIZE = VertexManager::MAXVBUFFERSIZE * 16;
-constexpr size_t INITIAL_INDEX_BUFFER_SIZE = VertexManager::MAXIBUFFERSIZE * sizeof(u16) * 2;
+constexpr size_t INITIAL_VERTEX_BUFFER_SIZE = VertexManager::MAXVBUFFERSIZE;
+constexpr size_t MAX_VERTEX_BUFFER_SIZE = VertexManager::MAXVBUFFERSIZE * 2;
+constexpr size_t INITIAL_INDEX_BUFFER_SIZE = VertexManager::MAXIBUFFERSIZE * sizeof(u16);
 constexpr size_t MAX_INDEX_BUFFER_SIZE = VertexManager::MAXIBUFFERSIZE * sizeof(u16) * 16;
 
 VertexManager::VertexManager()
@@ -66,6 +66,35 @@ void VertexManager::PrepareDrawBuffers(u32 stride)
 	size_t vertex_data_size = IndexGenerator::GetNumVerts() * stride;
 	size_t index_data_size = IndexGenerator::GetIndexLen() * sizeof(u16);
 
+	// Attempt to allocate from buffers
+	bool has_vbuffer_allocation = m_vertex_stream_buffer->ReserveMemory(vertex_data_size, stride);
+	bool has_ibuffer_allocation = m_index_stream_buffer->ReserveMemory(index_data_size, sizeof(u16));
+	if (!has_vbuffer_allocation || !has_ibuffer_allocation)
+	{
+		// Flush any pending commands first, so that we can wait on the fences
+		WARN_LOG(VIDEO, "Executing command list while waiting for space in vertex/index buffer");
+		Util::ExecuteCurrentCommandsAndRestoreState(m_state_tracker, false);
+
+		// Attempt to allocate again, this may cause a fence wait
+		if (!has_vbuffer_allocation)
+			has_vbuffer_allocation = m_vertex_stream_buffer->ReserveMemory(vertex_data_size, stride);
+		if (!has_ibuffer_allocation)
+			has_ibuffer_allocation = m_index_stream_buffer->ReserveMemory(index_data_size, sizeof(u16));
+
+		// If we still failed, that means the allocation was too large and will never succeed, so panic
+		if (!has_vbuffer_allocation || !has_ibuffer_allocation)
+			PanicAlert("Failed to allocate space in streaming buffers for pending draw");
+	}
+
+	memcpy(m_vertex_stream_buffer->GetCurrentHostPointer(), m_cpu_vertex_buffer.data(), vertex_data_size);
+	memcpy(m_index_stream_buffer->GetCurrentHostPointer(), m_cpu_index_buffer.data(), index_data_size);
+
+	// Update base indices
+	m_current_draw_base_vertex =
+		static_cast<u32>(m_vertex_stream_buffer->GetCurrentOffset() / stride);
+	m_current_draw_base_index =
+		static_cast<u32>(m_index_stream_buffer->GetCurrentOffset() / sizeof(u16));
+
 	m_vertex_stream_buffer->CommitMemory(vertex_data_size);
 	m_index_stream_buffer->CommitMemory(index_data_size);
 
@@ -78,51 +107,14 @@ void VertexManager::PrepareDrawBuffers(u32 stride)
 
 void VertexManager::ResetBuffer(u32 stride)
 {
-	if (s_cull_all)
-	{
-		// Not drawing on the gpu, so store in a heap buffer instead
-		s_pCurBufferPointer = s_pBaseBufferPointer = m_cpu_vertex_buffer.data();
-		s_pEndBufferPointer = s_pBaseBufferPointer + m_cpu_vertex_buffer.size();
-		IndexGenerator::Start(m_cpu_index_buffer.data());
-		return;
-	}
-
-	// Attempt to allocate from buffers
-	bool has_vbuffer_allocation = m_vertex_stream_buffer->ReserveMemory(MAXVBUFFERSIZE, stride);
-	bool has_ibuffer_allocation = m_index_stream_buffer->ReserveMemory(MAXIBUFFERSIZE, sizeof(u16));
-	if (!has_vbuffer_allocation || !has_ibuffer_allocation)
-	{
-		// Flush any pending commands first, so that we can wait on the fences
-		WARN_LOG(VIDEO, "Executing command list while waiting for space in vertex/index buffer");
-		Util::ExecuteCurrentCommandsAndRestoreState(m_state_tracker, false);
-
-		// Attempt to allocate again, this may cause a fence wait
-		if (!has_vbuffer_allocation)
-			has_vbuffer_allocation = m_vertex_stream_buffer->ReserveMemory(MAXVBUFFERSIZE, stride);
-		if (!has_ibuffer_allocation)
-			has_ibuffer_allocation = m_index_stream_buffer->ReserveMemory(MAXIBUFFERSIZE, sizeof(u16));
-
-		// If we still failed, that means the allocation was too large and will never succeed, so panic
-		if (!has_vbuffer_allocation || !has_ibuffer_allocation)
-			PanicAlert("Failed to allocate space in streaming buffers for pending draw");
-	}
-
-	// Update pointers
-	s_pBaseBufferPointer = m_vertex_stream_buffer->GetHostPointer();
-	s_pEndBufferPointer = m_vertex_stream_buffer->GetCurrentHostPointer() + MAXVBUFFERSIZE;
-	s_pCurBufferPointer = m_vertex_stream_buffer->GetCurrentHostPointer();
-	IndexGenerator::Start(reinterpret_cast<u16*>(m_index_stream_buffer->GetCurrentHostPointer()));
-
-	// Update base indices
-	m_current_draw_base_vertex =
-		static_cast<u32>(m_vertex_stream_buffer->GetCurrentOffset() / stride);
-	m_current_draw_base_index =
-		static_cast<u32>(m_index_stream_buffer->GetCurrentOffset() / sizeof(u16));
+	s_pCurBufferPointer = s_pBaseBufferPointer = m_cpu_vertex_buffer.data();
+	s_pEndBufferPointer = s_pBaseBufferPointer + m_cpu_vertex_buffer.size();
+	IndexGenerator::Start(m_cpu_index_buffer.data());
 }
 
 u16* VertexManager::GetIndexBuffer()
 {
-	return reinterpret_cast<u16*>(m_index_stream_buffer->GetCurrentHostPointer());
+	return reinterpret_cast<u16*>(IndexGenerator::GetBasePointer());
 }
 
 void VertexManager::vFlush(bool use_dst_alpha)

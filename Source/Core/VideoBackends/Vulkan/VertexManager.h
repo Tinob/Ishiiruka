@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "Common/CommonTypes.h"
+#include "Common/MemoryUtil.h"
 #include "VideoCommon/VertexManagerBase.h"
 
 namespace Vulkan
@@ -34,8 +35,8 @@ private:
 
 	StateTracker* m_state_tracker = nullptr;
 
-	std::vector<u8> m_cpu_vertex_buffer;
-	std::vector<u16> m_cpu_index_buffer;
+	std::vector<u8, Common::aligned_allocator<u8, 256>> m_cpu_vertex_buffer;
+	std::vector<u16, Common::aligned_allocator<u16, 256>> m_cpu_index_buffer;
 
 	std::unique_ptr<StreamBuffer> m_vertex_stream_buffer;
 	std::unique_ptr<StreamBuffer> m_index_stream_buffer;
