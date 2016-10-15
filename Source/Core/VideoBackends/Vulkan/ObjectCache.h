@@ -40,21 +40,44 @@ struct PipelineInfo
 	RasterizationState rasterization_state;
 	DepthStencilState depth_stencil_state;
 	VkPrimitiveTopology primitive_topology;
+
+	bool operator==(const PipelineInfo& rhs) const 
+	{
+		return std::memcmp(this, &rhs, sizeof(rhs)) == 0;
+	}
+
+	bool operator!=(const PipelineInfo& rhs) const
+	{
+		return !operator==(rhs);
+	}
+
+	bool operator<(const PipelineInfo& rhs) const
+	{
+		return std::memcmp(this, &rhs, sizeof(rhs)) < 0;
+	}
+
+	bool operator>(const PipelineInfo& rhs) const
+	{
+		return std::memcmp(this, &rhs, sizeof(rhs)) > 0;
+	}
 };
 
 struct PipelineInfoHash
 {
-	std::size_t operator()(const PipelineInfo& key) const;
+	size_t operator()(const PipelineInfo& key) const
+	{
+		size_t h = -1;
+		h = h * 137 + (uintptr_t)key.vertex_format;
+		h = h * 137 + (uintptr_t)key.pipeline_layout;
+		h = h * 137 + (uintptr_t)key.vs;
+		h = h * 137 + (uintptr_t)key.gs;
+		h = h * 137 + (uintptr_t)key.ps;
+		h = h * 137 + (uintptr_t)key.render_pass;
+		h = h * 137 + (uintptr_t)(((uintptr_t)key.blend_state.bits << 32) |
+			key.rasterization_state.bits | (uintptr_t(key.depth_stencil_state.bits) << 12) | (((uintptr_t)key.primitive_topology) << 24));
+		return h;
+	}
 };
-
-bool operator==(const PipelineInfo& lhs, const PipelineInfo& rhs);
-bool operator!=(const PipelineInfo& lhs, const PipelineInfo& rhs);
-bool operator<(const PipelineInfo& lhs, const PipelineInfo& rhs);
-bool operator>(const PipelineInfo& lhs, const PipelineInfo& rhs);
-bool operator==(const SamplerState& lhs, const SamplerState& rhs);
-bool operator!=(const SamplerState& lhs, const SamplerState& rhs);
-bool operator>(const SamplerState& lhs, const SamplerState& rhs);
-bool operator<(const SamplerState& lhs, const SamplerState& rhs);
 
 class ObjectCache
 {

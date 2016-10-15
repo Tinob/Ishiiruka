@@ -134,6 +134,22 @@ union SamplerState {
 	BitField<31, 1, u32> enable_anisotropic_filtering;
 
 	u32 bits;
+	bool operator==(const SamplerState& rhs) const 
+	{
+		return bits == rhs.bits;
+	}
+	bool operator!=(const SamplerState& rhs) const
+	{
+		return bits != rhs.bits;
+	}
+	bool operator>(const SamplerState& rhs) const
+	{
+		return bits > rhs.bits;
+	}
+	bool operator<(const SamplerState& rhs) const
+	{
+		return bits < rhs.bits;
+	}
 };
 
 }  // namespace Vulkan

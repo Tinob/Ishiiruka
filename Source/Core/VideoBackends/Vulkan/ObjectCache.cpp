@@ -22,6 +22,16 @@
 
 namespace Vulkan
 {
+	// The is_trivially_copyable check fails on MSVC due to BitField.
+	// TODO: Can we work around this any way?
+#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 5 && !defined(_MSC_VER)
+	static_assert(std::has_trivial_copy_constructor<PipelineInfo>::value,
+		"PipelineInfo is trivially copyable");
+#elif !defined(_MSC_VER)
+	static_assert(std::is_trivially_copyable<PipelineInfo>::value,
+		"PipelineInfo is trivially copyable");
+#endif
+
 std::unique_ptr<ObjectCache> g_object_cache;
 
 ObjectCache::ObjectCache()
@@ -935,64 +945,9 @@ std::string ObjectCache::GetUtilityShaderHeader() const
 	ss << "#define EFB_LAYERS " << efb_layers << std::endl;
 
 	return ss.str();
-	}
-
-// Comparison operators for PipelineInfos
-// Since these all boil down to POD types, we can just memcmp the entire thing for speed
-// The is_trivially_copyable check fails on MSVC due to BitField.
-// TODO: Can we work around this any way?
-#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 5 && !defined(_MSC_VER)
-static_assert(std::has_trivial_copy_constructor<PipelineInfo>::value,
-	"PipelineInfo is trivially copyable");
-#elif !defined(_MSC_VER)
-static_assert(std::is_trivially_copyable<PipelineInfo>::value,
-	"PipelineInfo is trivially copyable");
-#endif
-
-std::size_t PipelineInfoHash::operator()(const PipelineInfo& key) const
-{
-	return static_cast<std::size_t>(XXH64(&key, sizeof(key), 0));
 }
 
-bool operator==(const PipelineInfo& lhs, const PipelineInfo& rhs)
-{
-	return std::memcmp(&lhs, &rhs, sizeof(lhs)) == 0;
-}
 
-bool operator!=(const PipelineInfo& lhs, const PipelineInfo& rhs)
-{
-	return !operator==(lhs, rhs);
-}
-
-bool operator<(const PipelineInfo& lhs, const PipelineInfo& rhs)
-{
-	return std::memcmp(&lhs, &rhs, sizeof(lhs)) < 0;
-}
-
-bool operator>(const PipelineInfo& lhs, const PipelineInfo& rhs)
-{
-	return std::memcmp(&lhs, &rhs, sizeof(lhs)) > 0;
-}
-
-bool operator==(const SamplerState& lhs, const SamplerState& rhs)
-{
-	return lhs.bits == rhs.bits;
-}
-
-bool operator!=(const SamplerState& lhs, const SamplerState& rhs)
-{
-	return !operator==(lhs, rhs);
-}
-
-bool operator>(const SamplerState& lhs, const SamplerState& rhs)
-{
-	return lhs.bits > rhs.bits;
-}
-
-bool operator<(const SamplerState& lhs, const SamplerState& rhs)
-{
-	return lhs.bits < rhs.bits;
-}
 
 bool ObjectCache::CompileSharedShaders()
 {
