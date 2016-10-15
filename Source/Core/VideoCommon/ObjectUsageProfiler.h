@@ -39,6 +39,7 @@
 #include <vector>
 
 #include "Common/FileUtil.h"
+#include "Common/StringUtil.h"
 
 typedef uint64_t pKey_t;
 

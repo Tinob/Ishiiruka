@@ -8,8 +8,9 @@
 #include "Common/StringUtil.h"
 #include "Common/Logging/LogManager.h"
 #include "Core/IPC_HLE/WII_IPC_HLE_WiiSpeak.h"
-
+#ifdef _MSC_VER
 #pragma optimize("",off)
+#endif
 CWII_IPC_HLE_Device_usb_oh0::CWII_IPC_HLE_Device_usb_oh0(u32 DeviceID, const std::string& DeviceName)
 	: IWII_IPC_HLE_Device(DeviceID, DeviceName)
 {
@@ -843,4 +844,6 @@ void CWII_IPC_HLE_Device_usb_oh0_46d_a03::DoState(PointerWrap &p)
 {
 
 }
+#ifdef _MSC_VER
 #pragma optimize("",on)
+#endif

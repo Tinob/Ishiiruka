@@ -1149,10 +1149,10 @@ bool PostProcessingShader::ResizeOutputTextures(const TargetSize& new_size)
 	for (size_t i = 0; i < m_prev_frame_texture.size(); i++)
 	{
 		config.pcformat = PC_TexFormat::PC_TEX_FMT_RGBA32;
-		if (i < frameoutput.color_count)
+		if (i < static_cast<size_t>(frameoutput.color_count))
 			m_prev_frame_texture[i].color_frame.reset(g_texture_cache->CreateTexture(config));
 		config.pcformat = PC_TexFormat::PC_TEX_FMT_R32;
-		if (i < frameoutput.depth_count)
+		if (i < static_cast<size_t>(frameoutput.depth_count))
 			m_prev_frame_texture[i].depth_frame.reset(g_texture_cache->CreateTexture(config));
 	}
 	config.pcformat = PC_TexFormat::PC_TEX_FMT_RGBA32;

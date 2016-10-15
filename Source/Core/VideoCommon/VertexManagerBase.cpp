@@ -69,8 +69,9 @@ inline u32 GetRemainingSize()
 	return (u32)(VertexManagerBase::s_pEndBufferPointer - VertexManagerBase::s_pCurBufferPointer);
 }
 
-inline u32 GetRemainingIndices(int primitive)
+inline u32 GetRemainingIndices(int prim)
 {
+	GxDrawMode primitive = static_cast<GxDrawMode>(prim);
 	u32 index_len = VertexManagerBase::MAXIBUFFERSIZE - IndexGenerator::GetIndexLen();
 	if (primitive == GX_DRAW_TRIANGLE_STRIP || primitive == GX_DRAW_TRIANGLE_FAN)
 	{
