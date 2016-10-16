@@ -681,7 +681,7 @@ void SampleTextureRAW(ShaderCode& out, const char *texcoords, const char *texswa
 	}
 	else if (ApiType == API_VULKAN)
 	{
-		out.Write("wuround(255.0 * texture(samp%d, float3(%s.xy * " I_TEXDIMS "[%d].xy, %s))).%s;\n",
+		out.Write("texture(samp%d, float3(%s.xy * " I_TEXDIMS "[%d].xy, %s)).%s;\n",
 			8 + texmap, texcoords, texmap, "0.0", texswap);
 	}
 	else
@@ -1344,10 +1344,9 @@ inline void WriteFetchStageTexture(ShaderCode& out, const pixel_shader_uid_data&
 			out.Write("mapcoord = stagecoord;");
 			out.Write("float4 nrmap = ");
 			SampleTextureRAW<ApiType>(out, "(stagecoord)", "agbr", "0.0", texmap);
-			out.Write("nrmap.xy = nrmap.xy * 255.0/127.0 - 128.0/127.0;\n");
+			out.Write("nrmap.xy = nrmap.xy * (255.0/127.0) - (128.0/127.0);\n");			
 			// Extact z value from x and y
-			out.Write("nrmap.z = sqrt(1.0 - dot(nrmap.xy, nrmap.xy));\n");
-			out.Write("nrmap.xyz = normalize(nrmap.xyz);\n");
+			out.Write("nrmap.z = sqrt(1.0 - dot(nrmap.xy, nrmap.xy));\n");			
 			// Combine Normals
 			out.Write("normalmap.xyz = normalize(float3(nrmap.xy + normalmap.xy, nrmap.z * normalmap.z));\n");
 			// Combine Specular intensity
@@ -1670,6 +1669,17 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
 		}
 	}
 
+	out.Write("wu GetDitherValue(wu2 ditherindex)\n{\n");
+	if (ApiType & API_D3D9)
+	{
+		out.Write("\tfloat bayer[16] = {-7.0,1.0,-5.0,3.0,5.0,-3.0,7.0,-1.0,-4.0,4.0,-6.0,2.0,8.0,0.0,6.0,-2.0};\n");
+	}
+	else
+	{
+		out.Write("\tint bayer[16] = {-7,1,-5,3,5,-3,7,-1,-4,4,-6,2,8,0,6,-2};\n");
+	}
+	out.Write("\treturn bayer[ditherindex.y * 4 + ditherindex.x];\n}\n");
+
 	if (ApiType == API_OPENGL || ApiType == API_VULKAN)
 	{
 		if (uid_data.bounding_box)
@@ -1861,7 +1871,14 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
 			PanicAlert("PixelShader generator - buffer too small, canary has been eaten!");
 		return;
 	}
-
+	if (ApiType & API_D3D9)
+	{
+		out.Write("\tfloat2 ditherindex = round(rawpos.xy) % 4;\n");		
+	}
+	else
+	{
+		out.Write("\tint2 ditherindex = int2(rawpos.xy) & 3;\n");
+	}
 	out.Write("wu4 c0 = " I_COLORS "[1], c1 = " I_COLORS "[2], c2 = " I_COLORS "[3], prev = " I_COLORS "[0];\n"
 		"wu4 tex_ta[%i], tex_t = wu4(0,0,0,0), ras_t = wu4(0,0,0,0), konst_t = wu4(0,0,0,0);\n"
 		"wu3 c16 = wu3(1,256,0), c24 = wu3(1,256,256*256);\n"
@@ -2173,17 +2190,7 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
 
 	if (uid_data.dither && uid_data.rgba6_format)
 	{
-		if (ApiType & API_D3D9)
-		{
-			out.Write("\tfloat2 dither = round(rawpos.xy) % 4;\n");
-			out.Write("\tfloat bayer[16] = {-7.0,1.0,-5.0,3.0,5.0,-3.0,7.0,-1.0,-4.0,4.0,-6.0,2.0,8.0,0.0,6.0,-2.0};\n");
-		}
-		else
-		{
-			out.Write("\tint2 dither = int2(rawpos.xy) & 3;\n");
-			out.Write("\tint bayer[16] = {-7,1,-5,3,5,-3,7,-1,-4,4,-6,2,8,0,6,-2};\n");
-		}
-		out.Write("\tprev.rgb = prev.rgb + bayer[dither.y * 4 + dither.x];\n");
+		out.Write("\tprev.rgb = prev.rgb + GetDitherValue(ditherindex);\n");
 	}
 
 	if (uid_data.rgba6_format)
