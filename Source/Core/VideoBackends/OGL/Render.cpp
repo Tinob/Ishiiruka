@@ -1324,7 +1324,7 @@ void Renderer::SetBlendMode(bool forceUpdate)
 
 // This function has the final picture. We adjust the aspect ratio here.
 void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight,
-	const EFBRectangle& rc, float Gamma)
+	const EFBRectangle& rc, u64 ticks, float Gamma)
 {
 	if (g_ogl_config.bSupportsDebug)
 	{
@@ -1460,7 +1460,7 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight,
 		glReadPixels(flipped_trc.left, flipped_trc.bottom, flipped_trc.GetWidth(),
 			flipped_trc.GetHeight(), GL_RGBA, GL_UNSIGNED_BYTE, image.data());
 		DumpFrameData(image.data(), flipped_trc.GetWidth(), flipped_trc.GetHeight(),
-			flipped_trc.GetWidth() * 4, true);
+			flipped_trc.GetWidth() * 4, ticks, true);
 		FinishFrameData();
 	}
 	// Finish up the current frame, print some stats

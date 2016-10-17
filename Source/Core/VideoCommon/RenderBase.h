@@ -40,6 +40,7 @@ struct EfbPokeData
 
 // TODO: Move these out of here.
 extern int frameCount;
+extern int OSDChoice;
 
 // Renderer really isn't a very good name for this class - it's more like "Misc".
 // The long term goal is to get rid of this class and replace it with others that make
@@ -166,8 +167,8 @@ public:
 	static void FlipImageDataFromBGRA(u8* data, int w, int h);
 	static void ImageDataFromBGRA(u8* data, int w, int h);
 	// Finish up the current frame, print some stats
-	static void Swap(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, const EFBRectangle& rc, float Gamma = 1.0f);
-	virtual void SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, const EFBRectangle& rc, float Gamma = 1.0f) = 0;
+	static void Swap(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, const EFBRectangle& rc, u64 ticks, float Gamma = 1.0f);
+	virtual void SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, const EFBRectangle& rc, u64 ticks, float Gamma = 1.0f) = 0;
 
 	static PEControl::PixelFormat GetPrevPixelFormat()
 	{
@@ -199,7 +200,7 @@ protected:
 	static void RecordVideoMemory();
 
 	bool IsFrameDumping();
-	void DumpFrameData(const u8* data, int w, int h, int stride, bool swap_upside_down = false, bool bgra = false);
+	void DumpFrameData(const u8* data, int w, int h, int stride, u64 ticks, bool swap_upside_down = false, bool bgra = false);
 	void FinishFrameData();
 
 	static volatile bool s_bScreenshot;

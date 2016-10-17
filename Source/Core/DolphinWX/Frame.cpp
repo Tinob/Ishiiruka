@@ -334,19 +334,16 @@ bool CFrame::InitControllers()
 	if (!g_controller_interface.IsInit())
 	{
 #if defined(HAVE_X11) && HAVE_X11
-		Window win = X11Utils::XWindowFromHandle(GetHandle());
-		Pad::Initialize(reinterpret_cast<void*>(win));
-		Keyboard::Initialize(reinterpret_cast<void*>(win));
-		Wiimote::Initialize(reinterpret_cast<void*>(win),
-			Wiimote::InitializeMode::DO_NOT_WAIT_FOR_WIIMOTES);
-		HotkeyManagerEmu::Initialize(reinterpret_cast<void*>(win));
+		void* win = reinterpret_cast<void*>(X11Utils::XWindowFromHandle(GetHandle()));
 #else
-		Pad::Initialize(reinterpret_cast<void*>(GetHandle()));
-		Keyboard::Initialize(reinterpret_cast<void*>(GetHandle()));
-		Wiimote::Initialize(reinterpret_cast<void*>(GetHandle()),
-			Wiimote::InitializeMode::DO_NOT_WAIT_FOR_WIIMOTES);
-		HotkeyManagerEmu::Initialize(reinterpret_cast<void*>(GetHandle()));
+		void* win = reinterpret_cast<void*>(GetHandle());
 #endif
+		g_controller_interface.Initialize(win);
+		Pad::Initialize();
+		Keyboard::Initialize();
+		Wiimote::Initialize(Wiimote::InitializeMode::DO_NOT_WAIT_FOR_WIIMOTES);
+		HotkeyManagerEmu::Initialize();
+
 		return true;
 	}
 	return false;
@@ -402,10 +399,10 @@ CFrame::CFrame(wxFrame* parent, wxWindowID id, const wxString& title, wxRect geo
 		GetStatusBar()->Hide();
 
 	// Give it a menu bar
-	wxMenuBar* menubar_active = CreateMenu();
+	wxMenuBar* menubar_active = CreateMenuBar();
 	SetMenuBar(menubar_active);
 	// Create a menubar to service requests while the real menubar is hidden from the screen
-	m_menubar_shadow = CreateMenu();
+	m_menubar_shadow = CreateMenuBar();
 
 	// ---------------
 	// Main panel
@@ -548,7 +545,7 @@ CFrame::~CFrame()
 	Keyboard::Shutdown();
 	Pad::Shutdown();
 	HotkeyManagerEmu::Shutdown();
-
+	g_controller_interface.Shutdown();
 	drives.clear();
 
 #if defined(HAVE_XRANDR) && HAVE_XRANDR
@@ -616,8 +613,7 @@ void CFrame::OnClose(wxCloseEvent& event)
 			event.Veto();
 		}
 		// Tell OnStopped to resubmit the Close event
-		if (m_confirmStop)
-			m_bClosing = true;
+		m_bClosing = true;
 		return;
 	}
 
@@ -1307,7 +1303,7 @@ void CFrame::DoFullscreen(bool enable_fullscreen)
 			// Recreate the menubar if needed.
 			if (wxFrame::GetMenuBar() == nullptr)
 			{
-				SetMenuBar(CreateMenu());
+				SetMenuBar(CreateMenuBar());
 			}
 
 			// Show statusbar if enabled
@@ -1445,16 +1441,16 @@ void CFrame::ParseHotkeys()
 
 	if (IsHotkey(HK_INCREASE_IR))
 	{
+		OSDChoice = 1;
 		++g_Config.iEFBScale;
-		OSDPrintInternalResolution();
 	}
 	if (IsHotkey(HK_DECREASE_IR))
 	{
+		OSDChoice = 1;
 		if (--g_Config.iEFBScale < SCALE_AUTO)
 		{
 			g_Config.iEFBScale = SCALE_AUTO;
-		}
-		OSDPrintInternalResolution();
+		}		
 	}
 	if (IsHotkey(HK_TOGGLE_CROP))
 	{
@@ -1462,24 +1458,25 @@ void CFrame::ParseHotkeys()
 	}
 	if (IsHotkey(HK_TOGGLE_AR))
 	{
+		OSDChoice = 2;
 		// Toggle aspect ratio
 		g_Config.iAspectRatio = (g_Config.iAspectRatio + 1) & 3;
-		OSDPrintAspectRatio();
 	}
 	if (IsHotkey(HK_TOGGLE_EFBCOPIES))
 	{
+		OSDChoice = 3;
 		// Toggle EFB copies between EFB2RAM and EFB2Texture
 		g_Config.bSkipEFBCopyToRam = !g_Config.bSkipEFBCopyToRam;
-		OSDPrintEFB();
 	}
 	if (IsHotkey(HK_TOGGLE_FOG))
 	{
+		OSDChoice = 4;
 		g_Config.bDisableFog = !g_Config.bDisableFog;
-		OSDPrintFog();
 	}
 	Core::SetIsThrottlerTempDisabled(IsHotkey(HK_TOGGLE_THROTTLE, true));
 	if (IsHotkey(HK_DECREASE_EMULATION_SPEED))
 	{
+		OSDChoice = 5;
 		if (SConfig::GetInstance().m_EmulationSpeed <= 0.0f)
 			SConfig::GetInstance().m_EmulationSpeed = 1.0f;
 		else if (SConfig::GetInstance().m_EmulationSpeed >= 0.2f)
@@ -1490,19 +1487,16 @@ void CFrame::ParseHotkeys()
 		if (SConfig::GetInstance().m_EmulationSpeed >= 0.95f &&
 			SConfig::GetInstance().m_EmulationSpeed <= 1.05f)
 			SConfig::GetInstance().m_EmulationSpeed = 1.0f;
-
-		OSDPrintEmulationSpeed();
 	}
 	if (IsHotkey(HK_INCREASE_EMULATION_SPEED))
 	{
+		OSDChoice = 5;
 		if (SConfig::GetInstance().m_EmulationSpeed > 0.0f)
 			SConfig::GetInstance().m_EmulationSpeed += 0.1f;
 
 		if (SConfig::GetInstance().m_EmulationSpeed >= 0.95f &&
 			SConfig::GetInstance().m_EmulationSpeed <= 1.05f)
 			SConfig::GetInstance().m_EmulationSpeed = 1.0f;
-
-		OSDPrintEmulationSpeed();
 	}
 	if (IsHotkey(HK_SAVE_STATE_SLOT_SELECTED))
 	{
@@ -1702,85 +1696,4 @@ void CFrame::HandleSignal(wxTimerEvent& event)
 	if (!s_shutdown_signal_received.TestAndClear())
 		return;
 	Close();
-}
-
-void CFrame::OSDPrintInternalResolution()
-{
-	std::string text;
-	switch (g_Config.iEFBScale)
-	{
-	case SCALE_AUTO:
-		text = "Auto (fractional)";
-		break;
-	case SCALE_AUTO_INTEGRAL:
-		text = "Auto (integral)";
-		break;
-	case SCALE_1X:
-		text = "Native";
-		break;
-	case SCALE_1_5X:
-		text = "1.5x";
-		break;
-	case SCALE_2X:
-		text = "2x";
-		break;
-	case SCALE_2_5X:
-		text = "2.5x";
-		break;
-	default:
-		text = StringFromFormat("%dx", g_Config.iEFBScale - 3);
-		break;
-	}
-
-	OSD::AddMessage("Internal Resolution: " + text);
-}
-
-void CFrame::OSDPrintAspectRatio()
-{
-	std::string text;
-	switch (g_Config.iAspectRatio)
-	{
-	case ASPECT_AUTO:
-		text = "Auto";
-		break;
-	case ASPECT_STRETCH:
-		text = "Stretch";
-		break;
-	case ASPECT_ANALOG:
-	case ASPECT_4_3:
-		text = "Force 4:3";
-		break;
-	case ASPECT_ANALOG_WIDE:
-	case ASPECT_16_9:
-		text = "Force 16:9";
-		break;
-	case ASPECT_16_10:
-		text = "Force 16:10";
-		break;
-	}
-
-	OSD::AddMessage("Aspect Ratio: " + text + (g_Config.bCrop ? " (crop)" : ""));
-}
-
-void CFrame::OSDPrintEFB()
-{
-	OSD::AddMessage(std::string("Copy EFB: ") +
-		(g_Config.bSkipEFBCopyToRam ? "to Texture" : "to RAM"));
-}
-
-void CFrame::OSDPrintFog()
-{
-	OSD::AddMessage(std::string("Fog: ") + (g_Config.bDisableFog ? "Disabled" : "Enabled"));
-}
-
-void CFrame::OSDPrintEmulationSpeed()
-{
-	std::string text = "Speed Limit: ";
-
-	if (SConfig::GetInstance().m_EmulationSpeed <= 0)
-		text += "Unlimited";
-	else
-		text += StringFromFormat("%li%%", std::lround(SConfig::GetInstance().m_EmulationSpeed * 100.f));
-
-	OSD::AddMessage(text);
 }

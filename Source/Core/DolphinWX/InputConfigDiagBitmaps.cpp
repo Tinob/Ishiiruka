@@ -466,7 +466,7 @@ static void DrawBorder(wxGraphicsContext* gc, double scale)
 {
 	double pen_width = std::round(scale);  // Pen width = 1px * scale
 
-	// Use the window caption bar color as a safe accent color.
+																				 // Use the window caption bar color as a safe accent color.
 	wxPen border_pen(wxSystemSettings::GetColour(wxSYS_COLOUR_ACTIVECAPTION),
 		static_cast<int>(pen_width));
 	border_pen.SetCap(wxCAP_PROJECTING);
@@ -500,7 +500,7 @@ void InputConfigDialog::UpdateBitmaps(wxTimerEvent& WXUNUSED(event))
 
 		wxBitmap bitmap(g->static_bitmap->GetBitmap());
 		// NOTE: Selecting the bitmap inherits the bitmap's ScaleFactor onto the DC as well.
-		dc.SelectObject(bitmap);
+		dc.SelectObjectAsSource(bitmap);
 		dc.SetBackground(*wxWHITE_BRUSH);
 		dc.Clear();
 

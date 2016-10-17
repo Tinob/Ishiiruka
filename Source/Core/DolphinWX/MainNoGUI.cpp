@@ -23,6 +23,8 @@
 #include "Core/Core.h"
 #include "Core/HW/Wiimote.h"
 #include "Core/Host.h"
+#include "Core/IPC_HLE/WII_IPC_HLE.h"
+#include "Core/IPC_HLE/WII_IPC_HLE_Device_stm.h"
 #include "Core/IPC_HLE/WII_IPC_HLE_Device_usb_bt_emu.h"
 #include "Core/IPC_HLE/WII_IPC_HLE_WiiMote.h"
 #include "Core/State.h"
@@ -232,7 +234,9 @@ class PlatformX11 : public Platform
 		{
 			if (s_shutdown_requested.TestAndClear())
 			{
-				if (!s_tried_graceful_shutdown.IsSet() && SConfig::GetInstance().bWii)
+				const auto& stm = WII_IPC_HLE_Interface::GetDeviceByName("/dev/stm/eventhook");
+				if (!s_tried_graceful_shutdown.IsSet() && stm &&
+					std::static_pointer_cast<CWII_IPC_HLE_Device_stm_eventhook>(stm)->HasHookInstalled())
 				{
 					ProcessorInterface::PowerButton_Tap();
 					s_tried_graceful_shutdown.Set();
@@ -354,10 +358,10 @@ static Platform* GetPlatform()
 int main(int argc, char* argv[])
 {
 	int ch, help = 0;
-	struct option longopts[] = { {"exec", no_argument, nullptr, 'e'},
-															{"help", no_argument, nullptr, 'h'},
-															{"version", no_argument, nullptr, 'v'},
-															{nullptr, 0, nullptr, 0} };
+	struct option longopts[] = { { "exec", no_argument, nullptr, 'e' },
+	{ "help", no_argument, nullptr, 'h' },
+	{ "version", no_argument, nullptr, 'v' },
+	{ nullptr, 0, nullptr, 0 } };
 
 	while ((ch = getopt_long(argc, argv, "eh?v", longopts, 0)) != -1)
 	{

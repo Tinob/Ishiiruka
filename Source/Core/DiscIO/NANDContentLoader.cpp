@@ -96,6 +96,12 @@ std::string CSharedContent::AddSharedContent(const u8* hash)
 	return filename;
 }
 
+CNANDContentDataFile::CNANDContentDataFile(const std::string& filename) : m_filename{ filename }
+{
+}
+
+CNANDContentDataFile::~CNANDContentDataFile() = default;
+
 void CNANDContentDataFile::EnsureOpen()
 {
 	if (!m_file)
@@ -298,7 +304,7 @@ std::vector<u8> CNANDContentLoader::AESDecode(const u8* key, u8* iv, const u8* s
 std::vector<u8> CNANDContentLoader::GetKeyFromTicket(const std::vector<u8>& ticket)
 {
 	const u8 common_key[16] = { 0xeb, 0xe4, 0x2a, 0x22, 0x5e, 0x85, 0x93, 0xe4,
-														 0x48, 0xd9, 0xc5, 0x45, 0x73, 0x81, 0xaa, 0xf7 };
+		0x48, 0xd9, 0xc5, 0x45, 0x73, 0x81, 0xaa, 0xf7 };
 	u8 iv[16] = {};
 
 	std::copy(&ticket[0x01DC], &ticket[0x01DC + 8], iv);

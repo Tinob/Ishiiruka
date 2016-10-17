@@ -26,7 +26,7 @@ private:
 	void RefreshGUI();
 
 	void PopulateBackendChoiceBox();
-	static bool SupportsVolumeChanges(const std::string&);
+	void ToggleBackendSpecificControls(const std::string& backend);
 
 	void OnDSPEngineRadioBoxChanged(wxCommandEvent&);
 	void OnDPL2DecoderCheckBoxChanged(wxCommandEvent&);
@@ -47,4 +47,5 @@ private:
 	wxSpinCtrl* m_audio_latency_spinctrl;
 	wxCheckBox* m_time_stretching_checkbox;
 	wxCheckBox* m_RS_Hack_checkbox;
+	wxStaticText* m_audio_latency_label;
 };

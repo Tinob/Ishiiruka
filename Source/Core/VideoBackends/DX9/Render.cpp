@@ -452,7 +452,7 @@ void Renderer::ReinterpretPixelData(unsigned int convtype)
 }
 
 // This function has the final picture. We adjust the aspect ratio here.
-void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, const EFBRectangle& rc, float Gamma)
+void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, const EFBRectangle& rc, u64 ticks, float Gamma)
 {
 	if ((!XFBWrited && !g_ActiveConfig.RealXFBEnabled()) || !fbWidth || !fbHeight)
 	{
@@ -654,7 +654,7 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 		if (SUCCEEDED(ScreenShootMEMSurface->LockRect(&rect, GetTargetRectangle().AsRECT(), D3DLOCK_NO_DIRTY_UPDATE | D3DLOCK_NOSYSLOCK | D3DLOCK_READONLY)))
 		{
 			DumpFrameData(reinterpret_cast<const u8*>(rect.pBits), source_width, source_height,
-				rect.Pitch, false, true);
+				rect.Pitch, ticks, false, true);
 			FinishFrameData();
 
 			ScreenShootMEMSurface->UnlockRect();

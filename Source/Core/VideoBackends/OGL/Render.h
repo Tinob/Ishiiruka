@@ -99,7 +99,7 @@ public:
 
 	TargetRectangle ConvertEFBRectangle(const EFBRectangle& rc) override;
 
-	void SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, const EFBRectangle& rc,
+	void SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, const EFBRectangle& rc, u64 ticks,
 		float Gamma) override;
 
 	void ClearScreen(const EFBRectangle& rc, bool colorEnable, bool alphaEnable, bool zEnable,

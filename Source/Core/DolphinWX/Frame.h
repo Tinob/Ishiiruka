@@ -199,7 +199,18 @@ private:
 
 	void PopulateToolbar(wxToolBar* toolBar);
 	void RecreateToolbar();
-	wxMenuBar* CreateMenu();
+	wxMenuBar* CreateMenuBar();
+	wxMenu* CreateFileMenu();
+	wxMenu* CreateEmulationMenu();
+	wxMenu* CreateMovieMenu();
+	wxMenu* CreateOptionsMenu();
+	wxMenu* CreateToolsMenu();
+	wxMenu* CreateViewMenu();
+	wxMenu* CreateJITMenu();
+	wxMenu* CreateDebugMenu();
+	wxMenu* CreateSymbolsMenu();
+	wxMenu* CreateProfilerMenu();
+	wxMenu* CreateHelpMenu();
 
 	// Utility
 	wxString GetMenuLabel(int Id);
@@ -335,13 +346,6 @@ private:
 	void HandleSignal(wxTimerEvent&);
 
 	bool InitControllers();
-
-	// OSD
-	void OSDPrintInternalResolution();
-	void OSDPrintAspectRatio();
-	void OSDPrintEFB();
-	void OSDPrintFog();
-	void OSDPrintEmulationSpeed();
 
 	// Event table
 	DECLARE_EVENT_TABLE();

@@ -28,12 +28,12 @@
 
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
+#include "Core/CoreTiming.h"
 #include "Core/Host.h"
 #include "Core/Movie.h"
 #include "Core/FifoPlayer/FifoRecorder.h"
 #include "Core/HW/VideoInterface.h"
 
-#include "OnScreenDisplay.h"
 #include "VideoCommon/AVIDump.h"
 #include "VideoCommon/BPMemory.h"
 #include "VideoCommon/CommandProcessor.h"
@@ -43,6 +43,7 @@
 #include "VideoCommon/FramebufferManagerBase.h"
 #include "VideoCommon/GeometryShaderManager.h"
 #include "VideoCommon/ImageWrite.h"
+#include "VideoCommon/OnScreenDisplay.h"
 #include "VideoCommon/PixelShaderManager.h"
 #include "VideoCommon/PostProcessing.h"
 #include "VideoCommon/RenderBase.h"
@@ -54,6 +55,8 @@
 
 // TODO: Move these out of here.
 int frameCount;
+int OSDChoice;
+static int OSDTime;
 
 std::unique_ptr<Renderer> g_renderer;
 
@@ -108,6 +111,8 @@ Renderer::Renderer()
 {
 	UpdateActiveConfig();
 	TextureCacheBase::OnConfigChanged(g_ActiveConfig);
+	OSDChoice = 0;
+	OSDTime = 0;
 }
 
 Renderer::~Renderer()
@@ -141,8 +146,10 @@ void Renderer::RenderToXFB(u32 xfbAddr, const EFBRectangle& sourceRc, u32 fbStri
 	}
 	else
 	{
+		// The timing is not predictable here. So try to use the XFB path to dump frames.
+		u64 ticks = CoreTiming::GetTicks();
 		// below div two to convert from bytes to pixels - it expects width, not stride
-		Swap(xfbAddr, fbStride / 2, fbStride / 2, fbHeight, sourceRc, Gamma);
+		Swap(xfbAddr, fbStride / 2, fbStride / 2, fbHeight, sourceRc, ticks, Gamma);
 	}
 }
 
@@ -307,46 +314,146 @@ void Renderer::SetScreenshot(const std::string& filename)
 }
 
 
+// Create On-Screen-Messages
 void Renderer::DrawDebugText()
 {
-	auto draw_text = [](OSD::MessageType type, const std::string& message) {
-		OSD::AddTypedMessage(type, message, OSD::Duration::SHORT, OSD::Color::CYAN);
-	};
+	std::string final_yellow, final_cyan;
 
-	if (g_ActiveConfig.bShowFPS)
+	if (g_ActiveConfig.bShowFPS || SConfig::GetInstance().m_ShowFrameCount)
 	{
-		draw_text(OSD::MessageType::FPS,
-			StringFromFormat("FPS: %u", g_renderer->m_fps_counter.GetFPS()));
-	}
+		if (g_ActiveConfig.bShowFPS)
+			final_cyan += StringFromFormat("FPS: %u", g_renderer->m_fps_counter.GetFPS());
 
-	if (SConfig::GetInstance().m_ShowFrameCount)
-	{
-		draw_text(OSD::MessageType::FrameCount,
-			StringFromFormat("Frame: %" PRIu64, Movie::GetCurrentFrame()));
-
-		if (Movie::IsPlayingInput())
+		if (g_ActiveConfig.bShowFPS && SConfig::GetInstance().m_ShowFrameCount)
+			final_cyan += " - ";
+		if (SConfig::GetInstance().m_ShowFrameCount)
 		{
-			draw_text(OSD::MessageType::MovieInputCount,
-				StringFromFormat("Input: %" PRIu64 " / %" PRIu64, Movie::GetCurrentInputCount(),
-					Movie::GetTotalInputCount()));
+			final_cyan += StringFromFormat("Frame: %llu", (unsigned long long)Movie::GetCurrentFrame());
+			if (Movie::IsPlayingInput())
+				final_cyan += StringFromFormat("\nInput: %llu / %llu",
+				(unsigned long long)Movie::GetCurrentInputCount(),
+					(unsigned long long)Movie::GetTotalInputCount());
 		}
+
+		final_cyan += "\n";
+		final_yellow += "\n";
 	}
 
 	if (SConfig::GetInstance().m_ShowLag)
 	{
-		draw_text(OSD::MessageType::MovieLag,
-			StringFromFormat("Lag: %" PRIu64, Movie::GetCurrentLagCount()));
+		final_cyan += StringFromFormat("Lag: %" PRIu64 "\n", Movie::GetCurrentLagCount());
+		final_yellow += "\n";
 	}
 
 	if (SConfig::GetInstance().m_ShowInputDisplay)
 	{
-		draw_text(OSD::MessageType::MovieInput, Movie::GetInputDisplay());
+		final_cyan += Movie::GetInputDisplay();
+		final_yellow += "\n";
 	}
 
 	if (SConfig::GetInstance().m_ShowRTC)
 	{
-		draw_text(OSD::MessageType::RTC, Movie::GetRTCDisplay());
+		final_cyan += Movie::GetRTCDisplay();
+		final_yellow += "\n";
 	}
+
+	// OSD Menu messages
+	if (OSDChoice > 0)
+	{
+		OSDTime = Common::Timer::GetTimeMs() + 3000;
+		OSDChoice = -OSDChoice;
+	}
+
+	if ((u32)OSDTime > Common::Timer::GetTimeMs())
+	{
+		std::string res_text;
+		switch (g_ActiveConfig.iEFBScale)
+		{
+		case SCALE_AUTO:
+			res_text = "Auto (fractional)";
+			break;
+		case SCALE_AUTO_INTEGRAL:
+			res_text = "Auto (integral)";
+			break;
+		case SCALE_1X:
+			res_text = "Native";
+			break;
+		case SCALE_1_5X:
+			res_text = "1.5x";
+			break;
+		case SCALE_2X:
+			res_text = "2x";
+			break;
+		case SCALE_2_5X:
+			res_text = "2.5x";
+			break;
+		default:
+			res_text = StringFromFormat("%dx", g_ActiveConfig.iEFBScale - 3);
+			break;
+		}
+		const char* ar_text = "";
+		switch (g_ActiveConfig.iAspectRatio)
+		{
+		case ASPECT_AUTO:
+			ar_text = "Auto";
+			break;
+		case ASPECT_STRETCH:
+			ar_text = "Stretch";
+			break;
+		case ASPECT_ANALOG:
+			ar_text = "Force 4:3";
+			break;
+		case ASPECT_ANALOG_WIDE:
+			ar_text = "Force 16:9";
+		}
+
+		const char* const efbcopy_text = g_ActiveConfig.bSkipEFBCopyToRam ? "to Texture" : "to RAM";
+
+		// The rows
+		const std::string lines[] = {
+			std::string("Internal Resolution: ") + res_text,
+			std::string("Aspect Ratio: ") + ar_text + (g_ActiveConfig.bCrop ? " (crop)" : ""),
+			std::string("Copy EFB: ") + efbcopy_text,
+			std::string("Fog: ") + (g_ActiveConfig.bDisableFog ? "Disabled" : "Enabled"),
+			SConfig::GetInstance().m_EmulationSpeed <= 0 ?
+			"Speed Limit: Unlimited" :
+			StringFromFormat("Speed Limit: %li%%",
+				std::lround(SConfig::GetInstance().m_EmulationSpeed * 100.f)),
+		};
+
+		enum
+		{
+			lines_count = sizeof(lines) / sizeof(*lines)
+		};
+
+		// The latest changed setting in yellow
+		for (int i = 0; i != lines_count; ++i)
+		{
+			if (OSDChoice == -i - 1)
+				final_yellow += lines[i];
+			final_yellow += '\n';
+		}
+
+		// The other settings in cyan
+		for (int i = 0; i != lines_count; ++i)
+		{
+			if (OSDChoice != -i - 1)
+				final_cyan += lines[i];
+			final_cyan += '\n';
+		}
+	}
+
+	final_cyan += Common::Profiler::ToString();
+
+	if (g_ActiveConfig.bOverlayStats)
+		final_cyan += Statistics::ToString();
+
+	if (g_ActiveConfig.bOverlayProjStats)
+		final_cyan += Statistics::ToStringProj();
+
+	// and then the text
+	g_renderer->RenderText(final_cyan, 20, 20, 0xFF00FFFF);
+	g_renderer->RenderText(final_yellow, 20, 20, 0xFFFFFF00);
 }
 
 void Renderer::UpdateDrawRectangle(int backbuffer_width, int backbuffer_height)
@@ -540,10 +647,10 @@ void Renderer::RecordVideoMemory()
 }
 
 
-void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, const EFBRectangle& rc, float Gamma)
+void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, const EFBRectangle& rc, u64 ticks, float Gamma)
 {
 	// TODO: merge more generic parts into VideoCommon
-	g_renderer->SwapImpl(xfbAddr, fbWidth, fbStride, fbHeight, rc, Gamma);
+	g_renderer->SwapImpl(xfbAddr, fbWidth, fbStride, fbHeight, rc, ticks, Gamma);
 
 	if (XFBWrited)
 		g_renderer->m_fps_counter.Update();
@@ -581,7 +688,7 @@ bool Renderer::IsFrameDumping()
 	return false;
 }
 
-void Renderer::DumpFrameData(const u8* data, int w, int h, int stride, bool swap_upside_down, bool bgra)
+void Renderer::DumpFrameData(const u8* data, int w, int h, int stride, u64 ticks, bool swap_upside_down, bool bgra)
 {
 	if (w == 0 || h == 0)
 		return;
@@ -637,7 +744,7 @@ void Renderer::DumpFrameData(const u8* data, int w, int h, int stride, bool swap
 		}
 		if (m_AVI_dumping)
 		{
-			AVIDump::AddFrame(m_frame_data.data(), w, h, stride);
+			AVIDump::AddFrame(m_frame_data.data(), w, h, stride, ticks);
 		}
 
 		m_last_frame_dumped = true;
