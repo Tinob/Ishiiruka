@@ -49,8 +49,7 @@ void WiiConfigPane::InitializeGUI()
 	m_system_language_choice =
 		new wxChoice(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_system_language_strings);
 	m_sd_card_checkbox = new wxCheckBox(this, wxID_ANY, _("Insert SD Card"));
-	m_connect_keyboard_checkbox = new wxCheckBox(this, wxID_ANY, _("Connect USB Keyboard"));
-	m_wiispeak_checkbox = new wxCheckBox(this, wxID_ANY, _("Enable Wii Speak Dummy Support"));
+	m_connect_keyboard_checkbox = new wxCheckBox(this, wxID_ANY, _("Connect USB Keyboard"));	
 	m_bt_sensor_bar_pos =
 		new wxChoice(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_bt_sensor_bar_pos_strings);
 	m_bt_sensor_bar_sens = new DolphinSlider(this, wxID_ANY, 0, 0, 4);
@@ -67,8 +66,7 @@ void WiiConfigPane::InitializeGUI()
 	m_bt_sensor_bar_pos->Bind(wxEVT_CHOICE, &WiiConfigPane::OnSensorBarPosChanged, this);
 	m_bt_sensor_bar_sens->Bind(wxEVT_SLIDER, &WiiConfigPane::OnSensorBarSensChanged, this);
 	m_bt_speaker_volume->Bind(wxEVT_SLIDER, &WiiConfigPane::OnSpeakerVolumeChanged, this);
-	m_bt_wiimote_motor->Bind(wxEVT_CHECKBOX, &WiiConfigPane::OnWiimoteMotorChanged, this);
-	m_wiispeak_checkbox->Bind(wxEVT_CHECKBOX, &WiiConfigPane::OnWiiSpeakCheckBoxChanged, this);
+	m_bt_wiimote_motor->Bind(wxEVT_CHECKBOX, &WiiConfigPane::OnWiimoteMotorChanged, this);	
 
 	m_screensaver_checkbox->SetToolTip(_("Dims the screen after five minutes of inactivity."));
 	m_pal60_mode_checkbox->SetToolTip(_("Sets the Wii display mode to 60Hz (480i) instead of 50Hz "
@@ -76,7 +74,6 @@ void WiiConfigPane::InitializeGUI()
 	m_system_language_choice->SetToolTip(_("Sets the Wii system language."));
 	m_sd_card_checkbox->SetToolTip(_("Saved to /Wii/sd.raw (default size is 128mb)"));
 	m_connect_keyboard_checkbox->SetToolTip(_("May cause slow down in Wii Menu and some games."));
-	m_wiispeak_checkbox->SetToolTip(_("Adds Dummy Support for WiiSpeak to allow games that requires it to boot properly."));
 
 	const int space5 = FromDIP(5);
 
@@ -135,8 +132,6 @@ void WiiConfigPane::InitializeGUI()
 	device_settings_sizer->AddSpacer(space5);
 	device_settings_sizer->Add(m_connect_keyboard_checkbox, 0, wxLEFT | wxRIGHT, space5);
 	device_settings_sizer->AddSpacer(space5);
-	device_settings_sizer->Add(m_wiispeak_checkbox, 0, wxLEFT | wxRIGHT, space5);
-	device_settings_sizer->AddSpacer(space5);
 
 	auto* const bt_settings_static_sizer =
 		new wxStaticBoxSizer(wxVERTICAL, this, _("Wii Remote Settings"));
@@ -185,7 +180,6 @@ void WiiConfigPane::RefreshGUI()
 		m_bt_sensor_bar_sens->Disable();
 		m_bt_speaker_volume->Disable();
 		m_bt_wiimote_motor->Disable();
-		m_wiispeak_checkbox->Disable();
 	}
 }
 
@@ -238,9 +232,4 @@ void WiiConfigPane::OnSpeakerVolumeChanged(wxCommandEvent& event)
 void WiiConfigPane::OnWiimoteMotorChanged(wxCommandEvent& event)
 {
 	SConfig::GetInstance().m_wiimote_motor = event.IsChecked();
-}
-
-void WiiConfigPane::OnWiiSpeakCheckBoxChanged(wxCommandEvent& event)
-{
-	SConfig::GetInstance().bWiiSpeakSupport = m_wiispeak_checkbox->IsChecked();
 }

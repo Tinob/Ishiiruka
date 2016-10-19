@@ -29,7 +29,6 @@ private:
 	void OnConnectKeyboardCheckBoxChanged(wxCommandEvent&);
 	void OnSystemLanguageChoiceChanged(wxCommandEvent&);
 	void OnAspectRatioChoiceChanged(wxCommandEvent&);
-	void OnWiiSpeakCheckBoxChanged(wxCommandEvent&);
 
 	void OnSensorBarPosChanged(wxCommandEvent&);
 	void OnSensorBarSensChanged(wxCommandEvent&);
@@ -46,7 +45,6 @@ private:
 	wxCheckBox* m_connect_keyboard_checkbox;
 	wxChoice* m_system_language_choice;
 	wxChoice* m_aspect_ratio_choice;
-	wxCheckBox* m_wiispeak_checkbox;
 	wxChoice* m_bt_sensor_bar_pos;
 	DolphinSlider* m_bt_sensor_bar_sens;
 	DolphinSlider* m_bt_speaker_volume;

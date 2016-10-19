@@ -720,9 +720,6 @@
     <ClCompile Include="PowerPC\JitILCommon\IR.cpp">
       <Filter>PowerPC\JitILCommon</Filter>
     </ClCompile>
-    <ClCompile Include="IPC_HLE\WII_IPC_HLE_WiiSpeak.cpp">
-      <Filter>IPC HLE %28IOS/Starlet%29</Filter>
-    </ClCompile>
     <ClCompile Include="HW\GCKeyboardEmu.cpp">
       <Filter>HW %28Flipper/Hollywood%29\GCKeyboard</Filter>
     </ClCompile>
@@ -1266,9 +1263,6 @@
     <ClInclude Include="Analytics.h" />
     <ClInclude Include="IPC_HLE\WII_IPC_HLE_Device_usb_ven.h">
       <Filter>IPC HLE %28IOS/Starlet%29\USB</Filter>
-    </ClInclude>
-    <ClInclude Include="IPC_HLE\WII_IPC_HLE_WiiSpeak.h">
-      <Filter>IPC HLE %28IOS/Starlet%29</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -53,7 +53,6 @@ They will also generate a true or false return for UpdateInterrupts() in WII_IPC
 #include "Core/IPC_HLE/WII_IPC_HLE_Device_stm.h"
 #include "Core/IPC_HLE/WII_IPC_HLE_Device_usb_bt_emu.h"
 #include "Core/IPC_HLE/WII_IPC_HLE_Device_usb_bt_real.h"
-#include "Core/IPC_HLE/WII_IPC_HLE_WiiSpeak.h"
 #include "Core/IPC_HLE/WII_IPC_HLE_Device_usb_kbd.h"
 #include "Core/IPC_HLE/WII_IPC_HLE_Device_usb_ven.h"
 
@@ -130,12 +129,6 @@ void Reinit()
 	CWII_IPC_HLE_Device_es::m_ContentFile = "";
 
 	num_devices = 0;
-	if (SConfig::GetInstance().bWiiSpeakSupport)
-	{
-		AddDevice<CWII_IPC_HLE_Device_usb_oh0>("/dev/usb/oh0");
-		AddDevice<CWII_IPC_HLE_Device_usb_oh0_57e_308>("/dev/usb/oh0/57e/308");
-		AddDevice<CWII_IPC_HLE_Device_usb_oh0_46d_a03>("/dev/usb/oh0/46d/a03");
-	}
 	// Build hardware devices
 	if (!SConfig::GetInstance().m_bt_passthrough_enabled)
 		AddDevice<CWII_IPC_HLE_Device_usb_oh1_57e_305_emu>("/dev/usb/oh1/57e/305");

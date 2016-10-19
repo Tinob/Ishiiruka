@@ -273,7 +273,6 @@ void SConfig::SaveCoreSettings(IniFile& ini)
 	core->Set("DPL2Decoder", bDPL2Decoder);
 	core->Set("TimeStretching", bTimeStretching);
 	core->Set("RSHACK", bRSHACK);
-	core->Set("WiiSpeakSupport", bWiiSpeakSupport);
 	core->Set("Latency", iLatency);
 	core->Set("MemcardAPath", m_strMemoryCardA);
 	core->Set("MemcardBPath", m_strMemoryCardB);
@@ -582,7 +581,6 @@ void SConfig::LoadCoreSettings(IniFile& ini)
 	core->Get("DPL2Decoder", &bDPL2Decoder, false);
 	core->Get("TimeStretching", &bTimeStretching, false);
 	core->Get("RSHACK", &bRSHACK, false);
-	core->Get("WiiSpeakSupport", &bWiiSpeakSupport, false);
 	core->Get("Latency", &iLatency, 2);
 	core->Get("MemcardAPath", &m_strMemoryCardA);
 	core->Get("MemcardBPath", &m_strMemoryCardB);
@@ -774,7 +772,6 @@ void SConfig::LoadDefaults()
 	bDPL2Decoder = false;
 	bTimeStretching = false;
 	bRSHACK = false;
-	bWiiSpeakSupport = false;
 	iLatency = 14;
 
 	iPosX = INT_MIN;
