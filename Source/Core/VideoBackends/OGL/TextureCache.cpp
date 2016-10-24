@@ -130,7 +130,7 @@ void TextureCache::TCacheEntry::Bind(u32 stage, u32 last_texture)
 {
 	if (nrm_texture && g_ActiveConfig.HiresMaterialMapsEnabled())
 	{
-		s_ActiveTexture = 8;
+		s_ActiveTexture = 8 + stage;
 		glActiveTexture(GL_TEXTURE8 + stage);
 		glBindTexture(GL_TEXTURE_2D_ARRAY, nrm_texture);
 	}
