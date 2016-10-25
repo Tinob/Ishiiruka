@@ -214,6 +214,9 @@
     <ClCompile Include="DolphinSlider.cpp">
       <Filter>GUI\Widgets</Filter>
     </ClCompile>
+    <ClCompile Include="MainMenuBar.cpp">
+      <Filter>GUI</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Main.h" />
@@ -389,6 +392,9 @@
     </ClInclude>
     <ClInclude Include="DolphinSlider.h">
       <Filter>GUI\Widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="MainMenuBar.h">
+      <Filter>GUI</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

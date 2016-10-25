@@ -3,8 +3,10 @@
 // Refer to the license.txt file included.
 
 #pragma once
-
+#include <ctime>
 #include <wx/panel.h>
+
+#include "Common/CommonTypes.h"
 
 class DolphinSlider;
 class wxCheckBox;
