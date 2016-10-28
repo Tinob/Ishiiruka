@@ -237,11 +237,9 @@ void OGLPostProcessingShader::MapAndUpdateConfigurationBuffer()
 		// ProgramShaderCache uniform buffer afterwards, otherwise we'll end up flushing the wrong buffer.
 		glBindBuffer(GL_UNIFORM_BUFFER, buffer->m_uniform_buffer->m_buffer);
 
-		auto mapped_buffer = buffer->m_uniform_buffer->Map(buffer_size, ProgramShaderCache::GetUniformBufferAlignment());
-		memcpy(mapped_buffer.first, buffer_data, buffer_size);
-		buffer->m_uniform_buffer->Unmap(buffer_size);
+		auto mapped_buffer = buffer->m_uniform_buffer->Stream(buffer_size, ProgramShaderCache::GetUniformBufferAlignment(), buffer_data);
 
-		glBindBufferRange(GL_UNIFORM_BUFFER, UNIFORM_BUFFER_BIND_POINT + 1, buffer->m_uniform_buffer->m_buffer, mapped_buffer.second, buffer_size);
+		glBindBufferRange(GL_UNIFORM_BUFFER, UNIFORM_BUFFER_BIND_POINT + 1, buffer->m_uniform_buffer->m_buffer, mapped_buffer, buffer_size);
 
 		ADDSTAT(stats.thisFrame.bytesUniformStreamed, buffer_size);
 	}
@@ -605,13 +603,16 @@ void OGLPostProcessor::MapAndUpdateUniformBuffer(
 		// Annoyingly, due to latched state, we have to bind our private uniform buffer here, then restore the
 		// ProgramShaderCache uniform buffer afterwards, otherwise we'll end up flushing the wrong buffer.
 		glBindBuffer(GL_UNIFORM_BUFFER, m_uniform_buffer->m_buffer);
-
-		auto mapped_buffer = m_uniform_buffer->Map(POST_PROCESSING_CONTANTS_BUFFER_SIZE, ProgramShaderCache::GetUniformBufferAlignment());
-		memcpy(mapped_buffer.first, m_current_constants.data(), POST_PROCESSING_CONTANTS_BUFFER_SIZE);
-		m_uniform_buffer->Unmap(POST_PROCESSING_CONTANTS_BUFFER_SIZE);
-
-		glBindBufferRange(GL_UNIFORM_BUFFER, UNIFORM_BUFFER_BIND_POINT, m_uniform_buffer->m_buffer, mapped_buffer.second, POST_PROCESSING_CONTANTS_BUFFER_SIZE);
-
+		auto mapped_buffer = m_uniform_buffer->Stream(
+			POST_PROCESSING_CONTANTS_BUFFER_SIZE,
+			ProgramShaderCache::GetUniformBufferAlignment(),
+			m_current_constants.data());
+		glBindBufferRange(
+			GL_UNIFORM_BUFFER,
+			UNIFORM_BUFFER_BIND_POINT,
+			m_uniform_buffer->m_buffer,
+			mapped_buffer,
+			POST_PROCESSING_CONTANTS_BUFFER_SIZE);
 		ADDSTAT(stats.thisFrame.bytesUniformStreamed, POST_PROCESSING_CONTANTS_BUFFER_SIZE);
 	}
 }
