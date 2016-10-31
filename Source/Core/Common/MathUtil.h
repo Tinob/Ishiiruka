@@ -194,12 +194,20 @@ struct Rectangle
 		bottom = Clamp(bottom, y1, y2);
 	}
 
-	inline void Merge(const Rectangle<T>& other)
+	inline void MergeUL(const Rectangle<T>& other)
 	{
 		left = std::min(left, other.left);
 		top = std::min(top, other.top);
 		right = std::max(right, other.right);
 		bottom = std::max(bottom, other.bottom);
+	}
+
+	inline void MergeLL(const Rectangle<T>& other)
+	{
+		left = std::min(left, other.left);
+		top = std::max(top, other.top);
+		right = std::max(right, other.right);
+		bottom = std::min(bottom, other.bottom);
 	}
 
 };
