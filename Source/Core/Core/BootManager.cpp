@@ -76,6 +76,7 @@ private:
 	bool bHLE_BS2;
 	bool bProgressive;
 	bool bPAL60;
+	bool bRSHACK;
 	int iVideoRate;
 	bool bHalfAudioRate;
 	int iSelectedLanguage;
@@ -119,7 +120,7 @@ void ConfigCache::SaveConfig(const SConfig& config)
 	iVideoRate = config.iVideoRate;
 	bHalfAudioRate = config.bHalfAudioRate;
 	bTimeStretching = config.bTimeStretching;
-
+	bRSHACK = config.bRSHACK;
 	std::copy(std::begin(g_wiimote_sources), std::end(g_wiimote_sources), std::begin(iWiimoteSource));
 	std::copy(std::begin(config.m_SIDevice), std::end(config.m_SIDevice), std::begin(Pads));
 	std::copy(std::begin(config.m_EXIDevice), std::end(config.m_EXIDevice), std::begin(m_EXIDevice));
@@ -157,7 +158,7 @@ void ConfigCache::RestoreConfig(SConfig* config)
 	config->iVideoRate = iVideoRate;
 	config->bHalfAudioRate = bHalfAudioRate;
 	config->bTimeStretching = bTimeStretching;
-
+	config->bRSHACK = bRSHACK;
 	// Only change these back if they were actually set by game ini, since they can be changed while a
 	// game is running.
 	if (bSetVolume)
@@ -252,6 +253,7 @@ bool BootCore(const std::string& _rFilename)
 		core_section->Get("VideoRate", &StartUp.iVideoRate, StartUp.iVideoRate);
 		core_section->Get("HalfAudioRate", &StartUp.bHalfAudioRate, StartUp.bHalfAudioRate);
 		core_section->Get("TimeStretching", &StartUp.bTimeStretching, StartUp.bTimeStretching);
+		core_section->Get("RSHACK", &StartUp.bRSHACK, StartUp.bRSHACK);
 		core_section->Get("SyncGPU", &StartUp.bSyncGPU, StartUp.bSyncGPU);
 		core_section->Get("FastDiscSpeed", &StartUp.bFastDiscSpeed, StartUp.bFastDiscSpeed);
 		core_section->Get("DSPHLE", &StartUp.bDSPHLE, StartUp.bDSPHLE);
