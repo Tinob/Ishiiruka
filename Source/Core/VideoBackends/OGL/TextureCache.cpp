@@ -416,7 +416,7 @@ void TextureCache::TCacheEntry::LoadFromTmem(const u8* ar_src, const u8* gb_src,
 }
 
 void TextureCache::TCacheEntry::FromRenderTarget(u8* dst, PEControl::PixelFormat srcFormat, const EFBRectangle& srcRect,
-	bool scaleByHalf, unsigned int cbufid, const float *colmat)
+	bool scaleByHalf, unsigned int cbufid, const float *colmat, u32 width, u32 height)
 {
 	g_renderer->ResetAPIState(); // reset any game specific settings
 
@@ -435,7 +435,7 @@ void TextureCache::TCacheEntry::FromRenderTarget(u8* dst, PEControl::PixelFormat
 		g_sampler_cache->BindLinearSampler(9);
 	else
 		g_sampler_cache->BindNearestSampler(9);
-	glViewport(0, 0, R.GetWidth() / (scaleByHalf ? 2 : 1), R.GetHeight() / (scaleByHalf ? 2 : 1));
+	glViewport(0, 0, width, height);
 
 	GLuint uniform_location;
 	if (srcFormat == PEControl::Z24)
