@@ -2,7 +2,10 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
-#include <string>
+#include <array>
+#include <cstdlib>
+#include <sstream>
+#include <vector>
 #include <windows.h>
 
 #include "Common/GL/GLInterface/WGL.h"
@@ -50,6 +53,44 @@ bool cInterfaceWGL::PeekMessages()
 		DispatchMessage(&msg);
 	}
 	return TRUE;
+}
+
+#define WGL_CONTEXT_MAJOR_VERSION_ARB           0x2091
+#define WGL_CONTEXT_MINOR_VERSION_ARB           0x2092
+#define WGL_CONTEXT_LAYER_PLANE_ARB             0x2093
+#define WGL_CONTEXT_FLAGS_ARB                   0x2094
+#define WGL_CONTEXT_PROFILE_MASK_ARB            0x9126
+
+#define WGL_CONTEXT_DEBUG_BIT_ARB               0x0001
+#define WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB  0x0002
+
+#define WGL_CONTEXT_CORE_PROFILE_BIT_ARB        0x00000001
+#define WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB 0x00000002
+
+static HGLRC wglCreateContextAttribsARB(HDC hDC, HGLRC hShareContext, const int *attribList)
+{
+	typedef HGLRC(APIENTRY * PFNWGLCREATECONTEXTATTRIBSARBPROC)(HDC hDC, HGLRC hShareContext, const int *attribList);
+	static PFNWGLCREATECONTEXTATTRIBSARBPROC pfnCreateContextAttribsARB = 0;
+
+	HGLRC hContext = 0;
+	HGLRC hCurrentContext = 0;
+
+	if (!(hCurrentContext = wglCreateContext(hDC)))
+		return 0;
+
+	if (wglMakeCurrent(hDC, hCurrentContext))
+	{
+		if (!pfnCreateContextAttribsARB)
+			pfnCreateContextAttribsARB = reinterpret_cast<PFNWGLCREATECONTEXTATTRIBSARBPROC>(wglGetProcAddress("wglCreateContextAttribsARB"));
+
+		if (pfnCreateContextAttribsARB)
+		{
+			hContext = pfnCreateContextAttribsARB(hDC, hShareContext, attribList);
+		}
+	}
+	wglDeleteContext(hCurrentContext);
+
+	return hContext;
 }
 
 // Create rendering window.
@@ -118,12 +159,31 @@ bool cInterfaceWGL::Create(void* window_handle, bool core)
 		return false;
 	}
 
-	if (!(hRC = wglCreateContext(hDC)))
-	{
-		PanicAlert("(4) Can't create an OpenGL rendering context.");
-		return false;
-	}
+	std::array<std::pair<int, int>, 7> versions_to_try = { {
+		{ 4, 5 },{ 4, 4 },{ 4, 3 },{ 4, 2 },{ 4, 1 },{ 4, 0 },{ 3, 3 },
+		} };
 
+	for (const auto& version : versions_to_try)
+	{
+		int attriblist[] = {
+			WGL_CONTEXT_MAJOR_VERSION_ARB, version.first,
+			WGL_CONTEXT_MINOR_VERSION_ARB, version.second,
+			WGL_CONTEXT_FLAGS_ARB, 0,
+			WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+			0, 0 };
+
+		hRC = wglCreateContextAttribsARB(hDC, 0, attriblist);
+		if (hRC)
+			break;
+	}
+	if (!hRC)
+	{
+		if (!(hRC = wglCreateContext(hDC)))
+		{
+			PanicAlert("(4) Can't create an OpenGL rendering context.");
+			return false;
+		}
+	}
 	return true;
 }
 
