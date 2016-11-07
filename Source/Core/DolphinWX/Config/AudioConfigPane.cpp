@@ -2,6 +2,8 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "DolphinWX/Config/AudioConfigPane.h"
+
 #include <string>
 
 #include <wx/checkbox.h>
@@ -16,15 +18,15 @@
 #include "Common/Common.h"
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
-#include "DolphinWX/Config/AudioConfigPane.h"
 #include "DolphinWX/DolphinSlider.h"
+#include "DolphinWX/WxEventUtils.h"
 #include "DolphinWX/WxUtils.h"
 
 AudioConfigPane::AudioConfigPane(wxWindow* parent, wxWindowID id) : wxPanel(parent, id)
 {
 	InitializeGUI();
 	LoadGUIValues();
-	RefreshGUI();
+	BindEvents();
 }
 
 void AudioConfigPane::InitializeGUI()
@@ -48,16 +50,6 @@ void AudioConfigPane::InitializeGUI()
 
 	m_time_stretching_checkbox = new wxCheckBox(this, wxID_ANY, _("Time Stretching"));
 	m_RS_Hack_checkbox = new wxCheckBox(this, wxID_ANY, _("Rogue Squadron 2/3 Hack"));
-
-	m_dsp_engine_radiobox->Bind(wxEVT_RADIOBOX, &AudioConfigPane::OnDSPEngineRadioBoxChanged, this);
-	m_dpl2_decoder_checkbox->Bind(wxEVT_CHECKBOX, &AudioConfigPane::OnDPL2DecoderCheckBoxChanged,
-		this);
-	m_volume_slider->Bind(wxEVT_SLIDER, &AudioConfigPane::OnVolumeSliderChanged, this);
-	m_audio_backend_choice->Bind(wxEVT_CHOICE, &AudioConfigPane::OnAudioBackendChanged, this);
-	m_audio_latency_spinctrl->Bind(wxEVT_SPINCTRL, &AudioConfigPane::OnLatencySpinCtrlChanged, this);
-	m_time_stretching_checkbox->Bind(wxEVT_CHECKBOX, &AudioConfigPane::OnTimeStretchingCheckBoxChanged, this);
-	m_RS_Hack_checkbox->Bind(wxEVT_CHECKBOX, &AudioConfigPane::OnRS_Hack_checkboxChanged, this);
-
 	m_audio_backend_choice->SetToolTip(
 		_("Changing this will have no effect while the emulator is running."));
 	m_audio_latency_spinctrl->SetToolTip(_("Sets the latency (in ms). Higher values may reduce audio "
@@ -133,6 +125,7 @@ void AudioConfigPane::LoadGUIValues()
 
 	m_volume_slider->SetValue(SConfig::GetInstance().m_Volume);
 	m_volume_text->SetLabel(wxString::Format("%d %%", SConfig::GetInstance().m_Volume));
+	m_dpl2_decoder_checkbox->SetValue(startup_params.bDPL2Decoder);
 	m_audio_latency_spinctrl->SetValue(startup_params.iLatency);
 
 	m_time_stretching_checkbox->SetValue(startup_params.bTimeStretching);
@@ -152,17 +145,24 @@ void AudioConfigPane::ToggleBackendSpecificControls(const std::string& backend)
 	m_volume_text->Enable(supports_volume_changes);
 }
 
-void AudioConfigPane::RefreshGUI()
+void AudioConfigPane::BindEvents()
 {
-	if (Core::IsRunning())
-	{
-		m_audio_latency_spinctrl->Disable();
-		m_audio_backend_choice->Disable();
-		m_dpl2_decoder_checkbox->Disable();
-		m_dsp_engine_radiobox->Disable();
-		m_time_stretching_checkbox->Disable();
-		m_RS_Hack_checkbox->Disable();
-	}
+	m_dsp_engine_radiobox->Bind(wxEVT_RADIOBOX, &AudioConfigPane::OnDSPEngineRadioBoxChanged, this);
+	m_dsp_engine_radiobox->Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreNotRunning);
+
+	m_dpl2_decoder_checkbox->Bind(wxEVT_CHECKBOX, &AudioConfigPane::OnDPL2DecoderCheckBoxChanged,
+		this);
+	m_dpl2_decoder_checkbox->Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreNotRunning);
+
+	m_volume_slider->Bind(wxEVT_SLIDER, &AudioConfigPane::OnVolumeSliderChanged, this);
+
+	m_audio_backend_choice->Bind(wxEVT_CHOICE, &AudioConfigPane::OnAudioBackendChanged, this);
+	m_audio_backend_choice->Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreNotRunning);
+
+	m_audio_latency_spinctrl->Bind(wxEVT_SPINCTRL, &AudioConfigPane::OnLatencySpinCtrlChanged, this);
+	m_audio_latency_spinctrl->Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreNotRunning);
+	m_time_stretching_checkbox->Bind(wxEVT_CHECKBOX, &AudioConfigPane::OnTimeStretchingCheckBoxChanged, this);
+	m_RS_Hack_checkbox->Bind(wxEVT_CHECKBOX, &AudioConfigPane::OnRS_Hack_checkboxChanged, this);
 }
 
 void AudioConfigPane::OnDSPEngineRadioBoxChanged(wxCommandEvent& event)

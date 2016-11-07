@@ -653,8 +653,9 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 		D3DLOCKED_RECT rect;
 		if (SUCCEEDED(ScreenShootMEMSurface->LockRect(&rect, GetTargetRectangle().AsRECT(), D3DLOCK_NO_DIRTY_UPDATE | D3DLOCK_NOSYSLOCK | D3DLOCK_READONLY)))
 		{
+			AVIDump::Frame state = AVIDump::FetchState(ticks);
 			DumpFrameData(reinterpret_cast<const u8*>(rect.pBits), source_width, source_height,
-				rect.Pitch, ticks, false, true);
+				rect.Pitch, state, false, true);
 			FinishFrameData();
 
 			ScreenShootMEMSurface->UnlockRect();

@@ -70,7 +70,7 @@ void cInterfaceEGL::DetectMode()
 		// Get how many configs there are
 		if (!eglChooseConfig(egl_dpy, attribs, nullptr, 0, &num_configs))
 		{
-			INFO_LOG(VIDEO, "Error: couldn't get an EGL visual config\n");
+			INFO_LOG(VIDEO, "Error: couldn't get an EGL visual config");
 			continue;
 		}
 
@@ -79,7 +79,7 @@ void cInterfaceEGL::DetectMode()
 		// Get all the configurations
 		if (!eglChooseConfig(egl_dpy, attribs, config, num_configs, &num_configs))
 		{
-			INFO_LOG(VIDEO, "Error: couldn't get an EGL visual config\n");
+			INFO_LOG(VIDEO, "Error: couldn't get an EGL visual config");
 			delete[] config;
 			continue;
 		}
@@ -127,13 +127,13 @@ bool cInterfaceEGL::Create(void* window_handle, bool core)
 
 	if (!egl_dpy)
 	{
-		INFO_LOG(VIDEO, "Error: eglGetDisplay() failed\n");
+		INFO_LOG(VIDEO, "Error: eglGetDisplay() failed");
 		return false;
 	}
 
 	if (!eglInitialize(egl_dpy, &egl_major, &egl_minor))
 	{
-		INFO_LOG(VIDEO, "Error: eglInitialize() failed\n");
+		INFO_LOG(VIDEO, "Error: eglInitialize() failed");
 		return false;
 	}
 
@@ -167,14 +167,14 @@ bool cInterfaceEGL::Create(void* window_handle, bool core)
 		ctx_attribs = { EGL_CONTEXT_CLIENT_VERSION, 3, EGL_NONE };
 		break;
 	default:
-		ERROR_LOG(VIDEO, "Unknown opengl mode set\n");
+		ERROR_LOG(VIDEO, "Unknown opengl mode set");
 		return false;
 		break;
 	}
 
 	if (!eglChooseConfig(egl_dpy, attribs, &m_config, 1, &num_configs))
 	{
-		INFO_LOG(VIDEO, "Error: couldn't get an EGL visual config\n");
+		INFO_LOG(VIDEO, "Error: couldn't get an EGL visual config");
 		return false;
 	}
 
@@ -226,13 +226,13 @@ bool cInterfaceEGL::Create(void* window_handle, bool core)
 
 	if (!egl_ctx)
 	{
-		INFO_LOG(VIDEO, "Error: eglCreateContext failed\n");
+		INFO_LOG(VIDEO, "Error: eglCreateContext failed");
 		return false;
 	}
 
 	if (!CreateWindowSurface())
 	{
-		ERROR_LOG(VIDEO, "Error: CreateWindowSurface failed 0x%04x\n", eglGetError());
+		ERROR_LOG(VIDEO, "Error: CreateWindowSurface failed 0x%04x", eglGetError());
 		return false;
 	}
 	return true;
@@ -271,7 +271,7 @@ bool cInterfaceEGL::Create(cInterfaceBase* main_context)
 		ctx_attribs[1] = 3;
 		break;
 	default:
-		INFO_LOG(VIDEO, "Unknown opengl mode set\n");
+		INFO_LOG(VIDEO, "Unknown opengl mode set");
 		return false;
 		break;
 	}
@@ -284,13 +284,13 @@ bool cInterfaceEGL::Create(cInterfaceBase* main_context)
 	egl_ctx = eglCreateContext(egl_dpy, m_config, egl_context->egl_ctx, ctx_attribs);
 	if (!egl_ctx)
 	{
-		INFO_LOG(VIDEO, "Error: eglCreateContext failed 0x%04x\n", eglGetError());
+		INFO_LOG(VIDEO, "Error: eglCreateContext failed 0x%04x", eglGetError());
 		return false;
 	}
 
 	if (!CreateWindowSurface())
 	{
-		ERROR_LOG(VIDEO, "Error: CreateWindowSurface failed 0x%04x\n", eglGetError());
+		ERROR_LOG(VIDEO, "Error: CreateWindowSurface failed 0x%04x", eglGetError());
 		return false;
 	}
 	return true;
@@ -304,7 +304,7 @@ bool cInterfaceEGL::CreateWindowSurface()
 		egl_surf = eglCreateWindowSurface(egl_dpy, m_config, native_window, nullptr);
 		if (!egl_surf)
 		{
-			INFO_LOG(VIDEO, "Error: eglCreateWindowSurface failed\n");
+			INFO_LOG(VIDEO, "Error: eglCreateWindowSurface failed");
 			return false;
 		}
 	}

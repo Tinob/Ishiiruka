@@ -54,12 +54,14 @@ set(GUI_SRCS
 	LogWindow.cpp
 	Main.cpp
 	MainMenuBar.cpp
+	MainToolBar.cpp
 	MemcardManager.cpp
 	PatchAddEdit.cpp
 	PostProcessingConfigDiag.cpp
 	SoftwareVideoConfigDialog.cpp
 	TASInputDlg.cpp
 	VideoConfigDiag.cpp
+	WxEventUtils.cpp
 	WXInputBase.cpp
 	WxUtils.cpp)
 

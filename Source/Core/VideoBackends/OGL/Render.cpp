@@ -413,7 +413,7 @@ Renderer::Renderer()
 				"GPU: Does your video card support OpenGL 3.1?");
 			bSuccess = false;
 		}
-		else if (DriverDetails::HasBug(DriverDetails::BUG_BROKENUBO))
+		else if (DriverDetails::HasBug(DriverDetails::BUG_BROKEN_UBO))
 		{
 			PanicAlert(
 				"Buggy GPU driver detected.\n"
@@ -453,7 +453,7 @@ Renderer::Renderer()
 		GLExtensions::Supports("GL_ARB_sample_shading");
 	g_Config.backend_info.bSupportsGeometryShaders =
 		GLExtensions::Version() >= 320 &&
-		!DriverDetails::HasBug(DriverDetails::BUG_BROKENGEOMETRYSHADERS);
+		!DriverDetails::HasBug(DriverDetails::BUG_BROKEN_GEOMETRY_SHADERS);
 	g_Config.backend_info.bSupportsPaletteConversion =
 		GLExtensions::Supports("GL_ARB_texture_buffer_object") ||
 		GLExtensions::Supports("GL_OES_texture_buffer") ||
@@ -463,7 +463,7 @@ Renderer::Renderer()
 		(GLExtensions::Supports("GL_ARB_copy_image") || GLExtensions::Supports("GL_NV_copy_image") ||
 			GLExtensions::Supports("GL_EXT_copy_image") ||
 			GLExtensions::Supports("GL_OES_copy_image")) &&
-		!DriverDetails::HasBug(DriverDetails::BUG_BROKENCOPYIMAGE);
+		!DriverDetails::HasBug(DriverDetails::BUG_BROKEN_COPYIMAGE);
 
 	// Desktop OpenGL supports the binding layout if it supports 420pack
 	// OpenGL ES 3.1 supports it implicitly without an extension
@@ -693,7 +693,7 @@ Renderer::Renderer()
 
 	// Handle VSync on/off
 	s_vsync = g_ActiveConfig.IsVSync();
-	if (!DriverDetails::HasBug(DriverDetails::BUG_BROKENVSYNC))
+	if (!DriverDetails::HasBug(DriverDetails::BUG_BROKEN_VSYNC))
 		GLInterface->SwapInterval(s_vsync);
 
 	// TODO: Move these somewhere else?
@@ -1263,6 +1263,10 @@ void Renderer::_SetBlendMode(bool forceUpdate)
 	bool useDstAlpha = bpmem.dstalpha.enable && bpmem.blendmode.alphaupdate && target_has_alpha;
 	bool useDualSource = useDstAlpha && g_ActiveConfig.backend_info.bSupportsDualSourceBlend;
 
+	// Only use dual-source blending when required on drivers that don't support it very well.
+	if (DriverDetails::HasBug(DriverDetails::BUG_BROKEN_DUAL_SOURCE_BLENDING) && !useDstAlpha)
+		useDualSource = false;
+
 	const GLenum glSrcFactors[8] =
 	{
 		GL_ZERO,
@@ -1510,8 +1514,9 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight,
 		glPixelStorei(GL_PACK_ALIGNMENT, 1);
 		glReadPixels(flipped_trc.left, flipped_trc.bottom, flipped_trc.GetWidth(),
 			flipped_trc.GetHeight(), GL_RGBA, GL_UNSIGNED_BYTE, image.data());
+		AVIDump::Frame state = AVIDump::FetchState(ticks);
 		DumpFrameData(image.data(), flipped_trc.GetWidth(), flipped_trc.GetHeight(),
-			flipped_trc.GetWidth() * 4, ticks, true);
+			flipped_trc.GetWidth() * 4, state, true);
 		FinishFrameData();
 	}
 	// Finish up the current frame, print some stats
@@ -1623,7 +1628,7 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight,
 	if (s_vsync != g_ActiveConfig.IsVSync())
 	{
 		s_vsync = g_ActiveConfig.IsVSync();
-		if (!DriverDetails::HasBug(DriverDetails::BUG_BROKENVSYNC))
+		if (!DriverDetails::HasBug(DriverDetails::BUG_BROKEN_VSYNC))
 			GLInterface->SwapInterval(s_vsync);
 	}
 

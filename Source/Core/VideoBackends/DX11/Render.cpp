@@ -755,9 +755,9 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 		D3D::context->CopySubresourceRegion(s_screenshot_texture.get(), 0, 0, 0, 0, (ID3D11Resource*)D3D::GetBackBuffer()->GetTex(), 0, &source_box);
 		D3D11_MAPPED_SUBRESOURCE map;
 		D3D::context->Map(s_screenshot_texture.get(), 0, D3D11_MAP_READ, 0, &map);
-
+		AVIDump::Frame state = AVIDump::FetchState(ticks);
 		DumpFrameData(reinterpret_cast<const u8*>(map.pData), source_width, source_height,
-			map.RowPitch, ticks);
+			map.RowPitch, state);
 		FinishFrameData();
 		D3D::context->Unmap(s_screenshot_texture.get(), 0);
 	}

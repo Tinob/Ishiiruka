@@ -12,6 +12,7 @@
 #include <thread>
 #include <vector>
 
+#include "Common/Assert.h"
 #include "Common/ChunkFile.h"
 #include "Common/CommonPaths.h"
 #include "Common/FileUtil.h"
@@ -180,7 +181,7 @@ std::string GetInputDisplay()
 // NOTE: GPU Thread
 std::string GetRTCDisplay()
 {
-	time_t current_time = CEXIIPL::GetGCTimeJan1970();
+	time_t current_time = CEXIIPL::GetEmulatedTime(CEXIIPL::UNIX_EPOCH);
 	tm* gm_time = gmtime(&current_time);
 	char buffer[256];
 	strftime(buffer, sizeof(buffer), "Date/Time: %c", gm_time);
@@ -226,10 +227,10 @@ void Init()
 		ReadHeader();
 		std::thread md5thread(CheckMD5);
 		md5thread.detach();
-		if (strncmp(tmpHeader.gameID, SConfig::GetInstance().GetUniqueID().c_str(), 6))
+		if (strncmp(tmpHeader.gameID, SConfig::GetInstance().GetGameID().c_str(), 6))
 		{
 			PanicAlertT("The recorded game (%s) is not the same as the selected game (%s)",
-				tmpHeader.gameID, SConfig::GetInstance().GetUniqueID().c_str());
+				tmpHeader.gameID, SConfig::GetInstance().GetGameID().c_str());
 			EndPlayInput(false);
 		}
 	}
@@ -552,7 +553,7 @@ bool BeginRecordingInput(int controllers)
 	if (NetPlay::IsNetPlayRunning())
 	{
 		s_bNetPlay = true;
-		s_recordingStartTime = CEXIIPL::NetPlay_GetGCTime();
+		s_recordingStartTime = CEXIIPL::NetPlay_GetEmulatedTime();
 	}
 	else if (SConfig::GetInstance().bEnableCustomRTC)
 	{
@@ -1151,6 +1152,7 @@ void LoadInput(const std::string& filename)
 			if (s_playMode != MODE_PLAYING)
 			{
 				s_playMode = MODE_PLAYING;
+				Core::UpdateWantDeterminism();
 				Core::DisplayMessage("Switched to playback", 2000);
 			}
 		}
@@ -1159,6 +1161,7 @@ void LoadInput(const std::string& filename)
 			if (s_playMode != MODE_RECORDING)
 			{
 				s_playMode = MODE_RECORDING;
+				Core::UpdateWantDeterminism();
 				Core::DisplayMessage("Switched to recording", 2000);
 			}
 		}
@@ -1335,6 +1338,9 @@ void EndPlayInput(bool cont)
 {
 	if (cont)
 	{
+		// If !IsMovieActive(), changing s_playMode requires calling UpdateWantDeterminism
+		_assert_(IsMovieActive());
+
 		s_playMode = MODE_RECORDING;
 		Core::DisplayMessage("Reached movie end. Resuming recording.", 2000);
 	}
@@ -1375,7 +1381,7 @@ void SaveRecording(const std::string& filename)
 	header.filetype[1] = 'T';
 	header.filetype[2] = 'M';
 	header.filetype[3] = 0x1A;
-	strncpy(header.gameID, SConfig::GetInstance().GetUniqueID().c_str(), 6);
+	strncpy(header.gameID, SConfig::GetInstance().GetGameID().c_str(), 6);
 	header.bWii = SConfig::GetInstance().bWii;
 	header.numControllers = s_numPads & (SConfig::GetInstance().bWii ? 0xFF : 0x0F);
 

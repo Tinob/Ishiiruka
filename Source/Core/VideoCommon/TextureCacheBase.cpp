@@ -440,7 +440,7 @@ TextureCacheBase::TCacheEntryBase* TextureCacheBase::DoPartialTextureUpdates(Tex
 void TextureCacheBase::DumpTexture(TCacheEntryBase* entry, std::string basename, u32 level)
 {
 	std::string szDir = File::GetUserPath(D_DUMPTEXTURES_IDX) +
-		SConfig::GetInstance().m_strUniqueID;
+		SConfig::GetInstance().m_strGameID;
 
 	// make sure that the directory exists
 	if (!File::Exists(szDir) || !File::IsDirectory(szDir))

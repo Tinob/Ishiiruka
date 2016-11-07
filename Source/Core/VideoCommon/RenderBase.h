@@ -200,7 +200,7 @@ protected:
 	static void RecordVideoMemory();
 
 	bool IsFrameDumping();
-	void DumpFrameData(const u8* data, int w, int h, int stride, u64 ticks, bool swap_upside_down = false, bool bgra = false);
+	void DumpFrameData(const u8* data, int w, int h, int stride, const AVIDump::Frame& state, bool swap_upside_down = false, bool bgra = false);
 	void FinishFrameData();
 
 	static volatile bool s_bScreenshot;

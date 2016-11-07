@@ -18,7 +18,6 @@
 #include <wx/textctrl.h>
 #include <wx/textdlg.h>
 #include <wx/thread.h>
-#include <wx/toolbar.h>
 #include <wx/aui/auibar.h>
 #include <wx/aui/dockart.h>
 // clang-format on
@@ -58,8 +57,6 @@ CCodeWindow::CCodeWindow(const SConfig& _LocalCoreStartupParameter, CFrame* pare
 	: wxPanel(parent, id, position, size, style, name), m_sibling_panels(), Parent(parent),
 	codeview(nullptr)
 {
-	InitBitmaps();
-
 	DebugInterface* di = &PowerPC::debug_interface;
 
 	codeview = new CCodeView(di, &g_symbolDB, this, wxID_ANY);
@@ -135,14 +132,9 @@ CCodeWindow::~CCodeWindow()
 	m_aui_manager.UnInit();
 }
 
-wxMenuBar* CCodeWindow::GetMenuBar()
+wxMenuBar* CCodeWindow::GetParentMenuBar()
 {
 	return Parent->GetMenuBar();
-}
-
-wxToolBar* CCodeWindow::GetToolBar()
-{
-	return Parent->m_ToolBar;
 }
 
 // ----------
@@ -159,7 +151,8 @@ void CCodeWindow::OnHostMessage(wxCommandEvent& event)
 		break;
 
 	case IDM_UPDATE_DISASM_DIALOG:
-		Repopulate();
+		codeview->Center(PC);
+		Repopulate(false);
 		if (HasPanel<CRegisterWindow>())
 			GetPanel<CRegisterWindow>()->NotifyUpdate();
 		if (HasPanel<CWatchWindow>())
@@ -205,12 +198,14 @@ void CCodeWindow::OnCodeStep(wxCommandEvent& event)
 
 	case IDM_SKIP:
 		PC += 4;
-		Repopulate();
+		codeview->Center(PC);
+		Repopulate(false);
 		break;
 
 	case IDM_SETPC:
 		PC = codeview->GetSelection();
-		Repopulate();
+		codeview->Center(PC);
+		Repopulate(false);
 		break;
 
 	case IDM_GOTOPC:
@@ -218,7 +213,6 @@ void CCodeWindow::OnCodeStep(wxCommandEvent& event)
 		break;
 	}
 
-	UpdateButtonStates();
 	// Update all toolbars in the aui manager
 	Parent->UpdateGUI();
 }
@@ -383,11 +377,8 @@ void CCodeWindow::StepOut()
 		PowerPC::SetMode(old_mode);
 		CPU::PauseAndLock(false, false);
 
-		JumpToAddress(PC);
-		{
-			wxCommandEvent ev(wxEVT_HOST_COMMAND, IDM_UPDATE_DISASM_DIALOG);
-			GetEventHandler()->ProcessEvent(ev);
-		}
+		wxCommandEvent ev(wxEVT_HOST_COMMAND, IDM_UPDATE_DISASM_DIALOG);
+		GetEventHandler()->ProcessEvent(ev);
 
 		// Update all toolbars in the aui manager
 		Parent->UpdateGUI();
@@ -510,9 +501,6 @@ void CCodeWindow::OnCPUMode(wxCommandEvent& event)
 
 	// Clear the JIT cache to enable these changes
 	JitInterface::ClearCache();
-
-	// Update
-	UpdateButtonStates();
 }
 
 void CCodeWindow::OnJitMenu(wxCommandEvent& event)
@@ -551,137 +539,51 @@ void CCodeWindow::OnJitMenu(wxCommandEvent& event)
 // Shortcuts
 bool CCodeWindow::UseInterpreter()
 {
-	return GetMenuBar()->IsChecked(IDM_INTERPRETER);
+	return GetParentMenuBar()->IsChecked(IDM_INTERPRETER);
 }
 
 bool CCodeWindow::BootToPause()
 {
-	return GetMenuBar()->IsChecked(IDM_BOOT_TO_PAUSE);
+	return GetParentMenuBar()->IsChecked(IDM_BOOT_TO_PAUSE);
 }
 
 bool CCodeWindow::AutomaticStart()
 {
-	return GetMenuBar()->IsChecked(IDM_AUTOMATIC_START);
+	return GetParentMenuBar()->IsChecked(IDM_AUTOMATIC_START);
 }
 
 bool CCodeWindow::JITNoBlockCache()
 {
-	return GetMenuBar()->IsChecked(IDM_JIT_NO_BLOCK_CACHE);
+	return GetParentMenuBar()->IsChecked(IDM_JIT_NO_BLOCK_CACHE);
 }
 
 bool CCodeWindow::JITNoBlockLinking()
 {
-	return GetMenuBar()->IsChecked(IDM_JIT_NO_BLOCK_LINKING);
-}
-
-// Toolbar
-void CCodeWindow::InitBitmaps()
-{
-	static constexpr std::array<const char* const, Toolbar_Debug_Bitmap_Max> s_image_names{
-		{ "toolbar_debugger_step", "toolbar_debugger_step_over", "toolbar_debugger_step_out",
-		"toolbar_debugger_skip", "toolbar_debugger_goto_pc", "toolbar_debugger_set_pc" } };
-	const wxSize tool_size = Parent->GetToolbarBitmapSize();
-	for (std::size_t i = 0; i < s_image_names.size(); ++i)
-		m_Bitmaps[i] =
-		WxUtils::LoadScaledResourceBitmap(s_image_names[i], Parent, tool_size, wxDefaultSize,
-			WxUtils::LSI_SCALE_DOWN | WxUtils::LSI_ALIGN_CENTER);
-}
-
-void CCodeWindow::PopulateToolbar(wxToolBar* toolBar)
-{
-	WxUtils::AddToolbarButton(toolBar, IDM_STEP, _("Step"), m_Bitmaps[Toolbar_Step],
-		_("Step into the next instruction"));
-	WxUtils::AddToolbarButton(toolBar, IDM_STEPOVER, _("Step Over"), m_Bitmaps[Toolbar_StepOver],
-		_("Step over the next instruction"));
-	WxUtils::AddToolbarButton(toolBar, IDM_STEPOUT, _("Step Out"), m_Bitmaps[Toolbar_StepOut],
-		_("Step out of the current function"));
-	WxUtils::AddToolbarButton(toolBar, IDM_SKIP, _("Skip"), m_Bitmaps[Toolbar_Skip],
-		_("Skips the next instruction completely"));
-	toolBar->AddSeparator();
-	WxUtils::AddToolbarButton(toolBar, IDM_GOTOPC, _("Show PC"), m_Bitmaps[Toolbar_GotoPC],
-		_("Go to the current instruction"));
-	WxUtils::AddToolbarButton(toolBar, IDM_SETPC, _("Set PC"), m_Bitmaps[Toolbar_SetPC],
-		_("Set the current instruction"));
+	return GetParentMenuBar()->IsChecked(IDM_JIT_NO_BLOCK_LINKING);
 }
 
 // Update GUI
-void CCodeWindow::Repopulate()
+void CCodeWindow::Repopulate(bool refresh_codeview)
 {
 	if (!codeview)
 		return;
 
-	codeview->Center(PC);
+	if (refresh_codeview)
+		codeview->Refresh();
+
 	UpdateCallstack();
-	UpdateButtonStates();
 
 	// Do not automatically show the current PC position when a breakpoint is hit or
 	// when we pause since this can be called at other times too.
 	// codeview->Center(PC);
 }
 
-void CCodeWindow::UpdateButtonStates()
+void CCodeWindow::UpdateFonts()
 {
-	bool Initialized = (Core::GetState() != Core::CORE_UNINITIALIZED);
-	bool Pause = (Core::GetState() == Core::CORE_PAUSE);
-	bool Stepping = CPU::IsStepping();
-	bool can_step = Initialized && Stepping;
-	wxToolBar* ToolBar = GetToolBar();
-
-	// Toolbar
-	if (!ToolBar)
-		return;
-
-	ToolBar->EnableTool(IDM_STEP, can_step);
-	ToolBar->EnableTool(IDM_STEPOVER, can_step);
-	ToolBar->EnableTool(IDM_STEPOUT, can_step);
-	ToolBar->EnableTool(IDM_SKIP, can_step);
-	ToolBar->EnableTool(IDM_SETPC, Pause);
-	ToolBar->Realize();
-
-	// Menu bar
-	// ------------------
-	GetMenuBar()->Enable(IDM_INTERPRETER, Pause);  // CPU Mode
-
-	GetMenuBar()->Enable(IDM_STEP, can_step);
-	GetMenuBar()->Enable(IDM_STEPOVER, can_step);
-	GetMenuBar()->Enable(IDM_STEPOUT, can_step);
-
-	GetMenuBar()->Enable(IDM_JIT_NO_BLOCK_CACHE, !Initialized);
-
-	GetMenuBar()->Enable(IDM_JIT_OFF, Pause);
-	GetMenuBar()->Enable(IDM_JIT_LS_OFF, Pause);
-	GetMenuBar()->Enable(IDM_JIT_LSLXZ_OFF, Pause);
-	GetMenuBar()->Enable(IDM_JIT_LSLWZ_OFF, Pause);
-	GetMenuBar()->Enable(IDM_JIT_LSLBZX_OFF, Pause);
-	GetMenuBar()->Enable(IDM_JIT_LSF_OFF, Pause);
-	GetMenuBar()->Enable(IDM_JIT_LSP_OFF, Pause);
-	GetMenuBar()->Enable(IDM_JIT_FP_OFF, Pause);
-	GetMenuBar()->Enable(IDM_JIT_I_OFF, Pause);
-	GetMenuBar()->Enable(IDM_JIT_P_OFF, Pause);
-	GetMenuBar()->Enable(IDM_JIT_SR_OFF, Pause);
-
-	GetMenuBar()->Enable(IDM_CLEAR_CODE_CACHE, Pause);  // JIT Menu
-	GetMenuBar()->Enable(IDM_SEARCH_INSTRUCTION, Initialized);
-
-	GetMenuBar()->Enable(IDM_CLEAR_SYMBOLS, Initialized);  // Symbols menu
-	GetMenuBar()->Enable(IDM_SCAN_FUNCTIONS, Initialized);
-	GetMenuBar()->Enable(IDM_LOAD_MAP_FILE, Initialized);
-	GetMenuBar()->Enable(IDM_SAVEMAPFILE, Initialized);
-	GetMenuBar()->Enable(IDM_LOAD_MAP_FILE_AS, Initialized);
-	GetMenuBar()->Enable(IDM_SAVE_MAP_FILE_AS, Initialized);
-	GetMenuBar()->Enable(IDM_LOAD_BAD_MAP_FILE, Initialized);
-	GetMenuBar()->Enable(IDM_SAVE_MAP_FILE_WITH_CODES, Initialized);
-	GetMenuBar()->Enable(IDM_CREATE_SIGNATURE_FILE, Initialized);
-	GetMenuBar()->Enable(IDM_APPEND_SIGNATURE_FILE, Initialized);
-	GetMenuBar()->Enable(IDM_COMBINE_SIGNATURE_FILES, Initialized);
-	GetMenuBar()->Enable(IDM_RENAME_SYMBOLS, Initialized);
-	GetMenuBar()->Enable(IDM_USE_SIGNATURE_FILE, Initialized);
-	GetMenuBar()->Enable(IDM_PATCH_HLE_FUNCTIONS, Initialized);
-
-	// Update Fonts
 	callstack->SetFont(DebuggerFont);
 	symbols->SetFont(DebuggerFont);
 	callers->SetFont(DebuggerFont);
 	calls->SetFont(DebuggerFont);
 	m_aui_manager.GetArtProvider()->SetFont(wxAUI_DOCKART_CAPTION_FONT, DebuggerFont);
+	m_aui_manager.Update();
 }

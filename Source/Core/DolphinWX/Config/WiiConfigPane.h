@@ -21,7 +21,7 @@ public:
 private:
 	void InitializeGUI();
 	void LoadGUIValues();
-	void RefreshGUI();
+	void BindEvents();
 
 	void OnScreenSaverCheckBoxChanged(wxCommandEvent&);
 	void OnPAL60CheckBoxChanged(wxCommandEvent&);
@@ -45,6 +45,7 @@ private:
 	wxCheckBox* m_connect_keyboard_checkbox;
 	wxChoice* m_system_language_choice;
 	wxChoice* m_aspect_ratio_choice;
+
 	wxChoice* m_bt_sensor_bar_pos;
 	DolphinSlider* m_bt_sensor_bar_sens;
 	DolphinSlider* m_bt_speaker_volume;

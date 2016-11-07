@@ -97,7 +97,6 @@
     <ClCompile Include="Debugger\WatchView.cpp" />
     <ClCompile Include="Debugger\WatchWindow.cpp" />
     <ClCompile Include="DolphinSlider.cpp" />
-    <ClCompile Include="MainMenuBar.cpp" />
     <ClCompile Include="NetPlay\ChangeGameDialog.cpp" />
     <ClCompile Include="NetPlay\MD5Dialog.cpp" />
     <ClCompile Include="NetPlay\NetPlayLauncher.cpp" />
@@ -115,9 +114,11 @@
     <ClCompile Include="LogConfigWindow.cpp" />
     <ClCompile Include="LogWindow.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="MainMenuBar.cpp" />
     <ClCompile Include="MainNoGUI.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="MainToolBar.cpp" />
     <ClCompile Include="MemcardManager.cpp" />
     <ClCompile Include="NetPlay\PadMapDialog.cpp" />
     <ClCompile Include="PatchAddEdit.cpp" />
@@ -126,6 +127,7 @@
     <ClCompile Include="VideoConfigDiag.cpp" />
     <ClCompile Include="PostProcessingConfigDiag.cpp" />
     <ClCompile Include="ControllerConfigDiag.cpp" />
+    <ClCompile Include="WxEventUtils.cpp" />
     <ClCompile Include="WXInputBase.cpp" />
     <ClCompile Include="WxUtils.cpp" />
   </ItemGroup>
@@ -141,7 +143,6 @@
     <ClInclude Include="Config\PathConfigPane.h" />
     <ClInclude Include="Config\WiiConfigPane.h" />
     <ClInclude Include="DolphinSlider.h" />
-    <ClInclude Include="MainMenuBar.h" />
     <ClInclude Include="NetPlay\ChangeGameDialog.h" />
     <ClInclude Include="NetPlay\MD5Dialog.h" />
     <ClInclude Include="NetPlay\NetPlayLauncher.h" />
@@ -182,6 +183,8 @@
     <ClInclude Include="LogConfigWindow.h" />
     <ClInclude Include="LogWindow.h" />
     <ClInclude Include="Main.h" />
+    <ClInclude Include="MainMenuBar.h" />
+    <ClInclude Include="MainToolBar.h" />
     <ClInclude Include="MemcardManager.h" />
     <ClInclude Include="PatchAddEdit.h" />
     <ClInclude Include="SoftwareVideoConfigDialog.h" />
@@ -189,6 +192,7 @@
     <ClInclude Include="VideoConfigDiag.h" />
     <ClInclude Include="PostProcessingConfigDiag.h" />
     <ClInclude Include="ControllerConfigDiag.h" />
+    <ClInclude Include="WxEventUtils.h" />
     <ClInclude Include="WXInputBase.h" />
     <ClInclude Include="WxUtils.h" />
   </ItemGroup>

@@ -54,6 +54,7 @@ void JitArm64::Init()
   code_block.m_gpa = &js.gpa;
   code_block.m_fpa = &js.fpa;
   analyzer.SetOption(PPCAnalyst::PPCAnalyzer::OPTION_CONDITIONAL_CONTINUE);
+  analyzer.SetOption(PPCAnalyst::PPCAnalyzer::OPTION_CARRY_MERGE);
 
   m_supports_cycle_counter = HasCycleCounters();
 }
@@ -79,6 +80,7 @@ void JitArm64::Shutdown()
 
 void JitArm64::FallBackToInterpreter(UGeckoInstruction inst)
 {
+  FlushCarry();
   gpr.Flush(FlushMode::FLUSH_ALL, js.op);
   fpr.Flush(FlushMode::FLUSH_ALL, js.op);
 
@@ -183,20 +185,10 @@ void JitArm64::DoDownCount()
 {
   ARM64Reg WA = gpr.GetReg();
   LDR(INDEX_UNSIGNED, WA, PPC_REG, PPCSTATE_OFF(downcount));
-  if (js.downcountAmount < 4096)  // We can enlarge this if we used rotations
-  {
-    SUBS(WA, WA, js.downcountAmount);
-    STR(INDEX_UNSIGNED, WA, PPC_REG, PPCSTATE_OFF(downcount));
-  }
-  else
-  {
-    ARM64Reg WB = gpr.GetReg();
-    MOVI2R(WB, js.downcountAmount);
-    SUBS(WA, WA, WB);
-    STR(INDEX_UNSIGNED, WA, PPC_REG, PPCSTATE_OFF(downcount));
-    gpr.Unlock(WB);
-  }
-  gpr.Unlock(WA);
+  ARM64Reg WB = gpr.GetReg();
+  SUBSI2R(WA, WA, js.downcountAmount, WB);
+  STR(INDEX_UNSIGNED, WA, PPC_REG, PPCSTATE_OFF(downcount));
+  gpr.Unlock(WA, WB);
 }
 
 // Exits
@@ -429,6 +421,7 @@ const u8* JitArm64::DoJit(u32 em_address, PPCAnalyst::CodeBuffer* code_buf, JitB
   js.downcountAmount = 0;
   js.skipInstructions = 0;
   js.curBlock = b;
+  js.carryFlagSet = false;
 
   PPCAnalyst::CodeOp* ops = code_buf->codebuffer;
 
@@ -613,6 +606,8 @@ const u8* JitArm64::DoJit(u32 em_address, PPCAnalyst::CodeBuffer* code_buf, JitB
       }
 
       JitArm64Tables::CompileInstruction(ops[i]);
+      if (!MergeAllowedNextInstructions(1) || js.op[1].opinfo->type != OPTYPE_INTEGER)
+        FlushCarry();
 
       // If we have a register that will never be used again, flush it.
       gpr.StoreRegisters(~ops[i].gprInUse);

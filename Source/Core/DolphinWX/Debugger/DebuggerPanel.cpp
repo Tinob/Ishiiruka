@@ -116,15 +116,17 @@ void GFXDebuggerPanel::CreateGUIControls()
 	m_pButtonClearTextureCache->Bind(wxEVT_BUTTON, &GFXDebuggerPanel::OnClearTextureCacheButton,
 		this);
 
+	const wxString clear_vertex_shaders = _("Clear Vertex Shaders");
 	m_pButtonClearVertexShaderCache =
-		new wxButton(this, wxID_ANY, _("Clear V Shaders"), wxDefaultPosition, wxDefaultSize, 0,
-			wxDefaultValidator, _("Clear V Shaders"));
+		new wxButton(this, wxID_ANY, clear_vertex_shaders, wxDefaultPosition, wxDefaultSize, 0,
+			wxDefaultValidator, clear_vertex_shaders);
 	m_pButtonClearVertexShaderCache->Bind(wxEVT_BUTTON,
 		&GFXDebuggerPanel::OnClearVertexShaderCacheButton, this);
 
+	const wxString clear_pixel_shaders = _("Clear Pixel Shaders");
 	m_pButtonClearPixelShaderCache =
-		new wxButton(this, wxID_ANY, _("Clear P Shaders"), wxDefaultPosition, wxDefaultSize, 0,
-			wxDefaultValidator, _("Clear P Shaders"));
+		new wxButton(this, wxID_ANY, clear_pixel_shaders, wxDefaultPosition, wxDefaultSize, 0,
+			wxDefaultValidator, clear_pixel_shaders);
 	m_pButtonClearPixelShaderCache->Bind(wxEVT_BUTTON,
 		&GFXDebuggerPanel::OnClearPixelShaderCacheButton, this);
 
@@ -232,7 +234,7 @@ void GFXDebuggerPanel::OnPauseAtNextFrameButton(wxCommandEvent& event)
 void GFXDebuggerPanel::OnDumpButton(wxCommandEvent& event)
 {
 	std::string dump_path =
-		File::GetUserPath(D_DUMP_IDX) + "Debug/" + SConfig::GetInstance().m_strUniqueID + "/";
+		File::GetUserPath(D_DUMP_IDX) + "Debug/" + SConfig::GetInstance().m_strGameID + "/";
 	if (!File::CreateFullPath(dump_path))
 		return;
 

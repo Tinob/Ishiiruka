@@ -95,10 +95,11 @@ bool DolphinApp::OnInit()
 	std::lock_guard<std::mutex> lk(s_init_mutex);
 	if (!wxApp::OnInit())
 		return false;
-	wxLog::SetLogLevel(0);
+
 	Bind(wxEVT_QUERY_END_SESSION, &DolphinApp::OnEndSession, this);
 	Bind(wxEVT_END_SESSION, &DolphinApp::OnEndSession, this);
 	Bind(wxEVT_IDLE, &DolphinApp::OnIdle, this);
+	Bind(wxEVT_ACTIVATE_APP, &DolphinApp::OnActivate, this);
 
 	// Register message box and translation handlers
 	RegisterMsgAlertHandler(&wxMsgAlert);
@@ -269,6 +270,11 @@ void DolphinApp::AfterInit()
 			main_frame->BootGame("");
 		}
 	}
+}
+
+void DolphinApp::OnActivate(wxActivateEvent& ev)
+{
+	m_is_active = ev.GetActive();
 }
 
 void DolphinApp::InitLanguageSupport()
@@ -502,7 +508,7 @@ void Host_SetWiiMoteConnectionState(int _State)
 		event.SetString(_("Connecting..."));
 		break;
 	case 2:
-		event.SetString(_("Wiimote Connected"));
+		event.SetString(_("Wii Remote Connected"));
 		break;
 	}
 	// Update field 1 or 2
@@ -515,7 +521,7 @@ void Host_SetWiiMoteConnectionState(int _State)
 
 bool Host_UIHasFocus()
 {
-	return main_frame->UIHasFocus();
+	return wxGetApp().IsActiveThreadsafe();
 }
 
 bool Host_RendererHasFocus()

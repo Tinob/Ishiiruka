@@ -48,7 +48,7 @@ void JitArm64::GenerateAsm()
   // } while (CPU::GetState() == CPU::CPU_RUNNING);
   AlignCodePage();
   dispatcher = GetCodePtr();
-  WARN_LOG(DYNA_REC, "Dispatcher is %p\n", dispatcher);
+  WARN_LOG(DYNA_REC, "Dispatcher is %p", dispatcher);
 
   // Downcount Check
   // The result of slice decrementation should be in flags if somebody jumped here
@@ -629,7 +629,7 @@ void JitArm64::GenMfcr()
   const u8* start = GetCodePtr();
   for (int i = 0; i < 8; i++)
   {
-    LDR(INDEX_UNSIGNED, X1, PPC_REG, PPCSTATE_OFF(cr_val) + 8 * i);
+    LDR(INDEX_UNSIGNED, X1, PPC_REG, PPCSTATE_OFF(cr_val[i]));
 
     // SO
     if (i == 0)

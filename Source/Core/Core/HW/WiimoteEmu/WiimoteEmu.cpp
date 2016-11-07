@@ -283,9 +283,9 @@ Wiimote::Wiimote(const unsigned int index)
 	m_options->boolean_settings.emplace_back(
 		std::make_unique<ControlGroup::BackgroundInputSetting>(_trans("Background Input")));
 	m_options->boolean_settings.emplace_back(
-		std::make_unique<ControlGroup::BooleanSetting>(_trans("Sideways Wiimote"), false));
+		std::make_unique<ControlGroup::BooleanSetting>(_trans("Sideways Wii Remote"), false));
 	m_options->boolean_settings.emplace_back(
-		std::make_unique<ControlGroup::BooleanSetting>(_trans("Upright Wiimote"), false));
+		std::make_unique<ControlGroup::BooleanSetting>(_trans("Upright Wii Remote"), false));
 	m_options->boolean_settings.emplace_back(std::make_unique<ControlGroup::BooleanSetting>(
 		_trans("Iterative Input"), false, ControlGroup::SettingType::VIRTUAL));
 	m_options->numeric_settings.emplace_back(
@@ -295,7 +295,7 @@ Wiimote::Wiimote(const unsigned int index)
 
 	// hotkeys
 	groups.emplace_back(m_hotkeys = new ModifySettingsButton(_trans("Hotkeys")));
-	// hotkeys to temporarily modify the Wiimote orientation (sideways, upright)
+	// hotkeys to temporarily modify the Wii Remote orientation (sideways, upright)
 	// this setting modifier is toggled
 	m_hotkeys->AddInput(_trans("Sideways Toggle"), true);
 	m_hotkeys->AddInput(_trans("Upright Toggle"), true);
@@ -349,7 +349,7 @@ bool Wiimote::Step()
 	}
 
 	// check if a status report needs to be sent
-	// this happens on Wiimote sync and when extensions are switched
+	// this happens on Wii Remote sync and when extensions are switched
 	if (m_extension->active_extension != m_extension->switch_extension)
 	{
 		RequestStatus();
@@ -689,7 +689,7 @@ void Wiimote::Update()
 		if (rptf.ext)
 			GetExtData(data + rptf.ext);
 
-		// hybrid Wiimote stuff (for now, it's not supported while recording)
+		// hybrid Wii Remote stuff (for now, it's not supported while recording)
 		if (WIIMOTE_SRC_HYBRID == g_wiimote_sources[m_index] && !Movie::IsRecordingInput())
 		{
 			using namespace WiimoteReal;

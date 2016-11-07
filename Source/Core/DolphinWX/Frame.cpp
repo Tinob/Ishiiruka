@@ -2,6 +2,8 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "DolphinWX/Frame.h"
+
 #include <atomic>
 #include <cstddef>
 #include <fstream>
@@ -27,6 +29,7 @@
 #include <wx/statusbr.h>
 #include <wx/textctrl.h>
 #include <wx/thread.h>
+#include <wx/toolbar.h>
 
 #include "AudioCommon/AudioCommon.h"
 
@@ -48,8 +51,8 @@
 #include "Core/Movie.h"
 #include "Core/State.h"
 
+#include "DolphinWX/Config/ConfigMain.h"
 #include "DolphinWX/Debugger/CodeWindow.h"
-#include "DolphinWX/Frame.h"
 #include "DolphinWX/GameListCtrl.h"
 #include "DolphinWX/Globals.h"
 #include "DolphinWX/LogWindow.h"
@@ -142,7 +145,7 @@ bool CRenderFrame::IsValidSavestateDropped(const std::string& filepath)
 	std::string internal_game_id(game_id_length, ' ');
 	file.read(&internal_game_id[0], game_id_length);
 
-	return internal_game_id == SConfig::GetInstance().GetUniqueID();
+	return internal_game_id == SConfig::GetInstance().GetGameID();
 }
 
 #ifdef _WIN32
@@ -223,6 +226,7 @@ bool CRenderFrame::ShowFullScreen(bool show, long style)
 
 wxDEFINE_EVENT(wxEVT_HOST_COMMAND, wxCommandEvent);
 wxDEFINE_EVENT(DOLPHIN_EVT_LOCAL_INI_CHANGED, wxCommandEvent);
+wxDEFINE_EVENT(DOLPHIN_EVT_RELOAD_THEME_BITMAPS, wxCommandEvent);
 
 // Event tables
 BEGIN_EVENT_TABLE(CFrame, CRenderFrame)
@@ -291,13 +295,26 @@ static BOOL WINAPI s_ctrl_handler(DWORD fdwCtrlType)
 }
 #endif
 
+#if defined(__unix__) || defined(__unix) || defined(__APPLE__)
+static void SignalHandler(int)
+{
+	const char message[] = "A signal was received. A second signal will force Dolphin to stop.\n";
+	if (write(STDERR_FILENO, message, sizeof(message)) < 0)
+	{
+	}
+	s_shutdown_signal_received.Set();
+}
+#endif
+
 CFrame::CFrame(wxFrame* parent, wxWindowID id, const wxString& title, wxRect geometry,
 	bool use_debugger, bool batch_mode, bool show_log_window, long style)
 	: CRenderFrame(parent, id, title, wxDefaultPosition, wxSize(800, 600), style),
-	UseDebugger(use_debugger), m_bBatchMode(batch_mode),
-	m_toolbar_bitmap_size(FromDIP(wxSize(32, 32)))
+	UseDebugger(use_debugger), m_bBatchMode(batch_mode)
 {
-	BindMenuBarEvents();
+	BindEvents();
+
+	m_main_config_dialog = new CConfigMain(this);
+
 	for (int i = 0; i <= IDM_CODE_WINDOW - IDM_LOG_WINDOW; i++)
 		bFloatWindow[i] = false;
 
@@ -312,8 +329,7 @@ CFrame::CFrame(wxFrame* parent, wxWindowID id, const wxString& title, wxRect geo
 		g_pCodeWindow->Load();
 	}
 
-	// Create toolbar bitmaps
-	InitBitmaps();
+	wxFrame::CreateToolBar(wxTB_DEFAULT_STYLE | wxTB_TEXT | wxTB_FLAT);
 
 	// Give it a status bar
 	SetStatusBar(CreateStatusBar(2, wxST_SIZEGRIP, ID_STATUSBAR));
@@ -361,8 +377,6 @@ CFrame::CFrame(wxFrame* parent, wxWindowID id, const wxString& title, wxRect geo
 			.Hide());
 	AuiFullscreen = m_Mgr->SavePerspective();
 
-	// Create toolbar
-	RecreateToolbar();
 	if (!SConfig::GetInstance().m_InterfaceToolbar)
 		DoToggleToolbar(false);
 
@@ -420,16 +434,11 @@ CFrame::CFrame(wxFrame* parent, wxWindowID id, const wxString& title, wxRect geo
 		X11Utils::XWindowFromHandle(GetHandle()));
 #endif
 
-	// -------------------------
 	// Connect event handlers
-
 	m_Mgr->Bind(wxEVT_AUI_RENDER, &CFrame::OnManagerResize, this);
-	// ----------
 
 	// Update controls
 	UpdateGUI();
-	if (g_pCodeWindow)
-		g_pCodeWindow->UpdateButtonStates();
 
 	// check if game is running
 	InitControllers();
@@ -445,11 +454,7 @@ CFrame::CFrame(wxFrame* parent, wxWindowID id, const wxString& title, wxRect geo
 
 #if defined(__unix__) || defined(__unix) || defined(__APPLE__)
 	struct sigaction sa;
-	sa.sa_handler = [](int unused) {
-		char message[] = "A signal was received. A second signal will force Dolphin to stop.\n";
-		write(STDERR_FILENO, message, sizeof(message));
-		s_shutdown_signal_received.Set();
-	};
+	sa.sa_handler = SignalHandler;
 	sigemptyset(&sa.sa_mask);
 	sa.sa_flags = SA_RESETHAND;
 	sigaction(SIGINT, &sa, nullptr);
@@ -467,6 +472,7 @@ CFrame::~CFrame()
 	Pad::Shutdown();
 	HotkeyManagerEmu::Shutdown();
 	g_controller_interface.Shutdown();
+
 	drives.clear();
 
 #if defined(HAVE_XRANDR) && HAVE_XRANDR
@@ -480,6 +486,14 @@ CFrame::~CFrame()
 	// This object is owned by us, not wxw
 	m_menubar_shadow->Destroy();
 	m_menubar_shadow = nullptr;
+}
+
+void CFrame::BindEvents()
+{
+	BindMenuBarEvents();
+
+	Bind(DOLPHIN_EVT_RELOAD_THEME_BITMAPS, &CFrame::OnReloadThemeBitmaps, this);
+	Bind(DOLPHIN_EVT_RELOAD_GAMELIST, &CFrame::OnReloadGameList, this);
 }
 
 bool CFrame::RendererIsFullscreen()
@@ -503,18 +517,25 @@ void CFrame::OnQuit(wxCommandEvent& WXUNUSED(event))
 // Events
 void CFrame::OnActive(wxActivateEvent& event)
 {
+	m_bRendererHasFocus = (event.GetActive() && event.GetEventObject() == m_RenderFrame);
 	if (Core::GetState() == Core::CORE_RUN || Core::GetState() == Core::CORE_PAUSE)
 	{
-		if (event.GetActive() && event.GetEventObject() == m_RenderFrame)
+		if (m_bRendererHasFocus)
 		{
 			if (SConfig::GetInstance().bRenderToMain)
 				m_RenderParent->SetFocus();
+
+			if (SConfig::GetInstance().m_PauseOnFocusLost && Core::GetState() == Core::CORE_PAUSE)
+				DoPause();
 
 			if (SConfig::GetInstance().bHideCursor && Core::GetState() == Core::CORE_RUN)
 				m_RenderParent->SetCursor(wxCURSOR_BLANK);
 		}
 		else
 		{
+			if (SConfig::GetInstance().m_PauseOnFocusLost && Core::GetState() == Core::CORE_RUN)
+				DoPause();
+
 			if (SConfig::GetInstance().bHideCursor)
 				m_RenderParent->SetCursor(wxNullCursor);
 		}
@@ -768,38 +789,7 @@ bool CFrame::RendererHasFocus()
 {
 	if (m_RenderParent == nullptr)
 		return false;
-#ifdef _WIN32
-	HWND window = GetForegroundWindow();
-	if (window == nullptr)
-		return false;
-
-	if (m_RenderFrame->GetHWND() == window)
-		return true;
-#else
-	wxWindow* window = wxWindow::FindFocus();
-	if (window == nullptr)
-		return false;
-	// Why these different cases?
-	if (m_RenderParent == window || m_RenderParent == window->GetParent() ||
-		m_RenderParent->GetParent() == window->GetParent())
-	{
-		return true;
-	}
-#endif
-	return false;
-}
-
-bool CFrame::UIHasFocus()
-{
-	// UIHasFocus should return true any time any one of our UI
-	// windows has the focus, including any dialogs or other windows.
-	//
-	// wxWindow::FindFocus() returns the current wxWindow which has
-	// focus. If it's not one of our windows, then it will return
-	// null.
-
-	wxWindow* focusWindow = wxWindow::FindFocus();
-	return (focusWindow != nullptr);
+	return m_bRendererHasFocus;
 }
 
 void CFrame::OnGameListCtrlItemActivated(wxListEvent& WXUNUSED(event))
@@ -1138,35 +1128,6 @@ void CFrame::OnMouse(wxMouseEvent& event)
 	event.Skip();
 }
 
-void CFrame::OnFocusChange(wxFocusEvent& event)
-{
-	if (SConfig::GetInstance().m_PauseOnFocusLost && Core::IsRunningAndStarted())
-	{
-		if (RendererHasFocus())
-		{
-			if (Core::GetState() == Core::CORE_PAUSE)
-			{
-				Core::SetState(Core::CORE_RUN);
-				if (SConfig::GetInstance().bHideCursor)
-					m_RenderParent->SetCursor(wxCURSOR_BLANK);
-			}
-		}
-		else
-		{
-			if (Core::GetState() == Core::CORE_RUN)
-			{
-				Core::SetState(Core::CORE_PAUSE);
-				if (SConfig::GetInstance().bHideCursor)
-					m_RenderParent->SetCursor(wxNullCursor);
-				Core::UpdateTitle();
-			}
-		}
-		UpdateGUI();
-	}
-
-	event.Skip();
-}
-
 void CFrame::DoFullscreen(bool enable_fullscreen)
 {
 	if (g_Config.bExclusiveMode && Core::GetState() == Core::CORE_PAUSE)
@@ -1369,9 +1330,7 @@ void CFrame::ParseHotkeys()
 	{
 		OSDChoice = 1;
 		if (--g_Config.iEFBScale < SCALE_AUTO)
-		{
 			g_Config.iEFBScale = SCALE_AUTO;
-		}		
 	}
 	if (IsHotkey(HK_TOGGLE_CROP))
 	{
@@ -1398,6 +1357,7 @@ void CFrame::ParseHotkeys()
 	if (IsHotkey(HK_DECREASE_EMULATION_SPEED))
 	{
 		OSDChoice = 5;
+
 		if (SConfig::GetInstance().m_EmulationSpeed <= 0.0f)
 			SConfig::GetInstance().m_EmulationSpeed = 1.0f;
 		else if (SConfig::GetInstance().m_EmulationSpeed >= 0.2f)
@@ -1412,6 +1372,7 @@ void CFrame::ParseHotkeys()
 	if (IsHotkey(HK_INCREASE_EMULATION_SPEED))
 	{
 		OSDChoice = 5;
+
 		if (SConfig::GetInstance().m_EmulationSpeed > 0.0f)
 			SConfig::GetInstance().m_EmulationSpeed += 0.1f;
 
@@ -1616,5 +1577,6 @@ void CFrame::HandleSignal(wxTimerEvent& event)
 {
 	if (!s_shutdown_signal_received.TestAndClear())
 		return;
+	m_bClosing = true;
 	Close();
 }

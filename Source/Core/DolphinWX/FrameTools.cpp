@@ -68,6 +68,7 @@
 #include "DolphinWX/InputConfigDiag.h"
 #include "DolphinWX/LogWindow.h"
 #include "DolphinWX/MainMenuBar.h"
+#include "DolphinWX/MainToolBar.h"
 #include "DolphinWX/MemcardManager.h"
 #include "DolphinWX/NetPlay/NetPlaySetupFrame.h"
 #include "DolphinWX/NetPlay/NetWindow.h"
@@ -95,11 +96,6 @@ wxMenuBar* CFrame::GetMenuBar() const
 	{
 		return m_menubar_shadow;
 	}
-}
-
-const wxSize& CFrame::GetToolbarBitmapSize() const
-{
-	return m_toolbar_bitmap_size;
 }
 
 // Create menu items
@@ -180,6 +176,18 @@ void CFrame::BindMenuBarEvents()
 	Bind(wxEVT_MENU, &CFrame::GameListChanged, this, IDM_PURGE_GAME_LIST_CACHE);
 	Bind(wxEVT_MENU, &CFrame::OnChangeColumnsVisible, this, IDM_SHOW_SYSTEM, IDM_SHOW_STATE);
 
+	// Help menu
+	Bind(wxEVT_MENU, &CFrame::OnHelp, this, IDM_HELP_WEBSITE);
+	Bind(wxEVT_MENU, &CFrame::OnHelp, this, IDM_HELP_ONLINE_DOCS);
+	Bind(wxEVT_MENU, &CFrame::OnHelp, this, IDM_HELP_GITHUB);
+	Bind(wxEVT_MENU, &CFrame::OnHelp, this, wxID_ABOUT);
+
+	if (UseDebugger)
+		BindDebuggerMenuBarEvents();
+}
+
+void CFrame::BindDebuggerMenuBarEvents()
+{
 	// Debug menu
 	Bind(wxEVT_MENU, &CFrame::OnPerspectiveMenu, this, IDM_SAVE_PERSPECTIVE);
 	Bind(wxEVT_MENU, &CFrame::OnPerspectiveMenu, this, IDM_EDIT_PERSPECTIVES);
@@ -193,90 +201,68 @@ void CFrame::BindMenuBarEvents()
 	Bind(wxEVT_MENU, &CFrame::OnPerspectiveMenu, this, IDM_TAB_SPLIT);
 	Bind(wxEVT_MENU, &CFrame::OnPerspectiveMenu, this, IDM_NO_DOCKING);
 
-	// Help menu
-	Bind(wxEVT_MENU, &CFrame::OnHelp, this, IDM_HELP_WEBSITE);
-	Bind(wxEVT_MENU, &CFrame::OnHelp, this, IDM_HELP_ONLINE_DOCS);
-	Bind(wxEVT_MENU, &CFrame::OnHelp, this, IDM_HELP_GITHUB);
-	Bind(wxEVT_MENU, &CFrame::OnHelp, this, wxID_ABOUT);
+	BindDebuggerMenuBarUpdateEvents();
 }
 
-// Create toolbar items
-// ---------------------
-void CFrame::PopulateToolbar(wxToolBar* ToolBar)
+void CFrame::BindDebuggerMenuBarUpdateEvents()
 {
-	WxUtils::AddToolbarButton(ToolBar, wxID_OPEN, _("Open"), m_Bitmaps[Toolbar_FileOpen],
-		_("Open file..."));
-	WxUtils::AddToolbarButton(ToolBar, wxID_REFRESH, _("Refresh"), m_Bitmaps[Toolbar_Refresh],
-		_("Refresh game list"));
-	ToolBar->AddSeparator();
-	WxUtils::AddToolbarButton(ToolBar, IDM_PLAY, _("Play"), m_Bitmaps[Toolbar_Play], _("Play"));
-	WxUtils::AddToolbarButton(ToolBar, IDM_STOP, _("Stop"), m_Bitmaps[Toolbar_Stop], _("Stop"));
-	WxUtils::AddToolbarButton(ToolBar, IDM_TOGGLE_FULLSCREEN, _("FullScr"),
-		m_Bitmaps[Toolbar_FullScreen], _("Toggle fullscreen"));
-	WxUtils::AddToolbarButton(ToolBar, IDM_SCREENSHOT, _("ScrShot"), m_Bitmaps[Toolbar_Screenshot],
-		_("Take screenshot"));
-	ToolBar->AddSeparator();
-	WxUtils::AddToolbarButton(ToolBar, wxID_PREFERENCES, _("Config"), m_Bitmaps[Toolbar_ConfigMain],
-		_("Configure..."));
-	WxUtils::AddToolbarButton(ToolBar, IDM_CONFIG_GFX_BACKEND, _("Graphics"),
-		m_Bitmaps[Toolbar_ConfigGFX], _("Graphics settings"));
-	WxUtils::AddToolbarButton(ToolBar, IDM_CONFIG_CONTROLLERS, _("Controllers"),
-		m_Bitmaps[Toolbar_Controller], _("Controller settings"));
+	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCPUCanStep, this, IDM_STEP);
+	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCPUCanStep, this, IDM_STEPOUT);
+	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCPUCanStep, this, IDM_STEPOVER);
+
+	Bind(wxEVT_UPDATE_UI, &CFrame::OnUpdateInterpreterMenuItem, this, IDM_INTERPRETER);
+
+	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCorePaused, this, IDM_JIT_OFF);
+	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCorePaused, this, IDM_JIT_LS_OFF);
+	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCorePaused, this, IDM_JIT_LSLXZ_OFF);
+	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCorePaused, this, IDM_JIT_LSLWZ_OFF);
+	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCorePaused, this, IDM_JIT_LSLBZX_OFF);
+	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCorePaused, this, IDM_JIT_LSF_OFF);
+	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCorePaused, this, IDM_JIT_LSP_OFF);
+	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCorePaused, this, IDM_JIT_FP_OFF);
+	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCorePaused, this, IDM_JIT_I_OFF);
+	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCorePaused, this, IDM_JIT_P_OFF);
+	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCorePaused, this, IDM_JIT_SR_OFF);
+	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCorePaused, this, IDM_CLEAR_CODE_CACHE);
+
+	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCoreInitialized, this, IDM_SEARCH_INSTRUCTION);
+	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCoreInitialized, this, IDM_CLEAR_SYMBOLS);
+	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCoreInitialized, this, IDM_SCAN_FUNCTIONS);
+	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCoreInitialized, this, IDM_LOAD_MAP_FILE);
+	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCoreInitialized, this, IDM_SAVEMAPFILE);
+	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCoreInitialized, this, IDM_LOAD_MAP_FILE_AS);
+	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCoreInitialized, this, IDM_SAVE_MAP_FILE_AS);
+	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCoreInitialized, this, IDM_LOAD_BAD_MAP_FILE);
+	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCoreInitialized, this,
+		IDM_SAVE_MAP_FILE_WITH_CODES);
+	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCoreInitialized, this,
+		IDM_CREATE_SIGNATURE_FILE);
+	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCoreInitialized, this,
+		IDM_APPEND_SIGNATURE_FILE);
+	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCoreInitialized, this,
+		IDM_COMBINE_SIGNATURE_FILES);
+	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCoreInitialized, this, IDM_RENAME_SYMBOLS);
+	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCoreInitialized, this, IDM_USE_SIGNATURE_FILE);
+	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCoreInitialized, this, IDM_PATCH_HLE_FUNCTIONS);
+
+	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCoreUninitialized, this, IDM_JIT_NO_BLOCK_CACHE);
 }
 
-// Delete and recreate the toolbar
-void CFrame::RecreateToolbar()
+wxToolBar* CFrame::OnCreateToolBar(long style, wxWindowID id, const wxString& name)
 {
-	static constexpr long TOOLBAR_STYLE = wxTB_DEFAULT_STYLE | wxTB_TEXT | wxTB_FLAT;
+	const auto type =
+		UseDebugger ? MainToolBar::ToolBarType::Debug : MainToolBar::ToolBarType::Regular;
 
-	if (m_ToolBar != nullptr)
-	{
-		m_ToolBar->Destroy();
-		m_ToolBar = nullptr;
-	}
-
-	m_ToolBar = CreateToolBar(TOOLBAR_STYLE, wxID_ANY);
-	m_ToolBar->SetToolBitmapSize(m_toolbar_bitmap_size);
-
-	if (g_pCodeWindow)
-	{
-		g_pCodeWindow->PopulateToolbar(m_ToolBar);
-		m_ToolBar->AddSeparator();
-	}
-
-	PopulateToolbar(m_ToolBar);
-	// after adding the buttons to the toolbar, must call Realize() to reflect
-	// the changes
-	m_ToolBar->Realize();
-
-	UpdateGUI();
+	return new MainToolBar{ type, this, id, wxDefaultPosition, wxDefaultSize, style };
 }
 
-void CFrame::InitBitmaps()
+void CFrame::OpenGeneralConfiguration(wxWindowID tab_id)
 {
-	static constexpr std::array<const char* const, EToolbar_Max> s_image_names{
-		{ "open", "refresh", "play", "stop", "pause", "screenshot", "fullscreen", "config", "graphics",
-		"classic" } };
-	for (std::size_t i = 0; i < s_image_names.size(); ++i)
-		m_Bitmaps[i] = WxUtils::LoadScaledThemeBitmap(s_image_names[i], this, m_toolbar_bitmap_size);
+	if (tab_id > wxID_ANY)
+		m_main_config_dialog->SetSelectedTab(tab_id);
 
-	// Update in case the bitmap has been updated
-	if (m_ToolBar != nullptr)
-		RecreateToolbar();
-}
-
-void CFrame::OpenGeneralConfiguration(int tab)
-{
-	CConfigMain config_main(this);
-	if (tab > -1)
-		config_main.SetSelectedTab(tab);
-
-	HotkeyManagerEmu::Enable(false);
-	if (config_main.ShowModal() == wxID_OK)
-		UpdateGameList();
-	HotkeyManagerEmu::Enable(true);
-
-	UpdateGUI();
+	m_main_config_dialog->Show();
+	m_main_config_dialog->SetFocus();
 }
 
 // Menu items
@@ -398,7 +384,7 @@ void CFrame::OnTASInput(wxCommandEvent& event)
 		{
 			g_TASInputDlg[i + 4]->CreateWiiLayout(i);
 			g_TASInputDlg[i + 4]->Show();
-			g_TASInputDlg[i + 4]->SetTitle(wxString::Format(_("TAS Input - Wiimote %d"), i + 1));
+			g_TASInputDlg[i + 4]->SetTitle(wxString::Format(_("TAS Input - Wii Remote %d"), i + 1));
 		}
 	}
 }
@@ -523,13 +509,15 @@ void CFrame::OnPlay(wxCommandEvent& WXUNUSED(event))
 		// Core is initialized and emulator is running
 		if (UseDebugger)
 		{
-			CPU::EnableStepping(!CPU::IsStepping());
-
-			wxThread::Sleep(20);
-			g_pCodeWindow->JumpToAddress(PC);
-			g_pCodeWindow->Repopulate();
-			// Update toolbar with Play/Pause status
-			UpdateGUI();
+			bool was_stopped = CPU::IsStepping();
+			CPU::EnableStepping(!was_stopped);
+			// When the CPU stops it generates a IDM_UPDATE_DISASM_DIALOG which automatically refreshes
+			// the UI, the UI only needs to be refreshed manually when unpausing.
+			if (was_stopped)
+			{
+				g_pCodeWindow->Repopulate();
+				UpdateGUI();
+			}
 		}
 		else
 		{
@@ -629,8 +617,7 @@ void CFrame::StartGame(const std::string& filename)
 		return;
 	m_bGameLoading = true;
 
-	if (m_ToolBar)
-		m_ToolBar->EnableTool(IDM_PLAY, false);
+	GetToolBar()->EnableTool(IDM_PLAY, false);
 	GetMenuBar()->FindItem(IDM_PLAY)->Enable(false);
 
 	if (SConfig::GetInstance().bRenderToMain)
@@ -733,8 +720,6 @@ void CFrame::StartGame(const std::string& filename)
 		wxTheApp->Bind(wxEVT_MIDDLE_DOWN, &CFrame::OnMouse, this);
 		wxTheApp->Bind(wxEVT_MIDDLE_UP, &CFrame::OnMouse, this);
 		wxTheApp->Bind(wxEVT_MOTION, &CFrame::OnMouse, this);
-		wxTheApp->Bind(wxEVT_SET_FOCUS, &CFrame::OnFocusChange, this);
-		wxTheApp->Bind(wxEVT_KILL_FOCUS, &CFrame::OnFocusChange, this);
 		m_RenderParent->Bind(wxEVT_SIZE, &CFrame::OnRenderParentResize, this);
 	}
 }
@@ -744,13 +729,11 @@ void CFrame::OnBootDrive(wxCommandEvent& event)
 	BootGame(drives[event.GetId() - IDM_DRIVE1]);
 }
 
-// Refresh the file list and browse for a favorites directory
 void CFrame::OnRefresh(wxCommandEvent& WXUNUSED(event))
 {
 	UpdateGameList();
 }
 
-// Create screenshot
 void CFrame::OnScreenshot(wxCommandEvent& WXUNUSED(event))
 {
 	Core::SaveScreenShot();
@@ -926,11 +909,13 @@ void CFrame::OnStopped()
 		m_RenderFrame->SetWindowStyle(m_RenderFrame->GetWindowStyle() & ~wxSTAY_ON_TOP);
 	}
 	m_RenderParent = nullptr;
+	m_bRendererHasFocus = false;
+	m_RenderFrame = nullptr;
 
 	// Clean framerate indications from the status bar.
 	GetStatusBar()->SetStatusText(" ", 0);
 
-	// Clear wiimote connection status from the status bar.
+	// Clear Wii Remote connection status from the status bar.
 	GetStatusBar()->SetStatusText(" ", 1);
 
 	// If batch mode was specified on the command-line or we were already closing, exit now.
@@ -1064,6 +1049,50 @@ void CFrame::OnHelp(wxCommandEvent& event)
 		WxUtils::Launch("https://github.com/dolphin-emu/dolphin");
 		break;
 	}
+}
+
+void CFrame::OnReloadThemeBitmaps(wxCommandEvent& WXUNUSED(event))
+{
+	wxCommandEvent reload_event{ DOLPHIN_EVT_RELOAD_TOOLBAR_BITMAPS };
+	reload_event.SetEventObject(this);
+	wxPostEvent(GetToolBar(), reload_event);
+
+	UpdateGameList();
+}
+
+void CFrame::OnReloadGameList(wxCommandEvent& WXUNUSED(event))
+{
+	UpdateGameList();
+}
+
+void CFrame::OnEnableMenuItemIfCoreInitialized(wxUpdateUIEvent& event)
+{
+	event.Enable(Core::GetState() != Core::CORE_UNINITIALIZED);
+}
+
+void CFrame::OnEnableMenuItemIfCoreUninitialized(wxUpdateUIEvent& event)
+{
+	event.Enable(Core::GetState() == Core::CORE_UNINITIALIZED);
+}
+
+void CFrame::OnEnableMenuItemIfCorePaused(wxUpdateUIEvent& event)
+{
+	event.Enable(Core::GetState() == Core::CORE_PAUSE);
+}
+
+void CFrame::OnEnableMenuItemIfCPUCanStep(wxUpdateUIEvent& event)
+{
+	event.Enable(Core::GetState() != Core::CORE_UNINITIALIZED && CPU::IsStepping());
+}
+
+void CFrame::OnUpdateInterpreterMenuItem(wxUpdateUIEvent& event)
+{
+	OnEnableMenuItemIfCorePaused(event);
+
+	if (GetMenuBar()->FindItem(IDM_INTERPRETER)->IsChecked())
+		return;
+
+	event.Check(SConfig::GetInstance().iCPUCore == PowerPC::CORE_INTERPRETER);
 }
 
 void CFrame::ClearStatusBar()
@@ -1227,7 +1256,7 @@ void CFrame::ConnectWiimote(int wm_idx, bool connect)
 	{
 		bool was_unpaused = Core::PauseAndLock(true);
 		GetUsbPointer()->AccessWiiMote(wm_idx | 0x100)->Activate(connect);
-		const char* message = connect ? "Wiimote %i connected" : "Wiimote %i disconnected";
+		const char* message = connect ? "Wii Remote %i connected" : "Wii Remote %i disconnected";
 		Core::DisplayMessage(StringFromFormat(message, wm_idx + 1), 3000);
 		Host_UpdateMainFrame();
 		Core::PauseAndLock(false, was_unpaused);
@@ -1368,18 +1397,7 @@ void CFrame::UpdateGUI()
 	bool Paused = Core::GetState() == Core::CORE_PAUSE;
 	bool Stopping = Core::GetState() == Core::CORE_STOPPING;
 
-	// Make sure that we have a toolbar
-	if (m_ToolBar)
-	{
-		// Enable/disable the Config and Stop buttons
-		m_ToolBar->EnableTool(wxID_OPEN, !Initialized);
-		// Don't allow refresh when we don't show the list
-		m_ToolBar->EnableTool(wxID_REFRESH, !Initialized);
-		m_ToolBar->EnableTool(IDM_STOP, Running || Paused);
-		m_ToolBar->EnableTool(IDM_TOGGLE_FULLSCREEN, Running || Paused);
-		m_ToolBar->EnableTool(IDM_SCREENSHOT, Running || Paused);
-	}
-
+	GetToolBar()->Refresh(false);
 	GetMenuBar()->Refresh(false);
 
 	// File
@@ -1436,33 +1454,6 @@ void CFrame::UpdateGUI()
 		Core::PauseAndLock(false, was_unpaused);
 	}
 
-	if (m_ToolBar)
-	{
-		// Get the tool that controls pausing/playing
-		wxToolBarToolBase* PlayTool = m_ToolBar->FindById(IDM_PLAY);
-
-		if (PlayTool)
-		{
-			int position = m_ToolBar->GetToolPos(IDM_PLAY);
-
-			if (Running)
-			{
-				m_ToolBar->DeleteTool(IDM_PLAY);
-				m_ToolBar->InsertTool(position, IDM_PLAY, _("Pause"), m_Bitmaps[Toolbar_Pause],
-					WxUtils::CreateDisabledButtonBitmap(m_Bitmaps[Toolbar_Pause]),
-					wxITEM_NORMAL, _("Pause"));
-			}
-			else
-			{
-				m_ToolBar->DeleteTool(IDM_PLAY);
-				m_ToolBar->InsertTool(position, IDM_PLAY, _("Play"), m_Bitmaps[Toolbar_Play],
-					WxUtils::CreateDisabledButtonBitmap(m_Bitmaps[Toolbar_Play]),
-					wxITEM_NORMAL, _("Play"));
-			}
-			m_ToolBar->Realize();
-		}
-	}
-
 	GetMenuBar()->FindItem(IDM_RECORD_READ_ONLY)->Enable(Running || Paused);
 
 	if (!Initialized && !m_bGameLoading)
@@ -1472,8 +1463,7 @@ void CFrame::UpdateGUI()
 			// Prepare to load Default ISO, enable play button
 			if (!SConfig::GetInstance().m_strDefaultISO.empty())
 			{
-				if (m_ToolBar)
-					m_ToolBar->EnableTool(IDM_PLAY, true);
+				GetToolBar()->EnableTool(IDM_PLAY, true);
 				GetMenuBar()->FindItem(IDM_PLAY)->Enable();
 				GetMenuBar()->FindItem(IDM_RECORD)->Enable();
 				GetMenuBar()->FindItem(IDM_PLAY_RECORD)->Enable();
@@ -1482,8 +1472,7 @@ void CFrame::UpdateGUI()
 			else if (!SConfig::GetInstance().m_LastFilename.empty() &&
 				File::Exists(SConfig::GetInstance().m_LastFilename))
 			{
-				if (m_ToolBar)
-					m_ToolBar->EnableTool(IDM_PLAY, true);
+				GetToolBar()->EnableTool(IDM_PLAY, true);
 				GetMenuBar()->FindItem(IDM_PLAY)->Enable();
 				GetMenuBar()->FindItem(IDM_RECORD)->Enable();
 				GetMenuBar()->FindItem(IDM_PLAY_RECORD)->Enable();
@@ -1491,8 +1480,7 @@ void CFrame::UpdateGUI()
 			else
 			{
 				// No game has been selected yet, disable play button
-				if (m_ToolBar)
-					m_ToolBar->EnableTool(IDM_PLAY, false);
+				GetToolBar()->EnableTool(IDM_PLAY, false);
 				GetMenuBar()->FindItem(IDM_PLAY)->Enable(false);
 				GetMenuBar()->FindItem(IDM_RECORD)->Enable(false);
 				GetMenuBar()->FindItem(IDM_PLAY_RECORD)->Enable(false);
@@ -1508,8 +1496,7 @@ void CFrame::UpdateGUI()
 		// Game has been selected but not started, enable play button
 		if (m_GameListCtrl->GetSelectedISO() != nullptr && m_GameListCtrl->IsEnabled())
 		{
-			if (m_ToolBar)
-				m_ToolBar->EnableTool(IDM_PLAY, true);
+			GetToolBar()->EnableTool(IDM_PLAY, true);
 			GetMenuBar()->FindItem(IDM_PLAY)->Enable();
 			GetMenuBar()->FindItem(IDM_RECORD)->Enable();
 			GetMenuBar()->FindItem(IDM_PLAY_RECORD)->Enable();
@@ -1518,19 +1505,14 @@ void CFrame::UpdateGUI()
 	else if (Initialized)
 	{
 		// Game has been loaded, enable the pause button
-		if (m_ToolBar)
-			m_ToolBar->EnableTool(IDM_PLAY, !Stopping);
+		GetToolBar()->EnableTool(IDM_PLAY, !Stopping);
 		GetMenuBar()->FindItem(IDM_PLAY)->Enable(!Stopping);
 
 		// Reset game loading flag
 		m_bGameLoading = false;
 	}
 
-	// Refresh toolbar
-	if (m_ToolBar)
-	{
-		m_ToolBar->Refresh();
-	}
+	GetToolBar()->Refresh(false);
 
 	// Commit changes to manager
 	m_Mgr->Update();
@@ -1547,8 +1529,9 @@ void CFrame::UpdateGUI()
 
 void CFrame::UpdateGameList()
 {
-	if (m_GameListCtrl)
-		m_GameListCtrl->ReloadList();
+	wxCommandEvent event{DOLPHIN_EVT_RELOAD_GAMELIST, GetId()};
+	event.SetEventObject(this);
+	wxPostEvent(m_GameListCtrl, event);
 }
 
 void CFrame::GameListChanged(wxCommandEvent& event)

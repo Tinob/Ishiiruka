@@ -27,6 +27,7 @@
 // Class declarations
 class CGameListCtrl;
 class CCodeWindow;
+class CConfigMain;
 class CLogWindow;
 class FifoPlayerDlg;
 class LogConfigWindow;
@@ -59,6 +60,8 @@ private:
 #endif
 };
 
+wxDECLARE_EVENT(DOLPHIN_EVT_RELOAD_THEME_BITMAPS, wxCommandEvent);
+
 class CFrame : public CRenderFrame
 {
 public:
@@ -84,7 +87,6 @@ public:
 	wxCheatsWindow* g_CheatsWindow = nullptr;
 	TASInputDlg* g_TASInputDlg[8];
 
-	void InitBitmaps();
 	void DoPause();
 	void DoStop();
 	void OnStopped();
@@ -101,18 +103,16 @@ public:
 	void OnRenderParentClose(wxCloseEvent& event);
 	void OnRenderParentMove(wxMoveEvent& event);
 	bool RendererHasFocus();
-	bool UIHasFocus();
 	bool RendererIsFullscreen();
 	void DoFullscreen(bool bF);
 	void ToggleDisplayMode(bool bFullscreen);
 	void UpdateWiiMenuChoice(wxMenuItem* WiiMenuItem = nullptr);
 	static void ConnectWiimote(int wm_idx, bool connect);
 	void UpdateTitle(const std::string& str);
-	void OpenGeneralConfiguration(int tab = -1);
+	void OpenGeneralConfiguration(wxWindowID tab_id = wxID_ANY);
 
 	const CGameListCtrl* GetGameListCtrl() const;
 	wxMenuBar* GetMenuBar() const override;
-	const wxSize& GetToolbarBitmapSize() const;  // Needed before the toolbar exists
 
 #ifdef __WXGTK__
 	Common::Event panic_event;
@@ -126,7 +126,6 @@ public:
 
 	wxMenu* m_SavedPerspectives = nullptr;
 
-	wxToolBar* m_ToolBar = nullptr;
 	// AUI
 	wxAuiManager* m_Mgr = nullptr;
 	bool bFloatWindow[IDM_DEBUG_WINDOW_LIST_END - IDM_DEBUG_WINDOW_LIST_START] = {};
@@ -145,6 +144,7 @@ public:
 
 private:
 	CGameListCtrl* m_GameListCtrl = nullptr;
+	CConfigMain* m_main_config_dialog = nullptr;
 	wxPanel* m_Panel = nullptr;
 	CRenderFrame* m_RenderFrame = nullptr;
 	wxWindow* m_RenderParent = nullptr;
@@ -158,26 +158,12 @@ private:
 	bool m_bNoDocking = false;
 	bool m_bGameLoading = false;
 	bool m_bClosing = false;
+	bool m_bRendererHasFocus = false;
 	bool m_confirmStop = false;
 	bool m_tried_graceful_shutdown = false;
 	int m_saveSlot = 1;
 
 	std::vector<std::string> drives;
-
-	enum EToolbar
-	{
-		Toolbar_FileOpen,
-		Toolbar_Refresh,
-		Toolbar_Play,
-		Toolbar_Stop,
-		Toolbar_Pause,
-		Toolbar_Screenshot,
-		Toolbar_FullScreen,
-		Toolbar_ConfigMain,
-		Toolbar_ConfigGFX,
-		Toolbar_Controller,
-		EToolbar_Max
-	};
 
 	enum
 	{
@@ -191,16 +177,15 @@ private:
 	wxTimer m_poll_hotkey_timer;
 	wxTimer m_handle_signal_timer;
 
-	wxSize m_toolbar_bitmap_size;
-	wxBitmap m_Bitmaps[EToolbar_Max];
-
 	wxMenuBar* m_menubar_shadow = nullptr;
 
-	void PopulateToolbar(wxToolBar* toolBar);
-	void RecreateToolbar();
-
-	wxMenuBar* CreateMenuBar() const;
+	void BindEvents();
 	void BindMenuBarEvents();
+	void BindDebuggerMenuBarEvents();
+	void BindDebuggerMenuBarUpdateEvents();
+
+	wxToolBar* OnCreateToolBar(long style, wxWindowID id, const wxString& name) override;
+	wxMenuBar* CreateMenuBar() const;
 
 	// Utility
 	wxWindow* GetNotebookPageFromId(wxWindowID Id);
@@ -226,6 +211,7 @@ private:
 	void TogglePaneStyle(bool On, int EventId);
 	void ToggleNotebookStyle(bool On, long Style);
 	void PopulateSavedPerspectives();
+
 	// Float window
 	void DoUnfloatPage(int Id);
 	void OnFloatingPageClosed(wxCloseEvent& event);
@@ -250,6 +236,15 @@ private:
 	// Event functions
 	void OnQuit(wxCommandEvent& event);
 	void OnHelp(wxCommandEvent& event);
+
+	void OnReloadThemeBitmaps(wxCommandEvent& event);
+	void OnReloadGameList(wxCommandEvent& event);
+
+	void OnEnableMenuItemIfCoreInitialized(wxUpdateUIEvent& event);
+	void OnEnableMenuItemIfCoreUninitialized(wxUpdateUIEvent& event);
+	void OnEnableMenuItemIfCorePaused(wxUpdateUIEvent& event);
+	void OnEnableMenuItemIfCPUCanStep(wxUpdateUIEvent& event);
+	void OnUpdateInterpreterMenuItem(wxUpdateUIEvent& event);
 
 	void OnOpen(wxCommandEvent& event);  // File menu
 	void DoOpen(bool Boot);
@@ -304,8 +299,6 @@ private:
 
 	void OnKeyDown(wxKeyEvent& event);  // Keyboard
 	void OnMouse(wxMouseEvent& event);  // Mouse
-
-	void OnFocusChange(wxFocusEvent& event);
 
 	void OnHostMessage(wxCommandEvent& event);
 

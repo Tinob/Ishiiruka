@@ -7,7 +7,6 @@
 #include <array>
 
 #include <wx/aui/framemanager.h>
-#include <wx/bitmap.h>
 #include <wx/panel.h>
 
 #include "Common/CommonTypes.h"
@@ -84,10 +83,6 @@ public:
 	void Load();
 	void Save();
 
-	// Parent interaction
-	wxMenuBar* GetMenuBar();
-	wxToolBar* GetToolBar();
-
 	bool UseInterpreter();
 	bool BootToPause();
 	bool AutomaticStart();
@@ -95,13 +90,10 @@ public:
 	bool JITNoBlockLinking();
 	bool JumpToAddress(u32 address);
 
-	void Repopulate();
+	void Repopulate(bool refresh_codeview = true);
 	void NotifyMapLoaded();
-	void PopulateToolbar(wxToolBar* toolBar);
-	void UpdateButtonStates();
 	void OpenPages();
 
-	// Menu bar
 	// FIXME: This belongs in a separate class.
 	void TogglePanel(int id, bool show);
 	wxPanel* GetUntypedPanel(int id) const;
@@ -131,6 +123,8 @@ public:
 	int iNbAffiliation[IDM_DEBUG_WINDOW_LIST_END - IDM_DEBUG_WINDOW_LIST_START];
 
 private:
+	wxMenuBar* GetParentMenuBar();
+
 	void OnCPUMode(wxCommandEvent& event);
 
 	void OnChangeFont(wxCommandEvent& event);
@@ -154,13 +148,11 @@ private:
 	void StepOut();
 	void ToggleBreakpoint();
 
+	void UpdateFonts();
 	void UpdateLists();
 	void UpdateCallstack();
 
-	void InitBitmaps();
 	wxPanel* CreateSiblingPanel(int id);
-
-	wxBitmap m_Bitmaps[Toolbar_Debug_Bitmap_Max];
 
 	// Sibling debugger panels
 	// FIXME: This obviously belongs in some manager class above this one.

@@ -344,8 +344,8 @@ static u32 AdvanceDTK(u32 maximum_samples, u32* samples_to_process)
 	{
 		if (s_audio_position >= s_current_start + s_current_length)
 		{
-			DEBUG_LOG(DVDINTERFACE, "AdvanceDTK: NextStart=%08x, NextLength=%08x, "
-				"CurrentStart=%08x, CurrentLength=%08x, AudioPos=%08x",
+			DEBUG_LOG(DVDINTERFACE, "AdvanceDTK: NextStart=%08" PRIx64 ", NextLength=%08x, "
+				"CurrentStart=%08" PRIx64 ", CurrentLength=%08x, AudioPos=%08" PRIx64,
 				s_next_start, s_next_length, s_current_start, s_current_length, s_audio_position);
 
 			s_audio_position = s_next_start;

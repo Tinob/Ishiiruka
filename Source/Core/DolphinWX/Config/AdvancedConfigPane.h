@@ -3,6 +3,7 @@
 // Refer to the license.txt file included.
 
 #pragma once
+
 #include <ctime>
 #include <wx/panel.h>
 
@@ -22,7 +23,10 @@ public:
 private:
 	void InitializeGUI();
 	void LoadGUIValues();
-	void RefreshGUI();
+	void BindEvents();
+
+	void OnUpdateCPUClockControls(wxUpdateUIEvent&);
+	void OnUpdateRTCDateTimeEntries(wxUpdateUIEvent&);
 
 	void OnClockOverrideCheckBoxChanged(wxCommandEvent&);
 	void OnClockOverrideSliderChanged(wxCommandEvent&);

@@ -14,7 +14,6 @@
 
 namespace Arm64Gen
 {
-
 // X30 serves a dual purpose as a link register
 // Encoded as <u3:type><u5:reg>
 // Types:
@@ -26,77 +25,260 @@ namespace Arm64Gen
 enum ARM64Reg
 {
 	// 32bit registers
-	W0 = 0, W1, W2, W3, W4, W5, W6,
-	W7, W8, W9, W10, W11, W12, W13, W14,
-	W15, W16, W17, W18, W19, W20, W21, W22,
-	W23, W24, W25, W26, W27, W28, W29, W30,
+	W0 = 0,
+	W1,
+	W2,
+	W3,
+	W4,
+	W5,
+	W6,
+	W7,
+	W8,
+	W9,
+	W10,
+	W11,
+	W12,
+	W13,
+	W14,
+	W15,
+	W16,
+	W17,
+	W18,
+	W19,
+	W20,
+	W21,
+	W22,
+	W23,
+	W24,
+	W25,
+	W26,
+	W27,
+	W28,
+	W29,
+	W30,
 
-	WSP, // 32bit stack pointer
+	WSP,  // 32bit stack pointer
 
-	// 64bit registers
-	X0 = 0x20, X1, X2, X3, X4, X5, X6,
-	X7, X8, X9, X10, X11, X12, X13, X14,
-	X15, X16, X17, X18, X19, X20, X21, X22,
-	X23, X24, X25, X26, X27, X28, X29, X30,
+				// 64bit registers
+				X0 = 0x20,
+				X1,
+				X2,
+				X3,
+				X4,
+				X5,
+				X6,
+				X7,
+				X8,
+				X9,
+				X10,
+				X11,
+				X12,
+				X13,
+				X14,
+				X15,
+				X16,
+				X17,
+				X18,
+				X19,
+				X20,
+				X21,
+				X22,
+				X23,
+				X24,
+				X25,
+				X26,
+				X27,
+				X28,
+				X29,
+				X30,
 
-	SP, // 64bit stack pointer
+				SP,  // 64bit stack pointer
 
-	// VFP single precision registers
-	S0 = 0x40, S1, S2, S3, S4, S5, S6,
-	S7, S8, S9, S10, S11, S12, S13,
-	S14, S15, S16, S17, S18, S19, S20,
-	S21, S22, S23, S24, S25, S26, S27,
-	S28, S29, S30, S31,
+						 // VFP single precision registers
+						 S0 = 0x40,
+						 S1,
+						 S2,
+						 S3,
+						 S4,
+						 S5,
+						 S6,
+						 S7,
+						 S8,
+						 S9,
+						 S10,
+						 S11,
+						 S12,
+						 S13,
+						 S14,
+						 S15,
+						 S16,
+						 S17,
+						 S18,
+						 S19,
+						 S20,
+						 S21,
+						 S22,
+						 S23,
+						 S24,
+						 S25,
+						 S26,
+						 S27,
+						 S28,
+						 S29,
+						 S30,
+						 S31,
 
-	// VFP Double Precision registers
-	D0 = 0x80, D1, D2, D3, D4, D5, D6, D7,
-	D8, D9, D10, D11, D12, D13, D14, D15,
-	D16, D17, D18, D19, D20, D21, D22, D23,
-	D24, D25, D26, D27, D28, D29, D30, D31,
+						 // VFP Double Precision registers
+						 D0 = 0x80,
+						 D1,
+						 D2,
+						 D3,
+						 D4,
+						 D5,
+						 D6,
+						 D7,
+						 D8,
+						 D9,
+						 D10,
+						 D11,
+						 D12,
+						 D13,
+						 D14,
+						 D15,
+						 D16,
+						 D17,
+						 D18,
+						 D19,
+						 D20,
+						 D21,
+						 D22,
+						 D23,
+						 D24,
+						 D25,
+						 D26,
+						 D27,
+						 D28,
+						 D29,
+						 D30,
+						 D31,
 
-	// ASIMD Quad-Word registers
-	Q0 = 0xC0, Q1, Q2, Q3, Q4, Q5, Q6, Q7,
-	Q8, Q9, Q10, Q11, Q12, Q13, Q14, Q15,
-	Q16, Q17, Q18, Q19, Q20, Q21, Q22, Q23,
-	Q24, Q25, Q26, Q27, Q28, Q29, Q30, Q31,
+						 // ASIMD Quad-Word registers
+						 Q0 = 0xC0,
+						 Q1,
+						 Q2,
+						 Q3,
+						 Q4,
+						 Q5,
+						 Q6,
+						 Q7,
+						 Q8,
+						 Q9,
+						 Q10,
+						 Q11,
+						 Q12,
+						 Q13,
+						 Q14,
+						 Q15,
+						 Q16,
+						 Q17,
+						 Q18,
+						 Q19,
+						 Q20,
+						 Q21,
+						 Q22,
+						 Q23,
+						 Q24,
+						 Q25,
+						 Q26,
+						 Q27,
+						 Q28,
+						 Q29,
+						 Q30,
+						 Q31,
 
-	// For PRFM(prefetch memory) encoding
-	// This is encoded in the Rt register
-	// Data preload
-	PLDL1KEEP = 0, PLDL1STRM,
-	PLDL2KEEP, PLDL2STRM,
-	PLDL3KEEP, PLDL3STRM,
-	// Instruction preload
-	PLIL1KEEP = 8, PLIL1STRM,
-	PLIL2KEEP, PLIL2STRM,
-	PLIL3KEEP, PLIL3STRM,
-	// Prepare for store
-	PLTL1KEEP = 16, PLTL1STRM,
-	PLTL2KEEP, PLTL2STRM,
-	PLTL3KEEP, PLTL3STRM,
+						 // For PRFM(prefetch memory) encoding
+						 // This is encoded in the Rt register
+						 // Data preload
+						 PLDL1KEEP = 0,
+						 PLDL1STRM,
+						 PLDL2KEEP,
+						 PLDL2STRM,
+						 PLDL3KEEP,
+						 PLDL3STRM,
+						 // Instruction preload
+						 PLIL1KEEP = 8,
+						 PLIL1STRM,
+						 PLIL2KEEP,
+						 PLIL2STRM,
+						 PLIL3KEEP,
+						 PLIL3STRM,
+						 // Prepare for store
+						 PLTL1KEEP = 16,
+						 PLTL1STRM,
+						 PLTL2KEEP,
+						 PLTL2STRM,
+						 PLTL3KEEP,
+						 PLTL3STRM,
 
-	WZR = WSP,
-	ZR = SP,
+						 WZR = WSP,
+						 ZR = SP,
 
-	INVALID_REG = 0xFFFFFFFF
+						 INVALID_REG = 0xFFFFFFFF
 };
 
-constexpr bool Is64Bit(ARM64Reg reg)  { return (reg & 0x20) != 0; }
-constexpr bool IsSingle(ARM64Reg reg) { return (reg & 0xC0) == 0x40; }
-constexpr bool IsDouble(ARM64Reg reg) { return (reg & 0xC0) == 0x80; }
-constexpr bool IsScalar(ARM64Reg reg) { return IsSingle(reg) || IsDouble(reg); }
-constexpr bool IsQuad(ARM64Reg reg)   { return (reg & 0xC0) == 0xC0; }
-constexpr bool IsVector(ARM64Reg reg) { return (reg & 0xC0) != 0; }
-constexpr bool IsGPR(ARM64Reg reg)    { return static_cast<int>(reg) < 0x40; }
+constexpr bool Is64Bit(ARM64Reg reg)
+{
+	return (reg & 0x20) != 0;
+}
+constexpr bool IsSingle(ARM64Reg reg)
+{
+	return (reg & 0xC0) == 0x40;
+}
+constexpr bool IsDouble(ARM64Reg reg)
+{
+	return (reg & 0xC0) == 0x80;
+}
+constexpr bool IsScalar(ARM64Reg reg)
+{
+	return IsSingle(reg) || IsDouble(reg);
+}
+constexpr bool IsQuad(ARM64Reg reg)
+{
+	return (reg & 0xC0) == 0xC0;
+}
+constexpr bool IsVector(ARM64Reg reg)
+{
+	return (reg & 0xC0) != 0;
+}
+constexpr bool IsGPR(ARM64Reg reg)
+{
+	return static_cast<int>(reg) < 0x40;
+}
 
-constexpr ARM64Reg DecodeReg(ARM64Reg reg)         { return static_cast<ARM64Reg>(reg & 0x1F); }
-constexpr ARM64Reg EncodeRegTo64(ARM64Reg reg)     { return static_cast<ARM64Reg>(reg | 0x20); }
-constexpr ARM64Reg EncodeRegToSingle(ARM64Reg reg) { return static_cast<ARM64Reg>(DecodeReg(reg) + S0); }
-constexpr ARM64Reg EncodeRegToDouble(ARM64Reg reg) { return static_cast<ARM64Reg>((reg & ~0xC0) | 0x80); }
-constexpr ARM64Reg EncodeRegToQuad(ARM64Reg reg)   { return static_cast<ARM64Reg>(reg | 0xC0); }
+constexpr ARM64Reg DecodeReg(ARM64Reg reg)
+{
+	return static_cast<ARM64Reg>(reg & 0x1F);
+}
+constexpr ARM64Reg EncodeRegTo64(ARM64Reg reg)
+{
+	return static_cast<ARM64Reg>(reg | 0x20);
+}
+constexpr ARM64Reg EncodeRegToSingle(ARM64Reg reg)
+{
+	return static_cast<ARM64Reg>(DecodeReg(reg) + S0);
+}
+constexpr ARM64Reg EncodeRegToDouble(ARM64Reg reg)
+{
+	return static_cast<ARM64Reg>((reg & ~0xC0) | 0x80);
+}
+constexpr ARM64Reg EncodeRegToQuad(ARM64Reg reg)
+{
+	return static_cast<ARM64Reg>(reg | 0xC0);
+}
 
 // For AND/TST/ORR/EOR etc
-bool IsImmLogical(uint64_t value, unsigned int width, unsigned int* n, unsigned int* imm_s, unsigned int* imm_r);
+bool IsImmLogical(uint64_t value, unsigned int width, unsigned int* n, unsigned int* imm_s,
+	unsigned int* imm_r);
 // For ADD/SUB
 bool IsImmArithmetic(uint64_t input, u32* val, bool* shift);
 
@@ -125,7 +307,7 @@ enum IndexType
 	INDEX_UNSIGNED,
 	INDEX_POST,
 	INDEX_PRE,
-	INDEX_SIGNED, // used in LDP/STP
+	INDEX_SIGNED,  // used in LDP/STP
 };
 
 enum ShiftAmount
@@ -136,7 +318,8 @@ enum ShiftAmount
 	SHIFT_48 = 3,
 };
 
-enum RoundingMode {
+enum RoundingMode
+{
 	ROUND_A,  // round to nearest, ties to away
 	ROUND_M,  // round towards -inf
 	ROUND_N,  // round to nearest, ties to even
@@ -172,7 +355,7 @@ enum PStateField
 	FIELD_SPSel = 0,
 	FIELD_DAIFSet,
 	FIELD_DAIFClr,
-	FIELD_NZCV,	// The only system registers accessible from EL0 (user space)
+	FIELD_NZCV,  // The only system registers accessible from EL0 (user space)
 	FIELD_PMCR_EL0,
 	FIELD_PMCCNTR_EL0,
 	FIELD_FPCR = 0x340,
@@ -193,16 +376,16 @@ enum BarrierType
 {
 	OSHLD = 1,
 	OSHST = 2,
-	OSH   = 3,
+	OSH = 3,
 	NSHLD = 5,
 	NSHST = 6,
-	NSH   = 7,
+	NSH = 7,
 	ISHLD = 9,
 	ISHST = 10,
-	ISH   = 11,
-	LD    = 13,
-	ST    = 14,
-	SY    = 15,
+	ISH = 11,
+	LD = 13,
+	ST = 14,
+	SY = 15,
 };
 
 class ArithOption
@@ -235,12 +418,12 @@ public:
 	};
 
 private:
-	ARM64Reg        m_destReg;
-	WidthSpecifier  m_width;
+	ARM64Reg m_destReg;
+	WidthSpecifier m_width;
 	ExtendSpecifier m_extend;
-	TypeSpecifier   m_type;
-	ShiftType       m_shifttype;
-	u32             m_shift;
+	TypeSpecifier m_type;
+	ShiftType m_shifttype;
+	u32 m_shift;
 
 public:
 	ArithOption(ARM64Reg Rd, bool index = false)
@@ -293,28 +476,20 @@ public:
 				m_shift = 0;
 		}
 	}
-	TypeSpecifier GetType() const
-	{
-		return m_type;
-	}
-	ARM64Reg GetReg() const
-	{
-		return m_destReg;
-	}
+	TypeSpecifier GetType() const { return m_type; }
+	ARM64Reg GetReg() const { return m_destReg; }
 	u32 GetData() const
 	{
 		switch (m_type)
 		{
-			case TYPE_EXTENDEDREG:
-				return (m_extend << 13) |
-				       (m_shift << 10);
+		case TYPE_EXTENDEDREG:
+			return (m_extend << 13) | (m_shift << 10);
 			break;
-			case TYPE_SHIFTEDREG:
-				return (m_shifttype << 22) |
-				       (m_shift << 10);
+		case TYPE_SHIFTEDREG:
+			return (m_shifttype << 22) | (m_shift << 10);
 			break;
-			default:
-				_dbg_assert_msg_(DYNA_REC, false, "Invalid type in GetData");
+		default:
+			_dbg_assert_msg_(DYNA_REC, false, "Invalid type in GetData");
 			break;
 		}
 		return 0;
@@ -335,7 +510,8 @@ private:
 	void EncodeUnconditionalBranchInst(u32 opc, u32 op2, u32 op3, u32 op4, ARM64Reg Rn);
 	void EncodeExceptionInst(u32 instenc, u32 imm);
 	void EncodeSystemInst(u32 op0, u32 op1, u32 CRn, u32 CRm, u32 op2, ARM64Reg Rt);
-	void EncodeArithmeticInst(u32 instenc, bool flags, ARM64Reg Rd, ARM64Reg Rn, ARM64Reg Rm, ArithOption Option);
+	void EncodeArithmeticInst(u32 instenc, bool flags, ARM64Reg Rd, ARM64Reg Rn, ARM64Reg Rm,
+		ArithOption Option);
 	void EncodeArithmeticCarryInst(u32 op, bool flags, ARM64Reg Rd, ARM64Reg Rn, ARM64Reg Rm);
 	void EncodeCondCompareImmInst(u32 op, ARM64Reg Rn, u32 imm, u32 nzcv, CCFlags cond);
 	void EncodeCondCompareRegInst(u32 op, ARM64Reg Rn, ARM64Reg Rm, u32 nzcv, CCFlags cond);
@@ -354,7 +530,8 @@ private:
 	void EncodeLoadStoreRegisterOffset(u32 size, u32 opc, ARM64Reg Rt, ARM64Reg Rn, ArithOption Rm);
 	void EncodeAddSubImmInst(u32 op, bool flags, u32 shift, u32 imm, ARM64Reg Rn, ARM64Reg Rd);
 	void EncodeLogicalImmInst(u32 op, ARM64Reg Rd, ARM64Reg Rn, u32 immr, u32 imms, int n);
-	void EncodeLoadStorePair(u32 op, u32 load, IndexType type, ARM64Reg Rt, ARM64Reg Rt2, ARM64Reg Rn, s32 imm);
+	void EncodeLoadStorePair(u32 op, u32 load, IndexType type, ARM64Reg Rt, ARM64Reg Rt2, ARM64Reg Rn,
+		s32 imm);
 	void EncodeAddressInst(u32 op, ARM64Reg Rd, s32 imm);
 	void EncodeLoadStoreUnscaled(u32 size, u32 op, ARM64Reg Rt, ARM64Reg Rn, s32 imm);
 
@@ -362,20 +539,14 @@ protected:
 	void Write32(u32 value);
 
 public:
-	ARM64XEmitter()
-		: m_code(nullptr), m_lastCacheFlushEnd(nullptr)
+	ARM64XEmitter() : m_code(nullptr), m_lastCacheFlushEnd(nullptr) {}
+	ARM64XEmitter(u8* code_ptr)
 	{
-	}
-
-	ARM64XEmitter(u8* code_ptr) {
 		m_code = code_ptr;
 		m_lastCacheFlushEnd = code_ptr;
 	}
 
-	virtual ~ARM64XEmitter()
-	{
-	}
-
+	virtual ~ARM64XEmitter() {}
 	void SetCodePtr(u8* ptr);
 	void SetCodePtrUnsafe(u8* ptr);
 	void ReserveCodeSpace(u32 bytes);
@@ -480,11 +651,12 @@ public:
 		ARM64Reg zr = Is64Bit(Rd) ? ZR : WZR;
 		CSINC(Rd, zr, zr, (CCFlags)((u32)cond ^ 1));
 	}
-	void NEG(ARM64Reg Rd, ARM64Reg Rs)
+	void CSETM(ARM64Reg Rd, CCFlags cond)
 	{
-		SUB(Rd, Is64Bit(Rd) ? ZR : WZR, Rs);
+		ARM64Reg zr = Is64Bit(Rd) ? ZR : WZR;
+		CSINV(Rd, zr, zr, (CCFlags)((u32)cond ^ 1));
 	}
-
+	void NEG(ARM64Reg Rd, ARM64Reg Rs) { SUB(Rd, Is64Bit(Rd) ? ZR : WZR, Rs); }
 	// Data-Processing 1 source
 	void RBIT(ARM64Reg Rd, ARM64Reg Rn);
 	void REV16(ARM64Reg Rd, ARM64Reg Rn);
@@ -542,7 +714,6 @@ public:
 	void EON(ARM64Reg Rd, ARM64Reg Rn, ARM64Reg Rm) { EON(Rd, Rn, Rm, ArithOption(Rd, ST_LSL, 0)); }
 	void ANDS(ARM64Reg Rd, ARM64Reg Rn, ARM64Reg Rm) { ANDS(Rd, Rn, Rm, ArithOption(Rd, ST_LSL, 0)); }
 	void BICS(ARM64Reg Rd, ARM64Reg Rn, ARM64Reg Rm) { BICS(Rd, Rn, Rm, ArithOption(Rd, ST_LSL, 0)); }
-
 	// Convenience wrappers around ORR. These match the official convenience syntax.
 	void MOV(ARM64Reg Rd, ARM64Reg Rm, ArithOption Shift);
 	void MOV(ARM64Reg Rd, ARM64Reg Rm);
@@ -560,11 +731,7 @@ public:
 	void EOR(ARM64Reg Rd, ARM64Reg Rn, u32 immr, u32 imms, bool invert = false);
 	void ORR(ARM64Reg Rd, ARM64Reg Rn, u32 immr, u32 imms, bool invert = false);
 	void TST(ARM64Reg Rn, u32 immr, u32 imms, bool invert = false);
-	void TST(ARM64Reg Rn, ARM64Reg Rm)
-	{
-		ANDS(Is64Bit(Rn) ? ZR : WZR, Rn, Rm);
-	}
-
+	void TST(ARM64Reg Rn, ARM64Reg Rm) { ANDS(Is64Bit(Rn) ? ZR : WZR, Rn, Rm); }
 	// Add/subtract (immediate)
 	void ADD(ARM64Reg Rd, ARM64Reg Rn, u32 imm, bool shift = false);
 	void ADDS(ARM64Reg Rd, ARM64Reg Rn, u32 imm, bool shift = false);
@@ -594,11 +761,7 @@ public:
 	void UXTB(ARM64Reg Rd, ARM64Reg Rn);
 	void UXTH(ARM64Reg Rd, ARM64Reg Rn);
 
-	void UBFX(ARM64Reg Rd, ARM64Reg Rn, int lsb, int width)
-	{
-		UBFM(Rd, Rn, lsb, lsb + width - 1);
-	}
-
+	void UBFX(ARM64Reg Rd, ARM64Reg Rn, int lsb, int width) { UBFM(Rd, Rn, lsb, lsb + width - 1); }
 	// Load Register (Literal)
 	void LDR(ARM64Reg Rt, u32 imm);
 	void LDRSW(ARM64Reg Rt, u32 imm);
@@ -677,6 +840,7 @@ public:
 
 	// Wrapper around MOVZ+MOVK
 	void MOVI2R(ARM64Reg Rd, u64 imm, bool optimize = true);
+	bool MOVI2R2(ARM64Reg Rd, u64 imm1, u64 imm2);
 	template <class P>
 	void MOVP2R(ARM64Reg Rd, P* ptr)
 	{
@@ -684,15 +848,22 @@ public:
 		MOVI2R(Rd, (uintptr_t)ptr);
 	}
 
-	// Wrapper around AND x, y, imm etc. If you are sure the imm will work, no need to pass a scratch register.
+	// Wrapper around AND x, y, imm etc. If you are sure the imm will work, no need to pass a scratch
+	// register.
 	void ANDI2R(ARM64Reg Rd, ARM64Reg Rn, u64 imm, ARM64Reg scratch = INVALID_REG);
 	void ANDSI2R(ARM64Reg Rd, ARM64Reg Rn, u64 imm, ARM64Reg scratch = INVALID_REG);
-	void TSTI2R(ARM64Reg Rn, u64 imm, ARM64Reg scratch = INVALID_REG) { ANDSI2R(Is64Bit(Rn) ? ZR : WZR, Rn, imm, scratch); }
+	void TSTI2R(ARM64Reg Rn, u64 imm, ARM64Reg scratch = INVALID_REG)
+	{
+		ANDSI2R(Is64Bit(Rn) ? ZR : WZR, Rn, imm, scratch);
+	}
 	void ORRI2R(ARM64Reg Rd, ARM64Reg Rn, u64 imm, ARM64Reg scratch = INVALID_REG);
 	void EORI2R(ARM64Reg Rd, ARM64Reg Rn, u64 imm, ARM64Reg scratch = INVALID_REG);
 	void CMPI2R(ARM64Reg Rn, u64 imm, ARM64Reg scratch = INVALID_REG);
 
+	void ADDI2R_internal(ARM64Reg Rd, ARM64Reg Rn, u64 imm, bool negative, bool flags,
+		ARM64Reg scratch);
 	void ADDI2R(ARM64Reg Rd, ARM64Reg Rn, u64 imm, ARM64Reg scratch = INVALID_REG);
+	void ADDSI2R(ARM64Reg Rd, ARM64Reg Rn, u64 imm, ARM64Reg scratch = INVALID_REG);
 	void SUBI2R(ARM64Reg Rd, ARM64Reg Rn, u64 imm, ARM64Reg scratch = INVALID_REG);
 	void SUBSI2R(ARM64Reg Rd, ARM64Reg Rn, u64 imm, ARM64Reg scratch = INVALID_REG);
 
@@ -726,13 +897,14 @@ public:
 	{
 		auto trampoline = &ARM64XEmitter::CallLambdaTrampoline<T, Args...>;
 		MOVI2R(X30, (uintptr_t)trampoline);
-		MOVI2R(X0, (uintptr_t)const_cast<void*>((const void*)f));
+		MOVI2R(X0, (uintptr_t) const_cast<void*>((const void*)f));
 		return X30;
 	}
 
 	// Plain function call
 	void QuickCallFunction(ARM64Reg scratchreg, const void* func);
-	template <typename T> void QuickCallFunction(ARM64Reg scratchreg, T func)
+	template <typename T>
+	void QuickCallFunction(ARM64Reg scratchreg, T func)
 	{
 		QuickCallFunction(scratchreg, (const void*)func);
 	}
@@ -742,7 +914,6 @@ class ARM64FloatEmitter
 {
 public:
 	ARM64FloatEmitter(ARM64XEmitter* emit) : m_emit(emit) {}
-
 	void LDR(u8 size, IndexType type, ARM64Reg Rt, ARM64Reg Rn, s32 imm);
 	void STR(u8 size, IndexType type, ARM64Reg Rt, ARM64Reg Rn, s32 imm);
 
@@ -780,7 +951,7 @@ public:
 	void FSQRT(ARM64Reg Rd, ARM64Reg Rn);
 	void FMOV(ARM64Reg Rd, ARM64Reg Rn, bool top = false);  // Also generalized move between GPR/FP
 
-	// Scalar - 2 Source
+																													// Scalar - 2 Source
 	void FADD(ARM64Reg Rd, ARM64Reg Rn, ARM64Reg Rm);
 	void FMUL(ARM64Reg Rd, ARM64Reg Rn, ARM64Reg Rm);
 	void FSUB(ARM64Reg Rd, ARM64Reg Rn, ARM64Reg Rm);
@@ -823,10 +994,7 @@ public:
 	void FSUB(u8 size, ARM64Reg Rd, ARM64Reg Rn, ARM64Reg Rm);
 	void NOT(ARM64Reg Rd, ARM64Reg Rn);
 	void ORR(ARM64Reg Rd, ARM64Reg Rn, ARM64Reg Rm);
-	void MOV(ARM64Reg Rd, ARM64Reg Rn)
-	{
-		ORR(Rd, Rn, Rn);
-	}
+	void MOV(ARM64Reg Rd, ARM64Reg Rn) { ORR(Rd, Rn, Rn); }
 	void REV16(u8 size, ARM64Reg Rd, ARM64Reg Rn);
 	void REV32(u8 size, ARM64Reg Rd, ARM64Reg Rn);
 	void REV64(u8 size, ARM64Reg Rd, ARM64Reg Rn);
@@ -852,7 +1020,8 @@ public:
 	void FCVT(u8 size_to, u8 size_from, ARM64Reg Rd, ARM64Reg Rn);
 
 	// Scalar convert float to int, in a lot of variants.
-	// Note that the scalar version of this operation has two encodings, one that goes to an integer register
+	// Note that the scalar version of this operation has two encodings, one that goes to an integer
+	// register
 	// and one that outputs to a scalar fp register.
 	void FCVTS(ARM64Reg Rd, ARM64Reg Rn, RoundingMode round);
 	void FCVTU(ARM64Reg Rd, ARM64Reg Rn, RoundingMode round);
@@ -920,18 +1089,21 @@ public:
 private:
 	ARM64XEmitter* m_emit;
 	inline void Write32(u32 value) { m_emit->Write32(value); }
-
 	// Emitting functions
 	void EmitLoadStoreImmediate(u8 size, u32 opc, IndexType type, ARM64Reg Rt, ARM64Reg Rn, s32 imm);
-	void EmitScalar2Source(bool M, bool S, u32 type, u32 opcode, ARM64Reg Rd, ARM64Reg Rn, ARM64Reg Rm);
+	void EmitScalar2Source(bool M, bool S, u32 type, u32 opcode, ARM64Reg Rd, ARM64Reg Rn,
+		ARM64Reg Rm);
 	void EmitThreeSame(bool U, u32 size, u32 opcode, ARM64Reg Rd, ARM64Reg Rn, ARM64Reg Rm);
 	void EmitCopy(bool Q, u32 op, u32 imm5, u32 imm4, ARM64Reg Rd, ARM64Reg Rn);
 	void Emit2RegMisc(bool Q, bool U, u32 size, u32 opcode, ARM64Reg Rd, ARM64Reg Rn);
-	void EmitLoadStoreSingleStructure(bool L, bool R, u32 opcode, bool S, u32 size, ARM64Reg Rt, ARM64Reg Rn);
-	void EmitLoadStoreSingleStructure(bool L, bool R, u32 opcode, bool S, u32 size, ARM64Reg Rt, ARM64Reg Rn, ARM64Reg Rm);
+	void EmitLoadStoreSingleStructure(bool L, bool R, u32 opcode, bool S, u32 size, ARM64Reg Rt,
+		ARM64Reg Rn);
+	void EmitLoadStoreSingleStructure(bool L, bool R, u32 opcode, bool S, u32 size, ARM64Reg Rt,
+		ARM64Reg Rn, ARM64Reg Rm);
 	void Emit1Source(bool M, bool S, u32 type, u32 opcode, ARM64Reg Rd, ARM64Reg Rn);
 	void EmitConversion(bool sf, bool S, u32 type, u32 rmode, u32 opcode, ARM64Reg Rd, ARM64Reg Rn);
-	void EmitConversion2(bool sf, bool S, bool direction, u32 type, u32 rmode, u32 opcode, int scale, ARM64Reg Rd, ARM64Reg Rn);
+	void EmitConversion2(bool sf, bool S, bool direction, u32 type, u32 rmode, u32 opcode, int scale,
+		ARM64Reg Rd, ARM64Reg Rn);
 	void EmitCompare(bool M, bool S, u32 op, u32 opcode2, ARM64Reg Rn, ARM64Reg Rm);
 	void EmitCondSelect(bool M, bool S, CCFlags cond, ARM64Reg Rd, ARM64Reg Rn, ARM64Reg Rm);
 	void EmitPermute(u32 size, u32 op, ARM64Reg Rd, ARM64Reg Rn, ARM64Reg Rm);
@@ -939,13 +1111,17 @@ private:
 	void EmitShiftImm(bool Q, bool U, u32 immh, u32 immb, u32 opcode, ARM64Reg Rd, ARM64Reg Rn);
 	void EmitScalarShiftImm(bool U, u32 immh, u32 immb, u32 opcode, ARM64Reg Rd, ARM64Reg Rn);
 	void EmitLoadStoreMultipleStructure(u32 size, bool L, u32 opcode, ARM64Reg Rt, ARM64Reg Rn);
-	void EmitLoadStoreMultipleStructurePost(u32 size, bool L, u32 opcode, ARM64Reg Rt, ARM64Reg Rn, ARM64Reg Rm);
+	void EmitLoadStoreMultipleStructurePost(u32 size, bool L, u32 opcode, ARM64Reg Rt, ARM64Reg Rn,
+		ARM64Reg Rm);
 	void EmitScalar1Source(bool M, bool S, u32 type, u32 opcode, ARM64Reg Rd, ARM64Reg Rn);
-	void EmitVectorxElement(bool U, u32 size, bool L, u32 opcode, bool H, ARM64Reg Rd, ARM64Reg Rn, ARM64Reg Rm);
+	void EmitVectorxElement(bool U, u32 size, bool L, u32 opcode, bool H, ARM64Reg Rd, ARM64Reg Rn,
+		ARM64Reg Rm);
 	void EmitLoadStoreUnscaled(u32 size, u32 op, ARM64Reg Rt, ARM64Reg Rn, s32 imm);
 	void EmitConvertScalarToInt(ARM64Reg Rd, ARM64Reg Rn, RoundingMode round, bool sign);
-	void EmitScalar3Source(bool isDouble, ARM64Reg Rd, ARM64Reg Rn, ARM64Reg Rm, ARM64Reg Ra, int opcode);
-	void EncodeLoadStorePair(u32 size, bool load, IndexType type, ARM64Reg Rt, ARM64Reg Rt2, ARM64Reg Rn, s32 imm);
+	void EmitScalar3Source(bool isDouble, ARM64Reg Rd, ARM64Reg Rn, ARM64Reg Rm, ARM64Reg Ra,
+		int opcode);
+	void EncodeLoadStorePair(u32 size, bool load, IndexType type, ARM64Reg Rt, ARM64Reg Rt2,
+		ARM64Reg Rn, s32 imm);
 	void EncodeLoadStoreRegisterOffset(u32 size, bool load, ARM64Reg Rt, ARM64Reg Rn, ArithOption Rm);
 	void EncodeModImm(bool Q, u8 op, u8 cmode, u8 o2, ARM64Reg Rd, u8 abcdefgh);
 
@@ -963,7 +1139,8 @@ private:
 	{
 		u32* ptr = (u32*)region;
 		u32* maxptr = (u32*)(region + region_size);
-		// If our memory isn't a multiple of u32 then this won't write the last remaining bytes with anything
+		// If our memory isn't a multiple of u32 then this won't write the last remaining bytes with
+		// anything
 		// Less than optimal, but there would be nothing we could do but throw a runtime warning anyway.
 		// AArch64: 0xD4200000 = BRK 0
 		while (ptr < maxptr)
@@ -971,4 +1148,3 @@ private:
 	}
 };
 }
-
