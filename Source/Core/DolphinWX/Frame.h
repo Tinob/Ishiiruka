@@ -61,6 +61,7 @@ private:
 };
 
 wxDECLARE_EVENT(DOLPHIN_EVT_RELOAD_THEME_BITMAPS, wxCommandEvent);
+wxDECLARE_EVENT(DOLPHIN_EVT_UPDATE_LOAD_WII_MENU_ITEM, wxCommandEvent);
 
 class CFrame : public CRenderFrame
 {
@@ -106,7 +107,6 @@ public:
 	bool RendererIsFullscreen();
 	void DoFullscreen(bool bF);
 	void ToggleDisplayMode(bool bFullscreen);
-	void UpdateWiiMenuChoice(wxMenuItem* WiiMenuItem = nullptr);
 	static void ConnectWiimote(int wm_idx, bool connect);
 	void UpdateTitle(const std::string& str);
 	void OpenGeneralConfiguration(wxWindowID tab_id = wxID_ANY);
@@ -123,9 +123,6 @@ public:
 #if defined(HAVE_XRANDR) && HAVE_XRANDR
 	X11Utils::XRRConfiguration* m_XRRConfig;
 #endif
-
-	wxMenu* m_SavedPerspectives = nullptr;
-
 	// AUI
 	wxAuiManager* m_Mgr = nullptr;
 	bool bFloatWindow[IDM_DEBUG_WINDOW_LIST_END - IDM_DEBUG_WINDOW_LIST_START] = {};
@@ -240,11 +237,10 @@ private:
 	void OnReloadThemeBitmaps(wxCommandEvent& event);
 	void OnReloadGameList(wxCommandEvent& event);
 
-	void OnEnableMenuItemIfCoreInitialized(wxUpdateUIEvent& event);
-	void OnEnableMenuItemIfCoreUninitialized(wxUpdateUIEvent& event);
-	void OnEnableMenuItemIfCorePaused(wxUpdateUIEvent& event);
-	void OnEnableMenuItemIfCPUCanStep(wxUpdateUIEvent& event);
 	void OnUpdateInterpreterMenuItem(wxUpdateUIEvent& event);
+
+	void OnUpdateLoadWiiMenuItem(wxCommandEvent&);
+	void UpdateLoadWiiMenuItem() const;
 
 	void OnOpen(wxCommandEvent& event);  // File menu
 	void DoOpen(bool Boot);

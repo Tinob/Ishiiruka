@@ -15,7 +15,7 @@ public:
 	~GCAdapterConfigDiag();
 
 	void ScheduleAdapterUpdate();
-	void UpdateAdapter(wxCommandEvent& ev);
+	void OnUpdateAdapter(wxCommandEvent& ev);
 
 private:
 	wxStaticText* m_adapter_status;

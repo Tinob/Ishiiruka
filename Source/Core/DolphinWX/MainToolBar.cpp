@@ -8,8 +8,8 @@
 #include <utility>
 
 #include "Core/Core.h"
-#include "Core/HW/CPU.h"
 #include "DolphinWX/Globals.h"
+#include "DolphinWX/WxEventUtils.h"
 #include "DolphinWX/WxUtils.h"
 
 wxDEFINE_EVENT(DOLPHIN_EVT_RELOAD_TOOLBAR_BITMAPS, wxCommandEvent);
@@ -38,42 +38,20 @@ void MainToolBar::BindEvents()
 
 void MainToolBar::BindMainButtonEvents()
 {
-	Bind(wxEVT_UPDATE_UI, &MainToolBar::OnUpdateIfCoreNotRunning, this, wxID_OPEN);
-	Bind(wxEVT_UPDATE_UI, &MainToolBar::OnUpdateIfCoreNotRunning, this, wxID_REFRESH);
-	Bind(wxEVT_UPDATE_UI, &MainToolBar::OnUpdateIfCoreRunningOrPaused, this, IDM_STOP);
-	Bind(wxEVT_UPDATE_UI, &MainToolBar::OnUpdateIfCoreRunningOrPaused, this, IDM_TOGGLE_FULLSCREEN);
-	Bind(wxEVT_UPDATE_UI, &MainToolBar::OnUpdateIfCoreRunningOrPaused, this, IDM_SCREENSHOT);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreNotRunning, wxID_OPEN);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreNotRunning, wxID_REFRESH);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreRunningOrPaused, IDM_STOP);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreRunningOrPaused, IDM_TOGGLE_FULLSCREEN);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreRunningOrPaused, IDM_SCREENSHOT);
 }
 
 void MainToolBar::BindDebuggerButtonEvents()
 {
-	Bind(wxEVT_UPDATE_UI, &MainToolBar::OnUpdateIfCPUCanStep, this, IDM_STEP);
-	Bind(wxEVT_UPDATE_UI, &MainToolBar::OnUpdateIfCPUCanStep, this, IDM_STEPOVER);
-	Bind(wxEVT_UPDATE_UI, &MainToolBar::OnUpdateIfCPUCanStep, this, IDM_STEPOUT);
-	Bind(wxEVT_UPDATE_UI, &MainToolBar::OnUpdateIfCPUCanStep, this, IDM_SKIP);
-	Bind(wxEVT_UPDATE_UI, &MainToolBar::OnUpdateIfCorePaused, this, IDM_SETPC);
-}
-
-void MainToolBar::OnUpdateIfCoreNotRunning(wxUpdateUIEvent& event)
-{
-	event.Enable(!Core::IsRunning());
-}
-
-void MainToolBar::OnUpdateIfCorePaused(wxUpdateUIEvent& event)
-{
-	event.Enable(Core::GetState() == Core::CORE_PAUSE);
-}
-
-void MainToolBar::OnUpdateIfCoreRunningOrPaused(wxUpdateUIEvent& event)
-{
-	const auto state = Core::GetState();
-
-	event.Enable(state == Core::CORE_RUN || state == Core::CORE_PAUSE);
-}
-
-void MainToolBar::OnUpdateIfCPUCanStep(wxUpdateUIEvent& event)
-{
-	event.Enable(Core::IsRunning() && CPU::IsStepping());
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCPUCanStep, IDM_STEP);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCPUCanStep, IDM_STEPOVER);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCPUCanStep, IDM_STEPOUT);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCPUCanStep, IDM_SKIP);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCPUCanStep, IDM_SETPC);
 }
 
 void MainToolBar::OnReloadBitmaps(wxCommandEvent& WXUNUSED(event))
@@ -107,27 +85,27 @@ void MainToolBar::InitializeBitmaps()
 
 void MainToolBar::InitializeThemeBitmaps()
 {
-	m_icon_bitmaps.insert({ {TOOLBAR_FILEOPEN, CreateBitmap("open")},
-												 {TOOLBAR_REFRESH, CreateBitmap("refresh")},
-												 {TOOLBAR_PLAY, CreateBitmap("play")},
-												 {TOOLBAR_STOP, CreateBitmap("stop")},
-												 {TOOLBAR_PAUSE, CreateBitmap("pause")},
-												 {TOOLBAR_SCREENSHOT, CreateBitmap("screenshot")},
-												 {TOOLBAR_FULLSCREEN, CreateBitmap("fullscreen")},
-												 {TOOLBAR_CONFIGMAIN, CreateBitmap("config")},
-												 {TOOLBAR_CONFIGGFX, CreateBitmap("graphics")},
-												 {TOOLBAR_CONTROLLER, CreateBitmap("classic")} });
+	m_icon_bitmaps.insert({ { TOOLBAR_FILEOPEN, CreateBitmap("open") },
+	{ TOOLBAR_REFRESH, CreateBitmap("refresh") },
+	{ TOOLBAR_PLAY, CreateBitmap("play") },
+	{ TOOLBAR_STOP, CreateBitmap("stop") },
+	{ TOOLBAR_PAUSE, CreateBitmap("pause") },
+	{ TOOLBAR_SCREENSHOT, CreateBitmap("screenshot") },
+	{ TOOLBAR_FULLSCREEN, CreateBitmap("fullscreen") },
+	{ TOOLBAR_CONFIGMAIN, CreateBitmap("config") },
+	{ TOOLBAR_CONFIGGFX, CreateBitmap("graphics") },
+	{ TOOLBAR_CONTROLLER, CreateBitmap("classic") } });
 }
 
 void MainToolBar::InitializeDebuggerBitmaps()
 {
 	m_icon_bitmaps.insert(
-	{ {TOOLBAR_DEBUG_STEP, CreateDebuggerBitmap("toolbar_debugger_step")},
-	 {TOOLBAR_DEBUG_STEPOVER, CreateDebuggerBitmap("toolbar_debugger_step_over")},
-	 {TOOLBAR_DEBUG_STEPOUT, CreateDebuggerBitmap("toolbar_debugger_step_out")},
-	 {TOOLBAR_DEBUG_SKIP, CreateDebuggerBitmap("toolbar_debugger_skip")},
-	 {TOOLBAR_DEBUG_GOTOPC, CreateDebuggerBitmap("toolbar_debugger_goto_pc")},
-	 {TOOLBAR_DEBUG_SETPC, CreateDebuggerBitmap("toolbar_debugger_set_pc")} });
+	{ { TOOLBAR_DEBUG_STEP, CreateDebuggerBitmap("toolbar_debugger_step") },
+	{ TOOLBAR_DEBUG_STEPOVER, CreateDebuggerBitmap("toolbar_debugger_step_over") },
+	{ TOOLBAR_DEBUG_STEPOUT, CreateDebuggerBitmap("toolbar_debugger_step_out") },
+	{ TOOLBAR_DEBUG_SKIP, CreateDebuggerBitmap("toolbar_debugger_skip") },
+	{ TOOLBAR_DEBUG_GOTOPC, CreateDebuggerBitmap("toolbar_debugger_goto_pc") },
+	{ TOOLBAR_DEBUG_SETPC, CreateDebuggerBitmap("toolbar_debugger_set_pc") } });
 }
 
 wxBitmap MainToolBar::CreateBitmap(const std::string& name) const
@@ -146,14 +124,14 @@ wxBitmap MainToolBar::CreateDebuggerBitmap(const std::string& name) const
 void MainToolBar::ApplyThemeBitmaps()
 {
 	constexpr std::array<std::pair<int, ToolBarBitmapID>, 8> bitmap_entries{
-			{{wxID_OPEN, TOOLBAR_FILEOPEN},
-			 {wxID_REFRESH, TOOLBAR_REFRESH},
-			 {IDM_STOP, TOOLBAR_STOP},
-			 {IDM_TOGGLE_FULLSCREEN, TOOLBAR_FULLSCREEN},
-			 {IDM_SCREENSHOT, TOOLBAR_SCREENSHOT},
-			 {wxID_PREFERENCES, TOOLBAR_CONFIGMAIN},
-			 {IDM_CONFIG_GFX_BACKEND, TOOLBAR_CONFIGGFX},
-			 {IDM_CONFIG_CONTROLLERS, TOOLBAR_CONTROLLER}} };
+		{ { wxID_OPEN, TOOLBAR_FILEOPEN },
+		{ wxID_REFRESH, TOOLBAR_REFRESH },
+		{ IDM_STOP, TOOLBAR_STOP },
+		{ IDM_TOGGLE_FULLSCREEN, TOOLBAR_FULLSCREEN },
+		{ IDM_SCREENSHOT, TOOLBAR_SCREENSHOT },
+		{ wxID_PREFERENCES, TOOLBAR_CONFIGMAIN },
+		{ IDM_CONFIG_GFX_BACKEND, TOOLBAR_CONFIGGFX },
+		{ IDM_CONFIG_CONTROLLERS, TOOLBAR_CONTROLLER } } };
 
 	for (const auto& entry : bitmap_entries)
 		ApplyBitmap(entry.first, entry.second);
@@ -165,12 +143,12 @@ void MainToolBar::ApplyThemeBitmaps()
 void MainToolBar::ApplyDebuggerBitmaps()
 {
 	constexpr std::array<std::pair<int, ToolBarBitmapID>, 6> bitmap_entries{
-			{{IDM_STEP, TOOLBAR_DEBUG_STEP},
-			 {IDM_STEPOVER, TOOLBAR_DEBUG_STEPOVER},
-			 {IDM_STEPOUT, TOOLBAR_DEBUG_STEPOUT},
-			 {IDM_SKIP, TOOLBAR_DEBUG_SKIP},
-			 {IDM_GOTOPC, TOOLBAR_DEBUG_GOTOPC},
-			 {IDM_SETPC, TOOLBAR_DEBUG_SETPC}} };
+		{ { IDM_STEP, TOOLBAR_DEBUG_STEP },
+		{ IDM_STEPOVER, TOOLBAR_DEBUG_STEPOVER },
+		{ IDM_STEPOUT, TOOLBAR_DEBUG_STEPOUT },
+		{ IDM_SKIP, TOOLBAR_DEBUG_SKIP },
+		{ IDM_GOTOPC, TOOLBAR_DEBUG_GOTOPC },
+		{ IDM_SETPC, TOOLBAR_DEBUG_SETPC } } };
 
 	for (const auto& entry : bitmap_entries)
 		ApplyBitmap(entry.first, entry.second);

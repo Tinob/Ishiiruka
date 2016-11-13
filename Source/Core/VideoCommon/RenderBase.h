@@ -13,10 +13,11 @@
 // ---------------------------------------------------------------------------------------------
 
 #pragma once
-
+#include <condition_variable>
 #include <memory>
 #include <mutex>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "Common/CommonTypes.h"
@@ -163,9 +164,6 @@ public:
 	virtual u16 BBoxRead(int index) = 0;
 	virtual void BBoxWrite(int index, u16 value) = 0;
 
-	static void FlipImageData(u8* data, int w, int h, int pixel_width = 3);
-	static void FlipImageDataFromBGRA(u8* data, int w, int h);
-	static void ImageDataFromBGRA(u8* data, int w, int h);
 	// Finish up the current frame, print some stats
 	static void Swap(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, const EFBRectangle& rc, u64 ticks, float Gamma = 1.0f);
 	virtual void SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, const EFBRectangle& rc, u64 ticks, float Gamma = 1.0f) = 0;
@@ -203,7 +201,7 @@ protected:
 	void DumpFrameData(const u8* data, int w, int h, int stride, const AVIDump::Frame& state, bool swap_upside_down = false, bool bgra = false);
 	void FinishFrameData();
 
-	static volatile bool s_bScreenshot;
+	static Common::Flag s_screenshot;
 	static std::mutex s_criticalScreenshot;
 	static std::string s_sScreenshotName;
 
@@ -232,6 +230,8 @@ protected:
 	static void* s_new_surface_handle;
 	static const float GX_MAX_DEPTH;
 private:
+	void RunFrameDumps();
+	void ShutdownFrameDumping();
 	static PEControl::PixelFormat prev_efb_format;
 	static unsigned int efb_scale_numeratorX;
 	static unsigned int efb_scale_numeratorY;
@@ -239,10 +239,22 @@ private:
 	static unsigned int efb_scale_denominatorY;
 	static unsigned int ssaa_multiplier;
 
-	// framedumping
-	std::vector<u8> m_frame_data;
-	bool m_AVI_dumping = false;
-	bool m_last_frame_dumped = false;
+	// frame dumping
+	std::thread m_frame_dump_thread;
+	Common::Event m_frame_dump_start;
+	Common::Event m_frame_dump_done;
+	Common::Flag m_frame_dump_thread_running;
+	bool m_frame_dump_frame_running = false;
+	struct FrameDumpConfig
+	{
+		const u8* data;
+		int width;
+		int height;
+		int stride;
+		bool upside_down;
+		bool bgra;
+		AVIDump::Frame state;
+	} m_frame_dump_config;
 };
 
 extern std::unique_ptr<Renderer> g_renderer;

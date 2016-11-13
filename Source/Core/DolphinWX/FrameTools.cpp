@@ -74,6 +74,7 @@
 #include "DolphinWX/NetPlay/NetWindow.h"
 #include "DolphinWX/TASInputDlg.h"
 #include "DolphinWX/WXInputBase.h"
+#include "DolphinWX/WxEventUtils.h"
 #include "DolphinWX/WxUtils.h"
 
 #include "InputCommon/ControllerInterface/ControllerInterface.h"
@@ -206,46 +207,42 @@ void CFrame::BindDebuggerMenuBarEvents()
 
 void CFrame::BindDebuggerMenuBarUpdateEvents()
 {
-	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCPUCanStep, this, IDM_STEP);
-	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCPUCanStep, this, IDM_STEPOUT);
-	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCPUCanStep, this, IDM_STEPOVER);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCPUCanStep, IDM_STEP);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCPUCanStep, IDM_STEPOUT);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCPUCanStep, IDM_STEPOVER);
 
 	Bind(wxEVT_UPDATE_UI, &CFrame::OnUpdateInterpreterMenuItem, this, IDM_INTERPRETER);
 
-	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCorePaused, this, IDM_JIT_OFF);
-	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCorePaused, this, IDM_JIT_LS_OFF);
-	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCorePaused, this, IDM_JIT_LSLXZ_OFF);
-	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCorePaused, this, IDM_JIT_LSLWZ_OFF);
-	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCorePaused, this, IDM_JIT_LSLBZX_OFF);
-	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCorePaused, this, IDM_JIT_LSF_OFF);
-	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCorePaused, this, IDM_JIT_LSP_OFF);
-	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCorePaused, this, IDM_JIT_FP_OFF);
-	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCorePaused, this, IDM_JIT_I_OFF);
-	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCorePaused, this, IDM_JIT_P_OFF);
-	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCorePaused, this, IDM_JIT_SR_OFF);
-	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCorePaused, this, IDM_CLEAR_CODE_CACHE);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCorePaused, IDM_JIT_OFF);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCorePaused, IDM_JIT_LS_OFF);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCorePaused, IDM_JIT_LSLXZ_OFF);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCorePaused, IDM_JIT_LSLWZ_OFF);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCorePaused, IDM_JIT_LSLBZX_OFF);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCorePaused, IDM_JIT_LSF_OFF);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCorePaused, IDM_JIT_LSP_OFF);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCorePaused, IDM_JIT_FP_OFF);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCorePaused, IDM_JIT_I_OFF);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCorePaused, IDM_JIT_P_OFF);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCorePaused, IDM_JIT_SR_OFF);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCorePaused, IDM_CLEAR_CODE_CACHE);
 
-	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCoreInitialized, this, IDM_SEARCH_INSTRUCTION);
-	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCoreInitialized, this, IDM_CLEAR_SYMBOLS);
-	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCoreInitialized, this, IDM_SCAN_FUNCTIONS);
-	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCoreInitialized, this, IDM_LOAD_MAP_FILE);
-	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCoreInitialized, this, IDM_SAVEMAPFILE);
-	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCoreInitialized, this, IDM_LOAD_MAP_FILE_AS);
-	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCoreInitialized, this, IDM_SAVE_MAP_FILE_AS);
-	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCoreInitialized, this, IDM_LOAD_BAD_MAP_FILE);
-	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCoreInitialized, this,
-		IDM_SAVE_MAP_FILE_WITH_CODES);
-	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCoreInitialized, this,
-		IDM_CREATE_SIGNATURE_FILE);
-	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCoreInitialized, this,
-		IDM_APPEND_SIGNATURE_FILE);
-	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCoreInitialized, this,
-		IDM_COMBINE_SIGNATURE_FILES);
-	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCoreInitialized, this, IDM_RENAME_SYMBOLS);
-	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCoreInitialized, this, IDM_USE_SIGNATURE_FILE);
-	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCoreInitialized, this, IDM_PATCH_HLE_FUNCTIONS);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreInitialized, IDM_SEARCH_INSTRUCTION);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreInitialized, IDM_CLEAR_SYMBOLS);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreInitialized, IDM_SCAN_FUNCTIONS);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreInitialized, IDM_LOAD_MAP_FILE);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreInitialized, IDM_SAVEMAPFILE);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreInitialized, IDM_LOAD_MAP_FILE_AS);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreInitialized, IDM_SAVE_MAP_FILE_AS);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreInitialized, IDM_LOAD_BAD_MAP_FILE);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreInitialized, IDM_SAVE_MAP_FILE_WITH_CODES);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreInitialized, IDM_CREATE_SIGNATURE_FILE);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreInitialized, IDM_APPEND_SIGNATURE_FILE);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreInitialized, IDM_COMBINE_SIGNATURE_FILES);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreInitialized, IDM_RENAME_SYMBOLS);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreInitialized, IDM_USE_SIGNATURE_FILE);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreInitialized, IDM_PATCH_HLE_FUNCTIONS);
 
-	Bind(wxEVT_UPDATE_UI, &CFrame::OnEnableMenuItemIfCoreUninitialized, this, IDM_JIT_NO_BLOCK_CACHE);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreUninitialized, IDM_JIT_NO_BLOCK_CACHE);
 }
 
 wxToolBar* CFrame::OnCreateToolBar(long style, wxWindowID id, const wxString& name)
@@ -1065,34 +1062,19 @@ void CFrame::OnReloadGameList(wxCommandEvent& WXUNUSED(event))
 	UpdateGameList();
 }
 
-void CFrame::OnEnableMenuItemIfCoreInitialized(wxUpdateUIEvent& event)
-{
-	event.Enable(Core::GetState() != Core::CORE_UNINITIALIZED);
-}
-
-void CFrame::OnEnableMenuItemIfCoreUninitialized(wxUpdateUIEvent& event)
-{
-	event.Enable(Core::GetState() == Core::CORE_UNINITIALIZED);
-}
-
-void CFrame::OnEnableMenuItemIfCorePaused(wxUpdateUIEvent& event)
-{
-	event.Enable(Core::GetState() == Core::CORE_PAUSE);
-}
-
-void CFrame::OnEnableMenuItemIfCPUCanStep(wxUpdateUIEvent& event)
-{
-	event.Enable(Core::GetState() != Core::CORE_UNINITIALIZED && CPU::IsStepping());
-}
-
 void CFrame::OnUpdateInterpreterMenuItem(wxUpdateUIEvent& event)
 {
-	OnEnableMenuItemIfCorePaused(event);
+	WxEventUtils::OnEnableIfCorePaused(event);
 
 	if (GetMenuBar()->FindItem(IDM_INTERPRETER)->IsChecked())
 		return;
 
 	event.Check(SConfig::GetInstance().iCPUCore == PowerPC::CORE_INTERPRETER);
+}
+
+void CFrame::OnUpdateLoadWiiMenuItem(wxCommandEvent& WXUNUSED(event))
+{
+	UpdateLoadWiiMenuItem();
 }
 
 void CFrame::ClearStatusBar()
@@ -1207,32 +1189,28 @@ void CFrame::OnInstallWAD(wxCommandEvent& event)
 	u64 titleID = DiscIO::CNANDContentManager::Access().Install_WiiWAD(fileName);
 	if (titleID == TITLEID_SYSMENU)
 	{
-		UpdateWiiMenuChoice();
+		UpdateLoadWiiMenuItem();
 	}
 }
 
-void CFrame::UpdateWiiMenuChoice(wxMenuItem* WiiMenuItem)
+void CFrame::UpdateLoadWiiMenuItem() const
 {
-	if (!WiiMenuItem)
-	{
-		WiiMenuItem = GetMenuBar()->FindItem(IDM_LOAD_WII_MENU);
-	}
+	auto* const menu_item = GetMenuBar()->FindItem(IDM_LOAD_WII_MENU);
 
-	const DiscIO::CNANDContentLoader& SysMenu_Loader =
-		DiscIO::CNANDContentManager::Access().GetNANDLoader(TITLEID_SYSMENU,
-			Common::FROM_CONFIGURED_ROOT);
-	if (SysMenu_Loader.IsValid())
+	const auto& sys_menu_loader = DiscIO::CNANDContentManager::Access().GetNANDLoader(
+		TITLEID_SYSMENU, Common::FROM_CONFIGURED_ROOT);
+
+	if (sys_menu_loader.IsValid())
 	{
-		int sysmenuVersion = SysMenu_Loader.GetTitleVersion();
-		char sysmenuRegion = SysMenu_Loader.GetCountryChar();
-		WiiMenuItem->Enable();
-		WiiMenuItem->SetItemLabel(
-			wxString::Format(_("Load Wii System Menu %d%c"), sysmenuVersion, sysmenuRegion));
+		const int version = sys_menu_loader.GetTitleVersion();
+		const char region = sys_menu_loader.GetCountryChar();
+		menu_item->Enable();
+		menu_item->SetItemLabel(wxString::Format(_("Load Wii System Menu %d%c"), version, region));
 	}
 	else
 	{
-		WiiMenuItem->Enable(false);
-		WiiMenuItem->SetItemLabel(_("Load Wii System Menu"));
+		menu_item->Enable(false);
+		menu_item->SetItemLabel(_("Load Wii System Menu"));
 	}
 }
 
@@ -1426,8 +1404,8 @@ void CFrame::UpdateGUI()
 	// Tools
 	GetMenuBar()->FindItem(IDM_CHEATS)->Enable(SConfig::GetInstance().bEnableCheats);
 
-	bool ShouldEnableWiimotes = Initialized && SConfig::GetInstance().bWii &&
-		!SConfig::GetInstance().m_bt_passthrough_enabled;
+	bool ShouldEnableWiimotes =
+		Running && SConfig::GetInstance().bWii && !SConfig::GetInstance().m_bt_passthrough_enabled;
 	GetMenuBar()->FindItem(IDM_CONNECT_WIIMOTE1)->Enable(ShouldEnableWiimotes);
 	GetMenuBar()->FindItem(IDM_CONNECT_WIIMOTE2)->Enable(ShouldEnableWiimotes);
 	GetMenuBar()->FindItem(IDM_CONNECT_WIIMOTE3)->Enable(ShouldEnableWiimotes);

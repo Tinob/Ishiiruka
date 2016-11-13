@@ -739,6 +739,12 @@
     <ClCompile Include="IPC_HLE\WII_IPC_HLE_Device_usb_ven.cpp">
       <Filter>IPC HLE %28IOS/Starlet%29\USB</Filter>
     </ClCompile>
+    <ClCompile Include="IPC_HLE\WiiNetConfig.cpp">
+      <Filter>IPC HLE %28IOS/Starlet%29\Net</Filter>
+    </ClCompile>
+    <ClCompile Include="IPC_HLE\NWC24Config.cpp">
+      <Filter>IPC HLE %28IOS/Starlet%29\Net</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BootManager.h" />
@@ -1263,6 +1269,12 @@
     <ClInclude Include="Analytics.h" />
     <ClInclude Include="IPC_HLE\WII_IPC_HLE_Device_usb_ven.h">
       <Filter>IPC HLE %28IOS/Starlet%29\USB</Filter>
+    </ClInclude>
+    <ClInclude Include="IPC_HLE\WiiNetConfig.h">
+      <Filter>IPC HLE %28IOS/Starlet%29\Net</Filter>
+    </ClInclude>
+    <ClInclude Include="IPC_HLE\NWC24Config.h">
+      <Filter>IPC HLE %28IOS/Starlet%29\Net</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

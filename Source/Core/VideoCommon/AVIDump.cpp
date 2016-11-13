@@ -59,9 +59,9 @@ static void InitAVCodec()
 	}
 }
 
-bool AVIDump::Start(int w, int h)
+bool AVIDump::Start(int w, int h, bool fromBGRA)
 {
-	s_pix_fmt = AV_PIX_FMT_RGBA;
+	s_pix_fmt = fromBGRA ? AV_PIX_FMT_BGRA : AV_PIX_FMT_RGBA;
 
 	s_width = w;
 	s_height = h;
@@ -260,6 +260,7 @@ void AVIDump::Stop()
 	CloseFile();
 	s_file_index = 0;
 	NOTICE_LOG(VIDEO, "Stopping frame dump");
+	OSD::AddMessage("Stopped dumping frames");
 }
 
 void AVIDump::CloseFile()

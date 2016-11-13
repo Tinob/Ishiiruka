@@ -10,6 +10,7 @@
 
 #include "Common/CommonTypes.h"
 #include "VideoBackends/Vulkan/Constants.h"
+#include "VideoCommon/AVIDump.h"
 #include "VideoCommon/RenderBase.h"
 
 struct XFBSourceBase;
@@ -106,15 +107,36 @@ private:
 		u32 xfb_count, u32 fb_width, u32 fb_stride, u32 fb_height);
 
 	// Draw the frame only to the screenshot buffer.
-	bool DrawScreenshot(const EFBRectangle& rc, u32 xfb_addr, const XFBSourceBase* const* xfb_sources,
-		u32 xfb_count, u32 fb_width, u32 fb_stride, u32 fb_height);
+	bool DrawFrameDump(const EFBRectangle& rc, u32 xfb_addr, const XFBSourceBase* const* xfb_sources,
+		u32 xfb_count, u32 fb_width, u32 fb_stride, u32 fb_height, u64 ticks);
+
+	// Sets up renderer state to permit framedumping.
+	// Ideally we would have EndFrameDumping be a virtual method of Renderer, but due to various
+	// design issues it would have to end up being called in the destructor, which won't work.
+	void StartFrameDumping();
+	void EndFrameDumping();
+
+	// Fence callback so that we know when frames are ready to be written to the dump.
+	// This is done by clearing the fence pointer, so WriteFrameDumpFrame doesn't have to wait.
+	void OnFrameDumpImageReady(VkFence fence);
+
+	// Writes the specified buffered frame to the frame dump.
+	// NOTE: Assumes that frame.ticks and frame.pending are valid.
+	void WriteFrameDumpImage(size_t index);
+
+	// If there is a pending frame in this buffer, writes it to the frame dump.
+	// Ensures that the specified readback buffer meets the size requirements of the current frame.
+	StagingTexture2D* PrepareFrameDumpImage(u32 width, u32 height, u64 ticks);
+
+	// Ensures all buffered frames are written to frame dump.
+	void FlushFrameDump();
 
 	// Copies/scales an image to the currently-bound framebuffer.
 	void BlitScreen(VkRenderPass render_pass, const TargetRectangle& dst_rect,
 		const TargetRectangle& src_rect, const Texture2D* src_tex, bool linear_filter);
 
-	bool ResizeScreenshotBuffer(u32 new_width, u32 new_height);
-	void DestroyScreenshotResources();
+	bool ResizeFrameDumpBuffer(u32 new_width, u32 new_height);
+	void DestroyFrameDumpResources();
 
 	VkSemaphore m_image_available_semaphore = VK_NULL_HANDLE;
 	VkSemaphore m_rendering_finished_semaphore = VK_NULL_HANDLE;
@@ -135,8 +157,20 @@ private:
 	VkShaderModule m_blit_fragment_shader = VK_NULL_HANDLE;
 
 	// Texture used for screenshot/frame dumping
-	std::unique_ptr<Texture2D> m_screenshot_render_texture;
-	std::unique_ptr<StagingTexture2D> m_screenshot_readback_texture;
-	VkFramebuffer m_screenshot_framebuffer = VK_NULL_HANDLE;
+	std::unique_ptr<Texture2D> m_frame_dump_render_texture;
+	VkFramebuffer m_frame_dump_framebuffer = VK_NULL_HANDLE;
+
+	// Readback resources for frame dumping
+	static const size_t FRAME_DUMP_BUFFERED_FRAMES = 2;
+	struct FrameDumpImage
+	{
+		std::unique_ptr<StagingTexture2D> readback_texture;
+		VkFence fence = VK_NULL_HANDLE;
+		AVIDump::Frame dump_state = {};
+		bool pending = false;
+	};
+	std::array<FrameDumpImage, FRAME_DUMP_BUFFERED_FRAMES> m_frame_dump_images;
+	size_t m_current_frame_dump_image = FRAME_DUMP_BUFFERED_FRAMES - 1;
+	bool m_frame_dumping_active = false;
 };
 }
