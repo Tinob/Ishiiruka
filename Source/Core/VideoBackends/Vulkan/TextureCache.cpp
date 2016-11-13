@@ -33,6 +33,7 @@ namespace Vulkan
 {
 TextureCache::TextureCache()
 {
+	m_scaler = std::make_unique<TextureScaler>();
 }
 
 TextureCache::~TextureCache()
@@ -42,6 +43,7 @@ TextureCache::~TextureCache()
 	if (m_update_render_pass != VK_NULL_HANDLE)
 		vkDestroyRenderPass(g_vulkan_context->GetDevice(), m_update_render_pass, nullptr);
 	TextureCache::DeleteShaders();
+	m_scaler.reset();
 }
 
 TextureCache* TextureCache::GetInstance()
