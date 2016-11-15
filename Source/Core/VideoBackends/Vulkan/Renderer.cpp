@@ -1539,6 +1539,12 @@ void Renderer::SetSamplerState(int stage, int texindex, bool custom_tex)
 			VK_SAMPLER_MIPMAP_MODE_LINEAR :
 			VK_SAMPLER_MIPMAP_MODE_NEAREST;
 	}
+	else if (g_ActiveConfig.bDisableTextureFiltering)
+	{
+		new_state.min_filter = VK_FILTER_NEAREST;
+		new_state.mag_filter = VK_FILTER_NEAREST;
+		new_state.mipmap_mode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+	}
 	else
 	{
 		// Constants for these?
@@ -1582,7 +1588,9 @@ void Renderer::SetSamplerState(int stage, int texindex, bool custom_tex)
 	}
 
 	StateTracker::GetInstance()->SetSampler(bind_index, sampler);
+	StateTracker::GetInstance()->SetSampler(bind_index + 8, sampler);
 	m_sampler_states[bind_index].bits = new_state.bits;
+	m_sampler_states[bind_index + 8].bits = new_state.bits;
 }
 
 void Renderer::ResetSamplerStates()

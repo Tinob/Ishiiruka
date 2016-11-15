@@ -1545,7 +1545,7 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
 	if (Use_integer_math)
 	{
 		out.Write("#define wu int\n");
-		if (ApiType == API_OPENGL)
+		if (ApiType == API_OPENGL || ApiType == API_VULKAN)
 		{
 			out.Write("#define wu2 ivec2\n");
 			out.Write("#define wu3 ivec3\n");
@@ -1563,7 +1563,7 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
 	{
 
 		out.Write("#define wu float\n");
-		if (ApiType == API_OPENGL)
+		if (ApiType == API_OPENGL || ApiType == API_VULKAN)
 		{
 			out.Write("#define wu2 vec2\n");
 			out.Write("#define wu3 vec3\n");

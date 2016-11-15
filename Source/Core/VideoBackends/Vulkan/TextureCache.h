@@ -23,7 +23,7 @@ class TextureCache : public TextureCacheBase
 public:
 	struct TCacheEntry : TCacheEntryBase
 	{
-		TCacheEntry(const TCacheEntryConfig& config_, std::unique_ptr<Texture2D> texture,
+		TCacheEntry(const TCacheEntryConfig& config_, std::unique_ptr<Texture2D> texture, std::unique_ptr<Texture2D> nrmtexture,
 			VkFramebuffer framebuffer);
 		~TCacheEntry();
 
