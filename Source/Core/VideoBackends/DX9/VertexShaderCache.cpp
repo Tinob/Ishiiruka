@@ -167,6 +167,10 @@ void VertexShaderCache::Clear()
 	if (s_vshaders)
 	{
 		s_vshaderslock.lock();
+		if (s_compiler)
+		{
+			s_compiler->WaitForFinish();
+		}
 		s_vshaders->Persist();
 		s_vshaders->Clear([](auto& item)
 		{

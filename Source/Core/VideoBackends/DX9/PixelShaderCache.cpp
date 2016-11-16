@@ -354,6 +354,8 @@ void PixelShaderCache::Clear()
 	if (s_pshaders)
 	{
 		s_pixel_shaders_lock.lock();
+		if (s_compiler)
+			s_compiler->WaitForFinish();
 		s_pshaders->Persist();
 		s_pshaders->Clear([](auto& item)
 		{

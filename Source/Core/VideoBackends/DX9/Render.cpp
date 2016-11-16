@@ -970,7 +970,7 @@ void Renderer::_SetBlendMode(bool forceUpdate)
 	//really useful for debugging shader and blending errors
 	bool use_DstAlpha = bpmem.dstalpha.enable && bpmem.blendmode.alphaupdate && target_has_alpha;
 	bool use_DualSource = use_DstAlpha && g_ActiveConfig.backend_info.bSupportsDualSourceBlend;
-	static const D3DBLEND d3dSrcFactors[8] =
+	const D3DBLEND d3dSrcFactors[8] =
 	{
 		D3DBLEND_ZERO,
 		D3DBLEND_ONE,
@@ -981,7 +981,7 @@ void Renderer::_SetBlendMode(bool forceUpdate)
 		(target_has_alpha) ? D3DBLEND_DESTALPHA : D3DBLEND_ONE,
 		(target_has_alpha) ? D3DBLEND_INVDESTALPHA : D3DBLEND_ZERO
 	};
-	static const D3DBLEND d3dDestFactors[8] =
+	const D3DBLEND d3dDestFactors[8] =
 	{
 		D3DBLEND_ZERO,
 		D3DBLEND_ONE,
