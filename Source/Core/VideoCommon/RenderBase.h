@@ -82,7 +82,10 @@ public:
 	{}
 	virtual void SetViewport()
 	{}
-
+	virtual void SetFullscreen(bool enable_fullscreen)
+	{}
+	virtual bool IsFullscreen() const
+	{ return false; }
 	virtual void ApplyState(bool bUseDstAlpha)
 	{}
 	virtual void RestoreState()

@@ -239,7 +239,7 @@ namespace DX9
 
 // With D3D, we have to resize the backbuffer if the window changed
 // size.
-void Renderer::CheckForResize(bool &resized, bool &fullscreen, bool &fullscreencahnged)
+void Renderer::CheckForResize(bool &resized)
 {
 	RECT rcWindow;
 	GetClientRect(D3D::hWnd, &rcWindow);
@@ -251,12 +251,7 @@ void Renderer::CheckForResize(bool &resized, bool &fullscreen, bool &fullscreenc
 		|| s_vsync != g_ActiveConfig.IsVSync()) &&
 		client_width >= 4 && client_height >= 4;
 
-	fullscreen = g_ActiveConfig.bFullscreen &&
-		!SConfig::GetInstance().bRenderToMain;
-
-	fullscreencahnged = s_last_fullscreen_mode != fullscreen;
-
-	if (resized || fullscreencahnged)
+	if (resized)
 	{
 		// Handle vsync changes during execution
 		s_vsync = g_ActiveConfig.IsVSync();
@@ -678,9 +673,7 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 	SetWindowSize(fbStride, fbHeight);
 
 	bool windowResized;
-	bool fullscreen;
-	bool fullscreen_changed;
-	CheckForResize(windowResized, fullscreen, fullscreen_changed);;
+	CheckForResize(windowResized);
 
 	bool xfbchanged = false;
 
@@ -698,7 +691,6 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 	if (CalculateTargetSize(s_backbuffer_width, s_backbuffer_height, (newAA % 3) + 1)
 		|| xfbchanged
 		|| windowResized
-		|| fullscreen_changed
 		|| s_last_efb_scale != g_ActiveConfig.iEFBScale
 		|| s_LastAA != newAA)
 	{
@@ -713,18 +705,8 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 		D3D::dev->SetRenderTarget(0, D3D::GetBackBufferSurface());
 		D3D::dev->SetDepthStencilSurface(D3D::GetBackBufferDepthSurface());
 
-		if (windowResized || fullscreen_changed)
+		if (windowResized)
 		{
-			// Apply fullscreen state
-			if (fullscreen_changed)
-			{
-				s_last_fullscreen_mode = fullscreen;
-				// Notify the host that it is safe to exit fullscreen
-				if (!fullscreen)
-				{
-					Host_RequestFullscreen(false);
-				}
-			}
 			if (!D3D::GetEXSupported())
 			{
 				// device objects lost, so recreate all of them

@@ -70,7 +70,7 @@ public:
 
 	void ReinterpretPixelData(unsigned int convtype);
 
-	static void CheckForResize(bool &resized, bool &fullscreen, bool &fullscreencahnged);
+	static void CheckForResize(bool &resized);
 
 	u32 GetMaxTextureSize() override;
 };

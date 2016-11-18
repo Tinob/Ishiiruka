@@ -93,7 +93,6 @@ extern D3D12_CPU_DESCRIPTOR_HANDLE null_srv_cpu_shadow;
 extern std::unique_ptr<D3DCommandListManager> command_list_mgr;
 extern ID3D12GraphicsCommandList* current_command_list;
 bool TessellationEnabled();
-bool GeormetryShadersenabled();
 D3D_FEATURE_LEVEL GetFeatureLevel();
 bool GetLogicOpSupported();
 ID3D12RootSignature* GetRootSignature();
@@ -122,7 +121,7 @@ const char* ComputeShaderVersionString();
 unsigned int GetMaxTextureSize();
 
 HRESULT SetFullscreenState(bool enable_fullscreen);
-HRESULT GetFullscreenState(bool* fullscreen_state);
+bool GetFullscreenState();
 
 // This function will assign a name to the given resource.
 // The DirectX debug layer will make it easier to identify resources that way,
