@@ -43,7 +43,7 @@ public:
 			const MathUtil::Rectangle<int>& src_rect,
 			const MathUtil::Rectangle<int>& dst_rect) override;
 
-		void Bind(u32 stage, u32 last_texture) override;
+		void Bind(u32 stage) override;
 		bool Save(const std::string& filename, unsigned int level) override;
 		bool SupportsMaterialMap() const override
 		{

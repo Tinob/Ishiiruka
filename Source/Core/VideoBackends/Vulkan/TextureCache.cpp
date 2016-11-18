@@ -747,7 +747,7 @@ void TextureCache::TCacheEntry::CopyRectangleFromTexture(const TCacheEntryBase* 
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 }
 
-void TextureCache::TCacheEntry::Bind(u32 stage, u32 last_texture)
+void TextureCache::TCacheEntry::Bind(u32 stage)
 {
 	StateTracker::GetInstance()->SetTexture(stage, m_texture->GetView());
 	if (m_nrmtexture)

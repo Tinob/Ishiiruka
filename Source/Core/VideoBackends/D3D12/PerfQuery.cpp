@@ -107,7 +107,7 @@ void PerfQuery::FlushOne()
 
 	// Has the command list been executed yet?
 	if (entry.fence_value == m_next_fence_value)
-		D3D::command_list_mgr->ExecuteQueuedWork(false);
+		D3D::command_list_mgr->ExecuteQueuedWork();
 
 	// Block until the fence is reached
 	D3D::command_list_mgr->WaitOnCPUForFence(m_tracking_fence, entry.fence_value);

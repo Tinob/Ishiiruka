@@ -3,7 +3,6 @@
 // Refer to the license.txt file included.
 
 #define USE_D3D12_QUEUED_COMMAND_LISTS
-//#define USE_D3D12_DEBUG_LAYER
 
 #pragma once
 
@@ -38,6 +37,7 @@ using Microsoft::WRL::ComPtr;
 
 class D3DCommandListManager;
 class D3DDescriptorHeapManager;
+class D3DSamplerHeapManager;
 class D3DTexture2D;
 
 enum GRAPHICS_ROOT_PARAMETER : u32
@@ -82,9 +82,9 @@ extern ID3D12Device* device;
 extern unsigned int resource_descriptor_size;
 extern unsigned int sampler_descriptor_size;
 extern std::unique_ptr<D3DDescriptorHeapManager> gpu_descriptor_heap_mgr;
-extern std::unique_ptr<D3DDescriptorHeapManager> sampler_descriptor_heap_mgr;
 extern std::unique_ptr<D3DDescriptorHeapManager> dsv_descriptor_heap_mgr;
 extern std::unique_ptr<D3DDescriptorHeapManager> rtv_descriptor_heap_mgr;
+extern std::unique_ptr<D3DSamplerHeapManager> sampler_descriptor_heap_mgr;
 extern std::array<ID3D12DescriptorHeap*, 2> gpu_descriptor_heaps;
 
 extern D3D12_CPU_DESCRIPTOR_HANDLE null_srv_cpu;
