@@ -957,9 +957,9 @@ bool SConfig::AutoSetup(EBootBS2 _BootBS2)
 				m_strGameID.clear();
 			}
 
-			// Use the TitleIDhex for name and/or unique ID if launching from nand folder
-			// or if it is not ascii characters (specifically sysmenu could potentially apply to other
-			// things)
+			// Use the TitleIDhex for name and/or game ID if launching
+			// from nand folder or if it is not ascii characters
+			// (specifically sysmenu could potentially apply to other things)
 			std::string titleidstr = StringFromFormat("%016" PRIx64, ContentLoader.GetTitleID());
 
 			if (m_strName.empty())

@@ -673,6 +673,8 @@ void EmuThread()
 	// Clear on screen messages that haven't expired
 	OSD::ClearMessages();
 
+	BootManager::RestoreConfig();
+
 	INFO_LOG(CONSOLE, "Stop [Video Thread]\t\t---- Shutdown complete ----");
 	Movie::Shutdown();
 	PatchEngine::Shutdown();
