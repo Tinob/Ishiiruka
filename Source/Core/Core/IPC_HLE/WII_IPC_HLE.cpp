@@ -10,37 +10,33 @@ IPC basics (IOS' usage):
 
 Return values for file handles: All IPC calls will generate a return value to 0x04,
 in case of success they are
-	Open: DeviceID
-	Close: 0
-	Read: Bytes read
-	Write: Bytes written
-	Seek: Seek position
-	Ioctl: 0 (in addition to that there may be messages to the out buffers)
-	Ioctlv: 0 (in addition to that there may be messages to the out buffers)
+Open: DeviceID
+Close: 0
+Read: Bytes read
+Write: Bytes written
+Seek: Seek position
+Ioctl: 0 (in addition to that there may be messages to the out buffers)
+Ioctlv: 0 (in addition to that there may be messages to the out buffers)
 They will also generate a true or false return for UpdateInterrupts() in WII_IPC.cpp.
 */
 
-#include <list>
+#include <deque>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <string>
+#include <utility>
 #include <vector>
 
+#include "Common/Assert.h"
 #include "Common/ChunkFile.h"
-#include "Common/CommonPaths.h"
 #include "Common/CommonTypes.h"
-#include "Common/FileUtil.h"
-#include "Common/Thread.h"
-
+#include "Common/Logging/Log.h"
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
 #include "Core/CoreTiming.h"
-#include "Core/Debugger/Debugger_SymbolMap.h"
-#include "Core/HW/CPU.h"
 #include "Core/HW/Memmap.h"
-#include "Core/HW/SystemTimers.h"
 #include "Core/HW/WII_IPC.h"
-
 #include "Core/IPC_HLE/WII_IPC_HLE.h"
 #include "Core/IPC_HLE/WII_IPC_HLE_Device.h"
 #include "Core/IPC_HLE/WII_IPC_HLE_Device_DI.h"
@@ -51,16 +47,20 @@ They will also generate a true or false return for UpdateInterrupts() in WII_IPC
 #include "Core/IPC_HLE/WII_IPC_HLE_Device_net_ssl.h"
 #include "Core/IPC_HLE/WII_IPC_HLE_Device_sdio_slot0.h"
 #include "Core/IPC_HLE/WII_IPC_HLE_Device_stm.h"
+#include "Core/IPC_HLE/WII_IPC_HLE_Device_stub.h"
 #include "Core/IPC_HLE/WII_IPC_HLE_Device_usb_bt_emu.h"
 #include "Core/IPC_HLE/WII_IPC_HLE_Device_usb_bt_real.h"
 #include "Core/IPC_HLE/WII_IPC_HLE_Device_usb_kbd.h"
 #include "Core/IPC_HLE/WII_IPC_HLE_Device_usb_ven.h"
 
+namespace CoreTiming
+{
+struct EventType;
+}  // namespace CoreTiming
+
 #if defined(__LIBUSB__)
 #include "Core/IPC_HLE/WII_IPC_HLE_Device_hid.h"
 #endif
-
-#include "Core/PowerPC/PowerPC.h"
 
 namespace WII_IPC_HLE_Interface
 {
@@ -129,6 +129,7 @@ void Reinit()
 	CWII_IPC_HLE_Device_es::m_ContentFile = "";
 
 	num_devices = 0;
+
 	// Build hardware devices
 	if (!SConfig::GetInstance().m_bt_passthrough_enabled)
 		AddDevice<CWII_IPC_HLE_Device_usb_oh1_57e_305_emu>("/dev/usb/oh1/57e/305");
@@ -440,7 +441,7 @@ void ExecuteCommand(u32 address)
 					result = IWII_IPC_HLE_Device::GetDefaultReply();
 				}
 			}
-			else
+			else if (device_name.find('/') == 0)
 			{
 				device = CreateFileIO(DeviceID, device_name);
 				result = device->Open(address, Mode);
@@ -448,9 +449,13 @@ void ExecuteCommand(u32 address)
 				DEBUG_LOG(WII_IPC_FILEIO, "IOP: Open File (Device=%s, ID=%08x, Mode=%i)",
 					device->GetDeviceName().c_str(), DeviceID, Mode);
 				if (Memory::Read_U32(address + 4) == (u32)DeviceID)
-				{
 					s_fdmap[DeviceID] = device;
-				}
+			}
+			else
+			{
+				WARN_LOG(WII_IPC_HLE, "Invalid device: %s", device_name.c_str());
+				Memory::Write_U32(FS_ENOENT, address + 4);
+				result = IWII_IPC_HLE_Device::GetDefaultReply();
 			}
 		}
 		else
@@ -552,14 +557,7 @@ void ExecuteCommand(u32 address)
 	s_last_reply_time = CoreTiming::GetTicks() + result.reply_delay_ticks;
 
 	if (result.send_reply)
-	{
-		// The original hardware overwrites the command type with the async reply type.
-		Memory::Write_U32(IPC_REP_ASYNC, address);
-		// IOS also seems to write back the command that was responded to in the FD field.
-		Memory::Write_U32(Command, address + 8);
-		// Generate a reply to the IPC command
-		EnqueueReply(address, (int)result.reply_delay_ticks);
-	}
+		EnqueueReply(address, static_cast<int>(result.reply_delay_ticks));
 }
 
 // Happens AS SOON AS IPC gets a new pointer!
@@ -568,12 +566,13 @@ void EnqueueRequest(u32 address)
 	CoreTiming::ScheduleEvent(1000, s_event_enqueue, address | ENQUEUE_REQUEST_FLAG);
 }
 
-// Called when IOS module has some reply
-// NOTE: Only call this if you have correctly handled
-//       CommandAddress+0 and CommandAddress+8.
-//       Please search for examples of this being called elsewhere.
+// Called to send a reply to an IOS syscall
 void EnqueueReply(u32 address, int cycles_in_future, CoreTiming::FromThread from)
 {
+	// IOS writes back the command that was responded to in the FD field.
+	Memory::Write_U32(Memory::Read_U32(address), address + 8);
+	// IOS also overwrites the command type with the async reply type.
+	Memory::Write_U32(IPC_REP_ASYNC, address);
 	CoreTiming::ScheduleEvent(cycles_in_future, s_event_enqueue, address, from);
 }
 
@@ -630,12 +629,3 @@ void UpdateDevices()
 }
 
 }  // end of namespace WII_IPC_HLE_Interface
-
-// TODO: create WII_IPC_HLE_Device.cpp ?
-void IWII_IPC_HLE_Device::DoStateShared(PointerWrap& p)
-{
-	p.Do(m_Name);
-	p.Do(m_DeviceID);
-	p.Do(m_Hardware);
-	p.Do(m_Active);
-}

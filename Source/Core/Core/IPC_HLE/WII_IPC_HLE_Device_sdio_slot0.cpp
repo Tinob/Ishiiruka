@@ -2,35 +2,24 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include <cstdio>
+#include <cstring>
+#include <memory>
+#include <vector>
+
 #include "Common/ChunkFile.h"
 #include "Common/CommonTypes.h"
 #include "Common/FileUtil.h"
+#include "Common/Logging/Log.h"
 #include "Common/SDCardUtil.h"
-
 #include "Core/ConfigManager.h"
-#include "Core/Core.h"
-#include "Core/HW/CPU.h"
 #include "Core/HW/Memmap.h"
 #include "Core/IPC_HLE/WII_IPC_HLE.h"
 #include "Core/IPC_HLE/WII_IPC_HLE_Device_sdio_slot0.h"
 
-void CWII_IPC_HLE_Device_sdio_slot0::EnqueueReply(u32 CommandAddress, u32 ReturnValue)
-{
-	// IOS seems to write back the command that was responded to, this class does not
-	// overwrite the command so it is safe to read.
-	Memory::Write_U32(Memory::Read_U32(CommandAddress), CommandAddress + 8);
-	// The original hardware overwrites the command type with the async reply type.
-	Memory::Write_U32(IPC_REP_ASYNC, CommandAddress);
-
-	Memory::Write_U32(ReturnValue, CommandAddress + 4);
-
-	WII_IPC_HLE_Interface::EnqueueReply(CommandAddress);
-}
-
-CWII_IPC_HLE_Device_sdio_slot0::CWII_IPC_HLE_Device_sdio_slot0(u32 _DeviceID,
-	const std::string& _rDeviceName)
-	: IWII_IPC_HLE_Device(_DeviceID, _rDeviceName), m_Status(CARD_NOT_EXIST), m_BlockLength(0),
-	m_BusWidth(0), m_Card(nullptr)
+CWII_IPC_HLE_Device_sdio_slot0::CWII_IPC_HLE_Device_sdio_slot0(const u32 device_id,
+	const std::string& device_name)
+	: IWII_IPC_HLE_Device(device_id, device_name)
 {
 }
 
@@ -44,7 +33,7 @@ void CWII_IPC_HLE_Device_sdio_slot0::DoState(PointerWrap& p)
 	p.Do(m_Status);
 	p.Do(m_BlockLength);
 	p.Do(m_BusWidth);
-	p.Do(m_Registers);
+	p.Do(m_registers);
 }
 
 void CWII_IPC_HLE_Device_sdio_slot0::EventNotify()
@@ -54,7 +43,8 @@ void CWII_IPC_HLE_Device_sdio_slot0::EventNotify()
 	if ((SConfig::GetInstance().m_WiiSDCard && m_event.type == EVENT_INSERT) ||
 		(!SConfig::GetInstance().m_WiiSDCard && m_event.type == EVENT_REMOVE))
 	{
-		EnqueueReply(m_event.addr, m_event.type);
+		Memory::Write_U32(m_event.type, m_event.addr + 4);
+		WII_IPC_HLE_Interface::EnqueueReply(m_event.addr);
 		m_event.addr = 0;
 		m_event.type = EVENT_NONE;
 	}
@@ -87,7 +77,7 @@ IPCCommandResult CWII_IPC_HLE_Device_sdio_slot0::Open(u32 _CommandAddress, u32 _
 	OpenInternal();
 
 	Memory::Write_U32(GetDeviceID(), _CommandAddress + 0x4);
-	memset(m_Registers, 0, sizeof(m_Registers));
+	m_registers.fill(0);
 	m_Active = true;
 	return GetDefaultReply();
 }
@@ -130,7 +120,7 @@ IPCCommandResult CWII_IPC_HLE_Device_sdio_slot0::IOCtl(u32 _CommandAddress)
 
 		INFO_LOG(WII_IPC_SD, "IOCTL_WRITEHCR 0x%08x - 0x%08x", reg, val);
 
-		if (reg >= 0x200)
+		if (reg >= m_registers.size())
 		{
 			WARN_LOG(WII_IPC_SD, "IOCTL_WRITEHCR out of range");
 			break;
@@ -139,17 +129,17 @@ IPCCommandResult CWII_IPC_HLE_Device_sdio_slot0::IOCtl(u32 _CommandAddress)
 		if ((reg == HCR_CLOCKCONTROL) && (val & 1))
 		{
 			// Clock is set to oscillate, enable bit 1 to say it's stable
-			m_Registers[reg] = val | 2;
+			m_registers[reg] = val | 2;
 		}
 		else if ((reg == HCR_SOFTWARERESET) && val)
 		{
 			// When a reset is specified, the register gets cleared
-			m_Registers[reg] = 0;
+			m_registers[reg] = 0;
 		}
 		else
 		{
 			// Default to just storing the new value
-			m_Registers[reg] = val;
+			m_registers[reg] = val;
 		}
 	}
 	break;
@@ -158,13 +148,13 @@ IPCCommandResult CWII_IPC_HLE_Device_sdio_slot0::IOCtl(u32 _CommandAddress)
 	{
 		u32 reg = Memory::Read_U32(BufferIn);
 
-		if (reg >= 0x200)
+		if (reg >= m_registers.size())
 		{
 			WARN_LOG(WII_IPC_SD, "IOCTL_READHCR out of range");
 			break;
 		}
 
-		u32 val = m_Registers[reg];
+		u32 val = m_registers[reg];
 		INFO_LOG(WII_IPC_SD, "IOCTL_READHCR 0x%08x - 0x%08x", reg, val);
 
 		// Just reading the register
@@ -236,7 +226,8 @@ IPCCommandResult CWII_IPC_HLE_Device_sdio_slot0::IOCtl(u32 _CommandAddress)
 		// release returns 0
 		// unknown sd int
 		// technically we do it out of order, oh well
-		EnqueueReply(m_event.addr, EVENT_INVALID);
+		Memory::Write_U32(EVENT_INVALID, m_event.addr + 4);
+		WII_IPC_HLE_Interface::EnqueueReply(m_event.addr);
 		m_event.addr = 0;
 		m_event.type = EVENT_NONE;
 		Memory::Write_U32(0, _CommandAddress + 0x4);
