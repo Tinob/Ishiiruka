@@ -92,7 +92,7 @@ void VideoBackend::InitBackendInfo()
 	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT5] = true;
 
 	g_Config.backend_info.bSupportsScaling = false;
-	g_Config.backend_info.bSupportsExclusiveFullscreen = true;
+	g_Config.backend_info.bSupportsExclusiveFullscreen = false;
 	g_Config.backend_info.bSupportsDualSourceBlend = true;
 	g_Config.backend_info.bSupportsPixelLighting = true;
 	g_Config.backend_info.bNeedBlendIndices = false;
@@ -105,6 +105,7 @@ void VideoBackend::InitBackendInfo()
 	g_Config.backend_info.bSupportsDepthClamp = true;
 	g_Config.backend_info.bSupportsMultithreading = false;
 	g_Config.backend_info.bSupportsReversedDepthRange = true;
+	g_Config.backend_info.bSupportsInternalResolutionFrameDumps = false;
 	IDXGIFactory* factory;
 	IDXGIAdapter* ad;
 	hr = DX11::PCreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&factory);

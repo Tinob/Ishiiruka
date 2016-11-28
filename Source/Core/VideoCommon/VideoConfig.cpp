@@ -52,7 +52,7 @@ VideoConfig::VideoConfig()
 	iTexScalingType = 0;
 	iTexScalingFactor = 2;
 	backend_info.bSupportsMultithreading = false;
-
+	backend_info.bSupportsInternalResolutionFrameDumps = false;
 	bEnableValidationLayer = false;
 	bBackendMultithreading = true;
 }
@@ -87,13 +87,13 @@ void VideoConfig::Load(const std::string& ini_file)
 	settings->Get("HiresMaterialMapsBuild", &bHiresMaterialMapsBuild, false);
 	settings->Get("CacheHiresTextures", &bCacheHiresTextures, 0);
 	settings->Get("DumpEFBTarget", &bDumpEFBTarget, 0);
+	settings->Get("DumpFramesAsImages", &bDumpFramesAsImages, 0);
 	settings->Get("FreeLook", &bFreeLook, 0);
 	settings->Get("CompileShaderOnStartup", &bCompileShaderOnStartup, 1);
-
 	settings->Get("UseFFV1", &bUseFFV1, 0);
+	settings->Get("InternalResolutionFrameDumps", &bInternalResolutionFrameDumps, 0);
 	settings->Get("EnablePixelLighting", &bEnablePixelLighting, 0);
 	settings->Get("ForcedLighting", &bForcedLighting, 0);
-
 	settings->Get("ForcePhongShading", &bForcePhongShading, 0);
 	settings->Get("RimPower", &iRimPower, 80);
 	settings->Get("RimIntesity", &iRimIntesity, 0);
@@ -425,12 +425,12 @@ void VideoConfig::Save(const std::string& ini_file)
 	settings->Set("HiresTextures", bHiresTextures);
 	settings->Set("HiresMaterialMaps", bHiresMaterialMaps);
 	settings->Set("HiresMaterialMapsBuild", bHiresMaterialMapsBuild);
-	
 	settings->Set("CacheHiresTextures", bCacheHiresTextures);
 	settings->Set("DumpEFBTarget", bDumpEFBTarget);
+	settings->Set("DumpFramesAsImages", bDumpFramesAsImages);
 	settings->Set("FreeLook", bFreeLook);
+	settings->Set("InternalResolutionFrameDumps", bInternalResolutionFrameDumps);
 	settings->Set("CompileShaderOnStartup", bCompileShaderOnStartup);
-
 	settings->Set("UseFFV1", bUseFFV1);
 	settings->Set("EnablePixelLighting", bEnablePixelLighting);
 	settings->Set("ForcedLighting", bForcedLighting);

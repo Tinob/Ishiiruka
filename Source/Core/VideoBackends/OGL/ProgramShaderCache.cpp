@@ -9,6 +9,7 @@
 #include "Common/StringUtil.h"
 
 #include "Core/Host.h"
+#include "Core/ConfigManager.h"
 
 #include "VideoBackends/OGL/ProgramShaderCache.h"
 #include "VideoBackends/OGL/Render.h"

@@ -51,9 +51,10 @@ void HLE_GeneralDebugPrint()
 		// ___blank(const char* fmt, ...);
 		report_message = GetStringVA();
 	}
-
+	rGPR[3] = static_cast<u32>(report_message.length());
 	NPC = LR;
-
+	if (!report_message.empty() && report_message.back() == '\n')
+		report_message.pop_back();
 	NOTICE_LOG(OSREPORT, "%08x->%08x| %s", LR, PC, SHIFTJISToUTF8(report_message).c_str());
 }
 
@@ -158,9 +159,6 @@ std::string GetStringVA(u32 strReg)
 			result += string[i];
 		}
 	}
-
-	if (!result.empty() && result.back() == '\n')
-		result.pop_back();
 
 	return result;
 }
