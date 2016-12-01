@@ -63,13 +63,12 @@ XFBEncoder::~XFBEncoder()
 	SAFE_RELEASE(m_readback_buffer);
 }
 
-void XFBEncoder::EncodeTextureToRam(u8* dst, u32 dst_pitch, u32 dst_height,
+void XFBEncoder::EncodeTextureToRam(u8* dst, u32 dst_width, u32 dst_pitch, u32 dst_height,
 	D3DTexture2D* src_texture, const TargetRectangle& src_rect,
 	u32 src_width, u32 src_height, float gamma)
 {
 	// src_rect is in native coordinates
 	// dst_pitch is in words
-	u32 dst_width = dst_pitch / 2;
 	u32 dst_texture_width = dst_width / 2;
 	_assert_msg_(VIDEO, dst_width <= MAX_XFB_WIDTH && dst_height <= MAX_XFB_HEIGHT, "XFB destination does not exceed maximum size");
 

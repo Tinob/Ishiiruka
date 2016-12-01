@@ -1404,9 +1404,9 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight,
 		Core::Callback_VideoCopiedToXFB(false);
 		return;
 	}
-
+	if (!g_ActiveConfig.bUseXFB)
+		m_post_processor->OnEndFrame();
 	ResetAPIState();
-
 	UpdateDrawRectangle();
 	TargetRectangle flipped_trc = GetTargetRectangle();
 
@@ -1596,7 +1596,6 @@ void Renderer::DrawFrame(const TargetRectangle& target_rc, const EFBRectangle& s
 
 void Renderer::DrawEFB(const TargetRectangle& t_rc, const EFBRectangle& source_rc, GLuint dst_texture, const TargetSize& dst_size, float Gamma)
 {
-	m_post_processor->OnEndFrame();
 	TargetRectangle scaled_source_rc = ConvertEFBRectangle(source_rc);
 	TargetRectangle target_rc = { t_rc.left, t_rc.top, t_rc.right, t_rc.bottom };
 	// for msaa mode, we must resolve the efb content to non-msaa
@@ -1608,14 +1607,14 @@ void Renderer::DrawEFB(const TargetRectangle& t_rc, const EFBRectangle& source_r
 	GLuint depth_tex = 0;
 	if (m_post_processor->ShouldTriggerOnSwap())
 	{
-		TargetRectangle src_rect(target_rc);
+		TargetRectangle src_rect(scaled_source_rc);
 		TargetSize src_size(tex_size);
 
 		if (m_post_processor->RequiresDepthBuffer())
 			depth_tex = FramebufferManager::ResolveAndGetDepthTarget(source_rc);
 
 		uintptr_t new_blit_tex;
-		m_post_processor->PostProcess(&target_rc, &tex_size, &new_blit_tex, src_rect, src_size, tex, src_rect, src_size, depth_tex);
+		m_post_processor->PostProcess(&scaled_source_rc, &tex_size, &new_blit_tex, src_rect, src_size, tex, src_rect, src_size, depth_tex);
 		tex = static_cast<GLuint>(new_blit_tex);
 	}
 

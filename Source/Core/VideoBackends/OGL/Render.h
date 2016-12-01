@@ -151,7 +151,8 @@ private:
 		u32 fb_stride, u32 fb_height, float Gamma);
 	void DrawRealXFB(const TargetRectangle& target_rc, const XFBSourceBase* const* xfb_sources,
 		u32 xfb_count, GLuint dst_texture, const TargetSize& dst_size, u32 fb_width, u32 fb_stride, u32 fb_height);
-	void BlitScreen(const TargetRectangle& dst_rect, const TargetRectangle& src_rect, const  TargetSize& src_size, GLuint src_texture, GLuint src_depth_texture, const TargetSize& dst_size, GLuint dst_texture, float gamma);
+	void BlitScreen(const TargetRectangle& dst_rect, const TargetRectangle& src_rect, const  TargetSize& src_size, GLuint src_texture, 
+		GLuint src_depth_texture, const TargetSize& dst_size, GLuint dst_texture, float gamma);
 
 	void FlushFrameDump();
 	void DumpFrame(const TargetRectangle& flipped_trc, u64 ticks);
