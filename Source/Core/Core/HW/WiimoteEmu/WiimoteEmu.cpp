@@ -2,6 +2,7 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include <cassert>
 #include <cmath>
 #include <cstring>
 
@@ -313,6 +314,61 @@ Wiimote::Wiimote(const unsigned int index)
 std::string Wiimote::GetName() const
 {
 	return std::string("Wiimote") + char('1' + m_index);
+}
+
+ControllerEmu::ControlGroup* Wiimote::GetWiimoteGroup(WiimoteGroup group)
+{
+	switch (group)
+	{
+	case WiimoteGroup::Buttons:
+		return m_buttons;
+	case WiimoteGroup::DPad:
+		return m_dpad;
+	case WiimoteGroup::Shake:
+		return m_shake;
+	case WiimoteGroup::IR:
+		return m_ir;
+	case WiimoteGroup::Tilt:
+		return m_tilt;
+	case WiimoteGroup::Swing:
+		return m_swing;
+	case WiimoteGroup::Rumble:
+		return m_rumble;
+	case WiimoteGroup::Extension:
+		return m_extension;
+	case WiimoteGroup::Options:
+		return m_options;
+	case WiimoteGroup::Hotkeys:
+		return m_hotkeys;
+	default:
+		assert(false);
+		return nullptr;
+	}
+}
+
+ControllerEmu::ControlGroup* Wiimote::GetNunchukGroup(NunchukGroup group)
+{
+	return static_cast<Nunchuk*>(m_extension->attachments[EXT_NUNCHUK].get())->GetGroup(group);
+}
+
+ControllerEmu::ControlGroup* Wiimote::GetClassicGroup(ClassicGroup group)
+{
+	return static_cast<Classic*>(m_extension->attachments[EXT_CLASSIC].get())->GetGroup(group);
+}
+
+ControllerEmu::ControlGroup* Wiimote::GetGuitarGroup(GuitarGroup group)
+{
+	return static_cast<Guitar*>(m_extension->attachments[EXT_GUITAR].get())->GetGroup(group);
+}
+
+ControllerEmu::ControlGroup* Wiimote::GetDrumsGroup(DrumsGroup group)
+{
+	return static_cast<Drums*>(m_extension->attachments[EXT_DRUMS].get())->GetGroup(group);
+}
+
+ControllerEmu::ControlGroup* Wiimote::GetTurntableGroup(TurntableGroup group)
+{
+	return static_cast<Turntable*>(m_extension->attachments[EXT_TURNTABLE].get())->GetGroup(group);
 }
 
 bool Wiimote::Step()
@@ -795,7 +851,7 @@ void Wiimote::ControlChannel(const u16 _channelID, const void* _pData, u32 _Size
 	// Check for custom communication
 	if (99 == _channelID)
 	{
-		// Wiimote disconnected
+		// Wii Remote disconnected
 		// reset eeprom/register/reporting mode
 		Reset();
 		if (WIIMOTE_SRC_REAL & g_wiimote_sources[m_index])
@@ -911,7 +967,7 @@ void Wiimote::ConnectOnInput()
 	{
 		Host_ConnectWiimote(m_index, true);
 		// arbitrary value so it doesn't try to send multiple requests before Dolphin can react
-		// if Wiimotes are polled at 200Hz then this results in one request being sent per 500ms
+		// if Wii Remotes are polled at 200Hz then this results in one request being sent per 500ms
 		m_last_connect_request_counter = 100;
 	}
 }

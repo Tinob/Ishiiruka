@@ -738,9 +738,7 @@ bool FramebufferManager::PopulateColorReadbackTexture()
 	}
 
 	// Wait until the copy is complete.
-	g_command_buffer_mgr->ExecuteCommandBuffer(false, true);
-	StateTracker::GetInstance()->InvalidateDescriptorSets();
-	StateTracker::GetInstance()->SetPendingRebind();
+	Util::ExecuteCurrentCommandsAndRestoreState(false, true);
 
 	// Map to host memory.
 	if (!m_color_readback_texture->IsMapped() && !m_color_readback_texture->Map())
@@ -822,9 +820,7 @@ bool FramebufferManager::PopulateDepthReadbackTexture()
 	}
 
 	// Wait until the copy is complete.
-	g_command_buffer_mgr->ExecuteCommandBuffer(false, true);
-	StateTracker::GetInstance()->InvalidateDescriptorSets();
-	StateTracker::GetInstance()->SetPendingRebind();
+	Util::ExecuteCurrentCommandsAndRestoreState(false, true);
 
 	// Map to host memory.
 	if (!m_depth_readback_texture->IsMapped() && !m_depth_readback_texture->Map())

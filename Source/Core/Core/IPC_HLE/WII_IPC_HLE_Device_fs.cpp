@@ -22,7 +22,7 @@
 #include "Core/IPC_HLE/WII_IPC_HLE_Device_FileIO.h"
 #include "Core/IPC_HLE/WII_IPC_HLE_Device_fs.h"
 
-bool IsValidWiiPath(const std::string& path)
+static bool IsValidWiiPath(const std::string& path)
 {
 	return path.compare(0, 1, "/") == 0;
 }

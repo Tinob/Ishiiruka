@@ -131,7 +131,9 @@ static void StopHotplugThread()
   {
     // Write something to efd so that select() stops blocking.
     uint64_t value = 1;
-    write(s_wakeup_eventfd, &value, sizeof(uint64_t));
+    if (write(s_wakeup_eventfd, &value, sizeof(uint64_t)) < 0)
+    {
+    }
     s_hotplug_thread.join();
   }
 }
@@ -139,10 +141,15 @@ static void StopHotplugThread()
 void Init()
 {
   s_devnode_name_map.clear();
+  PopulateDevices();
+  StartHotplugThread();
+}
 
-  // During initialization we use udev to iterate over all /dev/input/event* devices.
-  // Note: the Linux kernel is currently limited to just 32 event devices. If this ever
-  //            changes, hopefully udev will take care of this.
+void PopulateDevices()
+{
+  // We use udev to iterate over all /dev/input/event* devices.
+  // Note: the Linux kernel is currently limited to just 32 event devices. If
+  // this ever changes, hopefully udev will take care of this.
 
   udev* udev = udev_new();
   _assert_msg_(PAD, udev != nullptr, "Couldn't initialize libudev.");
@@ -180,8 +187,6 @@ void Init()
   }
   udev_enumerate_unref(enumerate);
   udev_unref(udev);
-
-  StartHotplugThread();
 }
 
 void Shutdown()
@@ -404,7 +409,9 @@ void evdevDevice::ForceFeedback::SetState(ControlState state)
     play.code = m_id;
     play.value = 1;
 
-    write(m_fd, (const void*)&play, sizeof(play));
+    if (write(m_fd, &play, sizeof(play)) < 0)
+    {
+    }
   }
 }
 

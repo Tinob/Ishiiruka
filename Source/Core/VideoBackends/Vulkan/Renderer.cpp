@@ -325,6 +325,7 @@ void Renderer::BeginFrame()
 	// Ensure that the state tracker rebinds everything, and allocates a new set
 	// of descriptors out of the next pool.
 	StateTracker::GetInstance()->InvalidateDescriptorSets();
+	StateTracker::GetInstance()->InvalidateConstants();
 	StateTracker::GetInstance()->SetPendingRebind();
 }
 

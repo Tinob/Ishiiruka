@@ -19,7 +19,7 @@
 #include <wx/settings.h>
 #include <wx/statbmp.h>
 
-#include "DolphinWX/InputConfigDiag.h"
+#include "DolphinWX/Input/InputConfigDiag.h"
 #include "DolphinWX/WxUtils.h"
 
 #include "InputCommon/ControllerEmu.h"
@@ -466,7 +466,7 @@ static void DrawBorder(wxGraphicsContext* gc, double scale)
 {
 	double pen_width = std::round(scale);  // Pen width = 1px * scale
 
-																				 // Use the window caption bar color as a safe accent color.
+	// Use the window caption bar color as a safe accent color.
 	wxPen border_pen(wxSystemSettings::GetColour(wxSYS_COLOUR_ACTIVECAPTION),
 		static_cast<int>(pen_width));
 	border_pen.SetCap(wxCAP_PROJECTING);
@@ -487,12 +487,9 @@ void InputConfigDialog::UpdateBitmaps(wxTimerEvent& WXUNUSED(event))
 
 	g_controller_interface.UpdateInput();
 
-	GamepadPage* const current_page =
-		static_cast<GamepadPage*>(m_pad_notebook->GetPage(m_pad_notebook->GetSelection()));
-
 	wxMemoryDC dc;
 	auto lock = ControllerEmu::GetStateLock();
-	for (ControlGroupBox* g : current_page->control_groups)
+	for (ControlGroupBox* g : control_groups)
 	{
 		// Only if this control group has a bitmap
 		if (!g->static_bitmap)
