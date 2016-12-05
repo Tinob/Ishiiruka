@@ -236,7 +236,7 @@ const std::array<HotkeyGroupInfo, NUM_HOTKEY_GROUPS> groups_info = {
 	{ "Save state", HK_SAVE_STATE_SLOT_1, HK_SAVE_STATE_SLOT_SELECTED },
 	{ "Select state", HK_SELECT_STATE_SLOT_1, HK_SELECT_STATE_SLOT_10 },
 	{ "Load last state", HK_LOAD_LAST_STATE_1, HK_LOAD_LAST_STATE_10 },
-	{ "Other state hotkeys", HK_SAVE_FIRST_STATE, HK_LOAD_STATE_FILE } } };
+	{ "Other state hotkeys", HK_SAVE_FIRST_STATE, HK_TOGGLE_MATERIAL_TEXTURES } } };
 
 HotkeyManager::HotkeyManager()
 {

@@ -5,6 +5,6 @@
     <LocalDebuggerCommand>$(BinaryOutputDir)$(TargetFileName)</LocalDebuggerCommand>
     <LocalDebuggerWorkingDirectory>$(BinaryOutputDir)</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <ShowAllFiles>true</ShowAllFiles>
+    <ShowAllFiles>false</ShowAllFiles>
   </PropertyGroup>
 </Project>

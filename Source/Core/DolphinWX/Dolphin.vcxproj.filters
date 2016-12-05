@@ -31,6 +31,9 @@
     <Filter Include="GUI\Widgets">
       <UniqueIdentifier>{a894e2e3-e577-4b65-8572-055699f23a49}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GUI\ISOProperties">
+      <UniqueIdentifier>{81b2f4d1-34d8-4b4d-9ed5-fe46ef250a76}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -132,9 +135,6 @@
       <Filter>GUI</Filter>
     </ClCompile>
     <ClCompile Include="GameListCtrl.cpp">
-      <Filter>GUI</Filter>
-    </ClCompile>
-    <ClCompile Include="ISOProperties.cpp">
       <Filter>GUI</Filter>
     </ClCompile>
     <ClCompile Include="LogConfigWindow.cpp">
@@ -248,6 +248,12 @@
     <ClCompile Include="Input\WiimoteInputConfigDiag.cpp">
       <Filter>GUI\InputConfig</Filter>
     </ClCompile>
+    <ClCompile Include="ISOProperties\InfoPanel.cpp">
+      <Filter>GUI\ISOProperties</Filter>
+    </ClCompile>
+    <ClCompile Include="ISOProperties\ISOProperties.cpp">
+      <Filter>GUI\ISOProperties</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Main.h" />
@@ -345,9 +351,6 @@
       <Filter>GUI</Filter>
     </ClInclude>
     <ClInclude Include="Globals.h">
-      <Filter>GUI</Filter>
-    </ClInclude>
-    <ClInclude Include="ISOProperties.h">
       <Filter>GUI</Filter>
     </ClInclude>
     <ClInclude Include="LogConfigWindow.h">
@@ -457,6 +460,12 @@
     </ClInclude>
     <ClInclude Include="Input\WiimoteInputConfigDiag.h">
       <Filter>GUI\InputConfig</Filter>
+    </ClInclude>
+    <ClInclude Include="ISOProperties\InfoPanel.h">
+      <Filter>GUI\ISOProperties</Filter>
+    </ClInclude>
+    <ClInclude Include="ISOProperties\ISOProperties.h">
+      <Filter>GUI\ISOProperties</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
