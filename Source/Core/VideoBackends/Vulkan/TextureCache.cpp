@@ -426,7 +426,7 @@ void TextureCache::LoadData(Texture2D* dst, const u8* src, u32 width, u32 height
 		if (upload_pitch != source_pitch)
 		{
 			VkDeviceSize copy_pitch = std::min(source_pitch, upload_pitch);
-			for (u32 row = 0; row < height; row++)
+			for (u32 row = 0; row < block_H; row++)
 			{
 				memcpy(image_upload_buffer_pointer + row * upload_pitch, source_ptr + row * source_pitch,
 					copy_pitch);
