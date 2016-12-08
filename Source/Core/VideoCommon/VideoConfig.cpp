@@ -85,6 +85,7 @@ void VideoConfig::Load(const std::string& ini_file)
 	settings->Get("HiresTextures", &bHiresTextures, 0);
 	settings->Get("HiresMaterialMaps", &bHiresMaterialMaps, 0);
 	settings->Get("HiresMaterialMapsBuild", &bHiresMaterialMapsBuild, false);
+	settings->Get("ConvertHiresTextures", &bConvertHiresTextures, 0);
 	settings->Get("CacheHiresTextures", &bCacheHiresTextures, 0);
 	settings->Get("DumpEFBTarget", &bDumpEFBTarget, 0);
 	settings->Get("DumpFramesAsImages", &bDumpFramesAsImages, 0);
@@ -425,6 +426,7 @@ void VideoConfig::Save(const std::string& ini_file)
 	settings->Set("HiresTextures", bHiresTextures);
 	settings->Set("HiresMaterialMaps", bHiresMaterialMaps);
 	settings->Set("HiresMaterialMapsBuild", bHiresMaterialMapsBuild);
+	settings->Set("ConvertHiresTextures", bConvertHiresTextures);
 	settings->Set("CacheHiresTextures", bCacheHiresTextures);
 	settings->Set("DumpEFBTarget", bDumpEFBTarget);
 	settings->Set("DumpFramesAsImages", bDumpFramesAsImages);
