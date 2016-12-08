@@ -625,7 +625,7 @@ u32 GetTargetRefreshRate()
 
 u32 GetTicksPerSample()
 {
-	return 2 * SystemTimers::GetTicksPerSecond() / (s_clock_freqs[m_Clock] * SConfig::GetInstance().iVideoRate);
+	return 2 * SystemTimers::GetTicksPerSecond() / ((s_clock_freqs[m_Clock] * SConfig::GetInstance().iVideoRate) >> 3);
 }
 
 u32 GetTicksPerHalfLine()
