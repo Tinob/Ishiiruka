@@ -62,7 +62,6 @@ void StagingTexture2D::ReadTexels(u32 x, u32 y, u32 width, u32 height, void* dat
 	u32 data_stride) const
 {
 	_assert_((x + width) <= m_width && (y + height) <= m_height);
-	const char* src_ptr = GetRowPointer(y);
 	bool use_optimal_path = x == 0 && width == m_width && m_row_stride == data_stride;
 	u32 block_width = Util::GetBlockWidth(m_format);
 	if (block_width > 1)
@@ -72,6 +71,7 @@ void StagingTexture2D::ReadTexels(u32 x, u32 y, u32 width, u32 height, void* dat
 		width = std::max(1u, (width + block_width - 1) / block_width);
 		height = std::max(1u, (height + block_width - 1) / block_width);
 	}
+	const char* src_ptr = GetRowPointer(y);
 	// Optimal path: same dimensions, same stride.	
 	if (use_optimal_path)
 	{
@@ -92,7 +92,6 @@ void StagingTexture2D::ReadTexels(u32 x, u32 y, u32 width, u32 height, void* dat
 void StagingTexture2D::WriteTexels(u32 x, u32 y, u32 width, u32 height, const void* data,
 	u32 data_stride)
 {
-	char* dst_ptr = GetRowPointer(y);
 	// Optimal path: same dimensions, same stride.
 	_assert_((x + width) <= m_width && (y + height) <= m_height);
 	bool use_optimal_path = x == 0 && width == m_width && m_row_stride == data_stride;
@@ -104,6 +103,7 @@ void StagingTexture2D::WriteTexels(u32 x, u32 y, u32 width, u32 height, const vo
 		width = std::max(1u, (width + block_width - 1) / block_width);
 		height = std::max(1u, (height + block_width - 1) / block_width);
 	}
+	char* dst_ptr = GetRowPointer(y);
 	if (use_optimal_path)
 	{
 		memcpy(dst_ptr, data, m_row_stride * height);
