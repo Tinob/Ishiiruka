@@ -985,7 +985,7 @@ void CISOProperties::LoadGameConfig()
 	SetCheckboxValueFromGameini("Video_Stereoscopy", "StereoEFBMonoDepth", MonoDepth);
 
 	int iTemp;
-	if (GameIniLocal.GetIfExists("Core", "VideoRate", &iTemp))
+	if (GameIniLocal.GetIfExists("Core", "Video_Rate", &iTemp))
 	{
 		iTemp = std::min(std::max(iTemp, 1), 64);
 		DVideo->SetValue(iTemp);
@@ -1109,7 +1109,7 @@ bool CISOProperties::SaveGameConfig()
       GameIniLocal.DeleteKey((section), (key));                                                    \
   } while (0)
 
-	SAVE_IF_NOT_DEFAULT("Core", "VideoRate", DVideo->GetValue(), 1);
+	SAVE_IF_NOT_DEFAULT("Core", "Video_Rate", DVideo->GetValue(), 1);
 
 	SAVE_IF_NOT_DEFAULT("Video", "PH_SZNear", (m_PHack_Data.PHackSZNear ? 1 : 0), 0);
 	SAVE_IF_NOT_DEFAULT("Video", "PH_SZFar", (m_PHack_Data.PHackSZFar ? 1 : 0), 0);

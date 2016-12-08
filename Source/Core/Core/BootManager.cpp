@@ -250,11 +250,7 @@ bool BootCore(const std::string& _rFilename)
 		core_section->Get("AccurateNaNs", &StartUp.bAccurateNaNs, StartUp.bAccurateNaNs);
 		core_section->Get("MMU", &StartUp.bMMU, StartUp.bMMU);
 		core_section->Get("DCBZ", &StartUp.bDCBZOFF, StartUp.bDCBZOFF);
-		core_section->Get("VideoRate", &StartUp.iVideoRate, StartUp.iVideoRate);
-		if (StartUp.iVideoRate == 1)
-		{
-			StartUp.iVideoRate = 8;
-		}
+		core_section->Get("Video_Rate", &StartUp.iVideoRate, StartUp.iVideoRate);
 		core_section->Get("HalfAudioRate", &StartUp.bHalfAudioRate, StartUp.bHalfAudioRate);
 		core_section->Get("TimeStretching", &StartUp.bTimeStretching, StartUp.bTimeStretching);
 		core_section->Get("RSHACK", &StartUp.bRSHACK, StartUp.bRSHACK);
