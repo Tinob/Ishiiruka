@@ -626,13 +626,16 @@ void StateTracker::BeginRenderPass()
 	m_current_render_pass = m_load_render_pass;
 	m_framebuffer_render_area = m_framebuffer_size;
 
-	VkRenderPassBeginInfo begin_info = { VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+	VkRenderPassBeginInfo begin_info = 
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
 		nullptr,
 		m_current_render_pass,
 		m_framebuffer,
 		m_framebuffer_render_area,
 		0,
-		nullptr };
+		nullptr
+	};
 
 	vkCmdBeginRenderPass(g_command_buffer_mgr->GetCurrentCommandBuffer(), &begin_info,
 		VK_SUBPASS_CONTENTS_INLINE);
@@ -654,13 +657,16 @@ void StateTracker::BeginClearRenderPass(const VkRect2D& area, const VkClearValue
 	m_current_render_pass = m_clear_render_pass;
 	m_framebuffer_render_area = area;
 
-	VkRenderPassBeginInfo begin_info = { VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+	VkRenderPassBeginInfo begin_info =
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
 		nullptr,
 		m_current_render_pass,
 		m_framebuffer,
 		m_framebuffer_render_area,
 		2,
-		clear_values };
+		clear_values
+	};
 
 	vkCmdBeginRenderPass(g_command_buffer_mgr->GetCurrentCommandBuffer(), &begin_info,
 		VK_SUBPASS_CONTENTS_INLINE);
@@ -928,7 +934,8 @@ bool StateTracker::UpdatePipeline()
 
 bool StateTracker::UpdateDescriptorSet()
 {
-	const size_t MAX_DESCRIPTOR_WRITES = NUM_UBO_DESCRIPTOR_SET_BINDINGS +  // UBO
+	const size_t MAX_DESCRIPTOR_WRITES =
+		NUM_UBO_DESCRIPTOR_SET_BINDINGS +  // UBO
 		NUM_PIXEL_SHADER_SAMPLERS +        // Samplers
 		1;                                 // SSBO
 	std::array<VkWriteDescriptorSet, MAX_DESCRIPTOR_WRITES> writes;
@@ -975,7 +982,9 @@ bool StateTracker::UpdateDescriptorSet()
 			const VkDescriptorImageInfo& info = m_bindings.ps_samplers[i];
 			if (info.imageView != VK_NULL_HANDLE && info.sampler != VK_NULL_HANDLE)
 			{
-				writes[num_writes++] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+				writes[num_writes++] =
+				{
+					VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
 					nullptr,
 					set,
 					static_cast<uint32_t>(i),
@@ -984,7 +993,8 @@ bool StateTracker::UpdateDescriptorSet()
 					VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 					&info,
 					nullptr,
-					nullptr };
+					nullptr
+				};
 			}
 		}
 
@@ -1002,7 +1012,9 @@ bool StateTracker::UpdateDescriptorSet()
 		if (set == VK_NULL_HANDLE)
 			return false;
 
-		writes[num_writes++] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+		writes[num_writes++] =
+		{
+			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
 			nullptr,
 			set,
 			0,
@@ -1011,7 +1023,8 @@ bool StateTracker::UpdateDescriptorSet()
 			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
 			nullptr,
 			&m_bindings.ps_ssbo,
-			nullptr };
+			nullptr
+		};
 
 		m_descriptor_sets[DESCRIPTOR_SET_BIND_POINT_STORAGE_OR_TEXEL_BUFFER] = set;
 		m_dirty_flags |= DIRTY_FLAG_DESCRIPTOR_SET_BINDING;

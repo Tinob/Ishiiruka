@@ -328,7 +328,9 @@ bool TextureCache::CreateRenderPasses()
 		nullptr, nullptr,
 		0,       nullptr };
 
-	VkRenderPassCreateInfo update_info = { VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+	VkRenderPassCreateInfo update_info =
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
 		nullptr,
 		0,
 		1,
@@ -336,7 +338,8 @@ bool TextureCache::CreateRenderPasses()
 		1,
 		&subpass_description,
 		0,
-		nullptr };
+		nullptr
+	};
 
 	VkResult res = vkCreateRenderPass(g_vulkan_context->GetDevice(), &update_info, nullptr,
 		&m_render_pass);
@@ -468,7 +471,7 @@ void TextureCache::LoadData(Texture2D* dst, const u8* src, u32 width, u32 height
 		}
 
 		// Copy data to staging texture first, then to the "real" texture.
-		staging_texture->WriteTexels(0, 0, width, height, TextureCache::temp, source_pitch);
+		staging_texture->WriteTexels(0, 0, width, height, src, source_pitch);
 		staging_texture->CopyToImage(g_command_buffer_mgr->GetCurrentInitCommandBuffer(),
 			dst->GetImage(), VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, width,
 			height, level, 0);
@@ -573,9 +576,11 @@ void TextureCache::TCacheEntry::FromRenderTarget(u8* dst, PEControl::PixelFormat
 	StateTracker::GetInstance()->EndRenderPass();
 
 	// Transition EFB to shader resource before binding
-	VkRect2D region = { { scaled_src_rect.left, scaled_src_rect.top },
-	{ static_cast<u32>(scaled_src_rect.GetWidth()),
-		static_cast<u32>(scaled_src_rect.GetHeight()) } };
+	VkRect2D region = 
+	{ 
+		{ scaled_src_rect.left, scaled_src_rect.top },
+		{ static_cast<u32>(scaled_src_rect.GetWidth()), static_cast<u32>(scaled_src_rect.GetHeight()) }
+	};
 	Texture2D* src_texture;
 	if (is_depth_copy)
 		src_texture = FramebufferManager::GetInstance()->ResolveEFBDepthTexture(region);
