@@ -443,8 +443,8 @@ bool StateTracker::ReserveConstantStorage()
 	// Since we invalidate all constants on command buffer execution, it doesn't matter if this
 	// causes the stream buffer to be resized.
 	if (m_uniform_stream_buffer->ReserveMemory(m_uniform_buffer_reserve_size,
-		g_vulkan_context->GetUniformBufferAlignment(), true,
-		true, false))
+		g_vulkan_context->GetUniformBufferAlignment(), false,
+		false, false))
 	{
 		return true;
 	}
