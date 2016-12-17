@@ -401,6 +401,7 @@ void TextureCache::LoadData(Texture2D* dst, const u8* src, u32 width, u32 height
 	u32 upload_size = upload_pitch * block_H;
 	u32 upload_alignment = static_cast<u32>(g_vulkan_context->GetBufferImageGranularity());
 	u32 source_pitch = block_stride * block_size;
+	upload_alignment = block_size > upload_alignment ? block_size : upload_alignment;
 	if ((upload_size + upload_alignment) <= STAGING_TEXTURE_UPLOAD_THRESHOLD &&
 		(upload_size + upload_alignment) <= MAXIMUM_TEXTURE_UPLOAD_BUFFER_SIZE)
 	{
@@ -408,14 +409,14 @@ void TextureCache::LoadData(Texture2D* dst, const u8* src, u32 width, u32 height
 		StreamBuffer* upload_buffer = m_texture_upload_buffer.get();
 
 		// Allocate memory from the streaming buffer for the texture data.
-		if (!upload_buffer->ReserveMemory(upload_size, g_vulkan_context->GetBufferImageGranularity()))
+		if (!upload_buffer->ReserveMemory(upload_size, upload_alignment))
 		{
 			// Execute the command buffer first.
 			WARN_LOG(VIDEO, "Executing command list while waiting for space in texture upload buffer");
 			Util::ExecuteCurrentCommandsAndRestoreState(false);
 
 			// Try allocating again. This may cause a fence wait.
-			if (!upload_buffer->ReserveMemory(upload_size, g_vulkan_context->GetBufferImageGranularity()))
+			if (!upload_buffer->ReserveMemory(upload_size, upload_alignment))
 				PanicAlert("Failed to allocate space in texture upload buffer");
 		}
 
