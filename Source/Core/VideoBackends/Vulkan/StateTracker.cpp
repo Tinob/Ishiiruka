@@ -723,14 +723,15 @@ bool StateTracker::Bind(bool rebind_all /*= false*/)
 
 	// Re-bind parts of the pipeline
 	VkCommandBuffer command_buffer = g_command_buffer_mgr->GetCurrentCommandBuffer();
+
+	if (m_dirty_flags & DIRTY_FLAG_PIPELINE_BINDING || rebind_all)
+		vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline_object);
+
 	if (m_dirty_flags & DIRTY_FLAG_VERTEX_BUFFER || rebind_all)
 		vkCmdBindVertexBuffers(command_buffer, 0, 1, &m_vertex_buffer, &m_vertex_buffer_offset);
 
 	if (m_dirty_flags & DIRTY_FLAG_INDEX_BUFFER || rebind_all)
 		vkCmdBindIndexBuffer(command_buffer, m_index_buffer, m_index_buffer_offset, m_index_type);
-
-	if (m_dirty_flags & DIRTY_FLAG_PIPELINE_BINDING || rebind_all)
-		vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline_object);
 
 	if (m_dirty_flags & DIRTY_FLAG_DESCRIPTOR_SET_BINDING || rebind_all)
 	{
