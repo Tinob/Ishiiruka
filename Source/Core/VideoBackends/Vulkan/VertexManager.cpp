@@ -6,6 +6,7 @@
 #include "VideoBackends/Vulkan/BoundingBox.h"
 #include "VideoBackends/Vulkan/CommandBufferManager.h"
 #include "VideoBackends/Vulkan/FramebufferManager.h"
+#include "VideoBackends/Vulkan/PerfQuery.h"
 #include "VideoBackends/Vulkan/Renderer.h"
 #include "VideoBackends/Vulkan/StateTracker.h"
 #include "VideoBackends/Vulkan/StreamBuffer.h"
@@ -193,10 +194,13 @@ void VertexManager::vFlush(bool use_dst_alpha)
 		WARN_LOG(VIDEO, "Skipped draw of %u indices", index_count);
 		return;
 	}
-
+	if (PerfQueryBase::ShouldEmulate())
+		static_cast<PerfQuery*>(g_perf_query.get())->StartQuery();
 	// Execute the draw
 	vkCmdDrawIndexed(g_command_buffer_mgr->GetCurrentCommandBuffer(), index_count, 1,
 		m_current_draw_base_index, m_current_draw_base_vertex, 0);
+	if (PerfQueryBase::ShouldEmulate())
+		static_cast<PerfQuery*>(g_perf_query.get())->EndQuery();
 
 	// If the GPU does not support dual-source blending, we can approximate the effect by drawing
 	// the object a second time, with the write mask set to alpha only using a shader that outputs
