@@ -1878,7 +1878,7 @@ const std::string PostProcessor::s_post_fragment_header_ogl = R"(
 // Depth value is not inverted for GL
 #define DEPTH_VALUE(val) (val)
 // Shader inputs/outputs
-SAMPLER_BINDING(9) uniform sampler2DArray pp_inputs[4];
+SAMPLER_BINDING(9) uniform sampler2DArray pp_inputs[8];
 in float2 v_source_uv;
 in float2 v_target_uv;
 flat in float v_layer;
@@ -2015,8 +2015,8 @@ const std::string PostProcessor::s_post_fragment_header_d3d = R"(
 #define DEPTH_VALUE(val) (1.0f - (val))
 
 // Shader inputs
-Texture2DArray pp_inputs[4] : register(t%i);
-SamplerState pp_input_samplers[4] : register(s%i);
+Texture2DArray pp_inputs[8] : register(t%i);
+SamplerState pp_input_samplers[8] : register(s%i);
 // Shadows of those read/written in main
 static float v_layer;
 static float2 v_source_uv, v_target_uv, v_fragcoord;
@@ -2234,7 +2234,7 @@ void PostProcessor::GetUniformBufferShaderSource(API_TYPE api, const PostProcess
 		shader_source += "cbuffer PostProcessingConstants : register(b0) {\n";
 
 	// Common constants
-	shader_source += "\tfloat4 u_input_resolutions[4];\n"
+	shader_source += "\tfloat4 u_input_resolutions[8];\n"
 		"\tfloat4 u_target_resolution;\n"
 		"\tfloat4 u_source_rect;\n"
 		"\tfloat4 u_target_rect;\n"
