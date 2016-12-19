@@ -6,6 +6,7 @@
 
 #include <cstring>
 
+#include "Common/Align.h"
 #include "Common/Assert.h"
 
 #include "VideoBackends/Vulkan/CommandBufferManager.h"
@@ -101,10 +102,10 @@ bool StateTracker::Initialize()
 	// To work around this we reserve the maximum buffer size at all times, but only commit
 	// as many bytes as we use.
 	m_uniform_buffer_reserve_size = sizeof(PixelShaderConstants);
-	m_uniform_buffer_reserve_size = Util::AlignValue(m_uniform_buffer_reserve_size,
+	m_uniform_buffer_reserve_size = Common::AlignUp(m_uniform_buffer_reserve_size,
 		g_vulkan_context->GetUniformBufferAlignment()) +
 		sizeof(VertexShaderConstants);
-	m_uniform_buffer_reserve_size = Util::AlignValue(m_uniform_buffer_reserve_size,
+	m_uniform_buffer_reserve_size = Common::AlignUp(m_uniform_buffer_reserve_size,
 		g_vulkan_context->GetUniformBufferAlignment()) +
 		sizeof(GeometryShaderConstants);
 
@@ -465,10 +466,10 @@ void StateTracker::UploadAllConstants()
 	size_t ub_alignment = g_vulkan_context->GetUniformBufferAlignment();
 	size_t pixel_constants_offset = 0;
 	size_t vertex_constants_offset =
-		Util::AlignValue(pixel_constants_offset + PixelShaderManager::ConstantBufferSize * sizeof(float),
+		Common::AlignUp(pixel_constants_offset + PixelShaderManager::ConstantBufferSize * sizeof(float),
 			ub_alignment);
 	size_t geometry_constants_offset =
-		Util::AlignValue(vertex_constants_offset + VertexShaderManager::ConstantBufferSize * sizeof(float),
+		Common::AlignUp(vertex_constants_offset + VertexShaderManager::ConstantBufferSize * sizeof(float),
 			ub_alignment);
 	size_t allocation_size = geometry_constants_offset + sizeof(GeometryShaderConstants);
 

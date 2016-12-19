@@ -228,6 +228,7 @@
     <ClInclude Include="Analytics.h" />
     <ClInclude Include="MD5.h" />
     <ClInclude Include="ConstantBuffer.h" />
+    <ClInclude Include="Align.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BreakPoints.cpp" />

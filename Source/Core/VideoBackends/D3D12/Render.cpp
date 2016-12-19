@@ -9,6 +9,7 @@
 #include <strsafe.h>
 #include <unordered_map>
 
+#include "Common/Align.h"
 #include "Common/CommonTypes.h"
 #include "Common/FileUtil.h"
 #include "Common/MathUtil.h"
@@ -1398,7 +1399,7 @@ void Renderer::PrepareFrameDumpRenderTexture(u32 width, u32 height)
 void Renderer::PrepareFrameDumpBuffer(u32 width, u32 height)
 {
 	const unsigned int screenshot_buffer_size =
-		ROUND_UP(width * 4, D3D12_TEXTURE_DATA_PITCH_ALIGNMENT) *
+		Common::AlignUpSizePow2(width * 4, D3D12_TEXTURE_DATA_PITCH_ALIGNMENT) *
 		height;
 	if (screenshot_buffer_size < m_frame_dump_buffer_size)
 	{
@@ -1456,7 +1457,7 @@ void  Renderer::DumpFrame(const EFBRectangle& source_rc, u32 xfb_addr,
 	dst_location.PlacedFootprint.Footprint.Width = src_width;
 	dst_location.PlacedFootprint.Footprint.Height = src_height;
 	dst_location.PlacedFootprint.Footprint.Depth = 1;
-	dst_location.PlacedFootprint.Footprint.RowPitch = ROUND_UP(dst_location.PlacedFootprint.Footprint.Width * 4, D3D12_TEXTURE_DATA_PITCH_ALIGNMENT);
+	dst_location.PlacedFootprint.Footprint.RowPitch = Common::AlignUpSizePow2(dst_location.PlacedFootprint.Footprint.Width * 4, D3D12_TEXTURE_DATA_PITCH_ALIGNMENT);
 
 	D3D12_TEXTURE_COPY_LOCATION src_location = {};
 	src_location.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;

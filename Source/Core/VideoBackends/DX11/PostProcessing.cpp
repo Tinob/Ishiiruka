@@ -2,6 +2,7 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Common/Align.h"
 #include "Common/Common.h"
 #include "Common/CommonPaths.h"
 #include "Common/FileUtil.h"
@@ -382,7 +383,7 @@ bool D3DPostProcessor::CreateUniformBuffer()
 {
 	m_uniform_buffer.reset();
 	bool use_partial_buffer_update = D3D::SupportPartialContantBufferUpdate();
-	m_uniform_buffer = std::make_unique<D3D::ConstantStreamBuffer>(static_cast<int>(ROUND_UP(POST_PROCESSING_CONTANTS_BUFFER_SIZE, 256) * (use_partial_buffer_update ? 1024 : 1)));
+	m_uniform_buffer = std::make_unique<D3D::ConstantStreamBuffer>(static_cast<int>(Common::AlignUpSizePow2(POST_PROCESSING_CONTANTS_BUFFER_SIZE, 256) * (use_partial_buffer_update ? 1024 : 1)));
 	return true;
 }
 

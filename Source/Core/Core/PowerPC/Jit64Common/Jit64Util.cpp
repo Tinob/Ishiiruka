@@ -2,7 +2,7 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
-#include "Core/PowerPC/JitCommon/Jit_Util.h"
+#include "Core/PowerPC/Jit64Common/Jit64Util.h"
 #include "Common/BitSet.h"
 #include "Common/CommonTypes.h"
 #include "Common/Intrinsics.h"
@@ -11,7 +11,8 @@
 #include "Common/x64Emitter.h"
 #include "Core/HW/MMIO.h"
 #include "Core/HW/Memmap.h"
-#include "Core/PowerPC/JitCommon/JitBase.h"
+#include "Core/PowerPC/Jit64Common/Jit64Base.h"
+#include "Core/PowerPC/Jit64Common/TrampolineCache.h"
 #include "Core/PowerPC/PowerPC.h"
 
 using namespace Gen;
@@ -79,7 +80,7 @@ bool EmuCodeBlock::UnsafeLoadToReg(X64Reg reg_value, OpArg opAddress, int access
 		{
 			// This method can potentially clobber the address if it shares a register
 			// with the load target. In this case we can just subtract offset from the
-			// register (see JitBackpatch for this implementation).
+			// register (see Jit64Base for this implementation).
 			offsetAddedToAddress = (reg_value == opAddress.GetSimpleReg());
 
 			LEA(32, reg_value, MDisp(opAddress.GetSimpleReg(), offset));
@@ -234,7 +235,7 @@ FixupBranch EmuCodeBlock::CheckIfSafeAddress(const OpArg& reg_value, X64Reg reg_
 
 	// Perform lookup to see if we can use fast path.
 	SHR(32, R(scratch), Imm8(PowerPC::BAT_INDEX_SHIFT));
-	TEST(32, MScaled(scratch, SCALE_4, (u32)(u64)&PowerPC::dbat_table[0]), Imm32(2));
+	TEST(32, MScaled(scratch, SCALE_4, PtrOffset(&PowerPC::dbat_table[0])), Imm32(2));
 
 	if (scratch == reg_addr)
 		POP(scratch);

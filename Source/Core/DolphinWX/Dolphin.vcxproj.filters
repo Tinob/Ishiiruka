@@ -254,6 +254,12 @@
     <ClCompile Include="ISOProperties\ISOProperties.cpp">
       <Filter>GUI\ISOProperties</Filter>
     </ClCompile>
+    <ClCompile Include="ISOProperties\FileSystemPanel.cpp">
+      <Filter>GUI\ISOProperties</Filter>
+    </ClCompile>
+    <ClCompile Include="Input\MicButtonConfigDiag.cpp">
+      <Filter>GUI\InputConfig</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Main.h" />
@@ -466,6 +472,12 @@
     </ClInclude>
     <ClInclude Include="ISOProperties\ISOProperties.h">
       <Filter>GUI\ISOProperties</Filter>
+    </ClInclude>
+    <ClInclude Include="ISOProperties\FileSystemPanel.h">
+      <Filter>GUI\ISOProperties</Filter>
+    </ClInclude>
+    <ClInclude Include="Input\MicButtonConfigDiag.h">
+      <Filter>GUI\InputConfig</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

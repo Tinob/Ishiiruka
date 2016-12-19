@@ -38,6 +38,7 @@
     <ClCompile Include="ActionReplay.cpp" />
     <ClCompile Include="Analytics.cpp" />
     <ClCompile Include="ARDecrypt.cpp" />
+    <ClCompile Include="PowerPC\Jit64Common\BlockCache.cpp" />
     <ClCompile Include="BootManager.cpp" />
     <ClCompile Include="Boot\Boot.cpp" />
     <ClCompile Include="Boot\Boot_BS2Emu.cpp" />
@@ -239,11 +240,11 @@
     <ClCompile Include="PowerPC\Jit64\Jit_SystemRegisters.cpp" />
     <ClCompile Include="PowerPC\Jit64Common\Jit64AsmCommon.cpp" />
     <ClCompile Include="PowerPC\JitCommon\JitAsmCommon.cpp" />
-    <ClCompile Include="PowerPC\JitCommon\JitBackpatch.cpp" />
+    <ClCompile Include="PowerPC\Jit64Common\Jit64Base.cpp" />
     <ClCompile Include="PowerPC\JitCommon\JitBase.cpp" />
     <ClCompile Include="PowerPC\JitCommon\JitCache.cpp" />
-    <ClCompile Include="PowerPC\JitCommon\Jit_Util.cpp" />
-    <ClCompile Include="PowerPC\JitCommon\TrampolineCache.cpp" />
+    <ClCompile Include="PowerPC\Jit64Common\Jit64Util.cpp" />
+    <ClCompile Include="PowerPC\Jit64Common\TrampolineCache.cpp" />
     <ClCompile Include="PowerPC\CachedInterpreter.cpp" />
     <ClCompile Include="PowerPC\JitInterface.cpp" />
     <ClCompile Include="PowerPC\MMU.cpp" />
@@ -260,6 +261,7 @@
     <ClInclude Include="ActionReplay.h" />
     <ClInclude Include="Analytics.h" />
     <ClInclude Include="ARDecrypt.h" />
+    <ClInclude Include="PowerPC\Jit64Common\BlockCache.h" />
     <ClInclude Include="BootManager.h" />
     <ClInclude Include="Boot\Boot.h" />
     <ClInclude Include="Boot\Boot_DOL.h" />
@@ -409,6 +411,7 @@
     <ClInclude Include="IPC_HLE\WII_IPC_HLE_Device_usb_ven.h" />
     <ClInclude Include="IPC_HLE\WII_IPC_HLE_WiiMote.h" />
     <ClInclude Include="IPC_HLE\WII_Socket.h" />
+    <ClInclude Include="PowerPC\Jit64Common\Jit64Base.h" />
     <ClInclude Include="MachineContext.h" />
     <ClInclude Include="MemTools.h" />
     <ClInclude Include="Movie.h" />
@@ -433,8 +436,8 @@
     <ClInclude Include="PowerPC\JitCommon\JitAsmCommon.h" />
     <ClInclude Include="PowerPC\JitCommon\JitBase.h" />
     <ClInclude Include="PowerPC\JitCommon\JitCache.h" />
-    <ClInclude Include="PowerPC\JitCommon\Jit_Util.h" />
-    <ClInclude Include="PowerPC\JitCommon\TrampolineCache.h" />
+    <ClInclude Include="PowerPC\Jit64Common\Jit64Util.h" />
+    <ClInclude Include="PowerPC\Jit64Common\TrampolineCache.h" />
     <ClInclude Include="PowerPC\CachedInterpreter.h" />
     <ClInclude Include="PowerPC\JitInterface.h" />
     <ClInclude Include="PowerPC\PowerPC.h" />

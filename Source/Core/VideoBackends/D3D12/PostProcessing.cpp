@@ -2,6 +2,7 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Common/Align.h"
 #include "Common/Common.h"
 #include "Common/CommonPaths.h"
 #include "Common/FileUtil.h"
@@ -459,7 +460,7 @@ bool D3DPostProcessor::CreateCommonShaders()
 bool D3DPostProcessor::CreateUniformBuffer()
 {
 	m_uniform_buffer.reset();
-	size_t basesize = ROUND_UP(POST_PROCESSING_CONTANTS_BUFFER_SIZE, 256);
+	size_t basesize = Common::AlignUpSizePow2(POST_PROCESSING_CONTANTS_BUFFER_SIZE, 256);
 	m_uniform_buffer = std::make_unique<D3DStreamBuffer>(basesize * 128, basesize * 1024, nullptr);
 	return true;
 }
