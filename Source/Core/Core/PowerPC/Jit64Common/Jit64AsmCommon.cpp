@@ -4,6 +4,7 @@
 
 #include "Core/PowerPC/Jit64Common/Jit64AsmCommon.h"
 #include "Common/Assert.h"
+#include "Common/CPUDetect.h"
 #include "Common/CommonTypes.h"
 #include "Common/JitRegister.h"
 #include "Common/MathUtil.h"
@@ -12,7 +13,7 @@
 #include "Core/HW/GPFifo.h"
 #include "Core/PowerPC/Gekko.h"
 #include "Core/PowerPC/Jit64Common/Jit64Base.h"
-#include "Core/PowerPC/Jit64Common/Jit64Util.h"
+#include "Core/PowerPC/Jit64Common/Jit64PowerPCState.h"
 #include "Core/PowerPC/PowerPC.h"
 
 #define QUANTIZED_REGS_TO_SAVE                                                                     \
@@ -219,7 +220,7 @@ alignas(16) static const float m_127 = 127.0f;
 alignas(16) static const float m_m128 = -128.0f;
 
 // Sizes of the various quantized store types
-constexpr std::array<u8, 8> sizes{ { 32, 0, 0, 0, 8, 16, 8, 16 } };
+constexpr std::array<u8, 8> sizes{ {32, 0, 0, 0, 8, 16, 8, 16} };
 
 void CommonAsmRoutines::GenQuantizedStores()
 {

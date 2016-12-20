@@ -39,6 +39,8 @@
     <ClCompile Include="Analytics.cpp" />
     <ClCompile Include="ARDecrypt.cpp" />
     <ClCompile Include="PowerPC\Jit64Common\BlockCache.cpp" />
+	 <ClCompile Include="PowerPC\Jit64Common\EmuCodeBlock.cpp" />
+	 <ClCompile Include="PowerPC\Jit64Common\FarCodeCache.cpp" />
     <ClCompile Include="BootManager.cpp" />
     <ClCompile Include="Boot\Boot.cpp" />
     <ClCompile Include="Boot\Boot_BS2Emu.cpp" />
@@ -242,9 +244,11 @@
     <ClCompile Include="PowerPC\JitCommon\JitAsmCommon.cpp" />
     <ClCompile Include="PowerPC\Jit64Common\Jit64Base.cpp" />
     <ClCompile Include="PowerPC\JitCommon\JitBase.cpp" />
-    <ClCompile Include="PowerPC\JitCommon\JitCache.cpp" />
-    <ClCompile Include="PowerPC\Jit64Common\Jit64Util.cpp" />
+    <ClCompile Include="PowerPC\JitCommon\JitCache.cpp" />    
     <ClCompile Include="PowerPC\Jit64Common\TrampolineCache.cpp" />
+	 <ClCompile Include="PowerPC\SignatureDB\CSVSignatureDB.cpp" />
+	 <ClCompile Include="PowerPC\SignatureDB\DSYSignatureDB.cpp" />
+	 <ClCompile Include="PowerPC\SignatureDB\SignatureDB.cpp" />
     <ClCompile Include="PowerPC\CachedInterpreter.cpp" />
     <ClCompile Include="PowerPC\JitInterface.cpp" />
     <ClCompile Include="PowerPC\MMU.cpp" />
@@ -254,14 +258,12 @@
     <ClCompile Include="PowerPC\PPCSymbolDB.cpp" />
     <ClCompile Include="PowerPC\PPCTables.cpp" />
     <ClCompile Include="PowerPC\Profiler.cpp" />
-    <ClCompile Include="PowerPC\SignatureDB.cpp" />
     <ClCompile Include="State.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ActionReplay.h" />
     <ClInclude Include="Analytics.h" />
     <ClInclude Include="ARDecrypt.h" />
-    <ClInclude Include="PowerPC\Jit64Common\BlockCache.h" />
     <ClInclude Include="BootManager.h" />
     <ClInclude Include="Boot\Boot.h" />
     <ClInclude Include="Boot\Boot_DOL.h" />
@@ -433,11 +435,18 @@
     <ClInclude Include="PowerPC\JitILCommon\IR.h" />
     <ClInclude Include="PowerPC\JitILCommon\JitILBase.h" />
     <ClInclude Include="PowerPC\Jit64Common\Jit64AsmCommon.h" />
+	 <ClInclude Include="PowerPC\Jit64Common\BlockCache.h" />
+	 <ClInclude Include="PowerPC\Jit64Common\EmuCodeBlock.h" />
+	 <ClInclude Include="PowerPC\Jit64Common\FarCodeCache.h" />
     <ClInclude Include="PowerPC\JitCommon\JitAsmCommon.h" />
     <ClInclude Include="PowerPC\JitCommon\JitBase.h" />
     <ClInclude Include="PowerPC\JitCommon\JitCache.h" />
-    <ClInclude Include="PowerPC\Jit64Common\Jit64Util.h" />
+	 <ClInclude Include="PowerPC\Jit64Common\Jit64PowerPCState.h" />
     <ClInclude Include="PowerPC\Jit64Common\TrampolineCache.h" />
+	 <ClInclude Include="PowerPC\Jit64Common\TrampolineInfo.h" />
+	 <ClInclude Include="PowerPC\SignatureDB\CSVSignatureDB.h" />
+	 <ClInclude Include="PowerPC\SignatureDB\DSYSignatureDB.h" />
+	 <ClInclude Include="PowerPC\SignatureDB\SignatureDB.h" />
     <ClInclude Include="PowerPC\CachedInterpreter.h" />
     <ClInclude Include="PowerPC\JitInterface.h" />
     <ClInclude Include="PowerPC\PowerPC.h" />
@@ -446,7 +455,6 @@
     <ClInclude Include="PowerPC\PPCSymbolDB.h" />
     <ClInclude Include="PowerPC\PPCTables.h" />
     <ClInclude Include="PowerPC\Profiler.h" />
-    <ClInclude Include="PowerPC\SignatureDB.h" />
     <ClInclude Include="State.h" />
   </ItemGroup>
   <ItemGroup>

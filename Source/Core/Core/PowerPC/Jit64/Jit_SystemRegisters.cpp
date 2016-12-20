@@ -4,12 +4,13 @@
 
 #include "Core/PowerPC/Jit64/Jit.h"
 #include "Common/BitSet.h"
+#include "Common/CPUDetect.h"
 #include "Common/CommonTypes.h"
 #include "Common/x64Emitter.h"
 #include "Core/CoreTiming.h"
 #include "Core/HW/ProcessorInterface.h"
 #include "Core/PowerPC/Jit64/JitRegCache.h"
-#include "Core/PowerPC/Jit64Common/Jit64Util.h"
+#include "Core/PowerPC/Jit64Common/Jit64PowerPCState.h"
 #include "Core/PowerPC/PowerPC.h"
 
 using namespace Gen;
@@ -657,7 +658,7 @@ void Jit64::mffsx(UGeckoInstruction inst)
 
 // MXCSR = s_fpscr_to_mxcsr[FPSCR & 7]
 static const u32 s_fpscr_to_mxcsr[] = {
-	0x1F80, 0x7F80, 0x5F80, 0x3F80, 0x9F80, 0xFF80, 0xDF80, 0xBF80,
+		0x1F80, 0x7F80, 0x5F80, 0x3F80, 0x9F80, 0xFF80, 0xDF80, 0xBF80,
 };
 
 // Needs value of FPSCR in RSCRATCH.

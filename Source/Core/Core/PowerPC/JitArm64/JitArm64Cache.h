@@ -6,11 +6,11 @@
 
 #include "Core/PowerPC/JitCommon/JitCache.h"
 
-typedef void (*CompiledCode)();
+typedef void(*CompiledCode)();
 
 class JitArm64BlockCache : public JitBaseBlockCache
 {
 private:
-  void WriteLinkBlock(const JitBlock::LinkData& source, const JitBlock* dest) override;
-  void WriteDestroyBlock(const JitBlock& block) override;
+	void WriteLinkBlock(const JitBlock::LinkData& source, const JitBlock* dest) override;
+	void WriteDestroyBlock(const JitBlock& block) override;
 };

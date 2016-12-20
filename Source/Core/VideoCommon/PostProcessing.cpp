@@ -430,24 +430,24 @@ bool PostProcessingShaderConfiguration::ParseOptionBlock(const std::string& dirn
 
 	for (const auto& string_option : block.m_options)
 	{
-		if (StartsWith(string_option.first, "GUIName"))
+		if (StringStartsWith(string_option.first, "GUIName"))
 		{
 			if (string_option.first == "GUIName")
 			{
 				option.m_gui_name = string_option.second;
 			}
-			else if (LangCode != nullptr && EndsWith(string_option.first, LangCode))
+			else if (LangCode != nullptr && StringEndsWith(string_option.first, LangCode))
 			{
 				option.m_gui_name = string_option.second;
 			}
 		}
-		else if (StartsWith(string_option.first, "GUIDescription"))
+		else if (StringStartsWith(string_option.first, "GUIDescription"))
 		{
 			if (string_option.first == "GUIDescription")
 			{
 				option.m_gui_description = string_option.second;
 			}
-			else if (LangCode != nullptr && EndsWith(string_option.first, LangCode))
+			else if (LangCode != nullptr && StringEndsWith(string_option.first, LangCode))
 			{
 				option.m_gui_description = string_option.second;
 			}

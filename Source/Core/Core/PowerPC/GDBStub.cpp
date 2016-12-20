@@ -487,7 +487,7 @@ static void gdb_read_registers()
 	/*
 	for (i = 0; i < 32; i++)
 	{
-	wbe32hex(bufptr + i*8, riPS0(i));
+		wbe32hex(bufptr + i*8, riPS0(i));
 	}
 	bufptr += 32 * 8;
 	wbe32hex(bufptr, PC);      bufptr += 4;

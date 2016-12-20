@@ -18,6 +18,7 @@
 #include "Core/HLE/HLE.h"
 #include "Core/HW/CPU.h"
 #include "Core/PatchEngine.h"
+#include "Core/PowerPC/Jit64Common/Jit64PowerPCState.h"
 #include "Core/PowerPC/Jit64IL/JitIL.h"
 #include "Core/PowerPC/Jit64IL/JitIL_Tables.h"
 #include "Core/PowerPC/PowerPC.h"
@@ -265,7 +266,7 @@ void JitIL::Init()
 	blocks.Init();
 	asm_routines.Init(nullptr);
 
-	farcode.Init(jo.memcheck ? FARCODE_SIZE_MMU : FARCODE_SIZE);
+	m_far_code.Init(jo.memcheck ? FARCODE_SIZE_MMU : FARCODE_SIZE);
 	Clear();
 
 	code_block.m_stats = &js.st;
@@ -282,7 +283,7 @@ void JitIL::ClearCache()
 {
 	blocks.Clear();
 	trampolines.ClearCodeSpace();
-	farcode.ClearCodeSpace();
+	m_far_code.ClearCodeSpace();
 	ClearCodeSpace();
 	Clear();
 }
@@ -299,7 +300,7 @@ void JitIL::Shutdown()
 	blocks.Shutdown();
 	trampolines.Shutdown();
 	asm_routines.Shutdown();
-	farcode.Shutdown();
+	m_far_code.Shutdown();
 }
 
 void JitIL::FallBackToInterpreter(UGeckoInstruction _inst)
@@ -464,8 +465,8 @@ void JitIL::Trace()
 
 void JitIL::Jit(u32 em_address)
 {
-	if (IsAlmostFull() || farcode.IsAlmostFull() || trampolines.IsAlmostFull() || blocks.IsFull() ||
-		SConfig::GetInstance().bJITNoBlockCache)
+	if (IsAlmostFull() || m_far_code.IsAlmostFull() || trampolines.IsAlmostFull() ||
+		blocks.IsFull() || SConfig::GetInstance().bJITNoBlockCache)
 	{
 		ClearCache();
 	}

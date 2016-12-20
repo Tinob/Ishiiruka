@@ -395,7 +395,7 @@ void VideoConfig::VerifyValidity()
 		iTexScalingType = 10;
 	}
 	bHiresMaterialMaps = bHiresMaterialMaps && bHiresTextures && bEnablePixelLighting;
-	bLastStoryEFBToRam = bLastStoryEFBToRam && StartsWith(SConfig::GetInstance().GetGameID(), "SLS");
+	bLastStoryEFBToRam = bLastStoryEFBToRam && StringStartsWith(SConfig::GetInstance().GetGameID(), "SLS");
 }
 
 void VideoConfig::Save(const std::string& ini_file)

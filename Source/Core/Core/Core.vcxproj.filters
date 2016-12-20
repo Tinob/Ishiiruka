@@ -636,9 +636,6 @@
     <ClCompile Include="PowerPC\Profiler.cpp">
       <Filter>PowerPC</Filter>
     </ClCompile>
-    <ClCompile Include="PowerPC\SignatureDB.cpp">
-      <Filter>PowerPC</Filter>
-    </ClCompile>
     <ClCompile Include="PowerPC\JitCommon\JitAsmCommon.cpp">
       <Filter>PowerPC\JitCommon</Filter>
     </ClCompile>
@@ -748,11 +745,23 @@
     <ClCompile Include="PowerPC\Jit64Common\Jit64Base.cpp">
       <Filter>PowerPC\Jit64Common</Filter>
     </ClCompile>
-    <ClCompile Include="PowerPC\Jit64Common\Jit64Util.cpp">
-      <Filter>PowerPC\Jit64Common</Filter>
-    </ClCompile>
     <ClCompile Include="PowerPC\Jit64Common\BlockCache.cpp">
       <Filter>PowerPC\Jit64Common</Filter>
+    </ClCompile>
+    <ClCompile Include="PowerPC\Jit64Common\EmuCodeBlock.cpp">
+      <Filter>PowerPC\Jit64Common</Filter>
+    </ClCompile>
+    <ClCompile Include="PowerPC\Jit64Common\FarCodeCache.cpp">
+      <Filter>PowerPC\Jit64Common</Filter>
+    </ClCompile>
+    <ClCompile Include="PowerPC\SignatureDB\CSVSignatureDB.cpp">
+      <Filter>PowerPC\SignatureDB</Filter>
+    </ClCompile>
+    <ClCompile Include="PowerPC\SignatureDB\DSYSignatureDB.cpp">
+      <Filter>PowerPC\SignatureDB</Filter>
+    </ClCompile>
+    <ClCompile Include="PowerPC\SignatureDB\SignatureDB.cpp">
+      <Filter>PowerPC\SignatureDB</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1229,9 +1238,6 @@
     <ClInclude Include="PowerPC\Profiler.h">
       <Filter>PowerPC</Filter>
     </ClInclude>
-    <ClInclude Include="PowerPC\SignatureDB.h">
-      <Filter>PowerPC</Filter>
-    </ClInclude>
     <ClInclude Include="PowerPC\JitCommon\JitAsmCommon.h">
       <Filter>PowerPC\JitCommon</Filter>
     </ClInclude>
@@ -1285,15 +1291,33 @@
     <ClInclude Include="PowerPC\Jit64Common\TrampolineCache.h">
       <Filter>PowerPC\Jit64Common</Filter>
     </ClInclude>
-    <ClInclude Include="PowerPC\Jit64Common\Jit64Util.h">
+    <ClInclude Include="PowerPC\Jit64Common\Jit64PowerPCState.h">
       <Filter>PowerPC\Jit64Common</Filter>
     </ClInclude>
     <ClInclude Include="resource.h" />
     <ClInclude Include="PowerPC\Jit64Common\BlockCache.h">
       <Filter>PowerPC\Jit64Common</Filter>
     </ClInclude>
+    <ClInclude Include="PowerPC\Jit64Common\EmuCodeBlock.h">
+      <Filter>PowerPC\Jit64Common</Filter>
+    </ClInclude>
+    <ClInclude Include="PowerPC\Jit64Common\FarCodeCache.h">
+      <Filter>PowerPC\Jit64Common</Filter>
+    </ClInclude>
     <ClInclude Include="PowerPC\Jit64Common\Jit64Base.h">
       <Filter>PowerPC\Jit64Common</Filter>
+    </ClInclude>
+    <ClInclude Include="PowerPC\Jit64Common\TrampolineInfo.h">
+      <Filter>PowerPC\Jit64Common</Filter>
+    </ClInclude>
+    <ClInclude Include="PowerPC\SignatureDB\CSVSignatureDB.h">
+      <Filter>PowerPC\SignatureDB</Filter>
+    </ClInclude>
+    <ClInclude Include="PowerPC\SignatureDB\DSYSignatureDB.h">
+      <Filter>PowerPC\SignatureDB</Filter>
+    </ClInclude>
+    <ClInclude Include="PowerPC\SignatureDB\SignatureDB.h">
+      <Filter>PowerPC\SignatureDB</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -6,12 +6,13 @@
 #include <vector>
 
 #include "Common/Assert.h"
+#include "Common/CPUDetect.h"
 #include "Common/CommonTypes.h"
 #include "Common/MathUtil.h"
 #include "Common/x64Emitter.h"
 #include "Core/PowerPC/Jit64/Jit.h"
 #include "Core/PowerPC/Jit64/JitRegCache.h"
-#include "Core/PowerPC/Jit64Common/Jit64Util.h"
+#include "Core/PowerPC/Jit64Common/Jit64PowerPCState.h"
 #include "Core/PowerPC/PPCAnalyst.h"
 #include "Core/PowerPC/PowerPC.h"
 
@@ -282,7 +283,7 @@ void Jit64::reg_imm(UGeckoInstruction inst)
 	switch (inst.OPCD)
 	{
 	case 14:  // addi
-						// occasionally used as MOV - emulate, with immediate propagation
+		// occasionally used as MOV - emulate, with immediate propagation
 		if (gpr.R(a).IsImm() && d != a && a != 0)
 		{
 			gpr.SetImmediate32(d, gpr.R(a).Imm32() + (u32)(s32)inst.SIMM_16);

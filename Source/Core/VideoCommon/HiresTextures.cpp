@@ -196,7 +196,7 @@ void HiresTexture::Update()
 		bool luma_encoded = false;
 		for (size_t tag = 1; tag <= max_type; tag++)
 		{
-			if (EndsWith(FileName, s_maps_tags[tag]))
+			if (StringEndsWith(FileName, s_maps_tags[tag]))
 			{
 				map_index = BuildMaterialMaps ? tag : MapType::material;
 				FileName = FileName.substr(0, FileName.size() - s_maps_tags[tag].size());
@@ -209,7 +209,7 @@ void HiresTexture::Update()
 		}
 		else if (!BuildMaterialMaps && map_index == MapType::color)
 		{
-			if (EndsWith(FileName, "_lum"))
+			if (StringEndsWith(FileName, "_lum"))
 			{
 				FileName = FileName.substr(0, FileName.size() - 4);
 				luma_encoded = true;

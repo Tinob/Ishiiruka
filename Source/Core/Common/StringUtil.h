@@ -99,21 +99,14 @@ bool TryParseVector(const std::string& str, std::vector<N>* output, const char d
 // Generates an hexdump-like representation of a binary data blob.
 std::string HexDump(const u8* data, size_t size);
 
-inline bool StartsWith(const std::string& str, const std::string& prefix)
+inline bool StringStartsWith(const std::string& str, const std::string& prefix)
 {
-	return str.compare(0, prefix.size(), prefix) == 0;
+	return str.size() >= prefix.size() && str.compare(0, prefix.size(), prefix) == 0;
 }
 
-inline bool EndsWith(const std::string& str, const std::string& ending)
+inline bool StringEndsWith(const std::string& str, const std::string& ending)
 {
-	if (str.length() >= ending.length())
-	{
-		return (0 == str.compare(str.length() - ending.length(), ending.length(), ending));
-	}
-	else
-	{
-		return false;
-	}
+	return str.length() >= ending.length() && (str.compare(str.length() - ending.length(), ending.length(), ending) == 0);
 }
 
 // TODO: kill this

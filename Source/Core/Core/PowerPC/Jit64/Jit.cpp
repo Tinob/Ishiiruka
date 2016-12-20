@@ -26,7 +26,9 @@
 #include "Core/PowerPC/Jit64/Jit64_Tables.h"
 #include "Core/PowerPC/Jit64/JitAsm.h"
 #include "Core/PowerPC/Jit64/JitRegCache.h"
-#include "Core/PowerPC/Jit64Common/Jit64Util.h"
+#include "Core/PowerPC/Jit64Common/FarCodeCache.h"
+#include "Core/PowerPC/Jit64Common/Jit64PowerPCState.h"
+#include "Core/PowerPC/Jit64Common/TrampolineCache.h"
 #include "Core/PowerPC/JitInterface.h"
 #include "Core/PowerPC/PowerPC.h"
 #include "Core/PowerPC/Profiler.h"
@@ -92,25 +94,25 @@ using namespace PowerPC;
 
 // Optimization Ideas -
 /*
-* Assume SP is in main RAM (in Wii mode too?) - partly done
-* Assume all floating point loads and double precision loads+stores are to/from main ram
-(single precision stores can be used in write gather pipe, specialized fast check added)
-* AMD only - use movaps instead of movapd when loading ps from memory?
-* HLE functions like floorf, sin, memcpy, etc - they can be much faster
-* ABI optimizations - drop F0-F13 on blr, for example. Watch out for context switching.
-CR2-CR4 are non-volatile, rest of CR is volatile -> dropped on blr.
-R5-R12 are volatile -> dropped on blr.
-* classic inlining across calls.
-* Track which registers a block clobbers without using, then take advantage of this knowledge
-when compiling a block that links to that block.
-* Track more dependencies between instructions, e.g. avoiding PPC_FP code, single/double
-conversion, movddup on non-paired singles, etc where possible.
-* Support loads/stores directly from xmm registers in jit_util and the backpatcher; this might
-help AMD a lot since gpr/xmm transfers are slower there.
-* Smarter register allocation in general; maybe learn to drop values once we know they won't be
-used again before being overwritten?
-* More flexible reordering; there's limits to how far we can go because of exception handling
-and such, but it's currently limited to integer ops only. This can definitely be made better.
+	* Assume SP is in main RAM (in Wii mode too?) - partly done
+	* Assume all floating point loads and double precision loads+stores are to/from main ram
+		(single precision stores can be used in write gather pipe, specialized fast check added)
+	* AMD only - use movaps instead of movapd when loading ps from memory?
+	* HLE functions like floorf, sin, memcpy, etc - they can be much faster
+	* ABI optimizations - drop F0-F13 on blr, for example. Watch out for context switching.
+		CR2-CR4 are non-volatile, rest of CR is volatile -> dropped on blr.
+	R5-R12 are volatile -> dropped on blr.
+	* classic inlining across calls.
+	* Track which registers a block clobbers without using, then take advantage of this knowledge
+		when compiling a block that links to that block.
+	* Track more dependencies between instructions, e.g. avoiding PPC_FP code, single/double
+		conversion, movddup on non-paired singles, etc where possible.
+	* Support loads/stores directly from xmm registers in jit_util and the backpatcher; this might
+		help AMD a lot since gpr/xmm transfers are slower there.
+	* Smarter register allocation in general; maybe learn to drop values once we know they won't be
+		used again before being overwritten?
+	* More flexible reordering; there's limits to how far we can go because of exception handling
+		and such, but it's currently limited to integer ops only. This can definitely be made better.
 */
 
 // The BLR optimization is nice, but it means that JITted code can overflow the
@@ -244,7 +246,7 @@ void Jit64::Init()
 	// important: do this *after* generating the global asm routines, because we can't use farcode in
 	// them.
 	// it'll crash because the farcode functions get cleared on JIT clears.
-	farcode.Init(jo.memcheck ? FARCODE_SIZE_MMU : FARCODE_SIZE);
+	m_far_code.Init(jo.memcheck ? FARCODE_SIZE_MMU : FARCODE_SIZE);
 	Clear();
 
 	code_block.m_stats = &js.st;
@@ -257,7 +259,7 @@ void Jit64::ClearCache()
 {
 	blocks.Clear();
 	trampolines.ClearCodeSpace();
-	farcode.ClearCodeSpace();
+	m_far_code.ClearCodeSpace();
 	ClearCodeSpace();
 	Clear();
 	UpdateMemoryOptions();
@@ -271,7 +273,7 @@ void Jit64::Shutdown()
 	blocks.Shutdown();
 	trampolines.Shutdown();
 	asm_routines.Shutdown();
-	farcode.Shutdown();
+	m_far_code.Shutdown();
 }
 
 void Jit64::FallBackToInterpreter(UGeckoInstruction inst)
@@ -540,8 +542,8 @@ void Jit64::Jit(u32 em_address)
 #endif
 	}
 
-	if (IsAlmostFull() || farcode.IsAlmostFull() || trampolines.IsAlmostFull() || blocks.IsFull() ||
-		SConfig::GetInstance().bJITNoBlockCache)
+	if (IsAlmostFull() || m_far_code.IsAlmostFull() || trampolines.IsAlmostFull() ||
+		blocks.IsFull() || SConfig::GetInstance().bJITNoBlockCache)
 	{
 		ClearCache();
 	}
@@ -875,12 +877,12 @@ const u8* Jit64::DoJit(u32 em_address, PPCAnalyst::CodeBuffer* code_buf, JitBloc
 				SwitchToFarCode();
 				if (!js.fastmemLoadStore)
 				{
-					exceptionHandlerAtLoc[js.fastmemLoadStore] = nullptr;
+					m_exception_handler_at_loc[js.fastmemLoadStore] = nullptr;
 					SetJumpTarget(js.fixupExceptionHandler ? js.exceptionHandler : memException);
 				}
 				else
 				{
-					exceptionHandlerAtLoc[js.fastmemLoadStore] = GetWritableCodePtr();
+					m_exception_handler_at_loc[js.fastmemLoadStore] = GetWritableCodePtr();
 				}
 
 				BitSet32 gprToFlush = BitSet32::AllTrue(32);

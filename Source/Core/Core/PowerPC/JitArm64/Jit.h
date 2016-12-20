@@ -186,7 +186,7 @@ private:
 	Arm64Gen::ARM64CodeBlock farcode;
 	u8* nearcode;  // Backed up when we switch to far code.
 
-								 // Do we support cycle counter profiling?
+	// Do we support cycle counter profiling?
 	bool m_supports_cycle_counter;
 
 	void EmitResetCycleCounters();
