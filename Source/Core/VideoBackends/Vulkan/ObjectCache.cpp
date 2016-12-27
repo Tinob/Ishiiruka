@@ -318,6 +318,12 @@ std::string ObjectCache::GetDiskCacheFileName(const char* type)
 		SConfig::GetInstance().m_strGameID.c_str(), type);
 }
 
+std::string ObjectCache::GetDiskUIDCacheFileName()
+{
+	return StringFromFormat("%sIVK-%s-pipeline-uid.cache", File::GetUserPath(D_SHADERUIDCACHE_IDX).c_str(),
+		SConfig::GetInstance().m_strGameID.c_str());
+}
+
 class PipelineCacheReadCallback : public LinearDiskCacheReader<u32, u8>
 {
 public:
