@@ -227,7 +227,10 @@ public:
 
 	virtual PC_TexFormat GetNativeTextureFormat(const s32 texformat,
 		const TlutFormat tlutfmt, u32 width, u32 height) = 0;
-	virtual TCacheEntryBase* CreateTexture(const TCacheEntryConfig& config) = 0;
+	TCacheEntryBase* AllocateTexture(const TCacheEntryConfig& config);
+	void DisposeTexture(TCacheEntryBase* texture);
+
+	
 	virtual bool Palettize(TCacheEntryBase* entry, const TCacheEntryBase* base_entry) = 0;
 	virtual void CopyEFB(u8* dst, u32 format, u32 native_width, u32 bytes_per_row, u32 num_blocks_y, u32 memory_stride,
 		bool is_depth_copy, const EFBRectangle& srcRect,
@@ -252,6 +255,7 @@ protected:
 	size_t temp_size = {};
 	TCacheEntryBase* bound_textures[8] = {};
 	TextureCacheBase();
+	virtual TCacheEntryBase* CreateTexture(const TCacheEntryConfig& config) = 0;
 private:
 	typedef std::multimap<u32, TCacheEntryBase*> TexAddrCache;
 	typedef std::multimap<u64, TCacheEntryBase*> TexHashCache;
@@ -264,7 +268,7 @@ private:
 	TCacheEntryBase* DoPartialTextureUpdates(TCacheEntryBase* entry_to_update, u32 tlutaddr, u32 tlutfmt, u32 palette_size);
 	TextureCacheBase::TCacheEntryBase* ApplyPaletteToEntry(TCacheEntryBase* entry, u32 tlutaddr, u32 tlutfmt, u32 palette_size);
 	void DumpTexture(TCacheEntryBase* entry, std::string basename, u32 level);
-	TCacheEntryBase* AllocateTexture(const TCacheEntryConfig& config);
+
 	TexPool::iterator FindMatchingTextureFromPool(const TCacheEntryConfig& config);
 	TexAddrCache::iterator GetTexCacheIter(TCacheEntryBase* entry);
 	TexAddrCache::iterator InvalidateTexture(TexAddrCache::iterator t_iter);

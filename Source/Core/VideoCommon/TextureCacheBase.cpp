@@ -1358,6 +1358,21 @@ TextureCacheBase::TCacheEntryBase* TextureCacheBase::AllocateTexture(const TCach
 	return entry;
 }
 
+void TextureCacheBase::DisposeTexture(TCacheEntryBase* entry)
+{
+	if (entry->textures_by_hash_iter != textures_by_hash.end())
+	{
+		textures_by_hash.erase(entry->textures_by_hash_iter);
+		entry->textures_by_hash_iter = textures_by_hash.end();
+	}
+
+	entry->DestroyAllReferences();
+
+	entry->frameCount = FRAMECOUNT_INVALID;
+
+	texture_pool.emplace(entry->config, entry);
+}
+
 TextureCacheBase::TexPool::iterator
 TextureCacheBase::FindMatchingTextureFromPool(const TCacheEntryConfig& config)
 {
@@ -1393,18 +1408,7 @@ TextureCacheBase::TexAddrCache::iterator TextureCacheBase::InvalidateTexture(Tex
 		return textures_by_address.end();
 
 	TCacheEntryBase* entry = iter->second;
-
-	if (entry->textures_by_hash_iter != textures_by_hash.end())
-	{
-		textures_by_hash.erase(entry->textures_by_hash_iter);
-		entry->textures_by_hash_iter = textures_by_hash.end();
-	}
-
-	entry->DestroyAllReferences();
-
-	entry->frameCount = FRAMECOUNT_INVALID;
-
-	texture_pool.emplace(entry->config, entry);
+	DisposeTexture(iter->second);
 	return textures_by_address.erase(iter);
 }
 
