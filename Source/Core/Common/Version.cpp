@@ -19,9 +19,9 @@ const std::string scm_rev_str = "Ishiiruka-Dolphin"
 #endif
 
 #ifdef __INTEL_COMPILER
-BUILD_TYPE_STR SCM_DESC_STR "-ICC";
+" " BUILD_TYPE_STR " " SCM_DESC_STR "-ICC";
 #else
-BUILD_TYPE_STR SCM_DESC_STR;
+" " BUILD_TYPE_STR " " SCM_DESC_STR;
 #endif
 
 #ifdef _WIN32

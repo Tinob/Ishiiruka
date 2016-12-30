@@ -21,7 +21,7 @@ static const ARM64Reg DISPATCHER_PC = W26;  // register for PC when calling the 
 
 #define PPCSTATE_OFF(elem) (offsetof(PowerPC::PowerPCState, elem))
 
-// Some asserts to make sure we will be able to load everything
+																						// Some asserts to make sure we will be able to load everything
 static_assert(PPCSTATE_OFF(spr[1023]) <= 16380, "LDR(32bit) can't reach the last SPR");
 static_assert((PPCSTATE_OFF(ps[0][0]) % 8) == 0,
 	"LDR(64bit VFP) requires FPRs to be 8 byte aligned");
@@ -89,7 +89,7 @@ private:
 	RegType m_type;  // store type
 	ARM64Reg m_reg;  // host register we are in
 
-	// For REG_IMM
+									 // For REG_IMM
 	u32 m_value;  // IMM value
 
 	u32 m_last_used;
@@ -206,10 +206,10 @@ class Arm64GPRCache : public Arm64RegCache
 {
 public:
 	~Arm64GPRCache() {}
-	void Start(PPCAnalyst::BlockRegStats& stats);
+	void Start(PPCAnalyst::BlockRegStats& stats) override;
 
 	// Flushes the register cache in different ways depending on the mode
-	void Flush(FlushMode mode, PPCAnalyst::CodeOp* op = nullptr);
+	void Flush(FlushMode mode, PPCAnalyst::CodeOp* op = nullptr) override;
 
 	// Returns a guest register inside of a host register
 	// Will dump an immediate to the host register as well
@@ -228,7 +228,7 @@ public:
 
 protected:
 	// Get the order of the host registers
-	void GetAllocationOrder();
+	void GetAllocationOrder() override;
 
 	// Flushes a guest register by host provided
 	void FlushByHost(ARM64Reg host_reg) override;
@@ -246,7 +246,7 @@ class Arm64FPRCache : public Arm64RegCache
 public:
 	~Arm64FPRCache() {}
 	// Flushes the register cache in different ways depending on the mode
-	void Flush(FlushMode mode, PPCAnalyst::CodeOp* op = nullptr);
+	void Flush(FlushMode mode, PPCAnalyst::CodeOp* op = nullptr) override;
 
 	// Returns a guest register inside of a host register
 	// Will dump an immediate to the host register as well
@@ -262,7 +262,7 @@ public:
 
 protected:
 	// Get the order of the host registers
-	void GetAllocationOrder();
+	void GetAllocationOrder() override;
 
 	// Flushes a guest register by host provided
 	void FlushByHost(ARM64Reg host_reg) override;

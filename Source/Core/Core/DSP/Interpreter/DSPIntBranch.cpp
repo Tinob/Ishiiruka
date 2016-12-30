@@ -5,14 +5,14 @@
 // Additional copyrights go to Duddie and Tratax (c) 2004
 
 #include "Core/DSP/DSPCore.h"
-#include "Core/DSP/DSPIntCCUtil.h"
-#include "Core/DSP/DSPInterpreter.h"
-#include "Core/DSP/DSPIntUtil.h"
 #include "Core/DSP/DSPMemoryMap.h"
 #include "Core/DSP/DSPStacks.h"
+#include "Core/DSP/Interpreter/DSPIntCCUtil.h"
+#include "Core/DSP/Interpreter/DSPIntUtil.h"
+#include "Core/DSP/Interpreter/DSPInterpreter.h"
 
-namespace DSPInterpreter {
-
+namespace DSPInterpreter
+{
 // Generic call implementation
 // CALLcc addressA
 // 0000 0010 1011 cccc
@@ -111,7 +111,6 @@ void rti(const UDSPInstruction opc)
 {
 	g_dsp.r.sr = dsp_reg_load_stack(DSP_STACK_D);
 	g_dsp.pc = dsp_reg_load_stack(DSP_STACK_C);
-
 }
 
 // HALT
@@ -122,7 +121,6 @@ void halt(const UDSPInstruction opc)
 	g_dsp.cr |= 0x4;
 	g_dsp.pc--;
 }
-
 
 // LOOP handling: Loop stack is used to control execution of repeated blocks of
 // instructions. Whenever there is value on stack $st2 and current PC is equal
@@ -157,7 +155,6 @@ void HandleLoop()
 		}
 	}
 }
-
 
 // LOOP $R
 // 0000 0000 010r rrrr
@@ -209,7 +206,6 @@ void loopi(const UDSPInstruction opc)
 		dsp_skip_inst();
 	}
 }
-
 
 // BLOOP $R, addrA
 // 0000 0000 011r rrrr

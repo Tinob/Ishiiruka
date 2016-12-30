@@ -12,10 +12,10 @@
 
 namespace DSPInterpreter
 {
-
 bool CheckCondition(u8 _Condition);
 
-void Update_SR_Register16(s16 _Value, bool carry = false, bool overflow = false, bool overS32 = false);
+void Update_SR_Register16(s16 _Value, bool carry = false, bool overflow = false,
+	bool overS32 = false);
 void Update_SR_Register64(s64 _Value, bool carry = false, bool overflow = false);
 void Update_SR_LZ(bool value);
 

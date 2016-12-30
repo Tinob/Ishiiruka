@@ -3,18 +3,42 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Core/DSP/Interpreter/DSPInterpreter.h"
+
+#include "Common/CommonTypes.h"
+#include "Common/Logging/Log.h"
+
 #include "Core/DSP/DSPAnalyzer.h"
 #include "Core/DSP/DSPCore.h"
-#include "Core/DSP/DSPHWInterface.h"
-#include "Core/DSP/DSPInterpreter.h"
-#include "Core/DSP/DSPIntUtil.h"
 #include "Core/DSP/DSPMemoryMap.h"
 #include "Core/DSP/DSPTables.h"
 
-namespace DSPInterpreter {
+namespace DSPInterpreter
+{
+namespace
+{
+void ExecuteInstruction(const UDSPInstruction inst)
+{
+	const DSPOPCTemplate* opcode_template = GetOpTemplate(inst);
+
+	if (opcode_template->extended)
+	{
+		if ((inst >> 12) == 0x3)
+			extOpTable[inst & 0x7F]->intFunc(inst);
+		else
+			extOpTable[inst & 0xFF]->intFunc(inst);
+	}
+
+	opcode_template->intFunc(inst);
+
+	if (opcode_template->extended)
+	{
+		applyWriteBackLog();
+	}
+}
+}  // Anonymous namespace
 
 // NOTE: These have nothing to do with g_dsp.r.cr !
-
 void WriteCR(u16 val)
 {
 	// reset
@@ -76,7 +100,7 @@ void Step()
 	u16 opc = dsp_fetch_code();
 	ExecuteInstruction(UDSPInstruction(opc));
 
-	if (DSPAnalyzer::code_flags[static_cast<u16>(g_dsp.pc - 1u)] & DSPAnalyzer::CODE_LOOP_END)
+	if (DSPAnalyzer::GetCodeFlags(static_cast<u16>(g_dsp.pc - 1u)) & DSPAnalyzer::CODE_LOOP_END)
 		HandleLoop();
 }
 
@@ -134,7 +158,7 @@ int RunCyclesDebug(int cycles)
 				return cycles;
 			}
 			// Idle skipping.
-			if (DSPAnalyzer::code_flags[g_dsp.pc] & DSPAnalyzer::CODE_IDLE_SKIP)
+			if (DSPAnalyzer::GetCodeFlags(g_dsp.pc) & DSPAnalyzer::CODE_IDLE_SKIP)
 				return 0;
 			Step();
 			cycles--;
@@ -184,7 +208,7 @@ int RunCycles(int cycles)
 			if (g_dsp.cr & CR_HALT)
 				return 0;
 			// Idle skipping.
-			if (DSPAnalyzer::code_flags[g_dsp.pc] & DSPAnalyzer::CODE_IDLE_SKIP)
+			if (DSPAnalyzer::GetCodeFlags(g_dsp.pc) & DSPAnalyzer::CODE_IDLE_SKIP)
 				return 0;
 			Step();
 			cycles--;
@@ -203,6 +227,15 @@ int RunCycles(int cycles)
 			// it just won't call this function anymore.
 		}
 	}
+}
+
+void nop(const UDSPInstruction opc)
+{
+	// The real nop is 0. Anything else is bad.
+	if (opc == 0)
+		return;
+
+	ERROR_LOG(DSPLLE, "LLE: Unrecognized opcode 0x%04x", opc);
 }
 
 }  // namespace

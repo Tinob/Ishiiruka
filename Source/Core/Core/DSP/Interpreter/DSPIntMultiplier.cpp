@@ -4,27 +4,26 @@
 //
 // Additional copyrights go to Duddie and Tratax (c) 2004
 
-
 // Multiplier and product register control
 
-#include "Core/DSP/DSPIntCCUtil.h"
-#include "Core/DSP/DSPInterpreter.h"
-#include "Core/DSP/DSPIntUtil.h"
 #include "Core/DSP/DSPTables.h"
+#include "Core/DSP/Interpreter/DSPIntCCUtil.h"
+#include "Core/DSP/Interpreter/DSPIntUtil.h"
+#include "Core/DSP/Interpreter/DSPInterpreter.h"
 
-namespace DSPInterpreter {
-
+namespace DSPInterpreter
+{
 // Only MULX family instructions have unsigned/mixed support.
 inline s64 dsp_get_multiply_prod(u16 a, u16 b, u8 sign)
 {
 	s64 prod;
 
-	if ((sign == 1) && (g_dsp.r.sr & SR_MUL_UNSIGNED)) //unsigned
+	if ((sign == 1) && (g_dsp.r.sr & SR_MUL_UNSIGNED))  // unsigned
 		prod = (u32)(a * b);
-	else if ((sign == 2) && (g_dsp.r.sr & SR_MUL_UNSIGNED)) //mixed
+	else if ((sign == 2) && (g_dsp.r.sr & SR_MUL_UNSIGNED))  // mixed
 		prod = a * (s16)b;
 	else
-		prod = (s16)a * (s16)b; //signed
+		prod = (s16)a * (s16)b;  // signed
 
 	// Conditionally multiply by 2.
 	if ((g_dsp.r.sr & SR_MUL_MODIFY) == 0)
@@ -56,13 +55,13 @@ inline s64 dsp_multiply_mulx(u8 axh0, u8 axh1, u16 val1, u16 val2)
 	s64 result;
 
 	if ((axh0 == 0) && (axh1 == 0))
-		result = dsp_multiply(val1, val2, 1); // unsigned support ON if both ax?.l regs are used
+		result = dsp_multiply(val1, val2, 1);  // unsigned support ON if both ax?.l regs are used
 	else if ((axh0 == 0) && (axh1 == 1))
-		result = dsp_multiply(val1, val2, 2); // mixed support ON (u16)axl.0  * (s16)axh.1
+		result = dsp_multiply(val1, val2, 2);  // mixed support ON (u16)axl.0  * (s16)axh.1
 	else if ((axh0 == 1) && (axh1 == 0))
-		result = dsp_multiply(val2, val1, 2); // mixed support ON (u16)axl.1  * (s16)axh.0
+		result = dsp_multiply(val2, val1, 2);  // mixed support ON (u16)axl.1  * (s16)axh.0
 	else
-		result = dsp_multiply(val1, val2, 0); // unsigned support OFF if both ax?.h regs are used
+		result = dsp_multiply(val1, val2, 0);  // unsigned support OFF if both ax?.h regs are used
 
 	return result;
 }

@@ -4,16 +4,16 @@
 //
 // Additional copyrights go to Duddie and Tratax (c) 2004
 
-#include "Core/DSP/DSPIntCCUtil.h"
-#include "Core/DSP/DSPInterpreter.h"
-#include "Core/DSP/DSPIntUtil.h"
 #include "Core/DSP/DSPMemoryMap.h"
 #include "Core/DSP/DSPTables.h"
+#include "Core/DSP/Interpreter/DSPIntCCUtil.h"
+#include "Core/DSP/Interpreter/DSPIntUtil.h"
+#include "Core/DSP/Interpreter/DSPInterpreter.h"
 
 // Arithmetic and accumulator control.
 
-namespace DSPInterpreter {
-
+namespace DSPInterpreter
+{
 // CLR $acR
 // 1000 r001 xxxx xxxx
 // Clears accumulator $acR
@@ -122,7 +122,8 @@ void cmp(const UDSPInstruction opc)
 	s64 acc1 = dsp_get_long_acc(1);
 	s64 res = dsp_convert_long_acc(acc0 - acc1);
 
-	Update_SR_Register64(res, isCarry2(acc0, res), isOverflow(acc0, -acc1, res)); // CF -> influence on ABS/0xa100
+	Update_SR_Register64(res, isCarry2(acc0, res),
+		isOverflow(acc0, -acc1, res));  // CF -> influence on ABS/0xa100
 	zeroWriteBackLog();
 }
 
@@ -158,7 +159,8 @@ void cmpi(const UDSPInstruction opc)
 	u8 reg = (opc >> 8) & 0x1;
 
 	s64 val = dsp_get_long_acc(reg);
-	s64 imm = (s64)(s16)dsp_fetch_code() << 16; // Immediate is considered to be at M level in the 40-bit accumulator.
+	s64 imm = (s64)(s16)dsp_fetch_code()
+		<< 16;  // Immediate is considered to be at M level in the 40-bit accumulator.
 	s64 res = dsp_convert_long_acc(val - imm);
 
 	Update_SR_Register64(res, isCarry2(val, res), isOverflow(val, -imm, res));
@@ -840,7 +842,8 @@ void lsr16(const UDSPInstruction opc)
 	u8 areg = (opc >> 8) & 0x1;
 
 	u64 acc = dsp_get_long_acc(areg);
-	acc &= 0x000000FFFFFFFFFFULL; // Lop off the extraneous sign extension our 64-bit fake accum causes
+	acc &=
+		0x000000FFFFFFFFFFULL;  // Lop off the extraneous sign extension our 64-bit fake accum causes
 	acc >>= 16;
 
 	zeroWriteBackLog();
@@ -895,7 +898,8 @@ void lsr(const UDSPInstruction opc)
 	u8 rreg = (opc >> 8) & 0x01;
 	u16 shift;
 	u64 acc = dsp_get_long_acc(rreg);
-	acc &= 0x000000FFFFFFFFFFULL; // Lop off the extraneous sign extension our 64-bit fake accum causes
+	acc &=
+		0x000000FFFFFFFFFFULL;  // Lop off the extraneous sign extension our 64-bit fake accum causes
 
 	if ((opc & 0x3f) == 0)
 		shift = 0;
@@ -1154,6 +1158,4 @@ void asrnr(const UDSPInstruction opc)
 	Update_SR_Register64(dsp_get_long_acc(dreg));
 }
 
-
 }  // namespace
-

@@ -97,15 +97,15 @@ using namespace PowerPC;
 
 // Optimization Ideas -
 /*
-	* Assume SP is in main RAM (in Wii mode too?) - partly done
-	* Assume all floating point loads and double precision loads+stores are to/from main ram
-		(single precision can be used in write gather pipe, specialized fast check added)
-	* AMD only - use movaps instead of movapd when loading ps from memory?
-	* HLE functions like floorf, sin, memcpy, etc - they can be much faster
-	* ABI optimizations - drop F0-F13 on blr, for example. Watch out for context switching.
-		CR2-CR4 are non-volatile, rest of CR is volatile -> dropped on blr.
-	R5-R12 are volatile -> dropped on blr.
-	* classic inlining across calls.
+* Assume SP is in main RAM (in Wii mode too?) - partly done
+* Assume all floating point loads and double precision loads+stores are to/from main ram
+(single precision can be used in write gather pipe, specialized fast check added)
+* AMD only - use movaps instead of movapd when loading ps from memory?
+* HLE functions like floorf, sin, memcpy, etc - they can be much faster
+* ABI optimizations - drop F0-F13 on blr, for example. Watch out for context switching.
+CR2-CR4 are non-volatile, rest of CR is volatile -> dropped on blr.
+R5-R12 are volatile -> dropped on blr.
+* classic inlining across calls.
 
 Low hanging fruit:
 stfd -- guaranteed in memory
@@ -354,8 +354,8 @@ void JitIL::Cleanup()
 {
 	// SPEED HACK: MMCR0/MMCR1 should be checked at run-time, not at compile time.
 	if (MMCR0.Hex || MMCR1.Hex)
-		ABI_CallFunctionCCC(PowerPC::UpdatePerformanceMonitor, js.downcountAmount,
-			jit->js.numLoadStoreInst, jit->js.numFloatingPointInst);
+		ABI_CallFunctionCCC(PowerPC::UpdatePerformanceMonitor, js.downcountAmount, js.numLoadStoreInst,
+			js.numFloatingPointInst);
 }
 
 void JitIL::WriteExit(u32 destination)
@@ -518,8 +518,8 @@ const u8* JitIL::DoJit(u32 em_address, PPCAnalyst::CodeBuffer* code_buf, JitBloc
 	js.blockStart = em_address;
 	js.fifoBytesSinceCheck = 0;
 	js.curBlock = b;
-	jit->js.numLoadStoreInst = 0;
-	jit->js.numFloatingPointInst = 0;
+	js.numLoadStoreInst = 0;
+	js.numFloatingPointInst = 0;
 
 	PPCAnalyst::CodeOp* ops = code_buf->codebuffer;
 
@@ -610,7 +610,7 @@ const u8* JitIL::DoJit(u32 em_address, PPCAnalyst::CodeBuffer* code_buf, JitBloc
 					if (type == HLE::HLE_HOOK_REPLACE)
 					{
 						MOV(32, R(EAX), PPCSTATE(npc));
-						jit->js.downcountAmount += jit->js.st.numCycles;
+						js.downcountAmount += js.st.numCycles;
 						WriteExitDestInOpArg(R(EAX));
 						break;
 					}
@@ -625,7 +625,7 @@ const u8* JitIL::DoJit(u32 em_address, PPCAnalyst::CodeBuffer* code_buf, JitBloc
 				ibuild.EmitFPExceptionCheck(ibuild.EmitIntConst(ops[i].address));
 			}
 
-			if (jit->js.fifoWriteAddresses.find(js.compilerPC) != jit->js.fifoWriteAddresses.end())
+			if (js.fifoWriteAddresses.find(js.compilerPC) != js.fifoWriteAddresses.end())
 			{
 				ibuild.EmitExtExceptionCheck(ibuild.EmitIntConst(ops[i].address));
 			}
@@ -648,10 +648,10 @@ const u8* JitIL::DoJit(u32 em_address, PPCAnalyst::CodeBuffer* code_buf, JitBloc
 			}
 
 			if (opinfo->flags & FL_LOADSTORE)
-				++jit->js.numLoadStoreInst;
+				++js.numLoadStoreInst;
 
 			if (opinfo->flags & FL_USE_FPU)
-				++jit->js.numFloatingPointInst;
+				++js.numFloatingPointInst;
 		}
 	}
 

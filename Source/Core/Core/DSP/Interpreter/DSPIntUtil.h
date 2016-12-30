@@ -5,11 +5,11 @@
 
 #pragma once
 
+#include "Common/Assert.h"
 #include "Common/CommonTypes.h"
 
 #include "Core/DSP/DSPCore.h"
 #include "Core/DSP/DSPStacks.h"
-
 
 // ---------------------------------------------------------------------------------------
 // --- SR
@@ -41,12 +41,12 @@ static inline u16 dsp_increase_addr_reg(u16 reg, s16 _ix)
 
 	if (ix >= 0)
 	{
-		if (dar > wr) //overflow
+		if (dar > wr)  // overflow
 			nar -= wr + 1;
 	}
 	else
 	{
-		if ((((nar + wr + 1) ^ nar) & dar) <= wr) //underflow or below min for mask
+		if ((((nar + wr + 1) ^ nar) & dar) <= wr)  // underflow or below min for mask
 			nar += wr + 1;
 	}
 	return nar;
@@ -62,14 +62,14 @@ static inline u16 dsp_decrease_addr_reg(u16 reg, s16 _ix)
 	u32 nar = ar - ix;
 	u32 dar = (nar ^ ar ^ ~ix) & mx;
 
-	if ((u32)ix > 0xFFFF8000) //(ix < 0 && ix != -0x8000)
+	if ((u32)ix > 0xFFFF8000)  //(ix < 0 && ix != -0x8000)
 	{
-		if (dar > wr) //overflow
+		if (dar > wr)  // overflow
 			nar -= wr + 1;
 	}
 	else
 	{
-		if ((((nar + wr + 1) ^ nar) & dar) <= wr) //underflow or below min for mask
+		if ((((nar + wr + 1) ^ nar) & dar) <= wr)  // underflow or below min for mask
 			nar += wr + 1;
 	}
 	return nar;
@@ -98,7 +98,6 @@ static inline u16 dsp_decrement_addr_reg(u16 reg)
 		nar -= wr + 1;
 	return nar;
 }
-
 
 // ---------------------------------------------------------------------------------------
 // --- reg
@@ -133,12 +132,18 @@ static inline u16 dsp_op_read_reg(int _reg)
 	case DSP_REG_ACH0:
 	case DSP_REG_ACH1:
 		return g_dsp.r.ac[reg - DSP_REG_ACH0].h;
-	case DSP_REG_CR:     return g_dsp.r.cr;
-	case DSP_REG_SR:     return g_dsp.r.sr;
-	case DSP_REG_PRODL:  return g_dsp.r.prod.l;
-	case DSP_REG_PRODM:  return g_dsp.r.prod.m;
-	case DSP_REG_PRODH:  return g_dsp.r.prod.h;
-	case DSP_REG_PRODM2: return g_dsp.r.prod.m2;
+	case DSP_REG_CR:
+		return g_dsp.r.cr;
+	case DSP_REG_SR:
+		return g_dsp.r.sr;
+	case DSP_REG_PRODL:
+		return g_dsp.r.prod.l;
+	case DSP_REG_PRODM:
+		return g_dsp.r.prod.m;
+	case DSP_REG_PRODH:
+		return g_dsp.r.prod.h;
+	case DSP_REG_PRODM2:
+		return g_dsp.r.prod.m2;
 	case DSP_REG_AXL0:
 	case DSP_REG_AXL1:
 		return g_dsp.r.ax[reg - DSP_REG_AXL0].l;
@@ -196,12 +201,24 @@ static inline void dsp_op_write_reg(int _reg, u16 val)
 	case DSP_REG_WR3:
 		g_dsp.r.wr[reg - DSP_REG_WR0] = val;
 		break;
-	case DSP_REG_CR:     g_dsp.r.cr = val; break;
-	case DSP_REG_SR:     g_dsp.r.sr = val; break;
-	case DSP_REG_PRODL:  g_dsp.r.prod.l = val; break;
-	case DSP_REG_PRODM:  g_dsp.r.prod.m = val; break;
-	case DSP_REG_PRODH:  g_dsp.r.prod.h = val; break;
-	case DSP_REG_PRODM2: g_dsp.r.prod.m2 = val; break;
+	case DSP_REG_CR:
+		g_dsp.r.cr = val;
+		break;
+	case DSP_REG_SR:
+		g_dsp.r.sr = val;
+		break;
+	case DSP_REG_PRODL:
+		g_dsp.r.prod.l = val;
+		break;
+	case DSP_REG_PRODM:
+		g_dsp.r.prod.m = val;
+		break;
+	case DSP_REG_PRODH:
+		g_dsp.r.prod.h = val;
+		break;
+	case DSP_REG_PRODM2:
+		g_dsp.r.prod.m2 = val;
+		break;
 	case DSP_REG_AXL0:
 	case DSP_REG_AXL1:
 		g_dsp.r.ax[reg - DSP_REG_AXL0].l = val;
@@ -286,7 +303,7 @@ inline void dsp_set_long_acc(int _reg, s64 val)
 	g_dsp.r.ac[_reg].val = (u64)val;
 }
 
-inline s64 dsp_convert_long_acc(s64 val) // s64 -> s40
+inline s64 dsp_convert_long_acc(s64 val)  // s64 -> s40
 {
 	return ((val << 24) >> 24);
 }

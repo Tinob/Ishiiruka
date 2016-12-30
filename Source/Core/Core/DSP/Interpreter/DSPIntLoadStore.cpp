@@ -4,12 +4,12 @@
 //
 // Additional copyrights go to Duddie and Tratax (c) 2004
 
-#include "Core/DSP/DSPInterpreter.h"
-#include "Core/DSP/DSPIntUtil.h"
 #include "Core/DSP/DSPMemoryMap.h"
+#include "Core/DSP/Interpreter/DSPIntUtil.h"
+#include "Core/DSP/Interpreter/DSPInterpreter.h"
 
-namespace DSPInterpreter {
-
+namespace DSPInterpreter
+{
 // SRS @M, $(0x18+S)
 // 0010 1sss mmmm mmmm
 // Move value from register $(0x18+D) to data memory pointed by address

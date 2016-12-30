@@ -2,11 +2,14 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
-#include "DSPIntExtOps.h"
-#include "Core/DSP/DSPIntUtil.h"
-#include "Core/DSP/DSPMemoryMap.h"
+#include "Core/DSP/Interpreter/DSPIntExtOps.h"
 
-//not needed for game ucodes (it slows down interpreter/dspjit32 + easier to compare int VS dspjit64 without it)
+#include "Core/DSP/DSPMemoryMap.h"
+#include "Core/DSP/DSPTables.h"
+#include "Core/DSP/Interpreter/DSPIntUtil.h"
+
+// not needed for game ucodes (it slows down interpreter/dspjit32 + easier to compare int VS
+// dspjit64 without it)
 //#define PRECISE_BACKLOG
 
 // Extended opcodes do not exist on their own. These opcodes can only be
@@ -28,10 +31,8 @@ inline static void writeToBackLog(int i, int idx, u16 value)
 
 namespace DSPInterpreter
 {
-
 namespace Ext
 {
-
 inline bool IsSameMemArea(u16 a, u16 b)
 {
 	// LM: tested on Wii
@@ -199,7 +200,6 @@ void ls(const UDSPInstruction opc)
 	writeToBackLog(2, DSP_REG_AR0, dsp_increment_addr_reg(DSP_REG_AR0));
 }
 
-
 // LSN $axD.D, $acS.m
 // xxxx xxxx 10dd 010s
 // Load register $axD.D with value from memory pointed by register
@@ -331,10 +331,13 @@ void slnm(const UDSPInstruction opc)
 // example for "nx'ld $AX0.L, $AX1.L, @$AR3"
 // Loads the word pointed by AR0 to AX0.H, then loads the word pointed by AR3 to AX0.L.
 // Increments AR0 and AR3.
-// If AR0 and AR3 point into the same memory page (upper 6 bits of addr are the same -> games are not doing that!)
+// If AR0 and AR3 point into the same memory page (upper 6 bits of addr are the same -> games are
+// not doing that!)
 // then the value pointed by AR0 is loaded to BOTH AX0.H and AX0.L.
-// If AR0 points into an invalid memory page (ie 0x2000), then AX0.H keeps its old value. (not implemented yet)
-// If AR3 points into an invalid memory page, then AX0.L gets the same value as AX0.H. (not implemented yet)
+// If AR0 points into an invalid memory page (ie 0x2000), then AX0.H keeps its old value. (not
+// implemented yet)
+// If AR3 points into an invalid memory page, then AX0.L gets the same value as AX0.H. (not
+// implemented yet)
 void ld(const UDSPInstruction opc)
 {
 	u8 dreg = (opc >> 5) & 0x1;
@@ -428,8 +431,7 @@ void ldm(const UDSPInstruction opc)
 
 	writeToBackLog(2, sreg, dsp_increment_addr_reg(sreg));
 
-	writeToBackLog(3, DSP_REG_AR3,
-		dsp_increase_addr_reg(DSP_REG_AR3, (s16)g_dsp.r.ix[3]));
+	writeToBackLog(3, DSP_REG_AR3, dsp_increase_addr_reg(DSP_REG_AR3, (s16)g_dsp.r.ix[3]));
 }
 
 // LDAXM $axR, @$arS
@@ -448,8 +450,7 @@ void ldaxm(const UDSPInstruction opc)
 
 	writeToBackLog(2, sreg, dsp_increment_addr_reg(sreg));
 
-	writeToBackLog(3, DSP_REG_AR3,
-		dsp_increase_addr_reg(DSP_REG_AR3, (s16)g_dsp.r.ix[3]));
+	writeToBackLog(3, DSP_REG_AR3, dsp_increase_addr_reg(DSP_REG_AR3, (s16)g_dsp.r.ix[3]));
 }
 
 // LDNM $ax0.d, $ax1.r, @$arS
@@ -469,8 +470,7 @@ void ldnm(const UDSPInstruction opc)
 
 	writeToBackLog(2, sreg, dsp_increase_addr_reg(sreg, (s16)g_dsp.r.ix[sreg]));
 
-	writeToBackLog(3, DSP_REG_AR3,
-		dsp_increase_addr_reg(DSP_REG_AR3, (s16)g_dsp.r.ix[3]));
+	writeToBackLog(3, DSP_REG_AR3, dsp_increase_addr_reg(DSP_REG_AR3, (s16)g_dsp.r.ix[3]));
 }
 
 // LDAXNM $axR, @$arS
@@ -489,17 +489,15 @@ void ldaxnm(const UDSPInstruction opc)
 
 	writeToBackLog(2, sreg, dsp_increase_addr_reg(sreg, (s16)g_dsp.r.ix[sreg]));
 
-	writeToBackLog(3, DSP_REG_AR3,
-		dsp_increase_addr_reg(DSP_REG_AR3, (s16)g_dsp.r.ix[3]));
+	writeToBackLog(3, DSP_REG_AR3, dsp_increase_addr_reg(DSP_REG_AR3, (s16)g_dsp.r.ix[3]));
 }
 
-
 void nop(const UDSPInstruction opc)
-{}
+{
+}
 
-} // end namespace ext
-} // end namespace DSPInterpeter
-
+}  // end namespace ext
+}  // end namespace DSPInterpeter
 
 // The ext ops are calculated in parallel with the actual op. That means that
 // both the main op and the ext op see the same register state as input. The
@@ -551,12 +549,14 @@ void zeroWriteBackLogPreserveAcc(u8 acc)
 	{
 		// acc0
 		if ((acc == 0) &&
-			((writeBackLogIdx[i] == DSP_REG_ACL0) || (writeBackLogIdx[i] == DSP_REG_ACM0) || (writeBackLogIdx[i] == DSP_REG_ACH0)))
+			((writeBackLogIdx[i] == DSP_REG_ACL0) || (writeBackLogIdx[i] == DSP_REG_ACM0) ||
+			(writeBackLogIdx[i] == DSP_REG_ACH0)))
 			continue;
 
 		// acc1
 		if ((acc == 1) &&
-			((writeBackLogIdx[i] == DSP_REG_ACL1) || (writeBackLogIdx[i] == DSP_REG_ACM1) || (writeBackLogIdx[i] == DSP_REG_ACH1)))
+			((writeBackLogIdx[i] == DSP_REG_ACL1) || (writeBackLogIdx[i] == DSP_REG_ACM1) ||
+			(writeBackLogIdx[i] == DSP_REG_ACH1)))
 			continue;
 
 		dsp_op_write_reg(writeBackLogIdx[i], 0);
