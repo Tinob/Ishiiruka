@@ -243,7 +243,7 @@ public:
 
 	TCacheEntryBase* Load(const u32 stage);
 	void UnbindTextures();
-	void BindTextures();
+	virtual void BindTextures();
 	void CopyRenderTargetToTexture(u32 dstAddr, u32 dstFormat, u32 dstStride,
 		bool is_depth_copy, const EFBRectangle& srcRect, bool isIntensity, bool scaleByHalf);
 	u8* GetTemporalBuffer()
