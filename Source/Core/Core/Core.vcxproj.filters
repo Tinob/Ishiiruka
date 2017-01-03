@@ -555,6 +555,12 @@
     <ClCompile Include="IPC_HLE\WII_IPC_HLE.cpp">
       <Filter>IPC HLE %28IOS/Starlet%29</Filter>
     </ClCompile>
+    <ClCompile Include="IPC_HLE\WII_IPC_HLE_Device.cpp">
+      <Filter>IPC HLE %28IOS/Starlet%29</Filter>
+    </ClCompile>
+    <ClCompile Include="IPC_HLE\WII_IPC_HLE_Device_stub.cpp">
+      <Filter>IPC HLE %28IOS/Starlet%29</Filter>
+    </ClCompile>
     <ClCompile Include="IPC_HLE\WII_IPC_HLE_Device_DI.cpp">
       <Filter>IPC HLE %28IOS/Starlet%29\DI</Filter>
     </ClCompile>
@@ -573,6 +579,9 @@
     <ClCompile Include="IPC_HLE\ICMPWin.cpp">
       <Filter>IPC HLE %28IOS/Starlet%29\Net</Filter>
     </ClCompile>
+    <ClCompile Include="IPC_HLE\NWC24Config.cpp">
+      <Filter>IPC HLE %28IOS/Starlet%29\Net</Filter>
+    </ClCompile>
     <ClCompile Include="IPC_HLE\WII_IPC_HLE_Device_net.cpp">
       <Filter>IPC HLE %28IOS/Starlet%29\Net</Filter>
     </ClCompile>
@@ -580,6 +589,9 @@
       <Filter>IPC HLE %28IOS/Starlet%29\Net</Filter>
     </ClCompile>
     <ClCompile Include="IPC_HLE\WII_Socket.cpp">
+      <Filter>IPC HLE %28IOS/Starlet%29\Net</Filter>
+    </ClCompile>
+    <ClCompile Include="IPC_HLE\WiiNetConfig.cpp">
       <Filter>IPC HLE %28IOS/Starlet%29\Net</Filter>
     </ClCompile>
     <ClCompile Include="IPC_HLE\WII_IPC_HLE_Device_sdio_slot0.cpp">
@@ -654,6 +666,12 @@
     <ClCompile Include="PowerPC\Jit64IL\JitIL_Tables.cpp">
       <Filter>PowerPC\JitIL</Filter>
     </ClCompile>
+    <ClCompile Include="PowerPC\Jit64\FPURegCache.cpp">
+      <Filter>PowerPC\Jit64</Filter>
+    </ClCompile>
+    <ClCompile Include="PowerPC\Jit64\GPRRegCache.cpp">
+      <Filter>PowerPC\Jit64</Filter>
+    </ClCompile>
     <ClCompile Include="PowerPC\Jit64\Jit_Branch.cpp">
       <Filter>PowerPC\Jit64</Filter>
     </ClCompile>
@@ -720,31 +738,6 @@
     <ClCompile Include="PowerPC\MMU.cpp">
       <Filter>PowerPC</Filter>
     </ClCompile>
-    <ClCompile Include="PowerPC\Jit64Common\Jit64AsmCommon.cpp">
-      <Filter>PowerPC\Jit64Common</Filter>
-    </ClCompile>
-    <ClCompile Include="Analytics.cpp" />
-    <ClCompile Include="IPC_HLE\WII_IPC_HLE_Device_usb_ven.cpp">
-      <Filter>IPC HLE %28IOS/Starlet%29\USB</Filter>
-    </ClCompile>
-    <ClCompile Include="IPC_HLE\WiiNetConfig.cpp">
-      <Filter>IPC HLE %28IOS/Starlet%29\Net</Filter>
-    </ClCompile>
-    <ClCompile Include="IPC_HLE\NWC24Config.cpp">
-      <Filter>IPC HLE %28IOS/Starlet%29\Net</Filter>
-    </ClCompile>
-    <ClCompile Include="IPC_HLE\WII_IPC_HLE_Device.cpp">
-      <Filter>IPC HLE %28IOS/Starlet%29</Filter>
-    </ClCompile>
-    <ClCompile Include="IPC_HLE\WII_IPC_HLE_Device_stub.cpp">
-      <Filter>IPC HLE %28IOS/Starlet%29</Filter>
-    </ClCompile>
-    <ClCompile Include="PowerPC\Jit64Common\TrampolineCache.cpp">
-      <Filter>PowerPC\Jit64Common</Filter>
-    </ClCompile>
-    <ClCompile Include="PowerPC\Jit64Common\Jit64Base.cpp">
-      <Filter>PowerPC\Jit64Common</Filter>
-    </ClCompile>
     <ClCompile Include="PowerPC\Jit64Common\BlockCache.cpp">
       <Filter>PowerPC\Jit64Common</Filter>
     </ClCompile>
@@ -753,6 +746,19 @@
     </ClCompile>
     <ClCompile Include="PowerPC\Jit64Common\FarCodeCache.cpp">
       <Filter>PowerPC\Jit64Common</Filter>
+    </ClCompile>
+    <ClCompile Include="PowerPC\Jit64Common\Jit64AsmCommon.cpp">
+      <Filter>PowerPC\Jit64Common</Filter>
+    </ClCompile>
+    <ClCompile Include="PowerPC\Jit64Common\Jit64Base.cpp">
+      <Filter>PowerPC\Jit64Common</Filter>
+    </ClCompile>
+    <ClCompile Include="PowerPC\Jit64Common\TrampolineCache.cpp">
+      <Filter>PowerPC\Jit64Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Analytics.cpp" />
+    <ClCompile Include="IPC_HLE\WII_IPC_HLE_Device_usb_ven.cpp">
+      <Filter>IPC HLE %28IOS/Starlet%29\USB</Filter>
     </ClCompile>
     <ClCompile Include="PowerPC\SignatureDB\CSVSignatureDB.cpp">
       <Filter>PowerPC\SignatureDB</Filter>
@@ -821,7 +827,7 @@
     <ClInclude Include="DSP\Interpreter\DSPIntUtil.h">
       <Filter>DSPCore\Interpreter</Filter>
     </ClInclude>
-    <ClInclude Include="DSP\DSPEmitter.h">
+    <ClInclude Include="DSP\Jit\DSPEmitter.h">
       <Filter>DSPCore\Jit</Filter>
     </ClInclude>
     <ClInclude Include="DSP\Jit\DSPJitRegCache.h">
@@ -1145,6 +1151,9 @@
     <ClInclude Include="IPC_HLE\WII_IPC_HLE_Device.h">
       <Filter>IPC HLE %28IOS/Starlet%29</Filter>
     </ClInclude>
+    <ClInclude Include="IPC_HLE\WII_IPC_HLE_Device_stub.h">
+      <Filter>IPC HLE %28IOS/Starlet%29</Filter>
+    </ClInclude>
     <ClInclude Include="IPC_HLE\WII_IPC_HLE_Device_stm.h">
       <Filter>IPC HLE %28IOS/Starlet%29</Filter>
     </ClInclude>
@@ -1166,6 +1175,9 @@
     <ClInclude Include="IPC_HLE\ICMP.h">
       <Filter>IPC HLE %28IOS/Starlet%29\Net</Filter>
     </ClInclude>
+    <ClInclude Include="IPC_HLE\NWC24Config.h">
+      <Filter>IPC HLE %28IOS/Starlet%29\Net</Filter>
+    </ClInclude>
     <ClInclude Include="IPC_HLE\WII_IPC_HLE_Device_net.h">
       <Filter>IPC HLE %28IOS/Starlet%29\Net</Filter>
     </ClInclude>
@@ -1173,6 +1185,9 @@
       <Filter>IPC HLE %28IOS/Starlet%29\Net</Filter>
     </ClInclude>
     <ClInclude Include="IPC_HLE\WII_Socket.h">
+      <Filter>IPC HLE %28IOS/Starlet%29\Net</Filter>
+    </ClInclude>
+    <ClInclude Include="IPC_HLE\WiiNetConfig.h">
       <Filter>IPC HLE %28IOS/Starlet%29\Net</Filter>
     </ClInclude>
     <ClInclude Include="IPC_HLE\WII_IPC_HLE_Device_sdio_slot0.h">
@@ -1253,6 +1268,12 @@
     <ClInclude Include="PowerPC\Jit64IL\JitIL_Tables.h">
       <Filter>PowerPC\JitIL</Filter>
     </ClInclude>
+    <ClInclude Include="PowerPC\Jit64\FPURegCache.h">
+      <Filter>PowerPC\Jit64</Filter>
+    </ClInclude>
+    <ClInclude Include="PowerPC\Jit64\GPRRegCache.h">
+      <Filter>PowerPC\Jit64</Filter>
+    </ClInclude>
     <ClInclude Include="PowerPC\Jit64\JitRegCache.h">
       <Filter>PowerPC\Jit64</Filter>
     </ClInclude>
@@ -1272,29 +1293,6 @@
     <ClInclude Include="HW\GCKeyboard.h">
       <Filter>HW %28Flipper/Hollywood%29\GCKeyboard</Filter>
     </ClInclude>
-    <ClInclude Include="PowerPC\Jit64Common\Jit64AsmCommon.h">
-      <Filter>PowerPC\Jit64Common</Filter>
-    </ClInclude>
-    <ClInclude Include="Analytics.h" />
-    <ClInclude Include="IPC_HLE\WII_IPC_HLE_Device_usb_ven.h">
-      <Filter>IPC HLE %28IOS/Starlet%29\USB</Filter>
-    </ClInclude>
-    <ClInclude Include="IPC_HLE\WiiNetConfig.h">
-      <Filter>IPC HLE %28IOS/Starlet%29\Net</Filter>
-    </ClInclude>
-    <ClInclude Include="IPC_HLE\NWC24Config.h">
-      <Filter>IPC HLE %28IOS/Starlet%29\Net</Filter>
-    </ClInclude>
-    <ClInclude Include="IPC_HLE\WII_IPC_HLE_Device_stub.h">
-      <Filter>IPC HLE %28IOS/Starlet%29</Filter>
-    </ClInclude>
-    <ClInclude Include="PowerPC\Jit64Common\TrampolineCache.h">
-      <Filter>PowerPC\Jit64Common</Filter>
-    </ClInclude>
-    <ClInclude Include="PowerPC\Jit64Common\Jit64PowerPCState.h">
-      <Filter>PowerPC\Jit64Common</Filter>
-    </ClInclude>
-    <ClInclude Include="resource.h" />
     <ClInclude Include="PowerPC\Jit64Common\BlockCache.h">
       <Filter>PowerPC\Jit64Common</Filter>
     </ClInclude>
@@ -1304,11 +1302,24 @@
     <ClInclude Include="PowerPC\Jit64Common\FarCodeCache.h">
       <Filter>PowerPC\Jit64Common</Filter>
     </ClInclude>
+    <ClInclude Include="PowerPC\Jit64Common\Jit64AsmCommon.h">
+      <Filter>PowerPC\Jit64Common</Filter>
+    </ClInclude>
     <ClInclude Include="PowerPC\Jit64Common\Jit64Base.h">
+      <Filter>PowerPC\Jit64Common</Filter>
+    </ClInclude>
+    <ClInclude Include="PowerPC\Jit64Common\Jit64PowerPCState.h">
+      <Filter>PowerPC\Jit64Common</Filter>
+    </ClInclude>
+    <ClInclude Include="PowerPC\Jit64Common\TrampolineCache.h">
       <Filter>PowerPC\Jit64Common</Filter>
     </ClInclude>
     <ClInclude Include="PowerPC\Jit64Common\TrampolineInfo.h">
       <Filter>PowerPC\Jit64Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Analytics.h" />
+    <ClInclude Include="IPC_HLE\WII_IPC_HLE_Device_usb_ven.h">
+      <Filter>IPC HLE %28IOS/Starlet%29\USB</Filter>
     </ClInclude>
     <ClInclude Include="PowerPC\SignatureDB\CSVSignatureDB.h">
       <Filter>PowerPC\SignatureDB</Filter>
@@ -1322,8 +1333,5 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="Core.rc" />
   </ItemGroup>
 </Project>

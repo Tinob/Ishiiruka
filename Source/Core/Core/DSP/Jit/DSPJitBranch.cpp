@@ -12,6 +12,12 @@
 
 using namespace Gen;
 
+namespace DSP
+{
+namespace JIT
+{
+namespace x86
+{
 template <void(*jitCode)(const UDSPInstruction, DSPEmitter&)>
 static void ReJitConditional(const UDSPInstruction opc, DSPEmitter& emitter)
 {
@@ -81,7 +87,7 @@ static void WriteBranchExit(DSPEmitter& emitter)
 {
 	DSPJitRegCache c(emitter.gpr);
 	emitter.gpr.SaveRegs();
-	if (DSPAnalyzer::GetCodeFlags(emitter.startAddr) & DSPAnalyzer::CODE_IDLE_SKIP)
+	if (Analyzer::GetCodeFlags(emitter.startAddr) & Analyzer::CODE_IDLE_SKIP)
 	{
 		emitter.MOV(16, R(EAX), Imm16(0x1000));
 	}
@@ -452,3 +458,7 @@ void DSPEmitter::bloopi(const UDSPInstruction opc)
 		WriteBranchExit(*this);
 	}
 }
+
+}  // namespace x86
+}  // namespace JIT
+}  // namespace DSP

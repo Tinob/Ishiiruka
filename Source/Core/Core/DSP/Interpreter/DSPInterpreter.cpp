@@ -13,7 +13,9 @@
 #include "Core/DSP/DSPMemoryMap.h"
 #include "Core/DSP/DSPTables.h"
 
-namespace DSPInterpreter
+namespace DSP
+{
+namespace Interpreter
 {
 namespace
 {
@@ -100,7 +102,7 @@ void Step()
 	u16 opc = dsp_fetch_code();
 	ExecuteInstruction(UDSPInstruction(opc));
 
-	if (DSPAnalyzer::GetCodeFlags(static_cast<u16>(g_dsp.pc - 1u)) & DSPAnalyzer::CODE_LOOP_END)
+	if (Analyzer::GetCodeFlags(static_cast<u16>(g_dsp.pc - 1u)) & Analyzer::CODE_LOOP_END)
 		HandleLoop();
 }
 
@@ -158,7 +160,7 @@ int RunCyclesDebug(int cycles)
 				return cycles;
 			}
 			// Idle skipping.
-			if (DSPAnalyzer::GetCodeFlags(g_dsp.pc) & DSPAnalyzer::CODE_IDLE_SKIP)
+			if (Analyzer::GetCodeFlags(g_dsp.pc) & Analyzer::CODE_IDLE_SKIP)
 				return 0;
 			Step();
 			cycles--;
@@ -208,7 +210,7 @@ int RunCycles(int cycles)
 			if (g_dsp.cr & CR_HALT)
 				return 0;
 			// Idle skipping.
-			if (DSPAnalyzer::GetCodeFlags(g_dsp.pc) & DSPAnalyzer::CODE_IDLE_SKIP)
+			if (Analyzer::GetCodeFlags(g_dsp.pc) & Analyzer::CODE_IDLE_SKIP)
 				return 0;
 			Step();
 			cycles--;
@@ -238,4 +240,5 @@ void nop(const UDSPInstruction opc)
 	ERROR_LOG(DSPLLE, "LLE: Unrecognized opcode 0x%04x", opc);
 }
 
-}  // namespace
+}  // namespace Interpreter
+}  // namespace DSP

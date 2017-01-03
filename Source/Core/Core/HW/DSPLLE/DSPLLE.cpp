@@ -27,6 +27,10 @@
 #include "Core/HW/Memmap.h"
 #include "Core/Host.h"
 
+namespace DSP
+{
+namespace LLE
+{
 static Common::Event dspEvent;
 static Common::Event ppcEvent;
 static bool requestDisableThread;
@@ -67,7 +71,7 @@ void DSPLLE::DoState(PointerWrap& p)
 	p.DoArray(g_dsp.iram, DSP_IRAM_SIZE);
 	Common::WriteProtectMemory(g_dsp.iram, DSP_IRAM_BYTE_SIZE, false);
 	if (p.GetMode() == PointerWrap::MODE_READ)
-		DSPHost::CodeLoaded((const u8*)g_dsp.iram, DSP_IRAM_BYTE_SIZE);
+		Host::CodeLoaded((const u8*)g_dsp.iram, DSP_IRAM_BYTE_SIZE);
 	p.DoArray(g_dsp.dram, DSP_DRAM_SIZE);
 	p.Do(g_cycles_left);
 	p.Do(g_init_hax);
@@ -91,7 +95,7 @@ void DSPLLE::DSPThread(DSPLLE* dsp_lle)
 			}
 			else
 			{
-				DSPInterpreter::RunCyclesThread(cycles);
+				DSP::Interpreter::RunCyclesThread(cycles);
 			}
 			dsp_lle->m_cycle_count.store(0);
 		}
@@ -203,7 +207,7 @@ void DSPLLE::Shutdown()
 
 u16 DSPLLE::DSP_WriteControlRegister(u16 _uFlag)
 {
-	DSPInterpreter::WriteCR(_uFlag);
+	DSP::Interpreter::WriteCR(_uFlag);
 
 	if (_uFlag & 2)
 	{
@@ -222,12 +226,12 @@ u16 DSPLLE::DSP_WriteControlRegister(u16 _uFlag)
 		}
 	}
 
-	return DSPInterpreter::ReadCR();
+	return DSP::Interpreter::ReadCR();
 }
 
 u16 DSPLLE::DSP_ReadControlRegister()
 {
-	return DSPInterpreter::ReadCR();
+	return DSP::Interpreter::ReadCR();
 }
 
 u16 DSPLLE::DSP_ReadMailBoxHigh(bool _CPUMailbox)
@@ -284,22 +288,22 @@ void DSPLLE::DSP_Update(int cycles)
 		return;
 	// Sound stream update job has been handled by AudioDMA routine, which is more efficient
 	/*
-	// This gets called VERY OFTEN. The soundstream update might be expensive so only do it 200
-	times per second or something.
-	int cycles_between_ss_update;
+		// This gets called VERY OFTEN. The soundstream update might be expensive so only do it 200
+		times per second or something.
+		int cycles_between_ss_update;
 
-	if (g_dspInitialize.bWii)
-	cycles_between_ss_update = 121500000 / 200;
-	else
-	cycles_between_ss_update = 81000000 / 200;
+		if (g_dspInitialize.bWii)
+			cycles_between_ss_update = 121500000 / 200;
+		else
+			cycles_between_ss_update = 81000000 / 200;
 
-	m_cycle_count += cycles;
-	if (m_cycle_count > cycles_between_ss_update)
-	{
-	while (m_cycle_count > cycles_between_ss_update)
-	m_cycle_count -= cycles_between_ss_update;
-	soundStream->Update();
-	}
+		m_cycle_count += cycles;
+		if (m_cycle_count > cycles_between_ss_update)
+		{
+			while (m_cycle_count > cycles_between_ss_update)
+				m_cycle_count -= cycles_between_ss_update;
+			soundStream->Update();
+		}
 	*/
 	if (m_bDSPThread)
 	{
@@ -339,3 +343,5 @@ void DSPLLE::PauseAndLock(bool doLock, bool unpauseOnUnlock)
 	else
 		m_csDSPThreadActive.unlock();
 }
+}  // namespace LLE
+}  // namespace DSP

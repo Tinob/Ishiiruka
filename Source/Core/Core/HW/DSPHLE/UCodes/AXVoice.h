@@ -22,6 +22,10 @@
 #include "Core/HW/DSPHLE/UCodes/AXStructs.h"
 #include "Core/HW/Memmap.h"
 
+namespace DSP
+{
+namespace HLE
+{
 #ifdef AX_GC
 #define PB_TYPE AXPB
 #define MAX_SAMPLES_PER_FRAME 32
@@ -592,3 +596,5 @@ void ProcessVoice(PB_TYPE& pb, const AXBuffers& buffers, u16 count, AXMixControl
 }
 
 }  // namespace
+}  // namespace HLE
+}  // namespace DSP

@@ -19,31 +19,31 @@
 #include "Core/DSP/DSPDisassembler.h"
 #include "Core/DSP/DSPTables.h"
 
-static const char* err_string[] =
+namespace DSP
 {
-	"",
-	"Unknown Error",
-	"Unknown opcode",
-	"Not enough parameters",
-	"Too many parameters",
-	"Wrong parameter",
-	"Expected parameter of type 'string'",
-	"Expected parameter of type 'value'",
-	"Expected parameter of type 'register'",
-	"Expected parameter of type 'memory pointer'",
-	"Expected parameter of type 'immediate'",
-	"Incorrect binary value",
-	"Incorrect hexadecimal value",
-	"Incorrect decimal value",
-	"Label already exists",
-	"Label not defined",
-	"No matching brackets",
-	"This opcode cannot be extended",
-	"Given extending params for non extensible opcode",
-	"Wrong parameter: must be accumulator register",
-	"Wrong parameter: must be mid accumulator register",
-	"Invalid register",
-	"Number out of range" };
+static const char* err_string[] = { "",
+																	 "Unknown Error",
+																	 "Unknown opcode",
+																	 "Not enough parameters",
+																	 "Too many parameters",
+																	 "Wrong parameter",
+																	 "Expected parameter of type 'string'",
+																	 "Expected parameter of type 'value'",
+																	 "Expected parameter of type 'register'",
+																	 "Expected parameter of type 'memory pointer'",
+																	 "Expected parameter of type 'immediate'",
+																	 "Incorrect binary value",
+																	 "Incorrect hexadecimal value",
+																	 "Incorrect decimal value",
+																	 "Label already exists",
+																	 "Label not defined",
+																	 "No matching brackets",
+																	 "This opcode cannot be extended",
+																	 "Given extending params for non extensible opcode",
+																	 "Wrong parameter: must be accumulator register",
+																	 "Wrong parameter: must be mid accumulator register",
+																	 "Invalid register",
+																	 "Number out of range" };
 
 DSPAssembler::DSPAssembler(const AssemblerSettings& settings)
 	: gdg_buffer(nullptr), m_cur_addr(0), m_cur_pass(0), m_current_param(0), settings_(settings)
@@ -1033,3 +1033,4 @@ bool DSPAssembler::AssembleFile(const char* fname, int pass)
 
 	return !failed;
 }
+}  // namespace DSP

@@ -1331,6 +1331,10 @@ void CFrame::ParseHotkeys()
 		// Toggle EFB copies between EFB2RAM and EFB2Texture
 		g_Config.bSkipEFBCopyToRam = !g_Config.bSkipEFBCopyToRam;
 	}
+	if (IsHotkey(HK_TOGGLE_DUMPTEXTURES))
+	{
+		g_Config.bDumpTextures = !g_Config.bDumpTextures;
+	}
 	if (IsHotkey(HK_TOGGLE_FOG))
 	{
 		OSDChoice = 4;
@@ -1435,7 +1439,7 @@ void CFrame::ParseHotkeys()
 			g_renderer->GetPostProcessor()->SetReloadFlag();
 	}
 
-	if (IsHotkey(HK_TOGGLE_HIRES_TEXTURES))
+	if (IsHotkey(HK_TOGGLE_TEXTURES))
 	{
 		g_Config.bHiresTextures = !g_Config.bHiresTextures;
 	}

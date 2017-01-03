@@ -18,11 +18,17 @@
 #include "Core/DSP/DSPMemoryMap.h"
 #include "Core/DSP/DSPTables.h"
 
+using namespace Gen;
+
+namespace DSP
+{
+namespace JIT
+{
+namespace x86
+{
 constexpr size_t COMPILED_CODE_SIZE = 2097152;
 constexpr size_t MAX_BLOCK_SIZE = 250;
 constexpr u16 DSP_IDLE_SKIP_CYCLES = 0x1000;
-
-using namespace Gen;
 
 DSPEmitter::DSPEmitter()
 	: blockLinks(MAX_BLOCKS), blockSize(MAX_BLOCKS), blocks(MAX_BLOCKS),
@@ -92,9 +98,9 @@ void DSPEmitter::checkExceptions(u32 retval)
 
 bool DSPEmitter::FlagsNeeded() const
 {
-	const u8 flags = DSPAnalyzer::GetCodeFlags(compilePC);
+	const u8 flags = Analyzer::GetCodeFlags(compilePC);
 
-	return !(flags & DSPAnalyzer::CODE_START_OF_INST) || (flags & DSPAnalyzer::CODE_UPDATE_SR);
+	return !(flags & Analyzer::CODE_START_OF_INST) || (flags & Analyzer::CODE_UPDATE_SR);
 }
 
 void DSPEmitter::FallBackToInterpreter(UDSPInstruction inst)
@@ -178,7 +184,7 @@ void DSPEmitter::EmitInstruction(UDSPInstruction inst)
 			// need to call the online cleanup function because
 			// the writeBackLog gets populated at runtime
 			gpr.PushRegs();
-			ABI_CallFunction(::applyWriteBackLog);
+			ABI_CallFunction(applyWriteBackLog);
 			gpr.PopRegs();
 		}
 		else
@@ -215,7 +221,7 @@ void DSPEmitter::Compile(u16 start_addr)
 
 	while (compilePC < start_addr + MAX_BLOCK_SIZE)
 	{
-		if (DSPAnalyzer::GetCodeFlags(compilePC) & DSPAnalyzer::CODE_CHECK_INT)
+		if (Analyzer::GetCodeFlags(compilePC) & Analyzer::CODE_CHECK_INT)
 			checkExceptions(blockSize[start_addr]);
 
 		UDSPInstruction inst = dsp_imem_read(compilePC);
@@ -233,7 +239,7 @@ void DSPEmitter::Compile(u16 start_addr)
 
 		// Handle loop condition, only if current instruction was flagged as a loop destination
 		// by the analyzer.
-		if (DSPAnalyzer::GetCodeFlags(static_cast<u16>(compilePC - 1u)) & DSPAnalyzer::CODE_LOOP_END)
+		if (Analyzer::GetCodeFlags(static_cast<u16>(compilePC - 1u)) & Analyzer::CODE_LOOP_END)
 		{
 			MOVZX(32, 16, EAX, M(&(g_dsp.r.st[2])));
 			TEST(32, R(EAX), R(EAX));
@@ -254,8 +260,7 @@ void DSPEmitter::Compile(u16 start_addr)
 			DSPJitRegCache c(gpr);
 			HandleLoop();
 			gpr.SaveRegs();
-			if (!DSPHost::OnThread() &&
-				DSPAnalyzer::GetCodeFlags(start_addr) & DSPAnalyzer::CODE_IDLE_SKIP)
+			if (!Host::OnThread() && Analyzer::GetCodeFlags(start_addr) & Analyzer::CODE_IDLE_SKIP)
 			{
 				MOV(16, R(EAX), Imm16(DSP_IDLE_SKIP_CYCLES));
 			}
@@ -289,8 +294,7 @@ void DSPEmitter::Compile(u16 start_addr)
 				DSPJitRegCache c(gpr);
 				// don't update g_dsp.pc -- the branch insn already did
 				gpr.SaveRegs();
-				if (!DSPHost::OnThread() &&
-					DSPAnalyzer::GetCodeFlags(start_addr) & DSPAnalyzer::CODE_IDLE_SKIP)
+				if (!Host::OnThread() && Analyzer::GetCodeFlags(start_addr) & Analyzer::CODE_IDLE_SKIP)
 				{
 					MOV(16, R(EAX), Imm16(DSP_IDLE_SKIP_CYCLES));
 				}
@@ -307,7 +311,7 @@ void DSPEmitter::Compile(u16 start_addr)
 		}
 
 		// End the block if we're before an idle skip address
-		if (DSPAnalyzer::GetCodeFlags(compilePC) & DSPAnalyzer::CODE_IDLE_SKIP)
+		if (Analyzer::GetCodeFlags(compilePC) & Analyzer::CODE_IDLE_SKIP)
 		{
 			break;
 		}
@@ -353,7 +357,7 @@ void DSPEmitter::Compile(u16 start_addr)
 	}
 
 	gpr.SaveRegs();
-	if (!DSPHost::OnThread() && DSPAnalyzer::GetCodeFlags(start_addr) & DSPAnalyzer::CODE_IDLE_SKIP)
+	if (!Host::OnThread() && Analyzer::GetCodeFlags(start_addr) & Analyzer::CODE_IDLE_SKIP)
 	{
 		MOV(16, R(EAX), Imm16(DSP_IDLE_SKIP_CYCLES));
 	}
@@ -383,7 +387,7 @@ void DSPEmitter::CompileDispatcher()
 	const u8* dispatcherLoop = GetCodePtr();
 
 	FixupBranch exceptionExit;
-	if (DSPHost::OnThread())
+	if (Host::OnThread())
 	{
 		CMP(8, M(const_cast<bool*>(&g_dsp.external_interrupt_waiting)), Imm8(0));
 		exceptionExit = J_CC(CC_NE);
@@ -407,7 +411,7 @@ void DSPEmitter::CompileDispatcher()
 
 	// DSP gave up the remaining cycles.
 	SetJumpTarget(_halt);
-	if (DSPHost::OnThread())
+	if (Host::OnThread())
 	{
 		SetJumpTarget(exceptionExit);
 	}
@@ -415,3 +419,7 @@ void DSPEmitter::CompileDispatcher()
 	ABI_PopRegistersAndAdjustStack(registers_used, 8);
 	RET();
 }
+
+}  // namespace x86
+}  // namespace JIT
+}  // namespace DSP

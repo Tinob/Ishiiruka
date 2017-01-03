@@ -9,6 +9,8 @@
 #include "Core/DSP/DSPCommon.h"
 #include "Core/DSP/Jit/DSPEmitter.h"
 
+namespace DSP
+{
 // The non-ADDR ones that end with _D are the opposite one - if the bit specify
 // ACC0, then ACC_D will be ACC1.
 
@@ -66,7 +68,7 @@ struct param2_t
 struct DSPOPCTemplate
 {
 	using InterpreterFunction = void(*)(UDSPInstruction);
-	using JITFunction = void (DSPEmitter::*)(UDSPInstruction);
+	using JITFunction = void (DSP::JIT::x86::DSPEmitter::*)(UDSPInstruction);
 
 	const char* name;
 	u16 opcode;
@@ -123,3 +125,4 @@ void zeroWriteBackLog();
 void zeroWriteBackLogPreserveAcc(u8 acc);
 
 const DSPOPCTemplate* GetOpTemplate(const UDSPInstruction& inst);
+}  // namespace DSP

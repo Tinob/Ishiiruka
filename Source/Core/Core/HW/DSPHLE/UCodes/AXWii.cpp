@@ -15,6 +15,10 @@
 #include "Core/HW/DSPHLE/UCodes/AXVoice.h"
 #include "Core/HW/DSPHLE/UCodes/UCodes.h"
 
+namespace DSP
+{
+namespace HLE
+{
 AXWiiUCode::AXWiiUCode(DSPHLE* dsphle, u32 crc) : AXUCode(dsphle, crc), m_last_main_volume(0x8000)
 {
 	for (u16& volume : m_last_aux_volumes)
@@ -437,18 +441,13 @@ void AXWiiUCode::ProcessPBList(u32 pb_addr)
 
 	while (pb_addr)
 	{
-		AXBuffers buffers = 
-		{
-			{
-				m_samples_left,      m_samples_right,      m_samples_surround,
-				m_samples_auxA_left, m_samples_auxA_right, m_samples_auxA_surround,
-				m_samples_auxB_left, m_samples_auxB_right, m_samples_auxB_surround,
-				m_samples_auxC_left, m_samples_auxC_right, m_samples_auxC_surround,
-				m_samples_wm0,       m_samples_aux0,       m_samples_wm1,
-				m_samples_aux1,      m_samples_wm2,        m_samples_aux2,
-				m_samples_wm3,       m_samples_aux3
-			}
-		};
+		AXBuffers buffers = { {m_samples_left,      m_samples_right,      m_samples_surround,
+													m_samples_auxA_left, m_samples_auxA_right, m_samples_auxA_surround,
+													m_samples_auxB_left, m_samples_auxB_right, m_samples_auxB_surround,
+													m_samples_auxC_left, m_samples_auxC_right, m_samples_auxC_surround,
+													m_samples_wm0,       m_samples_aux0,       m_samples_wm1,
+													m_samples_aux1,      m_samples_wm2,        m_samples_aux2,
+													m_samples_wm3,       m_samples_aux3} };
 
 		ReadPB(pb_addr, pb);
 
@@ -656,3 +655,5 @@ void AXWiiUCode::DoState(PointerWrap& p)
 	p.Do(m_last_main_volume);
 	p.Do(m_last_aux_volumes);
 }
+}  // namespace HLE
+}  // namespace DSP

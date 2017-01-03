@@ -7,6 +7,12 @@
 #include <array>
 #include "Common/x64Emitter.h"
 
+namespace DSP
+{
+namespace JIT
+{
+namespace x86
+{
 class DSPEmitter;
 
 enum DSPJitRegSpecial
@@ -33,7 +39,7 @@ enum DSPJitSignExtend
 class DSPJitRegCache
 {
 public:
-	DSPJitRegCache(DSPEmitter& _emitter);
+	DSPJitRegCache(DSPEmitter& emitter);
 
 	// For branching into multiple control flows
 	DSPJitRegCache(const DSPJitRegCache& cache);
@@ -170,12 +176,16 @@ private:
 
 	static const std::array<Gen::X64Reg, 15> m_allocation_order;
 
-	std::array<DynamicReg, 37> regs;
-	std::array<X64CachedReg, 16> xregs;
+	std::array<DynamicReg, 37> m_regs;
+	std::array<X64CachedReg, 16> m_xregs;
 
-	DSPEmitter& emitter;
-	bool temporary;
-	bool merged;
+	DSPEmitter& m_emitter;
+	bool m_is_temporary;
+	bool m_is_merged;
 
-	int use_ctr;
+	int m_use_ctr;
 };
+
+}  // namespace x86
+}  // namespace JIT
+}  // namespace DSP
