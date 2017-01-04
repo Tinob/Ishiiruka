@@ -229,6 +229,8 @@
     <ClInclude Include="MD5.h" />
     <ClInclude Include="ConstantBuffer.h" />
     <ClInclude Include="Align.h" />
+    <ClInclude Include="BitHelpers.h" />
+    <ClInclude Include="AllocationMap.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BreakPoints.cpp" />
