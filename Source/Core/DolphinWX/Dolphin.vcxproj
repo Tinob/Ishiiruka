@@ -109,7 +109,7 @@
     <ClCompile Include="Input\NunchukInputConfigDiag.cpp" />
     <ClCompile Include="Input\TurntableInputConfigDiag.cpp" />
     <ClCompile Include="Input\WiimoteInputConfigDiag.cpp" />
-    <ClCompile Include="ISOProperties\FileSystemPanel.cpp" />
+    <ClCompile Include="ISOProperties\FilesystemPanel.cpp" />
     <ClCompile Include="ISOProperties\InfoPanel.cpp" />
     <ClCompile Include="ISOProperties\ISOProperties.cpp" />
     <ClCompile Include="NetPlay\ChangeGameDialog.cpp" />
@@ -166,7 +166,7 @@
     <ClInclude Include="Input\NunchukInputConfigDiag.h" />
     <ClInclude Include="Input\TurntableInputConfigDiag.h" />
     <ClInclude Include="Input\WiimoteInputConfigDiag.h" />
-    <ClInclude Include="ISOProperties\FileSystemPanel.h" />
+    <ClInclude Include="ISOProperties\FilesystemPanel.h" />
     <ClInclude Include="ISOProperties\InfoPanel.h" />
     <ClInclude Include="ISOProperties\ISOProperties.h" />
     <ClInclude Include="NetPlay\ChangeGameDialog.h" />
