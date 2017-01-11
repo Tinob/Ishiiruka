@@ -96,6 +96,7 @@ void VideoBackend::InitBackendInfo()
 	g_Config.backend_info.bSupportsComputeTextureEncoding = false;
 	g_Config.backend_info.bSupportsDepthClamp = false;
 	g_Config.backend_info.bSupportsMultithreading = false;
+	g_Config.backend_info.bSupportsValidationLayer = false;
 	g_Config.backend_info.bSupportsReversedDepthRange = false;
 	g_Config.backend_info.bSupportsInternalResolutionFrameDumps = false;
 	// adapters
