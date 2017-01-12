@@ -67,4 +67,3 @@ inline int GetPatchTypeCharLength(PatchType type)
 }
 
 }  // namespace
-extern std::vector<PatchEngine::Patch> onFrame;
