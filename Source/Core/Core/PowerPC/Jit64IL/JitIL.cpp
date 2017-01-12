@@ -97,15 +97,15 @@ using namespace PowerPC;
 
 // Optimization Ideas -
 /*
-* Assume SP is in main RAM (in Wii mode too?) - partly done
-* Assume all floating point loads and double precision loads+stores are to/from main ram
-(single precision can be used in write gather pipe, specialized fast check added)
-* AMD only - use movaps instead of movapd when loading ps from memory?
-* HLE functions like floorf, sin, memcpy, etc - they can be much faster
-* ABI optimizations - drop F0-F13 on blr, for example. Watch out for context switching.
-CR2-CR4 are non-volatile, rest of CR is volatile -> dropped on blr.
-R5-R12 are volatile -> dropped on blr.
-* classic inlining across calls.
+	* Assume SP is in main RAM (in Wii mode too?) - partly done
+	* Assume all floating point loads and double precision loads+stores are to/from main ram
+		(single precision can be used in write gather pipe, specialized fast check added)
+	* AMD only - use movaps instead of movapd when loading ps from memory?
+	* HLE functions like floorf, sin, memcpy, etc - they can be much faster
+	* ABI optimizations - drop F0-F13 on blr, for example. Watch out for context switching.
+		CR2-CR4 are non-volatile, rest of CR is volatile -> dropped on blr.
+	R5-R12 are volatile -> dropped on blr.
+	* classic inlining across calls.
 
 Low hanging fruit:
 stfd -- guaranteed in memory

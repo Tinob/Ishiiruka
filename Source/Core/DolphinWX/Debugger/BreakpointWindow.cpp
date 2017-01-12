@@ -2,6 +2,8 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "DolphinWX/Debugger/BreakpointWindow.h"
+
 #include <array>
 
 // clang-format off
@@ -12,16 +14,15 @@
 #include <wx/panel.h>
 // clang-format on
 
-#include "Common/BreakPoints.h"
 #include "Common/CommonTypes.h"
 #include "Common/FileUtil.h"
 #include "Common/IniFile.h"
 #include "Core/ConfigManager.h"
 #include "Core/HW/Memmap.h"
+#include "Core/PowerPC/BreakPoints.h"
 #include "Core/PowerPC/PowerPC.h"
 #include "DolphinWX/Debugger/BreakpointDlg.h"
 #include "DolphinWX/Debugger/BreakpointView.h"
-#include "DolphinWX/Debugger/BreakpointWindow.h"
 #include "DolphinWX/Debugger/CodeWindow.h"
 #include "DolphinWX/Debugger/MemoryCheckDlg.h"
 #include "DolphinWX/AuiToolBar.h"
@@ -38,7 +39,7 @@ public:
 		SetToolBitmapSize(bitmap_size);
 
 		static const std::array<const char* const, Num_Bitmaps> image_names{
-				{"toolbar_debugger_delete", "toolbar_add_breakpoint", "toolbar_add_memorycheck"} };
+			{ "toolbar_debugger_delete", "toolbar_add_breakpoint", "toolbar_add_memorycheck" } };
 		for (std::size_t i = 0; i < image_names.size(); ++i)
 			m_Bitmaps[i] =
 			WxUtils::LoadScaledResourceBitmap(image_names[i], this, bitmap_size, wxDefaultSize,
@@ -146,13 +147,19 @@ void CBreakPointWindow::OnClear(wxCommandEvent& WXUNUSED(event))
 void CBreakPointWindow::OnAddBreakPoint(wxCommandEvent& WXUNUSED(event))
 {
 	BreakPointDlg bpDlg(this);
-	bpDlg.ShowModal();
+	if (bpDlg.ShowModal() == wxID_OK)
+	{
+		NotifyUpdate();
+	}
 }
 
 void CBreakPointWindow::OnAddMemoryCheck(wxCommandEvent& WXUNUSED(event))
 {
 	MemoryCheckDlg memDlg(this);
-	memDlg.ShowModal();
+	if (memDlg.ShowModal() == wxID_OK)
+	{
+		NotifyUpdate();
+	}
 }
 
 void CBreakPointWindow::Event_SaveAll(wxCommandEvent& WXUNUSED(event))

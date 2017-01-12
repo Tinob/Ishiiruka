@@ -2079,14 +2079,14 @@ bool ARM64XEmitter::MOVI2R2(ARM64Reg Rd, u64 imm1, u64 imm2)
 
 void ARM64XEmitter::ABI_PushRegisters(BitSet32 registers)
 {
-	u32 num_regs = registers.Count();
+	unsigned int num_regs = registers.Count();
 
 	if (num_regs % 2)
 	{
 		bool first = true;
 
 		// Stack is required to be quad-word aligned.
-		u32 stack_size = Common::AlignUpPow2(num_regs * 8, 16);
+		u32 stack_size = Common::AlignUp(num_regs * 8, 16);
 		u32 current_offset = 0;
 		std::vector<ARM64Reg> reg_pair;
 
@@ -2665,7 +2665,8 @@ void ARM64FloatEmitter::EncodeLoadStoreRegisterOffset(u32 size, bool load, ARM64
 
 void ARM64FloatEmitter::EncodeModImm(bool Q, u8 op, u8 cmode, u8 o2, ARM64Reg Rd, u8 abcdefgh)
 {
-	union {
+	union
+	{
 		u8 hex;
 		struct
 		{

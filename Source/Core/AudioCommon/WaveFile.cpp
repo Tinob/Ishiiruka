@@ -11,10 +11,13 @@
 #include "Common/MsgHandler.h"
 #include "Common/StringUtil.h"
 
+#include "Core/ConfigManager.h"
+
 constexpr size_t WaveFileWriter::BUFFER_SIZE;
 
 WaveFileWriter::WaveFileWriter()
-{}
+{
+}
 
 WaveFileWriter::~WaveFileWriter()
 {
@@ -26,7 +29,8 @@ bool WaveFileWriter::Start(const std::string& filename, unsigned int HLESampleRa
 	// Ask to delete file
 	if (File::Exists(filename))
 	{
-		if (AskYesNoT("Delete the existing file '%s'?", filename.c_str()))
+		if (SConfig::GetInstance().m_DumpAudioSilent ||
+			AskYesNoT("Delete the existing file '%s'?", filename.c_str()))
 		{
 			File::Delete(filename);
 		}
@@ -36,6 +40,7 @@ bool WaveFileWriter::Start(const std::string& filename, unsigned int HLESampleRa
 			return false;
 		}
 	}
+
 	// Check if the file is already open
 	if (file)
 	{
@@ -108,31 +113,6 @@ void WaveFileWriter::Write4(const char* ptr)
 	file.WriteBytes(ptr, 4);
 }
 
-void WaveFileWriter::AddStereoSamples(const short* sample_data, u32 count, int sample_rate)
-{
-	if (!file)
-		PanicAlertT("WaveFileWriter - file not open.");
-
-	if (skip_silence)
-	{
-		bool all_zero = true;
-
-		for (u32 i = 0; i < count * 2; i++)
-		{
-			if (sample_data[i])
-				all_zero = false;
-		}
-
-		if (all_zero)
-			return;
-	}
-
-	CheckSampleRate(sample_rate);
-
-	file.WriteBytes(sample_data, count * 4);
-	audio_size += count * 4;
-}
-
 void WaveFileWriter::AddStereoSamplesBE(const short* sample_data, u32 count, int sample_rate)
 {
 	if (!file)
@@ -162,14 +142,6 @@ void WaveFileWriter::AddStereoSamplesBE(const short* sample_data, u32 count, int
 		conv_buffer[2 * i + 1] = Common::swap16((u16)sample_data[2 * i]);
 	}
 
-	CheckSampleRate(sample_rate);
-
-	file.WriteBytes(conv_buffer.data(), count * 4);
-	audio_size += count * 4;
-}
-
-void WaveFileWriter::CheckSampleRate(int sample_rate)
-{
 	if (sample_rate != current_sample_rate)
 	{
 		Stop();
@@ -179,4 +151,7 @@ void WaveFileWriter::CheckSampleRate(int sample_rate)
 		Start(filename.str(), sample_rate);
 		current_sample_rate = sample_rate;
 	}
+
+	file.WriteBytes(conv_buffer.data(), count * 4);
+	audio_size += count * 4;
 }
