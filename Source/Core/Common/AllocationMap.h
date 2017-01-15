@@ -33,13 +33,15 @@ public:
 	{
 		// Go to the next valid slot
 		m_current_slot++;
+		bool restarted = false;
 		if (m_current_slot >= m_slot_count)
 		{
 			// If we are at the end go back to the start
 			// to search for free slots
 			m_current_slot = 0;
+			restarted = true;
 		}
-		bool restarted = false;
+
 		size_t group = m_current_slot / bit_count;
 		int bit = static_cast<int>(m_current_slot & bit_mask);
 		while (group < m_group_count)
