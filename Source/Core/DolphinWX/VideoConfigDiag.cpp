@@ -1477,7 +1477,7 @@ void VideoConfigDiag::OnUpdateUI(wxUpdateUIEvent& ev)
 	hires_texturemaps->Show(vconfig.backend_info.bSupportsNormalMaps);
 
 
-	Async_Shader_compilation->Show(vconfig.backend_info.APIType != API_OPENGL);
+	Async_Shader_compilation->Show(vconfig.backend_info.bSupportsAsyncShaderCompilation);
 	Compute_Shader_decoding->Show(vconfig.backend_info.bSupportsComputeTextureDecoding);
 	Compute_Shader_encoding->Show(vconfig.backend_info.bSupportsComputeTextureEncoding);
 	Forced_LogicOp->Show(vconfig.backend_info.APIType == API_D3D11);
