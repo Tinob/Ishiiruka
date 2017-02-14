@@ -11,10 +11,10 @@ class wxTextCtrl;
 class BreakPointDlg : public wxDialog
 {
 public:
-	BreakPointDlg(wxWindow* _Parent);
+  BreakPointDlg(wxWindow* _Parent);
 
 private:
-	wxTextCtrl* m_pEditAddress;
+  wxTextCtrl* m_pEditAddress;
 
-	void OnOK(wxCommandEvent& event);
+  void OnOK(wxCommandEvent& event);
 };

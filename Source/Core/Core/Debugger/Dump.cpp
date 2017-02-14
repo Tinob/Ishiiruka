@@ -10,8 +10,7 @@
 
 #include "Core/Debugger/Dump.h"
 
-CDump::CDump(const std::string& filename) :
-	m_pData(nullptr)
+CDump::CDump(const std::string& filename) : m_pData(nullptr)
 {
 	File::IOFile pStream(filename, "rb");
 	if (pStream)
@@ -60,9 +59,7 @@ u32 CDump::GetPC(int _step)
 
 u32 CDump::Read32(u32 _pos)
 {
-	u32 result = (m_pData[_pos + 0] << 24) |
-		(m_pData[_pos + 1] << 16) |
-		(m_pData[_pos + 2] << 8) |
+	u32 result = (m_pData[_pos + 0] << 24) | (m_pData[_pos + 1] << 16) | (m_pData[_pos + 2] << 8) |
 		(m_pData[_pos + 3] << 0);
 
 	return result;

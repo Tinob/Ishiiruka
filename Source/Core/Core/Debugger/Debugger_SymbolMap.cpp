@@ -11,24 +11,23 @@
 #include "Core/Core.h"
 #include "Core/Debugger/Debugger_SymbolMap.h"
 #include "Core/HW/Memmap.h"
-#include "Core/PowerPC/PowerPC.h"
 #include "Core/PowerPC/PPCAnalyst.h"
 #include "Core/PowerPC/PPCSymbolDB.h"
+#include "Core/PowerPC/PowerPC.h"
 
 namespace Dolphin_Debugger
 {
-
 void AddAutoBreakpoints()
 {
 #if defined(_DEBUG) || defined(DEBUGFAST)
 #if 1
-	const char *bps[] = {
-		"PPCHalt",
+	const char* bps[] = {
+			"PPCHalt",
 	};
 
 	for (const char* bp : bps)
 	{
-		Symbol *symbol = g_symbolDB.GetSymbolFromName(bp);
+		Symbol* symbol = g_symbolDB.GetSymbolFromName(bp);
 		if (symbol)
 			PowerPC::breakpoints.Add(symbol->address, false);
 	}
@@ -49,9 +48,7 @@ static void WalkTheStack(const std::function<void(u32)>& stack_step)
 		u32 addr = PowerPC::HostRead_U32(PowerPC::ppcState.gpr[1]);  // SP
 
 		// Walk the stack chain
-		for (int count = 0;
-			!IsStackBottom(addr + 4) && (count++ < 20);
-			++count)
+		for (int count = 0; !IsStackBottom(addr + 4) && (count++ < 20); ++count)
 		{
 			u32 func_addr = PowerPC::HostRead_U32(addr + 4);
 			stack_step(func_addr);
@@ -67,7 +64,7 @@ static void WalkTheStack(const std::function<void(u32)>& stack_step)
 // Returns callstack "formatted for debugging" - meaning that it
 // includes LR as the last item, and all items are the last step,
 // instead of "pointing ahead"
-bool GetCallstack(std::vector<CallstackEntry> &output)
+bool GetCallstack(std::vector<CallstackEntry>& output)
 {
 	if (!Core::IsRunning() || !PowerPC::HostIsRAMAddress(PowerPC::ppcState.gpr[1]))
 		return false;
@@ -82,17 +79,16 @@ bool GetCallstack(std::vector<CallstackEntry> &output)
 	}
 
 	CallstackEntry entry;
-	entry.Name = StringFromFormat(" * %s [ LR = %08x ]\n", g_symbolDB.GetDescription(LR).c_str(), LR - 4);
+	entry.Name =
+		StringFromFormat(" * %s [ LR = %08x ]\n", g_symbolDB.GetDescription(LR).c_str(), LR - 4);
 	entry.vAddress = LR - 4;
 	output.push_back(entry);
 
-	WalkTheStack([&entry, &output](u32 func_addr)
-	{
+	WalkTheStack([&entry, &output](u32 func_addr) {
 		std::string func_desc = g_symbolDB.GetDescription(func_addr);
 		if (func_desc.empty() || func_desc == "Invalid")
 			func_desc = "(unknown)";
-		entry.Name = StringFromFormat(" * %s [ addr = %08x ]\n",
-			func_desc.c_str(), func_addr - 4);
+		entry.Name = StringFromFormat(" * %s [ addr = %08x ]\n", func_desc.c_str(), func_addr - 4);
 		entry.vAddress = func_addr - 4;
 		output.push_back(entry);
 	});
@@ -114,8 +110,7 @@ void PrintCallstack()
 		printf(" * %s  [ LR = %08x ]", g_symbolDB.GetDescription(LR).c_str(), LR);
 	}
 
-	WalkTheStack([](u32 func_addr)
-	{
+	WalkTheStack([](u32 func_addr) {
 		std::string func_desc = g_symbolDB.GetDescription(func_addr);
 		if (func_desc.empty() || func_desc == "Invalid")
 			func_desc = "(unknown)";
@@ -125,8 +120,7 @@ void PrintCallstack()
 
 void PrintCallstack(LogTypes::LOG_TYPE type, LogTypes::LOG_LEVELS level)
 {
-	GENERIC_LOG(type, level, "== STACK TRACE - SP = %08x ==",
-		PowerPC::ppcState.gpr[1]);
+	GENERIC_LOG(type, level, "== STACK TRACE - SP = %08x ==", PowerPC::ppcState.gpr[1]);
 
 	if (LR == 0)
 	{
@@ -135,12 +129,10 @@ void PrintCallstack(LogTypes::LOG_TYPE type, LogTypes::LOG_LEVELS level)
 
 	if (g_symbolDB.GetDescription(PC) != g_symbolDB.GetDescription(LR))
 	{
-		GENERIC_LOG(type, level, " * %s  [ LR = %08x ]",
-			g_symbolDB.GetDescription(LR).c_str(), LR);
+		GENERIC_LOG(type, level, " * %s  [ LR = %08x ]", g_symbolDB.GetDescription(LR).c_str(), LR);
 	}
 
-	WalkTheStack([type, level](u32 func_addr)
-	{
+	WalkTheStack([type, level](u32 func_addr) {
 		std::string func_desc = g_symbolDB.GetDescription(func_addr);
 		if (func_desc.empty() || func_desc == "Invalid")
 			func_desc = "(unknown)";

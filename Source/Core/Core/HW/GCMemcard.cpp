@@ -190,7 +190,7 @@ GCMemcard::GCMemcard(const std::string& filename, bool forceCreation, bool shift
 		}
 		else
 		{
-			PanicAlertT("Failed to read block %u of the save data\nMemory Card may be truncated\nFile "
+			PanicAlertT("Failed to read block %u of the save data\nMemory card may be truncated\nFile "
 				"position: 0x%" PRIx64,
 				i, mcdFile.Tell());
 			m_valid = false;
@@ -250,7 +250,7 @@ bool GCMemcard::Save()
 	return mcdFile.Close();
 }
 
-void calc_checksumsBE(u16* buf, u32 length, u16* csum, u16* inv_csum)
+void calc_checksumsBE(const u16* buf, u32 length, u16* csum, u16* inv_csum)
 {
 	*csum = *inv_csum = 0;
 
@@ -639,7 +639,7 @@ u32 GCMemcard::GetSaveData(u8 index, std::vector<GCMBlock>& Blocks) const
 }
 // End DEntry functions
 
-u32 GCMemcard::ImportFile(DEntry& direntry, std::vector<GCMBlock>& saveBlocks)
+u32 GCMemcard::ImportFile(const DEntry& direntry, std::vector<GCMBlock>& saveBlocks)
 {
 	if (!m_valid)
 		return NOMEMCARD;
@@ -766,13 +766,13 @@ u32 GCMemcard::RemoveFile(u8 index)  // index in the directory array
 	*PreviousDir = UpdatedDir;
 	if (PreviousDir == &dir )
 	{
-	CurrentDir = &dir;
-	PreviousDir = &dir_backup;
+		CurrentDir = &dir;
+		PreviousDir = &dir_backup;
 	}
 	else
 	{
-	CurrentDir = &dir_backup;
-	PreviousDir = &dir;
+		CurrentDir = &dir_backup;
+		PreviousDir = &dir;
 	}
 	*/
 	memset(&(UpdatedDir.Dir[index]), 0xFF, DENTRY_SIZE);
@@ -827,15 +827,12 @@ u32 GCMemcard::ImportGci(const std::string& inputFile, const std::string& output
 	if (!gci)
 		return OPENFAIL;
 
-	u32 result = ImportGciInternal(gci.ReleaseHandle(), inputFile, outputFile);
-
-	return result;
+	return ImportGciInternal(std::move(gci), inputFile, outputFile);
 }
 
-u32 GCMemcard::ImportGciInternal(FILE* gcih, const std::string& inputFile,
+u32 GCMemcard::ImportGciInternal(File::IOFile&& gci, const std::string& inputFile,
 	const std::string& outputFile)
 {
-	File::IOFile gci(gcih);
 	unsigned int offset;
 	std::string fileType;
 	SplitPath(inputFile, nullptr, nullptr, &fileType);
@@ -1163,8 +1160,7 @@ u32 GCMemcard::ReadAnimRGBA8(u8 index, u32* buffer, u8* delays) const
 		}
 	}
 
-	u16* sharedPal = (u16*)(animData);
-	int j = 0;
+	const u16* sharedPal = reinterpret_cast<u16*>(animData);
 
 	for (int i = 0; i < 8; i++)
 	{
@@ -1186,7 +1182,7 @@ u32 GCMemcard::ReadAnimRGBA8(u8 index, u32* buffer, u8* delays) const
 				buffer += 32 * 32;
 				break;
 			case CI8:  // CI8 with own palette
-				u16* paldata = (u16*)(data[i] + 32 * 32);
+				const u16* paldata = reinterpret_cast<u16*>(data[i] + 32 * 32);
 				ColorUtil::decodeCI8image(buffer, data[i], paldata, 32, 32);
 				buffer += 32 * 32;
 				break;
@@ -1197,7 +1193,7 @@ u32 GCMemcard::ReadAnimRGBA8(u8 index, u32* buffer, u8* delays) const
 			// Speed is set but there's no actual icon
 			// This is used to reduce animation speed in Pikmin and Luigi's Mansion for example
 			// These "blank frames" show the next icon
-			for (j = i; j < 8; ++j)
+			for (int j = i; j < 8; ++j)
 			{
 				if (fmts[j] != 0)
 				{
@@ -1211,7 +1207,7 @@ u32 GCMemcard::ReadAnimRGBA8(u8 index, u32* buffer, u8* delays) const
 						buffer += 32 * 32;
 						break;
 					case CI8:  // CI8 with own palette
-						u16* paldata = (u16*)(data[j] + 32 * 32);
+						const u16* paldata = reinterpret_cast<u16*>(data[j] + 32 * 32);
 						ColorUtil::decodeCI8image(buffer, data[j], paldata, 32, 32);
 						buffer += 32 * 32;
 						break;
@@ -1274,7 +1270,7 @@ bool GCMemcard::Format(bool shift_jis, u16 SizeMb)
 /* Returns: Error code                                       */
 /*************************************************************/
 
-s32 GCMemcard::FZEROGX_MakeSaveGameValid(Header& cardheader, DEntry& direntry,
+s32 GCMemcard::FZEROGX_MakeSaveGameValid(const Header& cardheader, const DEntry& direntry,
 	std::vector<GCMBlock>& FileBuffer)
 {
 	u32 i, j;
@@ -1283,7 +1279,7 @@ s32 GCMemcard::FZEROGX_MakeSaveGameValid(Header& cardheader, DEntry& direntry,
 	int block = 0;
 
 	// check for F-Zero GX system file
-	if (strcmp((char*)direntry.Filename, "f_zero.dat") != 0)
+	if (strcmp(reinterpret_cast<const char*>(direntry.Filename), "f_zero.dat") != 0)
 		return 0;
 
 	// get encrypted destination memory card serial numbers
@@ -1327,7 +1323,7 @@ s32 GCMemcard::FZEROGX_MakeSaveGameValid(Header& cardheader, DEntry& direntry,
 /* Returns: Error code                                     */
 /***********************************************************/
 
-s32 GCMemcard::PSO_MakeSaveGameValid(Header& cardheader, DEntry& direntry,
+s32 GCMemcard::PSO_MakeSaveGameValid(const Header& cardheader, const DEntry& direntry,
 	std::vector<GCMBlock>& FileBuffer)
 {
 	u32 i, j;
@@ -1337,10 +1333,10 @@ s32 GCMemcard::PSO_MakeSaveGameValid(Header& cardheader, DEntry& direntry,
 	u32 pso3offset = 0x00;
 
 	// check for PSO1&2 system file
-	if (strcmp((char*)direntry.Filename, "PSO_SYSTEM") != 0)
+	if (strcmp(reinterpret_cast<const char*>(direntry.Filename), "PSO_SYSTEM") != 0)
 	{
 		// check for PSO3 system file
-		if (strcmp((char*)direntry.Filename, "PSO3_SYSTEM") == 0)
+		if (strcmp(reinterpret_cast<const char*>(direntry.Filename), "PSO3_SYSTEM") == 0)
 		{
 			// PSO3 data block size adjustment
 			pso3offset = 0x10;

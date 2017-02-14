@@ -180,7 +180,7 @@ struct PBAudioAddr
 	u16 looping;
 	u16 sample_format;
 	u16 loop_addr_hi;  // Start of loop (this will point to a shared "zero" buffer if one-shot mode is
-					   // active)
+										 // active)
 	u16 loop_addr_lo;
 	u16 end_addr_hi;  // End of sample (and loop), inclusive
 	u16 end_addr_lo;
@@ -271,7 +271,8 @@ struct PBBiquadFilter
 	u16 a2;
 };
 
-union PBInfImpulseResponseWM {
+union PBInfImpulseResponseWM
+{
 	PBLowPassFilter lpf;
 	PBBiquadFilter biquad;
 };

@@ -17,6 +17,7 @@ namespace AudioCommon
 {
 void InitSoundStream(void* hwnd);
 void ShutdownSoundStream();
+std::string GetDefaultSoundBackend();
 std::vector<std::string> GetSoundBackends();
 bool SupportsDPL2Decoder(const std::string& backend);
 bool SupportsLatencyControl(const std::string& backend);

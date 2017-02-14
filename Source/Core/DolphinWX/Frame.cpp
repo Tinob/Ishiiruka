@@ -10,12 +10,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-#if defined(__unix__) || defined(__unix) || defined(__APPLE__)
-#include <signal.h>
-#endif
-#ifdef _WIN32
-#include <windows.h>
-#endif
 #include <wx/aui/auibook.h>
 #include <wx/aui/framemanager.h>
 #include <wx/filename.h>
@@ -30,6 +24,24 @@
 #include <wx/textctrl.h>
 #include <wx/thread.h>
 #include <wx/toolbar.h>
+
+#include "DolphinWX/Config/ConfigMain.h"
+#include "DolphinWX/Debugger/BreakpointDlg.h"
+#include "DolphinWX/Debugger/CodeWindow.h"
+#include "DolphinWX/Debugger/MemoryCheckDlg.h"
+#include "DolphinWX/GameListCtrl.h"
+#include "DolphinWX/Globals.h"
+#include "DolphinWX/LogWindow.h"
+#include "DolphinWX/Main.h"
+#include "DolphinWX/TASInputDlg.h"
+#include "DolphinWX/WxUtils.h"
+
+#if defined(__unix__) || defined(__unix) || defined(__APPLE__)
+#include <signal.h>
+#endif
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 #include "AudioCommon/AudioCommon.h"
 
@@ -46,21 +58,10 @@
 #include "Core/HW/GCPad.h"
 #include "Core/HW/Wiimote.h"
 #include "Core/HotkeyManager.h"
-#include "Core/IPC_HLE/WII_IPC_HLE.h"
-#include "Core/IPC_HLE/WII_IPC_HLE_Device_usb_bt_base.h"
+#include "Core/IOS/IPC.h"
+#include "Core/IOS/USB/Bluetooth/BTBase.h"
 #include "Core/Movie.h"
 #include "Core/State.h"
-
-#include "DolphinWX/Config/ConfigMain.h"
-#include "DolphinWX/Debugger/BreakpointDlg.h"
-#include "DolphinWX/Debugger/CodeWindow.h"
-#include "DolphinWX/Debugger/MemoryCheckDlg.h"
-#include "DolphinWX/GameListCtrl.h"
-#include "DolphinWX/Globals.h"
-#include "DolphinWX/LogWindow.h"
-#include "DolphinWX/Main.h"
-#include "DolphinWX/TASInputDlg.h"
-#include "DolphinWX/WxUtils.h"
 
 #include "InputCommon/GCPadStatus.h"
 
@@ -71,6 +72,10 @@
 #include "VideoCommon/VideoConfig.h"
 
 #if defined(HAVE_X11) && HAVE_X11
+
+#include <gdk/gdkx.h>
+#include <gtk/gtk.h>
+
 // X11Utils nastiness that's only used here
 namespace X11Utils
 {
@@ -160,7 +165,7 @@ WXLRESULT CRenderFrame::MSWWindowProc(WXUINT nMsg, WXWPARAM wParam, WXLPARAM lPa
 		{
 		case SC_SCREENSAVE:
 		case SC_MONITORPOWER:
-			if (Core::GetState() == Core::CORE_RUN && SConfig::GetInstance().bDisableScreenSaver)
+			if (Core::GetState() == Core::State::Running && SConfig::GetInstance().bDisableScreenSaver)
 				break;
 		default:
 			return wxFrame::MSWWindowProc(nMsg, wParam, lParam);
@@ -176,7 +181,7 @@ WXLRESULT CRenderFrame::MSWWindowProc(WXUINT nMsg, WXWPARAM wParam, WXLPARAM lPa
 
 		case WM_USER_SETCURSOR:
 			if (SConfig::GetInstance().bHideCursor && main_frame->RendererHasFocus() &&
-				Core::GetState() == Core::CORE_RUN)
+				Core::GetState() == Core::State::Running)
 				SetCursor(wxCURSOR_BLANK);
 			else
 				SetCursor(wxNullCursor);
@@ -225,6 +230,8 @@ wxDEFINE_EVENT(wxEVT_HOST_COMMAND, wxCommandEvent);
 wxDEFINE_EVENT(DOLPHIN_EVT_LOCAL_INI_CHANGED, wxCommandEvent);
 wxDEFINE_EVENT(DOLPHIN_EVT_RELOAD_THEME_BITMAPS, wxCommandEvent);
 wxDEFINE_EVENT(DOLPHIN_EVT_UPDATE_LOAD_WII_MENU_ITEM, wxCommandEvent);
+wxDEFINE_EVENT(DOLPHIN_EVT_BOOT_SOFTWARE, wxCommandEvent);
+wxDEFINE_EVENT(DOLPHIN_EVT_STOP_SOFTWARE, wxCommandEvent);
 
 // Event tables
 BEGIN_EVENT_TABLE(CFrame, CRenderFrame)
@@ -491,13 +498,15 @@ void CFrame::BindEvents()
 	Bind(DOLPHIN_EVT_RELOAD_THEME_BITMAPS, &CFrame::OnReloadThemeBitmaps, this);
 	Bind(DOLPHIN_EVT_RELOAD_GAMELIST, &CFrame::OnReloadGameList, this);
 	Bind(DOLPHIN_EVT_UPDATE_LOAD_WII_MENU_ITEM, &CFrame::OnUpdateLoadWiiMenuItem, this);
+	Bind(DOLPHIN_EVT_BOOT_SOFTWARE, &CFrame::OnPlay, this);
+	Bind(DOLPHIN_EVT_STOP_SOFTWARE, &CFrame::OnStop, this);
 }
 
 bool CFrame::RendererIsFullscreen()
 {
 	bool fullscreen = false;
 
-	if (Core::GetState() == Core::CORE_RUN || Core::GetState() == Core::CORE_PAUSE)
+	if (Core::GetState() == Core::State::Running || Core::GetState() == Core::State::Paused)
 	{
 		fullscreen = m_RenderFrame->IsFullScreen();
 	}
@@ -515,7 +524,7 @@ void CFrame::OnQuit(wxCommandEvent& WXUNUSED(event))
 void CFrame::OnActive(wxActivateEvent& event)
 {
 	m_bRendererHasFocus = (event.GetActive() && event.GetEventObject() == m_RenderFrame);
-	if (Core::GetState() == Core::CORE_RUN || Core::GetState() == Core::CORE_PAUSE)
+	if (Core::GetState() == Core::State::Running || Core::GetState() == Core::State::Paused)
 	{
 		if (m_bRendererHasFocus)
 		{
@@ -524,15 +533,15 @@ void CFrame::OnActive(wxActivateEvent& event)
 			else if (RendererIsFullscreen() && g_ActiveConfig.ExclusiveFullscreenEnabled())
 				DoExclusiveFullscreen(true);  // Regain exclusive mode
 
-			if (SConfig::GetInstance().m_PauseOnFocusLost && Core::GetState() == Core::CORE_PAUSE)
+			if (SConfig::GetInstance().m_PauseOnFocusLost && Core::GetState() == Core::State::Paused)
 				DoPause();
 
-			if (SConfig::GetInstance().bHideCursor && Core::GetState() == Core::CORE_RUN)
+			if (SConfig::GetInstance().bHideCursor && Core::GetState() == Core::State::Running)
 				m_RenderParent->SetCursor(wxCURSOR_BLANK);
 		}
 		else
 		{
-			if (SConfig::GetInstance().m_PauseOnFocusLost && Core::GetState() == Core::CORE_RUN)
+			if (SConfig::GetInstance().m_PauseOnFocusLost && Core::GetState() == Core::State::Running)
 				DoPause();
 
 			if (SConfig::GetInstance().bHideCursor)
@@ -546,7 +555,7 @@ void CFrame::OnClose(wxCloseEvent& event)
 {
 	// Before closing the window we need to shut down the emulation core.
 	// We'll try to close this window again once that is done.
-	if (Core::GetState() != Core::CORE_UNINITIALIZED)
+	if (Core::GetState() != Core::State::Uninitialized)
 	{
 		DoStop();
 		if (event.CanVeto())
@@ -614,7 +623,7 @@ void CFrame::OnResize(wxSizeEvent& event)
 
 	if (!IsMaximized() && !IsIconized() &&
 		!(SConfig::GetInstance().bRenderToMain && RendererIsFullscreen()) &&
-		!(Core::GetState() != Core::CORE_UNINITIALIZED && SConfig::GetInstance().bRenderToMain &&
+		!(Core::GetState() != Core::State::Uninitialized && SConfig::GetInstance().bRenderToMain &&
 			SConfig::GetInstance().bRenderWindowAutoSize))
 	{
 		SConfig::GetInstance().iWidth = GetSize().GetWidth();
@@ -674,7 +683,7 @@ void CFrame::OnHostMessage(wxCommandEvent& event)
 	switch (event.GetId())
 	{
 	case IDM_UPDATE_DISASM_DIALOG:  // For breakpoints causing pausing
-		if (!g_pCodeWindow || Core::GetState() != Core::CORE_PAUSE)
+		if (!g_pCodeWindow || Core::GetState() != Core::State::Paused)
 			return;
 		// fallthrough
 
@@ -704,17 +713,16 @@ void CFrame::OnHostMessage(wxCommandEvent& event)
 			m_RenderParent->SetCursor(wxCURSOR_BLANK);
 		break;
 
-#ifdef __WXGTK__
 	case IDM_PANIC:
 	{
 		wxString caption = event.GetString().BeforeFirst(':');
 		wxString text = event.GetString().AfterFirst(':');
-		bPanicResult = (wxYES == wxMessageBox(text, caption, event.GetInt() ? wxYES_NO : wxOK,
-			wxWindow::FindFocus()));
+		bPanicResult =
+			(wxYES == wxMessageBox(text, caption, wxSTAY_ON_TOP | (event.GetInt() ? wxYES_NO : wxOK),
+				wxWindow::FindFocus()));
 		panic_event.Set();
 	}
 	break;
-#endif
 
 	case WM_USER_STOP:
 		DoStop();
@@ -1199,10 +1207,10 @@ void CFrame::PollHotkeys(wxTimerEvent& event)
 	if (!HotkeyManagerEmu::IsEnabled())
 		return;
 
-	if (Core::GetState() == Core::CORE_UNINITIALIZED || Core::GetState() == Core::CORE_PAUSE)
+	if (Core::GetState() == Core::State::Uninitialized || Core::GetState() == Core::State::Paused)
 		g_controller_interface.UpdateInput();
 
-	if (Core::GetState() != Core::CORE_STOPPING)
+	if (Core::GetState() != Core::State::Stopping)
 	{
 		HotkeyManagerEmu::GetStatus();
 		ParseHotkeys();
@@ -1279,10 +1287,10 @@ void CFrame::ParseHotkeys()
 
 	if (SConfig::GetInstance().m_bt_passthrough_enabled)
 	{
-		auto device = WII_IPC_HLE_Interface::GetDeviceByName("/dev/usb/oh1/57e/305");
+		auto device = IOS::HLE::GetDeviceByName("/dev/usb/oh1/57e/305");
 		if (device != nullptr)
-			std::static_pointer_cast<CWII_IPC_HLE_Device_usb_oh1_57e_305_base>(device)
-			->UpdateSyncButtonState(IsHotkey(HK_TRIGGER_SYNC_BUTTON, true));
+			std::static_pointer_cast<IOS::HLE::Device::BluetoothBase>(device)->UpdateSyncButtonState(
+				IsHotkey(HK_TRIGGER_SYNC_BUTTON, true));
 	}
 
 	if (UseDebugger)

@@ -25,10 +25,7 @@ void ExecuteInstruction(const UDSPInstruction inst)
 
 	if (opcode_template->extended)
 	{
-		if ((inst >> 12) == 0x3)
-			extOpTable[inst & 0x7F]->intFunc(inst);
-		else
-			extOpTable[inst & 0xFF]->intFunc(inst);
+		GetExtOpTemplate(inst)->intFunc(inst);
 	}
 
 	opcode_template->intFunc(inst);
@@ -137,7 +134,7 @@ int RunCyclesDebug(int cycles)
 			return 0;
 		if (g_dsp_breakpoints.IsAddressBreakPoint(g_dsp.pc))
 		{
-			DSPCore_SetState(DSPCORE_STEPPING);
+			DSPCore_SetState(State::Stepping);
 			return cycles;
 		}
 		Step();
@@ -156,7 +153,7 @@ int RunCyclesDebug(int cycles)
 				return 0;
 			if (g_dsp_breakpoints.IsAddressBreakPoint(g_dsp.pc))
 			{
-				DSPCore_SetState(DSPCORE_STEPPING);
+				DSPCore_SetState(State::Stepping);
 				return cycles;
 			}
 			// Idle skipping.
@@ -173,7 +170,7 @@ int RunCyclesDebug(int cycles)
 		{
 			if (g_dsp_breakpoints.IsAddressBreakPoint(g_dsp.pc))
 			{
-				DSPCore_SetState(DSPCORE_STEPPING);
+				DSPCore_SetState(State::Stepping);
 				return cycles;
 			}
 			Step();

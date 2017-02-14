@@ -2,7 +2,6 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
-
 // Purpose: uncompress the dumps from costis GC-Debugger tool
 //
 //
@@ -14,7 +13,6 @@
 class CDump
 {
 public:
-
 	CDump(const std::string& filename);
 	~CDump();
 
@@ -30,7 +28,7 @@ private:
 		STRUCTUR_SIZE = 0x2BC
 	};
 
-	u8 *m_pData;
+	u8* m_pData;
 
 	size_t m_size;
 

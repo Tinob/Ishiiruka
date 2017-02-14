@@ -37,15 +37,15 @@
 #include "Core/HW/GCKeyboard.h"
 #include "Core/HW/GCPad.h"
 #include "Core/HW/ProcessorInterface.h"
-#include "Core/HW/SI_Device.h"
+#include "Core/HW/SI/SI_Device.h"
 #include "Core/HW/WiiSaveCrypted.h"
 #include "Core/HW/Wiimote.h"
 #include "Core/Host.h"
 #include "Core/HotkeyManager.h"
-#include "Core/IPC_HLE/WII_IPC_HLE.h"
-#include "Core/IPC_HLE/WII_IPC_HLE_Device_stm.h"
-#include "Core/IPC_HLE/WII_IPC_HLE_Device_usb_bt_emu.h"
-#include "Core/IPC_HLE/WII_IPC_HLE_WiiMote.h"
+#include "Core/IOS/IPC.h"
+#include "Core/IOS/STM/STM.h"
+#include "Core/IOS/USB/Bluetooth/BTEmu.h"
+#include "Core/IOS/USB/Bluetooth/WiimoteDevice.h"
 #include "Core/Movie.h"
 #include "Core/PowerPC/PPCSymbolDB.h"
 #include "Core/PowerPC/PowerPC.h"
@@ -141,6 +141,7 @@ void CFrame::BindMenuBarEvents()
 	// Movie menu
 	Bind(wxEVT_MENU, &CFrame::OnRecord, this, IDM_RECORD);
 	Bind(wxEVT_MENU, &CFrame::OnPlayRecording, this, IDM_PLAY_RECORD);
+	Bind(wxEVT_MENU, &CFrame::OnStopRecording, this, IDM_STOP_RECORD);
 	Bind(wxEVT_MENU, &CFrame::OnRecordExport, this, IDM_RECORD_EXPORT);
 	Bind(wxEVT_MENU, &CFrame::OnRecordReadOnly, this, IDM_RECORD_READ_ONLY);
 	Bind(wxEVT_MENU, &CFrame::OnTASInput, this, IDM_TAS_INPUT);
@@ -275,7 +276,7 @@ void CFrame::BootGame(const std::string& filename)
 	std::string bootfile = filename;
 	SConfig& StartUp = SConfig::GetInstance();
 
-	if (Core::GetState() != Core::CORE_UNINITIALIZED)
+	if (Core::GetState() != Core::State::Uninitialized)
 		return;
 
 	// Start filename if non empty.
@@ -322,7 +323,7 @@ void CFrame::BootGame(const std::string& filename)
 // Open file to boot
 void CFrame::OnOpen(wxCommandEvent& WXUNUSED(event))
 {
-	if (Core::GetState() == Core::CORE_UNINITIALIZED)
+	if (Core::GetState() == Core::State::Uninitialized)
 		DoOpen(true);
 }
 
@@ -431,11 +432,11 @@ void CFrame::OnShowRTCDisplay(wxCommandEvent& WXUNUSED(event))
 
 void CFrame::OnFrameStep(wxCommandEvent& event)
 {
-	bool wasPaused = (Core::GetState() == Core::CORE_PAUSE);
+	bool wasPaused = Core::GetState() == Core::State::Paused;
 
 	Movie::DoFrameStep();
 
-	bool isPaused = (Core::GetState() == Core::CORE_PAUSE);
+	bool isPaused = Core::GetState() == Core::State::Paused;
 	if (isPaused && !wasPaused)  // don't update on unpause, otherwise the status would be wrong when
 															 // pausing next frame
 		UpdateGUI();
@@ -496,12 +497,36 @@ void CFrame::OnPlayRecording(wxCommandEvent& WXUNUSED(event))
 		BootGame("");
 }
 
+void CFrame::OnStopRecording(wxCommandEvent& WXUNUSED(event))
+{
+	if (Movie::IsRecordingInput())
+	{
+		const bool was_paused = Core::GetState() == Core::State::Paused;
+		DoRecordingSave();
+		const bool is_paused = Core::GetState() == Core::State::Paused;
+		if (is_paused && !was_paused)
+			CPU::EnableStepping(false);
+	}
+
+	if (!Movie::IsReadOnly())
+	{
+		// let's make the read-only flag consistent at the start of a movie.
+		Movie::SetReadOnly(true);
+		GetMenuBar()->FindItem(IDM_RECORD_READ_ONLY)->Check();
+	}
+
+	Movie::EndPlayInput(false);
+
+	GetMenuBar()->FindItem(IDM_STOP_RECORD)->Enable(Movie::IsMovieActive());
+	GetMenuBar()->FindItem(IDM_RECORD)->Enable(!Movie::IsMovieActive());
+}
+
 void CFrame::OnRecordExport(wxCommandEvent& WXUNUSED(event))
 {
 	DoRecordingSave();
 }
 
-void CFrame::OnPlay(wxCommandEvent& WXUNUSED(event))
+void CFrame::OnPlay(wxCommandEvent& event)
 {
 	if (Core::IsRunning())
 	{
@@ -526,7 +551,7 @@ void CFrame::OnPlay(wxCommandEvent& WXUNUSED(event))
 	else
 	{
 		// Core is uninitialized, start the game
-		BootGame("");
+		BootGame(WxStrToStr(event.GetString()));
 	}
 }
 
@@ -534,7 +559,7 @@ void CFrame::OnRenderParentClose(wxCloseEvent& event)
 {
 	// Before closing the window we need to shut down the emulation core.
 	// We'll try to close this window again once that is done.
-	if (Core::GetState() != Core::CORE_UNINITIALIZED)
+	if (Core::GetState() != Core::State::Uninitialized)
 	{
 		DoStop();
 		if (event.CanVeto())
@@ -549,7 +574,7 @@ void CFrame::OnRenderParentClose(wxCloseEvent& event)
 
 void CFrame::OnRenderParentMove(wxMoveEvent& event)
 {
-	if (Core::GetState() != Core::CORE_UNINITIALIZED && !RendererIsFullscreen() &&
+	if (Core::GetState() != Core::State::Uninitialized && !RendererIsFullscreen() &&
 		!m_RenderFrame->IsMaximized() && !m_RenderFrame->IsIconized())
 	{
 		SConfig::GetInstance().iRenderWindowXPos = m_RenderFrame->GetPosition().x;
@@ -560,7 +585,7 @@ void CFrame::OnRenderParentMove(wxMoveEvent& event)
 
 void CFrame::OnRenderParentResize(wxSizeEvent& event)
 {
-	if (Core::GetState() != Core::CORE_UNINITIALIZED)
+	if (Core::GetState() != Core::State::Uninitialized)
 	{
 		int width, height;
 		if (!SConfig::GetInstance().bRenderToMain && !RendererIsFullscreen() &&
@@ -751,16 +776,16 @@ void CFrame::OnScreenshot(wxCommandEvent& WXUNUSED(event))
 // Pause the emulation
 void CFrame::DoPause()
 {
-	if (Core::GetState() == Core::CORE_RUN)
+	if (Core::GetState() == Core::State::Running)
 	{
-		Core::SetState(Core::CORE_PAUSE);
+		Core::SetState(Core::State::Paused);
 		if (SConfig::GetInstance().bHideCursor)
 			m_RenderParent->SetCursor(wxNullCursor);
 		Core::UpdateTitle();
 	}
 	else
 	{
-		Core::SetState(Core::CORE_RUN);
+		Core::SetState(Core::State::Running);
 		if (SConfig::GetInstance().bHideCursor && RendererHasFocus())
 			m_RenderParent->SetCursor(wxCURSOR_BLANK);
 	}
@@ -779,7 +804,7 @@ void CFrame::DoStop()
 	m_confirmStop = true;
 
 	m_bGameLoading = false;
-	if (Core::GetState() != Core::CORE_UNINITIALIZED || m_RenderParent != nullptr)
+	if (Core::GetState() != Core::State::Uninitialized || m_RenderParent != nullptr)
 	{
 #if defined __WXGTK__
 		wxMutexGuiLeave();
@@ -793,15 +818,15 @@ void CFrame::DoStop()
 			DoFullscreen(false);
 
 			// Pause the state during confirmation and restore it afterwards
-			Core::EState state = Core::GetState();
+			Core::State state = Core::GetState();
 
 			// Do not pause if netplay is running as CPU thread might be blocked
 			// waiting on inputs
-			bool should_pause = !NetPlayDialog::GetNetPlayClient();			
+			bool should_pause = !NetPlayDialog::GetNetPlayClient();
 
 			if (should_pause)
 			{
-				Core::SetState(Core::CORE_PAUSE);
+				Core::SetState(Core::State::Paused);
 			}
 
 			wxMessageDialog m_StopDlg(
@@ -853,7 +878,6 @@ void CFrame::DoStop()
 			m_tried_graceful_shutdown = true;
 			return;
 		}
-
 		Core::Stop();
 		UpdateGUI();
 	}
@@ -861,13 +885,13 @@ void CFrame::DoStop()
 
 bool CFrame::TriggerSTMPowerEvent()
 {
-	const auto stm = WII_IPC_HLE_Interface::GetDeviceByName("/dev/stm/eventhook");
-	if (!stm || !std::static_pointer_cast<CWII_IPC_HLE_Device_stm_eventhook>(stm)->HasHookInstalled())
+	const auto stm = IOS::HLE::GetDeviceByName("/dev/stm/eventhook");
+	if (!stm || !std::static_pointer_cast<IOS::HLE::Device::STMEventHook>(stm)->HasHookInstalled())
 		return false;
 
 	Core::DisplayMessage("Shutting down", 30000);
 	// Unpause because gracefully shutting down needs the game to actually request a shutdown
-	if (Core::GetState() == Core::CORE_PAUSE)
+	if (Core::GetState() == Core::State::Paused)
 		DoPause();
 	ProcessorInterface::PowerButton_Tap();
 	m_confirmStop = false;
@@ -944,7 +968,7 @@ void CFrame::OnStopped()
 
 void CFrame::DoRecordingSave()
 {
-	bool paused = (Core::GetState() == Core::CORE_PAUSE);
+	bool paused = Core::GetState() == Core::State::Paused;
 
 	if (!paused)
 		DoPause();
@@ -1008,9 +1032,9 @@ void CFrame::OnConfigHotkey(wxCommandEvent& WXUNUSED(event))
 
 	// check if game is running
 	bool game_running = false;
-	if (Core::GetState() == Core::CORE_RUN)
+	if (Core::GetState() == Core::State::Running)
 	{
-		Core::SetState(Core::CORE_PAUSE);
+		Core::SetState(Core::State::Paused);
 		game_running = true;
 	}
 
@@ -1030,7 +1054,7 @@ void CFrame::OnConfigHotkey(wxCommandEvent& WXUNUSED(event))
 	// if game isn't running
 	if (game_running)
 	{
-		Core::SetState(Core::CORE_RUN);
+		Core::SetState(Core::State::Running);
 	}
 
 	// Update the GUI in case menu accelerators were changed
@@ -1246,7 +1270,10 @@ void CFrame::ConnectWiimote(int wm_idx, bool connect)
 		!SConfig::GetInstance().m_bt_passthrough_enabled)
 	{
 		bool was_unpaused = Core::PauseAndLock(true);
-		GetUsbPointer()->AccessWiiMote(wm_idx | 0x100)->Activate(connect);
+		const auto bt = std::static_pointer_cast<IOS::HLE::Device::BluetoothEmu>(
+			IOS::HLE::GetDeviceByName("/dev/usb/oh1/57e/305"));
+		if (bt)
+			bt->AccessWiiMote(wm_idx | 0x100)->Activate(connect);
 		const char* message = connect ? "Wii Remote %i connected" : "Wii Remote %i disconnected";
 		Core::DisplayMessage(StringFromFormat(message, wm_idx + 1), 3000);
 		Host_UpdateMainFrame();
@@ -1259,10 +1286,11 @@ void CFrame::OnConnectWiimote(wxCommandEvent& event)
 	if (SConfig::GetInstance().m_bt_passthrough_enabled)
 		return;
 	bool was_unpaused = Core::PauseAndLock(true);
-	ConnectWiimote(event.GetId() - IDM_CONNECT_WIIMOTE1,
-		!GetUsbPointer()
-		->AccessWiiMote((event.GetId() - IDM_CONNECT_WIIMOTE1) | 0x100)
-		->IsConnected());
+	const auto bt = std::static_pointer_cast<IOS::HLE::Device::BluetoothEmu>(
+		IOS::HLE::GetDeviceByName("/dev/usb/oh1/57e/305"));
+	const bool is_connected =
+		bt && bt->AccessWiiMote((event.GetId() - IDM_CONNECT_WIIMOTE1) | 0x100)->IsConnected();
+	ConnectWiimote(event.GetId() - IDM_CONNECT_WIIMOTE1, !is_connected);
 	Core::PauseAndLock(false, was_unpaused);
 }
 
@@ -1384,9 +1412,9 @@ void CFrame::UpdateGUI()
 {
 	// Save status
 	bool Initialized = Core::IsRunning();
-	bool Running = Core::GetState() == Core::CORE_RUN;
-	bool Paused = Core::GetState() == Core::CORE_PAUSE;
-	bool Stopping = Core::GetState() == Core::CORE_STOPPING;
+	bool Running = Core::GetState() == Core::State::Running;
+	bool Paused = Core::GetState() == Core::State::Paused;
+	bool Stopping = Core::GetState() == Core::State::Stopping;
 
 	GetToolBar()->Refresh(false);
 	GetMenuBar()->Refresh(false);
@@ -1401,6 +1429,7 @@ void CFrame::UpdateGUI()
 	GetMenuBar()->FindItem(IDM_RESET)->Enable(Running || Paused);
 	GetMenuBar()->FindItem(IDM_RECORD)->Enable(!Movie::IsRecordingInput());
 	GetMenuBar()->FindItem(IDM_PLAY_RECORD)->Enable(!Initialized);
+	GetMenuBar()->FindItem(IDM_STOP_RECORD)->Enable(Movie::IsMovieActive());
 	GetMenuBar()->FindItem(IDM_RECORD_EXPORT)->Enable(Movie::IsMovieActive());
 	GetMenuBar()->FindItem(IDM_FRAMESTEP)->Enable(Running || Paused);
 	GetMenuBar()->FindItem(IDM_SCREENSHOT)->Enable(Running || Paused);
@@ -1417,8 +1446,9 @@ void CFrame::UpdateGUI()
 	// Tools
 	GetMenuBar()->FindItem(IDM_CHEATS)->Enable(SConfig::GetInstance().bEnableCheats);
 
-	bool ShouldEnableWiimotes =
-		Running && SConfig::GetInstance().bWii && !SConfig::GetInstance().m_bt_passthrough_enabled;
+	const auto bt = std::static_pointer_cast<IOS::HLE::Device::BluetoothEmu>(
+		IOS::HLE::GetDeviceByName("/dev/usb/oh1/57e/305"));
+	bool ShouldEnableWiimotes = Running && bt && !SConfig::GetInstance().m_bt_passthrough_enabled;
 	GetMenuBar()->FindItem(IDM_CONNECT_WIIMOTE1)->Enable(ShouldEnableWiimotes);
 	GetMenuBar()->FindItem(IDM_CONNECT_WIIMOTE2)->Enable(ShouldEnableWiimotes);
 	GetMenuBar()->FindItem(IDM_CONNECT_WIIMOTE3)->Enable(ShouldEnableWiimotes);
@@ -1427,21 +1457,13 @@ void CFrame::UpdateGUI()
 	if (ShouldEnableWiimotes)
 	{
 		bool was_unpaused = Core::PauseAndLock(true);
-		GetMenuBar()
-			->FindItem(IDM_CONNECT_WIIMOTE1)
-			->Check(GetUsbPointer()->AccessWiiMote(0x0100)->IsConnected());
-		GetMenuBar()
-			->FindItem(IDM_CONNECT_WIIMOTE2)
-			->Check(GetUsbPointer()->AccessWiiMote(0x0101)->IsConnected());
-		GetMenuBar()
-			->FindItem(IDM_CONNECT_WIIMOTE3)
-			->Check(GetUsbPointer()->AccessWiiMote(0x0102)->IsConnected());
-		GetMenuBar()
-			->FindItem(IDM_CONNECT_WIIMOTE4)
-			->Check(GetUsbPointer()->AccessWiiMote(0x0103)->IsConnected());
+		GetMenuBar()->FindItem(IDM_CONNECT_WIIMOTE1)->Check(bt->AccessWiiMote(0x0100)->IsConnected());
+		GetMenuBar()->FindItem(IDM_CONNECT_WIIMOTE2)->Check(bt->AccessWiiMote(0x0101)->IsConnected());
+		GetMenuBar()->FindItem(IDM_CONNECT_WIIMOTE3)->Check(bt->AccessWiiMote(0x0102)->IsConnected());
+		GetMenuBar()->FindItem(IDM_CONNECT_WIIMOTE4)->Check(bt->AccessWiiMote(0x0103)->IsConnected());
 		GetMenuBar()
 			->FindItem(IDM_CONNECT_BALANCEBOARD)
-			->Check(GetUsbPointer()->AccessWiiMote(0x0104)->IsConnected());
+			->Check(bt->AccessWiiMote(0x0104)->IsConnected());
 		Core::PauseAndLock(false, was_unpaused);
 	}
 
@@ -1492,6 +1514,8 @@ void CFrame::UpdateGUI()
 			GetMenuBar()->FindItem(IDM_RECORD)->Enable();
 			GetMenuBar()->FindItem(IDM_PLAY_RECORD)->Enable();
 		}
+		// Reset the stop playing/recording input menu item
+		GetMenuBar()->FindItem(IDM_STOP_RECORD)->SetItemLabel(_("Stop Playing/Recording Input"));
 	}
 	else if (Initialized)
 	{
@@ -1501,6 +1525,14 @@ void CFrame::UpdateGUI()
 
 		// Reset game loading flag
 		m_bGameLoading = false;
+
+		// Rename the stop playing/recording menu item depending on current movie state
+		if (Movie::IsRecordingInput())
+			GetMenuBar()->FindItem(IDM_STOP_RECORD)->SetItemLabel(_("Stop Recording Input"));
+		else if (Movie::IsPlayingInput())
+			GetMenuBar()->FindItem(IDM_STOP_RECORD)->SetItemLabel(_("Stop Playing Input"));
+		else
+			GetMenuBar()->FindItem(IDM_STOP_RECORD)->SetItemLabel(_("Stop Playing/Recording Input"));
 	}
 
 	GetToolBar()->Refresh(false);

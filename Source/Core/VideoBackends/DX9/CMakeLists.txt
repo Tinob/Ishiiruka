@@ -1,0 +1,39 @@
+set(SRCS
+  D3DBase.cpp
+  D3DBase.h
+  D3DShader.cpp
+  D3DShader.h
+  D3DTexture.cpp
+  D3DTexture.h
+  D3DUtil.cpp
+  D3DUtil.h
+  Depalettizer.cpp
+  Depalettizer.h
+  FramebufferManager.cpp
+  FramebufferManager.h
+  main.cpp
+  NativeVertexFormat.cpp
+  PerfQuery.cpp
+  PerfQuery.h
+  PixelShaderCache.cpp
+  PixelShaderCache.h
+  Render.cpp
+  Render.h
+  TextureCache.cpp
+  TextureCache.h
+  TextureConverter.cpp
+  TextureConverter.h
+  VertexManager.cpp
+  VertexManager.h
+  VertexShaderCache.cpp
+  VertexShaderCache.h
+  VideoBackend.h
+)
+
+set(LIBS
+  videocommon
+  SOIL
+  common
+)
+
+add_dolphin_library(videodx9 "${SRCS}" "${LIBS}")

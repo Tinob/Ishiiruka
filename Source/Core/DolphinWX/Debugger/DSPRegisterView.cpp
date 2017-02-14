@@ -13,19 +13,19 @@
 
 wxString CDSPRegTable::GetValue(int row, int col)
 {
-	if (row < GetNumberRows())
-	{
-		switch (col)
-		{
-		case 0:
-			return StrToWxStr(DSP::pdregname(row));
-		case 1:
-			return wxString::Format("0x%04x", DSP::DSPCore_ReadRegister(row));
-		default:
-			return wxEmptyString;
-		}
-	}
-	return wxEmptyString;
+  if (row < GetNumberRows())
+  {
+    switch (col)
+    {
+    case 0:
+      return StrToWxStr(DSP::pdregname(row));
+    case 1:
+      return wxString::Format("0x%04x", DSP::DSPCore_ReadRegister(row));
+    default:
+      return wxEmptyString;
+    }
+  }
+  return wxEmptyString;
 }
 
 void CDSPRegTable::SetValue(int, int, const wxString&)
@@ -34,59 +34,59 @@ void CDSPRegTable::SetValue(int, int, const wxString&)
 
 void CDSPRegTable::UpdateCachedRegs()
 {
-	if (m_CachedCounter == DSP::g_dsp.step_counter)
-	{
-		return;
-	}
+  if (m_CachedCounter == DSP::g_dsp.step_counter)
+  {
+    return;
+  }
 
-	m_CachedCounter = DSP::g_dsp.step_counter;
+  m_CachedCounter = DSP::g_dsp.step_counter;
 
-	for (size_t i = 0; i < m_CachedRegs.size(); ++i)
-	{
-		const u16 value = DSP::DSPCore_ReadRegister(i);
+  for (size_t i = 0; i < m_CachedRegs.size(); ++i)
+  {
+    const u16 value = DSP::DSPCore_ReadRegister(i);
 
-		m_CachedRegHasChanged[i] = m_CachedRegs[i] != value;
-		m_CachedRegs[i] = value;
-	}
+    m_CachedRegHasChanged[i] = m_CachedRegs[i] != value;
+    m_CachedRegs[i] = value;
+  }
 }
 
 wxGridCellAttr* CDSPRegTable::GetAttr(int row, int col, wxGridCellAttr::wxAttrKind)
 {
-	wxGridCellAttr* attr = new wxGridCellAttr();
+  wxGridCellAttr* attr = new wxGridCellAttr();
 
-	attr->SetBackgroundColour(*wxWHITE);
+  attr->SetBackgroundColour(*wxWHITE);
 
-	switch (col)
-	{
-	case 1:
-		attr->SetAlignment(wxALIGN_CENTER, wxALIGN_CENTER);
-		break;
-	default:
-		attr->SetAlignment(wxALIGN_LEFT, wxALIGN_CENTER);
-		break;
-	}
+  switch (col)
+  {
+  case 1:
+    attr->SetAlignment(wxALIGN_CENTER, wxALIGN_CENTER);
+    break;
+  default:
+    attr->SetAlignment(wxALIGN_LEFT, wxALIGN_CENTER);
+    break;
+  }
 
-	if (col == 1)
-		attr->SetTextColour(m_CachedRegHasChanged[row] ? *wxRED : *wxBLACK);
+  if (col == 1)
+    attr->SetTextColour(m_CachedRegHasChanged[row] ? *wxRED : *wxBLACK);
 
-	return attr;
+  return attr;
 }
 
 DSPRegisterView::DSPRegisterView(wxWindow* parent, wxWindowID id)
-	: wxGrid(parent, id, wxDefaultPosition, wxDLG_UNIT(parent, wxSize(100, 80)))
+    : wxGrid(parent, id, wxDefaultPosition, wxDLG_UNIT(parent, wxSize(100, 80)))
 {
-	m_register_table = new CDSPRegTable();
+  m_register_table = new CDSPRegTable();
 
-	SetTable(m_register_table, true);
-	SetRowLabelSize(0);
-	SetColLabelSize(0);
-	DisableDragRowSize();
+  SetTable(m_register_table, true);
+  SetRowLabelSize(0);
+  SetColLabelSize(0);
+  DisableDragRowSize();
 
-	AutoSizeColumns();
+  AutoSizeColumns();
 }
 
 void DSPRegisterView::Repopulate()
 {
-	m_register_table->UpdateCachedRegs();
-	ForceRefresh();
+  m_register_table->UpdateCachedRegs();
+  ForceRefresh();
 }

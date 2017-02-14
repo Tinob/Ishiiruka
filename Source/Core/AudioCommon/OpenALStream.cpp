@@ -2,7 +2,10 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include <climits>
 #include <cstring>
+#include <thread>
+
 #include "Common/Common.h"
 #include "AudioCommon/aldlist.h"
 #include "AudioCommon/DPL2Decoder.h"

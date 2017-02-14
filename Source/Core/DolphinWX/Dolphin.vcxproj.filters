@@ -107,6 +107,42 @@
     <ClCompile Include="NetPlay\NetWindow.cpp">
       <Filter>GUI\NetPlay</Filter>
     </ClCompile>
+    <ClCompile Include="Input\InputConfigDiag.cpp">
+      <Filter>GUI\InputConfig</Filter>
+    </ClCompile>
+    <ClCompile Include="Input\InputConfigDiagBitmaps.cpp">
+      <Filter>GUI\InputConfig</Filter>
+    </ClCompile>
+    <ClCompile Include="Input\HotkeyInputConfigDiag.cpp">
+      <Filter>GUI\InputConfig</Filter>
+    </ClCompile>
+    <ClCompile Include="Input\GCPadInputConfigDiag.cpp">
+      <Filter>GUI\InputConfig</Filter>
+    </ClCompile>
+    <ClCompile Include="Input\MicButtonConfigDiag.cpp">
+      <Filter>GUI\InputConfig</Filter>
+    </ClCompile>
+    <ClCompile Include="Input\GCKeyboardInputConfigDiag.cpp">
+      <Filter>GUI\InputConfig</Filter>
+    </ClCompile>
+    <ClCompile Include="Input\WiimoteInputConfigDiag.cpp">
+      <Filter>GUI\InputConfig</Filter>
+    </ClCompile>
+    <ClCompile Include="Input\NunchukInputConfigDiag.cpp">
+      <Filter>GUI\InputConfig</Filter>
+    </ClCompile>
+    <ClCompile Include="Input\ClassicInputConfigDiag.cpp">
+      <Filter>GUI\InputConfig</Filter>
+    </ClCompile>
+    <ClCompile Include="Input\GuitarInputConfigDiag.cpp">
+      <Filter>GUI\InputConfig</Filter>
+    </ClCompile>
+    <ClCompile Include="Input\DrumsInputConfigDiag.cpp">
+      <Filter>GUI\InputConfig</Filter>
+    </ClCompile>
+    <ClCompile Include="Input\TurntableInputConfigDiag.cpp">
+      <Filter>GUI\InputConfig</Filter>
+    </ClCompile>
     <ClCompile Include="Debugger\DebuggerPanel.cpp">
       <Filter>GUI\Video</Filter>
     </ClCompile>
@@ -188,8 +224,20 @@
     <ClCompile Include="Config\PathConfigPane.cpp">
       <Filter>GUI\Config</Filter>
     </ClCompile>
+    <ClCompile Include="Config\AddUSBDeviceDiag.cpp">
+      <Filter>GUI\Config</Filter>
+    </ClCompile>
     <ClCompile Include="Config\AdvancedConfigPane.cpp">
       <Filter>GUI\Config</Filter>
+    </ClCompile>
+    <ClCompile Include="ISOProperties\FilesystemPanel.cpp">
+      <Filter>GUI\ISOProperties</Filter>
+    </ClCompile>
+    <ClCompile Include="ISOProperties\InfoPanel.cpp">
+      <Filter>GUI\ISOProperties</Filter>
+    </ClCompile>
+    <ClCompile Include="ISOProperties\ISOProperties.cpp">
+      <Filter>GUI\ISOProperties</Filter>
     </ClCompile>
     <ClCompile Include="NetPlay\NetPlaySetupFrame.cpp">
       <Filter>GUI\NetPlay</Filter>
@@ -214,51 +262,6 @@
     </ClCompile>
     <ClCompile Include="DolphinSlider.cpp">
       <Filter>GUI\Widgets</Filter>
-    </ClCompile>
-    <ClCompile Include="Input\ClassicInputConfigDiag.cpp">
-      <Filter>GUI\InputConfig</Filter>
-    </ClCompile>
-    <ClCompile Include="Input\DrumsInputConfigDiag.cpp">
-      <Filter>GUI\InputConfig</Filter>
-    </ClCompile>
-    <ClCompile Include="Input\GCKeyboardInputConfigDiag.cpp">
-      <Filter>GUI\InputConfig</Filter>
-    </ClCompile>
-    <ClCompile Include="Input\GCPadInputConfigDiag.cpp">
-      <Filter>GUI\InputConfig</Filter>
-    </ClCompile>
-    <ClCompile Include="Input\GuitarInputConfigDiag.cpp">
-      <Filter>GUI\InputConfig</Filter>
-    </ClCompile>
-    <ClCompile Include="Input\HotkeyInputConfigDiag.cpp">
-      <Filter>GUI\InputConfig</Filter>
-    </ClCompile>
-    <ClCompile Include="Input\InputConfigDiag.cpp">
-      <Filter>GUI\InputConfig</Filter>
-    </ClCompile>
-    <ClCompile Include="Input\InputConfigDiagBitmaps.cpp">
-      <Filter>GUI\InputConfig</Filter>
-    </ClCompile>
-    <ClCompile Include="Input\NunchukInputConfigDiag.cpp">
-      <Filter>GUI\InputConfig</Filter>
-    </ClCompile>
-    <ClCompile Include="Input\TurntableInputConfigDiag.cpp">
-      <Filter>GUI\InputConfig</Filter>
-    </ClCompile>
-    <ClCompile Include="Input\WiimoteInputConfigDiag.cpp">
-      <Filter>GUI\InputConfig</Filter>
-    </ClCompile>
-    <ClCompile Include="ISOProperties\InfoPanel.cpp">
-      <Filter>GUI\ISOProperties</Filter>
-    </ClCompile>
-    <ClCompile Include="ISOProperties\ISOProperties.cpp">
-      <Filter>GUI\ISOProperties</Filter>
-    </ClCompile>
-    <ClCompile Include="ISOProperties\FilesystemPanel.cpp">
-      <Filter>GUI\ISOProperties</Filter>
-    </ClCompile>
-    <ClCompile Include="Input\MicButtonConfigDiag.cpp">
-      <Filter>GUI\InputConfig</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -328,6 +331,39 @@
     </ClInclude>
     <ClInclude Include="NetPlay\NetWindow.h">
       <Filter>GUI\NetPlay</Filter>
+    </ClInclude>
+    <ClInclude Include="Input\InputConfigDiag.h">
+      <Filter>GUI\InputConfig</Filter>
+    </ClInclude>
+    <ClInclude Include="Input\HotkeyInputConfigDiag.h">
+      <Filter>GUI\InputConfig</Filter>
+    </ClInclude>
+    <ClInclude Include="Input\GCPadInputConfigDiag.h">
+      <Filter>GUI\InputConfig</Filter>
+    </ClInclude>
+    <ClInclude Include="Input\MicButtonConfigDiag.h">
+      <Filter>GUI\InputConfig</Filter>
+    </ClInclude>
+    <ClInclude Include="Input\GCKeyboardInputConfigDiag.h">
+      <Filter>GUI\InputConfig</Filter>
+    </ClInclude>
+    <ClInclude Include="Input\WiimoteInputConfigDiag.h">
+      <Filter>GUI\InputConfig</Filter>
+    </ClInclude>
+    <ClInclude Include="Input\NunchukInputConfigDiag.h">
+      <Filter>GUI\InputConfig</Filter>
+    </ClInclude>
+    <ClInclude Include="Input\ClassicInputConfigDiag.h">
+      <Filter>GUI\InputConfig</Filter>
+    </ClInclude>
+    <ClInclude Include="Input\GuitarInputConfigDiag.h">
+      <Filter>GUI\InputConfig</Filter>
+    </ClInclude>
+    <ClInclude Include="Input\DrumsInputConfigDiag.h">
+      <Filter>GUI\InputConfig</Filter>
+    </ClInclude>
+    <ClInclude Include="Input\TurntableInputConfigDiag.h">
+      <Filter>GUI\InputConfig</Filter>
     </ClInclude>
     <ClInclude Include="Debugger\DebuggerPanel.h">
       <Filter>GUI\Video</Filter>
@@ -410,8 +446,20 @@
     <ClInclude Include="Config\PathConfigPane.h">
       <Filter>GUI\Config</Filter>
     </ClInclude>
+    <ClCompile Include="Config\AddUSBDeviceDiag.h">
+      <Filter>GUI\Config</Filter>
+    </ClCompile>
     <ClInclude Include="Config\AdvancedConfigPane.h">
       <Filter>GUI\Config</Filter>
+    </ClInclude>
+    <ClInclude Include="ISOProperties\FilesystemPanel.h">
+      <Filter>GUI\ISOProperties</Filter>
+    </ClInclude>
+    <ClInclude Include="ISOProperties\InfoPanel.h">
+      <Filter>GUI\ISOProperties</Filter>
+    </ClInclude>
+    <ClInclude Include="ISOProperties\ISOProperties.h">
+      <Filter>GUI\ISOProperties</Filter>
     </ClInclude>
     <ClInclude Include="NetPlay\NetPlaySetupFrame.h">
       <Filter>GUI\NetPlay</Filter>
@@ -436,48 +484,6 @@
     </ClInclude>
     <ClInclude Include="DolphinSlider.h">
       <Filter>GUI\Widgets</Filter>
-    </ClInclude>
-    <ClInclude Include="Input\ClassicInputConfigDiag.h">
-      <Filter>GUI\InputConfig</Filter>
-    </ClInclude>
-    <ClInclude Include="Input\DrumsInputConfigDiag.h">
-      <Filter>GUI\InputConfig</Filter>
-    </ClInclude>
-    <ClInclude Include="Input\GCKeyboardInputConfigDiag.h">
-      <Filter>GUI\InputConfig</Filter>
-    </ClInclude>
-    <ClInclude Include="Input\GCPadInputConfigDiag.h">
-      <Filter>GUI\InputConfig</Filter>
-    </ClInclude>
-    <ClInclude Include="Input\GuitarInputConfigDiag.h">
-      <Filter>GUI\InputConfig</Filter>
-    </ClInclude>
-    <ClInclude Include="Input\HotkeyInputConfigDiag.h">
-      <Filter>GUI\InputConfig</Filter>
-    </ClInclude>
-    <ClInclude Include="Input\InputConfigDiag.h">
-      <Filter>GUI\InputConfig</Filter>
-    </ClInclude>
-    <ClInclude Include="Input\NunchukInputConfigDiag.h">
-      <Filter>GUI\InputConfig</Filter>
-    </ClInclude>
-    <ClInclude Include="Input\TurntableInputConfigDiag.h">
-      <Filter>GUI\InputConfig</Filter>
-    </ClInclude>
-    <ClInclude Include="Input\WiimoteInputConfigDiag.h">
-      <Filter>GUI\InputConfig</Filter>
-    </ClInclude>
-    <ClInclude Include="ISOProperties\InfoPanel.h">
-      <Filter>GUI\ISOProperties</Filter>
-    </ClInclude>
-    <ClInclude Include="ISOProperties\ISOProperties.h">
-      <Filter>GUI\ISOProperties</Filter>
-    </ClInclude>
-    <ClInclude Include="ISOProperties\FilesystemPanel.h">
-      <Filter>GUI\ISOProperties</Filter>
-    </ClInclude>
-    <ClInclude Include="Input\MicButtonConfigDiag.h">
-      <Filter>GUI\InputConfig</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

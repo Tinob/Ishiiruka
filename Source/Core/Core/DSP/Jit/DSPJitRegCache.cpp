@@ -23,7 +23,7 @@ namespace x86
 {
 // Ordered in order of prefered use.
 // Not all of these are actually available
-const std::array<X64Reg, 15> DSPJitRegCache::m_allocation_order = {
+constexpr std::array<X64Reg, 15> s_allocation_order = {
 		{R8, R9, R10, R11, R12, R13, R14, R15, RSI, RDI, RBX, RCX, RDX, RAX, RBP} };
 
 static void* GetRegisterPointer(size_t reg)
@@ -689,7 +689,7 @@ void DSPJitRegCache::MovToMemory(size_t reg)
 	m_regs[reg].loc = tmp;
 }
 
-void DSPJitRegCache::GetReg(int reg, OpArg& oparg, bool load)
+OpArg DSPJitRegCache::GetReg(int reg, bool load)
 {
 	int real_reg;
 	int shift;
@@ -723,7 +723,7 @@ void DSPJitRegCache::GetReg(int reg, OpArg& oparg, bool load)
 	_assert_msg_(DSPLLE, m_regs[real_reg].loc.IsSimpleReg(), "did not get host reg for %d", reg);
 
 	RotateHostReg(real_reg, shift, load);
-	oparg = m_regs[real_reg].loc;
+	const OpArg oparg = m_regs[real_reg].loc;
 	m_regs[real_reg].used = true;
 
 	// do some register specific fixup
@@ -742,6 +742,8 @@ void DSPJitRegCache::GetReg(int reg, OpArg& oparg, bool load)
 	default:
 		break;
 	}
+
+	return oparg;
 }
 
 void DSPJitRegCache::PutReg(int reg, bool dirty)
@@ -806,23 +808,22 @@ void DSPJitRegCache::PutReg(int reg, bool dirty)
 	}
 }
 
-void DSPJitRegCache::ReadReg(int sreg, X64Reg host_dreg, DSPJitSignExtend extend)
+void DSPJitRegCache::ReadReg(int sreg, X64Reg host_dreg, RegisterExtension extend)
 {
-	OpArg reg;
-	GetReg(sreg, reg);
+	const OpArg reg = GetReg(sreg);
 
 	switch (m_regs[sreg].size)
 	{
 	case 2:
 		switch (extend)
 		{
-		case SIGN:
+		case RegisterExtension::Sign:
 			m_emitter.MOVSX(64, 16, host_dreg, reg);
 			break;
-		case ZERO:
+		case RegisterExtension::Zero:
 			m_emitter.MOVZX(64, 16, host_dreg, reg);
 			break;
-		case NONE:
+		case RegisterExtension::None:
 			m_emitter.MOV(16, R(host_dreg), reg);
 			break;
 		}
@@ -830,13 +831,13 @@ void DSPJitRegCache::ReadReg(int sreg, X64Reg host_dreg, DSPJitSignExtend extend
 	case 4:
 		switch (extend)
 		{
-		case SIGN:
+		case RegisterExtension::Sign:
 			m_emitter.MOVSX(64, 32, host_dreg, reg);
 			break;
-		case ZERO:
+		case RegisterExtension::Zero:
 			m_emitter.MOVZX(64, 32, host_dreg, reg);
 			break;
-		case NONE:
+		case RegisterExtension::None:
 			m_emitter.MOV(32, R(host_dreg), reg);
 			break;
 		}
@@ -853,8 +854,7 @@ void DSPJitRegCache::ReadReg(int sreg, X64Reg host_dreg, DSPJitSignExtend extend
 
 void DSPJitRegCache::WriteReg(int dreg, OpArg arg)
 {
-	OpArg reg;
-	GetReg(dreg, reg, false);
+	const OpArg reg = GetReg(dreg, false);
 	if (arg.IsImm())
 	{
 		switch (m_regs[dreg].size)
@@ -905,7 +905,7 @@ X64Reg DSPJitRegCache::SpillXReg()
 {
 	int max_use_ctr_diff = 0;
 	X64Reg least_recent_use_reg = INVALID_REG;
-	for (X64Reg reg : m_allocation_order)
+	for (X64Reg reg : s_allocation_order)
 	{
 		if (m_xregs[reg].guest_reg <= DSP_REG_MAX_MEM_BACKED && !m_regs[m_xregs[reg].guest_reg].used)
 		{
@@ -925,7 +925,7 @@ X64Reg DSPJitRegCache::SpillXReg()
 	}
 
 	// just choose one.
-	for (X64Reg reg : m_allocation_order)
+	for (X64Reg reg : s_allocation_order)
 	{
 		if (m_xregs[reg].guest_reg <= DSP_REG_MAX_MEM_BACKED && !m_regs[m_xregs[reg].guest_reg].used)
 		{
@@ -956,7 +956,7 @@ void DSPJitRegCache::SpillXReg(X64Reg reg)
 
 X64Reg DSPJitRegCache::FindFreeXReg()
 {
-	for (X64Reg x : m_allocation_order)
+	for (X64Reg x : s_allocation_order)
 	{
 		if (m_xregs[x].guest_reg == DSP_REG_NONE)
 		{

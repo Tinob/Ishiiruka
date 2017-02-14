@@ -194,6 +194,7 @@ CISOProperties::CISOProperties(const GameListItem& game_list_item, wxWindow* par
 	: wxDialog(parent, id, title, position, size, style), OpenGameListItem(game_list_item)
 {
 	Bind(DOLPHIN_EVT_CHANGE_ISO_PROPERTIES_TITLE, &CISOProperties::OnChangeTitle, this);
+
 	// Load ISO data
 	m_open_iso = DiscIO::CreateVolumeFromFilename(OpenGameListItem.GetFileName());
 

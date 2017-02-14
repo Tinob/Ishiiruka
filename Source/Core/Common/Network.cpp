@@ -11,6 +11,8 @@
 #include "Common/StringUtil.h"
 #include "Common/Timer.h"
 
+namespace Common
+{
 void GenerateMacAddress(const MACConsumer type, u8* mac)
 {
 	memset(mac, 0, MAC_ADDRESS_SIZE);
@@ -20,10 +22,10 @@ void GenerateMacAddress(const MACConsumer type, u8* mac)
 
 	switch (type)
 	{
-	case BBA:
+	case MACConsumer::BBA:
 		memcpy(mac, oui_bba, 3);
 		break;
-	case IOS:
+	case MACConsumer::IOS:
 		memcpy(mac, oui_ios, 3);
 		break;
 	}
@@ -38,9 +40,8 @@ void GenerateMacAddress(const MACConsumer type, u8* mac)
 
 std::string MacAddressToString(const u8* mac)
 {
-	return StringFromFormat("%02x:%02x:%02x:%02x:%02x:%02x",
-		mac[0], mac[1], mac[2],
-		mac[3], mac[4], mac[5]);
+	return StringFromFormat("%02x:%02x:%02x:%02x:%02x:%02x", mac[0], mac[1], mac[2], mac[3], mac[4],
+		mac[5]);
 }
 
 bool StringToMacAddress(const std::string& mac_string, u8* mac)
@@ -56,14 +57,17 @@ bool StringToMacAddress(const std::string& mac_string, u8* mac)
 			char c = tolower(mac_string.at(i));
 			if (c >= '0' && c <= '9')
 			{
-				mac[x / 2] |= (c - '0') << ((x & 1) ? 0 : 4); ++x;
+				mac[x / 2] |= (c - '0') << ((x & 1) ? 0 : 4);
+				++x;
 			}
 			else if (c >= 'a' && c <= 'f')
 			{
-				mac[x / 2] |= (c - 'a' + 10) << ((x & 1) ? 0 : 4); ++x;
+				mac[x / 2] |= (c - 'a' + 10) << ((x & 1) ? 0 : 4);
+				++x;
 			}
 		}
 		success = x / 2 == MAC_ADDRESS_SIZE;
 	}
 	return success;
 }
+}  // namespace Common

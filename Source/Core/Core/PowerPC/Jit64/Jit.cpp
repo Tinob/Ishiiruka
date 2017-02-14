@@ -372,6 +372,21 @@ bool Jit64::Cleanup()
 	return did_something;
 }
 
+void Jit64::FakeBLCall(u32 after)
+{
+	if (!m_enable_blr_optimization)
+		return;
+
+	// We may need to fake the BLR stack on inlined CALL instructions.
+	// Else we can't return to this location any more.
+	MOV(32, R(RSCRATCH2), Imm32(after));
+	PUSH(RSCRATCH2);
+	FixupBranch skip_exit = CALL();
+	POP(RSCRATCH2);
+	JustWriteExit(after, false, 0);
+	SetJumpTarget(skip_exit);
+}
+
 void Jit64::WriteExit(u32 destination, bool bl, u32 after)
 {
 	if (!m_enable_blr_optimization)
@@ -543,7 +558,7 @@ void Jit64::Jit(u32 em_address)
 	}
 
 	if (IsAlmostFull() || m_far_code.IsAlmostFull() || trampolines.IsAlmostFull() ||
-		blocks.IsFull() || SConfig::GetInstance().bJITNoBlockCache)
+		SConfig::GetInstance().bJITNoBlockCache)
 	{
 		ClearCache();
 	}
@@ -569,6 +584,7 @@ void Jit64::Jit(u32 em_address)
 				analyzer.ClearOption(PPCAnalyst::PPCAnalyzer::OPTION_BRANCH_MERGE);
 				analyzer.ClearOption(PPCAnalyst::PPCAnalyzer::OPTION_CROR_MERGE);
 				analyzer.ClearOption(PPCAnalyst::PPCAnalyzer::OPTION_CARRY_MERGE);
+				analyzer.ClearOption(PPCAnalyst::PPCAnalyzer::OPTION_BRANCH_FOLLOW);
 			}
 			Trace();
 		}
@@ -589,9 +605,9 @@ void Jit64::Jit(u32 em_address)
 		return;
 	}
 
-	int block_num = blocks.AllocateBlock(em_address);
-	JitBlock* b = blocks.GetBlock(block_num);
-	blocks.FinalizeBlock(block_num, jo.enableBlocklink, DoJit(em_address, &code_buffer, b, nextPC));
+	JitBlock* b = blocks.AllocateBlock(em_address);
+	DoJit(em_address, &code_buffer, b, nextPC);
+	blocks.FinalizeBlock(*b, jo.enableBlocklink, code_block.m_physical_addresses);
 }
 
 const u8* Jit64::DoJit(u32 em_address, PPCAnalyst::CodeBuffer* code_buf, JitBlock* b, u32 nextPC)
@@ -858,7 +874,7 @@ const u8* Jit64::DoJit(u32 em_address, PPCAnalyst::CodeBuffer* code_buf, JitBloc
 					fpr.BindToRegister(reg, true, false);
 			}
 
-			Jit64Tables::CompileInstruction(ops[i]);
+			Jit64Tables::CompileInstruction(*this, ops[i]);
 
 			if (jo.memcheck && (opinfo->flags & FL_LOADSTORE))
 			{
@@ -973,6 +989,7 @@ void Jit64::EnableOptimization()
 	analyzer.SetOption(PPCAnalyst::PPCAnalyzer::OPTION_BRANCH_MERGE);
 	analyzer.SetOption(PPCAnalyst::PPCAnalyzer::OPTION_CROR_MERGE);
 	analyzer.SetOption(PPCAnalyst::PPCAnalyzer::OPTION_CARRY_MERGE);
+	analyzer.SetOption(PPCAnalyst::PPCAnalyzer::OPTION_BRANCH_FOLLOW);
 }
 
 void Jit64::IntializeSpeculativeConstants()

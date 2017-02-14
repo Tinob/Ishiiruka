@@ -71,23 +71,23 @@ static Common::Event g_compressAndDumpStateSyncEvent;
 static std::thread g_save_thread;
 
 // Don't forget to increase this after doing changes on the savestate system
-static const u32 STATE_VERSION = 68;  // Last changed in PR 4638
+static const u32 STATE_VERSION = 77;  // Last changed in PR 4784
 
-																			// Maps savestate versions to Dolphin versions.
-																			// Versions after 42 don't need to be added to this list,
-																			// because they save the exact Dolphin version to savestates.
+// Maps savestate versions to Dolphin versions.
+// Versions after 42 don't need to be added to this list,
+// because they save the exact Dolphin version to savestates.
 static const std::map<u32, std::pair<std::string, std::string>> s_old_versions = {
 	// The 16 -> 17 change modified the size of StateHeader,
 	// so versions older than that can't even be decompressed anymore
-	{ 17,{ "3.5-1311", "3.5-1364" } },{ 18,{ "3.5-1366", "3.5-1371" } },{ 19,{ "3.5-1372", "3.5-1408" } },
-	{ 20,{ "3.5-1409", "4.0-704" } },{ 21,{ "4.0-705", "4.0-889" } },{ 22,{ "4.0-905", "4.0-1871" } },
-	{ 23,{ "4.0-1873", "4.0-1900" } },{ 24,{ "4.0-1902", "4.0-1919" } },{ 25,{ "4.0-1921", "4.0-1936" } },
-	{ 26,{ "4.0-1939", "4.0-1959" } },{ 27,{ "4.0-1961", "4.0-2018" } },{ 28,{ "4.0-2020", "4.0-2291" } },
-	{ 29,{ "4.0-2293", "4.0-2360" } },{ 30,{ "4.0-2362", "4.0-2628" } },{ 31,{ "4.0-2632", "4.0-3331" } },
-	{ 32,{ "4.0-3334", "4.0-3340" } },{ 33,{ "4.0-3342", "4.0-3373" } },{ 34,{ "4.0-3376", "4.0-3402" } },
-	{ 35,{ "4.0-3409", "4.0-3603" } },{ 36,{ "4.0-3610", "4.0-4480" } },{ 37,{ "4.0-4484", "4.0-4943" } },
-	{ 38,{ "4.0-4963", "4.0-5267" } },{ 39,{ "4.0-5279", "4.0-5525" } },{ 40,{ "4.0-5531", "4.0-5809" } },
-	{ 41,{ "4.0-5811", "4.0-5923" } },{ 42,{ "4.0-5925", "4.0-5946" } } };
+	{17, {"3.5-1311", "3.5-1364"}}, {18, {"3.5-1366", "3.5-1371"}}, {19, {"3.5-1372", "3.5-1408"}},
+	{20, {"3.5-1409", "4.0-704"}},  {21, {"4.0-705", "4.0-889"}},   {22, {"4.0-905", "4.0-1871"}},
+	{23, {"4.0-1873", "4.0-1900"}}, {24, {"4.0-1902", "4.0-1919"}}, {25, {"4.0-1921", "4.0-1936"}},
+	{26, {"4.0-1939", "4.0-1959"}}, {27, {"4.0-1961", "4.0-2018"}}, {28, {"4.0-2020", "4.0-2291"}},
+	{29, {"4.0-2293", "4.0-2360"}}, {30, {"4.0-2362", "4.0-2628"}}, {31, {"4.0-2632", "4.0-3331"}},
+	{32, {"4.0-3334", "4.0-3340"}}, {33, {"4.0-3342", "4.0-3373"}}, {34, {"4.0-3376", "4.0-3402"}},
+	{35, {"4.0-3409", "4.0-3603"}}, {36, {"4.0-3610", "4.0-4480"}}, {37, {"4.0-4484", "4.0-4943"}},
+	{38, {"4.0-4963", "4.0-5267"}}, {39, {"4.0-5279", "4.0-5525"}}, {40, {"4.0-5531", "4.0-5809"}},
+	{41, {"4.0-5811", "4.0-5923"}}, {42, {"4.0-5925", "4.0-5946"}} };
 
 enum
 {
@@ -152,6 +152,19 @@ static std::string DoState(PointerWrap& p)
 		// this will trigger an OSD message like "Can't load state from other revisions"
 		// we could use the version numbers to maintain some level of backward compatibility, but
 		// currently don't.
+		p.SetMode(PointerWrap::MODE_MEASURE);
+		return version_created_by;
+	}
+
+	bool is_wii =
+		SConfig::GetInstance().bWii || SConfig::GetInstance().m_BootType == SConfig::BOOT_MIOS;
+	const bool is_wii_currently = is_wii;
+	p.Do(is_wii);
+	if (is_wii != is_wii_currently)
+	{
+		OSD::AddMessage(StringFromFormat("Cannot load a savestate created under %s mode in %s mode",
+			is_wii ? "Wii" : "GC", is_wii_currently ? "Wii" : "GC"),
+			OSD::Duration::NORMAL, OSD::Color::RED);
 		p.SetMode(PointerWrap::MODE_MEASURE);
 		return version_created_by;
 	}

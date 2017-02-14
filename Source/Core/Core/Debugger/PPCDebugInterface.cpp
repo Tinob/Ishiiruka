@@ -21,7 +21,7 @@ std::string PPCDebugInterface::Disassemble(unsigned int address)
 	if (!IsAlive())
 		return "";
 
-	if (Core::GetState() == Core::CORE_PAUSE)
+	if (Core::GetState() == Core::State::Paused)
 	{
 		if (!PowerPC::HostIsRAMAddress(address))
 		{
@@ -172,12 +172,12 @@ int PPCDebugInterface::GetColor(unsigned int address)
 	if (!PowerPC::HostIsRAMAddress(address))
 		return 0xeeeeee;
 	static const int colors[6] = {
-		0xd0FFFF,  // light cyan
-		0xFFd0d0,  // light red
-		0xd8d8FF,  // light blue
-		0xFFd0FF,  // light purple
-		0xd0FFd0,  // light green
-		0xFFFFd0,  // light yellow
+			0xd0FFFF,  // light cyan
+			0xFFd0d0,  // light red
+			0xd8d8FF,  // light blue
+			0xFFd0FF,  // light purple
+			0xd0FFd0,  // light green
+			0xFFFFd0,  // light yellow
 	};
 	Symbol* symbol = g_symbolDB.GetSymbolFromAddr(address);
 	if (!symbol)

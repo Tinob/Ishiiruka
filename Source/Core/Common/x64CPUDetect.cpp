@@ -12,8 +12,10 @@
 #ifndef _WIN32
 
 #ifdef __FreeBSD__
-#include <sys/types.h>
+#include <unistd.h>
+
 #include <machine/cpufunc.h>
+#include <sys/types.h>
 #endif
 
 static inline void __cpuidex(int info[4], int function_id, int subfunction_id)

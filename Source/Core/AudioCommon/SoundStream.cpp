@@ -14,6 +14,9 @@
 #ifdef __APPLE__
 #undef BOOL
 #endif
+
+#include "Common/Logging/Log.h"
+
 #include "Core/Core.h"
 #include "Core/ConfigManager.h"
 #include "Core/HW/AudioInterface.h"

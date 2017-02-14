@@ -36,6 +36,12 @@ void CachedInterpreter::Shutdown()
 void CachedInterpreter::ExecuteOneBlock()
 {
 	const u8* normal_entry = m_block_cache.Dispatch();
+	if (!normal_entry)
+	{
+		Jit(PC);
+		return;
+	}
+
 	const Instruction* code = reinterpret_cast<const Instruction*>(normal_entry);
 
 	for (; code->type != Instruction::INSTRUCTION_ABORT; ++code)
@@ -123,7 +129,7 @@ static bool CheckDSI(u32 data)
 
 void CachedInterpreter::Jit(u32 address)
 {
-	if (m_code.size() >= CODE_SIZE / sizeof(Instruction) - 0x1000 || m_block_cache.IsFull() ||
+	if (m_code.size() >= CODE_SIZE / sizeof(Instruction) - 0x1000 ||
 		SConfig::GetInstance().bJITNoBlockCache)
 	{
 		ClearCache();
@@ -140,8 +146,7 @@ void CachedInterpreter::Jit(u32 address)
 		return;
 	}
 
-	int block_num = m_block_cache.AllocateBlock(PC);
-	JitBlock* b = m_block_cache.GetBlock(block_num);
+	JitBlock* b = m_block_cache.AllocateBlock(PC);
 
 	js.blockStart = PC;
 	js.firstFPInstructionFound = false;
@@ -212,7 +217,7 @@ void CachedInterpreter::Jit(u32 address)
 	b->codeSize = (u32)(GetCodePtr() - b->checkedEntry);
 	b->originalSize = code_block.m_num_instructions;
 
-	m_block_cache.FinalizeBlock(block_num, jo.enableBlocklink, b->checkedEntry);
+	m_block_cache.FinalizeBlock(*b, jo.enableBlocklink, code_block.m_physical_addresses);
 }
 
 void CachedInterpreter::ClearCache()

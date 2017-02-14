@@ -7,9 +7,7 @@
 #include <memory>
 
 #include "AudioCommon/Mixer.h"
-#include "AudioCommon/WaveFile.h"
 #include "Common/CommonTypes.h"
-#include "Common/Logging/Log.h"
 #include "Common/Thread.h"
 
 

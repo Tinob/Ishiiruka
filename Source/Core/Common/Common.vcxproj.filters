@@ -230,6 +230,8 @@
     <ClInclude Include="Align.h" />
     <ClInclude Include="BitHelpers.h" />
     <ClInclude Include="AllocationMap.h" />
+    <ClInclude Include="BitUtils.h" />
+    <ClInclude Include="LibusbContext.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CDUtils.cpp" />
@@ -291,11 +293,15 @@
     <ClCompile Include="ucrtFreadWorkaround.cpp" />
     <ClCompile Include="Analytics.cpp" />
     <ClCompile Include="MD5.cpp" />
+    <ClCompile Include="LibusbContext.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="BitField.natvis" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="scmrev.h.in" />
   </ItemGroup>
 </Project>

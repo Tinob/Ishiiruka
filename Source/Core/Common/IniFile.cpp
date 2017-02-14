@@ -430,21 +430,21 @@ bool IniFile::Save(const std::string& filename)
 
 // Unit test. TODO: Move to the real unit test framework.
 /*
-	int main()
-	{
-	 IniFile ini;
-	 ini.Load("my.ini");
-	 ini.Set("Hej", "A", "amaskdfl");
-	 ini.Set("Mossa", "A", "amaskdfl");
-	 ini.Set("Aissa", "A", "amaskdfl");
-	 //ini.Read("my.ini");
-	 std::string x;
-	 ini.Get("Hej", "B", &x, "boo");
-	 ini.DeleteKey("Mossa", "A");
-	 ini.DeleteSection("Mossa");
-	 ini.SortSections();
-	 ini.Save("my.ini");
-	 //UpdateVars(ini);
-	 return 0;
-	}
- */
+int main()
+{
+	IniFile ini;
+	ini.Load("my.ini");
+	ini.Set("Hello", "A", "amaskdfl");
+	ini.Set("Moss", "A", "amaskdfl");
+	ini.Set("Aissa", "A", "amaskdfl");
+	//ini.Read("my.ini");
+	std::string x;
+	ini.Get("Hello", "B", &x, "boo");
+	ini.DeleteKey("Moss", "A");
+	ini.DeleteSection("Moss");
+	ini.SortSections();
+	ini.Save("my.ini");
+	//UpdateVars(ini);
+	return 0;
+}
+*/

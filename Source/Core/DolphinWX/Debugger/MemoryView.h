@@ -11,11 +11,11 @@ class DebugInterface;
 
 enum class MemoryDataType
 {
-	U8,
-	U16,
-	U32,
-	ASCII,
-	FloatingPoint
+  U8,
+  U16,
+  U32,
+  ASCII,
+  FloatingPoint
 };
 
 wxDECLARE_EVENT(DOLPHIN_EVT_MEMORY_VIEW_DATA_TYPE_CHANGED, wxCommandEvent);
@@ -23,60 +23,62 @@ wxDECLARE_EVENT(DOLPHIN_EVT_MEMORY_VIEW_DATA_TYPE_CHANGED, wxCommandEvent);
 class CMemoryView : public wxControl
 {
 public:
-	CMemoryView(DebugInterface* debuginterface, wxWindow* parent);
+  CMemoryView(DebugInterface* debuginterface, wxWindow* parent);
 
-	u32 GetSelection() const { return selection; }
-	int GetMemoryType() const { return memory; }
-	void Center(u32 addr)
-	{
-		curAddress = addr;
-		Refresh();
-	}
+  u32 GetSelection() const { return selection; }
+  int GetMemoryType() const { return memory; }
+  void Center(u32 addr)
+  {
+    curAddress = addr;
+    Refresh();
+  }
 
-	void SetDataType(MemoryDataType data_type);
-	MemoryDataType GetDataType() const { return m_data_type; }
-	void SetMemCheckOptions(bool read, bool write, bool log)
-	{
-		memCheckRead = read;
-		memCheckWrite = write;
-		memCheckLog = log;
-	}
+  void SetDataType(MemoryDataType data_type);
+  MemoryDataType GetDataType() const { return m_data_type; }
+  void SetMemCheckOptions(bool read, bool write, bool log)
+  {
+    memCheckRead = read;
+    memCheckWrite = write;
+    memCheckLog = log;
+  }
 
 private:
-	int YToAddress(int y);
-	bool IsHexMode() const
-	{
-		return m_data_type != MemoryDataType::ASCII && m_data_type != MemoryDataType::FloatingPoint;
-	}
+  int YToAddress(int y);
+  bool IsHexMode() const
+  {
+    return m_data_type != MemoryDataType::ASCII && m_data_type != MemoryDataType::FloatingPoint;
+  }
 
-	void OnPaint(wxPaintEvent& event);
-	void OnMouseDownL(wxMouseEvent& event);
-	void OnMouseMove(wxMouseEvent& event);
-	void OnMouseUpL(wxMouseEvent& event);
-	void OnMouseDownR(wxMouseEvent& event);
-	void OnScrollWheel(wxMouseEvent& event);
-	void OnPopupMenu(wxCommandEvent& event);
-	void OnResize(wxSizeEvent& event);
+  wxString ReadMemoryAsString(u32 address) const;
 
-	static constexpr int LEFT_COL_WIDTH = 16;
+  void OnPaint(wxPaintEvent& event);
+  void OnMouseDownL(wxMouseEvent& event);
+  void OnMouseMove(wxMouseEvent& event);
+  void OnMouseUpL(wxMouseEvent& event);
+  void OnMouseDownR(wxMouseEvent& event);
+  void OnScrollWheel(wxMouseEvent& event);
+  void OnPopupMenu(wxCommandEvent& event);
+  void OnResize(wxSizeEvent& event);
 
-	DebugInterface* debugger;
+  static constexpr int LEFT_COL_WIDTH = 16;
 
-	unsigned int align;
-	int rowHeight;
-	int m_left_col_width;
+  DebugInterface* debugger;
 
-	u32 selection;
-	u32 oldSelection;
-	bool selecting;
+  unsigned int align;
+  int rowHeight;
+  int m_left_col_width;
 
-	int memory;
-	int curAddress;
+  u32 selection;
+  u32 oldSelection;
+  bool selecting;
 
-	bool memCheckRead;
-	bool memCheckWrite;
-	bool memCheckLog;
+  int memory;
+  int curAddress;
 
-	MemoryDataType m_data_type;
-	MemoryDataType m_last_hex_type = MemoryDataType::U8;
+  bool memCheckRead;
+  bool memCheckWrite;
+  bool memCheckLog;
+
+  MemoryDataType m_data_type;
+  MemoryDataType m_last_hex_type = MemoryDataType::U8;
 };

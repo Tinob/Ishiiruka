@@ -7,6 +7,7 @@
 #include "AudioCommon/Mixer.h"
 #include "Common/Atomic.h"
 #include "Common/CPUDetect.h"
+#include "Common/Logging/Log.h"
 #include "Common/MathUtil.h"
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"

@@ -5,9 +5,9 @@
 #pragma once
 
 #include <map>
-#include <vector>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <vector>
 
 // MemoryWatcher reads a file containing in-game memory addresses and outputs
 // changes to those memory addresses to a unix domain socket as the game runs.

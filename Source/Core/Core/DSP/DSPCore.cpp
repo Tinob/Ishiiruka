@@ -28,8 +28,7 @@ namespace DSP
 {
 SDSP g_dsp;
 DSPBreakpoints g_dsp_breakpoints;
-static DSPCoreState core_state = DSPCORE_STOP;
-u16 g_cycles_left = 0;
+static State core_state = State::Stopped;
 bool g_init_hax = false;
 std::unique_ptr<JIT::x86::DSPEmitter> g_dsp_jit;
 std::unique_ptr<DSPCaptureLogger> g_dsp_cap;
@@ -104,7 +103,6 @@ static void DSPCore_FreeMemoryPages()
 bool DSPCore_Init(const DSPInitOptions& opts)
 {
 	g_dsp.step_counter = 0;
-	g_cycles_left = 0;
 	g_init_hax = false;
 
 	g_dsp.irom = static_cast<u16*>(Common::AllocateMemoryPages(DSP_IROM_BYTE_SIZE));
@@ -154,16 +152,16 @@ bool DSPCore_Init(const DSPInitOptions& opts)
 
 	g_dsp_cap.reset(opts.capture_logger);
 
-	core_state = DSPCORE_RUNNING;
+	core_state = State::Running;
 	return true;
 }
 
 void DSPCore_Shutdown()
 {
-	if (core_state == DSPCORE_STOP)
+	if (core_state == State::Stopped)
 		return;
 
-	core_state = DSPCORE_STOP;
+	core_state = State::Stopped;
 
 	g_dsp_jit.reset();
 
@@ -218,8 +216,8 @@ void DSPCore_CheckExceptions()
 			if (Interpreter::dsp_SR_is_flag_set(SR_INT_ENABLE) || (i == EXP_INT))
 			{
 				// store pc and sr until RTI
-				dsp_reg_store_stack(DSP_STACK_C, g_dsp.pc);
-				dsp_reg_store_stack(DSP_STACK_D, g_dsp.r.sr);
+				dsp_reg_store_stack(StackRegister::Call, g_dsp.pc);
+				dsp_reg_store_stack(StackRegister::Data, g_dsp.r.sr);
 
 				g_dsp.pc = i * 2;
 				g_dsp.exceptions &= ~(1 << i);
@@ -245,28 +243,14 @@ int DSPCore_RunCycles(int cycles)
 {
 	if (g_dsp_jit)
 	{
-		if (g_dsp.external_interrupt_waiting)
-		{
-			DSPCore_CheckExternalInterrupt();
-			DSPCore_CheckExceptions();
-			DSPCore_SetExternalInterrupt(false);
-		}
-
-		g_cycles_left = cycles;
-		auto exec_addr = (JIT::x86::DSPEmitter::DSPCompiledCode)g_dsp_jit->enterDispatcher;
-		exec_addr();
-
-		if (g_dsp.reset_dspjit_codespace)
-			g_dsp_jit->ClearIRAMandDSPJITCodespaceReset();
-
-		return g_cycles_left;
+		return g_dsp_jit->RunCycles(static_cast<u16>(cycles));
 	}
 
 	while (cycles > 0)
 	{
 		switch (core_state)
 		{
-		case DSPCORE_RUNNING:
+		case State::Running:
 			// Seems to slow things down
 #if defined(_DEBUG) || defined(DEBUGFAST)
 			cycles = Interpreter::RunCyclesDebug(cycles);
@@ -275,9 +259,9 @@ int DSPCore_RunCycles(int cycles)
 #endif
 			break;
 
-		case DSPCORE_STEPPING:
+		case State::Stepping:
 			step_event.Wait();
-			if (core_state != DSPCORE_STEPPING)
+			if (core_state != State::Stepping)
 				continue;
 
 			Interpreter::Step();
@@ -285,55 +269,33 @@ int DSPCore_RunCycles(int cycles)
 
 			Host::UpdateDebugger();
 			break;
-		case DSPCORE_STOP:
+		case State::Stopped:
 			break;
 		}
 	}
 	return cycles;
 }
 
-void DSPCore_SetState(DSPCoreState new_state)
+void DSPCore_SetState(State new_state)
 {
 	core_state = new_state;
 
 	// kick the event, in case we are waiting
-	if (new_state == DSPCORE_RUNNING)
+	if (new_state == State::Running)
 		step_event.Set();
 
 	Host::UpdateDebugger();
 }
 
-DSPCoreState DSPCore_GetState()
+State DSPCore_GetState()
 {
 	return core_state;
 }
 
 void DSPCore_Step()
 {
-	if (core_state == DSPCORE_STEPPING)
+	if (core_state == State::Stepping)
 		step_event.Set();
-}
-
-void CompileCurrent()
-{
-	g_dsp_jit->Compile(g_dsp.pc);
-
-	bool retry = true;
-
-	while (retry)
-	{
-		retry = false;
-		for (u16 i = 0x0000; i < 0xffff; ++i)
-		{
-			if (!g_dsp_jit->unresolvedJumps[i].empty())
-			{
-				u16 addrToCompile = g_dsp_jit->unresolvedJumps[i].front();
-				g_dsp_jit->Compile(addrToCompile);
-				if (!g_dsp_jit->unresolvedJumps[i].empty())
-					retry = true;
-			}
-		}
-	}
 }
 
 u16 DSPCore_ReadRegister(size_t reg)

@@ -48,6 +48,8 @@ enum
 	D_THEMES_IDX,
 	D_PIPES_IDX,
 	D_MEMORYWATCHER_IDX,
+	D_WFSROOT_IDX,
+	D_BACKUP_IDX,
 	F_DOLPHINCONFIG_IDX,
 	F_DEBUGGERCONFIG_IDX,
 	F_LOGGERCONFIG_IDX,
@@ -214,7 +216,6 @@ public:
 	// m_good is set to false when a read, write or other function fails
 	bool IsGood() const { return m_good; }
 	explicit operator bool() const { return IsGood() && IsOpen(); }
-	std::FILE* ReleaseHandle();
 
 	std::FILE* GetHandle() { return m_file; }
 	void SetHandle(std::FILE* file);

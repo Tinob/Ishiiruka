@@ -32,6 +32,7 @@ namespace DiscIO
 {
 class IVolume;
 }
+
 namespace Gecko
 {
 class CodeConfigPanel;
@@ -96,7 +97,6 @@ private:
 	enum
 	{
 		ID_NOTEBOOK = 1000,
-
 		ID_GAMECONFIG,
 		ID_PATCH_PAGE,
 		ID_ARCODE_PAGE,
@@ -105,7 +105,6 @@ private:
 		ID_FILESYSTEM,
 
 		ID_USEDUALCORE,
-		ID_IDLESKIP,
 		ID_MMU,
 		ID_DCBZOFF,
 		ID_FPRF,
@@ -129,13 +128,12 @@ private:
 		ID_GPUDETERMINISM,
 		ID_DEPTHPERCENTAGE,
 		ID_CONVERGENCE,
-		ID_MONODEPTH
+		ID_MONODEPTH,
 	};
 
 	void LaunchExternalEditor(const std::string& filename, bool wait_until_closed);
 
 	void CreateGUIControls();
-	void OnChangeTitle(wxCommandEvent& event);
 	void OnClose(wxCloseEvent& event);
 	void OnCloseClick(wxCommandEvent& event);
 	void OnEditConfig(wxCommandEvent& event);
@@ -144,6 +142,7 @@ private:
 	void PatchButtonClicked(wxCommandEvent& event);
 	void OnEmustateChanged(wxCommandEvent& event);
 	void OnCheatCodeToggled(wxCommandEvent& event);
+	void OnChangeTitle(wxCommandEvent& event);
 	void OnDVideoChanged(wxCommandEvent& event);
 	const GameListItem OpenGameListItem;
 

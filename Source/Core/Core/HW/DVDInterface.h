@@ -95,12 +95,14 @@ enum DIInterruptType : int
 
 enum class ReplyType : u32
 {
+	NoReply,
 	Interrupt,
-	IOS_HLE,
+	IOS,
 	DTK
 };
 
 void Init();
+void Reset();
 void Shutdown();
 void DoState(PointerWrap& p);
 
@@ -119,7 +121,7 @@ bool IsDiscInside();
 void ChangeDiscAsHost(const std::string& new_path);  // Can only be called by the host thread
 void ChangeDiscAsCPU(const std::string& new_path);   // Can only be called by the CPU thread
 
-																										 // DVD Access Functions
+// DVD Access Functions
 bool ChangePartition(u64 offset);
 void ExecuteCommand(u32 command_0, u32 command_1, u32 command_2, u32 output_address,
 	u32 output_length, bool reply_to_ios);

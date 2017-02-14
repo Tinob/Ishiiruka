@@ -162,8 +162,8 @@ void DoState(PointerWrap& p)
 	p.Do(g_fake_TB_start_value);
 	p.Do(g_fake_TB_start_ticks);
 	p.Do(s_last_OC_factor);
-	p.Do(s_event_fifo_id);
 	g_last_OC_factor_inverted = 1.0f / s_last_OC_factor;
+	p.Do(s_event_fifo_id);
 
 	p.DoMarker("CoreTimingData");
 
@@ -171,6 +171,7 @@ void DoState(PointerWrap& p)
 	p.DoEachElement(s_event_queue, [](PointerWrap& pw, Event& ev) {
 		pw.Do(ev.time);
 		pw.Do(ev.fifo_order);
+
 		// this is why we can't have (nice things) pointers as userdata
 		pw.Do(ev.userdata);
 
@@ -375,6 +376,16 @@ void LogPendingEvents()
 	{
 		INFO_LOG(POWERPC, "PENDING: Now: %" PRId64 " Pending: %" PRId64 " Type: %s", g_global_timer,
 			ev.time, ev.type->name->c_str());
+	}
+}
+
+// Should only be called from the CPU thread after the PPC clock has changed
+void AdjustEventQueueTimes(u32 new_ppc_clock, u32 old_ppc_clock)
+{
+	for (Event& ev : s_event_queue)
+	{
+		const s64 ticks = (ev.time - g_global_timer) * new_ppc_clock / old_ppc_clock;
+		ev.time = g_global_timer + ticks;
 	}
 }
 

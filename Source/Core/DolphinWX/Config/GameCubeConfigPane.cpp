@@ -21,7 +21,7 @@
 #include "Common/FileUtil.h"
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
-#include "Core/HW/EXI.h"
+#include "Core/HW/EXI/EXI.h"
 #include "Core/HW/GCMemcard.h"
 #include "Core/HW/GCPad.h"
 #include "Core/NetPlayProto.h"
@@ -81,8 +81,8 @@ void GameCubeConfigPane::InitializeGUI()
 	// Device settings
 	// EXI Devices
 	wxStaticText* GCEXIDeviceText[3] = {
-		new wxStaticText(this, wxID_ANY, _("Slot A")), new wxStaticText(this, wxID_ANY, _("Slot B")),
-		new wxStaticText(this, wxID_ANY, "SP1"),
+			new wxStaticText(this, wxID_ANY, _("Slot A")), new wxStaticText(this, wxID_ANY, _("Slot B")),
+			new wxStaticText(this, wxID_ANY, "SP1"),
 	};
 
 	m_exi_devices[0] = new wxChoice(this, wxID_ANY);

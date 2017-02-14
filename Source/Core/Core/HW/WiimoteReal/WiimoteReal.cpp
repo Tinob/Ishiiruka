@@ -176,7 +176,7 @@ void Wiimote::InterruptChannel(const u16 channel, const void* const _data, const
 	}
 
 	// Disallow games from turning off all of the LEDs.
-	// It makes Wii Remote connection status confusing.
+	// It makes Wiimote connection status confusing.
 	if (rpt[1] == WM_LEDS)
 	{
 		auto& leds_rpt = *reinterpret_cast<wm_leds*>(&rpt[2]);
@@ -304,7 +304,7 @@ bool Wiimote::IsBalanceBoard()
 			const auto* ack = reinterpret_cast<wm_acknowledge*>(&buf[2]);
 			if (ack->reportID == WM_READ_DATA && ack->errorID != 0x00)
 			{
-				WARN_LOG(WIIMOTE, "Failed to read from 0xa400fe, assuming Wii Remote is not a Balance Board.");
+				WARN_LOG(WIIMOTE, "Failed to read from 0xa400fe, assuming Wiimote is not a Balance Board.");
 				return false;
 			}
 		}
@@ -438,7 +438,7 @@ void Wiimote::EmuStop()
 
 	DisableDataReporting();
 
-	NOTICE_LOG(WIIMOTE, "Stopping Wii Remote data reporting.");
+	NOTICE_LOG(WIIMOTE, "Stopping Wiimote data reporting.");
 
 	DisablePowerAssertionInternal();
 }
@@ -456,7 +456,7 @@ void Wiimote::EmuResume()
 	rpt.continuous = 1;
 	QueueReport(WM_REPORT_MODE, &rpt, sizeof(rpt));
 
-	NOTICE_LOG(WIIMOTE, "Resuming Wii Remote data reporting.");
+	NOTICE_LOG(WIIMOTE, "Resuming Wiimote data reporting.");
 
 	EnablePowerAssertionInternal();
 }
@@ -471,7 +471,7 @@ void Wiimote::EmuPause()
 	rpt.continuous = 0;
 	QueueReport(WM_REPORT_MODE, &rpt, sizeof(rpt));
 
-	NOTICE_LOG(WIIMOTE, "Pausing Wii Remote data reporting.");
+	NOTICE_LOG(WIIMOTE, "Pausing Wiimote data reporting.");
 
 	DisablePowerAssertionInternal();
 }
@@ -647,13 +647,13 @@ void Wiimote::ThreadFunc()
 	{
 		if (m_need_prepare.TestAndClear() && !PrepareOnThread())
 		{
-			ERROR_LOG(WIIMOTE, "Wiimote::PrepareOnThread failed.  Disconnecting Wii Remote %d.",
+			ERROR_LOG(WIIMOTE, "Wiimote::PrepareOnThread failed.  Disconnecting Wiimote %d.",
 				m_index + 1);
 			break;
 		}
 		if (!Write())
 		{
-			ERROR_LOG(WIIMOTE, "Wiimote::Write failed.  Disconnecting Wii Remote %d.", m_index + 1);
+			ERROR_LOG(WIIMOTE, "Wiimote::Write failed.  Disconnecting Wiimote %d.", m_index + 1);
 			break;
 		}
 		Read();

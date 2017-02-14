@@ -34,9 +34,17 @@ set(SRCS Analytics.cpp
          Crypto/ec.cpp
          Logging/LogManager.cpp)
 
+if(LIBUSB_FOUND)
+	set(LIBS ${LIBS} ${LIBUSB_LIBRARIES})
+	set(SRCS ${SRCS} LibusbContext.cpp)
+endif(LIBUSB_FOUND)
+
 if(ANDROID)
 	set(SRCS ${SRCS}
 	         Logging/ConsoleListenerDroid.cpp)
+elseif(WIN32)
+	set(SRCS ${SRCS}
+	         Logging/ConsoleListenerWin.cpp)
 else()
 	set(SRCS ${SRCS}
 	         Logging/ConsoleListenerNix.cpp)
@@ -98,4 +106,9 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
 endif()
 
 add_dolphin_library(common "${SRCS}" "${LIBS}")
-add_executable(traversal_server TraversalServer.cpp)
+
+if(UNIX)
+	# Posix networking code needs to be fixed for Windows
+	add_executable(traversal_server TraversalServer.cpp)
+endif()
+

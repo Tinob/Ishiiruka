@@ -11,9 +11,15 @@
 #include "Common/CommonTypes.h"
 #include "Common/NandPaths.h"
 #include "Common/NonCopyable.h"
+#include "Common/Timer.h"
 
-#include "Core/HW/EXI_DeviceIPL.h"
+#include "Core/HW/EXI/EXI_DeviceIPL.h"
 #include "Core/HW/Sram.h"
+
+namespace File
+{
+class IOFile;
+}
 
 #define BE64(x) (Common::swap64(x))
 #define BE32(x) (Common::swap32(x))
@@ -70,7 +76,7 @@ public:
 	}
 	virtual ~MemoryCardBase() {}
 	virtual s32 Read(u32 address, s32 length, u8* destaddress) = 0;
-	virtual s32 Write(u32 destaddress, s32 length, u8* srcaddress) = 0;
+	virtual s32 Write(u32 destaddress, s32 length, const u8* srcaddress) = 0;
 	virtual void ClearBlock(u32 address) = 0;
 	virtual void ClearAll() = 0;
 	virtual void DoState(PointerWrap& p) = 0;
@@ -89,7 +95,7 @@ struct GCMBlock
 	u8 block[BLOCK_SIZE];
 };
 
-void calc_checksumsBE(u16* buf, u32 length, u16* csum, u16* inv_csum);
+void calc_checksumsBE(const u16* buf, u32 length, u16* csum, u16* inv_csum);
 
 #pragma pack(push, 1)
 struct Header  // Offset    Size    Description
@@ -100,10 +106,10 @@ struct Header  // Offset    Size    Description
 	u32 SramBias;    // 0x0014    4       SRAM bias at time of format
 	u32 SramLang;    // 0x0018    4       SRAM language
 	u8 Unk2[4];      // 0x001c    4       ? almost always 0
-									 // end Serial in libogc
+	// end Serial in libogc
 	u8 deviceID[2];     // 0x0020    2       0 if formated in slot A 1 if formated in slot B
 	u8 SizeMb[2];       // 0x0022    2       Size of memcard in Mbits
-	u16 Encoding;       // 0x0024    2       Encoding (ASCII or Japanese)
+	u16 Encoding;       // 0x0024    2       Encoding (Windows-1252 or Shift JIS)
 	u8 Unused1[468];    // 0x0026    468     Unused (0xff)
 	u16 UpdateCounter;  // 0x01fa    2       Update Counter (?, probably unused)
 	u16 Checksum;       // 0x01fc    2       Additive Checksum
@@ -131,7 +137,7 @@ struct Header  // Offset    Size    Description
 		memset(this, 0xFF, BLOCK_SIZE);
 		*(u16*)SizeMb = BE16(sizeMb);
 		Encoding = BE16(shift_jis ? 1 : 0);
-		u64 rand = CEXIIPL::GetEmulatedTime(CEXIIPL::GC_EPOCH);
+		u64 rand = Common::Timer::GetLocalTimeSinceJan1970() - CEXIIPL::GC_EPOCH;
 		formatTime = Common::swap64(rand);
 		for (int i = 0; i < 12; i++)
 		{
@@ -164,40 +170,40 @@ struct DEntry
 	u8 Makercode[2];  // 0x04      0x02    Makercode
 	u8 Unused1;       // 0x06      0x01    reserved/unused (always 0xff, has no effect)
 	u8 BIFlags;       // 0x07      0x01    banner gfx format and icon animation (Image Key)
-										//      Bit(s)  Description
-										//      2       Icon Animation 0: forward 1: ping-pong
-										//      1       [--0: No Banner 1: Banner present--] WRONG! YAGCD LIES!
-										//      0       [--Banner Color 0: RGB5A3 1: CI8--]  WRONG! YAGCD LIES!
-										//      bits 0 and 1: image format
-										//      00 no banner
-										//      01 CI8 banner
-										//      10 RGB5A3 banner
-										//      11 ? maybe ==00? Time Splitters 2 and 3 have it and don't have banner
-										//
+	//      Bit(s)  Description
+	//      2       Icon Animation 0: forward 1: ping-pong
+	//      1       [--0: No Banner 1: Banner present--] WRONG! YAGCD LIES!
+	//      0       [--Banner Color 0: RGB5A3 1: CI8--]  WRONG! YAGCD LIES!
+	//      bits 0 and 1: image format
+	//      00 no banner
+	//      01 CI8 banner
+	//      10 RGB5A3 banner
+	//      11 ? maybe ==00? Time Splitters 2 and 3 have it and don't have banner
+	//
 	u8 Filename[DENTRY_STRLEN];  // 0x08      0x20     Filename
 	u8 ModTime[4];      // 0x28      0x04    Time of file's last modification in seconds since 12am,
 											// January 1st, 2000
 	u8 ImageOffset[4];  // 0x2c      0x04    image data offset
 	u8 IconFmt[2];      // 0x30      0x02    icon gfx format (2bits per icon)
-											//      Bits    Description
-											//      00      No icon
-											//      01      CI8 with a shared color palette after the last frame
-											//      10      RGB5A3
-											//      11      CI8 with a unique color palette after itself
-											//
+	//      Bits    Description
+	//      00      No icon
+	//      01      CI8 with a shared color palette after the last frame
+	//      10      RGB5A3
+	//      11      CI8 with a unique color palette after itself
+	//
 	u8 AnimSpeed[2];  // 0x32      0x02    Animation speed (2bits per icon) (*1)
-										//      Bits    Description
-										//      00      No icon
-										//      01      Icon lasts for 4 frames
-										//      10      Icon lasts for 8 frames
-										//      11      Icon lasts for 12 frames
-										//
+	//      Bits    Description
+	//      00      No icon
+	//      01      Icon lasts for 4 frames
+	//      10      Icon lasts for 8 frames
+	//      11      Icon lasts for 12 frames
+	//
 	u8 Permissions;  // 0x34      0x01    File-permissions
-									 //      Bit Permission  Description
-									 //      4   no move     File cannot be moved by the IPL
-									 //      3   no copy     File cannot be copied by the IPL
-									 //      2   public      Can be read by any game
-									 //
+	//      Bit Permission  Description
+	//      4   no move     File cannot be moved by the IPL
+	//      3   no copy     File cannot be copied by the IPL
+	//      2   public      Can be read by any game
+	//
 	u8 CopyCounter;      // 0x35      0x01    Copy counter (*2)
 	u8 FirstBlock[2];    // 0x36      0x02    Block no of first block of file (0 == offset 0)
 	u8 BlockCount[2];    // 0x38      0x02    File-length (number of blocks in file)
@@ -304,7 +310,8 @@ private:
 
 	std::vector<GCMBlock> mc_data_blocks;
 
-	u32 ImportGciInternal(FILE* gcih, const std::string& inputFile, const std::string& outputFile);
+	u32 ImportGciInternal(File::IOFile&& gci, const std::string& inputFile,
+		const std::string& outputFile);
 	void InitDirBatPointers();
 
 public:
@@ -314,9 +321,9 @@ public:
 	bool Save();
 	bool Format(bool shift_jis = false, u16 SizeMb = MemCard2043Mb);
 	static bool Format(u8* card_data, bool shift_jis = false, u16 SizeMb = MemCard2043Mb);
-	static s32 FZEROGX_MakeSaveGameValid(Header& cardheader, DEntry& direntry,
+	static s32 FZEROGX_MakeSaveGameValid(const Header& cardheader, const DEntry& direntry,
 		std::vector<GCMBlock>& FileBuffer);
-	static s32 PSO_MakeSaveGameValid(Header& cardheader, DEntry& direntry,
+	static s32 PSO_MakeSaveGameValid(const Header& cardheader, const DEntry& direntry,
 		std::vector<GCMBlock>& FileBuffer);
 
 	u32 TestChecksums() const;
@@ -357,7 +364,7 @@ public:
 	u32 GetSaveData(u8 index, std::vector<GCMBlock>& saveBlocks) const;
 
 	// adds the file to the directory and copies its contents
-	u32 ImportFile(DEntry& direntry, std::vector<GCMBlock>& saveBlocks);
+	u32 ImportFile(const DEntry& direntry, std::vector<GCMBlock>& saveBlocks);
 
 	// delete a file from the directory
 	u32 RemoveFile(u8 index);

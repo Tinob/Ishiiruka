@@ -29,11 +29,11 @@ enum DSPJitRegSpecial
 	DSP_REG_NONE = 255
 };
 
-enum DSPJitSignExtend
+enum class RegisterExtension
 {
-	SIGN,
-	ZERO,
-	NONE
+	Sign,
+	Zero,
+	None
 };
 
 class DSPJitRegCache
@@ -119,11 +119,11 @@ public:
 	// Gives no SCALE_RIP with abs(offset) >= 0x80000000
 	// 32/64 bit writes allowed when the register has a _64 or _32 suffix
 	// only 16 bit writes allowed without any suffix.
-	void GetReg(int reg, Gen::OpArg& oparg, bool load = true);
+	Gen::OpArg GetReg(int reg, bool load = true);
 	// Done with all usages of OpArg above
 	void PutReg(int reg, bool dirty = true);
 
-	void ReadReg(int sreg, Gen::X64Reg host_dreg, DSPJitSignExtend extend);
+	void ReadReg(int sreg, Gen::X64Reg host_dreg, RegisterExtension extend);
 	void WriteReg(int dreg, Gen::OpArg arg);
 
 	// Find a free host reg, spill if used, reserve
@@ -173,8 +173,6 @@ private:
 	void RotateHostReg(size_t reg, int shift, bool emit);
 	void MovToMemory(size_t reg);
 	void FlushMemBackedRegs();
-
-	static const std::array<Gen::X64Reg, 15> m_allocation_order;
 
 	std::array<DynamicReg, 37> m_regs;
 	std::array<X64CachedReg, 16> m_xregs;
