@@ -30,8 +30,8 @@ void StagingTexture2D::ReadTexel(u32 x, u32 y, void* data, size_t data_size) con
 	u32 block_width = Util::GetBlockWidth(m_format);
 	if (block_width > 1)
 	{
-		x = std::max(1u, (x + block_width - 1) / block_width);
-		y = std::max(1u, (y + block_width - 1) / block_width);
+		x = std::max(0u, (x + block_width - 1) / block_width);
+		y = std::max(0u, (y + block_width - 1) / block_width);
 	}
 	VkDeviceSize offset = y * m_row_stride + x * m_texel_size;
 	VkDeviceSize map_offset = offset - m_map_offset;
@@ -47,8 +47,8 @@ void StagingTexture2D::WriteTexel(u32 x, u32 y, const void* data, size_t data_si
 	u32 block_width = Util::GetBlockWidth(m_format);
 	if (block_width > 1)
 	{
-		x = std::max(1u, (x + block_width - 1) / block_width);
-		y = std::max(1u, (y + block_width - 1) / block_width);
+		x = std::max(0u, (x + block_width - 1) / block_width);
+		y = std::max(0u, (y + block_width - 1) / block_width);
 	}
 	VkDeviceSize offset = y * m_row_stride + x * m_texel_size;
 	VkDeviceSize map_offset = offset - m_map_offset;
@@ -66,8 +66,8 @@ void StagingTexture2D::ReadTexels(u32 x, u32 y, u32 width, u32 height, void* dat
 	u32 block_width = Util::GetBlockWidth(m_format);
 	if (block_width > 1)
 	{
-		x = std::max(1u, (x + block_width - 1) / block_width);
-		y = std::max(1u, (y + block_width - 1) / block_width);
+		x = std::max(0u, (x + block_width - 1) / block_width);
+		y = std::max(0u, (y + block_width - 1) / block_width);
 		width = std::max(1u, (width + block_width - 1) / block_width);
 		height = std::max(1u, (height + block_width - 1) / block_width);
 	}
@@ -98,8 +98,8 @@ void StagingTexture2D::WriteTexels(u32 x, u32 y, u32 width, u32 height, const vo
 	u32 block_width = Util::GetBlockWidth(m_format);
 	if (block_width > 1)
 	{
-		x = std::max(1u, (x + block_width - 1) / block_width);
-		y = std::max(1u, (y + block_width - 1) / block_width);
+		x = std::max(0u, (x + block_width - 1) / block_width);
+		y = std::max(0u, (y + block_width - 1) / block_width);
 		width = std::max(1u, (width + block_width - 1) / block_width);
 		height = std::max(1u, (height + block_width - 1) / block_width);
 	}
