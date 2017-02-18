@@ -68,7 +68,7 @@ set(SRCS	AsyncRequests.cpp
 			VideoState.cpp
 			XFMemory.cpp
 			XFStructs.cpp)
-set(LIBS core png xbrz)
+set(LIBS core png)
 
 if(_M_X86)
 	set(SRCS ${SRCS} x64TextureDecoder.cpp VertexLoaderX64.cpp)
@@ -85,5 +85,5 @@ endif()
 add_dolphin_library(videocommon "${SRCS}" "${LIBS}")
 
 if(LIBAV_FOUND)
-	target_link_libraries(videocommon ${LIBS} ${LIBAV_LIBRARIES})
+	target_link_libraries(videocommon PRIVATE ${LIBS} ${LIBAV_LIBRARIES})
 endif()
