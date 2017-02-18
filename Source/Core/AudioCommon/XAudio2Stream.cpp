@@ -34,10 +34,10 @@ public:
 
 	~StreamingVoiceContext();
 
-	void StreamingVoiceContext::Stop();
-	void StreamingVoiceContext::Play();
-	void StreamingVoiceContext::WriteFrame(s16* src, u32 numsamples);
-	bool StreamingVoiceContext::BufferReady();
+	void Stop();
+	void Play();
+	void WriteFrame(s16* src, u32 numsamples);
+	bool BufferReady();
 
 	STDMETHOD_(void, OnVoiceError) (THIS_ void* pBufferContext, HRESULT Error)
 	{}

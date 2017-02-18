@@ -37,10 +37,10 @@ public:
 
 	~StreamingVoiceContext2_7();
 
-	void StreamingVoiceContext2_7::Stop();
-	void StreamingVoiceContext2_7::Play();
-	void StreamingVoiceContext2_7::WriteFrame(s16* src, u32 numsamples);
-	bool StreamingVoiceContext2_7::BufferReady();
+	void Stop();
+	void Play();
+	void WriteFrame(s16* src, u32 numsamples);
+	bool BufferReady();
 	STDMETHOD_(void, OnVoiceError) (THIS_ void* pBufferContext, HRESULT Error)
 	{}
 	STDMETHOD_(void, OnVoiceProcessingPassStart) (UINT32)

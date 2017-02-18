@@ -187,7 +187,7 @@ int IOWrite(HANDLE& dev_handle, OVERLAPPED& hid_overlap_write, enum WinWriteMeth
 int IORead(HANDLE& dev_handle, OVERLAPPED& hid_overlap_read, u8* buf, int index);
 
 template <typename T>
-void ProcessWiimotes(bool new_scan, T& callback);
+void ProcessWiimotes(bool new_scan, const T& callback);
 
 bool AttachWiimote(HANDLE hRadio, const BLUETOOTH_RADIO_INFO&, BLUETOOTH_DEVICE_INFO_STRUCT&);
 void RemoveWiimote(BLUETOOTH_DEVICE_INFO_STRUCT&);
@@ -533,10 +533,10 @@ bool WiimoteWindows::ConnectInternal()
 	// This isn't as drastic as it sounds, since the process in which the threads
 	// reside is normal priority. Needed for keeping audio reports at a decent rate
 	/*
-		if (!SetThreadPriority(m_wiimote_thread.native_handle(), THREAD_PRIORITY_TIME_CRITICAL))
-		{
-			ERROR_LOG(WIIMOTE, "Failed to set Wiimote thread priority");
-		}
+	if (!SetThreadPriority(m_wiimote_thread.native_handle(), THREAD_PRIORITY_TIME_CRITICAL))
+	{
+	ERROR_LOG(WIIMOTE, "Failed to set Wiimote thread priority");
+	}
 	*/
 
 	return true;
@@ -795,7 +795,7 @@ int WiimoteWindows::IOWrite(const u8* buf, size_t len)
 
 // invokes callback for each found Wiimote Bluetooth device
 template <typename T>
-void ProcessWiimotes(bool new_scan, T& callback)
+void ProcessWiimotes(bool new_scan, const T& callback)
 {
 	BLUETOOTH_DEVICE_SEARCH_PARAMS srch;
 	srch.dwSize = sizeof(srch);
