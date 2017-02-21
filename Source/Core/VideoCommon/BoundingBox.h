@@ -28,7 +28,7 @@ enum
 	BOTTOM = 3
 };
 
-__forceinline void SetVertexBufferPosition(TPipelineState &pipelinestate)
+inline void SetVertexBufferPosition(TPipelineState &pipelinestate)
 {
 	bufferPos = pipelinestate.GetWritePosition();
 	pState = &pipelinestate;
