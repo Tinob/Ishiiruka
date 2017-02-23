@@ -2,6 +2,9 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 // Added For Ishiiruka By Tino
+
+#include <math.h>
+
 #ifdef _WIN32
 #include <windows.h>
 #endif

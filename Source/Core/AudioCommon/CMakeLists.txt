@@ -1,4 +1,5 @@
 set(SRCS
+  SoundStream.cpp
   AudioCommon.cpp
   DPL2Decoder.cpp
   Mixer.cpp

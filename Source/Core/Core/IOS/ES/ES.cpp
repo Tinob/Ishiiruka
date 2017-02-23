@@ -6,27 +6,27 @@
 // File description
 // -------------
 /*  Here we handle /dev/es requests. We have cases for these functions, the exact
-	DevKitPro/libogc name is in parenthesis:
+DevKitPro/libogc name is in parenthesis:
 
-	0x20 GetTitleID (ES_GetTitleID) (Input: none, Output: 8 bytes)
-	0x1d GetDataDir (ES_GetDataDir) (Input: 8 bytes, Output: 30 bytes)
+0x20 GetTitleID (ES_GetTitleID) (Input: none, Output: 8 bytes)
+0x1d GetDataDir (ES_GetDataDir) (Input: 8 bytes, Output: 30 bytes)
 
-	0x1b DiGetTicketView (Input: none, Output: 216 bytes)
-	0x16 GetConsumption (Input: 8 bytes, Output: 0 bytes, 4 bytes) // there are two output buffers
+0x1b DiGetTicketView (Input: none, Output: 216 bytes)
+0x16 GetConsumption (Input: 8 bytes, Output: 0 bytes, 4 bytes) // there are two output buffers
 
-	0x12 GetNumTicketViews (ES_GetNumTicketViews) (Input: 8 bytes, Output: 4 bytes)
-	0x14 GetTMDViewSize (ES_GetTMDViewSize) (Input: ?, Output: ?) // I don't get this anymore,
-		it used to come after 0x12
+0x12 GetNumTicketViews (ES_GetNumTicketViews) (Input: 8 bytes, Output: 4 bytes)
+0x14 GetTMDViewSize (ES_GetTMDViewSize) (Input: ?, Output: ?) // I don't get this anymore,
+it used to come after 0x12
 
-	but only the first two are correctly supported. For the other four we ignore any potential
-	input and only write zero to the out buffer. However, most games only use first two,
-	but some Nintendo developed games use the other ones to:
+but only the first two are correctly supported. For the other four we ignore any potential
+input and only write zero to the out buffer. However, most games only use first two,
+but some Nintendo developed games use the other ones to:
 
-	0x1b: Mario Galaxy, Mario Kart, SSBB
-	0x16: Mario Galaxy, Mario Kart, SSBB
-	0x12: Mario Kart
-	0x14: Mario Kart: But only if we don't return a zeroed out buffer for the 0x12 question,
-		and instead answer for example 1 will this question appear.
+0x1b: Mario Galaxy, Mario Kart, SSBB
+0x16: Mario Galaxy, Mario Kart, SSBB
+0x12: Mario Kart
+0x14: Mario Kart: But only if we don't return a zeroed out buffer for the 0x12 question,
+and instead answer for example 1 will this question appear.
 
 */
 // =============
@@ -69,26 +69,26 @@ namespace Device
 std::string ES::m_ContentFile;
 
 constexpr u8 s_key_sd[0x10] = { 0xab, 0x01, 0xb9, 0xd8, 0xe1, 0x62, 0x2b, 0x08,
-															 0xaf, 0xba, 0xd8, 0x4d, 0xbf, 0xc2, 0xa5, 0x5d };
+0xaf, 0xba, 0xd8, 0x4d, 0xbf, 0xc2, 0xa5, 0x5d };
 constexpr u8 s_key_ecc[0x1e] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-																0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-																0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 };
+0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 };
 constexpr u8 s_key_empty[0x10] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-																	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
 // default key table
 constexpr const u8* s_key_table[11] = {
-		s_key_ecc,    // ECC Private Key
-		s_key_empty,  // Console ID
-		s_key_empty,  // NAND AES Key
-		s_key_empty,  // NAND HMAC
-		s_key_empty,  // Common Key
-		s_key_empty,  // PRNG seed
-		s_key_sd,     // SD Key
-		s_key_empty,  // Unknown
-		s_key_empty,  // Unknown
-		s_key_empty,  // Unknown
-		s_key_empty,  // Unknown
+	s_key_ecc,    // ECC Private Key
+	s_key_empty,  // Console ID
+	s_key_empty,  // NAND AES Key
+	s_key_empty,  // NAND HMAC
+	s_key_empty,  // Common Key
+	s_key_empty,  // PRNG seed
+	s_key_sd,     // SD Key
+	s_key_empty,  // Unknown
+	s_key_empty,  // Unknown
+	s_key_empty,  // Unknown
+	s_key_empty,  // Unknown
 };
 
 ES::ES(u32 device_id, const std::string& device_name) : Device(device_id, device_name)
@@ -203,7 +203,7 @@ void ES::Close()
 	m_ContentAccessMap.clear();
 	m_TitleIDs.clear();
 	m_TitleID = -1;
-	m_AccessIdentID = 0x6000000;
+	m_AccessIdentID = 0;
 
 	INFO_LOG(IOS_ES, "ES: Close");
 	m_is_active = false;

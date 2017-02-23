@@ -129,18 +129,18 @@ bool AnalyzeFunction(u32 startAddr, Symbol& func, int max_size)
 			/*
 			else if ((instr.hex & 0xFC000000) == (0x4b000000 & 0xFC000000) && !instr.LK)
 			{
-				u32 target = addr + SignExt26(instr.LI << 2);
-				if (target < startAddr || (max_size && target > max_size+startAddr))
-				{
-					//block ends by branching away. We're done!
-					func.size *= 4; // into bytes
-					func.address = startAddr;
-					func.analyzed = 1;
-					func.hash = SignatureDB::ComputeCodeChecksum(startAddr, addr);
-					if (numInternalBranches == 0)
-						func.flags |= FFLAG_STRAIGHT;
-					return true;
-				}
+			u32 target = addr + SignExt26(instr.LI << 2);
+			if (target < startAddr || (max_size && target > max_size+startAddr))
+			{
+			//block ends by branching away. We're done!
+			func.size *= 4; // into bytes
+			func.address = startAddr;
+			func.analyzed = 1;
+			func.hash = SignatureDB::ComputeCodeChecksum(startAddr, addr);
+			if (numInternalBranches == 0)
+			func.flags |= FFLAG_STRAIGHT;
+			return true;
+			}
 			}*/
 			else if (instr.hex == 0x4e800021 || instr.hex == 0x4e800420 || instr.hex == 0x4e800421)
 			{
@@ -486,7 +486,7 @@ void PPCAnalyzer::ReorderInstructions(u32 instructions, CodeOp* code)
 		ReorderInstructionsCore(instructions, code, false, REORDER_CMP);
 }
 
-void PPCAnalyzer::SetInstructionStats(CodeBlock* block, CodeOp* code, GekkoOPInfo* opinfo,
+void PPCAnalyzer::SetInstructionStats(CodeBlock* block, CodeOp* code, const GekkoOPInfo* opinfo,
 	u32 index)
 {
 	code->wantsCR0 = false;

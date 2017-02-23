@@ -508,13 +508,6 @@ void CFrame::OnStopRecording(wxCommandEvent& WXUNUSED(event))
 			CPU::EnableStepping(false);
 	}
 
-	if (!Movie::IsReadOnly())
-	{
-		// let's make the read-only flag consistent at the start of a movie.
-		Movie::SetReadOnly(true);
-		GetMenuBar()->FindItem(IDM_RECORD_READ_ONLY)->Check();
-	}
-
 	Movie::EndPlayInput(false);
 
 	GetMenuBar()->FindItem(IDM_STOP_RECORD)->Enable(Movie::IsMovieActive());
@@ -1514,6 +1507,7 @@ void CFrame::UpdateGUI()
 			GetMenuBar()->FindItem(IDM_RECORD)->Enable();
 			GetMenuBar()->FindItem(IDM_PLAY_RECORD)->Enable();
 		}
+
 		// Reset the stop playing/recording input menu item
 		GetMenuBar()->FindItem(IDM_STOP_RECORD)->SetItemLabel(_("Stop Playing/Recording Input"));
 	}

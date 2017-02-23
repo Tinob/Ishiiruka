@@ -44,7 +44,7 @@ struct CodeOp  // 16B
 	bool canEndBlock;
 	bool skipLRStack;
 	bool skip;  // followed BL-s for example
-	// which registers are still needed after this instruction in this block
+							// which registers are still needed after this instruction in this block
 	BitSet32 fprInUse;
 	BitSet32 gprInUse;
 	// just because a register is in use doesn't mean we actually need or want it in an x86 register.
@@ -176,7 +176,7 @@ private:
 
 	void ReorderInstructionsCore(u32 instructions, CodeOp* code, bool reverse, ReorderType type);
 	void ReorderInstructions(u32 instructions, CodeOp* code);
-	void SetInstructionStats(CodeBlock* block, CodeOp* code, GekkoOPInfo* opinfo, u32 index);
+	void SetInstructionStats(CodeBlock* block, CodeOp* code, const GekkoOPInfo* opinfo, u32 index);
 
 	// Options
 	u32 m_options;
