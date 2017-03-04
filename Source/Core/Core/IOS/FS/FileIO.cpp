@@ -151,7 +151,7 @@ void FileIO::OpenFile()
 		m_file = std::shared_ptr<File::IOFile>(new File::IOFile(m_filepath, "r+b"),
 			deleter);  // Use the custom deleter from above.
 
-								 // Store a weak pointer to our newly opened file in the cache.
+// Store a weak pointer to our newly opened file in the cache.
 		openFiles[path] = std::weak_ptr<File::IOFile>(m_file);
 	}
 }

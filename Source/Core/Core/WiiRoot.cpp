@@ -2,17 +2,19 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Core/WiiRoot.h"
+
 #include <string>
 
 #include "Common/CommonPaths.h"
 #include "Common/FileUtil.h"
 #include "Common/Logging/Log.h"
 #include "Common/NandPaths.h"
+#include "Common/StringUtil.h"
 #include "Common/SysConf.h"
 #include "Core/ConfigManager.h"
 #include "Core/Movie.h"
 #include "Core/NetPlayClient.h"
-#include "Core/WiiRoot.h"
 
 #ifdef _WIN32
 #include <Windows.h>
@@ -77,13 +79,13 @@ void InitializeWiiRoot(bool use_temporary)
 		// Generate a SYSCONF with default settings for the temporary Wii NAND.
 		SysConf sysconf{ Common::FromWhichRoot::FROM_SESSION_ROOT };
 		sysconf.Save();
+
+		InitializeDeterministicWiiSaves();
 	}
 	else
 	{
 		File::SetUserPath(D_SESSION_WIIROOT_IDX, File::GetUserPath(D_WIIROOT_IDX));
 	}
-
-	InitializeDeterministicWiiSaves();
 }
 
 void ShutdownWiiRoot()

@@ -207,8 +207,6 @@ void SConfig::SaveGameListSettings(IniFile& ini)
 	gamelist->Set("ListSort", m_ListSort);
 	gamelist->Set("ListSortSecondary", m_ListSort2);
 
-	gamelist->Set("ColorCompressed", m_ColorCompressed);
-
 	gamelist->Set("ColumnPlatform", m_showSystemColumn);
 	gamelist->Set("ColumnBanner", m_showBannerColumn);
 	gamelist->Set("ColumnNotes", m_showMakerColumn);
@@ -527,9 +525,6 @@ void SConfig::LoadGameListSettings(IniFile& ini)
 	gamelist->Get("ListUnknown", &m_ListUnknown, true);
 	gamelist->Get("ListSort", &m_ListSort, 3);
 	gamelist->Get("ListSortSecondary", &m_ListSort2, 0);
-
-	// Determines if compressed games display in blue
-	gamelist->Get("ColorCompressed", &m_ColorCompressed, true);
 
 	// Gamelist columns toggles
 	gamelist->Get("ColumnPlatform", &m_showSystemColumn, true);
@@ -935,7 +930,7 @@ bool SConfig::AutoSetup(EBootBS2 _BootBS2)
 			const DiscIO::CNANDContentLoader& ContentLoader =
 				DiscIO::CNANDContentManager::Access().GetNANDLoader(m_strFilename);
 
-			if (ContentLoader.GetContentByIndex(ContentLoader.GetBootIndex()) == nullptr)
+			if (ContentLoader.GetContentByIndex(ContentLoader.GetTMD().GetBootIndex()) == nullptr)
 			{
 				// WAD is valid yet cannot be booted. Install instead.
 				u64 installed = DiscIO::CNANDContentManager::Access().Install_WiiWAD(m_strFilename);
@@ -944,7 +939,7 @@ bool SConfig::AutoSetup(EBootBS2 _BootBS2)
 				return false;  // do not boot
 			}
 
-			SetRegion(ContentLoader.GetRegion(), &set_region_dir);
+			SetRegion(ContentLoader.GetTMD().GetRegion(), &set_region_dir);
 
 			bWii = true;
 			m_BootType = BOOT_WII_NAND;

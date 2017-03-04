@@ -13,10 +13,11 @@
 #include "InputCommon/ControlReference/ControlReference.h"
 #include "InputCommon/ControllerEmu/Control/Control.h"
 #include "InputCommon/ControllerEmu/Control/Input.h"
+#include "InputCommon/ControllerEmu/Setting/NumericSetting.h"
 
 namespace ControllerEmu
 {
-Tilt::Tilt(const std::string& name_) : ControlGroup(name_, GROUP_TYPE_TILT)
+Tilt::Tilt(const std::string& name_) : ControlGroup(name_, GroupType::Tilt)
 {
 	controls.emplace_back(std::make_unique<Input>("Forward"));
 	controls.emplace_back(std::make_unique<Input>("Backward"));

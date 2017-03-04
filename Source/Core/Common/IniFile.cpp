@@ -2,9 +2,10 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
-// see IniFile.h
+#include "Common/IniFile.h"
 
 #include <algorithm>
+#include <cinttypes>
 #include <cstddef>
 #include <cstring>
 #include <fstream>
@@ -15,7 +16,6 @@
 
 #include "Common/CommonTypes.h"
 #include "Common/FileUtil.h"
-#include "Common/IniFile.h"
 #include "Common/StringUtil.h"
 
 void IniFile::ParseLine(const std::string& line, std::string* keyOut, std::string* valueOut)
@@ -51,7 +51,8 @@ void IniFile::Section::Set(const std::string& key, const std::string& newValue)
 	}
 }
 
-void IniFile::Section::Set(const std::string& key, const std::string& newValue, const std::string& defaultValue)
+void IniFile::Section::Set(const std::string& key, const std::string& newValue,
+	const std::string& defaultValue)
 {
 	if (newValue != defaultValue)
 		Set(key, newValue);
@@ -72,7 +73,43 @@ void IniFile::Section::Set(const std::string& key, const std::vector<std::string
 	Set(key, temp);
 }
 
-bool IniFile::Section::Get(const std::string& key, std::string* value, const std::string& defaultValue) const
+void IniFile::Section::Set(const std::string& key, u32 newValue)
+{
+	Set(key, StringFromFormat("0x%08x", newValue));
+}
+
+void IniFile::Section::Set(const std::string& key, u64 new_value)
+{
+	Set(key, StringFromFormat("0x%016" PRIx64, new_value));
+}
+
+void IniFile::Section::Set(const std::string& key, float newValue)
+{
+	Set(key, StringFromFormat("%#.9g", newValue));
+}
+
+void IniFile::Section::Set(const std::string& key, double newValue)
+{
+	Set(key, StringFromFormat("%#.17g", newValue));
+}
+
+void IniFile::Section::Set(const std::string& key, int newValue)
+{
+	Set(key, StringFromInt(newValue));
+}
+
+void IniFile::Section::Set(const std::string& key, s64 newValue)
+{
+	Set(key, StringFromFormat("%" PRId64, newValue));
+}
+
+void IniFile::Section::Set(const std::string& key, bool newValue)
+{
+	Set(key, StringFromBool(newValue));
+}
+
+bool IniFile::Section::Get(const std::string& key, std::string* value,
+	const std::string& defaultValue) const
 {
 	auto it = values.find(key);
 	if (it != values.end())
@@ -131,6 +168,18 @@ bool IniFile::Section::Get(const std::string& key, int* value, int defaultValue)
 	return false;
 }
 
+bool IniFile::Section::Get(const std::string& key, s64* value, s64 default_value) const
+{
+	std::string temp;
+	bool retval = Get(key, &temp);
+
+	if (retval && TryParse(temp, value))
+		return true;
+
+	*value = default_value;
+	return false;
+}
+
 bool IniFile::Section::Get(const std::string& key, u32* value, u32 defaultValue) const
 {
 	std::string temp;
@@ -140,6 +189,18 @@ bool IniFile::Section::Get(const std::string& key, u32* value, u32 defaultValue)
 		return true;
 
 	*value = defaultValue;
+	return false;
+}
+
+bool IniFile::Section::Get(const std::string& key, u64* value, u64 default_value) const
+{
+	std::string temp;
+	bool retval = Get(key, &temp);
+
+	if (retval && TryParse(temp, value))
+		return true;
+
+	*value = default_value;
 	return false;
 }
 
@@ -248,7 +309,7 @@ bool IniFile::Exists(const std::string& sectionName, const std::string& key) con
 	return section->Exists(key);
 }
 
-void IniFile::SetLines(const std::string& sectionName, const std::vector<std::string> &lines)
+void IniFile::SetLines(const std::string& sectionName, const std::vector<std::string>& lines)
 {
 	Section* section = GetOrCreateSection(sectionName);
 	section->lines = lines;
@@ -275,7 +336,8 @@ bool IniFile::GetKeys(const std::string& sectionName, std::vector<std::string>* 
 }
 
 // Return a list of all lines in a section
-bool IniFile::GetLines(const std::string& sectionName, std::vector<std::string>* lines, const bool remove_comments) const
+bool IniFile::GetLines(const std::string& sectionName, std::vector<std::string>* lines,
+	const bool remove_comments) const
 {
 	lines->clear();
 
@@ -376,10 +438,7 @@ bool IniFile::Load(const std::string& filename, bool keep_current_data)
 					// Kind of a hack, but the support for raw lines inside an
 					// INI is a hack anyway.
 					if ((key == "" && value == "") ||
-						(line.size() >= 1 &&
-						(line[0] == '$' ||
-							line[0] == '+' ||
-							line[0] == '*')))
+						(line.size() >= 1 && (line[0] == '$' || line[0] == '+' || line[0] == '*')))
 						current_section->lines.push_back(line);
 					else
 						current_section->Set(key, value);
@@ -432,19 +491,19 @@ bool IniFile::Save(const std::string& filename)
 /*
 int main()
 {
-	IniFile ini;
-	ini.Load("my.ini");
-	ini.Set("Hello", "A", "amaskdfl");
-	ini.Set("Moss", "A", "amaskdfl");
-	ini.Set("Aissa", "A", "amaskdfl");
-	//ini.Read("my.ini");
-	std::string x;
-	ini.Get("Hello", "B", &x, "boo");
-	ini.DeleteKey("Moss", "A");
-	ini.DeleteSection("Moss");
-	ini.SortSections();
-	ini.Save("my.ini");
-	//UpdateVars(ini);
-	return 0;
+IniFile ini;
+ini.Load("my.ini");
+ini.Set("Hello", "A", "amaskdfl");
+ini.Set("Moss", "A", "amaskdfl");
+ini.Set("Aissa", "A", "amaskdfl");
+//ini.Read("my.ini");
+std::string x;
+ini.Get("Hello", "B", &x, "boo");
+ini.DeleteKey("Moss", "A");
+ini.DeleteSection("Moss");
+ini.SortSections();
+ini.Save("my.ini");
+//UpdateVars(ini);
+return 0;
 }
 */

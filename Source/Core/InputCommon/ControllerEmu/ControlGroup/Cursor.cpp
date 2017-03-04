@@ -16,10 +16,12 @@
 #include "InputCommon/ControllerEmu/Control/Control.h"
 #include "InputCommon/ControllerEmu/Control/Input.h"
 #include "InputCommon/ControllerEmu/ControllerEmu.h"
+#include "InputCommon/ControllerEmu/Setting/BooleanSetting.h"
+#include "InputCommon/ControllerEmu/Setting/NumericSetting.h"
 
 namespace ControllerEmu
 {
-Cursor::Cursor(const std::string& name_) : ControlGroup(name_, GROUP_TYPE_CURSOR)
+Cursor::Cursor(const std::string& name_) : ControlGroup(name_, GroupType::Cursor)
 {
 	for (auto& named_direction : named_directions)
 		controls.emplace_back(std::make_unique<Input>(named_direction));

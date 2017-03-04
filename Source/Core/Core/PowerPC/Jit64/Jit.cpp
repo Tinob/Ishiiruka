@@ -13,6 +13,7 @@
 #endif
 
 #include "Common/CommonTypes.h"
+#include "Common/FileUtil.h"
 #include "Common/Logging/Log.h"
 #include "Common/MemoryUtil.h"
 #include "Common/StringUtil.h"
@@ -94,25 +95,25 @@ using namespace PowerPC;
 
 // Optimization Ideas -
 /*
-* Assume SP is in main RAM (in Wii mode too?) - partly done
-* Assume all floating point loads and double precision loads+stores are to/from main ram
-(single precision stores can be used in write gather pipe, specialized fast check added)
-* AMD only - use movaps instead of movapd when loading ps from memory?
-* HLE functions like floorf, sin, memcpy, etc - they can be much faster
-* ABI optimizations - drop F0-F13 on blr, for example. Watch out for context switching.
-CR2-CR4 are non-volatile, rest of CR is volatile -> dropped on blr.
-R5-R12 are volatile -> dropped on blr.
-* classic inlining across calls.
-* Track which registers a block clobbers without using, then take advantage of this knowledge
-when compiling a block that links to that block.
-* Track more dependencies between instructions, e.g. avoiding PPC_FP code, single/double
-conversion, movddup on non-paired singles, etc where possible.
-* Support loads/stores directly from xmm registers in jit_util and the backpatcher; this might
-help AMD a lot since gpr/xmm transfers are slower there.
-* Smarter register allocation in general; maybe learn to drop values once we know they won't be
-used again before being overwritten?
-* More flexible reordering; there's limits to how far we can go because of exception handling
-and such, but it's currently limited to integer ops only. This can definitely be made better.
+	* Assume SP is in main RAM (in Wii mode too?) - partly done
+	* Assume all floating point loads and double precision loads+stores are to/from main ram
+		(single precision stores can be used in write gather pipe, specialized fast check added)
+	* AMD only - use movaps instead of movapd when loading ps from memory?
+	* HLE functions like floorf, sin, memcpy, etc - they can be much faster
+	* ABI optimizations - drop F0-F13 on blr, for example. Watch out for context switching.
+		CR2-CR4 are non-volatile, rest of CR is volatile -> dropped on blr.
+	R5-R12 are volatile -> dropped on blr.
+	* classic inlining across calls.
+	* Track which registers a block clobbers without using, then take advantage of this knowledge
+		when compiling a block that links to that block.
+	* Track more dependencies between instructions, e.g. avoiding PPC_FP code, single/double
+		conversion, movddup on non-paired singles, etc where possible.
+	* Support loads/stores directly from xmm registers in jit_util and the backpatcher; this might
+		help AMD a lot since gpr/xmm transfers are slower there.
+	* Smarter register allocation in general; maybe learn to drop values once we know they won't be
+		used again before being overwritten?
+	* More flexible reordering; there's limits to how far we can go because of exception handling
+		and such, but it's currently limited to integer ops only. This can definitely be made better.
 */
 
 // The BLR optimization is nice, but it means that JITted code can overflow the
@@ -669,9 +670,6 @@ const u8* Jit64::DoJit(u32 em_address, PPCAnalyst::CodeBuffer* code_buf, JitBloc
 	fpr.Start();
 
 	js.downcountAmount = 0;
-	if (!SConfig::GetInstance().bEnableDebugging)
-		js.downcountAmount += PatchEngine::GetSpeedhackCycles(code_block.m_address);
-
 	js.skipInstructions = 0;
 	js.carryFlagSet = false;
 	js.carryFlagInverted = false;
@@ -728,6 +726,9 @@ const u8* Jit64::DoJit(u32 em_address, PPCAnalyst::CodeBuffer* code_buf, JitBloc
 		js.fixupExceptionHandler = false;
 		js.revertGprLoad = -1;
 		js.revertFprLoad = -1;
+
+		if (!SConfig::GetInstance().bEnableDebugging)
+			js.downcountAmount += PatchEngine::GetSpeedhackCycles(js.compilerPC);
 
 		if (i == (code_block.m_num_instructions - 1))
 		{

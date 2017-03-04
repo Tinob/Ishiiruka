@@ -21,6 +21,7 @@
 #include "Core/HW/DVDInterface.h"
 #include "Core/HW/EXI/EXI_DeviceIPL.h"
 #include "Core/HW/Memmap.h"
+#include "Core/IOS/ES/ES.h"
 #include "Core/IOS/ES/Formats.h"
 #include "Core/IOS/IPC.h"
 #include "Core/PatchEngine.h"
@@ -73,8 +74,8 @@ bool CBoot::EmulatedBS2_GC(bool skipAppLoader)
 		0x80000020);  // Booted from bootrom. 0xE5207C22 = booted from jtag
 	PowerPC::HostWrite_U32(Memory::REALRAM_SIZE,
 		0x80000028);  // Physical Memory Size (24MB on retail)
-// TODO determine why some games fail when using a retail ID. (Seem to take different EXI paths,
-// see Ikaruga for example)
+									// TODO determine why some games fail when using a retail ID. (Seem to take different EXI paths,
+									// see Ikaruga for example)
 	PowerPC::HostWrite_U32(
 		0x10000006,
 		0x8000002C);  // Console type - DevKit  (retail ID == 0x00000003) see YAGCD 4.2.1.1.2
@@ -94,8 +95,8 @@ bool CBoot::EmulatedBS2_GC(bool skipAppLoader)
 
 	PowerPC::HostWrite_U64((u64)CEXIIPL::GetEmulatedTime(CEXIIPL::GC_EPOCH) * (u64)40500000,
 		0x800030D8);  // Preset time base ticks
-// HIO checks this
-// PowerPC::HostWrite_U16(0x8200,     0x000030e6); // Console type
+									// HIO checks this
+									// PowerPC::HostWrite_U16(0x8200,     0x000030e6); // Console type
 
 	HLE::Patch(0x81300000, "OSReport");  // HLE OSReport for Apploader
 
@@ -190,10 +191,10 @@ bool CBoot::EmulatedBS2_GC(bool skipAppLoader)
 bool CBoot::SetupWiiMemory(u64 ios_title_id)
 {
 	static const std::map<DiscIO::Region, const RegionSetting> region_settings = {
-			{DiscIO::Region::NTSC_J, {"JPN", "NTSC", "JP", "LJ"}},
-			{DiscIO::Region::NTSC_U, {"USA", "NTSC", "US", "LU"}},
-			{DiscIO::Region::PAL, {"EUR", "PAL", "EU", "LE"}},
-			{DiscIO::Region::NTSC_K, {"KOR", "NTSC", "KR", "LKH"}} };
+		{ DiscIO::Region::NTSC_J,{ "JPN", "NTSC", "JP", "LJ" } },
+		{ DiscIO::Region::NTSC_U,{ "USA", "NTSC", "US", "LU" } },
+		{ DiscIO::Region::PAL,{ "EUR", "PAL", "EU", "LE" } },
+		{ DiscIO::Region::NTSC_K,{ "KOR", "NTSC", "KR", "LKH" } } };
 	auto entryPos = region_settings.find(SConfig::GetInstance().m_region);
 	const RegionSetting& region_setting = entryPos->second;
 
@@ -263,7 +264,7 @@ bool CBoot::SetupWiiMemory(u64 ios_title_id)
 	Memory::Write_U32(0x00000023, 0x0000002c);            // Production Board Model
 	Memory::Write_U32(0x00000000, 0x00000030);            // Init
 	Memory::Write_U32(0x817FEC60, 0x00000034);            // Init
-	// 38, 3C should get start, size of FST through apploader
+																												// 38, 3C should get start, size of FST through apploader
 	Memory::Write_U32(0x38a00040, 0x00000060);            // Exception init
 	Memory::Write_U32(0x8008f7b8, 0x000000e4);            // Thread Init
 	Memory::Write_U32(Memory::REALRAM_SIZE, 0x000000f0);  // "Simulated memory size" (debug mode?)
@@ -287,7 +288,7 @@ bool CBoot::SetupWiiMemory(u64 ios_title_id)
 	Memory::Write_U16(0x0000, 0x000030e0);      // PADInit
 	Memory::Write_U32(0x80000000, 0x00003184);  // GameID Address
 
-	// Fake the VI Init of the IPL
+																							// Fake the VI Init of the IPL
 	Memory::Write_U32(DiscIO::IsNTSC(SConfig::GetInstance().m_region) ? 0 : 1, 0x000000CC);
 
 	// Clear exception handler. Why? Don't we begin with only zeros?
@@ -309,6 +310,11 @@ bool CBoot::EmulatedBS2_Wii()
 		return false;
 
 	if (DVDInterface::GetVolume().GetVolumeType() != DiscIO::Platform::WII_DISC)
+		return false;
+
+	const IOS::ES::TMDReader tmd = DVDInterface::GetVolume().GetTMD();
+
+	if (!SetupWiiMemory(tmd.GetIOSId()))
 		return false;
 
 	// This is some kind of consistency check that is compared to the 0x00
@@ -346,17 +352,10 @@ bool CBoot::EmulatedBS2_Wii()
 
 	PowerPC::ppcState.gpr[1] = 0x816ffff0;  // StackPointer
 
-	std::vector<u8> tmd = DVDInterface::GetVolume().GetTMD();
-
-	IOS::HLE::TMDReader tmd_reader{ std::move(tmd) };
-
-	if (!SetupWiiMemory(tmd_reader.GetIOSId()))
-		return false;
-
-	// Execute the apploader
+																					// Execute the apploader
 	const u32 apploader_offset = 0x2440;  // 0x1c40;
 
-	// Load Apploader to Memory
+																				// Load Apploader to Memory
 	const DiscIO::IVolume& volume = DVDInterface::GetVolume();
 	u32 apploader_entry, apploader_size;
 	if (!volume.ReadSwapped(apploader_offset + 0x10, &apploader_entry, true) ||
@@ -385,11 +384,7 @@ bool CBoot::EmulatedBS2_Wii()
 	PowerPC::ppcState.gpr[3] = 0x81300000;
 	RunFunction(iAppLoaderInit);
 
-	// Let the apploader load the exe to memory. At this point I get an unknown IPC command
-	// (command zero) when I load Wii Sports or other games a second time. I don't notice
-	// any side effects however. It's a little disconcerting however that Start after Stop
-	// behaves differently than the first Start after starting Dolphin. It means something
-	// was not reset correctly.
+	// Let the apploader load the exe to memory
 	DEBUG_LOG(BOOT, "Run iAppLoaderMain");
 	do
 	{
@@ -412,8 +407,7 @@ bool CBoot::EmulatedBS2_Wii()
 	DEBUG_LOG(BOOT, "Run iAppLoaderClose");
 	RunFunction(iAppLoaderClose);
 
-	// Load patches and run startup patches
-	PatchEngine::LoadPatches();
+	IOS::HLE::Device::ES::DIVerify(tmd, DVDInterface::GetVolume().GetTicket());
 
 	// return
 	PC = PowerPC::ppcState.gpr[3];

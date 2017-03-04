@@ -20,6 +20,7 @@
 #include "Common/FileSearch.h"
 #include "Common/FileUtil.h"
 #include "Common/MsgHandler.h"
+#include "Common/StringUtil.h"
 #include "Core/ConfigManager.h"
 #include "Core/HotkeyManager.h"
 #include "DolphinWX/Config/InterfaceConfigPane.h"

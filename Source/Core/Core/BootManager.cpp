@@ -28,6 +28,7 @@
 #include "Common/IniFile.h"
 #include "Common/Logging/Log.h"
 #include "Common/MsgHandler.h"
+#include "Common/StringUtil.h"
 
 #include "Core/BootManager.h"
 #include "Core/ConfigManager.h"

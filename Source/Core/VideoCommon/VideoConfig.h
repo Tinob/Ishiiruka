@@ -151,7 +151,9 @@ struct VideoConfig final
 	bool bInternalResolutionFrameDumps;
 	bool bFreeLook;
 	bool bBorderlessFullscreen;
+	int iBitrateKbps;
 	bool bCompileShaderOnStartup;
+	
 
 	// Hacks
 	bool bEFBAccessEnable;

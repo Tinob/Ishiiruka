@@ -114,7 +114,14 @@ bool CVolumeWiiCrypted::GetTitleID(u64* buffer) const
 	return true;
 }
 
-std::vector<u8> CVolumeWiiCrypted::GetTMD() const
+IOS::ES::TicketReader CVolumeWiiCrypted::GetTicket() const
+{
+	std::vector<u8> buffer(0x2a4);
+	Read(m_VolumeOffset, buffer.size(), buffer.data(), false);
+	return IOS::ES::TicketReader{ std::move(buffer) };
+}
+
+IOS::ES::TMDReader CVolumeWiiCrypted::GetTMD() const
 {
 	u32 tmd_size;
 	u32 tmd_address;
@@ -137,7 +144,7 @@ std::vector<u8> CVolumeWiiCrypted::GetTMD() const
 	std::vector<u8> buffer(tmd_size);
 	Read(m_VolumeOffset + tmd_address, tmd_size, buffer.data(), false);
 
-	return buffer;
+	return IOS::ES::TMDReader{ std::move(buffer) };
 }
 
 u64 CVolumeWiiCrypted::PartitionOffsetToRawOffset(u64 offset) const

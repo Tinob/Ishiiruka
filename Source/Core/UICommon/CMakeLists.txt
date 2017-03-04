@@ -1,8 +1,11 @@
-set(SRCS Disassembler.cpp
-         UICommon.cpp
-         USBUtils.cpp)
+set(SRCS
+  CommandLineParse.cpp
+  Disassembler.cpp
+  UICommon.cpp
+  USBUtils.cpp
+)
 
-set(LIBS common)
+set(LIBS common cpp-optparse)
 if(LIBUSB_FOUND)
   set(LIBS ${LIBS} ${LIBUSB_LIBRARIES})
 endif()
