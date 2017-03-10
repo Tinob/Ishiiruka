@@ -446,9 +446,6 @@
     <ClInclude Include="Config\PathConfigPane.h">
       <Filter>GUI\Config</Filter>
     </ClInclude>
-    <ClCompile Include="Config\AddUSBDeviceDiag.h">
-      <Filter>GUI\Config</Filter>
-    </ClCompile>
     <ClInclude Include="Config\AdvancedConfigPane.h">
       <Filter>GUI\Config</Filter>
     </ClInclude>
@@ -485,6 +482,7 @@
     <ClInclude Include="DolphinSlider.h">
       <Filter>GUI\Widgets</Filter>
     </ClInclude>
+    <ClInclude Include="Config\AddUSBDeviceDiag.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />

@@ -242,6 +242,7 @@
     <ClInclude Include="AllocationMap.h" />
     <ClInclude Include="BitUtils.h" />
     <ClInclude Include="LibusbContext.h" />
+    <ClInclude Include="MD5.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CDUtils.cpp" />
@@ -309,6 +310,7 @@
     </ClCompile>
     <ClCompile Include="ucrtFreadWorkaround.cpp" />
     <ClCompile Include="Analytics.cpp" />
+    <ClCompile Include="MD5.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />
