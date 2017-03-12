@@ -766,9 +766,10 @@ void SConfig::SetRunningGameMetadata(const IOS::ES::TMDReader& tmd)
 			return;
 		}
 	}
-
+	// Read game ID from volume to avoid problems with custom textures and cheats
+	std::unique_ptr<DiscIO::IVolume> volume = DiscIO::CreateVolumeFromFilename(m_strFilename);	
 	// If not launching a disc game, just read everything from the TMD.
-	SetRunningGameMetadata(StringFromFormat("%016" PRIX64, tmd_title_id), tmd_title_id,
+	SetRunningGameMetadata(volume->GetGameID(), tmd_title_id,
 		tmd.GetTitleVersion());
 }
 
