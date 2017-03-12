@@ -11,9 +11,10 @@
 #include <vector>
 
 #include "Common/ChunkFile.h"
-#include "Common/CommonFuncs.h"
 #include "Common/CommonTypes.h"
 #include "Common/Crypto/AES.h"
+#include "Common/Swap.h"
+#include "Core/ec_wii.h"
 
 namespace IOS
 {
@@ -24,6 +25,12 @@ constexpr size_t CONTENT_VIEW_SIZE = 0x10;
 bool IsTitleType(u64 title_id, TitleType title_type)
 {
 	return static_cast<u32>(title_id >> 32) == static_cast<u32>(title_type);
+}
+
+bool IsDiscTitle(u64 title_id)
+{
+	return IsTitleType(title_id, TitleType::Game) ||
+		IsTitleType(title_id, TitleType::GameWithChannel);
 }
 
 bool Content::IsShared() const
@@ -258,10 +265,15 @@ std::vector<u8> TicketReader::GetRawTicketView(u32 ticket_num) const
 	std::memcpy(view.data(), &view_id, sizeof(view_id));
 
 	// Copy the rest of the ticket view structure from the ticket.
-	view.insert(view.end(), view_start, view_start + sizeof(TicketView) - sizeof(view_id));
+	view.insert(view.end(), view_start, view_start + (sizeof(TicketView) - sizeof(view_id)));
 	_assert_(view.size() == sizeof(TicketView));
 
 	return view;
+}
+
+u32 TicketReader::GetDeviceId() const
+{
+	return Common::swap32(m_bytes.data() + GetOffset() + offsetof(Ticket, device_id));
 }
 
 u64 TicketReader::GetTitleId() const
@@ -272,11 +284,39 @@ u64 TicketReader::GetTitleId() const
 std::vector<u8> TicketReader::GetTitleKey() const
 {
 	const u8 common_key[16] = { 0xeb, 0xe4, 0x2a, 0x22, 0x5e, 0x85, 0x93, 0xe4,
-														 0x48, 0xd9, 0xc5, 0x45, 0x73, 0x81, 0xaa, 0xf7 };
+		0x48, 0xd9, 0xc5, 0x45, 0x73, 0x81, 0xaa, 0xf7 };
 	u8 iv[16] = {};
 	std::copy_n(&m_bytes[GetOffset() + offsetof(Ticket, title_id)], sizeof(Ticket::title_id), iv);
 	return Common::AES::Decrypt(common_key, iv, &m_bytes[GetOffset() + offsetof(Ticket, title_key)],
 		16);
+}
+
+constexpr s32 IOSC_OK = 0;
+
+s32 TicketReader::Unpersonalise()
+{
+	const auto ticket_begin = m_bytes.begin() + GetOffset();
+
+	// IOS uses IOSC to compute an AES key from the peer public key and the device's private ECC key,
+	// which is used the decrypt the title key. The IV is the ticket ID (8 bytes), zero extended.
+
+	const auto public_key_iter = ticket_begin + offsetof(Ticket, server_public_key);
+	EcWii::ECCKey public_key;
+	std::copy_n(public_key_iter, sizeof(Ticket::server_public_key), public_key.begin());
+
+	const EcWii& ec = EcWii::GetInstance();
+	const std::array<u8, 16> shared_secret = ec.GetSharedSecret(public_key);
+
+	std::array<u8, 16> iv{};
+	std::copy_n(ticket_begin + offsetof(Ticket, ticket_id), sizeof(Ticket::ticket_id), iv.begin());
+
+	const std::vector<u8> key =
+		Common::AES::Decrypt(shared_secret.data(), iv.data(),
+			&*ticket_begin + offsetof(Ticket, title_key), sizeof(Ticket::title_key));
+
+	// Finally, IOS copies the decrypted title key back to the ticket buffer.
+	std::copy(key.cbegin(), key.cend(), ticket_begin + offsetof(Ticket, title_key));
+	return IOSC_OK;
 }
 }  // namespace ES
 }  // namespace IOS

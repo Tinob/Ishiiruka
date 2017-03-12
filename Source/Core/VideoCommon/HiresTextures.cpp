@@ -19,11 +19,13 @@
 #include "Common/FileSearch.h"
 #include "Common/FileUtil.h"
 #include "Common/Flag.h"
+#include "Common/Logging/Log.h"
 #include "Common/MemoryUtil.h"
 #include "Common/StringUtil.h"
+#include "Common/Swap.h"
 #include "Common/Thread.h"
 #include "Common/Timer.h"
-#include "Common/Logging/Log.h"
+
 
 #include "Core/ConfigManager.h"
 
@@ -156,7 +158,7 @@ void HiresTexture::Update()
 	}
 
 	s_textureMap.clear();
-	const std::string& game_id = SConfig::GetInstance().m_strGameID;
+	const std::string& game_id = SConfig::GetInstance().GetGameID();
 	const std::string texture_directory = GetTextureDirectory(game_id);
 
 	std::string ddscode(".dds");
@@ -337,7 +339,7 @@ std::string HiresTexture::GenBaseName(
 		u64 tlut_hash = 0;
 		if (tlut_size)
 			tlut_hash = GetHashHiresTexture(tlut, (int)tlut_size, g_ActiveConfig.iSafeTextureCache_ColorSamples);
-		name = StringFromFormat("%s_%08x_%i", SConfig::GetInstance().m_strGameID.c_str(), (u32)(tex_hash ^ tlut_hash), (u16)format);
+		name = StringFromFormat("%s_%08x_%i", SConfig::GetInstance().GetGameID().c_str(), (u32)(tex_hash ^ tlut_hash), (u16)format);
 		convert_iter = s_textureMap.find(name);
 		if (convert_iter != s_textureMap.end())
 		{

@@ -161,7 +161,7 @@ void SoundStream::SoundLoop()
 			availablesamples = sTouch.numSamples();
 			if (samplesneeded >= SOUND_FRAME_SIZE && availablesamples > 0)
 			{
-				ratemultiplier = std::fmaxf(std::fminf((float)availablesamples / (float)samplesneeded, 1.1f), 0.9f);
+				ratemultiplier = fmaxf(fminf((float)availablesamples / (float)samplesneeded, 1.1f), 0.9f);
 				numsamples = std::min(availablesamples, SOUND_FRAME_SIZE);
 				if (surroundSupported)
 				{

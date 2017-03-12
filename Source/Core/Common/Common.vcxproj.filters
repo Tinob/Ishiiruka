@@ -226,6 +226,9 @@
     <ClInclude Include="GL\GLExtensions\NV_primitive_restart.h">
       <Filter>GL\GLExtensions</Filter>
     </ClInclude>
+    <ClInclude Include="GL\GLExtensions\NV_depth_buffer_float.h">
+      <Filter>GL\GLExtensions</Filter>
+    </ClInclude>
     <ClInclude Include="GL\GLInterface\WGL.h">
       <Filter>GL\GLInterface</Filter>
     </ClInclude>
@@ -243,6 +246,7 @@
     <ClInclude Include="BitUtils.h" />
     <ClInclude Include="LibusbContext.h" />
     <ClInclude Include="MD5.h" />
+    <ClInclude Include="Swap.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CDUtils.cpp" />

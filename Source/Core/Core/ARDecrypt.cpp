@@ -13,9 +13,10 @@
 #include <windows.h>
 #endif
 
-#include "Common/CommonFuncs.h"
 #include "Common/CommonTypes.h"
 #include "Common/MsgHandler.h"
+#include "Common/Swap.h"
+
 #include "Core/ARDecrypt.h"
 
 namespace ActionReplay

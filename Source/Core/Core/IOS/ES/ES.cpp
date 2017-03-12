@@ -2,7 +2,10 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Core/IOS/ES/ES.h"
+
 #include <algorithm>
+#include <cctype>
 #include <cinttypes>
 #include <cstdio>
 #include <cstring>
@@ -11,31 +14,22 @@
 #include <vector>
 
 #include <mbedtls/aes.h>
+#include <mbedtls/sha1.h>
 
 #include "Common/Align.h"
 #include "Common/Assert.h"
 #include "Common/ChunkFile.h"
-#include "Common/CommonFuncs.h"
 #include "Common/FileUtil.h"
 #include "Common/Logging/Log.h"
 #include "Common/MsgHandler.h"
 #include "Common/NandPaths.h"
-#include "Core/Boot/Boot.h"
-#include "Core/Boot/Boot_DOL.h"
+#include "Common/Swap.h"
 #include "Core/ConfigManager.h"
-#include "Core/HLE/HLE.h"
-#include "Core/HW/DVDInterface.h"
 #include "Core/HW/Memmap.h"
-#include "Core/IOS/ES/ES.h"
 #include "Core/IOS/ES/Formats.h"
-#include "Core/PatchEngine.h"
-#include "Core/PowerPC/PPCSymbolDB.h"
-#include "Core/PowerPC/PowerPC.h"
-#include "Core/WiiRoot.h"
 #include "Core/ec_wii.h"
 #include "DiscIO/NANDContentLoader.h"
 #include "DiscIO/Volume.h"
-#include "VideoCommon/HiresTextures.h"
 
 namespace IOS
 {
@@ -49,7 +43,6 @@ struct TitleContext
 	void DoState(PointerWrap& p);
 	void Update(const DiscIO::CNANDContentLoader& content_loader);
 	void Update(const IOS::ES::TMDReader& tmd_, const IOS::ES::TicketReader& ticket_);
-	void UpdateRunningGame() const;
 
 	IOS::ES::TicketReader ticket;
 	IOS::ES::TMDReader tmd;
@@ -59,33 +52,32 @@ struct TitleContext
 
 // Shared across all ES instances.
 static std::string s_content_file;
-static std::vector<u64> s_title_ids;
 static TitleContext s_title_context;
 
 // Title to launch after IOS has been reset and reloaded (similar to /sys/launch.sys).
 static u64 s_title_to_launch;
 
 constexpr u8 s_key_sd[0x10] = { 0xab, 0x01, 0xb9, 0xd8, 0xe1, 0x62, 0x2b, 0x08,
-															 0xaf, 0xba, 0xd8, 0x4d, 0xbf, 0xc2, 0xa5, 0x5d };
+	0xaf, 0xba, 0xd8, 0x4d, 0xbf, 0xc2, 0xa5, 0x5d };
 constexpr u8 s_key_ecc[0x1e] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-																0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-																0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 };
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 };
 constexpr u8 s_key_empty[0x10] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-																	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
 // default key table
 constexpr const u8* s_key_table[11] = {
-		s_key_ecc,    // ECC Private Key
-		s_key_empty,  // Console ID
-		s_key_empty,  // NAND AES Key
-		s_key_empty,  // NAND HMAC
-		s_key_empty,  // Common Key
-		s_key_empty,  // PRNG seed
-		s_key_sd,     // SD Key
-		s_key_empty,  // Unknown
-		s_key_empty,  // Unknown
-		s_key_empty,  // Unknown
-		s_key_empty,  // Unknown
+	s_key_ecc,    // ECC Private Key
+	s_key_empty,  // Console ID
+	s_key_empty,  // NAND AES Key
+	s_key_empty,  // NAND HMAC
+	s_key_empty,  // Common Key
+	s_key_empty,  // PRNG seed
+	s_key_sd,     // SD Key
+	s_key_empty,  // Unknown
+	s_key_empty,  // Unknown
+	s_key_empty,  // Unknown
+	s_key_empty,  // Unknown
 };
 
 ES::ES(u32 device_id, const std::string& device_name) : Device(device_id, device_name)
@@ -94,16 +86,12 @@ ES::ES(u32 device_id, const std::string& device_name) : Device(device_id, device
 
 void ES::Init()
 {
+	const std::string import_dir = Common::RootUserPath(Common::FROM_SESSION_ROOT) + "/import";
+	File::DeleteDirRecursively(import_dir);
+	File::CreateDir(import_dir);
+
 	s_content_file = "";
 	s_title_context = TitleContext{};
-
-	s_title_ids.clear();
-	DiscIO::cUIDsys uid_sys{ Common::FromWhichRoot::FROM_SESSION_ROOT };
-	uid_sys.GetTitleIDs(s_title_ids);
-
-	// uncomment if  ES_GetOwnedTitlesCount / ES_GetOwnedTitles is implemented
-	// s_title_idsOwned.clear();
-	// DiscIO::cUIDsys::AccessInstance().GetTitleIDs(s_title_idsOwned, true);
 
 	if (s_title_to_launch != 0)
 	{
@@ -149,44 +137,9 @@ void TitleContext::Update(const IOS::ES::TMDReader& tmd_, const IOS::ES::TicketR
 	// Interesting title changes (channel or disc game launch) always happen after an IOS reload.
 	if (first_change)
 	{
-		UpdateRunningGame();
+		SConfig::GetInstance().SetRunningGameMetadata(tmd);
 		first_change = false;
 	}
-}
-
-void TitleContext::UpdateRunningGame() const
-{
-	// This one does not always make sense for Wii titles, so let's reset it back to a sane value.
-	SConfig::GetInstance().m_strName = "";
-	if (IOS::ES::IsTitleType(tmd.GetTitleId(), IOS::ES::TitleType::Game) ||
-		IOS::ES::IsTitleType(tmd.GetTitleId(), IOS::ES::TitleType::GameWithChannel))
-	{
-		const u32 title_identifier = Common::swap32(static_cast<u32>(tmd.GetTitleId()));
-		const u16 group_id = Common::swap16(tmd.GetGroupId());
-
-		char ascii_game_id[6];
-		std::memcpy(ascii_game_id, &title_identifier, sizeof(title_identifier));
-		std::memcpy(ascii_game_id + sizeof(title_identifier), &group_id, sizeof(group_id));
-
-		SConfig::GetInstance().m_strGameID = ascii_game_id;
-	}
-	else
-	{
-		SConfig::GetInstance().m_strGameID = StringFromFormat("%016" PRIX64, tmd.GetTitleId());
-	}
-
-	SConfig::GetInstance().m_title_id = tmd.GetTitleId();
-
-	// TODO: have a callback mechanism for title changes?
-	g_symbolDB.Clear();
-	CBoot::LoadMapFromFilename();
-	::HLE::Clear();
-	::HLE::PatchFunctions();
-	PatchEngine::Shutdown();
-	PatchEngine::LoadPatches();
-	HiresTexture::Update();
-
-	NOTICE_LOG(IOS_ES, "Active title: %016" PRIx64, tmd.GetTitleId());
 }
 
 void ES::LoadWAD(const std::string& _rContentFile)
@@ -240,6 +193,9 @@ bool ES::LaunchPPCTitle(u64 title_id, bool skip_reload)
 		return false;
 	}
 
+	if (!content_loader.GetTMD().IsValid() || !content_loader.GetTicket().IsValid())
+		return false;
+
 	// Before launching a title, IOS first reads the TMD and reloads into the specified IOS version,
 	// even when that version is already running. After it has reloaded, ES_Launch will be called
 	// again with the reload skipped, and the PPC will be bootstrapped then.
@@ -261,7 +217,6 @@ void ES::DoState(PointerWrap& p)
 	Device::DoState(p);
 	p.Do(s_content_file);
 	p.Do(m_AccessIdentID);
-	p.Do(s_title_ids);
 	s_title_context.DoState(p);
 
 	m_addtitle_tmd.DoState(p);
@@ -320,7 +275,7 @@ u32 ES::OpenTitleContent(u32 CFD, u64 TitleID, u16 Index)
 {
 	const DiscIO::CNANDContentLoader& Loader = AccessContentDevice(TitleID);
 
-	if (!Loader.IsValid() || !Loader.GetTicket().IsValid())
+	if (!Loader.IsValid() || !Loader.GetTMD().IsValid() || !Loader.GetTicket().IsValid())
 	{
 		WARN_LOG(IOS_ES, "ES: loader not valid for %" PRIx64, TitleID);
 		return 0xffffffff;
@@ -371,12 +326,10 @@ IPCCommandResult ES::IOCtlV(const IOCtlVRequest& request)
 		return AddContentFinish(request);
 	case IOCTL_ES_ADDTITLEFINISH:
 		return AddTitleFinish(request);
+	case IOCTL_ES_ADDTITLECANCEL:
+		return AddTitleCancel(request);
 	case IOCTL_ES_GETDEVICEID:
 		return ESGetDeviceID(request);
-	case IOCTL_ES_GETTITLECONTENTSCNT:
-		return GetTitleContentsCount(request);
-	case IOCTL_ES_GETTITLECONTENTS:
-		return GetTitleContents(request);
 	case IOCTL_ES_OPENTITLECONTENT:
 		return OpenTitleContent(request);
 	case IOCTL_ES_OPENCONTENT:
@@ -393,18 +346,42 @@ IPCCommandResult ES::IOCtlV(const IOCtlVRequest& request)
 		return GetTitleID(request);
 	case IOCTL_ES_SETUID:
 		return SetUID(request);
+
+	case IOCTL_ES_GETOWNEDTITLECNT:
+		return GetOwnedTitleCount(request);
+	case IOCTL_ES_GETOWNEDTITLES:
+		return GetOwnedTitles(request);
 	case IOCTL_ES_GETTITLECNT:
 		return GetTitleCount(request);
 	case IOCTL_ES_GETTITLES:
 		return GetTitles(request);
+
+	case IOCTL_ES_GETTITLECONTENTSCNT:
+		return GetStoredContentsCount(request);
+	case IOCTL_ES_GETTITLECONTENTS:
+		return GetStoredContents(request);
+	case IOCTL_ES_GETSTOREDCONTENTCNT:
+		return GetTMDStoredContentsCount(request);
+	case IOCTL_ES_GETSTOREDCONTENTS:
+		return GetTMDStoredContents(request);
+
 	case IOCTL_ES_GETVIEWCNT:
 		return GetViewCount(request);
 	case IOCTL_ES_GETVIEWS:
 		return GetViews(request);
+	case IOCTL_ES_DIGETTICKETVIEW:
+		return DIGetTicketView(request);
+
 	case IOCTL_ES_GETTMDVIEWCNT:
 		return GetTMDViewSize(request);
 	case IOCTL_ES_GETTMDVIEWS:
 		return GetTMDViews(request);
+
+	case IOCTL_ES_DIGETTMDVIEWSIZE:
+		return DIGetTMDViewSize(request);
+	case IOCTL_ES_DIGETTMDVIEW:
+		return DIGetTMDView(request);
+
 	case IOCTL_ES_GETCONSUMPTION:
 		return GetConsumption(request);
 	case IOCTL_ES_DELETETITLE:
@@ -443,12 +420,8 @@ IPCCommandResult ES::IOCtlV(const IOCtlVRequest& request)
 		return Sign(request);
 	case IOCTL_ES_GETBOOT2VERSION:
 		return GetBoot2Version(request);
-	case IOCTL_ES_DIGETTICKETVIEW:
-		return DIGetTicketView(request);
-	case IOCTL_ES_GETOWNEDTITLECNT:
-		return GetOwnedTitleCount(request);
 	default:
-		request.DumpUnknown(GetDeviceName(), LogTypes::IOS);
+		request.DumpUnknown(GetDeviceName(), LogTypes::IOS_ES);
 		break;
 	}
 
@@ -460,42 +433,76 @@ IPCCommandResult ES::AddTicket(const IOCtlVRequest& request)
 	if (!request.HasNumberOfValidVectors(3, 0))
 		return GetDefaultReply(ES_PARAMETER_SIZE_OR_ALIGNMENT);
 
-	INFO_LOG(IOS_ES, "IOCTL_ES_ADDTICKET");
-	std::vector<u8> ticket(request.in_vectors[0].size);
-	Memory::CopyFromEmu(ticket.data(), request.in_vectors[0].address, request.in_vectors[0].size);
+	std::vector<u8> bytes(request.in_vectors[0].size);
+	Memory::CopyFromEmu(bytes.data(), request.in_vectors[0].address, request.in_vectors[0].size);
 
-	DiscIO::AddTicket(IOS::ES::TicketReader{ std::move(ticket) });
+	IOS::ES::TicketReader ticket{ std::move(bytes) };
+	if (!ticket.IsValid())
+		return GetDefaultReply(ES_PARAMETER_SIZE_OR_ALIGNMENT);
 
+	const u32 ticket_device_id = ticket.GetDeviceId();
+	const u32 device_id = EcWii::GetInstance().GetNGID();
+	if (ticket_device_id != 0)
+	{
+		if (device_id != ticket_device_id)
+		{
+			WARN_LOG(IOS_ES, "Device ID mismatch: ticket %08x, device %08x", ticket_device_id, device_id);
+			return GetDefaultReply(ES_DEVICE_ID_MISMATCH);
+		}
+		const s32 ret = ticket.Unpersonalise();
+		if (ret < 0)
+		{
+			ERROR_LOG(IOS_ES, "AddTicket: Failed to unpersonalise ticket for %016" PRIx64 " (ret = %d)",
+				ticket.GetTitleId(), ret);
+			return GetDefaultReply(ret);
+		}
+	}
+
+	if (!DiscIO::AddTicket(ticket))
+		return GetDefaultReply(ES_WRITE_FAILURE);
+
+	INFO_LOG(IOS_ES, "AddTicket: Imported ticket for title %016" PRIx64, ticket.GetTitleId());
 	return GetDefaultReply(IPC_SUCCESS);
 }
 
-// TODO: write this to /tmp (or /import?) first, as title imports can be cancelled.
-static bool WriteTMD(const IOS::ES::TMDReader& tmd)
+static bool WriteImportTMD(const IOS::ES::TMDReader& tmd)
 {
-	const std::string tmd_path = Common::GetTMDFileName(tmd.GetTitleId(), Common::FROM_SESSION_ROOT);
+	const std::string tmd_path = Common::GetImportTitlePath(tmd.GetTitleId()) + "/content/title.tmd";
 	File::CreateFullPath(tmd_path);
 
-	File::IOFile fp(tmd_path, "wb");
-	return fp.WriteBytes(tmd.GetRawTMD().data(), tmd.GetRawTMD().size());
+	File::IOFile file(tmd_path, "wb");
+	return file.WriteBytes(tmd.GetRawTMD().data(), tmd.GetRawTMD().size());
+}
+
+static bool MoveImportTMDToTitleDirectory(const IOS::ES::TMDReader& tmd)
+{
+	const std::string src = Common::GetImportTitlePath(tmd.GetTitleId()) + "/content/title.tmd";
+	const std::string dest = Common::GetTMDFileName(tmd.GetTitleId(), Common::FROM_SESSION_ROOT);
+	return File::RenameSync(src, dest);
+}
+
+static std::string GetImportContentPath(const IOS::ES::TMDReader& tmd, u32 content_id)
+{
+	return Common::GetImportTitlePath(tmd.GetTitleId()) +
+		StringFromFormat("/content/%08x.app", content_id);
 }
 
 IPCCommandResult ES::AddTMD(const IOCtlVRequest& request)
 {
-	// This may appear to be very similar to AddTitleStart, but AddTitleStart takes
-	// three additional vectors and may do some additional processing -- so let's keep these separate.
-
 	if (!request.HasNumberOfValidVectors(1, 0))
 		return GetDefaultReply(ES_PARAMETER_SIZE_OR_ALIGNMENT);
 
 	std::vector<u8> tmd(request.in_vectors[0].size);
 	Memory::CopyFromEmu(tmd.data(), request.in_vectors[0].address, request.in_vectors[0].size);
 
-	m_addtitle_tmd.SetBytes(tmd);
+	// Ioctlv 0x2b writes the TMD to /tmp/title.tmd (for imports) and doesn't seem to write it
+	// to either /import or /title. So here we simply have to set the import TMD.
+	m_addtitle_tmd.SetBytes(std::move(tmd));
 	if (!m_addtitle_tmd.IsValid())
 		return GetDefaultReply(ES_INVALID_TMD);
 
-	if (!WriteTMD(m_addtitle_tmd))
-		return GetDefaultReply(ES_WRITE_FAILURE);
+	DiscIO::cUIDsys uid_sys{ Common::FROM_CONFIGURED_ROOT };
+	uid_sys.AddTitle(m_addtitle_tmd.GetTitleId());
 
 	return GetDefaultReply(IPC_SUCCESS);
 }
@@ -516,11 +523,10 @@ IPCCommandResult ES::AddTitleStart(const IOCtlVRequest& request)
 		return GetDefaultReply(ES_INVALID_TMD);
 	}
 
-	if (!WriteTMD(m_addtitle_tmd))
-		return GetDefaultReply(ES_WRITE_FAILURE);
-
 	DiscIO::cUIDsys uid_sys{ Common::FROM_CONFIGURED_ROOT };
 	uid_sys.AddTitle(m_addtitle_tmd.GetTitleId());
+
+	// TODO: check and use the other vectors.
 
 	return GetDefaultReply(IPC_SUCCESS);
 }
@@ -581,9 +587,19 @@ IPCCommandResult ES::AddContentData(const IOCtlVRequest& request)
 	return GetDefaultReply(IPC_SUCCESS);
 }
 
+static bool CheckIfContentHashMatches(const std::vector<u8>& content, const IOS::ES::Content& info)
+{
+	std::array<u8, 20> sha1;
+	mbedtls_sha1(content.data(), info.size, sha1.data());
+	return sha1 == info.sha1;
+}
+
 IPCCommandResult ES::AddContentFinish(const IOCtlVRequest& request)
 {
 	if (!request.HasNumberOfValidVectors(1, 0))
+		return GetDefaultReply(ES_PARAMETER_SIZE_OR_ALIGNMENT);
+
+	if (m_addtitle_content_id == 0xFFFFFFFF)
 		return GetDefaultReply(ES_PARAMETER_SIZE_OR_ALIGNMENT);
 
 	u32 content_fd = Memory::Read_U32(request.in_vectors[0].address);
@@ -615,26 +631,35 @@ IPCCommandResult ES::AddContentFinish(const IOCtlVRequest& request)
 	std::vector<u8> decrypted_data(m_addtitle_content_buffer.size());
 	mbedtls_aes_crypt_cbc(&aes_ctx, MBEDTLS_AES_DECRYPT, m_addtitle_content_buffer.size(), iv,
 		m_addtitle_content_buffer.data(), decrypted_data.data());
-
-	std::string content_path;
-	if (content_info.IsShared())
+	if (!CheckIfContentHashMatches(decrypted_data, content_info))
 	{
-		DiscIO::CSharedContent shared_content{ Common::FROM_SESSION_ROOT };
-		content_path = shared_content.AddSharedContent(content_info.sha1.data());
-	}
-	else
-	{
-		content_path = StringFromFormat(
-			"%s%08x.app",
-			Common::GetTitleContentPath(m_addtitle_tmd.GetTitleId(), Common::FROM_SESSION_ROOT).c_str(),
-			m_addtitle_content_id);
+		ERROR_LOG(IOS_ES, "AddContentFinish: Hash for content %08x doesn't match", content_info.id);
+		return GetDefaultReply(ES_HASH_DOESNT_MATCH);
 	}
 
-	File::IOFile fp(content_path, "wb");
-	fp.WriteBytes(decrypted_data.data(), content_info.size);
+	// Just write all contents to the title import directory. AddTitleFinish will
+	// move the contents to the proper location.
+	const std::string tmp_path = GetImportContentPath(m_addtitle_tmd, m_addtitle_content_id);
+	File::CreateFullPath(tmp_path);
+
+	File::IOFile fp(tmp_path, "wb");
+	if (!fp.WriteBytes(decrypted_data.data(), content_info.size))
+	{
+		ERROR_LOG(IOS_ES, "AddContentFinish: Failed to write to %s", tmp_path.c_str());
+		return GetDefaultReply(ES_WRITE_FAILURE);
+	}
 
 	m_addtitle_content_id = 0xFFFFFFFF;
 	return GetDefaultReply(IPC_SUCCESS);
+}
+
+static void AbortImport(const u64 title_id, const std::vector<std::string>& processed_paths)
+{
+	for (const auto& path : processed_paths)
+		File::Delete(path);
+
+	const std::string import_dir = Common::GetImportTitlePath(title_id);
+	File::DeleteDirRecursively(import_dir);
 }
 
 IPCCommandResult ES::AddTitleFinish(const IOCtlVRequest& request)
@@ -642,7 +667,64 @@ IPCCommandResult ES::AddTitleFinish(const IOCtlVRequest& request)
 	if (!request.HasNumberOfValidVectors(0, 0) || !m_addtitle_tmd.IsValid())
 		return GetDefaultReply(ES_PARAMETER_SIZE_OR_ALIGNMENT);
 
+	std::vector<std::string> processed_paths;
+
+	for (const auto& content_info : m_addtitle_tmd.GetContents())
+	{
+		const std::string source = GetImportContentPath(m_addtitle_tmd, content_info.id);
+
+		// Contents may not have been all imported. This is normal and this isn't an error condition.
+		if (!File::Exists(source))
+			continue;
+
+		std::string content_path;
+		if (content_info.IsShared())
+		{
+			DiscIO::CSharedContent shared_content{ Common::FROM_SESSION_ROOT };
+			content_path = shared_content.AddSharedContent(content_info.sha1.data());
+		}
+		else
+		{
+			content_path =
+				StringFromFormat("%s%08x.app", Common::GetTitleContentPath(m_addtitle_tmd.GetTitleId(),
+					Common::FROM_SESSION_ROOT)
+					.c_str(),
+					content_info.id);
+		}
+
+		File::CreateFullPath(content_path);
+		if (!File::RenameSync(source, content_path))
+		{
+			ERROR_LOG(IOS_ES, "AddTitleFinish: Failed to rename %s to %s", source.c_str(),
+				content_path.c_str());
+			AbortImport(m_addtitle_tmd.GetTitleId(), processed_paths);
+			return GetDefaultReply(ES_WRITE_FAILURE);
+		}
+
+		// Do not delete shared contents even if the import fails. This is because
+		// they can be used by several titles and it's not safe to delete them.
+		//
+		// The reason we delete private contents is to avoid having a title with half-complete
+		// contents, as it can cause issues with the system menu. On the other hand, leaving
+		// shared contents does not cause any issue.
+		if (!content_info.IsShared())
+			processed_paths.push_back(content_path);
+	}
+
+	if (!WriteImportTMD(m_addtitle_tmd) || !MoveImportTMDToTitleDirectory(m_addtitle_tmd))
+		return GetDefaultReply(ES_WRITE_FAILURE);
+
 	INFO_LOG(IOS_ES, "IOCTL_ES_ADDTITLEFINISH");
+	m_addtitle_tmd.SetBytes({});
+	return GetDefaultReply(IPC_SUCCESS);
+}
+
+IPCCommandResult ES::AddTitleCancel(const IOCtlVRequest& request)
+{
+	if (!request.HasNumberOfValidVectors(0, 0) || !m_addtitle_tmd.IsValid())
+		return GetDefaultReply(ES_PARAMETER_SIZE_OR_ALIGNMENT);
+
+	AbortImport(m_addtitle_tmd.GetTitleId(), {});
 	m_addtitle_tmd.SetBytes({});
 	return GetDefaultReply(IPC_SUCCESS);
 }
@@ -658,49 +740,109 @@ IPCCommandResult ES::ESGetDeviceID(const IOCtlVRequest& request)
 	return GetDefaultReply(IPC_SUCCESS);
 }
 
-IPCCommandResult ES::GetTitleContentsCount(const IOCtlVRequest& request)
+static std::vector<IOS::ES::Content> GetStoredContentsFromTMD(const IOS::ES::TMDReader& tmd)
 {
-	if (!request.HasNumberOfValidVectors(1, 1))
+	if (!tmd.IsValid())
+		return {};
+
+	const DiscIO::CSharedContent shared{ Common::FROM_SESSION_ROOT };
+	const std::vector<IOS::ES::Content> contents = tmd.GetContents();
+
+	std::vector<IOS::ES::Content> stored_contents;
+
+	std::copy_if(contents.begin(), contents.end(), std::back_inserter(stored_contents),
+		[&tmd, &shared](const auto& content) {
+		if (content.IsShared())
+		{
+			const std::string path = shared.GetFilenameFromSHA1(content.sha1.data());
+			return path != "unk" && File::Exists(path);
+		}
+		return File::Exists(
+			Common::GetTitleContentPath(tmd.GetTitleId(), Common::FROM_SESSION_ROOT));
+	});
+
+	return stored_contents;
+}
+
+// Used by the GetStoredContents ioctlvs. This assumes that the first output vector
+// is used for the content count (u32).
+IPCCommandResult ES::GetStoredContentsCount(const IOS::ES::TMDReader& tmd,
+	const IOCtlVRequest& request)
+{
+	if (request.io_vectors[0].size != sizeof(u32) || !tmd.IsValid())
 		return GetDefaultReply(ES_PARAMETER_SIZE_OR_ALIGNMENT);
 
-	u64 TitleID = Memory::Read_U64(request.in_vectors[0].address);
+	const u16 num_contents = static_cast<u16>(GetStoredContentsFromTMD(tmd).size());
+	Memory::Write_U32(num_contents, request.io_vectors[0].address);
 
-	const DiscIO::CNANDContentLoader& nand_content = AccessContentDevice(TitleID);
-	if (!nand_content.IsValid())
+	INFO_LOG(IOS_ES, "GetStoredContentsCount (0x%x):  %u content(s) for %016" PRIx64, request.request,
+		num_contents, tmd.GetTitleId());
+	return GetDefaultReply(IPC_SUCCESS);
+}
+
+// Used by the GetStoredContents ioctlvs. This assumes that the second input vector is used
+// for the content count and the output vector is used to store a list of content IDs (u32s).
+IPCCommandResult ES::GetStoredContents(const IOS::ES::TMDReader& tmd, const IOCtlVRequest& request)
+{
+	if (!tmd.IsValid())
 		return GetDefaultReply(ES_PARAMETER_SIZE_OR_ALIGNMENT);
 
-	const u16 num_contents = nand_content.GetTMD().GetNumContents();
+	if (request.in_vectors[1].size != sizeof(u32) ||
+		request.io_vectors[0].size != Memory::Read_U32(request.in_vectors[1].address) * sizeof(u32))
+	{
+		return GetDefaultReply(ES_PARAMETER_SIZE_OR_ALIGNMENT);
+	}
 
-	if ((u32)(TitleID >> 32) == 0x00010000)
-		Memory::Write_U32(0, request.io_vectors[0].address);
-	else
-		Memory::Write_U32(num_contents, request.io_vectors[0].address);
-
-	INFO_LOG(IOS_ES, "IOCTL_ES_GETTITLECONTENTSCNT: TitleID: %08x/%08x  content count %i",
-		(u32)(TitleID >> 32), (u32)TitleID, num_contents);
+	const auto contents = GetStoredContentsFromTMD(tmd);
+	const u32 max_content_count = Memory::Read_U32(request.in_vectors[1].address);
+	for (u32 i = 0; i < std::min(static_cast<u32>(contents.size()), max_content_count); ++i)
+		Memory::Write_U32(contents[i].id, request.io_vectors[0].address + i * sizeof(u32));
 
 	return GetDefaultReply(IPC_SUCCESS);
 }
 
-IPCCommandResult ES::GetTitleContents(const IOCtlVRequest& request)
+IPCCommandResult ES::GetStoredContentsCount(const IOCtlVRequest& request)
+{
+	if (!request.HasNumberOfValidVectors(1, 1) || request.in_vectors[0].size != sizeof(u64))
+		return GetDefaultReply(ES_PARAMETER_SIZE_OR_ALIGNMENT);
+
+	const u64 title_id = Memory::Read_U64(request.in_vectors[0].address);
+	const DiscIO::CNANDContentLoader& content_loader = AccessContentDevice(title_id);
+	if (!content_loader.IsValid())
+		return GetDefaultReply(ES_PARAMETER_SIZE_OR_ALIGNMENT);
+	return GetStoredContentsCount(content_loader.GetTMD(), request);
+}
+
+IPCCommandResult ES::GetStoredContents(const IOCtlVRequest& request)
+{
+	if (!request.HasNumberOfValidVectors(2, 1) || request.in_vectors[0].size != sizeof(u64))
+		return GetDefaultReply(ES_PARAMETER_SIZE_OR_ALIGNMENT);
+
+	const u64 title_id = Memory::Read_U64(request.in_vectors[0].address);
+	const DiscIO::CNANDContentLoader& content_loader = AccessContentDevice(title_id);
+	if (!content_loader.IsValid())
+		return GetDefaultReply(ES_PARAMETER_SIZE_OR_ALIGNMENT);
+	return GetStoredContents(content_loader.GetTMD(), request);
+}
+
+IPCCommandResult ES::GetTMDStoredContentsCount(const IOCtlVRequest& request)
+{
+	if (!request.HasNumberOfValidVectors(1, 1))
+		return GetDefaultReply(ES_PARAMETER_SIZE_OR_ALIGNMENT);
+
+	std::vector<u8> tmd_bytes(request.in_vectors[0].size);
+	Memory::CopyFromEmu(tmd_bytes.data(), request.in_vectors[0].address, tmd_bytes.size());
+	return GetStoredContentsCount(IOS::ES::TMDReader{ std::move(tmd_bytes) }, request);
+}
+
+IPCCommandResult ES::GetTMDStoredContents(const IOCtlVRequest& request)
 {
 	if (!request.HasNumberOfValidVectors(2, 1))
 		return GetDefaultReply(ES_PARAMETER_SIZE_OR_ALIGNMENT);
 
-	u64 TitleID = Memory::Read_U64(request.in_vectors[0].address);
-
-	const DiscIO::CNANDContentLoader& rNANDContent = AccessContentDevice(TitleID);
-	if (!rNANDContent.IsValid())
-		return GetDefaultReply(ES_PARAMETER_SIZE_OR_ALIGNMENT);
-
-	for (const auto& content : rNANDContent.GetTMD().GetContents())
-	{
-		const u16 index = content.index;
-		Memory::Write_U32(content.id, request.io_vectors[0].address + index * 4);
-		INFO_LOG(IOS_ES, "IOCTL_ES_GETTITLECONTENTS: Index %d: %08x", index, content.id);
-	}
-
-	return GetDefaultReply(IPC_SUCCESS);
+	std::vector<u8> tmd_bytes(request.in_vectors[0].size);
+	Memory::CopyFromEmu(tmd_bytes.data(), request.in_vectors[0].address, tmd_bytes.size());
+	return GetStoredContents(IOS::ES::TMDReader{ std::move(tmd_bytes) }, request);
 }
 
 IPCCommandResult ES::OpenTitleContent(const IOCtlVRequest& request)
@@ -892,37 +1034,139 @@ IPCCommandResult ES::SetUID(const IOCtlVRequest& request)
 	return GetDefaultReply(IPC_SUCCESS);
 }
 
-IPCCommandResult ES::GetTitleCount(const IOCtlVRequest& request)
+static bool IsValidPartOfTitleID(const std::string& string)
+{
+	if (string.length() != 8)
+		return false;
+	return std::all_of(string.begin(), string.end(),
+		[](const auto character) { return std::isxdigit(character) != 0; });
+}
+
+// Returns a vector of title IDs. IOS does not check the TMD at all here.
+static std::vector<u64> GetInstalledTitles()
+{
+	const std::string titles_dir = Common::RootUserPath(Common::FROM_SESSION_ROOT) + "/title";
+	if (!File::IsDirectory(titles_dir))
+	{
+		ERROR_LOG(IOS_ES, "/title is not a directory");
+		return {};
+	}
+
+	std::vector<u64> title_ids;
+
+	// The /title directory contains one directory per title type, and each of them contains
+	// a directory per title (where the name is the low 32 bits of the title ID in %08x format).
+	const auto entries = File::ScanDirectoryTree(titles_dir, true);
+	for (const File::FSTEntry& title_type : entries.children)
+	{
+		if (!title_type.isDirectory || !IsValidPartOfTitleID(title_type.virtualName))
+			continue;
+
+		if (title_type.children.empty())
+			continue;
+
+		for (const File::FSTEntry& title_identifier : title_type.children)
+		{
+			if (!title_identifier.isDirectory || !IsValidPartOfTitleID(title_identifier.virtualName))
+				continue;
+
+			const u32 type = std::stoul(title_type.virtualName, nullptr, 16);
+			const u32 identifier = std::stoul(title_identifier.virtualName, nullptr, 16);
+			title_ids.push_back(static_cast<u64>(type) << 32 | identifier);
+		}
+	}
+
+	return title_ids;
+}
+
+// Returns a vector of title IDs for which there is a ticket.
+static std::vector<u64> GetTitlesWithTickets()
+{
+	const std::string titles_dir = Common::RootUserPath(Common::FROM_SESSION_ROOT) + "/ticket";
+	if (!File::IsDirectory(titles_dir))
+	{
+		ERROR_LOG(IOS_ES, "/ticket is not a directory");
+		return {};
+	}
+
+	std::vector<u64> title_ids;
+
+	// The /ticket directory contains one directory per title type, and each of them contains
+	// one ticket per title (where the name is the low 32 bits of the title ID in %08x format).
+	const auto entries = File::ScanDirectoryTree(titles_dir, true);
+	for (const File::FSTEntry& title_type : entries.children)
+	{
+		if (!title_type.isDirectory || !IsValidPartOfTitleID(title_type.virtualName))
+			continue;
+
+		if (title_type.children.empty())
+			continue;
+
+		for (const File::FSTEntry& ticket : title_type.children)
+		{
+			const std::string name_without_ext = ticket.virtualName.substr(0, 8);
+			if (ticket.isDirectory || !IsValidPartOfTitleID(name_without_ext) ||
+				name_without_ext + ".tik" != ticket.virtualName)
+			{
+				continue;
+			}
+
+			const u32 type = std::stoul(title_type.virtualName, nullptr, 16);
+			const u32 identifier = std::stoul(name_without_ext, nullptr, 16);
+			title_ids.push_back(static_cast<u64>(type) << 32 | identifier);
+		}
+	}
+
+	return title_ids;
+}
+
+IPCCommandResult ES::GetTitleCount(const std::vector<u64>& titles, const IOCtlVRequest& request)
 {
 	if (!request.HasNumberOfValidVectors(0, 1) || request.io_vectors[0].size != 4)
 		return GetDefaultReply(ES_PARAMETER_SIZE_OR_ALIGNMENT);
 
-	Memory::Write_U32((u32)s_title_ids.size(), request.io_vectors[0].address);
-
-	INFO_LOG(IOS_ES, "IOCTL_ES_GETTITLECNT: Number of Titles %zu", s_title_ids.size());
+	Memory::Write_U32(static_cast<u32>(titles.size()), request.io_vectors[0].address);
 
 	return GetDefaultReply(IPC_SUCCESS);
 }
 
-IPCCommandResult ES::GetTitles(const IOCtlVRequest& request)
+IPCCommandResult ES::GetTitles(const std::vector<u64>& titles, const IOCtlVRequest& request)
 {
 	if (!request.HasNumberOfValidVectors(1, 1))
 		return GetDefaultReply(ES_PARAMETER_SIZE_OR_ALIGNMENT);
 
-	u32 MaxCount = Memory::Read_U32(request.in_vectors[0].address);
-	u32 Count = 0;
-	for (int i = 0; i < (int)s_title_ids.size(); i++)
+	const size_t max_count = Memory::Read_U32(request.in_vectors[0].address);
+	for (size_t i = 0; i < std::min(max_count, titles.size()); i++)
 	{
-		Memory::Write_U64(s_title_ids[i], request.io_vectors[0].address + i * 8);
-		INFO_LOG(IOS_ES, "IOCTL_ES_GETTITLES: %08x/%08x", (u32)(s_title_ids[i] >> 32),
-			(u32)s_title_ids[i]);
-		Count++;
-		if (Count >= MaxCount)
-			break;
+		Memory::Write_U64(titles[i], request.io_vectors[0].address + static_cast<u32>(i) * sizeof(u64));
+		INFO_LOG(IOS_ES, "     title %016" PRIx64, titles[i]);
 	}
-
-	INFO_LOG(IOS_ES, "IOCTL_ES_GETTITLES: Number of titles returned %i", Count);
 	return GetDefaultReply(IPC_SUCCESS);
+}
+
+IPCCommandResult ES::GetTitleCount(const IOCtlVRequest& request)
+{
+	const std::vector<u64> titles = GetInstalledTitles();
+	INFO_LOG(IOS_ES, "GetTitleCount: %zu titles", titles.size());
+	return GetTitleCount(titles, request);
+}
+
+IPCCommandResult ES::GetTitles(const IOCtlVRequest& request)
+{
+	return GetTitles(GetInstalledTitles(), request);
+}
+
+// HACK: Since we do not want to require users to install disc updates when launching
+//       Wii games from the game list (which is the inaccurate game boot path anyway),
+//       IOSes have to be faked for games which reload IOS to work properly.
+//       To minimize the effect of this hack, we should only do this for disc titles
+//       booted from the game list, though.
+static bool ShouldReturnFakeViewsForIOSes(u64 title_id)
+{
+	const bool ios = IsTitleType(title_id, IOS::ES::TitleType::System) && title_id != TITLEID_SYSMENU;
+	const bool disc_title =
+		s_title_context.active && IOS::ES::IsDiscTitle(s_title_context.tmd.GetTitleId());
+	return ios && SConfig::GetInstance().m_BootType == SConfig::BOOT_ISO && disc_title;
 }
 
 IPCCommandResult ES::GetViewCount(const IOCtlVRequest& request)
@@ -932,18 +1176,19 @@ IPCCommandResult ES::GetViewCount(const IOCtlVRequest& request)
 
 	u64 TitleID = Memory::Read_U64(request.in_vectors[0].address);
 
-	const DiscIO::CNANDContentLoader& Loader = AccessContentDevice(TitleID);
+	const IOS::ES::TicketReader ticket = DiscIO::FindSignedTicket(TitleID);
+	u32 view_count = ticket.IsValid() ? ticket.GetNumberOfTickets() : 0;
 
-	size_t view_count = 0;
-	if (Loader.IsValid() && Loader.GetTicket().IsValid())
+	if (ShouldReturnFakeViewsForIOSes(TitleID))
 	{
-		view_count = Loader.GetTicket().GetNumberOfTickets();
+		view_count = 1;
+		WARN_LOG(IOS_ES, "GetViewCount: Faking IOS title %016" PRIx64 " being present", TitleID);
 	}
 
-	INFO_LOG(IOS_ES, "IOCTL_ES_GETVIEWCNT for titleID: %08x/%08x (View Count = %zu)",
+	INFO_LOG(IOS_ES, "IOCTL_ES_GETVIEWCNT for titleID: %08x/%08x (View Count = %u)",
 		static_cast<u32>(TitleID >> 32), static_cast<u32>(TitleID), view_count);
 
-	Memory::Write_U32(static_cast<u32>(view_count), request.io_vectors[0].address);
+	Memory::Write_U32(view_count, request.io_vectors[0].address);
 	return GetDefaultReply(IPC_SUCCESS);
 }
 
@@ -955,17 +1200,22 @@ IPCCommandResult ES::GetViews(const IOCtlVRequest& request)
 	u64 TitleID = Memory::Read_U64(request.in_vectors[0].address);
 	u32 maxViews = Memory::Read_U32(request.in_vectors[1].address);
 
-	const DiscIO::CNANDContentLoader& Loader = AccessContentDevice(TitleID);
+	const IOS::ES::TicketReader ticket = DiscIO::FindSignedTicket(TitleID);
 
-	if (Loader.IsValid() && Loader.GetTicket().IsValid())
+	if (ticket.IsValid())
 	{
-		u32 number_of_views = std::min(maxViews, Loader.GetTicket().GetNumberOfTickets());
+		u32 number_of_views = std::min(maxViews, ticket.GetNumberOfTickets());
 		for (u32 view = 0; view < number_of_views; ++view)
 		{
-			const std::vector<u8> ticket_view = Loader.GetTicket().GetRawTicketView(view);
+			const std::vector<u8> ticket_view = ticket.GetRawTicketView(view);
 			Memory::CopyToEmu(request.io_vectors[0].address + view * sizeof(IOS::ES::TicketView),
 				ticket_view.data(), ticket_view.size());
 		}
+	}
+	else if (ShouldReturnFakeViewsForIOSes(TitleID))
+	{
+		Memory::Memset(request.io_vectors[0].address, 0, sizeof(IOS::ES::TicketView));
+		WARN_LOG(IOS_ES, "GetViews: Faking IOS title %016" PRIx64 " being present", TitleID);
 	}
 
 	INFO_LOG(IOS_ES, "IOCTL_ES_GETVIEWS for titleID: %08x/%08x (MaxViews = %i)", (u32)(TitleID >> 32),
@@ -1018,6 +1268,93 @@ IPCCommandResult ES::GetTMDViews(const IOCtlVRequest& request)
 
 	INFO_LOG(IOS_ES, "IOCTL_ES_GETTMDVIEWS: title: %08x/%08x (buffer size: %i)", (u32)(TitleID >> 32),
 		(u32)TitleID, MaxCount);
+	return GetDefaultReply(IPC_SUCCESS);
+}
+
+IPCCommandResult ES::DIGetTMDViewSize(const IOCtlVRequest& request)
+{
+	if (!request.HasNumberOfValidVectors(1, 1))
+		return GetDefaultReply(ES_PARAMETER_SIZE_OR_ALIGNMENT);
+
+	// Sanity check the TMD size.
+	if (request.in_vectors[0].size >= 4 * 1024 * 1024)
+		return GetDefaultReply(ES_PARAMETER_SIZE_OR_ALIGNMENT);
+
+	if (request.io_vectors[0].size != sizeof(u32))
+		return GetDefaultReply(ES_PARAMETER_SIZE_OR_ALIGNMENT);
+
+	const bool has_tmd = request.in_vectors[0].size != 0;
+	size_t tmd_view_size = 0;
+
+	if (has_tmd)
+	{
+		std::vector<u8> tmd_bytes(request.in_vectors[0].size);
+		Memory::CopyFromEmu(tmd_bytes.data(), request.in_vectors[0].address, tmd_bytes.size());
+		const IOS::ES::TMDReader tmd{ std::move(tmd_bytes) };
+
+		// Yes, this returns -1017, not ES_INVALID_TMD.
+		// IOS simply checks whether the TMD has all required content entries.
+		if (!tmd.IsValid())
+			return GetDefaultReply(ES_PARAMETER_SIZE_OR_ALIGNMENT);
+
+		tmd_view_size = tmd.GetRawView().size();
+	}
+	else
+	{
+		// If no TMD was passed in and no title is active, IOS returns -1017.
+		if (!s_title_context.active)
+			return GetDefaultReply(ES_PARAMETER_SIZE_OR_ALIGNMENT);
+
+		tmd_view_size = s_title_context.tmd.GetRawView().size();
+	}
+
+	Memory::Write_U32(static_cast<u32>(tmd_view_size), request.io_vectors[0].address);
+	return GetDefaultReply(IPC_SUCCESS);
+}
+
+IPCCommandResult ES::DIGetTMDView(const IOCtlVRequest& request)
+{
+	if (!request.HasNumberOfValidVectors(2, 1))
+		return GetDefaultReply(ES_PARAMETER_SIZE_OR_ALIGNMENT);
+
+	// Sanity check the TMD size.
+	if (request.in_vectors[0].size >= 4 * 1024 * 1024)
+		return GetDefaultReply(ES_PARAMETER_SIZE_OR_ALIGNMENT);
+
+	// Check whether the TMD view size is consistent.
+	if (request.in_vectors[1].size != sizeof(u32) ||
+		Memory::Read_U32(request.in_vectors[1].address) != request.io_vectors[0].size)
+	{
+		return GetDefaultReply(ES_PARAMETER_SIZE_OR_ALIGNMENT);
+	}
+
+	const bool has_tmd = request.in_vectors[0].size != 0;
+	std::vector<u8> tmd_view;
+
+	if (has_tmd)
+	{
+		std::vector<u8> tmd_bytes(request.in_vectors[0].size);
+		Memory::CopyFromEmu(tmd_bytes.data(), request.in_vectors[0].address, tmd_bytes.size());
+		const IOS::ES::TMDReader tmd{ std::move(tmd_bytes) };
+
+		if (!tmd.IsValid())
+			return GetDefaultReply(ES_PARAMETER_SIZE_OR_ALIGNMENT);
+
+		tmd_view = tmd.GetRawView();
+	}
+	else
+	{
+		// If no TMD was passed in and no title is active, IOS returns -1017.
+		if (!s_title_context.active)
+			return GetDefaultReply(ES_PARAMETER_SIZE_OR_ALIGNMENT);
+
+		tmd_view = s_title_context.tmd.GetRawView();
+	}
+
+	if (tmd_view.size() != request.io_vectors[0].size)
+		return GetDefaultReply(ES_PARAMETER_SIZE_OR_ALIGNMENT);
+
+	Memory::CopyToEmu(request.io_vectors[0].address, tmd_view.data(), tmd_view.size());
 	return GetDefaultReply(IPC_SUCCESS);
 }
 
@@ -1105,10 +1442,10 @@ IPCCommandResult ES::GetStoredTMDSize(const IOCtlVRequest& request)
 	u64 TitleID = Memory::Read_U64(request.in_vectors[0].address);
 	const DiscIO::CNANDContentLoader& Loader = AccessContentDevice(TitleID);
 
-	u32 tmd_size = 0;
-	if (Loader.IsValid())
-		tmd_size = static_cast<u32>(Loader.GetTMD().GetRawTMD().size());
+	if (!Loader.IsValid() || !Loader.GetTMD().IsValid())
+		return GetDefaultReply(FS_ENOENT);
 
+	const u32 tmd_size = static_cast<u32>(Loader.GetTMD().GetRawTMD().size());
 	Memory::Write_U32(tmd_size, request.io_vectors[0].address);
 
 	INFO_LOG(IOS_ES, "IOCTL_ES_GETSTOREDTMDSIZE: title: %08x/%08x (view size %i)",
@@ -1127,17 +1464,14 @@ IPCCommandResult ES::GetStoredTMD(const IOCtlVRequest& request)
 	const u32 MaxCount = Memory::Read_U32(request.in_vectors[1].address);
 	const DiscIO::CNANDContentLoader& Loader = AccessContentDevice(TitleID);
 
-	INFO_LOG(IOS_ES, "IOCTL_ES_GETSTOREDTMD: title: %08x/%08x   buffer size: %i",
-		(u32)(TitleID >> 32), (u32)TitleID, MaxCount);
+	if (!Loader.IsValid() || !Loader.GetTMD().IsValid())
+		return GetDefaultReply(FS_ENOENT);
 
-	if (Loader.IsValid())
-	{
-		const std::vector<u8> raw_tmd = Loader.GetTMD().GetRawTMD();
-		if (raw_tmd.size() != request.io_vectors[0].size)
-			return GetDefaultReply(ES_PARAMETER_SIZE_OR_ALIGNMENT);
+	const std::vector<u8> raw_tmd = Loader.GetTMD().GetRawTMD();
+	if (raw_tmd.size() != request.io_vectors[0].size)
+		return GetDefaultReply(ES_PARAMETER_SIZE_OR_ALIGNMENT);
 
-		Memory::CopyToEmu(request.io_vectors[0].address, raw_tmd.data(), raw_tmd.size());
-	}
+	Memory::CopyToEmu(request.io_vectors[0].address, raw_tmd.data(), raw_tmd.size());
 
 	INFO_LOG(IOS_ES, "IOCTL_ES_GETSTOREDTMD: title: %08x/%08x (buffer size: %i)",
 		(u32)(TitleID >> 32), (u32)TitleID, MaxCount);
@@ -1494,13 +1828,14 @@ IPCCommandResult ES::DIGetTicketView(const IOCtlVRequest& request)
 
 IPCCommandResult ES::GetOwnedTitleCount(const IOCtlVRequest& request)
 {
-	if (!request.HasNumberOfValidVectors(0, 1))
-		return GetDefaultReply(ES_PARAMETER_SIZE_OR_ALIGNMENT);
+	const std::vector<u64> titles = GetTitlesWithTickets();
+	INFO_LOG(IOS_ES, "GetOwnedTitleCount: %zu titles", titles.size());
+	return GetTitleCount(titles, request);
+}
 
-	INFO_LOG(IOS_ES, "IOCTL_ES_GETOWNEDTITLECNT");
-	// TODO: unimplemented.
-	Memory::Write_U32(0, request.io_vectors[0].address);
-	return GetDefaultReply(IPC_SUCCESS);
+IPCCommandResult ES::GetOwnedTitles(const IOCtlVRequest& request)
+{
+	return GetTitles(GetTitlesWithTickets(), request);
 }
 
 const DiscIO::CNANDContentLoader& ES::AccessContentDevice(u64 title_id)

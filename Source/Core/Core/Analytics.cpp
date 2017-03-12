@@ -233,6 +233,8 @@ void DolphinAnalytics::MakePerGameBuilder()
 		g_Config.backend_info.bSupportsExclusiveFullscreen);
 	builder.AddData("gpu-has-dual-source-blend", g_Config.backend_info.bSupportsDualSourceBlend);
 	builder.AddData("gpu-has-oversized-viewports", g_Config.backend_info.bSupportsOversizedViewports);
+	builder.AddData("gpu-has-oversized-depth-ranges",
+		g_Config.backend_info.bSupportsOversizedDepthRanges);
 	builder.AddData("gpu-has-geometry-shaders", g_Config.backend_info.bSupportsGeometryShaders);
 	builder.AddData("gpu-has-3d-vision", g_Config.backend_info.bSupports3DVision);
 	builder.AddData("gpu-has-early-z", g_Config.backend_info.bSupportsEarlyZ);

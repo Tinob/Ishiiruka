@@ -13,7 +13,9 @@
 #include "Common/CommonTypes.h"
 #include "Common/IniFile.h"
 #include "Common/StringUtil.h"
+#include "Common/Swap.h"
 #include "Common/Thread.h"
+
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
 #include "Core/HW/WiimoteEmu/WiimoteEmu.h"

@@ -19,7 +19,6 @@
 #include <vector>
 
 #include "Common/Align.h"
-#include "Common/CommonFuncs.h"
 #include "Common/CommonTypes.h"
 #include "Common/Crypto/ec.h"
 #include "Common/FileUtil.h"
@@ -27,6 +26,7 @@
 #include "Common/MsgHandler.h"
 #include "Common/NandPaths.h"
 #include "Common/StringUtil.h"
+#include "Common/Swap.h"
 
 #include "Core/HW/WiiSaveCrypted.h"
 

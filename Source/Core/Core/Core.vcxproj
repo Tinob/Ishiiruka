@@ -45,6 +45,10 @@
     <ClCompile Include="Boot\Boot_ELF.cpp" />
     <ClCompile Include="Boot\Boot_WiiWAD.cpp" />
     <ClCompile Include="Boot\ElfReader.cpp" />
+    <ClCompile Include="ConfigLoaders\BaseConfigLoader.cpp" />
+    <ClCompile Include="ConfigLoaders\GameConfigLoader.cpp" />
+    <ClCompile Include="ConfigLoaders\MovieConfigLoader.cpp" />
+    <ClCompile Include="ConfigLoaders\NetPlayConfigLoader.cpp" />
     <ClCompile Include="ConfigManager.cpp" />
     <ClCompile Include="Core.cpp" />
     <ClCompile Include="CoreTiming.cpp" />
@@ -291,6 +295,10 @@
     <ClInclude Include="Boot\Boot_DOL.h" />
     <ClInclude Include="Boot\ElfReader.h" />
     <ClInclude Include="Boot\ElfTypes.h" />
+    <ClInclude Include="ConfigLoaders\BaseConfigLoader.h" />
+    <ClInclude Include="ConfigLoaders\GameConfigLoader.h" />
+    <ClInclude Include="ConfigLoaders\MovieConfigLoader.h" />
+    <ClInclude Include="ConfigLoaders\NetPlayConfigLoader.h" />
     <ClInclude Include="ConfigManager.h" />
     <ClInclude Include="Core.h" />
     <ClInclude Include="CoreTiming.h" />

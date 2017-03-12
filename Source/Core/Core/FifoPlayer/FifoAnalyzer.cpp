@@ -8,8 +8,11 @@
 #include "Core/FifoPlayer/FifoAnalyzer.h"
 
 #include "Common/Assert.h"
+#include "Common/Swap.h"
+
 #include "Core/Core.h"
 #include "Core/FifoPlayer/FifoRecordAnalyzer.h"
+
 #include "VideoCommon/OpcodeDecoding.h"
 #include "VideoCommon/VertexLoader.h"
 #include "VideoCommon/VertexLoader_Normal.h"

@@ -77,8 +77,8 @@ private:
 		IOCTL_ES_GETCONSUMPTION = 0x16,
 		IOCTL_ES_DELETETITLE = 0x17,
 		IOCTL_ES_DELETETICKET = 0x18,
-		// IOCTL_ES_DIGETTMDVIEWSIZE   = 0x19,
-		// IOCTL_ES_DIGETTMDVIEW       = 0x1A,
+		IOCTL_ES_DIGETTMDVIEWSIZE = 0x19,
+		IOCTL_ES_DIGETTMDVIEW = 0x1A,
 		IOCTL_ES_DIGETTICKETVIEW = 0x1B,
 		IOCTL_ES_DIVERIFY = 0x1C,
 		IOCTL_ES_GETTITLEDIR = 0x1D,
@@ -119,6 +119,7 @@ private:
 		ES_READ_LESS_DATA_THAN_EXPECTED = -1009,
 		ES_WRITE_FAILURE = -1010,
 		ES_PARAMETER_SIZE_OR_ALIGNMENT = -1017,
+		ES_DEVICE_ID_MISMATCH = -1020,
 		ES_HASH_DOESNT_MATCH = -1022,
 		ES_MEM_ALLOC_FAILED = -1024,
 		ES_INCORRECT_ACCESS_RIGHT = -1026,
@@ -156,9 +157,8 @@ private:
 	IPCCommandResult AddContentData(const IOCtlVRequest& request);
 	IPCCommandResult AddContentFinish(const IOCtlVRequest& request);
 	IPCCommandResult AddTitleFinish(const IOCtlVRequest& request);
+	IPCCommandResult AddTitleCancel(const IOCtlVRequest& request);
 	IPCCommandResult ESGetDeviceID(const IOCtlVRequest& request);
-	IPCCommandResult GetTitleContentsCount(const IOCtlVRequest& request);
-	IPCCommandResult GetTitleContents(const IOCtlVRequest& request);
 	IPCCommandResult OpenTitleContent(const IOCtlVRequest& request);
 	IPCCommandResult OpenContent(const IOCtlVRequest& request);
 	IPCCommandResult ReadContent(const IOCtlVRequest& request);
@@ -167,12 +167,32 @@ private:
 	IPCCommandResult GetTitleDirectory(const IOCtlVRequest& request);
 	IPCCommandResult GetTitleID(const IOCtlVRequest& request);
 	IPCCommandResult SetUID(const IOCtlVRequest& request);
+
+	IPCCommandResult GetTitleCount(const std::vector<u64>& titles, const IOCtlVRequest& request);
+	IPCCommandResult GetTitles(const std::vector<u64>& titles, const IOCtlVRequest& request);
+	IPCCommandResult GetOwnedTitleCount(const IOCtlVRequest& request);
+	IPCCommandResult GetOwnedTitles(const IOCtlVRequest& request);
 	IPCCommandResult GetTitleCount(const IOCtlVRequest& request);
 	IPCCommandResult GetTitles(const IOCtlVRequest& request);
+
+	IPCCommandResult GetStoredContentsCount(const IOS::ES::TMDReader& tmd,
+		const IOCtlVRequest& request);
+	IPCCommandResult GetStoredContents(const IOS::ES::TMDReader& tmd, const IOCtlVRequest& request);
+	IPCCommandResult GetStoredContentsCount(const IOCtlVRequest& request);
+	IPCCommandResult GetStoredContents(const IOCtlVRequest& request);
+	IPCCommandResult GetTMDStoredContentsCount(const IOCtlVRequest& request);
+	IPCCommandResult GetTMDStoredContents(const IOCtlVRequest& request);
+
 	IPCCommandResult GetViewCount(const IOCtlVRequest& request);
 	IPCCommandResult GetViews(const IOCtlVRequest& request);
+	IPCCommandResult DIGetTicketView(const IOCtlVRequest& request);
+
 	IPCCommandResult GetTMDViewSize(const IOCtlVRequest& request);
 	IPCCommandResult GetTMDViews(const IOCtlVRequest& request);
+
+	IPCCommandResult DIGetTMDViewSize(const IOCtlVRequest& request);
+	IPCCommandResult DIGetTMDView(const IOCtlVRequest& request);
+
 	IPCCommandResult GetConsumption(const IOCtlVRequest& request);
 	IPCCommandResult DeleteTitle(const IOCtlVRequest& request);
 	IPCCommandResult DeleteTicket(const IOCtlVRequest& request);
@@ -194,8 +214,6 @@ private:
 	IPCCommandResult GetDeviceCertificate(const IOCtlVRequest& request);
 	IPCCommandResult Sign(const IOCtlVRequest& request);
 	IPCCommandResult GetBoot2Version(const IOCtlVRequest& request);
-	IPCCommandResult DIGetTicketView(const IOCtlVRequest& request);
-	IPCCommandResult GetOwnedTitleCount(const IOCtlVRequest& request);
 
 	static bool LaunchIOS(u64 ios_title_id);
 	static bool LaunchPPCTitle(u64 title_id, bool skip_reload);

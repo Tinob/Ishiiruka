@@ -10,6 +10,7 @@
 #ifdef _MSC_VER
 #include <intrin.h>
 #endif
+
 #include "Common/CommonTypes.h"
 
 namespace MathUtil

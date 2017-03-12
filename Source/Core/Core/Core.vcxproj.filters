@@ -157,6 +157,9 @@
     <Filter Include="IOS\WFS">
       <UniqueIdentifier>{1fa9df3e-6741-4045-b2f6-457b4a0540a9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ConfigLoaders">
+      <UniqueIdentifier>{2346495d-ed30-4a21-a3fc-11facc6155a8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BootManager.cpp" />
@@ -845,6 +848,18 @@
     <ClCompile Include="IOS\USB\Bluetooth\WiimoteHIDAttr.cpp">
       <Filter>IOS\USB\Bluetooth</Filter>
     </ClCompile>
+    <ClCompile Include="ConfigLoaders\BaseConfigLoader.cpp">
+      <Filter>ConfigLoaders</Filter>
+    </ClCompile>
+    <ClCompile Include="ConfigLoaders\GameConfigLoader.cpp">
+      <Filter>ConfigLoaders</Filter>
+    </ClCompile>
+    <ClCompile Include="ConfigLoaders\MovieConfigLoader.cpp">
+      <Filter>ConfigLoaders</Filter>
+    </ClCompile>
+    <ClCompile Include="ConfigLoaders\NetPlayConfigLoader.cpp">
+      <Filter>ConfigLoaders</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BootManager.h" />
@@ -1457,6 +1472,18 @@
     </ClInclude>
     <ClInclude Include="IOS\MIOS.h">
       <Filter>IOS</Filter>
+    </ClInclude>
+    <ClInclude Include="ConfigLoaders\BaseConfigLoader.h">
+      <Filter>ConfigLoaders</Filter>
+    </ClInclude>
+    <ClInclude Include="ConfigLoaders\GameConfigLoader.h">
+      <Filter>ConfigLoaders</Filter>
+    </ClInclude>
+    <ClInclude Include="ConfigLoaders\MovieConfigLoader.h">
+      <Filter>ConfigLoaders</Filter>
+    </ClInclude>
+    <ClInclude Include="ConfigLoaders\NetPlayConfigLoader.h">
+      <Filter>ConfigLoaders</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

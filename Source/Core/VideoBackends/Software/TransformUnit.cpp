@@ -7,6 +7,7 @@
 
 #include "Common/CommonTypes.h"
 #include "Common/MathUtil.h"
+#include "Common/Swap.h"
 
 #include "VideoBackends/Software/NativeVertexFormat.h"
 #include "VideoBackends/Software/TransformUnit.h"

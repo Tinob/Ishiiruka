@@ -55,6 +55,7 @@ VideoConfig::VideoConfig()
 	backend_info.bSupportsInternalResolutionFrameDumps = false;
 	bEnableValidationLayer = false;
 	bBackendMultithreading = true;
+	backend_info.MaxTextureSize = 4096;
 }
 
 void VideoConfig::Load(const std::string& ini_file)
@@ -92,6 +93,9 @@ void VideoConfig::Load(const std::string& ini_file)
 	settings->Get("FreeLook", &bFreeLook, 0);
 	settings->Get("CompileShaderOnStartup", &bCompileShaderOnStartup, 1);
 	settings->Get("UseFFV1", &bUseFFV1, 0);
+	settings->Get("DumpFormat", &sDumpFormat, "avi");
+	settings->Get("DumpCodec", &sDumpCodec, "");
+	settings->Get("DumpPath", &sDumpPath, "");
 	settings->Get("BitrateKbps", &iBitrateKbps, 2500);
 	settings->Get("InternalResolutionFrameDumps", &bInternalResolutionFrameDumps, 0);
 	settings->Get("EnablePixelLighting", &bEnablePixelLighting, 0);
@@ -435,6 +439,9 @@ void VideoConfig::Save(const std::string& ini_file)
 	settings->Set("InternalResolutionFrameDumps", bInternalResolutionFrameDumps);
 	settings->Set("CompileShaderOnStartup", bCompileShaderOnStartup);
 	settings->Set("UseFFV1", bUseFFV1);
+	settings->Set("DumpFormat", sDumpFormat);
+	settings->Set("DumpCodec", sDumpCodec);
+	settings->Set("DumpPath", sDumpPath);
 	settings->Set("BitrateKbps", iBitrateKbps);
 	settings->Set("EnablePixelLighting", bEnablePixelLighting);
 	settings->Set("ForcedLighting", bForcedLighting);

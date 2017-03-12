@@ -6,6 +6,8 @@
 
 #include "Common/CommonFuncs.h"
 #include "Common/FileUtil.h"
+#include "Common/Swap.h"
+
 #include "Core/Boot/Boot.h"
 #include "Core/Boot/ElfReader.h"
 #include "Core/HLE/HLE.h"

@@ -8,11 +8,14 @@
 #include <vector>
 
 #include "Common/ColorUtil.h"
+#include "Common/CommonFuncs.h"
 #include "Common/CommonPaths.h"
 #include "Common/CommonTypes.h"
 #include "Common/FileUtil.h"
 #include "Common/MsgHandler.h"
 #include "Common/StringUtil.h"
+#include "Common/Swap.h"
+
 #include "Core/HW/GCMemcard.h"
 
 static void ByteSwap(u8* valueA, u8* valueB)

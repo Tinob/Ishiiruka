@@ -249,7 +249,7 @@ void TextureCacheBase::ScaleTextureCacheEntryTo(TextureCacheBase::TCacheEntryBas
 		return;
 	}
 
-	u32 max = g_renderer->GetMaxTextureSize();
+	u32 max = g_ActiveConfig.backend_info.MaxTextureSize;
 	if (max < new_width || max < new_height)
 	{
 		ERROR_LOG(VIDEO, "Texture too big, width = %d, height = %d", new_width, new_height);
@@ -436,7 +436,7 @@ TextureCacheBase::TCacheEntryBase* TextureCacheBase::DoPartialTextureUpdates(TCa
 void TextureCacheBase::DumpTexture(TCacheEntryBase* entry, std::string basename, u32 level)
 {
 	std::string szDir = File::GetUserPath(D_DUMPTEXTURES_IDX) +
-		SConfig::GetInstance().m_strGameID;
+		SConfig::GetInstance().GetGameID();
 
 	// make sure that the directory exists
 	if (!File::Exists(szDir) || !File::IsDirectory(szDir))

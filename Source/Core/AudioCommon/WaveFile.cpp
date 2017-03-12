@@ -10,6 +10,7 @@
 #include "Common/Logging/Log.h"
 #include "Common/MsgHandler.h"
 #include "Common/StringUtil.h"
+#include "Common/Swap.h"
 
 #include "Core/ConfigManager.h"
 

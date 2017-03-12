@@ -23,6 +23,10 @@ set(SRCS	ActionReplay.cpp
 			Boot/Boot_ELF.cpp
 			Boot/Boot_WiiWAD.cpp
 			Boot/ElfReader.cpp
+			ConfigLoaders/BaseConfigLoader.cpp
+			ConfigLoaders/GameConfigLoader.cpp
+			ConfigLoaders/MovieConfigLoader.cpp
+			ConfigLoaders/NetPlayConfigLoader.cpp
 			Debugger/Debugger_SymbolMap.cpp
 			Debugger/Dump.cpp
 			Debugger/PPCDebugInterface.cpp

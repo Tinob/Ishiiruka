@@ -168,7 +168,7 @@ static std::unordered_map<std::string, std::string> LoadCustomTitles()
 		OpenFStream(titlestxt, load_directory + "wiitdb.txt", std::ios::in);
 
 	if (!titlestxt.is_open())
-		return{};
+		return {};
 
 	std::unordered_map<std::string, std::string> custom_titles;
 
@@ -624,8 +624,8 @@ void CGameListCtrl::InsertItemInReportView(long index)
 			UpdateItemAtColumn(item_index, i);
 	}
 
-	// Background color
-	SetBackgroundColor();
+	// List colors
+	SetColors();
 }
 
 static wxColour blend50(const wxColour& c1, const wxColour& c2)
@@ -638,7 +638,15 @@ static wxColour blend50(const wxColour& c1, const wxColour& c2)
 	return a << 24 | b << 16 | g << 8 | r;
 }
 
-void CGameListCtrl::SetBackgroundColor()
+static wxColour ContrastText(const wxColour& bgc)
+{
+	// Luminance threshold to determine whether to use black text on light background
+	static constexpr int LUM_THRESHOLD = 186;
+	int lum = 0.299 * bgc.Red() + 0.587 * bgc.Green() + 0.114 * bgc.Blue();
+	return (lum > LUM_THRESHOLD) ? *wxBLACK : *wxWHITE;
+}
+
+void CGameListCtrl::SetColors()
 {
 	for (long i = 0; i < GetItemCount(); i++)
 	{
@@ -646,6 +654,7 @@ void CGameListCtrl::SetBackgroundColor()
 			wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW)) :
 			wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW);
 		CGameListCtrl::SetItemBackgroundColour(i, color);
+		SetItemTextColour(i, ContrastText(color));
 	}
 }
 
@@ -796,7 +805,7 @@ void CGameListCtrl::OnColumnClick(wxListEvent& event)
 		SortItems(wxListCompare, last_sort);
 	}
 
-	SetBackgroundColor();
+	SetColors();
 
 	event.Skip();
 }
@@ -1215,7 +1224,7 @@ void CGameListCtrl::CompressSelection(bool _compress)
 		items_to_compress.push_back(iso);
 
 		// Show the Wii compression warning if it's relevant and it hasn't been shown already
-		if (!wii_compression_warning_accepted && _compress && 
+		if (!wii_compression_warning_accepted && _compress &&
 			iso->GetBlobType() != DiscIO::BlobType::GCZ &&
 			iso->GetPlatform() == DiscIO::Platform::WII_DISC)
 		{

@@ -9,6 +9,7 @@
 
 #include "Common/CPUDetect.h"
 #include "Common/Intrinsics.h"
+#include "Common/Swap.h"
 
 #include "VideoCommon/TextureDecoder.h"
 #ifdef _WIN32

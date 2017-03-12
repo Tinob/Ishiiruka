@@ -2,8 +2,12 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
-#include "Common/Common.h"
+#include "Common/CommonTypes.h"
+#include "Common/Logging/Log.h"
+#include "Common/Swap.h"
+
 #include "Core/HW/Memmap.h"
+
 #include "VideoCommon/CPMemory.h"
 #include "VideoCommon/Fifo.h"
 #include "VideoCommon/GeometryShaderManager.h"

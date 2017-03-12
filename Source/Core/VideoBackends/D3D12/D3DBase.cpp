@@ -799,12 +799,6 @@ unsigned int GetBackBufferHeight()
 	return s_yres;
 }
 
-// Returns the maximum width/height of a texture.
-unsigned int GetMaxTextureSize()
-{
-	return D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION;
-}
-
 void Reset()
 {
 	// release all back buffer references
