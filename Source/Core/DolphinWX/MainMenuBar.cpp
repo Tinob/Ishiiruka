@@ -120,7 +120,7 @@ wxMenu* MainMenuBar::CreateEmulationMenu() const
 	emulation_menu->Append(IDM_STOP, _("&Stop"));
 	emulation_menu->Append(IDM_RESET, _("&Reset"));
 	emulation_menu->AppendSeparator();
-	emulation_menu->Append(IDM_TOGGLE_FULLSCREEN, _("&Fullscreen"));
+	emulation_menu->Append(IDM_TOGGLE_FULLSCREEN, _("Toggle &Fullscreen"));
 	emulation_menu->Append(IDM_FRAMESTEP, _("&Frame Advance"));
 	emulation_menu->AppendSeparator();
 	emulation_menu->Append(IDM_SCREENSHOT, _("Take Screenshot"));
@@ -545,11 +545,10 @@ void MainMenuBar::RefreshWiiSystemMenuLabel() const
 
 	if (sys_menu_loader.IsValid())
 	{
-		const u16 sys_menu_version = sys_menu_loader.GetTMD().GetTitleVersion();
-		const char sys_menu_region = DiscIO::GetSysMenuRegion(sys_menu_version);
+		const u16 version_number = sys_menu_loader.GetTMD().GetTitleVersion();
+		const wxString version_string = StrToWxStr(DiscIO::GetSysMenuVersionString(version_number));
 		item->Enable();
-		item->SetItemLabel(
-			wxString::Format(_("Load Wii System Menu %u%c"), sys_menu_version, sys_menu_region));
+		item->SetItemLabel(wxString::Format(_("Load Wii System Menu %s"), version_string));
 	}
 	else
 	{

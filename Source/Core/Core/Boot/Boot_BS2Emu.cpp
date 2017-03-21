@@ -30,9 +30,9 @@
 #include "DiscIO/Enums.h"
 #include "DiscIO/Volume.h"
 
-void CBoot::RunFunction(u32 _iAddr)
+void CBoot::RunFunction(u32 address)
 {
-	PC = _iAddr;
+	PC = address;
 	LR = 0x00;
 
 	while (PC != 0x00)
@@ -43,7 +43,7 @@ void CBoot::RunFunction(u32 _iAddr)
 // GameCube Bootstrap 2 HLE:
 // copy the apploader to 0x81200000
 // execute the apploader, function by function, using the above utility.
-bool CBoot::EmulatedBS2_GC(bool skipAppLoader)
+bool CBoot::EmulatedBS2_GC(bool skip_app_loader)
 {
 	INFO_LOG(BOOT, "Faking GC BS2...");
 
@@ -67,15 +67,15 @@ bool CBoot::EmulatedBS2_GC(bool skipAppLoader)
 	// to 0x80000000 according to YAGCD 4.2.
 
 	// It's possible to boot DOL and ELF files without a disc inserted
-	if (DVDInterface::VolumeIsValid())
+	if (DVDInterface::IsDiscInside())
 		DVDRead(/*offset*/ 0x00000000, /*address*/ 0x00000000, 0x20, false);  // write disc info
 
 	PowerPC::HostWrite_U32(0x0D15EA5E,
 		0x80000020);  // Booted from bootrom. 0xE5207C22 = booted from jtag
 	PowerPC::HostWrite_U32(Memory::REALRAM_SIZE,
 		0x80000028);  // Physical Memory Size (24MB on retail)
-									// TODO determine why some games fail when using a retail ID. (Seem to take different EXI paths,
-									// see Ikaruga for example)
+					  // TODO determine why some games fail when using a retail ID. (Seem to take different EXI paths,
+					  // see Ikaruga for example)
 	PowerPC::HostWrite_U32(
 		0x10000006,
 		0x8000002C);  // Console type - DevKit  (retail ID == 0x00000003) see YAGCD 4.2.1.1.2
@@ -84,7 +84,7 @@ bool CBoot::EmulatedBS2_GC(bool skipAppLoader)
 	PowerPC::HostWrite_U32(ntsc ? 0 : 1, 0x800000CC);  // Fake the VI Init of the IPL (YAGCD 4.2.1.4)
 
 	PowerPC::HostWrite_U32(0x01000000, 0x800000d0);  // ARAM Size. 16MB main + 4/16/32MB external
-																									 // (retail consoles have no external ARAM)
+													 // (retail consoles have no external ARAM)
 
 	PowerPC::HostWrite_U32(0x09a7ec80, 0x800000F8);  // Bus Clock Speed
 	PowerPC::HostWrite_U32(0x1cf7c580, 0x800000FC);  // CPU Clock Speed
@@ -95,12 +95,12 @@ bool CBoot::EmulatedBS2_GC(bool skipAppLoader)
 
 	PowerPC::HostWrite_U64((u64)CEXIIPL::GetEmulatedTime(CEXIIPL::GC_EPOCH) * (u64)40500000,
 		0x800030D8);  // Preset time base ticks
-									// HIO checks this
-									// PowerPC::HostWrite_U16(0x8200,     0x000030e6); // Console type
+					  // HIO checks this
+					  // PowerPC::HostWrite_U16(0x8200,     0x000030e6); // Console type
 
 	HLE::Patch(0x81300000, "OSReport");  // HLE OSReport for Apploader
 
-	if (!DVDInterface::VolumeIsValid())
+	if (!DVDInterface::IsDiscInside())
 		return false;
 
 	// Load Apploader to Memory - The apploader is hardcoded to begin at 0x2440 on the disc,
@@ -108,7 +108,7 @@ bool CBoot::EmulatedBS2_GC(bool skipAppLoader)
 	const DiscIO::IVolume& volume = DVDInterface::GetVolume();
 	const u32 apploader_offset = 0x2440;
 	u32 apploader_entry, apploader_size, apploader_trailer;
-	if (skipAppLoader || !volume.ReadSwapped(apploader_offset + 0x10, &apploader_entry, false) ||
+	if (skip_app_loader || !volume.ReadSwapped(apploader_offset + 0x10, &apploader_entry, false) ||
 		!volume.ReadSwapped(apploader_offset + 0x14, &apploader_size, false) ||
 		!volume.ReadSwapped(apploader_offset + 0x18, &apploader_trailer, false) ||
 		apploader_entry == (u32)-1 || apploader_size + apploader_trailer == (u32)-1)
@@ -182,9 +182,6 @@ bool CBoot::EmulatedBS2_GC(bool skipAppLoader)
 	// return
 	PC = PowerPC::ppcState.gpr[3];
 
-	// Load patches
-	PatchEngine::LoadPatches();
-
 	return true;
 }
 
@@ -255,7 +252,7 @@ bool CBoot::SetupWiiMemory(u64 ios_title_id)
 	*/
 
 	// When booting a WAD or the system menu, there will probably not be a disc inserted
-	if (DVDInterface::VolumeIsValid())
+	if (DVDInterface::IsDiscInside())
 		DVDRead(0x00000000, 0x00000000, 0x20, false);  // Game Code
 
 	Memory::Write_U32(0x0D15EA5E, 0x00000020);            // Another magic word
@@ -264,7 +261,7 @@ bool CBoot::SetupWiiMemory(u64 ios_title_id)
 	Memory::Write_U32(0x00000023, 0x0000002c);            // Production Board Model
 	Memory::Write_U32(0x00000000, 0x00000030);            // Init
 	Memory::Write_U32(0x817FEC60, 0x00000034);            // Init
-																												// 38, 3C should get start, size of FST through apploader
+														  // 38, 3C should get start, size of FST through apploader
 	Memory::Write_U32(0x38a00040, 0x00000060);            // Exception init
 	Memory::Write_U32(0x8008f7b8, 0x000000e4);            // Thread Init
 	Memory::Write_U32(Memory::REALRAM_SIZE, 0x000000f0);  // "Simulated memory size" (debug mode?)
@@ -288,7 +285,7 @@ bool CBoot::SetupWiiMemory(u64 ios_title_id)
 	Memory::Write_U16(0x0000, 0x000030e0);      // PADInit
 	Memory::Write_U32(0x80000000, 0x00003184);  // GameID Address
 
-																							// Fake the VI Init of the IPL
+												// Fake the VI Init of the IPL
 	Memory::Write_U32(DiscIO::IsNTSC(SConfig::GetInstance().m_region) ? 0 : 1, 0x000000CC);
 
 	// Clear exception handler. Why? Don't we begin with only zeros?
@@ -306,7 +303,7 @@ bool CBoot::SetupWiiMemory(u64 ios_title_id)
 bool CBoot::EmulatedBS2_Wii()
 {
 	INFO_LOG(BOOT, "Faking Wii BS2...");
-	if (!DVDInterface::VolumeIsValid())
+	if (!DVDInterface::IsDiscInside())
 		return false;
 
 	if (DVDInterface::GetVolume().GetVolumeType() != DiscIO::Platform::WII_DISC)
@@ -352,10 +349,10 @@ bool CBoot::EmulatedBS2_Wii()
 
 	PowerPC::ppcState.gpr[1] = 0x816ffff0;  // StackPointer
 
-																					// Execute the apploader
+											// Execute the apploader
 	const u32 apploader_offset = 0x2440;  // 0x1c40;
 
-																				// Load Apploader to Memory
+										  // Load Apploader to Memory
 	const DiscIO::IVolume& volume = DVDInterface::GetVolume();
 	u32 apploader_entry, apploader_size;
 	if (!volume.ReadSwapped(apploader_offset + 0x10, &apploader_entry, true) ||
@@ -415,7 +412,7 @@ bool CBoot::EmulatedBS2_Wii()
 }
 
 // Returns true if apploader has run successfully
-bool CBoot::EmulatedBS2(bool _bIsWii)
+bool CBoot::EmulatedBS2(bool is_wii)
 {
-	return _bIsWii ? EmulatedBS2_Wii() : EmulatedBS2_GC();
+	return is_wii ? EmulatedBS2_Wii() : EmulatedBS2_GC();
 }

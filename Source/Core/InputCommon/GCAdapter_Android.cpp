@@ -33,7 +33,7 @@ static jclass s_adapter_class;
 
 static bool s_detected = false;
 static int s_fd = 0;
-static u8 s_controller_type[MAX_SI_CHANNELS] = {
+static u8 s_controller_type[SerialInterface::MAX_SI_CHANNELS] = {
 	ControllerTypes::CONTROLLER_NONE, ControllerTypes::CONTROLLER_NONE,
 	ControllerTypes::CONTROLLER_NONE, ControllerTypes::CONTROLLER_NONE };
 static u8 s_controller_rumble[4];
@@ -234,7 +234,7 @@ static void Reset()
 	if (s_read_adapter_thread_running.TestAndClear())
 		s_read_adapter_thread.join();
 
-	for (int i = 0; i < MAX_SI_CHANNELS; i++)
+	for (int i = 0; i < SerialInterface::MAX_SI_CHANNELS; i++)
 		s_controller_type[i] = ControllerTypes::CONTROLLER_NONE;
 
 	s_detected = false;
@@ -385,10 +385,11 @@ bool DeviceConnected(int chan)
 
 bool UseAdapter()
 {
-	return SConfig::GetInstance().m_SIDevice[0] == SIDEVICE_WIIU_ADAPTER ||
-		SConfig::GetInstance().m_SIDevice[1] == SIDEVICE_WIIU_ADAPTER ||
-		SConfig::GetInstance().m_SIDevice[2] == SIDEVICE_WIIU_ADAPTER ||
-		SConfig::GetInstance().m_SIDevice[3] == SIDEVICE_WIIU_ADAPTER;
+	const auto& si_devices = SConfig::GetInstance().m_SIDevice;
+
+	return std::any_of(std::begin(si_devices), std::end(si_devices), [](const auto device_type) {
+		return device_type == SerialInterface::SIDEVICE_WIIU_ADAPTER;
+	});
 }
 
 void ResetRumble()

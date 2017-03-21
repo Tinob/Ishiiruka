@@ -13,7 +13,6 @@
 #include "InputCommon/ControllerEmu/ControlGroup/Buttons.h"
 #include "InputCommon/ControllerEmu/ControlGroup/ControlGroup.h"
 #include "InputCommon/ControllerEmu/ControlGroup/MixedTriggers.h"
-#include "InputCommon/ControllerEmu/Setting/BackgroundInputSetting.h"
 #include "InputCommon/ControllerEmu/Setting/BooleanSetting.h"
 #include "InputCommon/GCPadStatus.h"
 
@@ -79,8 +78,6 @@ GCPad::GCPad(const unsigned int index) : m_index(index)
 
 	// options
 	groups.emplace_back(m_options = new ControllerEmu::ControlGroup(_trans("Options")));
-	m_options->boolean_settings.emplace_back(
-		std::make_unique<ControllerEmu::BackgroundInputSetting>(_trans("Background Input")));
 	m_options->boolean_settings.emplace_back(std::make_unique<ControllerEmu::BooleanSetting>(
 		_trans("Iterative Input"), false, ControllerEmu::SettingType::VIRTUAL));
 }
@@ -174,11 +171,11 @@ void GCPad::LoadDefaults(const ControllerInterface& ciface)
 #ifdef _WIN32
 	m_buttons->SetControlExpression(5, "!LMENU & RETURN");  // Start
 #else
-																						// OS X/Linux
+											  // OS X/Linux
 	m_buttons->SetControlExpression(5, "!`Alt_L` & Return");  // Start
 #endif
 
-																														// stick modifiers to 50 %
+															  // stick modifiers to 50 %
 	m_main_stick->controls[4]->control_ref->range = 0.5f;
 	m_c_stick->controls[4]->control_ref->range = 0.5f;
 
@@ -188,7 +185,7 @@ void GCPad::LoadDefaults(const ControllerInterface& ciface)
 	m_dpad->SetControlExpression(2, "F");  // Left
 	m_dpad->SetControlExpression(3, "H");  // Right
 
-																				 // C Stick
+										   // C Stick
 	m_c_stick->SetControlExpression(0, "I");  // Up
 	m_c_stick->SetControlExpression(1, "K");  // Down
 	m_c_stick->SetControlExpression(2, "J");  // Left
@@ -196,7 +193,7 @@ void GCPad::LoadDefaults(const ControllerInterface& ciface)
 #ifdef _WIN32
 	m_c_stick->SetControlExpression(4, "LCONTROL");  // Modifier
 
-																									 // Control Stick
+													 // Control Stick
 	m_main_stick->SetControlExpression(0, "UP");      // Up
 	m_main_stick->SetControlExpression(1, "DOWN");    // Down
 	m_main_stick->SetControlExpression(2, "LEFT");    // Left
@@ -206,18 +203,18 @@ void GCPad::LoadDefaults(const ControllerInterface& ciface)
 #elif __APPLE__
 	m_c_stick->SetControlExpression(4, "Left Control");  // Modifier
 
-																											 // Control Stick
+														 // Control Stick
 	m_main_stick->SetControlExpression(0, "Up Arrow");     // Up
 	m_main_stick->SetControlExpression(1, "Down Arrow");   // Down
 	m_main_stick->SetControlExpression(2, "Left Arrow");   // Left
 	m_main_stick->SetControlExpression(3, "Right Arrow");  // Right
 	m_main_stick->SetControlExpression(4, "Left Shift");   // Modifier
 #else
-																						// not sure if these are right
+											  // not sure if these are right
 
 	m_c_stick->SetControlExpression(4, "Control_L");  // Modifier
 
-																										// Control Stick
+													  // Control Stick
 	m_main_stick->SetControlExpression(0, "Up");       // Up
 	m_main_stick->SetControlExpression(1, "Down");     // Down
 	m_main_stick->SetControlExpression(2, "Left");     // Left
@@ -225,7 +222,7 @@ void GCPad::LoadDefaults(const ControllerInterface& ciface)
 	m_main_stick->SetControlExpression(4, "Shift_L");  // Modifier
 #endif
 
-																										 // Triggers
+													   // Triggers
 	m_triggers->SetControlExpression(0, "Q");  // L
 	m_triggers->SetControlExpression(1, "W");  // R
 }

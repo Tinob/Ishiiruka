@@ -237,17 +237,17 @@ void RegisterMMIO(MMIO::Mapping* mmio, u32 base)
 		u16* ptr;
 		bool align_writes_on_32_bytes;
 	} directly_mapped_vars[] = {
-			{AR_INFO, &s_ARAM_Info.Hex},
-			{AR_MODE, &s_AR_MODE},
-			{AR_REFRESH, &s_AR_REFRESH},
-			{AR_DMA_MMADDR_H, MMIO::Utils::HighPart(&s_arDMA.MMAddr)},
-			{AR_DMA_MMADDR_L, MMIO::Utils::LowPart(&s_arDMA.MMAddr), true},
-			{AR_DMA_ARADDR_H, MMIO::Utils::HighPart(&s_arDMA.ARAddr)},
-			{AR_DMA_ARADDR_L, MMIO::Utils::LowPart(&s_arDMA.ARAddr), true},
-			{AR_DMA_CNT_H, MMIO::Utils::HighPart(&s_arDMA.Cnt.Hex)},
-			// AR_DMA_CNT_L triggers DMA
-			{AUDIO_DMA_START_HI, MMIO::Utils::HighPart(&s_audioDMA.SourceAddress)},
-			{AUDIO_DMA_START_LO, MMIO::Utils::LowPart(&s_audioDMA.SourceAddress)},
+		{ AR_INFO, &s_ARAM_Info.Hex },
+		{ AR_MODE, &s_AR_MODE },
+		{ AR_REFRESH, &s_AR_REFRESH },
+		{ AR_DMA_MMADDR_H, MMIO::Utils::HighPart(&s_arDMA.MMAddr) },
+		{ AR_DMA_MMADDR_L, MMIO::Utils::LowPart(&s_arDMA.MMAddr), true },
+		{ AR_DMA_ARADDR_H, MMIO::Utils::HighPart(&s_arDMA.ARAddr) },
+		{ AR_DMA_ARADDR_L, MMIO::Utils::LowPart(&s_arDMA.ARAddr), true },
+		{ AR_DMA_CNT_H, MMIO::Utils::HighPart(&s_arDMA.Cnt.Hex) },
+		// AR_DMA_CNT_L triggers DMA
+		{ AUDIO_DMA_START_HI, MMIO::Utils::HighPart(&s_audioDMA.SourceAddress) },
+		{ AUDIO_DMA_START_LO, MMIO::Utils::LowPart(&s_audioDMA.SourceAddress) },
 	};
 	for (auto& mapped_var : directly_mapped_vars)
 	{
@@ -582,27 +582,25 @@ static void Do_ARAM_DMA()
 // (shuffle2) I still don't believe that this hack is actually needed... :(
 // Maybe the Wii Sports ucode is processed incorrectly?
 // (LM) It just means that DSP reads via '0xffdd' on Wii can end up in EXRAM or main RAM
-u8 ReadARAM(u32 _iAddress)
+u8 ReadARAM(u32 address)
 {
-	// NOTICE_LOG(DSPINTERFACE, "ReadARAM 0x%08x", _iAddress);
 	if (s_ARAM.wii_mode)
 	{
-		if (_iAddress & 0x10000000)
-			return s_ARAM.ptr[_iAddress & s_ARAM.mask];
+		if (address & 0x10000000)
+			return s_ARAM.ptr[address & s_ARAM.mask];
 		else
-			return Memory::Read_U8(_iAddress & Memory::RAM_MASK);
+			return Memory::Read_U8(address & Memory::RAM_MASK);
 	}
 	else
 	{
-		return s_ARAM.ptr[_iAddress & s_ARAM.mask];
+		return s_ARAM.ptr[address & s_ARAM.mask];
 	}
 }
 
-void WriteARAM(u8 value, u32 _uAddress)
+void WriteARAM(u8 value, u32 address)
 {
-	// NOTICE_LOG(DSPINTERFACE, "WriteARAM 0x%08x", _uAddress);
 	// TODO: verify this on Wii
-	s_ARAM.ptr[_uAddress & s_ARAM.mask] = value;
+	s_ARAM.ptr[address & s_ARAM.mask] = value;
 }
 
 u8* GetARAMPtr()

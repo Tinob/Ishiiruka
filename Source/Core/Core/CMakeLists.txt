@@ -7,6 +7,7 @@ set(SRCS	ActionReplay.cpp
 			CoreTiming.cpp
 			DSPEmulator.cpp
 			ec_wii.cpp
+			FileMonitor.cpp
 			GeckoCodeConfig.cpp
 			GeckoCode.cpp
 			HotkeyManager.cpp
@@ -103,9 +104,9 @@ set(SRCS	ActionReplay.cpp
 			HW/EXI/EXI_DeviceMic.cpp
 			HW/GCKeyboard.cpp
 			HW/GCKeyboardEmu.cpp
-			HW/GCMemcard.cpp
-			HW/GCMemcardDirectory.cpp
-			HW/GCMemcardRaw.cpp
+			HW/GCMemcard/GCMemcard.cpp
+			HW/GCMemcard/GCMemcardDirectory.cpp
+			HW/GCMemcard/GCMemcardRaw.cpp
 			HW/GCPad.cpp
 			HW/GCPadEmu.cpp
 			HW/GPFifo.cpp
@@ -148,6 +149,12 @@ set(SRCS	ActionReplay.cpp
 			IOS/DI/DI.cpp
 			IOS/ES/ES.cpp
 			IOS/ES/Formats.cpp
+			IOS/ES/Identity.cpp
+			IOS/ES/NandUtils.cpp
+			IOS/ES/TitleContents.cpp
+			IOS/ES/TitleInformation.cpp
+			IOS/ES/TitleManagement.cpp
+			IOS/ES/Views.cpp
 			IOS/FS/FileIO.cpp
 			IOS/FS/FS.cpp
 			IOS/Network/ICMPLin.cpp
@@ -237,6 +244,7 @@ if(_M_X86)
 			PowerPC/Jit64/JitRegCache.cpp
 			PowerPC/Jit64/Jit_SystemRegisters.cpp
 			PowerPC/Jit64Common/BlockCache.cpp
+			PowerPC/Jit64Common/ConstantPool.cpp
 			PowerPC/Jit64Common/EmuCodeBlock.cpp
 			PowerPC/Jit64Common/FarCodeCache.cpp
 			PowerPC/Jit64Common/Jit64AsmCommon.cpp

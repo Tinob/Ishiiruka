@@ -135,7 +135,7 @@ static void DumpLoadersCode()
 		sourcecode.append(iter->name);
 		sourcecode.append("\n// num_verts= ");
 		sourcecode.append(std::to_string(iter->num_verts));
-		sourcecode.append("#if _M_SSE >= 0x301\n");
+		sourcecode.append("#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)\n");
 		sourcecode.append("\tif (cpu_info.bSSSE3)\n");
 		sourcecode.append("\t{\n");
 		sourcecode.append("\t\tpvlmap[");

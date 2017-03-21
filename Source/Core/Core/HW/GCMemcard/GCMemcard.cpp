@@ -2,6 +2,8 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Core/HW/GCMemcard/GCMemcard.h"
+
 #include <algorithm>
 #include <cinttypes>
 #include <cstring>
@@ -15,8 +17,6 @@
 #include "Common/MsgHandler.h"
 #include "Common/StringUtil.h"
 #include "Common/Swap.h"
-
-#include "Core/HW/GCMemcard.h"
 
 static void ByteSwap(u8* valueA, u8* valueB)
 {
@@ -769,13 +769,13 @@ u32 GCMemcard::RemoveFile(u8 index)  // index in the directory array
 	*PreviousDir = UpdatedDir;
 	if (PreviousDir == &dir )
 	{
-		CurrentDir = &dir;
-		PreviousDir = &dir_backup;
+	CurrentDir = &dir;
+	PreviousDir = &dir_backup;
 	}
 	else
 	{
-		CurrentDir = &dir_backup;
-		PreviousDir = &dir;
+	CurrentDir = &dir_backup;
+	PreviousDir = &dir;
 	}
 	*/
 	memset(&(UpdatedDir.Dir[index]), 0xFF, DENTRY_SIZE);

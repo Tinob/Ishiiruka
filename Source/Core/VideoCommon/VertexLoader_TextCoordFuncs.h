@@ -46,7 +46,7 @@ __forceinline void _TexCoord_ReadIndex(TPipelineState &pipelinestate)
 	++pipelinestate.tcIndex;
 }
 
-#if _M_SSE >= 0x301
+#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
 
 __forceinline void _TexCoord_ReadDirect_UByte2_SSSE3(TPipelineState &pipelinestate)
 {

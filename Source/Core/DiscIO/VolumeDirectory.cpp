@@ -19,7 +19,6 @@
 #include "Common/Logging/Log.h"
 #include "DiscIO/Blob.h"
 #include "DiscIO/Enums.h"
-#include "DiscIO/FileMonitor.h"
 #include "DiscIO/Volume.h"
 #include "DiscIO/VolumeDirectory.h"
 
@@ -130,8 +129,6 @@ bool CVolumeDirectory::Read(u64 offset, u64 length, u8* buffer, bool decrypt) co
 
 		u64 fileSize = file.GetSize();
 
-		FileMon::CheckFile(fileName, fileSize);
-
 		if (fileOffset < fileSize)
 		{
 			u64 fileBytes = std::min(fileSize - fileOffset, length);
@@ -200,8 +197,8 @@ std::map<Language, std::string> CVolumeDirectory::GetLongNames() const
 {
 	std::string name = GetInternalName();
 	if (name.empty())
-		return{ {} };
-	return{ {Language::LANGUAGE_UNKNOWN, name} };
+		return { {} };
+	return { { Language::LANGUAGE_UNKNOWN, name } };
 }
 
 std::vector<u32> CVolumeDirectory::GetBanner(int* width, int* height) const
@@ -370,7 +367,7 @@ void CVolumeDirectory::BuildFST()
 	u32 name_offset = 0;  // Offset within name table
 	u32 root_offset = 0;  // Offset of root of FST
 
-	// write root entry
+						  // write root entry
 	WriteEntryData(&fst_offset, DIRECTORY_ENTRY, 0, 0, rootEntry.size);
 
 	WriteDirectory(rootEntry, &fst_offset, &name_offset, &current_data_address, root_offset);

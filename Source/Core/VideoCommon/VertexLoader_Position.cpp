@@ -20,7 +20,7 @@ void LOADERDECL Pos_ReadIndex()
 	_Pos_ReadIndex<I, T, N>(g_PipelineState);
 }
 
-#if _M_SSE >= 0x301
+#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
 
 template <bool three>
 void LOADERDECL Pos_ReadDirect_UByte_SSSE3()
@@ -136,7 +136,7 @@ void VertexLoader_Position::Init(void)
 		return;
 	}
 	Initialized = true;
-#if _M_SSE >= 0x301
+#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
 
 	if (cpu_info.bSSSE3)
 	{

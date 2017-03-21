@@ -15,7 +15,6 @@
 #include "Common/Logging/Log.h"
 #include "Common/MemArena.h"
 #include "Common/Swap.h"
-
 #include "Core/ConfigManager.h"
 #include "Core/HW/AudioInterface.h"
 #include "Core/HW/DSP.h"
@@ -48,7 +47,7 @@ static MemArena g_arena;
 
 // STATE_TO_SAVE
 static bool m_IsInitialized = false;  // Save the Init(), Shutdown() state
-// END STATE_TO_SAVE
+									  // END STATE_TO_SAVE
 
 u8* m_pRAM;
 u8* m_pL1Cache;
@@ -155,10 +154,10 @@ struct LogicalMemoryView
 // TODO: The actual size of RAM is REALRAM_SIZE (24MB); the other 8MB shouldn't
 // be backed by actual memory.
 static PhysicalMemoryRegion physical_regions[] = {
-		{&m_pRAM, 0x00000000, RAM_SIZE, PhysicalMemoryRegion::ALWAYS},
-		{&m_pL1Cache, 0xE0000000, L1_CACHE_SIZE, PhysicalMemoryRegion::ALWAYS},
-		{&m_pFakeVMEM, 0x7E000000, FAKEVMEM_SIZE, PhysicalMemoryRegion::FAKE_VMEM},
-		{&m_pEXRAM, 0x10000000, EXRAM_SIZE, PhysicalMemoryRegion::WII_ONLY},
+	{ &m_pRAM, 0x00000000, RAM_SIZE, PhysicalMemoryRegion::ALWAYS },
+	{ &m_pL1Cache, 0xE0000000, L1_CACHE_SIZE, PhysicalMemoryRegion::ALWAYS },
+	{ &m_pFakeVMEM, 0x7E000000, FAKEVMEM_SIZE, PhysicalMemoryRegion::FAKE_VMEM },
+	{ &m_pEXRAM, 0x10000000, EXRAM_SIZE, PhysicalMemoryRegion::WII_ONLY },
 };
 
 static std::vector<LogicalMemoryView> logical_mapped_entries;
@@ -228,14 +227,14 @@ void UpdateLogicalMemory(const PowerPC::BatTable& dbat_table)
 		g_arena.ReleaseView(entry.mapped_pointer, entry.mapped_size);
 	}
 	logical_mapped_entries.clear();
-	for (u32 i = 0; i < (1 << (32 - PowerPC::BAT_INDEX_SHIFT)); ++i)
+	for (u32 i = 0; i < dbat_table.size(); ++i)
 	{
-		if (dbat_table[i] & 1)
+		if (dbat_table[i] & PowerPC::BAT_PHYSICAL_BIT)
 		{
 			u32 logical_address = i << PowerPC::BAT_INDEX_SHIFT;
 			// TODO: Merge adjacent mappings to make this faster.
-			u32 logical_size = 1 << PowerPC::BAT_INDEX_SHIFT;
-			u32 translated_address = dbat_table[i] & ~3;
+			u32 logical_size = PowerPC::BAT_PAGE_SIZE;
+			u32 translated_address = dbat_table[i] & PowerPC::BAT_RESULT_MASK;
 			for (const auto& physical_region : physical_regions)
 			{
 				u32 mapping_address = physical_region.physical_address;
@@ -289,7 +288,7 @@ void Shutdown()
 		if ((flags & region.flags) != region.flags)
 			continue;
 		g_arena.ReleaseView(*region.out_pointer, region.size);
-		*region.out_pointer = 0;
+		*region.out_pointer = nullptr;
 	}
 	for (auto& entry : logical_mapped_entries)
 	{

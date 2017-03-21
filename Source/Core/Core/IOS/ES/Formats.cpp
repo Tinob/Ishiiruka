@@ -5,14 +5,18 @@
 #include "Core/IOS/ES/Formats.h"
 
 #include <algorithm>
+#include <cinttypes>
 #include <cstddef>
 #include <cstring>
+#include <locale>
+#include <string>
 #include <utility>
 #include <vector>
 
 #include "Common/ChunkFile.h"
 #include "Common/CommonTypes.h"
 #include "Common/Crypto/AES.h"
+#include "Common/StringUtil.h"
 #include "Common/Swap.h"
 #include "Core/ec_wii.h"
 
@@ -30,6 +34,13 @@ bool IsTitleType(u64 title_id, TitleType title_type)
 bool IsDiscTitle(u64 title_id)
 {
 	return IsTitleType(title_id, TitleType::Game) ||
+		IsTitleType(title_id, TitleType::GameWithChannel);
+}
+
+bool IsChannel(u64 title_id)
+{
+	return IsTitleType(title_id, TitleType::Channel) ||
+		IsTitleType(title_id, TitleType::SystemChannel) ||
 		IsTitleType(title_id, TitleType::GameWithChannel);
 }
 
@@ -118,7 +129,7 @@ u64 TMDReader::GetIOSId() const
 DiscIO::Region TMDReader::GetRegion() const
 {
 	if (GetTitleId() == 0x0000000100000002)
-		return DiscIO::RegionSwitchWii(DiscIO::GetSysMenuRegion(GetTitleVersion()));
+		return DiscIO::GetSysMenuRegion(GetTitleVersion());
 
 	return DiscIO::RegionSwitchWii(static_cast<u8>(GetTitleId() & 0xff));
 }
@@ -136,6 +147,22 @@ u16 TMDReader::GetTitleVersion() const
 u16 TMDReader::GetGroupId() const
 {
 	return Common::swap16(m_bytes.data() + offsetof(TMDHeader, group_id));
+}
+
+std::string TMDReader::GetGameID() const
+{
+	char game_id[6];
+	std::memcpy(game_id, m_bytes.data() + offsetof(TMDHeader, title_id) + 4, 4);
+	std::memcpy(game_id + 4, m_bytes.data() + offsetof(TMDHeader, group_id), 2);
+
+	const bool all_printable = std::all_of(std::begin(game_id), std::end(game_id), [](char c) {
+		return std::isprint(c, std::locale::classic());
+	});
+
+	if (all_printable)
+		return std::string(game_id, sizeof(game_id));
+
+	return StringFromFormat("%016" PRIx64, GetTitleId());
 }
 
 u16 TMDReader::GetNumContents() const
@@ -284,7 +311,7 @@ u64 TicketReader::GetTitleId() const
 std::vector<u8> TicketReader::GetTitleKey() const
 {
 	const u8 common_key[16] = { 0xeb, 0xe4, 0x2a, 0x22, 0x5e, 0x85, 0x93, 0xe4,
-		0x48, 0xd9, 0xc5, 0x45, 0x73, 0x81, 0xaa, 0xf7 };
+							   0x48, 0xd9, 0xc5, 0x45, 0x73, 0x81, 0xaa, 0xf7 };
 	u8 iv[16] = {};
 	std::copy_n(&m_bytes[GetOffset() + offsetof(Ticket, title_id)], sizeof(Ticket::title_id), iv);
 	return Common::AES::Decrypt(common_key, iv, &m_bytes[GetOffset() + offsetof(Ticket, title_key)],

@@ -227,9 +227,11 @@ u64 GetMurmurHash3(const u8* src, u32 len, u32 samples)
 
 
 // CRC32 hash using the SSE4.2 instruction
+#if defined(_M_X86_64)
+
+FUNCTION_TARGET_SSE42
 u64 GetCRC32(const u8* src, u32 len, u32 samples)
 {
-#if _M_SSE >= 0x402 || defined(_M_ARM_64)
 	u64 h[4] = { len, 0, 0, 0 };
 	u32 Step = (len / 8);
 	const u64* data = (const u64*)src;
@@ -239,9 +241,7 @@ u64 GetCRC32(const u8* src, u32 len, u32 samples)
 	Step = Step / samples;
 	if (Step < 1)
 		Step = 1;
-#endif
 
-#if _M_SSE >= 0x402
 	while (data < end - Step * 3)
 	{
 		h[0] = _mm_crc32_u64(h[0], data[Step * 0]);
@@ -263,7 +263,25 @@ u64 GetCRC32(const u8* src, u32 len, u32 samples)
 		memcpy(&temp, end, len & 7);
 		h[0] = _mm_crc32_u64(h[0], temp);
 	}
+
+	// FIXME: is there a better way to combine these partial hashes?
+	return h[0] + (h[1] << 10) + (h[2] << 21) + (h[3] << 32);
+}
+
 #elif defined(_M_ARM_64)
+
+u64 GetCRC32(const u8* src, u32 len, u32 samples)
+{
+	u64 h[4] = { len, 0, 0, 0 };
+	u32 Step = (len / 8);
+	const u64* data = (const u64*)src;
+	const u64* end = data + Step;
+	if (samples == 0)
+		samples = std::max(Step, 1u);
+	Step = Step / samples;
+	if (Step < 1)
+		Step = 1;
+
 	// We should be able to use intrinsics for this
 	// Too bad the intrinsics for this instruction was added in GCC 4.9.1
 	// The Android NDK (as of r10e) only has GCC 4.9
@@ -271,59 +289,54 @@ u64 GetCRC32(const u8* src, u32 len, u32 samples)
 	while (data < end - Step * 3)
 	{
 		asm("crc32x %w[res], %w[two], %x[three]"
-			: [res] "=r" (h[0])
-			: [two] "r" (h[0]),
-			[three] "r" (data[Step * 0]));
+			: [res] "=r"(h[0])
+			: [two] "r"(h[0]), [three] "r"(data[Step * 0]));
 		asm("crc32x %w[res], %w[two], %x[three]"
-			: [res] "=r" (h[1])
-			: [two] "r" (h[1]),
-			[three] "r" (data[Step * 1]));
+			: [res] "=r"(h[1])
+			: [two] "r"(h[1]), [three] "r"(data[Step * 1]));
 		asm("crc32x %w[res], %w[two], %x[three]"
-			: [res] "=r" (h[2])
-			: [two] "r" (h[2]),
-			[three] "r" (data[Step * 2]));
+			: [res] "=r"(h[2])
+			: [two] "r"(h[2]), [three] "r"(data[Step * 2]));
 		asm("crc32x %w[res], %w[two], %x[three]"
-			: [res] "=r" (h[3])
-			: [two] "r" (h[3]),
-			[three] "r" (data[Step * 3]));
+			: [res] "=r"(h[3])
+			: [two] "r"(h[3]), [three] "r"(data[Step * 3]));
 
 		data += Step * 4;
 	}
 	if (data < end - Step * 0)
 		asm("crc32x %w[res], %w[two], %x[three]"
-			: [res] "=r" (h[0])
-			: [two] "r" (h[0]),
-			[three] "r" (data[Step * 0]));
+			: [res] "=r"(h[0])
+			: [two] "r"(h[0]), [three] "r"(data[Step * 0]));
 	if (data < end - Step * 1)
 		asm("crc32x %w[res], %w[two], %x[three]"
-			: [res] "=r" (h[1])
-			: [two] "r" (h[1]),
-			[three] "r" (data[Step * 1]));
+			: [res] "=r"(h[1])
+			: [two] "r"(h[1]), [three] "r"(data[Step * 1]));
 	if (data < end - Step * 2)
 		asm("crc32x %w[res], %w[two], %x[three]"
-			: [res] "=r" (h[2])
-			: [two] "r" (h[2]),
-			[three] "r" (data[Step * 2]));
+			: [res] "=r"(h[2])
+			: [two] "r"(h[2]), [three] "r"(data[Step * 2]));
 
 	if (len & 7)
 	{
 		u64 temp = 0;
 		memcpy(&temp, end, len & 7);
 		asm("crc32x %w[res], %w[two], %x[three]"
-			: [res] "=r" (h[0])
-			: [two] "r" (h[0]),
-			[three] "r" (temp));
-	}
-#endif
+			: [res] "=r"(h[0])
+			: [two] "r"(h[0]), [three] "r"(temp));
+  }
 
-#if _M_SSE >= 0x402 || defined(_M_ARM_64)
 	// FIXME: is there a better way to combine these partial hashes?
 	return h[0] + (h[1] << 10) + (h[2] << 21) + (h[3] << 32);
-#else
-	return 0;
-#endif
-
 }
+
+#else
+
+u64 GetCRC32(const u8* src, u32 len, u32 samples)
+{
+	return 0;
+}
+
+#endif
 
 
 /*
@@ -378,13 +391,16 @@ u64 GetHashHiresTexture(const u8* src, u32 len, u32 samples)
 	return h;
 }
 #else
+
 // CRC32 hash using the SSE4.2 instruction
+#if defined(_M_X86)
+
+FUNCTION_TARGET_SSE42
 u64 GetCRC32(const u8* src, u32 len, u32 samples)
 {
-#if _M_SSE >= 0x402
 	u32 h = len;
 	u32 Step = (len / 4);
-	const u32* data = (const u32 *)src;
+	const u32* data = (const u32*)src;
 	const u32* end = data + Step;
 	if (samples == 0)
 		samples = std::max(Step, 1u);
@@ -399,10 +415,16 @@ u64 GetCRC32(const u8* src, u32 len, u32 samples)
 
 	const u8* data2 = (const u8*)end;
 	return (u64)_mm_crc32_u32(h, u32(data2[0]));
-#else
-	return 0;
-#endif
 }
+
+#else
+
+u64 GetCRC32(const u8* src, u32 len, u32 samples)
+{
+	return 0;
+}
+
+#endif
 
 //-----------------------------------------------------------------------------
 // Block read - if your platform needs to do endian-swapping or can only
@@ -584,7 +606,7 @@ u64 GetHash64(const u8* src, u32 len, u32 samples)
 // sets the hash function used for the texture cache
 void SetHash64Function()
 {
-#if _M_SSE >= 0x402
+#if defined(_M_X86_64) || defined(_M_X86)
 	if (cpu_info.bSSE4_2) // sse crc32 version
 	{
 		ptrHashFunction = &GetCRC32;

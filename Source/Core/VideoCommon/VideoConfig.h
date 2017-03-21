@@ -247,7 +247,6 @@ struct VideoConfig final
 		bool bSupportsPixelLighting;
 		bool bSupportsNormalMaps;
 		bool bSupportsSeparateAlphaFunction;
-		bool bSupportsOversizedDepthRanges;
 		bool bSupportsBindingLayout; // needed by PixelShaderGen, so must stay in VideoCommon
 		bool bSupportsEarlyZ; // needed by PixelShaderGen, so must stay in VideoCommon
 		bool bNeedBlendIndices; // needed by PixelShaderGen, so must stay in VideoCommon

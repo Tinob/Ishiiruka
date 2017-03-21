@@ -2,6 +2,11 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 // Added for Ishiiruka by Tino
+#if defined(_M_X86_64)
+#include <xmmintrin.h>
+#include <emmintrin.h>
+#endif
+
 #include "VideoCommon/VertexLoader_Mtx.h"
 
 void LOADERDECL Vertexloader_Mtx::PosMtx_ReadDirect_UByte()
@@ -32,7 +37,7 @@ void LOADERDECL Vertexloader_Mtx::TexMtx_Write_Float2()
 
 void LOADERDECL Vertexloader_Mtx::TexMtx_Write_Float3()
 {
-#if _M_SSE >= 0x200
+#if defined(_M_X86_64)
 	__m128 output = _mm_cvtsi32_ss(_mm_castsi128_ps(_mm_setzero_si128()), g_PipelineState.curtexmtx[g_PipelineState.texmtxwrite++]);
 	_mm_storeu_ps((float*)g_PipelineState.GetWritePosition(), _mm_shuffle_ps(output, output, 0x45));
 	g_PipelineState.WriteSkip(sizeof(float) * 3);

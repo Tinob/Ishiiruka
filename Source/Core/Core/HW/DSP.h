@@ -51,12 +51,12 @@ union UDSPControl
 		u16 DSP_mask : 1;
 		// Other ???
 		u16 DMAState : 1;     // DSPGetDMAStatus() uses this flag. __ARWaitForDMA() uses it too...maybe
-													// it's just general DMA flag
+							  // it's just general DMA flag
 		u16 DSPInitCode : 1;  // Indicator that the DSP was initialized?
 		u16 DSPInit : 1;      // DSPInit() writes to this flag
 		u16 pad : 4;
 	};
-	UDSPControl(u16 _Hex = 0) : Hex(_Hex) {}
+	UDSPControl(u16 hex = 0) : Hex(hex) {}
 };
 
 void Init(bool hle);
@@ -69,11 +69,11 @@ DSPEmulator* GetDSPEmulator();
 
 void DoState(PointerWrap& p);
 
-void GenerateDSPInterruptFromDSPEmu(DSPInterruptType _DSPInterruptType);
+void GenerateDSPInterruptFromDSPEmu(DSPInterruptType type);
 
 // Audio/DSP Helper
-u8 ReadARAM(const u32 _uAddress);
-void WriteARAM(u8 value, u32 _uAddress);
+u8 ReadARAM(u32 address);
+void WriteARAM(u8 value, u32 address);
 
 // Debugger Helper
 u8* GetARAMPtr();

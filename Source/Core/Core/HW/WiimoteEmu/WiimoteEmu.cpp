@@ -36,7 +36,6 @@
 #include "InputCommon/ControllerEmu/ControlGroup/Force.h"
 #include "InputCommon/ControllerEmu/ControlGroup/ModifySettingsButton.h"
 #include "InputCommon/ControllerEmu/ControlGroup/Tilt.h"
-#include "InputCommon/ControllerEmu/Setting/BackgroundInputSetting.h"
 #include "InputCommon/ControllerEmu/Setting/BooleanSetting.h"
 #include "InputCommon/ControllerEmu/Setting/NumericSetting.h"
 
@@ -170,8 +169,8 @@ void EmulateSwing(AccelData* const accel, ControllerEmu::Force* const swing_grou
 	axis_map[1] = sideways;                          // left|right
 	axis_map[2] = upright ? 2 : (sideways ? 0 : 1);  // forward/backward
 
-																									 // some orientations have up as positive, some as negative
-																									 // same with forward
+													 // some orientations have up as positive, some as negative
+													 // same with forward
 	if (sideways && !upright)
 		g_dir[axis_map[2]] *= -1;
 	if (!sideways && upright)
@@ -296,8 +295,6 @@ Wiimote::Wiimote(const unsigned int index)
 
 	// options
 	groups.emplace_back(m_options = new ControllerEmu::ControlGroup(_trans("Options")));
-	m_options->boolean_settings.emplace_back(
-		std::make_unique<ControllerEmu::BackgroundInputSetting>(_trans("Background Input")));
 	m_options->boolean_settings.emplace_back(std::make_unique<ControllerEmu::BooleanSetting>(
 		"Sideways Wiimote", _trans("Sideways Wii Remote"), false));
 	m_options->boolean_settings.emplace_back(std::make_unique<ControllerEmu::BooleanSetting>(
@@ -665,7 +662,7 @@ void Wiimote::GetExtData(u8* const data)
 	// i think it should be unencrpyted in the register, encrypted when read.
 	memcpy(m_reg_ext.controller_data, data, sizeof(wm_nc));  // TODO: Should it be nc specific?
 
-																													 // motionplus pass-through modes
+															 // motionplus pass-through modes
 	if (m_motion_plus_active)
 	{
 		switch (m_reg_motion_plus.ext_identifier[0x4])
@@ -744,7 +741,7 @@ void Wiimote::Update()
 		// hotkey/settings modifier
 		m_hotkeys->GetState();  // data is later accessed in UpdateButtonsStatus and GetAccelData
 
-														// core buttons
+								// core buttons
 		if (rptf.core)
 			GetButtonData(data + rptf.core);
 
@@ -1010,7 +1007,7 @@ void Wiimote::LoadDefaults(const ControllerInterface& ciface)
 	m_buttons->SetControlExpression(6, "!`Alt_L` & Return");  // Home
 #endif
 
-																														// Shake
+															  // Shake
 	for (int i = 0; i < 3; ++i)
 		m_shake->SetControlExpression(i, "Click 2");
 
@@ -1038,8 +1035,8 @@ void Wiimote::LoadDefaults(const ControllerInterface& ciface)
 	m_dpad->SetControlExpression(3, "Right");  // Right
 #endif
 
-																						 // ugly stuff
-																						 // enable nunchuk
+											   // ugly stuff
+											   // enable nunchuk
 	m_extension->switch_extension = 1;
 
 	// set nunchuk defaults

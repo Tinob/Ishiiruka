@@ -36,7 +36,7 @@
 #include "DolphinWX/ISOFile.h"
 #include "DolphinWX/WxUtils.h"
 
-static const u32 CACHE_REVISION = 0x128;  // Last changed in PR 4542
+static const u32 CACHE_REVISION = 0x129;  // Last changed in PR 5102
 
 static std::string GetLanguageString(DiscIO::Language language,
 	std::map<DiscIO::Language, std::string> strings)
@@ -245,8 +245,8 @@ std::string GameListItem::CreateCacheFilename() const
 	if (Filename.empty())
 		return Filename;  // Disc Drive
 
-	// Filename.extension_HashOfFolderPath_Size.cache
-	// Append hash to prevent ISO name-clashing in different folders.
+						  // Filename.extension_HashOfFolderPath_Size.cache
+						  // Append hash to prevent ISO name-clashing in different folders.
 	Filename.append(
 		StringFromFormat("%s_%x_%" PRIx64 ".cache", extension.c_str(),
 			HashFletcher((const u8*)LegalPathname.c_str(), LegalPathname.size()),

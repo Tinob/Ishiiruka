@@ -25,7 +25,7 @@ void LOADERDECL TexCoord_ReadIndex()
 	_TexCoord_ReadIndex<I, T, N>(g_PipelineState);
 }
 
-#if _M_SSE >= 0x301
+#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
 void LOADERDECL TexCoord_ReadDirect_UByte2_SSSE3()
 {
 	_TexCoord_ReadDirect_UByte2_SSSE3(g_PipelineState);
@@ -135,7 +135,7 @@ void VertexLoader_TextCoord::Init(void)
 		return;
 	}
 	Initialized = true;
-#if _M_SSE >= 0x301
+#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
 	if (cpu_info.bSSSE3)
 	{
 		tableReadTexCoord[DIRECT][FORMAT_UBYTE][TC_ELEMENTS_2] = TexCoord_ReadDirect_UByte2_SSSE3;

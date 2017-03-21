@@ -31,9 +31,9 @@ static void Setup();
 
 static bool s_detected = false;
 static libusb_device_handle* s_handle = nullptr;
-static u8 s_controller_type[MAX_SI_CHANNELS] = {
-		ControllerTypes::CONTROLLER_NONE, ControllerTypes::CONTROLLER_NONE,
-		ControllerTypes::CONTROLLER_NONE, ControllerTypes::CONTROLLER_NONE };
+static u8 s_controller_type[SerialInterface::MAX_SI_CHANNELS] = {
+	ControllerTypes::CONTROLLER_NONE, ControllerTypes::CONTROLLER_NONE,
+	ControllerTypes::CONTROLLER_NONE, ControllerTypes::CONTROLLER_NONE };
 static u8 s_controller_rumble[4];
 
 static std::mutex s_mutex;
@@ -199,7 +199,7 @@ static void Setup()
 	libusb_device** list;
 	ssize_t cnt = libusb_get_device_list(s_libusb_context.get(), &list);
 
-	for (int i = 0; i < MAX_SI_CHANNELS; i++)
+	for (int i = 0; i < SerialInterface::MAX_SI_CHANNELS; i++)
 	{
 		s_controller_type[i] = ControllerTypes::CONTROLLER_NONE;
 		s_controller_rumble[i] = 0;
@@ -350,7 +350,7 @@ static void Reset()
 		s_adapter_thread.join();
 	}
 
-	for (int i = 0; i < MAX_SI_CHANNELS; i++)
+	for (int i = 0; i < SerialInterface::MAX_SI_CHANNELS; i++)
 		s_controller_type[i] = ControllerTypes::CONTROLLER_NONE;
 
 	s_detected = false;
@@ -369,10 +369,10 @@ static void Reset()
 GCPadStatus Input(int chan)
 {
 	if (!UseAdapter())
-		return{};
+		return {};
 
 	if (s_handle == nullptr || !s_detected)
-		return{};
+		return {};
 
 	int payload_size = 0;
 	u8 controller_payload_copy[37];
@@ -467,10 +467,11 @@ bool DeviceConnected(int chan)
 
 bool UseAdapter()
 {
-	return SConfig::GetInstance().m_SIDevice[0] == SIDEVICE_WIIU_ADAPTER ||
-		SConfig::GetInstance().m_SIDevice[1] == SIDEVICE_WIIU_ADAPTER ||
-		SConfig::GetInstance().m_SIDevice[2] == SIDEVICE_WIIU_ADAPTER ||
-		SConfig::GetInstance().m_SIDevice[3] == SIDEVICE_WIIU_ADAPTER;
+	const auto& si_devices = SConfig::GetInstance().m_SIDevice;
+
+	return std::any_of(std::begin(si_devices), std::end(si_devices), [](const auto device_type) {
+		return device_type == SerialInterface::SIDEVICE_WIIU_ADAPTER;
+	});
 }
 
 void ResetRumble()
@@ -493,7 +494,7 @@ static void ResetRumbleLockNeeded()
 	std::fill(std::begin(s_controller_rumble), std::end(s_controller_rumble), 0);
 
 	unsigned char rumble[5] = { 0x11, s_controller_rumble[0], s_controller_rumble[1],
-														 s_controller_rumble[2], s_controller_rumble[3] };
+		s_controller_rumble[2], s_controller_rumble[3] };
 
 	int size = 0;
 	libusb_interrupt_transfer(s_handle, s_endpoint_out, rumble, sizeof(rumble), &size, 16);
@@ -513,7 +514,7 @@ void Output(int chan, u8 rumble_command)
 		s_controller_rumble[chan] = rumble_command;
 
 		unsigned char rumble[5] = { 0x11, s_controller_rumble[0], s_controller_rumble[1],
-															 s_controller_rumble[2], s_controller_rumble[3] };
+			s_controller_rumble[2], s_controller_rumble[3] };
 		int size = 0;
 
 		libusb_interrupt_transfer(s_handle, s_endpoint_out, rumble, sizeof(rumble), &size, 16);

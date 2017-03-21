@@ -9,6 +9,7 @@
 #include <utility>
 #include <vector>
 
+#include "Common/Assert.h"
 #include "Common/ColorUtil.h"
 #include "Common/CommonTypes.h"
 #include "Common/Logging/Log.h"
@@ -16,7 +17,6 @@
 #include "Common/StringUtil.h"
 #include "DiscIO/Blob.h"
 #include "DiscIO/Enums.h"
-#include "DiscIO/FileMonitor.h"
 #include "DiscIO/Filesystem.h"
 #include "DiscIO/Volume.h"
 #include "DiscIO/VolumeGC.h"
@@ -25,6 +25,7 @@ namespace DiscIO
 {
 CVolumeGC::CVolumeGC(std::unique_ptr<IBlobReader> reader) : m_pReader(std::move(reader))
 {
+	_assert_(m_pReader);
 }
 
 CVolumeGC::~CVolumeGC()
@@ -36,19 +37,12 @@ bool CVolumeGC::Read(u64 _Offset, u64 _Length, u8* _pBuffer, bool decrypt) const
 	if (decrypt)
 		PanicAlertT("Tried to decrypt data from a non-Wii volume");
 
-	if (m_pReader == nullptr)
-		return false;
-
-	FileMon::FindFilename(_Offset);
-
 	return m_pReader->Read(_Offset, _Length, _pBuffer);
 }
 
 std::string CVolumeGC::GetGameID() const
 {
 	static const std::string NO_UID("NO_UID");
-	if (m_pReader == nullptr)
-		return NO_UID;
 
 	char ID[6];
 
@@ -64,7 +58,7 @@ std::string CVolumeGC::GetGameID() const
 Region CVolumeGC::GetRegion() const
 {
 	u8 country_code;
-	if (!m_pReader->Read(3, 1, &country_code))
+	if (!ReadSwapped(3, &country_code, false))
 		return Region::UNKNOWN_REGION;
 
 	return RegionSwitchGC(country_code);
@@ -73,7 +67,7 @@ Region CVolumeGC::GetRegion() const
 Country CVolumeGC::GetCountry() const
 {
 	u8 country_code;
-	if (!m_pReader->Read(3, 1, &country_code))
+	if (!ReadSwapped(3, &country_code, false))
 		return Country::COUNTRY_UNKNOWN;
 
 	return CountrySwitch(country_code);
@@ -81,9 +75,6 @@ Country CVolumeGC::GetCountry() const
 
 std::string CVolumeGC::GetMakerID() const
 {
-	if (m_pReader == nullptr)
-		return std::string();
-
 	char makerID[2];
 	if (!Read(0x4, 0x2, (u8*)&makerID))
 		return std::string();
@@ -93,11 +84,8 @@ std::string CVolumeGC::GetMakerID() const
 
 u16 CVolumeGC::GetRevision() const
 {
-	if (!m_pReader)
-		return 0;
-
 	u8 revision;
-	if (!Read(7, 1, &revision))
+	if (!ReadSwapped(7, &revision, false))
 		return 0;
 
 	return revision;
@@ -106,7 +94,7 @@ u16 CVolumeGC::GetRevision() const
 std::string CVolumeGC::GetInternalName() const
 {
 	char name[0x60];
-	if (m_pReader != nullptr && Read(0x20, 0x60, (u8*)name))
+	if (Read(0x20, 0x60, (u8*)name))
 		return DecodeString(name);
 
 	return "";
@@ -152,9 +140,6 @@ std::vector<u32> CVolumeGC::GetBanner(int* width, int* height) const
 
 u64 CVolumeGC::GetFSTSize() const
 {
-	if (m_pReader == nullptr)
-		return 0;
-
 	u32 size;
 	if (!Read(0x428, 0x4, (u8*)&size))
 		return 0;
@@ -164,9 +149,6 @@ u64 CVolumeGC::GetFSTSize() const
 
 std::string CVolumeGC::GetApploaderDate() const
 {
-	if (m_pReader == nullptr)
-		return std::string();
-
 	char date[16];
 	if (!Read(0x2440, 0x10, (u8*)&date))
 		return std::string();
@@ -176,29 +158,23 @@ std::string CVolumeGC::GetApploaderDate() const
 
 BlobType CVolumeGC::GetBlobType() const
 {
-	return m_pReader ? m_pReader->GetBlobType() : BlobType::PLAIN;
+	return m_pReader->GetBlobType();
 }
 
 u64 CVolumeGC::GetSize() const
 {
-	if (m_pReader)
-		return m_pReader->GetDataSize();
-	else
-		return 0;
+	return m_pReader->GetDataSize();
 }
 
 u64 CVolumeGC::GetRawSize() const
 {
-	if (m_pReader)
-		return m_pReader->GetRawSize();
-	else
-		return 0;
+	return m_pReader->GetRawSize();
 }
 
 u8 CVolumeGC::GetDiscNumber() const
 {
 	u8 disc_number;
-	Read(6, 1, &disc_number);
+	ReadSwapped(6, &disc_number, false);
 	return disc_number;
 }
 

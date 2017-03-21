@@ -4,6 +4,7 @@
 
 #include "Core/Debugger/PPCDebugInterface.h"
 
+#include <cstddef>
 #include <string>
 
 #include "Common/GekkoDisassembler.h"
@@ -129,9 +130,9 @@ void PPCDebugInterface::ClearAllMemChecks()
 	PowerPC::memchecks.Clear();
 }
 
-bool PPCDebugInterface::IsMemCheck(unsigned int address)
+bool PPCDebugInterface::IsMemCheck(unsigned int address, size_t size)
 {
-	return PowerPC::memchecks.GetMemCheck(address) != nullptr;
+	return PowerPC::memchecks.GetMemCheck(address, size) != nullptr;
 }
 
 void PPCDebugInterface::ToggleMemCheck(unsigned int address, bool read, bool write, bool log)
@@ -172,12 +173,12 @@ int PPCDebugInterface::GetColor(unsigned int address)
 	if (!PowerPC::HostIsRAMAddress(address))
 		return 0xeeeeee;
 	static const int colors[6] = {
-			0xd0FFFF,  // light cyan
-			0xFFd0d0,  // light red
-			0xd8d8FF,  // light blue
-			0xFFd0FF,  // light purple
-			0xd0FFd0,  // light green
-			0xFFFFd0,  // light yellow
+		0xd0FFFF,  // light cyan
+		0xFFd0d0,  // light red
+		0xd8d8FF,  // light blue
+		0xFFd0FF,  // light purple
+		0xd0FFd0,  // light green
+		0xFFFFd0,  // light yellow
 	};
 	Symbol* symbol = g_symbolDB.GetSymbolFromAddr(address);
 	if (!symbol)

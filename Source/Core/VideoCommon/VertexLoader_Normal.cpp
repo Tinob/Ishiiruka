@@ -57,7 +57,7 @@ struct Normal_Index_Indices3
 	static const int size = sizeof(I) * 3;
 };
 
-#if _M_SSE >= 0x301
+#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
 
 template <int N>
 struct Normal_Direct_UByte_SSSE3
@@ -292,7 +292,7 @@ void VertexLoader_Normal::Init(void)
 	m_Table[INDEX16][NRM_INDICES3][NRM_NBT3][FORMAT_SHORT] = Normal_Index_Indices3<u16, s16>();
 	m_Table[INDEX16][NRM_INDICES3][NRM_NBT3][FORMAT_FLOAT] = Normal_Index_Indices3<u16, float>();
 
-#if _M_SSE >= 0x301
+#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
 	if (cpu_info.bSSSE3)
 	{
 		m_Table[DIRECT][NRM_INDICES1][NRM_NBT][FORMAT_UBYTE] = Normal_Direct_UByte_SSSE3<1>();

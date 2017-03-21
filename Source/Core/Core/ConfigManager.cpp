@@ -259,7 +259,7 @@ void SConfig::SaveCoreSettings(IniFile& ini)
 	core->Set("SlotB", m_EXIDevice[1]);
 	core->Set("SerialPort1", m_EXIDevice[2]);
 	core->Set("BBA_MAC", m_bba_mac);
-	for (int i = 0; i < MAX_SI_CHANNELS; ++i)
+	for (int i = 0; i < SerialInterface::MAX_SI_CHANNELS; ++i)
 	{
 		core->Set(StringFromFormat("SIDevice%i", i), m_SIDevice[i]);
 		core->Set(StringFromFormat("AdapterRumble%i", i), m_AdapterRumble[i]);
@@ -327,7 +327,7 @@ void SConfig::SaveNetworkSettings(IniFile& ini)
 
 	network->Set("SSLDumpRead", m_SSLDumpRead);
 	network->Set("SSLDumpWrite", m_SSLDumpWrite);
-	network->Set("SSLVerifyCert", m_SSLVerifyCert);
+	network->Set("SSLVerifyCertificates", m_SSLVerifyCert);
 	network->Set("SSLDumpRootCA", m_SSLDumpRootCA);
 	network->Set("SSLDumpPeerCert", m_SSLDumpPeerCert);
 }
@@ -579,10 +579,10 @@ void SConfig::LoadCoreSettings(IniFile& ini)
 	core->Get("BBA_MAC", &m_bba_mac);
 	core->Get("TimeProfiling", &bJITILTimeProfiling, false);
 	core->Get("OutputIR", &bJITILOutputIR, false);
-	for (int i = 0; i < MAX_SI_CHANNELS; ++i)
+	for (int i = 0; i < SerialInterface::MAX_SI_CHANNELS; ++i)
 	{
 		core->Get(StringFromFormat("SIDevice%i", i), (u32*)&m_SIDevice[i],
-			(i == 0) ? SIDEVICE_GC_CONTROLLER : SIDEVICE_NONE);
+			(i == 0) ? SerialInterface::SIDEVICE_GC_CONTROLLER : SerialInterface::SIDEVICE_NONE);
 		core->Get(StringFromFormat("AdapterRumble%i", i), &m_AdapterRumble[i], true);
 		core->Get(StringFromFormat("SimulateKonga%i", i), &m_AdapterKonga[i], false);
 	}
@@ -662,7 +662,7 @@ void SConfig::LoadNetworkSettings(IniFile& ini)
 
 	network->Get("SSLDumpRead", &m_SSLDumpRead, false);
 	network->Get("SSLDumpWrite", &m_SSLDumpWrite, false);
-	network->Get("SSLVerifyCert", &m_SSLVerifyCert, false);
+	network->Get("SSLVerifyCertificates", &m_SSLVerifyCert, false);
 	network->Get("SSLDumpRootCA", &m_SSLDumpRootCA, false);
 	network->Get("SSLDumpPeerCert", &m_SSLDumpPeerCert, false);
 }
@@ -755,7 +755,7 @@ void SConfig::SetRunningGameMetadata(const IOS::ES::TMDReader& tmd)
 	// the disc header instead of the TMD. They can differ.
 	// (IOS HLE ES calls us with a TMDReader rather than a volume when launching
 	// a disc game, because ES has no reason to be accessing the disc directly.)
-	if (DVDInterface::VolumeIsValid())
+	if (DVDInterface::IsDiscInside())
 	{
 		DVDThread::WaitUntilIdle();
 		const DiscIO::IVolume& volume = DVDInterface::GetVolume();
@@ -766,11 +766,7 @@ void SConfig::SetRunningGameMetadata(const IOS::ES::TMDReader& tmd)
 			return;
 		}
 	}
-	// Read game ID from volume to avoid problems with custom textures and cheats
-	std::unique_ptr<DiscIO::IVolume> volume = DiscIO::CreateVolumeFromFilename(m_strFilename);	
-	// If not launching a disc game, just read everything from the TMD.
-	SetRunningGameMetadata(volume->GetGameID(), tmd_title_id,
-		tmd.GetTitleVersion());
+	SetRunningGameMetadata(tmd.GetGameID(), tmd_title_id, tmd.GetTitleVersion());
 }
 
 void SConfig::SetRunningGameMetadata(const std::string& game_id, u64 title_id, u16 revision)
