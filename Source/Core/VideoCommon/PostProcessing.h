@@ -48,14 +48,17 @@ enum PostProcessingInputType : u32
 enum PostProcessingInputFilter : u32
 {
 	POST_PROCESSING_INPUT_FILTER_NEAREST,               // nearest/point sampling
-	POST_PROCESSING_INPUT_FILTER_LINEAR                 // linear sampling
+	POST_PROCESSING_INPUT_FILTER_LINEAR,                 // linear sampling
+	POST_PROCESSING_INPUT_FILTER_COUNT
 };
 
 enum PostProcessingAddressMode : u32
 {
 	POST_PROCESSING_ADDRESS_MODE_CLAMP,                 // clamp to edge
 	POST_PROCESSING_ADDRESS_MODE_WRAP,                  // wrap around at edge
-	POST_PROCESSING_ADDRESS_MODE_BORDER                 // fixed color (0) at edge
+	POST_PROCESSING_ADDRESS_MODE_BORDER,                // fixed color (0) at edge
+	POST_PROCESSING_ADDRESS_MODE_MIRROR,                // Mirror the texture
+	POST_PROCESSING_ADDRESS_MODE_COUNT
 };
 // Each option is aligned to a float4
 union Constant

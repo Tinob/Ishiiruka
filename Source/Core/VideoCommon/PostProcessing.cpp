@@ -676,6 +676,10 @@ bool PostProcessingShaderConfiguration::ParsePassBlock(const std::string& dirnam
 				{
 					input->address_mode = POST_PROCESSING_ADDRESS_MODE_BORDER;
 				}
+				else if (value == "Mirror")
+				{
+					input->address_mode = POST_PROCESSING_ADDRESS_MODE_MIRROR;
+				}
 				else
 				{
 					ERROR_LOG(VIDEO, "Post processing configuration error: Invalid input mode: %s", value.c_str());
