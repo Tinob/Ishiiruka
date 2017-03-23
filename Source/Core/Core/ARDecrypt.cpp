@@ -14,6 +14,7 @@
 #endif
 
 #include "Common/CommonTypes.h"
+#include "Common/CommonFuncs.h"
 #include "Common/MsgHandler.h"
 #include "Common/Swap.h"
 

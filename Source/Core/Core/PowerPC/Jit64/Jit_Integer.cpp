@@ -7,6 +7,7 @@
 
 #include "Common/Assert.h"
 #include "Common/CPUDetect.h"
+#include "Common/CommonFuncs.h"
 #include "Common/CommonTypes.h"
 #include "Common/MathUtil.h"
 #include "Common/x64Emitter.h"

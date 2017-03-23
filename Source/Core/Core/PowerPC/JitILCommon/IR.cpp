@@ -129,6 +129,7 @@ TODO (in no particular order):
 #include <string>
 
 #include "Common/CommonTypes.h"
+#include "Common/CommonFuncs.h"
 #include "Common/FileUtil.h"
 #include "Common/StringUtil.h"
 #include "Common/x64Emitter.h"
