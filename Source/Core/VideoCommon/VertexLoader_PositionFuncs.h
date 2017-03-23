@@ -51,7 +51,7 @@ __forceinline void _Pos_ReadIndex(TPipelineState &pipelinestate)
 		pipelinestate.Write(i < N ? PosScale(pipelinestate, Common::FromBigEndian(data[i])) : 0.f);
 }
 
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 template <bool three>
 __forceinline void _Pos_ReadDirect_UByte_SSSE3(TPipelineState &pipelinestate)
 {

@@ -126,7 +126,7 @@ void ConvertRGBA_BGRA_SSSE3(u32 *dst, const s32 dstPitch, u32 *pIn, const s32 wi
 
 void ConvertRGBA_BGRA(u32 *dst, const s32 dstPitch, u32 *pIn, const s32 width, const s32 height, const s32 pitch)
 {
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 	// Uses SSSE3 intrinsics to optimize RGBA -> BGRA swizzle:
 	if (cpu_info.bSSSE3)
 	{

@@ -96,7 +96,7 @@ __forceinline void _Normal_Index_Offset3(TPipelineState &pipelinestate)
 	_Normal_Index_Offset<I, T, 1, 2>(pipelinestate);
 }
 
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 
 template <int N>
 __forceinline void _Normal_Direct_UByte_SSSE3(TPipelineState &pipelinestate)

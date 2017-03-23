@@ -11,7 +11,7 @@ void G_GB4P51_pvt::Initialize(std::map<u64, TCompiledLoaderFunction> &pvlmap)
 {
 	// P_mtx0_3_I16_s16_Nrm_0_0_I16_s8_T0_mtx0_1_I16_s16_
 // num_verts= 139264034
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 	if (cpu_info.bSSSE3)
 	{
 		pvlmap[20943680057494] = TemplatedLoader<0x301, 0x00030f00u, 0x40e00407u, 0x00000000u, 0x00000000u>;

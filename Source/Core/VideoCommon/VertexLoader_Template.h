@@ -156,7 +156,7 @@ __forceinline void PosFunction_DIRECT(TPipelineState &pipelinestate)
 	switch (_format)
 	{
 	case FORMAT_UBYTE:
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 		if (iSSE >= 0x301)
 		{
 			if (N == 2)
@@ -175,7 +175,7 @@ __forceinline void PosFunction_DIRECT(TPipelineState &pipelinestate)
 		}
 		break;
 	case FORMAT_BYTE:
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 		if (iSSE >= 0x301)
 		{
 			if (N == 2)
@@ -194,7 +194,7 @@ __forceinline void PosFunction_DIRECT(TPipelineState &pipelinestate)
 		}
 		break;
 	case FORMAT_USHORT:
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 		if (iSSE >= 0x301)
 		{
 			if (N == 2)
@@ -213,7 +213,7 @@ __forceinline void PosFunction_DIRECT(TPipelineState &pipelinestate)
 		}
 		break;
 	case FORMAT_SHORT:
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 		if (iSSE >= 0x301)
 		{
 			if (N == 2)
@@ -232,7 +232,7 @@ __forceinline void PosFunction_DIRECT(TPipelineState &pipelinestate)
 		}
 		break;
 	case FORMAT_FLOAT:
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 		if (iSSE >= 0x301)
 		{
 			if (N == 2)
@@ -261,7 +261,7 @@ __forceinline void PosFunction_Index(TPipelineState &pipelinestate)
 	switch (_format)
 	{
 	case FORMAT_UBYTE:
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 		if (iSSE >= 0x301)
 		{
 			if (N == 2)
@@ -280,7 +280,7 @@ __forceinline void PosFunction_Index(TPipelineState &pipelinestate)
 		}
 		break;
 	case FORMAT_BYTE:
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 		if (iSSE >= 0x301)
 		{
 			if (N == 2)
@@ -299,7 +299,7 @@ __forceinline void PosFunction_Index(TPipelineState &pipelinestate)
 		}
 		break;
 	case FORMAT_USHORT:
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 		if (iSSE >= 0x301)
 		{
 			if (N == 2)
@@ -318,7 +318,7 @@ __forceinline void PosFunction_Index(TPipelineState &pipelinestate)
 		}
 		break;
 	case FORMAT_SHORT:
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 		if (iSSE >= 0x301)
 		{
 			if (N == 2)
@@ -337,7 +337,7 @@ __forceinline void PosFunction_Index(TPipelineState &pipelinestate)
 		}
 		break;
 	case FORMAT_FLOAT:
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 		if (iSSE >= 0x301)
 		{
 			if (N == 2)
@@ -383,7 +383,7 @@ __forceinline void NormalFunction_DIRECT(TPipelineState &pipelinestate)
 	switch (_format)
 	{
 	case FORMAT_UBYTE:
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 		if (iSSE >= 0x301)
 		{
 			_Normal_Direct_UByte_SSSE3<N>(pipelinestate);
@@ -395,7 +395,7 @@ __forceinline void NormalFunction_DIRECT(TPipelineState &pipelinestate)
 		}
 		break;
 	case FORMAT_BYTE:
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 		if (iSSE >= 0x301)
 		{
 			_Normal_Direct_SByte_SSSE3<N>(pipelinestate);
@@ -407,7 +407,7 @@ __forceinline void NormalFunction_DIRECT(TPipelineState &pipelinestate)
 		}
 		break;
 	case FORMAT_USHORT:
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 		if (iSSE >= 0x301)
 		{
 			_Normal_Direct_UShort_SSSE3<N>(pipelinestate);
@@ -419,7 +419,7 @@ __forceinline void NormalFunction_DIRECT(TPipelineState &pipelinestate)
 		}
 		break;
 	case FORMAT_SHORT:
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 		if (iSSE >= 0x301)
 		{
 			_Normal_Direct_Short_SSSE3<N>(pipelinestate);
@@ -431,7 +431,7 @@ __forceinline void NormalFunction_DIRECT(TPipelineState &pipelinestate)
 		}
 		break;
 	case FORMAT_FLOAT:
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 		if (iSSE >= 0x301)
 		{
 			_Normal_Direct_FLOAT_SSSE3<N>(pipelinestate);
@@ -453,7 +453,7 @@ __forceinline void NormalFunction_Index(TPipelineState &pipelinestate)
 	switch (_format)
 	{
 	case FORMAT_UBYTE:
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 		if (iSSE >= 0x301)
 		{
 			_Normal_Index_UByte_SSSE3<I, N>(pipelinestate);
@@ -465,7 +465,7 @@ __forceinline void NormalFunction_Index(TPipelineState &pipelinestate)
 		}
 		break;
 	case FORMAT_BYTE:
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 		if (iSSE >= 0x301)
 		{
 			_Normal_Index_SByte_SSSE3<I, N>(pipelinestate);
@@ -477,7 +477,7 @@ __forceinline void NormalFunction_Index(TPipelineState &pipelinestate)
 		}
 		break;
 	case FORMAT_USHORT:
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 		if (iSSE >= 0x301)
 		{
 			_Normal_Index_UShort_SSSE3<I, N>(pipelinestate);
@@ -489,7 +489,7 @@ __forceinline void NormalFunction_Index(TPipelineState &pipelinestate)
 		}
 		break;
 	case FORMAT_SHORT:
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 		if (iSSE >= 0x301)
 		{
 			_Normal_Index_Short_SSSE3<I, N>(pipelinestate);
@@ -501,7 +501,7 @@ __forceinline void NormalFunction_Index(TPipelineState &pipelinestate)
 		}
 		break;
 	case FORMAT_FLOAT:
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 		if (iSSE >= 0x301)
 		{
 			_Normal_Index_FLOAT_SSSE3<I, N>(pipelinestate);
@@ -523,7 +523,7 @@ __forceinline void NormalFunction_Index3(TPipelineState &pipelinestate)
 	switch (_format)
 	{
 	case FORMAT_UBYTE:
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 		if (iSSE >= 0x301)
 		{
 			_Normal_Index3_UByte_SSSE3<I>(pipelinestate);
@@ -535,7 +535,7 @@ __forceinline void NormalFunction_Index3(TPipelineState &pipelinestate)
 		}
 		break;
 	case FORMAT_BYTE:
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 		if (iSSE >= 0x301)
 		{
 			_Normal_Index3_SByte_SSSE3<I>(pipelinestate);
@@ -547,7 +547,7 @@ __forceinline void NormalFunction_Index3(TPipelineState &pipelinestate)
 		}
 		break;
 	case FORMAT_USHORT:
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 		if (iSSE >= 0x301)
 		{
 			_Normal_Index3_UShort_SSSE3<I>(pipelinestate);
@@ -559,7 +559,7 @@ __forceinline void NormalFunction_Index3(TPipelineState &pipelinestate)
 		}
 		break;
 	case FORMAT_SHORT:
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 		if (iSSE >= 0x301)
 		{
 			_Normal_Index3_Short_SSSE3<I>(pipelinestate);
@@ -571,7 +571,7 @@ __forceinline void NormalFunction_Index3(TPipelineState &pipelinestate)
 		}
 		break;
 	case FORMAT_FLOAT:
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 		if (iSSE >= 0x301)
 		{
 			_Normal_Index3_FLOAT_SSSE3<I>(pipelinestate);
@@ -670,7 +670,7 @@ __forceinline void TexCoordFunction_DIRECT(TPipelineState &pipelinestate)
 	switch (_format)
 	{
 	case FORMAT_UBYTE:
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 		if (iSSE >= 0x301 && N == 2)
 		{
 			_TexCoord_ReadDirect_UByte2_SSSE3(pipelinestate);
@@ -682,7 +682,7 @@ __forceinline void TexCoordFunction_DIRECT(TPipelineState &pipelinestate)
 		}
 		break;
 	case FORMAT_BYTE:
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 		if (iSSE >= 0x301 && N == 2)
 		{
 			_TexCoord_ReadDirect_SByte2_SSSE3(pipelinestate);
@@ -694,7 +694,7 @@ __forceinline void TexCoordFunction_DIRECT(TPipelineState &pipelinestate)
 		}
 		break;
 	case FORMAT_USHORT:
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 		if (iSSE >= 0x301 && N == 2)
 		{
 			_TexCoord_ReadDirect_UShort2_SSSE3(pipelinestate);
@@ -706,7 +706,7 @@ __forceinline void TexCoordFunction_DIRECT(TPipelineState &pipelinestate)
 		}
 		break;
 	case FORMAT_SHORT:
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 		if (iSSE >= 0x301 && N == 2)
 		{
 			_TexCoord_ReadDirect_Short2_SSSE3(pipelinestate);
@@ -718,7 +718,7 @@ __forceinline void TexCoordFunction_DIRECT(TPipelineState &pipelinestate)
 		}
 		break;
 	case FORMAT_FLOAT:
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 		if (iSSE >= 0x301 && N == 2)
 		{
 			_TexCoord_ReadDirect_Float2_SSSE3(pipelinestate);
@@ -740,7 +740,7 @@ __forceinline void TexCoordFunction_Index(TPipelineState &pipelinestate)
 	switch (_format)
 	{
 	case FORMAT_UBYTE:
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 		if (iSSE >= 0x301 && N == 2)
 		{
 			_TexCoord_ReadIndex_UByte2_SSSE3<I>(pipelinestate);
@@ -752,7 +752,7 @@ __forceinline void TexCoordFunction_Index(TPipelineState &pipelinestate)
 		}
 		break;
 	case FORMAT_BYTE:
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 		if (iSSE >= 0x301 && N == 2)
 		{
 			_TexCoord_ReadIndex_SByte2_SSSE3<I>(pipelinestate);
@@ -764,7 +764,7 @@ __forceinline void TexCoordFunction_Index(TPipelineState &pipelinestate)
 		}
 		break;
 	case FORMAT_USHORT:
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 		if (iSSE >= 0x301 && N == 2)
 		{
 			_TexCoord_ReadIndex_UShort2_SSSE3<I>(pipelinestate);
@@ -776,7 +776,7 @@ __forceinline void TexCoordFunction_Index(TPipelineState &pipelinestate)
 		}
 		break;
 	case FORMAT_SHORT:
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 		if (iSSE >= 0x301 && N == 2)
 		{
 			_TexCoord_ReadIndex_Short2_SSSE3<I>(pipelinestate);
@@ -788,7 +788,7 @@ __forceinline void TexCoordFunction_Index(TPipelineState &pipelinestate)
 		}
 		break;
 	case FORMAT_FLOAT:
-#if (defined(_M_X86) || defined(_M_X86_64)) && defined(FUNCTION_TARGET_SSSE3)
+#if _M_SSE >= 0x301
 		if (iSSE >= 0x301 && N == 2)
 		{
 			_TexCoord_ReadIndex_Float2_SSSE3<I>(pipelinestate);

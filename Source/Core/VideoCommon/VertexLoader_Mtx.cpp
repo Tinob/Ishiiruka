@@ -37,7 +37,7 @@ void LOADERDECL Vertexloader_Mtx::TexMtx_Write_Float2()
 
 void LOADERDECL Vertexloader_Mtx::TexMtx_Write_Float3()
 {
-#if defined(_M_X86_64)
+#if _M_SSE >= 0x200
 	__m128 output = _mm_cvtsi32_ss(_mm_castsi128_ps(_mm_setzero_si128()), g_PipelineState.curtexmtx[g_PipelineState.texmtxwrite++]);
 	_mm_storeu_ps((float*)g_PipelineState.GetWritePosition(), _mm_shuffle_ps(output, output, 0x45));
 	g_PipelineState.WriteSkip(sizeof(float) * 3);
