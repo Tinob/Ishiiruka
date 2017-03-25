@@ -223,11 +223,21 @@ void TextureCache::TCacheEntry::SetFormat()
 		gl_type = 0;
 		compressed = true;
 		break;
-	case PC_TEX_FMT_R32:
+	case PC_TEX_FMT_R_FLOAT:
 		gl_format = GL_DEPTH_COMPONENT32F;
 		gl_iformat = GL_DEPTH_COMPONENT;
 		gl_type = GL_UNSIGNED_BYTE;
-		compressed = true;
+		compressed = false;
+	case PC_TEX_FMT_RGBA16_FLOAT:
+		gl_format = GL_RGBA16F;
+		gl_iformat = GL_RGBA;
+		gl_type = GL_UNSIGNED_BYTE;
+		compressed = false;
+	case PC_TEX_FMT_RGBA_FLOAT:
+		gl_format = GL_RGBA32F;
+		gl_iformat = GL_RGBA;
+		gl_type = GL_UNSIGNED_BYTE;
+		compressed = false;
 		break;
 	}
 }

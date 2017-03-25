@@ -123,6 +123,7 @@ public:
 		std::vector<Input> inputs;
 		std::string entry_point;
 		float output_scale;
+		PC_TexFormat output_format;
 		std::vector<const ConfigurationOption*> dependent_options;
 
 		void GetInputLocations(
@@ -357,6 +358,7 @@ protected:
 		TextureCacheBase::TCacheEntryBase* output_texture{};
 		TargetSize output_size{};
 		float output_scale{};
+		PC_TexFormat output_format = PC_TexFormat::PC_TEX_FMT_RGBA32;
 
 		bool enabled{};
 	};
