@@ -1176,7 +1176,7 @@ bool PostProcessingShader::ResizeOutputTextures(const TargetSize& new_size)
 		config.pcformat = PC_TexFormat::PC_TEX_FMT_RGBA32;
 		if (i < static_cast<size_t>(frameoutput.color_count))
 			m_prev_frame_texture[i].color_frame = g_texture_cache->AllocateTexture(config);
-		config.pcformat = PC_TexFormat::PC_TEX_FMT_R_FLOAT;
+		config.pcformat = PC_TexFormat::PC_TEX_FMT_DEPTH_FLOAT;
 		if (i < static_cast<size_t>(frameoutput.depth_count))
 			m_prev_frame_texture[i].depth_frame = g_texture_cache->AllocateTexture(config);
 	}
@@ -1608,7 +1608,7 @@ bool PostProcessor::ResizeCopyBuffers(const TargetSize& size, int layers)
 	config.rendertarget = true;
 	config.layers = layers;
 	m_color_copy_texture = g_texture_cache->AllocateTexture(config);
-	config.pcformat = PC_TexFormat::PC_TEX_FMT_R_FLOAT;
+	config.pcformat = PC_TexFormat::PC_TEX_FMT_DEPTH_FLOAT;
 	m_depth_copy_texture = g_texture_cache->AllocateTexture(config);
 	if (m_color_copy_texture && m_depth_copy_texture)
 	{
