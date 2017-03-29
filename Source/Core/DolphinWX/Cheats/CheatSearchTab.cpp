@@ -10,7 +10,9 @@
 #include <wx/arrstr.h>
 #include <wx/button.h>
 #include <wx/choice.h>
+#include <wx/clipbrd.h>
 #include <wx/listctrl.h>
+#include <wx/menu.h>
 #include <wx/panel.h>
 #include <wx/radiobox.h>
 #include <wx/radiobut.h>
@@ -76,6 +78,8 @@ CheatSearchTab::CheatSearchTab(wxWindow* const parent) : wxPanel(parent)
 	m_lview_search_results->Bind(wxEVT_LIST_ITEM_SELECTED, &CheatSearchTab::OnListViewItemSelected,
 		this);
 	m_lview_search_results->Bind(wxEVT_LIST_ITEM_DESELECTED, &CheatSearchTab::OnListViewItemSelected,
+		this);
+	m_lview_search_results->Bind(wxEVT_LIST_ITEM_RIGHT_CLICK, &CheatSearchTab::OnListViewItemRigthClick,
 		this);
 
 	// Result count
@@ -232,6 +236,34 @@ void CheatSearchTab::OnListViewItemSelected(wxListEvent&)
 {
 	// Toggle "Create AR Code" Button
 	m_btn_create_code->Enable(m_lview_search_results->GetSelectedItemCount() > 0);
+}
+
+void CheatSearchTab::OnListViewItemContextMenuClick(wxCommandEvent& evt)
+{
+	int id = evt.GetId();
+	if (id > 0 && wxTheClipboard->Open())
+	{
+#ifdef __UNIX__
+		wxTheClipboard->UsePrimarySelection(true);
+#endif
+		void *data = reinterpret_cast<wxMenu *>(evt.GetEventObject())->GetClientData();
+		size_t idx = reinterpret_cast<size_t>(data);
+		u32 value = id == 1 ? m_search_results[idx].address : m_search_results[idx].old_value;
+		wxTheClipboard->SetData(new wxTextDataObject(wxString::Format(wxT("%08X"), value)));
+		wxTheClipboard->Flush();
+		wxTheClipboard->Close();	
+	}
+}
+
+void CheatSearchTab::OnListViewItemRigthClick(wxListEvent& evt)
+{
+	void *data = reinterpret_cast<void *>(static_cast<size_t>(evt.GetIndex()));
+	wxMenu mnu;
+	mnu.SetClientData(data);
+	mnu.Append(1, _("Copy Address"));
+	mnu.Append(2, _("Copy Old Value"));
+	mnu.Connect(wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(CheatSearchTab::OnListViewItemContextMenuClick), NULL, this);
+	PopupMenu(&mnu);
 }
 
 void CheatSearchTab::OnTimerUpdate(wxTimerEvent&)
