@@ -304,7 +304,7 @@ void CISOProperties::CreateGUIControls()
 	wxStaticText* const videorateText =
 		new wxStaticText(m_GameConfig, wxID_ANY, _("Video Rate Hack: "));
 
-	DVideo = new DolphinSlider(m_GameConfig, ID_DVIDEO, 8, 4, 36);
+	DVideo = new DolphinSlider(m_GameConfig, ID_DVIDEO, 8, 4, 64);
 	DVideo->SetToolTip(_("Multiply the rate of video interruptions to allow High framerate hacks"));
 	DVideo->Bind(wxEVT_SLIDER, &CISOProperties::OnDVideoChanged, this);
 	svideorate->Add(videorateText);
@@ -540,7 +540,7 @@ void CISOProperties::LoadGameConfig()
 	int iTemp;
 	if (GameIniLocal.GetIfExists("Core", "Video_Rate", &iTemp))
 	{
-		iTemp = std::min(std::max(iTemp, 4), 36);
+		iTemp = std::min(std::max(iTemp, 4), 64);
 		DVideo->SetValue(iTemp);
 		std::string lbl_text = StringFromFormat("%.2fx", iTemp * 0.125f);
 		label_DVideo->SetLabel(StrToWxStr(lbl_text));
