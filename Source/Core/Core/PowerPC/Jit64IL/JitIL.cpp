@@ -97,15 +97,15 @@ using namespace PowerPC;
 
 // Optimization Ideas -
 /*
-	* Assume SP is in main RAM (in Wii mode too?) - partly done
-	* Assume all floating point loads and double precision loads+stores are to/from main ram
-		(single precision can be used in write gather pipe, specialized fast check added)
-	* AMD only - use movaps instead of movapd when loading ps from memory?
-	* HLE functions like floorf, sin, memcpy, etc - they can be much faster
-	* ABI optimizations - drop F0-F13 on blr, for example. Watch out for context switching.
-		CR2-CR4 are non-volatile, rest of CR is volatile -> dropped on blr.
-	R5-R12 are volatile -> dropped on blr.
-	* classic inlining across calls.
+* Assume SP is in main RAM (in Wii mode too?) - partly done
+* Assume all floating point loads and double precision loads+stores are to/from main ram
+(single precision can be used in write gather pipe, specialized fast check added)
+* AMD only - use movaps instead of movapd when loading ps from memory?
+* HLE functions like floorf, sin, memcpy, etc - they can be much faster
+* ABI optimizations - drop F0-F13 on blr, for example. Watch out for context switching.
+CR2-CR4 are non-volatile, rest of CR is volatile -> dropped on blr.
+R5-R12 are volatile -> dropped on blr.
+* classic inlining across calls.
 
 Low hanging fruit:
 stfd -- guaranteed in memory
@@ -262,12 +262,19 @@ void JitIL::Init()
 	jo.accurateSinglePrecision = false;
 	UpdateMemoryOptions();
 
-	trampolines.Init(jo.memcheck ? TRAMPOLINE_CODE_SIZE_MMU : TRAMPOLINE_CODE_SIZE);
-	AllocCodeSpace(CODE_SIZE);
+	const size_t routines_size = asm_routines.CODE_SIZE;
+	const size_t trampolines_size = jo.memcheck ? TRAMPOLINE_CODE_SIZE_MMU : TRAMPOLINE_CODE_SIZE;
+	const size_t farcode_size = jo.memcheck ? FARCODE_SIZE_MMU : FARCODE_SIZE;
+	const size_t constpool_size = m_const_pool.CONST_POOL_SIZE;
+	AllocCodeSpace(CODE_SIZE + routines_size + trampolines_size + farcode_size + constpool_size);
+	AddChildCodeSpace(&asm_routines, routines_size);
+	AddChildCodeSpace(&trampolines, trampolines_size);
+	AddChildCodeSpace(&m_far_code, farcode_size);
+	m_const_pool.Init(AllocChildCodeSpace(constpool_size), constpool_size);
+
 	blocks.Init();
 	asm_routines.Init(nullptr);
-
-	m_far_code.Init(jo.memcheck ? FARCODE_SIZE_MMU : FARCODE_SIZE);
+	m_far_code.Init();
 	Clear();
 
 	code_block.m_stats = &js.st;
@@ -299,8 +306,6 @@ void JitIL::Shutdown()
 	FreeCodeSpace();
 
 	blocks.Shutdown();
-	trampolines.Shutdown();
-	asm_routines.Shutdown();
 	m_far_code.Shutdown();
 }
 

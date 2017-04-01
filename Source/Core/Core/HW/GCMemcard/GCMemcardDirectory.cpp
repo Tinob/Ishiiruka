@@ -4,6 +4,7 @@
 
 #include "Core/HW/GCMemcard/GCMemcardDirectory.h"
 
+#include <chrono>
 #include <cinttypes>
 #include <cstring>
 #include <memory>
@@ -187,7 +188,8 @@ void GCMemcardDirectory::FlushThread()
 
 	Common::SetCurrentThreadName(
 		StringFromFormat("Memcard %d flushing thread", m_card_index).c_str());
-
+	
+	constexpr std::chrono::seconds flush_interval{ 1 };
 	while (true)
 	{
 		// no-op until signalled

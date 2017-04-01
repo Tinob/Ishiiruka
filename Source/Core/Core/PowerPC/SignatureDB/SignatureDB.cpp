@@ -38,20 +38,20 @@ bool SignatureDB::Save(const std::string& file_path)
 }
 
 // Adds a known function to the hash database
-u32 SignatureDB::Add(u32 startAddr, u32 size, const std::string& name)
+/*u32 SignatureDB::Add(u32 startAddr, u32 size, const std::string& name)
 {
-	u32 hash = ComputeCodeChecksum(startAddr, startAddr + size - 4);
+u32 hash = ComputeCodeChecksum(startAddr, startAddr + size - 4);
 
-	DBFunc temp_dbfunc;
-	temp_dbfunc.size = size;
-	temp_dbfunc.name = name;
+DBFunc temp_dbfunc;
+temp_dbfunc.size = size;
+temp_dbfunc.name = name;
 
-	FuncDB::iterator iter = m_database.find(hash);
-	if (iter == m_database.end())
-		m_database[hash] = temp_dbfunc;
+FuncDB::iterator iter = m_database.find(hash);
+if (iter == m_database.end())
+m_database[hash] = temp_dbfunc;
 
-	return hash;
-}
+return hash;
+}*/
 
 void SignatureDB::List()
 {

@@ -21,7 +21,6 @@ option(ENABLE_LTO "Enables Link Time Optimization" OFF)
 option(ENABLE_GENERIC "Enables generic build that should run on any little-endian host" OFF)
 option(ENABLE_HEADLESS "Enables running Dolphin as a headless variant" OFF)
 option(ENABLE_ALSA "Enables ALSA sound backend" ON)
-option(ENABLE_AO "Enables libao sound backend" ON)
 option(ENABLE_PULSEAUDIO "Enables PulseAudio sound backend" ON)
 option(ENABLE_OPENAL "Enables OpenAL sound backend" ON)
 option(ENABLE_LLVM "Enables LLVM support, for disassembly" ON)
@@ -89,8 +88,13 @@ set(LIBS)
 
 # Set up paths
 set(bindir  ${CMAKE_INSTALL_PREFIX}/bin               CACHE PATH "bindir")
-set(datadir ${CMAKE_INSTALL_PREFIX}/share/dolphin-emu CACHE PATH "datadir")
-set(mandir  ${CMAKE_INSTALL_PREFIX}/share/man         CACHE PATH "mandir")
+if(HAIKU)
+	set(datadir ${CMAKE_INSTALL_PREFIX}/data/dolphin-emu  CACHE PATH "datadir")
+	set(mandir  ${CMAKE_INSTALL_PREFIX}/documentation/man CACHE PATH "mandir")
+else()
+	set(datadir ${CMAKE_INSTALL_PREFIX}/share/dolphin-emu CACHE PATH "datadir")
+	set(mandir  ${CMAKE_INSTALL_PREFIX}/share/man         CACHE PATH "mandir")
+endif()
 add_definitions(-DDATA_DIR="${datadir}/")
 
 if(CMAKE_SYSROOT)
@@ -212,6 +216,16 @@ if(CMAKE_C_COMPILER_ID MATCHES "MSVC")
 	string(APPEND CMAKE_EXE_LINKER_FLAGS " /BASE:0x00400000")
 	string(APPEND CMAKE_EXE_LINKER_FLAGS " /DYNAMICBASE:NO")
 	string(APPEND CMAKE_EXE_LINKER_FLAGS " /FIXED")
+
+	# Enforce C++ standard conforming conversion rules to catch possible bugs
+	add_compile_options(/Zc:strictStrings)
+	add_compile_options(/Zc:rvalueCast)
+	# Remove unreferenced inline functions/data to reduce link time and catch bugs
+	add_compile_options(/Zc:inline)
+	# Assume `new` (w/o std::nothrow) throws to reduce binary size
+	add_compile_options(/Zc:throwingNew)
+	# Enforce strict volatile semantics as per ISO C++
+	add_compile_options(/volatile:iso)
 
 	# Only MSBuild needs this, other generators will compile one file at a time
 	if(CMAKE_GENERATOR MATCHES "Visual Studio")
@@ -399,6 +413,10 @@ if(ANDROID)
 	SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 	SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 	SET(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
+elseif(HAIKU)
+	set(USE_X11 0)
+	set(USE_UPNP 0)
+	set(USE_EGL 0)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	list(APPEND LIBS rt)
 endif()
@@ -438,7 +456,7 @@ endif()
 
 set(USE_X11 0)
 
-if(UNIX AND NOT APPLE AND NOT ANDROID AND NOT ENABLE_HEADLESS)
+if(UNIX AND NOT APPLE AND NOT ANDROID AND NOT HAIKU AND NOT ENABLE_HEADLESS)
 	find_package(X11)
 	if(TRY_X11 AND X11_FOUND)
 		set(USE_X11 1)
@@ -809,7 +827,7 @@ if(NOT DISABLE_WX)
 		endif()
 	endif()
 
-	if(UNIX AND NOT APPLE)
+	if(UNIX AND NOT APPLE AND NOT HAIKU)
 		# There is a bug in the FindGTK module in cmake version 2.8.2 that
 		# does not find gdk-pixbuf-2.0.  On the other hand some 2.8.3
 		# users have complained that pkg-config does not find

@@ -178,6 +178,14 @@ static void DrawControlGroupBox(wxGraphicsContext* gc, ControlGroupBox* g)
 		case ControllerEmu::GroupType::Cursor:
 			((ControllerEmu::Cursor*)g->control_group)->GetState(&x, &y, &z);
 			break;
+		case ControllerEmu::GroupType::Other:
+		case ControllerEmu::GroupType::MixedTriggers:
+		case ControllerEmu::GroupType::Buttons:
+		case ControllerEmu::GroupType::Force:
+		case ControllerEmu::GroupType::Extension:
+		case ControllerEmu::GroupType::Triggers:
+		case ControllerEmu::GroupType::Slider:
+			break;
 		}
 
 		// ir cursor forward movement
@@ -478,7 +486,7 @@ static void DrawBorder(wxGraphicsContext* gc, double scale)
 {
 	double pen_width = std::round(scale);  // Pen width = 1px * scale
 
-																				 // Use the window caption bar color as a safe accent color.
+										   // Use the window caption bar color as a safe accent color.
 	wxPen border_pen(wxSystemSettings::GetColour(wxSYS_COLOUR_ACTIVECAPTION),
 		static_cast<int>(pen_width));
 	border_pen.SetCap(wxCAP_PROJECTING);

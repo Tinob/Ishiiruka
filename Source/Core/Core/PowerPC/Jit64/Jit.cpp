@@ -95,25 +95,25 @@ using namespace PowerPC;
 
 // Optimization Ideas -
 /*
-	* Assume SP is in main RAM (in Wii mode too?) - partly done
-	* Assume all floating point loads and double precision loads+stores are to/from main ram
-		(single precision stores can be used in write gather pipe, specialized fast check added)
-	* AMD only - use movaps instead of movapd when loading ps from memory?
-	* HLE functions like floorf, sin, memcpy, etc - they can be much faster
-	* ABI optimizations - drop F0-F13 on blr, for example. Watch out for context switching.
-		CR2-CR4 are non-volatile, rest of CR is volatile -> dropped on blr.
-	R5-R12 are volatile -> dropped on blr.
-	* classic inlining across calls.
-	* Track which registers a block clobbers without using, then take advantage of this knowledge
-		when compiling a block that links to that block.
-	* Track more dependencies between instructions, e.g. avoiding PPC_FP code, single/double
-		conversion, movddup on non-paired singles, etc where possible.
-	* Support loads/stores directly from xmm registers in jit_util and the backpatcher; this might
-		help AMD a lot since gpr/xmm transfers are slower there.
-	* Smarter register allocation in general; maybe learn to drop values once we know they won't be
-		used again before being overwritten?
-	* More flexible reordering; there's limits to how far we can go because of exception handling
-		and such, but it's currently limited to integer ops only. This can definitely be made better.
+* Assume SP is in main RAM (in Wii mode too?) - partly done
+* Assume all floating point loads and double precision loads+stores are to/from main ram
+(single precision stores can be used in write gather pipe, specialized fast check added)
+* AMD only - use movaps instead of movapd when loading ps from memory?
+* HLE functions like floorf, sin, memcpy, etc - they can be much faster
+* ABI optimizations - drop F0-F13 on blr, for example. Watch out for context switching.
+CR2-CR4 are non-volatile, rest of CR is volatile -> dropped on blr.
+R5-R12 are volatile -> dropped on blr.
+* classic inlining across calls.
+* Track which registers a block clobbers without using, then take advantage of this knowledge
+when compiling a block that links to that block.
+* Track more dependencies between instructions, e.g. avoiding PPC_FP code, single/double
+conversion, movddup on non-paired singles, etc where possible.
+* Support loads/stores directly from xmm registers in jit_util and the backpatcher; this might
+help AMD a lot since gpr/xmm transfers are slower there.
+* Smarter register allocation in general; maybe learn to drop values once we know they won't be
+used again before being overwritten?
+* More flexible reordering; there's limits to how far we can go because of exception handling
+and such, but it's currently limited to integer ops only. This can definitely be made better.
 */
 
 // The BLR optimization is nice, but it means that JITted code can overflow the
@@ -229,8 +229,15 @@ void Jit64::Init()
 	gpr.SetEmitter(this);
 	fpr.SetEmitter(this);
 
-	trampolines.Init(jo.memcheck ? TRAMPOLINE_CODE_SIZE_MMU : TRAMPOLINE_CODE_SIZE);
-	AllocCodeSpace(CODE_SIZE);
+	const size_t routines_size = asm_routines.CODE_SIZE;
+	const size_t trampolines_size = jo.memcheck ? TRAMPOLINE_CODE_SIZE_MMU : TRAMPOLINE_CODE_SIZE;
+	const size_t farcode_size = jo.memcheck ? FARCODE_SIZE_MMU : FARCODE_SIZE;
+	const size_t constpool_size = m_const_pool.CONST_POOL_SIZE;
+	AllocCodeSpace(CODE_SIZE + routines_size + trampolines_size + farcode_size + constpool_size);
+	AddChildCodeSpace(&asm_routines, routines_size);
+	AddChildCodeSpace(&trampolines, trampolines_size);
+	AddChildCodeSpace(&m_far_code, farcode_size);
+	m_const_pool.Init(AllocChildCodeSpace(constpool_size), constpool_size);
 
 	// BLR optimization has the same consequences as block linking, as well as
 	// depending on the fault handler to be safe in the event of excessive BL.
@@ -248,7 +255,7 @@ void Jit64::Init()
 	// important: do this *after* generating the global asm routines, because we can't use farcode in
 	// them.
 	// it'll crash because the farcode functions get cleared on JIT clears.
-	m_far_code.Init(jo.memcheck ? FARCODE_SIZE_MMU : FARCODE_SIZE);
+	m_far_code.Init();
 	Clear();
 
 	code_block.m_stats = &js.st;
@@ -262,6 +269,7 @@ void Jit64::ClearCache()
 	blocks.Clear();
 	trampolines.ClearCodeSpace();
 	m_far_code.ClearCodeSpace();
+	m_const_pool.Clear();
 	ClearCodeSpace();
 	Clear();
 	UpdateMemoryOptions();
@@ -273,9 +281,8 @@ void Jit64::Shutdown()
 	FreeCodeSpace();
 
 	blocks.Shutdown();
-	trampolines.Shutdown();
-	asm_routines.Shutdown();
 	m_far_code.Shutdown();
+	m_const_pool.Shutdown();
 }
 
 void Jit64::FallBackToInterpreter(UGeckoInstruction inst)

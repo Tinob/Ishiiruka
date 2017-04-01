@@ -26,8 +26,7 @@ void CallbackTemplate(u64 userdata, s64 lateness)
   static_assert(IDX < CB_IDS.size(), "IDX out of range");
   s_callbacks_ran_flags.set(IDX);
   EXPECT_EQ(CB_IDS[IDX], userdata);
-  if (s_expected_callback)  // In SharedSlot, we don't care about this
-    EXPECT_EQ(CB_IDS[IDX], s_expected_callback);
+  EXPECT_EQ(CB_IDS[IDX], s_expected_callback);
   EXPECT_EQ(s_lateness, lateness);
 }
 
@@ -50,7 +49,8 @@ public:
   }
 };
 
-void AdvanceAndCheck(u32 idx, int downcount, int expected_lateness = 0, int cpu_downcount = 0)
+static void AdvanceAndCheck(u32 idx, int downcount, int expected_lateness = 0,
+                            int cpu_downcount = 0)
 {
   s_callbacks_ran_flags = 0;
   s_expected_callback = CB_IDS[idx];
@@ -95,15 +95,33 @@ TEST(CoreTiming, BasicOrder)
   AdvanceAndCheck(4, MAX_SLICE_LENGTH);
 }
 
+namespace SharedSlotTest
+{
+static unsigned int s_counter = 0;
+
+template <unsigned int ID>
+void FifoCallback(u64 userdata, s64 lateness)
+{
+  static_assert(ID < CB_IDS.size(), "ID out of range");
+  s_callbacks_ran_flags.set(ID);
+  EXPECT_EQ(CB_IDS[ID], userdata);
+  EXPECT_EQ(ID, s_counter);
+  EXPECT_EQ(s_lateness, lateness);
+  ++s_counter;
+}
+}
+
 TEST(CoreTiming, SharedSlot)
 {
+  using namespace SharedSlotTest;
+
   ScopeInit guard;
 
-  CoreTiming::EventType* cb_a = CoreTiming::RegisterEvent("callbackA", CallbackTemplate<0>);
-  CoreTiming::EventType* cb_b = CoreTiming::RegisterEvent("callbackB", CallbackTemplate<1>);
-  CoreTiming::EventType* cb_c = CoreTiming::RegisterEvent("callbackC", CallbackTemplate<2>);
-  CoreTiming::EventType* cb_d = CoreTiming::RegisterEvent("callbackD", CallbackTemplate<3>);
-  CoreTiming::EventType* cb_e = CoreTiming::RegisterEvent("callbackE", CallbackTemplate<4>);
+  CoreTiming::EventType* cb_a = CoreTiming::RegisterEvent("callbackA", FifoCallback<0>);
+  CoreTiming::EventType* cb_b = CoreTiming::RegisterEvent("callbackB", FifoCallback<1>);
+  CoreTiming::EventType* cb_c = CoreTiming::RegisterEvent("callbackC", FifoCallback<2>);
+  CoreTiming::EventType* cb_d = CoreTiming::RegisterEvent("callbackD", FifoCallback<3>);
+  CoreTiming::EventType* cb_e = CoreTiming::RegisterEvent("callbackE", FifoCallback<4>);
 
   CoreTiming::ScheduleEvent(1000, cb_a, CB_IDS[0]);
   CoreTiming::ScheduleEvent(1000, cb_b, CB_IDS[1]);
@@ -116,8 +134,8 @@ TEST(CoreTiming, SharedSlot)
   EXPECT_EQ(1000, PowerPC::ppcState.downcount);
 
   s_callbacks_ran_flags = 0;
+  s_counter = 0;
   s_lateness = 0;
-  s_expected_callback = 0;
   PowerPC::ppcState.downcount = 0;
   CoreTiming::Advance();
   EXPECT_EQ(MAX_SLICE_LENGTH, PowerPC::ppcState.downcount);

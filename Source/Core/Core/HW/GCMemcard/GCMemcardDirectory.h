@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include <chrono>
 #include <mutex>
 #include <string>
 #include <thread>

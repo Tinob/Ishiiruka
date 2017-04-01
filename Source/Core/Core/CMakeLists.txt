@@ -7,7 +7,6 @@ set(SRCS	ActionReplay.cpp
 			CoreTiming.cpp
 			DSPEmulator.cpp
 			ec_wii.cpp
-			FileMonitor.cpp
 			GeckoCodeConfig.cpp
 			GeckoCode.cpp
 			HotkeyManager.cpp
@@ -89,8 +88,10 @@ set(SRCS	ActionReplay.cpp
 			HW/DSPLLE/DSPLLEGlobals.cpp
 			HW/DSPLLE/DSPLLE.cpp
 			HW/DSPLLE/DSPLLETools.cpp
-			HW/DVDInterface.cpp
-			HW/DVDThread.cpp
+			HW/DVD/DVDInterface.cpp
+			HW/DVD/DVDMath.cpp
+			HW/DVD/DVDThread.cpp
+			HW/DVD/FileMonitor.cpp
 			HW/EXI/EXI_Channel.cpp
 			HW/EXI/EXI.cpp
 			HW/EXI/EXI_Device.cpp
@@ -197,6 +198,7 @@ set(SRCS	ActionReplay.cpp
 			PowerPC/Profiler.cpp
 			PowerPC/SignatureDB/CSVSignatureDB.cpp
 			PowerPC/SignatureDB/DSYSignatureDB.cpp
+			PowerPC/SignatureDB/MEGASignatureDB.cpp
 			PowerPC/SignatureDB/SignatureDB.cpp
 			PowerPC/JitInterface.cpp
 			PowerPC/CachedInterpreter/CachedInterpreter.cpp

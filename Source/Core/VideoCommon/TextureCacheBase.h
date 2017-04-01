@@ -3,6 +3,8 @@
 // Refer to the license.txt file included.
 
 #pragma once
+
+#include <array>
 #include <map>
 #include <memory>
 #include <tuple>
@@ -262,7 +264,7 @@ public:
 protected:
 	alignas(16) u8 *temp = {};
 	size_t temp_size = {};
-	TCacheEntryBase* bound_textures[8] = {};
+	std::array<TCacheEntryBase*, 8> bound_textures{};
 	TextureCacheBase();
 	virtual TCacheEntryBase* CreateTexture(const TCacheEntryConfig& config) = 0;
 private:

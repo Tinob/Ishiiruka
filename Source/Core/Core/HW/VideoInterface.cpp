@@ -42,8 +42,8 @@ static UVIFBInfoRegister m_XFBInfoTop;
 static UVIFBInfoRegister m_XFBInfoBottom;
 static UVIFBInfoRegister m_3DFBInfoTop;  // Start making your stereoscopic demos! :p
 static UVIFBInfoRegister m_3DFBInfoBottom;
-static UVIInterruptRegister m_InterruptRegister[4];
-static UVILatchRegister m_LatchRegister[2];
+static std::array<UVIInterruptRegister, 4> m_InterruptRegister;
+static std::array<UVILatchRegister, 2> m_LatchRegister;
 static PictureConfigurationRegister m_PictureConfiguration;
 static UVIHorizontalScaling m_HorizontalScaling;
 static SVIFilterCoefTables m_FilterCoefTables;
@@ -57,9 +57,9 @@ static UVIBorderBlankRegister m_BorderHBlank;
 
 static u32 s_target_refresh_rate = 0;
 
-static u32 s_clock_freqs[2] = {
-		27000000UL, 54000000UL,
-};
+static constexpr std::array<u32, 2> s_clock_freqs{ {
+		27000000, 54000000,
+	} };
 
 static u64 s_ticks_last_line_start;  // number of ticks when the current full scanline started
 static u32 s_half_line_count;        // number of halflines that have occurred for this full frame
@@ -164,8 +164,7 @@ void Preset(bool _bNTSC)
 	m_InterruptRegister[2].Hex = 0;
 	m_InterruptRegister[3].Hex = 0;
 
-	m_LatchRegister[0].Hex = 0;
-	m_LatchRegister[1].Hex = 0;
+	m_LatchRegister = {};
 
 	m_PictureConfiguration.STD = 40;
 	m_PictureConfiguration.WPL = 40;
@@ -201,58 +200,60 @@ void Init()
 
 void RegisterMMIO(MMIO::Mapping* mmio, u32 base)
 {
-	struct
+	struct MappedVar
 	{
 		u32 addr;
 		u16* ptr;
-	} directly_mapped_vars[] = {
-			{VI_VERTICAL_TIMING, &m_VerticalTimingRegister.Hex},
-			{VI_HORIZONTAL_TIMING_0_HI, &m_HTiming0.Hi},
-			{VI_HORIZONTAL_TIMING_0_LO, &m_HTiming0.Lo},
-			{VI_HORIZONTAL_TIMING_1_HI, &m_HTiming1.Hi},
-			{VI_HORIZONTAL_TIMING_1_LO, &m_HTiming1.Lo},
-			{VI_VBLANK_TIMING_ODD_HI, &m_VBlankTimingOdd.Hi},
-			{VI_VBLANK_TIMING_ODD_LO, &m_VBlankTimingOdd.Lo},
-			{VI_VBLANK_TIMING_EVEN_HI, &m_VBlankTimingEven.Hi},
-			{VI_VBLANK_TIMING_EVEN_LO, &m_VBlankTimingEven.Lo},
-			{VI_BURST_BLANKING_ODD_HI, &m_BurstBlankingOdd.Hi},
-			{VI_BURST_BLANKING_ODD_LO, &m_BurstBlankingOdd.Lo},
-			{VI_BURST_BLANKING_EVEN_HI, &m_BurstBlankingEven.Hi},
-			{VI_BURST_BLANKING_EVEN_LO, &m_BurstBlankingEven.Lo},
-			{VI_FB_LEFT_TOP_LO, &m_XFBInfoTop.Lo},
-			{VI_FB_RIGHT_TOP_LO, &m_3DFBInfoTop.Lo},
-			{VI_FB_LEFT_BOTTOM_LO, &m_XFBInfoBottom.Lo},
-			{VI_FB_RIGHT_BOTTOM_LO, &m_3DFBInfoBottom.Lo},
-			{VI_PRERETRACE_LO, &m_InterruptRegister[0].Lo},
-			{VI_POSTRETRACE_LO, &m_InterruptRegister[1].Lo},
-			{VI_DISPLAY_INTERRUPT_2_LO, &m_InterruptRegister[2].Lo},
-			{VI_DISPLAY_INTERRUPT_3_LO, &m_InterruptRegister[3].Lo},
-			{VI_DISPLAY_LATCH_0_HI, &m_LatchRegister[0].Hi},
-			{VI_DISPLAY_LATCH_0_LO, &m_LatchRegister[0].Lo},
-			{VI_DISPLAY_LATCH_1_HI, &m_LatchRegister[1].Hi},
-			{VI_DISPLAY_LATCH_1_LO, &m_LatchRegister[1].Lo},
-			{VI_HSCALEW, &m_PictureConfiguration.Hex},
-			{VI_HSCALER, &m_HorizontalScaling.Hex},
-			{VI_FILTER_COEF_0_HI, &m_FilterCoefTables.Tables02[0].Hi},
-			{VI_FILTER_COEF_0_LO, &m_FilterCoefTables.Tables02[0].Lo},
-			{VI_FILTER_COEF_1_HI, &m_FilterCoefTables.Tables02[1].Hi},
-			{VI_FILTER_COEF_1_LO, &m_FilterCoefTables.Tables02[1].Lo},
-			{VI_FILTER_COEF_2_HI, &m_FilterCoefTables.Tables02[2].Hi},
-			{VI_FILTER_COEF_2_LO, &m_FilterCoefTables.Tables02[2].Lo},
-			{VI_FILTER_COEF_3_HI, &m_FilterCoefTables.Tables36[0].Hi},
-			{VI_FILTER_COEF_3_LO, &m_FilterCoefTables.Tables36[0].Lo},
-			{VI_FILTER_COEF_4_HI, &m_FilterCoefTables.Tables36[1].Hi},
-			{VI_FILTER_COEF_4_LO, &m_FilterCoefTables.Tables36[1].Lo},
-			{VI_FILTER_COEF_5_HI, &m_FilterCoefTables.Tables36[2].Hi},
-			{VI_FILTER_COEF_5_LO, &m_FilterCoefTables.Tables36[2].Lo},
-			{VI_FILTER_COEF_6_HI, &m_FilterCoefTables.Tables36[3].Hi},
-			{VI_FILTER_COEF_6_LO, &m_FilterCoefTables.Tables36[3].Lo},
-			{VI_CLOCK, &m_Clock},
-			{VI_DTV_STATUS, &m_DTVStatus.Hex},
-			{VI_FBWIDTH, &m_FBWidth.Hex},
-			{VI_BORDER_BLANK_END, &m_BorderHBlank.Lo},
-			{VI_BORDER_BLANK_START, &m_BorderHBlank.Hi},
 	};
+
+	std::array<MappedVar, 46> directly_mapped_vars{ {
+		{ VI_VERTICAL_TIMING, &m_VerticalTimingRegister.Hex },
+		{ VI_HORIZONTAL_TIMING_0_HI, &m_HTiming0.Hi },
+		{ VI_HORIZONTAL_TIMING_0_LO, &m_HTiming0.Lo },
+		{ VI_HORIZONTAL_TIMING_1_HI, &m_HTiming1.Hi },
+		{ VI_HORIZONTAL_TIMING_1_LO, &m_HTiming1.Lo },
+		{ VI_VBLANK_TIMING_ODD_HI, &m_VBlankTimingOdd.Hi },
+		{ VI_VBLANK_TIMING_ODD_LO, &m_VBlankTimingOdd.Lo },
+		{ VI_VBLANK_TIMING_EVEN_HI, &m_VBlankTimingEven.Hi },
+		{ VI_VBLANK_TIMING_EVEN_LO, &m_VBlankTimingEven.Lo },
+		{ VI_BURST_BLANKING_ODD_HI, &m_BurstBlankingOdd.Hi },
+		{ VI_BURST_BLANKING_ODD_LO, &m_BurstBlankingOdd.Lo },
+		{ VI_BURST_BLANKING_EVEN_HI, &m_BurstBlankingEven.Hi },
+		{ VI_BURST_BLANKING_EVEN_LO, &m_BurstBlankingEven.Lo },
+		{ VI_FB_LEFT_TOP_LO, &m_XFBInfoTop.Lo },
+		{ VI_FB_RIGHT_TOP_LO, &m_3DFBInfoTop.Lo },
+		{ VI_FB_LEFT_BOTTOM_LO, &m_XFBInfoBottom.Lo },
+		{ VI_FB_RIGHT_BOTTOM_LO, &m_3DFBInfoBottom.Lo },
+		{ VI_PRERETRACE_LO, &m_InterruptRegister[0].Lo },
+		{ VI_POSTRETRACE_LO, &m_InterruptRegister[1].Lo },
+		{ VI_DISPLAY_INTERRUPT_2_LO, &m_InterruptRegister[2].Lo },
+		{ VI_DISPLAY_INTERRUPT_3_LO, &m_InterruptRegister[3].Lo },
+		{ VI_DISPLAY_LATCH_0_HI, &m_LatchRegister[0].Hi },
+		{ VI_DISPLAY_LATCH_0_LO, &m_LatchRegister[0].Lo },
+		{ VI_DISPLAY_LATCH_1_HI, &m_LatchRegister[1].Hi },
+		{ VI_DISPLAY_LATCH_1_LO, &m_LatchRegister[1].Lo },
+		{ VI_HSCALEW, &m_PictureConfiguration.Hex },
+		{ VI_HSCALER, &m_HorizontalScaling.Hex },
+		{ VI_FILTER_COEF_0_HI, &m_FilterCoefTables.Tables02[0].Hi },
+		{ VI_FILTER_COEF_0_LO, &m_FilterCoefTables.Tables02[0].Lo },
+		{ VI_FILTER_COEF_1_HI, &m_FilterCoefTables.Tables02[1].Hi },
+		{ VI_FILTER_COEF_1_LO, &m_FilterCoefTables.Tables02[1].Lo },
+		{ VI_FILTER_COEF_2_HI, &m_FilterCoefTables.Tables02[2].Hi },
+		{ VI_FILTER_COEF_2_LO, &m_FilterCoefTables.Tables02[2].Lo },
+		{ VI_FILTER_COEF_3_HI, &m_FilterCoefTables.Tables36[0].Hi },
+		{ VI_FILTER_COEF_3_LO, &m_FilterCoefTables.Tables36[0].Lo },
+		{ VI_FILTER_COEF_4_HI, &m_FilterCoefTables.Tables36[1].Hi },
+		{ VI_FILTER_COEF_4_LO, &m_FilterCoefTables.Tables36[1].Lo },
+		{ VI_FILTER_COEF_5_HI, &m_FilterCoefTables.Tables36[2].Hi },
+		{ VI_FILTER_COEF_5_LO, &m_FilterCoefTables.Tables36[2].Lo },
+		{ VI_FILTER_COEF_6_HI, &m_FilterCoefTables.Tables36[3].Hi },
+		{ VI_FILTER_COEF_6_LO, &m_FilterCoefTables.Tables36[3].Lo },
+		{ VI_CLOCK, &m_Clock },
+		{ VI_DTV_STATUS, &m_DTVStatus.Hex },
+		{ VI_FBWIDTH, &m_FBWidth.Hex },
+		{ VI_BORDER_BLANK_END, &m_BorderHBlank.Lo },
+		{ VI_BORDER_BLANK_START, &m_BorderHBlank.Hi },
+		} };
 
 	// Declare all the boilerplate direct MMIOs.
 	for (auto& mapped_var : directly_mapped_vars)
@@ -261,20 +262,16 @@ void RegisterMMIO(MMIO::Mapping* mmio, u32 base)
 			MMIO::DirectWrite<u16>(mapped_var.ptr));
 	}
 
-	struct
-	{
-		u32 addr;
-		u16* ptr;
-	} update_params_on_read_vars[] = {
-			{VI_VERTICAL_TIMING, &m_VerticalTimingRegister.Hex},
-			{VI_HORIZONTAL_TIMING_0_HI, &m_HTiming0.Hi},
-			{VI_HORIZONTAL_TIMING_0_LO, &m_HTiming0.Lo},
-			{VI_VBLANK_TIMING_ODD_HI, &m_VBlankTimingOdd.Hi},
-			{VI_VBLANK_TIMING_ODD_LO, &m_VBlankTimingOdd.Lo},
-			{VI_VBLANK_TIMING_EVEN_HI, &m_VBlankTimingEven.Hi},
-			{VI_VBLANK_TIMING_EVEN_LO, &m_VBlankTimingEven.Lo},
-			{VI_CLOCK, &m_Clock},
-	};
+	std::array<MappedVar, 8> update_params_on_read_vars{ {
+		{ VI_VERTICAL_TIMING, &m_VerticalTimingRegister.Hex },
+		{ VI_HORIZONTAL_TIMING_0_HI, &m_HTiming0.Hi },
+		{ VI_HORIZONTAL_TIMING_0_LO, &m_HTiming0.Lo },
+		{ VI_VBLANK_TIMING_ODD_HI, &m_VBlankTimingOdd.Hi },
+		{ VI_VBLANK_TIMING_ODD_LO, &m_VBlankTimingOdd.Lo },
+		{ VI_VBLANK_TIMING_EVEN_HI, &m_VBlankTimingEven.Hi },
+		{ VI_VBLANK_TIMING_EVEN_LO, &m_VBlankTimingEven.Lo },
+		{ VI_CLOCK, &m_Clock },
+		} };
 
 	// Declare all the MMIOs that update timing params.
 	for (auto& mapped_var : update_params_on_read_vars)
@@ -391,10 +388,7 @@ void RegisterMMIO(MMIO::Mapping* mmio, u32 base)
 		{
 			// shuffle2 clear all data, reset to default vals, and enter idle mode
 			m_DisplayControlRegister.RST = 0;
-			for (UVIInterruptRegister& reg : m_InterruptRegister)
-			{
-				reg.Hex = 0;
-			}
+			m_InterruptRegister = {};
 			UpdateInterrupts();
 		}
 
@@ -643,11 +637,11 @@ u32 GetTicksPerField()
 
 static void LogField(FieldType field, u32 xfb_address)
 {
-	static constexpr std::array<const char*, 2> field_type_names{ {"Odd", "Even"} };
+	static constexpr std::array<const char*, 2> field_type_names{ { "Odd", "Even" } };
 
 	static const std::array<const UVIVBlankTimingRegister*, 2> vert_timing{ {
 			&m_VBlankTimingOdd, &m_VBlankTimingEven,
-	} };
+		} };
 
 	const auto field_index = static_cast<size_t>(field);
 

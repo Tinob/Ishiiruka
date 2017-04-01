@@ -15,8 +15,10 @@ namespace DSP
 {
 namespace Interpreter
 {
+namespace
+{
 // Only MULX family instructions have unsigned/mixed support.
-inline s64 dsp_get_multiply_prod(u16 a, u16 b, u8 sign)
+s64 dsp_get_multiply_prod(u16 a, u16 b, u8 sign)
 {
 	s64 prod;
 
@@ -27,32 +29,32 @@ inline s64 dsp_get_multiply_prod(u16 a, u16 b, u8 sign)
 	else
 		prod = (s16)a * (s16)b;  // signed
 
-	// Conditionally multiply by 2.
+								 // Conditionally multiply by 2.
 	if ((g_dsp.r.sr & SR_MUL_MODIFY) == 0)
 		prod <<= 1;
 
 	return prod;
 }
 
-inline s64 dsp_multiply(u16 a, u16 b, u8 sign = 0)
+s64 dsp_multiply(u16 a, u16 b, u8 sign = 0)
 {
 	s64 prod = dsp_get_multiply_prod(a, b, sign);
 	return prod;
 }
 
-inline s64 dsp_multiply_add(u16 a, u16 b, u8 sign = 0)
+s64 dsp_multiply_add(u16 a, u16 b, u8 sign = 0)
 {
 	s64 prod = dsp_get_long_prod() + dsp_get_multiply_prod(a, b, sign);
 	return prod;
 }
 
-inline s64 dsp_multiply_sub(u16 a, u16 b, u8 sign = 0)
+s64 dsp_multiply_sub(u16 a, u16 b, u8 sign = 0)
 {
 	s64 prod = dsp_get_long_prod() - dsp_get_multiply_prod(a, b, sign);
 	return prod;
 }
 
-inline s64 dsp_multiply_mulx(u8 axh0, u8 axh1, u16 val1, u16 val2)
+s64 dsp_multiply_mulx(u8 axh0, u8 axh1, u16 val1, u16 val2)
 {
 	s64 result;
 
@@ -67,18 +69,17 @@ inline s64 dsp_multiply_mulx(u8 axh0, u8 axh1, u16 val1, u16 val2)
 
 	return result;
 }
+}  // Anonymous namespace
 
-//----
-
-// CLRP
-// 1000 0100 xxxx xxxx
-// Clears product register $prod.
-// Magic numbers taken from duddie's doc
-//
-// 00ff_(fff0 + 0010)_0000 = 0100_0000_0000, conveniently, lower 40bits = 0
-//
-// It's not ok, to just zero all of them, correct values should be set because of
-// direct use of prod regs by AX/AXWII (look @that part of ucode).
+   // CLRP
+   // 1000 0100 xxxx xxxx
+   // Clears product register $prod.
+   // Magic numbers taken from duddie's doc
+   //
+   // 00ff_(fff0 + 0010)_0000 = 0100_0000_0000, conveniently, lower 40bits = 0
+   //
+   // It's not ok, to just zero all of them, correct values should be set because of
+   // direct use of prod regs by AX/AXWII (look @that part of ucode).
 void clrp(const UDSPInstruction opc)
 {
 	zeroWriteBackLog();
