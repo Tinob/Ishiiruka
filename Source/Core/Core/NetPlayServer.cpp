@@ -246,7 +246,7 @@ unsigned int NetPlayServer::OnConnect(ENetPeer* socket)
 	std::string npver;
 	rpac >> npver;
 	// Dolphin netplay version
-	if (npver != scm_rev_git_str)
+	if (npver != scm_rev_git_str && !SConfig::GetInstance().bAllowAllNetplayVersions)
 		return CON_ERR_VERSION_MISMATCH;
 
 	// game is currently running

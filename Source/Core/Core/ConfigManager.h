@@ -109,6 +109,7 @@ struct SConfig : NonCopyable
 	bool bEnableCheats = false;
 	bool bEnableMemcardSdWriting = true;
 	bool bCopyWiiSaveNetplay = true;
+	bool bAllowAllNetplayVersions = false;
 
 	bool bDPL2Decoder = false;
 	bool bTimeStretching = false;
