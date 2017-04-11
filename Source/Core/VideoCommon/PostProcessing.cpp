@@ -80,7 +80,7 @@ std::vector<std::string> PostProcessingShaderConfiguration::GetAvailableShaderNa
 	std::vector<std::string> paths;
 
 	// main folder
-	paths = DoFileSearch(search_extensions, search_dirs, false);
+	paths = Common::DoFileSearch(search_extensions, search_dirs, false);
 	for (const std::string& path : paths)
 	{
 		std::string filename;
@@ -92,7 +92,7 @@ std::vector<std::string> PostProcessingShaderConfiguration::GetAvailableShaderNa
 	}
 
 	// folders/sub-shaders
-	paths = FindSubdirectories(search_dirs, false);
+	paths = Common::FindSubdirectories(search_dirs, false);
 	for (const std::string& dirname : paths)
 	{
 		// find sub-shaders in this folder
@@ -100,7 +100,7 @@ std::vector<std::string> PostProcessingShaderConfiguration::GetAvailableShaderNa
 		if (pos != std::string::npos && (pos != dirname.length() - 1))
 		{
 			std::string shader_dirname = dirname.substr(pos + 1);
-			std::vector<std::string> sub_paths = DoFileSearch(search_extensions, { dirname }, false);
+			std::vector<std::string> sub_paths = Common::DoFileSearch(search_extensions, { dirname }, false);
 			for (const std::string& sub_path : sub_paths)
 			{
 				std::string filename;
@@ -1299,23 +1299,23 @@ void  PostProcessor::DoEFB(const TargetRectangle* src_rect)
 	}
 	else
 	{
-		// Copied from Renderer::SetViewport
+		// Copied fromg_renderer->SetViewport
 		int scissorXOff = bpmem.scissorOffset.x * 2;
 		int scissorYOff = bpmem.scissorOffset.y * 2;
-		float X = Renderer::EFBToScaledXf(xfmem.viewport.xOrig - xfmem.viewport.wd - (float)scissorXOff);
+		float X =g_renderer->EFBToScaledXf(xfmem.viewport.xOrig - xfmem.viewport.wd - (float)scissorXOff);
 		float Y;
 		if (m_APIType == API_OPENGL)
 		{
-			Y = Renderer::EFBToScaledYf((float)EFB_HEIGHT - xfmem.viewport.yOrig + xfmem.viewport.ht +
+			Y =g_renderer->EFBToScaledYf((float)EFB_HEIGHT - xfmem.viewport.yOrig + xfmem.viewport.ht +
 				(float)scissorYOff);
 		}
 		else
 		{
-			Y = Renderer::EFBToScaledYf(xfmem.viewport.yOrig + xfmem.viewport.ht - (float)scissorYOff);
+			Y =g_renderer->EFBToScaledYf(xfmem.viewport.yOrig + xfmem.viewport.ht - (float)scissorYOff);
 		}
 		
-		float Width = Renderer::EFBToScaledXf(2.0f * xfmem.viewport.wd);
-		float Height = Renderer::EFBToScaledYf(-2.0f * xfmem.viewport.ht);
+		float Width =g_renderer->EFBToScaledXf(2.0f * xfmem.viewport.wd);
+		float Height =g_renderer->EFBToScaledYf(-2.0f * xfmem.viewport.ht);
 		if (Width < 0)
 		{
 			X += Width;
@@ -1373,7 +1373,7 @@ void PostProcessor::OnEFBCopy(const TargetRectangle* src_rect)
 
 	// Fire off postprocessing on the current efb if a perspective scene has been drawn.
 	if (m_projection_state == PROJECTION_STATE_PERSPECTIVE
-		&& (src_rect == nullptr || (src_rect->GetWidth() > ((Renderer::GetTargetWidth() * 2) / 3))))
+		&& (src_rect == nullptr || (src_rect->GetWidth() > ((g_renderer->GetTargetWidth() * 2) / 3))))
 	{
 		DoEFB(src_rect);
 		m_projection_state = PROJECTION_STATE_FINAL;
@@ -2507,7 +2507,7 @@ bool  PostProcessor::UpdateConstantUniformBuffer(
 	constant_idx++;
 
 	// float4 window_rect
-	const TargetRectangle& window_rect = Renderer::GetWindowRectangle();
+	const TargetRectangle& window_rect =g_renderer->GetWindowRectangle();
 	temp.float_constant[0] = (float)window_rect.left;
 	temp.float_constant[1] = (float)window_rect.top;
 	temp.float_constant[2] = (float)window_rect.right;

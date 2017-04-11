@@ -335,6 +335,8 @@ IPCCommandResult ES::IOCtlV(const IOCtlVRequest& request)
 		return GetTitleID(request);
 	case IOCTL_ES_SETUID:
 		return SetUID(request);
+	case IOCTL_ES_DIVERIFY:
+		return DIVerify(request);
 
 	case IOCTL_ES_GETOWNEDTITLECNT:
 		return GetOwnedTitleCount(request);
@@ -409,12 +411,29 @@ IPCCommandResult ES::IOCtlV(const IOCtlVRequest& request)
 		return Sign(request);
 	case IOCTL_ES_GETBOOT2VERSION:
 		return GetBoot2Version(request);
-	default:
-		request.DumpUnknown(GetDeviceName(), LogTypes::IOS_ES);
-		break;
-	}
 
-	return GetDefaultReply(IPC_SUCCESS);
+	case IOCTL_ES_VERIFYSIGN:
+	case IOCTL_ES_DELETESHAREDCONTENT:
+	case IOCTL_ES_UNKNOWN_39:
+	case IOCTL_ES_UNKNOWN_3A:
+	case IOCTL_ES_UNKNOWN_3B:
+	case IOCTL_ES_UNKNOWN_3C:
+	case IOCTL_ES_UNKNOWN_3D:
+	case IOCTL_ES_UNKNOWN_3E:
+	case IOCTL_ES_UNKNOWN_3F:
+	case IOCTL_ES_UNKNOWN_40:
+	case IOCTL_ES_UNKNOWN_41:
+	case IOCTL_ES_UNKNOWN_42:
+	case IOCTL_ES_UNKNOWN_43:
+	case IOCTL_ES_UNKNOWN_44:
+		PanicAlert("IOS-ES: Unimplemented ioctlv 0x%x (%zu in vectors, %zu io vectors)",
+			request.request, request.in_vectors.size(), request.io_vectors.size());
+		request.DumpUnknown(GetDeviceName(), LogTypes::IOS_ES, LogTypes::LERROR);
+		return GetDefaultReply(IPC_EINVAL);
+
+	default:
+		return GetDefaultReply(IPC_EINVAL);
+	}
 }
 
 IPCCommandResult ES::GetConsumption(const IOCtlVRequest& request)
@@ -489,7 +508,13 @@ const DiscIO::CNANDContentLoader& ES::AccessContentDevice(u64 title_id)
 }
 
 // This is technically an ioctlv in IOS's ES, but it is an internal API which cannot be
-// used from the PowerPC (for unpatched IOSes anyway).
+// used from the PowerPC (for unpatched and up-to-date IOSes anyway).
+// So we block access to it from the IPC interface.
+IPCCommandResult ES::DIVerify(const IOCtlVRequest& request)
+{
+	return GetDefaultReply(ES_EINVAL);
+}
+
 s32 ES::DIVerify(const IOS::ES::TMDReader& tmd, const IOS::ES::TicketReader& ticket)
 {
 	s_title_context.Clear();

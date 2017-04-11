@@ -48,8 +48,7 @@ void AudioConfigPane::InitializeGUI()
 		new wxSpinCtrl(this, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 30);
 	m_audio_latency_label = new wxStaticText(this, wxID_ANY, _("Latency:"));
 
-	m_time_stretching_checkbox = new wxCheckBox(this, wxID_ANY, _("Time Stretching"));
-	m_RS_Hack_checkbox = new wxCheckBox(this, wxID_ANY, _("Rogue Squadron 2/3 Hack"));
+	m_time_stretching_checkbox = new wxCheckBox(this, wxID_ANY, _("Time Stretching"));	
 	m_audio_backend_choice->SetToolTip(
 		_("Changing this will have no effect while the emulator is running."));
 	m_audio_latency_spinctrl->SetToolTip(_("Sets the latency (in ms). Higher values may reduce audio "
@@ -65,9 +64,6 @@ void AudioConfigPane::InitializeGUI()
 	dsp_engine_sizer->AddSpacer(space5);
 	dsp_engine_sizer->AddStretchSpacer();
 	dsp_engine_sizer->Add(m_time_stretching_checkbox, 0, wxLEFT | wxRIGHT, space5);
-	dsp_engine_sizer->AddStretchSpacer();
-	dsp_engine_sizer->AddSpacer(space5);
-	dsp_engine_sizer->Add(m_RS_Hack_checkbox, 0, wxLEFT | wxRIGHT, space5);
 	dsp_engine_sizer->AddStretchSpacer();
 	dsp_engine_sizer->AddSpacer(space5);
 
@@ -129,7 +125,6 @@ void AudioConfigPane::LoadGUIValues()
 	m_audio_latency_spinctrl->SetValue(startup_params.iLatency);
 
 	m_time_stretching_checkbox->SetValue(startup_params.bTimeStretching);
-	m_RS_Hack_checkbox->SetValue(startup_params.bRSHACK);
 }
 
 void AudioConfigPane::ToggleBackendSpecificControls(const std::string& backend)
@@ -162,7 +157,6 @@ void AudioConfigPane::BindEvents()
 	m_audio_latency_spinctrl->Bind(wxEVT_SPINCTRL, &AudioConfigPane::OnLatencySpinCtrlChanged, this);
 	m_audio_latency_spinctrl->Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreNotRunning);
 	m_time_stretching_checkbox->Bind(wxEVT_CHECKBOX, &AudioConfigPane::OnTimeStretchingCheckBoxChanged, this);
-	m_RS_Hack_checkbox->Bind(wxEVT_CHECKBOX, &AudioConfigPane::OnRS_Hack_checkboxChanged, this);
 }
 
 void AudioConfigPane::OnDSPEngineRadioBoxChanged(wxCommandEvent& event)
@@ -180,11 +174,6 @@ void AudioConfigPane::OnDPL2DecoderCheckBoxChanged(wxCommandEvent&)
 void AudioConfigPane::OnTimeStretchingCheckBoxChanged(wxCommandEvent&)
 {
 	SConfig::GetInstance().bTimeStretching = m_time_stretching_checkbox->IsChecked();
-}
-
-void AudioConfigPane::OnRS_Hack_checkboxChanged(wxCommandEvent&)
-{
-	SConfig::GetInstance().bRSHACK = m_RS_Hack_checkbox->IsChecked();
 }
 
 void AudioConfigPane::OnVolumeSliderChanged(wxCommandEvent& event)

@@ -32,28 +32,26 @@ struct Request;
 
 struct IPCCommandResult
 {
-  s32 return_value;
-  bool send_reply;
-  u64 reply_delay_ticks;
+	s32 return_value;
+	bool send_reply;
+	u64 reply_delay_ticks;
 };
 
 enum IPCCommandType : u32
 {
-  IPC_CMD_OPEN = 1,
-  IPC_CMD_CLOSE = 2,
-  IPC_CMD_READ = 3,
-  IPC_CMD_WRITE = 4,
-  IPC_CMD_SEEK = 5,
-  IPC_CMD_IOCTL = 6,
-  IPC_CMD_IOCTLV = 7,
-  // This is used for replies to commands.
-  IPC_REPLY = 8,
+	IPC_CMD_OPEN = 1,
+	IPC_CMD_CLOSE = 2,
+	IPC_CMD_READ = 3,
+	IPC_CMD_WRITE = 4,
+	IPC_CMD_SEEK = 5,
+	IPC_CMD_IOCTL = 6,
+	IPC_CMD_IOCTLV = 7,
+	// This is used for replies to commands.
+	IPC_REPLY = 8,
 };
 
 // Init events and devices
 void Init();
-// Reset all events and devices (and optionally clear them)
-void Reset(bool clear_devices = false);
 // Shutdown
 void Shutdown();
 
@@ -83,7 +81,7 @@ void ExecuteCommand(u32 address);
 
 void EnqueueRequest(u32 address);
 void EnqueueReply(const Request& request, s32 return_value, int cycles_in_future = 0,
-                  CoreTiming::FromThread from = CoreTiming::FromThread::CPU);
+	CoreTiming::FromThread from = CoreTiming::FromThread::CPU);
 void EnqueueCommandAcknowledgement(u32 address, int cycles_in_future = 0);
 }  // namespace HLE
 }  // namespace IOS

@@ -243,9 +243,17 @@
     <ClInclude Include="BitHelpers.h" />
     <ClInclude Include="AllocationMap.h" />
     <ClInclude Include="BitUtils.h" />
-    <ClInclude Include="LibusbContext.h" />
     <ClInclude Include="MD5.h" />
     <ClInclude Include="Swap.h" />
+    <ClInclude Include="GL\GLExtensions\ARB_compute_shader.h">
+      <Filter>GL\GLExtensions</Filter>
+    </ClInclude>
+    <ClInclude Include="GL\GLExtensions\ARB_shader_image_load_store.h">
+      <Filter>GL\GLExtensions</Filter>
+    </ClInclude>
+    <ClInclude Include="GL\GLExtensions\ARB_texture_storage.h">
+      <Filter>GL\GLExtensions</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CDUtils.cpp" />

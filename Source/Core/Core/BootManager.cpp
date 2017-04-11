@@ -81,7 +81,6 @@ private:
 	bool bHLE_BS2;
 	bool bProgressive;
 	bool bPAL60;
-	bool bRSHACK;
 	int iVideoRate;
 	bool bHalfAudioRate;
 	int iSelectedLanguage;
@@ -97,7 +96,7 @@ private:
 	std::string m_strGPUDeterminismMode;
 	std::array<int, MAX_BBMOTES> iWiimoteSource;
 	std::array<SerialInterface::SIDevices, SerialInterface::MAX_SI_CHANNELS> Pads;
-	std::array<TEXIDevices, ExpansionInterface::MAX_EXI_CHANNELS> m_EXIDevice;
+	std::array<ExpansionInterface::TEXIDevices, ExpansionInterface::MAX_EXI_CHANNELS> m_EXIDevice;
 };
 
 void ConfigCache::SaveConfig(const SConfig& config)
@@ -129,7 +128,6 @@ void ConfigCache::SaveConfig(const SConfig& config)
 	iVideoRate = config.iVideoRate;
 	m_OCFactor = config.m_OCFactor;
 	bTimeStretching = config.bTimeStretching;
-	bRSHACK = config.bRSHACK;
 	m_OCEnable = config.m_OCEnable;
 
 	std::copy(std::begin(g_wiimote_sources), std::end(g_wiimote_sources), std::begin(iWiimoteSource));
@@ -170,7 +168,6 @@ void ConfigCache::RestoreConfig(SConfig* config)
 	config->iVideoRate = iVideoRate;
 	config->bHalfAudioRate = bHalfAudioRate;
 	config->bTimeStretching = bTimeStretching;
-	config->bRSHACK = bRSHACK;
 	// Only change these back if they were actually set by game ini, since they can be changed while a
 	// game is running.
 	if (bSetVolume)
@@ -270,7 +267,6 @@ bool BootCore(const std::string& _rFilename)
 		core_section->Get("Video_Rate", &StartUp.iVideoRate, StartUp.iVideoRate);
 		core_section->Get("HalfAudioRate", &StartUp.bHalfAudioRate, StartUp.bHalfAudioRate);
 		core_section->Get("TimeStretching", &StartUp.bTimeStretching, StartUp.bTimeStretching);
-		core_section->Get("RSHACK", &StartUp.bRSHACK, StartUp.bRSHACK);
 		core_section->Get("SyncGPU", &StartUp.bSyncGPU, StartUp.bSyncGPU);
 		core_section->Get("FastDiscSpeed", &StartUp.bFastDiscSpeed, StartUp.bFastDiscSpeed);
 		core_section->Get("DSPHLE", &StartUp.bDSPHLE, StartUp.bDSPHLE);
@@ -304,13 +300,11 @@ bool BootCore(const std::string& _rFilename)
 			}
 		}
 
-		Core::g_aspect_wide = StartUp.bWii;
-
 		// Wii settings
 		if (StartUp.bWii)
 		{
 			IniFile::Section* wii_section = game_ini.GetOrCreateSection("Wii");
-			wii_section->Get("Widescreen", &Core::g_aspect_wide, !!StartUp.m_wii_aspect_ratio);
+			wii_section->Get("Widescreen", &StartUp.m_wii_aspect_ratio, !!StartUp.m_wii_aspect_ratio);
 			wii_section->Get("Language", &StartUp.m_wii_language, StartUp.m_wii_language);
 
 			int source;

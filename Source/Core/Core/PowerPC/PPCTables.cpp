@@ -36,7 +36,7 @@ const std::array<u64, 16> m_crTable = { {
 		PPCCRToInternal(0x4), PPCCRToInternal(0x5), PPCCRToInternal(0x6), PPCCRToInternal(0x7),
 		PPCCRToInternal(0x8), PPCCRToInternal(0x9), PPCCRToInternal(0xA), PPCCRToInternal(0xB),
 		PPCCRToInternal(0xC), PPCCRToInternal(0xD), PPCCRToInternal(0xE), PPCCRToInternal(0xF),
-} };
+	} };
 
 GekkoOPInfo* GetOpInfo(UGeckoInstruction _inst)
 {
@@ -131,7 +131,7 @@ const char* GetInstructionName(UGeckoInstruction _inst)
 bool IsValidInstruction(UGeckoInstruction _inst)
 {
 	const GekkoOPInfo* info = GetOpInfo(_inst);
-	return info != nullptr;
+	return info != nullptr && info->type != OPTYPE_UNKNOWN;
 }
 
 void CountInstruction(UGeckoInstruction _inst)

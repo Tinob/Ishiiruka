@@ -93,7 +93,7 @@ void VideoBackend::InitBackendInfo()
 	g_Config.backend_info.bSupportsClipControl = true;
 	g_Config.backend_info.bSupportsSSAA = false;
 	g_Config.backend_info.bSupportsTessellation = false;
-	g_Config.backend_info.bSupportsComputeTextureDecoding = false;
+	g_Config.backend_info.bSupportsGPUTextureDecoding = false;
 	g_Config.backend_info.bSupportsComputeTextureEncoding = false;
 	g_Config.backend_info.bSupportsDepthClamp = false;
 	g_Config.backend_info.bSupportsMultithreading = false;

@@ -210,11 +210,15 @@ void Reset()
 
 void ScheduleInvalidateCacheThreadSafe(u32 address)
 {
-	if (CPU::GetState() == CPU::State::CPU_RUNNING)
+	if (CPU::GetState() == CPU::State::Running)
+	{
 		CoreTiming::ScheduleEvent(0, s_invalidate_cache_thread_safe, address,
 			CoreTiming::FromThread::NON_CPU);
+	}
 	else
+	{
 		PowerPC::ppcState.iCache.Invalidate(static_cast<u32>(address));
+	}
 }
 
 void Shutdown()
@@ -239,7 +243,7 @@ static void ApplyMode()
 		break;
 
 	case CoreMode::JIT:  // Switching from interpreter to JIT.
-		// Don't really need to do much. It'll work, the cache will refill itself.
+						 // Don't really need to do much. It'll work, the cache will refill itself.
 		s_cpu_core_base = JitInterface::GetCore();
 		if (!s_cpu_core_base)  // Has a chance to not get a working JIT core if one isn't active on host
 			s_cpu_core_base = s_interpreter;
@@ -528,7 +532,7 @@ void CheckBreakPoints()
 
 }  // namespace
 
-// FPSCR update functions
+   // FPSCR update functions
 
 void UpdateFPRF(double dvalue)
 {

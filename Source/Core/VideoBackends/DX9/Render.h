@@ -11,25 +11,6 @@ namespace DX9
 
 class Renderer : public ::Renderer
 {
-private:
-	bool m_bColorMaskChanged;
-	bool m_bBlendModeChanged;
-	bool m_bScissorRectChanged;
-	bool m_bViewPortChanged;
-	bool m_bViewPortChangedRequested;
-	TargetRectangle m_ScissorRect;
-	D3DVIEWPORT9 m_vp;
-	bool m_bGenerationModeChanged;
-	bool m_bDepthModeChanged;
-	bool m_bLogicOpModeChanged;
-
-	void _SetColorMask();
-	void _SetViewport();
-	void _SetBlendMode(bool forceUpdate);
-	void _SetScissorRect();
-	void _SetGenerationMode();
-	void _SetDepthMode();
-	void _SetLogicOpMode();
 public:
 	Renderer(void *&window_handle);
 	~Renderer();
@@ -70,7 +51,35 @@ public:
 
 	void ReinterpretPixelData(unsigned int convtype);
 
-	static void CheckForResize(bool &resized);
+	bool CheckForResize();
+private:
+	bool m_bColorMaskChanged = true;
+	bool m_bBlendModeChanged = true;
+	bool m_bScissorRectChanged = true;
+	bool m_bViewPortChanged = true;
+	bool m_bViewPortChangedRequested = true;
+	TargetRectangle m_ScissorRect{};
+	D3DVIEWPORT9 m_vp{};
+	bool m_bGenerationModeChanged = true;
+	bool m_bDepthModeChanged = true;
+	bool m_bLogicOpModeChanged = true;
+	u32 m_blendMode = 0;
+	u32 m_LastAA = 0;
+	bool m_IS_AMD = false;
+	float m_fMax_Point_Size = 0;
+	bool m_vsync = false;
+	bool m_b3D_RightFrame = false;	
+	bool m_last_fullscreen_mode = false;
+
+	void _SetColorMask();
+	void _SetViewport();
+	void _SetBlendMode(bool forceUpdate);
+	void _SetScissorRect();
+	void _SetGenerationMode();
+	void _SetDepthMode();
+	void _SetLogicOpMode();
+	void SetupDeviceObjects();	
+	void TeardownDeviceObjects();
 };
 
 }  // namespace DX9

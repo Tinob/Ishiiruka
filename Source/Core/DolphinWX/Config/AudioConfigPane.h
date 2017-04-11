@@ -34,7 +34,6 @@ private:
 	void OnAudioBackendChanged(wxCommandEvent&);
 	void OnLatencySpinCtrlChanged(wxCommandEvent&);
 	void OnTimeStretchingCheckBoxChanged(wxCommandEvent&);
-	void OnRS_Hack_checkboxChanged(wxCommandEvent&);
 
 	wxArrayString m_dsp_engine_strings;
 	wxArrayString m_audio_backend_strings;
@@ -46,6 +45,5 @@ private:
 	wxChoice* m_audio_backend_choice;
 	wxSpinCtrl* m_audio_latency_spinctrl;
 	wxCheckBox* m_time_stretching_checkbox;
-	wxCheckBox* m_RS_Hack_checkbox;
 	wxStaticText* m_audio_latency_label;
 };

@@ -4,6 +4,8 @@
 
 #include "Core/HW/SI/SI_DeviceGCController.h"
 
+#include <cstring>
+
 #include "Common/ChunkFile.h"
 #include "Common/CommonTypes.h"
 #include "Common/Logging/Log.h"
@@ -53,8 +55,11 @@ int CSIDevice_GCController::RunBuffer(u8* buffer, int length)
 	{
 	case CMD_RESET:
 	case CMD_ID:
-		*(u32*)&buffer[0] = SI_GC_CONTROLLER;
+	{
+		constexpr u32 id = SI_GC_CONTROLLER;
+		std::memcpy(buffer, &id, sizeof(id));
 		break;
+	}
 
 	case CMD_DIRECT:
 	{
@@ -205,7 +210,7 @@ bool CSIDevice_GCController::GetData(u32& hi, u32& low)
 	{
 		low = (u8)(pad_status.analogB);               // All 8 bits
 		low |= (u32)((u8)(pad_status.analogA) << 8);  // All 8 bits
-		// triggerLeft/Right are always 0
+													  // triggerLeft/Right are always 0
 		low |= (u32)((u8)pad_status.substickY << 16);  // All 8 bits
 		low |= (u32)((u8)pad_status.substickX << 24);  // All 8 bits
 	}

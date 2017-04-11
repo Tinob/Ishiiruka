@@ -249,15 +249,14 @@ void SConfig::SaveCoreSettings(IniFile& ini)
 	core->Set("OverrideGCLang", bOverrideGCLanguage);
 	core->Set("DPL2Decoder", bDPL2Decoder);
 	core->Set("TimeStretching", bTimeStretching);
-	core->Set("RSHACK", bRSHACK);
 	core->Set("Latency", iLatency);
 	core->Set("MemcardAPath", m_strMemoryCardA);
 	core->Set("MemcardBPath", m_strMemoryCardB);
 	core->Set("AgpCartAPath", m_strGbaCartA);
 	core->Set("AgpCartBPath", m_strGbaCartB);
-	core->Set("SlotA", m_EXIDevice[0]);
-	core->Set("SlotB", m_EXIDevice[1]);
-	core->Set("SerialPort1", m_EXIDevice[2]);
+	core->Get("SlotA", (int*)&m_EXIDevice[0], ExpansionInterface::EXIDEVICE_MEMORYCARD);
+	core->Get("SlotB", (int*)&m_EXIDevice[1], ExpansionInterface::EXIDEVICE_NONE);
+	core->Get("SerialPort1", (int*)&m_EXIDevice[2], ExpansionInterface::EXIDEVICE_NONE);
 	core->Set("BBA_MAC", m_bba_mac);
 	for (int i = 0; i < SerialInterface::MAX_SI_CHANNELS; ++i)
 	{
@@ -571,14 +570,13 @@ void SConfig::LoadCoreSettings(IniFile& ini)
 	core->Get("DPL2Decoder", &bDPL2Decoder, false);
 	core->Get("Latency", &iLatency, 2);
 	core->Get("TimeStretching", &bTimeStretching, false);
-	core->Get("RSHACK", &bRSHACK, false);
 	core->Get("MemcardAPath", &m_strMemoryCardA);
 	core->Get("MemcardBPath", &m_strMemoryCardB);
 	core->Get("AgpCartAPath", &m_strGbaCartA);
 	core->Get("AgpCartBPath", &m_strGbaCartB);
-	core->Get("SlotA", (int*)&m_EXIDevice[0], EXIDEVICE_MEMORYCARD);
-	core->Get("SlotB", (int*)&m_EXIDevice[1], EXIDEVICE_NONE);
-	core->Get("SerialPort1", (int*)&m_EXIDevice[2], EXIDEVICE_NONE);
+	core->Get("SlotA", (int*)&m_EXIDevice[0], ExpansionInterface::EXIDEVICE_MEMORYCARD);
+	core->Get("SlotB", (int*)&m_EXIDevice[1], ExpansionInterface::EXIDEVICE_NONE);
+	core->Get("SerialPort1", (int*)&m_EXIDevice[2], ExpansionInterface::EXIDEVICE_NONE);
 	core->Get("BBA_MAC", &m_bba_mac);
 	core->Get("TimeProfiling", &bJITILTimeProfiling, false);
 	core->Get("OutputIR", &bJITILOutputIR, false);
@@ -789,10 +787,8 @@ void SConfig::SetRunningGameMetadata(const std::string& game_id, u64 title_id, u
 			// TODO: have a callback mechanism for title changes?
 			g_symbolDB.Clear();
 			CBoot::LoadMapFromFilename();
-			HLE::Clear();
-			HLE::PatchFunctions();
-			PatchEngine::Shutdown();
-			PatchEngine::LoadPatches();
+			HLE::Reload();
+			PatchEngine::Reload();
 			HiresTexture::Update();
 		}
 	}
@@ -835,7 +831,6 @@ void SConfig::LoadDefaults()
 	bWii = false;
 	bDPL2Decoder = false;
 	bTimeStretching = false;
-	bRSHACK = false;
 	iLatency = 14;
 
 	iPosX = INT_MIN;

@@ -369,17 +369,18 @@ void CFrame::OnTASInput(wxCommandEvent& event)
 		if (SConfig::GetInstance().m_SIDevice[i] != SerialInterface::SIDEVICE_NONE &&
 			SConfig::GetInstance().m_SIDevice[i] != SerialInterface::SIDEVICE_GC_GBA)
 		{
-			g_TASInputDlg[i]->CreateGCLayout();
-			g_TASInputDlg[i]->Show();
-			g_TASInputDlg[i]->SetTitle(wxString::Format(_("TAS Input - GameCube Controller %d"), i + 1));
+			m_tas_input_dialogs[i]->CreateGCLayout();
+			m_tas_input_dialogs[i]->Show();
+			m_tas_input_dialogs[i]->SetTitle(
+				wxString::Format(_("TAS Input - GameCube Controller %d"), i + 1));
 		}
 
 		if (g_wiimote_sources[i] == WIIMOTE_SRC_EMU &&
 			!(Core::IsRunning() && !SConfig::GetInstance().bWii))
 		{
-			g_TASInputDlg[i + 4]->CreateWiiLayout(i);
-			g_TASInputDlg[i + 4]->Show();
-			g_TASInputDlg[i + 4]->SetTitle(wxString::Format(_("TAS Input - Wii Remote %d"), i + 1));
+			m_tas_input_dialogs[i + 4]->CreateWiiLayout(i);
+			m_tas_input_dialogs[i + 4]->Show();
+			m_tas_input_dialogs[i + 4]->SetTitle(wxString::Format(_("TAS Input - Wii Remote %d"), i + 1));
 		}
 	}
 }
@@ -903,6 +904,9 @@ void CFrame::OnStopped()
 	// Destroy the renderer frame when not rendering to main
 	m_RenderParent->Unbind(wxEVT_SIZE, &CFrame::OnRenderParentResize, this);
 
+	// Keyboard
+	wxTheApp->Unbind(wxEVT_KEY_DOWN, &CFrame::OnKeyDown, this);
+
 	// Mouse
 	wxTheApp->Unbind(wxEVT_RIGHT_DOWN, &CFrame::OnMouse, this);
 	wxTheApp->Unbind(wxEVT_RIGHT_UP, &CFrame::OnMouse, this);
@@ -1165,10 +1169,11 @@ void CFrame::OnImportSave(wxCommandEvent& WXUNUSED(event))
 
 void CFrame::OnShowCheatsWindow(wxCommandEvent& WXUNUSED(event))
 {
-	if (!g_CheatsWindow)
-		g_CheatsWindow = new wxCheatsWindow(this);
-	else
-		g_CheatsWindow->Raise();
+	if (!m_cheats_window)
+		m_cheats_window = new wxCheatsWindow(this);
+
+	m_cheats_window->Show();
+	m_cheats_window->Raise();
 }
 
 void CFrame::OnLoadWiiMenu(wxCommandEvent& WXUNUSED(event))
@@ -1510,12 +1515,12 @@ void CFrame::UpdateGUI()
 	m_Mgr->Update();
 
 	// Update non-modal windows
-	if (g_CheatsWindow)
+	if (m_cheats_window)
 	{
 		if (SConfig::GetInstance().bEnableCheats)
-			g_CheatsWindow->UpdateGUI();
+			m_cheats_window->UpdateGUI();
 		else
-			g_CheatsWindow->Close();
+			m_cheats_window->Hide();
 	}
 }
 
@@ -1589,7 +1594,7 @@ void CFrame::GameListChanged(wxCommandEvent& event)
 		break;
 	case IDM_PURGE_GAME_LIST_CACHE:
 		std::vector<std::string> rFilenames =
-			DoFileSearch({ ".cache" }, { File::GetUserPath(D_CACHE_IDX) });
+			Common::DoFileSearch({ ".cache" }, { File::GetUserPath(D_CACHE_IDX) });
 
 		for (const std::string& rFilename : rFilenames)
 		{

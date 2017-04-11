@@ -15,6 +15,8 @@
 #include "Core/HW/EXI/EXI.h"
 #include "Core/HW/Memmap.h"
 
+namespace ExpansionInterface
+{
 // XXX: The BBA stores multi-byte elements as little endian.
 // Multiple parts of this implementation depend on Dolphin
 // being compiled for a little endian host.
@@ -526,13 +528,13 @@ bool CEXIETHERNET::RecvHandlePacket()
 			/*
 			halt copy
 			if (cur_packet_size >= PAGE_SIZE)
-				desc.status |= FO | BF
+			desc.status |= FO | BF
 			if (RBFIM)
-				raise RBFI
+			raise RBFI
 			if (AUTORCVR)
-				discard bad packet
+			discard bad packet
 			else
-				inc MPC instead of receiving packets
+			inc MPC instead of receiving packets
 			*/
 			status |= DESC_FO | DESC_BF;
 			mBbaMem[BBA_IR] |= mBbaMem[BBA_IMR] & INT_RBF;
@@ -589,3 +591,4 @@ wait_for_next:
 
 	return true;
 }
+}  // namespace ExpansionInterface

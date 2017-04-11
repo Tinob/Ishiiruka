@@ -427,6 +427,7 @@ inline void GenerateTessellationShader(ShaderCode& out, const Tessellation_shade
 	out.Write(
 		"\tfloat4 " I_PROJECTION "[4];\n"
 		"\tfloat4 " I_DEPTHPARAMS ";\n"
+		"\tfloat4 " I_VIEWPARAMS ";\n"
 		"};\n");
 
 	if (ApiType == API_OPENGL)

@@ -412,6 +412,7 @@ public:
 	virtual ~XEmitter() {}
 	void SetCodePtr(u8* ptr);
 	void ReserveCodeSpace(int bytes);
+	const u8* AlignCodeTo(size_t alignment);
 	const u8* AlignCode4();
 	const u8* AlignCode16();
 	const u8* AlignCodePage();
@@ -446,7 +447,7 @@ public:
 	void LAHF();  // 3 cycle vector path
 	void SAHF();  // direct path fast
 
-	// Stack control
+				  // Stack control
 	void PUSH(X64Reg reg);
 	void POP(X64Reg reg);
 	void PUSH(int bits, const OpArg& reg);
@@ -488,7 +489,7 @@ public:
 	void BSF(int bits, X64Reg dest, const OpArg& src);  // Bottom bit to top bit
 	void BSR(int bits, X64Reg dest, const OpArg& src);  // Top bit to bottom bit
 
-	// Cache control
+														// Cache control
 	enum PrefetchLevel
 	{
 		PF_NTA,  // Non-temporal (data used once and only once)

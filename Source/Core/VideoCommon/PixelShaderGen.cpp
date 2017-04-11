@@ -1652,6 +1652,7 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
 		{
 			DeclareUniform<ApiType>(out, C_PROJECTION, "float4", I_PROJECTION"[4]");
 			DeclareUniform<ApiType>(out, C_DEPTHPARAMS, "float4", I_DEPTHPARAMS);
+			DeclareUniform<ApiType>(out, C_VIEWPARAMS, "float4", I_VIEWPARAMS);
 		}
 
 		DeclareUniform<ApiType>(out, C_PMATERIALS, "float4", I_MATERIALS "[4]");

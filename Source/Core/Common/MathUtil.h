@@ -5,17 +5,18 @@
 #pragma once
 
 #include <algorithm>
+#include <array>
 #include <cstdlib>
 #include <vector>
+
+#include "Common/CommonTypes.h"
+
 #ifdef _MSC_VER
 #include <intrin.h>
 #endif
 
-#include "Common/CommonTypes.h"
-
 namespace MathUtil
 {
-
 template <typename T>
 constexpr T SNANConstant()
 {
@@ -28,6 +29,7 @@ constexpr T SNANConstant()
 // will use __builtin_nans, which is improperly handled by the compiler and generates
 // a bad constant. Here we go back to the version MSVC used before the builtin.
 // TODO: Remove this and use numeric_limits directly whenever this bug is fixed.
+
 template <>
 constexpr double SNANConstant()
 {
@@ -41,7 +43,7 @@ constexpr float SNANConstant()
 
 #endif
 
-template<class T>
+template <class T>
 constexpr T Clamp(const T val, const T& min, const T& max)
 {
 	return std::max(min, std::min(max, val));
@@ -54,15 +56,11 @@ constexpr bool IsPow2(u32 imm)
 
 // The most significant bit of the fraction is an is-quiet bit on all architectures we care about.
 
-static const u64 DOUBLE_SIGN = 0x8000000000000000ULL,
-DOUBLE_EXP = 0x7FF0000000000000ULL,
-DOUBLE_FRAC = 0x000FFFFFFFFFFFFFULL,
-DOUBLE_ZERO = 0x0000000000000000ULL,
+static const u64 DOUBLE_SIGN = 0x8000000000000000ULL, DOUBLE_EXP = 0x7FF0000000000000ULL,
+DOUBLE_FRAC = 0x000FFFFFFFFFFFFFULL, DOUBLE_ZERO = 0x0000000000000000ULL,
 DOUBLE_QBIT = 0x0008000000000000ULL;
 
-static const u32 FLOAT_SIGN = 0x80000000,
-FLOAT_EXP = 0x7F800000,
-FLOAT_FRAC = 0x007FFFFF,
+static const u32 FLOAT_SIGN = 0x80000000, FLOAT_EXP = 0x7F800000, FLOAT_FRAC = 0x007FFFFF,
 FLOAT_ZERO = 0x00000000;
 
 union IntDouble
@@ -70,34 +68,28 @@ union IntDouble
 	double d;
 	u64 i;
 
-	explicit IntDouble(u64 _i) : i(_i)
-	{}
-	explicit IntDouble(double _d) : d(_d)
-	{}
+	explicit IntDouble(u64 _i) : i(_i) {}
+	explicit IntDouble(double _d) : d(_d) {}
 };
 union IntFloat
 {
 	float f;
 	u32 i;
 
-	explicit IntFloat(u32 _i) : i(_i)
-	{}
-	explicit IntFloat(float _f) : f(_f)
-	{}
+	explicit IntFloat(u32 _i) : i(_i) {}
+	explicit IntFloat(float _f) : f(_f) {}
 };
 
 inline bool IsQNAN(double d)
 {
 	IntDouble x(d);
-	return ((x.i & DOUBLE_EXP) == DOUBLE_EXP) &&
-		((x.i & DOUBLE_QBIT) == DOUBLE_QBIT);
+	return ((x.i & DOUBLE_EXP) == DOUBLE_EXP) && ((x.i & DOUBLE_QBIT) == DOUBLE_QBIT);
 }
 
 inline bool IsSNAN(double d)
 {
 	IntDouble x(d);
-	return ((x.i & DOUBLE_EXP) == DOUBLE_EXP) &&
-		((x.i & DOUBLE_FRAC) != DOUBLE_ZERO) &&
+	return ((x.i & DOUBLE_EXP) == DOUBLE_EXP) && ((x.i & DOUBLE_FRAC) != DOUBLE_ZERO) &&
 		((x.i & DOUBLE_QBIT) == DOUBLE_ZERO);
 }
 
@@ -140,16 +132,19 @@ u32 ClassifyDouble(double dvalue);
 // More efficient float version.
 u32 ClassifyFloat(float fvalue);
 
-extern const int frsqrte_expected_base[];
-extern const int frsqrte_expected_dec[];
-extern const int fres_expected_base[];
-extern const int fres_expected_dec[];
+struct BaseAndDec
+{
+	int m_base;
+	int m_dec;
+};
+extern const std::array<BaseAndDec, 32> frsqrte_expected;
+extern const std::array<BaseAndDec, 32> fres_expected;
 
 // PowerPC approximation algorithms
 double ApproximateReciprocalSquareRoot(double val);
 double ApproximateReciprocal(double val);
 
-template<class T>
+template <class T>
 struct Rectangle
 {
 	T left{};
@@ -161,22 +156,16 @@ struct Rectangle
 
 	constexpr Rectangle(T theLeft, T theTop, T theRight, T theBottom)
 		: left(theLeft), top(theTop), right(theRight), bottom(theBottom)
-	{}
+	{
+	}
 
 	constexpr bool operator==(const Rectangle& r) const
 	{
 		return left == r.left && top == r.top && right == r.right && bottom == r.bottom;
 	}
 
-	T GetWidth() const
-	{
-		return abs(right - left);
-	}
-	T GetHeight() const
-	{
-		return abs(bottom - top);
-	}
-
+	T GetWidth() const { return abs(right - left); }
+	T GetHeight() const { return abs(bottom - top); }
 	// If the rectangle is in a coordinate system with a lower-left origin, use
 	// this Clamp.
 	void ClampLL(T x1, T y1, T x2, T y2)
@@ -196,23 +185,6 @@ struct Rectangle
 		top = Clamp(top, y1, y2);
 		bottom = Clamp(bottom, y1, y2);
 	}
-
-	inline void MergeUL(const Rectangle<T>& other)
-	{
-		left = std::min(left, other.left);
-		top = std::min(top, other.top);
-		right = std::max(right, other.right);
-		bottom = std::max(bottom, other.bottom);
-	}
-
-	inline void MergeLL(const Rectangle<T>& other)
-	{
-		left = std::min(left, other.left);
-		top = std::max(top, other.top);
-		right = std::max(right, other.right);
-		bottom = std::min(bottom, other.bottom);
-	}
-
 };
 
 }  // namespace MathUtil

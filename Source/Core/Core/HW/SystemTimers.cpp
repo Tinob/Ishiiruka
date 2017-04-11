@@ -257,8 +257,9 @@ void Init()
 		s_localtime_rtc_offset =
 			Common::Timer::GetLocalTimeSinceJan1970() - SConfig::GetInstance().m_customRTCValue;
 	}
-	CoreTiming::SetFakeTBStartValue((u64)(s_cpu_core_clock / TIMER_RATIO) *
-		(u64)CEXIIPL::GetEmulatedTime(CEXIIPL::GC_EPOCH));
+	CoreTiming::SetFakeTBStartValue(static_cast<u64>(s_cpu_core_clock / TIMER_RATIO) *
+		static_cast<u64>(ExpansionInterface::CEXIIPL::GetEmulatedTime(
+			ExpansionInterface::CEXIIPL::GC_EPOCH)));
 	CoreTiming::SetFakeTBStartTicks(CoreTiming::GetTicks());
 
 	CoreTiming::SetFakeDecStartValue(0xFFFFFFFF);

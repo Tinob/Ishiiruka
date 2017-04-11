@@ -80,12 +80,24 @@ private:
 
 	void PrepareFrameDumpRenderTexture(u32 width, u32 height);
 	void PrepareFrameDumpBuffer(u32 width, u32 height);
+	void SetupDeviceObjects();
+	void TeardownDeviceObjects();
 
 	D3DTexture2D* m_frame_dump_render_texture = nullptr;
 	ID3D12Resource* m_frame_dump_buffer = nullptr;
 	u32 m_frame_dump_buffer_size = 0;
 	u32 m_frame_dump_render_texture_width = 0;
 	u32 m_frame_dump_render_texture_height = 0;
+	u32 m_last_multisamples = 1;
+	int m_last_stereo_mode = false;
+	bool m_last_xfb_mode = false;
+	bool m_scissor_dirty = true;
+	RECT m_scissor_rect{};
+	bool m_viewport_dirty = true;
+	D3D12_VIEWPORT m_vp;
+	bool m_target_dirty = true;
+	bool m_previous_use_dst_alpha = false;
+	D3DVertexFormat* m_previous_vertex_format = nullptr;
 };
 
 }

@@ -97,7 +97,8 @@ WiimoteInputConfigDialog::WiimoteInputConfigDialog(wxWindow* const parent, Input
 	motion_controls_ir_sizer->AddSpacer(space5);
 
 	tab_motion_controls_ir->SetSizerAndFit(motion_controls_ir_sizer);
-
+	
+	// i18n: IR stands for infrared and refers to the pointer functionality of Wii Remotes
 	notebook->AddPage(tab_motion_controls_ir, _("Motion Controls and IR"));
 
 	notebook->SetSelection(0);

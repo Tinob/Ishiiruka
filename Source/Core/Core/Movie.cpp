@@ -2,6 +2,8 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Core/Movie.h"
+
 #include <algorithm>
 #include <array>
 #include <cctype>
@@ -10,6 +12,7 @@
 #include <mbedtls/md.h>
 #include <mutex>
 #include <thread>
+#include <utility>
 #include <vector>
 
 #include "Common/Assert.h"
@@ -34,7 +37,6 @@
 #include "Core/HW/WiimoteEmu/WiimoteHid.h"
 #include "Core/IOS/USB/Bluetooth/BTEmu.h"
 #include "Core/IOS/USB/Bluetooth/WiimoteDevice.h"
-#include "Core/Movie.h"
 #include "Core/NetPlayProto.h"
 #include "Core/PowerPC/PowerPC.h"
 #include "Core/State.h"
@@ -91,8 +93,8 @@ static bool s_bPolled = false;
 static std::mutex s_input_display_lock;
 static std::string s_InputDisplay[8];
 
-static GCManipFunction gcmfunc = nullptr;
-static WiiManipFunction wiimfunc = nullptr;
+static GCManipFunction s_gc_manip_func;
+static WiiManipFunction s_wii_manip_func;
 
 // NOTE: Host / CPU Thread
 static void EnsureTmpInputSize(size_t bound)
@@ -180,7 +182,7 @@ std::string GetInputDisplay()
 // NOTE: GPU Thread
 std::string GetRTCDisplay()
 {
-	time_t current_time = CEXIIPL::GetEmulatedTime(CEXIIPL::UNIX_EPOCH);
+	time_t current_time = ExpansionInterface::CEXIIPL::GetEmulatedTime(ExpansionInterface::CEXIIPL::UNIX_EPOCH);
 	tm* gm_time = gmtime(&current_time);
 	char buffer[256];
 	strftime(buffer, sizeof(buffer), "Date/Time: %c\n", gm_time);
@@ -557,7 +559,7 @@ bool BeginRecordingInput(int controllers)
 	if (NetPlay::IsNetPlayRunning())
 	{
 		s_bNetPlay = true;
-		s_recordingStartTime = CEXIIPL::NetPlay_GetEmulatedTime();
+		s_recordingStartTime = ExpansionInterface::CEXIIPL::NetPlay_GetEmulatedTime();
 	}
 	else if (SConfig::GetInstance().bEnableCustomRTC)
 	{
@@ -1342,7 +1344,7 @@ void EndPlayInput(bool cont)
 	}
 	else if (s_playMode != MODE_NONE)
 	{
-		// We can be called by EmuThread during boot (CPU_POWERDOWN)
+		// We can be called by EmuThread during boot (CPU::State::PowerDown)
 		bool was_running = Core::IsRunningAndStarted() && !CPU::IsStepping();
 		if (was_running)
 			CPU::Break();
@@ -1440,25 +1442,25 @@ void SaveRecording(const std::string& filename)
 
 void SetGCInputManip(GCManipFunction func)
 {
-	gcmfunc = func;
+	s_gc_manip_func = std::move(func);
 }
 void SetWiiInputManip(WiiManipFunction func)
 {
-	wiimfunc = func;
+	s_wii_manip_func = std::move(func);
 }
 
 // NOTE: CPU Thread
 void CallGCInputManip(GCPadStatus* PadStatus, int controllerID)
 {
-	if (gcmfunc)
-		(*gcmfunc)(PadStatus, controllerID);
+	if (s_gc_manip_func)
+		s_gc_manip_func(PadStatus, controllerID);
 }
 // NOTE: CPU Thread
 void CallWiiInputManip(u8* data, WiimoteEmu::ReportFeatures rptf, int controllerID, int ext,
 	const wiimote_key key)
 {
-	if (wiimfunc)
-		(*wiimfunc)(data, rptf, controllerID, ext, key);
+	if (s_wii_manip_func)
+		s_wii_manip_func(data, rptf, controllerID, ext, key);
 }
 
 // NOTE: GPU Thread
@@ -1496,11 +1498,11 @@ void GetSettings()
 		s_bClearSave = !File::Exists(SConfig::GetInstance().m_strMemoryCardA);
 		s_language = SConfig::GetInstance().SelectedLanguage;
 	}
-	s_memcards |= (SConfig::GetInstance().m_EXIDevice[0] == EXIDEVICE_MEMORYCARD ||
-		SConfig::GetInstance().m_EXIDevice[0] == EXIDEVICE_MEMORYCARDFOLDER)
+	s_memcards |= (SConfig::GetInstance().m_EXIDevice[0] == ExpansionInterface::EXIDEVICE_MEMORYCARD ||
+		SConfig::GetInstance().m_EXIDevice[0] == ExpansionInterface::EXIDEVICE_MEMORYCARDFOLDER)
 		<< 0;
-	s_memcards |= (SConfig::GetInstance().m_EXIDevice[1] == EXIDEVICE_MEMORYCARD ||
-		SConfig::GetInstance().m_EXIDevice[1] == EXIDEVICE_MEMORYCARDFOLDER)
+	s_memcards |= (SConfig::GetInstance().m_EXIDevice[1] == ExpansionInterface::EXIDEVICE_MEMORYCARD ||
+		SConfig::GetInstance().m_EXIDevice[1] == ExpansionInterface::EXIDEVICE_MEMORYCARDFOLDER)
 		<< 1;
 
 	std::array<u8, 20> revision = ConvertGitRevisionToBytes(scm_rev_git_str);

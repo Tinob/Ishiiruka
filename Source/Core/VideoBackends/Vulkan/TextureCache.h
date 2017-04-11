@@ -31,17 +31,16 @@ public:
 		void Load(const u8* src, u32 width, u32 height,
 			u32 expanded_width, u32 level) override;
 		void LoadMaterialMap(const u8* src, u32 width, u32 height, u32 level) override;
-		void Load(const u8* src, u32 width, u32 height, u32 expandedWidth,
-			u32 expandedHeight, const s32 texformat, const u32 tlutaddr, const TlutFormat tlutfmt, u32 level) override;
-		void LoadFromTmem(const u8* ar_src, const u8* gb_src, u32 width, u32 height,
-			u32 expanded_width, u32 expanded_Height, u32 level) override;
 
 		void FromRenderTarget(bool is_depth_copy, const EFBRectangle& srcRect,
 			bool scaleByHalf, unsigned int cbufid, const float *colmat, u32 width, u32 height) override;
 		void CopyRectangleFromTexture(const TCacheEntryBase* source,
 			const MathUtil::Rectangle<int>& src_rect,
 			const MathUtil::Rectangle<int>& dst_rect) override;
-
+		bool DecodeTextureOnGPU(u32 dst_level, const u8* data,
+			u32 data_size, TextureFormat format, u32 width, u32 height,
+			u32 aligned_width, u32 aligned_height, u32 row_stride,
+			const u8* palette, TlutFormat palette_format) override;
 		void Bind(u32 stage) override;
 		bool Save(const std::string& filename, unsigned int level) override;
 		bool SupportsMaterialMap() const override
@@ -76,13 +75,17 @@ public:
 
 	TCacheEntryBase* CreateTexture(const TCacheEntryConfig& config) override;
 
-	void CopyEFB(u8* dst, u32 format, u32 native_width, u32 bytes_per_row, u32 num_blocks_y,
-		u32 memory_stride, bool is_depth_copy, const EFBRectangle& src_rect,
-		bool is_intensity, bool scale_by_half) override;
+	void CopyEFB(u8* dst, const EFBCopyFormat& format, u32 native_width, u32 bytes_per_row,
+		u32 num_blocks_y, u32 memory_stride,
+		bool is_depth_copy, const EFBRectangle& src_rect, bool scale_by_half) override;
 
 	void CopyRectangleFromTexture(TCacheEntry* dst_texture, const MathUtil::Rectangle<int>& dst_rect,
 		Texture2D* src_texture, const MathUtil::Rectangle<int>& src_rect);
-
+	bool SupportsGPUTextureDecode(TextureFormat format, TlutFormat palette_format) override;
+	TextureConverter* GetTextureConverter()
+	{
+		return m_texture_converter.get();
+	}
 private:
 	bool CreateRenderPasses();
 

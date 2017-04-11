@@ -170,7 +170,7 @@ void HiresTexture::Update()
 		Extensions.push_back(".dds");
 	}
 
-	std::vector<std::string> filenames = DoFileSearch(Extensions, { texture_directory }, /*recursive*/ true);
+	std::vector<std::string> filenames = Common::DoFileSearch(Extensions, { texture_directory }, /*recursive*/ true);
 
 	const std::string code = game_id + "_";
 	const std::string miptag = "mip";

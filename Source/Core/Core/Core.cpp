@@ -81,21 +81,14 @@
 
 namespace Core
 {
-// TODO: ugly, remove
-bool g_aspect_wide;
 
-bool g_want_determinism;
+static bool s_wants_determinism;
 
 // Declarations and definitions
 static Common::Timer s_timer;
 static std::atomic<u32> s_drawn_frame;
 static std::atomic<u32> s_drawn_video;
 
-// Function forwarding
-void Callback_WiimoteInterruptChannel(int _number, u16 _channelID, const void* _pData, u32 _Size);
-
-// Function declarations
-void EmuThread();
 
 static bool s_is_stopping = false;
 static bool s_hardware_initialized = false;
@@ -104,7 +97,7 @@ static Common::Flag s_is_booting;
 static void* s_window_handle = nullptr;
 static std::string s_state_filename;
 static std::thread s_emu_thread;
-static StoppedCallbackFunc s_on_stopped_callback = nullptr;
+static StoppedCallbackFunc s_on_stopped_callback;
 
 static std::thread s_cpu_thread;
 static bool s_request_refresh_info = false;
@@ -129,6 +122,8 @@ static void InitIsCPUKey()
 	pthread_key_create(&s_tls_is_cpu_key, nullptr);
 }
 #endif
+
+static void EmuThread();
 
 bool GetIsThrottlerTempDisabled()
 {
@@ -218,6 +213,11 @@ bool IsGPUThread()
 	{
 		return IsCPUThread();
 	}
+}
+
+bool WantsDeterminism()
+{
+	return s_wants_determinism;
 }
 
 // This is called from the GUI thread. See the booting call schedule in
@@ -353,7 +353,7 @@ static void CpuThread()
 	if (!s_state_filename.empty())
 	{
 		// Needs to PauseAndLock the Core
-		// NOTE: EmuThread should have left us in CPU_STEPPING so nothing will happen
+		// NOTE: EmuThread should have left us in State::Stepping so nothing will happen
 		//   until after the job is serviced.
 		QueueHostJob([] {
 			// Recheck in case Movie cleared it since.
@@ -432,11 +432,11 @@ static void FifoPlayerThread()
 
 	// If we did not enter the CPU Run Loop above then run a fake one instead.
 	// We need to be IsRunningAndStarted() for DolphinWX to stop us.
-	if (CPU::GetState() != CPU::CPU_POWERDOWN)
+	if (CPU::GetState() != CPU::State::PowerDown)
 	{
 		s_is_started = true;
 		Host_Message(WM_USER_STOP);
-		while (CPU::GetState() != CPU::CPU_POWERDOWN)
+		while (CPU::GetState() != CPU::State::PowerDown)
 		{
 			if (!_CoreParameter.bCPUThread)
 				video_backend->PeekMessages();
@@ -452,7 +452,7 @@ static void FifoPlayerThread()
 // Initialize and create emulation thread
 // Call browser: Init():s_emu_thread().
 // See the BootManager.cpp file description for a complete call schedule.
-void EmuThread()
+static void EmuThread()
 {
 	const SConfig& core_parameter = SConfig::GetInstance();
 	s_is_booting.Set();
@@ -595,7 +595,7 @@ void EmuThread()
 		// Spawn the CPU+GPU thread
 		s_cpu_thread = std::thread(cpuThreadFunc);
 
-		while (CPU::GetState() != CPU::CPU_POWERDOWN)
+		while (CPU::GetState() != CPU::State::PowerDown)
 		{
 			video_backend->PeekMessages();
 			Common::SleepCurrentThread(20);
@@ -731,19 +731,19 @@ static std::string GenerateScreenshotName()
 	return name;
 }
 
-void SaveScreenShot()
+void SaveScreenShot(bool wait_for_completion)
 {
 	const bool bPaused = GetState() == State::Paused;
 
 	SetState(State::Paused);
 
-	Renderer::SetScreenshot(GenerateScreenshotName());
+	g_renderer->SaveScreenshot(GenerateScreenshotName(), wait_for_completion);
 
 	if (!bPaused)
 		SetState(State::Running);
 }
 
-void SaveScreenShot(const std::string& name)
+void SaveScreenShot(const std::string& name, bool wait_for_completion)
 {
 	const bool bPaused = GetState() == State::Paused;
 
@@ -751,7 +751,7 @@ void SaveScreenShot(const std::string& name)
 
 	std::string filePath = GenerateScreenshotFolderPath() + name + ".png";
 
-	Renderer::SetScreenshot(filePath);
+	g_renderer->SaveScreenshot(filePath, wait_for_completion);
 
 	if (!bPaused)
 		SetState(State::Running);
@@ -951,19 +951,19 @@ void UpdateWantDeterminism(bool initial)
 	// settings that depend on it, such as GPU determinism mode. should have
 	// override options for testing,
 	bool new_want_determinism = Movie::IsMovieActive() || NetPlay::IsNetPlayRunning();
-	if (new_want_determinism != g_want_determinism || initial)
+	if (new_want_determinism != s_wants_determinism || initial)
 	{
 		NOTICE_LOG(COMMON, "Want determinism <- %s", new_want_determinism ? "true" : "false");
 
 		bool was_unpaused = Core::PauseAndLock(true);
 
-		g_want_determinism = new_want_determinism;
+		s_wants_determinism = new_want_determinism;
 		IOS::HLE::UpdateWantDeterminism(new_want_determinism);
 		Fifo::UpdateWantDeterminism(new_want_determinism);
 		// We need to clear the cache because some parts of the JIT depend on want_determinism, e.g. use
 		// of FMA.
 		JitInterface::ClearCache();
-		Core::InitializeWiiRoot(g_want_determinism);
+		Core::InitializeWiiRoot(s_wants_determinism);
 
 		Core::PauseAndLock(false, was_unpaused);
 	}

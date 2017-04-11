@@ -42,9 +42,9 @@ namespace Device
 BluetoothEmu::BluetoothEmu(u32 device_id, const std::string& device_name)
 	: BluetoothBase(device_id, device_name)
 {
-	SysConf sysconf{ Core::g_want_determinism ? Common::FromWhichRoot::FROM_SESSION_ROOT :
-																						 Common::FromWhichRoot::FROM_CONFIGURED_ROOT };
-	if (!Core::g_want_determinism)
+	SysConf sysconf{ Core::WantsDeterminism() ? Common::FromWhichRoot::FROM_SESSION_ROOT :
+		Common::FromWhichRoot::FROM_CONFIGURED_ROOT };
+	if (!Core::WantsDeterminism())
 		BackUpBTInfoSection(&sysconf);
 
 	_conf_pads BT_DINF;
@@ -524,9 +524,9 @@ bool BluetoothEmu::SendEventConnectionComplete(const bdaddr_t& _bd)
 		pWiimote->EventConnectionAccepted();
 
 	static char s_szLinkType[][128] = {
-			{"HCI_LINK_SCO     0x00 - Voice"},
-			{"HCI_LINK_ACL     0x01 - Data"},
-			{"HCI_LINK_eSCO    0x02 - eSCO"},
+		{ "HCI_LINK_SCO     0x00 - Voice" },
+		{ "HCI_LINK_ACL     0x01 - Data" },
+		{ "HCI_LINK_eSCO    0x02 - eSCO" },
 	};
 
 	DEBUG_LOG(IOS_WIIMOTE, "Event: SendEventConnectionComplete");
@@ -559,9 +559,9 @@ bool BluetoothEmu::SendEventRequestConnection(WiimoteDevice& _rWiiMote)
 	AddEventToQueue(Event);
 
 	static char LinkType[][128] = {
-			{"HCI_LINK_SCO     0x00 - Voice"},
-			{"HCI_LINK_ACL     0x01 - Data"},
-			{"HCI_LINK_eSCO    0x02 - eSCO"},
+		{ "HCI_LINK_SCO     0x00 - Voice" },
+		{ "HCI_LINK_ACL     0x01 - Data" },
+		{ "HCI_LINK_eSCO    0x02 - eSCO" },
 	};
 
 	DEBUG_LOG(IOS_WIIMOTE, "Event: SendEventRequestConnection");
@@ -1222,7 +1222,7 @@ void BluetoothEmu::CommandAcceptCon(const u8* input)
 	const hci_accept_con_cp* accept_connection = reinterpret_cast<const hci_accept_con_cp*>(input);
 
 	static char roles[][128] = {
-			{"Master (0x00)"}, {"Slave (0x01)"},
+		{ "Master (0x00)" },{ "Slave (0x01)" },
 	};
 
 	INFO_LOG(IOS_WIIMOTE, "Command: HCI_CMD_ACCEPT_CON");
@@ -1525,10 +1525,10 @@ void BluetoothEmu::CommandWriteScanEnable(const u8* input)
 	reply.status = 0x00;
 
 	static char scanning[][128] = {
-			{"HCI_NO_SCAN_ENABLE"},
-			{"HCI_INQUIRY_SCAN_ENABLE"},
-			{"HCI_PAGE_SCAN_ENABLE"},
-			{"HCI_INQUIRY_AND_PAGE_SCAN_ENABLE"},
+		{ "HCI_NO_SCAN_ENABLE" },
+		{ "HCI_INQUIRY_SCAN_ENABLE" },
+		{ "HCI_PAGE_SCAN_ENABLE" },
+		{ "HCI_INQUIRY_AND_PAGE_SCAN_ENABLE" },
 	};
 
 	DEBUG_LOG(IOS_WIIMOTE, "Command: HCI_CMD_WRITE_SCAN_ENABLE: (0x%02x)",
@@ -1613,9 +1613,9 @@ void BluetoothEmu::CommandWriteInquiryMode(const u8* input)
 	reply.status = 0x00;
 
 	static char inquiry_mode_tag[][128] = {
-			{"Standard Inquiry Result event format (default)"},
-			{"Inquiry Result format with RSSI"},
-			{"Inquiry Result with RSSI format or Extended Inquiry Result format"} };
+		{ "Standard Inquiry Result event format (default)" },
+		{ "Inquiry Result format with RSSI" },
+		{ "Inquiry Result with RSSI format or Extended Inquiry Result format" } };
 	INFO_LOG(IOS_WIIMOTE, "Command: HCI_CMD_WRITE_INQUIRY_MODE:");
 	DEBUG_LOG(IOS_WIIMOTE, "  mode: %s", inquiry_mode_tag[inquiry_mode->mode]);
 
@@ -1630,8 +1630,8 @@ void BluetoothEmu::CommandWritePageScanType(const u8* input)
 	hci_write_page_scan_type_rp reply;
 	reply.status = 0x00;
 
-	static char page_scan_type[][128] = { {"Mandatory: Standard Scan (default)"},
-																			 {"Optional: Interlaced Scan"} };
+	static char page_scan_type[][128] = { { "Mandatory: Standard Scan (default)" },
+	{ "Optional: Interlaced Scan" } };
 
 	INFO_LOG(IOS_WIIMOTE, "Command: HCI_CMD_WRITE_PAGE_SCAN_TYPE:");
 	DEBUG_LOG(IOS_WIIMOTE, "  type: %s", page_scan_type[write_page_scan_type->type]);
