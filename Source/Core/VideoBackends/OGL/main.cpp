@@ -160,7 +160,7 @@ void VideoBackend::Video_Prepare()
 	ProgramShaderCache::Init();
 	g_texture_cache = std::make_unique<TextureCache>();
 	g_sampler_cache = std::make_unique<SamplerCache>();
-	static_cast<Renderer*>(g_renderer.get())->Init();
+	g_renderer->Init();
 	TextureConverter::Init();
 	BBox::Init();
 }

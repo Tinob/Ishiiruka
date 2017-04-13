@@ -58,9 +58,6 @@ Renderer::Renderer(std::unique_ptr<SwapChain> swap_chain)
 	FramebufferManagerBase::SetLastXfbHeight(MAX_XFB_HEIGHT);
 	
 	m_last_efb_scale = g_ActiveConfig.iEFBScale;
-	UpdateDrawRectangle();
-	CalculateTargetSize();
-	PixelShaderManager::SetEfbScaleChanged();
 }
 
 Renderer::~Renderer()
@@ -84,6 +81,10 @@ Renderer* Renderer::GetInstance()
 
 bool Renderer::Initialize()
 {
+	UpdateDrawRectangle();
+	CalculateTargetSize();
+	PixelShaderManager::SetEfbScaleChanged();
+
 	BindEFBToStateTracker();
 
 	if (!CreateSemaphores())

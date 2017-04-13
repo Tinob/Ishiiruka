@@ -18,6 +18,7 @@ class Renderer final : public ::Renderer
 public:
 	Renderer(void *&window_handle);
 	~Renderer();
+	void Init() override;
 
 	void SetColorMask() override;
 	void SetBlendMode(bool force_Update) override;

@@ -196,23 +196,11 @@ Renderer::Renderer(void*& window_handle)
 	m_backbuffer_width = D3D::GetBackBufferWidth();
 	m_backbuffer_height = D3D::GetBackBufferHeight();
 
-	FramebufferManagerBase::SetLastXfbWidth(MAX_XFB_WIDTH);
-	FramebufferManagerBase::SetLastXfbHeight(MAX_XFB_HEIGHT);
-
-	UpdateDrawRectangle();
-
 	m_last_multisamples = g_ActiveConfig.iMultisamples;
 	m_last_efb_scale = g_ActiveConfig.iEFBScale;
 	m_last_stereo_mode = g_ActiveConfig.iStereoMode;
 	m_last_xfb_mode = g_ActiveConfig.bUseRealXFB;
-	CalculateTargetSize();
-	PixelShaderManager::SetEfbScaleChanged();
-
-	SetupDeviceObjects();
-
-	m_post_processor = std::make_unique<D3DPostProcessor>();
-	if (!m_post_processor->Initialize())
-		PanicAlert("D3D: Failed to initialize post processor.");
+	
 
 	// Setup GX pipeline state
 	gx_state.blend.blend_enable = false;
@@ -234,6 +222,28 @@ Renderer::Renderer(void*& window_handle)
 
 	gx_state.raster.cull_mode = D3D12_CULL_MODE_NONE;
 
+	// Already transitioned to appropriate states a few lines up for the clears.
+	m_target_dirty = true;
+
+	D3D::BeginFrame();
+}
+
+void Renderer::Init()
+{
+	FramebufferManagerBase::SetLastXfbWidth(MAX_XFB_WIDTH);
+	FramebufferManagerBase::SetLastXfbHeight(MAX_XFB_HEIGHT);
+
+	UpdateDrawRectangle();
+
+	CalculateTargetSize();
+	PixelShaderManager::SetEfbScaleChanged();
+
+	SetupDeviceObjects();
+
+	m_post_processor = std::make_unique<D3DPostProcessor>();
+	if (!m_post_processor->Initialize())
+		PanicAlert("D3D: Failed to initialize post processor.");
+
 	// Clear EFB textures
 	float clear_color[4] = { 0.f, 0.f, 0.f, 1.f };
 	FramebufferManager::GetEFBColorTexture()->TransitionToResourceState(D3D::current_command_list, D3D12_RESOURCE_STATE_RENDER_TARGET);
@@ -243,11 +253,6 @@ Renderer::Renderer(void*& window_handle)
 
 	m_vp = { 0.f, 0.f, static_cast<float>(m_target_width), static_cast<float>(m_target_height), D3D12_MIN_DEPTH, D3D12_MAX_DEPTH };
 	D3D::current_command_list->RSSetViewports(1, &m_vp);
-
-	// Already transitioned to appropriate states a few lines up for the clears.
-	m_target_dirty = true;
-
-	D3D::BeginFrame();
 }
 
 Renderer::~Renderer()

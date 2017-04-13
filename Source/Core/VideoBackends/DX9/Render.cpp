@@ -110,12 +110,28 @@ Renderer::Renderer(void *&window_handle)
 
 	D3D::Create(g_ActiveConfig.iAdapter, (HWND)window_handle,
 		fullScreenRes, backbuffer_mm_mode, false);
-
-	m_IS_AMD = D3D::IsATIDevice();
-
+	
 	// Decide framebuffer size
 	m_backbuffer_width = D3D::GetBackBufferWidth();
 	m_backbuffer_height = D3D::GetBackBufferHeight();
+
+	m_LastAA = g_ActiveConfig.iMultisamples - 1;
+	int SupersampleCoeficient = (m_LastAA % 3) + 1;
+
+	m_last_efb_scale = g_ActiveConfig.iEFBScale;
+	m_vsync = g_ActiveConfig.IsVSync();
+	m_bColorMaskChanged = true;
+	m_bBlendModeChanged = true;
+	m_bScissorRectChanged = true;
+	m_bViewPortChanged = true;
+	m_bGenerationModeChanged = true;
+	m_bDepthModeChanged = true;
+	m_bLogicOpModeChanged = true;
+}
+
+void Renderer::Init()
+{
+	m_IS_AMD = D3D::IsATIDevice();
 
 	FramebufferManagerBase::SetLastXfbWidth(MAX_XFB_WIDTH);
 	FramebufferManagerBase::SetLastXfbHeight(MAX_XFB_HEIGHT);

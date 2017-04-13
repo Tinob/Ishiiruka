@@ -727,47 +727,9 @@ Renderer::Renderer()
 	if (!DriverDetails::HasBug(DriverDetails::BUG_BROKEN_VSYNC))
 		GLInterface->SwapInterval(s_vsync);
 
-	// TODO: Move these somewhere else?
-	FramebufferManagerBase::SetLastXfbWidth(MAX_XFB_WIDTH);
-	FramebufferManagerBase::SetLastXfbHeight(MAX_XFB_HEIGHT);
-
-	UpdateDrawRectangle();
-
-	m_last_efb_scale = g_ActiveConfig.iEFBScale;
-	CalculateTargetSize();
-
-	PixelShaderManager::SetEfbScaleChanged();
-
 	// Because of the fixed framebuffer size we need to disable the resolution
 	// options while running
-	g_Config.bRunning = true;
-
-	glStencilFunc(GL_ALWAYS, 0, 0);
-	glBlendFunc(GL_ONE, GL_ONE);
-
-	glViewport(0, 0, GetTargetWidth(), GetTargetHeight());  // Reset The Current Viewport
-	if (g_ActiveConfig.backend_info.bSupportsClipControl)
-		glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
-
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	glClearDepthf(1.0f);
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LEQUAL);
-	if (g_ActiveConfig.backend_info.bSupportsDepthClamp)
-	{
-		glEnable(GL_CLIP_DISTANCE0);
-		glEnable(GL_CLIP_DISTANCE1);
-		glEnable(GL_DEPTH_CLAMP);
-	}
-
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);  // 4-byte pixel alignment
-
-	glDisable(GL_STENCIL_TEST);
-	glEnable(GL_SCISSOR_TEST);
-
-	glScissor(0, 0, GetTargetWidth(), GetTargetHeight());
-	glBlendColor(0, 0, 0, 0.5f);
-	glClearDepthf(1.0f);
+	g_Config.bRunning = true;	
 	UpdateActiveConfig();
 	ClearEFBCache();
 	m_bColorMaskChanged = true;
@@ -803,6 +765,17 @@ void Renderer::Shutdown()
 
 void Renderer::Init()
 {
+	// TODO: Move these somewhere else?
+	FramebufferManagerBase::SetLastXfbWidth(MAX_XFB_WIDTH);
+	FramebufferManagerBase::SetLastXfbHeight(MAX_XFB_HEIGHT);
+
+	UpdateDrawRectangle();
+
+	m_last_efb_scale = g_ActiveConfig.iEFBScale;
+	CalculateTargetSize();
+
+	PixelShaderManager::SetEfbScaleChanged();
+
 	// Initialize the FramebufferManager
 	g_framebuffer_manager =
 		std::make_unique<FramebufferManager>(m_target_width, m_target_height, s_MSAASamples);
@@ -814,6 +787,33 @@ void Renderer::Init()
 	m_post_processor = std::make_unique<OGLPostProcessor>();
 	if (!m_post_processor->Initialize())
 		PanicAlert("OGL: Failed to initialize post processor.");
+
+	glStencilFunc(GL_ALWAYS, 0, 0);
+	glBlendFunc(GL_ONE, GL_ONE);
+
+	glViewport(0, 0, GetTargetWidth(), GetTargetHeight());  // Reset The Current Viewport
+	if (g_ActiveConfig.backend_info.bSupportsClipControl)
+		glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
+
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClearDepthf(1.0f);
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
+	if (g_ActiveConfig.backend_info.bSupportsDepthClamp)
+	{
+		glEnable(GL_CLIP_DISTANCE0);
+		glEnable(GL_CLIP_DISTANCE1);
+		glEnable(GL_DEPTH_CLAMP);
+	}
+
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);  // 4-byte pixel alignment
+
+	glDisable(GL_STENCIL_TEST);
+	glEnable(GL_SCISSOR_TEST);
+
+	glScissor(0, 0, GetTargetWidth(), GetTargetHeight());
+	glBlendColor(0, 0, 0, 0.5f);
+	glClearDepthf(1.0f);
 }
 
 void Renderer::RenderText(const std::string& text, int left, int top, u32 color)

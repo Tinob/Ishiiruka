@@ -14,7 +14,7 @@ class Renderer : public ::Renderer
 public:
 	Renderer(void *&window_handle);
 	~Renderer();
-
+	void Init() override;
 	void SetColorMask();
 	void SetBlendMode(bool forceUpdate);
 	void SetScissorRect(const TargetRectangle& rc);

@@ -71,8 +71,8 @@ public:
 	Renderer();
 	~Renderer();
 
-	void Init();
-	void Shutdown();
+	void Init() override;
+	void Shutdown() override;
 
 	void SetColorMask() override;
 	void SetBlendMode(bool forceUpdate) override;

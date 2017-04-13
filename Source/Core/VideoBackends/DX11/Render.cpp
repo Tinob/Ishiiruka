@@ -255,22 +255,11 @@ Renderer::Renderer(void *&window_handle)
 	m_backbuffer_width = D3D::GetBackBufferWidth();
 	m_backbuffer_height = D3D::GetBackBufferHeight();
 
-	FramebufferManagerBase::SetLastXfbWidth(MAX_XFB_WIDTH);
-	FramebufferManagerBase::SetLastXfbHeight(MAX_XFB_HEIGHT);
-
-	UpdateDrawRectangle();
-
 	m_last_multisamples = g_ActiveConfig.iMultisamples;
 	m_last_efb_scale = g_ActiveConfig.iEFBScale;
 	m_last_stereo_mode = g_ActiveConfig.iStereoMode;
 	m_last_xfb_mode = g_ActiveConfig.bUseRealXFB;
-	CalculateTargetSize();
-	PixelShaderManager::SetEfbScaleChanged();
-	SetupDeviceObjects();
-
-	m_post_processor = std::make_unique<D3DPostProcessor>();
-	if (!m_post_processor->Initialize())
-		PanicAlert("D3D: Failed to initialize post processor.");
+	
 
 	// Setup GX pipeline state
 	gx_state.blend.blend_enable = false;
@@ -292,6 +281,24 @@ Renderer::Renderer(void *&window_handle)
 
 	gx_state.raster.cull_mode = D3D11_CULL_NONE;
 
+	m_3d_vision_texture = nullptr;
+	m_frame_dump_render_texture = nullptr;
+	m_frame_dump_staging_texture.reset();
+}
+
+void Renderer::Init()
+{
+	UpdateDrawRectangle();
+	FramebufferManagerBase::SetLastXfbWidth(MAX_XFB_WIDTH);
+	FramebufferManagerBase::SetLastXfbHeight(MAX_XFB_HEIGHT);
+	CalculateTargetSize();
+	PixelShaderManager::SetEfbScaleChanged();
+	SetupDeviceObjects();
+
+	m_post_processor = std::make_unique<D3DPostProcessor>();
+	if (!m_post_processor->Initialize())
+		PanicAlert("D3D: Failed to initialize post processor.");
+	
 	// Clear EFB textures
 	float ClearColor[4] = { 0.f, 0.f, 0.f, 1.f };
 	D3D::context->ClearRenderTargetView(FramebufferManager::GetEFBColorTexture()->GetRTV(), ClearColor);
@@ -301,9 +308,6 @@ Renderer::Renderer(void *&window_handle)
 	D3D::context->RSSetViewports(1, &vp);
 	D3D::context->OMSetRenderTargets(1, &FramebufferManager::GetEFBColorTexture()->GetRTV(), FramebufferManager::GetEFBDepthTexture()->GetDSV());
 	D3D::BeginFrame();
-	m_3d_vision_texture = nullptr;
-	m_frame_dump_render_texture = nullptr;
-	m_frame_dump_staging_texture.reset();
 }
 
 Renderer::~Renderer()

@@ -146,6 +146,7 @@ void VideoBackend::Video_Prepare()
 	g_vertex_manager = std::make_unique<VertexManager>();
 	g_perf_query = std::make_unique<PerfQuery>();
 	g_renderer = std::make_unique<Renderer>(m_window_handle);
+	g_renderer->Init();
 	UpdateActiveConfig();
 }
 
