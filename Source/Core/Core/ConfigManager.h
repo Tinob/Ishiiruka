@@ -111,9 +111,10 @@ struct SConfig : NonCopyable
 	bool bCopyWiiSaveNetplay = true;
 	bool bAllowAllNetplayVersions = false;
 
-	bool bDPL2Decoder = false;
-	bool bTimeStretching = false;
+	bool bDPL2Decoder = false;	
 	int iLatency = 14;
+	bool m_audio_stretch = false;
+	int m_audio_stretch_max_latency = 80;
 
 	bool bRunCompareServer = false;
 	bool bRunCompareClient = false;

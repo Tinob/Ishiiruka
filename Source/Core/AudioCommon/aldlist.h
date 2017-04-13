@@ -10,18 +10,18 @@
 #include "Common/CommonTypes.h"
 
 #ifdef _WIN32
-#pragma warning(disable: 4786)  //disable warning "identifier was truncated to
+#pragma warning(disable : 4786)  // disable warning "identifier was truncated to
 //'255' characters in the browser information"
 #endif
 
 typedef struct
 {
-	std::string               strDeviceName;
-	s32                       iMajorVersion;
-	s32                       iMinorVersion;
-	u32                       uiSourceCount;
+	std::string strDeviceName;
+	s32 iMajorVersion;
+	s32 iMinorVersion;
+	u32 uiSourceCount;
 	std::vector<std::string>* pvstrExtensions;
-	bool                      bSelected;
+	bool bSelected;
 } ALDEVICEINFO, *LPALDEVICEINFO;
 
 class ALDeviceList

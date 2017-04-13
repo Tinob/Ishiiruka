@@ -35,11 +35,11 @@ static float adapt_l_gain, adapt_r_gain, adapt_lpr_gain, adapt_lmr_gain;
 static std::vector<float> lf, rf, lr, rr, cf, cr;
 static float LFE_buf[256];
 static unsigned int lfe_pos;
-static float *filter_coefs_lfe;
+static float* filter_coefs_lfe;
 static unsigned int len125;
 
-template<class T, class _ftype_t>
-static _ftype_t DotProduct(int count, const T *buf, const _ftype_t *coefficients)
+template <class T, class _ftype_t>
+static _ftype_t DotProduct(int count, const T* buf, const _ftype_t* coefficients)
 {
 	int i;
 	float sum0 = 0.0f, sum1 = 0.0f, sum2 = 0.0f, sum3 = 0.0f;
@@ -60,15 +60,16 @@ static _ftype_t DotProduct(int count, const T *buf, const _ftype_t *coefficients
 	return sum0 + sum1 + sum2 + sum3;
 }
 
-template<class T>
-static T FIRFilter(const T *buf, int pos, int len, int count, const float *coefficients)
+template <class T>
+static T FIRFilter(const T* buf, int pos, int len, int count, const float* coefficients)
 {
 	int count1, count2;
 
 	if (pos >= count)
 	{
 		pos -= count;
-		count1 = count; count2 = 0;
+		count1 = count;
+		count2 = 0;
 	}
 	else
 	{
@@ -78,9 +79,10 @@ static T FIRFilter(const T *buf, int pos, int len, int count, const float *coeff
 	}
 
 	// high part of window
-	const T *ptr = &buf[pos];
+	const T* ptr = &buf[pos];
 
-	float r1 = DotProduct(count1, ptr, coefficients); coefficients += count1;
+	float r1 = DotProduct(count1, ptr, coefficients);
+	coefficients += count1;
 	float r2 = DotProduct(count2, buf, coefficients);
 	return T(r1 + r2);
 }
@@ -96,11 +98,11 @@ static T FIRFilter(const T *buf, int pos, int len, int count, const float *coeff
 */
 static void Hamming(int n, float* w)
 {
-	float k = float(2 * M_PI / ((float)(n - 1))); // 2*pi/(N-1)
+	float k = float(2 * M_PI / ((float)(n - 1)));  // 2*pi/(N-1)
 
 	// Calculate window coefficients
 	for (int i = 0; i < n; i++)
-		*w++ = float(0.54 - 0.46*cos(k*(float)i));
+		*w++ = float(0.54 - 0.46 * cos(k * (float)i));
 }
 
 /******************************************************************************
@@ -120,16 +122,16 @@ opt   beta constant used only when designing using kaiser windows
 
 returns 0 if OK, -1 if fail
 */
-static float* DesignFIR(unsigned int *n, float* fc, float opt)
+static float* DesignFIR(unsigned int* n, float* fc, float opt)
 {
-	unsigned int  o = *n & 1;                // Indicator for odd filter length
-	unsigned int  end = ((*n + 1) >> 1) - o; // Loop end
+	unsigned int o = *n & 1;                 // Indicator for odd filter length
+	unsigned int end = ((*n + 1) >> 1) - o;  // Loop end
 
-	float k1 = 2 * float(M_PI);              // 2*pi*fc1
-	float k2 = 0.5f * (float)(1 - o);        // Constant used if the filter has even length
-	float g = 0.0f;                          // Gain
-	float t1;                                // Temporary variables
-	float fc1;                               // Cutoff frequencies
+	float k1 = 2 * float(M_PI);        // 2*pi*fc1
+	float k2 = 0.5f * (float)(1 - o);  // Constant used if the filter has even length
+	float g = 0.0f;                    // Gain
+	float t1;                          // Temporary variables
+	float fc1;                         // Cutoff frequencies
 
 	// Sanity check
 	if (*n == 0)
@@ -137,7 +139,7 @@ static float* DesignFIR(unsigned int *n, float* fc, float opt)
 
 	fc[0] = MathUtil::Clamp(fc[0], 0.001f, 1.0f);
 
-	float *w = (float*)calloc(sizeof(float), *n);
+	float* w = (float*)calloc(sizeof(float), *n);
 
 	// Get window coefficients
 	Hamming(*n, w);
@@ -163,10 +165,9 @@ static float* DesignFIR(unsigned int *n, float* fc, float opt)
 	for (u32 i = 0; i < end; i++)
 	{
 		t1 = (float)(i + 1) - k2;
-		w[end - i - 1] = w[*n - end + i] = float(w[end - i - 1] * sin(k1 * t1) / (M_PI * t1)); // Sinc
-		g += 2 * w[end - i - 1]; // Total gain in filter
+		w[end - i - 1] = w[*n - end + i] = float(w[end - i - 1] * sin(k1 * t1) / (M_PI * t1));  // Sinc
+		g += 2 * w[end - i - 1];  // Total gain in filter
 	}
-
 
 	// Normalize gain
 	g = 1 / g;
@@ -208,7 +209,7 @@ static float* CalculateCoefficients125HzLowpass(int rate)
 {
 	len125 = 256;
 	float f = 125.0f / (rate / 2);
-	float *coeffs = DesignFIR(&len125, &f, 0);
+	float* coeffs = DesignFIR(&len125, &f, 0);
 	static const float M3_01DB = 0.7071067812f;
 	for (unsigned int i = 0; i < len125; i++)
 	{
@@ -219,26 +220,24 @@ static float* CalculateCoefficients125HzLowpass(int rate)
 
 static float PassiveLock(float x)
 {
-	static const float MATAGCLOCK = 0.2f;  /* AGC range (around 1) where the matrix behaves passively */
+	static const float MATAGCLOCK =
+		0.2f; /* AGC range (around 1) where the matrix behaves passively */
 	const float x1 = x - 1;
 	const float ax1s = fabs(x - 1) * (1.0f / MATAGCLOCK);
 	return x1 - x1 / (1 + ax1s * ax1s) + 1;
 }
 
-static void MatrixDecode(const float *in, const int k, const int il,
-	const int ir, bool decode_rear,
-	const int _dlbuflen,
-	float _l_fwr, float _r_fwr,
-	float _lpr_fwr, float _lmr_fwr,
-	float *_adapt_l_gain, float *_adapt_r_gain,
-	float *_adapt_lpr_gain, float *_adapt_lmr_gain,
-	float *_lf, float *_rf, float *_lr,
-	float *_rr, float *_cf)
+static void MatrixDecode(const float* in, const int k, const int il, const int ir, bool decode_rear,
+	const int _dlbuflen, float _l_fwr, float _r_fwr, float _lpr_fwr,
+	float _lmr_fwr, float* _adapt_l_gain, float* _adapt_r_gain,
+	float* _adapt_lpr_gain, float* _adapt_lmr_gain, float* _lf, float* _rf,
+	float* _lr, float* _rr, float* _cf)
 {
 	static const float M9_03DB = 0.3535533906f;
-	static const float MATAGCTRIG = 8.0f;   /* (Fuzzy) AGC trigger */
-	static const float MATAGCDECAY = 1.0f;  /* AGC baseline decay rate (1/samp.) */
-	static const float MATCOMPGAIN = 0.37f; /* Cross talk compensation gain,  0.50 - 0.55 is full cancellation. */
+	static const float MATAGCTRIG = 8.0f;  /* (Fuzzy) AGC trigger */
+	static const float MATAGCDECAY = 1.0f; /* AGC baseline decay rate (1/samp.) */
+	static const float MATCOMPGAIN =
+		0.37f; /* Cross talk compensation gain,  0.50 - 0.55 is full cancellation. */
 
 	const int kr = (k + olddelay) % _dlbuflen;
 	float l_gain = (_l_fwr + _r_fwr) / (1 + _l_fwr + _l_fwr);
@@ -310,12 +309,12 @@ static void MatrixDecode(const float *in, const int k, const int il,
 	_cf[k] += c_agc_cfk + c_agc_cfk;
 }
 
-void DPL2Decode(float *samples, int numsamples, float *out)
+void DPL2Decode(float* samples, int numsamples, float* out)
 {
-	static const unsigned int FWRDURATION = 240; // FWR average duration (samples)
+	static const unsigned int FWRDURATION = 240;  // FWR average duration (samples)
 	static const int cfg_delay = 0;
 	static const unsigned int fmt_freq = 48000;
-	static const unsigned int fmt_nchannels = 2; // input channels
+	static const unsigned int fmt_nchannels = 2;  // input channels
 
 	int cur = 0;
 
@@ -324,7 +323,7 @@ void DPL2Decode(float *samples, int numsamples, float *out)
 		Done();
 		olddelay = cfg_delay;
 		oldfreq = fmt_freq;
-		dlbuflen = std::max(FWRDURATION, (fmt_freq * cfg_delay / 1000)); //+(len7000-1);
+		dlbuflen = std::max(FWRDURATION, (fmt_freq * cfg_delay / 1000));  //+(len7000-1);
 		cyc_pos = dlbuflen - 1;
 		fwrbuf_l.resize(dlbuflen);
 		fwrbuf_r.resize(dlbuflen);
@@ -339,8 +338,8 @@ void DPL2Decode(float *samples, int numsamples, float *out)
 		memset(LFE_buf, 0, sizeof(LFE_buf));
 	}
 
-	float *in = samples; // Input audio data
-	float *end = in + numsamples * fmt_nchannels; // Loop end
+	float* in = samples;                           // Input audio data
+	float* end = in + numsamples * fmt_nchannels;  // Loop end
 
 	while (in < end)
 	{
@@ -357,12 +356,9 @@ void DPL2Decode(float *samples, int numsamples, float *out)
 		/* Matrix encoded 2 channel sources */
 		fwrbuf_l[k] = in[0];
 		fwrbuf_r[k] = in[1];
-		MatrixDecode(in, k, 0, 1, true, dlbuflen,
-			l_fwr, r_fwr,
-			lpr_fwr, lmr_fwr,
-			&adapt_l_gain, &adapt_r_gain,
-			&adapt_lpr_gain, &adapt_lmr_gain,
-			&lf[0], &rf[0], &lr[0], &rr[0], &cf[0]);
+		MatrixDecode(in, k, 0, 1, true, dlbuflen, l_fwr, r_fwr, lpr_fwr, lmr_fwr, &adapt_l_gain,
+			&adapt_r_gain, &adapt_lpr_gain, &adapt_lmr_gain, &lf[0], &rf[0], &lr[0], &rr[0],
+			&cf[0]);
 
 		out[cur + 0] = lf[k];
 		out[cur + 1] = rf[k];

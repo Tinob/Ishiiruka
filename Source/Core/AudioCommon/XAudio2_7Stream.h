@@ -1,4 +1,4 @@
-// Copyright 2008 Dolphin Emulator Project
+// Copyright 2013 Dolphin Emulator Project
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
@@ -27,22 +27,18 @@ struct IXAudio2MasteringVoice;
 
 #endif
 
-class XAudio2_7 final: public SoundStream
+class XAudio2_7 final : public SoundStream
 {
 #ifdef _WIN32
-protected:
-	virtual void InitializeSoundLoop() override;
-	virtual u32 SamplesNeeded() override;
-	virtual void WriteSamples(s16 *src, u32 numsamples) override;
-	virtual bool SupportSurroundOutput() override;
+
 private:
-	static void ReleaseIXAudio2(IXAudio2 *ptr);
+	static void ReleaseIXAudio2(IXAudio2* ptr);
 
 	class Releaser
 	{
 	public:
 		template <typename R>
-		void operator()(R *ptr)
+		void operator()(R* ptr)
 		{
 			ReleaseIXAudio2(ptr);
 		}
@@ -50,7 +46,9 @@ private:
 
 	std::unique_ptr<IXAudio2, Releaser> m_xaudio2;
 	std::unique_ptr<StreamingVoiceContext2_7> m_voice_context;
-	IXAudio2MasteringVoice *m_mastering_voice;
+	IXAudio2MasteringVoice* m_mastering_voice;
+
+	Common::Event m_sound_sync_event;
 	float m_volume;
 
 	const bool m_cleanup_com;
@@ -58,29 +56,17 @@ private:
 	static HMODULE m_xaudio2_dll;
 
 	static bool InitLibrary();
-	u32 samplesize;
 
 public:
 	XAudio2_7();
 	virtual ~XAudio2_7();
 
-	virtual bool Start();
-	virtual void Stop();
+	bool Start() override;
+	void Stop() override;
 
-	virtual void Update();
-	virtual void Clear(bool mute);
-	virtual void SetVolume(int volume);
+	void Clear(bool mute) override;
+	void SetVolume(int volume) override;
 
-	static bool isValid()
-	{
-		return InitLibrary();
-	}
-
-#else
-
-public:
-	XAudio2_7()
-	{}
-
+	static bool isValid() { return InitLibrary(); }
 #endif
 };

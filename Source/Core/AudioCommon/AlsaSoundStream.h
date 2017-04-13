@@ -16,7 +16,7 @@
 #include "AudioCommon/SoundStream.h"
 #include "Common/CommonTypes.h"
 
-class AlsaSound final: public SoundStream
+class AlsaSound final : public SoundStream
 {
 #if defined(HAVE_ALSA) && HAVE_ALSA
 public:
@@ -28,11 +28,7 @@ public:
 	void Update() override;
 	void Clear(bool) override;
 
-	static bool isValid()
-	{
-		return true;
-	}
-
+	static bool isValid() { return true; }
 private:
 	// maximum number of frames the buffer can hold
 	static constexpr size_t BUFFER_SIZE_MAX = 8192;
@@ -60,7 +56,7 @@ private:
 	std::condition_variable cv;
 	std::mutex cv_m;
 
-	snd_pcm_t *handle;
+	snd_pcm_t* handle;
 	unsigned int frames_to_deliver;
 #endif
 };

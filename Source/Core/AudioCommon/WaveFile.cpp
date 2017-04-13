@@ -2,16 +2,14 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "AudioCommon/WaveFile.h"
+
 #include <string>
 
-#include "AudioCommon/WaveFile.h"
-#include "Common/CommonFuncs.h"
 #include "Common/CommonTypes.h"
-#include "Common/Logging/Log.h"
 #include "Common/MsgHandler.h"
 #include "Common/StringUtil.h"
 #include "Common/Swap.h"
-
 #include "Core/ConfigManager.h"
 
 constexpr size_t WaveFileWriter::BUFFER_SIZE;
@@ -22,7 +20,10 @@ WaveFileWriter::WaveFileWriter()
 
 WaveFileWriter::~WaveFileWriter()
 {
-	Stop();
+	if (m_ready)
+	{
+		Stop();
+	}
 }
 
 bool WaveFileWriter::Start(const std::string& filename, unsigned int HLESampleRate)
@@ -88,7 +89,7 @@ bool WaveFileWriter::Start(const std::string& filename, unsigned int HLESampleRa
 	// We are now at offset 44
 	if (file.Tell() != 44)
 		PanicAlert("Wrong offset: %lld", (long long)file.Tell());
-
+	m_ready = true;
 	return true;
 }
 

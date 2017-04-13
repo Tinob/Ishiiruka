@@ -88,7 +88,9 @@ private:
 	int Volume;
 	int m_wii_language;
 	float m_EmulationSpeed;
-	bool bTimeStretching;
+	bool m_audio_stretch;
+	int m_audio_stretch_max_latency = 80;
+
 	float m_OCFactor;
 	bool m_OCEnable;
 	std::string strBackend;
@@ -127,7 +129,8 @@ void ConfigCache::SaveConfig(const SConfig& config)
 	m_wii_language = config.m_wii_language;
 	iVideoRate = config.iVideoRate;
 	m_OCFactor = config.m_OCFactor;
-	bTimeStretching = config.bTimeStretching;
+	m_audio_stretch = config.m_audio_stretch;
+	m_audio_stretch_max_latency = config.m_audio_stretch_max_latency;
 	m_OCEnable = config.m_OCEnable;
 
 	std::copy(std::begin(g_wiimote_sources), std::end(g_wiimote_sources), std::begin(iWiimoteSource));
@@ -167,7 +170,8 @@ void ConfigCache::RestoreConfig(SConfig* config)
 	config->iCPUCore = iCPUCore;
 	config->iVideoRate = iVideoRate;
 	config->bHalfAudioRate = bHalfAudioRate;
-	config->bTimeStretching = bTimeStretching;
+	config->m_audio_stretch = m_audio_stretch;
+	config->m_audio_stretch_max_latency = m_audio_stretch_max_latency;
 	// Only change these back if they were actually set by game ini, since they can be changed while a
 	// game is running.
 	if (bSetVolume)
@@ -266,7 +270,8 @@ bool BootCore(const std::string& _rFilename)
 		core_section->Get("LowDCBZHack", &StartUp.bLowDCBZHack, StartUp.bLowDCBZHack);
 		core_section->Get("Video_Rate", &StartUp.iVideoRate, StartUp.iVideoRate);
 		core_section->Get("HalfAudioRate", &StartUp.bHalfAudioRate, StartUp.bHalfAudioRate);
-		core_section->Get("TimeStretching", &StartUp.bTimeStretching, StartUp.bTimeStretching);
+		core_section->Get("AudioStretch", &StartUp.m_audio_stretch, StartUp.m_audio_stretch);
+		core_section->Get("AudioStretchMaxLatency", &StartUp.m_audio_stretch_max_latency, StartUp.m_audio_stretch_max_latency);
 		core_section->Get("SyncGPU", &StartUp.bSyncGPU, StartUp.bSyncGPU);
 		core_section->Get("FastDiscSpeed", &StartUp.bFastDiscSpeed, StartUp.bFastDiscSpeed);
 		core_section->Get("DSPHLE", &StartUp.bDSPHLE, StartUp.bDSPHLE);

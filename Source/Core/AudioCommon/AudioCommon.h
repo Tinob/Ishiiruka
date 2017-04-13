@@ -5,9 +5,10 @@
 #pragma once
 
 #include <memory>
+#include <string>
+#include <vector>
 
 #include "AudioCommon/SoundStream.h"
-#include "Common/CommonTypes.h"
 
 class CMixer;
 
@@ -15,7 +16,7 @@ extern std::unique_ptr<SoundStream> g_sound_stream;
 
 namespace AudioCommon
 {
-void InitSoundStream(void* hwnd);
+void InitSoundStream();
 void ShutdownSoundStream();
 std::string GetDefaultSoundBackend();
 std::vector<std::string> GetSoundBackends();

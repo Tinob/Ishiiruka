@@ -248,7 +248,8 @@ void SConfig::SaveCoreSettings(IniFile& ini)
 	core->Set("SelectedLanguage", SelectedLanguage);
 	core->Set("OverrideGCLang", bOverrideGCLanguage);
 	core->Set("DPL2Decoder", bDPL2Decoder);
-	core->Set("TimeStretching", bTimeStretching);
+	core->Set("AudioStretch", m_audio_stretch);
+	core->Set("AudioStretchMaxLatency", m_audio_stretch_max_latency);
 	core->Set("Latency", iLatency);
 	core->Set("MemcardAPath", m_strMemoryCardA);
 	core->Set("MemcardBPath", m_strMemoryCardB);
@@ -569,7 +570,8 @@ void SConfig::LoadCoreSettings(IniFile& ini)
 	core->Get("OverrideGCLang", &bOverrideGCLanguage, false);
 	core->Get("DPL2Decoder", &bDPL2Decoder, false);
 	core->Get("Latency", &iLatency, 2);
-	core->Get("TimeStretching", &bTimeStretching, false);
+	core->Get("AudioStretch", &m_audio_stretch, false);
+	core->Get("AudioStretchMaxLatency", &m_audio_stretch_max_latency, 80);
 	core->Get("MemcardAPath", &m_strMemoryCardA);
 	core->Get("MemcardBPath", &m_strMemoryCardB);
 	core->Get("AgpCartAPath", &m_strGbaCartA);
@@ -829,9 +831,10 @@ void SConfig::LoadDefaults()
 	SelectedLanguage = 0;
 	bOverrideGCLanguage = false;
 	bWii = false;
-	bDPL2Decoder = false;
-	bTimeStretching = false;
+	bDPL2Decoder = false;	
 	iLatency = 14;
+	m_audio_stretch = false;
+	m_audio_stretch_max_latency = 80;
 
 	iPosX = INT_MIN;
 	iPosY = INT_MIN;

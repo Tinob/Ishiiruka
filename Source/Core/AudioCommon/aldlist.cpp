@@ -6,23 +6,35 @@
  * Copyright (c) 2006, Creative Labs Inc.
  * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without modification, are permitted provided
+ * Redistribution and use in source and binary forms, with or without modification, are permitted
+ * provided
  * that the following conditions are met:
  *
- *     * Redistributions of source code must retain the above copyright notice, this list of conditions and
+ *     * Redistributions of source code must retain the above copyright notice, this list of
+ * conditions and
  * 	     the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright notice, this list of conditions
- * 	     and the following disclaimer in the documentation and/or other materials provided with the distribution.
- *     * Neither the name of Creative Labs Inc. nor the names of its contributors may be used to endorse or
+ *     * Redistributions in binary form must reproduce the above copyright notice, this list of
+ * conditions
+ * 	     and the following disclaimer in the documentation and/or other materials provided with the
+ * distribution.
+ *     * Neither the name of Creative Labs Inc. nor the names of its contributors may be used to
+ * endorse or
  * 	     promote products derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
- * PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
- * TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
+ * IMPLIED
+ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A
+ * PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR
+ * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED
+ * TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+ * THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
@@ -42,7 +54,6 @@
 #include <AL/alc.h>
 #endif
 
-
  /*
   * Init call
   */
@@ -50,34 +61,38 @@ ALDeviceList::ALDeviceList()
 {
 	ALDEVICEINFO ALDeviceInfo;
 
-	// DeviceInfo vector stores, for each enumerated device, it's device name, selection status, spec version #, and extension support
+	// DeviceInfo vector stores, for each enumerated device, it's device name, selection status, spec
+	// version #, and extension support
 	vDeviceInfo.clear();
 	vDeviceInfo.reserve(10);
 
 	defaultDeviceIndex = 0;
 
-	// grab function pointers for 1.0-API functions, and if successful proceed to enumerate all devices
-	//if (LoadOAL10Library(nullptr, &ALFunction) == TRUE) {
+	// grab function pointers for 1.0-API functions, and if successful proceed to enumerate all
+	// devices
+	// if (LoadOAL10Library(nullptr, &ALFunction) == TRUE) {
 	if (alcIsExtensionPresent(nullptr, "ALC_ENUMERATION_EXT"))
 	{
-		const char *devices = alcGetString(nullptr, ALC_DEVICE_SPECIFIER);
-		const char *defaultDeviceName = alcGetString(nullptr, ALC_DEFAULT_DEVICE_SPECIFIER);
-		// go through device list (each device terminated with a single nullptr, list terminated with double nullptr)
-		for (s32 index = 0; devices != nullptr && strlen(devices) > 0; index++, devices += strlen(devices) + 1)
+		const char* devices = alcGetString(nullptr, ALC_DEVICE_SPECIFIER);
+		const char* defaultDeviceName = alcGetString(nullptr, ALC_DEFAULT_DEVICE_SPECIFIER);
+		// go through device list (each device terminated with a single nullptr, list terminated with
+		// double nullptr)
+		for (s32 index = 0; devices != nullptr && strlen(devices) > 0;
+			index++, devices += strlen(devices) + 1)
 		{
 			if (strcmp(defaultDeviceName, devices) == 0)
 			{
 				defaultDeviceIndex = index;
 			}
-			ALCdevice *device = alcOpenDevice(devices);
+			ALCdevice* device = alcOpenDevice(devices);
 			if (device)
 			{
-				ALCcontext *context = alcCreateContext(device, nullptr);
+				ALCcontext* context = alcCreateContext(device, nullptr);
 				if (context)
 				{
 					alcMakeContextCurrent(context);
 					// if new actual device name isn't already in the list, then add it...
-					const char *actualDeviceName = alcGetString(device, ALC_DEVICE_SPECIFIER);
+					const char* actualDeviceName = alcGetString(device, ALC_DEVICE_SPECIFIER);
 					bool bNewName = true;
 					for (s32 i = 0; i < GetNumDevices(); i++)
 					{
@@ -167,18 +182,19 @@ s32 ALDeviceList::GetNumDevices()
 /*
  * Returns the device name at an index in the complete device list
  */
-char * ALDeviceList::GetDeviceName(s32 index)
+char* ALDeviceList::GetDeviceName(s32 index)
 {
 	if (index < GetNumDevices())
-		return (char *)vDeviceInfo[index].strDeviceName.c_str();
+		return (char*)vDeviceInfo[index].strDeviceName.c_str();
 	else
 		return nullptr;
 }
 
 /*
- * Returns the major and minor version numbers for a device at a specified index in the complete list
+ * Returns the major and minor version numbers for a device at a specified index in the complete
+ * list
  */
-void ALDeviceList::GetDeviceVersion(s32 index, s32 *major, s32 *minor)
+void ALDeviceList::GetDeviceVersion(s32 index, s32* major, s32* minor)
 {
 	if (index < GetNumDevices())
 	{
@@ -203,7 +219,7 @@ u32 ALDeviceList::GetMaxNumSources(s32 index)
 /*
  * Checks if the extension is supported on the given device
  */
-bool ALDeviceList::IsExtensionSupported(s32 index, char *szExtName)
+bool ALDeviceList::IsExtensionSupported(s32 index, char* szExtName)
 {
 	bool bReturn = false;
 
@@ -265,7 +281,7 @@ void ALDeviceList::FilterDevicesMaxVer(s32 major, s32 minor)
 /*
  * Deselects device which don't support the given extension name
  */
-void ALDeviceList::FilterDevicesExtension(char *szExtName)
+void ALDeviceList::FilterDevicesExtension(char* szExtName)
 {
 	bool bFound;
 

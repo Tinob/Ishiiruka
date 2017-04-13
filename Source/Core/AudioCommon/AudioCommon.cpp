@@ -5,7 +5,6 @@
 #include "AudioCommon/AudioCommon.h"
 #include "AudioCommon/AlsaSoundStream.h"
 #include "AudioCommon/CoreAudioSoundStream.h"
-#include "AudioCommon/DSoundStream.h"
 #include "AudioCommon/Mixer.h"
 #include "AudioCommon/NullSoundStream.h"
 #include "AudioCommon/OpenALStream.h"
@@ -16,9 +15,7 @@
 #include "Common/Common.h"
 #include "Common/FileUtil.h"
 #include "Common/Logging/Log.h"
-#include "Common/MsgHandler.h"
 #include "Core/ConfigManager.h"
-#include "Core/Movie.h"
 
 // This shouldn't be a global, at least not here.
 std::unique_ptr<SoundStream> g_sound_stream;
@@ -30,15 +27,13 @@ namespace AudioCommon
 static const int AUDIO_VOLUME_MIN = 0;
 static const int AUDIO_VOLUME_MAX = 100;
 
-void InitSoundStream(void* hWnd)
+void InitSoundStream()
 {
 	std::string backend = SConfig::GetInstance().sBackend;
 	if (backend == BACKEND_OPENAL && OpenALStream::isValid())
 		g_sound_stream = std::make_unique<OpenALStream>();
 	else if (backend == BACKEND_NULLSOUND)
 		g_sound_stream = std::make_unique<NullSound>();
-	else if (backend == BACKEND_DIRECTSOUND && DSound::isValid())
-		g_sound_stream = std::make_unique<DSound>(hWnd);
 	else if (backend == BACKEND_XAUDIO2)
 	{
 		if (XAudio2::isValid())
@@ -113,15 +108,9 @@ std::string GetDefaultSoundBackend()
 std::vector<std::string> GetSoundBackends()
 {
 	std::vector<std::string> backends;
-	backends.push_back(BACKEND_NULLSOUND);
 
-	if (DSound::isValid())
-		backends.push_back(BACKEND_DIRECTSOUND);
-	if (XAudio2_7::isValid()
-#ifndef HAVE_DXSDK
-		|| XAudio2::isValid()
-#endif
-		)
+	backends.push_back(BACKEND_NULLSOUND);
+	if (XAudio2_7::isValid() || XAudio2::isValid())
 		backends.push_back(BACKEND_XAUDIO2);
 	if (AlsaSound::isValid())
 		backends.push_back(BACKEND_ALSA);
@@ -144,14 +133,12 @@ bool SupportsDPL2Decoder(const std::string& backend)
 #endif
 	if (backend == BACKEND_PULSEAUDIO)
 		return true;
-	if (backend == BACKEND_XAUDIO2)
-		return true;
 	return false;
 }
 
 bool SupportsLatencyControl(const std::string& backend)
 {
-	return true;
+	return backend == BACKEND_OPENAL;
 }
 
 bool SupportsVolumeChanges(const std::string& backend)
@@ -159,7 +146,7 @@ bool SupportsVolumeChanges(const std::string& backend)
 	// FIXME: this one should ask the backend whether it supports it.
 	//       but getting the backend from string etc. is probably
 	//       too much just to enable/disable a stupid slider...
-	return backend == BACKEND_COREAUDIO || backend == BACKEND_OPENAL || backend == BACKEND_XAUDIO2 || backend == BACKEND_DIRECTSOUND;
+	return backend == BACKEND_COREAUDIO || backend == BACKEND_OPENAL || backend == BACKEND_XAUDIO2;
 }
 
 void UpdateSoundStream()

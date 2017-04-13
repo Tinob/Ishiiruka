@@ -523,7 +523,7 @@ static void EmuThread()
 			Wiimote::LoadConfig();
 	}
 
-	AudioCommon::InitSoundStream(s_window_handle);
+	AudioCommon::InitSoundStream();
 
 	// The hardware is initialized.
 	s_hardware_initialized = true;
