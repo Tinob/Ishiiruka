@@ -204,7 +204,7 @@ bool VideoSoftware::Initialize(void *window_handle)
 	PixelEngine::Init();
 	Clipper::Init();
 	Rasterizer::Init();
-	SWRenderer::Init();
+	g_renderer->Init();
 	DebugUtil::Init();
 
 	// Do our OSD callbacks
@@ -230,11 +230,11 @@ void VideoSoftware::Video_Cleanup()
 	if (g_renderer)
 	{
 		Fifo::Shutdown();
-		SWRenderer::Shutdown();
+		g_renderer->Shutdown();
 		DebugUtil::Shutdown();
 		// The following calls are NOT Thread Safe
 		// And need to be called from the video thread
-		SWRenderer::Shutdown();
+		g_renderer->Shutdown();
 		VertexLoaderManager::Shutdown();
 		g_framebuffer_manager.reset();
 		g_texture_cache.reset();
@@ -261,7 +261,7 @@ void VideoSoftware::Video_Prepare()
 	VertexShaderManager::Init();
 	PixelShaderManager::Init(true);
 	g_texture_cache = std::make_unique<TextureCache>();
-	SWRenderer::Init();
+	g_renderer->Init();
 	VertexLoaderManager::Init();
 	g_framebuffer_manager = std::make_unique<FramebufferManager>();
 
