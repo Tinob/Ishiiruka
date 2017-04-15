@@ -430,6 +430,23 @@ std::wstring CPToUTF16(u32 code_page, const std::string& input)
 	return output;
 }
 
+std::string UTF16ToCP(u32 code_page, const std::wstring& input)
+{
+	auto const size =
+		WideCharToMultiByte(code_page, 0, input.data(), (int)input.size(), nullptr, 0, NULL, false);
+
+	std::string output;
+	output.resize(size);
+
+	if (size == 0 ||
+		size != WideCharToMultiByte(code_page, 0, input.data(), (int)input.size(), &output[0],
+		(int)output.size(), nullptr, false))
+	{
+		output.clear();
+	}
+	return output;
+}
+
 std::wstring UTF8ToUTF16(const std::string& input)
 {
 	return CPToUTF16(CP_UTF8, input);
@@ -440,6 +457,11 @@ std::string SHIFTJISToUTF8(const std::string& input)
 	return UTF16ToUTF8(CPToUTF16(932, input));
 }
 
+std::string UTF8ToSHIFTJIS(const std::string& input)
+{
+	return UTF16ToCP(932, UTF8ToUTF16(input));
+}
+
 std::string CP1252ToUTF8(const std::string& input)
 {
 	return UTF16ToUTF8(CPToUTF16(1252, input));
@@ -448,11 +470,11 @@ std::string CP1252ToUTF8(const std::string& input)
 #else
 
 template <typename T>
-std::string CodeToUTF8(const char* fromcode, const std::basic_string<T>& input)
+std::string CodeTo(const char* tocode, const char* fromcode, const std::basic_string<T>& input)
 {
 	std::string result;
 
-	iconv_t const conv_desc = iconv_open("UTF-8", fromcode);
+	iconv_t const conv_desc = iconv_open(tocode, fromcode);
 	if ((iconv_t)-1 == conv_desc)
 	{
 		ERROR_LOG(COMMON, "Iconv initialization failure [%s]: %s", fromcode, strerror(errno));
@@ -503,6 +525,12 @@ std::string CodeToUTF8(const char* fromcode, const std::basic_string<T>& input)
 	return result;
 }
 
+template <typename T>
+std::string CodeToUTF8(const char* fromcode, const std::basic_string<T>& input)
+{
+	return CodeTo("UTF-8", fromcode, input);
+}
+
 std::string CP1252ToUTF8(const std::string& input)
 {
 	// return CodeToUTF8("CP1252//TRANSLIT", input);
@@ -514,6 +542,11 @@ std::string SHIFTJISToUTF8(const std::string& input)
 {
 	// return CodeToUTF8("CP932", input);
 	return CodeToUTF8("SJIS", input);
+}
+
+std::string UTF8ToSHIFTJIS(const std::string& input)
+{
+	return CodeTo("SJIS", "UTF-8", input);
 }
 
 std::string UTF16ToUTF8(const std::wstring& input)

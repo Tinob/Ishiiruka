@@ -17,6 +17,7 @@
 #include "Common/CommonTypes.h"
 #include "Common/FileUtil.h"
 #include "Common/Logging/Log.h"
+#include "Common/StringUtil.h"
 #include "DiscIO/Blob.h"
 #include "DiscIO/Enums.h"
 #include "DiscIO/Volume.h"
@@ -25,6 +26,7 @@
 namespace DiscIO
 {
 static u32 ComputeNameSize(const File::FSTEntry& parent_entry);
+static void ConvertUTF8NamesToSHIFTJIS(File::FSTEntry& parent_entry);
 static std::string ASCIIToLowercase(std::string str);
 
 const size_t CVolumeDirectory::MAX_NAME_LENGTH;
@@ -350,6 +352,9 @@ void CVolumeDirectory::BuildFST()
 	m_fst_data.clear();
 
 	File::FSTEntry rootEntry = File::ScanDirectoryTree(m_root_directory, true);
+
+	ConvertUTF8NamesToSHIFTJIS(rootEntry);
+
 	u32 name_table_size = ComputeNameSize(rootEntry);
 
 	m_fst_name_offset = rootEntry.size * ENTRY_SIZE;  // offset of name table in FST
@@ -500,6 +505,17 @@ static u32 ComputeNameSize(const File::FSTEntry& parent_entry)
 		name_size += (u32)entry.virtualName.length() + 1;
 	}
 	return name_size;
+}
+
+static void ConvertUTF8NamesToSHIFTJIS(File::FSTEntry& parent_entry)
+{
+	for (File::FSTEntry& entry : parent_entry.children)
+	{
+		if (entry.isDirectory)
+			ConvertUTF8NamesToSHIFTJIS(entry);
+
+		entry.virtualName = UTF8ToSHIFTJIS(entry.virtualName);
+	}
 }
 
 static std::string ASCIIToLowercase(std::string str)

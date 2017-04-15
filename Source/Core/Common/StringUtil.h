@@ -126,6 +126,7 @@ std::string ReplaceAll(std::string result, const std::string& src, const std::st
 
 std::string CP1252ToUTF8(const std::string& str);
 std::string SHIFTJISToUTF8(const std::string& str);
+std::string UTF8ToSHIFTJIS(const std::string& str);
 std::string UTF16ToUTF8(const std::wstring& str);
 
 #ifdef _WIN32

@@ -28,10 +28,12 @@ void CommonAsmRoutines::GenFifoWrite(int size)
 	const void* start = GetCodePtr();
 
 	// Assume value in RSCRATCH
-	MOV(32, R(RSCRATCH2), M(&GPFifo::m_gatherPipeCount));
-	SwapAndStore(size, MDisp(RSCRATCH2, PtrOffset(GPFifo::m_gatherPipe)), RSCRATCH);
-	ADD(32, R(RSCRATCH2), Imm8(size >> 3));
-	MOV(32, M(&GPFifo::m_gatherPipeCount), R(RSCRATCH2));
+	MOV(64, R(RSCRATCH2), ImmPtr(&GPFifo::g_gather_pipe_ptr));
+	MOV(64, R(RSCRATCH2), MatR(RSCRATCH2));
+	SwapAndStore(size, MatR(RSCRATCH2), RSCRATCH);
+	MOV(64, R(RSCRATCH), ImmPtr(&GPFifo::g_gather_pipe_ptr));
+	ADD(64, R(RSCRATCH2), Imm8(size >> 3));
+	MOV(64, MatR(RSCRATCH), R(RSCRATCH2));
 	RET();
 
 	JitRegister::Register(start, GetCodePtr(), "JIT_FifoWrite_%i", size);
@@ -275,13 +277,22 @@ const u8* CommonAsmRoutines::GenQuantizedStoreRuntime(bool single, EQuantizeType
 
 void CommonAsmRoutines::GenQuantizedLoads()
 {
-	pairedLoadQuantized = reinterpret_cast<const u8**>(const_cast<u8*>(AlignCode16()));
-	ReserveCodeSpace(16 * sizeof(u8*));
+	// Aligned to 256 bytes as least significant byte needs to be zero (See: Jit64::psq_lXX).
+	pairedLoadQuantized = reinterpret_cast<const u8**>(const_cast<u8*>(AlignCodeTo(256)));
+	ReserveCodeSpace(8 * sizeof(u8*));
 
 	for (int type = 0; type < 8; type++)
 		pairedLoadQuantized[type] = GenQuantizedLoadRuntime(false, static_cast<EQuantizeType>(type));
+}
+
+void CommonAsmRoutines::GenQuantizedSingleLoads()
+{
+	// Aligned to 256 bytes as least significant byte needs to be zero (See: Jit64::psq_lXX).
+	singleLoadQuantized = reinterpret_cast<const u8**>(const_cast<u8*>(AlignCodeTo(256)));
+	ReserveCodeSpace(8 * sizeof(u8*));
+
 	for (int type = 0; type < 8; type++)
-		pairedLoadQuantized[type + 8] = GenQuantizedLoadRuntime(true, static_cast<EQuantizeType>(type));
+		singleLoadQuantized[type] = GenQuantizedLoadRuntime(true, static_cast<EQuantizeType>(type));
 }
 
 const u8* CommonAsmRoutines::GenQuantizedLoadRuntime(bool single, EQuantizeType type)
