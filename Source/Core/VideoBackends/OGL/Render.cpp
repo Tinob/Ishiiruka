@@ -1160,9 +1160,9 @@ void Renderer::_SetViewport()
 		m_viewport.Width = EFBToScaledXf(2.0f * xfmem.viewport.wd);
 		m_viewport.Height = EFBToScaledYf(-2.0f * xfmem.viewport.ht);
 
-		float range = MathUtil::Clamp<float>(xfmem.viewport.zRange, -16777215.0f, 16777215.0f);
-		m_viewport.NearZ = MathUtil::Clamp<float>(xfmem.viewport.farZ - range, 0.0f, 16777215.0f) / 16777216.0f;
-		m_viewport.FarZ = MathUtil::Clamp<float>(xfmem.viewport.farZ, 0.0f, 16777215.0f) / 16777216.0f;
+		float range = xfmem.viewport.zRange;
+		m_viewport.NearZ = (xfmem.viewport.farZ - range) / 16777216.0f;
+		m_viewport.FarZ = xfmem.viewport.farZ / 16777216.0f;
 
 		if (m_viewport.Width < 0)
 		{
@@ -1175,6 +1175,29 @@ void Renderer::_SetViewport()
 			m_viewport.Height *= -1;
 		}
 
+		if (!g_ActiveConfig.backend_info.bSupportsDepthClamp)
+		{
+			// There's no way to support oversized depth ranges in this situation. Let's just clamp the
+			// range to the maximum value supported by the console GPU and hope for the best.
+			m_viewport.NearZ = MathUtil::Clamp(m_viewport.NearZ, 0.0f, GX_MAX_DEPTH);
+			m_viewport.FarZ = MathUtil::Clamp(m_viewport.FarZ, 0.0f, GX_MAX_DEPTH);
+		}
+
+		if (UseVertexDepthRange())
+		{
+			// We need to ensure depth values are clamped the maximum value supported by the console GPU.
+			// Taking into account whether the depth range is inverted or not.
+			if (xfmem.viewport.zRange < 0.0f)
+			{
+				m_viewport.NearZ = GX_MAX_DEPTH;
+				m_viewport.FarZ = 0.0f;
+			}
+			else
+			{
+				m_viewport.NearZ = 0.0f;
+				m_viewport.FarZ = GX_MAX_DEPTH;
+			}
+		}
 		
 	}
 	if (m_bViewPortChanged)

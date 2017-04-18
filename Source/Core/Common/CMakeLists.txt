@@ -1,6 +1,7 @@
 set(SRCS Analytics.cpp
          CDUtils.cpp
          ColorUtil.cpp
+		 CommonFuncs.cpp
 		 Config/Config.cpp
 		 Config/Layer.cpp
 		 Config/Section.cpp
@@ -13,8 +14,7 @@ set(SRCS Analytics.cpp
          JitRegister.cpp
          MathUtil.cpp
          MemArena.cpp
-         MemoryUtil.cpp
-         Misc.cpp
+         MemoryUtil.cpp         
          MsgHandler.cpp
          NandPaths.cpp
          Network.cpp

@@ -820,10 +820,9 @@ void Renderer::_SetViewport()
 		}
 		else
 		{
-			float nearz = xfmem.viewport.farZ - MathUtil::Clamp<float>(xfmem.viewport.zRange, 0.0f, 16777215.0f);
-			// Some games set invalids values for z min and z max so fix them to the max an min alowed and let the shaders do this work
-			m_vp.MaxZ = 1.0f - (MathUtil::Clamp<float>(nearz, 0.0f, 16777215.0f) / 16777216.0f);
-			m_vp.MinZ = 1.0f - (MathUtil::Clamp<float>(xfmem.viewport.farZ, 0.0f, 16777215.0f) / 16777216.0f);
+			float nearz = xfmem.viewport.farZ - xfmem.viewport.zRange;
+			m_vp.MaxZ = 1.0f - (nearz / 16777216.0f);
+			m_vp.MinZ = 1.0f - (xfmem.viewport.farZ / 16777216.0f);
 		}
 	}
 	if (m_bViewPortChanged)

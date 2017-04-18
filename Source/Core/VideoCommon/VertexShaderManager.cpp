@@ -416,10 +416,7 @@ void VertexShaderManager::SetConstants()
 		const float pixel_size_y = 2.f / viewport_height;
 		float rangez = xfmem.viewport.zRange;
 		float farz = xfmem.viewport.farZ;
-		const bool vertex_depth = g_ActiveConfig.backend_info.bSupportsDepthClamp &&
-			((fabs(rangez) > 16777215.0f || fabs(farz) > 16777215.0f) ||
-			(rangez < 0.0f && !g_ActiveConfig.backend_info.bSupportsReversedDepthRange));
-
+		const bool vertex_depth = g_renderer->UseVertexDepthRange();
 		if (g_ActiveConfig.backend_info.APIType & API_D3D9)
 		{
 			if (rangez >= 0.0f)
@@ -437,8 +434,7 @@ void VertexShaderManager::SetConstants()
 		}
 		else if (g_ActiveConfig.backend_info.bSupportsReversedDepthRange)
 		{
-			rangez = fabs(rangez) / 16777215.0f;
-			if (xfmem.viewport.zRange < 0.0f)
+			if (rangez < 0.0f)
 			{
 				farz = farz / 16777215.0f;
 			}
@@ -446,6 +442,7 @@ void VertexShaderManager::SetConstants()
 			{
 				farz = 1.0f - (farz / 16777215.0f);
 			}
+			rangez = fabs(rangez) / 16777215.0f;
 		}
 		else
 		{

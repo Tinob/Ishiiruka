@@ -473,10 +473,9 @@ void Renderer::SetViewport()
 	float width = Renderer::EFBToScaledXf(2.0f * xfmem.viewport.wd);
 	float height = Renderer::EFBToScaledYf(-2.0f * xfmem.viewport.ht);
 
-	float range = MathUtil::Clamp<float>(xfmem.viewport.zRange, 0.0f, 16777215.0f);
-	float min_depth =
-		MathUtil::Clamp<float>(xfmem.viewport.farZ - range, 0.0f, 16777215.0f) / 16777216.0f;
-	float max_depth = MathUtil::Clamp<float>(xfmem.viewport.farZ, 0.0f, 16777215.0f) / 16777216.0f;
+	float range = xfmem.viewport.zRange;
+	float min_depth = (xfmem.viewport.farZ - range) / 16777216.0f;
+	float max_depth = xfmem.viewport.farZ / 16777216.0f;
 
 	if (width < 0.0f)
 	{
@@ -491,7 +490,7 @@ void Renderer::SetViewport()
 
 	// If an inverted depth range is used, which D3D doesn't support,
 	// we need to calculate the depth range in the vertex shader.
-	if (xfmem.viewport.zRange < 0.0f)
+	if (UseVertexDepthRange())
 	{
 		min_depth = 0.0f;
 		max_depth = GX_MAX_DEPTH;

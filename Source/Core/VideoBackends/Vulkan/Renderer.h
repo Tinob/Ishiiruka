@@ -29,7 +29,7 @@ class Renderer : public ::Renderer
 public:
 	Renderer(std::unique_ptr<SwapChain> swap_chain);
 	~Renderer();
-
+	void Init() override;
 	static Renderer* GetInstance();
 
 	SwapChain* GetSwapChain() const { return m_swap_chain.get(); }

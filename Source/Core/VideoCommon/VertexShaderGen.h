@@ -34,7 +34,7 @@
 // shader variables
 #define I_PROJECTION            "cproj"
 #define I_DEPTHPARAMS           "cDepth" // farZ, zRange, pixel center x, pixel center y
-#define I_VIEWPARAMS            "cViewport" // viewport width, viewport height, PixelsizeX, PixelsizeY
+#define I_VIEWPARAMS            "cViewport" // half viewport width, half viewport height, 2 x PixelsizeX, 2 x PixelsizeY
 #define I_MATERIALS             "cmtrl"
 #define I_LIGHTS                "clights"
 #define I_TEXMATRICES           "ctexmtx"
