@@ -732,15 +732,6 @@ Renderer::Renderer()
 	g_Config.bRunning = true;	
 	UpdateActiveConfig();
 	ClearEFBCache();
-	m_bColorMaskChanged = true;
-	m_bBlendModeChanged = true;
-	m_bBlendModeForce = true;
-	m_bScissorRectChanged = true;
-	m_bViewPortChanged = true;
-	m_bGenerationModeChanged = true;
-	m_bDepthModeChanged = true;
-	m_bLogicOpModeChanged = true;
-	m_bViewPortChangedRequested = true;
 }
 
 Renderer::~Renderer()
@@ -850,14 +841,14 @@ TargetRectangle Renderer::ConvertEFBRectangle(const EFBRectangle& rc)
 void Renderer::_SetScissorRect()
 {
 	m_bScissorRectChanged = false;
-	glScissor(m_ScissorRect.left, m_ScissorRect.bottom, m_ScissorRect.GetWidth(), m_ScissorRect.GetHeight());
+	TargetRectangle targetrc = ConvertEFBRectangle(m_ScissorRect);
+	glScissor(targetrc.left, targetrc.bottom, targetrc.GetWidth(), targetrc.GetHeight());
 }
 
-void Renderer::SetScissorRect(const TargetRectangle& trc)
+void Renderer::SetScissorRect(const EFBRectangle& trc)
 {
 	m_bScissorRectChanged = true;
 	m_ScissorRect = trc;
-	
 }
 
 void Renderer::_SetColorMask()

@@ -21,7 +21,7 @@ public:
 	void Init() override;
 	void SetColorMask() override;
 	void SetBlendMode(bool forceUpdate) override;
-	void SetScissorRect(const TargetRectangle& rc) override;
+	void SetScissorRect(const EFBRectangle& rc) override;
 	void SetGenerationMode() override;
 	void SetDepthMode() override;
 	void SetLogicOpMode() override;

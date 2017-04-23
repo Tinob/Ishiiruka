@@ -22,7 +22,7 @@ public:
 
 	void SetColorMask() override;
 	void SetBlendMode(bool force_Update) override;
-	void SetScissorRect(const TargetRectangle& rc) override;
+	void SetScissorRect(const EFBRectangle& rc) override;
 	void SetGenerationMode() override;
 	void SetDepthMode() override;
 	void SetLogicOpMode() override;
@@ -93,7 +93,7 @@ private:
 	int m_last_stereo_mode = false;
 	bool m_last_xfb_mode = false;
 	bool m_scissor_dirty = true;
-	RECT m_scissor_rect{};
+	EFBRectangle m_scissor_rect{};
 	bool m_viewport_dirty = true;
 	D3D12_VIEWPORT m_vp;
 	bool m_target_dirty = true;

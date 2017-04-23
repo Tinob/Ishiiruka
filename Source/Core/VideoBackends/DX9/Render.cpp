@@ -909,10 +909,10 @@ void Renderer::RestoreState()
 void Renderer::_SetScissorRect()
 {
 	m_bScissorRectChanged = false;
-	D3D::dev->SetScissorRect(m_ScissorRect.AsRECT());
+	D3D::dev->SetScissorRect(ConvertEFBRectangle(m_ScissorRect).AsRECT());
 }
 
-void Renderer::SetScissorRect(const TargetRectangle& rc)
+void Renderer::SetScissorRect(const EFBRectangle& rc)
 {
 	m_ScissorRect = rc;
 	m_bScissorRectChanged = true;

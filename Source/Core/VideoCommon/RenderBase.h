@@ -67,7 +67,7 @@ public:
 
 	virtual void SetColorMask()	{}
 	virtual void SetBlendMode(bool forceUpdate)	{}
-	virtual void SetScissorRect(const TargetRectangle& rc)	{}
+	virtual void SetScissorRect(const EFBRectangle& rc)	{}
 	virtual void SetGenerationMode() {}
 	virtual void SetDepthMode()	{}
 	virtual void SetLogicOpMode() {}

@@ -76,7 +76,7 @@ public:
 
 	void SetColorMask() override;
 	void SetBlendMode(bool forceUpdate) override;
-	void SetScissorRect(const TargetRectangle& rc) override;
+	void SetScissorRect(const EFBRectangle& rc) override;
 	void SetGenerationMode() override;
 	void SetDepthMode() override;
 	void SetLogicOpMode() override;
@@ -121,17 +121,17 @@ private:
 		float       NearZ;
 		float       FarZ;
 	};
-	bool m_bColorMaskChanged;
-	bool m_bBlendModeChanged;
-	bool m_bBlendModeForce;
-	bool m_bScissorRectChanged;
-	bool m_bViewPortChanged;
-	TargetRectangle m_ScissorRect;
-	ViewPort m_viewport;
-	bool m_bGenerationModeChanged;
-	bool m_bDepthModeChanged;
-	bool m_bLogicOpModeChanged;
-	bool m_bViewPortChangedRequested;
+	bool m_bColorMaskChanged = true;
+	bool m_bBlendModeChanged = true;
+	bool m_bBlendModeForce = true;
+	bool m_bScissorRectChanged = true;
+	bool m_bViewPortChanged = true;
+	EFBRectangle m_ScissorRect{};
+	ViewPort m_viewport{};
+	bool m_bGenerationModeChanged = true;
+	bool m_bDepthModeChanged = true;
+	bool m_bLogicOpModeChanged = true;
+	bool m_bViewPortChangedRequested = true;
 
 	void _SetColorMask();
 	void _SetBlendMode(bool forceUpdate);

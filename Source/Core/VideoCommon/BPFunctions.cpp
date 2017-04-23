@@ -61,8 +61,7 @@ void SetScissor()
 	if (rc.left > rc.right) std::swap(rc.right, rc.left);
 	if (rc.top > rc.bottom) std::swap(rc.bottom, rc.top);
 
-	TargetRectangle trc = g_renderer->ConvertEFBRectangle(rc);
-	g_renderer->SetScissorRect(trc);
+	g_renderer->SetScissorRect(rc);
 	VertexShaderManager::SetViewportChanged();
 	GeometryShaderManager::SetViewportChanged();
 	PixelShaderManager::SetViewportChanged();

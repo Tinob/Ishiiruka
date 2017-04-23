@@ -17,7 +17,7 @@ public:
 	void Init() override;
 	void SetColorMask();
 	void SetBlendMode(bool forceUpdate);
-	void SetScissorRect(const TargetRectangle& rc);
+	void SetScissorRect(const EFBRectangle& rc);
 	void SetGenerationMode();
 	void SetDepthMode();
 	void SetLogicOpMode();
@@ -58,7 +58,7 @@ private:
 	bool m_bScissorRectChanged = true;
 	bool m_bViewPortChanged = true;
 	bool m_bViewPortChangedRequested = true;
-	TargetRectangle m_ScissorRect{};
+	EFBRectangle m_ScissorRect{};
 	D3DVIEWPORT9 m_vp{};
 	bool m_bGenerationModeChanged = true;
 	bool m_bDepthModeChanged = true;

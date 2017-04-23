@@ -317,9 +317,9 @@ __declspec(noinline) bool Renderer::CheckForResize()
 	return false;
 }
 
-void Renderer::SetScissorRect(const TargetRectangle& rc)
+void Renderer::SetScissorRect(const EFBRectangle& rc)
 {
-	m_scissor_rect = *rc.AsRECT();
+	m_scissor_rect = rc;
 	m_scissor_dirty = true;
 }
 
@@ -1003,7 +1003,8 @@ void Renderer::ApplyState(bool use_dst_alpha)
 	}
 	if (m_scissor_dirty)
 	{
-		D3D::current_command_list->RSSetScissorRects(1, &m_scissor_rect);
+		D3D12_RECT src_s_rect = *ConvertEFBRectangle(m_scissor_rect).AsRECT();
+		D3D::current_command_list->RSSetScissorRects(1, &src_s_rect);
 		m_scissor_dirty = false;
 	}
 	if (m_target_dirty)

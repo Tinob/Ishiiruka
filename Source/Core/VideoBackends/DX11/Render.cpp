@@ -378,9 +378,9 @@ bool Renderer::CheckForResize()
 	return false;
 }
 
-void Renderer::SetScissorRect(const TargetRectangle& rc)
+void Renderer::SetScissorRect(const EFBRectangle& rc)
 {
-	D3D::context->RSSetScissorRects(1, rc.AsRECT());
+	D3D::context->RSSetScissorRects(1, ConvertEFBRectangle(rc).AsRECT());
 }
 
 void Renderer::SetColorMask()
@@ -704,7 +704,7 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 
 	// Copy the framebuffer to screen.	
 	const TargetSize dst_size = { m_target_width, m_target_height };
-	DrawFrame(m_target_rectangle, rc, xfbAddr, xfbSourceList, xfbCount, D3D::GetBackBuffer(), dst_size, fbWidth, fbStride, fbHeight, Gamma);
+	DrawFrame(targetRc, rc, xfbAddr, xfbSourceList, xfbCount, D3D::GetBackBuffer(), dst_size, fbWidth, fbStride, fbHeight, Gamma);
 
 	// Dump frames
 	if (IsFrameDumping())

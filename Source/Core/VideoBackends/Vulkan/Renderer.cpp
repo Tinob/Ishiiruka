@@ -1662,8 +1662,10 @@ void Renderer::SetInterlacingMode()
 {
 }
 
-void Renderer::SetScissorRect(const TargetRectangle& target_rc)
+void Renderer::SetScissorRect(const EFBRectangle& rc)
 {
+	TargetRectangle target_rc = ConvertEFBRectangle(rc);
+
 	VkRect2D scissor = {
 		{ target_rc.left, target_rc.top },
 		{ static_cast<uint32_t>(target_rc.GetWidth()), static_cast<uint32_t>(target_rc.GetHeight()) } };
