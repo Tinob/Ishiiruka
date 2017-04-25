@@ -52,6 +52,7 @@
 #include "Core/State.h"
 
 #include "DiscIO/NANDContentLoader.h"
+#include "DiscIO/NANDImporter.h"
 
 #include "DolphinWX/AboutDolphin.h"
 #include "DolphinWX/Cheats/CheatsWindow.h"
@@ -74,7 +75,6 @@
 #include "DolphinWX/NetPlay/NetPlaySetupFrame.h"
 #include "DolphinWX/NetPlay/NetWindow.h"
 #include "DolphinWX/TASInputDlg.h"
-#include "DolphinWX/WXInputBase.h"
 #include "DolphinWX/WxEventUtils.h"
 #include "DolphinWX/WxUtils.h"
 
@@ -168,6 +168,8 @@ void CFrame::BindMenuBarEvents()
 	Bind(wxEVT_MENU, &CFrame::OnNetPlay, this, IDM_NETPLAY);
 	Bind(wxEVT_MENU, &CFrame::OnInstallWAD, this, IDM_MENU_INSTALL_WAD);
 	Bind(wxEVT_MENU, &CFrame::OnLoadWiiMenu, this, IDM_LOAD_WII_MENU);
+	Bind(wxEVT_MENU, &CFrame::OnImportBootMiiBackup, this, IDM_IMPORT_NAND);
+	Bind(wxEVT_MENU, &CFrame::OnExtractCertificates, this, IDM_EXTRACT_CERTIFICATES);
 	Bind(wxEVT_MENU, &CFrame::OnFifoPlayer, this, IDM_FIFOPLAYER);
 	Bind(wxEVT_MENU, &CFrame::OnConnectWiimote, this, IDM_CONNECT_WIIMOTE1, IDM_CONNECT_BALANCEBOARD);
 
@@ -232,6 +234,7 @@ void CFrame::BindDebuggerMenuBarUpdateEvents()
 	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreInitialized, IDM_CLEAR_SYMBOLS);
 	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreInitialized, IDM_SCAN_FUNCTIONS);
 	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreInitialized, IDM_SCAN_SIGNATURES);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreInitialized, IDM_SCAN_RSO);
 	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreInitialized, IDM_LOAD_MAP_FILE);
 	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreInitialized, IDM_SAVEMAPFILE);
 	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreInitialized, IDM_LOAD_MAP_FILE_AS);
@@ -662,7 +665,8 @@ void CFrame::StartGame(const std::string& filename)
 		// Set window size in framebuffer pixels since the 3D rendering will be operating at
 		// that level.
 		wxSize default_size{ wxSize(640, 480) * (1.0 / GetContentScaleFactor()) };
-		m_RenderFrame = new CRenderFrame(this, wxID_ANY, _("Dolphin"), wxDefaultPosition, default_size);
+		m_RenderFrame =
+			new CRenderFrame(nullptr, wxID_ANY, _("Dolphin"), wxDefaultPosition, default_size);
 
 		// Convert ClientSize coordinates to frame sizes.
 		wxSize decoration_fudge = m_RenderFrame->GetSize() - m_RenderFrame->GetClientSize();
@@ -745,7 +749,7 @@ void CFrame::StartGame(const std::string& filename)
 		wxTheApp->Bind(wxEVT_MIDDLE_UP, &CFrame::OnMouse, this);
 		wxTheApp->Bind(wxEVT_MOTION, &CFrame::OnMouse, this);
 		m_RenderParent->Bind(wxEVT_SIZE, &CFrame::OnRenderParentResize, this);
-	}
+}
 }
 
 void CFrame::OnBootDrive(wxCommandEvent& event)
@@ -867,7 +871,7 @@ void CFrame::DoStop()
 		}
 		Core::Stop();
 		UpdateGUI();
-	}
+}
 }
 
 bool CFrame::TriggerSTMPowerEvent()
@@ -931,7 +935,7 @@ void CFrame::OnStopped()
 
 		// Make sure the window is not longer set to stay on top
 		m_RenderFrame->SetWindowStyle(m_RenderFrame->GetWindowStyle() & ~wxSTAY_ON_TOP);
-	}
+}
 	m_RenderParent = nullptr;
 	m_bRendererHasFocus = false;
 	m_RenderFrame = nullptr;
@@ -1219,6 +1223,37 @@ void CFrame::OnInstallWAD(wxCommandEvent& event)
 	{
 		UpdateLoadWiiMenuItem();
 	}
+}
+
+void CFrame::OnImportBootMiiBackup(wxCommandEvent& WXUNUSED(event))
+{
+	if (!AskYesNoT("Merging a new NAND over your currently selected NAND will overwrite any channels "
+		"and savegames that already exist. This process is not reversible, so it is "
+		"recommended that you keep backups of both NANDs. Are you sure you want to "
+		"continue?"))
+		return;
+
+	wxString path = wxFileSelector(
+		_("Select a BootMii NAND backup to import"), wxEmptyString, wxEmptyString, wxEmptyString,
+		_("BootMii NAND backup file (*.bin)") + "|*.bin|" + wxGetTranslation(wxALL_FILES),
+		wxFD_OPEN | wxFD_PREVIEW | wxFD_FILE_MUST_EXIST, this);
+	const std::string file_name = WxStrToStr(path);
+	if (file_name.empty())
+		return;
+
+	wxProgressDialog dialog(_("Importing NAND backup"), _("Working..."), 100, this,
+		wxPD_APP_MODAL | wxPD_ELAPSED_TIME | wxPD_SMOOTH);
+	DiscIO::NANDImporter().ImportNANDBin(file_name,
+		[&dialog](size_t current_entry, size_t total_entries) {
+		dialog.SetRange(total_entries);
+		dialog.Update(current_entry);
+	});
+	UpdateLoadWiiMenuItem();
+}
+
+void CFrame::OnExtractCertificates(wxCommandEvent& WXUNUSED(event))
+{
+	DiscIO::NANDImporter().ExtractCertificates(File::GetUserPath(D_WIIROOT_IDX));
 }
 
 void CFrame::UpdateLoadWiiMenuItem() const
@@ -1639,6 +1674,9 @@ void CFrame::OnChangeColumnsVisible(wxCommandEvent& event)
 		break;
 	case IDM_SHOW_BANNER:
 		SConfig::GetInstance().m_showBannerColumn = !SConfig::GetInstance().m_showBannerColumn;
+		break;
+	case IDM_SHOW_TITLE:
+		SConfig::GetInstance().m_showTitleColumn = !SConfig::GetInstance().m_showTitleColumn;
 		break;
 	case IDM_SHOW_MAKER:
 		SConfig::GetInstance().m_showMakerColumn = !SConfig::GetInstance().m_showMakerColumn;

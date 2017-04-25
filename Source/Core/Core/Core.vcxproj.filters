@@ -888,6 +888,9 @@
     <ClCompile Include="ConfigLoaders\NetPlayConfigLoader.cpp">
       <Filter>ConfigLoaders</Filter>
     </ClCompile>
+    <ClCompile Include="Debugger\RSO.cpp">
+	<Filter>Debugger</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BootManager.h" />
@@ -1374,7 +1377,6 @@
     <ClInclude Include="Analytics.h" />
     <ClInclude Include="PowerPC\SignatureDB\CSVSignatureDB.h" />
     <ClInclude Include="PowerPC\SignatureDB\DSYSignatureDB.h" />
-    <ClCompile Include="PowerPC\SignatureDB\MEGASignatureDB.h" />
     <ClInclude Include="PowerPC\SignatureDB\SignatureDB.h" />
     <ClInclude Include="IOS\USB\Bluetooth\BTBase.h">
       <Filter>IOS\USB\Bluetooth</Filter>
@@ -1525,6 +1527,10 @@
     </ClInclude>
     <ClInclude Include="ConfigLoaders\NetPlayConfigLoader.h">
       <Filter>ConfigLoaders</Filter>
+    </ClInclude>
+    <ClInclude Include="PowerPC\SignatureDB\MEGASignatureDB.h" />
+    <ClInclude Include="Debugger\RSO.h">
+      <Filter>Debugger</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

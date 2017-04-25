@@ -1015,11 +1015,6 @@ void Renderer::SetLogicOpMode()
 	}
 }
 
-void Renderer::SetDitherMode()
-{
-	// TODO: Set dither mode to bpmem.blendmode.dither
-}
-
 void Renderer::SetSamplerState(int stage, int texindex, bool custom_tex)
 {
 	const FourTexUnits &tex = bpmem.tex[texindex];

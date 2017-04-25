@@ -1,5 +1,6 @@
 package org.dolphinemu.dolphinemu.ui.settings;
 
+import org.dolphinemu.dolphinemu.NativeLibrary;
 import org.dolphinemu.dolphinemu.R;
 import org.dolphinemu.dolphinemu.model.settings.BooleanSetting;
 import org.dolphinemu.dolphinemu.model.settings.IntSetting;
@@ -162,6 +163,7 @@ public final class SettingsFragmentPresenter
 		Setting overclock = null;
 		Setting continuousScan = null;
 		Setting wiimoteSpeaker = null;
+		Setting audioStretch = null;
 
 		if (!mSettings.get(SettingsFile.SETTINGS_DOLPHIN).isEmpty())
 		{
@@ -171,6 +173,7 @@ public final class SettingsFragmentPresenter
 			overclock = mSettings.get(SettingsFile.SETTINGS_DOLPHIN).get(SettingsFile.SECTION_CORE).getSetting(SettingsFile.KEY_OVERCLOCK_PERCENT);
 			continuousScan = mSettings.get(SettingsFile.SETTINGS_DOLPHIN).get(SettingsFile.SECTION_CORE).getSetting(SettingsFile.KEY_WIIMOTE_SCAN);
 			wiimoteSpeaker = mSettings.get(SettingsFile.SETTINGS_DOLPHIN).get(SettingsFile.SECTION_CORE).getSetting(SettingsFile.KEY_WIIMOTE_SPEAKER);
+			audioStretch = mSettings.get(SettingsFile.SETTINGS_DOLPHIN).get(SettingsFile.SECTION_CORE).getSetting(SettingsFile.KEY_AUDIO_STRETCH);
 		}
 		else
 		{
@@ -179,13 +182,34 @@ public final class SettingsFragmentPresenter
 			mView.passSettingsToActivity(mSettings);
 		}
 
-		// TODO Set default value for cpuCore based on arch.
-		sl.add(new SingleChoiceSetting(SettingsFile.KEY_CPU_CORE, SettingsFile.SECTION_CORE, SettingsFile.SETTINGS_DOLPHIN, R.string.cpu_core, 0, R.array.emuCoresEntries, R.array.emuCoresValues, 4, cpuCore));
+		// TODO: Having different emuCoresEntries/emuCoresValues for each architecture is annoying.
+		// The proper solution would be to have one emuCoresEntries and one emuCoresValues
+		// and exclude the values that aren't present in PowerPC::AvailableCPUCores().
+		int defaultCpuCore = NativeLibrary.DefaultCPUCore();
+		int emuCoresEntries;
+		int emuCoresValues;
+		if (defaultCpuCore == 1)  // x86-64
+		{
+			emuCoresEntries = R.array.emuCoresEntriesX86_64;
+			emuCoresValues = R.array.emuCoresValuesX86_64;
+		}
+		else if (defaultCpuCore == 4)  // AArch64
+		{
+			emuCoresEntries = R.array.emuCoresEntriesARM64;
+			emuCoresValues = R.array.emuCoresValuesARM64;
+		}
+		else
+		{
+			emuCoresEntries = R.array.emuCoresEntriesGeneric;
+			emuCoresValues = R.array.emuCoresValuesGeneric;
+		}
+		sl.add(new SingleChoiceSetting(SettingsFile.KEY_CPU_CORE, SettingsFile.SECTION_CORE, SettingsFile.SETTINGS_DOLPHIN, R.string.cpu_core, 0, emuCoresEntries, emuCoresValues, defaultCpuCore, cpuCore));
 		sl.add(new CheckBoxSetting(SettingsFile.KEY_DUAL_CORE, SettingsFile.SECTION_CORE, SettingsFile.SETTINGS_DOLPHIN, R.string.dual_core, R.string.dual_core_descrip, true, dualCore));
 		sl.add(new CheckBoxSetting(SettingsFile.KEY_OVERCLOCK_ENABLE, SettingsFile.SECTION_CORE, SettingsFile.SETTINGS_DOLPHIN, R.string.overclock_enable, R.string.overclock_enable_description, false, overclockEnable));
 		sl.add(new SliderSetting(SettingsFile.KEY_OVERCLOCK_PERCENT, SettingsFile.SECTION_CORE, SettingsFile.SETTINGS_DOLPHIN, R.string.overclock_title, 0, 400, "%", 100, overclock));
 		sl.add(new CheckBoxSetting(SettingsFile.KEY_WIIMOTE_SCAN, SettingsFile.SECTION_CORE, SettingsFile.SETTINGS_DOLPHIN, R.string.wiimote_scanning, R.string.wiimote_scanning_description, true, continuousScan));
 		sl.add(new CheckBoxSetting(SettingsFile.KEY_WIIMOTE_SPEAKER, SettingsFile.SECTION_CORE, SettingsFile.SETTINGS_DOLPHIN, R.string.wiimote_speaker, R.string.wiimote_speaker_description, true, wiimoteSpeaker));
+		sl.add(new CheckBoxSetting(SettingsFile.KEY_AUDIO_STRETCH, SettingsFile.SECTION_CORE, SettingsFile.SETTINGS_DOLPHIN, R.string.audio_stretch, R.string.audio_stretch_description, false, audioStretch));
 	}
 
 	private void addGcPadSettings(ArrayList<SettingsItem> sl)

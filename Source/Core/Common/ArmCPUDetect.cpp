@@ -2,15 +2,16 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include <asm/hwcap.h>
+#include <cstring>
 #include <fstream>
 #include <sstream>
 #include <string>
-#include <unistd.h>
-#include <asm/hwcap.h>
 #include <sys/auxv.h>
+#include <unistd.h>
 
-#include "Common/CommonTypes.h"
 #include "Common/CPUDetect.h"
+#include "Common/CommonTypes.h"
 #include "Common/StringUtil.h"
 
 const char procfile[] = "/proc/cpuinfo";
@@ -78,11 +79,16 @@ std::string CPUInfo::Summarize()
 	else
 		sum = StringFromFormat("%s, %i cores", cpu_string, num_cores);
 
-	if (bAES) sum += ", AES";
-	if (bCRC32) sum += ", CRC32";
-	if (bSHA1) sum += ", SHA1";
-	if (bSHA2) sum += ", SHA2";
-	if (CPU64bit) sum += ", 64-bit";
+	if (bAES)
+		sum += ", AES";
+	if (bCRC32)
+		sum += ", CRC32";
+	if (bSHA1)
+		sum += ", SHA1";
+	if (bSHA2)
+		sum += ", SHA2";
+	if (CPU64bit)
+		sum += ", 64-bit";
 
 	return sum;
 }

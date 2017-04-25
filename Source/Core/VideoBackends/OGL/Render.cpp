@@ -2145,11 +2145,6 @@ void Renderer::SetLogicOpMode()
 	m_bLogicOpModeChanged = true;
 }
 
-void Renderer::SetDitherMode()
-{
-
-}
-
 void Renderer::SetSamplerState(int stage, int texindex, bool custom_tex)
 {
 	auto const& tex = bpmem.tex[texindex];

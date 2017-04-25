@@ -2,12 +2,12 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Core/HW/WiimoteReal/WiimoteReal.h"
+
 #include <algorithm>
 #include <cstdlib>
 #include <queue>
 #include <unordered_set>
-
-#include "Core/HW/WiimoteReal/WiimoteReal.h"
 
 #include "Common/ChunkFile.h"
 #include "Common/CommonTypes.h"
@@ -15,7 +15,6 @@
 #include "Common/StringUtil.h"
 #include "Common/Swap.h"
 #include "Common/Thread.h"
-
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
 #include "Core/HW/WiimoteEmu/WiimoteEmu.h"
@@ -256,9 +255,9 @@ bool Wiimote::IsBalanceBoard()
 		return false;
 	// Initialise the extension by writing 0x55 to 0xa400f0, then writing 0x00 to 0xa400fb.
 	static const u8 init_extension_rpt1[MAX_PAYLOAD] = {
-			WM_SET_REPORT | WM_BT_OUTPUT, WM_WRITE_DATA, 0x04, 0xa4, 0x00, 0xf0, 0x01, 0x55 };
+		WM_SET_REPORT | WM_BT_OUTPUT, WM_WRITE_DATA, 0x04, 0xa4, 0x00, 0xf0, 0x01, 0x55 };
 	static const u8 init_extension_rpt2[MAX_PAYLOAD] = {
-			WM_SET_REPORT | WM_BT_OUTPUT, WM_WRITE_DATA, 0x04, 0xa4, 0x00, 0xfb, 0x01, 0x00 };
+		WM_SET_REPORT | WM_BT_OUTPUT, WM_WRITE_DATA, 0x04, 0xa4, 0x00, 0xfb, 0x01, 0x00 };
 	static const u8 status_report[] = { WM_SET_REPORT | WM_BT_OUTPUT, WM_REQUEST_STATUS, 0 };
 	if (!IOWrite(init_extension_rpt1, sizeof(init_extension_rpt1)) ||
 		!IOWrite(init_extension_rpt2, sizeof(init_extension_rpt2)))
@@ -285,7 +284,7 @@ bool Wiimote::IsBalanceBoard()
 				return false;
 			// Read two bytes from 0xa400fe to identify the extension.
 			static const u8 identify_ext_rpt[] = {
-					WM_SET_REPORT | WM_BT_OUTPUT, WM_READ_DATA, 0x04, 0xa4, 0x00, 0xfe, 0x02, 0x00 };
+				WM_SET_REPORT | WM_BT_OUTPUT, WM_READ_DATA, 0x04, 0xa4, 0x00, 0xfe, 0x02, 0x00 };
 			ret = IOWrite(identify_ext_rpt, sizeof(identify_ext_rpt));
 			break;
 		}
@@ -536,13 +535,9 @@ void WiimoteScanner::SetScanMode(WiimoteScanMode scan_mode)
 
 bool WiimoteScanner::IsReady() const
 {
-	return std::any_of(m_scanner_backends.begin(), m_scanner_backends.end(),
+	std::lock_guard<std::mutex> lg(m_backends_mutex);
+	return std::any_of(m_backends.begin(), m_backends.end(),
 		[](const auto& backend) { return backend->IsReady(); });
-}
-
-void WiimoteScanner::AddScannerBackend(std::unique_ptr<WiimoteScannerBackend> backend)
-{
-	m_scanner_backends.emplace_back(std::move(backend));
 }
 
 static void CheckForDisconnectedWiimotes()
@@ -559,6 +554,20 @@ void WiimoteScanner::ThreadFunc()
 
 	NOTICE_LOG(WIIMOTE, "Wiimote scanning thread has started.");
 
+	// Create and destroy scanner backends here to ensure all operations stay on the same thread. The
+	// HIDAPI backend on macOS has an error condition when IOHIDManagerCreate and IOHIDManagerClose
+	// are called on different threads (and so reference different CFRunLoops) which can cause an
+	// EXC_BAD_ACCES crash.
+	{
+		std::lock_guard<std::mutex> lg(m_backends_mutex);
+
+		m_backends.emplace_back(std::make_unique<WiimoteScannerLinux>());
+		m_backends.emplace_back(std::make_unique<WiimoteScannerAndroid>());
+		m_backends.emplace_back(std::make_unique<WiimoteScannerWindows>());
+		m_backends.emplace_back(std::make_unique<WiimoteScannerDarwin>());
+		m_backends.emplace_back(std::make_unique<WiimoteScannerHidapi>());
+	}
+
 	while (m_scan_thread_running.IsSet())
 	{
 		m_scan_mode_changed_event.WaitFor(std::chrono::milliseconds(500));
@@ -568,7 +577,7 @@ void WiimoteScanner::ThreadFunc()
 		if (m_scan_mode.load() == WiimoteScanMode::DO_NOT_SCAN)
 			continue;
 
-		for (const auto& backend : m_scanner_backends)
+		for (const auto& backend : m_backends)
 		{
 			if (CalculateWantedWiimotes() != 0 || CalculateWantedBB() != 0)
 			{
@@ -594,6 +603,10 @@ void WiimoteScanner::ThreadFunc()
 			m_scan_mode.store(WiimoteScanMode::DO_NOT_SCAN);
 	}
 
+	{
+		std::lock_guard<std::mutex> lg(m_backends_mutex);
+		m_backends.clear();
+	}
 	NOTICE_LOG(WIIMOTE, "Wiimote scanning thread has stopped.");
 }
 
@@ -696,11 +709,6 @@ void Initialize(::Wiimote::InitializeMode init_mode)
 	if (!g_real_wiimotes_initialized)
 	{
 		s_known_ids.clear();
-		g_wiimote_scanner.AddScannerBackend(std::make_unique<WiimoteScannerLinux>());
-		g_wiimote_scanner.AddScannerBackend(std::make_unique<WiimoteScannerAndroid>());
-		g_wiimote_scanner.AddScannerBackend(std::make_unique<WiimoteScannerWindows>());
-		g_wiimote_scanner.AddScannerBackend(std::make_unique<WiimoteScannerDarwin>());
-		g_wiimote_scanner.AddScannerBackend(std::make_unique<WiimoteScannerHidapi>());
 		g_wiimote_scanner.StartThread();
 	}
 

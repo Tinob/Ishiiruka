@@ -21,7 +21,6 @@ public:
 	void SetGenerationMode();
 	void SetDepthMode();
 	void SetLogicOpMode();
-	void SetDitherMode();
 	void SetSamplerState(int stage, int texindex, bool custom_tex);
 	void SetInterlacingMode();
 	void SetViewport();

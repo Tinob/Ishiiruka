@@ -1181,16 +1181,6 @@ void Renderer::_SetLogicOpMode()
 	}
 }
 
-void Renderer::SetDitherMode()
-{
-	// No way to emulate this properly with the defaul pipeline
-	// and teorically we don't need it because we alway use full color precision.
-	// To Allow a correct emulation  the output of the pixel shaders
-	// should be reduced to the decired precision and then
-	// a postproccesing shader should be used to emulate the correct
-	// dithering matrix and the aproximation equation	
-}
-
 void Renderer::SetInterlacingMode()
 {
 	// TODO

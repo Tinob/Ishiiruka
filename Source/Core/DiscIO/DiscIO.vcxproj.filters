@@ -75,6 +75,9 @@
     <ClCompile Include="TGCBlob.cpp">
       <Filter>Volume\Blob</Filter>
     </ClCompile>
+    <ClCompile Include="NANDImporter.cpp">
+      <Filter>NAND</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DiscScrubber.h">
@@ -132,6 +135,9 @@
       <Filter>Volume</Filter>
     </ClInclude>
     <ClInclude Include="TGCBlob.h" />
+    <ClInclude Include="NANDImporter.h">
+      <Filter>NAND</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />

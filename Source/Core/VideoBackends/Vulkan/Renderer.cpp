@@ -1654,10 +1654,6 @@ void Renderer::ResetSamplerStates()
 	g_object_cache->ClearSamplerCache();
 }
 
-void Renderer::SetDitherMode()
-{
-}
-
 void Renderer::SetInterlacingMode()
 {
 }

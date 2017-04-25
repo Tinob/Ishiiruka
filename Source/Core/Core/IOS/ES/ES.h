@@ -120,8 +120,8 @@ private:
 		IOCTL_ES_GETSHAREDCONTENTCNT = 0x36,
 		IOCTL_ES_GETSHAREDCONTENTS = 0x37,
 		IOCTL_ES_DELETESHAREDCONTENT = 0x38,
-		IOCTL_ES_UNKNOWN_39 = 0x39,
-		IOCTL_ES_UNKNOWN_3A = 0x3A,
+		IOCTL_ES_DIGETTMDSIZE = 0x39,
+		IOCTL_ES_DIGETTMD = 0x3A,
 		IOCTL_ES_UNKNOWN_3B = 0x3B,
 		IOCTL_ES_UNKNOWN_3C = 0x3C,
 		IOCTL_ES_UNKNOWN_3D = 0x3D,
@@ -214,6 +214,8 @@ private:
 	IPCCommandResult GetTMDStoredContents(const IOCtlVRequest& request);
 	IPCCommandResult GetStoredTMDSize(const IOCtlVRequest& request);
 	IPCCommandResult GetStoredTMD(const IOCtlVRequest& request);
+	IPCCommandResult GetSharedContentsCount(const IOCtlVRequest& request) const;
+	IPCCommandResult GetSharedContents(const IOCtlVRequest& request) const;
 
 	// Views for tickets and TMDs
 	IPCCommandResult GetTicketViewCount(const IOCtlVRequest& request);
@@ -223,6 +225,8 @@ private:
 	IPCCommandResult DIGetTicketView(const IOCtlVRequest& request);
 	IPCCommandResult DIGetTMDViewSize(const IOCtlVRequest& request);
 	IPCCommandResult DIGetTMDView(const IOCtlVRequest& request);
+	IPCCommandResult DIGetTMDSize(const IOCtlVRequest& request);
+	IPCCommandResult DIGetTMD(const IOCtlVRequest& request);
 
 	static bool LaunchIOS(u64 ios_title_id);
 	static bool LaunchPPCTitle(u64 title_id, bool skip_reload);

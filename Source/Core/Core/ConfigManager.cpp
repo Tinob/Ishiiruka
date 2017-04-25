@@ -216,6 +216,7 @@ void SConfig::SaveGameListSettings(IniFile& ini)
 
 	gamelist->Set("ColumnPlatform", m_showSystemColumn);
 	gamelist->Set("ColumnBanner", m_showBannerColumn);
+	gamelist->Set("ColumnTitle", m_showTitleColumn);
 	gamelist->Set("ColumnNotes", m_showMakerColumn);
 	gamelist->Set("ColumnFileName", m_showFileNameColumn);
 	gamelist->Set("ColumnID", m_showIDColumn);
@@ -809,7 +810,7 @@ void SConfig::LoadDefaults()
 #endif
 #endif
 
-	iCPUCore = PowerPC::CORE_JIT64;
+	iCPUCore = PowerPC::DefaultCPUCore();
 	iTimingVariance = 40;
 	bCPUThread = false;
 	bSyncGPUOnSkipIdleHack = true;

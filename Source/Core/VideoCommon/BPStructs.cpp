@@ -187,10 +187,6 @@ void BPWritten(const BPCmd& bp)
 			if (bp.changes & 0xF002) // logicopenable | logicmode
 				SetLogicOpMode();
 
-			// Set Dithering Mode
-			if (bp.changes & 4) // dither
-				SetDitherMode();
-
 			// Set Blending Mode
 			if (bp.changes & 0xFF1) // blendenable | alphaupdate | dstfactor | srcfactor | subtract
 				SetBlendMode();
@@ -674,7 +670,6 @@ void BPReload()
 	SetLineWidth();
 	SetDepthMode();
 	SetLogicOpMode();
-	SetDitherMode();
 	SetBlendMode();
 	SetColorMask();
 	OnPixelFormatChange();
