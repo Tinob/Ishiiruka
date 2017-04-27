@@ -37,7 +37,7 @@ set(extra_dirs "/usr/local/lib" "/lib" "/usr/lib")
 # BundleUtilities is overly verbose, so disable most of its messages
 function(message)
 	if(NOT ARGV MATCHES "^STATUS;")
-		_message(${ARGV})
+		_message("${ARGV}")
 	endif()
 endfunction()
 
