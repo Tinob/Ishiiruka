@@ -8,6 +8,7 @@
 #include <mutex>
 #include <string>
 #include <vector>
+#include <array>
 #include <wx/bitmap.h>
 #include <wx/frame.h>
 #include <wx/image.h>
