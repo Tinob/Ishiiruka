@@ -40,52 +40,52 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
  /*-
-	* Copyright (c) 2001 Maksim Yevmenkin <m_evmenkin@yahoo.com>
-	* All rights reserved.
-	*
-	* Redistribution and use in source and binary forms, with or without
-	* modification, are permitted provided that the following conditions
-	* are met:
-	* 1. Redistributions of source code must retain the above copyright
-	*    notice, this list of conditions and the following disclaimer.
-	* 2. Redistributions in binary form must reproduce the above copyright
-	*    notice, this list of conditions and the following disclaimer in the
-	*    documentation and/or other materials provided with the distribution.
-	*
-	* THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
-	* ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-	* IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-	* ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
-	* FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-	* DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
-	* OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-	* HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-	* LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
-	* OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-	* SUCH DAMAGE.
-	*
-	* $Id: hci.h,v 1.33 2009/09/11 18:35:50 plunky Exp $
-	* $FreeBSD: src/sys/netgraph/bluetooth/include/ng_hci.h,v 1.6 2005/01/07 01:45:43 imp Exp $
-	*/
+  * Copyright (c) 2001 Maksim Yevmenkin <m_evmenkin@yahoo.com>
+  * All rights reserved.
+  *
+  * Redistribution and use in source and binary forms, with or without
+  * modification, are permitted provided that the following conditions
+  * are met:
+  * 1. Redistributions of source code must retain the above copyright
+  *    notice, this list of conditions and the following disclaimer.
+  * 2. Redistributions in binary form must reproduce the above copyright
+  *    notice, this list of conditions and the following disclaimer in the
+  *    documentation and/or other materials provided with the distribution.
+  *
+  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+  * ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+  * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+  * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+  * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+  * SUCH DAMAGE.
+  *
+  * $Id: hci.h,v 1.33 2009/09/11 18:35:50 plunky Exp $
+  * $FreeBSD: src/sys/netgraph/bluetooth/include/ng_hci.h,v 1.6 2005/01/07 01:45:43 imp Exp $
+  */
 
-	/*
-	 * This file contains everything that applications need to know from
-	 * Host Controller Interface (HCI). Information taken from Bluetooth
-	 * Core Specifications (v1.1, v2.0 and v2.1)
-	 *
-	 * This file can be included by both kernel and userland applications.
-	 *
-	 * NOTE: Here and after Bluetooth device is called a "unit". Bluetooth
-	 *       specification refers to both devices and units. They are the
-	 *       same thing (I think), so to be consistent word "unit" will be
-	 *       used.
-	 */
+  /*
+	* This file contains everything that applications need to know from
+	* Host Controller Interface (HCI). Information taken from Bluetooth
+	* Core Specifications (v1.1, v2.0 and v2.1)
+	*
+	* This file can be included by both kernel and userland applications.
+	*
+	* NOTE: Here and after Bluetooth device is called a "unit". Bluetooth
+	*       specification refers to both devices and units. They are the
+	*       same thing (I think), so to be consistent word "unit" will be
+	*       used.
+	*/
 
 #pragma once
 
 #include <stdint.h>
 
-	 // All structs in this file are packed
+	// All structs in this file are packed
 #pragma pack(push, 1)
 
 /* All sizes are in bytes */
@@ -210,7 +210,7 @@ typedef struct
 #define HCI_LINK_SCO 0x00  /* Voice */
 #define HCI_LINK_ACL 0x01  /* Data */
 #define HCI_LINK_eSCO 0x02 /* eSCO */
-													 /* 0x03 - 0xFF - reserved for future use */
+									/* 0x03 - 0xFF - reserved for future use */
 
 /*
  * ACL/SCO packet type bits are set to enable the
@@ -403,26 +403,26 @@ typedef struct
  **************************************************************************/
 
  /*
-	* Macro(s) to combine OpCode and extract OGF (OpCode Group Field)
-	* and OCF (OpCode Command Field) from OpCode.
-	*/
+  * Macro(s) to combine OpCode and extract OGF (OpCode Group Field)
+  * and OCF (OpCode Command Field) from OpCode.
+  */
 
 #define HCI_OPCODE(gf, cf) ((((gf)&0x3f) << 10) | ((cf)&0x3ff))
 #define HCI_OCF(op) ((op)&0x3ff)
 #define HCI_OGF(op) (((op) >> 10) & 0x3f)
 
-	/*
-	 * Macro(s) to extract/combine connection handle, BC (Broadcast) and
-	 * PB (Packet boundary) flags.
-	 */
+  /*
+	* Macro(s) to extract/combine connection handle, BC (Broadcast) and
+	* PB (Packet boundary) flags.
+	*/
 
 #define HCI_CON_HANDLE(h) ((h)&0x0fff)
 #define HCI_PB_FLAG(h) (((h)&0x3000) >> 12)
 #define HCI_BC_FLAG(h) (((h)&0xc000) >> 14)
 #define HCI_MK_CON_HANDLE(h, pb, bc) (((h)&0x0fff) | (((pb)&3) << 12) | (((bc)&3) << 14))
 
-	 /* PB flag values */
-	 /* 00 - reserved for future use */
+	/* PB flag values */
+	/* 00 - reserved for future use */
 #define HCI_PACKET_FRAGMENT 0x1
 #define HCI_PACKET_START 0x2
 /* 11 - reserved for future use */
@@ -431,7 +431,7 @@ typedef struct
 #define HCI_POINT2POINT 0x0       /* only Host controller to Host */
 #define HCI_BROADCAST_ACTIVE 0x1  /* both directions */
 #define HCI_BROADCAST_PICONET 0x2 /* both directions */
-																	/* 11 - reserved for future use */
+											 /* 11 - reserved for future use */
 
 /* HCI command packet header */
 typedef struct
@@ -1102,8 +1102,8 @@ typedef struct
 {
 	uint8_t filter_type;           /* filter type */
 	uint8_t filter_condition_type; /* filter condition type */
-																 /* variable size condition
-																	 uint8_t		condition[]; -- conditions */
+											 /* variable size condition
+												uint8_t		condition[]; -- conditions */
 } hci_set_event_filter_cp;
 
 typedef hci_status_rp hci_set_event_filter_rp;
@@ -1164,9 +1164,9 @@ typedef struct
 typedef struct
 {
 	uint8_t num_keys_write; /* # of keys to write */
-													/* these are repeated "num_keys_write" times
-														bdaddr_t	bdaddr;             --- remote address(es)
-														uint8_t		key[HCI_KEY_SIZE];  --- key(s) */
+									/* these are repeated "num_keys_write" times
+									  bdaddr_t	bdaddr;             --- remote address(es)
+									  uint8_t		key[HCI_KEY_SIZE];  --- key(s) */
 } hci_write_stored_link_key_cp;
 
 typedef struct
@@ -1498,9 +1498,9 @@ typedef hci_status_rp hci_host_buffer_size_rp;
 typedef struct
 {
 	uint8_t nu_con_handles; /* # of connection handles */
-													/* these are repeated "num_con_handles" times
-														uint16_t	con_handle;    --- connection handle(s)
-														uint16_t	compl_pkts;    --- # of completed packets */
+									/* these are repeated "num_con_handles" times
+									  uint16_t	con_handle;    --- connection handle(s)
+									  uint16_t	compl_pkts;    --- # of completed packets */
 } hci_host_num_compl_pkts_cp;
 /* No return parameter(s) */
 
@@ -1548,8 +1548,8 @@ typedef struct
 {
 	uint8_t status;  /* 0x00 - success */
 	uint8_t num_iac; /* # of IAC */
-									 /* these are repeated "num_iac" times
-										 uint8_t		laps[HCI_LAP_SIZE]; --- LAPs */
+						  /* these are repeated "num_iac" times
+							 uint8_t		laps[HCI_LAP_SIZE]; --- LAPs */
 } hci_read_iac_lap_rp;
 
 #define HCI_OCF_WRITE_IAC_LAP 0x003a
@@ -1557,8 +1557,8 @@ typedef struct
 typedef struct
 {
 	uint8_t num_iac; /* # of IAC */
-									 /* these are repeated "num_iac" times
-										 uint8_t		laps[HCI_LAP_SIZE]; --- LAPs */
+						  /* these are repeated "num_iac" times
+							 uint8_t		laps[HCI_LAP_SIZE]; --- LAPs */
 } hci_write_iac_lap_cp;
 
 typedef hci_status_rp hci_write_iac_lap_rp;
@@ -2176,7 +2176,7 @@ typedef struct
 {
 	uint8_t num_cmd_pkts; /* # of HCI command packets */
 	uint16_t opcode;      /* command OpCode */
-												/* command return parameters (if any) */
+								 /* command return parameters (if any) */
 } hci_command_compl_ep;
 
 #define HCI_EVENT_COMMAND_STATUS 0x0f
@@ -2211,9 +2211,9 @@ typedef struct
 typedef struct
 {
 	uint8_t num_con_handles; /* # of connection handles */
-													 /* these are repeated "num_con_handles" times
-														 uint16_t	con_handle; --- connection handle(s)
-														 uint16_t	compl_pkts; --- # of completed packets */
+									 /* these are repeated "num_con_handles" times
+										uint16_t	con_handle; --- connection handle(s)
+										uint16_t	compl_pkts; --- # of completed packets */
 } hci_num_compl_pkts_ep;
 
 typedef struct
@@ -2235,9 +2235,9 @@ typedef struct
 typedef struct
 {
 	uint8_t num_keys; /* # of keys */
-										/* these are repeated "num_keys" times
-											bdaddr_t	bdaddr;               --- remote address(es)
-											uint8_t		key[HCI_KEY_SIZE]; --- key(s) */
+							/* these are repeated "num_keys" times
+							  bdaddr_t	bdaddr;               --- remote address(es)
+							  uint8_t		key[HCI_KEY_SIZE]; --- key(s) */
 } hci_return_link_keys_ep;
 
 #define HCI_EVENT_PIN_CODE_REQ 0x16

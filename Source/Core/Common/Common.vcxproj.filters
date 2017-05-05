@@ -254,6 +254,7 @@
     <ClInclude Include="GL\GLExtensions\ARB_texture_storage.h">
       <Filter>GL\GLExtensions</Filter>
     </ClInclude>
+    <ClInclude Include="GL\GLExtensions\EXT_texture_compression_s3tc.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CDUtils.cpp" />

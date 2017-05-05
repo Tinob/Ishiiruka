@@ -786,7 +786,10 @@
     <ClCompile Include="IOS\Network\ICMPLin.cpp">
       <Filter>IOS\Network</Filter>
     </ClCompile>
-    <ClCompile Include="IOS\IPC.cpp">
+    <ClCompile Include="IOS\IOS.cpp">
+      <Filter>IOS</Filter>
+    </ClCompile>
+    <ClCompile Include="IOS\MemoryValues.cpp">
       <Filter>IOS</Filter>
     </ClCompile>
     <ClCompile Include="IOS\MIOS.cpp">
@@ -889,7 +892,10 @@
       <Filter>ConfigLoaders</Filter>
     </ClCompile>
     <ClCompile Include="Debugger\RSO.cpp">
-	<Filter>Debugger</Filter>
+      <Filter>Debugger</Filter>
+    </ClCompile>
+    <ClCompile Include="IOS\IOSC.cpp">
+      <Filter>IOS</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -960,9 +966,6 @@
       <Filter>FifoPlayer</Filter>
     </ClInclude>
     <ClInclude Include="FifoPlayer\FifoDataFile.h">
-      <Filter>FifoPlayer</Filter>
-    </ClInclude>
-    <ClInclude Include="FifoPlayer\FifoFileStruct.h">
       <Filter>FifoPlayer</Filter>
     </ClInclude>
     <ClInclude Include="FifoPlayer\FifoPlaybackAnalyzer.h">
@@ -1200,9 +1203,6 @@
       <Filter>HW %28Flipper/Hollywood%29\Wiimote\Emu</Filter>
     </ClInclude>
     <ClInclude Include="HW\WiimoteEmu\WiimoteEmu.h">
-      <Filter>HW %28Flipper/Hollywood%29\Wiimote\Emu</Filter>
-    </ClInclude>
-    <ClInclude Include="HW\WiimoteEmu\WiimoteHid.h">
       <Filter>HW %28Flipper/Hollywood%29\Wiimote\Emu</Filter>
     </ClInclude>
     <ClInclude Include="HW\WiimoteReal\WiimoteReal.h">
@@ -1507,9 +1507,6 @@
     <ClInclude Include="IOS\Device.h">
       <Filter>IOS</Filter>
     </ClInclude>
-    <ClInclude Include="IOS\IPC.h">
-      <Filter>IOS</Filter>
-    </ClInclude>
     <ClInclude Include="IOS\MIOS.h">
       <Filter>IOS</Filter>
     </ClInclude>
@@ -1531,6 +1528,10 @@
     <ClInclude Include="PowerPC\SignatureDB\MEGASignatureDB.h" />
     <ClInclude Include="Debugger\RSO.h">
       <Filter>Debugger</Filter>
+    </ClInclude>
+    <ClInclude Include="IOS\IPC.h" />
+    <ClInclude Include="IOS\IOSC.h">
+      <Filter>IOS</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

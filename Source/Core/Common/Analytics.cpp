@@ -4,12 +4,13 @@
 
 #include <cmath>
 #include <cstdio>
-#include <string>
 #include <curl/curl.h>
+#include <string>
 
 #include "Common/Analytics.h"
 #include "Common/CommonTypes.h"
 #include "Common/StringUtil.h"
+#include "Common/Thread.h"
 
 namespace Common
 {
@@ -46,8 +47,7 @@ void AppendVarInt(std::string* out, u64 v)
 	} while (v);
 }
 
-void AppendBytes(std::string* out, const u8* bytes, u32 length,
-	bool encode_length = true)
+void AppendBytes(std::string* out, const u8* bytes, u32 length, bool encode_length = true)
 {
 	if (encode_length)
 	{
@@ -74,55 +74,47 @@ AnalyticsReportBuilder::AnalyticsReportBuilder()
 	m_report.push_back(WIRE_FORMAT_VERSION);
 }
 
-void AnalyticsReportBuilder::AppendSerializedValue(std::string* report,
-	const std::string& v)
+void AnalyticsReportBuilder::AppendSerializedValue(std::string* report, const std::string& v)
 {
 	AppendType(report, TypeId::STRING);
 	AppendBytes(report, reinterpret_cast<const u8*>(v.data()), static_cast<u32>(v.size()));
 }
 
-void AnalyticsReportBuilder::AppendSerializedValue(std::string* report,
-	const char* v)
+void AnalyticsReportBuilder::AppendSerializedValue(std::string* report, const char* v)
 {
 	AppendSerializedValue(report, std::string(v));
 }
 
-void AnalyticsReportBuilder::AppendSerializedValue(std::string* report,
-	bool v)
+void AnalyticsReportBuilder::AppendSerializedValue(std::string* report, bool v)
 {
 	AppendType(report, TypeId::BOOL);
 	AppendBool(report, v);
 }
 
-void AnalyticsReportBuilder::AppendSerializedValue(std::string* report,
-	u64 v)
+void AnalyticsReportBuilder::AppendSerializedValue(std::string* report, u64 v)
 {
 	AppendType(report, TypeId::UINT);
 	AppendVarInt(report, v);
 }
 
-void AnalyticsReportBuilder::AppendSerializedValue(std::string* report,
-	s64 v)
+void AnalyticsReportBuilder::AppendSerializedValue(std::string* report, s64 v)
 {
 	AppendType(report, TypeId::SINT);
 	AppendBool(report, v >= 0);
 	AppendVarInt(report, static_cast<u64>(std::abs(v)));
 }
 
-void AnalyticsReportBuilder::AppendSerializedValue(std::string* report,
-	u32 v)
+void AnalyticsReportBuilder::AppendSerializedValue(std::string* report, u32 v)
 {
 	AppendSerializedValue(report, static_cast<u64>(v));
 }
 
-void AnalyticsReportBuilder::AppendSerializedValue(std::string* report,
-	s32 v)
+void AnalyticsReportBuilder::AppendSerializedValue(std::string* report, s32 v)
 {
 	AppendSerializedValue(report, static_cast<s64>(v));
 }
 
-void AnalyticsReportBuilder::AppendSerializedValue(std::string* report,
-	float v)
+void AnalyticsReportBuilder::AppendSerializedValue(std::string* report, float v)
 {
 	AppendType(report, TypeId::FLOAT);
 	AppendBytes(report, reinterpret_cast<u8*>(&v), sizeof(v), false);
@@ -143,6 +135,7 @@ AnalyticsReporter::~AnalyticsReporter()
 
 void AnalyticsReporter::Send(AnalyticsReportBuilder&& report)
 {
+#if defined(USE_ANALYTICS) && USE_ANALYTICS
 	// Put a bound on the size of the queue to avoid uncontrolled memory growth.
 	constexpr u32 QUEUE_SIZE_LIMIT = 25;
 	if (m_reports_queue.Size() < QUEUE_SIZE_LIMIT)
@@ -150,10 +143,12 @@ void AnalyticsReporter::Send(AnalyticsReportBuilder&& report)
 		m_reports_queue.Push(report.Consume());
 		m_reporter_event.Set();
 	}
+#endif
 }
 
 void AnalyticsReporter::ThreadProc()
 {
+	Common::SetCurrentThreadName("Analytics");
 	while (true)
 	{
 		m_reporter_event.Wait();
@@ -188,8 +183,8 @@ void AnalyticsReporter::ThreadProc()
 
 void StdoutAnalyticsBackend::Send(std::string report)
 {
-	printf("Analytics report sent:\n%s", HexDump(
-		reinterpret_cast<const u8*>(report.data()), report.size()).c_str());
+	printf("Analytics report sent:\n%s",
+		HexDump(reinterpret_cast<const u8*>(report.data()), report.size()).c_str());
 }
 
 HttpAnalyticsBackend::HttpAnalyticsBackend(const std::string& endpoint)

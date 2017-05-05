@@ -12,7 +12,7 @@
 #include "Common/CommonTypes.h"
 #include "Common/FileUtil.h"
 #include "Core/IOS/Device.h"
-#include "Core/IOS/IPC.h"
+#include "Core/IOS/IOS.h"
 
 class PointerWrap;
 
@@ -26,12 +26,12 @@ namespace Device
 class SDIOSlot0 : public Device
 {
 public:
-	SDIOSlot0(u32 device_id, const std::string& device_name);
+	SDIOSlot0(Kernel& ios, const std::string& device_name);
 
 	void DoState(PointerWrap& p) override;
 
 	ReturnCode Open(const OpenRequest& request) override;
-	void Close() override;
+	ReturnCode Close(u32 fd) override;
 	IPCCommandResult IOCtl(const IOCtlRequest& request) override;
 	IPCCommandResult IOCtlV(const IOCtlVRequest& request) override;
 

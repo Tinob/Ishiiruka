@@ -15,7 +15,7 @@
 #include "Common/NandPaths.h"
 #include "Core/HW/Memmap.h"
 #include "Core/IOS/FS/FileIO.h"
-#include "Core/IOS/IPC.h"
+#include "Core/IOS/IOS.h"
 
 namespace IOS
 {
@@ -71,14 +71,14 @@ void CreateVirtualFATFilesystem()
 
 namespace Device
 {
-FileIO::FileIO(u32 device_id, const std::string& device_name)
-	: Device(device_id, device_name, DeviceType::FileIO)
+FileIO::FileIO(Kernel& ios, const std::string& device_name)
+	: Device(ios, device_name, DeviceType::FileIO)
 {
 }
 
-void FileIO::Close()
+ReturnCode FileIO::Close(u32 fd)
 {
-	INFO_LOG(IOS_FILEIO, "FileIO: Close %s (DeviceID=%08x)", m_name.c_str(), m_device_id);
+	INFO_LOG(IOS_FILEIO, "FileIO: Close %s", m_name.c_str());
 	m_Mode = 0;
 
 	// Let go of our pointer to the file, it will automatically close if we are the last handle
@@ -86,6 +86,7 @@ void FileIO::Close()
 	m_file.reset();
 
 	m_is_active = false;
+	return IPC_SUCCESS;
 }
 
 ReturnCode FileIO::Open(const OpenRequest& request)
@@ -151,7 +152,7 @@ void FileIO::OpenFile()
 		m_file = std::shared_ptr<File::IOFile>(new File::IOFile(m_filepath, "r+b"),
 			deleter);  // Use the custom deleter from above.
 
-// Store a weak pointer to our newly opened file in the cache.
+						  // Store a weak pointer to our newly opened file in the cache.
 		openFiles[path] = std::weak_ptr<File::IOFile>(m_file);
 	}
 }
@@ -168,15 +169,15 @@ IPCCommandResult FileIO::Seek(const SeekRequest& request)
 	u32 new_position = 0;
 	switch (request.mode)
 	{
-	case SeekRequest::IOS_SEEK_SET:
+	case IOS_SEEK_SET:
 		new_position = request.offset;
 		break;
 
-	case SeekRequest::IOS_SEEK_CUR:
+	case IOS_SEEK_CUR:
 		new_position = m_SeekPos + request.offset;
 		break;
 
-	case SeekRequest::IOS_SEEK_END:
+	case IOS_SEEK_END:
 		new_position = file_size + request.offset;
 		break;
 

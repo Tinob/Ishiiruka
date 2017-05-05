@@ -33,7 +33,7 @@ static bool IsValidWiiPath(const std::string& path)
 
 namespace Device
 {
-FS::FS(u32 device_id, const std::string& device_name) : Device(device_id, device_name)
+FS::FS(Kernel& ios, const std::string& device_name) : Device(ios, device_name)
 {
 	const std::string tmp_dir = BuildFilename("/tmp");
 	File::DeleteDirRecursively(tmp_dir);
@@ -206,7 +206,7 @@ IPCCommandResult FS::IOCtlV(const IOCtlVRequest& request)
 // Play it safe at 1/500th
 IPCCommandResult FS::GetFSReply(const s32 return_value) const
 {
-	return{ return_value, true, SystemTimers::GetTicksPerSecond() / 500 };
+	return { return_value, true, SystemTimers::GetTicksPerSecond() / 500 };
 }
 
 IPCCommandResult FS::GetStats(const IOCtlRequest& request)
@@ -310,7 +310,7 @@ IPCCommandResult FS::GetAttribute(const IOCtlRequest& request)
 
 	u32 OwnerID = 0;
 	u16 GroupID = 0x3031;  // this is also known as makercd, 01 (0x3031) for nintendo and 08
-												 // (0x3038) for MH3 etc
+								  // (0x3038) for MH3 etc
 
 	const std::string wii_path = Memory::GetString(request.buffer_in, 64);
 	if (!IsValidWiiPath(wii_path))

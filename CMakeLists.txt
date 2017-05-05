@@ -13,7 +13,6 @@ project(dolphin-emu)
 option(USE_EGL "Enables EGL OpenGL Interface" OFF)
 option(TRY_X11 "Enables X11 Support" ON)
 option(USE_SHARED_ENET "Use shared libenet if found rather than Dolphin's soon-to-compatibly-diverge version" OFF)
-option(USE_SHARED_GTEST "Use shared gtest library if found" OFF)
 option(USE_UPNP "Enables UPnP port mapping support" ON)
 option(DISABLE_WX "Disable wxWidgets (use Qt or CLI interface)" OFF)
 option(ENABLE_QT2 "Enable Qt2 (use the other experimental Qt interface)" OFF)
@@ -24,7 +23,6 @@ option(ENABLE_ALSA "Enables ALSA sound backend" ON)
 option(ENABLE_PULSEAUDIO "Enables PulseAudio sound backend" ON)
 option(ENABLE_OPENAL "Enables OpenAL sound backend" ON)
 option(ENABLE_LLVM "Enables LLVM support, for disassembly" ON)
-option(ENABLE_BLUEZ "Enables bluetooth support" ON)
 
 # Maintainers: if you consider blanket disabling this for your users, please
 # consider the following points:
@@ -762,117 +760,35 @@ list(APPEND LIBS ${ICONV_LIBRARIES})
 
 if(NOT ANDROID)
 	find_package(HIDAPI)
-	if(HIDAPI_FOUND)
-		message(STATUS "Using shared ${HIDAPI_LIBRARIES} ${HIDAPI_VERSION}")
-		include_directories(${HIDAPI_INCLUDE_DIRS})
-		list(APPEND LIBS ${HIDAPI_LIBRARIES})
-	else()
-		set(HIDAPI_FOUND 1)
-		include_directories(Externals/hidapi/hidapi)
-		if(APPLE)
-			message(STATUS "Using static hidapi from Externals")
-			add_subdirectory(Externals/hidapi/mac)
-			list(APPEND LIBS hidapi)
-		elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-			find_package(Libudev)
-			if(LIBUDEV_FOUND)
-				message(STATUS "Using static hidapi-hidraw from Externals")
-				add_subdirectory(Externals/hidapi/linux)
-				list(APPEND LIBS hidapi-hidraw udev)
-			else()
-				message(STATUS "Could not find udev, disabling hidapi")
-				set(HIDAPI_FOUND 0)
-			endif()
-		elseif(MSVC)
-			message(STATUS "Using static hidapi-hid from Externals")
-			add_subdirectory(Externals/hidapi/windows)
-			list(APPEND LIBS hidapi-hid)
-		else()
-			message(STATUS "Using static hidapi-libusb from Externals")
-			add_subdirectory(Externals/hidapi/libusb)
-			list(APPEND LIBS hidapi-libusb)
-		endif()
-	endif()
-	if(HIDAPI_FOUND)
-		add_definitions(-DHAVE_HIDAPI=1)
+	if(NOT HIDAPI_FOUND)
+		message(STATUS "Using static HIDAPI from Externals")
+		add_subdirectory(Externals/hidapi EXCLUDE_FROM_ALL)
 	endif()
 endif()
 
 if(NOT DISABLE_WX)
-	find_package(wxWidgets COMPONENTS core aui adv)
+  find_package(wxWidgets 3.1.0 COMPONENTS core aui adv)
 
-	if(_ARCH_32)
-		add_definitions(-DwxSIZE_T_IS_UINT)
-	endif()
+  if(_ARCH_32)
+    add_definitions(-DwxSIZE_T_IS_UINT)
+  endif()
 
-	if(wxWidgets_FOUND)
-		EXECUTE_PROCESS(WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-			COMMAND sh "${wxWidgets_CONFIG_EXECUTABLE}"
-			${wxWidgets_CONFIG_OPTIONS} --version
-			OUTPUT_VARIABLE wxWidgets_VERSION
-			OUTPUT_STRIP_TRAILING_WHITESPACE
-			ERROR_QUIET
-			)
-		message(STATUS "Found wxWidgets version ${wxWidgets_VERSION}")
-		set(wxMIN_VERSION "3.1.0")
-		if(${wxWidgets_VERSION} VERSION_LESS ${wxMIN_VERSION})
-			message(STATUS "At least ${wxMIN_VERSION} is required; ignoring found version")
-			unset(wxWidgets_FOUND)
-		endif()
-	endif()
-
-	if(UNIX AND NOT APPLE AND NOT HAIKU)
-		# There is a bug in the FindGTK module in cmake version 2.8.2 that
-		# does not find gdk-pixbuf-2.0.  On the other hand some 2.8.3
-		# users have complained that pkg-config does not find
-		# gdk-pixbuf-2.0.  On yet another hand, cmake version 2.8.3 in
-		# Ubuntu Natty does not find the glib libraries correctly.
-		# Ugly!!!
-		execute_process(COMMAND lsb_release -c -s
-			OUTPUT_VARIABLE DIST_NAME
-			ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
-		if(${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}
-				VERSION_EQUAL 2.8.2 OR "${DIST_NAME}" STREQUAL "natty")
-			check_lib(GTK2 gtk+-2.0 gtk+-2.0 gtk.h REQUIRED)
-		else()
-			find_package(GTK2)
-			if(GTK2_FOUND)
-				include_directories(${GTK2_INCLUDE_DIRS})
-				list(APPEND LIBS ${GTK2_LIBRARIES})
-			else()
-				message(FATAL_ERROR "GTK is required to build the WX UI. Please install the GTK development libraries.")
-			endif()
-		endif()
-	endif()
-
-	if(wxWidgets_FOUND)
-		include(${wxWidgets_USE_FILE})
-		message(STATUS "wxWidgets found, enabling GUI build")
-	else()
-		message(STATUS "Using static wxWidgets from Externals")
-
-		# These definitions and includes are used when building dolphin against wx,
-		# not when building wx itself (see wxw3 CMakeLists.txt for that)
-		if(APPLE)
-		elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux|FreeBSD")
-			# Check for required libs
-			check_lib(GTHREAD2 gthread-2.0 gthread-2.0 glib/gthread.h REQUIRED)
-			check_lib(PANGOCAIRO pangocairo pangocairo pango/pangocairo.h REQUIRED)
-			# On Linux "backtrace" is part of glibc. FreeBSD has a separate library.
-			# Required for wxUSE_STACKWALKER in Externals/wxWidgets3/wx/wxgtk.h
-			find_package(Backtrace REQUIRED)
-		elseif(WIN32)
-		else()
-			message(FATAL_ERROR "wxWidgets in Externals is not compatible with your platform")
-		endif()
-
-		include_directories(SYSTEM
-			Externals/wxWidgets3
-			Externals/wxWidgets3/include)
-		add_subdirectory(Externals/wxWidgets3)
-		set(wxWidgets_FOUND TRUE)
-		set(wxWidgets_LIBRARIES "wx")
-	endif()
+  if(wxWidgets_FOUND)
+    message(STATUS "wxWidgets found, enabling GUI build")
+    if(NOT TARGET wxWidgets::wxWidgets)
+      add_library(wxWidgets::wxWidgets INTERFACE IMPORTED)
+      set_target_properties(wxWidgets::wxWidgets PROPERTIES
+        INTERFACE_LINK_LIBRARIES "${wxWidgets_LIBRARIES}"
+        INTERFACE_INCLUDE_DIRECTORIES "${wxWidgets_INCLUDE_DIRS}"
+        INTERFACE_COMPILE_DEFINITIONS "${wxWidgets_DEFINITIONS}"
+        INTERFACE_COMPILE_OPTIONS "${wxWidgets_CXX_FLAGS}"
+      )
+    endif()
+  else()
+    message(STATUS "Using static wxWidgets from Externals")
+    add_subdirectory(Externals/wxWidgets3)
+    set(wxWidgets_FOUND TRUE)
+  endif()
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD|NetBSD")
@@ -897,15 +813,8 @@ include_directories("${PROJECT_BINARY_DIR}/Source/Core")
 ########################################
 # Unit testing.
 #
-find_package(GTest)
-if(GTEST_FOUND AND USE_SHARED_GTEST)
-	message(STATUS "Using shared gtest")
-	include_directories(${GTEST_INCLUDE_DIRS})
-else()
-	message(STATUS "Using static gtest from Externals")
-	include_directories(Externals/gtest/include)
-	add_subdirectory(Externals/gtest EXCLUDE_FROM_ALL)
-endif()
+message(STATUS "Using static gtest from Externals")
+add_subdirectory(Externals/gtest EXCLUDE_FROM_ALL)
 
 enable_testing()
 add_custom_target(unittests)

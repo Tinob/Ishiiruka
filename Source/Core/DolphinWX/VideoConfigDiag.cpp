@@ -249,7 +249,7 @@ static  wxArrayString GetListOfResolutions()
 	}
 #elif defined(HAVE_XRANDR) && HAVE_XRANDR
 	std::vector<std::string> resos;
-	main_frame->m_XRRConfig->AddResolutions(resos);
+	main_frame->m_xrr_config->AddResolutions(resos);
 	for (auto res : resos)
 		retlist.Add(StrToWxStr(res));
 #elif defined(__APPLE__)

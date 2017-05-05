@@ -19,24 +19,24 @@
 
 namespace WiimoteEmu
 {
-constexpr std::array<u8, 6> guitar_id{ {0x00, 0x00, 0xa4, 0x20, 0x01, 0x03} };
+constexpr std::array<u8, 6> guitar_id{ { 0x00, 0x00, 0xa4, 0x20, 0x01, 0x03 } };
 
 constexpr std::array<u16, 5> guitar_fret_bitmasks{ {
 		Guitar::FRET_GREEN, Guitar::FRET_RED, Guitar::FRET_YELLOW, Guitar::FRET_BLUE,
 		Guitar::FRET_ORANGE,
-} };
+	} };
 
 constexpr std::array<const char*, 5> guitar_fret_names{ {
-		"Green", "Red", "Yellow", "Blue", "Orange",
-} };
+		_trans("Green"), _trans("Red"), _trans("Yellow"), _trans("Blue"), _trans("Orange"),
+	} };
 
 constexpr std::array<u16, 2> guitar_button_bitmasks{ {
 		Guitar::BUTTON_MINUS, Guitar::BUTTON_PLUS,
-} };
+	} };
 
 constexpr std::array<u16, 2> guitar_strum_bitmasks{ {
 		Guitar::BAR_UP, Guitar::BAR_DOWN,
-} };
+	} };
 
 Guitar::Guitar(ExtensionReg& reg) : Attachment(_trans("Guitar"), reg)
 {
@@ -47,11 +47,11 @@ Guitar::Guitar(ExtensionReg& reg) : Attachment(_trans("Guitar"), reg)
 
 	// strum
 	groups.emplace_back(m_strum = new ControllerEmu::Buttons(_trans("Strum")));
-	m_strum->controls.emplace_back(new ControllerEmu::Input("Up"));
-	m_strum->controls.emplace_back(new ControllerEmu::Input("Down"));
+	m_strum->controls.emplace_back(new ControllerEmu::Input(_trans("Up")));
+	m_strum->controls.emplace_back(new ControllerEmu::Input(_trans("Down")));
 
 	// buttons
-	groups.emplace_back(m_buttons = new ControllerEmu::Buttons("Buttons"));
+	groups.emplace_back(m_buttons = new ControllerEmu::Buttons(_trans("Buttons")));
 	m_buttons->controls.emplace_back(new ControllerEmu::Input("-"));
 	m_buttons->controls.emplace_back(new ControllerEmu::Input("+"));
 
@@ -86,7 +86,7 @@ void Guitar::GetState(u8* const data)
 	// TODO: touch bar, probably not
 	gdata->tb = 0x0F;  // not touched
 
-	// whammy bar
+							 // whammy bar
 	ControlState whammy;
 	m_whammy->GetState(&whammy);
 	gdata->whammy = static_cast<u8>(whammy * 0x1F);

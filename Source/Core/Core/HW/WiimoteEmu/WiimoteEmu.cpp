@@ -15,13 +15,15 @@
 
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
+#include "Core/HW/Wiimote.h"
+#include "Core/HW/WiimoteCommon/WiimoteConstants.h"
+#include "Core/HW/WiimoteCommon/WiimoteHid.h"
 #include "Core/HW/WiimoteEmu/Attachment/Classic.h"
 #include "Core/HW/WiimoteEmu/Attachment/Drums.h"
 #include "Core/HW/WiimoteEmu/Attachment/Guitar.h"
 #include "Core/HW/WiimoteEmu/Attachment/Nunchuk.h"
 #include "Core/HW/WiimoteEmu/Attachment/Turntable.h"
 #include "Core/HW/WiimoteEmu/MatrixMath.h"
-#include "Core/HW/WiimoteEmu/WiimoteHid.h"
 #include "Core/HW/WiimoteReal/WiimoteReal.h"
 #include "Core/Host.h"
 #include "Core/Movie.h"
@@ -169,8 +171,8 @@ void EmulateSwing(AccelData* const accel, ControllerEmu::Force* const swing_grou
 	axis_map[1] = sideways;                          // left|right
 	axis_map[2] = upright ? 2 : (sideways ? 0 : 1);  // forward/backward
 
-													 // some orientations have up as positive, some as negative
-													 // same with forward
+																	 // some orientations have up as positive, some as negative
+																	 // same with forward
 	if (sideways && !upright)
 		g_dir[axis_map[2]] *= -1;
 	if (!sideways && upright)
@@ -195,7 +197,7 @@ static const char* const named_buttons[] = {
 
 void Wiimote::Reset()
 {
-	m_reporting_mode = WM_REPORT_CORE;
+	m_reporting_mode = RT_REPORT_CORE;
 	// i think these two are good
 	m_reporting_channel = 0;
 	m_reporting_auto = false;
@@ -253,7 +255,7 @@ Wiimote::Wiimote(const unsigned int index)
 	// ---- set up all the controls ----
 
 	// buttons
-	groups.emplace_back(m_buttons = new ControllerEmu::Buttons("Buttons"));
+	groups.emplace_back(m_buttons = new ControllerEmu::Buttons(_trans("Buttons")));
 	for (auto& named_button : named_buttons)
 		m_buttons->controls.emplace_back(new ControllerEmu::Input(named_button));
 
@@ -269,9 +271,12 @@ Wiimote::Wiimote(const unsigned int index)
 
 	// shake
 	groups.emplace_back(m_shake = new ControllerEmu::Buttons(_trans("Shake")));
-	m_shake->controls.emplace_back(new ControllerEmu::Input("X"));
-	m_shake->controls.emplace_back(new ControllerEmu::Input("Y"));
-	m_shake->controls.emplace_back(new ControllerEmu::Input("Z"));
+	// i18n: Refers to a 3D axis (used when mapping motion controls)
+	m_shake->controls.emplace_back(new ControllerEmu::Input(_trans("X")));
+	// i18n: Refers to a 3D axis (used when mapping motion controls)
+	m_shake->controls.emplace_back(new ControllerEmu::Input(_trans("Y")));
+	// i18n: Refers to a 3D axis (used when mapping motion controls)
+	m_shake->controls.emplace_back(new ControllerEmu::Input(_trans("Z")));
 
 	// extension
 	groups.emplace_back(m_extension = new ControllerEmu::Extension(_trans("Extension")));
@@ -290,7 +295,7 @@ Wiimote::Wiimote(const unsigned int index)
 	m_rumble->controls.emplace_back(m_motor = new ControllerEmu::Output(_trans("Motor")));
 
 	// dpad
-	groups.emplace_back(m_dpad = new ControllerEmu::Buttons("D-Pad"));
+	groups.emplace_back(m_dpad = new ControllerEmu::Buttons(_trans("D-Pad")));
 	for (auto& named_direction : named_directions)
 		m_dpad->controls.emplace_back(new ControllerEmu::Input(named_direction));
 
@@ -665,7 +670,7 @@ void Wiimote::GetExtData(u8* const data)
 	// i think it should be unencrpyted in the register, encrypted when read.
 	memcpy(m_reg_ext.controller_data, data, sizeof(wm_nc));  // TODO: Should it be nc specific?
 
-															 // motionplus pass-through modes
+																				// motionplus pass-through modes
 	if (m_motion_plus_active)
 	{
 		switch (m_reg_motion_plus.ext_identifier[0x4])
@@ -726,7 +731,7 @@ void Wiimote::Update()
 
 	m_status.battery = (u8)(m_battery_setting->GetValue() * 100);
 
-	const ReportFeatures& rptf = reporting_mode_features[m_reporting_mode - WM_REPORT_CORE];
+	const ReportFeatures& rptf = reporting_mode_features[m_reporting_mode - RT_REPORT_CORE];
 	s8 rptf_size = rptf.size;
 	if (Movie::IsPlayingInput() &&
 		Movie::PlayWiimote(m_index, data, rptf, m_extension->active_extension, m_ext_key))
@@ -744,7 +749,7 @@ void Wiimote::Update()
 		// hotkey/settings modifier
 		m_hotkeys->GetState();  // data is later accessed in UpdateButtonsStatus and GetAccelData
 
-								// core buttons
+										// core buttons
 		if (rptf.core)
 			GetButtonData(data + rptf.core);
 
@@ -776,10 +781,10 @@ void Wiimote::Update()
 					{
 						// use data reports
 					default:
-						if (real_data[1] >= WM_REPORT_CORE)
+						if (real_data[1] >= RT_REPORT_CORE)
 						{
 							const ReportFeatures& real_rptf =
-								reporting_mode_features[real_data[1] - WM_REPORT_CORE];
+								reporting_mode_features[real_data[1] - RT_REPORT_CORE];
 
 							// force same report type from real-Wiimote
 							if (&real_rptf != &rptf)
@@ -807,7 +812,7 @@ void Wiimote::Update()
 								memcpy(data + rptf.ext, real_data + real_rptf.ext,
 									sizeof(wm_nc));  // TODO: Why NC specific?
 						}
-						else if (WM_ACK_DATA != real_data[1] || m_extension->active_extension > 0)
+						else if (real_data[1] != RT_ACK_DATA || m_extension->active_extension > 0)
 							rptf_size = 0;
 						else
 							// use real-acks if an emu-extension isn't chosen
@@ -815,7 +820,7 @@ void Wiimote::Update()
 						break;
 
 						// use all status reports, after modification of the extension bit
-					case WM_STATUS_REPORT:
+					case RT_STATUS_REPORT:
 						// if (m_extension->switch_extension)
 						//((wm_status_report*)(real_data + 2))->extension = (m_extension->active_extension > 0);
 						if (m_extension->active_extension)
@@ -824,7 +829,7 @@ void Wiimote::Update()
 						break;
 
 						// use all read-data replies
-					case WM_READ_DATA_REPLY:
+					case RT_READ_DATA_REPLY:
 						rptf_size = -1;
 						break;
 					}
@@ -851,7 +856,7 @@ void Wiimote::Update()
 	Movie::CheckWiimoteStatus(m_index, data, rptf, m_extension->active_extension, m_ext_key);
 
 	// don't send a data report if auto reporting is off
-	if (false == m_reporting_auto && data[1] >= WM_REPORT_CORE)
+	if (false == m_reporting_auto && data[1] >= RT_REPORT_CORE)
 		return;
 
 	// send data report
@@ -935,8 +940,8 @@ void Wiimote::InterruptChannel(const u16 _channelID, const void* _pData, u32 _Si
 				switch (sr->wm)
 				{
 					// these two types are handled in RequestStatus() & ReadData()
-				case WM_REQUEST_STATUS:
-				case WM_READ_DATA:
+				case RT_REQUEST_STATUS:
+				case RT_READ_DATA:
 					if (WIIMOTE_SRC_REAL == g_wiimote_sources[m_index])
 						WiimoteReal::InterruptChannel(m_index, _channelID, _pData, _Size);
 					break;
@@ -1010,7 +1015,7 @@ void Wiimote::LoadDefaults(const ControllerInterface& ciface)
 	m_buttons->SetControlExpression(6, "!`Alt_L` & Return");  // Home
 #endif
 
-															  // Shake
+																				 // Shake
 	for (int i = 0; i < 3; ++i)
 		m_shake->SetControlExpression(i, "Click 2");
 
@@ -1038,8 +1043,8 @@ void Wiimote::LoadDefaults(const ControllerInterface& ciface)
 	m_dpad->SetControlExpression(3, "Right");  // Right
 #endif
 
-											   // ugly stuff
-											   // enable nunchuk
+															 // ugly stuff
+															 // enable nunchuk
 	m_extension->switch_extension = 1;
 
 	// set nunchuk defaults

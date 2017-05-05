@@ -19,12 +19,12 @@
 
 namespace WiimoteEmu
 {
-constexpr std::array<u8, 6> classic_id{ {0x00, 0x00, 0xa4, 0x20, 0x01, 0x01} };
+constexpr std::array<u8, 6> classic_id{ { 0x00, 0x00, 0xa4, 0x20, 0x01, 0x01 } };
 
 // Classic Controller calibration
 constexpr std::array<u8, 0x10> classic_calibration{ {
 		0xff, 0x00, 0x80, 0xff, 0x00, 0x80, 0xff, 0x00, 0x80, 0xff, 0x00, 0x80, 0x00, 0x00, 0x51, 0xa6,
-} };
+	} };
 
 constexpr std::array<u16, 9> classic_button_bitmasks{ {
 		Classic::BUTTON_A, Classic::BUTTON_B, Classic::BUTTON_X, Classic::BUTTON_Y,
@@ -34,28 +34,35 @@ constexpr std::array<u16, 9> classic_button_bitmasks{ {
 		Classic::BUTTON_MINUS, Classic::BUTTON_PLUS,
 
 		Classic::BUTTON_HOME,
-} };
+	} };
 
 constexpr std::array<const char*, 9> classic_button_names{ {
 		"A", "B", "X", "Y", "ZL", "ZR", "-", "+", "Home",
-} };
+	} };
 
 constexpr std::array<u16, 2> classic_trigger_bitmasks{ {
 		Classic::TRIGGER_L, Classic::TRIGGER_R,
-} };
+	} };
 
 constexpr std::array<const char*, 4> classic_trigger_names{ {
-		"L", "R", "L-Analog", "R-Analog",
-} };
+		// i18n: The left trigger button (labeled L on real controllers)
+		_trans("L"),
+		// i18n: The right trigger button (labeled R on real controllers)
+		_trans("R"),
+		// i18n: The left trigger button (labeled L on real controllers) used as an analog input
+		_trans("L-Analog"),
+		// i18n: The right trigger button (labeled R on real controllers) used as an analog input
+		_trans("R-Analog"),
+	} };
 
 constexpr std::array<u16, 4> classic_dpad_bitmasks{ {
 		Classic::PAD_UP, Classic::PAD_DOWN, Classic::PAD_LEFT, Classic::PAD_RIGHT,
-} };
+	} };
 
 Classic::Classic(ExtensionReg& reg) : Attachment(_trans("Classic"), reg)
 {
 	// buttons
-	groups.emplace_back(m_buttons = new ControllerEmu::Buttons("Buttons"));
+	groups.emplace_back(m_buttons = new ControllerEmu::Buttons(_trans("Buttons")));
 	for (auto& classic_button_name : classic_button_names)
 		m_buttons->controls.emplace_back(new ControllerEmu::Input(classic_button_name));
 
@@ -66,12 +73,12 @@ Classic::Classic(ExtensionReg& reg) : Attachment(_trans("Classic"), reg)
 		_trans("Right Stick"), DEFAULT_ATTACHMENT_STICK_RADIUS));
 
 	// triggers
-	groups.emplace_back(m_triggers = new ControllerEmu::MixedTriggers("Triggers"));
+	groups.emplace_back(m_triggers = new ControllerEmu::MixedTriggers(_trans("Triggers")));
 	for (auto& classic_trigger_name : classic_trigger_names)
 		m_triggers->controls.emplace_back(new ControllerEmu::Input(classic_trigger_name));
 
 	// dpad
-	groups.emplace_back(m_dpad = new ControllerEmu::Buttons("D-Pad"));
+	groups.emplace_back(m_dpad = new ControllerEmu::Buttons(_trans("D-Pad")));
 	for (auto& named_direction : named_directions)
 		m_dpad->controls.emplace_back(new ControllerEmu::Input(named_direction));
 

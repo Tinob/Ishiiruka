@@ -26,6 +26,7 @@
 #include "Common/CommonTypes.h"
 #include "Common/Logging/Log.h"
 #include "Common/Thread.h"
+#include "Core/HW/WiimoteCommon/WiimoteConstants.h"
 #include "Core/HW/WiimoteReal/IOWin.h"
 
 // Create func_t function pointer type and declare a nullptr-initialized static variable of that
@@ -366,7 +367,7 @@ static bool IsWiimote(const std::basic_string<TCHAR>& device_path, WinWriteMetho
 		return false;
 
 	u8 buf[MAX_PAYLOAD];
-	u8 const req_status_report[] = { WM_SET_REPORT | WM_BT_OUTPUT, WM_REQUEST_STATUS, 0 };
+	u8 const req_status_report[] = { WR_SET_REPORT | BT_OUTPUT, RT_REQUEST_STATUS, 0 };
 	int invalid_report_count = 0;
 	int rc = WriteToHandle(dev_handle, method, req_status_report, sizeof(req_status_report));
 	while (rc > 0)
@@ -377,7 +378,7 @@ static bool IsWiimote(const std::basic_string<TCHAR>& device_path, WinWriteMetho
 
 		switch (buf[1])
 		{
-		case WM_STATUS_REPORT:
+		case RT_STATUS_REPORT:
 			return true;
 		default:
 			WARN_LOG(WIIMOTE, "IsWiimote(): Received unexpected report %02x", buf[1]);
@@ -533,10 +534,10 @@ bool WiimoteWindows::ConnectInternal()
 	// This isn't as drastic as it sounds, since the process in which the threads
 	// reside is normal priority. Needed for keeping audio reports at a decent rate
 	/*
-	if (!SetThreadPriority(m_wiimote_thread.native_handle(), THREAD_PRIORITY_TIME_CRITICAL))
-	{
-	ERROR_LOG(WIIMOTE, "Failed to set Wiimote thread priority");
-	}
+	  if (!SetThreadPriority(m_wiimote_thread.native_handle(), THREAD_PRIORITY_TIME_CRITICAL))
+	  {
+		 ERROR_LOG(WIIMOTE, "Failed to set Wiimote thread priority");
+	  }
 	*/
 
 	return true;
@@ -651,8 +652,8 @@ static int IOWritePerSetOutputReport(HANDLE& dev_handle, const u8* buf, size_t l
 			NOTICE_LOG(WIIMOTE, "IOWrite[WWM_SET_OUTPUT_REPORT]: Unable to send data to the Wiimote");
 		}
 		else if (err != 0x1F)  // Some third-party adapters (DolphinBar) use this
-													 // error code to signal the absence of a Wiimote
-													 // linked to the HID device.
+									  // error code to signal the absence of a Wiimote
+									  // linked to the HID device.
 		{
 			WARN_LOG(WIIMOTE, "IOWrite[WWM_SET_OUTPUT_REPORT]: Error: %08x", err);
 		}

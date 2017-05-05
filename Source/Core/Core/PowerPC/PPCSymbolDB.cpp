@@ -54,7 +54,7 @@ Symbol* PPCSymbolDB::AddFunction(u32 startAddr)
 		u32 targetEnd = PPCAnalyst::AnalyzeFunction(startAddr, tempFunc);
 		if (targetEnd == 0)
 			return nullptr;  // found a dud :(
-		// LOG(OSHLE, "Symbol found at %08x", startAddr);
+								  // LOG(OSHLE, "Symbol found at %08x", startAddr);
 		functions[startAddr] = tempFunc;
 		tempFunc.type = Symbol::Type::Function;
 		checksumToFunction[tempFunc.hash].insert(&functions[startAddr]);
@@ -72,7 +72,7 @@ void PPCSymbolDB::AddKnownSymbol(u32 startAddr, u32 size, const std::string& nam
 		Symbol* tempfunc = &iter->second;
 		tempfunc->name = name;
 		tempfunc->function_name = GetStrippedFunctionName(name);
-		tempfunc->hash = SignatureDB::ComputeCodeChecksum(startAddr, startAddr + size - 4);
+		tempfunc->hash = HashSignatureDB::ComputeCodeChecksum(startAddr, startAddr + size - 4);
 		tempfunc->type = type;
 		tempfunc->size = size;
 	}
@@ -449,7 +449,7 @@ bool PPCSymbolDB::SaveMap(const std::string& filename, bool WithCodes) const
 			++itr;
 
 			/* To make nice straight lines we fill out the name with spaces, we also cut off
-				 all names longer than 25 letters */
+			all names longer than 25 letters */
 			std::string TempSym;
 			for (u32 i = 0; i < 25; i++)
 			{

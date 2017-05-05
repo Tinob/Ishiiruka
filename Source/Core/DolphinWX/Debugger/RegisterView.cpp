@@ -40,8 +40,8 @@ enum
 };
 
 constexpr const char* special_reg_names[] = { "PC",        "LR",    "CTR",  "CR",         "FPSCR",
-																						 "MSR",       "SRR0",  "SRR1", "Exceptions", "Int Mask",
-																						 "Int Cause", "DSISR", "DAR",  "PT hashmask" };
+"MSR",       "SRR0",  "SRR1", "Exceptions", "Int Mask",
+"Int Cause", "DSISR", "DAR",  "PT hashmask" };
 
 wxString GetFormatString(CRegTable::FormatSpecifier specifier)
 {
@@ -514,7 +514,7 @@ void CRegisterView::OnPopupMenu(wxCommandEvent& event)
 {
 	// FIXME: This is terrible. Generate events instead.
 	CFrame* cframe = wxGetApp().GetCFrame();
-	CCodeWindow* code_window = cframe->g_pCodeWindow;
+	CCodeWindow* code_window = cframe->m_code_window;
 	CWatchWindow* watch_window = code_window->GetPanel<CWatchWindow>();
 	CMemoryWindow* memory_window = code_window->GetPanel<CMemoryWindow>();
 

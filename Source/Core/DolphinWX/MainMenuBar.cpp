@@ -429,6 +429,8 @@ wxMenu* MainMenuBar::CreateSymbolsMenu() const
 		IDM_SCAN_SIGNATURES, _("&Signature Database"),
 		_("Recognise standard functions from Sys/totaldb.dsy, and use generic zz_ "
 			"names for other functions."));
+	generate_symbols_menu->Append(IDM_SCAN_RSO, _("&RSO Modules"),
+		_("Find functions based on RSO modules (experimental)..."));
 	symbols_menu->AppendSubMenu(generate_symbols_menu, _("&Generate Symbols From"));
 	symbols_menu->AppendSeparator();
 	symbols_menu->Append(IDM_LOAD_MAP_FILE, _("&Load Symbol Map"),
@@ -469,11 +471,7 @@ wxMenu* MainMenuBar::CreateSymbolsMenu() const
 	symbols_menu->Append(
 		IDM_USE_SIGNATURE_FILE, _("Apply Signat&ure File..."),
 		_("Must use Generate Symbols first! Recognise names of any standard library functions "
-			"used in multiple games, by loading them from a .dsy file."));
-	symbols_menu->Append(
-		IDM_USE_MEGA_SIGNATURE_FILE, _("Apply &MEGA Signature File..."),
-		_("Must use Generate Symbols first! Recognise names of any standard library functions "
-			"used in multiple games, by loading them from a .mega file."));
+			"used in multiple games, by loading them from a .dsy, .csv, or .mega file."));
 	symbols_menu->AppendSeparator();
 	symbols_menu->Append(IDM_PATCH_HLE_FUNCTIONS, _("&Patch HLE Functions"));
 	symbols_menu->Append(IDM_RENAME_SYMBOLS, _("&Rename Symbols from File..."));

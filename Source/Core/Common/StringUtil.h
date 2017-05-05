@@ -26,7 +26,7 @@ __attribute__((__format__(printf, 1, 2)))
 // Cheap!
 bool CharArrayFromFormatV(char* out, int outsize, const char* format, va_list args);
 
-template<size_t Count>
+template <size_t Count>
 inline void CharArrayFromFormat(char(&out)[Count], const char* format, ...)
 {
 	va_list args;
@@ -67,7 +67,8 @@ template <typename N>
 static bool TryParse(const std::string& str, N* const output)
 {
 	std::istringstream iss(str);
-	// is this right? not doing this breaks reading floats on locales that use different decimal separators
+	// is this right? not doing this breaks reading floats on locales that use different decimal
+	// separators
 	iss.imbue(std::locale("C"));
 
 	N tmp = 0;
@@ -100,16 +101,6 @@ bool TryParseVector(const std::string& str, std::vector<N>* output, const char d
 // Generates an hexdump-like representation of a binary data blob.
 std::string HexDump(const u8* data, size_t size);
 
-inline bool StringStartsWith(const std::string& str, const std::string& prefix)
-{
-	return str.size() >= prefix.size() && str.compare(0, prefix.size(), prefix) == 0;
-}
-
-inline bool StringEndsWith(const std::string& str, const std::string& ending)
-{
-	return str.length() >= ending.length() && (str.compare(str.length() - ending.length(), ending.length(), ending) == 0);
-}
-
 // TODO: kill this
 bool AsciiToHex(const std::string& _szValue, u32& result);
 
@@ -119,10 +110,15 @@ void SplitString(const std::string& str, char delim, std::vector<std::string>& o
 std::string JoinStrings(const std::vector<std::string>& strings, const std::string& delimiter);
 
 // "C:/Windows/winhelp.exe" to "C:/Windows/", "winhelp", ".exe"
-bool SplitPath(const std::string& full_path, std::string* _pPath, std::string* _pFilename, std::string* _pExtension);
+bool SplitPath(const std::string& full_path, std::string* _pPath, std::string* _pFilename,
+	std::string* _pExtension);
 
-void BuildCompleteFilename(std::string& _CompleteFilename, const std::string& _Path, const std::string& _Filename);
+void BuildCompleteFilename(std::string& _CompleteFilename, const std::string& _Path,
+	const std::string& _Filename);
 std::string ReplaceAll(std::string result, const std::string& src, const std::string& dest);
+
+bool StringBeginsWith(const std::string& str, const std::string& begin);
+bool StringEndsWith(const std::string& str, const std::string& end);
 
 std::string CP1252ToUTF8(const std::string& str);
 std::string SHIFTJISToUTF8(const std::string& str);

@@ -430,7 +430,7 @@ bool PostProcessingShaderConfiguration::ParseOptionBlock(const std::string& dirn
 
 	for (const auto& string_option : block.m_options)
 	{
-		if (StringStartsWith(string_option.first, "GUIName"))
+		if (StringBeginsWith(string_option.first, "GUIName"))
 		{
 			if (string_option.first == "GUIName")
 			{
@@ -441,7 +441,7 @@ bool PostProcessingShaderConfiguration::ParseOptionBlock(const std::string& dirn
 				option.m_gui_name = string_option.second;
 			}
 		}
-		else if (StringStartsWith(string_option.first, "GUIDescription"))
+		else if (StringBeginsWith(string_option.first, "GUIDescription"))
 		{
 			if (string_option.first == "GUIDescription")
 			{
@@ -2532,6 +2532,11 @@ bool  PostProcessor::UpdateConstantUniformBuffer(
 	return true;
 }
 
+void* PostProcessingShaderConfiguration::GetConfigurationBuffer(u32* buffer_size)
+{
+	*buffer_size = m_constants.size() * sizeof(Constant);
+	return m_constants.data();
+}
 
 void* PostProcessingShaderConfiguration::UpdateConfigurationBuffer(u32* buffer_size, bool packbuffer)
 {
@@ -2612,6 +2617,7 @@ void* PostProcessingShaderConfiguration::UpdateConfigurationBuffer(u32* buffer_s
 		m_constants[constant_idx] = temp;
 		constant_idx++;
 	}
+	m_constants.resize(constant_idx);
 	*buffer_size = constant_idx * sizeof(Constant);
 	return m_constants.data();
 }

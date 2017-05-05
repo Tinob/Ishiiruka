@@ -11,7 +11,7 @@
 #include "Common/ChunkFile.h"
 #include "Common/CommonTypes.h"
 #include "Common/Logging/Log.h"
-#include "Core/IOS/IPC.h"
+#include "Core/IOS/IOS.h"
 
 namespace IOS
 {
@@ -23,6 +23,7 @@ enum ReturnCode : s32
 	IPC_EACCES = -1,          // Permission denied
 	IPC_EEXIST = -2,          // File exists
 	IPC_EINVAL = -4,          // Invalid argument or fd
+	IPC_EMAX = -5,            // Too many file descriptors open
 	IPC_ENOENT = -6,          // File not found
 	IPC_EQUEUEFULL = -8,      // Queue full
 	IPC_EIO = -12,            // ECC error
@@ -83,6 +84,7 @@ struct Request
 
 enum OpenMode : s32
 {
+	IOS_OPEN_NONE = 0,
 	IOS_OPEN_READ = 1,
 	IOS_OPEN_WRITE = 2,
 	IOS_OPEN_RW = (IOS_OPEN_READ | IOS_OPEN_WRITE)
@@ -92,6 +94,10 @@ struct OpenRequest final : Request
 {
 	std::string path;
 	OpenMode flags = IOS_OPEN_READ;
+	// The UID and GID are not part of the IPC request sent from the PPC to the Starlet,
+	// but they are set after they reach IOS and are dispatched to the appropriate module.
+	u32 uid = 0;
+	u16 gid = 0;
 	explicit OpenRequest(u32 address);
 };
 
@@ -102,14 +108,15 @@ struct ReadWriteRequest final : Request
 	explicit ReadWriteRequest(u32 address);
 };
 
+enum SeekMode : s32
+{
+	IOS_SEEK_SET = 0,
+	IOS_SEEK_CUR = 1,
+	IOS_SEEK_END = 2,
+};
+
 struct SeekRequest final : Request
 {
-	enum SeekMode
-	{
-		IOS_SEEK_SET = 0,
-		IOS_SEEK_CUR = 1,
-		IOS_SEEK_END = 2,
-	};
 	u32 offset = 0;
 	SeekMode mode = IOS_SEEK_SET;
 	explicit SeekRequest(u32 address);
@@ -149,7 +156,6 @@ struct IOCtlVRequest final : Request
 	std::vector<IOVector> in_vectors;
 	std::vector<IOVector> io_vectors;
 	explicit IOCtlVRequest(u32 address);
-	bool HasInputVectorWithAddress(u32 vector_address) const;
 	bool HasNumberOfValidVectors(size_t in_count, size_t io_count) const;
 	void Dump(const std::string& description, LogTypes::LOG_TYPE type = LogTypes::IOS,
 		LogTypes::LOG_LEVELS level = LogTypes::LINFO) const;
@@ -169,7 +175,7 @@ public:
 		OH0,     // OH0 child devices which are created dynamically.
 	};
 
-	Device(u32 device_id, const std::string& device_name, DeviceType type = DeviceType::Static);
+	Device(Kernel& ios, const std::string& device_name, DeviceType type = DeviceType::Static);
 
 	virtual ~Device() = default;
 	// Release any resources which might interfere with savestating.
@@ -178,11 +184,10 @@ public:
 	void DoStateShared(PointerWrap& p);
 
 	const std::string& GetDeviceName() const { return m_name; }
-	u32 GetDeviceID() const { return m_device_id; }
 	// Replies to Open and Close requests are sent by the IPC request handler (HandleCommand),
 	// not by the devices themselves.
 	virtual ReturnCode Open(const OpenRequest& request);
-	virtual void Close();
+	virtual ReturnCode Close(u32 fd);
 	virtual IPCCommandResult Seek(const SeekRequest& seek) { return Unsupported(seek); }
 	virtual IPCCommandResult Read(const ReadWriteRequest& read) { return Unsupported(read); }
 	virtual IPCCommandResult Write(const ReadWriteRequest& write) { return Unsupported(write); }
@@ -196,9 +201,10 @@ public:
 	static IPCCommandResult GetNoReply();
 
 protected:
+	Kernel& m_ios;
+
 	std::string m_name;
 	// STATE_TO_SAVE
-	u32 m_device_id;
 	DeviceType m_device_type;
 	bool m_is_active = false;
 

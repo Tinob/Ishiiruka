@@ -24,8 +24,7 @@ namespace HLE
 {
 namespace Device
 {
-NetKDRequest::NetKDRequest(u32 device_id, const std::string& device_name)
-	: Device(device_id, device_name)
+NetKDRequest::NetKDRequest(Kernel& ios, const std::string& device_name) : Device(ios, device_name)
 {
 }
 
@@ -153,8 +152,8 @@ IPCCommandResult NetKDRequest::IOCtl(const IOCtlRequest& request)
 u8 NetKDRequest::GetAreaCode(const std::string& area) const
 {
 	static const std::map<std::string, u8> regions = {
-			{"JPN", 0}, {"USA", 1}, {"EUR", 2}, {"AUS", 2}, {"BRA", 1}, {"TWN", 3}, {"ROC", 3},
-			{"KOR", 4}, {"HKG", 5}, {"ASI", 5}, {"LTN", 1}, {"SAF", 2}, {"CHN", 6},
+		 {"JPN", 0}, {"USA", 1}, {"EUR", 2}, {"AUS", 2}, {"BRA", 1}, {"TWN", 3}, {"ROC", 3},
+		 {"KOR", 4}, {"HKG", 5}, {"ASI", 5}, {"LTN", 1}, {"SAF", 2}, {"CHN", 6},
 	};
 
 	auto entryPos = regions.find(area);
@@ -167,7 +166,7 @@ u8 NetKDRequest::GetAreaCode(const std::string& area) const
 u8 NetKDRequest::GetHardwareModel(const std::string& model) const
 {
 	static const std::map<std::string, u8> models = {
-			{"RVL", MODEL_RVL}, {"RVT", MODEL_RVT}, {"RVV", MODEL_RVV}, {"RVD", MODEL_RVD},
+		 {"RVL", MODEL_RVL}, {"RVT", MODEL_RVT}, {"RVV", MODEL_RVV}, {"RVD", MODEL_RVD},
 	};
 
 	auto entryPos = models.find(model);
@@ -194,7 +193,7 @@ s32 NetKDRequest::NWC24MakeUserID(u64* nwc24_id, u32 hollywood_id, u16 id_ctr, u
 {
 	const u8 table2[8] = { 0x1, 0x5, 0x0, 0x4, 0x2, 0x3, 0x6, 0x7 };
 	const u8 table1[16] = { 0x4, 0xB, 0x7, 0x9, 0xF, 0x1, 0xD, 0x3,
-												 0xC, 0x2, 0x6, 0xE, 0x8, 0x0, 0xA, 0x5 };
+								  0xC, 0x2, 0x6, 0xE, 0x8, 0x0, 0xA, 0x5 };
 
 	u64 mix_id = ((u64)area_code << 50) | ((u64)hardware_model << 47) | ((u64)hollywood_id << 15) |
 		((u64)id_ctr << 10);

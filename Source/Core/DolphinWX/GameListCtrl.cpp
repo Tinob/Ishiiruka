@@ -273,9 +273,28 @@ static bool ShouldDisplayGameListItem(const GameListItem& item)
 
 wxDEFINE_EVENT(DOLPHIN_EVT_RELOAD_GAMELIST, wxCommandEvent);
 
+struct CGameListCtrl::ColumnInfo
+{
+	const int id;
+	const int default_width;
+	const bool resizable;
+	bool& visible;
+};
+
 CGameListCtrl::CGameListCtrl(wxWindow* parent, const wxWindowID id, const wxPoint& pos,
 	const wxSize& size, long style)
-	: wxListCtrl(parent, id, pos, size, style), toolTip(nullptr)
+	: wxListCtrl(parent, id, pos, size, style), toolTip(nullptr),
+	m_columns({// {COLUMN, {default_width (without platform padding), resizability, visibility}}
+		{ COLUMN_PLATFORM, 32 + 1 /* icon padding */, false,
+		SConfig::GetInstance().m_showSystemColumn },
+		{ COLUMN_BANNER, 96, false, SConfig::GetInstance().m_showBannerColumn },
+		{ COLUMN_TITLE, 175, true, SConfig::GetInstance().m_showTitleColumn },
+		{ COLUMN_MAKER, 150, true, SConfig::GetInstance().m_showMakerColumn },
+		{ COLUMN_FILENAME, 100, true, SConfig::GetInstance().m_showFileNameColumn },
+		{ COLUMN_ID, 75, false, SConfig::GetInstance().m_showIDColumn },
+		{ COLUMN_COUNTRY, 32, false, SConfig::GetInstance().m_showRegionColumn },
+		{ COLUMN_EMULATION_STATE, 48, false, SConfig::GetInstance().m_showStateColumn },
+		{ COLUMN_SIZE, wxLIST_AUTOSIZE, false, SConfig::GetInstance().m_showSizeColumn } })
 {
 	Bind(wxEVT_SIZE, &CGameListCtrl::OnSize, this);
 	Bind(wxEVT_RIGHT_DOWN, &CGameListCtrl::OnRightClick, this);
@@ -438,29 +457,13 @@ void CGameListCtrl::ReloadList()
 #else
 		const int platform_padding = 8;
 #endif
-
-		const int platform_icon_padding = 1;
-
 		// set initial sizes for columns
 		SetColumnWidth(COLUMN_DUMMY, 0);
-		SetColumnWidth(COLUMN_PLATFORM, SConfig::GetInstance().m_showSystemColumn ?
-			FromDIP(32 + platform_icon_padding + platform_padding) :
-			0);
-		SetColumnWidth(COLUMN_BANNER,
-			SConfig::GetInstance().m_showBannerColumn ? FromDIP(96 + platform_padding) : 0);
-		SetColumnWidth(COLUMN_TITLE,
-			SConfig::GetInstance().m_showTitleColumn ? FromDIP(175 + platform_padding) : 0);
-		SetColumnWidth(COLUMN_MAKER,
-			SConfig::GetInstance().m_showMakerColumn ? FromDIP(150 + platform_padding) : 0);
-		SetColumnWidth(COLUMN_FILENAME, SConfig::GetInstance().m_showFileNameColumn ?
-			FromDIP(100 + platform_padding) :
-			0);
-		SetColumnWidth(COLUMN_ID,
-			SConfig::GetInstance().m_showIDColumn ? FromDIP(75 + platform_padding) : 0);
-		SetColumnWidth(COLUMN_COUNTRY,
-			SConfig::GetInstance().m_showRegionColumn ? FromDIP(32 + platform_padding) : 0);
-		SetColumnWidth(COLUMN_EMULATION_STATE,
-			SConfig::GetInstance().m_showStateColumn ? FromDIP(48 + platform_padding) : 0);
+
+		for (const auto& c : m_columns)
+		{
+			SetColumnWidth(c.id, c.visible ? FromDIP(c.default_width + platform_padding) : 0);
+		}
 
 		// add all items
 		for (int i = 0; i < (int)m_ISOFiles.size(); i++)
@@ -664,8 +667,9 @@ void CGameListCtrl::ScanForISOs()
 	m_ISOFiles.clear();
 
 	const auto custom_titles = LoadCustomTitles();
-	auto rFilenames = Common::DoFileSearch(GetFileSearchExtensions(), SConfig::GetInstance().m_ISOFolder,
-		SConfig::GetInstance().m_RecursiveISOFolder);
+	auto rFilenames =
+		Common::DoFileSearch(GetFileSearchExtensions(), SConfig::GetInstance().m_ISOFolder,
+			SConfig::GetInstance().m_RecursiveISOFolder);
 
 	if (rFilenames.size() > 0)
 	{
@@ -955,6 +959,27 @@ void CGameListCtrl::OnLeftClick(wxMouseEvent& event)
 	event.Skip();
 }
 
+static bool IsWADInstalled(const std::string& wad_path)
+{
+	const auto volume = DiscIO::CreateVolumeFromFilename(wad_path);
+	u64 title_id;
+	if (!volume || !volume->GetTitleID(&title_id))
+		return false;
+
+	const std::string content_dir =
+		Common::GetTitleContentPath(title_id, Common::FromWhichRoot::FROM_CONFIGURED_ROOT);
+
+	if (!File::IsDirectory(content_dir))
+		return false;
+
+	// Since this isn't IOS and we only need a simple way to figure out if a title is installed,
+	// we make the (reasonable) assumption that having more than just the TMD in the content
+	// directory means that the title is installed.
+	const auto entries = File::ScanDirectoryTree(content_dir, false);
+	return std::any_of(entries.children.begin(), entries.children.end(),
+		[](const auto& file) { return file.virtualName != "title.tmd"; });
+}
+
 void CGameListCtrl::OnRightClick(wxMouseEvent& event)
 {
 	// Focus the clicked item.
@@ -1023,9 +1048,15 @@ void CGameListCtrl::OnRightClick(wxMouseEvent& event)
 			if (platform == DiscIO::Platform::WII_WAD)
 			{
 				auto* const install_wad_item =
-					popupMenu.Append(IDM_LIST_INSTALL_WAD, _("Install to Wii Menu"));
-				// This should not be allowed while emulation is running, just like the Install WAD option.
-				install_wad_item->Enable(!Core::IsRunning() || !SConfig::GetInstance().bWii);
+					popupMenu.Append(IDM_LIST_INSTALL_WAD, _("Install to the NAND"));
+				auto* const uninstall_wad_item =
+					popupMenu.Append(IDM_LIST_UNINSTALL_WAD, _("Uninstall from the NAND"));
+				// These should not be allowed while emulation is running for safety reasons.
+				for (auto* menu_item : { install_wad_item, uninstall_wad_item })
+					menu_item->Enable(!Core::IsRunning() || !SConfig::GetInstance().bWii);
+
+				if (!IsWADInstalled(selected_iso->GetFileName()))
+					uninstall_wad_item->Enable(false);
 			}
 
 			popupMenu.Append(IDM_START_NETPLAY, _("Host with Netplay"));
@@ -1429,50 +1460,25 @@ void CGameListCtrl::AutomaticColumnWidth()
 	}
 	else if (GetColumnCount() > 0)
 	{
-		int resizable =
-			rc.GetWidth() - (GetColumnWidth(COLUMN_PLATFORM) + GetColumnWidth(COLUMN_BANNER) +
-				GetColumnWidth(COLUMN_ID) + GetColumnWidth(COLUMN_COUNTRY) +
-				GetColumnWidth(COLUMN_SIZE) + GetColumnWidth(COLUMN_EMULATION_STATE));
-		if (SConfig::GetInstance().m_showTitleColumn && SConfig::GetInstance().m_showMakerColumn &&
-			SConfig::GetInstance().m_showFileNameColumn)
+		int remaining_width = rc.GetWidth();
+		std::vector<int> visible_columns;
+
+		for (const auto& c : m_columns)
 		{
-			SetColumnWidth(COLUMN_TITLE, resizable / 3);
-			SetColumnWidth(COLUMN_MAKER, resizable / 3);
-			SetColumnWidth(COLUMN_FILENAME, resizable / 3);
+			if (c.visible)
+			{
+				if (c.resizable)
+					visible_columns.push_back(c.id);
+				else
+					remaining_width -= c.default_width;
+			}
 		}
-		else if (SConfig::GetInstance().m_showMakerColumn &&
-			SConfig::GetInstance().m_showFileNameColumn)
-		{
-			SetColumnWidth(COLUMN_MAKER, resizable / 2);
-			SetColumnWidth(COLUMN_FILENAME, resizable / 2);
-		}
-		else if (SConfig::GetInstance().m_showMakerColumn && SConfig::GetInstance().m_showTitleColumn)
-		{
-			SetColumnWidth(COLUMN_MAKER, resizable / 2);
-			SetColumnWidth(COLUMN_TITLE, resizable / 2);
-		}
-		else if (SConfig::GetInstance().m_showFileNameColumn &&
-			SConfig::GetInstance().m_showTitleColumn)
-		{
-			SetColumnWidth(COLUMN_TITLE, resizable / 2);
-			SetColumnWidth(COLUMN_FILENAME, resizable / 2);
-		}
-		else if (SConfig::GetInstance().m_showMakerColumn)
-		{
-			SetColumnWidth(COLUMN_MAKER, resizable);
-		}
-		else if (SConfig::GetInstance().m_showFileNameColumn)
-		{
-			SetColumnWidth(COLUMN_FILENAME, resizable);
-		}
-		else if (SConfig::GetInstance().m_showTitleColumn)
-		{
-			SetColumnWidth(COLUMN_TITLE, resizable);
-		}
-		else
-		{
-			SetColumnWidth(COLUMN_DUMMY, resizable);
-		}
+
+		if (visible_columns.empty())
+			visible_columns.push_back(COLUMN_DUMMY);
+
+		for (const int column : visible_columns)
+			SetColumnWidth(column, static_cast<int>(remaining_width / visible_columns.size()));
 	}
 	Thaw();
 }

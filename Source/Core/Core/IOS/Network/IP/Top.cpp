@@ -61,7 +61,7 @@ namespace HLE
 {
 namespace Device
 {
-NetIPTop::NetIPTop(u32 device_id, const std::string& device_name) : Device(device_id, device_name)
+NetIPTop::NetIPTop(Kernel& ios, const std::string& device_name) : Device(ios, device_name)
 {
 #ifdef _WIN32
 	int ret = WSAStartup(MAKEWORD(2, 2), &InitData);
@@ -540,8 +540,8 @@ IPCCommandResult NetIPTop::HandlePollRequest(const IOCtlRequest& request)
 		int native;
 		int wii;
 	} mapping[] = {
-		{ POLLRDNORM, 0x0001 },{ POLLRDBAND, 0x0002 },{ POLLPRI, 0x0004 },{ POLLWRNORM, 0x0008 },
-		{ POLLWRBAND, 0x0010 },{ POLLERR, 0x0020 },{ POLLHUP, 0x0040 },{ POLLNVAL, 0x0080 },
+		 {POLLRDNORM, 0x0001}, {POLLRDBAND, 0x0002}, {POLLPRI, 0x0004}, {POLLWRNORM, 0x0008},
+		 {POLLWRBAND, 0x0010}, {POLLERR, 0x0020},    {POLLHUP, 0x0040}, {POLLNVAL, 0x0080},
 	};
 
 	u32 unknown = Memory::Read_U32(request.buffer_in);
@@ -559,7 +559,7 @@ IPCCommandResult NetIPTop::HandlePollRequest(const IOCtlRequest& request)
 		int events = Memory::Read_U32(request.buffer_out + 0xc * i + 4);       // events
 		ufds[i].revents = Memory::Read_U32(request.buffer_out + 0xc * i + 8);  // revents
 
-																			   // Translate Wii to native events
+		// Translate Wii to native events
 		int unhandled_events = events;
 		ufds[i].events = 0;
 		for (auto& map : mapping)

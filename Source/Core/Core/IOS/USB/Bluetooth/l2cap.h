@@ -273,7 +273,7 @@ typedef struct
 {
 	uint16_t dcid;  /* destination channel ID */
 	uint16_t flags; /* flags */
-									/*      uint8_t options[] --  options */
+						 /*      uint8_t options[] --  options */
 } l2cap_cfg_req_cp;
 
 /* L2CAP Configuration Response */
@@ -283,7 +283,7 @@ typedef struct
 	uint16_t scid;   /* source channel ID */
 	uint16_t flags;  /* flags */
 	uint16_t result; /* 0x00 - success */
-									 /*      uint8_t options[] -- options */
+						  /*      uint8_t options[] -- options */
 } l2cap_cfg_rsp_cp;
 
 /* L2CAP configuration option */
@@ -337,10 +337,10 @@ typedef struct
 {
 	uint16_t type;   /* requested information type */
 	uint16_t result; /* 0x00 - success */
-									 /*      uint8_t info[]  -- info data (depends on type)
-									 *
-									 * L2CAP_CONNLESS_MTU - 2 bytes connectionless MTU
-									 */
+						  /*      uint8_t info[]  -- info data (depends on type)
+						  *
+						  * L2CAP_CONNLESS_MTU - 2 bytes connectionless MTU
+						  */
 } l2cap_info_rsp_cp;
 
 typedef union

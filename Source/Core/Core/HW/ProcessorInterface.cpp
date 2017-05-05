@@ -11,7 +11,7 @@
 #include "Core/HW/MMIO.h"
 #include "Core/HW/ProcessorInterface.h"
 #include "Core/HW/SystemTimers.h"
-#include "Core/IOS/IPC.h"
+#include "Core/IOS/IOS.h"
 #include "Core/IOS/STM/STM.h"
 #include "Core/PowerPC/PowerPC.h"
 
@@ -193,8 +193,8 @@ void SetInterrupt(u32 _causemask, bool _bSet)
 		m_InterruptCause |= _causemask;
 	else
 		m_InterruptCause &= ~_causemask;  // is there any reason to have this possibility?
-	// F|RES: i think the hw devices reset the interrupt in the PI to 0
-	// if the interrupt cause is eliminated. that isn't done by software (afaik)
+													 // F|RES: i think the hw devices reset the interrupt in the PI to 0
+													 // if the interrupt cause is eliminated. that isn't done by software (afaik)
 	UpdateException();
 }
 
@@ -210,22 +210,24 @@ static void ToggleResetButtonCallback(u64 userdata, s64 cyclesLate)
 
 static void IOSNotifyResetButtonCallback(u64 userdata, s64 cyclesLate)
 {
-	if (SConfig::GetInstance().bWii)
-	{
-		auto stm = IOS::HLE::GetDeviceByName("/dev/stm/eventhook");
-		if (stm)
-			std::static_pointer_cast<IOS::HLE::Device::STMEventHook>(stm)->ResetButton();
-	}
+	const auto ios = IOS::HLE::GetIOS();
+	if (!ios)
+		return;
+
+	auto stm = ios->GetDeviceByName("/dev/stm/eventhook");
+	if (stm)
+		std::static_pointer_cast<IOS::HLE::Device::STMEventHook>(stm)->ResetButton();
 }
 
 static void IOSNotifyPowerButtonCallback(u64 userdata, s64 cyclesLate)
 {
-	if (SConfig::GetInstance().bWii)
-	{
-		auto stm = IOS::HLE::GetDeviceByName("/dev/stm/eventhook");
-		if (stm)
-			std::static_pointer_cast<IOS::HLE::Device::STMEventHook>(stm)->PowerButton();
-	}
+	const auto ios = IOS::HLE::GetIOS();
+	if (!ios)
+		return;
+
+	auto stm = ios->GetDeviceByName("/dev/stm/eventhook");
+	if (stm)
+		std::static_pointer_cast<IOS::HLE::Device::STMEventHook>(stm)->PowerButton();
 }
 
 void ResetButton_Tap()

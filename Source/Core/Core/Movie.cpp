@@ -33,8 +33,9 @@
 #include "Core/HW/ProcessorInterface.h"
 #include "Core/HW/SI/SI.h"
 #include "Core/HW/Wiimote.h"
+#include "Core/HW/WiimoteCommon/WiimoteHid.h"
+#include "Core/HW/WiimoteCommon/WiimoteReport.h"
 #include "Core/HW/WiimoteEmu/WiimoteEmu.h"
-#include "Core/HW/WiimoteEmu/WiimoteHid.h"
 #include "Core/IOS/USB/Bluetooth/BTEmu.h"
 #include "Core/IOS/USB/Bluetooth/WiimoteDevice.h"
 #include "Core/NetPlayProto.h"
@@ -531,8 +532,10 @@ void ChangeWiiPads(bool instantly)
 	if (instantly && (s_controllers >> 4) == controllers)
 		return;
 
-	const auto bt = std::static_pointer_cast<IOS::HLE::Device::BluetoothEmu>(
-		IOS::HLE::GetDeviceByName("/dev/usb/oh1/57e/305"));
+	const auto ios = IOS::HLE::GetIOS();
+	const auto bt = ios ? std::static_pointer_cast<IOS::HLE::Device::BluetoothEmu>(
+		ios->GetDeviceByName("/dev/usb/oh1/57e/305")) :
+		nullptr;
 	for (int i = 0; i < MAX_WIIMOTES; ++i)
 	{
 		g_wiimote_sources[i] = IsUsingWiimote(i) ? WIIMOTE_SRC_EMU : WIIMOTE_SRC_NONE;

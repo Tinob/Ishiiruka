@@ -5,15 +5,15 @@
 /* HID reports access guide. */
 
 /* 0x10 - 0x1a   Output   EmuMain.cpp: HidOutputReport()
-			 0x10 - 0x14: General
-		 0x15: Status report request from the Wii
-		 0x16 and 0x17: Write and read memory or registers
-			 0x19 and 0x1a: General
-	 0x20 - 0x22   Input    EmuMain.cpp: HidOutputReport() to the destination
-			 0x15 leads to a 0x20 Input report
-			 0x17 leads to a 0x21 Input report
-		 0x10 - 0x1a leads to a 0x22 Input report
-	 0x30 - 0x3f   Input    This file: Update() */
+		 0x10 - 0x14: General
+	  0x15: Status report request from the Wii
+	  0x16 and 0x17: Write and read memory or registers
+		 0x19 and 0x1a: General
+	0x20 - 0x22   Input    EmuMain.cpp: HidOutputReport() to the destination
+		 0x15 leads to a 0x20 Input report
+		 0x17 leads to a 0x21 Input report
+	  0x10 - 0x1a leads to a 0x22 Input report
+	0x30 - 0x3f   Input    This file: Update() */
 
 #include <fstream>
 #include <queue>
@@ -26,11 +26,10 @@
 #include "Common/Logging/Log.h"
 #include "Common/MsgHandler.h"
 #include "Common/Swap.h"
-
 #include "Core/Core.h"
+#include "Core/HW/WiimoteCommon/WiimoteHid.h"
 #include "Core/HW/WiimoteEmu/Attachment/Attachment.h"
 #include "Core/HW/WiimoteEmu/WiimoteEmu.h"
-#include "Core/HW/WiimoteEmu/WiimoteHid.h"
 #include "Core/HW/WiimoteReal/WiimoteReal.h"
 #include "InputCommon/ControllerEmu/ControlGroup/Extension.h"
 
@@ -54,22 +53,22 @@ void Wiimote::ReportMode(const wm_report_mode* const dr)
 
 	if (dr->mode > 0x37)
 		PanicAlert("Wiimote: Unsupported Reporting mode.");
-	else if (dr->mode < WM_REPORT_CORE)
+	else if (dr->mode < RT_REPORT_CORE)
 		PanicAlert("Wiimote: Reporting mode < 0x30.");
 }
 
 /* Here we process the Output Reports that the Wii sends. Our response will be
-	 an Input Report back to the Wii. Input and Output is from the Wii's
-	 perspective, Output means data to the Wiimote (from the Wii), Input means
-	 data from the Wiimote.
+	an Input Report back to the Wii. Input and Output is from the Wii's
+	perspective, Output means data to the Wiimote (from the Wii), Input means
+	data from the Wiimote.
 
-	 The call browser:
+	The call browser:
 
-	 1. Wiimote_InterruptChannel > InterruptChannel > HidOutputReport
-	 2. Wiimote_ControlChannel > ControlChannel > HidOutputReport
+	1. Wiimote_InterruptChannel > InterruptChannel > HidOutputReport
+	2. Wiimote_ControlChannel > ControlChannel > HidOutputReport
 
-	 The IR enable/disable and speaker enable/disable and mute/unmute values are
-		bit2: 0 = Disable (0x02), 1 = Enable (0x06)
+	The IR enable/disable and speaker enable/disable and mute/unmute values are
+	 bit2: 0 = Disable (0x02), 1 = Enable (0x06)
 */
 void Wiimote::HidOutputReport(const wm_report* const sr, const bool send_ack)
 {
@@ -82,76 +81,76 @@ void Wiimote::HidOutputReport(const wm_report* const sr, const bool send_ack)
 
 	switch (sr->wm)
 	{
-	case WM_RUMBLE:  // 0x10
-		// this is handled above
+	case RT_RUMBLE:  // 0x10
+	  // this is handled above
 		return;  // no ack
 		break;
 
-	case WM_LEDS:  // 0x11
-		// INFO_LOG(WIIMOTE, "Set LEDs: 0x%02x", sr->data[0]);
+	case RT_LEDS:  // 0x11
+	  // INFO_LOG(WIIMOTE, "Set LEDs: 0x%02x", sr->data[0]);
 		m_status.leds = sr->data[0] >> 4;
 		break;
 
-	case WM_REPORT_MODE:  // 0x12
+	case RT_REPORT_MODE:  // 0x12
 		ReportMode((wm_report_mode*)sr->data);
 		break;
 
-	case WM_IR_PIXEL_CLOCK:  // 0x13
-		// INFO_LOG(WIIMOTE, "WM IR Clock: 0x%02x", sr->data[0]);
-		// m_ir_clock = sr->enable;
+	case RT_IR_PIXEL_CLOCK:  // 0x13
+	  // INFO_LOG(WIIMOTE, "WM IR Clock: 0x%02x", sr->data[0]);
+	  // m_ir_clock = sr->enable;
 		if (false == sr->ack)
 			return;
 		break;
 
-	case WM_SPEAKER_ENABLE:  // 0x14
-		// ERROR_LOG(WIIMOTE, "WM Speaker Enable: %02x", sr->enable);
-		// PanicAlert( "WM Speaker Enable: %d", sr->data[0] );
+	case RT_SPEAKER_ENABLE:  // 0x14
+	  // ERROR_LOG(WIIMOTE, "WM Speaker Enable: %02x", sr->enable);
+	  // PanicAlert( "WM Speaker Enable: %d", sr->data[0] );
 		m_status.speaker = sr->enable;
 		if (false == sr->ack)
 			return;
 		break;
 
-	case WM_REQUEST_STATUS:  // 0x15
+	case RT_REQUEST_STATUS:  // 0x15
 		if (WIIMOTE_SRC_EMU & g_wiimote_sources[m_index])
 			RequestStatus((wm_request_status*)sr->data);
 		return;  // sends its own ack
 		break;
 
-	case WM_WRITE_DATA:  // 0x16
+	case RT_WRITE_DATA:  // 0x16
 		WriteData((wm_write_data*)sr->data);
 		break;
 
-	case WM_READ_DATA:  // 0x17
+	case RT_READ_DATA:  // 0x17
 		if (WIIMOTE_SRC_EMU & g_wiimote_sources[m_index])
 			ReadData((wm_read_data*)sr->data);
 		return;  // sends its own ack
 		break;
 
-	case WM_WRITE_SPEAKER_DATA:  // 0x18
-		// wm_speaker_data *spkz = (wm_speaker_data*)sr->data;
-		// ERROR_LOG(WIIMOTE, "WM_WRITE_SPEAKER_DATA len:%x %s", spkz->length,
-		//	ArrayToString(spkz->data, spkz->length, 100, false).c_str());
+	case RT_WRITE_SPEAKER_DATA:  // 0x18
+	  // wm_speaker_data *spkz = (wm_speaker_data*)sr->data;
+	  // ERROR_LOG(WIIMOTE, "RT_WRITE_SPEAKER_DATA len:%x %s", spkz->length,
+	  //	ArrayToString(spkz->data, spkz->length, 100, false).c_str());
 		if (WIIMOTE_SRC_EMU & g_wiimote_sources[m_index] && !m_speaker_mute)
 			Wiimote::SpeakerData((wm_speaker_data*)sr->data);
 		return;  // no ack
 		break;
 
-	case WM_SPEAKER_MUTE:  // 0x19
-		// ERROR_LOG(WIIMOTE, "WM Speaker Mute: %02x", sr->enable);
-		// PanicAlert( "WM Speaker Mute: %d", sr->data[0] & 0x04 );
-		// testing
-		// if (sr->data[0] & 0x04)
-		//	memset(&m_channel_status, 0, sizeof(m_channel_status));
+	case RT_SPEAKER_MUTE:  // 0x19
+	  // ERROR_LOG(WIIMOTE, "WM Speaker Mute: %02x", sr->enable);
+	  // PanicAlert( "WM Speaker Mute: %d", sr->data[0] & 0x04 );
+	  // testing
+	  // if (sr->data[0] & 0x04)
+	  //	memset(&m_channel_status, 0, sizeof(m_channel_status));
 		m_speaker_mute = sr->enable;
 		if (false == sr->ack)
 			return;
 		break;
 
-	case WM_IR_LOGIC:  // 0x1a
-		// comment from old plugin:
-		// This enables or disables the IR lights, we update the global variable g_IR
-		// so that WmRequestStatus() knows about it
-		// INFO_LOG(WIIMOTE, "WM IR Enable: 0x%02x", sr->data[0]);
+	case RT_IR_LOGIC:  // 0x1a
+	  // comment from old plugin:
+	  // This enables or disables the IR lights, we update the global variable g_IR
+	  // so that WmRequestStatus() knows about it
+	  // INFO_LOG(WIIMOTE, "WM IR Enable: 0x%02x", sr->data[0]);
 		m_status.ir = sr->enable;
 		if (false == sr->ack)
 			return;
@@ -169,16 +168,16 @@ void Wiimote::HidOutputReport(const wm_report* const sr, const bool send_ack)
 }
 
 /* This will generate the 0x22 acknowledgement for most Input reports.
-	 It has the form of "a1 22 00 00 _reportID 00".
-	 The first two bytes are the core buttons data,
-	 00 00 means nothing is pressed.
-	 The last byte is the success code 00. */
+	It has the form of "a1 22 00 00 _reportID 00".
+	The first two bytes are the core buttons data,
+	00 00 means nothing is pressed.
+	The last byte is the success code 00. */
 void Wiimote::SendAck(u8 _reportID)
 {
 	u8 data[6];
 
 	data[0] = 0xA1;
-	data[1] = WM_ACK_DATA;
+	data[1] = RT_ACK_DATA;
 
 	wm_acknowledge* const ack = (wm_acknowledge*)(data + 2);
 
@@ -211,9 +210,9 @@ void Wiimote::HandleExtensionSwap()
 
 // old comment
 /* Here we produce a 0x20 status report to send to the Wii. We currently ignore
-	 the status request rs and all its eventual instructions it may include (for
-	 example turn off rumble or something else) and just send the status
-	 report. */
+	the status request rs and all its eventual instructions it may include (for
+	example turn off rumble or something else) and just send the status
+	report. */
 void Wiimote::RequestStatus(const wm_request_status* const rs)
 {
 	HandleExtensionSwap();
@@ -224,7 +223,7 @@ void Wiimote::RequestStatus(const wm_request_status* const rs)
 	// set up report
 	u8 data[8];
 	data[0] = 0xA1;
-	data[1] = WM_STATUS_REPORT;
+	data[1] = RT_STATUS_REPORT;
 
 	// status values
 	*(wm_status_report*)(data + 2) = m_status;
@@ -239,7 +238,7 @@ void Wiimote::RequestStatus(const wm_request_status* const rs)
 		if (g_wiimotes[m_index])
 		{
 			wm_request_status rpt = {};
-			g_wiimotes[m_index]->QueueReport(WM_REQUEST_STATUS, &rpt, sizeof(rpt));
+			g_wiimotes[m_index]->QueueReport(RT_REQUEST_STATUS, &rpt, sizeof(rpt));
 		}
 
 		return;
@@ -265,7 +264,7 @@ void Wiimote::WriteData(const wm_write_data* const wd)
 
 	switch (wd->space)
 	{
-	case WM_SPACE_EEPROM:
+	case WS_EEPROM:
 	{
 		// Write to EEPROM
 
@@ -291,8 +290,8 @@ void Wiimote::WriteData(const wm_write_data* const wd)
 	}
 	break;
 
-	case WM_SPACE_REGS1:
-	case WM_SPACE_REGS2:
+	case WS_REGS1:
+	case WS_REGS2:
 	{
 		// Write to Control Register
 
@@ -344,13 +343,13 @@ void Wiimote::WriteData(const wm_write_data* const wd)
 		else
 			return;  // TODO: generate a writedata error reply
 
-		/* TODO?
-		if (region_ptr == &m_reg_speaker)
-		{
+		 /* TODO?
+		 if (region_ptr == &m_reg_speaker)
+		 {
 			ERROR_LOG(WIIMOTE, "Write to speaker register %x %s", address,
-				ArrayToString(wd->data, wd->size, 100, false).c_str());
-		}
-		*/
+			  ArrayToString(wd->data, wd->size, 100, false).c_str());
+		 }
+		 */
 
 		if (&m_reg_ext == region_ptr)
 		{
@@ -406,7 +405,7 @@ void Wiimote::ReadData(const wm_read_data* const rd)
 
 	switch (rd->space)
 	{
-	case WM_SPACE_EEPROM:
+	case WS_EEPROM:
 	{
 		// PanicAlert("ReadData: reading from EEPROM: address: 0x%x size: 0x%x", address, size);
 		// Read from EEPROM
@@ -439,8 +438,8 @@ void Wiimote::ReadData(const wm_read_data* const rd)
 	}
 	break;
 
-	case WM_SPACE_REGS1:
-	case WM_SPACE_REGS2:
+	case WS_REGS1:
+	case WS_REGS2:
 	{
 		// Read from Control Register
 
@@ -524,17 +523,17 @@ void Wiimote::ReadData(const wm_read_data* const rd)
 
 // old comment
 /* Here we produce the actual 0x21 Input report that we send to the Wii. The
-	 message is divided into 16 bytes pieces and sent piece by piece. There will
-	 be five formatting bytes at the begging of all reports. A common format is
-	 00 00 f0 00 20, the 00 00 means that no buttons are pressed, the f means 16
-	 bytes in the message, the 0 means no error, the 00 20 means that the message
-	 is at the 00 20 offest in the registry that was read.
+	message is divided into 16 bytes pieces and sent piece by piece. There will
+	be five formatting bytes at the begging of all reports. A common format is
+	00 00 f0 00 20, the 00 00 means that no buttons are pressed, the f means 16
+	bytes in the message, the 0 means no error, the 00 20 means that the message
+	is at the 00 20 offest in the registry that was read.
 */
 void Wiimote::SendReadDataReply(ReadRequest& _request)
 {
 	u8 data[23];
 	data[0] = 0xA1;
-	data[1] = WM_READ_DATA_REPLY;
+	data[1] = RT_READ_DATA_REPLY;
 
 	wm_read_data_reply* const reply = (wm_read_data_reply*)(data + 2);
 	reply->buttons = m_status.buttons;

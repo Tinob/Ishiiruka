@@ -92,10 +92,10 @@ struct ConnectionSettings final
 	u8 padding_8[3];
 	u8 key_length;  // Length of key in bytes. 0x00 for WEP64 and WEP128.
 	u8 unknown;     // 0x00 or 0x01 toggled with a WPA-PSK (TKIP) and with a WEP entered with hex
-									// instead of ASCII.
+						 // instead of ASCII.
 	u8 padding_9;
 	u8 key[64];  // Encryption key; for WEP, key is stored 4 times (20 bytes for WEP64 and 52 bytes
-							 // for WEP128) then padded with 0x00
+					 // for WEP128) then padded with 0x00
 	u8 padding_10[236];
 };
 #pragma pack(pop)
