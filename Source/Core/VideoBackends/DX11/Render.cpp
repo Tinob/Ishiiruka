@@ -526,7 +526,7 @@ void Renderer::SetViewport()
 		Y += Ht;
 		Ht = -Ht;
 	}
-	
+
 	// If an inverted depth range is used, which D3D doesn't support,
 	// we need to calculate the depth range in the vertex shader.
 	if (UseVertexDepthRange())
