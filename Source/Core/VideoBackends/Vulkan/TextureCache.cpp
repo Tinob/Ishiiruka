@@ -267,7 +267,7 @@ TextureCacheBase::TCacheEntryBase* TextureCache::CreateTexture(const TCacheEntry
 	// Allocate texture object
 	std::unique_ptr<Texture2D> texture = Texture2D::Create(
 		config.width, config.height, config.levels, config.layers, PC_TexFormat_To_VkFormat[config.pcformat],
-		VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_VIEW_TYPE_2D_ARRAY, VK_IMAGE_TILING_OPTIMAL, usage);
+		VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_VIEW_TYPE_2D_ARRAY, VK_IMAGE_TILING_OPTIMAL, usage, m_render_pass);
 
 	if (!texture)
 		return nullptr;
@@ -310,7 +310,7 @@ TextureCacheBase::TCacheEntryBase* TextureCache::CreateTexture(const TCacheEntry
 	{
 		nrmtexture = Texture2D::Create(
 			config.width, config.height, config.levels, config.layers, PC_TexFormat_To_VkFormat[config.pcformat],
-			VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_VIEW_TYPE_2D_ARRAY, VK_IMAGE_TILING_OPTIMAL, usage);
+			VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_VIEW_TYPE_2D_ARRAY, VK_IMAGE_TILING_OPTIMAL, usage, m_render_pass);
 	}
 	TCacheEntry* entry = new TCacheEntry(config, std::move(texture), std::move(nrmtexture), framebuffer);
 	entry->compressed = config.pcformat >= PC_TEX_FMT_DXT1 && config.pcformat < PC_TEX_FMT_DEPTH_FLOAT;
@@ -496,8 +496,7 @@ TextureCache::TCacheEntry::TCacheEntry(const TCacheEntryConfig& config_,
 	std::unique_ptr<Texture2D> texture,
 	std::unique_ptr<Texture2D> nrmtexture,
 	VkFramebuffer framebuffer)
-	: TCacheEntryBase(config_), m_texture(std::move(texture)), m_nrmtexture(std::move(nrmtexture)),
-	m_framebuffer(framebuffer)
+	: TCacheEntryBase(config_), m_texture(std::move(texture)), m_nrmtexture(std::move(nrmtexture))	
 {
 }
 
@@ -510,8 +509,10 @@ TextureCache::TCacheEntry::~TCacheEntry()
 	{
 		StateTracker::GetInstance()->UnbindTexture(m_nrmtexture->GetView());
 	}
-	if (m_framebuffer != VK_NULL_HANDLE)
-		g_command_buffer_mgr->DeferFramebufferDestruction(m_framebuffer);
+}
+VkFramebuffer TextureCache::TCacheEntry::GetFramebuffer() const
+{ 
+	return m_texture->GetFrameBuffer();
 }
 
 bool TextureCache::TCacheEntry::DecodeTextureOnGPU(u32 dst_level, const u8* data,
@@ -546,9 +547,6 @@ void TextureCache::TCacheEntry::FromRenderTarget(bool is_depth_copy,
 
 	// Flush EFB pokes first, as they're expected to be included.
 	framebuffer_mgr->FlushEFBPokes();
-
-	// Has to be flagged as a render target.
-	_assert_(m_framebuffer != VK_NULL_HANDLE);
 
 	// Can't be done in a render pass, since we're doing our own render pass!
 	VkCommandBuffer command_buffer = g_command_buffer_mgr->GetCurrentCommandBuffer();
@@ -589,7 +587,7 @@ void TextureCache::TCacheEntry::FromRenderTarget(bool is_depth_copy,
 
 	VkRect2D dest_region = { { 0, 0 },{ width, height } };
 
-	draw.BeginRenderPass(m_framebuffer, dest_region);
+	draw.BeginRenderPass(m_texture->GetFrameBuffer(), dest_region);
 
 	draw.DrawQuad(0, 0, config.width, config.height, scaled_src_rect.left, scaled_src_rect.top, 0,
 		scaled_src_rect.GetWidth(), scaled_src_rect.GetHeight(),

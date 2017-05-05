@@ -56,9 +56,6 @@ TextureConverter::~TextureConverter()
 	if (m_encoding_render_pass != VK_NULL_HANDLE)
 		vkDestroyRenderPass(g_vulkan_context->GetDevice(), m_encoding_render_pass, nullptr);
 
-	if (m_encoding_render_framebuffer != VK_NULL_HANDLE)
-		vkDestroyFramebuffer(g_vulkan_context->GetDevice(), m_encoding_render_framebuffer, nullptr);
-
 	for (auto& it : m_encoding_shaders)
 		vkDestroyShaderModule(g_vulkan_context->GetDevice(), it.second, nullptr);
 
@@ -254,7 +251,7 @@ void TextureConverter::EncodeTextureToMemory(VkImageView src_texture, u8* dest_p
 		render_height);
 
 	VkRect2D render_region = { { 0, 0 },{ render_width, render_height } };
-	draw.BeginRenderPass(m_encoding_render_framebuffer, render_region);
+	draw.BeginRenderPass(m_encoding_render_texture->GetFrameBuffer(), render_region);
 	draw.DrawWithoutVertexBuffer(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 4);
 	draw.EndRenderPass();
 
@@ -295,7 +292,7 @@ void TextureConverter::EncodeTextureToMemoryYUYV(void* dst_ptr, u32 dst_width, u
 		m_encoding_render_pass, g_object_cache->GetPassthroughVertexShader(),
 		VK_NULL_HANDLE, m_rgb_to_yuyv_shader);
 	VkRect2D region = { { 0, 0 },{ output_width, dst_height } };
-	draw.BeginRenderPass(m_encoding_render_framebuffer, region);
+	draw.BeginRenderPass(m_encoding_render_texture->GetFrameBuffer(), region);
 	draw.SetPSSampler(0, src_texture->GetView(), g_object_cache->GetLinearSampler());
 	draw.DrawQuad(0, 0, static_cast<int>(output_width), static_cast<int>(dst_height), src_rect.left,
 		src_rect.top, 0, src_rect.GetWidth(), src_rect.GetHeight(),
@@ -738,28 +735,9 @@ bool TextureConverter::CreateEncodingTexture()
 		ENCODING_TEXTURE_WIDTH, ENCODING_TEXTURE_HEIGHT, 1, 1, ENCODING_TEXTURE_FORMAT,
 		VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_TILING_OPTIMAL,
 		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT |
-		VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+		VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, m_encoding_render_pass);
 	if (!m_encoding_render_texture)
 		return false;
-
-	VkImageView framebuffer_attachments[] = { m_encoding_render_texture->GetView() };
-	VkFramebufferCreateInfo framebuffer_info = { VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-		nullptr,
-		0,
-		m_encoding_render_pass,
-		static_cast<u32>(ArraySize(framebuffer_attachments)),
-		framebuffer_attachments,
-		m_encoding_render_texture->GetWidth(),
-		m_encoding_render_texture->GetHeight(),
-		m_encoding_render_texture->GetLayers() };
-
-	VkResult res = vkCreateFramebuffer(g_vulkan_context->GetDevice(), &framebuffer_info, nullptr,
-		&m_encoding_render_framebuffer);
-	if (res != VK_SUCCESS)
-	{
-		LOG_VULKAN_ERROR(res, "vkCreateFramebuffer failed: ");
-		return false;
-	}
 
 	return true;
 }

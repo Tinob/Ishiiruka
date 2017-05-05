@@ -27,13 +27,13 @@ public:
 	};
 	Texture2D(u32 width, u32 height, u32 levels, u32 layers, VkFormat format,
 		VkSampleCountFlagBits samples, VkImageViewType view_type, VkImage image,
-		VkDeviceMemory device_memory, VkImageView view);
+		VkDeviceMemory device_memory, VkImageView view, VkFramebuffer framebuffer);
 	~Texture2D();
 
 	static std::unique_ptr<Texture2D> Create(u32 width, u32 height, u32 levels, u32 layers,
 		VkFormat format, VkSampleCountFlagBits samples,
 		VkImageViewType view_type, VkImageTiling tiling,
-		VkImageUsageFlags usage);
+		VkImageUsageFlags usage, VkRenderPass renderpass = VK_NULL_HANDLE);
 
 	static std::unique_ptr<Texture2D> CreateFromExistingImage(u32 width, u32 height, u32 levels,
 		u32 layers, VkFormat format,
@@ -50,6 +50,7 @@ public:
 	VkImageLayout GetLayout() const { return m_layout; }
 	VkImageViewType GetViewType() const { return m_view_type; }
 	VkImage GetImage() const { return m_image; }
+	VkFramebuffer GetFrameBuffer() const { return m_framebuffer; }
 	VkDeviceMemory GetDeviceMemory() const { return m_device_memory; }
 	VkImageView GetView() const { return m_view; }
 	// Used when the render pass is changing the image layout, or to force it to
@@ -73,5 +74,7 @@ private:
 	VkImage m_image;
 	VkDeviceMemory m_device_memory;
 	VkImageView m_view;
+	//framebuffer for drawing into.
+	VkFramebuffer m_framebuffer;
 };
 }

@@ -27,7 +27,7 @@ public:
 		~TCacheEntry();
 
 		Texture2D* GetTexture() const { return m_texture.get(); }
-		VkFramebuffer GetFramebuffer() const { return m_framebuffer; }
+		VkFramebuffer GetFramebuffer() const;
 		void Load(const u8* src, u32 width, u32 height,
 			u32 expanded_width, u32 level) override;
 		void LoadMaterialMap(const u8* src, u32 width, u32 height, u32 level) override;
@@ -55,9 +55,6 @@ public:
 	private:
 		std::unique_ptr<Texture2D> m_texture;
 		std::unique_ptr<Texture2D> m_nrmtexture;
-
-		// If we're an EFB copy, framebuffer for drawing into.
-		VkFramebuffer m_framebuffer;
 	};
 
 	TextureCache();
@@ -85,6 +82,14 @@ public:
 	TextureConverter* GetTextureConverter()
 	{
 		return m_texture_converter.get();
+	}
+	VkRenderPass GetRenderPass() const
+	{
+		return m_render_pass;
+	}
+	VkShaderModule GetCopyShader() const
+	{
+		return m_copy_shader;
 	}
 private:
 	bool CreateRenderPasses();

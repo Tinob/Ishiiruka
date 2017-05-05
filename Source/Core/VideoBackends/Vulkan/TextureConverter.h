@@ -106,7 +106,6 @@ private:
 	std::map<EFBCopyFormat, VkShaderModule> m_encoding_shaders;
 	VkRenderPass m_encoding_render_pass = VK_NULL_HANDLE;
 	std::unique_ptr<Texture2D> m_encoding_render_texture;
-	VkFramebuffer m_encoding_render_framebuffer = VK_NULL_HANDLE;
 	std::unique_ptr<StagingTexture2D> m_encoding_download_texture;
 
 	// Texture decoding - GX format in memory->RGBA8
