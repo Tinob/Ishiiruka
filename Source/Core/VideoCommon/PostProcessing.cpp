@@ -26,8 +26,6 @@
 #include "VideoCommon/VideoConfig.h"
 #include "VideoCommon/XFMemory.h"
 
-#include <wx/language.h>
-
 
 static const char s_default_shader[] = "void main() { SetOutput(ApplyGCGamma(Sample())); }\n";
 struct LangDescriptor
@@ -2534,7 +2532,7 @@ bool  PostProcessor::UpdateConstantUniformBuffer(
 
 void* PostProcessingShaderConfiguration::GetConfigurationBuffer(u32* buffer_size)
 {
-	*buffer_size = m_constants.size() * sizeof(Constant);
+	*buffer_size = static_cast<u32>(m_constants.size() * sizeof(Constant));
 	return m_constants.data();
 }
 
@@ -2618,6 +2616,6 @@ void* PostProcessingShaderConfiguration::UpdateConfigurationBuffer(u32* buffer_s
 		constant_idx++;
 	}
 	m_constants.resize(constant_idx);
-	*buffer_size = constant_idx * sizeof(Constant);
+	*buffer_size = static_cast<u32>(constant_idx * sizeof(Constant));
 	return m_constants.data();
 }
