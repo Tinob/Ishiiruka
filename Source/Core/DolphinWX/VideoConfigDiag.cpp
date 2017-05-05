@@ -1015,7 +1015,7 @@ void VideoConfigDiag::Event_DisplayResolution(wxCommandEvent &ev)
 	SConfig::GetInstance().strFullscreenResolution =
 		WxStrToStr(choice_display_resolution->GetStringSelection());
 #if defined(HAVE_XRANDR) && HAVE_XRANDR
-	main_frame->m_XRRConfig->Update();
+	main_frame->m_xrr_config->Update();
 #endif
 	ev.Skip();
 }
