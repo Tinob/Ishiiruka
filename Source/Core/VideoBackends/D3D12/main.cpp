@@ -165,9 +165,9 @@ bool VideoBackend::Initialize(void *window_handle)
 {
 	if (window_handle == nullptr)
 		return false;
-
-	InitializeShared();
+	
 	InitBackendInfo();
+	InitializeShared();
 
 	if (FAILED(D3D::Create((HWND)window_handle)))
 		return false;

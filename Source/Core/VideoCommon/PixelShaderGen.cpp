@@ -2058,7 +2058,7 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
 			out.Write("spec.w = pow(1.0 - saturate(dot(View, _norm0))," I_PPHONG "[0].y);\n");
 			// Surfaces are more reflective depending on the view angle
 			// Aproximate this with a small math trick
-			out.Write("normalmap.w = lerp(normalmap.w, max(normalmap.w, 0.6), spec.w);\n");
+			out.Write("normalmap.w = lerp(normalmap.w, sqrt(normalmap.w), spec.w);\n");
 		}
 	}
 	else
