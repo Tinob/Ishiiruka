@@ -25,10 +25,10 @@ namespace WiimoteEmu
 // Yamaha ADPCM decoder code based on The ffmpeg Project (Copyright (s) 2001-2003)
 
 static const s32 yamaha_difflookup[] = { 1,  3,  5,  7,  9,  11,  13,  15,
-													 -1, -3, -5, -7, -9, -11, -13, -15 };
+-1, -3, -5, -7, -9, -11, -13, -15 };
 
 static const s32 yamaha_indexscale[] = { 230, 230, 230, 230, 307, 409, 512, 614,
-													 230, 230, 230, 230, 307, 409, 512, 614 };
+230, 230, 230, 230, 307, 409, 512, 614 };
 
 static s16 av_clip16(s32 a)
 {
@@ -68,7 +68,7 @@ void stopdamnwav()
 }
 #endif
 
-void Wiimote::SpeakerData(wm_speaker_data* sd)
+void Wiimote::SpeakerData(const wm_speaker_data* sd)
 {
 	if (!SConfig::GetInstance().m_WiimoteEnableSpeaker)
 		return;
@@ -145,7 +145,7 @@ void Wiimote::SpeakerData(wm_speaker_data* sd)
 		File::Delete("rmtdump.bin");
 		atexit(stopdamnwav);
 		OpenFStream(ofile, "rmtdump.bin", ofile.binary | ofile.out);
-		wav.Start("rmtdump.wav", 6000 /*Common::swap16(m_reg_speaker.sample_rate)*/);
+		wav.Start("rmtdump.wav", 6000);
 	}
 	wav.AddMonoSamples(samples.get(), sd->length * 2);
 	if (ofile.good())

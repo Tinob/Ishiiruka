@@ -87,8 +87,8 @@ bool CBoot::EmulatedBS2_GC(bool skip_app_loader)
 		0x80000020);  // Booted from bootrom. 0xE5207C22 = booted from jtag
 	PowerPC::HostWrite_U32(Memory::REALRAM_SIZE,
 		0x80000028);  // Physical Memory Size (24MB on retail)
-					  // TODO determine why some games fail when using a retail ID. (Seem to take different EXI paths,
-					  // see Ikaruga for example)
+						  // TODO determine why some games fail when using a retail ID. (Seem to take different EXI paths,
+						  // see Ikaruga for example)
 	PowerPC::HostWrite_U32(
 		0x10000006,
 		0x8000002C);  // Console type - DevKit  (retail ID == 0x00000003) see YAGCD 4.2.1.1.2
@@ -97,7 +97,7 @@ bool CBoot::EmulatedBS2_GC(bool skip_app_loader)
 	PowerPC::HostWrite_U32(ntsc ? 0 : 1, 0x800000CC);  // Fake the VI Init of the IPL (YAGCD 4.2.1.4)
 
 	PowerPC::HostWrite_U32(0x01000000, 0x800000d0);  // ARAM Size. 16MB main + 4/16/32MB external
-													 // (retail consoles have no external ARAM)
+																	 // (retail consoles have no external ARAM)
 
 	PowerPC::HostWrite_U32(0x09a7ec80, 0x800000F8);  // Bus Clock Speed
 	PowerPC::HostWrite_U32(0x1cf7c580, 0x800000FC);  // CPU Clock Speed
@@ -107,10 +107,9 @@ bool CBoot::EmulatedBS2_GC(bool skip_app_loader)
 	PowerPC::HostWrite_U32(0x4c000064, 0x80000C00);  // Write default Syscall Handler: rfi
 
 	PresetTimeBaseTicks();
+
 	// HIO checks this
 	// PowerPC::HostWrite_U16(0x8200,     0x000030e6); // Console type
-
-	HLE::Patch(0x81300000, "OSReport");  // HLE OSReport for Apploader
 
 	if (!DVDInterface::IsDiscInside())
 		return false;
@@ -162,6 +161,7 @@ bool CBoot::EmulatedBS2_GC(bool skip_app_loader)
 
 	// iAppLoaderInit
 	DEBUG_LOG(MASTER_LOG, "Call iAppLoaderInit");
+	HLE::Patch(0x81300000, "AppLoaderReport");  // HLE OSReport for Apploader
 	PowerPC::ppcState.gpr[3] = 0x81300000;
 	RunFunction(iAppLoaderInit);
 
@@ -190,6 +190,7 @@ bool CBoot::EmulatedBS2_GC(bool skip_app_loader)
 	// iAppLoaderClose
 	DEBUG_LOG(MASTER_LOG, "call iAppLoaderClose");
 	RunFunction(iAppLoaderClose);
+	HLE::UnPatch("AppLoaderReport");
 
 	// return
 	PC = PowerPC::ppcState.gpr[3];
@@ -273,7 +274,7 @@ bool CBoot::SetupWiiMemory(u64 ios_title_id)
 	Memory::Write_U32(0x00000023, 0x0000002c);            // Production Board Model
 	Memory::Write_U32(0x00000000, 0x00000030);            // Init
 	Memory::Write_U32(0x817FEC60, 0x00000034);            // Init
-														  // 38, 3C should get start, size of FST through apploader
+																			// 38, 3C should get start, size of FST through apploader
 	Memory::Write_U32(0x38a00040, 0x00000060);            // Exception init
 	Memory::Write_U32(0x8008f7b8, 0x000000e4);            // Thread Init
 	Memory::Write_U32(Memory::REALRAM_SIZE, 0x000000f0);  // "Simulated memory size" (debug mode?)
@@ -297,7 +298,7 @@ bool CBoot::SetupWiiMemory(u64 ios_title_id)
 	Memory::Write_U16(0x0000, 0x000030e0);      // PADInit
 	Memory::Write_U32(0x80000000, 0x00003184);  // GameID Address
 
-												// Fake the VI Init of the IPL
+															  // Fake the VI Init of the IPL
 	Memory::Write_U32(DiscIO::IsNTSC(SConfig::GetInstance().m_region) ? 0 : 1, 0x000000CC);
 
 	// Clear exception handler. Why? Don't we begin with only zeros?
@@ -357,14 +358,12 @@ bool CBoot::EmulatedBS2_Wii()
 	Memory::Write_U32(0x4c000064, 0x00000800);  // Write default FPU Handler:   rfi
 	Memory::Write_U32(0x4c000064, 0x00000C00);  // Write default Syscall Handler: rfi
 
-	HLE::Patch(0x81300000, "OSReport");  // HLE OSReport for Apploader
-
 	PowerPC::ppcState.gpr[1] = 0x816ffff0;  // StackPointer
 
-											// Execute the apploader
+														 // Execute the apploader
 	const u32 apploader_offset = 0x2440;  // 0x1c40;
 
-										  // Load Apploader to Memory
+													  // Load Apploader to Memory
 	const DiscIO::IVolume& volume = DVDInterface::GetVolume();
 	u32 apploader_entry, apploader_size;
 	if (!volume.ReadSwapped(apploader_offset + 0x10, &apploader_entry, true) ||
@@ -390,6 +389,7 @@ bool CBoot::EmulatedBS2_Wii()
 
 	// iAppLoaderInit
 	DEBUG_LOG(BOOT, "Run iAppLoaderInit");
+	HLE::Patch(0x81300000, "AppLoaderReport");  // HLE OSReport for Apploader
 	PowerPC::ppcState.gpr[3] = 0x81300000;
 	RunFunction(iAppLoaderInit);
 
@@ -415,6 +415,7 @@ bool CBoot::EmulatedBS2_Wii()
 	// iAppLoaderClose
 	DEBUG_LOG(BOOT, "Run iAppLoaderClose");
 	RunFunction(iAppLoaderClose);
+	HLE::UnPatch("AppLoaderReport");
 
 	IOS::HLE::Device::ES::DIVerify(tmd, DVDInterface::GetVolume().GetTicket());
 

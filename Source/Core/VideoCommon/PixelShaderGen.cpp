@@ -299,7 +299,8 @@ int2 BSH(int2 x, int n)
 	}
 	else
 	{
-		return x << (-n);
+		n = -n;
+		return x << n;
 	}
 }
 int remainder(int x, int y)
