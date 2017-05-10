@@ -539,6 +539,7 @@ void SConfig::LoadGameListSettings(IniFile& ini)
 	// Gamelist columns toggles
 	gamelist->Get("ColumnPlatform", &m_showSystemColumn, true);
 	gamelist->Get("ColumnDescription", &m_showDescriptionColumn, false);
+	gamelist->Get("ColumnTitle", &m_showTitleColumn, true);
 	gamelist->Get("ColumnBanner", &m_showBannerColumn, true);
 	gamelist->Get("ColumnNotes", &m_showMakerColumn, true);
 	gamelist->Get("ColumnFileName", &m_showFileNameColumn, false);
