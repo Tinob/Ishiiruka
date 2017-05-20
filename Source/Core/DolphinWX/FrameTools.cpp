@@ -42,6 +42,7 @@
 #include "Core/HW/Wiimote.h"
 #include "Core/Host.h"
 #include "Core/HotkeyManager.h"
+#include "Core/IOS/ES/ES.h"
 #include "Core/IOS/IOS.h"
 #include "Core/IOS/STM/STM.h"
 #include "Core/IOS/USB/Bluetooth/BTEmu.h"
@@ -53,7 +54,6 @@
 
 #include "DiscIO/NANDContentLoader.h"
 #include "DiscIO/NANDImporter.h"
-#include "DiscIO/VolumeCreator.h"
 #include "DiscIO/VolumeWad.h"
 
 #include "DolphinWX/AboutDolphin.h"
@@ -81,6 +81,8 @@
 #include "DolphinWX/WxUtils.h"
 
 #include "InputCommon/ControllerInterface/ControllerInterface.h"
+
+#include "UICommon/WiiUtils.h"
 
 #include "VideoCommon/RenderBase.h"
 #include "VideoCommon/VideoBackendBase.h"
@@ -242,7 +244,7 @@ void CFrame::BindDebuggerMenuBarUpdateEvents()
 	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreInitialized, IDM_LOAD_MAP_FILE_AS);
 	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreInitialized, IDM_SAVE_MAP_FILE_AS);
 	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreInitialized, IDM_LOAD_BAD_MAP_FILE);
-	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreInitialized, IDM_SAVE_MAP_FILE_WITH_CODES);
+	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCorePaused, IDM_SAVE_MAP_FILE_WITH_CODES);
 	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreInitialized, IDM_CREATE_SIGNATURE_FILE);
 	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreInitialized, IDM_APPEND_SIGNATURE_FILE);
 	Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreInitialized, IDM_COMBINE_SIGNATURE_FILES);
@@ -706,6 +708,8 @@ void CFrame::StartGame(const std::string& filename)
 
 	DoFullscreen(SConfig::GetInstance().bFullscreen);
 
+	SetDebuggerStartupParameters();
+
 	if (!BootManager::BootCore(filename))
 	{
 		DoFullscreen(false);
@@ -741,6 +745,27 @@ void CFrame::StartGame(const std::string& filename)
 		wxTheApp->Bind(wxEVT_MIDDLE_UP, &CFrame::OnMouse, this);
 		wxTheApp->Bind(wxEVT_MOTION, &CFrame::OnMouse, this);
 		m_render_parent->Bind(wxEVT_SIZE, &CFrame::OnRenderParentResize, this);
+	}
+}
+
+void CFrame::SetDebuggerStartupParameters() const
+{
+	SConfig& config = SConfig::GetInstance();
+
+	if (m_use_debugger)
+	{
+		const wxMenuBar* const menu_bar = GetMenuBar();
+
+		config.bBootToPause = menu_bar->IsChecked(IDM_BOOT_TO_PAUSE);
+		config.bAutomaticStart = menu_bar->IsChecked(IDM_AUTOMATIC_START);
+		config.bJITNoBlockCache = menu_bar->IsChecked(IDM_JIT_NO_BLOCK_CACHE);
+		config.bJITNoBlockLinking = menu_bar->IsChecked(IDM_JIT_NO_BLOCK_LINKING);
+		config.bEnableDebugging = true;
+	}
+	else
+	{
+		config.bBootToPause = false;
+		config.bEnableDebugging = false;
 	}
 }
 
@@ -1208,8 +1233,7 @@ void CFrame::OnInstallWAD(wxCommandEvent& event)
 		wxPD_APP_MODAL | wxPD_ELAPSED_TIME | wxPD_ESTIMATED_TIME |
 		wxPD_REMAINING_TIME | wxPD_SMOOTH);
 
-	u64 titleID = DiscIO::CNANDContentManager::Access().Install_WiiWAD(fileName);
-	if (titleID == TITLEID_SYSMENU)
+	if (WiiUtils::InstallWAD(fileName))
 	{
 		UpdateLoadWiiMenuItem();
 	}
@@ -1228,7 +1252,8 @@ void CFrame::OnUninstallWAD(wxCommandEvent&)
 	}
 
 	u64 title_id = file->GetTitleID();
-	if (!DiscIO::CNANDContentManager::Access().RemoveTitle(title_id, Common::FROM_CONFIGURED_ROOT))
+	IOS::HLE::Kernel ios;
+	if (ios.GetES()->DeleteTitleContent(title_id) < 0)
 	{
 		PanicAlertT("Failed to remove this title from the NAND.");
 		return;
@@ -1256,11 +1281,7 @@ void CFrame::OnImportBootMiiBackup(wxCommandEvent& WXUNUSED(event))
 
 	wxProgressDialog dialog(_("Importing NAND backup"), _("Working..."), 100, this,
 		wxPD_APP_MODAL | wxPD_ELAPSED_TIME | wxPD_SMOOTH);
-	DiscIO::NANDImporter().ImportNANDBin(file_name,
-		[&dialog](size_t current_entry, size_t total_entries) {
-		dialog.SetRange(total_entries);
-		dialog.Update(current_entry);
-	});
+	DiscIO::NANDImporter().ImportNANDBin(file_name, [&dialog] { dialog.Pulse(); });
 	UpdateLoadWiiMenuItem();
 }
 
@@ -1327,12 +1348,6 @@ void CFrame::OnConnectWiimote(wxCommandEvent& event)
 void CFrame::OnToggleFullscreen(wxCommandEvent& WXUNUSED(event))
 {
 	DoFullscreen(!RendererIsFullscreen());
-}
-
-void CFrame::OnToggleDualCore(wxCommandEvent& WXUNUSED(event))
-{
-	SConfig::GetInstance().bCPUThread = !SConfig::GetInstance().bCPUThread;
-	SConfig::GetInstance().SaveSettings();
 }
 
 void CFrame::OnLoadStateFromFile(wxCommandEvent& WXUNUSED(event))

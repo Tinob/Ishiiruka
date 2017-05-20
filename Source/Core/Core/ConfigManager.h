@@ -17,16 +17,17 @@
 
 namespace DiscIO
 {
-	enum class Language;
-	enum class Region;
-	class IVolume;
+enum class Language;
+enum class Region;
+struct Partition;
+class IVolume;
 }
 namespace IOS
 {
-	namespace ES
-	{
-		class TMDReader;
-	}
+namespace ES
+{
+class TMDReader;
+}
 }
 
 // DSP Backend Types
@@ -75,7 +76,7 @@ struct SConfig : NonCopyable
 	bool bAutomaticStart = false;
 	bool bBootToPause = false;
 
-	int iCPUCore;
+	int iCPUCore;  // Uses the values of PowerPC::CPUCore
 
 	// JIT (shared between JIT and JITIL)
 	bool bJITNoBlockCache = false;
@@ -92,8 +93,6 @@ struct SConfig : NonCopyable
 	bool bJITPairedOff = false;
 	bool bJITSystemRegistersOff = false;
 	bool bJITBranchOff = false;
-	bool bJITILTimeProfiling = false;
-	bool bJITILOutputIR = false;
 
 	bool bFastmem;
 	bool bFPRF = false;
@@ -231,7 +230,7 @@ struct SConfig : NonCopyable
 	u64 GetTitleID() const { return m_title_id; }
 	u16 GetRevision() const { return m_revision; }
 	void ResetRunningGameMetadata();
-	void SetRunningGameMetadata(const DiscIO::IVolume& volume);
+	void SetRunningGameMetadata(const DiscIO::IVolume& volume, const DiscIO::Partition& partition);
 	void SetRunningGameMetadata(const IOS::ES::TMDReader& tmd);
 
 	void LoadDefaults();
@@ -375,7 +374,6 @@ private:
 	void SaveAnalyticsSettings(IniFile& ini);
 	void SaveBluetoothPassthroughSettings(IniFile& ini);
 	void SaveUSBPassthroughSettings(IniFile& ini);
-	void SaveSysconfSettings(IniFile& ini);
 
 	void LoadGeneralSettings(IniFile& ini);
 	void LoadInterfaceSettings(IniFile& ini);
@@ -390,7 +388,6 @@ private:
 	void LoadAnalyticsSettings(IniFile& ini);
 	void LoadBluetoothPassthroughSettings(IniFile& ini);
 	void LoadUSBPassthroughSettings(IniFile& ini);
-	void LoadSysconfSettings(IniFile& ini);
 
 	void SetRunningGameMetadata(const std::string& game_id, u64 title_id, u16 revision);
 	bool SetRegion(DiscIO::Region region, std::string* directory_name);

@@ -18,7 +18,6 @@
 #include "Common/Logging/Log.h"
 #include "Common/StringUtil.h"
 #include "Common/Swap.h"
-
 #include "Core/ConfigManager.h"
 #include "Core/HW/DSPHLE/DSPHLE.h"
 #include "Core/HW/DSPHLE/UCodes/AX.h"
@@ -228,40 +227,40 @@ void UCodeInterface::DoStateShared(PointerWrap& p)
 	p.Do(m_needs_resume_mail);
 }
 
-UCodeInterface* UCodeFactory(u32 crc, DSPHLE* dsphle, bool wii)
+std::unique_ptr<UCodeInterface> UCodeFactory(u32 crc, DSPHLE* dsphle, bool wii)
 {
 	switch (crc)
 	{
 	case UCODE_ROM:
 		INFO_LOG(DSPHLE, "Switching to ROM ucode");
-		return new ROMUCode(dsphle, crc);
+		return std::make_unique<ROMUCode>(dsphle, crc);
 
 	case UCODE_INIT_AUDIO_SYSTEM:
 		INFO_LOG(DSPHLE, "Switching to INIT ucode");
-		return new INITUCode(dsphle, crc);
+		return std::make_unique<INITUCode>(dsphle, crc);
 
 	case 0x65d6cc6f:  // CARD
 		INFO_LOG(DSPHLE, "Switching to CARD ucode");
-		return new CARDUCode(dsphle, crc);
+		return std::make_unique<CARDUCode>(dsphle, crc);
 
 	case 0xdd7e72d5:
 		INFO_LOG(DSPHLE, "Switching to GBA ucode");
-		return new GBAUCode(dsphle, crc);
+		return std::make_unique<GBAUCode>(dsphle, crc);
 
 	case 0x3ad3b7ac:  // Naruto 3, Paper Mario - The Thousand Year Door
 	case 0x3daf59b9:  // Alien Hominid
 	case 0x4e8a8b21:  // spdemo, Crazy Taxi, 18 Wheeler, Disney, Monkeyball 1/2, Cubivore, Nintendo
-										// Puzzle Collection, Wario,
-	// Capcom vs. SNK 2, Naruto 2, Lost Kingdoms, Star Fox, Mario Party 4, Mortal Kombat,
-	// Smugglers Run Warzone, Smash Brothers, Sonic Mega Collection, ZooCube
-	// nddemo, Star Fox
+							// Puzzle Collection, Wario,
+							// Capcom vs. SNK 2, Naruto 2, Lost Kingdoms, Star Fox, Mario Party 4, Mortal Kombat,
+							// Smugglers Run Warzone, Smash Brothers, Sonic Mega Collection, ZooCube
+							// nddemo, Star Fox
 	case 0x07f88145:  // bustamove, Ikaruga, F-Zero GX, Robotech Battle Cry, Star Soldier, Soul
-										// Calibur 2,
-										// Zelda:OOT, Tony Hawk, Viewtiful Joe
+							// Calibur 2,
+							// Zelda:OOT, Tony Hawk, Viewtiful Joe
 	case 0xe2136399:  // Billy Hatcher, Dragon Ball Z, Mario Party 5, TMNT, 1080° Avalanche
 	case 0x3389a79e:  // MP1/MP2 Wii (Metroid Prime Trilogy)
 		INFO_LOG(DSPHLE, "CRC %08x: AX ucode chosen", crc);
-		return new AXUCode(dsphle, crc);
+		return std::make_unique<AXUCode>(dsphle, crc);
 
 	case 0x86840740:  // Zelda WW - US
 	case 0x6ca33a6d:  // Zelda TP GC - US
@@ -276,7 +275,7 @@ UCodeInterface* UCodeFactory(u32 crc, DSPHLE* dsphle, bool wii)
 	case 0x6c3f6f94:  // Zelda TP Wii - US
 	case 0xb7eb9a9c:  // Pikmin 1 New Play Control Wii - US
 	case 0xeaeb38cc:  // Pikmin 2 New Play Control Wii - US
-		return new ZeldaUCode(dsphle, crc);
+		return std::make_unique<ZeldaUCode>(dsphle, crc);
 
 	case 0x2ea36ce6:  // Some Wii demos
 	case 0x5ef56da3:  // AX demo
@@ -286,7 +285,7 @@ UCodeInterface* UCodeFactory(u32 crc, DSPHLE* dsphle, bool wii)
 	case 0x4cc52064:  // Bleach: Versus Crusade
 	case 0xd9c4bf34:  // WiiMenu
 		INFO_LOG(DSPHLE, "CRC %08x: Wii - AXWii chosen", crc);
-		return new AXWiiUCode(dsphle, crc);
+		return std::make_unique<AXWiiUCode>(dsphle, crc);
 
 	default:
 		if (wii)
@@ -295,7 +294,7 @@ UCodeInterface* UCodeFactory(u32 crc, DSPHLE* dsphle, bool wii)
 				"is homebrew.\n\n"
 				"Unknown ucode (CRC = %08x) - forcing AXWii.",
 				crc);
-			return new AXWiiUCode(dsphle, crc);
+			return std::make_unique<AXWiiUCode>(dsphle, crc);
 		}
 		else
 		{
@@ -303,7 +302,7 @@ UCodeInterface* UCodeFactory(u32 crc, DSPHLE* dsphle, bool wii)
 				"is homebrew.\n\n"
 				"DSPHLE: Unknown ucode (CRC = %08x) - forcing AX.",
 				crc);
-			return new AXUCode(dsphle, crc);
+			return std::make_unique<AXUCode>(dsphle, crc);
 		}
 
 	case UCODE_NULL:

@@ -25,7 +25,6 @@
 #include "Core/FifoPlayer/FifoDataFile.h"
 #include "Core/HLE/HLE.h"
 #include "Core/HW/DVD/DVDInterface.h"
-#include "Core/HW/DVD/DVDThread.h"
 #include "Core/HW/SI/SI.h"
 #include "Core/IOS/ES/Formats.h"
 #include "Core/IOS/USB/Bluetooth/BTBase.h"
@@ -37,7 +36,6 @@
 #include "DiscIO/Enums.h"
 #include "DiscIO/NANDContentLoader.h"
 #include "DiscIO/Volume.h"
-#include "DiscIO/VolumeCreator.h"
 
 SConfig* SConfig::m_Instance;
 
@@ -85,7 +83,6 @@ void SConfig::SaveSettings()
 	SaveNetworkSettings(ini);
 	SaveBluetoothPassthroughSettings(ini);
 	SaveUSBPassthroughSettings(ini);
-	SaveSysconfSettings(ini);
 
 	ini.Save(File::GetUserPath(F_DOLPHINCONFIG_IDX));
 }
@@ -368,19 +365,6 @@ void SConfig::SaveUSBPassthroughSettings(IniFile& ini)
 	section->Set("Devices", devices_string);
 }
 
-void SConfig::SaveSysconfSettings(IniFile& ini)
-{
-	IniFile::Section* section = ini.GetOrCreateSection("Sysconf");
-
-	section->Set("SensorBarPosition", m_sensor_bar_position);
-	section->Set("SensorBarSensitivity", m_sensor_bar_sensitivity);
-	section->Set("SpeakerVolume", m_speaker_volume);
-	section->Set("WiimoteMotor", m_wiimote_motor);
-	section->Set("WiiLanguage", m_wii_language);
-	section->Set("AspectRatio", m_wii_aspect_ratio);
-	section->Set("Screensaver", m_wii_screensaver);
-}
-
 void SConfig::SaveSettingsToSysconf()
 {
 	SysConf sysconf{ Common::FromWhichRoot::FROM_CONFIGURED_ROOT };
@@ -426,7 +410,6 @@ void SConfig::LoadSettings()
 	LoadAnalyticsSettings(ini);
 	LoadBluetoothPassthroughSettings(ini);
 	LoadUSBPassthroughSettings(ini);
-	LoadSysconfSettings(ini);
 }
 
 void SConfig::LoadGeneralSettings(IniFile& ini)
@@ -583,9 +566,7 @@ void SConfig::LoadCoreSettings(IniFile& ini)
 	core->Get("SlotA", (int*)&m_EXIDevice[0], ExpansionInterface::EXIDEVICE_MEMORYCARD);
 	core->Get("SlotB", (int*)&m_EXIDevice[1], ExpansionInterface::EXIDEVICE_NONE);
 	core->Get("SerialPort1", (int*)&m_EXIDevice[2], ExpansionInterface::EXIDEVICE_NONE);
-	core->Get("BBA_MAC", &m_bba_mac);
-	core->Get("TimeProfiling", &bJITILTimeProfiling, false);
-	core->Get("OutputIR", &bJITILOutputIR, false);
+	core->Get("BBA_MAC", &m_bba_mac);	
 	for (int i = 0; i < SerialInterface::MAX_SI_CHANNELS; ++i)
 	{
 		core->Get(StringFromFormat("SIDevice%i", i), (u32*)&m_SIDevice[i],
@@ -715,19 +696,6 @@ void SConfig::LoadUSBPassthroughSettings(IniFile& ini)
 	}
 }
 
-void SConfig::LoadSysconfSettings(IniFile& ini)
-{
-	IniFile::Section* section = ini.GetOrCreateSection("Sysconf");
-
-	section->Get("SensorBarPosition", &m_sensor_bar_position, m_sensor_bar_position);
-	section->Get("SensorBarSensitivity", &m_sensor_bar_sensitivity, m_sensor_bar_sensitivity);
-	section->Get("SpeakerVolume", &m_speaker_volume, m_speaker_volume);
-	section->Get("WiimoteMotor", &m_wiimote_motor, m_wiimote_motor);
-	section->Get("WiiLanguage", &m_wii_language, m_wii_language);
-	section->Get("AspectRatio", &m_wii_aspect_ratio, m_wii_aspect_ratio);
-	section->Get("Screensaver", &m_wii_screensaver, m_wii_screensaver);
-}
-
 void SConfig::LoadSettingsFromSysconf()
 {
 	SysConf sysconf{ Common::FromWhichRoot::FROM_CONFIGURED_ROOT };
@@ -748,11 +716,12 @@ void SConfig::ResetRunningGameMetadata()
 	SetRunningGameMetadata("00000000", 0, 0);
 }
 
-void SConfig::SetRunningGameMetadata(const DiscIO::IVolume& volume)
+void SConfig::SetRunningGameMetadata(const DiscIO::IVolume& volume,
+	const DiscIO::Partition& partition)
 {
 	u64 title_id = 0;
-	volume.GetTitleID(&title_id);
-	SetRunningGameMetadata(volume.GetGameID(), title_id, volume.GetRevision());
+	volume.GetTitleID(&title_id, partition);
+	SetRunningGameMetadata(volume.GetGameID(partition), title_id, volume.GetRevision(partition));
 }
 
 void SConfig::SetRunningGameMetadata(const IOS::ES::TMDReader& tmd)
@@ -763,18 +732,11 @@ void SConfig::SetRunningGameMetadata(const IOS::ES::TMDReader& tmd)
 	// the disc header instead of the TMD. They can differ.
 	// (IOS HLE ES calls us with a TMDReader rather than a volume when launching
 	// a disc game, because ES has no reason to be accessing the disc directly.)
-	if (DVDInterface::IsDiscInside())
+	if (!DVDInterface::UpdateRunningGameMetadata(tmd_title_id))
 	{
-		DVDThread::WaitUntilIdle();
-		const DiscIO::IVolume& volume = DVDInterface::GetVolume();
-		u64 volume_title_id;
-		if (volume.GetTitleID(&volume_title_id) && volume_title_id == tmd_title_id)
-		{
-			SetRunningGameMetadata(volume.GetGameID(), volume_title_id, volume.GetRevision());
-			return;
-		}
+		// If not launching a disc game, just read everything from the TMD.
+		SetRunningGameMetadata(tmd.GetGameID(), tmd_title_id, tmd.GetTitleVersion());
 	}
-	SetRunningGameMetadata(tmd.GetGameID(), tmd_title_id, tmd.GetTitleVersion());
 }
 
 void SConfig::SetRunningGameMetadata(const std::string& game_id, u64 title_id, u16 revision)
@@ -946,7 +908,7 @@ bool SConfig::AutoSetup(EBootBS2 _BootBS2)
 						m_strFilename.c_str());
 				return false;
 			}
-			SetRunningGameMetadata(*pVolume);
+			SetRunningGameMetadata(*pVolume, pVolume->GetGamePartition());
 
 			// Check if we have a Wii disc
 			bWii = pVolume->GetVolumeType() == DiscIO::Platform::WII_DISC;
@@ -994,13 +956,10 @@ bool SConfig::AutoSetup(EBootBS2 _BootBS2)
 				DiscIO::CNANDContentManager::Access().GetNANDLoader(m_strFilename);
 			const IOS::ES::TMDReader& tmd = content_loader.GetTMD();
 
-			if (content_loader.GetContentByIndex(tmd.GetBootIndex()) == nullptr)
+			if (!IOS::ES::IsChannel(tmd.GetTitleId()))
 			{
-				// WAD is valid yet cannot be booted. Install instead.
-				u64 installed = DiscIO::CNANDContentManager::Access().Install_WiiWAD(m_strFilename);
-				if (installed)
-					SuccessAlertT("The WAD has been installed successfully");
-				return false;  // do not boot
+				PanicAlertT("This WAD is not bootable.");
+				return false;
 			}
 
 			SetRegion(tmd.GetRegion(), &set_region_dir);

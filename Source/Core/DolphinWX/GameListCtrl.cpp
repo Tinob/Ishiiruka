@@ -53,7 +53,6 @@
 #include "DiscIO/Blob.h"
 #include "DiscIO/Enums.h"
 #include "DiscIO/Volume.h"
-#include "DiscIO/VolumeCreator.h"
 #include "DolphinWX/Frame.h"
 #include "DolphinWX/GameListCtrl.h"
 #include "DolphinWX/Globals.h"
@@ -1461,7 +1460,7 @@ void CGameListCtrl::AutomaticColumnWidth()
 				if (c.resizable)
 					visible_columns.push_back(c.id);
 				else
-					remaining_width -= c.default_width;
+					remaining_width -= GetColumnWidth(c.id);
 			}
 		}
 

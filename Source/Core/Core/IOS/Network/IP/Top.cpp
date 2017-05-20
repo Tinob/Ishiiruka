@@ -540,8 +540,8 @@ IPCCommandResult NetIPTop::HandlePollRequest(const IOCtlRequest& request)
 		int native;
 		int wii;
 	} mapping[] = {
-		 {POLLRDNORM, 0x0001}, {POLLRDBAND, 0x0002}, {POLLPRI, 0x0004}, {POLLWRNORM, 0x0008},
-		 {POLLWRBAND, 0x0010}, {POLLERR, 0x0020},    {POLLHUP, 0x0040}, {POLLNVAL, 0x0080},
+		{ POLLRDNORM, 0x0001 },{ POLLRDBAND, 0x0002 },{ POLLPRI, 0x0004 },{ POLLWRNORM, 0x0008 },
+		{ POLLWRBAND, 0x0010 },{ POLLERR, 0x0020 },{ POLLHUP, 0x0040 },{ POLLNVAL, 0x0080 },
 	};
 
 	u32 unknown = Memory::Read_U32(request.buffer_in);
@@ -559,7 +559,7 @@ IPCCommandResult NetIPTop::HandlePollRequest(const IOCtlRequest& request)
 		int events = Memory::Read_U32(request.buffer_out + 0xc * i + 4);       // events
 		ufds[i].revents = Memory::Read_U32(request.buffer_out + 0xc * i + 8);  // revents
 
-		// Translate Wii to native events
+																									  // Translate Wii to native events
 		int unhandled_events = events;
 		ufds[i].events = 0;
 		for (auto& map : mapping)
@@ -804,6 +804,10 @@ IPCCommandResult NetIPTop::HandleGetInterfaceOptRequest(const IOCtlVRequest& req
 		Memory::Write_U32(1, request.io_vectors[0].address);
 		break;
 
+	case 0x3001:  // hardcoded value
+		Memory::Write_U32(0x10, request.io_vectors[0].address);
+		break;
+
 	case 0x4002:  // ip addr numberHandle
 		Memory::Write_U32(1, request.io_vectors[0].address);
 		break;
@@ -813,6 +817,26 @@ IPCCommandResult NetIPTop::HandleGetInterfaceOptRequest(const IOCtlVRequest& req
 		Memory::Write_U32(10 << 24 | 1 << 8 | 30, request.io_vectors[0].address);
 		Memory::Write_U32(255 << 24 | 255 << 16 | 255 << 8 | 0, request.io_vectors[0].address + 4);
 		Memory::Write_U32(10 << 24 | 0 << 16 | 255 << 8 | 255, request.io_vectors[0].address + 8);
+		break;
+
+	case 0x4005:  // hardcoded value
+		Memory::Write_U32(0x20, request.io_vectors[0].address);
+		break;
+
+	case 0x6003:  // hardcoded value
+		Memory::Write_U32(0x80, request.io_vectors[0].address);
+		break;
+
+	case 0x600a:  // hardcoded value
+		Memory::Write_U32(0x80, request.io_vectors[0].address);
+		break;
+
+	case 0x600c:  // hardcoded value
+		Memory::Write_U32(0x80, request.io_vectors[0].address);
+		break;
+
+	case 0xb002:  // hardcoded value
+		Memory::Write_U32(2, request.io_vectors[0].address);
 		break;
 
 	default:
