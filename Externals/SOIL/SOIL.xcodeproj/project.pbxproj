@@ -1,0 +1,298 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		FAA28A211ED502FA00F8CE55 /* image_DXT.c in Sources */ = {isa = PBXBuildFile; fileRef = FAA28A151ED502FA00F8CE55 /* image_DXT.c */; };
+		FAA28A221ED502FA00F8CE55 /* image_DXT.h in Headers */ = {isa = PBXBuildFile; fileRef = FAA28A161ED502FA00F8CE55 /* image_DXT.h */; };
+		FAA28A231ED502FA00F8CE55 /* image_helper.c in Sources */ = {isa = PBXBuildFile; fileRef = FAA28A171ED502FA00F8CE55 /* image_helper.c */; };
+		FAA28A241ED502FA00F8CE55 /* image_helper.h in Headers */ = {isa = PBXBuildFile; fileRef = FAA28A181ED502FA00F8CE55 /* image_helper.h */; };
+		FAA28A251ED502FA00F8CE55 /* SOIL.h in Headers */ = {isa = PBXBuildFile; fileRef = FAA28A1A1ED502FA00F8CE55 /* SOIL.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FAA28A261ED502FA00F8CE55 /* SOIL.c in Sources */ = {isa = PBXBuildFile; fileRef = FAA28A1B1ED502FA00F8CE55 /* SOIL.c */; };
+		FAA28A271ED502FA00F8CE55 /* SOIL.h in Headers */ = {isa = PBXBuildFile; fileRef = FAA28A1C1ED502FA00F8CE55 /* SOIL.h */; };
+		FAA28A281ED502FA00F8CE55 /* stb_image_aug.c in Sources */ = {isa = PBXBuildFile; fileRef = FAA28A1D1ED502FA00F8CE55 /* stb_image_aug.c */; };
+		FAA28A291ED502FA00F8CE55 /* stb_image_aug.h in Headers */ = {isa = PBXBuildFile; fileRef = FAA28A1E1ED502FA00F8CE55 /* stb_image_aug.h */; };
+		FAA28A2A1ED502FA00F8CE55 /* stbi_DDS_aug_c.h in Headers */ = {isa = PBXBuildFile; fileRef = FAA28A1F1ED502FA00F8CE55 /* stbi_DDS_aug_c.h */; };
+		FAA28A2B1ED502FA00F8CE55 /* stbi_DDS_aug.h in Headers */ = {isa = PBXBuildFile; fileRef = FAA28A201ED502FA00F8CE55 /* stbi_DDS_aug.h */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		FAA28A0D1ED502D000F8CE55 /* libSOIL.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libSOIL.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		FAA28A141ED502FA00F8CE55 /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		FAA28A151ED502FA00F8CE55 /* image_DXT.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = image_DXT.c; sourceTree = "<group>"; };
+		FAA28A161ED502FA00F8CE55 /* image_DXT.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = image_DXT.h; sourceTree = "<group>"; };
+		FAA28A171ED502FA00F8CE55 /* image_helper.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = image_helper.c; sourceTree = "<group>"; };
+		FAA28A181ED502FA00F8CE55 /* image_helper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = image_helper.h; sourceTree = "<group>"; };
+		FAA28A1A1ED502FA00F8CE55 /* SOIL.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SOIL.h; sourceTree = "<group>"; };
+		FAA28A1B1ED502FA00F8CE55 /* SOIL.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = SOIL.c; sourceTree = "<group>"; };
+		FAA28A1C1ED502FA00F8CE55 /* SOIL.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SOIL.h; sourceTree = "<group>"; };
+		FAA28A1D1ED502FA00F8CE55 /* stb_image_aug.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stb_image_aug.c; sourceTree = "<group>"; };
+		FAA28A1E1ED502FA00F8CE55 /* stb_image_aug.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stb_image_aug.h; sourceTree = "<group>"; };
+		FAA28A1F1ED502FA00F8CE55 /* stbi_DDS_aug_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stbi_DDS_aug_c.h; sourceTree = "<group>"; };
+		FAA28A201ED502FA00F8CE55 /* stbi_DDS_aug.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stbi_DDS_aug.h; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		FAA28A0A1ED502D000F8CE55 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		FAA28A041ED502D000F8CE55 = {
+			isa = PBXGroup;
+			children = (
+				FAA28A141ED502FA00F8CE55 /* CMakeLists.txt */,
+				FAA28A151ED502FA00F8CE55 /* image_DXT.c */,
+				FAA28A161ED502FA00F8CE55 /* image_DXT.h */,
+				FAA28A171ED502FA00F8CE55 /* image_helper.c */,
+				FAA28A181ED502FA00F8CE55 /* image_helper.h */,
+				FAA28A191ED502FA00F8CE55 /* SOIL */,
+				FAA28A1B1ED502FA00F8CE55 /* SOIL.c */,
+				FAA28A1C1ED502FA00F8CE55 /* SOIL.h */,
+				FAA28A1D1ED502FA00F8CE55 /* stb_image_aug.c */,
+				FAA28A1E1ED502FA00F8CE55 /* stb_image_aug.h */,
+				FAA28A1F1ED502FA00F8CE55 /* stbi_DDS_aug_c.h */,
+				FAA28A201ED502FA00F8CE55 /* stbi_DDS_aug.h */,
+				FAA28A0E1ED502D000F8CE55 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		FAA28A0E1ED502D000F8CE55 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				FAA28A0D1ED502D000F8CE55 /* libSOIL.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		FAA28A191ED502FA00F8CE55 /* SOIL */ = {
+			isa = PBXGroup;
+			children = (
+				FAA28A1A1ED502FA00F8CE55 /* SOIL.h */,
+			);
+			path = SOIL;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		FAA28A0B1ED502D000F8CE55 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FAA28A251ED502FA00F8CE55 /* SOIL.h in Headers */,
+				FAA28A2A1ED502FA00F8CE55 /* stbi_DDS_aug_c.h in Headers */,
+				FAA28A291ED502FA00F8CE55 /* stb_image_aug.h in Headers */,
+				FAA28A241ED502FA00F8CE55 /* image_helper.h in Headers */,
+				FAA28A221ED502FA00F8CE55 /* image_DXT.h in Headers */,
+				FAA28A2B1ED502FA00F8CE55 /* stbi_DDS_aug.h in Headers */,
+				FAA28A271ED502FA00F8CE55 /* SOIL.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		FAA28A0C1ED502D000F8CE55 /* SOIL */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FAA28A111ED502D000F8CE55 /* Build configuration list for PBXNativeTarget "SOIL" */;
+			buildPhases = (
+				FAA28A091ED502D000F8CE55 /* Sources */,
+				FAA28A0A1ED502D000F8CE55 /* Frameworks */,
+				FAA28A0B1ED502D000F8CE55 /* Headers */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SOIL;
+			productName = SOIL;
+			productReference = FAA28A0D1ED502D000F8CE55 /* libSOIL.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		FAA28A051ED502D000F8CE55 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0830;
+				ORGANIZATIONNAME = "Vincent Imbimbo";
+				TargetAttributes = {
+					FAA28A0C1ED502D000F8CE55 = {
+						CreatedOnToolsVersion = 8.3.2;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = FAA28A081ED502D000F8CE55 /* Build configuration list for PBXProject "SOIL" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = FAA28A041ED502D000F8CE55;
+			productRefGroup = FAA28A0E1ED502D000F8CE55 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				FAA28A0C1ED502D000F8CE55 /* SOIL */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		FAA28A091ED502D000F8CE55 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FAA28A211ED502FA00F8CE55 /* image_DXT.c in Sources */,
+				FAA28A231ED502FA00F8CE55 /* image_helper.c in Sources */,
+				FAA28A261ED502FA00F8CE55 /* SOIL.c in Sources */,
+				FAA28A281ED502FA00F8CE55 /* stb_image_aug.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		FAA28A0F1ED502D000F8CE55 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		FAA28A101ED502D000F8CE55 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		FAA28A121ED502D000F8CE55 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				EXECUTABLE_PREFIX = lib;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		FAA28A131ED502D000F8CE55 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				EXECUTABLE_PREFIX = lib;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		FAA28A081ED502D000F8CE55 /* Build configuration list for PBXProject "SOIL" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FAA28A0F1ED502D000F8CE55 /* Debug */,
+				FAA28A101ED502D000F8CE55 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		FAA28A111ED502D000F8CE55 /* Build configuration list for PBXNativeTarget "SOIL" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FAA28A121ED502D000F8CE55 /* Debug */,
+				FAA28A131ED502D000F8CE55 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = FAA28A051ED502D000F8CE55 /* Project object */;
+}

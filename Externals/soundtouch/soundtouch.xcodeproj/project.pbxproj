@@ -1,0 +1,356 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		FAA287A11ED4A14700F8CE55 /* AAFilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FAA287811ED4A14700F8CE55 /* AAFilter.cpp */; };
+		FAA287A21ED4A14700F8CE55 /* AAFilter.h in Headers */ = {isa = PBXBuildFile; fileRef = FAA287821ED4A14700F8CE55 /* AAFilter.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FAA287A31ED4A14700F8CE55 /* BPMDetect.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FAA287831ED4A14700F8CE55 /* BPMDetect.cpp */; };
+		FAA287A41ED4A14700F8CE55 /* BPMDetect.h in Headers */ = {isa = PBXBuildFile; fileRef = FAA287841ED4A14700F8CE55 /* BPMDetect.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FAA287A51ED4A14700F8CE55 /* cpu_detect_x86.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FAA287861ED4A14700F8CE55 /* cpu_detect_x86.cpp */; };
+		FAA287A61ED4A14700F8CE55 /* cpu_detect.h in Headers */ = {isa = PBXBuildFile; fileRef = FAA287871ED4A14700F8CE55 /* cpu_detect.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FAA287A71ED4A14700F8CE55 /* FIFOSampleBuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FAA287881ED4A14700F8CE55 /* FIFOSampleBuffer.cpp */; };
+		FAA287A81ED4A14700F8CE55 /* FIFOSampleBuffer.h in Headers */ = {isa = PBXBuildFile; fileRef = FAA287891ED4A14700F8CE55 /* FIFOSampleBuffer.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FAA287A91ED4A14700F8CE55 /* FIFOSamplePipe.h in Headers */ = {isa = PBXBuildFile; fileRef = FAA2878A1ED4A14700F8CE55 /* FIFOSamplePipe.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FAA287AA1ED4A14700F8CE55 /* FIRFilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FAA2878B1ED4A14700F8CE55 /* FIRFilter.cpp */; };
+		FAA287AB1ED4A14700F8CE55 /* FIRFilter.h in Headers */ = {isa = PBXBuildFile; fileRef = FAA2878C1ED4A14700F8CE55 /* FIRFilter.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FAA287AC1ED4A14700F8CE55 /* InterpolateCubic.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FAA2878D1ED4A14700F8CE55 /* InterpolateCubic.cpp */; };
+		FAA287AD1ED4A14700F8CE55 /* InterpolateCubic.h in Headers */ = {isa = PBXBuildFile; fileRef = FAA2878E1ED4A14700F8CE55 /* InterpolateCubic.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FAA287AE1ED4A14700F8CE55 /* InterpolateLinear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FAA2878F1ED4A14700F8CE55 /* InterpolateLinear.cpp */; };
+		FAA287AF1ED4A14700F8CE55 /* InterpolateLinear.h in Headers */ = {isa = PBXBuildFile; fileRef = FAA287901ED4A14700F8CE55 /* InterpolateLinear.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FAA287B01ED4A14700F8CE55 /* InterpolateShannon.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FAA287911ED4A14700F8CE55 /* InterpolateShannon.cpp */; };
+		FAA287B11ED4A14700F8CE55 /* InterpolateShannon.h in Headers */ = {isa = PBXBuildFile; fileRef = FAA287921ED4A14700F8CE55 /* InterpolateShannon.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FAA287B21ED4A14700F8CE55 /* mmx_optimized.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FAA287941ED4A14700F8CE55 /* mmx_optimized.cpp */; };
+		FAA287B31ED4A14700F8CE55 /* PeakFinder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FAA287951ED4A14700F8CE55 /* PeakFinder.cpp */; };
+		FAA287B41ED4A14700F8CE55 /* PeakFinder.h in Headers */ = {isa = PBXBuildFile; fileRef = FAA287961ED4A14700F8CE55 /* PeakFinder.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FAA287B51ED4A14700F8CE55 /* RateTransposer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FAA287971ED4A14700F8CE55 /* RateTransposer.cpp */; };
+		FAA287B61ED4A14700F8CE55 /* RateTransposer.h in Headers */ = {isa = PBXBuildFile; fileRef = FAA287981ED4A14700F8CE55 /* RateTransposer.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FAA287B71ED4A14700F8CE55 /* SoundTouch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FAA287991ED4A14700F8CE55 /* SoundTouch.cpp */; };
+		FAA287B81ED4A14700F8CE55 /* SoundTouch.h in Headers */ = {isa = PBXBuildFile; fileRef = FAA2879A1ED4A14700F8CE55 /* SoundTouch.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FAA287B91ED4A14700F8CE55 /* sse_optimized.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FAA2879D1ED4A14700F8CE55 /* sse_optimized.cpp */; };
+		FAA287BA1ED4A14700F8CE55 /* STTypes.h in Headers */ = {isa = PBXBuildFile; fileRef = FAA2879E1ED4A14700F8CE55 /* STTypes.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FAA287BB1ED4A14700F8CE55 /* TDStretch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FAA2879F1ED4A14700F8CE55 /* TDStretch.cpp */; };
+		FAA287BC1ED4A14700F8CE55 /* TDStretch.h in Headers */ = {isa = PBXBuildFile; fileRef = FAA287A01ED4A14700F8CE55 /* TDStretch.h */; settings = {ATTRIBUTES = (Public, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		FAA2877A1ED4A0FB00F8CE55 /* libsoundtouch.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libsoundtouch.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		FAA287811ED4A14700F8CE55 /* AAFilter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = AAFilter.cpp; sourceTree = "<group>"; };
+		FAA287821ED4A14700F8CE55 /* AAFilter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AAFilter.h; sourceTree = "<group>"; };
+		FAA287831ED4A14700F8CE55 /* BPMDetect.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = BPMDetect.cpp; sourceTree = "<group>"; };
+		FAA287841ED4A14700F8CE55 /* BPMDetect.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BPMDetect.h; sourceTree = "<group>"; };
+		FAA287861ED4A14700F8CE55 /* cpu_detect_x86.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = cpu_detect_x86.cpp; sourceTree = "<group>"; };
+		FAA287871ED4A14700F8CE55 /* cpu_detect.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cpu_detect.h; sourceTree = "<group>"; };
+		FAA287881ED4A14700F8CE55 /* FIFOSampleBuffer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = FIFOSampleBuffer.cpp; sourceTree = "<group>"; };
+		FAA287891ED4A14700F8CE55 /* FIFOSampleBuffer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FIFOSampleBuffer.h; sourceTree = "<group>"; };
+		FAA2878A1ED4A14700F8CE55 /* FIFOSamplePipe.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FIFOSamplePipe.h; sourceTree = "<group>"; };
+		FAA2878B1ED4A14700F8CE55 /* FIRFilter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = FIRFilter.cpp; sourceTree = "<group>"; };
+		FAA2878C1ED4A14700F8CE55 /* FIRFilter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FIRFilter.h; sourceTree = "<group>"; };
+		FAA2878D1ED4A14700F8CE55 /* InterpolateCubic.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = InterpolateCubic.cpp; sourceTree = "<group>"; };
+		FAA2878E1ED4A14700F8CE55 /* InterpolateCubic.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = InterpolateCubic.h; sourceTree = "<group>"; };
+		FAA2878F1ED4A14700F8CE55 /* InterpolateLinear.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = InterpolateLinear.cpp; sourceTree = "<group>"; };
+		FAA287901ED4A14700F8CE55 /* InterpolateLinear.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = InterpolateLinear.h; sourceTree = "<group>"; };
+		FAA287911ED4A14700F8CE55 /* InterpolateShannon.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = InterpolateShannon.cpp; sourceTree = "<group>"; };
+		FAA287921ED4A14700F8CE55 /* InterpolateShannon.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = InterpolateShannon.h; sourceTree = "<group>"; };
+		FAA287941ED4A14700F8CE55 /* mmx_optimized.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = mmx_optimized.cpp; sourceTree = "<group>"; };
+		FAA287951ED4A14700F8CE55 /* PeakFinder.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PeakFinder.cpp; sourceTree = "<group>"; };
+		FAA287961ED4A14700F8CE55 /* PeakFinder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PeakFinder.h; sourceTree = "<group>"; };
+		FAA287971ED4A14700F8CE55 /* RateTransposer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RateTransposer.cpp; sourceTree = "<group>"; };
+		FAA287981ED4A14700F8CE55 /* RateTransposer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RateTransposer.h; sourceTree = "<group>"; };
+		FAA287991ED4A14700F8CE55 /* SoundTouch.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SoundTouch.cpp; sourceTree = "<group>"; };
+		FAA2879A1ED4A14700F8CE55 /* SoundTouch.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SoundTouch.h; sourceTree = "<group>"; };
+		FAA2879D1ED4A14700F8CE55 /* sse_optimized.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = sse_optimized.cpp; sourceTree = "<group>"; };
+		FAA2879E1ED4A14700F8CE55 /* STTypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = STTypes.h; sourceTree = "<group>"; };
+		FAA2879F1ED4A14700F8CE55 /* TDStretch.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TDStretch.cpp; sourceTree = "<group>"; };
+		FAA287A01ED4A14700F8CE55 /* TDStretch.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TDStretch.h; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		FAA287771ED4A0FB00F8CE55 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		FAA287711ED4A0FB00F8CE55 = {
+			isa = PBXGroup;
+			children = (
+				FAA287811ED4A14700F8CE55 /* AAFilter.cpp */,
+				FAA287821ED4A14700F8CE55 /* AAFilter.h */,
+				FAA287831ED4A14700F8CE55 /* BPMDetect.cpp */,
+				FAA287841ED4A14700F8CE55 /* BPMDetect.h */,
+				FAA287861ED4A14700F8CE55 /* cpu_detect_x86.cpp */,
+				FAA287871ED4A14700F8CE55 /* cpu_detect.h */,
+				FAA287881ED4A14700F8CE55 /* FIFOSampleBuffer.cpp */,
+				FAA287891ED4A14700F8CE55 /* FIFOSampleBuffer.h */,
+				FAA2878A1ED4A14700F8CE55 /* FIFOSamplePipe.h */,
+				FAA2878B1ED4A14700F8CE55 /* FIRFilter.cpp */,
+				FAA2878C1ED4A14700F8CE55 /* FIRFilter.h */,
+				FAA2878D1ED4A14700F8CE55 /* InterpolateCubic.cpp */,
+				FAA2878E1ED4A14700F8CE55 /* InterpolateCubic.h */,
+				FAA2878F1ED4A14700F8CE55 /* InterpolateLinear.cpp */,
+				FAA287901ED4A14700F8CE55 /* InterpolateLinear.h */,
+				FAA287911ED4A14700F8CE55 /* InterpolateShannon.cpp */,
+				FAA287921ED4A14700F8CE55 /* InterpolateShannon.h */,
+				FAA287941ED4A14700F8CE55 /* mmx_optimized.cpp */,
+				FAA287951ED4A14700F8CE55 /* PeakFinder.cpp */,
+				FAA287961ED4A14700F8CE55 /* PeakFinder.h */,
+				FAA287971ED4A14700F8CE55 /* RateTransposer.cpp */,
+				FAA287981ED4A14700F8CE55 /* RateTransposer.h */,
+				FAA287991ED4A14700F8CE55 /* SoundTouch.cpp */,
+				FAA2879A1ED4A14700F8CE55 /* SoundTouch.h */,
+				FAA2879D1ED4A14700F8CE55 /* sse_optimized.cpp */,
+				FAA2879E1ED4A14700F8CE55 /* STTypes.h */,
+				FAA2879F1ED4A14700F8CE55 /* TDStretch.cpp */,
+				FAA287A01ED4A14700F8CE55 /* TDStretch.h */,
+				FAA2877B1ED4A0FB00F8CE55 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		FAA2877B1ED4A0FB00F8CE55 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				FAA2877A1ED4A0FB00F8CE55 /* libsoundtouch.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		FAA287781ED4A0FB00F8CE55 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FAA287BC1ED4A14700F8CE55 /* TDStretch.h in Headers */,
+				FAA287AB1ED4A14700F8CE55 /* FIRFilter.h in Headers */,
+				FAA287B41ED4A14700F8CE55 /* PeakFinder.h in Headers */,
+				FAA287AD1ED4A14700F8CE55 /* InterpolateCubic.h in Headers */,
+				FAA287A91ED4A14700F8CE55 /* FIFOSamplePipe.h in Headers */,
+				FAA287AF1ED4A14700F8CE55 /* InterpolateLinear.h in Headers */,
+				FAA287B11ED4A14700F8CE55 /* InterpolateShannon.h in Headers */,
+				FAA287B81ED4A14700F8CE55 /* SoundTouch.h in Headers */,
+				FAA287B61ED4A14700F8CE55 /* RateTransposer.h in Headers */,
+				FAA287BA1ED4A14700F8CE55 /* STTypes.h in Headers */,
+				FAA287A81ED4A14700F8CE55 /* FIFOSampleBuffer.h in Headers */,
+				FAA287A21ED4A14700F8CE55 /* AAFilter.h in Headers */,
+				FAA287A41ED4A14700F8CE55 /* BPMDetect.h in Headers */,
+				FAA287A61ED4A14700F8CE55 /* cpu_detect.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		FAA287791ED4A0FB00F8CE55 /* soundtouch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FAA2877E1ED4A0FB00F8CE55 /* Build configuration list for PBXNativeTarget "soundtouch" */;
+			buildPhases = (
+				FAA287761ED4A0FB00F8CE55 /* Sources */,
+				FAA287771ED4A0FB00F8CE55 /* Frameworks */,
+				FAA287781ED4A0FB00F8CE55 /* Headers */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = soundtouch;
+			productName = soundtouch;
+			productReference = FAA2877A1ED4A0FB00F8CE55 /* libsoundtouch.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		FAA287721ED4A0FB00F8CE55 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0830;
+				ORGANIZATIONNAME = "Vincent Imbimbo";
+				TargetAttributes = {
+					FAA287791ED4A0FB00F8CE55 = {
+						CreatedOnToolsVersion = 8.3.2;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = FAA287751ED4A0FB00F8CE55 /* Build configuration list for PBXProject "soundtouch" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = FAA287711ED4A0FB00F8CE55;
+			productRefGroup = FAA2877B1ED4A0FB00F8CE55 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				FAA287791ED4A0FB00F8CE55 /* soundtouch */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		FAA287761ED4A0FB00F8CE55 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FAA287A51ED4A14700F8CE55 /* cpu_detect_x86.cpp in Sources */,
+				FAA287BB1ED4A14700F8CE55 /* TDStretch.cpp in Sources */,
+				FAA287A71ED4A14700F8CE55 /* FIFOSampleBuffer.cpp in Sources */,
+				FAA287B21ED4A14700F8CE55 /* mmx_optimized.cpp in Sources */,
+				FAA287B51ED4A14700F8CE55 /* RateTransposer.cpp in Sources */,
+				FAA287AC1ED4A14700F8CE55 /* InterpolateCubic.cpp in Sources */,
+				FAA287B01ED4A14700F8CE55 /* InterpolateShannon.cpp in Sources */,
+				FAA287A31ED4A14700F8CE55 /* BPMDetect.cpp in Sources */,
+				FAA287AA1ED4A14700F8CE55 /* FIRFilter.cpp in Sources */,
+				FAA287A11ED4A14700F8CE55 /* AAFilter.cpp in Sources */,
+				FAA287B91ED4A14700F8CE55 /* sse_optimized.cpp in Sources */,
+				FAA287B31ED4A14700F8CE55 /* PeakFinder.cpp in Sources */,
+				FAA287AE1ED4A14700F8CE55 /* InterpolateLinear.cpp in Sources */,
+				FAA287B71ED4A14700F8CE55 /* SoundTouch.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		FAA2877C1ED4A0FB00F8CE55 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		FAA2877D1ED4A0FB00F8CE55 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		FAA2877F1ED4A0FB00F8CE55 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				EXECUTABLE_PREFIX = lib;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		FAA287801ED4A0FB00F8CE55 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				EXECUTABLE_PREFIX = lib;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		FAA287751ED4A0FB00F8CE55 /* Build configuration list for PBXProject "soundtouch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FAA2877C1ED4A0FB00F8CE55 /* Debug */,
+				FAA2877D1ED4A0FB00F8CE55 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		FAA2877E1ED4A0FB00F8CE55 /* Build configuration list for PBXNativeTarget "soundtouch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FAA2877F1ED4A0FB00F8CE55 /* Debug */,
+				FAA287801ED4A0FB00F8CE55 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = FAA287721ED4A0FB00F8CE55 /* Project object */;
+}

@@ -1,0 +1,362 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		FAA293CD1ED7703300F8CE55 /* core.c in Sources */ = {isa = PBXBuildFile; fileRef = FAA293831ED7703300F8CE55 /* core.c */; };
+		FAA293CE1ED7703300F8CE55 /* descriptor.c in Sources */ = {isa = PBXBuildFile; fileRef = FAA293841ED7703300F8CE55 /* descriptor.c */; };
+		FAA293CF1ED7703300F8CE55 /* hotplug.c in Sources */ = {isa = PBXBuildFile; fileRef = FAA293851ED7703300F8CE55 /* hotplug.c */; };
+		FAA293D01ED7703300F8CE55 /* hotplug.h in Headers */ = {isa = PBXBuildFile; fileRef = FAA293861ED7703300F8CE55 /* hotplug.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FAA293D11ED7703300F8CE55 /* io.c in Sources */ = {isa = PBXBuildFile; fileRef = FAA293871ED7703300F8CE55 /* io.c */; };
+		FAA293D21ED7703300F8CE55 /* libusb.h in Headers */ = {isa = PBXBuildFile; fileRef = FAA2938A1ED7703300F8CE55 /* libusb.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FAA293D31ED7703300F8CE55 /* libusbi.h in Headers */ = {isa = PBXBuildFile; fileRef = FAA2938B1ED7703300F8CE55 /* libusbi.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FAA293D41ED7703300F8CE55 /* darwin_usb.c in Sources */ = {isa = PBXBuildFile; fileRef = FAA2938F1ED7703300F8CE55 /* darwin_usb.c */; };
+		FAA293D51ED7703300F8CE55 /* darwin_usb.h in Headers */ = {isa = PBXBuildFile; fileRef = FAA293901ED7703300F8CE55 /* darwin_usb.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FAA293E61ED7703300F8CE55 /* poll_posix.c in Sources */ = {isa = PBXBuildFile; fileRef = FAA293B41ED7703300F8CE55 /* poll_posix.c */; };
+		FAA293E71ED7703300F8CE55 /* poll_posix.h in Headers */ = {isa = PBXBuildFile; fileRef = FAA293B51ED7703300F8CE55 /* poll_posix.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FAA293EC1ED7703300F8CE55 /* threads_posix.c in Sources */ = {isa = PBXBuildFile; fileRef = FAA293BA1ED7703300F8CE55 /* threads_posix.c */; };
+		FAA293ED1ED7703300F8CE55 /* threads_posix.h in Headers */ = {isa = PBXBuildFile; fileRef = FAA293BB1ED7703300F8CE55 /* threads_posix.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FAA293FB1ED7703300F8CE55 /* strerror.c in Sources */ = {isa = PBXBuildFile; fileRef = FAA293C91ED7703300F8CE55 /* strerror.c */; };
+		FAA293FC1ED7703300F8CE55 /* sync.c in Sources */ = {isa = PBXBuildFile; fileRef = FAA293CA1ED7703300F8CE55 /* sync.c */; };
+		FAA293FD1ED7703300F8CE55 /* version.h in Headers */ = {isa = PBXBuildFile; fileRef = FAA293CB1ED7703300F8CE55 /* version.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FAA293FE1ED7703300F8CE55 /* version_nano.h in Headers */ = {isa = PBXBuildFile; fileRef = FAA293CC1ED7703300F8CE55 /* version_nano.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FAA294011ED770E200F8CE55 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FAA294001ED770E200F8CE55 /* CoreFoundation.framework */; };
+		FAA294031ED770E700F8CE55 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FAA294021ED770E700F8CE55 /* IOKit.framework */; };
+		FAA294071ED7738F00F8CE55 /* config.h in Headers */ = {isa = PBXBuildFile; fileRef = FAA294061ED7738F00F8CE55 /* config.h */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		FAA2937A1ED7700100F8CE55 /* libusb.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libusb.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		FAA293811ED7703300F8CE55 /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		FAA293831ED7703300F8CE55 /* core.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = core.c; sourceTree = "<group>"; };
+		FAA293841ED7703300F8CE55 /* descriptor.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = descriptor.c; sourceTree = "<group>"; };
+		FAA293851ED7703300F8CE55 /* hotplug.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = hotplug.c; sourceTree = "<group>"; };
+		FAA293861ED7703300F8CE55 /* hotplug.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = hotplug.h; sourceTree = "<group>"; };
+		FAA293871ED7703300F8CE55 /* io.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = io.c; sourceTree = "<group>"; };
+		FAA293881ED7703300F8CE55 /* libusb-1.0.def */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "libusb-1.0.def"; sourceTree = "<group>"; };
+		FAA293891ED7703300F8CE55 /* libusb-1.0.rc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "libusb-1.0.rc"; sourceTree = "<group>"; };
+		FAA2938A1ED7703300F8CE55 /* libusb.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = libusb.h; sourceTree = "<group>"; };
+		FAA2938B1ED7703300F8CE55 /* libusbi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = libusbi.h; sourceTree = "<group>"; };
+		FAA2938F1ED7703300F8CE55 /* darwin_usb.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = darwin_usb.c; sourceTree = "<group>"; };
+		FAA293901ED7703300F8CE55 /* darwin_usb.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = darwin_usb.h; sourceTree = "<group>"; };
+		FAA293B41ED7703300F8CE55 /* poll_posix.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = poll_posix.c; sourceTree = "<group>"; };
+		FAA293B51ED7703300F8CE55 /* poll_posix.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = poll_posix.h; sourceTree = "<group>"; };
+		FAA293BA1ED7703300F8CE55 /* threads_posix.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = threads_posix.c; sourceTree = "<group>"; };
+		FAA293BB1ED7703300F8CE55 /* threads_posix.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = threads_posix.h; sourceTree = "<group>"; };
+		FAA293C91ED7703300F8CE55 /* strerror.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = strerror.c; sourceTree = "<group>"; };
+		FAA293CA1ED7703300F8CE55 /* sync.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = sync.c; sourceTree = "<group>"; };
+		FAA293CB1ED7703300F8CE55 /* version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = version.h; sourceTree = "<group>"; };
+		FAA293CC1ED7703300F8CE55 /* version_nano.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = version_nano.h; sourceTree = "<group>"; };
+		FAA294001ED770E200F8CE55 /* CoreFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreFoundation.framework; path = System/Library/Frameworks/CoreFoundation.framework; sourceTree = SDKROOT; };
+		FAA294021ED770E700F8CE55 /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
+		FAA294041ED7721800F8CE55 /* Makefile.am */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Makefile.am; sourceTree = "<group>"; };
+		FAA294051ED7721800F8CE55 /* Makefile.in */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Makefile.in; sourceTree = "<group>"; };
+		FAA294061ED7738F00F8CE55 /* config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = config.h; path = ../../../build/Externals/libusb/config.h; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		FAA293771ED7700100F8CE55 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FAA294031ED770E700F8CE55 /* IOKit.framework in Frameworks */,
+				FAA294011ED770E200F8CE55 /* CoreFoundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		FAA293711ED7700100F8CE55 = {
+			isa = PBXGroup;
+			children = (
+				FAA293811ED7703300F8CE55 /* CMakeLists.txt */,
+				FAA293821ED7703300F8CE55 /* libusb */,
+				FAA2937B1ED7700100F8CE55 /* Products */,
+				FAA293FF1ED770E200F8CE55 /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		FAA2937B1ED7700100F8CE55 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				FAA2937A1ED7700100F8CE55 /* libusb.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		FAA293821ED7703300F8CE55 /* libusb */ = {
+			isa = PBXGroup;
+			children = (
+				FAA294041ED7721800F8CE55 /* Makefile.am */,
+				FAA294051ED7721800F8CE55 /* Makefile.in */,
+				FAA294061ED7738F00F8CE55 /* config.h */,
+				FAA293831ED7703300F8CE55 /* core.c */,
+				FAA293841ED7703300F8CE55 /* descriptor.c */,
+				FAA293851ED7703300F8CE55 /* hotplug.c */,
+				FAA293861ED7703300F8CE55 /* hotplug.h */,
+				FAA293871ED7703300F8CE55 /* io.c */,
+				FAA293881ED7703300F8CE55 /* libusb-1.0.def */,
+				FAA293891ED7703300F8CE55 /* libusb-1.0.rc */,
+				FAA2938A1ED7703300F8CE55 /* libusb.h */,
+				FAA2938B1ED7703300F8CE55 /* libusbi.h */,
+				FAA2938E1ED7703300F8CE55 /* os */,
+				FAA293C91ED7703300F8CE55 /* strerror.c */,
+				FAA293CA1ED7703300F8CE55 /* sync.c */,
+				FAA293CB1ED7703300F8CE55 /* version.h */,
+				FAA293CC1ED7703300F8CE55 /* version_nano.h */,
+			);
+			path = libusb;
+			sourceTree = "<group>";
+		};
+		FAA2938E1ED7703300F8CE55 /* os */ = {
+			isa = PBXGroup;
+			children = (
+				FAA2938F1ED7703300F8CE55 /* darwin_usb.c */,
+				FAA293901ED7703300F8CE55 /* darwin_usb.h */,
+				FAA293B41ED7703300F8CE55 /* poll_posix.c */,
+				FAA293B51ED7703300F8CE55 /* poll_posix.h */,
+				FAA293BA1ED7703300F8CE55 /* threads_posix.c */,
+				FAA293BB1ED7703300F8CE55 /* threads_posix.h */,
+			);
+			path = os;
+			sourceTree = "<group>";
+		};
+		FAA293FF1ED770E200F8CE55 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				FAA294021ED770E700F8CE55 /* IOKit.framework */,
+				FAA294001ED770E200F8CE55 /* CoreFoundation.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		FAA293781ED7700100F8CE55 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FAA293D51ED7703300F8CE55 /* darwin_usb.h in Headers */,
+				FAA293FD1ED7703300F8CE55 /* version.h in Headers */,
+				FAA293D01ED7703300F8CE55 /* hotplug.h in Headers */,
+				FAA293D21ED7703300F8CE55 /* libusb.h in Headers */,
+				FAA293D31ED7703300F8CE55 /* libusbi.h in Headers */,
+				FAA293FE1ED7703300F8CE55 /* version_nano.h in Headers */,
+				FAA293ED1ED7703300F8CE55 /* threads_posix.h in Headers */,
+				FAA293E71ED7703300F8CE55 /* poll_posix.h in Headers */,
+				FAA294071ED7738F00F8CE55 /* config.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		FAA293791ED7700100F8CE55 /* usb */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FAA2937E1ED7700100F8CE55 /* Build configuration list for PBXNativeTarget "usb" */;
+			buildPhases = (
+				FAA293761ED7700100F8CE55 /* Sources */,
+				FAA293771ED7700100F8CE55 /* Frameworks */,
+				FAA293781ED7700100F8CE55 /* Headers */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = usb;
+			productName = usb;
+			productReference = FAA2937A1ED7700100F8CE55 /* libusb.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		FAA293721ED7700100F8CE55 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0830;
+				ORGANIZATIONNAME = "Vincent Imbimbo";
+				TargetAttributes = {
+					FAA293791ED7700100F8CE55 = {
+						CreatedOnToolsVersion = 8.3.2;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = FAA293751ED7700100F8CE55 /* Build configuration list for PBXProject "usb" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = FAA293711ED7700100F8CE55;
+			productRefGroup = FAA2937B1ED7700100F8CE55 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				FAA293791ED7700100F8CE55 /* usb */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		FAA293761ED7700100F8CE55 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FAA293E61ED7703300F8CE55 /* poll_posix.c in Sources */,
+				FAA293FC1ED7703300F8CE55 /* sync.c in Sources */,
+				FAA293EC1ED7703300F8CE55 /* threads_posix.c in Sources */,
+				FAA293CE1ED7703300F8CE55 /* descriptor.c in Sources */,
+				FAA293D41ED7703300F8CE55 /* darwin_usb.c in Sources */,
+				FAA293D11ED7703300F8CE55 /* io.c in Sources */,
+				FAA293CF1ED7703300F8CE55 /* hotplug.c in Sources */,
+				FAA293CD1ED7703300F8CE55 /* core.c in Sources */,
+				FAA293FB1ED7703300F8CE55 /* strerror.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		FAA2937C1ED7700100F8CE55 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		FAA2937D1ED7700100F8CE55 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		FAA2937F1ED7700100F8CE55 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
+				EXECUTABLE_PREFIX = lib;
+				GCC_C_LANGUAGE_STANDARD = c11;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		FAA293801ED7700100F8CE55 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
+				EXECUTABLE_PREFIX = lib;
+				GCC_C_LANGUAGE_STANDARD = c11;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		FAA293751ED7700100F8CE55 /* Build configuration list for PBXProject "usb" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FAA2937C1ED7700100F8CE55 /* Debug */,
+				FAA2937D1ED7700100F8CE55 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		FAA2937E1ED7700100F8CE55 /* Build configuration list for PBXNativeTarget "usb" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FAA2937F1ED7700100F8CE55 /* Debug */,
+				FAA293801ED7700100F8CE55 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = FAA293721ED7700100F8CE55 /* Project object */;
+}
