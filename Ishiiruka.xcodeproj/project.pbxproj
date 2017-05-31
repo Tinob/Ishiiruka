@@ -13476,6 +13476,7 @@
 				FAA294281ED774AE00F8CE55 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		FAA2954E1ED799FF00F8CE55 /* Build configuration list for PBXNativeTarget "discio" */ = {
 			isa = XCConfigurationList;
@@ -13484,6 +13485,7 @@
 				FAA295501ED799FF00F8CE55 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		FAA2957D1ED79B9500F8CE55 /* Build configuration list for PBXNativeTarget "videosoftware" */ = {
 			isa = XCConfigurationList;
@@ -13492,6 +13494,7 @@
 				FAA2957F1ED79B9500F8CE55 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		FAA295A41ED79C7600F8CE55 /* Build configuration list for PBXNativeTarget "videoogl" */ = {
 			isa = XCConfigurationList;
@@ -13500,6 +13503,7 @@
 				FAA295A61ED79C7600F8CE55 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		FAA295C91ED79D1C00F8CE55 /* Build configuration list for PBXNativeTarget "videocommon" */ = {
 			isa = XCConfigurationList;
@@ -13508,6 +13512,7 @@
 				FAA295CB1ED79D1C00F8CE55 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		FAA296761ED8605D00F8CE55 /* Build configuration list for PBXNativeTarget "core" */ = {
 			isa = XCConfigurationList;
@@ -13516,6 +13521,7 @@
 				FAA296781ED8605D00F8CE55 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		FAA298941ED8875900F8CE55 /* Build configuration list for PBXNativeTarget "uicommon" */ = {
 			isa = XCConfigurationList;
@@ -13524,6 +13530,7 @@
 				FAA298961ED8875900F8CE55 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		FAA298BA1ED88A1600F8CE55 /* Build configuration list for PBXNativeTarget "Dolphin" */ = {
 			isa = XCConfigurationList;
@@ -13532,6 +13539,7 @@
 				FAA298BC1ED88A1600F8CE55 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

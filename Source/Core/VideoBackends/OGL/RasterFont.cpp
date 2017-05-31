@@ -139,9 +139,7 @@ static SHADER s_shader;
 RasterFont::RasterFont()
 {
 	// generate the texture
-	glGenTextures(1, &texture);
 	glActiveTexture(GL_TEXTURE8);
-	glBindTexture(GL_TEXTURE_2D, texture);
 	std::vector<u32> texture_data(CHARACTER_WIDTH * CHARACTER_COUNT * CHARACTER_HEIGHT);
 	for (int y = 0; y < CHARACTER_HEIGHT; y++)
 	{
@@ -185,7 +183,6 @@ RasterFont::RasterFont()
 
 RasterFont::~RasterFont()
 {
-	glDeleteTextures(1, &texture);
 	glDeleteBuffers(1, &VBO);
 	glDeleteVertexArrays(1, &VAO);
 	s_shader.Destroy();
