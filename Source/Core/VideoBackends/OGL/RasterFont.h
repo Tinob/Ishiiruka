@@ -22,8 +22,8 @@ public:
 
 private:
 	u32 VBO;
-    u32 VAO;
-    u32 texture;
+	u32 VAO;
+	u32 texture;
 	u32 uniform_color_id;
 	u32 uniform_offset_id;
 };
