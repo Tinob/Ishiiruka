@@ -19,7 +19,7 @@
 #include "VideoCommon/VideoConfig.h"
 
 #include "VideoCommon/LookUpTables.h"
-#include <emmintrin.h>
+
 
 
 // This avoids a harmless warning from a system header in Clang;

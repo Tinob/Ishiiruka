@@ -12,7 +12,7 @@
 #include "VideoCommon/VideoConfig.h"
 #include "VideoCommon/VertexLoaderManager.h"
 #include "VideoCommon/VertexLoaderX64.h"
-#include <emmintrin.h>
+
 
 using namespace Gen;
 

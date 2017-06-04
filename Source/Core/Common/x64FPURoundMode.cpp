@@ -8,7 +8,7 @@
 #include "Common/CPUDetect.h"
 #include "Common/FPURoundMode.h"
 #include "Common/Intrinsics.h"
-#include "xmmintrin.h"
+
 namespace FPURoundMode
 {
 // Get the default SSE states here.
