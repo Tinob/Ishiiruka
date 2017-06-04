@@ -1903,7 +1903,7 @@ const std::string PostProcessor::s_post_fragment_header_ogl = R"(
 // Depth value is not inverted for GL
 #define DEPTH_VALUE(val) (val)
 // Shader inputs/outputs
-SAMPLER_BINDING(9) uniform sampler2DArray pp_inputs[8];
+SAMPLER_BINDING(0) uniform sampler2DArray pp_inputs[8];
 in float2 v_source_uv;
 in float2 v_target_uv;
 flat in float v_layer;
