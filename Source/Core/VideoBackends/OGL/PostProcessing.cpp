@@ -26,7 +26,7 @@
 namespace OGL
 {
 
-static const u32 FIRST_INPUT_TEXTURE_UNIT = 0;
+static const u32 FIRST_INPUT_TEXTURE_UNIT = 9;
 static const u32 UNIFORM_BUFFER_BIND_POINT = 4;
 
 static const char* s_vertex_shader = R"(
@@ -319,7 +319,7 @@ void OGLPostProcessingShader::Draw(PostProcessor* p,
 		for (size_t i = 0; i < pass.inputs.size(); i++)
 		{
 			const InputBinding& input = pass.inputs[i];
-			glActiveTexture(GL_TEXTURE0 + FIRST_INPUT_TEXTURE_UNIT + input.texture_unit);
+			glActiveTexture(GL_TEXTURE0 + input.texture_unit);
 
 			switch (input.type)
 			{
