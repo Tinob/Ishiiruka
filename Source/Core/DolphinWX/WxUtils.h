@@ -34,7 +34,7 @@ wxBitmap CreateDisabledButtonBitmap(const wxBitmap& original);
 
 // Helper function to add a button to a toolbar
 void AddToolbarButton(wxToolBar* toolbar, int toolID, const wxString& label, const wxBitmap& bitmap,
-	const wxString& shortHelp);
+  const wxString& shortHelp);
 
 // Gets a complete set of window icons at all relevant sizes, use with wxTopLevelWindow::SetIcons
 wxIconBundle GetDolphinIconBundle();
@@ -47,7 +47,7 @@ wxRect GetVirtualScreenGeometry();
 // Supports spanning multiple monitors if there are multiple monitors.
 // Will snap to edge if the window is small enough to fit but spills over the boundary.
 void SetWindowSizeAndFitToScreen(wxTopLevelWindow* tlw, wxPoint pos, wxSize size,
-	wxSize default_size = wxDefaultSize);
+  wxSize default_size = wxDefaultSize);
 
 // wxSizers use the minimum size of a widget when computing layout instead of the best size.
 // The best size is only taken when the minsize is -1,-1 (i.e. undefined).
@@ -69,30 +69,30 @@ wxSize GetTextWidgetMinSize(const wxSpinCtrl* spinner);
 
 enum LSIFlags : unsigned int
 {
-	LSI_SCALE_NONE = 0,  // Disable scaling, only resize canvas
-	LSI_SCALE_UP = 1,    // Scale up if needed, but crop instead of scaling down
-	LSI_SCALE_DOWN = 2,  // Scale down if needed, only expand canvas instead of scaling up
-	LSI_SCALE = LSI_SCALE_UP | LSI_SCALE_DOWN,  // Scale either way as needed.
-	LSI_SCALE_NO_ASPECT = 8,                    // Disable preserving the aspect ratio of the image.
+  LSI_SCALE_NONE = 0,  // Disable scaling, only resize canvas
+  LSI_SCALE_UP = 1,    // Scale up if needed, but crop instead of scaling down
+  LSI_SCALE_DOWN = 2,  // Scale down if needed, only expand canvas instead of scaling up
+  LSI_SCALE = LSI_SCALE_UP | LSI_SCALE_DOWN,  // Scale either way as needed.
+  LSI_SCALE_NO_ASPECT = 8,                    // Disable preserving the aspect ratio of the image.
 
-	LSI_ALIGN_LEFT = 0,        // Place image at the left edge of canvas
-	LSI_ALIGN_RIGHT = 0x10,    // Place image at the right edge of canvas
-	LSI_ALIGN_HCENTER = 0x20,  // Place image in the horizontal center of canvas
-	LSI_ALIGN_TOP = 0,         // Place image at the top of the canvas
-	LSI_ALIGN_BOTTOM = 0x40,   // Place image at the bottom of the canvas
-	LSI_ALIGN_VCENTER = 0x80,  // Place image in the vertical center of canvas
+  LSI_ALIGN_LEFT = 0,        // Place image at the left edge of canvas
+  LSI_ALIGN_RIGHT = 0x10,    // Place image at the right edge of canvas
+  LSI_ALIGN_HCENTER = 0x20,  // Place image in the horizontal center of canvas
+  LSI_ALIGN_TOP = 0,         // Place image at the top of the canvas
+  LSI_ALIGN_BOTTOM = 0x40,   // Place image at the bottom of the canvas
+  LSI_ALIGN_VCENTER = 0x80,  // Place image in the vertical center of canvas
 
-	LSI_ALIGN_CENTER = LSI_ALIGN_HCENTER | LSI_ALIGN_VCENTER,
+  LSI_ALIGN_CENTER = LSI_ALIGN_HCENTER | LSI_ALIGN_VCENTER,
 
-	LSI_DEFAULT = LSI_SCALE | LSI_ALIGN_CENTER
+  LSI_DEFAULT = LSI_SCALE | LSI_ALIGN_CENTER
 };
 constexpr LSIFlags operator|(LSIFlags left, LSIFlags right)
 {
-	return static_cast<LSIFlags>(static_cast<unsigned int>(left) | right);
+  return static_cast<LSIFlags>(static_cast<unsigned int>(left) | right);
 }
 constexpr LSIFlags operator&(LSIFlags left, LSIFlags right)
 {
-	return static_cast<LSIFlags>(static_cast<unsigned int>(left) & right);
+  return static_cast<LSIFlags>(static_cast<unsigned int>(left) & right);
 }
 
 // Swiss army knife loader function for preparing a scaled resource image file.
@@ -104,32 +104,32 @@ constexpr LSIFlags operator&(LSIFlags left, LSIFlags right)
 // flags = See LSIFlags
 // fill_color = Color to fill the unused canvas area (due to aspect ratio or usable_rect).
 wxBitmap LoadScaledBitmap(const std::string& file_path, const wxWindow* context,
-	const wxSize& output_size = wxDefaultSize,
-	const wxRect& usable_rect = wxDefaultSize, LSIFlags flags = LSI_DEFAULT,
-	const wxColour& fill_color = wxTransparentColour);
+  const wxSize& output_size = wxDefaultSize,
+  const wxRect& usable_rect = wxDefaultSize, LSIFlags flags = LSI_DEFAULT,
+  const wxColour& fill_color = wxTransparentColour);
 wxBitmap LoadScaledResourceBitmap(const std::string& name, const wxWindow* context,
-	const wxSize& output_size = wxDefaultSize,
-	const wxRect& usable_rect = wxDefaultSize,
-	LSIFlags flags = LSI_DEFAULT,
-	const wxColour& fill_color = wxTransparentColour);
+  const wxSize& output_size = wxDefaultSize,
+  const wxRect& usable_rect = wxDefaultSize,
+  LSIFlags flags = LSI_DEFAULT,
+  const wxColour& fill_color = wxTransparentColour);
 wxBitmap LoadScaledThemeBitmap(const std::string& name, const wxWindow* context,
-	const wxSize& output_size = wxDefaultSize,
-	const wxRect& usable_rect = wxDefaultSize,
-	LSIFlags flags = LSI_DEFAULT,
-	const wxColour& fill_color = wxTransparentColour);
+  const wxSize& output_size = wxDefaultSize,
+  const wxRect& usable_rect = wxDefaultSize,
+  LSIFlags flags = LSI_DEFAULT,
+  const wxColour& fill_color = wxTransparentColour);
 
 // Variant of LoadScaledBitmap to scale an image that didn't come from a file.
 wxBitmap ScaleImageToBitmap(const wxImage& image, const wxWindow* context,
-	const wxSize& output_size = wxDefaultSize,
-	const wxRect& usable_rect = wxDefaultSize, LSIFlags flags = LSI_DEFAULT,
-	const wxColour& fill_color = wxTransparentColour);
+  const wxSize& output_size = wxDefaultSize,
+  const wxRect& usable_rect = wxDefaultSize, LSIFlags flags = LSI_DEFAULT,
+  const wxColour& fill_color = wxTransparentColour);
 
 // Rescales image to screen DPI.
 // "Source scale" is essentially the image's DPI as a ratio to 96DPI, e.g. 144DPI image has a
 // scale of 1.5.
 wxBitmap ScaleImageToBitmap(const wxImage& image, const wxWindow* context, double source_scale,
-	LSIFlags flags = LSI_DEFAULT,
-	const wxColour& fill_color = wxTransparentColour);
+  LSIFlags flags = LSI_DEFAULT,
+  const wxColour& fill_color = wxTransparentColour);
 
 // Internal scaling engine behind all the Scaling functions.
 // Exposes all control parameters instead of infering them from other sources.
@@ -137,9 +137,9 @@ wxBitmap ScaleImageToBitmap(const wxImage& image, const wxWindow* context, doubl
 // to framebuffer pixel sizes.
 // NOTE: Source scale factor only matters if you don't explicitly specify the output size.
 wxImage ScaleImage(wxImage image, double source_scale_factor = 1.0,
-	double content_scale_factor = 1.0, wxSize output_size = wxDefaultSize,
-	wxRect usable_rect = wxDefaultSize, LSIFlags flags = LSI_DEFAULT,
-	const wxColour& fill_color = wxTransparentColour);
+  double content_scale_factor = 1.0, wxSize output_size = wxDefaultSize,
+  wxRect usable_rect = wxDefaultSize, LSIFlags flags = LSI_DEFAULT,
+  const wxColour& fill_color = wxTransparentColour);
 
 }  // namespace
 

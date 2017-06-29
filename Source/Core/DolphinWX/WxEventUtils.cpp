@@ -13,43 +13,43 @@ namespace WxEventUtils
 {
 void OnEnableIfCoreInitialized(wxUpdateUIEvent& event)
 {
-	event.Enable(Core::GetState() != Core::State::Uninitialized);
+  event.Enable(Core::GetState() != Core::State::Uninitialized);
 }
 
 void OnEnableIfCoreUninitialized(wxUpdateUIEvent& event)
 {
-	event.Enable(Core::GetState() == Core::State::Uninitialized);
+  event.Enable(Core::GetState() == Core::State::Uninitialized);
 }
 
 void OnEnableIfCoreRunning(wxUpdateUIEvent& event)
 {
-	event.Enable(Core::IsRunning());
+  event.Enable(Core::IsRunning());
 }
 
 void OnEnableIfCoreNotRunning(wxUpdateUIEvent& event)
 {
-	event.Enable(!Core::IsRunning());
+  event.Enable(!Core::IsRunning());
 }
 
 void OnEnableIfCorePaused(wxUpdateUIEvent& event)
 {
-	event.Enable(Core::GetState() == Core::State::Paused);
+  event.Enable(Core::GetState() == Core::State::Paused);
 }
 
 void OnEnableIfCoreRunningOrPaused(wxUpdateUIEvent& event)
 {
-	const auto state = Core::GetState();
+  const auto state = Core::GetState();
 
-	event.Enable(state == Core::State::Running || state == Core::State::Paused);
+  event.Enable(state == Core::State::Running || state == Core::State::Paused);
 }
 
 void OnEnableIfCPUCanStep(wxUpdateUIEvent& event)
 {
-	event.Enable(Core::IsRunning() && CPU::IsStepping());
+  event.Enable(Core::IsRunning() && CPU::IsStepping());
 }
 
 void OnEnableIfNetplayNotRunning(wxUpdateUIEvent& event)
 {
-	event.Enable(!NetPlay::IsNetPlayRunning());
+  event.Enable(!NetPlay::IsNetPlayRunning());
 }
 }  // namespace WxEventUtils

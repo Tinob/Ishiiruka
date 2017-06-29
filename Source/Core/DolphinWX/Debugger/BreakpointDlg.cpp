@@ -47,7 +47,7 @@ void BreakPointDlg::OnOK(wxCommandEvent& event)
   else
   {
     WxUtils::ShowErrorDialog(
-        wxString::Format(_("The address %s is invalid."), WxStrToStr(AddressString).c_str()));
+      wxString::Format(_("The address %s is invalid."), WxStrToStr(AddressString).c_str()));
   }
 
   event.Skip();

@@ -23,11 +23,11 @@ namespace Interpreter
 // flags out: --10 0100
 void clr(const UDSPInstruction opc)
 {
-	u8 reg = (opc >> 11) & 0x1;
+  u8 reg = (opc >> 11) & 0x1;
 
-	dsp_set_long_acc(reg, 0);
-	Update_SR_Register64(0);
-	zeroWriteBackLog();
+  dsp_set_long_acc(reg, 0);
+  Update_SR_Register64(0);
+  zeroWriteBackLog();
 }
 
 // CLRL $acR.l
@@ -37,13 +37,13 @@ void clr(const UDSPInstruction opc)
 // flags out: --xx xx00
 void clrl(const UDSPInstruction opc)
 {
-	u8 reg = (opc >> 8) & 0x1;
-	s64 acc = dsp_round_long_acc(dsp_get_long_acc(reg));
+  u8 reg = (opc >> 8) & 0x1;
+  s64 acc = dsp_round_long_acc(dsp_get_long_acc(reg));
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_acc(reg, acc);
-	Update_SR_Register64(acc);
+  dsp_set_long_acc(reg, acc);
+  Update_SR_Register64(acc);
 }
 
 //----
@@ -57,11 +57,11 @@ void clrl(const UDSPInstruction opc)
 // flags out: -x-- ----
 void andcf(const UDSPInstruction opc)
 {
-	u8 reg = (opc >> 8) & 0x1;
+  u8 reg = (opc >> 8) & 0x1;
 
-	u16 imm = dsp_fetch_code();
-	u16 val = dsp_get_acc_m(reg);
-	Update_SR_LZ(((val & imm) == imm) ? true : false);
+  u16 imm = dsp_fetch_code();
+  u16 val = dsp_get_acc_m(reg);
+  Update_SR_LZ(((val & imm) == imm) ? true : false);
 }
 
 // ANDF $acD.m, #I
@@ -74,11 +74,11 @@ void andcf(const UDSPInstruction opc)
 // flags out: -x-- ----
 void andf(const UDSPInstruction opc)
 {
-	u8 reg = (opc >> 8) & 0x1;
+  u8 reg = (opc >> 8) & 0x1;
 
-	u16 imm = dsp_fetch_code();
-	u16 val = dsp_get_acc_m(reg);
-	Update_SR_LZ(((val & imm) == 0) ? true : false);
+  u16 imm = dsp_fetch_code();
+  u16 val = dsp_get_acc_m(reg);
+  Update_SR_LZ(((val & imm) == 0) ? true : false);
 }
 
 //----
@@ -90,11 +90,11 @@ void andf(const UDSPInstruction opc)
 // flags out: --xx xx00
 void tst(const UDSPInstruction opc)
 {
-	u8 reg = (opc >> 11) & 0x1;
+  u8 reg = (opc >> 11) & 0x1;
 
-	s64 acc = dsp_get_long_acc(reg);
-	Update_SR_Register64(acc);
-	zeroWriteBackLog();
+  s64 acc = dsp_get_long_acc(reg);
+  Update_SR_Register64(acc);
+  zeroWriteBackLog();
 }
 
 // TSTAXH $axR.h
@@ -104,11 +104,11 @@ void tst(const UDSPInstruction opc)
 // flags out: --x0 xx00
 void tstaxh(const UDSPInstruction opc)
 {
-	u8 reg = (opc >> 8) & 0x1;
+  u8 reg = (opc >> 8) & 0x1;
 
-	s16 val = dsp_get_ax_h(reg);
-	Update_SR_Register16(val);
-	zeroWriteBackLog();
+  s16 val = dsp_get_ax_h(reg);
+  Update_SR_Register16(val);
+  zeroWriteBackLog();
 }
 
 //----
@@ -120,13 +120,13 @@ void tstaxh(const UDSPInstruction opc)
 // flags out: x-xx xxxx
 void cmp(const UDSPInstruction opc)
 {
-	s64 acc0 = dsp_get_long_acc(0);
-	s64 acc1 = dsp_get_long_acc(1);
-	s64 res = dsp_convert_long_acc(acc0 - acc1);
+  s64 acc0 = dsp_get_long_acc(0);
+  s64 acc1 = dsp_get_long_acc(1);
+  s64 res = dsp_convert_long_acc(acc0 - acc1);
 
-	Update_SR_Register64(res, isCarry2(acc0, res),
-		isOverflow(acc0, -acc1, res));  // CF -> influence on ABS/0xa100
-	zeroWriteBackLog();
+  Update_SR_Register64(res, isCarry2(acc0, res),
+    isOverflow(acc0, -acc1, res));  // CF -> influence on ABS/0xa100
+  zeroWriteBackLog();
 }
 
 // CMPAR $acS axR.h
@@ -137,16 +137,16 @@ void cmp(const UDSPInstruction opc)
 // flags out: x-xx xxxx
 void cmpar(const UDSPInstruction opc)
 {
-	u8 rreg = (opc >> 12) & 0x1;
-	u8 sreg = (opc >> 11) & 0x1;
+  u8 rreg = (opc >> 12) & 0x1;
+  u8 sreg = (opc >> 11) & 0x1;
 
-	s64 sr = dsp_get_long_acc(sreg);
-	s64 rr = (s16)g_dsp.r.ax[rreg].h;
-	rr <<= 16;
-	s64 res = dsp_convert_long_acc(sr - rr);
+  s64 sr = dsp_get_long_acc(sreg);
+  s64 rr = (s16)g_dsp.r.ax[rreg].h;
+  rr <<= 16;
+  s64 res = dsp_convert_long_acc(sr - rr);
 
-	Update_SR_Register64(res, isCarry2(sr, res), isOverflow(sr, -rr, res));
-	zeroWriteBackLog();
+  Update_SR_Register64(res, isCarry2(sr, res), isOverflow(sr, -rr, res));
+  zeroWriteBackLog();
 }
 
 // CMPI $amD, #I
@@ -158,14 +158,14 @@ void cmpar(const UDSPInstruction opc)
 // flags out: x-xx xxxx
 void cmpi(const UDSPInstruction opc)
 {
-	u8 reg = (opc >> 8) & 0x1;
+  u8 reg = (opc >> 8) & 0x1;
 
-	s64 val = dsp_get_long_acc(reg);
-	s64 imm = (s64)(s16)dsp_fetch_code()
-		<< 16;  // Immediate is considered to be at M level in the 40-bit accumulator.
-	s64 res = dsp_convert_long_acc(val - imm);
+  s64 val = dsp_get_long_acc(reg);
+  s64 imm = (s64)(s16)dsp_fetch_code()
+    << 16;  // Immediate is considered to be at M level in the 40-bit accumulator.
+  s64 res = dsp_convert_long_acc(val - imm);
 
-	Update_SR_Register64(res, isCarry2(val, res), isOverflow(val, -imm, res));
+  Update_SR_Register64(res, isCarry2(val, res), isOverflow(val, -imm, res));
 }
 
 // CMPIS $acD, #I
@@ -177,14 +177,14 @@ void cmpi(const UDSPInstruction opc)
 // flags out: x-xx xxxx
 void cmpis(const UDSPInstruction opc)
 {
-	u8 areg = (opc >> 8) & 0x1;
+  u8 areg = (opc >> 8) & 0x1;
 
-	s64 acc = dsp_get_long_acc(areg);
-	s64 val = (s8)opc;
-	val <<= 16;
-	s64 res = dsp_convert_long_acc(acc - val);
+  s64 acc = dsp_get_long_acc(areg);
+  s64 val = (s8)opc;
+  val <<= 16;
+  s64 res = dsp_convert_long_acc(acc - val);
 
-	Update_SR_Register64(res, isCarry2(acc, res), isOverflow(acc, -val, res));
+  Update_SR_Register64(res, isCarry2(acc, res), isOverflow(acc, -val, res));
 }
 
 //----
@@ -198,14 +198,14 @@ void cmpis(const UDSPInstruction opc)
 // flags out: --xx xx00
 void xorr(const UDSPInstruction opc)
 {
-	u8 dreg = (opc >> 8) & 0x1;
-	u8 sreg = (opc >> 9) & 0x1;
-	u16 accm = g_dsp.r.ac[dreg].m ^ g_dsp.r.ax[sreg].h;
+  u8 dreg = (opc >> 8) & 0x1;
+  u8 sreg = (opc >> 9) & 0x1;
+  u16 accm = g_dsp.r.ac[dreg].m ^ g_dsp.r.ax[sreg].h;
 
-	zeroWriteBackLogPreserveAcc(dreg);
+  zeroWriteBackLogPreserveAcc(dreg);
 
-	g_dsp.r.ac[dreg].m = accm;
-	Update_SR_Register16((s16)accm, false, false, isOverS32(dsp_get_long_acc(dreg)));
+  g_dsp.r.ac[dreg].m = accm;
+  Update_SR_Register16((s16)accm, false, false, isOverS32(dsp_get_long_acc(dreg)));
 }
 
 // ANDR $acD.m, $axS.h
@@ -217,14 +217,14 @@ void xorr(const UDSPInstruction opc)
 // flags out: --xx xx00
 void andr(const UDSPInstruction opc)
 {
-	u8 dreg = (opc >> 8) & 0x1;
-	u8 sreg = (opc >> 9) & 0x1;
-	u16 accm = g_dsp.r.ac[dreg].m & g_dsp.r.ax[sreg].h;
+  u8 dreg = (opc >> 8) & 0x1;
+  u8 sreg = (opc >> 9) & 0x1;
+  u16 accm = g_dsp.r.ac[dreg].m & g_dsp.r.ax[sreg].h;
 
-	zeroWriteBackLogPreserveAcc(dreg);
+  zeroWriteBackLogPreserveAcc(dreg);
 
-	g_dsp.r.ac[dreg].m = accm;
-	Update_SR_Register16((s16)accm, false, false, isOverS32(dsp_get_long_acc(dreg)));
+  g_dsp.r.ac[dreg].m = accm;
+  Update_SR_Register16((s16)accm, false, false, isOverS32(dsp_get_long_acc(dreg)));
 }
 
 // ORR $acD.m, $axS.h
@@ -236,14 +236,14 @@ void andr(const UDSPInstruction opc)
 // flags out: --xx xx00
 void orr(const UDSPInstruction opc)
 {
-	u8 dreg = (opc >> 8) & 0x1;
-	u8 sreg = (opc >> 9) & 0x1;
-	u16 accm = g_dsp.r.ac[dreg].m | g_dsp.r.ax[sreg].h;
+  u8 dreg = (opc >> 8) & 0x1;
+  u8 sreg = (opc >> 9) & 0x1;
+  u16 accm = g_dsp.r.ac[dreg].m | g_dsp.r.ax[sreg].h;
 
-	zeroWriteBackLogPreserveAcc(dreg);
+  zeroWriteBackLogPreserveAcc(dreg);
 
-	g_dsp.r.ac[dreg].m = accm;
-	Update_SR_Register16((s16)accm, false, false, isOverS32(dsp_get_long_acc(dreg)));
+  g_dsp.r.ac[dreg].m = accm;
+  Update_SR_Register16((s16)accm, false, false, isOverS32(dsp_get_long_acc(dreg)));
 }
 
 // ANDC $acD.m, $ac(1-D).m
@@ -255,13 +255,13 @@ void orr(const UDSPInstruction opc)
 // flags out: --xx xx00
 void andc(const UDSPInstruction opc)
 {
-	u8 dreg = (opc >> 8) & 0x1;
-	u16 accm = g_dsp.r.ac[dreg].m & g_dsp.r.ac[1 - dreg].m;
+  u8 dreg = (opc >> 8) & 0x1;
+  u16 accm = g_dsp.r.ac[dreg].m & g_dsp.r.ac[1 - dreg].m;
 
-	zeroWriteBackLogPreserveAcc(dreg);
+  zeroWriteBackLogPreserveAcc(dreg);
 
-	g_dsp.r.ac[dreg].m = accm;
-	Update_SR_Register16((s16)accm, false, false, isOverS32(dsp_get_long_acc(dreg)));
+  g_dsp.r.ac[dreg].m = accm;
+  Update_SR_Register16((s16)accm, false, false, isOverS32(dsp_get_long_acc(dreg)));
 }
 
 // ORC $acD.m, $ac(1-D).m
@@ -273,13 +273,13 @@ void andc(const UDSPInstruction opc)
 // flags out: --xx xx00
 void orc(const UDSPInstruction opc)
 {
-	u8 dreg = (opc >> 8) & 0x1;
-	u16 accm = g_dsp.r.ac[dreg].m | g_dsp.r.ac[1 - dreg].m;
+  u8 dreg = (opc >> 8) & 0x1;
+  u16 accm = g_dsp.r.ac[dreg].m | g_dsp.r.ac[1 - dreg].m;
 
-	zeroWriteBackLogPreserveAcc(dreg);
+  zeroWriteBackLogPreserveAcc(dreg);
 
-	g_dsp.r.ac[dreg].m = accm;
-	Update_SR_Register16((s16)accm, false, false, isOverS32(dsp_get_long_acc(dreg)));
+  g_dsp.r.ac[dreg].m = accm;
+  Update_SR_Register16((s16)accm, false, false, isOverS32(dsp_get_long_acc(dreg)));
 }
 
 // XORC $acD.m
@@ -290,13 +290,13 @@ void orc(const UDSPInstruction opc)
 // flags out: --xx xx00
 void xorc(const UDSPInstruction opc)
 {
-	u8 dreg = (opc >> 8) & 0x1;
-	u16 accm = g_dsp.r.ac[dreg].m ^ g_dsp.r.ac[1 - dreg].m;
+  u8 dreg = (opc >> 8) & 0x1;
+  u16 accm = g_dsp.r.ac[dreg].m ^ g_dsp.r.ac[1 - dreg].m;
 
-	zeroWriteBackLogPreserveAcc(dreg);
+  zeroWriteBackLogPreserveAcc(dreg);
 
-	g_dsp.r.ac[dreg].m = accm;
-	Update_SR_Register16((s16)accm, false, false, isOverS32(dsp_get_long_acc(dreg)));
+  g_dsp.r.ac[dreg].m = accm;
+  Update_SR_Register16((s16)accm, false, false, isOverS32(dsp_get_long_acc(dreg)));
 }
 
 // NOT $acD.m
@@ -307,13 +307,13 @@ void xorc(const UDSPInstruction opc)
 // flags out: --xx xx00
 void notc(const UDSPInstruction opc)
 {
-	u8 dreg = (opc >> 8) & 0x1;
-	u16 accm = g_dsp.r.ac[dreg].m ^ 0xffff;
+  u8 dreg = (opc >> 8) & 0x1;
+  u16 accm = g_dsp.r.ac[dreg].m ^ 0xffff;
 
-	zeroWriteBackLogPreserveAcc(dreg);
+  zeroWriteBackLogPreserveAcc(dreg);
 
-	g_dsp.r.ac[dreg].m = accm;
-	Update_SR_Register16((s16)accm, false, false, isOverS32(dsp_get_long_acc(dreg)));
+  g_dsp.r.ac[dreg].m = accm;
+  Update_SR_Register16((s16)accm, false, false, isOverS32(dsp_get_long_acc(dreg)));
 }
 
 // XORI $acD.m, #I
@@ -325,11 +325,11 @@ void notc(const UDSPInstruction opc)
 // flags out: --xx xx00
 void xori(const UDSPInstruction opc)
 {
-	u8 reg = (opc >> 8) & 0x1;
-	u16 imm = dsp_fetch_code();
-	g_dsp.r.ac[reg].m ^= imm;
+  u8 reg = (opc >> 8) & 0x1;
+  u16 imm = dsp_fetch_code();
+  g_dsp.r.ac[reg].m ^= imm;
 
-	Update_SR_Register16((s16)g_dsp.r.ac[reg].m, false, false, isOverS32(dsp_get_long_acc(reg)));
+  Update_SR_Register16((s16)g_dsp.r.ac[reg].m, false, false, isOverS32(dsp_get_long_acc(reg)));
 }
 
 // ANDI $acD.m, #I
@@ -340,11 +340,11 @@ void xori(const UDSPInstruction opc)
 // flags out: --xx xx00
 void andi(const UDSPInstruction opc)
 {
-	u8 reg = (opc >> 8) & 0x1;
-	u16 imm = dsp_fetch_code();
-	g_dsp.r.ac[reg].m &= imm;
+  u8 reg = (opc >> 8) & 0x1;
+  u16 imm = dsp_fetch_code();
+  g_dsp.r.ac[reg].m &= imm;
 
-	Update_SR_Register16((s16)g_dsp.r.ac[reg].m, false, false, isOverS32(dsp_get_long_acc(reg)));
+  Update_SR_Register16((s16)g_dsp.r.ac[reg].m, false, false, isOverS32(dsp_get_long_acc(reg)));
 }
 
 // ORI $acD.m, #I
@@ -355,11 +355,11 @@ void andi(const UDSPInstruction opc)
 // flags out: --xx xx00
 void ori(const UDSPInstruction opc)
 {
-	u8 reg = (opc >> 8) & 0x1;
-	u16 imm = dsp_fetch_code();
-	g_dsp.r.ac[reg].m |= imm;
+  u8 reg = (opc >> 8) & 0x1;
+  u16 imm = dsp_fetch_code();
+  g_dsp.r.ac[reg].m |= imm;
 
-	Update_SR_Register16((s16)g_dsp.r.ac[reg].m, false, false, isOverS32(dsp_get_long_acc(reg)));
+  Update_SR_Register16((s16)g_dsp.r.ac[reg].m, false, false, isOverS32(dsp_get_long_acc(reg)));
 }
 
 //----
@@ -371,35 +371,35 @@ void ori(const UDSPInstruction opc)
 // flags out: x-xx xxxx
 void addr(const UDSPInstruction opc)
 {
-	u8 dreg = (opc >> 8) & 0x1;
-	u8 sreg = ((opc >> 9) & 0x3) + DSP_REG_AXL0;
+  u8 dreg = (opc >> 8) & 0x1;
+  u8 sreg = ((opc >> 9) & 0x3) + DSP_REG_AXL0;
 
-	s64 acc = dsp_get_long_acc(dreg);
-	s64 ax = 0;
+  s64 acc = dsp_get_long_acc(dreg);
+  s64 ax = 0;
 
-	switch (sreg)
-	{
-	case DSP_REG_AXL0:
-	case DSP_REG_AXL1:
-		ax = (s16)g_dsp.r.ax[sreg - DSP_REG_AXL0].l;
-		break;
-	case DSP_REG_AXH0:
-	case DSP_REG_AXH1:
-		ax = (s16)g_dsp.r.ax[sreg - DSP_REG_AXH0].h;
-		break;
-	default:
-		ax = 0;
-		break;
-	}
+  switch (sreg)
+  {
+  case DSP_REG_AXL0:
+  case DSP_REG_AXL1:
+    ax = (s16)g_dsp.r.ax[sreg - DSP_REG_AXL0].l;
+    break;
+  case DSP_REG_AXH0:
+  case DSP_REG_AXH1:
+    ax = (s16)g_dsp.r.ax[sreg - DSP_REG_AXH0].h;
+    break;
+  default:
+    ax = 0;
+    break;
+  }
 
-	ax <<= 16;
-	s64 res = acc + ax;
+  ax <<= 16;
+  s64 res = acc + ax;
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_acc(dreg, res);
-	res = dsp_get_long_acc(dreg);
-	Update_SR_Register64(res, isCarry(acc, res), isOverflow(acc, ax, res));
+  dsp_set_long_acc(dreg, res);
+  res = dsp_get_long_acc(dreg);
+  Update_SR_Register64(res, isCarry(acc, res), isOverflow(acc, ax, res));
 }
 
 // ADDAX $acD, $axS
@@ -409,18 +409,18 @@ void addr(const UDSPInstruction opc)
 // flags out: x-xx xxxx
 void addax(const UDSPInstruction opc)
 {
-	u8 dreg = (opc >> 8) & 0x1;
-	u8 sreg = (opc >> 9) & 0x1;
+  u8 dreg = (opc >> 8) & 0x1;
+  u8 sreg = (opc >> 9) & 0x1;
 
-	s64 acc = dsp_get_long_acc(dreg);
-	s64 ax = dsp_get_long_acx(sreg);
-	s64 res = acc + ax;
+  s64 acc = dsp_get_long_acc(dreg);
+  s64 ax = dsp_get_long_acx(sreg);
+  s64 res = acc + ax;
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_acc(dreg, res);
-	res = dsp_get_long_acc(dreg);
-	Update_SR_Register64(res, isCarry(acc, res), isOverflow(acc, ax, res));
+  dsp_set_long_acc(dreg, res);
+  res = dsp_get_long_acc(dreg);
+  Update_SR_Register64(res, isCarry(acc, res), isOverflow(acc, ax, res));
 }
 
 // ADD $acD, $ac(1-D)
@@ -430,17 +430,17 @@ void addax(const UDSPInstruction opc)
 // flags out: x-xx xxxx
 void add(const UDSPInstruction opc)
 {
-	u8 dreg = (opc >> 8) & 0x1;
+  u8 dreg = (opc >> 8) & 0x1;
 
-	s64 acc0 = dsp_get_long_acc(dreg);
-	s64 acc1 = dsp_get_long_acc(1 - dreg);
-	s64 res = acc0 + acc1;
+  s64 acc0 = dsp_get_long_acc(dreg);
+  s64 acc1 = dsp_get_long_acc(1 - dreg);
+  s64 res = acc0 + acc1;
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_acc(dreg, res);
-	res = dsp_get_long_acc(dreg);
-	Update_SR_Register64(res, isCarry(acc0, res), isOverflow(acc0, acc1, res));
+  dsp_set_long_acc(dreg, res);
+  res = dsp_get_long_acc(dreg);
+  Update_SR_Register64(res, isCarry(acc0, res), isOverflow(acc0, acc1, res));
 }
 
 // ADDP $acD
@@ -450,17 +450,17 @@ void add(const UDSPInstruction opc)
 // flags out: x-xx xxxx
 void addp(const UDSPInstruction opc)
 {
-	u8 dreg = (opc >> 8) & 0x1;
+  u8 dreg = (opc >> 8) & 0x1;
 
-	s64 acc = dsp_get_long_acc(dreg);
-	s64 prod = dsp_get_long_prod();
-	s64 res = acc + prod;
+  s64 acc = dsp_get_long_acc(dreg);
+  s64 prod = dsp_get_long_prod();
+  s64 res = acc + prod;
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_acc(dreg, res);
-	res = dsp_get_long_acc(dreg);
-	Update_SR_Register64(res, isCarry(acc, res), isOverflow(acc, prod, res));
+  dsp_set_long_acc(dreg, res);
+  res = dsp_get_long_acc(dreg);
+  Update_SR_Register64(res, isCarry(acc, res), isOverflow(acc, prod, res));
 }
 
 // ADDAXL $acD, $axS.l
@@ -471,19 +471,19 @@ void addp(const UDSPInstruction opc)
 // flags out: x-xx xxxx
 void addaxl(const UDSPInstruction opc)
 {
-	u8 sreg = (opc >> 9) & 0x1;
-	u8 dreg = (opc >> 8) & 0x1;
+  u8 sreg = (opc >> 9) & 0x1;
+  u8 dreg = (opc >> 8) & 0x1;
 
-	u64 acc = dsp_get_long_acc(dreg);
-	u16 acx = (u16)dsp_get_ax_l(sreg);
+  u64 acc = dsp_get_long_acc(dreg);
+  u16 acx = (u16)dsp_get_ax_l(sreg);
 
-	u64 res = acc + acx;
+  u64 res = acc + acx;
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_acc(dreg, (s64)res);
-	res = dsp_get_long_acc(dreg);
-	Update_SR_Register64((s64)res, isCarry(acc, res), isOverflow((s64)acc, (s64)acx, (s64)res));
+  dsp_set_long_acc(dreg, (s64)res);
+  res = dsp_get_long_acc(dreg);
+  Update_SR_Register64((s64)res, isCarry(acc, res), isOverflow((s64)acc, (s64)acx, (s64)res));
 }
 
 // ADDI $amR, #I
@@ -494,16 +494,16 @@ void addaxl(const UDSPInstruction opc)
 // flags out: x-xx xxxx
 void addi(const UDSPInstruction opc)
 {
-	u8 areg = (opc >> 8) & 0x1;
+  u8 areg = (opc >> 8) & 0x1;
 
-	s64 acc = dsp_get_long_acc(areg);
-	s64 imm = (s16)dsp_fetch_code();
-	imm <<= 16;
-	s64 res = acc + imm;
+  s64 acc = dsp_get_long_acc(areg);
+  s64 imm = (s16)dsp_fetch_code();
+  imm <<= 16;
+  s64 res = acc + imm;
 
-	dsp_set_long_acc(areg, res);
-	res = dsp_get_long_acc(areg);
-	Update_SR_Register64(res, isCarry(acc, res), isOverflow(acc, imm, res));
+  dsp_set_long_acc(areg, res);
+  res = dsp_get_long_acc(areg);
+  Update_SR_Register64(res, isCarry(acc, res), isOverflow(acc, imm, res));
 }
 
 // ADDIS $acD, #I
@@ -513,16 +513,16 @@ void addi(const UDSPInstruction opc)
 // flags out: x-xx xxxx
 void addis(const UDSPInstruction opc)
 {
-	u8 dreg = (opc >> 8) & 0x1;
+  u8 dreg = (opc >> 8) & 0x1;
 
-	s64 acc = dsp_get_long_acc(dreg);
-	s64 imm = (s8)(u8)opc;
-	imm <<= 16;
-	s64 res = acc + imm;
+  s64 acc = dsp_get_long_acc(dreg);
+  s64 imm = (s8)(u8)opc;
+  imm <<= 16;
+  s64 res = acc + imm;
 
-	dsp_set_long_acc(dreg, res);
-	res = dsp_get_long_acc(dreg);
-	Update_SR_Register64(res, isCarry(acc, res), isOverflow(acc, imm, res));
+  dsp_set_long_acc(dreg, res);
+  res = dsp_get_long_acc(dreg);
+  Update_SR_Register64(res, isCarry(acc, res), isOverflow(acc, imm, res));
 }
 
 // INCM $acsD
@@ -532,17 +532,17 @@ void addis(const UDSPInstruction opc)
 // flags out: x-xx xxxx
 void incm(const UDSPInstruction opc)
 {
-	u8 dreg = (opc >> 8) & 0x1;
+  u8 dreg = (opc >> 8) & 0x1;
 
-	s64 sub = 0x10000;
-	s64 acc = dsp_get_long_acc(dreg);
-	s64 res = acc + sub;
+  s64 sub = 0x10000;
+  s64 acc = dsp_get_long_acc(dreg);
+  s64 res = acc + sub;
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_acc(dreg, res);
-	res = dsp_get_long_acc(dreg);
-	Update_SR_Register64(res, isCarry(acc, res), isOverflow(acc, sub, res));
+  dsp_set_long_acc(dreg, res);
+  res = dsp_get_long_acc(dreg);
+  Update_SR_Register64(res, isCarry(acc, res), isOverflow(acc, sub, res));
 }
 
 // INC $acD
@@ -552,16 +552,16 @@ void incm(const UDSPInstruction opc)
 // flags out: x-xx xxxx
 void inc(const UDSPInstruction opc)
 {
-	u8 dreg = (opc >> 8) & 0x1;
+  u8 dreg = (opc >> 8) & 0x1;
 
-	s64 acc = dsp_get_long_acc(dreg);
-	s64 res = acc + 1;
+  s64 acc = dsp_get_long_acc(dreg);
+  s64 res = acc + 1;
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_acc(dreg, res);
-	res = dsp_get_long_acc(dreg);
-	Update_SR_Register64(res, isCarry(acc, res), isOverflow(acc, 1, res));
+  dsp_set_long_acc(dreg, res);
+  res = dsp_get_long_acc(dreg);
+  Update_SR_Register64(res, isCarry(acc, res), isOverflow(acc, 1, res));
 }
 
 //----
@@ -573,35 +573,35 @@ void inc(const UDSPInstruction opc)
 // flags out: x-xx xxxx
 void subr(const UDSPInstruction opc)
 {
-	u8 dreg = (opc >> 8) & 0x1;
-	u8 sreg = ((opc >> 9) & 0x3) + DSP_REG_AXL0;
+  u8 dreg = (opc >> 8) & 0x1;
+  u8 sreg = ((opc >> 9) & 0x3) + DSP_REG_AXL0;
 
-	s64 acc = dsp_get_long_acc(dreg);
-	s64 ax = 0;
+  s64 acc = dsp_get_long_acc(dreg);
+  s64 ax = 0;
 
-	switch (sreg)
-	{
-	case DSP_REG_AXL0:
-	case DSP_REG_AXL1:
-		ax = (s16)g_dsp.r.ax[sreg - DSP_REG_AXL0].l;
-		break;
-	case DSP_REG_AXH0:
-	case DSP_REG_AXH1:
-		ax = (s16)g_dsp.r.ax[sreg - DSP_REG_AXH0].h;
-		break;
-	default:
-		ax = 0;
-		break;
-	}
+  switch (sreg)
+  {
+  case DSP_REG_AXL0:
+  case DSP_REG_AXL1:
+    ax = (s16)g_dsp.r.ax[sreg - DSP_REG_AXL0].l;
+    break;
+  case DSP_REG_AXH0:
+  case DSP_REG_AXH1:
+    ax = (s16)g_dsp.r.ax[sreg - DSP_REG_AXH0].h;
+    break;
+  default:
+    ax = 0;
+    break;
+  }
 
-	ax <<= 16;
-	s64 res = acc - ax;
+  ax <<= 16;
+  s64 res = acc - ax;
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_acc(dreg, res);
-	res = dsp_get_long_acc(dreg);
-	Update_SR_Register64(res, isCarry2(acc, res), isOverflow(acc, -ax, res));
+  dsp_set_long_acc(dreg, res);
+  res = dsp_get_long_acc(dreg);
+  Update_SR_Register64(res, isCarry2(acc, res), isOverflow(acc, -ax, res));
 }
 
 // SUBAX $acD, $axS
@@ -611,18 +611,18 @@ void subr(const UDSPInstruction opc)
 // flags out: x-xx xxxx
 void subax(const UDSPInstruction opc)
 {
-	u8 dreg = (opc >> 8) & 0x1;
-	u8 sreg = (opc >> 9) & 0x1;
+  u8 dreg = (opc >> 8) & 0x1;
+  u8 sreg = (opc >> 9) & 0x1;
 
-	s64 acc = dsp_get_long_acc(dreg);
-	s64 acx = dsp_get_long_acx(sreg);
-	s64 res = acc - acx;
+  s64 acc = dsp_get_long_acc(dreg);
+  s64 acx = dsp_get_long_acx(sreg);
+  s64 res = acc - acx;
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_acc(dreg, res);
-	res = dsp_get_long_acc(dreg);
-	Update_SR_Register64(res, isCarry2(acc, res), isOverflow(acc, -acx, res));
+  dsp_set_long_acc(dreg, res);
+  res = dsp_get_long_acc(dreg);
+  Update_SR_Register64(res, isCarry2(acc, res), isOverflow(acc, -acx, res));
 }
 
 // SUB $acD, $ac(1-D)
@@ -632,17 +632,17 @@ void subax(const UDSPInstruction opc)
 // flags out: x-xx xxxx
 void sub(const UDSPInstruction opc)
 {
-	u8 dreg = (opc >> 8) & 0x1;
+  u8 dreg = (opc >> 8) & 0x1;
 
-	s64 acc1 = dsp_get_long_acc(dreg);
-	s64 acc2 = dsp_get_long_acc(1 - dreg);
-	s64 res = acc1 - acc2;
+  s64 acc1 = dsp_get_long_acc(dreg);
+  s64 acc2 = dsp_get_long_acc(1 - dreg);
+  s64 res = acc1 - acc2;
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_acc(dreg, res);
-	res = dsp_get_long_acc(dreg);
-	Update_SR_Register64(res, isCarry2(acc1, res), isOverflow(acc1, -acc2, res));
+  dsp_set_long_acc(dreg, res);
+  res = dsp_get_long_acc(dreg);
+  Update_SR_Register64(res, isCarry2(acc1, res), isOverflow(acc1, -acc2, res));
 }
 
 // SUBP $acD
@@ -652,17 +652,17 @@ void sub(const UDSPInstruction opc)
 // flags out: x-xx xxxx
 void subp(const UDSPInstruction opc)
 {
-	u8 dreg = (opc >> 8) & 0x1;
+  u8 dreg = (opc >> 8) & 0x1;
 
-	s64 acc = dsp_get_long_acc(dreg);
-	s64 prod = dsp_get_long_prod();
-	s64 res = acc - prod;
+  s64 acc = dsp_get_long_acc(dreg);
+  s64 prod = dsp_get_long_prod();
+  s64 res = acc - prod;
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_acc(dreg, res);
-	res = dsp_get_long_acc(dreg);
-	Update_SR_Register64(res, isCarry2(acc, res), isOverflow(acc, -prod, res));
+  dsp_set_long_acc(dreg, res);
+  res = dsp_get_long_acc(dreg);
+  Update_SR_Register64(res, isCarry2(acc, res), isOverflow(acc, -prod, res));
 }
 
 // DECM $acsD
@@ -672,17 +672,17 @@ void subp(const UDSPInstruction opc)
 // flags out: x-xx xxxx
 void decm(const UDSPInstruction opc)
 {
-	u8 dreg = (opc >> 8) & 0x01;
+  u8 dreg = (opc >> 8) & 0x01;
 
-	s64 sub = 0x10000;
-	s64 acc = dsp_get_long_acc(dreg);
-	s64 res = acc - sub;
+  s64 sub = 0x10000;
+  s64 acc = dsp_get_long_acc(dreg);
+  s64 res = acc - sub;
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_acc(dreg, res);
-	res = dsp_get_long_acc(dreg);
-	Update_SR_Register64(res, isCarry2(acc, res), isOverflow(acc, -sub, res));
+  dsp_set_long_acc(dreg, res);
+  res = dsp_get_long_acc(dreg);
+  Update_SR_Register64(res, isCarry2(acc, res), isOverflow(acc, -sub, res));
 }
 
 // DEC $acD
@@ -692,16 +692,16 @@ void decm(const UDSPInstruction opc)
 // flags out: x-xx xxxx
 void dec(const UDSPInstruction opc)
 {
-	u8 dreg = (opc >> 8) & 0x01;
+  u8 dreg = (opc >> 8) & 0x01;
 
-	s64 acc = dsp_get_long_acc(dreg);
-	s64 res = acc - 1;
+  s64 acc = dsp_get_long_acc(dreg);
+  s64 res = acc - 1;
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_acc(dreg, res);
-	res = dsp_get_long_acc(dreg);
-	Update_SR_Register64(res, isCarry2(acc, res), isOverflow(acc, -1, res));
+  dsp_set_long_acc(dreg, res);
+  res = dsp_get_long_acc(dreg);
+  Update_SR_Register64(res, isCarry2(acc, res), isOverflow(acc, -1, res));
 }
 
 //----
@@ -713,15 +713,15 @@ void dec(const UDSPInstruction opc)
 // flags out: --xx xx00
 void neg(const UDSPInstruction opc)
 {
-	u8 dreg = (opc >> 8) & 0x1;
+  u8 dreg = (opc >> 8) & 0x1;
 
-	s64 acc = dsp_get_long_acc(dreg);
-	acc = 0 - acc;
+  s64 acc = dsp_get_long_acc(dreg);
+  acc = 0 - acc;
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_acc(dreg, acc);
-	Update_SR_Register64(dsp_get_long_acc(dreg));
+  dsp_set_long_acc(dreg, acc);
+  Update_SR_Register64(dsp_get_long_acc(dreg));
 }
 
 // ABS  $acD
@@ -731,17 +731,17 @@ void neg(const UDSPInstruction opc)
 // flags out: --xx xx00
 void abs(const UDSPInstruction opc)
 {
-	u8 dreg = (opc >> 11) & 0x1;
+  u8 dreg = (opc >> 11) & 0x1;
 
-	s64 acc = dsp_get_long_acc(dreg);
+  s64 acc = dsp_get_long_acc(dreg);
 
-	if (acc < 0)
-		acc = 0 - acc;
+  if (acc < 0)
+    acc = 0 - acc;
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_acc(dreg, acc);
-	Update_SR_Register64(dsp_get_long_acc(dreg));
+  dsp_set_long_acc(dreg, acc);
+  Update_SR_Register64(dsp_get_long_acc(dreg));
 }
 //----
 
@@ -753,31 +753,31 @@ void abs(const UDSPInstruction opc)
 // flags out: --xx xx00
 void movr(const UDSPInstruction opc)
 {
-	u8 areg = (opc >> 8) & 0x1;
-	u8 sreg = ((opc >> 9) & 0x3) + DSP_REG_AXL0;
+  u8 areg = (opc >> 8) & 0x1;
+  u8 sreg = ((opc >> 9) & 0x3) + DSP_REG_AXL0;
 
-	s64 ax = 0;
-	switch (sreg)
-	{
-	case DSP_REG_AXL0:
-	case DSP_REG_AXL1:
-		ax = (s16)g_dsp.r.ax[sreg - DSP_REG_AXL0].l;
-		break;
-	case DSP_REG_AXH0:
-	case DSP_REG_AXH1:
-		ax = (s16)g_dsp.r.ax[sreg - DSP_REG_AXH0].h;
-		break;
-	default:
-		ax = 0;
-		break;
-	}
-	ax <<= 16;
-	ax &= ~0xffff;
+  s64 ax = 0;
+  switch (sreg)
+  {
+  case DSP_REG_AXL0:
+  case DSP_REG_AXL1:
+    ax = (s16)g_dsp.r.ax[sreg - DSP_REG_AXL0].l;
+    break;
+  case DSP_REG_AXH0:
+  case DSP_REG_AXH1:
+    ax = (s16)g_dsp.r.ax[sreg - DSP_REG_AXH0].h;
+    break;
+  default:
+    ax = 0;
+    break;
+  }
+  ax <<= 16;
+  ax &= ~0xffff;
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_acc(areg, ax);
-	Update_SR_Register64(ax);
+  dsp_set_long_acc(areg, ax);
+  Update_SR_Register64(ax);
 }
 
 // MOVAX $acD, $axS
@@ -787,15 +787,15 @@ void movr(const UDSPInstruction opc)
 // flags out: --xx xx00
 void movax(const UDSPInstruction opc)
 {
-	u8 dreg = (opc >> 8) & 0x1;
-	u8 sreg = (opc >> 9) & 0x1;
+  u8 dreg = (opc >> 8) & 0x1;
+  u8 sreg = (opc >> 9) & 0x1;
 
-	s64 acx = dsp_get_long_acx(sreg);
+  s64 acx = dsp_get_long_acx(sreg);
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_acc(dreg, acx);
-	Update_SR_Register64(acx);
+  dsp_set_long_acc(dreg, acx);
+  Update_SR_Register64(acx);
 }
 
 // MOV $acD, $ac(1-D)
@@ -805,13 +805,13 @@ void movax(const UDSPInstruction opc)
 // flags out: --x0 xx00
 void mov(const UDSPInstruction opc)
 {
-	u8 dreg = (opc >> 8) & 0x1;
-	u64 acc = dsp_get_long_acc(1 - dreg);
+  u8 dreg = (opc >> 8) & 0x1;
+  u64 acc = dsp_get_long_acc(1 - dreg);
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_acc(dreg, acc);
-	Update_SR_Register64(acc);
+  dsp_set_long_acc(dreg, acc);
+  Update_SR_Register64(acc);
 }
 
 //----
@@ -823,15 +823,15 @@ void mov(const UDSPInstruction opc)
 // flags out: --xx xx00
 void lsl16(const UDSPInstruction opc)
 {
-	u8 areg = (opc >> 8) & 0x1;
+  u8 areg = (opc >> 8) & 0x1;
 
-	s64 acc = dsp_get_long_acc(areg);
-	acc <<= 16;
+  s64 acc = dsp_get_long_acc(areg);
+  acc <<= 16;
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_acc(areg, acc);
-	Update_SR_Register64(dsp_get_long_acc(areg));
+  dsp_set_long_acc(areg, acc);
+  Update_SR_Register64(dsp_get_long_acc(areg));
 }
 
 // LSR16 $acR
@@ -841,17 +841,17 @@ void lsl16(const UDSPInstruction opc)
 // flags out: --xx xx00
 void lsr16(const UDSPInstruction opc)
 {
-	u8 areg = (opc >> 8) & 0x1;
+  u8 areg = (opc >> 8) & 0x1;
 
-	u64 acc = dsp_get_long_acc(areg);
-	acc &=
-		0x000000FFFFFFFFFFULL;  // Lop off the extraneous sign extension our 64-bit fake accum causes
-	acc >>= 16;
+  u64 acc = dsp_get_long_acc(areg);
+  acc &=
+    0x000000FFFFFFFFFFULL;  // Lop off the extraneous sign extension our 64-bit fake accum causes
+  acc >>= 16;
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_acc(areg, (s64)acc);
-	Update_SR_Register64(dsp_get_long_acc(areg));
+  dsp_set_long_acc(areg, (s64)acc);
+  Update_SR_Register64(dsp_get_long_acc(areg));
 }
 
 // ASR16 $acR
@@ -861,15 +861,15 @@ void lsr16(const UDSPInstruction opc)
 // flags out: --xx xx00
 void asr16(const UDSPInstruction opc)
 {
-	u8 areg = (opc >> 11) & 0x1;
+  u8 areg = (opc >> 11) & 0x1;
 
-	s64 acc = dsp_get_long_acc(areg);
-	acc >>= 16;
+  s64 acc = dsp_get_long_acc(areg);
+  acc >>= 16;
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_acc(areg, acc);
-	Update_SR_Register64(dsp_get_long_acc(areg));
+  dsp_set_long_acc(areg, acc);
+  Update_SR_Register64(dsp_get_long_acc(areg));
 }
 
 // LSL $acR, #I
@@ -879,14 +879,14 @@ void asr16(const UDSPInstruction opc)
 // flags out: --xx xx00
 void lsl(const UDSPInstruction opc)
 {
-	u8 rreg = (opc >> 8) & 0x01;
-	u16 shift = opc & 0x3f;
-	u64 acc = dsp_get_long_acc(rreg);
+  u8 rreg = (opc >> 8) & 0x01;
+  u16 shift = opc & 0x3f;
+  u64 acc = dsp_get_long_acc(rreg);
 
-	acc <<= shift;
+  acc <<= shift;
 
-	dsp_set_long_acc(rreg, acc);
-	Update_SR_Register64(dsp_get_long_acc(rreg));
+  dsp_set_long_acc(rreg, acc);
+  Update_SR_Register64(dsp_get_long_acc(rreg));
 }
 
 // LSR $acR, #I
@@ -897,21 +897,21 @@ void lsl(const UDSPInstruction opc)
 // flags out: --xx xx00
 void lsr(const UDSPInstruction opc)
 {
-	u8 rreg = (opc >> 8) & 0x01;
-	u16 shift;
-	u64 acc = dsp_get_long_acc(rreg);
-	acc &=
-		0x000000FFFFFFFFFFULL;  // Lop off the extraneous sign extension our 64-bit fake accum causes
+  u8 rreg = (opc >> 8) & 0x01;
+  u16 shift;
+  u64 acc = dsp_get_long_acc(rreg);
+  acc &=
+    0x000000FFFFFFFFFFULL;  // Lop off the extraneous sign extension our 64-bit fake accum causes
 
-	if ((opc & 0x3f) == 0)
-		shift = 0;
-	else
-		shift = 0x40 - (opc & 0x3f);
+  if ((opc & 0x3f) == 0)
+    shift = 0;
+  else
+    shift = 0x40 - (opc & 0x3f);
 
-	acc >>= shift;
+  acc >>= shift;
 
-	dsp_set_long_acc(rreg, (s64)acc);
-	Update_SR_Register64(dsp_get_long_acc(rreg));
+  dsp_set_long_acc(rreg, (s64)acc);
+  Update_SR_Register64(dsp_get_long_acc(rreg));
 }
 
 // ASL $acR, #I
@@ -921,14 +921,14 @@ void lsr(const UDSPInstruction opc)
 // flags out: --xx xx00
 void asl(const UDSPInstruction opc)
 {
-	u8 rreg = (opc >> 8) & 0x01;
-	u16 shift = opc & 0x3f;
-	u64 acc = dsp_get_long_acc(rreg);
+  u8 rreg = (opc >> 8) & 0x01;
+  u16 shift = opc & 0x3f;
+  u64 acc = dsp_get_long_acc(rreg);
 
-	acc <<= shift;
+  acc <<= shift;
 
-	dsp_set_long_acc(rreg, acc);
-	Update_SR_Register64(dsp_get_long_acc(rreg));
+  dsp_set_long_acc(rreg, acc);
+  Update_SR_Register64(dsp_get_long_acc(rreg));
 }
 
 // ASR $acR, #I
@@ -939,20 +939,20 @@ void asl(const UDSPInstruction opc)
 // flags out: --xx xx00
 void asr(const UDSPInstruction opc)
 {
-	u8 dreg = (opc >> 8) & 0x01;
-	u16 shift;
+  u8 dreg = (opc >> 8) & 0x01;
+  u16 shift;
 
-	if ((opc & 0x3f) == 0)
-		shift = 0;
-	else
-		shift = 0x40 - (opc & 0x3f);
+  if ((opc & 0x3f) == 0)
+    shift = 0;
+  else
+    shift = 0x40 - (opc & 0x3f);
 
-	// arithmetic shift
-	s64 acc = dsp_get_long_acc(dreg);
-	acc >>= shift;
+  // arithmetic shift
+  s64 acc = dsp_get_long_acc(dreg);
+  acc >>= shift;
 
-	dsp_set_long_acc(dreg, acc);
-	Update_SR_Register64(dsp_get_long_acc(dreg));
+  dsp_set_long_acc(dreg, acc);
+  Update_SR_Register64(dsp_get_long_acc(dreg));
 }
 
 // LSRN  (fixed parameters)
@@ -963,29 +963,29 @@ void asr(const UDSPInstruction opc)
 // flags out: --xx xx00
 void lsrn(const UDSPInstruction opc)
 {
-	s16 shift;
-	u16 accm = (u16)dsp_get_acc_m(1);
-	u64 acc = dsp_get_long_acc(0);
-	acc &= 0x000000FFFFFFFFFFULL;
+  s16 shift;
+  u16 accm = (u16)dsp_get_acc_m(1);
+  u64 acc = dsp_get_long_acc(0);
+  acc &= 0x000000FFFFFFFFFFULL;
 
-	if ((accm & 0x3f) == 0)
-		shift = 0;
-	else if (accm & 0x40)
-		shift = -0x40 + (accm & 0x3f);
-	else
-		shift = accm & 0x3f;
+  if ((accm & 0x3f) == 0)
+    shift = 0;
+  else if (accm & 0x40)
+    shift = -0x40 + (accm & 0x3f);
+  else
+    shift = accm & 0x3f;
 
-	if (shift > 0)
-	{
-		acc >>= shift;
-	}
-	else if (shift < 0)
-	{
-		acc <<= -shift;
-	}
+  if (shift > 0)
+  {
+    acc >>= shift;
+  }
+  else if (shift < 0)
+  {
+    acc <<= -shift;
+  }
 
-	dsp_set_long_acc(0, (s64)acc);
-	Update_SR_Register64(dsp_get_long_acc(0));
+  dsp_set_long_acc(0, (s64)acc);
+  Update_SR_Register64(dsp_get_long_acc(0));
 }
 
 // ASRN  (fixed parameters)
@@ -996,28 +996,28 @@ void lsrn(const UDSPInstruction opc)
 // flags out: --xx xx00
 void asrn(const UDSPInstruction opc)
 {
-	s16 shift;
-	u16 accm = (u16)dsp_get_acc_m(1);
-	s64 acc = dsp_get_long_acc(0);
+  s16 shift;
+  u16 accm = (u16)dsp_get_acc_m(1);
+  s64 acc = dsp_get_long_acc(0);
 
-	if ((accm & 0x3f) == 0)
-		shift = 0;
-	else if (accm & 0x40)
-		shift = -0x40 + (accm & 0x3f);
-	else
-		shift = accm & 0x3f;
+  if ((accm & 0x3f) == 0)
+    shift = 0;
+  else if (accm & 0x40)
+    shift = -0x40 + (accm & 0x3f);
+  else
+    shift = accm & 0x3f;
 
-	if (shift > 0)
-	{
-		acc >>= shift;
-	}
-	else if (shift < 0)
-	{
-		acc <<= -shift;
-	}
+  if (shift > 0)
+  {
+    acc >>= shift;
+  }
+  else if (shift < 0)
+  {
+    acc <<= -shift;
+  }
 
-	dsp_set_long_acc(0, acc);
-	Update_SR_Register64(dsp_get_long_acc(0));
+  dsp_set_long_acc(0, acc);
+  Update_SR_Register64(dsp_get_long_acc(0));
 }
 
 // LSRNRX $acD, $axS.h
@@ -1028,34 +1028,34 @@ void asrn(const UDSPInstruction opc)
 // flags out: --xx xx00
 void lsrnrx(const UDSPInstruction opc)
 {
-	u8 dreg = (opc >> 8) & 0x1;
-	u8 sreg = (opc >> 9) & 0x1;
+  u8 dreg = (opc >> 8) & 0x1;
+  u8 sreg = (opc >> 9) & 0x1;
 
-	s16 shift;
-	u16 axh = g_dsp.r.ax[sreg].h;
-	u64 acc = dsp_get_long_acc(dreg);
-	acc &= 0x000000FFFFFFFFFFULL;
+  s16 shift;
+  u16 axh = g_dsp.r.ax[sreg].h;
+  u64 acc = dsp_get_long_acc(dreg);
+  acc &= 0x000000FFFFFFFFFFULL;
 
-	if ((axh & 0x3f) == 0)
-		shift = 0;
-	else if (axh & 0x40)
-		shift = -0x40 + (axh & 0x3f);
-	else
-		shift = axh & 0x3f;
+  if ((axh & 0x3f) == 0)
+    shift = 0;
+  else if (axh & 0x40)
+    shift = -0x40 + (axh & 0x3f);
+  else
+    shift = axh & 0x3f;
 
-	if (shift > 0)
-	{
-		acc <<= shift;
-	}
-	else if (shift < 0)
-	{
-		acc >>= -shift;
-	}
+  if (shift > 0)
+  {
+    acc <<= shift;
+  }
+  else if (shift < 0)
+  {
+    acc >>= -shift;
+  }
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_acc(dreg, (s64)acc);
-	Update_SR_Register64(dsp_get_long_acc(dreg));
+  dsp_set_long_acc(dreg, (s64)acc);
+  Update_SR_Register64(dsp_get_long_acc(dreg));
 }
 
 // ASRNRX $acD, $axS.h
@@ -1066,33 +1066,33 @@ void lsrnrx(const UDSPInstruction opc)
 // flags out: --xx xx00
 void asrnrx(const UDSPInstruction opc)
 {
-	u8 dreg = (opc >> 8) & 0x1;
-	u8 sreg = (opc >> 9) & 0x1;
+  u8 dreg = (opc >> 8) & 0x1;
+  u8 sreg = (opc >> 9) & 0x1;
 
-	s16 shift;
-	u16 axh = g_dsp.r.ax[sreg].h;
-	s64 acc = dsp_get_long_acc(dreg);
+  s16 shift;
+  u16 axh = g_dsp.r.ax[sreg].h;
+  s64 acc = dsp_get_long_acc(dreg);
 
-	if ((axh & 0x3f) == 0)
-		shift = 0;
-	else if (axh & 0x40)
-		shift = -0x40 + (axh & 0x3f);
-	else
-		shift = axh & 0x3f;
+  if ((axh & 0x3f) == 0)
+    shift = 0;
+  else if (axh & 0x40)
+    shift = -0x40 + (axh & 0x3f);
+  else
+    shift = axh & 0x3f;
 
-	if (shift > 0)
-	{
-		acc <<= shift;
-	}
-	else if (shift < 0)
-	{
-		acc >>= -shift;
-	}
+  if (shift > 0)
+  {
+    acc <<= shift;
+  }
+  else if (shift < 0)
+  {
+    acc >>= -shift;
+  }
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_acc(dreg, acc);
-	Update_SR_Register64(dsp_get_long_acc(dreg));
+  dsp_set_long_acc(dreg, acc);
+  Update_SR_Register64(dsp_get_long_acc(dreg));
 }
 
 // LSRNR  $acD
@@ -1103,29 +1103,29 @@ void asrnrx(const UDSPInstruction opc)
 // flags out: --xx xx00
 void lsrnr(const UDSPInstruction opc)
 {
-	u8 dreg = (opc >> 8) & 0x1;
+  u8 dreg = (opc >> 8) & 0x1;
 
-	s16 shift;
-	u16 accm = (u16)dsp_get_acc_m(1 - dreg);
-	u64 acc = dsp_get_long_acc(dreg);
-	acc &= 0x000000FFFFFFFFFFULL;
+  s16 shift;
+  u16 accm = (u16)dsp_get_acc_m(1 - dreg);
+  u64 acc = dsp_get_long_acc(dreg);
+  acc &= 0x000000FFFFFFFFFFULL;
 
-	if ((accm & 0x3f) == 0)
-		shift = 0;
-	else if (accm & 0x40)
-		shift = -0x40 + (accm & 0x3f);
-	else
-		shift = accm & 0x3f;
+  if ((accm & 0x3f) == 0)
+    shift = 0;
+  else if (accm & 0x40)
+    shift = -0x40 + (accm & 0x3f);
+  else
+    shift = accm & 0x3f;
 
-	if (shift > 0)
-		acc <<= shift;
-	else if (shift < 0)
-		acc >>= -shift;
+  if (shift > 0)
+    acc <<= shift;
+  else if (shift < 0)
+    acc >>= -shift;
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_acc(dreg, (s64)acc);
-	Update_SR_Register64(dsp_get_long_acc(dreg));
+  dsp_set_long_acc(dreg, (s64)acc);
+  Update_SR_Register64(dsp_get_long_acc(dreg));
 }
 
 // ASRNR  $acD
@@ -1136,28 +1136,28 @@ void lsrnr(const UDSPInstruction opc)
 // flags out: --xx xx00
 void asrnr(const UDSPInstruction opc)
 {
-	u8 dreg = (opc >> 8) & 0x1;
+  u8 dreg = (opc >> 8) & 0x1;
 
-	s16 shift;
-	u16 accm = (u16)dsp_get_acc_m(1 - dreg);
-	s64 acc = dsp_get_long_acc(dreg);
+  s16 shift;
+  u16 accm = (u16)dsp_get_acc_m(1 - dreg);
+  s64 acc = dsp_get_long_acc(dreg);
 
-	if ((accm & 0x3f) == 0)
-		shift = 0;
-	else if (accm & 0x40)
-		shift = -0x40 + (accm & 0x3f);
-	else
-		shift = accm & 0x3f;
+  if ((accm & 0x3f) == 0)
+    shift = 0;
+  else if (accm & 0x40)
+    shift = -0x40 + (accm & 0x3f);
+  else
+    shift = accm & 0x3f;
 
-	if (shift > 0)
-		acc <<= shift;
-	else if (shift < 0)
-		acc >>= -shift;
+  if (shift > 0)
+    acc <<= shift;
+  else if (shift < 0)
+    acc >>= -shift;
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_acc(dreg, acc);
-	Update_SR_Register64(dsp_get_long_acc(dreg));
+  dsp_set_long_acc(dreg, acc);
+  Update_SR_Register64(dsp_get_long_acc(dreg));
 }
 
 }  // namespace Interpreter

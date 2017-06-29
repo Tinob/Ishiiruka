@@ -42,61 +42,61 @@ CNANDContentDataFile::~CNANDContentDataFile() = default;
 
 void CNANDContentDataFile::EnsureOpen()
 {
-	if (!m_file)
-		m_file = std::make_unique<File::IOFile>(m_filename, "rb");
-	else if (!m_file->IsOpen())
-		m_file->Open(m_filename, "rb");
+  if (!m_file)
+    m_file = std::make_unique<File::IOFile>(m_filename, "rb");
+  else if (!m_file->IsOpen())
+    m_file->Open(m_filename, "rb");
 }
 void CNANDContentDataFile::Open()
 {
-	EnsureOpen();
+  EnsureOpen();
 }
 std::vector<u8> CNANDContentDataFile::Get()
 {
-	EnsureOpen();
+  EnsureOpen();
 
-	if (!m_file->IsGood())
-		return {};
+  if (!m_file->IsGood())
+    return {};
 
-	u64 size = m_file->GetSize();
-	if (size == 0)
-		return {};
+  u64 size = m_file->GetSize();
+  if (size == 0)
+    return {};
 
-	std::vector<u8> result(size);
-	m_file->ReadBytes(result.data(), result.size());
+  std::vector<u8> result(size);
+  m_file->ReadBytes(result.data(), result.size());
 
-	return result;
+  return result;
 }
 
 bool CNANDContentDataFile::GetRange(u32 start, u32 size, u8* buffer)
 {
-	EnsureOpen();
-	if (!m_file->IsGood())
-		return false;
+  EnsureOpen();
+  if (!m_file->IsGood())
+    return false;
 
-	if (!m_file->Seek(start, SEEK_SET))
-		return false;
+  if (!m_file->Seek(start, SEEK_SET))
+    return false;
 
-	return m_file->ReadBytes(buffer, static_cast<size_t>(size));
+  return m_file->ReadBytes(buffer, static_cast<size_t>(size));
 }
 void CNANDContentDataFile::Close()
 {
-	if (m_file && m_file->IsOpen())
-		m_file->Close();
+  if (m_file && m_file->IsOpen())
+    m_file->Close();
 }
 
 bool CNANDContentDataBuffer::GetRange(u32 start, u32 size, u8* buffer)
 {
-	if (start + size > m_buffer.size())
-		return false;
+  if (start + size > m_buffer.size())
+    return false;
 
-	std::copy_n(&m_buffer[start], size, buffer);
-	return true;
+  std::copy_n(&m_buffer[start], size, buffer);
+  return true;
 }
 
 CNANDContentLoader::CNANDContentLoader(const std::string& content_name)
 {
-	m_Valid = Initialize(content_name);
+  m_Valid = Initialize(content_name);
 }
 
 CNANDContentLoader::~CNANDContentLoader()
@@ -105,118 +105,118 @@ CNANDContentLoader::~CNANDContentLoader()
 
 bool CNANDContentLoader::IsValid() const
 {
-	return m_Valid;
+  return m_Valid;
 }
 
 const SNANDContent* CNANDContentLoader::GetContentByID(u32 id) const
 {
-	const auto iterator = std::find_if(m_Content.begin(), m_Content.end(), [id](const auto& content) {
-		return content.m_metadata.id == id;
-	});
-	return iterator != m_Content.end() ? &*iterator : nullptr;
+  const auto iterator = std::find_if(m_Content.begin(), m_Content.end(), [id](const auto& content) {
+    return content.m_metadata.id == id;
+  });
+  return iterator != m_Content.end() ? &*iterator : nullptr;
 }
 
 const SNANDContent* CNANDContentLoader::GetContentByIndex(int index) const
 {
-	for (auto& Content : m_Content)
-	{
-		if (Content.m_metadata.index == index)
-		{
-			return &Content;
-		}
-	}
-	return nullptr;
+  for (auto& Content : m_Content)
+  {
+    if (Content.m_metadata.index == index)
+    {
+      return &Content;
+    }
+  }
+  return nullptr;
 }
 
 bool CNANDContentLoader::Initialize(const std::string& name)
 {
-	if (name.empty())
-		return false;
+  if (name.empty())
+    return false;
 
-	m_Path = name;
+  m_Path = name;
 
-	WiiWAD wad(name);
-	std::vector<u8> data_app;
+  WiiWAD wad(name);
+  std::vector<u8> data_app;
 
-	if (wad.IsValid())
-	{
-		m_IsWAD = true;
-		m_ticket = wad.GetTicket();
-		m_tmd = wad.GetTMD();
-		data_app = wad.GetDataApp();
-	}
-	else
-	{
-		std::string tmd_filename(m_Path);
+  if (wad.IsValid())
+  {
+    m_IsWAD = true;
+    m_ticket = wad.GetTicket();
+    m_tmd = wad.GetTMD();
+    data_app = wad.GetDataApp();
+  }
+  else
+  {
+    std::string tmd_filename(m_Path);
 
-		if (tmd_filename.back() == '/')
-			tmd_filename += "title.tmd";
-		else
-			m_Path = tmd_filename.substr(0, tmd_filename.find("title.tmd"));
+    if (tmd_filename.back() == '/')
+      tmd_filename += "title.tmd";
+    else
+      m_Path = tmd_filename.substr(0, tmd_filename.find("title.tmd"));
 
-		File::IOFile tmd_file(tmd_filename, "rb");
-		if (!tmd_file)
-		{
-			WARN_LOG(DISCIO, "CreateFromDirectory: error opening %s", tmd_filename.c_str());
-			return false;
-		}
+    File::IOFile tmd_file(tmd_filename, "rb");
+    if (!tmd_file)
+    {
+      WARN_LOG(DISCIO, "CreateFromDirectory: error opening %s", tmd_filename.c_str());
+      return false;
+    }
 
-		std::vector<u8> bytes(File::GetSize(tmd_filename));
-		tmd_file.ReadBytes(bytes.data(), bytes.size());
-		m_tmd.SetBytes(std::move(bytes));
+    std::vector<u8> bytes(File::GetSize(tmd_filename));
+    tmd_file.ReadBytes(bytes.data(), bytes.size());
+    m_tmd.SetBytes(std::move(bytes));
 
-		m_ticket = FindSignedTicket(m_tmd.GetTitleId());
-	}
+    m_ticket = FindSignedTicket(m_tmd.GetTitleId());
+  }
 
-	InitializeContentEntries(data_app);
-	return true;
+  InitializeContentEntries(data_app);
+  return true;
 }
 
 void CNANDContentLoader::InitializeContentEntries(const std::vector<u8>& data_app)
 {
-	if (!m_ticket.IsValid())
-	{
-		ERROR_LOG(IOS_ES, "No valid ticket for title %016" PRIx64, m_tmd.GetTitleId());
-		return;
-	}
+  if (!m_ticket.IsValid())
+  {
+    ERROR_LOG(IOS_ES, "No valid ticket for title %016" PRIx64, m_tmd.GetTitleId());
+    return;
+  }
 
-	const std::vector<IOS::ES::Content> contents = m_tmd.GetContents();
-	m_Content.resize(contents.size());
+  const std::vector<IOS::ES::Content> contents = m_tmd.GetContents();
+  m_Content.resize(contents.size());
 
-	u32 data_app_offset = 0;
-	const std::vector<u8> title_key = m_ticket.GetTitleKey();
-	IOS::ES::SharedContentMap shared_content{ Common::FromWhichRoot::FROM_SESSION_ROOT };
+  u32 data_app_offset = 0;
+  const std::vector<u8> title_key = m_ticket.GetTitleKey();
+  IOS::ES::SharedContentMap shared_content{ Common::FromWhichRoot::FROM_SESSION_ROOT };
 
-	for (size_t i = 0; i < contents.size(); ++i)
-	{
-		const auto& content = contents.at(i);
+  for (size_t i = 0; i < contents.size(); ++i)
+  {
+    const auto& content = contents.at(i);
 
-		if (m_IsWAD)
-		{
-			// The content index is used as IV (2 bytes); the remaining 14 bytes are zeroes.
-			std::array<u8, 16> iv{};
-			iv[0] = static_cast<u8>(content.index >> 8) & 0xFF;
-			iv[1] = static_cast<u8>(content.index) & 0xFF;
+    if (m_IsWAD)
+    {
+      // The content index is used as IV (2 bytes); the remaining 14 bytes are zeroes.
+      std::array<u8, 16> iv{};
+      iv[0] = static_cast<u8>(content.index >> 8) & 0xFF;
+      iv[1] = static_cast<u8>(content.index) & 0xFF;
 
-			u32 rounded_size = Common::AlignUp(static_cast<u32>(content.size), 0x40);
+      u32 rounded_size = Common::AlignUp(static_cast<u32>(content.size), 0x40);
 
-			m_Content[i].m_Data = std::make_unique<CNANDContentDataBuffer>(Common::AES::Decrypt(
-				title_key.data(), iv.data(), &data_app[data_app_offset], rounded_size));
-			data_app_offset += rounded_size;
-		}
-		else
-		{
-			std::string filename;
-			if (content.IsShared())
-				filename = shared_content.GetFilenameFromSHA1(content.sha1);
-			else
-				filename = StringFromFormat("%s/%08x.app", m_Path.c_str(), content.id);
+      m_Content[i].m_Data = std::make_unique<CNANDContentDataBuffer>(Common::AES::Decrypt(
+        title_key.data(), iv.data(), &data_app[data_app_offset], rounded_size));
+      data_app_offset += rounded_size;
+    }
+    else
+    {
+      std::string filename;
+      if (content.IsShared())
+        filename = shared_content.GetFilenameFromSHA1(content.sha1);
+      else
+        filename = StringFromFormat("%s/%08x.app", m_Path.c_str(), content.id);
 
-			m_Content[i].m_Data = std::make_unique<CNANDContentDataFile>(filename);
-		}
+      m_Content[i].m_Data = std::make_unique<CNANDContentDataFile>(filename);
+    }
 
-		m_Content[i].m_metadata = std::move(content);
-	}
+    m_Content[i].m_metadata = std::move(content);
+  }
 }
 
 CNANDContentManager::~CNANDContentManager()
@@ -225,62 +225,62 @@ CNANDContentManager::~CNANDContentManager()
 
 const CNANDContentLoader& CNANDContentManager::GetNANDLoader(const std::string& content_path)
 {
-	auto it = m_map.find(content_path);
-	if (it != m_map.end())
-		return *it->second;
-	return *m_map
-		.emplace_hint(it, std::make_pair(content_path,
-			std::make_unique<CNANDContentLoader>(content_path)))
-		->second;
+  auto it = m_map.find(content_path);
+  if (it != m_map.end())
+    return *it->second;
+  return *m_map
+    .emplace_hint(it, std::make_pair(content_path,
+      std::make_unique<CNANDContentLoader>(content_path)))
+    ->second;
 }
 
 const CNANDContentLoader& CNANDContentManager::GetNANDLoader(u64 title_id,
-	Common::FromWhichRoot from)
+  Common::FromWhichRoot from)
 {
-	std::string path = Common::GetTitleContentPath(title_id, from);
-	return GetNANDLoader(path);
+  std::string path = Common::GetTitleContentPath(title_id, from);
+  return GetNANDLoader(path);
 }
 
 void CNANDContentManager::ClearCache()
 {
-	m_map.clear();
+  m_map.clear();
 }
 
 bool AddTicket(const IOS::ES::TicketReader& signed_ticket)
 {
-	if (!signed_ticket.IsValid())
-	{
-		return false;
-	}
+  if (!signed_ticket.IsValid())
+  {
+    return false;
+  }
 
-	u64 title_id = signed_ticket.GetTitleId();
+  u64 title_id = signed_ticket.GetTitleId();
 
-	std::string ticket_filename = Common::GetTicketFileName(title_id, Common::FROM_CONFIGURED_ROOT);
-	File::CreateFullPath(ticket_filename);
+  std::string ticket_filename = Common::GetTicketFileName(title_id, Common::FROM_CONFIGURED_ROOT);
+  File::CreateFullPath(ticket_filename);
 
-	File::IOFile ticket_file(ticket_filename, "wb");
-	if (!ticket_file)
-		return false;
+  File::IOFile ticket_file(ticket_filename, "wb");
+  if (!ticket_file)
+    return false;
 
-	const std::vector<u8>& raw_ticket = signed_ticket.GetRawTicket();
-	return ticket_file.WriteBytes(raw_ticket.data(), raw_ticket.size());
+  const std::vector<u8>& raw_ticket = signed_ticket.GetRawTicket();
+  return ticket_file.WriteBytes(raw_ticket.data(), raw_ticket.size());
 }
 
 IOS::ES::TicketReader FindSignedTicket(u64 title_id)
 {
-	std::string ticket_filename = Common::GetTicketFileName(title_id, Common::FROM_CONFIGURED_ROOT);
-	File::IOFile ticket_file(ticket_filename, "rb");
-	if (!ticket_file)
-	{
-		return IOS::ES::TicketReader{};
-	}
+  std::string ticket_filename = Common::GetTicketFileName(title_id, Common::FROM_CONFIGURED_ROOT);
+  File::IOFile ticket_file(ticket_filename, "rb");
+  if (!ticket_file)
+  {
+    return IOS::ES::TicketReader{};
+  }
 
-	std::vector<u8> signed_ticket(ticket_file.GetSize());
-	if (!ticket_file.ReadBytes(signed_ticket.data(), signed_ticket.size()))
-	{
-		return IOS::ES::TicketReader{};
-	}
+  std::vector<u8> signed_ticket(ticket_file.GetSize());
+  if (!ticket_file.ReadBytes(signed_ticket.data(), signed_ticket.size()))
+  {
+    return IOS::ES::TicketReader{};
+  }
 
-	return IOS::ES::TicketReader{ std::move(signed_ticket) };
+  return IOS::ES::TicketReader{ std::move(signed_ticket) };
 }
 }  // namespace end

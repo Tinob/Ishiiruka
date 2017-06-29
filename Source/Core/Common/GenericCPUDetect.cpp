@@ -10,5 +10,5 @@ CPUInfo::CPUInfo() {}
 
 std::string CPUInfo::Summarize()
 {
-	return "Generic";
+  return "Generic";
 }

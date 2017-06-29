@@ -24,81 +24,81 @@
 
 struct StateFlags
 {
-	u32 checksum;
-	u8 flags;
-	u8 type;
-	u8 discstate;
-	u8 returnto;
-	u32 unknown[6];
+  u32 checksum;
+  u8 flags;
+  u8 type;
+  u8 discstate;
+  u8 returnto;
+  u32 unknown[6];
 };
 
 static u32 StateChecksum(const StateFlags& flags)
 {
-	constexpr size_t length_in_bytes = sizeof(StateFlags) - 4;
-	constexpr size_t num_elements = length_in_bytes / sizeof(u32);
-	std::array<u32, num_elements> flag_data;
+  constexpr size_t length_in_bytes = sizeof(StateFlags) - 4;
+  constexpr size_t num_elements = length_in_bytes / sizeof(u32);
+  std::array<u32, num_elements> flag_data;
 
-	std::memcpy(flag_data.data(), &flags.flags, length_in_bytes);
+  std::memcpy(flag_data.data(), &flags.flags, length_in_bytes);
 
-	return std::accumulate(flag_data.cbegin(), flag_data.cend(), 0U);
+  return std::accumulate(flag_data.cbegin(), flag_data.cend(), 0U);
 }
 
 bool CBoot::Boot_WiiWAD(const std::string& _pFilename)
 {
-	std::string state_filename(Common::GetTitleDataPath(TITLEID_SYSMENU, Common::FROM_SESSION_ROOT) +
-		WII_STATE);
+  std::string state_filename(Common::GetTitleDataPath(TITLEID_SYSMENU, Common::FROM_SESSION_ROOT) +
+    WII_STATE);
 
-	if (File::Exists(state_filename))
-	{
-		File::IOFile state_file(state_filename, "r+b");
-		StateFlags state;
-		state_file.ReadBytes(&state, sizeof(StateFlags));
+  if (File::Exists(state_filename))
+  {
+    File::IOFile state_file(state_filename, "r+b");
+    StateFlags state;
+    state_file.ReadBytes(&state, sizeof(StateFlags));
 
-		state.type = 0x03;  // TYPE_RETURN
-		state.checksum = StateChecksum(state);
+    state.type = 0x03;  // TYPE_RETURN
+    state.checksum = StateChecksum(state);
 
-		state_file.Seek(0, SEEK_SET);
-		state_file.WriteBytes(&state, sizeof(StateFlags));
-	}
-	else
-	{
-		File::CreateFullPath(state_filename);
-		File::IOFile state_file(state_filename, "a+b");
-		StateFlags state;
-		memset(&state, 0, sizeof(StateFlags));
-		state.type = 0x03;       // TYPE_RETURN
-		state.discstate = 0x01;  // DISCSTATE_WII
-		state.checksum = StateChecksum(state);
-		state_file.WriteBytes(&state, sizeof(StateFlags));
-	}
+    state_file.Seek(0, SEEK_SET);
+    state_file.WriteBytes(&state, sizeof(StateFlags));
+  }
+  else
+  {
+    File::CreateFullPath(state_filename);
+    File::IOFile state_file(state_filename, "a+b");
+    StateFlags state;
+    memset(&state, 0, sizeof(StateFlags));
+    state.type = 0x03;       // TYPE_RETURN
+    state.discstate = 0x01;  // DISCSTATE_WII
+    state.checksum = StateChecksum(state);
+    state_file.WriteBytes(&state, sizeof(StateFlags));
+  }
 
-	const DiscIO::CNANDContentLoader& ContentLoader =
-		DiscIO::CNANDContentManager::Access().GetNANDLoader(_pFilename);
-	if (!ContentLoader.IsValid())
-		return false;
+  const DiscIO::CNANDContentLoader& ContentLoader =
+    DiscIO::CNANDContentManager::Access().GetNANDLoader(_pFilename);
+  if (!ContentLoader.IsValid())
+    return false;
 
-	u64 titleID = ContentLoader.GetTMD().GetTitleId();
-	// create data directory
-	File::CreateFullPath(Common::GetTitleDataPath(titleID, Common::FROM_SESSION_ROOT));
+  u64 titleID = ContentLoader.GetTMD().GetTitleId();
+  // create data directory
+  File::CreateFullPath(Common::GetTitleDataPath(titleID, Common::FROM_SESSION_ROOT));
 
-	if (titleID == TITLEID_SYSMENU)
-		IOS::HLE::CreateVirtualFATFilesystem();
-	// setup Wii memory
+  if (titleID == TITLEID_SYSMENU)
+    IOS::HLE::CreateVirtualFATFilesystem();
+  // setup Wii memory
 
-	if (!SetupWiiMemory(nullptr, ContentLoader.GetTMD().GetIOSId()))
-		return false;
+  if (!SetupWiiMemory(nullptr, ContentLoader.GetTMD().GetIOSId()))
+    return false;
 
-	IOS::HLE::Device::ES::LoadWAD(_pFilename);
+  IOS::HLE::Device::ES::LoadWAD(_pFilename);
 
-	// TODO: kill these manual calls and just use ES_Launch here, as soon as the direct WAD
-	//       launch hack is dropped.
-	auto* ios = IOS::HLE::GetIOS();
-	IOS::ES::UIDSys uid_map{ Common::FROM_SESSION_ROOT };
-	ios->SetUidForPPC(uid_map.GetOrInsertUIDForTitle(titleID));
-	ios->SetGidForPPC(ContentLoader.GetTMD().GetGroupId());
+  // TODO: kill these manual calls and just use ES_Launch here, as soon as the direct WAD
+  //       launch hack is dropped.
+  auto* ios = IOS::HLE::GetIOS();
+  IOS::ES::UIDSys uid_map{ Common::FROM_SESSION_ROOT };
+  ios->SetUidForPPC(uid_map.GetOrInsertUIDForTitle(titleID));
+  ios->SetGidForPPC(ContentLoader.GetTMD().GetGroupId());
 
-	if (!ios->BootstrapPPC(ContentLoader))
-		return false;
+  if (!ios->BootstrapPPC(ContentLoader))
+    return false;
 
-	return true;
+  return true;
 }

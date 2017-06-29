@@ -114,39 +114,39 @@ void EnableAlphaToCoverage();
 
 struct Resolution
 {
-	char name[32];
-	int xres;
-	int yres;
-	std::set<D3DFORMAT> bitdepths;
-	std::set<int> refreshes;
+  char name[32];
+  int xres;
+  int yres;
+  std::set<D3DFORMAT> bitdepths;
+  std::set<int> refreshes;
 };
 
 struct AALevel
 {
-	AALevel(const char *n, D3DMULTISAMPLE_TYPE m, int q)
-	{
-		strncpy(name, n, 32);
-		name[31] = '\0';
-		ms_setting = m;
-		qual_setting = q;
-	}
-	char name[32];
-	D3DMULTISAMPLE_TYPE ms_setting;
-	int qual_setting;
+  AALevel(const char *n, D3DMULTISAMPLE_TYPE m, int q)
+  {
+    strncpy(name, n, 32);
+    name[31] = '\0';
+    ms_setting = m;
+    qual_setting = q;
+  }
+  char name[32];
+  D3DMULTISAMPLE_TYPE ms_setting;
+  int qual_setting;
 };
 
 struct Adapter
 {
-	D3DADAPTER_IDENTIFIER9 ident;
-	std::vector<Resolution> resolutions;
-	std::vector<AALevel> aa_levels;
-	bool supports_alpha_to_coverage;
+  D3DADAPTER_IDENTIFIER9 ident;
+  std::vector<Resolution> resolutions;
+  std::vector<AALevel> aa_levels;
+  bool supports_alpha_to_coverage;
 
-	// Magic render targets, see the top of this file.
-	bool supports_intz;
-	bool supports_rawz;
-	bool supports_resz;
-	bool supports_null;
+  // Magic render targets, see the top of this file.
+  bool supports_intz;
+  bool supports_rawz;
+  bool supports_resz;
+  bool supports_null;
 };
 
 const Adapter &GetAdapter(int i);

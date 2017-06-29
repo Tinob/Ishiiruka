@@ -22,19 +22,19 @@ class OH0;
 class OH0Device final : public Device
 {
 public:
-	OH0Device(Kernel& ios, const std::string& device_name);
+  OH0Device(Kernel& ios, const std::string& device_name);
 
-	ReturnCode Open(const OpenRequest& request) override;
-	ReturnCode Close(u32 fd) override;
-	IPCCommandResult IOCtl(const IOCtlRequest& request) override;
-	IPCCommandResult IOCtlV(const IOCtlVRequest& request) override;
-	void DoState(PointerWrap& p) override;
+  ReturnCode Open(const OpenRequest& request) override;
+  ReturnCode Close(u32 fd) override;
+  IPCCommandResult IOCtl(const IOCtlRequest& request) override;
+  IPCCommandResult IOCtlV(const IOCtlVRequest& request) override;
+  void DoState(PointerWrap& p) override;
 
 private:
-	std::shared_ptr<OH0> m_oh0;
-	u16 m_vid = 0;
-	u16 m_pid = 0;
-	u64 m_device_id = 0;
+  std::shared_ptr<OH0> m_oh0;
+  u16 m_vid = 0;
+  u16 m_pid = 0;
+  u64 m_device_id = 0;
 };
 }  // namespace Device
 }  // namespace HLE

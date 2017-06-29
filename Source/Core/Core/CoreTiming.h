@@ -27,11 +27,11 @@ namespace CoreTiming
 // These really shouldn't be global, but jit64 accesses them directly
 struct Globals
 {
-	s64 global_timer;
-	u64 fake_TB_start_value;
-	u64 fake_TB_start_ticks;
-	int slice_length;
-	float last_OC_factor_inverted;
+  s64 global_timer;
+  u64 fake_TB_start_value;
+  u64 fake_TB_start_ticks;
+  int slice_length;
+  float last_OC_factor_inverted;
 };
 extern Globals g;
 
@@ -58,11 +58,11 @@ void UnregisterAllEvents();
 
 enum class FromThread
 {
-	CPU,
-	NON_CPU,
-	// Don't use ANY unless you're sure you need to call from
-	// both the CPU thread and at least one other thread
-	ANY
+  CPU,
+  NON_CPU,
+  // Don't use ANY unless you're sure you need to call from
+  // both the CPU thread and at least one other thread
+  ANY
 };
 
 // userdata MAY NOT CONTAIN POINTERS. userdata might get written and reloaded from savestates.
@@ -70,7 +70,7 @@ enum class FromThread
 // is scheduled earlier than the current values (when scheduled from the CPU Thread only).
 // Scheduling from a callback will not update the downcount until the Advance() completes.
 void ScheduleEvent(s64 cycles_into_future, EventType* event_type, u64 userdata = 0,
-	FromThread from = FromThread::CPU);
+  FromThread from = FromThread::CPU);
 
 // We only permit one event of each type in the queue at a time.
 void RemoveEvent(EventType* event_type);

@@ -16,9 +16,9 @@ namespace Symbols
 class DSPSymbolDB : public SymbolDB
 {
 public:
-	DSPSymbolDB() {}
-	~DSPSymbolDB() {}
-	Symbol* GetSymbolFromAddr(u32 addr) override;
+  DSPSymbolDB() {}
+  ~DSPSymbolDB() {}
+  Symbol* GetSymbolFromAddr(u32 addr) override;
 };
 
 extern DSPSymbolDB g_dsp_symbol_db;

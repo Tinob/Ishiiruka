@@ -12,13 +12,13 @@ namespace DX12
 class ShaderConstantsManager final
 {
 public:
-	static void Init();
-	static void Shutdown();
+  static void Init();
+  static void Shutdown();
 
-	static bool LoadAndSetHullDomainShaderConstants();
-	static bool LoadAndSetGeometryShaderConstants();
-	static bool LoadAndSetPixelShaderConstants();
-	static bool LoadAndSetVertexShaderConstants();
+  static bool LoadAndSetHullDomainShaderConstants();
+  static bool LoadAndSetGeometryShaderConstants();
+  static bool LoadAndSetPixelShaderConstants();
+  static bool LoadAndSetVertexShaderConstants();
 };
 
 }

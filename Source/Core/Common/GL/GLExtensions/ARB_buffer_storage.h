@@ -34,9 +34,9 @@
 #define GL_BUFFER_STORAGE_FLAGS 0x8220
 
 typedef void(APIENTRYP PFNDOLBUFFERSTORAGEPROC)(GLenum target, GLsizeiptr size, const void* data,
-	GLbitfield flags);
+  GLbitfield flags);
 typedef void(APIENTRYP PFNDOLNAMEDBUFFERSTORAGEEXTPROC)(GLuint buffer, GLsizeiptr size,
-	const void* data, GLbitfield flags);
+  const void* data, GLbitfield flags);
 
 extern PFNDOLBUFFERSTORAGEPROC dolBufferStorage;
 

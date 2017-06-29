@@ -14,10 +14,10 @@ namespace SerialInterface
 class CSIDevice_DanceMat : public CSIDevice_GCController
 {
 public:
-	CSIDevice_DanceMat(SIDevices device, int device_number);
+  CSIDevice_DanceMat(SIDevices device, int device_number);
 
-	int RunBuffer(u8* buffer, int length) override;
-	u32 MapPadStatus(const GCPadStatus& pad_status) override;
-	bool GetData(u32& hi, u32& low) override;
+  int RunBuffer(u8* buffer, int length) override;
+  u32 MapPadStatus(const GCPadStatus& pad_status) override;
+  bool GetData(u32& hi, u32& low) override;
 };
 }  // namespace SerialInterface

@@ -48,10 +48,10 @@ extern const std::string scm_distributor_str;
 // Data: <Master Log      > 4D 61 73 74 65 72 20 4C 6F 67 00 00 00 00 00 00
 struct CrtDebugBreak
 {
-	CrtDebugBreak(int spot)
-	{
-		_CrtSetBreakAlloc(spot);
-	}
+  CrtDebugBreak(int spot)
+  {
+    _CrtSetBreakAlloc(spot);
+  }
 };
 //CrtDebugBreak breakAt(614);
 #endif // end DEBUG/FAST
@@ -81,9 +81,9 @@ struct CrtDebugBreak
 // Host communication.
 enum HOST_COMM
 {
-	// Begin at 10 in case there is already messages with wParam = 0, 1, 2 and so on
-	WM_USER_STOP = 10,
-	WM_USER_CREATE,
-	WM_USER_SETCURSOR,
-	WM_USER_JOB_DISPATCH,
+  // Begin at 10 in case there is already messages with wParam = 0, 1, 2 and so on
+  WM_USER_STOP = 10,
+  WM_USER_CREATE,
+  WM_USER_SETCURSOR,
+  WM_USER_JOB_DISPATCH,
 };

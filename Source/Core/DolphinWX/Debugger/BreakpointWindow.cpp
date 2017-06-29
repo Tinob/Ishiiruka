@@ -32,18 +32,18 @@ class CBreakPointBar : public DolphinAuiToolBar
 {
 public:
   CBreakPointBar(CBreakPointWindow* parent, const wxWindowID id)
-      : DolphinAuiToolBar(parent, id, wxDefaultPosition, wxDefaultSize,
-                          wxAUI_TB_DEFAULT_STYLE | wxAUI_TB_TEXT)
+    : DolphinAuiToolBar(parent, id, wxDefaultPosition, wxDefaultSize,
+      wxAUI_TB_DEFAULT_STYLE | wxAUI_TB_TEXT)
   {
     wxSize bitmap_size = FromDIP(wxSize(24, 24));
     SetToolBitmapSize(bitmap_size);
 
     static const std::array<const char* const, Num_Bitmaps> image_names{
-        {"toolbar_debugger_delete", "toolbar_add_breakpoint", "toolbar_add_memorycheck"}};
+        {"toolbar_debugger_delete", "toolbar_add_breakpoint", "toolbar_add_memorycheck"} };
     for (std::size_t i = 0; i < image_names.size(); ++i)
       m_Bitmaps[i] =
-          WxUtils::LoadScaledResourceBitmap(image_names[i], this, bitmap_size, wxDefaultSize,
-                                            WxUtils::LSI_SCALE_DOWN | WxUtils::LSI_ALIGN_CENTER);
+      WxUtils::LoadScaledResourceBitmap(image_names[i], this, bitmap_size, wxDefaultSize,
+        WxUtils::LSI_SCALE_DOWN | WxUtils::LSI_ALIGN_CENTER);
 
     AddTool(ID_DELETE, _("Delete"), m_Bitmaps[Toolbar_Delete]);
     Bind(wxEVT_TOOL, &CBreakPointWindow::OnDelete, parent, ID_DELETE);
@@ -87,9 +87,9 @@ private:
 };
 
 CBreakPointWindow::CBreakPointWindow(CCodeWindow* _pCodeWindow, wxWindow* parent, wxWindowID id,
-                                     const wxString& title, const wxPoint& position,
-                                     const wxSize& size, long style)
-    : wxPanel(parent, id, position, size, style, title), m_pCodeWindow(_pCodeWindow)
+  const wxString& title, const wxPoint& position,
+  const wxSize& size, long style)
+  : wxPanel(parent, id, position, size, style, title), m_pCodeWindow(_pCodeWindow)
 {
   m_mgr.SetManagedWindow(this);
   m_mgr.SetFlags(wxAUI_MGR_DEFAULT | wxAUI_MGR_LIVE_RESIZE);
@@ -98,12 +98,12 @@ CBreakPointWindow::CBreakPointWindow(CCodeWindow* _pCodeWindow, wxWindow* parent
   m_BreakPointListView->Bind(wxEVT_LIST_ITEM_SELECTED, &CBreakPointWindow::OnSelectBP, this);
 
   m_mgr.AddPane(new CBreakPointBar(this, wxID_ANY), wxAuiPaneInfo()
-                                                        .ToolbarPane()
-                                                        .Top()
-                                                        .LeftDockable(true)
-                                                        .RightDockable(true)
-                                                        .BottomDockable(false)
-                                                        .Floatable(false));
+    .ToolbarPane()
+    .Top()
+    .LeftDockable(true)
+    .RightDockable(true)
+    .BottomDockable(false)
+    .Floatable(false));
   m_mgr.AddPane(m_BreakPointListView, wxAuiPaneInfo().CenterPane());
   m_mgr.Update();
 }
@@ -172,7 +172,7 @@ void CBreakPointWindow::SaveAll()
   // simply dump all to bp/mc files in a way we can read again
   IniFile ini;
   ini.Load(File::GetUserPath(D_GAMESETTINGS_IDX) + SConfig::GetInstance().GetGameID() + ".ini",
-           false);
+    false);
   ini.SetLines("BreakPoints", PowerPC::breakpoints.GetStrings());
   ini.SetLines("MemoryBreakPoints", PowerPC::memchecks.GetStrings());
   ini.Save(File::GetUserPath(D_GAMESETTINGS_IDX) + SConfig::GetInstance().GetGameID() + ".ini");
@@ -191,7 +191,7 @@ void CBreakPointWindow::LoadAll()
   MemChecks::TMemChecksStr newmcs;
 
   if (!ini.Load(File::GetUserPath(D_GAMESETTINGS_IDX) + SConfig::GetInstance().GetGameID() + ".ini",
-                false))
+    false))
   {
     return;
   }

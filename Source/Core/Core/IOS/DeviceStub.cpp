@@ -13,21 +13,21 @@ namespace Device
 {
 ReturnCode Stub::Open(const OpenRequest& request)
 {
-	WARN_LOG(IOS, "%s faking Open()", m_name.c_str());
-	m_is_active = true;
-	return IPC_SUCCESS;
+  WARN_LOG(IOS, "%s faking Open()", m_name.c_str());
+  m_is_active = true;
+  return IPC_SUCCESS;
 }
 
 IPCCommandResult Stub::IOCtl(const IOCtlRequest& request)
 {
-	WARN_LOG(IOS, "%s faking IOCtl()", m_name.c_str());
-	return GetDefaultReply(IPC_SUCCESS);
+  WARN_LOG(IOS, "%s faking IOCtl()", m_name.c_str());
+  return GetDefaultReply(IPC_SUCCESS);
 }
 
 IPCCommandResult Stub::IOCtlV(const IOCtlVRequest& request)
 {
-	WARN_LOG(IOS, "%s faking IOCtlV()", m_name.c_str());
-	return GetDefaultReply(IPC_SUCCESS);
+  WARN_LOG(IOS, "%s faking IOCtlV()", m_name.c_str());
+  return GetDefaultReply(IPC_SUCCESS);
 }
 }  // namespace Device
 }  // namespace HLE

@@ -13,8 +13,8 @@ namespace ControllerEmu
 class Triggers : public ControlGroup
 {
 public:
-	explicit Triggers(const std::string& name);
+  explicit Triggers(const std::string& name);
 
-	void GetState(ControlState* analog);
+  void GetState(ControlState* analog);
 };
 }  // namespace ControllerEmu

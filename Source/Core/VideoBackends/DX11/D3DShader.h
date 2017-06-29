@@ -19,12 +19,12 @@ namespace D3D
 {
 enum class ShaderType : u32
 {
-	Vertex,
-	Pixel,
-	Geometry,
-	Hull,
-	Domain,
-	Compute
+  Vertex,
+  Pixel,
+  Geometry,
+  Hull,
+  Domain,
+  Compute
 };
 
 VertexShaderPtr CreateVertexShaderFromByteCode(const void* bytecode, size_t len);
@@ -35,66 +35,66 @@ PixelShaderPtr CreatePixelShaderFromByteCode(const void* bytecode, size_t len);
 ComputeShaderPtr CreateComputeShaderFromByteCode(const void* bytecode, size_t len);
 
 bool CompileShader(
-	ShaderType type,
-	const std::string& code,
-	D3DBlob& blob,
-	const D3D_SHADER_MACRO* pDefines = nullptr,
-	const char* pEntry = nullptr, bool throwError = true);
+  ShaderType type,
+  const std::string& code,
+  D3DBlob& blob,
+  const D3D_SHADER_MACRO* pDefines = nullptr,
+  const char* pEntry = nullptr, bool throwError = true);
 
 // Utility functions
 VertexShaderPtr CompileAndCreateVertexShader(
-	const std::string& code,
-	const D3D_SHADER_MACRO* pDefines = nullptr,
-	const char* pEntry = nullptr);
+  const std::string& code,
+  const D3D_SHADER_MACRO* pDefines = nullptr,
+  const char* pEntry = nullptr);
 HullShaderPtr CompileAndCreateHullShader(
-	const std::string& code,
-	const D3D_SHADER_MACRO* pDefines = nullptr,
-	const char* pEntry = nullptr, bool throwError = true);
+  const std::string& code,
+  const D3D_SHADER_MACRO* pDefines = nullptr,
+  const char* pEntry = nullptr, bool throwError = true);
 DomainShaderPtr CompileAndCreateDomainShader(
-	const std::string& code,
-	const D3D_SHADER_MACRO* pDefines = nullptr,
-	const char* pEntry = nullptr, bool throwError = true);
+  const std::string& code,
+  const D3D_SHADER_MACRO* pDefines = nullptr,
+  const char* pEntry = nullptr, bool throwError = true);
 GeometryShaderPtr CompileAndCreateGeometryShader(
-	const std::string& code,
-	const D3D_SHADER_MACRO* pDefines = nullptr,
-	const char* pEntry = nullptr);
+  const std::string& code,
+  const D3D_SHADER_MACRO* pDefines = nullptr,
+  const char* pEntry = nullptr);
 PixelShaderPtr CompileAndCreatePixelShader(
-	const std::string& code,
-	const D3D_SHADER_MACRO* pDefines = nullptr,
-	const char* pEntry = nullptr);
+  const std::string& code,
+  const D3D_SHADER_MACRO* pDefines = nullptr,
+  const char* pEntry = nullptr);
 ComputeShaderPtr CompileAndCreateComputeShader(
-	const std::string& code,
-	const D3D_SHADER_MACRO* pDefines = nullptr,
-	const char* pEntry = nullptr);
+  const std::string& code,
+  const D3D_SHADER_MACRO* pDefines = nullptr,
+  const char* pEntry = nullptr);
 
 ID3D11PixelShader* CompileAndCreatePixelShaderPtr(const std::string& code, const D3D_SHADER_MACRO* pDefines, const char* pEntry);
 
 inline VertexShaderPtr CreateVertexShaderFromByteCode(D3DBlob& bytecode)
 {
-	return CreateVertexShaderFromByteCode(bytecode.Data(), bytecode.Size());
+  return CreateVertexShaderFromByteCode(bytecode.Data(), bytecode.Size());
 }
 
 inline HullShaderPtr CreateHullShaderFromByteCode(D3DBlob& bytecode)
 {
-	return CreateHullShaderFromByteCode(bytecode.Data(), bytecode.Size());
+  return CreateHullShaderFromByteCode(bytecode.Data(), bytecode.Size());
 }
 
 inline DomainShaderPtr CreateDomainShaderFromByteCode(D3DBlob& bytecode)
 {
-	return CreateDomainShaderFromByteCode(bytecode.Data(), bytecode.Size());
+  return CreateDomainShaderFromByteCode(bytecode.Data(), bytecode.Size());
 }
 
 inline GeometryShaderPtr CreateGeometryShaderFromByteCode(D3DBlob& bytecode)
 {
-	return CreateGeometryShaderFromByteCode(bytecode.Data(), bytecode.Size());
+  return CreateGeometryShaderFromByteCode(bytecode.Data(), bytecode.Size());
 }
 inline PixelShaderPtr CreatePixelShaderFromByteCode(D3DBlob& bytecode)
 {
-	return CreatePixelShaderFromByteCode(bytecode.Data(), bytecode.Size());
+  return CreatePixelShaderFromByteCode(bytecode.Data(), bytecode.Size());
 }
 inline ComputeShaderPtr CreateComputeShaderFromByteCode(D3DBlob& bytecode)
 {
-	return CreateComputeShaderFromByteCode(bytecode.Data(), bytecode.Size());
+  return CreateComputeShaderFromByteCode(bytecode.Data(), bytecode.Size());
 }
 }
 

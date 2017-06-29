@@ -11,26 +11,26 @@
 // File type
 enum ElfType
 {
-	ET_NONE = 0,
-	ET_REL = 1,
-	ET_EXEC = 2,
-	ET_DYN = 3,
-	ET_CORE = 4,
-	ET_LOPROC = 0xFF00,
-	ET_HIPROC = 0xFFFF,
+  ET_NONE = 0,
+  ET_REL = 1,
+  ET_EXEC = 2,
+  ET_DYN = 3,
+  ET_CORE = 4,
+  ET_LOPROC = 0xFF00,
+  ET_HIPROC = 0xFFFF,
 };
 
 // Machine/Architecture
 enum ElfMachine
 {
-	EM_NONE = 0,
-	EM_M32 = 1,
-	EM_SPARC = 2,
-	EM_386 = 3,
-	EM_68K = 4,
-	EM_88K = 5,
-	EM_860 = 7,
-	EM_MIPS = 8
+  EM_NONE = 0,
+  EM_M32 = 1,
+  EM_SPARC = 2,
+  EM_386 = 3,
+  EM_68K = 4,
+  EM_88K = 5,
+  EM_860 = 7,
+  EM_MIPS = 8
 };
 
 // File version
@@ -99,10 +99,10 @@ enum ElfMachine
 // Section flags
 enum ElfSectionFlags
 {
-	SHF_WRITE = 0x1,
-	SHF_ALLOC = 0x2,
-	SHF_EXECINSTR = 0x4,
-	SHF_MASKPROC = 0xF0000000,
+  SHF_WRITE = 0x1,
+  SHF_ALLOC = 0x2,
+  SHF_EXECINSTR = 0x4,
+  SHF_MASKPROC = 0xF0000000,
 };
 
 // Symbol binding
@@ -184,59 +184,59 @@ enum ElfSectionFlags
 // ELF file header
 struct Elf32_Ehdr
 {
-	u8 e_ident[EI_NIDENT];
-	u16 e_type;
-	u16 e_machine;
-	u32 e_version;
-	u32 e_entry;
-	u32 e_phoff;
-	u32 e_shoff;
-	u32 e_flags;
-	u16 e_ehsize;
-	u16 e_phentsize;
-	u16 e_phnum;
-	u16 e_shentsize;
-	u16 e_shnum;
-	u16 e_shstrndx;
+  u8 e_ident[EI_NIDENT];
+  u16 e_type;
+  u16 e_machine;
+  u32 e_version;
+  u32 e_entry;
+  u32 e_phoff;
+  u32 e_shoff;
+  u32 e_flags;
+  u16 e_ehsize;
+  u16 e_phentsize;
+  u16 e_phnum;
+  u16 e_shentsize;
+  u16 e_shnum;
+  u16 e_shstrndx;
 };
 
 // Section header
 struct Elf32_Shdr
 {
-	u32 sh_name;
-	u32 sh_type;
-	u32 sh_flags;
-	u32 sh_addr;
-	u32 sh_offset;
-	u32 sh_size;
-	u32 sh_link;
-	u32 sh_info;
-	u32 sh_addralign;
-	u32 sh_entsize;
+  u32 sh_name;
+  u32 sh_type;
+  u32 sh_flags;
+  u32 sh_addr;
+  u32 sh_offset;
+  u32 sh_size;
+  u32 sh_link;
+  u32 sh_info;
+  u32 sh_addralign;
+  u32 sh_entsize;
 };
 
 // Segment header
 struct Elf32_Phdr
 {
-	u32 p_type;
-	u32 p_offset;
-	u32 p_vaddr;
-	u32 p_paddr;
-	u32 p_filesz;
-	u32 p_memsz;
-	u32 p_flags;
-	u32 p_align;
+  u32 p_type;
+  u32 p_offset;
+  u32 p_vaddr;
+  u32 p_paddr;
+  u32 p_filesz;
+  u32 p_memsz;
+  u32 p_flags;
+  u32 p_align;
 };
 
 // Symbol table entry
 struct Elf32_Sym
 {
-	u32 st_name;
-	u32 st_value;
-	u32 st_size;
-	u8 st_info;
-	u8 st_other;
-	u16 st_shndx;
+  u32 st_name;
+  u32 st_value;
+  u32 st_size;
+  u8 st_info;
+  u8 st_other;
+  u16 st_shndx;
 };
 
 #define ELF32_ST_BIND(i) ((i) >> 4)
@@ -246,15 +246,15 @@ struct Elf32_Sym
 // Relocation entries
 struct Elf32_Rel
 {
-	u32 r_offset;
-	u32 r_info;
+  u32 r_offset;
+  u32 r_info;
 };
 
 struct Elf32_Rela
 {
-	u32 r_offset;
-	u32 r_info;
-	s32 r_addend;
+  u32 r_offset;
+  u32 r_info;
+  s32 r_addend;
 };
 
 #define ELF32_R_SYM(i) ((i) >> 8)
@@ -263,10 +263,10 @@ struct Elf32_Rela
 
 struct Elf32_Dyn
 {
-	s32 d_tag;
-	union
-	{
-		u32 d_val;
-		u32 d_ptr;
-	} d_un;
+  s32 d_tag;
+  union
+  {
+    u32 d_val;
+    u32 d_ptr;
+  } d_un;
 };

@@ -20,60 +20,60 @@
 namespace ControllerEmu
 {
 ModifySettingsButton::ModifySettingsButton(std::string button_name)
-	: Buttons(std::move(button_name))
+  : Buttons(std::move(button_name))
 {
-	numeric_settings.emplace_back(std::make_unique<NumericSetting>(_trans("Threshold"), 0.5));
+  numeric_settings.emplace_back(std::make_unique<NumericSetting>(_trans("Threshold"), 0.5));
 }
 
 void ModifySettingsButton::AddInput(std::string button_name, bool toggle)
 {
-	controls.emplace_back(new Input(std::move(button_name)));
-	threshold_exceeded.emplace_back(false);
-	associated_settings.emplace_back(false);
-	associated_settings_toggle.emplace_back(toggle);
+  controls.emplace_back(new Input(std::move(button_name)));
+  threshold_exceeded.emplace_back(false);
+  associated_settings.emplace_back(false);
+  associated_settings_toggle.emplace_back(toggle);
 }
 
 void ModifySettingsButton::GetState()
 {
-	for (size_t i = 0; i < controls.size(); ++i)
-	{
-		ControlState state = controls[i]->control_ref->State();
+  for (size_t i = 0; i < controls.size(); ++i)
+  {
+    ControlState state = controls[i]->control_ref->State();
 
-		if (!associated_settings_toggle[i])
-		{
-			// not toggled
-			associated_settings[i] = state > numeric_settings[0]->GetValue();
-		}
-		else
-		{
-			// toggle (loading savestates does not en-/disable toggle)
-			// after we passed the threshold, we en-/disable. but after that, we don't change it
-			// anymore
-			if (!threshold_exceeded[i] && state > numeric_settings[0]->GetValue())
-			{
-				associated_settings[i] = !associated_settings[i];
+    if (!associated_settings_toggle[i])
+    {
+      // not toggled
+      associated_settings[i] = state > numeric_settings[0]->GetValue();
+    }
+    else
+    {
+      // toggle (loading savestates does not en-/disable toggle)
+      // after we passed the threshold, we en-/disable. but after that, we don't change it
+      // anymore
+      if (!threshold_exceeded[i] && state > numeric_settings[0]->GetValue())
+      {
+        associated_settings[i] = !associated_settings[i];
 
-				if (associated_settings[i])
-					OSD::AddMessage(controls[i]->name + ": on");
-				else
-					OSD::AddMessage(controls[i]->name + ": off");
+        if (associated_settings[i])
+          OSD::AddMessage(controls[i]->name + ": on");
+        else
+          OSD::AddMessage(controls[i]->name + ": off");
 
-				threshold_exceeded[i] = true;
-			}
+        threshold_exceeded[i] = true;
+      }
 
-			if (state < numeric_settings[0]->GetValue())
-				threshold_exceeded[i] = false;
-		}
-	}
+      if (state < numeric_settings[0]->GetValue())
+        threshold_exceeded[i] = false;
+    }
+  }
 }
 
 const std::vector<bool>& ModifySettingsButton::isSettingToggled() const
 {
-	return associated_settings_toggle;
+  return associated_settings_toggle;
 }
 
 const std::vector<bool>& ModifySettingsButton::getSettingsModifier() const
 {
-	return associated_settings;
+  return associated_settings;
 }
 }  // namespace ControllerEmu

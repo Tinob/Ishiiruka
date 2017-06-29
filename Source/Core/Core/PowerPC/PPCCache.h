@@ -20,23 +20,23 @@ const u32 ICACHE_VMEM_BIT = 0x20000000;
 
 struct InstructionCache
 {
-	u32 data[ICACHE_SETS][ICACHE_WAYS][ICACHE_BLOCK_SIZE];
-	u32 tags[ICACHE_SETS][ICACHE_WAYS];
-	u32 plru[ICACHE_SETS];
-	u32 valid[ICACHE_SETS];
+  u32 data[ICACHE_SETS][ICACHE_WAYS][ICACHE_BLOCK_SIZE];
+  u32 tags[ICACHE_SETS][ICACHE_WAYS];
+  u32 plru[ICACHE_SETS];
+  u32 valid[ICACHE_SETS];
 
-	u32 way_from_valid[255];
-	u32 way_from_plru[128];
+  u32 way_from_valid[255];
+  u32 way_from_plru[128];
 
-	u8 lookup_table[1 << 20];
-	u8 lookup_table_ex[1 << 21];
-	u8 lookup_table_vmem[1 << 20];
+  u8 lookup_table[1 << 20];
+  u8 lookup_table_ex[1 << 21];
+  u8 lookup_table_vmem[1 << 20];
 
-	InstructionCache();
-	u32 ReadInstruction(u32 addr);
-	void Invalidate(u32 addr);
-	void Init();
-	void Reset();
-	void DoState(PointerWrap& p);
+  InstructionCache();
+  u32 ReadInstruction(u32 addr);
+  void Invalidate(u32 addr);
+  void Init();
+  void Reset();
+  void DoState(PointerWrap& p);
 };
 }  // namespace PowerPC

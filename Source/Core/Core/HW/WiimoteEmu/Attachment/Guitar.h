@@ -22,31 +22,31 @@ struct ExtensionReg;
 class Guitar : public Attachment
 {
 public:
-	explicit Guitar(ExtensionReg& reg);
-	void GetState(u8* const data) override;
-	bool IsButtonPressed() const override;
+  explicit Guitar(ExtensionReg& reg);
+  void GetState(u8* const data) override;
+  bool IsButtonPressed() const override;
 
-	ControllerEmu::ControlGroup* GetGroup(GuitarGroup group);
+  ControllerEmu::ControlGroup* GetGroup(GuitarGroup group);
 
-	enum
-	{
-		BUTTON_PLUS = 0x04,
-		BUTTON_MINUS = 0x10,
-		BAR_DOWN = 0x40,
+  enum
+  {
+    BUTTON_PLUS = 0x04,
+    BUTTON_MINUS = 0x10,
+    BAR_DOWN = 0x40,
 
-		BAR_UP = 0x0100,
-		FRET_YELLOW = 0x0800,
-		FRET_GREEN = 0x1000,
-		FRET_BLUE = 0x2000,
-		FRET_RED = 0x4000,
-		FRET_ORANGE = 0x8000,
-	};
+    BAR_UP = 0x0100,
+    FRET_YELLOW = 0x0800,
+    FRET_GREEN = 0x1000,
+    FRET_BLUE = 0x2000,
+    FRET_RED = 0x4000,
+    FRET_ORANGE = 0x8000,
+  };
 
 private:
-	ControllerEmu::Buttons* m_buttons;
-	ControllerEmu::Buttons* m_frets;
-	ControllerEmu::Buttons* m_strum;
-	ControllerEmu::Triggers* m_whammy;
-	ControllerEmu::AnalogStick* m_stick;
+  ControllerEmu::Buttons* m_buttons;
+  ControllerEmu::Buttons* m_frets;
+  ControllerEmu::Buttons* m_strum;
+  ControllerEmu::Triggers* m_whammy;
+  ControllerEmu::AnalogStick* m_stick;
 };
 }

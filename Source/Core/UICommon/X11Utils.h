@@ -30,25 +30,25 @@ void InhibitScreensaver(Display* dpy, Window win, bool suspend);
 class XRRConfiguration
 {
 public:
-	XRRConfiguration(Display* _dpy, Window _win);
-	~XRRConfiguration();
+  XRRConfiguration(Display* _dpy, Window _win);
+  ~XRRConfiguration();
 
-	void Update();
-	void ToggleDisplayMode(bool bFullscreen);
-	void AddResolutions(std::vector<std::string>& resos);
+  void Update();
+  void ToggleDisplayMode(bool bFullscreen);
+  void AddResolutions(std::vector<std::string>& resos);
 
 private:
-	Display* dpy;
-	Window win;
-	int screen;
-	XRRScreenResources* screenResources;
-	XRROutputInfo* outputInfo;
-	XRRCrtcInfo* crtcInfo;
-	RRMode fullMode;
-	int fb_width, fb_height, fb_width_mm, fb_height_mm;
-	int fs_fb_width, fs_fb_height, fs_fb_width_mm, fs_fb_height_mm;
-	bool bValid;
-	bool bIsFullscreen;
+  Display* dpy;
+  Window win;
+  int screen;
+  XRRScreenResources* screenResources;
+  XRROutputInfo* outputInfo;
+  XRRCrtcInfo* crtcInfo;
+  RRMode fullMode;
+  int fb_width, fb_height, fb_width_mm, fb_height_mm;
+  int fs_fb_width, fs_fb_height, fs_fb_width_mm, fs_fb_height_mm;
+  bool bValid;
+  bool bIsFullscreen;
 };
 #endif
 }

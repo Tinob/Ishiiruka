@@ -26,18 +26,18 @@ namespace x86
 // Note: pc+=2 in duddie's doc seems wrong
 void DSPEmitter::srs(const UDSPInstruction opc)
 {
-	u8 reg = ((opc >> 8) & 0x7) + 0x18;
-	// u16 addr = (g_dsp.r.cr << 8) | (opc & 0xFF);
+  u8 reg = ((opc >> 8) & 0x7) + 0x18;
+  // u16 addr = (g_dsp.r.cr << 8) | (opc & 0xFF);
 
-	X64Reg tmp1 = m_gpr.GetFreeXReg();
+  X64Reg tmp1 = m_gpr.GetFreeXReg();
 
-	dsp_op_read_reg(reg, tmp1, RegisterExtension::Zero);
-	dsp_op_read_reg(DSP_REG_CR, RAX, RegisterExtension::Zero);
-	SHL(16, R(EAX), Imm8(8));
-	OR(16, R(EAX), Imm16(opc & 0xFF));
-	dmem_write(tmp1);
+  dsp_op_read_reg(reg, tmp1, RegisterExtension::Zero);
+  dsp_op_read_reg(DSP_REG_CR, RAX, RegisterExtension::Zero);
+  SHL(16, R(EAX), Imm8(8));
+  OR(16, R(EAX), Imm16(opc & 0xFF));
+  dmem_write(tmp1);
 
-	m_gpr.PutXReg(tmp1);
+  m_gpr.PutXReg(tmp1);
 }
 
 // LRS $(0x18+D), @M
@@ -47,20 +47,20 @@ void DSPEmitter::srs(const UDSPInstruction opc)
 // from CR, and the lower 8 bits are from the 8-bit immediate.
 void DSPEmitter::lrs(const UDSPInstruction opc)
 {
-	u8 reg = ((opc >> 8) & 0x7) + 0x18;
+  u8 reg = ((opc >> 8) & 0x7) + 0x18;
 
-	X64Reg tmp1 = m_gpr.GetFreeXReg();
+  X64Reg tmp1 = m_gpr.GetFreeXReg();
 
-	// u16 addr = (g_dsp.r[DSP_REG_CR] << 8) | (opc & 0xFF);
-	dsp_op_read_reg(DSP_REG_CR, tmp1, RegisterExtension::Zero);
-	SHL(16, R(tmp1), Imm8(8));
-	OR(16, R(tmp1), Imm16(opc & 0xFF));
-	dmem_read(tmp1);
+  // u16 addr = (g_dsp.r[DSP_REG_CR] << 8) | (opc & 0xFF);
+  dsp_op_read_reg(DSP_REG_CR, tmp1, RegisterExtension::Zero);
+  SHL(16, R(tmp1), Imm8(8));
+  OR(16, R(tmp1), Imm16(opc & 0xFF));
+  dmem_read(tmp1);
 
-	m_gpr.PutXReg(tmp1);
+  m_gpr.PutXReg(tmp1);
 
-	dsp_op_write_reg(reg, RAX);
-	dsp_conditional_extend_accum(reg);
+  dsp_op_write_reg(reg, RAX);
+  dsp_conditional_extend_accum(reg);
 }
 
 // LR $D, @M
@@ -69,11 +69,11 @@ void DSPEmitter::lrs(const UDSPInstruction opc)
 // Move value from data memory pointed by address M to register $D.
 void DSPEmitter::lr(const UDSPInstruction opc)
 {
-	int reg = opc & 0x1F;
-	u16 address = dsp_imem_read(m_compile_pc + 1);
-	dmem_read_imm(address);
-	dsp_op_write_reg(reg, EAX);
-	dsp_conditional_extend_accum(reg);
+  int reg = opc & 0x1F;
+  u16 address = dsp_imem_read(m_compile_pc + 1);
+  dmem_read_imm(address);
+  dsp_op_write_reg(reg, EAX);
+  dsp_conditional_extend_accum(reg);
 }
 
 // SR @M, $S
@@ -82,15 +82,15 @@ void DSPEmitter::lr(const UDSPInstruction opc)
 // Store value from register $S to a memory pointed by address M.
 void DSPEmitter::sr(const UDSPInstruction opc)
 {
-	u8 reg = opc & 0x1F;
-	u16 address = dsp_imem_read(m_compile_pc + 1);
+  u8 reg = opc & 0x1F;
+  u16 address = dsp_imem_read(m_compile_pc + 1);
 
-	X64Reg tmp1 = m_gpr.GetFreeXReg();
+  X64Reg tmp1 = m_gpr.GetFreeXReg();
 
-	dsp_op_read_reg(reg, tmp1);
-	dmem_write_imm(address, tmp1);
+  dsp_op_read_reg(reg, tmp1);
+  dmem_write_imm(address, tmp1);
 
-	m_gpr.PutXReg(tmp1);
+  m_gpr.PutXReg(tmp1);
 }
 
 // SI @M, #I
@@ -100,15 +100,15 @@ void DSPEmitter::sr(const UDSPInstruction opc)
 // M (M is 8-bit value sign extended).
 void DSPEmitter::si(const UDSPInstruction opc)
 {
-	u16 address = (s8)opc;
-	u16 imm = dsp_imem_read(m_compile_pc + 1);
+  u16 address = (s8)opc;
+  u16 imm = dsp_imem_read(m_compile_pc + 1);
 
-	X64Reg tmp1 = m_gpr.GetFreeXReg();
+  X64Reg tmp1 = m_gpr.GetFreeXReg();
 
-	MOV(32, R(tmp1), Imm32((u32)imm));
-	dmem_write_imm(address, tmp1);
+  MOV(32, R(tmp1), Imm32((u32)imm));
+  dmem_write_imm(address, tmp1);
 
-	m_gpr.PutXReg(tmp1);
+  m_gpr.PutXReg(tmp1);
 }
 
 // LRR $D, @$S
@@ -116,18 +116,18 @@ void DSPEmitter::si(const UDSPInstruction opc)
 // Move value from data memory pointed by addressing register $S to register $D.
 void DSPEmitter::lrr(const UDSPInstruction opc)
 {
-	u8 sreg = (opc >> 5) & 0x3;
-	u8 dreg = opc & 0x1f;
+  u8 sreg = (opc >> 5) & 0x3;
+  u8 dreg = opc & 0x1f;
 
-	X64Reg tmp1 = m_gpr.GetFreeXReg();
+  X64Reg tmp1 = m_gpr.GetFreeXReg();
 
-	dsp_op_read_reg(sreg, tmp1);
-	dmem_read(tmp1);
+  dsp_op_read_reg(sreg, tmp1);
+  dmem_read(tmp1);
 
-	m_gpr.PutXReg(tmp1);
+  m_gpr.PutXReg(tmp1);
 
-	dsp_op_write_reg(dreg, EAX);
-	dsp_conditional_extend_accum(dreg);
+  dsp_op_write_reg(dreg, EAX);
+  dsp_conditional_extend_accum(dreg);
 }
 
 // LRRD $D, @$S
@@ -136,19 +136,19 @@ void DSPEmitter::lrr(const UDSPInstruction opc)
 // Decrement register $S.
 void DSPEmitter::lrrd(const UDSPInstruction opc)
 {
-	u8 sreg = (opc >> 5) & 0x3;
-	u8 dreg = opc & 0x1f;
+  u8 sreg = (opc >> 5) & 0x3;
+  u8 dreg = opc & 0x1f;
 
-	X64Reg tmp1 = m_gpr.GetFreeXReg();
+  X64Reg tmp1 = m_gpr.GetFreeXReg();
 
-	dsp_op_read_reg(sreg, tmp1);
-	dmem_read(tmp1);
+  dsp_op_read_reg(sreg, tmp1);
+  dmem_read(tmp1);
 
-	m_gpr.PutXReg(tmp1);
+  m_gpr.PutXReg(tmp1);
 
-	dsp_op_write_reg(dreg, EAX);
-	dsp_conditional_extend_accum(dreg);
-	decrement_addr_reg(sreg);
+  dsp_op_write_reg(dreg, EAX);
+  dsp_conditional_extend_accum(dreg);
+  decrement_addr_reg(sreg);
 }
 
 // LRRI $D, @$S
@@ -157,19 +157,19 @@ void DSPEmitter::lrrd(const UDSPInstruction opc)
 // Increment register $S.
 void DSPEmitter::lrri(const UDSPInstruction opc)
 {
-	u8 sreg = (opc >> 5) & 0x3;
-	u8 dreg = opc & 0x1f;
+  u8 sreg = (opc >> 5) & 0x3;
+  u8 dreg = opc & 0x1f;
 
-	X64Reg tmp1 = m_gpr.GetFreeXReg();
+  X64Reg tmp1 = m_gpr.GetFreeXReg();
 
-	dsp_op_read_reg(sreg, tmp1);
-	dmem_read(tmp1);
+  dsp_op_read_reg(sreg, tmp1);
+  dmem_read(tmp1);
 
-	m_gpr.PutXReg(tmp1);
+  m_gpr.PutXReg(tmp1);
 
-	dsp_op_write_reg(dreg, EAX);
-	dsp_conditional_extend_accum(dreg);
-	increment_addr_reg(sreg);
+  dsp_op_write_reg(dreg, EAX);
+  dsp_conditional_extend_accum(dreg);
+  increment_addr_reg(sreg);
 }
 
 // LRRN $D, @$S
@@ -178,19 +178,19 @@ void DSPEmitter::lrri(const UDSPInstruction opc)
 // Add indexing register $(0x4+S) to register $S.
 void DSPEmitter::lrrn(const UDSPInstruction opc)
 {
-	u8 sreg = (opc >> 5) & 0x3;
-	u8 dreg = opc & 0x1f;
+  u8 sreg = (opc >> 5) & 0x3;
+  u8 dreg = opc & 0x1f;
 
-	X64Reg tmp1 = m_gpr.GetFreeXReg();
+  X64Reg tmp1 = m_gpr.GetFreeXReg();
 
-	dsp_op_read_reg(sreg, tmp1);
-	dmem_read(tmp1);
+  dsp_op_read_reg(sreg, tmp1);
+  dmem_read(tmp1);
 
-	m_gpr.PutXReg(tmp1);
+  m_gpr.PutXReg(tmp1);
 
-	dsp_op_write_reg(dreg, EAX);
-	dsp_conditional_extend_accum(dreg);
-	increase_addr_reg(sreg, sreg);
+  dsp_op_write_reg(dreg, EAX);
+  dsp_conditional_extend_accum(dreg);
+  increase_addr_reg(sreg, sreg);
 }
 
 // SRR @$D, $S
@@ -199,16 +199,16 @@ void DSPEmitter::lrrn(const UDSPInstruction opc)
 // addressing register $D.
 void DSPEmitter::srr(const UDSPInstruction opc)
 {
-	u8 dreg = (opc >> 5) & 0x3;
-	u8 sreg = opc & 0x1f;
+  u8 dreg = (opc >> 5) & 0x3;
+  u8 sreg = opc & 0x1f;
 
-	X64Reg tmp1 = m_gpr.GetFreeXReg();
+  X64Reg tmp1 = m_gpr.GetFreeXReg();
 
-	dsp_op_read_reg(sreg, tmp1);
-	dsp_op_read_reg(dreg, RAX, RegisterExtension::Zero);
-	dmem_write(tmp1);
+  dsp_op_read_reg(sreg, tmp1);
+  dsp_op_read_reg(dreg, RAX, RegisterExtension::Zero);
+  dmem_write(tmp1);
 
-	m_gpr.PutXReg(tmp1);
+  m_gpr.PutXReg(tmp1);
 }
 
 // SRRD @$D, $S
@@ -217,18 +217,18 @@ void DSPEmitter::srr(const UDSPInstruction opc)
 // addressing register $D. Decrement register $D.
 void DSPEmitter::srrd(const UDSPInstruction opc)
 {
-	u8 dreg = (opc >> 5) & 0x3;
-	u8 sreg = opc & 0x1f;
+  u8 dreg = (opc >> 5) & 0x3;
+  u8 sreg = opc & 0x1f;
 
-	X64Reg tmp1 = m_gpr.GetFreeXReg();
+  X64Reg tmp1 = m_gpr.GetFreeXReg();
 
-	dsp_op_read_reg(sreg, tmp1);
-	dsp_op_read_reg(dreg, RAX, RegisterExtension::Zero);
-	dmem_write(tmp1);
+  dsp_op_read_reg(sreg, tmp1);
+  dsp_op_read_reg(dreg, RAX, RegisterExtension::Zero);
+  dmem_write(tmp1);
 
-	m_gpr.PutXReg(tmp1);
+  m_gpr.PutXReg(tmp1);
 
-	decrement_addr_reg(dreg);
+  decrement_addr_reg(dreg);
 }
 
 // SRRI @$D, $S
@@ -237,18 +237,18 @@ void DSPEmitter::srrd(const UDSPInstruction opc)
 // addressing register $D. Increment register $D.
 void DSPEmitter::srri(const UDSPInstruction opc)
 {
-	u8 dreg = (opc >> 5) & 0x3;
-	u8 sreg = opc & 0x1f;
+  u8 dreg = (opc >> 5) & 0x3;
+  u8 sreg = opc & 0x1f;
 
-	X64Reg tmp1 = m_gpr.GetFreeXReg();
+  X64Reg tmp1 = m_gpr.GetFreeXReg();
 
-	dsp_op_read_reg(sreg, tmp1);
-	dsp_op_read_reg(dreg, RAX, RegisterExtension::Zero);
-	dmem_write(tmp1);
+  dsp_op_read_reg(sreg, tmp1);
+  dsp_op_read_reg(dreg, RAX, RegisterExtension::Zero);
+  dmem_write(tmp1);
 
-	m_gpr.PutXReg(tmp1);
+  m_gpr.PutXReg(tmp1);
 
-	increment_addr_reg(dreg);
+  increment_addr_reg(dreg);
 }
 
 // SRRN @$D, $S
@@ -257,18 +257,18 @@ void DSPEmitter::srri(const UDSPInstruction opc)
 // addressing register $D. Add DSP_REG_IX0 register to register $D.
 void DSPEmitter::srrn(const UDSPInstruction opc)
 {
-	u8 dreg = (opc >> 5) & 0x3;
-	u8 sreg = opc & 0x1f;
+  u8 dreg = (opc >> 5) & 0x3;
+  u8 sreg = opc & 0x1f;
 
-	X64Reg tmp1 = m_gpr.GetFreeXReg();
+  X64Reg tmp1 = m_gpr.GetFreeXReg();
 
-	dsp_op_read_reg(sreg, tmp1);
-	dsp_op_read_reg(dreg, RAX, RegisterExtension::Zero);
-	dmem_write(tmp1);
+  dsp_op_read_reg(sreg, tmp1);
+  dsp_op_read_reg(dreg, RAX, RegisterExtension::Zero);
+  dmem_write(tmp1);
 
-	m_gpr.PutXReg(tmp1);
+  m_gpr.PutXReg(tmp1);
 
-	increase_addr_reg(dreg, dreg);
+  increase_addr_reg(dreg, dreg);
 }
 
 // ILRR $acD.m, @$arS
@@ -277,18 +277,18 @@ void DSPEmitter::srrn(const UDSPInstruction opc)
 // $arS to mid accumulator register $acD.m.
 void DSPEmitter::ilrr(const UDSPInstruction opc)
 {
-	u16 reg = opc & 0x3;
-	u16 dreg = (opc >> 8) & 1;
+  u16 reg = opc & 0x3;
+  u16 dreg = (opc >> 8) & 1;
 
-	X64Reg tmp1 = m_gpr.GetFreeXReg();
+  X64Reg tmp1 = m_gpr.GetFreeXReg();
 
-	dsp_op_read_reg(reg, tmp1, RegisterExtension::Zero);
-	imem_read(tmp1);
+  dsp_op_read_reg(reg, tmp1, RegisterExtension::Zero);
+  imem_read(tmp1);
 
-	m_gpr.PutXReg(tmp1);
+  m_gpr.PutXReg(tmp1);
 
-	set_acc_m(dreg, R(RAX));
-	dsp_conditional_extend_accum(dreg + DSP_REG_ACM0);
+  set_acc_m(dreg, R(RAX));
+  dsp_conditional_extend_accum(dreg + DSP_REG_ACM0);
 }
 
 // ILRRD $acD.m, @$arS
@@ -297,19 +297,19 @@ void DSPEmitter::ilrr(const UDSPInstruction opc)
 // $arS to mid accumulator register $acD.m. Decrement addressing register $arS.
 void DSPEmitter::ilrrd(const UDSPInstruction opc)
 {
-	u16 reg = opc & 0x3;
-	u16 dreg = (opc >> 8) & 1;
+  u16 reg = opc & 0x3;
+  u16 dreg = (opc >> 8) & 1;
 
-	X64Reg tmp1 = m_gpr.GetFreeXReg();
+  X64Reg tmp1 = m_gpr.GetFreeXReg();
 
-	dsp_op_read_reg(reg, tmp1, RegisterExtension::Zero);
-	imem_read(tmp1);
+  dsp_op_read_reg(reg, tmp1, RegisterExtension::Zero);
+  imem_read(tmp1);
 
-	m_gpr.PutXReg(tmp1);
+  m_gpr.PutXReg(tmp1);
 
-	set_acc_m(dreg, R(RAX));
-	dsp_conditional_extend_accum(dreg + DSP_REG_ACM0);
-	decrement_addr_reg(reg);
+  set_acc_m(dreg, R(RAX));
+  dsp_conditional_extend_accum(dreg + DSP_REG_ACM0);
+  decrement_addr_reg(reg);
 }
 
 // ILRRI $acD.m, @$S
@@ -318,19 +318,19 @@ void DSPEmitter::ilrrd(const UDSPInstruction opc)
 // $arS to mid accumulator register $acD.m. Increment addressing register $arS.
 void DSPEmitter::ilrri(const UDSPInstruction opc)
 {
-	u16 reg = opc & 0x3;
-	u16 dreg = (opc >> 8) & 1;
+  u16 reg = opc & 0x3;
+  u16 dreg = (opc >> 8) & 1;
 
-	X64Reg tmp1 = m_gpr.GetFreeXReg();
+  X64Reg tmp1 = m_gpr.GetFreeXReg();
 
-	dsp_op_read_reg(reg, tmp1, RegisterExtension::Zero);
-	imem_read(tmp1);
+  dsp_op_read_reg(reg, tmp1, RegisterExtension::Zero);
+  imem_read(tmp1);
 
-	m_gpr.PutXReg(tmp1);
+  m_gpr.PutXReg(tmp1);
 
-	set_acc_m(dreg, R(RAX));
-	dsp_conditional_extend_accum(dreg + DSP_REG_ACM0);
-	increment_addr_reg(reg);
+  set_acc_m(dreg, R(RAX));
+  dsp_conditional_extend_accum(dreg + DSP_REG_ACM0);
+  increment_addr_reg(reg);
 }
 
 // ILRRN $acD.m, @$arS
@@ -340,19 +340,19 @@ void DSPEmitter::ilrri(const UDSPInstruction opc)
 // register $ixS to addressing register $arS.
 void DSPEmitter::ilrrn(const UDSPInstruction opc)
 {
-	u16 reg = opc & 0x3;
-	u16 dreg = (opc >> 8) & 1;
+  u16 reg = opc & 0x3;
+  u16 dreg = (opc >> 8) & 1;
 
-	X64Reg tmp1 = m_gpr.GetFreeXReg();
+  X64Reg tmp1 = m_gpr.GetFreeXReg();
 
-	dsp_op_read_reg(reg, tmp1, RegisterExtension::Zero);
-	imem_read(tmp1);
+  dsp_op_read_reg(reg, tmp1, RegisterExtension::Zero);
+  imem_read(tmp1);
 
-	m_gpr.PutXReg(tmp1);
+  m_gpr.PutXReg(tmp1);
 
-	set_acc_m(dreg, R(RAX));
-	dsp_conditional_extend_accum(dreg + DSP_REG_ACM0);
-	increase_addr_reg(reg, reg);
+  set_acc_m(dreg, R(RAX));
+  dsp_conditional_extend_accum(dreg + DSP_REG_ACM0);
+  increase_addr_reg(reg, reg);
 }
 
 }  // namespace x86

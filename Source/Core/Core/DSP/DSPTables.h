@@ -24,68 +24,68 @@ namespace DSP
 
 enum partype_t
 {
-	P_NONE = 0x0000,
-	P_VAL = 0x0001,
-	P_IMM = 0x0002,
-	P_MEM = 0x0003,
-	P_STR = 0x0004,
-	P_ADDR_I = 0x0005,
-	P_ADDR_D = 0x0006,
-	P_REG = 0x8000,
-	P_REG04 = P_REG | 0x0400,  // IX
-	P_REG08 = P_REG | 0x0800,
-	P_REG18 = P_REG | 0x1800,
-	P_REGM18 = P_REG | 0x1810,  // used in multiply instructions
-	P_REG19 = P_REG | 0x1900,
-	P_REGM19 = P_REG | 0x1910,  // used in multiply instructions
-	P_REG1A = P_REG | 0x1a80,
-	P_REG1C = P_REG | 0x1c00,
-	// P_ACC       = P_REG | 0x1c10, // used for global accum (gcdsptool's value)
-	P_ACCL = P_REG | 0x1c00,  // used for low part of accum
-	P_ACCM = P_REG | 0x1e00,  // used for mid part of accum
-	// The following are not in gcdsptool
-	P_ACCM_D = P_REG | 0x1e80,
-	P_ACC = P_REG | 0x2000,  // used for full accum.
-	P_ACC_D = P_REG | 0x2080,
-	P_AX = P_REG | 0x2200,
-	P_REGS_MASK = 0x03f80,  // gcdsptool's value = 0x01f80
-	P_REF = P_REG | 0x4000,
-	P_PRG = P_REF | P_REG,
+  P_NONE = 0x0000,
+  P_VAL = 0x0001,
+  P_IMM = 0x0002,
+  P_MEM = 0x0003,
+  P_STR = 0x0004,
+  P_ADDR_I = 0x0005,
+  P_ADDR_D = 0x0006,
+  P_REG = 0x8000,
+  P_REG04 = P_REG | 0x0400,  // IX
+  P_REG08 = P_REG | 0x0800,
+  P_REG18 = P_REG | 0x1800,
+  P_REGM18 = P_REG | 0x1810,  // used in multiply instructions
+  P_REG19 = P_REG | 0x1900,
+  P_REGM19 = P_REG | 0x1910,  // used in multiply instructions
+  P_REG1A = P_REG | 0x1a80,
+  P_REG1C = P_REG | 0x1c00,
+  // P_ACC       = P_REG | 0x1c10, // used for global accum (gcdsptool's value)
+  P_ACCL = P_REG | 0x1c00,  // used for low part of accum
+  P_ACCM = P_REG | 0x1e00,  // used for mid part of accum
+  // The following are not in gcdsptool
+  P_ACCM_D = P_REG | 0x1e80,
+  P_ACC = P_REG | 0x2000,  // used for full accum.
+  P_ACC_D = P_REG | 0x2080,
+  P_AX = P_REG | 0x2200,
+  P_REGS_MASK = 0x03f80,  // gcdsptool's value = 0x01f80
+  P_REF = P_REG | 0x4000,
+  P_PRG = P_REF | P_REG,
 
-	// The following seem like junk:
-	// P_REG10     = P_REG | 0x1000,
-	// P_AX_D      = P_REG | 0x2280,
+  // The following seem like junk:
+  // P_REG10     = P_REG | 0x1000,
+  // P_AX_D      = P_REG | 0x2280,
 };
 
 struct param2_t
 {
-	partype_t type;
-	u8 size;
-	u8 loc;
-	s8 lshift;
-	u16 mask;
+  partype_t type;
+  u8 size;
+  u8 loc;
+  s8 lshift;
+  u16 mask;
 };
 
 struct DSPOPCTemplate
 {
-	using InterpreterFunction = void(*)(UDSPInstruction);
-	using JITFunction = void (DSP::JIT::x86::DSPEmitter::*)(UDSPInstruction);
+  using InterpreterFunction = void(*)(UDSPInstruction);
+  using JITFunction = void (DSP::JIT::x86::DSPEmitter::*)(UDSPInstruction);
 
-	const char* name;
-	u16 opcode;
-	u16 opcode_mask;
+  const char* name;
+  u16 opcode;
+  u16 opcode_mask;
 
-	InterpreterFunction intFunc;
-	JITFunction jitFunc;
+  InterpreterFunction intFunc;
+  JITFunction jitFunc;
 
-	u8 size;
-	u8 param_count;
-	param2_t params[8];
-	bool extended;
-	bool branch;
-	bool uncond_branch;
-	bool reads_pc;
-	bool updates_sr;
+  u8 size;
+  u8 param_count;
+  param2_t params[8];
+  bool extended;
+  bool branch;
+  bool uncond_branch;
+  bool reads_pc;
+  bool updates_sr;
 };
 
 typedef DSPOPCTemplate opc_t;
@@ -100,9 +100,9 @@ extern std::array<int, WRITEBACK_LOG_SIZE> writeBackLogIdx;
 // Predefined labels
 struct pdlabel_t
 {
-	u16 addr;
-	const char* name;
-	const char* description;
+  u16 addr;
+  const char* name;
+  const char* description;
 };
 
 extern const std::array<pdlabel_t, 36> regnames;

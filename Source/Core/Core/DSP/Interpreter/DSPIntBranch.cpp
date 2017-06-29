@@ -24,13 +24,13 @@ namespace Interpreter
 // represented by value that follows this "call" instruction.
 void call(const UDSPInstruction opc)
 {
-	// must be outside the if.
-	u16 dest = dsp_fetch_code();
-	if (CheckCondition(opc & 0xf))
-	{
-		dsp_reg_store_stack(StackRegister::Call, g_dsp.pc);
-		g_dsp.pc = dest;
-	}
+  // must be outside the if.
+  u16 dest = dsp_fetch_code();
+  if (CheckCondition(opc & 0xf))
+  {
+    dsp_reg_store_stack(StackRegister::Call, g_dsp.pc);
+    g_dsp.pc = dest;
+  }
 }
 
 // Generic callr implementation
@@ -41,13 +41,13 @@ void call(const UDSPInstruction opc)
 // register $R.
 void callr(const UDSPInstruction opc)
 {
-	if (CheckCondition(opc & 0xf))
-	{
-		u8 reg = (opc >> 5) & 0x7;
-		u16 addr = dsp_op_read_reg(reg);
-		dsp_reg_store_stack(StackRegister::Call, g_dsp.pc);
-		g_dsp.pc = addr;
-	}
+  if (CheckCondition(opc & 0xf))
+  {
+    u8 reg = (opc >> 5) & 0x7;
+    u16 addr = dsp_op_read_reg(reg);
+    dsp_reg_store_stack(StackRegister::Call, g_dsp.pc);
+    g_dsp.pc = addr;
+  }
 }
 
 // Generic if implementation
@@ -56,11 +56,11 @@ void callr(const UDSPInstruction opc)
 // Execute following opcode if the condition has been met.
 void ifcc(const UDSPInstruction opc)
 {
-	if (!CheckCondition(opc & 0xf))
-	{
-		// skip the next opcode - we have to lookup its size.
-		dsp_skip_inst();
-	}
+  if (!CheckCondition(opc & 0xf))
+  {
+    // skip the next opcode - we have to lookup its size.
+    dsp_skip_inst();
+  }
 }
 
 // Generic jmp implementation
@@ -71,11 +71,11 @@ void ifcc(const UDSPInstruction opc)
 // address represented by value that follows this "jmp" instruction.
 void jcc(const UDSPInstruction opc)
 {
-	u16 dest = dsp_fetch_code();
-	if (CheckCondition(opc & 0xf))
-	{
-		g_dsp.pc = dest;
-	}
+  u16 dest = dsp_fetch_code();
+  if (CheckCondition(opc & 0xf))
+  {
+    g_dsp.pc = dest;
+  }
 }
 
 // Generic jmpr implementation
@@ -84,11 +84,11 @@ void jcc(const UDSPInstruction opc)
 // Jump to address; set program counter to a value from register $R.
 void jmprcc(const UDSPInstruction opc)
 {
-	if (CheckCondition(opc & 0xf))
-	{
-		u8 reg = (opc >> 5) & 0x7;
-		g_dsp.pc = dsp_op_read_reg(reg);
-	}
+  if (CheckCondition(opc & 0xf))
+  {
+    u8 reg = (opc >> 5) & 0x7;
+    g_dsp.pc = dsp_op_read_reg(reg);
+  }
 }
 
 // Generic ret implementation
@@ -98,10 +98,10 @@ void jmprcc(const UDSPInstruction opc)
 // from call stack $st0 and sets $pc to this location.
 void ret(const UDSPInstruction opc)
 {
-	if (CheckCondition(opc & 0xf))
-	{
-		g_dsp.pc = dsp_reg_load_stack(StackRegister::Call);
-	}
+  if (CheckCondition(opc & 0xf))
+  {
+    g_dsp.pc = dsp_reg_load_stack(StackRegister::Call);
+  }
 }
 
 // RTI
@@ -111,8 +111,8 @@ void ret(const UDSPInstruction opc)
 // location.
 void rti(const UDSPInstruction opc)
 {
-	g_dsp.r.sr = dsp_reg_load_stack(StackRegister::Data);
-	g_dsp.pc = dsp_reg_load_stack(StackRegister::Call);
+  g_dsp.r.sr = dsp_reg_load_stack(StackRegister::Data);
+  g_dsp.pc = dsp_reg_load_stack(StackRegister::Call);
 }
 
 // HALT
@@ -120,8 +120,8 @@ void rti(const UDSPInstruction opc)
 // Stops execution of DSP code. Sets bit DSP_CR_HALT in register DREG_CR.
 void halt(const UDSPInstruction opc)
 {
-	g_dsp.cr |= 0x4;
-	g_dsp.pc--;
+  g_dsp.cr |= 0x4;
+  g_dsp.pc--;
 }
 
 // LOOP handling: Loop stack is used to control execution of repeated blocks of
@@ -132,30 +132,30 @@ void halt(const UDSPInstruction opc)
 // continues at next opcode.
 void HandleLoop()
 {
-	// Handle looping hardware.
-	const u16 rCallAddress = g_dsp.r.st[0];
-	const u16 rLoopAddress = g_dsp.r.st[2];
-	u16& rLoopCounter = g_dsp.r.st[3];
+  // Handle looping hardware.
+  const u16 rCallAddress = g_dsp.r.st[0];
+  const u16 rLoopAddress = g_dsp.r.st[2];
+  u16& rLoopCounter = g_dsp.r.st[3];
 
-	if (rLoopAddress > 0 && rLoopCounter > 0)
-	{
-		// FIXME: why -1? because we just read past it.
-		if (g_dsp.pc - 1 == rLoopAddress)
-		{
-			rLoopCounter--;
-			if (rLoopCounter > 0)
-			{
-				g_dsp.pc = rCallAddress;
-			}
-			else
-			{
-				// end of loop
-				dsp_reg_load_stack(StackRegister::Call);
-				dsp_reg_load_stack(StackRegister::LoopAddress);
-				dsp_reg_load_stack(StackRegister::LoopCounter);
-			}
-		}
-	}
+  if (rLoopAddress > 0 && rLoopCounter > 0)
+  {
+    // FIXME: why -1? because we just read past it.
+    if (g_dsp.pc - 1 == rLoopAddress)
+    {
+      rLoopCounter--;
+      if (rLoopCounter > 0)
+      {
+        g_dsp.pc = rCallAddress;
+      }
+      else
+      {
+        // end of loop
+        dsp_reg_load_stack(StackRegister::Call);
+        dsp_reg_load_stack(StackRegister::LoopAddress);
+        dsp_reg_load_stack(StackRegister::LoopCounter);
+      }
+    }
+  }
 }
 
 // LOOP $R
@@ -168,20 +168,20 @@ void HandleLoop()
 // The looping hardware takes care of the rest.
 void loop(const UDSPInstruction opc)
 {
-	u16 reg = opc & 0x1f;
-	u16 cnt = dsp_op_read_reg(reg);
-	u16 loop_pc = g_dsp.pc;
+  u16 reg = opc & 0x1f;
+  u16 cnt = dsp_op_read_reg(reg);
+  u16 loop_pc = g_dsp.pc;
 
-	if (cnt)
-	{
-		dsp_reg_store_stack(StackRegister::Call, g_dsp.pc);
-		dsp_reg_store_stack(StackRegister::LoopAddress, loop_pc);
-		dsp_reg_store_stack(StackRegister::LoopCounter, cnt);
-	}
-	else
-	{
-		dsp_skip_inst();
-	}
+  if (cnt)
+  {
+    dsp_reg_store_stack(StackRegister::Call, g_dsp.pc);
+    dsp_reg_store_stack(StackRegister::LoopAddress, loop_pc);
+    dsp_reg_store_stack(StackRegister::LoopCounter, cnt);
+  }
+  else
+  {
+    dsp_skip_inst();
+  }
 }
 
 // LOOPI #I
@@ -194,19 +194,19 @@ void loop(const UDSPInstruction opc)
 // The looping hardware takes care of the rest.
 void loopi(const UDSPInstruction opc)
 {
-	u16 cnt = opc & 0xff;
-	u16 loop_pc = g_dsp.pc;
+  u16 cnt = opc & 0xff;
+  u16 loop_pc = g_dsp.pc;
 
-	if (cnt)
-	{
-		dsp_reg_store_stack(StackRegister::Call, g_dsp.pc);
-		dsp_reg_store_stack(StackRegister::LoopAddress, loop_pc);
-		dsp_reg_store_stack(StackRegister::LoopCounter, cnt);
-	}
-	else
-	{
-		dsp_skip_inst();
-	}
+  if (cnt)
+  {
+    dsp_reg_store_stack(StackRegister::Call, g_dsp.pc);
+    dsp_reg_store_stack(StackRegister::LoopAddress, loop_pc);
+    dsp_reg_store_stack(StackRegister::LoopCounter, cnt);
+  }
+  else
+  {
+    dsp_skip_inst();
+  }
 }
 
 // BLOOP $R, addrA
@@ -220,21 +220,21 @@ void loopi(const UDSPInstruction opc)
 // Up to 4 nested loops are allowed.
 void bloop(const UDSPInstruction opc)
 {
-	u16 reg = opc & 0x1f;
-	u16 cnt = dsp_op_read_reg(reg);
-	u16 loop_pc = dsp_fetch_code();
+  u16 reg = opc & 0x1f;
+  u16 cnt = dsp_op_read_reg(reg);
+  u16 loop_pc = dsp_fetch_code();
 
-	if (cnt)
-	{
-		dsp_reg_store_stack(StackRegister::Call, g_dsp.pc);
-		dsp_reg_store_stack(StackRegister::LoopAddress, loop_pc);
-		dsp_reg_store_stack(StackRegister::LoopCounter, cnt);
-	}
-	else
-	{
-		g_dsp.pc = loop_pc;
-		dsp_skip_inst();
-	}
+  if (cnt)
+  {
+    dsp_reg_store_stack(StackRegister::Call, g_dsp.pc);
+    dsp_reg_store_stack(StackRegister::LoopAddress, loop_pc);
+    dsp_reg_store_stack(StackRegister::LoopCounter, cnt);
+  }
+  else
+  {
+    g_dsp.pc = loop_pc;
+    dsp_skip_inst();
+  }
 }
 
 // BLOOPI #I, addrA
@@ -248,20 +248,20 @@ void bloop(const UDSPInstruction opc)
 // nested loops are allowed.
 void bloopi(const UDSPInstruction opc)
 {
-	u16 cnt = opc & 0xff;
-	u16 loop_pc = dsp_fetch_code();
+  u16 cnt = opc & 0xff;
+  u16 loop_pc = dsp_fetch_code();
 
-	if (cnt)
-	{
-		dsp_reg_store_stack(StackRegister::Call, g_dsp.pc);
-		dsp_reg_store_stack(StackRegister::LoopAddress, loop_pc);
-		dsp_reg_store_stack(StackRegister::LoopCounter, cnt);
-	}
-	else
-	{
-		g_dsp.pc = loop_pc;
-		dsp_skip_inst();
-	}
+  if (cnt)
+  {
+    dsp_reg_store_stack(StackRegister::Call, g_dsp.pc);
+    dsp_reg_store_stack(StackRegister::LoopAddress, loop_pc);
+    dsp_reg_store_stack(StackRegister::LoopCounter, cnt);
+  }
+  else
+  {
+    g_dsp.pc = loop_pc;
+    dsp_skip_inst();
+  }
 }
 
 }  // namespace Interpreter

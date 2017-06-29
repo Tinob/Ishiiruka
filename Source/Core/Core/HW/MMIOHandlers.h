@@ -101,17 +101,17 @@ template <typename T>
 class ReadHandlingMethodVisitor
 {
 public:
-	virtual void VisitConstant(T value) = 0;
-	virtual void VisitDirect(const T* addr, u32 mask) = 0;
-	virtual void VisitComplex(const std::function<T(u32)>* lambda) = 0;
+  virtual void VisitConstant(T value) = 0;
+  virtual void VisitDirect(const T* addr, u32 mask) = 0;
+  virtual void VisitComplex(const std::function<T(u32)>* lambda) = 0;
 };
 template <typename T>
 class WriteHandlingMethodVisitor
 {
 public:
-	virtual void VisitNop() = 0;
-	virtual void VisitDirect(T* addr, u32 mask) = 0;
-	virtual void VisitComplex(const std::function<void(u32, T)>* lambda) = 0;
+  virtual void VisitNop() = 0;
+  virtual void VisitDirect(T* addr, u32 mask) = 0;
+  virtual void VisitComplex(const std::function<void(u32, T)>* lambda) = 0;
 };
 
 // These classes are INTERNAL. Do not use outside of the MMIO implementation
@@ -122,74 +122,74 @@ template <typename T>
 class ReadHandler : public NonCopyable
 {
 public:
-	ReadHandler();
+  ReadHandler();
 
-	// Takes ownership of "method".
-	ReadHandler(ReadHandlingMethod<T>* method);
+  // Takes ownership of "method".
+  ReadHandler(ReadHandlingMethod<T>* method);
 
-	~ReadHandler();
+  ~ReadHandler();
 
-	// Entry point for read handling method visitors.
-	void Visit(ReadHandlingMethodVisitor<T>& visitor);
+  // Entry point for read handling method visitors.
+  void Visit(ReadHandlingMethodVisitor<T>& visitor);
 
-	T Read(u32 addr)
-	{
-		// Check if the handler has already been initialized. For real
-		// handlers, this will always be the case, so this branch should be
-		// easily predictable.
-		if (!m_Method)
-			InitializeInvalid();
+  T Read(u32 addr)
+  {
+    // Check if the handler has already been initialized. For real
+    // handlers, this will always be the case, so this branch should be
+    // easily predictable.
+    if (!m_Method)
+      InitializeInvalid();
 
-		return m_ReadFunc(addr);
-	}
+    return m_ReadFunc(addr);
+  }
 
-	// Internal method called when changing the internal method object. Its
-	// main role is to make sure the read function is updated at the same time.
-	void ResetMethod(ReadHandlingMethod<T>* method);
+  // Internal method called when changing the internal method object. Its
+  // main role is to make sure the read function is updated at the same time.
+  void ResetMethod(ReadHandlingMethod<T>* method);
 
 private:
-	// Initialize this handler to an invalid handler. Done lazily to avoid
-	// useless initialization of thousands of unused handler objects.
-	void InitializeInvalid() { ResetMethod(InvalidRead<T>()); }
-	std::unique_ptr<ReadHandlingMethod<T>> m_Method;
-	std::function<T(u32)> m_ReadFunc;
+  // Initialize this handler to an invalid handler. Done lazily to avoid
+  // useless initialization of thousands of unused handler objects.
+  void InitializeInvalid() { ResetMethod(InvalidRead<T>()); }
+  std::unique_ptr<ReadHandlingMethod<T>> m_Method;
+  std::function<T(u32)> m_ReadFunc;
 };
 template <typename T>
 class WriteHandler : public NonCopyable
 {
 public:
-	WriteHandler();
+  WriteHandler();
 
-	// Takes ownership of "method".
-	WriteHandler(WriteHandlingMethod<T>* method);
+  // Takes ownership of "method".
+  WriteHandler(WriteHandlingMethod<T>* method);
 
-	~WriteHandler();
+  ~WriteHandler();
 
-	// Entry point for write handling method visitors.
-	void Visit(WriteHandlingMethodVisitor<T>& visitor);
+  // Entry point for write handling method visitors.
+  void Visit(WriteHandlingMethodVisitor<T>& visitor);
 
-	void Write(u32 addr, T val)
-	{
-		// Check if the handler has already been initialized. For real
-		// handlers, this will always be the case, so this branch should be
-		// easily predictable.
-		if (!m_Method)
-			InitializeInvalid();
+  void Write(u32 addr, T val)
+  {
+    // Check if the handler has already been initialized. For real
+    // handlers, this will always be the case, so this branch should be
+    // easily predictable.
+    if (!m_Method)
+      InitializeInvalid();
 
-		m_WriteFunc(addr, val);
-	}
+    m_WriteFunc(addr, val);
+  }
 
-	// Internal method called when changing the internal method object. Its
-	// main role is to make sure the write function is updated at the same
-	// time.
-	void ResetMethod(WriteHandlingMethod<T>* method);
+  // Internal method called when changing the internal method object. Its
+  // main role is to make sure the write function is updated at the same
+  // time.
+  void ResetMethod(WriteHandlingMethod<T>* method);
 
 private:
-	// Initialize this handler to an invalid handler. Done lazily to avoid
-	// useless initialization of thousands of unused handler objects.
-	void InitializeInvalid() { ResetMethod(InvalidWrite<T>()); }
-	std::unique_ptr<WriteHandlingMethod<T>> m_Method;
-	std::function<void(u32, T)> m_WriteFunc;
+  // Initialize this handler to an invalid handler. Done lazily to avoid
+  // useless initialization of thousands of unused handler objects.
+  void InitializeInvalid() { ResetMethod(InvalidWrite<T>()); }
+  std::unique_ptr<WriteHandlingMethod<T>> m_Method;
+  std::function<void(u32, T)> m_WriteFunc;
 };
 
 // Boilerplate boilerplate boilerplate.

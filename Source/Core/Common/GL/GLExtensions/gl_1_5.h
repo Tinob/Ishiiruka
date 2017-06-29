@@ -87,11 +87,11 @@ typedef void(APIENTRYP PFNDOLDELETEBUFFERSPROC)(GLsizei n, const GLuint* buffers
 typedef void(APIENTRYP PFNDOLGENBUFFERSPROC)(GLsizei n, GLuint* buffers);
 typedef GLboolean(APIENTRYP PFNDOLISBUFFERPROC)(GLuint buffer);
 typedef void(APIENTRYP PFNDOLBUFFERDATAPROC)(GLenum target, GLsizeiptr size, const void* data,
-	GLenum usage);
+  GLenum usage);
 typedef void(APIENTRYP PFNDOLBUFFERSUBDATAPROC)(GLenum target, GLintptr offset, GLsizeiptr size,
-	const void* data);
+  const void* data);
 typedef void(APIENTRYP PFNDOLGETBUFFERSUBDATAPROC)(GLenum target, GLintptr offset, GLsizeiptr size,
-	void* data);
+  void* data);
 typedef void*(APIENTRYP PFNDOLMAPBUFFERPROC)(GLenum target, GLenum access);
 typedef GLboolean(APIENTRYP PFNDOLUNMAPBUFFERPROC)(GLenum target);
 typedef void(APIENTRYP PFNDOLGETBUFFERPARAMETERIVPROC)(GLenum target, GLenum pname, GLint* params);

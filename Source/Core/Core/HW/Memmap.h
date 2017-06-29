@@ -39,20 +39,20 @@ extern u8* m_pFakeVMEM;
 
 enum
 {
-	// RAM_SIZE is the amount allocated by the emulator, whereas REALRAM_SIZE is
-	// what will be reported in lowmem, and thus used by emulated software.
-	// Note: Writing to lowmem is done by IPL. If using retail IPL, it will
-	// always be set to 24MB.
-	REALRAM_SIZE = 0x01800000,
-	RAM_SIZE = ROUND_UP_POW2(REALRAM_SIZE),
-	RAM_MASK = RAM_SIZE - 1,
-	FAKEVMEM_SIZE = 0x02000000,
-	FAKEVMEM_MASK = FAKEVMEM_SIZE - 1,
-	L1_CACHE_SIZE = 0x00040000,
-	L1_CACHE_MASK = L1_CACHE_SIZE - 1,
-	IO_SIZE = 0x00010000,
-	EXRAM_SIZE = 0x04000000,
-	EXRAM_MASK = EXRAM_SIZE - 1,
+  // RAM_SIZE is the amount allocated by the emulator, whereas REALRAM_SIZE is
+  // what will be reported in lowmem, and thus used by emulated software.
+  // Note: Writing to lowmem is done by IPL. If using retail IPL, it will
+  // always be set to 24MB.
+  REALRAM_SIZE = 0x01800000,
+  RAM_SIZE = ROUND_UP_POW2(REALRAM_SIZE),
+  RAM_MASK = RAM_SIZE - 1,
+  FAKEVMEM_SIZE = 0x02000000,
+  FAKEVMEM_MASK = FAKEVMEM_SIZE - 1,
+  L1_CACHE_SIZE = 0x00040000,
+  L1_CACHE_MASK = L1_CACHE_SIZE - 1,
+  IO_SIZE = 0x00010000,
+  EXRAM_SIZE = 0x04000000,
+  EXRAM_MASK = EXRAM_SIZE - 1,
 };
 
 // MMIO mapping object.
@@ -90,24 +90,24 @@ void Write_U64_Swap(u64 var, u32 address);
 template <typename T>
 void CopyFromEmuSwapped(T* data, u32 address, size_t size)
 {
-	const T* src = reinterpret_cast<T*>(GetPointer(address));
+  const T* src = reinterpret_cast<T*>(GetPointer(address));
 
-	if (src == nullptr)
-		return;
+  if (src == nullptr)
+    return;
 
-	for (size_t i = 0; i < size / sizeof(T); i++)
-		data[i] = Common::FromBigEndian(src[i]);
+  for (size_t i = 0; i < size / sizeof(T); i++)
+    data[i] = Common::FromBigEndian(src[i]);
 }
 
 template <typename T>
 void CopyToEmuSwapped(u32 address, const T* data, size_t size)
 {
-	T* dest = reinterpret_cast<T*>(GetPointer(address));
+  T* dest = reinterpret_cast<T*>(GetPointer(address));
 
-	if (dest == nullptr)
-		return;
+  if (dest == nullptr)
+    return;
 
-	for (size_t i = 0; i < size / sizeof(T); i++)
-		dest[i] = Common::FromBigEndian(data[i]);
+  for (size_t i = 0; i < size / sizeof(T); i++)
+    dest[i] = Common::FromBigEndian(data[i]);
 }
 }

@@ -14,11 +14,11 @@ namespace ControllerEmu
 class Tilt : public ControlGroup
 {
 public:
-	explicit Tilt(const std::string& name);
+  explicit Tilt(const std::string& name);
 
-	void GetState(ControlState* x, ControlState* y, bool step = true);
+  void GetState(ControlState* x, ControlState* y, bool step = true);
 
 private:
-	std::array<ControlState, 2> m_tilt{};
+  std::array<ControlState, 2> m_tilt{};
 };
 }  // namespace ControllerEmu

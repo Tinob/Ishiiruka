@@ -22,7 +22,7 @@ enum SIDevices : int;
 // SI number of channels
 enum
 {
-	MAX_SI_CHANNELS = 0x04
+  MAX_SI_CHANNELS = 0x04
 };
 
 void Init();

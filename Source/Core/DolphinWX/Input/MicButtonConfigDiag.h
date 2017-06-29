@@ -9,6 +9,6 @@
 class MicButtonConfigDialog final : public InputConfigDialog
 {
 public:
-	MicButtonConfigDialog(wxWindow* parent, InputConfig& config, const wxString& name,
-		int port_num = 0);
+  MicButtonConfigDialog(wxWindow* parent, InputConfig& config, const wxString& name,
+    int port_num = 0);
 };

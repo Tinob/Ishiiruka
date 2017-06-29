@@ -30,13 +30,13 @@ broadway:                       729
 
 enum
 {
-	TIMER_RATIO = 12
+  TIMER_RATIO = 12
 };
 
 enum class Mode
 {
-	GC,
-	Wii,
+  GC,
+  Wii,
 };
 
 u32 GetTicksPerSecond();

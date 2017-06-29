@@ -22,26 +22,26 @@
 class ControlReference
 {
 public:
-	static bool InputGateOn();
+  static bool InputGateOn();
 
-	virtual ~ControlReference();
-	virtual ControlState State(const ControlState state = 0) = 0;
-	virtual ciface::Core::Device::Control* Detect(const unsigned int ms,
-		ciface::Core::Device* const device) = 0;
-	virtual bool IsInput() const = 0;
+  virtual ~ControlReference();
+  virtual ControlState State(const ControlState state = 0) = 0;
+  virtual ciface::Core::Device::Control* Detect(const unsigned int ms,
+    ciface::Core::Device* const device) = 0;
+  virtual bool IsInput() const = 0;
 
-	int BoundCount() const;
-	ciface::ExpressionParser::ParseStatus GetParseStatus() const;
-	void UpdateReference(const ciface::Core::DeviceContainer& devices,
-		const ciface::Core::DeviceQualifier& default_device);
+  int BoundCount() const;
+  ciface::ExpressionParser::ParseStatus GetParseStatus() const;
+  void UpdateReference(const ciface::Core::DeviceContainer& devices,
+    const ciface::Core::DeviceQualifier& default_device);
 
-	ControlState range;
-	std::string expression;
+  ControlState range;
+  std::string expression;
 
 protected:
-	ControlReference();
-	std::unique_ptr<ciface::ExpressionParser::Expression> m_parsed_expression;
-	ciface::ExpressionParser::ParseStatus m_parse_status;
+  ControlReference();
+  std::unique_ptr<ciface::ExpressionParser::Expression> m_parsed_expression;
+  ciface::ExpressionParser::ParseStatus m_parse_status;
 };
 
 //
@@ -52,11 +52,11 @@ protected:
 class InputReference : public ControlReference
 {
 public:
-	InputReference();
-	bool IsInput() const override;
-	ControlState State(const ControlState state) override;
-	ciface::Core::Device::Control* Detect(const unsigned int ms,
-		ciface::Core::Device* const device) override;
+  InputReference();
+  bool IsInput() const override;
+  ControlState State(const ControlState state) override;
+  ciface::Core::Device::Control* Detect(const unsigned int ms,
+    ciface::Core::Device* const device) override;
 };
 
 //
@@ -67,9 +67,9 @@ public:
 class OutputReference : public ControlReference
 {
 public:
-	OutputReference();
-	bool IsInput() const override;
-	ControlState State(const ControlState state) override;
-	ciface::Core::Device::Control* Detect(const unsigned int ms,
-		ciface::Core::Device* const device) override;
+  OutputReference();
+  bool IsInput() const override;
+  ControlState State(const ControlState state) override;
+  ciface::Core::Device::Control* Detect(const unsigned int ms,
+    ciface::Core::Device* const device) override;
 };

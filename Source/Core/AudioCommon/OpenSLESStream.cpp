@@ -40,7 +40,7 @@ static void bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq, void* context)
   // Render to the fresh buffer
   g_mixer->Mix(reinterpret_cast<short*>(buffer[curBuffer]), BUFFER_SIZE_IN_SAMPLES);
   SLresult result =
-      (*bqPlayerBufferQueue)->Enqueue(bqPlayerBufferQueue, buffer[curBuffer], sizeof(buffer[0]));
+    (*bqPlayerBufferQueue)->Enqueue(bqPlayerBufferQueue, buffer[curBuffer], sizeof(buffer[0]));
   curBuffer ^= 1;  // Switch buffer
 
   // Comment from sample code:
@@ -64,27 +64,27 @@ bool OpenSLESStream::Start()
   result = (*outputMixObject)->Realize(outputMixObject, SL_BOOLEAN_FALSE);
   assert(SL_RESULT_SUCCESS == result);
 
-  SLDataLocator_AndroidSimpleBufferQueue loc_bufq = {SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE, 2};
-  SLDataFormat_PCM format_pcm = {SL_DATAFORMAT_PCM,
+  SLDataLocator_AndroidSimpleBufferQueue loc_bufq = { SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE, 2 };
+  SLDataFormat_PCM format_pcm = { SL_DATAFORMAT_PCM,
                                  2,
                                  m_mixer->GetSampleRate() * 1000,
                                  SL_PCMSAMPLEFORMAT_FIXED_16,
                                  SL_PCMSAMPLEFORMAT_FIXED_16,
                                  SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT,
-                                 SL_BYTEORDER_LITTLEENDIAN};
+                                 SL_BYTEORDER_LITTLEENDIAN };
 
-  SLDataSource audioSrc = {&loc_bufq, &format_pcm};
+  SLDataSource audioSrc = { &loc_bufq, &format_pcm };
 
   // configure audio sink
-  SLDataLocator_OutputMix loc_outmix = {SL_DATALOCATOR_OUTPUTMIX, outputMixObject};
-  SLDataSink audioSnk = {&loc_outmix, nullptr};
+  SLDataLocator_OutputMix loc_outmix = { SL_DATALOCATOR_OUTPUTMIX, outputMixObject };
+  SLDataSink audioSnk = { &loc_outmix, nullptr };
 
   // create audio player
-  const SLInterfaceID ids[2] = {SL_IID_BUFFERQUEUE, SL_IID_VOLUME};
-  const SLboolean req[2] = {SL_BOOLEAN_TRUE, SL_BOOLEAN_TRUE};
+  const SLInterfaceID ids[2] = { SL_IID_BUFFERQUEUE, SL_IID_VOLUME };
+  const SLboolean req[2] = { SL_BOOLEAN_TRUE, SL_BOOLEAN_TRUE };
   result =
-      (*engineEngine)
-          ->CreateAudioPlayer(engineEngine, &bqPlayerObject, &audioSrc, &audioSnk, 2, ids, req);
+    (*engineEngine)
+    ->CreateAudioPlayer(engineEngine, &bqPlayerObject, &audioSrc, &audioSnk, 2, ids, req);
   assert(SL_RESULT_SUCCESS == result);
 
   result = (*bqPlayerObject)->Realize(bqPlayerObject, SL_BOOLEAN_FALSE);
@@ -92,7 +92,7 @@ bool OpenSLESStream::Start()
   result = (*bqPlayerObject)->GetInterface(bqPlayerObject, SL_IID_PLAY, &bqPlayerPlay);
   assert(SL_RESULT_SUCCESS == result);
   result =
-      (*bqPlayerObject)->GetInterface(bqPlayerObject, SL_IID_BUFFERQUEUE, &bqPlayerBufferQueue);
+    (*bqPlayerObject)->GetInterface(bqPlayerObject, SL_IID_BUFFERQUEUE, &bqPlayerBufferQueue);
   assert(SL_RESULT_SUCCESS == result);
   result = (*bqPlayerBufferQueue)->RegisterCallback(bqPlayerBufferQueue, bqPlayerCallback, nullptr);
   assert(SL_RESULT_SUCCESS == result);

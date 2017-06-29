@@ -16,12 +16,12 @@ namespace Analyzer
 
 enum
 {
-	CODE_START_OF_INST = 1,
-	CODE_IDLE_SKIP = 2,
-	CODE_LOOP_START = 4,
-	CODE_LOOP_END = 8,
-	CODE_UPDATE_SR = 16,
-	CODE_CHECK_INT = 32,
+  CODE_START_OF_INST = 1,
+  CODE_IDLE_SKIP = 2,
+  CODE_LOOP_START = 4,
+  CODE_LOOP_END = 8,
+  CODE_UPDATE_SR = 16,
+  CODE_CHECK_INT = 32,
 };
 
 // This one should be called every time IRAM changes - which is basically

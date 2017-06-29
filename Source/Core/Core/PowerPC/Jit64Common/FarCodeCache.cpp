@@ -6,15 +6,15 @@
 
 void FarCodeCache::Init()
 {
-	m_enabled = true;
+  m_enabled = true;
 }
 
 void FarCodeCache::Shutdown()
 {
-	m_enabled = false;
+  m_enabled = false;
 }
 
 bool FarCodeCache::Enabled() const
 {
-	return m_enabled;
+  return m_enabled;
 }

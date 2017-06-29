@@ -11,9 +11,9 @@ class JitBase;
 class JitBlockCache : public JitBaseBlockCache
 {
 public:
-	explicit JitBlockCache(JitBase& jit);
+  explicit JitBlockCache(JitBase& jit);
 
 private:
-	void WriteLinkBlock(const JitBlock::LinkData& source, const JitBlock* dest) override;
-	void WriteDestroyBlock(const JitBlock& block) override;
+  void WriteLinkBlock(const JitBlock::LinkData& source, const JitBlock* dest) override;
+  void WriteDestroyBlock(const JitBlock& block) override;
 };

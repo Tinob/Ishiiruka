@@ -52,8 +52,8 @@ bool UpdateRunningGameMetadata(const DiscIO::Partition& partition, u64 title_id)
 bool UpdateRunningGameMetadata(const DiscIO::Partition& partition);
 
 void StartRead(u64 dvd_offset, u32 length, const DiscIO::Partition& partition,
-	DVDInterface::ReplyType reply_type, s64 ticks_until_completion);
+  DVDInterface::ReplyType reply_type, s64 ticks_until_completion);
 void StartReadToEmulatedRAM(u32 output_address, u64 dvd_offset, u32 length,
-	const DiscIO::Partition& partition, DVDInterface::ReplyType reply_type,
-	s64 ticks_until_completion);
+  const DiscIO::Partition& partition, DVDInterface::ReplyType reply_type,
+  s64 ticks_until_completion);
 }

@@ -8,15 +8,15 @@ class VertexLoader_Normal
 {
 public:
 
-	// Init
-	static void Init(void);
+  // Init
+  static void Init(void);
 
-	// GetSize
-	static u32 GetSize(u32 _type, u32 _format, u32 _elements, u32 _index3);
+  // GetSize
+  static u32 GetSize(u32 _type, u32 _format, u32 _elements, u32 _index3);
 
-	// GetFunction
-	static TPipelineFunction GetFunction(u32 _type, u32 _format, u32 _elements, u32 _index3);
+  // GetFunction
+  static TPipelineFunction GetFunction(u32 _type, u32 _format, u32 _elements, u32 _index3);
 
 private:
-	static bool Initialized;
+  static bool Initialized;
 };

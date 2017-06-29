@@ -11,8 +11,8 @@ namespace DSP
 {
 enum Mailbox
 {
-	MAILBOX_CPU,
-	MAILBOX_DSP
+  MAILBOX_CPU,
+  MAILBOX_DSP
 };
 
 u32 gdsp_mbox_peek(Mailbox mbx);

@@ -20,12 +20,12 @@ void ProcessGBACrypto(u32 address);
 
 struct GBAUCode : public UCodeInterface
 {
-	GBAUCode(DSPHLE* dsphle, u32 crc);
-	virtual ~GBAUCode();
+  GBAUCode(DSPHLE* dsphle, u32 crc);
+  virtual ~GBAUCode();
 
-	void Initialize() override;
-	void HandleMail(u32 mail) override;
-	void Update() override;
+  void Initialize() override;
+  void HandleMail(u32 mail) override;
+  void Update() override;
 };
 }  // namespace HLE
 }  // namespace DSP

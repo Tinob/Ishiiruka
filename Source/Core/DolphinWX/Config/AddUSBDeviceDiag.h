@@ -20,12 +20,12 @@ class wxTextCtrl;
 class USBPassthroughDeviceEntry final : public wxClientData
 {
 public:
-	explicit USBPassthroughDeviceEntry(const std::pair<u16, u16> pair)
-		: m_vid(pair.first), m_pid(pair.second)
-	{
-	}
-	const u16 m_vid;
-	const u16 m_pid;
+  explicit USBPassthroughDeviceEntry(const std::pair<u16, u16> pair)
+    : m_vid(pair.first), m_pid(pair.second)
+  {
+  }
+  const u16 m_vid;
+  const u16 m_pid;
 };
 
 // This dialog is used to add a new USB device to the USB passthrough whitelist,
@@ -33,24 +33,24 @@ public:
 class AddUSBDeviceDiag final : public wxDialog
 {
 public:
-	explicit AddUSBDeviceDiag(wxWindow* parent);
+  explicit AddUSBDeviceDiag(wxWindow* parent);
 
 private:
-	static constexpr int DEVICE_REFRESH_INTERVAL_MS = 100;
+  static constexpr int DEVICE_REFRESH_INTERVAL_MS = 100;
 
-	void InitControls();
-	void RefreshDeviceList();
-	wxSizer* CreateManualControlsSizer();
-	wxSizer* CreateDeviceListSizer();
+  void InitControls();
+  void RefreshDeviceList();
+  wxSizer* CreateManualControlsSizer();
+  wxSizer* CreateDeviceListSizer();
 
-	void OnRefreshDevicesTimer(wxTimerEvent&);
-	void OnDeviceSelection(wxCommandEvent&);
-	void OnSave(wxCommandEvent&);
+  void OnRefreshDevicesTimer(wxTimerEvent&);
+  void OnDeviceSelection(wxCommandEvent&);
+  void OnSave(wxCommandEvent&);
 
-	std::map<std::pair<u16, u16>, std::string> m_shown_devices;
-	wxTimer m_refresh_devices_timer{ this };
+  std::map<std::pair<u16, u16>, std::string> m_shown_devices;
+  wxTimer m_refresh_devices_timer{ this };
 
-	wxTextCtrl* m_new_device_vid_ctrl;
-	wxTextCtrl* m_new_device_pid_ctrl;
-	wxListBox* m_inserted_devices_listbox;
+  wxTextCtrl* m_new_device_vid_ctrl;
+  wxTextCtrl* m_new_device_pid_ctrl;
+  wxListBox* m_inserted_devices_listbox;
 };

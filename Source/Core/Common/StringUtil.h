@@ -29,10 +29,10 @@ bool CharArrayFromFormatV(char* out, int outsize, const char* format, va_list ar
 template <size_t Count>
 inline void CharArrayFromFormat(char(&out)[Count], const char* format, ...)
 {
-	va_list args;
-	va_start(args, format);
-	CharArrayFromFormatV(out, Count, format, args);
-	va_end(args);
+  va_list args;
+  va_start(args, format);
+  CharArrayFromFormatV(out, Count, format, args);
+  va_end(args);
 }
 
 // Good
@@ -45,15 +45,15 @@ std::string StripQuotes(const std::string& s);
 template <typename I>
 std::string ThousandSeparate(I value, int spaces = 0)
 {
-	std::ostringstream oss;
+  std::ostringstream oss;
 
-	// std::locale("") seems to be broken on many platforms
+  // std::locale("") seems to be broken on many platforms
 #if defined _WIN32 || (defined __linux__ && !defined __clang__)
-	oss.imbue(std::locale(""));
+  oss.imbue(std::locale(""));
 #endif
-	oss << std::setw(spaces) << value;
+  oss << std::setw(spaces) << value;
 
-	return oss.str();
+  return oss.str();
 }
 
 std::string StringFromInt(int value);
@@ -66,36 +66,36 @@ bool TryParse(const std::string& str, u64* output);
 template <typename N>
 static bool TryParse(const std::string& str, N* const output)
 {
-	std::istringstream iss(str);
-	// is this right? not doing this breaks reading floats on locales that use different decimal
-	// separators
-	iss.imbue(std::locale("C"));
+  std::istringstream iss(str);
+  // is this right? not doing this breaks reading floats on locales that use different decimal
+  // separators
+  iss.imbue(std::locale("C"));
 
-	N tmp = 0;
-	if (iss >> tmp)
-	{
-		*output = tmp;
-		return true;
-	}
-	else
-		return false;
+  N tmp = 0;
+  if (iss >> tmp)
+  {
+    *output = tmp;
+    return true;
+  }
+  else
+    return false;
 }
 
 template <typename N>
 bool TryParseVector(const std::string& str, std::vector<N>* output, const char delimiter = ',')
 {
-	output->clear();
-	std::istringstream buffer(str);
-	std::string variable;
+  output->clear();
+  std::istringstream buffer(str);
+  std::string variable;
 
-	while (std::getline(buffer, variable, delimiter))
-	{
-		N tmp = 0;
-		if (!TryParse(variable, &tmp))
-			return false;
-		output->push_back(tmp);
-	}
-	return true;
+  while (std::getline(buffer, variable, delimiter))
+  {
+    N tmp = 0;
+    if (!TryParse(variable, &tmp))
+      return false;
+    output->push_back(tmp);
+  }
+  return true;
 }
 
 // Generates an hexdump-like representation of a binary data blob.
@@ -111,10 +111,10 @@ std::string JoinStrings(const std::vector<std::string>& strings, const std::stri
 
 // "C:/Windows/winhelp.exe" to "C:/Windows/", "winhelp", ".exe"
 bool SplitPath(const std::string& full_path, std::string* _pPath, std::string* _pFilename,
-	std::string* _pExtension);
+  std::string* _pExtension);
 
 void BuildCompleteFilename(std::string& _CompleteFilename, const std::string& _Path,
-	const std::string& _Filename);
+  const std::string& _Filename);
 std::string ReplaceAll(std::string result, const std::string& src, const std::string& dest);
 
 bool StringBeginsWith(const std::string& str, const std::string& begin);
@@ -132,22 +132,22 @@ std::wstring UTF8ToUTF16(const std::string& str);
 #ifdef _UNICODE
 inline std::string TStrToUTF8(const std::wstring& str)
 {
-	return UTF16ToUTF8(str);
+  return UTF16ToUTF8(str);
 }
 
 inline std::wstring UTF8ToTStr(const std::string& str)
 {
-	return UTF8ToUTF16(str);
+  return UTF8ToUTF16(str);
 }
 #else
 inline std::string TStrToUTF8(const std::string& str)
 {
-	return str;
+  return str;
 }
 
 inline std::string UTF8ToTStr(const std::string& str)
 {
-	return str;
+  return str;
 }
 #endif
 

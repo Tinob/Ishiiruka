@@ -8,25 +8,25 @@ namespace Config
 {
 enum class LayerType
 {
-	Base,
-	GlobalGame,
-	LocalGame,
-	Movie,
-	Netplay,
-	CommandLine,
-	CurrentRun,
-	Meta,
+  Base,
+  GlobalGame,
+  LocalGame,
+  Movie,
+  Netplay,
+  CommandLine,
+  CurrentRun,
+  Meta,
 };
 
 enum class System
 {
-	Main,
-	GCPad,
-	WiiPad,
-	GCKeyboard,
-	GFX,
-	Logger,
-	Debugger,
-	UI,
+  Main,
+  GCPad,
+  WiiPad,
+  GCKeyboard,
+  GFX,
+  Logger,
+  Debugger,
+  UI,
 };
 }

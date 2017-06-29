@@ -12,16 +12,16 @@ namespace ControllerEmu
 class AnalogStick : public ControlGroup
 {
 public:
-	enum
-	{
-		SETTING_RADIUS,
-		SETTING_DEADZONE,
-	};
+  enum
+  {
+    SETTING_RADIUS,
+    SETTING_DEADZONE,
+  };
 
-	// The GameCube controller and Wiimote attachments have a different default radius
-	AnalogStick(const char* name, ControlState default_radius);
-	AnalogStick(const char* name, const char* ui_name, ControlState default_radius);
+  // The GameCube controller and Wiimote attachments have a different default radius
+  AnalogStick(const char* name, ControlState default_radius);
+  AnalogStick(const char* name, const char* ui_name, ControlState default_radius);
 
-	void GetState(ControlState* x, ControlState* y);
+  void GetState(ControlState* x, ControlState* y);
 };
 }  // namespace ControllerEmu

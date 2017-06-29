@@ -49,86 +49,86 @@ namespace DX11
 
 struct XFBSource : public XFBSourceBase
 {
-	XFBSource(D3DTexture2D *_tex, int slices) :
-		tex(_tex),
-		m_slices(slices),
-		depthtex(nullptr)
-	{}
-	~XFBSource()
-	{
-		tex->Release();
-		if (depthtex)
-		{
-			depthtex->Release();
-		}
-	}
+  XFBSource(D3DTexture2D *_tex, int slices) :
+    tex(_tex),
+    m_slices(slices),
+    depthtex(nullptr)
+  {}
+  ~XFBSource()
+  {
+    tex->Release();
+    if (depthtex)
+    {
+      depthtex->Release();
+    }
+  }
 
-	void DecodeToTexture(u32 xfbAddr, u32 fbWidth, u32 fbHeight);
-	void CopyEFB(float Gamma);
-	D3DTexture2D* const tex;
-	D3DTexture2D* depthtex;
-	const int m_slices;
+  void DecodeToTexture(u32 xfbAddr, u32 fbWidth, u32 fbHeight);
+  void CopyEFB(float Gamma);
+  D3DTexture2D* const tex;
+  D3DTexture2D* depthtex;
+  const int m_slices;
 };
 
 class FramebufferManager : public FramebufferManagerBase
 {
 public:
-	FramebufferManager(u32 target_width, u32 target_height);
-	~FramebufferManager();
+  FramebufferManager(u32 target_width, u32 target_height);
+  ~FramebufferManager();
 
-	static D3DTexture2D* &GetEFBColorTexture();
-	static D3DTexture2D* &GetEFBDepthTexture();
-	static D3DTexture2D* &GetResolvedEFBColorTexture();
-	static D3DTexture2D* &GetResolvedEFBDepthTexture();
+  static D3DTexture2D* &GetEFBColorTexture();
+  static D3DTexture2D* &GetEFBDepthTexture();
+  static D3DTexture2D* &GetResolvedEFBColorTexture();
+  static D3DTexture2D* &GetResolvedEFBDepthTexture();
 
-	static D3DTexture2D* &GetEFBColorTempTexture()
-	{
-		return m_efb.color_temp_tex;
-	}
-	static void SwapReinterpretTexture()
-	{
-		D3DTexture2D* swaptex = GetEFBColorTempTexture();
-		m_efb.color_temp_tex = GetEFBColorTexture();
-		m_efb.color_tex = swaptex;
-	}
+  static D3DTexture2D* &GetEFBColorTempTexture()
+  {
+    return m_efb.color_temp_tex;
+  }
+  static void SwapReinterpretTexture()
+  {
+    D3DTexture2D* swaptex = GetEFBColorTempTexture();
+    m_efb.color_temp_tex = GetEFBColorTexture();
+    m_efb.color_tex = swaptex;
+  }
 
-	static u32 GetEFBCachedColor(u32 x, u32 y);
-	static float GetEFBCachedDepth(u32 x, u32 y);
-	static void SetEFBCachedColor(u32 x, u32 y, u32 value);
-	static void SetEFBCachedDepth(u32 x, u32 y, float value);
-	static void PopulateEFBColorCache();
-	static void PopulateEFBDepthCache();
-	static void InvalidateEFBCache();
+  static u32 GetEFBCachedColor(u32 x, u32 y);
+  static float GetEFBCachedDepth(u32 x, u32 y);
+  static void SetEFBCachedColor(u32 x, u32 y, u32 value);
+  static void SetEFBCachedDepth(u32 x, u32 y, float value);
+  static void PopulateEFBColorCache();
+  static void PopulateEFBDepthCache();
+  static void InvalidateEFBCache();
 
 private:
-	std::unique_ptr<XFBSourceBase> CreateXFBSource(u32 target_width, u32 target_height, u32 layers) override;
-	void GetTargetSize(u32 *width, u32 *height) override;
-	static void InitializeEFBCache();
-	void CopyToRealXFB(u32 xfbAddr, u32 fbStride, u32 fbHeight, const EFBRectangle& sourceRc, float Gamma) override;
+  std::unique_ptr<XFBSourceBase> CreateXFBSource(u32 target_width, u32 target_height, u32 layers) override;
+  void GetTargetSize(u32 *width, u32 *height) override;
+  static void InitializeEFBCache();
+  void CopyToRealXFB(u32 xfbAddr, u32 fbStride, u32 fbHeight, const EFBRectangle& sourceRc, float Gamma) override;
 
-	static struct Efb
-	{
-		D3DTexture2D* color_tex{};
-		D3DTexture2D* color_temp_tex{};
-		D3DTexture2D* resolved_color_tex{};
+  static struct Efb
+  {
+    D3DTexture2D* color_tex{};
+    D3DTexture2D* color_temp_tex{};
+    D3DTexture2D* resolved_color_tex{};
 
-		D3DTexture2D* depth_tex{};
-		D3DTexture2D* resolved_depth_tex{};
+    D3DTexture2D* depth_tex{};
+    D3DTexture2D* resolved_depth_tex{};
 
-		// EFB Cache
-		D3DTexture2D* color_cache_tex{};
-		ID3D11Texture2D* color_cache_buf{};
-		D3D11_MAPPED_SUBRESOURCE color_cache_buf_map{};
+    // EFB Cache
+    D3DTexture2D* color_cache_tex{};
+    ID3D11Texture2D* color_cache_buf{};
+    D3D11_MAPPED_SUBRESOURCE color_cache_buf_map{};
 
-		D3DTexture2D* depth_cache_tex{};
-		ID3D11Texture2D* depth_cache_buf{};
-		D3D11_MAPPED_SUBRESOURCE depth_cache_buf_map{};
+    D3DTexture2D* depth_cache_tex{};
+    ID3D11Texture2D* depth_cache_buf{};
+    D3D11_MAPPED_SUBRESOURCE depth_cache_buf_map{};
 
-		int slices{};
-	} m_efb;
+    int slices{};
+  } m_efb;
 
-	static u32 m_target_width;
-	static u32 m_target_height;
+  static u32 m_target_width;
+  static u32 m_target_height;
 };
 
 }  // namespace DX11

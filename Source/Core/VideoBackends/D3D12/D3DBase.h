@@ -40,22 +40,22 @@ class D3DTexture2D;
 
 enum GRAPHICS_ROOT_PARAMETER : u32
 {
-	DESCRIPTOR_TABLE_PS_SRV,
-	DESCRIPTOR_TABLE_PS_SAMPLER,
-	DESCRIPTOR_TABLE_VS_CBV,
-	DESCRIPTOR_TABLE_PS_CBVONE,
-	DESCRIPTOR_TABLE_PS_CBVTWO,
-	DESCRIPTOR_TABLE_PS_UAV,
-	DESCRIPTOR_TABLE_GS_CBV,
-	DESCRIPTOR_TABLE_DS_SRV,
-	DESCRIPTOR_TABLE_DS_SAMPLER,
-	DESCRIPTOR_TABLE_HS_CBV0,
-	DESCRIPTOR_TABLE_HS_CBV1,
-	DESCRIPTOR_TABLE_HS_CBV2,
-	DESCRIPTOR_TABLE_DS_CBV0,
-	DESCRIPTOR_TABLE_DS_CBV1,
-	DESCRIPTOR_TABLE_DS_CBV2,
-	NUM_GRAPHICS_ROOT_PARAMETERS
+  DESCRIPTOR_TABLE_PS_SRV,
+  DESCRIPTOR_TABLE_PS_SAMPLER,
+  DESCRIPTOR_TABLE_VS_CBV,
+  DESCRIPTOR_TABLE_PS_CBVONE,
+  DESCRIPTOR_TABLE_PS_CBVTWO,
+  DESCRIPTOR_TABLE_PS_UAV,
+  DESCRIPTOR_TABLE_GS_CBV,
+  DESCRIPTOR_TABLE_DS_SRV,
+  DESCRIPTOR_TABLE_DS_SAMPLER,
+  DESCRIPTOR_TABLE_HS_CBV0,
+  DESCRIPTOR_TABLE_HS_CBV1,
+  DESCRIPTOR_TABLE_HS_CBV2,
+  DESCRIPTOR_TABLE_DS_CBV0,
+  DESCRIPTOR_TABLE_DS_CBV1,
+  DESCRIPTOR_TABLE_DS_CBV2,
+  NUM_GRAPHICS_ROOT_PARAMETERS
 };
 
 namespace D3D
@@ -125,24 +125,24 @@ bool GetFullscreenState();
 template<typename T>
 static void SetDebugObjectName12(T* resource, LPCSTR name)
 {
-	HRESULT hr = resource->SetPrivateData(WKPDID_D3DDebugObjectName, (UINT)(name ? strlen(name) : 0), name);
-	if (FAILED(hr))
-	{
-		throw std::exception("Failure setting name for D3D12 object");
-	}
+  HRESULT hr = resource->SetPrivateData(WKPDID_D3DDebugObjectName, (UINT)(name ? strlen(name) : 0), name);
+  if (FAILED(hr))
+  {
+    throw std::exception("Failure setting name for D3D12 object");
+  }
 }
 
 static std::string GetDebugObjectName12(ID3D12Resource* resource)
 {
-	std::string name;
-	if (resource)
-	{
-		UINT size = 0;
-		resource->GetPrivateData(WKPDID_D3DDebugObjectName, &size, nullptr); //get required size
-		name.resize(size);
-		resource->GetPrivateData(WKPDID_D3DDebugObjectName, &size, const_cast<char*>(name.data()));
-	}
-	return name;
+  std::string name;
+  if (resource)
+  {
+    UINT size = 0;
+    resource->GetPrivateData(WKPDID_D3DDebugObjectName, &size, nullptr); //get required size
+    name.resize(size);
+    resource->GetPrivateData(WKPDID_D3DDebugObjectName, &size, const_cast<char*>(name.data()));
+  }
+  return name;
 }
 
 }  // namespace D3D

@@ -10,7 +10,7 @@
 namespace ControllerEmu
 {
 Control::Control(std::unique_ptr<ControlReference> ref, const std::string& name_)
-	: control_ref(std::move(ref)), name(name_)
+  : control_ref(std::move(ref)), name(name_)
 {
 }
 

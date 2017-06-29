@@ -12,8 +12,8 @@ namespace StreamADPCM
 {
 enum
 {
-	ONE_BLOCK_SIZE = 32,
-	SAMPLES_PER_BLOCK = 28
+  ONE_BLOCK_SIZE = 32,
+  SAMPLES_PER_BLOCK = 28
 };
 
 void InitFilter();

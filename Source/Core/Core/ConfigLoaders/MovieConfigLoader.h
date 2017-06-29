@@ -18,17 +18,17 @@ namespace ConfigLoaders
 class MovieConfigLayerLoader final : public Config::ConfigLayerLoader
 {
 public:
-	explicit MovieConfigLayerLoader(Movie::DTMHeader* header)
-		: ConfigLayerLoader(Config::LayerType::Movie), m_header(header)
-	{
-	}
+  explicit MovieConfigLayerLoader(Movie::DTMHeader* header)
+    : ConfigLayerLoader(Config::LayerType::Movie), m_header(header)
+  {
+  }
 
-	void Load(Config::Layer* config_layer) override;
-	void Save(Config::Layer* config_layer) override;
+  void Load(Config::Layer* config_layer) override;
+  void Save(Config::Layer* config_layer) override;
 
-	void ChangeDTMHeader(Movie::DTMHeader* header) { m_header = header; }
+  void ChangeDTMHeader(Movie::DTMHeader* header) { m_header = header; }
 private:
-	Movie::DTMHeader* m_header;
+  Movie::DTMHeader* m_header;
 };
 
 std::unique_ptr<Config::ConfigLayerLoader> GenerateMovieConfigLoader(Movie::DTMHeader* header);

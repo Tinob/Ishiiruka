@@ -45,67 +45,67 @@
 
 struct ELF_Header
 {
-	unsigned char ID[4];
-	unsigned char clazz;
-	unsigned char data;
-	unsigned char version;
-	unsigned char pad[9];
-	unsigned short e_type;     // ELF file type
-	unsigned short e_machine;  // ELF target machine
-	unsigned int e_version;    // ELF file version number
-	unsigned int e_entry;
-	unsigned int e_phoff;
-	unsigned int e_shoff;
-	unsigned int e_flags;
-	unsigned short e_ehsize;
-	unsigned short e_phentsize;
-	unsigned short e_phnum;
-	unsigned short e_shentsize;
-	unsigned short e_shnum;
-	unsigned short e_shtrndx;
+  unsigned char ID[4];
+  unsigned char clazz;
+  unsigned char data;
+  unsigned char version;
+  unsigned char pad[9];
+  unsigned short e_type;     // ELF file type
+  unsigned short e_machine;  // ELF target machine
+  unsigned int e_version;    // ELF file version number
+  unsigned int e_entry;
+  unsigned int e_phoff;
+  unsigned int e_shoff;
+  unsigned int e_flags;
+  unsigned short e_ehsize;
+  unsigned short e_phentsize;
+  unsigned short e_phnum;
+  unsigned short e_shentsize;
+  unsigned short e_shnum;
+  unsigned short e_shtrndx;
 };
 
 struct Program_Header
 {
-	unsigned int type;
-	unsigned int offset;
-	unsigned int vaddr;
-	unsigned int paddr;
-	unsigned int filesz;
-	unsigned int memsz;
-	unsigned int flags;
-	unsigned int align;
+  unsigned int type;
+  unsigned int offset;
+  unsigned int vaddr;
+  unsigned int paddr;
+  unsigned int filesz;
+  unsigned int memsz;
+  unsigned int flags;
+  unsigned int align;
 };
 
 struct Section_Header
 {
-	unsigned int name;
-	unsigned int type;
-	unsigned int flags;
-	unsigned int addr;
-	unsigned int offset;
-	unsigned int size;
-	unsigned int link;
-	unsigned int info;
-	unsigned int addralign;
-	unsigned int entsize;
+  unsigned int name;
+  unsigned int type;
+  unsigned int flags;
+  unsigned int addr;
+  unsigned int offset;
+  unsigned int size;
+  unsigned int link;
+  unsigned int info;
+  unsigned int addralign;
+  unsigned int entsize;
 };
 
 struct Symbol_Header
 {
-	unsigned int name;
-	unsigned int value;
-	unsigned int size;
-	unsigned char info;
-	unsigned char other;
-	unsigned short shndx;
+  unsigned int name;
+  unsigned int value;
+  unsigned int size;
+  unsigned char info;
+  unsigned char other;
+  unsigned short shndx;
 };
 
 struct Rela_Header
 {
-	unsigned int offset;
-	unsigned int info;
-	signed int addend;
+  unsigned int offset;
+  unsigned int info;
+  signed int addend;
 };
 
 const char ELFID[4] = { 0x7F, 'E', 'L', 'F' };

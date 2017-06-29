@@ -76,10 +76,10 @@ bool GetFullscreenState();
 template <typename T>
 void SetDebugObjectName(T resource, const char* name)
 {
-	static_assert(std::is_convertible<T, ID3D11DeviceChild*>::value,
-		"resource must be convertible to ID3D11DeviceChild*");
+  static_assert(std::is_convertible<T, ID3D11DeviceChild*>::value,
+    "resource must be convertible to ID3D11DeviceChild*");
 #if defined(_DEBUG) || defined(DEBUGFAST)
-	if (name && resource) resource->SetPrivateData(WKPDID_D3DDebugObjectName, (UINT)strlen(name), name);
+  if (name && resource) resource->SetPrivateData(WKPDID_D3DDebugObjectName, (UINT)strlen(name), name);
 #endif
 }
 

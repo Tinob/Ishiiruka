@@ -9,15 +9,15 @@ class VertexLoader_Position
 {
 public:
 
-	// Init
-	static void Init(void);
+  // Init
+  static void Init(void);
 
-	// GetSize
-	static unsigned int GetSize(u32 _type, u32 _format, u32 _elements);
+  // GetSize
+  static unsigned int GetSize(u32 _type, u32 _format, u32 _elements);
 
-	// GetFunction
-	static TPipelineFunction GetFunction(u32 _type, u32 _format, u32 _elements);
+  // GetFunction
+  static TPipelineFunction GetFunction(u32 _type, u32 _format, u32 _elements);
 
 private:
-	static bool Initialized;
+  static bool Initialized;
 };

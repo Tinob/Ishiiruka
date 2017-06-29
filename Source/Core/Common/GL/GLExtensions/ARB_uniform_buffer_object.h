@@ -25,27 +25,27 @@
 
 typedef void(APIENTRYP PFNDOLGETINTEGERI_VPROC)(GLenum target, GLuint index, GLint* data);
 typedef void(APIENTRYP PFNDOLBINDBUFFERRANGEPROC)(GLenum target, GLuint index, GLuint buffer,
-	GLintptr offset, GLsizeiptr size);
+  GLintptr offset, GLsizeiptr size);
 typedef void(APIENTRYP PFNDOLBINDBUFFERBASEPROC)(GLenum target, GLuint index, GLuint buffer);
 typedef void(APIENTRYP PFNDOLGETUNIFORMINDICESPROC)(GLuint program, GLsizei uniformCount,
-	const GLchar* const* uniformNames,
-	GLuint* uniformIndices);
+  const GLchar* const* uniformNames,
+  GLuint* uniformIndices);
 typedef void(APIENTRYP PFNDOLGETACTIVEUNIFORMSIVPROC)(GLuint program, GLsizei uniformCount,
-	const GLuint* uniformIndices, GLenum pname,
-	GLint* params);
+  const GLuint* uniformIndices, GLenum pname,
+  GLint* params);
 typedef void(APIENTRYP PFNDOLGETACTIVEUNIFORMNAMEPROC)(GLuint program, GLuint uniformIndex,
-	GLsizei bufSize, GLsizei* length,
-	GLchar* uniformName);
+  GLsizei bufSize, GLsizei* length,
+  GLchar* uniformName);
 typedef GLuint(APIENTRYP PFNDOLGETUNIFORMBLOCKINDEXPROC)(GLuint program,
-	const GLchar* uniformBlockName);
+  const GLchar* uniformBlockName);
 typedef void(APIENTRYP PFNDOLGETACTIVEUNIFORMBLOCKIVPROC)(GLuint program, GLuint uniformBlockIndex,
-	GLenum pname, GLint* params);
+  GLenum pname, GLint* params);
 typedef void(APIENTRYP PFNDOLGETACTIVEUNIFORMBLOCKNAMEPROC)(GLuint program,
-	GLuint uniformBlockIndex,
-	GLsizei bufSize, GLsizei* length,
-	GLchar* uniformBlockName);
+  GLuint uniformBlockIndex,
+  GLsizei bufSize, GLsizei* length,
+  GLchar* uniformBlockName);
 typedef void(APIENTRYP PFNDOLUNIFORMBLOCKBINDINGPROC)(GLuint program, GLuint uniformBlockIndex,
-	GLuint uniformBlockBinding);
+  GLuint uniformBlockBinding);
 
 extern PFNDOLBINDBUFFERBASEPROC dolBindBufferBase;
 extern PFNDOLBINDBUFFERRANGEPROC dolBindBufferRange;

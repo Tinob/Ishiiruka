@@ -25,119 +25,119 @@ enum class PlayerGameStatus;
 class NetPlayServer : public TraversalClientClient
 {
 public:
-	void ThreadFunc();
-	void SendAsyncToClients(sf::Packet&& packet);
+  void ThreadFunc();
+  void SendAsyncToClients(sf::Packet&& packet);
 
-	NetPlayServer(const u16 port, bool traversal, const std::string& centralServer, u16 centralPort);
-	~NetPlayServer();
+  NetPlayServer(const u16 port, bool traversal, const std::string& centralServer, u16 centralPort);
+  ~NetPlayServer();
 
-	bool ChangeGame(const std::string& game);
-	bool ComputeMD5(const std::string& file_identifier);
-	bool AbortMD5();
-	void SendChatMessage(const std::string& msg);
+  bool ChangeGame(const std::string& game);
+  bool ComputeMD5(const std::string& file_identifier);
+  bool AbortMD5();
+  void SendChatMessage(const std::string& msg);
 
-	void SetNetSettings(const NetSettings& settings);
+  void SetNetSettings(const NetSettings& settings);
 
-	bool StartGame();
+  bool StartGame();
 
-	PadMappingArray GetPadMapping() const;
-	void SetPadMapping(const PadMappingArray& mappings);
+  PadMappingArray GetPadMapping() const;
+  void SetPadMapping(const PadMappingArray& mappings);
 
-	PadMappingArray GetWiimoteMapping() const;
-	void SetWiimoteMapping(const PadMappingArray& mappings);
+  PadMappingArray GetWiimoteMapping() const;
+  void SetWiimoteMapping(const PadMappingArray& mappings);
 
-	void AdjustPadBufferSize(unsigned int size);
+  void AdjustPadBufferSize(unsigned int size);
 
-	void KickPlayer(PlayerId player);
+  void KickPlayer(PlayerId player);
 
-	u16 GetPort() const;
+  u16 GetPort() const;
 
-	void SetNetPlayUI(NetPlayUI* dialog);
-	std::unordered_set<std::string> GetInterfaceSet() const;
-	std::string GetInterfaceHost(const std::string& inter) const;
+  void SetNetPlayUI(NetPlayUI* dialog);
+  std::unordered_set<std::string> GetInterfaceSet() const;
+  std::string GetInterfaceHost(const std::string& inter) const;
 
-	bool is_connected = false;
+  bool is_connected = false;
 
 #ifdef USE_UPNP
-	void TryPortmapping(u16 port);
+  void TryPortmapping(u16 port);
 #endif
 
 private:
-	class Client
-	{
-	public:
-		PlayerId pid;
-		std::string name;
-		std::string revision;
-		PlayerGameStatus game_status;
+  class Client
+  {
+  public:
+    PlayerId pid;
+    std::string name;
+    std::string revision;
+    PlayerGameStatus game_status;
 
-		ENetPeer* socket;
-		u32 ping;
-		u32 current_game;
+    ENetPeer* socket;
+    u32 ping;
+    u32 current_game;
 
-		bool operator==(const Client& other) const { return this == &other; }
-	};
+    bool operator==(const Client& other) const { return this == &other; }
+  };
 
-	void SendToClients(const sf::Packet& packet, const PlayerId skip_pid = 0);
-	void Send(ENetPeer* socket, const sf::Packet& packet);
-	unsigned int OnConnect(ENetPeer* socket);
-	unsigned int OnDisconnect(const Client& player);
-	unsigned int OnData(sf::Packet& packet, Client& player);
+  void SendToClients(const sf::Packet& packet, const PlayerId skip_pid = 0);
+  void Send(ENetPeer* socket, const sf::Packet& packet);
+  unsigned int OnConnect(ENetPeer* socket);
+  unsigned int OnDisconnect(const Client& player);
+  unsigned int OnData(sf::Packet& packet, Client& player);
 
-	void OnTraversalStateChanged() override;
-	void OnConnectReady(ENetAddress) override {}
-	void OnConnectFailed(u8) override {}
-	void UpdatePadMapping();
-	void UpdateWiimoteMapping();
-	std::vector<std::pair<std::string, std::string>> GetInterfaceListInternal() const;
+  void OnTraversalStateChanged() override;
+  void OnConnectReady(ENetAddress) override {}
+  void OnConnectFailed(u8) override {}
+  void UpdatePadMapping();
+  void UpdateWiimoteMapping();
+  std::vector<std::pair<std::string, std::string>> GetInterfaceListInternal() const;
 
-	NetSettings m_settings;
+  NetSettings m_settings;
 
-	bool m_is_running = false;
-	bool m_do_loop = false;
-	Common::Timer m_ping_timer;
-	u32 m_ping_key = 0;
-	bool m_update_pings = false;
-	u32 m_current_game = 0;
-	unsigned int m_target_buffer_size = 0;
-	PadMappingArray m_pad_map;
-	PadMappingArray m_wiimote_map;
+  bool m_is_running = false;
+  bool m_do_loop = false;
+  Common::Timer m_ping_timer;
+  u32 m_ping_key = 0;
+  bool m_update_pings = false;
+  u32 m_current_game = 0;
+  unsigned int m_target_buffer_size = 0;
+  PadMappingArray m_pad_map;
+  PadMappingArray m_wiimote_map;
 
-	std::map<PlayerId, Client> m_players;
+  std::map<PlayerId, Client> m_players;
 
-	std::unordered_map<u32, std::vector<std::pair<PlayerId, u64>>> m_timebase_by_frame;
-	bool m_desync_detected;
+  std::unordered_map<u32, std::vector<std::pair<PlayerId, u64>>> m_timebase_by_frame;
+  bool m_desync_detected;
 
-	struct
-	{
-		std::recursive_mutex game;
-		// lock order
-		std::recursive_mutex players;
-		std::recursive_mutex async_queue_write;
-	} m_crit;
+  struct
+  {
+    std::recursive_mutex game;
+    // lock order
+    std::recursive_mutex players;
+    std::recursive_mutex async_queue_write;
+  } m_crit;
 
-	std::string m_selected_game;
-	std::thread m_thread;
-	Common::FifoQueue<sf::Packet, false> m_async_queue;
+  std::string m_selected_game;
+  std::thread m_thread;
+  Common::FifoQueue<sf::Packet, false> m_async_queue;
 
-	ENetHost* m_server = nullptr;
-	TraversalClient* m_traversal_client = nullptr;
-	NetPlayUI* m_dialog = nullptr;
+  ENetHost* m_server = nullptr;
+  TraversalClient* m_traversal_client = nullptr;
+  NetPlayUI* m_dialog = nullptr;
 
 #ifdef USE_UPNP
-	static void mapPortThread(const u16 port);
-	static void unmapPortThread();
+  static void mapPortThread(const u16 port);
+  static void unmapPortThread();
 
-	static bool initUPnP();
-	static bool UPnPMapPort(const std::string& addr, const u16 port);
-	static bool UPnPUnmapPort(const u16 port);
+  static bool initUPnP();
+  static bool UPnPMapPort(const std::string& addr, const u16 port);
+  static bool UPnPUnmapPort(const u16 port);
 
-	static struct UPNPUrls m_upnp_urls;
-	static struct IGDdatas m_upnp_data;
-	static std::string m_upnp_ourip;
-	static u16 m_upnp_mapped;
-	static bool m_upnp_inited;
-	static bool m_upnp_error;
-	static std::thread m_upnp_thread;
+  static struct UPNPUrls m_upnp_urls;
+  static struct IGDdatas m_upnp_data;
+  static std::string m_upnp_ourip;
+  static u16 m_upnp_mapped;
+  static bool m_upnp_inited;
+  static bool m_upnp_error;
+  static std::thread m_upnp_thread;
 #endif
 };

@@ -11,12 +11,12 @@ class Jit64;
 class FPURegCache final : public RegCache
 {
 public:
-	explicit FPURegCache(Jit64& jit);
+  explicit FPURegCache(Jit64& jit);
 
-	void StoreRegister(size_t preg, const Gen::OpArg& newLoc) override;
-	void LoadRegister(size_t preg, Gen::X64Reg newLoc) override;
-	const Gen::X64Reg* GetAllocationOrder(size_t* count) override;
-	Gen::OpArg GetDefaultLocation(size_t reg) const override;
-	BitSet32 GetRegUtilization() override;
-	BitSet32 CountRegsIn(size_t preg, u32 lookahead) override;
+  void StoreRegister(size_t preg, const Gen::OpArg& newLoc) override;
+  void LoadRegister(size_t preg, Gen::X64Reg newLoc) override;
+  const Gen::X64Reg* GetAllocationOrder(size_t* count) override;
+  Gen::OpArg GetDefaultLocation(size_t reg) const override;
+  BitSet32 GetRegUtilization() override;
+  BitSet32 CountRegsIn(size_t preg, u32 lookahead) override;
 };

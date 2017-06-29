@@ -17,9 +17,9 @@
 
 struct hid_packet
 {
-	u8 param : 4;
-	u8 type : 4;
-	u8 data[0];
+  u8 param : 4;
+  u8 type : 4;
+  u8 data[0];
 };
 
 constexpr u8 HID_TYPE_HANDSHAKE = 0;

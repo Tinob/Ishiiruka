@@ -13,28 +13,28 @@ class wxPanel;
 class HotkeyInputConfigDialog final : public InputConfigDialog
 {
 public:
-	HotkeyInputConfigDialog(wxWindow* parent, InputConfig& config, const wxString& name,
-		bool using_debugger, int port_num = 0);
+  HotkeyInputConfigDialog(wxWindow* parent, InputConfig& config, const wxString& name,
+    bool using_debugger, int port_num = 0);
 
 private:
-	wxSizer* CreateMainSizer();
-	wxSizer* CreateDeviceRelatedSizer();
-	wxSizer* CreateDeviceProfileSizer();
-	wxSizer* CreateOptionsSizer();
+  wxSizer* CreateMainSizer();
+  wxSizer* CreateDeviceRelatedSizer();
+  wxSizer* CreateDeviceProfileSizer();
+  wxSizer* CreateOptionsSizer();
 
-	void InitializeNotebook();
-	wxPanel* CreateGeneralPanel();
-	wxPanel* CreateTASToolsPanel();
-	wxPanel* CreateDebuggingPanel();
-	wxPanel* CreateWiiPanel();
-	wxPanel* CreateGraphicsPanel();
-	wxPanel* CreateStereoscopic3DPanel();
-	wxPanel* CreateSaveAndLoadStatePanel();
-	wxPanel* CreateOtherStateManagementPanel();
+  void InitializeNotebook();
+  wxPanel* CreateGeneralPanel();
+  wxPanel* CreateTASToolsPanel();
+  wxPanel* CreateDebuggingPanel();
+  wxPanel* CreateWiiPanel();
+  wxPanel* CreateGraphicsPanel();
+  wxPanel* CreateStereoscopic3DPanel();
+  wxPanel* CreateSaveAndLoadStatePanel();
+  wxPanel* CreateOtherStateManagementPanel();
 
-	void OnBackgroundInputChanged(wxCommandEvent& event);
-	void OnIterativeInputChanged(wxCommandEvent& event);
+  void OnBackgroundInputChanged(wxCommandEvent& event);
+  void OnIterativeInputChanged(wxCommandEvent& event);
 
-	wxNotebook* m_notebook;
-	bool m_using_debugger;
+  wxNotebook* m_notebook;
+  bool m_using_debugger;
 };

@@ -16,22 +16,22 @@ namespace Gecko
 class GeckoCode
 {
 public:
-	GeckoCode() : enabled(false) {}
-	struct Code
-	{
-		u32 address = 0;
-		u32 data = 0;
-		std::string original_line;
-	};
+  GeckoCode() : enabled(false) {}
+  struct Code
+  {
+    u32 address = 0;
+    u32 data = 0;
+    std::string original_line;
+  };
 
-	std::vector<Code> codes;
-	std::string name, creator;
-	std::vector<std::string> notes;
+  std::vector<Code> codes;
+  std::string name, creator;
+  std::vector<std::string> notes;
 
-	bool enabled;
-	bool user_defined;
+  bool enabled;
+  bool user_defined;
 
-	bool Exist(u32 address, u32 data) const;
+  bool Exist(u32 address, u32 data) const;
 };
 
 bool operator==(const GeckoCode& lhs, const GeckoCode& rhs);

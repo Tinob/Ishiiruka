@@ -25,11 +25,11 @@ namespace ciface
 namespace Pipes
 {
 static const std::array<std::string, 12> s_button_tokens{
-    {"A", "B", "X", "Y", "Z", "START", "L", "R", "D_UP", "D_DOWN", "D_LEFT", "D_RIGHT"}};
+    {"A", "B", "X", "Y", "Z", "START", "L", "R", "D_UP", "D_DOWN", "D_LEFT", "D_RIGHT"} };
 
-static const std::array<std::string, 2> s_shoulder_tokens{{"L", "R"}};
+static const std::array<std::string, 2> s_shoulder_tokens{ {"L", "R"} };
 
-static const std::array<std::string, 2> s_axis_tokens{{"MAIN", "C"}};
+static const std::array<std::string, 2> s_axis_tokens{ {"MAIN", "C"} };
 
 static double StringToDouble(const std::string& text)
 {

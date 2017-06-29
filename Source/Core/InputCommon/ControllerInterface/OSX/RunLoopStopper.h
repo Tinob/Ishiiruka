@@ -18,8 +18,8 @@ class RunLoopStopper
 public:
   RunLoopStopper()
   {
-    CFRunLoopSourceContext ctx = {.version = 0,
-                                  .perform = [](void*) { CFRunLoopStop(CFRunLoopGetCurrent()); }};
+    CFRunLoopSourceContext ctx = { .version = 0,
+                                  .perform = [](void*) { CFRunLoopStop(CFRunLoopGetCurrent()); } };
     m_source = CFRunLoopSourceCreate(kCFAllocatorDefault, 0, &ctx);
   }
   ~RunLoopStopper() { CFRelease(m_source); }

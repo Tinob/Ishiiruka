@@ -22,179 +22,179 @@ namespace Device
 {
 u32 ES::OpenTitleContent(u32 CFD, u64 TitleID, u16 Index)
 {
-	const DiscIO::CNANDContentLoader& Loader = AccessContentDevice(TitleID);
+  const DiscIO::CNANDContentLoader& Loader = AccessContentDevice(TitleID);
 
-	if (!Loader.IsValid() || !Loader.GetTMD().IsValid() || !Loader.GetTicket().IsValid())
-	{
-		WARN_LOG(IOS_ES, "ES: loader not valid for %" PRIx64, TitleID);
-		return 0xffffffff;
-	}
+  if (!Loader.IsValid() || !Loader.GetTMD().IsValid() || !Loader.GetTicket().IsValid())
+  {
+    WARN_LOG(IOS_ES, "ES: loader not valid for %" PRIx64, TitleID);
+    return 0xffffffff;
+  }
 
-	const DiscIO::SNANDContent* pContent = Loader.GetContentByIndex(Index);
+  const DiscIO::SNANDContent* pContent = Loader.GetContentByIndex(Index);
 
-	if (pContent == nullptr)
-	{
-		return 0xffffffff;  // TODO: what is the correct error value here?
-	}
+  if (pContent == nullptr)
+  {
+    return 0xffffffff;  // TODO: what is the correct error value here?
+  }
 
-	OpenedContent content;
-	content.m_position = 0;
-	content.m_content = pContent->m_metadata;
-	content.m_title_id = TitleID;
+  OpenedContent content;
+  content.m_position = 0;
+  content.m_content = pContent->m_metadata;
+  content.m_title_id = TitleID;
 
-	pContent->m_Data->Open();
+  pContent->m_Data->Open();
 
-	m_ContentAccessMap[CFD] = content;
-	return CFD;
+  m_ContentAccessMap[CFD] = content;
+  return CFD;
 }
 
 IPCCommandResult ES::OpenTitleContent(u32 uid, const IOCtlVRequest& request)
 {
-	if (!request.HasNumberOfValidVectors(3, 0))
-		return GetDefaultReply(ES_EINVAL);
+  if (!request.HasNumberOfValidVectors(3, 0))
+    return GetDefaultReply(ES_EINVAL);
 
-	u64 TitleID = Memory::Read_U64(request.in_vectors[0].address);
-	u32 Index = Memory::Read_U32(request.in_vectors[2].address);
+  u64 TitleID = Memory::Read_U64(request.in_vectors[0].address);
+  u32 Index = Memory::Read_U32(request.in_vectors[2].address);
 
-	s32 CFD = OpenTitleContent(m_AccessIdentID++, TitleID, Index);
+  s32 CFD = OpenTitleContent(m_AccessIdentID++, TitleID, Index);
 
-	INFO_LOG(IOS_ES, "IOCTL_ES_OPENTITLECONTENT: TitleID: %016" PRIx64 "  Index %i -> got CFD %x",
-		TitleID, Index, CFD);
+  INFO_LOG(IOS_ES, "IOCTL_ES_OPENTITLECONTENT: TitleID: %016" PRIx64 "  Index %i -> got CFD %x",
+    TitleID, Index, CFD);
 
-	return GetDefaultReply(CFD);
+  return GetDefaultReply(CFD);
 }
 
 IPCCommandResult ES::OpenContent(u32 uid, const IOCtlVRequest& request)
 {
-	if (!request.HasNumberOfValidVectors(1, 0))
-		return GetDefaultReply(ES_EINVAL);
-	u32 Index = Memory::Read_U32(request.in_vectors[0].address);
+  if (!request.HasNumberOfValidVectors(1, 0))
+    return GetDefaultReply(ES_EINVAL);
+  u32 Index = Memory::Read_U32(request.in_vectors[0].address);
 
-	if (!GetTitleContext().active)
-		return GetDefaultReply(ES_EINVAL);
+  if (!GetTitleContext().active)
+    return GetDefaultReply(ES_EINVAL);
 
-	s32 CFD = OpenTitleContent(m_AccessIdentID++, GetTitleContext().tmd.GetTitleId(), Index);
-	INFO_LOG(IOS_ES, "IOCTL_ES_OPENCONTENT: Index %i -> got CFD %x", Index, CFD);
+  s32 CFD = OpenTitleContent(m_AccessIdentID++, GetTitleContext().tmd.GetTitleId(), Index);
+  INFO_LOG(IOS_ES, "IOCTL_ES_OPENCONTENT: Index %i -> got CFD %x", Index, CFD);
 
-	return GetDefaultReply(CFD);
+  return GetDefaultReply(CFD);
 }
 
 IPCCommandResult ES::ReadContent(u32 uid, const IOCtlVRequest& request)
 {
-	if (!request.HasNumberOfValidVectors(1, 1))
-		return GetDefaultReply(ES_EINVAL);
+  if (!request.HasNumberOfValidVectors(1, 1))
+    return GetDefaultReply(ES_EINVAL);
 
-	u32 CFD = Memory::Read_U32(request.in_vectors[0].address);
-	u32 Size = request.io_vectors[0].size;
-	u32 Addr = request.io_vectors[0].address;
+  u32 CFD = Memory::Read_U32(request.in_vectors[0].address);
+  u32 Size = request.io_vectors[0].size;
+  u32 Addr = request.io_vectors[0].address;
 
-	auto itr = m_ContentAccessMap.find(CFD);
-	if (itr == m_ContentAccessMap.end())
-	{
-		return GetDefaultReply(-1);
-	}
-	OpenedContent& rContent = itr->second;
+  auto itr = m_ContentAccessMap.find(CFD);
+  if (itr == m_ContentAccessMap.end())
+  {
+    return GetDefaultReply(-1);
+  }
+  OpenedContent& rContent = itr->second;
 
-	u8* pDest = Memory::GetPointer(Addr);
+  u8* pDest = Memory::GetPointer(Addr);
 
-	if (rContent.m_position + Size > rContent.m_content.size)
-	{
-		Size = static_cast<u32>(rContent.m_content.size) - rContent.m_position;
-	}
+  if (rContent.m_position + Size > rContent.m_content.size)
+  {
+    Size = static_cast<u32>(rContent.m_content.size) - rContent.m_position;
+  }
 
-	if (Size > 0)
-	{
-		if (pDest)
-		{
-			const DiscIO::CNANDContentLoader& ContentLoader = AccessContentDevice(rContent.m_title_id);
-			// ContentLoader should never be invalid; rContent has been created by it.
-			if (ContentLoader.IsValid() && ContentLoader.GetTicket().IsValid())
-			{
-				const DiscIO::SNANDContent* pContent =
-					ContentLoader.GetContentByIndex(rContent.m_content.index);
-				if (!pContent->m_Data->GetRange(rContent.m_position, Size, pDest))
-					ERROR_LOG(IOS_ES, "ES: failed to read %u bytes from %u!", Size, rContent.m_position);
-			}
+  if (Size > 0)
+  {
+    if (pDest)
+    {
+      const DiscIO::CNANDContentLoader& ContentLoader = AccessContentDevice(rContent.m_title_id);
+      // ContentLoader should never be invalid; rContent has been created by it.
+      if (ContentLoader.IsValid() && ContentLoader.GetTicket().IsValid())
+      {
+        const DiscIO::SNANDContent* pContent =
+          ContentLoader.GetContentByIndex(rContent.m_content.index);
+        if (!pContent->m_Data->GetRange(rContent.m_position, Size, pDest))
+          ERROR_LOG(IOS_ES, "ES: failed to read %u bytes from %u!", Size, rContent.m_position);
+      }
 
-			rContent.m_position += Size;
-		}
-		else
-		{
-			PanicAlert("IOCTL_ES_READCONTENT - bad destination");
-		}
-	}
+      rContent.m_position += Size;
+    }
+    else
+    {
+      PanicAlert("IOCTL_ES_READCONTENT - bad destination");
+    }
+  }
 
-	DEBUG_LOG(IOS_ES,
-		"IOCTL_ES_READCONTENT: CFD %x, Address 0x%x, Size %i -> stream pos %i (Index %i)", CFD,
-		Addr, Size, rContent.m_position, rContent.m_content.index);
+  DEBUG_LOG(IOS_ES,
+    "IOCTL_ES_READCONTENT: CFD %x, Address 0x%x, Size %i -> stream pos %i (Index %i)", CFD,
+    Addr, Size, rContent.m_position, rContent.m_content.index);
 
-	return GetDefaultReply(Size);
+  return GetDefaultReply(Size);
 }
 
 IPCCommandResult ES::CloseContent(u32 uid, const IOCtlVRequest& request)
 {
-	if (!request.HasNumberOfValidVectors(1, 0))
-		return GetDefaultReply(ES_EINVAL);
+  if (!request.HasNumberOfValidVectors(1, 0))
+    return GetDefaultReply(ES_EINVAL);
 
-	u32 CFD = Memory::Read_U32(request.in_vectors[0].address);
+  u32 CFD = Memory::Read_U32(request.in_vectors[0].address);
 
-	INFO_LOG(IOS_ES, "IOCTL_ES_CLOSECONTENT: CFD %x", CFD);
+  INFO_LOG(IOS_ES, "IOCTL_ES_CLOSECONTENT: CFD %x", CFD);
 
-	auto itr = m_ContentAccessMap.find(CFD);
-	if (itr == m_ContentAccessMap.end())
-	{
-		return GetDefaultReply(-1);
-	}
+  auto itr = m_ContentAccessMap.find(CFD);
+  if (itr == m_ContentAccessMap.end())
+  {
+    return GetDefaultReply(-1);
+  }
 
-	const DiscIO::CNANDContentLoader& ContentLoader = AccessContentDevice(itr->second.m_title_id);
-	// ContentLoader should never be invalid; we shouldn't be here if ES_OPENCONTENT failed before.
-	if (ContentLoader.IsValid())
-	{
-		const DiscIO::SNANDContent* pContent =
-			ContentLoader.GetContentByIndex(itr->second.m_content.index);
-		pContent->m_Data->Close();
-	}
+  const DiscIO::CNANDContentLoader& ContentLoader = AccessContentDevice(itr->second.m_title_id);
+  // ContentLoader should never be invalid; we shouldn't be here if ES_OPENCONTENT failed before.
+  if (ContentLoader.IsValid())
+  {
+    const DiscIO::SNANDContent* pContent =
+      ContentLoader.GetContentByIndex(itr->second.m_content.index);
+    pContent->m_Data->Close();
+  }
 
-	m_ContentAccessMap.erase(itr);
+  m_ContentAccessMap.erase(itr);
 
-	return GetDefaultReply(IPC_SUCCESS);
+  return GetDefaultReply(IPC_SUCCESS);
 }
 
 IPCCommandResult ES::SeekContent(u32 uid, const IOCtlVRequest& request)
 {
-	if (!request.HasNumberOfValidVectors(3, 0))
-		return GetDefaultReply(ES_EINVAL);
+  if (!request.HasNumberOfValidVectors(3, 0))
+    return GetDefaultReply(ES_EINVAL);
 
-	u32 CFD = Memory::Read_U32(request.in_vectors[0].address);
-	u32 Addr = Memory::Read_U32(request.in_vectors[1].address);
-	u32 Mode = Memory::Read_U32(request.in_vectors[2].address);
+  u32 CFD = Memory::Read_U32(request.in_vectors[0].address);
+  u32 Addr = Memory::Read_U32(request.in_vectors[1].address);
+  u32 Mode = Memory::Read_U32(request.in_vectors[2].address);
 
-	auto itr = m_ContentAccessMap.find(CFD);
-	if (itr == m_ContentAccessMap.end())
-	{
-		return GetDefaultReply(-1);
-	}
-	OpenedContent& rContent = itr->second;
+  auto itr = m_ContentAccessMap.find(CFD);
+  if (itr == m_ContentAccessMap.end())
+  {
+    return GetDefaultReply(-1);
+  }
+  OpenedContent& rContent = itr->second;
 
-	switch (Mode)
-	{
-	case 0:  // SET
-		rContent.m_position = Addr;
-		break;
+  switch (Mode)
+  {
+  case 0:  // SET
+    rContent.m_position = Addr;
+    break;
 
-	case 1:  // CUR
-		rContent.m_position += Addr;
-		break;
+  case 1:  // CUR
+    rContent.m_position += Addr;
+    break;
 
-	case 2:  // END
-		rContent.m_position = static_cast<u32>(rContent.m_content.size) + Addr;
-		break;
-	}
+  case 2:  // END
+    rContent.m_position = static_cast<u32>(rContent.m_content.size) + Addr;
+    break;
+  }
 
-	DEBUG_LOG(IOS_ES, "IOCTL_ES_SEEKCONTENT: CFD %x, Address 0x%x, Mode %i -> Pos %i", CFD, Addr,
-		Mode, rContent.m_position);
+  DEBUG_LOG(IOS_ES, "IOCTL_ES_SEEKCONTENT: CFD %x, Address 0x%x, Mode %i -> Pos %i", CFD, Addr,
+    Mode, rContent.m_position);
 
-	return GetDefaultReply(rContent.m_position);
+  return GetDefaultReply(rContent.m_position);
 }
 }  // namespace Device
 }  // namespace HLE

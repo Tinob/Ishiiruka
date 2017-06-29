@@ -28,50 +28,50 @@ static VideoBackendBase* s_default_backend = nullptr;
 
 void VideoBackendBase::PopulateList()
 {
-	// D3D11 > D3D12 > D3D9 > OGL > VULKAN > SW
+  // D3D11 > D3D12 > D3D9 > OGL > VULKAN > SW
 #ifdef _WIN32
-	if (IsWindowsVistaOrGreater())
-	{
-		g_available_video_backends.push_back(std::make_unique<DX11::VideoBackend>());
-		// More robust way to check for D3D12 support than (unreliable) OS version checks.
-		HMODULE d3d12_module = LoadLibraryA("d3d12.dll");
-		if (d3d12_module != NULL)
-		{
-			FreeLibrary(d3d12_module);
-			g_available_video_backends.push_back(std::make_unique<DX12::VideoBackend>());
-		}
-	}
-	g_available_video_backends.push_back(std::make_unique<DX9::VideoBackend>());
+  if (IsWindowsVistaOrGreater())
+  {
+    g_available_video_backends.push_back(std::make_unique<DX11::VideoBackend>());
+    // More robust way to check for D3D12 support than (unreliable) OS version checks.
+    HMODULE d3d12_module = LoadLibraryA("d3d12.dll");
+    if (d3d12_module != NULL)
+    {
+      FreeLibrary(d3d12_module);
+      g_available_video_backends.push_back(std::make_unique<DX12::VideoBackend>());
+    }
+  }
+  g_available_video_backends.push_back(std::make_unique<DX9::VideoBackend>());
 #endif
-	// disable OGL video Backend while is merged from master
-	g_available_video_backends.push_back(std::make_unique<OGL::VideoBackend>());
+  // disable OGL video Backend while is merged from master
+  g_available_video_backends.push_back(std::make_unique<OGL::VideoBackend>());
 #ifndef __APPLE__
-	g_available_video_backends.push_back(std::make_unique<Vulkan::VideoBackend>());
+  g_available_video_backends.push_back(std::make_unique<Vulkan::VideoBackend>());
 #endif
-	// Disable software video backend as is currently not working
-	//g_available_video_backends.push_back(std::make_unique<SW::VideoSoftware>());
+  // Disable software video backend as is currently not working
+  //g_available_video_backends.push_back(std::make_unique<SW::VideoSoftware>());
 
-	for (auto& backend : g_available_video_backends)
-	{
-		if (backend)
-		{
-			s_default_backend = g_video_backend = backend.get();
-			break;
-		}
-	}
+  for (auto& backend : g_available_video_backends)
+  {
+    if (backend)
+    {
+      s_default_backend = g_video_backend = backend.get();
+      break;
+    }
+  }
 }
 
 void VideoBackendBase::ClearList()
 {
-	g_available_video_backends.clear();
+  g_available_video_backends.clear();
 }
 
 void VideoBackendBase::ActivateBackend(const std::string& name)
 {
-	if (name.empty()) // If nullptr, set it to the default backend (expected behavior)
-		g_video_backend = s_default_backend;
+  if (name.empty()) // If nullptr, set it to the default backend (expected behavior)
+    g_video_backend = s_default_backend;
 
-	for (auto& backend : g_available_video_backends)
-		if (name == backend->GetName())
-			g_video_backend = backend.get();
+  for (auto& backend : g_available_video_backends)
+    if (name == backend->GetName())
+      g_video_backend = backend.get();
 }

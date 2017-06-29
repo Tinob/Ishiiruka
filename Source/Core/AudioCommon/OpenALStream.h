@@ -61,27 +61,27 @@ class OpenALStream final : public SoundStream
 {
 #if defined HAVE_OPENAL && HAVE_OPENAL
 public:
-	OpenALStream() : uiSource(0) {}
-	bool Start() override;
-	void SoundLoop() override;
-	void SetVolume(int volume) override;
-	void Stop() override;
-	void Clear(bool mute) override;
-	void Update() override;
+  OpenALStream() : uiSource(0) {}
+  bool Start() override;
+  void SoundLoop() override;
+  void SetVolume(int volume) override;
+  void Stop() override;
+  void Clear(bool mute) override;
+  void Update() override;
 
-	static bool isValid() { return true; }
+  static bool isValid() { return true; }
 private:
-	std::thread thread;
-	Common::Flag m_run_thread;
+  std::thread thread;
+  Common::Flag m_run_thread;
 
-	Common::Event soundSyncEvent;
+  Common::Event soundSyncEvent;
 
-	short realtimeBuffer[OAL_MAX_SAMPLES * STEREO_CHANNELS];
-	float sampleBuffer[OAL_MAX_SAMPLES * SURROUND_CHANNELS * OAL_MAX_BUFFERS];
-	ALuint uiBuffers[OAL_MAX_BUFFERS];
-	ALuint uiSource;
-	ALfloat fVolume;
+  short realtimeBuffer[OAL_MAX_SAMPLES * STEREO_CHANNELS];
+  float sampleBuffer[OAL_MAX_SAMPLES * SURROUND_CHANNELS * OAL_MAX_BUFFERS];
+  ALuint uiBuffers[OAL_MAX_BUFFERS];
+  ALuint uiSource;
+  ALfloat fVolume;
 
-	u8 numBuffers;
+  u8 numBuffers;
 #endif  // HAVE_OPENAL
 };

@@ -41,146 +41,146 @@ typedef std::vector<std::pair<u32, u32>> regionvector;
 struct ConstatBuffer
 {
 private:
-	void* m_buffer;
-	regionvector m_dirtyRegions;
-	//size_t m_size;
-	bool m_dirty;
-	bool m_dirtyregiondisabled;
-	__forceinline void AddDirtyRegion(u32 const_number, u32 size)
-	{
-		m_dirty = true;
-		if (m_dirtyregiondisabled)
-		{
-			return;
-		}
-		u32 x = const_number;
-		u32 y = const_number + size - 1;		
-		for (size_t i = 0; i < m_dirtyRegions.size(); i++)
-		{
-			std::pair<u32, u32> &currentregion = m_dirtyRegions[i];
-			// overlaps
-			if (((x <= currentregion.second) && (currentregion.first <= y))
-				|| (y + 1 == currentregion.first) || (currentregion.second + 1 == x))
-			{
-				currentregion.first = std::min(currentregion.first, x);
-				currentregion.second = std::max(currentregion.second, y);
-				return;
-			}
-			else if (currentregion.first > x)
-			{
-				std::swap(x, currentregion.first);
-				std::swap(y, currentregion.second);
-			}
-		}
-		m_dirtyRegions.push_back(std::pair<u32, u32>(x, y));
-	}
+  void* m_buffer;
+  regionvector m_dirtyRegions;
+  //size_t m_size;
+  bool m_dirty;
+  bool m_dirtyregiondisabled;
+  __forceinline void AddDirtyRegion(u32 const_number, u32 size)
+  {
+    m_dirty = true;
+    if (m_dirtyregiondisabled)
+    {
+      return;
+    }
+    u32 x = const_number;
+    u32 y = const_number + size - 1;
+    for (size_t i = 0; i < m_dirtyRegions.size(); i++)
+    {
+      std::pair<u32, u32> &currentregion = m_dirtyRegions[i];
+      // overlaps
+      if (((x <= currentregion.second) && (currentregion.first <= y))
+        || (y + 1 == currentregion.first) || (currentregion.second + 1 == x))
+      {
+        currentregion.first = std::min(currentregion.first, x);
+        currentregion.second = std::max(currentregion.second, y);
+        return;
+      }
+      else if (currentregion.first > x)
+      {
+        std::swap(x, currentregion.first);
+        std::swap(y, currentregion.second);
+      }
+    }
+    m_dirtyRegions.push_back(std::pair<u32, u32>(x, y));
+  }
 public:
-	ConstatBuffer(void* buffer, size_t size) :
-		m_buffer(buffer),
-		m_dirtyRegions(),
-		//m_size(size),
-		m_dirty(false),
-		m_dirtyregiondisabled(false)
-	{
-		
-	}
-	~ConstatBuffer()
-	{
+  ConstatBuffer(void* buffer, size_t size) :
+    m_buffer(buffer),
+    m_dirtyRegions(),
+    //m_size(size),
+    m_dirty(false),
+    m_dirtyregiondisabled(false)
+  {
 
-	}
-	template<typename T>
-	__forceinline void SetConstant4(unsigned int const_number, T f1, T f2, T f3, T f4)
-	{
-		u32 idx = const_number * 4;
-		T* buff = &((T*)m_buffer)[idx];
-		*buff++ = f1;
-		*buff++ = f2;
-		*buff++ = f3;
-		*buff = f4;
-		AddDirtyRegion(const_number, 1);
-	}
-	template<typename T>
-	__forceinline void SetConstant3v(unsigned int const_number, const T *f)
-	{
-		u32 idx = const_number * 4;
-		T* buff = &((T*)m_buffer)[idx];
-		*buff++ = *f++;
-		*buff++ = *f++;
-		*buff++ = *f++;
-		*buff = T(0);
-		AddDirtyRegion(const_number, 1);
-	}
-	template<typename T>
-	__forceinline void SetConstant4v(unsigned int const_number, const T *f)
-	{
-		u32 idx = const_number * 4;
-		memcpy(&((T*)m_buffer)[idx], f, sizeof(T) * 4);
-		AddDirtyRegion(const_number, 1);
-	}
-	template<typename T>
-	__forceinline void SetMultiConstant3v(unsigned int const_number, unsigned int count, const T *f)
-	{
-		u32 idx = const_number * 4;
-		T* buff = &((T*)m_buffer)[idx];
-		for (unsigned int i = 0; i < count; i++)
-		{
-			*buff++ = *f++;
-			*buff++ = *f++;
-			*buff++ = *f++;
-			*buff++ = T(0);
-		}
-		AddDirtyRegion(const_number, count);
-	}
-	template<typename T>
-	__forceinline void SetMultiConstant4v(unsigned int const_number, unsigned int count, const T *f)
-	{
-		u32 idx = const_number * 4;
-		memcpy(&((T*)m_buffer)[idx], f, sizeof(T) * 4 * count);
-		AddDirtyRegion(const_number, count);
-	}
-	
-	template<typename T>
-	__forceinline T* GetBufferToUpdate(u32 const_number, u32 count)
-	{
-		u32 idx = const_number * 4;
-		AddDirtyRegion(const_number, count);
-		return &((T*)m_buffer)[idx];
-	}
-	
-	template<typename T>
-	__forceinline T* GetBuffer(u32 const_number) const
-	{
-		u32 idx = const_number * 4;
-		return &((T*)m_buffer)[idx];
-	}
+  }
+  ~ConstatBuffer()
+  {
 
-	__forceinline bool IsDirty()
-	{
-		return m_dirty;
-	}
+  }
+  template<typename T>
+  __forceinline void SetConstant4(unsigned int const_number, T f1, T f2, T f3, T f4)
+  {
+    u32 idx = const_number * 4;
+    T* buff = &((T*)m_buffer)[idx];
+    *buff++ = f1;
+    *buff++ = f2;
+    *buff++ = f3;
+    *buff = f4;
+    AddDirtyRegion(const_number, 1);
+  }
+  template<typename T>
+  __forceinline void SetConstant3v(unsigned int const_number, const T *f)
+  {
+    u32 idx = const_number * 4;
+    T* buff = &((T*)m_buffer)[idx];
+    *buff++ = *f++;
+    *buff++ = *f++;
+    *buff++ = *f++;
+    *buff = T(0);
+    AddDirtyRegion(const_number, 1);
+  }
+  template<typename T>
+  __forceinline void SetConstant4v(unsigned int const_number, const T *f)
+  {
+    u32 idx = const_number * 4;
+    memcpy(&((T*)m_buffer)[idx], f, sizeof(T) * 4);
+    AddDirtyRegion(const_number, 1);
+  }
+  template<typename T>
+  __forceinline void SetMultiConstant3v(unsigned int const_number, unsigned int count, const T *f)
+  {
+    u32 idx = const_number * 4;
+    T* buff = &((T*)m_buffer)[idx];
+    for (unsigned int i = 0; i < count; i++)
+    {
+      *buff++ = *f++;
+      *buff++ = *f++;
+      *buff++ = *f++;
+      *buff++ = T(0);
+    }
+    AddDirtyRegion(const_number, count);
+  }
+  template<typename T>
+  __forceinline void SetMultiConstant4v(unsigned int const_number, unsigned int count, const T *f)
+  {
+    u32 idx = const_number * 4;
+    memcpy(&((T*)m_buffer)[idx], f, sizeof(T) * 4 * count);
+    AddDirtyRegion(const_number, count);
+  }
 
-	__forceinline void Clear()
-	{
-		m_dirty = false;
-		if (!m_dirtyregiondisabled)
-		{
-			m_dirtyRegions.clear();
-		}
-	}
-	
-	__forceinline void EnableDirtyRegions()
-	{
-		m_dirtyregiondisabled = false;
-	}
+  template<typename T>
+  __forceinline T* GetBufferToUpdate(u32 const_number, u32 count)
+  {
+    u32 idx = const_number * 4;
+    AddDirtyRegion(const_number, count);
+    return &((T*)m_buffer)[idx];
+  }
 
-	__forceinline void DisableDirtyRegions()
-	{
-		m_dirtyregiondisabled = true;
-	}
+  template<typename T>
+  __forceinline T* GetBuffer(u32 const_number) const
+  {
+    u32 idx = const_number * 4;
+    return &((T*)m_buffer)[idx];
+  }
 
-	__forceinline const regionvector& GetRegions()
-	{
-		return m_dirtyRegions;
-	}
+  __forceinline bool IsDirty()
+  {
+    return m_dirty;
+  }
+
+  __forceinline void Clear()
+  {
+    m_dirty = false;
+    if (!m_dirtyregiondisabled)
+    {
+      m_dirtyRegions.clear();
+    }
+  }
+
+  __forceinline void EnableDirtyRegions()
+  {
+    m_dirtyregiondisabled = false;
+  }
+
+  __forceinline void DisableDirtyRegions()
+  {
+    m_dirtyregiondisabled = true;
+  }
+
+  __forceinline const regionvector& GetRegions()
+  {
+    return m_dirtyRegions;
+  }
 
 };

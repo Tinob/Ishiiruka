@@ -13,10 +13,10 @@ namespace SerialInterface
 class CSIDevice_Null final : public ISIDevice
 {
 public:
-	CSIDevice_Null(SIDevices device, int device_number);
+  CSIDevice_Null(SIDevices device, int device_number);
 
-	int RunBuffer(u8* buffer, int length) override;
-	bool GetData(u32& hi, u32& low) override;
-	void SendCommand(u32 command, u8 poll) override;
+  int RunBuffer(u8* buffer, int length) override;
+  bool GetData(u32& hi, u32& low) override;
+  void SendCommand(u32 command, u8 poll) override;
 };
 }  // namespace SerialInterface

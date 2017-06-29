@@ -16,25 +16,25 @@ const int DEPTH_BUFFER_START = EFB_WIDTH * EFB_HEIGHT * 3;
 #pragma pack(push,1)
 struct yuv422_packed
 {
-	u8 Y;
-	u8 UV;
+  u8 Y;
+  u8 UV;
 };
 #pragma pack(pop)
 
 // But this struct is only used internally, so we could optimise alignment
 struct yuv444
 {
-	u8 Y;
-	s8 U;
-	s8 V;
+  u8 Y;
+  s8 U;
+  s8 V;
 };
 
 enum
 {
-	ALP_C,
-	BLU_C,
-	GRN_C,
-	RED_C
+  ALP_C,
+  BLU_C,
+  GRN_C,
+  RED_C
 };
 
 // color order is ABGR in order to emulate RGBA on little-endian hardware
@@ -63,14 +63,14 @@ void BypassXFB(u8* texture, u32 fbWidth, u32 fbHeight, const EFBRectangle& sourc
 extern u32 perf_values[PQ_NUM_MEMBERS];
 inline void IncPerfCounterQuadCount(PerfQueryType type)
 {
-	// NOTE: hardware doesn't process individual pixels but quads instead.
-	// Current software renderer architecture works on pixels though, so
-	// we have this "quad" hack here to only increment the registers on
-	// every fourth rendered pixel
-	static u32 quad[PQ_NUM_MEMBERS];
-	if (++quad[type] != 3)
-		return;
-	quad[type] = 0;
-	++perf_values[type];
+  // NOTE: hardware doesn't process individual pixels but quads instead.
+  // Current software renderer architecture works on pixels though, so
+  // we have this "quad" hack here to only increment the registers on
+  // every fourth rendered pixel
+  static u32 quad[PQ_NUM_MEMBERS];
+  if (++quad[type] != 3)
+    return;
+  quad[type] = 0;
+  ++perf_values[type];
 }
 }

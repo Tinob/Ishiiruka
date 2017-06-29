@@ -44,22 +44,22 @@
 class ControllerInterface : public ciface::Core::DeviceContainer
 {
 public:
-	ControllerInterface() : m_is_init(false), m_hwnd(nullptr) {}
-	void Initialize(void* const hwnd);
-	void RefreshDevices();
-	void Shutdown();
-	void AddDevice(std::shared_ptr<ciface::Core::Device> device);
-	void RemoveDevice(std::function<bool(const ciface::Core::Device*)> callback);
-	bool IsInit() const { return m_is_init; }
-	void UpdateInput();
+  ControllerInterface() : m_is_init(false), m_hwnd(nullptr) {}
+  void Initialize(void* const hwnd);
+  void RefreshDevices();
+  void Shutdown();
+  void AddDevice(std::shared_ptr<ciface::Core::Device> device);
+  void RemoveDevice(std::function<bool(const ciface::Core::Device*)> callback);
+  bool IsInit() const { return m_is_init; }
+  void UpdateInput();
 
-	void RegisterHotplugCallback(std::function<void(void)> callback);
-	void InvokeHotplugCallbacks() const;
+  void RegisterHotplugCallback(std::function<void(void)> callback);
+  void InvokeHotplugCallbacks() const;
 
 private:
-	std::vector<std::function<void()>> m_hotplug_callbacks;
-	bool m_is_init;
-	void* m_hwnd;
+  std::vector<std::function<void()>> m_hotplug_callbacks;
+  bool m_is_init;
+  void* m_hwnd;
 };
 
 extern ControllerInterface g_controller_interface;

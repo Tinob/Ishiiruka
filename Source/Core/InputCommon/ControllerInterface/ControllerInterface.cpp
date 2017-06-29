@@ -41,75 +41,75 @@ ControllerInterface g_controller_interface;
 //
 void ControllerInterface::Initialize(void* const hwnd)
 {
-	if (m_is_init)
-		return;
+  if (m_is_init)
+    return;
 
-	m_hwnd = hwnd;
+  m_hwnd = hwnd;
 
 #ifdef CIFACE_USE_DINPUT
-	// nothing needed
+  // nothing needed
 #endif
 #ifdef CIFACE_USE_XINPUT
-	ciface::XInput::Init();
+  ciface::XInput::Init();
 #endif
 #ifdef CIFACE_USE_XLIB
-	// nothing needed
+  // nothing needed
 #endif
 #ifdef CIFACE_USE_OSX
-	ciface::OSX::Init(hwnd);
-	// nothing needed for Quartz
+  ciface::OSX::Init(hwnd);
+  // nothing needed for Quartz
 #endif
 #ifdef CIFACE_USE_SDL
-	ciface::SDL::Init();
+  ciface::SDL::Init();
 #endif
 #ifdef CIFACE_USE_ANDROID
-	// nothing needed
+  // nothing needed
 #endif
 #ifdef CIFACE_USE_EVDEV
-	ciface::evdev::Init();
+  ciface::evdev::Init();
 #endif
 #ifdef CIFACE_USE_PIPES
-	// nothing needed
+  // nothing needed
 #endif
 
-	m_is_init = true;
-	RefreshDevices();
+  m_is_init = true;
+  RefreshDevices();
 }
 
 void ControllerInterface::RefreshDevices()
 {
-	if (!m_is_init)
-		return;
+  if (!m_is_init)
+    return;
 
-	{
-		std::lock_guard<std::mutex> lk(m_devices_mutex);
-		m_devices.clear();
-	}
+  {
+    std::lock_guard<std::mutex> lk(m_devices_mutex);
+    m_devices.clear();
+  }
 
 #ifdef CIFACE_USE_DINPUT
-	ciface::DInput::PopulateDevices(reinterpret_cast<HWND>(m_hwnd));
+  ciface::DInput::PopulateDevices(reinterpret_cast<HWND>(m_hwnd));
 #endif
 #ifdef CIFACE_USE_XINPUT
-	ciface::XInput::PopulateDevices();
+  ciface::XInput::PopulateDevices();
 #endif
 #ifdef CIFACE_USE_XLIB
-	ciface::XInput2::PopulateDevices(m_hwnd);
+  ciface::XInput2::PopulateDevices(m_hwnd);
 #endif
 #ifdef CIFACE_USE_OSX
-	ciface::OSX::PopulateDevices(m_hwnd);
-	ciface::Quartz::PopulateDevices(m_hwnd);
+  ciface::OSX::PopulateDevices(m_hwnd);
+  ciface::Quartz::PopulateDevices(m_hwnd);
 #endif
 #ifdef CIFACE_USE_SDL
-	ciface::SDL::PopulateDevices();
+  ciface::SDL::PopulateDevices();
 #endif
 #ifdef CIFACE_USE_ANDROID
-	ciface::Android::PopulateDevices();
+  ciface::Android::PopulateDevices();
 #endif
 #ifdef CIFACE_USE_EVDEV
-	ciface::evdev::PopulateDevices();
+  ciface::evdev::PopulateDevices();
 #endif
 #ifdef CIFACE_USE_PIPES
-	ciface::Pipes::PopulateDevices();
+  ciface::Pipes::PopulateDevices();
 #endif
 }
 
@@ -120,75 +120,75 @@ void ControllerInterface::RefreshDevices()
 //
 void ControllerInterface::Shutdown()
 {
-	if (!m_is_init)
-		return;
+  if (!m_is_init)
+    return;
 
-	{
-		std::lock_guard<std::mutex> lk(m_devices_mutex);
+  {
+    std::lock_guard<std::mutex> lk(m_devices_mutex);
 
-		for (const auto& d : m_devices)
-		{
-			// Set outputs to ZERO before destroying device
-			for (ciface::Core::Device::Output* o : d->Outputs())
-				o->SetState(0);
-		}
+    for (const auto& d : m_devices)
+    {
+      // Set outputs to ZERO before destroying device
+      for (ciface::Core::Device::Output* o : d->Outputs())
+        o->SetState(0);
+    }
 
-		m_devices.clear();
-	}
+    m_devices.clear();
+  }
 
 #ifdef CIFACE_USE_XINPUT
-	ciface::XInput::DeInit();
+  ciface::XInput::DeInit();
 #endif
 #ifdef CIFACE_USE_DINPUT
-	// nothing needed
+  // nothing needed
 #endif
 #ifdef CIFACE_USE_XLIB
 // nothing needed
 #endif
 #ifdef CIFACE_USE_OSX
-	ciface::OSX::DeInit();
-	ciface::Quartz::DeInit();
+  ciface::OSX::DeInit();
+  ciface::Quartz::DeInit();
 #endif
 #ifdef CIFACE_USE_SDL
-	// TODO: there seems to be some sort of memory leak with SDL, quit isn't freeing everything up
-	SDL_Quit();
+  // TODO: there seems to be some sort of memory leak with SDL, quit isn't freeing everything up
+  SDL_Quit();
 #endif
 #ifdef CIFACE_USE_ANDROID
-	// nothing needed
+  // nothing needed
 #endif
 #ifdef CIFACE_USE_EVDEV
-	ciface::evdev::Shutdown();
+  ciface::evdev::Shutdown();
 #endif
 
-	m_is_init = false;
+  m_is_init = false;
 }
 
 void ControllerInterface::AddDevice(std::shared_ptr<ciface::Core::Device> device)
 {
-	std::lock_guard<std::mutex> lk(m_devices_mutex);
-	// Try to find an ID for this device
-	int id = 0;
-	while (true)
-	{
-		const auto it = std::find_if(m_devices.begin(), m_devices.end(), [&device, &id](const auto& d) {
-			return d->GetSource() == device->GetSource() && d->GetName() == device->GetName() &&
-				d->GetId() == id;
-		});
-		if (it == m_devices.end())  // no device with the same name with this ID, so we can use it
-			break;
-		else
-			id++;
-	}
-	device->SetId(id);
-	m_devices.emplace_back(std::move(device));
+  std::lock_guard<std::mutex> lk(m_devices_mutex);
+  // Try to find an ID for this device
+  int id = 0;
+  while (true)
+  {
+    const auto it = std::find_if(m_devices.begin(), m_devices.end(), [&device, &id](const auto& d) {
+      return d->GetSource() == device->GetSource() && d->GetName() == device->GetName() &&
+        d->GetId() == id;
+    });
+    if (it == m_devices.end())  // no device with the same name with this ID, so we can use it
+      break;
+    else
+      id++;
+  }
+  device->SetId(id);
+  m_devices.emplace_back(std::move(device));
 }
 
 void ControllerInterface::RemoveDevice(std::function<bool(const ciface::Core::Device*)> callback)
 {
-	std::lock_guard<std::mutex> lk(m_devices_mutex);
-	m_devices.erase(std::remove_if(m_devices.begin(), m_devices.end(),
-		[&callback](const auto& dev) { return callback(dev.get()); }),
-		m_devices.end());
+  std::lock_guard<std::mutex> lk(m_devices_mutex);
+  m_devices.erase(std::remove_if(m_devices.begin(), m_devices.end(),
+    [&callback](const auto& dev) { return callback(dev.get()); }),
+    m_devices.end());
 }
 
 //
@@ -198,13 +198,13 @@ void ControllerInterface::RemoveDevice(std::function<bool(const ciface::Core::De
 //
 void ControllerInterface::UpdateInput()
 {
-	// Don't block the UI or CPU thread (to avoid a short but noticeable frame drop)
-	if (m_devices_mutex.try_lock())
-	{
-		std::lock_guard<std::mutex> lk(m_devices_mutex, std::adopt_lock);
-		for (const auto& d : m_devices)
-			d->UpdateInput();
-	}
+  // Don't block the UI or CPU thread (to avoid a short but noticeable frame drop)
+  if (m_devices_mutex.try_lock())
+  {
+    std::lock_guard<std::mutex> lk(m_devices_mutex, std::adopt_lock);
+    for (const auto& d : m_devices)
+      d->UpdateInput();
+  }
 }
 
 //
@@ -215,7 +215,7 @@ void ControllerInterface::UpdateInput()
 //
 void ControllerInterface::RegisterHotplugCallback(std::function<void()> callback)
 {
-	m_hotplug_callbacks.emplace_back(std::move(callback));
+  m_hotplug_callbacks.emplace_back(std::move(callback));
 }
 
 //
@@ -225,6 +225,6 @@ void ControllerInterface::RegisterHotplugCallback(std::function<void()> callback
 //
 void ControllerInterface::InvokeHotplugCallbacks() const
 {
-	for (const auto& callback : m_hotplug_callbacks)
-		callback();
+  for (const auto& callback : m_hotplug_callbacks)
+    callback();
 }

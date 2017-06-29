@@ -17,43 +17,43 @@ namespace DX9
 class Depalettizer
 {
 public:
-	enum InternalPaletteFormat
-	{
-		IA = 0,
-		RGB565,
-		RGBA8
-	};
-	enum BaseType
-	{
-		Unorm4 = 0,
-		Unorm8
-	};
+  enum InternalPaletteFormat
+  {
+    IA = 0,
+    RGB565,
+    RGBA8
+  };
+  enum BaseType
+  {
+    Unorm4 = 0,
+    Unorm8
+  };
 
-	Depalettizer();
-	~Depalettizer();
+  Depalettizer();
+  ~Depalettizer();
 
-	bool Depalettize(LPDIRECT3DTEXTURE9 dstTex, LPDIRECT3DTEXTURE9 baseTex,
-		BaseType baseType);
-	void UploadPalette(u32 tlutFmt, void* addr, u32 size);
+  bool Depalettize(LPDIRECT3DTEXTURE9 dstTex, LPDIRECT3DTEXTURE9 baseTex,
+    BaseType baseType);
+  void UploadPalette(u32 tlutFmt, void* addr, u32 size);
 
 private:
-	LPDIRECT3DPIXELSHADER9 GetShader(BaseType type);
+  LPDIRECT3DPIXELSHADER9 GetShader(BaseType type);
 
-	InternalPaletteFormat m_PalleteFormat;
+  InternalPaletteFormat m_PalleteFormat;
 
-	LPDIRECT3DTEXTURE9 m_palette_texture[3][2];
-	LPDIRECT3DTEXTURE9 m_staging_texture[3][2];
+  LPDIRECT3DTEXTURE9 m_palette_texture[3][2];
+  LPDIRECT3DTEXTURE9 m_staging_texture[3][2];
 
-	// Depalettizing shader for 4-bit indices as normalized float
-	LPDIRECT3DPIXELSHADER9 m_unorm4Shader;
-	// Depalettizing shader for 8-bit indices as normalized float
-	LPDIRECT3DPIXELSHADER9 m_unorm8Shader;
-	// Depalettizing shader for 16-bit indices as normalized float
-	LPDIRECT3DPIXELSHADER9 m_unorm16Shader;
-	u32 m_last_tlutFmt = {};
-	void* m_last_addr = {};
-	u32 m_last_size = {};
-	u64 m_last_hash = {};
+  // Depalettizing shader for 4-bit indices as normalized float
+  LPDIRECT3DPIXELSHADER9 m_unorm4Shader;
+  // Depalettizing shader for 8-bit indices as normalized float
+  LPDIRECT3DPIXELSHADER9 m_unorm8Shader;
+  // Depalettizing shader for 16-bit indices as normalized float
+  LPDIRECT3DPIXELSHADER9 m_unorm16Shader;
+  u32 m_last_tlutFmt = {};
+  void* m_last_addr = {};
+  u32 m_last_size = {};
+  u64 m_last_hash = {};
 };
 
 }

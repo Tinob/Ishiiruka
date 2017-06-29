@@ -15,26 +15,26 @@ namespace DX12
 class D3DBlob
 {
 public:
-	// memory will be copied into an own buffer
-	D3DBlob(unsigned int blob_size, const u8* init_data = nullptr);
+  // memory will be copied into an own buffer
+  D3DBlob(unsigned int blob_size, const u8* init_data = nullptr);
 
-	// d3dblob will be AddRef'd
-	D3DBlob(ID3D10Blob* d3dblob);
+  // d3dblob will be AddRef'd
+  D3DBlob(ID3D10Blob* d3dblob);
 
-	void AddRef();
-	unsigned int Release();
+  void AddRef();
+  unsigned int Release();
 
-	unsigned int Size() const;
-	u8* Data();
+  unsigned int Size() const;
+  u8* Data();
 
 private:
-	~D3DBlob();
+  ~D3DBlob();
 
-	std::atomic<unsigned long> m_ref = 1;
-	unsigned int m_size = 0;
+  std::atomic<unsigned long> m_ref = 1;
+  unsigned int m_size = 0;
 
-	u8* m_data = nullptr;
-	ID3D10Blob* m_blob = nullptr;
+  u8* m_data = nullptr;
+  ID3D10Blob* m_blob = nullptr;
 };
 
 }  // namespace

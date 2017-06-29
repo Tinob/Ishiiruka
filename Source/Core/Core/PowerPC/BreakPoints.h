@@ -14,112 +14,112 @@ class DebugInterface;
 
 struct TBreakPoint
 {
-	u32 address = 0;
-	bool is_enabled = false;
-	bool is_temporary = false;
+  u32 address = 0;
+  bool is_enabled = false;
+  bool is_temporary = false;
 };
 
 struct TMemCheck
 {
-	u32 start_address = 0;
-	u32 end_address = 0;
+  u32 start_address = 0;
+  u32 end_address = 0;
 
-	bool is_ranged = false;
+  bool is_ranged = false;
 
-	bool is_break_on_read = false;
-	bool is_break_on_write = false;
+  bool is_break_on_read = false;
+  bool is_break_on_write = false;
 
-	bool log_on_hit = false;
-	bool break_on_hit = false;
+  bool log_on_hit = false;
+  bool break_on_hit = false;
 
-	u32 num_hits = 0;
+  u32 num_hits = 0;
 
-	// returns whether to break
-	bool Action(DebugInterface* dbg_interface, u32 value, u32 addr, bool write, size_t size, u32 pc);
+  // returns whether to break
+  bool Action(DebugInterface* dbg_interface, u32 value, u32 addr, bool write, size_t size, u32 pc);
 };
 
 struct TWatch
 {
-	std::string name;
-	u32 address = 0;
-	bool is_enabled = false;
+  std::string name;
+  u32 address = 0;
+  bool is_enabled = false;
 };
 
 // Code breakpoints.
 class BreakPoints
 {
 public:
-	using TBreakPoints = std::vector<TBreakPoint>;
-	using TBreakPointsStr = std::vector<std::string>;
+  using TBreakPoints = std::vector<TBreakPoint>;
+  using TBreakPointsStr = std::vector<std::string>;
 
-	const TBreakPoints& GetBreakPoints() const { return m_breakpoints; }
-	TBreakPointsStr GetStrings() const;
-	void AddFromStrings(const TBreakPointsStr& bp_strings);
+  const TBreakPoints& GetBreakPoints() const { return m_breakpoints; }
+  TBreakPointsStr GetStrings() const;
+  void AddFromStrings(const TBreakPointsStr& bp_strings);
 
-	// is address breakpoint
-	bool IsAddressBreakPoint(u32 address) const;
-	bool IsTempBreakPoint(u32 address) const;
+  // is address breakpoint
+  bool IsAddressBreakPoint(u32 address) const;
+  bool IsTempBreakPoint(u32 address) const;
 
-	// Add BreakPoint
-	void Add(u32 address, bool temp = false);
-	void Add(const TBreakPoint& bp);
+  // Add BreakPoint
+  void Add(u32 address, bool temp = false);
+  void Add(const TBreakPoint& bp);
 
-	// Remove Breakpoint
-	void Remove(u32 address);
-	void Clear();
-	void ClearAllTemporary();
+  // Remove Breakpoint
+  void Remove(u32 address);
+  void Clear();
+  void ClearAllTemporary();
 
 private:
-	TBreakPoints m_breakpoints;
+  TBreakPoints m_breakpoints;
 };
 
 // Memory breakpoints
 class MemChecks
 {
 public:
-	using TMemChecks = std::vector<TMemCheck>;
-	using TMemChecksStr = std::vector<std::string>;
+  using TMemChecks = std::vector<TMemCheck>;
+  using TMemChecksStr = std::vector<std::string>;
 
-	const TMemChecks& GetMemChecks() const { return m_mem_checks; }
-	TMemChecksStr GetStrings() const;
-	void AddFromStrings(const TMemChecksStr& mc_strings);
+  const TMemChecks& GetMemChecks() const { return m_mem_checks; }
+  TMemChecksStr GetStrings() const;
+  void AddFromStrings(const TMemChecksStr& mc_strings);
 
-	void Add(const TMemCheck& memory_check);
+  void Add(const TMemCheck& memory_check);
 
-	// memory breakpoint
-	TMemCheck* GetMemCheck(u32 address, size_t size = 1);
-	bool OverlapsMemcheck(u32 address, u32 length);
-	void Remove(u32 address);
+  // memory breakpoint
+  TMemCheck* GetMemCheck(u32 address, size_t size = 1);
+  bool OverlapsMemcheck(u32 address, u32 length);
+  void Remove(u32 address);
 
-	void Clear() { m_mem_checks.clear(); }
-	bool HasAny() const { return !m_mem_checks.empty(); }
+  void Clear() { m_mem_checks.clear(); }
+  bool HasAny() const { return !m_mem_checks.empty(); }
 private:
-	TMemChecks m_mem_checks;
+  TMemChecks m_mem_checks;
 };
 
 class Watches
 {
 public:
-	using TWatches = std::vector<TWatch>;
-	using TWatchesStr = std::vector<std::string>;
+  using TWatches = std::vector<TWatch>;
+  using TWatchesStr = std::vector<std::string>;
 
-	const TWatches& GetWatches() const { return m_watches; }
-	TWatchesStr GetStrings() const;
-	void AddFromStrings(const TWatchesStr& watch_strings);
+  const TWatches& GetWatches() const { return m_watches; }
+  TWatchesStr GetStrings() const;
+  void AddFromStrings(const TWatchesStr& watch_strings);
 
-	bool IsAddressWatch(u32 address) const;
+  bool IsAddressWatch(u32 address) const;
 
-	// Add watch
-	void Add(u32 address);
-	void Add(const TWatch& watch);
+  // Add watch
+  void Add(u32 address);
+  void Add(const TWatch& watch);
 
-	void Update(int count, u32 address);
-	void UpdateName(int count, const std::string name);
+  void Update(int count, u32 address);
+  void UpdateName(int count, const std::string name);
 
-	// Remove watch
-	void Remove(u32 address);
-	void Clear();
+  // Remove watch
+  void Remove(u32 address);
+  void Clear();
 
 private:
-	TWatches m_watches;
+  TWatches m_watches;
 };

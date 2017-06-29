@@ -12,13 +12,13 @@ namespace Common
 {
 enum class MACConsumer
 {
-	BBA,
-	IOS
+  BBA,
+  IOS
 };
 
 enum
 {
-	MAC_ADDRESS_SIZE = 6
+  MAC_ADDRESS_SIZE = 6
 };
 
 void GenerateMacAddress(const MACConsumer type, u8* mac);

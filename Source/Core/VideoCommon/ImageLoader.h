@@ -37,41 +37,41 @@
 
 enum DDSCompression
 {
-	DDSC_NONE,
-	DDSC_DXT1,
-	DDSC_DXT3,
-	DDSC_DXT5
+  DDSC_NONE,
+  DDSC_DXT1,
+  DDSC_DXT3,
+  DDSC_DXT5
 };
 struct ImageLoaderParams
 {
-	std::function<u8*(size_t, bool)> request_buffer_delegate;
-	u8* dst;
-	const char* Path;
-	u32 Width;
-	u32 Height;
-	u32 data_size;
-	s32 forcedchannels;
-	s32 formatBPP;
-	PC_TexFormat desiredTex;
-	PC_TexFormat resultTex;
-	u32 nummipmaps;
-	ImageLoaderParams()
-	{
-		Path = nullptr;
-		Width = 0;
-		Height = 0;
-		data_size = 0;
-		forcedchannels = 0;
-		formatBPP = 0;
-		desiredTex = PC_TexFormat::PC_TEX_FMT_NONE;
-		resultTex = PC_TexFormat::PC_TEX_FMT_NONE;
-		nummipmaps = 0;
-	}
+  std::function<u8*(size_t, bool)> request_buffer_delegate;
+  u8* dst;
+  const char* Path;
+  u32 Width;
+  u32 Height;
+  u32 data_size;
+  s32 forcedchannels;
+  s32 formatBPP;
+  PC_TexFormat desiredTex;
+  PC_TexFormat resultTex;
+  u32 nummipmaps;
+  ImageLoaderParams()
+  {
+    Path = nullptr;
+    Width = 0;
+    Height = 0;
+    data_size = 0;
+    forcedchannels = 0;
+    formatBPP = 0;
+    desiredTex = PC_TexFormat::PC_TEX_FMT_NONE;
+    resultTex = PC_TexFormat::PC_TEX_FMT_NONE;
+    nummipmaps = 0;
+  }
 };
 
 class ImageLoader
 {
 public:
-	static DDSCompression ReadDDS(ImageLoaderParams& loader_params);
-	static bool ReadPNG(ImageLoaderParams& loader_params);
+  static DDSCompression ReadDDS(ImageLoaderParams& loader_params);
+  static bool ReadPNG(ImageLoaderParams& loader_params);
 };

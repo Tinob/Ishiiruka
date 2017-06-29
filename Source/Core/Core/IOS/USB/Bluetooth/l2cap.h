@@ -180,13 +180,13 @@
 /* L2CAP Quality of Service option */
 typedef struct
 {
-	uint8_t flags;              /* reserved for future use */
-	uint8_t service_type;       /* service type */
-	uint32_t token_rate;        /* bytes per second */
-	uint32_t token_bucket_size; /* bytes */
-	uint32_t peak_bandwidth;    /* bytes per second */
-	uint32_t latency;           /* microseconds */
-	uint32_t delay_variation;   /* microseconds */
+  uint8_t flags;              /* reserved for future use */
+  uint8_t service_type;       /* service type */
+  uint32_t token_rate;        /* bytes per second */
+  uint32_t token_bucket_size; /* bytes */
+  uint32_t peak_bandwidth;    /* bytes per second */
+  uint32_t latency;           /* microseconds */
+  uint32_t delay_variation;   /* microseconds */
 } l2cap_qos_t;
 
 /* L2CAP QoS type */
@@ -198,12 +198,12 @@ typedef struct
 /* L2CAP Retransmission & Flow Control option */
 typedef struct
 {
-	uint8_t mode;             /* RFC mode */
-	uint8_t window_size;      /* bytes */
-	uint8_t max_transmit;     /* max retransmissions */
-	uint16_t retransmit_timo; /* milliseconds */
-	uint16_t monitor_timo;    /* milliseconds */
-	uint16_t max_pdu_size;    /* bytes */
+  uint8_t mode;             /* RFC mode */
+  uint8_t window_size;      /* bytes */
+  uint8_t max_transmit;     /* max retransmissions */
+  uint16_t retransmit_timo; /* milliseconds */
+  uint16_t monitor_timo;    /* milliseconds */
+  uint16_t max_pdu_size;    /* bytes */
 } l2cap_rfc_t;
 
 /* L2CAP RFC mode */
@@ -221,14 +221,14 @@ typedef struct
 /* L2CAP header */
 typedef struct
 {
-	uint16_t length; /* payload size */
-	uint16_t dcid;   /* destination channel ID */
+  uint16_t length; /* payload size */
+  uint16_t dcid;   /* destination channel ID */
 } l2cap_hdr_t;
 
 /* L2CAP ConnectionLess Traffic         (dcid == L2CAP_CLT_CID) */
 typedef struct
 {
-	uint16_t psm; /* Protocol/Service Multiplexor */
+  uint16_t psm; /* Protocol/Service Multiplexor */
 } l2cap_clt_hdr_t;
 
 #define L2CAP_CLT_MTU_MAXIMUM (L2CAP_MTU_MAXIMUM - sizeof(l2cap_clt_hdr_t))
@@ -236,79 +236,79 @@ typedef struct
 /* L2CAP Command header                 (dcid == L2CAP_SIGNAL_CID) */
 typedef struct
 {
-	uint8_t code;    /* command OpCode */
-	uint8_t ident;   /* identifier to match request and response */
-	uint16_t length; /* command parameters length */
+  uint8_t code;    /* command OpCode */
+  uint8_t ident;   /* identifier to match request and response */
+  uint16_t length; /* command parameters length */
 } l2cap_cmd_hdr_t;
 
 /* L2CAP Command Reject */
 #define L2CAP_COMMAND_REJ 0x01
 typedef struct
 {
-	uint16_t reason;  /* reason to reject command */
-	uint16_t data[2]; /* optional data */
+  uint16_t reason;  /* reason to reject command */
+  uint16_t data[2]; /* optional data */
 } l2cap_cmd_rej_cp;
 
 /* L2CAP Connection Request */
 #define L2CAP_CONNECT_REQ 0x02
 typedef struct
 {
-	uint16_t psm;  /* Protocol/Service Multiplexor (PSM) */
-	uint16_t scid; /* source channel ID */
+  uint16_t psm;  /* Protocol/Service Multiplexor (PSM) */
+  uint16_t scid; /* source channel ID */
 } l2cap_con_req_cp;
 
 /* L2CAP Connection Response */
 #define L2CAP_CONNECT_RSP 0x03
 typedef struct
 {
-	uint16_t dcid;   /* destination channel ID */
-	uint16_t scid;   /* source channel ID */
-	uint16_t result; /* 0x00 - success */
-	uint16_t status; /* more info if result != 0x00 */
+  uint16_t dcid;   /* destination channel ID */
+  uint16_t scid;   /* source channel ID */
+  uint16_t result; /* 0x00 - success */
+  uint16_t status; /* more info if result != 0x00 */
 } l2cap_con_rsp_cp;
 
 /* L2CAP Configuration Request */
 #define L2CAP_CONFIG_REQ 0x04
 typedef struct
 {
-	uint16_t dcid;  /* destination channel ID */
-	uint16_t flags; /* flags */
-						 /*      uint8_t options[] --  options */
+  uint16_t dcid;  /* destination channel ID */
+  uint16_t flags; /* flags */
+                       /*      uint8_t options[] --  options */
 } l2cap_cfg_req_cp;
 
 /* L2CAP Configuration Response */
 #define L2CAP_CONFIG_RSP 0x05
 typedef struct
 {
-	uint16_t scid;   /* source channel ID */
-	uint16_t flags;  /* flags */
-	uint16_t result; /* 0x00 - success */
-						  /*      uint8_t options[] -- options */
+  uint16_t scid;   /* source channel ID */
+  uint16_t flags;  /* flags */
+  uint16_t result; /* 0x00 - success */
+                        /*      uint8_t options[] -- options */
 } l2cap_cfg_rsp_cp;
 
 /* L2CAP configuration option */
 typedef struct
 {
-	uint8_t type;
-	uint8_t length;
-	/*      uint8_t value[] -- option value (depends on type) */
+  uint8_t type;
+  uint8_t length;
+  /*      uint8_t value[] -- option value (depends on type) */
 } l2cap_cfg_opt_t;
 
 /* L2CAP configuration option value */
 typedef union
 {
-	uint16_t mtu;        /* L2CAP_OPT_MTU */
-	uint16_t flush_timo; /* L2CAP_OPT_FLUSH_TIMO */
-	l2cap_qos_t qos;     /* L2CAP_OPT_QOS */
-	l2cap_rfc_t rfc;     /* L2CAP_OPT_RFC */
+  uint16_t mtu;        /* L2CAP_OPT_MTU */
+  uint16_t flush_timo; /* L2CAP_OPT_FLUSH_TIMO */
+  l2cap_qos_t qos;     /* L2CAP_OPT_QOS */
+  l2cap_rfc_t rfc;     /* L2CAP_OPT_RFC */
 } l2cap_cfg_opt_val_t;
 
 /* L2CAP Disconnect Request */
 #define L2CAP_DISCONNECT_REQ 0x06
 typedef struct
 {
-	uint16_t dcid; /* destination channel ID */
-	uint16_t scid; /* source channel ID */
+  uint16_t dcid; /* destination channel ID */
+  uint16_t scid; /* source channel ID */
 } l2cap_discon_req_cp;
 
 /* L2CAP Disconnect Response */
@@ -328,28 +328,28 @@ typedef l2cap_discon_req_cp l2cap_discon_rsp_cp;
 #define L2CAP_INFO_REQ 0x0a
 typedef struct
 {
-	uint16_t type; /* requested information type */
+  uint16_t type; /* requested information type */
 } l2cap_info_req_cp;
 
 /* L2CAP Information Response */
 #define L2CAP_INFO_RSP 0x0b
 typedef struct
 {
-	uint16_t type;   /* requested information type */
-	uint16_t result; /* 0x00 - success */
-						  /*      uint8_t info[]  -- info data (depends on type)
-						  *
-						  * L2CAP_CONNLESS_MTU - 2 bytes connectionless MTU
-						  */
+  uint16_t type;   /* requested information type */
+  uint16_t result; /* 0x00 - success */
+                        /*      uint8_t info[]  -- info data (depends on type)
+                        *
+                        * L2CAP_CONNLESS_MTU - 2 bytes connectionless MTU
+                        */
 } l2cap_info_rsp_cp;
 
 typedef union
 {
-	/* L2CAP_CONNLESS_MTU */
-	struct
-	{
-		uint16_t mtu;
-	} mtu;
+  /* L2CAP_CONNLESS_MTU */
+  struct
+  {
+    uint16_t mtu;
+  } mtu;
 } l2cap_info_rsp_data_t;
 
 #pragma pack(pop)

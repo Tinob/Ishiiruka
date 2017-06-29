@@ -18,14 +18,14 @@ class EmulatedController;
 class Extension : public ControlGroup
 {
 public:
-	explicit Extension(const std::string& name);
+  explicit Extension(const std::string& name);
 
-	void GetState(u8* data);
-	bool IsButtonPressed() const;
+  void GetState(u8* data);
+  bool IsButtonPressed() const;
 
-	std::vector<std::unique_ptr<EmulatedController>> attachments;
+  std::vector<std::unique_ptr<EmulatedController>> attachments;
 
-	int switch_extension = 0;
-	int active_extension = 0;
+  int switch_extension = 0;
+  int active_extension = 0;
 };
 }  // namespace ControllerEmu

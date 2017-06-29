@@ -22,7 +22,7 @@ namespace SDL
 // range, used for periodic haptic effects though often ignored by devices
 static const u16 RUMBLE_PERIOD = 10;
 static const u16 RUMBLE_LENGTH_MAX =
-    500;  // ms: enough to span multiple frames at low FPS, but still finite
+500;  // ms: enough to span multiple frames at low FPS, but still finite
 
 static std::string GetJoystickName(int index)
 {
@@ -42,11 +42,11 @@ void Init()
   }
   else
 #endif
-      if (SDL_Init(SDL_INIT_JOYSTICK) < 0)
-  {
-    // Failed to initialize
-    return;
-  }
+    if (SDL_Init(SDL_INIT_JOYSTICK) < 0)
+    {
+      // Failed to initialize
+      return;
+    }
 }
 
 void PopulateDevices()
@@ -69,12 +69,12 @@ void PopulateDevices()
 }
 
 Joystick::Joystick(SDL_Joystick* const joystick, const int sdl_index)
-    : m_joystick(joystick), m_sdl_index(sdl_index)
+  : m_joystick(joystick), m_sdl_index(sdl_index)
 {
-// really bad HACKS:
-// to not use SDL for an XInput device
-// too many people on the forums pick the SDL device and ask:
-// "why don't my 360 gamepad triggers/rumble work correctly"
+  // really bad HACKS:
+  // to not use SDL for an XInput device
+  // too many people on the forums pick the SDL device and ask:
+  // "why don't my 360 gamepad triggers/rumble work correctly"
 #ifdef _WIN32
   // checking the name is probably good (and hacky) enough
   // but I'll double check with the num of buttons/axes
@@ -82,8 +82,8 @@ Joystick::Joystick(SDL_Joystick* const joystick, const int sdl_index)
   std::transform(lcasename.begin(), lcasename.end(), lcasename.begin(), tolower);
 
   if ((std::string::npos != lcasename.find("xbox 360")) &&
-      (10 == SDL_JoystickNumButtons(joystick)) && (5 == SDL_JoystickNumAxes(joystick)) &&
-      (1 == SDL_JoystickNumHats(joystick)) && (0 == SDL_JoystickNumBalls(joystick)))
+    (10 == SDL_JoystickNumButtons(joystick)) && (5 == SDL_JoystickNumAxes(joystick)) &&
+    (1 == SDL_JoystickNumHats(joystick)) && (0 == SDL_JoystickNumBalls(joystick)))
   {
     // this device won't be used
     return;
@@ -91,7 +91,7 @@ Joystick::Joystick(SDL_Joystick* const joystick, const int sdl_index)
 #endif
 
   if (SDL_JoystickNumButtons(joystick) > 255 || SDL_JoystickNumAxes(joystick) > 255 ||
-      SDL_JoystickNumHats(joystick) > 255 || SDL_JoystickNumBalls(joystick) > 255)
+    SDL_JoystickNumHats(joystick) > 255 || SDL_JoystickNumBalls(joystick) > 255)
   {
     // This device is invalid, don't use it
     // Some crazy devices(HP webcam 2100) end up as HID devices

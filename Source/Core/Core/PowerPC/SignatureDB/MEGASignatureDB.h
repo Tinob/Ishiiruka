@@ -14,19 +14,19 @@ class PPCSymbolDB;
 
 struct MEGASignatureReference
 {
-	MEGASignatureReference(u32 ref_offset, std::string ref_name)
-		: offset(ref_offset), name(std::move(ref_name))
-	{
-	}
-	u32 offset;
-	std::string name;
+  MEGASignatureReference(u32 ref_offset, std::string ref_name)
+    : offset(ref_offset), name(std::move(ref_name))
+  {
+  }
+  u32 offset;
+  std::string name;
 };
 
 struct MEGASignature
 {
-	std::vector<u32> code;
-	std::string name;
-	std::vector<MEGASignatureReference> refs;
+  std::vector<u32> code;
+  std::string name;
+  std::vector<MEGASignatureReference> refs;
 };
 
 // MEGA files from Megazig's WiiTools IDA plugin
@@ -39,19 +39,19 @@ struct MEGASignature
 class MEGASignatureDB : public SignatureDBFormatHandler
 {
 public:
-	MEGASignatureDB();
-	~MEGASignatureDB() override;
+  MEGASignatureDB();
+  ~MEGASignatureDB() override;
 
-	void Clear() override;
-	bool Load(const std::string& file_path) override;
-	bool Save(const std::string& file_path) const override;
-	void List() const override;
+  void Clear() override;
+  bool Load(const std::string& file_path) override;
+  bool Save(const std::string& file_path) const override;
+  void List() const override;
 
-	void Apply(PPCSymbolDB* symbol_db) const override;
-	void Populate(const PPCSymbolDB* func_db, const std::string& filter = "") override;
+  void Apply(PPCSymbolDB* symbol_db) const override;
+  void Populate(const PPCSymbolDB* func_db, const std::string& filter = "") override;
 
-	bool Add(u32 startAddr, u32 size, const std::string& name) override;
+  bool Add(u32 startAddr, u32 size, const std::string& name) override;
 
 private:
-	std::vector<MEGASignature> m_signatures;
+  std::vector<MEGASignature> m_signatures;
 };

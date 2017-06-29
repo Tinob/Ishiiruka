@@ -12,7 +12,7 @@ namespace GPFifo
 {
 enum
 {
-	GATHER_PIPE_SIZE = 32
+  GATHER_PIPE_SIZE = 32
 };
 
 // pipe pointer for JIT access

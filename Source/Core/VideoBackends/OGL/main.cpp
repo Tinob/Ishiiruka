@@ -74,118 +74,118 @@ namespace OGL
 // Draw messages on top of the screen
 unsigned int VideoBackend::PeekMessages()
 {
-	return GLInterface->PeekMessages();
+  return GLInterface->PeekMessages();
 }
 
 std::string VideoBackend::GetName() const
 {
-	return "OGL";
+  return "OGL";
 }
 
 std::string VideoBackend::GetDisplayName() const
 {
-	if (GLInterface != nullptr && GLInterface->GetMode() == GLInterfaceMode::MODE_OPENGLES3)
-		return "OpenGLES";
-	else
-		return "OpenGL";
+  if (GLInterface != nullptr && GLInterface->GetMode() == GLInterfaceMode::MODE_OPENGLES3)
+    return "OpenGLES";
+  else
+    return "OpenGL";
 }
 
 void VideoBackend::InitBackendInfo()
 {
-	g_Config.backend_info.APIType = API_OPENGL;
-	g_Config.backend_info.MaxTextureSize = 1024;
+  g_Config.backend_info.APIType = API_OPENGL;
+  g_Config.backend_info.MaxTextureSize = 1024;
 #ifdef _WIN32
-	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_BGRA32] = false;
-	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_RGBA32] = true;
-	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_I4_AS_I8] = false;
-	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_IA4_AS_IA8] = false;
-	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_I8] = false;
-	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_IA8] = false;
-	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_RGB565] = false;
-	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT1] = true;
-	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT3] = true;
-	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT5] = true;
+  g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_BGRA32] = false;
+  g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_RGBA32] = true;
+  g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_I4_AS_I8] = false;
+  g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_IA4_AS_IA8] = false;
+  g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_I8] = false;
+  g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_IA8] = false;
+  g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_RGB565] = false;
+  g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT1] = true;
+  g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT3] = true;
+  g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT5] = true;
 #endif
-	g_Config.backend_info.bSupportsScaling = false;
-	g_Config.backend_info.bSupportsExclusiveFullscreen = false;
-	g_Config.backend_info.bSupportsOversizedViewports = true;
-	g_Config.backend_info.bSupportsGeometryShaders = true;
-	g_Config.backend_info.bSupports3DVision = false;
-	g_Config.backend_info.bSupportsPostProcessing = true;
-	g_Config.backend_info.bSupportsSSAA = true;
-	g_Config.backend_info.bSupportsPixelLighting = true;
-	g_Config.backend_info.bSupportsNormalMaps = true;
-	g_Config.backend_info.bSupportsTessellation = false;
-	g_Config.backend_info.bSupportsComputeShaders = false;
-	g_Config.backend_info.bSupportsGPUTextureDecoding = true;
-	g_Config.backend_info.bSupportsComputeTextureEncoding = false;
-	g_Config.backend_info.bSupportsDepthClamp = true;
-	g_Config.backend_info.bSupportsMultithreading = false;
-	g_Config.backend_info.bSupportsValidationLayer = false;
-	g_Config.backend_info.bSupportsReversedDepthRange = true;
-	g_Config.backend_info.bSupportsInternalResolutionFrameDumps = true;
-	g_Config.backend_info.bSupportsAsyncShaderCompilation = false;
-	g_Config.backend_info.Adapters.clear();
+  g_Config.backend_info.bSupportsScaling = false;
+  g_Config.backend_info.bSupportsExclusiveFullscreen = false;
+  g_Config.backend_info.bSupportsOversizedViewports = true;
+  g_Config.backend_info.bSupportsGeometryShaders = true;
+  g_Config.backend_info.bSupports3DVision = false;
+  g_Config.backend_info.bSupportsPostProcessing = true;
+  g_Config.backend_info.bSupportsSSAA = true;
+  g_Config.backend_info.bSupportsPixelLighting = true;
+  g_Config.backend_info.bSupportsNormalMaps = true;
+  g_Config.backend_info.bSupportsTessellation = false;
+  g_Config.backend_info.bSupportsComputeShaders = false;
+  g_Config.backend_info.bSupportsGPUTextureDecoding = true;
+  g_Config.backend_info.bSupportsComputeTextureEncoding = false;
+  g_Config.backend_info.bSupportsDepthClamp = true;
+  g_Config.backend_info.bSupportsMultithreading = false;
+  g_Config.backend_info.bSupportsValidationLayer = false;
+  g_Config.backend_info.bSupportsReversedDepthRange = true;
+  g_Config.backend_info.bSupportsInternalResolutionFrameDumps = true;
+  g_Config.backend_info.bSupportsAsyncShaderCompilation = false;
+  g_Config.backend_info.Adapters.clear();
 
-	// aamodes - 1 is to stay consistent with D3D (means no AA)
-	g_Config.backend_info.AAModes = { 1, 2, 4, 8 };
+  // aamodes - 1 is to stay consistent with D3D (means no AA)
+  g_Config.backend_info.AAModes = { 1, 2, 4, 8 };
 }
 
 bool VideoBackend::Initialize(void* window_handle)
 {
-	if (window_handle == nullptr)
-		return false;
+  if (window_handle == nullptr)
+    return false;
 
-	InitializeShared();
-	InitBackendInfo();
+  InitializeShared();
+  InitBackendInfo();
 
-	InitInterface();
-	GLInterface->SetMode(GLInterfaceMode::MODE_DETECT);
-	if (!GLInterface->Create(window_handle))
-		return false;
+  InitInterface();
+  GLInterface->SetMode(GLInterfaceMode::MODE_DETECT);
+  if (!GLInterface->Create(window_handle))
+    return false;
 
-	return true;
+  return true;
 }
 
 // This is called after Initialize() from the Core
 // Run from the graphics thread
 void VideoBackend::Video_Prepare()
 {
-	GLInterface->MakeCurrent();
+  GLInterface->MakeCurrent();
 
-	g_renderer = std::make_unique<Renderer>();
+  g_renderer = std::make_unique<Renderer>();
 
-	g_vertex_manager = std::make_unique<VertexManager>();
-	g_perf_query = GetPerfQuery();
-	ProgramShaderCache::Init();
-	g_texture_cache = std::make_unique<TextureCache>();
-	g_sampler_cache = std::make_unique<SamplerCache>();
-	g_renderer->Init();
-	TextureConverter::Init();
-	BBox::Init();
+  g_vertex_manager = std::make_unique<VertexManager>();
+  g_perf_query = GetPerfQuery();
+  ProgramShaderCache::Init();
+  g_texture_cache = std::make_unique<TextureCache>();
+  g_sampler_cache = std::make_unique<SamplerCache>();
+  g_renderer->Init();
+  TextureConverter::Init();
+  BBox::Init();
 }
 
 void VideoBackend::Shutdown()
 {
-	GLInterface->Shutdown();
-	GLInterface.reset();
-	ShutdownShared();
+  GLInterface->Shutdown();
+  GLInterface.reset();
+  ShutdownShared();
 }
 
 void VideoBackend::Video_Cleanup()
 {
-	// The following calls are NOT Thread Safe
-	// And need to be called from the video thread
-	CleanupShared();
-	static_cast<Renderer*>(g_renderer.get())->Shutdown();
-	BBox::Shutdown();
-	TextureConverter::Shutdown();
-	g_sampler_cache.reset();
-	g_texture_cache.reset();
-	ProgramShaderCache::Shutdown();
-	g_perf_query.reset();
-	g_vertex_manager.reset();
-	g_renderer.reset();
-	GLInterface->ClearCurrent();
+  // The following calls are NOT Thread Safe
+  // And need to be called from the video thread
+  CleanupShared();
+  static_cast<Renderer*>(g_renderer.get())->Shutdown();
+  BBox::Shutdown();
+  TextureConverter::Shutdown();
+  g_sampler_cache.reset();
+  g_texture_cache.reset();
+  ProgramShaderCache::Shutdown();
+  g_perf_query.reset();
+  g_vertex_manager.reset();
+  g_renderer.reset();
+  GLInterface->ClearCurrent();
 }
 }

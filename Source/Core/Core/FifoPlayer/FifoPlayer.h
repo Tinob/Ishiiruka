@@ -56,102 +56,102 @@ extern bool IsPlayingBackFifologWithBrokenEFBCopies;
 class FifoPlayer
 {
 public:
-	typedef void(*CallbackFunc)(void);
+  typedef void(*CallbackFunc)(void);
 
-	~FifoPlayer();
+  ~FifoPlayer();
 
-	bool Open(const std::string& filename);
-	void Close();
+  bool Open(const std::string& filename);
+  void Close();
 
-	// Returns a CPUCoreBase instance that can be injected into PowerPC as a
-	// pseudo-CPU. The instance is only valid while the FifoPlayer is Open().
-	// Returns nullptr if the FifoPlayer is not initialized correctly.
-	// Play/Pause/Stop of the FifoLog can be controlled normally via the
-	// PowerPC state.
-	std::unique_ptr<CPUCoreBase> GetCPUCore();
+  // Returns a CPUCoreBase instance that can be injected into PowerPC as a
+  // pseudo-CPU. The instance is only valid while the FifoPlayer is Open().
+  // Returns nullptr if the FifoPlayer is not initialized correctly.
+  // Play/Pause/Stop of the FifoLog can be controlled normally via the
+  // PowerPC state.
+  std::unique_ptr<CPUCoreBase> GetCPUCore();
 
-	FifoDataFile* GetFile() const { return m_File.get(); }
-	u32 GetFrameObjectCount() const;
-	u32 GetCurrentFrameNum() const { return m_CurrentFrame; }
-	const AnalyzedFrameInfo& GetAnalyzedFrameInfo(u32 frame) const { return m_FrameInfo[frame]; }
-	// Frame range
-	u32 GetFrameRangeStart() const { return m_FrameRangeStart; }
-	void SetFrameRangeStart(u32 start);
+  FifoDataFile* GetFile() const { return m_File.get(); }
+  u32 GetFrameObjectCount() const;
+  u32 GetCurrentFrameNum() const { return m_CurrentFrame; }
+  const AnalyzedFrameInfo& GetAnalyzedFrameInfo(u32 frame) const { return m_FrameInfo[frame]; }
+  // Frame range
+  u32 GetFrameRangeStart() const { return m_FrameRangeStart; }
+  void SetFrameRangeStart(u32 start);
 
-	u32 GetFrameRangeEnd() const { return m_FrameRangeEnd; }
-	void SetFrameRangeEnd(u32 end);
+  u32 GetFrameRangeEnd() const { return m_FrameRangeEnd; }
+  void SetFrameRangeEnd(u32 end);
 
-	// Object range
-	u32 GetObjectRangeStart() const { return m_ObjectRangeStart; }
-	void SetObjectRangeStart(u32 start) { m_ObjectRangeStart = start; }
-	u32 GetObjectRangeEnd() const { return m_ObjectRangeEnd; }
-	void SetObjectRangeEnd(u32 end) { m_ObjectRangeEnd = end; }
-	// If enabled then all memory updates happen at once before the first frame
-	// Default is disabled
-	void SetEarlyMemoryUpdates(bool enabled) { m_EarlyMemoryUpdates = enabled; }
-	// Callbacks
-	void SetFileLoadedCallback(CallbackFunc callback) { m_FileLoadedCb = callback; }
-	void SetFrameWrittenCallback(CallbackFunc callback) { m_FrameWrittenCb = callback; }
-	static FifoPlayer& GetInstance();
+  // Object range
+  u32 GetObjectRangeStart() const { return m_ObjectRangeStart; }
+  void SetObjectRangeStart(u32 start) { m_ObjectRangeStart = start; }
+  u32 GetObjectRangeEnd() const { return m_ObjectRangeEnd; }
+  void SetObjectRangeEnd(u32 end) { m_ObjectRangeEnd = end; }
+  // If enabled then all memory updates happen at once before the first frame
+  // Default is disabled
+  void SetEarlyMemoryUpdates(bool enabled) { m_EarlyMemoryUpdates = enabled; }
+  // Callbacks
+  void SetFileLoadedCallback(CallbackFunc callback) { m_FileLoadedCb = callback; }
+  void SetFrameWrittenCallback(CallbackFunc callback) { m_FrameWrittenCb = callback; }
+  static FifoPlayer& GetInstance();
 
 private:
-	class CPUCore;
+  class CPUCore;
 
-	FifoPlayer();
+  FifoPlayer();
 
-	CPU::State AdvanceFrame();
+  CPU::State AdvanceFrame();
 
-	void WriteFrame(const FifoFrameInfo& frame, const AnalyzedFrameInfo& info);
-	void WriteFramePart(u32 dataStart, u32 dataEnd, u32& nextMemUpdate, const FifoFrameInfo& frame,
-		const AnalyzedFrameInfo& info);
+  void WriteFrame(const FifoFrameInfo& frame, const AnalyzedFrameInfo& info);
+  void WriteFramePart(u32 dataStart, u32 dataEnd, u32& nextMemUpdate, const FifoFrameInfo& frame,
+    const AnalyzedFrameInfo& info);
 
-	void WriteAllMemoryUpdates();
-	void WriteMemory(const MemoryUpdate& memUpdate);
+  void WriteAllMemoryUpdates();
+  void WriteMemory(const MemoryUpdate& memUpdate);
 
-	// writes a range of data to the fifo
-	// start and end must be relative to frame's fifo data so elapsed cycles are figured correctly
-	void WriteFifo(const u8* data, u32 start, u32 end);
+  // writes a range of data to the fifo
+  // start and end must be relative to frame's fifo data so elapsed cycles are figured correctly
+  void WriteFifo(const u8* data, u32 start, u32 end);
 
-	void SetupFifo();
+  void SetupFifo();
 
-	void LoadMemory();
-	void LoadRegisters();
-	void LoadTextureMemory();
+  void LoadMemory();
+  void LoadRegisters();
+  void LoadTextureMemory();
 
-	void WriteCP(u32 address, u16 value);
-	void WritePI(u32 address, u32 value);
+  void WriteCP(u32 address, u16 value);
+  void WritePI(u32 address, u32 value);
 
-	void FlushWGP();
+  void FlushWGP();
 
-	void LoadBPReg(u8 reg, u32 value);
-	void LoadCPReg(u8 reg, u32 value);
-	void LoadXFReg(u16 reg, u32 value);
-	void LoadXFMem16(u16 address, const u32* data);
+  void LoadBPReg(u8 reg, u32 value);
+  void LoadCPReg(u8 reg, u32 value);
+  void LoadXFReg(u16 reg, u32 value);
+  void LoadXFMem16(u16 address, const u32* data);
 
-	bool ShouldLoadBP(u8 address);
+  bool ShouldLoadBP(u8 address);
 
-	static bool IsIdleSet();
-	static bool IsHighWatermarkSet();
+  static bool IsIdleSet();
+  static bool IsHighWatermarkSet();
 
-	bool m_Loop;
+  bool m_Loop;
 
-	u32 m_CurrentFrame = 0;
-	u32 m_FrameRangeStart = 0;
-	u32 m_FrameRangeEnd = 0;
+  u32 m_CurrentFrame = 0;
+  u32 m_FrameRangeStart = 0;
+  u32 m_FrameRangeEnd = 0;
 
-	u32 m_ObjectRangeStart = 0;
-	u32 m_ObjectRangeEnd = 10000;
+  u32 m_ObjectRangeStart = 0;
+  u32 m_ObjectRangeEnd = 10000;
 
-	bool m_EarlyMemoryUpdates = false;
+  bool m_EarlyMemoryUpdates = false;
 
-	u64 m_CyclesPerFrame = 0;
-	u32 m_ElapsedCycles = 0;
-	u32 m_FrameFifoSize = 0;
+  u64 m_CyclesPerFrame = 0;
+  u32 m_ElapsedCycles = 0;
+  u32 m_FrameFifoSize = 0;
 
-	CallbackFunc m_FileLoadedCb = nullptr;
-	CallbackFunc m_FrameWrittenCb = nullptr;
+  CallbackFunc m_FileLoadedCb = nullptr;
+  CallbackFunc m_FrameWrittenCb = nullptr;
 
-	std::unique_ptr<FifoDataFile> m_File;
+  std::unique_ptr<FifoDataFile> m_File;
 
-	std::vector<AnalyzedFrameInfo> m_FrameInfo;
+  std::vector<AnalyzedFrameInfo> m_FrameInfo;
 };

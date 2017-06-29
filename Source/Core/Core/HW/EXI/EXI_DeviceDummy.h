@@ -17,19 +17,19 @@ namespace ExpansionInterface
 class CEXIDummy final : public IEXIDevice
 {
 public:
-	explicit CEXIDummy(const std::string& name);
+  explicit CEXIDummy(const std::string& name);
 
-	void ImmWrite(u32 data, u32 size) override;
-	u32 ImmRead(u32 size) override;
+  void ImmWrite(u32 data, u32 size) override;
+  u32 ImmRead(u32 size) override;
 
-	void DMAWrite(u32 address, u32 size) override;
-	void DMARead(u32 address, u32 size) override;
+  void DMAWrite(u32 address, u32 size) override;
+  void DMARead(u32 address, u32 size) override;
 
-	bool IsPresent() const override;
+  bool IsPresent() const override;
 
 private:
-	void TransferByte(u8& byte) override;
+  void TransferByte(u8& byte) override;
 
-	std::string m_name;
+  std::string m_name;
 };
 }  // namespace ExpansionInterface

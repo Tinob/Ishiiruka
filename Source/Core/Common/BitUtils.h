@@ -20,7 +20,7 @@ namespace Common
 template <typename T>
 constexpr size_t BitSize() noexcept
 {
-	return sizeof(T) * CHAR_BIT;
+  return sizeof(T) * CHAR_BIT;
 }
 
 ///
@@ -36,7 +36,7 @@ constexpr size_t BitSize() noexcept
 template <typename T>
 constexpr T ExtractBit(const T src, const size_t bit) noexcept
 {
-	return (src >> bit) & static_cast<T>(1);
+  return (src >> bit) & static_cast<T>(1);
 }
 
 ///
@@ -52,9 +52,9 @@ constexpr T ExtractBit(const T src, const size_t bit) noexcept
 template <size_t bit, typename T>
 constexpr T ExtractBit(const T src) noexcept
 {
-	static_assert(bit < BitSize<T>(), "Specified bit must be within T's bit width.");
+  static_assert(bit < BitSize<T>(), "Specified bit must be within T's bit width.");
 
-	return ExtractBit(src, bit);
+  return ExtractBit(src, bit);
 }
 
 ///
@@ -73,8 +73,8 @@ constexpr T ExtractBit(const T src) noexcept
 template <typename T, typename Result = std::make_unsigned_t<T>>
 constexpr Result ExtractBits(const T src, const size_t begin, const size_t end) noexcept
 {
-	return static_cast<Result>(((static_cast<Result>(src) << ((BitSize<T>() - 1) - end)) >>
-		(BitSize<T>() - end + begin - 1)));
+  return static_cast<Result>(((static_cast<Result>(src) << ((BitSize<T>() - 1) - end)) >>
+    (BitSize<T>() - end + begin - 1)));
 }
 
 ///
@@ -93,10 +93,10 @@ constexpr Result ExtractBits(const T src, const size_t begin, const size_t end) 
 template <size_t begin, size_t end, typename T, typename Result = std::make_unsigned_t<T>>
 constexpr Result ExtractBits(const T src) noexcept
 {
-	static_assert(begin < end, "Beginning bit must be less than the ending bit.");
-	static_assert(begin < BitSize<T>(), "Beginning bit is larger than T's bit width.");
-	static_assert(end < BitSize<T>(), "Ending bit is larger than T's bit width.");
+  static_assert(begin < end, "Beginning bit must be less than the ending bit.");
+  static_assert(begin < BitSize<T>(), "Beginning bit is larger than T's bit width.");
+  static_assert(end < BitSize<T>(), "Ending bit is larger than T's bit width.");
 
-	return ExtractBits<T, Result>(src, begin, end);
+  return ExtractBits<T, Result>(src, begin, end);
 }
 }  // namespace Common

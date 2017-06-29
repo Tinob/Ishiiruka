@@ -29,9 +29,9 @@
 #define GL_PROGRAM_BINARY_FORMATS 0x87FF
 
 typedef void(APIENTRYP PFNDOLGETPROGRAMBINARYPROC)(GLuint program, GLsizei bufSize, GLsizei* length,
-	GLenum* binaryFormat, void* binary);
+  GLenum* binaryFormat, void* binary);
 typedef void(APIENTRYP PFNDOLPROGRAMBINARYPROC)(GLuint program, GLenum binaryFormat,
-	const void* binary, GLsizei length);
+  const void* binary, GLsizei length);
 typedef void(APIENTRYP PFNDOLPROGRAMPARAMETERIPROC)(GLuint program, GLenum pname, GLint value);
 
 extern PFNDOLGETPROGRAMBINARYPROC dolGetProgramBinary;

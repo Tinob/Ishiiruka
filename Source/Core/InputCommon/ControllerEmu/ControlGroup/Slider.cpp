@@ -19,20 +19,20 @@ namespace ControllerEmu
 {
 Slider::Slider(const std::string& name_) : ControlGroup(name_, GroupType::Slider)
 {
-	controls.emplace_back(std::make_unique<Input>("Left"));
-	controls.emplace_back(std::make_unique<Input>("Right"));
+  controls.emplace_back(std::make_unique<Input>("Left"));
+  controls.emplace_back(std::make_unique<Input>("Right"));
 
-	numeric_settings.emplace_back(std::make_unique<NumericSetting>(_trans("Dead Zone"), 0, 0, 50));
+  numeric_settings.emplace_back(std::make_unique<NumericSetting>(_trans("Dead Zone"), 0, 0, 50));
 }
 
 void Slider::GetState(ControlState* const slider)
 {
-	const ControlState deadzone = numeric_settings[0]->GetValue();
-	const ControlState state = controls[1]->control_ref->State() - controls[0]->control_ref->State();
+  const ControlState deadzone = numeric_settings[0]->GetValue();
+  const ControlState state = controls[1]->control_ref->State() - controls[0]->control_ref->State();
 
-	if (fabs(state) > deadzone)
-		*slider = (state - (deadzone * sign(state))) / (1 - deadzone);
-	else
-		*slider = 0;
+  if (fabs(state) > deadzone)
+    *slider = (state - (deadzone * sign(state))) / (1 - deadzone);
+  else
+    *slider = 0;
 }
 }  // namespace ControllerEmu

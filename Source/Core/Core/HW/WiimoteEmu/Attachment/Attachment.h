@@ -16,29 +16,29 @@ struct ExtensionReg;
 class Attachment : public ControllerEmu::EmulatedController
 {
 public:
-	Attachment(const char* const name, ExtensionReg& reg);
+  Attachment(const char* const name, ExtensionReg& reg);
 
-	virtual void GetState(u8* const data);
-	virtual bool IsButtonPressed() const;
+  virtual void GetState(u8* const data);
+  virtual bool IsButtonPressed() const;
 
-	void Reset();
-	std::string GetName() const override;
+  void Reset();
+  std::string GetName() const override;
 
 protected:
-	// Default radius for attachment analog sticks.
-	static constexpr ControlState DEFAULT_ATTACHMENT_STICK_RADIUS = 1.0;
+  // Default radius for attachment analog sticks.
+  static constexpr ControlState DEFAULT_ATTACHMENT_STICK_RADIUS = 1.0;
 
-	std::array<u8, 6> m_id{};
-	std::array<u8, 0x10> m_calibration{};
+  std::array<u8, 6> m_id{};
+  std::array<u8, 0x10> m_calibration{};
 
 private:
-	const char* const m_name;
-	ExtensionReg& m_reg;
+  const char* const m_name;
+  ExtensionReg& m_reg;
 };
 
 class None : public Attachment
 {
 public:
-	explicit None(ExtensionReg& reg);
+  explicit None(ExtensionReg& reg);
 };
 }  // namespace WiimoteEmu

@@ -7,4 +7,4 @@
 
 // The default font
 wxFont DebuggerFont{ 9,     wxFONTFAMILY_MODERN, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL,
-										false, "monospace" };
+                                        false, "monospace" };

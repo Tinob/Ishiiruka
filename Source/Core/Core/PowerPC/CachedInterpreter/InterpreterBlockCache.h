@@ -11,8 +11,8 @@ class JitBase;
 class BlockCache final : public JitBaseBlockCache
 {
 public:
-	explicit BlockCache(JitBase& jit);
+  explicit BlockCache(JitBase& jit);
 
 private:
-	void WriteLinkBlock(const JitBlock::LinkData& source, const JitBlock* dest) override;
+  void WriteLinkBlock(const JitBlock::LinkData& source, const JitBlock* dest) override;
 };

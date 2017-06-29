@@ -14,27 +14,27 @@ class XFBEncoder
 
 public:
 
-	XFBEncoder();
+  XFBEncoder();
 
-	void Init();
-	void Shutdown();
+  void Init();
+  void Shutdown();
 
-	void Encode(u8* dst, u32 width, u32 height, const EFBRectangle& srcRect, float gamma);
+  void Encode(u8* dst, u32 width, u32 height, const EFBRectangle& srcRect, float gamma);
 
 private:
 
-	D3D::Texture2dPtr m_out;
-	D3D::RtvPtr m_outRTV;
-	D3D::Texture2dPtr m_outStage;
-	D3D::BufferPtr m_encodeParams;
-	D3D::BufferPtr m_quad;
-	D3D::VertexShaderPtr m_vShader;
-	D3D::InputLayoutPtr m_quadLayout;
-	D3D::PixelShaderPtr m_pShader;
-	D3D::BlendStatePtr m_xfbEncodeBlendState;
-	D3D::DepthStencilStatePtr m_xfbEncodeDepthState;
-	D3D::RasterizerStatePtr m_xfbEncodeRastState;
-	D3D::SamplerStatePtr m_efbSampler;
+  D3D::Texture2dPtr m_out;
+  D3D::RtvPtr m_outRTV;
+  D3D::Texture2dPtr m_outStage;
+  D3D::BufferPtr m_encodeParams;
+  D3D::BufferPtr m_quad;
+  D3D::VertexShaderPtr m_vShader;
+  D3D::InputLayoutPtr m_quadLayout;
+  D3D::PixelShaderPtr m_pShader;
+  D3D::BlendStatePtr m_xfbEncodeBlendState;
+  D3D::DepthStencilStatePtr m_xfbEncodeDepthState;
+  D3D::RasterizerStatePtr m_xfbEncodeRastState;
+  D3D::SamplerStatePtr m_efbSampler;
 
 };
 

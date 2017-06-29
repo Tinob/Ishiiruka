@@ -69,23 +69,23 @@
   */
 
   /*
-	* This file contains everything that applications need to know from
-	* Host Controller Interface (HCI). Information taken from Bluetooth
-	* Core Specifications (v1.1, v2.0 and v2.1)
-	*
-	* This file can be included by both kernel and userland applications.
-	*
-	* NOTE: Here and after Bluetooth device is called a "unit". Bluetooth
-	*       specification refers to both devices and units. They are the
-	*       same thing (I think), so to be consistent word "unit" will be
-	*       used.
-	*/
+    * This file contains everything that applications need to know from
+    * Host Controller Interface (HCI). Information taken from Bluetooth
+    * Core Specifications (v1.1, v2.0 and v2.1)
+    *
+    * This file can be included by both kernel and userland applications.
+    *
+    * NOTE: Here and after Bluetooth device is called a "unit". Bluetooth
+    *       specification refers to both devices and units. They are the
+    *       same thing (I think), so to be consistent word "unit" will be
+    *       used.
+    */
 
 #pragma once
 
 #include <stdint.h>
 
-	// All structs in this file are packed
+    // All structs in this file are packed
 #pragma pack(push, 1)
 
 /* All sizes are in bytes */
@@ -97,7 +97,7 @@
 #ifndef __BLUETOOTH_H
 typedef struct
 {
-	uint8_t b[BLUETOOTH_BDADDR_SIZE];
+  uint8_t b[BLUETOOTH_BDADDR_SIZE];
 } bdaddr_t;
 #define BDADDR_ANY                                                                                 \
   {                                                                                                \
@@ -210,7 +210,7 @@ typedef struct
 #define HCI_LINK_SCO 0x00  /* Voice */
 #define HCI_LINK_ACL 0x01  /* Data */
 #define HCI_LINK_eSCO 0x02 /* eSCO */
-									/* 0x03 - 0xFF - reserved for future use */
+                                    /* 0x03 - 0xFF - reserved for future use */
 
 /*
  * ACL/SCO packet type bits are set to enable the
@@ -412,17 +412,17 @@ typedef struct
 #define HCI_OGF(op) (((op) >> 10) & 0x3f)
 
   /*
-	* Macro(s) to extract/combine connection handle, BC (Broadcast) and
-	* PB (Packet boundary) flags.
-	*/
+    * Macro(s) to extract/combine connection handle, BC (Broadcast) and
+    * PB (Packet boundary) flags.
+    */
 
 #define HCI_CON_HANDLE(h) ((h)&0x0fff)
 #define HCI_PB_FLAG(h) (((h)&0x3000) >> 12)
 #define HCI_BC_FLAG(h) (((h)&0xc000) >> 14)
 #define HCI_MK_CON_HANDLE(h, pb, bc) (((h)&0x0fff) | (((pb)&3) << 12) | (((bc)&3) << 14))
 
-	/* PB flag values */
-	/* 00 - reserved for future use */
+    /* PB flag values */
+    /* 00 - reserved for future use */
 #define HCI_PACKET_FRAGMENT 0x1
 #define HCI_PACKET_START 0x2
 /* 11 - reserved for future use */
@@ -431,14 +431,14 @@ typedef struct
 #define HCI_POINT2POINT 0x0       /* only Host controller to Host */
 #define HCI_BROADCAST_ACTIVE 0x1  /* both directions */
 #define HCI_BROADCAST_PICONET 0x2 /* both directions */
-											 /* 11 - reserved for future use */
+                                             /* 11 - reserved for future use */
 
 /* HCI command packet header */
 typedef struct
 {
-	// uint8_t		type;	/* MUST be 0x01 */
-	uint16_t opcode; /* OpCode */
-	uint8_t length;  /* parameter(s) length in bytes */
+  // uint8_t		type;	/* MUST be 0x01 */
+  uint16_t opcode; /* OpCode */
+  uint8_t length;  /* parameter(s) length in bytes */
 } hci_cmd_hdr_t;
 
 #define HCI_CMD_PKT 0x01
@@ -447,9 +447,9 @@ typedef struct
 /* ACL data packet header */
 typedef struct
 {
-	// uint8_t		type;	     /* MUST be 0x02 */
-	uint16_t con_handle; /* connection handle + PB + BC flags */
-	uint16_t length;     /* payload length in bytes */
+  // uint8_t		type;	     /* MUST be 0x02 */
+  uint16_t con_handle; /* connection handle + PB + BC flags */
+  uint16_t length;     /* payload length in bytes */
 } hci_acldata_hdr_t;
 
 #define HCI_ACL_DATA_PKT 0x02
@@ -458,9 +458,9 @@ typedef struct
 /* SCO data packet header */
 typedef struct
 {
-	// uint8_t		type;	    /* MUST be 0x03 */
-	uint16_t con_handle; /* connection handle + reserved bits */
-	uint8_t length;      /* payload length in bytes */
+  // uint8_t		type;	    /* MUST be 0x03 */
+  uint16_t con_handle; /* connection handle + reserved bits */
+  uint8_t length;      /* payload length in bytes */
 } hci_scodata_hdr_t;
 
 #define HCI_SCO_DATA_PKT 0x03
@@ -469,9 +469,9 @@ typedef struct
 /* HCI event packet header */
 typedef struct
 {
-	// uint8_t		type;	/* MUST be 0x04 */
-	uint8_t event;  /* event */
-	uint8_t length; /* parameter(s) length in bytes */
+  // uint8_t		type;	/* MUST be 0x04 */
+  uint8_t event;  /* event */
+  uint8_t length; /* parameter(s) length in bytes */
 } hci_event_hdr_t;
 
 #define HCI_EVENT_PKT 0x04
@@ -480,7 +480,7 @@ typedef struct
 /* HCI status return parameter */
 typedef struct
 {
-	uint8_t status; /* 0x00 - success */
+  uint8_t status; /* 0x00 - success */
 } hci_status_rp;
 
 /**************************************************************************
@@ -495,9 +495,9 @@ typedef struct
 #define HCI_CMD_INQUIRY 0x0401
 typedef struct
 {
-	uint8_t lap[HCI_LAP_SIZE]; /* LAP */
-	uint8_t inquiry_length;    /* (N x 1.28) sec */
-	uint8_t num_responses;     /* Max. # of responses */
+  uint8_t lap[HCI_LAP_SIZE]; /* LAP */
+  uint8_t inquiry_length;    /* (N x 1.28) sec */
+  uint8_t num_responses;     /* Max. # of responses */
 } hci_inquiry_cp;
 /* No return parameter(s) */
 
@@ -510,11 +510,11 @@ typedef hci_status_rp hci_inquiry_cancel_rp;
 #define HCI_CMD_PERIODIC_INQUIRY 0x0403
 typedef struct
 {
-	uint16_t max_period_length; /* Max. and min. amount of time */
-	uint16_t min_period_length; /* between consecutive inquiries */
-	uint8_t lap[HCI_LAP_SIZE];  /* LAP */
-	uint8_t inquiry_length;     /* (inquiry_length * 1.28) sec */
-	uint8_t num_responses;      /* Max. # of responses */
+  uint16_t max_period_length; /* Max. and min. amount of time */
+  uint16_t min_period_length; /* between consecutive inquiries */
+  uint8_t lap[HCI_LAP_SIZE];  /* LAP */
+  uint8_t inquiry_length;     /* (inquiry_length * 1.28) sec */
+  uint8_t num_responses;      /* Max. # of responses */
 } hci_periodic_inquiry_cp;
 
 typedef hci_status_rp hci_periodic_inquiry_rp;
@@ -528,12 +528,12 @@ typedef hci_status_rp hci_exit_periodic_inquiry_rp;
 #define HCI_CMD_CREATE_CON 0x0405
 typedef struct
 {
-	bdaddr_t bdaddr;            /* destination address */
-	uint16_t pkt_type;          /* packet type */
-	uint8_t page_scan_rep_mode; /* page scan repetition mode */
-	uint8_t page_scan_mode;     /* reserved - set to 0x00 */
-	uint16_t clock_offset;      /* clock offset */
-	uint8_t accept_role_switch; /* accept role switch? 0x00 == No */
+  bdaddr_t bdaddr;            /* destination address */
+  uint16_t pkt_type;          /* packet type */
+  uint8_t page_scan_rep_mode; /* page scan repetition mode */
+  uint8_t page_scan_mode;     /* reserved - set to 0x00 */
+  uint16_t clock_offset;      /* clock offset */
+  uint8_t accept_role_switch; /* accept role switch? 0x00 == No */
 } hci_create_con_cp;
 /* No return parameter(s) */
 
@@ -541,8 +541,8 @@ typedef struct
 #define HCI_CMD_DISCONNECT 0x0406
 typedef struct
 {
-	uint16_t con_handle; /* connection handle */
-	uint8_t reason;      /* reason to disconnect */
+  uint16_t con_handle; /* connection handle */
+  uint8_t reason;      /* reason to disconnect */
 } hci_discon_cp;
 /* No return parameter(s) */
 
@@ -551,8 +551,8 @@ typedef struct
 #define HCI_CMD_ADD_SCO_CON 0x0407
 typedef struct
 {
-	uint16_t con_handle; /* connection handle */
-	uint16_t pkt_type;   /* packet type */
+  uint16_t con_handle; /* connection handle */
+  uint16_t pkt_type;   /* packet type */
 } hci_add_sco_con_cp;
 /* No return parameter(s) */
 
@@ -560,21 +560,21 @@ typedef struct
 #define HCI_CMD_CREATE_CON_CANCEL 0x0408
 typedef struct
 {
-	bdaddr_t bdaddr; /* destination address */
+  bdaddr_t bdaddr; /* destination address */
 } hci_create_con_cancel_cp;
 
 typedef struct
 {
-	uint8_t status;  /* 0x00 - success */
-	bdaddr_t bdaddr; /* destination address */
+  uint8_t status;  /* 0x00 - success */
+  bdaddr_t bdaddr; /* destination address */
 } hci_create_con_cancel_rp;
 
 #define HCI_OCF_ACCEPT_CON 0x0009
 #define HCI_CMD_ACCEPT_CON 0x0409
 typedef struct
 {
-	bdaddr_t bdaddr; /* address of unit to be connected */
-	uint8_t role;    /* connection role */
+  bdaddr_t bdaddr; /* address of unit to be connected */
+  uint8_t role;    /* connection role */
 } hci_accept_con_cp;
 /* No return parameter(s) */
 
@@ -582,8 +582,8 @@ typedef struct
 #define HCI_CMD_REJECT_CON 0x040A
 typedef struct
 {
-	bdaddr_t bdaddr; /* remote address */
-	uint8_t reason;  /* reason to reject */
+  bdaddr_t bdaddr; /* remote address */
+  uint8_t reason;  /* reason to reject */
 } hci_reject_con_cp;
 /* No return parameter(s) */
 
@@ -591,63 +591,63 @@ typedef struct
 #define HCI_CMD_LINK_KEY_REP 0x040B
 typedef struct
 {
-	bdaddr_t bdaddr;           /* remote address */
-	uint8_t key[HCI_KEY_SIZE]; /* key */
+  bdaddr_t bdaddr;           /* remote address */
+  uint8_t key[HCI_KEY_SIZE]; /* key */
 } hci_link_key_rep_cp;
 
 typedef struct
 {
-	uint8_t status;  /* 0x00 - success */
-	bdaddr_t bdaddr; /* unit address */
+  uint8_t status;  /* 0x00 - success */
+  bdaddr_t bdaddr; /* unit address */
 } hci_link_key_rep_rp;
 
 #define HCI_OCF_LINK_KEY_NEG_REP 0x000c
 #define HCI_CMD_LINK_KEY_NEG_REP 0x040C
 typedef struct
 {
-	bdaddr_t bdaddr; /* remote address */
+  bdaddr_t bdaddr; /* remote address */
 } hci_link_key_neg_rep_cp;
 
 typedef struct
 {
-	uint8_t status;  /* 0x00 - success */
-	bdaddr_t bdaddr; /* unit address */
+  uint8_t status;  /* 0x00 - success */
+  bdaddr_t bdaddr; /* unit address */
 } hci_link_key_neg_rep_rp;
 
 #define HCI_OCF_PIN_CODE_REP 0x000d
 #define HCI_CMD_PIN_CODE_REP 0x040D
 typedef struct
 {
-	bdaddr_t bdaddr;           /* remote address */
-	uint8_t pin_size;          /* pin code length (in bytes) */
-	uint8_t pin[HCI_PIN_SIZE]; /* pin code */
+  bdaddr_t bdaddr;           /* remote address */
+  uint8_t pin_size;          /* pin code length (in bytes) */
+  uint8_t pin[HCI_PIN_SIZE]; /* pin code */
 } hci_pin_code_rep_cp;
 
 typedef struct
 {
-	uint8_t status;  /* 0x00 - success */
-	bdaddr_t bdaddr; /* unit address */
+  uint8_t status;  /* 0x00 - success */
+  bdaddr_t bdaddr; /* unit address */
 } hci_pin_code_rep_rp;
 
 #define HCI_OCF_PIN_CODE_NEG_REP 0x000e
 #define HCI_CMD_PIN_CODE_NEG_REP 0x040E
 typedef struct
 {
-	bdaddr_t bdaddr; /* remote address */
+  bdaddr_t bdaddr; /* remote address */
 } hci_pin_code_neg_rep_cp;
 
 typedef struct
 {
-	uint8_t status;  /* 0x00 - success */
-	bdaddr_t bdaddr; /* unit address */
+  uint8_t status;  /* 0x00 - success */
+  bdaddr_t bdaddr; /* unit address */
 } hci_pin_code_neg_rep_rp;
 
 #define HCI_OCF_CHANGE_CON_PACKET_TYPE 0x000f
 #define HCI_CMD_CHANGE_CON_PACKET_TYPE 0x040F
 typedef struct
 {
-	uint16_t con_handle; /* connection handle */
-	uint16_t pkt_type;   /* packet type */
+  uint16_t con_handle; /* connection handle */
+  uint16_t pkt_type;   /* packet type */
 } hci_change_con_pkt_type_cp;
 /* No return parameter(s) */
 
@@ -655,7 +655,7 @@ typedef struct
 #define HCI_CMD_AUTH_REQ 0x0411
 typedef struct
 {
-	uint16_t con_handle; /* connection handle */
+  uint16_t con_handle; /* connection handle */
 } hci_auth_req_cp;
 /* No return parameter(s) */
 
@@ -663,8 +663,8 @@ typedef struct
 #define HCI_CMD_SET_CON_ENCRYPTION 0x0413
 typedef struct
 {
-	uint16_t con_handle;       /* connection handle */
-	uint8_t encryption_enable; /* 0x00 - disable, 0x01 - enable */
+  uint16_t con_handle;       /* connection handle */
+  uint8_t encryption_enable; /* 0x00 - disable, 0x01 - enable */
 } hci_set_con_encryption_cp;
 /* No return parameter(s) */
 
@@ -672,7 +672,7 @@ typedef struct
 #define HCI_CMD_CHANGE_CON_LINK_KEY 0x0415
 typedef struct
 {
-	uint16_t con_handle; /* connection handle */
+  uint16_t con_handle; /* connection handle */
 } hci_change_con_link_key_cp;
 /* No return parameter(s) */
 
@@ -680,7 +680,7 @@ typedef struct
 #define HCI_CMD_MASTER_LINK_KEY 0x0417
 typedef struct
 {
-	uint8_t key_flag; /* key flag */
+  uint8_t key_flag; /* key flag */
 } hci_master_link_key_cp;
 /* No return parameter(s) */
 
@@ -688,10 +688,10 @@ typedef struct
 #define HCI_CMD_REMOTE_NAME_REQ 0x0419
 typedef struct
 {
-	bdaddr_t bdaddr;            /* remote address */
-	uint8_t page_scan_rep_mode; /* page scan repetition mode */
-	uint8_t page_scan_mode;     /* page scan mode */
-	uint16_t clock_offset;      /* clock offset */
+  bdaddr_t bdaddr;            /* remote address */
+  uint8_t page_scan_rep_mode; /* page scan repetition mode */
+  uint8_t page_scan_mode;     /* page scan mode */
+  uint16_t clock_offset;      /* clock offset */
 } hci_remote_name_req_cp;
 /* No return parameter(s) */
 
@@ -699,20 +699,20 @@ typedef struct
 #define HCI_CMD_REMOTE_NAME_REQ_CANCEL 0x041A
 typedef struct
 {
-	bdaddr_t bdaddr; /* remote address */
+  bdaddr_t bdaddr; /* remote address */
 } hci_remote_name_req_cancel_cp;
 
 typedef struct
 {
-	uint8_t status;  /* 0x00 - success */
-	bdaddr_t bdaddr; /* remote address */
+  uint8_t status;  /* 0x00 - success */
+  bdaddr_t bdaddr; /* remote address */
 } hci_remote_name_req_cancel_rp;
 
 #define HCI_OCF_READ_REMOTE_FEATURES 0x001b
 #define HCI_CMD_READ_REMOTE_FEATURES 0x041B
 typedef struct
 {
-	uint16_t con_handle; /* connection handle */
+  uint16_t con_handle; /* connection handle */
 } hci_read_remote_features_cp;
 /* No return parameter(s) */
 
@@ -720,8 +720,8 @@ typedef struct
 #define HCI_CMD_READ_REMOTE_EXTENDED_FEATURES 0x041C
 typedef struct
 {
-	uint16_t con_handle; /* connection handle */
-	uint8_t page;        /* page number */
+  uint16_t con_handle; /* connection handle */
+  uint8_t page;        /* page number */
 } hci_read_remote_extended_features_cp;
 /* No return parameter(s) */
 
@@ -729,7 +729,7 @@ typedef struct
 #define HCI_CMD_READ_REMOTE_VER_INFO 0x041D
 typedef struct
 {
-	uint16_t con_handle; /* connection handle */
+  uint16_t con_handle; /* connection handle */
 } hci_read_remote_ver_info_cp;
 /* No return parameter(s) */
 
@@ -737,7 +737,7 @@ typedef struct
 #define HCI_CMD_READ_CLOCK_OFFSET 0x041F
 typedef struct
 {
-	uint16_t con_handle; /* connection handle */
+  uint16_t con_handle; /* connection handle */
 } hci_read_clock_offset_cp;
 /* No return parameter(s) */
 
@@ -745,28 +745,28 @@ typedef struct
 #define HCI_CMD_READ_LMP_HANDLE 0x0420
 typedef struct
 {
-	uint16_t con_handle; /* connection handle */
+  uint16_t con_handle; /* connection handle */
 } hci_read_lmp_handle_cp;
 
 typedef struct
 {
-	uint8_t status;      /* 0x00 - success */
-	uint16_t con_handle; /* connection handle */
-	uint8_t lmp_handle;  /* LMP handle */
-	uint32_t reserved;   /* reserved */
+  uint8_t status;      /* 0x00 - success */
+  uint16_t con_handle; /* connection handle */
+  uint8_t lmp_handle;  /* LMP handle */
+  uint32_t reserved;   /* reserved */
 } hci_read_lmp_handle_rp;
 
 #define HCI_OCF_SETUP_SCO_CON 0x0028
 #define HCI_CMD_SETUP_SCO_CON 0x0428
 typedef struct
 {
-	uint16_t con_handle;   /* connection handle */
-	uint32_t tx_bandwidth; /* transmit bandwidth */
-	uint32_t rx_bandwidth; /* receive bandwidth */
-	uint16_t latency;      /* maximum latency */
-	uint16_t voice;        /* voice setting */
-	uint8_t rt_effort;     /* retransmission effort */
-	uint16_t pkt_type;     /* packet types */
+  uint16_t con_handle;   /* connection handle */
+  uint32_t tx_bandwidth; /* transmit bandwidth */
+  uint32_t rx_bandwidth; /* receive bandwidth */
+  uint16_t latency;      /* maximum latency */
+  uint16_t voice;        /* voice setting */
+  uint8_t rt_effort;     /* retransmission effort */
+  uint16_t pkt_type;     /* packet types */
 } hci_setup_sco_con_cp;
 /* No return parameter(s) */
 
@@ -774,13 +774,13 @@ typedef struct
 #define HCI_CMD_ACCEPT_SCO_CON_REQ 0x0429
 typedef struct
 {
-	bdaddr_t bdaddr;       /* remote address */
-	uint32_t tx_bandwidth; /* transmit bandwidth */
-	uint32_t rx_bandwidth; /* receive bandwidth */
-	uint16_t latency;      /* maximum latency */
-	uint16_t content;      /* voice setting */
-	uint8_t rt_effort;     /* retransmission effort */
-	uint16_t pkt_type;     /* packet types */
+  bdaddr_t bdaddr;       /* remote address */
+  uint32_t tx_bandwidth; /* transmit bandwidth */
+  uint32_t rx_bandwidth; /* receive bandwidth */
+  uint16_t latency;      /* maximum latency */
+  uint16_t content;      /* voice setting */
+  uint8_t rt_effort;     /* retransmission effort */
+  uint16_t pkt_type;     /* packet types */
 } hci_accept_sco_con_req_cp;
 /* No return parameter(s) */
 
@@ -788,8 +788,8 @@ typedef struct
 #define HCI_CMD_REJECT_SCO_CON_REQ 0x042a
 typedef struct
 {
-	bdaddr_t bdaddr; /* remote address */
-	uint8_t reason;  /* reject error code */
+  bdaddr_t bdaddr; /* remote address */
+  uint8_t reason;  /* reject error code */
 } hci_reject_sco_con_req_cp;
 /* No return parameter(s) */
 
@@ -797,111 +797,111 @@ typedef struct
 #define HCI_CMD_IO_CAPABILITY_REP 0x042a
 typedef struct
 {
-	bdaddr_t bdaddr;  /* remote address */
-	uint8_t io_cap;   /* IO capability */
-	uint8_t oob_data; /* OOB data present */
-	uint8_t auth_req; /* auth requirements */
+  bdaddr_t bdaddr;  /* remote address */
+  uint8_t io_cap;   /* IO capability */
+  uint8_t oob_data; /* OOB data present */
+  uint8_t auth_req; /* auth requirements */
 } hci_io_capability_rep_cp;
 
 typedef struct
 {
-	uint8_t status;  /* 0x00 - success */
-	bdaddr_t bdaddr; /* remote address */
+  uint8_t status;  /* 0x00 - success */
+  bdaddr_t bdaddr; /* remote address */
 } hci_io_capability_rep_rp;
 
 #define HCI_OCF_USER_CONFIRM_REP 0x002c
 #define HCI_CMD_USER_CONFIRM_REP 0x042c
 typedef struct
 {
-	bdaddr_t bdaddr; /* remote address */
+  bdaddr_t bdaddr; /* remote address */
 } hci_user_confirm_rep_cp;
 
 typedef struct
 {
-	uint8_t status;  /* 0x00 - success */
-	bdaddr_t bdaddr; /* remote address */
+  uint8_t status;  /* 0x00 - success */
+  bdaddr_t bdaddr; /* remote address */
 } hci_user_confirm_rep_rp;
 
 #define HCI_OCF_USER_CONFIRM_NEG_REP 0x002d
 #define HCI_CMD_USER_CONFIRM_NEG_REP 0x042d
 typedef struct
 {
-	bdaddr_t bdaddr; /* remote address */
+  bdaddr_t bdaddr; /* remote address */
 } hci_user_confirm_neg_rep_cp;
 
 typedef struct
 {
-	uint8_t status;  /* 0x00 - success */
-	bdaddr_t bdaddr; /* remote address */
+  uint8_t status;  /* 0x00 - success */
+  bdaddr_t bdaddr; /* remote address */
 } hci_user_confirm_neg_rep_rp;
 
 #define HCI_OCF_USER_PASSKEY_REP 0x002e
 #define HCI_CMD_USER_PASSKEY_REP 0x042e
 typedef struct
 {
-	bdaddr_t bdaddr; /* remote address */
-	uint32_t value;  /* 000000 - 999999 */
+  bdaddr_t bdaddr; /* remote address */
+  uint32_t value;  /* 000000 - 999999 */
 } hci_user_passkey_rep_cp;
 
 typedef struct
 {
-	uint8_t status;  /* 0x00 - success */
-	bdaddr_t bdaddr; /* remote address */
+  uint8_t status;  /* 0x00 - success */
+  bdaddr_t bdaddr; /* remote address */
 } hci_user_passkey_rep_rp;
 
 #define HCI_OCF_USER_PASSKEY_NEG_REP 0x002f
 #define HCI_CMD_USER_PASSKEY_NEG_REP 0x042f
 typedef struct
 {
-	bdaddr_t bdaddr; /* remote address */
+  bdaddr_t bdaddr; /* remote address */
 } hci_user_passkey_neg_rep_cp;
 
 typedef struct
 {
-	uint8_t status;  /* 0x00 - success */
-	bdaddr_t bdaddr; /* remote address */
+  uint8_t status;  /* 0x00 - success */
+  bdaddr_t bdaddr; /* remote address */
 } hci_user_passkey_neg_rep_rp;
 
 #define HCI_OCF_OOB_DATA_REP 0x0030
 #define HCI_CMD_OOB_DATA_REP 0x0430
 typedef struct
 {
-	bdaddr_t bdaddr; /* remote address */
-	uint8_t c[16];   /* pairing hash */
-	uint8_t r[16];   /* pairing randomizer */
+  bdaddr_t bdaddr; /* remote address */
+  uint8_t c[16];   /* pairing hash */
+  uint8_t r[16];   /* pairing randomizer */
 } hci_user_oob_data_rep_cp;
 
 typedef struct
 {
-	uint8_t status;  /* 0x00 - success */
-	bdaddr_t bdaddr; /* remote address */
+  uint8_t status;  /* 0x00 - success */
+  bdaddr_t bdaddr; /* remote address */
 } hci_user_oob_data_rep_rp;
 
 #define HCI_OCF_OOB_DATA_NEG_REP 0x0033
 #define HCI_CMD_OOB_DATA_NEG_REP 0x0433
 typedef struct
 {
-	bdaddr_t bdaddr; /* remote address */
+  bdaddr_t bdaddr; /* remote address */
 } hci_user_oob_data_neg_rep_cp;
 
 typedef struct
 {
-	uint8_t status;  /* 0x00 - success */
-	bdaddr_t bdaddr; /* remote address */
+  uint8_t status;  /* 0x00 - success */
+  bdaddr_t bdaddr; /* remote address */
 } hci_user_oob_data_neg_rep_rp;
 
 #define HCI_OCF_IO_CAPABILITY_NEG_REP 0x0034
 #define HCI_CMD_IO_CAPABILITY_NEG_REP 0x0434
 typedef struct
 {
-	bdaddr_t bdaddr; /* remote address */
-	uint8_t reason;  /* error code */
+  bdaddr_t bdaddr; /* remote address */
+  uint8_t reason;  /* error code */
 } hci_io_capability_neg_rep_cp;
 
 typedef struct
 {
-	uint8_t status;  /* 0x00 - success */
-	bdaddr_t bdaddr; /* remote address */
+  uint8_t status;  /* 0x00 - success */
+  bdaddr_t bdaddr; /* remote address */
 } hci_io_capability_neg_rep_rp;
 
 /**************************************************************************
@@ -916,9 +916,9 @@ typedef struct
 #define HCI_CMD_HOLD_MODE 0x0801
 typedef struct
 {
-	uint16_t con_handle;   /* connection handle */
-	uint16_t max_interval; /* (max_interval * 0.625) msec */
-	uint16_t min_interval; /* (max_interval * 0.625) msec */
+  uint16_t con_handle;   /* connection handle */
+  uint16_t max_interval; /* (max_interval * 0.625) msec */
+  uint16_t min_interval; /* (max_interval * 0.625) msec */
 } hci_hold_mode_cp;
 /* No return parameter(s) */
 
@@ -926,11 +926,11 @@ typedef struct
 #define HCI_CMD_SNIFF_MODE 0x0803
 typedef struct
 {
-	uint16_t con_handle;   /* connection handle */
-	uint16_t max_interval; /* (max_interval * 0.625) msec */
-	uint16_t min_interval; /* (max_interval * 0.625) msec */
-	uint16_t attempt;      /* (2 * attempt - 1) * 0.625 msec */
-	uint16_t timeout;      /* (2 * attempt - 1) * 0.625 msec */
+  uint16_t con_handle;   /* connection handle */
+  uint16_t max_interval; /* (max_interval * 0.625) msec */
+  uint16_t min_interval; /* (max_interval * 0.625) msec */
+  uint16_t attempt;      /* (2 * attempt - 1) * 0.625 msec */
+  uint16_t timeout;      /* (2 * attempt - 1) * 0.625 msec */
 } hci_sniff_mode_cp;
 /* No return parameter(s) */
 
@@ -938,7 +938,7 @@ typedef struct
 #define HCI_CMD_EXIT_SNIFF_MODE 0x0804
 typedef struct
 {
-	uint16_t con_handle; /* connection handle */
+  uint16_t con_handle; /* connection handle */
 } hci_exit_sniff_mode_cp;
 /* No return parameter(s) */
 
@@ -946,9 +946,9 @@ typedef struct
 #define HCI_CMD_PARK_MODE 0x0805
 typedef struct
 {
-	uint16_t con_handle;   /* connection handle */
-	uint16_t max_interval; /* (max_interval * 0.625) msec */
-	uint16_t min_interval; /* (max_interval * 0.625) msec */
+  uint16_t con_handle;   /* connection handle */
+  uint16_t max_interval; /* (max_interval * 0.625) msec */
+  uint16_t min_interval; /* (max_interval * 0.625) msec */
 } hci_park_mode_cp;
 /* No return parameter(s) */
 
@@ -956,7 +956,7 @@ typedef struct
 #define HCI_CMD_EXIT_PARK_MODE 0x0806
 typedef struct
 {
-	uint16_t con_handle; /* connection handle */
+  uint16_t con_handle; /* connection handle */
 } hci_exit_park_mode_cp;
 /* No return parameter(s) */
 
@@ -964,13 +964,13 @@ typedef struct
 #define HCI_CMD_QOS_SETUP 0x0807
 typedef struct
 {
-	uint16_t con_handle;      /* connection handle */
-	uint8_t flags;            /* reserved for future use */
-	uint8_t service_type;     /* service type */
-	uint32_t token_rate;      /* bytes per second */
-	uint32_t peak_bandwidth;  /* bytes per second */
-	uint32_t latency;         /* microseconds */
-	uint32_t delay_variation; /* microseconds */
+  uint16_t con_handle;      /* connection handle */
+  uint8_t flags;            /* reserved for future use */
+  uint8_t service_type;     /* service type */
+  uint32_t token_rate;      /* bytes per second */
+  uint32_t peak_bandwidth;  /* bytes per second */
+  uint32_t latency;         /* microseconds */
+  uint32_t delay_variation; /* microseconds */
 } hci_qos_setup_cp;
 /* No return parameter(s) */
 
@@ -978,22 +978,22 @@ typedef struct
 #define HCI_CMD_ROLE_DISCOVERY 0x0809
 typedef struct
 {
-	uint16_t con_handle; /* connection handle */
+  uint16_t con_handle; /* connection handle */
 } hci_role_discovery_cp;
 
 typedef struct
 {
-	uint8_t status;      /* 0x00 - success */
-	uint16_t con_handle; /* connection handle */
-	uint8_t role;        /* role for the connection handle */
+  uint8_t status;      /* 0x00 - success */
+  uint16_t con_handle; /* connection handle */
+  uint8_t role;        /* role for the connection handle */
 } hci_role_discovery_rp;
 
 #define HCI_OCF_SWITCH_ROLE 0x000b
 #define HCI_CMD_SWITCH_ROLE 0x080B
 typedef struct
 {
-	bdaddr_t bdaddr; /* remote address */
-	uint8_t role;    /* new local role */
+  bdaddr_t bdaddr; /* remote address */
+  uint8_t role;    /* new local role */
 } hci_switch_role_cp;
 /* No return parameter(s) */
 
@@ -1001,28 +1001,28 @@ typedef struct
 #define HCI_CMD_READ_LINK_POLICY_SETTINGS 0x080C
 typedef struct
 {
-	uint16_t con_handle; /* connection handle */
+  uint16_t con_handle; /* connection handle */
 } hci_read_link_policy_settings_cp;
 
 typedef struct
 {
-	uint8_t status;      /* 0x00 - success */
-	uint16_t con_handle; /* connection handle */
-	uint16_t settings;   /* link policy settings */
+  uint8_t status;      /* 0x00 - success */
+  uint16_t con_handle; /* connection handle */
+  uint16_t settings;   /* link policy settings */
 } hci_read_link_policy_settings_rp;
 
 #define HCI_OCF_WRITE_LINK_POLICY_SETTINGS 0x000d
 #define HCI_CMD_WRITE_LINK_POLICY_SETTINGS 0x080D
 typedef struct
 {
-	uint16_t con_handle; /* connection handle */
-	uint16_t settings;   /* link policy settings */
+  uint16_t con_handle; /* connection handle */
+  uint16_t settings;   /* link policy settings */
 } hci_write_link_policy_settings_cp;
 
 typedef struct
 {
-	uint8_t status;      /* 0x00 - success */
-	uint16_t con_handle; /* connection handle */
+  uint8_t status;      /* 0x00 - success */
+  uint16_t con_handle; /* connection handle */
 } hci_write_link_policy_settings_rp;
 
 #define HCI_OCF_READ_DEFAULT_LINK_POLICY_SETTINGS 0x000e
@@ -1030,15 +1030,15 @@ typedef struct
 /* No command parameter(s) */
 typedef struct
 {
-	uint8_t status;    /* 0x00 - success */
-	uint16_t settings; /* link policy settings */
+  uint8_t status;    /* 0x00 - success */
+  uint16_t settings; /* link policy settings */
 } hci_read_default_link_policy_settings_rp;
 
 #define HCI_OCF_WRITE_DEFAULT_LINK_POLICY_SETTINGS 0x000f
 #define HCI_CMD_WRITE_DEFAULT_LINK_POLICY_SETTINGS 0x080F
 typedef struct
 {
-	uint16_t settings; /* link policy settings */
+  uint16_t settings; /* link policy settings */
 } hci_write_default_link_policy_settings_cp;
 
 typedef hci_status_rp hci_write_default_link_policy_settings_rp;
@@ -1047,14 +1047,14 @@ typedef hci_status_rp hci_write_default_link_policy_settings_rp;
 #define HCI_CMD_FLOW_SPECIFICATION 0x0810
 typedef struct
 {
-	uint16_t con_handle; /* connection handle */
-	uint8_t flags;       /* reserved */
-	uint8_t flow_direction;
-	uint8_t service_type;
-	uint32_t token_rate;
-	uint32_t token_bucket;
-	uint32_t peak_bandwidth;
-	uint32_t latency;
+  uint16_t con_handle; /* connection handle */
+  uint8_t flags;       /* reserved */
+  uint8_t flow_direction;
+  uint8_t service_type;
+  uint32_t token_rate;
+  uint32_t token_bucket;
+  uint32_t peak_bandwidth;
+  uint32_t latency;
 } hci_flow_specification_cp;
 /* No return parameter(s) */
 
@@ -1062,16 +1062,16 @@ typedef struct
 #define HCI_CMD_SNIFF_SUBRATING 0x0810
 typedef struct
 {
-	uint16_t con_handle; /* connection handle */
-	uint16_t max_latency;
-	uint16_t max_timeout; /* max remote timeout */
-	uint16_t min_timeout; /* min local timeout */
+  uint16_t con_handle; /* connection handle */
+  uint16_t max_latency;
+  uint16_t max_timeout; /* max remote timeout */
+  uint16_t min_timeout; /* min local timeout */
 } hci_sniff_subrating_cp;
 
 typedef struct
 {
-	uint8_t status;      /* 0x00 - success */
-	uint16_t con_handle; /* connection handle */
+  uint8_t status;      /* 0x00 - success */
+  uint16_t con_handle; /* connection handle */
 } hci_sniff_subrating_rp;
 
 /**************************************************************************
@@ -1086,7 +1086,7 @@ typedef struct
 #define HCI_CMD_SET_EVENT_MASK 0x0C01
 typedef struct
 {
-	uint8_t event_mask[HCI_EVENT_MASK_SIZE]; /* event_mask */
+  uint8_t event_mask[HCI_EVENT_MASK_SIZE]; /* event_mask */
 } hci_set_event_mask_cp;
 
 typedef hci_status_rp hci_set_event_mask_rp;
@@ -1100,10 +1100,10 @@ typedef hci_status_rp hci_reset_rp;
 #define HCI_CMD_SET_EVENT_FILTER 0x0C05
 typedef struct
 {
-	uint8_t filter_type;           /* filter type */
-	uint8_t filter_condition_type; /* filter condition type */
-											 /* variable size condition
-												uint8_t		condition[]; -- conditions */
+  uint8_t filter_type;           /* filter type */
+  uint8_t filter_condition_type; /* filter condition type */
+                                           /* variable size condition
+                                              uint8_t		condition[]; -- conditions */
 } hci_set_event_filter_cp;
 
 typedef hci_status_rp hci_set_event_filter_rp;
@@ -1112,13 +1112,13 @@ typedef hci_status_rp hci_set_event_filter_rp;
 #define HCI_CMD_FLUSH 0x0C08
 typedef struct
 {
-	uint16_t con_handle; /* connection handle */
+  uint16_t con_handle; /* connection handle */
 } hci_flush_cp;
 
 typedef struct
 {
-	uint8_t status;      /* 0x00 - success */
-	uint16_t con_handle; /* connection handle */
+  uint8_t status;      /* 0x00 - success */
+  uint16_t con_handle; /* connection handle */
 } hci_flush_rp;
 
 #define HCI_OCF_READ_PIN_TYPE 0x0009
@@ -1126,15 +1126,15 @@ typedef struct
 /* No command parameter(s) */
 typedef struct
 {
-	uint8_t status;   /* 0x00 - success */
-	uint8_t pin_type; /* PIN type */
+  uint8_t status;   /* 0x00 - success */
+  uint8_t pin_type; /* PIN type */
 } hci_read_pin_type_rp;
 
 #define HCI_OCF_WRITE_PIN_TYPE 0x000a
 #define HCI_CMD_WRITE_PIN_TYPE 0x0C0A
 typedef struct
 {
-	uint8_t pin_type; /* PIN type */
+  uint8_t pin_type; /* PIN type */
 } hci_write_pin_type_cp;
 
 typedef hci_status_rp hci_write_pin_type_rp;
@@ -1148,52 +1148,52 @@ typedef hci_status_rp hci_create_new_unit_key_rp;
 #define HCI_CMD_READ_STORED_LINK_KEY 0x0C0D
 typedef struct
 {
-	bdaddr_t bdaddr;  /* address */
-	uint8_t read_all; /* read all keys? 0x01 - yes */
+  bdaddr_t bdaddr;  /* address */
+  uint8_t read_all; /* read all keys? 0x01 - yes */
 } hci_read_stored_link_key_cp;
 
 typedef struct
 {
-	uint8_t status;         /* 0x00 - success */
-	uint16_t max_num_keys;  /* Max. number of keys */
-	uint16_t num_keys_read; /* Number of stored keys */
+  uint8_t status;         /* 0x00 - success */
+  uint16_t max_num_keys;  /* Max. number of keys */
+  uint16_t num_keys_read; /* Number of stored keys */
 } hci_read_stored_link_key_rp;
 
 #define HCI_OCF_WRITE_STORED_LINK_KEY 0x0011
 #define HCI_CMD_WRITE_STORED_LINK_KEY 0x0C11
 typedef struct
 {
-	uint8_t num_keys_write; /* # of keys to write */
-									/* these are repeated "num_keys_write" times
-									  bdaddr_t	bdaddr;             --- remote address(es)
-									  uint8_t		key[HCI_KEY_SIZE];  --- key(s) */
+  uint8_t num_keys_write; /* # of keys to write */
+                                  /* these are repeated "num_keys_write" times
+                                    bdaddr_t	bdaddr;             --- remote address(es)
+                                    uint8_t		key[HCI_KEY_SIZE];  --- key(s) */
 } hci_write_stored_link_key_cp;
 
 typedef struct
 {
-	uint8_t status;           /* 0x00 - success */
-	uint8_t num_keys_written; /* # of keys successfully written */
+  uint8_t status;           /* 0x00 - success */
+  uint8_t num_keys_written; /* # of keys successfully written */
 } hci_write_stored_link_key_rp;
 
 #define HCI_OCF_DELETE_STORED_LINK_KEY 0x0012
 #define HCI_CMD_DELETE_STORED_LINK_KEY 0x0C12
 typedef struct
 {
-	bdaddr_t bdaddr;    /* address */
-	uint8_t delete_all; /* delete all keys? 0x01 - yes */
+  bdaddr_t bdaddr;    /* address */
+  uint8_t delete_all; /* delete all keys? 0x01 - yes */
 } hci_delete_stored_link_key_cp;
 
 typedef struct
 {
-	uint8_t status;            /* 0x00 - success */
-	uint16_t num_keys_deleted; /* Number of keys deleted */
+  uint8_t status;            /* 0x00 - success */
+  uint16_t num_keys_deleted; /* Number of keys deleted */
 } hci_delete_stored_link_key_rp;
 
 #define HCI_OCF_WRITE_LOCAL_NAME 0x0013
 #define HCI_CMD_WRITE_LOCAL_NAME 0x0C13
 typedef struct
 {
-	char name[HCI_UNIT_NAME_SIZE]; /* new unit name */
+  char name[HCI_UNIT_NAME_SIZE]; /* new unit name */
 } hci_write_local_name_cp;
 
 typedef hci_status_rp hci_write_local_name_rp;
@@ -1203,8 +1203,8 @@ typedef hci_status_rp hci_write_local_name_rp;
 /* No command parameter(s) */
 typedef struct
 {
-	uint8_t status;                /* 0x00 - success */
-	char name[HCI_UNIT_NAME_SIZE]; /* unit name */
+  uint8_t status;                /* 0x00 - success */
+  char name[HCI_UNIT_NAME_SIZE]; /* unit name */
 } hci_read_local_name_rp;
 
 #define HCI_OCF_READ_CON_ACCEPT_TIMEOUT 0x0015
@@ -1212,15 +1212,15 @@ typedef struct
 /* No command parameter(s) */
 typedef struct
 {
-	uint8_t status;   /* 0x00 - success */
-	uint16_t timeout; /* (timeout * 0.625) msec */
+  uint8_t status;   /* 0x00 - success */
+  uint16_t timeout; /* (timeout * 0.625) msec */
 } hci_read_con_accept_timeout_rp;
 
 #define HCI_OCF_WRITE_CON_ACCEPT_TIMEOUT 0x0016
 #define HCI_CMD_WRITE_CON_ACCEPT_TIMEOUT 0x0C16
 typedef struct
 {
-	uint16_t timeout; /* (timeout * 0.625) msec */
+  uint16_t timeout; /* (timeout * 0.625) msec */
 } hci_write_con_accept_timeout_cp;
 
 typedef hci_status_rp hci_write_con_accept_timeout_rp;
@@ -1230,15 +1230,15 @@ typedef hci_status_rp hci_write_con_accept_timeout_rp;
 /* No command parameter(s) */
 typedef struct
 {
-	uint8_t status;   /* 0x00 - success */
-	uint16_t timeout; /* (timeout * 0.625) msec */
+  uint8_t status;   /* 0x00 - success */
+  uint16_t timeout; /* (timeout * 0.625) msec */
 } hci_read_page_timeout_rp;
 
 #define HCI_OCF_WRITE_PAGE_TIMEOUT 0x0018
 #define HCI_CMD_WRITE_PAGE_TIMEOUT 0x0C18
 typedef struct
 {
-	uint16_t timeout; /* (timeout * 0.625) msec */
+  uint16_t timeout; /* (timeout * 0.625) msec */
 } hci_write_page_timeout_cp;
 
 typedef hci_status_rp hci_write_page_timeout_rp;
@@ -1248,15 +1248,15 @@ typedef hci_status_rp hci_write_page_timeout_rp;
 /* No command parameter(s) */
 typedef struct
 {
-	uint8_t status;      /* 0x00 - success */
-	uint8_t scan_enable; /* Scan enable */
+  uint8_t status;      /* 0x00 - success */
+  uint8_t scan_enable; /* Scan enable */
 } hci_read_scan_enable_rp;
 
 #define HCI_OCF_WRITE_SCAN_ENABLE 0x001a
 #define HCI_CMD_WRITE_SCAN_ENABLE 0x0C1A
 typedef struct
 {
-	uint8_t scan_enable; /* Scan enable */
+  uint8_t scan_enable; /* Scan enable */
 } hci_write_scan_enable_cp;
 
 typedef hci_status_rp hci_write_scan_enable_rp;
@@ -1266,17 +1266,17 @@ typedef hci_status_rp hci_write_scan_enable_rp;
 /* No command parameter(s) */
 typedef struct
 {
-	uint8_t status;              /* 0x00 - success */
-	uint16_t page_scan_interval; /* interval * 0.625 msec */
-	uint16_t page_scan_window;   /* window * 0.625 msec */
+  uint8_t status;              /* 0x00 - success */
+  uint16_t page_scan_interval; /* interval * 0.625 msec */
+  uint16_t page_scan_window;   /* window * 0.625 msec */
 } hci_read_page_scan_activity_rp;
 
 #define HCI_OCF_WRITE_PAGE_SCAN_ACTIVITY 0x001c
 #define HCI_CMD_WRITE_PAGE_SCAN_ACTIVITY 0x0C1C
 typedef struct
 {
-	uint16_t page_scan_interval; /* interval * 0.625 msec */
-	uint16_t page_scan_window;   /* window * 0.625 msec */
+  uint16_t page_scan_interval; /* interval * 0.625 msec */
+  uint16_t page_scan_window;   /* window * 0.625 msec */
 } hci_write_page_scan_activity_cp;
 
 typedef hci_status_rp hci_write_page_scan_activity_rp;
@@ -1286,17 +1286,17 @@ typedef hci_status_rp hci_write_page_scan_activity_rp;
 /* No command parameter(s) */
 typedef struct
 {
-	uint8_t status;                 /* 0x00 - success */
-	uint16_t inquiry_scan_interval; /* interval * 0.625 msec */
-	uint16_t inquiry_scan_window;   /* window * 0.625 msec */
+  uint8_t status;                 /* 0x00 - success */
+  uint16_t inquiry_scan_interval; /* interval * 0.625 msec */
+  uint16_t inquiry_scan_window;   /* window * 0.625 msec */
 } hci_read_inquiry_scan_activity_rp;
 
 #define HCI_OCF_WRITE_INQUIRY_SCAN_ACTIVITY 0x001e
 #define HCI_CMD_WRITE_INQUIRY_SCAN_ACTIVITY 0x0C1E
 typedef struct
 {
-	uint16_t inquiry_scan_interval; /* interval * 0.625 msec */
-	uint16_t inquiry_scan_window;   /* window * 0.625 msec */
+  uint16_t inquiry_scan_interval; /* interval * 0.625 msec */
+  uint16_t inquiry_scan_window;   /* window * 0.625 msec */
 } hci_write_inquiry_scan_activity_cp;
 
 typedef hci_status_rp hci_write_inquiry_scan_activity_rp;
@@ -1306,15 +1306,15 @@ typedef hci_status_rp hci_write_inquiry_scan_activity_rp;
 /* No command parameter(s) */
 typedef struct
 {
-	uint8_t status;      /* 0x00 - success */
-	uint8_t auth_enable; /* 0x01 - enabled */
+  uint8_t status;      /* 0x00 - success */
+  uint8_t auth_enable; /* 0x01 - enabled */
 } hci_read_auth_enable_rp;
 
 #define HCI_OCF_WRITE_AUTH_ENABLE 0x0020
 #define HCI_CMD_WRITE_AUTH_ENABLE 0x0C20
 typedef struct
 {
-	uint8_t auth_enable; /* 0x01 - enabled */
+  uint8_t auth_enable; /* 0x01 - enabled */
 } hci_write_auth_enable_cp;
 
 typedef hci_status_rp hci_write_auth_enable_rp;
@@ -1325,8 +1325,8 @@ typedef hci_status_rp hci_write_auth_enable_rp;
 /* No command parameter(s) */
 typedef struct
 {
-	uint8_t status;          /* 0x00 - success */
-	uint8_t encryption_mode; /* encryption mode */
+  uint8_t status;          /* 0x00 - success */
+  uint8_t encryption_mode; /* encryption mode */
 } hci_read_encryption_mode_rp;
 
 /* Write Encryption Mode is deprecated */
@@ -1334,7 +1334,7 @@ typedef struct
 #define HCI_CMD_WRITE_ENCRYPTION_MODE 0x0C22
 typedef struct
 {
-	uint8_t encryption_mode; /* encryption mode */
+  uint8_t encryption_mode; /* encryption mode */
 } hci_write_encryption_mode_cp;
 
 typedef hci_status_rp hci_write_encryption_mode_rp;
@@ -1344,15 +1344,15 @@ typedef hci_status_rp hci_write_encryption_mode_rp;
 /* No command parameter(s) */
 typedef struct
 {
-	uint8_t status;                 /* 0x00 - success */
-	uint8_t uclass[HCI_CLASS_SIZE]; /* unit class */
+  uint8_t status;                 /* 0x00 - success */
+  uint8_t uclass[HCI_CLASS_SIZE]; /* unit class */
 } hci_read_unit_class_rp;
 
 #define HCI_OCF_WRITE_UNIT_CLASS 0x0024
 #define HCI_CMD_WRITE_UNIT_CLASS 0x0C24
 typedef struct
 {
-	uint8_t uclass[HCI_CLASS_SIZE]; /* unit class */
+  uint8_t uclass[HCI_CLASS_SIZE]; /* unit class */
 } hci_write_unit_class_cp;
 
 typedef hci_status_rp hci_write_unit_class_rp;
@@ -1362,15 +1362,15 @@ typedef hci_status_rp hci_write_unit_class_rp;
 /* No command parameter(s) */
 typedef struct
 {
-	uint8_t status;    /* 0x00 - success */
-	uint16_t settings; /* voice settings */
+  uint8_t status;    /* 0x00 - success */
+  uint16_t settings; /* voice settings */
 } hci_read_voice_setting_rp;
 
 #define HCI_OCF_WRITE_VOICE_SETTING 0x0026
 #define HCI_CMD_WRITE_VOICE_SETTING 0x0C26
 typedef struct
 {
-	uint16_t settings; /* voice settings */
+  uint16_t settings; /* voice settings */
 } hci_write_voice_setting_cp;
 
 typedef hci_status_rp hci_write_voice_setting_rp;
@@ -1379,28 +1379,28 @@ typedef hci_status_rp hci_write_voice_setting_rp;
 #define HCI_CMD_READ_AUTO_FLUSH_TIMEOUT 0x0C27
 typedef struct
 {
-	uint16_t con_handle; /* connection handle */
+  uint16_t con_handle; /* connection handle */
 } hci_read_auto_flush_timeout_cp;
 
 typedef struct
 {
-	uint8_t status;      /* 0x00 - success */
-	uint16_t con_handle; /* connection handle */
-	uint16_t timeout;    /* 0x00 - no flush, timeout * 0.625 msec */
+  uint8_t status;      /* 0x00 - success */
+  uint16_t con_handle; /* connection handle */
+  uint16_t timeout;    /* 0x00 - no flush, timeout * 0.625 msec */
 } hci_read_auto_flush_timeout_rp;
 
 #define HCI_OCF_WRITE_AUTO_FLUSH_TIMEOUT 0x0028
 #define HCI_CMD_WRITE_AUTO_FLUSH_TIMEOUT 0x0C28
 typedef struct
 {
-	uint16_t con_handle; /* connection handle */
-	uint16_t timeout;    /* 0x00 - no flush, timeout * 0.625 msec */
+  uint16_t con_handle; /* connection handle */
+  uint16_t timeout;    /* 0x00 - no flush, timeout * 0.625 msec */
 } hci_write_auto_flush_timeout_cp;
 
 typedef struct
 {
-	uint8_t status;      /* 0x00 - success */
-	uint16_t con_handle; /* connection handle */
+  uint8_t status;      /* 0x00 - success */
+  uint16_t con_handle; /* connection handle */
 } hci_write_auto_flush_timeout_rp;
 
 #define HCI_OCF_READ_NUM_BROADCAST_RETRANS 0x0029
@@ -1408,15 +1408,15 @@ typedef struct
 /* No command parameter(s) */
 typedef struct
 {
-	uint8_t status;  /* 0x00 - success */
-	uint8_t counter; /* number of broadcast retransmissions */
+  uint8_t status;  /* 0x00 - success */
+  uint8_t counter; /* number of broadcast retransmissions */
 } hci_read_num_broadcast_retrans_rp;
 
 #define HCI_OCF_WRITE_NUM_BROADCAST_RETRANS 0x002a
 #define HCI_CMD_WRITE_NUM_BROADCAST_RETRANS 0x0C2A
 typedef struct
 {
-	uint8_t counter; /* number of broadcast retransmissions */
+  uint8_t counter; /* number of broadcast retransmissions */
 } hci_write_num_broadcast_retrans_cp;
 
 typedef hci_status_rp hci_write_num_broadcast_retrans_rp;
@@ -1426,15 +1426,15 @@ typedef hci_status_rp hci_write_num_broadcast_retrans_rp;
 /* No command parameter(s) */
 typedef struct
 {
-	uint8_t status;             /* 0x00 - success */
-	uint8_t hold_mode_activity; /* Hold mode activities */
+  uint8_t status;             /* 0x00 - success */
+  uint8_t hold_mode_activity; /* Hold mode activities */
 } hci_read_hold_mode_activity_rp;
 
 #define HCI_OCF_WRITE_HOLD_MODE_ACTIVITY 0x002c
 #define HCI_CMD_WRITE_HOLD_MODE_ACTIVITY 0x0C2C
 typedef struct
 {
-	uint8_t hold_mode_activity; /* Hold mode activities */
+  uint8_t hold_mode_activity; /* Hold mode activities */
 } hci_write_hold_mode_activity_cp;
 
 typedef hci_status_rp hci_write_hold_mode_activity_rp;
@@ -1443,15 +1443,15 @@ typedef hci_status_rp hci_write_hold_mode_activity_rp;
 #define HCI_CMD_READ_XMIT_LEVEL 0x0C2D
 typedef struct
 {
-	uint16_t con_handle; /* connection handle */
-	uint8_t type;        /* Xmit level type */
+  uint16_t con_handle; /* connection handle */
+  uint8_t type;        /* Xmit level type */
 } hci_read_xmit_level_cp;
 
 typedef struct
 {
-	uint8_t status;      /* 0x00 - success */
-	uint16_t con_handle; /* connection handle */
-	char level;          /* -30 <= level <= 30 dBm */
+  uint8_t status;      /* 0x00 - success */
+  uint16_t con_handle; /* connection handle */
+  char level;          /* -30 <= level <= 30 dBm */
 } hci_read_xmit_level_rp;
 
 #define HCI_OCF_READ_SCO_FLOW_CONTROL 0x002e
@@ -1459,15 +1459,15 @@ typedef struct
 /* No command parameter(s) */
 typedef struct
 {
-	uint8_t status;       /* 0x00 - success */
-	uint8_t flow_control; /* 0x00 - disabled */
+  uint8_t status;       /* 0x00 - success */
+  uint8_t flow_control; /* 0x00 - disabled */
 } hci_read_sco_flow_control_rp;
 
 #define HCI_OCF_WRITE_SCO_FLOW_CONTROL 0x002f
 #define HCI_CMD_WRITE_SCO_FLOW_CONTROL 0x0C2F
 typedef struct
 {
-	uint8_t flow_control; /* 0x00 - disabled */
+  uint8_t flow_control; /* 0x00 - disabled */
 } hci_write_sco_flow_control_cp;
 
 typedef hci_status_rp hci_write_sco_flow_control_rp;
@@ -1476,7 +1476,7 @@ typedef hci_status_rp hci_write_sco_flow_control_rp;
 #define HCI_CMD_HC2H_FLOW_CONTROL 0x0C31
 typedef struct
 {
-	uint8_t hc2h_flow; /* Host Controller to Host flow control */
+  uint8_t hc2h_flow; /* Host Controller to Host flow control */
 } hci_hc2h_flow_control_cp;
 
 typedef hci_status_rp hci_h2hc_flow_control_rp;
@@ -1485,10 +1485,10 @@ typedef hci_status_rp hci_h2hc_flow_control_rp;
 #define HCI_CMD_HOST_BUFFER_SIZE 0x0C33
 typedef struct
 {
-	uint16_t max_acl_size; /* Max. size of ACL packet (bytes) */
-	uint8_t max_sco_size;  /* Max. size of SCO packet (bytes) */
-	uint16_t num_acl_pkts; /* Max. number of ACL packets */
-	uint16_t num_sco_pkts; /* Max. number of SCO packets */
+  uint16_t max_acl_size; /* Max. size of ACL packet (bytes) */
+  uint8_t max_sco_size;  /* Max. size of SCO packet (bytes) */
+  uint16_t num_acl_pkts; /* Max. number of ACL packets */
+  uint16_t num_sco_pkts; /* Max. number of SCO packets */
 } hci_host_buffer_size_cp;
 
 typedef hci_status_rp hci_host_buffer_size_rp;
@@ -1497,10 +1497,10 @@ typedef hci_status_rp hci_host_buffer_size_rp;
 #define HCI_CMD_HOST_NUM_COMPL_PKTS 0x0C35
 typedef struct
 {
-	uint8_t nu_con_handles; /* # of connection handles */
-									/* these are repeated "num_con_handles" times
-									  uint16_t	con_handle;    --- connection handle(s)
-									  uint16_t	compl_pkts;    --- # of completed packets */
+  uint8_t nu_con_handles; /* # of connection handles */
+                                  /* these are repeated "num_con_handles" times
+                                    uint16_t	con_handle;    --- connection handle(s)
+                                    uint16_t	compl_pkts;    --- # of completed packets */
 } hci_host_num_compl_pkts_cp;
 /* No return parameter(s) */
 
@@ -1508,28 +1508,28 @@ typedef struct
 #define HCI_CMD_READ_LINK_SUPERVISION_TIMEOUT 0x0C36
 typedef struct
 {
-	uint16_t con_handle; /* connection handle */
+  uint16_t con_handle; /* connection handle */
 } hci_read_link_supervision_timeout_cp;
 
 typedef struct
 {
-	uint8_t status;      /* 0x00 - success */
-	uint16_t con_handle; /* connection handle */
-	uint16_t timeout;    /* Link supervision timeout * 0.625 msec */
+  uint8_t status;      /* 0x00 - success */
+  uint16_t con_handle; /* connection handle */
+  uint16_t timeout;    /* Link supervision timeout * 0.625 msec */
 } hci_read_link_supervision_timeout_rp;
 
 #define HCI_OCF_WRITE_LINK_SUPERVISION_TIMEOUT 0x0037
 #define HCI_CMD_WRITE_LINK_SUPERVISION_TIMEOUT 0x0C37
 typedef struct
 {
-	uint16_t con_handle; /* connection handle */
-	uint16_t timeout;    /* Link supervision timeout * 0.625 msec */
+  uint16_t con_handle; /* connection handle */
+  uint16_t timeout;    /* Link supervision timeout * 0.625 msec */
 } hci_write_link_supervision_timeout_cp;
 
 typedef struct
 {
-	uint8_t status;      /* 0x00 - success */
-	uint16_t con_handle; /* connection handle */
+  uint8_t status;      /* 0x00 - success */
+  uint16_t con_handle; /* connection handle */
 } hci_write_link_supervision_timeout_rp;
 
 #define HCI_OCF_READ_NUM_SUPPORTED_IAC 0x0038
@@ -1537,8 +1537,8 @@ typedef struct
 /* No command parameter(s) */
 typedef struct
 {
-	uint8_t status;  /* 0x00 - success */
-	uint8_t num_iac; /* # of supported IAC during scan */
+  uint8_t status;  /* 0x00 - success */
+  uint8_t num_iac; /* # of supported IAC during scan */
 } hci_read_num_supported_iac_rp;
 
 #define HCI_OCF_READ_IAC_LAP 0x0039
@@ -1546,19 +1546,19 @@ typedef struct
 /* No command parameter(s) */
 typedef struct
 {
-	uint8_t status;  /* 0x00 - success */
-	uint8_t num_iac; /* # of IAC */
-						  /* these are repeated "num_iac" times
-							 uint8_t		laps[HCI_LAP_SIZE]; --- LAPs */
+  uint8_t status;  /* 0x00 - success */
+  uint8_t num_iac; /* # of IAC */
+                        /* these are repeated "num_iac" times
+                           uint8_t		laps[HCI_LAP_SIZE]; --- LAPs */
 } hci_read_iac_lap_rp;
 
 #define HCI_OCF_WRITE_IAC_LAP 0x003a
 #define HCI_CMD_WRITE_IAC_LAP 0x0C3A
 typedef struct
 {
-	uint8_t num_iac; /* # of IAC */
-						  /* these are repeated "num_iac" times
-							 uint8_t		laps[HCI_LAP_SIZE]; --- LAPs */
+  uint8_t num_iac; /* # of IAC */
+                        /* these are repeated "num_iac" times
+                           uint8_t		laps[HCI_LAP_SIZE]; --- LAPs */
 } hci_write_iac_lap_cp;
 
 typedef hci_status_rp hci_write_iac_lap_rp;
@@ -1569,8 +1569,8 @@ typedef hci_status_rp hci_write_iac_lap_rp;
 /* No command parameter(s) */
 typedef struct
 {
-	uint8_t status;                /* 0x00 - success */
-	uint8_t page_scan_period_mode; /* Page scan period mode */
+  uint8_t status;                /* 0x00 - success */
+  uint8_t page_scan_period_mode; /* Page scan period mode */
 } hci_read_page_scan_period_rp;
 
 /* Write Page Scan Period Mode is deprecated */
@@ -1578,7 +1578,7 @@ typedef struct
 #define HCI_CMD_WRITE_PAGE_SCAN_PERIOD 0x0C3C
 typedef struct
 {
-	uint8_t page_scan_period_mode; /* Page scan period mode */
+  uint8_t page_scan_period_mode; /* Page scan period mode */
 } hci_write_page_scan_period_cp;
 
 typedef hci_status_rp hci_write_page_scan_period_rp;
@@ -1589,8 +1589,8 @@ typedef hci_status_rp hci_write_page_scan_period_rp;
 /* No command parameter(s) */
 typedef struct
 {
-	uint8_t status;         /* 0x00 - success */
-	uint8_t page_scan_mode; /* Page scan mode */
+  uint8_t status;         /* 0x00 - success */
+  uint8_t page_scan_mode; /* Page scan mode */
 } hci_read_page_scan_rp;
 
 /* Write Page Scan Mode is deprecated */
@@ -1598,7 +1598,7 @@ typedef struct
 #define HCI_CMD_WRITE_PAGE_SCAN 0x0C3E
 typedef struct
 {
-	uint8_t page_scan_mode; /* Page scan mode */
+  uint8_t page_scan_mode; /* Page scan mode */
 } hci_write_page_scan_cp;
 
 typedef hci_status_rp hci_write_page_scan_rp;
@@ -1607,7 +1607,7 @@ typedef hci_status_rp hci_write_page_scan_rp;
 #define HCI_CMD_SET_AFH_CLASSIFICATION 0x0C3F
 typedef struct
 {
-	uint8_t classification[10];
+  uint8_t classification[10];
 } hci_set_afh_classification_cp;
 
 typedef hci_status_rp hci_set_afh_classification_rp;
@@ -1618,15 +1618,15 @@ typedef hci_status_rp hci_set_afh_classification_rp;
 
 typedef struct
 {
-	uint8_t status; /* 0x00 - success */
-	uint8_t type;   /* inquiry scan type */
+  uint8_t status; /* 0x00 - success */
+  uint8_t type;   /* inquiry scan type */
 } hci_read_inquiry_scan_type_rp;
 
 #define HCI_OCF_WRITE_INQUIRY_SCAN_TYPE 0x0043
 #define HCI_CMD_WRITE_INQUIRY_SCAN_TYPE 0x0C43
 typedef struct
 {
-	uint8_t type; /* inquiry scan type */
+  uint8_t type; /* inquiry scan type */
 } hci_write_inquiry_scan_type_cp;
 
 typedef hci_status_rp hci_write_inquiry_scan_type_rp;
@@ -1637,15 +1637,15 @@ typedef hci_status_rp hci_write_inquiry_scan_type_rp;
 
 typedef struct
 {
-	uint8_t status; /* 0x00 - success */
-	uint8_t mode;   /* inquiry mode */
+  uint8_t status; /* 0x00 - success */
+  uint8_t mode;   /* inquiry mode */
 } hci_read_inquiry_mode_rp;
 
 #define HCI_OCF_WRITE_INQUIRY_MODE 0x0045
 #define HCI_CMD_WRITE_INQUIRY_MODE 0x0C45
 typedef struct
 {
-	uint8_t mode; /* inquiry mode */
+  uint8_t mode; /* inquiry mode */
 } hci_write_inquiry_mode_cp;
 
 typedef hci_status_rp hci_write_inquiry_mode_rp;
@@ -1656,15 +1656,15 @@ typedef hci_status_rp hci_write_inquiry_mode_rp;
 
 typedef struct
 {
-	uint8_t status; /* 0x00 - success */
-	uint8_t type;   /* page scan type */
+  uint8_t status; /* 0x00 - success */
+  uint8_t type;   /* page scan type */
 } hci_read_page_scan_type_rp;
 
 #define HCI_OCF_WRITE_PAGE_SCAN_TYPE 0x0047
 #define HCI_CMD_WRITE_PAGE_SCAN_TYPE 0x0C47
 typedef struct
 {
-	uint8_t type; /* page scan type */
+  uint8_t type; /* page scan type */
 } hci_write_page_scan_type_cp;
 
 typedef hci_status_rp hci_write_page_scan_type_rp;
@@ -1675,15 +1675,15 @@ typedef hci_status_rp hci_write_page_scan_type_rp;
 
 typedef struct
 {
-	uint8_t status; /* 0x00 - success */
-	uint8_t mode;   /* assessment mode */
+  uint8_t status; /* 0x00 - success */
+  uint8_t mode;   /* assessment mode */
 } hci_read_afh_assessment_rp;
 
 #define HCI_OCF_WRITE_AFH_ASSESSMENT 0x0049
 #define HCI_CMD_WRITE_AFH_ASSESSMENT 0x0C49
 typedef struct
 {
-	uint8_t mode; /* assessment mode */
+  uint8_t mode; /* assessment mode */
 } hci_write_afh_assessment_cp;
 
 typedef hci_status_rp hci_write_afh_assessment_rp;
@@ -1694,17 +1694,17 @@ typedef hci_status_rp hci_write_afh_assessment_rp;
 
 typedef struct
 {
-	uint8_t status; /* 0x00 - success */
-	uint8_t fec_required;
-	uint8_t response[240];
+  uint8_t status; /* 0x00 - success */
+  uint8_t fec_required;
+  uint8_t response[240];
 } hci_read_extended_inquiry_rsp_rp;
 
 #define HCI_OCF_WRITE_EXTENDED_INQUIRY_RSP 0x0052
 #define HCI_CMD_WRITE_EXTENDED_INQUIRY_RSP 0x0C52
 typedef struct
 {
-	uint8_t fec_required;
-	uint8_t response[240];
+  uint8_t fec_required;
+  uint8_t response[240];
 } hci_write_extended_inquiry_rsp_cp;
 
 typedef hci_status_rp hci_write_extended_inquiry_rsp_rp;
@@ -1713,7 +1713,7 @@ typedef hci_status_rp hci_write_extended_inquiry_rsp_rp;
 #define HCI_CMD_REFRESH_ENCRYPTION_KEY 0x0C53
 typedef struct
 {
-	uint16_t con_handle; /* connection handle */
+  uint16_t con_handle; /* connection handle */
 } hci_refresh_encryption_key_cp;
 
 typedef hci_status_rp hci_refresh_encryption_key_rp;
@@ -1724,15 +1724,15 @@ typedef hci_status_rp hci_refresh_encryption_key_rp;
 
 typedef struct
 {
-	uint8_t status; /* 0x00 - success */
-	uint8_t mode;   /* simple pairing mode */
+  uint8_t status; /* 0x00 - success */
+  uint8_t mode;   /* simple pairing mode */
 } hci_read_simple_pairing_mode_rp;
 
 #define HCI_OCF_WRITE_SIMPLE_PAIRING_MODE 0x0056
 #define HCI_CMD_WRITE_SIMPLE_PAIRING_MODE 0x0C56
 typedef struct
 {
-	uint8_t mode; /* simple pairing mode */
+  uint8_t mode; /* simple pairing mode */
 } hci_write_simple_pairing_mode_cp;
 
 typedef hci_status_rp hci_write_simple_pairing_mode_rp;
@@ -1743,9 +1743,9 @@ typedef hci_status_rp hci_write_simple_pairing_mode_rp;
 
 typedef struct
 {
-	uint8_t status; /* 0x00 - success */
-	uint8_t c[16];  /* pairing hash */
-	uint8_t r[16];  /* pairing randomizer */
+  uint8_t status; /* 0x00 - success */
+  uint8_t c[16];  /* pairing hash */
+  uint8_t r[16];  /* pairing randomizer */
 } hci_read_local_oob_data_rp;
 
 #define HCI_OCF_READ_INQUIRY_RSP_XMIT_POWER 0x0058
@@ -1754,15 +1754,15 @@ typedef struct
 
 typedef struct
 {
-	uint8_t status; /* 0x00 - success */
-	int8_t power;   /* TX power */
+  uint8_t status; /* 0x00 - success */
+  int8_t power;   /* TX power */
 } hci_read_inquiry_rsp_xmit_power_rp;
 
 #define HCI_OCF_WRITE_INQUIRY_RSP_XMIT_POWER 0x0059
 #define HCI_CMD_WRITE_INQUIRY_RSP_XMIT_POWER 0x0C59
 typedef struct
 {
-	int8_t power; /* TX power */
+  int8_t power; /* TX power */
 } hci_write_inquiry_rsp_xmit_power_cp;
 
 typedef hci_status_rp hci_write_inquiry_rsp_xmit_power_rp;
@@ -1773,15 +1773,15 @@ typedef hci_status_rp hci_write_inquiry_rsp_xmit_power_rp;
 
 typedef struct
 {
-	uint8_t status;    /* 0x00 - success */
-	uint8_t reporting; /* erroneous data reporting */
+  uint8_t status;    /* 0x00 - success */
+  uint8_t reporting; /* erroneous data reporting */
 } hci_read_default_errdata_reporting_rp;
 
 #define HCI_OCF_WRITE_DEFAULT_ERRDATA_REPORTING 0x005B
 #define HCI_CMD_WRITE_DEFAULT_ERRDATA_REPORTING 0x0C5B
 typedef struct
 {
-	uint8_t reporting; /* erroneous data reporting */
+  uint8_t reporting; /* erroneous data reporting */
 } hci_write_default_errdata_reporting_cp;
 
 typedef hci_status_rp hci_write_default_errdata_reporting_rp;
@@ -1790,8 +1790,8 @@ typedef hci_status_rp hci_write_default_errdata_reporting_rp;
 #define HCI_CMD_ENHANCED_FLUSH 0x0C5F
 typedef struct
 {
-	uint16_t con_handle; /* connection handle */
-	uint8_t packet_type;
+  uint16_t con_handle; /* connection handle */
+  uint8_t packet_type;
 } hci_enhanced_flush_cp;
 
 /* No response parameter(s) */
@@ -1800,14 +1800,14 @@ typedef struct
 #define HCI_CMD_SEND_KEYPRESS_NOTIFICATION 0x0C60
 typedef struct
 {
-	bdaddr_t bdaddr; /* remote address */
-	uint8_t type;    /* notification type */
+  bdaddr_t bdaddr; /* remote address */
+  uint8_t type;    /* notification type */
 } hci_send_keypress_notification_cp;
 
 typedef struct
 {
-	uint8_t status;  /* 0x00 - success */
-	bdaddr_t bdaddr; /* remote address */
+  uint8_t status;  /* 0x00 - success */
+  bdaddr_t bdaddr; /* remote address */
 } hci_send_keypress_notification_rp;
 
 /**************************************************************************
@@ -1823,12 +1823,12 @@ typedef struct
  /* No command parameter(s) */
 typedef struct
 {
-	uint8_t status;          /* 0x00 - success */
-	uint8_t hci_version;     /* HCI version */
-	uint16_t hci_revision;   /* HCI revision */
-	uint8_t lmp_version;     /* LMP version */
-	uint16_t manufacturer;   /* Hardware manufacturer name */
-	uint16_t lmp_subversion; /* LMP sub-version */
+  uint8_t status;          /* 0x00 - success */
+  uint8_t hci_version;     /* HCI version */
+  uint16_t hci_revision;   /* HCI revision */
+  uint8_t lmp_version;     /* LMP version */
+  uint16_t manufacturer;   /* Hardware manufacturer name */
+  uint16_t lmp_subversion; /* LMP sub-version */
 } hci_read_local_ver_rp;
 
 #define HCI_OCF_READ_LOCAL_COMMANDS 0x0002
@@ -1836,8 +1836,8 @@ typedef struct
 /* No command parameter(s) */
 typedef struct
 {
-	uint8_t status;                      /* 0x00 - success */
-	uint8_t commands[HCI_COMMANDS_SIZE]; /* opcode bitmask */
+  uint8_t status;                      /* 0x00 - success */
+  uint8_t commands[HCI_COMMANDS_SIZE]; /* opcode bitmask */
 } hci_read_local_commands_rp;
 
 #define HCI_OCF_READ_LOCAL_FEATURES 0x0003
@@ -1845,23 +1845,23 @@ typedef struct
 /* No command parameter(s) */
 typedef struct
 {
-	uint8_t status;                      /* 0x00 - success */
-	uint8_t features[HCI_FEATURES_SIZE]; /* LMP features bitmsk*/
+  uint8_t status;                      /* 0x00 - success */
+  uint8_t features[HCI_FEATURES_SIZE]; /* LMP features bitmsk*/
 } hci_read_local_features_rp;
 
 #define HCI_OCF_READ_LOCAL_EXTENDED_FEATURES 0x0004
 #define HCI_CMD_READ_LOCAL_EXTENDED_FEATURES 0x1004
 typedef struct
 {
-	uint8_t page; /* page number */
+  uint8_t page; /* page number */
 } hci_read_local_extended_features_cp;
 
 typedef struct
 {
-	uint8_t status;                      /* 0x00 - success */
-	uint8_t page;                        /* page number */
-	uint8_t max_page;                    /* maximum page number */
-	uint8_t features[HCI_FEATURES_SIZE]; /* LMP features */
+  uint8_t status;                      /* 0x00 - success */
+  uint8_t page;                        /* page number */
+  uint8_t max_page;                    /* maximum page number */
+  uint8_t features[HCI_FEATURES_SIZE]; /* LMP features */
 } hci_read_local_extended_features_rp;
 
 #define HCI_OCF_READ_BUFFER_SIZE 0x0005
@@ -1869,11 +1869,11 @@ typedef struct
 /* No command parameter(s) */
 typedef struct
 {
-	uint8_t status;        /* 0x00 - success */
-	uint16_t max_acl_size; /* Max. size of ACL packet (bytes) */
-	uint8_t max_sco_size;  /* Max. size of SCO packet (bytes) */
-	uint16_t num_acl_pkts; /* Max. number of ACL packets */
-	uint16_t num_sco_pkts; /* Max. number of SCO packets */
+  uint8_t status;        /* 0x00 - success */
+  uint16_t max_acl_size; /* Max. size of ACL packet (bytes) */
+  uint8_t max_sco_size;  /* Max. size of SCO packet (bytes) */
+  uint16_t num_acl_pkts; /* Max. number of ACL packets */
+  uint16_t num_sco_pkts; /* Max. number of SCO packets */
 } hci_read_buffer_size_rp;
 
 /* Read Country Code is deprecated */
@@ -1882,8 +1882,8 @@ typedef struct
 /* No command parameter(s) */
 typedef struct
 {
-	uint8_t status;       /* 0x00 - success */
-	uint8_t country_code; /* 0x00 - NAM, EUR, JP; 0x01 - France */
+  uint8_t status;       /* 0x00 - success */
+  uint8_t country_code; /* 0x00 - NAM, EUR, JP; 0x01 - France */
 } hci_read_country_code_rp;
 
 #define HCI_OCF_READ_BDADDR 0x0009
@@ -1891,8 +1891,8 @@ typedef struct
 /* No command parameter(s) */
 typedef struct
 {
-	uint8_t status;  /* 0x00 - success */
-	bdaddr_t bdaddr; /* unit address */
+  uint8_t status;  /* 0x00 - success */
+  bdaddr_t bdaddr; /* unit address */
 } hci_read_bdaddr_rp;
 
 /**************************************************************************
@@ -1907,86 +1907,86 @@ typedef struct
 #define HCI_CMD_READ_FAILED_CONTACT_CNTR 0x1401
 typedef struct
 {
-	uint16_t con_handle; /* connection handle */
+  uint16_t con_handle; /* connection handle */
 } hci_read_failed_contact_cntr_cp;
 
 typedef struct
 {
-	uint8_t status;      /* 0x00 - success */
-	uint16_t con_handle; /* connection handle */
-	uint16_t counter;    /* number of consecutive failed contacts */
+  uint8_t status;      /* 0x00 - success */
+  uint16_t con_handle; /* connection handle */
+  uint16_t counter;    /* number of consecutive failed contacts */
 } hci_read_failed_contact_cntr_rp;
 
 #define HCI_OCF_RESET_FAILED_CONTACT_CNTR 0x0002
 #define HCI_CMD_RESET_FAILED_CONTACT_CNTR 0x1402
 typedef struct
 {
-	uint16_t con_handle; /* connection handle */
+  uint16_t con_handle; /* connection handle */
 } hci_reset_failed_contact_cntr_cp;
 
 typedef struct
 {
-	uint8_t status;      /* 0x00 - success */
-	uint16_t con_handle; /* connection handle */
+  uint8_t status;      /* 0x00 - success */
+  uint16_t con_handle; /* connection handle */
 } hci_reset_failed_contact_cntr_rp;
 
 #define HCI_OCF_READ_LINK_QUALITY 0x0003
 #define HCI_CMD_READ_LINK_QUALITY 0x1403
 typedef struct
 {
-	uint16_t con_handle; /* connection handle */
+  uint16_t con_handle; /* connection handle */
 } hci_read_link_quality_cp;
 
 typedef struct
 {
-	uint8_t status;      /* 0x00 - success */
-	uint16_t con_handle; /* connection handle */
-	uint8_t quality;     /* higher value means better quality */
+  uint8_t status;      /* 0x00 - success */
+  uint16_t con_handle; /* connection handle */
+  uint8_t quality;     /* higher value means better quality */
 } hci_read_link_quality_rp;
 
 #define HCI_OCF_READ_RSSI 0x0005
 #define HCI_CMD_READ_RSSI 0x1405
 typedef struct
 {
-	uint16_t con_handle; /* connection handle */
+  uint16_t con_handle; /* connection handle */
 } hci_read_rssi_cp;
 
 typedef struct
 {
-	uint8_t status;      /* 0x00 - success */
-	uint16_t con_handle; /* connection handle */
-	char rssi;           /* -127 <= rssi <= 127 dB */
+  uint8_t status;      /* 0x00 - success */
+  uint16_t con_handle; /* connection handle */
+  char rssi;           /* -127 <= rssi <= 127 dB */
 } hci_read_rssi_rp;
 
 #define HCI_OCF_READ_AFH_CHANNEL_MAP 0x0006
 #define HCI_CMD_READ_AFH_CHANNEL_MAP 0x1406
 typedef struct
 {
-	uint16_t con_handle; /* connection handle */
+  uint16_t con_handle; /* connection handle */
 } hci_read_afh_channel_map_cp;
 
 typedef struct
 {
-	uint8_t status;      /* 0x00 - success */
-	uint16_t con_handle; /* connection handle */
-	uint8_t mode;        /* AFH mode */
-	uint8_t map[10];     /* AFH Channel Map */
+  uint8_t status;      /* 0x00 - success */
+  uint16_t con_handle; /* connection handle */
+  uint8_t mode;        /* AFH mode */
+  uint8_t map[10];     /* AFH Channel Map */
 } hci_read_afh_channel_map_rp;
 
 #define HCI_OCF_READ_CLOCK 0x0007
 #define HCI_CMD_READ_CLOCK 0x1407
 typedef struct
 {
-	uint16_t con_handle; /* connection handle */
-	uint8_t clock;       /* which clock */
+  uint16_t con_handle; /* connection handle */
+  uint8_t clock;       /* which clock */
 } hci_read_clock_cp;
 
 typedef struct
 {
-	uint8_t status;      /* 0x00 - success */
-	uint16_t con_handle; /* connection handle */
-	uint32_t clock;      /* clock value */
-	uint16_t accuracy;   /* clock accuracy */
+  uint8_t status;      /* 0x00 - success */
+  uint16_t con_handle; /* connection handle */
+  uint32_t clock;      /* clock value */
+  uint16_t accuracy;   /* clock accuracy */
 } hci_read_clock_rp;
 
 /**************************************************************************
@@ -2002,15 +2002,15 @@ typedef struct
  /* No command parameter(s) */
 typedef struct
 {
-	uint8_t status; /* 0x00 - success */
-	uint8_t lbmode; /* loopback mode */
+  uint8_t status; /* 0x00 - success */
+  uint8_t lbmode; /* loopback mode */
 } hci_read_loopback_mode_rp;
 
 #define HCI_OCF_WRITE_LOOPBACK_MODE 0x0002
 #define HCI_CMD_WRITE_LOOPBACK_MODE 0x1802
 typedef struct
 {
-	uint8_t lbmode; /* loopback mode */
+  uint8_t lbmode; /* loopback mode */
 } hci_write_loopback_mode_cp;
 
 typedef hci_status_rp hci_write_loopback_mode_rp;
@@ -2024,7 +2024,7 @@ typedef hci_status_rp hci_enable_unit_under_test_rp;
 #define HCI_CMD_WRITE_SIMPLE_PAIRING_DEBUG_MODE 0x1804
 typedef struct
 {
-	uint8_t mode; /* simple pairing debug mode */
+  uint8_t mode; /* simple pairing debug mode */
 } hci_write_simple_pairing_debug_mode_cp;
 
 typedef hci_status_rp hci_write_simple_pairing_debug_mode_rp;
@@ -2056,208 +2056,208 @@ typedef hci_status_rp hci_write_simple_pairing_debug_mode_rp;
 #define HCI_EVENT_INQUIRY_COMPL 0x01
 typedef struct
 {
-	uint8_t status; /* 0x00 - success */
+  uint8_t status; /* 0x00 - success */
 } hci_inquiry_compl_ep;
 
 #define HCI_EVENT_INQUIRY_RESULT 0x02
 typedef struct
 {
-	uint8_t num_responses; /* number of responses */
-	/*	hci_inquiry_response[num_responses]   -- see below */
+  uint8_t num_responses; /* number of responses */
+  /*	hci_inquiry_response[num_responses]   -- see below */
 } hci_inquiry_result_ep;
 
 typedef struct
 {
-	bdaddr_t bdaddr;                /* unit address */
-	uint8_t page_scan_rep_mode;     /* page scan rep. mode */
-	uint8_t page_scan_period_mode;  /* page scan period mode */
-	uint8_t page_scan_mode;         /* page scan mode */
-	uint8_t uclass[HCI_CLASS_SIZE]; /* unit class */
-	uint16_t clock_offset;          /* clock offset */
+  bdaddr_t bdaddr;                /* unit address */
+  uint8_t page_scan_rep_mode;     /* page scan rep. mode */
+  uint8_t page_scan_period_mode;  /* page scan period mode */
+  uint8_t page_scan_mode;         /* page scan mode */
+  uint8_t uclass[HCI_CLASS_SIZE]; /* unit class */
+  uint16_t clock_offset;          /* clock offset */
 } hci_inquiry_response;
 
 #define HCI_EVENT_CON_COMPL 0x03
 typedef struct
 {
-	uint8_t status;          /* 0x00 - success */
-	uint16_t con_handle;     /* Connection handle */
-	bdaddr_t bdaddr;         /* remote unit address */
-	uint8_t link_type;       /* Link type */
-	uint8_t encryption_mode; /* Encryption mode */
+  uint8_t status;          /* 0x00 - success */
+  uint16_t con_handle;     /* Connection handle */
+  bdaddr_t bdaddr;         /* remote unit address */
+  uint8_t link_type;       /* Link type */
+  uint8_t encryption_mode; /* Encryption mode */
 } hci_con_compl_ep;
 
 #define HCI_EVENT_CON_REQ 0x04
 typedef struct
 {
-	bdaddr_t bdaddr;                /* remote unit address */
-	uint8_t uclass[HCI_CLASS_SIZE]; /* remote unit class */
-	uint8_t link_type;              /* link type */
+  bdaddr_t bdaddr;                /* remote unit address */
+  uint8_t uclass[HCI_CLASS_SIZE]; /* remote unit class */
+  uint8_t link_type;              /* link type */
 } hci_con_req_ep;
 
 #define HCI_EVENT_DISCON_COMPL 0x05
 typedef struct
 {
-	uint8_t status;      /* 0x00 - success */
-	uint16_t con_handle; /* connection handle */
-	uint8_t reason;      /* reason to disconnect */
+  uint8_t status;      /* 0x00 - success */
+  uint16_t con_handle; /* connection handle */
+  uint8_t reason;      /* reason to disconnect */
 } hci_discon_compl_ep;
 
 #define HCI_EVENT_AUTH_COMPL 0x06
 typedef struct
 {
-	uint8_t status;      /* 0x00 - success */
-	uint16_t con_handle; /* connection handle */
+  uint8_t status;      /* 0x00 - success */
+  uint16_t con_handle; /* connection handle */
 } hci_auth_compl_ep;
 
 #define HCI_EVENT_REMOTE_NAME_REQ_COMPL 0x07
 typedef struct
 {
-	uint8_t status;                /* 0x00 - success */
-	bdaddr_t bdaddr;               /* remote unit address */
-	char name[HCI_UNIT_NAME_SIZE]; /* remote unit name */
+  uint8_t status;                /* 0x00 - success */
+  bdaddr_t bdaddr;               /* remote unit address */
+  char name[HCI_UNIT_NAME_SIZE]; /* remote unit name */
 } hci_remote_name_req_compl_ep;
 
 #define HCI_EVENT_ENCRYPTION_CHANGE 0x08
 typedef struct
 {
-	uint8_t status;            /* 0x00 - success */
-	uint16_t con_handle;       /* Connection handle */
-	uint8_t encryption_enable; /* 0x00 - disable */
+  uint8_t status;            /* 0x00 - success */
+  uint16_t con_handle;       /* Connection handle */
+  uint8_t encryption_enable; /* 0x00 - disable */
 } hci_encryption_change_ep;
 
 #define HCI_EVENT_CHANGE_CON_LINK_KEY_COMPL 0x09
 typedef struct
 {
-	uint8_t status;      /* 0x00 - success */
-	uint16_t con_handle; /* Connection handle */
+  uint8_t status;      /* 0x00 - success */
+  uint16_t con_handle; /* Connection handle */
 } hci_change_con_link_key_compl_ep;
 
 #define HCI_EVENT_MASTER_LINK_KEY_COMPL 0x0a
 typedef struct
 {
-	uint8_t status;      /* 0x00 - success */
-	uint16_t con_handle; /* Connection handle */
-	uint8_t key_flag;    /* Key flag */
+  uint8_t status;      /* 0x00 - success */
+  uint16_t con_handle; /* Connection handle */
+  uint8_t key_flag;    /* Key flag */
 } hci_master_link_key_compl_ep;
 
 #define HCI_EVENT_READ_REMOTE_FEATURES_COMPL 0x0b
 typedef struct
 {
-	uint8_t status;                      /* 0x00 - success */
-	uint16_t con_handle;                 /* Connection handle */
-	uint8_t features[HCI_FEATURES_SIZE]; /* LMP features bitmsk*/
+  uint8_t status;                      /* 0x00 - success */
+  uint16_t con_handle;                 /* Connection handle */
+  uint8_t features[HCI_FEATURES_SIZE]; /* LMP features bitmsk*/
 } hci_read_remote_features_compl_ep;
 
 #define HCI_EVENT_READ_REMOTE_VER_INFO_COMPL 0x0c
 typedef struct
 {
-	uint8_t status;          /* 0x00 - success */
-	uint16_t con_handle;     /* Connection handle */
-	uint8_t lmp_version;     /* LMP version */
-	uint16_t manufacturer;   /* Hardware manufacturer name */
-	uint16_t lmp_subversion; /* LMP sub-version */
+  uint8_t status;          /* 0x00 - success */
+  uint16_t con_handle;     /* Connection handle */
+  uint8_t lmp_version;     /* LMP version */
+  uint16_t manufacturer;   /* Hardware manufacturer name */
+  uint16_t lmp_subversion; /* LMP sub-version */
 } hci_read_remote_ver_info_compl_ep;
 
 #define HCI_EVENT_QOS_SETUP_COMPL 0x0d
 typedef struct
 {
-	uint8_t status;           /* 0x00 - success */
-	uint16_t con_handle;      /* connection handle */
-	uint8_t flags;            /* reserved for future use */
-	uint8_t service_type;     /* service type */
-	uint32_t token_rate;      /* bytes per second */
-	uint32_t peak_bandwidth;  /* bytes per second */
-	uint32_t latency;         /* microseconds */
-	uint32_t delay_variation; /* microseconds */
+  uint8_t status;           /* 0x00 - success */
+  uint16_t con_handle;      /* connection handle */
+  uint8_t flags;            /* reserved for future use */
+  uint8_t service_type;     /* service type */
+  uint32_t token_rate;      /* bytes per second */
+  uint32_t peak_bandwidth;  /* bytes per second */
+  uint32_t latency;         /* microseconds */
+  uint32_t delay_variation; /* microseconds */
 } hci_qos_setup_compl_ep;
 
 #define HCI_EVENT_COMMAND_COMPL 0x0e
 typedef struct
 {
-	uint8_t num_cmd_pkts; /* # of HCI command packets */
-	uint16_t opcode;      /* command OpCode */
-								 /* command return parameters (if any) */
+  uint8_t num_cmd_pkts; /* # of HCI command packets */
+  uint16_t opcode;      /* command OpCode */
+                               /* command return parameters (if any) */
 } hci_command_compl_ep;
 
 #define HCI_EVENT_COMMAND_STATUS 0x0f
 typedef struct
 {
-	uint8_t status;       /* 0x00 - pending */
-	uint8_t num_cmd_pkts; /* # of HCI command packets */
-	uint16_t opcode;      /* command OpCode */
+  uint8_t status;       /* 0x00 - pending */
+  uint8_t num_cmd_pkts; /* # of HCI command packets */
+  uint16_t opcode;      /* command OpCode */
 } hci_command_status_ep;
 
 #define HCI_EVENT_HARDWARE_ERROR 0x10
 typedef struct
 {
-	uint8_t hardware_code; /* hardware error code */
+  uint8_t hardware_code; /* hardware error code */
 } hci_hardware_error_ep;
 
 #define HCI_EVENT_FLUSH_OCCUR 0x11
 typedef struct
 {
-	uint16_t con_handle; /* connection handle */
+  uint16_t con_handle; /* connection handle */
 } hci_flush_occur_ep;
 
 #define HCI_EVENT_ROLE_CHANGE 0x12
 typedef struct
 {
-	uint8_t status;  /* 0x00 - success */
-	bdaddr_t bdaddr; /* address of remote unit */
-	uint8_t role;    /* new connection role */
+  uint8_t status;  /* 0x00 - success */
+  bdaddr_t bdaddr; /* address of remote unit */
+  uint8_t role;    /* new connection role */
 } hci_role_change_ep;
 
 #define HCI_EVENT_NUM_COMPL_PKTS 0x13
 typedef struct
 {
-	uint8_t num_con_handles; /* # of connection handles */
-									 /* these are repeated "num_con_handles" times
-										uint16_t	con_handle; --- connection handle(s)
-										uint16_t	compl_pkts; --- # of completed packets */
+  uint8_t num_con_handles; /* # of connection handles */
+                                   /* these are repeated "num_con_handles" times
+                                      uint16_t	con_handle; --- connection handle(s)
+                                      uint16_t	compl_pkts; --- # of completed packets */
 } hci_num_compl_pkts_ep;
 
 typedef struct
 {
-	uint16_t con_handle;
-	uint16_t compl_pkts;
+  uint16_t con_handle;
+  uint16_t compl_pkts;
 } hci_num_compl_pkts_info;
 
 #define HCI_EVENT_MODE_CHANGE 0x14
 typedef struct
 {
-	uint8_t status;      /* 0x00 - success */
-	uint16_t con_handle; /* connection handle */
-	uint8_t unit_mode;   /* remote unit mode */
-	uint16_t interval;   /* interval * 0.625 msec */
+  uint8_t status;      /* 0x00 - success */
+  uint16_t con_handle; /* connection handle */
+  uint8_t unit_mode;   /* remote unit mode */
+  uint16_t interval;   /* interval * 0.625 msec */
 } hci_mode_change_ep;
 
 #define HCI_EVENT_RETURN_LINK_KEYS 0x15
 typedef struct
 {
-	uint8_t num_keys; /* # of keys */
-							/* these are repeated "num_keys" times
-							  bdaddr_t	bdaddr;               --- remote address(es)
-							  uint8_t		key[HCI_KEY_SIZE]; --- key(s) */
+  uint8_t num_keys; /* # of keys */
+                          /* these are repeated "num_keys" times
+                            bdaddr_t	bdaddr;               --- remote address(es)
+                            uint8_t		key[HCI_KEY_SIZE]; --- key(s) */
 } hci_return_link_keys_ep;
 
 #define HCI_EVENT_PIN_CODE_REQ 0x16
 typedef struct
 {
-	bdaddr_t bdaddr; /* remote unit address */
+  bdaddr_t bdaddr; /* remote unit address */
 } hci_pin_code_req_ep;
 
 #define HCI_EVENT_LINK_KEY_REQ 0x17
 typedef struct
 {
-	bdaddr_t bdaddr; /* remote unit address */
+  bdaddr_t bdaddr; /* remote unit address */
 } hci_link_key_req_ep;
 
 #define HCI_EVENT_LINK_KEY_NOTIFICATION 0x18
 typedef struct
 {
-	bdaddr_t bdaddr;           /* remote unit address */
-	uint8_t key[HCI_KEY_SIZE]; /* link key */
-	uint8_t key_type;          /* type of the key */
+  bdaddr_t bdaddr;           /* remote unit address */
+  uint8_t key[HCI_KEY_SIZE]; /* link key */
+  uint8_t key_type;          /* type of the key */
 } hci_link_key_notification_ep;
 
 #define HCI_EVENT_LOOPBACK_COMMAND 0x19
@@ -2266,223 +2266,223 @@ typedef hci_cmd_hdr_t hci_loopback_command_ep;
 #define HCI_EVENT_DATA_BUFFER_OVERFLOW 0x1a
 typedef struct
 {
-	uint8_t link_type; /* Link type */
+  uint8_t link_type; /* Link type */
 } hci_data_buffer_overflow_ep;
 
 #define HCI_EVENT_MAX_SLOT_CHANGE 0x1b
 typedef struct
 {
-	uint16_t con_handle;   /* connection handle */
-	uint8_t lmp_max_slots; /* Max. # of slots allowed */
+  uint16_t con_handle;   /* connection handle */
+  uint8_t lmp_max_slots; /* Max. # of slots allowed */
 } hci_max_slot_change_ep;
 
 #define HCI_EVENT_READ_CLOCK_OFFSET_COMPL 0x1c
 typedef struct
 {
-	uint8_t status;        /* 0x00 - success */
-	uint16_t con_handle;   /* Connection handle */
-	uint16_t clock_offset; /* Clock offset */
+  uint8_t status;        /* 0x00 - success */
+  uint16_t con_handle;   /* Connection handle */
+  uint16_t clock_offset; /* Clock offset */
 } hci_read_clock_offset_compl_ep;
 
 #define HCI_EVENT_CON_PKT_TYPE_CHANGED 0x1d
 typedef struct
 {
-	uint8_t status;      /* 0x00 - success */
-	uint16_t con_handle; /* connection handle */
-	uint16_t pkt_type;   /* packet type */
+  uint8_t status;      /* 0x00 - success */
+  uint16_t con_handle; /* connection handle */
+  uint16_t pkt_type;   /* packet type */
 } hci_con_pkt_type_changed_ep;
 
 #define HCI_EVENT_QOS_VIOLATION 0x1e
 typedef struct
 {
-	uint16_t con_handle; /* connection handle */
+  uint16_t con_handle; /* connection handle */
 } hci_qos_violation_ep;
 
 /* Page Scan Mode Change Event is deprecated */
 #define HCI_EVENT_PAGE_SCAN_MODE_CHANGE 0x1f
 typedef struct
 {
-	bdaddr_t bdaddr;        /* destination address */
-	uint8_t page_scan_mode; /* page scan mode */
+  bdaddr_t bdaddr;        /* destination address */
+  uint8_t page_scan_mode; /* page scan mode */
 } hci_page_scan_mode_change_ep;
 
 #define HCI_EVENT_PAGE_SCAN_REP_MODE_CHANGE 0x20
 typedef struct
 {
-	bdaddr_t bdaddr;            /* destination address */
-	uint8_t page_scan_rep_mode; /* page scan repetition mode */
+  bdaddr_t bdaddr;            /* destination address */
+  uint8_t page_scan_rep_mode; /* page scan repetition mode */
 } hci_page_scan_rep_mode_change_ep;
 
 #define HCI_EVENT_FLOW_SPECIFICATION_COMPL 0x21
 typedef struct
 {
-	uint8_t status;          /* 0x00 - success */
-	uint16_t con_handle;     /* connection handle */
-	uint8_t flags;           /* reserved */
-	uint8_t direction;       /* flow direction */
-	uint8_t type;            /* service type */
-	uint32_t token_rate;     /* token rate */
-	uint32_t bucket_size;    /* token bucket size */
-	uint32_t peak_bandwidth; /* peak bandwidth */
-	uint32_t latency;        /* access latency */
+  uint8_t status;          /* 0x00 - success */
+  uint16_t con_handle;     /* connection handle */
+  uint8_t flags;           /* reserved */
+  uint8_t direction;       /* flow direction */
+  uint8_t type;            /* service type */
+  uint32_t token_rate;     /* token rate */
+  uint32_t bucket_size;    /* token bucket size */
+  uint32_t peak_bandwidth; /* peak bandwidth */
+  uint32_t latency;        /* access latency */
 } hci_flow_specification_compl_ep;
 
 #define HCI_EVENT_RSSI_RESULT 0x22
 typedef struct
 {
-	uint8_t num_responses; /* number of responses */
-	/*	hci_rssi_response[num_responses]   -- see below */
+  uint8_t num_responses; /* number of responses */
+  /*	hci_rssi_response[num_responses]   -- see below */
 } hci_rssi_result_ep;
 
 typedef struct
 {
-	bdaddr_t bdaddr;                /* unit address */
-	uint8_t page_scan_rep_mode;     /* page scan rep. mode */
-	uint8_t blank;                  /* reserved */
-	uint8_t uclass[HCI_CLASS_SIZE]; /* unit class */
-	uint16_t clock_offset;          /* clock offset */
-	int8_t rssi;                    /* rssi */
+  bdaddr_t bdaddr;                /* unit address */
+  uint8_t page_scan_rep_mode;     /* page scan rep. mode */
+  uint8_t blank;                  /* reserved */
+  uint8_t uclass[HCI_CLASS_SIZE]; /* unit class */
+  uint16_t clock_offset;          /* clock offset */
+  int8_t rssi;                    /* rssi */
 } hci_rssi_response;
 
 #define HCI_EVENT_READ_REMOTE_EXTENDED_FEATURES 0x23
 typedef struct
 {
-	uint8_t status;                      /* 0x00 - success */
-	uint16_t con_handle;                 /* connection handle */
-	uint8_t page;                        /* page number */
-	uint8_t max;                         /* max page number */
-	uint8_t features[HCI_FEATURES_SIZE]; /* LMP features bitmsk*/
+  uint8_t status;                      /* 0x00 - success */
+  uint16_t con_handle;                 /* connection handle */
+  uint8_t page;                        /* page number */
+  uint8_t max;                         /* max page number */
+  uint8_t features[HCI_FEATURES_SIZE]; /* LMP features bitmsk*/
 } hci_read_remote_extended_features_ep;
 
 #define HCI_EVENT_SCO_CON_COMPL 0x2c
 typedef struct
 {
-	uint8_t status;      /* 0x00 - success */
-	uint16_t con_handle; /* connection handle */
-	bdaddr_t bdaddr;     /* unit address */
-	uint8_t link_type;   /* link type */
-	uint8_t interval;    /* transmission interval */
-	uint8_t window;      /* retransmission window */
-	uint16_t rxlen;      /* rx packet length */
-	uint16_t txlen;      /* tx packet length */
-	uint8_t mode;        /* air mode */
+  uint8_t status;      /* 0x00 - success */
+  uint16_t con_handle; /* connection handle */
+  bdaddr_t bdaddr;     /* unit address */
+  uint8_t link_type;   /* link type */
+  uint8_t interval;    /* transmission interval */
+  uint8_t window;      /* retransmission window */
+  uint16_t rxlen;      /* rx packet length */
+  uint16_t txlen;      /* tx packet length */
+  uint8_t mode;        /* air mode */
 } hci_sco_con_compl_ep;
 
 #define HCI_EVENT_SCO_CON_CHANGED 0x2d
 typedef struct
 {
-	uint8_t status;      /* 0x00 - success */
-	uint16_t con_handle; /* connection handle */
-	uint8_t interval;    /* transmission interval */
-	uint8_t window;      /* retransmission window */
-	uint16_t rxlen;      /* rx packet length */
-	uint16_t txlen;      /* tx packet length */
+  uint8_t status;      /* 0x00 - success */
+  uint16_t con_handle; /* connection handle */
+  uint8_t interval;    /* transmission interval */
+  uint8_t window;      /* retransmission window */
+  uint16_t rxlen;      /* rx packet length */
+  uint16_t txlen;      /* tx packet length */
 } hci_sco_con_changed_ep;
 
 #define HCI_EVENT_SNIFF_SUBRATING 0x2e
 typedef struct
 {
-	uint8_t status;          /* 0x00 - success */
-	uint16_t con_handle;     /* connection handle */
-	uint16_t tx_latency;     /* max transmit latency */
-	uint16_t rx_latency;     /* max receive latency */
-	uint16_t remote_timeout; /* remote timeout */
-	uint16_t local_timeout;  /* local timeout */
+  uint8_t status;          /* 0x00 - success */
+  uint16_t con_handle;     /* connection handle */
+  uint16_t tx_latency;     /* max transmit latency */
+  uint16_t rx_latency;     /* max receive latency */
+  uint16_t remote_timeout; /* remote timeout */
+  uint16_t local_timeout;  /* local timeout */
 } hci_sniff_subrating_ep;
 
 #define HCI_EVENT_EXTENDED_RESULT 0x2f
 typedef struct
 {
-	uint8_t num_responses; /* must be 0x01 */
-	bdaddr_t bdaddr;       /* remote device address */
-	uint8_t page_scan_rep_mode;
-	uint8_t reserved;
-	uint8_t uclass[HCI_CLASS_SIZE];
-	uint16_t clock_offset;
-	int8_t rssi;
-	uint8_t response[240]; /* extended inquiry response */
+  uint8_t num_responses; /* must be 0x01 */
+  bdaddr_t bdaddr;       /* remote device address */
+  uint8_t page_scan_rep_mode;
+  uint8_t reserved;
+  uint8_t uclass[HCI_CLASS_SIZE];
+  uint16_t clock_offset;
+  int8_t rssi;
+  uint8_t response[240]; /* extended inquiry response */
 } hci_extended_result_ep;
 
 #define HCI_EVENT_ENCRYPTION_KEY_REFRESH 0x30
 typedef struct
 {
-	uint8_t status;      /* 0x00 - success */
-	uint16_t con_handle; /* connection handle */
+  uint8_t status;      /* 0x00 - success */
+  uint16_t con_handle; /* connection handle */
 } hci_encryption_key_refresh_ep;
 
 #define HCI_EVENT_IO_CAPABILITY_REQ 0x31
 typedef struct
 {
-	bdaddr_t bdaddr; /* remote device address */
+  bdaddr_t bdaddr; /* remote device address */
 } hci_io_capability_req_ep;
 
 #define HCI_EVENT_IO_CAPABILITY_RSP 0x32
 typedef struct
 {
-	bdaddr_t bdaddr; /* remote device address */
-	uint8_t io_capability;
-	uint8_t oob_data_present;
-	uint8_t auth_requirement;
+  bdaddr_t bdaddr; /* remote device address */
+  uint8_t io_capability;
+  uint8_t oob_data_present;
+  uint8_t auth_requirement;
 } hci_io_capability_rsp_ep;
 
 #define HCI_EVENT_USER_CONFIRM_REQ 0x33
 typedef struct
 {
-	bdaddr_t bdaddr; /* remote device address */
-	uint32_t value;  /* 000000 - 999999 */
+  bdaddr_t bdaddr; /* remote device address */
+  uint32_t value;  /* 000000 - 999999 */
 } hci_user_confirm_req_ep;
 
 #define HCI_EVENT_USER_PASSKEY_REQ 0x34
 typedef struct
 {
-	bdaddr_t bdaddr; /* remote device address */
+  bdaddr_t bdaddr; /* remote device address */
 } hci_user_passkey_req_ep;
 
 #define HCI_EVENT_REMOTE_OOB_DATA_REQ 0x35
 typedef struct
 {
-	bdaddr_t bdaddr; /* remote device address */
+  bdaddr_t bdaddr; /* remote device address */
 } hci_remote_oob_data_req_ep;
 
 #define HCI_EVENT_SIMPLE_PAIRING_COMPL 0x36
 typedef struct
 {
-	uint8_t status;  /* 0x00 - success */
-	bdaddr_t bdaddr; /* remote device address */
+  uint8_t status;  /* 0x00 - success */
+  bdaddr_t bdaddr; /* remote device address */
 } hci_simple_pairing_compl_ep;
 
 #define HCI_EVENT_LINK_SUPERVISION_TO_CHANGED 0x38
 typedef struct
 {
-	uint16_t con_handle; /* connection handle */
-	uint16_t timeout;    /* link supervision timeout */
+  uint16_t con_handle; /* connection handle */
+  uint16_t timeout;    /* link supervision timeout */
 } hci_link_supervision_to_changed_ep;
 
 #define HCI_EVENT_ENHANCED_FLUSH_COMPL 0x39
 typedef struct
 {
-	uint16_t con_handle; /* connection handle */
+  uint16_t con_handle; /* connection handle */
 } hci_enhanced_flush_compl_ep;
 
 #define HCI_EVENT_USER_PASSKEY_NOTIFICATION 0x3b
 typedef struct
 {
-	bdaddr_t bdaddr; /* remote device address */
-	uint32_t value;  /* 000000 - 999999 */
+  bdaddr_t bdaddr; /* remote device address */
+  uint32_t value;  /* 000000 - 999999 */
 } hci_user_passkey_notification_ep;
 
 #define HCI_EVENT_KEYPRESS_NOTIFICATION 0x3c
 typedef struct
 {
-	bdaddr_t bdaddr; /* remote device address */
-	uint8_t notification_type;
+  bdaddr_t bdaddr; /* remote device address */
+  uint8_t notification_type;
 } hci_keypress_notification_ep;
 
 #define HCI_EVENT_REMOTE_FEATURES_NOTIFICATION 0x3d
 typedef struct
 {
-	bdaddr_t bdaddr;                     /* remote device address */
-	uint8_t features[HCI_FEATURES_SIZE]; /* LMP features bitmsk*/
+  bdaddr_t bdaddr;                     /* remote device address */
+  uint8_t features[HCI_FEATURES_SIZE]; /* LMP features bitmsk*/
 } hci_remote_features_notification_ep;
 
 #define HCI_EVENT_BT_LOGO 0xfe
@@ -2510,31 +2510,31 @@ typedef struct
  */
 struct hci_filter
 {
-	uint32_t mask[8]; /* 256 bits */
+  uint32_t mask[8]; /* 256 bits */
 };
 
 static __inline void hci_filter_set(uint8_t bit, struct hci_filter* filter)
 {
-	uint8_t off = bit - 1;
+  uint8_t off = bit - 1;
 
-	off >>= 5;
-	filter->mask[off] |= (1 << ((bit - 1) & 0x1f));
+  off >>= 5;
+  filter->mask[off] |= (1 << ((bit - 1) & 0x1f));
 }
 
 static __inline void hci_filter_clr(uint8_t bit, struct hci_filter* filter)
 {
-	uint8_t off = bit - 1;
+  uint8_t off = bit - 1;
 
-	off >>= 5;
-	filter->mask[off] &= ~(1 << ((bit - 1) & 0x1f));
+  off >>= 5;
+  filter->mask[off] &= ~(1 << ((bit - 1) & 0x1f));
 }
 
 static __inline int hci_filter_test(uint8_t bit, const struct hci_filter* filter)
 {
-	uint8_t off = bit - 1;
+  uint8_t off = bit - 1;
 
-	off >>= 5;
-	return (filter->mask[off] & (1 << ((bit - 1) & 0x1f)));
+  off >>= 5;
+  return (filter->mask[off] & (1 << ((bit - 1) & 0x1f)));
 }
 
 /*
@@ -2559,38 +2559,38 @@ static __inline int hci_filter_test(uint8_t bit, const struct hci_filter* filter
 
 struct bt_stats
 {
-	uint32_t err_tx;
-	uint32_t err_rx;
-	uint32_t cmd_tx;
-	uint32_t evt_rx;
-	uint32_t acl_tx;
-	uint32_t acl_rx;
-	uint32_t sco_tx;
-	uint32_t sco_rx;
-	uint32_t byte_tx;
-	uint32_t byte_rx;
+  uint32_t err_tx;
+  uint32_t err_rx;
+  uint32_t cmd_tx;
+  uint32_t evt_rx;
+  uint32_t acl_tx;
+  uint32_t acl_rx;
+  uint32_t sco_tx;
+  uint32_t sco_rx;
+  uint32_t byte_tx;
+  uint32_t byte_rx;
 };
 
 struct btreq
 {
-	char btr_name[HCI_DEVNAME_SIZE]; /* device name */
+  char btr_name[HCI_DEVNAME_SIZE]; /* device name */
 
-	union
-	{
-		struct
-		{
-			bdaddr_t btri_bdaddr;      /* device bdaddr */
-			uint16_t btri_flags;       /* flags */
-			uint16_t btri_num_cmd;     /* # of free cmd buffers */
-			uint16_t btri_num_acl;     /* # of free ACL buffers */
-			uint16_t btri_num_sco;     /* # of free SCO buffers */
-			uint16_t btri_acl_mtu;     /* ACL mtu */
-			uint16_t btri_sco_mtu;     /* SCO mtu */
-			uint16_t btri_link_policy; /* Link Policy */
-			uint16_t btri_packet_type; /* Packet Type */
-		} btri;
-		struct bt_stats btrs; /* unit stats */
-	} btru;
+  union
+  {
+    struct
+    {
+      bdaddr_t btri_bdaddr;      /* device bdaddr */
+      uint16_t btri_flags;       /* flags */
+      uint16_t btri_num_cmd;     /* # of free cmd buffers */
+      uint16_t btri_num_acl;     /* # of free ACL buffers */
+      uint16_t btri_num_sco;     /* # of free SCO buffers */
+      uint16_t btri_acl_mtu;     /* ACL mtu */
+      uint16_t btri_sco_mtu;     /* SCO mtu */
+      uint16_t btri_link_policy; /* Link Policy */
+      uint16_t btri_packet_type; /* Packet Type */
+    } btri;
+    struct bt_stats btrs; /* unit stats */
+  } btru;
 };
 
 #define btr_flags btru.btri.btri_flags
@@ -2626,158 +2626,158 @@ struct btreq
 #include "Common/CommonTypes.h"
 struct SCommandMessage
 {
-	u16 Opcode;
-	u8 len;
+  u16 Opcode;
+  u8 len;
 };
 
 struct SHCIEventCommand
 {
-	u8 EventType;
-	u8 PayloadLength;
-	u8 PacketIndicator;
-	u16 Opcode;
+  u8 EventType;
+  u8 PayloadLength;
+  u8 PacketIndicator;
+  u16 Opcode;
 };
 
 struct SHCIEventStatus
 {
-	u8 EventType;
-	u8 PayloadLength;
-	u8 EventStatus;
-	u8 PacketIndicator;
-	u16 Opcode;
+  u8 EventType;
+  u8 PayloadLength;
+  u8 EventStatus;
+  u8 PacketIndicator;
+  u16 Opcode;
 };
 
 struct SHCIEventInquiryResult
 {
-	u8 EventType;
-	u8 PayloadLength;
-	u8 num_responses;
+  u8 EventType;
+  u8 PayloadLength;
+  u8 num_responses;
 };
 
 struct SHCIEventInquiryComplete
 {
-	u8 EventType;
-	u8 PayloadLength;
-	u8 EventStatus;
+  u8 EventType;
+  u8 PayloadLength;
+  u8 EventStatus;
 };
 
 struct SHCIEventReadClockOffsetComplete
 {
-	u8 EventType;
-	u8 PayloadLength;
-	u8 EventStatus;
-	u16 ConnectionHandle;
-	u16 ClockOffset;
+  u8 EventType;
+  u8 PayloadLength;
+  u8 EventStatus;
+  u16 ConnectionHandle;
+  u16 ClockOffset;
 };
 
 struct SHCIEventConPacketTypeChange
 {
-	u8 EventType;
-	u8 PayloadLength;
-	u8 EventStatus;
-	u16 ConnectionHandle;
-	u16 PacketType;
+  u8 EventType;
+  u8 PayloadLength;
+  u8 EventStatus;
+  u16 ConnectionHandle;
+  u16 PacketType;
 };
 
 struct SHCIEventReadRemoteVerInfo
 {
-	u8 EventType;
-	u8 PayloadLength;
-	u8 EventStatus;
-	u16 ConnectionHandle;
-	u8 lmp_version;
-	u16 manufacturer;
-	u16 lmp_subversion;
+  u8 EventType;
+  u8 PayloadLength;
+  u8 EventStatus;
+  u16 ConnectionHandle;
+  u8 lmp_version;
+  u16 manufacturer;
+  u16 lmp_subversion;
 };
 
 struct SHCIEventReadRemoteFeatures
 {
-	u8 EventType;
-	u8 PayloadLength;
-	u8 EventStatus;
-	u16 ConnectionHandle;
-	u8 features[HCI_FEATURES_SIZE];
+  u8 EventType;
+  u8 PayloadLength;
+  u8 EventStatus;
+  u16 ConnectionHandle;
+  u8 features[HCI_FEATURES_SIZE];
 };
 
 struct SHCIEventRemoteNameReq
 {
-	u8 EventType;
-	u8 PayloadLength;
-	u8 EventStatus;
-	bdaddr_t bdaddr;
-	u8 RemoteName[HCI_UNIT_NAME_SIZE];
+  u8 EventType;
+  u8 PayloadLength;
+  u8 EventStatus;
+  bdaddr_t bdaddr;
+  u8 RemoteName[HCI_UNIT_NAME_SIZE];
 };
 
 struct SHCIEventRequestConnection
 {
-	u8 EventType;
-	u8 PayloadLength;
-	bdaddr_t bdaddr;
-	uint8_t uclass[HCI_CLASS_SIZE]; /* unit class */
-	u8 LinkType;
+  u8 EventType;
+  u8 PayloadLength;
+  bdaddr_t bdaddr;
+  uint8_t uclass[HCI_CLASS_SIZE]; /* unit class */
+  u8 LinkType;
 };
 
 struct SHCIEventConnectionComplete
 {
-	u8 EventType;
-	u8 PayloadLength;
-	u8 EventStatus;
-	u16 Connection_Handle;
-	bdaddr_t bdaddr;
-	u8 LinkType;
-	u8 EncryptionEnabled;
+  u8 EventType;
+  u8 PayloadLength;
+  u8 EventStatus;
+  u16 Connection_Handle;
+  bdaddr_t bdaddr;
+  u8 LinkType;
+  u8 EncryptionEnabled;
 };
 
 struct SHCIEventRoleChange
 {
-	u8 EventType;
-	u8 PayloadLength;
-	u8 EventStatus;
-	bdaddr_t bdaddr;
-	u8 NewRole;
+  u8 EventType;
+  u8 PayloadLength;
+  u8 EventStatus;
+  bdaddr_t bdaddr;
+  u8 NewRole;
 };
 
 struct SHCIEventAuthenticationCompleted
 {
-	u8 EventType;
-	u8 PayloadLength;
-	u8 EventStatus;
-	u16 Connection_Handle;
+  u8 EventType;
+  u8 PayloadLength;
+  u8 EventStatus;
+  u16 Connection_Handle;
 };
 
 struct SHCIEventModeChange
 {
-	u8 EventType;
-	u8 PayloadLength;
-	u8 EventStatus;
-	u16 Connection_Handle;
-	u8 CurrentMode;
-	u16 Value;
+  u8 EventType;
+  u8 PayloadLength;
+  u8 EventStatus;
+  u16 Connection_Handle;
+  u8 CurrentMode;
+  u16 Value;
 };
 
 struct SHCIEventDisconnectCompleted
 {
-	u8 EventType;
-	u8 PayloadLength;
-	u8 EventStatus;
-	u16 Connection_Handle;
-	u8 Reason;
+  u8 EventType;
+  u8 PayloadLength;
+  u8 EventStatus;
+  u16 Connection_Handle;
+  u8 Reason;
 };
 
 struct SHCIEventRequestLinkKey
 {
-	u8 EventType;
-	u8 PayloadLength;
-	bdaddr_t bdaddr;
+  u8 EventType;
+  u8 PayloadLength;
+  bdaddr_t bdaddr;
 };
 
 struct SHCIEventLinkKeyNotification
 {
-	u8 EventType;
-	u8 PayloadLength;
-	u8 numKeys;
-	bdaddr_t bdaddr;
-	u8 LinkKey[HCI_KEY_SIZE];
+  u8 EventType;
+  u8 PayloadLength;
+  u8 numKeys;
+  bdaddr_t bdaddr;
+  u8 LinkKey[HCI_KEY_SIZE];
 };
 //////////////////////////////////////////////////////////////////////////
 

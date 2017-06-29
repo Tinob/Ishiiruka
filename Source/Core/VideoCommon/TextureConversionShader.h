@@ -15,56 +15,56 @@ namespace TextureConversionShader
 {
 inline u16 GetEncodedSampleCount(u32 format)
 {
-	switch (format)
-	{
-	case GX_TF_I4: return 8;
-	case GX_TF_I8: return 4;
-	case GX_TF_IA4: return 4;
-	case GX_TF_IA8: return 2;
-	case GX_TF_RGB565: return 2;
-	case GX_TF_RGB5A3: return 2;
-	case GX_TF_RGBA8: return 1;
-	case GX_CTF_R4: return 8;
-	case GX_CTF_RA4: return 4;
-	case GX_CTF_RA8: return 2;
-	case GX_CTF_A8: return 4;
-	case GX_CTF_R8: return 4;
-	case GX_CTF_G8: return 4;
-	case GX_CTF_B8: return 4;
-	case GX_CTF_RG8: return 2;
-	case GX_CTF_GB8: return 2;
-	case GX_CTF_Z8H: return 4;
-	case GX_TF_Z8: return 4;
-	case GX_CTF_Z16R: return 2;
-	case GX_TF_Z16: return 2;
-	case GX_TF_Z24X8: return 1;
-	case GX_CTF_Z4: return 8;
-	case GX_CTF_Z8M: return 4;
-	case GX_CTF_Z8L: return 4;
-	case GX_CTF_Z16L: return 2;
-	default: return 1;
-	}
+  switch (format)
+  {
+  case GX_TF_I4: return 8;
+  case GX_TF_I8: return 4;
+  case GX_TF_IA4: return 4;
+  case GX_TF_IA8: return 2;
+  case GX_TF_RGB565: return 2;
+  case GX_TF_RGB5A3: return 2;
+  case GX_TF_RGBA8: return 1;
+  case GX_CTF_R4: return 8;
+  case GX_CTF_RA4: return 4;
+  case GX_CTF_RA8: return 2;
+  case GX_CTF_A8: return 4;
+  case GX_CTF_R8: return 4;
+  case GX_CTF_G8: return 4;
+  case GX_CTF_B8: return 4;
+  case GX_CTF_RG8: return 2;
+  case GX_CTF_GB8: return 2;
+  case GX_CTF_Z8H: return 4;
+  case GX_TF_Z8: return 4;
+  case GX_CTF_Z16R: return 2;
+  case GX_TF_Z16: return 2;
+  case GX_TF_Z24X8: return 1;
+  case GX_CTF_Z4: return 8;
+  case GX_CTF_Z8M: return 4;
+  case GX_CTF_Z8L: return 4;
+  case GX_CTF_Z16L: return 2;
+  default: return 1;
+  }
 }
 const char *GenerateEncodingShader(const EFBCopyFormat& format, API_TYPE ApiType = API_OPENGL);
 
 // View format of the input data to the texture decoding shader.
 enum BufferFormat
 {
-	BUFFER_FORMAT_R8_UINT,
-	BUFFER_FORMAT_R16_UINT,
-	BUFFER_FORMAT_R32G32_UINT,
-	BUFFER_FORMAT_COUNT
+  BUFFER_FORMAT_R8_UINT,
+  BUFFER_FORMAT_R16_UINT,
+  BUFFER_FORMAT_R32G32_UINT,
+  BUFFER_FORMAT_COUNT
 };
 
 // Information required to compile and dispatch a texture decoding shader.
 struct DecodingShaderInfo
 {
-	BufferFormat buffer_format;
-	u32 palette_size;
-	u32 group_size_x;
-	u32 group_size_y;
-	bool group_flatten;
-	const char* shader_body;
+  BufferFormat buffer_format;
+  u32 palette_size;
+  u32 group_size_x;
+  u32 group_size_y;
+  bool group_flatten;
+  const char* shader_body;
 };
 
 // Obtain shader information for the specified texture format.

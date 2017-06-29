@@ -9,22 +9,22 @@
 class VertexLoader : public VertexLoaderBase
 {
 public:
-	VertexLoader(const TVtxDesc &vtx_desc, const VAT &vtx_attr);
-	~VertexLoader();
+  VertexLoader(const TVtxDesc &vtx_desc, const VAT &vtx_attr);
+  ~VertexLoader();
 
-	s32 RunVertices(const VertexLoaderParameters &parameters) override;
+  s32 RunVertices(const VertexLoaderParameters &parameters) override;
 
-	// For debugging / profiling
-	bool IsInitialized() override
-	{
-		return true;
-	} // This vertex loader supports all formats
+  // For debugging / profiling
+  bool IsInitialized() override
+  {
+    return true;
+  } // This vertex loader supports all formats
 private:
-	// Pipeline.
-	TPipelineFunction m_PipelineStages[32];
-	s32 m_numPipelineStages;
+  // Pipeline.
+  TPipelineFunction m_PipelineStages[32];
+  s32 m_numPipelineStages;
 
-	void CompileVertexTranslator();
+  void CompileVertexTranslator();
 
-	void WriteCall(TPipelineFunction);
+  void WriteCall(TPipelineFunction);
 };

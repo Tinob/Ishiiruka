@@ -29,16 +29,16 @@ class X64CodeBlock;
 class Jit64AsmRoutineManager : public CommonAsmRoutines
 {
 private:
-	void Generate();
-	void GenerateCommon();
-	u8* m_stack_top;
+  void Generate();
+  void GenerateCommon();
+  u8* m_stack_top;
 
 public:
-	// NOTE: When making large additions to the AsmCommon code, you might
-	// want to ensure this number is big enough.
-	static constexpr size_t CODE_SIZE = 16384;
+  // NOTE: When making large additions to the AsmCommon code, you might
+  // want to ensure this number is big enough.
+  static constexpr size_t CODE_SIZE = 16384;
 
-	void Init(u8* stack_top);
+  void Init(u8* stack_top);
 
-	void ResetStack(Gen::X64CodeBlock& emitter);
+  void ResetStack(Gen::X64CodeBlock& emitter);
 };

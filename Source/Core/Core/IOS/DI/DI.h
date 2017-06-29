@@ -27,19 +27,19 @@ namespace Device
 class DI : public Device
 {
 public:
-	DI(Kernel& ios, const std::string& device_name);
+  DI(Kernel& ios, const std::string& device_name);
 
-	void DoState(PointerWrap& p) override;
+  void DoState(PointerWrap& p) override;
 
-	IPCCommandResult IOCtl(const IOCtlRequest& request) override;
-	IPCCommandResult IOCtlV(const IOCtlVRequest& request) override;
+  IPCCommandResult IOCtl(const IOCtlRequest& request) override;
+  IPCCommandResult IOCtlV(const IOCtlVRequest& request) override;
 
-	void FinishIOCtl(DVDInterface::DIInterruptType interrupt_type);
+  void FinishIOCtl(DVDInterface::DIInterruptType interrupt_type);
 
 private:
-	void StartIOCtl(const IOCtlRequest& request);
+  void StartIOCtl(const IOCtlRequest& request);
 
-	std::deque<u32> m_commands_to_execute;
+  std::deque<u32> m_commands_to_execute;
 };
 }  // namespace Device
 }  // namespace HLE

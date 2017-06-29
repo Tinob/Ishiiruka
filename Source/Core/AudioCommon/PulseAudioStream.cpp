@@ -126,10 +126,10 @@ bool PulseAudio::PulseInit()
   m_pa_ba.minreq = -1;     // don't read every byte, try to group them _a bit_
   m_pa_ba.prebuf = -1;     // start as early as possible
   m_pa_ba.tlength =
-      BUFFER_SAMPLES * m_channels *
-      m_bytespersample;  // designed latency, only change this flag for low latency output
+    BUFFER_SAMPLES * m_channels *
+    m_bytespersample;  // designed latency, only change this flag for low latency output
   pa_stream_flags flags = pa_stream_flags(PA_STREAM_INTERPOLATE_TIMING | PA_STREAM_ADJUST_LATENCY |
-                                          PA_STREAM_AUTO_TIMING_UPDATE);
+    PA_STREAM_AUTO_TIMING_UPDATE);
   m_pa_error = pa_stream_connect_playback(m_pa_s, nullptr, &m_pa_ba, flags, nullptr, nullptr);
   if (m_pa_error < 0)
   {
@@ -213,7 +213,7 @@ void PulseAudio::WriteCallback(pa_stream* s, size_t length)
 
       // Discard the subwoofer channel - DPL2Decode generates a pretty
       // good 5.0 but not a good 5.1 output.
-      const int dpl2_to_5chan[] = {0, 1, 2, 4, 5};
+      const int dpl2_to_5chan[] = { 0, 1, 2, 4, 5 };
       for (int i = 0; i < frames; ++i)
       {
         for (int j = 0; j < m_channels; ++j)

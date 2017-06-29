@@ -18,18 +18,18 @@ u32 ReadFifo32(const u8*& data);
 
 enum DecodeMode
 {
-	DECODE_RECORD,
-	DECODE_PLAYBACK,
+  DECODE_RECORD,
+  DECODE_PLAYBACK,
 };
 
 u32 AnalyzeCommand(const u8* data, DecodeMode mode);
 
 struct CPMemory
 {
-	TVtxDesc vtxDesc;
-	VAT vtxAttr[8];
-	u32 arrayBases[16];
-	u32 arrayStrides[16];
+  TVtxDesc vtxDesc;
+  VAT vtxAttr[8];
+  u32 arrayBases[16];
+  u32 arrayStrides[16];
 };
 
 void LoadCPReg(u32 subCmd, u32 value, CPMemory& cpMem);

@@ -113,68 +113,68 @@ template <std::size_t position, std::size_t bits, typename T>
 struct BitField
 {
 private:
-	// This constructor might be considered ambiguous:
-	// Would it initialize the storage or just the bitfield?
-	// Hence, delete it. Use the assignment operator to set bitfield values!
-	BitField(T val) = delete;
+  // This constructor might be considered ambiguous:
+  // Would it initialize the storage or just the bitfield?
+  // Hence, delete it. Use the assignment operator to set bitfield values!
+  BitField(T val) = delete;
 
 public:
-	// Force default constructor to be created
-	// so that we can use this within unions
-	constexpr BitField() = default;
+  // Force default constructor to be created
+  // so that we can use this within unions
+  constexpr BitField() = default;
 
-	// We explicitly delete the copy assignment operator here, because the
-	// default copy assignment would copy the full storage value, rather than
-	// just the bits relevant to this particular bit field.
-	// Ideally, we would just implement the copy assignment to copy only the
-	// relevant bits, but this requires compiler support for unrestricted
-	// unions.
-	// TODO: Implement this operator properly once all target compilers
-	// support unrestricted unions.
-	BitField& operator=(const BitField&) = delete;
+  // We explicitly delete the copy assignment operator here, because the
+  // default copy assignment would copy the full storage value, rather than
+  // just the bits relevant to this particular bit field.
+  // Ideally, we would just implement the copy assignment to copy only the
+  // relevant bits, but this requires compiler support for unrestricted
+  // unions.
+  // TODO: Implement this operator properly once all target compilers
+  // support unrestricted unions.
+  BitField& operator=(const BitField&) = delete;
 
-	__forceinline BitField& operator=(T val)
-	{
-		storage = (storage & ~GetMask()) | ((val << position) & GetMask());
-		return *this;
-	}
+  __forceinline BitField& operator=(T val)
+  {
+    storage = (storage & ~GetMask()) | ((val << position) & GetMask());
+    return *this;
+  }
 
-	constexpr T Value() const { return Value(std::is_signed<T>()); }
-	constexpr operator T() const { return Value(); }
+  constexpr T Value() const { return Value(std::is_signed<T>()); }
+  constexpr operator T() const { return Value(); }
 private:
-	// StorageType is T for non-enum types and the underlying type of T if
-	// T is an enumeration. Note that T is wrapped within an enable_if in the
-	// former case to workaround compile errors which arise when using
-	// std::underlying_type<T>::type directly.
-	using StorageType = typename std::conditional_t<std::is_enum<T>::value, std::underlying_type<T>,
-		std::enable_if<true, T>>::type;
+  // StorageType is T for non-enum types and the underlying type of T if
+  // T is an enumeration. Note that T is wrapped within an enable_if in the
+  // former case to workaround compile errors which arise when using
+  // std::underlying_type<T>::type directly.
+  using StorageType = typename std::conditional_t<std::is_enum<T>::value, std::underlying_type<T>,
+    std::enable_if<true, T>>::type;
 
-	// Unsigned version of StorageType
-	using StorageTypeU = std::make_unsigned_t<StorageType>;
+  // Unsigned version of StorageType
+  using StorageTypeU = std::make_unsigned_t<StorageType>;
 
-	constexpr T Value(std::true_type) const
-	{
-		using shift_amount = std::integral_constant<size_t, 8 * sizeof(T) - bits>;
-		return static_cast<T>((storage << (shift_amount() - position)) >> shift_amount());
-	}
+  constexpr T Value(std::true_type) const
+  {
+    using shift_amount = std::integral_constant<size_t, 8 * sizeof(T) - bits>;
+    return static_cast<T>((storage << (shift_amount() - position)) >> shift_amount());
+  }
 
-	constexpr T Value(std::false_type) const
-	{
-		return static_cast<T>((storage & GetMask()) >> position);
-	}
+  constexpr T Value(std::false_type) const
+  {
+    return static_cast<T>((storage & GetMask()) >> position);
+  }
 
-	static constexpr StorageType GetMask()
-	{
-		return (std::numeric_limits<StorageTypeU>::max() >> (8 * sizeof(T) - bits)) << position;
-	}
+  static constexpr StorageType GetMask()
+  {
+    return (std::numeric_limits<StorageTypeU>::max() >> (8 * sizeof(T) - bits)) << position;
+  }
 
-	StorageType storage;
+  StorageType storage;
 
-	static_assert(bits + position <= 8 * sizeof(T), "Bitfield out of range");
+  static_assert(bits + position <= 8 * sizeof(T), "Bitfield out of range");
 
-	// And, you know, just in case people specify something stupid like bits=position=0x80000000
-	static_assert(position < 8 * sizeof(T), "Invalid position");
-	static_assert(bits <= 8 * sizeof(T), "Invalid number of bits");
-	static_assert(bits > 0, "Invalid number of bits");
+  // And, you know, just in case people specify something stupid like bits=position=0x80000000
+  static_assert(position < 8 * sizeof(T), "Invalid position");
+  static_assert(bits <= 8 * sizeof(T), "Invalid number of bits");
+  static_assert(bits > 0, "Invalid number of bits");
 };
 #pragma pack()

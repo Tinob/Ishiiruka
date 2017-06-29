@@ -80,23 +80,23 @@ constexpr double LONG_SEEK_VELOCITY_INVERSE = 4.5;  // inverse: s/m
 // r = sqrt(offset/total_bytes*(r.outer^2-r.inner^2) + r.inner^2)
 double CalculatePhysicalDiscPosition(u64 offset)
 {
-	// Just in case someone has an overly large disc image
-	// that can't exist in reality...
-	offset %= WII_DISC_LAYER_SIZE * 2;
+  // Just in case someone has an overly large disc image
+  // that can't exist in reality...
+  offset %= WII_DISC_LAYER_SIZE * 2;
 
-	// Assumption: the layout on the second disc layer is opposite of the first,
-	// ie layer 2 starts where layer 1 ends and goes backwards.
-	if (offset > WII_DISC_LAYER_SIZE)
-		offset = WII_DISC_LAYER_SIZE * 2 - offset;
+  // Assumption: the layout on the second disc layer is opposite of the first,
+  // ie layer 2 starts where layer 1 ends and goes backwards.
+  if (offset > WII_DISC_LAYER_SIZE)
+    offset = WII_DISC_LAYER_SIZE * 2 - offset;
 
-	// The track pitch here is 0.74 um, but it cancels out and we don't need it
+  // The track pitch here is 0.74 um, but it cancels out and we don't need it
 
-	// Note that because Wii and GC discs have identical data densities
-	// we can simply use the Wii numbers in both cases
-	return std::sqrt(
-		static_cast<double>(offset) / WII_DISC_LAYER_SIZE *
-		(WII_DVD_OUTER_RADIUS * WII_DVD_OUTER_RADIUS - DVD_INNER_RADIUS * DVD_INNER_RADIUS) +
-		DVD_INNER_RADIUS * DVD_INNER_RADIUS);
+  // Note that because Wii and GC discs have identical data densities
+  // we can simply use the Wii numbers in both cases
+  return std::sqrt(
+    static_cast<double>(offset) / WII_DISC_LAYER_SIZE *
+    (WII_DVD_OUTER_RADIUS * WII_DVD_OUTER_RADIUS - DVD_INNER_RADIUS * DVD_INNER_RADIUS) +
+    DVD_INNER_RADIUS * DVD_INNER_RADIUS);
 }
 
 // Returns the time in seconds to move the read head from one offset to
@@ -106,16 +106,16 @@ double CalculatePhysicalDiscPosition(u64 offset)
 // disc, though the head speed varies depending on the length of the seek.
 double CalculateSeekTime(u64 offset_from, u64 offset_to)
 {
-	const double position_from = CalculatePhysicalDiscPosition(offset_from);
-	const double position_to = CalculatePhysicalDiscPosition(offset_to);
+  const double position_from = CalculatePhysicalDiscPosition(offset_from);
+  const double position_to = CalculatePhysicalDiscPosition(offset_to);
 
-	// Seek time is roughly linear based on head distance travelled
-	const double distance = fabs(position_from - position_to);
+  // Seek time is roughly linear based on head distance travelled
+  const double distance = fabs(position_from - position_to);
 
-	if (distance < SHORT_SEEK_MAX_DISTANCE)
-		return distance * SHORT_SEEK_VELOCITY_INVERSE + SHORT_SEEK_CONSTANT;
-	else
-		return distance * LONG_SEEK_VELOCITY_INVERSE + LONG_SEEK_CONSTANT;
+  if (distance < SHORT_SEEK_MAX_DISTANCE)
+    return distance * SHORT_SEEK_VELOCITY_INVERSE + SHORT_SEEK_CONSTANT;
+  else
+    return distance * LONG_SEEK_VELOCITY_INVERSE + LONG_SEEK_CONSTANT;
 }
 
 // Returns the time in seconds it takes to read an amount of data from a disc,
@@ -124,31 +124,31 @@ double CalculateSeekTime(u64 offset_from, u64 offset_to)
 // a DMA delay on top of this, but we model that as part of this read time.
 double CalculateRawDiscReadTime(u64 offset, u64 length, bool wii_disc)
 {
-	// The Wii/GC have a CAV drive and the data has a constant pit length
-	// regardless of location on disc. This means we can linearly interpolate
-	// speed from the inner to outer radius. This matches a hardware test.
-	// We're just picking a point halfway into the read as our benchmark for
-	// read speed as speeds don't change materially in this small window.
-	const double physical_offset = CalculatePhysicalDiscPosition(offset + length / 2);
+  // The Wii/GC have a CAV drive and the data has a constant pit length
+  // regardless of location on disc. This means we can linearly interpolate
+  // speed from the inner to outer radius. This matches a hardware test.
+  // We're just picking a point halfway into the read as our benchmark for
+  // read speed as speeds don't change materially in this small window.
+  const double physical_offset = CalculatePhysicalDiscPosition(offset + length / 2);
 
-	double speed;
-	if (wii_disc)
-	{
-		speed = (physical_offset - DVD_INNER_RADIUS) / (WII_DVD_OUTER_RADIUS - DVD_INNER_RADIUS) *
-			(WII_DISC_OUTER_READ_SPEED - WII_DISC_INNER_READ_SPEED) +
-			WII_DISC_INNER_READ_SPEED;
-	}
-	else
-	{
-		speed = (physical_offset - DVD_INNER_RADIUS) / (GC_DVD_OUTER_RADIUS - DVD_INNER_RADIUS) *
-			(GC_DISC_OUTER_READ_SPEED - GC_DISC_INNER_READ_SPEED) +
-			GC_DISC_INNER_READ_SPEED;
-	}
+  double speed;
+  if (wii_disc)
+  {
+    speed = (physical_offset - DVD_INNER_RADIUS) / (WII_DVD_OUTER_RADIUS - DVD_INNER_RADIUS) *
+      (WII_DISC_OUTER_READ_SPEED - WII_DISC_INNER_READ_SPEED) +
+      WII_DISC_INNER_READ_SPEED;
+  }
+  else
+  {
+    speed = (physical_offset - DVD_INNER_RADIUS) / (GC_DVD_OUTER_RADIUS - DVD_INNER_RADIUS) *
+      (GC_DISC_OUTER_READ_SPEED - GC_DISC_INNER_READ_SPEED) +
+      GC_DISC_INNER_READ_SPEED;
+  }
 
-	DEBUG_LOG(DVDINTERFACE, "Read 0x%" PRIx64 " @ 0x%" PRIx64 " @%lf mm: %lf us, %lf MiB/s", length,
-		offset, physical_offset * 1000, length / speed * 1000 * 1000, speed / 1024 / 1024);
+  DEBUG_LOG(DVDINTERFACE, "Read 0x%" PRIx64 " @ 0x%" PRIx64 " @%lf mm: %lf us, %lf MiB/s", length,
+    offset, physical_offset * 1000, length / speed * 1000 * 1000, speed / 1024 / 1024);
 
-	return length / speed;
+  return length / speed;
 }
 
 }  // namespace DVDMath

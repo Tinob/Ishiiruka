@@ -14,11 +14,11 @@ namespace ControllerEmu
 class Force : public ControlGroup
 {
 public:
-	explicit Force(const std::string& name);
+  explicit Force(const std::string& name);
 
-	void GetState(ControlState* axis);
+  void GetState(ControlState* axis);
 
 private:
-	std::array<ControlState, 3> m_swing{};
+  std::array<ControlState, 3> m_swing{};
 };
 }  // namespace ControllerEmu

@@ -73,11 +73,11 @@
 #define GL_ONE_MINUS_CONSTANT_ALPHA 0x8004
 
 typedef void(APIENTRYP PFNDOLBLENDFUNCSEPARATEPROC)(GLenum sfactorRGB, GLenum dfactorRGB,
-	GLenum sfactorAlpha, GLenum dfactorAlpha);
+  GLenum sfactorAlpha, GLenum dfactorAlpha);
 typedef void(APIENTRYP PFNDOLMULTIDRAWARRAYSPROC)(GLenum mode, const GLint* first,
-	const GLsizei* count, GLsizei drawcount);
+  const GLsizei* count, GLsizei drawcount);
 typedef void(APIENTRYP PFNDOLMULTIDRAWELEMENTSPROC)(GLenum mode, const GLsizei* count, GLenum type,
-	const void* const* indices, GLsizei drawcount);
+  const void* const* indices, GLsizei drawcount);
 typedef void(APIENTRYP PFNDOLPOINTPARAMETERFPROC)(GLenum pname, GLfloat param);
 typedef void(APIENTRYP PFNDOLPOINTPARAMETERFVPROC)(GLenum pname, const GLfloat* params);
 typedef void(APIENTRYP PFNDOLPOINTPARAMETERIPROC)(GLenum pname, GLint param);
@@ -104,7 +104,7 @@ typedef void(APIENTRYP PFNDOLSECONDARYCOLOR3UIVPROC)(const GLuint* v);
 typedef void(APIENTRYP PFNDOLSECONDARYCOLOR3USPROC)(GLushort red, GLushort green, GLushort blue);
 typedef void(APIENTRYP PFNDOLSECONDARYCOLOR3USVPROC)(const GLushort* v);
 typedef void(APIENTRYP PFNDOLSECONDARYCOLORPOINTERPROC)(GLint size, GLenum type, GLsizei stride,
-	const void* pointer);
+  const void* pointer);
 typedef void(APIENTRYP PFNDOLWINDOWPOS2DPROC)(GLdouble x, GLdouble y);
 typedef void(APIENTRYP PFNDOLWINDOWPOS2DVPROC)(const GLdouble* v);
 typedef void(APIENTRYP PFNDOLWINDOWPOS2FPROC)(GLfloat x, GLfloat y);
@@ -122,7 +122,7 @@ typedef void(APIENTRYP PFNDOLWINDOWPOS3IVPROC)(const GLint* v);
 typedef void(APIENTRYP PFNDOLWINDOWPOS3SPROC)(GLshort x, GLshort y, GLshort z);
 typedef void(APIENTRYP PFNDOLWINDOWPOS3SVPROC)(const GLshort* v);
 typedef void(APIENTRYP PFNDOLBLENDCOLORPROC)(GLfloat red, GLfloat green, GLfloat blue,
-	GLfloat alpha);
+  GLfloat alpha);
 typedef void(APIENTRYP PFNDOLBLENDEQUATIONPROC)(GLenum mode);
 
 // These two are provided by ARB_imaging as well

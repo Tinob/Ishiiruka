@@ -27,8 +27,8 @@ Attachment::Attachment(const char* const name, ExtensionReg& reg) : m_name(name)
 
 None::None(ExtensionReg& reg) : Attachment("None", reg)
 {
-	// set up register
-	m_id = nothing_id;
+  // set up register
+  m_id = nothing_id;
 }
 
 void Attachment::GetState(u8* const data)
@@ -37,20 +37,20 @@ void Attachment::GetState(u8* const data)
 
 bool Attachment::IsButtonPressed() const
 {
-	return false;
+  return false;
 }
 
 std::string Attachment::GetName() const
 {
-	return m_name;
+  return m_name;
 }
 
 void Attachment::Reset()
 {
-	// set up register
-	m_reg = {};
-	std::copy(m_id.cbegin(), m_id.cend(), m_reg.constant_id);
-	std::copy(m_calibration.cbegin(), m_calibration.cend(), m_reg.calibration);
+  // set up register
+  m_reg = {};
+  std::copy(m_id.cbegin(), m_id.cend(), m_reg.constant_id);
+  std::copy(m_calibration.cbegin(), m_calibration.cend(), m_reg.calibration);
 }
 }  // namespace WiimoteEmu
 
@@ -58,22 +58,22 @@ namespace ControllerEmu
 {
 void Extension::GetState(u8* const data)
 {
-	static_cast<WiimoteEmu::Attachment*>(attachments[active_extension].get())->GetState(data);
+  static_cast<WiimoteEmu::Attachment*>(attachments[active_extension].get())->GetState(data);
 }
 
 bool Extension::IsButtonPressed() const
 {
-	// Extension == 0 means no Extension, > 0 means one is connected
-	// Since we want to use this to know if disconnected Wiimotes want to be connected, and
-	// disconnected
-	// Wiimotes (can? always?) have their active_extension set to -1, we also have to check the
-	// switch_extension
-	if (active_extension > 0)
-		return static_cast<WiimoteEmu::Attachment*>(attachments[active_extension].get())
-		->IsButtonPressed();
-	if (switch_extension > 0)
-		return static_cast<WiimoteEmu::Attachment*>(attachments[switch_extension].get())
-		->IsButtonPressed();
-	return false;
+  // Extension == 0 means no Extension, > 0 means one is connected
+  // Since we want to use this to know if disconnected Wiimotes want to be connected, and
+  // disconnected
+  // Wiimotes (can? always?) have their active_extension set to -1, we also have to check the
+  // switch_extension
+  if (active_extension > 0)
+    return static_cast<WiimoteEmu::Attachment*>(attachments[active_extension].get())
+    ->IsButtonPressed();
+  if (switch_extension > 0)
+    return static_cast<WiimoteEmu::Attachment*>(attachments[switch_extension].get())
+    ->IsButtonPressed();
+  return false;
 }
 }  // namespace ControllerEmu

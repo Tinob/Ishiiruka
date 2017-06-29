@@ -14,16 +14,16 @@ namespace FPURoundMode
 
 enum RoundMode
 {
-	ROUND_NEAR = 0,
-	ROUND_CHOP = 1,
-	ROUND_UP = 2,
-	ROUND_DOWN = 3
+  ROUND_NEAR = 0,
+  ROUND_CHOP = 1,
+  ROUND_UP = 2,
+  ROUND_DOWN = 3
 };
 enum PrecisionMode
 {
-	PREC_24 = 0,
-	PREC_53 = 1,
-	PREC_64 = 2
+  PREC_24 = 0,
+  PREC_53 = 1,
+  PREC_64 = 2
 };
 
 void SetRoundMode(int mode);

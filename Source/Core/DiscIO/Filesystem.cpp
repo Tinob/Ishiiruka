@@ -10,7 +10,7 @@
 namespace DiscIO
 {
 IFileSystem::IFileSystem(const IVolume* _rVolume, const Partition& partition)
-	: m_rVolume(_rVolume), m_partition(partition)
+  : m_rVolume(_rVolume), m_partition(partition)
 {
 }
 
@@ -20,18 +20,18 @@ IFileSystem::~IFileSystem()
 
 std::unique_ptr<IFileSystem> CreateFileSystem(const IVolume* volume, const Partition& partition)
 {
-	if (!volume)
-		return nullptr;
+  if (!volume)
+    return nullptr;
 
-	std::unique_ptr<IFileSystem> filesystem = std::make_unique<CFileSystemGCWii>(volume, partition);
+  std::unique_ptr<IFileSystem> filesystem = std::make_unique<CFileSystemGCWii>(volume, partition);
 
-	if (!filesystem)
-		return nullptr;
+  if (!filesystem)
+    return nullptr;
 
-	if (!filesystem->IsValid())
-		filesystem.reset();
+  if (!filesystem->IsValid())
+    filesystem.reset();
 
-	return filesystem;
+  return filesystem;
 }
 
 }  // namespace

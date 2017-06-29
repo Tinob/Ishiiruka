@@ -73,7 +73,7 @@ wxGridCellAttr* CDSPRegTable::GetAttr(int row, int col, wxGridCellAttr::wxAttrKi
 }
 
 DSPRegisterView::DSPRegisterView(wxWindow* parent, wxWindowID id)
-    : wxGrid(parent, id, wxDefaultPosition, wxDLG_UNIT(parent, wxSize(100, 80)))
+  : wxGrid(parent, id, wxDefaultPosition, wxDLG_UNIT(parent, wxSize(100, 80)))
 {
   m_register_table = new CDSPRegTable();
 

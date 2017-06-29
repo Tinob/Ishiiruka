@@ -24,13 +24,13 @@ bool UseDeterministicGPUThread();
 // Used for diagnostics.
 enum class SyncGPUReason
 {
-	Other,
-	Wraparound,
-	EFBPoke,
-	PerfQuery,
-	BBox,
-	Swap,
-	AuxSpace,
+  Other,
+  Wraparound,
+  EFBPoke,
+  PerfQuery,
+  BBox,
+  Swap,
+  AuxSpace,
 };
 
 // In deterministic GPU thread mode this waits for the GPU to be done with pending work.

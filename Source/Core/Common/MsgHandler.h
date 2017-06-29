@@ -9,14 +9,14 @@
 // Message alerts
 enum MSG_TYPE
 {
-	INFORMATION,
-	QUESTION,
-	WARNING,
-	CRITICAL
+  INFORMATION,
+  QUESTION,
+  WARNING,
+  CRITICAL
 };
 
 typedef bool(*MsgAlertHandler)(const char* caption, const char* text,
-	bool yes_no, int Style);
+  bool yes_no, int Style);
 typedef std::string(*StringTranslator)(const char* text);
 
 void RegisterMsgAlertHandler(MsgAlertHandler handler);

@@ -11,12 +11,12 @@ namespace DX12
 class BBox
 {
 public:
-	static void Init();
-	static void Bind();
-	static void Shutdown();
+  static void Init();
+  static void Bind();
+  static void Shutdown();
 
-	static void Set(int index, int value);
-	static int Get(int index);
+  static void Set(int index, int value);
+  static int Get(int index);
 };
 
 };

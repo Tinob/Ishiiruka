@@ -32,7 +32,7 @@ void SwitchCurrentThread(); // On Linux, this is equal to sleep 1ms
 // than using events because event functions use kernel calls.
 inline void YieldCPU()
 {
-	std::this_thread::yield();
+  std::this_thread::yield();
 }
 
 void SetCurrentThreadName(const char* name);

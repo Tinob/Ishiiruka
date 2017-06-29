@@ -20,50 +20,50 @@
 
 void VideoCommon_DoState(PointerWrap &p)
 {
-	// BP Memory
-	p.Do(bpmem);
-	p.DoMarker("BP Memory");
+  // BP Memory
+  p.Do(bpmem);
+  p.DoMarker("BP Memory");
 
-	// CP Memory
-	DoCPState(p);
+  // CP Memory
+  DoCPState(p);
 
-	// XF Memory
-	p.Do(xfmem);
-	p.DoMarker("XF Memory");
+  // XF Memory
+  p.Do(xfmem);
+  p.DoMarker("XF Memory");
 
-	// Texture decoder
-	p.DoArray(texMem);
-	p.DoMarker("texMem");
+  // Texture decoder
+  p.DoArray(texMem);
+  p.DoMarker("texMem");
 
-	// FIFO
-	Fifo::DoState(p);
-	p.DoMarker("Fifo");
+  // FIFO
+  Fifo::DoState(p);
+  p.DoMarker("Fifo");
 
-	CommandProcessor::DoState(p);
-	p.DoMarker("CommandProcessor");
+  CommandProcessor::DoState(p);
+  p.DoMarker("CommandProcessor");
 
-	PixelEngine::DoState(p);
-	p.DoMarker("PixelEngine");
+  PixelEngine::DoState(p);
+  p.DoMarker("PixelEngine");
 
-	// the old way of replaying current bpmem as writes to push side effects to pixel shader manager doesn't really work.
-	PixelShaderManager::DoState(p);
-	p.DoMarker("PixelShaderManager");
+  // the old way of replaying current bpmem as writes to push side effects to pixel shader manager doesn't really work.
+  PixelShaderManager::DoState(p);
+  p.DoMarker("PixelShaderManager");
 
-	VertexShaderManager::DoState(p);
-	p.DoMarker("VertexShaderManager");
+  VertexShaderManager::DoState(p);
+  p.DoMarker("VertexShaderManager");
 
-	GeometryShaderManager::DoState(p);
-	p.DoMarker("GeometryShaderManager");
+  GeometryShaderManager::DoState(p);
+  p.DoMarker("GeometryShaderManager");
 
-	TessellationShaderManager::DoState(p);
-	p.DoMarker("HullDomainShaderManager");
+  TessellationShaderManager::DoState(p);
+  p.DoMarker("HullDomainShaderManager");
 
-	g_vertex_manager->DoState(p);
-	p.DoMarker("VertexManager");
+  g_vertex_manager->DoState(p);
+  p.DoMarker("VertexManager");
 
-	BoundingBox::DoState(p);
-	p.DoMarker("BoundingBox");
+  BoundingBox::DoState(p);
+  p.DoMarker("BoundingBox");
 
 
-	// TODO: search for more data that should be saved and add it here
+  // TODO: search for more data that should be saved and add it here
 }

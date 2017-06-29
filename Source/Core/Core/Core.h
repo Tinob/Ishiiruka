@@ -26,10 +26,10 @@ void Callback_VideoCopiedToXFB(bool video_update);
 
 enum class State
 {
-	Uninitialized,
-	Paused,
-	Running,
-	Stopping
+  Uninitialized,
+  Paused,
+  Running,
+  Stopping
 };
 
 bool Init();

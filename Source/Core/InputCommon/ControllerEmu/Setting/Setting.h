@@ -8,8 +8,8 @@ namespace ControllerEmu
 {
 enum class SettingType
 {
-	NORMAL,   // normal settings are saved to configuration files
-	VIRTUAL,  // virtual settings are not saved at all
+  NORMAL,   // normal settings are saved to configuration files
+  VIRTUAL,  // virtual settings are not saved at all
 };
 
 }  // namespace ControllerEmu

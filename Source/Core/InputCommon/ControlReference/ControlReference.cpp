@@ -17,7 +17,7 @@ constexpr ControlState INPUT_DETECT_THRESHOLD = 0.55;
 
 bool ControlReference::InputGateOn()
 {
-	return SConfig::GetInstance().m_BackgroundInput || Host_RendererHasFocus() || Host_UIHasFocus();
+  return SConfig::GetInstance().m_BackgroundInput || Host_RendererHasFocus() || Host_UIHasFocus();
 }
 
 //
@@ -27,25 +27,25 @@ bool ControlReference::InputGateOn()
 // need to call this to re-parse a control reference's expression after changing it
 //
 void ControlReference::UpdateReference(const ciface::Core::DeviceContainer& devices,
-	const ciface::Core::DeviceQualifier& default_device)
+  const ciface::Core::DeviceQualifier& default_device)
 {
-	Expression* expr;
-	ControlFinder finder(devices, default_device, IsInput());
-	m_parse_status = ParseExpression(expression, finder, &expr);
-	m_parsed_expression.reset(expr);
+  Expression* expr;
+  ControlFinder finder(devices, default_device, IsInput());
+  m_parse_status = ParseExpression(expression, finder, &expr);
+  m_parsed_expression.reset(expr);
 }
 
 int ControlReference::BoundCount() const
 {
-	if (m_parsed_expression)
-		return m_parsed_expression->num_controls;
-	else
-		return 0;
+  if (m_parsed_expression)
+    return m_parsed_expression->num_controls;
+  else
+    return 0;
 }
 
 ParseStatus ControlReference::GetParseStatus() const
 {
-	return m_parse_status;
+  return m_parse_status;
 }
 
 ControlReference::ControlReference() : range(1), m_parsed_expression(nullptr)
@@ -64,11 +64,11 @@ OutputReference::OutputReference() : ControlReference()
 
 bool InputReference::IsInput() const
 {
-	return true;
+  return true;
 }
 bool OutputReference::IsInput() const
 {
-	return false;
+  return false;
 }
 
 //
@@ -79,9 +79,9 @@ bool OutputReference::IsInput() const
 //
 ControlState InputReference::State(const ControlState ignore)
 {
-	if (m_parsed_expression && InputGateOn())
-		return m_parsed_expression->GetValue() * range;
-	return 0.0;
+  if (m_parsed_expression && InputGateOn())
+    return m_parsed_expression->GetValue() * range;
+  return 0.0;
 }
 
 //
@@ -94,9 +94,9 @@ ControlState InputReference::State(const ControlState ignore)
 //
 ControlState OutputReference::State(const ControlState state)
 {
-	if (m_parsed_expression && InputGateOn())
-		m_parsed_expression->SetValue(state);
-	return 0.0;
+  if (m_parsed_expression && InputGateOn())
+    m_parsed_expression->SetValue(state);
+  return 0.0;
 }
 
 //
@@ -110,46 +110,46 @@ ControlState OutputReference::State(const ControlState state)
 // else return nullptr
 //
 ciface::Core::Device::Control* InputReference::Detect(const unsigned int ms,
-	ciface::Core::Device* const device)
+  ciface::Core::Device* const device)
 {
-	unsigned int time = 0;
-	std::vector<bool> states(device->Inputs().size());
+  unsigned int time = 0;
+  std::vector<bool> states(device->Inputs().size());
 
-	if (device->Inputs().size() == 0)
-		return nullptr;
+  if (device->Inputs().size() == 0)
+    return nullptr;
 
-	// get starting state of all inputs,
-	// so we can ignore those that were activated at time of Detect start
-	std::vector<ciface::Core::Device::Input *>::const_iterator i = device->Inputs().begin(),
-		e = device->Inputs().end();
-	for (std::vector<bool>::iterator state = states.begin(); i != e; ++i)
-		*state++ = ((*i)->GetState() > (1 - INPUT_DETECT_THRESHOLD));
+  // get starting state of all inputs,
+  // so we can ignore those that were activated at time of Detect start
+  std::vector<ciface::Core::Device::Input *>::const_iterator i = device->Inputs().begin(),
+    e = device->Inputs().end();
+  for (std::vector<bool>::iterator state = states.begin(); i != e; ++i)
+    *state++ = ((*i)->GetState() > (1 - INPUT_DETECT_THRESHOLD));
 
-	while (time < ms)
-	{
-		device->UpdateInput();
-		i = device->Inputs().begin();
-		for (std::vector<bool>::iterator state = states.begin(); i != e; ++i, ++state)
-		{
-			// detected an input
-			if ((*i)->IsDetectable() && (*i)->GetState() > INPUT_DETECT_THRESHOLD)
-			{
-				// input was released at some point during Detect call
-				// return the detected input
-				if (false == *state)
-					return *i;
-			}
-			else if ((*i)->GetState() < (1 - INPUT_DETECT_THRESHOLD))
-			{
-				*state = false;
-			}
-		}
-		Common::SleepCurrentThread(10);
-		time += 10;
-	}
+  while (time < ms)
+  {
+    device->UpdateInput();
+    i = device->Inputs().begin();
+    for (std::vector<bool>::iterator state = states.begin(); i != e; ++i, ++state)
+    {
+      // detected an input
+      if ((*i)->IsDetectable() && (*i)->GetState() > INPUT_DETECT_THRESHOLD)
+      {
+        // input was released at some point during Detect call
+        // return the detected input
+        if (false == *state)
+          return *i;
+      }
+      else if ((*i)->GetState() < (1 - INPUT_DETECT_THRESHOLD))
+      {
+        *state = false;
+      }
+    }
+    Common::SleepCurrentThread(10);
+    time += 10;
+  }
 
-	// no input was detected
-	return nullptr;
+  // no input was detected
+  return nullptr;
 }
 
 //
@@ -163,21 +163,21 @@ ciface::Core::Device::Control* InputReference::Detect(const unsigned int ms,
 // set all binded outputs to <range> power for x milliseconds return false
 //
 ciface::Core::Device::Control* OutputReference::Detect(const unsigned int ms,
-	ciface::Core::Device* const device)
+  ciface::Core::Device* const device)
 {
-	// ignore device
+  // ignore device
 
-	// don't hang if we don't even have any controls mapped
-	if (BoundCount() > 0)
-	{
-		State(1);
-		unsigned int slept = 0;
+  // don't hang if we don't even have any controls mapped
+  if (BoundCount() > 0)
+  {
+    State(1);
+    unsigned int slept = 0;
 
-		// this loop is to make stuff like flashing keyboard LEDs work
-		while (ms > (slept += 10))
-			Common::SleepCurrentThread(10);
+    // this loop is to make stuff like flashing keyboard LEDs work
+    while (ms > (slept += 10))
+      Common::SleepCurrentThread(10);
 
-		State(0);
-	}
-	return nullptr;
+    State(0);
+  }
+  return nullptr;
 }

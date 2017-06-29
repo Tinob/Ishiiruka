@@ -17,11 +17,11 @@ constexpr size_t FARCODE_SIZE_MMU = 1024 * 1024 * 48;
 class FarCodeCache : public Gen::X64CodeBlock
 {
 public:
-	void Init();
-	void Shutdown();
+  void Init();
+  void Shutdown();
 
-	bool Enabled() const;
+  bool Enabled() const;
 
 private:
-	bool m_enabled = false;
+  bool m_enabled = false;
 };

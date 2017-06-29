@@ -30,85 +30,85 @@ static std::string s_previous_file;
 // Filtered files
 static bool IsSoundFile(const std::string& filename)
 {
-	std::string extension;
-	SplitPath(filename, nullptr, nullptr, &extension);
-	std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
+  std::string extension;
+  SplitPath(filename, nullptr, nullptr, &extension);
+  std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
 
-	static const std::unordered_set<std::string> extensions = {
-		".adp",    // 1080 Avalanche, Crash Bandicoot, etc.
-		".adx",    // Sonic Adventure 2 Battle, etc.
-		".afc",    // Zelda WW
-		".ast",    // Zelda TP, Mario Kart
-		".brstm",  // Wii Sports, Wario Land, etc.
-		".dsp",    // Metroid Prime
-		".hps",    // SSB Melee
-		".ogg",    // Tony Hawk's Underground 2
-		".sad",    // Disaster
-		".snd",    // Tales of Symphonia
-		".song",   // Tales of Symphonia
-		".ssm",    // Custom Robo, Kirby Air Ride, etc.
-		".str",    // Harry Potter & the Sorcerer's Stone
-	};
+  static const std::unordered_set<std::string> extensions = {
+      ".adp",    // 1080 Avalanche, Crash Bandicoot, etc.
+      ".adx",    // Sonic Adventure 2 Battle, etc.
+      ".afc",    // Zelda WW
+      ".ast",    // Zelda TP, Mario Kart
+      ".brstm",  // Wii Sports, Wario Land, etc.
+      ".dsp",    // Metroid Prime
+      ".hps",    // SSB Melee
+      ".ogg",    // Tony Hawk's Underground 2
+      ".sad",    // Disaster
+      ".snd",    // Tales of Symphonia
+      ".song",   // Tales of Symphonia
+      ".ssm",    // Custom Robo, Kirby Air Ride, etc.
+      ".str",    // Harry Potter & the Sorcerer's Stone
+  };
 
-	return extensions.find(extension) != extensions.end();
+  return extensions.find(extension) != extensions.end();
 }
 
 void SetFileSystem(const DiscIO::IVolume* volume)
 {
-	// Instead of creating the file system object right away, we will let Log
-	// create it later once we know that it actually will get used
-	s_volume = volume;
-	s_new_volume = true;
+  // Instead of creating the file system object right away, we will let Log
+  // create it later once we know that it actually will get used
+  s_volume = volume;
+  s_new_volume = true;
 }
 
 // Logs access to files in the file system set by SetFileSystem
 void Log(u64 offset, const DiscIO::Partition& partition)
 {
-	// Do nothing if the log isn't selected
-	if (!LogManager::GetInstance()->IsEnabled(LogTypes::FILEMON, LogTypes::LWARNING))
-		return;
+  // Do nothing if the log isn't selected
+  if (!LogManager::GetInstance()->IsEnabled(LogTypes::FILEMON, LogTypes::LWARNING))
+    return;
 
-	// If the volume or partition changed, load the filesystem of the new partition
-	if (s_new_volume || s_partition != partition)
-	{
-		// Wii discs don't have PARTITION_NONE filesystems, so let's not waste time trying to read one
-		const bool reading_from_partition = partition != DiscIO::PARTITION_NONE;
-		const bool is_wii_disc = s_volume->GetVolumeType() == DiscIO::Platform::WII_DISC;
-		if (reading_from_partition != is_wii_disc)
-			return;
+  // If the volume or partition changed, load the filesystem of the new partition
+  if (s_new_volume || s_partition != partition)
+  {
+    // Wii discs don't have PARTITION_NONE filesystems, so let's not waste time trying to read one
+    const bool reading_from_partition = partition != DiscIO::PARTITION_NONE;
+    const bool is_wii_disc = s_volume->GetVolumeType() == DiscIO::Platform::WII_DISC;
+    if (reading_from_partition != is_wii_disc)
+      return;
 
-		s_new_volume = false;
-		s_filesystem = DiscIO::CreateFileSystem(s_volume, partition);
-		s_partition = partition;
-		s_previous_file.clear();
-	}
+    s_new_volume = false;
+    s_filesystem = DiscIO::CreateFileSystem(s_volume, partition);
+    s_partition = partition;
+    s_previous_file.clear();
+  }
 
-	// Do nothing if there is no valid file system
-	if (!s_filesystem)
-		return;
+  // Do nothing if there is no valid file system
+  if (!s_filesystem)
+    return;
 
-	const std::string filename = s_filesystem->GetFileName(offset);
+  const std::string filename = s_filesystem->GetFileName(offset);
 
-	// Do nothing if no file was found at that offset
-	if (filename.empty())
-		return;
+  // Do nothing if no file was found at that offset
+  if (filename.empty())
+    return;
 
-	// Do nothing if we found the same file again
-	if (s_previous_file == filename)
-		return;
+  // Do nothing if we found the same file again
+  if (s_previous_file == filename)
+    return;
 
-	const u64 size = s_filesystem->GetFileSize(filename);
-	const std::string size_string = ThousandSeparate(size / 1000, 7);
+  const u64 size = s_filesystem->GetFileSize(filename);
+  const std::string size_string = ThousandSeparate(size / 1000, 7);
 
-	const std::string log_string =
-		StringFromFormat("%s kB %s", size_string.c_str(), filename.c_str());
-	if (IsSoundFile(filename))
-		INFO_LOG(FILEMON, "%s", log_string.c_str());
-	else
-		WARN_LOG(FILEMON, "%s", log_string.c_str());
+  const std::string log_string =
+    StringFromFormat("%s kB %s", size_string.c_str(), filename.c_str());
+  if (IsSoundFile(filename))
+    INFO_LOG(FILEMON, "%s", log_string.c_str());
+  else
+    WARN_LOG(FILEMON, "%s", log_string.c_str());
 
-	// Update the last accessed file
-	s_previous_file = filename;
+  // Update the last accessed file
+  s_previous_file = filename;
 }
 
 }  // namespace FileMonitor

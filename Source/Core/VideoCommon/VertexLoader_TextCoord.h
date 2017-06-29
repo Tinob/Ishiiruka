@@ -9,18 +9,18 @@ class VertexLoader_TextCoord
 {
 public:
 
-	// Init
-	static void Init(void);
+  // Init
+  static void Init(void);
 
-	// GetSize
-	static u32 GetSize(u32 _type, u32 _format, u32 _elements);
+  // GetSize
+  static u32 GetSize(u32 _type, u32 _format, u32 _elements);
 
-	// GetFunction
-	static TPipelineFunction GetFunction(u32 _type, u32 _format, u32 _elements);
+  // GetFunction
+  static TPipelineFunction GetFunction(u32 _type, u32 _format, u32 _elements);
 
-	// GetDummyFunction
-	// It is important to synchronize tcIndex.
-	static TPipelineFunction GetDummyFunction();
+  // GetDummyFunction
+  // It is important to synchronize tcIndex.
+  static TPipelineFunction GetDummyFunction();
 private:
-	static bool Initialized;
+  static bool Initialized;
 };

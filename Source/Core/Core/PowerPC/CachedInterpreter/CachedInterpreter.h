@@ -14,30 +14,30 @@
 class CachedInterpreter : public JitBase
 {
 public:
-	CachedInterpreter();
-	~CachedInterpreter();
+  CachedInterpreter();
+  ~CachedInterpreter();
 
-	void Init() override;
-	void Shutdown() override;
+  void Init() override;
+  void Shutdown() override;
 
-	bool HandleFault(uintptr_t access_address, SContext* ctx) override { return false; }
-	void ClearCache() override;
+  bool HandleFault(uintptr_t access_address, SContext* ctx) override { return false; }
+  void ClearCache() override;
 
-	void Run() override;
-	void SingleStep() override;
+  void Run() override;
+  void SingleStep() override;
 
-	void Jit(u32 address) override;
+  void Jit(u32 address) override;
 
-	JitBaseBlockCache* GetBlockCache() override { return &m_block_cache; }
-	const char* GetName() override { return "Cached Interpreter"; }
-	const CommonAsmRoutinesBase* GetAsmRoutines() override { return nullptr; }
+  JitBaseBlockCache* GetBlockCache() override { return &m_block_cache; }
+  const char* GetName() override { return "Cached Interpreter"; }
+  const CommonAsmRoutinesBase* GetAsmRoutines() override { return nullptr; }
 private:
-	struct Instruction;
+  struct Instruction;
 
-	const u8* GetCodePtr() const;
-	void ExecuteOneBlock();
+  const u8* GetCodePtr() const;
+  void ExecuteOneBlock();
 
-	BlockCache m_block_cache{ *this };
-	std::vector<Instruction> m_code;
-	PPCAnalyst::CodeBuffer code_buffer;
+  BlockCache m_block_cache{ *this };
+  std::vector<Instruction> m_code;
+  PPCAnalyst::CodeBuffer code_buffer;
 };

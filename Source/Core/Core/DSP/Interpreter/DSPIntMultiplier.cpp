@@ -20,54 +20,54 @@ namespace
 // Only MULX family instructions have unsigned/mixed support.
 s64 dsp_get_multiply_prod(u16 a, u16 b, u8 sign)
 {
-	s64 prod;
+  s64 prod;
 
-	if ((sign == 1) && (g_dsp.r.sr & SR_MUL_UNSIGNED))  // unsigned
-		prod = (u32)(a * b);
-	else if ((sign == 2) && (g_dsp.r.sr & SR_MUL_UNSIGNED))  // mixed
-		prod = a * (s16)b;
-	else
-		prod = (s16)a * (s16)b;  // signed
+  if ((sign == 1) && (g_dsp.r.sr & SR_MUL_UNSIGNED))  // unsigned
+    prod = (u32)(a * b);
+  else if ((sign == 2) && (g_dsp.r.sr & SR_MUL_UNSIGNED))  // mixed
+    prod = a * (s16)b;
+  else
+    prod = (s16)a * (s16)b;  // signed
 
-								 // Conditionally multiply by 2.
-	if ((g_dsp.r.sr & SR_MUL_MODIFY) == 0)
-		prod <<= 1;
+                             // Conditionally multiply by 2.
+  if ((g_dsp.r.sr & SR_MUL_MODIFY) == 0)
+    prod <<= 1;
 
-	return prod;
+  return prod;
 }
 
 s64 dsp_multiply(u16 a, u16 b, u8 sign = 0)
 {
-	s64 prod = dsp_get_multiply_prod(a, b, sign);
-	return prod;
+  s64 prod = dsp_get_multiply_prod(a, b, sign);
+  return prod;
 }
 
 s64 dsp_multiply_add(u16 a, u16 b, u8 sign = 0)
 {
-	s64 prod = dsp_get_long_prod() + dsp_get_multiply_prod(a, b, sign);
-	return prod;
+  s64 prod = dsp_get_long_prod() + dsp_get_multiply_prod(a, b, sign);
+  return prod;
 }
 
 s64 dsp_multiply_sub(u16 a, u16 b, u8 sign = 0)
 {
-	s64 prod = dsp_get_long_prod() - dsp_get_multiply_prod(a, b, sign);
-	return prod;
+  s64 prod = dsp_get_long_prod() - dsp_get_multiply_prod(a, b, sign);
+  return prod;
 }
 
 s64 dsp_multiply_mulx(u8 axh0, u8 axh1, u16 val1, u16 val2)
 {
-	s64 result;
+  s64 result;
 
-	if ((axh0 == 0) && (axh1 == 0))
-		result = dsp_multiply(val1, val2, 1);  // unsigned support ON if both ax?.l regs are used
-	else if ((axh0 == 0) && (axh1 == 1))
-		result = dsp_multiply(val1, val2, 2);  // mixed support ON (u16)axl.0  * (s16)axh.1
-	else if ((axh0 == 1) && (axh1 == 0))
-		result = dsp_multiply(val2, val1, 2);  // mixed support ON (u16)axl.1  * (s16)axh.0
-	else
-		result = dsp_multiply(val1, val2, 0);  // unsigned support OFF if both ax?.h regs are used
+  if ((axh0 == 0) && (axh1 == 0))
+    result = dsp_multiply(val1, val2, 1);  // unsigned support ON if both ax?.l regs are used
+  else if ((axh0 == 0) && (axh1 == 1))
+    result = dsp_multiply(val1, val2, 2);  // mixed support ON (u16)axl.0  * (s16)axh.1
+  else if ((axh0 == 1) && (axh1 == 0))
+    result = dsp_multiply(val2, val1, 2);  // mixed support ON (u16)axl.1  * (s16)axh.0
+  else
+    result = dsp_multiply(val1, val2, 0);  // unsigned support OFF if both ax?.h regs are used
 
-	return result;
+  return result;
 }
 }  // Anonymous namespace
 
@@ -82,12 +82,12 @@ s64 dsp_multiply_mulx(u8 axh0, u8 axh1, u16 val1, u16 val2)
    // direct use of prod regs by AX/AXWII (look @that part of ucode).
 void clrp(const UDSPInstruction opc)
 {
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	g_dsp.r.prod.l = 0x0000;
-	g_dsp.r.prod.m = 0xfff0;
-	g_dsp.r.prod.h = 0x00ff;
-	g_dsp.r.prod.m2 = 0x0010;
+  g_dsp.r.prod.l = 0x0000;
+  g_dsp.r.prod.m = 0xfff0;
+  g_dsp.r.prod.h = 0x00ff;
+  g_dsp.r.prod.m2 = 0x0010;
 }
 
 // TSTPROD
@@ -97,9 +97,9 @@ void clrp(const UDSPInstruction opc)
 // flags out: --xx xx0x
 void tstprod(const UDSPInstruction opc)
 {
-	s64 prod = dsp_get_long_prod();
-	Update_SR_Register64(prod);
-	zeroWriteBackLog();
+  s64 prod = dsp_get_long_prod();
+  Update_SR_Register64(prod);
+  zeroWriteBackLog();
 }
 
 //----
@@ -111,14 +111,14 @@ void tstprod(const UDSPInstruction opc)
 // flags out: --xx xx0x
 void movp(const UDSPInstruction opc)
 {
-	u8 dreg = (opc >> 8) & 0x1;
+  u8 dreg = (opc >> 8) & 0x1;
 
-	s64 acc = dsp_get_long_prod();
+  s64 acc = dsp_get_long_prod();
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_acc(dreg, acc);
-	Update_SR_Register64(acc);
+  dsp_set_long_acc(dreg, acc);
+  Update_SR_Register64(acc);
 }
 
 // MOVNP $acD
@@ -129,14 +129,14 @@ void movp(const UDSPInstruction opc)
 // flags out: --xx xx0x
 void movnp(const UDSPInstruction opc)
 {
-	u8 dreg = (opc >> 8) & 0x1;
+  u8 dreg = (opc >> 8) & 0x1;
 
-	s64 acc = -dsp_get_long_prod();
+  s64 acc = -dsp_get_long_prod();
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_acc(dreg, acc);
-	Update_SR_Register64(acc);
+  dsp_set_long_acc(dreg, acc);
+  Update_SR_Register64(acc);
 }
 
 // MOVPZ $acD
@@ -147,14 +147,14 @@ void movnp(const UDSPInstruction opc)
 // flags out: --xx xx0x
 void movpz(const UDSPInstruction opc)
 {
-	u8 dreg = (opc >> 8) & 0x01;
+  u8 dreg = (opc >> 8) & 0x01;
 
-	s64 acc = dsp_get_long_prod_round_prodl();
+  s64 acc = dsp_get_long_prod_round_prodl();
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_acc(dreg, acc);
-	Update_SR_Register64(acc);
+  dsp_set_long_acc(dreg, acc);
+  Update_SR_Register64(acc);
 }
 
 // ADDPAXZ $acD, $axS
@@ -166,19 +166,19 @@ void movpz(const UDSPInstruction opc)
 // flags out: --xx xx0x
 void addpaxz(const UDSPInstruction opc)
 {
-	u8 dreg = (opc >> 8) & 0x1;
-	u8 sreg = (opc >> 9) & 0x1;
+  u8 dreg = (opc >> 8) & 0x1;
+  u8 sreg = (opc >> 9) & 0x1;
 
-	s64 oldprod = dsp_get_long_prod();
-	s64 prod = dsp_get_long_prod_round_prodl();
-	s64 ax = dsp_get_long_acx(sreg);
-	s64 res = prod + (ax & ~0xffff);
+  s64 oldprod = dsp_get_long_prod();
+  s64 prod = dsp_get_long_prod_round_prodl();
+  s64 ax = dsp_get_long_acx(sreg);
+  s64 res = prod + (ax & ~0xffff);
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_acc(dreg, res);
-	res = dsp_get_long_acc(dreg);
-	Update_SR_Register64(res, isCarry(oldprod, res), false);
+  dsp_set_long_acc(dreg, res);
+  res = dsp_get_long_acc(dreg);
+  Update_SR_Register64(res, isCarry(oldprod, res), false);
 }
 
 //----
@@ -188,11 +188,11 @@ void addpaxz(const UDSPInstruction opc)
 // Multiply $ax0.h by $ax0.h
 void mulaxh(const UDSPInstruction opc)
 {
-	s64 prod = dsp_multiply(dsp_get_ax_h(0), dsp_get_ax_h(0));
+  s64 prod = dsp_multiply(dsp_get_ax_h(0), dsp_get_ax_h(0));
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_prod(prod);
+  dsp_set_long_prod(prod);
 }
 
 //----
@@ -203,15 +203,15 @@ void mulaxh(const UDSPInstruction opc)
 // $axS.h of secondary accumulator $axS (treat them both as signed).
 void mul(const UDSPInstruction opc)
 {
-	u8 sreg = (opc >> 11) & 0x1;
+  u8 sreg = (opc >> 11) & 0x1;
 
-	u16 axl = dsp_get_ax_l(sreg);
-	u16 axh = dsp_get_ax_h(sreg);
-	s64 prod = dsp_multiply(axh, axl);
+  u16 axl = dsp_get_ax_l(sreg);
+  u16 axh = dsp_get_ax_h(sreg);
+  s64 prod = dsp_multiply(axh, axl);
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_prod(prod);
+  dsp_set_long_prod(prod);
 }
 
 // MULAC $axS.l, $axS.h, $acR
@@ -223,19 +223,19 @@ void mul(const UDSPInstruction opc)
 // flags out: --xx xx0x
 void mulac(const UDSPInstruction opc)
 {
-	u8 rreg = (opc >> 8) & 0x1;
-	u8 sreg = (opc >> 11) & 0x1;
+  u8 rreg = (opc >> 8) & 0x1;
+  u8 sreg = (opc >> 11) & 0x1;
 
-	s64 acc = dsp_get_long_acc(rreg) + dsp_get_long_prod();
-	u16 axl = dsp_get_ax_l(sreg);
-	u16 axh = dsp_get_ax_h(sreg);
-	s64 prod = dsp_multiply(axl, axh);
+  s64 acc = dsp_get_long_acc(rreg) + dsp_get_long_prod();
+  u16 axl = dsp_get_ax_l(sreg);
+  u16 axh = dsp_get_ax_h(sreg);
+  s64 prod = dsp_multiply(axl, axh);
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_prod(prod);
-	dsp_set_long_acc(rreg, acc);
-	Update_SR_Register64(dsp_get_long_acc(rreg));
+  dsp_set_long_prod(prod);
+  dsp_set_long_acc(rreg, acc);
+  Update_SR_Register64(dsp_get_long_acc(rreg));
 }
 
 // MULMV $axS.l, $axS.h, $acR
@@ -247,19 +247,19 @@ void mulac(const UDSPInstruction opc)
 // flags out: --xx xx0x
 void mulmv(const UDSPInstruction opc)
 {
-	u8 rreg = (opc >> 8) & 0x1;
-	u8 sreg = ((opc >> 11) & 0x1);
+  u8 rreg = (opc >> 8) & 0x1;
+  u8 sreg = ((opc >> 11) & 0x1);
 
-	s64 acc = dsp_get_long_prod();
-	u16 axl = dsp_get_ax_l(sreg);
-	u16 axh = dsp_get_ax_h(sreg);
-	s64 prod = dsp_multiply(axl, axh);
+  s64 acc = dsp_get_long_prod();
+  u16 axl = dsp_get_ax_l(sreg);
+  u16 axh = dsp_get_ax_h(sreg);
+  s64 prod = dsp_multiply(axl, axh);
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_prod(prod);
-	dsp_set_long_acc(rreg, acc);
-	Update_SR_Register64(dsp_get_long_acc(rreg));
+  dsp_set_long_prod(prod);
+  dsp_set_long_acc(rreg, acc);
+  Update_SR_Register64(dsp_get_long_acc(rreg));
 }
 
 // MULMVZ $axS.l, $axS.h, $acR
@@ -272,19 +272,19 @@ void mulmv(const UDSPInstruction opc)
 // flags out: --xx xx0x
 void mulmvz(const UDSPInstruction opc)
 {
-	u8 rreg = (opc >> 8) & 0x1;
-	u8 sreg = (opc >> 11) & 0x1;
+  u8 rreg = (opc >> 8) & 0x1;
+  u8 sreg = (opc >> 11) & 0x1;
 
-	s64 acc = dsp_get_long_prod_round_prodl();
-	u16 axl = dsp_get_ax_l(sreg);
-	u16 axh = dsp_get_ax_h(sreg);
-	s64 prod = dsp_multiply(axl, axh);
+  s64 acc = dsp_get_long_prod_round_prodl();
+  u16 axl = dsp_get_ax_l(sreg);
+  u16 axh = dsp_get_ax_h(sreg);
+  s64 prod = dsp_multiply(axl, axh);
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_prod(prod);
-	dsp_set_long_acc(rreg, acc);
-	Update_SR_Register64(dsp_get_long_acc(rreg));
+  dsp_set_long_prod(prod);
+  dsp_set_long_acc(rreg, acc);
+  Update_SR_Register64(dsp_get_long_acc(rreg));
 }
 
 //----
@@ -295,16 +295,16 @@ void mulmvz(const UDSPInstruction opc)
 // Part is selected by S and T bits. Zero selects low part, one selects high part.
 void mulx(const UDSPInstruction opc)
 {
-	u8 treg = ((opc >> 11) & 0x1);
-	u8 sreg = ((opc >> 12) & 0x1);
+  u8 treg = ((opc >> 11) & 0x1);
+  u8 sreg = ((opc >> 12) & 0x1);
 
-	u16 val1 = (sreg == 0) ? dsp_get_ax_l(0) : dsp_get_ax_h(0);
-	u16 val2 = (treg == 0) ? dsp_get_ax_l(1) : dsp_get_ax_h(1);
-	s64 prod = dsp_multiply_mulx(sreg, treg, val1, val2);
+  u16 val1 = (sreg == 0) ? dsp_get_ax_l(0) : dsp_get_ax_h(0);
+  u16 val2 = (treg == 0) ? dsp_get_ax_l(1) : dsp_get_ax_h(1);
+  s64 prod = dsp_multiply_mulx(sreg, treg, val1, val2);
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_prod(prod);
+  dsp_set_long_prod(prod);
 }
 
 // MULXAC $ax0.S, $ax1.T, $acR
@@ -316,20 +316,20 @@ void mulx(const UDSPInstruction opc)
 // flags out: --xx xx0x
 void mulxac(const UDSPInstruction opc)
 {
-	u8 rreg = (opc >> 8) & 0x1;
-	u8 treg = (opc >> 11) & 0x1;
-	u8 sreg = (opc >> 12) & 0x1;
+  u8 rreg = (opc >> 8) & 0x1;
+  u8 treg = (opc >> 11) & 0x1;
+  u8 sreg = (opc >> 12) & 0x1;
 
-	s64 acc = dsp_get_long_acc(rreg) + dsp_get_long_prod();
-	u16 val1 = (sreg == 0) ? dsp_get_ax_l(0) : dsp_get_ax_h(0);
-	u16 val2 = (treg == 0) ? dsp_get_ax_l(1) : dsp_get_ax_h(1);
-	s64 prod = dsp_multiply_mulx(sreg, treg, val1, val2);
+  s64 acc = dsp_get_long_acc(rreg) + dsp_get_long_prod();
+  u16 val1 = (sreg == 0) ? dsp_get_ax_l(0) : dsp_get_ax_h(0);
+  u16 val2 = (treg == 0) ? dsp_get_ax_l(1) : dsp_get_ax_h(1);
+  s64 prod = dsp_multiply_mulx(sreg, treg, val1, val2);
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_prod(prod);
-	dsp_set_long_acc(rreg, acc);
-	Update_SR_Register64(dsp_get_long_acc(rreg));
+  dsp_set_long_prod(prod);
+  dsp_set_long_acc(rreg, acc);
+  Update_SR_Register64(dsp_get_long_acc(rreg));
 }
 
 // MULXMV $ax0.S, $ax1.T, $acR
@@ -341,20 +341,20 @@ void mulxac(const UDSPInstruction opc)
 // flags out: --xx xx0x
 void mulxmv(const UDSPInstruction opc)
 {
-	u8 rreg = ((opc >> 8) & 0x1);
-	u8 treg = (opc >> 11) & 0x1;
-	u8 sreg = (opc >> 12) & 0x1;
+  u8 rreg = ((opc >> 8) & 0x1);
+  u8 treg = (opc >> 11) & 0x1;
+  u8 sreg = (opc >> 12) & 0x1;
 
-	s64 acc = dsp_get_long_prod();
-	u16 val1 = (sreg == 0) ? dsp_get_ax_l(0) : dsp_get_ax_h(0);
-	u16 val2 = (treg == 0) ? dsp_get_ax_l(1) : dsp_get_ax_h(1);
-	s64 prod = dsp_multiply_mulx(sreg, treg, val1, val2);
+  s64 acc = dsp_get_long_prod();
+  u16 val1 = (sreg == 0) ? dsp_get_ax_l(0) : dsp_get_ax_h(0);
+  u16 val2 = (treg == 0) ? dsp_get_ax_l(1) : dsp_get_ax_h(1);
+  s64 prod = dsp_multiply_mulx(sreg, treg, val1, val2);
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_prod(prod);
-	dsp_set_long_acc(rreg, acc);
-	Update_SR_Register64(dsp_get_long_acc(rreg));
+  dsp_set_long_prod(prod);
+  dsp_set_long_acc(rreg, acc);
+  Update_SR_Register64(dsp_get_long_acc(rreg));
 }
 
 // MULXMVZ $ax0.S, $ax1.T, $acR
@@ -367,20 +367,20 @@ void mulxmv(const UDSPInstruction opc)
 // flags out: --xx xx0x
 void mulxmvz(const UDSPInstruction opc)
 {
-	u8 rreg = (opc >> 8) & 0x1;
-	u8 treg = (opc >> 11) & 0x1;
-	u8 sreg = (opc >> 12) & 0x1;
+  u8 rreg = (opc >> 8) & 0x1;
+  u8 treg = (opc >> 11) & 0x1;
+  u8 sreg = (opc >> 12) & 0x1;
 
-	s64 acc = dsp_get_long_prod_round_prodl();
-	u16 val1 = (sreg == 0) ? dsp_get_ax_l(0) : dsp_get_ax_h(0);
-	u16 val2 = (treg == 0) ? dsp_get_ax_l(1) : dsp_get_ax_h(1);
-	s64 prod = dsp_multiply_mulx(sreg, treg, val1, val2);
+  s64 acc = dsp_get_long_prod_round_prodl();
+  u16 val1 = (sreg == 0) ? dsp_get_ax_l(0) : dsp_get_ax_h(0);
+  u16 val2 = (treg == 0) ? dsp_get_ax_l(1) : dsp_get_ax_h(1);
+  s64 prod = dsp_multiply_mulx(sreg, treg, val1, val2);
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_prod(prod);
-	dsp_set_long_acc(rreg, acc);
-	Update_SR_Register64(dsp_get_long_acc(rreg));
+  dsp_set_long_prod(prod);
+  dsp_set_long_acc(rreg, acc);
+  Update_SR_Register64(dsp_get_long_acc(rreg));
 }
 
 //----
@@ -391,16 +391,16 @@ void mulxmvz(const UDSPInstruction opc)
 // secondary accumulator $axS (treat them both as signed).
 void mulc(const UDSPInstruction opc)
 {
-	u8 treg = (opc >> 11) & 0x1;
-	u8 sreg = (opc >> 12) & 0x1;
+  u8 treg = (opc >> 11) & 0x1;
+  u8 sreg = (opc >> 12) & 0x1;
 
-	u16 accm = dsp_get_acc_m(sreg);
-	u16 axh = dsp_get_ax_h(treg);
-	s64 prod = dsp_multiply(accm, axh);
+  u16 accm = dsp_get_acc_m(sreg);
+  u16 axh = dsp_get_ax_h(treg);
+  s64 prod = dsp_multiply(accm, axh);
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_prod(prod);
+  dsp_set_long_prod(prod);
 }
 
 // MULCAC $acS.m, $axT.h, $acR
@@ -412,20 +412,20 @@ void mulc(const UDSPInstruction opc)
 // flags out: --xx xx0x
 void mulcac(const UDSPInstruction opc)
 {
-	u8 rreg = (opc >> 8) & 0x1;
-	u8 treg = (opc >> 11) & 0x1;
-	u8 sreg = (opc >> 12) & 0x1;
+  u8 rreg = (opc >> 8) & 0x1;
+  u8 treg = (opc >> 11) & 0x1;
+  u8 sreg = (opc >> 12) & 0x1;
 
-	s64 acc = dsp_get_long_acc(rreg) + dsp_get_long_prod();
-	u16 accm = dsp_get_acc_m(sreg);
-	u16 axh = dsp_get_ax_h(treg);
-	s64 prod = dsp_multiply(accm, axh);
+  s64 acc = dsp_get_long_acc(rreg) + dsp_get_long_prod();
+  u16 accm = dsp_get_acc_m(sreg);
+  u16 axh = dsp_get_ax_h(treg);
+  s64 prod = dsp_multiply(accm, axh);
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_prod(prod);
-	dsp_set_long_acc(rreg, acc);
-	Update_SR_Register64(dsp_get_long_acc(rreg));
+  dsp_set_long_prod(prod);
+  dsp_set_long_acc(rreg, acc);
+  Update_SR_Register64(dsp_get_long_acc(rreg));
 }
 
 // MULCMV $acS.m, $axT.h, $acR
@@ -438,20 +438,20 @@ void mulcac(const UDSPInstruction opc)
 // flags out: --xx xx0x
 void mulcmv(const UDSPInstruction opc)
 {
-	u8 rreg = (opc >> 8) & 0x1;
-	u8 treg = (opc >> 11) & 0x1;
-	u8 sreg = (opc >> 12) & 0x1;
+  u8 rreg = (opc >> 8) & 0x1;
+  u8 treg = (opc >> 11) & 0x1;
+  u8 sreg = (opc >> 12) & 0x1;
 
-	s64 acc = dsp_get_long_prod();
-	u16 accm = dsp_get_acc_m(sreg);
-	u16 axh = dsp_get_ax_h(treg);
-	s64 prod = dsp_multiply(accm, axh);
+  s64 acc = dsp_get_long_prod();
+  u16 accm = dsp_get_acc_m(sreg);
+  u16 axh = dsp_get_ax_h(treg);
+  s64 prod = dsp_multiply(accm, axh);
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_prod(prod);
-	dsp_set_long_acc(rreg, acc);
-	Update_SR_Register64(dsp_get_long_acc(rreg));
+  dsp_set_long_prod(prod);
+  dsp_set_long_acc(rreg, acc);
+  Update_SR_Register64(dsp_get_long_acc(rreg));
 }
 
 // MULCMVZ $acS.m, $axT.h, $acR
@@ -465,20 +465,20 @@ void mulcmv(const UDSPInstruction opc)
 // flags out: --xx xx0x
 void mulcmvz(const UDSPInstruction opc)
 {
-	u8 rreg = (opc >> 8) & 0x1;
-	u8 treg = (opc >> 11) & 0x1;
-	u8 sreg = (opc >> 12) & 0x1;
+  u8 rreg = (opc >> 8) & 0x1;
+  u8 treg = (opc >> 11) & 0x1;
+  u8 sreg = (opc >> 12) & 0x1;
 
-	s64 acc = dsp_get_long_prod_round_prodl();
-	u16 accm = dsp_get_acc_m(sreg);
-	u16 axh = dsp_get_ax_h(treg);
-	s64 prod = dsp_multiply(accm, axh);
+  s64 acc = dsp_get_long_prod_round_prodl();
+  u16 accm = dsp_get_acc_m(sreg);
+  u16 axh = dsp_get_ax_h(treg);
+  s64 prod = dsp_multiply(accm, axh);
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_prod(prod);
-	dsp_set_long_acc(rreg, acc);
-	Update_SR_Register64(dsp_get_long_acc(rreg));
+  dsp_set_long_prod(prod);
+  dsp_set_long_acc(rreg, acc);
+  Update_SR_Register64(dsp_get_long_acc(rreg));
 }
 
 //----
@@ -490,16 +490,16 @@ void mulcmvz(const UDSPInstruction opc)
 // signed) and add result to product register.
 void maddx(const UDSPInstruction opc)
 {
-	u8 treg = (opc >> 8) & 0x1;
-	u8 sreg = (opc >> 9) & 0x1;
+  u8 treg = (opc >> 8) & 0x1;
+  u8 sreg = (opc >> 9) & 0x1;
 
-	u16 val1 = (sreg == 0) ? dsp_get_ax_l(0) : dsp_get_ax_h(0);
-	u16 val2 = (treg == 0) ? dsp_get_ax_l(1) : dsp_get_ax_h(1);
-	s64 prod = dsp_multiply_add(val1, val2);
+  u16 val1 = (sreg == 0) ? dsp_get_ax_l(0) : dsp_get_ax_h(0);
+  u16 val2 = (treg == 0) ? dsp_get_ax_l(1) : dsp_get_ax_h(1);
+  s64 prod = dsp_multiply_add(val1, val2);
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_prod(prod);
+  dsp_set_long_prod(prod);
 }
 
 // MSUBX $(0x18+S*2), $(0x19+T*2)
@@ -509,16 +509,16 @@ void maddx(const UDSPInstruction opc)
 // signed) and subtract result from product register.
 void msubx(const UDSPInstruction opc)
 {
-	u8 treg = (opc >> 8) & 0x1;
-	u8 sreg = (opc >> 9) & 0x1;
+  u8 treg = (opc >> 8) & 0x1;
+  u8 sreg = (opc >> 9) & 0x1;
 
-	u16 val1 = (sreg == 0) ? dsp_get_ax_l(0) : dsp_get_ax_h(0);
-	u16 val2 = (treg == 0) ? dsp_get_ax_l(1) : dsp_get_ax_h(1);
-	s64 prod = dsp_multiply_sub(val1, val2);
+  u16 val1 = (sreg == 0) ? dsp_get_ax_l(0) : dsp_get_ax_h(0);
+  u16 val2 = (treg == 0) ? dsp_get_ax_l(1) : dsp_get_ax_h(1);
+  s64 prod = dsp_multiply_sub(val1, val2);
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_prod(prod);
+  dsp_set_long_prod(prod);
 }
 
 // MADDC $acS.m, $axT.h
@@ -528,16 +528,16 @@ void msubx(const UDSPInstruction opc)
 // register.
 void maddc(const UDSPInstruction opc)
 {
-	u8 treg = (opc >> 8) & 0x1;
-	u8 sreg = (opc >> 9) & 0x1;
+  u8 treg = (opc >> 8) & 0x1;
+  u8 sreg = (opc >> 9) & 0x1;
 
-	u16 accm = dsp_get_acc_m(sreg);
-	u16 axh = dsp_get_ax_h(treg);
-	s64 prod = dsp_multiply_add(accm, axh);
+  u16 accm = dsp_get_acc_m(sreg);
+  u16 axh = dsp_get_ax_h(treg);
+  s64 prod = dsp_multiply_add(accm, axh);
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_prod(prod);
+  dsp_set_long_prod(prod);
 }
 
 // MSUBC $acS.m, $axT.h
@@ -547,16 +547,16 @@ void maddc(const UDSPInstruction opc)
 // product register.
 void msubc(const UDSPInstruction opc)
 {
-	u8 treg = (opc >> 8) & 0x1;
-	u8 sreg = (opc >> 9) & 0x1;
+  u8 treg = (opc >> 8) & 0x1;
+  u8 sreg = (opc >> 9) & 0x1;
 
-	u16 accm = dsp_get_acc_m(sreg);
-	u16 axh = dsp_get_ax_h(treg);
-	s64 prod = dsp_multiply_sub(accm, axh);
+  u16 accm = dsp_get_acc_m(sreg);
+  u16 axh = dsp_get_ax_h(treg);
+  s64 prod = dsp_multiply_sub(accm, axh);
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_prod(prod);
+  dsp_set_long_prod(prod);
 }
 
 // MADD $axS.l, $axS.h
@@ -566,15 +566,15 @@ void msubc(const UDSPInstruction opc)
 // result to product register.
 void madd(const UDSPInstruction opc)
 {
-	u8 sreg = (opc >> 8) & 0x1;
+  u8 sreg = (opc >> 8) & 0x1;
 
-	u16 axl = dsp_get_ax_l(sreg);
-	u16 axh = dsp_get_ax_h(sreg);
-	s64 prod = dsp_multiply_add(axl, axh);
+  u16 axl = dsp_get_ax_l(sreg);
+  u16 axh = dsp_get_ax_h(sreg);
+  s64 prod = dsp_multiply_add(axl, axh);
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_prod(prod);
+  dsp_set_long_prod(prod);
 }
 
 // MSUB $axS.l, $axS.h
@@ -584,15 +584,15 @@ void madd(const UDSPInstruction opc)
 // subtract result from product register.
 void msub(const UDSPInstruction opc)
 {
-	u8 sreg = (opc >> 8) & 0x1;
+  u8 sreg = (opc >> 8) & 0x1;
 
-	u16 axl = dsp_get_ax_l(sreg);
-	u16 axh = dsp_get_ax_h(sreg);
-	s64 prod = dsp_multiply_sub(axl, axh);
+  u16 axl = dsp_get_ax_l(sreg);
+  u16 axh = dsp_get_ax_h(sreg);
+  s64 prod = dsp_multiply_sub(axl, axh);
 
-	zeroWriteBackLog();
+  zeroWriteBackLog();
 
-	dsp_set_long_prod(prod);
+  dsp_set_long_prod(prod);
 }
 
 }  // namespace Interpreter

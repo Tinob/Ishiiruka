@@ -14,18 +14,18 @@ namespace ControllerEmu
 class ModifySettingsButton : public Buttons
 {
 public:
-	explicit ModifySettingsButton(std::string button_name);
+  explicit ModifySettingsButton(std::string button_name);
 
-	void AddInput(std::string button_name, bool toggle = false);
+  void AddInput(std::string button_name, bool toggle = false);
 
-	void GetState();
+  void GetState();
 
-	const std::vector<bool>& isSettingToggled() const;
-	const std::vector<bool>& getSettingsModifier() const;
+  const std::vector<bool>& isSettingToggled() const;
+  const std::vector<bool>& getSettingsModifier() const;
 
 private:
-	std::vector<bool> threshold_exceeded;  // internal calculation (if "state" was above threshold)
-	std::vector<bool> associated_settings_toggle;  // is setting toggled or hold?
-	std::vector<bool> associated_settings;         // result
+  std::vector<bool> threshold_exceeded;  // internal calculation (if "state" was above threshold)
+  std::vector<bool> associated_settings_toggle;  // is setting toggled or hold?
+  std::vector<bool> associated_settings;         // result
 };
 }  // namespace ControllerEmu

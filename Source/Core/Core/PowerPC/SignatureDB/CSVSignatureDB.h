@@ -9,7 +9,7 @@
 class CSVSignatureDB final : public HashSignatureDB
 {
 public:
-	~CSVSignatureDB() = default;
-	bool Load(const std::string& file_path) override;
-	bool Save(const std::string& file_path) const override;
+  ~CSVSignatureDB() = default;
+  bool Load(const std::string& file_path) override;
+  bool Save(const std::string& file_path) const override;
 };

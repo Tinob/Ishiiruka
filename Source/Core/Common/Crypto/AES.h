@@ -15,8 +15,8 @@ namespace AES
 {
 enum class Mode
 {
-	Decrypt,
-	Encrypt,
+  Decrypt,
+  Encrypt,
 };
 std::vector<u8> DecryptEncrypt(const u8* key, u8* iv, const u8* src, size_t size, Mode mode);
 

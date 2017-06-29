@@ -9,6 +9,6 @@
 class GCKeyboardInputConfigDialog final : public InputConfigDialog
 {
 public:
-	GCKeyboardInputConfigDialog(wxWindow* parent, InputConfig& config, const wxString& name,
-		int port_num = 0);
+  GCKeyboardInputConfigDialog(wxWindow* parent, InputConfig& config, const wxString& name,
+    int port_num = 0);
 };

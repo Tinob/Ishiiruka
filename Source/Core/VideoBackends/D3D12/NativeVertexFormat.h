@@ -12,22 +12,22 @@ namespace DX12
 class D3DVertexFormat final : public NativeVertexFormat
 {
 public:
-	D3DVertexFormat(const PortableVertexDeclaration &vtx_decl);
-	~D3DVertexFormat();
+  D3DVertexFormat(const PortableVertexDeclaration &vtx_decl);
+  ~D3DVertexFormat();
 
-	void SetupVertexPointers() override;
+  void SetupVertexPointers() override;
 
-	D3D12_INPUT_LAYOUT_DESC GetActiveInputLayout() const
-	{
-		return m_layout;
-	};
+  D3D12_INPUT_LAYOUT_DESC GetActiveInputLayout() const
+  {
+    return m_layout;
+  };
 
 private:
-	D3D12_INPUT_ELEMENT_DESC GetInputElementDescFromAttributeFormat(const AttributeFormat* format, const char* semantic_name, unsigned int semantic_index) const;
+  D3D12_INPUT_ELEMENT_DESC GetInputElementDescFromAttributeFormat(const AttributeFormat* format, const char* semantic_name, unsigned int semantic_index) const;
 
-	std::array<D3D12_INPUT_ELEMENT_DESC, 15> m_elems{};
-	UINT m_num_elems = 0;
+  std::array<D3D12_INPUT_ELEMENT_DESC, 15> m_elems{};
+  UINT m_num_elems = 0;
 
-	D3D12_INPUT_LAYOUT_DESC m_layout{};
+  D3D12_INPUT_LAYOUT_DESC m_layout{};
 };
 }

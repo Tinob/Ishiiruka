@@ -30,10 +30,10 @@ using namespace Gen;
 bool JitBlock::OverlapsPhysicalRange(u32 address, u32 length) const
 {
   return physical_addresses.lower_bound(address) !=
-         physical_addresses.lower_bound(address + length);
+    physical_addresses.lower_bound(address + length);
 }
 
-JitBaseBlockCache::JitBaseBlockCache(JitBase& jit) : m_jit{jit}
+JitBaseBlockCache::JitBaseBlockCache(JitBase& jit) : m_jit{ jit }
 {
 }
 
@@ -103,7 +103,7 @@ JitBlock* JitBaseBlockCache::AllocateBlock(u32 em_address)
 }
 
 void JitBaseBlockCache::FinalizeBlock(JitBlock& block, bool block_link,
-                                      const std::set<u32>& physical_addresses)
+  const std::set<u32>& physical_addresses)
 {
   size_t index = FastLookupIndexForAddress(block.effectiveAddress);
   fast_block_map[index] = &block;

@@ -12,6 +12,6 @@ namespace ControllerEmu
 class Input : public Control
 {
 public:
-	explicit Input(const std::string& name);
+  explicit Input(const std::string& name);
 };
 }  // namespace ControllerEmu

@@ -18,34 +18,34 @@ class wxTimePickerCtrl;
 class AdvancedConfigPane final : public wxPanel
 {
 public:
-	AdvancedConfigPane(wxWindow* parent, wxWindowID id);
+  AdvancedConfigPane(wxWindow* parent, wxWindowID id);
 
 private:
-	void InitializeGUI();
-	void LoadGUIValues();
-	void BindEvents();
+  void InitializeGUI();
+  void LoadGUIValues();
+  void BindEvents();
 
-	void OnUpdateCPUClockControls(wxUpdateUIEvent&);
-	void OnUpdateRTCDateTimeEntries(wxUpdateUIEvent&);
+  void OnUpdateCPUClockControls(wxUpdateUIEvent&);
+  void OnUpdateRTCDateTimeEntries(wxUpdateUIEvent&);
 
-	void OnClockOverrideCheckBoxChanged(wxCommandEvent&);
-	void OnClockOverrideSliderChanged(wxCommandEvent&);
-	void OnCustomRTCCheckBoxChanged(wxCommandEvent&);
-	void OnCustomRTCDateChanged(wxCommandEvent&);
-	void OnCustomRTCTimeChanged(wxCommandEvent&);
+  void OnClockOverrideCheckBoxChanged(wxCommandEvent&);
+  void OnClockOverrideSliderChanged(wxCommandEvent&);
+  void OnCustomRTCCheckBoxChanged(wxCommandEvent&);
+  void OnCustomRTCDateChanged(wxCommandEvent&);
+  void OnCustomRTCTimeChanged(wxCommandEvent&);
 
-	void UpdateCPUClock();
+  void UpdateCPUClock();
 
-	// Custom RTC
-	void LoadCustomRTC();
-	void UpdateCustomRTC(time_t date, time_t time);
-	u32 m_temp_date;
-	u32 m_temp_time;
+  // Custom RTC
+  void LoadCustomRTC();
+  void UpdateCustomRTC(time_t date, time_t time);
+  u32 m_temp_date;
+  u32 m_temp_time;
 
-	wxCheckBox* m_clock_override_checkbox;
-	DolphinSlider* m_clock_override_slider;
-	wxStaticText* m_clock_override_text;
-	wxCheckBox* m_custom_rtc_checkbox;
-	wxDatePickerCtrl* m_custom_rtc_date_picker;
-	wxTimePickerCtrl* m_custom_rtc_time_picker;
+  wxCheckBox* m_clock_override_checkbox;
+  DolphinSlider* m_clock_override_slider;
+  wxStaticText* m_clock_override_text;
+  wxCheckBox* m_custom_rtc_checkbox;
+  wxDatePickerCtrl* m_custom_rtc_date_picker;
+  wxTimePickerCtrl* m_custom_rtc_time_picker;
 };

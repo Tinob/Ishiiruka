@@ -12,5 +12,4 @@
 namespace ActionReplay
 {
 void DecryptARCode(std::vector<std::string> vCodes, std::vector<AREntry>* ops);
-
 }  // namespace

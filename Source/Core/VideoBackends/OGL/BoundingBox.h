@@ -10,12 +10,12 @@ namespace OGL
 class BBox
 {
 public:
-	static void Init();
-	static void Shutdown();
+  static void Init();
+  static void Shutdown();
 
-	static void Update();
-	static void Set(s32 index, s32 value);
-	static s32 Get(s32 index);
+  static void Update();
+  static void Set(s32 index, s32 value);
+  static s32 Get(s32 index);
 };
 
 };

@@ -8,10 +8,10 @@
 class Vertexloader_Mtx
 {
 public:
-	static void LOADERDECL PosMtx_ReadDirect_UByte();
-	static void LOADERDECL PosMtx_Write();
-	static void LOADERDECL TexMtx_ReadDirect_UByte();
-	static void LOADERDECL TexMtx_Write_Float();
-	static void LOADERDECL TexMtx_Write_Float2();
-	static void LOADERDECL TexMtx_Write_Float3();
+  static void LOADERDECL PosMtx_ReadDirect_UByte();
+  static void LOADERDECL PosMtx_Write();
+  static void LOADERDECL TexMtx_ReadDirect_UByte();
+  static void LOADERDECL TexMtx_Write_Float();
+  static void LOADERDECL TexMtx_Write_Float2();
+  static void LOADERDECL TexMtx_Write_Float3();
 };

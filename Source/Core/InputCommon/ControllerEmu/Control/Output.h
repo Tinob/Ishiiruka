@@ -12,6 +12,6 @@ namespace ControllerEmu
 class Output : public Control
 {
 public:
-	explicit Output(const std::string& name);
+  explicit Output(const std::string& name);
 };
 }  // namespace ControllerEmu

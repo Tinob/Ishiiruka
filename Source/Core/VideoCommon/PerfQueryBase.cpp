@@ -10,5 +10,5 @@ std::unique_ptr<PerfQueryBase> g_perf_query;
 
 bool PerfQueryBase::ShouldEmulate()
 {
-	return g_ActiveConfig.bPerfQueriesEnable;
+  return g_ActiveConfig.bPerfQueriesEnable;
 }

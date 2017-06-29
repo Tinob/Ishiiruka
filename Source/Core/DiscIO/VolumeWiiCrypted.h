@@ -28,47 +28,47 @@ enum class Platform;
 class CVolumeWiiCrypted : public IVolume
 {
 public:
-	CVolumeWiiCrypted(std::unique_ptr<IBlobReader> reader);
-	~CVolumeWiiCrypted();
-	bool Read(u64 _Offset, u64 _Length, u8* _pBuffer, const Partition& partition) const override;
-	std::vector<Partition> GetPartitions() const override;
-	Partition GetGamePartition() const override;
-	bool GetTitleID(u64* buffer, const Partition& partition) const override;
-	IOS::ES::TicketReader GetTicket(const Partition& partition) const override;
-	IOS::ES::TMDReader GetTMD(const Partition& partition) const override;
-	std::string GetGameID(const Partition& partition) const override;
-	std::string GetMakerID(const Partition& partition) const override;
-	u16 GetRevision(const Partition& partition) const override;
-	std::string GetInternalName(const Partition& partition) const override;
-	std::map<Language, std::string> GetLongNames() const override;
-	std::vector<u32> GetBanner(int* width, int* height) const override;
-	u64 GetFSTSize(const Partition& partition) const override;
-	std::string GetApploaderDate(const Partition& partition) const override;
-	u8 GetDiscNumber(const Partition& partition) const override;
+  CVolumeWiiCrypted(std::unique_ptr<IBlobReader> reader);
+  ~CVolumeWiiCrypted();
+  bool Read(u64 _Offset, u64 _Length, u8* _pBuffer, const Partition& partition) const override;
+  std::vector<Partition> GetPartitions() const override;
+  Partition GetGamePartition() const override;
+  bool GetTitleID(u64* buffer, const Partition& partition) const override;
+  IOS::ES::TicketReader GetTicket(const Partition& partition) const override;
+  IOS::ES::TMDReader GetTMD(const Partition& partition) const override;
+  std::string GetGameID(const Partition& partition) const override;
+  std::string GetMakerID(const Partition& partition) const override;
+  u16 GetRevision(const Partition& partition) const override;
+  std::string GetInternalName(const Partition& partition) const override;
+  std::map<Language, std::string> GetLongNames() const override;
+  std::vector<u32> GetBanner(int* width, int* height) const override;
+  u64 GetFSTSize(const Partition& partition) const override;
+  std::string GetApploaderDate(const Partition& partition) const override;
+  u8 GetDiscNumber(const Partition& partition) const override;
 
-	Platform GetVolumeType() const override;
-	bool SupportsIntegrityCheck() const override { return true; }
-	bool CheckIntegrity(const Partition& partition) const override;
+  Platform GetVolumeType() const override;
+  bool SupportsIntegrityCheck() const override { return true; }
+  bool CheckIntegrity(const Partition& partition) const override;
 
-	Region GetRegion() const override;
-	Country GetCountry(const Partition& partition) const override;
-	BlobType GetBlobType() const override;
-	u64 GetSize() const override;
-	u64 GetRawSize() const override;
+  Region GetRegion() const override;
+  Country GetCountry(const Partition& partition) const override;
+  BlobType GetBlobType() const override;
+  u64 GetSize() const override;
+  u64 GetRawSize() const override;
 
-	static u64 PartitionOffsetToRawOffset(u64 offset, const Partition& partition);
+  static u64 PartitionOffsetToRawOffset(u64 offset, const Partition& partition);
 
-	static constexpr unsigned int BLOCK_HEADER_SIZE = 0x0400;
-	static constexpr unsigned int BLOCK_DATA_SIZE = 0x7C00;
-	static constexpr unsigned int BLOCK_TOTAL_SIZE = BLOCK_HEADER_SIZE + BLOCK_DATA_SIZE;
+  static constexpr unsigned int BLOCK_HEADER_SIZE = 0x0400;
+  static constexpr unsigned int BLOCK_DATA_SIZE = 0x7C00;
+  static constexpr unsigned int BLOCK_TOTAL_SIZE = BLOCK_HEADER_SIZE + BLOCK_DATA_SIZE;
 
 private:
-	std::unique_ptr<IBlobReader> m_pReader;
-	std::map<Partition, std::unique_ptr<mbedtls_aes_context>> m_partitions;
-	Partition m_game_partition;
+  std::unique_ptr<IBlobReader> m_pReader;
+  std::map<Partition, std::unique_ptr<mbedtls_aes_context>> m_partitions;
+  Partition m_game_partition;
 
-	mutable u64 m_last_decrypted_block;
-	mutable u8 m_last_decrypted_block_data[BLOCK_DATA_SIZE];
+  mutable u64 m_last_decrypted_block;
+  mutable u8 m_last_decrypted_block_data[BLOCK_DATA_SIZE];
 };
 
 }  // namespace

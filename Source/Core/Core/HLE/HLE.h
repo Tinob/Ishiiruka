@@ -12,16 +12,16 @@ namespace HLE
 {
 enum HookType
 {
-	HLE_HOOK_START = 0,    // Hook the beginning of the function and execute the function afterwards
-	HLE_HOOK_REPLACE = 1,  // Replace the function with the HLE version
-	HLE_HOOK_NONE = 2,     // Do not hook the function
+  HLE_HOOK_START = 0,    // Hook the beginning of the function and execute the function afterwards
+  HLE_HOOK_REPLACE = 1,  // Replace the function with the HLE version
+  HLE_HOOK_NONE = 2,     // Do not hook the function
 };
 
 enum HookFlag
 {
-	HLE_TYPE_GENERIC = 0,  // Miscellaneous function
-	HLE_TYPE_DEBUG = 1,    // Debug output function
-	HLE_TYPE_FIXED = 2,    // An arbitrary hook mapped to a fixed address instead of a symbol
+  HLE_TYPE_GENERIC = 0,  // Miscellaneous function
+  HLE_TYPE_DEBUG = 1,    // Debug output function
+  HLE_TYPE_FIXED = 2,    // An arbitrary hook mapped to a fixed address instead of a symbol
 };
 
 void PatchFixedFunctions();

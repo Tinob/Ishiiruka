@@ -9,6 +9,6 @@
 class WiimoteInputConfigDialog final : public InputConfigDialog
 {
 public:
-	WiimoteInputConfigDialog(wxWindow* parent, InputConfig& config, const wxString& name,
-		int port_num = 0);
+  WiimoteInputConfigDialog(wxWindow* parent, InputConfig& config, const wxString& name,
+    int port_num = 0);
 };

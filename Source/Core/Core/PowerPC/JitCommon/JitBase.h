@@ -45,86 +45,86 @@ extern JitBase* g_jit;
 class JitBase : public CPUCoreBase
 {
 protected:
-	struct JitOptions
-	{
-		bool enableBlocklink;
-		bool optimizeGatherPipe;
-		bool accurateSinglePrecision;
-		bool fastmem;
-		bool memcheck;
-	};
-	struct JitState
-	{
-		u32 compilerPC;
-		u32 blockStart;
-		int instructionNumber;
-		int instructionsLeft;
-		int downcountAmount;
-		u32 numLoadStoreInst;
-		u32 numFloatingPointInst;
-		// If this is set, we need to generate an exception handler for the fastmem load.
-		u8* fastmemLoadStore;
-		// If this is set, a load or store already prepared a jump to the exception handler for us,
-		// so just fixup that branch instead of testing for a DSI again.
-		bool fixupExceptionHandler;
-		Gen::FixupBranch exceptionHandler;
-		// If these are set, we've stored the old value of a register which will be loaded in
-		// revertLoad,
-		// which lets us revert it on the exception path.
-		int revertGprLoad;
-		int revertFprLoad;
+  struct JitOptions
+  {
+    bool enableBlocklink;
+    bool optimizeGatherPipe;
+    bool accurateSinglePrecision;
+    bool fastmem;
+    bool memcheck;
+  };
+  struct JitState
+  {
+    u32 compilerPC;
+    u32 blockStart;
+    int instructionNumber;
+    int instructionsLeft;
+    int downcountAmount;
+    u32 numLoadStoreInst;
+    u32 numFloatingPointInst;
+    // If this is set, we need to generate an exception handler for the fastmem load.
+    u8* fastmemLoadStore;
+    // If this is set, a load or store already prepared a jump to the exception handler for us,
+    // so just fixup that branch instead of testing for a DSI again.
+    bool fixupExceptionHandler;
+    Gen::FixupBranch exceptionHandler;
+    // If these are set, we've stored the old value of a register which will be loaded in
+    // revertLoad,
+    // which lets us revert it on the exception path.
+    int revertGprLoad;
+    int revertFprLoad;
 
-		bool assumeNoPairedQuantize;
-		std::map<u8, u32> constantGqr;
-		bool firstFPInstructionFound;
-		bool isLastInstruction;
-		int skipInstructions;
-		bool carryFlagSet;
-		bool carryFlagInverted;
+    bool assumeNoPairedQuantize;
+    std::map<u8, u32> constantGqr;
+    bool firstFPInstructionFound;
+    bool isLastInstruction;
+    int skipInstructions;
+    bool carryFlagSet;
+    bool carryFlagInverted;
 
-		bool generatingTrampoline = false;
-		u8* trampolineExceptionHandler;
+    bool generatingTrampoline = false;
+    u8* trampolineExceptionHandler;
 
-		bool mustCheckFifo;
-		int fifoBytesSinceCheck;
+    bool mustCheckFifo;
+    int fifoBytesSinceCheck;
 
-		PPCAnalyst::BlockStats st;
-		PPCAnalyst::BlockRegStats gpa;
-		PPCAnalyst::BlockRegStats fpa;
-		PPCAnalyst::CodeOp* op;
-		u8* rewriteStart;
+    PPCAnalyst::BlockStats st;
+    PPCAnalyst::BlockRegStats gpa;
+    PPCAnalyst::BlockRegStats fpa;
+    PPCAnalyst::CodeOp* op;
+    u8* rewriteStart;
 
-		JitBlock* curBlock;
+    JitBlock* curBlock;
 
-		std::unordered_set<u32> fifoWriteAddresses;
-		std::unordered_set<u32> pairedQuantizeAddresses;
-		std::unordered_set<u32> noSpeculativeConstantsAddresses;
-	};
+    std::unordered_set<u32> fifoWriteAddresses;
+    std::unordered_set<u32> pairedQuantizeAddresses;
+    std::unordered_set<u32> noSpeculativeConstantsAddresses;
+  };
 
-	PPCAnalyst::CodeBlock code_block;
-	PPCAnalyst::PPCAnalyzer analyzer;
+  PPCAnalyst::CodeBlock code_block;
+  PPCAnalyst::PPCAnalyzer analyzer;
 
-	bool CanMergeNextInstructions(int count) const;
+  bool CanMergeNextInstructions(int count) const;
 
-	void UpdateMemoryOptions();
+  void UpdateMemoryOptions();
 
 public:
-	// This should probably be removed from public:
-	JitOptions jo;
-	JitState js;
+  // This should probably be removed from public:
+  JitOptions jo;
+  JitState js;
 
-	JitBase();
-	~JitBase() override;
+  JitBase();
+  ~JitBase() override;
 
-	static const u8* Dispatch() { return g_jit->GetBlockCache()->Dispatch(); };
-	virtual JitBaseBlockCache* GetBlockCache() = 0;
+  static const u8* Dispatch() { return g_jit->GetBlockCache()->Dispatch(); };
+  virtual JitBaseBlockCache* GetBlockCache() = 0;
 
-	virtual void Jit(u32 em_address) = 0;
+  virtual void Jit(u32 em_address) = 0;
 
-	virtual const CommonAsmRoutinesBase* GetAsmRoutines() = 0;
+  virtual const CommonAsmRoutinesBase* GetAsmRoutines() = 0;
 
-	virtual bool HandleFault(uintptr_t access_address, SContext* ctx) = 0;
-	virtual bool HandleStackFault() { return false; }
+  virtual bool HandleFault(uintptr_t access_address, SContext* ctx) = 0;
+  virtual bool HandleStackFault() { return false; }
 };
 
 void JitTrampoline(u32 em_address);

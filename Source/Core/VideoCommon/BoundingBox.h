@@ -22,16 +22,16 @@ extern const TPipelineState *pState;
 
 enum
 {
-	LEFT = 0,
-	RIGHT = 1,
-	TOP = 2,
-	BOTTOM = 3
+  LEFT = 0,
+  RIGHT = 1,
+  TOP = 2,
+  BOTTOM = 3
 };
 
 __forceinline void SetVertexBufferPosition(TPipelineState &pipelinestate)
 {
-	bufferPos = pipelinestate.GetWritePosition();
-	pState = &pipelinestate;
+  bufferPos = pipelinestate.GetWritePosition();
+  pState = &pipelinestate;
 }
 
 void LOADERDECL SetVertexBufferPosition();

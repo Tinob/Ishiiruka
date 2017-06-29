@@ -30,19 +30,19 @@ namespace DX11
 
 union EFBEncodeParams
 {
-	struct
-	{
-		FLOAT NumHalfCacheLinesX;
-		FLOAT NumBlocksY;
-		FLOAT PosX;
-		FLOAT PosY;
-		FLOAT TexLeft;
-		FLOAT TexTop;
-		FLOAT TexRight;
-		FLOAT TexBottom;
-	};
-	// Constant buffers must be a multiple of 16 bytes in size.
-	u8 pad[32]; // Pad to the next multiple of 16 bytes
+  struct
+  {
+    FLOAT NumHalfCacheLinesX;
+    FLOAT NumBlocksY;
+    FLOAT PosX;
+    FLOAT PosY;
+    FLOAT TexLeft;
+    FLOAT TexTop;
+    FLOAT TexRight;
+    FLOAT TexBottom;
+  };
+  // Constant buffers must be a multiple of 16 bytes in size.
+  u8 pad[32]; // Pad to the next multiple of 16 bytes
 };
 
 static const char EFB_ENCODE_CS[] = R"HLSL(
@@ -692,243 +692,243 @@ if (cacheCoord.x < Params.NumHalfCacheLinesX && cacheCoord.y < Params.NumBlocksY
 
 void CSTextureEncoder::Init()
 {
-	m_ready = false;
+  m_ready = false;
 
-	HRESULT hr;
+  HRESULT hr;
 
-	// Create output buffer
-	bool bSupportsShaderModel5 = DX11::D3D::GetFeatureLevel() >= D3D_FEATURE_LEVEL_11_0;
-	auto outBd = CD3D11_BUFFER_DESC((4 * 4)*EFB_WIDTH*EFB_HEIGHT / 4, D3D11_BIND_UNORDERED_ACCESS);
-	if (!bSupportsShaderModel5)
-	{
-		outBd.MiscFlags |= D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
-	}
-	hr = D3D::device->CreateBuffer(&outBd, nullptr, ToAddr(m_out));
-	CHECK(SUCCEEDED(hr), "create efb encode output buffer");
-	D3D::SetDebugObjectName(m_out.get(), "efb encoder output buffer");
+  // Create output buffer
+  bool bSupportsShaderModel5 = DX11::D3D::GetFeatureLevel() >= D3D_FEATURE_LEVEL_11_0;
+  auto outBd = CD3D11_BUFFER_DESC((4 * 4)*EFB_WIDTH*EFB_HEIGHT / 4, D3D11_BIND_UNORDERED_ACCESS);
+  if (!bSupportsShaderModel5)
+  {
+    outBd.MiscFlags |= D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
+  }
+  hr = D3D::device->CreateBuffer(&outBd, nullptr, ToAddr(m_out));
+  CHECK(SUCCEEDED(hr), "create efb encode output buffer");
+  D3D::SetDebugObjectName(m_out.get(), "efb encoder output buffer");
 
-	// And the cpu side version
+  // And the cpu side version
 
-	outBd.Usage = D3D11_USAGE_STAGING;
-	outBd.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
-	outBd.BindFlags = 0;
-	outBd.MiscFlags = 0;
-	hr = D3D::device->CreateBuffer(&outBd, nullptr, ToAddr(m_outStage));
-	CHECK(SUCCEEDED(hr), "create efb encode staging buffer");
-	D3D::SetDebugObjectName(m_outStage.get(), "efb encoder staging buffer");
+  outBd.Usage = D3D11_USAGE_STAGING;
+  outBd.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+  outBd.BindFlags = 0;
+  outBd.MiscFlags = 0;
+  hr = D3D::device->CreateBuffer(&outBd, nullptr, ToAddr(m_outStage));
+  CHECK(SUCCEEDED(hr), "create efb encode staging buffer");
+  D3D::SetDebugObjectName(m_outStage.get(), "efb encoder staging buffer");
 
-	// UAV to write the shader result
+  // UAV to write the shader result
 
-	auto outUavDesc = CD3D11_UNORDERED_ACCESS_VIEW_DESC(m_out.get(), DXGI_FORMAT_R32_UINT, 0, (4)*EFB_WIDTH*EFB_HEIGHT / 4);
-	if (!bSupportsShaderModel5)
-	{
-		outUavDesc.Format = DXGI_FORMAT_R32_TYPELESS;
-		outUavDesc.Buffer.Flags |= D3D11_BUFFER_UAV_FLAG_RAW;
-	}
-	hr = D3D::device->CreateUnorderedAccessView(m_out.get(), &outUavDesc, ToAddr(m_outUav));
+  auto outUavDesc = CD3D11_UNORDERED_ACCESS_VIEW_DESC(m_out.get(), DXGI_FORMAT_R32_UINT, 0, (4)*EFB_WIDTH*EFB_HEIGHT / 4);
+  if (!bSupportsShaderModel5)
+  {
+    outUavDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+    outUavDesc.Buffer.Flags |= D3D11_BUFFER_UAV_FLAG_RAW;
+  }
+  hr = D3D::device->CreateUnorderedAccessView(m_out.get(), &outUavDesc, ToAddr(m_outUav));
 
-	D3D11_BUFFER_DESC bd = CD3D11_BUFFER_DESC(sizeof(EFBEncodeParams),
-		D3D11_BIND_CONSTANT_BUFFER);
-	hr = D3D::device->CreateBuffer(&bd, nullptr, ToAddr(m_encodeParams));
-	CHECK(SUCCEEDED(hr), "create efb encode params buffer");
-	D3D::SetDebugObjectName(m_encodeParams.get(), "efb encoder params buffer");
+  D3D11_BUFFER_DESC bd = CD3D11_BUFFER_DESC(sizeof(EFBEncodeParams),
+    D3D11_BIND_CONSTANT_BUFFER);
+  hr = D3D::device->CreateBuffer(&bd, nullptr, ToAddr(m_encodeParams));
+  CHECK(SUCCEEDED(hr), "create efb encode params buffer");
+  D3D::SetDebugObjectName(m_encodeParams.get(), "efb encoder params buffer");
 
-	// Create efb texture sampler
+  // Create efb texture sampler
 
-	D3D11_SAMPLER_DESC sd = CD3D11_SAMPLER_DESC(CD3D11_DEFAULT());
-	sd.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
-	hr = D3D::device->CreateSamplerState(&sd, ToAddr(m_efbSampler));
-	CHECK(SUCCEEDED(hr), "create efb encode texture sampler");
-	D3D::SetDebugObjectName(m_efbSampler.get(), "efb encoder texture sampler");
+  D3D11_SAMPLER_DESC sd = CD3D11_SAMPLER_DESC(CD3D11_DEFAULT());
+  sd.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+  hr = D3D::device->CreateSamplerState(&sd, ToAddr(m_efbSampler));
+  CHECK(SUCCEEDED(hr), "create efb encode texture sampler");
+  D3D::SetDebugObjectName(m_efbSampler.get(), "efb encoder texture sampler");
 
-	m_ready = true;
+  m_ready = true;
 
-	// Warm up with shader cache
-	std::string cache_filename = StringFromFormat("%sdx11-ENCODER-cs.cache", File::GetUserPath(D_SHADERCACHE_IDX).c_str());
-	m_shaderCache.OpenAndRead(cache_filename, ShaderCacheInserter(*this));
+  // Warm up with shader cache
+  std::string cache_filename = StringFromFormat("%sdx11-ENCODER-cs.cache", File::GetUserPath(D_SHADERCACHE_IDX).c_str());
+  m_shaderCache.OpenAndRead(cache_filename, ShaderCacheInserter(*this));
 }
 
 void CSTextureEncoder::Shutdown()
 {
-	m_ready = false;
+  m_ready = false;
 
-	m_efbSampler.reset();
-	m_out.reset();
-	m_outUav.reset();
-	m_outStage.reset();
-	m_shaderCache.Close();
+  m_efbSampler.reset();
+  m_out.reset();
+  m_outUav.reset();
+  m_outStage.reset();
+  m_shaderCache.Close();
 }
 
 void CSTextureEncoder::Encode(u8* dst, const EFBCopyFormat& format, u32 native_width,
-	u32 bytes_per_row, u32 num_blocks_y, u32 memory_stride,
-	bool is_depth_copy, const EFBRectangle& src_rect, bool scale_by_half)
+  u32 bytes_per_row, u32 num_blocks_y, u32 memory_stride,
+  bool is_depth_copy, const EFBRectangle& src_rect, bool scale_by_half)
 {
-	if (!m_ready) // Make sure we initialized OK
-		return;
-	ComboKey key;
-	key.format = format;
-	key.scaled = scale_by_half;
-	auto shader = GetEncodingComputeShader(key);
-	if (shader == nullptr)
-	{
-		return;
-	}
-	HRESULT hr;
-	u32 cacheLinesPerRow = bytes_per_row / 32;
-	// Reset API
+  if (!m_ready) // Make sure we initialized OK
+    return;
+  ComboKey key;
+  key.format = format;
+  key.scaled = scale_by_half;
+  auto shader = GetEncodingComputeShader(key);
+  if (shader == nullptr)
+  {
+    return;
+  }
+  HRESULT hr;
+  u32 cacheLinesPerRow = bytes_per_row / 32;
+  // Reset API
 
-	g_renderer->ResetAPIState();
+  g_renderer->ResetAPIState();
 
-	D3D::context->OMSetRenderTargets(0, nullptr, nullptr);
+  D3D::context->OMSetRenderTargets(0, nullptr, nullptr);
 
-	EFBRectangle fullSrcRect;
-	fullSrcRect.left = 0;
-	fullSrcRect.top = 0;
-	fullSrcRect.right = EFB_WIDTH;
-	fullSrcRect.bottom = EFB_HEIGHT;
-	TargetRectangle targetRect = g_renderer->ConvertEFBRectangle(fullSrcRect);
+  EFBRectangle fullSrcRect;
+  fullSrcRect.left = 0;
+  fullSrcRect.top = 0;
+  fullSrcRect.right = EFB_WIDTH;
+  fullSrcRect.bottom = EFB_HEIGHT;
+  TargetRectangle targetRect = g_renderer->ConvertEFBRectangle(fullSrcRect);
 
-	EFBEncodeParams params = { 0 };
-	params.NumHalfCacheLinesX = FLOAT(cacheLinesPerRow * 2);
-	params.NumBlocksY = FLOAT(num_blocks_y);
-	params.PosX = FLOAT(src_rect.left);
-	params.PosY = FLOAT(src_rect.top);
-	params.TexLeft = float(targetRect.left) / g_renderer->GetTargetWidth();
-	params.TexTop = float(targetRect.top) / g_renderer->GetTargetHeight();
-	params.TexRight = float(targetRect.right) / g_renderer->GetTargetWidth();
-	params.TexBottom = float(targetRect.bottom) / g_renderer->GetTargetHeight();
-	D3D::context->UpdateSubresource(m_encodeParams.get(), 0, nullptr, &params, 0, 0);
+  EFBEncodeParams params = { 0 };
+  params.NumHalfCacheLinesX = FLOAT(cacheLinesPerRow * 2);
+  params.NumBlocksY = FLOAT(num_blocks_y);
+  params.PosX = FLOAT(src_rect.left);
+  params.PosY = FLOAT(src_rect.top);
+  params.TexLeft = float(targetRect.left) / g_renderer->GetTargetWidth();
+  params.TexTop = float(targetRect.top) / g_renderer->GetTargetHeight();
+  params.TexRight = float(targetRect.right) / g_renderer->GetTargetWidth();
+  params.TexBottom = float(targetRect.bottom) / g_renderer->GetTargetHeight();
+  D3D::context->UpdateSubresource(m_encodeParams.get(), 0, nullptr, &params, 0, 0);
 
-	D3D::context->CSSetConstantBuffers(0, 1, D3D::ToAddr(m_encodeParams));
+  D3D::context->CSSetConstantBuffers(0, 1, D3D::ToAddr(m_encodeParams));
 
-	D3D::context->CSSetUnorderedAccessViews(0, 1, D3D::ToAddr(m_outUav), nullptr);
+  D3D::context->CSSetUnorderedAccessViews(0, 1, D3D::ToAddr(m_outUav), nullptr);
 
-	ID3D11ShaderResourceView* pEFB = is_depth_copy ?
-		FramebufferManager::GetResolvedEFBDepthTexture()->GetSRV() :
-		// FIXME: Instead of resolving EFB, it would be better to pick out a
-		// single sample from each pixel. The game may break if it isn't
-		// expecting the blurred edges around multisampled shapes.
-		FramebufferManager::GetResolvedEFBColorTexture()->GetSRV();
-	D3D::context->CSSetShader(shader, nullptr, 0);
-	D3D::context->CSSetShaderResources(0, 1, &pEFB);
-	D3D::context->CSSetSamplers(0, 1, D3D::ToAddr(m_efbSampler));
+  ID3D11ShaderResourceView* pEFB = is_depth_copy ?
+    FramebufferManager::GetResolvedEFBDepthTexture()->GetSRV() :
+    // FIXME: Instead of resolving EFB, it would be better to pick out a
+    // single sample from each pixel. The game may break if it isn't
+    // expecting the blurred edges around multisampled shapes.
+    FramebufferManager::GetResolvedEFBColorTexture()->GetSRV();
+  D3D::context->CSSetShader(shader, nullptr, 0);
+  D3D::context->CSSetShaderResources(0, 1, &pEFB);
+  D3D::context->CSSetSamplers(0, 1, D3D::ToAddr(m_efbSampler));
 
-	// Encode!
+  // Encode!
 
-	D3D::context->Dispatch((cacheLinesPerRow * 2 + 7) / 8, (num_blocks_y + 7) / 8, 1);
+  D3D::context->Dispatch((cacheLinesPerRow * 2 + 7) / 8, (num_blocks_y + 7) / 8, 1);
 
-	D3D11_BOX srcBox = CD3D11_BOX(0, 0, 0, (4 * 4)*cacheLinesPerRow * 2 * num_blocks_y, 1, 1);
-	D3D::context->CopySubresourceRegion(m_outStage.get(), 0, 0, 0, 0, m_out.get(), 0, &srcBox);
+  D3D11_BOX srcBox = CD3D11_BOX(0, 0, 0, (4 * 4)*cacheLinesPerRow * 2 * num_blocks_y, 1, 1);
+  D3D::context->CopySubresourceRegion(m_outStage.get(), 0, 0, 0, 0, m_out.get(), 0, &srcBox);
 
-	//
-	// Clean up state
-	IUnknown* nullDummy = nullptr;
-	D3D::context->CSSetUnorderedAccessViews(0, 1, (ID3D11UnorderedAccessView**)&nullDummy, nullptr);
-	D3D::context->CSSetShaderResources(0, 1, (ID3D11ShaderResourceView**)&nullDummy);
+  //
+  // Clean up state
+  IUnknown* nullDummy = nullptr;
+  D3D::context->CSSetUnorderedAccessViews(0, 1, (ID3D11UnorderedAccessView**)&nullDummy, nullptr);
+  D3D::context->CSSetShaderResources(0, 1, (ID3D11ShaderResourceView**)&nullDummy);
 
-	// Transfer staging buffer to GameCube/Wii RAM
-	// nVidia is unable to sync properly with a blocking Map
-	// That workaround works and NES games do not flick as hell anymore
-	D3D::context->Flush();
-	D3D11_MAPPED_SUBRESOURCE map = { 0 };
-	while ((hr = D3D::context->Map(m_outStage.get(), 0, D3D11_MAP_READ, D3D11_MAP_FLAG_DO_NOT_WAIT, &map)) != S_OK && hr == DXGI_ERROR_WAS_STILL_DRAWING)
-	{
-		Common::YieldCPU();
-	}
+  // Transfer staging buffer to GameCube/Wii RAM
+  // nVidia is unable to sync properly with a blocking Map
+  // That workaround works and NES games do not flick as hell anymore
+  D3D::context->Flush();
+  D3D11_MAPPED_SUBRESOURCE map = { 0 };
+  while ((hr = D3D::context->Map(m_outStage.get(), 0, D3D11_MAP_READ, D3D11_MAP_FLAG_DO_NOT_WAIT, &map)) != S_OK && hr == DXGI_ERROR_WAS_STILL_DRAWING)
+  {
+    Common::YieldCPU();
+  }
 
-	CHECK(SUCCEEDED(hr), "map staging buffer (0x%x)", hr);
-	if (hr == S_OK)
-	{
-		u8* src = (u8*)map.pData;
-		u32 readStride = std::min(bytes_per_row, map.RowPitch);
-		for (u32 y = 0; y < num_blocks_y; ++y)
-		{
-			memcpy(dst, src, readStride);
-			dst += memory_stride;
-			src += readStride;
-		}
-		D3D::context->Unmap(m_outStage.get(), 0);
-	}
+  CHECK(SUCCEEDED(hr), "map staging buffer (0x%x)", hr);
+  if (hr == S_OK)
+  {
+    u8* src = (u8*)map.pData;
+    u32 readStride = std::min(bytes_per_row, map.RowPitch);
+    for (u32 y = 0; y < num_blocks_y; ++y)
+    {
+      memcpy(dst, src, readStride);
+      dst += memory_stride;
+      src += readStride;
+    }
+    D3D::context->Unmap(m_outStage.get(), 0);
+  }
 
-	// Restore API
-	g_renderer->RestoreAPIState();
-	D3D::context->OMSetRenderTargets(1,
-		&FramebufferManager::GetEFBColorTexture()->GetRTV(),
-		FramebufferManager::GetEFBDepthTexture()->GetDSV());
+  // Restore API
+  g_renderer->RestoreAPIState();
+  D3D::context->OMSetRenderTargets(1,
+    &FramebufferManager::GetEFBColorTexture()->GetRTV(),
+    FramebufferManager::GetEFBDepthTexture()->GetDSV());
 }
 
 static const char* FETCH_FUNC_NAMES[4] = {
-	"Fetch_0", "Fetch_1"
+    "Fetch_0", "Fetch_1"
 };
 
 static const char* SCALEDFETCH_FUNC_NAMES[2] = {
-	"ScaledFetch_0", "ScaledFetch_1"
+    "ScaledFetch_0", "ScaledFetch_1"
 };
 
 static const char* INTENSITY_FUNC_NAMES[2] = {
-	"Intensity_0", "Intensity_1"
+    "Intensity_0", "Intensity_1"
 };
 
 ID3D11ComputeShader* CSTextureEncoder::GetEncodingComputeShader(const ComboKey& key)
 {
-	size_t generatorNum = static_cast<size_t>(key.format.copy_format) & 0xF;
-	auto iter = m_encoding_shaders.find(key);
-	if (iter != m_encoding_shaders.end())
-		return iter->second.get();
+  size_t generatorNum = static_cast<size_t>(key.format.copy_format) & 0xF;
+  auto iter = m_encoding_shaders.find(key);
+  if (iter != m_encoding_shaders.end())
+    return iter->second.get();
 
-	const char* generatorFuncName = nullptr;
-	switch (generatorNum)
-	{
-	case 0x0: generatorFuncName = "Generate_0"; break;
-	case 0x1: generatorFuncName = "Generate_1"; break;
-	case 0x2: generatorFuncName = "Generate_2"; break;
-	case 0x3: generatorFuncName = "Generate_3"; break;
-	case 0x4: generatorFuncName = "Generate_4"; break;
-	case 0x5: generatorFuncName = "Generate_5"; break;
-	case 0x6: generatorFuncName = "Generate_6"; break;
-	case 0x7: generatorFuncName = "Generate_7"; break;
-	case 0x8: generatorFuncName = "Generate_8"; break;
-	case 0x9: generatorFuncName = "Generate_9"; break;
-	case 0xA: generatorFuncName = "Generate_A"; break;
-	case 0xB: generatorFuncName = "Generate_B"; break;
-	case 0xC: generatorFuncName = "Generate_C"; break;
-	default:
-		WARN_LOG(VIDEO, "No generator available for dst format 0x%X; aborting", generatorNum);
-		m_encoding_shaders[key] = nullptr;
-		return false;
-	}
+  const char* generatorFuncName = nullptr;
+  switch (generatorNum)
+  {
+  case 0x0: generatorFuncName = "Generate_0"; break;
+  case 0x1: generatorFuncName = "Generate_1"; break;
+  case 0x2: generatorFuncName = "Generate_2"; break;
+  case 0x3: generatorFuncName = "Generate_3"; break;
+  case 0x4: generatorFuncName = "Generate_4"; break;
+  case 0x5: generatorFuncName = "Generate_5"; break;
+  case 0x6: generatorFuncName = "Generate_6"; break;
+  case 0x7: generatorFuncName = "Generate_7"; break;
+  case 0x8: generatorFuncName = "Generate_8"; break;
+  case 0x9: generatorFuncName = "Generate_9"; break;
+  case 0xA: generatorFuncName = "Generate_A"; break;
+  case 0xB: generatorFuncName = "Generate_B"; break;
+  case 0xC: generatorFuncName = "Generate_C"; break;
+  default:
+    WARN_LOG(VIDEO, "No generator available for dst format 0x%X; aborting", generatorNum);
+    m_encoding_shaders[key] = nullptr;
+    return false;
+  }
 
-	// Shader permutation not found, so compile it
-	D3DBlob bytecode;
-	D3D_SHADER_MACRO macros[] = {
-		{ "IMP_FETCH", FETCH_FUNC_NAMES[(key.format.copy_format & _GX_TF_ZTF) != 0 ? 1 : 0] },
-		{ "IMP_SCALEDFETCH", SCALEDFETCH_FUNC_NAMES[key.scaled] },
-		{ "IMP_INTENSITY", INTENSITY_FUNC_NAMES[key.format.copy_format < GX_TF_RGB565] },
-		{ "IMP_GENERATOR", generatorFuncName },
-		{ "SHADER_MODEL", DX11::D3D::GetFeatureLevel() >= D3D_FEATURE_LEVEL_11_0 ? "5" : "4" },
-		{ "DISCARD_ALPHA", key.format.efb_format == PEControl::RGBA6_Z24 ? "0" : "1" },
-		{ nullptr, nullptr }
-	};
-	if (!D3D::CompileShader(D3D::ShaderType::Compute, EFB_ENCODE_CS, bytecode, macros))
-	{
-		WARN_LOG(VIDEO, "EFB encoder shader for dstFormat 0x%X, srcformat 0x%X, scaled : %d failed to compile",
-			key.format.copy_format, key.format.efb_format, key.scaled ? 1 : 0);
-		// Add dummy shader to map to prevent trying to compile over and
-		// over again
-		m_encoding_shaders[key] = nullptr;
-		return false;
-	}
-	m_shaderCache.Append(key, bytecode.Data(), (u32)bytecode.Size());
-	return InsertShader(key, bytecode.Data(), (u32)bytecode.Size());
+  // Shader permutation not found, so compile it
+  D3DBlob bytecode;
+  D3D_SHADER_MACRO macros[] = {
+      { "IMP_FETCH", FETCH_FUNC_NAMES[(key.format.copy_format & _GX_TF_ZTF) != 0 ? 1 : 0] },
+      { "IMP_SCALEDFETCH", SCALEDFETCH_FUNC_NAMES[key.scaled] },
+      { "IMP_INTENSITY", INTENSITY_FUNC_NAMES[key.format.copy_format < GX_TF_RGB565] },
+      { "IMP_GENERATOR", generatorFuncName },
+      { "SHADER_MODEL", DX11::D3D::GetFeatureLevel() >= D3D_FEATURE_LEVEL_11_0 ? "5" : "4" },
+      { "DISCARD_ALPHA", key.format.efb_format == PEControl::RGBA6_Z24 ? "0" : "1" },
+      { nullptr, nullptr }
+  };
+  if (!D3D::CompileShader(D3D::ShaderType::Compute, EFB_ENCODE_CS, bytecode, macros))
+  {
+    WARN_LOG(VIDEO, "EFB encoder shader for dstFormat 0x%X, srcformat 0x%X, scaled : %d failed to compile",
+      key.format.copy_format, key.format.efb_format, key.scaled ? 1 : 0);
+    // Add dummy shader to map to prevent trying to compile over and
+    // over again
+    m_encoding_shaders[key] = nullptr;
+    return false;
+  }
+  m_shaderCache.Append(key, bytecode.Data(), (u32)bytecode.Size());
+  return InsertShader(key, bytecode.Data(), (u32)bytecode.Size());
 }
 
 ID3D11ComputeShader* CSTextureEncoder::InsertShader(const ComboKey &key, u8 const *data, u32 sz)
 {
-	ID3D11ComputeShader* newShader;
-	HRESULT hr = D3D::device->CreateComputeShader(data, sz, nullptr, &newShader);
-	CHECK(SUCCEEDED(hr), "create efb encoder pixel shader");
+  ID3D11ComputeShader* newShader;
+  HRESULT hr = D3D::device->CreateComputeShader(data, sz, nullptr, &newShader);
+  CHECK(SUCCEEDED(hr), "create efb encoder pixel shader");
 
-	m_encoding_shaders.emplace(key, D3D::UniquePtr<ID3D11ComputeShader>(newShader));
-	return newShader;
+  m_encoding_shaders.emplace(key, D3D::UniquePtr<ID3D11ComputeShader>(newShader));
+  return newShader;
 }
 }

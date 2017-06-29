@@ -15,8 +15,8 @@ namespace CommandLineParse
 {
 enum class ParserOptions
 {
-	IncludeGUIOptions,
-	OmitGUIOptions,
+  IncludeGUIOptions,
+  OmitGUIOptions,
 };
 
 std::unique_ptr<optparse::OptionParser> CreateParser(ParserOptions options);

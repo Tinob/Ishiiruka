@@ -13,9 +13,9 @@ namespace CPU
 {
 enum class State
 {
-	Running = 0,
-	Stepping = 2,
-	PowerDown = 3
+  Running = 0,
+  Stepping = 2,
+  PowerDown = 3
 };
 
 // Init

@@ -21,106 +21,106 @@
 class CWatchToolbar : public DolphinAuiToolBar
 {
 public:
-	CWatchToolbar(CWatchWindow* parent, const wxWindowID id)
-		: DolphinAuiToolBar(parent, id, wxDefaultPosition, wxDefaultSize,
-			wxAUI_TB_DEFAULT_STYLE | wxAUI_TB_TEXT)
-	{
-		wxSize bitmap_size = FromDIP(wxSize(16, 16));
-		SetToolBitmapSize(bitmap_size);
+  CWatchToolbar(CWatchWindow* parent, const wxWindowID id)
+    : DolphinAuiToolBar(parent, id, wxDefaultPosition, wxDefaultSize,
+      wxAUI_TB_DEFAULT_STYLE | wxAUI_TB_TEXT)
+  {
+    wxSize bitmap_size = FromDIP(wxSize(16, 16));
+    SetToolBitmapSize(bitmap_size);
 
-		m_Bitmaps[Toolbar_File] = WxUtils::LoadScaledResourceBitmap(
-			"toolbar_debugger_delete", this, bitmap_size, wxDefaultSize,
-			WxUtils::LSI_SCALE_DOWN | WxUtils::LSI_ALIGN_CENTER);
+    m_Bitmaps[Toolbar_File] = WxUtils::LoadScaledResourceBitmap(
+      "toolbar_debugger_delete", this, bitmap_size, wxDefaultSize,
+      WxUtils::LSI_SCALE_DOWN | WxUtils::LSI_ALIGN_CENTER);
 
-		AddTool(ID_LOAD, _("Load"), m_Bitmaps[Toolbar_File]);
-		Bind(wxEVT_TOOL, &CWatchWindow::Event_LoadAll, parent, ID_LOAD);
+    AddTool(ID_LOAD, _("Load"), m_Bitmaps[Toolbar_File]);
+    Bind(wxEVT_TOOL, &CWatchWindow::Event_LoadAll, parent, ID_LOAD);
 
-		AddTool(ID_SAVE, _("Save"), m_Bitmaps[Toolbar_File]);
-		Bind(wxEVT_TOOL, &CWatchWindow::Event_SaveAll, parent, ID_SAVE);
-	}
+    AddTool(ID_SAVE, _("Save"), m_Bitmaps[Toolbar_File]);
+    Bind(wxEVT_TOOL, &CWatchWindow::Event_SaveAll, parent, ID_SAVE);
+  }
 
 private:
-	enum
-	{
-		Toolbar_File,
-		Num_Bitmaps
-	};
+  enum
+  {
+    Toolbar_File,
+    Num_Bitmaps
+  };
 
-	enum
-	{
-		ID_LOAD,
-		ID_SAVE
-	};
+  enum
+  {
+    ID_LOAD,
+    ID_SAVE
+  };
 
-	wxBitmap m_Bitmaps[Num_Bitmaps];
+  wxBitmap m_Bitmaps[Num_Bitmaps];
 };
 
 CWatchWindow::CWatchWindow(wxWindow* parent, wxWindowID id, const wxPoint& position,
-	const wxSize& size, long style, const wxString& name)
-	: wxPanel(parent, id, position, size, style, name), m_GPRGridView(nullptr)
+  const wxSize& size, long style, const wxString& name)
+  : wxPanel(parent, id, position, size, style, name), m_GPRGridView(nullptr)
 {
-	m_mgr.SetManagedWindow(this);
-	m_mgr.SetFlags(wxAUI_MGR_DEFAULT | wxAUI_MGR_LIVE_RESIZE);
+  m_mgr.SetManagedWindow(this);
+  m_mgr.SetFlags(wxAUI_MGR_DEFAULT | wxAUI_MGR_LIVE_RESIZE);
 
-	m_GPRGridView = new CWatchView(this);
+  m_GPRGridView = new CWatchView(this);
 
-	m_mgr.AddPane(new CWatchToolbar(this, wxID_ANY), wxAuiPaneInfo()
-		.ToolbarPane()
-		.Top()
-		.LeftDockable(true)
-		.RightDockable(true)
-		.BottomDockable(false)
-		.Floatable(false));
-	m_mgr.AddPane(m_GPRGridView, wxAuiPaneInfo().CenterPane());
-	m_mgr.Update();
+  m_mgr.AddPane(new CWatchToolbar(this, wxID_ANY), wxAuiPaneInfo()
+    .ToolbarPane()
+    .Top()
+    .LeftDockable(true)
+    .RightDockable(true)
+    .BottomDockable(false)
+    .Floatable(false));
+  m_mgr.AddPane(m_GPRGridView, wxAuiPaneInfo().CenterPane());
+  m_mgr.Update();
 }
 
 CWatchWindow::~CWatchWindow()
 {
-	m_mgr.UnInit();
+  m_mgr.UnInit();
 }
 
 void CWatchWindow::NotifyUpdate()
 {
-	if (m_GPRGridView != nullptr)
-		m_GPRGridView->Repopulate();
+  if (m_GPRGridView != nullptr)
+    m_GPRGridView->Repopulate();
 }
 
 void CWatchWindow::Event_SaveAll(wxCommandEvent& WXUNUSED(event))
 {
-	SaveAll();
+  SaveAll();
 }
 
 void CWatchWindow::SaveAll()
 {
-	IniFile ini;
-	ini.Load(File::GetUserPath(D_GAMESETTINGS_IDX) + SConfig::GetInstance().GetGameID() + ".ini",
-		false);
-	ini.SetLines("Watches", PowerPC::watches.GetStrings());
-	ini.Save(File::GetUserPath(D_GAMESETTINGS_IDX) + SConfig::GetInstance().GetGameID() + ".ini");
+  IniFile ini;
+  ini.Load(File::GetUserPath(D_GAMESETTINGS_IDX) + SConfig::GetInstance().GetGameID() + ".ini",
+    false);
+  ini.SetLines("Watches", PowerPC::watches.GetStrings());
+  ini.Save(File::GetUserPath(D_GAMESETTINGS_IDX) + SConfig::GetInstance().GetGameID() + ".ini");
 }
 
 void CWatchWindow::Event_LoadAll(wxCommandEvent& WXUNUSED(event))
 {
-	LoadAll();
+  LoadAll();
 }
 
 void CWatchWindow::LoadAll()
 {
-	IniFile ini;
-	Watches::TWatchesStr watches;
+  IniFile ini;
+  Watches::TWatchesStr watches;
 
-	if (!ini.Load(File::GetUserPath(D_GAMESETTINGS_IDX) + SConfig::GetInstance().GetGameID() + ".ini",
-		false))
-	{
-		return;
-	}
+  if (!ini.Load(File::GetUserPath(D_GAMESETTINGS_IDX) + SConfig::GetInstance().GetGameID() + ".ini",
+    false))
+  {
+    return;
+  }
 
-	if (ini.GetLines("Watches", &watches, false))
-	{
-		PowerPC::watches.Clear();
-		PowerPC::watches.AddFromStrings(watches);
-	}
+  if (ini.GetLines("Watches", &watches, false))
+  {
+    PowerPC::watches.Clear();
+    PowerPC::watches.AddFromStrings(watches);
+  }
 
-	NotifyUpdate();
+  NotifyUpdate();
 }

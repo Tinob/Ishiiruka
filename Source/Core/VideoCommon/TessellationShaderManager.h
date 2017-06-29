@@ -13,21 +13,21 @@ class PointerWrap;
 // The non-API dependent parts.
 class TessellationShaderManager
 {
-	static bool dirty;
+  static bool dirty;
 public:
-	static void Init();
-	static void Dirty();
-	static inline bool IsDirty()
-	{
-		return dirty && g_ActiveConfig.TessellationEnabled();
-	}
-	static inline void Clear()
-	{
-		dirty = false;
-	}
-	static void Shutdown();
-	static void DoState(PointerWrap &p);
+  static void Init();
+  static void Dirty();
+  static inline bool IsDirty()
+  {
+    return dirty && g_ActiveConfig.TessellationEnabled();
+  }
+  static inline void Clear()
+  {
+    dirty = false;
+  }
+  static void Shutdown();
+  static void DoState(PointerWrap &p);
 
-	static void SetConstants();
-	alignas(256) static TessellationShaderConstants constants;
+  static void SetConstants();
+  alignas(256) static TessellationShaderConstants constants;
 };

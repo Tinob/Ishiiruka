@@ -22,11 +22,11 @@
 #endif
 
 typedef enum {
-	GDB_BP_TYPE_NONE = 0,
-	GDB_BP_TYPE_X,
-	GDB_BP_TYPE_R,
-	GDB_BP_TYPE_W,
-	GDB_BP_TYPE_A
+  GDB_BP_TYPE_NONE = 0,
+  GDB_BP_TYPE_X,
+  GDB_BP_TYPE_R,
+  GDB_BP_TYPE_W,
+  GDB_BP_TYPE_A
 } gdb_bp_type;
 
 void gdb_init(u32 port);

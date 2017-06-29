@@ -13,8 +13,8 @@ extern bool g_bRecordFifoData;
 // These are accurate (disregarding AA modes).
 enum
 {
-	EFB_WIDTH = 640,
-	EFB_HEIGHT = 528,
+  EFB_WIDTH = 640,
+  EFB_HEIGHT = 528,
 };
 
 // Max XFB width is 720. You can only copy out 640 wide areas of efb to XFB
@@ -43,66 +43,66 @@ typedef MathUtil::Rectangle<int> EFBRectangle;
 // convert an EFBRectangle to a TargetRectangle.
 struct TargetRectangle : public MathUtil::Rectangle<int>
 {
-	constexpr TargetRectangle() = default;
+  constexpr TargetRectangle() = default;
 
-	constexpr TargetRectangle(int theLeft, int theTop, int theRight, int theBottom)
-		: Rectangle<int>(theLeft, theTop, theRight, theBottom)
-	{}
+  constexpr TargetRectangle(int theLeft, int theTop, int theRight, int theBottom)
+    : Rectangle<int>(theLeft, theTop, theRight, theBottom)
+  {}
 
 #ifdef _WIN32
-	// Only used by D3D backend.
-	const RECT *AsRECT() const
-	{
-		// The types are binary compatible so this works.
-		return (const RECT *)this;
-	}
-	RECT *AsRECT()
-	{
-		// The types are binary compatible so this works.
-		return (RECT *)this;
-	}
+  // Only used by D3D backend.
+  const RECT *AsRECT() const
+  {
+    // The types are binary compatible so this works.
+    return (const RECT *)this;
+  }
+  RECT *AsRECT()
+  {
+    // The types are binary compatible so this works.
+    return (RECT *)this;
+  }
 #endif
 };
 
 // This structure describes a texture or screen resolution.
 struct TargetSize final
 {
-	constexpr TargetSize() = default;
-	constexpr TargetSize(int new_width, int new_height) : width(new_width), height(new_height)
-	{}
+  constexpr TargetSize() = default;
+  constexpr TargetSize(int new_width, int new_height) : width(new_width), height(new_height)
+  {}
 
-	void Set(int new_width, int new_height)
-	{
-		width = new_width; height = new_height;
-	}
+  void Set(int new_width, int new_height)
+  {
+    width = new_width; height = new_height;
+  }
 
-	bool operator==(const TargetSize& rhs) const
-	{
-		return std::tie(width, height) == std::tie(rhs.width, rhs.height);
-	}
-	bool operator!=(const TargetSize& rhs) const
-	{
-		return std::tie(width, height) != std::tie(rhs.width, rhs.height);
-	}
-	bool operator<=(const TargetSize& rhs) const
-	{
-		return std::tie(width, height) <= std::tie(rhs.width, rhs.height);
-	}
-	bool operator>=(const TargetSize& rhs) const
-	{
-		return std::tie(width, height) >= std::tie(rhs.width, rhs.height);
-	}
-	bool operator<(const TargetSize& rhs) const
-	{
-		return std::tie(width, height) < std::tie(rhs.width, rhs.height);
-	}
-	bool operator>(const TargetSize& rhs) const
-	{
-		return std::tie(width, height) > std::tie(rhs.width, rhs.height);
-	}
+  bool operator==(const TargetSize& rhs) const
+  {
+    return std::tie(width, height) == std::tie(rhs.width, rhs.height);
+  }
+  bool operator!=(const TargetSize& rhs) const
+  {
+    return std::tie(width, height) != std::tie(rhs.width, rhs.height);
+  }
+  bool operator<=(const TargetSize& rhs) const
+  {
+    return std::tie(width, height) <= std::tie(rhs.width, rhs.height);
+  }
+  bool operator>=(const TargetSize& rhs) const
+  {
+    return std::tie(width, height) >= std::tie(rhs.width, rhs.height);
+  }
+  bool operator<(const TargetSize& rhs) const
+  {
+    return std::tie(width, height) < std::tie(rhs.width, rhs.height);
+  }
+  bool operator>(const TargetSize& rhs) const
+  {
+    return std::tie(width, height) > std::tie(rhs.width, rhs.height);
+  }
 
-	int width = 1;
-	int height = 1;
+  int width = 1;
+  int height = 1;
 };
 
 #ifdef _WIN32
@@ -118,50 +118,50 @@ struct TargetSize final
 
 typedef enum
 {
-	API_NONE = 0,
-	API_OPENGL = 1,
-	API_D3D9_SM30 = 2,
-	API_D3D9_SM20 = 4,
-	API_D3D9 = 6,
-	API_D3D11 = 8,
-	API_VULKAN = 16
+  API_NONE = 0,
+  API_OPENGL = 1,
+  API_D3D9_SM30 = 2,
+  API_D3D9_SM20 = 4,
+  API_D3D9 = 6,
+  API_D3D11 = 8,
+  API_VULKAN = 16
 } API_TYPE;
 
 // Can be used for RGBA->BGRA or BGRA->RGBA
 inline u32 RGBA8ToBGRA8(u32 src)
 {
-	u32 color = src;
-	color &= 0xFF00FF00;
-	color |= (src >> 16) & 0xFF;
-	color |= (src << 16) & 0xFF0000;
-	return color;
+  u32 color = src;
+  color &= 0xFF00FF00;
+  color |= (src >> 16) & 0xFF;
+  color |= (src << 16) & 0xFF0000;
+  return color;
 }
 
 inline u32 RGBA8ToRGBA6ToRGBA8(u32 src)
 {
-	u32 color = src;
-	color &= 0xFCFCFCFC;
-	color |= (color >> 6) & 0x03030303;
-	return color;
+  u32 color = src;
+  color &= 0xFCFCFCFC;
+  color |= (color >> 6) & 0x03030303;
+  return color;
 }
 
 inline u32 RGBA8ToRGB565ToRGBA8(u32 src)
 {
-	u32 color = (src & 0xF8FCF8);
-	color |= (color >> 5) & 0x070007;
-	color |= (color >> 6) & 0x000300;
-	color |= 0xFF000000;
-	return color;
+  u32 color = (src & 0xF8FCF8);
+  color |= (color >> 5) & 0x070007;
+  color |= (color >> 6) & 0x000300;
+  color |= 0xFF000000;
+  return color;
 }
 
 inline u32 Z24ToZ16ToZ24(u32 src)
 {
-	return (src & 0xFFFF00) | (src >> 16);
+  return (src & 0xFFFF00) | (src >> 16);
 }
 
 struct s_svar
 {
-	const char *name;
-	const unsigned int reg;
-	const unsigned int size;
+  const char *name;
+  const unsigned int reg;
+  const unsigned int size;
 };

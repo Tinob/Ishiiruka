@@ -363,87 +363,87 @@ void main(
 
 void CSTextureDecoder::Init()
 {
-	m_pool_idx = 0;
-	m_Pool_size = 0;
-	m_ready = false;
+  m_pool_idx = 0;
+  m_Pool_size = 0;
+  m_ready = false;
 
-	u32 lutMaxEntries = (1 << 15) - 1;
-	auto lutBd = CD3D11_BUFFER_DESC(sizeof(u16)*lutMaxEntries, D3D11_BIND_SHADER_RESOURCE);
-	HRESULT hr = D3D::device->CreateBuffer(&lutBd, nullptr, ToAddr(m_lutRsc));
-	CHECKANDEXIT(SUCCEEDED(hr), "create texture decoder lut buffer");
-	D3D::SetDebugObjectName(m_lutRsc.get(), "texture decoder lut buffer");
-	auto outlutUavDesc = CD3D11_SHADER_RESOURCE_VIEW_DESC(m_lutRsc.get(), DXGI_FORMAT_R16_UINT, 0, lutMaxEntries, 0);
-	hr = D3D::device->CreateShaderResourceView(m_lutRsc.get(), &outlutUavDesc, ToAddr(m_lutSrv));
-	CHECKANDEXIT(SUCCEEDED(hr), "create texture decoder lut srv");
-	D3D::SetDebugObjectName(m_lutSrv.get(), "texture decoder lut srv");
+  u32 lutMaxEntries = (1 << 15) - 1;
+  auto lutBd = CD3D11_BUFFER_DESC(sizeof(u16)*lutMaxEntries, D3D11_BIND_SHADER_RESOURCE);
+  HRESULT hr = D3D::device->CreateBuffer(&lutBd, nullptr, ToAddr(m_lutRsc));
+  CHECKANDEXIT(SUCCEEDED(hr), "create texture decoder lut buffer");
+  D3D::SetDebugObjectName(m_lutRsc.get(), "texture decoder lut buffer");
+  auto outlutUavDesc = CD3D11_SHADER_RESOURCE_VIEW_DESC(m_lutRsc.get(), DXGI_FORMAT_R16_UINT, 0, lutMaxEntries, 0);
+  hr = D3D::device->CreateShaderResourceView(m_lutRsc.get(), &outlutUavDesc, ToAddr(m_lutSrv));
+  CHECKANDEXIT(SUCCEEDED(hr), "create texture decoder lut srv");
+  D3D::SetDebugObjectName(m_lutSrv.get(), "texture decoder lut srv");
 
-	if (!g_ActiveConfig.backend_info.bSupportsGPUTextureDecoding)
-	{
-		return;
-	}
-	auto rawBd = CD3D11_BUFFER_DESC(1024 * 1024 * 4, D3D11_BIND_SHADER_RESOURCE);
-	hr = D3D::device->CreateBuffer(&rawBd, nullptr, ToAddr(m_rawDataRsc));
-	CHECKANDEXIT(SUCCEEDED(hr), "create texture decoder input buffer");
-	D3D::SetDebugObjectName(m_rawDataRsc.get(), "texture decoder input buffer");
-	auto outUavDesc = CD3D11_SHADER_RESOURCE_VIEW_DESC(m_rawDataRsc.get(), DXGI_FORMAT_R32_UINT, 0, (rawBd.ByteWidth) / 4, 0);
-	hr = D3D::device->CreateShaderResourceView(m_rawDataRsc.get(), &outUavDesc, ToAddr(m_rawDataSrv));
-	CHECKANDEXIT(SUCCEEDED(hr), "create texture decoder input buffer srv");
-	D3D::SetDebugObjectName(m_rawDataSrv.get(), "texture decoder input buffer srv");
+  if (!g_ActiveConfig.backend_info.bSupportsGPUTextureDecoding)
+  {
+    return;
+  }
+  auto rawBd = CD3D11_BUFFER_DESC(1024 * 1024 * 4, D3D11_BIND_SHADER_RESOURCE);
+  hr = D3D::device->CreateBuffer(&rawBd, nullptr, ToAddr(m_rawDataRsc));
+  CHECKANDEXIT(SUCCEEDED(hr), "create texture decoder input buffer");
+  D3D::SetDebugObjectName(m_rawDataRsc.get(), "texture decoder input buffer");
+  auto outUavDesc = CD3D11_SHADER_RESOURCE_VIEW_DESC(m_rawDataRsc.get(), DXGI_FORMAT_R32_UINT, 0, (rawBd.ByteWidth) / 4, 0);
+  hr = D3D::device->CreateShaderResourceView(m_rawDataRsc.get(), &outUavDesc, ToAddr(m_rawDataSrv));
+  CHECKANDEXIT(SUCCEEDED(hr), "create texture decoder input buffer srv");
+  D3D::SetDebugObjectName(m_rawDataSrv.get(), "texture decoder input buffer srv");
 
-	auto paramBd = CD3D11_BUFFER_DESC(sizeof(u32) * 4, D3D11_BIND_CONSTANT_BUFFER, D3D11_USAGE_DYNAMIC,
-		D3D11_CPU_ACCESS_WRITE);
-	hr = D3D::device->CreateBuffer(&paramBd, nullptr, ToAddr(m_params));
-	CHECKANDEXIT(SUCCEEDED(hr), "create texture decoder params buffer");
-	D3D::SetDebugObjectName(m_params.get(), "texture decoder params buffer");
+  auto paramBd = CD3D11_BUFFER_DESC(sizeof(u32) * 4, D3D11_BIND_CONSTANT_BUFFER, D3D11_USAGE_DYNAMIC,
+    D3D11_CPU_ACCESS_WRITE);
+  hr = D3D::device->CreateBuffer(&paramBd, nullptr, ToAddr(m_params));
+  CHECKANDEXIT(SUCCEEDED(hr), "create texture decoder params buffer");
+  D3D::SetDebugObjectName(m_params.get(), "texture decoder params buffer");
 
-	m_ready = true;
+  m_ready = true;
 
-	// Warm up with shader cache
-	char cache_filename[MAX_PATH];
-	sprintf(cache_filename, "%sdx11-CSDECODER-cs.cache", File::GetUserPath(D_SHADERCACHE_IDX).c_str());
-	m_shaderCache.OpenAndRead(cache_filename, ShaderCacheInserter(*this));
+  // Warm up with shader cache
+  char cache_filename[MAX_PATH];
+  sprintf(cache_filename, "%sdx11-CSDECODER-cs.cache", File::GetUserPath(D_SHADERCACHE_IDX).c_str());
+  m_shaderCache.OpenAndRead(cache_filename, ShaderCacheInserter(*this));
 }
 
 void CSTextureDecoder::Shutdown()
 {
-	m_pool.clear();
-	m_rawDataSrv.reset();
-	m_rawDataRsc.reset();
-	m_lutSrv.reset();
-	m_lutRsc.reset();
-	m_params.reset();
-	for (size_t i = 0; i < 3; i++)
-	{
-		for (size_t j = 0; j < 2; j++)
-		{
-			m_depalettize_shaders[i][j].reset();
-		}
-	}
-	m_ready = false;
+  m_pool.clear();
+  m_rawDataSrv.reset();
+  m_rawDataRsc.reset();
+  m_lutSrv.reset();
+  m_lutRsc.reset();
+  m_params.reset();
+  for (size_t i = 0; i < 3; i++)
+  {
+    for (size_t j = 0; j < 2; j++)
+    {
+      m_depalettize_shaders[i][j].reset();
+    }
+  }
+  m_ready = false;
 }
 
 const bool DecFuncSupported[] = {
-	true,//GX_TF_I4     = 0x0,
-	true,//GX_TF_I8     = 0x1,
-	true,//GX_TF_IA4    = 0x2,
-	true,//GX_TF_IA8    = 0x3,
-	true,//GX_TF_RGB565 = 0x4,
-	true,//GX_TF_RGB5A3 = 0x5,
-	true,//GX_TF_RGBA8  = 0x6,
-	false,//
-	true,//GX_TF_C4     = 0x8,
-	true,//GX_TF_C8     = 0x9,
-	true,//GX_TF_C14X2  = 0xA,
-	false,//
-	false,//
-	false,//
-	false,//GX_TF_CMPR   = 0xE,
-	false,//
+    true,//GX_TF_I4     = 0x0,
+    true,//GX_TF_I8     = 0x1,
+    true,//GX_TF_IA4    = 0x2,
+    true,//GX_TF_IA8    = 0x3,
+    true,//GX_TF_RGB565 = 0x4,
+    true,//GX_TF_RGB5A3 = 0x5,
+    true,//GX_TF_RGBA8  = 0x6,
+    false,//
+    true,//GX_TF_C4     = 0x8,
+    true,//GX_TF_C8     = 0x9,
+    true,//GX_TF_C14X2  = 0xA,
+    false,//
+    false,//
+    false,//
+    false,//GX_TF_CMPR   = 0xE,
+    false,//
 };
 
 bool CSTextureDecoder::FormatSupported(u32 srcFmt)
 {
-	return m_ready && DecFuncSupported[u32(srcFmt) & 0xF];
+  return m_ready && DecFuncSupported[u32(srcFmt) & 0xF];
 }
 
 char const* DecFunc[] = {
@@ -478,201 +478,201 @@ char const* LutFunc[] = {
 
 bool CSTextureDecoder::SetStaticShader(u32 srcFmt, u32 lutFmt)
 {
-	if (!DecFuncSupported[srcFmt & 0xF])
-	{
-		return false;
-	}
-	u32 rawFmt = (srcFmt & 0xF);
-	if (rawFmt < GX_TF_C4 || rawFmt > GX_TF_C14X2)
-	{
-		lutFmt = 0;
-	}
-	auto key = MakeComboKey(srcFmt, lutFmt);
+  if (!DecFuncSupported[srcFmt & 0xF])
+  {
+    return false;
+  }
+  u32 rawFmt = (srcFmt & 0xF);
+  if (rawFmt < GX_TF_C4 || rawFmt > GX_TF_C14X2)
+  {
+    lutFmt = 0;
+  }
+  auto key = MakeComboKey(srcFmt, lutFmt);
 
-	auto it = m_staticShaders.find(key);
+  auto it = m_staticShaders.find(key);
 
-	if (it != m_staticShaders.end())
-	{
-		D3D::context->CSSetShader(it->second.get(), nullptr, 0);
-		return bool(it->second);
-	}
+  if (it != m_staticShaders.end())
+  {
+    D3D::context->CSSetShader(it->second.get(), nullptr, 0);
+    return bool(it->second);
+  }
 
-	// Shader permutation not found, so compile it
+  // Shader permutation not found, so compile it
 
-	D3D_SHADER_MACRO macros[] =
-	{
-		{ "DECODER_FUNC", DecFunc[rawFmt] },
-		{ "LUT_FUNC", LutFunc[lutFmt % 3] },
-		{ nullptr, nullptr }
-	};
+  D3D_SHADER_MACRO macros[] =
+  {
+      { "DECODER_FUNC", DecFunc[rawFmt] },
+      { "LUT_FUNC", LutFunc[lutFmt % 3] },
+      { nullptr, nullptr }
+  };
 
-	D3DBlob bytecode = nullptr;
-	if (!D3D::CompileShader(D3D::ShaderType::Compute, DECODER_CS, bytecode, macros))
-	{
-		WARN_LOG(VIDEO, "Unable to compile compute shader");
-		m_ready = false;
-		return false;
-	}
+  D3DBlob bytecode = nullptr;
+  if (!D3D::CompileShader(D3D::ShaderType::Compute, DECODER_CS, bytecode, macros))
+  {
+    WARN_LOG(VIDEO, "Unable to compile compute shader");
+    m_ready = false;
+    return false;
+  }
 
-	m_shaderCache.Append(key, bytecode.Data(), u32(bytecode.Size()));
+  m_shaderCache.Append(key, bytecode.Data(), u32(bytecode.Size()));
 
-	auto & result = m_staticShaders[key];
-	HRESULT hr = D3D::device->CreateComputeShader(bytecode.Data(), bytecode.Size(), nullptr, ToAddr(result));
-	CHECK(SUCCEEDED(hr), "create efb encoder compute shader");
-	if (FAILED(hr))
-	{
-		m_ready = false;
-		return false;
-	}
-	D3D::context->CSSetShader(result.get(), nullptr, 0);
+  auto & result = m_staticShaders[key];
+  HRESULT hr = D3D::device->CreateComputeShader(bytecode.Data(), bytecode.Size(), nullptr, ToAddr(result));
+  CHECK(SUCCEEDED(hr), "create efb encoder compute shader");
+  if (FAILED(hr))
+  {
+    m_ready = false;
+    return false;
+  }
+  D3D::context->CSSetShader(result.get(), nullptr, 0);
 
-	return bool(result);
+  return bool(result);
 }
 
 ID3D11PixelShader* CSTextureDecoder::GetDepalettizerPShader(BaseType srcFmt, u32 lutFmt)
 {
-	if (!m_depalettize_shaders[lutFmt][srcFmt])
-	{
-		D3D_SHADER_MACRO macros[] = {
-			{ "NUM_COLORS", DepalettizeColors[srcFmt] },
-			{ "LUT_FUNC", LutFunc[lutFmt & 3] },
-			{ nullptr, nullptr }
-		};
-		m_depalettize_shaders[lutFmt][srcFmt] = D3D::CompileAndCreatePixelShader(DEPALETTIZE_SHADER, macros);
-	}
-	return m_depalettize_shaders[lutFmt][srcFmt].get();
+  if (!m_depalettize_shaders[lutFmt][srcFmt])
+  {
+    D3D_SHADER_MACRO macros[] = {
+        { "NUM_COLORS", DepalettizeColors[srcFmt] },
+        { "LUT_FUNC", LutFunc[lutFmt & 3] },
+        { nullptr, nullptr }
+    };
+    m_depalettize_shaders[lutFmt][srcFmt] = D3D::CompileAndCreatePixelShader(DEPALETTIZE_SHADER, macros);
+  }
+  return m_depalettize_shaders[lutFmt][srcFmt].get();
 }
 
 
 ID3D11ComputeShader* CSTextureDecoder::InsertShader(ComboKey const &key, u8 const *data, u32 sz)
 {
-	auto & result = m_staticShaders[key];
-	HRESULT hr = D3D::device->CreateComputeShader(data, sz, nullptr, ToAddr(result));
-	CHECK(SUCCEEDED(hr), "create efb encoder compute shader");
-	if (FAILED(hr))
-	{
-		m_ready = false;
-		return nullptr;
-	}
-	return result.get();
+  auto & result = m_staticShaders[key];
+  HRESULT hr = D3D::device->CreateComputeShader(data, sz, nullptr, ToAddr(result));
+  CHECK(SUCCEEDED(hr), "create efb encoder compute shader");
+  if (FAILED(hr))
+  {
+    m_ready = false;
+    return nullptr;
+  }
+  return result.get();
 }
 
 void CSTextureDecoder::LoadLut(u32 lutFmt, void* addr, u32 size)
 {
-	if (lutFmt == m_lutFmt && addr == m_last_addr && size == m_last_size && m_last_hash)
-	{
-		u64 hash = GetHash64(reinterpret_cast<u8*>(addr), size, g_ActiveConfig.iSafeTextureCache_ColorSamples);
-		if (hash == m_last_hash)
-		{
-			return;
-		}
-		m_last_hash = hash;
-	}
-	else
-	{
-		m_last_hash = GetHash64(reinterpret_cast<u8*>(addr), size, g_ActiveConfig.iSafeTextureCache_ColorSamples);
-	}
-	m_last_addr = addr;
-	m_last_size = size;
-	D3D11_BOX box{ 0,0,0,size,1,1 };
-	D3D::context->UpdateSubresource(m_lutRsc.get(), 0, &box, addr, 0, 0);
-	m_lutFmt = lutFmt;
+  if (lutFmt == m_lutFmt && addr == m_last_addr && size == m_last_size && m_last_hash)
+  {
+    u64 hash = GetHash64(reinterpret_cast<u8*>(addr), size, g_ActiveConfig.iSafeTextureCache_ColorSamples);
+    if (hash == m_last_hash)
+    {
+      return;
+    }
+    m_last_hash = hash;
+  }
+  else
+  {
+    m_last_hash = GetHash64(reinterpret_cast<u8*>(addr), size, g_ActiveConfig.iSafeTextureCache_ColorSamples);
+  }
+  m_last_addr = addr;
+  m_last_size = size;
+  D3D11_BOX box{ 0,0,0,size,1,1 };
+  D3D::context->UpdateSubresource(m_lutRsc.get(), 0, &box, addr, 0, 0);
+  m_lutFmt = lutFmt;
 }
 bool CSTextureDecoder::Decode(const u8* src, u32 srcsize, u32 srcFmt, u32 w, u32 h, u32 expandedw, u32 expandedh, u32 level, D3DTexture2D& dstTexture)
 {
-	if (!m_ready || w < 32 || h < 32) // Make sure we initialized OK and texture size is big enough
-		return false;
+  if (!m_ready || w < 32 || h < 32) // Make sure we initialized OK and texture size is big enough
+    return false;
 
-	if (!SetStaticShader(srcFmt, m_lutFmt))
-	{
-		return false;
-	}
+  if (!SetStaticShader(srcFmt, m_lutFmt))
+  {
+    return false;
+  }
 
-	if (m_pool_idx == m_pool.size())
-	{
-		if (m_pool.size() < MAX_POOL_SIZE)
-		{
-			// create the pool texture here
-			auto desc = CD3D11_TEXTURE2D_DESC(DXGI_FORMAT_R8G8B8A8_UINT, 1024, 1024, 1, 1, D3D11_BIND_UNORDERED_ACCESS);
+  if (m_pool_idx == m_pool.size())
+  {
+    if (m_pool.size() < MAX_POOL_SIZE)
+    {
+      // create the pool texture here
+      auto desc = CD3D11_TEXTURE2D_DESC(DXGI_FORMAT_R8G8B8A8_UINT, 1024, 1024, 1, 1, D3D11_BIND_UNORDERED_ACCESS);
 
-			HRESULT hr;
-			PoolValue val;
-			hr = D3D::device->CreateTexture2D(&desc, nullptr, ToAddr(val.m_rsc));
-			CHECK(SUCCEEDED(hr), "create pool texture for texture decoder");
+      HRESULT hr;
+      PoolValue val;
+      hr = D3D::device->CreateTexture2D(&desc, nullptr, ToAddr(val.m_rsc));
+      CHECK(SUCCEEDED(hr), "create pool texture for texture decoder");
 
-			hr = D3D::device->CreateUnorderedAccessView(val.m_rsc.get(), nullptr, ToAddr(val.m_uav));
-			CHECK(SUCCEEDED(hr), "create pool UAV for texture decoder");
-			m_pool.push_back(std::move(val));
-		}
-		else
-		{
-			m_pool_idx = m_pool_idx % m_pool.size();
-		}
-	}
-	D3D11_BOX box{ 0, 0, 0, srcsize, 1, 1 };
-	D3D::context->UpdateSubresource(m_rawDataRsc.get(), 0, &box, src, 0, 0);
-	ID3D11UnorderedAccessView* uav = m_pool[m_pool_idx].m_uav.get();
-	D3D::context->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
+      hr = D3D::device->CreateUnorderedAccessView(val.m_rsc.get(), nullptr, ToAddr(val.m_uav));
+      CHECK(SUCCEEDED(hr), "create pool UAV for texture decoder");
+      m_pool.push_back(std::move(val));
+    }
+    else
+    {
+      m_pool_idx = m_pool_idx % m_pool.size();
+    }
+  }
+  D3D11_BOX box{ 0, 0, 0, srcsize, 1, 1 };
+  D3D::context->UpdateSubresource(m_rawDataRsc.get(), 0, &box, src, 0, 0);
+  ID3D11UnorderedAccessView* uav = m_pool[m_pool_idx].m_uav.get();
+  D3D::context->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
 
-	ID3D11ShaderResourceView* srvs[] = { m_rawDataSrv.get(), m_lutSrv.get() };
-	D3D::context->CSSetShaderResources(0, 2, srvs);
-	D3D11_MAPPED_SUBRESOURCE map;
-	D3D::context->Map(m_params.get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
-	((u32*)map.pData)[0] = w;
-	((u32*)map.pData)[1] = h;
-	D3D::context->Unmap(m_params.get(), 0);
-	D3D::context->CSSetConstantBuffers(0, 1, D3D::ToAddr(m_params));
+  ID3D11ShaderResourceView* srvs[] = { m_rawDataSrv.get(), m_lutSrv.get() };
+  D3D::context->CSSetShaderResources(0, 2, srvs);
+  D3D11_MAPPED_SUBRESOURCE map;
+  D3D::context->Map(m_params.get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &map);
+  ((u32*)map.pData)[0] = w;
+  ((u32*)map.pData)[1] = h;
+  D3D::context->Unmap(m_params.get(), 0);
+  D3D::context->CSSetConstantBuffers(0, 1, D3D::ToAddr(m_params));
 
-	D3D::context->Dispatch((expandedw + 7) / 8, (expandedh + 7) / 8, 1);
+  D3D::context->Dispatch((expandedw + 7) / 8, (expandedh + 7) / 8, 1);
 
-	uav = nullptr;
-	D3D::context->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
-	D3D11_BOX pSrcBox;
-	pSrcBox.left = 0;
-	pSrcBox.top = 0;
-	pSrcBox.front = 0;
-	pSrcBox.right = w;
-	pSrcBox.bottom = h;
-	pSrcBox.back = 1;
-	D3D::context->CopySubresourceRegion(dstTexture.GetTex(), level, 0, 0, 0, m_pool[m_pool_idx].m_rsc.get(), 0, &pSrcBox);
-	m_pool_idx++;
-	return true;
+  uav = nullptr;
+  D3D::context->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
+  D3D11_BOX pSrcBox;
+  pSrcBox.left = 0;
+  pSrcBox.top = 0;
+  pSrcBox.front = 0;
+  pSrcBox.right = w;
+  pSrcBox.bottom = h;
+  pSrcBox.back = 1;
+  D3D::context->CopySubresourceRegion(dstTexture.GetTex(), level, 0, 0, 0, m_pool[m_pool_idx].m_rsc.get(), 0, &pSrcBox);
+  m_pool_idx++;
+  return true;
 }
 
 bool CSTextureDecoder::Depalettize(D3DTexture2D& dstTexture, D3DTexture2D& srcTexture, BaseType baseType, u32 width, u32 height)
 {
-	ID3D11PixelShader* shader = GetDepalettizerPShader(baseType, m_lutFmt);
-	if (!shader)
-	{
-		return false;
-	}
+  ID3D11PixelShader* shader = GetDepalettizerPShader(baseType, m_lutFmt);
+  if (!shader)
+  {
+    return false;
+  }
 
-	g_renderer->ResetAPIState();
+  g_renderer->ResetAPIState();
 
-	D3D11_VIEWPORT vp = CD3D11_VIEWPORT(0.f, 0.f, FLOAT(width), FLOAT(height));
-	D3D::context->RSSetViewports(1, &vp);
+  D3D11_VIEWPORT vp = CD3D11_VIEWPORT(0.f, 0.f, FLOAT(width), FLOAT(height));
+  D3D::context->RSSetViewports(1, &vp);
 
-	D3D::stateman->SetTexture(1, m_lutSrv.get());
-	D3D11_RECT rsource = { 0, 0, LONG(width), LONG(height) };
+  D3D::stateman->SetTexture(1, m_lutSrv.get());
+  D3D11_RECT rsource = { 0, 0, LONG(width), LONG(height) };
 
-	D3D::context->OMSetRenderTargets(1, &dstTexture.GetRTV(), nullptr);
+  D3D::context->OMSetRenderTargets(1, &dstTexture.GetRTV(), nullptr);
 
-	D3D::drawShadedTexQuad(
-		srcTexture.GetSRV(),
-		&rsource,
-		width, height,
-		shader,
-		VertexShaderCache::GetSimpleVertexShader(),
-		VertexShaderCache::GetSimpleInputLayout(),
-		GeometryShaderCache::GetCopyGeometryShader()
-	);
+  D3D::drawShadedTexQuad(
+    srcTexture.GetSRV(),
+    &rsource,
+    width, height,
+    shader,
+    VertexShaderCache::GetSimpleVertexShader(),
+    VertexShaderCache::GetSimpleInputLayout(),
+    GeometryShaderCache::GetCopyGeometryShader()
+  );
 
-	D3D::stateman->SetTexture(1, nullptr);
-	D3D::context->OMSetRenderTargets(1,
-		&FramebufferManager::GetEFBColorTexture()->GetRTV(),
-		FramebufferManager::GetEFBDepthTexture()->GetDSV());
-	g_renderer->RestoreAPIState();
-	return true;
+  D3D::stateman->SetTexture(1, nullptr);
+  D3D::context->OMSetRenderTargets(1,
+    &FramebufferManager::GetEFBColorTexture()->GetRTV(),
+    FramebufferManager::GetEFBDepthTexture()->GetDSV());
+  g_renderer->RestoreAPIState();
+  return true;
 }
 
 }

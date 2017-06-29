@@ -19,22 +19,22 @@
 class SoftwareVideoConfigDialog : public wxDialog
 {
 public:
-	SoftwareVideoConfigDialog(wxWindow* parent, const std::string &title);
-	~SoftwareVideoConfigDialog();
+  SoftwareVideoConfigDialog(wxWindow* parent, const std::string &title);
+  ~SoftwareVideoConfigDialog();
 
-	void Event_Backend(wxCommandEvent &ev)
-	{
-		auto& new_backend = g_available_video_backends[ev.GetInt()];
+  void Event_Backend(wxCommandEvent &ev)
+  {
+    auto& new_backend = g_available_video_backends[ev.GetInt()];
 
-		if (g_video_backend != new_backend.get())
-		{
-			Close();
+    if (g_video_backend != new_backend.get())
+    {
+      Close();
 
-			g_video_backend = new_backend.get();
-			SConfig::GetInstance().m_strVideoBackend = g_video_backend->GetName();
+      g_video_backend = new_backend.get();
+      SConfig::GetInstance().m_strVideoBackend = g_video_backend->GetName();
 
-			g_video_backend->ShowConfig(GetParent());
-		}
-		ev.Skip();
-	}
+      g_video_backend->ShowConfig(GetParent());
+    }
+    ev.Skip();
+  }
 };

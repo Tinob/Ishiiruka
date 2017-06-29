@@ -25,36 +25,36 @@
 class TextureScaler
 {
 public:
-	TextureScaler();
-	~TextureScaler();
+  TextureScaler();
+  ~TextureScaler();
 
-	u32* Scale(u32* data, int width, int height);
+  u32* Scale(u32* data, int width, int height);
 
-	enum
-	{
-		NONE = 0, XBRZ = 1, HYBRID = 2, BICUBIC = 3, HYBRID_BICUBIC = 4, JINC = 5, JINC_SHARPER = 6, SMOOTHSTEP = 7, THREE_POINT = 8, DDT = 9, DDT_SHARP = 10
-	};
+  enum
+  {
+    NONE = 0, XBRZ = 1, HYBRID = 2, BICUBIC = 3, HYBRID_BICUBIC = 4, JINC = 5, JINC_SHARPER = 6, SMOOTHSTEP = 7, THREE_POINT = 8, DDT = 9, DDT_SHARP = 10
+  };
 
 private:
 
-	void ScaleXBRZ(int factor, u32* source, u32* dest, int width, int height);
-	void ScaleBilinear(int factor, u32* source, u32* dest, int width, int height);
-	void ScaleBicubicBSpline(int factor, u32* source, u32* dest, int width, int height);
-	void ScaleBicubicMitchell(int factor, u32* source, u32* dest, int width, int height);
-	void ScaleHybrid(int factor, u32* source, u32* dest, int width, int height, bool bicubic = false);
-	void ScaleJinc(int factor, u32* source, u32* dest, int width, int height);
-	void ScaleJincSharper(int factor, u32* source, u32* dest, int width, int height);
-	void ScaleSmoothstep(int factor, u32* source, u32* dest, int width, int height);
-	void Scale3Point(int factor, u32* source, u32* dest, int width, int height);
-	void ScaleDDT(int factor, u32* source, u32* dest, int width, int height);
-	void ScaleDDTSharp(int factor, u32* source, u32* dest, int width, int height);
+  void ScaleXBRZ(int factor, u32* source, u32* dest, int width, int height);
+  void ScaleBilinear(int factor, u32* source, u32* dest, int width, int height);
+  void ScaleBicubicBSpline(int factor, u32* source, u32* dest, int width, int height);
+  void ScaleBicubicMitchell(int factor, u32* source, u32* dest, int width, int height);
+  void ScaleHybrid(int factor, u32* source, u32* dest, int width, int height, bool bicubic = false);
+  void ScaleJinc(int factor, u32* source, u32* dest, int width, int height);
+  void ScaleJincSharper(int factor, u32* source, u32* dest, int width, int height);
+  void ScaleSmoothstep(int factor, u32* source, u32* dest, int width, int height);
+  void Scale3Point(int factor, u32* source, u32* dest, int width, int height);
+  void ScaleDDT(int factor, u32* source, u32* dest, int width, int height);
+  void ScaleDDTSharp(int factor, u32* source, u32* dest, int width, int height);
 
-	void DePosterize(u32* source, u32* dest, int width, int height);
+  void DePosterize(u32* source, u32* dest, int width, int height);
 
-	bool IsEmptyOrFlat(u32* data, int pixels);
+  bool IsEmptyOrFlat(u32* data, int pixels);
 
-	// depending on the factor and texture sizes, these can get pretty large 
-	// maximum is (100 MB total for a 512 by 512 texture with scaling factor 5 and hybrid scaling)
-	// of course, scaling factor 5 is totally silly anyway
-	Common::SimpleBuf<u32> bufInput, bufDeposter, bufOutput, bufTmp1, bufTmp2, bufTmp3;
+  // depending on the factor and texture sizes, these can get pretty large 
+  // maximum is (100 MB total for a 512 by 512 texture with scaling factor 5 and hybrid scaling)
+  // of course, scaling factor 5 is totally silly anyway
+  Common::SimpleBuf<u32> bufInput, bufDeposter, bufOutput, bufTmp1, bufTmp2, bufTmp3;
 };

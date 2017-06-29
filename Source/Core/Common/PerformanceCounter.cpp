@@ -23,25 +23,25 @@
 bool QueryPerformanceCounter(u64* out)
 {
 #if defined(_POSIX_TIMERS) && _POSIX_TIMERS > 0
-	timespec tp;
-	if (clock_gettime(DOLPHIN_CLOCK, &tp))
-		return false;
-	*out = (u64) tp.tv_nsec + (u64) 1000000000 * (u64) tp.tv_sec;
-	return true;
+  timespec tp;
+  if (clock_gettime(DOLPHIN_CLOCK, &tp))
+    return false;
+  *out = (u64)tp.tv_nsec + (u64)1000000000 * (u64)tp.tv_sec;
+  return true;
 #else
-	*out = 0;
-	return false;
+  *out = 0;
+  return false;
 #endif
 }
 
 bool QueryPerformanceFrequency(u64* out)
 {
 #if defined(_POSIX_TIMERS) && _POSIX_TIMERS > 0
-	*out = 1000000000;
-	return true;
+  * out = 1000000000;
+  return true;
 #else
-	*out = 1;
-	return false;
+  *out = 1;
+  return false;
 #endif
 }
 
