@@ -62,7 +62,7 @@ enum TextureFormat : u32
   GX_CTF_Z16L = 0xC | _GX_TF_ZTF | _GX_TF_CTF,
 };
 
-enum TlutFormat
+enum TlutFormat : u32
 {
   GX_TL_IA8 = 0x0,
   GX_TL_RGB565 = 0x1,

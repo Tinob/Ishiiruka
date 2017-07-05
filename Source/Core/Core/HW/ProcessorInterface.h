@@ -5,6 +5,7 @@
 #pragma once
 
 #include "Common/CommonTypes.h"
+
 class PointerWrap;
 
 namespace MMIO
@@ -35,7 +36,7 @@ enum InterruptCause
   INT_CAUSE_HSP = 0x2000,       // High Speed Port (from sdram controller)
   INT_CAUSE_WII_IPC = 0x4000,   // Wii IPC
   INT_CAUSE_RST_BUTTON =
-  0x10000  // ResetButtonState (1 = unpressed, 0 = pressed) it's a state, not maskable
+      0x10000  // ResetButtonState (1 = unpressed, 0 = pressed) it's a state, not maskable
 };
 
 // Internal hardware addresses

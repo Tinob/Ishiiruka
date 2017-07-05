@@ -10,5 +10,5 @@ class GCPadInputConfigDialog final : public InputConfigDialog
 {
 public:
   GCPadInputConfigDialog(wxWindow* parent, InputConfig& config, const wxString& name,
-    int port_num = 0);
+                         int port_num = 0);
 };

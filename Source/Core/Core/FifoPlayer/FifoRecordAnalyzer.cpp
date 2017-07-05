@@ -2,10 +2,10 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Core/FifoPlayer/FifoRecordAnalyzer.h"
+
 #include <algorithm>
 #include <cstring>
-
-#include "Core/FifoPlayer/FifoRecordAnalyzer.h"
 
 #include "Core/FifoPlayer/FifoAnalyzer.h"
 #include "Core/FifoPlayer/FifoRecorder.h"
@@ -37,7 +37,7 @@ void FifoRecordAnalyzer::ProcessLoadIndexedXf(u32 val, int array)
 }
 
 void FifoRecordAnalyzer::WriteVertexArray(int arrayIndex, const u8* vertexData, int vertexSize,
-  int numVertices)
+                                          int numVertices)
 {
   // Skip if not indexed array
   int arrayType = (s_CpMem.vtxDesc.Hex >> (9 + (arrayIndex * 2))) & 3;

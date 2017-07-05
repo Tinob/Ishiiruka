@@ -2,6 +2,9 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Core/Debugger/Debugger_SymbolMap.h"
+
+#include <cstdio>
 #include <functional>
 #include <string>
 
@@ -9,7 +12,6 @@
 #include "Common/StringUtil.h"
 
 #include "Core/Core.h"
-#include "Core/Debugger/Debugger_SymbolMap.h"
 #include "Core/HW/Memmap.h"
 #include "Core/PowerPC/PPCAnalyst.h"
 #include "Core/PowerPC/PPCSymbolDB.h"
@@ -22,7 +24,7 @@ void AddAutoBreakpoints()
 #if defined(_DEBUG) || defined(DEBUGFAST)
 #if 1
   const char* bps[] = {
-          "PPCHalt",
+      "PPCHalt",
   };
 
   for (const char* bp : bps)
@@ -80,7 +82,7 @@ bool GetCallstack(std::vector<CallstackEntry>& output)
 
   CallstackEntry entry;
   entry.Name =
-    StringFromFormat(" * %s [ LR = %08x ]\n", g_symbolDB.GetDescription(LR).c_str(), LR - 4);
+      StringFromFormat(" * %s [ LR = %08x ]\n", g_symbolDB.GetDescription(LR).c_str(), LR - 4);
   entry.vAddress = LR - 4;
   output.push_back(entry);
 

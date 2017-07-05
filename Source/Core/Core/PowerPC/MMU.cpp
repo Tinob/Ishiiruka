@@ -4,13 +4,13 @@
 
 #include <cstddef>
 #include <cstring>
+#include <string>
 
 #include "Common/Atomic.h"
-#include "Common/BitSet.h"
+#include "Common/BitUtils.h"
 #include "Common/CommonTypes.h"
 
 #include "Core/ConfigManager.h"
-#include "Core/Core.h"
 #include "Core/HW/CPU.h"
 #include "Core/HW/GPFifo.h"
 #include "Core/HW/MMIO.h"
@@ -217,7 +217,7 @@ static T ReadFromHardware(u32 em_address)
   }
 
   if (Memory::m_pEXRAM && (em_address >> 28) == 0x1 &&
-    (em_address & 0x0FFFFFFF) < Memory::EXRAM_SIZE)
+      (em_address & 0x0FFFFFFF) < Memory::EXRAM_SIZE)
   {
     T value;
     std::memcpy(&value, &Memory::m_pEXRAM[em_address & 0x0FFFFFFF], sizeof(T));
@@ -266,7 +266,7 @@ static void WriteToHardware(u32 em_address, const T data)
       return;
     }
     if ((em_address & (sizeof(T) - 1)) &&
-      (em_address & (HW_PAGE_SIZE - 1)) > HW_PAGE_SIZE - sizeof(T))
+        (em_address & (HW_PAGE_SIZE - 1)) > HW_PAGE_SIZE - sizeof(T))
     {
       // This could be unaligned down to the byte level... hopefully this is rare, so doing it this
       // way isn't too terrible.
@@ -306,7 +306,7 @@ static void WriteToHardware(u32 em_address, const T data)
   }
 
   if (Memory::m_pEXRAM && (em_address >> 28) == 0x1 &&
-    (em_address & 0x0FFFFFFF) < Memory::EXRAM_SIZE)
+      (em_address & 0x0FFFFFFF) < Memory::EXRAM_SIZE)
   {
     const T swapped_data = bswap(data);
     std::memcpy(&Memory::m_pEXRAM[em_address & 0x0FFFFFFF], &swapped_data, sizeof(T));
@@ -374,7 +374,7 @@ static void WriteToHardware(u32 em_address, const T data)
 
 // =================================
 /* These functions are primarily called by the Interpreter functions and are routed to the correct
-location through ReadFromHardware and WriteToHardware */
+   location through ReadFromHardware and WriteToHardware */
 // ----------------
 
 static void GenerateISIException(u32 effective_address);
@@ -398,7 +398,7 @@ TryReadInstResult TryReadInstruction(u32 address)
     auto tlb_addr = TranslateAddress<FLAG_OPCODE>(address);
     if (!tlb_addr.Success())
     {
-      return TryReadInstResult{ false, false, 0, 0 };
+      return TryReadInstResult{false, false, 0, 0};
     }
     else
     {
@@ -417,7 +417,7 @@ TryReadInstResult TryReadInstruction(u32 address)
   {
     hex = PowerPC::ppcState.iCache.ReadInstruction(address);
   }
-  return TryReadInstResult{ true, from_bat, hex, address };
+  return TryReadInstResult{true, from_bat, hex, address};
 }
 
 u32 HostRead_Instruction(const u32 address)
@@ -810,17 +810,17 @@ bool IsOptimizableGatherPipeWrite(u32 address)
 TranslateResult JitCache_TranslateAddress(u32 address)
 {
   if (!UReg_MSR(MSR).IR)
-    return TranslateResult{ true, true, address };
+    return TranslateResult{true, true, address};
 
   // TODO: We shouldn't use FLAG_OPCODE if the caller is the debugger.
   auto tlb_addr = TranslateAddress<FLAG_OPCODE>(address);
   if (!tlb_addr.Success())
   {
-    return TranslateResult{ false, false, 0 };
+    return TranslateResult{false, false, 0};
   }
 
   bool from_bat = tlb_addr.result == TranslateAddressResult::BAT_TRANSLATED;
-  return TranslateResult{ true, from_bat, tlb_addr.address };
+  return TranslateResult{true, from_bat, tlb_addr.address};
 }
 
 // *********************************************************************************
@@ -906,11 +906,11 @@ union UPTE2
   {
     u32 PP : 2;
     u32 : 1;
-          u32 WIMG : 4;
-          u32 C : 1;
-          u32 R : 1;
-          u32 : 3;
-                u32 RPN : 20;
+    u32 WIMG : 4;
+    u32 C : 1;
+    u32 R : 1;
+    u32 : 3;
+    u32 RPN : 20;
   };
   u32 Hex;
 };
@@ -921,7 +921,7 @@ static void GenerateDSIException(u32 effectiveAddress, bool write)
   if (!SConfig::GetInstance().bMMU)
   {
     PanicAlert("Invalid %s 0x%08x, PC = 0x%08x ", write ? "write to" : "read from",
-      effectiveAddress, PC);
+               effectiveAddress, PC);
     return;
   }
 
@@ -947,26 +947,17 @@ static void GenerateISIException(u32 _EffectiveAddress)
 void SDRUpdated()
 {
   u32 htabmask = SDR1_HTABMASK(PowerPC::ppcState.spr[SPR_SDR]);
-  u32 x = 1;
-  u32 xx = 0;
-  int n = 0;
-  while ((htabmask & x) && (n < 9))
-  {
-    n++;
-    xx |= x;
-    x <<= 1;
-  }
-  if (htabmask & ~xx)
+  if (!Common::IsValidLowMask(htabmask))
   {
     return;
   }
   u32 htaborg = SDR1_HTABORG(PowerPC::ppcState.spr[SPR_SDR]);
-  if (htaborg & xx)
+  if (htaborg & htabmask)
   {
     return;
   }
   PowerPC::ppcState.pagetable_base = htaborg << 16;
-  PowerPC::ppcState.pagetable_hashmask = ((xx << 10) | 0x3ff);
+  PowerPC::ppcState.pagetable_hashmask = ((htabmask << 10) | 0x3ff);
 }
 
 enum TLBLookupResult
@@ -1065,25 +1056,25 @@ static TranslateAddressResult TranslatePageAddress(const u32 address, const XChe
   u32 translatedAddress = 0;
   TLBLookupResult res = LookupTLBPageAddress(flag, address, &translatedAddress);
   if (res == TLB_FOUND)
-    return TranslateAddressResult{ TranslateAddressResult::PAGE_TABLE_TRANSLATED, translatedAddress };
+    return TranslateAddressResult{TranslateAddressResult::PAGE_TABLE_TRANSLATED, translatedAddress};
 
   u32 sr = PowerPC::ppcState.sr[EA_SR(address)];
 
   if (sr & 0x80000000)
-    return TranslateAddressResult{ TranslateAddressResult::DIRECT_STORE_SEGMENT, 0 };
+    return TranslateAddressResult{TranslateAddressResult::DIRECT_STORE_SEGMENT, 0};
 
   // TODO: Handle KS/KP segment register flags.
 
   // No-execute segment register flag.
   if ((flag == FLAG_OPCODE || flag == FLAG_OPCODE_NO_EXCEPTION) && (sr & 0x10000000))
-    return TranslateAddressResult{ TranslateAddressResult::PAGE_FAULT, 0 };
+    return TranslateAddressResult{TranslateAddressResult::PAGE_FAULT, 0};
 
   u32 offset = EA_Offset(address);         // 12 bit
   u32 page_index = EA_PageIndex(address);  // 16 bit
   u32 VSID = SR_VSID(sr);                  // 24 bit
   u32 api = EA_API(address);               //  6 bit (part of page_index)
 
-                                           // hash function no 1 "xor" .360
+  // hash function no 1 "xor" .360
   u32 hash = (VSID ^ page_index);
   u32 pte1 = Common::swap32((VSID << 7) | api | PTE1_V);
 
@@ -1097,7 +1088,7 @@ static TranslateAddressResult TranslatePageAddress(const u32 address, const XChe
     }
 
     u32 pteg_addr =
-      ((hash & PowerPC::ppcState.pagetable_hashmask) << 6) | PowerPC::ppcState.pagetable_base;
+        ((hash & PowerPC::ppcState.pagetable_hashmask) << 6) | PowerPC::ppcState.pagetable_base;
 
     for (int i = 0; i < 8; i++, pteg_addr += 8)
     {
@@ -1137,12 +1128,12 @@ static TranslateAddressResult TranslatePageAddress(const u32 address, const XChe
         if (res != TLB_UPDATE_C)
           UpdateTLBEntry(flag, PTE2, address);
 
-        return TranslateAddressResult{ TranslateAddressResult::PAGE_TABLE_TRANSLATED,
-            (PTE2.RPN << 12) | offset };
+        return TranslateAddressResult{TranslateAddressResult::PAGE_TABLE_TRANSLATED,
+                                      (PTE2.RPN << 12) | offset};
       }
     }
   }
-  return TranslateAddressResult{ TranslateAddressResult::PAGE_FAULT, 0 };
+  return TranslateAddressResult{TranslateAddressResult::PAGE_FAULT, 0};
 }
 
 static void UpdateBATs(BatTable& bat_table, u32 base_spr)
@@ -1175,7 +1166,7 @@ static void UpdateBATs(BatTable& bat_table, u32 base_spr)
       // implemented this way for invalid BATs as well.
       WARN_LOG(POWERPC, "Bad BAT setup: BPRN overlaps BL");
     }
-    if (CountSetBits((u32)(batu.BL + 1)) != 1)
+    if (!Common::IsValidLowMask((u32)batu.BL))
     {
       // With a valid BAT, the simplest way of masking is
       // (input & ~BL_mask) for matching and (input & BL_mask) for
@@ -1201,10 +1192,10 @@ static void UpdateBATs(BatTable& bat_table, u32 base_spr)
         else if (physical_address < Memory::REALRAM_SIZE)
           valid_bit |= BAT_PHYSICAL_BIT;
         else if (Memory::m_pEXRAM && physical_address >> 28 == 0x1 &&
-          (physical_address & 0x0FFFFFFF) < Memory::EXRAM_SIZE)
+                 (physical_address & 0x0FFFFFFF) < Memory::EXRAM_SIZE)
           valid_bit |= BAT_PHYSICAL_BIT;
         else if (physical_address >> 28 == 0xE &&
-          physical_address < 0xE0000000 + Memory::L1_CACHE_SIZE)
+                 physical_address < 0xE0000000 + Memory::L1_CACHE_SIZE)
           valid_bit |= BAT_PHYSICAL_BIT;
 
         // Fastmem doesn't support memchecks, so disable it for all overlapping virtual pages.
@@ -1281,7 +1272,7 @@ template <const XCheckTLBFlag flag>
 static TranslateAddressResult TranslateAddress(u32 address)
 {
   if (TranslateBatAddess(IsOpcodeFlag(flag) ? ibat_table : dbat_table, &address))
-    return TranslateAddressResult{ TranslateAddressResult::BAT_TRANSLATED, address };
+    return TranslateAddressResult{TranslateAddressResult::BAT_TRANSLATED, address};
 
   return TranslatePageAddress(address, flag);
 }

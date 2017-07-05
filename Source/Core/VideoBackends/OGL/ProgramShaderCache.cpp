@@ -337,7 +337,7 @@ bool ProgramShaderCache::CompileShader(SHADER& shader, const char* vcode, const 
 
     std::string filename = StringFromFormat("%sbad_p_%d.txt", File::GetUserPath(D_DUMP_IDX).c_str(), num_failures++);
     std::ofstream file;
-    OpenFStream(file, filename, std::ios_base::out);
+    File::OpenFStream(file, filename, std::ios_base::out);
     file << s_glsl_header << vcode << s_glsl_header << pcode;
     if (gcode)
       file << s_glsl_header << gcode;
@@ -408,7 +408,7 @@ bool ProgramShaderCache::CompileComputeShader(SHADER& shader, const std::string&
     std::string filename =
       StringFromFormat("%sbad_p_%d.txt", File::GetUserPath(D_DUMP_IDX).c_str(), num_failures++);
     std::ofstream file;
-    OpenFStream(file, filename, std::ios_base::out);
+    File::OpenFStream(file, filename, std::ios_base::out);
     file << s_glsl_header << code;
     file << info_log;
     file.close();
@@ -482,7 +482,7 @@ GLuint ProgramShaderCache::CompileSingleShader(GLuint type, const char* code, co
       prefix,
       num_failures++);
     std::ofstream file;
-    OpenFStream(file, filename, std::ios_base::out);
+    File::OpenFStream(file, filename, std::ios_base::out);
     file << s_glsl_header << code << info_log;
     file.close();
 

@@ -301,7 +301,7 @@ void GeometryShaderCache::CompileGShader(const GeometryShaderUid& uid, bool ongp
       char szTemp[MAX_PATH];
       sprintf(szTemp, "%sbad_gs_%04i.txt", File::GetUserPath(D_DUMP_IDX).c_str(), num_failures++);
       std::ofstream file;
-      OpenFStream(file, szTemp, std::ios_base::out);
+      File::OpenFStream(file, szTemp, std::ios_base::out);
       file << ((const char *)wunit->code.data());
       file << ((const char *)wunit->error->GetBufferPointer());
       file.close();

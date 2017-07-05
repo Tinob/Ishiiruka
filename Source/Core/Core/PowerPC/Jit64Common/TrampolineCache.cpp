@@ -14,7 +14,6 @@
 #include "Core/PowerPC/Jit64Common/Jit64Base.h"
 #include "Core/PowerPC/Jit64Common/Jit64PowerPCState.h"
 #include "Core/PowerPC/Jit64Common/TrampolineInfo.h"
-#include "Core/PowerPC/JitCommon/JitBase.h"
 #include "Core/PowerPC/PowerPC.h"
 
 #ifdef _WIN32
@@ -46,7 +45,7 @@ const u8* TrampolineCache::GenerateReadTrampoline(const TrampolineInfo& info)
   const u8* trampoline = GetCodePtr();
 
   SafeLoadToReg(info.op_reg, info.op_arg, info.accessSize << 3, info.offset, info.registersInUse,
-    info.signExtend, info.flags | SAFE_LOADSTORE_FORCE_SLOWMEM);
+                info.signExtend, info.flags | SAFE_LOADSTORE_FORCE_SLOWMEM);
 
   JMP(info.start + info.len, true);
 
@@ -68,7 +67,7 @@ const u8* TrampolineCache::GenerateWriteTrampoline(const TrampolineInfo& info)
   MOV(32, PPCSTATE(pc), Imm32(info.pc));
 
   SafeWriteRegToReg(info.op_arg, info.op_reg, info.accessSize << 3, info.offset,
-    info.registersInUse, info.flags | SAFE_LOADSTORE_FORCE_SLOWMEM);
+                    info.registersInUse, info.flags | SAFE_LOADSTORE_FORCE_SLOWMEM);
 
   JMP(info.start + info.len, true);
 

@@ -16,7 +16,6 @@
 #include "Common/StringUtil.h"
 #include "Common/Swap.h"
 #include "Common/x64Reg.h"
-
 #include "Core/HW/Memmap.h"
 #include "Core/MachineContext.h"
 #include "Core/PowerPC/PPCAnalyst.h"
@@ -128,13 +127,13 @@ bool Jitx86Base::BackPatch(u32 emAddress, SContext* ctx)
 }
 
 void LogGeneratedX86(size_t size, const PPCAnalyst::CodeBuffer* code_buffer, const u8* normalEntry,
-  const JitBlock* b)
+                     const JitBlock* b)
 {
   for (size_t i = 0; i < size; i++)
   {
     const PPCAnalyst::CodeOp& op = code_buffer->codebuffer[i];
     std::string temp = StringFromFormat(
-      "%08x %s", op.address, GekkoDisassembler::Disassemble(op.inst.hex, op.address).c_str());
+        "%08x %s", op.address, GekkoDisassembler::Disassemble(op.inst.hex, op.address).c_str());
     DEBUG_LOG(DYNA_REC, "IR_X86 PPC: %s\n", temp.c_str());
   }
 

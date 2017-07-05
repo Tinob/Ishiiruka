@@ -10,7 +10,7 @@
 #include <vector>
 
 #include "Common/CommonTypes.h"
-#include "Common/FileUtil.h"
+#include "Common/File.h"
 #include "Common/Logging/Log.h"
 #include "Common/MsgHandler.h"
 #include "DiscIO/Blob.h"
@@ -44,7 +44,7 @@ DriveReader::DriveReader(const std::string& drive)
 #ifdef _WIN32
   auto const path = UTF8ToTStr(std::string("\\\\.\\") + drive);
   m_disc_handle = CreateFile(path.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
-    nullptr, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, nullptr);
+                             nullptr, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, nullptr);
   if (IsOK())
   {
     // Do a test read to make sure everything is OK, since it seems you can get
@@ -65,7 +65,7 @@ DriveReader::DriveReader(const std::string& drive)
     storage_size.Version = sizeof(storage_size);
     DWORD bytes = 0;
     DeviceIoControl(m_disc_handle, IOCTL_STORAGE_READ_CAPACITY, nullptr, 0, &storage_size,
-      sizeof(storage_size), &bytes, nullptr);
+                    sizeof(storage_size), &bytes, nullptr);
     m_size = bytes ? storage_size.DiskLength.QuadPart : 0;
 
 #ifdef _LOCKDRIVE  // Do we want to lock the drive?
@@ -73,7 +73,7 @@ DriveReader::DriveReader(const std::string& drive)
     // removal while reading from it.
     m_lock_cdrom.PreventMediaRemoval = TRUE;
     DeviceIoControl(m_disc_handle, IOCTL_CDROM_MEDIA_REMOVAL, &m_lock_cdrom, sizeof(m_lock_cdrom),
-      nullptr, 0, &dwNotUsed, nullptr);
+                    nullptr, 0, &dwNotUsed, nullptr);
 #endif
 #else
   m_file.Open(drive, "rb");
@@ -97,7 +97,7 @@ DriveReader::DriveReader(const std::string& drive)
 #endif
   }
   else { NOTICE_LOG(DISCIO, "Load from DVD backup failed or no disc in drive %s", drive.c_str()); }
-  }
+}
 
 DriveReader::~DriveReader()
 {
@@ -106,7 +106,7 @@ DriveReader::~DriveReader()
   // Unlock the disc in the CD-ROM drive.
   m_lock_cdrom.PreventMediaRemoval = FALSE;
   DeviceIoControl(m_disc_handle, IOCTL_CDROM_MEDIA_REMOVAL, &m_lock_cdrom, sizeof(m_lock_cdrom),
-    nullptr, 0, &dwNotUsed, nullptr);
+                  nullptr, 0, &dwNotUsed, nullptr);
 #endif
   if (m_disc_handle != INVALID_HANDLE_VALUE)
   {
@@ -140,8 +140,8 @@ bool DriveReader::ReadMultipleAlignedBlocks(u64 block_num, u64 num_blocks, u8* o
   offset.QuadPart = GetSectorSize() * block_num;
   DWORD bytes_read;
   if (!SetFilePointerEx(m_disc_handle, offset, nullptr, FILE_BEGIN) ||
-    !ReadFile(m_disc_handle, out_ptr, static_cast<DWORD>(GetSectorSize() * num_blocks),
-      &bytes_read, nullptr))
+      !ReadFile(m_disc_handle, out_ptr, static_cast<DWORD>(GetSectorSize() * num_blocks),
+                &bytes_read, nullptr))
   {
     PanicAlertT("Disc Read Error");
     return false;

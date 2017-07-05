@@ -131,11 +131,11 @@ private:
   // should be inside the plugin
   void HandleSDP(u16 _SCID, u8* _pData, u32 _Size);
   void SDPSendServiceSearchResponse(u16 _SCID, u16 _TransactionID, u8* _pServiceSearchPattern,
-    u16 _MaximumServiceRecordCount);
+                                    u16 _MaximumServiceRecordCount);
 
   void SDPSendServiceAttributeResponse(u16 _SCID, u16 TransactionID, u32 _ServiceHandle,
-    u16 _StartAttrID, u16 _EndAttrID,
-    u16 _MaximumAttributeByteCount, u8* _pContinuationState);
+                                       u16 _StartAttrID, u16 _EndAttrID,
+                                       u16 _MaximumAttributeByteCount, u8* _pContinuationState);
 };
 }  // namespace HLE
 }  // namespace IOS

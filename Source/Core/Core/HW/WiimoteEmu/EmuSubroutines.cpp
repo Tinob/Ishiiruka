@@ -5,17 +5,18 @@
 /* HID reports access guide. */
 
 /* 0x10 - 0x1a   Output   EmuMain.cpp: HidOutputReport()
-0x10 - 0x14: General
-0x15: Status report request from the Wii
-0x16 and 0x17: Write and read memory or registers
-0x19 and 0x1a: General
-0x20 - 0x22   Input    EmuMain.cpp: HidOutputReport() to the destination
-0x15 leads to a 0x20 Input report
-0x17 leads to a 0x21 Input report
-0x10 - 0x1a leads to a 0x22 Input report
-0x30 - 0x3f   Input    This file: Update() */
+       0x10 - 0x14: General
+     0x15: Status report request from the Wii
+     0x16 and 0x17: Write and read memory or registers
+       0x19 and 0x1a: General
+   0x20 - 0x22   Input    EmuMain.cpp: HidOutputReport() to the destination
+       0x15 leads to a 0x20 Input report
+       0x17 leads to a 0x21 Input report
+     0x10 - 0x1a leads to a 0x22 Input report
+   0x30 - 0x3f   Input    This file: Update() */
 
 #include <fstream>
+#include <mutex>
 #include <queue>
 #include <string>
 #include <vector>
@@ -58,22 +59,22 @@ void Wiimote::ReportMode(const wm_report_mode* const dr)
 }
 
 /* Here we process the Output Reports that the Wii sends. Our response will be
-an Input Report back to the Wii. Input and Output is from the Wii's
-perspective, Output means data to the Wiimote (from the Wii), Input means
-data from the Wiimote.
+   an Input Report back to the Wii. Input and Output is from the Wii's
+   perspective, Output means data to the Wiimote (from the Wii), Input means
+   data from the Wiimote.
 
-The call browser:
+   The call browser:
 
-1. Wiimote_InterruptChannel > InterruptChannel > HidOutputReport
-2. Wiimote_ControlChannel > ControlChannel > HidOutputReport
+   1. Wiimote_InterruptChannel > InterruptChannel > HidOutputReport
+   2. Wiimote_ControlChannel > ControlChannel > HidOutputReport
 
-The IR enable/disable and speaker enable/disable and mute/unmute values are
-bit2: 0 = Disable (0x02), 1 = Enable (0x06)
+   The IR enable/disable and speaker enable/disable and mute/unmute values are
+    bit2: 0 = Disable (0x02), 1 = Enable (0x06)
 */
 void Wiimote::HidOutputReport(const wm_report* const sr, const bool send_ack)
 {
   DEBUG_LOG(WIIMOTE, "HidOutputReport (page: %i, cid: 0x%02x, wm: 0x%02x)", m_index,
-    m_reporting_channel, sr->wm);
+            m_reporting_channel, sr->wm);
 
   // WiiBrew:
   // In every single Output Report, bit 0 (0x01) of the first byte controls the Rumble feature.
@@ -82,12 +83,12 @@ void Wiimote::HidOutputReport(const wm_report* const sr, const bool send_ack)
   switch (sr->wm)
   {
   case RT_RUMBLE:  // 0x10
-                        // this is handled above
+    // this is handled above
     return;  // no ack
     break;
 
   case RT_LEDS:  // 0x11
-                      // INFO_LOG(WIIMOTE, "Set LEDs: 0x%02x", sr->data[0]);
+    // INFO_LOG(WIIMOTE, "Set LEDs: 0x%02x", sr->data[0]);
     m_status.leds = sr->data[0] >> 4;
     break;
 
@@ -96,15 +97,15 @@ void Wiimote::HidOutputReport(const wm_report* const sr, const bool send_ack)
     break;
 
   case RT_IR_PIXEL_CLOCK:  // 0x13
-                                   // INFO_LOG(WIIMOTE, "WM IR Clock: 0x%02x", sr->data[0]);
-                                   // m_ir_clock = sr->enable;
+    // INFO_LOG(WIIMOTE, "WM IR Clock: 0x%02x", sr->data[0]);
+    // m_ir_clock = sr->enable;
     if (false == sr->ack)
       return;
     break;
 
   case RT_SPEAKER_ENABLE:  // 0x14
-                                   // ERROR_LOG(WIIMOTE, "WM Speaker Enable: %02x", sr->enable);
-                                   // PanicAlert( "WM Speaker Enable: %d", sr->data[0] );
+    // ERROR_LOG(WIIMOTE, "WM Speaker Enable: %02x", sr->enable);
+    // PanicAlert( "WM Speaker Enable: %d", sr->data[0] );
     m_status.speaker = sr->enable;
     if (false == sr->ack)
       return;
@@ -139,9 +140,9 @@ void Wiimote::HidOutputReport(const wm_report* const sr, const bool send_ack)
     break;
 
   case RT_IR_LOGIC:  // 0x1a
-                           // comment from old plugin:
-                           // This enables or disables the IR lights, we update the global variable g_IR
-                           // so that WmRequestStatus() knows about it
+    // comment from old plugin:
+    // This enables or disables the IR lights, we update the global variable g_IR
+    // so that WmRequestStatus() knows about it
     m_status.ir = sr->enable;
     if (false == sr->ack)
       return;
@@ -159,10 +160,10 @@ void Wiimote::HidOutputReport(const wm_report* const sr, const bool send_ack)
 }
 
 /* This will generate the 0x22 acknowledgement for most Input reports.
-It has the form of "a1 22 00 00 _reportID 00".
-The first two bytes are the core buttons data,
-00 00 means nothing is pressed.
-The last byte is the success code 00. */
+   It has the form of "a1 22 00 00 _reportID 00".
+   The first two bytes are the core buttons data,
+   00 00 means nothing is pressed.
+   The last byte is the success code 00. */
 void Wiimote::SendAck(u8 report_id)
 {
   u8 data[6];
@@ -195,7 +196,7 @@ void Wiimote::HandleExtensionSwap()
 
     // reset register
     ((WiimoteEmu::Attachment*)m_extension->attachments[m_extension->active_extension].get())
-      ->Reset();
+        ->Reset();
   }
 }
 
@@ -267,8 +268,8 @@ void Wiimote::WriteData(const wm_write_data* const wd)
     {
       // TODO Only write parts of the Mii block
       std::ofstream file;
-      OpenFStream(file, File::GetUserPath(D_SESSION_WIIROOT_IDX) + "/mii.bin",
-        std::ios::binary | std::ios::out);
+      File::OpenFStream(file, File::GetUserPath(D_SESSION_WIIROOT_IDX) + "/mii.bin",
+                        std::ios::binary | std::ios::out);
       file.write((char*)m_eeprom + 0x0FCA, 0x02f0);
       file.close();
     }
@@ -290,19 +291,19 @@ void Wiimote::WriteData(const wm_write_data* const wd)
 
     switch (address >> 16)
     {
-      // speaker
+    // speaker
     case 0xa2:
       region_ptr = &m_reg_speaker;
       region_size = WIIMOTE_REG_SPEAKER_SIZE;
       break;
 
-      // extension register
+    // extension register
     case 0xa4:
       region_ptr = m_motion_plus_active ? (void*)&m_reg_motion_plus : (void*)&m_reg_ext;
       region_size = WIIMOTE_REG_EXT_SIZE;
       break;
 
-      // motion plus
+    // motion plus
     case 0xa6:
       if (false == m_motion_plus_active)
       {
@@ -311,7 +312,7 @@ void Wiimote::WriteData(const wm_write_data* const wd)
       }
       break;
 
-      // ir
+    // ir
     case 0xB0:
       region_ptr = &m_reg_ir;
       region_size = WIIMOTE_REG_IR_SIZE;
@@ -365,12 +366,12 @@ void Wiimote::ReadData(const wm_read_data* const rd)
   // hybrid Wiimote stuff
   // relay the read data request to real-Wiimote
   if (WIIMOTE_SRC_REAL & g_wiimote_sources[m_index] &&
-    ((0xA4 != (address >> 16)) || (m_extension->switch_extension <= 0)))
+      ((0xA4 != (address >> 16)) || (m_extension->switch_extension <= 0)))
   {
     WiimoteReal::InterruptChannel(m_index, m_reporting_channel, ((u8*)rd) - 2,
-      sizeof(wm_read_data) + 2);  // hacky
+                                  sizeof(wm_read_data) + 2);  // hacky
 
-                                           // don't want emu-Wiimote to send reply
+    // don't want emu-Wiimote to send reply
     return;
   }
 
@@ -400,7 +401,7 @@ void Wiimote::ReadData(const wm_read_data* const rd)
       // TODO Only read the Mii block parts required
       std::ifstream file;
       file.open((File::GetUserPath(D_SESSION_WIIROOT_IDX) + "/mii.bin").c_str(),
-        std::ios::binary | std::ios::in);
+                std::ios::binary | std::ios::in);
       file.read((char*)m_eeprom + 0x0FCA, 0x02f0);
       file.close();
     }
@@ -425,19 +426,19 @@ void Wiimote::ReadData(const wm_read_data* const rd)
 
     switch (address >> 16)
     {
-      // speaker
+    // speaker
     case 0xa2:
       region_ptr = &m_reg_speaker;
       region_size = WIIMOTE_REG_SPEAKER_SIZE;
       break;
 
-      // extension
+    // extension
     case 0xa4:
       region_ptr = m_motion_plus_active ? (void*)&m_reg_motion_plus : (void*)&m_reg_ext;
       region_size = WIIMOTE_REG_EXT_SIZE;
       break;
 
-      // motion plus
+    // motion plus
     case 0xa6:
       // reading from 0xa6 returns error when mplus is activated
       if (false == m_motion_plus_active)
@@ -447,7 +448,7 @@ void Wiimote::ReadData(const wm_read_data* const rd)
       }
       break;
 
-      // ir
+    // ir
     case 0xb0:
       region_ptr = &m_reg_ir;
       region_size = WIIMOTE_REG_IR_SIZE;

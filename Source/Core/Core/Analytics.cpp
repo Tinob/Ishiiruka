@@ -129,7 +129,7 @@ void DolphinAnalytics::MakeBaseBuilder()
   // CPU information.
   builder.AddData("cpu-summary", cpu_info.Summarize());
 
-  // OS information.
+// OS information.
 #if defined(_WIN32)
   builder.AddData("os-type", "windows");
 
@@ -154,9 +154,9 @@ void DolphinAnalytics::MakeBaseBuilder()
   builder.AddData("os-type", "osx");
 
   SInt32 osxmajor, osxminor, osxbugfix;
-  // Gestalt is deprecated, but the replacement (NSProcessInfo
-  // operatingSystemVersion) is only available on OS X 10.10, so we need to use
-  // it anyway.  Change this someday when Dolphin depends on 10.10+.
+// Gestalt is deprecated, but the replacement (NSProcessInfo
+// operatingSystemVersion) is only available on OS X 10.10, so we need to use
+// it anyway.  Change this someday when Dolphin depends on 10.10+.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   Gestalt(gestaltSystemVersionMajor, &osxmajor);
@@ -230,7 +230,7 @@ void DolphinAnalytics::MakePerGameBuilder()
     builder.AddData("gpu-adapter", g_Config.backend_info.AdapterName);
   }
   builder.AddData("gpu-has-exclusive-fullscreen",
-    g_Config.backend_info.bSupportsExclusiveFullscreen);
+                  g_Config.backend_info.bSupportsExclusiveFullscreen);
   builder.AddData("gpu-has-dual-source-blend", g_Config.backend_info.bSupportsDualSourceBlend);
   builder.AddData("gpu-has-oversized-viewports", g_Config.backend_info.bSupportsOversizedViewports);
   builder.AddData("gpu-has-geometry-shaders", g_Config.backend_info.bSupportsGeometryShaders);
@@ -254,7 +254,7 @@ void DolphinAnalytics::MakePerGameBuilder()
   // or the official gamecube adapter.
   builder.AddData("gcadapter-detected", GCAdapter::IsDetected());
   builder.AddData("has-controller", Pad::GetConfig()->IsControllerControlledByGamepadDevice(0) ||
-    GCAdapter::IsDetected());
+                                        GCAdapter::IsDetected());
 
   m_per_game_builder = builder;
 }

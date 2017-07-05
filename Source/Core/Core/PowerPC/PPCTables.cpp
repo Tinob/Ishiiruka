@@ -13,12 +13,12 @@
 
 #include "Common/Assert.h"
 #include "Common/CommonTypes.h"
+#include "Common/File.h"
 #include "Common/FileUtil.h"
 #include "Common/Logging/Log.h"
 #include "Common/StringUtil.h"
 
 #include "Core/PowerPC/Interpreter/Interpreter.h"
-#include "Core/PowerPC/JitInterface.h"
 #include "Core/PowerPC/PowerPC.h"
 
 std::array<GekkoOPInfo*, 64> m_infoTable;
@@ -31,12 +31,12 @@ std::array<GekkoOPInfo*, 1024> m_infoTable63;
 std::array<GekkoOPInfo*, 512> m_allInstructions;
 size_t m_numInstructions;
 
-const std::array<u64, 16> m_crTable = { {
-        PPCCRToInternal(0x0), PPCCRToInternal(0x1), PPCCRToInternal(0x2), PPCCRToInternal(0x3),
-        PPCCRToInternal(0x4), PPCCRToInternal(0x5), PPCCRToInternal(0x6), PPCCRToInternal(0x7),
-        PPCCRToInternal(0x8), PPCCRToInternal(0x9), PPCCRToInternal(0xA), PPCCRToInternal(0xB),
-        PPCCRToInternal(0xC), PPCCRToInternal(0xD), PPCCRToInternal(0xE), PPCCRToInternal(0xF),
-    } };
+const std::array<u64, 16> m_crTable = {{
+    PPCCRToInternal(0x0), PPCCRToInternal(0x1), PPCCRToInternal(0x2), PPCCRToInternal(0x3),
+    PPCCRToInternal(0x4), PPCCRToInternal(0x5), PPCCRToInternal(0x6), PPCCRToInternal(0x7),
+    PPCCRToInternal(0x8), PPCCRToInternal(0x9), PPCCRToInternal(0xA), PPCCRToInternal(0xB),
+    PPCCRToInternal(0xC), PPCCRToInternal(0xD), PPCCRToInternal(0xE), PPCCRToInternal(0xF),
+}};
 
 GekkoOPInfo* GetOpInfo(UGeckoInstruction _inst)
 {
@@ -154,7 +154,7 @@ void PrintInstructionRunCounts()
     temp.emplace_back(pInst->opname, pInst->runCount);
   }
   std::sort(temp.begin(), temp.end(),
-    [](const OpInfo& a, const OpInfo& b) { return a.second > b.second; });
+            [](const OpInfo& a, const OpInfo& b) { return a.second > b.second; });
 
   for (auto& inst : temp)
   {
@@ -170,14 +170,14 @@ void LogCompiledInstructions()
   static unsigned int time = 0;
 
   File::IOFile f(StringFromFormat("%sinst_log%i.txt", File::GetUserPath(D_LOGS_IDX).c_str(), time),
-    "w");
+                 "w");
   for (size_t i = 0; i < m_numInstructions; i++)
   {
     GekkoOPInfo* pInst = m_allInstructions[i];
     if (pInst->compileCount > 0)
     {
       fprintf(f.GetHandle(), "%s\t%i\t%" PRId64 "\t%08x\n", pInst->opname, pInst->compileCount,
-        pInst->runCount, pInst->lastUse);
+              pInst->runCount, pInst->lastUse);
     }
   }
 
@@ -188,13 +188,13 @@ void LogCompiledInstructions()
     if (pInst->compileCount == 0)
     {
       fprintf(f.GetHandle(), "%s\t%i\t%" PRId64 "\n", pInst->opname, pInst->compileCount,
-        pInst->runCount);
+              pInst->runCount);
     }
   }
 
 #ifdef OPLOG
   f.Open(StringFromFormat("%s" OP_TO_LOG "_at%i.txt", File::GetUserPath(D_LOGS_IDX).c_str(), time),
-    "w");
+         "w");
   for (auto& rsplocation : rsplocations)
   {
     fprintf(f.GetHandle(), OP_TO_LOG ": %08x\n", rsplocation);

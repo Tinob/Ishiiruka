@@ -9,6 +9,7 @@
 #include "Common/Logging/Log.h"
 #include "Common/MsgHandler.h"
 #include "Common/StringUtil.h"
+#include "Core/Config/GraphicsSettings.h"
 #include "VideoBackends/D3D12/D3DBase.h"
 #include "VideoBackends/D3D12/D3DCommandListManager.h"
 #include "VideoBackends/D3D12/D3DDescriptorHeapManager.h"
@@ -178,7 +179,7 @@ void UnloadD3D()
   d3d12_serialize_root_signature = nullptr;
 }
 
-std::vector<DXGI_SAMPLE_DESC> EnumAAModes(ID3D12Device* device)
+std::vector<DXGI_SAMPLE_DESC> EnumAAModes(ID3D12Device* dev)
 {
   std::vector<DXGI_SAMPLE_DESC> aa_modes;
 
@@ -188,7 +189,7 @@ std::vector<DXGI_SAMPLE_DESC> EnumAAModes(ID3D12Device* device)
     multisample_quality_levels.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
     multisample_quality_levels.SampleCount = samples;
 
-    device->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &multisample_quality_levels, sizeof(multisample_quality_levels));
+    dev->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &multisample_quality_levels, sizeof(multisample_quality_levels));
 
     DXGI_SAMPLE_DESC desc;
     desc.Count = samples;
@@ -323,7 +324,7 @@ HRESULT Create(HWND wnd)
     }
     ) == s_aa_modes.end())
     {
-      g_Config.iMultisamples = 1;
+      Config::SetCurrent(Config::GFX_MSAA, UINT32_C(1));
       UpdateActiveConfig();
     }
   }
@@ -441,7 +442,8 @@ HRESULT Create(HWND wnd)
   }
 
   s_backbuf[s_current_back_buf]->TransitionToResourceState(current_command_list, D3D12_RESOURCE_STATE_RENDER_TARGET);
-  current_command_list->OMSetRenderTargets(1, &s_backbuf[s_current_back_buf]->GetRTV(), FALSE, nullptr);
+  auto rtv = s_backbuf[s_current_back_buf]->GetRTV();
+  current_command_list->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
 
   QueryPerformanceFrequency(&s_qpc_frequency);
 

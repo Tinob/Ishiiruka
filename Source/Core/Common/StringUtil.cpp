@@ -296,17 +296,17 @@ std::string StringFromBool(bool value)
 }
 
 bool SplitPath(const std::string& full_path, std::string* _pPath, std::string* _pFilename,
-  std::string* _pExtension)
+               std::string* _pExtension)
 {
   if (full_path.empty())
     return false;
 
   size_t dir_end = full_path.find_last_of("/"
-    // Windows needs the : included for something like just "C:" to be considered a directory
+// Windows needs the : included for something like just "C:" to be considered a directory
 #ifdef _WIN32
-    ":"
+                                          ":"
 #endif
-  );
+                                          );
   if (std::string::npos == dir_end)
     dir_end = 0;
   else
@@ -329,7 +329,7 @@ bool SplitPath(const std::string& full_path, std::string* _pPath, std::string* _
 }
 
 void BuildCompleteFilename(std::string& _CompleteFilename, const std::string& _Path,
-  const std::string& _Filename)
+                           const std::string& _Filename)
 {
   _CompleteFilename = _Path;
 
@@ -341,15 +341,16 @@ void BuildCompleteFilename(std::string& _CompleteFilename, const std::string& _P
   _CompleteFilename += _Filename;
 }
 
-void SplitString(const std::string& str, const char delim, std::vector<std::string>& output)
+std::vector<std::string> SplitString(const std::string& str, const char delim)
 {
   std::istringstream iss(str);
-  output.resize(1);
+  std::vector<std::string> output(1);
 
   while (std::getline(iss, *output.rbegin(), delim))
     output.push_back("");
 
   output.pop_back();
+  return output;
 }
 
 std::string JoinStrings(const std::vector<std::string>& strings, const std::string& delimiter)
@@ -360,7 +361,7 @@ std::string JoinStrings(const std::vector<std::string>& strings, const std::stri
 
   std::stringstream res;
   std::copy(strings.begin(), strings.end(),
-    std::ostream_iterator<std::string>(res, delimiter.c_str()));
+            std::ostream_iterator<std::string>(res, delimiter.c_str()));
 
   // Drop the trailing delimiter.
   std::string joined = res.str();
@@ -405,19 +406,25 @@ bool StringEndsWith(const std::string& str, const std::string& end)
   return str.size() >= end.size() && std::equal(end.rbegin(), end.rend(), str.rbegin());
 }
 
+void StringPopBackIf(std::string* s, char c)
+{
+  if (!s->empty() && s->back() == c)
+    s->pop_back();
+}
+
 #ifdef _WIN32
 
 std::string UTF16ToUTF8(const std::wstring& input)
 {
   auto const size = WideCharToMultiByte(CP_UTF8, 0, input.data(), static_cast<int>(input.size()),
-    nullptr, 0, nullptr, nullptr);
+                                        nullptr, 0, nullptr, nullptr);
 
   std::string output;
   output.resize(size);
 
   if (size == 0 ||
-    size != WideCharToMultiByte(CP_UTF8, 0, input.data(), static_cast<int>(input.size()),
-      &output[0], static_cast<int>(output.size()), nullptr, nullptr))
+      size != WideCharToMultiByte(CP_UTF8, 0, input.data(), static_cast<int>(input.size()),
+                                  &output[0], static_cast<int>(output.size()), nullptr, nullptr))
   {
     output.clear();
   }
@@ -428,14 +435,14 @@ std::string UTF16ToUTF8(const std::wstring& input)
 std::wstring CPToUTF16(u32 code_page, const std::string& input)
 {
   auto const size =
-    MultiByteToWideChar(code_page, 0, input.data(), static_cast<int>(input.size()), nullptr, 0);
+      MultiByteToWideChar(code_page, 0, input.data(), static_cast<int>(input.size()), nullptr, 0);
 
   std::wstring output;
   output.resize(size);
 
   if (size == 0 ||
-    size != MultiByteToWideChar(code_page, 0, input.data(), static_cast<int>(input.size()),
-      &output[0], static_cast<int>(output.size())))
+      size != MultiByteToWideChar(code_page, 0, input.data(), static_cast<int>(input.size()),
+                                  &output[0], static_cast<int>(output.size())))
   {
     output.clear();
   }
@@ -446,14 +453,14 @@ std::wstring CPToUTF16(u32 code_page, const std::string& input)
 std::string UTF16ToCP(u32 code_page, const std::wstring& input)
 {
   auto const size = WideCharToMultiByte(code_page, 0, input.data(), static_cast<int>(input.size()),
-    nullptr, 0, nullptr, false);
+                                        nullptr, 0, nullptr, false);
 
   std::string output;
   output.resize(size);
 
   if (size == 0 ||
-    size != WideCharToMultiByte(code_page, 0, input.data(), static_cast<int>(input.size()),
-      &output[0], static_cast<int>(output.size()), nullptr, false))
+      size != WideCharToMultiByte(code_page, 0, input.data(), static_cast<int>(input.size()),
+                                  &output[0], static_cast<int>(output.size()), nullptr, false))
   {
     const DWORD error_code = GetLastError();
     ERROR_LOG(COMMON, "WideCharToMultiByte Error in String '%s': %lu", input.c_str(), error_code);
@@ -510,7 +517,7 @@ std::string CodeTo(const char* tocode, const char* fromcode, const std::basic_st
     while (src_bytes != 0)
     {
       size_t const iconv_result =
-        iconv(conv_desc, (char**)(&src_buffer), &src_bytes, &dst_buffer, &dst_bytes);
+          iconv(conv_desc, (char**)(&src_buffer), &src_bytes, &dst_buffer, &dst_bytes);
 
       if ((size_t)-1 == iconv_result)
       {

@@ -77,12 +77,6 @@
     <ClCompile Include="XFStructs.cpp">
       <Filter>Register Sections</Filter>
     </ClCompile>
-    <ClCompile Include="OpenCL.cpp">
-      <Filter>Decoding\OpenCL</Filter>
-    </ClCompile>
-    <ClCompile Include="OpenCL\OCLTextureDecoder.cpp">
-      <Filter>Decoding\OpenCL</Filter>
-    </ClCompile>
     <ClCompile Include="Fifo.cpp">
       <Filter>Decoding</Filter>
     </ClCompile>
@@ -307,12 +301,6 @@
     </ClInclude>
     <ClInclude Include="XFStructs.h">
       <Filter>Register Sections</Filter>
-    </ClInclude>
-    <ClInclude Include="OpenCL.h">
-      <Filter>Decoding\OpenCL</Filter>
-    </ClInclude>
-    <ClInclude Include="OpenCL\OCLTextureDecoder.h">
-      <Filter>Decoding\OpenCL</Filter>
     </ClInclude>
     <ClInclude Include="Fifo.h">
       <Filter>Decoding</Filter>

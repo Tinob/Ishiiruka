@@ -2,17 +2,24 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include <memory>
 #ifdef _WIN32
 #include <shlobj.h>  // for SHGetFolderPath
 #endif
 
 #include "Common/CommonPaths.h"
+#include "Common/Config/Config.h"
 #include "Common/FileUtil.h"
 #include "Common/Logging/LogManager.h"
 #include "Common/MsgHandler.h"
 
+#include "Core/ConfigLoaders/BaseConfigLoader.h"
 #include "Core/ConfigManager.h"
+#include "Core/Core.h"
+#include "Core/HW/ProcessorInterface.h"
 #include "Core/HW/Wiimote.h"
+#include "Core/IOS/IOS.h"
+#include "Core/IOS/STM/STM.h"
 
 #include "InputCommon/GCAdapter.h"
 
@@ -26,6 +33,8 @@ namespace UICommon
 void Init()
 {
   LogManager::Init();
+  Config::Init();
+  Config::AddLoadLayer(ConfigLoaders::GenerateBaseConfigLoader());
   SConfig::Init();
   VideoBackendBase::PopulateList();
   WiimoteReal::LoadSettings();
@@ -41,6 +50,7 @@ void Shutdown()
   WiimoteReal::Shutdown();
   VideoBackendBase::ClearList();
   SConfig::Shutdown();
+  Config::Shutdown();
   LogManager::Shutdown();
 }
 
@@ -99,18 +109,18 @@ void SetUserDirectory(const std::string& custom_path)
   // Check our registry keys
   HKEY hkey;
   DWORD local = 0;
-  TCHAR configPath[MAX_PATH] = { 0 };
+  TCHAR configPath[MAX_PATH] = {0};
   if (RegOpenKeyEx(HKEY_CURRENT_USER, TEXT("Software\\Dolphin Emulator"), 0, KEY_QUERY_VALUE,
-    &hkey) == ERROR_SUCCESS)
+                   &hkey) == ERROR_SUCCESS)
   {
     DWORD size = 4;
     if (RegQueryValueEx(hkey, TEXT("LocalUserConfig"), nullptr, nullptr,
-      reinterpret_cast<LPBYTE>(&local), &size) != ERROR_SUCCESS)
+                        reinterpret_cast<LPBYTE>(&local), &size) != ERROR_SUCCESS)
       local = 0;
 
     size = MAX_PATH;
     if (RegQueryValueEx(hkey, TEXT("UserConfigPath"), nullptr, nullptr, (LPBYTE)configPath,
-      &size) != ERROR_SUCCESS)
+                        &size) != ERROR_SUCCESS)
       configPath[0] = 0;
     RegCloseKey(hkey);
   }
@@ -120,7 +130,7 @@ void SetUserDirectory(const std::string& custom_path)
   // Get Program Files path in case we need it.
   TCHAR my_documents[MAX_PATH];
   bool my_documents_found = SUCCEEDED(
-    SHGetFolderPath(nullptr, CSIDL_MYDOCUMENTS, nullptr, SHGFP_TYPE_CURRENT, my_documents));
+      SHGetFolderPath(nullptr, CSIDL_MYDOCUMENTS, nullptr, SHGFP_TYPE_CURRENT, my_documents));
 
   if (local)  // Case 1-2
     user_path = File::GetExeDirectory() + DIR_SEP USERDATA_DIR DIR_SEP;
@@ -173,20 +183,20 @@ void SetUserDirectory(const std::string& custom_path)
     {
       const char* data_home = getenv("XDG_DATA_HOME");
       std::string data_path =
-        std::string(data_home && data_home[0] == '/' ? data_home :
-        (home_path + ".local" DIR_SEP "share")) +
-        DIR_SEP DOLPHIN_DATA_DIR DIR_SEP;
+          std::string(data_home && data_home[0] == '/' ? data_home :
+                                                         (home_path + ".local" DIR_SEP "share")) +
+          DIR_SEP DOLPHIN_DATA_DIR DIR_SEP;
 
       const char* config_home = getenv("XDG_CONFIG_HOME");
       std::string config_path =
-        std::string(config_home && config_home[0] == '/' ? config_home :
-        (home_path + ".config")) +
-        DIR_SEP DOLPHIN_DATA_DIR DIR_SEP;
+          std::string(config_home && config_home[0] == '/' ? config_home :
+                                                             (home_path + ".config")) +
+          DIR_SEP DOLPHIN_DATA_DIR DIR_SEP;
 
       const char* cache_home = getenv("XDG_CACHE_HOME");
       std::string cache_path =
-        std::string(cache_home && cache_home[0] == '/' ? cache_home : (home_path + ".cache")) +
-        DIR_SEP DOLPHIN_DATA_DIR DIR_SEP;
+          std::string(cache_home && cache_home[0] == '/' ? cache_home : (home_path + ".cache")) +
+          DIR_SEP DOLPHIN_DATA_DIR DIR_SEP;
 
       File::SetUserPath(D_USER_IDX, data_path);
       File::SetUserPath(D_CONFIG_IDX, config_path);
@@ -220,6 +230,22 @@ void SaveWiimoteSources()
   sec.Set("Source", (int)g_wiimote_sources[WIIMOTE_BALANCE_BOARD]);
 
   inifile.Save(ini_filename);
+}
+
+bool TriggerSTMPowerEvent()
+{
+  const auto ios = IOS::HLE::GetIOS();
+  if (!ios)
+    return false;
+
+  const auto stm = ios->GetDeviceByName("/dev/stm/eventhook");
+  if (!stm || !std::static_pointer_cast<IOS::HLE::Device::STMEventHook>(stm)->HasHookInstalled())
+    return false;
+
+  Core::DisplayMessage("Shutting down", 30000);
+  ProcessorInterface::PowerButton_Tap();
+
+  return true;
 }
 
 }  // namespace UICommon

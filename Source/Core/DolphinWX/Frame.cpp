@@ -42,6 +42,7 @@
 #include "Common/StringUtil.h"
 #include "Common/Thread.h"
 
+#include "Core/Config/GraphicsSettings.h"
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
 #include "Core/HW/DVD/DVDInterface.h"
@@ -96,8 +97,8 @@ Display* XDisplayFromHandle(void* Handle)
 #endif
 
 CRenderFrame::CRenderFrame(wxFrame* parent, wxWindowID id, const wxString& title,
-  const wxPoint& pos, const wxSize& size, long style)
-  : wxFrame(parent, id, title, pos, size, style)
+                           const wxPoint& pos, const wxSize& size, long style)
+    : wxFrame(parent, id, title, pos, size, style)
 {
   // Give it an icon
   SetIcons(WxUtils::GetDolphinIconBundle());
@@ -185,7 +186,7 @@ WXLRESULT CRenderFrame::MSWWindowProc(WXUINT nMsg, WXWPARAM wParam, WXLPARAM lPa
 
     case WM_USER_SETCURSOR:
       if (SConfig::GetInstance().bHideCursor && main_frame->RendererHasFocus() &&
-        Core::GetState() == Core::State::Running)
+          Core::GetState() == Core::State::Running)
         SetCursor(wxCURSOR_BLANK);
       else
         SetCursor(wxNullCursor);
@@ -197,7 +198,7 @@ WXLRESULT CRenderFrame::MSWWindowProc(WXUINT nMsg, WXWPARAM wParam, WXLPARAM lPa
     // Let Core finish initializing before accepting any WM_CLOSE messages
     if (!Core::IsRunning())
       break;
-    // Use default action otherwise
+  // Use default action otherwise
 
   default:
     // By default let wxWidgets do what it normally does with this event
@@ -317,9 +318,9 @@ static void SignalHandler(int)
 #endif
 
 CFrame::CFrame(wxFrame* parent, wxWindowID id, const wxString& title, wxRect geometry,
-  bool use_debugger, bool batch_mode, bool show_log_window, long style)
-  : CRenderFrame(parent, id, title, wxDefaultPosition, wxSize(800, 600), style),
-  m_use_debugger(use_debugger), m_batch_mode(batch_mode)
+               bool use_debugger, bool batch_mode, bool show_log_window, long style)
+    : CRenderFrame(parent, id, title, wxDefaultPosition, wxSize(800, 600), style),
+      m_use_debugger(use_debugger), m_batch_mode(batch_mode)
 {
   BindEvents();
 
@@ -337,7 +338,8 @@ CFrame::CFrame(wxFrame* parent, wxWindowID id, const wxString& title, wxRect geo
   wxFrame::CreateToolBar(wxTB_DEFAULT_STYLE | wxTB_TEXT | wxTB_FLAT)->Realize();
 
   // Give it a status bar
-  SetStatusBar(CreateStatusBar(2, wxST_SIZEGRIP, ID_STATUSBAR));
+  SetStatusBar(
+      CreateStatusBar(2, wxSTB_SIZEGRIP | wxSTB_ELLIPSIZE_END | wxSTB_SHOW_TIPS, ID_STATUSBAR));
   if (!SConfig::GetInstance().m_InterfaceStatusbar)
     GetStatusBar()->Hide();
 
@@ -351,8 +353,9 @@ CFrame::CFrame(wxFrame* parent, wxWindowID id, const wxString& title, wxRect geo
   // This panel is the parent for rendering and it holds the gamelistctrl
   m_panel = new wxPanel(this, IDM_MPANEL, wxDefaultPosition, wxDefaultSize, 0);
 
-  m_game_list_ctrl = new CGameListCtrl(m_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize,
-    wxLC_REPORT | wxSUNKEN_BORDER | wxLC_ALIGN_LEFT);
+  m_game_list_ctrl =
+      new GameListCtrl(m_batch_mode, m_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize,
+                       wxLC_REPORT | wxSUNKEN_BORDER | wxLC_ALIGN_LEFT);
   m_game_list_ctrl->Bind(wxEVT_LIST_ITEM_ACTIVATED, &CFrame::OnGameListCtrlItemActivated, this);
 
   wxBoxSizer* sizerPanel = new wxBoxSizer(wxHORIZONTAL);
@@ -364,22 +367,22 @@ CFrame::CFrame(wxFrame* parent, wxWindowID id, const wxString& title, wxRect geo
   m_mgr = new wxAuiManager(this, wxAUI_MGR_DEFAULT | wxAUI_MGR_LIVE_RESIZE);
 
   m_mgr->AddPane(m_panel, wxAuiPaneInfo()
-    .Name("Pane 0")
-    .Caption("Pane 0")
-    .PaneBorder(false)
-    .CaptionVisible(false)
-    .Layer(0)
-    .Center()
-    .Show());
+                              .Name("Pane 0")
+                              .Caption("Pane 0")
+                              .PaneBorder(false)
+                              .CaptionVisible(false)
+                              .Layer(0)
+                              .Center()
+                              .Show());
   if (!m_code_window)
     m_mgr->AddPane(CreateEmptyNotebook(), wxAuiPaneInfo()
-      .Name("Pane 1")
-      .Caption(_("Logging"))
-      .CaptionVisible(true)
-      .Layer(0)
-      .FloatingSize(wxSize(600, 350))
-      .CloseButton(true)
-      .Hide());
+                                              .Name("Pane 1")
+                                              .Caption(_("Logging"))
+                                              .CaptionVisible(true)
+                                              .Layer(0)
+                                              .FloatingSize(wxSize(600, 350))
+                                              .CloseButton(true)
+                                              .Hide());
   m_aui_fullscreen_perspective = m_mgr->SavePerspective();
 
   if (!SConfig::GetInstance().m_InterfaceToolbar)
@@ -410,7 +413,7 @@ CFrame::CFrame(wxFrame* parent, wxWindowID id, const wxString& title, wxRect geo
   // This has to be done here instead of in Main because the Show() happens here.
   SetMinSize(FromDIP(wxSize(400, 300)));
   WxUtils::SetWindowSizeAndFitToScreen(this, geometry.GetPosition(), geometry.GetSize(),
-    FromDIP(wxSize(800, 600)));
+                                       FromDIP(wxSize(800, 600)));
 
   // Start debugging maximized (Must be after the window has been positioned)
   if (m_use_debugger)
@@ -430,7 +433,7 @@ CFrame::CFrame(wxFrame* parent, wxWindowID id, const wxString& title, wxRect geo
 
 #if defined(HAVE_XRANDR) && HAVE_XRANDR
   m_xrr_config = new X11Utils::XRRConfiguration(X11Utils::XDisplayFromHandle(GetHandle()),
-    X11Utils::XWindowFromHandle(GetHandle()));
+                                                X11Utils::XWindowFromHandle(GetHandle()));
 #endif
 
   // Connect event handlers
@@ -490,7 +493,8 @@ void CFrame::BindEvents()
   BindMenuBarEvents();
 
   Bind(DOLPHIN_EVT_RELOAD_THEME_BITMAPS, &CFrame::OnReloadThemeBitmaps, this);
-  Bind(DOLPHIN_EVT_RELOAD_GAMELIST, &CFrame::OnReloadGameList, this);
+  Bind(DOLPHIN_EVT_REFRESH_GAMELIST, &CFrame::OnRefreshGameList, this);
+  Bind(DOLPHIN_EVT_RESCAN_GAMELIST, &CFrame::OnRescanGameList, this);
   Bind(DOLPHIN_EVT_UPDATE_LOAD_WII_MENU_ITEM, &CFrame::OnUpdateLoadWiiMenuItem, this);
   Bind(DOLPHIN_EVT_BOOT_SOFTWARE, &CFrame::OnPlay, this);
   Bind(DOLPHIN_EVT_STOP_SOFTWARE, &CFrame::OnStop, this);
@@ -499,14 +503,14 @@ void CFrame::BindEvents()
 void CFrame::InitializeTASDialogs()
 {
   std::generate(m_tas_input_dialogs.begin(), m_tas_input_dialogs.end(),
-    [this] { return new TASInputDlg{ this }; });
+                [this] { return new TASInputDlg{this}; });
 
   Movie::SetGCInputManip([this](GCPadStatus* pad_status, int controller_id) {
     m_tas_input_dialogs[controller_id]->GetValues(pad_status);
   });
 
   Movie::SetWiiInputManip([this](u8* data, WiimoteEmu::ReportFeatures rptf, int controller_id,
-    int ext, wiimote_key key) {
+                                 int ext, wiimote_key key) {
     m_tas_input_dialogs[controller_id + 4]->GetValues(data, rptf, ext, key);
   });
 }
@@ -516,12 +520,12 @@ void CFrame::InitializeCoreCallbacks()
   // Warning: this gets called from the CPU thread, so we should
   // only queue things to do on the proper thread
   State::SetOnAfterLoadCallback([this] {
-    AddPendingEvent(wxCommandEvent{ wxEVT_HOST_COMMAND, IDM_UPDATE_GUI });
+    AddPendingEvent(wxCommandEvent{wxEVT_HOST_COMMAND, IDM_UPDATE_GUI});
   });
 
   // Warning: this gets called from the EmuThread
   Core::SetOnStoppedCallback([this] {
-    AddPendingEvent(wxCommandEvent{ wxEVT_HOST_COMMAND, IDM_STOPPED });
+    AddPendingEvent(wxCommandEvent{wxEVT_HOST_COMMAND, IDM_STOPPED});
   });
 }
 
@@ -645,9 +649,9 @@ void CFrame::OnResize(wxSizeEvent& event)
   event.Skip();
 
   if (!IsMaximized() && !IsIconized() &&
-    !(SConfig::GetInstance().bRenderToMain && RendererIsFullscreen()) &&
-    !(Core::GetState() != Core::State::Uninitialized && SConfig::GetInstance().bRenderToMain &&
-      SConfig::GetInstance().bRenderWindowAutoSize))
+      !(SConfig::GetInstance().bRenderToMain && RendererIsFullscreen()) &&
+      !(Core::GetState() != Core::State::Uninitialized && SConfig::GetInstance().bRenderToMain &&
+        SConfig::GetInstance().bRenderWindowAutoSize))
   {
     SConfig::GetInstance().iWidth = GetSize().GetWidth();
     SConfig::GetInstance().iHeight = GetSize().GetHeight();
@@ -655,8 +659,8 @@ void CFrame::OnResize(wxSizeEvent& event)
 
   // Make sure the logger pane is a sane size
   if (!m_code_window && m_log_window && m_mgr->GetPane("Pane 1").IsShown() &&
-    !m_mgr->GetPane("Pane 1").IsFloating() && (m_log_window->x > GetClientRect().GetWidth() ||
-      m_log_window->y > GetClientRect().GetHeight()))
+      !m_mgr->GetPane("Pane 1").IsFloating() && (m_log_window->x > GetClientRect().GetWidth() ||
+                                                 m_log_window->y > GetClientRect().GetHeight()))
   {
     ShowResizePane();
   }
@@ -691,21 +695,21 @@ WXLRESULT CFrame::MSWWindowProc(WXUINT nMsg, WXWPARAM wParam, WXLPARAM lParam)
 
 void CFrame::InhibitScreensaver()
 {
-  // Inhibit the screensaver. Depending on the operating system this may also
-  // disable low-power states and/or screen dimming.
+// Inhibit the screensaver. Depending on the operating system this may also
+// disable low-power states and/or screen dimming.
 
 #if defined(HAVE_X11) && HAVE_X11
   if (SConfig::GetInstance().bDisableScreenSaver)
   {
     X11Utils::InhibitScreensaver(X11Utils::XDisplayFromHandle(GetHandle()),
-      X11Utils::XWindowFromHandle(GetHandle()), true);
+                                 X11Utils::XWindowFromHandle(GetHandle()), true);
   }
 #endif
 
 #ifdef _WIN32
   // Prevents Windows from sleeping, turning off the display, or idling
   EXECUTION_STATE should_screen_save =
-    SConfig::GetInstance().bDisableScreenSaver ? ES_DISPLAY_REQUIRED : 0;
+      SConfig::GetInstance().bDisableScreenSaver ? ES_DISPLAY_REQUIRED : 0;
   SetThreadExecutionState(ES_CONTINUOUS | should_screen_save | ES_SYSTEM_REQUIRED);
 #endif
 
@@ -714,8 +718,8 @@ void CFrame::InhibitScreensaver()
   {
     CFStringRef reason_for_activity = CFSTR("Emulation Running");
     if (IOPMAssertionCreateWithName(kIOPMAssertionTypePreventUserIdleDisplaySleep,
-      kIOPMAssertionLevelOn, reason_for_activity,
-      &m_power_assertion) != kIOReturnSuccess)
+                                    kIOPMAssertionLevelOn, reason_for_activity,
+                                    &m_power_assertion) != kIOReturnSuccess)
     {
       m_power_assertion = kIOPMNullAssertionID;
     }
@@ -729,7 +733,7 @@ void CFrame::UninhibitScreensaver()
   if (SConfig::GetInstance().bDisableScreenSaver)
   {
     X11Utils::InhibitScreensaver(X11Utils::XDisplayFromHandle(GetHandle()),
-      X11Utils::XWindowFromHandle(GetHandle()), false);
+                                 X11Utils::XWindowFromHandle(GetHandle()), false);
   }
 #endif
 
@@ -747,17 +751,17 @@ void CFrame::UninhibitScreensaver()
 #endif
 }
 
-void CFrame::UpdateTitle(const std::string& str)
+void CFrame::UpdateTitle(const wxString& str)
 {
+  const wxString revision_string = StrToWxStr(scm_rev_str);
   if (SConfig::GetInstance().bRenderToMain && SConfig::GetInstance().m_InterfaceStatusbar)
   {
     GetStatusBar()->SetStatusText(str, 0);
-    m_render_frame->SetTitle(scm_rev_str);
+    m_render_frame->SetTitle(revision_string);
   }
   else
   {
-    std::string titleStr = StringFromFormat("%s | %s", scm_rev_str.c_str(), str.c_str());
-    m_render_frame->SetTitle(titleStr);
+    m_render_frame->SetTitle(revision_string + StrToWxStr(" | ") + str);
   }
 }
 
@@ -768,7 +772,7 @@ void CFrame::OnHostMessage(wxCommandEvent& event)
   case IDM_UPDATE_DISASM_DIALOG:  // For breakpoints causing pausing
     if (!m_code_window || Core::GetState() != Core::State::Paused)
       return;
-    // fallthrough
+  // fallthrough
 
   case IDM_UPDATE_GUI:
     UpdateGUI();
@@ -780,7 +784,7 @@ void CFrame::OnHostMessage(wxCommandEvent& event)
     break;
 
   case IDM_UPDATE_TITLE:
-    UpdateTitle(WxStrToStr(event.GetString()));
+    UpdateTitle(event.GetString());
     break;
 
   case IDM_WINDOW_SIZE_REQUEST:
@@ -801,8 +805,8 @@ void CFrame::OnHostMessage(wxCommandEvent& event)
     wxString caption = event.GetString().BeforeFirst(':');
     wxString text = event.GetString().AfterFirst(':');
     m_panic_result =
-      (wxYES == wxMessageBox(text, caption, wxSTAY_ON_TOP | (event.GetInt() ? wxYES_NO : wxOK),
-        wxWindow::FindFocus()));
+        (wxYES == wxMessageBox(text, caption, wxSTAY_ON_TOP | (event.GetInt() ? wxYES_NO : wxOK),
+                               wxWindow::FindFocus()));
     m_panic_event.Set();
   }
   break;
@@ -836,7 +840,7 @@ void CFrame::OnHostMessage(wxCommandEvent& event)
 void CFrame::OnRenderWindowSizeRequest(int width, int height)
 {
   if (!SConfig::GetInstance().bRenderWindowAutoSize || !Core::IsRunning() ||
-    RendererIsFullscreen() || m_render_frame->IsMaximized())
+      RendererIsFullscreen() || m_render_frame->IsMaximized())
     return;
 
   wxSize requested_size(width, height);
@@ -876,20 +880,20 @@ void CFrame::OnGameListCtrlItemActivated(wxListEvent& WXUNUSED(event))
   // 1. Boot the selected iso
   // 2. Boot the default or last loaded iso.
   // 3. Call BrowseForDirectory if the gamelist is empty
-  if (!m_game_list_ctrl->GetISO(0) && CGameListCtrl::IsHidingItems())
+  if (!m_game_list_ctrl->GetISO(0) && GameListCtrl::IsHidingItems())
   {
     SConfig::GetInstance().m_ListGC = SConfig::GetInstance().m_ListWii =
-      SConfig::GetInstance().m_ListWad = SConfig::GetInstance().m_ListElfDol =
-      SConfig::GetInstance().m_ListJap = SConfig::GetInstance().m_ListUsa =
-      SConfig::GetInstance().m_ListPal = SConfig::GetInstance().m_ListAustralia =
-      SConfig::GetInstance().m_ListFrance = SConfig::GetInstance().m_ListGermany =
-      SConfig::GetInstance().m_ListItaly = SConfig::GetInstance().m_ListKorea =
-      SConfig::GetInstance().m_ListNetherlands =
-      SConfig::GetInstance().m_ListRussia =
-      SConfig::GetInstance().m_ListSpain =
-      SConfig::GetInstance().m_ListTaiwan =
-      SConfig::GetInstance().m_ListWorld =
-      SConfig::GetInstance().m_ListUnknown = true;
+        SConfig::GetInstance().m_ListWad = SConfig::GetInstance().m_ListElfDol =
+            SConfig::GetInstance().m_ListJap = SConfig::GetInstance().m_ListUsa =
+                SConfig::GetInstance().m_ListPal = SConfig::GetInstance().m_ListAustralia =
+                    SConfig::GetInstance().m_ListFrance = SConfig::GetInstance().m_ListGermany =
+                        SConfig::GetInstance().m_ListItaly = SConfig::GetInstance().m_ListKorea =
+                            SConfig::GetInstance().m_ListNetherlands =
+                                SConfig::GetInstance().m_ListRussia =
+                                    SConfig::GetInstance().m_ListSpain =
+                                        SConfig::GetInstance().m_ListTaiwan =
+                                            SConfig::GetInstance().m_ListWorld =
+                                                SConfig::GetInstance().m_ListUnknown = true;
 
     GetMenuBar()->FindItem(IDM_LIST_GC)->Check(true);
     GetMenuBar()->FindItem(IDM_LIST_WII)->Check(true);
@@ -909,7 +913,7 @@ void CFrame::OnGameListCtrlItemActivated(wxListEvent& WXUNUSED(event))
     GetMenuBar()->FindItem(IDM_LIST_WORLD)->Check(true);
     GetMenuBar()->FindItem(IDM_LIST_UNKNOWN)->Check(true);
 
-    UpdateGameList();
+    GameListRefresh();
   }
   else if (!m_game_list_ctrl->GetISO(0))
   {
@@ -1157,7 +1161,7 @@ void CFrame::OnMouse(wxMouseEvent& event)
     if (mouseLookEnabled)
     {
       VertexShaderManager::RotateView((event.GetX() - lastMouse[0]) / 200.0f,
-        (event.GetY() - lastMouse[1]) / 200.0f);
+                                      (event.GetY() - lastMouse[1]) / 200.0f);
       lastMouse[0] = event.GetX();
       lastMouse[1] = event.GetY();
     }
@@ -1165,7 +1169,7 @@ void CFrame::OnMouse(wxMouseEvent& event)
     if (mouseMoveEnabled)
     {
       VertexShaderManager::TranslateView((event.GetX() - lastMouse[0]) / 50.0f,
-        (event.GetY() - lastMouse[1]) / 50.0f);
+                                         (event.GetY() - lastMouse[1]) / 50.0f);
       lastMouse[0] = event.GetX();
       lastMouse[1] = event.GetY();
     }
@@ -1340,7 +1344,7 @@ void CFrame::ParseHotkeys()
     auto device = ios ? ios->GetDeviceByName("/dev/usb/oh1/57e/305") : nullptr;
     if (device != nullptr)
       std::static_pointer_cast<IOS::HLE::Device::BluetoothBase>(device)->UpdateSyncButtonState(
-        IsHotkey(HK_TRIGGER_SYNC_BUTTON, true));
+          IsHotkey(HK_TRIGGER_SYNC_BUTTON, true));
   }
 
   if (m_use_debugger)
@@ -1424,38 +1428,45 @@ void CFrame::ParseHotkeys()
   if (IsHotkey(HK_INCREASE_IR))
   {
     OSDChoice = 1;
-    ++g_Config.iEFBScale;
+    Config::SetCurrent(Config::GFX_EFB_SCALE, Config::Get(Config::GFX_EFB_SCALE) + 1);
   }
   if (IsHotkey(HK_DECREASE_IR))
   {
     OSDChoice = 1;
-    if (--g_Config.iEFBScale < SCALE_AUTO)
-      g_Config.iEFBScale = SCALE_AUTO;
+    if (Config::Get(Config::GFX_EFB_SCALE) > SCALE_AUTO)
+      Config::SetCurrent(Config::GFX_EFB_SCALE, Config::Get(Config::GFX_EFB_SCALE) - 1);
   }
   if (IsHotkey(HK_TOGGLE_CROP))
   {
-    g_Config.bCrop = !g_Config.bCrop;
+    Config::SetCurrent(Config::GFX_CROP, !Config::Get(Config::GFX_CROP));
   }
   if (IsHotkey(HK_TOGGLE_AR))
   {
     OSDChoice = 2;
     // Toggle aspect ratio
-    g_Config.iAspectRatio = (g_Config.iAspectRatio + 1) & 3;
+    int aspect_ratio = Config::Get(Config::GFX_ASPECT_RATIO);
+    aspect_ratio = (aspect_ratio + 1) & 3;
+    Config::SetCurrent(Config::GFX_ASPECT_RATIO, aspect_ratio);
   }
   if (IsHotkey(HK_TOGGLE_EFBCOPIES))
   {
     OSDChoice = 3;
     // Toggle EFB copies between EFB2RAM and EFB2Texture
-    g_Config.bSkipEFBCopyToRam = !g_Config.bSkipEFBCopyToRam;
-  }
-  if (IsHotkey(HK_TOGGLE_DUMPTEXTURES))
-  {
-    g_Config.bDumpTextures = !g_Config.bDumpTextures;
+    Config::SetCurrent(Config::GFX_HACK_SKIP_EFB_COPY_TO_RAM,
+                       !Config::Get(Config::GFX_HACK_SKIP_EFB_COPY_TO_RAM));
   }
   if (IsHotkey(HK_TOGGLE_FOG))
   {
     OSDChoice = 4;
-    g_Config.bDisableFog = !g_Config.bDisableFog;
+    Config::SetCurrent(Config::GFX_DISABLE_FOG, !Config::Get(Config::GFX_DISABLE_FOG));
+  }
+  if (IsHotkey(HK_TOGGLE_DUMPTEXTURES))
+  {
+    Config::SetCurrent(Config::GFX_DUMP_TEXTURES, !Config::Get(Config::GFX_DUMP_TEXTURES));
+  }
+  if (IsHotkey(HK_TOGGLE_TEXTURES))
+  {
+    Config::SetCurrent(Config::GFX_HIRES_TEXTURES, !Config::Get(Config::GFX_HIRES_TEXTURES));
   }
   Core::SetIsThrottlerTempDisabled(IsHotkey(HK_TOGGLE_THROTTLE, true));
   if (IsHotkey(HK_DECREASE_EMULATION_SPEED))
@@ -1470,7 +1481,7 @@ void CFrame::ParseHotkeys()
       SConfig::GetInstance().m_EmulationSpeed = 0.1f;
 
     if (SConfig::GetInstance().m_EmulationSpeed >= 0.95f &&
-      SConfig::GetInstance().m_EmulationSpeed <= 1.05f)
+        SConfig::GetInstance().m_EmulationSpeed <= 1.05f)
       SConfig::GetInstance().m_EmulationSpeed = 1.0f;
   }
   if (IsHotkey(HK_INCREASE_EMULATION_SPEED))
@@ -1481,7 +1492,7 @@ void CFrame::ParseHotkeys()
       SConfig::GetInstance().m_EmulationSpeed += 0.1f;
 
     if (SConfig::GetInstance().m_EmulationSpeed >= 0.95f &&
-      SConfig::GetInstance().m_EmulationSpeed <= 1.05f)
+        SConfig::GetInstance().m_EmulationSpeed <= 1.05f)
       SConfig::GetInstance().m_EmulationSpeed = 1.0f;
   }
   if (IsHotkey(HK_SAVE_STATE_SLOT_SELECTED))
@@ -1496,58 +1507,72 @@ void CFrame::ParseHotkeys()
   if (IsHotkey(HK_TOGGLE_STEREO_SBS))
   {
     if (g_Config.iStereoMode != STEREO_SBS)
-      g_Config.iStereoMode = STEREO_SBS;
+    {
+      Config::SetCurrent(Config::GFX_STEREO_MODE, static_cast<int>(STEREO_SBS));
+    }
     else
-      g_Config.iStereoMode = STEREO_OFF;
+    {
+      Config::SetCurrent(Config::GFX_STEREO_MODE, static_cast<int>(STEREO_OFF));
+    }
   }
   if (IsHotkey(HK_TOGGLE_STEREO_TAB))
   {
     if (g_Config.iStereoMode != STEREO_TAB)
-      g_Config.iStereoMode = STEREO_TAB;
+    {
+      Config::SetCurrent(Config::GFX_STEREO_MODE, static_cast<int>(STEREO_TAB));
+    }
     else
-      g_Config.iStereoMode = STEREO_OFF;
+    {
+      Config::SetCurrent(Config::GFX_STEREO_MODE, static_cast<int>(STEREO_OFF));
+    }
   }
   if (IsHotkey(HK_TOGGLE_STEREO_ANAGLYPH))
   {
     if (g_Config.iStereoMode != STEREO_SHADER || g_Config.sStereoShader != "Anaglyph/dubois")
     {
-      g_Config.iStereoMode = STEREO_SHADER;
-      g_Config.sStereoShader = "Anaglyph/dubois";
+      // Setting the anaglyph mode also requires a specific
+      // post-processing shader to be activated.
+      Config::SetCurrent(Config::GFX_STEREO_MODE, static_cast<int>(STEREO_SHADER));
+      Config::SetCurrent(Config::GFX_ENHANCE_POST_SHADERS, std::string("Anaglyph/dubois"));
       if (g_renderer && g_renderer->GetPostProcessor())
         g_renderer->GetPostProcessor()->SetReloadFlag();
     }
     else
-      g_Config.iStereoMode = STEREO_OFF;
+    {
+      Config::SetCurrent(Config::GFX_STEREO_MODE, static_cast<int>(STEREO_OFF));
+    }
   }
   if (IsHotkey(HK_TOGGLE_STEREO_3DVISION))
   {
     if (g_Config.iStereoMode != STEREO_3DVISION)
-      g_Config.iStereoMode = STEREO_3DVISION;
+    {
+      Config::SetCurrent(Config::GFX_STEREO_MODE, static_cast<int>(STEREO_3DVISION));
+    }
     else
-      g_Config.iStereoMode = STEREO_OFF;
+    {
+      Config::SetCurrent(Config::GFX_STEREO_MODE, static_cast<int>(STEREO_OFF));
+    }
   }
 
   if (IsHotkey(HK_DECREASE_DEPTH, true))
   {
-    if (--g_Config.iStereoDepth < 0)
-      g_Config.iStereoDepth = 0;
+    if (g_Config.iStereoDepth > 0)
+      Config::SetCurrent(Config::GFX_STEREO_DEPTH, g_Config.iStereoDepth - 1);
   }
   if (IsHotkey(HK_INCREASE_DEPTH, true))
   {
-    if (++g_Config.iStereoDepth > 100)
-      g_Config.iStereoDepth = 100;
+    if (g_Config.iStereoDepth < 100)
+      Config::SetCurrent(Config::GFX_STEREO_DEPTH, g_Config.iStereoDepth + 1);
   }
   if (IsHotkey(HK_DECREASE_CONVERGENCE, true))
   {
-    g_Config.iStereoConvergence -= 5;
-    if (g_Config.iStereoConvergence < 0)
-      g_Config.iStereoConvergence = 0;
+    int convergence = std::max(0, g_Config.iStereoConvergence - 5);
+    Config::SetCurrent(Config::GFX_STEREO_CONVERGENCE, convergence);
   }
   if (IsHotkey(HK_INCREASE_CONVERGENCE, true))
   {
-    g_Config.iStereoConvergence += 5;
-    if (g_Config.iStereoConvergence > 500)
-      g_Config.iStereoConvergence = 500;
+    int convergence = std::min(500, g_Config.iStereoConvergence + 5);
+    Config::SetCurrent(Config::GFX_STEREO_CONVERGENCE, convergence);
   }
 
   if (IsHotkey(HK_RELOAD_POSTPROCESS_SHADERS))
@@ -1556,14 +1581,9 @@ void CFrame::ParseHotkeys()
       g_renderer->GetPostProcessor()->SetReloadFlag();
   }
 
-  if (IsHotkey(HK_TOGGLE_TEXTURES))
-  {
-    g_Config.bHiresTextures = !g_Config.bHiresTextures;
-  }
-
   if (IsHotkey(HK_TOGGLE_MATERIAL_TEXTURES))
   {
-    g_Config.bHiresMaterialMaps = !g_Config.bHiresMaterialMaps;
+    Config::SetCurrent(Config::GFX_HIRES_MATERIAL_MAPS, !Config::Get(Config::GFX_HIRES_MATERIAL_MAPS));
   }
 
   static float debugSpeed = 1.0f;
@@ -1662,7 +1682,7 @@ void CFrame::HandleFrameSkipHotkeys()
     }
 
     if (frameStepCount == FRAME_STEP_DELAY && holdFrameStep &&
-      holdFrameStepDelayCount >= holdFrameStepDelay)
+        holdFrameStepDelayCount >= holdFrameStepDelay)
     {
       holdFrameStep = false;
       holdFrameStepDelayCount = 0;

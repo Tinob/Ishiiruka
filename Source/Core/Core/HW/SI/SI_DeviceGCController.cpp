@@ -23,7 +23,7 @@ namespace SerialInterface
 {
 // --- standard GameCube controller ---
 CSIDevice_GCController::CSIDevice_GCController(SIDevices device, int device_number)
-  : ISIDevice(device, device_number)
+    : ISIDevice(device, device_number)
 {
 }
 
@@ -210,7 +210,7 @@ bool CSIDevice_GCController::GetData(u32& hi, u32& low)
   {
     low = (u8)(pad_status.analogB);               // All 8 bits
     low |= (u32)((u8)(pad_status.analogA) << 8);  // All 8 bits
-                                                  // triggerLeft/Right are always 0
+    // triggerLeft/Right are always 0
     low |= (u32)((u8)pad_status.substickY << 16);  // All 8 bits
     low |= (u32)((u8)pad_status.substickX << 24);  // All 8 bits
   }
@@ -287,7 +287,7 @@ void CSIDevice_GCController::SendCommand(u32 command, u8 poll)
 
   switch (controller_command.command)
   {
-    // Costis sent it in some demos :)
+  // Costis sent it in some demos :)
   case 0x00:
     break;
 

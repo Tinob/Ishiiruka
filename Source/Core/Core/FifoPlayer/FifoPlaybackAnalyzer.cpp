@@ -4,6 +4,8 @@
 
 #include "Core/FifoPlayer/FifoPlaybackAnalyzer.h"
 
+#include <vector>
+
 #include "Common/CommonTypes.h"
 #include "Core/FifoPlayer/FifoAnalyzer.h"
 #include "Core/FifoPlayer/FifoDataFile.h"
@@ -20,7 +22,7 @@ struct CmdData
 };
 
 void FifoPlaybackAnalyzer::AnalyzeFrames(FifoDataFile* file,
-  std::vector<AnalyzedFrameInfo>& frameInfo)
+                                         std::vector<AnalyzedFrameInfo>& frameInfo)
 {
   u32* cpMem = file->GetCPMem();
   FifoAnalyzer::LoadCPReg(0x50, cpMem[0x50], s_CpMem);
@@ -55,7 +57,7 @@ void FifoPlaybackAnalyzer::AnalyzeFrames(FifoDataFile* file,
     {
       // Add memory updates that have occurred before this point in the frame
       while (nextMemUpdate < frame.memoryUpdates.size() &&
-        frame.memoryUpdates[nextMemUpdate].fifoPosition <= cmdStart)
+             frame.memoryUpdates[nextMemUpdate].fifoPosition <= cmdStart)
       {
         analyzed.memoryUpdates.push_back(frame.memoryUpdates[nextMemUpdate]);
         ++nextMemUpdate;

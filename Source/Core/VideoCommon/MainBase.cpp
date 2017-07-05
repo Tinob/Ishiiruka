@@ -203,8 +203,7 @@ void VideoBackendBase::InitializeShared()
 
   // do not initialize again for the config window
   m_initialized = true;
-  g_Config.Load(File::GetUserPath(D_CONFIG_IDX) + "GFX.ini");
-  g_Config.GameIniLoad();
+  g_Config.Refresh();
   g_Config.UpdateProjectionHack();
   g_Config.VerifyValidity();
   UpdateActiveConfig();

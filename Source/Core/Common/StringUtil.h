@@ -17,17 +17,17 @@ std::string StringFromFormatV(const char* format, va_list args);
 
 std::string StringFromFormat(const char* format, ...)
 #if !defined _WIN32
-// On compilers that support function attributes, this gives StringFromFormat
-// the same errors and warnings that printf would give.
-__attribute__((__format__(printf, 1, 2)))
+    // On compilers that support function attributes, this gives StringFromFormat
+    // the same errors and warnings that printf would give.
+    __attribute__((__format__(printf, 1, 2)))
 #endif
-;
+    ;
 
 // Cheap!
 bool CharArrayFromFormatV(char* out, int outsize, const char* format, va_list args);
 
 template <size_t Count>
-inline void CharArrayFromFormat(char(&out)[Count], const char* format, ...)
+inline void CharArrayFromFormat(char (&out)[Count], const char* format, ...)
 {
   va_list args;
   va_start(args, format);
@@ -47,7 +47,7 @@ std::string ThousandSeparate(I value, int spaces = 0)
 {
   std::ostringstream oss;
 
-  // std::locale("") seems to be broken on many platforms
+// std::locale("") seems to be broken on many platforms
 #if defined _WIN32 || (defined __linux__ && !defined __clang__)
   oss.imbue(std::locale(""));
 #endif
@@ -106,19 +106,20 @@ bool AsciiToHex(const std::string& _szValue, u32& result);
 
 std::string TabsToSpaces(int tab_size, const std::string& in);
 
-void SplitString(const std::string& str, char delim, std::vector<std::string>& output);
+std::vector<std::string> SplitString(const std::string& str, char delim);
 std::string JoinStrings(const std::vector<std::string>& strings, const std::string& delimiter);
 
 // "C:/Windows/winhelp.exe" to "C:/Windows/", "winhelp", ".exe"
 bool SplitPath(const std::string& full_path, std::string* _pPath, std::string* _pFilename,
-  std::string* _pExtension);
+               std::string* _pExtension);
 
 void BuildCompleteFilename(std::string& _CompleteFilename, const std::string& _Path,
-  const std::string& _Filename);
+                           const std::string& _Filename);
 std::string ReplaceAll(std::string result, const std::string& src, const std::string& dest);
 
 bool StringBeginsWith(const std::string& str, const std::string& begin);
 bool StringEndsWith(const std::string& str, const std::string& end);
+void StringPopBackIf(std::string* s, char c);
 
 std::string CP1252ToUTF8(const std::string& str);
 std::string SHIFTJISToUTF8(const std::string& str);

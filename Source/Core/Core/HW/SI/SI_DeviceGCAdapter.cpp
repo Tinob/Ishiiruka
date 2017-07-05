@@ -7,8 +7,6 @@
 #include <cstring>
 
 #include "Common/CommonTypes.h"
-#include "Common/Logging/Log.h"
-#include "Common/MsgHandler.h"
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
 #include "Core/HW/GCPad.h"
@@ -18,7 +16,7 @@
 namespace SerialInterface
 {
 CSIDevice_GCAdapter::CSIDevice_GCAdapter(SIDevices device, int device_number)
-  : CSIDevice_GCController(device, device_number)
+    : CSIDevice_GCController(device, device_number)
 {
   // get the correct pad number that should rumble locally when using netplay
   const int pad_num = NetPlay_InGamePadToLocalPad(m_device_number);

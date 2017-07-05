@@ -94,9 +94,9 @@ double CalculatePhysicalDiscPosition(u64 offset)
   // Note that because Wii and GC discs have identical data densities
   // we can simply use the Wii numbers in both cases
   return std::sqrt(
-    static_cast<double>(offset) / WII_DISC_LAYER_SIZE *
-    (WII_DVD_OUTER_RADIUS * WII_DVD_OUTER_RADIUS - DVD_INNER_RADIUS * DVD_INNER_RADIUS) +
-    DVD_INNER_RADIUS * DVD_INNER_RADIUS);
+      static_cast<double>(offset) / WII_DISC_LAYER_SIZE *
+          (WII_DVD_OUTER_RADIUS * WII_DVD_OUTER_RADIUS - DVD_INNER_RADIUS * DVD_INNER_RADIUS) +
+      DVD_INNER_RADIUS * DVD_INNER_RADIUS);
 }
 
 // Returns the time in seconds to move the read head from one offset to
@@ -135,18 +135,18 @@ double CalculateRawDiscReadTime(u64 offset, u64 length, bool wii_disc)
   if (wii_disc)
   {
     speed = (physical_offset - DVD_INNER_RADIUS) / (WII_DVD_OUTER_RADIUS - DVD_INNER_RADIUS) *
-      (WII_DISC_OUTER_READ_SPEED - WII_DISC_INNER_READ_SPEED) +
-      WII_DISC_INNER_READ_SPEED;
+                (WII_DISC_OUTER_READ_SPEED - WII_DISC_INNER_READ_SPEED) +
+            WII_DISC_INNER_READ_SPEED;
   }
   else
   {
     speed = (physical_offset - DVD_INNER_RADIUS) / (GC_DVD_OUTER_RADIUS - DVD_INNER_RADIUS) *
-      (GC_DISC_OUTER_READ_SPEED - GC_DISC_INNER_READ_SPEED) +
-      GC_DISC_INNER_READ_SPEED;
+                (GC_DISC_OUTER_READ_SPEED - GC_DISC_INNER_READ_SPEED) +
+            GC_DISC_INNER_READ_SPEED;
   }
 
   DEBUG_LOG(DVDINTERFACE, "Read 0x%" PRIx64 " @ 0x%" PRIx64 " @%lf mm: %lf us, %lf MiB/s", length,
-    offset, physical_offset * 1000, length / speed * 1000 * 1000, speed / 1024 / 1024);
+            offset, physical_offset * 1000, length / speed * 1000 * 1000, speed / 1024 / 1024);
 
   return length / speed;
 }

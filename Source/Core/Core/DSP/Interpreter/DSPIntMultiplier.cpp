@@ -29,7 +29,7 @@ s64 dsp_get_multiply_prod(u16 a, u16 b, u8 sign)
   else
     prod = (s16)a * (s16)b;  // signed
 
-                             // Conditionally multiply by 2.
+  // Conditionally multiply by 2.
   if ((g_dsp.r.sr & SR_MUL_MODIFY) == 0)
     prod <<= 1;
 
@@ -71,15 +71,15 @@ s64 dsp_multiply_mulx(u8 axh0, u8 axh1, u16 val1, u16 val2)
 }
 }  // Anonymous namespace
 
-   // CLRP
-   // 1000 0100 xxxx xxxx
-   // Clears product register $prod.
-   // Magic numbers taken from duddie's doc
-   //
-   // 00ff_(fff0 + 0010)_0000 = 0100_0000_0000, conveniently, lower 40bits = 0
-   //
-   // It's not ok, to just zero all of them, correct values should be set because of
-   // direct use of prod regs by AX/AXWII (look @that part of ucode).
+// CLRP
+// 1000 0100 xxxx xxxx
+// Clears product register $prod.
+// Magic numbers taken from duddie's doc
+//
+// 00ff_(fff0 + 0010)_0000 = 0100_0000_0000, conveniently, lower 40bits = 0
+//
+// It's not ok, to just zero all of them, correct values should be set because of
+// direct use of prod regs by AX/AXWII (look @that part of ucode).
 void clrp(const UDSPInstruction opc)
 {
   zeroWriteBackLog();

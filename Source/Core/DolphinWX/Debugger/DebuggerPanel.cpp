@@ -21,8 +21,8 @@
 #include "VideoCommon/TextureCacheBase.h"
 
 GFXDebuggerPanel::GFXDebuggerPanel(wxWindow* parent, wxWindowID id, const wxPoint& position,
-  const wxSize& size, long style, const wxString& title)
-  : wxPanel(parent, id, position, size, style, title)
+                                   const wxSize& size, long style, const wxString& title)
+    : wxPanel(parent, id, position, size, style, title)
 {
   g_pdebugger = this;
 
@@ -45,26 +45,26 @@ static PauseEventMap* pauseEventMap;
 
 void GFXDebuggerPanel::CreateGUIControls()
 {
-  static PauseEventMap map[] = { { NEXT_FRAME, _("Frame") },
-  { NEXT_FLUSH, _("Flush") },
+  static PauseEventMap map[] = {{NEXT_FRAME, _("Frame")},
+                                {NEXT_FLUSH, _("Flush")},
 
-  { NEXT_PIXEL_SHADER_CHANGE, _("Pixel Shader") },
-  { NEXT_VERTEX_SHADER_CHANGE, _("Vertex Shader") },
-  { NEXT_TEXTURE_CHANGE, _("Texture") },
-  { NEXT_NEW_TEXTURE, _("New Texture") },
+                                {NEXT_PIXEL_SHADER_CHANGE, _("Pixel Shader")},
+                                {NEXT_VERTEX_SHADER_CHANGE, _("Vertex Shader")},
+                                {NEXT_TEXTURE_CHANGE, _("Texture")},
+                                {NEXT_NEW_TEXTURE, _("New Texture")},
 
-  { NEXT_XFB_CMD, _("XFB Cmd") },
-  { NEXT_EFB_CMD, _("EFB Cmd") },
+                                {NEXT_XFB_CMD, _("XFB Cmd")},
+                                {NEXT_EFB_CMD, _("EFB Cmd")},
 
-  { NEXT_MATRIX_CMD, _("Matrix Cmd") },
-  { NEXT_VERTEX_CMD, _("Vertex Cmd") },
-  { NEXT_TEXTURE_CMD, _("Texture Cmd") },
-  { NEXT_LIGHT_CMD, _("Light Cmd") },
-  { NEXT_FOG_CMD, _("Fog Cmd") },
+                                {NEXT_MATRIX_CMD, _("Matrix Cmd")},
+                                {NEXT_VERTEX_CMD, _("Vertex Cmd")},
+                                {NEXT_TEXTURE_CMD, _("Texture Cmd")},
+                                {NEXT_LIGHT_CMD, _("Light Cmd")},
+                                {NEXT_FOG_CMD, _("Fog Cmd")},
 
-  { NEXT_SET_TLUT, _("TLUT Cmd") },
+                                {NEXT_SET_TLUT, _("TLUT Cmd")},
 
-  { NEXT_ERROR, _("Error") } };
+                                {NEXT_ERROR, _("Error")}};
   pauseEventMap = map;
   static constexpr int numPauseEventMap = ArraySize(map);
 
@@ -83,7 +83,7 @@ void GFXDebuggerPanel::CreateGUIControls()
   m_pButtonCont->Bind(wxEVT_BUTTON, &GFXDebuggerPanel::OnContButton, this);
 
   m_pCount = new wxTextCtrl(this, wxID_ANY, "1", wxDefaultPosition, wxDefaultSize, wxTE_RIGHT,
-    wxDefaultValidator, _("Count"));
+                            wxDefaultValidator, _("Count"));
   m_pCount->SetMinSize(WxUtils::GetTextWidgetMinSize(m_pCount, 10000));
 
   m_pPauseAtList = new wxChoice(this, wxID_ANY);
@@ -104,21 +104,21 @@ void GFXDebuggerPanel::CreateGUIControls()
 
   m_pButtonClearTextureCache = new wxButton(this, wxID_ANY, _("Clear Textures"));
   m_pButtonClearTextureCache->Bind(wxEVT_BUTTON, &GFXDebuggerPanel::OnClearTextureCacheButton,
-    this);
+                                   this);
 
   const wxString clear_vertex_shaders = _("Clear Vertex Shaders");
   m_pButtonClearVertexShaderCache =
-    new wxButton(this, wxID_ANY, clear_vertex_shaders, wxDefaultPosition, wxDefaultSize, 0,
-      wxDefaultValidator, clear_vertex_shaders);
+      new wxButton(this, wxID_ANY, clear_vertex_shaders, wxDefaultPosition, wxDefaultSize, 0,
+                   wxDefaultValidator, clear_vertex_shaders);
   m_pButtonClearVertexShaderCache->Bind(wxEVT_BUTTON,
-    &GFXDebuggerPanel::OnClearVertexShaderCacheButton, this);
+                                        &GFXDebuggerPanel::OnClearVertexShaderCacheButton, this);
 
   const wxString clear_pixel_shaders = _("Clear Pixel Shaders");
   m_pButtonClearPixelShaderCache =
-    new wxButton(this, wxID_ANY, clear_pixel_shaders, wxDefaultPosition, wxDefaultSize, 0,
-      wxDefaultValidator, clear_pixel_shaders);
+      new wxButton(this, wxID_ANY, clear_pixel_shaders, wxDefaultPosition, wxDefaultSize, 0,
+                   wxDefaultValidator, clear_pixel_shaders);
   m_pButtonClearPixelShaderCache->Bind(wxEVT_BUTTON,
-    &GFXDebuggerPanel::OnClearPixelShaderCacheButton, this);
+                                       &GFXDebuggerPanel::OnClearPixelShaderCacheButton, this);
 
   m_pDumpList = new wxChoice(this, wxID_ANY);
   m_pDumpList->Insert(_("Pixel Shader"), 0);
@@ -223,7 +223,7 @@ void GFXDebuggerPanel::OnPauseAtNextFrameButton(wxCommandEvent& event)
 void GFXDebuggerPanel::OnDumpButton(wxCommandEvent& event)
 {
   std::string dump_path =
-    File::GetUserPath(D_DUMP_IDX) + "Debug/" + SConfig::GetInstance().GetGameID() + "/";
+      File::GetUserPath(D_DUMP_IDX) + "Debug/" + SConfig::GetInstance().GetGameID() + "/";
   if (!File::CreateFullPath(dump_path))
     return;
 

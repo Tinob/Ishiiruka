@@ -82,7 +82,7 @@ bool D3DDescriptorHeapManager::AllocateTemporary(size_t num_handles,
   // Consume fences to create more space.
   while (!m_fences.empty())
   {
-    auto& iter = m_fences.begin();
+    const auto& iter = m_fences.begin();
     D3D::command_list_mgr->WaitOnCPUForFence(m_fence, iter->first);
     m_gpu_temporary_descriptor_index = iter->second;
     m_fences.pop_front();
@@ -397,8 +397,8 @@ D3D12_GPU_DESCRIPTOR_HANDLE D3DSamplerHeapManager::GetHandleForSamplerGroup(Samp
   {
     D3D12_CPU_DESCRIPTOR_HANDLE destinationDescriptor;
     destinationDescriptor.ptr = base_sampler_cpu_handle.ptr + i * D3D::sampler_descriptor_size;
-
-    D3D::device->CreateSampler(&StateCache::GetDesc(sampler_state[i]), destinationDescriptor);
+    auto desc = StateCache::GetDesc(sampler_state[i]);
+    D3D::device->CreateSampler(&desc, destinationDescriptor);
   }
 
   m_sampler_map[*reinterpret_cast<SamplerStateSet*>(sampler_state)] = base_sampler_gpu_handle;

@@ -19,7 +19,7 @@ class MovieConfigLayerLoader final : public Config::ConfigLayerLoader
 {
 public:
   explicit MovieConfigLayerLoader(Movie::DTMHeader* header)
-    : ConfigLayerLoader(Config::LayerType::Movie), m_header(header)
+      : ConfigLayerLoader(Config::LayerType::Movie), m_header(header)
   {
   }
 

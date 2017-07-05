@@ -3,18 +3,22 @@
 // Refer to the license.txt file included.
 
 #include "Core/NetPlayServer.h"
+
+#include <algorithm>
 #include <memory>
+#include <mutex>
 #include <string>
+#include <thread>
+#include <unordered_set>
 #include <vector>
+
 #include "Common/Common.h"
 #include "Common/ENetUtil.h"
 #include "Common/FileUtil.h"
-#include "Common/IniFile.h"
 #include "Common/Logging/Log.h"
 #include "Common/MsgHandler.h"
 #include "Common/StringUtil.h"
 #include "Core/ConfigManager.h"
-#include "Core/HW/EXI/EXI_DeviceIPL.h"
 #include "Core/HW/Sram.h"
 #include "Core/NetPlayClient.h"  //for NetPlayUI
 #include "InputCommon/GCPadStatus.h"
@@ -62,7 +66,7 @@ NetPlayServer::~NetPlayServer()
 
 // called from ---GUI--- thread
 NetPlayServer::NetPlayServer(const u16 port, bool traversal, const std::string& centralServer,
-  u16 centralPort)
+                             u16 centralPort)
 {
   //--use server time
   if (enet_initialize() != 0)
@@ -100,7 +104,7 @@ NetPlayServer::NetPlayServer(const u16 port, bool traversal, const std::string& 
     is_connected = true;
     m_do_loop = true;
     m_thread = std::thread(&NetPlayServer::ThreadFunc, this);
-    m_target_buffer_size = 8;
+    m_target_buffer_size = 5;
   }
 }
 
@@ -246,7 +250,7 @@ unsigned int NetPlayServer::OnConnect(ENetPeer* socket)
   std::string npver;
   rpac >> npver;
   // Dolphin netplay version
-  if (npver != scm_rev_git_str && !SConfig::GetInstance().bAllowAllNetplayVersions)
+  if (npver != scm_rev_git_str)
     return CON_ERR_VERSION_MISMATCH;
 
   // game is currently running
@@ -361,7 +365,7 @@ unsigned int NetPlayServer::OnDisconnect(const Client& player)
         sf::Packet spac;
         spac << (MessageId)NP_MSG_DISABLE_GAME;
         // this thread doesn't need players lock
-        SendToClients(spac, -1);
+        SendToClients(spac, static_cast<PlayerId>(-1));
         break;
       }
     }
@@ -510,7 +514,7 @@ unsigned int NetPlayServer::OnData(sf::Packet& packet, Client& player)
     PadMapping map = 0;
     GCPadStatus pad;
     packet >> map >> pad.button >> pad.analogA >> pad.analogB >> pad.stickX >> pad.stickY >>
-      pad.substickX >> pad.substickY >> pad.triggerLeft >> pad.triggerRight;
+        pad.substickX >> pad.substickY >> pad.triggerLeft >> pad.triggerRight;
 
     // If the data is not from the correct player,
     // then disconnect them.
@@ -523,7 +527,7 @@ unsigned int NetPlayServer::OnData(sf::Packet& packet, Client& player)
     sf::Packet spac;
     spac << (MessageId)NP_MSG_PAD_DATA;
     spac << map << pad.button << pad.analogA << pad.analogB << pad.stickX << pad.stickY
-      << pad.substickX << pad.substickY << pad.triggerLeft << pad.triggerRight;
+         << pad.substickX << pad.substickY << pad.triggerLeft << pad.triggerRight;
 
     SendToClients(spac, player.pid);
   }
@@ -635,15 +639,15 @@ unsigned int NetPlayServer::OnData(sf::Packet& packet, Client& player)
       // we have all records for this frame
 
       if (!std::all_of(timebases.begin(), timebases.end(), [&](std::pair<PlayerId, u64> pair) {
-        return pair.second == timebases[0].second;
-      }))
+            return pair.second == timebases[0].second;
+          }))
       {
         int pid_to_blame = -1;
         for (auto pair : timebases)
         {
           if (std::all_of(timebases.begin(), timebases.end(), [&](std::pair<PlayerId, u64> other) {
-            return other.first == pair.first || other.second != pair.second;
-          }))
+                return other.first == pair.first || other.second != pair.second;
+              }))
           {
             // we are the only outlier
             pid_to_blame = pair.first;
@@ -708,7 +712,7 @@ unsigned int NetPlayServer::OnData(sf::Packet& packet, Client& player)
 
   default:
     PanicAlertT("Unknown message with id:%d received from player:%d Kicking player!", mid,
-      player.pid);
+                player.pid);
     // unknown message, kick the client
     return 1;
     break;
@@ -840,7 +844,7 @@ void NetPlayServer::SendToClients(const sf::Packet& packet, const PlayerId skip_
 void NetPlayServer::Send(ENetPeer* socket, const sf::Packet& packet)
 {
   ENetPacket* epac =
-    enet_packet_create(packet.getData(), packet.getDataSize(), ENET_PACKET_FLAG_RELIABLE);
+      enet_packet_create(packet.getData(), packet.getDataSize(), ENET_PACKET_FLAG_RELIABLE);
   enet_peer_send(socket, 0, epac);
 }
 
@@ -899,8 +903,8 @@ std::vector<std::pair<std::string, std::string>> NetPlayServer::GetInterfaceList
 #if defined(_WIN32)
 
 #elif defined(ANDROID)
-  // Android has no getifaddrs for some stupid reason.  If this
-  // functionality ends up actually being used on Android, fix this.
+// Android has no getifaddrs for some stupid reason.  If this
+// functionality ends up actually being used on Android, fix this.
 #else
   ifaddrs* ifp = nullptr;
   char buf[512];
@@ -1024,10 +1028,10 @@ bool NetPlayServer::initUPnP()
     int statusCode = 200;
 #if MINIUPNPC_API_VERSION >= 16
     descXML.reset(static_cast<char*>(
-      miniwget_getaddr(dev->descURL, &descXMLsize, cIP, sizeof(cIP), 0, &statusCode)));
+        miniwget_getaddr(dev->descURL, &descXMLsize, cIP, sizeof(cIP), 0, &statusCode)));
 #else
     descXML.reset(
-      static_cast<char*>(miniwget_getaddr(dev->descURL, &descXMLsize, cIP, sizeof(cIP), 0)));
+        static_cast<char*>(miniwget_getaddr(dev->descURL, &descXMLsize, cIP, sizeof(cIP), 0)));
 #endif
     if (descXML && statusCode == 200)
     {
@@ -1057,8 +1061,8 @@ bool NetPlayServer::UPnPMapPort(const std::string& addr, const u16 port)
 
   std::string port_str = StringFromFormat("%d", port);
   int result = UPNP_AddPortMapping(
-    m_upnp_urls.controlURL, m_upnp_data.first.servicetype, port_str.c_str(), port_str.c_str(),
-    addr.c_str(), (std::string("dolphin-emu UDP on ") + addr).c_str(), "UDP", nullptr, nullptr);
+      m_upnp_urls.controlURL, m_upnp_data.first.servicetype, port_str.c_str(), port_str.c_str(),
+      addr.c_str(), (std::string("dolphin-emu UDP on ") + addr).c_str(), "UDP", nullptr, nullptr);
 
   if (result != 0)
     return false;
@@ -1080,7 +1084,7 @@ bool NetPlayServer::UPnPUnmapPort(const u16 port)
 {
   std::string port_str = StringFromFormat("%d", port);
   UPNP_DeletePortMapping(m_upnp_urls.controlURL, m_upnp_data.first.servicetype, port_str.c_str(),
-    "UDP", nullptr);
+                         "UDP", nullptr);
 
   return true;
 }

@@ -29,22 +29,22 @@ typedef GLboolean(APIENTRYP PFNDOLISSAMPLERPROC)(GLuint sampler);
 typedef void(APIENTRYP PFNDOLBINDSAMPLERPROC)(GLuint unit, GLuint sampler);
 typedef void(APIENTRYP PFNDOLSAMPLERPARAMETERIPROC)(GLuint sampler, GLenum pname, GLint param);
 typedef void(APIENTRYP PFNDOLSAMPLERPARAMETERIVPROC)(GLuint sampler, GLenum pname,
-  const GLint* param);
+                                                     const GLint* param);
 typedef void(APIENTRYP PFNDOLSAMPLERPARAMETERFPROC)(GLuint sampler, GLenum pname, GLfloat param);
 typedef void(APIENTRYP PFNDOLSAMPLERPARAMETERFVPROC)(GLuint sampler, GLenum pname,
-  const GLfloat* param);
+                                                     const GLfloat* param);
 typedef void(APIENTRYP PFNDOLSAMPLERPARAMETERIIVPROC)(GLuint sampler, GLenum pname,
-  const GLint* param);
+                                                      const GLint* param);
 typedef void(APIENTRYP PFNDOLSAMPLERPARAMETERIUIVPROC)(GLuint sampler, GLenum pname,
-  const GLuint* param);
+                                                       const GLuint* param);
 typedef void(APIENTRYP PFNDOLGETSAMPLERPARAMETERIVPROC)(GLuint sampler, GLenum pname,
-  GLint* params);
+                                                        GLint* params);
 typedef void(APIENTRYP PFNDOLGETSAMPLERPARAMETERIIVPROC)(GLuint sampler, GLenum pname,
-  GLint* params);
+                                                         GLint* params);
 typedef void(APIENTRYP PFNDOLGETSAMPLERPARAMETERFVPROC)(GLuint sampler, GLenum pname,
-  GLfloat* params);
+                                                        GLfloat* params);
 typedef void(APIENTRYP PFNDOLGETSAMPLERPARAMETERIUIVPROC)(GLuint sampler, GLenum pname,
-  GLuint* params);
+                                                          GLuint* params);
 
 extern PFNDOLBINDSAMPLERPROC dolBindSampler;
 extern PFNDOLDELETESAMPLERSPROC dolDeleteSamplers;

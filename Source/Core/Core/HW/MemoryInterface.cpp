@@ -3,6 +3,7 @@
 // Refer to the license.txt file included.
 
 #include "Core/HW/MemoryInterface.h"
+
 #include "Common/ChunkFile.h"
 #include "Common/CommonTypes.h"
 #include "Core/HW/MMIO.h"
@@ -111,8 +112,8 @@ union MIProtAddr
   struct
   {
     u32 : 5;
-          u32 addr : 25;
-          u32 : 2;
+    u32 addr : 25;
+    u32 : 2;
   };
 };
 
@@ -152,47 +153,47 @@ void RegisterMMIO(MMIO::Mapping* mmio, u32 base)
   {
     auto& region = g_mi_mem.regions[i / 4];
     mmio->Register(base | i, MMIO::DirectRead<u16>(&region.first_page),
-      MMIO::DirectWrite<u16>(&region.first_page));
+                   MMIO::DirectWrite<u16>(&region.first_page));
     mmio->Register(base | (i + 2), MMIO::DirectRead<u16>(&region.last_page),
-      MMIO::DirectWrite<u16>(&region.last_page));
+                   MMIO::DirectWrite<u16>(&region.last_page));
   }
 
   mmio->Register(base | MI_PROT_TYPE, MMIO::DirectRead<u16>(&g_mi_mem.prot_type.hex),
-    MMIO::DirectWrite<u16>(&g_mi_mem.prot_type.hex));
+                 MMIO::DirectWrite<u16>(&g_mi_mem.prot_type.hex));
 
   mmio->Register(base | MI_IRQMASK, MMIO::DirectRead<u16>(&g_mi_mem.irq_mask.hex),
-    MMIO::DirectWrite<u16>(&g_mi_mem.irq_mask.hex));
+                 MMIO::DirectWrite<u16>(&g_mi_mem.irq_mask.hex));
 
   mmio->Register(base | MI_IRQFLAG, MMIO::DirectRead<u16>(&g_mi_mem.irq_flag.hex),
-    MMIO::DirectWrite<u16>(&g_mi_mem.irq_flag.hex));
+                 MMIO::DirectWrite<u16>(&g_mi_mem.irq_flag.hex));
 
   mmio->Register(base | MI_UNKNOWN1, MMIO::DirectRead<u16>(&g_mi_mem.unknown1),
-    MMIO::DirectWrite<u16>(&g_mi_mem.unknown1));
+                 MMIO::DirectWrite<u16>(&g_mi_mem.unknown1));
 
   // The naming is confusing here: the registed contains the lower part of
   // the address (hence MI_..._LO but this is still the high part of the
   // overall register.
   mmio->Register(base | MI_PROT_ADDR_LO, MMIO::DirectRead<u16>(&g_mi_mem.prot_addr.hi),
-    MMIO::DirectWrite<u16>(&g_mi_mem.prot_addr.hi));
+                 MMIO::DirectWrite<u16>(&g_mi_mem.prot_addr.hi));
   mmio->Register(base | MI_PROT_ADDR_HI, MMIO::DirectRead<u16>(&g_mi_mem.prot_addr.lo),
-    MMIO::DirectWrite<u16>(&g_mi_mem.prot_addr.lo));
+                 MMIO::DirectWrite<u16>(&g_mi_mem.prot_addr.lo));
 
   for (int i = 0; i < 10; ++i)
   {
     auto& timer = g_mi_mem.timers[i];
     mmio->Register(base | (MI_TIMER0_HI + 4 * i), MMIO::DirectRead<u16>(&timer.hi),
-      MMIO::DirectWrite<u16>(&timer.hi));
+                   MMIO::DirectWrite<u16>(&timer.hi));
     mmio->Register(base | (MI_TIMER0_LO + 4 * i), MMIO::DirectRead<u16>(&timer.lo),
-      MMIO::DirectWrite<u16>(&timer.lo));
+                   MMIO::DirectWrite<u16>(&timer.lo));
   }
 
   mmio->Register(base | MI_UNKNOWN2, MMIO::DirectRead<u16>(&g_mi_mem.unknown2),
-    MMIO::DirectWrite<u16>(&g_mi_mem.unknown2));
+                 MMIO::DirectWrite<u16>(&g_mi_mem.unknown2));
 
   for (int i = 0; i < 0x1000; i += 4)
   {
     mmio->Register(base | i, MMIO::ReadToSmaller<u32>(mmio, base | i, base | (i + 2)),
-      MMIO::WriteToSmaller<u32>(mmio, base | i, base | (i + 2)));
+                   MMIO::WriteToSmaller<u32>(mmio, base | i, base | (i + 2)));
   }
 }
 

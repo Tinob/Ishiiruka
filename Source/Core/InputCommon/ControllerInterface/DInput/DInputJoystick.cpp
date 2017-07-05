@@ -21,7 +21,7 @@ void InitJoystick(IDirectInput8* const idi8, HWND hwnd)
 {
   std::list<DIDEVICEINSTANCE> joysticks;
   idi8->EnumDevices(DI8DEVCLASS_GAMECTRL, DIEnumDevicesCallback, (LPVOID)&joysticks,
-    DIEDFL_ATTACHEDONLY);
+                    DIEDFL_ATTACHEDONLY);
 
   std::unordered_set<DWORD> xinput_guids = GetXInputGUIDS();
   for (DIDEVICEINSTANCE& joystick : joysticks)
@@ -38,12 +38,12 @@ void InitJoystick(IDirectInput8* const idi8, HWND hwnd)
       if (SUCCEEDED(js_device->SetDataFormat(&c_dfDIJoystick)))
       {
         if (FAILED(js_device->SetCooperativeLevel(GetAncestor(hwnd, GA_ROOT),
-          DISCL_BACKGROUND | DISCL_EXCLUSIVE)))
+                                                  DISCL_BACKGROUND | DISCL_EXCLUSIVE)))
         {
           // PanicAlert("SetCooperativeLevel(DISCL_EXCLUSIVE) failed!");
           // fall back to non-exclusive mode, with no rumble
           if (FAILED(
-            js_device->SetCooperativeLevel(nullptr, DISCL_BACKGROUND | DISCL_NONEXCLUSIVE)))
+                  js_device->SetCooperativeLevel(nullptr, DISCL_BACKGROUND | DISCL_NONEXCLUSIVE)))
           {
             // PanicAlert("SetCooperativeLevel failed!");
             js_device->Release();
@@ -66,8 +66,8 @@ void InitJoystick(IDirectInput8* const idi8, HWND hwnd)
 }
 
 Joystick::Joystick(/*const LPCDIDEVICEINSTANCE lpddi, */ const LPDIRECTINPUTDEVICE8 device)
-  : m_device(device)
-  //, m_name(TStringToString(lpddi->tszInstanceName))
+    : m_device(device)
+//, m_name(TStringToString(lpddi->tszInstanceName))
 {
   // seems this needs to be done before GetCapabilities
   // polled or buffered data
@@ -132,7 +132,7 @@ Joystick::Joystick(/*const LPCDIDEVICEINSTANCE lpddi, */ const LPDIRECTINPUTDEVI
 
       // each axis gets a negative and a positive input instance associated with it
       AddAnalogInputs(new Axis(offset, ax, base, range.lMin - base),
-        new Axis(offset, ax, base, range.lMax - base));
+                      new Axis(offset, ax, base, range.lMax - base));
     }
   }
 

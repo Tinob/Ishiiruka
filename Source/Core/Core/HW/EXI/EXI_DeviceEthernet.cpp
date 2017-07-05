@@ -4,6 +4,7 @@
 
 #include "Core/HW/EXI/EXI_DeviceEthernet.h"
 
+#include <memory>
 #include <string>
 
 #include "Common/ChunkFile.h"
@@ -34,7 +35,7 @@ CEXIETHERNET::CEXIETHERNET()
   // Parse MAC address from config, and generate a new one if it doesn't
   // exist or can't be parsed.
   std::string& mac_addr_setting = SConfig::GetInstance().m_bba_mac;
-  u8 mac_addr[Common::MAC_ADDRESS_SIZE] = { 0 };
+  u8 mac_addr[Common::MAC_ADDRESS_SIZE] = {0};
 
   if (!Common::StringToMacAddress(mac_addr_setting, mac_addr))
   {
@@ -97,12 +98,12 @@ void CEXIETHERNET::ImmWrite(u32 data, u32 size)
     transfer.direction = IsWriteCommand(data) ? transfer.WRITE : transfer.READ;
 
     DEBUG_LOG(SP1, "%s %s %s %x", IsMXCommand(data) ? "mx " : "exi",
-      IsWriteCommand(data) ? "write" : "read ", GetRegisterName(), transfer.address);
+              IsWriteCommand(data) ? "write" : "read ", GetRegisterName(), transfer.address);
 
     if (transfer.address == BBA_IOB && transfer.region == transfer.MX)
     {
       ERROR_LOG(SP1, "Usage of BBA_IOB indicates that the rx packet descriptor has been corrupted. "
-        "Killing Dolphin...");
+                     "Killing Dolphin...");
       exit(0);
     }
 
@@ -178,15 +179,15 @@ void CEXIETHERNET::DMAWrite(u32 addr, u32 size)
   DEBUG_LOG(SP1, "DMA write: %08x %x", addr, size);
 
   if (transfer.region == transfer.MX && transfer.direction == transfer.WRITE &&
-    transfer.address == BBA_WRTXFIFOD)
+      transfer.address == BBA_WRTXFIFOD)
   {
     DirectFIFOWrite(Memory::GetPointer(addr), size);
   }
   else
   {
     ERROR_LOG(SP1, "DMA write in %s %s mode - not implemented",
-      transfer.region == transfer.EXI ? "exi" : "mx",
-      transfer.direction == transfer.READ ? "read" : "write");
+              transfer.region == transfer.EXI ? "exi" : "mx",
+              transfer.direction == transfer.READ ? "read" : "write");
   }
 }
 
@@ -226,15 +227,15 @@ const char* CEXIETHERNET::GetRegisterName() const
     switch (transfer.address)
     {
       STR_RETURN(EXI_ID)
-        STR_RETURN(REVISION_ID)
-        STR_RETURN(INTERRUPT)
-        STR_RETURN(INTERRUPT_MASK)
-        STR_RETURN(DEVICE_ID)
-        STR_RETURN(ACSTART)
-        STR_RETURN(HASH_READ)
-        STR_RETURN(HASH_WRITE)
-        STR_RETURN(HASH_STATUS)
-        STR_RETURN(RESET)
+      STR_RETURN(REVISION_ID)
+      STR_RETURN(INTERRUPT)
+      STR_RETURN(INTERRUPT_MASK)
+      STR_RETURN(DEVICE_ID)
+      STR_RETURN(ACSTART)
+      STR_RETURN(HASH_READ)
+      STR_RETURN(HASH_WRITE)
+      STR_RETURN(HASH_STATUS)
+      STR_RETURN(RESET)
     default:
       return "unknown";
     }
@@ -244,44 +245,44 @@ const char* CEXIETHERNET::GetRegisterName() const
     switch (transfer.address)
     {
       STR_RETURN(BBA_NCRA)
-        STR_RETURN(BBA_NCRB)
-        STR_RETURN(BBA_LTPS)
-        STR_RETURN(BBA_LRPS)
-        STR_RETURN(BBA_IMR)
-        STR_RETURN(BBA_IR)
-        STR_RETURN(BBA_BP)
-        STR_RETURN(BBA_TLBP)
-        STR_RETURN(BBA_TWP)
-        STR_RETURN(BBA_IOB)
-        STR_RETURN(BBA_TRP)
-        STR_RETURN(BBA_RWP)
-        STR_RETURN(BBA_RRP)
-        STR_RETURN(BBA_RHBP)
-        STR_RETURN(BBA_RXINTT)
-        STR_RETURN(BBA_NAFR_PAR0)
-        STR_RETURN(BBA_NAFR_PAR1)
-        STR_RETURN(BBA_NAFR_PAR2)
-        STR_RETURN(BBA_NAFR_PAR3)
-        STR_RETURN(BBA_NAFR_PAR4)
-        STR_RETURN(BBA_NAFR_PAR5)
-        STR_RETURN(BBA_NAFR_MAR0)
-        STR_RETURN(BBA_NAFR_MAR1)
-        STR_RETURN(BBA_NAFR_MAR2)
-        STR_RETURN(BBA_NAFR_MAR3)
-        STR_RETURN(BBA_NAFR_MAR4)
-        STR_RETURN(BBA_NAFR_MAR5)
-        STR_RETURN(BBA_NAFR_MAR6)
-        STR_RETURN(BBA_NAFR_MAR7)
-        STR_RETURN(BBA_NWAYC)
-        STR_RETURN(BBA_NWAYS)
-        STR_RETURN(BBA_GCA)
-        STR_RETURN(BBA_MISC)
-        STR_RETURN(BBA_TXFIFOCNT)
-        STR_RETURN(BBA_WRTXFIFOD)
-        STR_RETURN(BBA_MISC2)
-        STR_RETURN(BBA_SI_ACTRL)
-        STR_RETURN(BBA_SI_STATUS)
-        STR_RETURN(BBA_SI_ACTRL2)
+      STR_RETURN(BBA_NCRB)
+      STR_RETURN(BBA_LTPS)
+      STR_RETURN(BBA_LRPS)
+      STR_RETURN(BBA_IMR)
+      STR_RETURN(BBA_IR)
+      STR_RETURN(BBA_BP)
+      STR_RETURN(BBA_TLBP)
+      STR_RETURN(BBA_TWP)
+      STR_RETURN(BBA_IOB)
+      STR_RETURN(BBA_TRP)
+      STR_RETURN(BBA_RWP)
+      STR_RETURN(BBA_RRP)
+      STR_RETURN(BBA_RHBP)
+      STR_RETURN(BBA_RXINTT)
+      STR_RETURN(BBA_NAFR_PAR0)
+      STR_RETURN(BBA_NAFR_PAR1)
+      STR_RETURN(BBA_NAFR_PAR2)
+      STR_RETURN(BBA_NAFR_PAR3)
+      STR_RETURN(BBA_NAFR_PAR4)
+      STR_RETURN(BBA_NAFR_PAR5)
+      STR_RETURN(BBA_NAFR_MAR0)
+      STR_RETURN(BBA_NAFR_MAR1)
+      STR_RETURN(BBA_NAFR_MAR2)
+      STR_RETURN(BBA_NAFR_MAR3)
+      STR_RETURN(BBA_NAFR_MAR4)
+      STR_RETURN(BBA_NAFR_MAR5)
+      STR_RETURN(BBA_NAFR_MAR6)
+      STR_RETURN(BBA_NAFR_MAR7)
+      STR_RETURN(BBA_NWAYC)
+      STR_RETURN(BBA_NWAYS)
+      STR_RETURN(BBA_GCA)
+      STR_RETURN(BBA_MISC)
+      STR_RETURN(BBA_TXFIFOCNT)
+      STR_RETURN(BBA_WRTXFIFOD)
+      STR_RETURN(BBA_MISC2)
+      STR_RETURN(BBA_SI_ACTRL)
+      STR_RETURN(BBA_SI_STATUS)
+      STR_RETURN(BBA_SI_ACTRL2)
     default:
       if (transfer.address >= 0x100 && transfer.address <= 0xfff)
         return "packet buffer";
@@ -442,7 +443,7 @@ inline u8 CEXIETHERNET::HashIndex(const u8* dest_eth_addr)
 
 inline bool CEXIETHERNET::RecvMACFilter()
 {
-  static u8 const broadcast[] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
+  static u8 const broadcast[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 
   // Accept all destination addrs?
   if (mBbaMem[BBA_NCRB] & NCRB_PR)
@@ -497,10 +498,10 @@ bool CEXIETHERNET::RecvHandlePacket()
 
 #ifdef BBA_TRACK_PAGE_PTRS
   INFO_LOG(SP1, "RecvHandlePacket %x\n%s", mRecvBufferLength,
-    ArrayToString(mRecvBuffer, mRecvBufferLength, 0x100).c_str());
+           ArrayToString(mRecvBuffer, mRecvBufferLength, 0x100).c_str());
 
   INFO_LOG(SP1, "%x %x %x %x", page_ptr(BBA_BP), page_ptr(BBA_RRP), page_ptr(BBA_RWP),
-    page_ptr(BBA_RHBP));
+           page_ptr(BBA_RHBP));
 #endif
 
   write_ptr = ptr_from_page_ptr(BBA_RWP);
@@ -528,13 +529,13 @@ bool CEXIETHERNET::RecvHandlePacket()
       /*
       halt copy
       if (cur_packet_size >= PAGE_SIZE)
-      desc.status |= FO | BF
+        desc.status |= FO | BF
       if (RBFIM)
-      raise RBFI
+        raise RBFI
       if (AUTORCVR)
-      discard bad packet
+        discard bad packet
       else
-      inc MPC instead of receiving packets
+        inc MPC instead of receiving packets
       */
       status |= DESC_FO | DESC_BF;
       mBbaMem[BBA_IR] |= mBbaMem[BBA_IMR] & INT_RBF;
@@ -548,7 +549,7 @@ bool CEXIETHERNET::RecvHandlePacket()
 
 #ifdef BBA_TRACK_PAGE_PTRS
   INFO_LOG(SP1, "%x %x %x %x", page_ptr(BBA_BP), page_ptr(BBA_RRP), page_ptr(BBA_RWP),
-    page_ptr(BBA_RHBP));
+           page_ptr(BBA_RHBP));
 #endif
 
   // Is the current frame multicast?

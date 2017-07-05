@@ -17,20 +17,20 @@
 namespace ControllerEmu
 {
 ControlGroup::ControlGroup(const std::string& name_, const GroupType type_)
-  : name(name_), ui_name(name_), type(type_)
+    : name(name_), ui_name(name_), type(type_)
 {
 }
 
 ControlGroup::ControlGroup(const std::string& name_, const std::string& ui_name_,
-  const GroupType type_)
-  : name(name_), ui_name(ui_name_), type(type_)
+                           const GroupType type_)
+    : name(name_), ui_name(ui_name_), type(type_)
 {
 }
 
 ControlGroup::~ControlGroup() = default;
 
 void ControlGroup::LoadConfig(IniFile::Section* sec, const std::string& defdev,
-  const std::string& base)
+                              const std::string& base)
 {
   std::string group(base + name + "/");
 
@@ -86,7 +86,7 @@ void ControlGroup::LoadConfig(IniFile::Section* sec, const std::string& defdev,
 }
 
 void ControlGroup::SaveConfig(IniFile::Section* sec, const std::string& defdev,
-  const std::string& base)
+                              const std::string& base)
 {
   std::string group(base + name + "/");
 

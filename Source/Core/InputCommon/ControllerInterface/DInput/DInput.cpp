@@ -48,7 +48,7 @@ void PopulateDevices(HWND hwnd)
 {
   IDirectInput8* idi8;
   if (FAILED(DirectInput8Create(GetModuleHandle(nullptr), DIRECTINPUT_VERSION, IID_IDirectInput8,
-    (LPVOID*)&idi8, nullptr)))
+                                (LPVOID*)&idi8, nullptr)))
   {
     return;
   }

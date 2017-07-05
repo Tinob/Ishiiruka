@@ -210,14 +210,14 @@ void TextureCache::TCacheEntry::LoadMaterialMap(const u8* src, u32 width, u32 he
 }
 
 bool TextureCache::TCacheEntry::DecodeTextureOnGPU(u32 dst_level, const u8* data,
-  u32 data_size, TextureFormat format, u32 width, u32 height,
+  u32 data_size, TextureFormat tformat, u32 width, u32 height,
   u32 aligned_width, u32 aligned_height, u32 row_stride,
   const u8* palette, TlutFormat palette_format)
 {
   return s_decoder->Decode(
     data,
     data_size,
-    format,
+    tformat,
     width,
     height,
     aligned_width,
@@ -299,7 +299,7 @@ TextureCache::TCacheEntryBase* TextureCache::CreateTexture(const TCacheEntryConf
     config.width, config.height, 1, config.levels, D3D11_BIND_SHADER_RESOURCE, usage, cpu_access);
 
   ID3D11Texture2D *pTexture;
-  const HRESULT hr = D3D::device->CreateTexture2D(&texdesc, NULL, &pTexture);
+  HRESULT hr = D3D::device->CreateTexture2D(&texdesc, NULL, &pTexture);
   CHECK(SUCCEEDED(hr), "Create texture of the TextureCache");
 
   TCacheEntry* const entry = new TCacheEntry(config, new D3DTexture2D(pTexture, D3D11_BIND_SHADER_RESOURCE));
@@ -314,10 +314,10 @@ TextureCache::TCacheEntryBase* TextureCache::CreateTexture(const TCacheEntryConf
   SAFE_RELEASE(pTexture);
   if (config.materialmap)
   {
-    const D3D11_TEXTURE2D_DESC texdesc = CD3D11_TEXTURE2D_DESC(format,
+    const D3D11_TEXTURE2D_DESC mtexdesc = CD3D11_TEXTURE2D_DESC(format,
       config.width, config.height, config.layers, config.levels, D3D11_BIND_SHADER_RESOURCE, usage, cpu_access);
 
-    const HRESULT hr = D3D::device->CreateTexture2D(&texdesc, NULL, &pTexture);
+    hr = D3D::device->CreateTexture2D(&mtexdesc, NULL, &pTexture);
     CHECK(SUCCEEDED(hr), "Create material texture of the TextureCache");
     entry->nrm_texture = new D3DTexture2D(pTexture, D3D11_BIND_SHADER_RESOURCE);
     // TODO: better debug names

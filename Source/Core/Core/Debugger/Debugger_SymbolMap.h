@@ -22,7 +22,7 @@ bool GetCallstack(std::vector<CallstackEntry>& output);
 void PrintCallstack();
 void PrintCallstack(LogTypes::LOG_TYPE type, LogTypes::LOG_LEVELS level);
 void PrintDataBuffer(LogTypes::LOG_TYPE type, const u8* data, size_t size,
-  const std::string& title);
+                     const std::string& title);
 void AddAutoBreakpoints();
 
 }  // end of namespace Debugger

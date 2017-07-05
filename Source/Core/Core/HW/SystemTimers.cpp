@@ -26,24 +26,25 @@ frame.
 
 
 IPC_HLE_PERIOD: For the Wii Remote this is the call schedule:
-    IPC_HLE_UpdateCallback() // In this file
+  IPC_HLE_UpdateCallback() // In this file
 
-        // This function seems to call all devices' Update() function four times per frame
-        IOS::HLE::Update()
+    // This function seems to call all devices' Update() function four times per frame
+    IOS::HLE::Update()
 
-            // If the AclFrameQue is empty this will call Wiimote_Update() and make it send
-            the current input status to the game. I'm not sure if this occurs approximately
-            once every frame or if the frequency is not exactly tied to rendered frames
-            IOS::HLE::Device::BluetoothEmu::Update()
-            PluginWiimote::Wiimote_Update()
+      // If the AclFrameQue is empty this will call Wiimote_Update() and make it send
+      the current input status to the game. I'm not sure if this occurs approximately
+      once every frame or if the frequency is not exactly tied to rendered frames
+      IOS::HLE::Device::BluetoothEmu::Update()
+      PluginWiimote::Wiimote_Update()
 
-            // This is also a device updated by IOS::HLE::Update() but it doesn't
-            seem to ultimately call PluginWiimote::Wiimote_Update(). However it can be called
-            by the /dev/usb/oh1 device if the AclFrameQue is empty.
-            IOS::HLE::WiimoteDevice::Update()
+      // This is also a device updated by IOS::HLE::Update() but it doesn't
+      seem to ultimately call PluginWiimote::Wiimote_Update(). However it can be called
+      by the /dev/usb/oh1 device if the AclFrameQue is empty.
+      IOS::HLE::WiimoteDevice::Update()
 */
 
 #include "Core/HW/SystemTimers.h"
+
 #include "Common/Atomic.h"
 #include "Common/CommonTypes.h"
 #include "Common/Logging/Log.h"
@@ -146,7 +147,7 @@ void DecrementerSet()
 u32 GetFakeDecrementer()
 {
   return (CoreTiming::GetFakeDecStartValue() -
-    (u32)((CoreTiming::GetTicks() - CoreTiming::GetFakeDecStartTicks()) / TIMER_RATIO));
+          (u32)((CoreTiming::GetTicks() - CoreTiming::GetFakeDecStartTicks()) / TIMER_RATIO));
 }
 
 void TimeBaseSet()
@@ -158,7 +159,7 @@ void TimeBaseSet()
 u64 GetFakeTimeBase()
 {
   return CoreTiming::GetFakeTBStartValue() +
-    ((CoreTiming::GetTicks() - CoreTiming::GetFakeTBStartTicks()) / TIMER_RATIO);
+         ((CoreTiming::GetTicks() - CoreTiming::GetFakeTBStartTicks()) / TIMER_RATIO);
 }
 
 s64 GetLocalTimeRTCOffset()
@@ -210,7 +211,7 @@ static void ThrottleCallback(u64 last_time, s64 cyclesLate)
     if (abs(diff) > max_fallback)
     {
       DEBUG_LOG(COMMON, "system too %s, %d ms skipped", diff < 0 ? "slow" : "fast",
-        abs(diff) - max_fallback);
+                abs(diff) - max_fallback);
       last_time = time - max_fallback;
     }
     else if (diff > 0)
@@ -255,11 +256,13 @@ void Init()
   if (SConfig::GetInstance().bEnableCustomRTC)
   {
     s_localtime_rtc_offset =
-      Common::Timer::GetLocalTimeSinceJan1970() - SConfig::GetInstance().m_customRTCValue;
+        Common::Timer::GetLocalTimeSinceJan1970() - SConfig::GetInstance().m_customRTCValue;
   }
+
   CoreTiming::SetFakeTBStartValue(static_cast<u64>(s_cpu_core_clock / TIMER_RATIO) *
-    static_cast<u64>(ExpansionInterface::CEXIIPL::GetEmulatedTime(
-      ExpansionInterface::CEXIIPL::GC_EPOCH)));
+                                  static_cast<u64>(ExpansionInterface::CEXIIPL::GetEmulatedTime(
+                                      ExpansionInterface::CEXIIPL::GC_EPOCH)));
+
   CoreTiming::SetFakeTBStartTicks(CoreTiming::GetTicks());
 
   CoreTiming::SetFakeDecStartValue(0xFFFFFFFF);

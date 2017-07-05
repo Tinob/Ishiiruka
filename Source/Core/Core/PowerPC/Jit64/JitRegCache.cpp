@@ -2,6 +2,8 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Core/PowerPC/Jit64/JitRegCache.h"
+
 #include <algorithm>
 #include <cinttypes>
 #include <cmath>
@@ -13,13 +15,12 @@
 #include "Common/MsgHandler.h"
 #include "Common/x64Emitter.h"
 #include "Core/PowerPC/Jit64/Jit.h"
-#include "Core/PowerPC/Jit64/JitRegCache.h"
 #include "Core/PowerPC/PowerPC.h"
 
 using namespace Gen;
 using namespace PowerPC;
 
-RegCache::RegCache(Jit64& jit) : m_jit{ jit }
+RegCache::RegCache(Jit64& jit) : m_jit{jit}
 {
 }
 
@@ -30,7 +31,7 @@ void RegCache::Start()
     xreg.free = true;
     xreg.dirty = false;
     xreg.locked = false;
-    xreg.ppcReg = INVALID_REG;
+    xreg.ppcReg = static_cast<size_t>(INVALID_REG);
   }
   for (size_t i = 0; i < m_regs.size(); i++)
   {
@@ -44,13 +45,13 @@ void RegCache::Start()
   int maxPreload = 2;
   for (int i = 0; i < 32; i++)
   {
-      if (stats.numReads[i] > 2 || stats.numWrites[i] >= 2)
-      {
-          LoadToX64(i, true, false); //stats.firstRead[i] <= stats.firstWrite[i], false);
-          maxPreload--;
-          if (!maxPreload)
-              break;
-      }
+    if (stats.numReads[i] > 2 || stats.numWrites[i] >= 2)
+    {
+      LoadToX64(i, true, false); //stats.firstRead[i] <= stats.firstWrite[i], false);
+      maxPreload--;
+      if (!maxPreload)
+        break;
+    }
   }*/
   // Find top regs - preload them (load bursts ain't bad)
   // But only preload IF written OR reads >= 3
@@ -63,7 +64,7 @@ void RegCache::DiscardRegContentsIfCached(size_t preg)
     X64Reg xr = m_regs[preg].location.GetSimpleReg();
     m_xregs[xr].free = true;
     m_xregs[xr].dirty = false;
-    m_xregs[xr].ppcReg = INVALID_REG;
+    m_xregs[xr].ppcReg = static_cast<size_t>(INVALID_REG);
     m_regs[preg].away = false;
     m_regs[preg].location = GetDefaultLocation(preg);
   }
@@ -216,7 +217,7 @@ void RegCache::StoreFromRegister(size_t i, FlushMode mode)
       if (mode == FlushMode::All)
       {
         m_xregs[xr].free = true;
-        m_xregs[xr].ppcReg = INVALID_REG;
+        m_xregs[xr].ppcReg = static_cast<size_t>(INVALID_REG);
         m_xregs[xr].dirty = false;
       }
     }

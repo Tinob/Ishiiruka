@@ -19,13 +19,10 @@ class wxTextCtrl;
 class CPatchAddEdit : public wxDialog
 {
 public:
-  CPatchAddEdit(int _selection, std::vector<PatchEngine::Patch>* _onFrame,
-    wxWindow* parent,
-    wxWindowID id = wxID_ANY,
-    const wxString& title = _("Edit Patch"),
-    const wxPoint& pos = wxDefaultPosition,
-    const wxSize& size = wxDefaultSize,
-    long style = wxDEFAULT_DIALOG_STYLE);
+  CPatchAddEdit(int _selection, std::vector<PatchEngine::Patch>* _onFrame, wxWindow* parent,
+                wxWindowID id = wxID_ANY, const wxString& title = _("Edit Patch"),
+                const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize,
+                long style = wxDEFAULT_DIALOG_STYLE);
   virtual ~CPatchAddEdit();
 
 private:

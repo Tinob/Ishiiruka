@@ -10,9 +10,9 @@
 enum class KeyboardGroup;
 
 GCKeyboardInputConfigDialog::GCKeyboardInputConfigDialog(wxWindow* const parent,
-  InputConfig& config, const wxString& name,
-  const int port_num)
-  : InputConfigDialog(parent, config, name, port_num)
+                                                         InputConfig& config, const wxString& name,
+                                                         const int port_num)
+    : InputConfigDialog(parent, config, name, port_num)
 {
   const int space5 = FromDIP(5);
 
@@ -21,19 +21,19 @@ GCKeyboardInputConfigDialog::GCKeyboardInputConfigDialog(wxWindow* const parent,
   auto* const profile_chooser = CreateProfileChooserGroupBox();
 
   auto* const group_box_keys0x =
-    new ControlGroupBox(Keyboard::GetGroup(port_num, KeyboardGroup::Kb0x), this, this);
+      new ControlGroupBox(Keyboard::GetGroup(port_num, KeyboardGroup::Kb0x), this, this);
   auto* const group_box_keys1x =
-    new ControlGroupBox(Keyboard::GetGroup(port_num, KeyboardGroup::Kb1x), this, this);
+      new ControlGroupBox(Keyboard::GetGroup(port_num, KeyboardGroup::Kb1x), this, this);
   auto* const group_box_keys2x =
-    new ControlGroupBox(Keyboard::GetGroup(port_num, KeyboardGroup::Kb2x), this, this);
+      new ControlGroupBox(Keyboard::GetGroup(port_num, KeyboardGroup::Kb2x), this, this);
   auto* const group_box_keys3x =
-    new ControlGroupBox(Keyboard::GetGroup(port_num, KeyboardGroup::Kb3x), this, this);
+      new ControlGroupBox(Keyboard::GetGroup(port_num, KeyboardGroup::Kb3x), this, this);
   auto* const group_box_keys4x =
-    new ControlGroupBox(Keyboard::GetGroup(port_num, KeyboardGroup::Kb4x), this, this);
+      new ControlGroupBox(Keyboard::GetGroup(port_num, KeyboardGroup::Kb4x), this, this);
   auto* const group_box_keys5x =
-    new ControlGroupBox(Keyboard::GetGroup(port_num, KeyboardGroup::Kb5x), this, this);
+      new ControlGroupBox(Keyboard::GetGroup(port_num, KeyboardGroup::Kb5x), this, this);
   auto* const group_box_options =
-    new ControlGroupBox(Keyboard::GetGroup(port_num, KeyboardGroup::Options), this, this);
+      new ControlGroupBox(Keyboard::GetGroup(port_num, KeyboardGroup::Options), this, this);
 
   auto* const key5x_options_sizer = new wxBoxSizer(wxVERTICAL);
   key5x_options_sizer->Add(group_box_keys5x);

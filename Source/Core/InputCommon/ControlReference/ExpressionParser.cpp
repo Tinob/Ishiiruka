@@ -236,8 +236,8 @@ public:
   Device::Control* control;
 
   ControlExpression(ControlQualifier qualifier_, std::shared_ptr<Device> device,
-    Device::Control* control_)
-    : qualifier(qualifier_), control(control_), m_device(device)
+                    Device::Control* control_)
+      : qualifier(qualifier_), control(control_), m_device(device)
   {
   }
 
@@ -257,7 +257,7 @@ public:
   ExpressionNode* rhs;
 
   BinaryExpression(TokenType op_, ExpressionNode* lhs_, ExpressionNode* rhs_)
-    : op(op_), lhs(lhs_), rhs(rhs_)
+      : op(op_), lhs(lhs_), rhs(rhs_)
   {
   }
   virtual ~BinaryExpression()
@@ -523,7 +523,7 @@ Expression::~Expression()
 }
 
 static ParseStatus ParseExpressionInner(const std::string& str, ControlFinder& finder,
-  Expression** expr_out)
+                                        Expression** expr_out)
 {
   ParseStatus status;
   Expression* expr;

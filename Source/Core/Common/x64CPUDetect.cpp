@@ -5,8 +5,8 @@
 #include <cstring>
 #include <string>
 
-#include "Common/CommonTypes.h"
 #include "Common/CPUDetect.h"
+#include "Common/CommonTypes.h"
 #include "Common/Intrinsics.h"
 
 #ifndef _WIN32
@@ -24,17 +24,11 @@ static inline void __cpuidex(int info[4], int function_id, int subfunction_id)
   // Despite the name, this is just do_cpuid() with ECX as second input.
   cpuid_count((u_int)function_id, (u_int)subfunction_id, (u_int*)info);
 #else
-  info[0] = function_id;    // eax
-  info[2] = subfunction_id; // ecx
-  __asm__(
-    "cpuid"
-    : "=a" (info[0]),
-    "=b" (info[1]),
-    "=c" (info[2]),
-    "=d" (info[3])
-    : "a" (function_id),
-    "c" (subfunction_id)
-  );
+  info[0] = function_id;     // eax
+  info[2] = subfunction_id;  // ecx
+  __asm__("cpuid"
+          : "=a"(info[0]), "=b"(info[1]), "=c"(info[2]), "=d"(info[3])
+          : "a"(function_id), "c"(subfunction_id));
 #endif
 }
 
@@ -51,7 +45,7 @@ static u64 _xgetbv(u32 index)
   return ((u64)edx << 32) | eax;
 }
 
-#endif // ifndef _WIN32
+#endif  // ifndef _WIN32
 
 CPUInfo cpu_info;
 
@@ -109,20 +103,29 @@ void CPUInfo::Detect()
     int family = ((cpu_id[0] >> 8) & 0xf) + ((cpu_id[0] >> 20) & 0xff);
     int model = ((cpu_id[0] >> 4) & 0xf) + ((cpu_id[0] >> 12) & 0xf0);
     // Detect people unfortunate enough to be running Dolphin on an Atom
-    if (family == 6 && (model == 0x1C || model == 0x26 || model == 0x27 || model == 0x35 || model == 0x36 ||
-      model == 0x37 || model == 0x4A || model == 0x4D || model == 0x5A || model == 0x5D))
+    if (family == 6 &&
+        (model == 0x1C || model == 0x26 || model == 0x27 || model == 0x35 || model == 0x36 ||
+         model == 0x37 || model == 0x4A || model == 0x4D || model == 0x5A || model == 0x5D))
       bAtom = true;
     logical_cpu_count = (cpu_id[1] >> 16) & 0xFF;
     ht = (cpu_id[3] >> 28) & 1;
 
-    if ((cpu_id[3] >> 25) & 1) bSSE = true;
-    if ((cpu_id[3] >> 26) & 1) bSSE2 = true;
-    if ((cpu_id[2]) & 1) bSSE3 = true;
-    if ((cpu_id[2] >> 9) & 1) bSSSE3 = true;
-    if ((cpu_id[2] >> 19) & 1) bSSE4_1 = true;
-    if ((cpu_id[2] >> 20) & 1) bSSE4_2 = true;
-    if ((cpu_id[2] >> 22) & 1) bMOVBE = true;
-    if ((cpu_id[2] >> 25) & 1) bAES = true;
+    if ((cpu_id[3] >> 25) & 1)
+      bSSE = true;
+    if ((cpu_id[3] >> 26) & 1)
+      bSSE2 = true;
+    if ((cpu_id[2]) & 1)
+      bSSE3 = true;
+    if ((cpu_id[2] >> 9) & 1)
+      bSSSE3 = true;
+    if ((cpu_id[2] >> 19) & 1)
+      bSSE4_1 = true;
+    if ((cpu_id[2] >> 20) & 1)
+      bSSE4_2 = true;
+    if ((cpu_id[2] >> 22) & 1)
+      bMOVBE = true;
+    if ((cpu_id[2] >> 25) & 1)
+      bAES = true;
 
     if ((cpu_id[3] >> 24) & 1)
     {
@@ -173,10 +176,14 @@ void CPUInfo::Detect()
   {
     // Check for more features.
     __cpuid(cpu_id, 0x80000001);
-    if (cpu_id[2] & 1) bLAHFSAHF64 = true;
-    if ((cpu_id[2] >> 5) & 1) bLZCNT = true;
-    if ((cpu_id[2] >> 16) & 1) bFMA4 = true;
-    if ((cpu_id[3] >> 29) & 1) bLongMode = true;
+    if (cpu_id[2] & 1)
+      bLAHFSAHF64 = true;
+    if ((cpu_id[2] >> 5) & 1)
+      bLZCNT = true;
+    if ((cpu_id[2] >> 16) & 1)
+      bFMA4 = true;
+    if ((cpu_id[3] >> 29) & 1)
+      bLongMode = true;
   }
 
   num_cores = (logical_cpu_count == 0) ? 1 : logical_cpu_count;
@@ -218,26 +225,39 @@ std::string CPUInfo::Summarize()
   sum += brand_string;
   sum += ")";
 
-  if (bSSE) sum += ", SSE";
+  if (bSSE)
+    sum += ", SSE";
   if (bSSE2)
   {
     sum += ", SSE2";
     if (!bFlushToZero)
       sum += " (but not DAZ!)";
   }
-  if (bSSE3) sum += ", SSE3";
-  if (bSSSE3) sum += ", SSSE3";
-  if (bSSE4_1) sum += ", SSE4.1";
-  if (bSSE4_2) sum += ", SSE4.2";
-  if (HTT) sum += ", HTT";
-  if (bAVX) sum += ", AVX";
-  if (bAVX2) sum += ", AVX2";
-  if (bBMI1) sum += ", BMI1";
-  if (bBMI2) sum += ", BMI2";
-  if (bFMA) sum += ", FMA";
-  if (bAES) sum += ", AES";
-  if (bMOVBE) sum += ", MOVBE";
-  if (bLongMode) sum += ", 64-bit support";
+  if (bSSE3)
+    sum += ", SSE3";
+  if (bSSSE3)
+    sum += ", SSSE3";
+  if (bSSE4_1)
+    sum += ", SSE4.1";
+  if (bSSE4_2)
+    sum += ", SSE4.2";
+  if (HTT)
+    sum += ", HTT";
+  if (bAVX)
+    sum += ", AVX";
+  if (bAVX2)
+    sum += ", AVX2";
+  if (bBMI1)
+    sum += ", BMI1";
+  if (bBMI2)
+    sum += ", BMI2";
+  if (bFMA)
+    sum += ", FMA";
+  if (bAES)
+    sum += ", AES";
+  if (bMOVBE)
+    sum += ", MOVBE";
+  if (bLongMode)
+    sum += ", 64-bit support";
   return sum;
 }
-

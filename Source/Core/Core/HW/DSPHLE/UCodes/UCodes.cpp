@@ -5,6 +5,7 @@
 #include "Core/HW/DSPHLE/UCodes/UCodes.h"
 
 #include <cstring>
+#include <memory>
 #include <string>
 
 #ifdef _WIN32
@@ -13,12 +14,11 @@
 
 #include "Common/ChunkFile.h"
 #include "Common/CommonTypes.h"
-#include "Common/FileUtil.h"
 #include "Common/Hash.h"
 #include "Common/Logging/Log.h"
-#include "Common/StringUtil.h"
 #include "Common/Swap.h"
 #include "Core/ConfigManager.h"
+#include "Core/DSP/DSPCodeUtil.h"
 #include "Core/HW/DSPHLE/DSPHLE.h"
 #include "Core/HW/DSPHLE/UCodes/AX.h"
 #include "Core/HW/DSPHLE/UCodes/AXWii.h"
@@ -123,7 +123,7 @@ void* HLEMemory_Get_Pointer(u32 address)
 }
 
 UCodeInterface::UCodeInterface(DSPHLE* dsphle, u32 crc)
-  : m_mail_handler(dsphle->AccessMailHandler()), m_dsphle(dsphle), m_crc(crc)
+    : m_mail_handler(dsphle->AccessMailHandler()), m_dsphle(dsphle), m_crc(crc)
 {
 }
 
@@ -183,28 +183,22 @@ void UCodeInterface::PrepareBootUCode(u32 mail)
     m_upload_setup_in_progress = false;
 
     u32 ector_crc =
-      HashEctor((u8*)HLEMemory_Get_Pointer(m_next_ucode.iram_mram_addr), m_next_ucode.iram_size);
+        HashEctor((u8*)HLEMemory_Get_Pointer(m_next_ucode.iram_mram_addr), m_next_ucode.iram_size);
 
     if (SConfig::GetInstance().m_DumpUCode)
     {
-      std::string ucode_dump_path = StringFromFormat(
-        "%sDSP_UC_%08X.bin", File::GetUserPath(D_DUMPDSP_IDX).c_str(), ector_crc);
-
-      File::IOFile fp(ucode_dump_path, "wb");
-      if (fp)
-      {
-        fp.WriteArray((u8*)Memory::GetPointer(m_next_ucode.iram_mram_addr), m_next_ucode.iram_size);
-      }
+      DSP::DumpDSPCode(static_cast<u8*>(Memory::GetPointer(m_next_ucode.iram_mram_addr)),
+                       m_next_ucode.iram_size, ector_crc);
     }
 
     DEBUG_LOG(DSPHLE, "PrepareBootUCode 0x%08x", ector_crc);
     DEBUG_LOG(DSPHLE, "DRAM -> MRAM: src %04x dst %08x size %04x", m_next_ucode.mram_dram_addr,
-      m_next_ucode.mram_dest_addr, m_next_ucode.mram_size);
+              m_next_ucode.mram_dest_addr, m_next_ucode.mram_size);
     DEBUG_LOG(DSPHLE, "MRAM -> IRAM: src %08x dst %04x size %04x startpc %04x",
-      m_next_ucode.iram_mram_addr, m_next_ucode.iram_dest, m_next_ucode.iram_size,
-      m_next_ucode.iram_startpc);
+              m_next_ucode.iram_mram_addr, m_next_ucode.iram_dest, m_next_ucode.iram_size,
+              m_next_ucode.iram_startpc);
     DEBUG_LOG(DSPHLE, "MRAM -> DRAM: src %08x dst %04x size %04x", m_next_ucode.dram_mram_addr,
-      m_next_ucode.dram_dest, m_next_ucode.dram_size);
+              m_next_ucode.dram_dest, m_next_ucode.dram_size);
 
     if (m_next_ucode.mram_size)
     {
@@ -250,13 +244,13 @@ std::unique_ptr<UCodeInterface> UCodeFactory(u32 crc, DSPHLE* dsphle, bool wii)
   case 0x3ad3b7ac:  // Naruto 3, Paper Mario - The Thousand Year Door
   case 0x3daf59b9:  // Alien Hominid
   case 0x4e8a8b21:  // spdemo, Crazy Taxi, 18 Wheeler, Disney, Monkeyball 1/2, Cubivore, Nintendo
-                          // Puzzle Collection, Wario,
-                          // Capcom vs. SNK 2, Naruto 2, Lost Kingdoms, Star Fox, Mario Party 4, Mortal Kombat,
-                          // Smugglers Run Warzone, Smash Brothers, Sonic Mega Collection, ZooCube
-                          // nddemo, Star Fox
+                    // Puzzle Collection, Wario,
+  // Capcom vs. SNK 2, Naruto 2, Lost Kingdoms, Star Fox, Mario Party 4, Mortal Kombat,
+  // Smugglers Run Warzone, Smash Brothers, Sonic Mega Collection, ZooCube
+  // nddemo, Star Fox
   case 0x07f88145:  // bustamove, Ikaruga, F-Zero GX, Robotech Battle Cry, Star Soldier, Soul
-                          // Calibur 2,
-                          // Zelda:OOT, Tony Hawk, Viewtiful Joe
+                    // Calibur 2,
+                    // Zelda:OOT, Tony Hawk, Viewtiful Joe
   case 0xe2136399:  // Billy Hatcher, Dragon Ball Z, Mario Party 5, TMNT, 1080° Avalanche
   case 0x3389a79e:  // MP1/MP2 Wii (Metroid Prime Trilogy)
     INFO_LOG(DSPHLE, "CRC %08x: AX ucode chosen", crc);
@@ -266,7 +260,7 @@ std::unique_ptr<UCodeInterface> UCodeFactory(u32 crc, DSPHLE* dsphle, bool wii)
   case 0x6ca33a6d:  // Zelda TP GC - US
   case 0xd643001f:  // Super Mario Galaxy - US
   case 0x6ba3b3ea:  // GC IPL - PAL
-  case 0x24b22038:  // GC IPL - US
+  case 0x24b22038:  // GC IPL - NTSC
   case 0x2fcdf1ec:  // Zelda FSA - US
   case 0x4be6a5cb:  // Pikmin 1 GC - US
   case 0x267fd05a:  // Pikmin 1 GC - PAL
@@ -291,17 +285,17 @@ std::unique_ptr<UCodeInterface> UCodeFactory(u32 crc, DSPHLE* dsphle, bool wii)
     if (wii)
     {
       PanicAlertT("This title might be incompatible with DSP HLE emulation. Try using LLE if this "
-        "is homebrew.\n\n"
-        "Unknown ucode (CRC = %08x) - forcing AXWii.",
-        crc);
+                  "is homebrew.\n\n"
+                  "Unknown ucode (CRC = %08x) - forcing AXWii.",
+                  crc);
       return std::make_unique<AXWiiUCode>(dsphle, crc);
     }
     else
     {
       PanicAlertT("This title might be incompatible with DSP HLE emulation. Try using LLE if this "
-        "is homebrew.\n\n"
-        "DSPHLE: Unknown ucode (CRC = %08x) - forcing AX.",
-        crc);
+                  "is homebrew.\n\n"
+                  "DSPHLE: Unknown ucode (CRC = %08x) - forcing AX.",
+                  crc);
       return std::make_unique<AXUCode>(dsphle, crc);
     }
 

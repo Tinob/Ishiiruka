@@ -6,11 +6,11 @@
 
 #include "Common/ChunkFile.h"
 #include "Common/CommonTypes.h"
+#include "Common/File.h"
 #include "Common/FileUtil.h"
 #include "Common/Logging/Log.h"
 #include "Common/MathUtil.h"
 #include "Common/Swap.h"
-
 #include "Core/HW/DSP.h"
 #include "Core/HW/DSPHLE/DSPHLE.h"
 #include "Core/HW/DSPHLE/MailHandler.h"
@@ -44,8 +44,8 @@ void AXUCode::LoadResamplingCoefficients()
 {
   m_coeffs_available = false;
 
-  std::string filenames[] = { File::GetUserPath(D_GCUSER_IDX) + "dsp_coef.bin",
-      File::GetSysDirectory() + "/GC/dsp_coef.bin" };
+  std::string filenames[] = {File::GetUserPath(D_GCUSER_IDX) + "dsp_coef.bin",
+                             File::GetSysDirectory() + "/GC/dsp_coef.bin"};
 
   size_t fidx;
   std::string filename;
@@ -106,10 +106,10 @@ void AXUCode::HandleCommandList()
   u32 pb_addr = 0;
 
 #if 0
-  INFO_LOG(DSPHLE, "Command list:");
-  for (u32 i = 0; m_cmdlist[i] != CMD_END; ++i)
-    INFO_LOG(DSPHLE, "%04x", m_cmdlist[i]);
-  INFO_LOG(DSPHLE, "-------------");
+	INFO_LOG(DSPHLE, "Command list:");
+	for (u32 i = 0; m_cmdlist[i] != CMD_END; ++i)
+		INFO_LOG(DSPHLE, "%04x", m_cmdlist[i]);
+	INFO_LOG(DSPHLE, "-------------");
 #endif
 
   u32 curr_idx = 0;
@@ -120,8 +120,8 @@ void AXUCode::HandleCommandList()
 
     switch (cmd)
     {
-      // Some of these commands are unknown, or unused in this AX HLE.
-      // We still need to skip their arguments using "curr_idx += N".
+    // Some of these commands are unknown, or unused in this AX HLE.
+    // We still need to skip their arguments using "curr_idx += N".
 
     case CMD_SETUP:
       addr_hi = m_cmdlist[curr_idx++];
@@ -267,7 +267,7 @@ void AXUCode::HandleCommandList()
       u16 auxb_r_dl_lo = m_cmdlist[curr_idx++];
 
       SendAUXAndMix(HILO_TO_32(main_auxa_up), HILO_TO_32(auxb_s_up), HILO_TO_32(main_l_dl),
-        HILO_TO_32(main_r_dl), HILO_TO_32(auxb_l_dl), HILO_TO_32(auxb_r_dl));
+                    HILO_TO_32(main_r_dl), HILO_TO_32(auxb_l_dl), HILO_TO_32(auxb_r_dl));
       break;
     }
 
@@ -372,9 +372,9 @@ void AXUCode::SetupProcessing(u32 init_addr)
     init_data[i] = HLEMemory_Read_U16(init_addr + 2 * i);
 
   // List of all buffers we have to initialize
-  int* buffers[] = { m_samples_left,      m_samples_right,      m_samples_surround,
-      m_samples_auxA_left, m_samples_auxA_right, m_samples_auxA_surround,
-      m_samples_auxB_left, m_samples_auxB_right, m_samples_auxB_surround };
+  int* buffers[] = {m_samples_left,      m_samples_right,      m_samples_surround,
+                    m_samples_auxA_left, m_samples_auxA_right, m_samples_auxA_surround,
+                    m_samples_auxB_left, m_samples_auxB_right, m_samples_auxB_surround};
 
   u32 init_idx = 0;
   for (auto& buffer : buffers)
@@ -401,11 +401,11 @@ void AXUCode::SetupProcessing(u32 init_addr)
 
 void AXUCode::DownloadAndMixWithVolume(u32 addr, u16 vol_main, u16 vol_auxa, u16 vol_auxb)
 {
-  int* buffers_main[3] = { m_samples_left, m_samples_right, m_samples_surround };
-  int* buffers_auxa[3] = { m_samples_auxA_left, m_samples_auxA_right, m_samples_auxA_surround };
-  int* buffers_auxb[3] = { m_samples_auxB_left, m_samples_auxB_right, m_samples_auxB_surround };
-  int** buffers[3] = { buffers_main, buffers_auxa, buffers_auxb };
-  u16 volumes[3] = { vol_main, vol_auxa, vol_auxb };
+  int* buffers_main[3] = {m_samples_left, m_samples_right, m_samples_surround};
+  int* buffers_auxa[3] = {m_samples_auxA_left, m_samples_auxA_right, m_samples_auxA_surround};
+  int* buffers_auxb[3] = {m_samples_auxB_left, m_samples_auxB_right, m_samples_auxB_surround};
+  int** buffers[3] = {buffers_main, buffers_auxa, buffers_auxb};
+  u16 volumes[3] = {vol_main, vol_auxa, vol_auxb};
 
   for (u32 i = 0; i < 3; ++i)
   {
@@ -434,9 +434,9 @@ void AXUCode::ProcessPBList(u32 pb_addr)
 
   while (pb_addr)
   {
-    AXBuffers buffers = { { m_samples_left, m_samples_right, m_samples_surround, m_samples_auxA_left,
-        m_samples_auxA_right, m_samples_auxA_surround, m_samples_auxB_left,
-        m_samples_auxB_right, m_samples_auxB_surround } };
+    AXBuffers buffers = {{m_samples_left, m_samples_right, m_samples_surround, m_samples_auxA_left,
+                          m_samples_auxA_right, m_samples_auxA_surround, m_samples_auxB_left,
+                          m_samples_auxB_right, m_samples_auxB_surround}};
 
     ReadPB(pb_addr, pb, m_crc);
 
@@ -448,7 +448,7 @@ void AXUCode::ProcessPBList(u32 pb_addr)
       ApplyUpdatesForMs(curr_ms, (u16*)&pb, pb.updates.num_updates, updates);
 
       ProcessVoice(pb, buffers, spms, ConvertMixerControl(pb.mixer_control),
-        m_coeffs_available ? m_coeffs : nullptr);
+                   m_coeffs_available ? m_coeffs : nullptr);
 
       // Forward the buffers
       for (size_t i = 0; i < ArraySize(buffers.ptrs); ++i)
@@ -462,7 +462,7 @@ void AXUCode::ProcessPBList(u32 pb_addr)
 
 void AXUCode::MixAUXSamples(int aux_id, u32 write_addr, u32 read_addr)
 {
-  int* buffers[3] = { nullptr };
+  int* buffers[3] = {nullptr};
 
   switch (aux_id)
   {
@@ -586,10 +586,10 @@ void AXUCode::SetOppositeLR(u32 src_addr)
 }
 
 void AXUCode::SendAUXAndMix(u32 main_auxa_up, u32 auxb_s_up, u32 main_l_dl, u32 main_r_dl,
-  u32 auxb_l_dl, u32 auxb_r_dl)
+                            u32 auxb_l_dl, u32 auxb_r_dl)
 {
   // Buffers to upload first
-  int* up_buffers[] = { m_samples_auxA_left, m_samples_auxA_right, m_samples_auxA_surround };
+  int* up_buffers[] = {m_samples_auxA_left, m_samples_auxA_right, m_samples_auxA_surround};
 
   // Upload AUXA LRS
   int* ptr = (int*)HLEMemory_Get_Pointer(main_auxa_up);
@@ -603,8 +603,8 @@ void AXUCode::SendAUXAndMix(u32 main_auxa_up, u32 auxb_s_up, u32 main_l_dl, u32 
     *ptr++ = Common::swap32(sample);
 
   // Download buffers and addresses
-  int* dl_buffers[] = { m_samples_left, m_samples_right, m_samples_auxB_left, m_samples_auxB_right };
-  u32 dl_addrs[] = { main_l_dl, main_r_dl, auxb_l_dl, auxb_r_dl };
+  int* dl_buffers[] = {m_samples_left, m_samples_right, m_samples_auxB_left, m_samples_auxB_right};
+  u32 dl_addrs[] = {main_l_dl, main_r_dl, auxb_l_dl, auxb_r_dl};
 
   // Download and mix
   for (size_t i = 0; i < ArraySize(dl_buffers); ++i)

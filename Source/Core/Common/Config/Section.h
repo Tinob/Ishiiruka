@@ -27,6 +27,7 @@ class Section
 
 public:
   Section(LayerType layer, System system, const std::string& name);
+  virtual ~Section() = default;
 
   virtual bool Exists(const std::string& key) const;
   bool Delete(const std::string& key);
@@ -53,7 +54,7 @@ public:
 
   // Getters
   virtual bool Get(const std::string& key, std::string* value,
-    const std::string& default_value = NULL_STRING) const;
+                   const std::string& default_value = NULL_STRING) const;
 
   bool Get(const std::string& key, int* value, int defaultValue = 0) const;
   bool Get(const std::string& key, u32* value, u32 defaultValue = 0) const;
@@ -103,7 +104,7 @@ public:
   bool Exists(const std::string& key) const override;
 
   bool Get(const std::string& key, std::string* value,
-    const std::string& default_value = NULL_STRING) const override;
+           const std::string& default_value = NULL_STRING) const override;
 
   void Set(const std::string& key, const std::string& value) override;
 };

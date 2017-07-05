@@ -18,7 +18,7 @@
 namespace ControllerEmu
 {
 MixedTriggers::MixedTriggers(const std::string& name_)
-  : ControlGroup(name_, GroupType::MixedTriggers)
+    : ControlGroup(name_, GroupType::MixedTriggers)
 {
   numeric_settings.emplace_back(std::make_unique<NumericSetting>(_trans("Threshold"), 0.9));
 }

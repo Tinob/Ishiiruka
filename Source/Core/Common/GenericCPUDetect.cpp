@@ -6,7 +6,9 @@
 
 CPUInfo cpu_info;
 
-CPUInfo::CPUInfo() {}
+CPUInfo::CPUInfo()
+{
+}
 
 std::string CPUInfo::Summarize()
 {

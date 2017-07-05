@@ -135,7 +135,6 @@ void VertexManager::CreateDeviceObjects()
   m_vertex_buffers = new LPDIRECT3DVERTEXBUFFER9[MAX_VBUFFER_COUNT];
   m_index_buffers = new LPDIRECT3DINDEXBUFFER9[MAX_VBUFFER_COUNT];
 
-  bool Fail = false;
   for (m_current_vertex_buffer = 0; m_current_vertex_buffer < MAX_VBUFFER_COUNT; m_current_vertex_buffer++)
   {
     m_vertex_buffers[m_current_vertex_buffer] = nullptr;

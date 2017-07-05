@@ -19,7 +19,7 @@ namespace JIT
 namespace x86
 {
 void DSPEmitter::ReJitConditional(const UDSPInstruction opc,
-  void (DSPEmitter::*conditional_fn)(UDSPInstruction))
+                                  void (DSPEmitter::*conditional_fn)(UDSPInstruction))
 {
   u8 cond = opc & 0xf;
   if (cond == 0xf)  // Always true.
@@ -77,7 +77,7 @@ void DSPEmitter::ReJitConditional(const UDSPInstruction opc,
   }
   DSPJitRegCache c1(m_gpr);
   FixupBranch skip_code =
-    cond == 0xe ? J_CC(CC_E, true) : J_CC((CCFlags)(CC_NE - (cond & 1)), true);
+      cond == 0xe ? J_CC(CC_E, true) : J_CC((CCFlags)(CC_NE - (cond & 1)), true);
   (this->*conditional_fn)(opc);
   m_gpr.FlushRegs(c1);
   SetJumpTarget(skip_code);

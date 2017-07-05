@@ -18,9 +18,9 @@
 #include "DolphinWX/WxUtils.h"
 
 CBreakPointView::CBreakPointView(wxWindow* parent, const wxWindowID id)
-  : wxListCtrl(parent, id, wxDefaultPosition, wxDefaultSize,
-    wxLC_REPORT | wxSUNKEN_BORDER | wxLC_ALIGN_LEFT | wxLC_SINGLE_SEL |
-    wxLC_SORT_ASCENDING)
+    : wxListCtrl(parent, id, wxDefaultPosition, wxDefaultSize,
+                 wxLC_REPORT | wxSUNKEN_BORDER | wxLC_ALIGN_LEFT | wxLC_SINGLE_SEL |
+                     wxLC_SORT_ASCENDING)
 {
   SetFont(DebuggerFont);
   Refresh();
@@ -63,7 +63,7 @@ void CBreakPointView::Repopulate()
   for (const auto& rMemCheck : rMemChecks)
   {
     const wxString memcheck_on_str =
-      StrToWxStr((rMemCheck.break_on_hit || rMemCheck.log_on_hit) ? "on" : " ");
+        StrToWxStr((rMemCheck.break_on_hit || rMemCheck.log_on_hit) ? "on" : " ");
     int item = InsertItem(0, memcheck_on_str);
     SetItem(item, 1, StrToWxStr("MBP"));
 
@@ -75,7 +75,7 @@ void CBreakPointView::Repopulate()
     }
 
     std::string address_range_str =
-      StringFromFormat("%08x to %08x", rMemCheck.start_address, rMemCheck.end_address);
+        StringFromFormat("%08x to %08x", rMemCheck.start_address, rMemCheck.end_address);
     SetItem(item, 3, StrToWxStr(address_range_str));
 
     std::string mode;

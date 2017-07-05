@@ -24,12 +24,17 @@
 #include <vector>
 
 #include "Common/CommonTypes.h"
+#include "Common/Config/Config.h"
 #include "Common/FileUtil.h"
 #include "Common/IniFile.h"
 #include "Common/Logging/Log.h"
 #include "Common/MsgHandler.h"
 #include "Common/StringUtil.h"
 
+#include "Core/Boot/Boot.h"
+#include "Core/Config/Config.h"
+#include "Core/ConfigLoaders/GameConfigLoader.h"
+#include "Core/ConfigLoaders/NetPlayConfigLoader.h"
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
 #include "Core/HW/EXI/EXI.h"
@@ -87,9 +92,6 @@ private:
   int Volume;
   int m_wii_language;
   float m_EmulationSpeed;
-  bool m_audio_stretch;
-  int m_audio_stretch_max_latency = 80;
-
   float m_OCFactor;
   bool m_OCEnable;
   std::string strBackend;
@@ -128,8 +130,6 @@ void ConfigCache::SaveConfig(const SConfig& config)
   m_wii_language = config.m_wii_language;
   iVideoRate = config.iVideoRate;
   m_OCFactor = config.m_OCFactor;
-  m_audio_stretch = config.m_audio_stretch;
-  m_audio_stretch_max_latency = config.m_audio_stretch_max_latency;
   m_OCEnable = config.m_OCEnable;
 
   std::copy(std::begin(g_wiimote_sources), std::end(g_wiimote_sources), std::begin(iWiimoteSource));
@@ -169,8 +169,6 @@ void ConfigCache::RestoreConfig(SConfig* config)
   config->iCPUCore = iCPUCore;
   config->iVideoRate = iVideoRate;
   config->bHalfAudioRate = bHalfAudioRate;
-  config->m_audio_stretch = m_audio_stretch;
-  config->m_audio_stretch_max_latency = m_audio_stretch_max_latency;
   // Only change these back if they were actually set by game ini, since they can be changed while a
   // game is running.
   if (bSetVolume)
@@ -229,25 +227,30 @@ static GPUDeterminismMode ParseGPUDeterminismMode(const std::string& mode)
 }
 
 // Boot the ISO or file
-bool BootCore(const std::string& _rFilename)
+bool BootCore(std::unique_ptr<BootParameters> boot)
 {
+  if (!boot)
+    return false;
+
   SConfig& StartUp = SConfig::GetInstance();
 
-  StartUp.m_BootType = SConfig::BOOT_ISO;
-  StartUp.m_strFilename = _rFilename;
-  StartUp.m_LastFilename = _rFilename;
-  StartUp.SaveSettings();
   StartUp.bRunCompareClient = false;
   StartUp.bRunCompareServer = false;
 
   config_cache.SaveConfig(StartUp);
 
-  // If for example the ISO file is bad we return here
-  if (!StartUp.AutoSetup(SConfig::BOOT_DEFAULT))
+  if (!StartUp.SetPathsAndGameMetadata(*boot))
     return false;
 
   // Load game specific settings
+  if (!std::holds_alternative<BootParameters::IPL>(boot->parameters))
   {
+    std::string game_id = SConfig::GetInstance().GetGameID();
+    u16 revision = SConfig::GetInstance().GetRevision();
+
+    Config::AddLoadLayer(ConfigLoaders::GenerateGlobalGameConfigLoader(game_id, revision));
+    Config::AddLoadLayer(ConfigLoaders::GenerateLocalGameConfigLoader(game_id, revision));
+
     IniFile game_ini = StartUp.LoadGameIni();
 
     // General settings
@@ -258,7 +261,7 @@ bool BootCore(const std::string& _rFilename)
     core_section->Get("CPUThread", &StartUp.bCPUThread, StartUp.bCPUThread);
     core_section->Get("EnableCheats", &StartUp.bEnableCheats, StartUp.bEnableCheats);
     core_section->Get("SyncOnSkipIdle", &StartUp.bSyncGPUOnSkipIdleHack,
-      StartUp.bSyncGPUOnSkipIdleHack);
+                      StartUp.bSyncGPUOnSkipIdleHack);
     core_section->Get("FPRF", &StartUp.bFPRF, StartUp.bFPRF);
     core_section->Get("AccurateNaNs", &StartUp.bAccurateNaNs, StartUp.bAccurateNaNs);
     core_section->Get("MMU", &StartUp.bMMU, StartUp.bMMU);
@@ -266,8 +269,6 @@ bool BootCore(const std::string& _rFilename)
     core_section->Get("LowDCBZHack", &StartUp.bLowDCBZHack, StartUp.bLowDCBZHack);
     core_section->Get("Video_Rate", &StartUp.iVideoRate, StartUp.iVideoRate);
     core_section->Get("HalfAudioRate", &StartUp.bHalfAudioRate, StartUp.bHalfAudioRate);
-    core_section->Get("AudioStretch", &StartUp.m_audio_stretch, StartUp.m_audio_stretch);
-    core_section->Get("AudioStretchMaxLatency", &StartUp.m_audio_stretch_max_latency, StartUp.m_audio_stretch_max_latency);
     core_section->Get("SyncGPU", &StartUp.bSyncGPU, StartUp.bSyncGPU);
     core_section->Get("FastDiscSpeed", &StartUp.bFastDiscSpeed, StartUp.bFastDiscSpeed);
     core_section->Get("DSPHLE", &StartUp.bDSPHLE, StartUp.bDSPHLE);
@@ -286,7 +287,7 @@ bool BootCore(const std::string& _rFilename)
     dsp_section->Get("Backend", &StartUp.sBackend, StartUp.sBackend);
     VideoBackendBase::ActivateBackend(StartUp.m_strVideoBackend);
     core_section->Get("GPUDeterminismMode", &StartUp.m_strGPUDeterminismMode,
-      StartUp.m_strGPUDeterminismMode);
+                      StartUp.m_strGPUDeterminismMode);
     core_section->Get("Overclock", &StartUp.m_OCFactor, StartUp.m_OCFactor);
     core_section->Get("OverclockEnable", &StartUp.m_OCEnable, StartUp.m_OCEnable);
 
@@ -313,7 +314,7 @@ bool BootCore(const std::string& _rFilename)
       {
         controls_section->Get(StringFromFormat("WiimoteSource%u", i), &source, -1);
         if (source != -1 && g_wiimote_sources[i] != (unsigned)source &&
-          source >= WIIMOTE_SRC_NONE && source <= WIIMOTE_SRC_HYBRID)
+            source >= WIIMOTE_SRC_NONE && source <= WIIMOTE_SRC_HYBRID)
         {
           config_cache.bSetWiimoteSource[i] = true;
           g_wiimote_sources[i] = source;
@@ -322,7 +323,7 @@ bool BootCore(const std::string& _rFilename)
       }
       controls_section->Get("WiimoteSourceBB", &source, -1);
       if (source != -1 && g_wiimote_sources[WIIMOTE_BALANCE_BOARD] != (unsigned)source &&
-        (source == WIIMOTE_SRC_NONE || source == WIIMOTE_SRC_REAL))
+          (source == WIIMOTE_SRC_NONE || source == WIIMOTE_SRC_REAL))
       {
         config_cache.bSetWiimoteSource[WIIMOTE_BALANCE_BOARD] = true;
         g_wiimote_sources[WIIMOTE_BALANCE_BOARD] = source;
@@ -336,6 +337,7 @@ bool BootCore(const std::string& _rFilename)
   // Movie settings
   if (Movie::IsPlayingInput() && Movie::IsConfigSaved())
   {
+    Config::AddLayer(std::make_unique<Config::Layer>(Config::LayerType::Movie));
     StartUp.bCPUThread = Movie::IsDualCore();
     StartUp.bDSPHLE = Movie::IsDSPHLE();
     StartUp.bProgressive = Movie::IsProgressive();
@@ -350,9 +352,9 @@ bool BootCore(const std::string& _rFilename)
       if (Movie::IsUsingMemcard(i) && Movie::IsStartingFromClearSave() && !StartUp.bWii)
       {
         if (File::Exists(File::GetUserPath(D_GCUSER_IDX) +
-          StringFromFormat("Movie%s.raw", (i == 0) ? "A" : "B")))
+                         StringFromFormat("Movie%s.raw", (i == 0) ? "A" : "B")))
           File::Delete(File::GetUserPath(D_GCUSER_IDX) +
-            StringFromFormat("Movie%s.raw", (i == 0) ? "A" : "B"));
+                       StringFromFormat("Movie%s.raw", (i == 0) ? "A" : "B"));
         if (File::Exists(File::GetUserPath(D_GCUSER_IDX) + "Movie"))
           File::DeleteDirRecursively(File::GetUserPath(D_GCUSER_IDX) + "Movie");
       }
@@ -361,6 +363,7 @@ bool BootCore(const std::string& _rFilename)
 
   if (NetPlay::IsNetPlayRunning())
   {
+    Config::AddLoadLayer(ConfigLoaders::GenerateNetPlayConfigLoader(g_NetPlaySettings));
     StartUp.bCPUThread = g_NetPlaySettings.m_CPUthread;
     StartUp.bEnableCheats = g_NetPlaySettings.m_EnableCheats;
     StartUp.bDSPHLE = g_NetPlaySettings.m_DSPHLE;
@@ -404,15 +407,14 @@ bool BootCore(const std::string& _rFilename)
   if (StartUp.bWii)
     StartUp.SaveSettingsToSysconf();
 
-  // Run the game
-  // Init the core
-  if (!Core::Init())
+  const bool load_ipl = !StartUp.bWii && !StartUp.bHLE_BS2 &&
+                        std::holds_alternative<BootParameters::Disc>(boot->parameters);
+  if (load_ipl)
   {
-    PanicAlertT("Couldn't init the core.\nCheck your configuration.");
-    return false;
+    return Core::Init(std::make_unique<BootParameters>(BootParameters::IPL{
+        StartUp.m_region, std::move(std::get<BootParameters::Disc>(boot->parameters))}));
   }
-
-  return true;
+  return Core::Init(std::move(boot));
 }
 
 void Stop()
@@ -423,6 +425,11 @@ void Stop()
 
 void RestoreConfig()
 {
+  Config::ClearCurrentRunLayer();
+  Config::RemoveLayer(Config::LayerType::Movie);
+  Config::RemoveLayer(Config::LayerType::Netplay);
+  Config::RemoveLayer(Config::LayerType::GlobalGame);
+  Config::RemoveLayer(Config::LayerType::LocalGame);
   SConfig::GetInstance().LoadSettingsFromSysconf();
   SConfig::GetInstance().ResetRunningGameMetadata();
   config_cache.RestoreConfig(&SConfig::GetInstance());

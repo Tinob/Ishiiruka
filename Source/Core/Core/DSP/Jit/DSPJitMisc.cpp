@@ -163,7 +163,7 @@ void DSPEmitter::srbith(const UDSPInstruction opc)
 {
   switch ((opc >> 8) & 0xf)
   {
-    // M0/M2 change the multiplier mode (it can multiply by 2 for free).
+  // M0/M2 change the multiplier mode (it can multiply by 2 for free).
   case 0xa:  // M2
     clrCompileSR(SR_MUL_MODIFY);
     break;
@@ -171,8 +171,8 @@ void DSPEmitter::srbith(const UDSPInstruction opc)
     setCompileSR(SR_MUL_MODIFY);
     break;
 
-    // If set, treat multiplicands as unsigned.
-    // If clear, treat them as signed.
+  // If set, treat multiplicands as unsigned.
+  // If clear, treat them as signed.
   case 0xc:  // CLR15
     clrCompileSR(SR_MUL_UNSIGNED);
     break;
@@ -180,8 +180,8 @@ void DSPEmitter::srbith(const UDSPInstruction opc)
     setCompileSR(SR_MUL_UNSIGNED);
     break;
 
-    // Automatic 40-bit sign extension when loading ACx.M.
-    // SET40 changes something very important: see the LRI instruction above.
+  // Automatic 40-bit sign extension when loading ACx.M.
+  // SET40 changes something very important: see the LRI instruction above.
   case 0xe:  // SET16 (CLR40)
     clrCompileSR(SR_40_MODE_BIT);
     break;

@@ -40,28 +40,28 @@ void PathConfigPane::InitializeGUI()
   m_remove_iso_path_button->Disable();
 
   m_default_iso_filepicker = new wxFilePickerCtrl(
-    this, wxID_ANY, wxEmptyString, _("Choose a default ISO:"),
-    _("All GC/Wii files (elf, dol, gcm, iso, tgc, wbfs, ciso, gcz, wad)") +
-    wxString::Format("|*.elf;*.dol;*.gcm;*.iso;*.tgc;*.wbfs;*.ciso;*.gcz;*.wad|%s",
-      wxGetTranslation(wxALL_FILES)),
-    wxDefaultPosition, wxDefaultSize, wxFLP_USE_TEXTCTRL | wxFLP_OPEN | wxFLP_SMALL);
+      this, wxID_ANY, wxEmptyString, _("Choose a default ISO:"),
+      _("All GC/Wii files (elf, dol, gcm, iso, tgc, wbfs, ciso, gcz, wad)") +
+          wxString::Format("|*.elf;*.dol;*.gcm;*.iso;*.tgc;*.wbfs;*.ciso;*.gcz;*.wad|%s",
+                           wxGetTranslation(wxALL_FILES)),
+      wxDefaultPosition, wxDefaultSize, wxFLP_USE_TEXTCTRL | wxFLP_OPEN | wxFLP_SMALL);
   m_dvd_root_dirpicker =
-    new wxDirPickerCtrl(this, wxID_ANY, wxEmptyString, _("Choose a DVD root directory:"),
-      wxDefaultPosition, wxDefaultSize, wxDIRP_USE_TEXTCTRL | wxDIRP_SMALL);
+      new wxDirPickerCtrl(this, wxID_ANY, wxEmptyString, _("Choose a DVD root directory:"),
+                          wxDefaultPosition, wxDefaultSize, wxDIRP_USE_TEXTCTRL | wxDIRP_SMALL);
   m_apploader_path_filepicker = new wxFilePickerCtrl(
-    this, wxID_ANY, wxEmptyString,
-    _("Choose file to use as apploader: (applies to discs constructed from directories only)"),
-    _("apploader (.img)") + wxString::Format("|*.img|%s", wxGetTranslation(wxALL_FILES)),
-    wxDefaultPosition, wxDefaultSize, wxFLP_USE_TEXTCTRL | wxFLP_OPEN | wxFLP_SMALL);
+      this, wxID_ANY, wxEmptyString,
+      _("Choose file to use as apploader: (applies to discs constructed from directories only)"),
+      _("apploader (.img)") + wxString::Format("|*.img|%s", wxGetTranslation(wxALL_FILES)),
+      wxDefaultPosition, wxDefaultSize, wxFLP_USE_TEXTCTRL | wxFLP_OPEN | wxFLP_SMALL);
   m_nand_root_dirpicker =
-    new wxDirPickerCtrl(this, wxID_ANY, wxEmptyString, _("Choose a NAND root directory:"),
-      wxDefaultPosition, wxDefaultSize, wxDIRP_USE_TEXTCTRL | wxDIRP_SMALL);
+      new wxDirPickerCtrl(this, wxID_ANY, wxEmptyString, _("Choose a NAND root directory:"),
+                          wxDefaultPosition, wxDefaultSize, wxDIRP_USE_TEXTCTRL | wxDIRP_SMALL);
   m_dump_path_dirpicker =
-    new wxDirPickerCtrl(this, wxID_ANY, wxEmptyString, _("Choose a dump directory:"),
-      wxDefaultPosition, wxDefaultSize, wxDIRP_USE_TEXTCTRL | wxDIRP_SMALL);
+      new wxDirPickerCtrl(this, wxID_ANY, wxEmptyString, _("Choose a dump directory:"),
+                          wxDefaultPosition, wxDefaultSize, wxDIRP_USE_TEXTCTRL | wxDIRP_SMALL);
   m_wii_sdcard_filepicker = new wxFilePickerCtrl(
-    this, wxID_ANY, wxEmptyString, _("Choose an SD Card file:"), wxFileSelectorDefaultWildcardStr,
-    wxDefaultPosition, wxDefaultSize, wxDIRP_USE_TEXTCTRL | wxDIRP_SMALL);
+      this, wxID_ANY, wxEmptyString, _("Choose an SD Card file:"), wxFileSelectorDefaultWildcardStr,
+      wxDefaultPosition, wxDefaultSize, wxDIRP_USE_TEXTCTRL | wxDIRP_SMALL);
 
   const int space5 = FromDIP(5);
 
@@ -72,7 +72,7 @@ void PathConfigPane::InitializeGUI()
   iso_button_sizer->Add(m_remove_iso_path_button, 0, wxALIGN_CENTER_VERTICAL);
 
   wxStaticBoxSizer* const iso_listbox_sizer =
-    new wxStaticBoxSizer(wxVERTICAL, this, _("ISO Directories"));
+      new wxStaticBoxSizer(wxVERTICAL, this, _("ISO Directories"));
   iso_listbox_sizer->Add(m_iso_paths_listbox, 1, wxEXPAND);
   iso_listbox_sizer->AddSpacer(space5);
   iso_listbox_sizer->Add(iso_button_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, space5);
@@ -80,22 +80,22 @@ void PathConfigPane::InitializeGUI()
 
   wxGridBagSizer* const picker_sizer = new wxGridBagSizer(space5, space5);
   picker_sizer->Add(new wxStaticText(this, wxID_ANY, _("Default ISO:")), wxGBPosition(0, 0),
-    wxDefaultSpan, wxALIGN_CENTER_VERTICAL);
+                    wxDefaultSpan, wxALIGN_CENTER_VERTICAL);
   picker_sizer->Add(m_default_iso_filepicker, wxGBPosition(0, 1), wxDefaultSpan, wxEXPAND);
   picker_sizer->Add(new wxStaticText(this, wxID_ANY, _("DVD Root:")), wxGBPosition(1, 0),
-    wxDefaultSpan, wxALIGN_CENTER_VERTICAL);
+                    wxDefaultSpan, wxALIGN_CENTER_VERTICAL);
   picker_sizer->Add(m_dvd_root_dirpicker, wxGBPosition(1, 1), wxDefaultSpan, wxEXPAND);
   picker_sizer->Add(new wxStaticText(this, wxID_ANY, _("Apploader:")), wxGBPosition(2, 0),
-    wxDefaultSpan, wxALIGN_CENTER_VERTICAL);
+                    wxDefaultSpan, wxALIGN_CENTER_VERTICAL);
   picker_sizer->Add(m_apploader_path_filepicker, wxGBPosition(2, 1), wxDefaultSpan, wxEXPAND);
   picker_sizer->Add(new wxStaticText(this, wxID_ANY, _("Wii NAND Root:")), wxGBPosition(3, 0),
-    wxDefaultSpan, wxALIGN_CENTER_VERTICAL);
+                    wxDefaultSpan, wxALIGN_CENTER_VERTICAL);
   picker_sizer->Add(m_nand_root_dirpicker, wxGBPosition(3, 1), wxDefaultSpan, wxEXPAND);
   picker_sizer->Add(new wxStaticText(this, wxID_ANY, _("Dump Path:")), wxGBPosition(4, 0),
-    wxDefaultSpan, wxALIGN_CENTER_VERTICAL);
+                    wxDefaultSpan, wxALIGN_CENTER_VERTICAL);
   picker_sizer->Add(m_dump_path_dirpicker, wxGBPosition(4, 1), wxDefaultSpan, wxEXPAND);
   picker_sizer->Add(new wxStaticText(this, wxID_ANY, _("SD Card Path:")), wxGBPosition(5, 0),
-    wxDefaultSpan, wxALIGN_CENTER_VERTICAL);
+                    wxDefaultSpan, wxALIGN_CENTER_VERTICAL);
   picker_sizer->Add(m_wii_sdcard_filepicker, wxGBPosition(5, 1), wxDefaultSpan, wxEXPAND);
   picker_sizer->AddGrowableCol(1);
 
@@ -131,20 +131,27 @@ void PathConfigPane::BindEvents()
 {
   m_iso_paths_listbox->Bind(wxEVT_LISTBOX, &PathConfigPane::OnISOPathSelectionChanged, this);
   m_recursive_iso_paths_checkbox->Bind(wxEVT_CHECKBOX,
-    &PathConfigPane::OnRecursiveISOCheckBoxChanged, this);
+                                       &PathConfigPane::OnRecursiveISOCheckBoxChanged, this);
   m_add_iso_path_button->Bind(wxEVT_BUTTON, &PathConfigPane::OnAddISOPath, this);
   m_remove_iso_path_button->Bind(wxEVT_BUTTON, &PathConfigPane::OnRemoveISOPath, this);
   m_default_iso_filepicker->Bind(wxEVT_FILEPICKER_CHANGED, &PathConfigPane::OnDefaultISOChanged,
-    this);
+                                 this);
   m_dvd_root_dirpicker->Bind(wxEVT_DIRPICKER_CHANGED, &PathConfigPane::OnDVDRootChanged, this);
   m_apploader_path_filepicker->Bind(wxEVT_FILEPICKER_CHANGED,
-    &PathConfigPane::OnApploaderPathChanged, this);
+                                    &PathConfigPane::OnApploaderPathChanged, this);
   m_nand_root_dirpicker->Bind(wxEVT_DIRPICKER_CHANGED, &PathConfigPane::OnNANDRootChanged, this);
   m_dump_path_dirpicker->Bind(wxEVT_DIRPICKER_CHANGED, &PathConfigPane::OnDumpPathChanged, this);
   m_wii_sdcard_filepicker->Bind(wxEVT_FILEPICKER_CHANGED, &PathConfigPane::OnSdCardPathChanged,
-    this);
+                                this);
 
-  Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreNotRunning);
+  Bind(wxEVT_UPDATE_UI, &PathConfigPane::OnEnableIfCoreNotRunning, this);
+}
+
+void PathConfigPane::OnEnableIfCoreNotRunning(wxUpdateUIEvent& event)
+{
+  // Prevent the Remove button from being enabled via wxUpdateUIEvent
+  if (event.GetId() != m_remove_iso_path_button->GetId())
+    WxEventUtils::OnEnableIfCoreNotRunning(event);
 }
 
 void PathConfigPane::OnISOPathSelectionChanged(wxCommandEvent& event)
@@ -156,13 +163,13 @@ void PathConfigPane::OnRecursiveISOCheckBoxChanged(wxCommandEvent& event)
 {
   SConfig::GetInstance().m_RecursiveISOFolder = m_recursive_iso_paths_checkbox->IsChecked();
 
-  AddPendingEvent(wxCommandEvent(wxDOLPHIN_CFG_REFRESH_LIST));
+  AddPendingEvent(wxCommandEvent(wxDOLPHIN_CFG_RESCAN_LIST));
 }
 
 void PathConfigPane::OnAddISOPath(wxCommandEvent& event)
 {
   wxDirDialog dialog(this, _("Choose a directory to add"), wxGetHomeDir(),
-    wxDD_DEFAULT_STYLE | wxDD_DIR_MUST_EXIST);
+                     wxDD_DEFAULT_STYLE | wxDD_DIR_MUST_EXIST);
 
   if (dialog.ShowModal() == wxID_OK)
   {
@@ -172,7 +179,7 @@ void PathConfigPane::OnAddISOPath(wxCommandEvent& event)
     }
     else
     {
-      AddPendingEvent(wxCommandEvent(wxDOLPHIN_CFG_REFRESH_LIST));
+      AddPendingEvent(wxCommandEvent(wxDOLPHIN_CFG_RESCAN_LIST));
       m_iso_paths_listbox->Append(dialog.GetPath());
     }
   }
@@ -182,10 +189,10 @@ void PathConfigPane::OnAddISOPath(wxCommandEvent& event)
 
 void PathConfigPane::OnRemoveISOPath(wxCommandEvent& event)
 {
-  AddPendingEvent(wxCommandEvent(wxDOLPHIN_CFG_REFRESH_LIST));
+  AddPendingEvent(wxCommandEvent(wxDOLPHIN_CFG_RESCAN_LIST));
   m_iso_paths_listbox->Delete(m_iso_paths_listbox->GetSelection());
 
-  // This seems to not be activated on Windows when it should be. wxw bug?
+// This seems to not be activated on Windows when it should be. wxw bug?
 #ifdef _WIN32
   wxCommandEvent dummy_event{};
   OnISOPathSelectionChanged(dummy_event);
@@ -219,14 +226,14 @@ void PathConfigPane::OnSdCardPathChanged(wxCommandEvent& event)
 void PathConfigPane::OnNANDRootChanged(wxCommandEvent& event)
 {
   std::string nand_path = SConfig::GetInstance().m_NANDPath =
-    WxStrToStr(m_nand_root_dirpicker->GetPath());
+      WxStrToStr(m_nand_root_dirpicker->GetPath());
 
   File::SetUserPath(D_WIIROOT_IDX, nand_path);
   m_nand_root_dirpicker->SetPath(StrToWxStr(nand_path));
 
-  DiscIO::CNANDContentManager::Access().ClearCache();
+  DiscIO::NANDContentManager::Access().ClearCache();
 
-  wxCommandEvent update_event{ DOLPHIN_EVT_UPDATE_LOAD_WII_MENU_ITEM, GetId() };
+  wxCommandEvent update_event{DOLPHIN_EVT_UPDATE_LOAD_WII_MENU_ITEM, GetId()};
   update_event.SetEventObject(this);
   AddPendingEvent(update_event);
 }
@@ -234,7 +241,7 @@ void PathConfigPane::OnNANDRootChanged(wxCommandEvent& event)
 void PathConfigPane::OnDumpPathChanged(wxCommandEvent& event)
 {
   std::string dump_path = SConfig::GetInstance().m_DumpPath =
-    WxStrToStr(m_dump_path_dirpicker->GetPath());
+      WxStrToStr(m_dump_path_dirpicker->GetPath());
 
   m_dump_path_dirpicker->SetPath(StrToWxStr(dump_path));
 }

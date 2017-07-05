@@ -2,15 +2,14 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Core/FifoPlayer/FifoAnalyzer.h"
+
 #include <algorithm>
 #include <numeric>
-
-#include "Core/FifoPlayer/FifoAnalyzer.h"
 
 #include "Common/Assert.h"
 #include "Common/Swap.h"
 
-#include "Core/Core.h"
 #include "Core/FifoPlayer/FifoRecordAnalyzer.h"
 
 #include "VideoCommon/OpcodeDecoding.h"
@@ -58,12 +57,12 @@ u32 AnalyzeCommand(const u8* data, DecodeMode mode)
 
   switch (cmd)
   {
-  case GxOpCodes::GX_NOP:
+  case OpcodeDecoder::GX_NOP:
   case 0x44:
-  case GxOpCodes::GX_CMD_INVL_VC:
+  case OpcodeDecoder::GX_CMD_INVL_VC:
     break;
 
-  case GxOpCodes::GX_LOAD_CP_REG:
+  case OpcodeDecoder::GX_LOAD_CP_REG:
   {
     s_DrawingObject = false;
 
@@ -73,7 +72,7 @@ u32 AnalyzeCommand(const u8* data, DecodeMode mode)
     break;
   }
 
-  case GxOpCodes::GX_LOAD_XF_REG:
+  case OpcodeDecoder::GX_LOAD_XF_REG:
   {
     s_DrawingObject = false;
 
@@ -84,14 +83,14 @@ u32 AnalyzeCommand(const u8* data, DecodeMode mode)
     break;
   }
 
-  case GxOpCodes::GX_LOAD_INDX_A:
-  case GxOpCodes::GX_LOAD_INDX_B:
-  case GxOpCodes::GX_LOAD_INDX_C:
-  case GxOpCodes::GX_LOAD_INDX_D:
+  case OpcodeDecoder::GX_LOAD_INDX_A:
+  case OpcodeDecoder::GX_LOAD_INDX_B:
+  case OpcodeDecoder::GX_LOAD_INDX_C:
+  case OpcodeDecoder::GX_LOAD_INDX_D:
   {
     s_DrawingObject = false;
 
-    int array = 0xc + (cmd - GxOpCodes::GX_LOAD_INDX_A) / 8;
+    int array = 0xc + (cmd - OpcodeDecoder::GX_LOAD_INDX_A) / 8;
     u32 value = ReadFifo32(data);
 
     if (mode == DECODE_RECORD)
@@ -99,7 +98,7 @@ u32 AnalyzeCommand(const u8* data, DecodeMode mode)
     break;
   }
 
-  case GxOpCodes::GX_CMD_CALL_DL:
+  case OpcodeDecoder::GX_CMD_CALL_DL:
     // The recorder should have expanded display lists into the fifo stream and skipped the call to
     // start them
     // That is done to make it easier to track where memory is updated
@@ -107,7 +106,7 @@ u32 AnalyzeCommand(const u8* data, DecodeMode mode)
     data += 8;
     break;
 
-  case GxOpCodes::GX_LOAD_BP_REG:
+  case OpcodeDecoder::GX_LOAD_BP_REG:
   {
     s_DrawingObject = false;
     ReadFifo32(data);
@@ -120,7 +119,7 @@ u32 AnalyzeCommand(const u8* data, DecodeMode mode)
       s_DrawingObject = true;
 
       int sizes[21];
-      CalculateVertexElementSizes(sizes, cmd & GX_VAT_MASK, s_CpMem);
+      CalculateVertexElementSizes(sizes, cmd & OpcodeDecoder::GX_VAT_MASK, s_CpMem);
 
       // Determine offset of each element that might be a vertex array
       // The first 9 elements are never vertex arrays so we just accumulate their sizes.
@@ -201,18 +200,18 @@ void CalculateVertexElementSizes(int sizes[], int vatIndex, const CPMemory& cpMe
   const VAT& vtxAttr = cpMem.vtxAttr[vatIndex];
 
   // Colors
-  const u64 colDesc[2] = { vtxDesc.Color0, vtxDesc.Color1 };
-  const u32 colComp[2] = { vtxAttr.g0.Color0Comp, vtxAttr.g0.Color1Comp };
+  const u64 colDesc[2] = {vtxDesc.Color0, vtxDesc.Color1};
+  const u32 colComp[2] = {vtxAttr.g0.Color0Comp, vtxAttr.g0.Color1Comp};
 
-  const u32 tcElements[8] = { vtxAttr.g0.Tex0CoordElements, vtxAttr.g1.Tex1CoordElements,
-                                                       vtxAttr.g1.Tex2CoordElements, vtxAttr.g1.Tex3CoordElements,
-                                                       vtxAttr.g1.Tex4CoordElements, vtxAttr.g2.Tex5CoordElements,
-                                                       vtxAttr.g2.Tex6CoordElements, vtxAttr.g2.Tex7CoordElements };
+  const u32 tcElements[8] = {vtxAttr.g0.Tex0CoordElements, vtxAttr.g1.Tex1CoordElements,
+                             vtxAttr.g1.Tex2CoordElements, vtxAttr.g1.Tex3CoordElements,
+                             vtxAttr.g1.Tex4CoordElements, vtxAttr.g2.Tex5CoordElements,
+                             vtxAttr.g2.Tex6CoordElements, vtxAttr.g2.Tex7CoordElements};
 
-  const u32 tcFormat[8] = { vtxAttr.g0.Tex0CoordFormat, vtxAttr.g1.Tex1CoordFormat,
-                                                   vtxAttr.g1.Tex2CoordFormat, vtxAttr.g1.Tex3CoordFormat,
-                                                   vtxAttr.g1.Tex4CoordFormat, vtxAttr.g2.Tex5CoordFormat,
-                                                   vtxAttr.g2.Tex6CoordFormat, vtxAttr.g2.Tex7CoordFormat };
+  const u32 tcFormat[8] = {vtxAttr.g0.Tex0CoordFormat, vtxAttr.g1.Tex1CoordFormat,
+                           vtxAttr.g1.Tex2CoordFormat, vtxAttr.g1.Tex3CoordFormat,
+                           vtxAttr.g1.Tex4CoordFormat, vtxAttr.g2.Tex5CoordFormat,
+                           vtxAttr.g2.Tex6CoordFormat, vtxAttr.g2.Tex7CoordFormat};
 
   // Add position and texture matrix indices
   u64 vtxDescHex = cpMem.vtxDesc.Hex;
@@ -224,13 +223,13 @@ void CalculateVertexElementSizes(int sizes[], int vatIndex, const CPMemory& cpMe
 
   // Position
   sizes[9] = VertexLoader_Position::GetSize(vtxDesc.Position, vtxAttr.g0.PosFormat,
-    vtxAttr.g0.PosElements);
+                                            vtxAttr.g0.PosElements);
 
   // Normals
   if (vtxDesc.Normal != NOT_PRESENT)
   {
     sizes[10] = VertexLoader_Normal::GetSize(vtxDesc.Normal, vtxAttr.g0.NormalFormat,
-      vtxAttr.g0.NormalElements, vtxAttr.g0.NormalIndex3);
+                                             vtxAttr.g0.NormalElements, vtxAttr.g0.NormalIndex3);
   }
   else
   {

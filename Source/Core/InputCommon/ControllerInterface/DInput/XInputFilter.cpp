@@ -20,7 +20,7 @@ namespace DInput
 std::unordered_set<DWORD> GetXInputGUIDS()
 {
   static const GUID s_GUID_devclass_HID = {
-          0x745a17a0, 0x74d3, 0x11d0, {0xb6, 0xfe, 0x00, 0xa0, 0xc9, 0x0f, 0x57, 0xda} };
+      0x745a17a0, 0x74d3, 0x11d0, {0xb6, 0xfe, 0x00, 0xa0, 0xc9, 0x0f, 0x57, 0xda}};
   std::unordered_set<DWORD> guids;
 
   // Enumerate everything under the "Human Interface Devices" tree in the Device Manager
@@ -38,8 +38,8 @@ std::unordered_set<DWORD> GetXInputGUIDS()
     // Need to find the size of the data and set the buffer appropriately
     DWORD buffer_size = 0;
     while (!SetupDiGetDeviceRegistryPropertyW(setup_enum, &dev_info, SPDRP_HARDWAREID, nullptr,
-      reinterpret_cast<BYTE*>(buffer.data()),
-      static_cast<DWORD>(buffer.size()), &buffer_size))
+                                              reinterpret_cast<BYTE*>(buffer.data()),
+                                              static_cast<DWORD>(buffer.size()), &buffer_size))
     {
       if (buffer_size > buffer.size())
         buffer.resize(buffer_size);

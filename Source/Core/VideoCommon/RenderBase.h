@@ -87,7 +87,7 @@ public:
   // Display resolution
   int GetBackbufferWidth() const { return m_backbuffer_width; }
   int GetBackbufferHeight() const { return m_backbuffer_height; }
-  void SetWindowSize(int width, int height);
+  void SetWindowSize(u32 width, u32 height);
 
   // EFB coordinate conversion functions
 
@@ -104,8 +104,8 @@ public:
     m_window_rectangle.top = top;
     m_window_rectangle.bottom = bottom;
   }
-  float CalculateDrawAspectRatio(int target_width, int target_height) const;
-  std::tuple<float, float> ScaleToDisplayAspectRatio(int width, int height) const;
+  float CalculateDrawAspectRatio(u32 target_width, u32 target_height) const;
+  std::tuple<float, float> ScaleToDisplayAspectRatio(u32 width, u32 height) const;
   TargetRectangle CalculateFrameDumpDrawRectangle();
   void UpdateDrawRectangle();
 
@@ -199,8 +199,8 @@ private:
   unsigned int m_ssaa_multiplier = 1;
 
   // These will be set on the first call to SetWindowSize.
-  int m_last_window_request_width = 0;
-  int m_last_window_request_height = 0;
+  u32 m_last_window_request_width = 0;
+  u32 m_last_window_request_height = 0;
 
   // frame dumping
   std::thread m_frame_dump_thread;

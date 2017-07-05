@@ -44,7 +44,7 @@
 struct BlockStat
 {
   BlockStat(u32 _addr, u64 c, u64 ticks, u64 run, u32 size)
-    : addr(_addr), cost(c), tick_counter(ticks), run_count(run), block_size(size)
+      : addr(_addr), cost(c), tick_counter(ticks), run_count(run), block_size(size)
   {
   }
   u32 addr;

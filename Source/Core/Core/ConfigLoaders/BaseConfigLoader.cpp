@@ -2,19 +2,22 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Core/ConfigLoaders/BaseConfigLoader.h"
+
 #include <cstring>
 #include <list>
 #include <map>
+#include <memory>
 #include <string>
 
-#include "Common/CommonPaths.h"
 #include "Common/CommonTypes.h"
 #include "Common/Config/Config.h"
 #include "Common/FileUtil.h"
 #include "Common/IniFile.h"
 #include "Common/Logging/Log.h"
 
-#include "Core/ConfigLoaders/BaseConfigLoader.h"
+#include "Core/Config/Config.h"
+#include "Core/ConfigLoaders/IsSettingSaveable.h"
 
 namespace ConfigLoaders
 {
@@ -46,7 +49,7 @@ public:
       {
         const std::string section_name = section.GetName();
         Config::Section* config_section =
-          config_layer->GetOrCreateSection(system.first, section_name);
+            config_layer->GetOrCreateSection(system.first, section_name);
         const IniFile::Section::SectionMap& section_map = section.GetValues();
 
         for (const auto& value : section_map)
@@ -64,7 +67,7 @@ public:
       if (mapping == system_to_ini.end())
       {
         ERROR_LOG(COMMON, "Config can't map system '%s' to an INI file!",
-          Config::GetSystemName(system.first).c_str());
+                  Config::GetSystemName(system.first).c_str());
         continue;
       }
 
@@ -79,7 +82,12 @@ public:
         IniFile::Section* ini_section = ini.GetOrCreateSection(section_name);
 
         for (const auto& value : section_values)
+        {
+          if (!IsSettingSaveable({system.first, section->GetName(), value.first}))
+            continue;
+
           ini_section->Set(value.first, value.second);
+        }
       }
 
       ini.Save(File::GetUserPath(mapping->second));

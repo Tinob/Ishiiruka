@@ -131,11 +131,11 @@ void ChangeDevice(const u8 channel, const TEXIDevices device_type, const u8 devi
   // Called from GUI, so we need to use FromThread::NON_CPU.
   // Let the hardware see no device for 1 second
   CoreTiming::ScheduleEvent(0, changeDevice,
-    ((u64)channel << 32) | ((u64)EXIDEVICE_NONE << 16) | device_num,
-    CoreTiming::FromThread::NON_CPU);
+                            ((u64)channel << 32) | ((u64)EXIDEVICE_NONE << 16) | device_num,
+                            CoreTiming::FromThread::NON_CPU);
   CoreTiming::ScheduleEvent(SystemTimers::GetTicksPerSecond(), changeDevice,
-    ((u64)channel << 32) | ((u64)device_type << 16) | device_num,
-    CoreTiming::FromThread::NON_CPU);
+                            ((u64)channel << 32) | ((u64)device_type << 16) | device_num,
+                            CoreTiming::FromThread::NON_CPU);
 }
 
 CEXIChannel* GetChannel(u32 index)

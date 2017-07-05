@@ -14,8 +14,8 @@
 #include "InputCommon/ControllerEmu/Setting/NumericSetting.h"
 
 WiimoteInputConfigDialog::WiimoteInputConfigDialog(wxWindow* const parent, InputConfig& config,
-  const wxString& name, const int port_num)
-  : InputConfigDialog(parent, config, name, port_num)
+                                                   const wxString& name, const int port_num)
+    : InputConfigDialog(parent, config, name, port_num)
 {
   const int space5 = FromDIP(5);
 
@@ -29,17 +29,17 @@ WiimoteInputConfigDialog::WiimoteInputConfigDialog(wxWindow* const parent, Input
   auto* const tab_general = new wxPanel(notebook);
 
   auto* const group_box_buttons = new ControlGroupBox(
-    Wiimote::GetWiimoteGroup(port_num, WiimoteEmu::WiimoteGroup::Buttons), tab_general, this);
+      Wiimote::GetWiimoteGroup(port_num, WiimoteEmu::WiimoteGroup::Buttons), tab_general, this);
   auto* const group_box_dpad = new ControlGroupBox(
-    Wiimote::GetWiimoteGroup(port_num, WiimoteEmu::WiimoteGroup::DPad), tab_general, this);
+      Wiimote::GetWiimoteGroup(port_num, WiimoteEmu::WiimoteGroup::DPad), tab_general, this);
   auto* const group_box_rumble = new ControlGroupBox(
-    Wiimote::GetWiimoteGroup(port_num, WiimoteEmu::WiimoteGroup::Rumble), tab_general, this);
+      Wiimote::GetWiimoteGroup(port_num, WiimoteEmu::WiimoteGroup::Rumble), tab_general, this);
   auto* const group_box_extension = new ControlGroupBox(
-    Wiimote::GetWiimoteGroup(port_num, WiimoteEmu::WiimoteGroup::Extension), tab_general, this);
+      Wiimote::GetWiimoteGroup(port_num, WiimoteEmu::WiimoteGroup::Extension), tab_general, this);
   auto* const group_box_options = new ControlGroupBox(
-    Wiimote::GetWiimoteGroup(port_num, WiimoteEmu::WiimoteGroup::Options), tab_general, this);
+      Wiimote::GetWiimoteGroup(port_num, WiimoteEmu::WiimoteGroup::Options), tab_general, this);
   auto* const group_box_hotkeys = new ControlGroupBox(
-    Wiimote::GetWiimoteGroup(port_num, WiimoteEmu::WiimoteGroup::Hotkeys), tab_general, this);
+      Wiimote::GetWiimoteGroup(port_num, WiimoteEmu::WiimoteGroup::Hotkeys), tab_general, this);
 
   auto* const dpad_extension_rumble_sizer = new wxBoxSizer(wxVERTICAL);
   dpad_extension_rumble_sizer->Add(group_box_dpad, 0, wxEXPAND);
@@ -70,17 +70,17 @@ WiimoteInputConfigDialog::WiimoteInputConfigDialog(wxWindow* const parent, Input
   auto* const tab_motion_controls_ir = new wxPanel(notebook);
 
   auto* const group_box_shake =
-    new ControlGroupBox(Wiimote::GetWiimoteGroup(port_num, WiimoteEmu::WiimoteGroup::Shake),
-      tab_motion_controls_ir, this);
+      new ControlGroupBox(Wiimote::GetWiimoteGroup(port_num, WiimoteEmu::WiimoteGroup::Shake),
+                          tab_motion_controls_ir, this);
   auto* const group_box_ir =
-    new ControlGroupBox(Wiimote::GetWiimoteGroup(port_num, WiimoteEmu::WiimoteGroup::IR),
-      tab_motion_controls_ir, this);
+      new ControlGroupBox(Wiimote::GetWiimoteGroup(port_num, WiimoteEmu::WiimoteGroup::IR),
+                          tab_motion_controls_ir, this);
   auto* const group_box_tilt =
-    new ControlGroupBox(Wiimote::GetWiimoteGroup(port_num, WiimoteEmu::WiimoteGroup::Tilt),
-      tab_motion_controls_ir, this);
+      new ControlGroupBox(Wiimote::GetWiimoteGroup(port_num, WiimoteEmu::WiimoteGroup::Tilt),
+                          tab_motion_controls_ir, this);
   auto* const group_box_swing =
-    new ControlGroupBox(Wiimote::GetWiimoteGroup(port_num, WiimoteEmu::WiimoteGroup::Swing),
-      tab_motion_controls_ir, this);
+      new ControlGroupBox(Wiimote::GetWiimoteGroup(port_num, WiimoteEmu::WiimoteGroup::Swing),
+                          tab_motion_controls_ir, this);
 
   auto* const swing_shake_sizer = new wxBoxSizer(wxVERTICAL);
   swing_shake_sizer->Add(group_box_swing, 0, wxEXPAND);

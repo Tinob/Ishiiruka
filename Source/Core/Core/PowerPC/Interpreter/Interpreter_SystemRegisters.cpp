@@ -50,7 +50,7 @@ void Interpreter::mtfsb0x(UGeckoInstruction inst)
   u32 b = 0x80000000 >> inst.CRBD;
 
   /*if (b & 0x9ff80700)
-      PanicAlert("mtfsb0 clears bit %d, PC=%x", inst.CRBD, PC);*/
+    PanicAlert("mtfsb0 clears bit %d, PC=%x", inst.CRBD, PC);*/
 
   FPSCR.Hex &= ~b;
   FPSCRtoFPUSettings(FPSCR);
@@ -80,7 +80,7 @@ void Interpreter::mtfsfix(UGeckoInstruction inst)
 
   /*u32 cleared = ~(imm >> (4 * _inst.CRFD)) & FPSCR.Hex & mask;
   if (cleared & 0x9ff80700)
-      PanicAlert("mtfsfi clears %08x, PC=%x", cleared, PC);*/
+    PanicAlert("mtfsfi clears %08x, PC=%x", cleared, PC);*/
 
   FPSCR.Hex = (FPSCR.Hex & ~mask) | (imm >> (4 * inst.CRFD));
 
@@ -102,7 +102,7 @@ void Interpreter::mtfsfx(UGeckoInstruction inst)
 
   /*u32 cleared = ~((u32)(riPS0(_inst.FB))) & FPSCR.Hex & m;
   if (cleared & 0x9ff80700)
-      PanicAlert("mtfsf clears %08x, PC=%x", cleared, PC);*/
+    PanicAlert("mtfsf clears %08x, PC=%x", cleared, PC);*/
 
   FPSCR.Hex = (FPSCR.Hex & ~m) | ((u32)(riPS0(inst.FB)) & m);
   FPSCRtoFPUSettings(FPSCR);
@@ -174,7 +174,7 @@ void Interpreter::mtmsr(UGeckoInstruction inst)
 static void SetSR(int index, u32 value)
 {
   DEBUG_LOG(POWERPC, "%08x: MMU: Segment register %i set to %08x", PowerPC::ppcState.pc, index,
-    value);
+            value);
   PowerPC::ppcState.sr[index] = value;
 }
 
@@ -297,10 +297,10 @@ void Interpreter::mtspr(UGeckoInstruction inst)
   }
   break;
   case SPR_HID2:  // HID2
-      // TODO: generate illegal instruction for paired inst if PSE or LSQE
-      // not set.
-      // TODO: disable write gather pipe if WPE not set
-      // TODO: emulate locked cache and DMA bits.
+    // TODO: generate illegal instruction for paired inst if PSE or LSQE
+    // not set.
+    // TODO: disable write gather pipe if WPE not set
+    // TODO: emulate locked cache and DMA bits.
     break;
 
   case SPR_HID4:
@@ -317,7 +317,7 @@ void Interpreter::mtspr(UGeckoInstruction inst)
     GPFifo::ResetGatherPipe();
     break;
 
-    // Graphics Quantization Registers
+  // Graphics Quantization Registers
   case SPR_GQR0:
   case SPR_GQR0 + 1:
   case SPR_GQR0 + 2:
@@ -361,7 +361,7 @@ void Interpreter::mtspr(UGeckoInstruction inst)
     SystemTimers::DecrementerSet();
     break;
 
-    // Page table base etc
+  // Page table base etc
   case SPR_SDR:
     PowerPC::SDRUpdated();
     break;

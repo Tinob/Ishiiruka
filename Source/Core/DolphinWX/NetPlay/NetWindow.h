@@ -25,7 +25,7 @@
 #include <wx/msw/winundef.h>
 #endif
 
-class CGameListCtrl;
+class GameListCtrl;
 class MD5Dialog;
 class wxButton;
 class wxCheckBox;
@@ -52,7 +52,7 @@ enum
 
 enum
 {
-  INITIAL_PAD_BUFFER_SIZE = 8
+  INITIAL_PAD_BUFFER_SIZE = 5
 };
 
 enum class ChatMessageType
@@ -78,8 +78,8 @@ enum class MD5Target
 class NetPlayDialog : public wxFrame, public NetPlayUI
 {
 public:
-  NetPlayDialog(wxWindow* parent, const CGameListCtrl* const game_list, const std::string& game,
-    const bool is_hosting = false);
+  NetPlayDialog(wxWindow* parent, const GameListCtrl* const game_list, const std::string& game,
+                const bool is_hosting = false);
   ~NetPlayDialog();
 
   void OnStart(wxCommandEvent& event);
@@ -107,7 +107,7 @@ public:
   static NetPlayDialog*& GetInstance() { return npd; }
   static NetPlayClient*& GetNetPlayClient() { return netplay_client; }
   static NetPlayServer*& GetNetPlayServer() { return netplay_server; }
-  static void FillWithGameNames(wxListBox* game_lbox, const CGameListCtrl& game_list);
+  static void FillWithGameNames(wxListBox* game_lbox, const GameListCtrl& game_list);
 
   bool IsRecording() override;
 
@@ -163,7 +163,7 @@ private:
   std::vector<int> m_playerids;
   Common::FifoQueue<std::string> m_chat_msgs;
 
-  const CGameListCtrl* const m_game_list;
+  const GameListCtrl* const m_game_list;
 
   static NetPlayDialog* npd;
   static NetPlayServer* netplay_server;

@@ -8,15 +8,14 @@
 
 #include "Common/ChunkFile.h"
 #include "Common/Swap.h"
-
 #include "Core/HW/Memmap.h"
 #include "Core/PowerPC/JitInterface.h"
 #include "Core/PowerPC/PowerPC.h"
 
 namespace PowerPC
 {
-static const u32 s_plru_mask[8] = { 11, 11, 19, 19, 37, 37, 69, 69 };
-static const u32 s_plru_value[8] = { 11, 3, 17, 1, 36, 4, 64, 0 };
+static const u32 s_plru_mask[8] = {11, 11, 19, 19, 37, 37, 69, 69};
+static const u32 s_plru_value[8] = {11, 3, 17, 1, 36, 4, 64, 0};
 
 InstructionCache::InstructionCache()
 {

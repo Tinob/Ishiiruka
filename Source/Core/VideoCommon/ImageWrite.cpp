@@ -11,10 +11,16 @@
 #include "Common/MsgHandler.h"
 #include "VideoCommon/ImageWrite.h"
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable : 4611)
+#endif
+
+
 bool SaveData(const std::string& filename, const std::string& data)
 {
   std::ofstream f;
-  OpenFStream(f, filename, std::ios::binary);
+  File::OpenFStream(f, filename, std::ios::binary);
   f << data;
 
   return true;
@@ -126,3 +132,7 @@ finalise:
 
   return success;
 }
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif

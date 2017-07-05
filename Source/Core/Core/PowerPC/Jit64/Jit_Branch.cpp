@@ -29,7 +29,7 @@ using namespace Gen;
 void Jit64::sc(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-    JITDISABLE(bJITBranchOff);
+  JITDISABLE(bJITBranchOff);
 
   gpr.Flush();
   fpr.Flush();
@@ -42,7 +42,7 @@ void Jit64::sc(UGeckoInstruction inst)
 void Jit64::rfi(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-    JITDISABLE(bJITBranchOff);
+  JITDISABLE(bJITBranchOff);
 
   gpr.Flush();
   fpr.Flush();
@@ -62,7 +62,7 @@ void Jit64::rfi(UGeckoInstruction inst)
 void Jit64::bx(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-    JITDISABLE(bJITBranchOff);
+  JITDISABLE(bJITBranchOff);
 
   // We must always process the following sentence
   // even if the blocks are merged by PPCAnalyst::Flatten().
@@ -114,7 +114,7 @@ void Jit64::bx(UGeckoInstruction inst)
 void Jit64::bcx(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-    JITDISABLE(bJITBranchOff);
+  JITDISABLE(bJITBranchOff);
 
   // USES_CR
 
@@ -132,7 +132,7 @@ void Jit64::bcx(UGeckoInstruction inst)
   if ((inst.BO & BO_DONT_CHECK_CONDITION) == 0)  // Test a CR bit
   {
     pConditionDontBranch =
-      JumpIfCRFieldBit(inst.BI >> 2, 3 - (inst.BI & 3), !(inst.BO_2 & BO_BRANCH_IF_TRUE));
+        JumpIfCRFieldBit(inst.BI >> 2, 3 - (inst.BI & 3), !(inst.BO_2 & BO_BRANCH_IF_TRUE));
   }
 
   if (inst.LK)
@@ -142,7 +142,7 @@ void Jit64::bcx(UGeckoInstruction inst)
   // and an unconditional branch, we will skip the rest process.
   // Because PPCAnalyst::Flatten() merged the blocks.
   if (!js.isLastInstruction && (inst.BO & BO_DONT_DECREMENT_FLAG) &&
-    (inst.BO & BO_DONT_CHECK_CONDITION))
+      (inst.BO & BO_DONT_CHECK_CONDITION))
   {
     if (inst.LK && !js.op->skipLRStack)
     {
@@ -180,11 +180,11 @@ void Jit64::bcx(UGeckoInstruction inst)
 void Jit64::bcctrx(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-    JITDISABLE(bJITBranchOff);
+  JITDISABLE(bJITBranchOff);
 
   // bcctrx doesn't decrement and/or test CTR
   _dbg_assert_msg_(POWERPC, inst.BO_2 & BO_DONT_DECREMENT_FLAG,
-    "bcctrx with decrement and test CTR option is invalid!");
+                   "bcctrx with decrement and test CTR option is invalid!");
 
   if (inst.BO_2 & BO_DONT_CHECK_CONDITION)
   {
@@ -208,7 +208,7 @@ void Jit64::bcctrx(UGeckoInstruction inst)
     // BO_2 == 011zy -> b if true
 
     FixupBranch b =
-      JumpIfCRFieldBit(inst.BI >> 2, 3 - (inst.BI & 3), !(inst.BO_2 & BO_BRANCH_IF_TRUE));
+        JumpIfCRFieldBit(inst.BI >> 2, 3 - (inst.BI & 3), !(inst.BO_2 & BO_BRANCH_IF_TRUE));
     MOV(32, R(RSCRATCH), PPCSTATE_CTR);
     AND(32, R(RSCRATCH), Imm32(0xFFFFFFFC));
     // MOV(32, PPCSTATE(pc), R(RSCRATCH)); => Already done in WriteExitDestInRSCRATCH()
@@ -233,7 +233,7 @@ void Jit64::bcctrx(UGeckoInstruction inst)
 void Jit64::bclrx(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-    JITDISABLE(bJITBranchOff);
+  JITDISABLE(bJITBranchOff);
 
   FixupBranch pCTRDontBranch;
   if ((inst.BO & BO_DONT_DECREMENT_FLAG) == 0)  // Decrement and test CTR
@@ -249,11 +249,11 @@ void Jit64::bclrx(UGeckoInstruction inst)
   if ((inst.BO & BO_DONT_CHECK_CONDITION) == 0)  // Test a CR bit
   {
     pConditionDontBranch =
-      JumpIfCRFieldBit(inst.BI >> 2, 3 - (inst.BI & 3), !(inst.BO_2 & BO_BRANCH_IF_TRUE));
+        JumpIfCRFieldBit(inst.BI >> 2, 3 - (inst.BI & 3), !(inst.BO_2 & BO_BRANCH_IF_TRUE));
   }
 
-  // This below line can be used to prove that blr "eats flags" in practice.
-  // This observation could let us do some useful optimizations.
+// This below line can be used to prove that blr "eats flags" in practice.
+// This observation could let us do some useful optimizations.
 #ifdef ACID_TEST
   AND(32, PPCSTATE(cr), Imm32(~(0xFF000000)));
 #endif

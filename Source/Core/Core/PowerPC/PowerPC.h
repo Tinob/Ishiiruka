@@ -46,7 +46,7 @@ struct TLBEntry
 {
   static constexpr u32 INVALID_TAG = 0xffffffff;
 
-  u32 tag[TLB_WAYS] = { INVALID_TAG, INVALID_TAG };
+  u32 tag[TLB_WAYS] = {INVALID_TAG, INVALID_TAG};
   u32 paddr[TLB_WAYS] = {};
   u32 pte[TLB_WAYS] = {};
   u8 recent = 0;
@@ -78,7 +78,7 @@ struct PowerPCState
   u32 msr;    // machine specific register
   u32 fpscr;  // floating point flags/status bits
 
-              // Exception management.
+  // Exception management.
   u32 Exceptions;
 
   // Downcount for determining when we need to do timing
@@ -89,8 +89,8 @@ struct PowerPCState
   // XER, reformatted into byte fields for easier access.
   u8 xer_ca;
   u8 xer_so_ov;  // format: (SO << 1) | OV
-                 // The Broadway CPU implements bits 16-23 of the XER register... even though it doesn't support
-                 // lscbx
+  // The Broadway CPU implements bits 16-23 of the XER register... even though it doesn't support
+  // lscbx
   u16 xer_stringctrl;
 
 #if _M_X86_64
@@ -109,8 +109,8 @@ struct PowerPCState
 
   u32 sr[16];  // Segment registers.
 
-               // special purpose registers - controls quantizers, DMA, and lots of other misc extensions.
-               // also for power management, but we don't care about that.
+  // special purpose registers - controls quantizers, DMA, and lots of other misc extensions.
+  // also for power management, but we don't care about that.
   u32 spr[1024];
 
   // Storage for the stack pointer of the BLR optimization.
@@ -126,7 +126,7 @@ struct PowerPCState
 
 #if _M_X86_64
 static_assert(offsetof(PowerPC::PowerPCState, above_fits_in_first_0x100) <= 0x100,
-  "top of PowerPCState too big");
+              "top of PowerPCState too big");
 #endif
 
 extern PowerPCState ppcState;
@@ -271,7 +271,7 @@ void DMA_LCToMemory(u32 memAddr, u32 cacheAddr, u32 numBlocks);
 void DMA_MemoryToLC(u32 cacheAddr, u32 memAddr, u32 numBlocks);
 void ClearCacheLine(u32 address);  // Zeroes 32 bytes; address should be 32-byte-aligned
 
-                                   // TLB functions
+// TLB functions
 void SDRUpdated();
 void InvalidateTLBEntry(u32 address);
 void DBATUpdated();
@@ -296,7 +296,7 @@ constexpr int BAT_INDEX_SHIFT = 17;
 constexpr u32 BAT_PAGE_SIZE = 1 << BAT_INDEX_SHIFT;
 constexpr u32 BAT_MAPPED_BIT = 0x1;
 constexpr u32 BAT_PHYSICAL_BIT = 0x2;
-constexpr u32 BAT_RESULT_MASK = ~0x3;
+constexpr u32 BAT_RESULT_MASK = UINT32_C(~0x3);
 using BatTable = std::array<u32, 1 << (32 - BAT_INDEX_SHIFT)>;  // 128 KB
 extern BatTable ibat_table;
 extern BatTable dbat_table;
@@ -327,10 +327,10 @@ enum CRBits
 inline u64 PPCCRToInternal(u8 value)
 {
   u64 cr_val = 0x100000000;
-  cr_val |= (u64)!!(value & CR_SO) << 61;
-  cr_val |= (u64)!(value & CR_EQ);
-  cr_val |= (u64)!(value & CR_GT) << 63;
-  cr_val |= (u64)!!(value & CR_LT) << 62;
+  cr_val |= (u64) !!(value & CR_SO) << 61;
+  cr_val |= (u64) !(value & CR_EQ);
+  cr_val |= (u64) !(value & CR_GT) << 63;
+  cr_val |= (u64) !!(value & CR_LT) << 62;
 
   return cr_val;
 }

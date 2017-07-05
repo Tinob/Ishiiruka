@@ -2,12 +2,13 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Core/PowerPC/Jit64Common/ConstantPool.h"
+
 #include <cstring>
 #include <memory>
 #include <utility>
 
 #include "Common/Assert.h"
-#include "Core/PowerPC/Jit64Common/ConstantPool.h"
 
 ConstantPool::ConstantPool() = default;
 
@@ -37,7 +38,7 @@ void ConstantPool::Shutdown()
 }
 
 const void* ConstantPool::GetConstant(const void* value, size_t element_size, size_t num_elements,
-  size_t index)
+                                      size_t index)
 {
   const size_t value_size = element_size * num_elements;
   auto iter = m_const_info.find(value);
@@ -51,12 +52,12 @@ const void* ConstantPool::GetConstant(const void* value, size_t element_size, si
     m_remaining_size -= value_size;
 
     std::memcpy(ptr, value, value_size);
-    iter = m_const_info.emplace(std::make_pair(value, ConstantInfo{ ptr, value_size })).first;
+    iter = m_const_info.emplace(std::make_pair(value, ConstantInfo{ptr, value_size})).first;
   }
 
   const ConstantInfo& info = iter->second;
   _assert_msg_(DYNA_REC, info.m_size == value_size,
-    "Constant has incorrect size in constant pool.");
+               "Constant has incorrect size in constant pool.");
   u8* location = static_cast<u8*>(info.m_location);
   return location + element_size * index;
 }

@@ -44,7 +44,7 @@ class LibusbDevice final : public Device
 {
 public:
   LibusbDevice(Kernel& ios, libusb_device* device,
-    const libusb_device_descriptor& device_descriptor);
+               const libusb_device_descriptor& device_descriptor);
   ~LibusbDevice();
   DeviceDescriptor GetDeviceDescriptor() const override;
   std::vector<ConfigDescriptor> GetConfigurations() const override;

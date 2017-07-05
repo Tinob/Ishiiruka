@@ -6,6 +6,8 @@
 // Supports simple memory patches, and has a partial Action Replay implementation
 // in ActionReplay.cpp/h.
 
+#include "Core/PatchEngine.h"
+
 #include <algorithm>
 #include <map>
 #include <set>
@@ -13,7 +15,6 @@
 #include <vector>
 
 #include "Common/Assert.h"
-#include "Common/FileUtil.h"
 #include "Common/IniFile.h"
 #include "Common/StringUtil.h"
 
@@ -21,7 +22,6 @@
 #include "Core/ConfigManager.h"
 #include "Core/GeckoCode.h"
 #include "Core/GeckoCodeConfig.h"
-#include "Core/PatchEngine.h"
 #include "Core/PowerPC/PowerPC.h"
 
 namespace PatchEngine
@@ -34,7 +34,7 @@ static std::vector<Patch> onFrame;
 static std::map<u32, int> speedHacks;
 
 void LoadPatchSection(const std::string& section, std::vector<Patch>& patches, IniFile& globalIni,
-  IniFile& localIni)
+                      IniFile& localIni)
 {
   // Load the name of all enabled patches
   std::string enabledSectionName = section + "_Enabled";
@@ -50,7 +50,7 @@ void LoadPatchSection(const std::string& section, std::vector<Patch>& patches, I
     }
   }
 
-  const IniFile* inis[2] = { &globalIni, &localIni };
+  const IniFile* inis[2] = {&globalIni, &localIni};
 
   for (const IniFile* ini : inis)
   {
@@ -86,8 +86,7 @@ void LoadPatchSection(const std::string& section, std::vector<Patch>& patches, I
           line[loc] = ':';
         }
 
-        std::vector<std::string> items;
-        SplitString(line, ':', items);
+        const std::vector<std::string> items = SplitString(line, ':');
 
         if (items.size() >= 3)
         {
@@ -97,7 +96,7 @@ void LoadPatchSection(const std::string& section, std::vector<Patch>& patches, I
           success &= TryParse(items[2], &pE.value);
 
           pE.type = PatchType(std::find(PatchTypeStrings, PatchTypeStrings + 3, items[1]) -
-            PatchTypeStrings);
+                              PatchTypeStrings);
           success &= (pE.type != (PatchType)3);
           if (success)
           {
@@ -205,7 +204,7 @@ static bool IsStackSane()
   // Read the frame pointer from the stack (find 2nd frame from top), assert that it makes sense
   u32 next_SP = PowerPC::HostRead_U32(SP);
   if (next_SP <= SP || !PowerPC::HostIsRAMAddress(next_SP) ||
-    !PowerPC::HostIsRAMAddress(next_SP + 4))
+      !PowerPC::HostIsRAMAddress(next_SP + 4))
     return false;
 
   // Check the link register makes sense (that it points to a valid IBAT address)
@@ -223,9 +222,9 @@ bool ApplyFramePatches()
   if (!msr.DR || !msr.IR || !IsStackSane())
   {
     DEBUG_LOG(
-      ACTIONREPLAY,
-      "Need to retry later. CPU configuration is currently incorrect. PC = 0x%08X, MSR = 0x%08X",
-      PC, MSR);
+        ACTIONREPLAY,
+        "Need to retry later. CPU configuration is currently incorrect. PC = 0x%08X, MSR = 0x%08X",
+        PC, MSR);
     return false;
   }
 

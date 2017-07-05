@@ -23,22 +23,22 @@
 #include "UICommon/Disassembler.h"
 
 CJitWindow::CJitWindow(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size,
-  long style, const wxString& name)
-  : wxPanel(parent, id, pos, size, style, name)
+                       long style, const wxString& name)
+    : wxPanel(parent, id, pos, size, style, name)
 {
   wxBoxSizer* sizerBig = new wxBoxSizer(wxVERTICAL);
   wxBoxSizer* sizerSplit = new wxBoxSizer(wxHORIZONTAL);
   sizerSplit->Add(ppc_box = new wxTextCtrl(this, wxID_ANY, "(ppc)", wxDefaultPosition,
-    wxDefaultSize, wxTE_MULTILINE),
-    1, wxEXPAND);
+                                           wxDefaultSize, wxTE_MULTILINE),
+                  1, wxEXPAND);
   sizerSplit->Add(x86_box = new wxTextCtrl(this, wxID_ANY, "(x86)", wxDefaultPosition,
-    wxDefaultSize, wxTE_MULTILINE),
-    1, wxEXPAND);
+                                           wxDefaultSize, wxTE_MULTILINE),
+                  1, wxEXPAND);
   sizerBig->Add(block_list = new JitBlockList(this, wxID_ANY, wxDefaultPosition,
-    wxDLG_UNIT(this, wxSize(80, 96)),
-    wxLC_REPORT | wxSUNKEN_BORDER | wxLC_ALIGN_LEFT |
-    wxLC_SINGLE_SEL | wxLC_SORT_ASCENDING),
-    0, wxEXPAND);
+                                              wxDLG_UNIT(this, wxSize(80, 96)),
+                                              wxLC_REPORT | wxSUNKEN_BORDER | wxLC_ALIGN_LEFT |
+                                                  wxLC_SINGLE_SEL | wxLC_SORT_ASCENDING),
+                0, wxEXPAND);
   sizerBig->Add(sizerSplit, 2, wxEXPAND);
 
   sizerBig->Add(button_refresh = new wxButton(this, wxID_ANY, _("&Refresh")));
@@ -74,7 +74,7 @@ void CJitWindow::Compare(u32 em_address)
   u32 host_code_size = 0;
   std::string host_instructions_disasm;
   host_instructions_disasm = DisassembleBlock(m_disassembler.get(), &em_address,
-    &host_instructions_count, &host_code_size);
+                                              &host_instructions_count, &host_code_size);
 
   x86_box->SetValue(host_instructions_disasm);
 
@@ -115,14 +115,14 @@ void CJitWindow::Compare(u32 em_address)
     ppc_disasm << st.numCycles << " estimated cycles" << std::endl;
 
     ppc_disasm << "Num instr: PPC: " << code_block.m_num_instructions
-      << " x86: " << host_instructions_count << " (blowup: "
-      << 100 * host_instructions_count / code_block.m_num_instructions - 100 << "%)"
-      << std::endl;
+               << " x86: " << host_instructions_count << " (blowup: "
+               << 100 * host_instructions_count / code_block.m_num_instructions - 100 << "%)"
+               << std::endl;
 
     ppc_disasm << "Num bytes: PPC: " << code_block.m_num_instructions * 4
-      << " x86: " << host_code_size
-      << " (blowup: " << 100 * host_code_size / (4 * code_block.m_num_instructions) - 100
-      << "%)" << std::endl;
+               << " x86: " << host_code_size
+               << " (blowup: " << 100 * host_code_size / (4 * code_block.m_num_instructions) - 100
+               << "%)" << std::endl;
 
     ppc_box->SetValue(ppc_disasm.str());
   }
@@ -162,8 +162,8 @@ enum
 };
 
 JitBlockList::JitBlockList(wxWindow* parent, const wxWindowID id, const wxPoint& pos,
-  const wxSize& size, long style)
-  : wxListCtrl(parent, id, pos, size, style)  // | wxLC_VIRTUAL)
+                           const wxSize& size, long style)
+    : wxListCtrl(parent, id, pos, size, style)  // | wxLC_VIRTUAL)
 {
   Init();
 }

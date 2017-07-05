@@ -2,10 +2,13 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Core/HW/DVD/DVDThread.h"
+
 #include <cinttypes>
 #include <map>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <thread>
 #include <utility>
 #include <vector>
@@ -24,7 +27,6 @@
 #include "Core/Core.h"
 #include "Core/CoreTiming.h"
 #include "Core/HW/DVD/DVDInterface.h"
-#include "Core/HW/DVD/DVDThread.h"
 #include "Core/HW/DVD/FileMonitor.h"
 #include "Core/HW/Memmap.h"
 #include "Core/HW/SystemTimers.h"
@@ -68,8 +70,8 @@ static void DVDThread();
 static void WaitUntilIdle();
 
 static void StartReadInternal(bool copy_to_ram, u32 output_address, u64 dvd_offset, u32 length,
-  const DiscIO::Partition& partition,
-  DVDInterface::ReplyType reply_type, s64 ticks_until_completion);
+                              const DiscIO::Partition& partition,
+                              DVDInterface::ReplyType reply_type, s64 ticks_until_completion);
 
 static void FinishRead(u64 id, s64 cycles_late);
 static CoreTiming::EventType* s_finish_read;
@@ -85,7 +87,7 @@ static Common::FifoQueue<ReadRequest, false> s_request_queue;
 static Common::FifoQueue<ReadResult, false> s_result_queue;
 static std::map<u64, ReadResult> s_result_map;
 
-static std::unique_ptr<DiscIO::IVolume> s_disc;
+static std::unique_ptr<DiscIO::Volume> s_disc;
 
 void Start()
 {
@@ -179,7 +181,7 @@ void DoState(PointerWrap& p)
   // was made. Handling that properly may be more effort than it's worth.
 }
 
-void SetDisc(std::unique_ptr<DiscIO::IVolume> disc)
+void SetDisc(std::unique_ptr<DiscIO::Volume> disc)
 {
   WaitUntilIdle();
   s_disc = std::move(disc);
@@ -209,30 +211,19 @@ IOS::ES::TicketReader GetTicket(const DiscIO::Partition& partition)
   return s_disc->GetTicket(partition);
 }
 
-bool UpdateRunningGameMetadata(const DiscIO::Partition& partition, u64 title_id)
+bool UpdateRunningGameMetadata(const DiscIO::Partition& partition, std::optional<u64> title_id)
 {
   if (!s_disc)
     return false;
 
   WaitUntilIdle();
 
-  u64 volume_title_id;
-  if (!s_disc->GetTitleID(&volume_title_id, partition))
-    return false;
-
-  if (volume_title_id != title_id)
-    return false;
-
-  SConfig::GetInstance().SetRunningGameMetadata(*s_disc, partition);
-  return true;
-}
-
-bool UpdateRunningGameMetadata(const DiscIO::Partition& partition)
-{
-  if (!s_disc)
-    return false;
-
-  DVDThread::WaitUntilIdle();
+  if (title_id)
+  {
+    const std::optional<u64> volume_title_id = s_disc->GetTitleID(partition);
+    if (!volume_title_id || *volume_title_id != *title_id)
+      return false;
+  }
 
   SConfig::GetInstance().SetRunningGameMetadata(*s_disc, partition);
   return true;
@@ -250,22 +241,22 @@ void WaitUntilIdle()
 }
 
 void StartRead(u64 dvd_offset, u32 length, const DiscIO::Partition& partition,
-  DVDInterface::ReplyType reply_type, s64 ticks_until_completion)
+               DVDInterface::ReplyType reply_type, s64 ticks_until_completion)
 {
   StartReadInternal(false, 0, dvd_offset, length, partition, reply_type, ticks_until_completion);
 }
 
 void StartReadToEmulatedRAM(u32 output_address, u64 dvd_offset, u32 length,
-  const DiscIO::Partition& partition, DVDInterface::ReplyType reply_type,
-  s64 ticks_until_completion)
+                            const DiscIO::Partition& partition, DVDInterface::ReplyType reply_type,
+                            s64 ticks_until_completion)
 {
   StartReadInternal(true, output_address, dvd_offset, length, partition, reply_type,
-    ticks_until_completion);
+                    ticks_until_completion);
 }
 
 static void StartReadInternal(bool copy_to_ram, u32 output_address, u64 dvd_offset, u32 length,
-  const DiscIO::Partition& partition,
-  DVDInterface::ReplyType reply_type, s64 ticks_until_completion)
+                              const DiscIO::Partition& partition,
+                              DVDInterface::ReplyType reply_type, s64 ticks_until_completion)
 {
   _assert_(Core::IsCPUThread());
 
@@ -328,17 +319,17 @@ static void FinishRead(u64 id, s64 cycles_late)
   const std::vector<u8>& buffer = result.second;
 
   DEBUG_LOG(DVDINTERFACE, "Disc has been read. Real time: %" PRIu64 " us. "
-    "Real time including delay: %" PRIu64 " us. "
-    "Emulated time including delay: %" PRIu64 " us.",
-    request.realtime_done_us - request.realtime_started_us,
-    Common::Timer::GetTimeUs() - request.realtime_started_us,
-    (CoreTiming::GetTicks() - request.time_started_ticks) /
-    (SystemTimers::GetTicksPerSecond() / 1000000));
+                          "Real time including delay: %" PRIu64 " us. "
+                          "Emulated time including delay: %" PRIu64 " us.",
+            request.realtime_done_us - request.realtime_started_us,
+            Common::Timer::GetTimeUs() - request.realtime_started_us,
+            (CoreTiming::GetTicks() - request.time_started_ticks) /
+                (SystemTimers::GetTicksPerSecond() / 1000000));
 
   if (buffer.empty())
   {
     PanicAlertT("The disc could not be read (at 0x%" PRIx64 " - 0x%" PRIx64 ").",
-      request.dvd_offset, request.dvd_offset + request.length);
+                request.dvd_offset, request.dvd_offset + request.length);
   }
   else
   {
@@ -348,7 +339,7 @@ static void FinishRead(u64 id, s64 cycles_late)
 
   // Notify the emulated software that the command has been executed
   DVDInterface::FinishExecutingCommand(request.reply_type, DVDInterface::INT_TCINT, cycles_late,
-    buffer);
+                                       buffer);
 }
 
 static void DVDThread()

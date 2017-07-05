@@ -8,34 +8,26 @@
 
 namespace Common
 {
-
 class ScopeGuard final
 {
 public:
-  template<class Callable>
+  template <class Callable>
   ScopeGuard(Callable&& finalizer) : m_finalizer(std::forward<Callable>(finalizer))
-  {}
+  {
+  }
 
   ScopeGuard(ScopeGuard&& other) : m_finalizer(std::move(other.m_finalizer))
   {
     other.m_finalizer = nullptr;
   }
 
-  ~ScopeGuard()
-  {
-    Exit();
-  }
-
-  void Dismiss()
-  {
-    m_finalizer = nullptr;
-  }
-
+  ~ScopeGuard() { Exit(); }
+  void Dismiss() { m_finalizer = nullptr; }
   void Exit()
   {
     if (m_finalizer)
     {
-      m_finalizer(); // must not throw
+      m_finalizer();  // must not throw
       m_finalizer = nullptr;
     }
   }

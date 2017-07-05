@@ -14,6 +14,7 @@
 #include "Common/NandPaths.h"
 #include "Common/SettingsHandler.h"
 
+#include "Core/CommonTitles.h"
 #include "Core/HW/Memmap.h"
 #include "Core/IOS/Network/Socket.h"
 #include "Core/ec_wii.h"
@@ -41,7 +42,7 @@ IPCCommandResult NetKDRequest::IOCtl(const IOCtlRequest& request)
   case IOCTL_NWC24_SUSPEND_SCHEDULAR:
     // NWC24iResumeForCloseLib  from NWC24SuspendScheduler (Input: none, Output: 32 bytes)
     INFO_LOG(IOS_WC24, "NET_KD_REQ: IOCTL_NWC24_SUSPEND_SCHEDULAR - NI");
-    Memory::Write_U32(0, request.buffer_out);  // no error
+    WriteReturnValue(0, request.buffer_out);  // no error
     break;
 
   case IOCTL_NWC24_EXEC_TRY_SUSPEND_SCHEDULAR:  // NWC24iResumeForCloseLib
@@ -50,11 +51,11 @@ IPCCommandResult NetKDRequest::IOCtl(const IOCtlRequest& request)
 
   case IOCTL_NWC24_EXEC_RESUME_SCHEDULAR:  // NWC24iResumeForCloseLib
     INFO_LOG(IOS_WC24, "NET_KD_REQ: IOCTL_NWC24_EXEC_RESUME_SCHEDULAR - NI");
-    Memory::Write_U32(0, request.buffer_out);  // no error
+    WriteReturnValue(0, request.buffer_out);  // no error
     break;
 
   case IOCTL_NWC24_STARTUP_SOCKET:  // NWC24iStartupSocket
-    Memory::Write_U32(0, request.buffer_out);
+    WriteReturnValue(0, request.buffer_out);
     Memory::Write_U32(0, request.buffer_out + 4);
     return_value = 0;
     INFO_LOG(IOS_WC24, "NET_KD_REQ: IOCTL_NWC24_STARTUP_SOCKET - NI");
@@ -74,7 +75,7 @@ IPCCommandResult NetKDRequest::IOCtl(const IOCtlRequest& request)
 
   case IOCTL_NWC24_REQUEST_REGISTER_USER_ID:
     INFO_LOG(IOS_WC24, "NET_KD_REQ: IOCTL_NWC24_REQUEST_REGISTER_USER_ID");
-    Memory::Write_U32(0, request.buffer_out);
+    WriteReturnValue(0, request.buffer_out);
     Memory::Write_U32(0, request.buffer_out + 4);
     break;
 
@@ -83,7 +84,7 @@ IPCCommandResult NetKDRequest::IOCtl(const IOCtlRequest& request)
     if (config.CreationStage() == NWC24::NWC24Config::NWC24_IDCS_INITIAL)
     {
       const std::string settings_file_path(
-        Common::GetTitleDataPath(TITLEID_SYSMENU, Common::FROM_SESSION_ROOT) + WII_SETTING);
+          Common::GetTitleDataPath(Titles::SYSTEM_MENU, Common::FROM_SESSION_ROOT) + WII_SETTING);
       SettingsHandler gen;
       std::string area, model;
       bool got_settings = false;
@@ -110,20 +111,20 @@ IPCCommandResult NetKDRequest::IOCtl(const IOCtlRequest& request)
         config.SetCreationStage(NWC24::NWC24Config::NWC24_IDCS_GENERATED);
         config.WriteConfig();
 
-        Memory::Write_U32(ret, request.buffer_out);
+        WriteReturnValue(ret, request.buffer_out);
       }
       else
       {
-        Memory::Write_U32(NWC24::WC24_ERR_FATAL, request.buffer_out);
+        WriteReturnValue(NWC24::WC24_ERR_FATAL, request.buffer_out);
       }
     }
     else if (config.CreationStage() == NWC24::NWC24Config::NWC24_IDCS_GENERATED)
     {
-      Memory::Write_U32(NWC24::WC24_ERR_ID_GENERATED, request.buffer_out);
+      WriteReturnValue(NWC24::WC24_ERR_ID_GENERATED, request.buffer_out);
     }
     else if (config.CreationStage() == NWC24::NWC24Config::NWC24_IDCS_REGISTERED)
     {
-      Memory::Write_U32(NWC24::WC24_ERR_ID_REGISTERED, request.buffer_out);
+      WriteReturnValue(NWC24::WC24_ERR_ID_REGISTERED, request.buffer_out);
     }
     Memory::Write_U64(config.Id(), request.buffer_out + 4);
     Memory::Write_U32(config.CreationStage(), request.buffer_out + 0xC);
@@ -152,8 +153,8 @@ IPCCommandResult NetKDRequest::IOCtl(const IOCtlRequest& request)
 u8 NetKDRequest::GetAreaCode(const std::string& area) const
 {
   static const std::map<std::string, u8> regions = {
-       {"JPN", 0}, {"USA", 1}, {"EUR", 2}, {"AUS", 2}, {"BRA", 1}, {"TWN", 3}, {"ROC", 3},
-       {"KOR", 4}, {"HKG", 5}, {"ASI", 5}, {"LTN", 1}, {"SAF", 2}, {"CHN", 6},
+      {"JPN", 0}, {"USA", 1}, {"EUR", 2}, {"AUS", 2}, {"BRA", 1}, {"TWN", 3}, {"ROC", 3},
+      {"KOR", 4}, {"HKG", 5}, {"ASI", 5}, {"LTN", 1}, {"SAF", 2}, {"CHN", 6},
   };
 
   auto entryPos = regions.find(area);
@@ -166,7 +167,7 @@ u8 NetKDRequest::GetAreaCode(const std::string& area) const
 u8 NetKDRequest::GetHardwareModel(const std::string& model) const
 {
   static const std::map<std::string, u8> models = {
-       {"RVL", MODEL_RVL}, {"RVT", MODEL_RVT}, {"RVV", MODEL_RVV}, {"RVD", MODEL_RVD},
+      {"RVL", MODEL_RVL}, {"RVT", MODEL_RVT}, {"RVV", MODEL_RVV}, {"RVD", MODEL_RVD},
   };
 
   auto entryPos = models.find(model);
@@ -189,14 +190,14 @@ static u64 u64_insert_byte(u64 value, u8 shift, u8 byte)
 }
 
 s32 NetKDRequest::NWC24MakeUserID(u64* nwc24_id, u32 hollywood_id, u16 id_ctr, u8 hardware_model,
-  u8 area_code)
+                                  u8 area_code)
 {
-  const u8 table2[8] = { 0x1, 0x5, 0x0, 0x4, 0x2, 0x3, 0x6, 0x7 };
-  const u8 table1[16] = { 0x4, 0xB, 0x7, 0x9, 0xF, 0x1, 0xD, 0x3,
-                                0xC, 0x2, 0x6, 0xE, 0x8, 0x0, 0xA, 0x5 };
+  const u8 table2[8] = {0x1, 0x5, 0x0, 0x4, 0x2, 0x3, 0x6, 0x7};
+  const u8 table1[16] = {0x4, 0xB, 0x7, 0x9, 0xF, 0x1, 0xD, 0x3,
+                         0xC, 0x2, 0x6, 0xE, 0x8, 0x0, 0xA, 0x5};
 
   u64 mix_id = ((u64)area_code << 50) | ((u64)hardware_model << 47) | ((u64)hollywood_id << 15) |
-    ((u64)id_ctr << 10);
+               ((u64)id_ctr << 10);
   u64 mix_id_copy1 = mix_id;
 
   int ctr = 0;

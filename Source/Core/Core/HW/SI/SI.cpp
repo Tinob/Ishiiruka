@@ -138,22 +138,22 @@ union USIComCSR
     u32 TSTART : 1;   // write: start transfer  read: transfer status
     u32 CHANNEL : 2;  // determines which SI channel will be used on the communication interface.
     u32 : 3;
-          u32 CALLBEN : 1;  // Callback enable
-          u32 CMDEN : 1;    // Command enable?
-          u32 INLNGTH : 7;
-          u32 : 1;
-                u32 OUTLNGTH : 7;  // Communication Channel Output Length in bytes
-                u32 : 1;
-                      u32 CHANEN : 1;      // Channel enable?
-                      u32 CHANNUM : 2;     // Channel number?
-                      u32 RDSTINTMSK : 1;  // Read Status Interrupt Status Mask
-                      u32 RDSTINT : 1;     // Read Status Interrupt Status
-                      u32 COMERR : 1;      // Communication Error (set 0)
-                      u32 TCINTMSK : 1;    // Transfer Complete Interrupt Mask
-                      u32 TCINT : 1;       // Transfer Complete Interrupt
+    u32 CALLBEN : 1;  // Callback enable
+    u32 CMDEN : 1;    // Command enable?
+    u32 INLNGTH : 7;
+    u32 : 1;
+    u32 OUTLNGTH : 7;  // Communication Channel Output Length in bytes
+    u32 : 1;
+    u32 CHANEN : 1;      // Channel enable?
+    u32 CHANNUM : 2;     // Channel number?
+    u32 RDSTINTMSK : 1;  // Read Status Interrupt Status Mask
+    u32 RDSTINT : 1;     // Read Status Interrupt Status
+    u32 COMERR : 1;      // Communication Error (set 0)
+    u32 TCINTMSK : 1;    // Transfer Complete Interrupt Mask
+    u32 TCINT : 1;       // Transfer Complete Interrupt
   };
   USIComCSR() = default;
-  USIComCSR(u32 value) : hex{ value } {}
+  USIComCSR(u32 value) : hex{value} {}
 };
 
 // SI Status Register
@@ -169,31 +169,31 @@ union USIStatusReg
     u32 WRST3 : 1;   // (R) 1: buffer channel0 not copied
     u32 RDST3 : 1;   // (R) 1: new Data available
     u32 : 2;         // 7:6
-          u32 UNRUN2 : 1;  // (RWC) write 1: bit cleared  read 1: main proc underrun error
-          u32 OVRUN2 : 1;  // (RWC) write 1: bit cleared  read 1: overrun error
-          u32 COLL2 : 1;   // (RWC) write 1: bit cleared  read 1: collision error
-          u32 NOREP2 : 1;  // (RWC) write 1: bit cleared  read 1: response error
-          u32 WRST2 : 1;   // (R) 1: buffer channel0 not copied
-          u32 RDST2 : 1;   // (R) 1: new Data available
-          u32 : 2;         // 15:14
-                u32 UNRUN1 : 1;  // (RWC) write 1: bit cleared  read 1: main proc underrun error
-                u32 OVRUN1 : 1;  // (RWC) write 1: bit cleared  read 1: overrun error
-                u32 COLL1 : 1;   // (RWC) write 1: bit cleared  read 1: collision error
-                u32 NOREP1 : 1;  // (RWC) write 1: bit cleared  read 1: response error
-                u32 WRST1 : 1;   // (R) 1: buffer channel0 not copied
-                u32 RDST1 : 1;   // (R) 1: new Data available
-                u32 : 2;         // 23:22
-                      u32 UNRUN0 : 1;  // (RWC) write 1: bit cleared  read 1: main proc underrun error
-                      u32 OVRUN0 : 1;  // (RWC) write 1: bit cleared  read 1: overrun error
-                      u32 COLL0 : 1;   // (RWC) write 1: bit cleared  read 1: collision error
-                      u32 NOREP0 : 1;  // (RWC) write 1: bit cleared  read 1: response error
-                      u32 WRST0 : 1;   // (R) 1: buffer channel0 not copied
-                      u32 RDST0 : 1;   // (R) 1: new Data available
-                      u32 : 1;
-                            u32 WR : 1;  // (RW) write 1 start copy, read 0 copy done
+    u32 UNRUN2 : 1;  // (RWC) write 1: bit cleared  read 1: main proc underrun error
+    u32 OVRUN2 : 1;  // (RWC) write 1: bit cleared  read 1: overrun error
+    u32 COLL2 : 1;   // (RWC) write 1: bit cleared  read 1: collision error
+    u32 NOREP2 : 1;  // (RWC) write 1: bit cleared  read 1: response error
+    u32 WRST2 : 1;   // (R) 1: buffer channel0 not copied
+    u32 RDST2 : 1;   // (R) 1: new Data available
+    u32 : 2;         // 15:14
+    u32 UNRUN1 : 1;  // (RWC) write 1: bit cleared  read 1: main proc underrun error
+    u32 OVRUN1 : 1;  // (RWC) write 1: bit cleared  read 1: overrun error
+    u32 COLL1 : 1;   // (RWC) write 1: bit cleared  read 1: collision error
+    u32 NOREP1 : 1;  // (RWC) write 1: bit cleared  read 1: response error
+    u32 WRST1 : 1;   // (R) 1: buffer channel0 not copied
+    u32 RDST1 : 1;   // (R) 1: new Data available
+    u32 : 2;         // 23:22
+    u32 UNRUN0 : 1;  // (RWC) write 1: bit cleared  read 1: main proc underrun error
+    u32 OVRUN0 : 1;  // (RWC) write 1: bit cleared  read 1: overrun error
+    u32 COLL0 : 1;   // (RWC) write 1: bit cleared  read 1: collision error
+    u32 NOREP0 : 1;  // (RWC) write 1: bit cleared  read 1: response error
+    u32 WRST0 : 1;   // (R) 1: buffer channel0 not copied
+    u32 RDST0 : 1;   // (R) 1: new Data available
+    u32 : 1;
+    u32 WR : 1;  // (RW) write 1 start copy, read 0 copy done
   };
   USIStatusReg() = default;
-  USIStatusReg(u32 value) : hex{ value } {}
+  USIStatusReg(u32 value) : hex{value} {}
 };
 
 // SI EXI Clock Count
@@ -317,7 +317,7 @@ void RegisterMMIO(MMIO::Mapping* mmio, u32 base)
     const u32 address = base | static_cast<u32>(s_si_buffer.size() + i);
 
     mmio->Register(address, MMIO::DirectRead<u32>((u32*)&s_si_buffer[i]),
-      MMIO::DirectWrite<u32>((u32*)&s_si_buffer[i]));
+                   MMIO::DirectWrite<u32>((u32*)&s_si_buffer[i]));
   }
 
   // In and out for the 4 SI channels.
@@ -331,118 +331,118 @@ void RegisterMMIO(MMIO::Mapping* mmio, u32 base)
     int rdst_bit = 8 * (3 - i) + 5;
 
     mmio->Register(base | (SI_CHANNEL_0_OUT + 0xC * i),
-      MMIO::DirectRead<u32>(&s_channel[i].out.hex),
-      MMIO::DirectWrite<u32>(&s_channel[i].out.hex));
+                   MMIO::DirectRead<u32>(&s_channel[i].out.hex),
+                   MMIO::DirectWrite<u32>(&s_channel[i].out.hex));
     mmio->Register(base | (SI_CHANNEL_0_IN_HI + 0xC * i),
-      MMIO::ComplexRead<u32>([i, rdst_bit](u32) {
-      s_status_reg.hex &= ~(1 << rdst_bit);
-      UpdateInterrupts();
-      return s_channel[i].in_hi.hex;
-    }),
-      MMIO::DirectWrite<u32>(&s_channel[i].in_hi.hex));
+                   MMIO::ComplexRead<u32>([i, rdst_bit](u32) {
+                     s_status_reg.hex &= ~(1 << rdst_bit);
+                     UpdateInterrupts();
+                     return s_channel[i].in_hi.hex;
+                   }),
+                   MMIO::DirectWrite<u32>(&s_channel[i].in_hi.hex));
     mmio->Register(base | (SI_CHANNEL_0_IN_LO + 0xC * i),
-      MMIO::ComplexRead<u32>([i, rdst_bit](u32) {
-      s_status_reg.hex &= ~(1 << rdst_bit);
-      UpdateInterrupts();
-      return s_channel[i].in_lo.hex;
-    }),
-      MMIO::DirectWrite<u32>(&s_channel[i].in_lo.hex));
+                   MMIO::ComplexRead<u32>([i, rdst_bit](u32) {
+                     s_status_reg.hex &= ~(1 << rdst_bit);
+                     UpdateInterrupts();
+                     return s_channel[i].in_lo.hex;
+                   }),
+                   MMIO::DirectWrite<u32>(&s_channel[i].in_lo.hex));
   }
 
   mmio->Register(base | SI_POLL, MMIO::DirectRead<u32>(&s_poll.hex),
-    MMIO::DirectWrite<u32>(&s_poll.hex));
+                 MMIO::DirectWrite<u32>(&s_poll.hex));
 
   mmio->Register(base | SI_COM_CSR, MMIO::DirectRead<u32>(&s_com_csr.hex),
-    MMIO::ComplexWrite<u32>([](u32, u32 val) {
-    USIComCSR tmp_com_csr(val);
+                 MMIO::ComplexWrite<u32>([](u32, u32 val) {
+                   USIComCSR tmp_com_csr(val);
 
-    s_com_csr.CHANNEL = tmp_com_csr.CHANNEL;
-    s_com_csr.INLNGTH = tmp_com_csr.INLNGTH;
-    s_com_csr.OUTLNGTH = tmp_com_csr.OUTLNGTH;
-    s_com_csr.RDSTINTMSK = tmp_com_csr.RDSTINTMSK;
-    s_com_csr.TCINTMSK = tmp_com_csr.TCINTMSK;
+                   s_com_csr.CHANNEL = tmp_com_csr.CHANNEL;
+                   s_com_csr.INLNGTH = tmp_com_csr.INLNGTH;
+                   s_com_csr.OUTLNGTH = tmp_com_csr.OUTLNGTH;
+                   s_com_csr.RDSTINTMSK = tmp_com_csr.RDSTINTMSK;
+                   s_com_csr.TCINTMSK = tmp_com_csr.TCINTMSK;
 
-    s_com_csr.COMERR = 0;
+                   s_com_csr.COMERR = 0;
 
-    if (tmp_com_csr.RDSTINT)
-      s_com_csr.RDSTINT = 0;
-    if (tmp_com_csr.TCINT)
-      s_com_csr.TCINT = 0;
+                   if (tmp_com_csr.RDSTINT)
+                     s_com_csr.RDSTINT = 0;
+                   if (tmp_com_csr.TCINT)
+                     s_com_csr.TCINT = 0;
 
-    // be careful: run si-buffer after updating the INT flags
-    if (tmp_com_csr.TSTART)
-    {
-      s_com_csr.TSTART = 1;
-      RunSIBuffer(0, 0);
-    }
-    else if (s_com_csr.TSTART)
-    {
-      CoreTiming::RemoveEvent(s_tranfer_pending_event);
-    }
+                   // be careful: run si-buffer after updating the INT flags
+                   if (tmp_com_csr.TSTART)
+                   {
+                     s_com_csr.TSTART = 1;
+                     RunSIBuffer(0, 0);
+                   }
+                   else if (s_com_csr.TSTART)
+                   {
+                     CoreTiming::RemoveEvent(s_tranfer_pending_event);
+                   }
 
-    if (!s_com_csr.TSTART)
-      UpdateInterrupts();
-  }));
+                   if (!s_com_csr.TSTART)
+                     UpdateInterrupts();
+                 }));
 
   mmio->Register(base | SI_STATUS_REG, MMIO::DirectRead<u32>(&s_status_reg.hex),
-    MMIO::ComplexWrite<u32>([](u32, u32 val) {
-    USIStatusReg tmp_status(val);
+                 MMIO::ComplexWrite<u32>([](u32, u32 val) {
+                   USIStatusReg tmp_status(val);
 
-    // clear bits ( if (tmp.bit) SISR.bit=0 )
-    if (tmp_status.NOREP0)
-      s_status_reg.NOREP0 = 0;
-    if (tmp_status.COLL0)
-      s_status_reg.COLL0 = 0;
-    if (tmp_status.OVRUN0)
-      s_status_reg.OVRUN0 = 0;
-    if (tmp_status.UNRUN0)
-      s_status_reg.UNRUN0 = 0;
+                   // clear bits ( if (tmp.bit) SISR.bit=0 )
+                   if (tmp_status.NOREP0)
+                     s_status_reg.NOREP0 = 0;
+                   if (tmp_status.COLL0)
+                     s_status_reg.COLL0 = 0;
+                   if (tmp_status.OVRUN0)
+                     s_status_reg.OVRUN0 = 0;
+                   if (tmp_status.UNRUN0)
+                     s_status_reg.UNRUN0 = 0;
 
-    if (tmp_status.NOREP1)
-      s_status_reg.NOREP1 = 0;
-    if (tmp_status.COLL1)
-      s_status_reg.COLL1 = 0;
-    if (tmp_status.OVRUN1)
-      s_status_reg.OVRUN1 = 0;
-    if (tmp_status.UNRUN1)
-      s_status_reg.UNRUN1 = 0;
+                   if (tmp_status.NOREP1)
+                     s_status_reg.NOREP1 = 0;
+                   if (tmp_status.COLL1)
+                     s_status_reg.COLL1 = 0;
+                   if (tmp_status.OVRUN1)
+                     s_status_reg.OVRUN1 = 0;
+                   if (tmp_status.UNRUN1)
+                     s_status_reg.UNRUN1 = 0;
 
-    if (tmp_status.NOREP2)
-      s_status_reg.NOREP2 = 0;
-    if (tmp_status.COLL2)
-      s_status_reg.COLL2 = 0;
-    if (tmp_status.OVRUN2)
-      s_status_reg.OVRUN2 = 0;
-    if (tmp_status.UNRUN2)
-      s_status_reg.UNRUN2 = 0;
+                   if (tmp_status.NOREP2)
+                     s_status_reg.NOREP2 = 0;
+                   if (tmp_status.COLL2)
+                     s_status_reg.COLL2 = 0;
+                   if (tmp_status.OVRUN2)
+                     s_status_reg.OVRUN2 = 0;
+                   if (tmp_status.UNRUN2)
+                     s_status_reg.UNRUN2 = 0;
 
-    if (tmp_status.NOREP3)
-      s_status_reg.NOREP3 = 0;
-    if (tmp_status.COLL3)
-      s_status_reg.COLL3 = 0;
-    if (tmp_status.OVRUN3)
-      s_status_reg.OVRUN3 = 0;
-    if (tmp_status.UNRUN3)
-      s_status_reg.UNRUN3 = 0;
+                   if (tmp_status.NOREP3)
+                     s_status_reg.NOREP3 = 0;
+                   if (tmp_status.COLL3)
+                     s_status_reg.COLL3 = 0;
+                   if (tmp_status.OVRUN3)
+                     s_status_reg.OVRUN3 = 0;
+                   if (tmp_status.UNRUN3)
+                     s_status_reg.UNRUN3 = 0;
 
-    // send command to devices
-    if (tmp_status.WR)
-    {
-      s_channel[0].device->SendCommand(s_channel[0].out.hex, s_poll.EN0);
-      s_channel[1].device->SendCommand(s_channel[1].out.hex, s_poll.EN1);
-      s_channel[2].device->SendCommand(s_channel[2].out.hex, s_poll.EN2);
-      s_channel[3].device->SendCommand(s_channel[3].out.hex, s_poll.EN3);
+                   // send command to devices
+                   if (tmp_status.WR)
+                   {
+                     s_channel[0].device->SendCommand(s_channel[0].out.hex, s_poll.EN0);
+                     s_channel[1].device->SendCommand(s_channel[1].out.hex, s_poll.EN1);
+                     s_channel[2].device->SendCommand(s_channel[2].out.hex, s_poll.EN2);
+                     s_channel[3].device->SendCommand(s_channel[3].out.hex, s_poll.EN3);
 
-      s_status_reg.WR = 0;
-      s_status_reg.WRST0 = 0;
-      s_status_reg.WRST1 = 0;
-      s_status_reg.WRST2 = 0;
-      s_status_reg.WRST3 = 0;
-    }
-  }));
+                     s_status_reg.WR = 0;
+                     s_status_reg.WRST0 = 0;
+                     s_status_reg.WRST1 = 0;
+                     s_status_reg.WRST2 = 0;
+                     s_status_reg.WRST3 = 0;
+                   }
+                 }));
 
   mmio->Register(base | SI_EXI_CLOCK_COUNT, MMIO::DirectRead<u32>(&s_exi_clock_count.hex),
-    MMIO::DirectWrite<u32>(&s_exi_clock_count.hex));
+                 MMIO::DirectWrite<u32>(&s_exi_clock_count.hex));
 }
 
 static void UpdateInterrupts()
@@ -547,9 +547,9 @@ void ChangeDevice(SIDevices device, int channel)
   if (GetDeviceType(channel) != device)
   {
     CoreTiming::ScheduleEvent(0, s_change_device_event, ((u64)channel << 32) | SIDEVICE_NONE,
-      CoreTiming::FromThread::NON_CPU);
+                              CoreTiming::FromThread::NON_CPU);
     CoreTiming::ScheduleEvent(SystemTimers::GetTicksPerSecond(), s_change_device_event,
-      ((u64)channel << 32) | device, CoreTiming::FromThread::NON_CPU);
+                              ((u64)channel << 32) | device, CoreTiming::FromThread::NON_CPU);
   }
 }
 
@@ -560,7 +560,7 @@ void ChangeDeviceDeterministic(SIDevices device, int channel)
   {
     CoreTiming::ScheduleEvent(0, s_change_device_event, ((u64)channel << 32) | SIDEVICE_NONE);
     CoreTiming::ScheduleEvent(SystemTimers::GetTicksPerSecond(), s_change_device_event,
-      ((u64)channel << 32) | device);
+                              ((u64)channel << 32) | device);
   }
 }
 
@@ -572,13 +572,13 @@ void UpdateDevices()
 
   // Update channels and set the status bit if there's new data
   s_status_reg.RDST0 =
-    !!s_channel[0].device->GetData(s_channel[0].in_hi.hex, s_channel[0].in_lo.hex);
+      !!s_channel[0].device->GetData(s_channel[0].in_hi.hex, s_channel[0].in_lo.hex);
   s_status_reg.RDST1 =
-    !!s_channel[1].device->GetData(s_channel[1].in_hi.hex, s_channel[1].in_lo.hex);
+      !!s_channel[1].device->GetData(s_channel[1].in_hi.hex, s_channel[1].in_lo.hex);
   s_status_reg.RDST2 =
-    !!s_channel[2].device->GetData(s_channel[2].in_hi.hex, s_channel[2].in_lo.hex);
+      !!s_channel[2].device->GetData(s_channel[2].in_hi.hex, s_channel[2].in_lo.hex);
   s_status_reg.RDST3 =
-    !!s_channel[3].device->GetData(s_channel[3].in_hi.hex, s_channel[3].in_lo.hex);
+      !!s_channel[3].device->GetData(s_channel[3].in_hi.hex, s_channel[3].in_lo.hex);
 
   UpdateInterrupts();
 }
@@ -613,7 +613,7 @@ static void RunSIBuffer(u64 user_data, s64 cycles_late)
     int numOutput = device->RunBuffer(s_si_buffer.data(), in_length);
 
     DEBUG_LOG(SERIALINTERFACE, "RunSIBuffer  chan: %d  inLen: %i  outLen: %i  processed: %i",
-      s_com_csr.CHANNEL, in_length, out_length, numOutput);
+              s_com_csr.CHANNEL, in_length, out_length, numOutput);
 
     if (numOutput != 0)
     {

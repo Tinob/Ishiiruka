@@ -20,13 +20,13 @@
 #include "UICommon/USBUtils.h"
 
 AddUSBDeviceDiag::AddUSBDeviceDiag(wxWindow* const parent)
-  : wxDialog(parent, wxID_ANY, _("Add New USB Device"))
+    : wxDialog(parent, wxID_ANY, _("Add New USB Device"))
 {
   InitControls();
 
   RefreshDeviceList();
   Bind(wxEVT_TIMER, &AddUSBDeviceDiag::OnRefreshDevicesTimer, this,
-    m_refresh_devices_timer.GetId());
+       m_refresh_devices_timer.GetId());
   m_refresh_devices_timer.Start(DEVICE_REFRESH_INTERVAL_MS, wxTIMER_CONTINUOUS);
 
   auto* const btn_sizer = CreateStdDialogButtonSizer(wxOK | wxCANCEL);
@@ -37,12 +37,12 @@ AddUSBDeviceDiag::AddUSBDeviceDiag(wxWindow* const parent)
   const int space5 = FromDIP(5);
   sizer->AddSpacer(FromDIP(10));
   sizer->Add(new wxStaticText(this, wxID_ANY, _("Enter USB device ID"), wxDefaultPosition,
-    wxDefaultSize, wxALIGN_CENTRE_HORIZONTAL),
-    0, wxEXPAND | wxBOTTOM, FromDIP(10));
+                              wxDefaultSize, wxALIGN_CENTRE_HORIZONTAL),
+             0, wxEXPAND | wxBOTTOM, FromDIP(10));
   sizer->Add(CreateManualControlsSizer(), 0, wxEXPAND | wxLEFT | wxRIGHT, space5);
   sizer->Add(new wxStaticText(this, wxID_ANY, _("or select a device"), wxDefaultPosition,
-    wxDefaultSize, wxALIGN_CENTRE_HORIZONTAL),
-    0, wxEXPAND | wxTOP | wxBOTTOM, FromDIP(10));
+                              wxDefaultSize, wxALIGN_CENTRE_HORIZONTAL),
+             0, wxEXPAND | wxTOP | wxBOTTOM, FromDIP(10));
   auto* const device_list_sizer = CreateDeviceListSizer();
   sizer->Add(device_list_sizer, 1, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, space5);
   sizer->SetItemMinSize(device_list_sizer, FromDIP(350), FromDIP(150));
@@ -115,7 +115,7 @@ static bool IsValidUSBIDString(const std::string& string)
   if (string.empty() || string.length() > 4)
     return false;
   return std::all_of(string.begin(), string.end(),
-    [](const auto character) { return std::isxdigit(character) != 0; });
+                     [](const auto character) { return std::isxdigit(character) != 0; });
 }
 
 void AddUSBDeviceDiag::OnRefreshDevicesTimer(wxTimerEvent&)
@@ -129,7 +129,7 @@ void AddUSBDeviceDiag::OnDeviceSelection(wxCommandEvent&)
   if (index == wxNOT_FOUND)
     return;
   auto* const entry = static_cast<const USBPassthroughDeviceEntry*>(
-    m_inserted_devices_listbox->GetClientObject(index));
+      m_inserted_devices_listbox->GetClientObject(index));
   m_new_device_vid_ctrl->SetValue(StringFromFormat("%04x", entry->m_vid));
   m_new_device_pid_ctrl->SetValue(StringFromFormat("%04x", entry->m_pid));
 }
@@ -154,7 +154,7 @@ void AddUSBDeviceDiag::OnSave(wxCommandEvent&)
   const u16 vid = static_cast<u16>(std::stoul(vid_string, nullptr, 16));
   const u16 pid = static_cast<u16>(std::stoul(pid_string, nullptr, 16));
 
-  if (SConfig::GetInstance().IsUSBDeviceWhitelisted({ vid, pid }))
+  if (SConfig::GetInstance().IsUSBDeviceWhitelisted({vid, pid}))
   {
     WxUtils::ShowErrorDialog(_("This USB device is already whitelisted."));
     return;

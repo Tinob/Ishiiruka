@@ -47,29 +47,29 @@ void ControllerInterface::Initialize(void* const hwnd)
   m_hwnd = hwnd;
 
 #ifdef CIFACE_USE_DINPUT
-  // nothing needed
+// nothing needed
 #endif
 #ifdef CIFACE_USE_XINPUT
   ciface::XInput::Init();
 #endif
 #ifdef CIFACE_USE_XLIB
-  // nothing needed
+// nothing needed
 #endif
 #ifdef CIFACE_USE_OSX
   ciface::OSX::Init(hwnd);
-  // nothing needed for Quartz
+// nothing needed for Quartz
 #endif
 #ifdef CIFACE_USE_SDL
   ciface::SDL::Init();
 #endif
 #ifdef CIFACE_USE_ANDROID
-  // nothing needed
+// nothing needed
 #endif
 #ifdef CIFACE_USE_EVDEV
   ciface::evdev::Init();
 #endif
 #ifdef CIFACE_USE_PIPES
-  // nothing needed
+// nothing needed
 #endif
 
   m_is_init = true;
@@ -140,7 +140,7 @@ void ControllerInterface::Shutdown()
   ciface::XInput::DeInit();
 #endif
 #ifdef CIFACE_USE_DINPUT
-  // nothing needed
+// nothing needed
 #endif
 #ifdef CIFACE_USE_XLIB
 // nothing needed
@@ -154,7 +154,7 @@ void ControllerInterface::Shutdown()
   SDL_Quit();
 #endif
 #ifdef CIFACE_USE_ANDROID
-  // nothing needed
+// nothing needed
 #endif
 #ifdef CIFACE_USE_EVDEV
   ciface::evdev::Shutdown();
@@ -172,7 +172,7 @@ void ControllerInterface::AddDevice(std::shared_ptr<ciface::Core::Device> device
   {
     const auto it = std::find_if(m_devices.begin(), m_devices.end(), [&device, &id](const auto& d) {
       return d->GetSource() == device->GetSource() && d->GetName() == device->GetName() &&
-        d->GetId() == id;
+             d->GetId() == id;
     });
     if (it == m_devices.end())  // no device with the same name with this ID, so we can use it
       break;
@@ -187,8 +187,8 @@ void ControllerInterface::RemoveDevice(std::function<bool(const ciface::Core::De
 {
   std::lock_guard<std::mutex> lk(m_devices_mutex);
   m_devices.erase(std::remove_if(m_devices.begin(), m_devices.end(),
-    [&callback](const auto& dev) { return callback(dev.get()); }),
-    m_devices.end());
+                                 [&callback](const auto& dev) { return callback(dev.get()); }),
+                  m_devices.end());
 }
 
 //

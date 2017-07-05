@@ -12,7 +12,7 @@
 namespace SerialInterface
 {
 CSIDevice_DanceMat::CSIDevice_DanceMat(SIDevices device, int device_number)
-  : CSIDevice_GCController(device, device_number)
+    : CSIDevice_GCController(device, device_number)
 {
 }
 

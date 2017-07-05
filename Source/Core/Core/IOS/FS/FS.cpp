@@ -2,6 +2,8 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Core/IOS/FS/FS.h"
+
 #include <algorithm>
 #include <cstring>
 #include <deque>
@@ -12,14 +14,13 @@
 #include "Common/ChunkFile.h"
 #include "Common/CommonPaths.h"
 #include "Common/CommonTypes.h"
+#include "Common/File.h"
 #include "Common/FileUtil.h"
 #include "Common/Logging/Log.h"
 #include "Common/MsgHandler.h"
 #include "Common/NandPaths.h"
-#include "Common/StringUtil.h"
 #include "Core/HW/Memmap.h"
 #include "Core/HW/SystemTimers.h"
-#include "Core/IOS/FS/FS.h"
 #include "Core/IOS/FS/FileIO.h"
 
 namespace IOS
@@ -206,7 +207,7 @@ IPCCommandResult FS::IOCtlV(const IOCtlVRequest& request)
 // Play it safe at 1/500th
 IPCCommandResult FS::GetFSReply(const s32 return_value) const
 {
-  return { return_value, true, SystemTimers::GetTicksPerSecond() / 500 };
+  return {return_value, true, SystemTimers::GetTicksPerSecond() / 500};
 }
 
 IPCCommandResult FS::GetStats(const IOCtlRequest& request)
@@ -254,12 +255,12 @@ IPCCommandResult FS::CreateDirectory(const IOCtlRequest& request)
   u8 Attribs = Memory::Read_U8(Addr);
 
   INFO_LOG(IOS_FILEIO, "FS: CREATE_DIR %s, OwnerID %#x, GroupID %#x, Attributes %#x",
-    DirName.c_str(), OwnerID, GroupID, Attribs);
+           DirName.c_str(), OwnerID, GroupID, Attribs);
 
   DirName += DIR_SEP;
   File::CreateFullPath(DirName);
   _dbg_assert_msg_(IOS_FILEIO, File::IsDirectory(DirName), "FS: CREATE_DIR %s failed",
-    DirName.c_str());
+                   DirName.c_str());
 
   return GetFSReply(IPC_SUCCESS);
 }
@@ -305,12 +306,12 @@ IPCCommandResult FS::SetAttribute(const IOCtlRequest& request)
 IPCCommandResult FS::GetAttribute(const IOCtlRequest& request)
 {
   _dbg_assert_msg_(IOS_FILEIO, request.buffer_out_size == 76,
-    "    GET_ATTR needs an 76 bytes large output buffer but it is %i bytes large",
-    request.buffer_out_size);
+                   "    GET_ATTR needs an 76 bytes large output buffer but it is %i bytes large",
+                   request.buffer_out_size);
 
   u32 OwnerID = 0;
   u16 GroupID = 0x3031;  // this is also known as makercd, 01 (0x3031) for nintendo and 08
-                                // (0x3038) for MH3 etc
+                         // (0x3038) for MH3 etc
 
   const std::string wii_path = Memory::GetString(request.buffer_in, 64);
   if (!IsValidWiiPath(wii_path))
@@ -328,7 +329,7 @@ IPCCommandResult FS::GetAttribute(const IOCtlRequest& request)
   if (File::IsDirectory(Filename))
   {
     INFO_LOG(IOS_FILEIO, "FS: GET_ATTR Directory %s - all permission flags are set",
-      Filename.c_str());
+             Filename.c_str());
   }
   else
   {
@@ -510,7 +511,7 @@ IPCCommandResult FS::Shutdown(const IOCtlRequest& request)
 IPCCommandResult FS::ReadDirectory(const IOCtlVRequest& request)
 {
   const std::string relative_path =
-    Memory::GetString(request.in_vectors[0].address, request.in_vectors[0].size);
+      Memory::GetString(request.in_vectors[0].address, request.in_vectors[0].size);
 
   if (!IsValidWiiPath(relative_path))
   {
@@ -558,9 +559,9 @@ IPCCommandResult FS::ReadDirectory(const IOCtlVRequest& request)
     }
 
     std::sort(entry.children.begin(), entry.children.end(),
-      [](const File::FSTEntry& one, const File::FSTEntry& two) {
-      return one.virtualName < two.virtualName;
-    });
+              [](const File::FSTEntry& one, const File::FSTEntry& two) {
+                return one.virtualName < two.virtualName;
+              });
 
     u32 MaxEntries = Memory::Read_U32(request.in_vectors[0].address);
 
@@ -597,7 +598,7 @@ IPCCommandResult FS::GetUsage(const IOCtlVRequest& request)
   // fsBlocks and inodes
   // It should be correct, but don't count on it...
   std::string relativepath =
-    Memory::GetString(request.in_vectors[0].address, request.in_vectors[0].size);
+      Memory::GetString(request.in_vectors[0].address, request.in_vectors[0].size);
 
   if (!IsValidWiiPath(relativepath))
   {
@@ -617,7 +618,7 @@ IPCCommandResult FS::GetUsage(const IOCtlVRequest& request)
     // I decided to compare with sneek which has the following 2 special cases which are
     // Copyright (C) 2009-2011  crediar http://code.google.com/p/sneek/
     if ((relativepath.compare(0, 16, "/title/00010001") == 0) ||
-      (relativepath.compare(0, 16, "/title/00010005") == 0))
+        (relativepath.compare(0, 16, "/title/00010005") == 0))
     {
       fsBlocks = 23;  // size is size/0x4000
       iNodes = 42;    // empty folders return a FileCount of 1
@@ -629,7 +630,7 @@ IPCCommandResult FS::GetUsage(const IOCtlVRequest& request)
       iNodes = 1 + (u32)parentDir.size;
 
       u64 totalSize =
-        ComputeTotalFileSize(parentDir);  // "Real" size, to be converted to nand blocks
+          ComputeTotalFileSize(parentDir);  // "Real" size, to be converted to nand blocks
 
       fsBlocks = (u32)(totalSize / (16 * 1024));  // one bock is 16kb
     }

@@ -66,13 +66,13 @@ IPCCommandResult NetKDTime::IOCtl(const IOCtlRequest& request)
 u64 NetKDTime::GetAdjustedUTC() const
 {
   return ExpansionInterface::CEXIIPL::GetEmulatedTime(ExpansionInterface::CEXIIPL::WII_EPOCH) +
-    utcdiff;
+         utcdiff;
 }
 
 void NetKDTime::SetAdjustedUTC(u64 wii_utc)
 {
   utcdiff = ExpansionInterface::CEXIIPL::GetEmulatedTime(ExpansionInterface::CEXIIPL::WII_EPOCH) -
-    wii_utc;
+            wii_utc;
 }
 }  // namespace Device
 }  // namespace HLE

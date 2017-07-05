@@ -104,13 +104,13 @@ void DSPEmitter::dsp_op_write_reg(int reg, Gen::X64Reg host_sreg)
 {
   switch (reg & 0x1f)
   {
-    // 8-bit sign extended registers.
+  // 8-bit sign extended registers.
   case DSP_REG_ACH0:
   case DSP_REG_ACH1:
     m_gpr.WriteReg(reg, R(host_sreg));
     break;
 
-    // Stack registers.
+  // Stack registers.
   case DSP_REG_ST0:
   case DSP_REG_ST1:
   case DSP_REG_ST2:
@@ -128,12 +128,12 @@ void DSPEmitter::dsp_op_write_reg_imm(int reg, u16 val)
 {
   switch (reg & 0x1f)
   {
-    // 8-bit sign extended registers. Should look at prod.h too...
+  // 8-bit sign extended registers. Should look at prod.h too...
   case DSP_REG_ACH0:
   case DSP_REG_ACH1:
     m_gpr.WriteReg(reg, Imm16((u16)(s16)(s8)(u8)val));
     break;
-    // Stack registers.
+  // Stack registers.
   case DSP_REG_ST0:
   case DSP_REG_ST1:
   case DSP_REG_ST2:
@@ -203,7 +203,7 @@ void DSPEmitter::dsp_conditional_extend_accum_imm(int reg, u16 val)
 }
 
 void DSPEmitter::dsp_op_read_reg_dont_saturate(int reg, Gen::X64Reg host_dreg,
-  RegisterExtension extend)
+                                               RegisterExtension extend)
 {
   switch (reg & 0x1f)
   {
@@ -296,7 +296,7 @@ void DSPEmitter::dsp_op_read_reg(int reg, Gen::X64Reg host_dreg, RegisterExtensi
 
     m_gpr.PutReg(DSP_REG_SR, false);
   }
-  return;
+    return;
   default:
     m_gpr.ReadReg(reg, host_dreg, extend);
     return;

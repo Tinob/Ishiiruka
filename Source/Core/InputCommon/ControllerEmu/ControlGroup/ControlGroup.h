@@ -36,13 +36,13 @@ class ControlGroup
 public:
   explicit ControlGroup(const std::string& name, GroupType type = GroupType::Other);
   ControlGroup(const std::string& name, const std::string& ui_name,
-    GroupType type = GroupType::Other);
+               GroupType type = GroupType::Other);
   virtual ~ControlGroup();
 
   virtual void LoadConfig(IniFile::Section* sec, const std::string& defdev = "",
-    const std::string& base = "");
+                          const std::string& base = "");
   virtual void SaveConfig(IniFile::Section* sec, const std::string& defdev = "",
-    const std::string& base = "");
+                          const std::string& base = "");
 
   void SetControlExpression(int index, const std::string& expression);
 

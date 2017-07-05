@@ -12,5 +12,5 @@ class TurntableInputConfigDialog final : public InputConfigDialog
 {
 public:
   TurntableInputConfigDialog(wxWindow* parent, InputConfig& config, const wxString& name,
-    wxComboBox* device_cbox_parent, int port_num = 0);
+                             wxComboBox* device_cbox_parent, int port_num = 0);
 };

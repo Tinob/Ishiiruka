@@ -745,7 +745,8 @@ void CSTextureEncoder::Init()
 
   // Warm up with shader cache
   std::string cache_filename = StringFromFormat("%sdx11-ENCODER-cs.cache", File::GetUserPath(D_SHADERCACHE_IDX).c_str());
-  m_shaderCache.OpenAndRead(cache_filename, ShaderCacheInserter(*this));
+  ShaderCacheInserter inserter = ShaderCacheInserter(*this);
+  m_shaderCache.OpenAndRead(cache_filename, inserter);
 }
 
 void CSTextureEncoder::Shutdown()

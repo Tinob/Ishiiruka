@@ -18,7 +18,7 @@
 #include <vector>
 
 #include "Common/CommonTypes.h"
-#include "Common/FileUtil.h"
+#include "Common/File.h"
 #include "DiscIO/Blob.h"
 
 namespace DiscIO
@@ -45,7 +45,7 @@ class CompressedBlobReader : public SectorReader
 {
 public:
   static std::unique_ptr<CompressedBlobReader> Create(File::IOFile file,
-    const std::string& filename);
+                                                      const std::string& filename);
   ~CompressedBlobReader();
   const CompressedBlobHeader& GetHeader() const { return m_header; }
   BlobType GetBlobType() const override { return BlobType::GCZ; }

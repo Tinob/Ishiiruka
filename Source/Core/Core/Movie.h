@@ -9,6 +9,8 @@
 
 #include "Common/CommonTypes.h"
 
+struct BootParameters;
+
 struct GCPadStatus;
 class PointerWrap;
 struct wiimote_key;
@@ -36,7 +38,7 @@ struct ControllerState
 {
   bool Start : 1, A : 1, B : 1, X : 1, Y : 1, Z : 1;  // Binary buttons, 6 bits
   bool DPadUp : 1, DPadDown : 1,                      // Binary D-Pad buttons, 4 bits
-    DPadLeft : 1, DPadRight : 1;
+      DPadLeft : 1, DPadRight : 1;
   bool L : 1, R : 1;  // Binary triggers, 2 bits
   bool disc : 1;      // Checks for disc being changed
   bool reset : 1;     // Console reset button
@@ -61,7 +63,7 @@ struct DTMHeader
                    // the bits are GC controllers 1-4 and Wiimotes 1-4)
 
   bool
-    bFromSaveState;  // false indicates that the recording started from bootup, true for savestate
+      bFromSaveState;  // false indicates that the recording started from bootup, true for savestate
   u64 frameCount;      // Number of frames in the recording
   u64 inputCount;      // Number of input frames in recording
   u64 lagCount;        // Number of lag frames in the recording
@@ -110,7 +112,7 @@ static_assert(sizeof(DTMHeader) == 256, "DTMHeader should be 256 bytes");
 
 void FrameUpdate();
 void InputUpdate();
-void Init();
+void Init(const BootParameters& boot);
 
 void SetPolledDevice();
 
@@ -167,16 +169,14 @@ void LoadInput(const std::string& filename);
 void ReadHeader();
 void PlayController(GCPadStatus* PadStatus, int controllerID);
 bool PlayWiimote(int wiimote, u8* data, const struct WiimoteEmu::ReportFeatures& rptf, int ext,
-  const wiimote_key key);
+                 const wiimote_key key);
 void EndPlayInput(bool cont);
 void SaveRecording(const std::string& filename);
 void DoState(PointerWrap& p);
-void CheckMD5();
-void GetMD5();
 void Shutdown();
 void CheckPadStatus(GCPadStatus* PadStatus, int controllerID);
 void CheckWiimoteStatus(int wiimote, u8* data, const struct WiimoteEmu::ReportFeatures& rptf,
-  int ext, const wiimote_key key);
+                        int ext, const wiimote_key key);
 
 std::string GetInputDisplay();
 std::string GetRTCDisplay();
@@ -184,11 +184,11 @@ std::string GetRTCDisplay();
 // Done this way to avoid mixing of core and gui code
 using GCManipFunction = std::function<void(GCPadStatus*, int)>;
 using WiiManipFunction =
-std::function<void(u8*, WiimoteEmu::ReportFeatures, int, int, wiimote_key)>;
+    std::function<void(u8*, WiimoteEmu::ReportFeatures, int, int, wiimote_key)>;
 
 void SetGCInputManip(GCManipFunction);
 void SetWiiInputManip(WiiManipFunction);
 void CallGCInputManip(GCPadStatus* PadStatus, int controllerID);
 void CallWiiInputManip(u8* core, WiimoteEmu::ReportFeatures rptf, int controllerID, int ext,
-  const wiimote_key key);
+                       const wiimote_key key);
 }

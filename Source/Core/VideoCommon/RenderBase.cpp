@@ -445,11 +445,10 @@ void Renderer::DrawDebugText()
   RenderText(final_yellow, 20, 20, 0xFFFFFF00);
 }
 
-float Renderer::CalculateDrawAspectRatio(int target_width, int target_height) const
+float Renderer::CalculateDrawAspectRatio(u32 target_width, u32 target_height) const
 {
   // The dimensions are the sizes that are used to create the EFB/backbuffer textures, so
   // they should always be greater than zero.
-  _assert_(target_width > 0 && target_height > 0);
   if (g_ActiveConfig.iAspectRatio == ASPECT_STRETCH)
   {
     // If stretch is enabled, we prefer the aspect ratio of the window.
@@ -480,7 +479,7 @@ float Renderer::CalculateDrawAspectRatio(int target_width, int target_height) co
   return Ratio;
 }
 
-std::tuple<float, float> Renderer::ScaleToDisplayAspectRatio(const int width, const int height) const
+std::tuple<float, float> Renderer::ScaleToDisplayAspectRatio(const u32 width, const u32 height) const
 {
   // Scale either the width or height depending the content aspect ratio.
   // This way we preserve as much resolution as possible when scaling.
@@ -514,12 +513,12 @@ TargetRectangle Renderer::CalculateFrameDumpDrawRectangle()
   }
 
   // Grab the dimensions of the EFB textures, we scale either of these depending on the ratio.
-  unsigned int efb_width, efb_height;
+  u32 efb_width, efb_height;
   g_framebuffer_manager->GetTargetSize(&efb_width, &efb_height);
 
   // Scale either the width or height depending the content aspect ratio.
   // This way we preserve as much resolution as possible when scaling.
-  float ratio = CalculateDrawAspectRatio(efb_width, efb_height);
+  CalculateDrawAspectRatio(efb_width, efb_height);
   float draw_width, draw_height;
   std::tie(draw_width, draw_height) = ScaleToDisplayAspectRatio(efb_width, efb_height);
 
@@ -658,10 +657,10 @@ void Renderer::UpdateDrawRectangle()
   m_target_rectangle.bottom = YOffset + iHeight;
 }
 
-void Renderer::SetWindowSize(int width, int height)
+void Renderer::SetWindowSize(u32 width, u32 height)
 {
-  width = std::max(width, 16);
-  height = std::max(height, 16);
+  width = std::max(width, 16u);
+  height = std::max(height, 16u);
 
 
   // Scale the window size by the EFB scale.

@@ -71,7 +71,7 @@ private:
   static constexpr int TIMEOUT = 200;
   static constexpr int SYNC_BUTTON_HOLD_MS_TO_RESET = 10000;
 
-  std::atomic<SyncButtonState> m_sync_button_state{ SyncButtonState::Unpressed };
+  std::atomic<SyncButtonState> m_sync_button_state{SyncButtonState::Unpressed};
   Common::Timer m_sync_button_held_timer;
 
   libusb_device* m_device = nullptr;
@@ -85,7 +85,7 @@ private:
   struct PendingTransfer
   {
     PendingTransfer(std::unique_ptr<USB::TransferCommand> command_, std::unique_ptr<u8[]> buffer_)
-      : command(std::move(command_)), buffer(std::move(buffer_))
+        : command(std::move(command_)), buffer(std::move(buffer_))
     {
     }
     std::unique_ptr<USB::TransferCommand> command;

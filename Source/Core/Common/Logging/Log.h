@@ -14,8 +14,8 @@ enum LOG_TYPE
   BOOT,
   COMMANDPROCESSOR,
   COMMON,
-  CORE,
   CONSOLE,
+  CORE,
   DISCIO,
   DSPHLE,
   DSPLLE,
@@ -73,11 +73,11 @@ static const char LOG_LEVEL_TO_CHAR[7] = "-NEWID";
 }  // namespace
 
 void GenericLog(LogTypes::LOG_LEVELS level, LogTypes::LOG_TYPE type, const char* file, int line,
-  const char* fmt, ...)
+                const char* fmt, ...)
 #ifdef __GNUC__
-  __attribute__((format(printf, 5, 6)))
+    __attribute__((format(printf, 5, 6)))
 #endif
-  ;
+    ;
 
 #if defined LOGGING || defined _DEBUG || defined DEBUGFAST
 #define MAX_LOGLEVEL LogTypes::LOG_LEVELS::LDEBUG

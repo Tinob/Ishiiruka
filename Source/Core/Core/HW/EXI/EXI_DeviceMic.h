@@ -5,13 +5,15 @@
 #pragma once
 
 #include <mutex>
-#include "Common/Common.h"
+
+#include "Common/CommonTypes.h"
 #include "Core/HW/EXI/EXI_Device.h"
+
+struct cubeb;
+struct cubeb_stream;
 
 namespace ExpansionInterface
 {
-#if HAVE_PORTAUDIO
-
 class CEXIMic : public IEXIDevice
 {
 public:
@@ -68,8 +70,8 @@ private:
   void UpdateNextInterruptTicks();
 
   // Streaming input interface
-  int pa_error;     // PaError
-  void* pa_stream;  // PaStream
+  std::shared_ptr<cubeb> m_cubeb_ctx = nullptr;
+  cubeb_stream* m_cubeb_stream = nullptr;
 
   void StreamLog(const char* msg);
   void StreamInit();
@@ -99,14 +101,4 @@ public:
 protected:
   void TransferByte(u8& byte) override;
 };
-
-#else  // HAVE_PORTAUDIO
-
-class CEXIMic : public IEXIDevice
-{
-public:
-  CEXIMic(const int) {}
-};
-
-#endif
 }  // namespace ExpansionInterface

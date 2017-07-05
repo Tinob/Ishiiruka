@@ -4,6 +4,8 @@
 
 #include "Core/HotkeyManager.h"
 
+#include <algorithm>
+#include <array>
 #include <string>
 #include <vector>
 
@@ -14,12 +16,11 @@
 #include "InputCommon/ControllerEmu/Control/Input.h"
 #include "InputCommon/ControllerEmu/ControlGroup/Buttons.h"
 #include "InputCommon/ControllerEmu/ControlGroup/ControlGroup.h"
-#include "InputCommon/ControllerEmu/Setting/BooleanSetting.h"
 #include "InputCommon/ControllerInterface/ControllerInterface.h"
 #include "InputCommon/GCPadStatus.h"
+
 // clang-format off
-const std::string hotkey_labels[] =
-{
+const std::string hotkey_labels[] = {
     _trans("Open"),
     _trans("Change Disc"),
     _trans("Refresh List"),
@@ -154,7 +155,7 @@ const std::string hotkey_labels[] =
 };
 // clang-format on
 static_assert(NUM_HOTKEYS == sizeof(hotkey_labels) / sizeof(hotkey_labels[0]),
-  "Wrong count of hotkey_labels");
+              "Wrong count of hotkey_labels");
 
 namespace HotkeyManagerEmu
 {
@@ -191,7 +192,7 @@ bool IsPressed(int id, bool held)
 {
   unsigned int group = static_cast<HotkeyManager*>(s_config.GetController(0))->FindGroupByID(id);
   unsigned int group_key =
-    static_cast<HotkeyManager*>(s_config.GetController(0))->GetIndexForGroup(group, id);
+      static_cast<HotkeyManager*>(s_config.GetController(0))->GetIndexForGroup(group, id);
   if (s_hotkey.button[group] & (1 << group_key))
   {
     bool pressed = !!(s_hotkeyDown[group] & (1 << group_key));
@@ -240,24 +241,24 @@ void Shutdown()
 }
 
 const std::array<HotkeyGroupInfo, NUM_HOTKEY_GROUPS> groups_info = {
-        {{_trans("General"), HK_OPEN, HK_EXIT},
-         {_trans("Volume"), HK_VOLUME_DOWN, HK_VOLUME_TOGGLE_MUTE},
-         {_trans("Emulation speed"), HK_DECREASE_EMULATION_SPEED, HK_TOGGLE_THROTTLE},
-         {_trans("Frame advance"), HK_FRAME_ADVANCE, HK_FRAME_ADVANCE_RESET_SPEED},
-         {_trans("Movie"), HK_START_RECORDING, HK_READ_ONLY_MODE},
-         {_trans("Stepping"), HK_STEP, HK_SKIP},
-         {_trans("Program Counter"), HK_SHOW_PC, HK_SET_PC},
-         {_trans("Breakpoint"), HK_BP_TOGGLE, HK_MBP_ADD},
-         {_trans("Wii"), HK_TRIGGER_SYNC_BUTTON, HK_BALANCEBOARD_CONNECT},
+    {{_trans("General"), HK_OPEN, HK_EXIT},
+     {_trans("Volume"), HK_VOLUME_DOWN, HK_VOLUME_TOGGLE_MUTE},
+     {_trans("Emulation speed"), HK_DECREASE_EMULATION_SPEED, HK_TOGGLE_THROTTLE},
+     {_trans("Frame advance"), HK_FRAME_ADVANCE, HK_FRAME_ADVANCE_RESET_SPEED},
+     {_trans("Movie"), HK_START_RECORDING, HK_READ_ONLY_MODE},
+     {_trans("Stepping"), HK_STEP, HK_SKIP},
+     {_trans("Program Counter"), HK_SHOW_PC, HK_SET_PC},
+     {_trans("Breakpoint"), HK_BP_TOGGLE, HK_MBP_ADD},
+     {_trans("Wii"), HK_TRIGGER_SYNC_BUTTON, HK_BALANCEBOARD_CONNECT},
          {_trans("Graphics toggles"), HK_TOGGLE_CROP, HK_TOGGLE_MATERIAL_TEXTURES},
-         {_trans("Internal Resolution"), HK_INCREASE_IR, HK_DECREASE_IR},
-         {_trans("Freelook"), HK_FREELOOK_DECREASE_SPEED, HK_FREELOOK_RESET},
-         {_trans("3D"), HK_TOGGLE_STEREO_SBS, HK_TOGGLE_STEREO_3DVISION},
-         {_trans("3D depth"), HK_DECREASE_DEPTH, HK_INCREASE_CONVERGENCE},
-         {_trans("Load state"), HK_LOAD_STATE_SLOT_1, HK_LOAD_STATE_SLOT_SELECTED},
-         {_trans("Save state"), HK_SAVE_STATE_SLOT_1, HK_SAVE_STATE_SLOT_SELECTED},
-         {_trans("Select state"), HK_SELECT_STATE_SLOT_1, HK_SELECT_STATE_SLOT_10},
-         {_trans("Load last state"), HK_LOAD_LAST_STATE_1, HK_LOAD_LAST_STATE_10},
+     {_trans("Internal Resolution"), HK_INCREASE_IR, HK_DECREASE_IR},
+     {_trans("Freelook"), HK_FREELOOK_DECREASE_SPEED, HK_FREELOOK_RESET},
+     {_trans("3D"), HK_TOGGLE_STEREO_SBS, HK_TOGGLE_STEREO_3DVISION},
+     {_trans("3D depth"), HK_DECREASE_DEPTH, HK_INCREASE_CONVERGENCE},
+     {_trans("Load state"), HK_LOAD_STATE_SLOT_1, HK_LOAD_STATE_SLOT_SELECTED},
+     {_trans("Save state"), HK_SAVE_STATE_SLOT_1, HK_SAVE_STATE_SLOT_SELECTED},
+     {_trans("Select state"), HK_SELECT_STATE_SLOT_1, HK_SELECT_STATE_SLOT_10},
+     {_trans("Load last state"), HK_LOAD_LAST_STATE_1, HK_LOAD_LAST_STATE_10},
          {_trans("Other state hotkeys"), HK_SAVE_FIRST_STATE, HK_RELOAD_POSTPROCESS_SHADERS}} };
 
 HotkeyManager::HotkeyManager()
@@ -265,7 +266,7 @@ HotkeyManager::HotkeyManager()
   for (int group = 0; group < NUM_HOTKEY_GROUPS; group++)
   {
     m_hotkey_groups[group] =
-      (m_keys[group] = new ControllerEmu::Buttons("Keys", groups_info[group].name));
+        (m_keys[group] = new ControllerEmu::Buttons("Keys", groups_info[group].name));
     groups.emplace_back(m_hotkey_groups[group]);
     for (int key = groups_info[group].first; key <= groups_info[group].last; key++)
     {
@@ -306,7 +307,7 @@ ControllerEmu::ControlGroup* HotkeyManager::GetHotkeyGroup(HotkeyGroup group) co
 int HotkeyManager::FindGroupByID(int id) const
 {
   const auto i = std::find_if(groups_info.begin(), groups_info.end(),
-    [id](const auto& entry) { return entry.last >= id; });
+                              [id](const auto& entry) { return entry.last >= id; });
 
   return static_cast<int>(std::distance(groups_info.begin(), i));
 }
@@ -334,8 +335,8 @@ void HotkeyManager::LoadDefaults(const ControllerInterface& ciface)
 
   auto set_key_expression = [this](int index, const std::string& expression) {
     m_keys[FindGroupByID(index)]
-      ->controls[GetIndexForGroup(FindGroupByID(index), index)]
-      ->control_ref->expression = expression;
+        ->controls[GetIndexForGroup(FindGroupByID(index), index)]
+        ->control_ref->expression = expression;
   };
 
   // General hotkeys
@@ -380,9 +381,9 @@ void HotkeyManager::LoadDefaults(const ControllerInterface& ciface)
   for (int i = 0; i < 8; i++)
   {
     set_key_expression(HK_LOAD_STATE_SLOT_1 + i,
-      StringFromFormat((NON + " & `F%d`").c_str(), i + 1));
+                       StringFromFormat((NON + " & `F%d`").c_str(), i + 1));
     set_key_expression(HK_SAVE_STATE_SLOT_1 + i,
-      StringFromFormat((SHIFT + " & `F%d`").c_str(), i + 1));
+                       StringFromFormat((SHIFT + " & `F%d`").c_str(), i + 1));
   }
   set_key_expression(HK_UNDO_LOAD_STATE, NON + " & `F12`");
   set_key_expression(HK_UNDO_SAVE_STATE, SHIFT + " & `F12`");

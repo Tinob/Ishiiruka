@@ -34,7 +34,7 @@ bool ToggleFullscreen(Display* dpy, Window win)
 
   // Send the event
   if (!XSendEvent(dpy, DefaultRootWindow(dpy), False,
-    SubstructureRedirectMask | SubstructureNotifyMask, &event))
+                  SubstructureRedirectMask | SubstructureNotifyMask, &event))
   {
     ERROR_LOG(VIDEO, "Failed to switch fullscreen/windowed mode.");
     return false;
@@ -49,7 +49,7 @@ void InhibitScreensaver(Display* dpy, Window win, bool suspend)
   snprintf(id, sizeof(id), "0x%lx", win);
 
   // Call xdg-screensaver
-  char* argv[4] = { (char*)"xdg-screensaver", (char*)(suspend ? "suspend" : "resume"), id, nullptr };
+  char* argv[4] = {(char*)"xdg-screensaver", (char*)(suspend ? "suspend" : "resume"), id, nullptr};
   pid_t pid;
   if (!posix_spawnp(&pid, "xdg-screensaver", nullptr, nullptr, argv, environ))
   {
@@ -63,14 +63,14 @@ void InhibitScreensaver(Display* dpy, Window win, bool suspend)
 
 #if defined(HAVE_XRANDR) && HAVE_XRANDR
 XRRConfiguration::XRRConfiguration(Display* _dpy, Window _win)
-  : dpy(_dpy), win(_win), screenResources(nullptr), outputInfo(nullptr), crtcInfo(nullptr),
-  fullMode(0), fs_fb_width(0), fs_fb_height(0), fs_fb_width_mm(0), fs_fb_height_mm(0),
-  bValid(true), bIsFullscreen(false)
+    : dpy(_dpy), win(_win), screenResources(nullptr), outputInfo(nullptr), crtcInfo(nullptr),
+      fullMode(0), fs_fb_width(0), fs_fb_height(0), fs_fb_width_mm(0), fs_fb_height_mm(0),
+      bValid(true), bIsFullscreen(false)
 {
   int XRRMajorVersion, XRRMinorVersion;
 
   if (!XRRQueryVersion(dpy, &XRRMajorVersion, &XRRMinorVersion) ||
-    (XRRMajorVersion < 1 || (XRRMajorVersion == 1 && XRRMinorVersion < 3)))
+      (XRRMajorVersion < 1 || (XRRMajorVersion == 1 && XRRMinorVersion < 3)))
   {
     WARN_LOG(VIDEO, "XRRExtension not supported.");
     bValid = false;
@@ -133,14 +133,14 @@ void XRRConfiguration::Update()
   else
   {
     sscanf(SConfig::GetInstance().strFullscreenResolution.c_str(), "%m[^:]: %ux%u%c", &output_name,
-      &fullWidth, &fullHeight, &auxFlag);
+           &fullWidth, &fullHeight, &auxFlag);
   }
   bool want_interlaced = ('i' == auxFlag);
 
   for (int i = 0; i < screenResources->noutput; i++)
   {
     XRROutputInfo* output_info =
-      XRRGetOutputInfo(dpy, screenResources, screenResources->outputs[i]);
+        XRRGetOutputInfo(dpy, screenResources, screenResources->outputs[i]);
     if (output_info && output_info->crtc && output_info->connection == RR_Connected)
     {
       XRRCrtcInfo* crtc_info = XRRGetCrtcInfo(dpy, screenResources, output_info->crtc);
@@ -153,7 +153,7 @@ void XRRConfiguration::Update()
           {
             output_name = strdup(output_info->name);
             SConfig::GetInstance().strFullscreenResolution =
-              StringFromFormat("%s: %ux%u", output_info->name, fullWidth, fullHeight);
+                StringFromFormat("%s: %ux%u", output_info->name, fullWidth, fullHeight);
           }
           outputInfo = output_info;
           crtcInfo = crtc_info;
@@ -164,8 +164,8 @@ void XRRConfiguration::Update()
               if (output_info->modes[j] == screenResources->modes[k].id)
               {
                 if (fullWidth == screenResources->modes[k].width &&
-                  fullHeight == screenResources->modes[k].height &&
-                  want_interlaced == !!(screenResources->modes[k].modeFlags & RR_Interlace))
+                    fullHeight == screenResources->modes[k].height &&
+                    want_interlaced == !!(screenResources->modes[k].modeFlags & RR_Interlace))
                 {
                   fullMode = screenResources->modes[k].id;
                   if (crtcInfo->x + (int)screenResources->modes[k].width > fs_fb_width)
@@ -204,7 +204,7 @@ void XRRConfiguration::Update()
   else
   {
     ERROR_LOG(VIDEO, "Failed to obtain fullscreen size.\n"
-      "Using current desktop resolution for fullscreen.");
+                     "Using current desktop resolution for fullscreen.");
   }
 }
 
@@ -219,14 +219,14 @@ void XRRConfiguration::ToggleDisplayMode(bool bFullscreen)
   if (bFullscreen)
   {
     XRRSetCrtcConfig(dpy, screenResources, outputInfo->crtc, CurrentTime, crtcInfo->x, crtcInfo->y,
-      fullMode, crtcInfo->rotation, crtcInfo->outputs, crtcInfo->noutput);
+                     fullMode, crtcInfo->rotation, crtcInfo->outputs, crtcInfo->noutput);
     XRRSetScreenSize(dpy, win, fs_fb_width, fs_fb_height, fs_fb_width_mm, fs_fb_height_mm);
     bIsFullscreen = true;
   }
   else
   {
     XRRSetCrtcConfig(dpy, screenResources, outputInfo->crtc, CurrentTime, crtcInfo->x, crtcInfo->y,
-      crtcInfo->mode, crtcInfo->rotation, crtcInfo->outputs, crtcInfo->noutput);
+                     crtcInfo->mode, crtcInfo->rotation, crtcInfo->outputs, crtcInfo->noutput);
     XRRSetScreenSize(dpy, win, fb_width, fb_height, fb_width_mm, fb_height_mm);
     bIsFullscreen = false;
   }
@@ -243,7 +243,7 @@ void XRRConfiguration::AddResolutions(std::vector<std::string>& resos)
   for (int i = 0; i < screenResources->noutput; i++)
   {
     XRROutputInfo* output_info =
-      XRRGetOutputInfo(dpy, screenResources, screenResources->outputs[i]);
+        XRRGetOutputInfo(dpy, screenResources, screenResources->outputs[i]);
 
     if (output_info && output_info->crtc && output_info->connection == RR_Connected)
     {
@@ -255,8 +255,8 @@ void XRRConfiguration::AddResolutions(std::vector<std::string>& resos)
           {
             bool interlaced = !!(screenResources->modes[k].modeFlags & RR_Interlace);
             const std::string strRes = std::string(output_info->name) + ": " +
-              std::string(screenResources->modes[k].name) +
-              (interlaced ? "i" : "");
+                                       std::string(screenResources->modes[k].name) +
+                                       (interlaced ? "i" : "");
             // Only add unique resolutions
             if (std::find(resos.begin(), resos.end(), strRes) == resos.end())
             {

@@ -2,14 +2,15 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Core/PowerPC/SignatureDB/DSYSignatureDB.h"
+
 #include <cstddef>
 #include <cstring>
+#include <string>
 
 #include "Common/CommonTypes.h"
-#include "Common/FileUtil.h"
+#include "Common/File.h"
 #include "Common/Logging/Log.h"
-
-#include "Core/PowerPC/SignatureDB/DSYSignatureDB.h"
 
 namespace
 {

@@ -21,7 +21,7 @@ class MD5Dialog final : public wxDialog
 {
 public:
   MD5Dialog(wxWindow* parent, NetPlayServer* server, std::vector<const Player*> players,
-    const std::string& game);
+            const std::string& game);
 
   void SetProgress(int pid, int progress);
   void SetResult(int pid, const std::string& result);

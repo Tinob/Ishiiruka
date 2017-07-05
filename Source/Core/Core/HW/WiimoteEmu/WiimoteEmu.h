@@ -91,7 +91,8 @@ enum class GuitarGroup
   Frets,
   Strum,
   Whammy,
-  Stick
+  Stick,
+  SliderBar
 };
 
 enum class DrumsGroup
@@ -152,13 +153,13 @@ struct ExtensionReg
 };
 
 void EmulateShake(AccelData* const accel_data, ControllerEmu::Buttons* const buttons_group,
-  u8* const shake_step);
+                  u8* const shake_step);
 
 void EmulateTilt(AccelData* const accel, ControllerEmu::Tilt* const tilt_group,
-  const bool sideways = false, const bool upright = false);
+                 const bool sideways = false, const bool upright = false);
 
 void EmulateSwing(AccelData* const accel, ControllerEmu::Force* const tilt_group,
-  const bool sideways = false, const bool upright = false);
+                  const bool sideways = false, const bool upright = false);
 
 enum
 {

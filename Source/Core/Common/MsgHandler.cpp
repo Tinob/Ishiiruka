@@ -8,9 +8,9 @@
 
 #include "Common/Common.h"
 #include "Common/CommonTypes.h"
+#include "Common/Logging/Log.h"
 #include "Common/MsgHandler.h"
 #include "Common/StringUtil.h"
-#include "Common/Logging/Log.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -103,10 +103,13 @@ bool DefaultMsgHandler(const char* caption, const char* text, bool yes_no, int S
 {
 #ifdef _WIN32
   int STYLE = MB_ICONINFORMATION;
-  if (Style == QUESTION) STYLE = MB_ICONQUESTION;
-  if (Style == WARNING) STYLE = MB_ICONWARNING;
+  if (Style == QUESTION)
+    STYLE = MB_ICONQUESTION;
+  if (Style == WARNING)
+    STYLE = MB_ICONWARNING;
 
-  return IDYES == MessageBox(0, UTF8ToTStr(text).c_str(), UTF8ToTStr(caption).c_str(), STYLE | (yes_no ? MB_YESNO : MB_OK));
+  return IDYES == MessageBox(0, UTF8ToTStr(text).c_str(), UTF8ToTStr(caption).c_str(),
+                             STYLE | (yes_no ? MB_YESNO : MB_OK));
 #else
   fprintf(stderr, "%s\n", text);
 
@@ -120,4 +123,3 @@ std::string DefaultStringTranslator(const char* text)
 {
   return text;
 }
-

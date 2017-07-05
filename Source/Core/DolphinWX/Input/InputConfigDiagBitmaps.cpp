@@ -124,8 +124,8 @@ static void DrawCoordinate(wxGraphicsContext* gc, ControlState x, ControlState y
 }
 
 static void DrawButton(const std::vector<unsigned int>& bitmasks, unsigned int buttons,
-  unsigned int n, wxGraphicsContext* gc, ControlGroupBox* g, unsigned int row,
-  const wxGraphicsMatrix& null_matrix)
+                       unsigned int n, wxGraphicsContext* gc, ControlGroupBox* g, unsigned int row,
+                       const wxGraphicsMatrix& null_matrix)
 {
   if (buttons & bitmasks[(row * 8) + n])
   {
@@ -139,13 +139,13 @@ static void DrawButton(const std::vector<unsigned int>& bitmasks, unsigned int b
   gc->DrawRectangle(n * 12, (row == 0) ? 0 : (row * 11), 14, 12);
 
   // text
-  const std::string name = g->control_group->controls[(row * 8) + n]->name;
+  const std::string name = g->control_group->controls[(row * 8) + n]->ui_name;
   // Matrix transformation needs to be disabled so we don't draw scaled/zoomed text.
   wxGraphicsMatrix old_matrix = gc->GetTransform();
   gc->SetTransform(null_matrix);
   // bit of hax so ZL, ZR show up as L, R
   gc->DrawText(wxUniChar((name[1] && name[1] < 'a') ? name[1] : name[0]), (n * 12 + 2) * g->m_scale,
-    (1 + (row == 0 ? 0 : row * 11)) * g->m_scale);
+               (1 + (row == 0 ? 0 : row * 11)) * g->m_scale);
   gc->SetTransform(old_matrix);
 }
 
@@ -242,13 +242,13 @@ static void DrawControlGroupBox(wxGraphicsContext* gc, ControlGroupBox* g)
     if (g->control_group->type != ControllerEmu::GroupType::Cursor)
     {
       const int deadzone_idx = g->control_group->type == ControllerEmu::GroupType::Stick ?
-        ControllerEmu::AnalogStick::SETTING_DEADZONE :
-        0;
+                                   ControllerEmu::AnalogStick::SETTING_DEADZONE :
+                                   0;
 
       wxGraphicsPath path = gc->CreatePath();
       path.AddCircle(VIS_BITMAP_SIZE / 2, VIS_BITMAP_SIZE / 2,
-        g->control_group->numeric_settings[deadzone_idx]->GetValue() *
-        VIS_BITMAP_SIZE / 2);
+                     g->control_group->numeric_settings[deadzone_idx]->GetValue() *
+                         VIS_BITMAP_SIZE / 2);
       gc->SetBrush(*wxLIGHT_GREY_BRUSH);
       gc->FillPath(path);
     }
@@ -288,7 +288,7 @@ static void DrawControlGroupBox(wxGraphicsContext* gc, ControlGroupBox* g)
     for (unsigned int i = 0; i < 3; ++i)
     {
       raw_dot[i] = (g->control_group->controls[i * 2 + 1]->control_ref->State() -
-        g->control_group->controls[i * 2]->control_ref->State());
+                    g->control_group->controls[i * 2]->control_ref->State());
     }
 
     // deadzone rect for forward/backward visual
@@ -319,7 +319,7 @@ static void DrawControlGroupBox(wxGraphicsContext* gc, ControlGroupBox* g)
     gc->SetPen(*wxLIGHT_GREY_PEN);
     gc->SetBrush(*wxWHITE_BRUSH);
     DrawCenteredRectangle(gc, VIS_BITMAP_SIZE / 2, VIS_BITMAP_SIZE / 2, DEADZONE_RECT_SIZE,
-      DEADZONE_RECT_SIZE);
+                          DEADZONE_RECT_SIZE);
 
     // deadzone square
     gc->SetPen(*wxTRANSPARENT_PEN);
@@ -399,8 +399,8 @@ static void DrawControlGroupBox(wxGraphicsContext* gc, ControlGroupBox* g)
       // text
       // We don't want the text to be scaled/zoomed
       gc->SetTransform(null_matrix);
-      gc->DrawText(StrToWxStr(g->control_group->controls[n]->name), 3 * g->m_scale,
-        (n * 12 + 1) * g->m_scale);
+      gc->DrawText(StrToWxStr(g->control_group->controls[n]->ui_name), 3 * g->m_scale,
+                   (n * 12 + 1) * g->m_scale);
       gc->SetTransform(scale_matrix);
     }
 
@@ -426,7 +426,7 @@ static void DrawControlGroupBox(wxGraphicsContext* gc, ControlGroupBox* g)
       ControlState trig_d = g->control_group->controls[n]->control_ref->State();
 
       ControlState trig_a =
-        trig_d > thresh ? 1 : g->control_group->controls[n + trigger_count]->control_ref->State();
+          trig_d > thresh ? 1 : g->control_group->controls[n + trigger_count]->control_ref->State();
 
       gc->DrawRectangle(0, n * 12, 64 + 20, 14);
       if (trig_d <= thresh)
@@ -437,10 +437,10 @@ static void DrawControlGroupBox(wxGraphicsContext* gc, ControlGroupBox* g)
       // text
       // We don't want the text to be scaled/zoomed
       gc->SetTransform(null_matrix);
-      gc->DrawText(StrToWxStr(g->control_group->controls[n + trigger_count]->name), 3 * g->m_scale,
-        (n * 12 + 1) * g->m_scale);
-      gc->DrawText(StrToWxStr(std::string(1, g->control_group->controls[n]->name[0])),
-        (64 + 3) * g->m_scale, (n * 12 + 1) * g->m_scale);
+      gc->DrawText(StrToWxStr(g->control_group->controls[n + trigger_count]->ui_name),
+                   3 * g->m_scale, (n * 12 + 1) * g->m_scale);
+      gc->DrawText(StrToWxStr(std::string(1, g->control_group->controls[n]->ui_name[0])),
+                   (64 + 3) * g->m_scale, (n * 12 + 1) * g->m_scale);
       gc->SetTransform(scale_matrix);
     }
 
@@ -456,7 +456,7 @@ static void DrawControlGroupBox(wxGraphicsContext* gc, ControlGroupBox* g)
     const ControlState deadzone = g->control_group->numeric_settings[0]->GetValue();
 
     ControlState state = g->control_group->controls[1]->control_ref->State() -
-      g->control_group->controls[0]->control_ref->State();
+                         g->control_group->controls[0]->control_ref->State();
     gc->SetPen(*wxTRANSPARENT_PEN);
     gc->SetBrush(*wxGREY_BRUSH);
     gc->DrawRectangle(31 + state * 30, 0, 2, 14);
@@ -486,9 +486,9 @@ static void DrawBorder(wxGraphicsContext* gc, double scale)
 {
   double pen_width = std::round(scale);  // Pen width = 1px * scale
 
-                                         // Use the window caption bar color as a safe accent color.
+  // Use the window caption bar color as a safe accent color.
   wxPen border_pen(wxSystemSettings::GetColour(wxSYS_COLOUR_ACTIVECAPTION),
-    static_cast<int>(pen_width));
+                   static_cast<int>(pen_width));
   border_pen.SetCap(wxCAP_PROJECTING);
 
   double width, height;
@@ -503,7 +503,7 @@ static void DrawBorder(wxGraphicsContext* gc, double scale)
 void InputConfigDialog::UpdateBitmaps(wxTimerEvent& WXUNUSED(event))
 {
   wxFont small_font(6, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD);
-  const wxColour font_color{ 0xB8B8B8 };
+  const wxColour font_color{0xB8B8B8};
 
   g_controller_interface.UpdateInput();
 
@@ -527,7 +527,7 @@ void InputConfigDialog::UpdateBitmaps(wxTimerEvent& WXUNUSED(event))
     dc.GetTextExtent(g->control_group->name, nullptr, &dc_height);
 #endif
 
-    std::unique_ptr<wxGraphicsContext> gc{ wxGraphicsContext::Create(dc) };
+    std::unique_ptr<wxGraphicsContext> gc{wxGraphicsContext::Create(dc)};
     gc->DisableOffset();
     gc->SetFont(small_font, font_color);
 

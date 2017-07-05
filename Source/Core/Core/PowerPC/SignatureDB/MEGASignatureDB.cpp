@@ -9,6 +9,7 @@
 #include <fstream>
 #include <limits>
 #include <sstream>
+#include <string>
 #include <utility>
 
 #include "Common/FileUtil.h"
@@ -109,7 +110,7 @@ bool Compare(u32 address, u32 size, const MEGASignature& sig)
   for (size_t i = 0; i < sig.code.size(); ++i)
   {
     if (sig.code[i] != 0 &&
-      PowerPC::HostRead_U32(static_cast<u32>(address + i * sizeof(u32))) != sig.code[i])
+        PowerPC::HostRead_U32(static_cast<u32>(address + i * sizeof(u32))) != sig.code[i])
       return false;
   }
   return true;
@@ -127,7 +128,7 @@ void MEGASignatureDB::Clear()
 bool MEGASignatureDB::Load(const std::string& file_path)
 {
   std::ifstream ifs;
-  OpenFStream(ifs, file_path, std::ios_base::in);
+  File::OpenFStream(ifs, file_path, std::ios_base::in);
 
   if (!ifs)
     return false;
@@ -167,7 +168,7 @@ void MEGASignatureDB::Apply(PPCSymbolDB* symbol_db) const
       {
         symbol.name = sig.name;
         INFO_LOG(OSHLE, "Found %s at %08x (size: %08x)!", sig.name.c_str(), symbol.address,
-          symbol.size);
+                 symbol.size);
         break;
       }
     }

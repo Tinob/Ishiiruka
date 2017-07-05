@@ -2,6 +2,8 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Core/GeckoCode.h"
+
 #include <algorithm>
 #include <iterator>
 #include <mutex>
@@ -13,7 +15,6 @@
 #include "Common/FileUtil.h"
 
 #include "Core/ConfigManager.h"
-#include "Core/GeckoCode.h"
 #include "Core/HW/Memmap.h"
 #include "Core/PowerPC/PowerPC.h"
 
@@ -45,8 +46,8 @@ bool operator!=(const GeckoCode::Code& lhs, const GeckoCode::Code& rhs)
 bool GeckoCode::Exist(u32 address, u32 data) const
 {
   return std::find_if(codes.begin(), codes.end(), [&](const Code& code) {
-    return code.address == address && code.data == data;
-  }) != codes.end();
+           return code.address == address && code.data == data;
+         }) != codes.end();
 }
 
 enum class Installation
@@ -70,7 +71,7 @@ void SetActiveCodes(const std::vector<GeckoCode>& gcodes)
   {
     s_active_codes.reserve(gcodes.size());
     std::copy_if(gcodes.begin(), gcodes.end(), std::back_inserter(s_active_codes),
-      [](const GeckoCode& code) { return code.enabled; });
+                 [](const GeckoCode& code) { return code.enabled; });
   }
   s_active_codes.shrink_to_fit();
 
@@ -116,7 +117,7 @@ static Installation InstallCodeHandlerLocked()
   }
 
   const u32 codelist_base_address =
-    INSTALLER_BASE_ADDRESS + static_cast<u32>(data.size()) - CODE_SIZE;
+      INSTALLER_BASE_ADDRESS + static_cast<u32>(data.size()) - CODE_SIZE;
   const u32 codelist_end_address = INSTALLER_END_ADDRESS;
 
   // Write a magic value to 'gameid' (codehandleronly does not actually read this).
@@ -139,9 +140,9 @@ static Installation InstallCodeHandlerLocked()
     if (next_address + active_code.codes.size() * CODE_SIZE > end_address)
     {
       NOTICE_LOG(ACTIONREPLAY, "Too many GeckoCodes! Ran out of storage space in Game RAM. Could "
-        "not write: \"%s\". Need %zu bytes, only %u remain.",
-        active_code.name.c_str(), active_code.codes.size() * CODE_SIZE,
-        end_address - next_address);
+                               "not write: \"%s\". Need %zu bytes, only %u remain.",
+                 active_code.name.c_str(), active_code.codes.size() * CODE_SIZE,
+                 end_address - next_address);
       continue;
     }
 
@@ -154,7 +155,7 @@ static Installation InstallCodeHandlerLocked()
   }
 
   WARN_LOG(ACTIONREPLAY, "GeckoCodes: Using %u of %u bytes", next_address - start_address,
-    end_address - start_address);
+           end_address - start_address);
 
   // Stop code. Tells the handler that this is the end of the list.
   PowerPC::HostWrite_U32(0xF0000000, next_address);
@@ -238,8 +239,8 @@ void RunCodeHandler()
     PowerPC::HostWrite_U64(riPS1(i), SP + 24 + (2 * i + 1) * sizeof(u64));
   }
   DEBUG_LOG(ACTIONREPLAY, "GeckoCodes: Initiating phantom branch-and-link. "
-    "PC = 0x%08X, SP = 0x%08X, SFP = 0x%08X",
-    PC, SP, SFP);
+                          "PC = 0x%08X, SP = 0x%08X, SFP = 0x%08X",
+            PC, SP, SFP);
   LR = HLE_TRAMPOLINE_ADDRESS;
   PC = NPC = ENTRY_POINT;
 }

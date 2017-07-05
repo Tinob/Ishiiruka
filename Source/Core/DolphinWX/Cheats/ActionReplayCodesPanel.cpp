@@ -76,13 +76,13 @@ void ActionReplayCodesPanel::CreateGUI()
   // STYLE_SIDE_PANEL
   m_side_panel = new wxStaticBoxSizer(wxVERTICAL, this, _("Code Info"));
   m_label_code_name = new wxStaticText(m_side_panel->GetStaticBox(), wxID_ANY, _("Name: "),
-    wxDefaultPosition, wxDefaultSize, wxST_NO_AUTORESIZE);
+                                       wxDefaultPosition, wxDefaultSize, wxST_NO_AUTORESIZE);
   m_label_num_codes =
-    new wxStaticText(m_side_panel->GetStaticBox(), wxID_ANY, _("Number of Codes: ") + '0');
+      new wxStaticText(m_side_panel->GetStaticBox(), wxID_ANY, _("Number of Codes: ") + '0');
 
   m_list_codes = new wxListBox(m_side_panel->GetStaticBox(), wxID_ANY);
   {
-    wxFont monospace{ m_list_codes->GetFont() };
+    wxFont monospace{m_list_codes->GetFont()};
     monospace.SetFamily(wxFONTFAMILY_TELETYPE);
 #ifdef _WIN32
     monospace.SetFaceName("Consolas");  // Windows always uses Courier New
@@ -146,7 +146,7 @@ void ActionReplayCodesPanel::Repopulate()
   for (const auto& code : m_codes)
   {
     int idx =
-      m_checklist_cheats->Append(m_checklist_cheats->EscapeMnemonics(StrToWxStr(code.name)));
+        m_checklist_cheats->Append(m_checklist_cheats->EscapeMnemonics(StrToWxStr(code.name)));
     if (code.active)
       m_checklist_cheats->Check(idx);
   }
@@ -211,7 +211,7 @@ void ActionReplayCodesPanel::UpdateModifyButtons()
 
 void ActionReplayCodesPanel::GenerateToggleEvent(const ActionReplay::ARCode& code)
 {
-  wxCommandEvent toggle_event{ DOLPHIN_EVT_ARCODE_TOGGLED, GetId() };
+  wxCommandEvent toggle_event{DOLPHIN_EVT_ARCODE_TOGGLED, GetId()};
   toggle_event.SetClientData(const_cast<ActionReplay::ARCode*>(&code));
   if (!GetEventHandler()->ProcessEvent(toggle_event))
   {
@@ -244,7 +244,7 @@ void ActionReplayCodesPanel::OnCodeDoubleClick(wxCommandEvent& ev)
 
 void ActionReplayCodesPanel::OnAddNewCodeClick(wxCommandEvent&)
 {
-  ARCodeAddEdit editor{ {}, this, wxID_ANY, _("Add ActionReplay Code") };
+  ARCodeAddEdit editor{{}, this, wxID_ANY, _("Add ActionReplay Code")};
   m_editor = &editor;
   if (editor.ShowModal() == wxID_SAVE)
     AppendNewCode(editor.GetCode());
@@ -259,7 +259,7 @@ void ActionReplayCodesPanel::OnEditCodeClick(wxCommandEvent&)
   // If the code is from the global INI then we'll have to clone it.
   if (!code.user_defined)
   {
-    ARCodeAddEdit editor{ code, this, wxID_ANY, _("Duplicate Bundled ActionReplay Code") };
+    ARCodeAddEdit editor{code, this, wxID_ANY, _("Duplicate Bundled ActionReplay Code")};
     m_editor = &editor;
     if (editor.ShowModal() == wxID_SAVE)
       AppendNewCode(editor.GetCode());
@@ -267,7 +267,7 @@ void ActionReplayCodesPanel::OnEditCodeClick(wxCommandEvent&)
     return;
   }
 
-  ARCodeAddEdit editor{ code, this };
+  ARCodeAddEdit editor{code, this};
   m_editor = &editor;
   if (editor.ShowModal() == wxID_SAVE)
   {

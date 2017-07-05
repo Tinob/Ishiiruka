@@ -20,7 +20,7 @@
 namespace ControllerEmu
 {
 ModifySettingsButton::ModifySettingsButton(std::string button_name)
-  : Buttons(std::move(button_name))
+    : Buttons(std::move(button_name))
 {
   numeric_settings.emplace_back(std::make_unique<NumericSetting>(_trans("Threshold"), 0.5));
 }
@@ -54,9 +54,9 @@ void ModifySettingsButton::GetState()
         associated_settings[i] = !associated_settings[i];
 
         if (associated_settings[i])
-          OSD::AddMessage(controls[i]->name + ": on");
+          OSD::AddMessage(controls[i]->ui_name + ": on");
         else
-          OSD::AddMessage(controls[i]->name + ": off");
+          OSD::AddMessage(controls[i]->ui_name + ": off");
 
         threshold_exceeded[i] = true;
       }

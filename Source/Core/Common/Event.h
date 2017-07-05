@@ -22,8 +22,8 @@
 
 #include "Common/Flag.h"
 
-namespace Common {
-
+namespace Common
+{
 class Event final
 {
 public:
@@ -42,24 +42,17 @@ public:
       return;
 
     std::unique_lock<std::mutex> lk(m_mutex);
-    m_condvar.wait(lk, [&]
-    {
-      return m_flag.TestAndClear();
-    });
+    m_condvar.wait(lk, [&] { return m_flag.TestAndClear(); });
   }
 
-  template<class Rep, class Period>
+  template <class Rep, class Period>
   bool WaitFor(const std::chrono::duration<Rep, Period>& rel_time)
   {
     if (m_flag.TestAndClear())
       return true;
 
     std::unique_lock<std::mutex> lk(m_mutex);
-    bool signaled = m_condvar.wait_for(lk, rel_time,
-      [&]
-    {
-      return m_flag.TestAndClear();
-    });
+    bool signaled = m_condvar.wait_for(lk, rel_time, [&] { return m_flag.TestAndClear(); });
 
     return signaled;
   }

@@ -38,7 +38,7 @@ class Jitx86Base : public JitBase, public QuantizedMemoryRoutines
 {
 protected:
   bool BackPatch(u32 emAddress, SContext* ctx);
-  JitBlockCache blocks{ *this };
+  JitBlockCache blocks{*this};
   TrampolineCache trampolines;
 
 public:
@@ -47,4 +47,4 @@ public:
 };
 
 void LogGeneratedX86(size_t size, const PPCAnalyst::CodeBuffer* code_buffer, const u8* normalEntry,
-  const JitBlock* b);
+                     const JitBlock* b);

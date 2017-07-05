@@ -58,7 +58,7 @@ private:
   {
   public:
     Trigger(u8 index, const BYTE& trigger, BYTE range)
-      : m_trigger(trigger), m_range(range), m_index(index)
+        : m_trigger(trigger), m_range(range), m_index(index)
     {
     }
     std::string GetName() const override;
@@ -74,7 +74,7 @@ private:
   {
   public:
     Motor(u8 index, Device* parent, WORD& motor, WORD range)
-      : m_motor(motor), m_range(range), m_index(index), m_parent(parent)
+        : m_motor(motor), m_range(range), m_index(index), m_parent(parent)
     {
     }
     std::string GetName() const override;

@@ -65,8 +65,8 @@ struct TransformBuffer
   LPDIRECT3DTEXTURE9 FBTexture;
   LPDIRECT3DSURFACE9 RenderSurface;
   LPDIRECT3DSURFACE9 ReadSurface;
-  int Width;
-  int Height;
+  u32 Width;
+  u32 Height;
   u32 hits;
   void Clear()
   {
@@ -255,7 +255,7 @@ void EncodeToRamUsingShader(LPDIRECT3DPIXELSHADER9 shader, LPDIRECT3DTEXTURE9 sr
   HRESULT hr;
   u32 index = 0;
   u32 dstWidth = (dst_line_size / 4);
-  while (index < WorkingBuffers && (TrnBuffers[index].Width != dstWidth || TrnBuffers[index].Height != dstHeight))
+  while (index < WorkingBuffers && (TrnBuffers[index].Width != dstWidth || TrnBuffers[index].Height != static_cast<u32>(dstHeight)))
     index++;
   LPDIRECT3DSURFACE9  s_texConvReadSurface = nullptr;
   LPDIRECT3DSURFACE9 Rendersurf = nullptr;

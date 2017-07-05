@@ -2,17 +2,15 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Core/HW/CPU.h"
+
 #include <condition_variable>
 #include <mutex>
 
 #include "AudioCommon/AudioCommon.h"
 #include "Common/CommonTypes.h"
 #include "Common/Event.h"
-#include "Common/Logging/Log.h"
-#include "Common/MsgHandler.h"
 #include "Core/Core.h"
-#include "Core/HW/CPU.h"
-#include "Core/HW/Memmap.h"
 #include "Core/Host.h"
 #include "Core/PowerPC/PowerPC.h"
 #include "VideoCommon/Fifo.h"
@@ -111,7 +109,7 @@ void Run()
     case State::Stepping:
       // Wait for step command.
       s_state_cpu_cvar.wait(state_lock,
-        [] { return s_state_cpu_step_instruction || !IsStepping(); });
+                            [] { return s_state_cpu_step_instruction || !IsStepping(); });
       if (!IsStepping())
       {
         // Signal event if the mode changes.
@@ -164,7 +162,7 @@ void Stop()
   while (s_state_cpu_thread_active)
   {
     std::cv_status status =
-      s_state_cpu_idle_cvar.wait_for(state_lock, std::chrono::milliseconds(100));
+        s_state_cpu_idle_cvar.wait_for(state_lock, std::chrono::milliseconds(100));
     if (status == std::cv_status::timeout)
       Host_YieldToUI();
   }
@@ -233,7 +231,7 @@ void EnableStepping(bool stepping)
     while (s_state_cpu_thread_active)
     {
       std::cv_status status =
-        s_state_cpu_idle_cvar.wait_for(state_lock, std::chrono::milliseconds(100));
+          s_state_cpu_idle_cvar.wait_for(state_lock, std::chrono::milliseconds(100));
       if (status == std::cv_status::timeout)
         Host_YieldToUI();
     }
@@ -284,7 +282,7 @@ bool PauseAndLock(bool do_lock, bool unpause_on_unlock, bool control_adjacent)
     while (s_state_cpu_thread_active)
     {
       std::cv_status status =
-        s_state_cpu_idle_cvar.wait_for(state_lock, std::chrono::milliseconds(100));
+          s_state_cpu_idle_cvar.wait_for(state_lock, std::chrono::milliseconds(100));
       if (status == std::cv_status::timeout)
         Host_YieldToUI();
     }

@@ -15,9 +15,9 @@ class BooleanSetting
 {
 public:
   BooleanSetting(const std::string& setting_name, const std::string& ui_name,
-    const bool default_value, const SettingType setting_type = SettingType::NORMAL);
+                 const bool default_value, const SettingType setting_type = SettingType::NORMAL);
   BooleanSetting(const std::string& setting_name, const bool default_value,
-    const SettingType setting_type = SettingType::NORMAL);
+                 const SettingType setting_type = SettingType::NORMAL);
 
   bool GetValue() const;
   void SetValue(bool value);

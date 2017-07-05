@@ -12,6 +12,7 @@
 #include "Common/Logging/Log.h"
 
 #include "Core/ConfigManager.h"
+#include "Core/Config/GraphicsSettings.h"
 
 #include "VideoBackends/DX11/D3DPtr.h"
 #include "VideoBackends/DX11/D3DBase.h"
@@ -278,7 +279,7 @@ HRESULT Create(HWND wnd)
   }
   ) == aa_modes.end())
   {
-    g_Config.iMultisamples = 1;
+    Config::SetCurrent(Config::GFX_MSAA, UINT32_C(1));
     UpdateActiveConfig();
   }
 

@@ -247,7 +247,6 @@ int CD3DFont::DrawTextScaled(float x, float y, float fXScale, float fYScale, flo
   m_pVB->Lock(0, 0, (void**)&pVertices, D3DLOCK_DISCARD);
 
   //First, let's measure the text
-  float tw = 0;
   float mx = 0;
   float maxx = 0;
 
@@ -266,8 +265,6 @@ int CD3DFont::DrawTextScaled(float x, float y, float fXScale, float fYScale, flo
     mx += w + spacing*fXScale*vpWidth;
     if (mx > maxx) maxx = mx;
   }
-
-  float offset = -maxx / 2;
 
   float wScale = (fXScale*vpHeight)*invLineHeight;
   float hScale = (fYScale*vpHeight)*invLineHeight;

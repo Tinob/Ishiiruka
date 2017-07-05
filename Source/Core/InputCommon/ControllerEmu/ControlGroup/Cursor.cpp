@@ -39,7 +39,7 @@ Cursor::Cursor(const std::string& name_) : ControlGroup(name_, GroupType::Cursor
 }
 
 void Cursor::GetState(ControlState* const x, ControlState* const y, ControlState* const z,
-  const bool adjusted)
+                      const bool adjusted)
 {
   const ControlState zz = controls[4]->control_ref->State() - controls[5]->control_ref->State();
 

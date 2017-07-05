@@ -194,7 +194,7 @@ void D3DPostProcessingShader::Draw(PostProcessor* p,
   const TargetRectangle& src_rect, const TargetSize& src_size, uintptr_t src_tex,
   uintptr_t src_depth_tex, int src_layer, float gamma)
 {
-  D3DPostProcessor* parent = reinterpret_cast<D3DPostProcessor*>(p);
+  D3DPostProcessor* parent = static_cast<D3DPostProcessor*>(p);
   D3DTexture2D* dst_texture = reinterpret_cast<D3DTexture2D*>(dst_tex);
   D3DTexture2D* src_texture = reinterpret_cast<D3DTexture2D*>(src_tex);
   D3DTexture2D* src_depth_texture = reinterpret_cast<D3DTexture2D*>(src_depth_tex);
@@ -320,14 +320,16 @@ void D3DPostProcessingShader::Draw(PostProcessor* p,
       output_rect = dst_rect;
       output_size = dst_size;
       dst_texture->TransitionToResourceState(D3D::current_command_list, D3D12_RESOURCE_STATE_RENDER_TARGET);
-      D3D::current_command_list->OMSetRenderTargets(1, &dst_texture->GetRTV(), FALSE, nullptr);
+      auto rtv = dst_texture->GetRTV();
+      D3D::current_command_list->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
     }
     else
     {
       output_rect = PostProcessor::ScaleTargetRectangle(API_D3D11, src_rect, pass.output_scale);
       output_size = pass.output_size;
       reinterpret_cast<D3DTexture2D*>(pass.output_texture->GetInternalObject())->TransitionToResourceState(D3D::current_command_list, D3D12_RESOURCE_STATE_RENDER_TARGET);
-      D3D::current_command_list->OMSetRenderTargets(1, &reinterpret_cast<D3DTexture2D*>(pass.output_texture->GetInternalObject())->GetRTV(), FALSE, nullptr);
+      auto rtv = reinterpret_cast<D3DTexture2D*>(pass.output_texture->GetInternalObject())->GetRTV();
+      D3D::current_command_list->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
     }
 
     // Set viewport based on target rect
@@ -485,8 +487,6 @@ void D3DPostProcessor::PostProcessEFBToTexture(uintptr_t dst_texture)
   {
     depth_texture = FramebufferManager::GetResolvedEFBDepthTexture();
   }
-  D3DTexture2D* real_dst_texture = reinterpret_cast<D3DTexture2D*>(dst_texture);
-
   // Invoke post process process
   PostProcess(nullptr, nullptr, nullptr,
     target_rect, target_size, reinterpret_cast<uintptr_t>(color_texture),
@@ -595,7 +595,8 @@ void D3DPostProcessor::CopyTexture(const TargetRectangle& dst_rect, uintptr_t ds
   {
     D3D::SetViewportAndScissor(dst_rect.left, dst_rect.top, dst_rect.GetWidth(), dst_rect.GetHeight());
     dst_texture->TransitionToResourceState(D3D::current_command_list, D3D12_RESOURCE_STATE_RENDER_TARGET);
-    D3D::current_command_list->OMSetRenderTargets(1, &dst_texture->GetRTV(), FALSE, nullptr);
+    auto rtv = dst_texture->GetRTV();
+    D3D::current_command_list->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
 
     if (scaling)
       D3D::SetLinearCopySampler();

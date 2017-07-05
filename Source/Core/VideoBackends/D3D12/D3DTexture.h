@@ -46,47 +46,47 @@ public:
   void AddRef();
   UINT Release();
 
-  inline D3D12_RESOURCE_STATES D3DTexture2D::GetResourceUsageState() const
+  inline D3D12_RESOURCE_STATES GetResourceUsageState() const
   {
     return m_resource_state;
   }
 
-  inline bool D3DTexture2D::GetMultisampled() const
+  inline bool GetMultisampled() const
   {
     return m_multisampled;
   }
 
-  inline ID3D12Resource* D3DTexture2D::GetTex() const
+  inline ID3D12Resource* GetTex() const
   {
     return m_tex.Get();
   }
 
-  inline D3D12_CPU_DESCRIPTOR_HANDLE D3DTexture2D::GetSRVCPU() const
+  inline D3D12_CPU_DESCRIPTOR_HANDLE GetSRVCPU() const
   {
     return m_srv_cpu;
   }
 
-  inline D3D12_CPU_DESCRIPTOR_HANDLE D3DTexture2D::GetSRVCPUShadow() const
+  inline D3D12_CPU_DESCRIPTOR_HANDLE GetSRVCPUShadow() const
   {
     return m_srv_cpu_shadow;
   }
 
-  inline D3D12_GPU_DESCRIPTOR_HANDLE D3DTexture2D::GetSRVGPU() const
+  inline D3D12_GPU_DESCRIPTOR_HANDLE GetSRVGPU() const
   {
     return m_srv_gpu;
   }
 
-  inline D3D12_CPU_DESCRIPTOR_HANDLE D3DTexture2D::GetDSV() const
+  inline D3D12_CPU_DESCRIPTOR_HANDLE GetDSV() const
   {
     return m_dsv;
   }
 
-  inline D3D12_CPU_DESCRIPTOR_HANDLE D3DTexture2D::GetRTV() const
+  inline D3D12_CPU_DESCRIPTOR_HANDLE GetRTV() const
   {
     return m_rtv;
   }
 
-  inline DXGI_FORMAT D3DTexture2D::GetFormat() const
+  inline DXGI_FORMAT GetFormat() const
   {
     return m_format;
   }

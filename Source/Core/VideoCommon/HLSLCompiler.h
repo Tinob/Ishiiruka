@@ -4,6 +4,7 @@
 // Added for Ishiiruka By Tino
 #pragma once
 
+#include <atomic>
 #include <vector>
 #include <D3Dcompiler.h>
 #include "VideoCommon/ShaderGenCommon.h"
@@ -39,9 +40,10 @@ class HLSLAsyncCompiler final : Common::IWorker
   pD3DCompile PD3DCompile;
   HLSLAsyncCompiler();
   std::atomic<s32> m_repositoryIndex;
+  std::atomic<s32> m_inprogrescounter;
   ShaderCompilerWorkUnit* WorkUnitRepository;
-  Common::ManyToManyQueue<ShaderCompilerWorkUnit*, Common::CircularQueue<ShaderCompilerWorkUnit*>> m_input;
-  Common::ManyToOneQueue<ShaderCompilerWorkUnit*, Common::CircularQueue<ShaderCompilerWorkUnit*>> m_output;
+  Common::ManyToManyQueue<ShaderCompilerWorkUnit*, Common::OneToOneQueue<ShaderCompilerWorkUnit*>> m_input;
+  Common::ManyToOneQueue<ShaderCompilerWorkUnit*, Common::OneToOneQueue<ShaderCompilerWorkUnit*>> m_output;
   HLSLAsyncCompiler(HLSLAsyncCompiler const&);
   void operator=(HLSLAsyncCompiler const&);
 public:

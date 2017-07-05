@@ -60,7 +60,7 @@ protected:
   void StopThreads();
 
   IPCCommandResult HandleTransfer(std::shared_ptr<USB::Device> device, u32 request,
-    std::function<s32()> submit) const;
+                                  std::function<s32()> submit) const;
 
 private:
   bool AddDevice(std::unique_ptr<USB::Device> device);

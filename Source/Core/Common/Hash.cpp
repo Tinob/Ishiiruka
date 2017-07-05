@@ -2,14 +2,18 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Common/Hash.h"
 #include <algorithm>
 #include <cstring>
-#include "Common/CommonFuncs.h"
 #include "Common/CPUDetect.h"
-#include "Common/Hash.h"
+#include "Common/CommonFuncs.h"
 #include "Common/Intrinsics.h"
 
-static u64(*ptrHashFunction)(const u8* src, u32 len, u32 samples) = &GetMurmurHash3;
+#ifdef _M_ARM_64
+#include <arm_acle.h>
+#endif
+
+static u64 (*ptrHashFunction)(const u8* src, u32 len, u32 samples) = nullptr;
 
 // uint32_t
 // WARNING - may read one more byte!
@@ -17,7 +21,7 @@ static u64(*ptrHashFunction)(const u8* src, u32 len, u32 samples) = &GetMurmurHa
 u32 HashFletcher(const u8* data_u8, size_t length)
 {
   const u16* data = (const u16*)data_u8; /* Pointer to the data to be summed */
-  size_t len = (length + 1) / 2; /* Length in 16-bit words */
+  size_t len = (length + 1) / 2;         /* Length in 16-bit words */
   u32 sum1 = 0xffff, sum2 = 0xffff;
 
   while (len)
@@ -38,9 +42,8 @@ u32 HashFletcher(const u8* data_u8, size_t length)
   // Second reduction step to reduce sums to 16 bits
   sum1 = (sum1 & 0xffff) + (sum1 >> 16);
   sum2 = (sum2 & 0xffff) + (sum2 >> 16);
-  return(sum2 << 16 | sum1);
+  return (sum2 << 16 | sum1);
 }
-
 
 // Implementation from Wikipedia
 // Slightly slower than Fletcher above, but slightly more reliable.
@@ -79,7 +82,7 @@ u32 HashAdler32(const u8* data, size_t len)
     b -= MOD_ADLER;
   }
 
-  return((b << 16) | a);
+  return ((b << 16) | a);
 }
 
 // Stupid hash - but can't go back now :)
@@ -94,9 +97,8 @@ u32 HashEctor(const u8* ptr, int length)
     crc = (crc << 3) | (crc >> 29);
   }
 
-  return(crc);
+  return (crc);
 }
-
 
 #if _ARCH_64
 
@@ -166,7 +168,6 @@ u64 GetMurmurHash3(const u8* src, u32 len, u32 samples)
   u64 c1 = 0x87c37b91114253d5;
   u64 c2 = 0x4cf5ad432745937f;
 
-
   //----------
   // body
 
@@ -190,22 +191,37 @@ u64 GetMurmurHash3(const u8* src, u32 len, u32 samples)
 
   switch (len & 15)
   {
-  case 15: k2 ^= u64(tail[14]) << 48;
-  case 14: k2 ^= u64(tail[13]) << 40;
-  case 13: k2 ^= u64(tail[12]) << 32;
-  case 12: k2 ^= u64(tail[11]) << 24;
-  case 11: k2 ^= u64(tail[10]) << 16;
-  case 10: k2 ^= u64(tail[9]) << 8;
-  case  9: k2 ^= u64(tail[8]) << 0;
+  case 15:
+    k2 ^= u64(tail[14]) << 48;
+  case 14:
+    k2 ^= u64(tail[13]) << 40;
+  case 13:
+    k2 ^= u64(tail[12]) << 32;
+  case 12:
+    k2 ^= u64(tail[11]) << 24;
+  case 11:
+    k2 ^= u64(tail[10]) << 16;
+  case 10:
+    k2 ^= u64(tail[9]) << 8;
+  case 9:
+    k2 ^= u64(tail[8]) << 0;
 
-  case  8: k1 ^= u64(tail[7]) << 56;
-  case  7: k1 ^= u64(tail[6]) << 48;
-  case  6: k1 ^= u64(tail[5]) << 40;
-  case  5: k1 ^= u64(tail[4]) << 32;
-  case  4: k1 ^= u64(tail[3]) << 24;
-  case  3: k1 ^= u64(tail[2]) << 16;
-  case  2: k1 ^= u64(tail[1]) << 8;
-  case  1: k1 ^= u64(tail[0]) << 0;
+  case 8:
+    k1 ^= u64(tail[7]) << 56;
+  case 7:
+    k1 ^= u64(tail[6]) << 48;
+  case 6:
+    k1 ^= u64(tail[5]) << 40;
+  case 5:
+    k1 ^= u64(tail[4]) << 32;
+  case 4:
+    k1 ^= u64(tail[3]) << 24;
+  case 3:
+    k1 ^= u64(tail[2]) << 16;
+  case 2:
+    k1 ^= u64(tail[1]) << 8;
+  case 1:
+    k1 ^= u64(tail[0]) << 0;
     bmix64(h1, h2, k1, k2, c1, c2);
   };
 
@@ -225,14 +241,13 @@ u64 GetMurmurHash3(const u8* src, u32 len, u32 samples)
   return h1;
 }
 
-
 // CRC32 hash using the SSE4.2 instruction
 #if defined(_M_X86_64)
 
 FUNCTION_TARGET_SSE42
 u64 GetCRC32(const u8* src, u32 len, u32 samples)
 {
-  u64 h[4] = { len, 0, 0, 0 };
+  u64 h[4] = {len, 0, 0, 0};
   u32 Step = (len / 8);
   const u64* data = (const u64*)src;
   const u64* end = data + Step;
@@ -272,7 +287,7 @@ u64 GetCRC32(const u8* src, u32 len, u32 samples)
 
 u64 GetCRC32(const u8* src, u32 len, u32 samples)
 {
-  u64 h[4] = { len, 0, 0, 0 };
+  u64 h[4] = {len, 0, 0, 0};
   u32 Step = (len / 8);
   const u64* data = (const u64*)src;
   const u64* end = data + Step;
@@ -282,47 +297,26 @@ u64 GetCRC32(const u8* src, u32 len, u32 samples)
   if (Step < 1)
     Step = 1;
 
-  // We should be able to use intrinsics for this
-  // Too bad the intrinsics for this instruction was added in GCC 4.9.1
-  // The Android NDK (as of r10e) only has GCC 4.9
-  // Once the Android NDK has a newer GCC version, update these to use intrinsics
   while (data < end - Step * 3)
   {
-    asm("crc32x %w[res], %w[two], %x[three]"
-      : [res] "=r"(h[0])
-      : [two] "r"(h[0]), [three] "r"(data[Step * 0]));
-    asm("crc32x %w[res], %w[two], %x[three]"
-      : [res] "=r"(h[1])
-      : [two] "r"(h[1]), [three] "r"(data[Step * 1]));
-    asm("crc32x %w[res], %w[two], %x[three]"
-      : [res] "=r"(h[2])
-      : [two] "r"(h[2]), [three] "r"(data[Step * 2]));
-    asm("crc32x %w[res], %w[two], %x[three]"
-      : [res] "=r"(h[3])
-      : [two] "r"(h[3]), [three] "r"(data[Step * 3]));
-
+    h[0] = __crc32d(h[0], data[Step * 0]);
+    h[1] = __crc32d(h[1], data[Step * 1]);
+    h[2] = __crc32d(h[2], data[Step * 2]);
+    h[3] = __crc32d(h[3], data[Step * 3]);
     data += Step * 4;
   }
   if (data < end - Step * 0)
-    asm("crc32x %w[res], %w[two], %x[three]"
-      : [res] "=r"(h[0])
-      : [two] "r"(h[0]), [three] "r"(data[Step * 0]));
+    h[0] = __crc32d(h[0], data[Step * 0]);
   if (data < end - Step * 1)
-    asm("crc32x %w[res], %w[two], %x[three]"
-      : [res] "=r"(h[1])
-      : [two] "r"(h[1]), [three] "r"(data[Step * 1]));
+    h[1] = __crc32d(h[1], data[Step * 1]);
   if (data < end - Step * 2)
-    asm("crc32x %w[res], %w[two], %x[three]"
-      : [res] "=r"(h[2])
-      : [two] "r"(h[2]), [three] "r"(data[Step * 2]));
+    h[2] = __crc32d(h[2], data[Step * 2]);
 
   if (len & 7)
   {
     u64 temp = 0;
     memcpy(&temp, end, len & 7);
-    asm("crc32x %w[res], %w[two], %x[three]"
-      : [res] "=r"(h[0])
-      : [two] "r"(h[0]), [three] "r"(temp));
+    h[0] = __crc32d(h[0], temp);
   }
 
   // FIXME: is there a better way to combine these partial hashes?
@@ -338,14 +332,13 @@ u64 GetCRC32(const u8* src, u32 len, u32 samples)
 
 #endif
 
-
 /*
-* NOTE: This hash function is used for custom texture loading/dumping, so
-* it should not be changed, which would require all custom textures to be
-* recalculated for their new hash values. If the hashing function is
-* changed, make sure this one is still used when the legacy parameter is
-* true.
-*/
+ * NOTE: This hash function is used for custom texture loading/dumping, so
+ * it should not be changed, which would require all custom textures to be
+ * recalculated for their new hash values. If the hashing function is
+ * changed, make sure this one is still used when the legacy parameter is
+ * true.
+ */
 u64 GetHashHiresTexture(const u8* src, u32 len, u32 samples)
 {
   const u64 m = 0xc6a4a7935bd1e995;
@@ -370,17 +363,24 @@ u64 GetHashHiresTexture(const u8* src, u32 len, u32 samples)
     h *= m;
   }
 
-  const u8 * data2 = (const u8*)end;
+  const u8* data2 = (const u8*)end;
 
   switch (len & 7)
   {
-  case 7: h ^= u64(data2[6]) << 48;
-  case 6: h ^= u64(data2[5]) << 40;
-  case 5: h ^= u64(data2[4]) << 32;
-  case 4: h ^= u64(data2[3]) << 24;
-  case 3: h ^= u64(data2[2]) << 16;
-  case 2: h ^= u64(data2[1]) << 8;
-  case 1: h ^= u64(data2[0]);
+  case 7:
+    h ^= u64(data2[6]) << 48;
+  case 6:
+    h ^= u64(data2[5]) << 40;
+  case 5:
+    h ^= u64(data2[4]) << 32;
+  case 4:
+    h ^= u64(data2[3]) << 24;
+  case 3:
+    h ^= u64(data2[2]) << 16;
+  case 2:
+    h ^= u64(data2[1]) << 8;
+  case 1:
+    h ^= u64(data2[0]);
     h *= m;
   };
 
@@ -517,13 +517,20 @@ u64 GetMurmurHash3(const u8* src, u32 len, u32 samples)
 
   switch (len & 7)
   {
-  case 7: k2 ^= tail[6] << 16;
-  case 6: k2 ^= tail[5] << 8;
-  case 5: k2 ^= tail[4] << 0;
-  case 4: k1 ^= tail[3] << 24;
-  case 3: k1 ^= tail[2] << 16;
-  case 2: k1 ^= tail[1] << 8;
-  case 1: k1 ^= tail[0] << 0;
+  case 7:
+    k2 ^= tail[6] << 16;
+  case 6:
+    k2 ^= tail[5] << 8;
+  case 5:
+    k2 ^= tail[4] << 0;
+  case 4:
+    k1 ^= tail[3] << 24;
+  case 3:
+    k1 ^= tail[2] << 16;
+  case 2:
+    k1 ^= tail[1] << 8;
+  case 1:
+    k1 ^= tail[0] << 0;
     bmix32(h1, h2, k1, k2, c1, c2);
   };
 
@@ -548,10 +555,10 @@ u64 GetMurmurHash3(const u8* src, u32 len, u32 samples)
 }
 
 /*
-* FIXME: The old 32-bit version of this hash made different hashes than the
-* 64-bit version. Until someone can make a new version of the 32-bit one that
-* makes identical hashes, this is just a c/p of the 64-bit one.
-*/
+ * FIXME: The old 32-bit version of this hash made different hashes than the
+ * 64-bit version. Until someone can make a new version of the 32-bit one that
+ * makes identical hashes, this is just a c/p of the 64-bit one.
+ */
 u64 GetHashHiresTexture(const u8* src, u32 len, u32 samples)
 {
   const u64 m = 0xc6a4a7935bd1e995ULL;
@@ -580,13 +587,20 @@ u64 GetHashHiresTexture(const u8* src, u32 len, u32 samples)
 
   switch (len & 7)
   {
-  case 7: h ^= u64(data2[6]) << 48;
-  case 6: h ^= u64(data2[5]) << 40;
-  case 5: h ^= u64(data2[4]) << 32;
-  case 4: h ^= u64(data2[3]) << 24;
-  case 3: h ^= u64(data2[2]) << 16;
-  case 2: h ^= u64(data2[1]) << 8;
-  case 1: h ^= u64(data2[0]);
+  case 7:
+    h ^= u64(data2[6]) << 48;
+  case 6:
+    h ^= u64(data2[5]) << 40;
+  case 5:
+    h ^= u64(data2[4]) << 32;
+  case 4:
+    h ^= u64(data2[3]) << 24;
+  case 3:
+    h ^= u64(data2[2]) << 16;
+  case 2:
+    h ^= u64(data2[1]) << 8;
+  case 1:
+    h ^= u64(data2[0]);
     h *= m;
   };
 
@@ -607,7 +621,7 @@ u64 GetHash64(const u8* src, u32 len, u32 samples)
 void SetHash64Function()
 {
 #if defined(_M_X86_64) || defined(_M_X86)
-  if (cpu_info.bSSE4_2) // sse crc32 version
+  if (cpu_info.bSSE4_2)  // sse crc32 version
   {
     ptrHashFunction = &GetCRC32;
   }
@@ -623,6 +637,3 @@ void SetHash64Function()
     ptrHashFunction = &GetMurmurHash3;
   }
 }
-
-
-

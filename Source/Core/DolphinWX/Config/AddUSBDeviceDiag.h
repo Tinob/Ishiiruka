@@ -21,7 +21,7 @@ class USBPassthroughDeviceEntry final : public wxClientData
 {
 public:
   explicit USBPassthroughDeviceEntry(const std::pair<u16, u16> pair)
-    : m_vid(pair.first), m_pid(pair.second)
+      : m_vid(pair.first), m_pid(pair.second)
   {
   }
   const u16 m_vid;
@@ -48,7 +48,7 @@ private:
   void OnSave(wxCommandEvent&);
 
   std::map<std::pair<u16, u16>, std::string> m_shown_devices;
-  wxTimer m_refresh_devices_timer{ this };
+  wxTimer m_refresh_devices_timer{this};
 
   wxTextCtrl* m_new_device_vid_ctrl;
   wxTextCtrl* m_new_device_pid_ctrl;

@@ -10,9 +10,7 @@
 #include <wx/arrstr.h>
 #include <wx/button.h>
 #include <wx/choice.h>
-#include <wx/clipbrd.h>
 #include <wx/listctrl.h>
-#include <wx/menu.h>
 #include <wx/panel.h>
 #include <wx/radiobox.h>
 #include <wx/radiobut.h>
@@ -41,14 +39,14 @@ CheatSearchTab::CheatSearchTab(wxWindow* const parent) : wxPanel(parent)
   // first scan button
   m_btn_init_scan = new wxButton(this, wxID_ANY, _("New Scan"));
   m_btn_init_scan->SetToolTip(_("Perform a full index of the game's RAM at the current Data Size. "
-    "Required before any Searching can be performed."));
+                                "Required before any Searching can be performed."));
   m_btn_init_scan->Bind(wxEVT_BUTTON, &CheatSearchTab::OnNewScanClicked, this);
   m_btn_init_scan->Disable();
 
   // next scan button
   m_btn_next_scan = new wxButton(this, wxID_ANY, _("Next Scan"));
   m_btn_next_scan->SetToolTip(_("Eliminate items from the current scan results that do not match "
-    "the current Search settings."));
+                                "the current Search settings."));
   m_btn_next_scan->Bind(wxEVT_BUTTON, &CheatSearchTab::OnNextScanClicked, this);
   m_btn_next_scan->Disable();
 
@@ -60,13 +58,13 @@ CheatSearchTab::CheatSearchTab(wxWindow* const parent) : wxPanel(parent)
   m_btn_create_code->Disable();
 
   // data sizes radiobox
-  std::array<wxString, 3> data_size_names = { {_("8-bit"), _("16-bit"), _("32-bit")} };
+  std::array<wxString, 3> data_size_names = {{_("8-bit"), _("16-bit"), _("32-bit")}};
   m_data_sizes = new wxRadioBox(this, wxID_ANY, _("Data Size"), wxDefaultPosition, wxDefaultSize,
-    static_cast<int>(data_size_names.size()), data_size_names.data());
+                                static_cast<int>(data_size_names.size()), data_size_names.data());
 
   // ListView for search results
   m_lview_search_results = new wxListView(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
-    wxLC_REPORT | wxLC_SINGLE_SEL);
+                                          wxLC_REPORT | wxLC_SINGLE_SEL);
   m_lview_search_results->AppendColumn(_("Address"));
   m_lview_search_results->AppendColumn(_("Value"));
   // i18n: Float means floating point number
@@ -74,13 +72,11 @@ CheatSearchTab::CheatSearchTab(wxWindow* const parent) : wxPanel(parent)
   // i18n: Double means double-precision floating point number
   m_lview_search_results->AppendColumn(_("Value (double)"));
   m_lview_search_results->Bind(wxEVT_LIST_ITEM_ACTIVATED, &CheatSearchTab::OnListViewItemActivated,
-    this);
+                               this);
   m_lview_search_results->Bind(wxEVT_LIST_ITEM_SELECTED, &CheatSearchTab::OnListViewItemSelected,
-    this);
+                               this);
   m_lview_search_results->Bind(wxEVT_LIST_ITEM_DESELECTED, &CheatSearchTab::OnListViewItemSelected,
-    this);
-  m_lview_search_results->Bind(wxEVT_LIST_ITEM_RIGHT_CLICK, &CheatSearchTab::OnListViewItemRigthClick,
-    this);
+                               this);
 
   // Result count
   m_label_results_count = new wxStaticText(this, wxID_ANY, _("Count:"));
@@ -89,7 +85,7 @@ CheatSearchTab::CheatSearchTab(wxWindow* const parent) : wxPanel(parent)
 
   // results groupbox
   wxStaticBoxSizer* const sizer_cheat_search_results =
-    new wxStaticBoxSizer(wxVERTICAL, this, _("Results"));
+      new wxStaticBoxSizer(wxVERTICAL, this, _("Results"));
   sizer_cheat_search_results->AddSpacer(space5);
   sizer_cheat_search_results->Add(m_label_results_count, 0, wxLEFT | wxRIGHT, space5);
   sizer_cheat_search_results->AddSpacer(space5);
@@ -102,8 +98,8 @@ CheatSearchTab::CheatSearchTab(wxWindow* const parent) : wxPanel(parent)
   m_textctrl_value_x = new wxTextCtrl(this, wxID_ANY, "0x0");
   m_textctrl_value_x->SetMinSize(WxUtils::GetTextWidgetMinSize(m_textctrl_value_x, "0x00000000  "));
   m_textctrl_value_x->SetToolTip(
-    _("Value to match against. Can be Hex (\"0x\"), Octal (\"0\") or Decimal. "
-      "Leave blank to filter each result against its own previous value."));
+      _("Value to match against. Can be Hex (\"0x\"), Octal (\"0\") or Decimal. "
+        "Leave blank to filter each result against its own previous value."));
 
   // Filter types in the compare dropdown
   // TODO: Implement between search
@@ -118,7 +114,7 @@ CheatSearchTab::CheatSearchTab(wxWindow* const parent) : wxPanel(parent)
   m_search_type->Select(0);
 
   wxStaticBoxSizer* const sizer_cheat_search_filter =
-    new wxStaticBoxSizer(wxVERTICAL, this, _("Search (clear to use previous value)"));
+      new wxStaticBoxSizer(wxVERTICAL, this, _("Search (clear to use previous value)"));
   sizer_cheat_search_filter->AddSpacer(space5);
   sizer_cheat_search_filter->Add(m_textctrl_value_x, 0, wxEXPAND | wxLEFT | wxRIGHT, space5);
   sizer_cheat_search_filter->AddSpacer(space5);
@@ -238,34 +234,6 @@ void CheatSearchTab::OnListViewItemSelected(wxListEvent&)
   m_btn_create_code->Enable(m_lview_search_results->GetSelectedItemCount() > 0);
 }
 
-void CheatSearchTab::OnListViewItemContextMenuClick(wxCommandEvent& evt)
-{
-  int id = evt.GetId();
-  if (id > 0 && wxTheClipboard->Open())
-  {
-#ifdef __UNIX__
-    wxTheClipboard->UsePrimarySelection(true);
-#endif
-    void *data = reinterpret_cast<wxMenu *>(evt.GetEventObject())->GetClientData();
-    size_t idx = reinterpret_cast<size_t>(data);
-    u32 value = id == 1 ? m_search_results[idx].address : m_search_results[idx].old_value;
-    wxTheClipboard->SetData(new wxTextDataObject(wxString::Format(wxT("%08X"), value)));
-    wxTheClipboard->Flush();
-    wxTheClipboard->Close();
-  }
-}
-
-void CheatSearchTab::OnListViewItemRigthClick(wxListEvent& evt)
-{
-  void *data = reinterpret_cast<void *>(static_cast<size_t>(evt.GetIndex()));
-  wxMenu mnu;
-  mnu.SetClientData(data);
-  mnu.Append(1, _("Copy Address"));
-  mnu.Append(2, _("Copy Old Value"));
-  mnu.Connect(wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(CheatSearchTab::OnListViewItemContextMenuClick), NULL, this);
-  PopupMenu(&mnu);
-}
-
 void CheatSearchTab::OnTimerUpdate(wxTimerEvent&)
 {
   if (Core::GetState() != Core::State::Running)
@@ -274,7 +242,7 @@ void CheatSearchTab::OnTimerUpdate(wxTimerEvent&)
   // Only update the currently visible list rows.
   long first = m_lview_search_results->GetTopItem();
   long last = std::min<long>(m_lview_search_results->GetItemCount(),
-    first + m_lview_search_results->GetCountPerPage());
+                             first + m_lview_search_results->GetCountPerPage());
 
   m_lview_search_results->Freeze();
 
@@ -362,9 +330,9 @@ static ComparisonMask operator&(ComparisonMask comp1, ComparisonMask comp2)
 void CheatSearchTab::FilterCheatSearchResults(u32 value, bool prev)
 {
   static const std::array<ComparisonMask, 5> filters{
-          {ComparisonMask::EQUAL | ComparisonMask::GREATER_THAN | ComparisonMask::LESS_THAN,  // Unknown
-           ComparisonMask::GREATER_THAN | ComparisonMask::LESS_THAN,  // Not Equal
-           ComparisonMask::EQUAL, ComparisonMask::GREATER_THAN, ComparisonMask::LESS_THAN} };
+      {ComparisonMask::EQUAL | ComparisonMask::GREATER_THAN | ComparisonMask::LESS_THAN,  // Unknown
+       ComparisonMask::GREATER_THAN | ComparisonMask::LESS_THAN,  // Not Equal
+       ComparisonMask::EQUAL, ComparisonMask::GREATER_THAN, ComparisonMask::LESS_THAN}};
   ComparisonMask filter_mask = filters[m_search_type->GetSelection()];
 
   std::vector<CheatSearchResult> filtered_results;

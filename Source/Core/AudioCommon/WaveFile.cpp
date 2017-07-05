@@ -7,6 +7,8 @@
 #include <string>
 
 #include "Common/CommonTypes.h"
+#include "Common/File.h"
+#include "Common/FileUtil.h"
 #include "Common/MsgHandler.h"
 #include "Common/StringUtil.h"
 #include "Common/Swap.h"
@@ -32,7 +34,7 @@ bool WaveFileWriter::Start(const std::string& filename, unsigned int HLESampleRa
   if (File::Exists(filename))
   {
     if (SConfig::GetInstance().m_DumpAudioSilent ||
-      AskYesNoT("Delete the existing file '%s'?", filename.c_str()))
+        AskYesNoT("Delete the existing file '%s'?", filename.c_str()))
     {
       File::Delete(filename);
     }
@@ -47,7 +49,7 @@ bool WaveFileWriter::Start(const std::string& filename, unsigned int HLESampleRa
   if (file)
   {
     PanicAlertT("The file %s was already open, the file header will not be written.",
-      filename.c_str());
+                filename.c_str());
     return false;
   }
 
@@ -55,8 +57,8 @@ bool WaveFileWriter::Start(const std::string& filename, unsigned int HLESampleRa
   if (!file)
   {
     PanicAlertT("The file %s could not be opened for writing. Please check if it's already opened "
-      "by another program.",
-      filename.c_str());
+                "by another program.",
+                filename.c_str());
     return false;
   }
 

@@ -14,9 +14,9 @@ class ARCodeAddEdit final : public wxDialog
 {
 public:
   ARCodeAddEdit(ActionReplay::ARCode code, wxWindow* parent, wxWindowID id = wxID_ANY,
-    const wxString& title = _("Edit ActionReplay Code"),
-    const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize,
-    long style = wxDEFAULT_DIALOG_STYLE);
+                const wxString& title = _("Edit ActionReplay Code"),
+                const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize,
+                long style = wxDEFAULT_DIALOG_STYLE);
 
   const ActionReplay::ARCode& GetCode() const { return m_code; }
 private:

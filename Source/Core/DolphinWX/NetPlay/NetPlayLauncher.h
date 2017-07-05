@@ -1,13 +1,14 @@
 // Copyright 2016 Dolphin Emulator Project
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
+
 #pragma once
 
 #include <string>
 #include "Common/CommonTypes.h"
 #include "Common/IniFile.h"
 
-class CGameListCtrl;
+class GameListCtrl;
 class wxRect;
 class wxWindow;
 
@@ -20,15 +21,15 @@ public:
 
   static const std::string DEFAULT_TRAVERSAL_HOST;
   static constexpr u16 DEFAULT_TRAVERSAL_PORT = 6262;
-  const wxRect window_defaults{ wxDefaultCoord, wxDefaultCoord, 768, 768 - 128 };
+  const wxRect window_defaults{wxDefaultCoord, wxDefaultCoord, 768, 768 - 128};
 
   std::string player_name;
-  const CGameListCtrl* game_list_ctrl;
+  const GameListCtrl* game_list_ctrl;
   wxWindow* parent_window;
   bool use_traversal;
   std::string traversal_host;
   u16 traversal_port;
-  wxRect window_pos{ window_defaults };
+  wxRect window_pos{window_defaults};
 };
 
 class NetPlayHostConfig : public NetPlayLaunchConfig

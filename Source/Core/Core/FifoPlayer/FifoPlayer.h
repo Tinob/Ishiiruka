@@ -56,7 +56,7 @@ extern bool IsPlayingBackFifologWithBrokenEFBCopies;
 class FifoPlayer
 {
 public:
-  typedef void(*CallbackFunc)(void);
+  typedef void (*CallbackFunc)(void);
 
   ~FifoPlayer();
 
@@ -103,7 +103,7 @@ private:
 
   void WriteFrame(const FifoFrameInfo& frame, const AnalyzedFrameInfo& info);
   void WriteFramePart(u32 dataStart, u32 dataEnd, u32& nextMemUpdate, const FifoFrameInfo& frame,
-    const AnalyzedFrameInfo& info);
+                      const AnalyzedFrameInfo& info);
 
   void WriteAllMemoryUpdates();
   void WriteMemory(const MemoryUpdate& memUpdate);

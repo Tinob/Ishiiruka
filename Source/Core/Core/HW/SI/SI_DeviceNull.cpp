@@ -9,7 +9,7 @@
 namespace SerialInterface
 {
 CSIDevice_Null::CSIDevice_Null(SIDevices device, int device_number)
-  : ISIDevice{ device, device_number }
+    : ISIDevice{device, device_number}
 {
 }
 

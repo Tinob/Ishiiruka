@@ -8,6 +8,11 @@
 
 #include "Common/CommonTypes.h"
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable : 4200)
+#endif
+
 typedef std::vector<u8> Report;
 
 // Report defines
@@ -171,12 +176,12 @@ union wm_classic_extension_buttons
     u8 dpad_right : 1;
 
     u8 : 2;     // cf. extension_data and passthrough_data
-         u8 zr : 1;  // right z button
-         u8 x : 1;
-         u8 a : 1;
-         u8 y : 1;
-         u8 b : 1;
-         u8 zl : 1;  // left z button
+    u8 zr : 1;  // right z button
+    u8 x : 1;
+    u8 a : 1;
+    u8 y : 1;
+    u8 b : 1;
+    u8 zl : 1;  // left z button
   };            // common data
 
   // M+ pass-through mode slightly differs from the regular data.
@@ -185,18 +190,18 @@ union wm_classic_extension_buttons
   {
     u8 : 8;
 
-         u8 dpad_up : 1;
-         u8 dpad_left : 1;
-         u8 : 6;
+    u8 dpad_up : 1;
+    u8 dpad_left : 1;
+    u8 : 6;
   } regular_data;
 
   struct
   {
     u8 : 8;
 
-         u8 unknown : 1;      // always 0?
-         u8 report_type : 1;  // 1: report contains M+ data, 0: report contains extension data
-         u8 : 6;
+    u8 unknown : 1;      // always 0?
+    u8 report_type : 1;  // 1: report contains M+ data, 0: report contains extension data
+    u8 : 6;
   } passthrough_data;
 };
 static_assert(sizeof(wm_classic_extension_buttons) == 2, "Wrong size");
@@ -211,19 +216,19 @@ union wm_classic_extension
   struct
   {
     u8 : 6;
-         u8 rx3 : 2;
+    u8 rx3 : 2;
 
-         u8 : 6;
-              u8 rx2 : 2;
+    u8 : 6;
+    u8 rx2 : 2;
 
-              u8 ry : 5;
-              u8 lt2 : 2;
-              u8 rx1 : 1;
+    u8 ry : 5;
+    u8 lt2 : 2;
+    u8 rx1 : 1;
 
-              u8 rt : 5;
-              u8 lt1 : 3;
+    u8 rt : 5;
+    u8 lt1 : 3;
 
-              wm_classic_extension_buttons bt;  // byte 4, 5
+    wm_classic_extension_buttons bt;  // byte 4, 5
   };
 
   struct
@@ -231,10 +236,10 @@ union wm_classic_extension
     u8 lx : 6;  // byte 0
     u8 : 2;
 
-         u8 ly : 6;  // byte 1
-         u8 : 2;
+    u8 ly : 6;  // byte 1
+    u8 : 2;
 
-              unsigned : 32;
+    unsigned : 32;
   } regular_data;
 
   struct
@@ -243,11 +248,11 @@ union wm_classic_extension
     u8 lx : 5;  // Bits 1-5
     u8 : 2;
 
-         u8 dpad_left : 1;
-         u8 ly : 5;  // Bits 1-5
-         u8 : 2;
+    u8 dpad_left : 1;
+    u8 ly : 5;  // Bits 1-5
+    u8 : 2;
 
-              unsigned : 32;
+    unsigned : 32;
   } passthrough_data;
 };
 static_assert(sizeof(wm_classic_extension) == 6, "Wrong size");
@@ -260,7 +265,7 @@ struct wm_guitar_extension
   u8 sy : 6;
   u8 pad2 : 2;  // 1 on gh3, 0 on ghwt
 
-  u8 tb : 5;    // not used in gh3
+  u8 sb : 5;    // not used in gh3
   u8 pad3 : 3;  // always 0
 
   u8 whammy : 5;
@@ -360,7 +365,7 @@ struct wm_leds
   u8 rumble : 1;
   // real Wii also sets bit 0x2 (unknown purpose)
   u8 : 3;
-       u8 leds : 4;
+  u8 leds : 4;
 };
 static_assert(sizeof(wm_leds) == 1, "Wrong size");
 
@@ -371,7 +376,7 @@ struct wm_report_mode
   u8 all_the_time : 1;
   u8 continuous : 1;
   u8 : 5;
-       u8 mode;
+  u8 mode;
 };
 static_assert(sizeof(wm_report_mode) == 2, "Wrong size");
 
@@ -400,9 +405,9 @@ struct wm_write_data
   u8 rumble : 1;
   u8 space : 2;  // see WM_SPACE_*
   u8 : 5;
-       u8 address[3];
-       u8 size;
-       u8 data[16];
+  u8 address[3];
+  u8 size;
+  u8 data[16];
 };
 static_assert(sizeof(wm_write_data) == 21, "Wrong size");
 
@@ -419,8 +424,8 @@ struct wm_read_data
   u8 rumble : 1;
   u8 space : 2;  // see WM_SPACE_*
   u8 : 5;
-       u8 address[3];
-       u16 size;
+  u8 address[3];
+  u16 size;
 };
 static_assert(sizeof(wm_read_data) == 6, "Wrong size");
 
@@ -448,6 +453,13 @@ struct wm_report_core_accel
   wm_accel a;
 };
 static_assert(sizeof(wm_report_core_accel) == 5, "Wrong size");
+
+struct wm_report_core_ext8
+{
+  wm_buttons c;
+  u8 ext[8];
+};
+static_assert(sizeof(wm_report_core_ext8) == 10, "Wrong size");
 
 struct wm_report_core_accel_ir12
 {
@@ -491,3 +503,7 @@ struct wm_speaker_data
 };
 static_assert(sizeof(wm_speaker_data) == 21, "Wrong size");
 #pragma pack(pop)
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif

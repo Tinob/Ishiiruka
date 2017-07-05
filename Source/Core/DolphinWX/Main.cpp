@@ -112,8 +112,6 @@ bool DolphinApp::OnInit()
   if (!wxApp::OnInit())
     return false;
 
-  wxLog::SetLogLevel(0);
-
   Bind(wxEVT_QUERY_END_SESSION, &DolphinApp::OnEndSession, this);
   Bind(wxEVT_END_SESSION, &DolphinApp::OnEndSession, this);
   Bind(wxEVT_IDLE, &DolphinApp::OnIdle, this);
@@ -161,13 +159,16 @@ bool DolphinApp::OnInit()
   // Enable the PNG image handler for screenshots
   wxImage::AddHandler(new wxPNGHandler);
 
+  // Silent PNG warnings from some homebrew banners: "iCCP: known incorrect sRGB profile"
+  wxImage::SetDefaultLoadFlags(wxImage::GetDefaultLoadFlags() & ~wxImage::Load_Verbose);
+
   // We have to copy the size and position out of SConfig now because CFrame's OnMove
   // handler will corrupt them during window creation (various APIs like SetMenuBar cause
   // event dispatch including WM_MOVE/WM_SIZE)
   wxRect window_geometry(SConfig::GetInstance().iPosX, SConfig::GetInstance().iPosY,
-    SConfig::GetInstance().iWidth, SConfig::GetInstance().iHeight);
+                         SConfig::GetInstance().iWidth, SConfig::GetInstance().iHeight);
   main_frame = new CFrame(nullptr, wxID_ANY, StrToWxStr(scm_rev_str), window_geometry,
-    m_use_debugger, m_batch_mode, m_use_logger);
+                          m_use_debugger, m_batch_mode, m_use_logger);
   SetTopWindow(main_frame);
 
   AfterInit();
@@ -223,25 +224,22 @@ void DolphinApp::MacOpenFile(const wxString& fileName)
 
 void DolphinApp::AfterInit()
 {
-  if (!m_batch_mode)
-    main_frame->UpdateGameList();
-
 #if defined(USE_ANALYTICS) && USE_ANALYTICS
   if (!SConfig::GetInstance().m_analytics_permission_asked)
   {
     int answer =
-      wxMessageBox(_("If authorized, Dolphin can collect data on its performance, "
-        "feature usage, and configuration, as well as data on your system's "
-        "hardware and operating system.\n\n"
-        "No private data is ever collected. This data helps us understand "
-        "how people and emulated games use Dolphin and prioritize our "
-        "efforts. It also helps us identify rare configurations that are "
-        "causing bugs, performance and stability issues.\n"
-        "This authorization can be revoked at any time through Dolphin's "
-        "settings.\n\n"
-        "Do you authorize Dolphin to report this information to Dolphin's "
-        "developers?"),
-        _("Usage statistics reporting"), wxYES_NO, main_frame);
+        wxMessageBox(_("If authorized, Dolphin can collect data on its performance, "
+                       "feature usage, and configuration, as well as data on your system's "
+                       "hardware and operating system.\n\n"
+                       "No private data is ever collected. This data helps us understand "
+                       "how people and emulated games use Dolphin and prioritize our "
+                       "efforts. It also helps us identify rare configurations that are "
+                       "causing bugs, performance and stability issues.\n"
+                       "This authorization can be revoked at any time through Dolphin's "
+                       "settings.\n\n"
+                       "Do you authorize Dolphin to report this information to Dolphin's "
+                       "developers?"),
+                     _("Usage statistics reporting"), wxYES_NO, main_frame);
 
     SConfig::GetInstance().m_analytics_permission_asked = true;
     SConfig::GetInstance().m_analytics_enabled = (answer == wxYES);
@@ -314,14 +312,14 @@ void DolphinApp::InitLanguageSupport()
   {
     m_locale.reset(new wxLocale(language));
 
-    // Specify where dolphins *.gmo files are located on each operating system
+// Specify where dolphins *.gmo files are located on each operating system
 #ifdef __WXMSW__
     m_locale->AddCatalogLookupPathPrefix(StrToWxStr(File::GetExeDirectory() + DIR_SEP "Languages"));
 #elif defined(__WXGTK__)
     m_locale->AddCatalogLookupPathPrefix(StrToWxStr(DATA_DIR "../locale"));
 #elif defined(__WXOSX__)
     m_locale->AddCatalogLookupPathPrefix(
-      StrToWxStr(File::GetBundleDirectory() + "Contents/Resources"));
+        StrToWxStr(File::GetBundleDirectory() + "Contents/Resources"));
 #endif
 
     m_locale->AddCatalog("dolphin-emu");
@@ -329,15 +327,15 @@ void DolphinApp::InitLanguageSupport()
     if (!m_locale->IsOk())
     {
       wxMessageBox(_("Error loading selected language. Falling back to system default."),
-        _("Error"));
+                   _("Error"));
       m_locale.reset(new wxLocale(wxLANGUAGE_DEFAULT));
     }
   }
   else
   {
     wxMessageBox(
-      _("The selected language is not supported by your system. Falling back to system default."),
-      _("Error"));
+        _("The selected language is not supported by your system. Falling back to system default."),
+        _("Error"));
     m_locale.reset(new wxLocale(wxLANGUAGE_DEFAULT));
   }
 }
@@ -380,12 +378,12 @@ bool wxMsgAlert(const char* caption, const char* text, bool yes_no, int /*Style*
     NetPlayDialog*& npd = NetPlayDialog::GetInstance();
     if (npd != nullptr && npd->IsShown())
     {
-      npd->AppendChat("/!\\ " + std::string{ text });
+      npd->AppendChat("/!\\ " + std::string{text});
       return true;
     }
     return wxYES == wxMessageBox(StrToWxStr(text), StrToWxStr(caption),
-      wxSTAY_ON_TOP | ((yes_no) ? wxYES_NO : wxOK),
-      wxWindow::FindFocus());
+                                 wxSTAY_ON_TOP | ((yes_no) ? wxYES_NO : wxOK),
+                                 wxWindow::FindFocus());
   }
   else
   {
@@ -496,7 +494,7 @@ void Host_SetWiiMoteConnectionState(int _State)
     event.SetString(_("Wii Remote Connected"));
     break;
   }
-  // Update field 1 or 2
+  // The second field is used for auxiliary info such as this
   event.SetInt(1);
 
   NOTICE_LOG(WIIMOTE, "%s", static_cast<const char*>(event.GetString().c_str()));

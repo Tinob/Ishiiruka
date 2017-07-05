@@ -2,9 +2,9 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include <windows.h>
 #include <array>
 #include <string>
-#include <windows.h>
 
 #include "Common/GL/GLInterface/WGL.h"
 #include "Common/Logging/Log.h"
@@ -23,7 +23,7 @@ DECLARE_HANDLE(HPBUFFERARB);
 #define WGL_PBUFFER_HEIGHT_ARB 0x2035
 #define WGL_PBUFFER_LOST_ARB 0x2036
 typedef HPBUFFERARB(WINAPI* PFNWGLCREATEPBUFFERARBPROC)(HDC hDC, int iPixelFormat, int iWidth,
-  int iHeight, const int* piAttribList);
+                                                        int iHeight, const int* piAttribList);
 typedef HDC(WINAPI* PFNWGLGETPBUFFERDCARBPROC)(HPBUFFERARB hPbuffer);
 typedef int(WINAPI* PFNWGLRELEASEPBUFFERDCARBPROC)(HPBUFFERARB hPbuffer, HDC hDC);
 typedef BOOL(WINAPI* PFNWGLDESTROYPBUFFERARBPROC)(HPBUFFERARB hPbuffer);
@@ -82,14 +82,14 @@ typedef BOOL(WINAPI* PFNWGLQUERYPBUFFERARBPROC)(HPBUFFERARB hPbuffer, int iAttri
 #define WGL_TYPE_RGBA_ARB 0x202B
 #define WGL_TYPE_COLORINDEX_ARB 0x202C
 typedef BOOL(WINAPI* PFNWGLGETPIXELFORMATATTRIBIVARBPROC)(HDC hdc, int iPixelFormat,
-  int iLayerPlane, UINT nAttributes,
-  const int* piAttributes, int* piValues);
+                                                          int iLayerPlane, UINT nAttributes,
+                                                          const int* piAttributes, int* piValues);
 typedef BOOL(WINAPI* PFNWGLGETPIXELFORMATATTRIBFVARBPROC)(HDC hdc, int iPixelFormat,
-  int iLayerPlane, UINT nAttributes,
-  const int* piAttributes, FLOAT* pfValues);
+                                                          int iLayerPlane, UINT nAttributes,
+                                                          const int* piAttributes, FLOAT* pfValues);
 typedef BOOL(WINAPI* PFNWGLCHOOSEPIXELFORMATARBPROC)(HDC hdc, const int* piAttribIList,
-  const FLOAT* pfAttribFList, UINT nMaxFormats,
-  int* piFormats, UINT* nNumFormats);
+                                                     const FLOAT* pfAttribFList, UINT nMaxFormats,
+                                                     int* piFormats, UINT* nNumFormats);
 #endif /* WGL_ARB_pixel_format */
 
 #ifndef WGL_ARB_create_context
@@ -102,7 +102,7 @@ typedef BOOL(WINAPI* PFNWGLCHOOSEPIXELFORMATARBPROC)(HDC hdc, const int* piAttri
 #define WGL_CONTEXT_FLAGS_ARB 0x2094
 #define ERROR_INVALID_VERSION_ARB 0x2095
 typedef HGLRC(WINAPI* PFNWGLCREATECONTEXTATTRIBSARBPROC)(HDC hDC, HGLRC hShareContext,
-  const int* attribList);
+                                                         const int* attribList);
 #endif /* WGL_ARB_create_context */
 
 #ifndef WGL_ARB_create_context_profile
@@ -131,19 +131,19 @@ static PFNWGLDESTROYPBUFFERARBPROC wglDestroyPbufferARB = nullptr;
 static void LoadWGLExtensions()
 {
   wglSwapIntervalEXT = reinterpret_cast<PFNWGLSWAPINTERVALEXTPROC>(
-    GLInterface->GetFuncAddress("wglSwapIntervalEXT"));
+      GLInterface->GetFuncAddress("wglSwapIntervalEXT"));
   wglCreateContextAttribsARB = reinterpret_cast<PFNWGLCREATECONTEXTATTRIBSARBPROC>(
-    wglGetProcAddress("wglCreateContextAttribsARB"));
+      wglGetProcAddress("wglCreateContextAttribsARB"));
   wglChoosePixelFormatARB = reinterpret_cast<PFNWGLCHOOSEPIXELFORMATARBPROC>(
-    wglGetProcAddress("wglChoosePixelFormatARB"));
+      wglGetProcAddress("wglChoosePixelFormatARB"));
   wglCreatePbufferARB =
-    reinterpret_cast<PFNWGLCREATEPBUFFERARBPROC>(wglGetProcAddress("wglCreatePbufferARB"));
+      reinterpret_cast<PFNWGLCREATEPBUFFERARBPROC>(wglGetProcAddress("wglCreatePbufferARB"));
   wglGetPbufferDCARB =
-    reinterpret_cast<PFNWGLGETPBUFFERDCARBPROC>(wglGetProcAddress("wglGetPbufferDCARB"));
+      reinterpret_cast<PFNWGLGETPBUFFERDCARBPROC>(wglGetProcAddress("wglGetPbufferDCARB"));
   wglReleasePbufferDCARB =
-    reinterpret_cast<PFNWGLRELEASEPBUFFERDCARBPROC>(wglGetProcAddress("wglReleasePbufferDCARB"));
+      reinterpret_cast<PFNWGLRELEASEPBUFFERDCARBPROC>(wglGetProcAddress("wglReleasePbufferDCARB"));
   wglDestroyPbufferARB =
-    reinterpret_cast<PFNWGLDESTROYPBUFFERARBPROC>(wglGetProcAddress("wglGetPbufferDCARB"));
+      reinterpret_cast<PFNWGLDESTROYPBUFFERARBPROC>(wglGetProcAddress("wglGetPbufferDCARB"));
 }
 
 static void ClearWGLExtensionPointers()
@@ -223,8 +223,8 @@ bool cInterfaceWGL::Create(void* window_handle, bool core)
       sizeof(PIXELFORMATDESCRIPTOR),  // Size Of This Pixel Format Descriptor
       1,                              // Version Number
       PFD_DRAW_TO_WINDOW |            // Format Must Support Window
-      PFD_SUPPORT_OPENGL |        // Format Must Support OpenGL
-      PFD_DOUBLEBUFFER,           // Must Support Double Buffering
+          PFD_SUPPORT_OPENGL |        // Format Must Support OpenGL
+          PFD_DOUBLEBUFFER,           // Must Support Double Buffering
       PFD_TYPE_RGBA,                  // Request An RGBA Format
       32,                             // Select Our Color Depth
       0,
@@ -248,8 +248,8 @@ bool cInterfaceWGL::Create(void* window_handle, bool core)
     return false;
   }
 
-  int pixel_format;
-  if (!(pixel_format = ChoosePixelFormat(m_dc, &pfd)))
+  int pixel_format = ChoosePixelFormat(m_dc, &pfd);
+  if (!pixel_format)
   {
     PanicAlert("(2) Can't find a suitable PixelFormat.");
     return false;
@@ -261,7 +261,8 @@ bool cInterfaceWGL::Create(void* window_handle, bool core)
     return false;
   }
 
-  if (!(m_rc = wglCreateContext(m_dc)))
+  m_rc = wglCreateContext(m_dc);
+  if (!m_rc)
   {
     PanicAlert("(4) Can't create an OpenGL rendering context.");
     return false;
@@ -350,7 +351,7 @@ HGLRC cInterfaceWGL::CreateCoreContext(HDC dc, HGLRC share_context)
   // List of versions to attempt context creation for. (4.5-3.2, geometry shaders is a minimum
   // requirement since we're using core profile)
   static constexpr std::array<std::pair<int, int>, 8> try_versions = {
-      { { 4, 5 },{ 4, 4 },{ 4, 3 },{ 4, 2 },{ 4, 1 },{ 4, 0 },{ 3, 3 },{ 3, 2 } } };
+      {{4, 5}, {4, 4}, {4, 3}, {4, 2}, {4, 1}, {4, 0}, {3, 3}, {3, 2}}};
 
   for (const auto& version : try_versions)
   {
@@ -359,18 +360,18 @@ HGLRC cInterfaceWGL::CreateCoreContext(HDC dc, HGLRC share_context)
         WGL_CONTEXT_PROFILE_MASK_ARB,
         WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
 #ifdef _DEBUG
-            WGL_CONTEXT_FLAGS_ARB,
-            WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB | WGL_CONTEXT_DEBUG_BIT_ARB,
+        WGL_CONTEXT_FLAGS_ARB,
+        WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB | WGL_CONTEXT_DEBUG_BIT_ARB,
 #else
-            WGL_CONTEXT_FLAGS_ARB,
-            WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
+        WGL_CONTEXT_FLAGS_ARB,
+        WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
 #endif
-            WGL_CONTEXT_MAJOR_VERSION_ARB,
-            version.first,
-            WGL_CONTEXT_MINOR_VERSION_ARB,
-            version.second,
-            0,
-            0 };
+        WGL_CONTEXT_MAJOR_VERSION_ARB,
+        version.first,
+        WGL_CONTEXT_MINOR_VERSION_ARB,
+        version.second,
+        0,
+        0};
 
     // Attempt creating this context.
     HGLRC core_context = wglCreateContextAttribsARB(dc, nullptr, attribs.data());
@@ -397,10 +398,10 @@ HGLRC cInterfaceWGL::CreateCoreContext(HDC dc, HGLRC share_context)
 }
 
 bool cInterfaceWGL::CreatePBuffer(HDC onscreen_dc, int width, int height, HANDLE* pbuffer_handle,
-  HDC* pbuffer_dc)
+                                  HDC* pbuffer_dc)
 {
   if (!wglChoosePixelFormatARB || !wglCreatePbufferARB || !wglGetPbufferDCARB ||
-    !wglReleasePbufferDCARB || !wglDestroyPbufferARB)
+      !wglReleasePbufferDCARB || !wglDestroyPbufferARB)
   {
     ERROR_LOG(VIDEO, "Missing WGL_ARB_pbuffer extension");
     return false;
@@ -420,14 +421,14 @@ bool cInterfaceWGL::CreatePBuffer(HDC onscreen_dc, int width, int height, HANDLE
       WGL_STENCIL_BITS_ARB,
       0,
       0,
-      0 };
+      0};
 
   static constexpr std::array<float, 1 * 2> pf_fattribs = {};
 
   int pixel_format;
   UINT num_pixel_formats;
   if (!wglChoosePixelFormatARB(onscreen_dc, pf_iattribs.data(), pf_fattribs.data(), 1,
-    &pixel_format, &num_pixel_formats))
+                               &pixel_format, &num_pixel_formats))
   {
     ERROR_LOG(VIDEO, "Failed to obtain a compatible pbuffer pixel format");
     return false;
@@ -436,7 +437,7 @@ bool cInterfaceWGL::CreatePBuffer(HDC onscreen_dc, int width, int height, HANDLE
   static constexpr std::array<int, 1 * 2> pb_attribs = {};
 
   HPBUFFERARB pbuffer =
-    wglCreatePbufferARB(onscreen_dc, pixel_format, width, height, pb_attribs.data());
+      wglCreatePbufferARB(onscreen_dc, pixel_format, width, height, pb_attribs.data());
   if (!pbuffer)
   {
     ERROR_LOG(VIDEO, "Failed to create pbuffer");
@@ -475,11 +476,6 @@ void cInterfaceWGL::Update()
   // Get the new window width and height
   s_backbuffer_width = rcWindow.right - rcWindow.left;
   s_backbuffer_height = rcWindow.bottom - rcWindow.top;
-  // Get the top-left corner of the client area in screen coordinates
-  POINT originPoint = { 0, 0 };
-  ClientToScreen(m_window_handle, &originPoint);
-  s_window_xpos = originPoint.x;
-  s_window_ypos = originPoint.y;
 }
 
 // Close backend

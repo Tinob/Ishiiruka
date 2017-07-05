@@ -15,29 +15,27 @@
 #include <wx/textctrl.h>
 
 #include "Common/FileUtil.h"
+#include "Core/Config/GraphicsSettings.h"
 #include "Core/Core.h"
 #include "DolphinWX/SoftwareVideoConfigDialog.h"
 #include "DolphinWX/VideoConfigDiag.h"
 #include "DolphinWX/WxUtils.h"
 
-template <typename T>
-IntegerSetting<T>::IntegerSetting(wxWindow* parent, const wxString& label, T& setting, int minVal,
-  int maxVal, long style)
-  : wxSpinCtrl(parent, wxID_ANY, label, wxDefaultPosition, wxDefaultSize, style),
-  m_setting(setting)
+IntegerSetting::IntegerSetting(wxWindow* parent, const wxString& label,
+                               const Config::ConfigInfo<int>& setting, int minVal, int maxVal,
+                               long style)
+    : wxSpinCtrl(parent, wxID_ANY, label, wxDefaultPosition, wxDefaultSize, style),
+      m_setting(setting)
 {
   SetRange(minVal, maxVal);
-  SetValue(m_setting);
+  SetValue(Config::Get(m_setting));
   Bind(wxEVT_SPINCTRL, &IntegerSetting::UpdateValue, this);
 }
 
 SoftwareVideoConfigDialog::SoftwareVideoConfigDialog(wxWindow* parent, const std::string& title)
-  : wxDialog(parent, wxID_ANY,
-    wxString(wxString::Format(_("Dolphin %s Graphics Configuration"), title)))
+    : wxDialog(parent, wxID_ANY,
+               wxString(wxString::Format(_("Dolphin %s Graphics Configuration"), title)))
 {
-  VideoConfig& vconfig = g_Config;
-  vconfig.Load(File::GetUserPath(D_CONFIG_IDX) + "GFX.ini");
-
   wxNotebook* const notebook = new wxNotebook(this, wxID_ANY);
 
   const int space5 = FromDIP(5);
@@ -51,7 +49,7 @@ SoftwareVideoConfigDialog::SoftwareVideoConfigDialog(wxWindow* parent, const std
     // - rendering
     {
       wxStaticBoxSizer* const group_rendering =
-        new wxStaticBoxSizer(wxVERTICAL, page_general, _("Rendering"));
+          new wxStaticBoxSizer(wxVERTICAL, page_general, _("Rendering"));
       szr_general->AddSpacer(space5);
       szr_general->Add(group_rendering, 0, wxEXPAND | wxLEFT | wxRIGHT, space5);
       wxGridSizer* const szr_rendering = new wxGridSizer(2, space5, space5);
@@ -82,27 +80,27 @@ SoftwareVideoConfigDialog::SoftwareVideoConfigDialog(wxWindow* parent, const std
 
       // xfb
       szr_rendering->Add(
-        new SettingCheckBox(page_general, _("Bypass XFB"), "", vconfig.bUseXFB, true));
+          new SettingCheckBox(page_general, _("Bypass XFB"), "", Config::GFX_USE_XFB, true));
     }
 
     // - info
     {
       wxStaticBoxSizer* const group_info =
-        new wxStaticBoxSizer(wxVERTICAL, page_general, _("Overlay Information"));
+          new wxStaticBoxSizer(wxVERTICAL, page_general, _("Overlay Information"));
       szr_general->AddSpacer(space5);
       szr_general->Add(group_info, 0, wxEXPAND | wxLEFT | wxRIGHT, space5);
       wxGridSizer* const szr_info = new wxGridSizer(2, space5, space5);
       group_info->Add(szr_info, 0, wxEXPAND | wxLEFT | wxRIGHT, space5);
       group_info->AddSpacer(space5);
 
-      szr_info->Add(
-        new SettingCheckBox(page_general, _("Various Statistics"), "", vconfig.bOverlayStats));
+      szr_info->Add(new SettingCheckBox(page_general, _("Various Statistics"), "",
+                                        Config::GFX_OVERLAY_STATS));
     }
 
     // - utility
     {
       wxStaticBoxSizer* const group_utility =
-        new wxStaticBoxSizer(wxVERTICAL, page_general, _("Utility"));
+          new wxStaticBoxSizer(wxVERTICAL, page_general, _("Utility"));
       szr_general->AddSpacer(space5);
       szr_general->Add(group_utility, 0, wxEXPAND | wxLEFT | wxRIGHT, space5);
       wxGridSizer* const szr_utility = new wxGridSizer(2, space5, space5);
@@ -110,13 +108,13 @@ SoftwareVideoConfigDialog::SoftwareVideoConfigDialog(wxWindow* parent, const std
       group_utility->AddSpacer(space5);
 
       szr_utility->Add(
-        new SettingCheckBox(page_general, _("Dump Textures"), "", vconfig.bDumpTextures));
+          new SettingCheckBox(page_general, _("Dump Textures"), "", Config::GFX_DUMP_TEXTURES));
       szr_utility->Add(
-        new SettingCheckBox(page_general, _("Dump Objects"), "", vconfig.bDumpObjects));
+          new SettingCheckBox(page_general, _("Dump Objects"), "", Config::GFX_SW_DUMP_OBJECTS));
 
       // - debug only
       wxStaticBoxSizer* const group_debug_only_utility =
-        new wxStaticBoxSizer(wxHORIZONTAL, page_general, _("Debug Only"));
+          new wxStaticBoxSizer(wxHORIZONTAL, page_general, _("Debug Only"));
       group_utility->Add(group_debug_only_utility, 0, wxEXPAND);
       group_utility->AddSpacer(space5);
       wxGridSizer* const szr_debug_only_utility = new wxGridSizer(2, space5, space5);
@@ -124,16 +122,16 @@ SoftwareVideoConfigDialog::SoftwareVideoConfigDialog(wxWindow* parent, const std
       group_debug_only_utility->Add(szr_debug_only_utility, 0, wxEXPAND | wxBOTTOM, space5);
       group_debug_only_utility->AddSpacer(space5);
 
-      szr_debug_only_utility->Add(
-        new SettingCheckBox(page_general, _("Dump TEV Stages"), "", vconfig.bDumpTevStages));
+      szr_debug_only_utility->Add(new SettingCheckBox(page_general, _("Dump TEV Stages"), "",
+                                                      Config::GFX_SW_DUMP_TEV_STAGES));
       szr_debug_only_utility->Add(new SettingCheckBox(page_general, _("Dump Texture Fetches"), "",
-        vconfig.bDumpTevTextureFetches));
+                                                      Config::GFX_SW_DUMP_TEV_TEX_FETCHES));
     }
 
     // - misc
     {
       wxStaticBoxSizer* const group_misc =
-        new wxStaticBoxSizer(wxVERTICAL, page_general, _("Drawn Object Range"));
+          new wxStaticBoxSizer(wxVERTICAL, page_general, _("Drawn Object Range"));
       szr_general->AddSpacer(space5);
       szr_general->Add(group_misc, 0, wxEXPAND | wxLEFT | wxRIGHT, space5);
       wxFlexGridSizer* const szr_misc = new wxFlexGridSizer(2, space5, space5);
@@ -141,8 +139,8 @@ SoftwareVideoConfigDialog::SoftwareVideoConfigDialog(wxWindow* parent, const std
       group_misc->AddSpacer(space5);
 
       szr_misc->Add(
-        new IntegerSetting<int>(page_general, _("Start"), vconfig.drawStart, 0, 100000));
-      szr_misc->Add(new IntegerSetting<int>(page_general, _("End"), vconfig.drawEnd, 0, 100000));
+          new IntegerSetting(page_general, _("Start"), Config::GFX_SW_DRAW_START, 0, 100000));
+      szr_misc->Add(new IntegerSetting(page_general, _("End"), Config::GFX_SW_DRAW_END, 0, 100000));
     }
 
     szr_general->AddSpacer(space5);
@@ -168,5 +166,5 @@ SoftwareVideoConfigDialog::SoftwareVideoConfigDialog(wxWindow* parent, const std
 
 SoftwareVideoConfigDialog::~SoftwareVideoConfigDialog()
 {
-  g_Config.Save((File::GetUserPath(D_CONFIG_IDX) + "GFX.ini").c_str());
+  Config::Save();
 }

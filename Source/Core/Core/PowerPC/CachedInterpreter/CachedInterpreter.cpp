@@ -3,6 +3,7 @@
 // Refer to the license.txt file included.
 
 #include "Core/PowerPC/CachedInterpreter/CachedInterpreter.h"
+
 #include "Common/CommonTypes.h"
 #include "Common/Logging/Log.h"
 #include "Core/ConfigManager.h"
@@ -16,17 +17,17 @@
 
 struct CachedInterpreter::Instruction
 {
-  typedef void(*CommonCallback)(UGeckoInstruction);
-  typedef bool(*ConditionalCallback)(u32 data);
+  typedef void (*CommonCallback)(UGeckoInstruction);
+  typedef bool (*ConditionalCallback)(u32 data);
 
   Instruction() : type(INSTRUCTION_ABORT) {}
   Instruction(const CommonCallback c, UGeckoInstruction i)
-    : common_callback(c), data(i.hex), type(INSTRUCTION_TYPE_COMMON)
+      : common_callback(c), data(i.hex), type(INSTRUCTION_TYPE_COMMON)
   {
   }
 
   Instruction(const ConditionalCallback c, u32 d)
-    : conditional_callback(c), data(d), type(INSTRUCTION_TYPE_CONDITIONAL)
+      : conditional_callback(c), data(d), type(INSTRUCTION_TYPE_CONDITIONAL)
   {
   }
 
@@ -146,7 +147,7 @@ static void WriteBrokenBlockNPC(UGeckoInstruction data)
 
 static bool CheckFPU(u32 data)
 {
-  UReg_MSR msr{ MSR };
+  UReg_MSR msr{MSR};
   if (!msr.FP)
   {
     PowerPC::ppcState.Exceptions |= EXCEPTION_FPU_UNAVAILABLE;
@@ -171,7 +172,7 @@ static bool CheckDSI(u32 data)
 void CachedInterpreter::Jit(u32 address)
 {
   if (m_code.size() >= CODE_SIZE / sizeof(Instruction) - 0x1000 ||
-    SConfig::GetInstance().bJITNoBlockCache)
+      SConfig::GetInstance().bJITNoBlockCache)
   {
     ClearCache();
   }

@@ -7,7 +7,6 @@
 #include <cstring>
 #include <vector>
 
-#include "Common/Assert.h"
 #include "Common/Logging/Log.h"
 #include "Core/HW/Memmap.h"
 #include "Core/IOS/ES/Formats.h"
@@ -19,14 +18,24 @@ namespace HLE
 {
 namespace Device
 {
-IPCCommandResult ES::GetConsoleID(const IOCtlVRequest& request)
+ReturnCode ES::GetDeviceId(u32* device_id) const
 {
-  if (!request.HasNumberOfValidVectors(0, 1))
+  const EcWii& ec = EcWii::GetInstance();
+  *device_id = ec.GetNGID();
+  INFO_LOG(IOS_ES, "GetDeviceId: %08X", *device_id);
+  return IPC_SUCCESS;
+}
+
+IPCCommandResult ES::GetDeviceId(const IOCtlVRequest& request)
+{
+  if (!request.HasNumberOfValidVectors(0, 1) || request.io_vectors[0].size != sizeof(u32))
     return GetDefaultReply(ES_EINVAL);
 
-  const EcWii& ec = EcWii::GetInstance();
-  INFO_LOG(IOS_ES, "IOCTL_ES_GETDEVICEID %08X", ec.GetNGID());
-  Memory::Write_U32(ec.GetNGID(), request.io_vectors[0].address);
+  u32 device_id;
+  const ReturnCode ret = GetDeviceId(&device_id);
+  if (ret != IPC_SUCCESS)
+    return GetDefaultReply(ret);
+  Memory::Write_U32(device_id, request.io_vectors[0].address);
   return GetDefaultReply(IPC_SUCCESS);
 }
 
@@ -106,7 +115,7 @@ IPCCommandResult ES::Sign(const IOCtlVRequest& request)
 
   const EcWii& ec = EcWii::GetInstance();
   MakeAPSigAndCert(sig_out, ap_cert_out, GetTitleContext().tmd.GetTitleId(), data, data_size,
-    ec.GetNGPriv(), ec.GetNGID());
+                   ec.GetNGPriv(), ec.GetNGID());
 
   return GetDefaultReply(IPC_SUCCESS);
 }

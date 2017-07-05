@@ -72,31 +72,31 @@
 #define GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT 0x8E8F
 
 typedef void(APIENTRYP PFNDOLDRAWARRAYSINSTANCEDBASEINSTANCEPROC)(GLenum mode, GLint first,
-  GLsizei count,
-  GLsizei instancecount,
-  GLuint baseinstance);
+                                                                  GLsizei count,
+                                                                  GLsizei instancecount,
+                                                                  GLuint baseinstance);
 typedef void(APIENTRYP PFNDOLDRAWELEMENTSINSTANCEDBASEINSTANCEPROC)(GLenum mode, GLsizei count,
-  GLenum type,
-  const void* indices,
-  GLsizei instancecount,
-  GLuint baseinstance);
+                                                                    GLenum type,
+                                                                    const void* indices,
+                                                                    GLsizei instancecount,
+                                                                    GLuint baseinstance);
 typedef void(APIENTRYP PFNDOLDRAWELEMENTSINSTANCEDBASEVERTEXBASEINSTANCEPROC)(
-  GLenum mode, GLsizei count, GLenum type, const void* indices, GLsizei instancecount,
-  GLint basevertex, GLuint baseinstance);
+    GLenum mode, GLsizei count, GLenum type, const void* indices, GLsizei instancecount,
+    GLint basevertex, GLuint baseinstance);
 typedef void(APIENTRYP PFNDOLGETINTERNALFORMATIVPROC)(GLenum target, GLenum internalformat,
-  GLenum pname, GLsizei bufSize, GLint* params);
+                                                      GLenum pname, GLsizei bufSize, GLint* params);
 typedef void(APIENTRYP PFNDOLGETACTIVEATOMICCOUNTERBUFFERIVPROC)(GLuint program, GLuint bufferIndex,
-  GLenum pname, GLint* params);
+                                                                 GLenum pname, GLint* params);
 typedef void(APIENTRYP PFNDOLDRAWTRANSFORMFEEDBACKINSTANCEDPROC)(GLenum mode, GLuint id,
-  GLsizei instancecount);
+                                                                 GLsizei instancecount);
 typedef void(APIENTRYP PFNDOLDRAWTRANSFORMFEEDBACKSTREAMINSTANCEDPROC)(GLenum mode, GLuint id,
-  GLuint stream,
-  GLsizei instancecount);
+                                                                       GLuint stream,
+                                                                       GLsizei instancecount);
 
 extern PFNDOLDRAWARRAYSINSTANCEDBASEINSTANCEPROC dolDrawArraysInstancedBaseInstance;
 extern PFNDOLDRAWELEMENTSINSTANCEDBASEINSTANCEPROC dolDrawElementsInstancedBaseInstance;
 extern PFNDOLDRAWELEMENTSINSTANCEDBASEVERTEXBASEINSTANCEPROC
-dolDrawElementsInstancedBaseVertexBaseInstance;
+    dolDrawElementsInstancedBaseVertexBaseInstance;
 extern PFNDOLGETINTERNALFORMATIVPROC dolGetInternalformativ;
 extern PFNDOLGETACTIVEATOMICCOUNTERBUFFERIVPROC dolGetActiveAtomicCounterBufferiv;
 extern PFNDOLDRAWTRANSFORMFEEDBACKINSTANCEDPROC dolDrawTransformFeedbackInstanced;

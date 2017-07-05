@@ -15,10 +15,9 @@
 
 namespace Common
 {
-
 static const u32 PROFILER_FIELD_LENGTH = 8;
 static const u32 PROFILER_FIELD_LENGTH_FP = PROFILER_FIELD_LENGTH + 3;
-static const int PROFILER_LAZY_DELAY = 60; // in frames
+static const int PROFILER_LAZY_DELAY = 60;  // in frames
 
 std::list<Profiler*> Profiler::s_all_profilers;
 std::mutex Profiler::s_mutex;
@@ -30,7 +29,8 @@ std::string Profiler::s_lazy_result = "";
 int Profiler::s_lazy_delay = 0;
 
 Profiler::Profiler(const std::string& name)
-  : m_name(name), m_usecs(0), m_usecs_min(-1), m_usecs_max(0), m_usecs_quad(0), m_calls(0), m_depth(0)
+    : m_name(name), m_usecs(0), m_usecs_min(UINT64_MAX), m_usecs_max(0), m_usecs_quad(0),
+      m_calls(0), m_depth(0)
 {
   m_time = Common::Timer::GetTimeUs();
   s_max_length = std::max<u32>(s_max_length, u32(m_name.length()));
@@ -69,20 +69,25 @@ std::string Profiler::ToString()
   s_frame_time = end;
 
   std::ostringstream buffer;
-  buffer << std::setw(s_max_length) << std::left << "" << " ";
-  buffer << std::setw(PROFILER_FIELD_LENGTH) << std::right << "calls" << " ";
-  buffer << std::setw(PROFILER_FIELD_LENGTH) << std::right << "sum" << " ";
-  buffer << std::setw(PROFILER_FIELD_LENGTH_FP) << std::right << "rel" << " ";
-  buffer << std::setw(PROFILER_FIELD_LENGTH) << std::right << "min" << " ";
-  buffer << std::setw(PROFILER_FIELD_LENGTH_FP) << std::right << "avg" << " ";
-  buffer << std::setw(PROFILER_FIELD_LENGTH_FP) << std::right << "stdev" << " ";
-  buffer << std::setw(PROFILER_FIELD_LENGTH) << std::right << "max" << " ";
+  buffer << std::setw(s_max_length) << std::left << ""
+         << " ";
+  buffer << std::setw(PROFILER_FIELD_LENGTH) << std::right << "calls"
+         << " ";
+  buffer << std::setw(PROFILER_FIELD_LENGTH) << std::right << "sum"
+         << " ";
+  buffer << std::setw(PROFILER_FIELD_LENGTH_FP) << std::right << "rel"
+         << " ";
+  buffer << std::setw(PROFILER_FIELD_LENGTH) << std::right << "min"
+         << " ";
+  buffer << std::setw(PROFILER_FIELD_LENGTH_FP) << std::right << "avg"
+         << " ";
+  buffer << std::setw(PROFILER_FIELD_LENGTH_FP) << std::right << "stdev"
+         << " ";
+  buffer << std::setw(PROFILER_FIELD_LENGTH) << std::right << "max"
+         << " ";
   buffer << "/ usec" << std::endl;
 
-  s_all_profilers.sort([](Profiler* a, Profiler* b)
-  {
-    return *b < *a;
-  });
+  s_all_profilers.sort([](Profiler* a, Profiler* b) { return *b < *a; });
 
   for (auto profiler : s_all_profilers)
   {
@@ -124,7 +129,7 @@ std::string Profiler::Read()
   if (m_calls)
   {
     avg = double(m_usecs) / m_calls;
-    stdev = std::sqrt(double(m_usecs_quad) / m_calls - avg*avg);
+    stdev = std::sqrt(double(m_usecs_quad) / m_calls - avg * avg);
   }
   else
   {
@@ -142,17 +147,18 @@ std::string Profiler::Read()
   buffer << std::setw(PROFILER_FIELD_LENGTH) << std::right << m_usecs << " ";
   buffer << std::setw(PROFILER_FIELD_LENGTH_FP) << std::right << time_rel << " ";
   buffer << std::setw(PROFILER_FIELD_LENGTH) << std::right << m_usecs_min << " ";
-  buffer << std::setw(PROFILER_FIELD_LENGTH_FP) << std::right << std::fixed << std::setprecision(2) << avg << " ";
-  buffer << std::setw(PROFILER_FIELD_LENGTH_FP) << std::right << std::fixed << std::setprecision(2) << stdev << " ";
+  buffer << std::setw(PROFILER_FIELD_LENGTH_FP) << std::right << std::fixed << std::setprecision(2)
+         << avg << " ";
+  buffer << std::setw(PROFILER_FIELD_LENGTH_FP) << std::right << std::fixed << std::setprecision(2)
+         << stdev << " ";
   buffer << std::setw(PROFILER_FIELD_LENGTH) << std::right << m_usecs_max;
 
   m_usecs = 0;
-  m_usecs_min = -1;
+  m_usecs_min = UINT64_MAX;
   m_usecs_max = 0;
   m_usecs_quad = 0;
   m_calls = 0;
 
   return buffer.str();
 }
-
 }

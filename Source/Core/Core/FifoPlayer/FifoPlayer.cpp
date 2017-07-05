@@ -2,10 +2,10 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Core/FifoPlayer/FifoPlayer.h"
+
 #include <algorithm>
 #include <mutex>
-
-#include "Core/FifoPlayer/FifoPlayer.h"
 
 #include "Common/Assert.h"
 #include "Common/CommonTypes.h"
@@ -31,7 +31,7 @@
 
 bool IsPlayingBackFifologWithBrokenEFBCopies = false;
 
-FifoPlayer::FifoPlayer() : m_Loop{ SConfig::GetInstance().bLoopFifoReplay }
+FifoPlayer::FifoPlayer() : m_Loop{SConfig::GetInstance().bLoopFifoReplay}
 {
 }
 
@@ -70,23 +70,23 @@ void FifoPlayer::Close()
 class FifoPlayer::CPUCore final : public CPUCoreBase
 {
 public:
-    explicit CPUCore(FifoPlayer* parent) : m_parent(parent) {}
-    CPUCore(const CPUCore&) = delete;
-    ~CPUCore() {}
-    CPUCore& operator=(const CPUCore&) = delete;
+  explicit CPUCore(FifoPlayer* parent) : m_parent(parent) {}
+  CPUCore(const CPUCore&) = delete;
+  ~CPUCore() {}
+  CPUCore& operator=(const CPUCore&) = delete;
 
-    void Init() override
-    {
-        IsPlayingBackFifologWithBrokenEFBCopies = m_parent->m_File->HasBrokenEFBCopies();
+  void Init() override
+  {
+    IsPlayingBackFifologWithBrokenEFBCopies = m_parent->m_File->HasBrokenEFBCopies();
 
-        m_parent->m_CurrentFrame = m_parent->m_FrameRangeStart;
-        m_parent->LoadMemory();
-    }
+    m_parent->m_CurrentFrame = m_parent->m_FrameRangeStart;
+    m_parent->LoadMemory();
+  }
 
-    void Shutdown() override { IsPlayingBackFifologWithBrokenEFBCopies = false; }
-    void ClearCache() override
-    {
-      // Nothing to clear.
+  void Shutdown() override { IsPlayingBackFifologWithBrokenEFBCopies = false; }
+  void ClearCache() override
+  {
+    // Nothing to clear.
   }
 
   void SingleStep() override
@@ -94,32 +94,33 @@ public:
     // NOTE: AdvanceFrame() will get stuck forever in Dual Core because the FIFO
     //   is disabled by CPU::EnableStepping(true) so the frame never gets displayed.
     PanicAlertT("Cannot SingleStep the FIFO. Use Frame Advance instead.");
-}
+  }
 
-const char* GetName() override { return "FifoPlayer"; }
-void Run() override
-{
+  const char* GetName() override { return "FifoPlayer"; }
+  void Run() override
+  {
     while (CPU::GetState() == CPU::State::Running)
     {
-        switch (m_parent->AdvanceFrame())
-        {
-        case CPU::State::PowerDown:
-            CPU::Break();
-            Host_Message(WM_USER_STOP);
-            break;
+      switch (m_parent->AdvanceFrame())
+      {
+      case CPU::State::PowerDown:
+        CPU::Break();
+        Host_Message(WM_USER_STOP);
+        break;
 
-        case CPU::State::Stepping:
-            CPU::Break();
-            Host_UpdateMainFrame();
-            break;
-        case CPU::State::Running:
-            break;
-        }
+      case CPU::State::Stepping:
+        CPU::Break();
+        Host_UpdateMainFrame();
+        break;
+
+      case CPU::State::Running:
+        break;
+      }
     }
-}
+  }
 
 private:
-    FifoPlayer* m_parent;
+  FifoPlayer* m_parent;
 };
 
 CPU::State FifoPlayer::AdvanceFrame()
@@ -278,7 +279,7 @@ void FifoPlayer::WriteFrame(const FifoFrameInfo& frame, const AnalyzedFrameInfo&
 }
 
 void FifoPlayer::WriteFramePart(u32 dataStart, u32 dataEnd, u32& nextMemUpdate,
-  const FifoFrameInfo& frame, const AnalyzedFrameInfo& info)
+                                const FifoFrameInfo& frame, const AnalyzedFrameInfo& info)
 {
   const u8* const data = frame.fifoData.data();
 
@@ -467,7 +468,7 @@ void FifoPlayer::LoadRegisters()
 void FifoPlayer::LoadTextureMemory()
 {
   static_assert(static_cast<size_t>(TMEM_SIZE) == static_cast<size_t>(FifoDataFile::TEX_MEM_SIZE),
-    "TMEM_SIZE matches the size of texture memory in FifoDataFile");
+                "TMEM_SIZE matches the size of texture memory in FifoDataFile");
   std::memcpy(texMem, m_File->GetTexMem(), FifoDataFile::TEX_MEM_SIZE);
 }
 
@@ -544,13 +545,13 @@ bool FifoPlayer::ShouldLoadBP(u8 address)
 bool FifoPlayer::IsIdleSet()
 {
   CommandProcessor::UCPStatusReg status =
-    PowerPC::Read_U16(0xCC000000 | CommandProcessor::STATUS_REGISTER);
+      PowerPC::Read_U16(0xCC000000 | CommandProcessor::STATUS_REGISTER);
   return status.CommandIdle;
 }
 
 bool FifoPlayer::IsHighWatermarkSet()
 {
   CommandProcessor::UCPStatusReg status =
-    PowerPC::Read_U16(0xCC000000 | CommandProcessor::STATUS_REGISTER);
+      PowerPC::Read_U16(0xCC000000 | CommandProcessor::STATUS_REGISTER);
   return status.OverflowHiWatermark;
 }

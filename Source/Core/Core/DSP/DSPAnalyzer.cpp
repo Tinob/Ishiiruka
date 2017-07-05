@@ -33,41 +33,41 @@ constexpr size_t MAX_IDLE_SIG_SIZE = 6;
 
 // 0xFFFF means ignore.
 constexpr u16 idle_skip_sigs[NUM_IDLE_SIGS][MAX_IDLE_SIG_SIZE + 1] = {
-  // From AX:
-  {0x26fc,          // LRS   $30, @DMBH
-   0x02c0, 0x8000,  // ANDCF $30, #0x8000
-   0x029d, 0xFFFF,  // JLZ 0x027a
-   0, 0},           // RET
-  {0x27fc,          // LRS   $31, @DMBH
-   0x03c0, 0x8000,  // ANDCF $31, #0x8000
-   0x029d, 0xFFFF,  // JLZ 0x027a
-   0, 0},           // RET
-  {0x26fe,          // LRS   $30, @CMBH
-   0x02c0, 0x8000,  // ANDCF $30, #0x8000
-   0x029c, 0xFFFF,  // JLNZ 0x0280
-   0, 0},           // RET
-  {0x27fe,          // LRS   $31, @CMBH
-   0x03c0, 0x8000,  // ANDCF $31, #0x8000
-   0x029c, 0xFFFF,  // JLNZ 0x0280
-   0, 0},           // RET
-  {0x26fc,          // LRS  $AC0.M, @DMBH
-   0x02a0, 0x8000,  // ANDF $AC0.M, #0x8000
-   0x029c, 0xFFFF,  // JLNZ 0x????
-   0, 0},
-  {0x27fc,          // LRS  $AC1.M, @DMBH
-   0x03a0, 0x8000,  // ANDF $AC1.M, #0x8000
-   0x029c, 0xFFFF,  // JLNZ 0x????
-   0, 0},
-   // From Zelda:
-   {0x00de, 0xFFFE,  // LR    $AC0.M, @CMBH
-      0x02c0, 0x8000,  // ANDCF $AC0.M, #0x8000
-      0x029c, 0xFFFF,  // JLNZ 0x05cf
-      0},
-      // From Zelda - experimental
-      {0x00da, 0x0352,  // LR     $AX0.H, @0x0352
-       0x8600,          // TSTAXH $AX0.H
-       0x0295, 0xFFFF,  // JZ    0x????
-       0, 0} };
+    // From AX:
+    {0x26fc,          // LRS   $30, @DMBH
+     0x02c0, 0x8000,  // ANDCF $30, #0x8000
+     0x029d, 0xFFFF,  // JLZ 0x027a
+     0, 0},           // RET
+    {0x27fc,          // LRS   $31, @DMBH
+     0x03c0, 0x8000,  // ANDCF $31, #0x8000
+     0x029d, 0xFFFF,  // JLZ 0x027a
+     0, 0},           // RET
+    {0x26fe,          // LRS   $30, @CMBH
+     0x02c0, 0x8000,  // ANDCF $30, #0x8000
+     0x029c, 0xFFFF,  // JLNZ 0x0280
+     0, 0},           // RET
+    {0x27fe,          // LRS   $31, @CMBH
+     0x03c0, 0x8000,  // ANDCF $31, #0x8000
+     0x029c, 0xFFFF,  // JLNZ 0x0280
+     0, 0},           // RET
+    {0x26fc,          // LRS  $AC0.M, @DMBH
+     0x02a0, 0x8000,  // ANDF $AC0.M, #0x8000
+     0x029c, 0xFFFF,  // JLNZ 0x????
+     0, 0},
+    {0x27fc,          // LRS  $AC1.M, @DMBH
+     0x03a0, 0x8000,  // ANDF $AC1.M, #0x8000
+     0x029c, 0xFFFF,  // JLNZ 0x????
+     0, 0},
+    // From Zelda:
+    {0x00de, 0xFFFE,  // LR    $AC0.M, @CMBH
+     0x02c0, 0x8000,  // ANDCF $AC0.M, #0x8000
+     0x029c, 0xFFFF,  // JLNZ 0x05cf
+     0},
+    // From Zelda - experimental
+    {0x00da, 0x0352,  // LR     $AX0.H, @0x0352
+     0x8600,          // TSTAXH $AX0.H
+     0x0295, 0xFFFF,  // JZ    0x????
+     0, 0}};
 
 void Reset()
 {
@@ -122,8 +122,8 @@ void AnalyzeRange(u16 start_addr, u16 end_addr)
     // If an instruction potentially raises exceptions, mark the following
     // instruction as needing to check for exceptions
     if (opcode->opcode == 0x00c0 || opcode->opcode == 0x1800 || opcode->opcode == 0x1880 ||
-      opcode->opcode == 0x1900 || opcode->opcode == 0x1980 || opcode->opcode == 0x2000 ||
-      opcode->extended)
+        opcode->opcode == 0x1900 || opcode->opcode == 0x1980 || opcode->opcode == 0x2000 ||
+        opcode->extended)
       code_flags[static_cast<u16>(addr + opcode->size)] |= CODE_CHECK_INT;
 
     addr += opcode->size;

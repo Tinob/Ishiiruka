@@ -18,7 +18,7 @@ class InputConfig
 {
 public:
   InputConfig(const std::string& ini_name, const std::string& gui_name,
-    const std::string& profile_name);
+              const std::string& profile_name);
 
   ~InputConfig();
 

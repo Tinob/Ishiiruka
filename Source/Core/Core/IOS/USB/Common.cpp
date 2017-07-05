@@ -141,7 +141,7 @@ Device::GetDescriptors(std::function<bool(const InterfaceDescriptor&)> predicate
 
       CopyDescriptorToBuffer(&buffer, descriptor);
       for (const auto& endpoint_descriptor : GetEndpoints(
-        static_cast<u8>(c), descriptor.bInterfaceNumber, descriptor.bAlternateSetting))
+               static_cast<u8>(c), descriptor.bInterfaceNumber, descriptor.bAlternateSetting))
         CopyDescriptorToBuffer(&buffer, endpoint_descriptor);
     }
   }

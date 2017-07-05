@@ -30,7 +30,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
- // Modified for use with Dolphin
+// Modified for use with Dolphin
 
 #include <string>
 
@@ -43,97 +43,75 @@
 #define PPCDISASM_REV 6
 
 // general defines
-#define PPCIDXMASK      0xfc000000
-#define PPCIDX2MASK     0x000007fe
-#define PPCDMASK        0x03e00000
-#define PPCAMASK        0x001f0000
-#define PPCBMASK        0x0000f800
-#define PPCCMASK        0x000007c0
-#define PPCMMASK        0x0000003e
-#define PPCCRDMASK      0x03800000
-#define PPCCRAMASK      0x001c0000
-#define PPCLMASK        0x00600000
-#define PPCOE           0x00000400
-#define PPCVRC          0x00000400
-#define PPCDST          0x02000000
-#define PPCSTRM         0x00600000
+#define PPCIDXMASK 0xfc000000
+#define PPCIDX2MASK 0x000007fe
+#define PPCDMASK 0x03e00000
+#define PPCAMASK 0x001f0000
+#define PPCBMASK 0x0000f800
+#define PPCCMASK 0x000007c0
+#define PPCMMASK 0x0000003e
+#define PPCCRDMASK 0x03800000
+#define PPCCRAMASK 0x001c0000
+#define PPCLMASK 0x00600000
+#define PPCOE 0x00000400
+#define PPCVRC 0x00000400
+#define PPCDST 0x02000000
+#define PPCSTRM 0x00600000
 
-#define PPCIDXSH        26
-#define PPCDSH          21
-#define PPCASH          16
-#define PPCBSH          11
-#define PPCCSH          6
-#define PPCMSH          1
-#define PPCCRDSH        23
-#define PPCCRASH        18
-#define PPCLSH          21
-#define PPCIDX2SH       1
+#define PPCIDXSH 26
+#define PPCDSH 21
+#define PPCASH 16
+#define PPCBSH 11
+#define PPCCSH 6
+#define PPCMSH 1
+#define PPCCRDSH 23
+#define PPCCRASH 18
+#define PPCLSH 21
+#define PPCIDX2SH 1
 
-#define PPCGETIDX(x)    (((x)&PPCIDXMASK)>>PPCIDXSH)
-#define PPCGETD(x)      (((x)&PPCDMASK)>>PPCDSH)
-#define PPCGETA(x)      (((x)&PPCAMASK)>>PPCASH)
-#define PPCGETB(x)      (((x)&PPCBMASK)>>PPCBSH)
-#define PPCGETC(x)      (((x)&PPCCMASK)>>PPCCSH)
-#define PPCGETM(x)      (((x)&PPCMMASK)>>PPCMSH)
-#define PPCGETCRD(x)    (((x)&PPCCRDMASK)>>PPCCRDSH)
-#define PPCGETCRA(x)    (((x)&PPCCRAMASK)>>PPCCRASH)
-#define PPCGETL(x)      (((x)&PPCLMASK)>>PPCLSH)
-#define PPCGETIDX2(x)   (((x)&PPCIDX2MASK)>>PPCIDX2SH)
-#define PPCGETSTRM(x)   (((x)&PPCSTRM)>>PPCDSH)
-
+#define PPCGETIDX(x) (((x)&PPCIDXMASK) >> PPCIDXSH)
+#define PPCGETD(x) (((x)&PPCDMASK) >> PPCDSH)
+#define PPCGETA(x) (((x)&PPCAMASK) >> PPCASH)
+#define PPCGETB(x) (((x)&PPCBMASK) >> PPCBSH)
+#define PPCGETC(x) (((x)&PPCCMASK) >> PPCCSH)
+#define PPCGETM(x) (((x)&PPCMMASK) >> PPCMSH)
+#define PPCGETCRD(x) (((x)&PPCCRDMASK) >> PPCCRDSH)
+#define PPCGETCRA(x) (((x)&PPCCRAMASK) >> PPCCRASH)
+#define PPCGETL(x) (((x)&PPCLMASK) >> PPCLSH)
+#define PPCGETIDX2(x) (((x)&PPCIDX2MASK) >> PPCIDX2SH)
+#define PPCGETSTRM(x) (((x)&PPCSTRM) >> PPCDSH)
 
 static const char* trap_condition[32] = {
     nullptr, "lgt",   "llt",   nullptr, "eq",    "lge",   "lle",   nullptr,
     "gt",    nullptr, nullptr, nullptr, "ge",    nullptr, nullptr, nullptr,
     "lt",    nullptr, nullptr, nullptr, "le",    nullptr, nullptr, nullptr,
-    "ne",    nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr
-};
+    "ne",    nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
 
-static const char* cmpname[4] = {
-    "cmpw", "cmpd", "cmplw", "cmpld"
-};
+static const char* cmpname[4] = {"cmpw", "cmpd", "cmplw", "cmpld"};
 
-static const char* ps_cmpname[4] = {
-    "ps_cmpu0", "ps_cmpo0", "ps_cmpu1", "ps_cmpo1"
-};
+static const char* ps_cmpname[4] = {"ps_cmpu0", "ps_cmpo0", "ps_cmpu1", "ps_cmpo1"};
 
-static const char* b_ext[4] = {
-    "", "l", "a", "la"
-};
+static const char* b_ext[4] = {"", "l", "a", "la"};
 
-static const char* b_condition[8] = {
-    "ge", "le", "ne", "ns", "lt", "gt", "eq", "so"
-};
+static const char* b_condition[8] = {"ge", "le", "ne", "ns", "lt", "gt", "eq", "so"};
 
-static const char* b_decr[16] = {
-    "nzf", "zf", nullptr, nullptr, "nzt", "zt", nullptr, nullptr,
-    "nz",  "z",  nullptr, nullptr, "nz",  "z",  nullptr, nullptr
-};
+static const char* b_decr[16] = {"nzf", "zf", nullptr, nullptr, "nzt", "zt", nullptr, nullptr,
+                                 "nz",  "z",  nullptr, nullptr, "nz",  "z",  nullptr, nullptr};
 
-static const char* regsel[2] = {
-    "", "r"
-};
+static const char* regsel[2] = {"", "r"};
 
-static const char* oesel[2] = {
-    "", "o"
-};
+static const char* oesel[2] = {"", "o"};
 
-static const char* rcsel[2] = {
-    "", "."
-};
+static const char* rcsel[2] = {"", "."};
 
-static const char* ldstnames[24] = {
-    "lwz", "lwzu", "lbz", "lbzu", "stw", "stwu", "stb", "stbu", "lhz", "lhzu",
-    "lha", "lhau", "sth", "sthu", "lmw", "stmw", "lfs", "lfsu", "lfd", "lfdu",
-    "stfs", "stfsu", "stfd", "stfdu"
-};
+static const char* ldstnames[24] = {"lwz", "lwzu", "lbz", "lbzu", "stw",  "stwu",  "stb",  "stbu",
+                                    "lhz", "lhzu", "lha", "lhau", "sth",  "sthu",  "lmw",  "stmw",
+                                    "lfs", "lfsu", "lfd", "lfdu", "stfs", "stfsu", "stfd", "stfdu"};
 
-static const char* regnames[32] = {
-    "r0", "sp", "rtoc", "r3", "r4", "r5", "r6", "r7",
-    "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15",
-    "r16", "r17", "r18", "r19", "r20", "r21", "r22", "r23",
-    "r24", "r25", "r26", "r27", "r28", "r29", "r30", "r31"
-};
+static const char* regnames[32] = {"r0",  "sp",  "rtoc", "r3",  "r4",  "r5",  "r6",  "r7",
+                                   "r8",  "r9",  "r10",  "r11", "r12", "r13", "r14", "r15",
+                                   "r16", "r17", "r18",  "r19", "r20", "r21", "r22", "r23",
+                                   "r24", "r25", "r26",  "r27", "r28", "r29", "r30", "r31"};
 
 // Initialize static class variables.
 u32* GekkoDisassembler::m_instr = nullptr;
@@ -145,100 +123,168 @@ unsigned char GekkoDisassembler::m_flags = PPCF_ILLEGAL;
 unsigned short GekkoDisassembler::m_sreg = 0;
 u32 GekkoDisassembler::m_displacement = 0;
 
-
 static std::string spr_name(int i)
 {
   switch (i)
   {
-  case 1: return "XER";
-  case 8: return "LR";
-  case 9: return "CTR";
-  case 18: return "DSIR";
-  case 19: return "DAR";
-  case 22: return "DEC";
-  case 25: return "SDR1";
-  case 26: return "SRR0";
-  case 27: return "SRR1";
-  case 272: return "SPRG0";
-  case 273: return "SPRG1";
-  case 274: return "SPRG2";
-  case 275: return "SPRG3";
-  case 282: return "EAR";
-  case 287: return "PVR";
-  case 528: return "IBAT0U";
-  case 529: return "IBAT0L";
-  case 530: return "IBAT1U";
-  case 531: return "IBAT1L";
-  case 532: return "IBAT2U";
-  case 533: return "IBAT2L";
-  case 534: return "IBAT3U";
-  case 535: return "IBAT3L";
-  case 536: return "DBAT0U";
-  case 537: return "DBAT0L";
-  case 538: return "DBAT1U";
-  case 539: return "DBAT1L";
-  case 540: return "DBAT2U";
-  case 541: return "DBAT2L";
-  case 542: return "DBAT3U";
-  case 543: return "DBAT3L";
-  case 912: return "GQR0";
-  case 913: return "GQR1";
-  case 914: return "GQR2";
-  case 915: return "GQR3";
-  case 916: return "GQR4";
-  case 917: return "GQR5";
-  case 918: return "GQR6";
-  case 919: return "GQR7";
-  case 920: return "HID2";
-  case 921: return "WPAR";
-  case 922: return "DMA_U";
-  case 923: return "DMA_L";
-  case 924: return "ECID_U";
-  case 925: return "ECID_M";
-  case 926: return "ECID_L";
-  case 936: return "UMMCR0";
-  case 937: return "UPMC1";
-  case 938: return "UPMC2";
-  case 939: return "USIA";
-  case 940: return "UMMCR1";
-  case 941: return "UPMC3";
-  case 942: return "UPMC4";
-  case 943: return "USDA";
-  case 952: return "MMCR0";
-  case 953: return "PMC1";
-  case 954: return "PMC2";
-  case 955: return "SIA";
-  case 956: return "MMCR1";
-  case 957: return "PMC3";
-  case 958: return "PMC4";
-  case 959: return "SDA";
-  case 1008: return "HID0";
-  case 1009: return "HID1";
-  case 1010: return "IABR";
-  case 1011: return "HID4";
-  case 1013: return "DABR";
-  case 1017: return "L2CR";
-  case 1019: return "ICTC";
-  case 1020: return "THRM1";
-  case 1021: return "THRM2";
-  case 1022: return "THRM3";
+  case 1:
+    return "XER";
+  case 8:
+    return "LR";
+  case 9:
+    return "CTR";
+  case 18:
+    return "DSIR";
+  case 19:
+    return "DAR";
+  case 22:
+    return "DEC";
+  case 25:
+    return "SDR1";
+  case 26:
+    return "SRR0";
+  case 27:
+    return "SRR1";
+  case 272:
+    return "SPRG0";
+  case 273:
+    return "SPRG1";
+  case 274:
+    return "SPRG2";
+  case 275:
+    return "SPRG3";
+  case 282:
+    return "EAR";
+  case 287:
+    return "PVR";
+  case 528:
+    return "IBAT0U";
+  case 529:
+    return "IBAT0L";
+  case 530:
+    return "IBAT1U";
+  case 531:
+    return "IBAT1L";
+  case 532:
+    return "IBAT2U";
+  case 533:
+    return "IBAT2L";
+  case 534:
+    return "IBAT3U";
+  case 535:
+    return "IBAT3L";
+  case 536:
+    return "DBAT0U";
+  case 537:
+    return "DBAT0L";
+  case 538:
+    return "DBAT1U";
+  case 539:
+    return "DBAT1L";
+  case 540:
+    return "DBAT2U";
+  case 541:
+    return "DBAT2L";
+  case 542:
+    return "DBAT3U";
+  case 543:
+    return "DBAT3L";
+  case 912:
+    return "GQR0";
+  case 913:
+    return "GQR1";
+  case 914:
+    return "GQR2";
+  case 915:
+    return "GQR3";
+  case 916:
+    return "GQR4";
+  case 917:
+    return "GQR5";
+  case 918:
+    return "GQR6";
+  case 919:
+    return "GQR7";
+  case 920:
+    return "HID2";
+  case 921:
+    return "WPAR";
+  case 922:
+    return "DMA_U";
+  case 923:
+    return "DMA_L";
+  case 924:
+    return "ECID_U";
+  case 925:
+    return "ECID_M";
+  case 926:
+    return "ECID_L";
+  case 936:
+    return "UMMCR0";
+  case 937:
+    return "UPMC1";
+  case 938:
+    return "UPMC2";
+  case 939:
+    return "USIA";
+  case 940:
+    return "UMMCR1";
+  case 941:
+    return "UPMC3";
+  case 942:
+    return "UPMC4";
+  case 943:
+    return "USDA";
+  case 952:
+    return "MMCR0";
+  case 953:
+    return "PMC1";
+  case 954:
+    return "PMC2";
+  case 955:
+    return "SIA";
+  case 956:
+    return "MMCR1";
+  case 957:
+    return "PMC3";
+  case 958:
+    return "PMC4";
+  case 959:
+    return "SDA";
+  case 1008:
+    return "HID0";
+  case 1009:
+    return "HID1";
+  case 1010:
+    return "IABR";
+  case 1011:
+    return "HID4";
+  case 1013:
+    return "DABR";
+  case 1017:
+    return "L2CR";
+  case 1019:
+    return "ICTC";
+  case 1020:
+    return "THRM1";
+  case 1021:
+    return "THRM2";
+  case 1022:
+    return "THRM3";
   }
 
   return StringFromFormat("%d", i);
 }
 
-
 static u32 swapda(u32 w)
 {
-  return ((w & 0xfc00ffff) | ((w&PPCAMASK) << 5) | ((w&PPCDMASK) >> 5));
+  return ((w & 0xfc00ffff) | ((w & PPCAMASK) << 5) | ((w & PPCDMASK) >> 5));
 }
-
 
 static u32 swapab(u32 w)
 {
-  return ((w & 0xffe007ff) | ((w&PPCBMASK) << 5) | ((w&PPCAMASK) >> 5));
+  return ((w & 0xffe007ff) | ((w & PPCBMASK) << 5) | ((w & PPCAMASK) >> 5));
 }
-
 
 void GekkoDisassembler::ill(u32 in)
 {
@@ -282,13 +328,16 @@ std::string GekkoDisassembler::imm(u32 in, int uimm, int type, bool hex)
   switch (type)
   {
   case 0:
-    return StringFromFormat("%s, %s, %d", regnames[(int)PPCGETD(in)], regnames[(int)PPCGETA(in)], i);
+    return StringFromFormat("%s, %s, %d", regnames[(int)PPCGETD(in)], regnames[(int)PPCGETA(in)],
+                            i);
 
   case 1:
     if (hex)
-      return StringFromFormat("%s, %s, 0x%.4X", regnames[(int)PPCGETA(in)], regnames[(int)PPCGETD(in)], i);
+      return StringFromFormat("%s, %s, 0x%.4X", regnames[(int)PPCGETA(in)],
+                              regnames[(int)PPCGETD(in)], i);
     else
-      return StringFromFormat("%s, %s, %d", regnames[(int)PPCGETA(in)], regnames[(int)PPCGETD(in)], i);
+      return StringFromFormat("%s, %s, %d", regnames[(int)PPCGETA(in)], regnames[(int)PPCGETD(in)],
+                              i);
 
   case 2:
     return StringFromFormat("%s, %d", regnames[(int)PPCGETA(in)], i);
@@ -304,12 +353,10 @@ std::string GekkoDisassembler::imm(u32 in, int uimm, int type, bool hex)
   }
 }
 
-
 std::string GekkoDisassembler::ra_rb(u32 in)
 {
   return StringFromFormat("%s, %s", regnames[(int)PPCGETA(in)], regnames[(int)PPCGETB(in)]);
 }
-
 
 std::string GekkoDisassembler::rd_ra_rb(u32 in, int mask)
 {
@@ -334,7 +381,6 @@ std::string GekkoDisassembler::rd_ra_rb(u32 in, int mask)
   return result;
 }
 
-
 std::string GekkoDisassembler::fd_ra_rb(u32 in, int mask)
 {
   std::string result;
@@ -355,11 +401,9 @@ std::string GekkoDisassembler::fd_ra_rb(u32 in, int mask)
   return result;
 }
 
-
 void GekkoDisassembler::trapi(u32 in, unsigned char dmode)
 {
   const char* cnd = trap_condition[PPCGETD(in)];
-
 
   m_flags |= dmode;
   if (cnd != nullptr)
@@ -373,7 +417,6 @@ void GekkoDisassembler::trapi(u32 in, unsigned char dmode)
   }
   m_operands += imm(in, 0, 2, false);
 }
-
 
 void GekkoDisassembler::cmpi(u32 in, int uimm)
 {
@@ -399,7 +442,6 @@ void GekkoDisassembler::cmpi(u32 in, int uimm)
     ill(in);
   }
 }
-
 
 void GekkoDisassembler::addi(u32 in, const std::string& ext)
 {
@@ -451,9 +493,10 @@ size_t GekkoDisassembler::branch(u32 in, const char* bname, int aform, int bdisp
         m_operands = StringFromFormat("%d, %d", bo, bi);
       }
     }
-    else // Branch conditional
+    else  // Branch conditional
     {
-      m_opcode = StringFromFormat("b%s%s%s%c", b_condition[((bo & 8) >> 1) + (bi & 3)], bname, ext, y);
+      m_opcode =
+          StringFromFormat("b%s%s%s%c", b_condition[((bo & 8) >> 1) + (bi & 3)], bname, ext, y);
 
       if (bi >= 4)
       {
@@ -475,7 +518,6 @@ size_t GekkoDisassembler::branch(u32 in, const char* bname, int aform, int bdisp
   return m_operands.length();
 }
 
-
 void GekkoDisassembler::bc(u32 in)
 {
   unsigned int d = (int)(in & 0xfffc);
@@ -493,7 +535,6 @@ void GekkoDisassembler::bc(u32 in)
   m_type = PPCINSTR_BRANCH;
   m_displacement = d;
 }
-
 
 void GekkoDisassembler::bli(u32 in)
 {
@@ -513,7 +554,6 @@ void GekkoDisassembler::bli(u32 in)
   m_displacement = d;
 }
 
-
 void GekkoDisassembler::mcrf(u32 in, char c)
 {
   if ((in & 0x0063f801) == 0)
@@ -526,7 +566,6 @@ void GekkoDisassembler::mcrf(u32 in, char c)
     ill(in);
   }
 }
-
 
 void GekkoDisassembler::crop(u32 in, const char* n1, const char* n2)
 {
@@ -547,7 +586,6 @@ void GekkoDisassembler::crop(u32 in, const char* n1, const char* n2)
     ill(in);
   }
 }
-
 
 void GekkoDisassembler::nooper(u32 in, const char* name, unsigned char dmode)
 {
@@ -571,16 +609,15 @@ void GekkoDisassembler::rlw(u32 in, const char* name, int i)
   int me = (int)PPCGETM(in);
 
   m_opcode = StringFromFormat("rlw%s%c", name, in & 1 ? '.' : '\0');
-  m_operands = StringFromFormat("%s, %s, %s%d, %d, %d (%08x)", regnames[a], regnames[s], regsel[i], bsh, mb, me, HelperRotateMask(bsh, mb, me));
+  m_operands = StringFromFormat("%s, %s, %s%d, %d, %d (%08x)", regnames[a], regnames[s], regsel[i],
+                                bsh, mb, me, HelperRotateMask(bsh, mb, me));
 }
-
 
 void GekkoDisassembler::ori(u32 in, const char* name)
 {
   m_opcode = name;
   m_operands = imm(in, 1, 1, true);
 }
-
 
 void GekkoDisassembler::rld(u32 in, const char* name, int i)
 {
@@ -594,7 +631,6 @@ void GekkoDisassembler::rld(u32 in, const char* name, int i)
   m_operands = StringFromFormat("%s, %s, %s%d, %d", regnames[a], regnames[s], regsel[i], bsh, m);
 }
 
-
 void GekkoDisassembler::cmp(u32 in)
 {
   int i = (int)PPCGETL(in);
@@ -604,7 +640,7 @@ void GekkoDisassembler::cmp(u32 in)
     if (i != 0)
       m_flags |= PPCF_64;
 
-    m_opcode = cmpname[((in&PPCIDX2MASK) ? 2 : 0) + i];
+    m_opcode = cmpname[((in & PPCIDX2MASK) ? 2 : 0) + i];
 
     i = (int)PPCGETCRD(in);
     if (i != 0)
@@ -617,7 +653,6 @@ void GekkoDisassembler::cmp(u32 in)
     ill(in);
   }
 }
-
 
 void GekkoDisassembler::trap(u32 in, unsigned char dmode)
 {
@@ -653,7 +688,8 @@ void GekkoDisassembler::trap(u32 in, unsigned char dmode)
 }
 
 // Standard instruction: xxxx rD,rA,rB
-void GekkoDisassembler::dab(u32 in, const char* name, int mask, int smode, int chkoe, int chkrc, unsigned char dmode)
+void GekkoDisassembler::dab(u32 in, const char* name, int mask, int smode, int chkoe, int chkrc,
+                            unsigned char dmode)
 {
   if (chkrc >= 0 && ((in & 1) != (unsigned int)chkrc))
   {
@@ -667,13 +703,15 @@ void GekkoDisassembler::dab(u32 in, const char* name, int mask, int smode, int c
     if (smode)
       in = swapda(in);
 
-    m_opcode = StringFromFormat("%s%s%s", name, oesel[chkoe && (in&PPCOE)], rcsel[(chkrc < 0) && (in & 1)]);
+    m_opcode = StringFromFormat("%s%s%s", name, oesel[chkoe && (in & PPCOE)],
+                                rcsel[(chkrc < 0) && (in & 1)]);
     m_operands = rd_ra_rb(in, mask);
   }
 }
 
 // Last operand is no register: xxxx rD,rA,NB
-void GekkoDisassembler::rrn(u32 in, const char* name, int smode, int chkoe, int chkrc, unsigned char dmode)
+void GekkoDisassembler::rrn(u32 in, const char* name, int smode, int chkoe, int chkrc,
+                            unsigned char dmode)
 {
   if (chkrc >= 0 && ((in & 1) != (unsigned int)chkrc))
   {
@@ -687,13 +725,13 @@ void GekkoDisassembler::rrn(u32 in, const char* name, int smode, int chkoe, int 
     if (smode)
       in = swapda(in);
 
-    m_opcode = StringFromFormat("%s%s%s", name, oesel[chkoe && (in&PPCOE)], rcsel[(chkrc < 0) && (in & 1)]);
+    m_opcode = StringFromFormat("%s%s%s", name, oesel[chkoe && (in & PPCOE)],
+                                rcsel[(chkrc < 0) && (in & 1)]);
 
     m_operands = rd_ra_rb(in, 6);
     m_operands += StringFromFormat(",%d", (int)PPCGETB(in));
   }
 }
-
 
 void GekkoDisassembler::mtcr(u32 in)
 {
@@ -715,7 +753,6 @@ void GekkoDisassembler::mtcr(u32 in)
   }
 }
 
-
 void GekkoDisassembler::msr(u32 in, int smode)
 {
   int s = (int)PPCGETD(in);
@@ -736,7 +773,6 @@ void GekkoDisassembler::msr(u32 in, int smode)
       m_operands = StringFromFormat("%s, %d", regnames[s], sr);
   }
 }
-
 
 void GekkoDisassembler::mspr(u32 in, int smode)
 {
@@ -790,7 +826,6 @@ void GekkoDisassembler::mspr(u32 in, int smode)
   }
 }
 
-
 void GekkoDisassembler::mtb(u32 in)
 {
   int d = (int)PPCGETD(in);
@@ -825,7 +860,6 @@ void GekkoDisassembler::mtb(u32 in)
     m_opcode = StringFromFormat("mftb%c", x);
   }
 }
-
 
 void GekkoDisassembler::sradi(u32 in)
 {
@@ -906,7 +940,6 @@ void GekkoDisassembler::fdab(u32 in, const char* name, int mask)
   m_operands = fd_ra_rb(in, mask);
 }
 
-
 void GekkoDisassembler::fcmp(u32 in, char c)
 {
   if (in & 0x00600001)
@@ -916,10 +949,10 @@ void GekkoDisassembler::fcmp(u32 in, char c)
   else
   {
     m_opcode = StringFromFormat("fcmp%c", c);
-    m_operands = StringFromFormat("cr%d,f%d,f%d", (int)PPCGETCRD(in), (int)PPCGETA(in), (int)PPCGETB(in));
+    m_operands =
+        StringFromFormat("cr%d,f%d,f%d", (int)PPCGETCRD(in), (int)PPCGETA(in), (int)PPCGETB(in));
   }
 }
-
 
 void GekkoDisassembler::mtfsb(u32 in, int n)
 {
@@ -933,7 +966,6 @@ void GekkoDisassembler::mtfsb(u32 in, int n)
     m_operands = StringFromFormat("%d", (int)PPCGETD(in));
   }
 }
-
 
 // Paired instructions
 
@@ -986,7 +1018,6 @@ void GekkoDisassembler::mtfsb(u32 in, int n)
 #define IX ((inst >> 7) & 0x7)
 #define WX ((inst >> 10) & 0x1)
 
-
 void GekkoDisassembler::ps(u32 inst)
 {
   switch ((inst >> 1) & 0x1F)
@@ -1031,27 +1062,27 @@ void GekkoDisassembler::ps(u32 inst)
     m_operands = StringFromFormat("p%u, p%u*p%u", FD, FA, FC);
     return;
 
-  case 26: // rsqrte
+  case 26:  // rsqrte
     m_opcode = "ps_rsqrte";
     m_operands = StringFromFormat("p%u, p%u", FD, FB);
     return;
 
-  case 28: // msub
+  case 28:  // msub
     m_opcode = "ps_msub";
     m_operands = StringFromFormat("p%u, p%u*p%u-p%u", FD, FA, FC, FB);
     return;
 
-  case 29: // madd
+  case 29:  // madd
     m_opcode = "ps_madd";
     m_operands = StringFromFormat("p%u, p%u*p%u+p%u", FD, FA, FC, FB);
     return;
 
-  case 30: // nmsub
+  case 30:  // nmsub
     m_opcode = "ps_nmsub";
     m_operands = StringFromFormat("p%u, -(p%u*p%u-p%u)", FD, FA, FC, FB);
     return;
 
-  case 31: // nmadd
+  case 31:  // nmadd
     m_opcode = "ps_nmadd";
     m_operands = StringFromFormat("p%u, -(p%u*p%u+p%u)", FD, FA, FC, FB);
     return;
@@ -1089,13 +1120,13 @@ void GekkoDisassembler::ps(u32 inst)
 
   switch ((inst >> 1) & 0x3FF)
   {
-    // 10-bit suckers  (?)
-  case 40: // nmadd
+  // 10-bit suckers  (?)
+  case 40:  // nmadd
     m_opcode = "ps_neg";
     m_operands = StringFromFormat("p%u, -p%u", FD, FB);
     return;
 
-  case 72: // nmadd
+  case 72:  // nmadd
     m_opcode = "ps_mr";
     m_operands = StringFromFormat("p%u, p%u", FD, FB);
     return;
@@ -1166,7 +1197,8 @@ void GekkoDisassembler::ps_mem(u32 inst)
 
   case 57:
     m_opcode = "psq_lu";
-    m_operands = StringFromFormat("p%u, %i(r%u), %d, qr%d", RS, SEX12(inst & 0xFFF), RA, W, I);;
+    m_operands = StringFromFormat("p%u, %i(r%u), %d, qr%d", RS, SEX12(inst & 0xFFF), RA, W, I);
+    ;
     break;
 
   case 60:
@@ -1189,8 +1221,7 @@ u32* GekkoDisassembler::DoDisassembly(bool big_endian)
 
   if (!big_endian)
   {
-    in = (in & 0xff) << 24 | (in & 0xff00) << 8 | (in & 0xff0000) >> 8 |
-      (in & 0xff000000) >> 24;
+    in = (in & 0xff) << 24 | (in & 0xff00) << 8 | (in & 0xff0000) >> 8 | (in & 0xff000000) >> 24;
   }
 
   m_opcode.clear();
@@ -1201,11 +1232,11 @@ u32* GekkoDisassembler::DoDisassembly(bool big_endian)
   switch (PPCGETIDX(in))
   {
   case 2:
-    trapi(in, PPCF_64); // tdi
+    trapi(in, PPCF_64);  // tdi
     break;
 
   case 3:
-    trapi(in, 0); // twi
+    trapi(in, 0);  // twi
     break;
 
   case 4:
@@ -1230,15 +1261,15 @@ u32* GekkoDisassembler::DoDisassembly(bool big_endian)
     break;
 
   case 10:
-    cmpi(in, 1);      // cmpli
+    cmpi(in, 1);  // cmpli
     break;
 
   case 11:
-    cmpi(in, 0);      // cmpi
+    cmpi(in, 0);  // cmpi
     break;
 
   case 12:
-    addi(in, "ic");   // addic
+    addi(in, "ic");  // addic
     break;
 
   case 13:
@@ -1246,11 +1277,11 @@ u32* GekkoDisassembler::DoDisassembly(bool big_endian)
     break;
 
   case 14:
-    addi(in, "i");    // addi
+    addi(in, "i");  // addi
     break;
 
   case 15:
-    addi(in, "is");   // addis
+    addi(in, "is");  // addis
     break;
 
   case 16:
@@ -1276,11 +1307,11 @@ u32* GekkoDisassembler::DoDisassembly(bool big_endian)
       break;
 
     case 16:
-      branch(in, "lr", 0, 0);    // bclr
+      branch(in, "lr", 0, 0);  // bclr
       break;
 
     case 33:
-      crop(in, "nor", "not");    // crnor
+      crop(in, "nor", "not");  // crnor
       break;
 
     case 50:
@@ -1288,7 +1319,7 @@ u32* GekkoDisassembler::DoDisassembly(bool big_endian)
       break;
 
     case 129:
-      crop(in, "andc", nullptr); // crandc
+      crop(in, "andc", nullptr);  // crandc
       break;
 
     case 150:
@@ -1296,11 +1327,11 @@ u32* GekkoDisassembler::DoDisassembly(bool big_endian)
       break;
 
     case 193:
-      crop(in, "xor", "clr");    // crxor
+      crop(in, "xor", "clr");  // crxor
       break;
 
     case 225:
-      crop(in, "nand", nullptr); // crnand
+      crop(in, "nand", nullptr);  // crnand
       break;
 
     case 257:
@@ -1308,7 +1339,7 @@ u32* GekkoDisassembler::DoDisassembly(bool big_endian)
       break;
 
     case 289:
-      crop(in, "eqv", "set");    // creqv
+      crop(in, "eqv", "set");  // creqv
       break;
 
     case 417:
@@ -1316,11 +1347,11 @@ u32* GekkoDisassembler::DoDisassembly(bool big_endian)
       break;
 
     case 449:
-      crop(in, "or", "move");    // cror
+      crop(in, "or", "move");  // cror
       break;
 
     case 528:
-      branch(in, "ctr", 0, 0);   // bcctr
+      branch(in, "ctr", 0, 0);  // bcctr
       break;
 
     default:
@@ -1330,11 +1361,11 @@ u32* GekkoDisassembler::DoDisassembly(bool big_endian)
     break;
 
   case 20:
-    rlw(in, "imi", 0); // rlwimi
+    rlw(in, "imi", 0);  // rlwimi
     break;
 
   case 21:
-    rlw(in, "inm", 0); // rlwinm
+    rlw(in, "inm", 0);  // rlwinm
     break;
 
   case 23:
@@ -1378,13 +1409,13 @@ u32* GekkoDisassembler::DoDisassembly(bool big_endian)
       rld(in, "icr", 0);  // rldicr
       break;
     case 2:
-      rld(in, "ic", 0);   // rldic
+      rld(in, "ic", 0);  // rldic
       break;
     case 3:
       rld(in, "imi", 0);  // rldimi
       break;
     case 4:
-      rld(in, in & 2 ? "cl" : "cr", 1); // rldcl, rldcr
+      rld(in, in & 2 ? "cl" : "cr", 1);  // rldcl, rldcr
       break;
     default:
       ill(in);
@@ -1400,14 +1431,14 @@ u32* GekkoDisassembler::DoDisassembly(bool big_endian)
       if (in & 1)
         ill(in);
       else
-        cmp(in); // cmp, cmpl
+        cmp(in);  // cmp, cmpl
       break;
 
     case 4:
       if (in & 1)
         ill(in);
       else
-        trap(in, 0); // tw
+        trap(in, 0);  // tw
       break;
 
     case 8:
@@ -1498,7 +1529,7 @@ u32* GekkoDisassembler::DoDisassembly(bool big_endian)
       break;
 
     case 68:
-      trap(in, PPCF_64); // td
+      trap(in, PPCF_64);  // td
       break;
 
     case 73:
@@ -1608,7 +1639,7 @@ u32* GekkoDisassembler::DoDisassembly(bool big_endian)
       break;
 
     case 210:
-      msr(in, 1); // mfsr
+      msr(in, 1);  // mfsr
       break;
 
     case 214:
@@ -1703,7 +1734,7 @@ u32* GekkoDisassembler::DoDisassembly(bool big_endian)
       break;
 
     case 339:
-      mspr(in, 0); // mfspr
+      mspr(in, 0);  // mfspr
       break;
 
     case 341:
@@ -1719,7 +1750,7 @@ u32* GekkoDisassembler::DoDisassembly(bool big_endian)
       break;
 
     case 371:
-      mtb(in); // mftb
+      mtb(in);  // mftb
       break;
 
     case 373:
@@ -1739,7 +1770,7 @@ u32* GekkoDisassembler::DoDisassembly(bool big_endian)
       break;
 
     case 413:
-      sradi(in); // sradi
+      sradi(in);  // sradi
       break;
 
     case 434:
@@ -1775,7 +1806,7 @@ u32* GekkoDisassembler::DoDisassembly(bool big_endian)
       break;
 
     case 467:
-      mspr(in, 1); // mtspr
+      mspr(in, 1);  // mtspr
       break;
 
     case 470:
@@ -1844,7 +1875,7 @@ u32* GekkoDisassembler::DoDisassembly(bool big_endian)
       break;
 
     case 595:
-      msr(in, 0); // mfsr
+      msr(in, 0);  // mfsr
       break;
 
     case 597:
@@ -2001,13 +2032,13 @@ u32* GekkoDisassembler::DoDisassembly(bool big_endian)
     switch (in & 3)
     {
     case 0:
-      ldst(in&~3, "ld", 'r', PPCF_64);
+      ldst(in & ~3, "ld", 'r', PPCF_64);
       break;
     case 1:
-      ldst(in&~3, "ldu", 'r', PPCF_64);
+      ldst(in & ~3, "ldu", 'r', PPCF_64);
       break;
     case 2:
-      ldst(in&~3, "lwa", 'r', PPCF_64);
+      ldst(in & ~3, "lwa", 'r', PPCF_64);
       break;
     default:
       ill(in);
@@ -2068,10 +2099,10 @@ u32* GekkoDisassembler::DoDisassembly(bool big_endian)
     switch (in & 3)
     {
     case 0:
-      ldst(in&~3, "std", 'r', PPCF_64);
+      ldst(in & ~3, "std", 'r', PPCF_64);
       break;
     case 1:
-      ldst(in&~3, "stdu", 'r', PPCF_64);
+      ldst(in & ~3, "stdu", 'r', PPCF_64);
       break;
     default:
       ill(in);
@@ -2166,7 +2197,7 @@ u32* GekkoDisassembler::DoDisassembly(bool big_endian)
         break;
 
       case 64:
-        mcrf(in, 's'); // mcrfs
+        mcrf(in, 's');  // mcrfs
         break;
 
       case 70:
@@ -2208,7 +2239,8 @@ u32* GekkoDisassembler::DoDisassembly(bool big_endian)
         if ((in & 0x02010000) == 0)
         {
           m_opcode = StringFromFormat("mtfsf%s", rcsel[in & 1]);
-          m_operands = StringFromFormat("0x%x,%u", (unsigned int)(in >> 17) & 0x01fe, (unsigned int)PPCGETB(in));
+          m_operands = StringFromFormat("0x%x,%u", (unsigned int)(in >> 17) & 0x01fe,
+                                        (unsigned int)PPCGETB(in));
         }
         else
         {
@@ -2243,7 +2275,8 @@ u32* GekkoDisassembler::DoDisassembly(bool big_endian)
 }
 
 // simplified interface
-std::string GekkoDisassembler::Disassemble(u32 opcode, u32 current_instruction_address, bool big_endian)
+std::string GekkoDisassembler::Disassemble(u32 opcode, u32 current_instruction_address,
+                                           bool big_endian)
 {
   u32 opc = opcode;
   u32 addr = current_instruction_address;
@@ -2259,7 +2292,7 @@ std::string GekkoDisassembler::Disassemble(u32 opcode, u32 current_instruction_a
 static const char* gprnames[] = {
     " r0", " r1 (sp)", " r2 (rtoc)", " r3", " r4", " r5", " r6", " r7", " r8", " r9", "r10",
     "r11", "r12",      "r13",        "r14", "r15", "r16", "r17", "r18", "r19", "r20", "r21",
-    "r22", "r23",      "r24",        "r25", "r26", "r27", "r28", "r29", "r30", "r31" };
+    "r22", "r23",      "r24",        "r25", "r26", "r27", "r28", "r29", "r30", "r31"};
 
 const char* GekkoDisassembler::GetGPRName(u32 index)
 {
@@ -2269,13 +2302,10 @@ const char* GekkoDisassembler::GetGPRName(u32 index)
   return nullptr;
 }
 
-static const char* fprnames[] =
-{
-    " f0", " f1", " f2", " f3", " f4", " f5", " f6", " f7",
-    " f8", " f9", "f10", "f11", "f12", "f13", "f14", "f15",
-    "f16", "f17", "f18", "f19", "f20", "f21", "f22", "f23",
-    "f24", "f25", "f26", "f27", "f28", "f29", "f30", "f31"
-};
+static const char* fprnames[] = {" f0", " f1", " f2", " f3", " f4", " f5", " f6", " f7",
+                                 " f8", " f9", "f10", "f11", "f12", "f13", "f14", "f15",
+                                 "f16", "f17", "f18", "f19", "f20", "f21", "f22", "f23",
+                                 "f24", "f25", "f26", "f27", "f28", "f29", "f30", "f31"};
 
 const char* GekkoDisassembler::GetFPRName(u32 index)
 {

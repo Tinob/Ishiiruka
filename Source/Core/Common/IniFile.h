@@ -56,7 +56,7 @@ public:
     void Set(const std::string& key, const std::vector<std::string>& newValues);
 
     bool Get(const std::string& key, std::string* value,
-      const std::string& defaultValue = NULL_STRING) const;
+             const std::string& defaultValue = NULL_STRING) const;
     bool Get(const std::string& key, int* value, int defaultValue = 0) const;
     bool Get(const std::string& key, s64* value, s64 default_value = 0) const;
     bool Get(const std::string& key, u32* value, u32 defaultValue = 0) const;
@@ -86,15 +86,15 @@ public:
   };
 
   /**
-  * Loads sections and keys.
-  * @param filename filename of the ini file which should be loaded
-  * @param keep_current_data If true, "extends" the currently loaded list of sections and keys with
-  * the loaded data (and replaces existing entries). If false, existing data will be erased.
-  * @warning Using any other operations than "Get*" and "Exists" is untested and will behave
-  * unexpectedly
-  * @todo This really is just a hack to support having two levels of gameinis (defaults and
-  * user-specified) and should eventually be replaced with a less stupid system.
-  */
+   * Loads sections and keys.
+   * @param filename filename of the ini file which should be loaded
+   * @param keep_current_data If true, "extends" the currently loaded list of sections and keys with
+   * the loaded data (and replaces existing entries). If false, existing data will be erased.
+   * @warning Using any other operations than "Get*" and "Exists" is untested and will behave
+   * unexpectedly
+   * @todo This really is just a hack to support having two levels of gameinis (defaults and
+   * user-specified) and should eventually be replaced with a less stupid system.
+   */
   bool Load(const std::string& filename, bool keep_current_data = false);
 
   bool Save(const std::string& filename);
@@ -127,7 +127,7 @@ public:
   void SetLines(const std::string& sectionName, const std::vector<std::string>& lines);
   void SetLines(const std::string& section_name, std::vector<std::string>&& lines);
   bool GetLines(const std::string& sectionName, std::vector<std::string>* lines,
-    const bool remove_comments = true) const;
+                const bool remove_comments = true) const;
 
   bool DeleteKey(const std::string& sectionName, const std::string& key);
   bool DeleteSection(const std::string& sectionName);

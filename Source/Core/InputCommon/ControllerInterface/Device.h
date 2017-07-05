@@ -130,14 +130,18 @@ class DeviceQualifier
 public:
   DeviceQualifier() : cid(-1) {}
   DeviceQualifier(const std::string& _source, const int _id, const std::string& _name)
-    : source(_source), cid(_id), name(_name)
+      : source(_source), cid(_id), name(_name)
   {
   }
   void FromDevice(const Device* const dev);
   void FromString(const std::string& str);
   std::string ToString() const;
+
   bool operator==(const DeviceQualifier& devq) const;
-  bool operator==(const Device* const dev) const;
+  bool operator!=(const DeviceQualifier& devq) const;
+
+  bool operator==(const Device* dev) const;
+  bool operator!=(const Device* dev) const;
 
   std::string source;
   int cid;

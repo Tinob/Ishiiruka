@@ -20,7 +20,7 @@ class JitBlockList : public wxListCtrl
 {
 public:
   JitBlockList(wxWindow* parent, const wxWindowID id, const wxPoint& pos, const wxSize& size,
-    long style);
+               long style);
   void Init();
   void Repopulate();
 };
@@ -29,8 +29,8 @@ class CJitWindow : public wxPanel
 {
 public:
   CJitWindow(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition,
-    const wxSize& size = wxDefaultSize, long style = wxTAB_TRAVERSAL | wxBORDER_NONE,
-    const wxString& name = _("JIT Block Viewer"));
+             const wxSize& size = wxDefaultSize, long style = wxTAB_TRAVERSAL | wxBORDER_NONE,
+             const wxString& name = _("JIT Block Viewer"));
 
   void ViewAddr(u32 em_address);
   void Repopulate();

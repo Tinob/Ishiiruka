@@ -36,7 +36,7 @@ public:
 
   void AddDevice(TEXIDevices device_type, int device_num);
   void AddDevice(std::unique_ptr<IEXIDevice> device, int device_num,
-    bool notify_presence_changed = true);
+                 bool notify_presence_changed = true);
 
   // Remove all devices
   void RemoveDevices();
@@ -82,7 +82,7 @@ private:
       u32 : 18;
     };
     UEXI_STATUS() = default;
-    explicit UEXI_STATUS(u32 hex) : Hex{ hex } {}
+    explicit UEXI_STATUS(u32 hex) : Hex{hex} {}
   };
 
   // EXI Control Register

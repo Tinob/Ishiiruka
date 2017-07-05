@@ -17,6 +17,7 @@
 #endif
 
 #include "Common/CommonTypes.h"
+#include "Common/File.h"
 #include "Common/FileUtil.h"
 #include "Common/SettingsHandler.h"
 #include "Common/Timer.h"
@@ -30,7 +31,7 @@ bool SettingsHandler::Open(const std::string& settings_file_path)
 {
   Reset();
 
-  File::IOFile file{ settings_file_path, "rb" };
+  File::IOFile file{settings_file_path, "rb"};
   if (!file.ReadBytes(m_buffer.data(), m_buffer.size()))
     return false;
 
@@ -43,7 +44,7 @@ bool SettingsHandler::Save(const std::string& destination_file_path) const
   if (!File::CreateFullPath(destination_file_path))
     return false;
 
-  File::IOFile file{ destination_file_path, "wb" };
+  File::IOFile file{destination_file_path, "wb"};
   return file.WriteBytes(m_buffer.data(), m_buffer.size());
 }
 

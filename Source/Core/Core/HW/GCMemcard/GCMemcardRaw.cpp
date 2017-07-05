@@ -7,10 +7,13 @@
 #include <chrono>
 #include <cstring>
 #include <memory>
+#include <mutex>
 #include <string>
+#include <thread>
 
 #include "Common/ChunkFile.h"
 #include "Common/CommonTypes.h"
+#include "Common/File.h"
 #include "Common/FileUtil.h"
 #include "Common/Logging/Log.h"
 #include "Common/StringUtil.h"
@@ -23,7 +26,7 @@
 #define MC_HDR_SIZE 0xA000
 
 MemoryCard::MemoryCard(const std::string& filename, int card_index, u16 size_mbits)
-  : MemoryCardBase(card_index, size_mbits), m_filename(filename)
+    : MemoryCardBase(card_index, size_mbits), m_filename(filename)
 {
   File::IOFile file(m_filename, "rb");
   if (file)
@@ -46,7 +49,7 @@ MemoryCard::MemoryCard(const std::string& filename, int card_index, u16 size_mbi
     m_memcard_data = std::make_unique<u8[]>(m_memory_card_size);
     // Fills in MC_HDR_SIZE bytes
     GCMemcard::Format(&m_memcard_data[0], m_filename.find(".JAP.raw") != std::string::npos,
-      size_mbits);
+                      size_mbits);
     memset(&m_memcard_data[MC_HDR_SIZE], 0xFF, m_memory_card_size - MC_HDR_SIZE);
 
     INFO_LOG(EXPANSIONINTERFACE, "No memory card found. A new one was created instead.");
@@ -76,7 +79,7 @@ void MemoryCard::FlushThread()
   }
 
   Common::SetCurrentThreadName(
-    StringFromFormat("Memcard %d flushing thread", m_card_index).c_str());
+      StringFromFormat("Memcard %d flushing thread", m_card_index).c_str());
 
   const auto flush_interval = std::chrono::seconds(15);
 
@@ -113,11 +116,11 @@ void MemoryCard::FlushThread()
     if (!file)
     {
       PanicAlertT(
-        "Could not write memory card file %s.\n\n"
-        "Are you running Dolphin from a CD/DVD, or is the save file maybe write protected?\n\n"
-        "Are you receiving this after moving the emulator directory?\nIf so, then you may "
-        "need to re-specify your memory card location in the options.",
-        m_filename.c_str());
+          "Could not write memory card file %s.\n\n"
+          "Are you running Dolphin from a CD/DVD, or is the save file maybe write protected?\n\n"
+          "Are you receiving this after moving the emulator directory?\nIf so, then you may "
+          "need to re-specify your memory card location in the options.",
+          m_filename.c_str());
 
       // Exit the flushing thread - further flushes will be ignored unless
       // the thread is recreated.
@@ -133,9 +136,9 @@ void MemoryCard::FlushThread()
     if (!do_exit)
     {
       Core::DisplayMessage(StringFromFormat("Wrote memory card %c contents to %s",
-        m_card_index ? 'B' : 'A', m_filename.c_str())
-        .c_str(),
-        4000);
+                                            m_card_index ? 'B' : 'A', m_filename.c_str())
+                               .c_str(),
+                           4000);
     }
     else
     {

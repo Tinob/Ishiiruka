@@ -21,7 +21,7 @@ std::vector<u8> DecryptEncrypt(const u8* key, u8* iv, const u8* src, size_t size
     mbedtls_aes_setkey_dec(&aes_ctx, key, 128);
 
   mbedtls_aes_crypt_cbc(&aes_ctx, mode == Mode::Encrypt ? MBEDTLS_AES_ENCRYPT : MBEDTLS_AES_DECRYPT,
-    size, iv, src, buffer.data());
+                        size, iv, src, buffer.data());
 
   return buffer;
 }

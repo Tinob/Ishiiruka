@@ -251,7 +251,7 @@ void OGLPostProcessingShader::Draw(PostProcessor* p,
   const TargetRectangle& src_rect, const TargetSize& src_size, uintptr_t src_tex,
   uintptr_t src_depth_tex, int src_layer, float gamma)
 {
-  OGLPostProcessor* parent = reinterpret_cast<OGLPostProcessor*>(p);
+  OGLPostProcessor* parent = static_cast<OGLPostProcessor*>(p);
   GLuint dst_texture = static_cast<GLuint>(dst_tex);
   GLuint src_texture = static_cast<GLuint>(src_tex);
   GLuint src_depth_texture = static_cast<GLuint>(src_depth_tex);

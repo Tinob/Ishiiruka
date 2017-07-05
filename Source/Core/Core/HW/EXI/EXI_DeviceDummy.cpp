@@ -4,12 +4,14 @@
 
 #include "Core/HW/EXI/EXI_DeviceDummy.h"
 
+#include <string>
+
 #include "Common/CommonTypes.h"
 #include "Common/Logging/Log.h"
 
 namespace ExpansionInterface
 {
-CEXIDummy::CEXIDummy(const std::string& name) : m_name{ name }
+CEXIDummy::CEXIDummy(const std::string& name) : m_name{name}
 {
 }
 
@@ -27,13 +29,13 @@ u32 CEXIDummy::ImmRead(u32 size)
 void CEXIDummy::DMAWrite(u32 address, u32 size)
 {
   INFO_LOG(EXPANSIONINTERFACE, "EXI DUMMY %s DMAWrite: %08x bytes, from %08x to device",
-    m_name.c_str(), size, address);
+           m_name.c_str(), size, address);
 }
 
 void CEXIDummy::DMARead(u32 address, u32 size)
 {
   INFO_LOG(EXPANSIONINTERFACE, "EXI DUMMY %s DMARead:  %08x bytes, from device to %08x",
-    m_name.c_str(), size, address);
+           m_name.c_str(), size, address);
 }
 
 bool CEXIDummy::IsPresent() const

@@ -3,9 +3,10 @@
 // Refer to the license.txt file included.
 
 #include "Core/PowerPC/CachedInterpreter/InterpreterBlockCache.h"
+
 #include "Core/PowerPC/JitCommon/JitBase.h"
 
-BlockCache::BlockCache(JitBase& jit) : JitBaseBlockCache{ jit }
+BlockCache::BlockCache(JitBase& jit) : JitBaseBlockCache{jit}
 {
 }
 

@@ -20,7 +20,7 @@
 bool BreakPoints::IsAddressBreakPoint(u32 address) const
 {
   return std::any_of(m_breakpoints.begin(), m_breakpoints.end(),
-    [address](const auto& bp) { return bp.address == address; });
+                     [address](const auto& bp) { return bp.address == address; });
 }
 
 bool BreakPoints::IsTempBreakPoint(u32 address) const
@@ -139,9 +139,9 @@ MemChecks::TMemChecksStr MemChecks::GetStrings() const
     std::stringstream ss;
     ss << std::hex << mc.start_address;
     ss << " " << (mc.is_ranged ? mc.end_address : mc.start_address) << " "
-      << (mc.is_ranged ? "n" : "") << (mc.is_break_on_read ? "r" : "")
-      << (mc.is_break_on_write ? "w" : "") << (mc.log_on_hit ? "l" : "")
-      << (mc.break_on_hit ? "p" : "");
+       << (mc.is_ranged ? "n" : "") << (mc.is_break_on_read ? "r" : "")
+       << (mc.is_break_on_write ? "w" : "") << (mc.log_on_hit ? "l" : "")
+       << (mc.break_on_hit ? "p" : "");
     mc_strings.push_back(ss.str());
   }
 
@@ -225,9 +225,9 @@ bool MemChecks::OverlapsMemcheck(u32 address, u32 length)
   for (TMemCheck memcheck : m_mem_checks)
   {
     if (((memcheck.start_address | page_end_suffix) == page_end_address ||
-      (memcheck.end_address | page_end_suffix) == page_end_address) ||
-      ((memcheck.start_address | page_end_suffix) < page_end_address &&
-      (memcheck.end_address | page_end_suffix) > page_end_address))
+         (memcheck.end_address | page_end_suffix) == page_end_address) ||
+        ((memcheck.start_address | page_end_suffix) < page_end_address &&
+         (memcheck.end_address | page_end_suffix) > page_end_address))
     {
       return true;
     }
@@ -236,16 +236,16 @@ bool MemChecks::OverlapsMemcheck(u32 address, u32 length)
 }
 
 bool TMemCheck::Action(DebugInterface* debug_interface, u32 value, u32 addr, bool write,
-  size_t size, u32 pc)
+                       size_t size, u32 pc)
 {
   if ((write && is_break_on_write) || (!write && is_break_on_read))
   {
     if (log_on_hit)
     {
       NOTICE_LOG(MEMMAP, "MBP %08x (%s) %s%zu %0*x at %08x (%s)", pc,
-        debug_interface->GetDescription(pc).c_str(), write ? "Write" : "Read", size * 8,
-        static_cast<int>(size * 2), value, addr,
-        debug_interface->GetDescription(addr).c_str());
+                 debug_interface->GetDescription(pc).c_str(), write ? "Write" : "Read", size * 8,
+                 static_cast<int>(size * 2), value, addr,
+                 debug_interface->GetDescription(addr).c_str());
     }
     if (break_on_hit)
       return true;
@@ -256,7 +256,7 @@ bool TMemCheck::Action(DebugInterface* debug_interface, u32 value, u32 addr, boo
 bool Watches::IsAddressWatch(u32 address) const
 {
   return std::any_of(m_watches.begin(), m_watches.end(),
-    [address](const auto& watch) { return watch.address == address; });
+                     [address](const auto& watch) { return watch.address == address; });
 }
 
 Watches::TWatchesStr Watches::GetStrings() const

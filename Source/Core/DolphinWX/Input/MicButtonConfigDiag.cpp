@@ -8,8 +8,8 @@
 #include "Core/HW/GCPadEmu.h"
 
 MicButtonConfigDialog::MicButtonConfigDialog(wxWindow* const parent, InputConfig& config,
-  const wxString& name, const int port_num)
-  : InputConfigDialog(parent, config, name, port_num)
+                                             const wxString& name, const int port_num)
+    : InputConfigDialog(parent, config, name, port_num)
 {
   const int space5 = FromDIP(5);
   const int space150 = FromDIP(150);
@@ -22,7 +22,7 @@ MicButtonConfigDialog::MicButtonConfigDialog(wxWindow* const parent, InputConfig
   device_chooser_szr->AddSpacer(space5);
 
   auto* const group_box_button =
-    new ControlGroupBox(Pad::GetGroup(port_num, PadGroup::Mic), this, this);
+      new ControlGroupBox(Pad::GetGroup(port_num, PadGroup::Mic), this, this);
 
   auto* const controls_sizer = new wxBoxSizer(wxHORIZONTAL);
   controls_sizer->Add(group_box_button, 0, wxEXPAND);

@@ -10,8 +10,11 @@
 // locating performance issues.
 
 #include <algorithm>
+#include <array>
 #include <cstring>
+#include <functional>
 #include <map>
+#include <set>
 #include <utility>
 
 #include "Common/CommonTypes.h"
@@ -19,6 +22,7 @@
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
 #include "Core/PowerPC/JitCommon/JitBase.h"
+#include "Core/PowerPC/PPCSymbolDB.h"
 #include "Core/PowerPC/PowerPC.h"
 
 #ifdef _WIN32
@@ -30,10 +34,10 @@ using namespace Gen;
 bool JitBlock::OverlapsPhysicalRange(u32 address, u32 length) const
 {
   return physical_addresses.lower_bound(address) !=
-    physical_addresses.lower_bound(address + length);
+         physical_addresses.lower_bound(address + length);
 }
 
-JitBaseBlockCache::JitBaseBlockCache(JitBase& jit) : m_jit{ jit }
+JitBaseBlockCache::JitBaseBlockCache(JitBase& jit) : m_jit{jit}
 {
 }
 
@@ -103,7 +107,7 @@ JitBlock* JitBaseBlockCache::AllocateBlock(u32 em_address)
 }
 
 void JitBaseBlockCache::FinalizeBlock(JitBlock& block, bool block_link,
-  const std::set<u32>& physical_addresses)
+                                      const std::set<u32>& physical_addresses)
 {
   size_t index = FastLookupIndexForAddress(block.effectiveAddress);
   fast_block_map[index] = &block;
@@ -128,7 +132,12 @@ void JitBaseBlockCache::FinalizeBlock(JitBlock& block, bool block_link,
     LinkBlock(block);
   }
 
-  JitRegister::Register(block.checkedEntry, block.codeSize, "JIT_PPC_%08x", block.physicalAddress);
+  if (Symbol* symbol = g_symbolDB.GetSymbolFromAddr(block.effectiveAddress))
+    JitRegister::Register(block.checkedEntry, block.codeSize, "JIT_PPC_%s_%08x",
+                          symbol->function_name.c_str(), block.physicalAddress);
+  else
+    JitRegister::Register(block.checkedEntry, block.codeSize, "JIT_PPC_%08x",
+                          block.physicalAddress);
 }
 
 JitBlock* JitBaseBlockCache::GetBlockFromStartAddress(u32 addr, u32 msr)

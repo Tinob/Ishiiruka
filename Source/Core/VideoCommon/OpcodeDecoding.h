@@ -7,6 +7,8 @@
 
 class DataReader;
 
+namespace OpcodeDecoder
+{
 enum GxOpCodes : u8
 {
   GX_NOP = 0x00,
@@ -72,9 +74,6 @@ enum GxDrawMode : u32
   GX_DRAW_LINE_STRIP = 0x6,		// 0xB0
   GX_DRAW_POINTS = 0x7,			// 0xB8
 };
-
-namespace OpcodeDecoder
-{
 
 void Init();
 

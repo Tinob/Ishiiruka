@@ -139,7 +139,7 @@ std::unique_ptr<Texture2D> Texture2D::Create(u32 width, u32 height, u32 levels, 
 			height,
 			layers };
 
-		VkResult res = vkCreateFramebuffer(g_vulkan_context->GetDevice(), &framebuffer_info, nullptr,
+		res = vkCreateFramebuffer(g_vulkan_context->GetDevice(), &framebuffer_info, nullptr,
 			&framebuffer);
 		if (res != VK_SUCCESS)
 		{

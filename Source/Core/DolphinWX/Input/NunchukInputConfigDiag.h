@@ -12,5 +12,5 @@ class NunchukInputConfigDialog final : public InputConfigDialog
 {
 public:
   NunchukInputConfigDialog(wxWindow* parent, InputConfig& config, const wxString& name,
-    wxComboBox* device_cbox_parent, int port_num = 0);
+                           wxComboBox* device_cbox_parent, int port_num = 0);
 };

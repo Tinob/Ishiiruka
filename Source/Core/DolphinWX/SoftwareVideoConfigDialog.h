@@ -19,10 +19,10 @@
 class SoftwareVideoConfigDialog : public wxDialog
 {
 public:
-  SoftwareVideoConfigDialog(wxWindow* parent, const std::string &title);
+  SoftwareVideoConfigDialog(wxWindow* parent, const std::string& title);
   ~SoftwareVideoConfigDialog();
 
-  void Event_Backend(wxCommandEvent &ev)
+  void Event_Backend(wxCommandEvent& ev)
   {
     auto& new_backend = g_available_video_backends[ev.GetInt()];
 
@@ -35,6 +35,7 @@ public:
 
       g_video_backend->ShowConfig(GetParent());
     }
+
     ev.Skip();
   }
 };

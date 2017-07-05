@@ -145,13 +145,13 @@ struct OpArg
   bool operator==(const OpArg& b) const
   {
     return operandReg == b.operandReg && scale == b.scale && offsetOrBaseReg == b.offsetOrBaseReg &&
-      indexReg == b.indexReg && offset == b.offset;
+           indexReg == b.indexReg && offset == b.offset;
   }
   void WriteREX(XEmitter* emit, int opBits, int bits, int customOp = -1) const;
   void WriteVEX(XEmitter* emit, X64Reg regOp1, X64Reg regOp2, int L, int pp, int mmmmm,
-    int W = 0) const;
+                int W = 0) const;
   void WriteRest(XEmitter* emit, int extraBytes = 0, X64Reg operandReg = INVALID_REG,
-    bool warn_64bit_offset = true) const;
+                 bool warn_64bit_offset = true) const;
   void WriteSingleByteOp(XEmitter* emit, u8 op, X64Reg operandReg, int bits);
 
   u64 Imm64() const
@@ -221,7 +221,7 @@ struct OpArg
   bool IsImm() const
   {
     return scale == SCALE_IMM8 || scale == SCALE_IMM16 || scale == SCALE_IMM32 ||
-      scale == SCALE_IMM64;
+           scale == SCALE_IMM64;
   }
   bool IsSimpleReg() const { return scale == SCALE_NONE; }
   bool IsSimpleReg(X64Reg reg) const { return IsSimpleReg() && GetSimpleReg() == reg; }
@@ -254,7 +254,7 @@ struct OpArg
   void AddMemOffset(int val)
   {
     _dbg_assert_msg_(DYNA_REC, scale == SCALE_RIP || (scale <= SCALE_ATREG && scale > SCALE_NONE),
-      "Tried to increment an OpArg which doesn't have an offset");
+                     "Tried to increment an OpArg which doesn't have an offset");
     offset += val;
   }
 
@@ -370,27 +370,27 @@ private:
   void WriteSSSE3Op(u8 opPrefix, u16 op, X64Reg regOp, const OpArg& arg, int extrabytes = 0);
   void WriteSSE41Op(u8 opPrefix, u16 op, X64Reg regOp, const OpArg& arg, int extrabytes = 0);
   void WriteVEXOp(u8 opPrefix, u16 op, X64Reg regOp1, X64Reg regOp2, const OpArg& arg, int W = 0,
-    int extrabytes = 0);
+                  int extrabytes = 0);
   void WriteVEXOp4(u8 opPrefix, u16 op, X64Reg regOp1, X64Reg regOp2, const OpArg& arg,
-    X64Reg regOp3, int W = 0);
+                   X64Reg regOp3, int W = 0);
   void WriteAVXOp(u8 opPrefix, u16 op, X64Reg regOp1, X64Reg regOp2, const OpArg& arg, int W = 0,
-    int extrabytes = 0);
+                  int extrabytes = 0);
   void WriteAVXOp4(u8 opPrefix, u16 op, X64Reg regOp1, X64Reg regOp2, const OpArg& arg,
-    X64Reg regOp3, int W = 0);
+                   X64Reg regOp3, int W = 0);
   void WriteFMA3Op(u8 op, X64Reg regOp1, X64Reg regOp2, const OpArg& arg, int W = 0);
   void WriteFMA4Op(u8 op, X64Reg dest, X64Reg regOp1, X64Reg regOp2, const OpArg& arg, int W = 0);
   void WriteBMIOp(int size, u8 opPrefix, u16 op, X64Reg regOp1, X64Reg regOp2, const OpArg& arg,
-    int extrabytes = 0);
+                  int extrabytes = 0);
   void WriteBMI1Op(int size, u8 opPrefix, u16 op, X64Reg regOp1, X64Reg regOp2, const OpArg& arg,
-    int extrabytes = 0);
+                   int extrabytes = 0);
   void WriteBMI2Op(int size, u8 opPrefix, u16 op, X64Reg regOp1, X64Reg regOp2, const OpArg& arg,
-    int extrabytes = 0);
+                   int extrabytes = 0);
   void WriteMOVBE(int bits, u8 op, X64Reg regOp, const OpArg& arg);
   void WriteFloatLoadStore(int bits, FloatOp op, FloatOp op_80b, const OpArg& arg);
   void WriteNormalOp(int bits, NormalOp op, const OpArg& a1, const OpArg& a2);
 
   void ABI_CalculateFrameSize(BitSet32 mask, size_t rsp_alignment, size_t needed_frame_size,
-    size_t* shadowp, size_t* subtractionp, size_t* xmm_offsetp);
+                              size_t* shadowp, size_t* subtractionp, size_t* xmm_offsetp);
 
 protected:
   void Write8(u8 value);
@@ -447,7 +447,7 @@ public:
   void LAHF();  // 3 cycle vector path
   void SAHF();  // direct path fast
 
-                // Stack control
+  // Stack control
   void PUSH(X64Reg reg);
   void POP(X64Reg reg);
   void PUSH(int bits, const OpArg& reg);
@@ -489,7 +489,7 @@ public:
   void BSF(int bits, X64Reg dest, const OpArg& src);  // Bottom bit to top bit
   void BSR(int bits, X64Reg dest, const OpArg& src);  // Top bit to bottom bit
 
-                                                      // Cache control
+  // Cache control
   enum PrefetchLevel
   {
     PF_NTA,  // Non-temporal (data used once and only once)
@@ -568,14 +568,14 @@ public:
 
   // Sign/zero extension
   void MOVSX(int dbits, int sbits, X64Reg dest,
-    OpArg src);  // automatically uses MOVSXD if necessary
+             OpArg src);  // automatically uses MOVSXD if necessary
   void MOVZX(int dbits, int sbits, X64Reg dest, OpArg src);
 
   // Available only on Atom or >= Haswell so far. Test with cpu_info.bMOVBE.
   void MOVBE(int bits, X64Reg dest, const OpArg& src);
   void MOVBE(int bits, const OpArg& dest, X64Reg src);
   void LoadAndSwap(int size, X64Reg dst, const OpArg& src, bool sign_extend = false,
-    MovInfo* info = nullptr);
+                   MovInfo* info = nullptr);
   void SwapAndStore(int size, const OpArg& dst, X64Reg src, MovInfo* info = nullptr);
 
   // Available only on AMD >= Phenom or Intel >= Haswell
@@ -966,29 +966,29 @@ public:
   void name(X64Reg dest, X64Reg regOp1, const OpArg& arg, X64Reg regOp2);
 
   FMA4(VFMADDSUBPS)
-    FMA4(VFMADDSUBPD)
-    FMA4(VFMSUBADDPS)
-    FMA4(VFMSUBADDPD)
-    FMA4(VFMADDPS)
-    FMA4(VFMADDPD)
-    FMA4(VFMADDSS)
-    FMA4(VFMADDSD)
-    FMA4(VFMSUBPS)
-    FMA4(VFMSUBPD)
-    FMA4(VFMSUBSS)
-    FMA4(VFMSUBSD)
-    FMA4(VFNMADDPS)
-    FMA4(VFNMADDPD)
-    FMA4(VFNMADDSS)
-    FMA4(VFNMADDSD)
-    FMA4(VFNMSUBPS)
-    FMA4(VFNMSUBPD)
-    FMA4(VFNMSUBSS)
-    FMA4(VFNMSUBSD)
+  FMA4(VFMADDSUBPD)
+  FMA4(VFMSUBADDPS)
+  FMA4(VFMSUBADDPD)
+  FMA4(VFMADDPS)
+  FMA4(VFMADDPD)
+  FMA4(VFMADDSS)
+  FMA4(VFMADDSD)
+  FMA4(VFMSUBPS)
+  FMA4(VFMSUBPD)
+  FMA4(VFMSUBSS)
+  FMA4(VFMSUBSD)
+  FMA4(VFNMADDPS)
+  FMA4(VFNMADDPD)
+  FMA4(VFNMADDSS)
+  FMA4(VFNMADDSD)
+  FMA4(VFNMSUBPS)
+  FMA4(VFNMSUBPD)
+  FMA4(VFNMSUBSS)
+  FMA4(VFNMSUBSD)
 #undef FMA4
 
-    // VEX GPR instructions
-    void SARX(int bits, X64Reg regOp1, const OpArg& arg, X64Reg regOp2);
+  // VEX GPR instructions
+  void SARX(int bits, X64Reg regOp1, const OpArg& arg, X64Reg regOp2);
   void SHLX(int bits, X64Reg regOp1, const OpArg& arg, X64Reg regOp2);
   void SHRX(int bits, X64Reg regOp1, const OpArg& arg, X64Reg regOp2);
   void RORX(int bits, X64Reg regOp, const OpArg& arg, u8 rotate);
@@ -1011,8 +1011,8 @@ public:
   void ABI_CallFunction(FunctionPointer func)
   {
     static_assert(std::is_pointer<FunctionPointer>() &&
-      std::is_function<std::remove_pointer_t<FunctionPointer>>(),
-      "Supplied type must be a function pointer.");
+                      std::is_function<std::remove_pointer_t<FunctionPointer>>(),
+                  "Supplied type must be a function pointer.");
 
     const void* ptr = reinterpret_cast<const void*>(func);
     const u64 address = reinterpret_cast<u64>(ptr);
@@ -1088,7 +1088,7 @@ public:
 
   template <typename FunctionPointer>
   void ABI_CallFunctionCCCP(FunctionPointer func, u32 param1, u32 param2, u32 param3,
-    const void* param4)
+                            const void* param4)
   {
     MOV(32, R(ABI_PARAM1), Imm32(param1));
     MOV(32, R(ABI_PARAM2), Imm32(param2));
@@ -1155,9 +1155,9 @@ public:
   // required by the ABI, where the previous alignment was as specified.
   // Push returns the size of the shadow space, i.e. the offset of the frame.
   size_t ABI_PushRegistersAndAdjustStack(BitSet32 mask, size_t rsp_alignment,
-    size_t needed_frame_size = 0);
+                                         size_t needed_frame_size = 0);
   void ABI_PopRegistersAndAdjustStack(BitSet32 mask, size_t rsp_alignment,
-    size_t needed_frame_size = 0);
+                                      size_t needed_frame_size = 0);
 
   // Utility to generate a call to a std::function object.
   //

@@ -186,9 +186,9 @@ const std::vector<CPUCore>& AvailableCPUCores()
   static const std::vector<CPUCore> cpu_cores = {
       CORE_INTERPRETER, CORE_CACHEDINTERPRETER,
 #ifdef _M_X86_64
-        CORE_JIT64,
+      CORE_JIT64,
 #elif defined(_M_ARM_64)
-        CORE_JITARM64,
+      CORE_JITARM64,
 #endif
   };
 
@@ -213,7 +213,7 @@ void Init(int cpu_core)
   FPURoundMode::SetPrecisionMode(FPURoundMode::PREC_53);
 
   s_invalidate_cache_thread_safe =
-    CoreTiming::RegisterEvent("invalidateEmulatedCache", InvalidateCacheThreadSafe);
+      CoreTiming::RegisterEvent("invalidateEmulatedCache", InvalidateCacheThreadSafe);
 
   Reset();
 
@@ -239,7 +239,7 @@ void ScheduleInvalidateCacheThreadSafe(u32 address)
   if (CPU::GetState() == CPU::State::Running)
   {
     CoreTiming::ScheduleEvent(0, s_invalidate_cache_thread_safe, address,
-      CoreTiming::FromThread::NON_CPU);
+                              CoreTiming::FromThread::NON_CPU);
   }
   else
   {
@@ -269,7 +269,7 @@ static void ApplyMode()
     break;
 
   case CoreMode::JIT:  // Switching from interpreter to JIT.
-                       // Don't really need to do much. It'll work, the cache will refill itself.
+    // Don't really need to do much. It'll work, the cache will refill itself.
     s_cpu_core_base = JitInterface::GetCore();
     if (!s_cpu_core_base)  // Has a chance to not get a working JIT core if one isn't active on host
       s_cpu_core_base = s_interpreter;
@@ -382,9 +382,9 @@ void UpdatePerformanceMonitor(u32 cycles, u32 num_load_stores, u32 num_fp_inst)
   }
 
   if ((MMCR0.PMC1INTCONTROL && (PowerPC::ppcState.spr[SPR_PMC1] & 0x80000000) != 0) ||
-    (MMCR0.PMCINTCONTROL && (PowerPC::ppcState.spr[SPR_PMC2] & 0x80000000) != 0) ||
-    (MMCR0.PMCINTCONTROL && (PowerPC::ppcState.spr[SPR_PMC3] & 0x80000000) != 0) ||
-    (MMCR0.PMCINTCONTROL && (PowerPC::ppcState.spr[SPR_PMC4] & 0x80000000) != 0))
+      (MMCR0.PMCINTCONTROL && (PowerPC::ppcState.spr[SPR_PMC2] & 0x80000000) != 0) ||
+      (MMCR0.PMCINTCONTROL && (PowerPC::ppcState.spr[SPR_PMC3] & 0x80000000) != 0) ||
+      (MMCR0.PMCINTCONTROL && (PowerPC::ppcState.spr[SPR_PMC4] & 0x80000000) != 0))
     PowerPC::ppcState.Exceptions |= EXCEPTION_PERFORMANCE_MONITOR;
 }
 
@@ -558,7 +558,7 @@ void CheckBreakPoints()
 
 }  // namespace
 
-   // FPSCR update functions
+// FPSCR update functions
 
 void UpdateFPRF(double dvalue)
 {

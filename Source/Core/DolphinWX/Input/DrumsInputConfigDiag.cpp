@@ -8,18 +8,18 @@
 #include "Core/HW/WiimoteEmu/WiimoteEmu.h"
 
 DrumsInputConfigDialog::DrumsInputConfigDialog(wxWindow* const parent, InputConfig& config,
-  const wxString& name, wxComboBox* device_cbox_parent,
-  const int port_num)
-  : InputConfigDialog(parent, config, name, port_num)
+                                               const wxString& name, wxComboBox* device_cbox_parent,
+                                               const int port_num)
+    : InputConfigDialog(parent, config, name, port_num)
 {
   const int space5 = FromDIP(5);
 
   device_cbox = device_cbox_parent;
 
   auto* const group_box_buttons = new ControlGroupBox(
-    Wiimote::GetDrumsGroup(port_num, WiimoteEmu::DrumsGroup::Buttons), this, this);
+      Wiimote::GetDrumsGroup(port_num, WiimoteEmu::DrumsGroup::Buttons), this, this);
   auto* const group_box_pads = new ControlGroupBox(
-    Wiimote::GetDrumsGroup(port_num, WiimoteEmu::DrumsGroup::Pads), this, this);
+      Wiimote::GetDrumsGroup(port_num, WiimoteEmu::DrumsGroup::Pads), this, this);
 
   auto* const buttons_pads_sizer = new wxBoxSizer(wxVERTICAL);
   buttons_pads_sizer->Add(group_box_buttons);
@@ -27,7 +27,7 @@ DrumsInputConfigDialog::DrumsInputConfigDialog(wxWindow* const parent, InputConf
   buttons_pads_sizer->Add(group_box_pads);
 
   auto* const group_box_stick = new ControlGroupBox(
-    Wiimote::GetDrumsGroup(port_num, WiimoteEmu::DrumsGroup::Stick), this, this);
+      Wiimote::GetDrumsGroup(port_num, WiimoteEmu::DrumsGroup::Stick), this, this);
 
   auto* const controls_sizer = new wxBoxSizer(wxHORIZONTAL);
   controls_sizer->AddSpacer(space5);

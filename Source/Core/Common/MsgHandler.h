@@ -15,9 +15,8 @@ enum MSG_TYPE
   CRITICAL
 };
 
-typedef bool(*MsgAlertHandler)(const char* caption, const char* text,
-  bool yes_no, int Style);
-typedef std::string(*StringTranslator)(const char* text);
+typedef bool (*MsgAlertHandler)(const char* caption, const char* text, bool yes_no, int Style);
+typedef std::string (*StringTranslator)(const char* text);
 
 void RegisterMsgAlertHandler(MsgAlertHandler handler);
 void RegisterStringTranslator(StringTranslator translator);
@@ -25,9 +24,9 @@ void RegisterStringTranslator(StringTranslator translator);
 std::string GetTranslation(const char* string);
 bool MsgAlert(bool yes_no, int Style, const char* format, ...)
 #ifdef __GNUC__
-__attribute__((format(printf, 3, 4)))
+    __attribute__((format(printf, 3, 4)))
 #endif
-;
+    ;
 void SetEnableAlert(bool enable);
 
 #ifdef _WIN32

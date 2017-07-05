@@ -2,6 +2,8 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Core/IOS/FS/FileIO.h"
+
 #include <cinttypes>
 #include <cstdio>
 #include <map>
@@ -11,10 +13,11 @@
 #include "Common/Assert.h"
 #include "Common/ChunkFile.h"
 #include "Common/CommonTypes.h"
+#include "Common/File.h"
 #include "Common/FileUtil.h"
 #include "Common/NandPaths.h"
+#include "Core/CommonTitles.h"
 #include "Core/HW/Memmap.h"
-#include "Core/IOS/FS/FileIO.h"
 #include "Core/IOS/IOS.h"
 
 namespace IOS
@@ -38,14 +41,14 @@ void CreateVirtualFATFilesystem()
 {
   const int cdbSize = 0x01400000;
   const std::string cdbPath =
-    Common::GetTitleDataPath(TITLEID_SYSMENU, Common::FROM_SESSION_ROOT) + "cdb.vff";
+      Common::GetTitleDataPath(Titles::SYSTEM_MENU, Common::FROM_SESSION_ROOT) + "cdb.vff";
   if ((int)File::GetSize(cdbPath) < cdbSize)
   {
     // cdb.vff is a virtual Fat filesystem created on first launch of sysmenu
     // we create it here as it is faster ~3 minutes for me when sysmenu does it ~1 second created
     // here
-    const u8 cdbHDR[0x20] = { 'V', 'F', 'F', 0x20, 0xfe, 0xff, 1, 0, 1, 0x40, 0, 0, 0, 0x20 };
-    const u8 cdbFAT[4] = { 0xf0, 0xff, 0xff, 0xff };
+    const u8 cdbHDR[0x20] = {'V', 'F', 'F', 0x20, 0xfe, 0xff, 1, 0, 1, 0x40, 0, 0, 0, 0x20};
+    const u8 cdbFAT[4] = {0xf0, 0xff, 0xff, 0xff};
 
     File::IOFile cdbFile(cdbPath, "wb");
     if (cdbFile)
@@ -72,7 +75,7 @@ void CreateVirtualFATFilesystem()
 namespace Device
 {
 FileIO::FileIO(Kernel& ios, const std::string& device_name)
-  : Device(ios, device_name, DeviceType::FileIO)
+    : Device(ios, device_name, DeviceType::FileIO)
 {
 }
 
@@ -93,7 +96,7 @@ ReturnCode FileIO::Open(const OpenRequest& request)
 {
   m_Mode = request.flags;
 
-  static const char* const Modes[] = { "Unk Mode", "Read only", "Write only", "Read and Write" };
+  static const char* const Modes[] = {"Unk Mode", "Read only", "Write only", "Read and Write"};
 
   m_filepath = BuildFilename(m_name);
 
@@ -102,7 +105,7 @@ ReturnCode FileIO::Open(const OpenRequest& request)
   if (!File::Exists(m_filepath) || File::IsDirectory(m_filepath))
   {
     WARN_LOG(IOS_FILEIO, "FileIO: Open (%s) failed - File doesn't exist %s", Modes[m_Mode],
-      m_filepath.c_str());
+             m_filepath.c_str());
     return FS_ENOENT;
   }
 
@@ -150,9 +153,9 @@ void FileIO::OpenFile()
     // All files are opened read/write. Actual access rights will be controlled per handle by the
     // read/write functions below
     m_file = std::shared_ptr<File::IOFile>(new File::IOFile(m_filepath, "r+b"),
-      deleter);  // Use the custom deleter from above.
+                                           deleter);  // Use the custom deleter from above.
 
-                    // Store a weak pointer to our newly opened file in the cache.
+    // Store a weak pointer to our newly opened file in the cache.
     openFiles[path] = std::weak_ptr<File::IOFile>(m_file);
   }
 }
@@ -164,7 +167,7 @@ IPCCommandResult FileIO::Seek(const SeekRequest& request)
 
   const u32 file_size = static_cast<u32>(m_file->GetSize());
   DEBUG_LOG(IOS_FILEIO, "FileIO: Seek Pos: 0x%08x, Mode: %i (%s, Length=0x%08x)", request.offset,
-    request.mode, m_name.c_str(), file_size);
+            request.mode, m_name.c_str(), file_size);
 
   u32 new_position = 0;
   switch (request.mode)
@@ -197,15 +200,15 @@ IPCCommandResult FileIO::Read(const ReadWriteRequest& request)
   if (!m_file->IsOpen())
   {
     ERROR_LOG(IOS_FILEIO, "Failed to read from %s (Addr=0x%08x Size=0x%x) - file could "
-      "not be opened or does not exist",
-      m_name.c_str(), request.buffer, request.size);
+                          "not be opened or does not exist",
+              m_name.c_str(), request.buffer, request.size);
     return GetDefaultReply(FS_ENOENT);
   }
 
   if (m_Mode == IOS_OPEN_WRITE)
   {
     WARN_LOG(IOS_FILEIO, "Attempted to read 0x%x bytes to 0x%08x on a write-only file %s",
-      request.size, request.buffer, m_name.c_str());
+             request.size, request.buffer, m_name.c_str());
     return GetDefaultReply(FS_EACCESS);
   }
 
@@ -216,10 +219,10 @@ IPCCommandResult FileIO::Read(const ReadWriteRequest& request)
     requested_read_length = file_size - m_SeekPos;
 
   DEBUG_LOG(IOS_FILEIO, "Read 0x%x bytes to 0x%08x from %s", request.size, request.buffer,
-    m_name.c_str());
+            m_name.c_str());
   m_file->Seek(m_SeekPos, SEEK_SET);  // File might be opened twice, need to seek before we read
   const u32 number_of_bytes_read = static_cast<u32>(
-    fread(Memory::GetPointer(request.buffer), 1, requested_read_length, m_file->GetHandle()));
+      fread(Memory::GetPointer(request.buffer), 1, requested_read_length, m_file->GetHandle()));
 
   if (number_of_bytes_read != requested_read_length && ferror(m_file->GetHandle()))
     return GetDefaultReply(FS_EACCESS);
@@ -238,15 +241,15 @@ IPCCommandResult FileIO::Write(const ReadWriteRequest& request)
     if (m_Mode == IOS_OPEN_READ)
     {
       WARN_LOG(IOS_FILEIO,
-        "FileIO: Attempted to write 0x%x bytes from 0x%08x to a read-only file %s",
-        request.size, request.buffer, m_name.c_str());
+               "FileIO: Attempted to write 0x%x bytes from 0x%08x to a read-only file %s",
+               request.size, request.buffer, m_name.c_str());
     }
     else
     {
       DEBUG_LOG(IOS_FILEIO, "FileIO: Write 0x%04x bytes from 0x%08x to %s", request.size,
-        request.buffer, m_name.c_str());
+                request.buffer, m_name.c_str());
       m_file->Seek(m_SeekPos,
-        SEEK_SET);  // File might be opened twice, need to seek before we write
+                   SEEK_SET);  // File might be opened twice, need to seek before we write
       if (m_file->WriteBytes(Memory::GetPointer(request.buffer), request.size))
       {
         return_value = request.size;
@@ -257,8 +260,8 @@ IPCCommandResult FileIO::Write(const ReadWriteRequest& request)
   else
   {
     ERROR_LOG(IOS_FILEIO, "FileIO: Failed to read from %s (Addr=0x%08x Size=0x%x) - file could "
-      "not be opened or does not exist",
-      m_name.c_str(), request.buffer, request.size);
+                          "not be opened or does not exist",
+              m_name.c_str(), request.buffer, request.size);
     return_value = FS_ENOENT;
   }
 
@@ -309,7 +312,7 @@ IPCCommandResult FileIO::GetFileStats(const IOCtlRequest& request)
     return GetDefaultReply(FS_ENOENT);
 
   DEBUG_LOG(IOS_FILEIO, "File: %s, Length: %" PRIu64 ", Pos: %u", m_name.c_str(), m_file->GetSize(),
-    m_SeekPos);
+            m_SeekPos);
   Memory::Write_U32(static_cast<u32>(m_file->GetSize()), request.buffer_out);
   Memory::Write_U32(m_SeekPos, request.buffer_out + 4);
   return GetDefaultReply(IPC_SUCCESS);

@@ -66,7 +66,7 @@ class CheatWarningMessage final : public wxPanel
 {
 public:
   CheatWarningMessage(wxWindow* parent, std::string game_id)
-    : wxPanel(parent), m_game_id(std::move(game_id))
+      : wxPanel(parent), m_game_id(std::move(game_id))
   {
     SetExtraStyle(GetExtraStyle() | wxWS_EX_BLOCK_EVENTS);
     CreateGUI();
@@ -101,9 +101,9 @@ private:
     int space15 = FromDIP(15);
 
     wxStaticBitmap* icon =
-      new wxStaticBitmap(this, wxID_ANY, wxArtProvider::GetMessageBoxIcon(wxICON_WARNING));
+        new wxStaticBitmap(this, wxID_ANY, wxArtProvider::GetMessageBoxIcon(wxICON_WARNING));
     m_message = new wxStaticText(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize,
-      wxST_NO_AUTORESIZE);
+                                 wxST_NO_AUTORESIZE);
     m_btn_configure = new wxButton(this, wxID_ANY, _("Configure Dolphin"));
 
     m_btn_configure->Bind(wxEVT_BUTTON, &CheatWarningMessage::OnConfigureClicked, this);
@@ -153,7 +153,7 @@ private:
     case State::GameRunning:
       m_btn_configure->Hide();
       m_message->SetLabelText(
-        _("Changing cheats will only take effect when the game is restarted."));
+          _("Changing cheats will only take effect when the game is restarted."));
       break;
     }
     m_state = new_state;
@@ -188,9 +188,9 @@ EVT_BUTTON(ID_REMOVEPATCH, CISOProperties::PatchButtonClicked)
 END_EVENT_TABLE()
 
 CISOProperties::CISOProperties(const GameListItem& game_list_item, wxWindow* parent, wxWindowID id,
-  const wxString& title, const wxPoint& position, const wxSize& size,
-  long style)
-  : wxDialog(parent, id, title, position, size, style), OpenGameListItem(game_list_item)
+                               const wxString& title, const wxPoint& position, const wxSize& size,
+                               long style)
+    : wxDialog(parent, id, title, position, size, style), OpenGameListItem(game_list_item)
 {
   Bind(DOLPHIN_EVT_CHANGE_ISO_PROPERTIES_TITLE, &CISOProperties::OnChangeTitle, this);
 
@@ -233,7 +233,7 @@ void CISOProperties::CreateGUIControls()
 
   wxButton* const EditConfigDefault = new wxButton(this, ID_SHOWDEFAULTCONFIG, _("Show Defaults"));
   EditConfigDefault->SetToolTip(
-    _("Opens the default (read-only) configuration for this game in an external text editor."));
+      _("Opens the default (read-only) configuration for this game in an external text editor."));
 
   // Notebook
   wxNotebook* const m_Notebook = new wxNotebook(this, ID_NOTEBOOK);
@@ -246,39 +246,39 @@ void CISOProperties::CreateGUIControls()
   wxPanel* const gecko_cheat_page = new wxPanel(m_Notebook);
   m_Notebook->AddPage(gecko_cheat_page, _("Gecko Codes"));
   m_Notebook->AddPage(new InfoPanel(m_Notebook, ID_INFORMATION, OpenGameListItem, m_open_iso),
-    _("Info"));
+                      _("Info"));
 
   // GameConfig editing - Overrides and emulation state
   wxStaticText* const OverrideText = new wxStaticText(
-    m_GameConfig, wxID_ANY, _("These settings override core Dolphin settings.\nUndetermined "
-      "means the game uses Dolphin's setting."));
+      m_GameConfig, wxID_ANY, _("These settings override core Dolphin settings.\nUndetermined "
+                                "means the game uses Dolphin's setting."));
 
   // Core
   CPUThread = new wxCheckBox(m_GameConfig, ID_USEDUALCORE, _("Enable Dual Core"), wxDefaultPosition,
-    wxDefaultSize, GetElementStyle("Core", "CPUThread"));
+                             wxDefaultSize, GetElementStyle("Core", "CPUThread"));
   MMU = new wxCheckBox(m_GameConfig, ID_MMU, _("Enable MMU"), wxDefaultPosition, wxDefaultSize,
-    GetElementStyle("Core", "MMU"));
+                       GetElementStyle("Core", "MMU"));
   MMU->SetToolTip(_(
-    "Enables the Memory Management Unit, needed for some games. (ON = Compatible, OFF = Fast)"));
+      "Enables the Memory Management Unit, needed for some games. (ON = Compatible, OFF = Fast)"));
   DCBZOFF = new wxCheckBox(m_GameConfig, ID_DCBZOFF, _("Skip DCBZ clearing"), wxDefaultPosition,
-    wxDefaultSize, GetElementStyle("Core", "DCBZ"));
+                           wxDefaultSize, GetElementStyle("Core", "DCBZ"));
   DCBZOFF->SetToolTip(_("Bypass the clearing of the data cache by the DCBZ instruction. Usually "
-    "leave this option disabled."));
+                        "leave this option disabled."));
   FPRF = new wxCheckBox(m_GameConfig, ID_FPRF, _("Enable FPRF"), wxDefaultPosition, wxDefaultSize,
-    GetElementStyle("Core", "FPRF"));
+                        GetElementStyle("Core", "FPRF"));
   FPRF->SetToolTip(_("Enables Floating Point Result Flag calculation, needed for a few games. (ON "
-    "= Compatible, OFF = Fast)"));
+                     "= Compatible, OFF = Fast)"));
   SyncGPU = new wxCheckBox(m_GameConfig, ID_SYNCGPU, _("Synchronize GPU thread"), wxDefaultPosition,
-    wxDefaultSize, GetElementStyle("Core", "SyncGPU"));
+                           wxDefaultSize, GetElementStyle("Core", "SyncGPU"));
   SyncGPU->SetToolTip(_("Synchronizes the GPU and CPU threads to help prevent random freezes in "
-    "Dual Core mode. (ON = Compatible, OFF = Fast)"));
+                        "Dual Core mode. (ON = Compatible, OFF = Fast)"));
   FastDiscSpeed =
-    new wxCheckBox(m_GameConfig, ID_DISCSPEED, _("Speed up Disc Transfer Rate"),
-      wxDefaultPosition, wxDefaultSize, GetElementStyle("Core", "FastDiscSpeed"));
+      new wxCheckBox(m_GameConfig, ID_DISCSPEED, _("Speed up Disc Transfer Rate"),
+                     wxDefaultPosition, wxDefaultSize, GetElementStyle("Core", "FastDiscSpeed"));
   FastDiscSpeed->SetToolTip(_("Enable fast disc access. This can cause crashes and other problems "
-    "in some games. (ON = Fast, OFF = Compatible)"));
+                              "in some games. (ON = Fast, OFF = Compatible)"));
   DSPHLE = new wxCheckBox(m_GameConfig, ID_AUDIO_DSP_HLE, _("DSP HLE emulation (fast)"),
-    wxDefaultPosition, wxDefaultSize, GetElementStyle("Core", "DSPHLE"));
+                          wxDefaultPosition, wxDefaultSize, GetElementStyle("Core", "DSPHLE"));
   // TimeStretching
   TimeStretching =
     new wxCheckBox(m_GameConfig, ID_TIMESTRETCHING, _("Time Stretching"),
@@ -287,13 +287,13 @@ void CISOProperties::CreateGUIControls()
 
   wxBoxSizer* const sGPUDeterminism = new wxBoxSizer(wxHORIZONTAL);
   wxStaticText* const GPUDeterminismText =
-    new wxStaticText(m_GameConfig, wxID_ANY, _("Deterministic dual core: "));
+      new wxStaticText(m_GameConfig, wxID_ANY, _("Deterministic dual core: "));
   arrayStringFor_GPUDeterminism.Add(_("Not Set"));
   arrayStringFor_GPUDeterminism.Add(_("auto"));
   arrayStringFor_GPUDeterminism.Add(_("none"));
   arrayStringFor_GPUDeterminism.Add(_("fake-completion"));
   GPUDeterminism = new wxChoice(m_GameConfig, ID_GPUDETERMINISM, wxDefaultPosition, wxDefaultSize,
-    arrayStringFor_GPUDeterminism);
+                                arrayStringFor_GPUDeterminism);
   sGPUDeterminism->Add(GPUDeterminismText, 0, wxALIGN_CENTER_VERTICAL);
   sGPUDeterminism->Add(GPUDeterminism, 0, wxALIGN_CENTER_VERTICAL);
   // Video Rate Hack
@@ -312,37 +312,37 @@ void CISOProperties::CreateGUIControls()
 
   // Wii Console
   EnableWideScreen =
-    new wxCheckBox(m_GameConfig, ID_ENABLEWIDESCREEN, _("Enable WideScreen"), wxDefaultPosition,
-      wxDefaultSize, GetElementStyle("Wii", "Widescreen"));
+      new wxCheckBox(m_GameConfig, ID_ENABLEWIDESCREEN, _("Enable WideScreen"), wxDefaultPosition,
+                     wxDefaultSize, GetElementStyle("Wii", "Widescreen"));
 
   // Stereoscopy
   wxBoxSizer* const sDepthPercentage = new wxBoxSizer(wxHORIZONTAL);
   wxStaticText* const DepthPercentageText =
-    new wxStaticText(m_GameConfig, wxID_ANY, _("Depth Percentage: "));
+      new wxStaticText(m_GameConfig, wxID_ANY, _("Depth Percentage: "));
   DepthPercentage = new DolphinSlider(m_GameConfig, ID_DEPTHPERCENTAGE, 100, 0, 200);
   DepthPercentage->SetToolTip(
-    _("This value is multiplied with the depth set in the graphics configuration."));
+      _("This value is multiplied with the depth set in the graphics configuration."));
   sDepthPercentage->Add(DepthPercentageText);
   sDepthPercentage->Add(DepthPercentage);
 
   wxBoxSizer* const sConvergence = new wxBoxSizer(wxHORIZONTAL);
   wxStaticText* const ConvergenceText =
-    new wxStaticText(m_GameConfig, wxID_ANY, _("Convergence: "));
+      new wxStaticText(m_GameConfig, wxID_ANY, _("Convergence: "));
   Convergence = new wxSpinCtrl(m_GameConfig, ID_CONVERGENCE);
   Convergence->SetRange(0, INT32_MAX);
   Convergence->SetToolTip(
-    _("This value is added to the convergence value set in the graphics configuration."));
+      _("This value is added to the convergence value set in the graphics configuration."));
   sConvergence->Add(ConvergenceText);
   sConvergence->Add(Convergence);
 
   MonoDepth =
-    new wxCheckBox(m_GameConfig, ID_MONODEPTH, _("Monoscopic Shadows"), wxDefaultPosition,
-      wxDefaultSize, GetElementStyle("Video_Stereoscopy", "StereoEFBMonoDepth"));
+      new wxCheckBox(m_GameConfig, ID_MONODEPTH, _("Monoscopic Shadows"), wxDefaultPosition,
+                     wxDefaultSize, GetElementStyle("Video_Stereoscopy", "StereoEFBMonoDepth"));
   MonoDepth->SetToolTip(_("Use a single depth buffer for both eyes. Needed for a few games."));
 
   wxBoxSizer* const sEmuState = new wxBoxSizer(wxHORIZONTAL);
   wxStaticText* const EmuStateText =
-    new wxStaticText(m_GameConfig, wxID_ANY, _("Emulation State: "));
+      new wxStaticText(m_GameConfig, wxID_ANY, _("Emulation State: "));
   arrayStringFor_EmuState.Add(_("Not Set"));
   arrayStringFor_EmuState.Add(_("Broken"));
   arrayStringFor_EmuState.Add(_("Intro"));
@@ -350,14 +350,14 @@ void CISOProperties::CreateGUIControls()
   arrayStringFor_EmuState.Add(_("Playable"));
   arrayStringFor_EmuState.Add(_("Perfect"));
   EmuState = new wxChoice(m_GameConfig, ID_EMUSTATE, wxDefaultPosition, wxDefaultSize,
-    arrayStringFor_EmuState);
+                          arrayStringFor_EmuState);
   EmuIssues = new wxTextCtrl(m_GameConfig, ID_EMU_ISSUES, wxEmptyString);
   sEmuState->Add(EmuStateText, 0, wxALIGN_CENTER_VERTICAL);
   sEmuState->Add(EmuState, 0, wxALIGN_CENTER_VERTICAL);
   sEmuState->Add(EmuIssues, 1, wxEXPAND);
 
   wxStaticBoxSizer* const sbCoreOverrides =
-    new wxStaticBoxSizer(wxVERTICAL, m_GameConfig, _("Core"));
+      new wxStaticBoxSizer(wxVERTICAL, m_GameConfig, _("Core"));
   sbCoreOverrides->Add(CPUThread, 0, wxLEFT | wxRIGHT, space5);
   sbCoreOverrides->Add(MMU, 0, wxLEFT | wxRIGHT, space5);
   sbCoreOverrides->Add(DCBZOFF, 0, wxLEFT | wxRIGHT, space5);
@@ -374,7 +374,7 @@ void CISOProperties::CreateGUIControls()
   sbCoreOverrides->AddSpacer(space5);
 
   wxStaticBoxSizer* const sbWiiOverrides =
-    new wxStaticBoxSizer(wxVERTICAL, m_GameConfig, _("Wii Console"));
+      new wxStaticBoxSizer(wxVERTICAL, m_GameConfig, _("Wii Console"));
   if (m_open_iso->GetVolumeType() == DiscIO::Platform::GAMECUBE_DISC)
   {
     sbWiiOverrides->ShowItems(false);
@@ -383,13 +383,13 @@ void CISOProperties::CreateGUIControls()
   sbWiiOverrides->Add(EnableWideScreen, 0, wxLEFT, space5);
 
   wxStaticBoxSizer* const sbStereoOverrides =
-    new wxStaticBoxSizer(wxVERTICAL, m_GameConfig, _("Stereoscopy"));
+      new wxStaticBoxSizer(wxVERTICAL, m_GameConfig, _("Stereoscopy"));
   sbStereoOverrides->Add(sDepthPercentage);
   sbStereoOverrides->Add(sConvergence);
   sbStereoOverrides->Add(MonoDepth);
 
   wxStaticBoxSizer* const sbGameConfig =
-    new wxStaticBoxSizer(wxVERTICAL, m_GameConfig, _("Game-Specific Settings"));
+      new wxStaticBoxSizer(wxVERTICAL, m_GameConfig, _("Game-Specific Settings"));
   sbGameConfig->AddSpacer(space5);
   sbGameConfig->Add(OverrideText, 0, wxEXPAND | wxLEFT | wxRIGHT, space5);
   sbGameConfig->AddSpacer(space5);
@@ -408,7 +408,7 @@ void CISOProperties::CreateGUIControls()
   // Patches
   wxBoxSizer* const sPatches = new wxBoxSizer(wxVERTICAL);
   Patches = new wxCheckListBox(m_PatchPage, ID_PATCHES_LIST, wxDefaultPosition, wxDefaultSize, 0,
-    nullptr, wxLB_HSCROLL);
+                               nullptr, wxLB_HSCROLL);
   wxBoxSizer* const sPatchButtons = new wxBoxSizer(wxHORIZONTAL);
   EditPatch = new wxButton(m_PatchPage, ID_EDITPATCH, _("Edit..."));
   wxButton* const AddPatch = new wxButton(m_PatchPage, ID_ADDPATCH, _("Add..."));
@@ -430,7 +430,7 @@ void CISOProperties::CreateGUIControls()
 
   // Action Replay Cheats
   m_ar_code_panel =
-    new ActionReplayCodesPanel(m_CheatPage, ActionReplayCodesPanel::STYLE_MODIFY_BUTTONS);
+      new ActionReplayCodesPanel(m_CheatPage, ActionReplayCodesPanel::STYLE_MODIFY_BUTTONS);
   m_cheats_disabled_ar = new CheatWarningMessage(m_CheatPage, game_id);
 
   m_ar_code_panel->Bind(DOLPHIN_EVT_ARCODE_TOGGLED, &CISOProperties::OnCheatCodeToggled, this);
@@ -451,10 +451,10 @@ void CISOProperties::CreateGUIControls()
   gecko_layout->Add(m_geckocode_panel, 1, wxEXPAND);
   gecko_cheat_page->SetSizer(gecko_layout);
 
-  if (m_open_iso->GetVolumeType() != DiscIO::Platform::WII_WAD)
+  if (DiscIO::IsDisc(m_open_iso->GetVolumeType()))
   {
     m_Notebook->AddPage(new FilesystemPanel(m_Notebook, ID_FILESYSTEM, m_open_iso),
-      _("Filesystem"));
+                        _("Filesystem"));
   }
 
   wxStdDialogButtonSizer* sButtons = CreateStdDialogButtonSizer(wxOK | wxNO_DEFAULT);
@@ -465,7 +465,7 @@ void CISOProperties::CreateGUIControls()
   // If there is no default gameini, disable the button.
   bool game_ini_exists = false;
   for (const std::string& ini_filename :
-    SConfig::GetGameIniFilenames(game_id, m_open_iso->GetRevision()))
+       SConfig::GetGameIniFilenames(game_id, m_open_iso->GetRevision()))
   {
     if (File::Exists(File::GetSysDirectory() + GAMESETTINGS_DIR DIR_SEP + ini_filename))
     {
@@ -510,7 +510,7 @@ void CISOProperties::OnEmustateChanged(wxCommandEvent& event)
 }
 
 void CISOProperties::SetCheckboxValueFromGameini(const char* section, const char* key,
-  wxCheckBox* checkbox)
+                                                 wxCheckBox* checkbox)
 {
   // Prefer local gameini value over default gameini value.
   bool value;
@@ -604,7 +604,7 @@ void CISOProperties::LoadGameConfig()
 }
 
 void CISOProperties::SaveGameIniValueFrom3StateCheckbox(const char* section, const char* key,
-  wxCheckBox* checkbox)
+                                                        wxCheckBox* checkbox)
 {
   // Delete any existing entries from the local gameini if checkbox is undetermined.
   // Otherwise, write the current value to the local gameini if the value differs from the default
@@ -707,7 +707,7 @@ void CISOProperties::LaunchExternalEditor(const std::string& filename, bool wait
 {
 #ifdef __APPLE__
   // GetOpenCommand does not work for wxCocoa
-  const char* OpenCommandConst[] = { "open", "-a", "TextEdit", filename.c_str(), NULL };
+  const char* OpenCommandConst[] = {"open", "-a", "TextEdit", filename.c_str(), NULL};
   char** OpenCommand = const_cast<char**>(OpenCommandConst);
 #else
   wxFileType* filetype = wxTheMimeTypesManager->GetFileTypeFromExtension("ini");
@@ -790,7 +790,7 @@ void CISOProperties::OnChangeTitle(wxCommandEvent& event)
 void CISOProperties::OnShowDefaultConfig(wxCommandEvent& WXUNUSED(event))
 {
   for (const std::string& filename :
-    SConfig::GetGameIniFilenames(game_id, m_open_iso->GetRevision()))
+       SConfig::GetGameIniFilenames(game_id, m_open_iso->GetRevision()))
   {
     std::string path = File::GetSysDirectory() + GAMESETTINGS_DIR DIR_SEP + filename;
     if (File::Exists(path))
@@ -801,8 +801,8 @@ void CISOProperties::OnShowDefaultConfig(wxCommandEvent& WXUNUSED(event))
 void CISOProperties::PatchListSelectionChanged(wxCommandEvent& event)
 {
   if (Patches->GetSelection() == wxNOT_FOUND ||
-    DefaultPatches.find(Patches->GetString(Patches->GetSelection()).ToStdString()) !=
-    DefaultPatches.end())
+      DefaultPatches.find(Patches->GetString(Patches->GetSelection()).ToStdString()) !=
+          DefaultPatches.end())
   {
     EditPatch->Disable();
     RemovePatch->Disable();
@@ -849,7 +849,7 @@ void CISOProperties::PatchList_Save()
       for (const PatchEngine::PatchEntry& entry : p.entries)
       {
         std::string temp = StringFromFormat("0x%08X:%s:0x%08X", entry.address,
-          PatchEngine::PatchTypeStrings[entry.type], entry.value);
+                                            PatchEngine::PatchTypeStrings[entry.type], entry.value);
         lines.push_back(temp);
       }
     }

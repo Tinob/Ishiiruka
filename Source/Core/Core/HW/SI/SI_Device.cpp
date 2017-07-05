@@ -21,7 +21,7 @@
 namespace SerialInterface
 {
 ISIDevice::ISIDevice(SIDevices device_type, int device_number)
-  : m_device_number(device_number), m_device_type(device_type)
+    : m_device_number(device_number), m_device_type(device_type)
 {
 }
 

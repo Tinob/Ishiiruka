@@ -30,6 +30,7 @@
 #include "DolphinWX/Main.h"
 #include "DolphinWX/VideoConfigDiag.h"
 #include "DolphinWX/WxUtils.h"
+#include "UICommon/VideoUtils.h"
 #include "VideoCommon/PostProcessing.h"
 #include "VideoCommon/RenderBase.h"
 #include "VideoCommon/VideoBackendBase.h"
@@ -44,52 +45,56 @@ template class BoolSetting<wxCheckBox>;
 template class BoolSetting<wxRadioButton>;
 
 template <>
-SettingCheckBox::BoolSetting(wxWindow* parent, const wxString& label, const wxString& tooltip, bool &setting, bool reverse, long style)
-  : wxCheckBox(parent, wxID_ANY, label, wxDefaultPosition, wxDefaultSize, style)
-  , m_setting(setting)
-  , m_reverse(reverse)
+SettingCheckBox::BoolSetting(wxWindow* parent, const wxString& label, const wxString& tooltip,
+  const Config::ConfigInfo<bool>& setting, bool reverse, long style)
+  : wxCheckBox(parent, wxID_ANY, label, wxDefaultPosition, wxDefaultSize, style),
+  m_setting(setting), m_reverse(reverse)
 {
   SetToolTip(tooltip);
-  SetValue(m_setting ^ m_reverse);
+  SetValue(Config::Get(m_setting) ^ m_reverse);
+  if (Config::GetActiveLayerForConfig(m_setting) != Config::LayerType::Base)
+    SetFont(GetFont().MakeBold());
   Bind(wxEVT_CHECKBOX, &SettingCheckBox::UpdateValue, this);
 }
 
 template <>
-SettingRadioButton::BoolSetting(wxWindow* parent, const wxString& label, const wxString& tooltip, bool &setting, bool reverse, long style)
-  : wxRadioButton(parent, wxID_ANY, label, wxDefaultPosition, wxDefaultSize, style)
-  , m_setting(setting)
-  , m_reverse(reverse)
+SettingRadioButton::BoolSetting(wxWindow* parent, const wxString& label, const wxString& tooltip,
+  const Config::ConfigInfo<bool>& setting, bool reverse, long style)
+  : wxRadioButton(parent, wxID_ANY, label, wxDefaultPosition, wxDefaultSize, style),
+  m_setting(setting), m_reverse(reverse)
 {
   SetToolTip(tooltip);
-  SetValue(m_setting ^ m_reverse);
+  SetValue(Config::Get(m_setting) ^ m_reverse);
+  if (Config::GetActiveLayerForConfig(m_setting) != Config::LayerType::Base)
+    SetFont(GetFont().MakeBold());
   Bind(wxEVT_RADIOBUTTON, &SettingRadioButton::UpdateValue, this);
 }
 
-SettingChoice::SettingChoice(wxWindow* parent, int &setting, const wxString& tooltip, int num, const wxString choices[], long style)
-  : wxChoice(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, num, choices)
-  , m_setting(setting)
+template <>
+RefBoolSetting<wxCheckBox>::RefBoolSetting(wxWindow* parent, const wxString& label,
+  const wxString& tooltip, bool& setting, bool reverse,
+  long style)
+  : wxCheckBox(parent, wxID_ANY, label, wxDefaultPosition, wxDefaultSize, style),
+  m_setting(setting), m_reverse(reverse)
 {
   SetToolTip(tooltip);
-  Select(m_setting);
+  SetValue(m_setting ^ m_reverse);
+  Bind(wxEVT_CHECKBOX, &RefBoolSetting<wxCheckBox>::UpdateValue, this);
+}
+
+SettingChoice::SettingChoice(wxWindow* parent, const Config::ConfigInfo<int>& setting,
+  const wxString& tooltip, int num, const wxString choices[], long style)
+  : wxChoice(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, num, choices), m_setting(setting)
+{
+  SetToolTip(tooltip);
+  Select(Config::Get(m_setting));
   Bind(wxEVT_CHOICE, &SettingChoice::UpdateValue, this);
 }
 
 void SettingChoice::UpdateValue(wxCommandEvent& ev)
 {
-  m_setting = ev.GetInt();
+  Config::SetBaseOrCurrent(m_setting, ev.GetInt());
   ev.Skip();
-}
-
-void VideoConfigDiag::Event_ClickClose(wxCommandEvent&)
-{
-  Close();
-}
-
-void VideoConfigDiag::Event_Close(wxCloseEvent& ev)
-{
-  g_Config.Save(File::GetUserPath(D_CONFIG_IDX) + "GFX.ini");
-
-  EndModal(wxID_OK);
 }
 
 #if defined(_WIN32)
@@ -180,7 +185,7 @@ static wxString internal_resolution_frame_dumping_desc = _(
   "image will be scaled horizontally to preserve the vertical resolution.\n\nIf unsure, leave "
   "this unchecked.");
 static wxString dump_frames_desc = _("Dump all rendered frames to an AVI file in User/Dump/Frames/\n\nIf unsure, leave this unchecked.");
-#if !defined WIN32 && defined HAVE_LIBAV
+#if defined(HAVE_FFMPEG)
 static wxString use_ffv1_desc = _("Encode frame dumps using the FFV1 codec.\n\nIf unsure, leave this unchecked.");
 #endif
 static wxString free_look_desc = _("This feature allows you to change the game's camera.\nMove the mouse while holding the right mouse button to pan and while holding the middle button to move.\nHold SHIFT and press one of the WASD keys to move the camera by a certain step distance (SHIFT+0 to move faster and SHIFT+9 to move slower). Press SHIFT+R to reset the camera.\n\nIf unsure, leave this unchecked.");
@@ -222,75 +227,13 @@ wxTRANSLATE("Round 2D vertices to whole pixels.  Fixes some "
   "games at higher internal resolutions.  This setting is disabled and turned off "
   "at 1x IR.\n\nIf unsure, leave this unchecked.");
 
-// Search for available resolutions - TODO: Move to Common?
-static  wxArrayString GetListOfResolutions()
-{
-  wxArrayString retlist;
-  retlist.Add(_("Auto"));
-#ifdef _WIN32
-  DWORD iModeNum = 0;
-  DEVMODE dmi;
-  ZeroMemory(&dmi, sizeof(dmi));
-  dmi.dmSize = sizeof(dmi);
-  std::vector<std::string> resos;
-
-  while (EnumDisplaySettings(nullptr, iModeNum++, &dmi) != 0)
-  {
-    char res[100];
-    sprintf(res, "%dx%d", dmi.dmPelsWidth, dmi.dmPelsHeight);
-    std::string strRes(res);
-    // Only add unique resolutions
-    if (std::find(resos.begin(), resos.end(), strRes) == resos.end())
-    {
-      resos.push_back(strRes);
-      retlist.Add(StrToWxStr(res));
-    }
-    ZeroMemory(&dmi, sizeof(dmi));
-  }
-#elif defined(HAVE_XRANDR) && HAVE_XRANDR
-  std::vector<std::string> resos;
-  main_frame->m_xrr_config->AddResolutions(resos);
-  for (auto res : resos)
-    retlist.Add(StrToWxStr(res));
-#elif defined(__APPLE__)
-  CFArrayRef modes = CGDisplayCopyAllDisplayModes(CGMainDisplayID(), nullptr);
-  for (CFIndex i = 0; i < CFArrayGetCount(modes); i++)
-  {
-    std::stringstream res;
-    CGDisplayModeRef mode;
-    CFStringRef encoding;
-    size_t w, h;
-    bool is32;
-
-    mode = (CGDisplayModeRef)CFArrayGetValueAtIndex(modes, i);
-    w = CGDisplayModeGetWidth(mode);
-    h = CGDisplayModeGetHeight(mode);
-    encoding = CGDisplayModeCopyPixelEncoding(mode);
-    is32 = CFEqual(encoding, CFSTR(IO32BitDirectPixels));
-    CFRelease(encoding);
-
-    if (!is32)
-      continue;
-    if (CGDisplayModeGetIOFlags(mode) & kDisplayModeStretchedFlag)
-      continue;
-
-    res << w << "x" << h;
-
-    retlist.Add(res.str());
-  }
-  CFRelease(modes);
-#endif
-  return retlist;
-}
-
 VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
   : wxDialog(parent, wxID_ANY,
     wxString::Format(_("Dolphin %s Graphics Configuration"), StrToWxStr(title)),
     wxDefaultPosition, wxDefaultSize)
   , vconfig(g_Config)
 {
-  //if (File::Exists(File::GetUserPath(D_CONFIG_IDX) + "GFX.ini"))
-  vconfig.Load(File::GetUserPath(D_CONFIG_IDX) + "GFX.ini");
+  vconfig.Refresh();
 
   Bind(wxEVT_UPDATE_UI, &VideoConfigDiag::OnUpdateUI, this);
 
@@ -327,7 +270,7 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
       // adapter (D3D only)
       if (vconfig.backend_info.Adapters.size())
       {
-        choice_adapter = CreateChoice(page_general, vconfig.iAdapter, adapter_desc);
+        choice_adapter = CreateChoice(page_general, Config::GFX_ADAPTER, adapter_desc);
 
         for (const std::string& adapter : vconfig.backend_info.Adapters)
         {
@@ -350,7 +293,17 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
 #if !defined(__APPLE__)
         // display resolution
         {
-          wxArrayString res_list = GetListOfResolutions();
+          wxArrayString res_list;
+          res_list.Add(_("Auto"));
+#if defined(HAVE_XRANDR) && HAVE_XRANDR
+          const auto resolutions = VideoUtils::GetAvailableResolutions(main_frame->m_xrr_config);
+#else
+          const auto resolutions = VideoUtils::GetAvailableResolutions(nullptr);
+#endif
+
+          for (const auto& res : resolutions)
+            res_list.Add(res);
+
           if (res_list.empty())
             res_list.Add(_("<No resolutions found>"));
           label_display_resolution = new wxStaticText(page_general, wxID_ANY, _("Fullscreen resolution:"));
@@ -370,15 +323,15 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
           const wxString ar_choices[] = { _("Auto"), _("Force Analog 16:9"), _("Force Analog 4:3"), _("Stretch to Window"), _("Force 4:3"), _("Force 16:9"), _("Force 16:10") };
 
           szr_display->Add(new wxStaticText(page_general, wxID_ANY, _("Aspect Ratio:")), 1, wxALIGN_CENTER_VERTICAL, 0);
-          wxChoice* const choice_aspect = CreateChoice(page_general, vconfig.iAspectRatio, (ar_desc),
+          wxChoice* const choice_aspect = CreateChoice(page_general, Config::GFX_ASPECT_RATIO, (ar_desc),
             sizeof(ar_choices) / sizeof(*ar_choices), ar_choices);
           szr_display->Add(choice_aspect, 1, 0, 0);
         }
 
         // various other display options
         {
-          szr_display->Add(CreateCheckBox(page_general, _("V-Sync"), (vsync_desc), vconfig.bVSync));
-          szr_display->Add(CreateCheckBox(page_general, _("Use Fullscreen"), (use_fullscreen_desc), SConfig::GetInstance().bFullscreen));
+          szr_display->Add(CreateCheckBox(page_general, _("V-Sync"), (vsync_desc), Config::GFX_VSYNC));
+          szr_display->Add(CreateCheckBoxRefBool(page_general, _("Use Fullscreen"), (use_fullscreen_desc), SConfig::GetInstance().bFullscreen));
         }
       }
 
@@ -386,22 +339,22 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
       wxFlexGridSizer* const szr_other = new wxFlexGridSizer(2, 5, 5);
 
       {
-        szr_other->Add(CreateCheckBox(page_general, _("Show FPS"), (show_fps_desc), vconfig.bShowFPS));
+        szr_other->Add(CreateCheckBox(page_general, _("Show FPS"), (show_fps_desc), Config::GFX_SHOW_FPS));
         szr_other->Add(CreateCheckBox(page_general, _("Show NetPlay Ping"),
           wxGetTranslation(show_netplay_ping_desc),
-          vconfig.bShowNetPlayPing));
-        szr_other->Add(CreateCheckBox(page_general, _("Auto Adjust Window Size"), (auto_window_size_desc), SConfig::GetInstance().bRenderWindowAutoSize));
+          Config::GFX_SHOW_NETPLAY_PING));
+        szr_other->Add(CreateCheckBoxRefBool(page_general, _("Auto Adjust Window Size"), (auto_window_size_desc), SConfig::GetInstance().bRenderWindowAutoSize));
         szr_other->Add(CreateCheckBox(page_general, _("Show NetPlay Messages"),
           wxGetTranslation(show_netplay_messages_desc),
-          vconfig.bShowNetPlayMessages));
-        szr_other->Add(CreateCheckBox(page_general, _("Keep window on top"), (keep_window_on_top_desc), SConfig::GetInstance().bKeepWindowOnTop));
-        szr_other->Add(CreateCheckBox(page_general, _("Hide Mouse Cursor"), (hide_mouse_cursor_desc), SConfig::GetInstance().bHideCursor));
-        szr_other->Add(render_to_main_checkbox = CreateCheckBox(page_general, _("Render to Main Window"), (render_to_main_win_desc), SConfig::GetInstance().bRenderToMain));
+          Config::GFX_SHOW_NETPLAY_MESSAGES));
+        szr_other->Add(CreateCheckBoxRefBool(page_general, _("Keep window on top"), (keep_window_on_top_desc), SConfig::GetInstance().bKeepWindowOnTop));
+        szr_other->Add(CreateCheckBoxRefBool(page_general, _("Hide Mouse Cursor"), (hide_mouse_cursor_desc), SConfig::GetInstance().bHideCursor));
+        szr_other->Add(render_to_main_checkbox = CreateCheckBoxRefBool(page_general, _("Render to Main Window"), (render_to_main_win_desc), SConfig::GetInstance().bRenderToMain));
         if (vconfig.backend_info.bSupportsMultithreading)
         {
           szr_other->Add(backend_multithreading = CreateCheckBox(page_general, _("Enable Multi-threading"),
             wxGetTranslation(backend_multithreading_desc),
-            vconfig.bBackendMultithreading));
+            Config::GFX_BACKEND_MULTITHREADING));
         }
       }
 
@@ -442,7 +395,7 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
 
 
       wxChoice *const choice_efbscale = CreateChoice(page_enh,
-        vconfig.iEFBScale, (internal_res_desc), (vconfig.iEFBScale > 11) ?
+        Config::GFX_EFB_SCALE, (internal_res_desc), (vconfig.iEFBScale > 11) ?
         ArraySize(efbscale_choices) : ArraySize(efbscale_choices) - 1, efbscale_choices);
 
 
@@ -469,25 +422,25 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
     {
       const wxString af_choices[] = { wxT("1x"), wxT("2x"), wxT("4x"), wxT("8x"), wxT("16x") };
       szr_enh->Add(new wxStaticText(page_enh, wxID_ANY, _("Anisotropic Filtering:")), 1, wxALIGN_CENTER_VERTICAL, 0);
-      szr_enh->Add(CreateChoice(page_enh, vconfig.iMaxAnisotropy, (af_desc), 5, af_choices));
+      szr_enh->Add(CreateChoice(page_enh, Config::GFX_ENHANCE_MAX_ANISOTROPY, (af_desc), 5, af_choices));
       szr_enh->AddSpacer(0);
     }
 
     // Scaled copy, PL, Bilinear filter, 3D Vision
-    szr_enh->Add(CreateCheckBox(page_enh, _("Scaled EFB Copy"), (scaled_efb_copy_desc), vconfig.bCopyEFBScaled));
+    szr_enh->Add(CreateCheckBox(page_enh, _("Scaled EFB Copy"), (scaled_efb_copy_desc), Config::GFX_HACK_COPY_EFB_ENABLED));
     if (vconfig.backend_info.bSupportsScaling)
     {
-      szr_enh->Add(CreateCheckBox(page_enh, _("Use Scaling Filter"), (Use_Scaling_filter_desc), vconfig.bUseScalingFilter));
+      szr_enh->Add(CreateCheckBox(page_enh, _("Use Scaling Filter"), (Use_Scaling_filter_desc), Config::GFX_ENHANCE_USE_SCALING_FILTER));
     }
-    szr_enh->Add(CreateCheckBox(page_enh, _("Force Texture Filtering"), (force_filtering_desc), vconfig.bForceFiltering));
-    szr_enh->Add(CreateCheckBox(page_enh, _("Disable Texture Filtering"), (disable_filtering_desc), vconfig.bDisableTextureFiltering));
+    szr_enh->Add(CreateCheckBox(page_enh, _("Force Texture Filtering"), (force_filtering_desc), Config::GFX_ENHANCE_FORCE_FILTERING));
+    szr_enh->Add(CreateCheckBox(page_enh, _("Disable Texture Filtering"), (disable_filtering_desc), Config::GFX_ENHANCE_DISABLE_FILTERING));
 
-    szr_enh->Add(CreateCheckBox(page_enh, _("Widescreen Hack"), (ws_hack_desc), vconfig.bWidescreenHack));
-    szr_enh->Add(CreateCheckBox(page_enh, _("Disable Fog"), (disable_fog_desc), vconfig.bDisableFog));
-    szr_enh->Add(CreateCheckBox(page_enh, _("Force 24-bit Color"), (true_color_desc), vconfig.bForceTrueColor));
-    szr_enh->Add(pixel_lighting = CreateCheckBox(page_enh, _("Per-Pixel Lighting"), (pixel_lighting_desc), vconfig.bEnablePixelLighting));
-    szr_enh->Add(phong_lighting = CreateCheckBox(page_enh, _("Phong Lighting"), (phong_lighting_desc), vconfig.bForcePhongShading));
-    szr_enh->Add(sim_bump = CreateCheckBox(page_enh, _("Auto Bumps"), (bump_desc), vconfig.bSimBumpEnabled));
+    szr_enh->Add(CreateCheckBox(page_enh, _("Widescreen Hack"), (ws_hack_desc), Config::GFX_WIDESCREEN_HACK));
+    szr_enh->Add(CreateCheckBox(page_enh, _("Disable Fog"), (disable_fog_desc), Config::GFX_DISABLE_FOG));
+    szr_enh->Add(CreateCheckBox(page_enh, _("Force 24-bit Color"), (true_color_desc), Config::GFX_ENHANCE_FORCE_TRUE_COLOR));
+    szr_enh->Add(pixel_lighting = CreateCheckBox(page_enh, _("Per-Pixel Lighting"), (pixel_lighting_desc), Config::GFX_ENABLE_PIXEL_LIGHTING));
+    szr_enh->Add(phong_lighting = CreateCheckBox(page_enh, _("Phong Lighting"), (phong_lighting_desc), Config::GFX_FORCE_PHONG_SHADING));
+    szr_enh->Add(sim_bump = CreateCheckBox(page_enh, _("Auto Bumps"), (bump_desc), Config::GFX_SIMULATE_BUMP_MAPPING));
     wxStaticBoxSizer* const group_enh = new wxStaticBoxSizer(wxVERTICAL, page_enh, _("Enhancements"));
     group_enh->Add(szr_enh, 1, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 5);
     szr_enh_main->Add(group_enh, 0, wxEXPAND | wxALL, 5);
@@ -497,9 +450,9 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
 
       szr_texturescaling->Add(new wxStaticText(page_enh, wxID_ANY, _("Texture Scaling Mode:")), 1, wxALIGN_CENTER_VERTICAL, 0);
       const wxString scaling_choices[] = { "Off", "XBRZ", "Hybrid", "Bicubic", "Hybrid-Bicubic", "Jinc", "Jinc-Sharper", "Smoothstep", "3-Point", "DDT", "DDT-Sharp" };
-      wxChoice* scaling_choice = CreateChoice(page_enh, vconfig.iTexScalingType, (texture_scaling_desc), ArraySize(scaling_choices), scaling_choices);
+      wxChoice* scaling_choice = CreateChoice(page_enh, Config::GFX_ENHANCE_TEXTURE_SCALING_TYPE, (texture_scaling_desc), ArraySize(scaling_choices), scaling_choices);
       szr_texturescaling->Add(scaling_choice, 1, wxEXPAND | wxRIGHT);
-      szr_texturescaling->Add(CreateCheckBox(page_enh, _("DePosterize"), (texture_deposterize_desc), vconfig.bTexDeposterize), 1, wxALIGN_CENTER_VERTICAL);
+      szr_texturescaling->Add(CreateCheckBox(page_enh, _("DePosterize"), (texture_deposterize_desc), Config::GFX_ENHANCE_USE_DEPOSTERIZE), 1, wxALIGN_CENTER_VERTICAL);
 
       wxSlider* const factor_slider = new wxSlider(
         page_enh,
@@ -613,7 +566,7 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
       szr_stereo->Add(new wxStaticText(page_enh, wxID_ANY, _("Stereoscopic 3D Mode:")), 1, wxALIGN_CENTER_VERTICAL, 0);
 
       const wxString stereo_choices[] = { "Off", "Side-by-Side", "Top-and-Bottom", "Shader", "Nvidia 3D Vision" };
-      wxChoice* stereo_choice = CreateChoice(page_enh, vconfig.iStereoMode, (stereo_3d_desc), vconfig.backend_info.bSupports3DVision ? ArraySize(stereo_choices) : ArraySize(stereo_choices) - 1, stereo_choices);
+      wxChoice* stereo_choice = CreateChoice(page_enh, Config::GFX_STEREO_MODE, (stereo_3d_desc), vconfig.backend_info.bSupports3DVision ? ArraySize(stereo_choices) : ArraySize(stereo_choices) - 1, stereo_choices);
       stereo_choice->Bind(wxEVT_CHOICE, &VideoConfigDiag::Event_StereoMode, this);
       szr_stereo->Add(stereo_choice, 0, wxEXPAND);
 
@@ -625,7 +578,7 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
       szr_stereo->Add(choice_stereoshader, 0, wxEXPAND);
       PopulateStereoShaders();
 
-      szr_stereo->Add(CreateCheckBox(page_enh, _("Swap Eyes"), (stereo_swap_desc), vconfig.bStereoSwapEyes), 1, wxALIGN_CENTER_VERTICAL, 0);
+      szr_stereo->Add(CreateCheckBox(page_enh, _("Swap Eyes"), (stereo_swap_desc), Config::GFX_STEREO_SWAP_EYES), 1, wxALIGN_CENTER_VERTICAL, 0);
 
       wxSlider* const sep_slider = new wxSlider(page_enh, wxID_ANY, vconfig.iStereoDepth, 0, 100, wxDefaultPosition, wxDefaultSize);
       sep_slider->Bind(wxEVT_SLIDER, &VideoConfigDiag::Event_StereoDepth, this);
@@ -651,7 +604,7 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
     {
       wxFlexGridSizer* const szr_tessellation = new wxFlexGridSizer(3, 5, 5);
       szr_tessellation->AddGrowableCol(2, 1);
-      szr_tessellation->Add(CreateCheckBox(page_enh, _("Enable"), (Tessellation_desc), vconfig.bTessellation), 1, wxALIGN_CENTER_VERTICAL, 0);
+      szr_tessellation->Add(CreateCheckBox(page_enh, _("Enable"), (Tessellation_desc), Config::GFX_ENHANCE_TESSELLATION), 1, wxALIGN_CENTER_VERTICAL, 0);
 
       wxSlider* const min_slider = new wxSlider(page_enh, wxID_ANY, vconfig.iTessellationDistance, 5, 1000, wxDefaultPosition, wxDefaultSize);
       min_slider->Bind(wxEVT_SLIDER, &VideoConfigDiag::Event_TessellationDistance, this);
@@ -660,7 +613,7 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
       szr_tessellation->Add(new wxStaticText(page_enh, wxID_ANY, _("Distance Decay:")), 1, wxALIGN_CENTER_VERTICAL, 0);
       szr_tessellation->Add(min_slider, 1, wxEXPAND | wxRIGHT);
 
-      szr_tessellation->Add(CreateCheckBox(page_enh, _("Early Culling"), (Tessellation_early_culling_desc), vconfig.bTessellationEarlyCulling), 1, wxALIGN_CENTER_VERTICAL, 0);
+      szr_tessellation->Add(CreateCheckBox(page_enh, _("Early Culling"), (Tessellation_early_culling_desc), Config::GFX_ENHANCE_TESSELLATION_EARLY_CULLING), 1, wxALIGN_CENTER_VERTICAL, 0);
 
       wxSlider* const max_slider = new wxSlider(page_enh, wxID_ANY, vconfig.iTessellationMax, 2, 63, wxDefaultPosition, wxDefaultSize);
       max_slider->Bind(wxEVT_SLIDER, &VideoConfigDiag::Event_TessellationMax, this);
@@ -669,7 +622,7 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
       szr_tessellation->Add(new wxStaticText(page_enh, wxID_ANY, _("Maximun Detail:")), 1, wxALIGN_CENTER_VERTICAL, 0);
       szr_tessellation->Add(max_slider, 1, wxEXPAND | wxRIGHT);
 
-      szr_tessellation->Add(CreateCheckBox(page_enh, _("Forced Lighting"), (Tessellation_forced_lights_desc), vconfig.bForcedLighting), 1, wxALIGN_CENTER_VERTICAL, 0);
+      szr_tessellation->Add(CreateCheckBox(page_enh, _("Forced Lighting"), (Tessellation_forced_lights_desc), Config::GFX_FORCED_LIGHTING), 1, wxALIGN_CENTER_VERTICAL, 0);
 
       wxSlider* const round_slider = new wxSlider(page_enh, wxID_ANY, vconfig.iTessellationRoundingIntensity, 0, 100, wxDefaultPosition, wxDefaultSize);
       round_slider->Bind(wxEVT_SLIDER, &VideoConfigDiag::Event_TessellationRounding, this);
@@ -761,7 +714,7 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
 
       // Trigger
       const wxString pptrigger_choices[] = { _("On Swap"), _("On Projection"), _("On EFB Copy"), _("After Blit") };
-      choice_pptrigger = CreateChoice(page_postprocessing, vconfig.iPostProcessingTrigger, wxGetTranslation(pptrigger_desc), 4, pptrigger_choices);
+      choice_pptrigger = CreateChoice(page_postprocessing, Config::GFX_ENHANCE_POST_TRIGUER, wxGetTranslation(pptrigger_desc), 4, pptrigger_choices);
       szr_options->Add(new wxStaticText(page_postprocessing, wxID_ANY, _("Post-Processing Trigger:")), 0, wxALIGN_CENTER_VERTICAL, 0);
       szr_options->Add(choice_pptrigger, 1, wxEXPAND | wxALIGN_CENTER_VERTICAL);
 
@@ -813,13 +766,13 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
     wxStaticBoxSizer* const szr_efb = new wxStaticBoxSizer(wxVERTICAL, page_hacks, _("Embedded Frame Buffer"));
 
     // format change emulation
-    emulate_efb_format_changes = CreateCheckBox(page_hacks, _("Ignore Format Changes"), (efb_emulate_format_changes_desc), vconfig.bEFBEmulateFormatChanges, true);
+    emulate_efb_format_changes = CreateCheckBox(page_hacks, _("Ignore Format Changes"), (efb_emulate_format_changes_desc), Config::GFX_HACK_EFB_EMULATE_FORMAT_CHANGES, true);
 
-    szr_efb->Add(CreateCheckBox(page_hacks, _("Skip EFB Access from CPU"), (efb_access_desc), vconfig.bEFBAccessEnable, true), 0, wxBOTTOM | wxLEFT, 5);
-    Fast_efb_cache = CreateCheckBox(page_hacks, _("Fast EFB Access"), (efb_fast_access_desc), vconfig.bEFBFastAccess, false);
+    szr_efb->Add(CreateCheckBox(page_hacks, _("Skip EFB Access from CPU"), (efb_access_desc), Config::GFX_HACK_EFB_ACCESS_ENABLE, true), 0, wxBOTTOM | wxLEFT, 5);
+    Fast_efb_cache = CreateCheckBox(page_hacks, _("Fast EFB Access"), (efb_fast_access_desc), Config::GFX_HACK_EFB_FAST_ACCESS_ENABLE, false);
     szr_efb->Add(Fast_efb_cache, 0, wxBOTTOM | wxLEFT, 5);
     szr_efb->Add(emulate_efb_format_changes, 0, wxBOTTOM | wxLEFT, 5);
-    szr_efb->Add(CreateCheckBox(page_hacks, _("Store EFB copies to Texture Only"), (skip_efb_copy_to_ram_desc), vconfig.bSkipEFBCopyToRam), 0, wxBOTTOM | wxLEFT, 5);
+    szr_efb->Add(CreateCheckBox(page_hacks, _("Store EFB copies to Texture Only"), (skip_efb_copy_to_ram_desc), Config::GFX_HACK_SKIP_EFB_COPY_TO_RAM), 0, wxBOTTOM | wxLEFT, 5);
     szr_hacks->Add(szr_efb, 0, wxEXPAND | wxALL, 5);
 
     // Texture cache
@@ -847,9 +800,9 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
     {
       wxStaticBoxSizer* const group_xfb = new wxStaticBoxSizer(wxHORIZONTAL, page_hacks, _("External Frame Buffer"));
 
-      SettingCheckBox* disable_xfb = CreateCheckBox(page_hacks, _("Disable"), (xfb_desc), vconfig.bUseXFB, true);
-      virtual_xfb = CreateRadioButton(page_hacks, _("Virtual"), (xfb_virtual_desc), vconfig.bUseRealXFB, true, wxRB_GROUP);
-      real_xfb = CreateRadioButton(page_hacks, _("Real"), (xfb_real_desc), vconfig.bUseRealXFB);
+      SettingCheckBox* disable_xfb = CreateCheckBox(page_hacks, _("Disable"), (xfb_desc), Config::GFX_USE_XFB, true);
+      virtual_xfb = CreateRadioButton(page_hacks, _("Virtual"), (xfb_virtual_desc), Config::GFX_USE_REAL_XFB, true, wxRB_GROUP);
+      real_xfb = CreateRadioButton(page_hacks, _("Real"), (xfb_real_desc), Config::GFX_USE_REAL_XFB);
 
       group_xfb->Add(disable_xfb, 0, wxLEFT | wxRIGHT | wxBOTTOM, 5);
       group_xfb->AddStretchSpacer(1);
@@ -877,25 +830,26 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
       group_bbox->Add(bbox_slider, 3, wxRIGHT, 0);
       group_bbox->Add(text_bboxmode = new wxStaticText(page_hacks, wxID_ANY, _("GPU")), 1, wxRIGHT | wxTOP | wxBOTTOM, 5);
       szr_hacks->Add(group_bbox, 0, wxEXPAND | wxALL, 5);
-      bbox_slider->SetValue(vconfig.iBBoxMode);
-      text_bboxmode->SetLabel((s_bbox_mode_text[vconfig.iBBoxMode]));
+      int bboxmode = Config::Get(Config::GFX_HACK_BBOX_MODE);
+      bbox_slider->SetValue(bboxmode);
+      text_bboxmode->SetLabel((s_bbox_mode_text[bboxmode]));
     }
     // - other hacks
     {
       wxGridSizer* const szr_other = new wxGridSizer(2, 5, 5);
       // Disable while i fix opencl
       //szr_other->Add(CreateCheckBox(page_hacks, _("OpenCL Texture Decoder"), (opencl_desc), vconfig.bEnableOpenCL));	
-      szr_other->Add(CreateCheckBox(page_hacks, _("Fast Depth Calculation"), (fast_depth_calc_desc), vconfig.bFastDepthCalc));
+      szr_other->Add(CreateCheckBox(page_hacks, _("Fast Depth Calculation"), (fast_depth_calc_desc), Config::GFX_FAST_DEPTH_CALC));
       vertex_rounding_checkbox =
         CreateCheckBox(page_hacks, _("Vertex Rounding"), wxGetTranslation(vertex_rounding_desc),
-          vconfig.bVertexRounding);
+          Config::GFX_HACK_VERTEX_ROUDING);
       szr_other->Add(vertex_rounding_checkbox);
-      szr_other->Add(Forced_LogicOp = CreateCheckBox(page_hacks, _("Force Logic Blending"), (forcedLogivOp_desc), vconfig.bForceLogicOpBlend));
+      szr_other->Add(Forced_LogicOp = CreateCheckBox(page_hacks, _("Force Logic Blending"), (forcedLogivOp_desc), Config::GFX_HACK_FORCE_LOGICOP_BLEND));
       //szr_other->Add(Predictive_FIFO = CreateCheckBox(page_hacks, _("Predictive FIFO"), (predictiveFifo_desc), vconfig.bPredictiveFifo));
       //szr_other->Add(Wait_For_Shaders = CreateCheckBox(page_hacks, _("Wait for Shader Compilation"), (waitforshadercompilation_desc), vconfig.bWaitForShaderCompilation));
-      szr_other->Add(Async_Shader_compilation = CreateCheckBox(page_hacks, _("Full Async Shader Compilation"), (fullAsyncShaderCompilation_desc), vconfig.bFullAsyncShaderCompilation));
-      szr_other->Add(GPU_Texture_decoding = CreateCheckBox(page_hacks, _("GPU Texture Decoding"), (compute_texture_decoding_desc), vconfig.bEnableGPUTextureDecoding));
-      szr_other->Add(Compute_Shader_encoding = CreateCheckBox(page_hacks, _("Compute Texture Encoding"), (Compute_texture_encoding_desc), vconfig.bEnableComputeTextureEncoding));
+      szr_other->Add(Async_Shader_compilation = CreateCheckBox(page_hacks, _("Full Async Shader Compilation"), (fullAsyncShaderCompilation_desc), Config::GFX_HACK_FULL_ASYNC_SHADER_COMPILATION));
+      szr_other->Add(GPU_Texture_decoding = CreateCheckBox(page_hacks, _("GPU Texture Decoding"), (compute_texture_decoding_desc), Config::GFX_ENABLE_GPU_TEXTURE_DECODING));
+      szr_other->Add(Compute_Shader_encoding = CreateCheckBox(page_hacks, _("Compute Texture Encoding"), (Compute_texture_encoding_desc), Config::GFX_ENABLE_COMPUTE_TEXTURE_ENCODING));
 
       wxStaticBoxSizer* const group_other = new wxStaticBoxSizer(wxVERTICAL, page_hacks, _("Other"));
       group_other->Add(szr_other, 1, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 5);
@@ -917,14 +871,14 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
     {
       wxGridSizer* const szr_debug = new wxGridSizer(2, 5, 5);
 
-      szr_debug->Add(CreateCheckBox(page_advanced, _("Enable Wireframe"), (wireframe_desc), vconfig.bWireFrame));
-      szr_debug->Add(CreateCheckBox(page_advanced, _("Show Statistics"), (show_stats_desc), vconfig.bOverlayStats));
-      szr_debug->Add(CreateCheckBox(page_advanced, _("Texture Format Overlay"), (texfmt_desc), vconfig.bTexFmtOverlayEnable));
+      szr_debug->Add(CreateCheckBox(page_advanced, _("Enable Wireframe"), (wireframe_desc), Config::GFX_ENABLE_WIREFRAME));
+      szr_debug->Add(CreateCheckBox(page_advanced, _("Show Statistics"), (show_stats_desc), Config::GFX_OVERLAY_STATS));
+      szr_debug->Add(CreateCheckBox(page_advanced, _("Texture Format Overlay"), (texfmt_desc), Config::GFX_TEXFMT_OVERLAY_ENABLE));
       if (vconfig.backend_info.bSupportsValidationLayer)
       {
         szr_debug->Add(validation_layer = CreateCheckBox(page_advanced, _("Enable API Validation Layers"),
           wxGetTranslation(validation_layer_desc),
-          vconfig.bEnableValidationLayer));
+         Config::GFX_ENABLE_VALIDATION_LAYER));
       }
 
 
@@ -937,25 +891,24 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
     {
       wxGridSizer* const szr_utility = new wxGridSizer(2, 5, 5);
 
-      szr_utility->Add(CreateCheckBox(page_advanced, _("Dump Textures"), (dump_textures_desc), vconfig.bDumpTextures));
-      szr_utility->Add(CreateCheckBox(page_advanced, _("Dump Vertex Loaders"), (dump_VertexTranslators_desc), vconfig.bDumpVertexLoaders));
-      szr_utility->Add(CreateCheckBox(page_advanced, _("Load Custom Textures"), (load_hires_textures_desc), vconfig.bHiresTextures));
-      cache_hires_textures = CreateCheckBox(page_advanced, _("Prefetch Custom Textures"), cache_hires_textures_desc, vconfig.bCacheHiresTextures);
-      hires_texturemaps = CreateCheckBox(page_advanced, _("Load Custom Material Maps"), load_hires_material_maps_desc, vconfig.bHiresMaterialMaps);
+      szr_utility->Add(CreateCheckBox(page_advanced, _("Dump Textures"), (dump_textures_desc), Config::GFX_DUMP_TEXTURES));
+      szr_utility->Add(CreateCheckBox(page_advanced, _("Load Custom Textures"), (load_hires_textures_desc), Config::GFX_HIRES_TEXTURES));
+      cache_hires_textures = CreateCheckBox(page_advanced, _("Prefetch Custom Textures"), cache_hires_textures_desc, Config::GFX_CACHE_HIRES_TEXTURES);
+      hires_texturemaps = CreateCheckBox(page_advanced, _("Load Custom Material Maps"), load_hires_material_maps_desc, Config::GFX_HIRES_MATERIAL_MAPS);
       szr_utility->Add(cache_hires_textures);
       if (vconfig.backend_info.bSupportsInternalResolutionFrameDumps)
       {
         szr_utility->Add(CreateCheckBox(page_advanced, _("Full Resolution Frame Dumps"),
           wxGetTranslation(internal_resolution_frame_dumping_desc),
-          vconfig.bInternalResolutionFrameDumps));
+          Config::GFX_INTERNAL_RESOLUTION_FRAME_DUMPS));
       }
       szr_utility->Add(hires_texturemaps);
-      szr_utility->Add(CreateCheckBox(page_advanced, _("Dump EFB Target"), (dump_efb_desc), vconfig.bDumpEFBTarget));
-      szr_utility->Add(CreateCheckBox(page_advanced, _("Free Look"), (free_look_desc), vconfig.bFreeLook));
-      szr_utility->Add(shaderprecompile = CreateCheckBox(page_advanced, _("Compile Shaders on Startup"), (shader_precompile_desc), vconfig.bCompileShaderOnStartup));
+      szr_utility->Add(CreateCheckBox(page_advanced, _("Dump EFB Target"), (dump_efb_desc), Config::GFX_DUMP_EFB_TARGET));
+      szr_utility->Add(CreateCheckBox(page_advanced, _("Free Look"), (free_look_desc), Config::GFX_FREE_LOOK));
+      szr_utility->Add(shaderprecompile = CreateCheckBox(page_advanced, _("Compile Shaders on Startup"), (shader_precompile_desc), Config::GFX_COMPILE_SHADERS_ON_STARTUP));
 
-#if !defined WIN32 && defined HAVE_LIBAV
-      szr_utility->Add(CreateCheckBox(page_advanced, _("Frame Dumps Use FFV1"), (use_ffv1_desc), vconfig.bUseFFV1));
+#if defined(HAVE_FFMPEG)
+      szr_utility->Add(CreateCheckBox(page_advanced, _("Frame Dumps Use FFV1"), (use_ffv1_desc), Config::GFX_USE_FFV1));
 #endif
 
       wxStaticBoxSizer* const group_utility = new wxStaticBoxSizer(wxVERTICAL, page_advanced, _("Utility"));
@@ -967,8 +920,7 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
     {
       wxGridSizer* const szr_misc = new wxGridSizer(2, 5, 5);
 
-      szr_misc->Add(CreateCheckBox(page_advanced, _("Show Input Display"), (show_input_display_desc), vconfig.bShowInputDisplay));
-      szr_misc->Add(CreateCheckBox(page_advanced, _("Crop"), (crop_desc), vconfig.bCrop));
+      szr_misc->Add(CreateCheckBox(page_advanced, _("Crop"), (crop_desc), Config::GFX_CROP));
 
       // Progressive Scan
       {
@@ -981,7 +933,7 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
       }
 #if defined WIN32
       // Borderless Fullscreen
-      borderless_fullscreen = CreateCheckBox(page_advanced, _("Borderless Fullscreen"), (borderless_fullscreen_desc), vconfig.bBorderlessFullscreen);
+      borderless_fullscreen = CreateCheckBox(page_advanced, _("Borderless Fullscreen"), (borderless_fullscreen_desc), Config::GFX_BORDERLESS_FULLSCREEN);
       szr_misc->Add(borderless_fullscreen);
 #endif
       wxStaticBoxSizer* const group_misc = new wxStaticBoxSizer(wxVERTICAL, page_advanced, _("Misc"));
@@ -994,20 +946,27 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
     page_advanced->SetSizerAndFit(szr_advanced);
   }
 
-  wxButton* const btn_close = new wxButton(this, wxID_OK, _("Close"), wxDefaultPosition);
-  btn_close->Bind(wxEVT_COMMAND_BUTTON_CLICKED, &VideoConfigDiag::Event_ClickClose, this);
+  wxStdDialogButtonSizer* btn_sizer = CreateStdDialogButtonSizer(wxOK | wxNO_DEFAULT);
+  btn_sizer->GetAffirmativeButton()->SetLabel(_("Close"));
+  SetEscapeId(wxID_OK);  // Escape key or window manager 'X'
 
-  Bind(wxEVT_CLOSE_WINDOW, &VideoConfigDiag::Event_Close, this);
+  Bind(wxEVT_BUTTON, &VideoConfigDiag::Event_Close, this, wxID_OK);
 
   wxBoxSizer* const szr_main = new wxBoxSizer(wxVERTICAL);
   szr_main->Add(notebook, 1, wxEXPAND | wxALL, 5);
-  szr_main->Add(btn_close, 0, wxALIGN_RIGHT | wxRIGHT | wxBOTTOM, 5);
+  szr_main->Add(btn_sizer, 0, wxALIGN_RIGHT | wxRIGHT | wxBOTTOM, 5);
 
   SetSizerAndFit(szr_main);
   Center();
   SetFocus();
 
   UpdateWindowUI();
+}
+
+void VideoConfigDiag::Event_Close(wxCommandEvent& ev)
+{
+  Config::Save();
+  ev.Skip();
 }
 
 void VideoConfigDiag::Event_DisplayResolution(wxCommandEvent &ev)
@@ -1020,23 +979,44 @@ void VideoConfigDiag::Event_DisplayResolution(wxCommandEvent &ev)
   ev.Skip();
 }
 
-SettingCheckBox* VideoConfigDiag::CreateCheckBox(wxWindow* parent, const wxString& label, const wxString& description, bool &setting, bool reverse, long style)
+SettingCheckBox* VideoConfigDiag::CreateCheckBox(wxWindow* parent, const wxString& label,
+  const wxString& description,
+  const Config::ConfigInfo<bool>& setting,
+  bool reverse, long style)
 {
-  SettingCheckBox* const cb = new SettingCheckBox(parent, label, wxString(), setting, reverse, style);
+  SettingCheckBox* const cb =
+    new SettingCheckBox(parent, label, wxString(), setting, reverse, style);
   RegisterControl(cb, description);
   return cb;
 }
 
-SettingChoice* VideoConfigDiag::CreateChoice(wxWindow* parent, int& setting, const wxString& description, int num, const wxString choices[], long style)
+RefBoolSetting<wxCheckBox>* VideoConfigDiag::CreateCheckBoxRefBool(wxWindow* parent,
+  const wxString& label,
+  const wxString& description,
+  bool& setting)
+{
+  auto* const cb = new RefBoolSetting<wxCheckBox>(parent, label, wxString(), setting, false, 0);
+  RegisterControl(cb, description);
+  return cb;
+}
+
+SettingChoice* VideoConfigDiag::CreateChoice(wxWindow* parent,
+  const Config::ConfigInfo<int>& setting,
+  const wxString& description, int num,
+  const wxString choices[], long style)
 {
   SettingChoice* const ch = new SettingChoice(parent, setting, wxString(), num, choices, style);
   RegisterControl(ch, description);
   return ch;
 }
 
-SettingRadioButton* VideoConfigDiag::CreateRadioButton(wxWindow* parent, const wxString& label, const wxString& description, bool &setting, bool reverse, long style)
+SettingRadioButton* VideoConfigDiag::CreateRadioButton(wxWindow* parent, const wxString& label,
+  const wxString& description,
+  const Config::ConfigInfo<bool>& setting,
+  bool reverse, long style)
 {
-  SettingRadioButton* const rb = new SettingRadioButton(parent, label, wxString(), setting, reverse, style);
+  SettingRadioButton* const rb =
+    new SettingRadioButton(parent, label, wxString(), setting, reverse, style);
   RegisterControl(rb, description);
   return rb;
 }
@@ -1151,15 +1131,16 @@ void VideoConfigDiag::Event_ProgressiveScan(wxCommandEvent &ev)
 void VideoConfigDiag::Event_Stc(wxCommandEvent &ev)
 {
   int samples[] = { 0, 512, 128 };
-  vconfig.iSafeTextureCache_ColorSamples = samples[ev.GetInt()];
+  Config::SetBaseOrCurrent(Config::GFX_SAFE_TEXTURE_CACHE_COLOR_SAMPLES, samples[ev.GetInt()]);
 
   ev.Skip();
 }
 
 void VideoConfigDiag::Event_Bbox(wxCommandEvent &ev)
 {
-  vconfig.iBBoxMode = ev.GetInt();
-  text_bboxmode->SetLabel((s_bbox_mode_text[vconfig.iBBoxMode]));
+  int bboxmode = ev.GetInt();
+  Config::SetBaseOrCurrent(Config::GFX_HACK_BBOX_MODE, bboxmode);
+  text_bboxmode->SetLabel((s_bbox_mode_text[bboxmode]));
   ev.Skip();
 }
 
@@ -1173,24 +1154,20 @@ static void ReloadPostProcessingShaders()
 
 void VideoConfigDiag::UpdatePostProcessingShadersConfig()
 {
-  if (listbox_selected_ppshaders->IsEmpty())
+  std::string shaders;
+  bool HasShaders = !listbox_selected_ppshaders->IsEmpty();
+  Config::SetBaseOrCurrent(Config::GFX_ENHANCE_POST_ENABLED, HasShaders);
+  if (HasShaders)
   {
-    vconfig.bPostProcessingEnable = false;
-    vconfig.sPostProcessingShaders.clear();
-  }
-  else
-  {
-    vconfig.bPostProcessingEnable = true;
-    vconfig.sPostProcessingShaders.clear();
     for (unsigned int i = 0; i < listbox_selected_ppshaders->GetCount(); i++)
     {
       if (i > 0)
-        vconfig.sPostProcessingShaders += ':';
+        shaders += ':';
 
-      vconfig.sPostProcessingShaders += WxStrToStr(listbox_selected_ppshaders->GetString(i));
+      shaders += WxStrToStr(listbox_selected_ppshaders->GetString(i));
     }
   }
-
+  Config::SetBaseOrCurrent(Config::GFX_ENHANCE_POST_SHADERS, shaders);
   ReloadPostProcessingShaders();
 }
 
@@ -1303,14 +1280,15 @@ void VideoConfigDiag::Event_PPShaderAdd(wxCommandEvent& ev)
 void VideoConfigDiag::Event_ScalingShader(wxCommandEvent& ev)
 {
   const int sel = ev.GetInt();
+  std::string shader;
+  
   if (sel)
-    vconfig.sScalingShader = WxStrToStr(ev.GetString());
-  else
-    vconfig.sScalingShader.clear();
+    shader = WxStrToStr(ev.GetString());
 
+  Config::SetBaseOrCurrent(Config::GFX_ENHANCE_SCALING_SHADER, shader);
   // Load shader, determine whether to enable options button
   PostProcessingShaderConfiguration shader_config;
-  if (shader_config.LoadShader(SCALING_SHADER_SUBDIR, vconfig.sScalingShader))
+  if (shader_config.LoadShader(SCALING_SHADER_SUBDIR, shader))
     button_config_scalingshader->Enable(shader_config.HasOptions());
   else
     button_config_scalingshader->Disable();
@@ -1320,74 +1298,73 @@ void VideoConfigDiag::Event_ScalingShader(wxCommandEvent& ev)
 
 void VideoConfigDiag::Event_StereoShader(wxCommandEvent& ev)
 {
-  vconfig.sStereoShader = WxStrToStr(ev.GetString());
+  Config::SetBaseOrCurrent(Config::GFX_STEREO_SHADER, WxStrToStr(ev.GetString()));
   ReloadPostProcessingShaders();
 }
 
 void VideoConfigDiag::Event_ConfigureScalingShader(wxCommandEvent &ev)
 {
-  PostProcessingConfigDiag dialog(this, SCALING_SHADER_SUBDIR, vconfig.sScalingShader, (g_renderer) ? g_renderer->GetPostProcessor()->GetScalingShaderConfig() : nullptr);
+  PostProcessingConfigDiag dialog(this, SCALING_SHADER_SUBDIR, Config::Get(Config::GFX_STEREO_SHADER), (g_renderer) ? g_renderer->GetPostProcessor()->GetScalingShaderConfig() : nullptr);
   dialog.ShowModal();
 }
 
 void VideoConfigDiag::Event_StereoDepth(wxCommandEvent &ev)
 {
-  vconfig.iStereoDepth = ev.GetInt();
-
+  Config::SetBaseOrCurrent(Config::GFX_STEREO_DEPTH, ev.GetInt());
   ev.Skip();
 }
 
 void VideoConfigDiag::Event_SpecularIntensity(wxCommandEvent &ev)
 {
-  vconfig.iSpecularMultiplier = ev.GetInt();
+  Config::SetBaseOrCurrent(Config::GFX_SPECULAR_MULTIPLIER, ev.GetInt());
 
   ev.Skip();
 }
 
 void VideoConfigDiag::Event_RimIntensity(wxCommandEvent &ev)
 {
-  vconfig.iRimIntesity = ev.GetInt();
+  Config::SetBaseOrCurrent(Config::GFX_RIM_INTENSITY, ev.GetInt());
 
   ev.Skip();
 }
 
 void VideoConfigDiag::Event_RimPower(wxCommandEvent &ev)
 {
-  vconfig.iRimPower = ev.GetInt();
+  Config::SetBaseOrCurrent(Config::GFX_RIM_POWER, ev.GetInt());
 
   ev.Skip();
 }
 void VideoConfigDiag::Event_RimBase(wxCommandEvent &ev)
 {
-  vconfig.iRimBase = ev.GetInt();
+  Config::SetBaseOrCurrent(Config::GFX_RIM_BASE, ev.GetInt());
 
   ev.Skip();
 }
 
 void VideoConfigDiag::Event_BumpStrength(wxCommandEvent &ev)
 {
-  vconfig.iSimBumpStrength = ev.GetInt();
+  Config::SetBaseOrCurrent(Config::GFX_SIMULATE_BUMP_STRENGTH, ev.GetInt());
 
   ev.Skip();
 }
 
 void VideoConfigDiag::Event_BumpDetailBlend(wxCommandEvent &ev)
 {
-  vconfig.iSimBumpDetailBlend = ev.GetInt();
+  Config::SetBaseOrCurrent(Config::GFX_SIMULATE_BUMP_DETAIL_BLEND, ev.GetInt());
 
   ev.Skip();
 }
 
 void VideoConfigDiag::Event_BumpDetailFrequency(wxCommandEvent &ev)
 {
-  vconfig.iSimBumpDetailFrequency = ev.GetInt();
+  Config::SetBaseOrCurrent(Config::GFX_SIMULATE_BUMP_DETAIL_FREQUENCY, ev.GetInt());
 
   ev.Skip();
 }
 
 void VideoConfigDiag::Event_BumpThreshold(wxCommandEvent &ev)
 {
-  vconfig.iSimBumpThreshold = ev.GetInt();
+  Config::SetBaseOrCurrent(Config::GFX_SIMULATE_BUMP_THRESHOLD, ev.GetInt());
 
   ev.Skip();
 }
@@ -1395,8 +1372,9 @@ void VideoConfigDiag::Event_BumpThreshold(wxCommandEvent &ev)
 void VideoConfigDiag::Event_ScalingFactor(wxCommandEvent &ev)
 {
   const wxString sf_choices[] = { wxT("1x"), wxT("2x"), wxT("3x"), wxT("4x"), wxT("5x") };
-  vconfig.iTexScalingFactor = ev.GetInt();
-  label_TextureScale->SetLabel(sf_choices[vconfig.iTexScalingFactor - 1]);
+  int iTexScalingFactor = ev.GetInt();
+  Config::SetBaseOrCurrent(Config::GFX_ENHANCE_TEXTURE_SCALING_FACTOR, iTexScalingFactor);
+  label_TextureScale->SetLabel(sf_choices[iTexScalingFactor - 1]);
   ev.Skip();
 }
 
@@ -1406,36 +1384,35 @@ void VideoConfigDiag::Event_StereoConvergence(wxCommandEvent &ev)
   int value = ev.GetInt();
   if (90 < value && value < 110)
     conv_slider->SetValue(100);
-
-  vconfig.iStereoConvergencePercentage = conv_slider->GetValue();
+  Config::SetBaseOrCurrent(Config::GFX_STEREO_CONVERGENCE_PERCENTAGE, conv_slider->GetValue());
 
   ev.Skip();
 }
 
 void VideoConfigDiag::Event_TessellationDistance(wxCommandEvent &ev)
 {
-  vconfig.iTessellationDistance = ev.GetInt();
+  Config::SetBaseOrCurrent(Config::GFX_ENHANCE_TESSELLATION_DISTANCE, ev.GetInt());
 
   ev.Skip();
 }
 
 void VideoConfigDiag::Event_TessellationMax(wxCommandEvent &ev)
 {
-  vconfig.iTessellationMax = ev.GetInt();
+  Config::SetBaseOrCurrent(Config::GFX_ENHANCE_TESSELLATION_MAX, ev.GetInt());
 
   ev.Skip();
 }
 
 void VideoConfigDiag::Event_TessellationRounding(wxCommandEvent &ev)
 {
-  vconfig.iTessellationRoundingIntensity = ev.GetInt();
+  Config::SetBaseOrCurrent(Config::GFX_ENHANCE_TESSELLATION_ROUNDING_INTENSITY, ev.GetInt());
 
   ev.Skip();
 }
 
 void VideoConfigDiag::Event_TessellationDisplacement(wxCommandEvent &ev)
 {
-  vconfig.iTessellationDisplacementIntensity = ev.GetInt();
+  Config::SetBaseOrCurrent(Config::GFX_ENHANCE_TESSELLATION_DISPLACEMENT_INTENSITY, ev.GetInt());
 
   ev.Skip();
 }
@@ -1443,7 +1420,7 @@ void VideoConfigDiag::Event_TessellationDisplacement(wxCommandEvent &ev)
 void VideoConfigDiag::Event_StereoMode(wxCommandEvent &ev)
 {
   // Disable blit shader choice when anaglyph shader on
-  vconfig.iStereoMode = ev.GetInt();
+  Config::SetBaseOrCurrent(Config::GFX_STEREO_MODE, ev.GetInt());
   choice_stereoshader->Enable((ev.GetInt() == STEREO_SHADER));
 
   ReloadPostProcessingShaders();
@@ -1574,8 +1551,7 @@ void VideoConfigDiag::PopulatePostProcessingShaders()
   }
 
   // Split the list of post-processing shaders, and fill the list box
-  std::vector<std::string> ppshader_list;
-  SplitString(vconfig.sPostProcessingShaders, ':', ppshader_list);
+  std::vector<std::string> ppshader_list = SplitString(Config::Get(Config::GFX_ENHANCE_POST_SHADERS), ':');
   for (const std::string& shader_name : ppshader_list)
     listbox_selected_ppshaders->AppendString(StrToWxStr(shader_name));
 
@@ -1599,12 +1575,12 @@ void VideoConfigDiag::PopulateScalingShaders()
 
   for (const std::string& shader : shaders)
     choice_scalingshader->AppendString(StrToWxStr(shader));
-
-  if (choice_scalingshader->SetStringSelection(StrToWxStr(vconfig.sScalingShader)))
+  std::string scalingshader = Config::Get(Config::GFX_ENHANCE_SCALING_SHADER);
+  if (choice_scalingshader->SetStringSelection(StrToWxStr(scalingshader)))
   {
     // Load shader, determine whether to enable options button
     PostProcessingShaderConfiguration shader_config;
-    if (shader_config.LoadShader(SCALING_SHADER_SUBDIR, vconfig.sScalingShader))
+    if (shader_config.LoadShader(SCALING_SHADER_SUBDIR, scalingshader))
       button_config_scalingshader->Enable(shader_config.HasOptions());
     else
       button_config_scalingshader->Disable();
@@ -1625,7 +1601,7 @@ void VideoConfigDiag::PopulateStereoShaders()
     for (const std::string& shader : shaders)
       choice_stereoshader->AppendString(StrToWxStr(shader));
 
-    if (!choice_stereoshader->SetStringSelection(StrToWxStr(vconfig.sStereoShader)))
+    if (!choice_stereoshader->SetStringSelection(StrToWxStr(Config::Get(Config::GFX_STEREO_SHADER))))
     {
       // Invalid shader, reset it to default
       choice_stereoshader->Select(0);
@@ -1633,14 +1609,14 @@ void VideoConfigDiag::PopulateStereoShaders()
   }
 
   // Set enabled based on stereo mode
-  choice_stereoshader->Enable(vconfig.iStereoMode == STEREO_SHADER);
+  choice_stereoshader->Enable(Config::Get(Config::GFX_STEREO_MODE) == STEREO_SHADER);
 }
 
 void VideoConfigDiag::PopulateAAList()
 {
-  const std::vector<int>& aa_modes = vconfig.backend_info.AAModes;
+  const auto& aa_modes = vconfig.backend_info.AAModes;
   const bool supports_ssaa = vconfig.backend_info.bSupportsSSAA;
-  for (int mode : aa_modes)
+  for (auto mode : aa_modes)
   {
     if (mode == 1)
     {
@@ -1661,7 +1637,7 @@ void VideoConfigDiag::PopulateAAList()
 
   if (supports_ssaa)
   {
-    for (int mode : aa_modes)
+    for (auto mode : aa_modes)
     {
       if (mode != 1)
         choice_aamode->AppendString(std::to_string(mode) + "x SSAA");
@@ -1685,8 +1661,10 @@ void VideoConfigDiag::OnAAChanged(wxCommandEvent& ev)
 {
   int mode = ev.GetInt();
   ev.Skip();
-  const std::vector<int>& aa_modes = vconfig.backend_info.AAModes;
-  vconfig.bSSAA = mode >= aa_modes.size();
-  mode -= vconfig.bSSAA * (aa_modes.size() - 1);
-  vconfig.iMultisamples = aa_modes[mode];
+  const std::vector<u32>& aa_modes = vconfig.backend_info.AAModes;
+  bool ssaa = mode > aa_modes.size();
+  Config::SetBaseOrCurrent(Config::GFX_SSAA, ssaa);
+  mode -= ssaa * (aa_modes.size() - 1);
+  Config::SetBaseOrCurrent(Config::GFX_MSAA, (u32)aa_modes[mode]);
+
 }

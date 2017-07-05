@@ -8,9 +8,8 @@
 #include <utility>
 #include <vector>
 
-#include "Common/CommonFuncs.h"
-#include "Common/CommonPaths.h"
 #include "Common/CommonTypes.h"
+#include "Common/File.h"
 #include "Common/FileUtil.h"
 #include "Common/Logging/Log.h"
 #include "Common/NandPaths.h"
@@ -28,20 +27,20 @@ std::string RootUserPath(FromWhichRoot from)
 std::string GetImportTitlePath(u64 title_id, FromWhichRoot from)
 {
   return RootUserPath(from) + StringFromFormat("/import/%08x/%08x",
-    static_cast<u32>(title_id >> 32),
-    static_cast<u32>(title_id));
+                                               static_cast<u32>(title_id >> 32),
+                                               static_cast<u32>(title_id));
 }
 
 std::string GetTicketFileName(u64 _titleID, FromWhichRoot from)
 {
   return StringFromFormat("%s/ticket/%08x/%08x.tik", RootUserPath(from).c_str(),
-    (u32)(_titleID >> 32), (u32)_titleID);
+                          (u32)(_titleID >> 32), (u32)_titleID);
 }
 
 std::string GetTitlePath(u64 title_id, FromWhichRoot from)
 {
   return StringFromFormat("%s/title/%08x/%08x/", RootUserPath(from).c_str(),
-    static_cast<u32>(title_id >> 32), static_cast<u32>(title_id));
+                          static_cast<u32>(title_id >> 32), static_cast<u32>(title_id));
 }
 
 std::string GetTitleDataPath(u64 _titleID, FromWhichRoot from)
@@ -69,8 +68,8 @@ std::string EscapeFileName(const std::string& filename)
   std::string filename_with_escaped_double_underscores = ReplaceAll(filename, "__", "__5f____5f__");
 
   // Escape all other characters that need to be escaped
-  static const std::unordered_set<char> chars_to_replace = { '\"', '*', '/',  ':', '<',
-      '>',  '?', '\\', '|', '\x7f' };
+  static const std::unordered_set<char> chars_to_replace = {'\"', '*', '/',  ':', '<',
+                                                            '>',  '?', '\\', '|', '\x7f'};
   std::string result;
   result.reserve(filename_with_escaped_double_underscores.size());
   for (char c : filename_with_escaped_double_underscores)
@@ -86,8 +85,7 @@ std::string EscapeFileName(const std::string& filename)
 
 std::string EscapePath(const std::string& path)
 {
-  std::vector<std::string> split_strings;
-  SplitString(path, '/', split_strings);
+  const std::vector<std::string> split_strings = SplitString(path, '/');
 
   std::vector<std::string> escaped_split_strings;
   escaped_split_strings.reserve(split_strings.size());
@@ -109,7 +107,7 @@ std::string UnescapeFileName(const std::string& filename)
     u32 character;
     if (pos + 6 <= result.size() && result[pos + 4] == '_' && result[pos + 5] == '_')
       if (AsciiToHex(result.substr(pos + 2, 2), character))
-        result.replace(pos, 6, { static_cast<char>(character) });
+        result.replace(pos, 6, {static_cast<char>(character)});
 
     ++pos;
   }

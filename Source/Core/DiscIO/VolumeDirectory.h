@@ -6,6 +6,7 @@
 
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -29,13 +30,13 @@ enum class Language;
 enum class Region;
 enum class Platform;
 
-class CVolumeDirectory : public IVolume
+class VolumeDirectory : public Volume
 {
 public:
-  CVolumeDirectory(const std::string& directory, bool is_wii, const std::string& apploader = "",
-    const std::string& dol = "");
+  VolumeDirectory(const std::string& directory, bool is_wii, const std::string& apploader = "",
+                  const std::string& dol = "");
 
-  ~CVolumeDirectory();
+  ~VolumeDirectory();
 
   static bool IsValidDirectory(const std::string& directory);
 
@@ -48,13 +49,14 @@ public:
 
   std::string GetMakerID(const Partition& partition = PARTITION_NONE) const override;
 
-  u16 GetRevision(const Partition& partition = PARTITION_NONE) const override { return 0; }
+  std::optional<u16> GetRevision(const Partition& partition = PARTITION_NONE) const override
+  {
+    return {};
+  }
   std::string GetInternalName(const Partition& partition = PARTITION_NONE) const override;
   std::map<Language, std::string> GetLongNames() const override;
   std::vector<u32> GetBanner(int* width, int* height) const override;
   void SetName(const std::string&);
-
-  u64 GetFSTSize(const Partition& partition = PARTITION_NONE) const override;
 
   std::string GetApploaderDate(const Partition& partition = PARTITION_NONE) const override;
   Platform GetVolumeType() const override;
@@ -80,7 +82,7 @@ private:
 
   // writing to read buffer
   void WriteToBuffer(u64 source_start_address, u64 source_length, const u8* source, u64* address,
-    u64* length, u8** buffer) const;
+                     u64* length, u8** buffer) const;
 
   void PadToAddress(u64 start_address, u64* address, u64* length, u8** buffer) const;
 
@@ -88,10 +90,10 @@ private:
 
   // FST creation
   void WriteEntryData(u32* entry_offset, u8 type, u32 name_offset, u64 data_offset, u64 length,
-    u32 address_shift);
+                      u32 address_shift);
   void WriteEntryName(u32* name_offset, const std::string& name);
   void WriteDirectory(const File::FSTEntry& parent_entry, u32* fst_offset, u32* name_offset,
-    u64* data_offset, u32 parent_entry_index);
+                      u64* data_offset, u32 parent_entry_index);
 
   std::string m_root_directory;
 

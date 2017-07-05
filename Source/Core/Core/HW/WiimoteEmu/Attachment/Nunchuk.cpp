@@ -21,11 +21,11 @@
 
 namespace WiimoteEmu
 {
-constexpr std::array<u8, 6> nunchuk_id{ { 0x00, 0x00, 0xa4, 0x20, 0x00, 0x00 } };
+constexpr std::array<u8, 6> nunchuk_id{{0x00, 0x00, 0xa4, 0x20, 0x00, 0x00}};
 
-constexpr std::array<u8, 2> nunchuk_button_bitmasks{ {
-        Nunchuk::BUTTON_C, Nunchuk::BUTTON_Z,
-    } };
+constexpr std::array<u8, 2> nunchuk_button_bitmasks{{
+    Nunchuk::BUTTON_C, Nunchuk::BUTTON_Z,
+}};
 
 Nunchuk::Nunchuk(ExtensionReg& reg) : Attachment(_trans("Nunchuk"), reg)
 {
@@ -36,7 +36,7 @@ Nunchuk::Nunchuk(ExtensionReg& reg) : Attachment(_trans("Nunchuk"), reg)
 
   // stick
   groups.emplace_back(
-    m_stick = new ControllerEmu::AnalogStick(_trans("Stick"), DEFAULT_ATTACHMENT_STICK_RADIUS));
+      m_stick = new ControllerEmu::AnalogStick(_trans("Stick"), DEFAULT_ATTACHMENT_STICK_RADIUS));
 
   // swing
   groups.emplace_back(m_swing = new ControllerEmu::Force(_trans("Swing")));
@@ -151,7 +151,7 @@ void Nunchuk::LoadDefaults(const ControllerInterface& ciface)
   m_stick->SetControlExpression(2, "A");  // left
   m_stick->SetControlExpression(3, "D");  // right
 
-                                                       // Buttons
+// Buttons
 #ifdef _WIN32
   m_buttons->SetControlExpression(0, "LCONTROL");  // C
   m_buttons->SetControlExpression(1, "LSHIFT");    // Z

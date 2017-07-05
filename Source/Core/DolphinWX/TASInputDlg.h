@@ -27,9 +27,9 @@ class TASInputDlg : public wxDialog
 {
 public:
   explicit TASInputDlg(wxWindow* parent, wxWindowID id = wxID_ANY,
-    const wxString& title = _("TAS Input"),
-    const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize,
-    long style = wxDEFAULT_DIALOG_STYLE | wxSTAY_ON_TOP);
+                       const wxString& title = _("TAS Input"),
+                       const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize,
+                       long style = wxDEFAULT_DIALOG_STYLE | wxSTAY_ON_TOP);
 
   void GetValues(GCPadStatus* PadStatus);
   void GetValues(u8* data, WiimoteEmu::ReportFeatures rptf, int ext, const wiimote_key key);
@@ -98,12 +98,12 @@ private:
   void OnCheckboxToggle(wxCommandEvent& event);
   Stick* FindStickByID(int id);
   Stick CreateStick(int id_stick, int xRange, int yRange, u32 defaultX, u32 defaultY, bool reverseX,
-    bool reverseY);
+                    bool reverseY);
   wxStaticBoxSizer* CreateStickLayout(Stick* tempStick, const wxString& title);
   wxStaticBoxSizer* CreateAccelLayout(Control* x, Control* y, Control* z, const wxString& title);
   Button CreateButton(const wxString& name);
   Control CreateControl(long style, int width, int height, bool reverse = false, u32 range = 255,
-    u32 default_value = 128);
+                        u32 default_value = 128);
   wxBitmap CreateStickBitmap(int x, int y);
 
   void OnCloseWindow(wxCloseEvent& event);
@@ -129,7 +129,7 @@ private:
   };
 
   Control m_l_cont, m_r_cont, m_x_cont, m_y_cont, m_z_cont, m_nx_cont, m_ny_cont, m_nz_cont, m_cc_l,
-    m_cc_r;
+      m_cc_r;
   Button m_a, m_b, m_x, m_y, m_z, m_l, m_r, m_c;
   Button m_start, m_plus, m_minus, m_one, m_two, m_home;
   Button m_dpad_up, m_dpad_down, m_dpad_left, m_dpad_right;

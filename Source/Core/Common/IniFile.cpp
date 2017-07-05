@@ -41,7 +41,7 @@ const std::string& IniFile::NULL_STRING = "";
 
 IniFile::Section::Section() = default;
 
-IniFile::Section::Section(std::string name_) : name{ std::move(name_) }
+IniFile::Section::Section(std::string name_) : name{std::move(name_)}
 {
 }
 
@@ -58,7 +58,7 @@ void IniFile::Section::Set(const std::string& key, const std::string& newValue)
 }
 
 void IniFile::Section::Set(const std::string& key, const std::string& newValue,
-  const std::string& defaultValue)
+                           const std::string& defaultValue)
 {
   if (newValue != defaultValue)
     Set(key, newValue);
@@ -107,7 +107,7 @@ void IniFile::Section::Set(const std::string& key, bool newValue)
 }
 
 bool IniFile::Section::Get(const std::string& key, std::string* value,
-  const std::string& defaultValue) const
+                           const std::string& defaultValue) const
 {
   auto it = values.find(key);
   if (it != values.end())
@@ -377,7 +377,7 @@ bool IniFile::GetKeys(const std::string& sectionName, std::vector<std::string>* 
 
 // Return a list of all lines in a section
 bool IniFile::GetLines(const std::string& sectionName, std::vector<std::string>* lines,
-  const bool remove_comments) const
+                       const bool remove_comments) const
 {
   lines->clear();
 
@@ -401,7 +401,7 @@ bool IniFile::Load(const std::string& filename, bool keep_current_data)
 
   // Open file
   std::ifstream in;
-  OpenFStream(in, filename, std::ios::in);
+  File::OpenFStream(in, filename, std::ios::in);
 
   if (in.fail())
     return false;
@@ -457,7 +457,7 @@ bool IniFile::Load(const std::string& filename, bool keep_current_data)
           // Kind of a hack, but the support for raw lines inside an
           // INI is a hack anyway.
           if ((key == "" && value == "") ||
-            (line.size() >= 1 && (line[0] == '$' || line[0] == '+' || line[0] == '*')))
+              (line.size() >= 1 && (line[0] == '$' || line[0] == '+' || line[0] == '*')))
             current_section->m_lines.push_back(line);
           else
             current_section->Set(key, value);
@@ -474,7 +474,7 @@ bool IniFile::Save(const std::string& filename)
 {
   std::ofstream out;
   std::string temp = File::GetTempFilenameForAtomicWrite(filename);
-  OpenFStream(out, temp, std::ios::out);
+  File::OpenFStream(out, temp, std::ios::out);
 
   if (out.fail())
   {
@@ -508,21 +508,21 @@ bool IniFile::Save(const std::string& filename)
 
 // Unit test. TODO: Move to the real unit test framework.
 /*
-int main()
-{
-IniFile ini;
-ini.Load("my.ini");
-ini.Set("Hello", "A", "amaskdfl");
-ini.Set("Moss", "A", "amaskdfl");
-ini.Set("Aissa", "A", "amaskdfl");
-//ini.Read("my.ini");
-std::string x;
-ini.Get("Hello", "B", &x, "boo");
-ini.DeleteKey("Moss", "A");
-ini.DeleteSection("Moss");
-ini.SortSections();
-ini.Save("my.ini");
-//UpdateVars(ini);
-return 0;
-}
-*/
+   int main()
+   {
+    IniFile ini;
+    ini.Load("my.ini");
+    ini.Set("Hello", "A", "amaskdfl");
+    ini.Set("Moss", "A", "amaskdfl");
+    ini.Set("Aissa", "A", "amaskdfl");
+    //ini.Read("my.ini");
+    std::string x;
+    ini.Get("Hello", "B", &x, "boo");
+    ini.DeleteKey("Moss", "A");
+    ini.DeleteSection("Moss");
+    ini.SortSections();
+    ini.Save("my.ini");
+    //UpdateVars(ini);
+    return 0;
+   }
+ */

@@ -8,8 +8,8 @@
 #include "Core/HW/GCPadEmu.h"
 
 GCPadInputConfigDialog::GCPadInputConfigDialog(wxWindow* const parent, InputConfig& config,
-  const wxString& name, const int port_num)
-  : InputConfigDialog(parent, config, name, port_num)
+                                               const wxString& name, const int port_num)
+    : InputConfigDialog(parent, config, name, port_num)
 {
   const int space5 = FromDIP(5);
 
@@ -18,19 +18,19 @@ GCPadInputConfigDialog::GCPadInputConfigDialog(wxWindow* const parent, InputConf
   auto* const profile_chooser = CreateProfileChooserGroupBox();
 
   auto* const group_box_buttons =
-    new ControlGroupBox(Pad::GetGroup(port_num, PadGroup::Buttons), this, this);
+      new ControlGroupBox(Pad::GetGroup(port_num, PadGroup::Buttons), this, this);
   auto* const group_box_main_stick =
-    new ControlGroupBox(Pad::GetGroup(port_num, PadGroup::MainStick), this, this);
+      new ControlGroupBox(Pad::GetGroup(port_num, PadGroup::MainStick), this, this);
   auto* const group_box_c_stick =
-    new ControlGroupBox(Pad::GetGroup(port_num, PadGroup::CStick), this, this);
+      new ControlGroupBox(Pad::GetGroup(port_num, PadGroup::CStick), this, this);
   auto* const group_box_dpad =
-    new ControlGroupBox(Pad::GetGroup(port_num, PadGroup::DPad), this, this);
+      new ControlGroupBox(Pad::GetGroup(port_num, PadGroup::DPad), this, this);
   auto* const group_box_triggers =
-    new ControlGroupBox(Pad::GetGroup(port_num, PadGroup::Triggers), this, this);
+      new ControlGroupBox(Pad::GetGroup(port_num, PadGroup::Triggers), this, this);
   auto* const group_box_rumble =
-    new ControlGroupBox(Pad::GetGroup(port_num, PadGroup::Rumble), this, this);
+      new ControlGroupBox(Pad::GetGroup(port_num, PadGroup::Rumble), this, this);
   auto* const group_box_options =
-    new ControlGroupBox(Pad::GetGroup(port_num, PadGroup::Options), this, this);
+      new ControlGroupBox(Pad::GetGroup(port_num, PadGroup::Options), this, this);
 
   auto* const triggers_rumble_sizer = new wxBoxSizer(wxVERTICAL);
   triggers_rumble_sizer->Add(group_box_triggers, 0, wxEXPAND);

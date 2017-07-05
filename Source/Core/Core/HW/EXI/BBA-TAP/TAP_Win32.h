@@ -26,13 +26,13 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
- //===============================================
- // This file is included both by OpenVPN and
- // the TAP-Win32 driver and contains definitions
- // common to both.
- //===============================================
-#include <stdlib.h>
+//===============================================
+// This file is included both by OpenVPN and
+// the TAP-Win32 driver and contains definitions
+// common to both.
+//===============================================
 #include <windows.h>
+#include <stdlib.h>
 #include <winioctl.h>
 #define TAP_WIN32_MIN_MAJOR 9
 #define TAP_WIN32_MIN_MINOR 0

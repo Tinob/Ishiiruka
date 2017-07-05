@@ -18,7 +18,7 @@ class PointerWrap;
 
 namespace DiscIO
 {
-class CNANDContentLoader;
+class NANDContentLoader;
 }
 
 namespace IOS
@@ -31,7 +31,7 @@ struct TitleContext
 {
   void Clear();
   void DoState(PointerWrap& p);
-  void Update(const DiscIO::CNANDContentLoader& content_loader);
+  void Update(const DiscIO::NANDContentLoader& content_loader);
   void Update(const IOS::ES::TMDReader& tmd_, const IOS::ES::TicketReader& ticket_);
 
   IOS::ES::TicketReader ticket;
@@ -57,9 +57,11 @@ public:
 
   struct OpenedContent
   {
-    u64 m_title_id;
+    bool m_opened = false;
+    u64 m_title_id = 0;
     IOS::ES::Content m_content;
-    u32 m_position;
+    u32 m_position = 0;
+    u32 m_uid = 0;
   };
 
   struct TitleImportContext
@@ -80,7 +82,7 @@ public:
 
     bool valid = false;
     IOS::ES::TMDReader tmd;
-    std::vector<u8> title_key;
+    std::array<u8, 16> title_key;
     std::map<u32, ExportContent> contents;
   };
 
@@ -94,13 +96,28 @@ public:
     TitleExportContext title_export;
     bool active = false;
     // We use this to associate an IPC fd with an ES context.
-    u32 ipc_fd = -1;
+    s32 ipc_fd = -1;
   };
 
+  IOS::ES::TMDReader FindImportTMD(u64 title_id) const;
+  IOS::ES::TMDReader FindInstalledTMD(u64 title_id) const;
+
+  // Get installed titles (in /title) without checking for TMDs at all.
+  std::vector<u64> GetInstalledTitles() const;
+  // Get titles which are being imported (in /import) without checking for TMDs at all.
+  std::vector<u64> GetTitleImports() const;
+  // Get titles for which there is a ticket (in /ticket).
+  std::vector<u64> GetTitlesWithTickets() const;
+
+  std::vector<IOS::ES::Content> GetStoredContentsFromTMD(const IOS::ES::TMDReader& tmd) const;
+  u32 GetSharedContentsCount() const;
+  std::vector<std::array<u8, 20>> GetSharedContents() const;
+
   // Title management
-  ReturnCode ImportTicket(const std::vector<u8>& ticket_bytes);
+  ReturnCode ImportTicket(const std::vector<u8>& ticket_bytes, const std::vector<u8>& cert_chain);
   ReturnCode ImportTmd(Context& context, const std::vector<u8>& tmd_bytes);
-  ReturnCode ImportTitleInit(Context& context, const std::vector<u8>& tmd_bytes);
+  ReturnCode ImportTitleInit(Context& context, const std::vector<u8>& tmd_bytes,
+                             const std::vector<u8>& cert_chain);
   ReturnCode ImportContentBegin(Context& context, u64 title_id, u32 content_id);
   ReturnCode ImportContentData(Context& context, u32 content_fd, const u8* data, u32 data_size);
   ReturnCode ImportContentEnd(Context& context, u32 content_fd);
@@ -114,6 +131,17 @@ public:
   ReturnCode DeleteTitle(u64 title_id);
   ReturnCode DeleteTitleContent(u64 title_id) const;
   ReturnCode DeleteTicket(const u8* ticket_view);
+  ReturnCode DeleteSharedContent(const std::array<u8, 20>& sha1) const;
+  ReturnCode DeleteContent(u64 title_id, u32 content_id) const;
+
+  ReturnCode GetDeviceId(u32* device_id) const;
+
+  // Views
+  ReturnCode GetV0TicketFromView(const u8* ticket_view, u8* ticket) const;
+  ReturnCode GetTicketFromView(const u8* ticket_view, u8* ticket, u32* ticket_size) const;
+
+  ReturnCode SetUpStreamKey(u32 uid, const u8* ticket_view, const IOS::ES::TMDReader& tmd,
+                            u32* handle);
 
 private:
   enum
@@ -126,7 +154,7 @@ private:
     IOCTL_ES_ADDTITLEFINISH = 0x06,
     IOCTL_ES_GETDEVICEID = 0x07,
     IOCTL_ES_LAUNCH = 0x08,
-    IOCTL_ES_OPENCONTENT = 0x09,
+    IOCTL_ES_OPEN_ACTIVE_TITLE_CONTENT = 0x09,
     IOCTL_ES_READCONTENT = 0x0A,
     IOCTL_ES_CLOSECONTENT = 0x0B,
     IOCTL_ES_GETOWNEDTITLECNT = 0x0C,
@@ -153,7 +181,7 @@ private:
     IOCTL_ES_SETUID = 0x21,
     IOCTL_ES_DELETETITLECONTENT = 0x22,
     IOCTL_ES_SEEKCONTENT = 0x23,
-    IOCTL_ES_OPENTITLECONTENT = 0x24,
+    IOCTL_ES_OPENCONTENT = 0x24,
     IOCTL_ES_LAUNCHBC = 0x25,
     IOCTL_ES_EXPORTTITLEINIT = 0x26,
     IOCTL_ES_EXPORTCONTENTBEGIN = 0x27,
@@ -176,16 +204,16 @@ private:
     IOCTL_ES_DELETESHAREDCONTENT = 0x38,
     IOCTL_ES_DIGETTMDSIZE = 0x39,
     IOCTL_ES_DIGETTMD = 0x3A,
-    IOCTL_ES_UNKNOWN_3B = 0x3B,
-    IOCTL_ES_UNKNOWN_3C = 0x3C,
-    IOCTL_ES_UNKNOWN_3D = 0x3D,
-    IOCTL_ES_UNKNOWN_3E = 0x3E,
-    IOCTL_ES_UNKNOWN_3F = 0x3F,
-    IOCTL_ES_UNKNOWN_40 = 0x40,
+    IOCTL_ES_DIVERIFY_WITH_VIEW = 0x3B,
+    IOCTL_ES_SET_UP_STREAM_KEY = 0x3C,
+    IOCTL_ES_DELETE_STREAM_KEY = 0x3D,
+    IOCTL_ES_DELETE_CONTENT = 0x3E,
+    IOCTL_ES_INVALID_3F = 0x3F,
+    IOCTL_ES_GET_V0_TICKET_FROM_VIEW = 0x40,
     IOCTL_ES_UNKNOWN_41 = 0x41,
     IOCTL_ES_UNKNOWN_42 = 0x42,
-    IOCTL_ES_UNKNOWN_43 = 0x43,
-    IOCTL_ES_UNKNOWN_44 = 0x44,
+    IOCTL_ES_GET_TICKET_SIZE_FROM_VIEW = 0x43,
+    IOCTL_ES_GET_TICKET_FROM_VIEW = 0x44,
     IOCTL_ES_CHECKKOREAREGION = 0x45,
   };
 
@@ -209,9 +237,11 @@ private:
   IPCCommandResult DeleteTitle(const IOCtlVRequest& request);
   IPCCommandResult DeleteTitleContent(const IOCtlVRequest& request);
   IPCCommandResult DeleteTicket(const IOCtlVRequest& request);
+  IPCCommandResult DeleteSharedContent(const IOCtlVRequest& request);
+  IPCCommandResult DeleteContent(const IOCtlVRequest& request);
 
   // Device identity and encryption
-  IPCCommandResult GetConsoleID(const IOCtlVRequest& request);
+  IPCCommandResult GetDeviceId(const IOCtlVRequest& request);
   IPCCommandResult GetDeviceCertificate(const IOCtlVRequest& request);
   IPCCommandResult CheckKoreaRegion(const IOCtlVRequest& request);
   IPCCommandResult Sign(const IOCtlVRequest& request);
@@ -226,9 +256,11 @@ private:
   IPCCommandResult Launch(const IOCtlVRequest& request);
   IPCCommandResult LaunchBC(const IOCtlVRequest& request);
   IPCCommandResult DIVerify(const IOCtlVRequest& request);
+  IPCCommandResult SetUpStreamKey(const Context& context, const IOCtlVRequest& request);
+  IPCCommandResult DeleteStreamKey(const IOCtlVRequest& request);
 
   // Title contents
-  IPCCommandResult OpenTitleContent(u32 uid, const IOCtlVRequest& request);
+  IPCCommandResult OpenActiveTitleContent(u32 uid, const IOCtlVRequest& request);
   IPCCommandResult OpenContent(u32 uid, const IOCtlVRequest& request);
   IPCCommandResult ReadContent(u32 uid, const IOCtlVRequest& request);
   IPCCommandResult CloseContent(u32 uid, const IOCtlVRequest& request);
@@ -243,7 +275,7 @@ private:
   IPCCommandResult GetTitles(const IOCtlVRequest& request);
   IPCCommandResult GetBoot2Version(const IOCtlVRequest& request);
   IPCCommandResult GetStoredContentsCount(const IOS::ES::TMDReader& tmd,
-    const IOCtlVRequest& request);
+                                          const IOCtlVRequest& request);
   IPCCommandResult GetStoredContents(const IOS::ES::TMDReader& tmd, const IOCtlVRequest& request);
   IPCCommandResult GetStoredContentsCount(const IOCtlVRequest& request);
   IPCCommandResult GetStoredContents(const IOCtlVRequest& request);
@@ -257,6 +289,9 @@ private:
   // Views for tickets and TMDs
   IPCCommandResult GetTicketViewCount(const IOCtlVRequest& request);
   IPCCommandResult GetTicketViews(const IOCtlVRequest& request);
+  IPCCommandResult GetV0TicketFromView(const IOCtlVRequest& request);
+  IPCCommandResult GetTicketSizeFromView(const IOCtlVRequest& request);
+  IPCCommandResult GetTicketFromView(const IOCtlVRequest& request);
   IPCCommandResult GetTMDViewSize(const IOCtlVRequest& request);
   IPCCommandResult GetTMDViews(const IOCtlVRequest& request);
   IPCCommandResult DIGetTicketView(const IOCtlVRequest& request);
@@ -265,21 +300,52 @@ private:
   IPCCommandResult DIGetTMDSize(const IOCtlVRequest& request);
   IPCCommandResult DIGetTMD(const IOCtlVRequest& request);
 
-  ContextArray::iterator FindActiveContext(u32 fd);
+  ContextArray::iterator FindActiveContext(s32 fd);
   ContextArray::iterator FindInactiveContext();
 
   bool LaunchIOS(u64 ios_title_id);
   bool LaunchPPCTitle(u64 title_id, bool skip_reload);
   static TitleContext& GetTitleContext();
+  bool IsActiveTitlePermittedByTicket(const u8* ticket_view) const;
 
-  static const DiscIO::CNANDContentLoader& AccessContentDevice(u64 title_id);
+  ReturnCode CheckStreamKeyPermissions(u32 uid, const u8* ticket_view,
+                                       const IOS::ES::TMDReader& tmd) const;
 
-  u32 OpenTitleContent(u32 CFD, u64 TitleID, u16 Index);
+  enum class VerifyContainerType
+  {
+    TMD,
+    Ticket,
+    Device,
+  };
+  enum class VerifyMode
+  {
+    // Whether or not new certificates should be added to the certificate store (/sys/cert.sys).
+    DoNotUpdateCertStore,
+    UpdateCertStore,
+  };
+  bool IsIssuerCorrect(VerifyContainerType type, const IOS::ES::CertReader& issuer_cert) const;
+  ReturnCode ReadCertStore(std::vector<u8>* buffer) const;
+  ReturnCode WriteNewCertToStore(const IOS::ES::CertReader& cert);
+  ReturnCode VerifyContainer(VerifyContainerType type, VerifyMode mode,
+                             const IOS::ES::SignedBlobReader& signed_blob,
+                             const std::vector<u8>& cert_chain, u32 iosc_handle = 0);
 
-  using ContentAccessMap = std::map<u32, OpenedContent>;
-  ContentAccessMap m_ContentAccessMap;
+  // Start a title import.
+  bool InitImport(u64 title_id);
+  // Clean up the import content directory and move it back to /title.
+  bool FinishImport(const IOS::ES::TMDReader& tmd);
+  // Write a TMD for a title in /import atomically.
+  bool WriteImportTMD(const IOS::ES::TMDReader& tmd);
+  // Finish stale imports and clear the import directory.
+  void FinishStaleImport(u64 title_id);
+  void FinishAllStaleImports();
 
-  u32 m_AccessIdentID = 0;
+  static const DiscIO::NANDContentLoader& AccessContentDevice(u64 title_id);
+
+  s32 OpenContent(const IOS::ES::TMDReader& tmd, u16 content_index, u32 uid);
+
+  using ContentTable = std::array<OpenedContent, 16>;
+  ContentTable m_content_table;
 
   ContextArray m_contexts;
 };

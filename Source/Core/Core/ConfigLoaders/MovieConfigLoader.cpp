@@ -2,17 +2,17 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Core/ConfigLoaders/MovieConfigLoader.h"
+
 #include <cstring>
+#include <memory>
 #include <string>
 
 #include "Common/CommonFuncs.h"
-#include "Common/CommonPaths.h"
 #include "Common/CommonTypes.h"
 #include "Common/Config/Config.h"
 #include "Common/FileUtil.h"
-#include "Common/IniFile.h"
 
-#include "Core/ConfigLoaders/MovieConfigLoader.h"
 #include "Core/Movie.h"
 
 namespace ConfigLoaders
@@ -75,7 +75,7 @@ void MovieConfigLayerLoader::Save(Config::Layer* config_layer)
 
   m_header->CPUCore = cpu_core;
   strncpy(reinterpret_cast<char*>(m_header->videoBackend), video_backend.c_str(),
-    ArraySize(m_header->videoBackend));
+          ArraySize(m_header->videoBackend));
 }
 
 // Loader generation

@@ -20,6 +20,7 @@
 #include "Common/MathUtil.h"
 #include "Common/StringUtil.h"
 
+#include "Core/Config/GraphicsSettings.h"
 #include "Core/Core.h"
 
 #include "VideoBackends/OGL/BoundingBox.h"
@@ -45,7 +46,7 @@
 
 void VideoConfig::UpdateProjectionHack()
 {
-  ::UpdateProjectionHack(g_Config.iPhackvalue, g_Config.sPhackvalue);
+  ::UpdateProjectionHack(g_Config.phack);
 }
 
 namespace OGL
@@ -58,7 +59,7 @@ static std::unique_ptr<RasterFont> s_raster_font;
 
 // 1 for no MSAA. Use s_MSAASamples > 1 to check for MSAA.
 static int s_MSAASamples = 1;
-static int s_last_multisamples = 1;
+static u32 s_last_multisamples = 1u;
 static int s_last_stereo_mode = STEREO_OFF;
 static bool s_last_xfb_mode = false;
 
@@ -548,7 +549,7 @@ Renderer::Renderer()
       {
         // GLES 3.1 can't support stereo rendering and MSAA
         OSD::AddMessage("MSAA Stereo rendering isn't supported by your GPU.", 10000);
-        g_ActiveConfig.iMultisamples = 1;
+        Config::SetCurrent(Config::GFX_MSAA, UINT32_C(1));
       }
     }
     else
@@ -733,8 +734,7 @@ Renderer::Renderer()
     GLInterface->SwapInterval(s_vsync);
 
   // Because of the fixed framebuffer size we need to disable the resolution
-  // options while running
-  g_Config.bRunning = true;
+  // options while running  
   UpdateActiveConfig();
   ClearEFBCache();
 }
@@ -750,7 +750,6 @@ void Renderer::Shutdown()
 {
   g_framebuffer_manager.reset();
 
-  g_Config.bRunning = false;
   UpdateActiveConfig();
 
   s_raster_font.reset();

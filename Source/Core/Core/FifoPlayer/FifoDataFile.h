@@ -86,7 +86,7 @@ private:
 
   u64 WriteMemoryUpdates(const std::vector<MemoryUpdate>& memUpdates, File::IOFile& file);
   static void ReadMemoryUpdates(u64 fileOffset, u32 numUpdates,
-    std::vector<MemoryUpdate>& memUpdates, File::IOFile& file);
+                                std::vector<MemoryUpdate>& memUpdates, File::IOFile& file);
 
   u32 m_BPMem[BP_MEM_SIZE];
   u32 m_CPMem[CP_MEM_SIZE];

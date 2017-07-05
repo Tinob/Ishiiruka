@@ -16,8 +16,8 @@ static void GetRandomishBytes(u8* buf, size_t size)
 }
 
 TraversalClient::TraversalClient(ENetHost* netHost, const std::string& server, const u16 port)
-  : m_NetHost(netHost), m_Client(nullptr), m_FailureReason(0), m_ConnectRequestId(0),
-  m_PendingConnect(false), m_Server(server), m_port(port), m_PingTime(0)
+    : m_NetHost(netHost), m_Client(nullptr), m_FailureReason(0), m_ConnectRequestId(0),
+      m_PendingConnect(false), m_Server(server), m_port(port), m_PingTime(0)
 {
   netHost->intercept = TraversalClient::InterceptCallback;
 
@@ -279,8 +279,8 @@ int ENET_CALLBACK TraversalClient::InterceptCallback(ENetHost* host, ENetEvent* 
 {
   auto traversalClient = g_TraversalClient.get();
   if (traversalClient->TestPacket(host->receivedData, host->receivedDataLength,
-    &host->receivedAddress) ||
-    (host->receivedDataLength == 1 && host->receivedData[0] == 0))
+                                  &host->receivedAddress) ||
+      (host->receivedDataLength == 1 && host->receivedData[0] == 0))
   {
     event->type = (ENetEventType)42;
     return 1;
@@ -301,18 +301,18 @@ static u16 g_OldListenPort;
 bool EnsureTraversalClient(const std::string& server, u16 server_port, u16 listen_port)
 {
   if (!g_MainNetHost || !g_TraversalClient || server != g_OldServer ||
-    server_port != g_OldServerPort || listen_port != g_OldListenPort)
+      server_port != g_OldServerPort || listen_port != g_OldListenPort)
   {
     g_OldServer = server;
     g_OldServerPort = server_port;
     g_OldListenPort = listen_port;
 
-    ENetAddress addr = { ENET_HOST_ANY, listen_port };
+    ENetAddress addr = {ENET_HOST_ANY, listen_port};
     ENetHost* host = enet_host_create(&addr,  // address
-      50,     // peerCount
-      1,      // channelLimit
-      0,      // incomingBandwidth
-      0);     // outgoingBandwidth
+                                      50,     // peerCount
+                                      1,      // channelLimit
+                                      0,      // incomingBandwidth
+                                      0);     // outgoingBandwidth
     if (!host)
     {
       g_MainNetHost.reset();

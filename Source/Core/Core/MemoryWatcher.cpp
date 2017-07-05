@@ -123,7 +123,7 @@ void MemoryWatcher::Step()
       current_value = new_value;
       std::string message = ComposeMessage(address, new_value);
       sendto(m_fd, message.c_str(), message.size() + 1, 0, reinterpret_cast<sockaddr*>(&m_addr),
-        sizeof(m_addr));
+             sizeof(m_addr));
     }
   }
 }

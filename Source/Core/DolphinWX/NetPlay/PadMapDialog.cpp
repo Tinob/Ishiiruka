@@ -15,8 +15,8 @@
 #include "Core/NetPlayServer.h"
 
 PadMapDialog::PadMapDialog(wxWindow* parent, NetPlayServer* server, NetPlayClient* client)
-  : wxDialog(parent, wxID_ANY, _("Controller Ports")), m_pad_mapping(server->GetPadMapping()),
-  m_wii_mapping(server->GetWiimoteMapping()), m_player_list(client->GetPlayers())
+    : wxDialog(parent, wxID_ANY, _("Controller Ports")), m_pad_mapping(server->GetPadMapping()),
+      m_wii_mapping(server->GetWiimoteMapping()), m_player_list(client->GetPlayers())
 {
   const int space5 = FromDIP(5);
   const int space10 = FromDIP(10);
@@ -29,12 +29,12 @@ PadMapDialog::PadMapDialog(wxWindow* parent, NetPlayServer* server, NetPlayClien
     player_names.Add(StrToWxStr(player->name));
 
   auto build_choice = [&](unsigned int base_idx, unsigned int idx, const PadMappingArray& mapping,
-    const wxString& port_name) {
+                          const wxString& port_name) {
     pad_sizer->Add(new wxStaticText(this, wxID_ANY, wxString::Format("%s %d", port_name, idx + 1)),
-      wxGBPosition(0, base_idx + idx), wxDefaultSpan, wxALIGN_CENTER);
+                   wxGBPosition(0, base_idx + idx), wxDefaultSpan, wxALIGN_CENTER);
 
     m_map_cbox[base_idx + idx] =
-      new wxChoice(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, player_names);
+        new wxChoice(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, player_names);
     m_map_cbox[base_idx + idx]->Select(0);
     m_map_cbox[base_idx + idx]->Bind(wxEVT_CHOICE, &PadMapDialog::OnAdjust, this);
     if (mapping[idx] != -1)

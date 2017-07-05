@@ -27,7 +27,7 @@ public:
   // to existing values if they were already copied. Pointer equality is
   // used to determine if two constants are the same.
   const void* GetConstant(const void* value, size_t element_size, size_t num_elements,
-    size_t index);
+                          size_t index);
 
 private:
   struct ConstantInfo

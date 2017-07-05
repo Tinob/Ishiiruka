@@ -16,8 +16,8 @@ class NumericSetting
 {
 public:
   NumericSetting(const std::string& setting_name, const ControlState default_value,
-    const u32 low = 0, const u32 high = 100,
-    const SettingType setting_type = SettingType::NORMAL);
+                 const u32 low = 0, const u32 high = 100,
+                 const SettingType setting_type = SettingType::NORMAL);
 
   ControlState GetValue() const;
   void SetValue(ControlState value);

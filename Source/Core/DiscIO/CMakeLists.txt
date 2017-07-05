@@ -3,6 +3,7 @@ set(SRCS
   CISOBlob.cpp
   WbfsBlob.cpp
   CompressedBlob.cpp
+  DiscExtractor.cpp
   DiscScrubber.cpp
   DriveBlob.cpp
   Enums.cpp
@@ -16,7 +17,7 @@ set(SRCS
   VolumeDirectory.cpp
   VolumeGC.cpp
   VolumeWad.cpp
-  VolumeWiiCrypted.cpp
+  VolumeWii.cpp
   WiiWad.cpp
 )
 

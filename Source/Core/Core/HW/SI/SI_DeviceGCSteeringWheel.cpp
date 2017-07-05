@@ -13,7 +13,7 @@
 namespace SerialInterface
 {
 CSIDevice_GCSteeringWheel::CSIDevice_GCSteeringWheel(SIDevices device, int device_number)
-  : CSIDevice_GCController(device, device_number)
+    : CSIDevice_GCController(device, device_number)
 {
 }
 
@@ -56,9 +56,9 @@ bool CSIDevice_GCSteeringWheel::GetData(u32& hi, u32& low)
     low = (u8)pad_status.triggerRight;              // All 8 bits
     low |= (u32)((u8)pad_status.triggerLeft << 8);  // All 8 bits
 
-                                                    // The GC Steering Wheel appears to have combined pedals
-                                                    // (both the Accelerate and Brake pedals are mapped to a single axis)
-                                                    // We use the stickY axis for the pedals.
+    // The GC Steering Wheel appears to have combined pedals
+    // (both the Accelerate and Brake pedals are mapped to a single axis)
+    // We use the stickY axis for the pedals.
     if (pad_status.stickY < 128)
       low |= (u32)((u8)(255 - ((pad_status.stickY & 0x7f) * 2)) << 16);  // All 8 bits (Brake)
     if (pad_status.stickY >= 128)

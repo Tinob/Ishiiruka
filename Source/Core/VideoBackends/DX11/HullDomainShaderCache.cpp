@@ -225,13 +225,13 @@ void HullDomainShaderCache::CompileHDShader(const TessellationShaderUid& uid, bo
       static int num_failures = 0;
       std::string szTemp = StringFromFormat("%sbad_hs_%04i.txt", File::GetUserPath(D_DUMP_IDX).c_str(), num_failures++);
       std::ofstream file;
-      OpenFStream(file, szTemp, std::ios_base::out);
+      File::OpenFStream(file, szTemp, std::ios_base::out);
       file << ((const char *)wunit->code.data());
       file << ((const char *)wunit->error->GetBufferPointer());
       file.close();
 
       PanicAlert("Failed to compile Hull shader!\nThis usually happens when trying to use Dolphin with an outdated GPU or integrated GPU like the Intel GMA series.\n\nIf you're sure this is Dolphin's error anyway, post the contents of %s along with this error message at the forums.\n\nDebug info (%s):\n%s",
-        szTemp,
+        szTemp.c_str(),
         D3D::HullShaderVersionString(),
         (char*)wunit->error->GetBufferPointer());
     }
@@ -253,13 +253,13 @@ void HullDomainShaderCache::CompileHDShader(const TessellationShaderUid& uid, bo
       static int num_failures = 0;
       std::string szTemp = StringFromFormat("%sbad_ds_%04i.txt", File::GetUserPath(D_DUMP_IDX).c_str(), num_failures++);
       std::ofstream file;
-      OpenFStream(file, szTemp, std::ios_base::out);
+      File::OpenFStream(file, szTemp, std::ios_base::out);
       file << ((const char *)wunitd->code.data());
       file << ((const char *)wunitd->error->GetBufferPointer());
       file.close();
 
       PanicAlert("Failed to compile Domain shader!\nThis usually happens when trying to use Dolphin with an outdated GPU or integrated GPU like the Intel GMA series.\n\nIf you're sure this is Dolphin's error anyway, post the contents of %s along with this error message at the forums.\n\nDebug info (%s):\n%s",
-        szTemp,
+        szTemp.c_str(),
         D3D::DomainShaderVersionString(),
         (char*)wunitd->error->GetBufferPointer());
     }

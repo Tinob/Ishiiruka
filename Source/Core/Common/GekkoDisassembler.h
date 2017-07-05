@@ -30,7 +30,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
- // Modified for use with Dolphin
+// Modified for use with Dolphin
 
 #pragma once
 
@@ -43,7 +43,8 @@
 class GekkoDisassembler final
 {
 public:
-  static std::string Disassemble(u32 opcode, u32 current_instruction_address, bool big_endian = true);
+  static std::string Disassemble(u32 opcode, u32 current_instruction_address,
+                                 bool big_endian = true);
   static const char* GetGPRName(u32 index);
   static const char* GetFPRName(u32 index);
 
@@ -71,7 +72,8 @@ private:
   static void rld(u32 in, const char* name, int i);
   static void cmp(u32 in);
   static void trap(u32 in, unsigned char dmode);
-  static void dab(u32 in, const char* name, int mask, int smode, int chkoe, int chkrc, unsigned char dmode);
+  static void dab(u32 in, const char* name, int mask, int smode, int chkoe, int chkrc,
+                  unsigned char dmode);
   static void rrn(u32 in, const char* name, int smode, int chkoe, int chkrc, unsigned char dmode);
   static void mtcr(u32 in);
   static void msr(u32 in, int smode);
@@ -91,17 +93,17 @@ private:
 
   static u32 HelperRotateMask(int r, int mb, int me)
   {
-    //first make 001111111111111 part
+    // first make 001111111111111 part
     unsigned int begin = 0xFFFFFFFF >> mb;
-    //then make 000000000001111 part, which is used to flip the bits of the first one
+    // then make 000000000001111 part, which is used to flip the bits of the first one
     unsigned int end = me < 31 ? (0xFFFFFFFF >> (me + 1)) : 0;
-    //do the bitflip
+    // do the bitflip
     unsigned int mask = begin ^ end;
-    //and invert if backwards
+    // and invert if backwards
     if (me < mb)
       mask = ~mask;
-    //rotate the mask so it can be applied to source reg
-    //return _rotl(mask, 32 - r);
+    // rotate the mask so it can be applied to source reg
+    // return _rotl(mask, 32 - r);
     return (mask << (32 - r)) | (mask >> r);
   }
 
@@ -124,33 +126,29 @@ private:
     }
   }
 
-  static int SEX12(u32 x)
-  {
-    return x & 0x800 ? (x | 0xFFFFF000) : x;
-  }
-
+  static int SEX12(u32 x) { return x & 0x800 ? (x | 0xFFFFF000) : x; }
   enum InstructionType
   {
-    PPCINSTR_OTHER = 0, // No additional info for other instr.
-    PPCINSTR_BRANCH = 1, // Branch dest. = PC+displacement
-    PPCINSTR_LDST = 2, // Load/store instruction: displ(sreg)
-    PPCINSTR_IMM = 3, // 16-bit immediate val. in displacement
+    PPCINSTR_OTHER = 0,   // No additional info for other instr.
+    PPCINSTR_BRANCH = 1,  // Branch dest. = PC+displacement
+    PPCINSTR_LDST = 2,    // Load/store instruction: displ(sreg)
+    PPCINSTR_IMM = 3,     // 16-bit immediate val. in displacement
   };
 
   enum Flags
   {
-    PPCF_ILLEGAL = (1 << 0), // Illegal PowerPC instruction
-    PPCF_UNSIGNED = (1 << 1), // Unsigned immediate instruction
-    PPCF_SUPER = (1 << 2), // Supervisor level instruction
-    PPCF_64 = (1 << 3), // 64-bit only instruction
+    PPCF_ILLEGAL = (1 << 0),   // Illegal PowerPC instruction
+    PPCF_UNSIGNED = (1 << 1),  // Unsigned immediate instruction
+    PPCF_SUPER = (1 << 2),     // Supervisor level instruction
+    PPCF_64 = (1 << 3),        // 64-bit only instruction
   };
 
-  static u32* m_instr;           // Pointer to instruction to disassemble
-  static u32* m_iaddr;           // Instruction.address., usually the same as instr
-  static std::string m_opcode;   // Buffer for opcode, min. 10 chars.
-  static std::string m_operands; // Operand buffer, min. 24 chars.
-  static unsigned char m_type;   // Type of instruction, see below
-  static unsigned char m_flags;  // Additional flags
-  static unsigned short m_sreg;  // Register in load/store instructions
-  static u32 m_displacement;     // Branch- or load/store displacement
+  static u32* m_instr;            // Pointer to instruction to disassemble
+  static u32* m_iaddr;            // Instruction.address., usually the same as instr
+  static std::string m_opcode;    // Buffer for opcode, min. 10 chars.
+  static std::string m_operands;  // Operand buffer, min. 24 chars.
+  static unsigned char m_type;    // Type of instruction, see below
+  static unsigned char m_flags;   // Additional flags
+  static unsigned short m_sreg;   // Register in load/store instructions
+  static u32 m_displacement;      // Branch- or load/store displacement
 };

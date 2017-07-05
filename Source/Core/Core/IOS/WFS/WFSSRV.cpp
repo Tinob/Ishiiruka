@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "Common/CommonTypes.h"
+#include "Common/File.h"
 #include "Common/FileUtil.h"
 #include "Common/Logging/Log.h"
 #include "Common/NandPaths.h"
@@ -72,8 +73,8 @@ IPCCommandResult WFSSRV::IOCtl(const IOCtlRequest& request)
     Memory::Write_U32(0, request.buffer_out + 8);
     return GetNoReply();
 
-    // TODO(wfs): Globbing is not really implemented, we just fake the one case
-    // (listing /vol/*) which is required to get the installer to work.
+  // TODO(wfs): Globbing is not really implemented, we just fake the one case
+  // (listing /vol/*) which is required to get the installer to work.
   case IOCTL_WFS_GLOB_START:
     INFO_LOG(IOS, "IOCTL_WFS_GLOB_START(%u)", request.request);
     Memory::Memset(request.buffer_out, 0, request.buffer_out_size);
@@ -147,7 +148,7 @@ IPCCommandResult WFSSRV::IOCtl(const IOCtlRequest& request)
     fd_obj->position += read_bytes;
 
     INFO_LOG(IOS, "IOCTL_WFS_READ: read %zd bytes from FD %d (%s)", read_bytes, fd,
-      fd_obj->path.c_str());
+             fd_obj->path.c_str());
     return_error_code = static_cast<int>(read_bytes);
     break;
   }

@@ -4,7 +4,11 @@
 
 #include "Core/Debugger/RSO.h"
 
+#include <cstddef>
+#include <list>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include "Common/CommonFuncs.h"
 #include "Common/Logging/Log.h"
@@ -604,7 +608,7 @@ bool RSOChainView::LoadNextChain(const RSOView& view)
     if (prev_address != next_node.GetPrevEntry())
     {
       ERROR_LOG(OSHLE, "RSOChain has an incoherent previous link %08x != %08x in %s", prev_address,
-        next_node.GetPrevEntry(), next_node.GetName().c_str());
+                next_node.GetPrevEntry(), next_node.GetName().c_str());
       return false;
     }
 
@@ -629,7 +633,7 @@ bool RSOChainView::LoadPrevChain(const RSOView& view)
     if (next_address != prev_node.GetNextEntry())
     {
       ERROR_LOG(OSHLE, "RSOChain has an incoherent next link %08x != %08x in %s", next_address,
-        prev_node.GetNextEntry(), prev_node.GetName().c_str());
+                prev_node.GetNextEntry(), prev_node.GetName().c_str());
       return false;
     }
 

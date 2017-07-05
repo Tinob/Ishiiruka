@@ -19,32 +19,32 @@
 
 namespace WiimoteEmu
 {
-constexpr std::array<u8, 6> classic_id{ { 0x00, 0x00, 0xa4, 0x20, 0x01, 0x01 } };
+constexpr std::array<u8, 6> classic_id{{0x00, 0x00, 0xa4, 0x20, 0x01, 0x01}};
 
 // Classic Controller calibration
-constexpr std::array<u8, 0x10> classic_calibration{ {
-        0xff, 0x00, 0x80, 0xff, 0x00, 0x80, 0xff, 0x00, 0x80, 0xff, 0x00, 0x80, 0x00, 0x00, 0x51, 0xa6,
-    } };
+constexpr std::array<u8, 0x10> classic_calibration{{
+    0xff, 0x00, 0x80, 0xff, 0x00, 0x80, 0xff, 0x00, 0x80, 0xff, 0x00, 0x80, 0x00, 0x00, 0x51, 0xa6,
+}};
 
-constexpr std::array<u16, 9> classic_button_bitmasks{ {
-        Classic::BUTTON_A, Classic::BUTTON_B, Classic::BUTTON_X, Classic::BUTTON_Y,
+constexpr std::array<u16, 9> classic_button_bitmasks{{
+    Classic::BUTTON_A, Classic::BUTTON_B, Classic::BUTTON_X, Classic::BUTTON_Y,
 
-        Classic::BUTTON_ZL, Classic::BUTTON_ZR,
+    Classic::BUTTON_ZL, Classic::BUTTON_ZR,
 
-        Classic::BUTTON_MINUS, Classic::BUTTON_PLUS,
+    Classic::BUTTON_MINUS, Classic::BUTTON_PLUS,
 
-        Classic::BUTTON_HOME,
-    } };
+    Classic::BUTTON_HOME,
+}};
 
-constexpr std::array<const char*, 9> classic_button_names{ {
-        "A", "B", "X", "Y", "ZL", "ZR", "-", "+", "Home",
-    } };
+constexpr std::array<const char*, 9> classic_button_names{{
+    "A", "B", "X", "Y", "ZL", "ZR", "-", "+", "Home",
+}};
 
-constexpr std::array<u16, 2> classic_trigger_bitmasks{ {
-        Classic::TRIGGER_L, Classic::TRIGGER_R,
-    } };
+constexpr std::array<u16, 2> classic_trigger_bitmasks{{
+    Classic::TRIGGER_L, Classic::TRIGGER_R,
+}};
 
-constexpr std::array<const char*, 4> classic_trigger_names{ {
+constexpr std::array<const char*, 4> classic_trigger_names{{
     // i18n: The left trigger button (labeled L on real controllers)
     _trans("L"),
     // i18n: The right trigger button (labeled R on real controllers)
@@ -53,33 +53,36 @@ constexpr std::array<const char*, 4> classic_trigger_names{ {
     _trans("L-Analog"),
     // i18n: The right trigger button (labeled R on real controllers) used as an analog input
     _trans("R-Analog"),
-} };
+}};
 
-constexpr std::array<u16, 4> classic_dpad_bitmasks{ {
-        Classic::PAD_UP, Classic::PAD_DOWN, Classic::PAD_LEFT, Classic::PAD_RIGHT,
-    } };
+constexpr std::array<u16, 4> classic_dpad_bitmasks{{
+    Classic::PAD_UP, Classic::PAD_DOWN, Classic::PAD_LEFT, Classic::PAD_RIGHT,
+}};
 
 Classic::Classic(ExtensionReg& reg) : Attachment(_trans("Classic"), reg)
 {
   // buttons
   groups.emplace_back(m_buttons = new ControllerEmu::Buttons(_trans("Buttons")));
-  for (auto& classic_button_name : classic_button_names)
-    m_buttons->controls.emplace_back(new ControllerEmu::Input(classic_button_name));
+  for (const char* button_name : classic_button_names)
+  {
+    const std::string& ui_name = (button_name == std::string("Home")) ? "HOME" : button_name;
+    m_buttons->controls.emplace_back(new ControllerEmu::Input(button_name, ui_name));
+  }
 
   // sticks
   groups.emplace_back(m_left_stick = new ControllerEmu::AnalogStick(
-    _trans("Left Stick"), DEFAULT_ATTACHMENT_STICK_RADIUS));
+                          _trans("Left Stick"), DEFAULT_ATTACHMENT_STICK_RADIUS));
   groups.emplace_back(m_right_stick = new ControllerEmu::AnalogStick(
-    _trans("Right Stick"), DEFAULT_ATTACHMENT_STICK_RADIUS));
+                          _trans("Right Stick"), DEFAULT_ATTACHMENT_STICK_RADIUS));
 
   // triggers
   groups.emplace_back(m_triggers = new ControllerEmu::MixedTriggers(_trans("Triggers")));
-  for (auto& classic_trigger_name : classic_trigger_names)
-    m_triggers->controls.emplace_back(new ControllerEmu::Input(classic_trigger_name));
+  for (const char* trigger_name : classic_trigger_names)
+    m_triggers->controls.emplace_back(new ControllerEmu::Input(trigger_name));
 
   // dpad
   groups.emplace_back(m_dpad = new ControllerEmu::Buttons(_trans("D-Pad")));
-  for (auto& named_direction : named_directions)
+  for (const char* named_direction : named_directions)
     m_dpad->controls.emplace_back(new ControllerEmu::Input(named_direction));
 
   // Set up register
@@ -100,9 +103,9 @@ void Classic::GetState(u8* const data)
     m_left_stick->GetState(&x, &y);
 
     ccdata->regular_data.lx =
-      static_cast<u8>(Classic::LEFT_STICK_CENTER_X + (x * Classic::LEFT_STICK_RADIUS));
+        static_cast<u8>(Classic::LEFT_STICK_CENTER_X + (x * Classic::LEFT_STICK_RADIUS));
     ccdata->regular_data.ly =
-      static_cast<u8>(Classic::LEFT_STICK_CENTER_Y + (y * Classic::LEFT_STICK_RADIUS));
+        static_cast<u8>(Classic::LEFT_STICK_CENTER_Y + (y * Classic::LEFT_STICK_RADIUS));
   }
 
   // right stick
@@ -122,7 +125,7 @@ void Classic::GetState(u8* const data)
 
   // triggers
   {
-    ControlState trigs[2] = { 0, 0 };
+    ControlState trigs[2] = {0, 0};
     u8 lt, rt;
     m_triggers->GetState(&ccdata->bt.hex, classic_trigger_bitmasks.data(), trigs);
 

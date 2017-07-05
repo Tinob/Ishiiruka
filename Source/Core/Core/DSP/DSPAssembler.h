@@ -42,7 +42,8 @@ enum err_t
   ERR_WRONG_PARAMETER_ACC,
   ERR_WRONG_PARAMETER_MID_ACC,
   ERR_INVALID_REGISTER,
-  ERR_OUT_RANGE_NUMBER
+  ERR_OUT_RANGE_NUMBER,
+  ERR_OUT_RANGE_PC,
 };
 
 // Unless you want labels to carry over between files, you probably
@@ -58,7 +59,7 @@ public:
 
   // If returns false, call GetErrorString to get some text to present to the user.
   bool Assemble(const std::string& text, std::vector<u16>& code,
-    std::vector<int>* line_numbers = nullptr);
+                std::vector<int>* line_numbers = nullptr);
 
   std::string GetErrorString() const { return last_error_str; }
   err_t GetError() const { return last_error; }
@@ -91,7 +92,7 @@ private:
   u32 GetParams(char* parstr, param_t* par);
 
   void InitPass(int pass);
-  bool AssembleFile(const std::string& file_path, int pass);
+  bool AssemblePass(const std::string& text, int pass);
 
   void ShowError(err_t err_code, const char* extra_info = nullptr);
   // void ShowWarning(err_t err_code, const char *extra_info = nullptr);

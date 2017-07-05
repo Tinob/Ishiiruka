@@ -28,15 +28,15 @@ using namespace Gen;
 void Jit64::lXXx(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-    JITDISABLE(bJITLoadStoreOff);
+  JITDISABLE(bJITLoadStoreOff);
 
   int a = inst.RA, b = inst.RB, d = inst.RD;
 
   // Skip disabled JIT instructions
   FALLBACK_IF(SConfig::GetInstance().bJITLoadStorelbzxOff && (inst.OPCD == 31) &&
-    (inst.SUBOP10 == 87));
+              (inst.SUBOP10 == 87));
   FALLBACK_IF(SConfig::GetInstance().bJITLoadStorelXzOff &&
-    ((inst.OPCD == 34) || (inst.OPCD == 40) || (inst.OPCD == 32)));
+              ((inst.OPCD == 34) || (inst.OPCD == 40) || (inst.OPCD == 32)));
   FALLBACK_IF(SConfig::GetInstance().bJITLoadStorelwzOff && (inst.OPCD == 32));
 
   // Determine memory access size and sign extend
@@ -111,8 +111,8 @@ void Jit64::lXXx(UGeckoInstruction inst)
   // PowerPC has no 8-bit sign extended load, but x86 does, so merge extsb with the load if we find
   // it.
   if (CanMergeNextInstructions(1) && accessSize == 8 && js.op[1].inst.OPCD == 31 &&
-    js.op[1].inst.SUBOP10 == 954 && js.op[1].inst.RS == inst.RD && js.op[1].inst.RA == inst.RD &&
-    !js.op[1].inst.Rc)
+      js.op[1].inst.SUBOP10 == 954 && js.op[1].inst.RS == inst.RD && js.op[1].inst.RA == inst.RD &&
+      !js.op[1].inst.Rc)
   {
     js.downcountAmount++;
     js.skipInstructions = 1;
@@ -120,10 +120,10 @@ void Jit64::lXXx(UGeckoInstruction inst)
   }
 
   if (!CPU::IsStepping() && inst.OPCD == 32 && CanMergeNextInstructions(2) &&
-    (inst.hex & 0xFFFF0000) == 0x800D0000 &&
-    (js.op[1].inst.hex == 0x28000000 ||
-    (SConfig::GetInstance().bWii && js.op[1].inst.hex == 0x2C000000)) &&
-    js.op[2].inst.hex == 0x4182fff8)
+      (inst.hex & 0xFFFF0000) == 0x800D0000 &&
+      (js.op[1].inst.hex == 0x28000000 ||
+       (SConfig::GetInstance().bWii && js.op[1].inst.hex == 0x2C000000)) &&
+      js.op[2].inst.hex == 0x4182fff8)
   {
     s32 offset = (s32)(s16)inst.SIMM_16;
     gpr.BindToRegister(a, true, false);
@@ -202,7 +202,7 @@ void Jit64::lXXx(UGeckoInstruction inst)
       // If we're using reg+reg mode and b is an immediate, pretend we're using constant offset mode
       bool use_constant_offset = inst.OPCD != 31 || gpr.R(b).IsImm();
 
-      s32 offset;
+      s32 offset = 0;
       if (use_constant_offset)
         offset = inst.OPCD == 31 ? gpr.R(b).SImm32() : (s32)inst.SIMM_16;
       // Depending on whether we have an immediate and/or update, find the optimum way to calculate
@@ -270,7 +270,7 @@ void Jit64::lXXx(UGeckoInstruction inst)
 void Jit64::dcbx(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-    JITDISABLE(bJITLoadStoreOff);
+  JITDISABLE(bJITLoadStoreOff);
 
   X64Reg addr = RSCRATCH;
   X64Reg value = RSCRATCH2;
@@ -309,7 +309,7 @@ void Jit64::dcbx(UGeckoInstruction inst)
 void Jit64::dcbt(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-    JITDISABLE(bJITLoadStoreOff);
+  JITDISABLE(bJITLoadStoreOff);
 
   // Prefetch. Since we don't emulate the data cache, we don't need to do anything.
 
@@ -319,7 +319,7 @@ void Jit64::dcbt(UGeckoInstruction inst)
   // need to is terrible for performance.
   // (Invalidating the jit block cache on dcbst is a heuristic.)
   if (CanMergeNextInstructions(1) && js.op[1].inst.OPCD == 31 && js.op[1].inst.SUBOP10 == 54 &&
-    js.op[1].inst.RA == inst.RA && js.op[1].inst.RB == inst.RB)
+      js.op[1].inst.RA == inst.RA && js.op[1].inst.RB == inst.RB)
   {
     js.skipInstructions = 1;
   }
@@ -329,7 +329,7 @@ void Jit64::dcbt(UGeckoInstruction inst)
 void Jit64::dcbz(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-    JITDISABLE(bJITLoadStoreOff);
+  JITDISABLE(bJITLoadStoreOff);
   if (SConfig::GetInstance().bDCBZOFF)
     return;
   FALLBACK_IF(SConfig::GetInstance().bLowDCBZHack);
@@ -378,7 +378,7 @@ void Jit64::dcbz(UGeckoInstruction inst)
 void Jit64::stX(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-    JITDISABLE(bJITLoadStoreOff);
+  JITDISABLE(bJITLoadStoreOff);
 
   int s = inst.RS;
   int a = inst.RA;
@@ -431,7 +431,7 @@ void Jit64::stX(UGeckoInstruction inst)
     if (gpr.R(s).IsImm())
     {
       SafeWriteRegToReg(gpr.R(s), gpr.RX(a), accessSize, offset, CallerSavedRegistersInUse(),
-        SAFE_LOADSTORE_CLOBBER_RSCRATCH_INSTEAD_OF_ADDR);
+                        SAFE_LOADSTORE_CLOBBER_RSCRATCH_INSTEAD_OF_ADDR);
     }
     else
     {
@@ -447,7 +447,7 @@ void Jit64::stX(UGeckoInstruction inst)
         reg_value = gpr.RX(s);
       }
       SafeWriteRegToReg(reg_value, gpr.RX(a), accessSize, offset, CallerSavedRegistersInUse(),
-        SAFE_LOADSTORE_CLOBBER_RSCRATCH_INSTEAD_OF_ADDR);
+                        SAFE_LOADSTORE_CLOBBER_RSCRATCH_INSTEAD_OF_ADDR);
     }
 
     if (update)
@@ -459,7 +459,7 @@ void Jit64::stX(UGeckoInstruction inst)
 void Jit64::stXx(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-    JITDISABLE(bJITLoadStoreOff);
+  JITDISABLE(bJITLoadStoreOff);
 
   int a = inst.RA, b = inst.RB, s = inst.RS;
   bool update = !!(inst.SUBOP10 & 32);
@@ -499,7 +499,7 @@ void Jit64::stXx(UGeckoInstruction inst)
     if (update)
       registersInUse[RSCRATCH2] = true;
     SafeWriteRegToReg(gpr.R(s), RSCRATCH2, accessSize, 0, registersInUse,
-      byte_reverse ? SAFE_LOADSTORE_NO_SWAP : 0);
+                      byte_reverse ? SAFE_LOADSTORE_NO_SWAP : 0);
   }
   else
   {
@@ -518,7 +518,7 @@ void Jit64::stXx(UGeckoInstruction inst)
     if (update)
       registersInUse[RSCRATCH2] = true;
     SafeWriteRegToReg(reg_value, RSCRATCH2, accessSize, 0, registersInUse,
-      byte_reverse ? SAFE_LOADSTORE_NO_SWAP : 0);
+                      byte_reverse ? SAFE_LOADSTORE_NO_SWAP : 0);
   }
 
   if (update)
@@ -532,7 +532,7 @@ void Jit64::stXx(UGeckoInstruction inst)
 void Jit64::lmw(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-    JITDISABLE(bJITLoadStoreOff);
+  JITDISABLE(bJITLoadStoreOff);
 
   // TODO: This doesn't handle rollback on DSI correctly
   MOV(32, R(RSCRATCH2), Imm32((u32)(s32)inst.SIMM_16));
@@ -541,7 +541,7 @@ void Jit64::lmw(UGeckoInstruction inst)
   for (int i = inst.RD; i < 32; i++)
   {
     SafeLoadToReg(RSCRATCH, R(RSCRATCH2), 32, (i - inst.RD) * 4,
-      CallerSavedRegistersInUse() | BitSet32{ RSCRATCH2 }, false);
+                  CallerSavedRegistersInUse() | BitSet32{RSCRATCH2}, false);
     gpr.BindToRegister(i, false, true);
     MOV(32, gpr.R(i), R(RSCRATCH));
   }
@@ -551,7 +551,7 @@ void Jit64::lmw(UGeckoInstruction inst)
 void Jit64::stmw(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-    JITDISABLE(bJITLoadStoreOff);
+  JITDISABLE(bJITLoadStoreOff);
 
   // TODO: This doesn't handle rollback on DSI correctly
   for (int i = inst.RD; i < 32; i++)
@@ -563,13 +563,13 @@ void Jit64::stmw(UGeckoInstruction inst)
     if (gpr.R(i).IsImm())
     {
       SafeWriteRegToReg(gpr.R(i), RSCRATCH, 32, (i - inst.RD) * 4 + (u32)(s32)inst.SIMM_16,
-        CallerSavedRegistersInUse());
+                        CallerSavedRegistersInUse());
     }
     else
     {
       MOV(32, R(RSCRATCH2), gpr.R(i));
       SafeWriteRegToReg(RSCRATCH2, RSCRATCH, 32, (i - inst.RD) * 4 + (u32)(s32)inst.SIMM_16,
-        CallerSavedRegistersInUse());
+                        CallerSavedRegistersInUse());
     }
   }
   gpr.UnlockAllX();
@@ -578,7 +578,7 @@ void Jit64::stmw(UGeckoInstruction inst)
 void Jit64::eieio(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-    JITDISABLE(bJITLoadStoreOff);
+  JITDISABLE(bJITLoadStoreOff);
 
   // optimizeGatherPipe generally postpones FIFO checks to the end of the JIT block,
   // which is generally safe. However postponing FIFO writes across eieio instructions

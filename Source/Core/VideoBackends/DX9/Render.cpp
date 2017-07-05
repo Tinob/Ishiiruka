@@ -116,7 +116,6 @@ Renderer::Renderer(void *&window_handle)
   m_backbuffer_height = D3D::GetBackBufferHeight();
 
   m_LastAA = g_ActiveConfig.iMultisamples - 1;
-  int SupersampleCoeficient = (m_LastAA % 3) + 1;
 
   m_last_efb_scale = g_ActiveConfig.iEFBScale;
   m_vsync = g_ActiveConfig.IsVSync();
@@ -636,16 +635,18 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
   {
     int source_width = GetTargetRectangle().GetWidth();
     int source_height = GetTargetRectangle().GetHeight();
-    HRESULT hr = D3D::dev->GetRenderTargetData(D3D::GetBackBufferSurface(), m_screen_shoot_mem_surface);
-    D3DLOCKED_RECT rect;
-    if (SUCCEEDED(m_screen_shoot_mem_surface->LockRect(&rect, GetTargetRectangle().AsRECT(), D3DLOCK_NO_DIRTY_UPDATE | D3DLOCK_NOSYSLOCK | D3DLOCK_READONLY)))
+    if (SUCCEEDED(D3D::dev->GetRenderTargetData(D3D::GetBackBufferSurface(), m_screen_shoot_mem_surface)))
     {
-      AVIDump::Frame state = AVIDump::FetchState(ticks);
-      DumpFrameData(reinterpret_cast<const u8*>(rect.pBits), source_width, source_height,
-        rect.Pitch, state, false, true);
-      FinishFrameData();
+      D3DLOCKED_RECT rect;
+      if (SUCCEEDED(m_screen_shoot_mem_surface->LockRect(&rect, GetTargetRectangle().AsRECT(), D3DLOCK_NO_DIRTY_UPDATE | D3DLOCK_NOSYSLOCK | D3DLOCK_READONLY)))
+      {
+        AVIDump::Frame state = AVIDump::FetchState(ticks);
+        DumpFrameData(reinterpret_cast<const u8*>(rect.pBits), source_width, source_height,
+          rect.Pitch, state, false, true);
+        FinishFrameData();
 
-      m_screen_shoot_mem_surface->UnlockRect();
+        m_screen_shoot_mem_surface->UnlockRect();
+      }
     }
   }
 
@@ -704,8 +705,6 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
     m_LastAA = newAA;
 
     UpdateDrawRectangle();
-
-    int SupersampleCoeficient = (m_LastAA % 3) + 1;
 
     m_last_efb_scale = g_ActiveConfig.iEFBScale;
     PixelShaderManager::SetEfbScaleChanged();

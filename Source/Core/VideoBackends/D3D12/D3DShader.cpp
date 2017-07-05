@@ -95,7 +95,7 @@ bool CompileShader(
     static int num_failures = 0;
     std::string filename = StringFromFormat("%sbad_%s_%04i.txt", File::GetUserPath(D_DUMP_IDX).c_str(), sufix, num_failures++);
     std::ofstream file;
-    OpenFStream(file, filename, std::ios_base::out);
+    File::OpenFStream(file, filename, std::ios_base::out);
     file << code;
     file << "\n";
     file << static_cast<const char*>(errorBuffer->GetBufferPointer());
@@ -104,7 +104,7 @@ bool CompileShader(
     {
       PanicAlert("Failed to compile shader: %s\nDebug info (%s):\n%s",
         filename.c_str(),
-        profile,
+        profile.c_str(),
         (char*)errorBuffer->GetBufferPointer());
     }
     *blob = nullptr;

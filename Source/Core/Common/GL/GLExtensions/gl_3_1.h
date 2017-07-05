@@ -86,33 +86,33 @@
 #define GL_INVALID_INDEX 0xFFFFFFFFu
 
 typedef void(APIENTRYP PFNDOLDRAWARRAYSINSTANCEDPROC)(GLenum mode, GLint first, GLsizei count,
-  GLsizei instancecount);
+                                                      GLsizei instancecount);
 typedef void(APIENTRYP PFNDOLDRAWELEMENTSINSTANCEDPROC)(GLenum mode, GLsizei count, GLenum type,
-  const void* indices, GLsizei instancecount);
+                                                        const void* indices, GLsizei instancecount);
 typedef void(APIENTRYP PFNDOLTEXBUFFERPROC)(GLenum target, GLenum internalformat, GLuint buffer);
 typedef void(APIENTRYP PFNDOLPRIMITIVERESTARTINDEXPROC)(GLuint index);
 typedef void(APIENTRYP PFNDOLCOPYBUFFERSUBDATAPROC)(GLenum readTarget, GLenum writeTarget,
-  GLintptr readOffset, GLintptr writeOffset,
-  GLsizeiptr size);
+                                                    GLintptr readOffset, GLintptr writeOffset,
+                                                    GLsizeiptr size);
 typedef void(APIENTRYP PFNDOLGETUNIFORMINDICESPROC)(GLuint program, GLsizei uniformCount,
-  const GLchar* const* uniformNames,
-  GLuint* uniformIndices);
+                                                    const GLchar* const* uniformNames,
+                                                    GLuint* uniformIndices);
 typedef void(APIENTRYP PFNDOLGETACTIVEUNIFORMSIVPROC)(GLuint program, GLsizei uniformCount,
-  const GLuint* uniformIndices, GLenum pname,
-  GLint* params);
+                                                      const GLuint* uniformIndices, GLenum pname,
+                                                      GLint* params);
 typedef void(APIENTRYP PFNDOLGETACTIVEUNIFORMNAMEPROC)(GLuint program, GLuint uniformIndex,
-  GLsizei bufSize, GLsizei* length,
-  GLchar* uniformName);
+                                                       GLsizei bufSize, GLsizei* length,
+                                                       GLchar* uniformName);
 typedef GLuint(APIENTRYP PFNDOLGETUNIFORMBLOCKINDEXPROC)(GLuint program,
-  const GLchar* uniformBlockName);
+                                                         const GLchar* uniformBlockName);
 typedef void(APIENTRYP PFNDOLGETACTIVEUNIFORMBLOCKIVPROC)(GLuint program, GLuint uniformBlockIndex,
-  GLenum pname, GLint* params);
+                                                          GLenum pname, GLint* params);
 typedef void(APIENTRYP PFNDOLGETACTIVEUNIFORMBLOCKNAMEPROC)(GLuint program,
-  GLuint uniformBlockIndex,
-  GLsizei bufSize, GLsizei* length,
-  GLchar* uniformBlockName);
+                                                            GLuint uniformBlockIndex,
+                                                            GLsizei bufSize, GLsizei* length,
+                                                            GLchar* uniformBlockName);
 typedef void(APIENTRYP PFNDOLUNIFORMBLOCKBINDINGPROC)(GLuint program, GLuint uniformBlockIndex,
-  GLuint uniformBlockBinding);
+                                                      GLuint uniformBlockBinding);
 
 extern PFNDOLDRAWARRAYSINSTANCEDPROC dolDrawArraysInstanced;
 extern PFNDOLDRAWELEMENTSINSTANCEDPROC dolDrawElementsInstanced;

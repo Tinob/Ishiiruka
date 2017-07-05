@@ -38,7 +38,7 @@ private:
   void SetupGciFolder(u16 sizeMb);
   void SetupRawMemcard(u16 sizeMb);
   static void EventCompleteFindInstance(u64 userdata,
-    std::function<void(CEXIMemoryCard*)> callback);
+                                        std::function<void(CEXIMemoryCard*)> callback);
 
   // Scheduled when a command that required delayed end signaling is done.
   static void CmdDoneCallback(u64 userdata, s64 cyclesLate);

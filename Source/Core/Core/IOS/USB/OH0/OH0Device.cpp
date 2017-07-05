@@ -2,14 +2,17 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Core/IOS/USB/OH0/OH0Device.h"
+
+#include <memory>
 #include <sstream>
+#include <string>
 #include <tuple>
 #include <vector>
 
 #include "Common/ChunkFile.h"
 #include "Core/IOS/IOS.h"
 #include "Core/IOS/USB/OH0/OH0.h"
-#include "Core/IOS/USB/OH0/OH0Device.h"
 
 namespace IOS
 {
@@ -19,7 +22,7 @@ namespace Device
 {
 static void GetVidPidFromDevicePath(const std::string& device_path, u16& vid, u16& pid)
 {
-  std::stringstream stream{ device_path };
+  std::stringstream stream{device_path};
   std::string segment;
   std::vector<std::string> list;
   while (std::getline(stream, segment, '/'))

@@ -634,7 +634,7 @@ public:
   );
 
 private:
-  ~ID3D12QueuedCommandList();
+  virtual ~ID3D12QueuedCommandList();
 
   void ResetQueueOverflowTracking();
   void CheckForOverflow();

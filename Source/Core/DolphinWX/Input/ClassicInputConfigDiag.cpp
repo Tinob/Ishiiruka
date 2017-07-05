@@ -8,25 +8,25 @@
 #include "Core/HW/WiimoteEmu/WiimoteEmu.h"
 
 ClassicInputConfigDialog::ClassicInputConfigDialog(wxWindow* const parent, InputConfig& config,
-  const wxString& name,
-  wxComboBox* device_cbox_parent,
-  const int port_num)
-  : InputConfigDialog(parent, config, name, port_num)
+                                                   const wxString& name,
+                                                   wxComboBox* device_cbox_parent,
+                                                   const int port_num)
+    : InputConfigDialog(parent, config, name, port_num)
 {
   const int space5 = FromDIP(5);
 
   device_cbox = device_cbox_parent;
 
   auto* const group_box_buttons = new ControlGroupBox(
-    Wiimote::GetClassicGroup(port_num, WiimoteEmu::ClassicGroup::Buttons), this, this);
+      Wiimote::GetClassicGroup(port_num, WiimoteEmu::ClassicGroup::Buttons), this, this);
   auto* const group_box_dpad = new ControlGroupBox(
-    Wiimote::GetClassicGroup(port_num, WiimoteEmu::ClassicGroup::DPad), this, this);
+      Wiimote::GetClassicGroup(port_num, WiimoteEmu::ClassicGroup::DPad), this, this);
   auto* const group_box_left_stick = new ControlGroupBox(
-    Wiimote::GetClassicGroup(port_num, WiimoteEmu::ClassicGroup::LeftStick), this, this);
+      Wiimote::GetClassicGroup(port_num, WiimoteEmu::ClassicGroup::LeftStick), this, this);
   auto* const group_box_right_stick = new ControlGroupBox(
-    Wiimote::GetClassicGroup(port_num, WiimoteEmu::ClassicGroup::RightStick), this, this);
+      Wiimote::GetClassicGroup(port_num, WiimoteEmu::ClassicGroup::RightStick), this, this);
   auto* const group_box_triggers = new ControlGroupBox(
-    Wiimote::GetClassicGroup(port_num, WiimoteEmu::ClassicGroup::Triggers), this, this);
+      Wiimote::GetClassicGroup(port_num, WiimoteEmu::ClassicGroup::Triggers), this, this);
 
   auto* const controls_sizer = new wxBoxSizer(wxHORIZONTAL);
   controls_sizer->AddSpacer(space5);

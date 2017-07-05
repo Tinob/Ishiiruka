@@ -10,7 +10,7 @@
 
 // Will fail to compile on a non-array:
 template <typename T, size_t N>
-constexpr size_t ArraySize(T(&arr)[N])
+constexpr size_t ArraySize(T (&arr)[N])
 {
   return N;
 }
@@ -78,7 +78,7 @@ inline u64 _rotr64(u64 x, unsigned int shift)
 #define fileno _fileno
 
 extern "C" {
-  __declspec(dllimport) void __stdcall DebugBreak(void);
+__declspec(dllimport) void __stdcall DebugBreak(void);
 }
 #define Crash()                                                                                    \
   {                                                                                                \

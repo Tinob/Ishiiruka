@@ -5,8 +5,13 @@
 
 #include "Core/DSP/DSPHWInterface.h"
 
+#include <atomic>
+#include <cstddef>
+#include <cstring>
+
 #include "Common/CPUDetect.h"
 #include "Common/CommonTypes.h"
+#include "Common/Hash.h"
 #include "Common/Intrinsics.h"
 #include "Common/Logging/Log.h"
 #include "Common/MemoryUtil.h"
@@ -52,10 +57,10 @@ void gdsp_mbox_write_l(Mailbox mbx, u16 val)
 #if defined(_DEBUG) || defined(DEBUGFAST)
   if (mbx == MAILBOX_DSP)
     DEBUG_LOG(DSP_MAIL, "DSP(WM) B:%i M:0x%08x (pc=0x%04x)", mbx, gdsp_mbox_peek(MAILBOX_DSP),
-      g_dsp.pc);
+              g_dsp.pc);
   else
     DEBUG_LOG(DSP_MAIL, "CPU(WM) B:%i M:0x%08x (pc=0x%04x)", mbx, gdsp_mbox_peek(MAILBOX_CPU),
-      g_dsp.pc);
+              g_dsp.pc);
 #endif
 }
 
@@ -84,10 +89,10 @@ u16 gdsp_mbox_read_l(Mailbox mbx)
 #if defined(_DEBUG) || defined(DEBUGFAST)
   if (mbx == MAILBOX_DSP)
     DEBUG_LOG(DSP_MAIL, "DSP(RM) B:%i M:0x%08x (pc=0x%04x)", mbx, gdsp_mbox_peek(MAILBOX_DSP),
-      g_dsp.pc);
+              g_dsp.pc);
   else
     DEBUG_LOG(DSP_MAIL, "CPU(RM) B:%i M:0x%08x (pc=0x%04x)", mbx, gdsp_mbox_peek(MAILBOX_CPU),
-      g_dsp.pc);
+              g_dsp.pc);
 #endif
 
   return (u16)value;
@@ -146,11 +151,11 @@ void gdsp_ifx_write(u32 addr, u32 val)
   case DSP_DSCR:
     g_dsp.ifx_regs[addr & 0xFF] = val;
     break;
-    /*
-    case DSP_ACCAL:
-    dsp_step_accelerator();
-    break;
-    */
+  /*
+      case DSP_ACCAL:
+        dsp_step_accelerator();
+        break;
+  */
   default:
     if ((addr & 0xff) >= 0xa0)
     {
@@ -203,7 +208,7 @@ static u16 _gdsp_ifx_read(u16 addr)
       if (pdlabels[(addr & 0xFF) - 0xa0].name && pdlabels[(addr & 0xFF) - 0xa0].description)
       {
         DEBUG_LOG(DSPLLE, "%04x MR %s (%04x)", g_dsp.pc, pdlabels[(addr & 0xFF) - 0xa0].name,
-          g_dsp.ifx_regs[addr & 0xFF]);
+                  g_dsp.ifx_regs[addr & 0xFF]);
       }
       else
       {
@@ -227,28 +232,28 @@ u16 gdsp_ifx_read(u16 addr)
 
 static const u8* gdsp_idma_in(u16 dsp_addr, u32 addr, u32 size)
 {
-  Common::UnWriteProtectMemory(g_dsp.iram, DSP_IRAM_BYTE_SIZE, false);
+  u16* dst = g_dsp.iram + (dsp_addr / 2);
 
-  u8* dst = ((u8*)g_dsp.iram);
-  for (u32 i = 0; i < size; i += 2)
-  {
-    *(u16*)&dst[dsp_addr + i] =
-      Common::swap16(*(const u16*)&g_dsp.cpu_ram[(addr + i) & 0x0fffffff]);
-  }
+  const u8* code = &g_dsp.cpu_ram[addr & 0x0fffffff];
+  g_dsp.iram_crc = HashEctor(code, size);
+
+  Common::UnWriteProtectMemory(g_dsp.iram, DSP_IRAM_BYTE_SIZE, false);
+  memcpy(dst, code, size);
+  for (size_t i = 0; i < size / 2; i++)
+    dst[i] = Common::swap16(dst[i]);
   Common::WriteProtectMemory(g_dsp.iram, DSP_IRAM_BYTE_SIZE, false);
 
-  Host::CodeLoaded((const u8*)g_dsp.iram + dsp_addr, size);
-
+  Host::CodeLoaded(code, size);
   NOTICE_LOG(DSPLLE, "*** Copy new UCode from 0x%08x to 0x%04x (crc: %8x)", addr, dsp_addr,
-    g_dsp.iram_crc);
+             g_dsp.iram_crc);
 
-  return dst + dsp_addr;
+  return reinterpret_cast<u8*>(dst);
 }
 
 static const u8* gdsp_idma_out(u16 dsp_addr, u32 addr, u32 size)
 {
   ERROR_LOG(DSPLLE, "*** idma_out IRAM_DSP (0x%04x) -> RAM (0x%08x) : size (0x%08x)", dsp_addr / 2,
-    addr, size);
+            addr, size);
 
   return nullptr;
 }
@@ -262,9 +267,9 @@ static void gdsp_ddma_in_SSSE3(u16 dsp_addr, u32 addr, u32 size, u8* dst)
   for (u32 i = 0; i < size; i += 16)
   {
     _mm_storeu_si128(
-      (__m128i*)&dst[dsp_addr + i],
-      _mm_shuffle_epi8(_mm_loadu_si128((__m128i*)&g_dsp.cpu_ram[(addr + i) & 0x7FFFFFFF]),
-        s_mask));
+        (__m128i*)&dst[dsp_addr + i],
+        _mm_shuffle_epi8(_mm_loadu_si128((__m128i*)&g_dsp.cpu_ram[(addr + i) & 0x7FFFFFFF]),
+                         s_mask));
   }
 }
 
@@ -274,7 +279,7 @@ static void gdsp_ddma_out_SSSE3(u16 dsp_addr, u32 addr, u32 size, const u8* src)
   for (u32 i = 0; i < size; i += 16)
   {
     _mm_storeu_si128((__m128i*)&g_dsp.cpu_ram[(addr + i) & 0x7FFFFFFF],
-      _mm_shuffle_epi8(_mm_loadu_si128((__m128i*)&src[dsp_addr + i]), s_mask));
+                     _mm_shuffle_epi8(_mm_loadu_si128((__m128i*)&src[dsp_addr + i]), s_mask));
   }
 }
 #endif
@@ -295,11 +300,11 @@ static const u8* gdsp_ddma_in(u16 dsp_addr, u32 addr, u32 size)
     for (u32 i = 0; i < size; i += 2)
     {
       *(u16*)&dst[dsp_addr + i] =
-        Common::swap16(*(const u16*)&g_dsp.cpu_ram[(addr + i) & 0x7FFFFFFF]);
+          Common::swap16(*(const u16*)&g_dsp.cpu_ram[(addr + i) & 0x7FFFFFFF]);
     }
   }
   DEBUG_LOG(DSPLLE, "*** ddma_in RAM (0x%08x) -> DRAM_DSP (0x%04x) : size (0x%08x)", addr,
-    dsp_addr / 2, size);
+            dsp_addr / 2, size);
 
   return dst + dsp_addr;
 }
@@ -319,12 +324,12 @@ static const u8* gdsp_ddma_out(u16 dsp_addr, u32 addr, u32 size)
     for (u32 i = 0; i < size; i += 2)
     {
       *(u16*)&g_dsp.cpu_ram[(addr + i) & 0x7FFFFFFF] =
-        Common::swap16(*(const u16*)&src[dsp_addr + i]);
+          Common::swap16(*(const u16*)&src[dsp_addr + i]);
     }
   }
 
   DEBUG_LOG(DSPLLE, "*** ddma_out DRAM_DSP (0x%04x) -> RAM (0x%08x) : size (0x%08x)", dsp_addr / 2,
-    addr, size);
+            addr, size);
 
   return src + dsp_addr;
 }
@@ -339,13 +344,13 @@ static void gdsp_do_dma()
   if (len > 0x4000)
   {
     ERROR_LOG(DSPLLE,
-      "DMA ERROR: PC: %04x, Control: %04x, Address: %08x, DSP Address: %04x, Size: %04x",
-      g_dsp.pc, ctl, addr, dsp_addr, len);
+              "DMA ERROR: PC: %04x, Control: %04x, Address: %08x, DSP Address: %04x, Size: %04x",
+              g_dsp.pc, ctl, addr, dsp_addr, len);
     exit(0);
   }
 #if defined(_DEBUG) || defined(DEBUGFAST)
   DEBUG_LOG(DSPLLE, "DMA pc: %04x, Control: %04x, Address: %08x, DSP Address: %04x, Size: %04x",
-    g_dsp.pc, ctl, addr, dsp_addr, len);
+            g_dsp.pc, ctl, addr, dsp_addr, len);
 #endif
 
   const u8* copied_data_ptr = nullptr;

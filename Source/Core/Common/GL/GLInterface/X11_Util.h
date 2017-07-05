@@ -13,15 +13,15 @@
 class cX11Window
 {
 private:
-	void XEventThread();
-	std::thread xEventThread;
-	Colormap colormap;
+  void XEventThread();
+  std::thread xEventThread;
+  Colormap colormap;
 
 public:
-	void Initialize(Display* dpy);
-	Window CreateXWindow(Window parent, XVisualInfo* vi);
-	void DestroyXWindow();
+  void Initialize(Display* dpy);
+  Window CreateXWindow(Window parent, XVisualInfo* vi);
+  void DestroyXWindow();
 
-	Display* dpy;
-	Window win;
+  Display* dpy;
+  Window win;
 };

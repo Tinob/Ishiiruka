@@ -834,11 +834,13 @@ void Renderer::ApplyState(bool bUseDstAlpha)
   D3D::stateman->SetVertexConstants(vbuffer);
   if (geometry_shader)
   {
-    D3D::stateman->SetGeometryConstants(GeometryShaderCache::GetConstantBuffer());
+    D3D::BufferDescriptor gcbuffer = GeometryShaderCache::GetConstantBuffer();
+    D3D::stateman->SetGeometryConstants(gcbuffer);
   }
   if (hull_shader)
   {
-    D3D::stateman->SetHullDomainConstants(0, HullDomainShaderCache::GetConstantBuffer());
+    D3D::BufferDescriptor hdcbuffer = HullDomainShaderCache::GetConstantBuffer();
+    D3D::stateman->SetHullDomainConstants(0, hdcbuffer);
     D3D::stateman->SetHullDomainConstants(1, vbuffer);
     D3D::stateman->SetHullDomainConstants(2, pbuffer);
   }

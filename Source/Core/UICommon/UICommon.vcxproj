@@ -12,6 +12,7 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{604C8368-F34A-4D55-82C8-CC92A0C13254}</ProjectGuid>
+    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Configuration">
@@ -34,16 +35,6 @@
     <Import Project="..\..\VSProps\PCHUse.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <ClCompile>
-      <AdditionalIncludeDirectories>$(ExternalsDir)zlib;$(ExternalsDir)cpp-optparse;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <ClCompile>
-      <AdditionalIncludeDirectories>$(ExternalsDir)zlib;$(ExternalsDir)cpp-optparse;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-  </ItemDefinitionGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />
   </ItemGroup>
@@ -59,14 +50,13 @@
     <ClCompile Include="USBUtils.cpp">
       <DisableSpecificWarnings>4200;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
-    <ClCompile Include="WiiUtils.cpp" />
+    <ClCompile Include="VideoUtils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommandLineParse.h" />
     <ClInclude Include="UICommon.h" />
     <ClInclude Include="Disassembler.h" />
     <ClInclude Include="USBUtils.h" />
-    <ClInclude Include="WiiUtils.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(ExternalsDir)cpp-optparse\cpp-optparse.vcxproj">

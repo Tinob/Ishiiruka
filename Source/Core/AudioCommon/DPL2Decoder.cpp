@@ -112,14 +112,14 @@ static std::vector<float> DesignFIR(unsigned int n, float fc, float opt)
   const unsigned int o = n & 1;                 // Indicator for odd filter length
   const unsigned int end = ((n + 1) >> 1) - o;  // Loop end
 
-                                                // Cutoff frequency must be < 0.5 where 0.5 <=> Fs/2
+  // Cutoff frequency must be < 0.5 where 0.5 <=> Fs/2
   const float fc1 = MathUtil::Clamp(fc, 0.001f, 1.0f) / 2;
 
   const float k1 = 2 * static_cast<float>(M_PI) * fc1;  // Cutoff frequency in rad/s
   const float k2 = 0.5f * static_cast<float>(1 - o);    // Time offset if filter has even length
   float g = 0.0f;                                       // Gain
 
-                                                        // Sanity check
+  // Sanity check
   if (n == 0)
     return {};
 
@@ -143,7 +143,7 @@ static std::vector<float> DesignFIR(unsigned int n, float fc, float opt)
   {
     float t1 = static_cast<float>(i + 1) - k2;
     w[end - i - 1] = w[n - end + i] =
-      static_cast<float>(w[end - i - 1] * sin(k1 * t1) / (M_PI * t1));  // Sinc
+        static_cast<float>(w[end - i - 1] * sin(k1 * t1) / (M_PI * t1));  // Sinc
     g += 2 * w[end - i - 1];                                              // Total gain in filter
   }
 
@@ -194,23 +194,23 @@ static std::vector<float> CalculateCoefficients125HzLowpass(int rate)
 static float PassiveLock(float x)
 {
   static const float MATAGCLOCK =
-    0.2f; /* AGC range (around 1) where the matrix behaves passively */
+      0.2f; /* AGC range (around 1) where the matrix behaves passively */
   const float x1 = x - 1;
   const float ax1s = fabs(x - 1) * (1.0f / MATAGCLOCK);
   return x1 - x1 / (1 + ax1s * ax1s) + 1;
 }
 
 static void MatrixDecode(const float* in, const int k, const int il, const int ir, bool decode_rear,
-  const int _dlbuflen, float _l_fwr, float _r_fwr, float _lpr_fwr,
-  float _lmr_fwr, float* _adapt_l_gain, float* _adapt_r_gain,
-  float* _adapt_lpr_gain, float* _adapt_lmr_gain, float* _lf, float* _rf,
-  float* _lr, float* _rr, float* _cf)
+                         const int _dlbuflen, float _l_fwr, float _r_fwr, float _lpr_fwr,
+                         float _lmr_fwr, float* _adapt_l_gain, float* _adapt_r_gain,
+                         float* _adapt_lpr_gain, float* _adapt_lmr_gain, float* _lf, float* _rf,
+                         float* _lr, float* _rr, float* _cf)
 {
   static const float M9_03DB = 0.3535533906f;
   static const float MATAGCTRIG = 8.0f;  /* (Fuzzy) AGC trigger */
   static const float MATAGCDECAY = 1.0f; /* AGC baseline decay rate (1/samp.) */
   static const float MATCOMPGAIN =
-    0.37f; /* Cross talk compensation gain,  0.50 - 0.55 is full cancellation. */
+      0.37f; /* Cross talk compensation gain,  0.50 - 0.55 is full cancellation. */
 
   const int kr = (k + olddelay) % _dlbuflen;
   float l_gain = (_l_fwr + _r_fwr) / (1 + _l_fwr + _l_fwr);
@@ -330,8 +330,8 @@ void DPL2Decode(float* samples, int numsamples, float* out)
     fwrbuf_l[k] = in[0];
     fwrbuf_r[k] = in[1];
     MatrixDecode(in, k, 0, 1, true, dlbuflen, l_fwr, r_fwr, lpr_fwr, lmr_fwr, &adapt_l_gain,
-      &adapt_r_gain, &adapt_lpr_gain, &adapt_lmr_gain, &lf[0], &rf[0], &lr[0], &rr[0],
-      &cf[0]);
+                 &adapt_r_gain, &adapt_lpr_gain, &adapt_lmr_gain, &lf[0], &rf[0], &lr[0], &rr[0],
+                 &cf[0]);
 
     out[cur + 0] = lf[k];
     out[cur + 1] = rf[k];

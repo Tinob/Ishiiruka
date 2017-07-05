@@ -45,11 +45,11 @@ void InitKeyboardMouse(IDirectInput8* const idi8, HWND _hwnd)
   LPDIRECTINPUTDEVICE8 mo_device = nullptr;
 
   if (SUCCEEDED(idi8->CreateDevice(GUID_SysKeyboard, &kb_device, nullptr)) &&
-    SUCCEEDED(kb_device->SetDataFormat(&c_dfDIKeyboard)) &&
-    SUCCEEDED(kb_device->SetCooperativeLevel(nullptr, DISCL_BACKGROUND | DISCL_NONEXCLUSIVE)) &&
-    SUCCEEDED(idi8->CreateDevice(GUID_SysMouse, &mo_device, nullptr)) &&
-    SUCCEEDED(mo_device->SetDataFormat(&c_dfDIMouse2)) &&
-    SUCCEEDED(mo_device->SetCooperativeLevel(nullptr, DISCL_BACKGROUND | DISCL_NONEXCLUSIVE)))
+      SUCCEEDED(kb_device->SetDataFormat(&c_dfDIKeyboard)) &&
+      SUCCEEDED(kb_device->SetCooperativeLevel(nullptr, DISCL_BACKGROUND | DISCL_NONEXCLUSIVE)) &&
+      SUCCEEDED(idi8->CreateDevice(GUID_SysMouse, &mo_device, nullptr)) &&
+      SUCCEEDED(mo_device->SetDataFormat(&c_dfDIMouse2)) &&
+      SUCCEEDED(mo_device->SetCooperativeLevel(nullptr, DISCL_BACKGROUND | DISCL_NONEXCLUSIVE)))
   {
     g_controller_interface.AddDevice(std::make_shared<KeyboardMouse>(kb_device, mo_device));
     return;
@@ -72,8 +72,8 @@ KeyboardMouse::~KeyboardMouse()
 }
 
 KeyboardMouse::KeyboardMouse(const LPDIRECTINPUTDEVICE8 kb_device,
-  const LPDIRECTINPUTDEVICE8 mo_device)
-  : m_kb_device(kb_device), m_mo_device(mo_device)
+                             const LPDIRECTINPUTDEVICE8 mo_device)
+    : m_kb_device(kb_device), m_mo_device(mo_device)
 {
   m_kb_device->Acquire();
   m_mo_device->Acquire();
@@ -112,7 +112,7 @@ KeyboardMouse::KeyboardMouse(const LPDIRECTINPUTDEVICE8 kb_device,
 
 void GetMousePos(ControlState* const x, ControlState* const y)
 {
-  POINT point = { 1, 1 };
+  POINT point = {1, 1};
   GetCursorPos(&point);
   // Get the cursor position relative to the upper left corner of the current window (separate or
   // render to main)

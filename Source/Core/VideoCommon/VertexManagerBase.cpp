@@ -69,21 +69,21 @@ VertexManagerBase::~VertexManagerBase() {}
 
 inline u32 GetRemainingIndices(int prim)
 {
-  GxDrawMode primitive = static_cast<GxDrawMode>(prim);
+  OpcodeDecoder::GxDrawMode primitive = static_cast<OpcodeDecoder::GxDrawMode>(prim);
   u32 index_len = VertexManagerBase::MAXIBUFFERSIZE - IndexGenerator::GetIndexLen();
-  if (primitive == GX_DRAW_TRIANGLE_STRIP || primitive == GX_DRAW_TRIANGLE_FAN)
+  if (primitive == OpcodeDecoder::GX_DRAW_TRIANGLE_STRIP || primitive == OpcodeDecoder::GX_DRAW_TRIANGLE_FAN)
   {
     return index_len / 3 + 2;
   }
-  if (primitive < GX_DRAW_TRIANGLES)
+  if (primitive < OpcodeDecoder::GX_DRAW_TRIANGLES)
   {
     return index_len / 6 * 4;
   }
-  else if (primitive == GX_DRAW_LINE_STRIP)
+  else if (primitive == OpcodeDecoder::GX_DRAW_LINE_STRIP)
   {
     return index_len / 2 + 1;
   }
-  else if (primitive <= GX_DRAW_POINTS)
+  else if (primitive <= OpcodeDecoder::GX_DRAW_POINTS)
   {
     return index_len;
   }

@@ -8,19 +8,19 @@
 #include "Core/HW/WiimoteEmu/WiimoteEmu.h"
 
 NunchukInputConfigDialog::NunchukInputConfigDialog(wxWindow* const parent, InputConfig& config,
-  const wxString& name,
-  wxComboBox* device_cbox_parent,
-  const int port_num)
-  : InputConfigDialog(parent, config, name, port_num)
+                                                   const wxString& name,
+                                                   wxComboBox* device_cbox_parent,
+                                                   const int port_num)
+    : InputConfigDialog(parent, config, name, port_num)
 {
   const int space5 = FromDIP(5);
 
   device_cbox = device_cbox_parent;
 
   auto* const group_box_buttons = new ControlGroupBox(
-    Wiimote::GetNunchukGroup(port_num, WiimoteEmu::NunchukGroup::Buttons), this, this);
+      Wiimote::GetNunchukGroup(port_num, WiimoteEmu::NunchukGroup::Buttons), this, this);
   auto* const group_box_shake = new ControlGroupBox(
-    Wiimote::GetNunchukGroup(port_num, WiimoteEmu::NunchukGroup::Shake), this, this);
+      Wiimote::GetNunchukGroup(port_num, WiimoteEmu::NunchukGroup::Shake), this, this);
 
   auto* const buttons_shake = new wxBoxSizer(wxVERTICAL);
   buttons_shake->Add(group_box_buttons, 0, wxEXPAND);
@@ -28,11 +28,11 @@ NunchukInputConfigDialog::NunchukInputConfigDialog(wxWindow* const parent, Input
   buttons_shake->Add(group_box_shake, 0, wxEXPAND);
 
   auto* const group_box_stick = new ControlGroupBox(
-    Wiimote::GetNunchukGroup(port_num, WiimoteEmu::NunchukGroup::Stick), this, this);
+      Wiimote::GetNunchukGroup(port_num, WiimoteEmu::NunchukGroup::Stick), this, this);
   auto* const group_box_tilt = new ControlGroupBox(
-    Wiimote::GetNunchukGroup(port_num, WiimoteEmu::NunchukGroup::Tilt), this, this);
+      Wiimote::GetNunchukGroup(port_num, WiimoteEmu::NunchukGroup::Tilt), this, this);
   auto* const group_box_swing = new ControlGroupBox(
-    Wiimote::GetNunchukGroup(port_num, WiimoteEmu::NunchukGroup::Swing), this, this);
+      Wiimote::GetNunchukGroup(port_num, WiimoteEmu::NunchukGroup::Swing), this, this);
 
   auto* const controls_sizer = new wxBoxSizer(wxHORIZONTAL);
   controls_sizer->AddSpacer(space5);

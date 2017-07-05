@@ -52,10 +52,12 @@ void ReplaceTexture2D(ID3D12Resource* texture12, const u8* buffer, DXGI_FORMAT f
   {
     // If the texture is too large to fit in the upload buffer, create a temporary buffer instead.
     // This will only be the case for large (e.g. 8192x8192) textures from custom texture packs.
+    CD3DX12_HEAP_PROPERTIES hprops(D3D12_HEAP_TYPE_UPLOAD);
+    CD3DX12_RESOURCE_DESC rdesc = CD3DX12_RESOURCE_DESC::Buffer(upload_size);
     CheckHR(D3D::device->CreateCommittedResource(
-      &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+      &hprops,
       D3D12_HEAP_FLAG_NONE,
-      &CD3DX12_RESOURCE_DESC::Buffer(upload_size),
+      &rdesc,
       D3D12_RESOURCE_STATE_GENERIC_READ,
       nullptr,
       IID_PPV_ARGS(&upload_buffer)));
@@ -84,8 +86,8 @@ void ReplaceTexture2D(ID3D12Resource* texture12, const u8* buffer, DXGI_FORMAT f
   u32 upload_rows = 0;
   u64 upload_row_size_in_bytes = 0;
   u64 upload_total_bytes = 0;
-
-  D3D::device->GetCopyableFootprints(&texture12->GetDesc(), level, 1, upload_buffer_offset, &upload_footprint, &upload_rows, &upload_row_size_in_bytes, &upload_total_bytes);
+  auto tdesc = texture12->GetDesc();
+  D3D::device->GetCopyableFootprints(&tdesc, level, 1, upload_buffer_offset, &upload_footprint, &upload_rows, &upload_row_size_in_bytes, &upload_total_bytes);
 
   const u8* src_data = reinterpret_cast<const u8*>(buffer);
   if (src_pitch == upload_footprint.Footprint.RowPitch && src_pitch == upload_row_size_in_bytes)
@@ -103,8 +105,9 @@ void ReplaceTexture2D(ID3D12Resource* texture12, const u8* buffer, DXGI_FORMAT f
       );
     }
   }
-
-  D3D::current_command_list->CopyTextureRegion(&CD3DX12_TEXTURE_COPY_LOCATION(texture12, level), 0, 0, 0, &CD3DX12_TEXTURE_COPY_LOCATION(upload_buffer, upload_footprint), nullptr);
+  CD3DX12_TEXTURE_COPY_LOCATION dst = CD3DX12_TEXTURE_COPY_LOCATION(texture12, level);
+  CD3DX12_TEXTURE_COPY_LOCATION src = CD3DX12_TEXTURE_COPY_LOCATION(upload_buffer, upload_footprint);
+  D3D::current_command_list->CopyTextureRegion(&dst, 0, 0, 0, &src, nullptr);
 
   // Release temporary buffer after commands complete.
   // We block here because otherwise if there was a large number of texture uploads, we may run out of memory.
@@ -157,12 +160,12 @@ D3DTexture2D* D3DTexture2D::Create(unsigned int width, unsigned int height, u32 
     optimized_clear_value.DepthStencil.Depth = 0.0f;
     optimized_clear_value.DepthStencil.Stencil = 0;
   }
-
+  CD3DX12_HEAP_PROPERTIES hprop(D3D12_HEAP_TYPE_DEFAULT);  
   CheckHR(
     D3D::device->CreateCommittedResource(
-      &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+      &hprop,
       D3D12_HEAP_FLAG_NONE,
-      &CD3DX12_RESOURCE_DESC(texdesc),
+      &texdesc,
       D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
       &optimized_clear_value,
       IID_PPV_ARGS(texture.GetAddressOf())

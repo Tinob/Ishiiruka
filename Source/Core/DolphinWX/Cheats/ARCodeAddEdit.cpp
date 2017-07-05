@@ -23,9 +23,9 @@
 #include "DolphinWX/WxUtils.h"
 
 ARCodeAddEdit::ARCodeAddEdit(ActionReplay::ARCode code, wxWindow* parent, wxWindowID id,
-  const wxString& title, const wxPoint& position, const wxSize& size,
-  long style)
-  : wxDialog(parent, id, title, position, size, style), m_code(std::move(code))
+                             const wxString& title, const wxPoint& position, const wxSize& size,
+                             long style)
+    : wxDialog(parent, id, title, position, size, style), m_code(std::move(code))
 {
   CreateGUI();
 }
@@ -46,13 +46,13 @@ void ARCodeAddEdit::CreateGUI()
   m_txt_cheat_name->SetValue(StrToWxStr(m_code.name));
 
   m_cheat_codes =
-    new wxTextCtrl(sbEntry->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition,
-      wxDLG_UNIT(this, wxSize(240, 128)), wxTE_MULTILINE);
+      new wxTextCtrl(sbEntry->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition,
+                     wxDLG_UNIT(this, wxSize(240, 128)), wxTE_MULTILINE);
   for (const auto& op : m_code.ops)
     m_cheat_codes->AppendText(wxString::Format("%08X %08X\n", op.cmd_addr, op.value));
 
   {
-    wxFont font{ m_cheat_codes->GetFont() };
+    wxFont font{m_cheat_codes->GetFont()};
     font.SetFamily(wxFONTFAMILY_TELETYPE);
 #ifdef _WIN32
     // Windows uses Courier New for monospace even though there are better fonts.
@@ -94,8 +94,8 @@ void ARCodeAddEdit::SaveCheatData(wxCommandEvent& WXUNUSED(event))
   std::vector<std::string> encrypted_lines;
 
   // Split the entered cheat into lines.
-  std::vector<std::string> input_lines;
-  SplitString(WxStrToStr(m_cheat_codes->GetValue()), '\n', input_lines);
+  const std::vector<std::string> input_lines =
+      SplitString(WxStrToStr(m_cheat_codes->GetValue()), '\n');
 
   for (size_t i = 0; i < input_lines.size(); i++)
   {
@@ -106,8 +106,7 @@ void ARCodeAddEdit::SaveCheatData(wxCommandEvent& WXUNUSED(event))
       continue;
 
     // Let's parse the current line.  Is it in encrypted or decrypted form?
-    std::vector<std::string> pieces;
-    SplitString(line_str, ' ', pieces);
+    std::vector<std::string> pieces = SplitString(line_str, ' ');
 
     if (pieces.size() == 2 && pieces[0].size() == 8 && pieces[1].size() == 8)
     {
@@ -120,10 +119,10 @@ void ARCodeAddEdit::SaveCheatData(wxCommandEvent& WXUNUSED(event))
     }
     else if (pieces.size() == 1)
     {
-      SplitString(line_str, '-', pieces);
+      pieces = SplitString(line_str, '-');
 
       if (pieces.size() == 3 && pieces[0].size() == 4 && pieces[1].size() == 4 &&
-        pieces[2].size() == 5)
+          pieces[2].size() == 5)
       {
         // Encrypted code line.  We'll have to decode it later.
         encrypted_lines.emplace_back(pieces[0] + pieces[1] + pieces[2]);
@@ -133,11 +132,11 @@ void ARCodeAddEdit::SaveCheatData(wxCommandEvent& WXUNUSED(event))
 
     // If the above-mentioned conditions weren't met, then something went wrong.
     if (wxMessageBox(
-      wxString::Format(_("Unable to parse line %u of the entered AR code as a valid "
-        "encrypted or decrypted code. Make sure you typed it correctly.\n\n"
-        "Would you like to ignore this line and continue parsing?"),
-        (unsigned)(i + 1)),
-      _("Parsing Error"), wxYES_NO | wxICON_ERROR, this) == wxNO)
+            wxString::Format(_("Unable to parse line %u of the entered AR code as a valid "
+                               "encrypted or decrypted code. Make sure you typed it correctly.\n\n"
+                               "Would you like to ignore this line and continue parsing?"),
+                             (unsigned)(i + 1)),
+            _("Parsing Error"), wxYES_NO | wxICON_ERROR, this) == wxNO)
     {
       return;
     }
@@ -151,10 +150,10 @@ void ARCodeAddEdit::SaveCheatData(wxCommandEvent& WXUNUSED(event))
     if (!decrypted_lines.empty())
     {
       mode =
-        wxMessageBox(_("This Action Replay code contains both encrypted and unencrypted lines; "
-          "you should check that you have entered it correctly.\n\n"
-          "Do you want to discard all unencrypted lines?"),
-          _("Invalid Mixed Code"), wxYES_NO | wxCANCEL | wxICON_ERROR, this);
+          wxMessageBox(_("This Action Replay code contains both encrypted and unencrypted lines; "
+                         "you should check that you have entered it correctly.\n\n"
+                         "Do you want to discard all unencrypted lines?"),
+                       _("Invalid Mixed Code"), wxYES_NO | wxCANCEL | wxICON_ERROR, this);
       // YES = Discard the unencrypted lines then decrypt the encrypted ones instead.
       // NO = Discard the encrypted lines, keep the unencrypted ones
       // CANCEL = Stop and let the user go back to editing

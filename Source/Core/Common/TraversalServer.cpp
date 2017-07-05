@@ -1,20 +1,20 @@
 // This file is public domain, in case it's useful to anyone. -comex
 
 // The central server implementation.
+#include <arpa/inet.h>
 #include <cerrno>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <fcntl.h>
-#include <unistd.h>
-#include <unordered_map>
-#include <utility>
-#include <vector>
-#include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <unistd.h>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 #include "Common/TraversalProto.h"
 
 #define DEBUG 0
@@ -46,10 +46,11 @@ struct EvictFindResult
 };
 
 template <typename K, typename V>
-EvictFindResult<V> EvictFind(std::unordered_map<K, EvictEntry<V>>& map, const K& key, bool refresh = false)
+EvictFindResult<V> EvictFind(std::unordered_map<K, EvictEntry<V>>& map, const K& key,
+                             bool refresh = false)
 {
 retry:
-  const u64 expiryTime = 30 * 1000000; // 30s
+  const u64 expiryTime = 30 * 1000000;  // 30s
   EvictFindResult<V> result;
   if (map.bucket_count())
   {
@@ -74,7 +75,8 @@ retry:
   }
 #if DEBUG
   printf("failed to find key '");
-  for (size_t i = 0; i < sizeof(key); i++) {
+  for (size_t i = 0; i < sizeof(key); i++)
+  {
     printf("%02x", ((u8*)&key)[i]);
   }
   printf("'\n");
@@ -107,14 +109,8 @@ struct hash<TraversalHostId>
 
 static int sock;
 static int urandomFd;
-static std::unordered_map<
-  TraversalRequestId,
-  OutgoingPacketInfo
-> outgoingPackets;
-static std::unordered_map<
-  TraversalHostId,
-  EvictEntry<TraversalInetAddress>
-> connectedClients;
+static std::unordered_map<TraversalRequestId, OutgoingPacketInfo> outgoingPackets;
+static std::unordered_map<TraversalHostId, EvictEntry<TraversalInetAddress>> connectedClients;
 
 static TraversalInetAddress MakeInetAddress(const sockaddr_in6& addr)
 {
@@ -124,7 +120,7 @@ static TraversalInetAddress MakeInetAddress(const sockaddr_in6& addr)
     exit(1);
   }
   u32* words = (u32*)addr.sin6_addr.s6_addr;
-  TraversalInetAddress result = { 0 };
+  TraversalInetAddress result = {0};
   if (words[0] == 0 && words[1] == 0 && words[2] == 0xffff0000)
   {
     result.isIPV6 = false;
@@ -202,7 +198,7 @@ static void TrySend(const void* buffer, size_t size, sockaddr_in6* addr)
 {
 #if DEBUG
   printf("-> %d %llu %s\n", ((TraversalPacket*)buffer)->type,
-    (long long)((TraversalPacket*)buffer)->requestId, SenderName(addr));
+         (long long)((TraversalPacket*)buffer)->requestId, SenderName(addr));
 #endif
   if ((size_t)sendto(sock, buffer, size, 0, (sockaddr*)addr, sizeof(*addr)) != size)
   {
@@ -231,7 +227,6 @@ static void SendPacket(OutgoingPacketInfo* info)
   info->sendTime = currentTime;
   TrySend(&info->packet, sizeof(info->packet), &info->dest);
 }
-
 
 static void ResendPackets()
 {

@@ -37,7 +37,7 @@ void Force::GetState(ControlState* axis)
   {
     ControlState tmpf = 0;
     const ControlState state =
-      controls[i + 1]->control_ref->State() - controls[i]->control_ref->State();
+        controls[i + 1]->control_ref->State() - controls[i]->control_ref->State();
     if (fabs(state) > deadzone)
       tmpf = ((state - (deadzone * sign(state))) / (1 - deadzone));
 

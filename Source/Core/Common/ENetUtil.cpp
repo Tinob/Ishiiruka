@@ -8,7 +8,6 @@
 
 namespace ENetUtil
 {
-
 void WakeupThread(ENetHost* host)
 {
   // Send ourselves a spurious message.  This is hackier than it should be.
@@ -19,7 +18,7 @@ void WakeupThread(ENetHost* host)
     address.port = host->address.port;
   else
     enet_socket_get_address(host->socket, &address);
-  address.host = 0x0100007f; // localhost
+  address.host = 0x0100007f;  // localhost
   u8 byte = 0;
   ENetBuffer buf;
   buf.data = &byte;
@@ -37,6 +36,4 @@ int ENET_CALLBACK InterceptCallback(ENetHost* host, ENetEvent* event)
   }
   return 0;
 }
-
-
 }

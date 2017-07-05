@@ -57,9 +57,9 @@ static UVIBorderBlankRegister m_BorderHBlank;
 
 static u32 s_target_refresh_rate = 0;
 
-static constexpr std::array<u32, 2> s_clock_freqs{ {
-        27000000, 54000000,
-    } };
+static constexpr std::array<u32, 2> s_clock_freqs{{
+    27000000, 54000000,
+}};
 
 static u64 s_ticks_last_line_start;  // number of ticks when the current full scanline started
 static u32 s_half_line_count;        // number of halflines that have occurred for this full frame
@@ -206,217 +206,217 @@ void RegisterMMIO(MMIO::Mapping* mmio, u32 base)
     u16* ptr;
   };
 
-  std::array<MappedVar, 46> directly_mapped_vars{ {
-      { VI_VERTICAL_TIMING, &m_VerticalTimingRegister.Hex },
-      { VI_HORIZONTAL_TIMING_0_HI, &m_HTiming0.Hi },
-      { VI_HORIZONTAL_TIMING_0_LO, &m_HTiming0.Lo },
-      { VI_HORIZONTAL_TIMING_1_HI, &m_HTiming1.Hi },
-      { VI_HORIZONTAL_TIMING_1_LO, &m_HTiming1.Lo },
-      { VI_VBLANK_TIMING_ODD_HI, &m_VBlankTimingOdd.Hi },
-      { VI_VBLANK_TIMING_ODD_LO, &m_VBlankTimingOdd.Lo },
-      { VI_VBLANK_TIMING_EVEN_HI, &m_VBlankTimingEven.Hi },
-      { VI_VBLANK_TIMING_EVEN_LO, &m_VBlankTimingEven.Lo },
-      { VI_BURST_BLANKING_ODD_HI, &m_BurstBlankingOdd.Hi },
-      { VI_BURST_BLANKING_ODD_LO, &m_BurstBlankingOdd.Lo },
-      { VI_BURST_BLANKING_EVEN_HI, &m_BurstBlankingEven.Hi },
-      { VI_BURST_BLANKING_EVEN_LO, &m_BurstBlankingEven.Lo },
-      { VI_FB_LEFT_TOP_LO, &m_XFBInfoTop.Lo },
-      { VI_FB_RIGHT_TOP_LO, &m_3DFBInfoTop.Lo },
-      { VI_FB_LEFT_BOTTOM_LO, &m_XFBInfoBottom.Lo },
-      { VI_FB_RIGHT_BOTTOM_LO, &m_3DFBInfoBottom.Lo },
-      { VI_PRERETRACE_LO, &m_InterruptRegister[0].Lo },
-      { VI_POSTRETRACE_LO, &m_InterruptRegister[1].Lo },
-      { VI_DISPLAY_INTERRUPT_2_LO, &m_InterruptRegister[2].Lo },
-      { VI_DISPLAY_INTERRUPT_3_LO, &m_InterruptRegister[3].Lo },
-      { VI_DISPLAY_LATCH_0_HI, &m_LatchRegister[0].Hi },
-      { VI_DISPLAY_LATCH_0_LO, &m_LatchRegister[0].Lo },
-      { VI_DISPLAY_LATCH_1_HI, &m_LatchRegister[1].Hi },
-      { VI_DISPLAY_LATCH_1_LO, &m_LatchRegister[1].Lo },
-      { VI_HSCALEW, &m_PictureConfiguration.Hex },
-      { VI_HSCALER, &m_HorizontalScaling.Hex },
-      { VI_FILTER_COEF_0_HI, &m_FilterCoefTables.Tables02[0].Hi },
-      { VI_FILTER_COEF_0_LO, &m_FilterCoefTables.Tables02[0].Lo },
-      { VI_FILTER_COEF_1_HI, &m_FilterCoefTables.Tables02[1].Hi },
-      { VI_FILTER_COEF_1_LO, &m_FilterCoefTables.Tables02[1].Lo },
-      { VI_FILTER_COEF_2_HI, &m_FilterCoefTables.Tables02[2].Hi },
-      { VI_FILTER_COEF_2_LO, &m_FilterCoefTables.Tables02[2].Lo },
-      { VI_FILTER_COEF_3_HI, &m_FilterCoefTables.Tables36[0].Hi },
-      { VI_FILTER_COEF_3_LO, &m_FilterCoefTables.Tables36[0].Lo },
-      { VI_FILTER_COEF_4_HI, &m_FilterCoefTables.Tables36[1].Hi },
-      { VI_FILTER_COEF_4_LO, &m_FilterCoefTables.Tables36[1].Lo },
-      { VI_FILTER_COEF_5_HI, &m_FilterCoefTables.Tables36[2].Hi },
-      { VI_FILTER_COEF_5_LO, &m_FilterCoefTables.Tables36[2].Lo },
-      { VI_FILTER_COEF_6_HI, &m_FilterCoefTables.Tables36[3].Hi },
-      { VI_FILTER_COEF_6_LO, &m_FilterCoefTables.Tables36[3].Lo },
-      { VI_CLOCK, &m_Clock },
-      { VI_DTV_STATUS, &m_DTVStatus.Hex },
-      { VI_FBWIDTH, &m_FBWidth.Hex },
-      { VI_BORDER_BLANK_END, &m_BorderHBlank.Lo },
-      { VI_BORDER_BLANK_START, &m_BorderHBlank.Hi },
-      } };
+  std::array<MappedVar, 46> directly_mapped_vars{{
+      {VI_VERTICAL_TIMING, &m_VerticalTimingRegister.Hex},
+      {VI_HORIZONTAL_TIMING_0_HI, &m_HTiming0.Hi},
+      {VI_HORIZONTAL_TIMING_0_LO, &m_HTiming0.Lo},
+      {VI_HORIZONTAL_TIMING_1_HI, &m_HTiming1.Hi},
+      {VI_HORIZONTAL_TIMING_1_LO, &m_HTiming1.Lo},
+      {VI_VBLANK_TIMING_ODD_HI, &m_VBlankTimingOdd.Hi},
+      {VI_VBLANK_TIMING_ODD_LO, &m_VBlankTimingOdd.Lo},
+      {VI_VBLANK_TIMING_EVEN_HI, &m_VBlankTimingEven.Hi},
+      {VI_VBLANK_TIMING_EVEN_LO, &m_VBlankTimingEven.Lo},
+      {VI_BURST_BLANKING_ODD_HI, &m_BurstBlankingOdd.Hi},
+      {VI_BURST_BLANKING_ODD_LO, &m_BurstBlankingOdd.Lo},
+      {VI_BURST_BLANKING_EVEN_HI, &m_BurstBlankingEven.Hi},
+      {VI_BURST_BLANKING_EVEN_LO, &m_BurstBlankingEven.Lo},
+      {VI_FB_LEFT_TOP_LO, &m_XFBInfoTop.Lo},
+      {VI_FB_RIGHT_TOP_LO, &m_3DFBInfoTop.Lo},
+      {VI_FB_LEFT_BOTTOM_LO, &m_XFBInfoBottom.Lo},
+      {VI_FB_RIGHT_BOTTOM_LO, &m_3DFBInfoBottom.Lo},
+      {VI_PRERETRACE_LO, &m_InterruptRegister[0].Lo},
+      {VI_POSTRETRACE_LO, &m_InterruptRegister[1].Lo},
+      {VI_DISPLAY_INTERRUPT_2_LO, &m_InterruptRegister[2].Lo},
+      {VI_DISPLAY_INTERRUPT_3_LO, &m_InterruptRegister[3].Lo},
+      {VI_DISPLAY_LATCH_0_HI, &m_LatchRegister[0].Hi},
+      {VI_DISPLAY_LATCH_0_LO, &m_LatchRegister[0].Lo},
+      {VI_DISPLAY_LATCH_1_HI, &m_LatchRegister[1].Hi},
+      {VI_DISPLAY_LATCH_1_LO, &m_LatchRegister[1].Lo},
+      {VI_HSCALEW, &m_PictureConfiguration.Hex},
+      {VI_HSCALER, &m_HorizontalScaling.Hex},
+      {VI_FILTER_COEF_0_HI, &m_FilterCoefTables.Tables02[0].Hi},
+      {VI_FILTER_COEF_0_LO, &m_FilterCoefTables.Tables02[0].Lo},
+      {VI_FILTER_COEF_1_HI, &m_FilterCoefTables.Tables02[1].Hi},
+      {VI_FILTER_COEF_1_LO, &m_FilterCoefTables.Tables02[1].Lo},
+      {VI_FILTER_COEF_2_HI, &m_FilterCoefTables.Tables02[2].Hi},
+      {VI_FILTER_COEF_2_LO, &m_FilterCoefTables.Tables02[2].Lo},
+      {VI_FILTER_COEF_3_HI, &m_FilterCoefTables.Tables36[0].Hi},
+      {VI_FILTER_COEF_3_LO, &m_FilterCoefTables.Tables36[0].Lo},
+      {VI_FILTER_COEF_4_HI, &m_FilterCoefTables.Tables36[1].Hi},
+      {VI_FILTER_COEF_4_LO, &m_FilterCoefTables.Tables36[1].Lo},
+      {VI_FILTER_COEF_5_HI, &m_FilterCoefTables.Tables36[2].Hi},
+      {VI_FILTER_COEF_5_LO, &m_FilterCoefTables.Tables36[2].Lo},
+      {VI_FILTER_COEF_6_HI, &m_FilterCoefTables.Tables36[3].Hi},
+      {VI_FILTER_COEF_6_LO, &m_FilterCoefTables.Tables36[3].Lo},
+      {VI_CLOCK, &m_Clock},
+      {VI_DTV_STATUS, &m_DTVStatus.Hex},
+      {VI_FBWIDTH, &m_FBWidth.Hex},
+      {VI_BORDER_BLANK_END, &m_BorderHBlank.Lo},
+      {VI_BORDER_BLANK_START, &m_BorderHBlank.Hi},
+  }};
 
   // Declare all the boilerplate direct MMIOs.
   for (auto& mapped_var : directly_mapped_vars)
   {
     mmio->Register(base | mapped_var.addr, MMIO::DirectRead<u16>(mapped_var.ptr),
-      MMIO::DirectWrite<u16>(mapped_var.ptr));
+                   MMIO::DirectWrite<u16>(mapped_var.ptr));
   }
 
-  std::array<MappedVar, 8> update_params_on_read_vars{ {
-      { VI_VERTICAL_TIMING, &m_VerticalTimingRegister.Hex },
-      { VI_HORIZONTAL_TIMING_0_HI, &m_HTiming0.Hi },
-      { VI_HORIZONTAL_TIMING_0_LO, &m_HTiming0.Lo },
-      { VI_VBLANK_TIMING_ODD_HI, &m_VBlankTimingOdd.Hi },
-      { VI_VBLANK_TIMING_ODD_LO, &m_VBlankTimingOdd.Lo },
-      { VI_VBLANK_TIMING_EVEN_HI, &m_VBlankTimingEven.Hi },
-      { VI_VBLANK_TIMING_EVEN_LO, &m_VBlankTimingEven.Lo },
-      { VI_CLOCK, &m_Clock },
-      } };
+  std::array<MappedVar, 8> update_params_on_read_vars{{
+      {VI_VERTICAL_TIMING, &m_VerticalTimingRegister.Hex},
+      {VI_HORIZONTAL_TIMING_0_HI, &m_HTiming0.Hi},
+      {VI_HORIZONTAL_TIMING_0_LO, &m_HTiming0.Lo},
+      {VI_VBLANK_TIMING_ODD_HI, &m_VBlankTimingOdd.Hi},
+      {VI_VBLANK_TIMING_ODD_LO, &m_VBlankTimingOdd.Lo},
+      {VI_VBLANK_TIMING_EVEN_HI, &m_VBlankTimingEven.Hi},
+      {VI_VBLANK_TIMING_EVEN_LO, &m_VBlankTimingEven.Lo},
+      {VI_CLOCK, &m_Clock},
+  }};
 
   // Declare all the MMIOs that update timing params.
   for (auto& mapped_var : update_params_on_read_vars)
   {
     mmio->Register(base | mapped_var.addr, MMIO::DirectRead<u16>(mapped_var.ptr),
-      MMIO::ComplexWrite<u16>([mapped_var](u32, u16 val) {
-      *mapped_var.ptr = val;
-      UpdateParameters();
-    }));
+                   MMIO::ComplexWrite<u16>([mapped_var](u32, u16 val) {
+                     *mapped_var.ptr = val;
+                     UpdateParameters();
+                   }));
   }
 
   // XFB related MMIOs that require special handling on writes.
   mmio->Register(base | VI_FB_LEFT_TOP_HI, MMIO::DirectRead<u16>(&m_XFBInfoTop.Hi),
-    MMIO::ComplexWrite<u16>([](u32, u16 val) {
-    m_XFBInfoTop.Hi = val;
-    if (m_XFBInfoTop.CLRPOFF)
-      m_XFBInfoTop.POFF = 0;
-  }));
+                 MMIO::ComplexWrite<u16>([](u32, u16 val) {
+                   m_XFBInfoTop.Hi = val;
+                   if (m_XFBInfoTop.CLRPOFF)
+                     m_XFBInfoTop.POFF = 0;
+                 }));
   mmio->Register(base | VI_FB_LEFT_BOTTOM_HI, MMIO::DirectRead<u16>(&m_XFBInfoBottom.Hi),
-    MMIO::ComplexWrite<u16>([](u32, u16 val) {
-    m_XFBInfoBottom.Hi = val;
-    if (m_XFBInfoBottom.CLRPOFF)
-      m_XFBInfoBottom.POFF = 0;
-  }));
+                 MMIO::ComplexWrite<u16>([](u32, u16 val) {
+                   m_XFBInfoBottom.Hi = val;
+                   if (m_XFBInfoBottom.CLRPOFF)
+                     m_XFBInfoBottom.POFF = 0;
+                 }));
   mmio->Register(base | VI_FB_RIGHT_TOP_HI, MMIO::DirectRead<u16>(&m_3DFBInfoTop.Hi),
-    MMIO::ComplexWrite<u16>([](u32, u16 val) {
-    m_3DFBInfoTop.Hi = val;
-    if (m_3DFBInfoTop.CLRPOFF)
-      m_3DFBInfoTop.POFF = 0;
-  }));
+                 MMIO::ComplexWrite<u16>([](u32, u16 val) {
+                   m_3DFBInfoTop.Hi = val;
+                   if (m_3DFBInfoTop.CLRPOFF)
+                     m_3DFBInfoTop.POFF = 0;
+                 }));
   mmio->Register(base | VI_FB_RIGHT_BOTTOM_HI, MMIO::DirectRead<u16>(&m_3DFBInfoBottom.Hi),
-    MMIO::ComplexWrite<u16>([](u32, u16 val) {
-    m_3DFBInfoBottom.Hi = val;
-    if (m_3DFBInfoBottom.CLRPOFF)
-      m_3DFBInfoBottom.POFF = 0;
-  }));
+                 MMIO::ComplexWrite<u16>([](u32, u16 val) {
+                   m_3DFBInfoBottom.Hi = val;
+                   if (m_3DFBInfoBottom.CLRPOFF)
+                     m_3DFBInfoBottom.POFF = 0;
+                 }));
 
   // MMIOs with unimplemented writes that trigger warnings.
   mmio->Register(
-    base | VI_VERTICAL_BEAM_POSITION,
-    MMIO::ComplexRead<u16>([](u32) { return 1 + (s_half_line_count - 1) / 2; }),
-    MMIO::ComplexWrite<u16>([](u32, u16 val) {
-    WARN_LOG(VIDEOINTERFACE,
-      "Changing vertical beam position to 0x%04x - not documented or implemented yet",
-      val);
-  }));
+      base | VI_VERTICAL_BEAM_POSITION,
+      MMIO::ComplexRead<u16>([](u32) { return 1 + (s_half_line_count - 1) / 2; }),
+      MMIO::ComplexWrite<u16>([](u32, u16 val) {
+        WARN_LOG(VIDEOINTERFACE,
+                 "Changing vertical beam position to 0x%04x - not documented or implemented yet",
+                 val);
+      }));
   mmio->Register(
-    base | VI_HORIZONTAL_BEAM_POSITION, MMIO::ComplexRead<u16>([](u32) {
-    u16 value =
-      static_cast<u16>(1 +
-        m_HTiming0.HLW * (CoreTiming::GetTicks() - s_ticks_last_line_start) /
-        (GetTicksPerHalfLine()));
-    return MathUtil::Clamp(value, static_cast<u16>(1), static_cast<u16>(m_HTiming0.HLW * 2));
-  }),
-    MMIO::ComplexWrite<u16>([](u32, u16 val) {
-    WARN_LOG(VIDEOINTERFACE,
-      "Changing horizontal beam position to 0x%04x - not documented or implemented yet",
-      val);
-  }));
+      base | VI_HORIZONTAL_BEAM_POSITION, MMIO::ComplexRead<u16>([](u32) {
+        u16 value =
+            static_cast<u16>(1 +
+                             m_HTiming0.HLW * (CoreTiming::GetTicks() - s_ticks_last_line_start) /
+                                 (GetTicksPerHalfLine()));
+        return MathUtil::Clamp(value, static_cast<u16>(1), static_cast<u16>(m_HTiming0.HLW * 2));
+      }),
+      MMIO::ComplexWrite<u16>([](u32, u16 val) {
+        WARN_LOG(VIDEOINTERFACE,
+                 "Changing horizontal beam position to 0x%04x - not documented or implemented yet",
+                 val);
+      }));
 
   // The following MMIOs are interrupts related and update interrupt status
   // on writes.
   mmio->Register(base | VI_PRERETRACE_HI, MMIO::DirectRead<u16>(&m_InterruptRegister[0].Hi),
-    MMIO::ComplexWrite<u16>([](u32, u16 val) {
-    m_InterruptRegister[0].Hi = val;
-    UpdateInterrupts();
-  }));
+                 MMIO::ComplexWrite<u16>([](u32, u16 val) {
+                   m_InterruptRegister[0].Hi = val;
+                   UpdateInterrupts();
+                 }));
   mmio->Register(base | VI_POSTRETRACE_HI, MMIO::DirectRead<u16>(&m_InterruptRegister[1].Hi),
-    MMIO::ComplexWrite<u16>([](u32, u16 val) {
-    m_InterruptRegister[1].Hi = val;
-    UpdateInterrupts();
-  }));
+                 MMIO::ComplexWrite<u16>([](u32, u16 val) {
+                   m_InterruptRegister[1].Hi = val;
+                   UpdateInterrupts();
+                 }));
   mmio->Register(base | VI_DISPLAY_INTERRUPT_2_HI,
-    MMIO::DirectRead<u16>(&m_InterruptRegister[2].Hi),
-    MMIO::ComplexWrite<u16>([](u32, u16 val) {
-    m_InterruptRegister[2].Hi = val;
-    UpdateInterrupts();
-  }));
+                 MMIO::DirectRead<u16>(&m_InterruptRegister[2].Hi),
+                 MMIO::ComplexWrite<u16>([](u32, u16 val) {
+                   m_InterruptRegister[2].Hi = val;
+                   UpdateInterrupts();
+                 }));
   mmio->Register(base | VI_DISPLAY_INTERRUPT_3_HI,
-    MMIO::DirectRead<u16>(&m_InterruptRegister[3].Hi),
-    MMIO::ComplexWrite<u16>([](u32, u16 val) {
-    m_InterruptRegister[3].Hi = val;
-    UpdateInterrupts();
-  }));
+                 MMIO::DirectRead<u16>(&m_InterruptRegister[3].Hi),
+                 MMIO::ComplexWrite<u16>([](u32, u16 val) {
+                   m_InterruptRegister[3].Hi = val;
+                   UpdateInterrupts();
+                 }));
 
   // Unknown anti-aliasing related MMIO register: puts a warning on log and
   // needs to shift/mask when reading/writing.
   mmio->Register(base | VI_UNK_AA_REG_HI,
-    MMIO::ComplexRead<u16>([](u32) { return m_UnkAARegister >> 16; }),
-    MMIO::ComplexWrite<u16>([](u32, u16 val) {
-    m_UnkAARegister = (m_UnkAARegister & 0x0000FFFF) | ((u32)val << 16);
-    WARN_LOG(VIDEOINTERFACE, "Writing to the unknown AA register (hi)");
-  }));
+                 MMIO::ComplexRead<u16>([](u32) { return m_UnkAARegister >> 16; }),
+                 MMIO::ComplexWrite<u16>([](u32, u16 val) {
+                   m_UnkAARegister = (m_UnkAARegister & 0x0000FFFF) | ((u32)val << 16);
+                   WARN_LOG(VIDEOINTERFACE, "Writing to the unknown AA register (hi)");
+                 }));
   mmio->Register(base | VI_UNK_AA_REG_LO,
-    MMIO::ComplexRead<u16>([](u32) { return m_UnkAARegister & 0xFFFF; }),
-    MMIO::ComplexWrite<u16>([](u32, u16 val) {
-    m_UnkAARegister = (m_UnkAARegister & 0xFFFF0000) | val;
-    WARN_LOG(VIDEOINTERFACE, "Writing to the unknown AA register (lo)");
-  }));
+                 MMIO::ComplexRead<u16>([](u32) { return m_UnkAARegister & 0xFFFF; }),
+                 MMIO::ComplexWrite<u16>([](u32, u16 val) {
+                   m_UnkAARegister = (m_UnkAARegister & 0xFFFF0000) | val;
+                   WARN_LOG(VIDEOINTERFACE, "Writing to the unknown AA register (lo)");
+                 }));
 
   // Control register writes only updates some select bits, and additional
   // processing needs to be done if a reset is requested.
   mmio->Register(base | VI_CONTROL_REGISTER, MMIO::DirectRead<u16>(&m_DisplayControlRegister.Hex),
-    MMIO::ComplexWrite<u16>([](u32, u16 val) {
-    UVIDisplayControlRegister tmpConfig(val);
-    m_DisplayControlRegister.ENB = tmpConfig.ENB;
-    m_DisplayControlRegister.NIN = tmpConfig.NIN;
-    m_DisplayControlRegister.DLR = tmpConfig.DLR;
-    m_DisplayControlRegister.LE0 = tmpConfig.LE0;
-    m_DisplayControlRegister.LE1 = tmpConfig.LE1;
-    m_DisplayControlRegister.FMT = tmpConfig.FMT;
+                 MMIO::ComplexWrite<u16>([](u32, u16 val) {
+                   UVIDisplayControlRegister tmpConfig(val);
+                   m_DisplayControlRegister.ENB = tmpConfig.ENB;
+                   m_DisplayControlRegister.NIN = tmpConfig.NIN;
+                   m_DisplayControlRegister.DLR = tmpConfig.DLR;
+                   m_DisplayControlRegister.LE0 = tmpConfig.LE0;
+                   m_DisplayControlRegister.LE1 = tmpConfig.LE1;
+                   m_DisplayControlRegister.FMT = tmpConfig.FMT;
 
-    if (tmpConfig.RST)
-    {
-      // shuffle2 clear all data, reset to default vals, and enter idle mode
-      m_DisplayControlRegister.RST = 0;
-      m_InterruptRegister = {};
-      UpdateInterrupts();
-    }
+                   if (tmpConfig.RST)
+                   {
+                     // shuffle2 clear all data, reset to default vals, and enter idle mode
+                     m_DisplayControlRegister.RST = 0;
+                     m_InterruptRegister = {};
+                     UpdateInterrupts();
+                   }
 
-    UpdateParameters();
-  }));
+                   UpdateParameters();
+                 }));
 
   // Map 8 bit reads (not writes) to 16 bit reads.
   for (int i = 0; i < 0x1000; i += 2)
   {
     mmio->Register(base | i, MMIO::ReadToLarger<u8>(mmio, base | i, 8), MMIO::InvalidWrite<u8>());
     mmio->Register(base | (i + 1), MMIO::ReadToLarger<u8>(mmio, base | i, 0),
-      MMIO::InvalidWrite<u8>());
+                   MMIO::InvalidWrite<u8>());
   }
 
   // Map 32 bit reads and writes to 16 bit reads and writes.
   for (int i = 0; i < 0x1000; i += 4)
   {
     mmio->Register(base | i, MMIO::ReadToSmaller<u32>(mmio, base | i, base | (i + 2)),
-      MMIO::WriteToSmaller<u32>(mmio, base | i, base | (i + 2)));
+                   MMIO::WriteToSmaller<u32>(mmio, base | i, base | (i + 2)));
   }
 }
 
 void UpdateInterrupts()
 {
   if ((m_InterruptRegister[0].IR_INT && m_InterruptRegister[0].IR_MASK) ||
-    (m_InterruptRegister[1].IR_INT && m_InterruptRegister[1].IR_MASK) ||
-    (m_InterruptRegister[2].IR_INT && m_InterruptRegister[2].IR_MASK) ||
-    (m_InterruptRegister[3].IR_INT && m_InterruptRegister[3].IR_MASK))
+      (m_InterruptRegister[1].IR_INT && m_InterruptRegister[1].IR_MASK) ||
+      (m_InterruptRegister[2].IR_INT && m_InterruptRegister[2].IR_MASK) ||
+      (m_InterruptRegister[3].IR_INT && m_InterruptRegister[3].IR_MASK))
   {
     ProcessorInterface::SetInterrupt(ProcessorInterface::INT_CAUSE_VI, true);
   }
@@ -446,13 +446,13 @@ u32 GetXFBAddressBottom()
 static u32 GetHalfLinesPerEvenField()
 {
   return (3 * m_VerticalTimingRegister.EQU + m_VBlankTimingEven.PRB +
-    2 * m_VerticalTimingRegister.ACV + m_VBlankTimingEven.PSB);
+          2 * m_VerticalTimingRegister.ACV + m_VBlankTimingEven.PSB);
 }
 
 static u32 GetHalfLinesPerOddField()
 {
   return (3 * m_VerticalTimingRegister.EQU + m_VBlankTimingOdd.PRB +
-    2 * m_VerticalTimingRegister.ACV + m_VBlankTimingOdd.PSB);
+          2 * m_VerticalTimingRegister.ACV + m_VBlankTimingOdd.PSB);
 }
 
 static u32 GetTicksPerEvenField()
@@ -548,7 +548,7 @@ float GetAspectRatio()
   // 5. Calculate the final ratio and scale to 4:3
   float ratio = horizontal_active_ratio / vertical_active_ratio;
   if (std::isnormal(
-    ratio))  // Check we have a sane ratio and haven't propagated any infs/nans/zeros
+          ratio))  // Check we have a sane ratio and haven't propagated any infs/nans/zeros
     return ratio * (4.0f / 3.0f);  // Scale to 4:3
   else
     return (4.0f / 3.0f);  // VI isn't initialized correctly, just return 4:3 instead
@@ -607,12 +607,12 @@ void UpdateParameters()
 {
   s_even_field_first_hl = 3 * m_VerticalTimingRegister.EQU + m_VBlankTimingEven.PRB + 1;
   s_odd_field_first_hl =
-    GetHalfLinesPerEvenField() + 3 * m_VerticalTimingRegister.EQU + m_VBlankTimingOdd.PRB + 1;
+      GetHalfLinesPerEvenField() + 3 * m_VerticalTimingRegister.EQU + m_VBlankTimingOdd.PRB + 1;
   s_even_field_last_hl = s_even_field_first_hl + m_VerticalTimingRegister.ACV * 2;
   s_odd_field_last_hl = s_odd_field_first_hl + m_VerticalTimingRegister.ACV * 2;
 
   s_target_refresh_rate = lround(2.0 * SystemTimers::GetTicksPerSecond() /
-    (GetTicksPerEvenField() + GetTicksPerOddField()));
+                                 (GetTicksPerEvenField() + GetTicksPerOddField()));
 }
 
 u32 GetTargetRefreshRate()
@@ -637,30 +637,30 @@ u32 GetTicksPerField()
 
 static void LogField(FieldType field, u32 xfb_address)
 {
-  static constexpr std::array<const char*, 2> field_type_names{ { "Odd", "Even" } };
+  static constexpr std::array<const char*, 2> field_type_names{{"Odd", "Even"}};
 
-  static const std::array<const UVIVBlankTimingRegister*, 2> vert_timing{ {
-          &m_VBlankTimingOdd, &m_VBlankTimingEven,
-      } };
+  static const std::array<const UVIVBlankTimingRegister*, 2> vert_timing{{
+      &m_VBlankTimingOdd, &m_VBlankTimingEven,
+  }};
 
   const auto field_index = static_cast<size_t>(field);
 
   DEBUG_LOG(VIDEOINTERFACE, "(VI->BeginField): Address: %.08X | WPL %u | STD %u | EQ %u | PRB %u | "
-    "ACV %u | PSB %u | Field %s",
-    xfb_address, m_PictureConfiguration.WPL, m_PictureConfiguration.STD,
-    m_VerticalTimingRegister.EQU, vert_timing[field_index]->PRB,
-    m_VerticalTimingRegister.ACV, vert_timing[field_index]->PSB,
-    field_type_names[field_index]);
+                            "ACV %u | PSB %u | Field %s",
+            xfb_address, m_PictureConfiguration.WPL, m_PictureConfiguration.STD,
+            m_VerticalTimingRegister.EQU, vert_timing[field_index]->PRB,
+            m_VerticalTimingRegister.ACV, vert_timing[field_index]->PSB,
+            field_type_names[field_index]);
 
   DEBUG_LOG(VIDEOINTERFACE, "HorizScaling: %04x | fbwidth %d | %u | %u", m_HorizontalScaling.Hex,
-    m_FBWidth.Hex, GetTicksPerEvenField(), GetTicksPerOddField());
+            m_FBWidth.Hex, GetTicksPerEvenField(), GetTicksPerOddField());
 }
 
 static void BeginField(FieldType field, u64 ticks)
 {
   // Could we fit a second line of data in the stride?
   bool potentially_interlaced_xfb =
-    ((m_PictureConfiguration.STD / m_PictureConfiguration.WPL) == 2);
+      ((m_PictureConfiguration.STD / m_PictureConfiguration.WPL) == 2);
   // Are there an odd number of half-lines per field (definition of interlaced video)
   bool interlaced_video_mode = (GetHalfLinesPerEvenField() & 1) == 1;
 

@@ -172,14 +172,14 @@ static inline void dsp_op_write_reg(int _reg, u16 val)
 
   switch (reg)
   {
-    // 8-bit sign extended registers. Should look at prod.h too...
+  // 8-bit sign extended registers. Should look at prod.h too...
   case DSP_REG_ACH0:
   case DSP_REG_ACH1:
     // sign extend from the bottom 8 bits.
     g_dsp.r.ac[reg - DSP_REG_ACH0].h = (u16)(s16)(s8)(u8)val;
     break;
 
-    // Stack registers.
+  // Stack registers.
   case DSP_REG_ST0:
   case DSP_REG_ST1:
   case DSP_REG_ST2:

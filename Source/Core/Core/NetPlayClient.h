@@ -67,8 +67,8 @@ public:
   void SendAsync(sf::Packet&& packet);
 
   NetPlayClient(const std::string& address, const u16 port, NetPlayUI* dialog,
-    const std::string& name, bool traversal, const std::string& centralServer,
-    u16 centralPort);
+                const std::string& name, bool traversal, const std::string& centralServer,
+                u16 centralPort);
   ~NetPlayClient();
 
   void GetPlayerList(std::string& list, std::vector<int>& pid_list);
@@ -122,8 +122,8 @@ protected:
   std::thread m_thread;
 
   std::string m_selected_game;
-  Common::Flag m_is_running{ false };
-  Common::Flag m_do_loop{ true };
+  Common::Flag m_is_running{false};
+  Common::Flag m_do_loop{true};
 
   unsigned int m_target_buffer_size = 20;
 

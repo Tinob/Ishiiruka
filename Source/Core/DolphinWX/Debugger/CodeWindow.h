@@ -77,9 +77,9 @@ class CCodeWindow : public wxPanel
 {
 public:
   explicit CCodeWindow(CFrame* parent, wxWindowID id = wxID_ANY,
-    const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize,
-    long style = wxTAB_TRAVERSAL | wxBORDER_NONE,
-    const wxString& name = _("Code"));
+                       const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize,
+                       long style = wxTAB_TRAVERSAL | wxBORDER_NONE,
+                       const wxString& name = _("Code"));
   ~CCodeWindow();
 
   void Load();

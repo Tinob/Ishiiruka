@@ -8,6 +8,7 @@
 
 #include "Common/CommonPaths.h"
 #include "Common/CommonTypes.h"
+#include "Common/File.h"
 #include "Common/FileUtil.h"
 #include "Common/Logging/Log.h"
 #include "Common/Swap.h"
@@ -64,9 +65,9 @@ void NWC24Config::ResetConfig()
     File::Delete(m_path);
 
   constexpr const char* urls[5] = {
-       "https://amw.wc24.wii.com/cgi-bin/account.cgi", "http://rcw.wc24.wii.com/cgi-bin/check.cgi",
-       "http://mtw.wc24.wii.com/cgi-bin/receive.cgi",  "http://mtw.wc24.wii.com/cgi-bin/delete.cgi",
-       "http://mtw.wc24.wii.com/cgi-bin/send.cgi",
+      "https://amw.wc24.wii.com/cgi-bin/account.cgi", "http://rcw.wc24.wii.com/cgi-bin/check.cgi",
+      "http://mtw.wc24.wii.com/cgi-bin/receive.cgi",  "http://mtw.wc24.wii.com/cgi-bin/delete.cgi",
+      "http://mtw.wc24.wii.com/cgi-bin/send.cgi",
   };
 
   memset(&m_data, 0, sizeof(m_data));

@@ -173,15 +173,15 @@ void CEXIGecko::ImmReadWrite(u32& _uData, u32 _uSize)
     break;
   case CMD_LED_ON:
     Core::DisplayMessage("USBGecko: A piercing blue light is now shining in your general direction",
-      3000);
+                         3000);
     break;
 
   case CMD_INIT:
     _uData = ident;
     break;
 
-    // PC -> Gecko
-    // |= 0x08000000 if successful
+  // PC -> Gecko
+  // |= 0x08000000 if successful
   case CMD_RECV:
   {
     std::lock_guard<std::mutex> lk(transfer_lock);
@@ -209,8 +209,8 @@ void CEXIGecko::ImmReadWrite(u32& _uData, u32 _uSize)
     _uData = 0x04000000;
     break;
 
-    // Check if data in FIFO for PC -> Gecko, or FIFO empty
-    // |= 0x04000000 if data in recv FIFO
+  // Check if data in FIFO for PC -> Gecko, or FIFO empty
+  // |= 0x04000000 if data in recv FIFO
   case CMD_CHK_RX:
   {
     std::lock_guard<std::mutex> lk(transfer_lock);

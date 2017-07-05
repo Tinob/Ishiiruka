@@ -13,6 +13,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{3E5C4E02-1BA9-4776-BDBE-E3F91FFA34CF}</ProjectGuid>
     <RootNamespace>VideoCommon</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Configuration">
@@ -99,8 +100,6 @@
     <ClCompile Include="MainBase.cpp" />
     <ClCompile Include="OnScreenDisplay.cpp" />
     <ClCompile Include="OpcodeDecoding.cpp" />
-    <ClCompile Include="OpenCL.cpp" />
-    <ClCompile Include="OpenCL\OCLTextureDecoder.cpp" />
     <ClCompile Include="PerfQueryBase.cpp" />
     <ClCompile Include="PixelEngine.cpp" />
     <ClCompile Include="PixelShaderGen.cpp" />
@@ -184,8 +183,6 @@
     <ClInclude Include="NativeVertexFormat.h" />
     <ClInclude Include="OnScreenDisplay.h" />
     <ClInclude Include="OpcodeDecoding.h" />
-    <ClInclude Include="OpenCL.h" />
-    <ClInclude Include="OpenCL\OCLTextureDecoder.h" />
     <ClInclude Include="PerfQueryBase.h" />
     <ClInclude Include="PixelEngine.h" />
     <ClInclude Include="PixelShaderGen.h" />
@@ -230,9 +227,6 @@
     <None Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(ExternalsDir)CLRun\clrun\CLRun.vcxproj">
-      <Project>{AA862E5E-A993-497A-B6A0-0E8E94B10050}</Project>
-    </ProjectReference>
     <ProjectReference Include="$(CoreDir)Common\Common.vcxproj">
       <Project>{C87A4178-44F6-49B2-B7AA-C79AF1B8C534}</Project>
     </ProjectReference>

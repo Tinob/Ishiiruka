@@ -3,11 +3,16 @@
 // Refer to the license.txt file included.
 
 #include "Core/NetPlayClient.h"
+
 #include <algorithm>
 #include <fstream>
-#include <mbedtls/md5.h>
 #include <memory>
+#include <mutex>
+#include <sstream>
 #include <thread>
+
+#include <mbedtls/md5.h>
+
 #include "Common/Common.h"
 #include "Common/CommonPaths.h"
 #include "Common/CommonTypes.h"
@@ -69,9 +74,9 @@ NetPlayClient::~NetPlayClient()
 
 // called from ---GUI--- thread
 NetPlayClient::NetPlayClient(const std::string& address, const u16 port, NetPlayUI* dialog,
-  const std::string& name, bool traversal,
-  const std::string& centralServer, u16 centralPort)
-  : m_dialog(dialog), m_player_name(name)
+                             const std::string& name, bool traversal,
+                             const std::string& centralServer, u16 centralPort)
+    : m_dialog(dialog), m_player_name(name)
 {
   ClearBuffers();
 
@@ -320,7 +325,7 @@ unsigned int NetPlayClient::OnData(sf::Packet& packet)
     PadMapping map = 0;
     GCPadStatus pad;
     packet >> map >> pad.button >> pad.analogA >> pad.analogB >> pad.stickX >> pad.stickY >>
-      pad.substickX >> pad.substickY >> pad.triggerLeft >> pad.triggerRight;
+        pad.substickX >> pad.substickY >> pad.triggerLeft >> pad.triggerRight;
 
     // Trusting server for good map value (>=0 && <4)
     // add to pad buffer
@@ -372,8 +377,8 @@ unsigned int NetPlayClient::OnData(sf::Packet& packet)
     game_status_packet << static_cast<MessageId>(NP_MSG_GAME_STATUS);
 
     PlayerGameStatus status = m_dialog->FindGame(m_selected_game).empty() ?
-      PlayerGameStatus::NotFound :
-      PlayerGameStatus::Ok;
+                                  PlayerGameStatus::NotFound :
+                                  PlayerGameStatus::Ok;
 
     game_status_packet << static_cast<u32>(status);
     Send(game_status_packet);
@@ -563,7 +568,7 @@ unsigned int NetPlayClient::OnData(sf::Packet& packet)
 void NetPlayClient::Send(const sf::Packet& packet)
 {
   ENetPacket* epac =
-    enet_packet_create(packet.getData(), packet.getDataSize(), ENET_PACKET_FLAG_RELIABLE);
+      enet_packet_create(packet.getData(), packet.getDataSize(), ENET_PACKET_FLAG_RELIABLE);
   enet_peer_send(m_server, 0, epac);
 }
 
@@ -573,16 +578,16 @@ void NetPlayClient::DisplayPlayersPing()
     return;
 
   OSD::AddTypedMessage(OSD::MessageType::NetPlayPing,
-    StringFromFormat("Ping: %u", GetPlayersMaxPing()), OSD::Duration::SHORT,
-    OSD::Color::CYAN);
+                       StringFromFormat("Ping: %u", GetPlayersMaxPing()), OSD::Duration::SHORT,
+                       OSD::Color::CYAN);
 }
 
 u32 NetPlayClient::GetPlayersMaxPing() const
 {
   return std::max_element(
-    m_players.begin(), m_players.end(),
-    [](const auto& a, const auto& b) { return a.second.ping < b.second.ping; })
-    ->second.ping;
+             m_players.begin(), m_players.end(),
+             [](const auto& a, const auto& b) { return a.second.ping < b.second.ping; })
+      ->second.ping;
 }
 
 void NetPlayClient::Disconnect()
@@ -674,7 +679,7 @@ void NetPlayClient::GetPlayerList(std::string& list, std::vector<int>& pid_list)
   std::ostringstream ss;
 
   const auto enumerate_player_controller_mappings = [&ss](const PadMappingArray& mappings,
-    const Player& player) {
+                                                          const Player& player) {
     for (size_t i = 0; i < mappings.size(); i++)
     {
       if (mappings[i] == player.pid)
@@ -747,7 +752,7 @@ void NetPlayClient::SendPadState(const int in_game_pad, const GCPadStatus& pad)
   packet << static_cast<MessageId>(NP_MSG_PAD_DATA);
   packet << static_cast<PadMapping>(in_game_pad);
   packet << pad.button << pad.analogA << pad.analogB << pad.stickX << pad.stickY << pad.substickX
-    << pad.substickY << pad.triggerLeft << pad.triggerRight;
+         << pad.substickY << pad.triggerLeft << pad.triggerRight;
 
   SendAsync(std::move(packet));
 }
@@ -891,13 +896,13 @@ void NetPlayClient::ClearBuffers()
 void NetPlayClient::OnTraversalStateChanged()
 {
   if (m_connection_state == ConnectionState::WaitingForTraversalClientConnection &&
-    m_traversal_client->m_State == TraversalClient::Connected)
+      m_traversal_client->m_State == TraversalClient::Connected)
   {
     m_connection_state = ConnectionState::WaitingForTraversalClientConnectReady;
     m_traversal_client->ConnectToClient(m_host_spec);
   }
   else if (m_connection_state != ConnectionState::Failure &&
-    m_traversal_client->m_State == TraversalClient::Failure)
+           m_traversal_client->m_State == TraversalClient::Failure)
   {
     Disconnect();
     m_dialog->OnTraversalError(m_traversal_client->m_FailureReason);
@@ -1036,8 +1041,8 @@ bool NetPlayClient::WiimoteUpdate(int _number, u8* data, const u8 size, u8 repor
 
         SendWiimoteState(_number, nw);
       } while (m_wiimote_buffer[_number].Size() <=
-        m_target_buffer_size * 200 /
-        120);  // TODO: add a seperate setting for wiimote buffer?
+               m_target_buffer_size * 200 /
+                   120);  // TODO: add a seperate setting for wiimote buffer?
     }
 
   }  // unlock players
@@ -1134,13 +1139,13 @@ bool NetPlayClient::LocalPlayerHasControllerMapped() const
   };
 
   return std::any_of(m_pad_map.begin(), m_pad_map.end(), mapping_matches_player_id) ||
-    std::any_of(m_wiimote_map.begin(), m_wiimote_map.end(), mapping_matches_player_id);
+         std::any_of(m_wiimote_map.begin(), m_wiimote_map.end(), mapping_matches_player_id);
 }
 
 bool NetPlayClient::IsFirstInGamePad(int ingame_pad) const
 {
   return std::none_of(m_pad_map.begin(), m_pad_map.begin() + ingame_pad,
-    [](auto mapping) { return mapping > 0; });
+                      [](auto mapping) { return mapping > 0; });
 }
 
 int NetPlayClient::NumLocalPads() const
@@ -1207,7 +1212,7 @@ bool NetPlayClient::DoAllPlayersHaveGame()
   std::lock_guard<std::recursive_mutex> lkp(m_crit.players);
 
   return std::all_of(std::begin(m_players), std::end(m_players),
-    [](auto entry) { return entry.second.game_status == PlayerGameStatus::Ok; });
+                     [](auto entry) { return entry.second.game_status == PlayerGameStatus::Ok; });
 }
 
 void NetPlayClient::ComputeMD5(const std::string& file_identifier)

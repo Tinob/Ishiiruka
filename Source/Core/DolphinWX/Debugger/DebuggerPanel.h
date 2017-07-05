@@ -15,8 +15,8 @@ class GFXDebuggerPanel : public wxPanel, public GFXDebuggerBase
 {
 public:
   GFXDebuggerPanel(wxWindow* parent, wxWindowID id = wxID_ANY,
-    const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize,
-    long style = wxTAB_TRAVERSAL, const wxString& title = _("GFX Debugger"));
+                   const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize,
+                   long style = wxTAB_TRAVERSAL, const wxString& title = _("GFX Debugger"));
 
   virtual ~GFXDebuggerPanel();
 

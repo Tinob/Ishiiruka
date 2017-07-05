@@ -68,25 +68,27 @@ enum BBoxMode : s32
   BBoxGPU = 2
 };
 
-
-
-class IniFile;
+struct ProjectionHackConfig final
+{
+  bool m_enable;
+  bool m_sznear;
+  bool m_szfar;
+  std::string m_znear;
+  std::string m_zfar;
+};
 
 // NEVER inherit from this class.
 struct VideoConfig final
 {
   VideoConfig();
-  void Load(const std::string& ini_file);
-  void GameIniLoad();
+  void Refresh();
   void VerifyValidity();
-  void Save(const std::string& ini_file);
   void UpdateProjectionHack();
   bool IsVSync() const;
   bool PixelLightingEnabled(const XFMemory& xfr, const u32 components) const;
 
   // General
   bool bVSync;
-  bool bRunning;
   bool bWidescreenHack;
   int iAspectRatio;
   bool bCrop;   // Aspect ratio controls.
@@ -98,7 +100,7 @@ struct VideoConfig final
   bool bOMPDecoder;
 
   // Enhancements
-  int iMultisamples;
+  u32 iMultisamples;
   bool bSSAA;
   int iEFBScale;
   bool bForceFiltering;
@@ -172,8 +174,7 @@ struct VideoConfig final
   bool bSkipEFBCopyToRam;
   bool bCopyEFBScaled;
   int iSafeTextureCache_ColorSamples;
-  int iPhackvalue[4];
-  std::string sPhackvalue[2];
+  ProjectionHackConfig phack;
   float fAspectRatioHackW, fAspectRatioHackH;
   bool bEnablePixelLighting;
   bool bForcedLighting;
@@ -236,7 +237,7 @@ struct VideoConfig final
     API_TYPE APIType;
 
     std::vector<std::string> Adapters; // for D3D9 and D3D11
-    std::vector<int> AAModes;
+    std::vector<u32> AAModes;
 
     // TODO: merge AdapterName and Adapters array
     std::string AdapterName; // for OpenGL

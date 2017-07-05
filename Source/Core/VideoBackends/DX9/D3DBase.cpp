@@ -250,7 +250,6 @@ void Enumerate()
     a.aa_levels.clear();
     a.resolutions.clear();
     D3D->GetAdapterIdentifier(i, 0, &a.ident);
-    bool isNvidia = a.ident.VendorId == VENDOR_NVIDIA;
 
     // Add SuperSamples modes
     a.aa_levels.push_back(AALevel("None", D3DMULTISAMPLE_NONE, 0));
@@ -332,7 +331,7 @@ void Enumerate()
       int found = -1;
       for (int x = 0; x < (int)a.resolutions.size(); x++)
       {
-        if (a.resolutions[x].xres == mode.Width && a.resolutions[x].yres == mode.Height)
+        if (a.resolutions[x].xres == static_cast<int>(mode.Width) && a.resolutions[x].yres == static_cast<int>(mode.Height))
         {
           found = x;
           break;

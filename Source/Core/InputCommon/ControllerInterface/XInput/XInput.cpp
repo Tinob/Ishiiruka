@@ -16,27 +16,27 @@ static const struct
 {
   const char* const name;
   const WORD bitmask;
-} named_buttons[] = { {"Button A", XINPUT_GAMEPAD_A},
-                                         {"Button B", XINPUT_GAMEPAD_B},
-                                         {"Button X", XINPUT_GAMEPAD_X},
-                                         {"Button Y", XINPUT_GAMEPAD_Y},
-                                         {"Pad N", XINPUT_GAMEPAD_DPAD_UP},
-                                         {"Pad S", XINPUT_GAMEPAD_DPAD_DOWN},
-                                         {"Pad W", XINPUT_GAMEPAD_DPAD_LEFT},
-                                         {"Pad E", XINPUT_GAMEPAD_DPAD_RIGHT},
-                                         {"Start", XINPUT_GAMEPAD_START},
-                                         {"Back", XINPUT_GAMEPAD_BACK},
-                                         {"Shoulder L", XINPUT_GAMEPAD_LEFT_SHOULDER},
-                                         {"Shoulder R", XINPUT_GAMEPAD_RIGHT_SHOULDER},
-                                         {"Guide", XINPUT_GAMEPAD_GUIDE},
-                                         {"Thumb L", XINPUT_GAMEPAD_LEFT_THUMB},
-                                         {"Thumb R", XINPUT_GAMEPAD_RIGHT_THUMB} };
+} named_buttons[] = {{"Button A", XINPUT_GAMEPAD_A},
+                     {"Button B", XINPUT_GAMEPAD_B},
+                     {"Button X", XINPUT_GAMEPAD_X},
+                     {"Button Y", XINPUT_GAMEPAD_Y},
+                     {"Pad N", XINPUT_GAMEPAD_DPAD_UP},
+                     {"Pad S", XINPUT_GAMEPAD_DPAD_DOWN},
+                     {"Pad W", XINPUT_GAMEPAD_DPAD_LEFT},
+                     {"Pad E", XINPUT_GAMEPAD_DPAD_RIGHT},
+                     {"Start", XINPUT_GAMEPAD_START},
+                     {"Back", XINPUT_GAMEPAD_BACK},
+                     {"Shoulder L", XINPUT_GAMEPAD_LEFT_SHOULDER},
+                     {"Shoulder R", XINPUT_GAMEPAD_RIGHT_SHOULDER},
+                     {"Guide", XINPUT_GAMEPAD_GUIDE},
+                     {"Thumb L", XINPUT_GAMEPAD_LEFT_THUMB},
+                     {"Thumb R", XINPUT_GAMEPAD_RIGHT_THUMB}};
 
-static const char* const named_triggers[] = { "Trigger L", "Trigger R" };
+static const char* const named_triggers[] = {"Trigger L", "Trigger R"};
 
-static const char* const named_axes[] = { "Left X", "Left Y", "Right X", "Right Y" };
+static const char* const named_axes[] = {"Left X", "Left Y", "Right X", "Right Y"};
 
-static const char* const named_motors[] = { "Motor L", "Motor R" };
+static const char* const named_motors[] = {"Motor L", "Motor R"};
 
 static HMODULE hXInput = nullptr;
 
@@ -67,7 +67,7 @@ void Init()
     }
 
     PXInputGetCapabilities =
-      (XInputGetCapabilities_t)::GetProcAddress(hXInput, "XInputGetCapabilities");
+        (XInputGetCapabilities_t)::GetProcAddress(hXInput, "XInputGetCapabilities");
     PXInputSetState = (XInputSetState_t)::GetProcAddress(hXInput, "XInputSetState");
 
     // Ordinal 100 is the same as XInputGetState, except it doesn't dummy out the guide
@@ -117,7 +117,7 @@ Device::Device(const XINPUT_CAPABILITIES& caps, u8 index) : m_subtype(caps.SubTy
   {
     // Guide button is never reported in caps
     if ((named_buttons[i].bitmask & caps.Gamepad.wButtons) ||
-      ((named_buttons[i].bitmask & XINPUT_GAMEPAD_GUIDE) && haveGuideButton))
+        ((named_buttons[i].bitmask & XINPUT_GAMEPAD_GUIDE) && haveGuideButton))
       AddInput(new Button(i, m_state_in.Gamepad.wButtons));
   }
 

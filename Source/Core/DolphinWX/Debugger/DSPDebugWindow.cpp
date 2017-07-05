@@ -31,8 +31,8 @@
 static DSPDebuggerLLE* m_DebuggerFrame = nullptr;
 
 DSPDebuggerLLE::DSPDebuggerLLE(wxWindow* parent, wxWindowID id)
-  : wxPanel(parent, id, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _("DSP LLE Debugger")),
-  m_CachedStepCounter(-1), m_toolbar_item_size(FromDIP(wxSize(16, 16)))
+    : wxPanel(parent, id, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _("DSP LLE Debugger")),
+      m_CachedStepCounter(UINT64_MAX), m_toolbar_item_size(FromDIP(wxSize(16, 16)))
 {
   Bind(wxEVT_MENU, &DSPDebuggerLLE::OnChangeState, this, ID_RUNTOOL, ID_SHOWPCTOOL);
 
@@ -43,32 +43,32 @@ DSPDebuggerLLE::DSPDebuggerLLE(wxWindow* parent, wxWindowID id)
   m_mgr.SetFlags(wxAUI_MGR_DEFAULT | wxAUI_MGR_LIVE_RESIZE);
 
   m_Toolbar =
-    new DolphinAuiToolBar(this, ID_TOOLBAR, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_TEXT);
+      new DolphinAuiToolBar(this, ID_TOOLBAR, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_TEXT);
   m_Toolbar->AddTool(ID_RUNTOOL, _("Pause"),
-    wxArtProvider::GetBitmap(wxART_TICK_MARK, wxART_OTHER, m_toolbar_item_size));
+                     wxArtProvider::GetBitmap(wxART_TICK_MARK, wxART_OTHER, m_toolbar_item_size));
   // i18n: Here, "Step" is a verb. This function is used for
   // going through code step by step.
   m_Toolbar->AddTool(ID_STEPTOOL, _("Step"),
-    wxArtProvider::GetBitmap(wxART_GO_DOWN, wxART_OTHER, m_toolbar_item_size));
+                     wxArtProvider::GetBitmap(wxART_GO_DOWN, wxART_OTHER, m_toolbar_item_size));
   m_Toolbar->AddTool(
-    // i18n: Here, PC is an acronym for program counter, not personal computer.
-    ID_SHOWPCTOOL, _("Show PC"),
-    wxArtProvider::GetBitmap(wxART_GO_TO_PARENT, wxART_OTHER, m_toolbar_item_size));
+      // i18n: Here, PC is an acronym for program counter, not personal computer.
+      ID_SHOWPCTOOL, _("Show PC"),
+      wxArtProvider::GetBitmap(wxART_GO_TO_PARENT, wxART_OTHER, m_toolbar_item_size));
   m_Toolbar->AddSeparator();
 
   m_addr_txtctrl = new wxTextCtrl(m_Toolbar, wxID_ANY, wxEmptyString, wxDefaultPosition,
-    wxDefaultSize, wxTE_PROCESS_ENTER);
+                                  wxDefaultSize, wxTE_PROCESS_ENTER);
   m_addr_txtctrl->Bind(wxEVT_TEXT_ENTER, &DSPDebuggerLLE::OnAddrBoxChange, this);
 
   m_Toolbar->AddControl(m_addr_txtctrl);
   m_Toolbar->Realize();
 
   m_SymbolList = new wxListBox(this, wxID_ANY, wxDefaultPosition, wxDLG_UNIT(this, wxSize(100, 80)),
-    0, nullptr, wxLB_SORT);
+                               0, nullptr, wxLB_SORT);
   m_SymbolList->Bind(wxEVT_LISTBOX, &DSPDebuggerLLE::OnSymbolListChange, this);
 
   m_MainNotebook = new wxAuiNotebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
-    wxAUI_NB_TOP | wxAUI_NB_TAB_SPLIT | wxAUI_NB_TAB_MOVE);
+                                     wxAUI_NB_TOP | wxAUI_NB_TAB_SPLIT | wxAUI_NB_TAB_MOVE);
 
   wxPanel* code_panel = new wxPanel(m_MainNotebook, wxID_ANY);
   wxBoxSizer* code_sizer = new wxBoxSizer(wxVERTICAL);
@@ -89,17 +89,17 @@ DSPDebuggerLLE::DSPDebuggerLLE(wxWindow* parent, wxWindowID id)
 
   // add the panes to the manager
   m_mgr.AddPane(m_Toolbar,
-    wxAuiPaneInfo().ToolbarPane().Top().LeftDockable(false).RightDockable(false));
+                wxAuiPaneInfo().ToolbarPane().Top().LeftDockable(false).RightDockable(false));
 
   m_mgr.AddPane(m_SymbolList,
-    wxAuiPaneInfo().Left().CloseButton(false).Caption(_("Symbols")).Dockable(true));
+                wxAuiPaneInfo().Left().CloseButton(false).Caption(_("Symbols")).Dockable(true));
 
   m_mgr.AddPane(
-    m_MainNotebook,
-    wxAuiPaneInfo().Name("m_MainNotebook").Center().CloseButton(false).MaximizeButton(true));
+      m_MainNotebook,
+      wxAuiPaneInfo().Name("m_MainNotebook").Center().CloseButton(false).MaximizeButton(true));
 
   m_mgr.AddPane(m_Regs,
-    wxAuiPaneInfo().Right().CloseButton(false).Caption(_("Registers")).Dockable(true));
+                wxAuiPaneInfo().Right().CloseButton(false).Caption(_("Registers")).Dockable(true));
 
   m_mgr.GetArtProvider()->SetFont(wxAUI_DOCKART_CAPTION_FONT, DebuggerFont);
   UpdateState();
@@ -179,14 +179,14 @@ void DSPDebuggerLLE::UpdateState()
   {
     m_Toolbar->SetToolLabel(ID_RUNTOOL, _("Pause"));
     m_Toolbar->SetToolBitmap(
-      ID_RUNTOOL, wxArtProvider::GetBitmap(wxART_TICK_MARK, wxART_OTHER, m_toolbar_item_size));
+        ID_RUNTOOL, wxArtProvider::GetBitmap(wxART_TICK_MARK, wxART_OTHER, m_toolbar_item_size));
     m_Toolbar->EnableTool(ID_STEPTOOL, false);
   }
   else
   {
     m_Toolbar->SetToolLabel(ID_RUNTOOL, _("Run"));
     m_Toolbar->SetToolBitmap(
-      ID_RUNTOOL, wxArtProvider::GetBitmap(wxART_GO_FORWARD, wxART_OTHER, m_toolbar_item_size));
+        ID_RUNTOOL, wxArtProvider::GetBitmap(wxART_GO_FORWARD, wxART_OTHER, m_toolbar_item_size));
     m_Toolbar->EnableTool(ID_STEPTOOL, true);
   }
   m_Toolbar->Realize();

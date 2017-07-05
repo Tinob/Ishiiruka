@@ -2,6 +2,8 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Core/CoreTiming.h"
+
 #include <algorithm>
 #include <cinttypes>
 #include <mutex>
@@ -18,7 +20,6 @@
 
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
-#include "Core/CoreTiming.h"
 #include "Core/PowerPC/PowerPC.h"
 
 #include "VideoCommon/Fifo.h"
@@ -104,11 +105,11 @@ EventType* RegisterEvent(const std::string& name, TimedCallback callback)
   // check for existing type with same name.
   // we want event type names to remain unique so that we can use them for serialization.
   _assert_msg_(POWERPC, s_event_types.find(name) == s_event_types.end(),
-    "CoreTiming Event \"%s\" is already registered. Events should only be registered "
-    "during Init to avoid breaking save states.",
-    name.c_str());
+               "CoreTiming Event \"%s\" is already registered. Events should only be registered "
+               "during Init to avoid breaking save states.",
+               name.c_str());
 
-  auto info = s_event_types.emplace(name, EventType{ callback, nullptr });
+  auto info = s_event_types.emplace(name, EventType{callback, nullptr});
   EventType* event_type = &info.first->second;
   event_type->name = &info.first->first;
   return event_type;
@@ -189,8 +190,8 @@ void DoState(PointerWrap& p)
       else
       {
         WARN_LOG(POWERPC,
-          "Lost event from savestate because its type, \"%s\", has not been registered.",
-          name.c_str());
+                 "Lost event from savestate because its type, \"%s\", has not been registered.",
+                 name.c_str());
         ev.type = s_ev_lost;
       }
     }
@@ -240,7 +241,7 @@ void ScheduleEvent(s64 cycles_into_future, EventType* event_type, u64 userdata, 
   {
     from_cpu_thread = from == FromThread::CPU;
     _assert_msg_(POWERPC, from_cpu_thread == Core::IsCPUThread(),
-      "ScheduleEvent from wrong thread (%s)", from_cpu_thread ? "CPU" : "non-CPU");
+                 "ScheduleEvent from wrong thread (%s)", from_cpu_thread ? "CPU" : "non-CPU");
   }
 
   if (from_cpu_thread)
@@ -251,7 +252,7 @@ void ScheduleEvent(s64 cycles_into_future, EventType* event_type, u64 userdata, 
     if (!s_is_global_timer_sane)
       ForceExceptionCheck(cycles_into_future);
 
-    s_event_queue.emplace_back(Event{ timeout, s_event_fifo_id++, userdata, event_type });
+    s_event_queue.emplace_back(Event{timeout, s_event_fifo_id++, userdata, event_type});
     std::push_heap(s_event_queue.begin(), s_event_queue.end(), std::greater<Event>());
   }
   else
@@ -259,19 +260,19 @@ void ScheduleEvent(s64 cycles_into_future, EventType* event_type, u64 userdata, 
     if (Core::WantsDeterminism())
     {
       ERROR_LOG(POWERPC, "Someone scheduled an off-thread \"%s\" event while netplay or "
-        "movie play/record was active.  This is likely to cause a desync.",
-        event_type->name->c_str());
+                         "movie play/record was active.  This is likely to cause a desync.",
+                event_type->name->c_str());
     }
 
     std::lock_guard<std::mutex> lk(s_ts_write_lock);
-    s_ts_queue.Push(Event{ g.global_timer + cycles_into_future, 0, userdata, event_type });
+    s_ts_queue.Push(Event{g.global_timer + cycles_into_future, 0, userdata, event_type});
   }
 }
 
 void RemoveEvent(EventType* event_type)
 {
   auto itr = std::remove_if(s_event_queue.begin(), s_event_queue.end(),
-    [&](const Event& e) { return e.type == event_type; });
+                            [&](const Event& e) { return e.type == event_type; });
 
   // Removing random items breaks the invariant so we have to re-establish it.
   if (itr != s_event_queue.end())
@@ -352,7 +353,7 @@ void Advance()
   if (!s_event_queue.empty())
   {
     g.slice_length = static_cast<int>(
-      std::min<s64>(s_event_queue.front().time - g.global_timer, MAX_SLICE_LENGTH));
+        std::min<s64>(s_event_queue.front().time - g.global_timer, MAX_SLICE_LENGTH));
   }
 
   PowerPC::ppcState.downcount = CyclesToDowncount(g.slice_length);
@@ -371,7 +372,7 @@ void LogPendingEvents()
   for (const Event& ev : clone)
   {
     INFO_LOG(POWERPC, "PENDING: Now: %" PRId64 " Pending: %" PRId64 " Type: %s", g.global_timer,
-      ev.time, ev.type->name->c_str());
+             ev.time, ev.type->name->c_str());
   }
 }
 
@@ -409,7 +410,7 @@ std::string GetScheduledEventsSummary()
   for (const Event& ev : clone)
   {
     text += StringFromFormat("%s : %" PRIi64 " %016" PRIx64 "\n", ev.type->name->c_str(), ev.time,
-      ev.userdata);
+                             ev.userdata);
   }
   return text;
 }

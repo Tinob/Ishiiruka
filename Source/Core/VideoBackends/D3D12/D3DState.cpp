@@ -84,7 +84,7 @@ public:
       native = g_vertex_manager->CreateNativeVertexFormat(native_vtx_decl);
     }
 
-    desc.InputLayout = reinterpret_cast<D3DVertexFormat*>(native.get())->GetActiveInputLayout();
+    desc.InputLayout = static_cast<D3DVertexFormat*>(native.get())->GetActiveInputLayout();
 
     desc.CachedPSO.CachedBlobSizeInBytes = value_size;
     desc.CachedPSO.pCachedBlob = value;
@@ -109,7 +109,7 @@ public:
     small_desc.ps_bytecode = desc.PS;
     small_desc.hs_bytecode = desc.HS;
     small_desc.ds_bytecode = desc.DS;
-    small_desc.input_Layout = reinterpret_cast<D3DVertexFormat*>(native.get());
+    small_desc.input_Layout = static_cast<D3DVertexFormat*>(native.get());
     small_desc.sample_count = key.sample_desc.Count;
     gx_state_cache.m_small_pso_map[small_desc] = pso;
   }

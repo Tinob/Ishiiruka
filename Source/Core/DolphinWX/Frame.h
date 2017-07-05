@@ -6,6 +6,7 @@
 
 #include <array>
 #include <cstddef>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -13,10 +14,12 @@
 #include <wx/frame.h>
 #include <wx/image.h>
 #include <wx/panel.h>
+#include <wx/string.h>
 #include <wx/timer.h>
 
 #include "Common/CommonTypes.h"
 #include "Common/Event.h"
+#include "Core/ConfigManager.h"
 #include "DolphinWX/Globals.h"
 
 #if defined(HAVE_X11) && HAVE_X11
@@ -27,8 +30,10 @@
 #include <IOKit/pwr_mgt/IOPMLib.h>
 #endif
 
+struct BootParameters;
+
 // Class declarations
-class CGameListCtrl;
+class GameListCtrl;
 class CCodeWindow;
 class CConfigMain;
 class CLogWindow;
@@ -49,8 +54,8 @@ class CRenderFrame : public wxFrame
 {
 public:
   CRenderFrame(wxFrame* parent, wxWindowID id = wxID_ANY, const wxString& title = "Dolphin",
-    const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize,
-    long style = wxDEFAULT_FRAME_STYLE);
+               const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize,
+               long style = wxDEFAULT_FRAME_STYLE);
 
   bool ShowFullScreen(bool show, long style = wxFULLSCREEN_ALL) override;
 
@@ -72,9 +77,9 @@ class CFrame : public CRenderFrame
 {
 public:
   CFrame(wxFrame* parent, wxWindowID id = wxID_ANY, const wxString& title = "Dolphin",
-    wxRect geometry = wxDefaultSize, bool use_debugger = false, bool batch_mode = false,
-    bool show_log_window = false,
-    long style = wxDEFAULT_FRAME_STYLE | wxNO_FULL_REPAINT_ON_RESIZE);
+         wxRect geometry = wxDefaultSize, bool use_debugger = false, bool batch_mode = false,
+         bool show_log_window = false,
+         long style = wxDEFAULT_FRAME_STYLE | wxNO_FULL_REPAINT_ON_RESIZE);
 
   virtual ~CFrame();
 
@@ -93,10 +98,11 @@ public:
 
   void DoStop();
   void UpdateGUI();
-  void UpdateGameList();
+  void GameListRefresh();
+  void GameListRescan(bool purge_cache = false);
   void ToggleLogWindow(bool bShow);
   void ToggleLogConfigWindow(bool bShow);
-  void StatusBarMessage(const char* Text, ...);
+  void StatusBarMessage(const char* format, ...);
   void ClearStatusBar();
   void BootGame(const std::string& filename);
   bool RendererHasFocus();
@@ -138,7 +144,7 @@ private:
     ADD_PANE_CENTER
   };
 
-  CGameListCtrl* m_game_list_ctrl = nullptr;
+  GameListCtrl* m_game_list_ctrl = nullptr;
   CConfigMain* m_main_config_dialog = nullptr;
   wxPanel* m_panel = nullptr;
   CRenderFrame* m_render_frame = nullptr;
@@ -183,7 +189,7 @@ private:
   void InitializeTASDialogs();
   void InitializeCoreCallbacks();
 
-  void StartGame(const std::string& filename);
+  void StartGame(std::unique_ptr<BootParameters> boot);
   void SetDebuggerStartupParameters() const;
 
   // Utility
@@ -216,7 +222,7 @@ private:
   void OnFloatingPageClosed(wxCloseEvent& event);
   void DoFloatNotebookPage(wxWindowID Id);
   wxFrame* CreateParentFrame(wxWindowID Id = wxID_ANY, const wxString& title = "",
-    wxWindow* = nullptr);
+                             wxWindow* = nullptr);
 
   void AddPane(int dir);
   void UpdateCurrentPerspective();
@@ -233,7 +239,7 @@ private:
   WXLRESULT MSWWindowProc(WXUINT nMsg, WXWPARAM wParam, WXLPARAM lParam);
 #endif
 
-  // Screensaver
+// Screensaver
 #ifdef __APPLE__
   IOPMAssertionID m_power_assertion = kIOPMNullAssertionID;
 #endif
@@ -247,10 +253,9 @@ private:
   void DoFullscreen(bool enable_fullscreen);
   void DoExclusiveFullscreen(bool enable_fullscreen);
   void ToggleDisplayMode(bool bFullscreen);
-  bool TriggerSTMPowerEvent();
   void OnStopped();
   void OnRenderWindowSizeRequest(int width, int height);
-  void UpdateTitle(const std::string& str);
+  void UpdateTitle(const wxString& str);
   static void ConnectWiimote(int wm_idx, bool connect);
 
   // Event functions
@@ -262,7 +267,8 @@ private:
   void OnHelp(wxCommandEvent& event);
 
   void OnReloadThemeBitmaps(wxCommandEvent& event);
-  void OnReloadGameList(wxCommandEvent& event);
+  void OnRefreshGameList(wxCommandEvent& event);
+  void OnRescanGameList(wxCommandEvent& event);
 
   void OnUpdateInterpreterMenuItem(wxUpdateUIEvent& event);
 
@@ -327,6 +333,10 @@ private:
   void OnImportSave(wxCommandEvent& event);
   void OnExportAllSaves(wxCommandEvent& event);
 
+  void OnLoadGameCubeIPLJAP(wxCommandEvent& event);
+  void OnLoadGameCubeIPLUSA(wxCommandEvent& event);
+  void OnLoadGameCubeIPLEUR(wxCommandEvent& event);
+
   void OnNetPlay(wxCommandEvent& event);
 
   void OnShowCheatsWindow(wxCommandEvent& event);
@@ -335,6 +345,7 @@ private:
   void OnUninstallWAD(wxCommandEvent& event);
   void OnImportBootMiiBackup(wxCommandEvent& event);
   void OnExtractCertificates(wxCommandEvent& event);
+  void OnPerformOnlineWiiUpdate(wxCommandEvent& event);
   void OnFifoPlayer(wxCommandEvent& event);
   void OnConnectWiimote(wxCommandEvent& event);
   void GameListChanged(wxCommandEvent& event);

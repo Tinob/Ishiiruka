@@ -2,7 +2,6 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
-#include <array>
 #include <cstddef>
 #include <map>
 #include <memory>
@@ -18,7 +17,7 @@ namespace Config
 const std::string& Section::NULL_STRING = "";
 
 Section::Section(LayerType layer, System system, const std::string& name)
-  : m_layer(layer), m_system(system), m_name(name)
+    : m_layer(layer), m_system(system), m_name(name)
 {
 }
 
@@ -81,7 +80,7 @@ void Section::Set(const std::string& key, bool newValue)
 }
 
 void Section::Set(const std::string& key, const std::string& newValue,
-  const std::string& defaultValue)
+                  const std::string& defaultValue)
 {
   if (newValue != defaultValue)
     Set(key, newValue);
@@ -96,7 +95,7 @@ void Section::SetLines(const std::vector<std::string>& lines)
 }
 
 bool Section::Get(const std::string& key, std::string* value,
-  const std::string& default_value) const
+                  const std::string& default_value) const
 {
   const auto& it = m_values.find(key);
   if (it != m_values.end())
@@ -232,7 +231,7 @@ void Section::ClearDirty()
 }
 
 RecursiveSection::RecursiveSection(LayerType layer, System system, const std::string& name)
-  : Section(layer, system, name)
+    : Section(layer, system, name)
 {
 }
 
@@ -252,15 +251,9 @@ bool RecursiveSection::Exists(const std::string& key) const
 }
 
 bool RecursiveSection::Get(const std::string& key, std::string* value,
-  const std::string& default_value) const
+                           const std::string& default_value) const
 {
-  static constexpr std::array<LayerType, 7> search_order = { {
-      // Skip the meta layer
-      LayerType::CurrentRun, LayerType::CommandLine, LayerType::Movie, LayerType::Netplay,
-      LayerType::LocalGame, LayerType::GlobalGame, LayerType::Base,
-} };
-
-  for (auto layer_id : search_order)
+  for (auto layer_id : SEARCH_ORDER)
   {
     auto layers_it = Config::GetLayers()->find(layer_id);
     if (layers_it == Config::GetLayers()->end())

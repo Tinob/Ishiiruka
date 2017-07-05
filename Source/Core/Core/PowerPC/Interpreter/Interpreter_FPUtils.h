@@ -14,7 +14,7 @@
 #include "Core/PowerPC/PowerPC.h"
 
 const u64 PPC_NAN_U64 = 0x7ff8000000000000ull;
-const double PPC_NAN = *(double* const)& PPC_NAN_U64;
+const double PPC_NAN = *(double* const) & PPC_NAN_U64;
 
 // the 4 less-significand bits in FPSCR[FPRF]
 enum FPCC

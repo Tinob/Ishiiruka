@@ -17,7 +17,7 @@ namespace Device
 ReturnCode BluetoothStub::Open(const OpenRequest& request)
 {
   PanicAlertT("Bluetooth passthrough mode is enabled, but Dolphin was built without libusb."
-    " Passthrough mode cannot be used.");
+              " Passthrough mode cannot be used.");
   return IPC_ENOENT;
 }
 

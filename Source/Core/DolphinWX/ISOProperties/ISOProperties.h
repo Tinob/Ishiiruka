@@ -5,6 +5,7 @@
 #pragma once
 
 #include <cstddef>
+#include <functional>
 #include <memory>
 #include <set>
 #include <string>
@@ -30,7 +31,7 @@ class wxTextCtrl;
 
 namespace DiscIO
 {
-class IVolume;
+class Volume;
 }
 
 namespace Gecko
@@ -52,15 +53,15 @@ class CISOProperties : public wxDialog
 {
 public:
   CISOProperties(const GameListItem& game_list_item, wxWindow* parent, wxWindowID id = wxID_ANY,
-    const wxString& title = _("Properties"), const wxPoint& pos = wxDefaultPosition,
-    const wxSize& size = wxDefaultSize,
-    long style = wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER);
+                 const wxString& title = _("Properties"), const wxPoint& pos = wxDefaultPosition,
+                 const wxSize& size = wxDefaultSize,
+                 long style = wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER);
   virtual ~CISOProperties();
 
 private:
   DECLARE_EVENT_TABLE();
 
-  std::unique_ptr<DiscIO::IVolume> m_open_iso;
+  std::unique_ptr<DiscIO::Volume> m_open_iso;
 
   std::vector<PatchEngine::Patch> onFrame;
   PHackData m_PHack_Data;
@@ -163,5 +164,5 @@ private:
   long GetElementStyle(const char* section, const char* key);
   void SetCheckboxValueFromGameini(const char* section, const char* key, wxCheckBox* checkbox);
   void SaveGameIniValueFrom3StateCheckbox(const char* section, const char* key,
-    wxCheckBox* checkbox);
+                                          wxCheckBox* checkbox);
 };

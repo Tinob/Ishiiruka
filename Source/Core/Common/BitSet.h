@@ -40,14 +40,9 @@ public:
   class Ref
   {
   public:
-    constexpr Ref(Ref&& other) : m_bs(other.m_bs), m_mask(other.m_mask)
-    {}
-    constexpr Ref(BitSet* bs, IntTy mask) : m_bs(bs), m_mask(mask)
-    {}
-    constexpr operator bool() const
-    {
-      return (m_bs->m_val & m_mask) != 0;
-    }
+    constexpr Ref(Ref&& other) : m_bs(other.m_bs), m_mask(other.m_mask) {}
+    constexpr Ref(BitSet* bs, IntTy mask) : m_bs(bs), m_mask(mask) {}
+    constexpr operator bool() const { return (m_bs->m_val & m_mask) != 0; }
     bool operator=(bool set)
     {
       m_bs->m_val = (m_bs->m_val & ~m_mask) | (set ? m_mask : 0);
@@ -63,10 +58,8 @@ public:
   class Iterator
   {
   public:
-    constexpr Iterator(const Iterator& other) : m_val(other.m_val), m_bit(other.m_bit)
-    {}
-    constexpr Iterator(IntTy val, int bit) : m_val(val), m_bit(bit)
-    {}
+    constexpr Iterator(const Iterator& other) : m_val(other.m_val), m_bit(other.m_bit) {}
+    constexpr Iterator(IntTy val, int bit) : m_val(val), m_bit(bit) {}
     Iterator& operator=(Iterator other)
     {
       new (this) Iterator(other);
@@ -92,27 +85,16 @@ public:
       ++*this;
       return other;
     }
-    constexpr int operator*() const
-    {
-      return m_bit;
-    }
-    constexpr bool operator==(Iterator other) const
-    {
-      return m_bit == other.m_bit;
-    }
-    constexpr bool operator!=(Iterator other) const
-    {
-      return m_bit != other.m_bit;
-    }
+    constexpr int operator*() const { return m_bit; }
+    constexpr bool operator==(Iterator other) const { return m_bit == other.m_bit; }
+    constexpr bool operator!=(Iterator other) const { return m_bit != other.m_bit; }
   private:
     IntTy m_val;
     int m_bit;
   };
 
-  constexpr BitSet() : m_val(0)
-  {}
-  constexpr explicit BitSet(IntTy val) : m_val(val)
-  {}
+  constexpr BitSet() : m_val(0) {}
+  constexpr explicit BitSet(IntTy val) : m_val(val) {}
   BitSet(std::initializer_list<int> init)
   {
     m_val = 0;
@@ -125,78 +107,27 @@ public:
     return BitSet(count == sizeof(IntTy) * 8 ? ~(IntTy)0 : (((IntTy)1 << count) - 1));
   }
 
-  Ref operator[](size_t bit)
-  {
-    return Ref(this, (IntTy)1 << bit);
-  }
-  constexpr const Ref operator[](size_t bit) const
-  {
-    return (*const_cast<BitSet*>(this))[bit];
-  }
-  constexpr bool operator==(BitSet other) const
-  {
-    return m_val == other.m_val;
-  }
-  constexpr bool operator!=(BitSet other) const
-  {
-    return m_val != other.m_val;
-  }
-  constexpr bool operator<(BitSet other) const
-  {
-    return m_val < other.m_val;
-  }
-  constexpr bool operator>(BitSet other) const
-  {
-    return m_val > other.m_val;
-  }
-  constexpr BitSet operator|(BitSet other) const
-  {
-    return BitSet(m_val | other.m_val);
-  }
-  constexpr BitSet operator&(BitSet other) const
-  {
-    return BitSet(m_val & other.m_val);
-  }
-  constexpr BitSet operator^(BitSet other) const
-  {
-    return BitSet(m_val ^ other.m_val);
-  }
-  constexpr BitSet operator~() const
-  {
-    return BitSet(~m_val);
-  }
-  constexpr explicit operator bool() const
-  {
-    return m_val != 0;
-  }
-  BitSet& operator|=(BitSet other)
-  {
-    return *this = *this | other;
-  }
-  BitSet& operator&=(BitSet other)
-  {
-    return *this = *this & other;
-  }
-  BitSet& operator^=(BitSet other)
-  {
-    return *this = *this ^ other;
-  }
+  Ref operator[](size_t bit) { return Ref(this, (IntTy)1 << bit); }
+  constexpr const Ref operator[](size_t bit) const { return (*const_cast<BitSet*>(this))[bit]; }
+  constexpr bool operator==(BitSet other) const { return m_val == other.m_val; }
+  constexpr bool operator!=(BitSet other) const { return m_val != other.m_val; }
+  constexpr bool operator<(BitSet other) const { return m_val < other.m_val; }
+  constexpr bool operator>(BitSet other) const { return m_val > other.m_val; }
+  constexpr BitSet operator|(BitSet other) const { return BitSet(m_val | other.m_val); }
+  constexpr BitSet operator&(BitSet other) const { return BitSet(m_val & other.m_val); }
+  constexpr BitSet operator^(BitSet other) const { return BitSet(m_val ^ other.m_val); }
+  constexpr BitSet operator~() const { return BitSet(~m_val); }
+  constexpr explicit operator bool() const { return m_val != 0; }
+  BitSet& operator|=(BitSet other) { return *this = *this | other; }
+  BitSet& operator&=(BitSet other) { return *this = *this & other; }
+  BitSet& operator^=(BitSet other) { return *this = *this ^ other; }
   // Warning: Even though on modern CPUs this is a single fast instruction,
   // Dolphin's official builds do not currently assume POPCNT support on x86,
   // so slower explicit bit twiddling is generated.  Still should generally
   // be faster than a loop.
-  constexpr unsigned int Count() const
-  {
-    return CountSetBits(m_val);
-  }
-  constexpr Iterator begin() const
-  {
-    return ++Iterator(m_val, 0);
-  }
-  constexpr Iterator end() const
-  {
-    return Iterator(m_val, -1);
-  }
+  constexpr unsigned int Count() const { return CountSetBits(m_val); }
+  constexpr Iterator begin() const { return ++Iterator(m_val, 0); }
+  constexpr Iterator end() const { return Iterator(m_val, -1); }
   IntTy m_val;
 };
 }

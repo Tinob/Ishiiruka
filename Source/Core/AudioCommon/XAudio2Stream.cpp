@@ -16,7 +16,7 @@
 struct StreamingVoiceContext : public IXAudio2VoiceCallback
 {
 private:
-  CMixer* const m_mixer;
+  Mixer* const m_mixer;
   Common::Event& m_sound_sync_event;
   IXAudio2SourceVoice* m_source_voice;
   std::unique_ptr<BYTE[]> xaudio_buffer;
@@ -24,9 +24,8 @@ private:
   void SubmitBuffer(PBYTE buf_data);
 
 public:
-  StreamingVoiceContext(IXAudio2* pXAudio2, CMixer* pMixer, Common::Event& pSyncEvent);
-
-  ~StreamingVoiceContext();
+  StreamingVoiceContext(IXAudio2* pXAudio2, Mixer* pMixer, Common::Event& pSyncEvent);
+  virtual ~StreamingVoiceContext();
 
   void Stop();
   void Play();
@@ -57,10 +56,10 @@ void StreamingVoiceContext::SubmitBuffer(PBYTE buf_data)
   m_source_voice->SubmitSourceBuffer(&buf);
 }
 
-StreamingVoiceContext::StreamingVoiceContext(IXAudio2* pXAudio2, CMixer* pMixer,
-  Common::Event& pSyncEvent)
-  : m_mixer(pMixer), m_sound_sync_event(pSyncEvent),
-  xaudio_buffer(new BYTE[NUM_BUFFERS * BUFFER_SIZE_BYTES]())
+StreamingVoiceContext::StreamingVoiceContext(IXAudio2* pXAudio2, Mixer* pMixer,
+                                             Common::Event& pSyncEvent)
+    : m_mixer(pMixer), m_sound_sync_event(pSyncEvent),
+      xaudio_buffer(new BYTE[NUM_BUFFERS * BUFFER_SIZE_BYTES]())
 {
   WAVEFORMATEXTENSIBLE wfx = {};
 
@@ -78,7 +77,7 @@ StreamingVoiceContext::StreamingVoiceContext(IXAudio2* pXAudio2, CMixer* pMixer,
   // create source voice
   HRESULT hr;
   if (FAILED(hr = pXAudio2->CreateSourceVoice(&m_source_voice, &wfx.Format, XAUDIO2_VOICE_NOSRC,
-    1.0f, this)))
+                                              1.0f, this)))
   {
     PanicAlert("XAudio2 CreateSourceVoice failed: %#X", hr);
     return;
@@ -158,8 +157,8 @@ bool XAudio2::InitLibrary()
 }
 
 XAudio2::XAudio2()
-  : m_mastering_voice(nullptr), m_volume(1.0f),
-  m_cleanup_com(SUCCEEDED(CoInitializeEx(nullptr, COINIT_MULTITHREADED)))
+    : m_mastering_voice(nullptr), m_volume(1.0f),
+      m_cleanup_com(SUCCEEDED(CoInitializeEx(nullptr, COINIT_MULTITHREADED)))
 {
 }
 
@@ -197,7 +196,7 @@ bool XAudio2::Start()
   m_mastering_voice->SetVolume(m_volume);
 
   m_voice_context = std::unique_ptr<StreamingVoiceContext>(
-    new StreamingVoiceContext(m_xaudio2.get(), m_mixer.get(), m_sound_sync_event));
+      new StreamingVoiceContext(m_xaudio2.get(), m_mixer.get(), m_sound_sync_event));
 
   return true;
 }

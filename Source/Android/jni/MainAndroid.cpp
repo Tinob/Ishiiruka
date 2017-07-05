@@ -23,7 +23,9 @@
 #include "Common/FileUtil.h"
 #include "Common/GL/GLInterfaceBase.h"
 #include "Common/Logging/LogManager.h"
+#include "Common/MsgHandler.h"
 
+#include "Core/Boot/Boot.h"
 #include "Core/BootManager.h"
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
@@ -191,7 +193,7 @@ static inline u32 GetPixel(u32* buffer, unsigned int x, unsigned int y)
 
 static bool LoadBanner(std::string filename, u32* Banner)
 {
-  std::unique_ptr<DiscIO::IVolume> pVolume(DiscIO::CreateVolumeFromFilename(filename));
+  std::unique_ptr<DiscIO::Volume> pVolume(DiscIO::CreateVolumeFromFilename(filename));
 
   if (pVolume != nullptr)
   {
@@ -229,7 +231,7 @@ static bool LoadBanner(std::string filename, u32* Banner)
 
 static int GetCountry(std::string filename)
 {
-  std::unique_ptr<DiscIO::IVolume> pVolume(DiscIO::CreateVolumeFromFilename(filename));
+  std::unique_ptr<DiscIO::Volume> pVolume(DiscIO::CreateVolumeFromFilename(filename));
 
   if (pVolume != nullptr)
   {
@@ -245,7 +247,7 @@ static int GetCountry(std::string filename)
 
 static int GetPlatform(std::string filename)
 {
-  std::unique_ptr<DiscIO::IVolume> pVolume(DiscIO::CreateVolumeFromFilename(filename));
+  std::unique_ptr<DiscIO::Volume> pVolume(DiscIO::CreateVolumeFromFilename(filename));
 
   if (pVolume != nullptr)
   {
@@ -271,7 +273,7 @@ static std::string GetTitle(std::string filename)
   __android_log_print(ANDROID_LOG_WARN, DOLPHIN_TAG, "Getting Title for file: %s",
                       filename.c_str());
 
-  std::unique_ptr<DiscIO::IVolume> pVolume(DiscIO::CreateVolumeFromFilename(filename));
+  std::unique_ptr<DiscIO::Volume> pVolume(DiscIO::CreateVolumeFromFilename(filename));
 
   if (pVolume != nullptr)
   {
@@ -314,7 +316,7 @@ static std::string GetDescription(std::string filename)
   __android_log_print(ANDROID_LOG_WARN, DOLPHIN_TAG, "Getting Description for file: %s",
                       filename.c_str());
 
-  std::unique_ptr<DiscIO::IVolume> volume(DiscIO::CreateVolumeFromFilename(filename));
+  std::unique_ptr<DiscIO::Volume> volume(DiscIO::CreateVolumeFromFilename(filename));
 
   if (volume != nullptr)
   {
@@ -349,7 +351,7 @@ static std::string GetGameId(std::string filename)
 {
   __android_log_print(ANDROID_LOG_WARN, DOLPHIN_TAG, "Getting ID for file: %s", filename.c_str());
 
-  std::unique_ptr<DiscIO::IVolume> volume(DiscIO::CreateVolumeFromFilename(filename));
+  std::unique_ptr<DiscIO::Volume> volume(DiscIO::CreateVolumeFromFilename(filename));
   if (volume == nullptr)
     return std::string();
 
@@ -363,7 +365,7 @@ static std::string GetCompany(std::string filename)
   __android_log_print(ANDROID_LOG_WARN, DOLPHIN_TAG, "Getting Company for file: %s",
                       filename.c_str());
 
-  std::unique_ptr<DiscIO::IVolume> volume(DiscIO::CreateVolumeFromFilename(filename));
+  std::unique_ptr<DiscIO::Volume> volume(DiscIO::CreateVolumeFromFilename(filename));
   if (volume == nullptr)
     return std::string();
 
@@ -376,7 +378,7 @@ static u64 GetFileSize(std::string filename)
 {
   __android_log_print(ANDROID_LOG_WARN, DOLPHIN_TAG, "Getting size of file: %s", filename.c_str());
 
-  std::unique_ptr<DiscIO::IVolume> volume(DiscIO::CreateVolumeFromFilename(filename));
+  std::unique_ptr<DiscIO::Volume> volume(DiscIO::CreateVolumeFromFilename(filename));
   if (volume == nullptr)
     return -1;
 
@@ -459,8 +461,8 @@ JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_SetUserDirec
     JNIEnv* env, jobject obj, jstring jDirectory);
 JNIEXPORT jstring JNICALL
 Java_org_dolphinemu_dolphinemu_NativeLibrary_GetUserDirectory(JNIEnv* env, jobject obj);
-JNIEXPORT jint JNICALL
-Java_org_dolphinemu_dolphinemu_NativeLibrary_DefaultCPUCore(JNIEnv* env, jobject obj);
+JNIEXPORT jint JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_DefaultCPUCore(JNIEnv* env,
+                                                                                   jobject obj);
 JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_SetProfiling(JNIEnv* env,
                                                                                  jobject obj,
                                                                                  jboolean enable);
@@ -793,7 +795,7 @@ JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_Run(JNIEnv* 
 
   // No use running the loop when booting fails
   s_have_wm_user_stop = false;
-  if (BootManager::BootCore(s_filename.c_str()))
+  if (BootManager::BootCore(BootParameters::GenerateFromFile(s_filename)))
   {
     static constexpr int TIMEOUT = 10000;
     static constexpr int WAIT_STEP = 25;

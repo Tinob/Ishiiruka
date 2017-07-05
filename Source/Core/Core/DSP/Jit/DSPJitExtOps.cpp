@@ -10,19 +10,19 @@
 using namespace Gen;
 
 /* It is safe to directly write to the address registers as they are
-     neither read not written by any extendable opcode. The same is true
-     for memory accesses.
-     It probably even is safe to write to all registers except for
-     SR, ACx.x, AXx.x and PROD, which may be modified by the main op.
+   neither read not written by any extendable opcode. The same is true
+   for memory accesses.
+   It probably even is safe to write to all registers except for
+   SR, ACx.x, AXx.x and PROD, which may be modified by the main op.
 
-     This code uses EBX to keep the values of the registers written by
-     the extended op so the main op can still access the old values.
-     storeIndex and storeIndex2 control where the lower and upper 16bits
-     of EBX are written to. Additionally, the upper 16bits can contain the
-     original SR so we can do sign extension in 40bit mode. There is only
-     the 'ld family of opcodes writing to two registers at the same time,
-     and those always are AXx.x, thus no need to leave space for SR for
-     sign extension.
+   This code uses EBX to keep the values of the registers written by
+   the extended op so the main op can still access the old values.
+   storeIndex and storeIndex2 control where the lower and upper 16bits
+   of EBX are written to. Additionally, the upper 16bits can contain the
+   original SR so we can do sign extension in 40bit mode. There is only
+   the 'ld family of opcodes writing to two registers at the same time,
+   and those always are AXx.x, thus no need to leave space for SR for
+   sign extension.
  */
 
 namespace DSP

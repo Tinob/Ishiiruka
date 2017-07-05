@@ -129,15 +129,15 @@ void Interpreter::oris(UGeckoInstruction inst)
 void Interpreter::subfic(UGeckoInstruction inst)
 {
   /*	u32 rra = ~rGPR[inst.RA];
-      s32 immediate = (s16)inst.SIMM_16 + 1;
+    s32 immediate = (s16)inst.SIMM_16 + 1;
 
   //	#define CALC_XER_CA(X,Y) (((X) + (Y) < X) ? SET_XER_CA : CLEAR_XER_CA)
-      if ((rra + immediate) < rra)
-          SetCarry(1);
-      else
-          SetCarry(0);
+    if ((rra + immediate) < rra)
+      SetCarry(1);
+    else
+      SetCarry(0);
 
-      rGPR[inst.RD] = rra - immediate;
+    rGPR[inst.RD] = rra - immediate;
   */
 
   s32 immediate = inst.SIMM_16;
@@ -154,7 +154,7 @@ void Interpreter::twi(UGeckoInstruction inst)
   DEBUG_LOG(POWERPC, "twi rA %x SIMM %x TO %0x", a, b, TO);
 
   if (((a < b) && (TO & 0x10)) || ((a > b) && (TO & 0x08)) || ((a == b) && (TO & 0x04)) ||
-    (((u32)a < (u32)b) && (TO & 0x02)) || (((u32)a > (u32)b) && (TO & 0x01)))
+      (((u32)a < (u32)b) && (TO & 0x02)) || (((u32)a > (u32)b) && (TO & 0x01)))
   {
     PowerPC::ppcState.Exceptions |= EXCEPTION_PROGRAM;
     PowerPC::CheckExceptions();
@@ -356,21 +356,10 @@ void Interpreter::srawx(UGeckoInstruction inst)
   else
   {
     int amount = rb & 0x1f;
-    if (amount == 0)
-    {
-      rGPR[inst.RA] = rGPR[inst.RS];
-      SetCarry(0);
-    }
-    else
-    {
-      s32 rrs = rGPR[inst.RS];
-      rGPR[inst.RA] = rrs >> amount;
+    s32 rrs = rGPR[inst.RS];
+    rGPR[inst.RA] = rrs >> amount;
 
-      if ((rrs < 0) && (rrs << (32 - amount)))
-        SetCarry(1);
-      else
-        SetCarry(0);
-    }
+    SetCarry(rrs < 0 && amount > 0 && (u32(rrs) << (32 - amount)) != 0);
   }
 
   if (inst.Rc)
@@ -381,21 +370,10 @@ void Interpreter::srawix(UGeckoInstruction inst)
 {
   int amount = inst.SH;
 
-  if (amount != 0)
-  {
-    s32 rrs = rGPR[inst.RS];
-    rGPR[inst.RA] = rrs >> amount;
+  s32 rrs = rGPR[inst.RS];
+  rGPR[inst.RA] = rrs >> amount;
 
-    if ((rrs < 0) && (rrs << (32 - amount)))
-      SetCarry(1);
-    else
-      SetCarry(0);
-  }
-  else
-  {
-    SetCarry(0);
-    rGPR[inst.RA] = rGPR[inst.RS];
-  }
+  SetCarry(rrs < 0 && amount > 0 && (u32(rrs) << (32 - amount)) != 0);
 
   if (inst.Rc)
     Helper_UpdateCR0(rGPR[inst.RA]);
@@ -419,7 +397,7 @@ void Interpreter::tw(UGeckoInstruction inst)
   DEBUG_LOG(POWERPC, "tw rA %0x rB %0x TO %0x", a, b, TO);
 
   if (((a < b) && (TO & 0x10)) || ((a > b) && (TO & 0x08)) || ((a == b) && (TO & 0x04)) ||
-    (((u32)a < (u32)b) && (TO & 0x02)) || (((u32)a > (u32)b) && (TO & 0x01)))
+      (((u32)a < (u32)b) && (TO & 0x02)) || (((u32)a > (u32)b) && (TO & 0x01)))
   {
     PowerPC::ppcState.Exceptions |= EXCEPTION_PROGRAM;
     PowerPC::CheckExceptions();
@@ -517,7 +495,7 @@ void Interpreter::divwx(UGeckoInstruction inst)
     }
 
     if (((u32)a & 0x80000000) && b == 0)
-      rGPR[inst.RD] = -1;
+      rGPR[inst.RD] = UINT32_MAX;
     else
       rGPR[inst.RD] = 0;
   }

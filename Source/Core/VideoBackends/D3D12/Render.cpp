@@ -422,19 +422,22 @@ void Renderer::PokeEFB(EFBAccessType type, const EfbPokeData* points, size_t num
   if (type == EFBAccessType::PokeColor)
   {
     // In the D3D12 backend, the rt/db/viewport is passed into DrawEFBPokeQuads, and set there.
+    auto rtv = FramebufferManager::GetEFBColorTexture()->GetRTV();
     D3D::DrawEFBPokeQuads(
       type,
       points,
       num_points,
       &g_reset_blend_desc,
       &g_reset_depth_desc,
-      &FramebufferManager::GetEFBColorTexture()->GetRTV(),
+      &rtv,
       nullptr,
       FramebufferManager::GetEFBColorTexture()->GetMultisampled()
     );
   }
   else // if (type == POKE_Z)
   {
+    auto rtv = FramebufferManager::GetEFBColorTexture()->GetRTV();
+    auto dsv = FramebufferManager::GetEFBDepthTexture()->GetDSV();
     FramebufferManager::GetEFBDepthTexture()->TransitionToResourceState(D3D::current_command_list, D3D12_RESOURCE_STATE_DEPTH_WRITE);
     D3D::DrawEFBPokeQuads(
       type,
@@ -442,8 +445,8 @@ void Renderer::PokeEFB(EFBAccessType type, const EfbPokeData* points, size_t num
       num_points,
       &s_clear_blend_descs[CLEAR_BLEND_DESC_ALL_CHANNELS_DISABLED],
       &s_clear_depth_descs[CLEAR_DEPTH_DESC_DEPTH_ENABLED_WRITES_ENABLED],
-      &FramebufferManager::GetEFBColorTexture()->GetRTV(),
-      &FramebufferManager::GetEFBDepthTexture()->GetDSV(),
+      &rtv,
+      &dsv,
       FramebufferManager::GetEFBColorTexture()->GetMultisampled()
     );
   }
@@ -587,7 +590,8 @@ void Renderer::ReinterpretPixelData(unsigned int convtype)
   D3D::SetViewportAndScissor(0, 0, GetTargetWidth(), GetTargetHeight());
 
   FramebufferManager::GetEFBColorTempTexture()->TransitionToResourceState(D3D::current_command_list, D3D12_RESOURCE_STATE_RENDER_TARGET);
-  D3D::current_command_list->OMSetRenderTargets(1, &FramebufferManager::GetEFBColorTempTexture()->GetRTV(), FALSE, nullptr);
+  auto rtv = FramebufferManager::GetEFBColorTempTexture()->GetRTV();
+  D3D::current_command_list->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
 
   D3D::SetPointCopySampler();
   D3D::DrawShadedTexQuad(
@@ -690,10 +694,11 @@ void Renderer::SwapImpl(u32 xfb_addr, u32 fb_width, u32 fb_stride, u32 fb_height
   TargetRectangle target_rc = GetTargetRectangle();
 
   D3D::GetBackBuffer()->TransitionToResourceState(D3D::current_command_list, D3D12_RESOURCE_STATE_RENDER_TARGET);
-  D3D::current_command_list->OMSetRenderTargets(1, &D3D::GetBackBuffer()->GetRTV(), FALSE, nullptr);
+  auto rtv = D3D::GetBackBuffer()->GetRTV();
+  D3D::current_command_list->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
 
   float clear_color[4] = { 0.f, 0.f, 0.f, 1.f };
-  D3D::current_command_list->ClearRenderTargetView(D3D::GetBackBuffer()->GetRTV(), clear_color, 0, nullptr);
+  D3D::current_command_list->ClearRenderTargetView(rtv, clear_color, 0, nullptr);
   // Copy the framebuffer to screen.	
   const TargetSize dst_size = { m_backbuffer_width, m_backbuffer_height };
   DrawFrame(target_rc, rc, xfb_addr, xfb_source_list, xfb_count, D3D::GetBackBuffer(), dst_size, fb_width, fb_stride, fb_height, gamma);
@@ -769,12 +774,11 @@ void Renderer::SwapImpl(u32 xfb_addr, u32 fb_width, u32 fb_stride, u32 fb_height
     PixelShaderManager::SetEfbScaleChanged();
 
     D3D::GetBackBuffer()->TransitionToResourceState(D3D::current_command_list, D3D12_RESOURCE_STATE_RENDER_TARGET);
-    D3D::current_command_list->OMSetRenderTargets(1, &D3D::GetBackBuffer()->GetRTV(), FALSE, nullptr);
+    rtv = D3D::GetBackBuffer()->GetRTV();
+    D3D::current_command_list->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
 
     g_framebuffer_manager.reset();
     g_framebuffer_manager = std::make_unique<FramebufferManager>(m_target_width, m_target_height);
-    const float clear_color[4] = { 0.f, 0.f, 0.f, 1.f };
-
     FramebufferManager::GetEFBColorTexture()->TransitionToResourceState(D3D::current_command_list, D3D12_RESOURCE_STATE_RENDER_TARGET);
     D3D::current_command_list->ClearRenderTargetView(FramebufferManager::GetEFBColorTexture()->GetRTV(), clear_color, 0, nullptr);
 
@@ -837,7 +841,8 @@ void Renderer::DrawEFB(const TargetRectangle& t_rc, const EFBRectangle& source_r
     tex = reinterpret_cast<D3DTexture2D*>(new_blit_tex);
 
     // Restore render target to backbuffer
-    D3D::current_command_list->OMSetRenderTargets(1, &D3D::GetBackBuffer()->GetRTV(), FALSE, nullptr);
+    auto rtv = D3D::GetBackBuffer()->GetRTV();
+    D3D::current_command_list->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
     D3D::SetLinearCopySampler();
   }
   if (blit_depth_tex == nullptr
@@ -909,9 +914,6 @@ void Renderer::DrawRealXFB(const TargetRectangle& target_rc, const XFBSourceBase
     source_rc.bottom = xfb_source->sourceRc.bottom;
 
     // use virtual xfb with offset
-    int xfb_height = xfb_source->srcHeight;
-    int xfb_width = xfb_source->srcWidth;
-
     drawRc = target_rc;
     source_rc.right -= fb_stride - fb_width;
 
@@ -1013,9 +1015,9 @@ void Renderer::ApplyState(bool use_dst_alpha)
     FramebufferManager::RestoreEFBRenderTargets();
     m_target_dirty = false;
   }
-  if (D3D::command_list_mgr->GetCommandListDirtyState(COMMAND_LIST_STATE_PSO) || m_previous_vertex_format != reinterpret_cast<D3DVertexFormat*>(VertexLoaderManager::GetCurrentVertexFormat()))
+  if (D3D::command_list_mgr->GetCommandListDirtyState(COMMAND_LIST_STATE_PSO) || m_previous_vertex_format != static_cast<D3DVertexFormat*>(VertexLoaderManager::GetCurrentVertexFormat()))
   {
-    m_previous_vertex_format = reinterpret_cast<D3DVertexFormat*>(VertexLoaderManager::GetCurrentVertexFormat());
+    m_previous_vertex_format = static_cast<D3DVertexFormat*>(VertexLoaderManager::GetCurrentVertexFormat());
 
     D3D12_PRIMITIVE_TOPOLOGY_TYPE topologyType = ShaderCache::GetCurrentPrimitiveTopology();
     RasterizerState modifiableRastState = gx_state.raster;
@@ -1042,7 +1044,7 @@ void Renderer::ApplyState(bool use_dst_alpha)
         gx_state.blend,                             // BlendState BlendState;
         modifiableRastState,                        // RasterizerState RasterizerState;
         gx_state.zmode,                             // ZMode DepthStencilState;
-        g_ActiveConfig.iMultisamples
+        static_cast<int>(g_ActiveConfig.iMultisamples)
     };
 
     if (use_dst_alpha)
@@ -1408,11 +1410,13 @@ void Renderer::PrepareFrameDumpBuffer(u32 width, u32 height)
     return;
   }
   m_frame_dump_buffer_size = screenshot_buffer_size;
+  CD3DX12_HEAP_PROPERTIES hprop(D3D12_HEAP_TYPE_READBACK);
+  auto rdesc = CD3DX12_RESOURCE_DESC::Buffer(m_frame_dump_buffer_size);
   CheckHR(
     D3D::device->CreateCommittedResource(
-      &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK),
+      &hprop,
       D3D12_HEAP_FLAG_NONE,
-      &CD3DX12_RESOURCE_DESC::Buffer(m_frame_dump_buffer_size),
+      &rdesc,
       D3D12_RESOURCE_STATE_COPY_DEST,
       nullptr,
       IID_PPV_ARGS(&m_frame_dump_buffer)

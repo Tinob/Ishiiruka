@@ -64,10 +64,10 @@ void PSTextureEncoder::Init()
   );
 
   D3D12_CLEAR_VALUE optimized_clear_value = { DXGI_FORMAT_B8G8R8A8_UNORM,{ 0.0f, 0.0f, 0.0f, 1.0f } };
-
+  CD3DX12_HEAP_PROPERTIES hprops(D3D12_HEAP_TYPE_DEFAULT);
   CheckHR(
     D3D::device->CreateCommittedResource(
-      &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+      &hprops,
       D3D12_HEAP_FLAG_NONE,
       &out_tex_desc,
       D3D12_RESOURCE_STATE_COPY_SOURCE,
@@ -79,16 +79,17 @@ void PSTextureEncoder::Init()
   D3D::SetDebugObjectName12(m_out.Get(), "efb encoder output texture");
 
   InitializeRTV();
-
+  hprops = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK);
+  auto rdesc = CD3DX12_RESOURCE_DESC::Buffer(
+    Common::AlignUpSizePow2(static_cast<unsigned int>(out_tex_desc.Width) * 4, D3D12_TEXTURE_DATA_PITCH_ALIGNMENT) *
+    out_tex_desc.Height
+  );
   // Create output staging buffer
   CheckHR(
     D3D::device->CreateCommittedResource(
-      &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK),
+      &hprops,
       D3D12_HEAP_FLAG_NONE,
-      &CD3DX12_RESOURCE_DESC::Buffer(
-        Common::AlignUpSizePow2(static_cast<unsigned int>(out_tex_desc.Width) * 4, D3D12_TEXTURE_DATA_PITCH_ALIGNMENT) *
-        out_tex_desc.Height
-      ),
+      &rdesc,
       D3D12_RESOURCE_STATE_COPY_DEST,
       nullptr,
       IID_PPV_ARGS(m_out_readback_buffer.ReleaseAndGetAddressOf())
@@ -99,12 +100,13 @@ void PSTextureEncoder::Init()
 
   // Create constant buffer for uploading data to shaders. Need to align to 256 bytes.
   unsigned int encode_params_buffer_size = (sizeof(EFBEncodeParams) + 0xff) & ~0xff;
-
+  hprops = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+  rdesc = CD3DX12_RESOURCE_DESC::Buffer(encode_params_buffer_size);
   CheckHR(
     D3D::device->CreateCommittedResource(
-      &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+      &hprops,
       D3D12_HEAP_FLAG_NONE,
-      &CD3DX12_RESOURCE_DESC::Buffer(encode_params_buffer_size),
+      &rdesc,
       D3D12_RESOURCE_STATE_GENERIC_READ,
       nullptr,
       IID_PPV_ARGS(m_encode_params_buffer.ReleaseAndGetAddressOf())

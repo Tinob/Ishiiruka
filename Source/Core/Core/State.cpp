@@ -2,6 +2,8 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Core/State.h"
+
 #include <lzo/lzo1x.h>
 #include <map>
 #include <mutex>
@@ -13,6 +15,7 @@
 #include "Common/ChunkFile.h"
 #include "Common/CommonTypes.h"
 #include "Common/Event.h"
+#include "Common/File.h"
 #include "Common/FileUtil.h"
 #include "Common/MsgHandler.h"
 #include "Common/ScopeGuard.h"
@@ -30,7 +33,6 @@
 #include "Core/Movie.h"
 #include "Core/NetPlayClient.h"
 #include "Core/PowerPC/PowerPC.h"
-#include "Core/State.h"
 
 #include "VideoCommon/AVIDump.h"
 #include "VideoCommon/OnScreenDisplay.h"
@@ -71,23 +73,23 @@ static Common::Event g_compressAndDumpStateSyncEvent;
 static std::thread g_save_thread;
 
 // Don't forget to increase this after doing changes on the savestate system
-static const u32 STATE_VERSION = 86;  // Last changed in PR 2353
+static const u32 STATE_VERSION = 87;  // Last changed in PR 5707
 
 // Maps savestate versions to Dolphin versions.
 // Versions after 42 don't need to be added to this list,
 // because they save the exact Dolphin version to savestates.
 static const std::map<u32, std::pair<std::string, std::string>> s_old_versions = {
-  // The 16 -> 17 change modified the size of StateHeader,
-  // so versions older than that can't even be decompressed anymore
-  {17, {"3.5-1311", "3.5-1364"}}, {18, {"3.5-1366", "3.5-1371"}}, {19, {"3.5-1372", "3.5-1408"}},
-  {20, {"3.5-1409", "4.0-704"}},  {21, {"4.0-705", "4.0-889"}},   {22, {"4.0-905", "4.0-1871"}},
-  {23, {"4.0-1873", "4.0-1900"}}, {24, {"4.0-1902", "4.0-1919"}}, {25, {"4.0-1921", "4.0-1936"}},
-  {26, {"4.0-1939", "4.0-1959"}}, {27, {"4.0-1961", "4.0-2018"}}, {28, {"4.0-2020", "4.0-2291"}},
-  {29, {"4.0-2293", "4.0-2360"}}, {30, {"4.0-2362", "4.0-2628"}}, {31, {"4.0-2632", "4.0-3331"}},
-  {32, {"4.0-3334", "4.0-3340"}}, {33, {"4.0-3342", "4.0-3373"}}, {34, {"4.0-3376", "4.0-3402"}},
-  {35, {"4.0-3409", "4.0-3603"}}, {36, {"4.0-3610", "4.0-4480"}}, {37, {"4.0-4484", "4.0-4943"}},
-  {38, {"4.0-4963", "4.0-5267"}}, {39, {"4.0-5279", "4.0-5525"}}, {40, {"4.0-5531", "4.0-5809"}},
-  {41, {"4.0-5811", "4.0-5923"}}, {42, {"4.0-5925", "4.0-5946"}} };
+    // The 16 -> 17 change modified the size of StateHeader,
+    // so versions older than that can't even be decompressed anymore
+    {17, {"3.5-1311", "3.5-1364"}}, {18, {"3.5-1366", "3.5-1371"}}, {19, {"3.5-1372", "3.5-1408"}},
+    {20, {"3.5-1409", "4.0-704"}},  {21, {"4.0-705", "4.0-889"}},   {22, {"4.0-905", "4.0-1871"}},
+    {23, {"4.0-1873", "4.0-1900"}}, {24, {"4.0-1902", "4.0-1919"}}, {25, {"4.0-1921", "4.0-1936"}},
+    {26, {"4.0-1939", "4.0-1959"}}, {27, {"4.0-1961", "4.0-2018"}}, {28, {"4.0-2020", "4.0-2291"}},
+    {29, {"4.0-2293", "4.0-2360"}}, {30, {"4.0-2362", "4.0-2628"}}, {31, {"4.0-2632", "4.0-3331"}},
+    {32, {"4.0-3334", "4.0-3340"}}, {33, {"4.0-3342", "4.0-3373"}}, {34, {"4.0-3376", "4.0-3402"}},
+    {35, {"4.0-3409", "4.0-3603"}}, {36, {"4.0-3610", "4.0-4480"}}, {37, {"4.0-4484", "4.0-4943"}},
+    {38, {"4.0-4963", "4.0-5267"}}, {39, {"4.0-5279", "4.0-5525"}}, {40, {"4.0-5531", "4.0-5809"}},
+    {41, {"4.0-5811", "4.0-5923"}}, {42, {"4.0-5925", "4.0-5946"}}};
 
 enum
 {
@@ -156,15 +158,14 @@ static std::string DoState(PointerWrap& p)
     return version_created_by;
   }
 
-  bool is_wii =
-    SConfig::GetInstance().bWii || SConfig::GetInstance().m_BootType == SConfig::BOOT_MIOS;
+  bool is_wii = SConfig::GetInstance().bWii || SConfig::GetInstance().m_is_mios;
   const bool is_wii_currently = is_wii;
   p.Do(is_wii);
   if (is_wii != is_wii_currently)
   {
     OSD::AddMessage(StringFromFormat("Cannot load a savestate created under %s mode in %s mode",
-      is_wii ? "Wii" : "GC", is_wii_currently ? "Wii" : "GC"),
-      OSD::Duration::NORMAL, OSD::Color::RED);
+                                     is_wii ? "Wii" : "GC", is_wii_currently ? "Wii" : "GC"),
+                    OSD::Duration::NORMAL, OSD::Color::RED);
     p.SetMode(PointerWrap::MODE_MEASURE);
     return version_created_by;
   }
@@ -191,7 +192,7 @@ static std::string DoState(PointerWrap& p)
   Gecko::DoState(p);
   p.DoMarker("Gecko");
 
-#if defined(HAVE_LIBAV) || defined(_WIN32)
+#if defined(HAVE_FFMPEG)
   AVIDump::DoState();
 #endif
 
@@ -485,7 +486,7 @@ static void LoadFileStateData(const std::string& filename, std::vector<u8>& ret_
   if (strncmp(SConfig::GetInstance().GetGameID().c_str(), header.gameID, 6))
   {
     Core::DisplayMessage(
-      StringFromFormat("State belongs to a different game (ID %.*s)", 6, header.gameID), 2000);
+        StringFromFormat("State belongs to a different game (ID %.*s)", 6, header.gameID), 2000);
     return;
   }
 
@@ -512,8 +513,8 @@ static void LoadFileStateData(const std::string& filename, std::vector<u8>& ret_
       {
         // This doesn't seem to happen anymore.
         PanicAlertT("Internal LZO Error - decompression failed (%d) (%li, %li) \n"
-          "Try loading the state again",
-          res, i, new_len);
+                    "Try loading the state again",
+                    res, i, new_len);
         return;
       }
 
@@ -591,7 +592,7 @@ void LoadAs(const std::string& filename)
       if (File::Exists(filename + ".dtm"))
         Movie::LoadInput(filename + ".dtm");
       else if (!Movie::IsJustStartingRecordingInputFromSaveState() &&
-        !Movie::IsJustStartingPlayingInputFromSaveState())
+               !Movie::IsJustStartingPlayingInputFromSaveState())
         Movie::EndPlayInput(false);
     }
     else
@@ -670,7 +671,7 @@ void Shutdown()
 static std::string MakeStateFilename(int number)
 {
   return StringFromFormat("%s%s.s%02i", File::GetUserPath(D_STATESAVES_IDX).c_str(),
-    SConfig::GetInstance().GetGameID().c_str(), number);
+                          SConfig::GetInstance().GetGameID().c_str(), number);
 }
 
 void Save(int slot, bool wait)

@@ -2,13 +2,11 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
-#include "Common/CommonPaths.h"
-#include "Common/Config/Config.h"
-#include "Common/FileUtil.h"
-#include "Common/IniFile.h"
-#include "Common/Logging/Log.h"
-
 #include "Core/ConfigLoaders/NetPlayConfigLoader.h"
+
+#include <memory>
+
+#include "Common/Config/Config.h"
 #include "Core/NetPlayProto.h"
 
 namespace ConfigLoaders
@@ -17,7 +15,7 @@ class NetPlayConfigLayerLoader final : public Config::ConfigLayerLoader
 {
 public:
   explicit NetPlayConfigLayerLoader(const NetSettings& settings)
-    : ConfigLayerLoader(Config::LayerType::Netplay), m_settings(settings)
+      : ConfigLayerLoader(Config::LayerType::Netplay), m_settings(settings)
   {
   }
 

@@ -21,9 +21,9 @@
 
 namespace FileMonitor
 {
-static const DiscIO::IVolume* s_volume;
+static const DiscIO::Volume* s_volume;
 static bool s_new_volume = false;
-static std::unique_ptr<DiscIO::IFileSystem> s_filesystem;
+static std::unique_ptr<DiscIO::FileSystem> s_filesystem;
 static DiscIO::Partition s_partition;
 static std::string s_previous_file;
 
@@ -53,7 +53,7 @@ static bool IsSoundFile(const std::string& filename)
   return extensions.find(extension) != extensions.end();
 }
 
-void SetFileSystem(const DiscIO::IVolume* volume)
+void SetFileSystem(const DiscIO::Volume* volume)
 {
   // Instead of creating the file system object right away, we will let Log
   // create it later once we know that it actually will get used
@@ -71,10 +71,11 @@ void Log(u64 offset, const DiscIO::Partition& partition)
   // If the volume or partition changed, load the filesystem of the new partition
   if (s_new_volume || s_partition != partition)
   {
-    // Wii discs don't have PARTITION_NONE filesystems, so let's not waste time trying to read one
+    // Discs with partitions don't have PARTITION_NONE filesystems,
+    // so let's not waste time trying to read one
     const bool reading_from_partition = partition != DiscIO::PARTITION_NONE;
-    const bool is_wii_disc = s_volume->GetVolumeType() == DiscIO::Platform::WII_DISC;
-    if (reading_from_partition != is_wii_disc)
+    const bool disc_has_partitions = !s_volume->GetPartitions().empty();
+    if (reading_from_partition != disc_has_partitions)
       return;
 
     s_new_volume = false;
@@ -87,28 +88,28 @@ void Log(u64 offset, const DiscIO::Partition& partition)
   if (!s_filesystem)
     return;
 
-  const std::string filename = s_filesystem->GetFileName(offset);
+  const std::unique_ptr<DiscIO::FileInfo> file_info = s_filesystem->FindFileInfo(offset);
 
   // Do nothing if no file was found at that offset
-  if (filename.empty())
+  if (!file_info)
     return;
+
+  const std::string path = file_info->GetPath();
 
   // Do nothing if we found the same file again
-  if (s_previous_file == filename)
+  if (s_previous_file == path)
     return;
 
-  const u64 size = s_filesystem->GetFileSize(filename);
-  const std::string size_string = ThousandSeparate(size / 1000, 7);
+  const std::string size_string = ThousandSeparate(file_info->GetSize() / 1000, 7);
 
-  const std::string log_string =
-    StringFromFormat("%s kB %s", size_string.c_str(), filename.c_str());
-  if (IsSoundFile(filename))
+  const std::string log_string = StringFromFormat("%s kB %s", size_string.c_str(), path.c_str());
+  if (IsSoundFile(path))
     INFO_LOG(FILEMON, "%s", log_string.c_str());
   else
     WARN_LOG(FILEMON, "%s", log_string.c_str());
 
   // Update the last accessed file
-  s_previous_file = filename;
+  s_previous_file = path;
 }
 
 }  // namespace FileMonitor

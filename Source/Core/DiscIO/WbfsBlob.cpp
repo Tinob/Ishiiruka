@@ -15,7 +15,7 @@
 #include "Common/Align.h"
 #include "Common/Assert.h"
 #include "Common/CommonTypes.h"
-#include "Common/FileUtil.h"
+#include "Common/File.h"
 #include "Common/MsgHandler.h"
 #include "Common/Swap.h"
 
@@ -26,7 +26,7 @@ static const u64 WII_SECTOR_COUNT = 143432 * 2;
 static const u64 WII_DISC_HEADER_SIZE = 256;
 
 WbfsFileReader::WbfsFileReader(File::IOFile file, const std::string& path)
-  : m_size(0), m_good(false)
+    : m_size(0), m_good(false)
 {
   if (!AddFileToList(std::move(file)))
     return;
@@ -38,7 +38,7 @@ WbfsFileReader::WbfsFileReader(File::IOFile file, const std::string& path)
   // Grab disc info (assume slot 0, checked in ReadHeader())
   m_wlba_table.resize(m_blocks_per_disc);
   m_files[0].file.Seek(m_hd_sector_size + WII_DISC_HEADER_SIZE /*+ i * m_disc_info_size*/,
-    SEEK_SET);
+                       SEEK_SET);
   m_files[0].file.ReadBytes(m_wlba_table.data(), m_blocks_per_disc * sizeof(u16));
   for (size_t i = 0; i < m_blocks_per_disc; i++)
     m_wlba_table[i] = Common::swap16(m_wlba_table[i]);
@@ -106,9 +106,9 @@ bool WbfsFileReader::ReadHeader()
     return false;
 
   m_blocks_per_disc =
-    (WII_SECTOR_COUNT * WII_SECTOR_SIZE + m_wbfs_sector_size - 1) / m_wbfs_sector_size;
+      (WII_SECTOR_COUNT * WII_SECTOR_SIZE + m_wbfs_sector_size - 1) / m_wbfs_sector_size;
   m_disc_info_size =
-    Common::AlignUp(WII_DISC_HEADER_SIZE + m_blocks_per_disc * sizeof(u16), m_hd_sector_size);
+      Common::AlignUp(WII_DISC_HEADER_SIZE + m_blocks_per_disc * sizeof(u16), m_hd_sector_size);
 
   return m_header.disc_table[0] != 0;
 }

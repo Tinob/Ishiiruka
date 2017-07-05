@@ -9,14 +9,11 @@
 
 namespace JitRegister
 {
-
 void Init(const std::string& perf_dir);
 void Shutdown();
-void RegisterV(const void* base_address, u32 code_size,
-  const char* format, va_list args);
+void RegisterV(const void* base_address, u32 code_size, const char* format, va_list args);
 
-inline void Register(const void* base_address, u32 code_size,
-  const char* format, ...)
+inline void Register(const void* base_address, u32 code_size, const char* format, ...)
 {
   va_list args;
   va_start(args, format);
@@ -24,8 +21,7 @@ inline void Register(const void* base_address, u32 code_size,
   va_end(args);
 }
 
-inline void Register(const void* start, const void* end,
-  const char* format, ...)
+inline void Register(const void* start, const void* end, const char* format, ...)
 {
   va_list args;
   va_start(args, format);
@@ -33,5 +29,4 @@ inline void Register(const void* start, const void* end,
   RegisterV(start, code_size, format, args);
   va_end(args);
 }
-
 }

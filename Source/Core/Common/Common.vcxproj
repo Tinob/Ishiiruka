@@ -12,6 +12,7 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C87A4178-44F6-49B2-B7AA-C79AF1B8C534}</ProjectGuid>
+    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Configuration">
@@ -36,7 +37,6 @@
   <PropertyGroup Label="UserMacros" />
   <ItemGroup>
     <ClInclude Include="Align.h" />
-    <ClInclude Include="AllocationMap.h" />
     <ClInclude Include="Analytics.h" />
     <ClInclude Include="Assert.h" />
     <ClInclude Include="Atomic.h" />
@@ -65,6 +65,7 @@
     <ClInclude Include="ENetUtil.h" />
     <ClInclude Include="Event.h" />
     <ClInclude Include="FifoQueue.h" />
+    <ClInclude Include="File.h" />
     <ClInclude Include="FileSearch.h" />
     <ClInclude Include="FileUtil.h" />
     <ClInclude Include="FixedSizeQueue.h" />
@@ -123,8 +124,10 @@
     <ClInclude Include="GL\GLInterface\WGL.h" />
     <ClInclude Include="GL\GLUtil.h" />
     <ClInclude Include="Hash.h" />
+    <ClInclude Include="HttpRequest.h" />
     <ClInclude Include="IniFile.h" />
     <ClInclude Include="JitRegister.h" />
+    <ClInclude Include="LdrWatcher.h" />
     <ClInclude Include="LinearDiskCache.h" />
     <ClInclude Include="MathUtil.h" />
     <ClInclude Include="MD5.h" />
@@ -163,10 +166,13 @@
     <ClCompile Include="Analytics.cpp" />
     <ClCompile Include="CDUtils.cpp" />
     <ClCompile Include="ColorUtil.cpp" />
+    <ClCompile Include="CommonFuncs.cpp" />
+    <ClCompile Include="CompatPatches.cpp" />
     <ClCompile Include="Config\Config.cpp" />
     <ClCompile Include="Config\Layer.cpp" />
     <ClCompile Include="Config\Section.cpp" />
     <ClCompile Include="ENetUtil.cpp" />
+    <ClCompile Include="File.cpp" />
     <ClCompile Include="FileSearch.cpp" />
     <ClCompile Include="FileUtil.cpp" />
     <ClCompile Include="GekkoDisassembler.cpp" />
@@ -175,14 +181,15 @@
     <ClCompile Include="GL\GLInterface\WGL.cpp" />
     <ClCompile Include="GL\GLUtil.cpp" />
     <ClCompile Include="Hash.cpp" />
+    <ClCompile Include="HttpRequest.cpp" />
     <ClCompile Include="IniFile.cpp" />
     <ClCompile Include="JitRegister.cpp" />
+    <ClCompile Include="LdrWatcher.cpp" />
     <ClCompile Include="Logging\ConsoleListenerWin.cpp" />
     <ClCompile Include="MathUtil.cpp" />
     <ClCompile Include="MD5.cpp" />
     <ClCompile Include="MemArena.cpp" />
     <ClCompile Include="MemoryUtil.cpp" />
-    <ClCompile Include="CommonFuncs.cpp" />
     <ClCompile Include="MsgHandler.cpp" />
     <ClCompile Include="NandPaths.cpp" />
     <ClCompile Include="Network.cpp" />
@@ -197,7 +204,6 @@
     <ClCompile Include="ThreadPool.cpp" />
     <ClCompile Include="Timer.cpp" />
     <ClCompile Include="TraversalClient.cpp" />
-    <ClCompile Include="ucrtFreadWorkaround.cpp" />
     <ClCompile Include="Version.cpp" />
     <ClCompile Include="x64ABI.cpp" />
     <ClCompile Include="x64CPUDetect.cpp" />
@@ -230,9 +236,6 @@
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="BitField.natvis" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="scmrev.h.in" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

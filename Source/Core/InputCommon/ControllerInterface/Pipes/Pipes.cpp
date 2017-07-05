@@ -25,11 +25,11 @@ namespace ciface
 namespace Pipes
 {
 static const std::array<std::string, 12> s_button_tokens{
-    {"A", "B", "X", "Y", "Z", "START", "L", "R", "D_UP", "D_DOWN", "D_LEFT", "D_RIGHT"} };
+    {"A", "B", "X", "Y", "Z", "START", "L", "R", "D_UP", "D_DOWN", "D_LEFT", "D_RIGHT"}};
 
-static const std::array<std::string, 2> s_shoulder_tokens{ {"L", "R"} };
+static const std::array<std::string, 2> s_shoulder_tokens{{"L", "R"}};
 
-static const std::array<std::string, 2> s_axis_tokens{ {"MAIN", "C"} };
+static const std::array<std::string, 2> s_axis_tokens{{"MAIN", "C"}};
 
 static double StringToDouble(const std::string& text)
 {
@@ -136,8 +136,7 @@ void PipeDevice::SetAxis(const std::string& entry, double value)
 
 void PipeDevice::ParseCommand(const std::string& command)
 {
-  std::vector<std::string> tokens;
-  SplitString(command, ' ', tokens);
+  const std::vector<std::string> tokens = SplitString(command, ' ');
   if (tokens.size() < 2 || tokens.size() > 4)
     return;
   if (tokens[0] == "PRESS" || tokens[0] == "RELEASE")

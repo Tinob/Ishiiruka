@@ -33,8 +33,8 @@ class ControlFinder
 {
 public:
   ControlFinder(const Core::DeviceContainer& container_, const Core::DeviceQualifier& default_,
-    const bool is_input_)
-    : container(container_), default_device(default_), is_input(is_input_)
+                const bool is_input_)
+      : container(container_), default_device(default_), is_input(is_input_)
   {
   }
   std::shared_ptr<Core::Device> FindDevice(ControlQualifier qualifier) const;

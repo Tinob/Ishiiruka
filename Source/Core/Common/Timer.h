@@ -18,7 +18,8 @@ public:
   void Stop();
   void Update();
 
-  // The time difference is always returned in milliseconds, regardless of alternative internal representation
+  // The time difference is always returned in milliseconds, regardless of alternative internal
+  // representation
   u64 GetTimeDifference();
   void AddTimeDifference();
 
@@ -48,4 +49,4 @@ private:
   bool m_Running;
 };
 
-} // Namespace Common
+}  // Namespace Common

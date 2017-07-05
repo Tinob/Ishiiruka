@@ -7,7 +7,6 @@
 
 namespace Common
 {
-
 template <typename T>
 constexpr T AlignUpSizePow2(T value, size_t size)
 {

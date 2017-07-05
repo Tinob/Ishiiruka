@@ -57,7 +57,7 @@ bool CompileShader(const char *code, u32 len, u8 **bytecode, u32 *bytecodelen, S
     char szTemp[MAX_PATH];
     sprintf(szTemp, "%sbad_%s_%04i.txt", File::GetUserPath(D_DUMP_IDX).c_str(), shader_type == vertex_shaer ? "vs" : "ps", num_failures++);
     std::ofstream file;
-    OpenFStream(file, szTemp, std::ios_base::out);
+    File::OpenFStream(file, szTemp, std::ios_base::out);
     file << code;
     file.close();
 

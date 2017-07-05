@@ -3,8 +3,8 @@
 // Refer to the license.txt file included.
 
 #ifdef _WIN32
-#include <io.h>
 #include <windows.h>
+#include <io.h>
 #endif
 
 #include <algorithm>
@@ -18,6 +18,7 @@
 #include <zlib.h>
 
 #include "Common/CommonTypes.h"
+#include "Common/File.h"
 #include "Common/FileUtil.h"
 #include "Common/Hash.h"
 #include "Common/Logging/Log.h"
@@ -32,7 +33,7 @@ namespace DiscIO
 bool IsGCZBlob(File::IOFile& file);
 
 CompressedBlobReader::CompressedBlobReader(File::IOFile file, const std::string& filename)
-  : m_file(std::move(file)), m_file_name(filename)
+    : m_file(std::move(file)), m_file_name(filename)
 {
   m_file_size = m_file.GetSize();
   m_file.Seek(0, SEEK_SET);
@@ -47,22 +48,22 @@ CompressedBlobReader::CompressedBlobReader(File::IOFile file, const std::string&
   m_file.ReadArray(m_hashes.data(), m_header.num_blocks);
 
   m_data_offset = (sizeof(CompressedBlobHeader)) +
-    (sizeof(u64)) * m_header.num_blocks     // skip block pointers
-    + (sizeof(u32)) * m_header.num_blocks;  // skip hashes
+                  (sizeof(u64)) * m_header.num_blocks     // skip block pointers
+                  + (sizeof(u32)) * m_header.num_blocks;  // skip hashes
 
-// A compressed block is never ever longer than a decompressed block, so just header.block_size
-// should be fine.
-// I still add some safety margin.
+  // A compressed block is never ever longer than a decompressed block, so just header.block_size
+  // should be fine.
+  // I still add some safety margin.
   const u32 zlib_buffer_size = m_header.block_size + 64;
   m_zlib_buffer.resize(zlib_buffer_size);
 }
 
 std::unique_ptr<CompressedBlobReader> CompressedBlobReader::Create(File::IOFile file,
-  const std::string& filename)
+                                                                   const std::string& filename)
 {
   if (IsGCZBlob(file))
     return std::unique_ptr<CompressedBlobReader>(
-      new CompressedBlobReader(std::move(file), filename));
+        new CompressedBlobReader(std::move(file), filename));
 
   return nullptr;
 }
@@ -105,7 +106,7 @@ bool CompressedBlobReader::GetBlock(u64 block_num, u8* out_ptr)
   if (!m_file.ReadBytes(m_zlib_buffer.data(), comp_block_size))
   {
     PanicAlertT("The disc image \"%s\" is truncated, some of the data is missing.",
-      m_file_name.c_str());
+                m_file_name.c_str());
     m_file.Clear();
     return false;
   }
@@ -114,8 +115,8 @@ bool CompressedBlobReader::GetBlock(u64 block_num, u8* out_ptr)
   u32 block_hash = HashAdler32(m_zlib_buffer.data(), comp_block_size);
   if (block_hash != m_hashes[block_num])
     PanicAlertT("The disc image \"%s\" is corrupt.\n"
-      "Hash of block %" PRIu64 " is %08x instead of %08x.",
-      m_file_name.c_str(), block_num, block_hash, m_hashes[block_num]);
+                "Hash of block %" PRIu64 " is %08x instead of %08x.",
+                m_file_name.c_str(), block_num, block_hash, m_hashes[block_num]);
 
   if (uncompressed)
   {
@@ -152,7 +153,7 @@ bool CompressedBlobReader::GetBlock(u64 block_num, u8* out_ptr)
 }
 
 bool CompressFileToBlob(const std::string& infile_path, const std::string& outfile_path,
-  u32 sub_type, int block_size, CompressCB callback, void* arg)
+                        u32 sub_type, int block_size, CompressCB callback, void* arg)
 {
   bool scrubbing = false;
 
@@ -173,9 +174,9 @@ bool CompressFileToBlob(const std::string& infile_path, const std::string& outfi
   if (!outfile)
   {
     PanicAlertT("Failed to open the output file \"%s\".\n"
-      "Check that you have permissions to write the target folder and that the media can "
-      "be written.",
-      outfile_path.c_str());
+                "Check that you have permissions to write the target folder and that the media can "
+                "be written.",
+                outfile_path.c_str());
     return false;
   }
 
@@ -185,7 +186,7 @@ bool CompressFileToBlob(const std::string& infile_path, const std::string& outfi
     if (!disc_scrubber.SetupScrub(infile_path, block_size))
     {
       PanicAlertT("\"%s\" failed to be scrubbed. Probably the image is corrupt.",
-        infile_path.c_str());
+                  infile_path.c_str());
       return false;
     }
 
@@ -236,8 +237,8 @@ bool CompressFileToBlob(const std::string& infile_path, const std::string& outfi
         ratio = (int)(100 * position / inpos);
 
       std::string temp =
-        StringFromFormat(GetStringT("%i of %i blocks. Compression ratio %i%%").c_str(), i,
-          header.num_blocks, ratio);
+          StringFromFormat(GetStringT("%i of %i blocks. Compression ratio %i%%").c_str(), i,
+                           header.num_blocks, ratio);
       bool was_cancelled = !callback(temp, (float)i / (float)header.num_blocks, arg);
       if (was_cancelled)
       {
@@ -295,8 +296,8 @@ bool CompressFileToBlob(const std::string& infile_path, const std::string& outfi
     if (!outfile.WriteBytes(write_buf, write_size))
     {
       PanicAlertT("Failed to write the output file \"%s\".\n"
-        "Check that you have enough space available on the target drive.",
-        outfile_path.c_str());
+                  "Check that you have enough space available on the target drive.",
+                  outfile_path.c_str());
       success = false;
       break;
     }
@@ -334,7 +335,7 @@ bool CompressFileToBlob(const std::string& infile_path, const std::string& outfi
 }
 
 bool DecompressBlobToFile(const std::string& infile_path, const std::string& outfile_path,
-  CompressCB callback, void* arg)
+                          CompressCB callback, void* arg)
 {
   std::unique_ptr<CompressedBlobReader> reader;
   {
@@ -358,9 +359,9 @@ bool DecompressBlobToFile(const std::string& infile_path, const std::string& out
   if (!outfile)
   {
     PanicAlertT("Failed to open the output file \"%s\".\n"
-      "Check that you have permissions to write the target folder and that the media can "
-      "be written.",
-      outfile_path.c_str());
+                "Check that you have permissions to write the target folder and that the media can "
+                "be written.",
+                outfile_path.c_str());
     return false;
   }
 
@@ -389,8 +390,8 @@ bool DecompressBlobToFile(const std::string& infile_path, const std::string& out
     if (!outfile.WriteBytes(buffer.data(), sz))
     {
       PanicAlertT("Failed to write the output file \"%s\".\n"
-        "Check that you have enough space available on the target drive.",
-        outfile_path.c_str());
+                  "Check that you have enough space available on the target drive.",
+                  outfile_path.c_str());
       success = false;
       break;
     }

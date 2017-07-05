@@ -8,7 +8,7 @@
 #include <string>
 #include <utility>
 
-#include "Common/FileUtil.h"
+#include "Common/File.h"
 #include "Common/Swap.h"
 
 namespace
@@ -27,15 +27,15 @@ template <typename T>
 void SplitInterval(T split_point, Interval<T> interval, Interval<T>* out_1, Interval<T>* out_2)
 {
   if (interval.start < split_point)
-    *out_1 = { interval.start, std::min(interval.length, split_point - interval.start) };
+    *out_1 = {interval.start, std::min(interval.length, split_point - interval.start)};
   else
-    *out_1 = { 0, 0 };
+    *out_1 = {0, 0};
 
   if (interval.End() > split_point)
-    *out_2 = { std::max(interval.start, split_point),
-                        std::min(interval.length, interval.End() - split_point) };
+    *out_2 = {std::max(interval.start, split_point),
+              std::min(interval.length, interval.End() - split_point)};
   else
-    *out_2 = { 0, 0 };
+    *out_2 = {0, 0};
 }
 
 u32 SubtractBE32(u32 minuend_be, u32 subtrahend_le)
@@ -74,13 +74,13 @@ TGCFileReader::TGCFileReader(File::IOFile file) : m_file(std::move(file))
   u32 header_size = Common::swap32(m_header.header_size);
   m_size = m_file.GetSize();
   m_file_offset = Common::swap32(m_header.unknown_important_2) -
-    Common::swap32(m_header.unknown_important_1) + header_size;
+                  Common::swap32(m_header.unknown_important_1) + header_size;
 }
 
 u64 TGCFileReader::GetDataSize() const
 {
   return m_size + Common::swap32(m_header.unknown_important_2) -
-    Common::swap32(m_header.unknown_important_1);
+         Common::swap32(m_header.unknown_important_1);
 }
 
 bool TGCFileReader::Read(u64 offset, u64 nbytes, u8* out_ptr)
@@ -109,7 +109,7 @@ bool TGCFileReader::Read(u64 offset, u64 nbytes, u8* out_ptr)
   if (!last_part.IsEmpty())
   {
     if (!InternalRead(last_part.start - m_file_offset, last_part.length,
-      out_ptr + (last_part.start - offset)))
+                      out_ptr + (last_part.start - offset)))
       return false;
   }
 

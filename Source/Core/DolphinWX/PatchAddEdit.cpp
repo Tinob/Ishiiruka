@@ -22,9 +22,9 @@
 #include "DolphinWX/WxUtils.h"
 
 CPatchAddEdit::CPatchAddEdit(int _selection, std::vector<PatchEngine::Patch>* _onFrame,
-  wxWindow* parent, wxWindowID id, const wxString& title,
-  const wxPoint& position, const wxSize& size, long style)
-  : wxDialog(parent, id, title, position, size, style), onFrame(_onFrame), selection(_selection)
+                             wxWindow* parent, wxWindowID id, const wxString& title,
+                             const wxPoint& position, const wxSize& size, long style)
+    : wxDialog(parent, id, title, position, size, style), onFrame(_onFrame), selection(_selection)
 {
   CreateGUIControls(selection);
 
@@ -72,14 +72,14 @@ void CPatchAddEdit::CreateGUIControls(int _selection)
   for (int i = 0; i < 3; ++i)
     wxArrayStringFor_EditPatchType.Add(StrToWxStr(PatchEngine::PatchTypeStrings[i]));
   EditPatchType = new wxRadioBox(this, wxID_ANY, _("Type"), wxDefaultPosition, wxDefaultSize,
-    wxArrayStringFor_EditPatchType, 3, wxRA_SPECIFY_COLS);
+                                 wxArrayStringFor_EditPatchType, 3, wxRA_SPECIFY_COLS);
   EditPatchType->SetSelection((int)tempEntries.at(0).type);
 
   wxStaticText* EditPatchValueText = new wxStaticText(this, wxID_ANY, _("Value:"));
   EditPatchValue = new wxTextCtrl(this, wxID_ANY);
   EditPatchValue->SetValue(
-    wxString::Format("%0*X", PatchEngine::GetPatchTypeCharLength(tempEntries.at(0).type),
-      tempEntries.at(0).value));
+      wxString::Format("%0*X", PatchEngine::GetPatchTypeCharLength(tempEntries.at(0).type),
+                       tempEntries.at(0).value));
 
   EntryAdd = new wxButton(this, wxID_ANY, _("Add"));
   EntryAdd->Bind(wxEVT_BUTTON, &CPatchAddEdit::AddEntry, this);
@@ -93,7 +93,7 @@ void CPatchAddEdit::CreateGUIControls(int _selection)
   sEditPatchName->Add(EditPatchNameText, 0, wxALIGN_CENTER_VERTICAL);
   sEditPatchName->Add(EditPatchName, 1, wxEXPAND | wxLEFT, space5);
   sbEntry = new wxStaticBoxSizer(wxVERTICAL, this,
-    wxString::Format(_("Entry 1/%d"), (int)tempEntries.size()));
+                                 wxString::Format(_("Entry 1/%d"), (int)tempEntries.size()));
   currentItem = 1;
 
   wxGridBagSizer* sgEntry = new wxGridBagSizer(space10, space10);
@@ -204,11 +204,11 @@ void CPatchAddEdit::RemoveEntry(wxCommandEvent& event)
 void CPatchAddEdit::UpdateEntryCtrls(PatchEngine::PatchEntry pE)
 {
   sbEntry->GetStaticBox()->SetLabel(
-    wxString::Format(_("Entry %d/%d"), currentItem, (int)tempEntries.size()));
+      wxString::Format(_("Entry %d/%d"), currentItem, (int)tempEntries.size()));
   EditPatchOffset->SetValue(wxString::Format("%08X", pE.address));
   EditPatchType->SetSelection(pE.type);
   EditPatchValue->SetValue(
-    wxString::Format("%0*X", PatchEngine::GetPatchTypeCharLength(pE.type), pE.value));
+      wxString::Format("%0*X", PatchEngine::GetPatchTypeCharLength(pE.type), pE.value));
 }
 
 bool CPatchAddEdit::UpdateTempEntryData(std::vector<PatchEngine::PatchEntry>::iterator iterEntry)
@@ -222,7 +222,7 @@ bool CPatchAddEdit::UpdateTempEntryData(std::vector<PatchEngine::PatchEntry>::it
     parsed_ok = false;
 
   PatchEngine::PatchType tempType = (*iterEntry).type =
-    (PatchEngine::PatchType)EditPatchType->GetSelection();
+      (PatchEngine::PatchType)EditPatchType->GetSelection();
 
   if (EditPatchValue->GetValue().ToULong(&value, 16))
   {

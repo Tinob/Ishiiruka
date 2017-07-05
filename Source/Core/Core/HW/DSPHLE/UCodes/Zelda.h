@@ -75,7 +75,7 @@ private:
   // we can do better here with very low risk. Why not? :)
   template <size_t N>
   s32 AddBuffersWithVolumeRamp(std::array<s16, N>* dst, const std::array<s16, N>& src, s32 vol,
-    s32 step)
+                               s32 step)
   {
     if (!vol && !step)
       return vol;

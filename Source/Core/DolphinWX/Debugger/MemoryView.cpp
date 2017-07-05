@@ -5,9 +5,9 @@
 #include "DolphinWX/Debugger/MemoryView.h"
 
 #include <algorithm>
-#include <cctype>
 #include <cmath>
 #include <cstring>
+#include <locale>
 #include <string>
 #include <wx/brush.h>
 #include <wx/clipbrd.h>
@@ -51,9 +51,9 @@ enum
 wxDEFINE_EVENT(DOLPHIN_EVT_MEMORY_VIEW_DATA_TYPE_CHANGED, wxCommandEvent);
 
 CMemoryView::CMemoryView(DebugInterface* debuginterface, wxWindow* parent)
-  : wxControl(parent, wxID_ANY), debugger(debuginterface), align(0), rowHeight(FromDIP(13)),
-  m_left_col_width(FromDIP(LEFT_COL_WIDTH)), selection(0), oldSelection(0), selecting(false),
-  memory(0), curAddress(debuginterface->GetPC()), m_data_type(MemoryDataType::U8)
+    : wxControl(parent, wxID_ANY), debugger(debuginterface), align(0), rowHeight(FromDIP(13)),
+      m_left_col_width(FromDIP(LEFT_COL_WIDTH)), selection(0), oldSelection(0), selecting(false),
+      memory(0), curAddress(debuginterface->GetPC()), m_data_type(MemoryDataType::U8)
 {
   Bind(wxEVT_PAINT, &CMemoryView::OnPaint, this);
   Bind(wxEVT_LEFT_DOWN, &CMemoryView::OnMouseDownL, this);
@@ -123,9 +123,9 @@ wxString CMemoryView::ReadMemoryAsString(u32 address) const
     str.reserve(4);
     for (unsigned int i = 0; i < 4; ++i)
     {
-      u8 byte = static_cast<u8>(mem_data >> (24 - i * 8));
-      if (std::isprint(byte))
-        str += static_cast<char>(byte);
+      char byte = static_cast<char>(mem_data >> (24 - i * 8) & 0xFF);
+      if (std::isprint(byte, std::locale::classic()))
+        str += byte;
       else
         str += ' ';
     }
@@ -149,7 +149,7 @@ wxString CMemoryView::ReadMemoryAsString(u32 address) const
       case MemoryDataType::U8:
       default:
         str += StringFromFormat(" %02X %02X %02X %02X", (word >> 24) & 0xFF, (word >> 16) & 0xFF,
-          (word >> 8) & 0xFF, word & 0xFF);
+                                (word >> 8) & 0xFF, word & 0xFF);
         break;
       case MemoryDataType::U16:
         str += StringFromFormat(" %04X %04X", (word >> 16) & 0xFFFF, word & 0xFFFF);
@@ -161,7 +161,8 @@ wxString CMemoryView::ReadMemoryAsString(u32 address) const
     }
   }
 
-  return StrToWxStr(str);
+  // Not a UTF-8 string
+  return wxString(str.c_str(), wxCSConv(wxFONTENCODING_CP1252), str.size());
 }
 
 void CMemoryView::OnMouseDownL(wxMouseEvent& event)
@@ -267,7 +268,7 @@ void CMemoryView::OnPopupMenu(wxCommandEvent& event)
   {
     wxClipboardLocker clipboard_lock;
     wxTheClipboard->SetData(new wxTextDataObject(
-      wxString::Format("%08x", debugger->ReadExtraMemory(memory, selection))));
+        wxString::Format("%08x", debugger->ReadExtraMemory(memory, selection))));
   }
   break;
 #endif
@@ -306,7 +307,7 @@ void CMemoryView::OnMouseDownR(wxMouseEvent& event)
 {
   // popup menu
   wxMenu menu;
-  // menu.Append(IDM_GOTOINMEMVIEW, _("&Goto in mem view"));
+// menu.Append(IDM_GOTOINMEMVIEW, _("&Goto in mem view"));
 #if wxUSE_CLIPBOARD
   menu.Append(IDM_COPYADDRESS, _("Copy &address"));
   menu.Append(IDM_COPYHEX, _("Copy &hex"));
@@ -318,9 +319,9 @@ void CMemoryView::OnMouseDownR(wxMouseEvent& event)
 
   wxMenu* viewAsSubMenu = new wxMenu;
   viewAsSubMenu->AppendRadioItem(IDM_VIEWASFP, _("FP value"))
-    ->Check(m_data_type == MemoryDataType::FloatingPoint);
+      ->Check(m_data_type == MemoryDataType::FloatingPoint);
   viewAsSubMenu->AppendRadioItem(IDM_VIEWASASCII, "ASCII")
-    ->Check(m_data_type == MemoryDataType::ASCII);
+      ->Check(m_data_type == MemoryDataType::ASCII);
   viewAsSubMenu->AppendRadioItem(IDM_VIEWASHEX, _("Hex"))->Check(IsHexMode());
   menu.AppendSubMenu(viewAsSubMenu, _("View As:"));
 

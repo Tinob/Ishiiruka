@@ -11,7 +11,7 @@
 
 #include "Common/CDUtils.h"
 #include "Common/CommonTypes.h"
-#include "Common/FileUtil.h"
+#include "Common/File.h"
 
 #include "DiscIO/Blob.h"
 #include "DiscIO/CISOBlob.h"
@@ -47,7 +47,7 @@ SectorReader::~SectorReader()
 const SectorReader::Cache* SectorReader::FindCacheLine(u64 block_num)
 {
   auto itr = std::find_if(m_cache.begin(), m_cache.end(),
-    [&](const Cache& entry) { return entry.Contains(block_num); });
+                          [&](const Cache& entry) { return entry.Contains(block_num); });
   if (itr == m_cache.end())
     return nullptr;
 
@@ -113,7 +113,7 @@ bool SectorReader::Read(u64 offset, u64 size, u8* out_ptr)
     u32 was_read = static_cast<u32>(std::min<u64>(can_read, remain));
 
     std::copy(cache->data.begin() + read_offset, cache->data.begin() + read_offset + was_read,
-      out_ptr);
+              out_ptr);
 
     offset += was_read;
     out_ptr += was_read;
@@ -173,7 +173,7 @@ u32 SectorReader::ReadChunk(u8* buffer, u64 chunk_num)
   return 0;
 }
 
-std::unique_ptr<IBlobReader> CreateBlobReader(const std::string& filename)
+std::unique_ptr<BlobReader> CreateBlobReader(const std::string& filename)
 {
   if (cdio_is_cdrom(filename))
     return DriveReader::Create(filename);

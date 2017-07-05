@@ -12,16 +12,17 @@
 #include <cinttypes>
 #include <cstdio>
 #include <cstring>
+#include <string>
 
 #include <mbedtls/sha1.h>
 
 #include "Common/CommonTypes.h"
 #include "Common/Crypto/ec.h"
+#include "Common/File.h"
 #include "Common/FileUtil.h"
 #include "Common/Logging/Log.h"
 #include "Common/Swap.h"
 
-constexpr u32 default_NG_id = 0x0403AC68;
 constexpr u32 default_NG_key_id = 0x6AAB8C59;
 
 constexpr u8 default_NG_priv[] = {
@@ -30,16 +31,16 @@ constexpr u8 default_NG_priv[] = {
 };
 
 constexpr u8 default_NG_sig[] = {
-  // R
-  0x00, 0xD8, 0x81, 0x63, 0xB2, 0x00, 0x6B, 0x0B, 0x54, 0x82, 0x88, 0x63, 0x81, 0x1C, 0x00, 0x71,
-  0x12, 0xED, 0xB7, 0xFD, 0x21, 0xAB, 0x0E, 0x50, 0x0E, 0x1F, 0xBF, 0x78, 0xAD, 0x37,
-  // S
-  0x00, 0x71, 0x8D, 0x82, 0x41, 0xEE, 0x45, 0x11, 0xC7, 0x3B, 0xAC, 0x08, 0xB6, 0x83, 0xDC, 0x05,
-  0xB8, 0xA8, 0x90, 0x1F, 0xA8, 0x2A, 0x0E, 0x4E, 0x76, 0xEF, 0x44, 0x72, 0x99, 0xF8,
+    // R
+    0x00, 0xD8, 0x81, 0x63, 0xB2, 0x00, 0x6B, 0x0B, 0x54, 0x82, 0x88, 0x63, 0x81, 0x1C, 0x00, 0x71,
+    0x12, 0xED, 0xB7, 0xFD, 0x21, 0xAB, 0x0E, 0x50, 0x0E, 0x1F, 0xBF, 0x78, 0xAD, 0x37,
+    // S
+    0x00, 0x71, 0x8D, 0x82, 0x41, 0xEE, 0x45, 0x11, 0xC7, 0x3B, 0xAC, 0x08, 0xB6, 0x83, 0xDC, 0x05,
+    0xB8, 0xA8, 0x90, 0x1F, 0xA8, 0x2A, 0x0E, 0x4E, 0x76, 0xEF, 0x44, 0x72, 0x99, 0xF8,
 };
 
 static void MakeBlankSigECCert(u8* cert_out, const char* signer, const char* name,
-  const u8* private_key, u32 key_id)
+                               const u8* private_key, u32 key_id)
 {
   memset(cert_out, 0, 0x180);
   *(u32*)cert_out = Common::swap32(0x10002);
@@ -63,7 +64,7 @@ void MakeNGCert(u8* ng_cert_out, u32 NG_id, u32 NG_key_id, const u8* NG_priv, co
   char name[64];
   if ((NG_id == 0) || (NG_key_id == 0) || (NG_priv == nullptr) || (NG_sig == nullptr))
   {
-    NG_id = default_NG_id;
+    NG_id = DEFAULT_WII_DEVICE_ID;
     NG_key_id = default_NG_key_id;
     NG_priv = default_NG_priv;
     NG_sig = default_NG_sig;
@@ -86,7 +87,7 @@ void MakeNGCert(u8* ng_cert_out, u32 NG_id, u32 NG_key_id, const u8* NG_priv, co
 // NG_id is the device-unique id to use
 // if NG_priv is nullptr or NG_id is 0, it will use builtin defaults
 void MakeAPSigAndCert(u8* sig_out, u8* ap_cert_out, u64 title_id, u8* data, u32 data_size,
-  const u8* NG_priv, u32 NG_id)
+                      const u8* NG_priv, u32 NG_id)
 {
   u8 hash[20];
   u8 ap_priv[30];
@@ -96,7 +97,7 @@ void MakeAPSigAndCert(u8* sig_out, u8* ap_cert_out, u64 title_id, u8* data, u32 
   if ((NG_id == 0) || (NG_priv == nullptr))
   {
     NG_priv = default_NG_priv;
-    NG_id = default_NG_id;
+    NG_id = DEFAULT_WII_DEVICE_ID;
   }
 
   memset(ap_priv, 0, 0x1e);
@@ -136,7 +137,7 @@ EcWii::EcWii()
       else
       {
         ERROR_LOG(IOS_ES, "Failed to read keys.bin, check it is the correct size of %08zX bytes.",
-          sizeof(BootMiiKeysBin));
+                  sizeof(BootMiiKeysBin));
       }
     }
     else
@@ -147,9 +148,9 @@ EcWii::EcWii()
   else
   {
     ERROR_LOG(
-      IOS_ES,
-      "%s could not be found. Using default values. We recommend you grab keys.bin from BootMii.",
-      keys_path.c_str());
+        IOS_ES,
+        "%s could not be found. Using default values. We recommend you grab keys.bin from BootMii.",
+        keys_path.c_str());
   }
 
   if (init)
@@ -184,7 +185,7 @@ void EcWii::InitDefaults()
 {
   memset(&BootMiiKeysBin, 0, sizeof(BootMiiKeysBin));
 
-  BootMiiKeysBin.ng_id = Common::swap32(default_NG_id);
+  BootMiiKeysBin.ng_id = Common::swap32(DEFAULT_WII_DEVICE_ID);
   BootMiiKeysBin.ng_key_id = Common::swap32(default_NG_key_id);
 
   memcpy(BootMiiKeysBin.ng_priv, default_NG_priv, sizeof(BootMiiKeysBin.ng_priv));

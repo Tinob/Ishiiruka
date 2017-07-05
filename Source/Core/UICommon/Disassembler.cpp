@@ -25,7 +25,7 @@ private:
   disassembler m_disasm;
 
   std::string DisassembleHostBlock(const u8* code_start, const u32 code_size,
-    u32* host_instructions_count, u64 starting_pc) override;
+                                   u32* host_instructions_count, u64 starting_pc) override;
 };
 
 #if defined(HAVE_LLVM)
@@ -33,7 +33,7 @@ class HostDisassemblerLLVM : public HostDisassembler
 {
 public:
   HostDisassemblerLLVM(const std::string& host_disasm, int inst_size = -1,
-    const std::string& cpu = "");
+                       const std::string& cpu = "");
   ~HostDisassemblerLLVM()
   {
     if (m_can_disasm)
@@ -46,12 +46,12 @@ private:
   int m_instruction_size;
 
   std::string DisassembleHostBlock(const u8* code_start, const u32 code_size,
-    u32* host_instructions_count, u64 starting_pc) override;
+                                   u32* host_instructions_count, u64 starting_pc) override;
 };
 
 HostDisassemblerLLVM::HostDisassemblerLLVM(const std::string& host_disasm, int inst_size,
-  const std::string& cpu)
-  : m_can_disasm(false), m_instruction_size(inst_size)
+                                           const std::string& cpu)
+    : m_can_disasm(false), m_instruction_size(inst_size)
 {
   LLVMInitializeAllTargetInfos();
   LLVMInitializeAllTargetMCs();
@@ -64,14 +64,14 @@ HostDisassemblerLLVM::HostDisassemblerLLVM(const std::string& host_disasm, int i
     return;
 
   LLVMSetDisasmOptions(m_llvm_context, LLVMDisassembler_Option_AsmPrinterVariant |
-    LLVMDisassembler_Option_PrintLatency);
+                                           LLVMDisassembler_Option_PrintLatency);
 
   m_can_disasm = true;
 }
 
 std::string HostDisassemblerLLVM::DisassembleHostBlock(const u8* code_start, const u32 code_size,
-  u32* host_instructions_count,
-  u64 starting_pc)
+                                                       u32* host_instructions_count,
+                                                       u64 starting_pc)
 {
   if (!m_can_disasm)
     return "(No LLVM context)";
@@ -84,7 +84,7 @@ std::string HostDisassemblerLLVM::DisassembleHostBlock(const u8* code_start, con
   {
     char inst_disasm[256];
     size_t inst_size = LLVMDisasmInstruction(m_llvm_context, disasmPtr, (u64)(end - disasmPtr),
-      starting_pc, inst_disasm, 256);
+                                             starting_pc, inst_disasm, 256);
 
     x86_disasm << "0x" << std::hex << starting_pc << "\t";
     if (!inst_size)
@@ -134,7 +134,7 @@ HostDisassemblerX86::HostDisassemblerX86()
 }
 
 std::string HostDisassemblerX86::DisassembleHostBlock(const u8* code_start, const u32 code_size,
-  u32* host_instructions_count, u64 starting_pc)
+                                                      u32* host_instructions_count, u64 starting_pc)
 {
   u64 disasmPtr = (u64)code_start;
   const u8* end = code_start + code_size;
@@ -168,7 +168,7 @@ std::unique_ptr<HostDisassembler> GetNewDisassembler(const std::string& arch)
 }
 
 std::string DisassembleBlock(HostDisassembler* disasm, u32* address, u32* host_instructions_count,
-  u32* code_size)
+                             u32* code_size)
 {
   const u8* code;
   int res = JitInterface::GetHostCode(address, &code, code_size);

@@ -78,7 +78,7 @@ std::vector<std::string> PostProcessingShaderConfiguration::GetAvailableShaderNa
   std::vector<std::string> paths;
 
   // main folder
-  paths = Common::DoFileSearch(search_extensions, search_dirs, false);
+  paths = Common::DoFileSearch(search_dirs, search_extensions, false);
   for (const std::string& path : paths)
   {
     std::string filename;
@@ -98,7 +98,7 @@ std::vector<std::string> PostProcessingShaderConfiguration::GetAvailableShaderNa
     if (pos != std::string::npos && (pos != dirname.length() - 1))
     {
       std::string shader_dirname = dirname.substr(pos + 1);
-      std::vector<std::string> sub_paths = Common::DoFileSearch(search_extensions, { dirname }, false);
+      std::vector<std::string> sub_paths = Common::DoFileSearch({ dirname }, search_extensions, false);
       for (const std::string& sub_path : sub_paths)
       {
         std::string filename;
@@ -1413,8 +1413,7 @@ void PostProcessor::ReloadShaderConfigs()
 void PostProcessor::ReloadPostProcessingShaderConfigs()
 {
   // Load post-processing shader list
-  m_shader_names.clear();
-  SplitString(g_ActiveConfig.sPostProcessingShaders, ':', m_shader_names);
+  m_shader_names = SplitString(g_ActiveConfig.sPostProcessingShaders, ':');
 
   // Load shaders
   m_shader_configs.clear();

@@ -19,20 +19,20 @@
 namespace ControllerEmu
 {
 AnalogStick::AnalogStick(const char* const name_, ControlState default_radius)
-  : AnalogStick(name_, name_, default_radius)
+    : AnalogStick(name_, name_, default_radius)
 {
 }
 
 AnalogStick::AnalogStick(const char* const name_, const char* const ui_name_,
-  ControlState default_radius)
-  : ControlGroup(name_, ui_name_, GroupType::Stick)
+                         ControlState default_radius)
+    : ControlGroup(name_, ui_name_, GroupType::Stick)
 {
   for (auto& named_direction : named_directions)
     controls.emplace_back(std::make_unique<Input>(named_direction));
 
   controls.emplace_back(std::make_unique<Input>(_trans("Modifier")));
   numeric_settings.emplace_back(
-    std::make_unique<NumericSetting>(_trans("Radius"), default_radius, 0, 100));
+      std::make_unique<NumericSetting>(_trans("Radius"), default_radius, 0, 100));
   numeric_settings.emplace_back(std::make_unique<NumericSetting>(_trans("Dead Zone"), 0, 0, 50));
 }
 

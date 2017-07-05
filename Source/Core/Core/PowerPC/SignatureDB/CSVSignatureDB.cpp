@@ -2,14 +2,15 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Core/PowerPC/SignatureDB/CSVSignatureDB.h"
+
 #include <cstdio>
 #include <fstream>
 #include <sstream>
 
+#include "Common/File.h"
 #include "Common/FileUtil.h"
 #include "Common/Logging/Log.h"
-
-#include "Core/PowerPC/SignatureDB/CSVSignatureDB.h"
 
 // CSV separated with tabs
 // Checksum | Size | Symbol | [Object Location |] Object Name
@@ -17,7 +18,7 @@ bool CSVSignatureDB::Load(const std::string& file_path)
 {
   std::string line;
   std::ifstream ifs;
-  OpenFStream(ifs, file_path, std::ios_base::in);
+  File::OpenFStream(ifs, file_path, std::ios_base::in);
 
   if (!ifs)
     return false;
@@ -70,8 +71,8 @@ bool CSVSignatureDB::Save(const std::string& file_path) const
     // The object name/location are unused for the time being.
     // To be implemented.
     fprintf(f.GetHandle(), "%08x\t%08x\t%s\t%s\t%s\n", func.first, func.second.size,
-      func.second.name.c_str(), func.second.object_location.c_str(),
-      func.second.object_name.c_str());
+            func.second.name.c_str(), func.second.object_location.c_str(),
+            func.second.object_name.c_str());
   }
 
   INFO_LOG(OSHLE, "CSV database save successful");

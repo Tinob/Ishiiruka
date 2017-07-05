@@ -15,16 +15,11 @@
 
 namespace Common
 {
-
 template <typename T, bool NeedSize = true>
 class FifoQueue
 {
 public:
-  FifoQueue() : m_size(0)
-  {
-    m_write_ptr = m_read_ptr = new ElementPtr();
-  }
-
+  FifoQueue() : m_size(0) { m_write_ptr = m_read_ptr = new ElementPtr(); }
   ~FifoQueue()
   {
     // this will empty out the whole queue
@@ -37,16 +32,8 @@ public:
     return m_size.load();
   }
 
-  bool Empty() const
-  {
-    return !m_read_ptr->next.load();
-  }
-
-  T& Front() const
-  {
-    return m_read_ptr->current;
-  }
-
+  bool Empty() const { return !m_read_ptr->next.load(); }
+  T& Front() const { return m_read_ptr->current; }
   template <typename Arg>
   void Push(Arg&& t)
   {
@@ -70,7 +57,7 @@ public:
     m_read_ptr = tmpptr->next.load();
     // set the next element to nullptr to stop the recursive deletion
     tmpptr->next.store(nullptr);
-    delete tmpptr; // this also deletes the element
+    delete tmpptr;  // this also deletes the element
   }
 
   bool Pop(T& t)
@@ -103,9 +90,7 @@ private:
   class ElementPtr
   {
   public:
-    ElementPtr() : next(nullptr)
-    {}
-
+    ElementPtr() : next(nullptr) {}
     ~ElementPtr()
     {
       ElementPtr* next_ptr = next.load();
@@ -122,5 +107,4 @@ private:
   ElementPtr* m_read_ptr;
   std::atomic<u32> m_size;
 };
-
 }

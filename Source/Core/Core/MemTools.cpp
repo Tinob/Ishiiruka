@@ -147,8 +147,8 @@ static void ExceptionThread(mach_port_t port)
     // thread_set_exception_ports, or MACH_NOTIFY_NO_SENDERS due to
     // mach_port_request_notification.
     CheckKR("mach_msg_overwrite",
-      mach_msg_overwrite(send_msg, option, send_size, sizeof(msg_in), port,
-        MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL, &msg_in.Head, 0));
+            mach_msg_overwrite(send_msg, option, send_size, sizeof(msg_in), port,
+                               MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL, &msg_in.Head, 0));
 
     if (msg_in.Head.msgh_id == MACH_NOTIFY_NO_SENDERS)
     {
@@ -194,7 +194,7 @@ static void ExceptionThread(mach_port_t port)
       msg_out.new_stateCnt = 0;
     }
     msg_out.Head.msgh_size =
-      offsetof(__typeof__(msg_out), new_state) + msg_out.new_stateCnt * sizeof(natural_t);
+        offsetof(__typeof__(msg_out), new_state) + msg_out.new_stateCnt * sizeof(natural_t);
 
     send_msg = &msg_out.Head;
     send_size = msg_out.Head.msgh_size;
@@ -206,24 +206,24 @@ void InstallExceptionHandler()
 {
   mach_port_t port;
   CheckKR("mach_port_allocate",
-    mach_port_allocate(mach_task_self(), MACH_PORT_RIGHT_RECEIVE, &port));
+          mach_port_allocate(mach_task_self(), MACH_PORT_RIGHT_RECEIVE, &port));
   std::thread exc_thread(ExceptionThread, port);
   exc_thread.detach();
   // Obtain a send right for thread_set_exception_ports to copy...
   CheckKR("mach_port_insert_right",
-    mach_port_insert_right(mach_task_self(), port, port, MACH_MSG_TYPE_MAKE_SEND));
+          mach_port_insert_right(mach_task_self(), port, port, MACH_MSG_TYPE_MAKE_SEND));
   // Mach tries the following exception ports in order: thread, task, host.
   // Debuggers set the task port, so we grab the thread port.
   CheckKR("thread_set_exception_ports",
-    thread_set_exception_ports(mach_thread_self(), EXC_MASK_BAD_ACCESS, port,
-      EXCEPTION_STATE | MACH_EXCEPTION_CODES, x86_THREAD_STATE64));
+          thread_set_exception_ports(mach_thread_self(), EXC_MASK_BAD_ACCESS, port,
+                                     EXCEPTION_STATE | MACH_EXCEPTION_CODES, x86_THREAD_STATE64));
   // ...and get rid of our copy so that MACH_NOTIFY_NO_SENDERS works.
   CheckKR("mach_port_mod_refs",
-    mach_port_mod_refs(mach_task_self(), port, MACH_PORT_RIGHT_SEND, -1));
+          mach_port_mod_refs(mach_task_self(), port, MACH_PORT_RIGHT_SEND, -1));
   mach_port_t previous;
   CheckKR("mach_port_request_notification",
-    mach_port_request_notification(mach_task_self(), port, MACH_NOTIFY_NO_SENDERS, 0, port,
-      MACH_MSG_TYPE_MAKE_SEND_ONCE, &previous));
+          mach_port_request_notification(mach_task_self(), port, MACH_NOTIFY_NO_SENDERS, 0, port,
+                                         MACH_MSG_TYPE_MAKE_SEND_ONCE, &previous));
 }
 
 void UninstallExceptionHandler()
@@ -248,7 +248,7 @@ static void sigsegv_handler(int sig, siginfo_t* info, void* raw_context)
   }
   uintptr_t bad_address = (uintptr_t)info->si_addr;
 
-  // Get all the information we can out of the context.
+// Get all the information we can out of the context.
 #ifdef __OpenBSD__
   ucontext_t* ctx = context;
 #else
@@ -257,11 +257,11 @@ static void sigsegv_handler(int sig, siginfo_t* info, void* raw_context)
   // assume it's not a write
   if (!JitInterface::HandleFault(bad_address,
 #ifdef __APPLE__
-    *ctx
+                                 *ctx
 #else
-    ctx
+                                 ctx
 #endif
-  ))
+                                 ))
   {
     // retry and crash
     signal(SIGSEGV, SIG_DFL);

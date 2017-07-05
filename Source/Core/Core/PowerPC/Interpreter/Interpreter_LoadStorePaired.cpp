@@ -15,42 +15,42 @@
 
 // dequantize table
 const float m_dequantizeTable[] = {
-        1.0 / (1ULL << 0),  1.0 / (1ULL << 1),  1.0 / (1ULL << 2),  1.0 / (1ULL << 3),
-        1.0 / (1ULL << 4),  1.0 / (1ULL << 5),  1.0 / (1ULL << 6),  1.0 / (1ULL << 7),
-        1.0 / (1ULL << 8),  1.0 / (1ULL << 9),  1.0 / (1ULL << 10), 1.0 / (1ULL << 11),
-        1.0 / (1ULL << 12), 1.0 / (1ULL << 13), 1.0 / (1ULL << 14), 1.0 / (1ULL << 15),
-        1.0 / (1ULL << 16), 1.0 / (1ULL << 17), 1.0 / (1ULL << 18), 1.0 / (1ULL << 19),
-        1.0 / (1ULL << 20), 1.0 / (1ULL << 21), 1.0 / (1ULL << 22), 1.0 / (1ULL << 23),
-        1.0 / (1ULL << 24), 1.0 / (1ULL << 25), 1.0 / (1ULL << 26), 1.0 / (1ULL << 27),
-        1.0 / (1ULL << 28), 1.0 / (1ULL << 29), 1.0 / (1ULL << 30), 1.0 / (1ULL << 31),
-        (1ULL << 32),       (1ULL << 31),       (1ULL << 30),       (1ULL << 29),
-        (1ULL << 28),       (1ULL << 27),       (1ULL << 26),       (1ULL << 25),
-        (1ULL << 24),       (1ULL << 23),       (1ULL << 22),       (1ULL << 21),
-        (1ULL << 20),       (1ULL << 19),       (1ULL << 18),       (1ULL << 17),
-        (1ULL << 16),       (1ULL << 15),       (1ULL << 14),       (1ULL << 13),
-        (1ULL << 12),       (1ULL << 11),       (1ULL << 10),       (1ULL << 9),
-        (1ULL << 8),        (1ULL << 7),        (1ULL << 6),        (1ULL << 5),
-        (1ULL << 4),        (1ULL << 3),        (1ULL << 2),        (1ULL << 1),
+    1.0 / (1ULL << 0),  1.0 / (1ULL << 1),  1.0 / (1ULL << 2),  1.0 / (1ULL << 3),
+    1.0 / (1ULL << 4),  1.0 / (1ULL << 5),  1.0 / (1ULL << 6),  1.0 / (1ULL << 7),
+    1.0 / (1ULL << 8),  1.0 / (1ULL << 9),  1.0 / (1ULL << 10), 1.0 / (1ULL << 11),
+    1.0 / (1ULL << 12), 1.0 / (1ULL << 13), 1.0 / (1ULL << 14), 1.0 / (1ULL << 15),
+    1.0 / (1ULL << 16), 1.0 / (1ULL << 17), 1.0 / (1ULL << 18), 1.0 / (1ULL << 19),
+    1.0 / (1ULL << 20), 1.0 / (1ULL << 21), 1.0 / (1ULL << 22), 1.0 / (1ULL << 23),
+    1.0 / (1ULL << 24), 1.0 / (1ULL << 25), 1.0 / (1ULL << 26), 1.0 / (1ULL << 27),
+    1.0 / (1ULL << 28), 1.0 / (1ULL << 29), 1.0 / (1ULL << 30), 1.0 / (1ULL << 31),
+    (1ULL << 32),       (1ULL << 31),       (1ULL << 30),       (1ULL << 29),
+    (1ULL << 28),       (1ULL << 27),       (1ULL << 26),       (1ULL << 25),
+    (1ULL << 24),       (1ULL << 23),       (1ULL << 22),       (1ULL << 21),
+    (1ULL << 20),       (1ULL << 19),       (1ULL << 18),       (1ULL << 17),
+    (1ULL << 16),       (1ULL << 15),       (1ULL << 14),       (1ULL << 13),
+    (1ULL << 12),       (1ULL << 11),       (1ULL << 10),       (1ULL << 9),
+    (1ULL << 8),        (1ULL << 7),        (1ULL << 6),        (1ULL << 5),
+    (1ULL << 4),        (1ULL << 3),        (1ULL << 2),        (1ULL << 1),
 };
 
 // quantize table
 const float m_quantizeTable[] = {
-        (1ULL << 0),        (1ULL << 1),        (1ULL << 2),        (1ULL << 3),
-        (1ULL << 4),        (1ULL << 5),        (1ULL << 6),        (1ULL << 7),
-        (1ULL << 8),        (1ULL << 9),        (1ULL << 10),       (1ULL << 11),
-        (1ULL << 12),       (1ULL << 13),       (1ULL << 14),       (1ULL << 15),
-        (1ULL << 16),       (1ULL << 17),       (1ULL << 18),       (1ULL << 19),
-        (1ULL << 20),       (1ULL << 21),       (1ULL << 22),       (1ULL << 23),
-        (1ULL << 24),       (1ULL << 25),       (1ULL << 26),       (1ULL << 27),
-        (1ULL << 28),       (1ULL << 29),       (1ULL << 30),       (1ULL << 31),
-        1.0 / (1ULL << 32), 1.0 / (1ULL << 31), 1.0 / (1ULL << 30), 1.0 / (1ULL << 29),
-        1.0 / (1ULL << 28), 1.0 / (1ULL << 27), 1.0 / (1ULL << 26), 1.0 / (1ULL << 25),
-        1.0 / (1ULL << 24), 1.0 / (1ULL << 23), 1.0 / (1ULL << 22), 1.0 / (1ULL << 21),
-        1.0 / (1ULL << 20), 1.0 / (1ULL << 19), 1.0 / (1ULL << 18), 1.0 / (1ULL << 17),
-        1.0 / (1ULL << 16), 1.0 / (1ULL << 15), 1.0 / (1ULL << 14), 1.0 / (1ULL << 13),
-        1.0 / (1ULL << 12), 1.0 / (1ULL << 11), 1.0 / (1ULL << 10), 1.0 / (1ULL << 9),
-        1.0 / (1ULL << 8),  1.0 / (1ULL << 7),  1.0 / (1ULL << 6),  1.0 / (1ULL << 5),
-        1.0 / (1ULL << 4),  1.0 / (1ULL << 3),  1.0 / (1ULL << 2),  1.0 / (1ULL << 1),
+    (1ULL << 0),        (1ULL << 1),        (1ULL << 2),        (1ULL << 3),
+    (1ULL << 4),        (1ULL << 5),        (1ULL << 6),        (1ULL << 7),
+    (1ULL << 8),        (1ULL << 9),        (1ULL << 10),       (1ULL << 11),
+    (1ULL << 12),       (1ULL << 13),       (1ULL << 14),       (1ULL << 15),
+    (1ULL << 16),       (1ULL << 17),       (1ULL << 18),       (1ULL << 19),
+    (1ULL << 20),       (1ULL << 21),       (1ULL << 22),       (1ULL << 23),
+    (1ULL << 24),       (1ULL << 25),       (1ULL << 26),       (1ULL << 27),
+    (1ULL << 28),       (1ULL << 29),       (1ULL << 30),       (1ULL << 31),
+    1.0 / (1ULL << 32), 1.0 / (1ULL << 31), 1.0 / (1ULL << 30), 1.0 / (1ULL << 29),
+    1.0 / (1ULL << 28), 1.0 / (1ULL << 27), 1.0 / (1ULL << 26), 1.0 / (1ULL << 25),
+    1.0 / (1ULL << 24), 1.0 / (1ULL << 23), 1.0 / (1ULL << 22), 1.0 / (1ULL << 21),
+    1.0 / (1ULL << 20), 1.0 / (1ULL << 19), 1.0 / (1ULL << 18), 1.0 / (1ULL << 17),
+    1.0 / (1ULL << 16), 1.0 / (1ULL << 15), 1.0 / (1ULL << 14), 1.0 / (1ULL << 13),
+    1.0 / (1ULL << 12), 1.0 / (1ULL << 11), 1.0 / (1ULL << 10), 1.0 / (1ULL << 9),
+    1.0 / (1ULL << 8),  1.0 / (1ULL << 7),  1.0 / (1ULL << 6),  1.0 / (1ULL << 5),
+    1.0 / (1ULL << 4),  1.0 / (1ULL << 3),  1.0 / (1ULL << 2),  1.0 / (1ULL << 1),
 };
 
 template <typename SType>
@@ -91,21 +91,21 @@ template <>
 std::pair<u8, u8> ReadPair<u8>(u32 addr)
 {
   u16 val = PowerPC::Read_U16(addr);
-  return{ (u8)(val >> 8), (u8)val };
+  return {(u8)(val >> 8), (u8)val};
 }
 
 template <>
 std::pair<u16, u16> ReadPair<u16>(u32 addr)
 {
   u32 val = PowerPC::Read_U32(addr);
-  return{ (u16)(val >> 16), (u16)val };
+  return {(u16)(val >> 16), (u16)val};
 }
 
 template <>
 std::pair<u32, u32> ReadPair<u32>(u32 addr)
 {
   u64 val = PowerPC::Read_U64(addr);
-  return{ (u32)(val >> 32), (u32)val };
+  return {(u32)(val >> 32), (u32)val};
 }
 
 template <typename T>
@@ -232,7 +232,7 @@ std::pair<float, float> LoadAndDequantize(u32 addr, u32 instW, u32 ldScale)
     ps0 = (float)(T)(value.first) * m_dequantizeTable[ldScale];
     ps1 = (float)(T)(value.second) * m_dequantizeTable[ldScale];
   }
-  return{ ps0, ps1 };
+  return {ps0, ps1};
 }
 
 void Interpreter::Helper_Dequantize(u32 addr, u32 instI, u32 instRD, u32 instW)

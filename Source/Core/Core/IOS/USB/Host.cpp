@@ -2,8 +2,13 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Core/IOS/USB/Host.h"
+
 #include <algorithm>
 #include <memory>
+#include <mutex>
+#include <set>
+#include <string>
 #include <utility>
 
 #ifdef __LIBUSB__
@@ -18,7 +23,6 @@
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
 #include "Core/IOS/USB/Common.h"
-#include "Core/IOS/USB/Host.h"
 #include "Core/IOS/USB/LibusbDevice.h"
 
 namespace IOS
@@ -121,7 +125,7 @@ bool USBHost::UpdateDevices(const bool always_add_hooks)
 }
 
 bool USBHost::AddNewDevices(std::set<u64>& new_devices, DeviceChangeHooks& hooks,
-  const bool always_add_hooks)
+                            const bool always_add_hooks)
 {
 #ifdef __LIBUSB__
   if (SConfig::GetInstance().m_usb_passthrough_devices.empty())
@@ -134,7 +138,7 @@ bool USBHost::AddNewDevices(std::set<u64>& new_devices, DeviceChangeHooks& hooks
     if (count < 0)
     {
       WARN_LOG(IOS_USB, "Failed to get device list: %s",
-        libusb_error_name(static_cast<int>(count)));
+               libusb_error_name(static_cast<int>(count)));
       return false;
     }
 
@@ -144,7 +148,7 @@ bool USBHost::AddNewDevices(std::set<u64>& new_devices, DeviceChangeHooks& hooks
       libusb_device_descriptor descriptor;
       libusb_get_device_descriptor(device, &descriptor);
       if (!SConfig::GetInstance().IsUSBDeviceWhitelisted(
-      { descriptor.idVendor, descriptor.idProduct }))
+              {descriptor.idVendor, descriptor.idProduct}))
       {
         libusb_unref_device(device);
         continue;
@@ -191,8 +195,8 @@ void USBHost::DispatchHooks(const DeviceChangeHooks& hooks)
   for (const auto& hook : hooks)
   {
     INFO_LOG(IOS_USB, "%s - %s device: %04x:%04x", GetDeviceName().c_str(),
-      hook.second == ChangeEvent::Inserted ? "New" : "Removed", hook.first->GetVid(),
-      hook.first->GetPid());
+             hook.second == ChangeEvent::Inserted ? "New" : "Removed", hook.first->GetVid(),
+             hook.first->GetPid());
     OnDeviceChange(hook.second, hook.first);
   }
   if (!hooks.empty())
@@ -231,7 +235,7 @@ void USBHost::StartThreads()
           continue;
         }
 
-        static timeval tv = { 0, 50000 };
+        static timeval tv = {0, 50000};
         libusb_handle_events_timeout_completed(m_libusb_context, &tv, nullptr);
       }
     });
@@ -255,7 +259,7 @@ void USBHost::StopThreads()
 }
 
 IPCCommandResult USBHost::HandleTransfer(std::shared_ptr<USB::Device> device, u32 request,
-  std::function<s32()> submit) const
+                                         std::function<s32()> submit) const
 {
   if (!device)
     return GetDefaultReply(IPC_ENOENT);
@@ -265,7 +269,7 @@ IPCCommandResult USBHost::HandleTransfer(std::shared_ptr<USB::Device> device, u3
     return GetNoReply();
 
   ERROR_LOG(IOS_USB, "[%04x:%04x] Failed to submit transfer (request %u): %s", device->GetVid(),
-    device->GetPid(), request, device->GetErrorName(ret).c_str());
+            device->GetPid(), request, device->GetErrorName(ret).c_str());
   return GetDefaultReply(ret <= 0 ? ret : IPC_EINVAL);
 }
 }  // namespace Device

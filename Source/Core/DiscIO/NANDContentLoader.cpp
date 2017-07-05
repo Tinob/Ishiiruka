@@ -19,6 +19,7 @@
 #include "Common/Align.h"
 #include "Common/CommonTypes.h"
 #include "Common/Crypto/AES.h"
+#include "Common/File.h"
 #include "Common/FileUtil.h"
 #include "Common/Logging/Log.h"
 #include "Common/MsgHandler.h"
@@ -32,26 +33,26 @@
 
 namespace DiscIO
 {
-CNANDContentData::~CNANDContentData() = default;
+NANDContentData::~NANDContentData() = default;
 
-CNANDContentDataFile::CNANDContentDataFile(const std::string& filename) : m_filename{ filename }
+NANDContentDataFile::NANDContentDataFile(const std::string& filename) : m_filename{filename}
 {
 }
 
-CNANDContentDataFile::~CNANDContentDataFile() = default;
+NANDContentDataFile::~NANDContentDataFile() = default;
 
-void CNANDContentDataFile::EnsureOpen()
+void NANDContentDataFile::EnsureOpen()
 {
   if (!m_file)
     m_file = std::make_unique<File::IOFile>(m_filename, "rb");
   else if (!m_file->IsOpen())
     m_file->Open(m_filename, "rb");
 }
-void CNANDContentDataFile::Open()
+void NANDContentDataFile::Open()
 {
   EnsureOpen();
 }
-std::vector<u8> CNANDContentDataFile::Get()
+std::vector<u8> NANDContentDataFile::Get()
 {
   EnsureOpen();
 
@@ -68,7 +69,7 @@ std::vector<u8> CNANDContentDataFile::Get()
   return result;
 }
 
-bool CNANDContentDataFile::GetRange(u32 start, u32 size, u8* buffer)
+bool NANDContentDataFile::GetRange(u32 start, u32 size, u8* buffer)
 {
   EnsureOpen();
   if (!m_file->IsGood())
@@ -79,13 +80,13 @@ bool CNANDContentDataFile::GetRange(u32 start, u32 size, u8* buffer)
 
   return m_file->ReadBytes(buffer, static_cast<size_t>(size));
 }
-void CNANDContentDataFile::Close()
+void NANDContentDataFile::Close()
 {
   if (m_file && m_file->IsOpen())
     m_file->Close();
 }
 
-bool CNANDContentDataBuffer::GetRange(u32 start, u32 size, u8* buffer)
+bool NANDContentDataBuffer::GetRange(u32 start, u32 size, u8* buffer)
 {
   if (start + size > m_buffer.size())
     return false;
@@ -94,21 +95,22 @@ bool CNANDContentDataBuffer::GetRange(u32 start, u32 size, u8* buffer)
   return true;
 }
 
-CNANDContentLoader::CNANDContentLoader(const std::string& content_name)
+NANDContentLoader::NANDContentLoader(const std::string& content_name, Common::FromWhichRoot from)
+    : m_root(from)
 {
   m_Valid = Initialize(content_name);
 }
 
-CNANDContentLoader::~CNANDContentLoader()
+NANDContentLoader::~NANDContentLoader()
 {
 }
 
-bool CNANDContentLoader::IsValid() const
+bool NANDContentLoader::IsValid() const
 {
   return m_Valid;
 }
 
-const SNANDContent* CNANDContentLoader::GetContentByID(u32 id) const
+const NANDContent* NANDContentLoader::GetContentByID(u32 id) const
 {
   const auto iterator = std::find_if(m_Content.begin(), m_Content.end(), [id](const auto& content) {
     return content.m_metadata.id == id;
@@ -116,7 +118,7 @@ const SNANDContent* CNANDContentLoader::GetContentByID(u32 id) const
   return iterator != m_Content.end() ? &*iterator : nullptr;
 }
 
-const SNANDContent* CNANDContentLoader::GetContentByIndex(int index) const
+const NANDContent* NANDContentLoader::GetContentByIndex(int index) const
 {
   for (auto& Content : m_Content)
   {
@@ -128,7 +130,7 @@ const SNANDContent* CNANDContentLoader::GetContentByIndex(int index) const
   return nullptr;
 }
 
-bool CNANDContentLoader::Initialize(const std::string& name)
+bool NANDContentLoader::Initialize(const std::string& name)
 {
   if (name.empty())
     return false;
@@ -172,7 +174,7 @@ bool CNANDContentLoader::Initialize(const std::string& name)
   return true;
 }
 
-void CNANDContentLoader::InitializeContentEntries(const std::vector<u8>& data_app)
+void NANDContentLoader::InitializeContentEntries(const std::vector<u8>& data_app)
 {
   if (!m_ticket.IsValid())
   {
@@ -184,8 +186,8 @@ void CNANDContentLoader::InitializeContentEntries(const std::vector<u8>& data_ap
   m_Content.resize(contents.size());
 
   u32 data_app_offset = 0;
-  const std::vector<u8> title_key = m_ticket.GetTitleKey();
-  IOS::ES::SharedContentMap shared_content{ Common::FromWhichRoot::FROM_SESSION_ROOT };
+  const std::array<u8, 16> title_key = m_ticket.GetTitleKey();
+  IOS::ES::SharedContentMap shared_content{m_root};
 
   for (size_t i = 0; i < contents.size(); ++i)
   {
@@ -200,70 +202,50 @@ void CNANDContentLoader::InitializeContentEntries(const std::vector<u8>& data_ap
 
       u32 rounded_size = Common::AlignUp(static_cast<u32>(content.size), 0x40);
 
-      m_Content[i].m_Data = std::make_unique<CNANDContentDataBuffer>(Common::AES::Decrypt(
-        title_key.data(), iv.data(), &data_app[data_app_offset], rounded_size));
+      m_Content[i].m_Data = std::make_unique<NANDContentDataBuffer>(Common::AES::Decrypt(
+          title_key.data(), iv.data(), &data_app[data_app_offset], rounded_size));
       data_app_offset += rounded_size;
     }
     else
     {
       std::string filename;
       if (content.IsShared())
-        filename = shared_content.GetFilenameFromSHA1(content.sha1);
+        filename = *shared_content.GetFilenameFromSHA1(content.sha1);
       else
         filename = StringFromFormat("%s/%08x.app", m_Path.c_str(), content.id);
 
-      m_Content[i].m_Data = std::make_unique<CNANDContentDataFile>(filename);
+      m_Content[i].m_Data = std::make_unique<NANDContentDataFile>(filename);
     }
 
     m_Content[i].m_metadata = std::move(content);
   }
 }
 
-CNANDContentManager::~CNANDContentManager()
+NANDContentManager::~NANDContentManager()
 {
 }
 
-const CNANDContentLoader& CNANDContentManager::GetNANDLoader(const std::string& content_path)
+const NANDContentLoader& NANDContentManager::GetNANDLoader(const std::string& content_path,
+                                                           Common::FromWhichRoot from)
 {
   auto it = m_map.find(content_path);
   if (it != m_map.end())
     return *it->second;
   return *m_map
-    .emplace_hint(it, std::make_pair(content_path,
-      std::make_unique<CNANDContentLoader>(content_path)))
-    ->second;
+              .emplace_hint(it, std::make_pair(content_path, std::make_unique<NANDContentLoader>(
+                                                                 content_path, from)))
+              ->second;
 }
 
-const CNANDContentLoader& CNANDContentManager::GetNANDLoader(u64 title_id,
-  Common::FromWhichRoot from)
+const NANDContentLoader& NANDContentManager::GetNANDLoader(u64 title_id, Common::FromWhichRoot from)
 {
   std::string path = Common::GetTitleContentPath(title_id, from);
-  return GetNANDLoader(path);
+  return GetNANDLoader(path, from);
 }
 
-void CNANDContentManager::ClearCache()
+void NANDContentManager::ClearCache()
 {
   m_map.clear();
-}
-
-bool AddTicket(const IOS::ES::TicketReader& signed_ticket)
-{
-  if (!signed_ticket.IsValid())
-  {
-    return false;
-  }
-
-  u64 title_id = signed_ticket.GetTitleId();
-
-  std::string ticket_filename = Common::GetTicketFileName(title_id, Common::FROM_CONFIGURED_ROOT);
-  File::CreateFullPath(ticket_filename);
-
-  File::IOFile ticket_file(ticket_filename, "wb");
-  if (!ticket_file)
-    return false;
-
-  const std::vector<u8>& raw_ticket = signed_ticket.GetRawTicket();
-  return ticket_file.WriteBytes(raw_ticket.data(), raw_ticket.size());
 }
 
 IOS::ES::TicketReader FindSignedTicket(u64 title_id)
@@ -281,6 +263,6 @@ IOS::ES::TicketReader FindSignedTicket(u64 title_id)
     return IOS::ES::TicketReader{};
   }
 
-  return IOS::ES::TicketReader{ std::move(signed_ticket) };
+  return IOS::ES::TicketReader{std::move(signed_ticket)};
 }
 }  // namespace end

@@ -46,9 +46,9 @@ struct wxCheatsWindow::CodeData : public wxClientData
 };
 
 wxCheatsWindow::wxCheatsWindow(wxWindow* const parent)
-  : wxDialog(parent, wxID_ANY, "", wxDefaultPosition, wxDefaultSize,
-    wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER | wxMAXIMIZE_BOX | wxMINIMIZE_BOX |
-    wxDIALOG_NO_PARENT)
+    : wxDialog(parent, wxID_ANY, "", wxDefaultPosition, wxDefaultSize,
+               wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER | wxMAXIMIZE_BOX | wxMINIMIZE_BOX |
+                   wxDIALOG_NO_PARENT)
 {
   // Create the GUI controls
   CreateGUI();
@@ -78,8 +78,8 @@ void wxCheatsWindow::CreateGUI()
   wxPanel* tab_cheats = new wxPanel(m_notebook_main, wxID_ANY);
 
   m_ar_codes_panel =
-    new ActionReplayCodesPanel(tab_cheats, ActionReplayCodesPanel::STYLE_SIDE_PANEL |
-      ActionReplayCodesPanel::STYLE_MODIFY_BUTTONS);
+      new ActionReplayCodesPanel(tab_cheats, ActionReplayCodesPanel::STYLE_SIDE_PANEL |
+                                                 ActionReplayCodesPanel::STYLE_MODIFY_BUTTONS);
 
   wxBoxSizer* sizer_tab_cheats = new wxBoxSizer(wxVERTICAL);
   sizer_tab_cheats->AddSpacer(space5);
@@ -101,11 +101,11 @@ void wxCheatsWindow::CreateGUI()
 
   m_checkbox_log_ar = new wxCheckBox(m_tab_log, wxID_ANY, _("Enable AR Logging"));
   m_checkbox_log_ar->Bind(wxEVT_CHECKBOX,
-    &wxCheatsWindow::OnEvent_CheckBoxEnableLogging_StateChange, this);
+                          &wxCheatsWindow::OnEvent_CheckBoxEnableLogging_StateChange, this);
 
   m_checkbox_log_ar->SetValue(ActionReplay::IsSelfLogging());
   m_textctrl_log = new wxTextCtrl(m_tab_log, wxID_ANY, wxEmptyString, wxDefaultPosition,
-    wxDefaultSize, wxTE_MULTILINE | wxTE_READONLY | wxTE_DONTWRAP);
+                                  wxDefaultSize, wxTE_MULTILINE | wxTE_READONLY | wxTE_DONTWRAP);
 
   wxBoxSizer* log_control_sizer = new wxBoxSizer(wxHORIZONTAL);
   log_control_sizer->Add(m_checkbox_log_ar, 0, wxALIGN_CENTER_VERTICAL);

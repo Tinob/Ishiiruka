@@ -77,13 +77,13 @@ private:
 };
 
 constexpr ActionReplayCodesPanel::Style operator|(ActionReplayCodesPanel::Style a,
-  ActionReplayCodesPanel::Style b)
+                                                  ActionReplayCodesPanel::Style b)
 {
   return static_cast<ActionReplayCodesPanel::Style>(static_cast<int>(a) | b);
 }
 
 constexpr ActionReplayCodesPanel::Style operator&(ActionReplayCodesPanel::Style a,
-  ActionReplayCodesPanel::Style b)
+                                                  ActionReplayCodesPanel::Style b)
 {
   return static_cast<ActionReplayCodesPanel::Style>(static_cast<int>(a) & b);
 }

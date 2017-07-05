@@ -2,13 +2,15 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Core/FifoPlayer/FifoDataFile.h"
+
 #include <algorithm>
 #include <cstring>
+#include <memory>
 #include <string>
+#include <vector>
 
-#include "Common/FileUtil.h"
-
-#include "Core/FifoPlayer/FifoDataFile.h"
+#include "Common/File.h"
 
 enum
 {
@@ -248,7 +250,7 @@ std::unique_ptr<FifoDataFile> FifoDataFile::Load(const std::string& filename, bo
     file.ReadBytes(dstFrame.fifoData.data(), srcFrame.fifoDataSize);
 
     ReadMemoryUpdates(srcFrame.memoryUpdatesOffset, srcFrame.numMemoryUpdates,
-      dstFrame.memoryUpdates, file);
+                      dstFrame.memoryUpdates, file);
 
     dataFile->AddFrame(dstFrame);
   }
@@ -278,7 +280,7 @@ bool FifoDataFile::GetFlag(u32 flag) const
 }
 
 u64 FifoDataFile::WriteMemoryUpdates(const std::vector<MemoryUpdate>& memUpdates,
-  File::IOFile& file)
+                                     File::IOFile& file)
 {
   // Add space for memory update list
   u64 updateListOffset = file.Tell();
@@ -309,7 +311,7 @@ u64 FifoDataFile::WriteMemoryUpdates(const std::vector<MemoryUpdate>& memUpdates
 }
 
 void FifoDataFile::ReadMemoryUpdates(u64 fileOffset, u32 numUpdates,
-  std::vector<MemoryUpdate>& memUpdates, File::IOFile& file)
+                                     std::vector<MemoryUpdate>& memUpdates, File::IOFile& file)
 {
   memUpdates.resize(numUpdates);
 

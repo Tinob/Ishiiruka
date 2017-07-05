@@ -2,16 +2,19 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Core/PowerPC/PPCAnalyst.h"
+
 #include <algorithm>
+#include <map>
 #include <queue>
 #include <string>
+#include <vector>
 
+#include "Common/Assert.h"
 #include "Common/CommonTypes.h"
 #include "Common/Logging/Log.h"
 #include "Common/StringUtil.h"
 #include "Core/ConfigManager.h"
-#include "Core/PowerPC/JitCommon/JitCache.h"
-#include "Core/PowerPC/PPCAnalyst.h"
 #include "Core/PowerPC/PPCSymbolDB.h"
 #include "Core/PowerPC/PPCTables.h"
 #include "Core/PowerPC/PowerPC.h"
@@ -135,18 +138,18 @@ bool AnalyzeFunction(u32 startAddr, Symbol& func, int max_size)
       /*
       else if ((instr.hex & 0xFC000000) == (0x4b000000 & 0xFC000000) && !instr.LK)
       {
-      u32 target = addr + SignExt26(instr.LI << 2);
-      if (target < startAddr || (max_size && target > max_size+startAddr))
-      {
-      //block ends by branching away. We're done!
-      func.size *= 4; // into bytes
-      func.address = startAddr;
-      func.analyzed = 1;
-      func.hash = HashSignatureDB::ComputeCodeChecksum(startAddr, addr);
-      if (numInternalBranches == 0)
-      func.flags |= FFLAG_STRAIGHT;
-      return true;
-      }
+        u32 target = addr + SignExt26(instr.LI << 2);
+        if (target < startAddr || (max_size && target > max_size+startAddr))
+        {
+          //block ends by branching away. We're done!
+          func.size *= 4; // into bytes
+          func.address = startAddr;
+          func.analyzed = 1;
+          func.hash = HashSignatureDB::ComputeCodeChecksum(startAddr, addr);
+          if (numInternalBranches == 0)
+            func.flags |= FFLAG_STRAIGHT;
+          return true;
+        }
       }*/
       else if (instr.hex == 0x4e800021 || instr.hex == 0x4e800420 || instr.hex == 0x4e800421)
       {
@@ -189,6 +192,14 @@ bool AnalyzeFunction(u32 startAddr, Symbol& func, int max_size)
   }
 }
 
+bool ReanalyzeFunction(u32 start_addr, Symbol& func, int max_size)
+{
+  _assert_msg_(OSHLE, func.analyzed, "The function wasn't previously analyzed!");
+
+  func.analyzed = false;
+  return AnalyzeFunction(start_addr, func, max_size);
+}
+
 // Second pass analysis, done after the first pass is done for all functions
 // so we have more information to work with
 static void AnalyzeFunction2(Symbol* func)
@@ -215,8 +226,8 @@ static bool CanSwapAdjacentOps(const CodeOp& a, const CodeOp& b)
 
   // can't reorder around breakpoints
   if (SConfig::GetInstance().bEnableDebugging &&
-    (PowerPC::breakpoints.IsAddressBreakPoint(a.address) ||
-      PowerPC::breakpoints.IsAddressBreakPoint(b.address)))
+      (PowerPC::breakpoints.IsAddressBreakPoint(a.address) ||
+       PowerPC::breakpoints.IsAddressBreakPoint(b.address)))
     return false;
   if (b_flags & (FL_SET_CRx | FL_ENDBLOCK | FL_TIMER | FL_EVIL | FL_SET_OE))
     return false;
@@ -229,7 +240,7 @@ static bool CanSwapAdjacentOps(const CodeOp& a, const CodeOp& b)
   {
   case 16:
   case 18:
-    // branches. Do not swap.
+  // branches. Do not swap.
   case 17:  // sc
   case 46:  // lmw
   case 19:  // table19 - lots of tricky stuff
@@ -304,22 +315,22 @@ static void FindFunctionsFromBranches(u32 startAddr, u32 endAddr, SymbolDB* func
 static void FindFunctionsFromHandlers(PPCSymbolDB* func_db)
 {
   static const std::map<u32, const char* const> handlers = {
-      { 0x80000100, "system_reset_exception_handler" },
-      { 0x80000200, "machine_check_exception_handler" },
-      { 0x80000300, "dsi_exception_handler" },
-      { 0x80000400, "isi_exception_handler" },
-      { 0x80000500, "external_interrupt_exception_handler" },
-      { 0x80000600, "alignment_exception_handler" },
-      { 0x80000700, "program_exception_handler" },
-      { 0x80000800, "floating_point_unavailable_exception_handler" },
-      { 0x80000900, "decrementer_exception_handler" },
-      { 0x80000C00, "system_call_exception_handler" },
-      { 0x80000D00, "trace_exception_handler" },
-      { 0x80000E00, "floating_point_assist_exception_handler" },
-      { 0x80000F00, "performance_monitor_interrupt_handler" },
-      { 0x80001300, "instruction_address_breakpoint_exception_handler" },
-      { 0x80001400, "system_management_interrupt_handler" },
-      { 0x80001700, "thermal_management_interrupt_exception_handler" } };
+      {0x80000100, "system_reset_exception_handler"},
+      {0x80000200, "machine_check_exception_handler"},
+      {0x80000300, "dsi_exception_handler"},
+      {0x80000400, "isi_exception_handler"},
+      {0x80000500, "external_interrupt_exception_handler"},
+      {0x80000600, "alignment_exception_handler"},
+      {0x80000700, "program_exception_handler"},
+      {0x80000800, "floating_point_unavailable_exception_handler"},
+      {0x80000900, "decrementer_exception_handler"},
+      {0x80000C00, "system_call_exception_handler"},
+      {0x80000D00, "trace_exception_handler"},
+      {0x80000E00, "floating_point_assist_exception_handler"},
+      {0x80000F00, "performance_monitor_interrupt_handler"},
+      {0x80001300, "instruction_address_breakpoint_exception_handler"},
+      {0x80001400, "system_management_interrupt_handler"},
+      {0x80001700, "thermal_management_interrupt_exception_handler"}};
 
   for (const auto& entry : handlers)
   {
@@ -439,21 +450,21 @@ void FindFunctions(u32 startAddr, u32 endAddr, PPCSymbolDB* func_db)
     unniceSize /= numUnNice;
 
   INFO_LOG(OSHLE, "Functions analyzed. %i leafs, %i nice, %i unnice."
-    "%i timer, %i rfi. %i are branchless leafs.",
-    numLeafs, numNice, numUnNice, numTimer, numRFI, numStraightLeaf);
+                  "%i timer, %i rfi. %i are branchless leafs.",
+           numLeafs, numNice, numUnNice, numTimer, numRFI, numStraightLeaf);
   INFO_LOG(OSHLE, "Average size: %i (leaf), %i (nice), %i(unnice)", leafSize, niceSize, unniceSize);
 }
 
 static bool isCmp(const CodeOp& a)
 {
   return (a.inst.OPCD == 10 || a.inst.OPCD == 11) ||
-    (a.inst.OPCD == 31 && (a.inst.SUBOP10 == 0 || a.inst.SUBOP10 == 32));
+         (a.inst.OPCD == 31 && (a.inst.SUBOP10 == 0 || a.inst.SUBOP10 == 32));
 }
 
 static bool isCarryOp(const CodeOp& a)
 {
   return (a.opinfo->flags & FL_SET_CA) && !(a.opinfo->flags & FL_SET_OE) &&
-    a.opinfo->type == OPTYPE_INTEGER;
+         a.opinfo->type == OPTYPE_INTEGER;
 }
 
 static bool isCror(const CodeOp& a)
@@ -462,7 +473,7 @@ static bool isCror(const CodeOp& a)
 }
 
 void PPCAnalyzer::ReorderInstructionsCore(u32 instructions, CodeOp* code, bool reverse,
-  ReorderType type)
+                                          ReorderType type)
 {
   // Bubbling an instruction sometimes reveals another opportunity to bubble an instruction, so do
   // multiple passes.
@@ -484,18 +495,18 @@ void PPCAnalyzer::ReorderInstructionsCore(u32 instructions, CodeOp* code, bool r
       // Reorder integer compares, rlwinm., and carry-affecting ops
       // (if we add more merged branch instructions, add them here!)
       if ((type == REORDER_CROR && isCror(a)) || (type == REORDER_CARRY && isCarryOp(a)) ||
-        (type == REORDER_CMP && (isCmp(a) || a.outputCR0)))
+          (type == REORDER_CMP && (isCmp(a) || a.outputCR0)))
       {
         // once we're next to a carry instruction, don't move away!
         if (type == REORDER_CARRY && i != start)
         {
           // if we read the CA flag, and the previous instruction sets it, don't move away.
           if (!reverse && (a.opinfo->flags & FL_READ_CA) &&
-            (code[i - increment].opinfo->flags & FL_SET_CA))
+              (code[i - increment].opinfo->flags & FL_SET_CA))
             continue;
           // if we set the CA flag, and the next instruction reads it, don't move away.
           if (reverse && (a.opinfo->flags & FL_SET_CA) &&
-            (code[i - increment].opinfo->flags & FL_READ_CA))
+              (code[i - increment].opinfo->flags & FL_READ_CA))
             continue;
         }
 
@@ -531,7 +542,7 @@ void PPCAnalyzer::ReorderInstructions(u32 instructions, CodeOp* code)
 }
 
 void PPCAnalyzer::SetInstructionStats(CodeBlock* block, CodeOp* code, const GekkoOPInfo* opinfo,
-  u32 index)
+                                      u32 index)
 {
   code->wantsCR0 = false;
   code->wantsCR1 = false;
@@ -719,8 +730,8 @@ u32 PPCAnalyzer::Analyze(u32 address, CodeBlock* block, CodeBuffer* buffer, u32 
     code[i].opinfo = opinfo;
     code[i].address = address;
     code[i].inst = inst;
-    code[i].branchTo = -1;
-    code[i].branchToIndex = -1;
+    code[i].branchTo = UINT32_MAX;
+    code[i].branchToIndex = UINT32_MAX;
     code[i].skip = false;
     block->m_stats->numCycles += opinfo->numCycles;
     block->m_physical_addresses.insert(result.physical_address);
@@ -752,7 +763,7 @@ u32 PPCAnalyzer::Analyze(u32 address, CodeBlock* block, CodeBuffer* buffer, u32 
         }
       }
       else if (inst.OPCD == 16 && (inst.BO & BO_DONT_DECREMENT_FLAG) &&
-        (inst.BO & BO_DONT_CHECK_CONDITION) && blockSize > 1)
+               (inst.BO & BO_DONT_CHECK_CONDITION) && blockSize > 1)
       {
         // Always follow unconditional BCX instructions, but they are very rare.
         follow = true;
@@ -764,7 +775,7 @@ u32 PPCAnalyzer::Analyze(u32 address, CodeBlock* block, CodeBuffer* buffer, u32 
         }
       }
       else if (inst.OPCD == 19 && inst.SUBOP10 == 16 && !inst.LK && found_call &&
-        (inst.BO & BO_DONT_DECREMENT_FLAG) && (inst.BO & BO_DONT_CHECK_CONDITION))
+               (inst.BO & BO_DONT_DECREMENT_FLAG) && (inst.BO & BO_DONT_CHECK_CONDITION))
       {
         // bclrx with unconditional branch = return
         // Follow it if we can propagate the LR value of the last CALL instruction.
@@ -796,13 +807,13 @@ u32 PPCAnalyzer::Analyze(u32 address, CodeBlock* block, CodeBuffer* buffer, u32 
     if (HasOption(OPTION_CONDITIONAL_CONTINUE))
     {
       if (inst.OPCD == 16 &&
-        ((inst.BO & BO_DONT_DECREMENT_FLAG) == 0 || (inst.BO & BO_DONT_CHECK_CONDITION) == 0))
+          ((inst.BO & BO_DONT_DECREMENT_FLAG) == 0 || (inst.BO & BO_DONT_CHECK_CONDITION) == 0))
       {
         // bcx with conditional branch
         conditional_continue = true;
       }
       else if (inst.OPCD == 19 && inst.SUBOP10 == 16 && ((inst.BO & BO_DONT_DECREMENT_FLAG) == 0 ||
-        (inst.BO & BO_DONT_CHECK_CONDITION) == 0))
+                                                         (inst.BO & BO_DONT_CHECK_CONDITION) == 0))
       {
         // bclrx with conditional branch
         conditional_continue = true;

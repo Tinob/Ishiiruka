@@ -2,7 +2,6 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
-
 // Detect the CPU, so we'll know which optimizations to use
 #pragma once
 

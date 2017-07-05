@@ -8,19 +8,19 @@
 #include "Core/HW/WiimoteEmu/WiimoteEmu.h"
 
 TurntableInputConfigDialog::TurntableInputConfigDialog(wxWindow* const parent, InputConfig& config,
-  const wxString& name,
-  wxComboBox* device_cbox_parent,
-  const int port_num)
-  : InputConfigDialog(parent, config, name, port_num)
+                                                       const wxString& name,
+                                                       wxComboBox* device_cbox_parent,
+                                                       const int port_num)
+    : InputConfigDialog(parent, config, name, port_num)
 {
   const int space5 = FromDIP(5);
 
   device_cbox = device_cbox_parent;
 
   auto* const group_box_stick = new ControlGroupBox(
-    Wiimote::GetTurntableGroup(port_num, WiimoteEmu::TurntableGroup::Stick), this, this);
+      Wiimote::GetTurntableGroup(port_num, WiimoteEmu::TurntableGroup::Stick), this, this);
   auto* const group_box_effect_dial = new ControlGroupBox(
-    Wiimote::GetTurntableGroup(port_num, WiimoteEmu::TurntableGroup::EffectDial), this, this);
+      Wiimote::GetTurntableGroup(port_num, WiimoteEmu::TurntableGroup::EffectDial), this, this);
 
   auto* const stick_effect_sizer = new wxBoxSizer(wxVERTICAL);
   stick_effect_sizer->Add(group_box_stick, 0, wxEXPAND);
@@ -28,11 +28,11 @@ TurntableInputConfigDialog::TurntableInputConfigDialog(wxWindow* const parent, I
   stick_effect_sizer->Add(group_box_effect_dial, 0, wxEXPAND);
 
   auto* const group_box_left_table = new ControlGroupBox(
-    Wiimote::GetTurntableGroup(port_num, WiimoteEmu::TurntableGroup::LeftTable), this, this);
+      Wiimote::GetTurntableGroup(port_num, WiimoteEmu::TurntableGroup::LeftTable), this, this);
   auto* const group_box_right_table = new ControlGroupBox(
-    Wiimote::GetTurntableGroup(port_num, WiimoteEmu::TurntableGroup::RightTable), this, this);
+      Wiimote::GetTurntableGroup(port_num, WiimoteEmu::TurntableGroup::RightTable), this, this);
   auto* const group_box_crossfade = new ControlGroupBox(
-    Wiimote::GetTurntableGroup(port_num, WiimoteEmu::TurntableGroup::Crossfade), this, this);
+      Wiimote::GetTurntableGroup(port_num, WiimoteEmu::TurntableGroup::Crossfade), this, this);
 
   auto* const tables_crossfade_sizer = new wxBoxSizer(wxVERTICAL);
   tables_crossfade_sizer->Add(group_box_right_table, 0, wxEXPAND);
@@ -42,7 +42,7 @@ TurntableInputConfigDialog::TurntableInputConfigDialog(wxWindow* const parent, I
   tables_crossfade_sizer->Add(group_box_crossfade, 0, wxEXPAND);
 
   auto* const group_box_buttons = new ControlGroupBox(
-    Wiimote::GetTurntableGroup(port_num, WiimoteEmu::TurntableGroup::Buttons), this, this);
+      Wiimote::GetTurntableGroup(port_num, WiimoteEmu::TurntableGroup::Buttons), this, this);
 
   auto* const controls_sizer = new wxBoxSizer(wxHORIZONTAL);
   controls_sizer->AddSpacer(space5);

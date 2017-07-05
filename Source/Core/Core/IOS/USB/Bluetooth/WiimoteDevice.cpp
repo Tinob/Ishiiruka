@@ -2,6 +2,8 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Core/IOS/USB/Bluetooth/WiimoteDevice.h"
+
 #include <cstring>
 #include <memory>
 #include <utility>
@@ -17,7 +19,6 @@
 #include "Core/HW/Wiimote.h"
 #include "Core/Host.h"
 #include "Core/IOS/USB/Bluetooth/BTEmu.h"
-#include "Core/IOS/USB/Bluetooth/WiimoteDevice.h"
 #include "Core/IOS/USB/Bluetooth/WiimoteHIDAttr.h"
 #include "Core/IOS/USB/Bluetooth/l2cap.h"
 
@@ -26,9 +27,9 @@ namespace IOS
 namespace HLE
 {
 WiimoteDevice::WiimoteDevice(Device::BluetoothEmu* host, int number, bdaddr_t bd, bool ready)
-  : m_BD(bd),
-  m_Name(number == WIIMOTE_BALANCE_BOARD ? "Nintendo RVL-WBC-01" : "Nintendo RVL-CNT-01"),
-  m_pHost(host)
+    : m_BD(bd),
+      m_Name(number == WIIMOTE_BALANCE_BOARD ? "Nintendo RVL-WBC-01" : "Nintendo RVL-CNT-01"),
+      m_pHost(host)
 {
   INFO_LOG(IOS_WIIMOTE, "Wiimote: #%i Constructed", number);
 
@@ -70,7 +71,7 @@ void WiimoteDevice::DoState(PointerWrap& p)
   if (passthrough_bluetooth && p.GetMode() == PointerWrap::MODE_READ)
   {
     Core::DisplayMessage("State needs Bluetooth passthrough to be enabled. Aborting load state.",
-      3000);
+                         3000);
     p.SetMode(PointerWrap::MODE_VERIFY);
     return;
   }
@@ -245,7 +246,7 @@ void WiimoteDevice::ExecuteL2capCmd(u8* _pData, u32 _Size)
   u8* pData = _pData + sizeof(l2cap_hdr_t);
   u32 DataSize = _Size - sizeof(l2cap_hdr_t);
   DEBUG_LOG(IOS_WIIMOTE, "  CID 0x%04x, Len 0x%x, DataSize 0x%x", pHeader->dcid, pHeader->length,
-    DataSize);
+            DataSize);
 
   if (pHeader->length != DataSize)
   {
@@ -262,7 +263,7 @@ void WiimoteDevice::ExecuteL2capCmd(u8* _pData, u32 _Size)
   default:
   {
     _dbg_assert_msg_(IOS_WIIMOTE, DoesChannelExist(pHeader->dcid),
-      "L2CAP: SendACLPacket to unknown channel %i", pHeader->dcid);
+                     "L2CAP: SendACLPacket to unknown channel %i", pHeader->dcid);
     CChannelMap::iterator itr = m_Channel.find(pHeader->dcid);
 
     const int number = m_ConnectionHandle & 0xFF;
@@ -317,7 +318,7 @@ void WiimoteDevice::SignalChannel(u8* _pData, u32 _Size)
     {
     case L2CAP_COMMAND_REJ:
       ERROR_LOG(IOS_WIIMOTE, "SignalChannel - L2CAP_COMMAND_REJ (something went wrong)."
-        "Try to replace your SYSCONF file with a new copy.");
+                             "Try to replace your SYSCONF file with a new copy.");
       break;
 
     case L2CAP_CONNECT_REQ:
@@ -427,7 +428,7 @@ void WiimoteDevice::ReceiveConfigurationReq(u8 _Ident, u8* _pData, u32 _Size)
   l2cap_cfg_req_cp* pCommandConfigReq = (l2cap_cfg_req_cp*)_pData;
 
   _dbg_assert_(IOS_WIIMOTE, pCommandConfigReq->flags ==
-    0x00);  // 1 means that the options are send in multi-packets
+                                0x00);  // 1 means that the options are send in multi-packets
   _dbg_assert_(IOS_WIIMOTE, DoesChannelExist(pCommandConfigReq->dcid));
 
   SChannel& rChannel = m_Channel[pCommandConfigReq->dcid];
@@ -580,7 +581,7 @@ void WiimoteDevice::SendDisconnectRequest(u16 scid)
   DEBUG_LOG(IOS_WIIMOTE, "    Scid: 0x%04x", cr.scid);
 
   SendCommandToACL(L2CAP_DISCONNECT_REQ, L2CAP_DISCONNECT_REQ, sizeof(l2cap_discon_req_cp),
-    (u8*)&cr);
+                   (u8*)&cr);
 }
 
 void WiimoteDevice::SendConfigurationRequest(u16 scid, u16 MTU, u16 FlushTimeOut)
@@ -653,8 +654,8 @@ void WiimoteDevice::SendConfigurationRequest(u16 scid, u16 MTU, u16 FlushTimeOut
 #define SDP_SEQ16 0x36
 
 void WiimoteDevice::SDPSendServiceSearchResponse(u16 cid, u16 TransactionID,
-  u8* pServiceSearchPattern,
-  u16 MaximumServiceRecordCount)
+                                                 u8* pServiceSearchPattern,
+                                                 u16 MaximumServiceRecordCount)
 {
   // verify block... we handle search pattern for HID service only
   {
@@ -752,9 +753,9 @@ static int ParseAttribList(u8* pAttribIDList, u16& _startID, u16& _endID)
 }
 
 void WiimoteDevice::SDPSendServiceAttributeResponse(u16 cid, u16 TransactionID, u32 ServiceHandle,
-  u16 startAttrID, u16 endAttrID,
-  u16 MaximumAttributeByteCount,
-  u8* pContinuationState)
+                                                    u16 startAttrID, u16 endAttrID,
+                                                    u16 MaximumAttributeByteCount,
+                                                    u8* pContinuationState)
 {
   if (ServiceHandle != 0x10000)
   {
@@ -801,7 +802,7 @@ void WiimoteDevice::HandleSDP(u16 cid, u8* _pData, u32 _Size)
 
   switch (buffer.Read8(0))
   {
-    // SDP_ServiceSearchRequest
+  // SDP_ServiceSearchRequest
   case 0x02:
   {
     WARN_LOG(IOS_WIIMOTE, "!!! SDP_ServiceSearchRequest !!!");
@@ -813,7 +814,7 @@ void WiimoteDevice::HandleSDP(u16 cid, u8* _pData, u32 _Size)
     u16 MaximumServiceRecordCount = buffer.Read16(10);
 
     SDPSendServiceSearchResponse(cid, TransactionID, pServiceSearchPattern,
-      MaximumServiceRecordCount);
+                                 MaximumServiceRecordCount);
   }
   break;
 
@@ -837,7 +838,7 @@ void WiimoteDevice::HandleSDP(u16 cid, u8* _pData, u32 _Size)
     u8* pContinuationState = buffer.GetPointer(offset);
 
     SDPSendServiceAttributeResponse(cid, TransactionID, ServiceHandle, startAttrID, endAttrID,
-      MaximumAttributeByteCount, pContinuationState);
+                                    MaximumAttributeByteCount, pContinuationState);
   }
   break;
 
@@ -921,7 +922,7 @@ void WiimoteDevice::ReceiveL2capData(u16 scid, const void* _pData, u32 _Size)
 namespace Core
 {
 /* This is called continuously from the Wiimote plugin as soon as it has received
-    a reporting mode. _Size is the byte size of the report. */
+   a reporting mode. _Size is the byte size of the report. */
 void Callback_WiimoteInterruptChannel(int _number, u16 _channelID, const void* _pData, u32 _Size)
 {
   const u8* pData = (const u8*)_pData;
@@ -932,7 +933,7 @@ void Callback_WiimoteInterruptChannel(int _number, u16 _channelID, const void* _
   DEBUG_LOG(WIIMOTE, "   Channel: %x", _channelID);
 
   const auto bt = std::static_pointer_cast<IOS::HLE::Device::BluetoothEmu>(
-    IOS::HLE::GetIOS()->GetDeviceByName("/dev/usb/oh1/57e/305"));
+      IOS::HLE::GetIOS()->GetDeviceByName("/dev/usb/oh1/57e/305"));
   if (bt)
     bt->m_WiiMotes[_number].ReceiveL2capData(_channelID, _pData, _Size);
 }

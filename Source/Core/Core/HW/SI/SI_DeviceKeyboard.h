@@ -58,7 +58,7 @@ protected:
       u32 : 8;
     };
     UCommand() = default;
-    UCommand(u32 value) : hex{ value } {}
+    UCommand(u32 value) : hex{value} {}
   };
 
   // PADAnalogMode

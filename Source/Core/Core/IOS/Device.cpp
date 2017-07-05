@@ -2,6 +2,8 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Core/IOS/Device.h"
+
 #include <algorithm>
 #include <map>
 
@@ -9,7 +11,6 @@
 #include "Common/StringUtil.h"
 #include "Core/HW/Memmap.h"
 #include "Core/HW/SystemTimers.h"
-#include "Core/IOS/Device.h"
 #include "Core/IOS/IOS.h"
 
 namespace IOS
@@ -83,42 +84,42 @@ bool IOCtlVRequest::HasNumberOfValidVectors(const size_t in_count, const size_t 
 
   auto IsValidVector = [](const auto& vector) { return vector.size == 0 || vector.address != 0; };
   return std::all_of(in_vectors.begin(), in_vectors.end(), IsValidVector) &&
-    std::all_of(io_vectors.begin(), io_vectors.end(), IsValidVector);
+         std::all_of(io_vectors.begin(), io_vectors.end(), IsValidVector);
 }
 
 void IOCtlRequest::Log(const std::string& device_name, LogTypes::LOG_TYPE type,
-  LogTypes::LOG_LEVELS verbosity) const
+                       LogTypes::LOG_LEVELS verbosity) const
 {
   GENERIC_LOG(type, verbosity, "%s (fd %u) - IOCtl 0x%x (in_size=0x%x, out_size=0x%x)",
-    device_name.c_str(), fd, request, buffer_in_size, buffer_out_size);
+              device_name.c_str(), fd, request, buffer_in_size, buffer_out_size);
 }
 
 void IOCtlRequest::Dump(const std::string& description, LogTypes::LOG_TYPE type,
-  LogTypes::LOG_LEVELS level) const
+                        LogTypes::LOG_LEVELS level) const
 {
   Log("===== " + description, type, level);
   GENERIC_LOG(type, level, "In buffer\n%s",
-    HexDump(Memory::GetPointer(buffer_in), buffer_in_size).c_str());
+              HexDump(Memory::GetPointer(buffer_in), buffer_in_size).c_str());
   GENERIC_LOG(type, level, "Out buffer\n%s",
-    HexDump(Memory::GetPointer(buffer_out), buffer_out_size).c_str());
+              HexDump(Memory::GetPointer(buffer_out), buffer_out_size).c_str());
 }
 
 void IOCtlRequest::DumpUnknown(const std::string& description, LogTypes::LOG_TYPE type,
-  LogTypes::LOG_LEVELS level) const
+                               LogTypes::LOG_LEVELS level) const
 {
   Dump("Unknown IOCtl - " + description, type, level);
 }
 
 void IOCtlVRequest::Dump(const std::string& description, LogTypes::LOG_TYPE type,
-  LogTypes::LOG_LEVELS level) const
+                         LogTypes::LOG_LEVELS level) const
 {
   GENERIC_LOG(type, level, "===== %s (fd %u) - IOCtlV 0x%x (%zu in, %zu io)", description.c_str(),
-    fd, request, in_vectors.size(), io_vectors.size());
+              fd, request, in_vectors.size(), io_vectors.size());
 
   size_t i = 0;
   for (const auto& vector : in_vectors)
     GENERIC_LOG(type, level, "in[%zu] (size=0x%x):\n%s", i++, vector.size,
-      HexDump(Memory::GetPointer(vector.address), vector.size).c_str());
+                HexDump(Memory::GetPointer(vector.address), vector.size).c_str());
 
   i = 0;
   for (const auto& vector : io_vectors)
@@ -126,7 +127,7 @@ void IOCtlVRequest::Dump(const std::string& description, LogTypes::LOG_TYPE type
 }
 
 void IOCtlVRequest::DumpUnknown(const std::string& description, LogTypes::LOG_TYPE type,
-  LogTypes::LOG_LEVELS level) const
+                                LogTypes::LOG_LEVELS level) const
 {
   Dump("Unknown IOCtlV - " + description, type, level);
 }
@@ -134,7 +135,7 @@ void IOCtlVRequest::DumpUnknown(const std::string& description, LogTypes::LOG_TY
 namespace Device
 {
 Device::Device(Kernel& ios, const std::string& device_name, const DeviceType type)
-  : m_ios(ios), m_name(device_name), m_device_type(type)
+    : m_ios(ios), m_name(device_name), m_device_type(type)
 {
 }
 
@@ -165,11 +166,11 @@ ReturnCode Device::Close(u32 fd)
 
 IPCCommandResult Device::Unsupported(const Request& request)
 {
-  static std::map<IPCCommandType, std::string> names = { {{IPC_CMD_READ, "Read"},
-                                                                           {IPC_CMD_WRITE, "Write"},
-                                                                           {IPC_CMD_SEEK, "Seek"},
-                                                                           {IPC_CMD_IOCTL, "IOCtl"},
-                                                                           {IPC_CMD_IOCTLV, "IOCtlV"}} };
+  static std::map<IPCCommandType, std::string> names = {{{IPC_CMD_READ, "Read"},
+                                                         {IPC_CMD_WRITE, "Write"},
+                                                         {IPC_CMD_SEEK, "Seek"},
+                                                         {IPC_CMD_IOCTL, "IOCtl"},
+                                                         {IPC_CMD_IOCTLV, "IOCtlV"}}};
   WARN_LOG(IOS, "%s does not support %s()", m_name.c_str(), names[request.command].c_str());
   return GetDefaultReply(IPC_EINVAL);
 }
@@ -177,14 +178,14 @@ IPCCommandResult Device::Unsupported(const Request& request)
 // Returns an IPCCommandResult for a reply that takes 250 us (arbitrarily chosen value)
 IPCCommandResult Device::GetDefaultReply(const s32 return_value)
 {
-  return { return_value, true, SystemTimers::GetTicksPerSecond() / 4000 };
+  return {return_value, true, SystemTimers::GetTicksPerSecond() / 4000};
 }
 
 // Returns an IPCCommandResult with no reply. Useful for async commands that will generate a reply
 // later. This takes no return value because it won't be used.
 IPCCommandResult Device::GetNoReply()
 {
-  return { IPC_SUCCESS, false, 0 };
+  return {IPC_SUCCESS, false, 0};
 }
 }  // namespace Device
 }  // namespace HLE

@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "Common/CommonTypes.h"
+#include "Common/File.h"
 #include "Common/FileUtil.h"
 #include "Common/Logging/Log.h"
 #include "Core/HW/Memmap.h"
@@ -62,7 +63,7 @@ void ARCUnpacker::Extract(const WriteCallback& callback)
     u32 size = Common::swap32(node + 8);
     std::string basename = string_table + name_offset;
     std::string fullname =
-      current_directory.empty() ? basename : current_directory + "/" + basename;
+        current_directory.empty() ? basename : current_directory + "/" + basename;
 
     u8 flags = *node;
     if (flags == 1)
@@ -72,7 +73,7 @@ void ARCUnpacker::Extract(const WriteCallback& callback)
     else
     {
       std::vector<u8> contents(m_whole_file.data() + data_offset,
-        m_whole_file.data() + data_offset + size);
+                               m_whole_file.data() + data_offset + size);
       callback(fullname, contents);
     }
   }
@@ -86,7 +87,7 @@ WFSI::WFSI(Kernel& ios, const std::string& device_name) : Device(ios, device_nam
 
 IPCCommandResult WFSI::IOCtl(const IOCtlRequest& request)
 {
-  u32 return_error_code = IPC_SUCCESS;
+  s32 return_error_code = IPC_SUCCESS;
 
   switch (request.request)
   {
@@ -116,7 +117,7 @@ IPCCommandResult WFSI::IOCtl(const IOCtlRequest& request)
       break;
     }
 
-    memcpy(m_aes_key, ticket.GetTitleKey().data(), sizeof(m_aes_key));
+    memcpy(m_aes_key, ticket.GetTitleKey(m_ios.GetIOSC()).data(), sizeof(m_aes_key));
     mbedtls_aes_setkey_dec(&m_aes_ctx, m_aes_key, 128);
 
     break;
@@ -124,13 +125,13 @@ IPCCommandResult WFSI::IOCtl(const IOCtlRequest& request)
 
   case IOCTL_WFSI_PREPARE_PROFILE:
     m_base_extract_path = StringFromFormat("/vol/%s/tmp/", m_device_name.c_str());
-    // Fall through intended.
+  // Fall through intended.
 
   case IOCTL_WFSI_PREPARE_CONTENT:
   {
     const char* ioctl_name = request.request == IOCTL_WFSI_PREPARE_PROFILE ?
-      "IOCTL_WFSI_PREPARE_PROFILE" :
-      "IOCTL_WFSI_PREPARE_CONTENT";
+                                 "IOCTL_WFSI_PREPARE_PROFILE" :
+                                 "IOCTL_WFSI_PREPARE_CONTENT";
 
     // Initializes the IV from the index of the content in the TMD contents.
     u32 content_id = Memory::Read_U32(request.buffer_in + 8);
@@ -146,7 +147,7 @@ IPCCommandResult WFSI::IOCtl(const IOCtlRequest& request)
     m_aes_iv[0] = content_info.index >> 8;
     m_aes_iv[1] = content_info.index & 0xFF;
     INFO_LOG(IOS, "%s: Content id %08x found at index %d", ioctl_name, content_id,
-      content_info.index);
+             content_info.index);
 
     m_arc_unpacker.Reset();
     break;
@@ -156,18 +157,18 @@ IPCCommandResult WFSI::IOCtl(const IOCtlRequest& request)
   case IOCTL_WFSI_IMPORT_CONTENT:
   {
     const char* ioctl_name = request.request == IOCTL_WFSI_IMPORT_PROFILE ?
-      "IOCTL_WFSI_IMPORT_PROFILE" :
-      "IOCTL_WFSI_IMPORT_CONTENT";
+                                 "IOCTL_WFSI_IMPORT_PROFILE" :
+                                 "IOCTL_WFSI_IMPORT_CONTENT";
 
     u32 content_id = Memory::Read_U32(request.buffer_in + 0xC);
     u32 input_ptr = Memory::Read_U32(request.buffer_in + 0x10);
     u32 input_size = Memory::Read_U32(request.buffer_in + 0x14);
     INFO_LOG(IOS, "%s: %08x bytes of data at %08x from content id %d", ioctl_name, input_size,
-      input_ptr, content_id);
+             input_ptr, content_id);
 
     std::vector<u8> decrypted(input_size);
     mbedtls_aes_crypt_cbc(&m_aes_ctx, MBEDTLS_AES_DECRYPT, input_size, m_aes_iv,
-      Memory::GetPointer(input_ptr), decrypted.data());
+                          Memory::GetPointer(input_ptr), decrypted.data());
 
     m_arc_unpacker.AddBytes(decrypted);
     break;
@@ -177,8 +178,8 @@ IPCCommandResult WFSI::IOCtl(const IOCtlRequest& request)
   case IOCTL_WFSI_FINALIZE_CONTENT:
   {
     const char* ioctl_name = request.request == IOCTL_WFSI_FINALIZE_PROFILE ?
-      "IOCTL_WFSI_FINALIZE_PROFILE" :
-      "IOCTL_WFSI_FINALIZE_CONTENT";
+                                 "IOCTL_WFSI_FINALIZE_PROFILE" :
+                                 "IOCTL_WFSI_FINALIZE_CONTENT";
     INFO_LOG(IOS, "%s", ioctl_name);
 
     auto callback = [this](const std::string& filename, const std::vector<u8>& bytes) {
@@ -227,9 +228,9 @@ IPCCommandResult WFSI::IOCtl(const IOCtlRequest& request)
     INFO_LOG(IOS, "IOCTL_WFSI_APPLY_TITLE_PROFILE");
 
     m_base_extract_path = StringFromFormat(
-      "/vol/%s/_install/%c%c%c%c/content", m_device_name.c_str(),
-      static_cast<char>(m_tmd.GetTitleId() >> 24), static_cast<char>(m_tmd.GetTitleId() >> 16),
-      static_cast<char>(m_tmd.GetTitleId() >> 8), static_cast<char>(m_tmd.GetTitleId()));
+        "/vol/%s/_install/%c%c%c%c/content", m_device_name.c_str(),
+        static_cast<char>(m_tmd.GetTitleId() >> 24), static_cast<char>(m_tmd.GetTitleId() >> 16),
+        static_cast<char>(m_tmd.GetTitleId() >> 8), static_cast<char>(m_tmd.GetTitleId()));
     File::CreateFullPath(WFS::NativePath(m_base_extract_path));
 
     break;

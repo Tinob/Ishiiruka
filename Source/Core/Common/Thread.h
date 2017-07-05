@@ -18,14 +18,13 @@
 
 namespace Common
 {
-
 int CurrentThreadId();
 
 void SetThreadAffinity(std::thread::native_handle_type thread, u32 mask);
 void SetCurrentThreadAffinity(u32 mask);
 
 void SleepCurrentThread(int ms);
-void SwitchCurrentThread(); // On Linux, this is equal to sleep 1ms
+void SwitchCurrentThread();  // On Linux, this is equal to sleep 1ms
 
 // Use this function during a spin-wait to make the current thread
 // relax while another thread is working. This may be more efficient
@@ -37,4 +36,4 @@ inline void YieldCPU()
 
 void SetCurrentThreadName(const char* name);
 
-} // namespace Common
+}  // namespace Common

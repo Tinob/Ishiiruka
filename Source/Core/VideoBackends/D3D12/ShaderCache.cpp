@@ -414,13 +414,13 @@ void ShaderCache::HandleGSUIDChange(
       static int num_failures = 0;
       std::string filename = StringFromFormat("%sbad_gs_%04i.txt", File::GetUserPath(D_DUMP_IDX).c_str(), num_failures++);
       std::ofstream file;
-      OpenFStream(file, filename, std::ios_base::out);
+      File::OpenFStream(file, filename, std::ios_base::out);
       file << ((const char *)wunit->code.data());
       file << ((const char *)wunit->error->GetBufferPointer());
       file.close();
 
       PanicAlert("Failed to compile geometry shader!\nThis usually happens when trying to use Dolphin with an outdated GPU or integrated GPU like the Intel GMA series.\n\nIf you're sure this is Dolphin's error anyway, post the contents of %s along with this error message at the forums.\n\nDebug info (%s):\n%s",
-        filename,
+        filename.c_str(),
         D3D::GeometryShaderVersionString(),
         (char*)wunit->error->GetBufferPointer());
     }
@@ -471,13 +471,13 @@ void ShaderCache::HandlePSUIDChange(
       static int num_failures = 0;
       std::string filename = StringFromFormat("%sbad_ps_%04i.txt", File::GetUserPath(D_DUMP_IDX).c_str(), num_failures++);
       std::ofstream file;
-      OpenFStream(file, filename, std::ios_base::out);
+      File::OpenFStream(file, filename, std::ios_base::out);
       file << ((const char *)wunit->code.data());
       file << ((const char *)wunit->error->GetBufferPointer());
       file.close();
 
       PanicAlert("Failed to compile pixel shader!\nThis usually happens when trying to use Dolphin with an outdated GPU or integrated GPU like the Intel GMA series.\n\nIf you're sure this is Dolphin's error anyway, post the contents of %s along with this error message at the forums.\n\nDebug info (%s):\n%s",
-        filename,
+        filename.c_str(),
         D3D::PixelShaderVersionString(),
         (char*)wunit->error->GetBufferPointer());
     }
@@ -528,12 +528,12 @@ void ShaderCache::HandleVSUIDChange(
       static int num_failures = 0;
       std::string filename = StringFromFormat("%sbad_vs_%04i.txt", File::GetUserPath(D_DUMP_IDX).c_str(), num_failures++);
       std::ofstream file;
-      OpenFStream(file, filename, std::ios_base::out);
+      File::OpenFStream(file, filename, std::ios_base::out);
       file << ((const char*)wunit->code.data());
       file.close();
 
       PanicAlert("Failed to compile vertex shader!\nThis usually happens when trying to use Dolphin with an outdated GPU or integrated GPU like the Intel GMA series.\n\nIf you're sure this is Dolphin's error anyway, post the contents of %s along with this error message at the forums.\n\nDebug info (%s):\n%s",
-        filename,
+        filename.c_str(),
         D3D::VertexShaderVersionString(),
         (char*)wunit->error->GetBufferPointer());
     }
@@ -603,13 +603,13 @@ void ShaderCache::HandleTSUIDChange(
       static int num_failures = 0;
       std::string filename = StringFromFormat("%sbad_ds_%04i.txt", File::GetUserPath(D_DUMP_IDX).c_str(), num_failures++);
       std::ofstream file;
-      OpenFStream(file, filename, std::ios_base::out);
+      File::OpenFStream(file, filename, std::ios_base::out);
       file << ((const char *)wunit->code.data());
       file << ((const char *)wunit->error->GetBufferPointer());
       file.close();
 
       PanicAlert("Failed to compile domain shader!\nThis usually happens when trying to use Dolphin with an outdated GPU or integrated GPU like the Intel GMA series.\n\nIf you're sure this is Dolphin's error anyway, post the contents of %s along with this error message at the forums.\n\nDebug info (%s):\n%s",
-        filename,
+        filename.c_str(),
         D3D::DomainShaderVersionString(),
         (char*)wunit->error->GetBufferPointer());
     }
@@ -630,13 +630,13 @@ void ShaderCache::HandleTSUIDChange(
       static int num_failures = 0;
       std::string filename = StringFromFormat("%sbad_hs_%04i.txt", File::GetUserPath(D_DUMP_IDX).c_str(), num_failures++);
       std::ofstream file;
-      OpenFStream(file, filename, std::ios_base::out);
+      File::OpenFStream(file, filename, std::ios_base::out);
       file << ((const char *)wunit->code.data());
       file << ((const char *)wunit->error->GetBufferPointer());
       file.close();
 
       PanicAlert("Failed to compile hull shader!\nThis usually happens when trying to use Dolphin with an outdated GPU or integrated GPU like the Intel GMA series.\n\nIf you're sure this is Dolphin's error anyway, post the contents of %s along with this error message at the forums.\n\nDebug info (%s):\n%s",
-        filename,
+        filename.c_str(),
         D3D::HullShaderVersionString(),
         (char*)wunit->error->GetBufferPointer());
     }

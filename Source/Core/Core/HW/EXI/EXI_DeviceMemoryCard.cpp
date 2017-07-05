@@ -6,6 +6,7 @@
 
 #include <array>
 #include <cstring>
+#include <functional>
 #include <memory>
 #include <string>
 
@@ -17,6 +18,7 @@
 #include "Common/Logging/Log.h"
 #include "Common/NandPaths.h"
 #include "Common/StringUtil.h"
+#include "Core/CommonTitles.h"
 #include "Core/ConfigManager.h"
 #include "Core/CoreTiming.h"
 #include "Core/HW/EXI/EXI.h"
@@ -30,7 +32,6 @@
 #include "Core/HW/SystemTimers.h"
 #include "Core/Movie.h"
 #include "DiscIO/Enums.h"
-#include "DiscIO/NANDContentLoader.h"
 
 namespace ExpansionInterface
 {
@@ -51,11 +52,11 @@ static std::array<CoreTiming::EventType*, 2> s_et_transfer_complete;
 // Takes care of the nasty recovery of the 'this' pointer from card_index,
 // stored in the userdata parameter of the CoreTiming event.
 void CEXIMemoryCard::EventCompleteFindInstance(u64 userdata,
-  std::function<void(CEXIMemoryCard*)> callback)
+                                               std::function<void(CEXIMemoryCard*)> callback)
 {
   int card_index = (int)userdata;
   CEXIMemoryCard* pThis =
-    (CEXIMemoryCard*)ExpansionInterface::FindDevice(EXIDEVICE_MEMORYCARD, card_index);
+      (CEXIMemoryCard*)ExpansionInterface::FindDevice(EXIDEVICE_MEMORYCARD, card_index);
   if (pThis == nullptr)
   {
     pThis = (CEXIMemoryCard*)ExpansionInterface::FindDevice(EXIDEVICE_MEMORYCARDFOLDER, card_index);
@@ -74,7 +75,7 @@ void CEXIMemoryCard::CmdDoneCallback(u64 userdata, s64 cyclesLate)
 void CEXIMemoryCard::TransferCompleteCallback(u64 userdata, s64 cyclesLate)
 {
   EventCompleteFindInstance(userdata,
-    [](CEXIMemoryCard* instance) { instance->TransferComplete(); });
+                            [](CEXIMemoryCard* instance) { instance->TransferComplete(); });
 }
 
 void CEXIMemoryCard::Init()
@@ -104,7 +105,7 @@ void CEXIMemoryCard::Shutdown()
 CEXIMemoryCard::CEXIMemoryCard(const int index, bool gciFolder) : card_index(index)
 {
   _assert_msg_(EXPANSIONINTERFACE, static_cast<std::size_t>(index) < s_et_cmd_done.size(),
-    "Trying to create invalid memory card index %d.", index);
+               "Trying to create invalid memory card index %d.", index);
 
   // NOTE: When loading a save state, DMA completion callbacks (s_et_transfer_complete) and such
   //   may have been restored, we need to anticipate those arriving.
@@ -127,13 +128,13 @@ CEXIMemoryCard::CEXIMemoryCard(const int index, bool gciFolder) : card_index(ind
   // card_id = 0xc243;
   card_id = 0xc221;  // It's a Nintendo brand memcard
 
-                     // The following games have issues with memory cards bigger than 16Mb
-                     // Darkened Skye GDQE6S GDQP6S
-                     // WTA Tour Tennis GWTEA4 GWTJA4 GWTPA4
-                     // Disney Sports : Skate Boarding GDXEA4 GDXPA4 GDXJA4
-                     // Disney Sports : Soccer GDKEA4
-                     // Wallace and Gromit in Pet Zoo GWLE6L GWLX6L
-                     // Use a 16Mb (251 block) memory card for these games
+  // The following games have issues with memory cards bigger than 16Mb
+  // Darkened Skye GDQE6S GDQP6S
+  // WTA Tour Tennis GWTEA4 GWTJA4 GWTPA4
+  // Disney Sports : Skate Boarding GDXEA4 GDXPA4 GDXJA4
+  // Disney Sports : Soccer GDKEA4
+  // Wallace and Gromit in Pet Zoo GWLE6L GWLX6L
+  // Use a 16Mb (251 block) memory card for these games
   bool useMC251;
   IniFile gameIni = SConfig::GetInstance().LoadGameIni();
   gameIni.GetOrCreateSection("Core")->Get("MemoryCard251", &useMC251, false);
@@ -149,7 +150,7 @@ CEXIMemoryCard::CEXIMemoryCard(const int index, bool gciFolder) : card_index(ind
   }
 
   memory_card_size = memorycard->GetCardId() * SIZE_TO_Mb;
-  u8 header[20] = { 0 };
+  u8 header[20] = {0};
   memorycard->Read(0, static_cast<s32>(ArraySize(header)), header);
   SetCardFlashID(header, card_index);
 }
@@ -160,7 +161,8 @@ void CEXIMemoryCard::SetupGciFolder(u16 sizeMb)
 
   const std::string& game_id = SConfig::GetInstance().GetGameID();
   u32 CurrentGameId = 0;
-  if (game_id.length() >= 4 && game_id != "00000000" && game_id != TITLEID_SYSMENU_STRING)
+  if (game_id.length() >= 4 && game_id != "00000000" &&
+      SConfig::GetInstance().GetTitleID() != Titles::SYSTEM_MENU)
     CurrentGameId = BE32((u8*)game_id.c_str());
 
   const bool shift_jis = region == DiscIO::Region::NTSC_J;
@@ -168,11 +170,11 @@ void CEXIMemoryCard::SetupGciFolder(u16 sizeMb)
   std::string strDirectoryName = File::GetUserPath(D_GCUSER_IDX);
 
   if (Movie::IsPlayingInput() && Movie::IsConfigSaved() && Movie::IsUsingMemcard(card_index) &&
-    Movie::IsStartingFromClearSave())
+      Movie::IsStartingFromClearSave())
     strDirectoryName += "Movie" DIR_SEP;
 
   strDirectoryName = strDirectoryName + SConfig::GetDirectoryForRegion(region) + DIR_SEP +
-    StringFromFormat("Card %c", 'A' + card_index);
+                     StringFromFormat("Card %c", 'A' + card_index);
 
   if (!File::Exists(strDirectoryName))  // first use of memcard folder, migrate automatically
   {
@@ -189,24 +191,24 @@ void CEXIMemoryCard::SetupGciFolder(u16 sizeMb)
     {
       // TODO more user friendly abort
       PanicAlertT("%s is not a directory, failed to move to *.original.\n Verify your "
-        "write permissions or move the file outside of Dolphin",
-        strDirectoryName.c_str());
+                  "write permissions or move the file outside of Dolphin",
+                  strDirectoryName.c_str());
       exit(0);
     }
   }
 
   memorycard = std::make_unique<GCMemcardDirectory>(strDirectoryName + DIR_SEP, card_index, sizeMb,
-    shift_jis, region, CurrentGameId);
+                                                    shift_jis, region, CurrentGameId);
 }
 
 void CEXIMemoryCard::SetupRawMemcard(u16 sizeMb)
 {
   std::string filename = (card_index == 0) ? SConfig::GetInstance().m_strMemoryCardA :
-    SConfig::GetInstance().m_strMemoryCardB;
+                                             SConfig::GetInstance().m_strMemoryCardB;
   if (Movie::IsPlayingInput() && Movie::IsConfigSaved() && Movie::IsUsingMemcard(card_index) &&
-    Movie::IsStartingFromClearSave())
+      Movie::IsStartingFromClearSave())
     filename = File::GetUserPath(D_GCUSER_IDX) +
-    StringFromFormat("Movie%s.raw", (card_index == 0) ? "A" : "B");
+               StringFromFormat("Movie%s.raw", (card_index == 0) ? "A" : "B");
 
   if (sizeMb == MemCard251Mb)
   {
@@ -339,7 +341,7 @@ void CEXIMemoryCard::TransferByte(u8& byte)
     case cmdExtraByteProgram:
     case cmdChipErase:
       DEBUG_LOG(EXPANSIONINTERFACE, "EXI MEMCARD: command %02x at position 0. seems normal.",
-        command);
+                command);
       break;
     default:
       WARN_LOG(EXPANSIONINTERFACE, "EXI MEMCARD: command %02x at position 0", command);
@@ -516,7 +518,7 @@ void CEXIMemoryCard::DMARead(u32 _uAddr, u32 _uSize)
 
   // Schedule transfer complete later based on read speed
   CoreTiming::ScheduleEvent(_uSize * (SystemTimers::GetTicksPerSecond() / MC_TRANSFER_RATE_READ),
-    s_et_transfer_complete[card_index], (u64)card_index);
+                            s_et_transfer_complete[card_index], (u64)card_index);
 }
 
 // DMA write are preceded by all of the necessary setup via IMMWrite
@@ -532,6 +534,6 @@ void CEXIMemoryCard::DMAWrite(u32 _uAddr, u32 _uSize)
 
   // Schedule transfer complete later based on write speed
   CoreTiming::ScheduleEvent(_uSize * (SystemTimers::GetTicksPerSecond() / MC_TRANSFER_RATE_WRITE),
-    s_et_transfer_complete[card_index], (u64)card_index);
+                            s_et_transfer_complete[card_index], (u64)card_index);
 }
 }  // namespace ExpansionInterface

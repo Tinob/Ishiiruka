@@ -189,7 +189,7 @@ enum : u16
   SR_TOP2BITS = 0x0020,  // If the upper (ac?.m/ax?.h) 2 bits are equal
   SR_LOGIC_ZERO = 0x0040,
   SR_OVERFLOW_STICKY =
-  0x0080,  // Set at the same time as 0x2 (under same conditions) - but not cleared the same
+      0x0080,  // Set at the same time as 0x2 (under same conditions) - but not cleared the same
   SR_100 = 0x0100,         // Unknown
   SR_INT_ENABLE = 0x0200,  // Not 100% sure but duddie says so. This should replace the hack, if so.
   SR_400 = 0x0400,         // Unknown
@@ -197,9 +197,9 @@ enum : u16
   SR_1000 = 0x1000,            // Unknown
   SR_MUL_MODIFY = 0x2000,      // 1 = normal. 0 = x2   (M0, M2) (Free mul by 2)
   SR_40_MODE_BIT = 0x4000,     // 0 = "16", 1 = "40"  (SET16, SET40)  Controls sign extension when
-                                                           // loading mid accums and data saturation for stores from mid accums.
+                               // loading mid accums and data saturation for stores from mid accums.
   SR_MUL_UNSIGNED = 0x8000,    // 0 = normal. 1 = unsigned  (CLR15, SET15) If set, treats ax?.l as
-                                                           // unsigned (MULX family only).
+                               // unsigned (MULX family only).
 
   // This should be the bits affected by CMP. Does not include logic zero.
   SR_CMP_MASK = 0x3f

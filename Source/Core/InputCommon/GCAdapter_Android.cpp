@@ -35,18 +35,18 @@ static bool s_detected = false;
 static int s_fd = 0;
 static u8 s_controller_type[SerialInterface::MAX_SI_CHANNELS] = {
     ControllerTypes::CONTROLLER_NONE, ControllerTypes::CONTROLLER_NONE,
-    ControllerTypes::CONTROLLER_NONE, ControllerTypes::CONTROLLER_NONE };
+    ControllerTypes::CONTROLLER_NONE, ControllerTypes::CONTROLLER_NONE};
 static u8 s_controller_rumble[4];
 
 // Input handling
 static std::mutex s_read_mutex;
 static std::array<u8, 37> s_controller_payload;
-static std::atomic<int> s_controller_payload_size{ 0 };
+static std::atomic<int> s_controller_payload_size{0};
 
 // Output handling
 static std::mutex s_write_mutex;
 static u8 s_controller_write_payload[5];
-static std::atomic<int> s_controller_write_payload_size{ 0 };
+static std::atomic<int> s_controller_write_payload_size{0};
 
 // Adapter running thread
 static std::thread s_read_adapter_thread;
@@ -74,7 +74,7 @@ static void ScanThreadFunc()
   while (s_adapter_detect_thread_running.IsSet())
   {
     if (!s_detected && UseAdapter() &&
-      env->CallStaticBooleanMethod(s_adapter_class, queryadapter_func))
+        env->CallStaticBooleanMethod(s_adapter_class, queryadapter_func))
       Setup();
     Common::SleepCurrentThread(1000);
   }
@@ -281,7 +281,7 @@ GCPadStatus Input(int chan)
   if (payload_size != controller_payload_copy.size())
   {
     ERROR_LOG(SERIALINTERFACE, "error reading payload (size: %d, type: %02x)", payload_size,
-      controller_payload_copy[0]);
+              controller_payload_copy[0]);
     Reset();
   }
   else
@@ -289,10 +289,10 @@ GCPadStatus Input(int chan)
     bool get_origin = false;
     u8 type = controller_payload_copy[1 + (9 * chan)] >> 4;
     if (type != ControllerTypes::CONTROLLER_NONE &&
-      s_controller_type[chan] == ControllerTypes::CONTROLLER_NONE)
+        s_controller_type[chan] == ControllerTypes::CONTROLLER_NONE)
     {
       ERROR_LOG(SERIALINTERFACE, "New device connected to Port %d of Type: %02x", chan + 1,
-        controller_payload_copy[1 + (9 * chan)]);
+                controller_payload_copy[1 + (9 * chan)]);
       get_origin = true;
     }
 
@@ -356,11 +356,11 @@ void Output(int chan, u8 rumble_command)
 
   // Skip over rumble commands if it has not changed or the controller is wireless
   if (rumble_command != s_controller_rumble[chan] &&
-    s_controller_type[chan] != ControllerTypes::CONTROLLER_WIRELESS)
+      s_controller_type[chan] != ControllerTypes::CONTROLLER_WIRELESS)
   {
     s_controller_rumble[chan] = rumble_command;
-    unsigned char rumble[5] = { 0x11, s_controller_rumble[0], s_controller_rumble[1],
-        s_controller_rumble[2], s_controller_rumble[3] };
+    unsigned char rumble[5] = {0x11, s_controller_rumble[0], s_controller_rumble[1],
+                               s_controller_rumble[2], s_controller_rumble[3]};
     {
       std::lock_guard<std::mutex> lk(s_write_mutex);
       memcpy(s_controller_write_payload, rumble, 5);
@@ -394,7 +394,7 @@ bool UseAdapter()
 
 void ResetRumble()
 {
-  unsigned char rumble[5] = { 0x11, 0, 0, 0, 0 };
+  unsigned char rumble[5] = {0x11, 0, 0, 0, 0};
   {
     std::lock_guard<std::mutex> lk(s_read_mutex);
     memcpy(s_controller_write_payload, rumble, 5);

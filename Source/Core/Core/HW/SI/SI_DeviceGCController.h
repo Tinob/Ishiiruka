@@ -54,7 +54,7 @@ protected:
       u32 : 8;
     };
     UCommand() = default;
-    UCommand(u32 value) : hex{ value } {}
+    UCommand(u32 value) : hex{value} {}
   };
 
   enum EButtonCombo
@@ -123,7 +123,7 @@ class CSIDevice_TaruKonga : public CSIDevice_GCController
 {
 public:
   CSIDevice_TaruKonga(SIDevices device, int device_number)
-    : CSIDevice_GCController(device, device_number)
+      : CSIDevice_GCController(device, device_number)
   {
     m_simulate_konga = true;
   }

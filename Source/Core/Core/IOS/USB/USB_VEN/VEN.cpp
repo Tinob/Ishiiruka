@@ -4,7 +4,11 @@
 
 #include "Core/IOS/USB/USB_VEN/VEN.h"
 
+#include <cstddef>
 #include <cstring>
+#include <memory>
+#include <mutex>
+#include <string>
 
 #include "Common/ChunkFile.h"
 #include "Common/Logging/Log.h"
@@ -70,10 +74,10 @@ IPCCommandResult USB_VEN::IOCtl(const IOCtlRequest& request)
 IPCCommandResult USB_VEN::IOCtlV(const IOCtlVRequest& request)
 {
   static const std::map<u32, u32> s_num_vectors = {
-       {USB::IOCTLV_USBV5_CTRLMSG, 2},
-       {USB::IOCTLV_USBV5_INTRMSG, 2},
-       {USB::IOCTLV_USBV5_BULKMSG, 2},
-       {USB::IOCTLV_USBV5_ISOMSG, 4},
+      {USB::IOCTLV_USBV5_CTRLMSG, 2},
+      {USB::IOCTLV_USBV5_INTRMSG, 2},
+      {USB::IOCTLV_USBV5_BULKMSG, 2},
+      {USB::IOCTLV_USBV5_ISOMSG, 4},
   };
 
   switch (request.request)
@@ -91,7 +95,7 @@ IPCCommandResult USB_VEN::IOCtlV(const IOCtlVRequest& request)
     if (!device || !device->Attach(GetInterfaceNumber(device_id)))
       return GetDefaultReply(IPC_ENOENT);
     return HandleTransfer(device, request.request,
-      [&, this]() { return SubmitTransfer(*device, request); });
+                          [&, this]() { return SubmitTransfer(*device, request); });
   }
   default:
     return GetDefaultReply(IPC_EINVAL);
@@ -116,7 +120,7 @@ void USB_VEN::DoState(PointerWrap& p)
 
 std::shared_ptr<USB::Device> USB_VEN::GetDeviceByIOSID(const s32 ios_id) const
 {
-  std::lock_guard<std::mutex> lk{ m_id_map_mutex };
+  std::lock_guard<std::mutex> lk{m_id_map_mutex};
   const auto iter = m_ios_ids.find(ios_id);
   if (iter == m_ios_ids.cend())
     return nullptr;
@@ -140,7 +144,7 @@ IPCCommandResult USB_VEN::CancelEndpoint(USB::Device& device, const IOCtlRequest
 
 IPCCommandResult USB_VEN::GetDeviceChange(const IOCtlRequest& request)
 {
-  std::lock_guard<std::mutex> lk{ m_devicechange_hook_address_mutex };
+  std::lock_guard<std::mutex> lk{m_devicechange_hook_address_mutex};
   m_devicechange_hook_request = std::make_unique<IOCtlRequest>(request.address);
   // On the first call, the reply is sent immediately (instead of on device insertion/removal)
   if (m_devicechange_first_call)
@@ -189,12 +193,12 @@ IPCCommandResult USB_VEN::SetAlternateSetting(USB::Device& device, const IOCtlRe
 IPCCommandResult USB_VEN::Shutdown(const IOCtlRequest& request)
 {
   if (request.buffer_in != 0 || request.buffer_in_size != 0 || request.buffer_out != 0 ||
-    request.buffer_out_size != 0)
+      request.buffer_out_size != 0)
   {
     return GetDefaultReply(IPC_EINVAL);
   }
 
-  std::lock_guard<std::mutex> lk{ m_devicechange_hook_address_mutex };
+  std::lock_guard<std::mutex> lk{m_devicechange_hook_address_mutex};
   if (m_devicechange_hook_request)
   {
     m_ios.EnqueueIPCReply(*m_devicechange_hook_request, IPC_SUCCESS);
@@ -211,7 +215,7 @@ IPCCommandResult USB_VEN::SuspendResume(USB::Device& device, const IOCtlRequest&
   // Note: this is unimplemented because there's no easy way to do this in a
   // platform-independant way (libusb does not support power management).
   INFO_LOG(IOS_USB, "[%04x:%04x %d] Received %s command", device.GetVid(), device.GetPid(),
-    GetInterfaceNumber(device_id), resumed == 0 ? "suspend" : "resume");
+           GetInterfaceNumber(device_id), resumed == 0 ? "suspend" : "resume");
   return GetDefaultReply(IPC_SUCCESS);
 }
 
@@ -246,7 +250,7 @@ IPCCommandResult USB_VEN::HandleDeviceIOCtl(const IOCtlRequest& request, Handler
 
 void USB_VEN::OnDeviceChange(const ChangeEvent event, std::shared_ptr<USB::Device> device)
 {
-  std::lock_guard<std::mutex> id_map_lock{ m_id_map_mutex };
+  std::lock_guard<std::mutex> id_map_lock{m_id_map_mutex};
   if (event == ChangeEvent::Inserted)
   {
     for (const auto& interface : device->GetInterfaces(0))
@@ -277,7 +281,7 @@ void USB_VEN::OnDeviceChange(const ChangeEvent event, std::shared_ptr<USB::Devic
 
 void USB_VEN::OnDeviceChangeEnd()
 {
-  std::lock_guard<std::mutex> lk{ m_devicechange_hook_address_mutex };
+  std::lock_guard<std::mutex> lk{m_devicechange_hook_address_mutex};
   TriggerDeviceChangeReply();
   ++m_device_number;
 }
@@ -287,7 +291,7 @@ void USB_VEN::TriggerDeviceChangeReply()
   if (!m_devicechange_hook_request)
     return;
 
-  std::lock_guard<std::mutex> id_map_lock{ m_id_map_mutex };
+  std::lock_guard<std::mutex> id_map_lock{m_id_map_mutex};
   u8 num_devices = 0;
   const size_t max_num = m_devicechange_hook_request->buffer_out_size / sizeof(DeviceEntry);
   for (const auto& ios_device : m_ios_ids)
@@ -323,7 +327,7 @@ void USB_VEN::TriggerDeviceChangeReply()
     entry.num_altsettings = device->GetNumberOfAltSettings(interface_number);
 
     Memory::CopyToEmu(m_devicechange_hook_request->buffer_out + sizeof(entry) * num_devices++,
-      &entry, sizeof(entry));
+                      &entry, sizeof(entry));
   }
 
   m_ios.EnqueueIPCReply(*m_devicechange_hook_request, num_devices, 0, CoreTiming::FromThread::ANY);

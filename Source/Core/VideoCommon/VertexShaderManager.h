@@ -7,8 +7,9 @@
 #include "VideoCommon/VertexShaderGen.h"
 
 class PointerWrap;
+struct ProjectionHackConfig;
 
-void UpdateProjectionHack(int iParams[], std::string sParams[]);
+void UpdateProjectionHack(const ProjectionHackConfig& config);
 
 // The non-API dependent parts.
 class VertexShaderManager

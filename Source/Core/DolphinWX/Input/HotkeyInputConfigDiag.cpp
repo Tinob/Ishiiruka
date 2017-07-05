@@ -12,9 +12,9 @@
 #include "DolphinWX/Input/HotkeyInputConfigDiag.h"
 
 HotkeyInputConfigDialog::HotkeyInputConfigDialog(wxWindow* parent, InputConfig& config,
-  const wxString& name, bool using_debugger,
-  int port_num)
-  : InputConfigDialog(parent, config, name, port_num), m_using_debugger{ using_debugger }
+                                                 const wxString& name, bool using_debugger,
+                                                 int port_num)
+    : InputConfigDialog(parent, config, name, port_num), m_using_debugger{using_debugger}
 {
   InitializeNotebook();
   SetSizerAndFit(CreateMainSizer());
@@ -37,7 +37,7 @@ wxSizer* HotkeyInputConfigDialog::CreateMainSizer()
   main_sizer->Add(m_notebook, 1, wxEXPAND | wxLEFT | wxRIGHT, space5);
   main_sizer->AddSpacer(space5);
   main_sizer->Add(CreateButtonSizer(wxCLOSE | wxNO_DEFAULT), 0, wxEXPAND | wxLEFT | wxRIGHT,
-    space5);
+                  space5);
   main_sizer->AddSpacer(space5);
 
   return main_sizer;
@@ -60,12 +60,12 @@ wxSizer* HotkeyInputConfigDialog::CreateOptionsSizer()
   auto background_input_checkbox = new wxCheckBox(this, wxID_ANY, _("Background Input"));
   background_input_checkbox->SetValue(SConfig::GetInstance().m_BackgroundInput);
   background_input_checkbox->Bind(wxEVT_CHECKBOX,
-    &HotkeyInputConfigDialog::OnBackgroundInputChanged, this);
+                                  &HotkeyInputConfigDialog::OnBackgroundInputChanged, this);
 
   auto iterative_input_checkbox = new wxCheckBox(this, wxID_ANY, _("Iterative Input"));
   iterative_input_checkbox->SetValue(m_iterate);
   iterative_input_checkbox->Bind(wxEVT_CHECKBOX, &HotkeyInputConfigDialog::OnIterativeInputChanged,
-    this);
+                                 this);
 
   auto sizer = new wxStaticBoxSizer(wxVERTICAL, this, _("Options"));
   sizer->AddSpacer(space3);
@@ -133,11 +133,11 @@ wxPanel* HotkeyInputConfigDialog::CreateGeneralPanel()
   auto* const general_panel = new wxPanel(m_notebook);
 
   auto* const general_group_box =
-    new ControlGroupBox(HotkeyManagerEmu::GetHotkeyGroup(HKGP_GENERAL), general_panel, this);
+      new ControlGroupBox(HotkeyManagerEmu::GetHotkeyGroup(HKGP_GENERAL), general_panel, this);
   auto* const volume_group_box =
-    new ControlGroupBox(HotkeyManagerEmu::GetHotkeyGroup(HKGP_VOLUME), general_panel, this);
+      new ControlGroupBox(HotkeyManagerEmu::GetHotkeyGroup(HKGP_VOLUME), general_panel, this);
   auto* const speed_group_box =
-    new ControlGroupBox(HotkeyManagerEmu::GetHotkeyGroup(HKGP_SPEED), general_panel, this);
+      new ControlGroupBox(HotkeyManagerEmu::GetHotkeyGroup(HKGP_SPEED), general_panel, this);
 
   auto* const volume_speed_sizer = new wxBoxSizer(wxVERTICAL);
   volume_speed_sizer->AddSpacer(space5);
@@ -160,9 +160,9 @@ wxPanel* HotkeyInputConfigDialog::CreateTASToolsPanel()
   auto* const tas_panel = new wxPanel(m_notebook);
 
   auto* const frame_advance_group_box =
-    new ControlGroupBox(HotkeyManagerEmu::GetHotkeyGroup(HKGP_FRAME_ADVANCE), tas_panel, this);
+      new ControlGroupBox(HotkeyManagerEmu::GetHotkeyGroup(HKGP_FRAME_ADVANCE), tas_panel, this);
   auto* const movie_group_box =
-    new ControlGroupBox(HotkeyManagerEmu::GetHotkeyGroup(HKGP_MOVIE), tas_panel, this);
+      new ControlGroupBox(HotkeyManagerEmu::GetHotkeyGroup(HKGP_MOVIE), tas_panel, this);
 
   auto* const tas_sizer = new wxBoxSizer(wxHORIZONTAL);
   tas_sizer->AddSpacer(space5);
@@ -180,11 +180,11 @@ wxPanel* HotkeyInputConfigDialog::CreateDebuggingPanel()
   auto* const debugging_panel = new wxPanel(m_notebook);
 
   auto* const stepping_group_box =
-    new ControlGroupBox(HotkeyManagerEmu::GetHotkeyGroup(HKGP_STEPPING), debugging_panel, this);
+      new ControlGroupBox(HotkeyManagerEmu::GetHotkeyGroup(HKGP_STEPPING), debugging_panel, this);
   auto* const pc_group_box =
-    new ControlGroupBox(HotkeyManagerEmu::GetHotkeyGroup(HKGP_PC), debugging_panel, this);
+      new ControlGroupBox(HotkeyManagerEmu::GetHotkeyGroup(HKGP_PC), debugging_panel, this);
   auto* const breakpoint_group_box =
-    new ControlGroupBox(HotkeyManagerEmu::GetHotkeyGroup(HKGP_BREAKPOINT), debugging_panel, this);
+      new ControlGroupBox(HotkeyManagerEmu::GetHotkeyGroup(HKGP_BREAKPOINT), debugging_panel, this);
 
   auto* const debugging_sizer = new wxBoxSizer(wxHORIZONTAL);
   debugging_sizer->AddSpacer(space5);
@@ -205,7 +205,7 @@ wxPanel* HotkeyInputConfigDialog::CreateWiiPanel()
   auto* const wii_panel = new wxPanel(m_notebook);
 
   auto* const wii_group_box =
-    new ControlGroupBox(HotkeyManagerEmu::GetHotkeyGroup(HKGP_WII), wii_panel, this);
+      new ControlGroupBox(HotkeyManagerEmu::GetHotkeyGroup(HKGP_WII), wii_panel, this);
 
   auto* const wii_sizer = new wxBoxSizer(wxHORIZONTAL);
   wii_sizer->AddSpacer(space5);
@@ -222,9 +222,9 @@ wxPanel* HotkeyInputConfigDialog::CreateGraphicsPanel()
   auto* const graphics_panel = new wxPanel(m_notebook);
 
   auto* const graphics_toggles_group_box = new ControlGroupBox(
-    HotkeyManagerEmu::GetHotkeyGroup(HKGP_GRAPHICS_TOGGLES), graphics_panel, this);
+      HotkeyManagerEmu::GetHotkeyGroup(HKGP_GRAPHICS_TOGGLES), graphics_panel, this);
   auto* const ir_group_box =
-    new ControlGroupBox(HotkeyManagerEmu::GetHotkeyGroup(HKGP_IR), graphics_panel, this);
+      new ControlGroupBox(HotkeyManagerEmu::GetHotkeyGroup(HKGP_IR), graphics_panel, this);
 
   auto* const ir_sizer = new wxBoxSizer(wxVERTICAL);
   ir_sizer->Add(graphics_toggles_group_box, 0, wxEXPAND);
@@ -232,7 +232,7 @@ wxPanel* HotkeyInputConfigDialog::CreateGraphicsPanel()
   ir_sizer->Add(ir_group_box, 0, wxEXPAND);
 
   auto* const freelook_group_box =
-    new ControlGroupBox(HotkeyManagerEmu::GetHotkeyGroup(HKGP_FREELOOK), graphics_panel, this);
+      new ControlGroupBox(HotkeyManagerEmu::GetHotkeyGroup(HKGP_FREELOOK), graphics_panel, this);
 
   auto* const szr_graphics_toggles = new wxBoxSizer(wxHORIZONTAL);
   szr_graphics_toggles->AddSpacer(space5);
@@ -251,9 +251,9 @@ wxPanel* HotkeyInputConfigDialog::CreateStereoscopic3DPanel()
   auto* const stereoscopic_panel = new wxPanel(m_notebook);
 
   auto* const stereoscopic_toggles_group_box = new ControlGroupBox(
-    HotkeyManagerEmu::GetHotkeyGroup(HKGP_3D_TOGGLE), stereoscopic_panel, this);
+      HotkeyManagerEmu::GetHotkeyGroup(HKGP_3D_TOGGLE), stereoscopic_panel, this);
   auto* const stereoscopic_depth_group_box = new ControlGroupBox(
-    HotkeyManagerEmu::GetHotkeyGroup(HKGP_3D_DEPTH), stereoscopic_panel, this);
+      HotkeyManagerEmu::GetHotkeyGroup(HKGP_3D_DEPTH), stereoscopic_panel, this);
 
   auto* const stereoscopic_sizer = new wxBoxSizer(wxHORIZONTAL);
   stereoscopic_sizer->AddSpacer(space5);
@@ -272,9 +272,9 @@ wxPanel* HotkeyInputConfigDialog::CreateSaveAndLoadStatePanel()
   auto* const save_load_state_panel = new wxPanel(m_notebook);
 
   auto* const load_state_group_box = new ControlGroupBox(
-    HotkeyManagerEmu::GetHotkeyGroup(HKGP_LOAD_STATE), save_load_state_panel, this);
+      HotkeyManagerEmu::GetHotkeyGroup(HKGP_LOAD_STATE), save_load_state_panel, this);
   auto* const save_state_group_box = new ControlGroupBox(
-    HotkeyManagerEmu::GetHotkeyGroup(HKGP_SAVE_STATE), save_load_state_panel, this);
+      HotkeyManagerEmu::GetHotkeyGroup(HKGP_SAVE_STATE), save_load_state_panel, this);
 
   auto* const save_load_state_sizer = new wxBoxSizer(wxHORIZONTAL);
   save_load_state_sizer->AddSpacer(space5);
@@ -293,11 +293,11 @@ wxPanel* HotkeyInputConfigDialog::CreateOtherStateManagementPanel()
   auto* const other_state_panel = new wxPanel(m_notebook);
 
   auto* const group_box_select_state = new ControlGroupBox(
-    HotkeyManagerEmu::GetHotkeyGroup(HKGP_SELECT_STATE), other_state_panel, this);
+      HotkeyManagerEmu::GetHotkeyGroup(HKGP_SELECT_STATE), other_state_panel, this);
   auto* const group_box_load_last_state = new ControlGroupBox(
-    HotkeyManagerEmu::GetHotkeyGroup(HKGP_LOAD_LAST_STATE), other_state_panel, this);
+      HotkeyManagerEmu::GetHotkeyGroup(HKGP_LOAD_LAST_STATE), other_state_panel, this);
   auto* const group_box_state_misc = new ControlGroupBox(
-    HotkeyManagerEmu::GetHotkeyGroup(HKGP_STATE_MISC), other_state_panel, this);
+      HotkeyManagerEmu::GetHotkeyGroup(HKGP_STATE_MISC), other_state_panel, this);
 
   auto* const other_state_sizer = new wxBoxSizer(wxHORIZONTAL);
   other_state_sizer->AddSpacer(space5);

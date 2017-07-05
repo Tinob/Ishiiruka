@@ -21,14 +21,14 @@ public:
   void LoadSettings();
 
 private:
-  LogManager *m_LogManager;
+  LogManager* m_LogManager;
   bool m_writeFile, m_writeConsole, m_writeWindow;
   bool enableAll;
 
   // Controls
   wxCheckBox *m_writeFileCB, *m_writeConsoleCB, *m_writeWindowCB;
   wxCheckListBox* m_checks;
-  wxRadioBox *m_verbosity;
+  wxRadioBox* m_verbosity;
 
   void CreateGUIControls();
   void OnVerbosityChange(wxCommandEvent& event);

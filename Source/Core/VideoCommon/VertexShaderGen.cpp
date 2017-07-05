@@ -310,7 +310,6 @@ inline void GenerateVertexShader(ShaderCode& out, const vertex_shader_uid_data& 
       }
       break;
     case XF_SRCCOLORS_INROW:
-      _dbg_assert_log_(VIDEO, texinfo.texgentype == XF_TEXGEN_COLOR_STRGBC0 || texinfo.texgentype == XF_TEXGEN_COLOR_STRGBC1, "texgentype missmatch: %u", texinfo.texgentype);
       break;
     case XF_SRCBINORMAL_T_INROW:
       if (components & VB_HAS_NRM1)
@@ -325,7 +324,6 @@ inline void GenerateVertexShader(ShaderCode& out, const vertex_shader_uid_data& 
       }
       break;
     default:
-      _dbg_assert_log_(VIDEO, texinfo.sourcerow <= XF_SRCTEX7_INROW, "sourcerow missmatch: %u", texinfo.sourcerow);
       if (components & (VB_HAS_UV0 << (texinfo.sourcerow - XF_SRCTEX0_INROW)))
         out.Write("coord.xy = tex%d.xy;\n", texinfo.sourcerow - XF_SRCTEX0_INROW);
       break;

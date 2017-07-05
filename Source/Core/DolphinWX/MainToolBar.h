@@ -22,8 +22,8 @@ public:
   };
 
   MainToolBar(ToolBarType type, wxWindow* parent, wxWindowID id,
-    const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize,
-    long style = wxTB_HORIZONTAL, const wxString& name = wxToolBarNameStr);
+              const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize,
+              long style = wxTB_HORIZONTAL, const wxString& name = wxToolBarNameStr);
 
   void Refresh(bool erase_background, const wxRect* rect = nullptr) override;
 
@@ -70,7 +70,7 @@ private:
   void AddMainToolBarButtons();
   void AddDebuggerToolBarButtons();
   void AddToolBarButton(int tool_id, ToolBarBitmapID bitmap_id, const wxString& label,
-    const wxString& short_help = wxEmptyString);
+                        const wxString& short_help = wxEmptyString);
 
   void RefreshPlayButton();
 

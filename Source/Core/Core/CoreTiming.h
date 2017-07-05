@@ -28,9 +28,9 @@ namespace CoreTiming
 struct Globals
 {
   s64 global_timer;
+  int slice_length;
   u64 fake_TB_start_value;
   u64 fake_TB_start_ticks;
-  int slice_length;
   float last_OC_factor_inverted;
 };
 extern Globals g;
@@ -40,7 +40,7 @@ extern Globals g;
 void Init();
 void Shutdown();
 
-typedef void(*TimedCallback)(u64 userdata, s64 cyclesLate);
+typedef void (*TimedCallback)(u64 userdata, s64 cyclesLate);
 
 // This should only be called from the CPU thread, if you are calling it any other thread, you are
 // doing something evil
@@ -70,7 +70,7 @@ enum class FromThread
 // is scheduled earlier than the current values (when scheduled from the CPU Thread only).
 // Scheduling from a callback will not update the downcount until the Advance() completes.
 void ScheduleEvent(s64 cycles_into_future, EventType* event_type, u64 userdata = 0,
-  FromThread from = FromThread::CPU);
+                   FromThread from = FromThread::CPU);
 
 // We only permit one event of each type in the queue at a time.
 void RemoveEvent(EventType* event_type);

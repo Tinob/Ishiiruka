@@ -42,7 +42,6 @@ namespace Vulkan
 Renderer::Renderer(std::unique_ptr<SwapChain> swap_chain)
 	: m_swap_chain(std::move(swap_chain))
 {
-	g_Config.bRunning = true;
 	UpdateActiveConfig();
 
 	// Set to something invalid, forcing all states to be re-initialized.
@@ -62,7 +61,6 @@ Renderer::Renderer(std::unique_ptr<SwapChain> swap_chain)
 
 Renderer::~Renderer()
 {
-	g_Config.bRunning = false;
 	UpdateActiveConfig();
 
 	// Ensure all frames are written to frame dump at shutdown.
@@ -589,7 +587,7 @@ void Renderer::SwapImpl(u32 xfb_addr, u32 fb_width, u32 fb_stride, u32 fb_height
 
 	// Update the window size based on the frame that was just rendered.
 	// Due to depending on guest state, we need to call this every frame.
-	SetWindowSize(static_cast<int>(fb_stride), static_cast<int>(fb_height));
+	SetWindowSize(fb_stride, fb_height);
 
 	// Clean up stale textures.
 	TextureCache::GetInstance()->Cleanup(frameCount);
@@ -1131,7 +1129,7 @@ void Renderer::CheckForSurfaceChange()
 void Renderer::CheckForConfigChanges()
 {
 	// Save the video config so we can compare against to determine which settings have changed.
-	int old_multisamples = g_ActiveConfig.iMultisamples;
+	u32 old_multisamples = g_ActiveConfig.iMultisamples;
 	int old_anisotropy = g_ActiveConfig.iMaxAnisotropy;
 	int old_stereo_mode = g_ActiveConfig.iStereoMode;
 	int old_aspect_ratio = g_ActiveConfig.iAspectRatio;

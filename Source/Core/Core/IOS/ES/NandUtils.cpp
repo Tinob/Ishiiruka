@@ -3,26 +3,31 @@
 // Refer to the license.txt file included.
 
 #include <algorithm>
+#include <array>
 #include <cctype>
 #include <cinttypes>
+#include <functional>
 #include <iterator>
 #include <string>
 #include <unordered_set>
 #include <vector>
 
 #include "Common/CommonTypes.h"
+#include "Common/File.h"
 #include "Common/FileUtil.h"
 #include "Common/Logging/Log.h"
 #include "Common/NandPaths.h"
 #include "Common/StringUtil.h"
+#include "Core/IOS/ES/ES.h"
 #include "Core/IOS/ES/Formats.h"
-#include "Core/IOS/ES/NandUtils.h"
 
 namespace IOS
 {
-namespace ES
+namespace HLE
 {
-static TMDReader FindTMD(u64 title_id, const std::string& tmd_path)
+namespace Device
+{
+static IOS::ES::TMDReader FindTMD(u64 title_id, const std::string& tmd_path)
 {
   File::IOFile file(tmd_path, "rb");
   if (!file)
@@ -32,15 +37,15 @@ static TMDReader FindTMD(u64 title_id, const std::string& tmd_path)
   if (!file.ReadBytes(tmd_bytes.data(), tmd_bytes.size()))
     return {};
 
-  return TMDReader{ std::move(tmd_bytes) };
+  return IOS::ES::TMDReader{std::move(tmd_bytes)};
 }
 
-TMDReader FindImportTMD(u64 title_id)
+IOS::ES::TMDReader ES::FindImportTMD(u64 title_id) const
 {
   return FindTMD(title_id, Common::GetImportTitlePath(title_id) + "/content/title.tmd");
 }
 
-TMDReader FindInstalledTMD(u64 title_id)
+IOS::ES::TMDReader ES::FindInstalledTMD(u64 title_id) const
 {
   return FindTMD(title_id, Common::GetTMDFileName(title_id, Common::FROM_SESSION_ROOT));
 }
@@ -50,7 +55,7 @@ static bool IsValidPartOfTitleID(const std::string& string)
   if (string.length() != 8)
     return false;
   return std::all_of(string.begin(), string.end(),
-    [](const auto character) { return std::isxdigit(character) != 0; });
+                     [](const auto character) { return std::isxdigit(character) != 0; });
 }
 
 static std::vector<u64> GetTitlesInTitleOrImport(const std::string& titles_dir)
@@ -85,20 +90,26 @@ static std::vector<u64> GetTitlesInTitleOrImport(const std::string& titles_dir)
     }
   }
 
+  // On a real Wii, the title list is not in any particular order. However, because of how
+  // the flash filesystem works, titles such as 1-2 are *never* in the first position.
+  // We must keep this behaviour, or some versions of the System Menu may break.
+
+  std::sort(title_ids.begin(), title_ids.end(), std::greater<>());
+
   return title_ids;
 }
 
-std::vector<u64> GetInstalledTitles()
+std::vector<u64> ES::GetInstalledTitles() const
 {
   return GetTitlesInTitleOrImport(Common::RootUserPath(Common::FROM_SESSION_ROOT) + "/title");
 }
 
-std::vector<u64> GetTitleImports()
+std::vector<u64> ES::GetTitleImports() const
 {
   return GetTitlesInTitleOrImport(Common::RootUserPath(Common::FROM_SESSION_ROOT) + "/import");
 }
 
-std::vector<u64> GetTitlesWithTickets()
+std::vector<u64> ES::GetTitlesWithTickets() const
 {
   const std::string tickets_dir = Common::RootUserPath(Common::FROM_SESSION_ROOT) + "/ticket";
   if (!File::IsDirectory(tickets_dir))
@@ -124,7 +135,7 @@ std::vector<u64> GetTitlesWithTickets()
     {
       const std::string name_without_ext = ticket.virtualName.substr(0, 8);
       if (ticket.isDirectory || !IsValidPartOfTitleID(name_without_ext) ||
-        name_without_ext + ".tik" != ticket.virtualName)
+          name_without_ext + ".tik" != ticket.virtualName)
       {
         continue;
       }
@@ -138,53 +149,53 @@ std::vector<u64> GetTitlesWithTickets()
   return title_ids;
 }
 
-std::vector<Content> GetStoredContentsFromTMD(const TMDReader& tmd)
+std::vector<IOS::ES::Content> ES::GetStoredContentsFromTMD(const IOS::ES::TMDReader& tmd) const
 {
   if (!tmd.IsValid())
     return {};
 
-  const IOS::ES::SharedContentMap shared{ Common::FROM_SESSION_ROOT };
-  const std::vector<Content> contents = tmd.GetContents();
+  const IOS::ES::SharedContentMap shared{Common::FROM_SESSION_ROOT};
+  const std::vector<IOS::ES::Content> contents = tmd.GetContents();
 
-  std::vector<Content> stored_contents;
+  std::vector<IOS::ES::Content> stored_contents;
 
   std::copy_if(contents.begin(), contents.end(), std::back_inserter(stored_contents),
-    [&tmd, &shared](const auto& content) {
-    if (content.IsShared())
-    {
-      const std::string path = shared.GetFilenameFromSHA1(content.sha1);
-      return path != "unk" && File::Exists(path);
-    }
-    return File::Exists(
-      Common::GetTitleContentPath(tmd.GetTitleId(), Common::FROM_SESSION_ROOT) +
-      StringFromFormat("%08x.app", content.id));
-  });
+               [&tmd, &shared](const auto& content) {
+                 if (content.IsShared())
+                 {
+                   const auto path = shared.GetFilenameFromSHA1(content.sha1);
+                   return path && File::Exists(*path);
+                 }
+                 return File::Exists(
+                     Common::GetTitleContentPath(tmd.GetTitleId(), Common::FROM_SESSION_ROOT) +
+                     StringFromFormat("%08x.app", content.id));
+               });
 
   return stored_contents;
 }
 
-u32 GetSharedContentsCount()
+u32 ES::GetSharedContentsCount() const
 {
   const std::string shared1_path = Common::RootUserPath(Common::FROM_SESSION_ROOT) + "/shared1";
   const auto entries = File::ScanDirectoryTree(shared1_path, false);
   return static_cast<u32>(
-    std::count_if(entries.children.begin(), entries.children.end(), [](const auto& entry) {
-    return !entry.isDirectory && entry.virtualName.size() == 12 &&
-      entry.virtualName.compare(8, 4, ".app") == 0;
-  }));
+      std::count_if(entries.children.begin(), entries.children.end(), [](const auto& entry) {
+        return !entry.isDirectory && entry.virtualName.size() == 12 &&
+               entry.virtualName.compare(8, 4, ".app") == 0;
+      }));
 }
 
-std::vector<std::array<u8, 20>> GetSharedContents()
+std::vector<std::array<u8, 20>> ES::GetSharedContents() const
 {
-  const IOS::ES::SharedContentMap map{ Common::FROM_SESSION_ROOT };
+  const IOS::ES::SharedContentMap map{Common::FROM_SESSION_ROOT};
   return map.GetHashes();
 }
 
-bool InitImport(u64 title_id)
+bool ES::InitImport(u64 title_id)
 {
   const std::string content_dir = Common::GetTitleContentPath(title_id, Common::FROM_SESSION_ROOT);
   const std::string data_dir = Common::GetTitleDataPath(title_id, Common::FROM_SESSION_ROOT);
-  for (const auto& dir : { content_dir, data_dir })
+  for (const auto& dir : {content_dir, data_dir})
   {
     if (!File::IsDirectory(dir) && !File::CreateFullPath(dir) && !File::CreateDir(dir))
     {
@@ -193,7 +204,7 @@ bool InitImport(u64 title_id)
     }
   }
 
-  UIDSys uid_sys{ Common::FROM_CONFIGURED_ROOT };
+  IOS::ES::UIDSys uid_sys{Common::FROM_CONFIGURED_ROOT};
   uid_sys.GetOrInsertUIDForTitle(title_id);
 
   // IOS moves the title content directory to /import if the TMD exists during an import.
@@ -211,13 +222,13 @@ bool InitImport(u64 title_id)
   return true;
 }
 
-bool FinishImport(const IOS::ES::TMDReader& tmd)
+bool ES::FinishImport(const IOS::ES::TMDReader& tmd)
 {
   const u64 title_id = tmd.GetTitleId();
   const std::string import_content_dir = Common::GetImportTitlePath(title_id) + "/content";
 
   // Remove everything not listed in the TMD.
-  std::unordered_set<std::string> expected_entries = { "title.tmd" };
+  std::unordered_set<std::string> expected_entries = {"title.tmd"};
   for (const auto& content_info : tmd.GetContents())
     expected_entries.insert(StringFromFormat("%08x.app", content_info.id));
   const auto entries = File::ScanDirectoryTree(import_content_dir, false);
@@ -244,19 +255,40 @@ bool FinishImport(const IOS::ES::TMDReader& tmd)
   return true;
 }
 
-bool WriteImportTMD(const IOS::ES::TMDReader& tmd)
+bool ES::WriteImportTMD(const IOS::ES::TMDReader& tmd)
 {
   const std::string tmd_path = Common::RootUserPath(Common::FROM_SESSION_ROOT) + "/tmp/title.tmd";
   File::CreateFullPath(tmd_path);
 
   {
     File::IOFile file(tmd_path, "wb");
-    if (!file.WriteBytes(tmd.GetRawTMD().data(), tmd.GetRawTMD().size()))
+    if (!file.WriteBytes(tmd.GetBytes().data(), tmd.GetBytes().size()))
       return false;
   }
 
   const std::string dest = Common::GetImportTitlePath(tmd.GetTitleId()) + "/content/title.tmd";
   return File::Rename(tmd_path, dest);
 }
-}  // namespace ES
+
+void ES::FinishStaleImport(u64 title_id)
+{
+  const auto import_tmd = FindImportTMD(title_id);
+  if (!import_tmd.IsValid())
+    File::DeleteDirRecursively(Common::GetImportTitlePath(title_id) + "/content");
+  else
+    FinishImport(import_tmd);
+}
+
+void ES::FinishAllStaleImports()
+{
+  const std::vector<u64> titles = GetTitleImports();
+  for (const u64& title_id : titles)
+    FinishStaleImport(title_id);
+
+  const std::string import_dir = Common::RootUserPath(Common::FROM_SESSION_ROOT) + "/import";
+  File::DeleteDirRecursively(import_dir);
+  File::CreateDir(import_dir);
+}
+}  // namespace Device
+}  // namespace HLE
 }  // namespace IOS

@@ -2,14 +2,15 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Core/DSP/DSPCaptureLogger.h"
+
 #include <cstring>
 #include <memory>
+#include <string>
 
 #include "Common/CommonTypes.h"
-#include "Common/FileUtil.h"
+#include "Common/File.h"
 #include "Common/PcapFile.h"
-
-#include "Core/DSP/DSPCaptureLogger.h"
 
 namespace DSP
 {
@@ -39,7 +40,7 @@ struct DMAPacket
 #pragma pack(pop)
 
 PCAPDSPCaptureLogger::PCAPDSPCaptureLogger(const std::string& pcap_filename)
-  : m_pcap(new PCAP(new File::IOFile(pcap_filename, "wb")))
+    : m_pcap(new PCAP(new File::IOFile(pcap_filename, "wb")))
 {
 }
 
@@ -63,7 +64,7 @@ void PCAPDSPCaptureLogger::LogIFXAccess(bool read, u16 address, u16 value)
 }
 
 void PCAPDSPCaptureLogger::LogDMA(u16 control, u32 gc_address, u16 dsp_address, u16 length,
-  const u8* data)
+                                  const u8* data)
 {
   // The length of a DMA cannot be above 64K, so we use a static buffer for
   // the construction of the packet.

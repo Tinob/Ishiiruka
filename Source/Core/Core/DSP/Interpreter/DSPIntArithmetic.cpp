@@ -125,7 +125,7 @@ void cmp(const UDSPInstruction opc)
   s64 res = dsp_convert_long_acc(acc0 - acc1);
 
   Update_SR_Register64(res, isCarry2(acc0, res),
-    isOverflow(acc0, -acc1, res));  // CF -> influence on ABS/0xa100
+                       isOverflow(acc0, -acc1, res));  // CF -> influence on ABS/0xa100
   zeroWriteBackLog();
 }
 
@@ -162,7 +162,7 @@ void cmpi(const UDSPInstruction opc)
 
   s64 val = dsp_get_long_acc(reg);
   s64 imm = (s64)(s16)dsp_fetch_code()
-    << 16;  // Immediate is considered to be at M level in the 40-bit accumulator.
+            << 16;  // Immediate is considered to be at M level in the 40-bit accumulator.
   s64 res = dsp_convert_long_acc(val - imm);
 
   Update_SR_Register64(res, isCarry2(val, res), isOverflow(val, -imm, res));
@@ -845,7 +845,7 @@ void lsr16(const UDSPInstruction opc)
 
   u64 acc = dsp_get_long_acc(areg);
   acc &=
-    0x000000FFFFFFFFFFULL;  // Lop off the extraneous sign extension our 64-bit fake accum causes
+      0x000000FFFFFFFFFFULL;  // Lop off the extraneous sign extension our 64-bit fake accum causes
   acc >>= 16;
 
   zeroWriteBackLog();
@@ -901,7 +901,7 @@ void lsr(const UDSPInstruction opc)
   u16 shift;
   u64 acc = dsp_get_long_acc(rreg);
   acc &=
-    0x000000FFFFFFFFFFULL;  // Lop off the extraneous sign extension our 64-bit fake accum causes
+      0x000000FFFFFFFFFFULL;  // Lop off the extraneous sign extension our 64-bit fake accum causes
 
   if ((opc & 0x3f) == 0)
     shift = 0;

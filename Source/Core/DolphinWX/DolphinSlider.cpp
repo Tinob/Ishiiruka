@@ -20,8 +20,8 @@ DolphinSlider::DolphinSlider() = default;
 DolphinSlider::~DolphinSlider() = default;
 
 bool DolphinSlider::Create(wxWindow* parent, wxWindowID id, int value, int min_val, int max_val,
-  const wxPoint& pos, const wxSize& size, long style,
-  const wxValidator& validator, const wxString& name)
+                           const wxPoint& pos, const wxSize& size, long style,
+                           const wxValidator& validator, const wxString& name)
 {
   // Sanitize the style flags.
   // We don't want any label flags because those break DPI scaling on wxMSW,
@@ -51,10 +51,10 @@ wxSize DolphinSlider::DoGetBestClientSize() const
     // NOTE: This is less inefficient then it seems, DoGetBestSize() is only called once
     //   per instance and cached until InvalidateBestSize() is called.
     wxSlider* helper = new wxSlider(GetParent(), wxID_ANY, GetValue(), GetMin(), GetMax(),
-      wxDefaultPosition, FromDIP(wxSize(100, 100)), GetWindowStyle());
+                                    wxDefaultPosition, FromDIP(wxSize(100, 100)), GetWindowStyle());
     ::RECT r{};
     ::SendMessageW(reinterpret_cast<HWND>(helper->GetHWND()), TBM_GETTHUMBRECT, 0,
-      reinterpret_cast<LPARAM>(&r));
+                   reinterpret_cast<LPARAM>(&r));
     helper->Destroy();
 
     // Breakdown metrics

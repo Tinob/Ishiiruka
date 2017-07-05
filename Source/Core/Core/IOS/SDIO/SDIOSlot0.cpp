@@ -2,6 +2,8 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Core/IOS/SDIO/SDIOSlot0.h"
+
 #include <cstdio>
 #include <cstring>
 #include <memory>
@@ -9,13 +11,13 @@
 
 #include "Common/ChunkFile.h"
 #include "Common/CommonTypes.h"
+#include "Common/File.h"
 #include "Common/FileUtil.h"
 #include "Common/Logging/Log.h"
 #include "Common/SDCardUtil.h"
 #include "Core/ConfigManager.h"
 #include "Core/HW/Memmap.h"
 #include "Core/IOS/IOS.h"
-#include "Core/IOS/SDIO/SDIOSlot0.h"
 
 namespace IOS
 {
@@ -47,7 +49,7 @@ void SDIOSlot0::EventNotify()
   // Accessing SConfig variables like this isn't really threadsafe,
   // but this is how it's done all over the place...
   if ((SConfig::GetInstance().m_WiiSDCard && m_event->type == EVENT_INSERT) ||
-    (!SConfig::GetInstance().m_WiiSDCard && m_event->type == EVENT_REMOVE))
+      (!SConfig::GetInstance().m_WiiSDCard && m_event->type == EVENT_REMOVE))
   {
     m_ios.EnqueueIPCReply(m_event->request, m_event->type);
     m_event.reset();
@@ -69,7 +71,7 @@ void SDIOSlot0::OpenInternal()
     if (!m_Card)
     {
       ERROR_LOG(IOS_SD, "Could not open SD Card image or create a new one, are you running "
-        "from a read-only directory?");
+                        "from a read-only directory?");
     }
   }
 }
@@ -134,8 +136,8 @@ IPCCommandResult SDIOSlot0::IOCtlV(const IOCtlVRequest& request)
   return GetDefaultReply(IPC_SUCCESS);
 }
 
-u32 SDIOSlot0::ExecuteCommand(const Request& request, u32 _BufferIn, u32 _BufferInSize,
-  u32 _rwBuffer, u32 _rwBufferSize, u32 _BufferOut, u32 _BufferOutSize)
+s32 SDIOSlot0::ExecuteCommand(const Request& request, u32 _BufferIn, u32 _BufferInSize,
+                              u32 _rwBuffer, u32 _rwBufferSize, u32 _BufferOut, u32 _BufferOutSize)
 {
   // The game will send us a SendCMD with this information. To be able to read and write
   // to a file we need to prepare a 0x10 byte output buffer as response.
@@ -164,7 +166,7 @@ u32 SDIOSlot0::ExecuteCommand(const Request& request, u32 _BufferIn, u32 _Buffer
 
   // Note: req.addr is the virtual address of _rwBuffer
 
-  u32 ret = RET_OK;
+  s32 ret = RET_OK;
 
   switch (req.command)
   {
@@ -238,7 +240,7 @@ u32 SDIOSlot0::ExecuteCommand(const Request& request, u32 _BufferIn, u32 _Buffer
     // Data address (req.arg) is in byte units in a Standard Capacity SD Memory Card
     // and in block (512 Byte) units in a High Capacity SD Memory Card.
     INFO_LOG(IOS_SD, "%sRead %i Block(s) from 0x%08x bsize %i into 0x%08x!",
-      req.isDMA ? "DMA " : "", req.blocks, req.arg, req.bsize, req.addr);
+             req.isDMA ? "DMA " : "", req.blocks, req.arg, req.bsize, req.addr);
 
     if (m_Card)
     {
@@ -254,20 +256,20 @@ u32 SDIOSlot0::ExecuteCommand(const Request& request, u32 _BufferIn, u32 _Buffer
       else
       {
         ERROR_LOG(IOS_SD, "Read Failed - error: %i, eof: %i", ferror(m_Card.GetHandle()),
-          feof(m_Card.GetHandle()));
+                  feof(m_Card.GetHandle()));
         ret = RET_FAIL;
       }
     }
   }
-  Memory::Write_U32(0x900, _BufferOut);
-  break;
+    Memory::Write_U32(0x900, _BufferOut);
+    break;
 
   case WRITE_MULTIPLE_BLOCK:
   {
     // Data address (req.arg) is in byte units in a Standard Capacity SD Memory Card
     // and in block (512 Byte) units in a High Capacity SD Memory Card.
     INFO_LOG(IOS_SD, "%sWrite %i Block(s) from 0x%08x bsize %i to offset 0x%08x!",
-      req.isDMA ? "DMA " : "", req.blocks, req.addr, req.bsize, req.arg);
+             req.isDMA ? "DMA " : "", req.blocks, req.addr, req.bsize, req.arg);
 
     if (m_Card && SConfig::GetInstance().bEnableMemcardSdWriting)
     {
@@ -279,13 +281,13 @@ u32 SDIOSlot0::ExecuteCommand(const Request& request, u32 _BufferIn, u32 _Buffer
       if (!m_Card.WriteBytes(Memory::GetPointer(req.addr), size))
       {
         ERROR_LOG(IOS_SD, "Write Failed - error: %i, eof: %i", ferror(m_Card.GetHandle()),
-          feof(m_Card.GetHandle()));
+                  feof(m_Card.GetHandle()));
         ret = RET_FAIL;
       }
     }
   }
-  Memory::Write_U32(0x900, _BufferOut);
-  break;
+    Memory::Write_U32(0x900, _BufferOut);
+    break;
 
   case EVENT_REGISTER:  // async
     INFO_LOG(IOS_SD, "Register event %x", req.arg);
@@ -293,7 +295,7 @@ u32 SDIOSlot0::ExecuteCommand(const Request& request, u32 _BufferIn, u32 _Buffer
     ret = RET_EVENT_REGISTER;
     break;
 
-    // Used to cancel an event that was already registered.
+  // Used to cancel an event that was already registered.
   case EVENT_UNREGISTER:
   {
     INFO_LOG(IOS_SD, "Unregister event %x", req.arg);
@@ -393,10 +395,10 @@ IPCCommandResult SDIOSlot0::SetClk(const IOCtlRequest& request)
 IPCCommandResult SDIOSlot0::SendCommand(const IOCtlRequest& request)
 {
   INFO_LOG(IOS_SD, "IOCTL_SENDCMD %x IPC:%08x", Memory::Read_U32(request.buffer_in),
-    request.address);
+           request.address);
 
   const s32 return_value = ExecuteCommand(request, request.buffer_in, request.buffer_in_size, 0, 0,
-    request.buffer_out, request.buffer_out_size);
+                                          request.buffer_out, request.buffer_out_size);
 
   if (return_value == RET_EVENT_REGISTER)
   {
@@ -416,8 +418,8 @@ IPCCommandResult SDIOSlot0::GetStatus(const IOCtlRequest& request)
     m_Status = CARD_NOT_EXIST;
 
   INFO_LOG(IOS_SD, "IOCTL_GETSTATUS. Replying that SD card is %s%s",
-    (m_Status & CARD_INSERTED) ? "inserted" : "not present",
-    (m_Status & CARD_INITIALIZED) ? " and initialized" : "");
+           (m_Status & CARD_INSERTED) ? "inserted" : "not present",
+           (m_Status & CARD_INITIALIZED) ? " and initialized" : "");
 
   Memory::Write_U32(m_Status, request.buffer_out);
   return GetDefaultReply(IPC_SUCCESS);
@@ -436,9 +438,9 @@ IPCCommandResult SDIOSlot0::SendCommand(const IOCtlVRequest& request)
   Memory::Memset(request.io_vectors[0].address, 0, request.io_vectors[0].size);
 
   const s32 return_value =
-    ExecuteCommand(request, request.in_vectors[0].address, request.in_vectors[0].size,
-      request.in_vectors[1].address, request.in_vectors[1].size,
-      request.io_vectors[0].address, request.io_vectors[0].size);
+      ExecuteCommand(request, request.in_vectors[0].address, request.in_vectors[0].size,
+                     request.in_vectors[1].address, request.in_vectors[1].size,
+                     request.io_vectors[0].address, request.io_vectors[0].size);
 
   return GetDefaultReply(return_value);
 }

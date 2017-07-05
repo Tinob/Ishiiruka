@@ -14,11 +14,11 @@
 #include "DolphinWX/WxUtils.h"
 
 CreateCodeDialog::CreateCodeDialog(wxWindow* const parent, const u32 address)
-  : wxDialog(parent, wxID_ANY, _("Create AR Code")), m_code_address(address)
+    : wxDialog(parent, wxID_ANY, _("Create AR Code")), m_code_address(address)
 {
   wxStaticText* const label_name = new wxStaticText(this, wxID_ANY, _("Name: "));
   m_textctrl_name = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition,
-    wxDLG_UNIT(this, wxSize(180, -1)));
+                                   wxDLG_UNIT(this, wxSize(180, -1)));
 
   wxStaticText* const label_code = new wxStaticText(this, wxID_ANY, _("Code: "));
   m_textctrl_code = new wxTextCtrl(this, wxID_ANY, wxString::Format("0x%08x", address));
@@ -51,7 +51,7 @@ CreateCodeDialog::CreateCodeDialog(wxWindow* const parent, const u32 address)
   sizer_main->Add(m_textctrl_value, 0, wxLEFT | wxRIGHT, space5);
   sizer_main->AddSpacer(space5);
   sizer_main->Add(CreateButtonSizer(wxOK | wxCANCEL | wxNO_DEFAULT), 0, wxEXPAND | wxLEFT | wxRIGHT,
-    space5);
+                  space5);
   sizer_main->AddSpacer(space5);
 
   // NOTE: Use default wxCANCEL handling.

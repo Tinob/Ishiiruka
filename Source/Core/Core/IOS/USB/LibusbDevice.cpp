@@ -2,21 +2,25 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Core/IOS/USB/LibusbDevice.h"
+
 #include <algorithm>
 #include <cstddef>
 #include <cstring>
+#include <functional>
 #include <map>
+#include <memory>
+#include <mutex>
 #include <utility>
+#include <vector>
 
 #include <libusb.h>
 
 #include "Common/Assert.h"
 #include "Common/Logging/Log.h"
-#include "Core/CoreTiming.h"
 #include "Core/HW/Memmap.h"
 #include "Core/IOS/Device.h"
 #include "Core/IOS/IOS.h"
-#include "Core/IOS/USB/LibusbDevice.h"
 
 namespace IOS
 {
@@ -25,15 +29,15 @@ namespace HLE
 namespace USB
 {
 LibusbDevice::LibusbDevice(Kernel& ios, libusb_device* device,
-  const libusb_device_descriptor& descriptor)
-  : m_ios(ios), m_device(device)
+                           const libusb_device_descriptor& descriptor)
+    : m_ios(ios), m_device(device)
 {
   libusb_ref_device(m_device);
   m_vid = descriptor.idVendor;
   m_pid = descriptor.idProduct;
   m_id = (static_cast<u64>(m_vid) << 32 | static_cast<u64>(m_pid) << 16 |
-    static_cast<u64>(libusb_get_bus_number(device)) << 8 |
-    static_cast<u64>(libusb_get_device_address(device)));
+          static_cast<u64>(libusb_get_bus_number(device)) << 8 |
+          static_cast<u64>(libusb_get_device_address(device)));
 
   for (u8 i = 0; i < descriptor.bNumConfigurations; ++i)
     m_config_descriptors.emplace_back(std::make_unique<LibusbConfigDescriptor>(m_device, i));
@@ -148,7 +152,7 @@ bool LibusbDevice::Attach(const u8 interface)
 int LibusbDevice::CancelTransfer(const u8 endpoint)
 {
   INFO_LOG(IOS_USB, "[%04x:%04x %d] Cancelling transfers (endpoint 0x%x)", m_vid, m_pid,
-    m_active_interface, endpoint);
+           m_active_interface, endpoint);
   const auto iterator = m_transfer_endpoints.find(endpoint);
   if (iterator == m_transfer_endpoints.cend())
     return IPC_ENOENT;
@@ -162,7 +166,7 @@ int LibusbDevice::ChangeInterface(const u8 interface)
     return LIBUSB_ERROR_NOT_FOUND;
 
   INFO_LOG(IOS_USB, "[%04x:%04x %d] Changing interface to %d", m_vid, m_pid, m_active_interface,
-    interface);
+           interface);
   const int ret = DetachInterface();
   if (ret < 0)
     return ret;
@@ -175,7 +179,7 @@ int LibusbDevice::SetAltSetting(const u8 alt_setting)
     return LIBUSB_ERROR_NOT_FOUND;
 
   INFO_LOG(IOS_USB, "[%04x:%04x %d] Setting alt setting %d", m_vid, m_pid, m_active_interface,
-    alt_setting);
+           alt_setting);
   return libusb_set_interface_alt_setting(m_handle, m_active_interface, alt_setting);
 }
 
@@ -186,7 +190,7 @@ int LibusbDevice::SubmitTransfer(std::unique_ptr<CtrlMessage> cmd)
 
   switch ((cmd->request_type << 8) | cmd->request)
   {
-    // The following requests have to go through libusb and cannot be directly sent to the device.
+  // The following requests have to go through libusb and cannot be directly sent to the device.
   case USBHDR(DIR_HOST2DEVICE, TYPE_STANDARD, REC_INTERFACE, REQUEST_SET_INTERFACE):
   {
     if (static_cast<u8>(cmd->index) != m_active_interface)
@@ -195,7 +199,7 @@ int LibusbDevice::SubmitTransfer(std::unique_ptr<CtrlMessage> cmd)
       if (ret < 0)
       {
         ERROR_LOG(IOS_USB, "[%04x:%04x %d] Failed to change interface to %d: %s", m_vid, m_pid,
-          m_active_interface, cmd->index, libusb_error_name(ret));
+                  m_active_interface, cmd->index, libusb_error_name(ret));
         return ret;
       }
     }
@@ -216,7 +220,7 @@ int LibusbDevice::SubmitTransfer(std::unique_ptr<CtrlMessage> cmd)
   const size_t size = cmd->length + LIBUSB_CONTROL_SETUP_SIZE;
   auto buffer = std::make_unique<u8[]>(size);
   libusb_fill_control_setup(buffer.get(), cmd->request_type, cmd->request, cmd->value, cmd->index,
-    cmd->length);
+                            cmd->length);
   Memory::CopyFromEmu(buffer.get() + LIBUSB_CONTROL_SETUP_SIZE, cmd->data_address, cmd->length);
   libusb_transfer* transfer = libusb_alloc_transfer(0);
   transfer->flags |= LIBUSB_TRANSFER_FREE_TRANSFER;
@@ -232,8 +236,8 @@ int LibusbDevice::SubmitTransfer(std::unique_ptr<BulkMessage> cmd)
 
   libusb_transfer* transfer = libusb_alloc_transfer(0);
   libusb_fill_bulk_transfer(transfer, m_handle, cmd->endpoint,
-    cmd->MakeBuffer(cmd->length).release(), cmd->length, TransferCallback,
-    this, 0);
+                            cmd->MakeBuffer(cmd->length).release(), cmd->length, TransferCallback,
+                            this, 0);
   transfer->flags |= LIBUSB_TRANSFER_FREE_TRANSFER;
   m_transfer_endpoints[transfer->endpoint].AddTransfer(std::move(cmd), transfer);
   return libusb_submit_transfer(transfer);
@@ -246,8 +250,8 @@ int LibusbDevice::SubmitTransfer(std::unique_ptr<IntrMessage> cmd)
 
   libusb_transfer* transfer = libusb_alloc_transfer(0);
   libusb_fill_interrupt_transfer(transfer, m_handle, cmd->endpoint,
-    cmd->MakeBuffer(cmd->length).release(), cmd->length,
-    TransferCallback, this, 0);
+                                 cmd->MakeBuffer(cmd->length).release(), cmd->length,
+                                 TransferCallback, this, 0);
   transfer->flags |= LIBUSB_TRANSFER_FREE_TRANSFER;
   m_transfer_endpoints[transfer->endpoint].AddTransfer(std::move(cmd), transfer);
   return libusb_submit_transfer(transfer);
@@ -309,23 +313,23 @@ void LibusbDevice::TransferCallback(libusb_transfer* transfer)
 }
 
 static const std::map<u8, const char*> s_transfer_types = {
-     {LIBUSB_TRANSFER_TYPE_CONTROL, "Control"},
-     {LIBUSB_TRANSFER_TYPE_ISOCHRONOUS, "Isochronous"},
-     {LIBUSB_TRANSFER_TYPE_BULK, "Bulk"},
-     {LIBUSB_TRANSFER_TYPE_INTERRUPT, "Interrupt"},
+    {LIBUSB_TRANSFER_TYPE_CONTROL, "Control"},
+    {LIBUSB_TRANSFER_TYPE_ISOCHRONOUS, "Isochronous"},
+    {LIBUSB_TRANSFER_TYPE_BULK, "Bulk"},
+    {LIBUSB_TRANSFER_TYPE_INTERRUPT, "Interrupt"},
 };
 
 void LibusbDevice::TransferEndpoint::AddTransfer(std::unique_ptr<TransferCommand> command,
-  libusb_transfer* transfer)
+                                                 libusb_transfer* transfer)
 {
-  std::lock_guard<std::mutex> lk{ m_transfers_mutex };
+  std::lock_guard<std::mutex> lk{m_transfers_mutex};
   m_transfers.emplace(transfer, std::move(command));
 }
 
 void LibusbDevice::TransferEndpoint::HandleTransfer(libusb_transfer* transfer,
-  std::function<s32(const TransferCommand&)> fn)
+                                                    std::function<s32(const TransferCommand&)> fn)
 {
-  std::lock_guard<std::mutex> lk{ m_transfers_mutex };
+  std::lock_guard<std::mutex> lk{m_transfers_mutex};
   const auto iterator = m_transfers.find(transfer);
   if (iterator == m_transfers.cend())
   {
@@ -348,8 +352,8 @@ void LibusbDevice::TransferEndpoint::HandleTransfer(libusb_transfer* transfer,
   case LIBUSB_TRANSFER_OVERFLOW:
   case LIBUSB_TRANSFER_STALL:
     ERROR_LOG(IOS_USB, "[%04x:%04x %d] %s transfer (endpoint 0x%02x) failed: %s", device->m_vid,
-      device->m_pid, device->m_active_interface, s_transfer_types.at(transfer->type),
-      transfer->endpoint, libusb_error_name(transfer->status));
+              device->m_pid, device->m_active_interface, s_transfer_types.at(transfer->type),
+              transfer->endpoint, libusb_error_name(transfer->status));
     return_value = transfer->status == LIBUSB_TRANSFER_STALL ? -7004 : -5;
     break;
   case LIBUSB_TRANSFER_NO_DEVICE:
@@ -388,14 +392,14 @@ int LibusbDevice::AttachInterface(const u8 interface)
   if (ret < 0 && ret != LIBUSB_ERROR_NOT_FOUND && ret != LIBUSB_ERROR_NOT_SUPPORTED)
   {
     ERROR_LOG(IOS_USB, "[%04x:%04x] Failed to detach kernel driver: %s", m_vid, m_pid,
-      libusb_error_name(ret));
+              libusb_error_name(ret));
     return ret;
   }
   const int r = libusb_claim_interface(m_handle, interface);
   if (r < 0)
   {
     ERROR_LOG(IOS_USB, "[%04x:%04x] Couldn't claim interface %d: %s", m_vid, m_pid, interface,
-      libusb_error_name(r));
+              libusb_error_name(r));
     return r;
   }
   m_active_interface = interface;
@@ -415,7 +419,7 @@ int LibusbDevice::DetachInterface()
   if (ret < 0 && ret != LIBUSB_ERROR_NO_DEVICE)
   {
     ERROR_LOG(IOS_USB, "[%04x:%04x] Failed to release interface %d: %s", m_vid, m_pid,
-      m_active_interface, libusb_error_name(ret));
+              m_active_interface, libusb_error_name(ret));
     return ret;
   }
   return 0;

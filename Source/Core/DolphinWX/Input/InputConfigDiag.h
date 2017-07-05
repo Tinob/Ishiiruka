@@ -156,7 +156,7 @@ class ControlButton : public wxButton
 {
 public:
   ControlButton(wxWindow* const parent, ControlReference* const _ref, const std::string& name,
-    const unsigned int width, const std::string& label = {});
+                const unsigned int width, const std::string& label = {});
 
   ControlReference* const control_reference;
   const std::string m_name;
@@ -171,7 +171,7 @@ class ControlGroupBox : public wxStaticBoxSizer
 {
 public:
   ControlGroupBox(ControllerEmu::ControlGroup* const group, wxWindow* const parent,
-    InputConfigDialog* eventsink);
+                  InputConfigDialog* eventsink);
   ~ControlGroupBox();
 
   bool HasBitmapHeading() const;
@@ -188,7 +188,7 @@ class InputConfigDialog : public wxDialog
 {
 public:
   InputConfigDialog(wxWindow* const parent, InputConfig& config, const wxString& name,
-    const int port_num = 0);
+                    const int port_num = 0);
   virtual ~InputConfigDialog() = default;
 
   void OnClose(wxCloseEvent& event);

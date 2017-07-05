@@ -119,8 +119,8 @@ private:
   {
   public:
     CMemcardListCtrl(wxWindow* parent, const wxWindowID id, const wxPoint& pos, const wxSize& size,
-      long style, ManagerSettings& manager_settings)
-      : wxListCtrl(parent, id, pos, size, style), mgr_settings(manager_settings)
+                     long style, ManagerSettings& manager_settings)
+        : wxListCtrl(parent, id, pos, size, style), mgr_settings(manager_settings)
     {
       Bind(wxEVT_RIGHT_DOWN, &CMemcardListCtrl::OnRightClick, this);
     }

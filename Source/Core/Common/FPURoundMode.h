@@ -10,7 +10,8 @@ namespace FPURoundMode
 {
 // TODO: MSVC currently produces broken code:
 // https://connect.microsoft.com/VisualStudio/feedback/details/828892/vc-2013-miscompilation-with-enums-and-bit-fields
-// Once that is fixed, change types in SetRoundMode(), SetSIMDMode(), and in UReg_FPSCR to 'RoundMode'.
+// Once that is fixed, change types in SetRoundMode(), SetSIMDMode(), and in UReg_FPSCR to
+// 'RoundMode'.
 
 enum RoundMode
 {

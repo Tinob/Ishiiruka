@@ -29,7 +29,7 @@ namespace x86
 class DSPEmitter : public Gen::X64CodeBlock
 {
 public:
-  using DSPCompiledCode = u32(*)();
+  using DSPCompiledCode = u32 (*)();
   using Block = const u8*;
 
   static constexpr size_t MAX_BLOCKS = 0x10000;
@@ -275,9 +275,9 @@ private:
   void dsp_conditional_extend_accum(int reg);
   void dsp_conditional_extend_accum_imm(int reg, u16 val);
   void dsp_op_read_reg_dont_saturate(int reg, Gen::X64Reg host_dreg,
-    RegisterExtension extend = RegisterExtension::None);
+                                     RegisterExtension extend = RegisterExtension::None);
   void dsp_op_read_reg(int reg, Gen::X64Reg host_dreg,
-    RegisterExtension extend = RegisterExtension::None);
+                       RegisterExtension extend = RegisterExtension::None);
 
   // SDSP memory offset helpers
   Gen::OpArg M_SDSP_pc();
@@ -298,7 +298,7 @@ private:
   void multiply_sub();
   void multiply_mulx(u8 axh0, u8 axh1);
 
-  DSPJitRegCache m_gpr{ *this };
+  DSPJitRegCache m_gpr{*this};
 
   u16 m_compile_pc;
   u16 m_compile_status_register;

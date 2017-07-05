@@ -83,7 +83,7 @@ void OH0::DoState(PointerWrap& p)
   if (p.GetMode() == PointerWrap::MODE_READ && !m_devices.empty())
   {
     Core::DisplayMessage("It is suggested that you unplug and replug all connected USB devices.",
-      5000);
+                         5000);
     Core::DisplayMessage("If USB doesn't work properly, an emulation reset may be needed.", 5000);
   }
   p.Do(m_insertion_hooks);
@@ -99,8 +99,8 @@ IPCCommandResult OH0::CancelInsertionHook(const IOCtlRequest& request)
 
   // IOS assigns random IDs, but ours are simply the VID + PID (see RegisterInsertionHookWithID)
   TriggerHook(m_insertion_hooks,
-  { Memory::Read_U16(request.buffer_in), Memory::Read_U16(request.buffer_in + 2) },
-    USB_ECANCELED);
+              {Memory::Read_U16(request.buffer_in), Memory::Read_U16(request.buffer_in + 2)},
+              USB_ECANCELED);
   return GetDefaultReply(IPC_SUCCESS);
 }
 
@@ -166,11 +166,11 @@ IPCCommandResult OH0::SetRhPortStatus(const IOCtlVRequest& request)
 
 IPCCommandResult OH0::RegisterRemovalHook(const u64 device_id, const IOCtlRequest& request)
 {
-  std::lock_guard<std::mutex> lock{ m_hooks_mutex };
+  std::lock_guard<std::mutex> lock{m_hooks_mutex};
   // IOS only allows a single device removal hook.
   if (m_removal_hooks.find(device_id) != m_removal_hooks.end())
     return GetDefaultReply(IPC_EEXIST);
-  m_removal_hooks.insert({ device_id, request.address });
+  m_removal_hooks.insert({device_id, request.address});
   return GetNoReply();
 }
 
@@ -184,7 +184,7 @@ IPCCommandResult OH0::RegisterInsertionHook(const IOCtlVRequest& request)
   if (HasDeviceWithVidPid(vid, pid))
     return GetDefaultReply(IPC_SUCCESS);
 
-  std::lock_guard<std::mutex> lock{ m_hooks_mutex };
+  std::lock_guard<std::mutex> lock{m_hooks_mutex};
   // TODO: figure out whether IOS allows more than one hook.
   m_insertion_hooks[{vid, pid}] = request.address;
   return GetNoReply();
@@ -195,14 +195,14 @@ IPCCommandResult OH0::RegisterInsertionHookWithID(const IOCtlVRequest& request)
   if (!request.HasNumberOfValidVectors(3, 1))
     return GetDefaultReply(IPC_EINVAL);
 
-  std::lock_guard<std::mutex> lock{ m_hooks_mutex };
+  std::lock_guard<std::mutex> lock{m_hooks_mutex};
   const u16 vid = Memory::Read_U16(request.in_vectors[0].address);
   const u16 pid = Memory::Read_U16(request.in_vectors[1].address);
   const bool trigger_only_for_new_device = Memory::Read_U8(request.in_vectors[2].address) == 1;
   if (!trigger_only_for_new_device && HasDeviceWithVidPid(vid, pid))
     return GetDefaultReply(IPC_SUCCESS);
   // TODO: figure out whether IOS allows more than one hook.
-  m_insertion_hooks.insert({ {vid, pid}, request.address });
+  m_insertion_hooks.insert({{vid, pid}, request.address});
   // The output vector is overwritten with an ID to use with ioctl 31 for cancelling the hook.
   Memory::Write_U32(vid << 16 | pid, request.io_vectors[0].address);
   return GetNoReply();
@@ -228,7 +228,7 @@ void OH0::OnDeviceChange(const ChangeEvent event, std::shared_ptr<USB::Device> d
 {
   std::lock_guard<std::mutex> lk(m_devices_mutex);
   if (event == ChangeEvent::Inserted)
-    TriggerHook(m_insertion_hooks, { device->GetVid(), device->GetPid() }, IPC_SUCCESS);
+    TriggerHook(m_insertion_hooks, {device->GetVid(), device->GetPid()}, IPC_SUCCESS);
   else if (event == ChangeEvent::Removed)
     TriggerHook(m_removal_hooks, device->GetId(), IPC_SUCCESS);
 }
@@ -236,11 +236,11 @@ void OH0::OnDeviceChange(const ChangeEvent event, std::shared_ptr<USB::Device> d
 template <typename T>
 void OH0::TriggerHook(std::map<T, u32>& hooks, T value, const ReturnCode return_value)
 {
-  std::lock_guard<std::mutex> lk{ m_hooks_mutex };
+  std::lock_guard<std::mutex> lk{m_hooks_mutex};
   const auto hook = hooks.find(value);
   if (hook == hooks.end())
     return;
-  m_ios.EnqueueIPCReply(Request{ hook->second }, return_value, 0, CoreTiming::FromThread::ANY);
+  m_ios.EnqueueIPCReply(Request{hook->second}, return_value, 0, CoreTiming::FromThread::ANY);
   hooks.erase(hook);
 }
 
@@ -256,14 +256,14 @@ std::pair<ReturnCode, u64> OH0::DeviceOpen(const u16 vid, const u16 pid)
     has_device_with_vid_pid = true;
 
     if (m_opened_devices.find(device.second->GetId()) != m_opened_devices.cend() ||
-      !device.second->Attach(0))
+        !device.second->Attach(0))
       continue;
 
     m_opened_devices.emplace(device.second->GetId());
-    return { IPC_SUCCESS, device.second->GetId() };
+    return {IPC_SUCCESS, device.second->GetId()};
   }
   // IOS doesn't allow opening the same device more than once (IPC_EEXIST)
-  return { has_device_with_vid_pid ? IPC_EEXIST : IPC_ENOENT, 0 };
+  return {has_device_with_vid_pid ? IPC_EEXIST : IPC_ENOENT, 0};
 }
 
 void OH0::DeviceClose(const u64 device_id)
@@ -308,7 +308,7 @@ IPCCommandResult OH0::DeviceIOCtlV(const u64 device_id, const IOCtlVRequest& req
   case USB::IOCTLV_USBV0_INTRMSG:
   case USB::IOCTLV_USBV0_ISOMSG:
     return HandleTransfer(device, request.request,
-      [&, this]() { return SubmitTransfer(*device, request); });
+                          [&, this]() { return SubmitTransfer(*device, request); });
   case USB::IOCTLV_USBV0_UNKNOWN_32:
     request.DumpUnknown(GetDeviceName(), LogTypes::IOS_USB);
     return GetDefaultReply(IPC_SUCCESS);
@@ -323,21 +323,21 @@ s32 OH0::SubmitTransfer(USB::Device& device, const IOCtlVRequest& ioctlv)
   {
   case USB::IOCTLV_USBV0_CTRLMSG:
     if (!ioctlv.HasNumberOfValidVectors(6, 1) ||
-      Common::swap16(Memory::Read_U16(ioctlv.in_vectors[4].address)) != ioctlv.io_vectors[0].size)
+        Common::swap16(Memory::Read_U16(ioctlv.in_vectors[4].address)) != ioctlv.io_vectors[0].size)
       return IPC_EINVAL;
     return device.SubmitTransfer(std::make_unique<USB::V0CtrlMessage>(m_ios, ioctlv));
 
   case USB::IOCTLV_USBV0_BLKMSG:
   case USB::IOCTLV_USBV0_LBLKMSG:
     if (!ioctlv.HasNumberOfValidVectors(2, 1) ||
-      Memory::Read_U16(ioctlv.in_vectors[1].address) != ioctlv.io_vectors[0].size)
+        Memory::Read_U16(ioctlv.in_vectors[1].address) != ioctlv.io_vectors[0].size)
       return IPC_EINVAL;
     return device.SubmitTransfer(std::make_unique<USB::V0BulkMessage>(
-      m_ios, ioctlv, ioctlv.request == USB::IOCTLV_USBV0_LBLKMSG));
+        m_ios, ioctlv, ioctlv.request == USB::IOCTLV_USBV0_LBLKMSG));
 
   case USB::IOCTLV_USBV0_INTRMSG:
     if (!ioctlv.HasNumberOfValidVectors(2, 1) ||
-      Memory::Read_U16(ioctlv.in_vectors[1].address) != ioctlv.io_vectors[0].size)
+        Memory::Read_U16(ioctlv.in_vectors[1].address) != ioctlv.io_vectors[0].size)
       return IPC_EINVAL;
     return device.SubmitTransfer(std::make_unique<USB::V0IntrMessage>(m_ios, ioctlv));
 

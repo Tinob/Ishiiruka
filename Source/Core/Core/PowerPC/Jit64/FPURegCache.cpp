@@ -10,7 +10,7 @@
 
 using namespace Gen;
 
-FPURegCache::FPURegCache(Jit64& jit) : RegCache{ jit }
+FPURegCache::FPURegCache(Jit64& jit) : RegCache{jit}
 {
 }
 
@@ -26,8 +26,8 @@ void FPURegCache::LoadRegister(size_t preg, X64Reg new_loc)
 
 const X64Reg* FPURegCache::GetAllocationOrder(size_t* count)
 {
-  static const X64Reg allocation_order[] = { XMM6,  XMM7,  XMM8,  XMM9, XMM10, XMM11, XMM12,
-                                                                                      XMM13, XMM14, XMM15, XMM2, XMM3,  XMM4,  XMM5 };
+  static const X64Reg allocation_order[] = {XMM6,  XMM7,  XMM8,  XMM9, XMM10, XMM11, XMM12,
+                                            XMM13, XMM14, XMM15, XMM2, XMM3,  XMM4,  XMM5};
   *count = sizeof(allocation_order) / sizeof(X64Reg);
   return allocation_order;
 }

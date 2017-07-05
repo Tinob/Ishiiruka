@@ -28,7 +28,7 @@ public:
 private:
   static HGLRC CreateCoreContext(HDC dc, HGLRC share_context);
   static bool CreatePBuffer(HDC onscreen_dc, int width, int height, HANDLE* pbuffer_handle,
-    HDC* pbuffer_dc);
+                            HDC* pbuffer_dc);
 
   HWND m_window_handle = nullptr;
   HANDLE m_pbuffer_handle = nullptr;

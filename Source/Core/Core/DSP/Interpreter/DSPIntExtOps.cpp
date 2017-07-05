@@ -551,14 +551,14 @@ void zeroWriteBackLogPreserveAcc(u8 acc)
   {
     // acc0
     if ((acc == 0) &&
-      ((writeBackLogIdx[i] == DSP_REG_ACL0) || (writeBackLogIdx[i] == DSP_REG_ACM0) ||
-      (writeBackLogIdx[i] == DSP_REG_ACH0)))
+        ((writeBackLogIdx[i] == DSP_REG_ACL0) || (writeBackLogIdx[i] == DSP_REG_ACM0) ||
+         (writeBackLogIdx[i] == DSP_REG_ACH0)))
       continue;
 
     // acc1
     if ((acc == 1) &&
-      ((writeBackLogIdx[i] == DSP_REG_ACL1) || (writeBackLogIdx[i] == DSP_REG_ACM1) ||
-      (writeBackLogIdx[i] == DSP_REG_ACH1)))
+        ((writeBackLogIdx[i] == DSP_REG_ACL1) || (writeBackLogIdx[i] == DSP_REG_ACM1) ||
+         (writeBackLogIdx[i] == DSP_REG_ACH1)))
       continue;
 
     Interpreter::dsp_op_write_reg(writeBackLogIdx[i], 0);

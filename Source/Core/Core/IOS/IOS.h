@@ -21,7 +21,7 @@ class PointerWrap;
 
 namespace DiscIO
 {
-class CNANDContentLoader;
+class NANDContentLoader;
 }
 
 namespace IOS
@@ -82,6 +82,8 @@ enum ProcessId : u32
   PID_UNKNOWN = 19,
 };
 
+void WriteReturnValue(s32 value, u32 address);
+
 // HLE for the IOS kernel: IPC, device management, syscalls, and Dolphin-specific, IOS-wide calls.
 class Kernel
 {
@@ -104,14 +106,14 @@ public:
 
   void EnqueueIPCRequest(u32 address);
   void EnqueueIPCReply(const Request& request, s32 return_value, int cycles_in_future = 0,
-    CoreTiming::FromThread from = CoreTiming::FromThread::CPU);
+                       CoreTiming::FromThread from = CoreTiming::FromThread::CPU);
 
   void SetUidForPPC(u32 uid);
   u32 GetUidForPPC() const;
   void SetGidForPPC(u16 gid);
   u16 GetGidForPPC() const;
 
-  bool BootstrapPPC(const DiscIO::CNANDContentLoader& content_loader);
+  bool BootstrapPPC(const DiscIO::NANDContentLoader& content_loader);
   bool BootIOS(u64 ios_title_id);
   u32 GetVersion() const;
 
@@ -131,6 +133,7 @@ protected:
   s32 GetFreeDeviceID();
   s32 OpenDevice(OpenRequest& request);
 
+  bool m_is_responsible_for_nand_root = false;
   u64 m_title_id = 0;
   static constexpr u8 IPC_MAX_FDS = 0x18;
   std::map<std::string, std::shared_ptr<Device::Device>> m_device_map;

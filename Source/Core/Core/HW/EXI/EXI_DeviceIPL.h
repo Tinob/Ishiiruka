@@ -25,8 +25,8 @@ public:
   static constexpr u32 UNIX_EPOCH = 0;          // 1970-01-01 00:00:00
   static constexpr u32 GC_EPOCH = 0x386D4380;   // 2000-01-01 00:00:00
   static constexpr u32 WII_EPOCH = 0x477E5826;  // 2008-01-04 16:00:38
-                                                // The Wii epoch is suspiciously random, and the Wii was even
-                                                // released before it, but apparently it works anyway?
+  // The Wii epoch is suspiciously random, and the Wii was even
+  // released before it, but apparently it works anyway?
 
   static u32 GetEmulatedTime(u32 epoch);
   static u64 NetPlay_GetEmulatedTime();
@@ -74,7 +74,7 @@ private:
   void TransferByte(u8& _uByte) override;
   bool IsWriteCommand() const { return !!(m_uAddress & (1 << 31)); }
   u32 CommandRegion() const { return (m_uAddress & ~(1 << 31)) >> 8; }
-  void LoadFileToIPL(const std::string& filename, u32 offset);
+  bool LoadFileToIPL(const std::string& filename, u32 offset);
   void LoadFontFile(const std::string& filename, u32 offset);
   std::string FindIPLDump(const std::string& path_prefix);
 };

@@ -61,10 +61,10 @@ enum NWAYC
   NWAYC_PS100_10 = 0x02,  // Port Select 100/10
   NWAYC_ANE = 0x04,       // Autonegotiate enable
 
-                          // Autonegotiation status bits...
+  // Autonegotiation status bits...
 
-                          NWAYC_NTTEST = 0x40,  // Reserved
-                          NWAYC_LTE = 0x80      // Link Test Enable
+  NWAYC_NTTEST = 0x40,  // Reserved
+  NWAYC_LTE = 0x80      // Link Test Enable
 };
 
 enum NWAYS

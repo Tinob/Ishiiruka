@@ -52,7 +52,7 @@ ControllerEmu::ControlGroup* GetDrumsGroup(int number, WiimoteEmu::DrumsGroup gr
 ControllerEmu::ControlGroup* GetTurntableGroup(int number, WiimoteEmu::TurntableGroup group)
 {
   return static_cast<WiimoteEmu::Wiimote*>(s_config.GetController(number))
-    ->GetTurntableGroup(group);
+      ->GetTurntableGroup(group);
 }
 
 void Shutdown()
@@ -107,7 +107,7 @@ void ControlChannel(int number, u16 channel_id, const void* data, u32 size)
 {
   if (WIIMOTE_SRC_HYBRID & g_wiimote_sources[number])
     static_cast<WiimoteEmu::Wiimote*>(s_config.GetController(number))
-    ->ControlChannel(channel_id, data, size);
+        ->ControlChannel(channel_id, data, size);
 }
 
 // An L2CAP packet is passed from the Core to the Wiimote on the HID INTERRUPT channel.
@@ -115,7 +115,7 @@ void InterruptChannel(int number, u16 channel_id, const void* data, u32 size)
 {
   if (WIIMOTE_SRC_HYBRID & g_wiimote_sources[number])
     static_cast<WiimoteEmu::Wiimote*>(s_config.GetController(number))
-    ->InterruptChannel(channel_id, data, size);
+        ->InterruptChannel(channel_id, data, size);
 }
 
 // This function is called periodically by the Core to update Wiimote state.

@@ -79,9 +79,11 @@ public:
 
   static inline void RestoreEFBRenderTargets()
   {
+    auto rtv = FramebufferManager::GetEFBColorTexture()->GetRTV();
+    auto dsv = FramebufferManager::GetEFBDepthTexture()->GetDSV();
     D3D::current_command_list->OMSetRenderTargets(1,
-      &FramebufferManager::GetEFBColorTexture()->GetRTV(), FALSE,
-      &FramebufferManager::GetEFBDepthTexture()->GetDSV());
+      &rtv, FALSE,
+      &dsv);
   }
 
   static u32 GetEFBCachedColor(u32 x, u32 y);

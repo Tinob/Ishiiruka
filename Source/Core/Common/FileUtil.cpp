@@ -16,6 +16,7 @@
 #include "Common/CommonFuncs.h"
 #include "Common/CommonPaths.h"
 #include "Common/CommonTypes.h"
+#include "Common/File.h"
 #include "Common/FileUtil.h"
 #include "Common/Logging/Log.h"
 
@@ -50,29 +51,15 @@
 // REMEMBER: strdup considered harmful!
 namespace File
 {
-// Remove any ending forward slashes from directory paths
-// Modifies argument.
-static void StripTailDirSlashes(std::string& fname)
-{
-  if (fname.length() > 1)
-  {
-    while (fname.back() == DIR_SEP_CHR)
-      fname.pop_back();
-  }
-}
-
 // Returns true if file filename exists
 bool Exists(const std::string& filename)
 {
   struct stat file_info;
 
-  std::string copy(filename);
-  StripTailDirSlashes(copy);
-
 #ifdef _WIN32
-  int result = _tstat64(UTF8ToTStr(copy).c_str(), &file_info);
+  int result = _tstat64(UTF8ToTStr(filename).c_str(), &file_info);
 #else
-  int result = stat(copy.c_str(), &file_info);
+  int result = stat(filename.c_str(), &file_info);
 #endif
 
   return (result == 0);
@@ -83,19 +70,15 @@ bool IsDirectory(const std::string& filename)
 {
   struct stat file_info;
 
-  std::string copy(filename);
-  StripTailDirSlashes(copy);
-
 #ifdef _WIN32
-  int result = _tstat64(UTF8ToTStr(copy).c_str(), &file_info);
+  int result = _tstat64(UTF8ToTStr(filename).c_str(), &file_info);
 #else
-  int result = stat(copy.c_str(), &file_info);
+  int result = stat(filename.c_str(), &file_info);
 #endif
 
   if (result < 0)
   {
-    WARN_LOG(COMMON, "IsDirectory: stat failed on %s: %s", filename.c_str(),
-      GetLastErrorMsg().c_str());
+    WARN_LOG(COMMON, "IsDirectory: stat failed on %s: %s", filename.c_str(), strerror(errno));
     return false;
   }
 
@@ -127,14 +110,14 @@ bool Delete(const std::string& filename)
   if (!DeleteFile(UTF8ToTStr(filename).c_str()))
   {
     WARN_LOG(COMMON, "Delete: DeleteFile failed on %s: %s", filename.c_str(),
-      GetLastErrorMsg().c_str());
+             GetLastErrorMsg().c_str());
     return false;
   }
 #else
   if (unlink(filename.c_str()) == -1)
   {
     WARN_LOG(COMMON, "Delete: unlink failed on %s: %s", filename.c_str(),
-      GetLastErrorMsg().c_str());
+             GetLastErrorMsg().c_str());
     return false;
   }
 #endif
@@ -246,7 +229,7 @@ bool Rename(const std::string& srcFilename, const std::string& destFilename)
   // The Internet seems torn about whether ReplaceFile is atomic or not.
   // Hopefully it's atomic enough...
   if (ReplaceFile(df.c_str(), sf.c_str(), nullptr, REPLACEFILE_IGNORE_MERGE_ERRORS, nullptr,
-    nullptr))
+                  nullptr))
     return true;
   // Might have failed because the destination doesn't exist.
   if (GetLastError() == ERROR_FILE_NOT_FOUND)
@@ -259,7 +242,7 @@ bool Rename(const std::string& srcFilename, const std::string& destFilename)
     return true;
 #endif
   ERROR_LOG(COMMON, "Rename: failed %s --> %s: %s", srcFilename.c_str(), destFilename.c_str(),
-    GetLastErrorMsg().c_str());
+            GetLastErrorMsg().c_str());
   return false;
 }
 
@@ -307,11 +290,11 @@ bool Copy(const std::string& srcFilename, const std::string& destFilename)
     return true;
 
   ERROR_LOG(COMMON, "Copy: failed %s --> %s: %s", srcFilename.c_str(), destFilename.c_str(),
-    GetLastErrorMsg().c_str());
+            GetLastErrorMsg().c_str());
   return false;
 #else
 
-  // buffer size
+// buffer size
 #define BSIZE 1024
 
   char buffer[BSIZE];
@@ -322,7 +305,7 @@ bool Copy(const std::string& srcFilename, const std::string& destFilename)
   if (!input.is_open())
   {
     ERROR_LOG(COMMON, "Copy: input failed %s --> %s: %s", srcFilename.c_str(), destFilename.c_str(),
-      GetLastErrorMsg().c_str());
+              GetLastErrorMsg().c_str());
     return false;
   }
 
@@ -332,7 +315,7 @@ bool Copy(const std::string& srcFilename, const std::string& destFilename)
   if (!output.IsOpen())
   {
     ERROR_LOG(COMMON, "Copy: output failed %s --> %s: %s", srcFilename.c_str(),
-      destFilename.c_str(), GetLastErrorMsg().c_str());
+              destFilename.c_str(), GetLastErrorMsg().c_str());
     return false;
   }
 
@@ -344,7 +327,7 @@ bool Copy(const std::string& srcFilename, const std::string& destFilename)
     if (!input)
     {
       ERROR_LOG(COMMON, "Copy: failed reading from source, %s --> %s: %s", srcFilename.c_str(),
-        destFilename.c_str(), GetLastErrorMsg().c_str());
+                destFilename.c_str(), GetLastErrorMsg().c_str());
       return false;
     }
 
@@ -352,7 +335,7 @@ bool Copy(const std::string& srcFilename, const std::string& destFilename)
     if (!output.WriteBytes(buffer, BSIZE))
     {
       ERROR_LOG(COMMON, "Copy: failed writing to output, %s --> %s: %s", srcFilename.c_str(),
-        destFilename.c_str(), GetLastErrorMsg().c_str());
+                destFilename.c_str(), GetLastErrorMsg().c_str());
       return false;
     }
   }
@@ -432,7 +415,7 @@ bool CreateEmptyFile(const std::string& filename)
   if (!File::IOFile(filename, "wb"))
   {
     ERROR_LOG(COMMON, "CreateEmptyFile: failed %s: %s", filename.c_str(),
-      GetLastErrorMsg().c_str());
+              GetLastErrorMsg().c_str());
     return false;
   }
 
@@ -501,6 +484,7 @@ FSTEntry ScanDirectoryTree(const std::string& directory, bool recursive)
   }
   closedir(dirp);
 #endif
+
   return parent_entry;
 }
 
@@ -538,7 +522,7 @@ bool DeleteDirRecursively(const std::string& directory)
 
     // check for "." and ".."
     if (((virtualName[0] == '.') && (virtualName[1] == '\0')) ||
-      ((virtualName[0] == '.') && (virtualName[1] == '.') && (virtualName[2] == '\0')))
+        ((virtualName[0] == '.') && (virtualName[1] == '.') && (virtualName[2] == '\0')))
       continue;
 
     std::string newPath = directory + DIR_SEP_CHR + virtualName;
@@ -630,9 +614,9 @@ void CopyDir(const std::string& source_path, const std::string& dest_path)
 // Returns the current directory
 std::string GetCurrentDir()
 {
-  char* dir;
   // Get the current working directory (getcwd uses malloc)
-  if (!(dir = __getcwd(nullptr, 0)))
+  char* dir = __getcwd(nullptr, 0);
+  if (!dir)
   {
     ERROR_LOG(COMMON, "GetCurrentDirectory failed: %s", GetLastErrorMsg().c_str());
     return nullptr;
@@ -666,7 +650,7 @@ std::string CreateTempDir()
   dir = ReplaceAll(dir, "\\", DIR_SEP);
   return dir;
 #else
-  const char* base = getenv("TMPDIR") ? : "/tmp";
+  const char* base = getenv("TMPDIR") ?: "/tmp";
   std::string path = std::string(base) + "/DolphinWii.XXXXXX";
   if (!mkdtemp(&path[0]))
     return "";
@@ -800,9 +784,9 @@ static void RebuildUserDirectories(unsigned int dir_index)
 
     s_user_paths[D_MEMORYWATCHER_IDX] = s_user_paths[D_USER_IDX] + MEMORYWATCHER_DIR DIR_SEP;
     s_user_paths[F_MEMORYWATCHERLOCATIONS_IDX] =
-      s_user_paths[D_MEMORYWATCHER_IDX] + MEMORYWATCHER_LOCATIONS;
+    s_user_paths[D_MEMORYWATCHER_IDX] + MEMORYWATCHER_LOCATIONS;
     s_user_paths[F_MEMORYWATCHERSOCKET_IDX] =
-      s_user_paths[D_MEMORYWATCHER_IDX] + MEMORYWATCHER_SOCKET;
+    s_user_paths[D_MEMORYWATCHER_IDX] + MEMORYWATCHER_SOCKET;
 
     // The shader cache has moved to the cache directory, so remove the old one.
     // TODO: remove that someday.
@@ -902,120 +886,6 @@ bool ReadFileToString(const std::string& filename, std::string& str)
   bool retval = file.ReadArray(&str[0], str.size(), &read_size);
 
   return retval;
-}
-
-IOFile::IOFile() : m_file(nullptr), m_good(true)
-{
-}
-
-IOFile::IOFile(std::FILE* file) : m_file(file), m_good(true)
-{
-}
-
-IOFile::IOFile(const std::string& filename, const char openmode[]) : m_file(nullptr), m_good(true)
-{
-  Open(filename, openmode);
-}
-
-IOFile::~IOFile()
-{
-  Close();
-}
-
-IOFile::IOFile(IOFile&& other) noexcept : m_file(nullptr), m_good(true)
-{
-  Swap(other);
-}
-
-IOFile& IOFile::operator=(IOFile&& other) noexcept
-{
-  Swap(other);
-  return *this;
-}
-
-void IOFile::Swap(IOFile& other) noexcept
-{
-  std::swap(m_file, other.m_file);
-  std::swap(m_good, other.m_good);
-}
-
-bool IOFile::Open(const std::string& filename, const char openmode[])
-{
-  Close();
-#ifdef _WIN32
-  _tfopen_s(&m_file, UTF8ToTStr(filename).c_str(), UTF8ToTStr(openmode).c_str());
-#else
-  m_file = fopen(filename.c_str(), openmode);
-#endif
-
-  m_good = IsOpen();
-  return m_good;
-}
-
-bool IOFile::Close()
-{
-  if (!IsOpen() || 0 != std::fclose(m_file))
-    m_good = false;
-
-  m_file = nullptr;
-  return m_good;
-}
-
-void IOFile::SetHandle(std::FILE* file)
-{
-  Close();
-  Clear();
-  m_file = file;
-}
-
-u64 IOFile::GetSize()
-{
-  if (IsOpen())
-    return File::GetSize(m_file);
-  else
-    return 0;
-}
-
-bool IOFile::Seek(s64 off, int origin)
-{
-  if (!IsOpen() || 0 != fseeko(m_file, off, origin))
-    m_good = false;
-
-  return m_good;
-}
-
-u64 IOFile::Tell() const
-{
-  if (IsOpen())
-    return ftello(m_file);
-  else
-    return -1;
-}
-
-bool IOFile::Flush()
-{
-  if (!IsOpen() || 0 != std::fflush(m_file))
-    m_good = false;
-
-  return m_good;
-}
-
-bool IOFile::Resize(u64 size)
-{
-  if (!IsOpen() ||
-    0 !=
-#ifdef _WIN32
-    // ector: _chsize sucks, not 64-bit safe
-    // F|RES: changed to _chsize_s. i think it is 64-bit safe
-    _chsize_s(_fileno(m_file), size)
-#else
-    // TODO: handle 64bit and growing
-    ftruncate(fileno(m_file), size)
-#endif
-    )
-    m_good = false;
-
-  return m_good;
 }
 
 }  // namespace

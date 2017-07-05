@@ -19,11 +19,12 @@ PerfQuery::PerfQuery()
 {
   D3D12_QUERY_HEAP_DESC desc = { D3D12_QUERY_HEAP_TYPE_OCCLUSION, PERF_QUERY_BUFFER_SIZE, 0 };
   CheckHR(D3D::device->CreateQueryHeap(&desc, IID_PPV_ARGS(m_query_heap.ReleaseAndGetAddressOf())));
-
+  CD3DX12_HEAP_PROPERTIES hprops(D3D12_HEAP_TYPE_READBACK);
+  CD3DX12_RESOURCE_DESC rdesc = CD3DX12_RESOURCE_DESC::Buffer(QUERY_READBACK_BUFFER_SIZE);
   CheckHR(D3D::device->CreateCommittedResource(
-    &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK),
+    &hprops,
     D3D12_HEAP_FLAG_NONE,
-    &CD3DX12_RESOURCE_DESC::Buffer(QUERY_READBACK_BUFFER_SIZE),
+    &rdesc,
     D3D12_RESOURCE_STATE_COPY_DEST,
     nullptr,
     IID_PPV_ARGS(m_query_readback_buffer.ReleaseAndGetAddressOf())));

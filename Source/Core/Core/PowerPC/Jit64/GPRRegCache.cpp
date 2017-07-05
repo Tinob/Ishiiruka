@@ -10,7 +10,7 @@
 
 using namespace Gen;
 
-GPRRegCache::GPRRegCache(Jit64& jit) : RegCache{ jit }
+GPRRegCache::GPRRegCache(Jit64& jit) : RegCache{jit}
 {
 }
 
@@ -32,15 +32,15 @@ OpArg GPRRegCache::GetDefaultLocation(size_t reg) const
 const X64Reg* GPRRegCache::GetAllocationOrder(size_t* count)
 {
   static const X64Reg allocation_order[] = {
-    // R12, when used as base register, for example in a LEA, can generate bad code! Need to look into
-    // this.
-    #ifdef _WIN32
-                RSI, RDI, R13, R14, R15, R8,
-                R9,  R10, R11, R12, RCX
-    #else
-                R12, R13, R14, R15, RSI, RDI,
-                R8,  R9,  R10, R11, RCX
-    #endif
+// R12, when used as base register, for example in a LEA, can generate bad code! Need to look into
+// this.
+#ifdef _WIN32
+      RSI, RDI, R13, R14, R15, R8,
+      R9,  R10, R11, R12, RCX
+#else
+      R12, R13, R14, R15, RSI, RDI,
+      R8,  R9,  R10, R11, RCX
+#endif
   };
   *count = sizeof(allocation_order) / sizeof(X64Reg);
   return allocation_order;

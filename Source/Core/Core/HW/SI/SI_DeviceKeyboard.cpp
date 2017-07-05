@@ -16,7 +16,7 @@ namespace SerialInterface
 {
 // --- GameCube keyboard ---
 CSIDevice_Keyboard::CSIDevice_Keyboard(SIDevices device, int device_number)
-  : ISIDevice(device, device_number)
+    : ISIDevice(device, device_number)
 {
 }
 
@@ -70,7 +70,7 @@ KeyboardStatus CSIDevice_Keyboard::GetKeyboardStatus() const
 bool CSIDevice_Keyboard::GetData(u32& hi, u32& low)
 {
   KeyboardStatus key_status = GetKeyboardStatus();
-  u8 key[3] = { 0x00, 0x00, 0x00 };
+  u8 key[3] = {0x00, 0x00, 0x00};
   MapKeys(key_status, key);
   u8 checksum = key[0] ^ key[1] ^ key[2] ^ m_counter;
 

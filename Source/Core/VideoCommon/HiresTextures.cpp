@@ -16,6 +16,7 @@
 #include <SOIL/SOIL.h>
 
 #include "Common/CommonPaths.h"
+#include "Common/File.h"
 #include "Common/FileSearch.h"
 #include "Common/FileUtil.h"
 #include "Common/Flag.h"
@@ -26,7 +27,7 @@
 #include "Common/Thread.h"
 #include "Common/Timer.h"
 
-
+#include "Core/Config/GraphicsSettings.h"
 #include "Core/ConfigManager.h"
 
 #include "VideoCommon/ImageLoader.h"
@@ -170,7 +171,7 @@ void HiresTexture::Update()
     Extensions.push_back(".dds");
   }
 
-  std::vector<std::string> filenames = Common::DoFileSearch(Extensions, { texture_directory }, /*recursive*/ true);
+  std::vector<std::string> filenames = Common::DoFileSearch({ texture_directory }, Extensions, /*recursive*/ true);
 
   const std::string code = game_id + "_";
   const std::string miptag = "mip";
@@ -311,7 +312,7 @@ void HiresTexture::Prefetch()
 
     if (size_sum.load() > max_mem)
     {
-      g_Config.bCacheHiresTextures = false;
+      Config::SetCurrent(Config::GFX_HIRES_TEXTURES, false);
 
       OSD::AddMessage(StringFromFormat("Custom Textures prefetching after %.1f MB aborted, not enough RAM available", size_sum / (1024.0 * 1024.0)), 10000);
       return;
@@ -386,10 +387,10 @@ std::string HiresTexture::GenBaseName(
       tlut_size = 2 * (max + 1 - min);
       tlut += 2 * min;
     }
-    u64 tex_hash = XXH64(texture, texture_size);
+    u64 tex_hash = XXH64(texture, texture_size, 0);
     u64 tlut_hash = 0;
     if (tlut_size)
-      tlut_hash = XXH64(tlut, tlut_size);
+      tlut_hash = XXH64(tlut, tlut_size, 0);
     std::string basename = s_format_prefix + StringFromFormat("%dx%d%s_%016" PRIx64, width, height, has_mipmaps ? "_m" : "", tex_hash);
     std::string tlutname = tlut_size ? StringFromFormat("_%016" PRIx64, tlut_hash) : "";
     std::string formatname = StringFromFormat("_%d", format);

@@ -7,6 +7,9 @@
 // However, if a JITed instruction (for example lwz) wants to access a bad memory area that call
 // may be redirected here (for example to Read_U32()).
 
+#include "Core/HW/Memmap.h"
+
+#include <algorithm>
 #include <cstring>
 #include <memory>
 
@@ -21,7 +24,6 @@
 #include "Core/HW/DVD/DVDInterface.h"
 #include "Core/HW/EXI/EXI.h"
 #include "Core/HW/MMIO.h"
-#include "Core/HW/Memmap.h"
 #include "Core/HW/MemoryInterface.h"
 #include "Core/HW/ProcessorInterface.h"
 #include "Core/HW/SI/SI.h"
@@ -47,7 +49,7 @@ static MemArena g_arena;
 
 // STATE_TO_SAVE
 static bool m_IsInitialized = false;  // Save the Init(), Shutdown() state
-                                      // END STATE_TO_SAVE
+// END STATE_TO_SAVE
 
 u8* m_pRAM;
 u8* m_pL1Cache;
@@ -98,7 +100,7 @@ struct PhysicalMemoryRegion
   u8** out_pointer;
   u32 physical_address;
   u32 size;
-  enum
+  enum : u32
   {
     ALWAYS = 0,
     FAKE_VMEM = 1,
@@ -154,10 +156,10 @@ struct LogicalMemoryView
 // TODO: The actual size of RAM is REALRAM_SIZE (24MB); the other 8MB shouldn't
 // be backed by actual memory.
 static PhysicalMemoryRegion physical_regions[] = {
-    { &m_pRAM, 0x00000000, RAM_SIZE, PhysicalMemoryRegion::ALWAYS },
-    { &m_pL1Cache, 0xE0000000, L1_CACHE_SIZE, PhysicalMemoryRegion::ALWAYS },
-    { &m_pFakeVMEM, 0x7E000000, FAKEVMEM_SIZE, PhysicalMemoryRegion::FAKE_VMEM },
-    { &m_pEXRAM, 0x10000000, EXRAM_SIZE, PhysicalMemoryRegion::WII_ONLY },
+    {&m_pRAM, 0x00000000, RAM_SIZE, PhysicalMemoryRegion::ALWAYS},
+    {&m_pL1Cache, 0xE0000000, L1_CACHE_SIZE, PhysicalMemoryRegion::ALWAYS},
+    {&m_pFakeVMEM, 0x7E000000, FAKEVMEM_SIZE, PhysicalMemoryRegion::FAKE_VMEM},
+    {&m_pEXRAM, 0x10000000, EXRAM_SIZE, PhysicalMemoryRegion::WII_ONLY},
 };
 
 static std::vector<LogicalMemoryView> logical_mapped_entries;
@@ -254,7 +256,7 @@ void UpdateLogicalMemory(const PowerPC::BatTable& dbat_table)
             PanicAlert("MemoryMap_Setup: Failed finding a memory base.");
             exit(0);
           }
-          logical_mapped_entries.push_back({ mapped_pointer, mapped_size });
+          logical_mapped_entries.push_back({mapped_pointer, mapped_size});
         }
       }
     }

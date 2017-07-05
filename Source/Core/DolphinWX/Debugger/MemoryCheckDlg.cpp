@@ -18,7 +18,7 @@
 #include "DolphinWX/WxUtils.h"
 
 MemoryCheckDlg::MemoryCheckDlg(wxWindow* parent)
-  : wxDialog(parent, wxID_ANY, _("Add a Memory Breakpoint"))
+    : wxDialog(parent, wxID_ANY, _("Add a Memory Breakpoint"))
 {
   Bind(wxEVT_BUTTON, &MemoryCheckDlg::OnOK, this, wxID_OK);
   Bind(wxEVT_RADIOBUTTON, &MemoryCheckDlg::OnRadioButtonClick, this);
@@ -36,13 +36,13 @@ MemoryCheckDlg::MemoryCheckDlg(wxWindow* parent)
   m_pEditEndAddress = new wxTextCtrl(this, wxID_ANY);
   m_pEditEndAddress->Disable();
   m_radioAddress = new wxRadioButton(this, wxID_ANY, _("With an address"), wxDefaultPosition,
-    wxDefaultSize, wxRB_GROUP);
+                                     wxDefaultSize, wxRB_GROUP);
   m_radioRange = new wxRadioButton(this, wxID_ANY, _("Within a range"));
   // i18n: This string is used for a radio button that represents the type of
   // memory breakpoint that gets triggered when a read operation occurs.
   // The string does not mean "read-only" in the sense that something cannot be written to.
   m_radioRead = new wxRadioButton(this, wxID_ANY, _("Read only"), wxDefaultPosition, wxDefaultSize,
-    wxRB_GROUP);
+                                  wxRB_GROUP);
   // i18n: This string is used for a radio button that represents the type of
   // memory breakpoint that gets triggered when a write operation occurs.
   // The string does not mean "write-only" in the sense that something cannot be read from.
@@ -52,7 +52,7 @@ MemoryCheckDlg::MemoryCheckDlg(wxWindow* parent)
   // The string is not a command to read and write something or to allow reading and writing.
   m_radioReadWrite = new wxRadioButton(this, wxID_ANY, _("Read and write"));
   m_radioLog =
-    new wxRadioButton(this, wxID_ANY, _("Log"), wxDefaultPosition, wxDefaultSize, wxRB_GROUP);
+      new wxRadioButton(this, wxID_ANY, _("Log"), wxDefaultPosition, wxDefaultSize, wxRB_GROUP);
   m_radioBreak = new wxRadioButton(this, wxID_ANY, _("Break"));
   m_radioBreakLog = new wxRadioButton(this, wxID_ANY, _("Break and log"));
   m_radioBreakLog->SetValue(true);
@@ -154,12 +154,12 @@ void MemoryCheckDlg::OnOK(wxCommandEvent& event)
   bool Log = m_radioLog->GetValue() || m_radioBreakLog->GetValue();
   bool Break = m_radioBreak->GetValue() || m_radioBreakLog->GetValue();
 
-  u32 StartAddress, EndAddress;
+  u32 StartAddress = UINT32_MAX, EndAddress = 0;
   bool EndAddressOK =
-    EndAddressString.Len() && AsciiToHex(WxStrToStr(EndAddressString), EndAddress);
+      EndAddressString.Len() && AsciiToHex(WxStrToStr(EndAddressString), EndAddress);
 
   if (AsciiToHex(WxStrToStr(StartAddressString), StartAddress) && (OnRead || OnWrite) &&
-    (Log || Break))
+      (Log || Break))
   {
     TMemCheck MemCheck;
 

@@ -28,7 +28,7 @@ namespace HLE
 {
 struct SQueuedEvent
 {
-  u8 m_buffer[1024] = { 0 };
+  u8 m_buffer[1024] = {0};
   u32 m_size = 0;
   u16 m_connectionHandle = 0;
 
@@ -97,7 +97,7 @@ private:
 
     Kernel& m_ios;
     std::deque<Packet> m_queue;
-  } m_acl_pool{ m_ios };
+  } m_acl_pool{m_ios};
 
   u32 m_PacketCount[MAX_BBMOTES] = {};
   u64 m_last_ticks = 0;

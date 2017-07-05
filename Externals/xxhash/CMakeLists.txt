@@ -1,6 +1,7 @@
-
+project(xxhash C)
 
 set(SRCS
-	xxhash.cpp
+	xxhash.c
 )
+
 add_library(xxhash STATIC ${SRCS})

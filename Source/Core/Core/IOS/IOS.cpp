@@ -18,7 +18,8 @@
 #include "Common/ChunkFile.h"
 #include "Common/CommonTypes.h"
 #include "Common/Logging/Log.h"
-#include "Core/Boot/Boot_DOL.h"
+#include "Core/Boot/DolReader.h"
+#include "Core/CommonTitles.h"
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
 #include "Core/CoreTiming.h"
@@ -103,8 +104,8 @@ enum class MemorySetupType
 static bool SetupMemory(u64 ios_title_id, MemorySetupType setup_type)
 {
   auto target_imv = std::find_if(
-    GetMemoryValues().begin(), GetMemoryValues().end(),
-    [&](const MemoryValues& imv) { return imv.ios_number == (ios_title_id & 0xffff); });
+      GetMemoryValues().begin(), GetMemoryValues().end(),
+      [&](const MemoryValues& imv) { return imv.ios_number == (ios_title_id & 0xffff); });
 
   if (target_imv == GetMemoryValues().end())
   {
@@ -168,10 +169,10 @@ static bool SetupMemory(u64 ios_title_id, MemorySetupType setup_type)
   return true;
 }
 
-// IOS used by the latest System Menu (4.3).
-constexpr u64 IOS80_TITLE_ID = 0x0000000100000050;
-constexpr u64 BC_TITLE_ID = 0x0000000100000100;
-constexpr u64 MIOS_TITLE_ID = 0x0000000100000101;
+void WriteReturnValue(s32 value, u32 address)
+{
+  Memory::Write_U32(static_cast<u32>(value), address);
+}
 
 Kernel::Kernel()
 {
@@ -179,6 +180,7 @@ Kernel::Kernel()
   // using more than one IOS instance at a time is not supported.
   _assert_(GetIOS() == nullptr);
   Core::InitializeWiiRoot(false);
+  m_is_responsible_for_nand_root = true;
   AddCoreDevices();
 }
 
@@ -197,7 +199,8 @@ Kernel::~Kernel()
     m_device_map.clear();
   }
 
-  Core::ShutdownWiiRoot();
+  if (m_is_responsible_for_nand_root)
+    Core::ShutdownWiiRoot();
 }
 
 Kernel::Kernel(u64 title_id) : m_title_id(title_id)
@@ -211,9 +214,7 @@ EmulationKernel::EmulationKernel(u64 title_id) : Kernel(title_id)
   if (!SetupMemory(title_id, MemorySetupType::IOSReload))
     WARN_LOG(IOS, "No information about this IOS -- cannot set up memory values");
 
-  Core::InitializeWiiRoot(Core::WantsDeterminism());
-
-  if (title_id == MIOS_TITLE_ID)
+  if (title_id == Titles::MIOS)
   {
     MIOS::Load();
     return;
@@ -273,7 +274,7 @@ u16 Kernel::GetGidForPPC() const
 
 // This corresponds to syscall 0x41, which loads a binary from the NAND and bootstraps the PPC.
 // Unlike 0x42, IOS will set up some constants in memory before booting the PPC.
-bool Kernel::BootstrapPPC(const DiscIO::CNANDContentLoader& content_loader)
+bool Kernel::BootstrapPPC(const DiscIO::NANDContentLoader& content_loader)
 {
   if (!content_loader.IsValid())
     return false;
@@ -282,14 +283,15 @@ bool Kernel::BootstrapPPC(const DiscIO::CNANDContentLoader& content_loader)
   if (!content)
     return false;
 
-  const auto dol_loader = std::make_unique<CDolLoader>(content->m_Data->Get());
+  const auto dol_loader = std::make_unique<DolReader>(content->m_Data->Get());
   if (!dol_loader->IsValid())
     return false;
 
   if (!SetupMemory(m_title_id, MemorySetupType::Full))
     return false;
 
-  dol_loader->Load();
+  if (!dol_loader->LoadIntoMemory())
+    return false;
 
   // NAND titles start with address translation off at 0x3400 (via the PPC bootstub)
   // The state of other CPU registers (like the BAT registers) doesn't matter much
@@ -313,10 +315,10 @@ bool Kernel::BootIOS(const u64 ios_title_id)
   //
   // Because we currently don't have boot1 and boot2, and BC is only ever used to launch MIOS
   // (indirectly via boot2), we can just launch MIOS when BC is launched.
-  if (ios_title_id == BC_TITLE_ID)
+  if (ios_title_id == Titles::BC)
   {
     NOTICE_LOG(IOS, "BC: Launching MIOS...");
-    return BootIOS(MIOS_TITLE_ID);
+    return BootIOS(Titles::MIOS);
   }
 
   // Shut down the active IOS first before switching to the new one.
@@ -435,7 +437,7 @@ IPCCommandResult Kernel::HandleIPCCommand(const Request& request)
 {
   if (request.command == IPC_CMD_OPEN)
   {
-    OpenRequest open_request{ request.address };
+    OpenRequest open_request{request.address};
     const s32 new_fd = OpenDevice(open_request);
     return Device::Device::GetDefaultReply(new_fd);
   }
@@ -450,15 +452,15 @@ IPCCommandResult Kernel::HandleIPCCommand(const Request& request)
     m_fdmap[request.fd].reset();
     return Device::Device::GetDefaultReply(device->Close(request.fd));
   case IPC_CMD_READ:
-    return device->Read(ReadWriteRequest{ request.address });
+    return device->Read(ReadWriteRequest{request.address});
   case IPC_CMD_WRITE:
-    return device->Write(ReadWriteRequest{ request.address });
+    return device->Write(ReadWriteRequest{request.address});
   case IPC_CMD_SEEK:
-    return device->Seek(SeekRequest{ request.address });
+    return device->Seek(SeekRequest{request.address});
   case IPC_CMD_IOCTL:
-    return device->IOCtl(IOCtlRequest{ request.address });
+    return device->IOCtl(IOCtlRequest{request.address});
   case IPC_CMD_IOCTLV:
-    return device->IOCtlV(IOCtlVRequest{ request.address });
+    return device->IOCtlV(IOCtlVRequest{request.address});
   default:
     _assert_msg_(IOS, false, "Unexpected command: %x", request.command);
     return Device::Device::GetDefaultReply(IPC_EINVAL);
@@ -467,7 +469,7 @@ IPCCommandResult Kernel::HandleIPCCommand(const Request& request)
 
 void Kernel::ExecuteIPCCommand(const u32 address)
 {
-  Request request{ address };
+  Request request{address};
   IPCCommandResult result = HandleIPCCommand(request);
 
   if (!result.send_reply)
@@ -490,7 +492,7 @@ void Kernel::EnqueueIPCRequest(u32 address)
 
 // Called to send a reply to an IOS syscall
 void Kernel::EnqueueIPCReply(const Request& request, const s32 return_value, int cycles_in_future,
-  CoreTiming::FromThread from)
+                             CoreTiming::FromThread from)
 {
   Memory::Write_U32(static_cast<u32>(return_value), request.address + 4);
   // IOS writes back the command that was responded to in the FD field.
@@ -503,7 +505,7 @@ void Kernel::EnqueueIPCReply(const Request& request, const s32 return_value, int
 void Kernel::EnqueueIPCAcknowledgement(u32 address, int cycles_in_future)
 {
   CoreTiming::ScheduleEvent(cycles_in_future, s_event_enqueue,
-    address | ENQUEUE_ACKNOWLEDGEMENT_FLAG);
+                            address | ENQUEUE_ACKNOWLEDGEMENT_FLAG);
 }
 
 void Kernel::HandleIPCEvent(u64 userdata)
@@ -589,7 +591,7 @@ void Kernel::DoState(PointerWrap& p)
 
   m_iosc.DoState(p);
 
-  if (m_title_id == MIOS_TITLE_ID)
+  if (m_title_id == Titles::MIOS)
     return;
 
   // We need to make sure all file handles are closed so IOS::HLE::Device::FS::DoState can
@@ -680,13 +682,13 @@ void Init()
   });
 
   // Start with IOS80 to simulate part of the Wii boot process.
-  s_ios = std::make_unique<EmulationKernel>(IOS80_TITLE_ID);
+  s_ios = std::make_unique<EmulationKernel>(Titles::SYSTEM_MENU_IOS);
   // On a Wii, boot2 launches the system menu IOS, which then launches the system menu
   // (which bootstraps the PPC). Bootstrapping the PPC results in memory values being set up.
   // This means that the constants in the 0x3100 region are always set up by the time
   // a game is launched. This is necessary because booting games from the game list skips
   // a significant part of a Wii's boot process.
-  SetupMemory(IOS80_TITLE_ID, MemorySetupType::Full);
+  SetupMemory(Titles::SYSTEM_MENU_IOS, MemorySetupType::Full);
 }
 
 void Shutdown()

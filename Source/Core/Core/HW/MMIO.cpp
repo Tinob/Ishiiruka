@@ -2,11 +2,12 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Core/HW/MMIO.h"
+
 #include <functional>
 
 #include "Common/Assert.h"
 #include "Common/CommonTypes.h"
-#include "Core/HW/MMIO.h"
 #include "Core/HW/MMIOHandlers.h"
 
 namespace MMIO
@@ -20,14 +21,14 @@ template <typename T>
 class ReadHandlingMethod
 {
 public:
-  virtual ~ReadHandlingMethod() {}
+  virtual ~ReadHandlingMethod() = default;
   virtual void AcceptReadVisitor(ReadHandlingMethodVisitor<T>& v) const = 0;
 };
 template <typename T>
 class WriteHandlingMethod
 {
 public:
-  virtual ~WriteHandlingMethod() {}
+  virtual ~WriteHandlingMethod() = default;
   virtual void AcceptWriteVisitor(WriteHandlingMethodVisitor<T>& v) const = 0;
 };
 
@@ -39,7 +40,7 @@ class ConstantHandlingMethod : public ReadHandlingMethod<T>
 {
 public:
   explicit ConstantHandlingMethod(T value) : value_(value) {}
-  virtual ~ConstantHandlingMethod() {}
+  virtual ~ConstantHandlingMethod() = default;
   void AcceptReadVisitor(ReadHandlingMethodVisitor<T>& v) const override
   {
     v.VisitConstant(value_);
@@ -62,7 +63,7 @@ class NopHandlingMethod : public WriteHandlingMethod<T>
 {
 public:
   NopHandlingMethod() {}
-  virtual ~NopHandlingMethod() {}
+  virtual ~NopHandlingMethod() = default;
   void AcceptWriteVisitor(WriteHandlingMethodVisitor<T>& v) const override { v.VisitNop(); }
 };
 template <typename T>
@@ -79,7 +80,7 @@ class DirectHandlingMethod : public ReadHandlingMethod<T>, public WriteHandlingM
 {
 public:
   DirectHandlingMethod(T* addr, u32 mask) : addr_(addr), mask_(mask) {}
-  virtual ~DirectHandlingMethod() {}
+  virtual ~DirectHandlingMethod() = default;
   void AcceptReadVisitor(ReadHandlingMethodVisitor<T>& v) const override
   {
     v.VisitDirect(addr_, mask_);
@@ -123,16 +124,16 @@ class ComplexHandlingMethod : public ReadHandlingMethod<T>, public WriteHandling
 {
 public:
   explicit ComplexHandlingMethod(std::function<T(u32)> read_lambda)
-    : read_lambda_(read_lambda), write_lambda_(InvalidWriteLambda())
+      : read_lambda_(read_lambda), write_lambda_(InvalidWriteLambda())
   {
   }
 
   explicit ComplexHandlingMethod(std::function<void(u32, T)> write_lambda)
-    : read_lambda_(InvalidReadLambda()), write_lambda_(write_lambda)
+      : read_lambda_(InvalidReadLambda()), write_lambda_(write_lambda)
   {
   }
 
-  virtual ~ComplexHandlingMethod() {}
+  virtual ~ComplexHandlingMethod() = default;
   void AcceptReadVisitor(ReadHandlingMethodVisitor<T>& v) const override
   {
     v.VisitComplex(&read_lambda_);
@@ -148,7 +149,7 @@ private:
   {
     return [](u32) {
       _dbg_assert_msg_(MEMMAP, 0, "Called the read lambda on a write "
-        "complex handler.");
+                                  "complex handler.");
       return 0;
     };
   }
@@ -157,7 +158,7 @@ private:
   {
     return [](u32, T) {
       _dbg_assert_msg_(MEMMAP, 0, "Called the write lambda on a read "
-        "complex handler.");
+                                  "complex handler.");
     };
   }
 
@@ -182,7 +183,7 @@ ReadHandlingMethod<T>* InvalidRead()
 {
   return ComplexRead<T>([](u32 addr) {
     ERROR_LOG(MEMMAP, "Trying to read %zu bits from an invalid MMIO (addr=%08x)", 8 * sizeof(T),
-      addr);
+              addr);
     return -1;
   });
 }
@@ -191,7 +192,7 @@ WriteHandlingMethod<T>* InvalidWrite()
 {
   return ComplexWrite<T>([](u32 addr, T val) {
     ERROR_LOG(MEMMAP, "Trying to write %zu bits to an invalid MMIO (addr=%08x, val=%08x)",
-      8 * sizeof(T), addr, (u32)val);
+              8 * sizeof(T), addr, (u32)val);
   });
 }
 
@@ -266,7 +267,7 @@ ReadHandlingMethod<T>* ReadToLarger(Mapping* mmio, u32 larger_addr, u32 shift)
 
   // TODO(delroth): optimize
   return ComplexRead<T>(
-    [large, shift](u32 addr) { return large->Read(addr & ~(sizeof(LT) - 1)) >> shift; });
+      [large, shift](u32 addr) { return large->Read(addr & ~(sizeof(LT) - 1)) >> shift; });
 }
 
 // Inplementation of the ReadHandler and WriteHandler class. There is a lot of
@@ -304,6 +305,8 @@ void ReadHandler<T>::ResetMethod(ReadHandlingMethod<T>* method)
 
   struct FuncCreatorVisitor : public ReadHandlingMethodVisitor<T>
   {
+    virtual ~FuncCreatorVisitor() = default;
+
     std::function<T(u32)> ret;
 
     void VisitConstant(T value) override
@@ -356,6 +359,8 @@ void WriteHandler<T>::ResetMethod(WriteHandlingMethod<T>* method)
 
   struct FuncCreatorVisitor : public WriteHandlingMethodVisitor<T>
   {
+    virtual ~FuncCreatorVisitor() = default;
+
     std::function<void(u32, T)> ret;
 
     void VisitNop() override

@@ -30,7 +30,7 @@ typedef GLenum(APIENTRYP PFNDOLCLIENTWAITSYNCPROC)(GLsync sync, GLbitfield flags
 typedef void(APIENTRYP PFNDOLWAITSYNCPROC)(GLsync sync, GLbitfield flags, GLuint64 timeout);
 typedef void(APIENTRYP PFNDOLGETINTEGER64VPROC)(GLenum pname, GLint64* data);
 typedef void(APIENTRYP PFNDOLGETSYNCIVPROC)(GLsync sync, GLenum pname, GLsizei bufSize,
-  GLsizei* length, GLint* values);
+                                            GLsizei* length, GLint* values);
 typedef void(APIENTRYP PFNDOLGETINTEGER64I_VPROC)(GLenum target, GLuint index, GLint64* data);
 
 extern PFNDOLCLIENTWAITSYNCPROC dolClientWaitSync;

@@ -1469,7 +1469,6 @@ TextureCacheBase::TexAddrCache::iterator TextureCacheBase::InvalidateTexture(Tex
   if (iter == textures_by_address.end())
     return textures_by_address.end();
 
-  TCacheEntryBase* entry = iter->second;
   DisposeTexture(iter->second);
   return textures_by_address.erase(iter);
 }

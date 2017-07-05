@@ -16,7 +16,7 @@ void SymbolDB::List()
   for (const auto& func : functions)
   {
     DEBUG_LOG(OSHLE, "%s @ %08x: %i bytes (hash %08x) : %i calls", func.second.name.c_str(),
-      func.second.address, func.second.size, func.second.hash, func.second.numCalls);
+              func.second.address, func.second.size, func.second.hash, func.second.numCalls);
   }
   INFO_LOG(OSHLE, "%zu functions known in this program above.", functions.size());
 }
@@ -75,9 +75,9 @@ std::vector<Symbol*> SymbolDB::GetSymbolsFromHash(u32 hash)
   const auto iter = checksumToFunction.find(hash);
 
   if (iter == checksumToFunction.cend())
-    return{};
+    return {};
 
-  return{ iter->second.cbegin(), iter->second.cend() };
+  return {iter->second.cbegin(), iter->second.cend()};
 }
 
 void SymbolDB::AddCompleteSymbol(const Symbol& symbol)

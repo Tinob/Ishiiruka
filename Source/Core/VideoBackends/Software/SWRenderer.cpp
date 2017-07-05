@@ -43,7 +43,6 @@ void SWRenderer::Init()
 
 void SWRenderer::Shutdown()
 {
-  g_Config.bRunning = false;
   UpdateActiveConfig();
 }
 

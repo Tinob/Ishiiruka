@@ -10,7 +10,7 @@
 #include <string>
 
 #include "Common/CommonTypes.h"
-#include "Common/FileUtil.h"
+#include "Common/File.h"
 #include "Core/IOS/Device.h"
 #include "Core/IOS/IOS.h"
 
@@ -128,8 +128,8 @@ private:
 
   IPCCommandResult SendCommand(const IOCtlVRequest& request);
 
-  u32 ExecuteCommand(const Request& request, u32 BufferIn, u32 BufferInSize, u32 BufferIn2,
-    u32 BufferInSize2, u32 _BufferOut, u32 BufferOutSize);
+  s32 ExecuteCommand(const Request& request, u32 BufferIn, u32 BufferInSize, u32 BufferIn2,
+                     u32 BufferInSize2, u32 _BufferOut, u32 BufferOutSize);
   void OpenInternal();
 
   // TODO: do we need more than one?

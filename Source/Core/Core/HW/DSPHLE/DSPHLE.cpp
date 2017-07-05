@@ -2,13 +2,12 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
-#include <iostream>
+#include "Core/HW/DSPHLE/DSPHLE.h"
 
 #include "Common/ChunkFile.h"
 #include "Common/CommonTypes.h"
 #include "Common/MsgHandler.h"
 #include "Core/Core.h"
-#include "Core/HW/DSPHLE/DSPHLE.h"
 #include "Core/HW/DSPHLE/UCodes/UCodes.h"
 #include "Core/HW/SystemTimers.h"
 
@@ -16,9 +15,9 @@ namespace DSP
 {
 namespace HLE
 {
-DSPHLE::DSPHLE()
-{
-}
+DSPHLE::DSPHLE() = default;
+
+DSPHLE::~DSPHLE() = default;
 
 bool DSPHLE::Initialize(bool wii, bool dsp_thread)
 {
@@ -101,7 +100,7 @@ void DSPHLE::DoState(PointerWrap& p)
   if (!is_hle && p.GetMode() == PointerWrap::MODE_READ)
   {
     Core::DisplayMessage("State is incompatible with current DSP engine. Aborting load state.",
-      3000);
+                         3000);
     p.SetMode(PointerWrap::MODE_VERIFY);
     return;
   }
@@ -123,7 +122,7 @@ void DSPHLE::DoState(PointerWrap& p)
   const bool same_last_ucode = last_ucode_crc == last_ucode_crc_before_load;
   auto ucode = same_ucode ? std::move(m_ucode) : UCodeFactory(ucode_crc, this, m_wii);
   auto last_ucode =
-    same_last_ucode ? std::move(m_last_ucode) : UCodeFactory(last_ucode_crc, this, m_wii);
+      same_last_ucode ? std::move(m_last_ucode) : UCodeFactory(last_ucode_crc, this, m_wii);
 
   if (ucode)
     ucode->DoState(p);

@@ -36,8 +36,8 @@ wxString GetTraversalLabelText(IniFile::Section& section)
 }
 }  // Anonymous namespace
 
-NetPlaySetupFrame::NetPlaySetupFrame(wxWindow* const parent, const CGameListCtrl* const game_list)
-  : wxFrame(parent, wxID_ANY, _("Dolphin NetPlay Setup")), m_game_list(game_list)
+NetPlaySetupFrame::NetPlaySetupFrame(wxWindow* const parent, const GameListCtrl* const game_list)
+    : wxFrame(parent, wxID_ANY, _("Dolphin NetPlay Setup")), m_game_list(game_list)
 {
   IniFile inifile;
   inifile.Load(File::GetUserPath(F_DOLPHINCONFIG_IDX));
@@ -61,7 +61,7 @@ NetPlaySetupFrame::NetPlaySetupFrame(wxWindow* const parent, const CGameListCtrl
 
     temp.clear();
     netplay_section.Get("ConnectPort", &temp,
-      std::to_string(NetPlayHostConfig::DEFAULT_LISTEN_PORT));
+                        std::to_string(NetPlayHostConfig::DEFAULT_LISTEN_PORT));
     m_connect_port_text->SetValue(StrToWxStr(temp));
 
     temp.clear();
@@ -137,11 +137,11 @@ void NetPlaySetupFrame::CreateGUI()
   wxGridBagSizer* top_sizer = new wxGridBagSizer(space5, space5);
   top_sizer->Add(connectiontype_lbl, wxGBPosition(0, 0), wxDefaultSpan, wxALIGN_CENTER_VERTICAL);
   top_sizer->Add(WxUtils::GiveMinSizeDIP(m_direct_traversal, wxSize(100, -1)), wxGBPosition(0, 1),
-    wxDefaultSpan, wxEXPAND);
+                 wxDefaultSpan, wxEXPAND);
   top_sizer->Add(m_trav_reset_btn, wxGBPosition(0, 2), wxDefaultSpan, wxALIGN_CENTER_VERTICAL);
   top_sizer->Add(nick_lbl, wxGBPosition(1, 0), wxDefaultSpan, wxALIGN_CENTER_VERTICAL);
   top_sizer->Add(WxUtils::GiveMinSizeDIP(m_nickname_text, wxSize(150, -1)), wxGBPosition(1, 1),
-    wxDefaultSpan, wxEXPAND);
+                 wxDefaultSpan, wxEXPAND);
 
   m_notebook = CreateNotebookGUI(panel);
   m_notebook->Bind(wxEVT_NOTEBOOK_PAGE_CHANGED, &NetPlaySetupFrame::OnTabChanged, this);
@@ -185,20 +185,20 @@ wxNotebook* NetPlaySetupFrame::CreateNotebookGUI(wxWindow* parent)
 
     m_client_port_lbl = new wxStaticText(connect_tab, wxID_ANY, _("Port:"));
     m_connect_port_text = new wxTextCtrl(connect_tab, wxID_ANY,
-      std::to_string(NetPlayHostConfig::DEFAULT_LISTEN_PORT));
+                                         std::to_string(NetPlayHostConfig::DEFAULT_LISTEN_PORT));
 
     wxButton* const connect_btn = new wxButton(connect_tab, wxID_ANY, _("Connect"));
     connect_btn->Bind(wxEVT_BUTTON, &NetPlaySetupFrame::OnJoin, this);
 
     wxStaticText* const alert_lbl = new wxStaticText(
-      connect_tab, wxID_ANY,
-      _("ALERT:\n\n"
-        "All players must use the same Dolphin version.\n"
-        "All memory cards, SD cards and cheats must be identical between players or disabled.\n"
-        "If DSP LLE is used, DSP ROMs must be identical between players.\n"
-        "If connecting directly, the host must have the chosen UDP port open/forwarded!\n"
-        "\n"
-        "Wii Remote support in netplay is experimental and should not be expected to work.\n"));
+        connect_tab, wxID_ANY,
+        _("ALERT:\n\n"
+          "All players must use the same Dolphin version.\n"
+          "All memory cards, SD cards and cheats must be identical between players or disabled.\n"
+          "If DSP LLE is used, DSP ROMs must be identical between players.\n"
+          "If connecting directly, the host must have the chosen UDP port open/forwarded!\n"
+          "\n"
+          "Wii Remote support in netplay is experimental and should not be expected to work.\n"));
 
     wxBoxSizer* const top_szr = new wxBoxSizer(wxHORIZONTAL);
     top_szr->Add(m_ip_lbl, 0, wxALIGN_CENTER_VERTICAL);
@@ -225,23 +225,23 @@ wxNotebook* NetPlaySetupFrame::CreateNotebookGUI(wxWindow* parent)
   {
     m_host_port_lbl = new wxStaticText(host_tab, wxID_ANY, _("Port:"));
     m_host_port_text =
-      new wxTextCtrl(host_tab, wxID_ANY, std::to_string(NetPlayHostConfig::DEFAULT_LISTEN_PORT));
+        new wxTextCtrl(host_tab, wxID_ANY, std::to_string(NetPlayHostConfig::DEFAULT_LISTEN_PORT));
 
     m_traversal_listen_port_enabled = new wxCheckBox(host_tab, wxID_ANY, _("Force Listen Port:"));
     m_traversal_listen_port = new wxSpinCtrl(host_tab, wxID_ANY, "", wxDefaultPosition,
-      wxDefaultSize, wxSP_ARROW_KEYS, 1, 65535);
+                                             wxDefaultSize, wxSP_ARROW_KEYS, 1, 65535);
     m_traversal_listen_port->SetMinSize(WxUtils::GetTextWidgetMinSize(m_traversal_listen_port));
 
     m_traversal_listen_port_enabled->Bind(wxEVT_CHECKBOX,
-      &NetPlaySetupFrame::OnTraversalListenPortChanged, this);
+                                          &NetPlaySetupFrame::OnTraversalListenPortChanged, this);
     m_traversal_listen_port->Bind(wxEVT_TEXT, &NetPlaySetupFrame::OnTraversalListenPortChanged,
-      this);
+                                  this);
 
     wxButton* const host_btn = new wxButton(host_tab, wxID_ANY, _("Host"));
     host_btn->Bind(wxEVT_BUTTON, &NetPlaySetupFrame::OnHost, this);
 
     m_game_lbox =
-      new wxListBox(host_tab, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0, nullptr, wxLB_SORT);
+        new wxListBox(host_tab, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0, nullptr, wxLB_SORT);
     m_game_lbox->Bind(wxEVT_LISTBOX_DCLICK, &NetPlaySetupFrame::OnHost, this);
 
     NetPlayDialog::FillWithGameNames(m_game_lbox, *m_game_list);
@@ -304,8 +304,8 @@ NetPlaySetupFrame::~NetPlaySetupFrame()
   netplay_section.Set("ConnectPort", WxStrToStr(m_connect_port_text->GetValue()));
   netplay_section.Set("HostPort", WxStrToStr(m_host_port_text->GetValue()));
   netplay_section.Set("ListenPort", m_traversal_listen_port_enabled->IsChecked() ?
-    m_traversal_listen_port->GetValue() :
-    0);
+                                        m_traversal_listen_port->GetValue() :
+                                        0);
 
 #ifdef USE_UPNP
   netplay_section.Set("UseUPNP", m_upnp_chk->GetValue(), false);
@@ -346,7 +346,7 @@ void NetPlaySetupFrame::DoHost()
   if (host_config.use_traversal)
   {
     host_config.listen_port = static_cast<u16>(
-      m_traversal_listen_port_enabled->IsChecked() ? m_traversal_listen_port->GetValue() : 0);
+        m_traversal_listen_port_enabled->IsChecked() ? m_traversal_listen_port->GetValue() : 0);
   }
   else
   {

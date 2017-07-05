@@ -3,6 +3,7 @@
 // Refer to the license.txt file included.
 
 #include "Core/PowerPC/Jit64/JitAsm.h"
+
 #include "Common/CommonTypes.h"
 #include "Common/JitRegister.h"
 #include "Common/x64ABI.h"
@@ -60,7 +61,7 @@ void Jit64AsmRoutineManager::Generate()
   ABI_CallFunction(CoreTiming::Advance);
   ABI_PopRegistersAndAdjustStack({}, 0);
   FixupBranch skipToRealDispatch =
-    J(SConfig::GetInstance().bEnableDebugging);  // skip the sync and compare first time
+      J(SConfig::GetInstance().bEnableDebugging);  // skip the sync and compare first time
   dispatcherMispredictedBLR = GetCodePtr();
   AND(32, PPCSTATE(pc), Imm32(0xFFFFFFFC));
 

@@ -138,7 +138,7 @@ static bool IsLogicZero()
 static bool IsConditionA()
 {
   return (((g_dsp.r.sr & SR_OVER_S32) || (g_dsp.r.sr & SR_TOP2BITS)) &&
-    !(g_dsp.r.sr & SR_ARITH_ZERO)) != 0;
+          !(g_dsp.r.sr & SR_ARITH_ZERO)) != 0;
 }
 
 // see DSPCore.h for flags

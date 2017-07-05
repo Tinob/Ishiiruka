@@ -2,6 +2,8 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Core/HW/HW.h"
+
 #include "Common/ChunkFile.h"
 #include "Common/CommonTypes.h"
 
@@ -14,7 +16,6 @@
 #include "Core/HW/DVD/DVDInterface.h"
 #include "Core/HW/EXI/EXI.h"
 #include "Core/HW/GPFifo.h"
-#include "Core/HW/HW.h"
 #include "Core/HW/Memmap.h"
 #include "Core/HW/ProcessorInterface.h"
 #include "Core/HW/SI/SI.h"
@@ -22,8 +23,8 @@
 #include "Core/HW/VideoInterface.h"
 #include "Core/HW/WII_IPC.h"
 #include "Core/IOS/IOS.h"
-#include "Core/Movie.h"
 #include "Core/State.h"
+#include "Core/WiiRoot.h"
 
 namespace HW
 {
@@ -49,6 +50,8 @@ void Init()
 
   if (SConfig::GetInstance().bWii)
   {
+    // The NAND should only be initialised once per emulation session.
+    Core::InitializeWiiRoot(Core::WantsDeterminism());
     IOS::Init();
     IOS::HLE::Init();  // Depends on Memory
   }
@@ -59,6 +62,7 @@ void Shutdown()
   // IOS should always be shut down regardless of bWii because it can be running in GC mode (MIOS).
   IOS::HLE::Shutdown();  // Depends on Memory
   IOS::Shutdown();
+  Core::ShutdownWiiRoot();
 
   SystemTimers::Shutdown();
   CPU::Shutdown();

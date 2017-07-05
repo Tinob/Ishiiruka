@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -36,6 +37,12 @@
 
 namespace
 {
+template <typename T>
+wxString OptionalToString(std::optional<T> value)
+{
+  return value ? StrToWxStr(std::to_string(*value)) : wxString();
+}
+
 wxArrayString GetLanguageChoiceStrings(const std::vector<DiscIO::Language>& languages)
 {
   wxArrayString available_languages;
@@ -135,7 +142,7 @@ int FindPreferredLanguageIndex(DiscIO::Language preferred_language,
 }  // Anonymous namespace
 
 InfoPanel::InfoPanel(wxWindow* parent, wxWindowID id, const GameListItem& item,
-  const std::unique_ptr<DiscIO::IVolume>& opened_iso)
+  const std::unique_ptr<DiscIO::Volume>& opened_iso)
   : wxPanel{ parent, id }, m_game_list_item{ item }, m_opened_iso{ opened_iso }
 {
   CreateGUI();
@@ -177,9 +184,8 @@ void InfoPanel::LoadISODetails()
   m_game_id->SetValue(StrToWxStr(m_opened_iso->GetGameID()));
   m_country->SetValue(GetCountryName(m_opened_iso->GetCountry()));
   m_maker_id->SetValue("0x" + StrToWxStr(m_opened_iso->GetMakerID()));
-  m_revision->SetValue(StrToWxStr(std::to_string(m_opened_iso->GetRevision())));
+  m_revision->SetValue(OptionalToString(m_opened_iso->GetRevision()));
   m_date->SetValue(StrToWxStr(m_opened_iso->GetApploaderDate()));
-  m_fst->SetValue(StrToWxStr(std::to_string(m_opened_iso->GetFSTSize())));
   if (m_ios_version)
   {
     const IOS::ES::TMDReader tmd = m_opened_iso->GetTMD(m_opened_iso->GetGamePartition());
@@ -192,7 +198,7 @@ void InfoPanel::LoadBannerDetails()
 {
   LoadBannerImage();
 
-  const bool is_wii = m_opened_iso->GetVolumeType() != DiscIO::Platform::GAMECUBE_DISC;
+  const bool is_wii = DiscIO::IsWii(m_opened_iso->GetVolumeType());
   ChangeBannerDetails(SConfig::GetInstance().GetCurrentLanguage(is_wii));
 }
 
@@ -215,14 +221,13 @@ void InfoPanel::LoadBannerImage()
 wxStaticBoxSizer* InfoPanel::CreateISODetailsSizer()
 {
   std::vector<std::pair<wxString, wxTextCtrl*&>> controls = { {
-          {_("Internal Name:"), m_internal_name},
-          {_("Game ID:"), m_game_id},
-          {_("Country:"), m_country},
-          {_("Maker ID:"), m_maker_id},
-          {_("Revision:"), m_revision},
-          {_("Apploader Date:"), m_date},
-          {_("FST Size:"), m_fst},
-  } };
+    { _("Internal Name:"), m_internal_name },
+    { _("Game ID:"), m_game_id },
+    { _("Country:"), m_country },
+    { _("Maker ID:"), m_maker_id },
+    { _("Revision:"), m_revision },
+    { _("Apploader Date:"), m_date },
+    } };
   if (m_opened_iso->GetTMD(m_opened_iso->GetGamePartition()).IsValid())
     controls.emplace_back(_("IOS Version:"), m_ios_version);
 
@@ -306,7 +311,7 @@ wxStaticBoxSizer* InfoPanel::CreateBannerDetailsSizer()
 wxChoice* InfoPanel::CreateCommentLanguageChoice()
 {
   const auto languages = m_game_list_item.GetLanguages();
-  const bool is_wii = m_opened_iso->GetVolumeType() != DiscIO::Platform::GAMECUBE_DISC;
+  const bool is_wii = DiscIO::IsWii(m_opened_iso->GetVolumeType());
   const auto preferred_language = SConfig::GetInstance().GetCurrentLanguage(is_wii);
   const int preferred_language_index = FindPreferredLanguageIndex(preferred_language, languages);
   const auto choices = GetLanguageChoiceStrings(languages);

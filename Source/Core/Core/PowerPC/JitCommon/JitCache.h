@@ -76,7 +76,7 @@ struct JitBlock
   size_t fast_block_map_index;
 };
 
-typedef void(*CompiledCode)();
+typedef void (*CompiledCode)();
 
 // This is essentially just an std::bitset, but Visual Studia 2013's
 // implementation of std::bitset is slow.

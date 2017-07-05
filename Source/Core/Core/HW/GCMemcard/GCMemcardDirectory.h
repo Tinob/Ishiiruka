@@ -22,7 +22,7 @@ class GCMemcardDirectory : public MemoryCardBase, NonCopyable
 {
 public:
   GCMemcardDirectory(const std::string& directory, int slot, u16 size_mbits, bool shift_jis,
-    DiscIO::Region card_region, int game_id);
+                     DiscIO::Region card_region, int game_id);
   ~GCMemcardDirectory();
   void FlushToFile();
   void FlushThread();
@@ -51,7 +51,6 @@ private:
 
   std::vector<std::string> m_loaded_saves;
   std::string m_save_directory;
-  const std::chrono::seconds flush_interval = std::chrono::seconds(1);
   Common::Event m_flush_trigger;
   std::mutex m_write_mutex;
   Common::Flag m_exiting;

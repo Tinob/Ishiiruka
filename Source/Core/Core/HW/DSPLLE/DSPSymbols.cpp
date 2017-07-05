@@ -2,18 +2,20 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Core/HW/DSPLLE/DSPSymbols.h"
+
 #include <cctype>
 #include <list>
 #include <map>
 #include <string>
+#include <vector>
 
 #include "Common/CommonTypes.h"
-#include "Common/FileUtil.h"
+#include "Common/File.h"
 #include "Common/StringUtil.h"
 
 #include "Core/DSP/DSPCore.h"
 #include "Core/DSP/DSPDisassembler.h"
-#include "Core/HW/DSPLLE/DSPSymbols.h"
 
 namespace DSP
 {
@@ -228,7 +230,7 @@ void AutoDisassembly(u16 start_addr, u16 end_addr)
     addr_to_line[addr] = line_counter;
 
     std::string buf;
-    if (!disasm.DisassembleOpcode(ptr, 0, 2, &addr, buf))
+    if (!disasm.DisassembleOpcode(ptr, &addr, buf))
     {
       ERROR_LOG(DSPLLE, "disasm failed at %04x", addr);
       break;

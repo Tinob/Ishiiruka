@@ -5,7 +5,6 @@
 #include <wx/gdicmn.h>
 
 #include "Common/CommonTypes.h"
-#include "Common/FileUtil.h"
 #include "Common/IniFile.h"
 #include "Common/StringUtil.h"
 #include "DolphinWX/NetPlay/NetPlayLauncher.h"
@@ -24,12 +23,12 @@ bool NetPlayLauncher::Host(const NetPlayHostConfig& config)
   }
 
   netplay_server = new NetPlayServer(config.listen_port, config.use_traversal,
-    config.traversal_host, config.traversal_port);
+                                     config.traversal_host, config.traversal_port);
 
   if (!netplay_server->is_connected)
   {
     WxUtils::ShowErrorDialog(
-      _("Failed to listen. Is another instance of the NetPlay server running?"));
+        _("Failed to listen. Is another instance of the NetPlay server running?"));
     return false;
   }
 
@@ -46,8 +45,8 @@ bool NetPlayLauncher::Host(const NetPlayHostConfig& config)
 
   NetPlayClient*& netplay_client = NetPlayDialog::GetNetPlayClient();
   netplay_client =
-    new NetPlayClient("127.0.0.1", netplay_server->GetPort(), npd, config.player_name, false,
-      config.traversal_host, config.traversal_port);
+      new NetPlayClient("127.0.0.1", netplay_server->GetPort(), npd, config.player_name, false,
+                        config.traversal_host, config.traversal_port);
 
   if (netplay_client->IsConnected())
   {
@@ -77,8 +76,8 @@ bool NetPlayLauncher::Join(const NetPlayJoinConfig& config)
     host = config.connect_host;
 
   netplay_client =
-    new NetPlayClient(host, config.connect_port, npd, config.player_name, config.use_traversal,
-      config.traversal_host, config.traversal_port);
+      new NetPlayClient(host, config.connect_port, npd, config.player_name, config.use_traversal,
+                        config.traversal_host, config.traversal_port);
   if (netplay_client->IsConnected())
   {
     npd->SetSize(config.window_pos);
@@ -141,6 +140,7 @@ void NetPlayLaunchConfig::SetDialogInfo(const IniFile::Section& section, wxWindo
 void NetPlayHostConfig::FromIniConfig(IniFile::Section& netplay_section)
 {
   netplay_section.Get("Nickname", &player_name, "Player");
+
   std::string traversal_choice_setting;
   netplay_section.Get("TraversalChoice", &traversal_choice_setting, "direct");
   use_traversal = traversal_choice_setting == "traversal";

@@ -1,11 +1,11 @@
 // This file is public domain, in case it's useful to anyone. -comex
 
 #pragma once
+#include <enet/enet.h>
 #include <functional>
 #include <list>
 #include <memory>
 #include <random>
-#include <enet/enet.h>
 #include "Common/Common.h"
 #include "Common/Thread.h"
 #include "Common/TraversalProto.h"
@@ -13,8 +13,7 @@
 class TraversalClientClient
 {
 public:
-  virtual ~TraversalClientClient()
-  {};
+  virtual ~TraversalClientClient(){};
   virtual void OnTraversalStateChanged() = 0;
   virtual void OnConnectReady(ENetAddress addr) = 0;
   virtual void OnConnectFailed(u8 reason) = 0;
@@ -71,7 +70,7 @@ private:
   std::list<OutgoingTraversalPacketInfo> m_OutgoingTraversalPackets;
   ENetAddress m_ServerAddress;
   std::string m_Server;
-  u16         m_port;
+  u16 m_port;
   enet_uint32 m_PingTime;
 };
 extern std::unique_ptr<TraversalClient> g_TraversalClient;

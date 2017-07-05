@@ -31,7 +31,7 @@ void AdvancedConfigPane::InitializeGUI()
 {
   m_clock_override_checkbox = new wxCheckBox(this, wxID_ANY, _("Enable CPU Clock Override"));
   m_clock_override_slider =
-    new DolphinSlider(this, wxID_ANY, 100, 0, 150, wxDefaultPosition, FromDIP(wxSize(200, -1)));
+      new DolphinSlider(this, wxID_ANY, 100, 0, 150, wxDefaultPosition, FromDIP(wxSize(200, -1)));
   m_clock_override_text = new wxStaticText(this, wxID_ANY, "");
 
   m_custom_rtc_checkbox = new wxCheckBox(this, wxID_ANY, _("Enable Custom RTC"));
@@ -39,19 +39,19 @@ void AdvancedConfigPane::InitializeGUI()
   m_custom_rtc_time_picker = new wxTimePickerCtrl(this, wxID_ANY);
 
   wxStaticText* const clock_override_description =
-    new wxStaticText(this, wxID_ANY, _("Higher values can make variable-framerate games "
-      "run at a higher framerate, at the expense of CPU. "
-      "Lower values can make variable-framerate games "
-      "run at a lower framerate, saving CPU.\n\n"
-      "WARNING: Changing this from the default (100%) "
-      "can and will break games and cause glitches. "
-      "Do so at your own risk. Please do not report "
-      "bugs that occur with a non-default clock. "));
+      new wxStaticText(this, wxID_ANY, _("Higher values can make variable-framerate games "
+                                         "run at a higher framerate, at the expense of CPU. "
+                                         "Lower values can make variable-framerate games "
+                                         "run at a lower framerate, saving CPU.\n\n"
+                                         "WARNING: Changing this from the default (100%) "
+                                         "can and will break games and cause glitches. "
+                                         "Do so at your own risk. Please do not report "
+                                         "bugs that occur with a non-default clock. "));
 
   wxStaticText* const custom_rtc_description = new wxStaticText(
-    this, wxID_ANY,
-    _("This setting allows you to set a custom real time clock (RTC) separate "
-      "from your current system time.\n\nIf you're unsure, leave this disabled."));
+      this, wxID_ANY,
+      _("This setting allows you to set a custom real time clock (RTC) separate "
+        "from your current system time.\n\nIf you're unsure, leave this disabled."));
 
 #ifdef __APPLE__
   clock_override_description->Wrap(550);
@@ -68,7 +68,7 @@ void AdvancedConfigPane::InitializeGUI()
   clock_override_slider_sizer->Add(m_clock_override_text, 1, wxLEFT, space5);
 
   wxStaticBoxSizer* const cpu_options_sizer =
-    new wxStaticBoxSizer(wxVERTICAL, this, _("CPU Options"));
+      new wxStaticBoxSizer(wxVERTICAL, this, _("CPU Options"));
   cpu_options_sizer->AddSpacer(space5);
   cpu_options_sizer->Add(m_clock_override_checkbox, 0, wxEXPAND | wxLEFT | wxRIGHT, space5);
   cpu_options_sizer->AddSpacer(space5);
@@ -78,12 +78,12 @@ void AdvancedConfigPane::InitializeGUI()
   cpu_options_sizer->AddSpacer(space5);
 
   wxFlexGridSizer* const custom_rtc_date_time_sizer =
-    new wxFlexGridSizer(2, wxSize(space5, space5));
+      new wxFlexGridSizer(2, wxSize(space5, space5));
   custom_rtc_date_time_sizer->Add(m_custom_rtc_date_picker, 0, wxEXPAND);
   custom_rtc_date_time_sizer->Add(m_custom_rtc_time_picker, 0, wxEXPAND);
 
   wxStaticBoxSizer* const custom_rtc_sizer =
-    new wxStaticBoxSizer(wxVERTICAL, this, _("Custom RTC Options"));
+      new wxStaticBoxSizer(wxVERTICAL, this, _("Custom RTC Options"));
   custom_rtc_sizer->AddSpacer(space5);
   custom_rtc_sizer->Add(m_custom_rtc_checkbox, 0, wxLEFT | wxRIGHT, space5);
   custom_rtc_sizer->AddSpacer(space5);
@@ -116,28 +116,28 @@ void AdvancedConfigPane::LoadGUIValues()
 void AdvancedConfigPane::BindEvents()
 {
   m_clock_override_checkbox->Bind(wxEVT_CHECKBOX,
-    &AdvancedConfigPane::OnClockOverrideCheckBoxChanged, this);
+                                  &AdvancedConfigPane::OnClockOverrideCheckBoxChanged, this);
   m_clock_override_checkbox->Bind(wxEVT_UPDATE_UI, &AdvancedConfigPane::OnUpdateCPUClockControls,
-    this);
+                                  this);
 
   m_clock_override_slider->Bind(wxEVT_SLIDER, &AdvancedConfigPane::OnClockOverrideSliderChanged,
-    this);
+                                this);
   m_clock_override_slider->Bind(wxEVT_UPDATE_UI, &AdvancedConfigPane::OnUpdateCPUClockControls,
-    this);
+                                this);
 
   m_custom_rtc_checkbox->Bind(wxEVT_CHECKBOX, &AdvancedConfigPane::OnCustomRTCCheckBoxChanged,
-    this);
+                              this);
   m_custom_rtc_checkbox->Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreNotRunning);
 
   m_custom_rtc_date_picker->Bind(wxEVT_DATE_CHANGED, &AdvancedConfigPane::OnCustomRTCDateChanged,
-    this);
+                                 this);
   m_custom_rtc_date_picker->Bind(wxEVT_UPDATE_UI, &AdvancedConfigPane::OnUpdateRTCDateTimeEntries,
-    this);
+                                 this);
 
   m_custom_rtc_time_picker->Bind(wxEVT_TIME_CHANGED, &AdvancedConfigPane::OnCustomRTCTimeChanged,
-    this);
+                                 this);
   m_custom_rtc_time_picker->Bind(wxEVT_UPDATE_UI, &AdvancedConfigPane::OnUpdateRTCDateTimeEntries,
-    this);
+                                 this);
 }
 
 void AdvancedConfigPane::OnClockOverrideCheckBoxChanged(wxCommandEvent& event)
@@ -151,7 +151,7 @@ void AdvancedConfigPane::OnClockOverrideSliderChanged(wxCommandEvent& event)
 {
   // Vaguely exponential scaling?
   SConfig::GetInstance().m_OCFactor =
-    std::exp2f((m_clock_override_slider->GetValue() - 100.f) / 25.f);
+      std::exp2f((m_clock_override_slider->GetValue() - 100.f) / 25.f);
   UpdateCPUClock();
 }
 
@@ -187,7 +187,7 @@ void AdvancedConfigPane::UpdateCPUClock()
   int clock = static_cast<int>(std::round(SConfig::GetInstance().m_OCFactor * core_clock));
 
   m_clock_override_text->SetLabel(
-    SConfig::GetInstance().m_OCEnable ? wxString::Format("%d %% (%d MHz)", percent, clock) : "");
+      SConfig::GetInstance().m_OCEnable ? wxString::Format("%d %% (%d MHz)", percent, clock) : "");
 }
 
 void AdvancedConfigPane::LoadCustomRTC()
@@ -205,7 +205,7 @@ void AdvancedConfigPane::LoadCustomRTC()
   m_temp_time = ToSeconds(m_custom_rtc_time_picker->GetValue()) - m_temp_date;
   // Limit dates to a valid range (Jan 1/2000 to Dec 31/2099)
   m_custom_rtc_date_picker->SetRange(wxDateTime(1, wxDateTime::Jan, 2000),
-    wxDateTime(31, wxDateTime::Dec, 2099));
+                                     wxDateTime(31, wxDateTime::Dec, 2099));
 }
 
 void AdvancedConfigPane::UpdateCustomRTC(time_t date, time_t time)

@@ -25,10 +25,10 @@
 #include <paths.h>
 #else
 #include <fcntl.h>
-#include <sys/stat.h>
 #include <sys/ioctl.h>
+#include <sys/stat.h>
 #include <unistd.h>
-#endif // WIN32
+#endif  // WIN32
 
 #ifdef __linux__
 #include <linux/cdrom.h>
@@ -56,7 +56,7 @@ std::vector<std::string> cdio_get_devices()
       if (is_cdrom(drive))
       {
         std::string str(TStrToUTF8(drive));
-        str.pop_back(); // we don't want the final backslash
+        str.pop_back();  // we don't want the final backslash
         drives.push_back(std::move(str));
       }
 
@@ -72,8 +72,8 @@ std::vector<std::string> cdio_get_devices()
 // Returns a pointer to an array of strings with the device names
 std::vector<std::string> cdio_get_devices()
 {
-  io_object_t   next_media;
-  mach_port_t   master_port;
+  io_object_t next_media;
+  mach_port_t master_port;
   kern_return_t kern_result;
   io_iterator_t media_iterator;
   CFMutableDictionaryRef classes_to_match;
@@ -87,11 +87,9 @@ std::vector<std::string> cdio_get_devices()
   if (classes_to_match == nullptr)
     return drives;
 
-  CFDictionarySetValue(classes_to_match,
-    CFSTR(kIOMediaEjectableKey), kCFBooleanTrue);
+  CFDictionarySetValue(classes_to_match, CFSTR(kIOMediaEjectableKey), kCFBooleanTrue);
 
-  kern_result = IOServiceGetMatchingServices(master_port,
-    classes_to_match, &media_iterator);
+  kern_result = IOServiceGetMatchingServices(master_port, classes_to_match, &media_iterator);
   if (kern_result != KERN_SUCCESS)
     return drives;
 
@@ -103,9 +101,7 @@ std::vector<std::string> cdio_get_devices()
     do
     {
       str_bsd_path =
-        IORegistryEntryCreateCFProperty(next_media,
-          CFSTR(kIOBSDNameKey), kCFAllocatorDefault,
-          0);
+          IORegistryEntryCreateCFProperty(next_media, CFSTR(kIOBSDNameKey), kCFAllocatorDefault, 0);
       if (str_bsd_path == nullptr)
       {
         IOObjectRelease(next_media);
@@ -141,20 +137,15 @@ static struct
   const char* format;
   unsigned int num_min;
   unsigned int num_max;
-} checklist[] =
-{
+} checklist[] = {
 #ifdef __linux__
-        { "/dev/cdrom", 0, 0 },
-        { "/dev/dvd", 0, 0 },
-        { "/dev/hd%c", 'a', 'z' },
-        { "/dev/scd%d", 0, 27 },
-        { "/dev/sr%d", 0, 27 },
+    {"/dev/cdrom", 0, 0},  {"/dev/dvd", 0, 0},   {"/dev/hd%c", 'a', 'z'},
+    {"/dev/scd%d", 0, 27}, {"/dev/sr%d", 0, 27},
 #else
-        { "/dev/acd%d", 0, 27 },
-        { "/dev/cd%d", 0, 27 },
+    {"/dev/acd%d", 0, 27},
+    {"/dev/cd%d", 0, 27},
 #endif
-        { nullptr, 0, 0 }
-};
+    {nullptr, 0, 0}};
 
 // Returns true if a device is a block or char device and not a symbolic link
 static bool is_device(const std::string& source_name)
@@ -163,8 +154,7 @@ static bool is_device(const std::string& source_name)
   if (0 != lstat(source_name.c_str(), &buf))
     return false;
 
-  return ((S_ISBLK(buf.st_mode) || S_ISCHR(buf.st_mode)) &&
-    !S_ISLNK(buf.st_mode));
+  return ((S_ISBLK(buf.st_mode) || S_ISCHR(buf.st_mode)) && !S_ISLNK(buf.st_mode));
 }
 
 // Check a device to see if it is a DVD/CD-ROM drive

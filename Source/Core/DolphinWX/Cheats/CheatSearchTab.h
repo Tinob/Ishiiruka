@@ -47,8 +47,6 @@ private:
   void OnCreateARCodeClicked(wxCommandEvent&);
   void OnListViewItemActivated(wxListEvent&);
   void OnListViewItemSelected(wxListEvent&);
-  void OnListViewItemRigthClick(wxListEvent&);
-  void OnListViewItemContextMenuClick(wxCommandEvent&);
   void OnTimerUpdate(wxTimerEvent&);
 
   std::vector<CheatSearchResult> m_search_results;

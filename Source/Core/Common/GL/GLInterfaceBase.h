@@ -25,8 +25,6 @@ protected:
   u32 s_backbuffer_height = 0;
   bool m_core = false;
   bool m_is_shared = false;
-  u32 s_window_xpos = 0;
-  u32 s_window_ypos = 0;
 
   GLInterfaceMode s_opengl_mode = GLInterfaceMode::MODE_DETECT;
 
@@ -49,8 +47,6 @@ public:
     s_backbuffer_width = W;
     s_backbuffer_height = H;
   }
-  virtual u32 GetWindowXPos() { return s_window_xpos; }
-  virtual u32 GetWindowYPos() { return s_window_ypos; }
   virtual void Update() {}
   virtual bool PeekMessages() { return false; }
   virtual void UpdateHandle(void* window_handle) {}

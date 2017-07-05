@@ -5,11 +5,13 @@
 #include "Core/HW/EXI/EXI_DeviceIPL.h"
 
 #include <cstring>
+#include <string>
 
 #include "Common/Assert.h"
 #include "Common/ChunkFile.h"
 #include "Common/CommonPaths.h"
 #include "Common/CommonTypes.h"
+#include "Common/File.h"
 #include "Common/FileUtil.h"
 #include "Common/Logging/Log.h"
 #include "Common/MemoryUtil.h"
@@ -34,11 +36,11 @@ namespace ExpansionInterface
 // so that people can change default language.
 
 static const char iplverPAL[0x100] = "(C) 1999-2001 Nintendo.  All rights reserved."
-"(C) 1999 ArtX Inc.  All rights reserved."
-"PAL  Revision 1.0  ";
+                                     "(C) 1999 ArtX Inc.  All rights reserved."
+                                     "PAL  Revision 1.0  ";
 
 static const char iplverNTSC[0x100] = "(C) 1999-2001 Nintendo.  All rights reserved."
-"(C) 1999 ArtX Inc.  All rights reserved.";
+                                      "(C) 1999 ArtX Inc.  All rights reserved.";
 
 // bootrom descrambler reversed by segher
 // Copyright 2008 Segher Boessenkool <segher@kernel.crashing.org>
@@ -98,8 +100,18 @@ CEXIIPL::CEXIIPL() : m_uPosition(0), m_uAddress(0), m_uRWOffset(0), m_FontsLoade
   // Create the IPL
   m_pIPL = static_cast<u8*>(Common::AllocateMemoryPages(ROM_SIZE));
 
-  if (SConfig::GetInstance().bHLE_BS2)
+  // Load whole ROM dump
+  // Note: The Wii doesn't have a copy of the IPL, only fonts.
+  if (!SConfig::GetInstance().bWii && LoadFileToIPL(SConfig::GetInstance().m_strBootROM, 0))
   {
+    // Descramble the encrypted section (contains BS1 and BS2)
+    Descrambler(m_pIPL + 0x100, 0x1afe00);
+    INFO_LOG(BOOT, "Loaded bootrom: %s", m_pIPL);  // yay for null-terminated strings ;p
+  }
+  else
+  {
+    // If we are in Wii mode or if loading the GC IPL fails, we should still try to load fonts.
+
     // Copy header
     if (DiscIO::IsNTSC(SConfig::GetInstance().m_region))
       memcpy(m_pIPL, iplverNTSC, sizeof(iplverNTSC));
@@ -109,14 +121,6 @@ CEXIIPL::CEXIIPL() : m_uPosition(0), m_uAddress(0), m_uRWOffset(0), m_FontsLoade
     // Load fonts
     LoadFontFile((File::GetSysDirectory() + GC_SYS_DIR + DIR_SEP + FONT_SHIFT_JIS), 0x1aff00);
     LoadFontFile((File::GetSysDirectory() + GC_SYS_DIR + DIR_SEP + FONT_WINDOWS_1252), 0x1fcf00);
-  }
-  else
-  {
-    // Load whole ROM dump
-    LoadFileToIPL(SConfig::GetInstance().m_strBootROM, 0);
-    // Descramble the encrypted section (contains BS1 and BS2)
-    Descrambler(m_pIPL + 0x100, 0x1afe00);
-    INFO_LOG(BOOT, "Loaded bootrom: %s", m_pIPL);  // yay for null-terminated strings ;p
   }
 
   // Clear RTC
@@ -157,17 +161,19 @@ void CEXIIPL::DoState(PointerWrap& p)
   p.Do(m_FontsLoaded);
 }
 
-void CEXIIPL::LoadFileToIPL(const std::string& filename, u32 offset)
+bool CEXIIPL::LoadFileToIPL(const std::string& filename, u32 offset)
 {
   File::IOFile stream(filename, "rb");
   if (!stream)
-    return;
+    return false;
 
   u64 filesize = stream.GetSize();
 
-  stream.ReadBytes(m_pIPL + offset, filesize);
+  if (!stream.ReadBytes(m_pIPL + offset, filesize))
+    return false;
 
   m_FontsLoaded = true;
+  return true;
 }
 
 std::string CEXIIPL::FindIPLDump(const std::string& path_prefix)
@@ -210,7 +216,7 @@ void CEXIIPL::LoadFontFile(const std::string& filename, u32 offset)
     u64 fontsize = (offset == 0x1aff00) ? 0x4a24d : 0x2575;
 
     INFO_LOG(BOOT, "Found IPL dump, loading %s font from %s",
-      ((offset == 0x1aff00) ? "Shift JIS" : "Windows-1252"), (ipl_rom_path).c_str());
+             ((offset == 0x1aff00) ? "Shift JIS" : "Windows-1252"), (ipl_rom_path).c_str());
 
     stream.Seek(offset, 0);
     stream.ReadBytes(m_pIPL + offset, fontsize);
@@ -236,9 +242,7 @@ void CEXIIPL::SetCS(int _iCS)
 void CEXIIPL::UpdateRTC()
 {
   u32 epoch =
-    (SConfig::GetInstance().bWii || SConfig::GetInstance().m_BootType == SConfig::BOOT_MIOS) ?
-    WII_EPOCH :
-    GC_EPOCH;
+      (SConfig::GetInstance().bWii || SConfig::GetInstance().m_is_mios) ? WII_EPOCH : GC_EPOCH;
   u32 rtc = Common::swap32(GetEmulatedTime(epoch));
   std::memcpy(m_RTC, &rtc, sizeof(u32));
 }
@@ -303,13 +307,13 @@ void CEXIIPL::TransferByte(u8& _uByte)
         {
           device_name = "illegal address";
           _dbg_assert_msg_(EXPANSIONINTERFACE, 0, "EXI IPL-DEV: %s %08x", device_name.c_str(),
-            m_uAddress);
+                           m_uAddress);
         }
         break;
       }
 
       DEBUG_LOG(EXPANSIONINTERFACE, "%s %s %08x", device_name.c_str(),
-        IsWriteCommand() ? "write" : "read", m_uAddress);
+                IsWriteCommand() ? "write" : "read", m_uAddress);
     }
   }
   else
@@ -368,7 +372,7 @@ void CEXIIPL::TransferByte(u8& _uByte)
     case REGION_WRTC0:
     case REGION_WRTC1:
     case REGION_WRTC2:
-      // Wii only RTC flags... afaik just the Wii Menu initialize it
+    // Wii only RTC flags... afaik just the Wii Menu initialize it
     default:
       if ((m_uAddress >> 6) < ROM_SIZE)
       {
@@ -386,12 +390,12 @@ void CEXIIPL::TransferByte(u8& _uByte)
             if (position >= 0x001FCF00)
             {
               PanicAlertT("Error: Trying to access Windows-1252 fonts but they are not loaded. "
-                "Games may not show fonts correctly, or crash.");
+                          "Games may not show fonts correctly, or crash.");
             }
             else
             {
               PanicAlertT("Error: Trying to access Shift JIS fonts but they are not loaded. "
-                "Games may not show fonts correctly, or crash.");
+                          "Games may not show fonts correctly, or crash.");
             }
             m_FontsLoaded = true;  // Don't be a nag :p
           }
@@ -400,7 +404,7 @@ void CEXIIPL::TransferByte(u8& _uByte)
       else
       {
         NOTICE_LOG(OSREPORT, "EXI IPL-DEV: %s %x at %08x", IsWriteCommand() ? "write" : "read",
-          _uByte, m_uAddress);
+                   _uByte, m_uAddress);
       }
       break;
     }

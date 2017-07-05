@@ -16,7 +16,6 @@
 
 #include "Common/CommonTypes.h"
 #include "Common/MathUtil.h"
-#include "Core/ConfigManager.h"
 #include "Core/HW/DSP.h"
 #include "Core/HW/DSPHLE/UCodes/AX.h"
 #include "Core/HW/DSPHLE/UCodes/AXStructs.h"
@@ -146,19 +145,19 @@ void WritePB(u32 addr, const PB_TYPE& pb, u32 crc)
 #define DUMP_U32(field) WARN_LOG(DSPHLE, "    %08x (%s)", HILO_TO_32(pb.field), #field)
 void DumpPB(const PB_TYPE& pb)
 {
-  DUMP_U32(next_pb);
-  DUMP_U32(this_pb);
-  DUMP_U16(src_type);
-  DUMP_U16(coef_select);
+	DUMP_U32(next_pb);
+	DUMP_U32(this_pb);
+	DUMP_U16(src_type);
+	DUMP_U16(coef_select);
 #ifdef AX_GC
-  DUMP_U16(mixer_control);
+	DUMP_U16(mixer_control);
 #else
-  DUMP_U32(mixer_control);
+	DUMP_U32(mixer_control);
 #endif
-  DUMP_U16(running);
-  DUMP_U16(is_stream);
+	DUMP_U16(running);
+	DUMP_U16(is_stream);
 
-  // TODO: complete as needed
+	// TODO: complete as needed
 }
 #endif
 
@@ -221,13 +220,13 @@ u16 AcceleratorGetSample()
     s32 coef2 = acc_pb->adpcm.coefs[coef_idx * 2 + 1];
 
     int temp = (*acc_cur_addr & 1) ? (DSP::ReadARAM(*acc_cur_addr >> 1) & 0xF) :
-      (DSP::ReadARAM(*acc_cur_addr >> 1) >> 4);
+                                     (DSP::ReadARAM(*acc_cur_addr >> 1) >> 4);
 
     if (temp >= 8)
       temp -= 16;
 
     int val =
-      (scale * temp) + ((0x400 + coef1 * acc_pb->adpcm.yn1 + coef2 * acc_pb->adpcm.yn2) >> 11);
+        (scale * temp) + ((0x400 + coef1 * acc_pb->adpcm.yn1 + coef2 * acc_pb->adpcm.yn2) >> 11);
     val = MathUtil::Clamp(val, -0x7FFF, 0x7FFF);
 
     acc_pb->adpcm.yn2 = acc_pb->adpcm.yn1;
@@ -328,7 +327,7 @@ u16 AcceleratorGetSample()
 // avoids discontinuities in the audio stream, especially with very low ratios
 // which interpolate a lot of values between two "real" samples.
 u32 ResampleAudio(std::function<s16(u32)> input_callback, s16* output, u32 count, s16* last_samples,
-  u32 curr_pos, u32 ratio, int srctype, const s16* coeffs)
+                  u32 curr_pos, u32 ratio, int srctype, const s16* coeffs)
 {
   int read_samples_count = 0;
 
@@ -452,8 +451,8 @@ void GetInputSamples(PB_TYPE& pb, s16* samples, u16 count, const s16* coeffs)
   if (coeffs)
     coeffs += pb.coef_select * 0x200;
   u32 curr_pos =
-    ResampleAudio([](u32) { return AcceleratorGetSample(); }, samples, count, pb.src.last_samples,
-      pb.src.cur_addr_frac, HILO_TO_32(pb.src.ratio), pb.src_type, coeffs);
+      ResampleAudio([](u32) { return AcceleratorGetSample(); }, samples, count, pb.src.last_samples,
+                    pb.src.cur_addr_frac, HILO_TO_32(pb.src.ratio), pb.src_type, coeffs);
   pb.src.cur_addr_frac = (curr_pos & 0xFFFF);
 
   // Update current position in the PB.
@@ -499,7 +498,7 @@ s16 LowPassFilter(s16* samples, u32 count, s16 yn1, u16 a0, u16 b0)
 // Process 1ms of audio (for AX GC) or 3ms of audio (for AX Wii) from a PB and
 // mix it to the output buffers.
 void ProcessVoice(PB_TYPE& pb, const AXBuffers& buffers, u16 count, AXMixControl mctrl,
-  const s16* coeffs)
+                  const s16* coeffs)
 {
   // If the voice is not running, nothing to do.
   if (!pb.running)
@@ -513,7 +512,7 @@ void ProcessVoice(PB_TYPE& pb, const AXBuffers& buffers, u16 count, AXMixControl
   for (u32 i = 0; i < count; ++i)
   {
     samples[i] = MathUtil::Clamp(((s32)samples[i] * pb.vol_env.cur_volume) >> 15, -32767,
-      32767);  // -32768 ?
+                                 32767);  // -32768 ?
     pb.vol_env.cur_volume += pb.vol_env.cur_volume_delta;
   }
 
@@ -525,8 +524,8 @@ void ProcessVoice(PB_TYPE& pb, const AXBuffers& buffers, u16 count, AXMixControl
     pb.lpf.yn1 = LowPassFilter(samples, count, pb.lpf.yn1, pb.lpf.a0, pb.lpf.b0);
   }
 
-  // Mix LRS, AUXA and AUXB depending on mixer_control
-  // TODO: Handle DPL2 on AUXB.
+// Mix LRS, AUXA and AUXB depending on mixer_control
+// TODO: Handle DPL2 on AUXB.
 
 #define MIX_ON(C) (0 != (mctrl & MIX_##C))
 #define RAMP_ON(C) (0 != (mctrl & MIX_##C##_RAMP))
@@ -540,34 +539,34 @@ void ProcessVoice(PB_TYPE& pb, const AXBuffers& buffers, u16 count, AXMixControl
 
   if (MIX_ON(AUXA_L))
     MixAdd(buffers.auxA_left, samples, count, &pb.mixer.auxA_left, &pb.dpop.auxA_left,
-      RAMP_ON(AUXA_L));
+           RAMP_ON(AUXA_L));
   if (MIX_ON(AUXA_R))
     MixAdd(buffers.auxA_right, samples, count, &pb.mixer.auxA_right, &pb.dpop.auxA_right,
-      RAMP_ON(AUXA_R));
+           RAMP_ON(AUXA_R));
   if (MIX_ON(AUXA_S))
     MixAdd(buffers.auxA_surround, samples, count, &pb.mixer.auxA_surround, &pb.dpop.auxA_surround,
-      RAMP_ON(AUXA_S));
+           RAMP_ON(AUXA_S));
 
   if (MIX_ON(AUXB_L))
     MixAdd(buffers.auxB_left, samples, count, &pb.mixer.auxB_left, &pb.dpop.auxB_left,
-      RAMP_ON(AUXB_L));
+           RAMP_ON(AUXB_L));
   if (MIX_ON(AUXB_R))
     MixAdd(buffers.auxB_right, samples, count, &pb.mixer.auxB_right, &pb.dpop.auxB_right,
-      RAMP_ON(AUXB_R));
+           RAMP_ON(AUXB_R));
   if (MIX_ON(AUXB_S))
     MixAdd(buffers.auxB_surround, samples, count, &pb.mixer.auxB_surround, &pb.dpop.auxB_surround,
-      RAMP_ON(AUXB_S));
+           RAMP_ON(AUXB_S));
 
 #ifdef AX_WII
   if (MIX_ON(AUXC_L))
     MixAdd(buffers.auxC_left, samples, count, &pb.mixer.auxC_left, &pb.dpop.auxC_left,
-      RAMP_ON(AUXC_L));
+           RAMP_ON(AUXC_L));
   if (MIX_ON(AUXC_R))
     MixAdd(buffers.auxC_right, samples, count, &pb.mixer.auxC_right, &pb.dpop.auxC_right,
-      RAMP_ON(AUXC_R));
+           RAMP_ON(AUXC_R));
   if (MIX_ON(AUXC_S))
     MixAdd(buffers.auxC_surround, samples, count, &pb.mixer.auxC_surround, &pb.dpop.auxC_surround,
-      RAMP_ON(AUXC_S));
+           RAMP_ON(AUXC_S));
 #endif
 
 #undef MIX_ON
@@ -592,38 +591,38 @@ void ProcessVoice(PB_TYPE& pb, const AXBuffers& buffers, u16 count, AXMixControl
     // We use ratio 0x55555 == (5 * 65536 + 21845) / 65536 == 5.3333 which
     // is the nearest we can get to 96/18
     u32 curr_pos = ResampleAudio([&samples](u32 i) { return samples[i]; }, wm_samples, wm_count,
-      pb.remote_src.last_samples, pb.remote_src.cur_addr_frac, 0x55555,
-      SRCTYPE_POLYPHASE, coeffs);
+                                 pb.remote_src.last_samples, pb.remote_src.cur_addr_frac, 0x55555,
+                                 SRCTYPE_POLYPHASE, coeffs);
     pb.remote_src.cur_addr_frac = curr_pos & 0xFFFF;
 
-    // Mix to main[0-3] and aux[0-3]
+// Mix to main[0-3] and aux[0-3]
 #define WMCHAN_MIX_ON(n) (0 != ((pb.remote_mixer_control >> (2 * n)) & 3))
 #define WMCHAN_MIX_RAMP(n) (0 != ((pb.remote_mixer_control >> (2 * n)) & 2))
 
     if (WMCHAN_MIX_ON(0))
       MixAdd(buffers.wm_main0, wm_samples, wm_count, &pb.remote_mixer.main0, &pb.remote_dpop.main0,
-        WMCHAN_MIX_RAMP(0));
+             WMCHAN_MIX_RAMP(0));
     if (WMCHAN_MIX_ON(1))
       MixAdd(buffers.wm_aux0, wm_samples, wm_count, &pb.remote_mixer.aux0, &pb.remote_dpop.aux0,
-        WMCHAN_MIX_RAMP(1));
+             WMCHAN_MIX_RAMP(1));
     if (WMCHAN_MIX_ON(2))
       MixAdd(buffers.wm_main1, wm_samples, wm_count, &pb.remote_mixer.main1, &pb.remote_dpop.main1,
-        WMCHAN_MIX_RAMP(2));
+             WMCHAN_MIX_RAMP(2));
     if (WMCHAN_MIX_ON(3))
       MixAdd(buffers.wm_aux1, wm_samples, wm_count, &pb.remote_mixer.aux1, &pb.remote_dpop.aux1,
-        WMCHAN_MIX_RAMP(3));
+             WMCHAN_MIX_RAMP(3));
     if (WMCHAN_MIX_ON(4))
       MixAdd(buffers.wm_main2, wm_samples, wm_count, &pb.remote_mixer.main2, &pb.remote_dpop.main2,
-        WMCHAN_MIX_RAMP(4));
+             WMCHAN_MIX_RAMP(4));
     if (WMCHAN_MIX_ON(5))
       MixAdd(buffers.wm_aux2, wm_samples, wm_count, &pb.remote_mixer.aux2, &pb.remote_dpop.aux2,
-        WMCHAN_MIX_RAMP(5));
+             WMCHAN_MIX_RAMP(5));
     if (WMCHAN_MIX_ON(6))
       MixAdd(buffers.wm_main3, wm_samples, wm_count, &pb.remote_mixer.main3, &pb.remote_dpop.main3,
-        WMCHAN_MIX_RAMP(6));
+             WMCHAN_MIX_RAMP(6));
     if (WMCHAN_MIX_ON(7))
       MixAdd(buffers.wm_aux3, wm_samples, wm_count, &pb.remote_mixer.aux3, &pb.remote_dpop.aux3,
-        WMCHAN_MIX_RAMP(7));
+             WMCHAN_MIX_RAMP(7));
   }
 #undef WMCHAN_MIX_RAMP
 #undef WMCHAN_MIX_ON

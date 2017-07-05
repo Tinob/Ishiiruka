@@ -41,7 +41,7 @@ struct Patch
 
 int GetSpeedhackCycles(const u32 addr);
 void LoadPatchSection(const std::string& section, std::vector<Patch>& patches, IniFile& globalIni,
-  IniFile& localIni);
+                      IniFile& localIni);
 void LoadPatches();
 bool ApplyFramePatches();
 void Shutdown();

@@ -52,7 +52,7 @@ void Tilt::GetState(ControlState* const x, ControlState* const y, const bool ste
 
   // the amt a full square stick would have at current angle
   ControlState square_full =
-    std::min(ang_sin ? 1 / fabs(ang_sin) : 2, ang_cos ? 1 / fabs(ang_cos) : 2);
+      std::min(ang_sin ? 1 / fabs(ang_sin) : 2, ang_cos ? 1 / fabs(ang_cos) : 2);
 
   // the amt a full stick would have that was (user setting circular) at current angle
   // I think this is more like a pointed circle rather than a rounded square like it should be

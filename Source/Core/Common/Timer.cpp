@@ -20,23 +20,10 @@
 
 namespace Common
 {
-
-#ifdef _WIN32
-inline double GetFreq()
-{
-  LARGE_INTEGER freq;
-  QueryPerformanceFrequency(&freq);
-  return 1000000.0 / double(freq.QuadPart);
-}
-#endif
-
 u32 Timer::GetTimeMs()
 {
 #ifdef _WIN32
-  LARGE_INTEGER time;
-  static double freq = GetFreq();
-  QueryPerformanceCounter(&time);
-  return static_cast<u32>(double(time.QuadPart) * freq * 0.001);
+  return timeGetTime();
 #elif defined __APPLE__
   struct timeval t;
   (void)gettimeofday(&t, nullptr);
@@ -48,6 +35,14 @@ u32 Timer::GetTimeMs()
 #endif
 }
 
+#ifdef _WIN32
+double GetFreq()
+{
+  LARGE_INTEGER freq;
+  QueryPerformanceFrequency(&freq);
+  return 1000000.0 / double(freq.QuadPart);
+}
+#endif
 
 u64 Timer::GetTimeUs()
 {
@@ -153,7 +148,7 @@ std::string Timer::GetTimeElapsedFormatted() const
   u32 Hours = Minutes / 60;
 
   std::string TmpStr = StringFromFormat("%02i:%02i:%02i:%03" PRIu64, Hours, Minutes % 60,
-    Seconds % 60, Milliseconds % 1000);
+                                        Seconds % 60, Milliseconds % 1000);
   return TmpStr;
 }
 
@@ -211,7 +206,7 @@ std::string Timer::GetTimeFormatted()
   char tmp[13];
   strftime(tmp, 6, "%M:%S", gmTime);
 
-  // Now tack on the milliseconds
+// Now tack on the milliseconds
 #ifdef _WIN32
   struct timeb tp;
   (void)::ftime(&tp);

@@ -57,11 +57,11 @@ constexpr bool IsPow2(u32 imm)
 // The most significant bit of the fraction is an is-quiet bit on all architectures we care about.
 
 static const u64 DOUBLE_SIGN = 0x8000000000000000ULL, DOUBLE_EXP = 0x7FF0000000000000ULL,
-DOUBLE_FRAC = 0x000FFFFFFFFFFFFFULL, DOUBLE_ZERO = 0x0000000000000000ULL,
-DOUBLE_QBIT = 0x0008000000000000ULL;
+                 DOUBLE_FRAC = 0x000FFFFFFFFFFFFFULL, DOUBLE_ZERO = 0x0000000000000000ULL,
+                 DOUBLE_QBIT = 0x0008000000000000ULL;
 
 static const u32 FLOAT_SIGN = 0x80000000, FLOAT_EXP = 0x7F800000, FLOAT_FRAC = 0x007FFFFF,
-FLOAT_ZERO = 0x00000000;
+                 FLOAT_ZERO = 0x00000000;
 
 union IntDouble
 {
@@ -90,7 +90,7 @@ inline bool IsSNAN(double d)
 {
   IntDouble x(d);
   return ((x.i & DOUBLE_EXP) == DOUBLE_EXP) && ((x.i & DOUBLE_FRAC) != DOUBLE_ZERO) &&
-    ((x.i & DOUBLE_QBIT) == DOUBLE_ZERO);
+         ((x.i & DOUBLE_QBIT) == DOUBLE_ZERO);
 }
 
 inline float FlushToZero(float f)
@@ -155,7 +155,7 @@ struct Rectangle
   constexpr Rectangle() = default;
 
   constexpr Rectangle(T theLeft, T theTop, T theRight, T theBottom)
-    : left(theLeft), top(theTop), right(theRight), bottom(theBottom)
+      : left(theLeft), top(theTop), right(theRight), bottom(theBottom)
   {
   }
 
@@ -198,7 +198,7 @@ inline int IntLog2(u64 val)
   return 63 - __builtin_clzll(val);
 
 #elif defined(_MSC_VER)
-  unsigned long result = -1;
+  unsigned long result = ULONG_MAX;
   _BitScanReverse64(&result, val);
   return result;
 

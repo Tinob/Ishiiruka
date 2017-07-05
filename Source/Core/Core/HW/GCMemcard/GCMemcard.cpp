@@ -13,7 +13,7 @@
 #include "Common/CommonFuncs.h"
 #include "Common/CommonPaths.h"
 #include "Common/CommonTypes.h"
-#include "Common/FileUtil.h"
+#include "Common/File.h"
 #include "Common/MsgHandler.h"
 #include "Common/StringUtil.h"
 #include "Common/Swap.h"
@@ -26,7 +26,7 @@ static void ByteSwap(u8* valueA, u8* valueB)
 }
 
 GCMemcard::GCMemcard(const std::string& filename, bool forceCreation, bool shift_jis)
-  : m_valid(false), m_fileName(filename)
+    : m_valid(false), m_fileName(filename)
 {
   // Currently there is a string freeze. instead of adding a new message about needing r/w
   // open file read only, if write is denied the error will be reported at that point
@@ -38,7 +38,7 @@ GCMemcard::GCMemcard(const std::string& filename, bool forceCreation, bool shift
       if (!AskYesNoT("\"%s\" does not exist.\n Create a new 16MB Memory Card?", filename.c_str()))
         return;
       shift_jis =
-        AskYesNoT("Format as Shift JIS (Japanese)?\nChoose no for Windows-1252 (Western)");
+          AskYesNoT("Format as Shift JIS (Japanese)?\nChoose no for Windows-1252 (Western)");
     }
     Format(shift_jis);
     return;
@@ -51,21 +51,21 @@ GCMemcard::GCMemcard(const std::string& filename, bool forceCreation, bool shift
     if (strcasecmp(fileType.c_str(), ".raw") && strcasecmp(fileType.c_str(), ".gcp"))
     {
       PanicAlertT("File has the extension \"%s\".\nValid extensions are (.raw/.gcp)",
-        fileType.c_str());
+                  fileType.c_str());
       return;
     }
     auto size = mcdFile.GetSize();
     if (size < MC_FST_BLOCKS * BLOCK_SIZE)
     {
       PanicAlertT("%s failed to load as a memory card.\nFile is not large enough to be a valid "
-        "memory card file (0x%x bytes)",
-        filename.c_str(), (unsigned)size);
+                  "memory card file (0x%x bytes)",
+                  filename.c_str(), (unsigned)size);
       return;
     }
     if (size % BLOCK_SIZE)
     {
       PanicAlertT("%s failed to load as a memory card.\nCard file size is invalid (0x%x bytes)",
-        filename.c_str(), (unsigned)size);
+                  filename.c_str(), (unsigned)size);
       return;
     }
 
@@ -81,7 +81,7 @@ GCMemcard::GCMemcard(const std::string& filename, bool forceCreation, bool shift
       break;
     default:
       PanicAlertT("%s failed to load as a memory card.\nCard size is invalid (0x%x bytes)",
-        filename.c_str(), (unsigned)size);
+                  filename.c_str(), (unsigned)size);
       return;
     }
   }
@@ -194,8 +194,8 @@ GCMemcard::GCMemcard(const std::string& filename, bool forceCreation, bool shift
     else
     {
       PanicAlertT("Failed to read block %u of the save data\nMemory card may be truncated\nFile "
-        "position: 0x%" PRIx64,
-        i, mcdFile.Tell());
+                  "position: 0x%" PRIx64,
+                  i, mcdFile.Tell());
       m_valid = false;
       break;
     }
@@ -369,7 +369,7 @@ u8 GCMemcard::TitlePresent(const DEntry& d) const
   while (i < DIRLEN)
   {
     if ((BE32(CurrentDir->Dir[i].Gamecode) == BE32(d.Gamecode)) &&
-      (!memcmp(CurrentDir->Dir[i].Filename, d.Filename, 32)))
+        (!memcmp(CurrentDir->Dir[i].Filename, d.Filename, 32)))
     {
       break;
     }
@@ -662,7 +662,7 @@ u32 GCMemcard::ImportFile(const DEntry& direntry, std::vector<GCMBlock>& saveBlo
 
   // find first free data block
   u16 firstBlock =
-    CurrentBat->NextFreeBlock(maxBlock - MC_FST_BLOCKS, BE16(CurrentBat->LastAllocated));
+      CurrentBat->NextFreeBlock(maxBlock - MC_FST_BLOCKS, BE16(CurrentBat->LastAllocated));
   if (firstBlock == 0xFFFF)
     return OUTOFBLOCKS;
   Directory UpdatedDir = *CurrentDir;
@@ -769,13 +769,13 @@ u32 GCMemcard::RemoveFile(u8 index)  // index in the directory array
   *PreviousDir = UpdatedDir;
   if (PreviousDir == &dir )
   {
-  CurrentDir = &dir;
-  PreviousDir = &dir_backup;
+    CurrentDir = &dir;
+    PreviousDir = &dir_backup;
   }
   else
   {
-  CurrentDir = &dir_backup;
-  PreviousDir = &dir;
+    CurrentDir = &dir_backup;
+    PreviousDir = &dir;
   }
   */
   memset(&(UpdatedDir.Dir[index]), 0xFF, DENTRY_SIZE);
@@ -834,7 +834,7 @@ u32 GCMemcard::ImportGci(const std::string& inputFile, const std::string& output
 }
 
 u32 GCMemcard::ImportGciInternal(File::IOFile&& gci, const std::string& inputFile,
-  const std::string& outputFile)
+                                 const std::string& outputFile)
 {
   unsigned int offset;
   std::string fileType;
@@ -1274,7 +1274,7 @@ bool GCMemcard::Format(bool shift_jis, u16 SizeMb)
 /*************************************************************/
 
 s32 GCMemcard::FZEROGX_MakeSaveGameValid(const Header& cardheader, const DEntry& direntry,
-  std::vector<GCMBlock>& FileBuffer)
+                                         std::vector<GCMBlock>& FileBuffer)
 {
   u32 i, j;
   u32 serial1, serial2;
@@ -1327,7 +1327,7 @@ s32 GCMemcard::FZEROGX_MakeSaveGameValid(const Header& cardheader, const DEntry&
 /***********************************************************/
 
 s32 GCMemcard::PSO_MakeSaveGameValid(const Header& cardheader, const DEntry& direntry,
-  std::vector<GCMBlock>& FileBuffer)
+                                     std::vector<GCMBlock>& FileBuffer)
 {
   u32 i, j;
   u32 chksum;

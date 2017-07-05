@@ -12,6 +12,7 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{01573C36-AC6E-49F6-94BA-572517EB9740}</ProjectGuid>
+    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Configuration">
@@ -40,7 +41,6 @@
   <ItemGroup>
     <ClCompile Include="..\png.c" />
     <ClCompile Include="..\pngerror.c" />
-    <ClCompile Include="..\pnggccrd.c" />
     <ClCompile Include="..\pngget.c" />
     <ClCompile Include="..\pngmem.c" />
     <ClCompile Include="..\pngpread.c" />
@@ -50,7 +50,6 @@
     <ClCompile Include="..\pngrutil.c" />
     <ClCompile Include="..\pngset.c" />
     <ClCompile Include="..\pngtrans.c" />
-    <ClCompile Include="..\pngvcrd.c" />
     <ClCompile Include="..\pngwio.c" />
     <ClCompile Include="..\pngwrite.c" />
     <ClCompile Include="..\pngwtran.c" />

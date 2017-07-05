@@ -5,7 +5,10 @@
 #include "Core/IOS/USB/USB_HID/HIDv4.h"
 
 #include <cstring>
+#include <mutex>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include "Common/Align.h"
 #include "Common/ChunkFile.h"
@@ -59,7 +62,7 @@ IPCCommandResult USB_HIDv4::IOCtl(const IOCtlRequest& request)
     if (!device->Attach(0))
       return GetDefaultReply(IPC_EINVAL);
     return HandleTransfer(device, request.request,
-      [&, this]() { return SubmitTransfer(*device, request); });
+                          [&, this]() { return SubmitTransfer(*device, request); });
   }
   default:
     request.DumpUnknown(GetDeviceName(), LogTypes::IOS_USB);
@@ -81,7 +84,7 @@ IPCCommandResult USB_HIDv4::CancelInterrupt(const IOCtlRequest& request)
 
 IPCCommandResult USB_HIDv4::GetDeviceChange(const IOCtlRequest& request)
 {
-  std::lock_guard<std::mutex> lk{ m_devicechange_hook_address_mutex };
+  std::lock_guard<std::mutex> lk{m_devicechange_hook_address_mutex};
   if (request.buffer_out == 0 || request.buffer_out_size != 0x600)
     return GetDefaultReply(IPC_EINVAL);
 
@@ -97,7 +100,7 @@ IPCCommandResult USB_HIDv4::GetDeviceChange(const IOCtlRequest& request)
 
 IPCCommandResult USB_HIDv4::Shutdown(const IOCtlRequest& request)
 {
-  std::lock_guard<std::mutex> lk{ m_devicechange_hook_address_mutex };
+  std::lock_guard<std::mutex> lk{m_devicechange_hook_address_mutex};
   if (m_devicechange_hook_request != 0)
   {
     Memory::Write_U32(0xffffffff, m_devicechange_hook_request->buffer_out);
@@ -141,7 +144,7 @@ void USB_HIDv4::DoState(PointerWrap& p)
 
 std::shared_ptr<USB::Device> USB_HIDv4::GetDeviceByIOSID(const s32 ios_id) const
 {
-  std::lock_guard<std::mutex> lk{ m_id_map_mutex };
+  std::lock_guard<std::mutex> lk{m_id_map_mutex};
   const auto iterator = m_ios_ids.find(ios_id);
   if (iterator == m_ios_ids.cend())
     return nullptr;
@@ -151,7 +154,7 @@ std::shared_ptr<USB::Device> USB_HIDv4::GetDeviceByIOSID(const s32 ios_id) const
 void USB_HIDv4::OnDeviceChange(ChangeEvent event, std::shared_ptr<USB::Device> device)
 {
   {
-    std::lock_guard<std::mutex> id_map_lock{ m_id_map_mutex };
+    std::lock_guard<std::mutex> id_map_lock{m_id_map_mutex};
     if (event == ChangeEvent::Inserted)
     {
       s32 new_id = 0;
@@ -161,7 +164,7 @@ void USB_HIDv4::OnDeviceChange(ChangeEvent event, std::shared_ptr<USB::Device> d
       m_device_ids[device->GetId()] = new_id;
     }
     else if (event == ChangeEvent::Removed &&
-      m_device_ids.find(device->GetId()) != m_device_ids.cend())
+             m_device_ids.find(device->GetId()) != m_device_ids.cend())
     {
       m_ios_ids.erase(m_device_ids.at(device->GetId()));
       m_device_ids.erase(device->GetId());
@@ -169,7 +172,7 @@ void USB_HIDv4::OnDeviceChange(ChangeEvent event, std::shared_ptr<USB::Device> d
   }
 
   {
-    std::lock_guard<std::mutex> lk{ m_devicechange_hook_address_mutex };
+    std::lock_guard<std::mutex> lk{m_devicechange_hook_address_mutex};
     TriggerDeviceChangeReply();
   }
 }
@@ -209,7 +212,7 @@ void USB_HIDv4::TriggerDeviceChangeReply()
 
 std::vector<u8> USB_HIDv4::GetDeviceEntry(const USB::Device& device) const
 {
-  std::lock_guard<std::mutex> id_map_lock{ m_id_map_mutex };
+  std::lock_guard<std::mutex> id_map_lock{m_id_map_mutex};
 
   // The structure for a device section is as follows:
   //   0-4 bytes: total size of the device data, including the size and the device ID

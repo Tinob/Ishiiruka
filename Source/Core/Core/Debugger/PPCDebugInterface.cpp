@@ -12,7 +12,6 @@
 
 #include "Core/Core.h"
 #include "Core/HW/DSP.h"
-#include "Core/PowerPC/JitCommon/JitBase.h"
 #include "Core/PowerPC/PPCSymbolDB.h"
 #include "Core/PowerPC/PowerPC.h"
 
@@ -76,7 +75,7 @@ unsigned int PPCDebugInterface::ReadExtraMemory(int memory, unsigned int address
     return PowerPC::HostRead_U32(address);
   case 1:
     return (DSP::ReadARAM(address) << 24) | (DSP::ReadARAM(address + 1) << 16) |
-      (DSP::ReadARAM(address + 2) << 8) | (DSP::ReadARAM(address + 3));
+           (DSP::ReadARAM(address + 2) << 8) | (DSP::ReadARAM(address + 3));
   default:
     return 0;
   }

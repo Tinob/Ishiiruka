@@ -88,9 +88,12 @@ bool TextureCache::TCacheEntry::Save(const std::string& filename, unsigned int l
       s_texture_cache_entry_readback_buffer->Release();
 
     s_texture_cache_entry_readback_buffer_size = required_readback_buffer_size;
-    CheckHR(D3D::device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK),
+    CD3DX12_HEAP_PROPERTIES hprop(D3D12_HEAP_TYPE_READBACK);
+    auto rdesc = CD3DX12_RESOURCE_DESC::Buffer(s_texture_cache_entry_readback_buffer_size);
+    CheckHR(D3D::device->CreateCommittedResource(
+      &hprop,
       D3D12_HEAP_FLAG_NONE,
-      &CD3DX12_RESOURCE_DESC::Buffer(s_texture_cache_entry_readback_buffer_size),
+      &rdesc,
       D3D12_RESOURCE_STATE_COPY_DEST,
       nullptr,
       IID_PPV_ARGS(&s_texture_cache_entry_readback_buffer)));
@@ -151,7 +154,7 @@ void TextureCache::TCacheEntry::CopyRectangleFromTexture(
   const MathUtil::Rectangle<int>& src_rect,
   const MathUtil::Rectangle<int>& dst_rect)
 {
-  const TCacheEntry* srcentry = reinterpret_cast<const TCacheEntry*>(source);
+  const TCacheEntry* srcentry = static_cast<const TCacheEntry*>(source);
   if (src_rect.GetWidth() == dst_rect.GetWidth()
     && src_rect.GetHeight() == dst_rect.GetHeight())
   {
@@ -183,7 +186,8 @@ void TextureCache::TCacheEntry::CopyRectangleFromTexture(
   D3D::SetViewportAndScissor(dst_rect.left, dst_rect.top, dst_rect.GetWidth(), dst_rect.GetHeight());
 
   m_texture->TransitionToResourceState(D3D::current_command_list, D3D12_RESOURCE_STATE_RENDER_TARGET);
-  D3D::current_command_list->OMSetRenderTargets(1, &m_texture->GetRTV(), FALSE, nullptr);
+  auto rtv = m_texture->GetRTV();
+  D3D::current_command_list->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
 
   D3D::SetLinearCopySampler();
   D3D12_RECT srcRC;
@@ -256,12 +260,12 @@ TextureCacheBase::TCacheEntryBase* TextureCache::CreateTexture(const TCacheEntry
 
     D3D12_RESOURCE_DESC texdesc12 = CD3DX12_RESOURCE_DESC::Tex2D(format,
       config.width, config.height, 1, config.levels);
-
+    CD3DX12_HEAP_PROPERTIES hprop(D3D12_HEAP_TYPE_DEFAULT);
     CheckHR(
       D3D::device->CreateCommittedResource(
-        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+        &hprop,
         D3D12_HEAP_FLAG_NONE,
-        &CD3DX12_RESOURCE_DESC(texdesc12),
+        &texdesc12,
         D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
         nullptr,
         IID_PPV_ARGS(pTexture.ReleaseAndGetAddressOf())
@@ -293,11 +297,12 @@ TextureCacheBase::TCacheEntryBase* TextureCache::CreateTexture(const TCacheEntry
 
     if (config.materialmap)
     {
+      hprop = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
       CheckHR(
         D3D::device->CreateCommittedResource(
-          &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+          &hprop,
           D3D12_HEAP_FLAG_NONE,
-          &CD3DX12_RESOURCE_DESC(texdesc12),
+          &texdesc12,
           D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
           nullptr,
           IID_PPV_ARGS(pTexture.ReleaseAndGetAddressOf())
@@ -362,7 +367,8 @@ void TextureCache::TCacheEntry::FromRenderTarget(bool is_depth_copy, const EFBRe
   // (This can happen because we don't unbind textures when we free them.)
 
   m_texture->TransitionToResourceState(D3D::current_command_list, D3D12_RESOURCE_STATE_RENDER_TARGET);
-  D3D::current_command_list->OMSetRenderTargets(1, &m_texture->GetRTV(), FALSE, nullptr);
+  auto rtv = m_texture->GetRTV();
+  D3D::current_command_list->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
 
   // Create texture copy
   D3D::DrawShadedTexQuad(
@@ -478,7 +484,7 @@ void main(
 
 void TextureCache::LoadLut(u32 lutFmt, void* palette, u32 size)
 {
-  if (m_lut_size > 512)
+  if (m_lut_size > 512u)
   {
     return;
   }
@@ -580,7 +586,8 @@ bool TextureCache::Palettize(TCacheEntryBase* entry, const TCacheEntryBase* unco
   // (This can happen because we don't unbind textures when we free them.)
 
   static_cast<TCacheEntry*>(entry)->m_texture->TransitionToResourceState(D3D::current_command_list, D3D12_RESOURCE_STATE_RENDER_TARGET);
-  D3D::current_command_list->OMSetRenderTargets(1, &static_cast<TCacheEntry*>(entry)->m_texture->GetRTV(), FALSE, nullptr);
+  auto rtv = static_cast<TCacheEntry*>(entry)->m_texture->GetRTV();
+  D3D::current_command_list->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
   // stretch picture with increased internal resolution
   // stretch picture with increased internal resolution
   D3D::SetViewportAndScissor(0, 0, unconverted->config.width, unconverted->config.height);
@@ -634,11 +641,13 @@ TextureCache::TextureCache()
   m_palette_stream_buffer = std::make_unique<D3DStreamBuffer>(sizeof(u16) * 256 * 1024, sizeof(u16) * 256 * 1024 * 16, nullptr);
 
   // Right now, there are only two variants of palette_uniform data. So, we'll just create an upload heap to permanently store both of these.
+  CD3DX12_HEAP_PROPERTIES hprop(D3D12_HEAP_TYPE_DEFAULT);
+  auto rdesc = CD3DX12_RESOURCE_DESC::Buffer(((16 + 255) & ~255) * 2);
   CheckHR(
     D3D::device->CreateCommittedResource(
-      &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+      &hprop,
       D3D12_HEAP_FLAG_NONE,
-      &CD3DX12_RESOURCE_DESC::Buffer(((16 + 255) & ~255) * 2), // Constant Buffers have to be 256b aligned. "* 2" to create for two sets of data.
+      &rdesc, // Constant Buffers have to be 256b aligned. "* 2" to create for two sets of data.
       D3D12_RESOURCE_STATE_COPY_DEST,
       nullptr,
       IID_PPV_ARGS(&m_palette_uniform_buffer)
@@ -692,17 +701,16 @@ void TextureCache::BindTextures()
     }
   }
 
-  if (last_texture == 0 && bound_textures[0] != nullptr && reinterpret_cast<TCacheEntry*>(bound_textures[0])->m_nrm_texture == nullptr)
+  if (last_texture == 0 && bound_textures[0] != nullptr && static_cast<TCacheEntry*>(bound_textures[0])->m_nrm_texture == nullptr)
   {
     DX12::D3D::current_command_list->SetGraphicsRootDescriptorTable(
       DESCRIPTOR_TABLE_PS_SRV,
-      reinterpret_cast<TCacheEntry*>(bound_textures[0])->m_texture->GetSRVGPU());
+      static_cast<TCacheEntry*>(bound_textures[0])->m_texture->GetSRVGPU());
     return;
   }
 
   // If more than one texture, allocate space for group.
   D3D12_CPU_DESCRIPTOR_HANDLE s_group_base_texture_cpu_handle;
-  D3D12_GPU_DESCRIPTOR_HANDLE s_group_base_texture_gpu_handle;
   const unsigned int num_handles = use_materials ? 16 : 8;
   if (!D3D::gpu_descriptor_heap_mgr->AllocateTemporary(num_handles, &s_group_base_texture_cpu_handle, &s_group_base_texture_gpu_handle))
   {
@@ -724,16 +732,16 @@ void TextureCache::BindTextures()
         s_group_base_texture_cpu_handle.ptr + stage * D3D::resource_descriptor_size;
 
       DX12::D3D::device->CopyDescriptorsSimple(
-        1, textureDestDescriptor, reinterpret_cast<TCacheEntry*>(bound_textures[stage])
+        1, textureDestDescriptor, static_cast<TCacheEntry*>(bound_textures[stage])
         ->m_texture->GetSRVCPUShadow(),
         D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-      if (reinterpret_cast<TCacheEntry*>(bound_textures[stage])->m_nrm_texture && use_materials)
+      if (static_cast<TCacheEntry*>(bound_textures[stage])->m_nrm_texture && use_materials)
       {
         textureDestDescriptor.ptr = s_group_base_texture_cpu_handle.ptr + ((8 + stage) * D3D::resource_descriptor_size);
         DX12::D3D::device->CopyDescriptorsSimple(
           1,
           textureDestDescriptor,
-          reinterpret_cast<TCacheEntry*>(bound_textures[stage])->m_nrm_texture->GetSRVCPUShadow(),
+          static_cast<TCacheEntry*>(bound_textures[stage])->m_nrm_texture->GetSRVCPUShadow(),
           D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV
         );
       }

@@ -201,7 +201,8 @@ void D3DPostProcessingShader::MapAndUpdateConfigurationBuffer()
   {
     buffer->AppendData(buffer_data, buffer_size);
   }
-  D3D::stateman->SetPixelConstants(1, buffer->GetDescriptor());
+  auto bdesc = buffer->GetDescriptor();
+  D3D::stateman->SetPixelConstants(1, bdesc);
 }
 
 void D3DPostProcessingShader::Draw(PostProcessor* p,
@@ -209,7 +210,7 @@ void D3DPostProcessingShader::Draw(PostProcessor* p,
   const TargetRectangle& src_rect, const TargetSize& src_size, uintptr_t src_tex,
   uintptr_t src_depth_tex, int src_layer, float gamma)
 {
-  D3DPostProcessor* parent = reinterpret_cast<D3DPostProcessor*>(p);
+  D3DPostProcessor* parent = static_cast<D3DPostProcessor*>(p);
   D3DTexture2D* dst_texture = reinterpret_cast<D3DTexture2D*>(dst_tex);
   D3DTexture2D* src_texture = reinterpret_cast<D3DTexture2D*>(src_tex);
   D3DTexture2D* src_depth_texture = reinterpret_cast<D3DTexture2D*>(src_depth_tex);
@@ -472,7 +473,8 @@ void D3DPostProcessor::MapAndUpdateUniformBuffer(
     m_uniform_buffer->AppendData(m_current_constants.data(), POST_PROCESSING_CONTANTS_BUFFER_SIZE);
     ADDSTAT(stats.thisFrame.bytesUniformStreamed, POST_PROCESSING_CONTANTS_BUFFER_SIZE);
   }
-  D3D::stateman->SetPixelConstants(0, m_uniform_buffer->GetDescriptor());
+  auto bdesc = m_uniform_buffer->GetDescriptor();
+  D3D::stateman->SetPixelConstants(0, bdesc);
 
 }
 

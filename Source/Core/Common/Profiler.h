@@ -12,7 +12,6 @@
 
 namespace Common
 {
-
 class Profiler
 {
 public:
@@ -50,19 +49,14 @@ private:
 class ProfilerExecuter
 {
 public:
-  ProfilerExecuter(Profiler* _p) : m_p(_p)
-  {
-    m_p->Start();
-  }
-  ~ProfilerExecuter()
-  {
-    m_p->Stop();
-  }
+  ProfilerExecuter(Profiler* _p) : m_p(_p) { m_p->Start(); }
+  ~ProfilerExecuter() { m_p->Stop(); }
 private:
   Profiler* m_p;
 };
-
 };
 
 // Warning: This profiler isn't thread safe. Only profile functions which doesn't run simultaneously
-#define PROFILE(name) static Common::Profiler prof_gen(name); Common::ProfilerExecuter prof_e(&prof_gen);
+#define PROFILE(name)                                                                              \
+  static Common::Profiler prof_gen(name);                                                          \
+  Common::ProfilerExecuter prof_e(&prof_gen);

@@ -4,6 +4,9 @@
 
 #include "Core/PowerPC/Jit64Common/EmuCodeBlock.h"
 
+#include <functional>
+#include <limits>
+
 #include "Common/Assert.h"
 #include "Common/CPUDetect.h"
 #include "Common/Intrinsics.h"
@@ -83,7 +86,7 @@ void EmuCodeBlock::SwitchToNearCode()
 }
 
 FixupBranch EmuCodeBlock::CheckIfSafeAddress(const OpArg& reg_value, X64Reg reg_addr,
-  BitSet32 registers_in_use)
+                                             BitSet32 registers_in_use)
 {
   registers_in_use[reg_addr] = true;
   if (reg_value.IsSimpleReg())
@@ -112,14 +115,14 @@ FixupBranch EmuCodeBlock::CheckIfSafeAddress(const OpArg& reg_value, X64Reg reg_
 }
 
 void EmuCodeBlock::UnsafeLoadRegToReg(X64Reg reg_addr, X64Reg reg_value, int accessSize, s32 offset,
-  bool signExtend)
+                                      bool signExtend)
 {
   OpArg src = MComplex(RMEM, reg_addr, SCALE_1, offset);
   LoadAndSwap(accessSize, reg_value, src, signExtend);
 }
 
 void EmuCodeBlock::UnsafeLoadRegToRegNoSwap(X64Reg reg_addr, X64Reg reg_value, int accessSize,
-  s32 offset, bool signExtend)
+                                            s32 offset, bool signExtend)
 {
   if (signExtend)
     MOVSX(32, accessSize, reg_value, MComplex(RMEM, reg_addr, SCALE_1, offset));
@@ -128,7 +131,7 @@ void EmuCodeBlock::UnsafeLoadRegToRegNoSwap(X64Reg reg_addr, X64Reg reg_value, i
 }
 
 void EmuCodeBlock::UnsafeWriteRegToReg(OpArg reg_value, X64Reg reg_addr, int accessSize, s32 offset,
-  bool swap, MovInfo* info)
+                                       bool swap, MovInfo* info)
 {
   if (info)
   {
@@ -154,13 +157,13 @@ void EmuCodeBlock::UnsafeWriteRegToReg(OpArg reg_value, X64Reg reg_addr, int acc
 }
 
 void EmuCodeBlock::UnsafeWriteRegToReg(Gen::X64Reg reg_value, Gen::X64Reg reg_addr, int accessSize,
-  s32 offset, bool swap, Gen::MovInfo* info)
+                                       s32 offset, bool swap, Gen::MovInfo* info)
 {
   UnsafeWriteRegToReg(R(reg_value), reg_addr, accessSize, offset, swap, info);
 }
 
 bool EmuCodeBlock::UnsafeLoadToReg(X64Reg reg_value, OpArg opAddress, int accessSize, s32 offset,
-  bool signExtend, MovInfo* info)
+                                   bool signExtend, MovInfo* info)
 {
   bool offsetAddedToAddress = false;
   OpArg memOperand;
@@ -228,9 +231,9 @@ class MMIOReadCodeGenerator : public MMIO::ReadHandlingMethodVisitor<T>
 {
 public:
   MMIOReadCodeGenerator(Gen::X64CodeBlock* code, BitSet32 registers_in_use, Gen::X64Reg dst_reg,
-    u32 address, bool sign_extend)
-    : m_code(code), m_registers_in_use(registers_in_use), m_dst_reg(dst_reg), m_address(address),
-    m_sign_extend(sign_extend)
+                        u32 address, bool sign_extend)
+      : m_code(code), m_registers_in_use(registers_in_use), m_dst_reg(dst_reg), m_address(address),
+        m_sign_extend(sign_extend)
   {
   }
 
@@ -304,8 +307,8 @@ private:
 };
 
 void EmuCodeBlock::MMIOLoadToReg(MMIO::Mapping* mmio, Gen::X64Reg reg_value,
-  BitSet32 registers_in_use, u32 address, int access_size,
-  bool sign_extend)
+                                 BitSet32 registers_in_use, u32 address, int access_size,
+                                 bool sign_extend)
 {
   switch (access_size)
   {
@@ -331,7 +334,7 @@ void EmuCodeBlock::MMIOLoadToReg(MMIO::Mapping* mmio, Gen::X64Reg reg_value,
 }
 
 void EmuCodeBlock::SafeLoadToReg(X64Reg reg_value, const Gen::OpArg& opAddress, int accessSize,
-  s32 offset, BitSet32 registersInUse, bool signExtend, int flags)
+                                 s32 offset, BitSet32 registersInUse, bool signExtend, int flags)
 {
   bool slowmem = (flags & SAFE_LOADSTORE_FORCE_SLOWMEM) != 0;
 
@@ -341,7 +344,7 @@ void EmuCodeBlock::SafeLoadToReg(X64Reg reg_value, const Gen::OpArg& opAddress, 
     u8* backpatchStart = GetWritableCodePtr();
     MovInfo mov;
     bool offsetAddedToAddress =
-      UnsafeLoadToReg(reg_value, opAddress, accessSize, offset, signExtend, &mov);
+        UnsafeLoadToReg(reg_value, opAddress, accessSize, offset, signExtend, &mov);
     TrampolineInfo& info = m_back_patch_info[mov.address];
     info.pc = g_jit->js.compilerPC;
     info.nonAtomicSwapStoreSrc = mov.nonAtomicSwapStore ? mov.nonAtomicSwapStoreSrc : INVALID_REG;
@@ -374,7 +377,7 @@ void EmuCodeBlock::SafeLoadToReg(X64Reg reg_value, const Gen::OpArg& opAddress, 
   }
 
   _assert_msg_(DYNA_REC, opAddress.IsSimpleReg(),
-    "Incorrect use of SafeLoadToReg (address isn't register or immediate)");
+               "Incorrect use of SafeLoadToReg (address isn't register or immediate)");
   X64Reg reg_addr = opAddress.GetSimpleReg();
   if (offset)
   {
@@ -437,7 +440,7 @@ void EmuCodeBlock::SafeLoadToReg(X64Reg reg_value, const Gen::OpArg& opAddress, 
 }
 
 void EmuCodeBlock::SafeLoadToRegImmediate(X64Reg reg_value, u32 address, int accessSize,
-  BitSet32 registersInUse, bool signExtend)
+                                          BitSet32 registersInUse, bool signExtend)
 {
   // If the address is known to be RAM, just load it directly.
   if (PowerPC::IsOptimizableRAMAddress(address))
@@ -451,7 +454,7 @@ void EmuCodeBlock::SafeLoadToRegImmediate(X64Reg reg_value, u32 address, int acc
   if (accessSize != 64 && mmioAddress)
   {
     MMIOLoadToReg(Memory::mmio_mapping.get(), reg_value, registersInUse, mmioAddress, accessSize,
-      signExtend);
+                  signExtend);
     return;
   }
 
@@ -487,7 +490,7 @@ void EmuCodeBlock::SafeLoadToRegImmediate(X64Reg reg_value, u32 address, int acc
 }
 
 void EmuCodeBlock::SafeWriteRegToReg(OpArg reg_value, X64Reg reg_addr, int accessSize, s32 offset,
-  BitSet32 registersInUse, int flags)
+                                     BitSet32 registersInUse, int flags)
 {
   bool swap = !(flags & SAFE_LOADSTORE_NO_SWAP);
   bool slowmem = (flags & SAFE_LOADSTORE_FORCE_SLOWMEM) != 0;
@@ -600,7 +603,7 @@ void EmuCodeBlock::SafeWriteRegToReg(OpArg reg_value, X64Reg reg_addr, int acces
 }
 
 void EmuCodeBlock::SafeWriteRegToReg(Gen::X64Reg reg_value, Gen::X64Reg reg_addr, int accessSize,
-  s32 offset, BitSet32 registersInUse, int flags)
+                                     s32 offset, BitSet32 registersInUse, int flags)
 {
   SafeWriteRegToReg(R(reg_value), reg_addr, accessSize, offset, registersInUse, flags);
 }
@@ -611,7 +614,7 @@ bool EmuCodeBlock::WriteClobbersRegValue(int accessSize, bool swap)
 }
 
 bool EmuCodeBlock::WriteToConstAddress(int accessSize, OpArg arg, u32 address,
-  BitSet32 registersInUse)
+                                       BitSet32 registersInUse)
 {
   arg = FixImmediate(accessSize, arg);
 
@@ -709,7 +712,7 @@ void EmuCodeBlock::JitClearCA()
 }
 
 void EmuCodeBlock::ForceSinglePrecision(X64Reg output, const OpArg& input, bool packed,
-  bool duplicate)
+                                        bool duplicate)
 {
   // Most games don't need these. Zelda requires it though - some platforms get stuck without them.
   if (g_jit->jo.accurateSinglePrecision)
@@ -738,8 +741,8 @@ void EmuCodeBlock::ForceSinglePrecision(X64Reg output, const OpArg& input, bool 
 
 // Abstract between AVX and SSE: automatically handle 3-operand instructions
 void EmuCodeBlock::avx_op(void (XEmitter::*avxOp)(X64Reg, X64Reg, const OpArg&),
-  void (XEmitter::*sseOp)(X64Reg, const OpArg&), X64Reg regOp,
-  const OpArg& arg1, const OpArg& arg2, bool packed, bool reversible)
+                          void (XEmitter::*sseOp)(X64Reg, const OpArg&), X64Reg regOp,
+                          const OpArg& arg1, const OpArg& arg2, bool packed, bool reversible)
 {
   if (arg1.IsSimpleReg(regOp))
   {
@@ -786,8 +789,8 @@ void EmuCodeBlock::avx_op(void (XEmitter::*avxOp)(X64Reg, X64Reg, const OpArg&),
 
 // Abstract between AVX and SSE: automatically handle 3-operand instructions
 void EmuCodeBlock::avx_op(void (XEmitter::*avxOp)(X64Reg, X64Reg, const OpArg&, u8),
-  void (XEmitter::*sseOp)(X64Reg, const OpArg&, u8), X64Reg regOp,
-  const OpArg& arg1, const OpArg& arg2, u8 imm)
+                          void (XEmitter::*sseOp)(X64Reg, const OpArg&, u8), X64Reg regOp,
+                          const OpArg& arg1, const OpArg& arg2, u8 imm)
 {
   if (arg1.IsSimpleReg(regOp))
   {
@@ -819,8 +822,8 @@ void EmuCodeBlock::avx_op(void (XEmitter::*avxOp)(X64Reg, X64Reg, const OpArg&, 
   }
 }
 
-alignas(16) static const u64 psMantissaTruncate[2] = { 0xFFFFFFFFF8000000ULL, 0xFFFFFFFFF8000000ULL };
-alignas(16) static const u64 psRoundBit[2] = { 0x8000000, 0x8000000 };
+alignas(16) static const u64 psMantissaTruncate[2] = {0xFFFFFFFFF8000000ULL, 0xFFFFFFFFF8000000ULL};
+alignas(16) static const u64 psRoundBit[2] = {0x8000000, 0x8000000};
 
 // Emulate the odd truncation/rounding that the PowerPC does on the RHS operand before
 // a single precision multiply. To be precise, it drops the low 28 bits of the mantissa,
@@ -943,11 +946,11 @@ void EmuCodeBlock::ConvertDoubleToSingle(X64Reg dst, X64Reg src)
 #else   // MORE_ACCURATE_DOUBLETOSINGLE
 
 alignas(16) static const __m128i double_sign_bit = _mm_set_epi64x(0xffffffffffffffff,
-  0x7fffffffffffffff);
+                                                                  0x7fffffffffffffff);
 alignas(16) static const __m128i single_qnan_bit = _mm_set_epi64x(0xffffffffffffffff,
-  0xffffffffffbfffff);
+                                                                  0xffffffffffbfffff);
 alignas(16) static const __m128i double_qnan_bit = _mm_set_epi64x(0xffffffffffffffff,
-  0xfff7ffffffffffff);
+                                                                  0xfff7ffffffffffff);
 
 // Smallest positive double that results in a normalized single.
 alignas(16) static const double min_norm_single = std::numeric_limits<float>::min();
@@ -1031,9 +1034,9 @@ void EmuCodeBlock::ConvertSingleToDouble(X64Reg dst, X64Reg src, bool src_is_gpr
   MOVDDUP(dst, R(dst));
 }
 
-alignas(16) static const u64 psDoubleExp[2] = { 0x7FF0000000000000ULL, 0 };
-alignas(16) static const u64 psDoubleFrac[2] = { 0x000FFFFFFFFFFFFFULL, 0 };
-alignas(16) static const u64 psDoubleNoSign[2] = { 0x7FFFFFFFFFFFFFFFULL, 0 };
+alignas(16) static const u64 psDoubleExp[2] = {0x7FF0000000000000ULL, 0};
+alignas(16) static const u64 psDoubleFrac[2] = {0x000FFFFFFFFFFFFFULL, 0};
+alignas(16) static const u64 psDoubleNoSign[2] = {0x7FFFFFFFFFFFFFFFULL, 0};
 
 // TODO: it might be faster to handle FPRF in the same way as CR is currently handled for integer,
 // storing
@@ -1060,7 +1063,7 @@ void EmuCodeBlock::SetFPRF(Gen::X64Reg xmm)
 
     // Nice normalized number: sign ? PPC_FPCLASS_NN : PPC_FPCLASS_PN;
     LEA(32, RSCRATCH, MScaled(RSCRATCH, MathUtil::PPC_FPCLASS_NN - MathUtil::PPC_FPCLASS_PN,
-      MathUtil::PPC_FPCLASS_PN));
+                              MathUtil::PPC_FPCLASS_PN));
     continue1 = J();
 
     SetJumpTarget(maxExponent);
@@ -1074,7 +1077,7 @@ void EmuCodeBlock::SetFPRF(Gen::X64Reg xmm)
     // Max exponent + no mantissa: sign ? PPC_FPCLASS_NINF : PPC_FPCLASS_PINF;
     SetJumpTarget(notNAN);
     LEA(32, RSCRATCH, MScaled(RSCRATCH, MathUtil::PPC_FPCLASS_NINF - MathUtil::PPC_FPCLASS_PINF,
-      MathUtil::PPC_FPCLASS_PINF));
+                              MathUtil::PPC_FPCLASS_PINF));
     continue3 = J();
 
     SetJumpTarget(zeroExponent);
@@ -1083,7 +1086,7 @@ void EmuCodeBlock::SetFPRF(Gen::X64Reg xmm)
 
     // No exponent + mantissa: sign ? PPC_FPCLASS_ND : PPC_FPCLASS_PD;
     LEA(32, RSCRATCH, MScaled(RSCRATCH, MathUtil::PPC_FPCLASS_ND - MathUtil::PPC_FPCLASS_PD,
-      MathUtil::PPC_FPCLASS_PD));
+                              MathUtil::PPC_FPCLASS_PD));
     continue4 = J();
 
     // Zero: sign ? PPC_FPCLASS_NZ : PPC_FPCLASS_PZ;
@@ -1099,12 +1102,12 @@ void EmuCodeBlock::SetFPRF(Gen::X64Reg xmm)
     AND(64, R(RSCRATCH), MConst(psDoubleNoSign));
     CMP(64, R(RSCRATCH), MConst(psDoubleExp));
     FixupBranch nan =
-      J_CC(CC_G);  // This works because if the sign bit is set, RSCRATCH is negative
+        J_CC(CC_G);  // This works because if the sign bit is set, RSCRATCH is negative
     FixupBranch infinity = J_CC(CC_E);
     MOVQ_xmm(R(RSCRATCH), xmm);
     SHR(64, R(RSCRATCH), Imm8(63));
     LEA(32, RSCRATCH, MScaled(RSCRATCH, MathUtil::PPC_FPCLASS_NN - MathUtil::PPC_FPCLASS_PN,
-      MathUtil::PPC_FPCLASS_PN));
+                              MathUtil::PPC_FPCLASS_PN));
     continue1 = J();
     SetJumpTarget(nan);
     MOVQ_xmm(R(RSCRATCH), xmm);
@@ -1115,14 +1118,14 @@ void EmuCodeBlock::SetFPRF(Gen::X64Reg xmm)
     MOVQ_xmm(R(RSCRATCH), xmm);
     SHR(64, R(RSCRATCH), Imm8(63));
     LEA(32, RSCRATCH, MScaled(RSCRATCH, MathUtil::PPC_FPCLASS_NINF - MathUtil::PPC_FPCLASS_PINF,
-      MathUtil::PPC_FPCLASS_PINF));
+                              MathUtil::PPC_FPCLASS_PINF));
     continue3 = J();
     SetJumpTarget(zeroExponent);
     TEST(64, R(RSCRATCH), R(RSCRATCH));
     FixupBranch zero = J_CC(CC_Z);
     SHR(64, R(RSCRATCH), Imm8(63));
     LEA(32, RSCRATCH, MScaled(RSCRATCH, MathUtil::PPC_FPCLASS_ND - MathUtil::PPC_FPCLASS_PD,
-      MathUtil::PPC_FPCLASS_PD));
+                              MathUtil::PPC_FPCLASS_PD));
     continue4 = J();
     SetJumpTarget(zero);
     SHR(64, R(RSCRATCH), Imm8(63));

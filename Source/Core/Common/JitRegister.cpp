@@ -10,7 +10,7 @@
 #include <string>
 
 #include "Common/CommonTypes.h"
-#include "Common/FileUtil.h"
+#include "Common/File.h"
 #include "Common/JitRegister.h"
 #include "Common/StringUtil.h"
 
@@ -37,7 +37,6 @@ static File::IOFile s_perf_map_file;
 
 namespace JitRegister
 {
-
 void Init(const std::string& perf_dir)
 {
 #if defined USE_OPROFILE && USE_OPROFILE
@@ -70,8 +69,7 @@ void Shutdown()
     s_perf_map_file.Close();
 }
 
-void RegisterV(const void* base_address, u32 code_size,
-  const char* format, va_list args)
+void RegisterV(const void* base_address, u32 code_size, const char* format, va_list args)
 {
 #if !(defined USE_OPROFILE && USE_OPROFILE) && !defined(USE_VTUNE)
   if (!s_perf_map_file.IsOpen())
@@ -81,12 +79,11 @@ void RegisterV(const void* base_address, u32 code_size,
   std::string symbol_name = StringFromFormatV(format, args);
 
 #if defined USE_OPROFILE && USE_OPROFILE
-  op_write_native_code(s_agent, symbol_name.data(), (u64)base_address,
-    base_address, code_size);
+  op_write_native_code(s_agent, symbol_name.data(), (u64)base_address, base_address, code_size);
 #endif
 
 #ifdef USE_VTUNE
-  iJIT_Method_Load jmethod = { 0 };
+  iJIT_Method_Load jmethod = {0};
   jmethod.method_id = iJIT_GetNewMethodID();
   jmethod.method_load_address = const_cast<void*>(base_address);
   jmethod.method_size = code_size;
@@ -97,11 +94,9 @@ void RegisterV(const void* base_address, u32 code_size,
   // Linux perf /tmp/perf-$pid.map:
   if (s_perf_map_file.IsOpen())
   {
-    std::string entry = StringFromFormat(
-      "%" PRIx64 " %x %s\n",
-      (u64)base_address, code_size, symbol_name.data());
+    std::string entry =
+        StringFromFormat("%" PRIx64 " %x %s\n", (u64)base_address, code_size, symbol_name.data());
     s_perf_map_file.WriteBytes(entry.data(), entry.size());
   }
 }
-
 }

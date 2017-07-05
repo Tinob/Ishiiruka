@@ -65,7 +65,7 @@ void Interpreter::bcx(UGeckoInstruction inst)
       u32 last_inst = PowerPC::HostRead_U32(PC - 4);
 
       if (last_inst == 0x28000000 /* cmplwi */ ||
-        (last_inst == 0x2C000000 /* cmpwi */ && SConfig::GetInstance().bWii))
+          (last_inst == 0x2C000000 /* cmpwi */ && SConfig::GetInstance().bWii))
       {
         CoreTiming::Idle();
       }
@@ -76,7 +76,7 @@ void Interpreter::bcx(UGeckoInstruction inst)
 void Interpreter::bcctrx(UGeckoInstruction inst)
 {
   _dbg_assert_msg_(POWERPC, inst.BO_2 & BO_DONT_DECREMENT_FLAG,
-    "bcctrx with decrement and test CTR option is invalid!");
+                   "bcctrx with decrement and test CTR option is invalid!");
 
   int condition = ((inst.BO_2 >> 4) | (GetCRBit(inst.BI_2) == ((inst.BO_2 >> 3) & 1))) & 1;
 

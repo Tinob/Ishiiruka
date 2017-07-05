@@ -2,16 +2,15 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Core/HLE/HLE.h"
+
 #include <algorithm>
 #include <map>
 
 #include "Common/CommonTypes.h"
 
 #include "Core/ConfigManager.h"
-#include "Core/Core.h"
-#include "Core/Debugger/Debugger_SymbolMap.h"
 #include "Core/GeckoCode.h"
-#include "Core/HLE/HLE.h"
 #include "Core/HLE/HLE_Misc.h"
 #include "Core/HLE/HLE_OS.h"
 #include "Core/HW/Memmap.h"
@@ -23,7 +22,7 @@ namespace HLE
 {
 using namespace PowerPC;
 
-typedef void(*TPatchFunction)();
+typedef void (*TPatchFunction)();
 
 static std::map<u32, u32> s_original_instructions;
 
@@ -43,37 +42,41 @@ struct SPatch
 
 // clang-format off
 static const SPatch OSPatches[] = {
-  // Placeholder, OSPatches[0] is the "non-existent function" index
-  { "FAKE_TO_SKIP_0",               HLE_Misc::UnimplementedFunction,       HLE_HOOK_REPLACE, HLE_TYPE_GENERIC },
+    // Placeholder, OSPatches[0] is the "non-existent function" index
+    {"FAKE_TO_SKIP_0",               HLE_Misc::UnimplementedFunction,       HLE_HOOK_REPLACE, HLE_TYPE_GENERIC},
 
-  { "PanicAlert",                   HLE_Misc::HLEPanicAlert,               HLE_HOOK_REPLACE, HLE_TYPE_DEBUG },
+    {"PanicAlert",                   HLE_Misc::HLEPanicAlert,               HLE_HOOK_REPLACE, HLE_TYPE_DEBUG},
 
-  // Name doesn't matter, installed in CBoot::BootUp()
-  { "HBReload",                     HLE_Misc::HBReload,                    HLE_HOOK_REPLACE, HLE_TYPE_GENERIC },
+    // Name doesn't matter, installed in CBoot::BootUp()
+    {"HBReload",                     HLE_Misc::HBReload,                    HLE_HOOK_REPLACE, HLE_TYPE_GENERIC},
 
-  // Debug/OS Support
-  { "OSPanic",                      HLE_OS::HLE_OSPanic,                   HLE_HOOK_REPLACE, HLE_TYPE_DEBUG },
+    // Debug/OS Support
+    {"OSPanic",                      HLE_OS::HLE_OSPanic,                   HLE_HOOK_REPLACE, HLE_TYPE_DEBUG},
 
-  // This needs to be put before vprintf (because vprintf is called indirectly by this)
-  { "JUTWarningConsole_f",          HLE_OS::HLE_GeneralDebugPrint,         HLE_HOOK_START,   HLE_TYPE_DEBUG },
+    // This needs to be put before vprintf (because vprintf is called indirectly by this)
+    {"JUTWarningConsole_f",          HLE_OS::HLE_GeneralDebugPrint,         HLE_HOOK_START,   HLE_TYPE_DEBUG},
 
-  { "OSReport",                     HLE_OS::HLE_GeneralDebugPrint,         HLE_HOOK_START,   HLE_TYPE_DEBUG },
-  { "DEBUGPrint",                   HLE_OS::HLE_GeneralDebugPrint,         HLE_HOOK_START,   HLE_TYPE_DEBUG },
-  { "WUD_DEBUGPrint",               HLE_OS::HLE_GeneralDebugPrint,         HLE_HOOK_START,   HLE_TYPE_DEBUG },
-  { "vprintf",                      HLE_OS::HLE_GeneralDebugPrint,         HLE_HOOK_START,   HLE_TYPE_DEBUG },
-  { "printf",                       HLE_OS::HLE_GeneralDebugPrint,         HLE_HOOK_START,   HLE_TYPE_DEBUG },
-  { "nlPrintf",                     HLE_OS::HLE_GeneralDebugPrint,         HLE_HOOK_START,   HLE_TYPE_DEBUG },
-  { "puts",                         HLE_OS::HLE_GeneralDebugPrint,         HLE_HOOK_START,   HLE_TYPE_DEBUG }, // gcc-optimized printf?
-  { "___blank",                     HLE_OS::HLE_GeneralDebugPrint,         HLE_HOOK_START,   HLE_TYPE_DEBUG }, // used for early init things (normally)
-  { "__write_console",              HLE_OS::HLE_write_console,             HLE_HOOK_START,   HLE_TYPE_DEBUG }, // used by sysmenu (+more?)
+    {"OSReport",                     HLE_OS::HLE_GeneralDebugPrint,         HLE_HOOK_START,   HLE_TYPE_DEBUG},
+    {"DEBUGPrint",                   HLE_OS::HLE_GeneralDebugPrint,         HLE_HOOK_START,   HLE_TYPE_DEBUG},
+    {"WUD_DEBUGPrint",               HLE_OS::HLE_GeneralDebugPrint,         HLE_HOOK_START,   HLE_TYPE_DEBUG},
+    {"vprintf",                      HLE_OS::HLE_GeneralDebugVPrint,        HLE_HOOK_START,   HLE_TYPE_DEBUG},
+    {"printf",                       HLE_OS::HLE_GeneralDebugPrint,         HLE_HOOK_START,   HLE_TYPE_DEBUG},
+    {"vdprintf",                     HLE_OS::HLE_LogVDPrint,                HLE_HOOK_START,   HLE_TYPE_DEBUG},
+    {"dprintf",                      HLE_OS::HLE_LogDPrint,                 HLE_HOOK_START,   HLE_TYPE_DEBUG},
+    {"vfprintf",                     HLE_OS::HLE_LogVFPrint,                HLE_HOOK_START,   HLE_TYPE_DEBUG},
+    {"fprintf",                      HLE_OS::HLE_LogFPrint,                 HLE_HOOK_START,   HLE_TYPE_DEBUG},
+    {"nlPrintf",                     HLE_OS::HLE_GeneralDebugPrint,         HLE_HOOK_START,   HLE_TYPE_DEBUG},
+    {"puts",                         HLE_OS::HLE_GeneralDebugPrint,         HLE_HOOK_START,   HLE_TYPE_DEBUG}, // gcc-optimized printf?
+    {"___blank",                     HLE_OS::HLE_GeneralDebugPrint,         HLE_HOOK_START,   HLE_TYPE_DEBUG}, // used for early init things (normally)
+    {"__write_console",              HLE_OS::HLE_write_console,             HLE_HOOK_START,   HLE_TYPE_DEBUG}, // used by sysmenu (+more?)
 
-  { "GeckoCodehandler",             HLE_Misc::GeckoCodeHandlerICacheFlush, HLE_HOOK_START,   HLE_TYPE_FIXED },
-  { "GeckoHandlerReturnTrampoline", HLE_Misc::GeckoReturnTrampoline,       HLE_HOOK_REPLACE, HLE_TYPE_FIXED },
-  { "AppLoaderReport",              HLE_OS::HLE_GeneralDebugPrint,         HLE_HOOK_REPLACE, HLE_TYPE_FIXED } // apploader needs OSReport-like function
+    {"GeckoCodehandler",             HLE_Misc::GeckoCodeHandlerICacheFlush, HLE_HOOK_START,   HLE_TYPE_FIXED},
+    {"GeckoHandlerReturnTrampoline", HLE_Misc::GeckoReturnTrampoline,       HLE_HOOK_REPLACE, HLE_TYPE_FIXED},
+    {"AppLoaderReport",              HLE_OS::HLE_GeneralDebugPrint,         HLE_HOOK_REPLACE, HLE_TYPE_FIXED} // apploader needs OSReport-like function
 };
 
 static const SPatch OSBreakPoints[] = {
-    { "FAKE_TO_SKIP_0", HLE_Misc::UnimplementedFunction, HLE_HOOK_START, HLE_TYPE_GENERIC },
+    {"FAKE_TO_SKIP_0", HLE_Misc::UnimplementedFunction, HLE_HOOK_START, HLE_TYPE_GENERIC},
 };
 // clang-format on
 
@@ -194,8 +197,8 @@ u32 GetFirstFunctionIndex(u32 address)
 {
   u32 index = GetFunctionIndex(address);
   auto first = std::find_if(
-    s_original_instructions.begin(), s_original_instructions.end(),
-    [=](const auto& entry) { return entry.second == index && entry.first < address; });
+      s_original_instructions.begin(), s_original_instructions.end(),
+      [=](const auto& entry) { return entry.second == index && entry.first < address; });
   return first == std::end(s_original_instructions) ? index : 0;
 }
 
@@ -212,13 +215,13 @@ int GetFunctionFlagsByIndex(u32 index)
 bool IsEnabled(int flags)
 {
   return flags != HLE::HLE_TYPE_DEBUG || SConfig::GetInstance().bEnableDebugging ||
-    PowerPC::GetMode() == PowerPC::CoreMode::Interpreter;
+         PowerPC::GetMode() == PowerPC::CoreMode::Interpreter;
 }
 
 u32 UnPatch(const std::string& patch_name)
 {
   auto* patch = std::find_if(std::begin(OSPatches), std::end(OSPatches),
-    [&](const SPatch& p) { return patch_name == p.m_szPatchName; });
+                             [&](const SPatch& p) { return patch_name == p.m_szPatchName; });
   if (patch == std::end(OSPatches))
     return 0;
 
@@ -243,8 +246,10 @@ u32 UnPatch(const std::string& patch_name)
     return addr;
   }
 
-  for (const auto& symbol : g_symbolDB.GetSymbolsFromName(patch_name))
+  const auto& symbols = g_symbolDB.GetSymbolsFromName(patch_name);
+  if (symbols.size())
   {
+    const auto& symbol = symbols[0];
     for (u32 addr = symbol->address; addr < symbol->address + symbol->size; addr += 4)
     {
       s_original_instructions.erase(addr);

@@ -6,348 +6,327 @@
 #include <cinttypes>
 #include <cstddef>
 #include <cstring>
+#include <map>
+#include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
+#include "Common/CommonFuncs.h"
 #include "Common/CommonTypes.h"
-#include "Common/FileUtil.h"
+#include "Common/File.h"
 #include "Common/Logging/Log.h"
 #include "Common/MsgHandler.h"
 #include "Common/StringUtil.h"
+#include "DiscIO/DiscExtractor.h"
 #include "DiscIO/FileSystemGCWii.h"
 #include "DiscIO/Filesystem.h"
 #include "DiscIO/Volume.h"
 
 namespace DiscIO
 {
-CFileSystemGCWii::CFileSystemGCWii(const IVolume* _rVolume, const Partition& partition)
-  : IFileSystem(_rVolume, partition), m_Initialized(false), m_Valid(false), m_offset_shift(0)
+constexpr u32 FST_ENTRY_SIZE = 4 * 3;  // An FST entry consists of three 32-bit integers
+
+// Set everything manually.
+FileInfoGCWii::FileInfoGCWii(const u8* fst, u8 offset_shift, u32 index, u32 total_file_infos)
+    : m_fst(fst), m_offset_shift(offset_shift), m_index(index), m_total_file_infos(total_file_infos)
 {
-  m_Valid = DetectFileSystem();
 }
 
-CFileSystemGCWii::~CFileSystemGCWii()
+// For the root object only.
+// m_fst and m_index must be correctly set before GetSize() is called!
+FileInfoGCWii::FileInfoGCWii(const u8* fst, u8 offset_shift)
+    : m_fst(fst), m_offset_shift(offset_shift), m_index(0), m_total_file_infos(GetSize())
 {
-  m_FileInfoVector.clear();
 }
 
-u64 CFileSystemGCWii::GetFileSize(const std::string& _rFullPath)
+// Copy data that is common to the whole file system.
+FileInfoGCWii::FileInfoGCWii(const FileInfoGCWii& file_info, u32 index)
+    : FileInfoGCWii(file_info.m_fst, file_info.m_offset_shift, index, file_info.m_total_file_infos)
 {
-  if (!m_Initialized)
-    InitFileSystem();
-
-  const SFileInfo* pFileInfo = FindFileInfo(_rFullPath);
-
-  if (pFileInfo != nullptr && !pFileInfo->IsDirectory())
-    return pFileInfo->m_FileSize;
-
-  return 0;
 }
 
-std::string CFileSystemGCWii::GetFileName(u64 _Address)
+FileInfoGCWii::~FileInfoGCWii() = default;
+
+uintptr_t FileInfoGCWii::GetAddress() const
 {
-  if (!m_Initialized)
-    InitFileSystem();
-
-  for (auto& fileInfo : m_FileInfoVector)
-  {
-    if ((fileInfo.m_Offset <= _Address) && ((fileInfo.m_Offset + fileInfo.m_FileSize) > _Address))
-    {
-      return fileInfo.m_FullPath;
-    }
-  }
-
-  return "";
+  return reinterpret_cast<uintptr_t>(m_fst + FST_ENTRY_SIZE * m_index);
 }
 
-u64 CFileSystemGCWii::ReadFile(const std::string& _rFullPath, u8* _pBuffer, u64 _MaxBufferSize,
-  u64 _OffsetInFile)
+u32 FileInfoGCWii::GetNextIndex() const
 {
-  if (!m_Initialized)
-    InitFileSystem();
-
-  const SFileInfo* pFileInfo = FindFileInfo(_rFullPath);
-  if (pFileInfo == nullptr)
-    return 0;
-
-  if (_OffsetInFile >= pFileInfo->m_FileSize)
-    return 0;
-
-  u64 read_length = std::min(_MaxBufferSize, pFileInfo->m_FileSize - _OffsetInFile);
-
-  DEBUG_LOG(DISCIO, "Reading %" PRIx64 " bytes at %" PRIx64 " from file %s. Offset: %" PRIx64
-    " Size: %" PRIx64,
-    read_length, _OffsetInFile, _rFullPath.c_str(), pFileInfo->m_Offset,
-    pFileInfo->m_FileSize);
-
-  m_rVolume->Read(pFileInfo->m_Offset + _OffsetInFile, read_length, _pBuffer, m_partition);
-  return read_length;
+  return IsDirectory() ? GetSize() : m_index + 1;
 }
 
-bool CFileSystemGCWii::ExportFile(const std::string& _rFullPath,
-  const std::string& _rExportFilename)
+FileInfo& FileInfoGCWii::operator++()
 {
-  if (!m_Initialized)
-    InitFileSystem();
-
-  const SFileInfo* pFileInfo = FindFileInfo(_rFullPath);
-
-  if (!pFileInfo)
-    return false;
-
-  u64 remainingSize = pFileInfo->m_FileSize;
-  u64 fileOffset = pFileInfo->m_Offset;
-
-  File::IOFile f(_rExportFilename, "wb");
-  if (!f)
-    return false;
-
-  bool result = true;
-
-  while (remainingSize)
-  {
-    // Limit read size to 128 MB
-    size_t readSize = (size_t)std::min(remainingSize, (u64)0x08000000);
-
-    std::vector<u8> buffer(readSize);
-
-    result = m_rVolume->Read(fileOffset, readSize, &buffer[0], m_partition);
-
-    if (!result)
-      break;
-
-    f.WriteBytes(&buffer[0], readSize);
-
-    remainingSize -= readSize;
-    fileOffset += readSize;
-  }
-
-  return result;
+  m_index = GetNextIndex();
+  return *this;
 }
 
-bool CFileSystemGCWii::ExportApploader(const std::string& _rExportFolder) const
+std::unique_ptr<FileInfo> FileInfoGCWii::clone() const
 {
-  u32 apploader_size;
-  u32 trailer_size;
-  const u32 header_size = 0x20;
-  if (!m_rVolume->ReadSwapped(0x2440 + 0x14, &apploader_size, m_partition) ||
-    !m_rVolume->ReadSwapped(0x2440 + 0x18, &trailer_size, m_partition))
-    return false;
-  apploader_size += trailer_size + header_size;
-  DEBUG_LOG(DISCIO, "Apploader size -> %x", apploader_size);
-
-  std::vector<u8> buffer(apploader_size);
-  if (m_rVolume->Read(0x2440, apploader_size, buffer.data(), m_partition))
-  {
-    std::string exportName(_rExportFolder + "/apploader.img");
-
-    File::IOFile AppFile(exportName, "wb");
-    if (AppFile)
-    {
-      AppFile.WriteBytes(buffer.data(), apploader_size);
-      return true;
-    }
-  }
-
-  return false;
+  return std::make_unique<FileInfoGCWii>(*this);
 }
 
-u64 CFileSystemGCWii::GetBootDOLOffset() const
+FileInfo::const_iterator FileInfoGCWii::begin() const
 {
-  u32 offset = 0;
-  m_rVolume->ReadSwapped(0x420, &offset, m_partition);
-  return static_cast<u64>(offset) << m_offset_shift;
+  return const_iterator(std::make_unique<FileInfoGCWii>(*this, m_index + 1));
 }
 
-u32 CFileSystemGCWii::GetBootDOLSize(u64 dol_offset) const
+FileInfo::const_iterator FileInfoGCWii::end() const
 {
-  // The dol_offset value is usually obtained by calling GetBootDOLOffset.
-  // If GetBootDOLOffset fails by returning 0, GetBootDOLSize should also fail.
-  if (dol_offset == 0)
-    return 0;
-
-  u32 dol_size = 0;
-  u32 offset = 0;
-  u32 size = 0;
-
-  // Iterate through the 7 code segments
-  for (u8 i = 0; i < 7; i++)
-  {
-    if (!m_rVolume->ReadSwapped(dol_offset + 0x00 + i * 4, &offset, m_partition) ||
-      !m_rVolume->ReadSwapped(dol_offset + 0x90 + i * 4, &size, m_partition))
-      return 0;
-    dol_size = std::max(offset + size, dol_size);
-  }
-
-  // Iterate through the 11 data segments
-  for (u8 i = 0; i < 11; i++)
-  {
-    if (!m_rVolume->ReadSwapped(dol_offset + 0x1c + i * 4, &offset, m_partition) ||
-      !m_rVolume->ReadSwapped(dol_offset + 0xac + i * 4, &size, m_partition))
-      return 0;
-    dol_size = std::max(offset + size, dol_size);
-  }
-
-  return dol_size;
+  return const_iterator(std::make_unique<FileInfoGCWii>(*this, GetNextIndex()));
 }
 
-bool CFileSystemGCWii::ExportDOL(const std::string& _rExportFolder) const
+u32 FileInfoGCWii::Get(EntryProperty entry_property) const
 {
-  u64 DolOffset = GetBootDOLOffset();
-  u32 DolSize = GetBootDOLSize(DolOffset);
-
-  if (DolOffset == 0 || DolSize == 0)
-    return false;
-
-  std::vector<u8> buffer(DolSize);
-  if (m_rVolume->Read(DolOffset, DolSize, &buffer[0], m_partition))
-  {
-    std::string exportName(_rExportFolder + "/boot.dol");
-
-    File::IOFile DolFile(exportName, "wb");
-    if (DolFile)
-    {
-      DolFile.WriteBytes(&buffer[0], DolSize);
-      return true;
-    }
-  }
-
-  return false;
+  return Common::swap32(m_fst + FST_ENTRY_SIZE * m_index +
+                        sizeof(u32) * static_cast<int>(entry_property));
 }
 
-std::string CFileSystemGCWii::GetStringFromOffset(u64 _Offset) const
+u32 FileInfoGCWii::GetSize() const
 {
-  std::string data(255, 0x00);
-  m_rVolume->Read(_Offset, data.size(), (u8*)&data[0], m_partition);
-  data.erase(std::find(data.begin(), data.end(), 0x00), data.end());
+  return Get(EntryProperty::FILE_SIZE);
+}
 
+u64 FileInfoGCWii::GetOffset() const
+{
+  return static_cast<u64>(Get(EntryProperty::FILE_OFFSET)) << m_offset_shift;
+}
+
+bool FileInfoGCWii::IsDirectory() const
+{
+  return (Get(EntryProperty::NAME_OFFSET) & 0xFF000000) != 0;
+}
+
+u32 FileInfoGCWii::GetTotalChildren() const
+{
+  return Get(EntryProperty::FILE_SIZE) - (m_index + 1);
+}
+
+u64 FileInfoGCWii::GetNameOffset() const
+{
+  return static_cast<u64>(FST_ENTRY_SIZE) * m_total_file_infos +
+         (Get(EntryProperty::NAME_OFFSET) & 0xFFFFFF);
+}
+
+std::string FileInfoGCWii::GetName() const
+{
   // TODO: Should we really always use SHIFT-JIS?
-  // It makes some filenames in Pikmin (NTSC-U) sane, but is it correct?
-  return SHIFTJISToUTF8(data);
+  // Some names in Pikmin (NTSC-U) don't make sense without it, but is it correct?
+  return SHIFTJISToUTF8(reinterpret_cast<const char*>(m_fst + GetNameOffset()));
 }
 
-const std::vector<SFileInfo>& CFileSystemGCWii::GetFileList()
+std::string FileInfoGCWii::GetPath() const
 {
-  if (!m_Initialized)
-    InitFileSystem();
+  // The root entry doesn't have a name
+  if (m_index == 0)
+    return "";
 
-  return m_FileInfoVector;
-}
-
-const SFileInfo* CFileSystemGCWii::FindFileInfo(const std::string& _rFullPath)
-{
-  if (!m_Initialized)
-    InitFileSystem();
-
-  for (auto& fileInfo : m_FileInfoVector)
+  if (IsDirectory())
   {
-    if (!strcasecmp(fileInfo.m_FullPath.c_str(), _rFullPath.c_str()))
-      return &fileInfo;
+    u32 parent_directory_index = Get(EntryProperty::FILE_OFFSET);
+    return FileInfoGCWii(*this, parent_directory_index).GetPath() + GetName() + "/";
+  }
+  else
+  {
+    // The parent directory can be found by searching backwards
+    // for a directory that contains this file. The search cannot fail,
+    // because the root directory at index 0 contains all files.
+    FileInfoGCWii potential_parent(*this, m_index - 1);
+    while (!(potential_parent.IsDirectory() &&
+             potential_parent.Get(EntryProperty::FILE_SIZE) > m_index))
+    {
+      potential_parent = FileInfoGCWii(*this, potential_parent.m_index - 1);
+    }
+    return potential_parent.GetPath() + GetName();
+  }
+}
+
+bool FileInfoGCWii::IsValid(u64 fst_size, const FileInfoGCWii& parent_directory) const
+{
+  if (GetNameOffset() >= fst_size)
+  {
+    ERROR_LOG(DISCIO, "Impossibly large name offset in file system");
+    return false;
   }
 
-  return nullptr;
+  if (IsDirectory())
+  {
+    if (Get(EntryProperty::FILE_OFFSET) != parent_directory.m_index)
+    {
+      ERROR_LOG(DISCIO, "Incorrect parent offset in file system");
+      return false;
+    }
+
+    u32 size = Get(EntryProperty::FILE_SIZE);
+
+    if (size <= m_index)
+    {
+      ERROR_LOG(DISCIO, "Impossibly small directory size in file system");
+      return false;
+    }
+
+    if (size > parent_directory.Get(EntryProperty::FILE_SIZE))
+    {
+      ERROR_LOG(DISCIO, "Impossibly large directory size in file system");
+      return false;
+    }
+
+    for (const FileInfo& child : *this)
+    {
+      if (!static_cast<const FileInfoGCWii&>(child).IsValid(fst_size, *this))
+        return false;
+    }
+  }
+
+  return true;
 }
 
-bool CFileSystemGCWii::DetectFileSystem()
+FileSystemGCWii::FileSystemGCWii(const Volume* volume, const Partition& partition)
+    : FileSystem(volume, partition), m_valid(false), m_offset_shift(0), m_root(nullptr, 0, 0, 0)
 {
-  u32 magic_bytes;
-  if (m_rVolume->ReadSwapped(0x18, &magic_bytes, m_partition) && magic_bytes == 0x5D1C9EA3)
-  {
+  // Check if this is a GameCube or Wii disc
+  if (m_volume->ReadSwapped<u32>(0x18, m_partition) == u32(0x5D1C9EA3))
     m_offset_shift = 2;  // Wii file system
-    return true;
-  }
-  else if (m_rVolume->ReadSwapped(0x1c, &magic_bytes, m_partition) && magic_bytes == 0xC2339F3D)
-  {
+  else if (m_volume->ReadSwapped<u32>(0x1c, m_partition) == u32(0xC2339F3D))
     m_offset_shift = 0;  // GameCube file system
-    return true;
+  else
+    return;
+
+  const std::optional<u64> fst_offset = GetFSTOffset(*m_volume, m_partition);
+  const std::optional<u64> fst_size = GetFSTSize(*m_volume, m_partition);
+  if (!fst_offset || !fst_size)
+    return;
+  if (*fst_size < FST_ENTRY_SIZE)
+  {
+    ERROR_LOG(DISCIO, "File system is too small");
+    return;
   }
 
-  return false;
-}
-
-void CFileSystemGCWii::InitFileSystem()
-{
-  m_Initialized = true;
-
-  // read the whole FST
-  u32 fst_offset_unshifted;
-  if (!m_rVolume->ReadSwapped(0x424, &fst_offset_unshifted, m_partition))
-    return;
-  u64 FSTOffset = static_cast<u64>(fst_offset_unshifted) << m_offset_shift;
-
-  // read all fileinfos
-  u32 name_offset, offset, size;
-  if (!m_rVolume->ReadSwapped(FSTOffset + 0x0, &name_offset, m_partition) ||
-    !m_rVolume->ReadSwapped(FSTOffset + 0x4, &offset, m_partition) ||
-    !m_rVolume->ReadSwapped(FSTOffset + 0x8, &size, m_partition))
-    return;
-  SFileInfo root = { name_offset, static_cast<u64>(offset) << m_offset_shift, size };
-
-  if (!root.IsDirectory())
-    return;
-
-  // 12 bytes (the size of a file entry) times 10 * 1024 * 1024 is 120 MiB,
-  // more than total RAM in a Wii. No file system should use anywhere near that much.
-  static const u32 ARBITRARY_FILE_SYSTEM_SIZE_LIMIT = 10 * 1024 * 1024;
-  if (root.m_FileSize > ARBITRARY_FILE_SYSTEM_SIZE_LIMIT)
+  // 128 MiB is more than the total amount of RAM in a Wii.
+  // No file system should use anywhere near that much.
+  static const u32 ARBITRARY_FILE_SYSTEM_SIZE_LIMIT = 128 * 1024 * 1024;
+  if (*fst_size > ARBITRARY_FILE_SYSTEM_SIZE_LIMIT)
   {
     // Without this check, Dolphin can crash by trying to allocate too much
-    // memory when loading the file systems of certain malformed disc images.
+    // memory when loading a disc image with an incorrect FST size.
 
     ERROR_LOG(DISCIO, "File system is abnormally large! Aborting loading");
     return;
   }
 
-  if (m_FileInfoVector.size())
-    PanicAlert("Wtf?");
-  u64 NameTableOffset = FSTOffset;
-
-  m_FileInfoVector.reserve((size_t)root.m_FileSize);
-  for (u32 i = 0; i < root.m_FileSize; i++)
+  // Read the whole FST
+  m_file_system_table.resize(*fst_size);
+  if (!m_volume->Read(*fst_offset, *fst_size, m_file_system_table.data(), m_partition))
   {
-    const u64 read_offset = FSTOffset + (i * 0xC);
-    name_offset = 0;
-    m_rVolume->ReadSwapped(read_offset + 0x0, &name_offset, m_partition);
-    offset = 0;
-    m_rVolume->ReadSwapped(read_offset + 0x4, &offset, m_partition);
-    size = 0;
-    m_rVolume->ReadSwapped(read_offset + 0x8, &size, m_partition);
-    m_FileInfoVector.emplace_back(name_offset, static_cast<u64>(offset) << m_offset_shift, size);
-    NameTableOffset += 0xC;
+    ERROR_LOG(DISCIO, "Couldn't read file system table");
+    return;
   }
 
-  BuildFilenames(1, m_FileInfoVector.size(), "", NameTableOffset);
+  // Create the root object
+  m_root = FileInfoGCWii(m_file_system_table.data(), m_offset_shift);
+  if (!m_root.IsDirectory())
+  {
+    ERROR_LOG(DISCIO, "File system root is not a directory");
+    return;
+  }
+
+  if (FST_ENTRY_SIZE * m_root.GetSize() > *fst_size)
+  {
+    ERROR_LOG(DISCIO, "File system has too many entries for its size");
+    return;
+  }
+
+  // If the FST's final byte isn't 0, FileInfoGCWii::GetName() can read past the end
+  if (m_file_system_table[*fst_size - 1] != 0)
+  {
+    ERROR_LOG(DISCIO, "File system does not end with a null byte");
+    return;
+  }
+
+  m_valid = m_root.IsValid(*fst_size, m_root);
 }
 
-size_t CFileSystemGCWii::BuildFilenames(const size_t _FirstIndex, const size_t _LastIndex,
-  const std::string& _szDirectory, u64 _NameTableOffset)
+FileSystemGCWii::~FileSystemGCWii() = default;
+
+const FileInfo& FileSystemGCWii::GetRoot() const
 {
-  size_t CurrentIndex = _FirstIndex;
+  return m_root;
+}
 
-  while (CurrentIndex < _LastIndex)
+std::unique_ptr<FileInfo> FileSystemGCWii::FindFileInfo(const std::string& path) const
+{
+  if (!IsValid())
+    return nullptr;
+
+  return FindFileInfo(path, m_root);
+}
+
+std::unique_ptr<FileInfo> FileSystemGCWii::FindFileInfo(const std::string& path,
+                                                        const FileInfo& file_info) const
+{
+  // Given a path like "directory1/directory2/fileA.bin", this function will
+  // find directory1 and then call itself to search for "directory2/fileA.bin".
+
+  if (path.empty() || path == "/")
+    return file_info.clone();
+
+  // It's only possible to search in directories. Searching in a file is an error
+  if (!file_info.IsDirectory())
+    return nullptr;
+
+  size_t first_dir_separator = path.find('/');
+  const std::string searching_for = path.substr(0, first_dir_separator);
+  const std::string rest_of_path =
+      (first_dir_separator != std::string::npos) ? path.substr(first_dir_separator + 1) : "";
+
+  for (const FileInfo& child : file_info)
   {
-    SFileInfo& rFileInfo = m_FileInfoVector[CurrentIndex];
-    u64 const uOffset = _NameTableOffset + (rFileInfo.m_NameOffset & 0xFFFFFF);
-    std::string const offset_str{ GetStringFromOffset(uOffset) };
-    bool const is_dir = rFileInfo.IsDirectory();
-    rFileInfo.m_FullPath.reserve(_szDirectory.size() + offset_str.size());
-
-    rFileInfo.m_FullPath.append(_szDirectory.data(), _szDirectory.size())
-      .append(offset_str.data(), offset_str.size())
-      .append("/", size_t(is_dir));
-
-    if (!is_dir)
+    if (!strcasecmp(child.GetName().c_str(), searching_for.c_str()))
     {
-      ++CurrentIndex;
-      continue;
-    }
+      // A match is found. The rest of the path is passed on to finish the search.
+      std::unique_ptr<FileInfo> result = FindFileInfo(rest_of_path, child);
 
-    // check next index
-    CurrentIndex = BuildFilenames(CurrentIndex + 1, (size_t)rFileInfo.m_FileSize,
-      rFileInfo.m_FullPath, _NameTableOffset);
+      // If the search wasn't successful, the loop continues, just in case there's a second
+      // file info that matches searching_for (which probably won't happen in practice)
+      if (result)
+        return result;
+    }
   }
 
-  return CurrentIndex;
+  return nullptr;
+}
+
+std::unique_ptr<FileInfo> FileSystemGCWii::FindFileInfo(u64 disc_offset) const
+{
+  if (!IsValid())
+    return nullptr;
+
+  // Build a cache (unless there already is one)
+  if (m_offset_file_info_cache.empty())
+  {
+    u32 fst_entries = m_root.GetSize();
+    for (u32 i = 0; i < fst_entries; i++)
+    {
+      FileInfoGCWii file_info(m_root, i);
+      if (!file_info.IsDirectory())
+        m_offset_file_info_cache.emplace(file_info.GetOffset() + file_info.GetSize(), i);
+    }
+  }
+
+  // Get the first file that ends after disc_offset
+  const auto it = m_offset_file_info_cache.upper_bound(disc_offset);
+  if (it == m_offset_file_info_cache.end())
+    return nullptr;
+  std::unique_ptr<FileInfo> result(std::make_unique<FileInfoGCWii>(m_root, it->second));
+
+  // If the file's start isn't after disc_offset, success
+  if (result->GetOffset() <= disc_offset)
+    return result;
+
+  return nullptr;
 }
 
 }  // namespace
