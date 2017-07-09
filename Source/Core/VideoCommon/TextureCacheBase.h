@@ -70,6 +70,7 @@ public:
         result = ((width + 3) >> 2)*((height + 3) >> 2) * 16;
         break;
       default:
+        result = ((width + 3) >> 2)*((height + 3) >> 2);
         break;
       }
       if (levels > 1 || rendertarget)
