@@ -463,6 +463,15 @@ OptionName = J_CEL_SHADING
 DefaultValue = false
 
 [OptionRangeFloat]
+GUIName = Depth Limit
+OptionName = A_CEL_DEPTH_LIMIT
+MinValue = 0.0, 0.0
+MaxValue = 1.0, 1.0
+DefaultValue = 0.0, 1.0
+StepAmount = 0.001, 0.001
+DependentOption = J_CEL_SHADING
+
+[OptionRangeFloat]
 GUIName = EdgeStrength
 OptionName = A_EDGE_STRENGTH
 MinValue = 0.00
@@ -520,6 +529,15 @@ DependentOption = J_CEL_SHADING
 GUIName = Paint Shading
 OptionName = J_PAINT_SHADING
 DefaultValue = false
+
+[OptionRangeFloat]
+GUIName = Depth Limit
+OptionName = PAINT_DEPTH_LIMIT
+MinValue = 0.0, 0.0
+MaxValue = 1.0, 1.0
+DefaultValue = 0.0, 1.0
+StepAmount = 0.001, 0.001
+DependentOption = J_PAINT_SHADING
 
 [OptionRangeInteger]
 GUIName = Paint method
@@ -1591,6 +1609,11 @@ float4 ContrastPass(float4 color)
 
 float4 CelPass(float4 color)
 {
+	float scenedepth = SampleDepth();
+	float2 limit = GetOption(A_CEL_DEPTH_LIMIT);
+	if (scenedepth > limit.y || scenedepth < limit.x)
+		return color;
+
 	float3 yuv;
 	float3 sum = color.rgb;
 
@@ -2220,7 +2243,16 @@ float3 PaintShading(float3 color, float2 texcoord)
 	{
 		int j, i;
 		float2 screenSize = GetResolution();
-		float3 m0, m1, m2, m3, k0, k1, k2, k3, shade;
+		float3 m0 = float3(0.0,0.0,0.0);
+		float3 m1 = float3(0.0,0.0,0.0);
+		float3 m2 = float3(0.0,0.0,0.0);
+		float3 m3 = float3(0.0,0.0,0.0);
+		float3 k0 = float3(0.0,0.0,0.0);
+		float3 k1 = float3(0.0,0.0,0.0);
+		float3 k2 = float3(0.0,0.0,0.0);
+		float3 k3 = float3(0.0,0.0,0.0);
+		float3 shade = float3(0.0,0.0,0.0);
+
 		float n = float((PaintRadius + 1.0) * (PaintRadius + 1.0));
 
 		for (j = int(-PaintRadius); j <= 0; ++j) {
@@ -2274,6 +2306,11 @@ float3 PaintShading(float3 color, float2 texcoord)
 
 float4 PaintPass(float4 color, float2 texcoord)
 {
+	float scenedepth = SampleDepth();
+	float2 limit = GetOption(PAINT_DEPTH_LIMIT);
+	if (scenedepth > limit.y || scenedepth < limit.x)
+		return color;
+
 	float3 paint = PaintShading(color.rgb, texcoord);
 	color.rgb = lerp(color.rgb, paint, GetOption(PaintStrength));
 	color.a = AvgLuminance(color.rgb);
