@@ -99,7 +99,7 @@ public:
 private:
   struct TCacheEntry : TCacheEntryBase
   {
-    TCacheEntry(const TCacheEntryConfig& _config) : TCacheEntryBase(_config)
+    TCacheEntry(const TextureConfig& _config) : TCacheEntryBase(_config)
     {}
     ~TCacheEntry()
     {}
@@ -138,7 +138,7 @@ private:
     }
   };
 
-  TCacheEntryBase* CreateTexture(const TCacheEntryConfig& config) override
+  TCacheEntryBase* CreateTexture(const TextureConfig& config) override
   {
     return new TCacheEntry(config);
   }

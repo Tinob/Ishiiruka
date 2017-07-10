@@ -465,6 +465,9 @@
     <ClInclude Include="ObjectUsageProfiler.h">
       <Filter>Util</Filter>
     </ClInclude>
+    <ClInclude Include="TextureConfig.h">
+      <Filter>Base</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="CMakeLists.txt" />

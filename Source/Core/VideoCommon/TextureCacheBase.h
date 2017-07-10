@@ -16,6 +16,7 @@
 
 #include "VideoCommon/BPMemory.h"
 #include "VideoCommon/TextureDecoder.h"
+#include "VideoCommon/TextureConfig.h"
 #include "VideoCommon/VideoCommon.h"
 
 struct VideoConfig;
@@ -34,86 +35,11 @@ enum TextureCacheParams
 
 class TextureCacheBase
 {
-public:
-  struct TCacheEntryConfig
-  {
-    constexpr TCacheEntryConfig() = default;
-
-    u32 GetSizeInBytes() const
-    {
-      u32 result = 0;
-      switch (pcformat)
-      {
-      case PC_TEX_FMT_RGBA16_FLOAT:
-        result = ((width + 3) & (~3)) * ((height + 3) & (~3)) * 8;
-        break;
-      case PC_TEX_FMT_RGBA_FLOAT:
-        result = ((width + 3) & (~3)) * ((height + 3) & (~3)) * 16;
-        break;
-        break;
-      case PC_TEX_FMT_DEPTH_FLOAT:
-      case PC_TEX_FMT_R_FLOAT:
-      case PC_TEX_FMT_BGRA32:
-      case PC_TEX_FMT_RGBA32:
-        result = ((width + 3) & (~3)) * ((height + 3) & (~3)) * 4;
-        break;
-      case PC_TEX_FMT_IA4_AS_IA8:
-      case PC_TEX_FMT_IA8:
-      case PC_TEX_FMT_RGB565:
-        result = ((width + 3) & (~3)) * ((height + 3) & (~3)) * 2;
-        break;
-      case PC_TEX_FMT_DXT1:
-        result = ((width + 3) >> 2)*((height + 3) >> 2) * 8;
-        break;
-      case PC_TEX_FMT_DXT3:
-      case PC_TEX_FMT_DXT5:
-        result = ((width + 3) >> 2)*((height + 3) >> 2) * 16;
-        break;
-      default:
-        result = ((width + 3) >> 2)*((height + 3) >> 2);
-        break;
-      }
-      if (levels > 1 || rendertarget)
-      {
-        result += result * 2;
-      }
-      if (materialmap)
-      {
-        result *= 2;
-      }
-      result = std::max(result, 4096u);
-      return result;
-    }
-
-    bool operator == (const TCacheEntryConfig& o) const
-    {
-      return std::tie(width, height, levels, layers, rendertarget, pcformat, materialmap) ==
-        std::tie(o.width, o.height, o.levels, o.layers, o.rendertarget, o.pcformat, o.materialmap);
-    }
-
-    struct Hasher
-    {
-      size_t operator()(const TCacheEntryConfig& c) const
-      {
-        return (u64)c.materialmap << 57	// 1 bit
-          | (u64)c.rendertarget << 56	// 1 bit
-          | (u64)c.pcformat << 48		// 8 bits
-          | (u64)c.layers << 40		// 8 bits 
-          | (u64)c.levels << 32		// 8 bits 
-          | (u64)c.height << 16		// 16 bits 
-          | (u64)c.width;				// 16 bits
-      }
-    };
-
-    u32 width = 0, height = 0, levels = 1, layers = 1;
-    bool rendertarget = false;
-    bool materialmap = false;
-    PC_TexFormat pcformat = PC_TEX_FMT_NONE;
-  };
+public: 
 
   struct TCacheEntryBase
   {
-    TCacheEntryConfig config;
+    TextureConfig config;
 
     // common members
     bool is_efb_copy = false;
@@ -190,7 +116,7 @@ public:
 
     void SetEfbCopy(u32 stride);
 
-    TCacheEntryBase(const TCacheEntryConfig& c) : config(c)
+    TCacheEntryBase(const TextureConfig& c) : config(c)
     {
       native_size_in_bytes = config.GetSizeInBytes();
     }
@@ -247,7 +173,7 @@ public:
 
   virtual PC_TexFormat GetNativeTextureFormat(const s32 texformat,
     const TlutFormat tlutfmt, u32 width, u32 height) = 0;
-  TCacheEntryBase* AllocateTexture(const TCacheEntryConfig& config);
+  TCacheEntryBase* AllocateTexture(const TextureConfig& config);
   void DisposeTexture(TCacheEntryBase* texture);
 
 
@@ -280,11 +206,11 @@ protected:
   size_t temp_size = {};
   std::array<TCacheEntryBase*, 8> bound_textures{};
   TextureCacheBase();
-  virtual TCacheEntryBase* CreateTexture(const TCacheEntryConfig& config) = 0;
+  virtual TCacheEntryBase* CreateTexture(const TextureConfig& config) = 0;
 private:
   typedef std::multimap<u32, TCacheEntryBase*> TexAddrCache;
   typedef std::multimap<u64, TCacheEntryBase*> TexHashCache;
-  typedef std::unordered_multimap<TCacheEntryConfig, TCacheEntryBase*, TCacheEntryConfig::Hasher> TexPool;
+  typedef std::unordered_multimap<TextureConfig, TCacheEntryBase*, TextureConfig::Hasher> TexPool;
   typedef std::unordered_map<std::string, TCacheEntryBase*> HiresTexPool;
 
   void SetBackupConfig(const VideoConfig& config);
@@ -294,7 +220,7 @@ private:
   TCacheEntryBase* ApplyPaletteToEntry(TCacheEntryBase* entry, u32 tlutaddr, u32 tlutfmt, u32 palette_size);
   void DumpTexture(TCacheEntryBase* entry, std::string basename, u32 level);
 
-  TexPool::iterator FindMatchingTextureFromPool(const TCacheEntryConfig& config);
+  TexPool::iterator FindMatchingTextureFromPool(const TextureConfig& config);
   TexAddrCache::iterator GetTexCacheIter(TCacheEntryBase* entry);
   TexAddrCache::iterator InvalidateTexture(TexAddrCache::iterator t_iter);
   TCacheEntryBase* ReturnEntry(u32 stage, TCacheEntryBase* entry);

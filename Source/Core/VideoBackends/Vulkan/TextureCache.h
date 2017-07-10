@@ -22,7 +22,7 @@ class TextureCache : public TextureCacheBase
 public:
 	struct TCacheEntry : TCacheEntryBase
 	{
-		TCacheEntry(const TCacheEntryConfig& config_, std::unique_ptr<Texture2D> texture, std::unique_ptr<Texture2D> nrmtexture,
+		TCacheEntry(const TextureConfig& config_, std::unique_ptr<Texture2D> texture, std::unique_ptr<Texture2D> nrmtexture,
 			VkFramebuffer framebuffer);
 		~TCacheEntry();
 
@@ -70,7 +70,7 @@ public:
 	bool CompileShaders() override;
 	void DeleteShaders() override;
 
-	TCacheEntryBase* CreateTexture(const TCacheEntryConfig& config) override;
+	TCacheEntryBase* CreateTexture(const TextureConfig& config) override;
 
 	void CopyEFB(u8* dst, const EFBCopyFormat& format, u32 native_width, u32 bytes_per_row,
 		u32 num_blocks_y, u32 memory_stride,

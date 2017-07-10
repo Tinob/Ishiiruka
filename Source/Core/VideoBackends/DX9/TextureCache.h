@@ -27,7 +27,7 @@ private:
 
     D3DFORMAT d3d_fmt;
     bool compressed;
-    TCacheEntry(const TCacheEntryConfig& config, LPDIRECT3DTEXTURE9 _tex) : TCacheEntryBase(config), texture(_tex), compressed(false)
+    TCacheEntry(const TextureConfig& config, LPDIRECT3DTEXTURE9 _tex) : TCacheEntryBase(config), texture(_tex), compressed(false)
     {}
     ~TCacheEntry();
 
@@ -57,7 +57,7 @@ private:
 
   PC_TexFormat GetNativeTextureFormat(const s32 texformat, const TlutFormat tlutfmt, u32 width, u32 height) override;
 
-  TCacheEntryBase* CreateTexture(const TCacheEntryConfig& config);
+  TCacheEntryBase* CreateTexture(const TextureConfig& config);
 
   void CopyEFB(u8* dst, const EFBCopyFormat& format, u32 native_width, u32 bytes_per_row,
     u32 num_blocks_y, u32 memory_stride, bool is_depth_copy,

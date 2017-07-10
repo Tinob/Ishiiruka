@@ -221,7 +221,7 @@ bool TextureCacheBase::TCacheEntryBase::OverlapsMemoryRange(u32 range_address, u
 
 TextureCacheBase::TCacheEntryBase* TextureCacheBase::ApplyPaletteToEntry(TCacheEntryBase* entry, u32 tlutaddr, u32 tlutfmt, u32 palette_size)
 {
-  TCacheEntryConfig newconfig;
+  TextureConfig newconfig;
   newconfig.rendertarget = true;
   newconfig.pcformat = PC_TEX_FMT_RGBA32;
   newconfig.width = entry->config.width;
@@ -261,7 +261,7 @@ void TextureCacheBase::ScaleTextureCacheEntryTo(TextureCacheBase::TCacheEntryBas
     return;
   }
 
-  TextureCacheBase::TCacheEntryConfig newconfig;
+  TextureConfig newconfig;
   newconfig.width = new_width;
   newconfig.height = new_height;
   newconfig.layers = (*entry)->config.layers;
@@ -754,7 +754,7 @@ TextureCacheBase::TCacheEntryBase* TextureCacheBase::Load(const u32 stage)
       static_cast<TlutFormat>(tlutfmt)) && !(from_tmem && texformat == GX_TF_RGBA8);
 
   // create the entry/texture
-  TCacheEntryConfig config;
+  TextureConfig config;
   config.width = width;
   config.height = height;
   config.levels = texLevels;
@@ -1363,7 +1363,7 @@ void TextureCacheBase::CopyRenderTargetToTexture(u32 dstAddr, u32 dstFormat, u32
   if (copy_to_vram)
   {
     // create the texture
-    TCacheEntryConfig config;
+    TextureConfig config;
     config.rendertarget = true;
     config.pcformat = PC_TEX_FMT_RGBA32;
     config.width = scaled_tex_w;
@@ -1398,7 +1398,7 @@ void TextureCacheBase::CopyRenderTargetToTexture(u32 dstAddr, u32 dstFormat, u32
   }
 }
 
-TextureCacheBase::TCacheEntryBase* TextureCacheBase::AllocateTexture(const TCacheEntryConfig& config)
+TextureCacheBase::TCacheEntryBase* TextureCacheBase::AllocateTexture(const TextureConfig& config)
 {
   TexPool::iterator iter = FindMatchingTextureFromPool(config);
   TextureCacheBase::TCacheEntryBase* entry;
@@ -1434,7 +1434,7 @@ void TextureCacheBase::DisposeTexture(TCacheEntryBase* entry)
 }
 
 TextureCacheBase::TexPool::iterator
-TextureCacheBase::FindMatchingTextureFromPool(const TCacheEntryConfig& config)
+TextureCacheBase::FindMatchingTextureFromPool(const TextureConfig& config)
 {
   // Find a texture from the pool that does not have a frameCount of FRAMECOUNT_INVALID.
   // This prevents a texture from being used twice in a single frame with different data,

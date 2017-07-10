@@ -192,6 +192,7 @@
     <ClInclude Include="ShaderGenCommon.h" />
     <ClInclude Include="Statistics.h" />
     <ClInclude Include="TextureCacheBase.h" />
+    <ClInclude Include="TextureConfig.h" />
     <ClInclude Include="TextureConversionShader.h" />
     <ClInclude Include="TextureDecoder.h" />
     <ClInclude Include="TextureScalerCommon.h" />

@@ -27,7 +27,7 @@ private:
     bool convertrgb565;
     bool compressed;
 
-    TCacheEntry(const TCacheEntryConfig& config, D3DTexture2D *_tex) : TCacheEntryBase(config),
+    TCacheEntry(const TextureConfig& config, D3DTexture2D *_tex) : TCacheEntryBase(config),
       texture(_tex), nrm_texture(nullptr), swap_rg(false), convertrgb565(false), compressed(false)
     {}
     ~TCacheEntry();
@@ -60,7 +60,7 @@ private:
 
   PC_TexFormat GetNativeTextureFormat(const s32 texformat, const TlutFormat tlutfmt, u32 width, u32 height) override;
 
-  TextureCache::TCacheEntryBase* CreateTexture(const TCacheEntryConfig& config);
+  TextureCache::TCacheEntryBase* CreateTexture(const TextureConfig& config);
 
   void CopyEFB(u8* dst, const EFBCopyFormat& format, u32 native_width, u32 bytes_per_row,
     u32 num_blocks_y, u32 memory_stride, bool is_depth_copy,

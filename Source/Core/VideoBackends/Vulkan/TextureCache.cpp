@@ -238,7 +238,7 @@ void TextureCache::ScaleTextureRectangle(TCacheEntry* dst_texture,
 	draw.EndRenderPass();
 }
 
-TextureCacheBase::TCacheEntryBase* TextureCache::CreateTexture(const TCacheEntryConfig& config)
+TextureCacheBase::TCacheEntryBase* TextureCache::CreateTexture(const TextureConfig& config)
 {
 	static const VkFormat PC_TexFormat_To_VkFormat[]
 	{
@@ -492,7 +492,7 @@ void TextureCache::LoadData(Texture2D* dst, const u8* src, u32 width, u32 height
 }
 
 
-TextureCache::TCacheEntry::TCacheEntry(const TCacheEntryConfig& config_,
+TextureCache::TCacheEntry::TCacheEntry(const TextureConfig& config_,
 	std::unique_ptr<Texture2D> texture,
 	std::unique_ptr<Texture2D> nrmtexture,
 	VkFramebuffer framebuffer)

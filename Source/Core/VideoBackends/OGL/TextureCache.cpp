@@ -138,7 +138,7 @@ TextureCache::TCacheEntry::~TCacheEntry()
   }
 }
 
-TextureCache::TCacheEntry::TCacheEntry(const TCacheEntryConfig& _config)
+TextureCache::TCacheEntry::TCacheEntry(const TextureConfig& _config)
   : TCacheEntryBase(_config)
 {
   glGenTextures(1, &texture);
@@ -286,7 +286,7 @@ void TextureCache::TCacheEntry::SetFormat()
   }
 }
 
-TextureCache::TCacheEntryBase* TextureCache::CreateTexture(const TCacheEntryConfig& config)
+TextureCache::TCacheEntryBase* TextureCache::CreateTexture(const TextureConfig& config)
 {
   TCacheEntry* entry = new TCacheEntry(config);
 

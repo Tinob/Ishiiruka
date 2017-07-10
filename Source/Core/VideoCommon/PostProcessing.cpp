@@ -1058,7 +1058,7 @@ bool PostProcessingShader::CreatePasses()
 
       if (input.type == POST_PROCESSING_INPUT_TYPE_IMAGE)
       {
-        TextureCacheBase::TCacheEntryConfig config;
+        TextureConfig config;
         config.width = input_config.external_image_size.width;
         config.height = input_config.external_image_size.height;
         config.pcformat = PC_TexFormat::PC_TEX_FMT_RGBA32;
@@ -1162,7 +1162,7 @@ bool PostProcessingShader::ResizeOutputTextures(const TargetSize& new_size)
     g_texture_cache->DisposeTexture(m_prev_frame_texture[i].depth_frame);
   }
   m_prev_frame_texture.resize(std::max(frameoutput.color_count, frameoutput.depth_count));
-  TextureCacheBase::TCacheEntryConfig config;
+  TextureConfig config;
   config.width = m_prev_frame_size.width;
   config.height = m_prev_frame_size.height;
 
@@ -1598,7 +1598,7 @@ bool PostProcessor::ResizeCopyBuffers(const TargetSize& size, int layers)
   m_copy_size.Set(0, 0);
   m_copy_layers = 0;
 
-  TextureCacheBase::TCacheEntryConfig config;
+  TextureConfig config;
   config.width = size.width;
   config.height = size.height;
   config.pcformat = PC_TexFormat::PC_TEX_FMT_RGBA32;
@@ -1626,7 +1626,7 @@ bool PostProcessor::ResizeStereoBuffer(const TargetSize& size)
     m_stereo_buffer_texture = nullptr;
   }
   m_stereo_buffer_size.Set(0, 0);
-  TextureCacheBase::TCacheEntryConfig config;
+  TextureConfig config;
   config.width = size.width;
   config.height = size.height;
   config.pcformat = PC_TexFormat::PC_TEX_FMT_RGBA32;

@@ -39,7 +39,7 @@ private:
     //TexMode0 mode; // current filter and clamp modes that texture is set to
     //TexMode1 mode1; // current filter and clamp modes that texture is set to
 
-    TCacheEntry(const TCacheEntryConfig& config);
+    TCacheEntry(const TextureConfig& config);
     ~TCacheEntry();
 
     void CopyRectangleFromTexture(
@@ -71,7 +71,7 @@ private:
 
   PC_TexFormat GetNativeTextureFormat(const s32 texformat, const TlutFormat tlutfmt, u32 width, u32 height) override;
 
-  TCacheEntryBase* CreateTexture(const TCacheEntryConfig& config) override;
+  TCacheEntryBase* CreateTexture(const TextureConfig& config) override;
 
   void CopyEFB(u8* dst, const EFBCopyFormat& format, u32 native_width, u32 bytes_per_row,
     u32 num_blocks_y, u32 memory_stride, bool is_depth_copy,

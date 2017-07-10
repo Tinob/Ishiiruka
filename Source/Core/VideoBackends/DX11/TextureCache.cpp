@@ -238,7 +238,7 @@ PC_TexFormat TextureCache::GetNativeTextureFormat(const s32 texformat, const Tlu
   return pcfmt;
 }
 
-TextureCache::TCacheEntryBase* TextureCache::CreateTexture(const TCacheEntryConfig& config)
+TextureCache::TCacheEntryBase* TextureCache::CreateTexture(const TextureConfig& config)
 {
   static const DXGI_FORMAT PC_TexFormat_To_DXGIFORMAT[]
   {
