@@ -70,6 +70,7 @@ public:
 				result = ((width + 3) >> 2)*((height + 3) >> 2) * 16;
 				break;
 			default:
+				result = ((width + 3) >> 2)*((height + 3) >> 2);
 				break;
 			}
 			if (levels > 1 || rendertarget)
@@ -241,7 +242,7 @@ public:
 	void OnConfigChanged(VideoConfig& config);
 	// Removes textures which aren't used for more than TEXTURE_KILL_THRESHOLD frames,
 	// frameCount is the current frame number.
-	void Cleanup(int frameCount);
+	void Cleanup(s32 frameCount);
 	void Invalidate();
 
 	virtual PC_TexFormat GetNativeTextureFormat(const s32 texformat,
