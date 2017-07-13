@@ -50,6 +50,7 @@ void AudioConfigPane::InitializeGUI()
 
 	m_time_stretching_checkbox = new wxCheckBox(this, wxID_ANY, _("Time Stretching"));
 	m_RS_Hack_checkbox = new wxCheckBox(this, wxID_ANY, _("Rogue Squadron 2/3 Hack"));
+	m_InstantDMA_Hack_checkbox = new wxCheckBox(this, wxID_ANY, _("Resident Evil 2/3 Hack"));
 	m_audio_backend_choice->SetToolTip(
 		_("Changing this will have no effect while the emulator is running."));
 	m_audio_latency_spinctrl->SetToolTip(_("Sets the latency (in ms). Higher values may reduce audio "
@@ -68,6 +69,9 @@ void AudioConfigPane::InitializeGUI()
 	dsp_engine_sizer->AddStretchSpacer();
 	dsp_engine_sizer->AddSpacer(space5);
 	dsp_engine_sizer->Add(m_RS_Hack_checkbox, 0, wxLEFT | wxRIGHT, space5);
+	dsp_engine_sizer->AddStretchSpacer();
+	dsp_engine_sizer->AddSpacer(space5);
+	dsp_engine_sizer->Add(m_InstantDMA_Hack_checkbox, 0, wxLEFT | wxRIGHT, space5);
 	dsp_engine_sizer->AddStretchSpacer();
 	dsp_engine_sizer->AddSpacer(space5);
 
@@ -130,6 +134,7 @@ void AudioConfigPane::LoadGUIValues()
 
 	m_time_stretching_checkbox->SetValue(startup_params.bTimeStretching);
 	m_RS_Hack_checkbox->SetValue(startup_params.bRSHACK);
+	m_InstantDMA_Hack_checkbox->SetValue(startup_params.bInstantDMAHack);
 }
 
 void AudioConfigPane::ToggleBackendSpecificControls(const std::string& backend)
@@ -163,6 +168,9 @@ void AudioConfigPane::BindEvents()
 	m_audio_latency_spinctrl->Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreNotRunning);
 	m_time_stretching_checkbox->Bind(wxEVT_CHECKBOX, &AudioConfigPane::OnTimeStretchingCheckBoxChanged, this);
 	m_RS_Hack_checkbox->Bind(wxEVT_CHECKBOX, &AudioConfigPane::OnRS_Hack_checkboxChanged, this);
+	m_RS_Hack_checkbox->Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreNotRunning);
+	m_InstantDMA_Hack_checkbox->Bind(wxEVT_CHECKBOX, &AudioConfigPane::OnInstantDMA_Hack_checkboxChanged, this);
+	m_InstantDMA_Hack_checkbox->Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreNotRunning);
 }
 
 void AudioConfigPane::OnDSPEngineRadioBoxChanged(wxCommandEvent& event)
@@ -185,6 +193,11 @@ void AudioConfigPane::OnTimeStretchingCheckBoxChanged(wxCommandEvent&)
 void AudioConfigPane::OnRS_Hack_checkboxChanged(wxCommandEvent&)
 {
 	SConfig::GetInstance().bRSHACK = m_RS_Hack_checkbox->IsChecked();
+}
+
+void AudioConfigPane::OnInstantDMA_Hack_checkboxChanged(wxCommandEvent&)
+{
+	SConfig::GetInstance().bInstantDMAHack = m_InstantDMA_Hack_checkbox->IsChecked();
 }
 
 void AudioConfigPane::OnVolumeSliderChanged(wxCommandEvent& event)

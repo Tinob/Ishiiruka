@@ -103,6 +103,7 @@ struct SConfig : NonCopyable
 	bool bDPL2Decoder = false;
 	bool bTimeStretching = false;
 	bool bRSHACK = false;
+	bool bInstantDMAHack = false;
 	int iLatency = 14;
 
 	bool bRunCompareServer = false;

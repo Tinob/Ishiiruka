@@ -77,6 +77,7 @@ private:
 	bool bProgressive;
 	bool bPAL60;
 	bool bRSHACK;
+	bool bInstantDMAHack;
 	int iVideoRate;
 	bool bHalfAudioRate;
 	int iSelectedLanguage;
@@ -123,6 +124,7 @@ void ConfigCache::SaveConfig(const SConfig& config)
 	bHalfAudioRate = config.bHalfAudioRate;
 	bTimeStretching = config.bTimeStretching;
 	bRSHACK = config.bRSHACK;
+	bInstantDMAHack = config.bInstantDMAHack;
 	m_OCEnable = config.m_OCEnable;
 	m_OCFactor = config.m_OCFactor;
 	std::copy(std::begin(g_wiimote_sources), std::end(g_wiimote_sources), std::begin(iWiimoteSource));
@@ -163,6 +165,7 @@ void ConfigCache::RestoreConfig(SConfig* config)
 	config->bHalfAudioRate = bHalfAudioRate;
 	config->bTimeStretching = bTimeStretching;
 	config->bRSHACK = bRSHACK;
+	config->bInstantDMAHack = bInstantDMAHack;
 	config->m_OCEnable = m_OCEnable;
 	config->m_OCFactor = m_OCFactor;
 	// Only change these back if they were actually set by game ini, since they can be changed while a
@@ -260,6 +263,8 @@ bool BootCore(const std::string& _rFilename)
 		core_section->Get("HalfAudioRate", &StartUp.bHalfAudioRate, StartUp.bHalfAudioRate);
 		core_section->Get("TimeStretching", &StartUp.bTimeStretching, StartUp.bTimeStretching);
 		core_section->Get("RSHACK", &StartUp.bRSHACK, StartUp.bRSHACK);
+		core_section->Get("InstantDMAHack", &StartUp.bInstantDMAHack, StartUp.bInstantDMAHack);
+		
 		core_section->Get("SyncGPU", &StartUp.bSyncGPU, StartUp.bSyncGPU);
 		core_section->Get("FastDiscSpeed", &StartUp.bFastDiscSpeed, StartUp.bFastDiscSpeed);
 		core_section->Get("DSPHLE", &StartUp.bDSPHLE, StartUp.bDSPHLE);
