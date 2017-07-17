@@ -177,7 +177,6 @@ void VertexManagerBase::DoFlush()
         if (bpmem.tevind[i].IsActive() && bpmem.tevind[i].bt < bpmem.genMode.numindstages.Value())
           usedtextures |= 1 << bpmem.tevindref.getTexMap(bpmem.tevind[i].bt);
 
-    g_texture_cache->UnbindTextures();
     s32 material_mask = 0;
     s32 emissive_mask = 0;
     for (unsigned int i = 0; i < 8; i++)

@@ -59,13 +59,14 @@ TextureCacheBase::TextureCacheBase()
 
   SetHash64Function();
   texture_pool_memory_usage = 0;
-  UnbindTextures();
+  InvalidateAllBindPoints();
   m_scaler = std::make_unique<TextureScaler>();
 }
 
 void TextureCacheBase::Invalidate()
 {
-  UnbindTextures();
+  InvalidateAllBindPoints();
+  bound_textures.fill(nullptr);
   auto iter = textures_by_address.begin();
   auto end = textures_by_address.end();
   while (iter != end)
@@ -79,7 +80,6 @@ void TextureCacheBase::Invalidate()
 TextureCacheBase::~TextureCacheBase()
 {
   HiresTexture::Shutdown();
-  UnbindTextures();
   Invalidate();
   for (auto& rt : texture_pool)
   {
@@ -157,7 +157,11 @@ void TextureCacheBase::Cleanup(s32 _frameCount)
   auto tcend = textures_by_address.end();
   while (iter != tcend)
   {
-    if (iter->second->frameCount == FRAMECOUNT_INVALID)
+    if (iter->second->tmem_only)
+    {
+      iter = InvalidateTexture(iter);
+    }
+    else if (iter->second->frameCount == FRAMECOUNT_INVALID)
     {
       iter->second->frameCount = _frameCount;
     }
@@ -333,7 +337,7 @@ TextureCacheBase::TCacheEntryBase* TextureCacheBase::DoPartialTextureUpdates(TCa
   {
     TCacheEntryBase* entry = iter.first->second;
     if (entry != entry_to_update
-      && entry->IsEfbCopy()
+      && entry->IsEfbCopy() && !entry->tmem_only
       && entry->references.count(entry_to_update) == 0
       && entry->OverlapsMemoryRange(entry_to_update->addr, entry_to_update->size_in_bytes)
       && entry->memory_stride == numBlocksX * block_size)
@@ -464,24 +468,26 @@ TextureCacheBase::TCacheEntryBase* TextureCacheBase::ReturnEntry(u32 stage, TCac
   bound_textures[stage] = entry;
   s_last_texture = std::max(s_last_texture, stage);
   GFX_DEBUGGER_PAUSE_AT(NEXT_TEXTURE_CHANGE, true);
+  // We need to keep track of invalided textures until they have actually been replaced or re-loaded
+  valid_bind_points.set(stage);
   return entry;
 }
 void TextureCacheBase::BindTextures()
 {
   for (u32 i = 0; i <= s_last_texture; ++i)
   {
-    if (bound_textures[i])
+    if (IsValidBindPoint(static_cast<u32>(i)) && bound_textures[i])
       bound_textures[i]->Bind(i);
   }
-}
-void TextureCacheBase::UnbindTextures()
-{
-  s_last_texture = 0;
-  bound_textures.fill(nullptr);
 }
 
 TextureCacheBase::TCacheEntryBase* TextureCacheBase::Load(const u32 stage)
 {
+  // if this stage was not invalidated by changes to texture registers, keep the current texture
+  if (IsValidBindPoint(stage) && bound_textures[stage])
+  {
+    return ReturnEntry(stage, bound_textures[stage]);
+  }
   const FourTexUnits &tex = bpmem.tex[stage >> 2];
   const u32 id = stage & 3;
   const u32 address = (tex.texImage3[id].image_base/* & 0x1FFFFF*/) << 5;
@@ -603,6 +609,12 @@ TextureCacheBase::TCacheEntryBase* TextureCacheBase::Load(const u32 stage)
   while (iter != iter_range.second)
   {
     TCacheEntryBase* entry = iter->second;
+    // Skip entries that are only left in our texture cache for the tmem cache emulation
+    if (entry->tmem_only)
+    {
+      ++iter;
+      continue;
+    }
     // Do not load strided EFB copies, they are not meant to be used directly
     if (entry->IsEfbCopy() && entry->native_width >= nativeW && entry->native_height >= nativeH &&
       entry->memory_stride == entry->BytesPerRow())
@@ -1468,7 +1480,17 @@ TextureCacheBase::TexAddrCache::iterator TextureCacheBase::InvalidateTexture(Tex
 {
   if (iter == textures_by_address.end())
     return textures_by_address.end();
-
+  for (size_t i = 0; i < bound_textures.size(); ++i)
+  {
+    // If the entry is currently bound and not invalidated, keep it, but mark it as invalidated.
+      // This way it can still be used via tmem cache emulation, but nothing else.
+      // Spyro: A Hero's Tail is known for using such overwritten textures.
+    if (bound_textures[i] == iter->second && IsValidBindPoint(static_cast<u32>(i)))
+    {
+      bound_textures[i]->tmem_only = true;
+      return ++iter;
+    }
+  }
   DisposeTexture(iter->second);
   return textures_by_address.erase(iter);
 }

@@ -5,6 +5,7 @@
 #pragma once
 
 #include <array>
+#include <bitset>
 #include <map>
 #include <memory>
 #include <tuple>
@@ -47,6 +48,7 @@ public:
     bool is_scaled = false;
     bool emissive_in_alpha = false;
     bool may_have_overlapping_textures = false;
+    bool tmem_only = false;  // indicates that this texture only exists in the tmem cache
     u32 addr = {};
     u32 size_in_bytes = {};
     u32 native_size_in_bytes = {};
@@ -168,7 +170,7 @@ public:
   void OnConfigChanged(VideoConfig& config);
   // Removes textures which aren't used for more than TEXTURE_KILL_THRESHOLD frames,
   // frameCount is the current frame number.
-  void Cleanup(int frameCount);
+  void Cleanup(s32 frameCount);
   void Invalidate();
 
   virtual PC_TexFormat GetNativeTextureFormat(const s32 texformat,
@@ -188,7 +190,8 @@ public:
   virtual void LoadLut(u32 lutFmt, void* addr, u32 size) = 0;
 
   TCacheEntryBase* Load(const u32 stage);
-  void UnbindTextures();
+  void InvalidateAllBindPoints() { valid_bind_points.reset(); }
+  bool IsValidBindPoint(u32 i) { return valid_bind_points.test(i); }
   virtual void BindTextures();
   void CopyRenderTargetToTexture(u32 dstAddr, u32 dstFormat, u32 dstStride,
     bool is_depth_copy, const EFBRectangle& srcRect, bool isIntensity, bool scaleByHalf);
@@ -205,6 +208,7 @@ protected:
   alignas(16) u8 *temp = {};
   size_t temp_size = {};
   std::array<TCacheEntryBase*, 8> bound_textures{};
+  std::bitset<8> valid_bind_points;
   TextureCacheBase();
   virtual TCacheEntryBase* CreateTexture(const TextureConfig& config) = 0;
 private:

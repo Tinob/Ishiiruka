@@ -725,7 +725,7 @@ void TextureCache::BindTextures()
 
   for (unsigned int stage = 0; stage < 8; stage++)
   {
-    if (bound_textures[stage] != nullptr)
+    if (IsValidBindPoint(static_cast<u32>(stage)) && bound_textures[stage])
     {
       D3D12_CPU_DESCRIPTOR_HANDLE textureDestDescriptor;
       textureDestDescriptor.ptr =
