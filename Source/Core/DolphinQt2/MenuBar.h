@@ -39,10 +39,15 @@ signals:
   void StateSaveUndo();
   void StateSaveOldest();
   void SetStateSlot(int slot);
+  void BootWiiSystemMenu();
 
   void PerformOnlineUpdate(const std::string& region);
 
   // Options
+  void Configure();
+  void ConfigureGraphics();
+  void ConfigureAudio();
+  void ConfigureControllers();
   void ConfigureHotkeys();
 
   // View
@@ -95,6 +100,7 @@ private:
   QAction* m_fullscreen_action;
   QAction* m_frame_advance_action;
   QAction* m_screenshot_action;
+  QAction* m_boot_sysmenu;
   QMenu* m_state_load_menu;
   QMenu* m_state_save_menu;
   QMenu* m_state_slot_menu;

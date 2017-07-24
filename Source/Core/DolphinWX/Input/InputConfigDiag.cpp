@@ -55,6 +55,7 @@
 #include "DolphinWX/Input/GuitarInputConfigDiag.h"
 #include "DolphinWX/Input/NunchukInputConfigDiag.h"
 #include "DolphinWX/Input/TurntableInputConfigDiag.h"
+#include "DolphinWX/UINeedsControllerState.h"
 #include "DolphinWX/WxUtils.h"
 
 #include "InputCommon/ControlReference/ControlReference.h"
@@ -856,11 +857,9 @@ void InputConfigDialog::LoadProfile(wxCommandEvent&)
   std::string fname;
   InputConfigDialog::GetProfilePath(fname);
 
-  if (!File::Exists(fname))
-    return;
-
   IniFile inifile;
-  inifile.Load(fname);
+  if (!inifile.Load(fname))
+    return;
 
   controller->LoadConfig(inifile.GetOrCreateSection("Profile"));
   controller->UpdateReferences(g_controller_interface);
@@ -916,25 +915,23 @@ void InputConfigDialog::UpdateDeviceComboBox()
 
 void InputConfigDialog::RefreshDevices(wxCommandEvent&)
 {
-  bool was_unpaused = Core::PauseAndLock(true);
+  Core::RunAsCPUThread([&] {
+    // refresh devices
+    g_controller_interface.RefreshDevices();
 
-  // refresh devices
-  g_controller_interface.RefreshDevices();
+    // update all control references
+    UpdateControlReferences();
 
-  // update all control references
-  UpdateControlReferences();
+    // update device cbox
+    UpdateDeviceComboBox();
 
-  // update device cbox
-  UpdateDeviceComboBox();
+    Wiimote::LoadConfig();
+    Keyboard::LoadConfig();
+    Pad::LoadConfig();
+    HotkeyManagerEmu::LoadConfig();
 
-  Wiimote::LoadConfig();
-  Keyboard::LoadConfig();
-  Pad::LoadConfig();
-  HotkeyManagerEmu::LoadConfig();
-
-  UpdateGUI();
-
-  Core::PauseAndLock(false, was_unpaused);
+    UpdateGUI();
+  });
 }
 
 ControlGroupBox::~ControlGroupBox()
@@ -1261,6 +1258,7 @@ InputConfigDialog::InputConfigDialog(wxWindow* const parent, InputConfig& config
 {
   Bind(wxEVT_CLOSE_WINDOW, &InputConfigDialog::OnClose, this);
   Bind(wxEVT_BUTTON, &InputConfigDialog::OnCloseButton, this, wxID_CLOSE);
+  Bind(wxEVT_ACTIVATE, &InputConfigDialog::OnActivate, this);
 
   SetLayoutAdaptationMode(wxDIALOG_ADAPTATION_MODE_ENABLED);
   SetLayoutAdaptationLevel(wxDIALOG_ADAPTATION_STANDARD_SIZER);
@@ -1269,6 +1267,12 @@ InputConfigDialog::InputConfigDialog(wxWindow* const parent, InputConfig& config
   m_update_timer.SetOwner(this);
   Bind(wxEVT_TIMER, &InputConfigDialog::UpdateBitmaps, this);
   m_update_timer.Start(PREVIEW_UPDATE_TIME, wxTIMER_CONTINUOUS);
+}
+
+void InputConfigDialog::OnActivate(wxActivateEvent& event)
+{
+  // Needed for input bitmaps
+  SetUINeedsControllerState(event.GetActive());
 }
 
 InputEventFilter::InputEventFilter()

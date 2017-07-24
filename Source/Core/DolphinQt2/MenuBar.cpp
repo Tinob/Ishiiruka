@@ -86,6 +86,12 @@ void MenuBar::AddToolsMenu()
   QMenu* tools_menu = addMenu(tr("Tools"));
   m_wad_install_action = tools_menu->addAction(tr("Install WAD..."), this, SLOT(InstallWAD()));
 
+  // Label will be set by a NANDRefresh later
+  m_boot_sysmenu = tools_menu->addAction(QStringLiteral(""), [this] { emit BootWiiSystemMenu(); });
+  m_boot_sysmenu->setEnabled(false);
+
+  connect(&Settings::Instance(), &Settings::NANDRefresh, [this] { UpdateToolsMenu(false); });
+
   m_perform_online_update_menu = tools_menu->addMenu(tr("Perform Online System Update"));
   m_perform_online_update_for_current_region = m_perform_online_update_menu->addAction(
       tr("Current Region"), [this] { emit PerformOnlineUpdate(""); });
@@ -173,10 +179,9 @@ void MenuBar::UpdateStateSlotMenu()
   {
     int slot = i + 1;
     QString info = QString::fromStdString(State::GetInfoStringOfSlot(slot));
-    QString action_string = tr(" Slot %1 - %2").arg(slot).arg(info);
-    actions_load.at(i)->setText(tr("Load from") + action_string);
-    actions_save.at(i)->setText(tr("Save to") + action_string);
-    actions_slot.at(i)->setText(tr("Select") + action_string);
+    actions_load.at(i)->setText(tr("Load from Slot %1 - %2").arg(slot).arg(info));
+    actions_save.at(i)->setText(tr("Save to Slot %1 - %2").arg(slot).arg(info));
+    actions_slot.at(i)->setText(tr("Select Slot %1 - %2").arg(slot).arg(info));
   }
 }
 
@@ -191,7 +196,12 @@ void MenuBar::AddViewMenu()
 void MenuBar::AddOptionsMenu()
 {
   QMenu* options_menu = addMenu(tr("Options"));
-  options_menu->addAction(tr("Hotkey Settings"), this, &MenuBar::ConfigureHotkeys);
+  options_menu->addAction(tr("Co&nfiguration..."), this, &MenuBar::Configure);
+  options_menu->addSeparator();
+  options_menu->addAction(tr("&Graphics Settings..."), this, &MenuBar::ConfigureGraphics);
+  options_menu->addAction(tr("&Audio Settings..."), this, &MenuBar::ConfigureAudio);
+  options_menu->addAction(tr("&Controller Settings..."), this, &MenuBar::ConfigureControllers);
+  options_menu->addAction(tr("&Hotkey Settings..."), this, &MenuBar::ConfigureHotkeys);
 }
 
 void MenuBar::AddHelpMenu()
@@ -266,12 +276,22 @@ void MenuBar::AddTableColumnsMenu(QMenu* view_menu)
 
 void MenuBar::UpdateToolsMenu(bool emulation_started)
 {
-  const bool enable_wii_tools = !emulation_started || !SConfig::GetInstance().bWii;
-  m_perform_online_update_menu->setEnabled(enable_wii_tools);
-  if (enable_wii_tools)
+  m_boot_sysmenu->setEnabled(!emulation_started);
+  m_perform_online_update_menu->setEnabled(!emulation_started);
+
+  if (!emulation_started)
   {
     IOS::HLE::Kernel ios;
     const auto tmd = ios.GetES()->FindInstalledTMD(Titles::SYSTEM_MENU);
+
+    const QString sysmenu_version =
+        tmd.IsValid() ?
+            QString::fromStdString(DiscIO::GetSysMenuVersionString(tmd.GetTitleVersion())) :
+            QStringLiteral("");
+    m_boot_sysmenu->setText(tr("Load Wii System Menu %1").arg(sysmenu_version));
+
+    m_boot_sysmenu->setEnabled(tmd.IsValid());
+
     for (QAction* action : m_perform_online_update_menu->actions())
       action->setEnabled(!tmd.IsValid());
     m_perform_online_update_for_current_region->setEnabled(tmd.IsValid());

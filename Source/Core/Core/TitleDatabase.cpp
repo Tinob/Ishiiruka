@@ -51,7 +51,7 @@ using Map = std::unordered_map<std::string, std::string>;
 
 // Note that this function will not overwrite entries that already are in the maps
 static bool LoadMap(const std::string& file_path, Map& map,
-                    std::function<bool(const std::string& game_id)> predicate)
+  std::function<bool(const std::string& game_id)> predicate)
 {
   std::ifstream txt;
   File::OpenFStream(txt, file_path, std::ios::in);
@@ -83,7 +83,7 @@ static bool IsGCTitle(const std::string& game_id)
 {
   const char system_id = game_id[0];
   return game_id.length() == 6 &&
-         (system_id == 'G' || system_id == 'D' || system_id == 'U' || system_id == 'P');
+    (system_id == 'G' || system_id == 'D' || system_id == 'U' || system_id == 'P');
 }
 
 static bool IsWiiTitle(const std::string& game_id)
@@ -94,12 +94,12 @@ static bool IsWiiTitle(const std::string& game_id)
 
 static bool IsJapaneseGCTitle(const std::string& game_id)
 {
-  return IsGCTitle(game_id) && DiscIO::RegionSwitchGC(game_id[3]) == DiscIO::Region::NTSC_J;
+  return IsGCTitle(game_id) && DiscIO::CountrySwitch(game_id[3]) == DiscIO::Country::COUNTRY_JAPAN;
 }
 
 static bool IsNonJapaneseGCTitle(const std::string& game_id)
 {
-  return IsGCTitle(game_id) && DiscIO::RegionSwitchGC(game_id[3]) != DiscIO::Region::NTSC_J;
+  return IsGCTitle(game_id) && DiscIO::CountrySwitch(game_id[3]) != DiscIO::Country::COUNTRY_JAPAN;
 }
 
 // Note that this function will not overwrite entries that already are in the maps
@@ -124,6 +124,9 @@ TitleDatabase::TitleDatabase()
   if (!LoadMap(load_directory + "wiitdb.txt", m_gc_title_map, m_wii_title_map))
     LoadMap(load_directory + "titles.txt", m_gc_title_map, m_wii_title_map);
 
+  if (!SConfig::GetInstance().m_use_builtin_title_database)
+    return;
+
   // Load the database in the console language.
   // Note: The GameCube language setting can't be set to Japanese,
   // so instead, we use Japanese names iff the games are NTSC-J.
@@ -133,7 +136,7 @@ TitleDatabase::TitleDatabase()
   if (gc_code != "en")
   {
     LoadMap(File::GetSysDirectory() + "wiitdb-" + gc_code + ".txt", m_gc_title_map,
-            IsNonJapaneseGCTitle);
+      IsNonJapaneseGCTitle);
   }
   if (wii_code != "en")
     LoadMap(File::GetSysDirectory() + "wiitdb-" + wii_code + ".txt", m_wii_title_map, IsWiiTitle);
@@ -147,7 +150,7 @@ TitleDatabase::TitleDatabase()
   // i18n: "Wii Menu" (or System Menu) refers to the Wii's main menu,
   // which is (usually) the first thing users see when a Wii console starts.
   m_wii_title_map.emplace("0000000100000002", GetStringT("Wii Menu"));
-  for (const auto& id : {"HAXX", "JODI", "00010001af1bf516", "LULZ", "OHBC"})
+  for (const auto& id : { "HAXX", "JODI", "00010001af1bf516", "LULZ", "OHBC" })
     m_wii_title_map.emplace(id, "The Homebrew Channel");
 }
 
@@ -157,7 +160,7 @@ std::string TitleDatabase::GetTitleName(const std::string& game_id, TitleType ty
 {
   const auto& map = IsWiiTitle(game_id) ? m_wii_title_map : m_gc_title_map;
   const std::string key =
-      type == TitleType::Channel && game_id.length() == 6 ? game_id.substr(0, 4) : game_id;
+    type == TitleType::Channel && game_id.length() == 6 ? game_id.substr(0, 4) : game_id;
   const auto iterator = map.find(key);
   return iterator != map.end() ? iterator->second : "";
 }

@@ -102,7 +102,6 @@ static StoppedCallbackFunc s_on_stopped_callback;
 
 static std::thread s_cpu_thread;
 static bool s_request_refresh_info = false;
-static int s_pause_and_lock_depth = 0;
 static bool s_is_throttler_temp_disabled = false;
 
 struct HostJob
@@ -242,8 +241,8 @@ bool Init(std::unique_ptr<BootParameters> boot)
 
   Core::UpdateWantDeterminism(/*initial*/ true);
 
-  INFO_LOG(OSREPORT, "Starting core = %s mode", SConfig::GetInstance().bWii ? "Wii" : "GameCube");
-  INFO_LOG(OSREPORT, "CPU Thread separate = %s", SConfig::GetInstance().bCPUThread ? "Yes" : "No");
+  INFO_LOG(BOOT, "Starting core = %s mode", SConfig::GetInstance().bWii ? "Wii" : "GameCube");
+  INFO_LOG(BOOT, "CPU Thread separate = %s", SConfig::GetInstance().bCPUThread ? "Yes" : "No");
 
   Host_UpdateMainFrame();  // Disable any menus or buttons at boot
 
@@ -761,15 +760,10 @@ void RequestRefreshInfo()
   s_request_refresh_info = true;
 }
 
-bool PauseAndLock(bool do_lock, bool unpause_on_unlock)
+static bool PauseAndLock(bool do_lock, bool unpause_on_unlock)
 {
   // WARNING: PauseAndLock is not fully threadsafe so is only valid on the Host Thread
   if (!IsRunning())
-    return true;
-
-  // let's support recursive locking to simplify things on the caller's side,
-  // and let's do it at this outer level in case the individual systems don't support it.
-  if (do_lock ? s_pause_and_lock_depth++ : --s_pause_and_lock_depth)
     return true;
 
   bool was_unpaused = true;
@@ -806,6 +800,19 @@ bool PauseAndLock(bool do_lock, bool unpause_on_unlock)
   }
 
   return was_unpaused;
+}
+
+void RunAsCPUThread(std::function<void()> function)
+{
+  const bool is_cpu_thread = IsCPUThread();
+  bool was_unpaused = false;
+  if (!is_cpu_thread)
+    was_unpaused = PauseAndLock(true, true);
+
+  function();
+
+  if (!is_cpu_thread)
+    PauseAndLock(false, was_unpaused);
 }
 
 // Display FPS info
@@ -961,22 +968,20 @@ void UpdateWantDeterminism(bool initial)
   {
     NOTICE_LOG(COMMON, "Want determinism <- %s", new_want_determinism ? "true" : "false");
 
-    bool was_unpaused = Core::PauseAndLock(true);
+    RunAsCPUThread([&] {
+      s_wants_determinism = new_want_determinism;
+      const auto ios = IOS::HLE::GetIOS();
+      if (ios)
+        ios->UpdateWantDeterminism(new_want_determinism);
+      Fifo::UpdateWantDeterminism(new_want_determinism);
+      // We need to clear the cache because some parts of the JIT depend on want_determinism,
+      // e.g. use of FMA.
+      JitInterface::ClearCache();
 
-    s_wants_determinism = new_want_determinism;
-    const auto ios = IOS::HLE::GetIOS();
-    if (ios)
-      ios->UpdateWantDeterminism(new_want_determinism);
-    Fifo::UpdateWantDeterminism(new_want_determinism);
-    // We need to clear the cache because some parts of the JIT depend on want_determinism, e.g. use
-    // of FMA.
-    JitInterface::ClearCache();
-
-    // Don't call InitializeWiiRoot during boot, because IOS already does it.
-    if (!initial)
-      Core::InitializeWiiRoot(s_wants_determinism);
-
-    Core::PauseAndLock(false, was_unpaused);
+      // Don't call InitializeWiiRoot during boot, because IOS already does it.
+      if (!initial)
+        Core::InitializeWiiRoot(s_wants_determinism);
+    });
   }
 }
 

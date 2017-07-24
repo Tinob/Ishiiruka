@@ -14,10 +14,12 @@
 #include <QMenu>
 #include <QMessageBox>
 #include <QProgressDialog>
+#include <QSettings>
 #include <QUrl>
 
 #include "Common/FileUtil.h"
 #include "Core/ConfigManager.h"
+#include "Core/Core.h"
 #include "DiscIO/Blob.h"
 #include "DiscIO/Enums.h"
 
@@ -85,6 +87,15 @@ void GameList::MakeTableView()
   m_table->setColumnHidden(GameListModel::COL_RATING, !SConfig::GetInstance().m_showStateColumn);
 
   QHeaderView* hor_header = m_table->horizontalHeader();
+
+  connect(hor_header, &QHeaderView::sortIndicatorChanged, this, &GameList::OnHeaderViewChanged);
+  connect(hor_header, &QHeaderView::sectionResized, this, &GameList::OnHeaderViewChanged);
+  connect(hor_header, &QHeaderView::sectionCountChanged, this, &GameList::OnHeaderViewChanged);
+  connect(hor_header, &QHeaderView::sectionMoved, this, &GameList::OnHeaderViewChanged);
+
+  hor_header->setSectionsMovable(true);
+  hor_header->restoreState(QSettings().value(QStringLiteral("tableheader/state")).toByteArray());
+
   hor_header->setSectionResizeMode(GameListModel::COL_PLATFORM, QHeaderView::ResizeToContents);
   hor_header->setSectionResizeMode(GameListModel::COL_COUNTRY, QHeaderView::ResizeToContents);
   hor_header->setSectionResizeMode(GameListModel::COL_ID, QHeaderView::ResizeToContents);
@@ -154,10 +165,24 @@ void GameList::ShowContextMenu(const QPoint&)
   }
   if (platform == DiscIO::Platform::WII_WAD)
   {
-    menu->addAction(tr("Install to the NAND"), this, SLOT(InstallWAD()));
+    QAction* wad_install_action = new QAction(tr("Install to the NAND"), menu);
+    QAction* wad_uninstall_action = new QAction(tr("Uninstall from the NAND"), menu);
 
-    if (GameFile(game).IsInstalled())
-      menu->addAction(tr("Uninstall from the NAND"), this, SLOT(UninstallWAD()));
+    connect(wad_install_action, &QAction::triggered, this, &GameList::InstallWAD);
+    connect(wad_uninstall_action, &QAction::triggered, this, &GameList::UninstallWAD);
+
+    for (QAction* a : {wad_install_action, wad_uninstall_action})
+    {
+      connect(this, &GameList::EmulationStarted, a, [a] { a->setEnabled(false); });
+      a->setEnabled(!Core::IsRunning());
+      menu->addAction(a);
+    }
+
+    connect(this, &GameList::EmulationStopped, wad_install_action,
+            [wad_install_action] { wad_install_action->setEnabled(true); });
+    connect(this, &GameList::EmulationStopped, wad_uninstall_action, [wad_uninstall_action, game] {
+      wad_uninstall_action->setEnabled(GameFile(game).IsInstalled());
+    });
 
     menu->addSeparator();
   }
@@ -429,4 +454,10 @@ static bool CompressCB(const std::string& text, float percent, void* ptr)
 
   progress_dialog->setValue(percent * 100);
   return !progress_dialog->wasCanceled();
+}
+
+void GameList::OnHeaderViewChanged()
+{
+  QSettings().setValue(QStringLiteral("tableheader/state"),
+                       m_table->horizontalHeader()->saveState());
 }

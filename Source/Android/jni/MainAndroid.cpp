@@ -125,7 +125,7 @@ void Host_SetStartupDebuggingParameters()
 {
 }
 
-bool Host_UIHasFocus()
+bool Host_UINeedsControllerState()
 {
   return true;
 }
@@ -141,10 +141,6 @@ bool Host_RendererIsFullscreen()
 }
 
 void Host_ConnectWiimote(int wm_idx, bool connect)
-{
-}
-
-void Host_SetWiiMoteConnectionState(int _State)
 {
 }
 

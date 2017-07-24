@@ -128,11 +128,11 @@ wxString GetCountryName(DiscIO::Country country)
 }
 
 int FindPreferredLanguageIndex(DiscIO::Language preferred_language,
-  const std::vector<DiscIO::Language>& languages)
+                               const std::vector<DiscIO::Language>& languages)
 {
   const auto iter =
-    std::find_if(languages.begin(), languages.end(),
-      [preferred_language](auto language) { return language == preferred_language; });
+      std::find_if(languages.begin(), languages.end(),
+                   [preferred_language](auto language) { return language == preferred_language; });
 
   if (iter == languages.end())
     return 0;
@@ -142,8 +142,8 @@ int FindPreferredLanguageIndex(DiscIO::Language preferred_language,
 }  // Anonymous namespace
 
 InfoPanel::InfoPanel(wxWindow* parent, wxWindowID id, const GameListItem& item,
-  const std::unique_ptr<DiscIO::Volume>& opened_iso)
-  : wxPanel{ parent, id }, m_game_list_item{ item }, m_opened_iso{ opened_iso }
+                     const std::unique_ptr<DiscIO::Volume>& opened_iso)
+    : wxPanel{parent, id}, m_game_list_item{item}, m_opened_iso{opened_iso}
 {
   CreateGUI();
   BindEvents();
@@ -220,14 +220,14 @@ void InfoPanel::LoadBannerImage()
 
 wxStaticBoxSizer* InfoPanel::CreateISODetailsSizer()
 {
-  std::vector<std::pair<wxString, wxTextCtrl*&>> controls = { {
-    { _("Internal Name:"), m_internal_name },
-    { _("Game ID:"), m_game_id },
-    { _("Country:"), m_country },
-    { _("Maker ID:"), m_maker_id },
-    { _("Revision:"), m_revision },
-    { _("Apploader Date:"), m_date },
-    } };
+  std::vector<std::pair<wxString, wxTextCtrl*&>> controls = {{
+      {_("Internal Name:"), m_internal_name},
+      {_("Game ID:"), m_game_id},
+      {_("Country:"), m_country},
+      {_("Maker ID:"), m_maker_id},
+      {_("Revision:"), m_revision},
+      {_("Apploader Date:"), m_date},
+  }};
   if (m_opened_iso->GetTMD(m_opened_iso->GetGamePartition()).IsValid())
     controls.emplace_back(_("IOS Version:"), m_ios_version);
 
@@ -239,14 +239,14 @@ wxStaticBoxSizer* InfoPanel::CreateISODetailsSizer()
     auto* const text = new wxStaticText(this, wxID_ANY, control.first);
     iso_details->Add(text, wxGBPosition(row, 0), wxGBSpan(1, 1), wxALIGN_CENTER_VERTICAL);
     control.second = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize,
-      wxTE_READONLY);
+                                    wxTE_READONLY);
     iso_details->Add(control.second, wxGBPosition(row, 1), wxGBSpan(1, 2), wxEXPAND);
     ++row;
   }
 
   auto* const md5_sum_text = new wxStaticText(this, wxID_ANY, _("MD5 Checksum:"));
   m_md5_sum = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize,
-    wxTE_READONLY);
+                             wxTE_READONLY);
   m_md5_sum_compute = new wxButton(this, wxID_ANY, _("Compute"));
 
   iso_details->Add(md5_sum_text, wxGBPosition(row, 0), wxGBSpan(1, 1), wxALIGN_CENTER_VERTICAL);
@@ -269,16 +269,16 @@ wxStaticBoxSizer* InfoPanel::CreateBannerDetailsSizer()
 {
   auto* const name_text = new wxStaticText(this, wxID_ANY, _("Name:"));
   m_name = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize,
-    wxTE_READONLY);
+                          wxTE_READONLY);
   auto* const maker_text = new wxStaticText(this, wxID_ANY, _("Maker:"));
   m_maker = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize,
-    wxTE_READONLY);
+                           wxTE_READONLY);
   auto* const comment_text = new wxStaticText(this, wxID_ANY, _("Description:"));
   m_comment = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize,
-    wxTE_MULTILINE | wxTE_READONLY);
+                             wxTE_MULTILINE | wxTE_READONLY);
   auto* const banner_text = new wxStaticText(this, wxID_ANY, _("Banner:"));
   m_banner =
-    new wxStaticBitmap(this, wxID_ANY, wxNullBitmap, wxDefaultPosition, FromDIP(wxSize(96, 32)));
+      new wxStaticBitmap(this, wxID_ANY, wxNullBitmap, wxDefaultPosition, FromDIP(wxSize(96, 32)));
 
   auto* const languages_text = new wxStaticText(this, wxID_ANY, _("Show Language:"));
   m_languages = CreateCommentLanguageChoice();
@@ -288,7 +288,7 @@ wxStaticBoxSizer* InfoPanel::CreateBannerDetailsSizer()
   banner_details->Add(languages_text, wxGBPosition(0, 0), wxGBSpan(1, 1), wxALIGN_CENTER_VERTICAL);
   // Comboboxes cannot be safely stretched vertically on Windows.
   banner_details->Add(WxUtils::GiveMinSize(m_languages, wxDefaultSize), wxGBPosition(0, 1),
-    wxGBSpan(1, 1), wxEXPAND);
+                      wxGBSpan(1, 1), wxEXPAND);
   banner_details->Add(name_text, wxGBPosition(1, 0), wxGBSpan(1, 1), wxALIGN_CENTER_VERTICAL);
   banner_details->Add(m_name, wxGBPosition(1, 1), wxGBSpan(1, 1), wxEXPAND);
   banner_details->Add(maker_text, wxGBPosition(2, 0), wxGBSpan(1, 1), wxALIGN_CENTER_VERTICAL);
@@ -328,9 +328,9 @@ wxChoice* InfoPanel::CreateCommentLanguageChoice()
 void InfoPanel::OnComputeMD5(wxCommandEvent& WXUNUSED(event))
 {
   wxProgressDialog progress_dialog(_("Computing MD5 checksum"), _("Working..."), 100, this,
-    wxPD_APP_MODAL | wxPD_AUTO_HIDE | wxPD_CAN_ABORT |
-    wxPD_ELAPSED_TIME | wxPD_ESTIMATED_TIME |
-    wxPD_REMAINING_TIME | wxPD_SMOOTH);
+                                   wxPD_APP_MODAL | wxPD_AUTO_HIDE | wxPD_CAN_ABORT |
+                                       wxPD_ELAPSED_TIME | wxPD_ESTIMATED_TIME |
+                                       wxPD_REMAINING_TIME | wxPD_SMOOTH);
 
   const auto result = MD5::MD5Sum(m_game_list_item.GetFileName(), [&progress_dialog](int progress) {
     return progress_dialog.Update(progress);
@@ -357,8 +357,8 @@ void InfoPanel::OnRightClickBanner(wxMouseEvent& WXUNUSED(event))
 void InfoPanel::OnSaveBannerImage(wxCommandEvent& WXUNUSED(event))
 {
   wxFileDialog dialog(this, _("Save as..."), wxGetHomeDir(),
-    wxString::Format("%s.png", m_game_id->GetValue()), wxALL_FILES_PATTERN,
-    wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+                      wxString::Format("%s.png", m_game_id->GetValue()), wxALL_FILES_PATTERN,
+                      wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
 
   if (dialog.ShowModal() == wxID_OK)
   {
@@ -387,7 +387,7 @@ void InfoPanel::ChangeBannerDetails(DiscIO::Language language)
 
   const auto game_id = m_game_list_item.GetGameID();
   const auto new_title = wxString::Format("%s%s: %s - %s", StrToWxStr(filename),
-    StrToWxStr(extension), StrToWxStr(game_id), name);
+                                          StrToWxStr(extension), StrToWxStr(game_id), name);
 
   EmitTitleChangeEvent(new_title);
 }

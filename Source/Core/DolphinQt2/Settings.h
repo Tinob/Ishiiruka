@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <QSettings>
+#include <QObject>
 #include <QVector>
 
 #include "Common/NonCopyable.h"
@@ -60,8 +60,8 @@ signals:
   void PathRemoved(const QString&);
   void HideCursorChanged();
   void VolumeChanged(int volume);
+  void NANDRefresh();
 
 private:
   Settings();
-  QSettings m_native_settings;
 };

@@ -73,23 +73,23 @@ static Common::Event g_compressAndDumpStateSyncEvent;
 static std::thread g_save_thread;
 
 // Don't forget to increase this after doing changes on the savestate system
-static const u32 STATE_VERSION = 87;  // Last changed in PR 5707
+static const u32 STATE_VERSION = 88;  // Last changed in PR 5733
 
-// Maps savestate versions to Dolphin versions.
-// Versions after 42 don't need to be added to this list,
-// because they save the exact Dolphin version to savestates.
+                                      // Maps savestate versions to Dolphin versions.
+                                      // Versions after 42 don't need to be added to this list,
+                                      // because they save the exact Dolphin version to savestates.
 static const std::map<u32, std::pair<std::string, std::string>> s_old_versions = {
-    // The 16 -> 17 change modified the size of StateHeader,
-    // so versions older than that can't even be decompressed anymore
-    {17, {"3.5-1311", "3.5-1364"}}, {18, {"3.5-1366", "3.5-1371"}}, {19, {"3.5-1372", "3.5-1408"}},
-    {20, {"3.5-1409", "4.0-704"}},  {21, {"4.0-705", "4.0-889"}},   {22, {"4.0-905", "4.0-1871"}},
-    {23, {"4.0-1873", "4.0-1900"}}, {24, {"4.0-1902", "4.0-1919"}}, {25, {"4.0-1921", "4.0-1936"}},
-    {26, {"4.0-1939", "4.0-1959"}}, {27, {"4.0-1961", "4.0-2018"}}, {28, {"4.0-2020", "4.0-2291"}},
-    {29, {"4.0-2293", "4.0-2360"}}, {30, {"4.0-2362", "4.0-2628"}}, {31, {"4.0-2632", "4.0-3331"}},
-    {32, {"4.0-3334", "4.0-3340"}}, {33, {"4.0-3342", "4.0-3373"}}, {34, {"4.0-3376", "4.0-3402"}},
-    {35, {"4.0-3409", "4.0-3603"}}, {36, {"4.0-3610", "4.0-4480"}}, {37, {"4.0-4484", "4.0-4943"}},
-    {38, {"4.0-4963", "4.0-5267"}}, {39, {"4.0-5279", "4.0-5525"}}, {40, {"4.0-5531", "4.0-5809"}},
-    {41, {"4.0-5811", "4.0-5923"}}, {42, {"4.0-5925", "4.0-5946"}}};
+  // The 16 -> 17 change modified the size of StateHeader,
+  // so versions older than that can't even be decompressed anymore
+  { 17,{ "3.5-1311", "3.5-1364" } },{ 18,{ "3.5-1366", "3.5-1371" } },{ 19,{ "3.5-1372", "3.5-1408" } },
+  { 20,{ "3.5-1409", "4.0-704" } },{ 21,{ "4.0-705", "4.0-889" } },{ 22,{ "4.0-905", "4.0-1871" } },
+  { 23,{ "4.0-1873", "4.0-1900" } },{ 24,{ "4.0-1902", "4.0-1919" } },{ 25,{ "4.0-1921", "4.0-1936" } },
+  { 26,{ "4.0-1939", "4.0-1959" } },{ 27,{ "4.0-1961", "4.0-2018" } },{ 28,{ "4.0-2020", "4.0-2291" } },
+  { 29,{ "4.0-2293", "4.0-2360" } },{ 30,{ "4.0-2362", "4.0-2628" } },{ 31,{ "4.0-2632", "4.0-3331" } },
+  { 32,{ "4.0-3334", "4.0-3340" } },{ 33,{ "4.0-3342", "4.0-3373" } },{ 34,{ "4.0-3376", "4.0-3402" } },
+  { 35,{ "4.0-3409", "4.0-3603" } },{ 36,{ "4.0-3610", "4.0-4480" } },{ 37,{ "4.0-4484", "4.0-4943" } },
+  { 38,{ "4.0-4963", "4.0-5267" } },{ 39,{ "4.0-5279", "4.0-5525" } },{ 40,{ "4.0-5531", "4.0-5809" } },
+  { 41,{ "4.0-5811", "4.0-5923" } },{ 42,{ "4.0-5925", "4.0-5946" } } };
 
 enum
 {
@@ -164,8 +164,8 @@ static std::string DoState(PointerWrap& p)
   if (is_wii != is_wii_currently)
   {
     OSD::AddMessage(StringFromFormat("Cannot load a savestate created under %s mode in %s mode",
-                                     is_wii ? "Wii" : "GC", is_wii_currently ? "Wii" : "GC"),
-                    OSD::Duration::NORMAL, OSD::Color::RED);
+      is_wii ? "Wii" : "GC", is_wii_currently ? "Wii" : "GC"),
+      OSD::Duration::NORMAL, OSD::Color::RED);
     p.SetMode(PointerWrap::MODE_MEASURE);
     return version_created_by;
   }
@@ -207,42 +207,36 @@ void LoadFromBuffer(std::vector<u8>& buffer)
     return;
   }
 
-  bool wasUnpaused = Core::PauseAndLock(true);
-
-  u8* ptr = &buffer[0];
-  PointerWrap p(&ptr, PointerWrap::MODE_READ);
-  DoState(p);
-
-  Core::PauseAndLock(false, wasUnpaused);
+  Core::RunAsCPUThread([&] {
+    u8* ptr = &buffer[0];
+    PointerWrap p(&ptr, PointerWrap::MODE_READ);
+    DoState(p);
+  });
 }
 
 void SaveToBuffer(std::vector<u8>& buffer)
 {
-  bool wasUnpaused = Core::PauseAndLock(true);
+  Core::RunAsCPUThread([&] {
+    u8* ptr = nullptr;
+    PointerWrap p(&ptr, PointerWrap::MODE_MEASURE);
 
-  u8* ptr = nullptr;
-  PointerWrap p(&ptr, PointerWrap::MODE_MEASURE);
+    DoState(p);
+    const size_t buffer_size = reinterpret_cast<size_t>(ptr);
+    buffer.resize(buffer_size);
 
-  DoState(p);
-  const size_t buffer_size = reinterpret_cast<size_t>(ptr);
-  buffer.resize(buffer_size);
-
-  ptr = &buffer[0];
-  p.SetMode(PointerWrap::MODE_WRITE);
-  DoState(p);
-
-  Core::PauseAndLock(false, wasUnpaused);
+    ptr = &buffer[0];
+    p.SetMode(PointerWrap::MODE_WRITE);
+    DoState(p);
+  });
 }
 
 void VerifyBuffer(std::vector<u8>& buffer)
 {
-  bool wasUnpaused = Core::PauseAndLock(true);
-
-  u8* ptr = &buffer[0];
-  PointerWrap p(&ptr, PointerWrap::MODE_VERIFY);
-  DoState(p);
-
-  Core::PauseAndLock(false, wasUnpaused);
+  Core::RunAsCPUThread([&] {
+    u8* ptr = &buffer[0];
+    PointerWrap p(&ptr, PointerWrap::MODE_VERIFY);
+    DoState(p);
+  });
 }
 
 // return state number not in map
@@ -399,48 +393,44 @@ static void CompressAndDumpState(CompressAndDumpState_args save_args)
 
 void SaveAs(const std::string& filename, bool wait)
 {
-  // Pause the core while we save the state
-  bool wasUnpaused = Core::PauseAndLock(true);
-
-  // Measure the size of the buffer.
-  u8* ptr = nullptr;
-  PointerWrap p(&ptr, PointerWrap::MODE_MEASURE);
-  DoState(p);
-  const size_t buffer_size = reinterpret_cast<size_t>(ptr);
-
-  // Then actually do the write.
-  {
-    std::lock_guard<std::mutex> lk(g_cs_current_buffer);
-    g_current_buffer.resize(buffer_size);
-    ptr = &g_current_buffer[0];
-    p.SetMode(PointerWrap::MODE_WRITE);
+  Core::RunAsCPUThread([&] {
+    // Measure the size of the buffer.
+    u8* ptr = nullptr;
+    PointerWrap p(&ptr, PointerWrap::MODE_MEASURE);
     DoState(p);
-  }
+    const size_t buffer_size = reinterpret_cast<size_t>(ptr);
 
-  if (p.GetMode() == PointerWrap::MODE_WRITE)
-  {
-    Core::DisplayMessage("Saving State...", 1000);
+    // Then actually do the write.
+    {
+      std::lock_guard<std::mutex> lk(g_cs_current_buffer);
+      g_current_buffer.resize(buffer_size);
+      ptr = &g_current_buffer[0];
+      p.SetMode(PointerWrap::MODE_WRITE);
+      DoState(p);
+    }
 
-    CompressAndDumpState_args save_args;
-    save_args.buffer_vector = &g_current_buffer;
-    save_args.buffer_mutex = &g_cs_current_buffer;
-    save_args.filename = filename;
-    save_args.wait = wait;
+    if (p.GetMode() == PointerWrap::MODE_WRITE)
+    {
+      Core::DisplayMessage("Saving State...", 1000);
 
-    Flush();
-    g_save_thread = std::thread(CompressAndDumpState, save_args);
-    g_compressAndDumpStateSyncEvent.Wait();
+      CompressAndDumpState_args save_args;
+      save_args.buffer_vector = &g_current_buffer;
+      save_args.buffer_mutex = &g_cs_current_buffer;
+      save_args.filename = filename;
+      save_args.wait = wait;
 
-    g_last_filename = filename;
-  }
-  else
-  {
-    // someone aborted the save by changing the mode?
-    Core::DisplayMessage("Unable to save: Internal DoState Error", 4000);
-  }
+      Flush();
+      g_save_thread = std::thread(CompressAndDumpState, save_args);
+      g_compressAndDumpStateSyncEvent.Wait();
 
-  // Resume the core and disable stepping
-  Core::PauseAndLock(false, wasUnpaused);
+      g_last_filename = filename;
+    }
+    else
+    {
+      // someone aborted the save by changing the mode?
+      Core::DisplayMessage("Unable to save: Internal DoState Error", 4000);
+    }
+  });
 }
 
 bool ReadHeader(const std::string& filename, StateHeader& header)
@@ -486,7 +476,7 @@ static void LoadFileStateData(const std::string& filename, std::vector<u8>& ret_
   if (strncmp(SConfig::GetInstance().GetGameID().c_str(), header.gameID, 6))
   {
     Core::DisplayMessage(
-        StringFromFormat("State belongs to a different game (ID %.*s)", 6, header.gameID), 2000);
+      StringFromFormat("State belongs to a different game (ID %.*s)", 6, header.gameID), 2000);
     return;
   }
 
@@ -513,8 +503,8 @@ static void LoadFileStateData(const std::string& filename, std::vector<u8>& ret_
       {
         // This doesn't seem to happen anymore.
         PanicAlertT("Internal LZO Error - decompression failed (%d) (%li, %li) \n"
-                    "Try loading the state again",
-                    res, i, new_len);
+          "Try loading the state again",
+          res, i, new_len);
         return;
       }
 
@@ -549,72 +539,68 @@ void LoadAs(const std::string& filename)
     return;
   }
 
-  // Stop the core while we load the state
-  bool wasUnpaused = Core::PauseAndLock(true);
+  Core::RunAsCPUThread([&] {
+    g_loadDepth++;
 
-  g_loadDepth++;
-
-  // Save temp buffer for undo load state
-  if (!Movie::IsJustStartingRecordingInputFromSaveState())
-  {
-    std::lock_guard<std::mutex> lk(g_cs_undo_load_buffer);
-    SaveToBuffer(g_undo_load_buffer);
-    if (Movie::IsMovieActive())
-      Movie::SaveRecording(File::GetUserPath(D_STATESAVES_IDX) + "undo.dtm");
-    else if (File::Exists(File::GetUserPath(D_STATESAVES_IDX) + "undo.dtm"))
-      File::Delete(File::GetUserPath(D_STATESAVES_IDX) + "undo.dtm");
-  }
-
-  bool loaded = false;
-  bool loadedSuccessfully = false;
-  std::string version_created_by;
-
-  // brackets here are so buffer gets freed ASAP
-  {
-    std::vector<u8> buffer;
-    LoadFileStateData(filename, buffer);
-
-    if (!buffer.empty())
+    // Save temp buffer for undo load state
+    if (!Movie::IsJustStartingRecordingInputFromSaveState())
     {
-      u8* ptr = &buffer[0];
-      PointerWrap p(&ptr, PointerWrap::MODE_READ);
-      version_created_by = DoState(p);
-      loaded = true;
-      loadedSuccessfully = (p.GetMode() == PointerWrap::MODE_READ);
+      std::lock_guard<std::mutex> lk(g_cs_undo_load_buffer);
+      SaveToBuffer(g_undo_load_buffer);
+      if (Movie::IsMovieActive())
+        Movie::SaveRecording(File::GetUserPath(D_STATESAVES_IDX) + "undo.dtm");
+      else if (File::Exists(File::GetUserPath(D_STATESAVES_IDX) + "undo.dtm"))
+        File::Delete(File::GetUserPath(D_STATESAVES_IDX) + "undo.dtm");
     }
-  }
 
-  if (loaded)
-  {
-    if (loadedSuccessfully)
+    bool loaded = false;
+    bool loadedSuccessfully = false;
+    std::string version_created_by;
+
+    // brackets here are so buffer gets freed ASAP
     {
-      Core::DisplayMessage(StringFromFormat("Loaded state from %s", filename.c_str()), 2000);
-      if (File::Exists(filename + ".dtm"))
-        Movie::LoadInput(filename + ".dtm");
-      else if (!Movie::IsJustStartingRecordingInputFromSaveState() &&
-               !Movie::IsJustStartingPlayingInputFromSaveState())
-        Movie::EndPlayInput(false);
+      std::vector<u8> buffer;
+      LoadFileStateData(filename, buffer);
+
+      if (!buffer.empty())
+      {
+        u8* ptr = &buffer[0];
+        PointerWrap p(&ptr, PointerWrap::MODE_READ);
+        version_created_by = DoState(p);
+        loaded = true;
+        loadedSuccessfully = (p.GetMode() == PointerWrap::MODE_READ);
+      }
     }
-    else
+
+    if (loaded)
     {
-      // failed to load
-      Core::DisplayMessage("Unable to load: Can't load state from other versions!", 4000);
-      if (!version_created_by.empty())
-        Core::DisplayMessage("The savestate was created using " + version_created_by, 4000);
+      if (loadedSuccessfully)
+      {
+        Core::DisplayMessage(StringFromFormat("Loaded state from %s", filename.c_str()), 2000);
+        if (File::Exists(filename + ".dtm"))
+          Movie::LoadInput(filename + ".dtm");
+        else if (!Movie::IsJustStartingRecordingInputFromSaveState() &&
+          !Movie::IsJustStartingPlayingInputFromSaveState())
+          Movie::EndPlayInput(false);
+      }
+      else
+      {
+        // failed to load
+        Core::DisplayMessage("Unable to load: Can't load state from other versions!", 4000);
+        if (!version_created_by.empty())
+          Core::DisplayMessage("The savestate was created using " + version_created_by, 4000);
 
-      // since we could be in an inconsistent state now (and might crash or whatever), undo.
-      if (g_loadDepth < 2)
-        UndoLoadState();
+        // since we could be in an inconsistent state now (and might crash or whatever), undo.
+        if (g_loadDepth < 2)
+          UndoLoadState();
+      }
     }
-  }
 
-  if (s_on_after_load_callback)
-    s_on_after_load_callback();
+    if (s_on_after_load_callback)
+      s_on_after_load_callback();
 
-  g_loadDepth--;
-
-  // resume dat core
-  Core::PauseAndLock(false, wasUnpaused);
+    g_loadDepth--;
+  });
 }
 
 void SetOnAfterLoadCallback(AfterLoadCallbackFunc callback)
@@ -624,24 +610,22 @@ void SetOnAfterLoadCallback(AfterLoadCallbackFunc callback)
 
 void VerifyAt(const std::string& filename)
 {
-  bool wasUnpaused = Core::PauseAndLock(true);
+  Core::RunAsCPUThread([&] {
+    std::vector<u8> buffer;
+    LoadFileStateData(filename, buffer);
 
-  std::vector<u8> buffer;
-  LoadFileStateData(filename, buffer);
+    if (!buffer.empty())
+    {
+      u8* ptr = &buffer[0];
+      PointerWrap p(&ptr, PointerWrap::MODE_VERIFY);
+      DoState(p);
 
-  if (!buffer.empty())
-  {
-    u8* ptr = &buffer[0];
-    PointerWrap p(&ptr, PointerWrap::MODE_VERIFY);
-    DoState(p);
-
-    if (p.GetMode() == PointerWrap::MODE_VERIFY)
-      Core::DisplayMessage(StringFromFormat("Verified state at %s", filename.c_str()), 2000);
-    else
-      Core::DisplayMessage("Unable to Verify : Can't verify state from other revisions !", 4000);
-  }
-
-  Core::PauseAndLock(false, wasUnpaused);
+      if (p.GetMode() == PointerWrap::MODE_VERIFY)
+        Core::DisplayMessage(StringFromFormat("Verified state at %s", filename.c_str()), 2000);
+      else
+        Core::DisplayMessage("Unable to Verify : Can't verify state from other revisions !", 4000);
+    }
+  });
 }
 
 void Init()
@@ -671,7 +655,7 @@ void Shutdown()
 static std::string MakeStateFilename(int number)
 {
   return StringFromFormat("%s%s.s%02i", File::GetUserPath(D_STATESAVES_IDX).c_str(),
-                          SConfig::GetInstance().GetGameID().c_str(), number);
+    SConfig::GetInstance().GetGameID().c_str(), number);
 }
 
 void Save(int slot, bool wait)

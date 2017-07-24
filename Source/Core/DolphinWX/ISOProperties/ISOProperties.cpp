@@ -2,6 +2,8 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+
+#include <algorithm>
 #include <cinttypes>
 #include <cstddef>
 #include <cstdio>
@@ -37,6 +39,7 @@
 #include "Common/FileUtil.h"
 #include "Common/IniFile.h"
 #include "Common/StringUtil.h"
+#include "Core/ConfigLoaders/GameConfigLoader.h"
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
 #include "Core/GeckoCodeConfig.h"
@@ -463,16 +466,12 @@ void CISOProperties::CreateGUIControls()
   sButtons->GetAffirmativeButton()->SetLabel(_("Close"));
 
   // If there is no default gameini, disable the button.
-  bool game_ini_exists = false;
-  for (const std::string& ini_filename :
-       SConfig::GetGameIniFilenames(game_id, m_open_iso->GetRevision()))
-  {
-    if (File::Exists(File::GetSysDirectory() + GAMESETTINGS_DIR DIR_SEP + ini_filename))
-    {
-      game_ini_exists = true;
-      break;
-    }
-  }
+  const std::vector<std::string> ini_names =
+      ConfigLoaders::GetGameIniFilenames(game_id, m_open_iso->GetRevision());
+  const bool game_ini_exists =
+      std::any_of(ini_names.cbegin(), ini_names.cend(), [](const std::string& name) {
+        return File::Exists(File::GetSysDirectory() + GAMESETTINGS_DIR DIR_SEP + name);
+      });
   if (!game_ini_exists)
     EditConfigDefault->Disable();
 
@@ -661,7 +660,6 @@ bool CISOProperties::SaveGameConfig()
   } while (0)
 
   SAVE_IF_NOT_DEFAULT("Core", "Video_Rate", DVideo->GetValue(), 8);
-
   SAVE_IF_NOT_DEFAULT("Video", "PH_SZNear", (m_PHack_Data.PHackSZNear ? 1 : 0), 0);
   SAVE_IF_NOT_DEFAULT("Video", "PH_SZFar", (m_PHack_Data.PHackSZFar ? 1 : 0), 0);
   SAVE_IF_NOT_DEFAULT("Video", "PH_ZNear", m_PHack_Data.PHZNear, "");
@@ -790,7 +788,7 @@ void CISOProperties::OnChangeTitle(wxCommandEvent& event)
 void CISOProperties::OnShowDefaultConfig(wxCommandEvent& WXUNUSED(event))
 {
   for (const std::string& filename :
-       SConfig::GetGameIniFilenames(game_id, m_open_iso->GetRevision()))
+       ConfigLoaders::GetGameIniFilenames(game_id, m_open_iso->GetRevision()))
   {
     std::string path = File::GetSysDirectory() + GAMESETTINGS_DIR DIR_SEP + filename;
     if (File::Exists(path))

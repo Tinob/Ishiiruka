@@ -219,6 +219,9 @@ struct SConfig : NonCopyable
   void SetRunningGameMetadata(const IOS::ES::TMDReader& tmd);
 
   void LoadDefaults();
+  // Replaces NTSC-K with some other region, and doesn't replace non-NTSC-K regions
+  static DiscIO::Region ToGameCubeRegion(DiscIO::Region region);
+  // The region argument must be valid for GameCube (i.e. must not be NTSC-K)
   static const char* GetDirectoryForRegion(DiscIO::Region region);
   std::string GetBootROMPath(const std::string& region_directory) const;
   bool SetPathsAndGameMetadata(const BootParameters& boot);
@@ -232,9 +235,6 @@ struct SConfig : NonCopyable
   static IniFile LoadDefaultGameIni(const std::string& id, std::optional<u16> revision);
   static IniFile LoadLocalGameIni(const std::string& id, std::optional<u16> revision);
   static IniFile LoadGameIni(const std::string& id, std::optional<u16> revision);
-
-  static std::vector<std::string> GetGameIniFilenames(const std::string& id,
-                                                      std::optional<u16> revision);
 
   std::string m_NANDPath;
   std::string m_DumpPath;
@@ -259,6 +259,7 @@ struct SConfig : NonCopyable
   bool m_InterfaceLogConfigWindow;
   bool m_InterfaceExtendedFPSInfo;
   bool m_show_active_title = false;
+  bool m_use_builtin_title_database = true;
   bool m_show_development_warning;
 
   bool m_ListDrives;

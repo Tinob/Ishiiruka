@@ -16,8 +16,8 @@
 wxDEFINE_EVENT(wxEVT_ADAPTER_UPDATE, wxCommandEvent);
 
 GCAdapterConfigDiag::GCAdapterConfigDiag(wxWindow* const parent, const wxString& name,
-                                         const int tab_num)
-    : wxDialog(parent, wxID_ANY, name), m_pad_id(tab_num)
+  const int tab_num)
+  : wxDialog(parent, wxID_ANY, name), m_pad_id(tab_num)
 {
   wxCheckBox* const gamecube_rumble = new wxCheckBox(this, wxID_ANY, _("Rumble"));
   gamecube_rumble->SetValue(SConfig::GetInstance().m_AdapterRumble[m_pad_id]);
@@ -71,12 +71,12 @@ void GCAdapterConfigDiag::ScheduleAdapterUpdate()
 
 void GCAdapterConfigDiag::OnUpdateAdapter(wxCommandEvent& WXUNUSED(event))
 {
-  bool unpause = Core::PauseAndLock(true);
-  if (GCAdapter::IsDetected())
-    m_adapter_status->SetLabelText(_("Adapter Detected"));
-  else
-    m_adapter_status->SetLabelText(_("Adapter Not Detected"));
-  Core::PauseAndLock(false, unpause);
+  Core::RunAsCPUThread([this] {
+    if (GCAdapter::IsDetected())
+      m_adapter_status->SetLabelText(_("Adapter Detected"));
+    else
+      m_adapter_status->SetLabelText(_("Adapter Not Detected"));
+  });
 }
 
 void GCAdapterConfigDiag::OnAdapterRumble(wxCommandEvent& event)

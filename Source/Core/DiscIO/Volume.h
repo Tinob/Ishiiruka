@@ -83,6 +83,7 @@ public:
   virtual Platform GetVolumeType() const = 0;
   virtual bool SupportsIntegrityCheck() const { return false; }
   virtual bool CheckIntegrity(const Partition& partition) const { return false; }
+  // May be inaccurate for WADs
   virtual Region GetRegion() const = 0;
   Country GetCountry() const { return GetCountry(GetGamePartition()); }
   virtual Country GetCountry(const Partition& partition) const = 0;
@@ -96,7 +97,7 @@ public:
 
 protected:
   template <u32 N>
-  std::string DecodeString(const char (&data)[N]) const
+  std::string DecodeString(const char(&data)[N]) const
   {
     // strnlen to trim NULLs
     std::string string(data, strnlen(data, sizeof(data)));
@@ -120,7 +121,7 @@ protected:
 
 std::unique_ptr<Volume> CreateVolumeFromFilename(const std::string& filename);
 std::unique_ptr<Volume> CreateVolumeFromDirectory(const std::string& directory, bool is_wii,
-                                                  const std::string& apploader = "",
-                                                  const std::string& dol = "");
+  const std::string& apploader = "",
+  const std::string& dol = "");
 
 }  // namespace

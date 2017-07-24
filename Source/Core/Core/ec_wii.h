@@ -8,19 +8,19 @@
 // http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 
 /*
- *
- * Structs for keys.bin taken from:
- *
- * mini - a Free Software replacement for the Nintendo/BroadOn IOS.
- * crypto hardware support
- *
- * Copyright (C) 2008, 2009 Haxx Enterprises <bushing@gmail.com>
- * Copyright (C) 2008, 2009 Sven Peter <svenpeter@gmail.com>
- * Copyright (C) 2008, 2009 Hector Martin "marcan" <marcan@marcansoft.com>
- *
- * # This code is licensed to you under the terms of the GNU GPL, version 2;
- * # see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
- */
+*
+* Structs for keys.bin taken from:
+*
+* mini - a Free Software replacement for the Nintendo/BroadOn IOS.
+* crypto hardware support
+*
+* Copyright (C) 2008, 2009 Haxx Enterprises <bushing@gmail.com>
+* Copyright (C) 2008, 2009 Sven Peter <svenpeter@gmail.com>
+* Copyright (C) 2008, 2009 Hector Martin "marcan" <marcan@marcansoft.com>
+*
+* # This code is licensed to you under the terms of the GNU GPL, version 2;
+* # see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
+*/
 
 #pragma once
 
@@ -30,7 +30,7 @@ constexpr u32 DEFAULT_WII_DEVICE_ID = 0x0403AC68;
 
 void MakeNGCert(u8* ng_cert_out, u32 NG_id, u32 NG_key_id, const u8* NG_priv, const u8* NG_sig);
 void MakeAPSigAndCert(u8* sig_out, u8* ap_cert_out, u64 title_id, u8* data, u32 data_size,
-                      const u8* NG_priv, u32 NG_id);
+  const u8* NG_priv, u32 NG_id);
 
 class EcWii
 {
@@ -42,6 +42,7 @@ public:
   u32 GetNGKeyID() const;
   const u8* GetNGPriv() const;
   const u8* GetNGSig() const;
+  const u8* GetBackupKey() const;
 
 private:
   void InitDefaults();
@@ -59,7 +60,7 @@ private:
 #ifndef _WIN32
   __attribute__((packed))
 #endif
-  eep_ctr_t;
+    eep_ctr_t;
 
   struct
   {
@@ -82,7 +83,7 @@ private:
       };
     };
     u8 nand_key[0x10];    // 0x158
-    u8 rng_key[0x10];     // 0x168
+    u8 backup_key[0x10];  // 0x168
     u32 unk1;             // 0x178
     u32 unk2;             // 0x17C
     u8 eeprom_pad[0x80];  // 0x180
@@ -106,7 +107,7 @@ private:
   __attribute__((packed))
 #endif
 
-  BootMiiKeysBin;
+    BootMiiKeysBin;
 
 #pragma pack(pop)
 };

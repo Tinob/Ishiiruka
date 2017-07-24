@@ -13,6 +13,7 @@
 AboutDialog::AboutDialog(QWidget* parent) : QDialog(parent)
 {
   setWindowTitle(tr("About Dolphin"));
+  setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
   setAttribute(Qt::WA_DeleteOnClose);
 
   QString text = QStringLiteral("");
@@ -53,8 +54,8 @@ AboutDialog::AboutDialog(QWidget* parent) : QDialog(parent)
   text_label->setOpenExternalLinks(true);
 
   QLabel* copyright =
-      new QLabel(tr("© 2003-%1 Dolphin Team. “GameCube” and “Wii” are"
-                    " trademarks of Nintendo. Dolphin is not affiliated with Nintendo in any way.")
+      new QLabel(tr("\u00A9 2003-%1 Dolphin Team. \u201cGameCube\u201d and \u201cWii\u201d are "
+                    "trademarks of Nintendo. Dolphin is not affiliated with Nintendo in any way.")
                      .arg(QStringLiteral(__DATE__).right(4)));
 
   QLabel* logo = new QLabel();

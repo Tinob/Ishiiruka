@@ -23,7 +23,7 @@ class FilesystemPanel final : public wxPanel
 {
 public:
   explicit FilesystemPanel(wxWindow* parent, wxWindowID id,
-    const std::unique_ptr<DiscIO::Volume>& opened_iso);
+                           const std::unique_ptr<DiscIO::Volume>& opened_iso);
   ~FilesystemPanel();
 
 private:
@@ -51,7 +51,7 @@ private:
   void ExtractSingleFile(const wxString& output_file_path) const;
   void ExtractSingleDirectory(const wxString& output_folder);
   void ExtractDirectories(const std::string& full_path, const std::string& output_folder,
-    const DiscIO::FileSystem& filesystem);
+                          const DiscIO::FileSystem& filesystem);
   void ExtractPartition(const std::string& output_folder, const DiscIO::FileSystem& filesystem);
 
   std::pair<wxString, const DiscIO::FileSystem&> BuildFilePathFromSelection() const;

@@ -116,7 +116,7 @@ void Host_RequestRenderWindowSize(int width, int height)
 {
 }
 
-bool Host_UIHasFocus()
+bool Host_UINeedsControllerState()
 {
   return false;
 }
@@ -137,18 +137,14 @@ void Host_ConnectWiimote(int wm_idx, bool connect)
     const auto ios = IOS::HLE::GetIOS();
     if (!ios || SConfig::GetInstance().m_bt_passthrough_enabled)
       return;
-    bool was_unpaused = Core::PauseAndLock(true);
-    const auto bt = std::static_pointer_cast<IOS::HLE::Device::BluetoothEmu>(
-        ios->GetDeviceByName("/dev/usb/oh1/57e/305"));
-    if (bt)
-      bt->AccessWiiMote(wm_idx | 0x100)->Activate(connect);
-    Host_UpdateMainFrame();
-    Core::PauseAndLock(false, was_unpaused);
+    Core::RunAsCPUThread([&] {
+      const auto bt = std::static_pointer_cast<IOS::HLE::Device::BluetoothEmu>(
+          ios->GetDeviceByName("/dev/usb/oh1/57e/305"));
+      if (bt)
+        bt->AccessWiiMote(wm_idx | 0x100)->Activate(connect);
+      Host_UpdateMainFrame();
+    });
   });
-}
-
-void Host_SetWiiMoteConnectionState(int _State)
-{
 }
 
 void Host_ShowVideoConfig(void*, const std::string&)

@@ -39,6 +39,7 @@
 MappingWindow::MappingWindow(QWidget* parent, int port_num) : QDialog(parent), m_port(port_num)
 {
   setWindowTitle(tr("Port %1").arg(port_num + 1));
+  setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
 
   CreateDevicesLayout();
   CreateProfilesLayout();
@@ -228,25 +229,23 @@ void MappingWindow::RefreshDevices()
 {
   m_devices_combo->clear();
 
-  const bool paused = Core::PauseAndLock(true);
+  Core::RunAsCPUThread([&] {
+    g_controller_interface.RefreshDevices();
+    m_controller->UpdateReferences(g_controller_interface);
+    m_controller->UpdateDefaultDevice();
 
-  g_controller_interface.RefreshDevices();
-  m_controller->UpdateReferences(g_controller_interface);
-  m_controller->UpdateDefaultDevice();
+    const auto default_device = m_controller->default_device.ToString();
 
-  const auto default_device = m_controller->default_device.ToString();
+    m_devices_combo->addItem(QString::fromStdString(default_device));
 
-  m_devices_combo->addItem(QString::fromStdString(default_device));
+    for (const auto& name : g_controller_interface.GetAllDeviceStrings())
+    {
+      if (name != default_device)
+        m_devices_combo->addItem(QString::fromStdString(name));
+    }
 
-  for (const auto& name : g_controller_interface.GetAllDeviceStrings())
-  {
-    if (name != default_device)
-      m_devices_combo->addItem(QString::fromStdString(name));
-  }
-
-  m_devices_combo->setCurrentIndex(0);
-
-  Core::PauseAndLock(false, paused);
+    m_devices_combo->setCurrentIndex(0);
+  });
 }
 
 void MappingWindow::ChangeMappingType(MappingWindow::Type type)

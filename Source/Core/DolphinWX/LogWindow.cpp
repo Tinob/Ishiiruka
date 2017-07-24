@@ -35,9 +35,9 @@ constexpr int UPDATE_TIME_MS = 200;
 constexpr size_t MSGQUEUE_MAX_SIZE = 100;
 
 CLogWindow::CLogWindow(CFrame* parent, wxWindowID id, const wxPoint& pos, const wxSize& size,
-  long style, const wxString& name)
-  : wxPanel(parent, id, pos, size, style, name), x(0), y(0), winpos(0), Parent(parent),
-  m_LogAccess(true), m_Log(nullptr), m_cmdline(nullptr), m_FontChoice(nullptr)
+                       long style, const wxString& name)
+    : wxPanel(parent, id, pos, size, style, name), x(0), y(0), winpos(0), Parent(parent),
+      m_LogAccess(true), m_Log(nullptr), m_cmdline(nullptr), m_FontChoice(nullptr)
 {
   Bind(wxEVT_TIMER, &CLogWindow::OnLogTimer, this);
 
@@ -92,15 +92,15 @@ void CLogWindow::CreateGUIControls()
 
   // Log viewer
   m_Log = CreateTextCtrl(this, wxID_ANY, wxTE_RICH | wxTE_MULTILINE | wxTE_READONLY |
-    (wrap_lines ? wxTE_WORDWRAP : wxTE_DONTWRAP));
+                                             (wrap_lines ? wxTE_WORDWRAP : wxTE_DONTWRAP));
 
   // submit row
   m_cmdline = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize,
-    wxTE_PROCESS_ENTER | wxTE_PROCESS_TAB);
+                             wxTE_PROCESS_ENTER | wxTE_PROCESS_TAB);
 
   // Clear log button
   m_clear_log_btn =
-    new wxButton(this, wxID_ANY, _("Clear"), wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT);
+      new wxButton(this, wxID_ANY, _("Clear"), wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT);
   m_clear_log_btn->Bind(wxEVT_BUTTON, &CLogWindow::OnClear, this);
 
   const int space3 = FromDIP(3);
@@ -129,15 +129,7 @@ CLogWindow::~CLogWindow()
 
 void CLogWindow::RemoveAllListeners()
 {
-  if (!m_has_listeners)
-    return;
-  m_has_listeners = false;
-
-  for (int i = 0; i < LogTypes::NUMBER_OF_LOGS; ++i)
-  {
-    m_LogManager->RemoveListener(static_cast<LogTypes::LOG_TYPE>(i),
-      LogListener::LOG_WINDOW_LISTENER);
-  }
+  m_LogManager->RegisterListener(LogListener::LOG_WINDOW_LISTENER, nullptr);
 }
 
 void CLogWindow::SaveSettings()
@@ -187,16 +179,16 @@ void CLogWindow::PopulateBottom()
 wxTextCtrl* CLogWindow::CreateTextCtrl(wxPanel* parent, wxWindowID id, long Style)
 {
   wxTextCtrl* TC =
-    new wxTextCtrl(parent, id, wxEmptyString, wxDefaultPosition, wxDefaultSize, Style);
+      new wxTextCtrl(parent, id, wxEmptyString, wxDefaultPosition, wxDefaultSize, Style);
 #ifdef __APPLE__
   TC->SetBackgroundColour(*wxLIGHT_GREY);
 #else
   TC->SetBackgroundColour(*wxBLACK);
 #endif
   if (m_FontChoice && m_FontChoice->GetSelection() < (int)LogFont.size() &&
-    m_FontChoice->GetSelection() >= 0)
+      m_FontChoice->GetSelection() >= 0)
     TC->SetDefaultStyle(
-      wxTextAttr(wxNullColour, wxNullColour, LogFont[m_FontChoice->GetSelection()]));
+        wxTextAttr(wxNullColour, wxNullColour, LogFont[m_FontChoice->GetSelection()]));
 
   return TC;
 }
@@ -206,7 +198,7 @@ void CLogWindow::OnFontChange(wxCommandEvent& event)
   // Update selected font
   LogFont[LogFont.size() - 1] = DebuggerFont;
   m_Log->SetStyle(0, m_Log->GetLastPosition(),
-    wxTextAttr(wxNullColour, wxNullColour, LogFont[event.GetSelection()]));
+                  wxTextAttr(wxNullColour, wxNullColour, LogFont[event.GetSelection()]));
   m_Log->SetDefaultStyle(wxTextAttr(wxNullColour, wxNullColour, LogFont[event.GetSelection()]));
 
   SaveSettings();
@@ -229,10 +221,10 @@ void CLogWindow::OnWrapLineCheck(wxCommandEvent& event)
   m_Log->Destroy();
   if (event.IsChecked())
     m_Log =
-    CreateTextCtrl(this, wxID_ANY, wxTE_RICH | wxTE_MULTILINE | wxTE_READONLY | wxTE_WORDWRAP);
+        CreateTextCtrl(this, wxID_ANY, wxTE_RICH | wxTE_MULTILINE | wxTE_READONLY | wxTE_WORDWRAP);
   else
     m_Log =
-    CreateTextCtrl(this, wxID_ANY, wxTE_RICH | wxTE_MULTILINE | wxTE_READONLY | wxTE_DONTWRAP);
+        CreateTextCtrl(this, wxID_ANY, wxTE_RICH | wxTE_MULTILINE | wxTE_READONLY | wxTE_DONTWRAP);
   m_Log->SetDefaultStyle(wxTextAttr(*wxWHITE));
   m_Log->AppendText(Text);
   PopulateBottom();

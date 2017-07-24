@@ -118,7 +118,7 @@ bool ReadAnnotatedAssembly(const std::string& filename)
         {
           // Remove hex notation
           if ((int)i == first_hex + 3 && (first_hex == 0 || line[first_hex - 1] != 'x') &&
-            (i >= len - 1 || line[i + 1] == ' '))
+              (i >= len - 1 || line[i + 1] == ' '))
           {
             hex_found = true;
             break;

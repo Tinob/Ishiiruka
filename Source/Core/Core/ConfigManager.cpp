@@ -13,6 +13,7 @@
 
 #include "AudioCommon/AudioCommon.h"
 
+#include "Common/Assert.h"
 #include "Common/CDUtils.h"
 #include "Common/CommonPaths.h"
 #include "Common/CommonTypes.h"
@@ -26,6 +27,7 @@
 
 #include "Core/Analytics.h"
 #include "Core/Boot/Boot.h"
+#include "Core/ConfigLoaders/GameConfigLoader.h"
 #include "Core/Core.h"
 #include "Core/FifoPlayer/FifoDataFile.h"
 #include "Core/HLE/HLE.h"
@@ -168,6 +170,7 @@ void SConfig::SaveInterfaceSettings(IniFile& ini)
   interface->Set("ShowLogConfigWindow", m_InterfaceLogConfigWindow);
   interface->Set("ExtendedFPSInfo", m_InterfaceExtendedFPSInfo);
   interface->Set("ShowActiveTitle", m_show_active_title);
+  interface->Set("UseBuiltinTitleDatabase", m_use_builtin_title_database);
   interface->Set("ShowDevelopmentWarning", m_show_development_warning);
   interface->Set("ThemeName", theme_name);
   interface->Set("PauseOnFocusLost", m_PauseOnFocusLost);
@@ -481,6 +484,7 @@ void SConfig::LoadInterfaceSettings(IniFile& ini)
   interface->Get("ShowLogConfigWindow", &m_InterfaceLogConfigWindow, false);
   interface->Get("ExtendedFPSInfo", &m_InterfaceExtendedFPSInfo, false);
   interface->Get("ShowActiveTitle", &m_show_active_title, true);
+  interface->Get("UseBuiltinTitleDatabase", &m_use_builtin_title_database, true);
   interface->Get("ShowDevelopmentWarning", &m_show_development_warning, true);
   interface->Get("ThemeName", &theme_name, DEFAULT_THEME_DIR);
   interface->Get("PauseOnFocusLost", &m_PauseOnFocusLost, false);
@@ -868,6 +872,19 @@ bool SConfig::IsUSBDeviceWhitelisted(const std::pair<u16, u16> vid_pid) const
   return m_usb_passthrough_devices.find(vid_pid) != m_usb_passthrough_devices.end();
 }
 
+// The reason we need this function is because some memory card code
+// expects to get a non-NTSC-K region even if we're emulating an NTSC-K Wii.
+DiscIO::Region SConfig::ToGameCubeRegion(DiscIO::Region region)
+{
+  if (region != DiscIO::Region::NTSC_K)
+    return region;
+
+  // GameCube has no NTSC-K region. No choice of replacement value is completely
+  // non-arbitrary, but let's go with NTSC-J since Korean GameCubes are NTSC-J.
+  return DiscIO::Region::NTSC_J;
+}
+
+
 const char* SConfig::GetDirectoryForRegion(DiscIO::Region region)
 {
   switch (region)
@@ -882,13 +899,8 @@ const char* SConfig::GetDirectoryForRegion(DiscIO::Region region)
     return EUR_DIR;
 
   case DiscIO::Region::NTSC_K:
-    // This function can't return a Korean directory name, because this
-    // function is only used for GameCube things (memory cards, IPL), and
-    // GameCube has no NTSC-K region. Since NTSC-K doesn't correspond to any
-    // GameCube region, let's return an arbitrary pick. Returning nullptr like
-    // with unknown regions would be inappropriate, because Dolphin expects
-    // to get valid memory card paths even when running an NTSC-K Wii game.
-    return JAP_DIR;
+    _assert_msg_(BOOT, false, "NTSC-K is not a valid GameCube region");
+    return nullptr;
 
   default:
     return nullptr;
@@ -981,7 +993,7 @@ bool SConfig::SetPathsAndGameMetadata(const BootParameters& boot)
     return false;
 
   // Set up region
-  const char* retrieved_region_dir = GetDirectoryForRegion(region);
+  const char* retrieved_region_dir = GetDirectoryForRegion(ToGameCubeRegion(region));
   m_region = retrieved_region_dir ? region : DiscIO::Region::PAL;
   const std::string set_region_dir = retrieved_region_dir ? retrieved_region_dir : EUR_DIR;
   if (!retrieved_region_dir &&
@@ -1082,7 +1094,7 @@ IniFile SConfig::LoadGameIni() const
 IniFile SConfig::LoadDefaultGameIni(const std::string& id, std::optional<u16> revision)
 {
   IniFile game_ini;
-  for (const std::string& filename : GetGameIniFilenames(id, revision))
+  for (const std::string& filename : ConfigLoaders::GetGameIniFilenames(id, revision))
     game_ini.Load(File::GetSysDirectory() + GAMESETTINGS_DIR DIR_SEP + filename, true);
   return game_ini;
 }
@@ -1090,7 +1102,7 @@ IniFile SConfig::LoadDefaultGameIni(const std::string& id, std::optional<u16> re
 IniFile SConfig::LoadLocalGameIni(const std::string& id, std::optional<u16> revision)
 {
   IniFile game_ini;
-  for (const std::string& filename : GetGameIniFilenames(id, revision))
+  for (const std::string& filename : ConfigLoaders::GetGameIniFilenames(id, revision))
     game_ini.Load(File::GetUserPath(D_GAMESETTINGS_IDX) + filename, true);
   return game_ini;
 }
@@ -1098,35 +1110,9 @@ IniFile SConfig::LoadLocalGameIni(const std::string& id, std::optional<u16> revi
 IniFile SConfig::LoadGameIni(const std::string& id, std::optional<u16> revision)
 {
   IniFile game_ini;
-  for (const std::string& filename : GetGameIniFilenames(id, revision))
+  for (const std::string& filename : ConfigLoaders::GetGameIniFilenames(id, revision))
     game_ini.Load(File::GetSysDirectory() + GAMESETTINGS_DIR DIR_SEP + filename, true);
-  for (const std::string& filename : GetGameIniFilenames(id, revision))
+  for (const std::string& filename : ConfigLoaders::GetGameIniFilenames(id, revision))
     game_ini.Load(File::GetUserPath(D_GAMESETTINGS_IDX) + filename, true);
   return game_ini;
-}
-
-// Returns all possible filenames in ascending order of priority
-std::vector<std::string> SConfig::GetGameIniFilenames(const std::string& id,
-                                                      std::optional<u16> revision)
-{
-  std::vector<std::string> filenames;
-
-  if (id.empty())
-    return filenames;
-
-  // INIs that match the system code (unique for each Virtual Console system)
-  filenames.push_back(id.substr(0, 1) + ".ini");
-
-  // INIs that match all regions
-  if (id.size() >= 4)
-    filenames.push_back(id.substr(0, 3) + ".ini");
-
-  // Regular INIs
-  filenames.push_back(id + ".ini");
-
-  // INIs with specific revisions
-  if (revision)
-    filenames.push_back(id + StringFromFormat("r%d", *revision) + ".ini");
-
-  return filenames;
 }

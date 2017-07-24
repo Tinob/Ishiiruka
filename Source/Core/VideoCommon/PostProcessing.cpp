@@ -2384,7 +2384,7 @@ std::string PostProcessor::GetCommonFragmentShaderSource(API_TYPE api, const Pos
       std::string type_str = (count == 1) ? "int" : StringFromFormat("int%d", count);
       shader_source += StringFromFormat("#define %s %s(", it.first.c_str(), type_str.c_str());
       for (int i = 0; i < count; i++)
-        shader_source += StringFromInt(it.second.m_integer_values[i]);
+        shader_source += std::to_string(it.second.m_integer_values[i]);
       shader_source += ")\n";
     }
     else if (it.second.m_type == POST_PROCESSING_OPTION_TYPE_FLOAT)
