@@ -4,6 +4,7 @@
 // Modified For Ishiiruka By Tino
 #pragma once
 #include <cstring>
+#include "Common/Common.h"
 #include "Common/CommonFuncs.h"
 #include "Common/CommonTypes.h"
 
