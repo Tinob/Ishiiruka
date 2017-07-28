@@ -56,8 +56,7 @@ TextureCacheBase::TextureCacheBase()
   TexDecoder_SetTexFmtOverlayOptions(backup_config.texfmt_overlay, backup_config.texfmt_overlay_center);
 
   HiresTexture::Init();
-
-  SetHash64Function();
+  
   texture_pool_memory_usage = 0;
   InvalidateAllBindPoints();
   m_scaler = std::make_unique<TextureScaler>();

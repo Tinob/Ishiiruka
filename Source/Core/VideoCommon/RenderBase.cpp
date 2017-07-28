@@ -23,6 +23,7 @@
 #include "Common/Event.h"
 #include "Common/FileUtil.h"
 #include "Common/Flag.h"
+#include "Common/Hash.h"
 #include "Common/Logging/Log.h"
 #include "Common/MsgHandler.h"
 #include "Common/Profiler.h"
@@ -78,6 +79,7 @@ static float AspectToWidescreen(float aspect)
 
 Renderer::Renderer()
 {
+  SetHash64Function();
   OSDChoice = 0;
   OSDTime = 0;
   m_last_efb_scale = g_ActiveConfig.iEFBScale;
