@@ -590,6 +590,9 @@ if(NOT XXHASH_FOUND)
 endif()
 LIST(APPEND LIBS xxhash)
 
+include_directories(Externals/xbrz)
+LIST(APPEND LIBS xbrz)
+
 find_package(ZLIB)
 if(ZLIB_FOUND)
   message(STATUS "Using shared zlib")
@@ -787,6 +790,7 @@ add_subdirectory(Externals/gtest EXCLUDE_FROM_ALL)
 ########################################
 # Process Dolphin source now that all setup is complete
 #
+add_subdirectory(Externals/xbrz)
 add_subdirectory(Source)
 
 ########################################

@@ -304,7 +304,9 @@ set(LIBS ${LIBS} ${MBEDTLS_LIBRARIES})
 if(WIN32)
   set(SRCS ${SRCS} HW/EXI/BBA-TAP/TAP_Win32.cpp HW/WiimoteReal/IOWin.cpp)
   list(APPEND LIBS
-    videod3d
+    videod3d9
+    videod3d11
+    videod3d12
     setupapi.lib
     iphlpapi.lib
   )
