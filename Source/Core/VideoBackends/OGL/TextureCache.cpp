@@ -948,11 +948,11 @@ bool TextureCache::SupportsGPUTextureDecode(TextureFormat format, TlutFormat pal
 }
 
 bool TextureCache::TCacheEntry::DecodeTextureOnGPU(u32 dst_level, const u8* data,
-	u32 data_size, TextureFormat format, u32 width, u32 height,
+	u32 data_size, TextureFormat _format, u32 width, u32 height,
 	u32 aligned_width, u32 aligned_height, u32 row_stride,
 	const u8* palette, TlutFormat palette_format)
 {
-	auto key = std::make_pair(static_cast<u32>(format), static_cast<u32>(palette_format));
+	auto key = std::make_pair(static_cast<u32>(_format), static_cast<u32>(palette_format));
 	auto iter = s_texture_decoding_program_info.find(key);
 	if (iter == s_texture_decoding_program_info.end())
 		return false;
@@ -1023,7 +1023,7 @@ bool TextureCache::TCacheEntry::DecodeTextureOnGPU(u32 dst_level, const u8* data
 	TextureCache::SetStage();
 
 #ifdef TIME_TEXTURE_DECODING
-	WARN_LOG(VIDEO, "Decode texture format %u size %ux%u took %.4fms", static_cast<u32>(format),
+	WARN_LOG(VIDEO, "Decode texture format %u size %ux%u took %.4fms", static_cast<u32>(_format),
 		width, height, timer.GetTimeMilliseconds());
 #endif
 	return true;

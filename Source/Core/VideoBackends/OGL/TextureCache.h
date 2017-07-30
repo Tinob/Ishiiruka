@@ -54,7 +54,7 @@ private:
 		void FromRenderTarget(bool is_depth_copy, const EFBRectangle& srcRect,
 			bool scaleByHalf, unsigned int cbufid, const float *colmat, u32 width, u32 height) override;
 		bool DecodeTextureOnGPU(u32 dst_level, const u8* data,
-			u32 data_size, TextureFormat format, u32 width, u32 height,
+			u32 data_size, TextureFormat _format, u32 width, u32 height,
 			u32 aligned_width, u32 aligned_height, u32 row_stride,
 			const u8* palette, TlutFormat palette_format) override;
 		bool SupportsMaterialMap() const override

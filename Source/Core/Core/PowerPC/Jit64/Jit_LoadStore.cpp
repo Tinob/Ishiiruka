@@ -353,7 +353,7 @@ void Jit64::dcbx(UGeckoInstruction inst)
 		SetJumpTarget(c);
 		ABI_PushRegistersAndAdjustStack(registersInUse, 0);
 		SHL(32, R(addr), Imm8(5));
-		ABI_CallFunctionR(DSP::FlushInstantDMA, addr);
+		ABI_CallFunctionR((const void*)DSP::FlushInstantDMA, addr);
 		ABI_PopRegistersAndAdjustStack(registersInUse, 0);
 		c = J(true);
 		SwitchToNearCode();
