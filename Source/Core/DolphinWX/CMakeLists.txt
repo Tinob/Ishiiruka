@@ -118,7 +118,7 @@ endif()
 # Handle localization
 find_package(Gettext)
 if(GETTEXT_MSGMERGE_EXECUTABLE AND GETTEXT_MSGFMT_EXECUTABLE)
-  set(pot_file "${CMAKE_SOURCE_DIR}/Languages/po/dolphin-emu.pot")
+  set(pot_file "${CMAKE_SOURCE_DIR}/Languages/po/ishiiruka.pot")
   file(GLOB LINGUAS ${CMAKE_SOURCE_DIR}/Languages/po/*.po)
 
   target_sources(ishiiruka PRIVATE ${pot_file} ${LINGUAS})
@@ -128,7 +128,7 @@ if(GETTEXT_MSGMERGE_EXECUTABLE AND GETTEXT_MSGFMT_EXECUTABLE)
   foreach(po ${LINGUAS})
     get_filename_component(lang ${po} NAME_WE)
     set(mo_dir ${CMAKE_CURRENT_BINARY_DIR}/${lang})
-    set(mo ${mo_dir}/dolphin-emu.mo)
+    set(mo ${mo_dir}/ishiiruka.mo)
 
     target_sources(ishiiruka PRIVATE ${mo})
     source_group("Localization\\\\Generated" FILES ${mo})

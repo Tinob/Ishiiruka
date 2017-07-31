@@ -21,10 +21,10 @@
 #define DOLPHIN_DATA_DIR "Library/Application Support/Dolphin"
 #elif defined ANDROID
 #define USERDATA_DIR "user"
-#define DOLPHIN_DATA_DIR "/sdcard/dolphin-emu"
+#define DOLPHIN_DATA_DIR "/sdcard/ishiiruka"
 #else
 #define USERDATA_DIR "user"
-#define DOLPHIN_DATA_DIR "dolphin-emu"
+#define DOLPHIN_DATA_DIR "ishiiruka"
 #endif
 
 // Shared data dirs (Sys and shared User for Linux)
@@ -33,7 +33,7 @@
 #elif defined __APPLE__
 #define SYSDATA_DIR "Contents/Resources/Sys"
 #elif defined ANDROID
-#define SYSDATA_DIR "/sdcard/dolphin-emu"
+#define SYSDATA_DIR "/sdcard/ishiiruka"
 #else
 #ifdef DATA_DIR
 #define SYSDATA_DIR DATA_DIR "sys"

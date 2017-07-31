@@ -30,7 +30,7 @@
     <key>CFBundleIconFile</key>
     <string>Dolphin.icns</string>
     <key>CFBundleIdentifier</key>
-    <string>org.dolphin-emu.dolphin</string>
+    <string>org.ishiiruka.dolphin</string>
     <key>CFBundleDevelopmentRegion</key>
     <string>English</string>
     <key>CFBundlePackageType</key>
