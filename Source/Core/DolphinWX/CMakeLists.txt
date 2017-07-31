@@ -106,13 +106,13 @@ if(WIN32)
   )
 endif()
 
-add_executable(dolphin-emu ${SRCS})
-target_link_libraries(dolphin-emu PRIVATE ${LIBS})
+add_executable(ishiiruka ${SRCS})
+target_link_libraries(ishiiruka PRIVATE ${LIBS})
 
 if(USE_X11)
   find_package(GTK2 REQUIRED)
-  target_link_libraries(dolphin-emu PRIVATE ${GTK2_LIBRARIES})
-  target_include_directories(dolphin-emu PRIVATE ${GTK2_INCLUDE_DIRS})
+  target_link_libraries(ishiiruka PRIVATE ${GTK2_LIBRARIES})
+  target_include_directories(ishiiruka PRIVATE ${GTK2_INCLUDE_DIRS})
 endif()
 
 # Handle localization
@@ -121,7 +121,7 @@ if(GETTEXT_MSGMERGE_EXECUTABLE AND GETTEXT_MSGFMT_EXECUTABLE)
   set(pot_file "${CMAKE_SOURCE_DIR}/Languages/po/dolphin-emu.pot")
   file(GLOB LINGUAS ${CMAKE_SOURCE_DIR}/Languages/po/*.po)
 
-  target_sources(dolphin-emu PRIVATE ${pot_file} ${LINGUAS})
+  target_sources(ishiiruka PRIVATE ${pot_file} ${LINGUAS})
   source_group("Localization" FILES ${LINGUAS})
   source_group("Localization\\\\Generated" FILES ${pot_file})
 
@@ -130,7 +130,7 @@ if(GETTEXT_MSGMERGE_EXECUTABLE AND GETTEXT_MSGFMT_EXECUTABLE)
     set(mo_dir ${CMAKE_CURRENT_BINARY_DIR}/${lang})
     set(mo ${mo_dir}/dolphin-emu.mo)
 
-    target_sources(dolphin-emu PRIVATE ${mo})
+    target_sources(ishiiruka PRIVATE ${mo})
     source_group("Localization\\\\Generated" FILES ${mo})
 
     if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
@@ -150,7 +150,7 @@ endif()
 
 if(APPLE)
   # Ask for an application bundle.
-  set_target_properties(dolphin-emu PROPERTIES
+  set_target_properties(ishiiruka PROPERTIES
     MACOSX_BUNDLE true
     MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist.in
     OUTPUT_NAME Dolphin
@@ -160,7 +160,7 @@ if(APPLE)
   set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/Data/Sys")
   file(GLOB_RECURSE resources RELATIVE "${CMAKE_SOURCE_DIR}/Data" "${CMAKE_SOURCE_DIR}/Data/Sys/*")
   foreach(res ${resources})
-    target_sources(dolphin-emu PRIVATE "${CMAKE_SOURCE_DIR}/Data/${res}")
+    target_sources(ishiiruka PRIVATE "${CMAKE_SOURCE_DIR}/Data/${res}")
     get_filename_component(resdir "${res}" DIRECTORY)
     set_source_files_properties("${CMAKE_SOURCE_DIR}/Data/${res}" PROPERTIES
       MACOSX_PACKAGE_LOCATION "Resources/${resdir}")
@@ -169,19 +169,19 @@ if(APPLE)
 
   # Update library references to make the bundle portable
   include(DolphinPostprocessBundle)
-  dolphin_postprocess_bundle(dolphin-emu)
+  dolphin_postprocess_bundle(ishiiruka)
 
   # Install bundle into systemwide /Applications directory.
-  install(TARGETS dolphin-emu DESTINATION /Applications)
+  install(TARGETS ishiiruka DESTINATION /Applications)
 elseif(WIN32)
-  set_target_properties(dolphin-emu PROPERTIES
+  set_target_properties(ishiiruka PROPERTIES
     WIN32_EXECUTABLE ON
   )
-  add_custom_command(TARGET dolphin-emu
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/Data/Sys $<TARGET_FILE_DIR:dolphin-emu>/Sys
+  add_custom_command(TARGET ishiiruka
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/Data/Sys $<TARGET_FILE_DIR:ishiiruka>/Sys
   )
 else()
-  install(TARGETS dolphin-emu RUNTIME DESTINATION ${bindir})
+  install(TARGETS ishiiruka RUNTIME DESTINATION ${bindir})
 endif()
 
-set(CPACK_PACKAGE_EXECUTABLES ${CPACK_PACKAGE_EXECUTABLES} dolphin-emu)
+set(CPACK_PACKAGE_EXECUTABLES ${CPACK_PACKAGE_EXECUTABLES} ishiiruka)

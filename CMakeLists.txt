@@ -9,7 +9,7 @@ set(CMAKE_OSX_ARCHITECTURES "x86_64")
 # features can be used, not the minimum required version to run.
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9" CACHE string "")
 
-project(dolphin-emu)
+project(ishiiruka)
 option(USE_EGL "Enables EGL OpenGL Interface" OFF)
 option(TRY_X11 "Enables X11 Support" ON)
 option(USE_SHARED_ENET "Use shared libenet if found rather than Dolphin's soon-to-compatibly-diverge version" OFF)
@@ -818,7 +818,7 @@ if(CMAKE_SYSTEM_NAME MATCHES "Linux|FreeBSD|OpenBSD")
 endif()
 
 # packaging information
-set(CPACK_PACKAGE_NAME "dolphin-emu")
+set(CPACK_PACKAGE_NAME "ishiiruka")
 set(CPACK_PACKAGE_VENDOR "Dolphin Team")
 set(CPACK_PACKAGE_VERSION_MAJOR ${DOLPHIN_VERSION_MAJOR})
 set(CPACK_PACKAGE_VERSION_MINOR ${DOLPHIN_VERSION_MINOR})
