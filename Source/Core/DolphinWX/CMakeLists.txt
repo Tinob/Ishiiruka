@@ -118,7 +118,7 @@ include(FindGettext)
 if(GETTEXT_MSGMERGE_EXECUTABLE AND GETTEXT_MSGFMT_EXECUTABLE AND wxWidgets_FOUND)
 	file(GLOB LINGUAS ${CMAKE_SOURCE_DIR}/Languages/po/*.po)
 	add_custom_target(translations ALL)
-	GETTEXT_CREATE_TRANSLATIONS(${CMAKE_SOURCE_DIR}/Languages/po/dolphin-emu.pot ${LINGUAS})
+	GETTEXT_CREATE_TRANSLATIONS(${CMAKE_SOURCE_DIR}/Languages/po/ishiiruka.pot ${LINGUAS})
 endif()
 
 if(wxWidgets_FOUND)
@@ -187,7 +187,7 @@ if(wxWidgets_FOUND)
 						)
 					file(RENAME
 						${BUNDLE_PATH}/Contents/Resources/\${TRANSLATION_DIR}/\${TRANSLATION_FILE}
-						${BUNDLE_PATH}/Contents/Resources/\${TRANSLATION_DIR}/dolphin-emu.mo
+						${BUNDLE_PATH}/Contents/Resources/\${TRANSLATION_DIR}/ishiiruka.mo
 						)
 				endforeach(TRANSLATION_FILE)
 				")

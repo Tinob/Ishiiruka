@@ -28,9 +28,9 @@
 	<key>CFBundleExecutable</key>
 	<string>Dolphin</string>
 	<key>CFBundleIconFile</key>
-	<string>Dolphin.icns</string>
+	<string>ishiiruka.icns</string>
 	<key>CFBundleIdentifier</key>
-	<string>org.dolphin-emu.dolphin</string>
+	<string>org.ishiiruka.dolphin</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>English</string>
 	<key>CFBundleLocalizations</key>

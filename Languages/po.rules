@@ -18,7 +18,7 @@
 					DisplayName="Output File"
 					Description="Specifies a name to override the default file name"
 					Switch="-o &quot;[value]&quot;"
-					DefaultValue="$(OutDir)\Languages\$(InputName)\dolphin-emu.mo"
+					DefaultValue="$(OutDir)\Languages\$(InputName)\ishiiruka.mo"
 					Delimited="true"
 				/>
 				<BooleanProperty

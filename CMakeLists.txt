@@ -94,7 +94,7 @@ if(APPLE)
 	set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/install-dummy)
 else()
 	set(bindir  ${CMAKE_INSTALL_PREFIX}/bin               CACHE PATH "bindir")
-	set(datadir ${CMAKE_INSTALL_PREFIX}/share/dolphin-emu CACHE PATH "datadir")
+	set(datadir ${CMAKE_INSTALL_PREFIX}/share/ishiiruka CACHE PATH "datadir")
 	set(mandir  ${CMAKE_INSTALL_PREFIX}/share/man         CACHE PATH "mandir")
 	add_definitions(-DDATA_DIR="${datadir}/")
 endif()
@@ -1061,16 +1061,16 @@ if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Linux|FreeBSD|OpenBSD|Darwin")
 endif()
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux|FreeBSD|OpenBSD")
 	# Install the application icon and menu item
-	install(FILES Data/dolphin-emu.svg
+	install(FILES Data/ishiiruka.svg
 		DESTINATION ${CMAKE_INSTALL_PREFIX}/share/icons/hicolor/scalable/apps)
-	install(FILES Data/dolphin-emu.png
+	install(FILES Data/ishiiruka.png
 		DESTINATION ${CMAKE_INSTALL_PREFIX}/share/icons/hicolor/48x48/apps)
-	install(FILES Data/dolphin-emu.desktop
+	install(FILES Data/ishiiruka.desktop
 		DESTINATION ${CMAKE_INSTALL_PREFIX}/share/applications)
 	# Install manpages
-	install(FILES Data/dolphin-emu.6
+	install(FILES Data/ishiiruka.6
 		DESTINATION ${mandir}/man6)
-	install(FILES Data/dolphin-emu-nogui.6
+	install(FILES Data/ishiiruka-nogui.6
 		DESTINATION ${mandir}/man6)
 endif()
 
