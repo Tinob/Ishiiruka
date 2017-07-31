@@ -84,6 +84,9 @@ void Host_YieldToUI()
 {
   qApp->processEvents(QEventLoop::ExcludeUserInputEvents);
 }
+void Host_UpdateProgressDialog(const char* caption, int position, int total)
+{
+}
 
 // We ignore these, and their purpose should be questioned individually.
 // In particular, RequestRenderWindowSize, RequestFullscreen, and
@@ -102,9 +105,6 @@ void Host_NotifyMapLoaded()
 {
 }
 void Host_UpdateDisasmDialog()
-{
-}
-void Host_ConnectWiimote(int wm_idx, bool connect)
 {
 }
 void Host_ShowVideoConfig(void* parent, const std::string& backend_name)

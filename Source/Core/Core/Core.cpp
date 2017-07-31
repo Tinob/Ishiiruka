@@ -342,6 +342,7 @@ static void CpuThread()
   {
     Common::SetCurrentThreadName("CPU-GPU thread");
     video_backend->Video_Prepare();
+    Host_Message(WM_USER_CREATE);
   }
 
   // This needs to be delayed until after the video backend is ready.
@@ -410,6 +411,7 @@ static void FifoPlayerThread()
   else
   {
     video_backend->Video_Prepare();
+    Host_Message(WM_USER_CREATE);
     Common::SetCurrentThreadName("FIFO-GPU thread");
   }
 
@@ -603,7 +605,7 @@ static void EmuThread(std::unique_ptr<BootParameters> boot)
     Common::SetCurrentThreadName("Video thread");
 
     video_backend->Video_Prepare();
-
+    Host_Message(WM_USER_CREATE);
     // Spawn the CPU thread
     s_cpu_thread = std::thread(cpuThreadFunc);
 

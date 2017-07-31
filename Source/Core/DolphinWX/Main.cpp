@@ -5,7 +5,6 @@
 #include <OptionParser.h>
 #include <cstdio>
 #include <cstring>
-#include <mutex>
 #include <string>
 #include <utility>
 #include <wx/app.h>
@@ -86,8 +85,6 @@ std::string wxStringTranslator(const char*);
 
 CFrame* main_frame = nullptr;
 
-static std::mutex s_init_mutex;
-
 bool DolphinApp::Initialize(int& c, wxChar** v)
 {
 #if defined HAVE_X11 && HAVE_X11
@@ -137,8 +134,6 @@ bool DolphinApp::OnInit()
 #endif
 
   ParseCommandLine();
-
-  std::lock_guard<std::mutex> lk(s_init_mutex);
 
   UICommon::SetUserDirectory(m_user_path.ToStdString());
   UICommon::CreateDirectories();
@@ -489,21 +484,6 @@ bool Host_RendererIsFullscreen()
   return main_frame->RendererIsFullscreen();
 }
 
-void Host_ConnectWiimote(int wm_idx, bool connect)
-{
-  std::lock_guard<std::mutex> lk(s_init_mutex);
-  if (connect)
-  {
-    wxCommandEvent event(wxEVT_HOST_COMMAND, IDM_FORCE_CONNECT_WIIMOTE1 + wm_idx);
-    main_frame->GetEventHandler()->AddPendingEvent(event);
-  }
-  else
-  {
-    wxCommandEvent event(wxEVT_HOST_COMMAND, IDM_FORCE_DISCONNECT_WIIMOTE1 + wm_idx);
-    main_frame->GetEventHandler()->AddPendingEvent(event);
-  }
-}
-
 void Host_ShowVideoConfig(void* parent, const std::string& backend_name)
 {
   wxWindow* const parent_window = static_cast<wxWindow*>(parent);
@@ -523,4 +503,13 @@ void Host_ShowVideoConfig(void* parent, const std::string& backend_name)
 void Host_YieldToUI()
 {
   wxGetApp().GetMainLoop()->YieldFor(wxEVT_CATEGORY_UI);
+}
+
+void Host_UpdateProgressDialog(const char* caption, int position, int total)
+{
+  wxCommandEvent event(wxEVT_HOST_COMMAND, IDM_UPDATE_PROGRESS_DIALOG);
+  event.SetString(caption);
+  event.SetInt(position);
+  event.SetExtraLong(total);
+  main_frame->GetEventHandler()->AddPendingEvent(event);
 }

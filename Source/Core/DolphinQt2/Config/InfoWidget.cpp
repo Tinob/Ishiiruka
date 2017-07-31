@@ -60,7 +60,7 @@ QGroupBox* InfoWidget::CreateISODetails()
 
 QGroupBox* InfoWidget::CreateBannerDetails()
 {
-  QGroupBox* group = new QGroupBox(tr("%1 Banner Details").arg(m_game.GetPlatform()));
+  QGroupBox* group = new QGroupBox(tr("Banner Details"));
   QFormLayout* layout = new QFormLayout;
 
   m_long_name = CreateValueDisplay();
@@ -133,7 +133,9 @@ void InfoWidget::CreateLanguageSelector()
   }
   if (m_language_selector->count() == 1)
     m_language_selector->setDisabled(true);
-  connect(m_language_selector, SIGNAL(currentIndexChanged(int)), this, SLOT(ChangeLanguage()));
+  connect(m_language_selector,
+          static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this,
+          &InfoWidget::ChangeLanguage);
   ChangeLanguage();
 }
 

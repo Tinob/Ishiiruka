@@ -5,8 +5,8 @@
 #pragma once
 
 #include <string>
-
-#include "Core/Config/Config.h"
+#include "Common/CommonTypes.h"
+#include "Common/Config/Config.h"
 
 namespace Config
 {

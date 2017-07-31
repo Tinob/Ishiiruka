@@ -26,7 +26,6 @@
 bool Host_UINeedsControllerState();
 bool Host_RendererHasFocus();
 bool Host_RendererIsFullscreen();
-void Host_ConnectWiimote(int wm_idx, bool connect);
 void Host_Message(int Id);
 void Host_NotifyMapLoaded();
 void Host_RefreshDSPDebuggerWindow();
@@ -36,6 +35,7 @@ void Host_UpdateMainFrame();
 void Host_UpdateTitle(const std::string& title);
 void Host_ShowVideoConfig(void* parent, const std::string& backend_name);
 void Host_YieldToUI();
+void Host_UpdateProgressDialog(const char* caption, int position, int total);
 
 // TODO (neobrain): Remove this from host!
 void* Host_GetRenderHandle();

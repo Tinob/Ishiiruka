@@ -584,7 +584,8 @@ void ProgramShaderCache::Init()
       if ((!uid_data.stereo || g_ActiveConfig.backend_info.bSupportsGeometryShaders)
         && (!uid_data.bounding_box || g_ActiveConfig.backend_info.bSupportsBBox))
       {
-        Host_UpdateTitle(StringFromFormat("Compiling Shaders %zu %% (%zu/%zu)", (shader_count * 100) / total, shader_count, total));
+        Host_UpdateProgressDialog(GetStringT("Compiling Shaders...").c_str(),
+          static_cast<int>(shader_count), static_cast<int>(total));
         CompileShader(item);
       }
     },
@@ -593,6 +594,7 @@ void ProgramShaderCache::Init()
       return !entry.shader.glprogid;
     }
     , true);
+    Host_UpdateProgressDialog("", -1, -1);
   }
 }
 

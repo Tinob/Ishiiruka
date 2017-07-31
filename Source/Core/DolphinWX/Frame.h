@@ -49,6 +49,7 @@ class wxAuiNotebook;
 class wxAuiNotebookEvent;
 class wxListEvent;
 class wxMenuItem;
+class wxProgressDialog;
 
 class CRenderFrame : public wxFrame
 {
@@ -154,6 +155,7 @@ private:
   FifoPlayerDlg* m_fifo_player_dialog = nullptr;
   std::array<TASInputDlg*, 8> m_tas_input_dialogs{};
   wxCheatsWindow* m_cheats_window = nullptr;
+  wxProgressDialog* m_progress_dialog = nullptr;
   bool m_use_debugger = false;
   bool m_batch_mode = false;
   bool m_editing_perspectives = false;
@@ -256,7 +258,6 @@ private:
   void OnStopped();
   void OnRenderWindowSizeRequest(int width, int height);
   void UpdateTitle(const wxString& str);
-  static void ConnectWiimote(int wm_idx, bool connect);
 
   // Event functions
   void PostEvent(wxCommandEvent& event);

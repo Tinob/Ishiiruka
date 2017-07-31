@@ -6,7 +6,6 @@
 
 #include <string>
 
-#include "Core/Config/Config.h"
 #include "VideoCommon/VideoConfig.h"
 
 namespace Config

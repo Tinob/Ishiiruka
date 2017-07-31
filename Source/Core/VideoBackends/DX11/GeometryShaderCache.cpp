@@ -197,7 +197,8 @@ void GeometryShaderCache::Init()
       shader_count++;
       if ((shader_count & 7) == 0)
       {
-        Host_UpdateTitle(StringFromFormat("Compiling Geometry Shaders %i %% (%i/%i)", (shader_count * 100) / total, shader_count, total));
+        Host_UpdateProgressDialog(GetStringT("Compiling Geometry shaders...").c_str(),
+          static_cast<int>(shader_count), static_cast<int>(total));
         s_compiler->WaitForFinish();
       }
     },
@@ -207,6 +208,7 @@ void GeometryShaderCache::Init()
     }
     , true);
     s_compiler->WaitForFinish();
+    Host_UpdateProgressDialog("", -1, -1);
   }
 
   s_last_entry = nullptr;
