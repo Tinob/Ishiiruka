@@ -107,9 +107,9 @@ if(APPLE)
 endif()
 
 if(APPLE)
-	set(DOLPHIN_EXE_BASE Dolphin)
+	set(DOLPHIN_EXE_BASE Ishiiruka)
 else()
-	set(DOLPHIN_EXE_BASE dolphin-emu)
+	set(DOLPHIN_EXE_BASE Ishiiruka)
 endif()
 
 set(DOLPHIN_EXE ${DOLPHIN_EXE_BASE})
