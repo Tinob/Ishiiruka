@@ -84,7 +84,7 @@ void FramebufferManager::InitializeEFBCache()
   tex_desc = CD3D11_TEXTURE2D_DESC(DXGI_FORMAT_R8G8B8A8_UNORM, EFB_WIDTH, EFB_HEIGHT, 1, 1, D3D11_BIND_RENDER_TARGET);
   hr = D3D::device->CreateTexture2D(&tex_desc, nullptr, &buf);
   CHECK(hr == S_OK, "create EFB color cache texture (hr=%#x)", hr);
-  m_efb.color_cache_tex = new D3DTexture2D(buf, D3D11_BIND_RENDER_TARGET);
+  m_efb.color_cache_tex = new D3DTexture2D(buf, D3D11_BIND_RENDER_TARGET, DXGI_FORMAT_R8G8B8A8_UNORM);
   SAFE_RELEASE(buf);
   D3D::SetDebugObjectName((ID3D11DeviceChild*)m_efb.color_cache_tex->GetTex(), "EFB color read texture (used in g_renderer->AccessEFB)");
   D3D::SetDebugObjectName((ID3D11DeviceChild*)m_efb.color_cache_tex->GetRTV(), "EFB color read texture render target view (used in g_renderer->AccessEFB)");
@@ -99,7 +99,7 @@ void FramebufferManager::InitializeEFBCache()
   tex_desc = CD3D11_TEXTURE2D_DESC(DXGI_FORMAT_R32_FLOAT, EFB_WIDTH, EFB_HEIGHT, 1, 1, D3D11_BIND_RENDER_TARGET);
   hr = D3D::device->CreateTexture2D(&tex_desc, nullptr, &buf);
   CHECK(hr == S_OK, "create EFB depth cache read texture (hr=%#x)", hr);
-  m_efb.depth_cache_tex = new D3DTexture2D(buf, D3D11_BIND_RENDER_TARGET);
+  m_efb.depth_cache_tex = new D3DTexture2D(buf, D3D11_BIND_RENDER_TARGET, DXGI_FORMAT_R32_FLOAT);
   SAFE_RELEASE(buf);
   D3D::SetDebugObjectName((ID3D11DeviceChild*)m_efb.depth_cache_tex->GetTex(), "EFB depth read texture (used in g_renderer->AccessEFB)");
   D3D::SetDebugObjectName((ID3D11DeviceChild*)m_efb.depth_cache_tex->GetRTV(), "EFB depth read texture render target view (used in g_renderer->AccessEFB)");
@@ -130,7 +130,7 @@ FramebufferManager::FramebufferManager(u32 target_width, u32 target_height)
   tex_desc = CD3D11_TEXTURE2D_DESC(DXGI_FORMAT_R8G8B8A8_UNORM, m_target_width, m_target_height, m_efb.slices, 1, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET, D3D11_USAGE_DEFAULT, 0, sample_desc.Count, sample_desc.Quality);
   hr = D3D::device->CreateTexture2D(&tex_desc, nullptr, &buf);
   CHECK(hr == S_OK, "create EFB color texture (size: %dx%d; hr=%#x)", m_target_width, m_target_height, hr);
-  m_efb.color_tex = new D3DTexture2D(buf, (D3D11_BIND_FLAG)(D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET), DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_R8G8B8A8_UNORM, (sample_desc.Count > 1));
+  m_efb.color_tex = new D3DTexture2D(buf, (D3D11_BIND_FLAG)(D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET), DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_R8G8B8A8_UNORM, (sample_desc.Count > 1));
   SAFE_RELEASE(buf);
   D3D::SetDebugObjectName((ID3D11DeviceChild*)m_efb.color_tex->GetTex(), "EFB color texture");
   D3D::SetDebugObjectName((ID3D11DeviceChild*)m_efb.color_tex->GetSRV(), "EFB color texture shader resource view");
@@ -140,7 +140,7 @@ FramebufferManager::FramebufferManager(u32 target_width, u32 target_height)
   tex_desc = CD3D11_TEXTURE2D_DESC(DXGI_FORMAT_R8G8B8A8_UNORM, m_target_width, m_target_height, m_efb.slices, 1, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET, D3D11_USAGE_DEFAULT, 0, sample_desc.Count, sample_desc.Quality);
   hr = D3D::device->CreateTexture2D(&tex_desc, nullptr, &buf);
   CHECK(hr == S_OK, "create EFB color temp texture (size: %dx%d; hr=%#x)", m_target_width, m_target_height, hr);
-  m_efb.color_temp_tex = new D3DTexture2D(buf, (D3D11_BIND_FLAG)(D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET), DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_R8G8B8A8_UNORM, (sample_desc.Count > 1));
+  m_efb.color_temp_tex = new D3DTexture2D(buf, (D3D11_BIND_FLAG)(D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET), DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_R8G8B8A8_UNORM, (sample_desc.Count > 1));
   SAFE_RELEASE(buf);
   D3D::SetDebugObjectName((ID3D11DeviceChild*)m_efb.color_temp_tex->GetTex(), "EFB color temp texture");
   D3D::SetDebugObjectName((ID3D11DeviceChild*)m_efb.color_temp_tex->GetSRV(), "EFB color temp texture shader resource view");
@@ -150,7 +150,7 @@ FramebufferManager::FramebufferManager(u32 target_width, u32 target_height)
   tex_desc = CD3D11_TEXTURE2D_DESC(DXGI_FORMAT_R32_TYPELESS, m_target_width, m_target_height, m_efb.slices, 1, D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE, D3D11_USAGE_DEFAULT, 0, sample_desc.Count, sample_desc.Quality);
   hr = D3D::device->CreateTexture2D(&tex_desc, nullptr, &buf);
   CHECK(hr == S_OK, "create EFB depth texture (size: %dx%d; hr=%#x)", m_target_width, m_target_height, hr);
-  m_efb.depth_tex = new D3DTexture2D(buf, (D3D11_BIND_FLAG)(D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE), DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_D32_FLOAT, DXGI_FORMAT_UNKNOWN, (sample_desc.Count > 1));
+  m_efb.depth_tex = new D3DTexture2D(buf, (D3D11_BIND_FLAG)(D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE), DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_D32_FLOAT, DXGI_FORMAT_UNKNOWN, (sample_desc.Count > 1));
   SAFE_RELEASE(buf);
   D3D::SetDebugObjectName((ID3D11DeviceChild*)m_efb.depth_tex->GetTex(), "EFB depth texture");
   D3D::SetDebugObjectName((ID3D11DeviceChild*)m_efb.depth_tex->GetDSV(), "EFB depth texture depth stencil view");

@@ -520,7 +520,7 @@ bool PostProcessingShaderConfiguration::ParsePassBlock(const std::string& dirnam
 {
   RenderPass pass;
   pass.output_scale = 1.0f;
-  pass.output_format = PC_TexFormat::PC_TEX_FMT_RGBA32;
+  pass.output_format = HostTextureFormat::PC_TEX_FMT_RGBA32;
 
   for (const auto& option : block.m_options)
   {
@@ -540,15 +540,15 @@ bool PostProcessingShaderConfiguration::ParsePassBlock(const std::string& dirnam
     {
       if (value == "R32_FLOAT")
       {
-        pass.output_format = PC_TexFormat::PC_TEX_FMT_R_FLOAT;
+        pass.output_format = HostTextureFormat::PC_TEX_FMT_R_FLOAT;
       }
       else if (value == "RGBA16_FLOAT")
       {
-        pass.output_format = PC_TexFormat::PC_TEX_FMT_RGBA16_FLOAT;
+        pass.output_format = HostTextureFormat::PC_TEX_FMT_RGBA16_FLOAT;
       }
       else if (value == "RGBA32_FLOAT")
       {
-        pass.output_format = PC_TexFormat::PC_TEX_FMT_RGBA_FLOAT;
+        pass.output_format = HostTextureFormat::PC_TEX_FMT_RGBA_FLOAT;
       }
       else
       {
@@ -971,31 +971,12 @@ void PostProcessingShaderConfiguration::SetOptionb(const std::string& option, bo
 
 PostProcessingShader::~PostProcessingShader()
 {
-  for (size_t i = 0; i < m_prev_frame_texture.size(); i++)
-  {
-    m_prev_frame_texture[i].color_frame;
-    m_prev_frame_texture[i].depth_frame;
-  }
-  for (RenderPassData& pass : m_passes)
-  {
-    for (InputBinding& input : pass.inputs)
-    {
-      // External textures
-      if (input.texture)
-      {
-        delete input.texture;
-      }
-    }
-    if (pass.output_texture)
-    {
-      delete pass.output_texture;
-    }
-  }
+ 
 }
 
-TextureCacheBase::TCacheEntryBase* PostProcessingShader::GetLastPassOutputTexture() const
+HostTexture* PostProcessingShader::GetLastPassOutputTexture() const
 {
-  return m_passes[m_last_pass_index].output_texture;
+  return m_passes[m_last_pass_index].output_texture.get();
 }
 
 bool PostProcessingShader::IsLastPassScaled() const
@@ -1061,10 +1042,10 @@ bool PostProcessingShader::CreatePasses()
         TextureConfig config;
         config.width = input_config.external_image_size.width;
         config.height = input_config.external_image_size.height;
-        config.pcformat = PC_TexFormat::PC_TEX_FMT_RGBA32;
+        config.pcformat = HostTextureFormat::PC_TEX_FMT_RGBA32;
         config.rendertarget = false;
 
-        input.texture = g_texture_cache->AllocateTexture(config);
+        input.texture = std::move(g_texture_cache->AllocateTexture(config));
         input.texture->Load(input_config.external_image_data.get(), config.width, config.height, config.width, 0);
         input.size = input_config.external_image_size;
       }
@@ -1133,7 +1114,7 @@ void PostProcessingShader::LinkPassOutputs()
         }
         else
         {
-          input_binding.prev_texture = m_passes[pass_output_index].output_texture;
+          input_binding.prev_texture = m_passes[pass_output_index].output_texture.get();
           input_binding.size = m_passes[pass_output_index].output_size;
         }
       }
@@ -1171,14 +1152,14 @@ bool PostProcessingShader::ResizeOutputTextures(const TargetSize& new_size)
 
   for (size_t i = 0; i < m_prev_frame_texture.size(); i++)
   {
-    config.pcformat = PC_TexFormat::PC_TEX_FMT_RGBA32;
+    config.pcformat = HostTextureFormat::PC_TEX_FMT_RGBA32;
     if (i < static_cast<size_t>(frameoutput.color_count))
-      m_prev_frame_texture[i].color_frame = g_texture_cache->AllocateTexture(config);
-    config.pcformat = PC_TexFormat::PC_TEX_FMT_DEPTH_FLOAT;
+      m_prev_frame_texture[i].color_frame = std::move(g_texture_cache->AllocateTexture(config));
+    config.pcformat = HostTextureFormat::PC_TEX_FMT_DEPTH_FLOAT;
     if (i < static_cast<size_t>(frameoutput.depth_count))
-      m_prev_frame_texture[i].depth_frame = g_texture_cache->AllocateTexture(config);
+      m_prev_frame_texture[i].depth_frame = std::move(g_texture_cache->AllocateTexture(config));
   }
-  config.pcformat = PC_TexFormat::PC_TEX_FMT_RGBA32;
+  config.pcformat = HostTextureFormat::PC_TEX_FMT_RGBA32;
   for (size_t pass_index = 0; pass_index < m_passes.size(); pass_index++)
   {
     RenderPassData& pass = m_passes[pass_index];
@@ -1194,7 +1175,7 @@ bool PostProcessingShader::ResizeOutputTextures(const TargetSize& new_size)
     config.width = pass.output_size.width;
     config.height = pass.output_size.height;
     // Last pass output is always RGBA32
-    config.pcformat = pass_index < m_passes.size() - 1 ? pass.output_format : PC_TexFormat::PC_TEX_FMT_RGBA32;
+    config.pcformat = pass_index < m_passes.size() - 1 ? pass.output_format : HostTextureFormat::PC_TEX_FMT_RGBA32;
     pass.output_texture = g_texture_cache->AllocateTexture(config);
   }
   m_internal_size = new_size;
@@ -1208,22 +1189,7 @@ PostProcessor::PostProcessor(API_TYPE apitype) : m_APIType(apitype)
 
 PostProcessor::~PostProcessor()
 {
-  m_timer.Stop();
-  if (m_color_copy_texture)
-  {
-    delete m_color_copy_texture;
-    m_color_copy_texture = nullptr;
-  }
-  if (m_depth_copy_texture)
-  {
-    delete m_depth_copy_texture;
-    m_depth_copy_texture = nullptr;
-  }
-  if (m_stereo_buffer_texture)
-  {
-    delete m_stereo_buffer_texture;
-    m_stereo_buffer_texture = nullptr;
-  }
+  m_timer.Stop();  
 }
 
 void PostProcessor::DisablePostProcessor()
@@ -1601,11 +1567,11 @@ bool PostProcessor::ResizeCopyBuffers(const TargetSize& size, int layers)
   TextureConfig config;
   config.width = size.width;
   config.height = size.height;
-  config.pcformat = PC_TexFormat::PC_TEX_FMT_RGBA32;
+  config.pcformat = HostTextureFormat::PC_TEX_FMT_RGBA32;
   config.rendertarget = true;
   config.layers = layers;
   m_color_copy_texture = g_texture_cache->AllocateTexture(config);
-  config.pcformat = PC_TexFormat::PC_TEX_FMT_DEPTH_FLOAT;
+  config.pcformat = HostTextureFormat::PC_TEX_FMT_DEPTH_FLOAT;
   m_depth_copy_texture = g_texture_cache->AllocateTexture(config);
   if (m_color_copy_texture && m_depth_copy_texture)
   {
@@ -1629,7 +1595,7 @@ bool PostProcessor::ResizeStereoBuffer(const TargetSize& size)
   TextureConfig config;
   config.width = size.width;
   config.height = size.height;
-  config.pcformat = PC_TexFormat::PC_TEX_FMT_RGBA32;
+  config.pcformat = HostTextureFormat::PC_TEX_FMT_RGBA32;
   config.rendertarget = true;
   config.layers = 2;
   m_stereo_buffer_texture = g_texture_cache->AllocateTexture(config);

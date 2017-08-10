@@ -47,6 +47,7 @@ ID3D12GraphicsCommandList* current_command_list = nullptr;
 size_t root_signature_index = 0;
 std::array<ComPtr<ID3D12RootSignature>, 3> root_signatures;
 
+D3D12_GPU_DESCRIPTOR_HANDLE null_srv_gpu = {};
 D3D12_CPU_DESCRIPTOR_HANDLE null_srv_cpu = {};
 D3D12_CPU_DESCRIPTOR_HANDLE null_srv_cpu_shadow = {};
 
@@ -486,7 +487,7 @@ void CreateDescriptorHeaps()
       PanicAlert("Failed to create descriptor heap");
 
     // Allocate null descriptor for use when filling tables
-    gpu_descriptor_heap_mgr->Allocate(nullptr, &null_srv_cpu, &null_srv_cpu_shadow, nullptr);
+    gpu_descriptor_heap_mgr->Allocate(nullptr, &null_srv_cpu, &null_srv_cpu_shadow, &null_srv_gpu);
     gpu_descriptor_heaps[0] = gpu_descriptor_heap_mgr->GetDescriptorHeap();
     resource_descriptor_size = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
   }

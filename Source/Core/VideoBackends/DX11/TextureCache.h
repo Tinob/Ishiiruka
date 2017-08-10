@@ -17,55 +17,23 @@ public:
   ~TextureCache();
 
 private:
-  struct TCacheEntry : TCacheEntryBase
-  {
-    D3DTexture2D *texture;
-    D3DTexture2D *nrm_texture;
-    DXGI_FORMAT DXGI_format;
-    D3D11_USAGE usage;
-    bool swap_rg;
-    bool convertrgb565;
-    bool compressed;
 
-    TCacheEntry(const TextureConfig& config, D3DTexture2D *_tex) : TCacheEntryBase(config),
-      texture(_tex), nrm_texture(nullptr), swap_rg(false), convertrgb565(false), compressed(false)
-    {}
-    ~TCacheEntry();
+  HostTextureFormat GetHostTextureFormat(const s32 texformat, const TlutFormat tlutfmt, u32 width, u32 height) override;
 
-    void CopyRectangleFromTexture(
-      const TCacheEntryBase* source,
-      const MathUtil::Rectangle<int> &srcrect,
-      const MathUtil::Rectangle<int> &dstrect) override;
+  void CopyEFBToCacheEntry(TextureCacheBase::TCacheEntry* entry, bool is_depth_copy, const EFBRectangle& src_rect,
+    bool scale_by_half, u32 cbuf_id, const float* colmat, u32 width, u32 height) override;
 
-    void Load(const u8* src, u32 width, u32 height,
-      u32 expanded_width, u32 level) override;
-    void LoadMaterialMap(const u8* src, u32 width, u32 height, u32 level) override;
-    void FromRenderTarget(bool is_depth_copy, const EFBRectangle& srcRect,
-      bool scaleByHalf, unsigned int cbufid, const float *colmat, u32 width, u32 height) override;
-    bool DecodeTextureOnGPU(u32 dst_level, const u8* data,
-      u32 data_size, TextureFormat format, u32 width, u32 height,
-      u32 aligned_width, u32 aligned_height, u32 row_stride,
-      const u8* palette, TlutFormat palette_format) override;
-    bool SupportsMaterialMap() const override
-    {
-      return nrm_texture != nullptr;
-    };
-    void Bind(u32 stage) override;
-    bool Save(const std::string& filename, u32 level) override;
-    inline uintptr_t GetInternalObject() override
-    {
-      return reinterpret_cast<uintptr_t>(texture);
-    };
-  };
+  bool DecodeTextureOnGPU(HostTexture* dst, u32 dst_level, const u8* data,
+    u32 data_size, TextureFormat format, u32 width, u32 height,
+    u32 aligned_width, u32 aligned_height, u32 row_stride,
+    const u8* palette, TlutFormat palette_format) override;
 
-  PC_TexFormat GetNativeTextureFormat(const s32 texformat, const TlutFormat tlutfmt, u32 width, u32 height) override;
-
-  TextureCache::TCacheEntryBase* CreateTexture(const TextureConfig& config);
+  std::unique_ptr<HostTexture> CreateTexture(const TextureConfig& config) override;
 
   void CopyEFB(u8* dst, const EFBCopyFormat& format, u32 native_width, u32 bytes_per_row,
     u32 num_blocks_y, u32 memory_stride, bool is_depth_copy,
     const EFBRectangle& src_rect, bool scale_by_half) override;
-  bool Palettize(TCacheEntryBase* entry, const TCacheEntryBase* base_entry) override;
+  bool Palettize(TCacheEntry* entry, const TCacheEntry* base_entry) override;
   void LoadLut(u32 lutFmt, void* addr, u32 size) override;
   bool SupportsGPUTextureDecode(TextureFormat format, TlutFormat palette_format) override;
   bool CompileShaders() override

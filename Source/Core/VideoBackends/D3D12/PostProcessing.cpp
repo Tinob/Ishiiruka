@@ -275,7 +275,7 @@ void D3DPostProcessingShader::Draw(PostProcessor* p,
         }
         break;
       default:
-        TextureCacheBase::TCacheEntryBase* i_texture = input.texture != nullptr ? input.texture : input.prev_texture;
+        HostTexture* i_texture = input.texture ? input.texture.get() : input.prev_texture;
         if (i_texture != nullptr)
         {
           input_texture = reinterpret_cast<D3DTexture2D*>(i_texture->GetInternalObject());

@@ -40,6 +40,7 @@
     <ClCompile Include="FramebufferManager.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="NativeVertexFormat.cpp" />
+    <ClCompile Include="OGLTexture.cpp" />
     <ClCompile Include="PerfQuery.cpp" />
     <ClCompile Include="PostProcessing.cpp" />
     <ClCompile Include="ProgramShaderCache.cpp" />
@@ -55,6 +56,7 @@
     <ClInclude Include="BoundingBox.h" />
     <ClInclude Include="FramebufferManager.h" />
     <ClInclude Include="GPUTimer.h" />
+    <ClInclude Include="OGLTexture.h" />
     <ClInclude Include="PerfQuery.h" />
     <ClInclude Include="PostProcessing.h" />
     <ClInclude Include="ProgramShaderCache.h" />

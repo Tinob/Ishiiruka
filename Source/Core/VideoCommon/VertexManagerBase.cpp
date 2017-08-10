@@ -108,7 +108,7 @@ void VertexManagerBase::PrepareForAdditionalData(int primitive, u32 count, u32 s
     if (count > GetRemainingIndices(primitive))
       ERROR_LOG(VIDEO, "VertexManagerBase: Buffer not large enough for all indices! "
         "Increase MAXIBUFFERSIZE or we need primitive breaking after all.");
-    if (s_pCurBufferPointer && needed_vertex_bytes > GetRemainingSize())
+    if (needed_vertex_bytes > GetRemainingSize())
       ERROR_LOG(VIDEO, "VertexManagerBase: Buffer not large enough for all vertices! "
         "Increase MAXVBUFFERSIZE or we need primitive breaking after all.");
 #endif
@@ -183,12 +183,12 @@ void VertexManagerBase::DoFlush()
     {
       if (usedtextures & (1 << i))
       {
-        const TextureCacheBase::TCacheEntryBase* tentry = g_texture_cache->Load(i);
+        const TextureCacheBase::TCacheEntry* tentry = g_texture_cache->Load(i);
         if (tentry)
         {
           if (g_ActiveConfig.HiresMaterialMapsEnabled())
           {
-            material_mask |= ((int)tentry->SupportsMaterialMap()) << i;
+            material_mask |= ((int)tentry->material_map) << i;
             emissive_mask |= ((int)tentry->emissive_in_alpha) << i;
           }
           PixelShaderManager::SetTexDims(i, tentry->native_width, tentry->native_height);

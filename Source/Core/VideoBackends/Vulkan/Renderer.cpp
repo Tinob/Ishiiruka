@@ -648,7 +648,7 @@ void Renderer::DrawVirtualXFB(VkRenderPass render_pass, const TargetRectangle& t
 	for (u32 i = 0; i < xfb_count; ++i)
 	{
 		const XFBSource* xfb_source = static_cast<const XFBSource*>(xfb_sources[i]);
-		xfb_source->GetTexture()->GetTexture()->TransitionToLayout(
+		xfb_source->GetTexture()->GetRawTexIdentifier()->TransitionToLayout(
 			g_command_buffer_mgr->GetCurrentCommandBuffer(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 		TargetRectangle source_rect = xfb_source->sourceRc;
@@ -673,7 +673,7 @@ void Renderer::DrawVirtualXFB(VkRenderPass render_pass, const TargetRectangle& t
 			2;
 
 		source_rect.right -= Renderer::EFBToScaledX(fb_stride - fb_width);
-		BlitScreen(render_pass, draw_rect, source_rect, xfb_source->GetTexture()->GetTexture(), true);
+		BlitScreen(render_pass, draw_rect, source_rect, xfb_source->GetTexture()->GetRawTexIdentifier(), true);
 	}
 }
 
@@ -684,13 +684,13 @@ void Renderer::DrawRealXFB(VkRenderPass render_pass, const TargetRectangle& targ
 	for (u32 i = 0; i < xfb_count; ++i)
 	{
 		const XFBSource* xfb_source = static_cast<const XFBSource*>(xfb_sources[i]);
-		xfb_source->GetTexture()->GetTexture()->TransitionToLayout(
+		xfb_source->GetTexture()->GetRawTexIdentifier()->TransitionToLayout(
 			g_command_buffer_mgr->GetCurrentCommandBuffer(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 		TargetRectangle source_rect = xfb_source->sourceRc;
 		TargetRectangle draw_rect = target_rect;
 		source_rect.right -= fb_stride - fb_width;
-		BlitScreen(render_pass, draw_rect, source_rect, xfb_source->GetTexture()->GetTexture(), true);
+		BlitScreen(render_pass, draw_rect, source_rect, xfb_source->GetTexture()->GetRawTexIdentifier(), true);
 	}
 }
 

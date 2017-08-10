@@ -349,7 +349,7 @@ void OGLPostProcessingShader::Draw(PostProcessor* p,
         }
         break;
       default:
-        TextureCacheBase::TCacheEntryBase* input_texture = input.texture != nullptr ? input.texture : input.prev_texture;
+        HostTexture* input_texture = input.texture ? input.texture.get() : input.prev_texture;
         if (input_texture != nullptr)
         {
           glBindTexture(GL_TEXTURE_2D_ARRAY, static_cast<GLuint>(input_texture->GetInternalObject()));

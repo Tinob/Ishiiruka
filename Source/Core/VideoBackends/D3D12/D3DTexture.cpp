@@ -3,7 +3,6 @@
 // Refer to the license.txt file included.
 #include <memory>
 
-#include "Common/CommonTypes.h"
 #include "Common/MsgHandler.h"
 #include "VideoBackends/D3D12/D3DBase.h"
 #include "VideoBackends/D3D12/D3DCommandListManager.h"
@@ -31,7 +30,7 @@ void CleanupPersistentD3DTextureResources()
   s_texture_upload_stream_buffer.reset();
 }
 
-void ReplaceTexture2D(ID3D12Resource* texture12, const u8* buffer, DXGI_FORMAT fmt, unsigned int width, unsigned int height, unsigned int src_pitch, unsigned int level, D3D12_RESOURCE_STATES current_resource_state)
+void ReplaceTexture2D(ID3D12Resource* texture12, const u8* buffer, DXGI_FORMAT fmt, u32 width, u32 height, u32 src_pitch, u32 level, D3D12_RESOURCE_STATES current_resource_state)
 {
   if (fmt == DXGI_FORMAT_R8G8B8A8_UNORM)
   {
@@ -43,7 +42,7 @@ void ReplaceTexture2D(ID3D12Resource* texture12, const u8* buffer, DXGI_FORMAT f
     src_pitch *= (fmt == DXGI_FORMAT_BC1_UNORM ? 8 : 16);
     height = std::max(1u, (height + 3) >> 2);
   }
-  const unsigned int upload_size = Common::AlignUpSizePow2(src_pitch, D3D12_TEXTURE_DATA_PITCH_ALIGNMENT) * height;
+  const u32 upload_size = Common::AlignUpSizePow2(src_pitch, D3D12_TEXTURE_DATA_PITCH_ALIGNMENT) * height;
 
   ID3D12Resource* upload_buffer = nullptr;
   size_t upload_buffer_offset = 0;
@@ -130,7 +129,7 @@ void ReplaceTexture2D(ID3D12Resource* texture12, const u8* buffer, DXGI_FORMAT f
 
 }  // namespace
 
-D3DTexture2D* D3DTexture2D::Create(unsigned int width, unsigned int height, u32 bind, DXGI_FORMAT fmt, unsigned int levels, unsigned int slices, D3D12_SUBRESOURCE_DATA* data)
+D3DTexture2D* D3DTexture2D::Create(u32 width, u32 height, u32 bind, DXGI_FORMAT fmt, u32 levels, u32 slices, D3D12_SUBRESOURCE_DATA* data)
 {
   ComPtr<ID3D12Resource> texture;
 
@@ -177,7 +176,7 @@ D3DTexture2D* D3DTexture2D::Create(unsigned int width, unsigned int height, u32 
 
   if (data)
   {
-    DX12::D3D::ReplaceTexture2D(texture.Get(), reinterpret_cast<const u8*>(data->pData), fmt, width, height, static_cast<unsigned int>(data->RowPitch), 0, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+    DX12::D3D::ReplaceTexture2D(texture.Get(), reinterpret_cast<const u8*>(data->pData), fmt, width, height, static_cast<u32>(data->RowPitch), 0, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
   }
   return ret;
 }

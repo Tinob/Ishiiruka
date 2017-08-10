@@ -9,6 +9,7 @@
 #include <tuple>
 
 #include "Common/CommonTypes.h"
+#include "Common/MathUtil.h"
 
 #include "VideoCommon/TextureDecoder.h"
 
@@ -54,26 +55,26 @@ struct TextureConfig
     {
       result += result * 2;
     }
-    if (materialmap)
-    {
-      result *= 2;
-    }
     result = std::max(result, 4096u);
     return result;
   }
 
   bool operator == (const TextureConfig& o) const
   {
-    return std::tie(width, height, levels, layers, rendertarget, pcformat, materialmap) ==
-      std::tie(o.width, o.height, o.levels, o.layers, o.rendertarget, o.pcformat, o.materialmap);
+    return std::tie(width, height, levels, layers, rendertarget, pcformat) ==
+      std::tie(o.width, o.height, o.levels, o.layers, o.rendertarget, o.pcformat);
+  }
+
+  MathUtil::Rectangle<int> GetRect() const
+  {
+    return { 0, 0, static_cast<int>(width), static_cast<int>(height) };
   }
 
   struct Hasher
   {
     size_t operator()(const TextureConfig& c) const
     {
-      return (u64)c.materialmap << 57	// 1 bit
-        | (u64)c.rendertarget << 56	// 1 bit
+      return (u64)c.rendertarget << 56	// 1 bit
         | (u64)c.pcformat << 48		// 8 bits
         | (u64)c.layers << 40		// 8 bits 
         | (u64)c.levels << 32		// 8 bits 
@@ -84,6 +85,5 @@ struct TextureConfig
 
   u32 width = 0, height = 0, levels = 1, layers = 1;
   bool rendertarget = false;
-  bool materialmap = false;
-  PC_TexFormat pcformat = PC_TEX_FMT_NONE;
+  HostTextureFormat pcformat = PC_TEX_FMT_NONE;
 };

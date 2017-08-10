@@ -47,8 +47,8 @@ void WriteSwizzler(char*& p, u32 format)
   // Two were merged for GLSL
   WRITE(p, "uniform float4 " I_COLORS"[2] %s;\n", WriteRegister("c", C_COLORS));
 
-  u32 blkW = TexDecoder_GetBlockWidthInTexels(format);
-  u32 blkH = TexDecoder_GetBlockHeightInTexels(format);
+  u32 blkW = TexDecoder::GetBlockWidthInTexels(format);
+  u32 blkH = TexDecoder::GetBlockHeightInTexels(format);
   u32 samples = TextureConversionShader::GetEncodedSampleCount(format);
 
   WRITE(p, "uniform sampler samp0 : register(s0);\n");
@@ -92,8 +92,8 @@ void Write32BitSwizzler(char*& p, u32 format)
   // Two were merged for GLSL
   WRITE(p, "uniform float4 " I_COLORS"[2] %s;\n", WriteRegister("c", C_COLORS));
 
-  u32 blkW = TexDecoder_GetBlockWidthInTexels(format);
-  u32 blkH = TexDecoder_GetBlockHeightInTexels(format);
+  u32 blkW = TexDecoder::GetBlockWidthInTexels(format);
+  u32 blkH = TexDecoder::GetBlockHeightInTexels(format);
 
   // 32 bit textures (RGBA8 and Z24) are store in 2 cache line increments
   WRITE(p, "uniform sampler samp0 : register(s0);\n");

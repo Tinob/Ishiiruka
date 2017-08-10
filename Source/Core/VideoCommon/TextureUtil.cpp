@@ -240,7 +240,7 @@ void CopyCompressedTextureData(u8 *pDst, const u8 *pSrc, const s32 width, const 
   }
 }
 
-s32 GetTextureSizeInBytes(u32 width, u32 height, PC_TexFormat fmt)
+s32 GetTextureSizeInBytes(u32 width, u32 height, HostTextureFormat fmt)
 {
   static const s32 formatSize[11]
   {

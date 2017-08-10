@@ -7,6 +7,8 @@ set(SRCS
   D3DTexture.h
   D3DUtil.cpp
   D3DUtil.h
+  DXTexture.cpp
+  DXTexture.h
   Depalettizer.cpp
   Depalettizer.h
   FramebufferManager.cpp

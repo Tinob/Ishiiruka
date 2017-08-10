@@ -44,6 +44,9 @@
     <ClCompile Include="Depalettizer.cpp">
       <Filter>Render</Filter>
     </ClCompile>
+    <ClCompile Include="DXTexture.cpp">
+      <Filter>D3D</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="VideoBackend.h" />
@@ -85,6 +88,9 @@
     </ClInclude>
     <ClInclude Include="Depalettizer.h">
       <Filter>Render</Filter>
+    </ClInclude>
+    <ClInclude Include="DXTexture.h">
+      <Filter>D3D</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -20,6 +20,7 @@ set(SRCS
 	VertexManager.cpp
 	VulkanContext.cpp
 	VulkanLoader.cpp
+	VKTexture.cpp
 	main.cpp
 )
 

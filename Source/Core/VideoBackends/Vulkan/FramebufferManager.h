@@ -9,7 +9,9 @@
 #include "Common/CommonTypes.h"
 #include "VideoBackends/Vulkan/Constants.h"
 #include "VideoBackends/Vulkan/TextureCache.h"
+#include "VideoBackends/Vulkan/VKTexture.h"
 #include "VideoCommon/FramebufferManagerBase.h"
+
 
 namespace Vulkan
 {
@@ -175,10 +177,10 @@ private:
 class XFBSource final : public XFBSourceBase
 {
 public:
-	explicit XFBSource(std::unique_ptr<TextureCache::TCacheEntry> texture);
+	explicit XFBSource(std::unique_ptr<HostTexture> texture);
 	~XFBSource();
 
-	TextureCache::TCacheEntry* GetTexture() const { return m_texture.get(); }
+    VKTexture* GetTexture() const { return static_cast<VKTexture*>(m_texture.get()); }
 	// Guest -> GPU EFB Textures
 	void DecodeToTexture(u32 xfb_addr, u32 fb_width, u32 fb_height) override;
 
@@ -186,7 +188,7 @@ public:
 	void CopyEFB(float gamma) override;
 
 private:
-	std::unique_ptr<TextureCache::TCacheEntry> m_texture;
+	std::unique_ptr<HostTexture> m_texture;
 };
 
 }  // namespace Vulkan

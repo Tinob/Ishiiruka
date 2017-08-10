@@ -123,7 +123,7 @@ public:
     std::vector<Input> inputs;
     std::string entry_point;
     float output_scale;
-    PC_TexFormat output_format;
+    HostTextureFormat output_format;
     std::vector<const ConfigurationOption*> dependent_options;
 
     void GetInputLocations(
@@ -319,7 +319,7 @@ public:
   {};
   virtual ~PostProcessingShader();
 
-  TextureCacheBase::TCacheEntryBase* GetLastPassOutputTexture() const;
+  HostTexture* GetLastPassOutputTexture() const;
   bool IsLastPassScaled() const;
 
   bool IsReady() const
@@ -342,8 +342,8 @@ protected:
     u32 texture_unit{};
     TargetSize size{};
     u32 frame_index{};
-    TextureCacheBase::TCacheEntryBase* texture{};	// only set for external images
-    TextureCacheBase::TCacheEntryBase* prev_texture{};
+    std::unique_ptr<HostTexture> texture{};	// only set for external images
+    HostTexture* prev_texture{};
     uintptr_t texture_sampler{};
   };
 
@@ -356,10 +356,10 @@ protected:
 
     std::vector<InputBinding> inputs;
 
-    TextureCacheBase::TCacheEntryBase* output_texture{};
+    std::unique_ptr<HostTexture> output_texture{};
     TargetSize output_size{};
     float output_scale{};
-    PC_TexFormat output_format = PC_TexFormat::PC_TEX_FMT_RGBA32;
+    HostTextureFormat output_format = HostTextureFormat::PC_TEX_FMT_RGBA32;
 
     bool enabled{};
   };
@@ -386,15 +386,15 @@ protected:
   bool m_prev_depth_enabled = false;
   struct past_frame_data
   {
-    TextureCacheBase::TCacheEntryBase* color_frame;
-    TextureCacheBase::TCacheEntryBase* depth_frame;
+    std::unique_ptr<HostTexture> color_frame;
+    std::unique_ptr<HostTexture> depth_frame;
   };
   std::vector<past_frame_data> m_prev_frame_texture;
   TargetSize m_prev_frame_size{};
   TargetSize m_prev_depth_frame_size{};
   int m_prev_frame_index = -1;
   int m_prev_depth_frame_index = -1;
-  inline TextureCacheBase::TCacheEntryBase* GetPrevColorFrame(int frame_index)
+  inline HostTexture* GetPrevColorFrame(int frame_index)
   {
     if (!m_prev_frame_enabled)
     {
@@ -402,10 +402,10 @@ protected:
     }
     int index = static_cast<int>(m_config->GetFrameOutput().color_count);
     index = (m_prev_frame_index - frame_index + index) % index;
-    return m_prev_frame_texture[index].color_frame;
+    return m_prev_frame_texture[index].color_frame.get();
   }
 
-  inline TextureCacheBase::TCacheEntryBase* GetPrevDepthFrame(int frame_index)
+  inline HostTexture* GetPrevDepthFrame(int frame_index)
   {
     if (!m_prev_depth_enabled)
     {
@@ -413,7 +413,7 @@ protected:
     }
     int index = static_cast<int>(m_config->GetFrameOutput().depth_count);
     index = (m_prev_depth_frame_index - frame_index + index) % index;
-    return m_prev_frame_texture[index].depth_frame;
+    return m_prev_frame_texture[index].depth_frame.get();
   }
   inline void IncrementFrame()
   {
@@ -589,11 +589,11 @@ protected:
   // buffers
   TargetSize m_copy_size;
   int m_copy_layers = 0;
-  TextureCacheBase::TCacheEntryBase* m_color_copy_texture = nullptr;
-  TextureCacheBase::TCacheEntryBase* m_depth_copy_texture = nullptr;
+  std::unique_ptr<HostTexture> m_color_copy_texture = nullptr;
+  std::unique_ptr<HostTexture> m_depth_copy_texture = nullptr;
 
   TargetSize m_stereo_buffer_size;
-  TextureCacheBase::TCacheEntryBase* m_stereo_buffer_texture = nullptr;
+  std::unique_ptr<HostTexture> m_stereo_buffer_texture = nullptr;
 
   // Projection state for detecting when to apply post
   PROJECTION_STATE m_projection_state = PROJECTION_STATE_INITIAL;

@@ -85,6 +85,7 @@ extern std::unique_ptr<D3DDescriptorHeapManager> rtv_descriptor_heap_mgr;
 extern std::unique_ptr<D3DSamplerHeapManager> sampler_descriptor_heap_mgr;
 extern std::array<ID3D12DescriptorHeap*, 2> gpu_descriptor_heaps;
 
+extern D3D12_GPU_DESCRIPTOR_HANDLE null_srv_gpu;
 extern D3D12_CPU_DESCRIPTOR_HANDLE null_srv_cpu;
 extern D3D12_CPU_DESCRIPTOR_HANDLE null_srv_cpu_shadow;
 

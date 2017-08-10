@@ -1,17 +1,18 @@
 set(SRCS BoundingBox.cpp
-           FramebufferManager.cpp
-	   main.cpp
-	   NativeVertexFormat.cpp
-	   PerfQuery.cpp
-	   PostProcessing.cpp
-	   ProgramShaderCache.cpp
-	   RasterFont.cpp
-	   Render.cpp
-	   SamplerCache.cpp
-	   StreamBuffer.cpp
-	   TextureCache.cpp
-	   TextureConverter.cpp
-	   VertexManager.cpp)
+  FramebufferManager.cpp
+  OGLTexture.cpp
+  main.cpp
+  NativeVertexFormat.cpp
+  PerfQuery.cpp
+  PostProcessing.cpp
+  ProgramShaderCache.cpp
+  RasterFont.cpp
+  Render.cpp
+  SamplerCache.cpp
+  StreamBuffer.cpp
+  TextureCache.cpp
+  TextureConverter.cpp
+  VertexManager.cpp)
 
 
 set(LIBS	${LIBS}

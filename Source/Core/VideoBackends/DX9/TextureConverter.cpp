@@ -370,8 +370,8 @@ void EncodeToRamFromTexture(u8* dest_ptr, const EFBCopyFormat& format, u32 nativ
     FramebufferManager::GetEFBDepthTexture() :
     FramebufferManager::GetEFBColorTexture();
 
-  const u16 blkW = TexDecoder_GetBlockWidthInTexels(format.copy_format);
-  const u16 blkH = TexDecoder_GetBlockHeightInTexels(format.copy_format);
+  const u16 blkW = TexDecoder::GetBlockWidthInTexels(format.copy_format);
+  const u16 blkH = TexDecoder::GetBlockHeightInTexels(format.copy_format);
   const u16 samples = TextureConversionShader::GetEncodedSampleCount(format.copy_format);
 
   // only copy on cache line boundaries

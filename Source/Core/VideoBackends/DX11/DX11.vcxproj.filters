@@ -71,6 +71,9 @@
     <ClCompile Include="HullDomainShaderCache.cpp">
       <Filter>Render</Filter>
     </ClCompile>
+    <ClCompile Include="DXTexture.cpp">
+      <Filter>Render</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="VideoBackend.h" />
@@ -144,6 +147,9 @@
       <Filter>Render</Filter>
     </ClInclude>
     <ClInclude Include="HullDomainShaderCache.h">
+      <Filter>Render</Filter>
+    </ClInclude>
+    <ClInclude Include="DXTexture.h">
       <Filter>Render</Filter>
     </ClInclude>
   </ItemGroup>

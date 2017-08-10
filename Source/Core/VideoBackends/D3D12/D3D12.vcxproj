@@ -59,6 +59,7 @@
     <ClCompile Include="D3DStreamBuffer.cpp" />
     <ClCompile Include="D3DTexture.cpp" />
     <ClCompile Include="D3DUtil.cpp" />
+    <ClCompile Include="DXTexture.cpp" />
     <ClCompile Include="FramebufferManager.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="NativeVertexFormat.cpp" />
@@ -85,6 +86,7 @@
     <ClInclude Include="D3DStreamBuffer.h" />
     <ClInclude Include="D3DTexture.h" />
     <ClInclude Include="D3DUtil.h" />
+    <ClInclude Include="DXTexture.h" />
     <ClInclude Include="FramebufferManager.h" />
     <ClInclude Include="NativeVertexFormat.h" />
     <ClInclude Include="PerfQuery.h" />

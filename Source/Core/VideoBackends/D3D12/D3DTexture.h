@@ -7,6 +7,8 @@
 #include <d3d12.h>
 #include "VideoBackends/D3D12/D3DUtil.h"
 
+#include "VideoCommon/HostTexture.h"
+
 namespace DX12
 {
 
@@ -19,7 +21,7 @@ enum TEXTURE_BIND_FLAG : u32
 
 namespace D3D
 {
-void ReplaceTexture2D(ID3D12Resource* pTexture, const u8* buffer, DXGI_FORMAT fmt, unsigned int width, unsigned int height, unsigned int src_pitch, unsigned int level, D3D12_RESOURCE_STATES current_resource_state = D3D12_RESOURCE_STATE_COMMON);
+void ReplaceTexture2D(ID3D12Resource* pTexture, const u8* buffer, DXGI_FORMAT fmt, u32 width, u32 height, u32 src_pitch, u32 level, D3D12_RESOURCE_STATES current_resource_state = D3D12_RESOURCE_STATE_COMMON);
 void CleanupPersistentD3DTextureResources();
 }
 
@@ -31,9 +33,23 @@ public:
   //     either create an ID3D12Resource object, pass it to the constructor and specify what views to create
   //     or let the texture automatically be created by D3DTexture2D::Create
 
-  D3DTexture2D(ID3D12Resource* texptr, u32 bind, DXGI_FORMAT fmt, DXGI_FORMAT srv_format = DXGI_FORMAT_UNKNOWN, DXGI_FORMAT dsv_format = DXGI_FORMAT_UNKNOWN, DXGI_FORMAT rtv_format = DXGI_FORMAT_UNKNOWN, bool multisampled = false, D3D12_RESOURCE_STATES resource_state = D3D12_RESOURCE_STATE_COMMON);
-  static D3DTexture2D* Create(unsigned int width, unsigned int height, u32 bind, DXGI_FORMAT fmt, unsigned int levels = 1, unsigned int slices = 1, D3D12_SUBRESOURCE_DATA* data = nullptr);
-  inline void TransitionToResourceState(ID3D12GraphicsCommandList* command_list, D3D12_RESOURCE_STATES state_after)
+  D3DTexture2D(
+    ID3D12Resource* texptr,
+    u32 bind,
+    DXGI_FORMAT fmt,
+    DXGI_FORMAT srv_format = DXGI_FORMAT_UNKNOWN,
+    DXGI_FORMAT dsv_format = DXGI_FORMAT_UNKNOWN,
+    DXGI_FORMAT rtv_format = DXGI_FORMAT_UNKNOWN,
+    bool multisampled = false,
+    D3D12_RESOURCE_STATES resource_state = D3D12_RESOURCE_STATE_COMMON);
+  static D3DTexture2D* Create(u32 width,
+    u32 height,
+    u32 bind,
+    DXGI_FORMAT fmt,
+    u32 levels = 1,
+    u32 slices = 1,
+    D3D12_SUBRESOURCE_DATA* data = nullptr);
+  void TransitionToResourceState(ID3D12GraphicsCommandList* command_list, D3D12_RESOURCE_STATES state_after)
   {
     if (m_resource_state != state_after)
     {

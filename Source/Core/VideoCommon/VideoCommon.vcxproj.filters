@@ -216,6 +216,9 @@
     <ClCompile Include="TessellationShaderManager.cpp">
       <Filter>Shader Managers</Filter>
     </ClCompile>
+    <ClCompile Include="HostTexture.cpp">
+      <Filter>Base</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommandProcessor.h" />
@@ -466,6 +469,9 @@
       <Filter>Util</Filter>
     </ClInclude>
     <ClInclude Include="TextureConfig.h">
+      <Filter>Base</Filter>
+    </ClInclude>
+    <ClInclude Include="HostTexture.h">
       <Filter>Base</Filter>
     </ClInclude>
   </ItemGroup>

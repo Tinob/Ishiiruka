@@ -120,6 +120,9 @@ FramebufferManager::FramebufferManager(u32 target_width, u32 target_height)
   D3D12_RESOURCE_DESC text_desc;
   D3D12_CLEAR_VALUE clear_valueRTV = { DXGI_FORMAT_R8G8B8A8_UNORM,{ 0.0f, 0.0f, 0.0f, 1.0f } };
   D3D12_CLEAR_VALUE clear_valueDSV = CD3DX12_CLEAR_VALUE(DXGI_FORMAT_D32_FLOAT, 0.0f, 0);
+  clear_valueDSV.Color[0] = 0;
+  clear_valueDSV.Color[1] = 0;
+  clear_valueDSV.Color[2] = 0;
   clear_valueDSV.Color[3] = 0;
   HRESULT hr;
 

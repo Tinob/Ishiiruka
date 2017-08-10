@@ -21,7 +21,7 @@ void IndexGenerator::Init()
 {
   primitive_table[OpcodeDecoder::GX_DRAW_QUADS] = IndexGenerator::AddQuads;
 #if defined(_DEBUG) || defined(DEBUGFAST)
-  primitive_table[GX_DRAW_QUADS_2] = IndexGenerator::AddQuads_nonstandard;
+  primitive_table[OpcodeDecoder::GX_DRAW_QUADS_2] = IndexGenerator::AddQuads_nonstandard;
 #else
   primitive_table[OpcodeDecoder::GX_DRAW_QUADS_2] = IndexGenerator::AddQuads;
 #endif

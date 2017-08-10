@@ -434,7 +434,7 @@ HRESULT Create(HWND wnd)
       && format_support.OutFormatSupport2 & D3D11_FORMAT_SUPPORT2_OUTPUT_MERGER_LOGIC_OP;
 
   }
-  backbuf = new D3DTexture2D(buf, D3D11_BIND_RENDER_TARGET);
+  backbuf = new D3DTexture2D(buf, D3D11_BIND_RENDER_TARGET, DXGI_FORMAT_R8G8B8A8_UNORM);
   SAFE_RELEASE(buf);
   CHECK(backbuf != nullptr, "Create back buffer texture");
   SetDebugObjectName(backbuf->GetTex(), "backbuffer texture");
@@ -594,7 +594,7 @@ void Reset()
     SAFE_RELEASE(swapchain);
     return;
   }
-  backbuf = new D3DTexture2D(buf, D3D11_BIND_RENDER_TARGET);
+  backbuf = new D3DTexture2D(buf, D3D11_BIND_RENDER_TARGET, DXGI_FORMAT_R8G8B8A8_UNORM);
   SAFE_RELEASE(buf);
   CHECK(backbuf != nullptr, "Create back buffer texture");
   SetDebugObjectName(backbuf->GetTex(), "backbuffer texture");

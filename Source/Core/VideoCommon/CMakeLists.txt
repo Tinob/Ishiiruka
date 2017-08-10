@@ -32,6 +32,7 @@ set(SRCS	AsyncRequests.cpp
 			G_SPXP41_pvt.cpp
 			G_SX4E01_pvt.cpp
 			HiresTextures.cpp
+			HostTexture.cpp
 			ImageWrite.cpp
 			IndexGenerator.cpp
 			MainBase.cpp
