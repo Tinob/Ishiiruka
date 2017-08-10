@@ -45,10 +45,10 @@ template class BoolSetting<wxCheckBox>;
 template class BoolSetting<wxRadioButton>;
 
 template <>
-SettingCheckBox::BoolSetting(wxWindow* parent, const wxString& label, const wxString& tooltip,
+SettingCheckBox::BoolSetting(wxWindow* parent, VideoConfig &vconfig, const wxString& label, const wxString& tooltip,
   const Config::ConfigInfo<bool>& setting, bool reverse, long style)
   : wxCheckBox(parent, wxID_ANY, label, wxDefaultPosition, wxDefaultSize, style),
-  m_setting(setting), m_reverse(reverse)
+  m_setting(setting), m_reverse(reverse), m_vconfig(vconfig)
 {
   SetToolTip(tooltip);
   SetValue(Config::Get(m_setting) ^ m_reverse);
@@ -58,10 +58,10 @@ SettingCheckBox::BoolSetting(wxWindow* parent, const wxString& label, const wxSt
 }
 
 template <>
-SettingRadioButton::BoolSetting(wxWindow* parent, const wxString& label, const wxString& tooltip,
+SettingRadioButton::BoolSetting(wxWindow* parent, VideoConfig &vconfig, const wxString& label, const wxString& tooltip,
   const Config::ConfigInfo<bool>& setting, bool reverse, long style)
   : wxRadioButton(parent, wxID_ANY, label, wxDefaultPosition, wxDefaultSize, style),
-  m_setting(setting), m_reverse(reverse)
+  m_setting(setting), m_reverse(reverse), m_vconfig(vconfig)
 {
   SetToolTip(tooltip);
   SetValue(Config::Get(m_setting) ^ m_reverse);
@@ -71,20 +71,20 @@ SettingRadioButton::BoolSetting(wxWindow* parent, const wxString& label, const w
 }
 
 template <>
-RefBoolSetting<wxCheckBox>::RefBoolSetting(wxWindow* parent, const wxString& label,
+RefBoolSetting<wxCheckBox>::RefBoolSetting(wxWindow* parent, VideoConfig& vconfig, const wxString& label,
   const wxString& tooltip, bool& setting, bool reverse,
   long style)
   : wxCheckBox(parent, wxID_ANY, label, wxDefaultPosition, wxDefaultSize, style),
-  m_setting(setting), m_reverse(reverse)
+  m_setting(setting), m_reverse(reverse), m_vconfig(vconfig)
 {
   SetToolTip(tooltip);
   SetValue(m_setting ^ m_reverse);
   Bind(wxEVT_CHECKBOX, &RefBoolSetting<wxCheckBox>::UpdateValue, this);
 }
 
-SettingChoice::SettingChoice(wxWindow* parent, const Config::ConfigInfo<int>& setting,
+SettingChoice::SettingChoice(wxWindow* parent, VideoConfig &vconfig, const Config::ConfigInfo<int>& setting,
   const wxString& tooltip, int num, const wxString choices[], long style)
-  : wxChoice(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, num, choices), m_setting(setting)
+  : wxChoice(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, num, choices), m_setting(setting), m_vconfig(vconfig)
 {
   SetToolTip(tooltip);
   Select(Config::Get(m_setting));
@@ -94,6 +94,7 @@ SettingChoice::SettingChoice(wxWindow* parent, const Config::ConfigInfo<int>& se
 void SettingChoice::UpdateValue(wxCommandEvent& ev)
 {
   Config::SetBaseOrCurrent(m_setting, ev.GetInt());
+  m_vconfig.Refresh();
   ev.Skip();
 }
 
@@ -878,7 +879,7 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
       {
         szr_debug->Add(validation_layer = CreateCheckBox(page_advanced, _("Enable API Validation Layers"),
           wxGetTranslation(validation_layer_desc),
-         Config::GFX_ENABLE_VALIDATION_LAYER));
+          Config::GFX_ENABLE_VALIDATION_LAYER));
       }
 
 
@@ -966,6 +967,7 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
 void VideoConfigDiag::Event_Close(wxCommandEvent& ev)
 {
   Config::Save();
+  vconfig.Refresh();
   ev.Skip();
 }
 
@@ -985,7 +987,7 @@ SettingCheckBox* VideoConfigDiag::CreateCheckBox(wxWindow* parent, const wxStrin
   bool reverse, long style)
 {
   SettingCheckBox* const cb =
-    new SettingCheckBox(parent, label, wxString(), setting, reverse, style);
+    new SettingCheckBox(parent, vconfig, label, wxString(), setting, reverse, style);
   RegisterControl(cb, description);
   return cb;
 }
@@ -995,7 +997,7 @@ RefBoolSetting<wxCheckBox>* VideoConfigDiag::CreateCheckBoxRefBool(wxWindow* par
   const wxString& description,
   bool& setting)
 {
-  auto* const cb = new RefBoolSetting<wxCheckBox>(parent, label, wxString(), setting, false, 0);
+  auto* const cb = new RefBoolSetting<wxCheckBox>(parent, vconfig, label, wxString(), setting, false, 0);
   RegisterControl(cb, description);
   return cb;
 }
@@ -1005,7 +1007,7 @@ SettingChoice* VideoConfigDiag::CreateChoice(wxWindow* parent,
   const wxString& description, int num,
   const wxString choices[], long style)
 {
-  SettingChoice* const ch = new SettingChoice(parent, setting, wxString(), num, choices, style);
+  SettingChoice* const ch = new SettingChoice(parent, vconfig, setting, wxString(), num, choices, style);
   RegisterControl(ch, description);
   return ch;
 }
@@ -1016,7 +1018,7 @@ SettingRadioButton* VideoConfigDiag::CreateRadioButton(wxWindow* parent, const w
   bool reverse, long style)
 {
   SettingRadioButton* const rb =
-    new SettingRadioButton(parent, label, wxString(), setting, reverse, style);
+    new SettingRadioButton(parent, vconfig, label, wxString(), setting, reverse, style);
   RegisterControl(rb, description);
   return rb;
 }
@@ -1132,7 +1134,7 @@ void VideoConfigDiag::Event_Stc(wxCommandEvent &ev)
 {
   int samples[] = { 0, 512, 128 };
   Config::SetBaseOrCurrent(Config::GFX_SAFE_TEXTURE_CACHE_COLOR_SAMPLES, samples[ev.GetInt()]);
-
+  vconfig.Refresh();
   ev.Skip();
 }
 
@@ -1140,6 +1142,7 @@ void VideoConfigDiag::Event_Bbox(wxCommandEvent &ev)
 {
   int bboxmode = ev.GetInt();
   Config::SetBaseOrCurrent(Config::GFX_HACK_BBOX_MODE, bboxmode);
+  vconfig.Refresh();
   text_bboxmode->SetLabel((s_bbox_mode_text[bboxmode]));
   ev.Skip();
 }
@@ -1168,6 +1171,7 @@ void VideoConfigDiag::UpdatePostProcessingShadersConfig()
     }
   }
   Config::SetBaseOrCurrent(Config::GFX_ENHANCE_POST_SHADERS, shaders);
+  vconfig.Refresh();
   ReloadPostProcessingShaders();
 }
 
@@ -1281,7 +1285,7 @@ void VideoConfigDiag::Event_ScalingShader(wxCommandEvent& ev)
 {
   const int sel = ev.GetInt();
   std::string shader;
-  
+
   if (sel)
     shader = WxStrToStr(ev.GetString());
 
@@ -1294,12 +1298,14 @@ void VideoConfigDiag::Event_ScalingShader(wxCommandEvent& ev)
     button_config_scalingshader->Disable();
 
   ReloadPostProcessingShaders();
+  vconfig.Refresh();
 }
 
 void VideoConfigDiag::Event_StereoShader(wxCommandEvent& ev)
 {
   Config::SetBaseOrCurrent(Config::GFX_STEREO_SHADER, WxStrToStr(ev.GetString()));
   ReloadPostProcessingShaders();
+  vconfig.Refresh();
 }
 
 void VideoConfigDiag::Event_ConfigureScalingShader(wxCommandEvent &ev)
@@ -1311,61 +1317,62 @@ void VideoConfigDiag::Event_ConfigureScalingShader(wxCommandEvent &ev)
 void VideoConfigDiag::Event_StereoDepth(wxCommandEvent &ev)
 {
   Config::SetBaseOrCurrent(Config::GFX_STEREO_DEPTH, ev.GetInt());
+  vconfig.Refresh();
   ev.Skip();
 }
 
 void VideoConfigDiag::Event_SpecularIntensity(wxCommandEvent &ev)
 {
   Config::SetBaseOrCurrent(Config::GFX_SPECULAR_MULTIPLIER, ev.GetInt());
-
+  vconfig.Refresh();
   ev.Skip();
 }
 
 void VideoConfigDiag::Event_RimIntensity(wxCommandEvent &ev)
 {
   Config::SetBaseOrCurrent(Config::GFX_RIM_INTENSITY, ev.GetInt());
-
+  vconfig.Refresh();
   ev.Skip();
 }
 
 void VideoConfigDiag::Event_RimPower(wxCommandEvent &ev)
 {
   Config::SetBaseOrCurrent(Config::GFX_RIM_POWER, ev.GetInt());
-
+  vconfig.Refresh();
   ev.Skip();
 }
 void VideoConfigDiag::Event_RimBase(wxCommandEvent &ev)
 {
   Config::SetBaseOrCurrent(Config::GFX_RIM_BASE, ev.GetInt());
-
+  vconfig.Refresh();
   ev.Skip();
 }
 
 void VideoConfigDiag::Event_BumpStrength(wxCommandEvent &ev)
 {
   Config::SetBaseOrCurrent(Config::GFX_SIMULATE_BUMP_STRENGTH, ev.GetInt());
-
+  vconfig.Refresh();
   ev.Skip();
 }
 
 void VideoConfigDiag::Event_BumpDetailBlend(wxCommandEvent &ev)
 {
   Config::SetBaseOrCurrent(Config::GFX_SIMULATE_BUMP_DETAIL_BLEND, ev.GetInt());
-
+  vconfig.Refresh();
   ev.Skip();
 }
 
 void VideoConfigDiag::Event_BumpDetailFrequency(wxCommandEvent &ev)
 {
   Config::SetBaseOrCurrent(Config::GFX_SIMULATE_BUMP_DETAIL_FREQUENCY, ev.GetInt());
-
+  vconfig.Refresh();
   ev.Skip();
 }
 
 void VideoConfigDiag::Event_BumpThreshold(wxCommandEvent &ev)
 {
   Config::SetBaseOrCurrent(Config::GFX_SIMULATE_BUMP_THRESHOLD, ev.GetInt());
-
+  vconfig.Refresh();
   ev.Skip();
 }
 
@@ -1375,6 +1382,7 @@ void VideoConfigDiag::Event_ScalingFactor(wxCommandEvent &ev)
   int iTexScalingFactor = ev.GetInt();
   Config::SetBaseOrCurrent(Config::GFX_ENHANCE_TEXTURE_SCALING_FACTOR, iTexScalingFactor);
   label_TextureScale->SetLabel(sf_choices[iTexScalingFactor - 1]);
+  vconfig.Refresh();
   ev.Skip();
 }
 
@@ -1385,35 +1393,35 @@ void VideoConfigDiag::Event_StereoConvergence(wxCommandEvent &ev)
   if (90 < value && value < 110)
     conv_slider->SetValue(100);
   Config::SetBaseOrCurrent(Config::GFX_STEREO_CONVERGENCE_PERCENTAGE, conv_slider->GetValue());
-
+  vconfig.Refresh();
   ev.Skip();
 }
 
 void VideoConfigDiag::Event_TessellationDistance(wxCommandEvent &ev)
 {
   Config::SetBaseOrCurrent(Config::GFX_ENHANCE_TESSELLATION_DISTANCE, ev.GetInt());
-
+  vconfig.Refresh();
   ev.Skip();
 }
 
 void VideoConfigDiag::Event_TessellationMax(wxCommandEvent &ev)
 {
   Config::SetBaseOrCurrent(Config::GFX_ENHANCE_TESSELLATION_MAX, ev.GetInt());
-
+  vconfig.Refresh();
   ev.Skip();
 }
 
 void VideoConfigDiag::Event_TessellationRounding(wxCommandEvent &ev)
 {
   Config::SetBaseOrCurrent(Config::GFX_ENHANCE_TESSELLATION_ROUNDING_INTENSITY, ev.GetInt());
-
+  vconfig.Refresh();
   ev.Skip();
 }
 
 void VideoConfigDiag::Event_TessellationDisplacement(wxCommandEvent &ev)
 {
   Config::SetBaseOrCurrent(Config::GFX_ENHANCE_TESSELLATION_DISPLACEMENT_INTENSITY, ev.GetInt());
-
+  vconfig.Refresh();
   ev.Skip();
 }
 
@@ -1424,7 +1432,7 @@ void VideoConfigDiag::Event_StereoMode(wxCommandEvent &ev)
   choice_stereoshader->Enable((ev.GetInt() == STEREO_SHADER));
 
   ReloadPostProcessingShaders();
-
+  vconfig.Refresh();
   ev.Skip();
 }
 
@@ -1525,7 +1533,6 @@ void VideoConfigDiag::OnUpdateUI(wxUpdateUIEvent& ev)
   {
     vertex_rounding_checkbox->Enable(true);
   }
-
   ev.Skip();
 }
 
@@ -1666,5 +1673,5 @@ void VideoConfigDiag::OnAAChanged(wxCommandEvent& ev)
   Config::SetBaseOrCurrent(Config::GFX_SSAA, ssaa);
   mode -= ssaa * (aa_modes.size() - 1);
   Config::SetBaseOrCurrent(Config::GFX_MSAA, (u32)aa_modes[mode]);
-
+  vconfig.Refresh();
 }

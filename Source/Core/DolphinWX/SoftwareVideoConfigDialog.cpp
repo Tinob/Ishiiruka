@@ -21,11 +21,11 @@
 #include "DolphinWX/VideoConfigDiag.h"
 #include "DolphinWX/WxUtils.h"
 
-IntegerSetting::IntegerSetting(wxWindow* parent, const wxString& label,
+IntegerSetting::IntegerSetting(wxWindow* parent, VideoConfig &vconfig, const wxString& label,
                                const Config::ConfigInfo<int>& setting, int minVal, int maxVal,
                                long style)
     : wxSpinCtrl(parent, wxID_ANY, label, wxDefaultPosition, wxDefaultSize, style),
-      m_setting(setting)
+      m_setting(setting), m_vconfig(vconfig)
 {
   SetRange(minVal, maxVal);
   SetValue(Config::Get(m_setting));
@@ -80,7 +80,7 @@ SoftwareVideoConfigDialog::SoftwareVideoConfigDialog(wxWindow* parent, const std
 
       // xfb
       szr_rendering->Add(
-          new SettingCheckBox(page_general, _("Bypass XFB"), "", Config::GFX_USE_XFB, true));
+          new SettingCheckBox(page_general, g_Config, _("Bypass XFB"), "", Config::GFX_USE_XFB, true));
     }
 
     // - info
@@ -93,7 +93,7 @@ SoftwareVideoConfigDialog::SoftwareVideoConfigDialog(wxWindow* parent, const std
       group_info->Add(szr_info, 0, wxEXPAND | wxLEFT | wxRIGHT, space5);
       group_info->AddSpacer(space5);
 
-      szr_info->Add(new SettingCheckBox(page_general, _("Various Statistics"), "",
+      szr_info->Add(new SettingCheckBox(page_general, g_Config, _("Various Statistics"), "",
                                         Config::GFX_OVERLAY_STATS));
     }
 
@@ -108,9 +108,9 @@ SoftwareVideoConfigDialog::SoftwareVideoConfigDialog(wxWindow* parent, const std
       group_utility->AddSpacer(space5);
 
       szr_utility->Add(
-          new SettingCheckBox(page_general, _("Dump Textures"), "", Config::GFX_DUMP_TEXTURES));
+          new SettingCheckBox(page_general, g_Config, _("Dump Textures"), "", Config::GFX_DUMP_TEXTURES));
       szr_utility->Add(
-          new SettingCheckBox(page_general, _("Dump Objects"), "", Config::GFX_SW_DUMP_OBJECTS));
+          new SettingCheckBox(page_general, g_Config, _("Dump Objects"), "", Config::GFX_SW_DUMP_OBJECTS));
 
       // - debug only
       wxStaticBoxSizer* const group_debug_only_utility =
@@ -122,9 +122,9 @@ SoftwareVideoConfigDialog::SoftwareVideoConfigDialog(wxWindow* parent, const std
       group_debug_only_utility->Add(szr_debug_only_utility, 0, wxEXPAND | wxBOTTOM, space5);
       group_debug_only_utility->AddSpacer(space5);
 
-      szr_debug_only_utility->Add(new SettingCheckBox(page_general, _("Dump TEV Stages"), "",
+      szr_debug_only_utility->Add(new SettingCheckBox(page_general, g_Config, _("Dump TEV Stages"), "",
                                                       Config::GFX_SW_DUMP_TEV_STAGES));
-      szr_debug_only_utility->Add(new SettingCheckBox(page_general, _("Dump Texture Fetches"), "",
+      szr_debug_only_utility->Add(new SettingCheckBox(page_general, g_Config, _("Dump Texture Fetches"), "",
                                                       Config::GFX_SW_DUMP_TEV_TEX_FETCHES));
     }
 
@@ -139,8 +139,8 @@ SoftwareVideoConfigDialog::SoftwareVideoConfigDialog(wxWindow* parent, const std
       group_misc->AddSpacer(space5);
 
       szr_misc->Add(
-          new IntegerSetting(page_general, _("Start"), Config::GFX_SW_DRAW_START, 0, 100000));
-      szr_misc->Add(new IntegerSetting(page_general, _("End"), Config::GFX_SW_DRAW_END, 0, 100000));
+          new IntegerSetting(page_general, g_Config, _("Start"), Config::GFX_SW_DRAW_START, 0, 100000));
+      szr_misc->Add(new IntegerSetting(page_general, g_Config, _("End"), Config::GFX_SW_DRAW_END, 0, 100000));
     }
 
     szr_general->AddSpacer(space5);
