@@ -859,7 +859,7 @@ void Renderer::RunFrameDumps()
       std::lock_guard<std::mutex> lk(m_screenshot_lock);
 
       if (TextureToPng(config.data, config.stride, m_screenshot_name, config.width, config.height,
-        false))
+        false, (g_ActiveConfig.backend_info.APIType & API_D3D9) != 0))
         OSD::AddMessage("Screenshot saved to " + m_screenshot_name);
 
       // Reset settings
