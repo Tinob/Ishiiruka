@@ -259,6 +259,7 @@
     </ClInclude>
     <ClInclude Include="File.h" />
     <ClInclude Include="LdrWatcher.h" />
+    <ClInclude Include="GL\GLExtensions\ARB_texture_compression_bptc.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CDUtils.cpp" />

@@ -242,24 +242,34 @@ void CopyCompressedTextureData(u8 *pDst, const u8 *pSrc, const s32 width, const 
 
 s32 GetTextureSizeInBytes(u32 width, u32 height, HostTextureFormat fmt)
 {
-  static const s32 formatSize[11]
+  static const s32 formatSize[HostTextureFormat::PC_TEX_NUM_FORMATS]
   {
-      0,//PC_TEX_FMT_NONE
-      4,//PC_TEX_FMT_BGRA32
-      4,//PC_TEX_FMT_RGBA32
-      1,//PC_TEX_FMT_I4_AS_I8 A hack which means the format is a packed 8-bit intensity texture. It is unpacked to A8L8 in D3DTexture.cpp
-      2,//PC_TEX_FMT_IA4_AS_IA8
-      1,//PC_TEX_FMT_I8
-      2,//PC_TEX_FMT_IA8
-      2,//PC_TEX_FMT_RGB565
-      8,//PC_TEX_FMT_DXT1
-      16,//PC_TEX_FMT_DXT3
-      16,//PC_TEX_FMT_DXT5
+    0,//PC_TEX_FMT_NONE = 0,
+    4,//PC_TEX_FMT_BGRA32,
+    4,//PC_TEX_FMT_RGBA32,
+    1,//PC_TEX_FMT_I4_AS_I8,
+    2,//PC_TEX_FMT_IA4_AS_IA8,
+    1,//PC_TEX_FMT_I8,
+    2,//PC_TEX_FMT_IA8,
+    2,//PC_TEX_FMT_RGB565,
+    8,//PC_TEX_FMT_DXT1,
+    16,//PC_TEX_FMT_DXT3,
+    16,//PC_TEX_FMT_DXT5,
+    16,//PC_TEX_FMT_BPTC,
+    4,//PC_TEX_FMT_DEPTH_FLOAT,
+    4,//PC_TEX_FMT_R_FLOAT,
+    8,//PC_TEX_FMT_RGBA16_FLOAT,
+    16,//PC_TEX_FMT_RGBA_FLOAT
   };
-  if (fmt == PC_TEX_FMT_DXT1 || fmt == PC_TEX_FMT_DXT3 || fmt == PC_TEX_FMT_DXT5)
+  if (TexDecoder::IsCompressed(fmt))
   {
     width = (width + 3) >> 2;
     height = (height + 3) >> 2;
+  }
+  else
+  {
+    width = ((width + 3) & (~3));
+    height = ((height + 3) & (~3));
   }
   return width * height * formatSize[fmt];
 }

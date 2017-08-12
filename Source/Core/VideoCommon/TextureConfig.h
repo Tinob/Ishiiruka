@@ -12,6 +12,7 @@
 #include "Common/MathUtil.h"
 
 #include "VideoCommon/TextureDecoder.h"
+#include "VideoCommon/TextureUtil.h"
 
 struct TextureConfig
 {
@@ -19,38 +20,7 @@ struct TextureConfig
 
   u32 GetSizeInBytes() const
   {
-    u32 result = 0;
-    switch (pcformat)
-    {
-    case PC_TEX_FMT_RGBA16_FLOAT:
-      result = ((width + 3) & (~3)) * ((height + 3) & (~3)) * 8;
-      break;
-    case PC_TEX_FMT_RGBA_FLOAT:
-      result = ((width + 3) & (~3)) * ((height + 3) & (~3)) * 16;
-      break;
-      break;
-    case PC_TEX_FMT_DEPTH_FLOAT:
-    case PC_TEX_FMT_R_FLOAT:
-    case PC_TEX_FMT_BGRA32:
-    case PC_TEX_FMT_RGBA32:
-      result = ((width + 3) & (~3)) * ((height + 3) & (~3)) * 4;
-      break;
-    case PC_TEX_FMT_IA4_AS_IA8:
-    case PC_TEX_FMT_IA8:
-    case PC_TEX_FMT_RGB565:
-      result = ((width + 3) & (~3)) * ((height + 3) & (~3)) * 2;
-      break;
-    case PC_TEX_FMT_DXT1:
-      result = ((width + 3) >> 2)*((height + 3) >> 2) * 8;
-      break;
-    case PC_TEX_FMT_DXT3:
-    case PC_TEX_FMT_DXT5:
-      result = ((width + 3) >> 2)*((height + 3) >> 2) * 16;
-      break;
-    default:
-      result = ((width + 3) >> 2)*((height + 3) >> 2);
-      break;
-    }
+    u32 result = TextureUtil::GetTextureSizeInBytes(width, height, pcformat);
     if (levels > 1 || rendertarget)
     {
       result += result * 2;

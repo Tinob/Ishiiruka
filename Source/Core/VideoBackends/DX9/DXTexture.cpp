@@ -40,6 +40,7 @@ static const D3DFORMAT HostTextureFormat_To_D3DFORMAT[]
   D3DFMT_DXT1,//PC_TEX_FMT_DXT1
   D3DFMT_DXT3,//PC_TEX_FMT_DXT3
   D3DFMT_DXT5,//PC_TEX_FMT_DXT5
+  D3DFMT_UNKNOWN,//PC_TEX_FMT_BPTC
   D3DFMT_D32F_LOCKABLE,//PC_TEX_FMT_DEPTH_FLOAT
   D3DFMT_R32F,//PC_TEX_FMT_R_FLOAT
   D3DFMT_A16B16G16R16F, //PC_TEX_FMT_RGBA16_FLOAT
@@ -59,6 +60,7 @@ static const u32 HostTextureFormat_To_Buffer_Index[]
   3,//PC_TEX_FMT_DXT1
   4,//PC_TEX_FMT_DXT3
   5,//PC_TEX_FMT_DXT5
+  0,//PC_TEX_FMT_BPTC
   6,//PC_TEX_FMT_DEPTH_FLOAT
   7,//PC_TEX_FMT_R_FLOAT
   8,//PC_TEX_FMT_RGBA16_FLOAT
@@ -101,9 +103,7 @@ DXTexture::DXTexture(const TextureConfig& tex_config) : HostTexture(tex_config)
     return;
   }
   m_texture = D3D::CreateTexture2D(m_config.width, m_config.height, d3d_fmt, m_config.levels);
-  compressed = d3d_fmt == D3DFMT_DXT1
-    || d3d_fmt == D3DFMT_DXT3
-    || d3d_fmt == D3DFMT_DXT5;
+  compressed = TexDecoder::IsCompressed(m_config.pcformat);
 }
 
 DXTexture::~DXTexture()

@@ -25,6 +25,13 @@ void UpdateActiveConfig()
     Movie::SetGraphicsConfig();
   g_ActiveConfig = g_Config;
 }
+void VideoConfig::ClearFormats()
+{
+  for (s32 i = 0; i < 16; i++)
+  {
+    backend_info.bSupportedFormats[i] = false;
+  }
+}
 
 VideoConfig::VideoConfig()
 {
@@ -34,10 +41,7 @@ VideoConfig::VideoConfig()
 
   // disable all features by default
   backend_info.APIType = API_NONE;
-  for (s32 i = 0; i < 16; i++)
-  {
-    backend_info.bSupportedFormats[i] = false;
-  }
+  ClearFormats();
   backend_info.bSupportsExclusiveFullscreen = false;
 
   // Game-specific stereoscopy settings
@@ -107,9 +111,9 @@ void VideoConfig::Refresh()
   iSimBumpStrength = Config::Get(Config::GFX_SIMULATE_BUMP_STRENGTH);
   iSimBumpDetailFrequency = Config::Get(Config::GFX_SIMULATE_BUMP_DETAIL_FREQUENCY);
   iSimBumpThreshold = Config::Get(Config::GFX_SIMULATE_BUMP_THRESHOLD);
-  iSimBumpDetailBlend= Config::Get(Config::GFX_SIMULATE_BUMP_DETAIL_BLEND);
-  
-  
+  iSimBumpDetailBlend = Config::Get(Config::GFX_SIMULATE_BUMP_DETAIL_BLEND);
+
+
   bFastDepthCalc = Config::Get(Config::GFX_FAST_DEPTH_CALC);
   iMultisamples = Config::Get(Config::GFX_MSAA);
   bSSAA = Config::Get(Config::GFX_SSAA);

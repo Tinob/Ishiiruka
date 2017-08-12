@@ -71,7 +71,7 @@ void OGLTexture::SetFormat()
     break;
   case PC_TEX_FMT_RGB565:
     gl_format = GL_RGB;
-    gl_iformat = GL_RGB;
+    gl_iformat = GL_RGB5;
     gl_siformat = GL_RGB5;
     gl_type = GL_UNSIGNED_SHORT_5_6_5;
     break;
@@ -93,6 +93,13 @@ void OGLTexture::SetFormat()
     gl_format = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
     gl_iformat = GL_RGBA;
     gl_siformat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+    gl_type = GL_UNSIGNED_BYTE;
+    compressed = true;
+    break;
+  case PC_TEX_FMT_BPTC:
+    gl_format = GL_COMPRESSED_RGBA_BPTC_UNORM;
+    gl_iformat = GL_RGBA;
+    gl_siformat = GL_COMPRESSED_RGBA_BPTC_UNORM;
     gl_type = GL_UNSIGNED_BYTE;
     compressed = true;
     break;
@@ -279,6 +286,7 @@ void OGLTexture::Load(const u8* src, u32 width, u32 height,
   case PC_TEX_FMT_DXT1:
   case PC_TEX_FMT_DXT3:
   case PC_TEX_FMT_DXT5:
+  case PC_TEX_FMT_BPTC:
   {
     if (expanded_width != width)
     {

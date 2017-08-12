@@ -454,7 +454,7 @@ void TextureCacheBase::DumpTexture(TCacheEntry* entry, std::string basename, u32
     basename += StringFromFormat("_mip%i", level);
   }
   
-  std::string filename = szDir + "/" + basename + ((entry->GetConfig().pcformat >= PC_TEX_FMT_DXT1 && entry->GetConfig().pcformat <= PC_TEX_FMT_DXT5) ? ".dds" : ".png");
+  std::string filename = szDir + "/" + basename + (TexDecoder::IsCompressed(entry->GetConfig().pcformat) ? ".dds" : ".png");
 
   if (!File::Exists(filename))
     entry->GetColor()->Save(filename, level);

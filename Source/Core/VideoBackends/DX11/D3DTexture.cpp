@@ -33,6 +33,7 @@ inline void LoadDataMap(ID3D11Texture2D* pTexture, const u8* buffer, const s32 l
     break;
   case DXGI_FORMAT_B8G8R8A8_UNORM:
   case DXGI_FORMAT_R8G8B8A8_UNORM:
+  case DXGI_FORMAT_R32_FLOAT:    
     if (convert_rgb565)
     {
       if (fmt == DXGI_FORMAT_B8G8R8A8_UNORM)
@@ -56,7 +57,14 @@ inline void LoadDataMap(ID3D11Texture2D* pTexture, const u8* buffer, const s32 l
   case DXGI_FORMAT_BC1_UNORM:
   case DXGI_FORMAT_BC2_UNORM:
   case DXGI_FORMAT_BC3_UNORM:
+  case DXGI_FORMAT_BC7_UNORM:
     TextureUtil::CopyCompressedTextureData((u8*)map.pData, buffer, width, height, pitch, fmt == DXGI_FORMAT_BC1_UNORM ? 8 : 16, map.RowPitch);
+    break;
+  case DXGI_FORMAT_R16G16B16A16_FLOAT:
+    pixelsize = 8;
+    break;
+  case DXGI_FORMAT_R32G32B32A32_FLOAT:
+    pixelsize = 16;
     break;
   default:
     PanicAlert("D3D: Invalid texture format %i", fmt);
@@ -83,6 +91,7 @@ inline void LoadDataResource(ID3D11Texture2D* pTexture, const u8* buffer, const 
     break;
   case DXGI_FORMAT_B8G8R8A8_UNORM:
   case DXGI_FORMAT_R8G8B8A8_UNORM:
+  case DXGI_FORMAT_R32_FLOAT:
     pixelsize = 4;
     if (swap_rb)
     {
@@ -92,11 +101,18 @@ inline void LoadDataResource(ID3D11Texture2D* pTexture, const u8* buffer, const 
   case DXGI_FORMAT_BC1_UNORM:
   case DXGI_FORMAT_BC2_UNORM:
   case DXGI_FORMAT_BC3_UNORM:
+  case DXGI_FORMAT_BC7_UNORM:
     pitch = (pitch + 3) >> 2;
     pixelsize = (fmt == DXGI_FORMAT_BC1_UNORM ? 8 : 16);
     dest_region.right = width < 4 ? 4 : width;
     dest_region.bottom = height < 4 ? 4 : height;
     height = 0;
+    break;
+  case DXGI_FORMAT_R16G16B16A16_FLOAT:
+    pixelsize = 8;
+    break;
+  case DXGI_FORMAT_R32G32B32A32_FLOAT:
+    pixelsize = 16;
     break;
   default:
     PanicAlert("D3D: Invalid texture format %i", fmt);

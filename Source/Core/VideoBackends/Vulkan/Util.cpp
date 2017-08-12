@@ -89,6 +89,7 @@ u32 GetBlockSize(VkFormat format)
 		return 8;
 	case VK_FORMAT_BC2_UNORM_BLOCK:
 	case VK_FORMAT_BC3_UNORM_BLOCK:
+    case VK_FORMAT_BC7_UNORM_BLOCK:
 		return 16;
 	default:
 		PanicAlert("Unhandled pixel format");
@@ -109,6 +110,7 @@ u32 GetBlockWidth(VkFormat format)
 	case VK_FORMAT_BC1_RGBA_UNORM_BLOCK:
 	case VK_FORMAT_BC2_UNORM_BLOCK:
 	case VK_FORMAT_BC3_UNORM_BLOCK:
+    case VK_FORMAT_BC7_UNORM_BLOCK:
 		return 4;
 	default:
 		PanicAlert("Unhandled pixel format");

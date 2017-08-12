@@ -32,14 +32,45 @@ void CleanupPersistentD3DTextureResources()
 
 void ReplaceTexture2D(ID3D12Resource* texture12, const u8* buffer, DXGI_FORMAT fmt, u32 width, u32 height, u32 src_pitch, u32 level, D3D12_RESOURCE_STATES current_resource_state)
 {
-  if (fmt == DXGI_FORMAT_R8G8B8A8_UNORM)
+  u32 pixelsize = 1;
+  bool compresed = false;
+  switch (fmt)
   {
-    src_pitch *= 4;
+  case DXGI_FORMAT_B8G8R8A8_UNORM:
+  case DXGI_FORMAT_R8G8B8A8_UNORM:
+  case DXGI_FORMAT_R32_FLOAT:
+    pixelsize = 4;
+    break;
+  case DXGI_FORMAT_B5G6R5_UNORM:
+    pixelsize = 2;
+    break;
+  case DXGI_FORMAT_BC1_UNORM:
+    pixelsize = 8;
+    compresed = true;
+    break;
+  case DXGI_FORMAT_BC2_UNORM:
+  case DXGI_FORMAT_BC3_UNORM:
+  case DXGI_FORMAT_BC7_UNORM:
+    pixelsize = 16;
+    compresed = true;
+    break;
+  case DXGI_FORMAT_R16G16B16A16_FLOAT:
+    pixelsize = 8;
+    break;
+  case DXGI_FORMAT_R32G32B32A32_FLOAT:
+    pixelsize = 16;
+    break;
+  default:
+    break;
+  }
+  if (!compresed)
+  {
+    src_pitch *= pixelsize;
   }
   else
   {
     src_pitch = std::max(1u, (src_pitch + 3) >> 2);
-    src_pitch *= (fmt == DXGI_FORMAT_BC1_UNORM ? 8 : 16);
+    src_pitch *= pixelsize;
     height = std::max(1u, (height + 3) >> 2);
   }
   const u32 upload_size = Common::AlignUpSizePow2(src_pitch, D3D12_TEXTURE_DATA_PITCH_ALIGNMENT) * height;

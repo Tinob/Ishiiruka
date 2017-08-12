@@ -246,16 +246,8 @@ void VulkanContext::PopulateBackendInfo(VideoConfig* config)
 	config->backend_info.bSupportsReversedDepthRange = false;   // No support yet due to driver bugs.
 	config->backend_info.bSupportsComputeShaders = true;        // Assumed support.
 	config->backend_info.bSupportsGPUTextureDecoding = true;    // Assumed support.
-	config->backend_info.bSupportedFormats[PC_TEX_FMT_BGRA32] = false;
-	config->backend_info.bSupportedFormats[PC_TEX_FMT_RGBA32] = true;
-	config->backend_info.bSupportedFormats[PC_TEX_FMT_I4_AS_I8] = false;
-	config->backend_info.bSupportedFormats[PC_TEX_FMT_IA4_AS_IA8] = false;
-	config->backend_info.bSupportedFormats[PC_TEX_FMT_I8] = false;
-	config->backend_info.bSupportedFormats[PC_TEX_FMT_IA8] = false;
-	config->backend_info.bSupportedFormats[PC_TEX_FMT_RGB565] = false;
-	config->backend_info.bSupportedFormats[PC_TEX_FMT_DXT1] = true;
-	config->backend_info.bSupportedFormats[PC_TEX_FMT_DXT3] = true;
-	config->backend_info.bSupportedFormats[PC_TEX_FMT_DXT5] = true;
+    config->ClearFormats();
+	config->backend_info.bSupportedFormats[PC_TEX_FMT_RGBA32] = true;	
 	config->backend_info.bSupportsScaling = false;
 	config->backend_info.bSupportsPixelLighting = true;
 	config->backend_info.bNeedBlendIndices = false;
@@ -296,6 +288,17 @@ void VulkanContext::PopulateBackendInfoFeatures(VideoConfig* config, VkPhysicalD
 	// Depth clamping implies shaderClipDistance and depthClamp
 	config->backend_info.bSupportsDepthClamp =
 		(features.depthClamp == VK_TRUE && features.shaderClipDistance == VK_TRUE);
+    config->backend_info.bSupportedFormats[PC_TEX_FMT_RGBA32] = true;
+    const bool supports_bc = features.textureCompressionBC == VK_TRUE;
+    config->backend_info.bSupportedFormats[PC_TEX_FMT_DXT1] = supports_bc;
+    config->backend_info.bSupportedFormats[PC_TEX_FMT_DXT3] = supports_bc;
+    config->backend_info.bSupportedFormats[PC_TEX_FMT_DXT5] = supports_bc;
+    config->backend_info.bSupportedFormats[PC_TEX_FMT_BPTC] = supports_bc;
+    config->backend_info.bSupportedFormats[PC_TEX_FMT_DEPTH_FLOAT] = true;
+    config->backend_info.bSupportedFormats[PC_TEX_FMT_R_FLOAT] = true;
+    config->backend_info.bSupportedFormats[PC_TEX_FMT_RGBA16_FLOAT] = true;
+    config->backend_info.bSupportedFormats[PC_TEX_FMT_RGBA_FLOAT] = true;
+
 }
 
 void VulkanContext::PopulateBackendInfoMultisampleModes(
@@ -457,20 +460,21 @@ bool VulkanContext::SelectDeviceFeatures()
 	}
 
 	// Enable the features we use.
-	m_device_features.dualSrcBlend = available_features.dualSrcBlend;
-	m_device_features.geometryShader = available_features.geometryShader;
-	m_device_features.samplerAnisotropy = available_features.samplerAnisotropy;
-	m_device_features.logicOp = available_features.logicOp;
-	m_device_features.fragmentStoresAndAtomics = available_features.fragmentStoresAndAtomics;
-	m_device_features.sampleRateShading = available_features.sampleRateShading;
-	m_device_features.largePoints = available_features.largePoints;
-	m_device_features.shaderStorageImageMultisample =
-		available_features.shaderStorageImageMultisample;
-	m_device_features.shaderTessellationAndGeometryPointSize =
-		available_features.shaderTessellationAndGeometryPointSize;
-	m_device_features.occlusionQueryPrecise = available_features.occlusionQueryPrecise;
-	m_device_features.shaderClipDistance = available_features.shaderClipDistance;
-	m_device_features.depthClamp = available_features.depthClamp;
+    m_device_features.dualSrcBlend = available_features.dualSrcBlend;
+    m_device_features.geometryShader = available_features.geometryShader;
+    m_device_features.samplerAnisotropy = available_features.samplerAnisotropy;
+    m_device_features.logicOp = available_features.logicOp;
+    m_device_features.fragmentStoresAndAtomics = available_features.fragmentStoresAndAtomics;
+    m_device_features.sampleRateShading = available_features.sampleRateShading;
+    m_device_features.largePoints = available_features.largePoints;
+    m_device_features.shaderStorageImageMultisample =
+      available_features.shaderStorageImageMultisample;
+    m_device_features.shaderTessellationAndGeometryPointSize =
+      available_features.shaderTessellationAndGeometryPointSize;
+    m_device_features.occlusionQueryPrecise = available_features.occlusionQueryPrecise;
+    m_device_features.shaderClipDistance = available_features.shaderClipDistance;
+    m_device_features.depthClamp = available_features.depthClamp;
+    m_device_features.textureCompressionBC = available_features.textureCompressionBC;
 	return true;
 }
 

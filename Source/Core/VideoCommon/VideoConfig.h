@@ -15,8 +15,10 @@
 #include <vector>
 
 #include "Common/CommonTypes.h"
+#include "VideoCommon/TextureDecoder.h"
 #include "VideoCommon/VideoCommon.h"
 #include "VideoCommon/XFMemory.h"
+
 
 // Log in two categories, and save three other options in the same byte
 #define CONF_LOG          1
@@ -81,6 +83,7 @@ struct ProjectionHackConfig final
 struct VideoConfig final
 {
   VideoConfig();
+  void ClearFormats();
   void Refresh();
   void VerifyValidity();
   void UpdateProjectionHack();
@@ -244,7 +247,7 @@ struct VideoConfig final
 
     u32 MaxTextureSize;
 
-    bool bSupportedFormats[16]; // used for D3D9 in TextureCache		
+    bool bSupportedFormats[HostTextureFormat::PC_TEX_NUM_FORMATS]; // used for D3D9 in TextureCache		
     bool bSupportsDualSourceBlend; // only supported by D3D11 and OpenGL
     bool bSupportsPixelLighting;
     bool bSupportsNormalMaps;

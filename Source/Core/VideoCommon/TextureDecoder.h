@@ -104,14 +104,17 @@ enum HostTextureFormat
   PC_TEX_FMT_DXT1,
   PC_TEX_FMT_DXT3,
   PC_TEX_FMT_DXT5,
+  PC_TEX_FMT_BPTC,
   PC_TEX_FMT_DEPTH_FLOAT,
   PC_TEX_FMT_R_FLOAT,
   PC_TEX_FMT_RGBA16_FLOAT,
-  PC_TEX_FMT_RGBA_FLOAT
+  PC_TEX_FMT_RGBA_FLOAT,
+  PC_TEX_NUM_FORMATS
 };
 
 namespace TexDecoder
 {
+bool IsCompressed(HostTextureFormat format);
 u32 GetTexelSizeInNibbles(u32 format);
 u32 GetTextureSizeInBytes(u32 width, u32 height, u32 format);
 u32 GetBlockWidthInTexels(u32 format);

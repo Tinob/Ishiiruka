@@ -46,6 +46,7 @@ std::unique_ptr<VKTexture> VKTexture::Create(const TextureConfig& tex_config)
     VK_FORMAT_BC1_RGBA_UNORM_BLOCK,//PC_TEX_FMT_DXT1
     VK_FORMAT_BC2_UNORM_BLOCK,//PC_TEX_FMT_DXT3
     VK_FORMAT_BC3_UNORM_BLOCK,//PC_TEX_FMT_DXT5
+    VK_FORMAT_BC7_UNORM_BLOCK,//PC_TEX_FMT_BPTC
     VK_FORMAT_R32_SFLOAT,//PC_TEX_FMT_DEPTH_FLOAT
     VK_FORMAT_R32_SFLOAT,//PC_TEX_FMT_R_FLOAT
     VK_FORMAT_R16G16B16A16_SFLOAT,//PC_TEX_FMT_RGBA16_FLOAT
@@ -70,7 +71,7 @@ std::unique_ptr<VKTexture> VKTexture::Create(const TextureConfig& tex_config)
   }
 
   VKTexture* tex = new VKTexture(tex_config, std::move(texture));
-  tex->compressed = tex_config.pcformat >= PC_TEX_FMT_DXT1 && tex_config.pcformat < PC_TEX_FMT_DEPTH_FLOAT;
+  tex->compressed = TexDecoder::IsCompressed(tex_config.pcformat);
   return std::unique_ptr<VKTexture>(tex);
 }
 

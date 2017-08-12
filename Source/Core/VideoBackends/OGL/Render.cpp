@@ -635,6 +635,7 @@ Renderer::Renderer()
     g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT1] = GLExtensions::Supports("GL_EXT_texture_compression_s3tc");
     g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT3] = g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT1];
     g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT5] = g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT1];
+    g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_BPTC] = GLExtensions::Supports("GL_ARB_texture_compression_bptc");
 
     // Desktop OpenGL can't have the Android Extension Pack
     g_ogl_config.bSupportsAEP = false;

@@ -514,7 +514,7 @@ HRESULT Create(int adapter, HWND wnd, int _resolution, int aa_mode, bool auto_de
   m_stream_sources_Changed.assign(MaxStreamSources, false);
   m_index_buffer_Changed = false;
   g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_BGRA32] = true;
-  g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_RGBA32] = false;
+  g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_RGBA32] = CheckTextureSupport(0, D3DFMT_A8B8G8R8);
   const bool alpha_luminiscente_supported = CheckTextureSupport(0, D3DFMT_A8L8);
   g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_I4_AS_I8] = alpha_luminiscente_supported;
   g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_IA4_AS_IA8] = alpha_luminiscente_supported;

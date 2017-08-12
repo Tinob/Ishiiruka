@@ -441,7 +441,30 @@ HRESULT Create(HWND wnd)
   SetDebugObjectName(backbuf->GetRTV(), "backbuffer render target view");
 
   context->OMSetRenderTargets(1, &backbuf->GetRTV(), nullptr);
-
+  UINT format_support;
+  device->CheckFormatSupport(DXGI_FORMAT_B8G8R8A8_UNORM, &format_support);
+  bgra_textures_supported = (format_support & D3D11_FORMAT_SUPPORT_TEXTURE2D) != 0;
+  g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_BGRA32] = bgra_textures_supported;
+  g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_RGBA32] = true;
+  device->CheckFormatSupport(DXGI_FORMAT_B5G6R5_UNORM, &format_support);
+  g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_RGB565] = (format_support & D3D11_FORMAT_SUPPORT_TEXTURE2D) != 0;
+  device->CheckFormatSupport(DXGI_FORMAT_BC1_UNORM, &format_support);
+  g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT1] = (format_support & D3D11_FORMAT_SUPPORT_TEXTURE2D) != 0;
+  device->CheckFormatSupport(DXGI_FORMAT_BC2_UNORM, &format_support);
+  g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT3] = (format_support & D3D11_FORMAT_SUPPORT_TEXTURE2D) != 0;
+  device->CheckFormatSupport(DXGI_FORMAT_BC3_UNORM, &format_support);
+  g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT5] = (format_support & D3D11_FORMAT_SUPPORT_TEXTURE2D) != 0;
+  device->CheckFormatSupport(DXGI_FORMAT_BC7_UNORM, &format_support);
+  g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_BPTC] = (format_support & D3D11_FORMAT_SUPPORT_TEXTURE2D) != 0;
+  device->CheckFormatSupport(DXGI_FORMAT_R32_FLOAT, &format_support);
+  g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DEPTH_FLOAT] = (format_support & D3D11_FORMAT_SUPPORT_TEXTURE2D) != 0;
+  device->CheckFormatSupport(DXGI_FORMAT_R32_FLOAT, &format_support);
+  g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DEPTH_FLOAT] = (format_support & D3D11_FORMAT_SUPPORT_TEXTURE2D) != 0;
+  g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_R_FLOAT] = (format_support & D3D11_FORMAT_SUPPORT_TEXTURE2D) != 0;
+  device->CheckFormatSupport(DXGI_FORMAT_R16G16B16A16_FLOAT, &format_support);
+  g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_RGBA16_FLOAT] = (format_support & D3D11_FORMAT_SUPPORT_TEXTURE2D) != 0;
+  device->CheckFormatSupport(DXGI_FORMAT_R32G32B32A32_FLOAT, &format_support);
+  g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_RGBA_FLOAT] = (format_support & D3D11_FORMAT_SUPPORT_TEXTURE2D) != 0;
   UpdateActiveConfig();
   stateman = new StateManager;
   return S_OK;

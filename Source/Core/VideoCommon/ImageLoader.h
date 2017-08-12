@@ -55,6 +55,7 @@ struct ImageLoaderParams
   HostTextureFormat desiredTex;
   HostTextureFormat resultTex;
   u32 nummipmaps;
+  bool releaseresourcesonerror;
   ImageLoaderParams()
   {
     Path = nullptr;
@@ -66,12 +67,13 @@ struct ImageLoaderParams
     desiredTex = HostTextureFormat::PC_TEX_FMT_NONE;
     resultTex = HostTextureFormat::PC_TEX_FMT_NONE;
     nummipmaps = 0;
+    releaseresourcesonerror = false;
   }
 };
 
 class ImageLoader
 {
 public:
-  static DDSCompression ReadDDS(ImageLoaderParams& loader_params);
+  static bool ReadDDS(ImageLoaderParams& loader_params);
   static bool ReadPNG(ImageLoaderParams& loader_params);
 };

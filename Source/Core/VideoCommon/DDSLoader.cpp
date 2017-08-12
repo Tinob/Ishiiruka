@@ -29,9 +29,11 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#include "ImageLoader.h"
 #include "Common/Common.h"
-#include "ImageWrite.h"
+
+#include "VideoCommon/ImageLoader.h"
+#include "VideoCommon/ImageWrite.h"
+#include "VideoCommon/VideoConfig.h"
 
 #define MAKEFOURCC(ch0, ch1, ch2, ch3) ((u32)(u8)(ch0) | ((u32)(u8)(ch1) << 8) | ((u32)(u8)(ch2) << 16) | ((u32)(u8)(ch3) << 24 ))
     /*
@@ -56,10 +58,24 @@
     /*
     * Pixel Fomat flags
     */
-#define DDPF_ALPHAPIXELS	0x00000001
-#define DDPF_FOURCC	0x00000004
-#define DDPF_RGB	0x00000040
+#define DDPF_FOURCC 0x00000004      // DDPF_FOURCC
+#define DDPF_RGB 0x00000040         // DDPF_RGB
+#define DDPF_RGBA 0x00000041        // DDPF_RGB | DDPF_ALPHAPIXELS
+#define DDPF_LUMINANCE 0x00020000   // DDPF_LUMINANCE
+#define DDPF_LUMINANCEA 0x00020001  // DDPF_LUMINANCE | DDPF_ALPHAPIXELS
+#define DDPF_ALPHA 0x00000002       // DDPF_ALPHA
+#define DDPF_PAL8 0x00000020        // DDPF_PALETTEINDEXED8
+#define DDPF_PAL8A 0x00000021       // DDPF_PALETTEINDEXED8 | DDPF_ALPHAPIXELS
+#define DDPF_BUMPDUDV 0x00080000    // DDPF_BUMPDUDV
 
+    // Subset here matches D3D10_RESOURCE_DIMENSION and D3D11_RESOURCE_DIMENSION
+enum DDS_RESOURCE_DIMENSION
+{
+  DDS_DIMENSION_TEXTURE1D = 2,
+  DDS_DIMENSION_TEXTURE2D = 3,
+  DDS_DIMENSION_TEXTURE3D = 4,
+};
+#pragma pack(push, 1)
 typedef struct _DDPIXELFORMAT
 {
   u32       dwSize;                 // size of structure
@@ -178,75 +194,99 @@ typedef struct _DDSHeader
   u32      dwTextureStage;
 } DDSHeader;
 
-DDSCompression ImageLoader::ReadDDS(ImageLoaderParams& loader_params)
+struct _DDSHeader_DXT10
 {
-  DDSCompression Result = DDSC_NONE;
+  uint32_t dxgiFormat;
+  uint32_t resourceDimension;
+  uint32_t miscFlag;  // see DDS_RESOURCE_MISC_FLAG
+  uint32_t arraySize;
+  uint32_t miscFlags2;  // see DDS_MISC_FLAGS2
+};
+
+#pragma pack(pop)
+
+static_assert(sizeof(_DDSHeader) == 128, "DDS Header size mismatch");
+static_assert(sizeof(_DDSHeader_DXT10) == 20, "DDS DX10 Extended Header size mismatch");
+
+bool ImageLoader::ReadDDS(ImageLoaderParams& loader_params)
+{
   DDSHeader ddsd;
-  FILE *pFile;
+  size_t header_size = 0;
+  File::IOFile file;
+  file.Open(loader_params.Path, "rb");
+  if (!file.IsOpen())
+    return false;
   u32 block_size = 8;
 
-  // Open the file
-  pFile = fopen(loader_params.Path, "rb");
-
-  if (pFile == nullptr)
-  {
-    return Result;
-  }
-
   // Get the surface descriptor
-  u32 readedsize = (u32)fread(&ddsd, sizeof(ddsd), 1, pFile);
-  if (ddsd.dwSignature != DDS_SIGNARURE || ddsd.dwSize != 124)
+  if (!file.ReadBytes(&ddsd, sizeof(ddsd)) || ddsd.dwSignature != DDS_SIGNARURE || ddsd.dwSize != 124)
   {
-    fclose(pFile);
-    return Result;
+    return false;
   }
+  header_size += sizeof(ddsd);
   // Check for a valid Header
   u32 flag = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH | DDSD_PIXELFORMAT;
   if ((ddsd.dwFlags & flag) != flag)
   {
-    fclose(pFile);
-    return Result;
+    return false;
   }
+
+  // Image should be 2D.
+  if (ddsd.dwFlags & DDSD_DEPTH)
+    return false;
+
   flag = DDPF_FOURCC | DDPF_RGB;
   if ((ddsd.ddpfPixelFormat.dwFlags & flag) == 0)
   {
-    fclose(pFile);
-    return Result;
+    return false;
   }
   if (ddsd.ddpfPixelFormat.dwSize != 32)
   {
-    fclose(pFile);
-    return Result;
+    return false;
   }
-  // Support only block aligned files
-  if ((ddsd.dwWidth % 4) != 0 || (ddsd.dwHeight % 4) != 0)
+  // Handle DX10 extension header.
+  u32 dxt10_format = 0;
+  if (ddsd.ddpfPixelFormat.dwFourCC == MAKEFOURCC('D', 'X', '1', '0'))
   {
-    fclose(pFile);
-    return Result;
+    _DDSHeader_DXT10 dxt10_header;
+    if (!file.ReadBytes(&dxt10_header, sizeof(dxt10_header)))
+      return false;
+    // Can't handle array textures here. Doesn't make sense to use them, anyway.
+    if (dxt10_header.resourceDimension != DDS_DIMENSION_TEXTURE2D || dxt10_header.arraySize != 1)
+      return false;
+
+    header_size += sizeof(dxt10_header);
+    dxt10_format = dxt10_header.dxgiFormat;
   }
 
   //
   // Suport only Basic DDS compresion Formats
   //
-
-  switch (ddsd.ddpfPixelFormat.dwFourCC)
+  u32 FourCC = ddsd.ddpfPixelFormat.dwFourCC;
+  if ((FourCC == FOURCC_DXT1 || dxt10_format == 71)
+    && g_ActiveConfig.backend_info.bSupportedFormats[HostTextureFormat::PC_TEX_FMT_DXT1])
   {
-  case FOURCC_DXT1:
-    // DXT1's compression ratio is 8:1
     block_size = 8;
-    break;
-  case FOURCC_DXT3:
-    // DXT3's compression ratio is 4:1
+  }
+  else if ((FourCC == FOURCC_DXT3 || dxt10_format == 74)
+    && g_ActiveConfig.backend_info.bSupportedFormats[HostTextureFormat::PC_TEX_FMT_DXT3])
+  {
     block_size = 16;
-    break;
-  case FOURCC_DXT5:
-    // DXT5's compression ratio is 4:1
+  }
+  else if ((FourCC == FOURCC_DXT5 || dxt10_format == 77)
+    && g_ActiveConfig.backend_info.bSupportedFormats[HostTextureFormat::PC_TEX_FMT_DXT5])
+  {
     block_size = 16;
-    break;
-  default:
-    // the format is not supported so return inmediatelly
-    fclose(pFile);
-    return Result;
+  }
+  else if (dxt10_format == 98
+    && g_ActiveConfig.backend_info.bSupportedFormats[HostTextureFormat::PC_TEX_FMT_BPTC])
+  {
+    block_size = 16;
+  }
+  else
+  {
+    // unsupported format
+    return false;
   }
 
   //
@@ -263,7 +303,7 @@ DDSCompression ImageLoader::ReadDDS(ImageLoaderParams& loader_params)
     u32 w = ddsd.dwWidth;
     u32 h = ddsd.dwHeight;
     u32 level = 0;
-    while ((w > 4 || h > 4) && level < ddsd.dwMipMapCount)
+    while ((w > 1 || h > 1) && level < ddsd.dwMipMapCount)
     {
       level++;
       w = std::max(w >> 1, 1u);
@@ -275,37 +315,51 @@ DDSCompression ImageLoader::ReadDDS(ImageLoaderParams& loader_params)
   {
     ddsd.dwMipMapCount = 0;
   }
+  size_t remaining = file.GetSize() - header_size;
+  if (remaining < loader_params.data_size)
+  {
+    loader_params.data_size = ddsd.dwLinearSize;
+    ddsd.dwMipMapCount = 0;
+    mipmapspresent = false;
+    if (remaining < loader_params.data_size)
+    {
+      // Invalid File size
+      return false;
+    }
+  }
   // Check available buffer size
   loader_params.dst = loader_params.request_buffer_delegate(loader_params.data_size, mipmapspresent);
   if (loader_params.dst == nullptr)
   {
-    fclose(pFile);
-    return Result;
+    return false;
   }
 
-  readedsize = (u32)fread(loader_params.dst, 1, loader_params.data_size, pFile);
-  // Close the file
-  fclose(pFile);
-  if ((readedsize + block_size) < loader_params.data_size)
+  if (!file.ReadBytes(loader_params.dst, loader_params.data_size))
   {
-    // if the size readed is less than the size calculated then
-    // some of the header values are wrong we have to fallback
-    // to just load the available data
-    if (readedsize < ddsd.dwLinearSize)
-    {
-      // Invalid file just discard
-      return DDSC_NONE;
-    }
-    // Just load the first level
-    ddsd.dwMipMapCount = 0;
+    //Unable to read file
+    return false;
   }
 
-  u32 FourCC = ddsd.ddpfPixelFormat.dwFourCC;
-  Result = (FourCC == FOURCC_DXT1) ? DDSC_DXT1 : ((FourCC == FOURCC_DXT3) ? DDSC_DXT3 : DDSC_DXT5);
+  if (FourCC == FOURCC_DXT1 || dxt10_format == 71)
+  {
+    loader_params.resultTex = HostTextureFormat::PC_TEX_FMT_DXT1;
+  }
+  else if (FourCC == FOURCC_DXT3 || dxt10_format == 74)
+  {
+    loader_params.resultTex = HostTextureFormat::PC_TEX_FMT_DXT3;
+  }
+  else if (FourCC == FOURCC_DXT5 || dxt10_format == 77)
+  {
+    loader_params.resultTex = HostTextureFormat::PC_TEX_FMT_DXT5;
+  }
+  else
+  {
+    loader_params.resultTex = HostTextureFormat::PC_TEX_FMT_BPTC;
+  }
   loader_params.Width = ddsd.dwWidth;
   loader_params.Height = ddsd.dwHeight;
   loader_params.nummipmaps = ddsd.dwMipMapCount;
-  return Result;
+  return true;
 }
 
 bool TextureToDDS(const u8* data, int row_stride, const std::string& filename, int width, int height, DDSCompression format)

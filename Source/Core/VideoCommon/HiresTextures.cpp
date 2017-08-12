@@ -444,7 +444,7 @@ std::string HiresTexture::GenBaseName(
   return name;
 }
 
-inline u8* LoadPNG(const char* path, int& width, int& height)
+inline u8* LoadImageFromFile(const char* path, int& width, int& height)
 {
   File::IOFile file(path, "rb");
   std::vector<u8> buffer(file.GetSize());
@@ -456,10 +456,10 @@ inline u8* LoadPNG(const char* path, int& width, int& height)
   return SOIL_load_image_from_memory(buffer.data(), (int)buffer.size(), &width, &height, &image_channels, SOIL_LOAD_RGBA);
 }
 
-inline void ReadPNG(ImageLoaderParams &ImgInfo)
+inline void ReadImageFile(ImageLoaderParams &ImgInfo)
 {
   // libpng path seems to fail with some png files using soil meanwhile
-  /*if (ImageLoader::ReadPNG(ImgInfo))
+  /*if (ImageLoader::ReadImageFile(ImgInfo))
   {
   ImgInfo.resultTex = PC_TEX_FMT_RGBA32;
   }
@@ -467,7 +467,7 @@ inline void ReadPNG(ImageLoaderParams &ImgInfo)
   int image_width;
   int image_height;
   ImgInfo.resultTex = PC_TEX_FMT_NONE;
-  u8* decoded = LoadPNG(ImgInfo.Path, image_width, image_height);
+  u8* decoded = LoadImageFromFile(ImgInfo.Path, image_width, image_height);
   if (decoded == nullptr)
   {
     return;
@@ -488,30 +488,21 @@ inline void ReadPNG(ImageLoaderParams &ImgInfo)
 
 inline void ReadDDS(ImageLoaderParams &ImgInfo)
 {
-  DDSCompression ddsc = ImageLoader::ReadDDS(ImgInfo);
-  if (ddsc != DDSCompression::DDSC_NONE)
+  if (!ImageLoader::ReadDDS(ImgInfo))
   {
-    switch (ddsc)
+    if (ImgInfo.releaseresourcesonerror && ImgInfo.dst)
     {
-    case DDSC_DXT1:
-      ImgInfo.resultTex = PC_TEX_FMT_DXT1;
-      break;
-    case DDSC_DXT3:
-      ImgInfo.resultTex = PC_TEX_FMT_DXT3;
-      break;
-    case DDSC_DXT5:
-      ImgInfo.resultTex = PC_TEX_FMT_DXT5;
-      break;
-    default:
-      break;
+      delete[] ImgInfo.dst;
+      ImgInfo.dst = nullptr;
     }
+    ReadImageFile(ImgInfo);
   }
 }
 
 
 inline bool BuildColor(const HiresTextureCacheItem& item, ImageLoaderParams &ImgInfo, size_t level)
 {
-  ReadPNG(ImgInfo);
+  ReadImageFile(ImgInfo);
   if (ImgInfo.resultTex != PC_TEX_FMT_RGBA32 || item.maps[MapType::emissive].size() <= level)
   {
     return false;
@@ -521,7 +512,7 @@ inline bool BuildColor(const HiresTextureCacheItem& item, ImageLoaderParams &Img
   if (ImgInfo.dst != nullptr &&  leveldata.path.size() > 0)
   {
     int image_width, image_height;
-    u8* lumadata = LoadPNG(leveldata.path.c_str(), image_width, image_height);
+    u8* lumadata = LoadImageFromFile(leveldata.path.c_str(), image_width, image_height);
     if (lumadata != nullptr)
     {
       if (static_cast<u32>(image_width) == ImgInfo.Width
@@ -560,7 +551,7 @@ inline bool BuildColor(const HiresTextureCacheItem& item, ImageLoaderParams &Img
 
 inline void BuildMaterial(const HiresTextureCacheItem& item, ImageLoaderParams &ImgInfo, size_t level)
 {
-  ReadPNG(ImgInfo);
+  ReadImageFile(ImgInfo);
   if (ImgInfo.resultTex != PC_TEX_FMT_RGBA32)
   {
     return;
@@ -572,7 +563,7 @@ inline void BuildMaterial(const HiresTextureCacheItem& item, ImageLoaderParams &
     auto& leveldata = item.maps[MapType::bump][level];
     int image_width;
     int image_height;
-    bumpdata = LoadPNG(leveldata.path.c_str(), image_width, image_height);
+    bumpdata = LoadImageFromFile(leveldata.path.c_str(), image_width, image_height);
     if (bumpdata != nullptr
       && static_cast<u32>(image_width) == ImgInfo.Width
       && static_cast<u32>(image_height) == ImgInfo.Height)
@@ -587,7 +578,7 @@ inline void BuildMaterial(const HiresTextureCacheItem& item, ImageLoaderParams &
     auto& leveldata = item.maps[MapType::specular][level];
     int image_width;
     int image_height;
-    speculardata = LoadPNG(leveldata.path.c_str(), image_width, image_height);
+    speculardata = LoadImageFromFile(leveldata.path.c_str(), image_width, image_height);
     if (speculardata != nullptr
       && static_cast<u32>(image_width) == ImgInfo.Width
       && static_cast<u32>(image_height) == ImgInfo.Height)
@@ -716,6 +707,7 @@ HiresTexture* HiresTexture::Load(const std::string& basename,
   for (size_t level = 0; level < current.maps[MapType::color].size(); level++)
   {
     ImageLoaderParams imgInfo;
+    imgInfo.releaseresourcesonerror = cacheresult;
     hires_mip_level &item = current.maps[MapType::color][level];
     bool emissive_present = current.emissive_in_color;
     imgInfo.dst = nullptr;
@@ -756,7 +748,7 @@ HiresTexture* HiresTexture::Load(const std::string& basename,
       }
       else
       {
-        ReadPNG(imgInfo);
+        ReadImageFile(imgInfo);
       }
     }
     if (imgInfo.dst == nullptr || imgInfo.resultTex == PC_TEX_FMT_NONE)
@@ -845,6 +837,7 @@ HiresTexture* HiresTexture::Load(const std::string& basename,
     for (size_t level = 0; level < current.maps[material_mat_index].size(); level++)
     {
       ImageLoaderParams imgInfo;
+      imgInfo.releaseresourcesonerror = cacheresult;
       hires_mip_level &item = current.maps[material_mat_index][level];
       imgInfo.dst = nullptr;
       imgInfo.Path = item.path.c_str();
@@ -875,7 +868,7 @@ HiresTexture* HiresTexture::Load(const std::string& basename,
         }
         else
         {
-          ReadPNG(imgInfo);
+          ReadImageFile(imgInfo);
         }
       }
       if (imgInfo.dst == nullptr || imgInfo.resultTex == PC_TEX_FMT_NONE)

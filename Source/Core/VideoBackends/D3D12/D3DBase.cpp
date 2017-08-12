@@ -457,7 +457,18 @@ HRESULT Create(HWND wnd)
   StateCache::CheckDiskCacheState(adapter.Get());
   factory.Reset();
   adapter.Reset();
-
+  g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_BGRA32] = s_feat_level > D3D_FEATURE_LEVEL_11_0;
+  g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_RGBA32] = true;
+  g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_RGB565] = s_feat_level > D3D_FEATURE_LEVEL_11_0;
+  g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT1] = s_feat_level >= D3D_FEATURE_LEVEL_11_0;
+  g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT3] = s_feat_level >= D3D_FEATURE_LEVEL_11_0;
+  g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT5] = s_feat_level >= D3D_FEATURE_LEVEL_11_0;
+  g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_BPTC] = s_feat_level > D3D_FEATURE_LEVEL_11_0;
+  g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DEPTH_FLOAT] = s_feat_level >= D3D_FEATURE_LEVEL_11_0;  
+  g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_R_FLOAT] = s_feat_level >= D3D_FEATURE_LEVEL_11_0;
+  g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_RGBA16_FLOAT] = s_feat_level >= D3D_FEATURE_LEVEL_11_0;
+  g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_RGBA_FLOAT] = s_feat_level >= D3D_FEATURE_LEVEL_11_0;
+  UpdateActiveConfig();
   return S_OK;
 }
 
