@@ -66,7 +66,6 @@ std::unique_ptr<HostTexture> TextureCache::CreateTexture(const TextureConfig& co
 void TextureCache::CopyEFBToCacheEntry(TextureCacheBase::TCacheEntry* entry, bool is_depth_copy, const EFBRectangle& src_rect,
   bool scale_by_half, u32 cbuf_id, const float* colmat, u32 width, u32 height)
 {
-  const DXTexture* hosttexture = static_cast<const DXTexture*>(entry->GetColor());
   // When copying at half size, in multisampled mode, resolve the color/depth buffer first.
   // This is because multisampled texture reads go through Load, not Sample, and the linear
   // filter is ignored.
@@ -106,7 +105,7 @@ void TextureCache::CopyEFBToCacheEntry(TextureCacheBase::TCacheEntry* entry, boo
 
   // Make sure we don't draw with the texture set as both a source and target.
   // (This can happen because we don't unbind textures when we free them.)
-  auto destination = hosttexture->GetRawTexIdentifier();
+  auto destination = static_cast<DXTexture*>(entry->GetColor())->GetRawTexIdentifier();
   destination->TransitionToResourceState(D3D::current_command_list, D3D12_RESOURCE_STATE_RENDER_TARGET);
   auto rtv = destination->GetRTV();
   D3D::current_command_list->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
@@ -122,7 +121,7 @@ void TextureCache::CopyEFBToCacheEntry(TextureCacheBase::TCacheEntry* entry, boo
     StaticShaderCache::GetSimpleVertexShader(),
     StaticShaderCache::GetSimpleVertexShaderInputLayout(),
     StaticShaderCache::GetCopyGeometryShader(),
-    0, efb_tex->GetFormat(), false, destination->GetMultisampled()
+    0, destination->GetFormat(), false, destination->GetMultisampled()
   );
   destination->TransitionToResourceState(D3D::current_command_list, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
   g_renderer->RestoreAPIState();

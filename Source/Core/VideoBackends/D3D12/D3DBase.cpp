@@ -457,6 +457,7 @@ HRESULT Create(HWND wnd)
   StateCache::CheckDiskCacheState(adapter.Get());
   factory.Reset();
   adapter.Reset();
+  g_Config.ClearFormats();
   g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_BGRA32] = s_feat_level > D3D_FEATURE_LEVEL_11_0;
   g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_RGBA32] = true;
   g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_RGB565] = s_feat_level > D3D_FEATURE_LEVEL_11_0;
