@@ -145,6 +145,7 @@ private:
     ADD_PANE_CENTER
   };
 
+  static constexpr int MOUSE_HIDE_DELAY = 3000;
   GameListCtrl* m_game_list_ctrl = nullptr;
   CConfigMain* m_main_config_dialog = nullptr;
   wxPanel* m_panel = nullptr;
@@ -169,6 +170,7 @@ private:
   int m_save_slot = 1;
 
   wxTimer m_poll_hotkey_timer;
+  wxTimer m_cursor_timer;
   wxTimer m_handle_signal_timer;
 
   wxMenuBar* m_menubar_shadow = nullptr;
@@ -347,6 +349,7 @@ private:
   void OnImportBootMiiBackup(wxCommandEvent& event);
   void OnExtractCertificates(wxCommandEvent& event);
   void OnPerformOnlineWiiUpdate(wxCommandEvent& event);
+  void OnPerformDiscWiiUpdate(wxCommandEvent& event);
   void OnFifoPlayer(wxCommandEvent& event);
   void OnConnectWiimote(wxCommandEvent& event);
   void GameListChanged(wxCommandEvent& event);
@@ -361,10 +364,11 @@ private:
 
   void PollHotkeys(wxTimerEvent&);
   void ParseHotkeys();
+  void HandleCursorTimer(wxTimerEvent&);
   void HandleSignal(wxTimerEvent&);
 
   bool InitControllers();
 
   // Event table
-  DECLARE_EVENT_TABLE();
+  DECLARE_EVENT_TABLE()
 };

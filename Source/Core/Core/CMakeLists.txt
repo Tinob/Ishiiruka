@@ -26,6 +26,9 @@ set(SRCS
   Boot/DolReader.cpp
   Boot/ElfReader.cpp
   Config/GraphicsSettings.cpp
+  Config/MainSettings.cpp
+  Config/NetplaySettings.cpp
+  Config/SYSCONFSettings.cpp
   ConfigLoaders/BaseConfigLoader.cpp
   ConfigLoaders/GameConfigLoader.cpp
   ConfigLoaders/IsSettingSaveable.cpp
@@ -183,6 +186,7 @@ set(SRCS
   IOS/USB/OH0/OH0.cpp
   IOS/USB/OH0/OH0Device.cpp
   IOS/USB/USB_HID/HIDv4.cpp
+  IOS/USB/USB_HID/HIDv5.cpp
   IOS/USB/USB_VEN/VEN.cpp
   IOS/USB/USBV0.cpp
   IOS/USB/USBV4.cpp
@@ -280,6 +284,7 @@ set(LIBS
   pugixml
   sfml-network
   sfml-system
+  videonull
   videoogl
   videosoftware
   z
@@ -303,9 +308,7 @@ set(LIBS ${LIBS} ${MBEDTLS_LIBRARIES})
 if(WIN32)
   set(SRCS ${SRCS} HW/EXI/BBA-TAP/TAP_Win32.cpp HW/WiimoteReal/IOWin.cpp)
   list(APPEND LIBS
-    videod3d9
-    videod3d11
-    videod3d12
+    videod3d
     setupapi.lib
     iphlpapi.lib
   )
@@ -341,10 +344,6 @@ if(TARGET Hidapi::Hidapi)
   set(SRCS ${SRCS} HW/WiimoteReal/IOhidapi.cpp)
   list(APPEND LIBS Hidapi::Hidapi)
   add_definitions(-DHAVE_HIDAPI=1)
-endif()
-
-if(OPROFILE_FOUND)
-  set(LIBS ${LIBS} ${OPROFILE_LIBRARIES})
 endif()
 
 if(GDBSTUB)

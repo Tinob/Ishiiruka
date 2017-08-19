@@ -260,6 +260,8 @@
     <ClInclude Include="File.h" />
     <ClInclude Include="LdrWatcher.h" />
     <ClInclude Include="GL\GLExtensions\ARB_texture_compression_bptc.h" />
+    <ClInclude Include="Lazy.h" />
+    <ClInclude Include="UPnP.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CDUtils.cpp" />
@@ -330,6 +332,7 @@
     <ClCompile Include="File.cpp" />
     <ClCompile Include="LdrWatcher.cpp" />
     <ClCompile Include="CompatPatches.cpp" />
+    <ClCompile Include="UPnP.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />

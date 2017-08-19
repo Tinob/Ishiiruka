@@ -128,6 +128,7 @@
     <ClInclude Include="HttpRequest.h" />
     <ClInclude Include="IniFile.h" />
     <ClInclude Include="JitRegister.h" />
+    <ClInclude Include="Lazy.h" />
     <ClInclude Include="LdrWatcher.h" />
     <ClInclude Include="LinearDiskCache.h" />
     <ClInclude Include="MathUtil.h" />
@@ -153,6 +154,7 @@
     <ClInclude Include="Timer.h" />
     <ClInclude Include="TraversalClient.h" />
     <ClInclude Include="TraversalProto.h" />
+    <ClInclude Include="UPnP.h" />
     <ClInclude Include="x64ABI.h" />
     <ClInclude Include="x64Emitter.h" />
     <ClInclude Include="x64Reg.h" />
@@ -205,6 +207,7 @@
     <ClCompile Include="ThreadPool.cpp" />
     <ClCompile Include="Timer.cpp" />
     <ClCompile Include="TraversalClient.cpp" />
+    <ClCompile Include="UPnP.cpp" />
     <ClCompile Include="Version.cpp" />
     <ClCompile Include="x64ABI.cpp" />
     <ClCompile Include="x64CPUDetect.cpp" />

@@ -106,7 +106,7 @@ std::string DSPDisassembler::DisassembleParameters(const DSPOPCTemplate& opc, u1
       {
         if (opc.params[j].mask == 0x003f)  // LSL, LSR, ASL, ASR
           buf += StringFromFormat("#%d",
-          (val & 0x20) ? (val | 0xFFFFFFC0) : val);  // 6-bit sign extension
+                                  (val & 0x20) ? (val | 0xFFFFFFC0) : val);  // 6-bit sign extension
         else
           buf += StringFromFormat("#0x%02x", val);
       }
@@ -149,8 +149,8 @@ bool DSPDisassembler::DisassembleOpcode(const u16* binbuf, u16* pc, std::string&
   // Find main opcode
   const DSPOPCTemplate* opc = FindOpInfoByOpcode(op1);
   const DSPOPCTemplate fake_op = {
-    "CW",  0x0000, 0x0000, nullptr, nullptr, 1, 1,{ { P_VAL, 2, 0, 0, 0xffff } },
-    false, false,  false,  false,   false };
+      "CW",  0x0000, 0x0000, nullptr, nullptr, 1, 1, {{P_VAL, 2, 0, 0, 0xffff}},
+      false, false,  false,  false,   false};
   if (!opc)
     opc = &fake_op;
 

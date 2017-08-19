@@ -39,6 +39,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile />
+  </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="BoundingBox.cpp" />
     <ClCompile Include="CSTextureDecoder.cpp" />

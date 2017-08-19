@@ -17,7 +17,7 @@ namespace Config
 const std::string& Section::NULL_STRING = "";
 
 Section::Section(LayerType layer, System system, const std::string& name)
-    : m_layer(layer), m_system(system), m_name(name)
+  : m_layer(layer), m_system(system), m_name(name)
 {
 }
 
@@ -54,6 +54,11 @@ void Section::Set(const std::string& key, const std::string& value)
   }
 }
 
+void Section::Set(const std::string& key, u16 newValue)
+{
+  Section::Set(key, StringFromFormat("0x%04x", newValue));
+}
+
 void Section::Set(const std::string& key, u32 newValue)
 {
   Section::Set(key, StringFromFormat("0x%08x", newValue));
@@ -80,7 +85,7 @@ void Section::Set(const std::string& key, bool newValue)
 }
 
 void Section::Set(const std::string& key, const std::string& newValue,
-                  const std::string& defaultValue)
+  const std::string& defaultValue)
 {
   if (newValue != defaultValue)
     Set(key, newValue);
@@ -95,7 +100,7 @@ void Section::SetLines(const std::vector<std::string>& lines)
 }
 
 bool Section::Get(const std::string& key, std::string* value,
-                  const std::string& default_value) const
+  const std::string& default_value) const
 {
   const auto& it = m_values.find(key);
   if (it != m_values.end())
@@ -113,6 +118,18 @@ bool Section::Get(const std::string& key, std::string* value,
 }
 
 bool Section::Get(const std::string& key, int* value, int defaultValue) const
+{
+  std::string temp;
+  bool retval = Get(key, &temp);
+
+  if (retval && TryParse(temp, value))
+    return true;
+
+  *value = defaultValue;
+  return false;
+}
+
+bool Section::Get(const std::string& key, u16* value, u16 defaultValue) const
 {
   std::string temp;
   bool retval = Get(key, &temp);
@@ -231,7 +248,7 @@ void Section::ClearDirty()
 }
 
 RecursiveSection::RecursiveSection(LayerType layer, System system, const std::string& name)
-    : Section(layer, system, name)
+  : Section(layer, system, name)
 {
 }
 
@@ -251,7 +268,7 @@ bool RecursiveSection::Exists(const std::string& key) const
 }
 
 bool RecursiveSection::Get(const std::string& key, std::string* value,
-                           const std::string& default_value) const
+  const std::string& default_value) const
 {
   for (auto layer_id : SEARCH_ORDER)
   {

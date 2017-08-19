@@ -49,8 +49,8 @@ int GCMemcardDirectory::LoadGCI(const std::string& file_name, bool current_game_
       if (m_loaded_saves[i] == gci_filename)
       {
         PanicAlertT("%s\nwas not loaded because it has the same internal filename as previously "
-          "loaded save\n%s",
-          gci.m_filename.c_str(), m_saves[i].m_filename.c_str());
+                    "loaded save\n%s",
+                    gci.m_filename.c_str(), m_saves[i].m_filename.c_str());
         return NO_INDEX;
       }
     }
@@ -61,8 +61,8 @@ int GCMemcardDirectory::LoadGCI(const std::string& file_name, bool current_game_
     if (num_blocks > 2043)
     {
       PanicAlertT(
-        "%s\nwas not loaded because it is an invalid GCI.\n Number of blocks claimed to be %u",
-        gci.m_filename.c_str(), num_blocks);
+          "%s\nwas not loaded because it is an invalid GCI.\n Number of blocks claimed to be %u",
+          gci.m_filename.c_str(), num_blocks);
       return NO_INDEX;
     }
 
@@ -71,8 +71,8 @@ int GCMemcardDirectory::LoadGCI(const std::string& file_name, bool current_game_
     if (file_size != size + DENTRY_SIZE)
     {
       PanicAlertT("%s\nwas not loaded because it is an invalid GCI.\n File size (0x%" PRIx64
-        ") does not match the size recorded in the header (0x%x)",
-        gci.m_filename.c_str(), file_size, size + DENTRY_SIZE);
+                  ") does not match the size recorded in the header (0x%x)",
+                  gci.m_filename.c_str(), file_size, size + DENTRY_SIZE);
       return NO_INDEX;
     }
 
@@ -91,9 +91,9 @@ int GCMemcardDirectory::LoadGCI(const std::string& file_name, bool current_game_
       if (total_blocks > free_blocks * 10)
       {
         PanicAlertT("%s\nwas not loaded because there is less than 10%% free blocks available on "
-          "the memory card\n"
-          "Total Blocks: %d; Free Blocks: %d",
-          gci.m_filename.c_str(), total_blocks, free_blocks);
+                    "the memory card\n"
+                    "Total Blocks: %d; Free Blocks: %d",
+                    gci.m_filename.c_str(), total_blocks, free_blocks);
         return NO_INDEX;
       }
     }
@@ -101,8 +101,8 @@ int GCMemcardDirectory::LoadGCI(const std::string& file_name, bool current_game_
     if (first_block == 0xFFFF)
     {
       PanicAlertT(
-        "%s\nwas not loaded because there are not enough free blocks on the virtual memory card",
-        file_name.c_str());
+          "%s\nwas not loaded because there are not enough free blocks on the virtual memory card",
+          file_name.c_str());
       return NO_INDEX;
     }
     *(u16*)&gci.m_gci_header.FirstBlock = first_block;
@@ -122,24 +122,24 @@ int GCMemcardDirectory::LoadGCI(const std::string& file_name, bool current_game_
 }
 
 GCMemcardDirectory::GCMemcardDirectory(const std::string& directory, int slot, u16 size_mbits,
-  bool shift_jis, int game_id)
-  : MemoryCardBase(slot, size_mbits), m_game_id(game_id), m_last_block(-1),
-  m_hdr(slot, size_mbits, shift_jis), m_bat1(size_mbits), m_saves(0),
-  m_save_directory(directory), m_exiting(false)
+                                       bool shift_jis, int game_id)
+    : MemoryCardBase(slot, size_mbits), m_game_id(game_id), m_last_block(-1),
+      m_hdr(slot, size_mbits, shift_jis), m_bat1(size_mbits), m_saves(0),
+      m_save_directory(directory), m_exiting(false)
 {
   // Use existing header data if available
   {
     File::IOFile((m_save_directory + MC_HDR), "rb").ReadBytes(&m_hdr, BLOCK_SIZE);
   }
 
-  std::vector<std::string> filenames = Common::DoFileSearch({ m_save_directory }, { ".gci" });
+  std::vector<std::string> filenames = Common::DoFileSearch({m_save_directory}, {".gci"});
 
   if (filenames.size() > 112)
   {
     Core::DisplayMessage("Warning: There are more than 112 save files on this memory card.\n"
-      " Only loading the first 112 in the folder, unless the game ID is the "
-      "same as the current game's ID",
-      4000);
+                         " Only loading the first 112 in the folder, unless the game ID is the "
+                         "same as the current game's ID",
+                         4000);
   }
 
   for (const std::string& gci_file : filenames)
@@ -147,8 +147,8 @@ GCMemcardDirectory::GCMemcardDirectory(const std::string& directory, int slot, u
     if (m_saves.size() == DIRLEN)
     {
       PanicAlertT(
-        "There are too many GCI files in the folder\n%s.\nOnly the first 127 will be available",
-        m_save_directory.c_str());
+          "There are too many GCI files in the folder\n%s.\nOnly the first 127 will be available",
+          m_save_directory.c_str());
       break;
     }
     int index = LoadGCI(gci_file, m_saves.size() > 112);
@@ -174,9 +174,9 @@ void GCMemcardDirectory::FlushThread()
   }
 
   Common::SetCurrentThreadName(
-    StringFromFormat("Memcard %d flushing thread", m_card_index).c_str());
+      StringFromFormat("Memcard %d flushing thread", m_card_index).c_str());
 
-  constexpr std::chrono::seconds flush_interval{ 1 };
+  constexpr std::chrono::seconds flush_interval{1};
   while (true)
   {
     // no-op until signalled
@@ -217,7 +217,7 @@ s32 GCMemcardDirectory::Read(u32 src_address, s32 length, u8* dest_address)
 
     // verify that we haven't calculated a length beyond BLOCK_SIZE
     _dbg_assert_msg_(EXPANSIONINTERFACE, (src_address + length) % BLOCK_SIZE == 0,
-      "Memcard directory Read Logic Error");
+                     "Memcard directory Read Logic Error");
   }
 
   if (m_last_block != block)
@@ -277,7 +277,7 @@ s32 GCMemcardDirectory::Write(u32 dest_address, s32 length, const u8* src_addres
 
     // verify that we haven't calculated a length beyond BLOCK_SIZE
     _dbg_assert_msg_(EXPANSIONINTERFACE, (dest_address + length) % BLOCK_SIZE == 0,
-      "Memcard directory Write Logic Error");
+                     "Memcard directory Write Logic Error");
   }
   if (m_last_block != block)
   {
@@ -296,7 +296,7 @@ s32 GCMemcardDirectory::Write(u32 dest_address, s32 length, const u8* src_addres
       {
         s32 to_write = std::min<s32>(DENTRY_SIZE, length);
         bytes_written +=
-          DirectoryWrite(dest_address + bytes_written, to_write, src_address + bytes_written);
+            DirectoryWrite(dest_address + bytes_written, to_write, src_address + bytes_written);
         length -= to_write;
       }
       return bytes_written;
@@ -402,7 +402,7 @@ inline void GCMemcardDirectory::SyncSaves()
         if ((gamecode != 0xFFFFFFFF) && (gamecode != new_gamecode))
         {
           PanicAlertT("Game overwrote with another games save. Data corruption ahead 0x%x, 0x%x",
-            BE32(m_saves[i].m_gci_header.Gamecode), BE32(current->Dir[i].Gamecode));
+                      BE32(m_saves[i].m_gci_header.Gamecode), BE32(current->Dir[i].Gamecode));
         }
         memcpy((u8*)&(m_saves[i].m_gci_header), (u8*)&(current->Dir[i]), DENTRY_SIZE);
         if (old_start != new_start)
@@ -420,7 +420,7 @@ inline void GCMemcardDirectory::SyncSaves()
     else if ((i < m_saves.size()) && (*(u32*)&(m_saves[i].m_gci_header) != 0xFFFFFFFF))
     {
       INFO_LOG(EXPANSIONINTERFACE, "Clearing and/or deleting save 0x%x",
-        BE32(m_saves[i].m_gci_header.Gamecode));
+               BE32(m_saves[i].m_gci_header.Gamecode));
       *(u32*)&(m_saves[i].m_gci_header.Gamecode) = 0xFFFFFFFF;
       m_saves[i].m_save_data.clear();
       m_saves[i].m_used_blocks.clear();
@@ -479,11 +479,11 @@ s32 GCMemcardDirectory::DirectoryWrite(u32 dest_address, u32 length, const u8* s
     // needed to update the update ctr, checksums
     // could check for writes to the 6 important bytes but doubtful that it improves performance
     // noticably
-    memcpy((u8*)(dest)+offset, src_address, length);
+    memcpy((u8*)(dest) + offset, src_address, length);
     SyncSaves();
   }
   else
-    memcpy((u8*)(dest)+offset, src_address, length);
+    memcpy((u8*)(dest) + offset, src_address, length);
   return length;
 }
 
@@ -512,8 +512,8 @@ bool GCMemcardDirectory::SetUsedBlocks(int save_index)
   if (blocks_from_bat != num_blocks)
   {
     PanicAlertT("Warning: Number of blocks indicated by the BAT (%u) does not match that of the "
-      "loaded file header (%u)",
-      blocks_from_bat, num_blocks);
+                "loaded file header (%u)",
+                blocks_from_bat, num_blocks);
     return false;
   }
 
@@ -538,7 +538,7 @@ void GCMemcardDirectory::FlushToFile()
           // to
           // skip flushing this file until actual save data is modified
           ERROR_LOG(EXPANSIONINTERFACE,
-            "GCI header modified without corresponding save data changes");
+                    "GCI header modified without corresponding save data changes");
           continue;
         }
         if (m_saves[i].m_filename.empty())
@@ -554,7 +554,7 @@ void GCMemcardDirectory::FlushToFile()
           }
           if (File::Exists(default_save_name))
             PanicAlertT("Failed to find new filename.\n%s\n will be overwritten",
-              default_save_name.c_str());
+                        default_save_name.c_str());
           m_saves[i].m_filename = default_save_name;
         }
         File::IOFile gci(m_saves[i].m_filename, "wb");
@@ -566,16 +566,16 @@ void GCMemcardDirectory::FlushToFile()
           if (gci.IsGood())
           {
             Core::DisplayMessage(
-              StringFromFormat("Wrote save contents to %s", m_saves[i].m_filename.c_str()), 4000);
+                StringFromFormat("Wrote save contents to %s", m_saves[i].m_filename.c_str()), 4000);
           }
           else
           {
             ++errors;
             Core::DisplayMessage(StringFromFormat("Failed to write save contents to %s",
-              m_saves[i].m_filename.c_str()),
-              4000);
+                                                  m_saves[i].m_filename.c_str()),
+                                 4000);
             ERROR_LOG(EXPANSIONINTERFACE, "Failed to save data to %s",
-              m_saves[i].m_filename.c_str());
+                      m_saves[i].m_filename.c_str());
           }
         }
       }
@@ -602,7 +602,7 @@ void GCMemcardDirectory::FlushToFile()
     if (gamecode != m_game_id && gamecode != 0xFFFFFFFF && m_saves[i].m_save_data.size())
     {
       INFO_LOG(EXPANSIONINTERFACE, "Flushing savedata to disk for %s",
-        m_saves[i].m_filename.c_str());
+               m_saves[i].m_filename.c_str());
       m_saves[i].m_save_data.clear();
     }
   }
@@ -688,7 +688,7 @@ void MigrateFromMemcardFile(const std::string& directory_name, int card_index)
 {
   File::CreateFullPath(directory_name);
   std::string ini_memcard = (card_index == 0) ? SConfig::GetInstance().m_strMemoryCardA :
-    SConfig::GetInstance().m_strMemoryCardB;
+                                                SConfig::GetInstance().m_strMemoryCardB;
   if (File::Exists(ini_memcard))
   {
     GCMemcard memcard(ini_memcard.c_str());

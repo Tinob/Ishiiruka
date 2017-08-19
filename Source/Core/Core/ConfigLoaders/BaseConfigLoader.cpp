@@ -9,35 +9,78 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <type_traits>
+#include <variant>
 
 #include "Common/CommonTypes.h"
 #include "Common/Config/Config.h"
 #include "Common/FileUtil.h"
 #include "Common/IniFile.h"
 #include "Common/Logging/Log.h"
+#include "Common/SysConf.h"
 
+#include "Core/Config/GraphicsSettings.h"
+#include "Core/Config/SYSCONFSettings.h"
 #include "Core/ConfigLoaders/IsSettingSaveable.h"
+#include "Core/Core.h"
+#include "Core/IOS/USB/Bluetooth/BTBase.h"
 
 namespace ConfigLoaders
 {
+void SaveToSYSCONF(Config::Layer* layer)
+{
+  if (Core::IsRunning())
+    return;
+
+  SysConf sysconf{ Common::FromWhichRoot::FROM_CONFIGURED_ROOT };
+
+  for (const Config::SYSCONFSetting& setting : Config::SYSCONF_SETTINGS)
+  {
+    std::visit(
+      [layer, &setting, &sysconf](auto& info) {
+      const std::string key = info.location.section + "." + info.location.key;
+
+      if (setting.type == SysConf::Entry::Type::Long)
+        sysconf.SetData<u32>(key, setting.type, layer->Get(info));
+      else if (setting.type == SysConf::Entry::Type::Byte)
+        sysconf.SetData<u8>(key, setting.type, static_cast<u8>(layer->Get(info)));
+    },
+      setting.config_info);
+  }
+
+  // Disable WiiConnect24's standby mode. If it is enabled, it prevents us from receiving
+  // shutdown commands in the State Transition Manager (STM).
+  // TODO: remove this if and once Dolphin supports WC24 standby mode.
+  SysConf::Entry* idle_entry = sysconf.GetOrAddEntry("IPL.IDL", SysConf::Entry::Type::SmallArray);
+  if (idle_entry->bytes.empty())
+    idle_entry->bytes = std::vector<u8>(2);
+  else
+    idle_entry->bytes[0] = 0;
+  NOTICE_LOG(CORE, "Disabling WC24 'standby' (shutdown to idle) to avoid hanging on shutdown");
+
+  IOS::HLE::RestoreBTInfoSection(&sysconf);
+  sysconf.Save();
+}
+
 const std::map<Config::System, int> system_to_ini = {
-    {Config::System::Main, F_DOLPHINCONFIG_IDX},
-    {Config::System::GCPad, F_GCPADCONFIG_IDX},
-    {Config::System::WiiPad, F_WIIPADCONFIG_IDX},
-    {Config::System::GCKeyboard, F_GCKEYBOARDCONFIG_IDX},
-    {Config::System::GFX, F_GFXCONFIG_IDX},
-    {Config::System::Logger, F_LOGGERCONFIG_IDX},
-    {Config::System::Debugger, F_DEBUGGERCONFIG_IDX},
-    {Config::System::UI, F_UICONFIG_IDX},
+  { Config::System::Main, F_DOLPHINCONFIG_IDX },
+  { Config::System::GCPad, F_GCPADCONFIG_IDX },
+  { Config::System::WiiPad, F_WIIPADCONFIG_IDX },
+  { Config::System::GCKeyboard, F_GCKEYBOARDCONFIG_IDX },
+  { Config::System::GFX, F_GFXCONFIG_IDX },
+  { Config::System::Logger, F_LOGGERCONFIG_IDX },
+  { Config::System::Debugger, F_DEBUGGERCONFIG_IDX },
+  { Config::System::UI, F_UICONFIG_IDX },
 };
 
 // INI layer configuration loader
-class INIBaseConfigLayerLoader final : public Config::ConfigLayerLoader
+class BaseConfigLayerLoader final : public Config::ConfigLayerLoader
 {
 public:
-  INIBaseConfigLayerLoader() : ConfigLayerLoader(Config::LayerType::Base) {}
+  BaseConfigLayerLoader() : ConfigLayerLoader(Config::LayerType::Base) {}
   void Load(Config::Layer* config_layer) override
   {
+    LoadFromSYSCONF(config_layer);
     for (const auto& system : system_to_ini)
     {
       IniFile ini;
@@ -48,11 +91,14 @@ public:
       {
         const std::string section_name = section.GetName();
         Config::Section* config_section =
-            config_layer->GetOrCreateSection(system.first, section_name);
+          config_layer->GetOrCreateSection(system.first, section_name);
         const IniFile::Section::SectionMap& section_map = section.GetValues();
 
         for (const auto& value : section_map)
+        {
+          const Config::ConfigLocation location{ system.first, section_name, value.first };
           config_section->Set(value.first, value.second);
+        }
       }
     }
   }
@@ -62,11 +108,17 @@ public:
     const Config::LayerMap& sections = config_layer->GetLayerMap();
     for (const auto& system : sections)
     {
+      if (system.first == Config::System::SYSCONF)
+      {
+        SaveToSYSCONF(config_layer);
+        continue;
+      }
+
       auto mapping = system_to_ini.find(system.first);
       if (mapping == system_to_ini.end())
       {
         ERROR_LOG(COMMON, "Config can't map system '%s' to an INI file!",
-                  Config::GetSystemName(system.first).c_str());
+          Config::GetSystemName(system.first).c_str());
         continue;
       }
 
@@ -82,7 +134,8 @@ public:
 
         for (const auto& value : section_values)
         {
-          if (!IsSettingSaveable({system.first, section->GetName(), value.first}))
+          const Config::ConfigLocation location{ system.first, section->GetName(), value.first };
+          if (!IsSettingSaveable(location))
             continue;
 
           ini_section->Set(value.first, value.second);
@@ -92,11 +145,35 @@ public:
       ini.Save(File::GetUserPath(mapping->second));
     }
   }
+
+private:
+  void LoadFromSYSCONF(Config::Layer* layer)
+  {
+    if (Core::IsRunning())
+      return;
+
+    SysConf sysconf{ Common::FromWhichRoot::FROM_CONFIGURED_ROOT };
+    for (const Config::SYSCONFSetting& setting : Config::SYSCONF_SETTINGS)
+    {
+      std::visit(
+        [&](auto& info) {
+        const std::string key = info.location.section + "." + info.location.key;
+        auto* section =
+          layer->GetOrCreateSection(Config::System::SYSCONF, info.location.section);
+
+        if (setting.type == SysConf::Entry::Type::Long)
+          section->Set(info.location.key, sysconf.GetData<u32>(key, info.default_value));
+        else if (setting.type == SysConf::Entry::Type::Byte)
+          section->Set(info.location.key, sysconf.GetData<u8>(key, info.default_value));
+      },
+        setting.config_info);
+    }
+  }
 };
 
 // Loader generation
 std::unique_ptr<Config::ConfigLayerLoader> GenerateBaseConfigLoader()
 {
-  return std::make_unique<INIBaseConfigLayerLoader>();
+  return std::make_unique<BaseConfigLayerLoader>();
 }
 }

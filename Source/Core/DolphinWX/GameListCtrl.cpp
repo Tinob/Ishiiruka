@@ -46,6 +46,7 @@
 #include "Common/SysConf.h"
 #include "Common/Thread.h"
 #include "Core/Boot/Boot.h"
+#include "Core/Config/NetplaySettings.h"
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
 #include "Core/HW/DVD/DVDInterface.h"
@@ -53,6 +54,7 @@
 #include "Core/Movie.h"
 #include "Core/TitleDatabase.h"
 #include "DiscIO/Blob.h"
+#include "DiscIO/DirectoryBlob.h"
 #include "DiscIO/Enums.h"
 #include "DiscIO/Volume.h"
 #include "DolphinWX/Frame.h"
@@ -80,7 +82,7 @@ public:
   wxProgressDialog* dialog;
 };
 
-static constexpr u32 CACHE_REVISION = 2;  // Last changed in PR 5687
+static constexpr u32 CACHE_REVISION = 3;  // Last changed in PR 5573
 
 static bool sorted = false;
 
@@ -761,6 +763,12 @@ void GameListCtrl::RescanList()
   auto search_results = Common::DoFileSearch(SConfig::GetInstance().m_ISOFolder, search_extensions,
     SConfig::GetInstance().m_RecursiveISOFolder);
 
+  // TODO Prevent DoFileSearch from looking inside /files/ directories of DirectoryBlobs at all?
+  // TODO Make DoFileSearch support filter predicates so we don't have remove things afterwards?
+  search_results.erase(
+    std::remove_if(search_results.begin(), search_results.end(), DiscIO::ShouldHideFromGameList),
+    search_results.end());
+
   std::vector<std::string> cached_paths;
   for (const auto& file : m_cached_files)
     cached_paths.emplace_back(file->GetFileName());
@@ -1165,6 +1173,13 @@ void GameListCtrl::OnRightClick(wxMouseEvent& event)
         changeDiscItem->Enable(Core::IsRunning());
       }
 
+      if (platform == DiscIO::Platform::WII_DISC)
+      {
+        auto* const perform_update_item =
+          popupMenu.Append(IDM_LIST_PERFORM_DISC_UPDATE, _("Perform System Update"));
+        perform_update_item->Enable(!Core::IsRunning() || !SConfig::GetInstance().bWii);
+      }
+
       if (platform == DiscIO::Platform::WII_WAD)
       {
         auto* const install_wad_item =
@@ -1327,20 +1342,13 @@ void GameListCtrl::OnNetPlayHost(wxCommandEvent& WXUNUSED(event))
   if (!iso)
     return;
 
-  IniFile ini_file;
-  const std::string dolphin_ini = File::GetUserPath(F_DOLPHINCONFIG_IDX);
-  ini_file.Load(dolphin_ini);
-  IniFile::Section& netplay_section = *ini_file.GetOrCreateSection("NetPlay");
-
   NetPlayHostConfig config;
-  config.FromIniConfig(netplay_section);
+  config.FromConfig();
   config.game_name = iso->GetUniqueIdentifier();
   config.game_list_ctrl = this;
-  config.SetDialogInfo(netplay_section, m_parent);
+  config.SetDialogInfo(m_parent);
 
-  netplay_section.Set("SelectedHostGame", config.game_name);
-  ini_file.Save(dolphin_ini);
-
+  Config::SetBaseOrCurrent(Config::NETPLAY_SELECTED_HOST_GAME, config.game_name);
   NetPlayLauncher::Host(config);
 }
 

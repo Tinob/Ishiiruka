@@ -28,7 +28,7 @@ Layer::Layer(LayerType type) : m_layer(type)
 }
 
 Layer::Layer(std::unique_ptr<ConfigLayerLoader> loader)
-    : m_layer(loader->GetLayer()), m_loader(std::move(loader))
+  : m_layer(loader->GetLayer()), m_loader(std::move(loader))
 {
   Load();
 }
@@ -70,7 +70,7 @@ Section* Layer::GetOrCreateSection(System system, const std::string& section_nam
     if (m_layer == LayerType::Meta)
     {
       m_sections[system].emplace_back(
-          std::make_unique<RecursiveSection>(m_layer, system, section_name));
+        std::make_unique<RecursiveSection>(m_layer, system, section_name));
     }
     else
     {
@@ -109,16 +109,11 @@ const LayerMap& Layer::GetLayerMap() const
   return m_sections;
 }
 
-ConfigLayerLoader* Layer::GetLoader() const
-{
-  return m_loader.get();
-}
-
 bool Layer::IsDirty() const
 {
   return std::any_of(m_sections.begin(), m_sections.end(), [](const auto& system) {
     return std::any_of(system.second.begin(), system.second.end(),
-                       [](const auto& section) { return section->IsDirty(); });
+      [](const auto& section) { return section->IsDirty(); });
   });
 }
 
@@ -126,7 +121,7 @@ void Layer::ClearDirty()
 {
   std::for_each(m_sections.begin(), m_sections.end(), [](auto& system) {
     std::for_each(system.second.begin(), system.second.end(),
-                  [](auto& section) { section->ClearDirty(); });
+      [](auto& section) { section->ClearDirty(); });
   });
 }
 
@@ -146,7 +141,7 @@ Section* RecursiveLayer::GetOrCreateSection(System system, const std::string& se
   if (!section)
   {
     m_sections[system].emplace_back(
-        std::make_unique<RecursiveSection>(m_layer, system, section_name));
+      std::make_unique<RecursiveSection>(m_layer, system, section_name));
     section = m_sections[system].back().get();
   }
   return section;

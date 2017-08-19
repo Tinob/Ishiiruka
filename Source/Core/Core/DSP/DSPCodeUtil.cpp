@@ -83,7 +83,7 @@ bool Compare(const std::vector<u16>& code1, const std::vector<u16>& code2)
       pc = i;
       disassembler.DisassembleOpcode(&code2[0], &pc, line2);
       printf("!! %04x : %04x vs %04x - %s  vs  %s\n", i, code1[i], code2[i], line1.c_str(),
-        line2.c_str());
+             line2.c_str());
     }
   }
   if (code2.size() != code1.size())
@@ -143,7 +143,7 @@ bool SaveBinary(const std::vector<u16>& code, const std::string& filename)
 bool DumpDSPCode(const u8* code_be, int size_in_bytes, u32 crc)
 {
   const std::string root_name =
-    File::GetUserPath(D_DUMPDSP_IDX) + StringFromFormat("DSP_UC_%08X", crc);
+      File::GetUserPath(D_DUMPDSP_IDX) + StringFromFormat("DSP_UC_%08X", crc);
   const std::string binary_file = root_name + ".bin";
   const std::string text_file = root_name + ".txt";
 

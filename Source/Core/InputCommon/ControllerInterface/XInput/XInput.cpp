@@ -16,27 +16,27 @@ static const struct
 {
   const char* const name;
   const WORD bitmask;
-} named_buttons[] = {{"Button A", XINPUT_GAMEPAD_A},
-                     {"Button B", XINPUT_GAMEPAD_B},
-                     {"Button X", XINPUT_GAMEPAD_X},
-                     {"Button Y", XINPUT_GAMEPAD_Y},
-                     {"Pad N", XINPUT_GAMEPAD_DPAD_UP},
-                     {"Pad S", XINPUT_GAMEPAD_DPAD_DOWN},
-                     {"Pad W", XINPUT_GAMEPAD_DPAD_LEFT},
-                     {"Pad E", XINPUT_GAMEPAD_DPAD_RIGHT},
-                     {"Start", XINPUT_GAMEPAD_START},
-                     {"Back", XINPUT_GAMEPAD_BACK},
-                     {"Shoulder L", XINPUT_GAMEPAD_LEFT_SHOULDER},
-                     {"Shoulder R", XINPUT_GAMEPAD_RIGHT_SHOULDER},
-                     {"Guide", XINPUT_GAMEPAD_GUIDE},
-                     {"Thumb L", XINPUT_GAMEPAD_LEFT_THUMB},
-                     {"Thumb R", XINPUT_GAMEPAD_RIGHT_THUMB}};
+} named_buttons[] = { { "Button A", XINPUT_GAMEPAD_A },
+{ "Button B", XINPUT_GAMEPAD_B },
+{ "Button X", XINPUT_GAMEPAD_X },
+{ "Button Y", XINPUT_GAMEPAD_Y },
+{ "Pad N", XINPUT_GAMEPAD_DPAD_UP },
+{ "Pad S", XINPUT_GAMEPAD_DPAD_DOWN },
+{ "Pad W", XINPUT_GAMEPAD_DPAD_LEFT },
+{ "Pad E", XINPUT_GAMEPAD_DPAD_RIGHT },
+{ "Start", XINPUT_GAMEPAD_START },
+{ "Back", XINPUT_GAMEPAD_BACK },
+{ "Shoulder L", XINPUT_GAMEPAD_LEFT_SHOULDER },
+{ "Shoulder R", XINPUT_GAMEPAD_RIGHT_SHOULDER },
+{ "Guide", XINPUT_GAMEPAD_GUIDE },
+{ "Thumb L", XINPUT_GAMEPAD_LEFT_THUMB },
+{ "Thumb R", XINPUT_GAMEPAD_RIGHT_THUMB } };
 
-static const char* const named_triggers[] = {"Trigger L", "Trigger R"};
+static const char* const named_triggers[] = { "Trigger L", "Trigger R" };
 
-static const char* const named_axes[] = {"Left X", "Left Y", "Right X", "Right Y"};
+static const char* const named_axes[] = { "Left X", "Left Y", "Right X", "Right Y" };
 
-static const char* const named_motors[] = {"Motor L", "Motor R"};
+static const char* const named_motors[] = { "Motor L", "Motor R" };
 
 static HMODULE hXInput = nullptr;
 
@@ -67,7 +67,7 @@ void Init()
     }
 
     PXInputGetCapabilities =
-        (XInputGetCapabilities_t)::GetProcAddress(hXInput, "XInputGetCapabilities");
+      (XInputGetCapabilities_t)::GetProcAddress(hXInput, "XInputGetCapabilities");
     PXInputSetState = (XInputSetState_t)::GetProcAddress(hXInput, "XInputSetState");
 
     // Ordinal 100 is the same as XInputGetState, except it doesn't dummy out the guide
@@ -109,46 +109,37 @@ void DeInit()
 
 Device::Device(const XINPUT_CAPABILITIES& caps, u8 index) : m_subtype(caps.SubType), m_index(index)
 {
-  // XInputGetCaps seems to always claim all capabilities are supported
-  // but I will leave all this stuff in, incase m$ fixes xinput up a bit
+  // XInputGetCaps can be broken on some devices, so we'll just ignore it
+  // and assume all gamepad + vibration capabilities are supported
 
   // get supported buttons
   for (int i = 0; i != sizeof(named_buttons) / sizeof(*named_buttons); ++i)
   {
-    // Guide button is never reported in caps
-    if ((named_buttons[i].bitmask & caps.Gamepad.wButtons) ||
-        ((named_buttons[i].bitmask & XINPUT_GAMEPAD_GUIDE) && haveGuideButton))
+    // Only add guide button if we have the 100 ordinal XInputGetState
+    if (!(named_buttons[i].bitmask & XINPUT_GAMEPAD_GUIDE) || haveGuideButton)
       AddInput(new Button(i, m_state_in.Gamepad.wButtons));
   }
 
   // get supported triggers
   for (int i = 0; i != sizeof(named_triggers) / sizeof(*named_triggers); ++i)
   {
-    // BYTE val = (&caps.Gamepad.bLeftTrigger)[i];  // should be max value / MSDN lies
-    if ((&caps.Gamepad.bLeftTrigger)[i])
-      AddInput(new Trigger(i, (&m_state_in.Gamepad.bLeftTrigger)[i], 255));
+    AddInput(new Trigger(i, (&m_state_in.Gamepad.bLeftTrigger)[i], 255));
   }
 
   // get supported axes
   for (int i = 0; i != sizeof(named_axes) / sizeof(*named_axes); ++i)
   {
-    // SHORT val = (&caps.Gamepad.sThumbLX)[i];  // xinput doesn't give the range / MSDN is a liar
-    if ((&caps.Gamepad.sThumbLX)[i])
-    {
-      const SHORT& ax = (&m_state_in.Gamepad.sThumbLX)[i];
+    const SHORT& ax = (&m_state_in.Gamepad.sThumbLX)[i];
 
-      // each axis gets a negative and a positive input instance associated with it
-      AddInput(new Axis(i, ax, -32768));
-      AddInput(new Axis(i, ax, 32767));
-    }
+    // each axis gets a negative and a positive input instance associated with it
+    AddInput(new Axis(i, ax, -32768));
+    AddInput(new Axis(i, ax, 32767));
   }
 
   // get supported motors
   for (int i = 0; i != sizeof(named_motors) / sizeof(*named_motors); ++i)
   {
-    // WORD val = (&caps.Vibration.wLeftMotorSpeed)[i]; // should be max value / nope, more lies
-    if ((&caps.Vibration.wLeftMotorSpeed)[i])
-      AddOutput(new Motor(i, this, (&m_state_out.wLeftMotorSpeed)[i], 65535));
+    AddOutput(new Motor(i, this, (&m_state_out.wLeftMotorSpeed)[i], 65535));
   }
 
   ZeroMemory(&m_state_in, sizeof(m_state_in));

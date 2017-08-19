@@ -37,6 +37,7 @@ set(SRCS
   Config/Graphics/GraphicsWindow.cpp
   Config/Graphics/SoftwareRendererWidget.cpp
   Config/InfoWidget.cpp
+  Config/LoggerWidget.cpp
   Config/Mapping/GCKeyboardEmu.cpp
   Config/Mapping/GCPadEmu.cpp
   Config/Mapping/GCPadWiiU.cpp
@@ -62,8 +63,14 @@ set(SRCS
   GameList/GameList.cpp
   GameList/GameListModel.cpp
   GameList/GameTracker.cpp
+  GameList/GridProxyModel.cpp
   GameList/ListProxyModel.cpp
-  GameList/TableProxyModel.cpp
+  QtUtils/BlockUserInputFilter.cpp
+  NetPlay/GameListDialog.cpp
+  NetPlay/MD5Dialog.cpp
+  NetPlay/NetPlayDialog.cpp
+  NetPlay/NetPlaySetupDialog.cpp
+  NetPlay/PadMappingDialog.cpp
   QtUtils/DoubleClickEventFilter.cpp
   QtUtils/ElidedButton.cpp
   QtUtils/ListTabWidget.cpp

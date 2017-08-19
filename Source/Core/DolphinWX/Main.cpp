@@ -80,7 +80,7 @@ __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 
 IMPLEMENT_APP(DolphinApp)
 
-bool wxMsgAlert(const char*, const char*, bool, int);
+bool wxMsgAlert(const char*, const char*, bool, MsgType);
 std::string wxStringTranslator(const char*);
 
 CFrame* main_frame = nullptr;
@@ -134,6 +134,10 @@ bool DolphinApp::OnInit()
 #endif
 
   ParseCommandLine();
+
+#ifdef _WIN32
+  FreeConsole();
+#endif
 
   UICommon::SetUserDirectory(m_user_path.ToStdString());
   UICommon::CreateDirectories();
@@ -367,7 +371,7 @@ void DolphinApp::OnIdle(wxIdleEvent& ev)
 // ------------
 // Talk to GUI
 
-bool wxMsgAlert(const char* caption, const char* text, bool yes_no, int /*Style*/)
+bool wxMsgAlert(const char* caption, const char* text, bool yes_no, MsgType /*style*/)
 {
   if (wxIsMainThread())
   {

@@ -204,7 +204,7 @@ void AdvancedConfigPane::UpdateCPUClock()
   int clock = static_cast<int>(std::round(SConfig::GetInstance().m_OCFactor * core_clock));
 
   m_clock_override_text->SetLabel(
-      SConfig::GetInstance().m_OCEnable ? wxString::Format("%d %% (%d MHz)", percent, clock) : "");
+      SConfig::GetInstance().m_OCEnable ? wxString::Format("%d %% (%d MHz)", percent, clock) : wxString(""));
 }
 
 void AdvancedConfigPane::LoadCustomRTC()

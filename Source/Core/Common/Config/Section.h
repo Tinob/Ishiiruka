@@ -35,6 +35,7 @@ public:
   // Setters
   virtual void Set(const std::string& key, const std::string& value);
 
+  void Set(const std::string& key, u16 newValue);
   void Set(const std::string& key, u32 newValue);
   void Set(const std::string& key, float newValue);
   void Set(const std::string& key, double newValue);
@@ -54,9 +55,10 @@ public:
 
   // Getters
   virtual bool Get(const std::string& key, std::string* value,
-                   const std::string& default_value = NULL_STRING) const;
+    const std::string& default_value = NULL_STRING) const;
 
   bool Get(const std::string& key, int* value, int defaultValue = 0) const;
+  bool Get(const std::string& key, u16* value, u16 defaultValue = 0) const;
   bool Get(const std::string& key, u32* value, u32 defaultValue = 0) const;
   bool Get(const std::string& key, bool* value, bool defaultValue = false) const;
   bool Get(const std::string& key, float* value, float defaultValue = 0.0f) const;
@@ -104,7 +106,7 @@ public:
   bool Exists(const std::string& key) const override;
 
   bool Get(const std::string& key, std::string* value,
-           const std::string& default_value = NULL_STRING) const override;
+    const std::string& default_value = NULL_STRING) const override;
 
   void Set(const std::string& key, const std::string& value) override;
 };

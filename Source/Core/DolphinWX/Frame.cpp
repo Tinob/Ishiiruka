@@ -246,6 +246,7 @@ BEGIN_EVENT_TABLE(CFrame, CRenderFrame)
 EVT_MENU_RANGE(IDM_FLOAT_LOG_WINDOW, IDM_FLOAT_CODE_WINDOW, CFrame::OnFloatWindow)
 
 // Game list context menu
+EVT_MENU(IDM_LIST_PERFORM_DISC_UPDATE, CFrame::OnPerformDiscWiiUpdate)
 EVT_MENU(IDM_LIST_INSTALL_WAD, CFrame::OnInstallWAD)
 EVT_MENU(IDM_LIST_UNINSTALL_WAD, CFrame::OnUninstallWAD)
 
@@ -449,6 +450,10 @@ CFrame::CFrame(wxFrame* parent, wxWindowID id, const wxString& title, wxRect geo
   m_poll_hotkey_timer.SetOwner(this);
   Bind(wxEVT_TIMER, &CFrame::PollHotkeys, this, m_poll_hotkey_timer.GetId());
   m_poll_hotkey_timer.Start(1000 / 60, wxTIMER_CONTINUOUS);
+
+  m_cursor_timer.SetOwner(this);
+  Bind(wxEVT_TIMER, &CFrame::HandleCursorTimer, this, m_cursor_timer.GetId());
+  m_cursor_timer.StartOnce(MOUSE_HIDE_DELAY);
 
   // Shut down cleanly on SIGINT, SIGTERM (Unix) and on various signals on Windows
   m_handle_signal_timer.SetOwner(this);
@@ -819,6 +824,7 @@ void CFrame::OnHostMessage(wxCommandEvent& event)
   case IDM_STOPPED:
     OnStopped();
     break;
+
   case IDM_UPDATE_PROGRESS_DIALOG:
   {
     int current = event.GetInt();
@@ -836,8 +842,8 @@ void CFrame::OnHostMessage(wxCommandEvent& event)
       if (!m_progress_dialog)
       {
         m_progress_dialog = new wxProgressDialog(
-          _("Operation in progress..."), event.GetString(), total, m_render_frame,
-          wxPD_APP_MODAL | wxPD_ELAPSED_TIME | wxPD_SMOOTH | wxPD_REMAINING_TIME);
+            _("Operation in progress..."), event.GetString(), total, m_render_frame,
+            wxPD_APP_MODAL | wxPD_ELAPSED_TIME | wxPD_SMOOTH | wxPD_REMAINING_TIME);
         m_progress_dialog->Show();
       }
       else
@@ -848,7 +854,7 @@ void CFrame::OnHostMessage(wxCommandEvent& event)
       }
     }
   }
-  break;  
+  break;
   }
 }
 
@@ -1138,6 +1144,13 @@ void CFrame::OnKeyDown(wxKeyEvent& event)
 
 void CFrame::OnMouse(wxMouseEvent& event)
 {
+  if (!SConfig::GetInstance().bHideCursor && main_frame->RendererHasFocus() &&
+      Core::GetState() == Core::State::Running)
+  {
+    m_render_parent->SetCursor(wxNullCursor);
+    m_cursor_timer.StartOnce(MOUSE_HIDE_DELAY);
+  }
+
   // next handlers are all for FreeLook, so we don't need to check them if disabled
   if (!g_Config.bFreeLook)
   {
@@ -1708,6 +1721,13 @@ void CFrame::HandleFrameSkipHotkeys()
     holdFrameStep = false;
     holdFrameStepDelayCount = 0;
   }
+}
+
+void CFrame::HandleCursorTimer(wxTimerEvent& event)
+{
+  if (!SConfig::GetInstance().bHideCursor && main_frame->RendererHasFocus() &&
+      Core::GetState() == Core::State::Running)
+    m_render_parent->SetCursor(wxCURSOR_BLANK);
 }
 
 void CFrame::HandleSignal(wxTimerEvent& event)

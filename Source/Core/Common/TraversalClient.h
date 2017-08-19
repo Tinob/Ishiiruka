@@ -13,7 +13,7 @@
 class TraversalClientClient
 {
 public:
-  virtual ~TraversalClientClient(){};
+  virtual ~TraversalClientClient() = default;
   virtual void OnTraversalStateChanged() = 0;
   virtual void OnConnectReady(ENetAddress addr) = 0;
   virtual void OnConnectFailed(u8 reason) = 0;
@@ -28,7 +28,7 @@ public:
     Connected,
     Failure
   };
-  enum FailureReason
+  enum class FailureReason
   {
     BadHost = 0x300,
     VersionTooOld,
@@ -50,7 +50,7 @@ public:
   TraversalClientClient* m_Client;
   TraversalHostId m_HostId;
   State m_State;
-  int m_FailureReason;
+  FailureReason m_FailureReason;
 
 private:
   struct OutgoingTraversalPacketInfo

@@ -18,6 +18,7 @@
 #include "Core/Boot/Boot.h"
 #include "Core/BootManager.h"
 #include "Core/CommonTitles.h"
+#include "Core/Config/NetplaySettings.h"
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
 #include "Core/HW/GCKeyboard.h"
@@ -27,18 +28,22 @@
 #include "Core/HW/WiimoteEmu/WiimoteEmu.h"
 #include "Core/HotkeyManager.h"
 #include "Core/Movie.h"
+#include "Core/NetPlayClient.h"
 #include "Core/NetPlayProto.h"
+#include "Core/NetPlayServer.h"
 #include "Core/State.h"
 
 #include "DolphinQt2/AboutDialog.h"
 #include "DolphinQt2/Config/ControllersWindow.h"
-
 #include "DolphinQt2/Config/Graphics/GraphicsWindow.h"
+#include "DolphinQt2/Config/LoggerWidget.h"
 #include "DolphinQt2/Config/Mapping/MappingWindow.h"
 #include "DolphinQt2/Config/SettingsWindow.h"
 #include "DolphinQt2/Host.h"
 #include "DolphinQt2/HotkeyScheduler.h"
 #include "DolphinQt2/MainWindow.h"
+#include "DolphinQt2/NetPlay/NetPlayDialog.h"
+#include "DolphinQt2/NetPlay/NetPlaySetupDialog.h"
 #include "DolphinQt2/QtUtils/WindowActivationEventFilter.h"
 #include "DolphinQt2/Resources.h"
 #include "DolphinQt2/Settings.h"
@@ -70,6 +75,8 @@ MainWindow::MainWindow() : QMainWindow(nullptr)
 
   InitControllers();
   InitCoreCallbacks();
+
+  NetPlayInit();
 }
 
 MainWindow::~MainWindow()
@@ -134,6 +141,7 @@ void MainWindow::CreateComponents()
   m_controllers_window = new ControllersWindow(this);
   m_settings_window = new SettingsWindow(this);
   m_hotkey_window = new MappingWindow(this, 0);
+  m_logger_widget = new LoggerWidget(this);
 
   connect(this, &MainWindow::EmulationStarted, m_settings_window,
           &SettingsWindow::EmulationStarted);
@@ -193,16 +201,19 @@ void MainWindow::ConnectMenuBar()
   // Tools
   connect(m_menu_bar, &MenuBar::PerformOnlineUpdate, this, &MainWindow::PerformOnlineUpdate);
   connect(m_menu_bar, &MenuBar::BootWiiSystemMenu, this, &MainWindow::BootWiiSystemMenu);
+  connect(m_menu_bar, &MenuBar::StartNetPlay, this, &MainWindow::ShowNetPlaySetupDialog);
 
   // View
-  connect(m_menu_bar, &MenuBar::ShowTable, m_game_list, &GameList::SetTableView);
   connect(m_menu_bar, &MenuBar::ShowList, m_game_list, &GameList::SetListView);
+  connect(m_menu_bar, &MenuBar::ShowGrid, m_game_list, &GameList::SetGridView);
   connect(m_menu_bar, &MenuBar::ColumnVisibilityToggled, m_game_list,
           &GameList::OnColumnVisibilityToggled);
+
   connect(m_menu_bar, &MenuBar::GameListPlatformVisibilityToggled, m_game_list,
           &GameList::OnGameListVisibilityChanged);
   connect(m_menu_bar, &MenuBar::GameListRegionVisibilityToggled, m_game_list,
           &GameList::OnGameListVisibilityChanged);
+
   connect(m_menu_bar, &MenuBar::ShowAboutDialog, this, &MainWindow::ShowAboutDialog);
 
   connect(this, &MainWindow::EmulationStarted, m_menu_bar, &MenuBar::EmulationStarted);
@@ -254,6 +265,7 @@ void MainWindow::ConnectToolBar()
 void MainWindow::ConnectGameList()
 {
   connect(m_game_list, &GameList::GameSelected, this, &MainWindow::Play);
+  connect(m_game_list, &GameList::NetPlayHost, this, &MainWindow::NetPlayHost);
   connect(this, &MainWindow::EmulationStarted, m_game_list, &GameList::EmulationStarted);
   connect(this, &MainWindow::EmulationStopped, m_game_list, &GameList::EmulationStopped);
 }
@@ -269,7 +281,9 @@ void MainWindow::ConnectRenderWidget()
 void MainWindow::ConnectStack()
 {
   m_stack->addWidget(m_game_list);
+
   setCentralWidget(m_stack);
+  addDockWidget(Qt::RightDockWidgetArea, m_logger_widget);
 }
 
 void MainWindow::Open()
@@ -296,7 +310,7 @@ void MainWindow::Play()
   }
   else
   {
-    QString selection = m_game_list->GetSelectedGame();
+    QString selection = m_game_list->GetSelectedGame()->GetFilePath();
     if (selection.length() > 0)
     {
       StartGame(selection);
@@ -349,8 +363,9 @@ bool MainWindow::RequestStop()
   if (SConfig::GetInstance().bConfirmStop)
   {
     const Core::State state = Core::GetState();
-    // TODO: Set to false when Netplay is running as a CPU thread
-    bool pause = true;
+
+    // Only pause the game, if NetPlay is not running
+    bool pause = Settings::Instance().GetNetPlayClient() != nullptr;
 
     if (pause)
       Core::SetState(Core::State::Paused);
@@ -540,6 +555,13 @@ void MainWindow::ShowGraphicsWindow()
   m_graphics_window->activateWindow();
 }
 
+void MainWindow::ShowNetPlaySetupDialog()
+{
+  m_netplay_setup_dialog->show();
+  m_netplay_setup_dialog->raise();
+  m_netplay_setup_dialog->activateWindow();
+}
+
 void MainWindow::StateLoad()
 {
   QString path = QFileDialog::getOpenFileName(this, tr("Select a File"), QDir::currentPath(),
@@ -608,6 +630,132 @@ void MainWindow::BootWiiSystemMenu()
 {
   StartGame(QString::fromStdString(
       Common::GetTitleContentPath(Titles::SYSTEM_MENU, Common::FROM_CONFIGURED_ROOT)));
+}
+
+void MainWindow::NetPlayInit()
+{
+  m_netplay_setup_dialog = new NetPlaySetupDialog(this);
+  m_netplay_dialog = new NetPlayDialog(this);
+
+  connect(m_netplay_dialog, &NetPlayDialog::Boot, this, &MainWindow::StartGame);
+  connect(m_netplay_dialog, &NetPlayDialog::Stop, this, &MainWindow::RequestStop);
+  connect(m_netplay_dialog, &NetPlayDialog::rejected, this, &MainWindow::NetPlayQuit);
+  connect(this, &MainWindow::EmulationStopped, m_netplay_dialog, &NetPlayDialog::EmulationStopped);
+  connect(m_netplay_setup_dialog, &NetPlaySetupDialog::Join, this, &MainWindow::NetPlayJoin);
+  connect(m_netplay_setup_dialog, &NetPlaySetupDialog::Host, this, &MainWindow::NetPlayHost);
+}
+
+bool MainWindow::NetPlayJoin()
+{
+  if (Core::IsRunning())
+  {
+    QMessageBox::critical(
+        nullptr, QObject::tr("Error"),
+        QObject::tr("Can't start a NetPlay Session while a game is still running!"));
+    return false;
+  }
+
+  if (m_netplay_dialog->isVisible())
+  {
+    QMessageBox::critical(nullptr, QObject::tr("Error"),
+                          QObject::tr("A NetPlay Session is already in progress!"));
+    return false;
+  }
+
+  // Settings
+  std::string host_ip;
+  u16 host_port;
+  if (Settings::Instance().GetNetPlayServer() != nullptr)
+  {
+    host_ip = "127.0.0.1";
+    host_port = Settings::Instance().GetNetPlayServer()->GetPort();
+  }
+  else
+  {
+    host_ip = Config::Get(Config::NETPLAY_HOST_CODE);
+    host_port = Config::Get(Config::NETPLAY_HOST_PORT);
+  }
+
+  const std::string traversal_choice = Config::Get(Config::NETPLAY_TRAVERSAL_CHOICE);
+  const bool is_traversal = traversal_choice == "traversal";
+
+  const std::string traversal_host = Config::Get(Config::NETPLAY_TRAVERSAL_SERVER);
+  const u16 traversal_port = Config::Get(Config::NETPLAY_TRAVERSAL_PORT);
+  const std::string nickname = Config::Get(Config::NETPLAY_NICKNAME);
+
+  // Create Client
+  Settings::Instance().ResetNetPlayClient(new NetPlayClient(
+      host_ip, host_port, m_netplay_dialog, nickname,
+      NetTraversalConfig{Settings::Instance().GetNetPlayServer() != nullptr ? false : is_traversal,
+                         traversal_host, traversal_port}));
+
+  if (!Settings::Instance().GetNetPlayClient()->IsConnected())
+  {
+    QMessageBox::critical(nullptr, QObject::tr("Error"),
+                          QObject::tr("Failed to connect to server"));
+    return false;
+  }
+
+  m_netplay_setup_dialog->close();
+  m_netplay_dialog->show(nickname, is_traversal);
+
+  return true;
+}
+
+bool MainWindow::NetPlayHost(const QString& game_id)
+{
+  if (Core::IsRunning())
+  {
+    QMessageBox::critical(
+        nullptr, QObject::tr("Error"),
+        QObject::tr("Can't start a NetPlay Session while a game is still running!"));
+    return false;
+  }
+
+  if (m_netplay_dialog->isVisible())
+  {
+    QMessageBox::critical(nullptr, QObject::tr("Error"),
+                          QObject::tr("A NetPlay Session is already in progress!"));
+    return false;
+  }
+
+  // Settings
+  u16 host_port = Config::Get(Config::NETPLAY_HOST_PORT);
+  const std::string traversal_choice = Config::Get(Config::NETPLAY_TRAVERSAL_CHOICE);
+  const bool is_traversal = traversal_choice == "traversal";
+  const bool use_upnp = Config::Get(Config::NETPLAY_USE_UPNP);
+
+  const std::string traversal_host = Config::Get(Config::NETPLAY_TRAVERSAL_SERVER);
+  const u16 traversal_port = Config::Get(Config::NETPLAY_TRAVERSAL_PORT);
+  const std::string nickname = Config::Get(Config::NETPLAY_NICKNAME);
+
+  if (is_traversal)
+    host_port = Config::Get(Config::NETPLAY_LISTEN_PORT);
+
+  // Create Server
+  Settings::Instance().ResetNetPlayServer(new NetPlayServer(
+      host_port, use_upnp, NetTraversalConfig{is_traversal, traversal_host, traversal_port}));
+
+  if (!Settings::Instance().GetNetPlayServer()->is_connected)
+  {
+    QMessageBox::critical(
+        nullptr, QObject::tr("Failed to open server"),
+        QObject::tr(
+            "Failed to listen on port %1. Is another instance of the NetPlay server running?")
+            .arg(host_port));
+    return false;
+  }
+
+  Settings::Instance().GetNetPlayServer()->ChangeGame(game_id.toStdString());
+
+  // Join our local server
+  return NetPlayJoin();
+}
+
+void MainWindow::NetPlayQuit()
+{
+  Settings::Instance().ResetNetPlayClient();
+  Settings::Instance().ResetNetPlayServer();
 }
 
 bool MainWindow::eventFilter(QObject* object, QEvent* event)

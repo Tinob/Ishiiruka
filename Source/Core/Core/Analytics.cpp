@@ -219,6 +219,8 @@ void DolphinAnalytics::MakePerGameBuilder()
   builder.AddData("cfg-gfx-efb-copy-scaled", g_Config.bCopyEFBScaled);
   builder.AddData("cfg-gfx-tc-samples", g_Config.iSafeTextureCache_ColorSamples);
   builder.AddData("cfg-gfx-stereo-mode", g_Config.iStereoMode);
+  builder.AddData("cfg-gfx-per-pixel-lighting", g_Config.bEnablePixelLighting);
+  builder.AddData("cfg-gfx-fast-depth", g_Config.bFastDepthCalc);
 
   // GPU features.
   if (g_Config.iAdapter < static_cast<int>(g_Config.backend_info.Adapters.size()))

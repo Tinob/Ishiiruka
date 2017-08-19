@@ -25,69 +25,70 @@
 
 #include "DolphinQt2/Config/PropertiesDialog.h"
 #include "DolphinQt2/GameList/GameList.h"
+#include "DolphinQt2/GameList/GridProxyModel.h"
 #include "DolphinQt2/GameList/ListProxyModel.h"
-#include "DolphinQt2/GameList/TableProxyModel.h"
 #include "DolphinQt2/QtUtils/DoubleClickEventFilter.h"
 #include "DolphinQt2/Settings.h"
+#include "DolphinQt2/WiiUpdate.h"
 
 static bool CompressCB(const std::string&, float, void*);
 
 GameList::GameList(QWidget* parent) : QStackedWidget(parent)
 {
-  m_model = new GameListModel(this);
-  m_table_proxy = new TableProxyModel(this);
-  m_table_proxy->setSortCaseSensitivity(Qt::CaseInsensitive);
-  m_table_proxy->setSortRole(Qt::InitialSortOrderRole);
-  m_table_proxy->setSourceModel(m_model);
+  m_model = Settings::Instance().GetGameListModel();
   m_list_proxy = new ListProxyModel(this);
+  m_list_proxy->setSortCaseSensitivity(Qt::CaseInsensitive);
+  m_list_proxy->setSortRole(Qt::InitialSortOrderRole);
   m_list_proxy->setSourceModel(m_model);
+  m_grid_proxy = new GridProxyModel(this);
+  m_grid_proxy->setSourceModel(m_model);
 
-  MakeTableView();
   MakeListView();
+  MakeGridView();
   MakeEmptyView();
 
-  connect(m_table, &QTableView::doubleClicked, this, &GameList::GameSelected);
-  connect(m_list, &QListView::doubleClicked, this, &GameList::GameSelected);
+  connect(m_list, &QTableView::doubleClicked, this, &GameList::GameSelected);
+  connect(m_grid, &QListView::doubleClicked, this, &GameList::GameSelected);
   connect(&Settings::Instance(), &Settings::PathAdded, m_model, &GameListModel::DirectoryAdded);
   connect(&Settings::Instance(), &Settings::PathRemoved, m_model, &GameListModel::DirectoryRemoved);
   connect(m_model, &QAbstractItemModel::rowsInserted, this, &GameList::ConsiderViewChange);
   connect(m_model, &QAbstractItemModel::rowsRemoved, this, &GameList::ConsiderViewChange);
 
-  addWidget(m_table);
   addWidget(m_list);
+  addWidget(m_grid);
   addWidget(m_empty);
-  m_prefer_table = Settings::Instance().GetPreferredView();
+  m_prefer_list = Settings::Instance().GetPreferredView();
   ConsiderViewChange();
 }
 
-void GameList::MakeTableView()
+void GameList::MakeListView()
 {
-  m_table = new QTableView(this);
-  m_table->setModel(m_table_proxy);
+  m_list = new QTableView(this);
+  m_list->setModel(m_list_proxy);
 
-  m_table->setSelectionMode(QAbstractItemView::SingleSelection);
-  m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
-  m_table->setAlternatingRowColors(true);
-  m_table->setShowGrid(false);
-  m_table->setSortingEnabled(true);
-  m_table->setCurrentIndex(QModelIndex());
-  m_table->setContextMenuPolicy(Qt::CustomContextMenu);
-  m_table->setWordWrap(false);
+  m_list->setSelectionMode(QAbstractItemView::SingleSelection);
+  m_list->setSelectionBehavior(QAbstractItemView::SelectRows);
+  m_list->setAlternatingRowColors(true);
+  m_list->setShowGrid(false);
+  m_list->setSortingEnabled(true);
+  m_list->setCurrentIndex(QModelIndex());
+  m_list->setContextMenuPolicy(Qt::CustomContextMenu);
+  m_list->setWordWrap(false);
 
-  connect(m_table, &QTableView::customContextMenuRequested, this, &GameList::ShowContextMenu);
+  connect(m_list, &QTableView::customContextMenuRequested, this, &GameList::ShowContextMenu);
 
-  m_table->setColumnHidden(GameListModel::COL_PLATFORM, !SConfig::GetInstance().m_showSystemColumn);
-  m_table->setColumnHidden(GameListModel::COL_ID, !SConfig::GetInstance().m_showIDColumn);
-  m_table->setColumnHidden(GameListModel::COL_BANNER, !SConfig::GetInstance().m_showBannerColumn);
-  m_table->setColumnHidden(GameListModel::COL_TITLE, !SConfig::GetInstance().m_showTitleColumn);
-  m_table->setColumnHidden(GameListModel::COL_DESCRIPTION,
-                           !SConfig::GetInstance().m_showDescriptionColumn);
-  m_table->setColumnHidden(GameListModel::COL_MAKER, !SConfig::GetInstance().m_showMakerColumn);
-  m_table->setColumnHidden(GameListModel::COL_SIZE, !SConfig::GetInstance().m_showSizeColumn);
-  m_table->setColumnHidden(GameListModel::COL_COUNTRY, !SConfig::GetInstance().m_showRegionColumn);
-  m_table->setColumnHidden(GameListModel::COL_RATING, !SConfig::GetInstance().m_showStateColumn);
+  m_list->setColumnHidden(GameListModel::COL_PLATFORM, !SConfig::GetInstance().m_showSystemColumn);
+  m_list->setColumnHidden(GameListModel::COL_ID, !SConfig::GetInstance().m_showIDColumn);
+  m_list->setColumnHidden(GameListModel::COL_BANNER, !SConfig::GetInstance().m_showBannerColumn);
+  m_list->setColumnHidden(GameListModel::COL_TITLE, !SConfig::GetInstance().m_showTitleColumn);
+  m_list->setColumnHidden(GameListModel::COL_DESCRIPTION,
+                          !SConfig::GetInstance().m_showDescriptionColumn);
+  m_list->setColumnHidden(GameListModel::COL_MAKER, !SConfig::GetInstance().m_showMakerColumn);
+  m_list->setColumnHidden(GameListModel::COL_SIZE, !SConfig::GetInstance().m_showSizeColumn);
+  m_list->setColumnHidden(GameListModel::COL_COUNTRY, !SConfig::GetInstance().m_showRegionColumn);
+  m_list->setColumnHidden(GameListModel::COL_RATING, !SConfig::GetInstance().m_showStateColumn);
 
-  QHeaderView* hor_header = m_table->horizontalHeader();
+  QHeaderView* hor_header = m_list->horizontalHeader();
 
   connect(hor_header, &QHeaderView::sortIndicatorChanged, this, &GameList::OnHeaderViewChanged);
   connect(hor_header, &QHeaderView::sectionResized, this, &GameList::OnHeaderViewChanged);
@@ -107,8 +108,8 @@ void GameList::MakeTableView()
   hor_header->setSectionResizeMode(GameListModel::COL_DESCRIPTION, QHeaderView::Stretch);
   hor_header->setSectionResizeMode(GameListModel::COL_RATING, QHeaderView::ResizeToContents);
 
-  m_table->verticalHeader()->hide();
-  m_table->setFrameStyle(QFrame::NoFrame);
+  m_list->verticalHeader()->hide();
+  m_list->setFrameStyle(QFrame::NoFrame);
 }
 
 void GameList::MakeEmptyView()
@@ -128,26 +129,26 @@ void GameList::MakeEmptyView()
   });
 }
 
-void GameList::MakeListView()
+void GameList::MakeGridView()
 {
-  m_list = new QListView(this);
-  m_list->setModel(m_list_proxy);
-  m_list->setViewMode(QListView::IconMode);
-  m_list->setResizeMode(QListView::Adjust);
-  m_list->setUniformItemSizes(true);
-  m_list->setContextMenuPolicy(Qt::CustomContextMenu);
-  m_list->setFrameStyle(QFrame::NoFrame);
-  connect(m_list, &QTableView::customContextMenuRequested, this, &GameList::ShowContextMenu);
+  m_grid = new QListView(this);
+  m_grid->setModel(m_grid_proxy);
+  m_grid->setViewMode(QListView::IconMode);
+  m_grid->setResizeMode(QListView::Adjust);
+  m_grid->setUniformItemSizes(true);
+  m_grid->setContextMenuPolicy(Qt::CustomContextMenu);
+  m_grid->setFrameStyle(QFrame::NoFrame);
+  connect(m_grid, &QTableView::customContextMenuRequested, this, &GameList::ShowContextMenu);
 }
 
 void GameList::ShowContextMenu(const QPoint&)
 {
   const auto game = GetSelectedGame();
-  if (game.isEmpty())
+  if (game.isNull())
     return;
 
   QMenu* menu = new QMenu(this);
-  DiscIO::Platform platform = GameFile(game).GetPlatformID();
+  DiscIO::Platform platform = game->GetPlatformID();
   menu->addAction(tr("&Properties"), this, &GameList::OpenProperties);
   menu->addAction(tr("&Wiki"), this, &GameList::OpenWiki);
   menu->addSeparator();
@@ -155,7 +156,7 @@ void GameList::ShowContextMenu(const QPoint&)
   if (platform == DiscIO::Platform::GAMECUBE_DISC || platform == DiscIO::Platform::WII_DISC)
   {
     menu->addAction(tr("Set as &default ISO"), this, &GameList::SetDefaultISO);
-    const auto blob_type = GameFile(game).GetBlobType();
+    const auto blob_type = game->GetBlobType();
 
     if (blob_type == DiscIO::BlobType::GCZ)
       menu->addAction(tr("Decompress ISO..."), this, &GameList::CompressISO);
@@ -164,6 +165,15 @@ void GameList::ShowContextMenu(const QPoint&)
 
     menu->addSeparator();
   }
+
+  if (platform == DiscIO::Platform::WII_DISC)
+  {
+    menu->addAction(tr("Perform System Update"), [this] {
+      WiiUpdate::PerformDiscUpdate(GetSelectedGame()->GetFilePath().toStdString(), this);
+    });
+    menu->setEnabled(!Core::IsRunning() || !SConfig::GetInstance().bWii);
+  }
+
   if (platform == DiscIO::Platform::WII_WAD)
   {
     QAction* wad_install_action = new QAction(tr("Install to the NAND"), menu);
@@ -182,7 +192,7 @@ void GameList::ShowContextMenu(const QPoint&)
     connect(this, &GameList::EmulationStopped, wad_install_action,
             [wad_install_action] { wad_install_action->setEnabled(true); });
     connect(this, &GameList::EmulationStopped, wad_uninstall_action, [wad_uninstall_action, game] {
-      wad_uninstall_action->setEnabled(GameFile(game).IsInstalled());
+      wad_uninstall_action->setEnabled(game->IsInstalled());
     });
 
     menu->addSeparator();
@@ -197,12 +207,26 @@ void GameList::ShowContextMenu(const QPoint&)
 
   menu->addAction(tr("Open &containing folder"), this, &GameList::OpenContainingFolder);
   menu->addAction(tr("Delete File..."), this, &GameList::DeleteFile);
+
+  QAction* netplay_host = new QAction(tr("Host with NetPlay"), menu);
+
+  connect(netplay_host, &QAction::triggered,
+          [this, game] { emit NetPlayHost(game->GetUniqueID()); });
+
+  connect(this, &GameList::EmulationStarted, netplay_host,
+          [netplay_host] { netplay_host->setEnabled(false); });
+  connect(this, &GameList::EmulationStopped, netplay_host,
+          [netplay_host] { netplay_host->setEnabled(true); });
+  netplay_host->setEnabled(!Core::IsRunning());
+
+  menu->addAction(netplay_host);
+
   menu->exec(QCursor::pos());
 }
 
 void GameList::OpenProperties()
 {
-  PropertiesDialog* properties = new PropertiesDialog(this, GameFile(GetSelectedGame()));
+  PropertiesDialog* properties = new PropertiesDialog(this, *GetSelectedGame());
   properties->show();
 }
 
@@ -210,7 +234,7 @@ void GameList::ExportWiiSave()
 {
   QMessageBox result_dialog(this);
 
-  const bool success = GameFile(GetSelectedGame()).ExportWiiSave();
+  const bool success = GetSelectedGame()->ExportWiiSave();
 
   result_dialog.setIcon(success ? QMessageBox::Information : QMessageBox::Critical);
   result_dialog.setText(success ? tr("Successfully exported save files") :
@@ -220,19 +244,19 @@ void GameList::ExportWiiSave()
 
 void GameList::OpenWiki()
 {
-  QString game_id = GameFile(GetSelectedGame()).GetGameID();
+  QString game_id = GetSelectedGame()->GetGameID();
   QString url = QStringLiteral("https://wiki.dolphin-emu.org/index.php?title=").append(game_id);
   QDesktopServices::openUrl(QUrl(url));
 }
 
 void GameList::CompressISO()
 {
-  const auto original_path = GetSelectedGame();
-  auto file = GameFile(original_path);
+  auto file = GetSelectedGame();
+  const auto original_path = file->GetFilePath();
 
-  const bool compressed = (file.GetBlobType() == DiscIO::BlobType::GCZ);
+  const bool compressed = (file->GetBlobType() == DiscIO::BlobType::GCZ);
 
-  if (!compressed && file.GetPlatformID() == DiscIO::Platform::WII_DISC)
+  if (!compressed && file->GetPlatformID() == DiscIO::Platform::WII_DISC)
   {
     QMessageBox wii_warning(this);
     wii_warning.setIcon(QMessageBox::Warning);
@@ -249,9 +273,9 @@ void GameList::CompressISO()
   QString dst_path = QFileDialog::getSaveFileName(
       this, compressed ? tr("Select where you want to save the decompressed image") :
                          tr("Select where you want to save the compressed image"),
-      QFileInfo(GetSelectedGame())
+      QFileInfo(GetSelectedGame()->GetFilePath())
           .dir()
-          .absoluteFilePath(file.GetGameID())
+          .absoluteFilePath(file->GetGameID())
           .append(compressed ? QStringLiteral(".gcm") : QStringLiteral(".gcz")),
       compressed ? tr("Uncompressed GC/Wii images (*.iso *.gcm)") :
                    tr("Compressed GC/Wii images (*.gcz)"));
@@ -273,7 +297,7 @@ void GameList::CompressISO()
   else
   {
     good = DiscIO::CompressFileToBlob(original_path.toStdString(), dst_path.toStdString(),
-                                      file.GetPlatformID() == DiscIO::Platform::WII_DISC ? 1 : 0,
+                                      file->GetPlatformID() == DiscIO::Platform::WII_DISC ? 1 : 0,
                                       16384, &CompressCB, &progress_dialog);
   }
 
@@ -293,7 +317,7 @@ void GameList::InstallWAD()
 {
   QMessageBox result_dialog(this);
 
-  const bool success = GameFile(GetSelectedGame()).Install();
+  const bool success = GetSelectedGame()->Install();
 
   result_dialog.setIcon(success ? QMessageBox::Information : QMessageBox::Critical);
   result_dialog.setText(success ? tr("Successfully installed this title to the NAND.") :
@@ -315,7 +339,7 @@ void GameList::UninstallWAD()
 
   QMessageBox result_dialog(this);
 
-  const bool success = GameFile(GetSelectedGame()).Uninstall();
+  const bool success = GetSelectedGame()->Uninstall();
 
   result_dialog.setIcon(success ? QMessageBox::Information : QMessageBox::Critical);
   result_dialog.setText(success ? tr("Successfully removed this title from the NAND.") :
@@ -325,24 +349,24 @@ void GameList::UninstallWAD()
 
 void GameList::SetDefaultISO()
 {
-  SConfig::GetInstance().m_strDefaultISO = GetSelectedGame().toStdString();
+  SConfig::GetInstance().m_strDefaultISO = GetSelectedGame()->GetFilePath().toStdString();
 }
 
 void GameList::OpenContainingFolder()
 {
-  QUrl url = QUrl::fromLocalFile(QFileInfo(GetSelectedGame()).dir().absolutePath());
+  QUrl url = QUrl::fromLocalFile(QFileInfo(GetSelectedGame()->GetFilePath()).dir().absolutePath());
   QDesktopServices::openUrl(url);
 }
 
 void GameList::OpenSaveFolder()
 {
-  QUrl url = QUrl::fromLocalFile(GameFile(GetSelectedGame()).GetWiiFSPath());
+  QUrl url = QUrl::fromLocalFile(GetSelectedGame()->GetWiiFSPath());
   QDesktopServices::openUrl(url);
 }
 
 void GameList::DeleteFile()
 {
-  const auto game = GetSelectedGame();
+  const auto game = GetSelectedGame()->GetFilePath();
   QMessageBox confirm_dialog(this);
 
   confirm_dialog.setIcon(QMessageBox::Warning);
@@ -379,33 +403,33 @@ void GameList::DeleteFile()
   }
 }
 
-QString GameList::GetSelectedGame() const
+QSharedPointer<GameFile> GameList::GetSelectedGame() const
 {
   QAbstractItemView* view;
   QSortFilterProxyModel* proxy;
-  if (currentWidget() == m_table)
-  {
-    view = m_table;
-    proxy = m_table_proxy;
-  }
-  else
+  if (currentWidget() == m_list)
   {
     view = m_list;
     proxy = m_list_proxy;
+  }
+  else
+  {
+    view = m_grid;
+    proxy = m_grid_proxy;
   }
   QItemSelectionModel* sel_model = view->selectionModel();
   if (sel_model->hasSelection())
   {
     QModelIndex model_index = proxy->mapToSource(sel_model->selectedIndexes()[0]);
-    return m_model->GetPath(model_index.row());
+    return m_model->GetGameFile(model_index.row());
   }
-  return QStringLiteral("");
+  return {};
 }
 
-void GameList::SetPreferredView(bool table)
+void GameList::SetPreferredView(bool list)
 {
-  m_prefer_table = table;
-  Settings::Instance().SetPreferredView(table);
+  m_prefer_list = list;
+  Settings::Instance().SetPreferredView(list);
   ConsiderViewChange();
 }
 
@@ -413,10 +437,10 @@ void GameList::ConsiderViewChange()
 {
   if (m_model->rowCount(QModelIndex()) > 0)
   {
-    if (m_prefer_table)
-      setCurrentWidget(m_table);
-    else
+    if (m_prefer_list)
       setCurrentWidget(m_list);
+    else
+      setCurrentWidget(m_grid);
   }
   else
   {
@@ -444,13 +468,13 @@ void GameList::OnColumnVisibilityToggled(const QString& row, bool visible)
       {tr("Title"), GameListModel::COL_TITLE},
       {tr("State"), GameListModel::COL_RATING}};
 
-  m_table->setColumnHidden(rowname_to_col_index[row], !visible);
+  m_list->setColumnHidden(rowname_to_col_index[row], !visible);
 }
 
 void GameList::OnGameListVisibilityChanged()
 {
-  m_table_proxy->invalidate();
   m_list_proxy->invalidate();
+  m_grid_proxy->invalidate();
 }
 
 static bool CompressCB(const std::string& text, float percent, void* ptr)
@@ -466,5 +490,5 @@ static bool CompressCB(const std::string& text, float percent, void* ptr)
 void GameList::OnHeaderViewChanged()
 {
   QSettings().setValue(QStringLiteral("tableheader/state"),
-                       m_table->horizontalHeader()->saveState());
+                       m_list->horizontalHeader()->saveState());
 }

@@ -33,7 +33,7 @@ public:
   VolumeWAD(std::unique_ptr<BlobReader> reader);
   ~VolumeWAD();
   bool Read(u64 offset, u64 length, u8* buffer,
-    const Partition& partition = PARTITION_NONE) const override;
+            const Partition& partition = PARTITION_NONE) const override;
   std::optional<u64> GetTitleID(const Partition& partition = PARTITION_NONE) const override;
   const IOS::ES::TMDReader& GetTMD(const Partition& partition = PARTITION_NONE) const override;
   std::string GetGameID(const Partition& partition = PARTITION_NONE) const override;

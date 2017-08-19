@@ -21,7 +21,7 @@ class GCMemcardDirectory : public MemoryCardBase, NonCopyable
 {
 public:
   GCMemcardDirectory(const std::string& directory, int slot, u16 size_mbits, bool shift_jis,
-    int game_id);
+                     int game_id);
   ~GCMemcardDirectory();
   void FlushToFile();
   void FlushThread();

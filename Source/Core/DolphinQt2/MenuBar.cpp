@@ -77,14 +77,19 @@ void MenuBar::EmulationStopped()
 void MenuBar::AddFileMenu()
 {
   QMenu* file_menu = addMenu(tr("&File"));
-  m_open_action = file_menu->addAction(tr("&Open..."), this, &MenuBar::Open);
-  m_exit_action = file_menu->addAction(tr("E&xit"), this, &MenuBar::Exit);
+  m_open_action = file_menu->addAction(tr("&Open..."), this, &MenuBar::Open,
+                                       QKeySequence(QStringLiteral("Ctrl+O")));
+  m_exit_action = file_menu->addAction(tr("E&xit"), this, &MenuBar::Exit,
+                                       QKeySequence(QStringLiteral("Alt+F4")));
 }
 
 void MenuBar::AddToolsMenu()
 {
   QMenu* tools_menu = addMenu(tr("&Tools"));
   m_wad_install_action = tools_menu->addAction(tr("Install WAD..."), this, &MenuBar::InstallWAD);
+
+  tools_menu->addAction(tr("Start &NetPlay..."), this, &MenuBar::StartNetPlay);
+  tools_menu->addSeparator();
 
   // Label will be set by a NANDRefresh later
   m_boot_sysmenu = tools_menu->addAction(QStringLiteral(""), [this] { emit BootWiiSystemMenu(); });
@@ -113,7 +118,11 @@ void MenuBar::AddEmulationMenu()
   m_reset_action = emu_menu->addAction(tr("&Reset"), this, &MenuBar::Reset);
   m_fullscreen_action = emu_menu->addAction(tr("Toggle &Fullscreen"), this, &MenuBar::Fullscreen);
   m_frame_advance_action = emu_menu->addAction(tr("&Frame Advance"), this, &MenuBar::FrameAdvance);
+
   m_screenshot_action = emu_menu->addAction(tr("Take Screenshot"), this, &MenuBar::Screenshot);
+
+  emu_menu->addSeparator();
+
   AddStateLoadMenu(emu_menu);
   AddStateSaveMenu(emu_menu);
   AddStateSlotMenu(emu_menu);
@@ -188,9 +197,28 @@ void MenuBar::UpdateStateSlotMenu()
 void MenuBar::AddViewMenu()
 {
   QMenu* view_menu = addMenu(tr("&View"));
+  QAction* show_log = view_menu->addAction(tr("Show &Log"));
+  show_log->setCheckable(true);
+  show_log->setChecked(Settings::Instance().IsLogVisible());
+
+  connect(show_log, &QAction::toggled, &Settings::Instance(), &Settings::SetLogVisible);
+
+  QAction* show_log_config = view_menu->addAction(tr("Show Log &Configuration"));
+  show_log_config->setCheckable(true);
+  show_log_config->setChecked(Settings::Instance().IsLogConfigVisible());
+
+  connect(show_log_config, &QAction::toggled, &Settings::Instance(),
+          &Settings::SetLogConfigVisible);
+
+  connect(&Settings::Instance(), &Settings::LogVisibilityChanged, show_log, &QAction::setChecked);
+  connect(&Settings::Instance(), &Settings::LogConfigVisibilityChanged, show_log_config,
+          &QAction::setChecked);
+
+  view_menu->addSeparator();
+
   AddGameListTypeSection(view_menu);
   view_menu->addSeparator();
-  AddTableColumnsMenu(view_menu);
+  AddListColumnsMenu(view_menu);
   view_menu->addSeparator();
   AddShowPlatformsMenu(view_menu);
   AddShowRegionsMenu(view_menu);
@@ -228,27 +256,25 @@ void MenuBar::AddHelpMenu()
 
 void MenuBar::AddGameListTypeSection(QMenu* view_menu)
 {
-  // i18n: When this option is enabled, the game list is displayed as a table
-  QAction* table_view = view_menu->addAction(tr("Table"));
-  table_view->setCheckable(true);
-
-  // i18n: When this option is enabled, the game list is displayed as a list
-  QAction* list_view = view_menu->addAction(tr("List"));
+  QAction* list_view = view_menu->addAction(tr("List View"));
   list_view->setCheckable(true);
 
+  QAction* grid_view = view_menu->addAction(tr("Grid View"));
+  grid_view->setCheckable(true);
+
   QActionGroup* list_group = new QActionGroup(this);
-  list_group->addAction(table_view);
   list_group->addAction(list_view);
+  list_group->addAction(grid_view);
 
-  bool prefer_table = Settings::Instance().GetPreferredView();
-  table_view->setChecked(prefer_table);
-  list_view->setChecked(!prefer_table);
+  bool prefer_list = Settings::Instance().GetPreferredView();
+  list_view->setChecked(prefer_list);
+  grid_view->setChecked(!prefer_list);
 
-  connect(table_view, &QAction::triggered, this, &MenuBar::ShowTable);
   connect(list_view, &QAction::triggered, this, &MenuBar::ShowList);
+  connect(grid_view, &QAction::triggered, this, &MenuBar::ShowGrid);
 }
 
-void MenuBar::AddTableColumnsMenu(QMenu* view_menu)
+void MenuBar::AddListColumnsMenu(QMenu* view_menu)
 {
   static const QMap<QString, bool*> columns{
       {tr("Platform"), &SConfig::GetInstance().m_showSystemColumn},
@@ -262,7 +288,7 @@ void MenuBar::AddTableColumnsMenu(QMenu* view_menu)
       {tr("State"), &SConfig::GetInstance().m_showStateColumn}};
 
   QActionGroup* column_group = new QActionGroup(this);
-  QMenu* cols_menu = view_menu->addMenu(tr("Table Columns"));
+  QMenu* cols_menu = view_menu->addMenu(tr("List Columns"));
   column_group->setExclusive(false);
 
   for (const auto& key : columns.keys())

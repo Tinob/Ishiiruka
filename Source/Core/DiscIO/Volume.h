@@ -51,6 +51,12 @@ public:
       return {};
     return Common::FromBigEndian(temp);
   }
+  std::optional<u64> ReadSwappedAndShifted(u64 offset, const Partition& partition) const
+  {
+    const std::optional<u32> temp = ReadSwapped<u32>(offset, partition);
+    return temp ? static_cast<u64>(*temp) << GetOffsetShift() : std::optional<u64>();
+  }
+
   virtual std::vector<Partition> GetPartitions() const { return {}; }
   virtual Partition GetGamePartition() const { return PARTITION_NONE; }
   virtual std::optional<u32> GetPartitionType(const Partition& partition) const { return {}; }
@@ -97,7 +103,7 @@ public:
 
 protected:
   template <u32 N>
-  std::string DecodeString(const char(&data)[N]) const
+  std::string DecodeString(const char (&data)[N]) const
   {
     // strnlen to trim NULLs
     std::string string(data, strnlen(data, sizeof(data)));
@@ -108,6 +114,7 @@ protected:
       return CP1252ToUTF8(string);
   }
 
+  virtual u32 GetOffsetShift() const { return 0; }
   static std::map<Language, std::string> ReadWiiNames(const std::vector<u8>& data);
 
   static const size_t NUMBER_OF_LANGUAGES = 10;
@@ -120,8 +127,5 @@ protected:
 };
 
 std::unique_ptr<Volume> CreateVolumeFromFilename(const std::string& filename);
-std::unique_ptr<Volume> CreateVolumeFromDirectory(const std::string& directory, bool is_wii,
-  const std::string& apploader = "",
-  const std::string& dol = "");
 
 }  // namespace

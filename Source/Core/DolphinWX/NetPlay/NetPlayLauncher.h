@@ -6,7 +6,6 @@
 
 #include <string>
 #include "Common/CommonTypes.h"
-#include "Common/IniFile.h"
 
 class GameListCtrl;
 class wxRect;
@@ -15,13 +14,9 @@ class wxWindow;
 class NetPlayLaunchConfig
 {
 public:
-  static std::string GetTraversalHostFromIniConfig(const IniFile::Section& netplay_section);
-  static u16 GetTraversalPortFromIniConfig(const IniFile::Section& netplay_section);
-  void SetDialogInfo(const IniFile::Section& section, wxWindow* parent);
+  void SetDialogInfo(wxWindow* parent);
 
-  static const std::string DEFAULT_TRAVERSAL_HOST;
-  static constexpr u16 DEFAULT_TRAVERSAL_PORT = 6262;
-  const wxRect window_defaults{wxDefaultCoord, wxDefaultCoord, 768, 768 - 128};
+  const wxRect window_defaults{ wxDefaultCoord, wxDefaultCoord, 768, 768 - 128 };
 
   std::string player_name;
   const GameListCtrl* game_list_ctrl;
@@ -29,21 +24,17 @@ public:
   bool use_traversal;
   std::string traversal_host;
   u16 traversal_port;
-  wxRect window_pos{window_defaults};
+  wxRect window_pos{ window_defaults };
 };
 
 class NetPlayHostConfig : public NetPlayLaunchConfig
 {
 public:
-  void FromIniConfig(IniFile::Section& netplay_section);
-
-  static constexpr u16 DEFAULT_LISTEN_PORT = 2626;
+  void FromConfig();
 
   std::string game_name;
   u16 listen_port = 0;
-#ifdef USE_UPNP
-  bool forward_port;
-#endif
+  bool forward_port = false;
 };
 
 class NetPlayJoinConfig : public NetPlayLaunchConfig

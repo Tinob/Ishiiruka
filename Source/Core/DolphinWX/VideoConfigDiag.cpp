@@ -23,6 +23,7 @@
 #include "Common/FileSearch.h"
 #include "Common/FileUtil.h"
 #include "Common/SysConf.h"
+#include "Core/Config/SYSCONFSettings.h"
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
 #include "Core/ConfigManager.h"
@@ -929,7 +930,8 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
         RegisterControl(progressive_scan_checkbox, (prog_scan_desc));
         progressive_scan_checkbox->Bind(wxEVT_CHECKBOX, &VideoConfigDiag::Event_ProgressiveScan, this);
 
-        progressive_scan_checkbox->SetValue(SConfig::GetInstance().bProgressive);
+        // TODO: split this into two different settings, one for Wii and one for GC?
+        progressive_scan_checkbox->SetValue(Config::Get(Config::SYSCONF_PROGRESSIVE_SCAN));
         szr_misc->Add(progressive_scan_checkbox);
       }
 #if defined WIN32
@@ -1125,8 +1127,7 @@ void VideoConfigDiag::Event_Adapter(wxCommandEvent &ev)
 
 void VideoConfigDiag::Event_ProgressiveScan(wxCommandEvent &ev)
 {
-  SConfig::GetInstance().bProgressive = ev.IsChecked();
-
+  Config::SetBase(Config::SYSCONF_PROGRESSIVE_SCAN, ev.IsChecked());
   ev.Skip();
 }
 

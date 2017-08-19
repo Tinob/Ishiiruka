@@ -60,171 +60,171 @@ enum ARM64Reg
 
   WSP,  // 32bit stack pointer
 
-  // 64bit registers
-  X0 = 0x20,
-  X1,
-  X2,
-  X3,
-  X4,
-  X5,
-  X6,
-  X7,
-  X8,
-  X9,
-  X10,
-  X11,
-  X12,
-  X13,
-  X14,
-  X15,
-  X16,
-  X17,
-  X18,
-  X19,
-  X20,
-  X21,
-  X22,
-  X23,
-  X24,
-  X25,
-  X26,
-  X27,
-  X28,
-  X29,
-  X30,
+        // 64bit registers
+        X0 = 0x20,
+        X1,
+        X2,
+        X3,
+        X4,
+        X5,
+        X6,
+        X7,
+        X8,
+        X9,
+        X10,
+        X11,
+        X12,
+        X13,
+        X14,
+        X15,
+        X16,
+        X17,
+        X18,
+        X19,
+        X20,
+        X21,
+        X22,
+        X23,
+        X24,
+        X25,
+        X26,
+        X27,
+        X28,
+        X29,
+        X30,
 
-  SP,  // 64bit stack pointer
+        SP,  // 64bit stack pointer
 
-  // VFP single precision registers
-  S0 = 0x40,
-  S1,
-  S2,
-  S3,
-  S4,
-  S5,
-  S6,
-  S7,
-  S8,
-  S9,
-  S10,
-  S11,
-  S12,
-  S13,
-  S14,
-  S15,
-  S16,
-  S17,
-  S18,
-  S19,
-  S20,
-  S21,
-  S22,
-  S23,
-  S24,
-  S25,
-  S26,
-  S27,
-  S28,
-  S29,
-  S30,
-  S31,
+             // VFP single precision registers
+             S0 = 0x40,
+             S1,
+             S2,
+             S3,
+             S4,
+             S5,
+             S6,
+             S7,
+             S8,
+             S9,
+             S10,
+             S11,
+             S12,
+             S13,
+             S14,
+             S15,
+             S16,
+             S17,
+             S18,
+             S19,
+             S20,
+             S21,
+             S22,
+             S23,
+             S24,
+             S25,
+             S26,
+             S27,
+             S28,
+             S29,
+             S30,
+             S31,
 
-  // VFP Double Precision registers
-  D0 = 0x80,
-  D1,
-  D2,
-  D3,
-  D4,
-  D5,
-  D6,
-  D7,
-  D8,
-  D9,
-  D10,
-  D11,
-  D12,
-  D13,
-  D14,
-  D15,
-  D16,
-  D17,
-  D18,
-  D19,
-  D20,
-  D21,
-  D22,
-  D23,
-  D24,
-  D25,
-  D26,
-  D27,
-  D28,
-  D29,
-  D30,
-  D31,
+             // VFP Double Precision registers
+             D0 = 0x80,
+             D1,
+             D2,
+             D3,
+             D4,
+             D5,
+             D6,
+             D7,
+             D8,
+             D9,
+             D10,
+             D11,
+             D12,
+             D13,
+             D14,
+             D15,
+             D16,
+             D17,
+             D18,
+             D19,
+             D20,
+             D21,
+             D22,
+             D23,
+             D24,
+             D25,
+             D26,
+             D27,
+             D28,
+             D29,
+             D30,
+             D31,
 
-  // ASIMD Quad-Word registers
-  Q0 = 0xC0,
-  Q1,
-  Q2,
-  Q3,
-  Q4,
-  Q5,
-  Q6,
-  Q7,
-  Q8,
-  Q9,
-  Q10,
-  Q11,
-  Q12,
-  Q13,
-  Q14,
-  Q15,
-  Q16,
-  Q17,
-  Q18,
-  Q19,
-  Q20,
-  Q21,
-  Q22,
-  Q23,
-  Q24,
-  Q25,
-  Q26,
-  Q27,
-  Q28,
-  Q29,
-  Q30,
-  Q31,
+             // ASIMD Quad-Word registers
+             Q0 = 0xC0,
+             Q1,
+             Q2,
+             Q3,
+             Q4,
+             Q5,
+             Q6,
+             Q7,
+             Q8,
+             Q9,
+             Q10,
+             Q11,
+             Q12,
+             Q13,
+             Q14,
+             Q15,
+             Q16,
+             Q17,
+             Q18,
+             Q19,
+             Q20,
+             Q21,
+             Q22,
+             Q23,
+             Q24,
+             Q25,
+             Q26,
+             Q27,
+             Q28,
+             Q29,
+             Q30,
+             Q31,
 
-  // For PRFM(prefetch memory) encoding
-  // This is encoded in the Rt register
-  // Data preload
-  PLDL1KEEP = 0,
-  PLDL1STRM,
-  PLDL2KEEP,
-  PLDL2STRM,
-  PLDL3KEEP,
-  PLDL3STRM,
-  // Instruction preload
-  PLIL1KEEP = 8,
-  PLIL1STRM,
-  PLIL2KEEP,
-  PLIL2STRM,
-  PLIL3KEEP,
-  PLIL3STRM,
-  // Prepare for store
-  PLTL1KEEP = 16,
-  PLTL1STRM,
-  PLTL2KEEP,
-  PLTL2STRM,
-  PLTL3KEEP,
-  PLTL3STRM,
+             // For PRFM(prefetch memory) encoding
+             // This is encoded in the Rt register
+             // Data preload
+             PLDL1KEEP = 0,
+             PLDL1STRM,
+             PLDL2KEEP,
+             PLDL2STRM,
+             PLDL3KEEP,
+             PLDL3STRM,
+             // Instruction preload
+             PLIL1KEEP = 8,
+             PLIL1STRM,
+             PLIL2KEEP,
+             PLIL2STRM,
+             PLIL3KEEP,
+             PLIL3STRM,
+             // Prepare for store
+             PLTL1KEEP = 16,
+             PLTL1STRM,
+             PLTL2KEEP,
+             PLTL2STRM,
+             PLTL3KEEP,
+             PLTL3STRM,
 
-  WZR = WSP,
-  ZR = SP,
+             WZR = WSP,
+             ZR = SP,
 
-  INVALID_REG = 0xFFFFFFFF
+             INVALID_REG = 0xFFFFFFFF
 };
 
 constexpr bool Is64Bit(ARM64Reg reg)
@@ -279,7 +279,7 @@ constexpr ARM64Reg EncodeRegToQuad(ARM64Reg reg)
 
 // For AND/TST/ORR/EOR etc
 bool IsImmLogical(uint64_t value, unsigned int width, unsigned int* n, unsigned int* imm_s,
-                  unsigned int* imm_r);
+  unsigned int* imm_r);
 // For ADD/SUB
 bool IsImmArithmetic(uint64_t input, u32* val, bool* shift);
 
@@ -513,7 +513,7 @@ private:
   void EncodeExceptionInst(u32 instenc, u32 imm);
   void EncodeSystemInst(u32 op0, u32 op1, u32 CRn, u32 CRm, u32 op2, ARM64Reg Rt);
   void EncodeArithmeticInst(u32 instenc, bool flags, ARM64Reg Rd, ARM64Reg Rn, ARM64Reg Rm,
-                            ArithOption Option);
+    ArithOption Option);
   void EncodeArithmeticCarryInst(u32 op, bool flags, ARM64Reg Rd, ARM64Reg Rn, ARM64Reg Rm);
   void EncodeCondCompareImmInst(u32 op, ARM64Reg Rn, u32 imm, u32 nzcv, CCFlags cond);
   void EncodeCondCompareRegInst(u32 op, ARM64Reg Rn, ARM64Reg Rm, u32 nzcv, CCFlags cond);
@@ -533,7 +533,7 @@ private:
   void EncodeAddSubImmInst(u32 op, bool flags, u32 shift, u32 imm, ARM64Reg Rn, ARM64Reg Rd);
   void EncodeLogicalImmInst(u32 op, ARM64Reg Rd, ARM64Reg Rn, u32 immr, u32 imms, int n);
   void EncodeLoadStorePair(u32 op, u32 load, IndexType type, ARM64Reg Rt, ARM64Reg Rt2, ARM64Reg Rn,
-                           s32 imm);
+    s32 imm);
   void EncodeAddressInst(u32 op, ARM64Reg Rd, s32 imm);
   void EncodeLoadStoreUnscaled(u32 size, u32 op, ARM64Reg Rt, ARM64Reg Rn, s32 imm);
 
@@ -721,7 +721,7 @@ public:
   void MOV(ARM64Reg Rd, ARM64Reg Rm);
   void MVN(ARM64Reg Rd, ARM64Reg Rm);
 
-  // TODO: These are "slow" as they use arith+shift, should be replaced with UBFM/EXTR variants.
+  // Convenience wrappers around UBFM/EXTR.
   void LSR(ARM64Reg Rd, ARM64Reg Rm, int shift);
   void LSL(ARM64Reg Rd, ARM64Reg Rm, int shift);
   void ASR(ARM64Reg Rd, ARM64Reg Rm, int shift);
@@ -863,7 +863,7 @@ public:
   void CMPI2R(ARM64Reg Rn, u64 imm, ARM64Reg scratch = INVALID_REG);
 
   void ADDI2R_internal(ARM64Reg Rd, ARM64Reg Rn, u64 imm, bool negative, bool flags,
-                       ARM64Reg scratch);
+    ARM64Reg scratch);
   void ADDI2R(ARM64Reg Rd, ARM64Reg Rn, u64 imm, ARM64Reg scratch = INVALID_REG);
   void ADDSI2R(ARM64Reg Rd, ARM64Reg Rn, u64 imm, ARM64Reg scratch = INVALID_REG);
   void SUBI2R(ARM64Reg Rd, ARM64Reg Rn, u64 imm, ARM64Reg scratch = INVALID_REG);
@@ -953,7 +953,7 @@ public:
   void FSQRT(ARM64Reg Rd, ARM64Reg Rn);
   void FMOV(ARM64Reg Rd, ARM64Reg Rn, bool top = false);  // Also generalized move between GPR/FP
 
-  // Scalar - 2 Source
+                                                          // Scalar - 2 Source
   void FADD(ARM64Reg Rd, ARM64Reg Rn, ARM64Reg Rm);
   void FMUL(ARM64Reg Rd, ARM64Reg Rn, ARM64Reg Rm);
   void FSUB(ARM64Reg Rd, ARM64Reg Rn, ARM64Reg Rm);
@@ -1095,18 +1095,18 @@ private:
   // Emitting functions
   void EmitLoadStoreImmediate(u8 size, u32 opc, IndexType type, ARM64Reg Rt, ARM64Reg Rn, s32 imm);
   void EmitScalar2Source(bool M, bool S, u32 type, u32 opcode, ARM64Reg Rd, ARM64Reg Rn,
-                         ARM64Reg Rm);
+    ARM64Reg Rm);
   void EmitThreeSame(bool U, u32 size, u32 opcode, ARM64Reg Rd, ARM64Reg Rn, ARM64Reg Rm);
   void EmitCopy(bool Q, u32 op, u32 imm5, u32 imm4, ARM64Reg Rd, ARM64Reg Rn);
   void Emit2RegMisc(bool Q, bool U, u32 size, u32 opcode, ARM64Reg Rd, ARM64Reg Rn);
   void EmitLoadStoreSingleStructure(bool L, bool R, u32 opcode, bool S, u32 size, ARM64Reg Rt,
-                                    ARM64Reg Rn);
+    ARM64Reg Rn);
   void EmitLoadStoreSingleStructure(bool L, bool R, u32 opcode, bool S, u32 size, ARM64Reg Rt,
-                                    ARM64Reg Rn, ARM64Reg Rm);
+    ARM64Reg Rn, ARM64Reg Rm);
   void Emit1Source(bool M, bool S, u32 type, u32 opcode, ARM64Reg Rd, ARM64Reg Rn);
   void EmitConversion(bool sf, bool S, u32 type, u32 rmode, u32 opcode, ARM64Reg Rd, ARM64Reg Rn);
   void EmitConversion2(bool sf, bool S, bool direction, u32 type, u32 rmode, u32 opcode, int scale,
-                       ARM64Reg Rd, ARM64Reg Rn);
+    ARM64Reg Rd, ARM64Reg Rn);
   void EmitCompare(bool M, bool S, u32 op, u32 opcode2, ARM64Reg Rn, ARM64Reg Rm);
   void EmitCondSelect(bool M, bool S, CCFlags cond, ARM64Reg Rd, ARM64Reg Rn, ARM64Reg Rm);
   void EmitPermute(u32 size, u32 op, ARM64Reg Rd, ARM64Reg Rn, ARM64Reg Rm);
@@ -1115,16 +1115,16 @@ private:
   void EmitScalarShiftImm(bool U, u32 immh, u32 immb, u32 opcode, ARM64Reg Rd, ARM64Reg Rn);
   void EmitLoadStoreMultipleStructure(u32 size, bool L, u32 opcode, ARM64Reg Rt, ARM64Reg Rn);
   void EmitLoadStoreMultipleStructurePost(u32 size, bool L, u32 opcode, ARM64Reg Rt, ARM64Reg Rn,
-                                          ARM64Reg Rm);
+    ARM64Reg Rm);
   void EmitScalar1Source(bool M, bool S, u32 type, u32 opcode, ARM64Reg Rd, ARM64Reg Rn);
   void EmitVectorxElement(bool U, u32 size, bool L, u32 opcode, bool H, ARM64Reg Rd, ARM64Reg Rn,
-                          ARM64Reg Rm);
+    ARM64Reg Rm);
   void EmitLoadStoreUnscaled(u32 size, u32 op, ARM64Reg Rt, ARM64Reg Rn, s32 imm);
   void EmitConvertScalarToInt(ARM64Reg Rd, ARM64Reg Rn, RoundingMode round, bool sign);
   void EmitScalar3Source(bool isDouble, ARM64Reg Rd, ARM64Reg Rn, ARM64Reg Rm, ARM64Reg Ra,
-                         int opcode);
+    int opcode);
   void EncodeLoadStorePair(u32 size, bool load, IndexType type, ARM64Reg Rt, ARM64Reg Rt2,
-                           ARM64Reg Rn, s32 imm);
+    ARM64Reg Rn, s32 imm);
   void EncodeLoadStoreRegisterOffset(u32 size, bool load, ARM64Reg Rt, ARM64Reg Rn, ArithOption Rm);
   void EncodeModImm(bool Q, u8 op, u8 cmode, u8 o2, ARM64Reg Rd, u8 abcdefgh);
 

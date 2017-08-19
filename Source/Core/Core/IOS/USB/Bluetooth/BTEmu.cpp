@@ -40,10 +40,10 @@ SQueuedEvent::SQueuedEvent(u32 size, u16 handle) : m_size(size), m_connectionHan
 namespace Device
 {
 BluetoothEmu::BluetoothEmu(Kernel& ios, const std::string& device_name)
-  : BluetoothBase(ios, device_name)
+    : BluetoothBase(ios, device_name)
 {
-  SysConf sysconf{ Core::WantsDeterminism() ? Common::FromWhichRoot::FROM_SESSION_ROOT :
-    Common::FromWhichRoot::FROM_CONFIGURED_ROOT };
+  SysConf sysconf{Core::WantsDeterminism() ? Common::FromWhichRoot::FROM_SESSION_ROOT :
+                                             Common::FromWhichRoot::FROM_CONFIGURED_ROOT};
   if (!Core::WantsDeterminism())
     BackUpBTInfoSection(&sysconf);
 
@@ -69,7 +69,7 @@ BluetoothEmu::BluetoothEmu(Kernel& ios, const std::string& device_name)
     memcpy(BT_DINF.active[i].name, wmName, 20);
 
     DEBUG_LOG(IOS_WIIMOTE, "Wii Remote %d BT ID %x,%x,%x,%x,%x,%x", i, tmpBD[0], tmpBD[1], tmpBD[2],
-      tmpBD[3], tmpBD[4], tmpBD[5]);
+              tmpBD[3], tmpBD[4], tmpBD[5]);
     m_WiiMotes.emplace_back(this, i, tmpBD, g_wiimote_sources[i] != WIIMOTE_SRC_NONE);
     i++;
   }
@@ -97,7 +97,7 @@ static void DoStateForMessage(Kernel& ios, PointerWrap& p, std::unique_ptr<T>& m
   p.Do(request_address);
   if (request_address != 0)
   {
-    IOCtlVRequest request{ request_address };
+    IOCtlVRequest request{request_address};
     message = std::make_unique<T>(ios, request);
   }
 }
@@ -162,21 +162,21 @@ IPCCommandResult BluetoothEmu::IOCtlV(const IOCtlVRequest& request)
 
   case USB::IOCTLV_USBV0_BLKMSG:
   {
-    const USB::V0BulkMessage ctrl{ m_ios, request };
+    const USB::V0BulkMessage ctrl{m_ios, request};
     switch (ctrl.endpoint)
     {
     case ACL_DATA_OUT:  // ACL data is received from the stack
     {
       // This is the ACL datapath from CPU to Wii Remote
       const auto* acl_header =
-        reinterpret_cast<hci_acldata_hdr_t*>(Memory::GetPointer(ctrl.data_address));
+          reinterpret_cast<hci_acldata_hdr_t*>(Memory::GetPointer(ctrl.data_address));
 
       _dbg_assert_(IOS_WIIMOTE, HCI_BC_FLAG(acl_header->con_handle) == HCI_POINT2POINT);
       _dbg_assert_(IOS_WIIMOTE, HCI_PB_FLAG(acl_header->con_handle) == HCI_PACKET_START);
 
       SendToDevice(HCI_CON_HANDLE(acl_header->con_handle),
-        Memory::GetPointer(ctrl.data_address + sizeof(hci_acldata_hdr_t)),
-        acl_header->length);
+                   Memory::GetPointer(ctrl.data_address + sizeof(hci_acldata_hdr_t)),
+                   acl_header->length);
       break;
     }
     case ACL_DATA_IN:  // We are given an ACL buffer to fill
@@ -194,7 +194,7 @@ IPCCommandResult BluetoothEmu::IOCtlV(const IOCtlVRequest& request)
 
   case USB::IOCTLV_USBV0_INTRMSG:
   {
-    const USB::V0IntrMessage ctrl{ m_ios, request };
+    const USB::V0IntrMessage ctrl{m_ios, request};
     if (ctrl.endpoint == HCI_EVENT)  // We are given a HCI buffer to fill
     {
       m_HCIEndpoint = std::make_unique<USB::V0IntrMessage>(m_ios, request);
@@ -241,10 +241,10 @@ void BluetoothEmu::SendACLPacket(u16 connection_handle, const u8* data, u32 size
   if (m_ACLEndpoint && !m_HCIEndpoint && m_EventQueue.empty())
   {
     DEBUG_LOG(IOS_WIIMOTE, "ACL endpoint valid, sending packet to %08x",
-      m_ACLEndpoint->ios_request.address);
+              m_ACLEndpoint->ios_request.address);
 
     hci_acldata_hdr_t* header =
-      reinterpret_cast<hci_acldata_hdr_t*>(Memory::GetPointer(m_ACLEndpoint->data_address));
+        reinterpret_cast<hci_acldata_hdr_t*>(Memory::GetPointer(m_ACLEndpoint->data_address));
     header->con_handle = HCI_MK_CON_HANDLE(connection_handle, HCI_PACKET_START, HCI_POINT2POINT);
     header->length = size;
 
@@ -275,7 +275,7 @@ void BluetoothEmu::AddEventToQueue(const SQueuedEvent& _event)
     if (m_EventQueue.empty())  // fast path :)
     {
       DEBUG_LOG(IOS_WIIMOTE, "HCI endpoint valid, sending packet to %08x",
-        m_HCIEndpoint->ios_request.address);
+                m_HCIEndpoint->ios_request.address);
       m_HCIEndpoint->FillBuffer(_event.m_buffer, _event.m_size);
 
       // Send a reply to indicate HCI buffer is filled
@@ -285,13 +285,13 @@ void BluetoothEmu::AddEventToQueue(const SQueuedEvent& _event)
     else  // push new one, pop oldest
     {
       DEBUG_LOG(IOS_WIIMOTE, "HCI endpoint not currently valid, queueing (%zu)...",
-        m_EventQueue.size());
+                m_EventQueue.size());
       m_EventQueue.push_back(_event);
       const SQueuedEvent& event = m_EventQueue.front();
       DEBUG_LOG(IOS_WIIMOTE, "HCI event %x "
-        "being written from queue (%zu) to %08x...",
-        ((hci_event_hdr_t*)event.m_buffer)->event, m_EventQueue.size() - 1,
-        m_HCIEndpoint->ios_request.address);
+                             "being written from queue (%zu) to %08x...",
+                ((hci_event_hdr_t*)event.m_buffer)->event, m_EventQueue.size() - 1,
+                m_HCIEndpoint->ios_request.address);
       m_HCIEndpoint->FillBuffer(event.m_buffer, event.m_size);
 
       // Send a reply to indicate HCI buffer is filled
@@ -303,7 +303,7 @@ void BluetoothEmu::AddEventToQueue(const SQueuedEvent& _event)
   else
   {
     DEBUG_LOG(IOS_WIIMOTE, "HCI endpoint not currently valid, queuing (%zu)...",
-      m_EventQueue.size());
+              m_EventQueue.size());
     m_EventQueue.push_back(_event);
   }
 }
@@ -316,8 +316,8 @@ void BluetoothEmu::Update()
     // an endpoint has become available, and we have a stored response.
     const SQueuedEvent& event = m_EventQueue.front();
     DEBUG_LOG(IOS_WIIMOTE, "HCI event %x being written from queue (%zu) to %08x...",
-      ((hci_event_hdr_t*)event.m_buffer)->event, m_EventQueue.size() - 1,
-      m_HCIEndpoint->ios_request.address);
+              ((hci_event_hdr_t*)event.m_buffer)->event, m_EventQueue.size() - 1,
+              m_HCIEndpoint->ios_request.address);
     m_HCIEndpoint->FillBuffer(event.m_buffer, event.m_size);
 
     // Send a reply to indicate HCI buffer is filled
@@ -401,8 +401,8 @@ void BluetoothEmu::ACLPool::WriteToEndpoint(USB::V0BulkMessage& endpoint)
   const u16 conn_handle = packet.conn_handle;
 
   DEBUG_LOG(IOS_WIIMOTE, "ACL packet being written from "
-    "queue to %08x",
-    endpoint.ios_request.address);
+                         "queue to %08x",
+            endpoint.ios_request.address);
 
   hci_acldata_hdr_t* pHeader = (hci_acldata_hdr_t*)Memory::GetPointer(endpoint.data_address);
   pHeader->con_handle = HCI_MK_CON_HANDLE(conn_handle, HCI_PACKET_START, HCI_POINT2POINT);
@@ -438,18 +438,18 @@ bool BluetoothEmu::SendEventInquiryResponse()
     return false;
 
   _dbg_assert_(IOS_WIIMOTE, sizeof(SHCIEventInquiryResult) - 2 +
-    (m_WiiMotes.size() * sizeof(hci_inquiry_response)) <
-    256);
+                                    (m_WiiMotes.size() * sizeof(hci_inquiry_response)) <
+                                256);
 
   SQueuedEvent Event(static_cast<u32>(sizeof(SHCIEventInquiryResult) +
-    m_WiiMotes.size() * sizeof(hci_inquiry_response)),
-    0);
+                                      m_WiiMotes.size() * sizeof(hci_inquiry_response)),
+                     0);
 
   SHCIEventInquiryResult* pInquiryResult = (SHCIEventInquiryResult*)Event.m_buffer;
 
   pInquiryResult->EventType = HCI_EVENT_INQUIRY_RESULT;
   pInquiryResult->PayloadLength =
-    (u8)(sizeof(SHCIEventInquiryResult) - 2 + (m_WiiMotes.size() * sizeof(hci_inquiry_response)));
+      (u8)(sizeof(SHCIEventInquiryResult) - 2 + (m_WiiMotes.size() * sizeof(hci_inquiry_response)));
   pInquiryResult->num_responses = (u8)m_WiiMotes.size();
 
   for (size_t i = 0; i < m_WiiMotes.size(); i++)
@@ -458,7 +458,7 @@ bool BluetoothEmu::SendEventInquiryResponse()
       continue;
 
     u8* pBuffer =
-      Event.m_buffer + sizeof(SHCIEventInquiryResult) + i * sizeof(hci_inquiry_response);
+        Event.m_buffer + sizeof(SHCIEventInquiryResult) + i * sizeof(hci_inquiry_response);
     hci_inquiry_response* pResponse = (hci_inquiry_response*)pBuffer;
 
     pResponse->bdaddr = m_WiiMotes[i].GetBD();
@@ -473,8 +473,8 @@ bool BluetoothEmu::SendEventInquiryResponse()
 
     DEBUG_LOG(IOS_WIIMOTE, "Event: Send Fake Inquiry of one controller");
     DEBUG_LOG(IOS_WIIMOTE, "  bd: %02x:%02x:%02x:%02x:%02x:%02x", pResponse->bdaddr[0],
-      pResponse->bdaddr[1], pResponse->bdaddr[2], pResponse->bdaddr[3],
-      pResponse->bdaddr[4], pResponse->bdaddr[5]);
+              pResponse->bdaddr[1], pResponse->bdaddr[2], pResponse->bdaddr[3],
+              pResponse->bdaddr[4], pResponse->bdaddr[5]);
   }
 
   AddEventToQueue(Event);
@@ -507,17 +507,17 @@ bool BluetoothEmu::SendEventConnectionComplete(const bdaddr_t& _bd)
     pWiimote->EventConnectionAccepted();
 
   static char s_szLinkType[][128] = {
-    { "HCI_LINK_SCO     0x00 - Voice" },
-    { "HCI_LINK_ACL     0x01 - Data" },
-    { "HCI_LINK_eSCO    0x02 - eSCO" },
+      {"HCI_LINK_SCO     0x00 - Voice"},
+      {"HCI_LINK_ACL     0x01 - Data"},
+      {"HCI_LINK_eSCO    0x02 - eSCO"},
   };
 
   DEBUG_LOG(IOS_WIIMOTE, "Event: SendEventConnectionComplete");
   DEBUG_LOG(IOS_WIIMOTE, "  Connection_Handle: 0x%04x", pConnectionComplete->Connection_Handle);
   DEBUG_LOG(IOS_WIIMOTE, "  bd: %02x:%02x:%02x:%02x:%02x:%02x", pConnectionComplete->bdaddr[0],
-    pConnectionComplete->bdaddr[1], pConnectionComplete->bdaddr[2],
-    pConnectionComplete->bdaddr[3], pConnectionComplete->bdaddr[4],
-    pConnectionComplete->bdaddr[5]);
+            pConnectionComplete->bdaddr[1], pConnectionComplete->bdaddr[2],
+            pConnectionComplete->bdaddr[3], pConnectionComplete->bdaddr[4],
+            pConnectionComplete->bdaddr[5]);
   DEBUG_LOG(IOS_WIIMOTE, "  LinkType: %s", s_szLinkType[pConnectionComplete->LinkType]);
   DEBUG_LOG(IOS_WIIMOTE, "  EncryptionEnabled: %i", pConnectionComplete->EncryptionEnabled);
 
@@ -542,16 +542,16 @@ bool BluetoothEmu::SendEventRequestConnection(WiimoteDevice& _rWiiMote)
   AddEventToQueue(Event);
 
   static char LinkType[][128] = {
-    { "HCI_LINK_SCO     0x00 - Voice" },
-    { "HCI_LINK_ACL     0x01 - Data" },
-    { "HCI_LINK_eSCO    0x02 - eSCO" },
+      {"HCI_LINK_SCO     0x00 - Voice"},
+      {"HCI_LINK_ACL     0x01 - Data"},
+      {"HCI_LINK_eSCO    0x02 - eSCO"},
   };
 
   DEBUG_LOG(IOS_WIIMOTE, "Event: SendEventRequestConnection");
   DEBUG_LOG(IOS_WIIMOTE, "  bd: %02x:%02x:%02x:%02x:%02x:%02x", pEventRequestConnection->bdaddr[0],
-    pEventRequestConnection->bdaddr[1], pEventRequestConnection->bdaddr[2],
-    pEventRequestConnection->bdaddr[3], pEventRequestConnection->bdaddr[4],
-    pEventRequestConnection->bdaddr[5]);
+            pEventRequestConnection->bdaddr[1], pEventRequestConnection->bdaddr[2],
+            pEventRequestConnection->bdaddr[3], pEventRequestConnection->bdaddr[4],
+            pEventRequestConnection->bdaddr[5]);
   DEBUG_LOG(IOS_WIIMOTE, "  COD[0]: 0x%02x", pEventRequestConnection->uclass[0]);
   DEBUG_LOG(IOS_WIIMOTE, "  COD[1]: 0x%02x", pEventRequestConnection->uclass[1]);
   DEBUG_LOG(IOS_WIIMOTE, "  COD[2]: 0x%02x", pEventRequestConnection->uclass[2]);
@@ -593,7 +593,7 @@ bool BluetoothEmu::SendEventAuthenticationCompleted(u16 _connectionHandle)
   SQueuedEvent Event(sizeof(SHCIEventAuthenticationCompleted), _connectionHandle);
 
   SHCIEventAuthenticationCompleted* pEventAuthenticationCompleted =
-    (SHCIEventAuthenticationCompleted*)Event.m_buffer;
+      (SHCIEventAuthenticationCompleted*)Event.m_buffer;
   pEventAuthenticationCompleted->EventType = HCI_EVENT_AUTH_COMPL;
   pEventAuthenticationCompleted->PayloadLength = sizeof(SHCIEventAuthenticationCompleted) - 2;
   pEventAuthenticationCompleted->EventStatus = 0;
@@ -601,7 +601,7 @@ bool BluetoothEmu::SendEventAuthenticationCompleted(u16 _connectionHandle)
 
   DEBUG_LOG(IOS_WIIMOTE, "Event: SendEventAuthenticationCompleted");
   DEBUG_LOG(IOS_WIIMOTE, "  Connection_Handle: 0x%04x",
-    pEventAuthenticationCompleted->Connection_Handle);
+            pEventAuthenticationCompleted->Connection_Handle);
 
   AddEventToQueue(Event);
 
@@ -626,8 +626,8 @@ bool BluetoothEmu::SendEventRemoteNameReq(const bdaddr_t& _bd)
 
   DEBUG_LOG(IOS_WIIMOTE, "Event: SendEventRemoteNameReq");
   DEBUG_LOG(IOS_WIIMOTE, "  bd: %02x:%02x:%02x:%02x:%02x:%02x", pRemoteNameReq->bdaddr[0],
-    pRemoteNameReq->bdaddr[1], pRemoteNameReq->bdaddr[2], pRemoteNameReq->bdaddr[3],
-    pRemoteNameReq->bdaddr[4], pRemoteNameReq->bdaddr[5]);
+            pRemoteNameReq->bdaddr[1], pRemoteNameReq->bdaddr[2], pRemoteNameReq->bdaddr[3],
+            pRemoteNameReq->bdaddr[4], pRemoteNameReq->bdaddr[5]);
   DEBUG_LOG(IOS_WIIMOTE, "  RemoteName: %s", pRemoteNameReq->RemoteName);
 
   AddEventToQueue(Event);
@@ -661,10 +661,10 @@ bool BluetoothEmu::SendEventReadRemoteFeatures(u16 _connectionHandle)
   DEBUG_LOG(IOS_WIIMOTE, "Event: SendEventReadRemoteFeatures");
   DEBUG_LOG(IOS_WIIMOTE, "  Connection_Handle: 0x%04x", pReadRemoteFeatures->ConnectionHandle);
   DEBUG_LOG(IOS_WIIMOTE, "  features: %02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x",
-    pReadRemoteFeatures->features[0], pReadRemoteFeatures->features[1],
-    pReadRemoteFeatures->features[2], pReadRemoteFeatures->features[3],
-    pReadRemoteFeatures->features[4], pReadRemoteFeatures->features[5],
-    pReadRemoteFeatures->features[6], pReadRemoteFeatures->features[7]);
+            pReadRemoteFeatures->features[0], pReadRemoteFeatures->features[1],
+            pReadRemoteFeatures->features[2], pReadRemoteFeatures->features[3],
+            pReadRemoteFeatures->features[4], pReadRemoteFeatures->features[5],
+            pReadRemoteFeatures->features[6], pReadRemoteFeatures->features[7]);
 
   AddEventToQueue(Event);
 
@@ -761,8 +761,8 @@ bool BluetoothEmu::SendEventRoleChange(bdaddr_t _bd, bool _master)
 
   DEBUG_LOG(IOS_WIIMOTE, "Event: SendEventRoleChange");
   DEBUG_LOG(IOS_WIIMOTE, "  bd: %02x:%02x:%02x:%02x:%02x:%02x", pRoleChange->bdaddr[0],
-    pRoleChange->bdaddr[1], pRoleChange->bdaddr[2], pRoleChange->bdaddr[3],
-    pRoleChange->bdaddr[4], pRoleChange->bdaddr[5]);
+            pRoleChange->bdaddr[1], pRoleChange->bdaddr[2], pRoleChange->bdaddr[3],
+            pRoleChange->bdaddr[4], pRoleChange->bdaddr[5]);
   DEBUG_LOG(IOS_WIIMOTE, "  NewRole: %i", pRoleChange->NewRole);
 
   return true;
@@ -771,15 +771,15 @@ bool BluetoothEmu::SendEventRoleChange(bdaddr_t _bd, bool _master)
 bool BluetoothEmu::SendEventNumberOfCompletedPackets()
 {
   SQueuedEvent Event((u32)(sizeof(hci_event_hdr_t) + sizeof(hci_num_compl_pkts_ep) +
-    (sizeof(hci_num_compl_pkts_info) * m_WiiMotes.size())),
-    0);
+                           (sizeof(hci_num_compl_pkts_info) * m_WiiMotes.size())),
+                     0);
 
   DEBUG_LOG(IOS_WIIMOTE, "Event: SendEventNumberOfCompletedPackets");
 
   hci_event_hdr_t* event_hdr = (hci_event_hdr_t*)Event.m_buffer;
   hci_num_compl_pkts_ep* event = (hci_num_compl_pkts_ep*)((u8*)event_hdr + sizeof(hci_event_hdr_t));
   hci_num_compl_pkts_info* info =
-    (hci_num_compl_pkts_info*)((u8*)event + sizeof(hci_num_compl_pkts_ep));
+      (hci_num_compl_pkts_info*)((u8*)event + sizeof(hci_num_compl_pkts_ep));
 
   event_hdr->event = HCI_EVENT_NUM_COMPL_PKTS;
   event_hdr->length = sizeof(hci_num_compl_pkts_ep);
@@ -858,13 +858,13 @@ bool BluetoothEmu::SendEventLinkKeyNotification(const u8 num_to_send)
   for (int i = 0; i < num_to_send; i++)
   {
     hci_link_key_rep_cp* link_key_info =
-      (hci_link_key_rep_cp*)((u8*)&pEventLinkKey->bdaddr + sizeof(hci_link_key_rep_cp) * i);
+        (hci_link_key_rep_cp*)((u8*)&pEventLinkKey->bdaddr + sizeof(hci_link_key_rep_cp) * i);
     link_key_info->bdaddr = m_WiiMotes[i].GetBD();
     memcpy(link_key_info->key, m_WiiMotes[i].GetLinkKey(), HCI_KEY_SIZE);
 
     DEBUG_LOG(IOS_WIIMOTE, "  bd: %02x:%02x:%02x:%02x:%02x:%02x", link_key_info->bdaddr[0],
-      link_key_info->bdaddr[1], link_key_info->bdaddr[2], link_key_info->bdaddr[3],
-      link_key_info->bdaddr[4], link_key_info->bdaddr[5]);
+              link_key_info->bdaddr[1], link_key_info->bdaddr[2], link_key_info->bdaddr[3],
+              link_key_info->bdaddr[4], link_key_info->bdaddr[5]);
   }
 
   AddEventToQueue(Event);
@@ -884,9 +884,9 @@ bool BluetoothEmu::SendEventRequestLinkKey(const bdaddr_t& _bd)
 
   DEBUG_LOG(IOS_WIIMOTE, "Event: SendEventRequestLinkKey");
   DEBUG_LOG(IOS_WIIMOTE, "  bd: %02x:%02x:%02x:%02x:%02x:%02x", pEventRequestLinkKey->bdaddr[0],
-    pEventRequestLinkKey->bdaddr[1], pEventRequestLinkKey->bdaddr[2],
-    pEventRequestLinkKey->bdaddr[3], pEventRequestLinkKey->bdaddr[4],
-    pEventRequestLinkKey->bdaddr[5]);
+            pEventRequestLinkKey->bdaddr[1], pEventRequestLinkKey->bdaddr[2],
+            pEventRequestLinkKey->bdaddr[3], pEventRequestLinkKey->bdaddr[4],
+            pEventRequestLinkKey->bdaddr[5]);
 
   AddEventToQueue(Event);
 
@@ -902,7 +902,7 @@ bool BluetoothEmu::SendEventReadClockOffsetComplete(u16 _connectionHandle)
   SQueuedEvent Event(sizeof(SHCIEventReadClockOffsetComplete), _connectionHandle);
 
   SHCIEventReadClockOffsetComplete* pReadClockOffsetComplete =
-    (SHCIEventReadClockOffsetComplete*)Event.m_buffer;
+      (SHCIEventReadClockOffsetComplete*)Event.m_buffer;
   pReadClockOffsetComplete->EventType = HCI_EVENT_READ_CLOCK_OFFSET_COMPL;
   pReadClockOffsetComplete->PayloadLength = sizeof(SHCIEventReadClockOffsetComplete) - 2;
   pReadClockOffsetComplete->EventStatus = 0x00;
@@ -927,7 +927,7 @@ bool BluetoothEmu::SendEventConPacketTypeChange(u16 _connectionHandle, u16 _pack
   SQueuedEvent Event(sizeof(SHCIEventConPacketTypeChange), _connectionHandle);
 
   SHCIEventConPacketTypeChange* pChangeConPacketType =
-    (SHCIEventConPacketTypeChange*)Event.m_buffer;
+      (SHCIEventConPacketTypeChange*)Event.m_buffer;
   pChangeConPacketType->EventType = HCI_EVENT_CON_PKT_TYPE_CHANGED;
   pChangeConPacketType->PayloadLength = sizeof(SHCIEventConPacketTypeChange) - 2;
   pChangeConPacketType->EventStatus = 0x00;
@@ -955,13 +955,13 @@ void BluetoothEmu::ExecuteHCICommandMessage(const USB::V0CtrlMessage& ctrl_messa
 
   DEBUG_LOG(IOS_WIIMOTE, "**************************************************");
   DEBUG_LOG(IOS_WIIMOTE, "Execute HCI Command: 0x%04x (ocf: 0x%02x, ogf: 0x%02x)", pMsg->Opcode,
-    ocf, ogf);
+            ocf, ogf);
 
   switch (pMsg->Opcode)
   {
-    //
-    // --- read commands ---
-    //
+  //
+  // --- read commands ---
+  //
   case HCI_CMD_RESET:
     CommandReset(pInput);
     break;
@@ -1030,7 +1030,7 @@ void BluetoothEmu::ExecuteHCICommandMessage(const USB::V0CtrlMessage& ctrl_messa
     CommandWriteInquiryScanType(pInput);
     break;
 
-    // vendor specific...
+  // vendor specific...
   case 0xFC4C:
     CommandVendorSpecific_FC4C(pInput, ctrl_message.length - 3);
     break;
@@ -1118,7 +1118,7 @@ void BluetoothEmu::ExecuteHCICommandMessage(const USB::V0CtrlMessage& ctrl_messa
     else
     {
       _dbg_assert_msg_(IOS_WIIMOTE, 0, "Unknown USB_IOCTL_CTRLMSG: 0x%04X (ocf: 0x%x  ogf 0x%x)",
-        pMsg->Opcode, ocf, ogf);
+                       pMsg->Opcode, ocf, ogf);
     }
     break;
   }
@@ -1167,9 +1167,9 @@ void BluetoothEmu::CommandCreateCon(const u8* input)
   INFO_LOG(IOS_WIIMOTE, "Command: HCI_CMD_CREATE_CON");
   DEBUG_LOG(IOS_WIIMOTE, "Input:");
   DEBUG_LOG(IOS_WIIMOTE, "  bd: %02x:%02x:%02x:%02x:%02x:%02x", create_connection->bdaddr[0],
-    create_connection->bdaddr[1], create_connection->bdaddr[2],
-    create_connection->bdaddr[3], create_connection->bdaddr[4],
-    create_connection->bdaddr[5]);
+            create_connection->bdaddr[1], create_connection->bdaddr[2],
+            create_connection->bdaddr[3], create_connection->bdaddr[4],
+            create_connection->bdaddr[5]);
 
   DEBUG_LOG(IOS_WIIMOTE, "  pkt_type: %i", create_connection->pkt_type);
   DEBUG_LOG(IOS_WIIMOTE, "  page_scan_rep_mode: %i", create_connection->page_scan_rep_mode);
@@ -1204,14 +1204,14 @@ void BluetoothEmu::CommandAcceptCon(const u8* input)
   const hci_accept_con_cp* accept_connection = reinterpret_cast<const hci_accept_con_cp*>(input);
 
   static char roles[][128] = {
-    { "Master (0x00)" },{ "Slave (0x01)" },
+      {"Master (0x00)"}, {"Slave (0x01)"},
   };
 
   INFO_LOG(IOS_WIIMOTE, "Command: HCI_CMD_ACCEPT_CON");
   DEBUG_LOG(IOS_WIIMOTE, "  bd: %02x:%02x:%02x:%02x:%02x:%02x", accept_connection->bdaddr[0],
-    accept_connection->bdaddr[1], accept_connection->bdaddr[2],
-    accept_connection->bdaddr[3], accept_connection->bdaddr[4],
-    accept_connection->bdaddr[5]);
+            accept_connection->bdaddr[1], accept_connection->bdaddr[2],
+            accept_connection->bdaddr[3], accept_connection->bdaddr[4],
+            accept_connection->bdaddr[5]);
   DEBUG_LOG(IOS_WIIMOTE, "  role: %s", roles[accept_connection->role]);
 
   SendEventCommandStatus(HCI_CMD_ACCEPT_CON);
@@ -1231,8 +1231,8 @@ void BluetoothEmu::CommandLinkKeyRep(const u8* input)
 
   INFO_LOG(IOS_WIIMOTE, "Command: HCI_CMD_LINK_KEY_REP");
   DEBUG_LOG(IOS_WIIMOTE, "  bd: %02x:%02x:%02x:%02x:%02x:%02x", key_rep->bdaddr[0],
-    key_rep->bdaddr[1], key_rep->bdaddr[2], key_rep->bdaddr[3], key_rep->bdaddr[4],
-    key_rep->bdaddr[5]);
+            key_rep->bdaddr[1], key_rep->bdaddr[2], key_rep->bdaddr[3], key_rep->bdaddr[4],
+            key_rep->bdaddr[5]);
 
   hci_link_key_rep_rp reply;
   reply.status = 0x00;
@@ -1247,8 +1247,8 @@ void BluetoothEmu::CommandLinkKeyNegRep(const u8* input)
 
   INFO_LOG(IOS_WIIMOTE, "Command: HCI_CMD_LINK_KEY_NEG_REP");
   DEBUG_LOG(IOS_WIIMOTE, "  bd: %02x:%02x:%02x:%02x:%02x:%02x", key_neg->bdaddr[0],
-    key_neg->bdaddr[1], key_neg->bdaddr[2], key_neg->bdaddr[3], key_neg->bdaddr[4],
-    key_neg->bdaddr[5]);
+            key_neg->bdaddr[1], key_neg->bdaddr[2], key_neg->bdaddr[3], key_neg->bdaddr[4],
+            key_neg->bdaddr[5]);
 
   hci_link_key_neg_rep_rp reply;
   reply.status = 0x00;
@@ -1260,7 +1260,7 @@ void BluetoothEmu::CommandLinkKeyNegRep(const u8* input)
 void BluetoothEmu::CommandChangeConPacketType(const u8* input)
 {
   const hci_change_con_pkt_type_cp* change_packet_type =
-    reinterpret_cast<const hci_change_con_pkt_type_cp*>(input);
+      reinterpret_cast<const hci_change_con_pkt_type_cp*>(input);
 
   // ntd stack sets packet type 0xcc18, which is HCI_PKT_DH5 | HCI_PKT_DM5 | HCI_PKT_DH1 |
   // HCI_PKT_DM1
@@ -1287,12 +1287,12 @@ void BluetoothEmu::CommandAuthenticationRequested(const u8* input)
 void BluetoothEmu::CommandRemoteNameReq(const u8* input)
 {
   const hci_remote_name_req_cp* remote_name_req =
-    reinterpret_cast<const hci_remote_name_req_cp*>(input);
+      reinterpret_cast<const hci_remote_name_req_cp*>(input);
 
   INFO_LOG(IOS_WIIMOTE, "Command: HCI_CMD_REMOTE_NAME_REQ");
   DEBUG_LOG(IOS_WIIMOTE, "  bd: %02x:%02x:%02x:%02x:%02x:%02x", remote_name_req->bdaddr[0],
-    remote_name_req->bdaddr[1], remote_name_req->bdaddr[2], remote_name_req->bdaddr[3],
-    remote_name_req->bdaddr[4], remote_name_req->bdaddr[5]);
+            remote_name_req->bdaddr[1], remote_name_req->bdaddr[2], remote_name_req->bdaddr[3],
+            remote_name_req->bdaddr[4], remote_name_req->bdaddr[5]);
   DEBUG_LOG(IOS_WIIMOTE, "  page_scan_rep_mode: %i", remote_name_req->page_scan_rep_mode);
   DEBUG_LOG(IOS_WIIMOTE, "  page_scan_mode: %i", remote_name_req->page_scan_mode);
   DEBUG_LOG(IOS_WIIMOTE, "  clock_offset: %i", remote_name_req->clock_offset);
@@ -1304,7 +1304,7 @@ void BluetoothEmu::CommandRemoteNameReq(const u8* input)
 void BluetoothEmu::CommandReadRemoteFeatures(const u8* input)
 {
   const hci_read_remote_features_cp* read_remote_features =
-    reinterpret_cast<const hci_read_remote_features_cp*>(input);
+      reinterpret_cast<const hci_read_remote_features_cp*>(input);
 
   INFO_LOG(IOS_WIIMOTE, "Command: HCI_CMD_READ_REMOTE_FEATURES");
   DEBUG_LOG(IOS_WIIMOTE, "  ConnectionHandle: 0x%04x", read_remote_features->con_handle);
@@ -1316,7 +1316,7 @@ void BluetoothEmu::CommandReadRemoteFeatures(const u8* input)
 void BluetoothEmu::CommandReadRemoteVerInfo(const u8* input)
 {
   const hci_read_remote_ver_info_cp* read_remote_ver_info =
-    reinterpret_cast<const hci_read_remote_ver_info_cp*>(input);
+      reinterpret_cast<const hci_read_remote_ver_info_cp*>(input);
 
   INFO_LOG(IOS_WIIMOTE, "Command: HCI_CMD_READ_REMOTE_VER_INFO");
   DEBUG_LOG(IOS_WIIMOTE, "  ConnectionHandle: 0x%02x", read_remote_ver_info->con_handle);
@@ -1328,7 +1328,7 @@ void BluetoothEmu::CommandReadRemoteVerInfo(const u8* input)
 void BluetoothEmu::CommandReadClockOffset(const u8* input)
 {
   const hci_read_clock_offset_cp* read_clock_offset =
-    reinterpret_cast<const hci_read_clock_offset_cp*>(input);
+      reinterpret_cast<const hci_read_clock_offset_cp*>(input);
 
   INFO_LOG(IOS_WIIMOTE, "Command: HCI_CMD_READ_CLOCK_OFFSET");
   DEBUG_LOG(IOS_WIIMOTE, "  ConnectionHandle: 0x%02x", read_clock_offset->con_handle);
@@ -1355,7 +1355,7 @@ void BluetoothEmu::CommandSniffMode(const u8* input)
 void BluetoothEmu::CommandWriteLinkPolicy(const u8* input)
 {
   const hci_write_link_policy_settings_cp* link_policy =
-    reinterpret_cast<const hci_write_link_policy_settings_cp*>(input);
+      reinterpret_cast<const hci_write_link_policy_settings_cp*>(input);
 
   INFO_LOG(IOS_WIIMOTE, "Command: HCI_CMD_WRITE_LINK_POLICY_SETTINGS");
   DEBUG_LOG(IOS_WIIMOTE, "  ConnectionHandle: 0x%04x", link_policy->con_handle);
@@ -1377,7 +1377,7 @@ void BluetoothEmu::CommandReset(const u8* input)
 void BluetoothEmu::CommandSetEventFilter(const u8* input)
 {
   const hci_set_event_filter_cp* set_event_filter =
-    reinterpret_cast<const hci_set_event_filter_cp*>(input);
+      reinterpret_cast<const hci_set_event_filter_cp*>(input);
 
   hci_set_event_filter_rp reply;
   reply.status = 0x00;
@@ -1392,7 +1392,7 @@ void BluetoothEmu::CommandSetEventFilter(const u8* input)
 void BluetoothEmu::CommandWritePinType(const u8* input)
 {
   const hci_write_pin_type_cp* write_pin_type =
-    reinterpret_cast<const hci_write_pin_type_cp*>(input);
+      reinterpret_cast<const hci_write_pin_type_cp*>(input);
 
   hci_write_pin_type_rp reply;
   reply.status = 0x00;
@@ -1406,7 +1406,7 @@ void BluetoothEmu::CommandWritePinType(const u8* input)
 void BluetoothEmu::CommandReadStoredLinkKey(const u8* input)
 {
   const hci_read_stored_link_key_cp* read_stored_link_key =
-    reinterpret_cast<const hci_read_stored_link_key_cp*>(input);
+      reinterpret_cast<const hci_read_stored_link_key_cp*>(input);
 
   hci_read_stored_link_key_rp reply;
   reply.status = 0x00;
@@ -1425,9 +1425,9 @@ void BluetoothEmu::CommandReadStoredLinkKey(const u8* input)
   INFO_LOG(IOS_WIIMOTE, "Command: HCI_CMD_READ_STORED_LINK_KEY:");
   DEBUG_LOG(IOS_WIIMOTE, "input:");
   DEBUG_LOG(IOS_WIIMOTE, "  bd: %02x:%02x:%02x:%02x:%02x:%02x", read_stored_link_key->bdaddr[0],
-    read_stored_link_key->bdaddr[1], read_stored_link_key->bdaddr[2],
-    read_stored_link_key->bdaddr[3], read_stored_link_key->bdaddr[4],
-    read_stored_link_key->bdaddr[5]);
+            read_stored_link_key->bdaddr[1], read_stored_link_key->bdaddr[2],
+            read_stored_link_key->bdaddr[3], read_stored_link_key->bdaddr[4],
+            read_stored_link_key->bdaddr[5]);
   DEBUG_LOG(IOS_WIIMOTE, "  read_all: %i", read_stored_link_key->read_all);
   DEBUG_LOG(IOS_WIIMOTE, "return:");
   DEBUG_LOG(IOS_WIIMOTE, "  max_num_keys: %i", reply.max_num_keys);
@@ -1435,19 +1435,19 @@ void BluetoothEmu::CommandReadStoredLinkKey(const u8* input)
 
   SendEventLinkKeyNotification((u8)reply.num_keys_read);
   SendEventCommandComplete(HCI_CMD_READ_STORED_LINK_KEY, &reply,
-    sizeof(hci_read_stored_link_key_rp));
+                           sizeof(hci_read_stored_link_key_rp));
 }
 
 void BluetoothEmu::CommandDeleteStoredLinkKey(const u8* input)
 {
   const hci_delete_stored_link_key_cp* delete_stored_link_key =
-    reinterpret_cast<const hci_delete_stored_link_key_cp*>(input);
+      reinterpret_cast<const hci_delete_stored_link_key_cp*>(input);
 
   INFO_LOG(IOS_WIIMOTE, "Command: HCI_OCF_DELETE_STORED_LINK_KEY");
   DEBUG_LOG(IOS_WIIMOTE, "  bd: %02x:%02x:%02x:%02x:%02x:%02x", delete_stored_link_key->bdaddr[0],
-    delete_stored_link_key->bdaddr[1], delete_stored_link_key->bdaddr[2],
-    delete_stored_link_key->bdaddr[3], delete_stored_link_key->bdaddr[4],
-    delete_stored_link_key->bdaddr[5]);
+            delete_stored_link_key->bdaddr[1], delete_stored_link_key->bdaddr[2],
+            delete_stored_link_key->bdaddr[3], delete_stored_link_key->bdaddr[4],
+            delete_stored_link_key->bdaddr[5]);
   DEBUG_LOG(IOS_WIIMOTE, "  delete_all: 0x%01x", delete_stored_link_key->delete_all);
 
   WiimoteDevice* wiiMote = AccessWiiMote(delete_stored_link_key->bdaddr);
@@ -1459,16 +1459,16 @@ void BluetoothEmu::CommandDeleteStoredLinkKey(const u8* input)
   reply.num_keys_deleted = 0;
 
   SendEventCommandComplete(HCI_CMD_DELETE_STORED_LINK_KEY, &reply,
-    sizeof(hci_delete_stored_link_key_rp));
+                           sizeof(hci_delete_stored_link_key_rp));
 
   ERROR_LOG(IOS_WIIMOTE, "HCI: CommandDeleteStoredLinkKey... Probably the security for linking "
-    "has failed. Could be a problem with loading the SCONF");
+                         "has failed. Could be a problem with loading the SCONF");
 }
 
 void BluetoothEmu::CommandWriteLocalName(const u8* input)
 {
   const hci_write_local_name_cp* write_local_name =
-    reinterpret_cast<const hci_write_local_name_cp*>(input);
+      reinterpret_cast<const hci_write_local_name_cp*>(input);
 
   hci_write_local_name_rp reply;
   reply.status = 0x00;
@@ -1484,7 +1484,7 @@ void BluetoothEmu::CommandWriteLocalName(const u8* input)
 void BluetoothEmu::CommandWritePageTimeOut(const u8* input)
 {
   const hci_write_page_timeout_cp* write_page_timeout =
-    reinterpret_cast<const hci_write_page_timeout_cp*>(input);
+      reinterpret_cast<const hci_write_page_timeout_cp*>(input);
 
   hci_host_buffer_size_rp reply;
   reply.status = 0x00;
@@ -1499,21 +1499,21 @@ void BluetoothEmu::CommandWritePageTimeOut(const u8* input)
 void BluetoothEmu::CommandWriteScanEnable(const u8* input)
 {
   const hci_write_scan_enable_cp* write_scan_enable =
-    reinterpret_cast<const hci_write_scan_enable_cp*>(input);
+      reinterpret_cast<const hci_write_scan_enable_cp*>(input);
   m_ScanEnable = write_scan_enable->scan_enable;
 
   hci_write_scan_enable_rp reply;
   reply.status = 0x00;
 
   static char scanning[][128] = {
-    { "HCI_NO_SCAN_ENABLE" },
-    { "HCI_INQUIRY_SCAN_ENABLE" },
-    { "HCI_PAGE_SCAN_ENABLE" },
-    { "HCI_INQUIRY_AND_PAGE_SCAN_ENABLE" },
+      {"HCI_NO_SCAN_ENABLE"},
+      {"HCI_INQUIRY_SCAN_ENABLE"},
+      {"HCI_PAGE_SCAN_ENABLE"},
+      {"HCI_INQUIRY_AND_PAGE_SCAN_ENABLE"},
   };
 
   DEBUG_LOG(IOS_WIIMOTE, "Command: HCI_CMD_WRITE_SCAN_ENABLE: (0x%02x)",
-    write_scan_enable->scan_enable);
+            write_scan_enable->scan_enable);
   DEBUG_LOG(IOS_WIIMOTE, "  scan_enable: %s", scanning[write_scan_enable->scan_enable]);
 
   SendEventCommandComplete(HCI_CMD_WRITE_SCAN_ENABLE, &reply, sizeof(hci_write_scan_enable_rp));
@@ -1522,7 +1522,7 @@ void BluetoothEmu::CommandWriteScanEnable(const u8* input)
 void BluetoothEmu::CommandWriteUnitClass(const u8* input)
 {
   const hci_write_unit_class_cp* write_unit_class =
-    reinterpret_cast<const hci_write_unit_class_cp*>(input);
+      reinterpret_cast<const hci_write_unit_class_cp*>(input);
 
   hci_write_unit_class_rp reply;
   reply.status = 0x00;
@@ -1538,7 +1538,7 @@ void BluetoothEmu::CommandWriteUnitClass(const u8* input)
 void BluetoothEmu::CommandHostBufferSize(const u8* input)
 {
   const hci_host_buffer_size_cp* host_buffer_size =
-    reinterpret_cast<const hci_host_buffer_size_cp*>(input);
+      reinterpret_cast<const hci_host_buffer_size_cp*>(input);
 
   hci_host_buffer_size_rp reply;
   reply.status = 0x00;
@@ -1555,7 +1555,7 @@ void BluetoothEmu::CommandHostBufferSize(const u8* input)
 void BluetoothEmu::CommandWriteLinkSupervisionTimeout(const u8* input)
 {
   const hci_write_link_supervision_timeout_cp* supervision =
-    reinterpret_cast<const hci_write_link_supervision_timeout_cp*>(input);
+      reinterpret_cast<const hci_write_link_supervision_timeout_cp*>(input);
 
   // timeout of 0 means timing out is disabled
   INFO_LOG(IOS_WIIMOTE, "Command: HCI_CMD_WRITE_LINK_SUPERVISION_TIMEOUT");
@@ -1567,13 +1567,13 @@ void BluetoothEmu::CommandWriteLinkSupervisionTimeout(const u8* input)
   reply.con_handle = supervision->con_handle;
 
   SendEventCommandComplete(HCI_CMD_WRITE_LINK_SUPERVISION_TIMEOUT, &reply,
-    sizeof(hci_write_link_supervision_timeout_rp));
+                           sizeof(hci_write_link_supervision_timeout_rp));
 }
 
 void BluetoothEmu::CommandWriteInquiryScanType(const u8* input)
 {
   const hci_write_inquiry_scan_type_cp* set_event_filter =
-    reinterpret_cast<const hci_write_inquiry_scan_type_cp*>(input);
+      reinterpret_cast<const hci_write_inquiry_scan_type_cp*>(input);
 
   hci_write_inquiry_scan_type_rp reply;
   reply.status = 0x00;
@@ -1582,21 +1582,21 @@ void BluetoothEmu::CommandWriteInquiryScanType(const u8* input)
   DEBUG_LOG(IOS_WIIMOTE, "  type: %i", set_event_filter->type);
 
   SendEventCommandComplete(HCI_CMD_WRITE_INQUIRY_SCAN_TYPE, &reply,
-    sizeof(hci_write_inquiry_scan_type_rp));
+                           sizeof(hci_write_inquiry_scan_type_rp));
 }
 
 void BluetoothEmu::CommandWriteInquiryMode(const u8* input)
 {
   const hci_write_inquiry_mode_cp* inquiry_mode =
-    reinterpret_cast<const hci_write_inquiry_mode_cp*>(input);
+      reinterpret_cast<const hci_write_inquiry_mode_cp*>(input);
 
   hci_write_inquiry_mode_rp reply;
   reply.status = 0x00;
 
   static char inquiry_mode_tag[][128] = {
-    { "Standard Inquiry Result event format (default)" },
-    { "Inquiry Result format with RSSI" },
-    { "Inquiry Result with RSSI format or Extended Inquiry Result format" } };
+      {"Standard Inquiry Result event format (default)"},
+      {"Inquiry Result format with RSSI"},
+      {"Inquiry Result with RSSI format or Extended Inquiry Result format"}};
   INFO_LOG(IOS_WIIMOTE, "Command: HCI_CMD_WRITE_INQUIRY_MODE:");
   DEBUG_LOG(IOS_WIIMOTE, "  mode: %s", inquiry_mode_tag[inquiry_mode->mode]);
 
@@ -1606,19 +1606,19 @@ void BluetoothEmu::CommandWriteInquiryMode(const u8* input)
 void BluetoothEmu::CommandWritePageScanType(const u8* input)
 {
   const hci_write_page_scan_type_cp* write_page_scan_type =
-    reinterpret_cast<const hci_write_page_scan_type_cp*>(input);
+      reinterpret_cast<const hci_write_page_scan_type_cp*>(input);
 
   hci_write_page_scan_type_rp reply;
   reply.status = 0x00;
 
-  static char page_scan_type[][128] = { { "Mandatory: Standard Scan (default)" },
-  { "Optional: Interlaced Scan" } };
+  static char page_scan_type[][128] = {{"Mandatory: Standard Scan (default)"},
+                                       {"Optional: Interlaced Scan"}};
 
   INFO_LOG(IOS_WIIMOTE, "Command: HCI_CMD_WRITE_PAGE_SCAN_TYPE:");
   DEBUG_LOG(IOS_WIIMOTE, "  type: %s", page_scan_type[write_page_scan_type->type]);
 
   SendEventCommandComplete(HCI_CMD_WRITE_PAGE_SCAN_TYPE, &reply,
-    sizeof(hci_write_page_scan_type_rp));
+                           sizeof(hci_write_page_scan_type_rp));
 }
 
 void BluetoothEmu::CommandReadLocalVer(const u8* input)
@@ -1658,8 +1658,8 @@ void BluetoothEmu::CommandReadLocalFeatures(const u8* input)
   INFO_LOG(IOS_WIIMOTE, "Command: HCI_CMD_READ_LOCAL_FEATURES:");
   DEBUG_LOG(IOS_WIIMOTE, "return:");
   DEBUG_LOG(IOS_WIIMOTE, "  features: %02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x", reply.features[0],
-    reply.features[1], reply.features[2], reply.features[3], reply.features[4],
-    reply.features[5], reply.features[6], reply.features[7]);
+            reply.features[1], reply.features[2], reply.features[3], reply.features[4],
+            reply.features[5], reply.features[6], reply.features[7]);
 
   SendEventCommandComplete(HCI_CMD_READ_LOCAL_FEATURES, &reply, sizeof(hci_read_local_features_rp));
 }
@@ -1695,7 +1695,7 @@ void BluetoothEmu::CommandReadBDAdrr(const u8* input)
   INFO_LOG(IOS_WIIMOTE, "Command: HCI_CMD_READ_BDADDR:");
   DEBUG_LOG(IOS_WIIMOTE, "return:");
   DEBUG_LOG(IOS_WIIMOTE, "  bd: %02x:%02x:%02x:%02x:%02x:%02x", reply.bdaddr[0], reply.bdaddr[1],
-    reply.bdaddr[2], reply.bdaddr[3], reply.bdaddr[4], reply.bdaddr[5]);
+            reply.bdaddr[2], reply.bdaddr[3], reply.bdaddr[4], reply.bdaddr[5]);
 
   SendEventCommandComplete(HCI_CMD_READ_BDADDR, &reply, sizeof(hci_read_bdaddr_rp));
 }
@@ -1740,8 +1740,8 @@ void BluetoothEmu::CommandVendorSpecific_FC4C(const u8* input, u32 size)
 WiimoteDevice* BluetoothEmu::AccessWiiMote(const bdaddr_t& address)
 {
   const auto iterator =
-    std::find_if(m_WiiMotes.begin(), m_WiiMotes.end(),
-      [&address](const WiimoteDevice& remote) { return remote.GetBD() == address; });
+      std::find_if(m_WiiMotes.begin(), m_WiiMotes.end(),
+                   [&address](const WiimoteDevice& remote) { return remote.GetBD() == address; });
   return iterator != m_WiiMotes.cend() ? &*iterator : nullptr;
 }
 
@@ -1764,7 +1764,7 @@ void BluetoothEmu::DisplayDisconnectMessage(const int wiimoteNumber, const int r
   // mean
   // and display things like "Wii Remote %i disconnected due to inactivity!" etc.
   Core::DisplayMessage(
-    StringFromFormat("Wii Remote %i disconnected by emulated software", wiimoteNumber), 3000);
+      StringFromFormat("Wii Remote %i disconnected by emulated software", wiimoteNumber), 3000);
 }
 }  // namespace Device
 }  // namespace HLE

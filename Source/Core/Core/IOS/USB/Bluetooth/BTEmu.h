@@ -28,7 +28,7 @@ namespace HLE
 {
 struct SQueuedEvent
 {
-  u8 m_buffer[1024] = { 0 };
+  u8 m_buffer[1024] = {0};
   u32 m_size = 0;
   u16 m_connectionHandle = 0;
 
@@ -66,7 +66,7 @@ public:
   void DoState(PointerWrap& p) override;
 
 private:
-  bdaddr_t m_ControllerBD{ { 0x11, 0x02, 0x19, 0x79, 0x00, 0xff } };
+  bdaddr_t m_ControllerBD{{0x11, 0x02, 0x19, 0x79, 0x00, 0xff}};
 
   // this is used to trigger connecting via ACL
   u8 m_ScanEnable = 0;
@@ -97,7 +97,7 @@ private:
 
     Kernel& m_ios;
     std::deque<Packet> m_queue;
-  } m_acl_pool{ m_ios };
+  } m_acl_pool{m_ios};
 
   u32 m_PacketCount[MAX_BBMOTES] = {};
   u64 m_last_ticks = 0;

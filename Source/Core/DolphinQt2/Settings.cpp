@@ -11,6 +11,7 @@
 #include "Common/FileUtil.h"
 #include "Common/StringUtil.h"
 #include "Core/ConfigManager.h"
+#include "DolphinQt2/GameList/GameListModel.h"
 #include "DolphinQt2/Settings.h"
 #include "InputCommon/InputConfig.h"
 
@@ -77,9 +78,9 @@ bool Settings::GetPreferredView() const
   return QSettings().value(QStringLiteral("PreferredView"), true).toBool();
 }
 
-void Settings::SetPreferredView(bool table)
+void Settings::SetPreferredView(bool list)
 {
-  QSettings().setValue(QStringLiteral("PreferredView"), table);
+  QSettings().setValue(QStringLiteral("PreferredView"), list);
 }
 
 int Settings::GetStateSlot() const
@@ -142,4 +143,58 @@ QVector<QString> Settings::GetProfiles(const InputConfig* config) const
   }
 
   return vec;
+}
+
+bool Settings::IsLogVisible() const
+{
+  return QSettings().value(QStringLiteral("logging/logvisible")).toBool();
+}
+
+void Settings::SetLogVisible(bool visible)
+{
+  if (IsLogVisible() != visible)
+  {
+    QSettings().setValue(QStringLiteral("logging/logvisible"), visible);
+    emit LogVisibilityChanged(visible);
+  }
+}
+
+bool Settings::IsLogConfigVisible() const
+{
+  return QSettings().value(QStringLiteral("logging/logconfigvisible")).toBool();
+}
+
+void Settings::SetLogConfigVisible(bool visible)
+{
+  if (IsLogConfigVisible() != visible)
+  {
+    QSettings().setValue(QStringLiteral("logging/logconfigvisible"), visible);
+    emit LogConfigVisibilityChanged(visible);
+  }
+}
+
+GameListModel* Settings::GetGameListModel() const
+{
+  static GameListModel* model = new GameListModel;
+  return model;
+}
+
+NetPlayClient* Settings::GetNetPlayClient()
+{
+  return m_client.get();
+}
+
+void Settings::ResetNetPlayClient(NetPlayClient* client)
+{
+  m_client.reset(client);
+}
+
+NetPlayServer* Settings::GetNetPlayServer()
+{
+  return m_server.get();
+}
+
+void Settings::ResetNetPlayServer(NetPlayServer* server)
+{
+  m_server.reset(server);
 }

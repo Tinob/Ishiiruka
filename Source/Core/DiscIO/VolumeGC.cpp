@@ -210,7 +210,7 @@ void VolumeGC::LoadBannerFile() const
   }
 
   if (file_size != ReadFile(*this, PARTITION_NONE, file_info.get(),
-    reinterpret_cast<u8*>(&banner_file), file_size))
+                            reinterpret_cast<u8*>(&banner_file), file_size))
   {
     WARN_LOG(DISCIO, "Could not read opening.bnr.");
     return;
@@ -255,7 +255,7 @@ void VolumeGC::ExtractBannerInformation(const GCBanner& banner_file, bool is_bnr
   m_image_height = GC_BANNER_HEIGHT;
   m_image_buffer = std::vector<u32>(m_image_width * m_image_height);
   ColorUtil::decode5A3image(m_image_buffer.data(), banner_file.image, m_image_width,
-    m_image_height);
+                            m_image_height);
 
   for (u32 i = 0; i < number_of_languages; ++i)
   {

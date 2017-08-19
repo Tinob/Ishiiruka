@@ -459,6 +459,7 @@ static void EmuThread(std::unique_ptr<BootParameters> boot)
     s_is_booting.Clear();
     s_is_started = false;
     s_is_stopping = false;
+    s_wants_determinism = false;
 
     if (s_on_stopped_callback)
       s_on_stopped_callback();
@@ -606,6 +607,7 @@ static void EmuThread(std::unique_ptr<BootParameters> boot)
 
     video_backend->Video_Prepare();
     Host_Message(WM_USER_CREATE);
+
     // Spawn the CPU thread
     s_cpu_thread = std::thread(cpuThreadFunc);
 

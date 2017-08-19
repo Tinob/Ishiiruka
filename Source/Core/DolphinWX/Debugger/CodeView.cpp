@@ -57,11 +57,11 @@ enum
 };
 
 CCodeView::CCodeView(DebugInterface* debuginterface, SymbolDB* symboldb, wxWindow* parent,
-                     wxWindowID Id)
-    : wxControl(parent, Id), m_debugger(debuginterface), m_symbol_db(symboldb), m_plain(false),
-      m_curAddress(debuginterface->GetPC()), m_align(debuginterface->GetInstructionSize(0)),
-      m_rowHeight(FromDIP(13)), m_left_col_width(FromDIP(LEFT_COL_WIDTH)), m_selection(0),
-      m_oldSelection(0), m_selecting(false)
+  wxWindowID Id)
+  : wxControl(parent, Id), m_debugger(debuginterface), m_symbol_db(symboldb), m_plain(false),
+  m_curAddress(debuginterface->GetPC()), m_align(debuginterface->GetInstructionSize(0)),
+  m_rowHeight(FromDIP(13)), m_left_col_width(FromDIP(LEFT_COL_WIDTH)), m_selection(0),
+  m_oldSelection(0), m_selecting(false)
 {
   Bind(wxEVT_PAINT, &CCodeView::OnPaint, this);
   Bind(wxEVT_MOUSEWHEEL, &CCodeView::OnScrollWheel, this);
@@ -262,7 +262,7 @@ void CCodeView::OnPopupMenu(wxCommandEvent& event)
   {
     wxClipboardLocker locker;
     wxTheClipboard->SetData(
-        new wxTextDataObject(wxString::Format("%08x", m_debugger->ReadInstruction(m_selection))));
+      new wxTextDataObject(wxString::Format("%08x", m_debugger->ReadInstruction(m_selection))));
   }
   break;
 
@@ -294,7 +294,7 @@ void CCodeView::OnPopupMenu(wxCommandEvent& event)
     Refresh();
     break;
 
-  // Insert blr or restore old value
+    // Insert blr or restore old value
   case IDM_INSERTBLR:
     InsertBlrNop(0);
     Refresh();
@@ -313,8 +313,8 @@ void CCodeView::OnPopupMenu(wxCommandEvent& event)
     if (!read_result.valid)
       break;
     AssemblerEntryDialog dialog(m_selection, this, _("Enter instruction code:"),
-                                wxGetTextFromUserPromptStr,
-                                wxString::Format(wxT("%#08x"), read_result.hex));
+      wxGetTextFromUserPromptStr,
+      wxString::Format(wxT("%#08x"), read_result.hex));
     if (dialog.ShowModal() == wxID_OK)
     {
       unsigned long code;
@@ -358,10 +358,10 @@ void CCodeView::OnPopupMenu(wxCommandEvent& event)
     if (symbol)
     {
       wxTextEntryDialog input_symbol(this, _("Rename symbol:"), wxGetTextFromUserPromptStr,
-                                     StrToWxStr(symbol->name));
+        StrToWxStr(symbol->name));
       if (input_symbol.ShowModal() == wxID_OK)
       {
-        symbol->name = WxStrToStr(input_symbol.GetValue());
+        symbol->Rename(WxStrToStr(input_symbol.GetValue()));
         Refresh();  // Redraw to show the renamed symbol
       }
       Host_NotifyMapLoaded();
@@ -376,8 +376,8 @@ void CCodeView::OnPopupMenu(wxCommandEvent& event)
       break;
 
     wxTextEntryDialog dialog(this,
-                             wxString::Format(_("Enter symbol (%s) size:"), symbol->name.c_str()),
-                             wxGetTextFromUserPromptStr, wxString::Format(wxT("%i"), symbol->size));
+      wxString::Format(_("Enter symbol (%s) size:"), symbol->name.c_str()),
+      wxGetTextFromUserPromptStr, wxString::Format(wxT("%i"), symbol->size));
 
     if (dialog.ShowModal() == wxID_OK)
     {
@@ -399,14 +399,14 @@ void CCodeView::OnPopupMenu(wxCommandEvent& event)
       break;
 
     wxTextEntryDialog dialog(
-        this, wxString::Format(_("Enter symbol (%s) end address:"), symbol->name.c_str()),
-        wxGetTextFromUserPromptStr, wxString::Format(wxT("%#08x"), symbol->address + symbol->size));
+      this, wxString::Format(_("Enter symbol (%s) end address:"), symbol->name.c_str()),
+      wxGetTextFromUserPromptStr, wxString::Format(wxT("%#08x"), symbol->address + symbol->size));
 
     if (dialog.ShowModal() == wxID_OK)
     {
       unsigned long address;
       if (dialog.GetValue().ToULong(&address, 0) && address <= std::numeric_limits<u32>::max() &&
-          address >= symbol->address)
+        address >= symbol->address)
       {
         PPCAnalyst::ReanalyzeFunction(symbol->address, *symbol, address - symbol->address);
         Refresh();
@@ -432,7 +432,7 @@ void CCodeView::OnMouseUpR(wxMouseEvent& event)
   wxMenu menu;
   // menu->Append(IDM_GOTOINMEMVIEW, "&Goto in mem view");
   menu.Append(IDM_FOLLOWBRANCH, _("Follow &branch"))
-      ->Enable(AddrToBranch(m_selection) ? true : false);
+    ->Enable(AddrToBranch(m_selection) ? true : false);
   menu.AppendSeparator();
 #if wxUSE_CLIPBOARD
   menu.Append(IDM_COPYADDRESS, _("&Copy address"));
@@ -550,7 +550,7 @@ void CCodeView::OnPaint(wxPaintEvent& event)
       // (4.5,4.5)->(10.5,10.5) with the line being aliased on the half-pixels)
       double offset = pen_width / 2.0;
       ctx->DrawRectangle(m_left_col_width + offset, row_y + offset, col_width - pen_width,
-                         m_rowHeight - pen_width);
+        m_rowHeight - pen_width);
     }
 
     if (!m_plain)
@@ -587,8 +587,8 @@ void CCodeView::OnPaint(wxPaintEvent& event)
         branches[num_branches].src = row_y + (m_rowHeight / 2);
         branches[num_branches].srcAddr = (address / m_align);
         branches[num_branches++].dst =
-            (int)(row_y + ((s64)(u32)offs - (s64)(u32)address) * m_rowHeight / m_align +
-                  m_rowHeight / 2);
+          (int)(row_y + ((s64)(u32)offs - (s64)(u32)address) * m_rowHeight / m_align +
+            m_rowHeight / 2);
         desc = StringFromFormat("-->%s", m_debugger->GetDescription(offs).c_str());
 
         // the -> arrow illustrations are purple
@@ -609,7 +609,7 @@ void CCodeView::OnPaint(wxPaintEvent& event)
         ctx->SetFont(DebuggerFont, instr_color);
 
       ctx->DrawText(StrToWxStr(opcode), text_col + (m_plain ? 1 * char_width : 9 * char_width),
-                    row_y);
+        row_y);
 
       if (desc.empty())
       {
@@ -637,11 +637,11 @@ void CCodeView::OnPaint(wxPaintEvent& event)
       }
     }
   }  // end of for
-  // ------------
+     // ------------
 
-  // -------------------------
-  // Colors and brushes
-  // -------------------------
+     // -------------------------
+     // Colors and brushes
+     // -------------------------
   ctx->SetPen(focus_pen);
 
   wxGraphicsPath branch_path = ctx->CreatePath();

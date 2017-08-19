@@ -23,7 +23,9 @@
 #include "Common/MsgHandler.h"
 #include "Common/StringUtil.h"
 
+#include "Common/Config/Config.h"
 #include "Core/Config/GraphicsSettings.h"
+#include "Core/Config/SYSCONFSettings.h"
 #include "Core/ConfigLoaders/IsSettingSaveable.h"
 
 namespace ConfigLoaders
@@ -36,12 +38,16 @@ std::vector<std::string> GetGameIniFilenames(const std::string& id, std::optiona
   if (id.empty())
     return filenames;
 
-  // INIs that match the system code (unique for each Virtual Console system)
-  filenames.push_back(id.substr(0, 1) + ".ini");
+  // Using the first letter or the 3 letters of the ID only makes sense
+  // if the ID is an actual game ID (which has 6 characters).
+  if (id.length() == 6)
+  {
+    // INIs that match the system code (unique for each Virtual Console system)
+    filenames.push_back(id.substr(0, 1) + ".ini");
 
-  // INIs that match all regions
-  if (id.size() >= 4)
+    // INIs that match all regions
     filenames.push_back(id.substr(0, 3) + ".ini");
+  }
 
   // Regular INIs
   filenames.push_back(id + ".ini");
@@ -66,6 +72,7 @@ static const INIToLocationMap& GetINIToLocationMap()
 
       {{"Video_Settings", "wideScreenHack"}, {Config::GFX_WIDESCREEN_HACK.location}},
       {{"Video_Settings", "AspectRatio"}, {Config::GFX_ASPECT_RATIO.location}},
+      {{"Video_Settings", "SuggestedAspectRatio"}, {Config::GFX_SUGGESTED_ASPECT_RATIO.location}},
       {{"Video_Settings", "Crop"}, {Config::GFX_CROP.location}},
       {{"Video_Settings", "UseXFB"}, {Config::GFX_USE_XFB.location}},
       {{"Video_Settings", "UseRealXFB"}, {Config::GFX_USE_REAL_XFB.location}},
@@ -151,6 +158,11 @@ static const INIToLocationMap& GetINIToLocationMap()
       {{"Video", "WaitForShaderCompilation"},{Config::GFX_HACK_WAIT_FOR_SHADER_COMPILATION.location } },
       {{"Video", "EnableGPUTextureDecoding"},{Config::GFX_ENABLE_GPU_TEXTURE_DECODING.location } },
       {{"Video", "EnableComputeTextureEncoding"},{Config::GFX_ENABLE_COMPUTE_TEXTURE_ENCODING.location } },
+
+      {{"Core", "ProgressiveScan"}, {Config::SYSCONF_PROGRESSIVE_SCAN.location}},
+      {{"Core", "PAL60"}, {Config::SYSCONF_PAL60.location}},
+      {{"Wii", "Widescreen"}, {Config::SYSCONF_WIDESCREEN.location}},
+      {{"Wii", "Language"}, {Config::SYSCONF_LANGUAGE.location}},
   };
   return ini_to_location;
 }
@@ -345,9 +357,9 @@ private:
 
       auto* config_section =
           config_layer->GetOrCreateSection(mapped_config.system, mapped_config.section);
-      config_section->Set(mapped_config.key, value.second);
+        config_section->Set(mapped_config.key, value.second);
+      }
     }
-  }
 
   const std::string m_id;
   const u16 m_revision;
@@ -368,19 +380,19 @@ void INIGameConfigLayerLoader::Save(Config::Layer* config_layer)
     {
       for (const auto& value : section->GetValues())
       {
-        if (!IsSettingSaveable({system.first, section->GetName(), value.first}))
+        const Config::ConfigLocation location{system.first, section->GetName(), value.first};
+        if (!IsSettingSaveable(location))
           continue;
 
-        const auto ini_location =
-            GetINILocationFromConfig({system.first, section->GetName(), value.first});
+        const auto ini_location = GetINILocationFromConfig(location);
         if (ini_location.first.empty() && ini_location.second.empty())
           continue;
 
         IniFile::Section* ini_section = ini.GetOrCreateSection(ini_location.first);
-        ini_section->Set(ini_location.second, value.second);
+          ini_section->Set(ini_location.second, value.second);
+        }
       }
     }
-  }
 
   // Try to save to the revision specific INI first, if it exists.
   const std::string gameini_with_rev =

@@ -31,6 +31,7 @@
 #include "Common/Thread.h"
 #include "Common/Timer.h"
 
+#include "Core/Config/SYSCONFSettings.h"
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
 #include "Core/CoreTiming.h"
@@ -86,7 +87,7 @@ Renderer::Renderer()
 
   if (SConfig::GetInstance().bWii)
   {
-    m_aspect_wide = SConfig::GetInstance().m_wii_aspect_ratio != 0;
+    m_aspect_wide = Config::Get(Config::SYSCONF_WIDESCREEN);
   }
 }
 

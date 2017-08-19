@@ -8,13 +8,18 @@
 #include <vector>
 
 #include "Common/Config/Config.h"
-
 #include "Core/Config/GraphicsSettings.h"
 
 namespace ConfigLoaders
 {
 bool IsSettingSaveable(const Config::ConfigLocation& config_location)
 {
+  if (config_location.system == Config::System::Logger)
+    return true;
+
+  if (config_location.system == Config::System::Main && config_location.section == "NetPlay")
+    return true;
+
   const static std::vector<Config::ConfigLocation> s_setting_saveable{
       // Graphics.Hardware
 
@@ -95,6 +100,7 @@ bool IsSettingSaveable(const Config::ConfigLocation& config_location)
       Config::GFX_PROJECTION_HACK.location, Config::GFX_PROJECTION_HACK_SZNEAR.location,
       Config::GFX_PROJECTION_HACK_SZFAR.location, Config::GFX_PROJECTION_HACK_ZNEAR.location,
       Config::GFX_PROJECTION_HACK_ZFAR.location, Config::GFX_PERF_QUERIES_ENABLE.location,
+
   };
 
   return std::find(s_setting_saveable.begin(), s_setting_saveable.end(), config_location) !=

@@ -27,20 +27,20 @@ std::string RootUserPath(FromWhichRoot from)
 std::string GetImportTitlePath(u64 title_id, FromWhichRoot from)
 {
   return RootUserPath(from) + StringFromFormat("/import/%08x/%08x",
-                                               static_cast<u32>(title_id >> 32),
-                                               static_cast<u32>(title_id));
+    static_cast<u32>(title_id >> 32),
+    static_cast<u32>(title_id));
 }
 
 std::string GetTicketFileName(u64 _titleID, FromWhichRoot from)
 {
   return StringFromFormat("%s/ticket/%08x/%08x.tik", RootUserPath(from).c_str(),
-                          (u32)(_titleID >> 32), (u32)_titleID);
+    (u32)(_titleID >> 32), (u32)_titleID);
 }
 
 std::string GetTitlePath(u64 title_id, FromWhichRoot from)
 {
   return StringFromFormat("%s/title/%08x/%08x/", RootUserPath(from).c_str(),
-                          static_cast<u32>(title_id >> 32), static_cast<u32>(title_id));
+    static_cast<u32>(title_id >> 32), static_cast<u32>(title_id));
 }
 
 std::string GetTitleDataPath(u64 _titleID, FromWhichRoot from)
@@ -58,6 +58,35 @@ std::string GetTMDFileName(u64 _titleID, FromWhichRoot from)
   return GetTitleContentPath(_titleID, from) + "title.tmd";
 }
 
+bool IsTitlePath(const std::string& path, FromWhichRoot from, u64* title_id)
+{
+  std::string expected_prefix = RootUserPath(from) + "/title/";
+  if (!StringBeginsWith(path, expected_prefix))
+  {
+    return false;
+  }
+
+  // Try to find a title ID in the remaining path.
+  std::string subdirectory = path.substr(expected_prefix.size());
+  std::vector<std::string> components = SplitString(subdirectory, '/');
+  if (components.size() < 2)
+  {
+    return false;
+  }
+
+  u32 title_id_high, title_id_low;
+  if (!AsciiToHex(components[0], title_id_high) || !AsciiToHex(components[1], title_id_low))
+  {
+    return false;
+  }
+
+  if (title_id != nullptr)
+  {
+    *title_id = (static_cast<u64>(title_id_high) << 32) | title_id_low;
+  }
+  return true;
+}
+
 std::string EscapeFileName(const std::string& filename)
 {
   // Prevent paths from containing special names like ., .., ..., ...., and so on
@@ -68,8 +97,8 @@ std::string EscapeFileName(const std::string& filename)
   std::string filename_with_escaped_double_underscores = ReplaceAll(filename, "__", "__5f____5f__");
 
   // Escape all other characters that need to be escaped
-  static const std::unordered_set<char> chars_to_replace = {'\"', '*', '/',  ':', '<',
-                                                            '>',  '?', '\\', '|', '\x7f'};
+  static const std::unordered_set<char> chars_to_replace = { '\"', '*', '/',  ':', '<',
+    '>',  '?', '\\', '|', '\x7f' };
   std::string result;
   result.reserve(filename_with_escaped_double_underscores.size());
   for (char c : filename_with_escaped_double_underscores)
@@ -107,7 +136,7 @@ std::string UnescapeFileName(const std::string& filename)
     u32 character;
     if (pos + 6 <= result.size() && result[pos + 4] == '_' && result[pos + 5] == '_')
       if (AsciiToHex(result.substr(pos + 2, 2), character))
-        result.replace(pos, 6, {static_cast<char>(character)});
+        result.replace(pos, 6, { static_cast<char>(character) });
 
     ++pos;
   }

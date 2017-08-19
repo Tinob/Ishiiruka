@@ -16,8 +16,8 @@
 wxDEFINE_EVENT(wxEVT_ADAPTER_UPDATE, wxCommandEvent);
 
 GCAdapterConfigDiag::GCAdapterConfigDiag(wxWindow* const parent, const wxString& name,
-  const int tab_num)
-  : wxDialog(parent, wxID_ANY, name), m_pad_id(tab_num)
+                                         const int tab_num)
+    : wxDialog(parent, wxID_ANY, name), m_pad_id(tab_num)
 {
   wxCheckBox* const gamecube_rumble = new wxCheckBox(this, wxID_ANY, _("Enable Rumble"));
   gamecube_rumble->SetValue(SConfig::GetInstance().m_AdapterRumble[m_pad_id]);
