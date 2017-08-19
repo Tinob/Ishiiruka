@@ -228,8 +228,8 @@ void TextureCache::CopyEFBToCacheEntry(
   bool scale_by_half, u32 cbuf_id, const float* colmat, u32 width, u32 height)
 {
   VKTexture* texture = static_cast<VKTexture*>(entry->GetColor());
-    // A better way of doing this would be nice.
-    FramebufferManager* framebuffer_mgr =
+  // A better way of doing this would be nice.
+  FramebufferManager* framebuffer_mgr =
     static_cast<FramebufferManager*>(g_framebuffer_manager.get());
   TargetRectangle scaled_src_rect = g_renderer->ConvertEFBRectangle(src_rect);
 

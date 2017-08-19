@@ -10,16 +10,16 @@ namespace Vulkan
 {
 class VideoBackend : public VideoBackendBase
 {
-	bool Initialize(void* window_handle) override;
-	void Shutdown() override;
+  bool Initialize(void* window_handle) override;
+  void Shutdown() override;
 
-	std::string GetName() const override { return "Vulkan"; }
-	std::string GetDisplayName() const override { return "Vulkan (experimental)"; }
-	void Video_Prepare() override;
-	void Video_Cleanup() override;
+  std::string GetName() const override { return "Vulkan"; }
+  std::string GetDisplayName() const override { return "Vulkan (experimental)"; }
+  void Video_Prepare() override;
+  void Video_Cleanup() override;
 
-	void InitBackendInfo() override;
+  void InitBackendInfo() override;
 
-	unsigned int PeekMessages() override { return 0; }
+  unsigned int PeekMessages() override { return 0; }
 };
 }

@@ -28,7 +28,7 @@ namespace Vulkan
 {
 VKTexture::VKTexture(const TextureConfig& tex_config, std::unique_ptr<Texture2D> texture)
   : HostTexture(tex_config), m_texture(std::move(texture))
-{  
+{
 }
 
 std::unique_ptr<VKTexture> VKTexture::Create(const TextureConfig& tex_config)

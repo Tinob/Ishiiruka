@@ -19,34 +19,34 @@ class StagingBuffer;
 class BoundingBox
 {
 public:
-	BoundingBox();
-	~BoundingBox();
+  BoundingBox();
+  ~BoundingBox();
 
-	bool Initialize();
+  bool Initialize();
 
-	VkBuffer GetGPUBuffer() const { return m_gpu_buffer; }
-	VkDeviceSize GetGPUBufferOffset() const { return 0; }
-	VkDeviceSize GetGPUBufferSize() const { return BUFFER_SIZE; }
-	s32 Get(size_t index);
-	void Set(size_t index, s32 value);
+  VkBuffer GetGPUBuffer() const { return m_gpu_buffer; }
+  VkDeviceSize GetGPUBufferOffset() const { return 0; }
+  VkDeviceSize GetGPUBufferSize() const { return BUFFER_SIZE; }
+  s32 Get(size_t index);
+  void Set(size_t index, s32 value);
 
-	void Invalidate();
-	void Flush();
+  void Invalidate();
+  void Flush();
 
 private:
-	bool CreateGPUBuffer();
-	bool CreateReadbackBuffer();
-	void Readback();
+  bool CreateGPUBuffer();
+  bool CreateReadbackBuffer();
+  void Readback();
 
-	VkBuffer m_gpu_buffer = VK_NULL_HANDLE;
-	VkDeviceMemory m_gpu_memory = VK_NULL_HANDLE;
+  VkBuffer m_gpu_buffer = VK_NULL_HANDLE;
+  VkDeviceMemory m_gpu_memory = VK_NULL_HANDLE;
 
-	static const size_t NUM_VALUES = 4;
-	static const size_t BUFFER_SIZE = sizeof(u32) * NUM_VALUES;
+  static const size_t NUM_VALUES = 4;
+  static const size_t BUFFER_SIZE = sizeof(u32) * NUM_VALUES;
 
-	std::unique_ptr<StagingBuffer> m_readback_buffer;
-	std::array<bool, NUM_VALUES> m_values_dirty = {};
-	bool m_valid = true;
+  std::unique_ptr<StagingBuffer> m_readback_buffer;
+  std::array<bool, NUM_VALUES> m_values_dirty = {};
+  bool m_valid = true;
 };
 
 }  // namespace Vulkan
