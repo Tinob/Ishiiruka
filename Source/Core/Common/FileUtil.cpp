@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cstring>
 #include <fcntl.h>
+#include <fstream>
 #include <limits.h>
 #include <string>
 #include <sys/stat.h>
@@ -141,14 +142,14 @@ bool Delete(const std::string& filename)
   if (!DeleteFile(UTF8ToTStr(filename).c_str()))
   {
     WARN_LOG(COMMON, "Delete: DeleteFile failed on %s: %s", filename.c_str(),
-             GetLastErrorMsg().c_str());
+             GetLastErrorString().c_str());
     return false;
   }
 #else
   if (unlink(filename.c_str()) == -1)
   {
     WARN_LOG(COMMON, "Delete: unlink failed on %s: %s", filename.c_str(),
-             GetLastErrorMsg().c_str());
+             LastStrerrorString().c_str());
     return false;
   }
 #endif
@@ -241,11 +242,14 @@ bool DeleteDir(const std::string& filename)
 #ifdef _WIN32
   if (::RemoveDirectory(UTF8ToTStr(filename).c_str()))
     return true;
+  ERROR_LOG(COMMON, "DeleteDir: RemoveDirectory failed on %s: %s", filename.c_str(),
+            GetLastErrorString().c_str());
 #else
   if (rmdir(filename.c_str()) == 0)
     return true;
+  ERROR_LOG(COMMON, "DeleteDir: rmdir failed on %s: %s", filename.c_str(),
+            LastStrerrorString().c_str());
 #endif
-  ERROR_LOG(COMMON, "DeleteDir: %s: %s", filename.c_str(), GetLastErrorMsg().c_str());
 
   return false;
 }
@@ -268,12 +272,14 @@ bool Rename(const std::string& srcFilename, const std::string& destFilename)
     if (MoveFile(sf.c_str(), df.c_str()))
       return true;
   }
+  ERROR_LOG(COMMON, "Rename: MoveFile failed on %s --> %s: %s", srcFilename.c_str(),
+            destFilename.c_str(), GetLastErrorString().c_str());
 #else
   if (rename(srcFilename.c_str(), destFilename.c_str()) == 0)
     return true;
+  ERROR_LOG(COMMON, "Rename: rename failed on %s --> %s: %s", srcFilename.c_str(),
+            destFilename.c_str(), LastStrerrorString().c_str());
 #endif
-  ERROR_LOG(COMMON, "Rename: failed %s --> %s: %s", srcFilename.c_str(), destFilename.c_str(),
-            GetLastErrorMsg().c_str());
   return false;
 }
 
@@ -312,66 +318,22 @@ bool RenameSync(const std::string& srcFilename, const std::string& destFilename)
   return true;
 }
 
-// copies file srcFilename to destFilename, returns true on success
-bool Copy(const std::string& srcFilename, const std::string& destFilename)
+// copies file source_path to destination_path, returns true on success
+bool Copy(const std::string& source_path, const std::string& destination_path)
 {
-  INFO_LOG(COMMON, "Copy: %s --> %s", srcFilename.c_str(), destFilename.c_str());
+  INFO_LOG(COMMON, "Copy: %s --> %s", source_path.c_str(), destination_path.c_str());
 #ifdef _WIN32
-  if (CopyFile(UTF8ToTStr(srcFilename).c_str(), UTF8ToTStr(destFilename).c_str(), FALSE))
+  if (CopyFile(UTF8ToTStr(source_path).c_str(), UTF8ToTStr(destination_path).c_str(), FALSE))
     return true;
 
-  ERROR_LOG(COMMON, "Copy: failed %s --> %s: %s", srcFilename.c_str(), destFilename.c_str(),
-            GetLastErrorMsg().c_str());
+  ERROR_LOG(COMMON, "Copy: failed %s --> %s: %s", source_path.c_str(), destination_path.c_str(),
+    GetLastErrorString().c_str());
   return false;
 #else
-
-// buffer size
-#define BSIZE 1024
-
-  char buffer[BSIZE];
-
-  // Open input file
-  std::ifstream input;
-  OpenFStream(input, srcFilename, std::ifstream::in | std::ifstream::binary);
-  if (!input.is_open())
-  {
-    ERROR_LOG(COMMON, "Copy: input failed %s --> %s: %s", srcFilename.c_str(), destFilename.c_str(),
-              GetLastErrorMsg().c_str());
-    return false;
-  }
-
-  // open output file
-  File::IOFile output(destFilename, "wb");
-
-  if (!output.IsOpen())
-  {
-    ERROR_LOG(COMMON, "Copy: output failed %s --> %s: %s", srcFilename.c_str(),
-              destFilename.c_str(), GetLastErrorMsg().c_str());
-    return false;
-  }
-
-  // copy loop
-  while (!input.eof())
-  {
-    // read input
-    input.read(buffer, BSIZE);
-    if (!input)
-    {
-      ERROR_LOG(COMMON, "Copy: failed reading from source, %s --> %s: %s", srcFilename.c_str(),
-                destFilename.c_str(), GetLastErrorMsg().c_str());
-      return false;
-    }
-
-    // write output
-    if (!output.WriteBytes(buffer, BSIZE))
-    {
-      ERROR_LOG(COMMON, "Copy: failed writing to output, %s --> %s: %s", srcFilename.c_str(),
-                destFilename.c_str(), GetLastErrorMsg().c_str());
-      return false;
-    }
-  }
-
-  return true;
+  std::ifstream source{ source_path, std::ios::binary };
+  std::ofstream destination{ destination_path, std::ios::binary };
+  destination << source.rdbuf();
+  return source.good() && destination.good();
 #endif
 }
 
@@ -394,14 +356,14 @@ u64 GetSize(FILE* f)
   u64 pos = ftello(f);
   if (fseeko(f, 0, SEEK_END) != 0)
   {
-    ERROR_LOG(COMMON, "GetSize: seek failed %p: %s", f, GetLastErrorMsg().c_str());
+    ERROR_LOG(COMMON, "GetSize: seek failed %p: %s", f, LastStrerrorString().c_str());
     return 0;
   }
 
   u64 size = ftello(f);
   if ((size != pos) && (fseeko(f, pos, SEEK_SET) != 0))
   {
-    ERROR_LOG(COMMON, "GetSize: seek failed %p: %s", f, GetLastErrorMsg().c_str());
+    ERROR_LOG(COMMON, "GetSize: seek failed %p: %s", f, LastStrerrorString().c_str());
     return 0;
   }
 
@@ -416,7 +378,7 @@ bool CreateEmptyFile(const std::string& filename)
   if (!File::IOFile(filename, "wb"))
   {
     ERROR_LOG(COMMON, "CreateEmptyFile: failed %s: %s", filename.c_str(),
-              GetLastErrorMsg().c_str());
+              LastStrerrorString().c_str());
     return false;
   }
 
@@ -559,7 +521,7 @@ bool DeleteDirRecursively(const std::string& directory)
 }
 
 // Create directory and copy contents (does not overwrite existing files)
-void CopyDir(const std::string& source_path, const std::string& dest_path)
+void CopyDir(const std::string& source_path, const std::string& dest_path, bool destructive)
 {
   if (source_path == dest_path)
     return;
@@ -600,15 +562,21 @@ void CopyDir(const std::string& source_path, const std::string& dest_path)
     {
       if (!Exists(dest))
         File::CreateFullPath(dest + DIR_SEP);
-      CopyDir(source, dest);
+      CopyDir(source, dest, destructive);
     }
-    else if (!Exists(dest))
-      File::Copy(source, dest);
+    else if (!destructive && !Exists(dest))
+    {
+      Copy(source, dest);
+    }
+    else if (destructive)
+    {
+      Rename(source, dest);
+    }
 #ifdef _WIN32
   } while (FindNextFile(hFind, &ffd) != 0);
   FindClose(hFind);
 #else
-  }
+}
   closedir(dirp);
 #endif
 }
@@ -620,7 +588,7 @@ std::string GetCurrentDir()
   char* dir = __getcwd(nullptr, 0);
   if (!dir)
   {
-    ERROR_LOG(COMMON, "GetCurrentDirectory failed: %s", GetLastErrorMsg().c_str());
+    ERROR_LOG(COMMON, "GetCurrentDirectory failed: %s", LastStrerrorString().c_str());
     return nullptr;
   }
   std::string strDir = dir;

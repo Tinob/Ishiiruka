@@ -14,8 +14,11 @@ GameListModel::GameListModel(QObject* parent) : QAbstractTableModel(parent)
 {
   connect(&m_tracker, &GameTracker::GameLoaded, this, &GameListModel::UpdateGame);
   connect(&m_tracker, &GameTracker::GameRemoved, this, &GameListModel::RemoveGame);
-  connect(this, &GameListModel::DirectoryAdded, &m_tracker, &GameTracker::AddDirectory);
-  connect(this, &GameListModel::DirectoryRemoved, &m_tracker, &GameTracker::RemoveDirectory);
+  connect(&Settings::Instance(), &Settings::PathAdded, &m_tracker, &GameTracker::AddDirectory);
+  connect(&Settings::Instance(), &Settings::PathRemoved, &m_tracker, &GameTracker::RemoveDirectory);
+
+  for (const QString& dir : Settings::Instance().GetPaths())
+    m_tracker.AddDirectory(dir);
 
   connect(&Settings::Instance(), &Settings::ThemeChanged, [this] {
     // Tell the view to repaint. The signal 'dataChanged' also seems like it would work here, but
@@ -60,6 +63,8 @@ QVariant GameListModel::data(const QModelIndex& index, int role) const
       // GameCube banners are 96x32, but Wii banners are 192x64.
       // TODO: use custom banners from rom directory like DolphinWX?
       QPixmap banner = game->GetBanner();
+      if (banner.isNull())
+        banner = Resources::GetMisc(Resources::BANNER_MISSING);
       banner.setDevicePixelRatio(std::max(banner.width() / GAMECUBE_BANNER_SIZE.width(),
                                           banner.height() / GAMECUBE_BANNER_SIZE.height()));
       return banner;
@@ -73,7 +78,10 @@ QVariant GameListModel::data(const QModelIndex& index, int role) const
                                                Core::TitleDatabase::TitleType::Channel :
                                                Core::TitleDatabase::TitleType::Other));
       if (display_name.isEmpty())
-        return game->GetLongName();
+        display_name = game->GetLongName();
+
+      if (display_name.isEmpty())
+        display_name = game->GetFileName();
 
       return display_name;
     }
@@ -200,19 +208,22 @@ QSharedPointer<GameFile> GameListModel::GetGameFile(int index) const
   return m_games[index];
 }
 
-void GameListModel::UpdateGame(QSharedPointer<GameFile> game)
+void GameListModel::UpdateGame(const QSharedPointer<GameFile>& game)
 {
   QString path = game->GetFilePath();
 
-  int entry = FindGame(path);
-  if (entry < 0)
-    entry = m_games.size();
+  int index = FindGame(path);
+  if (index < 0)
+  {
+    beginInsertRows(QModelIndex(), m_games.size(), m_games.size());
+    m_games.push_back(game);
+    endInsertRows();
+  }
   else
-    return;
-
-  beginInsertRows(QModelIndex(), entry, entry);
-  m_games.insert(entry, game);
-  endInsertRows();
+  {
+    m_games[index] = game;
+    emit dataChanged(createIndex(index, 0), createIndex(index + 1, columnCount(QModelIndex())));
+  }
 }
 
 void GameListModel::RemoveGame(const QString& path)

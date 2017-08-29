@@ -114,7 +114,10 @@ enum HostTextureFormat
 
 namespace TexDecoder
 {
-bool IsCompressed(HostTextureFormat format);
+static inline bool IsCompressed(HostTextureFormat format)
+{
+  return format >= PC_TEX_FMT_DXT1 && format <= PC_TEX_FMT_BPTC;
+}
 u32 GetTexelSizeInNibbles(u32 format);
 u32 GetTextureSizeInBytes(u32 width, u32 height, u32 format);
 u32 GetBlockWidthInTexels(u32 format);

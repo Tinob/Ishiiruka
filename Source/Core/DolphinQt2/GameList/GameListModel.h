@@ -45,12 +45,8 @@ public:
     NUM_COLS
   };
 
-  void UpdateGame(QSharedPointer<GameFile> game);
+  void UpdateGame(const QSharedPointer<GameFile>& game);
   void RemoveGame(const QString& path);
-
-signals:
-  void DirectoryAdded(const QString& dir);
-  void DirectoryRemoved(const QString& dir);
 
 private:
   // Index in m_games, or -1 if it isn't found

@@ -14,7 +14,6 @@
 
 #ifdef _WIN32
 #include <windows.h>
-#include <psapi.h>
 #include "Common/StringUtil.h"
 #else
 #include <stdio.h>
@@ -89,20 +88,13 @@ void FreeMemoryPages(void* ptr, size_t size)
 {
   if (ptr)
   {
-    bool error_occurred = false;
-
 #ifdef _WIN32
     if (!VirtualFree(ptr, 0, MEM_RELEASE))
-      error_occurred = true;
+      PanicAlert("FreeMemoryPages failed!\nVirtualFree: %s", GetLastErrorString().c_str());
 #else
-    int retval = munmap(ptr, size);
-
-    if (retval != 0)
-      error_occurred = true;
+    if (munmap(ptr, size) != 0)
+      PanicAlert("FreeMemoryPages failed!\nmunmap: %s", LastStrerrorString().c_str());
 #endif
-
-    if (error_occurred)
-      PanicAlert("FreeMemoryPages failed!\n%s", GetLastErrorMsg().c_str());
   }
 }
 
@@ -120,84 +112,40 @@ void FreeAlignedMemory(void* ptr)
 
 void ReadProtectMemory(void* ptr, size_t size)
 {
-  bool error_occurred = false;
-
 #ifdef _WIN32
   DWORD oldValue;
   if (!VirtualProtect(ptr, size, PAGE_NOACCESS, &oldValue))
-    error_occurred = true;
+    PanicAlert("ReadProtectMemory failed!\nVirtualProtect: %s", GetLastErrorString().c_str());
 #else
-  int retval = mprotect(ptr, size, PROT_NONE);
-
-  if (retval != 0)
-    error_occurred = true;
+  if (mprotect(ptr, size, PROT_NONE) != 0)
+    PanicAlert("ReadProtectMemory failed!\nmprotect: %s", LastStrerrorString().c_str());
 #endif
-
-  if (error_occurred)
-    PanicAlert("ReadProtectMemory failed!\n%s", GetLastErrorMsg().c_str());
 }
 
 void WriteProtectMemory(void* ptr, size_t size, bool allowExecute)
 {
-  bool error_occurred = false;
-
 #ifdef _WIN32
   DWORD oldValue;
   if (!VirtualProtect(ptr, size, allowExecute ? PAGE_EXECUTE_READ : PAGE_READONLY, &oldValue))
-    error_occurred = true;
+    PanicAlert("WriteProtectMemory failed!\nVirtualProtect: %s", GetLastErrorString().c_str());
 #else
-  int retval = mprotect(ptr, size, allowExecute ? (PROT_READ | PROT_EXEC) : PROT_READ);
-
-  if (retval != 0)
-    error_occurred = true;
+  if (mprotect(ptr, size, allowExecute ? (PROT_READ | PROT_EXEC) : PROT_READ) != 0)
+    PanicAlert("WriteProtectMemory failed!\nmprotect: %s", LastStrerrorString().c_str());
 #endif
-
-  if (error_occurred)
-    PanicAlert("WriteProtectMemory failed!\n%s", GetLastErrorMsg().c_str());
 }
 
 void UnWriteProtectMemory(void* ptr, size_t size, bool allowExecute)
 {
-  bool error_occurred = false;
-
 #ifdef _WIN32
   DWORD oldValue;
   if (!VirtualProtect(ptr, size, allowExecute ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE, &oldValue))
-    error_occurred = true;
+    PanicAlert("UnWriteProtectMemory failed!\nVirtualProtect: %s", GetLastErrorString().c_str());
 #else
-  int retval = mprotect(ptr, size, allowExecute ? (PROT_READ | PROT_WRITE | PROT_EXEC) :
-                                                  PROT_WRITE | PROT_READ);
-
-  if (retval != 0)
-    error_occurred = true;
-#endif
-
-  if (error_occurred)
-    PanicAlert("UnWriteProtectMemory failed!\n%s", GetLastErrorMsg().c_str());
-}
-
-std::string MemUsage()
-{
-#ifdef _WIN32
-#pragma comment(lib, "psapi")
-  DWORD processID = GetCurrentProcessId();
-  HANDLE hProcess;
-  PROCESS_MEMORY_COUNTERS pmc;
-  std::string Ret;
-
-  // Print information about the memory usage of the process.
-
-  hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, processID);
-  if (nullptr == hProcess)
-    return "MemUsage Error";
-
-  if (GetProcessMemoryInfo(hProcess, &pmc, sizeof(pmc)))
-    Ret = StringFromFormat("%s K", ThousandSeparate(pmc.WorkingSetSize / 1024, 7).c_str());
-
-  CloseHandle(hProcess);
-  return Ret;
-#else
-  return "";
+  if (mprotect(ptr, size,
+               allowExecute ? (PROT_READ | PROT_WRITE | PROT_EXEC) : PROT_WRITE | PROT_READ) != 0)
+  {
+    PanicAlert("UnWriteProtectMemory failed!\nmprotect: %s", LastStrerrorString().c_str());
+  }
 #endif
 }
 

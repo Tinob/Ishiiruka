@@ -15,7 +15,6 @@
 
 #include "Common/CommonTypes.h"
 #include "Common/FileUtil.h"
-#include "Common/NonCopyable.h"
 #include "DiscIO/Blob.h"
 
 namespace File
@@ -43,34 +42,58 @@ public:
   explicit DiscContent(u64 offset);
 
   u64 GetOffset() const;
+  u64 GetEndOffset() const;
   u64 GetSize() const;
   bool Read(u64* offset, u64* length, u8** buffer) const;
 
-  bool operator==(const DiscContent& other) const { return m_offset == other.m_offset; }
+  bool operator==(const DiscContent& other) const { return GetEndOffset() == other.GetEndOffset(); }
   bool operator!=(const DiscContent& other) const { return !(*this == other); }
-  bool operator<(const DiscContent& other) const { return m_offset < other.m_offset; }
+  bool operator<(const DiscContent& other) const { return GetEndOffset() < other.GetEndOffset(); }
   bool operator>(const DiscContent& other) const { return other < *this; }
   bool operator<=(const DiscContent& other) const { return !(*this < other); }
   bool operator>=(const DiscContent& other) const { return !(*this > other); }
 private:
   u64 m_offset;
   u64 m_size = 0;
-  std::string m_path;
   ContentSource m_content_source;
 };
 
-// We do not allow copying, because it might mess up the pointers inside DiscContents
-class DirectoryBlobPartition : private NonCopyable
+class DiscContentContainer
+{
+public:
+  template <typename T>
+  void Add(u64 offset, const std::vector<T>& vector)
+  {
+    return Add(offset, vector.size() * sizeof(T), reinterpret_cast<const u8*>(vector.data()));
+  }
+  void Add(u64 offset, u64 size, const std::string& path);
+  void Add(u64 offset, u64 size, const u8* data);
+  u64 CheckSizeAndAdd(u64 offset, const std::string& path);
+  u64 CheckSizeAndAdd(u64 offset, u64 max_size, const std::string& path);
+
+  bool Read(u64 offset, u64 length, u8* buffer) const;
+
+private:
+  std::set<DiscContent> m_contents;
+};
+
+class DirectoryBlobPartition
 {
 public:
   DirectoryBlobPartition() = default;
   DirectoryBlobPartition(const std::string& root_directory, std::optional<bool> is_wii);
 
+  // We do not allow copying, because it might mess up the pointers inside DiscContents
+  DirectoryBlobPartition(const DirectoryBlobPartition&) = delete;
+  DirectoryBlobPartition& operator=(const DirectoryBlobPartition&) = delete;
+  DirectoryBlobPartition(DirectoryBlobPartition&&) = default;
+  DirectoryBlobPartition& operator=(DirectoryBlobPartition&&) = default;
+
   bool IsWii() const { return m_is_wii; }
   u64 GetDataSize() const { return m_data_size; }
   const std::string& GetRootDirectory() const { return m_root_directory; }
   const std::vector<u8>& GetHeader() const { return m_disc_header; }
-  const std::set<DiscContent>& GetContents() const { return m_contents; }
+  const DiscContentContainer& GetContents() const { return m_contents; }
 private:
   void SetDiscHeaderAndDiscType(std::optional<bool> is_wii);
   void SetBI2();
@@ -84,12 +107,12 @@ private:
 
   // FST creation
   void WriteEntryData(u32* entry_offset, u8 type, u32 name_offset, u64 data_offset, u64 length,
-                      u32 address_shift);
+    u32 address_shift);
   void WriteEntryName(u32* name_offset, const std::string& name, u64 name_table_offset);
   void WriteDirectory(const File::FSTEntry& parent_entry, u32* fst_offset, u32* name_offset,
-                      u64* data_offset, u32 parent_entry_index, u64 name_table_offset);
+    u64* data_offset, u32 parent_entry_index, u64 name_table_offset);
 
-  std::set<DiscContent> m_contents;
+  DiscContentContainer m_contents;
   std::vector<u8> m_disc_header;
   std::vector<u8> m_bi2;
   std::vector<u8> m_apploader;
@@ -103,11 +126,16 @@ private:
   u64 m_data_size;
 };
 
-// We do not allow copying, because it might mess up the pointers inside DiscContents
-class DirectoryBlobReader : public BlobReader, private NonCopyable
+class DirectoryBlobReader : public BlobReader
 {
 public:
   static std::unique_ptr<DirectoryBlobReader> Create(const std::string& dol_path);
+
+  // We do not allow copying, because it might mess up the pointers inside DiscContents
+  DirectoryBlobReader(const DirectoryBlobReader&) = delete;
+  DirectoryBlobReader& operator=(const DirectoryBlobReader&) = delete;
+  DirectoryBlobReader(DirectoryBlobReader&&) = default;
+  DirectoryBlobReader& operator=(DirectoryBlobReader&&) = default;
 
   bool Read(u64 offset, u64 length, u8* buffer) override;
   bool SupportsReadWiiDecrypted() const override;
@@ -121,7 +149,7 @@ private:
   struct PartitionWithType
   {
     PartitionWithType(DirectoryBlobPartition&& partition_, PartitionType type_)
-        : partition(std::move(partition_)), type(type_)
+      : partition(std::move(partition_)), type(type_)
     {
     }
 
@@ -130,12 +158,10 @@ private:
   };
 
   explicit DirectoryBlobReader(const std::string& game_partition_root,
-                               const std::string& true_root);
-
-  bool ReadInternal(u64 offset, u64 length, u8* buffer, const std::set<DiscContent>& contents);
+    const std::string& true_root);
 
   void SetNonpartitionDiscHeader(const std::vector<u8>& partition_header,
-                                 const std::string& game_partition_root);
+    const std::string& game_partition_root);
   void SetWiiRegionData(const std::string& game_partition_root);
   void SetPartitions(std::vector<PartitionWithType>&& partitions);
   void SetPartitionHeader(const DirectoryBlobPartition& partition, u64 partition_address);
@@ -144,7 +170,7 @@ private:
   DirectoryBlobPartition m_gamecube_pseudopartition;
 
   // For Wii:
-  std::set<DiscContent> m_nonpartition_contents;
+  DiscContentContainer m_nonpartition_contents;
   std::map<u64, DirectoryBlobPartition> m_partitions;
 
   bool m_is_wii;

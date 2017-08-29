@@ -17,26 +17,11 @@ static const QStringList game_filters{
 
 GameTracker::GameTracker(QObject* parent) : QFileSystemWatcher(parent)
 {
-  m_loader = new GameLoader;
-  m_loader->moveToThread(&m_loader_thread);
-
   qRegisterMetaType<QSharedPointer<GameFile>>();
-  connect(&m_loader_thread, &QThread::finished, m_loader, &QObject::deleteLater);
   connect(this, &QFileSystemWatcher::directoryChanged, this, &GameTracker::UpdateDirectory);
   connect(this, &QFileSystemWatcher::fileChanged, this, &GameTracker::UpdateFile);
-  connect(this, &GameTracker::PathChanged, m_loader, &GameLoader::LoadGame);
-  connect(m_loader, &GameLoader::GameLoaded, this, &GameTracker::GameLoaded);
 
-  m_loader_thread.start();
-
-  for (QString dir : Settings::Instance().GetPaths())
-    AddDirectory(dir);
-}
-
-GameTracker::~GameTracker()
-{
-  m_loader_thread.quit();
-  m_loader_thread.wait();
+  m_load_thread.Reset([this](const QString& path) { LoadGame(path); });
 }
 
 void GameTracker::AddDirectory(const QString& dir)
@@ -84,7 +69,7 @@ void GameTracker::UpdateDirectory(const QString& dir)
     {
       addPath(path);
       m_tracked_files[path] = QSet<QString>{dir};
-      emit PathChanged(path);
+      m_load_thread.EmplaceItem(path);
     }
   }
 
@@ -130,7 +115,7 @@ void GameTracker::UpdateFile(const QString& file)
     GameRemoved(file);
     addPath(file);
 
-    emit PathChanged(file);
+    m_load_thread.EmplaceItem(file);
   }
   else if (removePath(file))
   {
@@ -139,7 +124,7 @@ void GameTracker::UpdateFile(const QString& file)
   }
 }
 
-void GameLoader::LoadGame(const QString& path)
+void GameTracker::LoadGame(const QString& path)
 {
   if (!DiscIO::ShouldHideFromGameList(path.toStdString()))
   {

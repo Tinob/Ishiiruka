@@ -775,12 +775,6 @@ namespace TexDecoder
 
 // Decodes all known Gamecube/Wii texture formats.
 // by ector
-
-bool IsCompressed(HostTextureFormat format)
-{
-  return format >= PC_TEX_FMT_DXT1 && format <= PC_TEX_FMT_BPTC;
-}
-
 u32 GetTexelSizeInNibbles(u32 format)
 {
   switch (format & 0x3f)

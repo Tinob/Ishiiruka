@@ -14,7 +14,6 @@
 #include "Common/Event.h"
 #include "Common/FifoQueue.h"
 #include "Common/Flag.h"
-#include "Common/NonCopyable.h"
 #include "Core/HW/Wiimote.h"
 #include "Core/HW/WiimoteCommon/WiimoteConstants.h"
 #include "Core/HW/WiimoteCommon/WiimoteHid.h"
@@ -24,9 +23,14 @@ class PointerWrap;
 
 namespace WiimoteReal
 {
-class Wiimote : NonCopyable
+class Wiimote
 {
 public:
+  Wiimote(const Wiimote&) = delete;
+  Wiimote& operator=(const Wiimote&) = delete;
+  Wiimote(Wiimote&&) = default;
+  Wiimote& operator=(Wiimote&&) = default;
+
   virtual ~Wiimote() {}
   // This needs to be called in derived destructors!
   void Shutdown();
@@ -148,7 +152,7 @@ private:
   std::thread m_scan_thread;
   Common::Flag m_scan_thread_running;
   Common::Event m_scan_mode_changed_event;
-  std::atomic<WiimoteScanMode> m_scan_mode{WiimoteScanMode::DO_NOT_SCAN};
+  std::atomic<WiimoteScanMode> m_scan_mode{ WiimoteScanMode::DO_NOT_SCAN };
 };
 
 extern std::mutex g_wiimotes_mutex;
