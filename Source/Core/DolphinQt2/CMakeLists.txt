@@ -1,5 +1,11 @@
-find_package(Qt5Widgets REQUIRED)
-find_Package(Qt5Gui REQUIRED)
+find_package(Qt5Widgets)
+find_package(Qt5Gui)
+
+if(NOT Qt5Widgets_FOUND OR NOT Qt5Gui_FOUND)
+  message(FATAL_ERROR "Could not find Qt5, which is required to build the DolphinQt2 frontend. If you don't want to build the Qt frontend, pass -DENABLE_QT2=False to
+CMake.")
+endif()
+
 set_property(TARGET Qt5::Core PROPERTY INTERFACE_COMPILE_FEATURES "")
 message(STATUS "Found Qt version ${Qt5Core_VERSION}")
 
@@ -59,6 +65,7 @@ set(SRCS
   Config/Mapping/WiimoteEmuMotionControl.cpp
   Config/PropertiesDialog.cpp
   Config/SettingsWindow.cpp
+  GameList/GameFileCache.cpp
   GameList/GameFile.cpp
   GameList/GameList.cpp
   GameList/GameListModel.cpp

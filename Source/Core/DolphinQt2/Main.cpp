@@ -21,7 +21,7 @@
 #include "UICommon/CommandLineParse.h"
 #include "UICommon/UICommon.h"
 
-bool QtMsgAlertHandler(const char* caption, const char* text, bool yes_no, MsgType style)
+static bool QtMsgAlertHandler(const char* caption, const char* text, bool yes_no, MsgType style)
 {
   return RunOnObject(QApplication::instance(), [&] {
     QMessageBox message_box(QApplication::activeWindow());
@@ -52,7 +52,10 @@ bool QtMsgAlertHandler(const char* caption, const char* text, bool yes_no, MsgTy
 // /SubSystem:Windows
 int main(int argc, char* argv[])
 {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)
   QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+#endif
+
   QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
   QCoreApplication::setOrganizationName(QStringLiteral("Dolphin Emulator"));
   QCoreApplication::setOrganizationDomain(QStringLiteral("dolphin-emu.org"));
@@ -79,8 +82,6 @@ int main(int argc, char* argv[])
 
   int retval = 0;
 
-  // There's intentionally no way to set this from the UI.
-  // Add it to your INI manually instead.
   if (SConfig::GetInstance().m_show_development_warning)
   {
     InDevelopmentWarning warning_box;

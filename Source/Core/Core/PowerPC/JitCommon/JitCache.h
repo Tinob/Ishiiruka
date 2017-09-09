@@ -49,7 +49,6 @@ struct JitBlock
   // The number of PPC instructions represented by this block. Mostly
   // useful for logging.
   u32 originalSize;
-  int runCount;  // for profiling.
 
   // Information about exits to a known address from this block.
   // This is used to implement block linking.
@@ -65,18 +64,22 @@ struct JitBlock
   // This set stores all physical addresses of all occupied instructions.
   std::set<u32> physical_addresses;
 
-  // we don't really need to save start and stop
-  // TODO (mb2): ticStart and ticStop -> "local var" mean "in block" ... low priority ;)
-  u64 ticStart;    // for profiling - time.
-  u64 ticStop;     // for profiling - time.
-  u64 ticCounter;  // for profiling - time.
+  // Block profiling data, structure is inlined in Jit.cpp
+  struct ProfileData
+  {
+    u64 ticCounter;
+    u64 downcountCounter;
+    u64 runCount;
+    u64 ticStart;
+    u64 ticStop;
+  } profile_data = {};
 
   // This tracks the position if this block within the fast block cache.
   // We allow each block to have only one map entry.
   size_t fast_block_map_index;
 };
 
-typedef void (*CompiledCode)();
+typedef void(*CompiledCode)();
 
 // This is essentially just an std::bitset, but Visual Studia 2013's
 // implementation of std::bitset is slow.
@@ -170,13 +173,13 @@ private:
   // It is used to query all blocks which links to an address.
   std::multimap<u32, JitBlock*> links_to;  // destination_PC -> number
 
-  // Map indexed by the physical address of the entry point.
-  // This is used to query the block based on the current PC in a slow way.
+                                           // Map indexed by the physical address of the entry point.
+                                           // This is used to query the block based on the current PC in a slow way.
   std::multimap<u32, JitBlock> block_map;  // start_addr -> block
 
-  // Range of overlapping code indexed by a masked physical address.
-  // This is used for invalidation of memory regions. The range is grouped
-  // in macro blocks of each 0x100 bytes.
+                                           // Range of overlapping code indexed by a masked physical address.
+                                           // This is used for invalidation of memory regions. The range is grouped
+                                           // in macro blocks of each 0x100 bytes.
   static constexpr u32 BLOCK_RANGE_MAP_ELEMENTS = 0x100;
   std::map<u32, std::set<JitBlock*>> block_range_map;
 

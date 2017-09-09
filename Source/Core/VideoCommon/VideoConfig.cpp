@@ -4,6 +4,7 @@
 
 #include <cmath>
 
+#include "Common/CPUDetect.h"
 #include "Common/CommonTypes.h"
 #include "Common/StringUtil.h"
 #include "Core/Config/GraphicsSettings.h"
@@ -176,9 +177,11 @@ void VideoConfig::Refresh()
 
   bForceDualSourceBlend = Config::Get(Config::GFX_HACK_FORCE_DUAL_SOURCE);
   bFullAsyncShaderCompilation = Config::Get(Config::GFX_HACK_FULL_ASYNC_SHADER_COMPILATION);
-  bWaitForShaderCompilation = Config::Get(Config::GFX_HACK_WAIT_FOR_SHADER_COMPILATION);
   bLastStoryEFBToRam = Config::Get(Config::GFX_HACK_LAST_HISTORY_EFBTORAM);
   bForceLogicOpBlend = Config::Get(Config::GFX_HACK_FORCE_LOGICOP_BLEND);
+
+  bBackgroundShaderCompiling = Config::Get(Config::GFX_BACKGROUND_SHADER_COMPILING);
+  bDisableSpecializedShaders = Config::Get(Config::GFX_DISABLE_SPECIALIZED_SHADERS);
 
   phack.m_enable = Config::Get(Config::GFX_PROJECTION_HACK) == 1;
   phack.m_sznear = Config::Get(Config::GFX_PROJECTION_HACK_SZNEAR) == 1;
@@ -246,9 +249,6 @@ void VideoConfig::VerifyValidity()
       iStereoMode = 0;
     }
   }
-  // Disable while reimplementing predictive fifo
-  bPredictiveFifo = false;
-  bWaitForShaderCompilation = false;
   if (iBBoxMode > BBoxGPU || iBBoxMode < BBoxNone)
   {
     iBBoxMode = BBoxNone;

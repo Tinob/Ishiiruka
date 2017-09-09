@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: Dolphin Emulator\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2017-07-17 14:17+0200\n"
-"PO-Revision-Date: 2017-08-11 12:31+0000\n"
+"PO-Revision-Date: 2017-09-02 11:54+0000\n"
 "Last-Translator: JosJuice\n"
 "Language-Team: Russian (http://www.transifex.com/delroth/dolphin-emu/"
 "language/ru/)\n"
@@ -7835,7 +7835,7 @@ msgstr ""
 
 #: Source/Core/DolphinWX/Config/InterfaceConfigPane.cpp:94
 msgid "Use Built-In Database of Game Names"
-msgstr "Использовать встроенную базу названий игры"
+msgstr "Использовать встроенную базу названий игр"
 
 #: Source/Core/DolphinWX/VideoConfigDiag.cpp:427
 msgid "Use Fullscreen"
@@ -7851,7 +7851,7 @@ msgstr "Режим PAL60 (EuRGB60)"
 
 #: Source/Core/DolphinWX/Config/InterfaceConfigPane.cpp:89
 msgid "Use Panic Handlers"
-msgstr "Показывать panic-уведомления (ошибки)"
+msgstr "Использовать обработчики ошибок"
 
 #: Source/Core/DolphinWX/VideoConfigDiag.cpp:170
 msgid ""
@@ -8388,8 +8388,6 @@ msgid ""
 "Your GCM/ISO file seems to be invalid (invalid country).\n"
 "Continue with PAL region?"
 msgstr ""
-"По всей видимости ваш файл GCM/ISO некорректен (неверный регион).\n"
-"Продолжить в режиме PAL?"
 
 #. i18n: Refers to a 3D axis (used when mapping motion controls)
 #: Source/Core/Core/HW/WiimoteEmu/Attachment/Nunchuk.cpp:54
@@ -8525,6 +8523,9 @@ msgstr "| ИЛИ"
 #~ msgid "All Save States (*.sav *.s##);; All Files (*)"
 #~ msgstr "Файлы быстрых сохранений (*.sav, *.s##);; Все файлы (*)"
 
+#~ msgid "Always Hide Mouse Cursor"
+#~ msgstr "Всегда скрывать курсор мыши"
+
 #~ msgid "Apply"
 #~ msgstr "Применить"
 
@@ -8542,6 +8543,9 @@ msgstr "| ИЛИ"
 
 #~ msgid "Branch: "
 #~ msgstr "Ветвь: "
+
+#~ msgid "Buffer size changed to %1"
+#~ msgstr "Размер буфера изменён на %1"
 
 #~ msgid "Can't start a NetPlay Session while a game is still running!"
 #~ msgstr "Невозможно создать сессию сетевой игры, пока игра всё ещё запущена!"
@@ -8676,6 +8680,9 @@ msgstr "| ИЛИ"
 #~ msgid "Enable Rumble"
 #~ msgstr "Включить вибрацию"
 
+#~ msgid "Enables Wii Remote vibration."
+#~ msgstr "Включает вибрацию Wii Remote."
+
 #~ msgid "Exclusive"
 #~ msgstr "Исключительные"
 
@@ -8703,6 +8710,13 @@ msgstr "| ИЛИ"
 #~ msgstr ""
 #~ "Не удалось инициализировать прослушивание порта %1. У вас запущен ещё "
 #~ "один сервер сетевой игры?"
+
+#~ msgid ""
+#~ "Failed to load %s. If you are using Windows 7, try installing the "
+#~ "KB4019990 update package."
+#~ msgstr ""
+#~ "Не удалось загрузить %s. Если вы пользуетесь Windows 7, попробуйте "
+#~ "установить пакет обновления KB4019990."
 
 #~ msgid "Failed to open '%1'"
 #~ msgstr "Не удалось открыть '%1'"
@@ -8840,6 +8854,9 @@ msgstr "| ИЛИ"
 #~ msgid "PNG image file (*.png);; All Files (*)"
 #~ msgstr "Файл изображения PNG (*.png);; Все файлы (*)"
 
+#~ msgid "Perform System Update"
+#~ msgstr "Выполнить обновление системы"
+
 #~ msgid "Port %1"
 #~ msgstr "Порт %1"
 
@@ -8940,6 +8957,18 @@ msgstr "| ИЛИ"
 
 #~ msgid "Successfully removed this title from the NAND."
 #~ msgstr "Данный продукт успешно удалён из NAND."
+
+#~ msgid "The game disc does not contain any usable update information."
+#~ msgstr "На данном диске не содержится полезной информации про обновление."
+
+#~ msgid ""
+#~ "The game's region does not match your console's. To avoid issues with the "
+#~ "system menu, it is not possible to update the emulated console using this "
+#~ "disc."
+#~ msgstr ""
+#~ "Регионы игры и консоли не совпадают. Обновление эмулируемой консоли при "
+#~ "помощи данного диска невозможно, т.к. это приведёт к ошибкам системного "
+#~ "меню."
 
 #~ msgid "The profile '%1' does not exist"
 #~ msgstr "Профиль '%1' не существует"

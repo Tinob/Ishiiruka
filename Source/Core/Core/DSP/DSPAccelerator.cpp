@@ -9,6 +9,7 @@
 #include "Common/MathUtil.h"
 
 #include "Core/DSP/DSPCore.h"
+#include "Core/DSP/DSPHWInterface.h"
 #include "Core/DSP/DSPHost.h"
 
 namespace DSP
@@ -31,15 +32,15 @@ static s16 ADPCM_Step(u32& _rSamplePos)
   s32 coef2 = pCoefTable[coef_idx * 2 + 1];
 
   int temp = (_rSamplePos & 1) ? (Host::ReadHostMemory(_rSamplePos >> 1) & 0xF) :
-                                 (Host::ReadHostMemory(_rSamplePos >> 1) >> 4);
+    (Host::ReadHostMemory(_rSamplePos >> 1) >> 4);
 
   if (temp >= 8)
     temp -= 16;
 
   // 0x400 = 0.5  in 11-bit fixed point
   int val =
-      (scale * temp) +
-      ((0x400 + coef1 * (s16)g_dsp.ifx_regs[DSP_YN1] + coef2 * (s16)g_dsp.ifx_regs[DSP_YN2]) >> 11);
+    (scale * temp) +
+    ((0x400 + coef1 * (s16)g_dsp.ifx_regs[DSP_YN1] + coef2 * (s16)g_dsp.ifx_regs[DSP_YN2]) >> 11);
   val = MathUtil::Clamp(val, -0x7FFF, 0x7FFF);
 
   g_dsp.ifx_regs[DSP_YN2] = g_dsp.ifx_regs[DSP_YN1];
@@ -177,8 +178,8 @@ u16 dsp_read_accelerator()
     DSPCore_SetException(EXP_ACCOV);
   }
 
-  g_dsp.ifx_regs[DSP_ACCAH] = Address >> 16;
-  g_dsp.ifx_regs[DSP_ACCAL] = Address & 0xffff;
+  gdsp_ifx_write(DSP_ACCAH, Address >> 16);
+  gdsp_ifx_write(DSP_ACCAL, Address & 0xffff);
   return val;
 }
 }  // namespace DSP

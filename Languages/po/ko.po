@@ -12,7 +12,7 @@ msgstr ""
 "Project-Id-Version: Dolphin Emulator\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2017-07-17 14:17+0200\n"
-"PO-Revision-Date: 2017-08-11 12:31+0000\n"
+"PO-Revision-Date: 2017-09-02 11:54+0000\n"
 "Last-Translator: JosJuice\n"
 "Language-Team: Korean (http://www.transifex.com/delroth/dolphin-emu/language/"
 "ko/)\n"
@@ -3153,7 +3153,8 @@ msgstr ""
 
 #: Source/Core/DolphinWX/NetPlay/NetPlayLauncher.cpp:31
 msgid "Failed to listen. Is another instance of the NetPlay server running?"
-msgstr "연결에 실패했습니다. 구동중인 다른 넷플레이 서버 인스턴스가 있습니까?"
+msgstr ""
+"연결 듣기에 실패했습니다. 구동중인 다른 넷플레이 서버 인스턴스가 있습니까?"
 
 #: Source/Core/Core/IOS/MIOS.cpp:139
 msgid "Failed to load MIOS ELF into memory."
@@ -3924,12 +3925,14 @@ msgstr ""
 "INI 를 수동으로 편집해야할 것입니다."
 
 #: Source/Core/DolphinWX/NetPlay/MD5Dialog.cpp:94
+#, fuzzy
 msgid "Hashes do not match."
-msgstr ""
+msgstr "해쉬가 일치하지 않습니다!"
 
 #: Source/Core/DolphinWX/NetPlay/MD5Dialog.cpp:94
+#, fuzzy
 msgid "Hashes match!"
-msgstr ""
+msgstr "해쉬가 일치합니다!"
 
 #: Source/Core/Core/HW/GCMemcard/GCMemcard.cpp:131
 msgid "Header checksum failed"
@@ -6719,6 +6722,7 @@ msgid "Speaker Volume:"
 msgstr "스피커 볼륨:"
 
 #: Source/Core/DolphinWX/VideoConfigDiag.cpp:187
+#, fuzzy
 msgid ""
 "Specifies the resolution used to render at. A high resolution greatly "
 "improves visual quality, but also greatly increases GPU load and can cause "
@@ -6730,6 +6734,12 @@ msgid ""
 "\n"
 "If unsure, select Native."
 msgstr ""
+"렌더에 사용되는 해상도를 지정합니다. 고해상도는 비주얼 품질을 굉장히 향상시킵"
+"니다, 하지만  GPU 로드를 또한 굉장히 증가시키고 특정 게임에서 이슈들을 유발"
+"할 수 있습니다. 일반적으로 말해서, 더 낮은 내부 해상도는, 더 좋은 성능이 나"
+"올 것입니다.\n"
+"\n"
+"모르겠으면, 원본을 선택하세요."
 
 #: Source/Core/DolphinWX/Config/GeneralConfigPane.cpp:100
 msgid "Speed Limit:"
@@ -6843,7 +6853,7 @@ msgstr "스텝 나가기 시간 초과!"
 
 #: Source/Core/DolphinWX/Debugger/CodeWindow.cpp:331
 msgid "Step over in progress..."
-msgstr "스텝 넘어가기 중..."
+msgstr "스텝 넘어가기 진행 중..."
 
 #: Source/Core/DolphinWX/MainToolBar.cpp:200
 msgid "Step over the next instruction"
@@ -8313,8 +8323,6 @@ msgid ""
 "Your GCM/ISO file seems to be invalid (invalid country).\n"
 "Continue with PAL region?"
 msgstr ""
-"당신의 GCM/ISO 파일이 부적합(부적합 국가)인 것 같습니다.\n"
-"PAL 지역으로 계속합니까?"
 
 #. i18n: Refers to a 3D axis (used when mapping motion controls)
 #: Source/Core/Core/HW/WiimoteEmu/Attachment/Nunchuk.cpp:54
@@ -8375,6 +8383,12 @@ msgstr "| OR"
 #~ msgid "%1 ms"
 #~ msgstr "%1 ms"
 
+#~ msgid "%1[%2]: %3"
+#~ msgstr "%1[%2]: %3"
+
+#~ msgid "%1[%2]: %3 %"
+#~ msgstr "%1[%2]: %3 %"
+
 #~ msgid "&Cancel"
 #~ msgstr "취소(&C)"
 
@@ -8386,6 +8400,9 @@ msgstr "| OR"
 
 #~ msgid "&Theme:"
 #~ msgstr "테마(&T):"
+
+#~ msgid "..."
+#~ msgstr "..."
 
 #~ msgid "16x"
 #~ msgstr "16x"
@@ -8424,6 +8441,9 @@ msgstr "| OR"
 #~ "그 리포트를 만들 포인트가 없습니다 개발자들이 이미 그것들을 알고 있거든요."
 #~ "</p>\n"
 
+#~ msgid "A NetPlay Session is already in progress!"
+#~ msgstr "넷플레이 세션이 이미 진행 중입니다!"
+
 #~ msgid "Abort"
 #~ msgstr "중단"
 
@@ -8437,6 +8457,9 @@ msgstr "| OR"
 #~ msgid "All Save States (*.sav *.s##);; All Files (*)"
 #~ msgstr "모든 저장 상태 (*.sav *.s##);; 모든 파일들 (*)"
 
+#~ msgid "Always Hide Mouse Cursor"
+#~ msgstr "항상 마우스 커서를 숨깁니다"
+
 #~ msgid "Apply"
 #~ msgstr "적용"
 
@@ -8446,11 +8469,20 @@ msgstr "| OR"
 #~ msgid "Are you sure you want to delete this file?"
 #~ msgstr "이 파일을 정말로 삭제하시겠습니까?"
 
+#~ msgid "Are you sure you want to quit NetPlay?"
+#~ msgstr "정말로 넷플레이를 종료하고 싶습니까?"
+
 #~ msgid "Are you sure?"
 #~ msgstr "확신합니까?"
 
 #~ msgid "Branch: "
 #~ msgstr "분기:"
+
+#~ msgid "Buffer size changed to %1"
+#~ msgstr "버퍼 크기가 %1 로 변경되었습니다"
+
+#~ msgid "Can't start a NetPlay Session while a game is still running!"
+#~ msgstr "게임이 여전히 구동되는 동안에 넷플레이 세션을 시작할 수 없습니다!"
 
 #~ msgid "Cancel"
 #~ msgstr "취소"
@@ -8490,6 +8522,9 @@ msgstr "| OR"
 #~ msgstr "출력 설정"
 
 #~ msgid "Confirm"
+#~ msgstr "확정"
+
+#~ msgid "Confirmation"
 #~ msgstr "확정"
 
 #~ msgid "Controller Settings"
@@ -8577,8 +8612,14 @@ msgstr "| OR"
 #~ msgid "Enable Rumble"
 #~ msgstr "진동 활성화"
 
+#~ msgid "Enables Wii Remote vibration."
+#~ msgstr "Wii 리모트 진동을 켭니다."
+
 #~ msgid "Exclusive"
 #~ msgstr "전용"
+
+#~ msgid "Failed to connect to server"
+#~ msgstr "서버 연결에 실패했습니다"
 
 #~ msgid "Failed to delete the selected file."
 #~ msgstr "선택된 파일 삭제에 실패했습니다."
@@ -8595,8 +8636,25 @@ msgstr "| OR"
 #~ msgid "Failed to launch"
 #~ msgstr "런치에 실패했습니다"
 
+#~ msgid ""
+#~ "Failed to listen on port %1. Is another instance of the NetPlay server "
+#~ "running?"
+#~ msgstr ""
+#~ "포트 %1 듣기에 실패했습니다. 구동 중인 다른 넷플레이 서버 인스턴스가 있습"
+#~ "니까?"
+
+#~ msgid ""
+#~ "Failed to load %s. If you are using Windows 7, try installing the "
+#~ "KB4019990 update package."
+#~ msgstr ""
+#~ "%s 로드에 실패했습니다. 윈도우 7을 사용중이면, KB4019990 업데이트 패키지"
+#~ "를 설치해보세요."
+
 #~ msgid "Failed to open '%1'"
 #~ msgstr "'%1' 를 열기에 실패했습니다"
+
+#~ msgid "Failed to open server"
+#~ msgstr "서버 열기에 실패했습니다"
 
 #~ msgid "File Path:"
 #~ msgstr "파일 경로:"
@@ -8608,8 +8666,14 @@ msgstr "| OR"
 #~ "업데이트를 완료중입니다...\n"
 #~ "시간이 잠시 걸릴 수 있습니다."
 
+#~ msgid "GC Port %1"
+#~ msgstr "GC 포트 %1"
+
 #~ msgid "Game Folders"
 #~ msgstr "게임 폴더들"
+
+#~ msgid "Game changed to \"%1\""
+#~ msgstr "게임이 \"%1\" 로 변경되었습니다"
 
 #~ msgid "GameCube Adapter for Wii U at Port %1"
 #~ msgstr "포트 %1 에 Wii U 용 게임큐브 어댑터 "
@@ -8625,6 +8689,12 @@ msgstr "| OR"
 
 #~ msgid "GameCube Keyboard at Port %1"
 #~ msgstr "포트 %1 에 겜임큐브 키보드"
+
+#~ msgid "Grid View"
+#~ msgstr "격자 보기"
+
+#~ msgid "Host with NetPlay"
+#~ msgstr "넷플레이로 호스트"
 
 #~ msgid "Hotkey Settings"
 #~ msgstr "단축키 설정"
@@ -8655,11 +8725,20 @@ msgstr "| OR"
 #~ "문 환경설정을 우리가 식별하게 도와줍니다.\n"
 #~ "이 허가는 돌핀 설정에서 어느 때라도 철회될 수 있습니다."
 
+#~ msgid "Invalid Player ID"
+#~ msgstr "부적합한 플레이어 아이디"
+
 #~ msgid "Latency:"
 #~ msgstr "지연:"
 
 #~ msgid "Left Table"
 #~ msgstr "왼쪽 테이블"
+
+#~ msgid "List Columns"
+#~ msgstr "목록 세로줄"
+
+#~ msgid "List View"
+#~ msgstr "목록 보기"
 
 #~ msgid "Load State from File"
 #~ msgstr "파일에서 상태 로드"
@@ -8679,6 +8758,12 @@ msgstr "| OR"
 #~ msgid "Long Name:"
 #~ msgstr "긴 이름:"
 
+#~ msgid "Lost connection to NetPlay server..."
+#~ msgstr "넷플레이 서버 연결을 잃었습니다..."
+
+#~ msgid "MD5 Check:"
+#~ msgstr "MD5 체크:"
+
 #~ msgid "Monospaced Font"
 #~ msgstr "단일띄어쓰기 폰트"
 
@@ -8695,22 +8780,37 @@ msgstr "| OR"
 #~ msgstr "아직 시행되지 않았습니다."
 
 #~ msgid "Operation in progress..."
-#~ msgstr "작동 처리중..."
+#~ msgstr "작업 진행 중..."
 
 #~ msgid "PNG image file (*.png);; All Files (*)"
 #~ msgstr "PNG 이미지 파일 (*.png);; 모든 파일들 (*)"
 
+#~ msgid "Perform System Update"
+#~ msgstr "시스텝 업데이트 하기"
+
 #~ msgid "Port %1"
 #~ msgstr "포트 %1"
 
+#~ msgid "Possible desync detected: %1 might have desynced at frame %2"
+#~ msgstr "가능한 비동기 감지됨: %1 가 프레임 %2 에서 비동기화된 듯 합니다"
+
 #~ msgid "Recommended for normal users"
 #~ msgstr "일반 사용자에게 권장됩니다"
+
+#~ msgid "Reset Traversal Server"
+#~ msgstr "횡단 서버를 리셋합니다"
+
+#~ msgid "Reset Traversal Server to %1:%2"
+#~ msgstr "횡단 서버를 %1:%2 로 리셋합니다"
 
 #~ msgid "Revision: "
 #~ msgstr "개정:"
 
 #~ msgid "Right Table"
 #~ msgstr "오른쪽 테이블"
+
+#~ msgid "Room ID"
+#~ msgstr "룸 ID"
 
 #~ msgid "Run DolphinWX Instead"
 #~ msgstr "DolphinWX 대신 실행합니다"
@@ -8763,6 +8863,12 @@ msgstr "| OR"
 #~ msgid "Software Renderer"
 #~ msgstr "소프트웨어 렌더러"
 
+#~ msgid "Started game"
+#~ msgstr "시작된 게임"
+
+#~ msgid "Stopped game"
+#~ msgstr "멈춰진 게임"
+
 #~ msgid "Success!"
 #~ msgstr "성공!"
 
@@ -8781,6 +8887,17 @@ msgstr "| OR"
 #~ msgid "Successfully removed this title from the NAND."
 #~ msgstr "NAND 에서 이 타이틀을 성공적으로 제거했습니다."
 
+#~ msgid "The game disc does not contain any usable update information."
+#~ msgstr "게임 디스크가 사용가능한 업데이트 정보를 가지고 있지 않습니다."
+
+#~ msgid ""
+#~ "The game's region does not match your console's. To avoid issues with the "
+#~ "system menu, it is not possible to update the emulated console using this "
+#~ "disc."
+#~ msgstr ""
+#~ "게임의 지역이 당신의 콘솔 지역과 맞지 않습니다. 시스템 메뉴로 이슈들을 피"
+#~ "하려고, 이 디스크를 사용한 에뮬된 콘솔을 업데이트하는 것은 불가능합니다."
+
 #~ msgid "The profile '%1' does not exist"
 #~ msgstr "프로파일 '%1' 이 존재하지 않습니다"
 
@@ -8792,6 +8909,9 @@ msgstr "| OR"
 #~ msgstr ""
 #~ "이 소프트웨어는 합법적 소유가 아닌 게임을 플레이하기 위해 쓰여서는 안됩니"
 #~ "다."
+
+#~ msgid "Traversal Error"
+#~ msgstr "횡단 에러"
 
 #~ msgid "Ubershaders:"
 #~ msgstr "우버쉐이더스:"
@@ -8817,6 +8937,9 @@ msgstr "| OR"
 
 #~ msgid "Wii Channel"
 #~ msgstr "Wii 채널"
+
+#~ msgid "You must select a game to host!"
+#~ msgstr "호스트할 게임을 선택해야 합니다!"
 
 #~ msgid ""
 #~ "© 2003-%1 Dolphin Team. “GameCube” and “Wii” are trademarks of Nintendo. "

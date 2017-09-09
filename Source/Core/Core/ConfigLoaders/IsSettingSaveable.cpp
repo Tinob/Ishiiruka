@@ -91,7 +91,6 @@ bool IsSettingSaveable(const Config::ConfigLocation& config_location)
       Config::GFX_HACK_VERTEX_ROUDING.location,
       Config::GFX_HACK_FORCE_DUAL_SOURCE.location,
       Config::GFX_HACK_FULL_ASYNC_SHADER_COMPILATION.location,
-      Config::GFX_HACK_WAIT_FOR_SHADER_COMPILATION.location,
       Config::GFX_HACK_LAST_HISTORY_EFBTORAM.location,
       Config::GFX_HACK_FORCE_LOGICOP_BLEND.location,
 

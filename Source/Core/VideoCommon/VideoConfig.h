@@ -169,8 +169,6 @@ struct VideoConfig final
   bool bForceProgressive;
   bool bPerfQueriesEnable;
   bool bFullAsyncShaderCompilation;
-  bool bPredictiveFifo;
-  bool bWaitForShaderCompilation;
   bool bEnableGPUTextureDecoding;
   bool bEnableComputeTextureEncoding;
   bool bEFBEmulateFormatChanges;
@@ -203,7 +201,7 @@ struct VideoConfig final
   int iLog; // CONF_ bits
   int iSaveTargetId; // TODO: Should be dropped
 
-  // Stereoscopy
+                     // Stereoscopy
   int iStereoMode;
   int iStereoDepth;
   int iStereoConvergence;
@@ -232,6 +230,23 @@ struct VideoConfig final
   // Early command buffer execution interval in number of draws.
   // Currently only supported with Vulkan.
   int iCommandBufferExecuteInterval;
+
+  // The following options determine the ubershader mode:
+  //   No ubershaders:
+  //     - bBackgroundShaderCompiling = false
+  //     - bDisableSpecializedShaders = false
+  //   Hybrid/background compiling:
+  //     - bBackgroundShaderCompiling = true
+  //     - bDisableSpecializedShaders = false
+  //   Ubershaders only:
+  //     - bBackgroundShaderCompiling = false
+  //     - bDisableSpecializedShaders = true
+
+  // Enable background shader compiling, use ubershaders while waiting.
+  bool bBackgroundShaderCompiling;
+
+  // Use ubershaders only, don't compile specialized shaders.
+  bool bDisableSpecializedShaders;
 
   // Static config per API
   // TODO: Move this out of VideoConfig
@@ -276,6 +291,8 @@ struct VideoConfig final
     bool bSupportsReversedDepthRange;
     bool bSupportsInternalResolutionFrameDumps;
     bool bSupportsAsyncShaderCompilation;
+    bool bSupportsBitfield;                // Needed by UberShaders, so must stay in VideoCommon
+    bool bSupportsDynamicSamplerIndexing;  // Needed by UberShaders, so must stay in VideoCommon
   } backend_info;
 
   // Utility
@@ -303,6 +320,7 @@ struct VideoConfig final
   {
     return backend_info.bSupportsGPUTextureDecoding && bEnableGPUTextureDecoding;
   }
+  inline bool UseVertexRounding() const { return bVertexRounding && iEFBScale != SCALE_1X; }
 };
 
 extern VideoConfig g_Config;

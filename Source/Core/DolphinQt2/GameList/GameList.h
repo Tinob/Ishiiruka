@@ -32,6 +32,7 @@ signals:
   void EmulationStarted();
   void EmulationStopped();
   void NetPlayHost(const QString& game_id);
+  void SelectionChanged(QSharedPointer<GameFile> game_file);
 
 private:
   void ShowContextMenu(const QPoint&);
@@ -45,6 +46,7 @@ private:
   void UninstallWAD();
   void ExportWiiSave();
   void CompressISO();
+  void ChangeDisc();
   void OnHeaderViewChanged();
 
   void MakeListView();

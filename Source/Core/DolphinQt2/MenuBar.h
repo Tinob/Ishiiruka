@@ -9,6 +9,13 @@
 #include <QMenu>
 #include <QMenuBar>
 
+namespace DiscIO
+{
+enum class Region;
+};
+
+#include "DolphinQt2/GameList/GameFile.h"
+
 class MenuBar final : public QMenuBar
 {
   Q_OBJECT
@@ -21,9 +28,6 @@ public:
   void EmulationStopped();
   void UpdateStateSlotMenu();
   void UpdateToolsMenu(bool emulation_started);
-
-  // Tools
-  void InstallWAD();
 
 signals:
   // File
@@ -50,8 +54,12 @@ signals:
   void StateSaveOldest();
   void SetStateSlot(int slot);
   void BootWiiSystemMenu();
+  void ImportNANDBackup();
 
   void PerformOnlineUpdate(const std::string& region);
+
+  // Tools
+  void BootGameCubeIPL(DiscIO::Region region);
 
   // Options
   void Configure();
@@ -68,6 +76,16 @@ signals:
   void GameListRegionVisibilityToggled(const QString& row, bool visible);
 
   void ShowAboutDialog();
+
+  // Movie
+  void PlayRecording();
+  void StartRecording();
+  void StopRecording();
+  void ExportRecording();
+
+  void SelectionChanged(QSharedPointer<GameFile> game_file);
+  void RecordingStatusChanged(bool recording);
+  void ReadOnlyModeChanged(bool read_only);
 
 private:
   void AddFileMenu();
@@ -86,6 +104,16 @@ private:
   void AddOptionsMenu();
   void AddToolsMenu();
   void AddHelpMenu();
+  void AddMovieMenu();
+
+  void InstallWAD();
+  void ImportWiiSave();
+  void ExportWiiSaves();
+  void NANDExtractCertificates();
+
+  void OnSelectionChanged(QSharedPointer<GameFile> game_file);
+  void OnRecordingStatusChanged(bool recording);
+  void OnReadOnlyModeChanged(bool read_only);
 
   // File
   QAction* m_open_action;
@@ -95,6 +123,11 @@ private:
   QAction* m_wad_install_action;
   QMenu* m_perform_online_update_menu;
   QAction* m_perform_online_update_for_current_region;
+  QAction* m_ntscj_ipl;
+  QAction* m_ntscu_ipl;
+  QAction* m_pal_ipl;
+  QAction* m_import_backup;
+  QAction* m_extract_certificates;
 
   // Emulation
   QAction* m_play_action;
@@ -111,4 +144,11 @@ private:
   QActionGroup* m_state_slots;
   QMenu* m_state_load_slots_menu;
   QMenu* m_state_save_slots_menu;
+
+  // Movie
+  QAction* m_recording_export;
+  QAction* m_recording_play;
+  QAction* m_recording_start;
+  QAction* m_recording_stop;
+  QAction* m_recording_read_only;
 };

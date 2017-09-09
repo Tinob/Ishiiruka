@@ -17,7 +17,8 @@ constexpr ControlState INPUT_DETECT_THRESHOLD = 0.55;
 
 bool ControlReference::InputGateOn()
 {
-  return SConfig::GetInstance().m_BackgroundInput || Host_RendererHasFocus();
+  return SConfig::GetInstance().m_BackgroundInput || Host_RendererHasFocus() ||
+         Host_UINeedsControllerState();
 }
 
 //
@@ -27,7 +28,7 @@ bool ControlReference::InputGateOn()
 // need to call this to re-parse a control reference's expression after changing it
 //
 void ControlReference::UpdateReference(const ciface::Core::DeviceContainer& devices,
-  const ciface::Core::DeviceQualifier& default_device)
+                                       const ciface::Core::DeviceQualifier& default_device)
 {
   Expression* expr;
   ControlFinder finder(devices, default_device, IsInput());
@@ -110,7 +111,7 @@ ControlState OutputReference::State(const ControlState state)
 // else return nullptr
 //
 ciface::Core::Device::Control* InputReference::Detect(const unsigned int ms,
-  ciface::Core::Device* const device)
+                                                      ciface::Core::Device* const device)
 {
   unsigned int time = 0;
   std::vector<bool> states(device->Inputs().size());
@@ -121,7 +122,7 @@ ciface::Core::Device::Control* InputReference::Detect(const unsigned int ms,
   // get starting state of all inputs,
   // so we can ignore those that were activated at time of Detect start
   std::vector<ciface::Core::Device::Input *>::const_iterator i = device->Inputs().begin(),
-    e = device->Inputs().end();
+                                                             e = device->Inputs().end();
   for (std::vector<bool>::iterator state = states.begin(); i != e; ++i)
     *state++ = ((*i)->GetState() > (1 - INPUT_DETECT_THRESHOLD));
 
@@ -163,7 +164,7 @@ ciface::Core::Device::Control* InputReference::Detect(const unsigned int ms,
 // set all binded outputs to <range> power for x milliseconds return false
 //
 ciface::Core::Device::Control* OutputReference::Detect(const unsigned int ms,
-  ciface::Core::Device* const device)
+                                                       ciface::Core::Device* const device)
 {
   // ignore device
 

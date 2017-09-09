@@ -14,7 +14,7 @@ msgstr ""
 "Project-Id-Version: Dolphin Emulator\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2017-07-17 14:17+0200\n"
-"PO-Revision-Date: 2017-08-11 12:31+0000\n"
+"PO-Revision-Date: 2017-09-02 11:54+0000\n"
 "Last-Translator: JosJuice\n"
 "Language-Team: Swedish (http://www.transifex.com/delroth/dolphin-emu/"
 "language/sv/)\n"
@@ -5461,7 +5461,7 @@ msgstr "Perfekt"
 
 #: Source/Core/DolphinWX/MainMenuBar.cpp:246
 msgid "Perform Online System Update"
-msgstr "Uppdatera systemmjukvara"
+msgstr "Uppdatera systemmjukvaran via internet"
 
 #: Source/Core/DolphinWX/Cheats/CheatSearchTab.cpp:41
 msgid ""
@@ -8401,8 +8401,6 @@ msgid ""
 "Your GCM/ISO file seems to be invalid (invalid country).\n"
 "Continue with PAL region?"
 msgstr ""
-"Din GCM/ISO-fil verkar vara ogiltig (ogiltigt land).\n"
-"Vill du fortsätta med PAL-regionen?"
 
 #. i18n: Refers to a 3D axis (used when mapping motion controls)
 #: Source/Core/Core/HW/WiimoteEmu/Attachment/Nunchuk.cpp:54
@@ -8538,6 +8536,9 @@ msgstr "| ELLER"
 #~ msgid "All Save States (*.sav *.s##);; All Files (*)"
 #~ msgstr "Alla snabbsparningar (*.sav *.s##);; Alla filer (*)"
 
+#~ msgid "Always Hide Mouse Cursor"
+#~ msgstr "Dölj alltid muspekaren"
+
 #~ msgid "Apply"
 #~ msgstr "Verkställ"
 
@@ -8555,6 +8556,9 @@ msgstr "| ELLER"
 
 #~ msgid "Branch: "
 #~ msgstr "Gren: "
+
+#~ msgid "Buffer size changed to %1"
+#~ msgstr "Buffertstorleken ändrades till %1"
 
 #~ msgid "Can't start a NetPlay Session while a game is still running!"
 #~ msgstr ""
@@ -8692,6 +8696,9 @@ msgstr "| ELLER"
 #~ msgid "Enable Rumble"
 #~ msgstr "Vibration"
 
+#~ msgid "Enables Wii Remote vibration."
+#~ msgstr "Låter Wii-fjärrkontroller skaka."
+
 #~ msgid "Exclusive"
 #~ msgstr "Exklusivt"
 
@@ -8717,6 +8724,13 @@ msgstr "| ELLER"
 #~ "Failed to listen on port %1. Is another instance of the NetPlay server "
 #~ "running?"
 #~ msgstr "Misslyckades att lyssna på port %1. Körs nätspelsservern redan?"
+
+#~ msgid ""
+#~ "Failed to load %s. If you are using Windows 7, try installing the "
+#~ "KB4019990 update package."
+#~ msgstr ""
+#~ "Misslyckades att läsa in %s. Om du använder Windows 7, prova att "
+#~ "installera uppdateringspaketet KB4019990."
 
 #~ msgid "Failed to open '%1'"
 #~ msgstr "Misslyckades att öppna '%1'"
@@ -8803,7 +8817,7 @@ msgstr "| ELLER"
 #~ msgstr "Latens:"
 
 #~ msgid "Left Table"
-#~ msgstr "Vänster skivspelare"
+#~ msgstr "Vänster skiva"
 
 #~ msgid "List Columns"
 #~ msgstr "Listkolumner"
@@ -8856,6 +8870,9 @@ msgstr "| ELLER"
 #~ msgid "PNG image file (*.png);; All Files (*)"
 #~ msgstr "PNG-bildfil (*.png);; Alla filer (*)"
 
+#~ msgid "Perform System Update"
+#~ msgstr "Uppdatera systemmjukvaran"
+
 #~ msgid "Port %1"
 #~ msgstr "Uttag %1"
 
@@ -8877,7 +8894,7 @@ msgstr "| ELLER"
 #~ msgstr "Revision: "
 
 #~ msgid "Right Table"
-#~ msgstr "Höger skivspelare"
+#~ msgstr "Höger skiva"
 
 #~ msgid "Room ID"
 #~ msgstr "Rum-ID"
@@ -8956,6 +8973,20 @@ msgstr "| ELLER"
 
 #~ msgid "Successfully removed this title from the NAND."
 #~ msgstr "Titeln har tagits bort från NAND-minnet."
+
+#~ msgid "The game disc does not contain any usable update information."
+#~ msgstr ""
+#~ "Spelskivan innehåller inte någon uppdateringsinformation som går att "
+#~ "använda."
+
+#~ msgid ""
+#~ "The game's region does not match your console's. To avoid issues with the "
+#~ "system menu, it is not possible to update the emulated console using this "
+#~ "disc."
+#~ msgstr ""
+#~ "Spelets region matchar inte konsolens region. För att undvika problem med "
+#~ "systemmenyn kommer du inte kunna uppdatera den emulerade konsolen med den "
+#~ "här skivan."
 
 #~ msgid "The profile '%1' does not exist"
 #~ msgstr "Profilen '%1' finns inte"

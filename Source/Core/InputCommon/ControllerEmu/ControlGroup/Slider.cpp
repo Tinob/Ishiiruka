@@ -18,7 +18,7 @@
 namespace ControllerEmu
 {
 Slider::Slider(const std::string& name, const std::string& ui_name)
-  : ControlGroup(name, ui_name, GroupType::Slider)
+    : ControlGroup(name, ui_name, GroupType::Slider)
 {
   controls.emplace_back(std::make_unique<Input>("Left"));
   controls.emplace_back(std::make_unique<Input>("Right"));

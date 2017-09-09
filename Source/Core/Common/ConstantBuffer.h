@@ -89,6 +89,13 @@ public:
 
   }
   template<typename T>
+  __forceinline void SetConstant(unsigned int const_number, unsigned int index, T f1)
+  {
+    u32 idx = const_number * 4 + index;
+    ((T*)m_buffer)[idx] =  f1;
+    AddDirtyRegion(const_number, 1);
+  }
+  template<typename T>
   __forceinline void SetConstant4(unsigned int const_number, T f1, T f2, T f3, T f4)
   {
     u32 idx = const_number * 4;

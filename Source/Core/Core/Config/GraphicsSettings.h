@@ -78,6 +78,8 @@ extern const ConfigInfo<bool> GFX_ENABLE_VALIDATION_LAYER;
 extern const ConfigInfo<bool> GFX_BACKEND_MULTITHREADING;
 extern const ConfigInfo<int> GFX_COMMAND_BUFFER_EXECUTE_INTERVAL;
 extern const ConfigInfo<bool> GFX_SHADER_CACHE;
+extern const ConfigInfo<bool> GFX_BACKGROUND_SHADER_COMPILING;
+extern const ConfigInfo<bool> GFX_DISABLE_SPECIALIZED_SHADERS;
 
 extern const ConfigInfo<bool> GFX_SW_ZCOMPLOC;
 extern const ConfigInfo<bool> GFX_SW_ZFREEZE;
@@ -131,7 +133,6 @@ extern const ConfigInfo<bool> GFX_HACK_EFB_EMULATE_FORMAT_CHANGES;
 extern const ConfigInfo<bool> GFX_HACK_VERTEX_ROUDING;
 extern const ConfigInfo<bool> GFX_HACK_FORCE_DUAL_SOURCE;
 extern const ConfigInfo<bool> GFX_HACK_FULL_ASYNC_SHADER_COMPILATION;
-extern const ConfigInfo<bool> GFX_HACK_WAIT_FOR_SHADER_COMPILATION;
 extern const ConfigInfo<bool> GFX_HACK_LAST_HISTORY_EFBTORAM;
 extern const ConfigInfo<bool> GFX_HACK_FORCE_LOGICOP_BLEND;
 

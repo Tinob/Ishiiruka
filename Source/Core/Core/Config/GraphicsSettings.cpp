@@ -99,6 +99,11 @@ const ConfigInfo<int> GFX_COMMAND_BUFFER_EXECUTE_INTERVAL{
     {System::GFX, "Settings", "CommandBufferExecuteInterval"}, 100};
 const ConfigInfo<bool> GFX_SHADER_CACHE{{System::GFX, "Settings", "ShaderCache"}, true};
 
+const ConfigInfo<bool> GFX_BACKGROUND_SHADER_COMPILING{
+  { System::GFX, "Settings", "BackgroundShaderCompiling" }, false };
+const ConfigInfo<bool> GFX_DISABLE_SPECIALIZED_SHADERS{
+  { System::GFX, "Settings", "DisableSpecializedShaders" }, false };
+
 const ConfigInfo<bool> GFX_SW_ZCOMPLOC{{System::GFX, "Settings", "SWZComploc"}, true};
 const ConfigInfo<bool> GFX_SW_ZFREEZE{{System::GFX, "Settings", "SWZFreeze"}, true};
 const ConfigInfo<bool> GFX_SW_DUMP_OBJECTS{{System::GFX, "Settings", "SWDumpObjects"}, false};
@@ -169,7 +174,6 @@ const ConfigInfo<bool> GFX_HACK_VERTEX_ROUDING{{System::GFX, "Hacks", "VertexRou
 
 const ConfigInfo<bool> GFX_HACK_FORCE_DUAL_SOURCE{ { System::GFX, "Hacks", "ForceDualSourceBlend" }, false };
 const ConfigInfo<bool> GFX_HACK_FULL_ASYNC_SHADER_COMPILATION{ { System::GFX, "Hacks", "FullAsyncShaderCompilation" }, false };
-const ConfigInfo<bool> GFX_HACK_WAIT_FOR_SHADER_COMPILATION{ { System::GFX, "Hacks", "WaitForShaderCompilation" }, false };
 const ConfigInfo<bool> GFX_HACK_LAST_HISTORY_EFBTORAM{ { System::GFX, "Hacks", "LastStoryEFBToRam" }, false };
 const ConfigInfo<bool> GFX_HACK_FORCE_LOGICOP_BLEND{ { System::GFX, "Hacks", "ForceLogicOpBlend" }, false };
 

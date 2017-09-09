@@ -27,7 +27,7 @@ msgstr ""
 "Project-Id-Version: Dolphin Emulator\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2017-07-17 14:17+0200\n"
-"PO-Revision-Date: 2017-08-11 12:31+0000\n"
+"PO-Revision-Date: 2017-09-02 11:54+0000\n"
 "Last-Translator: JosJuice\n"
 "Language-Team: Portuguese (Brazil) (http://www.transifex.com/delroth/dolphin-"
 "emu/language/pt_BR/)\n"
@@ -8464,8 +8464,6 @@ msgid ""
 "Your GCM/ISO file seems to be invalid (invalid country).\n"
 "Continue with PAL region?"
 msgstr ""
-"Seu arquivo GCM/ISO parece ser inválido (país inválido).\n"
-"Continuar com a região PAL?"
 
 #. i18n: Refers to a 3D axis (used when mapping motion controls)
 #: Source/Core/Core/HW/WiimoteEmu/Attachment/Nunchuk.cpp:54
@@ -8562,6 +8560,30 @@ msgstr "| OR"
 #~ msgid "8x"
 #~ msgstr "8x"
 
+#~ msgid ""
+#~ "<p>DolphinQt is a new experimental GUI that is intended to replace the "
+#~ "current GUI based on wxWidgets. The implementation is <b>currently "
+#~ "incomplete</b> so some functionality (like changing certain settings) may "
+#~ "be missing.</p>\n"
+#~ "<p>Only developers working on the DolphinQt implementation and curious "
+#~ "testers should use it at the present time; normal users are recommended "
+#~ "to continue using the older DolphinWX GUI for the time being.</p>\n"
+#~ "<h3>Bug Reports</h3><p>At the current time there is no point making bug "
+#~ "reports about DolphinQt GUI's missing features as the developers are "
+#~ "already aware of those.</p>\n"
+#~ msgstr ""
+#~ "<p>O DolphinQt é uma nova interface experimental que se destina a "
+#~ "substituir a interface atual baseada no wxWidgets. A implementação é "
+#~ "<b>atualmente incompleta</b>, portanto, algumas funcionalidades (como "
+#~ "alterar certas configurações) podem estar faltando.</p>\n"
+#~ "<p> Somente os desenvolvedores que trabalham na implementação do "
+#~ "DolphinQt e testadores curiosos devem usá-lo no momento atual; recomenda-"
+#~ "se que os usuários normais continuem usando a interface DolphinWX mais "
+#~ "antiga por enquanto. </p>\n"
+#~ "<h3>Relatórios de erros</h3><p>No momento atual, não há nenhum motivo "
+#~ "para relatar erros sobre os recursos em falta na interface DolphinQt, "
+#~ "pois os desenvolvedores já estão cientes disso. </p>\n"
+
 #~ msgid "A NetPlay Session is already in progress!"
 #~ msgstr "Uma Sessão NetPlay já está em progresso!"
 
@@ -8577,6 +8599,9 @@ msgstr "| OR"
 
 #~ msgid "All Save States (*.sav *.s##);; All Files (*)"
 #~ msgstr "Estados Salvos (*.sav *.s##);; Todos os Arquivos (*)"
+
+#~ msgid "Always Hide Mouse Cursor"
+#~ msgstr "Sempre Ocultar Cursor do Mouse"
 
 #~ msgid "Apply"
 #~ msgstr "Aplicar"
@@ -8595,6 +8620,9 @@ msgstr "| OR"
 
 #~ msgid "Branch: "
 #~ msgstr "Ramo:"
+
+#~ msgid "Buffer size changed to %1"
+#~ msgstr "Tamanho do buffer alterado para %1"
 
 #~ msgid "Can't start a NetPlay Session while a game is still running!"
 #~ msgstr ""
@@ -8731,6 +8759,9 @@ msgstr "| OR"
 #~ msgid "Enable Rumble"
 #~ msgstr "Ativar Vibração"
 
+#~ msgid "Enables Wii Remote vibration."
+#~ msgstr "Habilita a vibração do Wii Remote."
+
 #~ msgid "Exclusive"
 #~ msgstr "Exclusivo"
 
@@ -8758,6 +8789,13 @@ msgstr "| OR"
 #~ msgstr ""
 #~ "Falha ao escutar a porta %1. Outra instância do servidor NetPlay está em "
 #~ "execução?"
+
+#~ msgid ""
+#~ "Failed to load %s. If you are using Windows 7, try installing the "
+#~ "KB4019990 update package."
+#~ msgstr ""
+#~ "Falha ao carregar %s. Se você usa o Windows 7, tente instalar o pacote de "
+#~ "atualização KB4019990."
 
 #~ msgid "Failed to open '%1'"
 #~ msgstr "Falha ao abrir '%1'"
@@ -8897,6 +8935,9 @@ msgstr "| OR"
 #~ msgid "PNG image file (*.png);; All Files (*)"
 #~ msgstr "Arquivo de imagem PNG (*.png);; Todos os Arquivos (*)"
 
+#~ msgid "Perform System Update"
+#~ msgstr "Executar Atualização do Sistema"
+
 #~ msgid "Port %1"
 #~ msgstr "Porta %1"
 
@@ -8997,6 +9038,19 @@ msgstr "| OR"
 #~ msgid "Successfully removed this title from the NAND."
 #~ msgstr "Título removido com sucesso da NAND."
 
+#~ msgid "The game disc does not contain any usable update information."
+#~ msgstr ""
+#~ "O disco do jogo não contém nenhuma informação de atualização utilizável."
+
+#~ msgid ""
+#~ "The game's region does not match your console's. To avoid issues with the "
+#~ "system menu, it is not possible to update the emulated console using this "
+#~ "disc."
+#~ msgstr ""
+#~ "A região do jogo não corresponde ao seu console. Para evitar problemas "
+#~ "com o menu do sistema, não é possível atualizar o console emulado usando "
+#~ "este disco."
+
 #~ msgid "The profile '%1' does not exist"
 #~ msgstr "Esse perfil '%1' não existe"
 
@@ -9011,6 +9065,9 @@ msgstr "| OR"
 
 #~ msgid "Traversal Error"
 #~ msgstr "Erro Traversal"
+
+#~ msgid "Ubershaders:"
+#~ msgstr "Ubershaders:"
 
 #~ msgid "Uncompressed GC/Wii images (*.iso *.gcm)"
 #~ msgstr "Imagens descompactadas do GC/Wii (*.iso *.gcm)"

@@ -12,6 +12,9 @@
 #include <QIcon>
 #include <QMessageBox>
 #include <QMimeData>
+#include <QProgressDialog>
+
+#include <future>
 
 #include "Common/Common.h"
 
@@ -33,6 +36,8 @@
 #include "Core/NetPlayServer.h"
 #include "Core/State.h"
 
+#include "DiscIO/NANDImporter.h"
+
 #include "DolphinQt2/AboutDialog.h"
 #include "DolphinQt2/Config/ControllersWindow.h"
 #include "DolphinQt2/Config/Graphics/GraphicsWindow.h"
@@ -44,6 +49,7 @@
 #include "DolphinQt2/MainWindow.h"
 #include "DolphinQt2/NetPlay/NetPlayDialog.h"
 #include "DolphinQt2/NetPlay/NetPlaySetupDialog.h"
+#include "DolphinQt2/QtUtils/QueueOnObject.h"
 #include "DolphinQt2/QtUtils/WindowActivationEventFilter.h"
 #include "DolphinQt2/Resources.h"
 #include "DolphinQt2/Settings.h"
@@ -199,9 +205,17 @@ void MainWindow::ConnectMenuBar()
   connect(m_menu_bar, &MenuBar::ConfigureHotkeys, this, &MainWindow::ShowHotkeyDialog);
 
   // Tools
+  connect(m_menu_bar, &MenuBar::BootGameCubeIPL, this, &MainWindow::OnBootGameCubeIPL);
+  connect(m_menu_bar, &MenuBar::ImportNANDBackup, this, &MainWindow::OnImportNANDBackup);
   connect(m_menu_bar, &MenuBar::PerformOnlineUpdate, this, &MainWindow::PerformOnlineUpdate);
   connect(m_menu_bar, &MenuBar::BootWiiSystemMenu, this, &MainWindow::BootWiiSystemMenu);
   connect(m_menu_bar, &MenuBar::StartNetPlay, this, &MainWindow::ShowNetPlaySetupDialog);
+
+  // Movie
+  connect(m_menu_bar, &MenuBar::PlayRecording, this, &MainWindow::OnPlayRecording);
+  connect(m_menu_bar, &MenuBar::StartRecording, this, &MainWindow::OnStartRecording);
+  connect(m_menu_bar, &MenuBar::StopRecording, this, &MainWindow::OnStopRecording);
+  connect(m_menu_bar, &MenuBar::ExportRecording, this, &MainWindow::OnExportRecording);
 
   // View
   connect(m_menu_bar, &MenuBar::ShowList, m_game_list, &GameList::SetListView);
@@ -219,6 +233,9 @@ void MainWindow::ConnectMenuBar()
   connect(this, &MainWindow::EmulationStarted, m_menu_bar, &MenuBar::EmulationStarted);
   connect(this, &MainWindow::EmulationPaused, m_menu_bar, &MenuBar::EmulationPaused);
   connect(this, &MainWindow::EmulationStopped, m_menu_bar, &MenuBar::EmulationStopped);
+  connect(m_game_list, &GameList::SelectionChanged, m_menu_bar, &MenuBar::SelectionChanged);
+  connect(this, &MainWindow::ReadOnlyModeChanged, m_menu_bar, &MenuBar::ReadOnlyModeChanged);
+  connect(this, &MainWindow::RecordingStatusChanged, m_menu_bar, &MenuBar::RecordingStatusChanged);
 
   connect(this, &MainWindow::EmulationStarted, this,
           [=]() { m_controllers_window->OnEmulationStateChanged(true); });
@@ -240,6 +257,16 @@ void MainWindow::ConnectHotkeys()
           &MainWindow::StateSaveSlot);
   connect(m_hotkey_scheduler, &HotkeyScheduler::SetStateSlotHotkey, this,
           &MainWindow::SetStateSlot);
+
+  connect(m_hotkey_scheduler, &HotkeyScheduler::StartRecording, this,
+          &MainWindow::OnStartRecording);
+  connect(m_hotkey_scheduler, &HotkeyScheduler::ExportRecording, this,
+          &MainWindow::OnExportRecording);
+  connect(m_hotkey_scheduler, &HotkeyScheduler::ToggleReadOnlyMode, [this] {
+    bool read_only = !Movie::IsReadOnly();
+    Movie::SetReadOnly(read_only);
+    emit ReadOnlyModeChanged(read_only);
+  });
 }
 
 void MainWindow::ConnectToolBar()
@@ -345,10 +372,10 @@ void MainWindow::OnStopComplete()
     QGuiApplication::instance()->quit();
 
   // If the current emulation prevented the booting of another, do that now
-  if (!m_pending_boot.isEmpty())
+  if (m_pending_boot != nullptr)
   {
-    StartGame(m_pending_boot);
-    m_pending_boot.clear();
+    StartGame(std::move(m_pending_boot));
+    m_pending_boot.reset();
   }
 }
 
@@ -447,6 +474,11 @@ void MainWindow::ScreenShot()
 
 void MainWindow::StartGame(const QString& path)
 {
+  StartGame(BootParameters::GenerateFromFile(path.toStdString()));
+}
+
+void MainWindow::StartGame(std::unique_ptr<BootParameters>&& parameters)
+{
   // If we're running, only start a new game once we've stopped the last.
   if (Core::GetState() != Core::State::Uninitialized)
   {
@@ -454,11 +486,11 @@ void MainWindow::StartGame(const QString& path)
       return;
 
     // As long as the shutdown isn't complete, we can't boot, so let's boot later
-    m_pending_boot = path;
+    m_pending_boot = std::move(parameters);
     return;
   }
   // Boot up, show an error if it fails to load the game.
-  if (!BootManager::BootCore(BootParameters::GenerateFromFile(path.toStdString())))
+  if (!BootManager::BootCore(std::move(parameters)))
   {
     QMessageBox::critical(this, tr("Error"), tr("Failed to init core"), QMessageBox::Ok);
     return;
@@ -637,7 +669,8 @@ void MainWindow::NetPlayInit()
   m_netplay_setup_dialog = new NetPlaySetupDialog(this);
   m_netplay_dialog = new NetPlayDialog(this);
 
-  connect(m_netplay_dialog, &NetPlayDialog::Boot, this, &MainWindow::StartGame);
+  connect(m_netplay_dialog, &NetPlayDialog::Boot, this,
+          static_cast<void (MainWindow::*)(const QString&)>(&MainWindow::StartGame));
   connect(m_netplay_dialog, &NetPlayDialog::Stop, this, &MainWindow::RequestStop);
   connect(m_netplay_dialog, &NetPlayDialog::rejected, this, &MainWindow::NetPlayQuit);
   connect(this, &MainWindow::EmulationStopped, m_netplay_dialog, &NetPlayDialog::EmulationStopped);
@@ -818,4 +851,140 @@ void MainWindow::dropEvent(QDropEvent* event)
 QSize MainWindow::sizeHint() const
 {
   return QSize(800, 600);
+}
+
+void MainWindow::OnBootGameCubeIPL(DiscIO::Region region)
+{
+  StartGame(std::make_unique<BootParameters>(BootParameters::IPL{region}));
+}
+
+void MainWindow::OnImportNANDBackup()
+{
+  auto response = QMessageBox::question(
+      this, tr("Question"),
+      tr("Merging a new NAND over your currently selected NAND will overwrite any channels "
+         "and savegames that already exist. This process is not reversible, so it is "
+         "recommended that you keep backups of both NANDs. Are you sure you want to "
+         "continue?"));
+
+  if (response == QMessageBox::No)
+    return;
+
+  QString file = QFileDialog::getOpenFileName(this, tr("Select the save file"), QDir::currentPath(),
+                                              tr("BootMii NAND backup file (*.bin);;"
+                                                 "All Files (*)"));
+
+  if (file.isEmpty())
+    return;
+
+  QProgressDialog* dialog = new QProgressDialog(this);
+  dialog->setMinimum(0);
+  dialog->setMaximum(0);
+  dialog->setLabelText(tr("Importing NAND backup"));
+  dialog->setCancelButton(nullptr);
+
+  auto beginning = QDateTime::currentDateTime().toMSecsSinceEpoch();
+
+  auto result = std::async(std::launch::async, [&] {
+    DiscIO::NANDImporter().ImportNANDBin(file.toStdString(), [&dialog, beginning] {
+      QueueOnObject(dialog, [&dialog, beginning] {
+        dialog->setLabelText(
+            tr("Importing NAND backup\n Time elapsed: %1s")
+                .arg((QDateTime::currentDateTime().toMSecsSinceEpoch() - beginning) / 1000));
+      });
+    });
+    QueueOnObject(dialog, [dialog] { dialog->close(); });
+  });
+
+  dialog->exec();
+
+  result.wait();
+
+  m_menu_bar->UpdateToolsMenu(Core::IsRunning());
+}
+
+void MainWindow::OnPlayRecording()
+{
+  QString dtm_file = QFileDialog::getOpenFileName(this, tr("Select The Recording File"), QString(),
+                                                  tr("Dolphin TAS Movies (*.dtm)"));
+
+  if (dtm_file.isEmpty())
+    return;
+
+  if (!Movie::IsReadOnly())
+  {
+    // let's make the read-only flag consistent at the start of a movie.
+    Movie::SetReadOnly(true);
+    emit ReadOnlyModeChanged(true);
+  }
+
+  if (Movie::PlayInput(dtm_file.toStdString()))
+  {
+    emit RecordingStatusChanged(true);
+
+    Play();
+  }
+}
+
+void MainWindow::OnStartRecording()
+{
+  if ((!Core::IsRunningAndStarted() && Core::IsRunning()) || Movie::IsRecordingInput() ||
+      Movie::IsPlayingInput())
+    return;
+
+  if (Movie::IsReadOnly())
+  {
+    // The user just chose to record a movie, so that should take precedence
+    Movie::SetReadOnly(false);
+    emit ReadOnlyModeChanged(true);
+  }
+
+  int controllers = 0;
+
+  for (int i = 0; i < 4; i++)
+  {
+    if (SerialInterface::SIDevice_IsGCController(SConfig::GetInstance().m_SIDevice[i]))
+      controllers |= (1 << i);
+
+    if (g_wiimote_sources[i] != WIIMOTE_SRC_NONE)
+      controllers |= (1 << (i + 4));
+  }
+
+  if (Movie::BeginRecordingInput(controllers))
+  {
+    emit RecordingStatusChanged(true);
+
+    if (!Core::IsRunning())
+      Play();
+  }
+}
+
+void MainWindow::OnStopRecording()
+{
+  if (Movie::IsRecordingInput())
+    OnExportRecording();
+
+  Movie::EndPlayInput(false);
+  emit RecordingStatusChanged(true);
+}
+
+void MainWindow::OnExportRecording()
+{
+  bool was_paused = Core::GetState() == Core::State::Paused;
+
+  if (was_paused)
+    Core::SetState(Core::State::Paused);
+
+  QString dtm_file = QFileDialog::getSaveFileName(this, tr("Select The Recording File"), QString(),
+                                                  tr("Dolphin TAS Movies (*.dtm)"));
+
+  if (was_paused)
+    Core::SetState(Core::State::Running);
+
+  if (dtm_file.isEmpty())
+    return;
+
+  Core::SetState(Core::State::Running);
+
+  Movie::SaveRecording(dtm_file.toStdString());
 }

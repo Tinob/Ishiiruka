@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: Dolphin Emulator\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2017-07-17 14:17+0200\n"
-"PO-Revision-Date: 2017-08-11 12:31+0000\n"
+"PO-Revision-Date: 2017-09-02 11:54+0000\n"
 "Last-Translator: JosJuice\n"
 "Language-Team: Polish (http://www.transifex.com/delroth/dolphin-emu/language/"
 "pl/)\n"
@@ -642,7 +642,7 @@ msgstr "3D"
 #: Source/Core/Core/HotkeyManager.cpp:256
 #, fuzzy
 msgid "3D depth"
-msgstr "Głębia:"
+msgstr "Głębia 3D"
 
 #: Source/Core/DolphinWX/VideoConfigDiag.cpp:518
 msgid "3x Native (1920x1584) for 1080p"
@@ -1131,12 +1131,14 @@ msgid "Auto (Multiple of 640x528)"
 msgstr "Auto (wielokrotność 640x528)"
 
 #: Source/Core/DolphinWX/VideoConfigDiag.cpp:512
+#, fuzzy
 msgid "Auto (Window Size)"
-msgstr ""
+msgstr "Automatycznie dopasuj rozmiar okna"
 
 #: Source/Core/DolphinWX/VideoConfigDiag.cpp:445
+#, fuzzy
 msgid "Auto Adjust Window Size"
-msgstr ""
+msgstr "Automatycznie dopasuj rozmiar okna"
 
 #: Source/Core/DolphinWX/VideoConfigDiag.cpp:126
 msgid ""
@@ -1324,7 +1326,7 @@ msgstr "Szukaj folderu wyjściowego"
 
 #: Source/Core/DolphinWX/Config/AudioConfigPane.cpp:52
 msgid "Buffer Size:"
-msgstr ""
+msgstr "Rozmiar bufora:"
 
 #: Source/Core/DolphinWX/NetPlay/NetWindow.cpp:253
 msgid "Buffer:"
@@ -8208,8 +8210,6 @@ msgid ""
 "Your GCM/ISO file seems to be invalid (invalid country).\n"
 "Continue with PAL region?"
 msgstr ""
-"Twój plik GCM/ISO wygląda na niewłaściwy (niewłaściwy kraj).\n"
-"Kontynuować w regionie PAL?"
 
 #. i18n: Refers to a 3D axis (used when mapping motion controls)
 #: Source/Core/Core/HW/WiimoteEmu/Attachment/Nunchuk.cpp:54
@@ -8269,3 +8269,21 @@ msgstr "| OR"
 
 #~ msgid "%1 ms"
 #~ msgstr "%1 ms"
+
+#~ msgid "All Save States (*.sav *.s##);; All Files (*)"
+#~ msgstr "Wszystkie stany zapisu (*.sav *.s##);; wszystkie pliki (*)"
+
+#~ msgid "Always Hide Mouse Cursor"
+#~ msgstr "Zawsze ukrywaj kursor myszy"
+
+#~ msgid "Apply"
+#~ msgstr "Zastosuj"
+
+#~ msgid "Branch: "
+#~ msgstr "Gałąź:"
+
+#~ msgid "Cancel"
+#~ msgstr "Anuluj"
+
+#~ msgid "Configuration"
+#~ msgstr "Konfiguracja"

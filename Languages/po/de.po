@@ -33,7 +33,7 @@ msgstr ""
 "Project-Id-Version: Dolphin Emulator\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2017-07-17 14:17+0200\n"
-"PO-Revision-Date: 2017-08-11 12:31+0000\n"
+"PO-Revision-Date: 2017-09-02 11:54+0000\n"
 "Last-Translator: JosJuice\n"
 "Language-Team: German (http://www.transifex.com/delroth/dolphin-emu/language/"
 "de/)\n"
@@ -53,8 +53,8 @@ msgstr ""
 "\n"
 "Dolphin ist ein freier und quelloffener Gamecube- und Wii-Emulator.\n"
 "\n"
-"Dieses Programm sollte nicht verwendet werden, um Spiele zu spielen, die du "
-"nicht legal besitzt.\n"
+"Dieses Programm sollte nicht verwendet werden, um Spiele zu spielen, die Sie "
+"nicht legal besitzen.\n"
 
 #: Source/Core/DolphinWX/NetPlay/NetWindow.cpp:773
 msgid " (internal IP)"
@@ -236,8 +236,8 @@ msgid ""
 " Verify your write permissions or move the file outside of Dolphin"
 msgstr ""
 "%s ist kein Verzeichnis, verschieben nach *.original fehlgeschlagen.\n"
-"Überprüfe deine Schreibberechtigungen oder verschiebe die Datei nach "
-"außerhalb von Dolphin"
+"Überprüfen Sie Ihre Schreibberechtigungen oder verschieben Sie die Datei "
+"nach außerhalb von Dolphin"
 
 #: Source/Core/Core/HW/EXI/EXI_DeviceMemoryCard.cpp:188
 #, c-format
@@ -423,7 +423,7 @@ msgstr "&JIT"
 
 #: Source/Core/DolphinWX/MainMenuBar.cpp:373
 msgid "&JIT Block Linking Off"
-msgstr "&JIT Blockverbindung Aus"
+msgstr "&JIT-Blockverbindung Aus"
 
 #: Source/Core/DolphinWX/MainMenuBar.cpp:397
 msgid "&JIT FloatingPoint Off"
@@ -728,7 +728,7 @@ msgid ""
 "current emulation before it completes. Force stop?"
 msgstr ""
 "Eine Abschaltung ist bereits im Gange. Nicht gespeicherte Daten können "
-"verloren gehen, wenn du die aktuelle Emulation stoppst, bevor sie "
+"verloren gehen, wenn Sie die aktuelle Emulation stoppen, bevor sie "
 "abgeschlossen ist. Stopp erzwingen?"
 
 #: Source/Core/DolphinWX/ControllerConfigDiag.cpp:358
@@ -736,8 +736,8 @@ msgid ""
 "A supported Bluetooth device could not be found,\n"
 "so you must connect Wii Remotes manually."
 msgstr ""
-"Es wurde kein unterstütztes Bluetooth-Gerät gefunden.\n"
-"Du musst deine Wiimotes manuell verbinden."
+"Es wurde kein unterstütztes Bluetooth-Gerät gefunden,\n"
+"Sie müssen Ihre Wiimotes manuell verbinden."
 
 #: Source/Core/DolphinWX/ControllerConfigDiag.cpp:550
 msgid "A sync can only be triggered when a Wii game is running."
@@ -1187,12 +1187,11 @@ msgid ""
 "to rebuild and retry it several times, either with changes to Dolphin or if "
 "you are developing a homebrew game.]"
 msgstr ""
-"Lade automatisch das Standard-ISO wenn Dolphin startet, oder das letzte "
-"geladene Spiel, wenn du ihm keine elf-Datei mit der --elf-Kommandozeile "
-"gegeben hast. [Dies kann beim Bug-Testing eines bestimmten Spiels hilfreich "
-"sein, wenn du das Spiel mehrere Male rekompilierst und neu startest; "
-"entweder mit Änderungen an Dolphin, oder wenn du ein Homebrew-Spiel "
-"entwickelst.]"
+"Automatisch das Standard-ISO laden, wenn Dolphin startet, oder das letzte "
+"geladene Spiel, wenn Sie ihm keine elf-Datei mit der --elf-Kommandozeile "
+"gegeben haben. [Dies kann beim Bug-Testing eines bestimmten Spiels hilfreich "
+"sein, wenn Sie das Spiel mehrere Male rekompiliert und neu starten; entweder "
+"mit Änderungen an Dolphin, oder wenn Sie ein Homebrew-Spiel entwickeln.]"
 
 #: Source/Core/DolphinWX/MainMenuBar.cpp:378
 msgid ""
@@ -1572,7 +1571,7 @@ msgstr "Standard ISO auswählen:"
 
 #: Source/Core/DolphinWX/Config/PathConfigPane.cpp:171
 msgid "Choose a directory to add"
-msgstr "Ordner zum Hinzufügen auswählen."
+msgstr "Verzeichnis zum Hinzufügen auswählen."
 
 #: Source/Core/DolphinWX/Config/PathConfigPane.cpp:60
 msgid "Choose a dump directory:"
@@ -1608,7 +1607,7 @@ msgstr "Sekundäre Eingabedatei auswählen"
 #: Source/Core/DolphinWX/ISOProperties/FilesystemPanel.cpp:248
 #: Source/Core/DolphinWX/ISOProperties/FilesystemPanel.cpp:275
 msgid "Choose the folder to extract to"
-msgstr "Zielordner zum Extrahieren auswählen"
+msgstr "Ordner zum Extrahieren auswählen"
 
 #: Source/Core/InputCommon/ControllerEmu/ControlGroup/Tilt.cpp:30
 msgid "Circle Stick"
@@ -1996,13 +1995,13 @@ msgid ""
 msgstr ""
 "Die Speicherkartendatei %s konnte nicht geschrieben werden.\n"
 "\n"
-"Dies tritt auf, wenn du Dolphin von einem nicht schreibbaren Medium, "
-"beispielsweise einer CD/DVD ausführst oder die Datei als schreibgeschützt "
+"Dies tritt auf, wenn Sie Dolphin von einem nicht schreibbaren Medium, "
+"beispielsweise einer CD/DVD ausführen oder die Datei als schreibgeschützt "
 "markiert ist.\n"
 "\n"
-"Eine weitere Möglichkeit ist, dass du den Dolphin-Ordner verschoben hast.\n"
+"Eine weitere Möglichkeit ist, dass Sie den Dolphin-Ordner verschoben hast.\n"
 "\n"
-"Wenn einer dieser Fälle zutriffst, solltest du den Speicherort der "
+"Wenn einer dieser Fälle zutriffst, sollten Sie den Speicherort der "
 "Speicherkarte in den Optionen ändern."
 
 #: Source/Core/Core/NetPlayClient.cpp:90
@@ -2289,7 +2288,7 @@ msgstr "Erkenne"
 
 #: Source/Core/DolphinWX/ISOProperties/ISOProperties.cpp:288
 msgid "Deterministic dual core: "
-msgstr "Deterministischer Dual Core: "
+msgstr "Deterministischer Doppelkern: "
 
 #: Source/Core/DolphinWX/Input/InputConfigDiag.cpp:214
 #: Source/Core/DolphinWX/Input/InputConfigDiag.cpp:1186
@@ -2650,8 +2649,8 @@ msgid ""
 "driver."
 msgstr ""
 "FEHLER: Diese Version von Dolphin benötigt einen TAP-Win32-Treiber, mit "
-"mindestens Version %d.%d -- Wenn du Dolphin kürzlich aktualisiert hast, ist "
-"eventuell ein Neustart nötig, damit Windows den neuen Treiber erkennt."
+"mindestens Version %d.%d -- Wenn Sie Dolphin kürzlich aktualisiert haben, "
+"ist eventuell ein Neustart nötig, damit Windows den neuen Treiber erkennt."
 
 #: Source/Core/DolphinWX/FifoPlayerDlg.cpp:101
 msgid "Early Memory Updates"
@@ -2852,8 +2851,8 @@ msgid ""
 "\n"
 "If unsure, leave this unchecked."
 msgstr ""
-"Aktiviere dies, wenn du den ganzen Bildschirm zum Rendern verwenden "
-"möchtest.\n"
+"Aktivieren Sie dies, wenn Sie den ganzen Bildschirm zum Rendern verwenden "
+"möchten.\n"
 "Wenn dies deaktiviert ist, wird ein Renderfenster erstellt.\n"
 "\n"
 "Im Zweifel deaktiviert lassen."
@@ -2865,8 +2864,8 @@ msgid ""
 "\n"
 "If unsure, leave this unchecked."
 msgstr ""
-"Aktiviere dies, wenn du das Hauptfenster von Dolphin zum Rendern verwenden "
-"willst anstelle eines getrennten Renderfensters.\n"
+"Aktivieren Sie dies, wenn Sie das Hauptfenster von Dolphin zum Rendern "
+"verwenden möchten anstelle eines getrennten Renderfensters.\n"
 "\n"
 "Im Zweifel deaktiviert lassen."
 
@@ -3271,8 +3270,8 @@ msgid ""
 "media can be written."
 msgstr ""
 "Öffnen der Ausgabedatei \"%s\" fehlgeschlagen.\n"
-"Überprüfe ob du über Schreibrechte im Zielordner verfügst und ob das Medium "
-"beschreibbar ist."
+"Überprüfen Sie, ob Sie über Schreibrechte im Zielordner verfügen und ob das "
+"Medium beschreibbar ist."
 
 #: Source/Core/Core/Movie.cpp:1001
 #, c-format
@@ -3813,7 +3812,7 @@ msgid ""
 msgstr ""
 "GFX FIFO: Unbekannter Befehl (0X%02x @ %p, %s).\n"
 "Das bedeutet eines der folgenden Dinge:\n"
-"* Die emulierte GPU ist nicht mehr synchron, das deaktivieren von Dual Core "
+"* Die emulierte GPU ist nicht mehr synchron, das deaktivieren von Doppelkern "
 "kann helfen\n"
 "* Der Befehlsstrom wurde durch einen Speicherfehler beschädigt\n"
 "* Dies ist wirklich ein unbekannter Befehl (unwahrscheinlich)\n"
@@ -4012,8 +4011,8 @@ msgid ""
 "Hash tap count is set to %d which is non-standard.\n"
 "You will need to edit the INI manually."
 msgstr ""
-"Der Hashtap-Zähler ist auf %d gesetzt, dies ist nicht standardgemäß. Du "
-"musst die INI manuell bearbeiten."
+"Der Hashtap-Zähler ist auf %d gesetzt, dies ist nicht standardgemäß. Sie "
+"müssen die INI manuell bearbeiten."
 
 #: Source/Core/DolphinWX/NetPlay/MD5Dialog.cpp:94
 #, fuzzy
@@ -4865,7 +4864,8 @@ msgid ""
 msgstr ""
 "Benötigte Zeit für das Rendern jedes Frames in User/Logs/render_time.txt "
 "loggen.\n"
-"Verwende diese Funktion wenn du die Leistung von Dolphin messen willst.\n"
+"Verwenden Sie diese Funktion, wenn Sie die Leistung von Dolphin messen "
+"möchten.\n"
 "\n"
 "Im Zweifel deaktiviert lassen."
 
@@ -4977,7 +4977,7 @@ msgid ""
 "%s\n"
 "Would you like to copy the old file to this new location?\n"
 msgstr ""
-"Der Speicherkarten-Dateiname in Slot %c is ungültig.\n"
+"Der Speicherkarten-Dateiname in Slot %c ist ungültig.\n"
 "Region ist nicht festgelegt.\n"
 "\n"
 "Slot %c Pfad wurde geändert zu:\n"
@@ -5240,7 +5240,7 @@ msgstr "Kein gültiges Hex"
 
 #: Source/Core/DolphinWX/NetPlay/NetWindow.cpp:362
 msgid "Not all players have the game. Do you really want to start?"
-msgstr "Nicht alle Spieler besitzen das Spiel. Möchtest du trotzdem starten?"
+msgstr "Nicht alle Spieler besitzen das Spiel. Möchten Sie trotzdem starten?"
 
 #: Source/Core/DolphinWX/Main.cpp:473
 #, fuzzy
@@ -6124,8 +6124,8 @@ msgstr ""
 "Speichere den gesamten zerlegten Code. Dies kann einige Sekunden dauern und "
 "benötigt eventuell zwischen 50 und 100 MB Festplattenspeicher. Es wird nur "
 "Code gespeichert, der sich in den ersten 4 MB des Speichers befindet. Wenn "
-"du ein Spiel debuggst, das .rel-Dateien mit Code in den Speicher lädt, "
-"möchtest du vielleicht das Limit auf etwa 8 MB erhöhen. Dies kann in "
+"Sie ein Spiel debuggen, das .rel-Dateien mit Code in den Speicher lädt, "
+"möchten Sie vielleicht das Limit auf etwa 8 MB erhöhen. Dies kann in "
 "SymbolDB::SaveMap() gemacht werden."
 
 #: Source/Core/DolphinWX/MainMenuBar.cpp:471
@@ -6134,15 +6134,15 @@ msgid ""
 "want to open the .map file in IDA Pro, use the .idc script."
 msgstr ""
 "Speichert die Funktionsnamen und Adressen für dieses Spiel in eine "
-"Kartendatei. Wenn du die Kartendatei in IDA Pro öffnen möchtest, benutze "
-"das .idc-Skript."
+"Kartendatei. Wenn Sie die Kartendatei in IDA Pro öffnen möchten, verwenden "
+"Sie das .idc-Skript."
 
 #: Source/Core/DolphinWX/MainMenuBar.cpp:461
 msgid ""
 "Save the function names for each address to a .map file in your user "
 "settings map folder, named after the title ID."
 msgstr ""
-"Speichert die Funktionsnamen für jede Adresse in eine Kartendatei in deinem "
+"Speichert die Funktionsnamen für jede Adresse in eine Kartendatei in Ihrem "
 "Benutzereinstellungskartenordner, benannt nach der Titel-ID."
 
 #: Source/Core/Core/HotkeyManager.cpp:125
@@ -6334,7 +6334,7 @@ msgstr ""
 "Seitenverhältnis von 4:3\n"
 "An Fenstergröße anpassen: Bild auf Fenstergröße strecken.\n"
 "\n"
-"Im Zweifel Automatisch wählen."
+"Im Zweifel Automatisch auswählen."
 
 #: Source/Core/Core/ConfigLoaders/GameConfigLoader.cpp:254
 #: Source/Core/InputCommon/InputConfig.cpp:63
@@ -6368,7 +6368,7 @@ msgstr ""
 "Auflösung sein.\n"
 "Die Performanceauswirkungen dieser Option sind vernachlässigbar.\n"
 "\n"
-"Im Zweifel Automatisch wählen."
+"Im Zweifel Automatisch auswählen."
 
 #: Source/Core/DolphinWX/VideoConfigDiag.cpp:278
 msgid ""
@@ -6386,12 +6386,12 @@ msgstr ""
 "Nebeneinander und Übereinander werden von den meisten 3D-Fernsehern "
 "verwendet.\n"
 "Anaglyph wird für Rot-Cyan gefärbte Briilen verwendet.\n"
-"HDMI 3D wird verwendet, wenn dein Monitor 3D-Display Auflösungen "
+"HDMI 3D wird verwendet, wenn Ihr Monitor 3D-Bildschirmauflösungen "
 "unterstützt.\n"
 "Verringert die Emulationsgeschwindigkeit stark und sorgt manchmal für "
 "Probleme.\n"
 "\n"
-"Im Zweifel, wähle Aus."
+"Im Zweifel Aus auswählen."
 
 #: Source/Core/DolphinWX/VideoConfigDiag.cpp:112
 msgid ""
@@ -6404,9 +6404,9 @@ msgstr ""
 "Wählt das Grafik-API, das intern verwendet wird.\n"
 "Der Software-Renderer ist außerordentlich langsam und wird normalerweise nur "
 "zur Fehlersuche verwendet. Wenn es keinen besonderen Grund gibt ihn zu "
-"benutzen solltest du hier OpenGL wählen.\n"
+"benutzen, sollten Sie hier OpenGL auswählen.\n"
 "\n"
-"Im Zweifel, wähle OpenGL."
+"Im Zweifel OpenGL auswählen."
 
 #: Source/Core/DolphinWX/VideoConfigDiag.cpp:105
 msgid ""
@@ -6422,12 +6422,12 @@ msgstr ""
 "Wählt das Grafik-API, das intern verwendet wird.\n"
 "Der Software-Renderer ist außerordentlich langsam und wird normalerweise nur "
 "zur Fehlersuche verwendet. Wenn es keinen besonderen Grund gibt ihn zu "
-"benutzen solltest du hier entweder Direct3D oder OpenGL wählen. Verschiedene "
-"Spiele verhalten sich je nach API unterschiedlich, deshalb ist es "
-"empfehlenswert, beide Modi zu testen und den zu wählen, der weniger Probleme "
-"verursacht.\n"
+"benutzen, sollten Sie hier entweder Direct3D oder OpenGL auswählen. "
+"Verschiedene Spiele verhalten sich je nach API unterschiedlich, deshalb ist "
+"es empfehlenswert, beide Modi zu testen und den zu wählen, der weniger "
+"Probleme verursacht.\n"
 "\n"
-"Im Zweifel, wähle OpenGL."
+"Im Zweifel OpenGL auswählen."
 
 #: Source/Core/DolphinWX/NetPlay/NetWindow.cpp:172
 msgid "Send"
@@ -6844,8 +6844,8 @@ msgstr ""
 "Software Rendering ist eine Größenordnung langsamer als die anderen "
 "Backends.\n"
 "Nur nützlich für Debug-Zwecke.\n"
-"Möchtst du wirklich Software Rendering aktivieren? Im Zweifel, wähle \"Nein"
-"\"."
+"Möchten Sie wirklich Software Rendering aktivieren? Im Zweifel \"Nein\" "
+"auswählen."
 
 #: Source/Core/DolphinWX/ISOProperties/InfoPanel.cpp:113
 msgid "Spain"
@@ -7146,8 +7146,8 @@ msgid ""
 "Synchronizes the GPU and CPU threads to help prevent random freezes in Dual "
 "Core mode. (ON = Compatible, OFF = Fast)"
 msgstr ""
-"Synchronisiert die GPU- und CPU-Threads um willkürliche Aufhänger mit Dual "
-"Core zu vermeiden. (EIN = Kompatibel, AUS = Schnell)"
+"Synchronisiert die GPU- und CPU-Threads um willkürliche Aufhänger mit "
+"Doppelkern zu vermeiden. (EIN = Kompatibel, AUS = Schnell)"
 
 #: Source/Core/DolphinWX/Input/InputConfigDiag.cpp:348
 msgid "Syntax error"
@@ -7369,7 +7369,7 @@ msgstr "Der resultierende entschlüsselte AR-Code enthält keine Zeilen."
 #: Source/Core/DolphinWX/MemcardManager.cpp:435
 msgid "The save you are trying to copy has an invalid file size."
 msgstr ""
-"Der Spielstand den du versuchst zu kopieren hat eine ungültige Dateigröße."
+"Der Spielstand, den Sie versuchen zu kopieren, hat eine ungültige Dateigröße."
 
 #: Source/Core/DolphinWX/Main.cpp:322
 msgid ""
@@ -7449,7 +7449,7 @@ msgid ""
 "Do you want to discard all unencrypted lines?"
 msgstr ""
 "Dieser Action Replay-Code enthält sowohl verschlüsselte als auch "
-"entschlüsselte Zeilen; du solltest prüfen, ob du ihn richtig eingegeben "
+"entschlüsselte Zeilen; Sie sollten prüfen, ob Sie ihn richtig eingegeben "
 "hast.\n"
 "\n"
 "Sollen alle entschlüsselten Zeilen gelöscht werden?"
@@ -7511,7 +7511,7 @@ msgid ""
 "or freezes while running this game."
 msgstr ""
 "Dieses Spiel benötigt die Bounding Box Emulation, um korrekt zu "
-"funktionieren, aber deine Grafikkarte oder ihre Treiber unterstützen dies "
+"funktionieren, aber Ihre Grafikkarte oder Ihre Treiber unterstützen dies "
 "nicht. Es kann zu Fehlern oder Abstürzen kommen, während dieses Spiel läuft."
 
 #: Source/Core/DolphinWX/MainMenuBar.cpp:367
@@ -7773,8 +7773,8 @@ msgid ""
 "Would you like to ignore this line and continue parsing?"
 msgstr ""
 "Konnte Zeile %u des eingegebenen AR-Codes nicht als gültigen, "
-"verschlüsselten oder entschlüsselten Code parsen. Prüfe, ob du ihn richtig "
-"eingegeben hast.\n"
+"verschlüsselten oder entschlüsselten Code parsen. Prüfen Sie, ob Sie ihn "
+"richtig eingegeben hast.\n"
 "\n"
 "Soll diese Zeile ignoriert und mit dem Parsen fortgefahren werden?"
 
@@ -8200,10 +8200,10 @@ msgid ""
 "%u > %zu) (input %u > %u). You should load another save before continuing, "
 "or load this state with read-only mode off."
 msgstr ""
-"Warnung: Du hast einen Spielstand geladen, der sich nach dem Ende des Films "
-"befindet. (Byte %u > %zu) (Input %u > %u). Du solltest vor dem Fortfahren "
-"einen anderen Spielstand laden, oder diesen Spielstand, wenn der Nur-Lese-"
-"Modus ausgeschaltet ist."
+"Warnung: Sie haben einen Spielstand geladen, der sich nach dem Ende des "
+"Films befindet. (Byte %u > %zu) (Eingabe %u > %u). Sie sollten vor dem "
+"Fortfahren einen anderen Spielstand laden, oder diesen Spielstand, wenn der "
+"Nur-Lese-Modus ausgeschaltet ist."
 
 #: Source/Core/Core/Movie.cpp:1033
 #, c-format
@@ -8212,9 +8212,9 @@ msgid ""
 "save (byte %u < %u) (frame %u < %u). You should load another save before "
 "continuing."
 msgstr ""
-"Warnung: Du hast einen Spielstand geladen, dessen Speicherpunkt hinter dem "
-"Ende der aktuellen Aufnahme liegt. (Byte %u > %u) (Bild %u > %u). Lade einen "
-"anderen Spielstand bevor du fortfährst."
+"Warnung: Sie haben einen Spielstand geladen, dessen Speicherpunkt hinter dem "
+"Ende der aktuellen Aufnahme liegt. (Byte %u > %u) (Bild %u > %u). Laden Sie "
+"einen anderen Spielstand, bevor Sie fortfahren."
 
 #: Source/Core/Core/Movie.cpp:1084
 #, c-format
@@ -8223,10 +8223,10 @@ msgid ""
 "should load another save before continuing, or load this state with read-"
 "only mode off. Otherwise you'll probably get a desync."
 msgstr ""
-"Warnung: Du hast einen Spielstand geladen, dessen Aufnahme bei Byte %zu (0x"
-"%zX) nicht übereinstimmt. Lade einen anderen Spielstand bevor du fortfährst, "
-"oder lade diesen Spielstand nicht im schreibgeschützen Modus, andernfalls "
-"könnten Desynchronisationen auftreten."
+"Warnung: Sie haben einen Spielstand geladen, dessen Aufnahme bei Byte %zu (0x"
+"%zX) nicht übereinstimmt. Laden Sie einen anderen Spielstand, bevor Sie "
+"fortfahren, oder laden Sie diesen Spielstand nicht im schreibgeschützen "
+"Modus, andernfalls könnten Desynchronisationen auftreten."
 
 #: Source/Core/Core/Movie.cpp:1101
 #, c-format
@@ -8246,20 +8246,19 @@ msgid ""
 "Start=%d, A=%d, B=%d, X=%d, Y=%d, Z=%d, DUp=%d, DDown=%d, DLeft=%d, DRight="
 "%d, L=%d, R=%d, LT=%d, RT=%d, AnalogX=%d, AnalogY=%d, CX=%d, CY=%d"
 msgstr ""
-"Warnung: Du hast einen Spielstand geladen, dessen Aufnahme bei Frame %td "
-"nicht übereinstimmt. Lade einen anderen Spielstand bevor du fortfährst, oder "
-"lade diesen Spielstand nicht im schreibgeschützten Modus, andernfalls "
-"könnten Desynchronisationen auftreten.\n"
+"Warnung: Sie haben einen Spielstand geladen, dessen Aufnahme bei Bild %td "
+"nicht übereinstimmt. Laden Sie einen anderen Spielstand, bevor Sie "
+"fortfahren, oder laden Sie diesen Spielstand nicht im schreibgeschützten "
+"Modus, andernfalls könnten Desynchronisationen auftreten.\n"
 "\n"
-"Weitere Informationen: Die aktuelle Aufnahme hat eine Länge von %d Frames "
-"und die Aufnahme vom Spielstand ist %d Frames lang.\n"
+"Weitere Informationen: Die aktuelle Aufnahme hat eine Länge von %d Bildern "
+"und die Aufnahme vom Spielstand ist %d Bilder lang.\n"
 "\n"
-"Bei Frame %td werden in der aktuellen Aufnahme die folgenden Tasten "
-"gedrückt:\n"
+"Bei Bild%td werden in der aktuellen Aufnahme die folgenden Tasten gedrückt:\n"
 "Start=%d, A=%d, B=%d, X=%d, Y=%d, Z=%d, DUp=%d, DDown=%d, DLeft=%d, DRight="
 "%d, L=%d, R=%d, LT=%d, RT=%d, AnalogX=%d, AnalogY=%d, CX=%d, CY=%d\n"
 "\n"
-"Bei Frame %td werden in der Aufnahme vom Spielstand die folgenden Tasten "
+"Bei Bild %td werden in der Aufnahme vom Spielstand die folgenden Tasten "
 "gedrückt:\n"
 "Start=%d, A=%d, B=%d, X=%d, Y=%d, Z=%d, DUp=%d, DDown=%d, DLeft=%d, DRight="
 "%d, L=%d, R=%d, LT=%d, RT=%d, AnalogX=%d, AnalogY=%d, CX=%d, CY=%d"
@@ -8467,15 +8466,16 @@ msgstr ""
 
 #: Source/Core/DolphinWX/NetPlay/NetPlaySetupFrame.cpp:327
 msgid "You must choose a game!"
-msgstr "Du musst ein Spiel auswählen!"
+msgstr "Sie müssen ein Spiel auswählen!"
 
 #: Source/Core/DolphinWX/Cheats/CreateCodeDialog.cpp:69
 msgid "You must enter a name."
-msgstr "Du musst einen Namen eingeben."
+msgstr "Sie müssen einen Namen eingeben."
 
 #: Source/Core/DolphinWX/Cheats/CheatSearchTab.cpp:373
 msgid "You must enter a valid decimal, hexadecimal or octal value."
-msgstr "Du musst eine gültige Dezimal-, Hexadezimal- oder Oktalzahl eingeben."
+msgstr ""
+"Sie m+ssen eine gültige Dezimal-, Hexadezimal- oder Oktalzahl eingeben."
 
 #: Source/Core/DolphinWX/Input/InputConfigDiag.cpp:886
 msgid "You must enter a valid profile name."
@@ -8491,17 +8491,15 @@ msgid ""
 "Would you like to stop now to fix the problem?\n"
 "If you select \"No\", audio might be garbled."
 msgstr ""
-"Deine DSP-ROMs haben ungültige Hashwerte.\n"
-"Möchtest du die Emulation beenden um das Problem zu beheben?\n"
-"Wenn du \"Nein\" wählst, könnte die Audiowiedergabe verzerrt klingen."
+"Ihre DSP-ROMs haben ungültige Hashwerte.\n"
+"Möchten Sie die Emulation beenden, um das Problem zu beheben?\n"
+"Wenn Sie \"Nein\" auswählen, könnte die Audiowiedergabe verzerrt klingen."
 
 #: Source/Core/Core/ConfigManager.cpp:989
 msgid ""
 "Your GCM/ISO file seems to be invalid (invalid country).\n"
 "Continue with PAL region?"
 msgstr ""
-"Ihre GCM/ISO-Datei scheint ungültig zu sein (Land ungültig).\n"
-"Mit PAL-Region fortfahren?"
 
 #. i18n: Refers to a 3D axis (used when mapping motion controls)
 #: Source/Core/Core/HW/WiimoteEmu/Attachment/Nunchuk.cpp:54
@@ -8562,6 +8560,12 @@ msgstr "| ODER"
 #~ msgid "%1 ms"
 #~ msgstr "%1 ms"
 
+#~ msgid "%1[%2]: %3"
+#~ msgstr "%1[%2]: %3"
+
+#~ msgid "%1[%2]: %3 %"
+#~ msgstr "%1[%2]: %3 %"
+
 #~ msgid "&Cancel"
 #~ msgstr "&Abbrechen"
 
@@ -8573,6 +8577,9 @@ msgstr "| ODER"
 
 #~ msgid "&Theme:"
 #~ msgstr "&Design:"
+
+#~ msgid "..."
+#~ msgstr "..."
 
 #~ msgid "16x"
 #~ msgstr "16x"
@@ -8590,7 +8597,7 @@ msgstr "| ODER"
 #~ msgstr "8x"
 
 #~ msgid "A NetPlay Session is already in progress!"
-#~ msgstr "Eine NetPlay-Session ist bereits in Bearbeitung!"
+#~ msgstr "Eine NetPlay-Sitzung läuft bereits!"
 
 #~ msgid "Abort"
 #~ msgstr "Abbrechen"
@@ -8605,27 +8612,33 @@ msgstr "| ODER"
 #~ msgid "All Save States (*.sav *.s##);; All Files (*)"
 #~ msgstr "Alle Speicherstände (*.sav *.s##);; Alle Dateien (*)"
 
+#~ msgid "Always Hide Mouse Cursor"
+#~ msgstr "Mauszeiger immer ausblenden"
+
 #~ msgid "Apply"
 #~ msgstr "Übernehmen"
 
 #~ msgid "Are you sure that you want to delete '%1'?"
-#~ msgstr "Möchtest du '%1' wirklich löschen? "
+#~ msgstr "Möchten Sie '%1' wirklich löschen? "
 
 #~ msgid "Are you sure you want to delete this file?"
-#~ msgstr "Möchtest du diese Datei wirklich löschen? "
+#~ msgstr "Möchten Sie diese Datei wirklich löschen? "
 
 #~ msgid "Are you sure you want to quit NetPlay?"
-#~ msgstr "Bist du dir sicher, dass du NetPlay beenden möchtest?"
+#~ msgstr "Sind Sie sicher, dass Sie NetPlay beenden möchten?"
 
 #~ msgid "Are you sure?"
-#~ msgstr "Bist du dir sicher?"
+#~ msgstr "Sind Sie sicher?"
 
 #~ msgid "Branch: "
 #~ msgstr "Entwicklungszweig:"
 
+#~ msgid "Buffer size changed to %1"
+#~ msgstr "Puffergröße auf %1 geändert"
+
 #~ msgid "Can't start a NetPlay Session while a game is still running!"
 #~ msgstr ""
-#~ "Du kannst keine NetPlay-Session starten während ein Spiel noch läuft!"
+#~ "Sie können keine NetPlay-Sitzung starten, während ein Spiel noch läuft!"
 
 #~ msgid "Cancel"
 #~ msgstr "Abbrechen"
@@ -8634,8 +8647,8 @@ msgstr "| ODER"
 #~ "Check whether you have the permissions required to delete the file or "
 #~ "whether it's still in use."
 #~ msgstr ""
-#~ "Überprüfe, ob du entweder die nötigen Berechtigungen besitzt, um die "
-#~ "Datei zu löschen, oder ob die Datei noch in Verwendung ist."
+#~ "Überprüfen Sie, ob Sie entweder die nötigen Berechtigungen besitzen, um "
+#~ "die Datei zu löschen, oder ob die Datei noch in Verwendung ist."
 
 #~ msgid "Classic Controller"
 #~ msgstr "Klassischer Controller"
@@ -8704,7 +8717,7 @@ msgstr "| ODER"
 #~ "Dolphin autorisieren, Informationen an das Entwicklerteam zu senden?"
 
 #~ msgid "Do you want to add \"%1\" to the list of Game Paths?"
-#~ msgstr "Möchtest du \"%1\" zur Liste der Spielverzeichnisse hinzufügen?"
+#~ msgstr "Möchten Sie \"%1\" zur Liste der Spielverzeichnisse hinzufügen?"
 
 #~ msgid "Dolphin %1 Graphics Configuration"
 #~ msgstr "Dolphin %1 Grafikeinstellungen"
@@ -8733,6 +8746,9 @@ msgstr "| ODER"
 
 #~ msgid "Enable Rumble"
 #~ msgstr "Rumble aktivieren"
+
+#~ msgid "Enables Wii Remote vibration."
+#~ msgstr "Aktiviert die Wiimote-Vibration."
 
 #~ msgid "Exclusive"
 #~ msgstr "Exklusiv"
@@ -8785,7 +8801,7 @@ msgstr "| ODER"
 #~ msgstr "Spiele-Ordner"
 
 #~ msgid "Game changed to \"%1\""
-#~ msgstr "Spiel geändert zu \"%1\""
+#~ msgstr "Spiel auf \"%1\" geändert"
 
 #~ msgid "GameCube Adapter for Wii U at Port %1"
 #~ msgstr "GameCube-Adapter für Wii U an Port %1"
@@ -8900,6 +8916,9 @@ msgstr "| ODER"
 #~ msgid "PNG image file (*.png);; All Files (*)"
 #~ msgstr "PNG-Bilddatei (*.png);; Alle Dateien (*)"
 
+#~ msgid "Perform System Update"
+#~ msgstr "Systemaktualisierung durchführen"
+
 #~ msgid "Port %1"
 #~ msgstr "Port %1"
 
@@ -9011,7 +9030,7 @@ msgstr "| ODER"
 #~ "This software should not be used to play games you do not legally own."
 #~ msgstr ""
 #~ "Dieses Programm sollte nicht verwendet werden, um Spiele zu spielen, die "
-#~ "du nicht legal besitzt."
+#~ "Sie nicht legal besitzen."
 
 #~ msgid "Traversal Error"
 #~ msgstr "Übergangsfehler"
@@ -9042,7 +9061,7 @@ msgstr "| ODER"
 #~ msgstr "Wii-Kanal"
 
 #~ msgid "You must select a game to host!"
-#~ msgstr "Du musst ein Spiel zum Ausrichten auswählen!"
+#~ msgstr "Sie müssen ein Spiel zum Ausrichten auswählen!"
 
 #~ msgid ""
 #~ "© 2003-%1 Dolphin Team. “GameCube” and “Wii” are trademarks of Nintendo. "

@@ -155,7 +155,6 @@ static const INIToLocationMap& GetINIToLocationMap()
       {{"Video", "PH_ZFar"}, {Config::GFX_PROJECTION_HACK_ZFAR.location}},
       {{"Video", "PerfQueriesEnable"}, {Config::GFX_PERF_QUERIES_ENABLE.location}},
       {{"Video", "FullAsyncShaderCompilation"},{Config::GFX_HACK_FULL_ASYNC_SHADER_COMPILATION.location } },
-      {{"Video", "WaitForShaderCompilation"},{Config::GFX_HACK_WAIT_FOR_SHADER_COMPILATION.location } },
       {{"Video", "EnableGPUTextureDecoding"},{Config::GFX_ENABLE_GPU_TEXTURE_DECODING.location } },
       {{"Video", "EnableComputeTextureEncoding"},{Config::GFX_ENABLE_COMPUTE_TEXTURE_ENCODING.location } },
 

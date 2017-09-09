@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: Dolphin Emulator\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2017-07-17 14:17+0200\n"
-"PO-Revision-Date: 2017-08-11 12:31+0000\n"
+"PO-Revision-Date: 2017-09-02 11:54+0000\n"
 "Last-Translator: JosJuice\n"
 "Language-Team: Italian (http://www.transifex.com/delroth/dolphin-emu/"
 "language/it/)\n"
@@ -8461,8 +8461,6 @@ msgid ""
 "Your GCM/ISO file seems to be invalid (invalid country).\n"
 "Continue with PAL region?"
 msgstr ""
-"Il file GCM/ISO sembra non valido (paese non valido).\n"
-"Procedere con la zona PAL?"
 
 #. i18n: Refers to a 3D axis (used when mapping motion controls)
 #: Source/Core/Core/HW/WiimoteEmu/Attachment/Nunchuk.cpp:54
@@ -8599,6 +8597,9 @@ msgstr "| OR"
 #~ msgstr ""
 #~ "Tutti i Salvataggi di Stati di Gioco (*.sav *.s##);; Tutti i File (*)"
 
+#~ msgid "Always Hide Mouse Cursor"
+#~ msgstr "Nascondi sempre il cursore del mouse"
+
 #~ msgid "Apply"
 #~ msgstr "Applica"
 
@@ -8616,6 +8617,9 @@ msgstr "| OR"
 
 #~ msgid "Branch: "
 #~ msgstr "Branch:"
+
+#~ msgid "Buffer size changed to %1"
+#~ msgstr "Dimensione del buffer cambiata a %1"
 
 #~ msgid "Can't start a NetPlay Session while a game is still running!"
 #~ msgstr ""
@@ -8751,6 +8755,9 @@ msgstr "| OR"
 #~ msgid "Enable Rumble"
 #~ msgstr "Abilita Vibrazione"
 
+#~ msgid "Enables Wii Remote vibration."
+#~ msgstr "Abilita la vibrazione del Wii Remote."
+
 #~ msgid "Exclusive"
 #~ msgstr "Esclusivo"
 
@@ -8778,6 +8785,13 @@ msgstr "| OR"
 #~ msgstr ""
 #~ "Fallito l'ascolto sulla porta %1. C'è già un'altra istanza di un server "
 #~ "NetPlay in esecuzione?"
+
+#~ msgid ""
+#~ "Failed to load %s. If you are using Windows 7, try installing the "
+#~ "KB4019990 update package."
+#~ msgstr ""
+#~ "Impossibile caricare %s. Se stai utilizzando Windows 7, prova a "
+#~ "installare l'aggiornamento KB4019990."
 
 #~ msgid "Failed to open '%1'"
 #~ msgstr "Fallia l'apertura di '%1'"
@@ -8916,6 +8930,9 @@ msgstr "| OR"
 #~ msgid "PNG image file (*.png);; All Files (*)"
 #~ msgstr "File immagine PNG (*.png);; Tutti i File (*)"
 
+#~ msgid "Perform System Update"
+#~ msgstr "Avvia l'Aggiornamento di Sistema"
+
 #~ msgid "Port %1"
 #~ msgstr "Porta %1"
 
@@ -9014,6 +9031,19 @@ msgstr "| OR"
 
 #~ msgid "Successfully removed this title from the NAND."
 #~ msgstr "Il titolo è stato rimosso con successo dalla NAND."
+
+#~ msgid "The game disc does not contain any usable update information."
+#~ msgstr ""
+#~ "Questo disco di gioco non contiene alcun aggiornamento utilizzabile."
+
+#~ msgid ""
+#~ "The game's region does not match your console's. To avoid issues with the "
+#~ "system menu, it is not possible to update the emulated console using this "
+#~ "disc."
+#~ msgstr ""
+#~ "La regione del gioco non corrisponde a quella della tua console. Per "
+#~ "evitare problemi col menu di sistema, non è possibile aggiornare la "
+#~ "console emulata con questo disco."
 
 #~ msgid "The profile '%1' does not exist"
 #~ msgstr "Il profilo '%1' non esiste"
