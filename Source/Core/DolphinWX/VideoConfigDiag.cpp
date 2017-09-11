@@ -1670,7 +1670,7 @@ void VideoConfigDiag::OnAAChanged(wxCommandEvent& ev)
   int mode = ev.GetInt();
   ev.Skip();
   const std::vector<u32>& aa_modes = vconfig.backend_info.AAModes;
-  bool ssaa = mode > aa_modes.size();
+  bool ssaa = mode >= aa_modes.size();
   Config::SetBaseOrCurrent(Config::GFX_SSAA, ssaa);
   mode -= ssaa * (aa_modes.size() - 1);
   Config::SetBaseOrCurrent(Config::GFX_MSAA, (u32)aa_modes[mode]);
