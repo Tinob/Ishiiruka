@@ -101,6 +101,11 @@ void VideoBackend::InitBackendInfo()
   g_Config.backend_info.bSupportsReversedDepthRange = false;
   g_Config.backend_info.bSupportsInternalResolutionFrameDumps = false;
   g_Config.backend_info.bSupportsAsyncShaderCompilation = true;
+  g_Config.backend_info.bSupportsDynamicSamplerIndexing = false;
+  g_Config.backend_info.bSupportsGSInstancing = false;
+  g_Config.backend_info.bSupportsFragmentStoresAndAtomics = false;
+  g_Config.backend_info.bSupportsBitfield = false;
+  g_Config.backend_info.bSupportsUberShaders = false;
   g_Config.ClearFormats();
   // adapters
   g_Config.backend_info.Adapters.clear();

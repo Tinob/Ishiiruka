@@ -92,10 +92,13 @@ void VideoBackend::InitBackendInfo()
   g_Config.backend_info.bSupportsNormalMaps = true;
   g_Config.backend_info.bSupportsDepthClamp = true;
   g_Config.backend_info.bSupportsMultithreading = false;
-  g_Config.backend_info.bSupportsValidationLayer = false;
+  g_Config.backend_info.bSupportsValidationLayer = true;
   g_Config.backend_info.bSupportsReversedDepthRange = true;
   g_Config.backend_info.bSupportsInternalResolutionFrameDumps = true;
   g_Config.backend_info.bSupportsAsyncShaderCompilation = true;
+  g_Config.backend_info.bSupportsBitfield = false;
+  g_Config.backend_info.bSupportsDynamicSamplerIndexing = false;
+  g_Config.backend_info.bSupportsUberShaders = true;
   g_Config.ClearFormats();
   IDXGIFactory* factory;
   IDXGIAdapter* ad;
@@ -132,6 +135,7 @@ void VideoBackend::InitBackendInfo()
       // Requires the instance attribute (only available in shader model 5)
       g_Config.backend_info.bSupportsGSInstancing = shader_model_5_supported;
       g_Config.backend_info.bSupportsTessellation = shader_model_5_supported;
+      g_Config.backend_info.bSupportsFragmentStoresAndAtomics = shader_model_5_supported;
       g_Config.backend_info.bSupportsSSAA = shader_model_5_supported;
       g_Config.backend_info.bSupportsGPUTextureDecoding = shader_model_5_supported;
       g_Config.backend_info.bSupportsComputeTextureEncoding = shader_model_5_supported;

@@ -80,7 +80,7 @@ public:
     {
       item.usage_count++;
     }
-    if (m_categories.size() == 1)
+    if (m_categories.size() <= 1)
     {
       return item.info;
     }

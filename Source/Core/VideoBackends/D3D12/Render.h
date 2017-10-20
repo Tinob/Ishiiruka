@@ -97,6 +97,8 @@ private:
   D3D12_VIEWPORT m_vp;
   bool m_target_dirty = true;
   bool m_previous_use_dst_alpha = false;
+  bool m_previous_use_p_uber_shader = false;
+  bool m_previous_use_v_uber_shader = false;
   D3DVertexFormat* m_previous_vertex_format = nullptr;
 };
 

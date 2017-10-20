@@ -981,7 +981,7 @@ void TextureCacheBase::CopyRenderTargetToTexture(u32 dstAddr, u32 dstFormat, u32
   ColorMask[0] = ColorMask[1] = ColorMask[2] = ColorMask[3] = 255.0f;
   ColorMask[4] = ColorMask[5] = ColorMask[6] = ColorMask[7] = 1.0f / 255.0f;
   u32 cbufid = -1;
-  u32 srcFormat = bpmem.zcontrol.pixel_format;
+  auto srcFormat = bpmem.zcontrol.pixel_format.Value();
   bool efbHasAlpha = srcFormat == PEControl::RGBA6_Z24;
 
   if (is_depth_copy)

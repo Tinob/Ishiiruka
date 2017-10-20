@@ -115,6 +115,10 @@ void VideoBackend::InitBackendInfo()
   g_Config.backend_info.bSupportsReversedDepthRange = true;
   g_Config.backend_info.bSupportsInternalResolutionFrameDumps = true;
   g_Config.backend_info.bSupportsAsyncShaderCompilation = true;
+  g_Config.backend_info.bSupportsFragmentStoresAndAtomics = true;
+  g_Config.backend_info.bSupportsBitfield = false;
+  g_Config.backend_info.bSupportsDynamicSamplerIndexing = false;
+  g_Config.backend_info.bSupportsUberShaders = true;
   IDXGIFactory* factory;
   IDXGIAdapter* ad;
   hr = create_dxgi_factory(__uuidof(IDXGIFactory), (void**)&factory);

@@ -58,12 +58,18 @@ public:
   static void TranslateView(float x, float y, float z = 0.0f);
   static void RotateView(float x, float y);
   static void ResetView();
+
+  static void SetVertexFormat(u32 components);
+  static void SetTexMatrixInfoChanged(int index);
+  static void SetLightingConfigChanged();
+
   // data: raw vertex data
   // out: 4 floats which will be initialized with the corresponding clip space coordinates
   // NOTE: g_fProjectionMatrix must be up to date when this is called
   // (i.e. VertexShaderManager::SetConstants needs to be called before using this!)
   static void TransformToClipSpace(const u8* data, const PortableVertexDeclaration &vtx_dcl, float *out);
 private:
+  static bool bTexMtxInfoChanged, bLightingConfigChanged;
   static bool bProjectionChanged;
   static bool bViewportChanged;
   static int s_materials_changed;

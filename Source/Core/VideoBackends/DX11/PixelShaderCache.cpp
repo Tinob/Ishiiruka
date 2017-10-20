@@ -9,6 +9,7 @@
 #include "Core/Host.h"
 #include "VideoBackends/DX11/D3DBase.h"
 #include "VideoBackends/DX11/D3DShader.h"
+#include "VideoBackends/DX11/D3DState.h"
 #include "VideoBackends/DX11/D3DUtil.h"
 #include "VideoBackends/DX11/PixelShaderCache.h"
 #include "VideoBackends/DX11/VertexShaderCache.h"
@@ -25,13 +26,16 @@ namespace DX11
 {
 
 PixelShaderCache::PSCache* PixelShaderCache::s_pixel_shaders;
+PixelShaderCache::PUSCache PixelShaderCache::s_pixel_uber_shaders;
 const PixelShaderCache::PSCacheEntry* PixelShaderCache::s_last_entry;
+const PixelShaderCache::PSCacheEntry* PixelShaderCache::s_last_uber_entry;
 PixelShaderUid PixelShaderCache::s_last_uid;
-PixelShaderUid PixelShaderCache::s_external_last_uid;
+UberShader::PixelUberShaderUid PixelShaderCache::s_last_uber_uid;
+
 static HLSLAsyncCompiler *s_compiler;
-static Common::SpinLock<true> s_pixel_shaders_lock;
 static bool s_previous_per_pixel_lighting = false;
 LinearDiskCache<PixelShaderUid, u8> g_ps_disk_cache;
+LinearDiskCache<UberShader::PixelUberShaderUid, u8> g_pus_disk_cache;
 
 D3D::PixelShaderPtr s_ColorMatrixProgram[2];
 D3D::PixelShaderPtr s_ColorCopyProgram[3];
@@ -457,10 +461,19 @@ public:
   }
 };
 
+// this class will load the precompiled shaders into our cache
+class PixelUberShaderCacheInserter : public LinearDiskCacheReader<UberShader::PixelUberShaderUid, u8>
+{
+public:
+  void Read(const UberShader::PixelUberShaderUid &key, const u8 *value, u32 value_size)
+  {
+    PixelShaderCache::InsertByteCode(key, value, value_size);
+  }
+};
+
 void PixelShaderCache::Init()
 {
   s_compiler = &HLSLAsyncCompiler::getInstance();
-  s_pixel_shaders_lock.unlock();
   bool use_partial_buffer_update = D3D::SupportPartialContantBufferUpdate();
   u32 cbsize = C_PCONST_END * 4 * sizeof(float) * (use_partial_buffer_update ? 1024 : 1); // is always a multiple of 16	
   pscbuf = new D3D::ConstantStreamBuffer(cbsize);
@@ -492,14 +505,36 @@ void PixelShaderCache::Init()
   CHECK(s_DepthMatrixProgram[0] != nullptr, "Create depth matrix pixel shader");
   D3D::SetDebugObjectName(s_DepthMatrixProgram[0].get(), "depth matrix pixel shader");
 
-  Clear();
+  s_pixel_shaders = nullptr;
 
-  if (!File::Exists(File::GetUserPath(D_SHADERCACHE_IDX)))
-    File::CreateDir(File::GetUserPath(D_SHADERCACHE_IDX).c_str());
+  LoadFromDisk();
 
+  if (g_ActiveConfig.bCompileShaderOnStartup)
+  {
+    CompileUberShaders();
+    CompileShaders();
+  }
+  s_last_entry = nullptr;
+  s_last_uber_entry = nullptr;
   SETSTAT(stats.numPixelShadersCreated, 0);
-  SETSTAT(stats.numPixelShadersAlive, 0);
+  SETSTAT(stats.numPixelShadersAlive, static_cast<int>(s_pixel_shaders->size()));
+}
 
+void PixelShaderCache::LoadFromDisk()
+{
+  if (s_pixel_shaders)
+  {
+    s_pixel_shaders->Persist();
+    s_pixel_shaders->Clear([](PSCacheEntry& item)
+    {
+      item.Destroy();
+    });
+    delete s_pixel_shaders;
+    s_pixel_shaders = nullptr;
+  }
+  for (auto& item : s_pixel_uber_shaders)
+    item.second.Destroy();
+  s_pixel_uber_shaders.clear();
   pKey_t gameid = (pKey_t)GetMurmurHash3(reinterpret_cast<const u8*>(SConfig::GetInstance().GetGameID().data()), (u32)SConfig::GetInstance().GetGameID().size(), 0);
   s_pixel_shaders = PSCache::Create(
     gameid,
@@ -507,55 +542,92 @@ void PixelShaderCache::Init()
     "Ishiiruka.ps",
     StringFromFormat("%s.ps", SConfig::GetInstance().GetGameID().c_str())
   );
-
-  std::string cache_filename = StringFromFormat("%sIDX11-%s-ps.cache", File::GetUserPath(D_SHADERCACHE_IDX).c_str(),
-    SConfig::GetInstance().GetGameID().c_str());
-
+  std::string cache_filename = GetDiskShaderCacheFileName(API_D3D11, "ups", false, true);
+  PixelUberShaderCacheInserter uinserter;
+  g_pus_disk_cache.OpenAndRead(cache_filename, uinserter);
+  cache_filename = GetDiskShaderCacheFileName(API_D3D11, "ps", true, true);
   PixelShaderCacheInserter inserter;
   g_ps_disk_cache.OpenAndRead(cache_filename, inserter);
-  if (g_ActiveConfig.bCompileShaderOnStartup)
+}
+static size_t shader_count = 0;
+void PixelShaderCache::CompileShaders()
+{
+  pKey_t gameid = (pKey_t)GetMurmurHash3(reinterpret_cast<const u8*>(SConfig::GetInstance().GetGameID().data()), (u32)SConfig::GetInstance().GetGameID().size(), 0);
+  shader_count = 0;
+  const ShaderHostConfig& hostconfig = ShaderHostConfig::GetCurrent();
+  s_pixel_shaders->ForEachMostUsedByCategory(gameid,
+    [&](const PixelShaderUid& it, size_t total)
   {
-    size_t shader_count = 0;
-    s_pixel_shaders->ForEachMostUsedByCategory(gameid,
-      [&](const PixelShaderUid& it, size_t total)
-    {
-      PixelShaderUid item = it;
-      item.ClearHASH();
-      item.CalculateUIDHash();
-      CompilePShader(item, true);
+    PixelShaderUid item = it;
+    item.ClearHASH();
+    item.CalculateUIDHash();
+    CompilePShader(item, hostconfig, [total]() {
       shader_count++;
       if ((shader_count & 7) == 0)
       {
         Host_UpdateProgressDialog(GetStringT("Compiling Pixel shaders...").c_str(),
           static_cast<int>(shader_count), static_cast<int>(total));
-        s_compiler->WaitForFinish();
       }
-    },
-      [](PSCacheEntry& entry)
-    {
-      return !entry.shader;
-    }
-    , true);
-    s_compiler->WaitForFinish();
-    Host_UpdateProgressDialog("", -1, -1);
+    });
+
+  },
+    [](PSCacheEntry& entry)
+  {
+    return !entry.shader;
   }
-  s_last_entry = nullptr;
+  , true);
+  s_compiler->WaitForFinish();
+  Host_UpdateProgressDialog("", -1, -1);
 }
 
-// ONLY to be used during shutdown.
+void PixelShaderCache::CompileUberShaders()
+{
+  const ShaderHostConfig& hostconfig = ShaderHostConfig::GetCurrent();
+  shader_count = 0;
+  UberShader::EnumeratePixelUberShaderUids([&](const UberShader::PixelUberShaderUid& uid, size_t total) {
+    CompileUberShader(uid, hostconfig, [total]() {
+      shader_count++;
+      Host_UpdateProgressDialog(GetStringT("Compiling Pixel Uber shaders...").c_str(),
+        static_cast<int>(shader_count), static_cast<int>(total));
+
+    });
+  });
+  s_compiler->WaitForFinish();
+  Host_UpdateProgressDialog("", -1, -1);
+}
+
+void PixelShaderCache::Reload()
+{
+  s_compiler->WaitForFinish();
+  g_ps_disk_cache.Sync();
+  g_ps_disk_cache.Close();
+  g_pus_disk_cache.Sync();
+  g_pus_disk_cache.Close();
+  LoadFromDisk();
+  CompileShaders();
+  s_last_entry = nullptr;
+  s_last_uber_entry = nullptr;
+  s_last_uid.ClearUID();
+  s_last_uber_uid.ClearUID();
+}
+
 void PixelShaderCache::Clear()
 {
   if (s_pixel_shaders)
   {
-    s_pixel_shaders_lock.lock();
     s_pixel_shaders->Persist();
     s_pixel_shaders->Clear([](PSCacheEntry& item)
     {
       item.Destroy();
     });
-    s_pixel_shaders_lock.unlock();
   }
+  for (auto& item : s_pixel_uber_shaders)
+    item.second.Destroy();
+  s_pixel_uber_shaders.clear();
   s_last_entry = nullptr;
+  s_last_uber_entry = nullptr;
+  s_last_uid.ClearUID();
+  s_last_uber_uid.ClearUID();
 }
 
 // Used in Swap() when AA mode has changed
@@ -597,48 +669,119 @@ void PixelShaderCache::Shutdown()
   s_pixel_shaders = nullptr;
   g_ps_disk_cache.Sync();
   g_ps_disk_cache.Close();
+  g_pus_disk_cache.Sync();
+  g_pus_disk_cache.Close();
 }
 
-void PixelShaderCache::CompilePShader(const PixelShaderUid& uid, bool ongputhread)
+void PixelShaderCache::CompileUberShader(const UberShader::PixelUberShaderUid& uid, const ShaderHostConfig& hostconfig, std::function<void()> oncompilationfinished = {})
 {
-  s_pixel_shaders_lock.lock();
-  PSCacheEntry* entry = &s_pixel_shaders->GetOrAdd(uid);
-  s_pixel_shaders_lock.unlock();
-  if (ongputhread)
-  {
-    s_last_entry = entry;
-  }
+  PSCacheEntry* entry = &s_pixel_uber_shaders[uid];
+  s_last_uber_entry = entry;
   // Compile only when we have a new instance
   if (entry->initialized.test_and_set())
   {
+    if (oncompilationfinished) oncompilationfinished();
     return;
   }
   // Need to compile a new shader
 
   ShaderCompilerWorkUnit *wunit = s_compiler->NewUnit(PIXELSHADERGEN_BUFFERSIZE);
-  wunit->GenerateCodeHandler = [uid](ShaderCompilerWorkUnit* wunit)
+  wunit->GenerateCodeHandler = [uid, hostconfig](ShaderCompilerWorkUnit* wunit)
   {
     ShaderCode code;
     code.SetBuffer(wunit->code.data());
-    GeneratePixelShaderCodeD3D11(code, uid.GetUidData());
+    UberShader::GenPixelShader(code, API_D3D11, hostconfig, uid.GetUidData());
     wunit->codesize = (u32)code.BufferSize();
   };
 
   wunit->entrypoint = "main";
-#if defined(_DEBUG) || defined(DEBUGFAST)
-  wunit->flags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
-#else
-  wunit->flags = D3DCOMPILE_SKIP_VALIDATION | D3DCOMPILE_OPTIMIZATION_LEVEL3;
-#endif
-  wunit->target = D3D::PixelShaderVersionString();
-  wunit->ResultHandler = [uid, entry](ShaderCompilerWorkUnit* wunit)
+  if (g_ActiveConfig.bEnableShaderDebug)
   {
+    wunit->flags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+  }
+  else
+  {
+    wunit->flags = D3DCOMPILE_SKIP_VALIDATION | D3DCOMPILE_OPTIMIZATION_LEVEL3;
+  }
+  wunit->target = D3D::PixelShaderVersionString();
+  wunit->ResultHandler = [uid, entry, oncompilationfinished](ShaderCompilerWorkUnit* wunit)
+  {
+    if (oncompilationfinished) oncompilationfinished();
+    if (SUCCEEDED(wunit->cresult))
+    {
+      ID3DBlob* shaderBuffer = wunit->shaderbytecode;
+      const u8* bytecode = (const u8*)shaderBuffer->GetBufferPointer();
+      u32 bytecodelen = (u32)shaderBuffer->GetBufferSize();
+      g_pus_disk_cache.Append(uid, bytecode, bytecodelen);
+      if (g_ActiveConfig.bEnableShaderDebug)
+      {
+        entry->code = std::string(wunit->code.data());
+      }
+      PushByteCode(bytecode, bytecodelen, entry);
+    }
+    else
+    {
+      static int num_failures = 0;
+      std::string filename = StringFromFormat("%sbad_ups_%04i.txt", File::GetUserPath(D_DUMP_IDX).c_str(), num_failures++);
+      std::ofstream file;
+      File::OpenFStream(file, filename, std::ios_base::out);
+      file << ((const char *)wunit->code.data());
+      file << ((const char *)wunit->error->GetBufferPointer());
+      file.close();
+
+      PanicAlert("Failed to compile pixel uber shader!\nThis usually happens when trying to use Dolphin with an outdated GPU or integrated GPU like the Intel GMA series.\n\nIf you're sure this is Dolphin's error anyway, post the contents of %s along with this error message at the forums.\n\nDebug info (%s):\n%s",
+        filename.c_str(),
+        D3D::PixelShaderVersionString(),
+        (char*)wunit->error->GetBufferPointer());
+    }
+  };
+  s_compiler->CompileShaderAsync(wunit);
+}
+
+void PixelShaderCache::CompilePShader(const PixelShaderUid& uid, const ShaderHostConfig& hostconfig, std::function<void()> oncompilationfinished = {})
+{
+  PSCacheEntry* entry = &s_pixel_shaders->GetOrAdd(uid);
+  s_last_entry = entry;
+  // Compile only when we have a new instance
+  if (entry->initialized.test_and_set())
+  {
+    if (oncompilationfinished) oncompilationfinished();
+    return;
+  }
+  // Need to compile a new shader
+
+  ShaderCompilerWorkUnit *wunit = s_compiler->NewUnit(PIXELSHADERGEN_BUFFERSIZE);
+  wunit->GenerateCodeHandler = [uid, hostconfig](ShaderCompilerWorkUnit* wunit)
+  {
+    ShaderCode code;
+    code.SetBuffer(wunit->code.data());
+    GeneratePixelShaderCode(code, uid.GetUidData(), hostconfig);
+    wunit->codesize = (u32)code.BufferSize();
+  };
+
+  wunit->entrypoint = "main";
+  if (g_ActiveConfig.bEnableShaderDebug)
+  {
+    wunit->flags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+  }
+  else
+  {
+    wunit->flags = D3DCOMPILE_SKIP_VALIDATION | D3DCOMPILE_OPTIMIZATION_LEVEL3;
+  }
+  wunit->target = D3D::PixelShaderVersionString();
+  wunit->ResultHandler = [uid, entry, oncompilationfinished](ShaderCompilerWorkUnit* wunit)
+  {
+    if (oncompilationfinished) oncompilationfinished();
     if (SUCCEEDED(wunit->cresult))
     {
       ID3DBlob* shaderBuffer = wunit->shaderbytecode;
       const u8* bytecode = (const u8*)shaderBuffer->GetBufferPointer();
       u32 bytecodelen = (u32)shaderBuffer->GetBufferSize();
       g_ps_disk_cache.Append(uid, bytecode, bytecodelen);
+      if (g_ActiveConfig.bEnableShaderDebug)
+      {
+        entry->code = std::string(wunit->code.data());
+      }
       PushByteCode(bytecode, bytecodelen, entry);
     }
     else
@@ -663,37 +806,54 @@ void PixelShaderCache::CompilePShader(const PixelShaderUid& uid, bool ongputhrea
 void PixelShaderCache::PrepareShader(PIXEL_SHADER_RENDER_MODE render_mode,
   u32 components,
   const XFMemory &xfr,
-  const BPMemory &bpm, bool ongputhread)
+  const BPMemory &bpm)
 {
+  if (g_ActiveConfig.bBackgroundShaderCompiling || g_ActiveConfig.bDisableSpecializedShaders)
+  {
+    auto uuid = UberShader::GetPixelUberShaderUid(components, xfr, bpm);
+    if (!s_last_uber_entry || s_last_uber_uid != uuid)
+    {
+      s_last_uber_uid = uuid;
+      CompileUberShader(uuid, ShaderHostConfig::GetCurrent());
+    }
+  }
+  if (g_ActiveConfig.bDisableSpecializedShaders)
+  {
+    return;
+  }
   PixelShaderUid uid;
   GetPixelShaderUID(uid, render_mode, components, xfr, bpm);
-  if (ongputhread)
+  s_compiler->ProcCompilationResults();
+  // Check if the shader is already set
+  if (s_last_entry && uid == s_last_uid)
   {
-    s_compiler->ProcCompilationResults();
-    // Check if the shader is already set
-    if (s_last_entry)
-    {
-      if (uid == s_last_uid)
-      {
-        return;
-      }
-    }
-    s_last_uid = uid;
-    GFX_DEBUGGER_PAUSE_AT(NEXT_PIXEL_SHADER_CHANGE, true);
+    return;
   }
-  else
+  s_last_uid = uid;
+  GFX_DEBUGGER_PAUSE_AT(NEXT_PIXEL_SHADER_CHANGE, true);
+  CompilePShader(uid, ShaderHostConfig::GetCurrent());
+}
+
+void PixelShaderCache::SetActiveShader()
+{
+  ID3D11PixelShader* shader = nullptr;
+  if (!g_ActiveConfig.bDisableSpecializedShaders && s_last_entry && s_last_entry->compiled)
   {
-    if (s_external_last_uid == uid)
-    {
-      return;
-    }
-    s_external_last_uid = uid;
+    shader = s_last_entry->shader.get();
   }
-  CompilePShader(uid, ongputhread);
+  else if (s_last_uber_entry)
+  {
+    shader = s_last_uber_entry->shader.get();
+  }
+  D3D::stateman->SetPixelShader(shader);
 }
 
 bool PixelShaderCache::TestShader()
 {
+  if (g_ActiveConfig.bBackgroundShaderCompiling || g_ActiveConfig.bDisableSpecializedShaders)
+  {
+    return true;
+  }
   int count = 0;
   while (!s_last_entry->compiled)
   {
@@ -716,13 +876,20 @@ void PixelShaderCache::PushByteCode(const void* bytecode, u32 bytecodelen, Pixel
     // TODO: Somehow make the debug name a bit more specific
     D3D::SetDebugObjectName(entry->shader.get(), "a pixel shader of PixelShaderCache");
     INCSTAT(stats.numPixelShadersCreated);
-    SETSTAT(stats.numPixelShadersAlive, static_cast<int>(s_pixel_shaders->size()));
+    SETSTAT(stats.numPixelShadersAlive, static_cast<int>(s_pixel_shaders->size() + s_pixel_uber_shaders.size()));
   }
 }
 
 void PixelShaderCache::InsertByteCode(const PixelShaderUid &uid, const void* bytecode, u32 bytecodelen)
 {
   PSCacheEntry* entry = &s_pixel_shaders->GetOrAdd(uid);
+  entry->initialized.test_and_set();
+  PushByteCode(bytecode, bytecodelen, entry);
+}
+
+void PixelShaderCache::InsertByteCode(const UberShader::PixelUberShaderUid &uid, const void* bytecode, u32 bytecodelen)
+{
+  PSCacheEntry* entry = &s_pixel_uber_shaders[uid];
   entry->initialized.test_and_set();
   PushByteCode(bytecode, bytecodelen, entry);
 }

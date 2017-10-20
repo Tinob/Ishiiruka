@@ -31,10 +31,8 @@ namespace DX11
 HullDomainShaderCache::HDCache* HullDomainShaderCache::s_hulldomain_shaders;
 const HullDomainShaderCache::HDCacheEntry* HullDomainShaderCache::s_last_entry;
 TessellationShaderUid HullDomainShaderCache::s_last_uid;
-TessellationShaderUid HullDomainShaderCache::s_external_last_uid;
 
 static HLSLAsyncCompiler *s_compiler;
-static Common::SpinLock<true> s_hulldomain_shaders_lock;
 
 std::unique_ptr<D3D::ConstantStreamBuffer> hdscbuf;
 
@@ -75,7 +73,6 @@ public:
 void HullDomainShaderCache::Init()
 {
   s_compiler = &HLSLAsyncCompiler::getInstance();
-  s_hulldomain_shaders_lock.unlock();
 
   bool use_partial_buffer_update = D3D::SupportPartialContantBufferUpdate();
   u32 gbsize = static_cast<u32>(Common::AlignUpSizePow2(sizeof(TessellationShaderConstants), 16) * (use_partial_buffer_update ? 1024 : 1)); // must be a multiple of 16
@@ -111,21 +108,20 @@ void HullDomainShaderCache::Init()
   SETSTAT(stats.numHullShadersAlive, 0);
   if (g_ActiveConfig.bCompileShaderOnStartup)
   {
-    size_t shader_count = 0;
+    static size_t shader_count;
+    shader_count = 0;
     s_hulldomain_shaders->ForEachMostUsedByCategory(gameid,
       [&](const TessellationShaderUid& it, size_t total)
     {
       TessellationShaderUid item = it;
       item.ClearHASH();
       item.CalculateUIDHash();
-      CompileHDShader(item, true);
-      shader_count++;
-      if ((shader_count & 7) == 0)
-      {
+      CompileHDShader(item, [total]() {
+        shader_count++;
         Host_UpdateProgressDialog(GetStringT("Compiling Tessellation shaders...").c_str(),
-          static_cast<int>(shader_count), static_cast<int>(total));
-        s_compiler->WaitForFinish();
-      }
+          static_cast<int>(shader_count), static_cast<int>(total * 2));
+      });
+      
     },
       [](HDCacheEntry& entry)
     {
@@ -143,13 +139,11 @@ void HullDomainShaderCache::Clear()
 {
   if (s_hulldomain_shaders)
   {
-    s_hulldomain_shaders_lock.lock();
     s_hulldomain_shaders->Persist();
     s_hulldomain_shaders->Clear([](HDCacheEntry& item)
     {
       item.Destroy();
     });
-    s_hulldomain_shaders_lock.unlock();
   }
   s_last_entry = nullptr;
 }
@@ -172,18 +166,14 @@ void HullDomainShaderCache::Shutdown()
   g_ds_disk_cache.Close();
 }
 
-void HullDomainShaderCache::CompileHDShader(const TessellationShaderUid& uid, bool ongputhread)
+void HullDomainShaderCache::CompileHDShader(const TessellationShaderUid& uid, std::function<void()> oncompilationfinished = {})
 {
-  s_hulldomain_shaders_lock.lock();
-  HDCacheEntry* entry = &s_hulldomain_shaders->GetOrAdd(uid);
-  s_hulldomain_shaders_lock.unlock();
-  if (ongputhread)
-  {
-    s_last_entry = entry;
-  }
+  HDCacheEntry* entry = &s_hulldomain_shaders->GetOrAdd(uid);  
+  s_last_entry = entry;
   // Compile only when we have a new instance
   if (entry->initialized.test_and_set())
   {
+    if (oncompilationfinished) oncompilationfinished();
     return;
   }
 
@@ -212,8 +202,9 @@ void HullDomainShaderCache::CompileHDShader(const TessellationShaderUid& uid, bo
   wunitd->flags = D3DCOMPILE_SKIP_VALIDATION | D3DCOMPILE_OPTIMIZATION_LEVEL3;
 #endif
   wunitd->target = D3D::DomainShaderVersionString();
-  wunit->ResultHandler = [uid, entry](ShaderCompilerWorkUnit* wunit)
+  wunit->ResultHandler = [uid, entry, oncompilationfinished](ShaderCompilerWorkUnit* wunit)
   {
+    if (oncompilationfinished) oncompilationfinished();
     if (SUCCEEDED(wunit->cresult))
     {
       ID3DBlob* shaderBuffer = wunit->shaderbytecode;
@@ -240,8 +231,9 @@ void HullDomainShaderCache::CompileHDShader(const TessellationShaderUid& uid, bo
     entry->hcompiled = true;
   };
 
-  wunitd->ResultHandler = [uid, entry](ShaderCompilerWorkUnit* wunitd)
+  wunitd->ResultHandler = [uid, entry, oncompilationfinished](ShaderCompilerWorkUnit* wunitd)
   {
+    if (oncompilationfinished) oncompilationfinished();
     if (SUCCEEDED(wunitd->cresult))
     {
       ID3DBlob* shaderBuffer = wunitd->shaderbytecode;
@@ -275,49 +267,27 @@ void HullDomainShaderCache::PrepareShader(
   const XFMemory &xfr,
   const BPMemory &bpm,
   const PrimitiveType primitiveType,
-  const u32 components,
-  bool ongputhread)
+  const u32 components)
 {
   if (!(primitiveType == PrimitiveType::PRIMITIVE_TRIANGLES
     && g_ActiveConfig.TessellationEnabled()
     && xfr.projection.type == GX_PERSPECTIVE
     && (g_ActiveConfig.bForcedLighting || g_ActiveConfig.PixelLightingEnabled(xfr, components))))
   {
-    if (ongputhread)
-    {
-      s_last_entry = nullptr;
-    }
-    else
-    {
-      s_external_last_uid.ClearUID();
-    }
+    s_last_entry = nullptr;
     return;
   }
   TessellationShaderUid uid;
   GetTessellationShaderUID(uid, xfr, bpm, components);
-  if (ongputhread)
+  s_compiler->ProcCompilationResults();
+  // Check if the shader is already set
+  if (s_last_entry && uid == s_last_uid)
   {
-    s_compiler->ProcCompilationResults();
-    // Check if the shader is already set
-    if (s_last_entry)
-    {
-      if (uid == s_last_uid)
-      {
-        return;
-      }
-    }
-    s_last_uid = uid;
-    GFX_DEBUGGER_PAUSE_AT(NEXT_PIXEL_SHADER_CHANGE, true);
+    return;
   }
-  else
-  {
-    if (s_external_last_uid == uid)
-    {
-      return;
-    }
-    s_external_last_uid = uid;
-  }
-  CompileHDShader(uid, ongputhread);
+  s_last_uid = uid;
+  GFX_DEBUGGER_PAUSE_AT(NEXT_PIXEL_SHADER_CHANGE, true);
+  CompileHDShader(uid);
 }
 
 bool HullDomainShaderCache::TestShader()

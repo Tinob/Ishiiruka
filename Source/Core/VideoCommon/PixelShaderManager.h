@@ -4,6 +4,7 @@
 
 #pragma once
 #include "Common/ConstantBuffer.h"
+#include "VideoCommon/ConstantManager.h"
 #include "VideoCommon/PixelShaderGen.h"
 
 class PointerWrap;
@@ -12,7 +13,7 @@ class PointerWrap;
 class PixelShaderManager
 {
 public:
-  static const size_t ConstantBufferSize = C_PENVCONST_END * 4;
+  static const size_t ConstantBufferSize = C_PCONST_END * 4;
   static void Init(bool use_integer_constants);
   static void Dirty();
   static void DoState(PointerWrap &p);
@@ -34,8 +35,12 @@ public:
   // constant management, should be called after memory is committed
   static void SetTevColor(int index, int component, s32 value);
   static void SetTevKonstColor(int index, int component, s32 value);
+  static void SetTevOrder(int index, u32 order);
+  static void SetTevKSel(int index, u32 ksel);
+  static void SetTevCombiner(int index, int alpha, u32 combiner);
   static void SetAlpha();
-  static void SetDestAlpha();
+  static void SetAlphaTestChanged();
+  static void SetDestAlphaChanged();
   static void SetTexDims(int texmapid, u32 width, u32 height);
   static void SetZTextureBias();
 
@@ -54,10 +59,14 @@ public:
     s_nIndTexMtxChanged |= 1 << matrixidx;
   }
 
+  static void SetTevIndirectChanged();
+
   static inline void SetZTextureTypeChanged()
   {
     s_bZTextureTypeChanged = true;
   }
+
+  static void SetZTextureOpChanged();
 
   static inline void SetTexCoordChanged(u8 texmapid)
   {
@@ -89,6 +98,11 @@ public:
     s_EfbScaleChanged = true;
   }
 
+  static void SetGenModeChanged();
+  static void SetZModeControl();
+  static void SetBlendModeChanged();
+  static void SetBoundingBoxActive(bool active);
+
   static void SetZSlope(float dfdx, float dfdy, float f0);
   static void SetColorMatrix(const float* pmatrix);
   static void InvalidateXFRange(u32 start, u32 end);
@@ -103,10 +117,13 @@ private:
   static bool s_bFogRangeAdjustChanged;
   static bool s_bViewPortChanged;
   static bool s_EfbScaleChanged;
+  static bool s_bIndirectDirty;
+  static bool s_bDestAlphaDirty;
   static u8 s_nTexDimsChanged;
   static u8 s_nIndTexScaleChanged;
   static int s_materials_changed;
   static void SetPSTextureDims(int texid);
   alignas(256) static float psconstants[ConstantBufferSize];
+  static PixelShaderConstants* Debug_view;
   static ConstatBuffer m_buffer;
 };

@@ -196,15 +196,15 @@ u32 Renderer::AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data)
     // check what to do with the alpha channel (GX_PokeAlphaRead)
     PixelEngine::UPEAlphaReadReg alpha_read_mode = PixelEngine::GetAlphaReadMode();
 
-    if (bpmem.zcontrol.pixel_format == PEControl::RGBA6_Z24)
+    if (bpmem.zcontrol.pixel_format.Value() == PEControl::RGBA6_Z24)
     {
       color = RGBA8ToRGBA6ToRGBA8(color);
     }
-    else if (bpmem.zcontrol.pixel_format == PEControl::RGB565_Z16)
+    else if (bpmem.zcontrol.pixel_format.Value() == PEControl::RGB565_Z16)
     {
       color = RGBA8ToRGB565ToRGBA8(color);
     }
-    if (bpmem.zcontrol.pixel_format != PEControl::RGBA6_Z24)
+    if (bpmem.zcontrol.pixel_format.Value() != PEControl::RGBA6_Z24)
     {
       color |= 0xFF000000;
     }
@@ -228,7 +228,7 @@ u32 Renderer::AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data)
     float depth = 1.0f - FramebufferManager::GetInstance()->PeekEFBDepth(x, y);
     u32 ret = 0;
 
-    if (bpmem.zcontrol.pixel_format == PEControl::RGB565_Z16)
+    if (bpmem.zcontrol.pixel_format.Value() == PEControl::RGB565_Z16)
     {
       // if Z is in 16 bit format you must return a 16 bit integer
       ret = MathUtil::Clamp<u32>(static_cast<u32>(depth * 65536.0f), 0, 0xFFFF);
@@ -353,9 +353,9 @@ void Renderer::ClearScreen(const EFBRectangle& rc, bool color_enable, bool alpha
 
   // Determine whether the EFB has an alpha channel. If it doesn't, we can clear the alpha
   // channel to 0xFF. This hopefully allows us to use the fast path in most cases.
-  if (bpmem.zcontrol.pixel_format == PEControl::RGB565_Z16 ||
-    bpmem.zcontrol.pixel_format == PEControl::RGB8_Z24 ||
-    bpmem.zcontrol.pixel_format == PEControl::Z24)
+  if (bpmem.zcontrol.pixel_format.Value() == PEControl::RGB565_Z16 ||
+    bpmem.zcontrol.pixel_format.Value() == PEControl::RGB8_Z24 ||
+    bpmem.zcontrol.pixel_format.Value() == PEControl::Z24)
   {
     // Force alpha writes, and clear the alpha channel. This is different to the other backends,
     // where the existing values of the alpha channel are preserved.
@@ -591,6 +591,12 @@ void Renderer::SwapImpl(u32 xfb_addr, u32 fb_width, u32 fb_stride, u32 fb_height
 
   // Clean up stale textures.
   TextureCache::GetInstance()->Cleanup(frameCount);
+
+  if (CheckForHostConfigChanges())
+  {
+    g_command_buffer_mgr->WaitForGPUIdle();
+    g_object_cache->Reload();
+  }
 }
 
 void Renderer::ResolveEFBForSwap(const TargetRectangle& scaled_rect)
@@ -1275,7 +1281,7 @@ void Renderer::SetGenerationMode()
   RasterizationState new_rs_state = {};
   new_rs_state.bits = StateTracker::GetInstance()->GetRasterizationState().bits;
 
-  switch (bpmem.genMode.cullmode)
+  switch (bpmem.genMode.cullmode.Value())
   {
   case GenMode::CULL_NONE:
     new_rs_state.cull_mode = VK_CULL_MODE_NONE;
@@ -1300,11 +1306,11 @@ void Renderer::SetGenerationMode()
 void Renderer::SetDepthMode()
 {
   DepthStencilState new_ds_state = {};
-  new_ds_state.test_enable = bpmem.zmode.testenable ? VK_TRUE : VK_FALSE;
-  new_ds_state.write_enable = bpmem.zmode.updateenable ? VK_TRUE : VK_FALSE;
+  new_ds_state.test_enable = bpmem.zmode.testenable.Value() ? VK_TRUE : VK_FALSE;
+  new_ds_state.write_enable = bpmem.zmode.updateenable.Value() ? VK_TRUE : VK_FALSE;
 
   // Inverted depth, hence these are swapped
-  switch (bpmem.zmode.func)
+  switch (bpmem.zmode.func.Value())
   {
   case ZMode::NEVER:
     new_ds_state.compare_op = VK_COMPARE_OP_NEVER;
@@ -1344,9 +1350,9 @@ void Renderer::SetColorMask()
 
   if (bpmem.alpha_test.TestResult() != AlphaTest::FAIL)
   {
-    if (bpmem.blendmode.alphaupdate && bpmem.zcontrol.pixel_format == PEControl::RGBA6_Z24)
+    if (bpmem.blendmode.alphaupdate.Value() && bpmem.zcontrol.pixel_format.Value() == PEControl::RGBA6_Z24)
       color_mask |= VK_COLOR_COMPONENT_A_BIT;
-    if (bpmem.blendmode.colorupdate)
+    if (bpmem.blendmode.colorupdate.Value())
       color_mask |= VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT;
   }
 
@@ -1391,14 +1397,14 @@ void Renderer::SetBlendMode(bool force_update)
 
   // Our render target always uses an alpha channel, so we need to override the blend functions to
   // assume a destination alpha of 1 if the render target isn't supposed to have an alpha channel.
-  bool target_has_alpha = bpmem.zcontrol.pixel_format == PEControl::RGBA6_Z24;
-  bool use_dst_alpha = bpmem.dstalpha.enable && bpmem.blendmode.alphaupdate && target_has_alpha &&
+  bool target_has_alpha = bpmem.zcontrol.pixel_format.Value() == PEControl::RGBA6_Z24;
+  bool use_dst_alpha = bpmem.dstalpha.enable.Value() && bpmem.blendmode.alphaupdate.Value() && target_has_alpha &&
     g_vulkan_context->SupportsDualSourceBlend();
 
   new_blend_state.blend_enable = VK_TRUE;
   new_blend_state.blend_op = VK_BLEND_OP_ADD;
 
-  switch (bpmem.blendmode.srcfactor)
+  switch (bpmem.blendmode.srcfactor.Value())
   {
   case BlendMode::ZERO:
     new_blend_state.src_blend = VK_BLEND_FACTOR_ZERO;
@@ -1432,7 +1438,7 @@ void Renderer::SetBlendMode(bool force_update)
     break;
   }
 
-  switch (bpmem.blendmode.dstfactor)
+  switch (bpmem.blendmode.dstfactor.Value())
   {
   case BlendMode::ZERO:
     new_blend_state.dst_blend = VK_BLEND_FACTOR_ZERO;
@@ -1489,7 +1495,7 @@ void Renderer::SetLogicOpMode()
   new_blend_state.bits = StateTracker::GetInstance()->GetBlendState().bits;
 
   // Does our device support logic ops?
-  bool logic_op_enable = bpmem.blendmode.logicopenable && !bpmem.blendmode.blendenable;
+  bool logic_op_enable = bpmem.blendmode.logicopenable.Value() && !bpmem.blendmode.blendenable.Value();
   if (g_vulkan_context->SupportsLogicOps())
   {
     if (logic_op_enable)
@@ -1501,7 +1507,7 @@ void Renderer::SetLogicOpMode()
         VK_LOGIC_OP_COPY_INVERTED, VK_LOGIC_OP_OR_INVERTED, VK_LOGIC_OP_NAND, VK_LOGIC_OP_SET } };
 
       new_blend_state.logic_op_enable = VK_TRUE;
-      new_blend_state.logic_op = logic_ops[bpmem.blendmode.logicmode];
+      new_blend_state.logic_op = logic_ops[bpmem.blendmode.logicmode.Value()];
     }
     else
     {
@@ -1547,9 +1553,9 @@ void Renderer::SetLogicOpMode()
         { VK_BLEND_FACTOR_ONE, VK_BLEND_OP_ADD, VK_BLEND_FACTOR_ONE } } };
 
       new_blend_state.blend_enable = VK_TRUE;
-      new_blend_state.blend_op = logic_ops[bpmem.blendmode.logicmode].op;
-      new_blend_state.src_blend = logic_ops[bpmem.blendmode.logicmode].src_factor;
-      new_blend_state.dst_blend = logic_ops[bpmem.blendmode.logicmode].dst_factor;
+      new_blend_state.blend_op = logic_ops[bpmem.blendmode.logicmode.Value()].op;
+      new_blend_state.src_blend = logic_ops[bpmem.blendmode.logicmode.Value()].src_factor;
+      new_blend_state.dst_blend = logic_ops[bpmem.blendmode.logicmode.Value()].dst_factor;
       new_blend_state.alpha_blend_op = new_blend_state.blend_op;
       new_blend_state.src_alpha_blend = Util::GetAlphaBlendFactor(new_blend_state.src_blend);
       new_blend_state.dst_alpha_blend = Util::GetAlphaBlendFactor(new_blend_state.dst_blend);

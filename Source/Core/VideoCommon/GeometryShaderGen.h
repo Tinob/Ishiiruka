@@ -3,6 +3,7 @@
 // Refer to the license.txt file included.
 
 #pragma once
+#include <functional>
 
 #include "VideoCommon/BPMemory.h"
 #include "VideoCommon/ShaderGenCommon.h"
@@ -22,21 +23,13 @@ struct geometry_shader_uid_data
   {
     return 0;
   }
-  bool IsPassthrough() const
-  {
-    return primitive_type == PRIMITIVE_TRIANGLES && !stereo && !wireframe;
-  }
+  bool IsPassthrough() const;
 
-  void ClearUnused() {}
+  void ClearUnused(){}
 
-  u32 stereo : 1;
   u32 numTexGens : 4;
   u32 pixel_lighting : 1;
   u32 primitive_type : 2;
-  u32 wireframe : 1;
-  u32 msaa : 1;
-  u32 ssaa : 1;
-  u32 padding : 21;
 };
 
 #pragma pack()
@@ -49,5 +42,6 @@ struct geometry_shader_uid_data
 #define GEOMETRYSHADERGEN_UID_VERSION 1
 typedef ShaderUid<geometry_shader_uid_data> GeometryShaderUid;
 
-void GenerateGeometryShaderCode(ShaderCode& object, const geometry_shader_uid_data& uid_data, API_TYPE ApiType);
+void GenerateGeometryShaderCode(ShaderCode& object, const geometry_shader_uid_data& uid_data, const ShaderHostConfig& hostconfig);
 void GetGeometryShaderUid(GeometryShaderUid& object, u32 primitive_type, const XFMemory &xfr, const u32 components);
+void EnumerateGeometryShaderUids(const std::function<void(const GeometryShaderUid&, size_t)>& callback);

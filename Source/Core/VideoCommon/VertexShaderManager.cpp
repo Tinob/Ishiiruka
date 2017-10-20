@@ -32,6 +32,8 @@ alignas(256) float g_fProjectionMatrix[16];
 bool VertexShaderManager::bProjectionChanged;
 bool VertexShaderManager::bViewportChanged;
 int VertexShaderManager::s_materials_changed;
+bool VertexShaderManager::bTexMtxInfoChanged;
+bool VertexShaderManager::bLightingConfigChanged;
 
 static bool s_tex_matrices_changed[2];
 static int s_transform_matrices_changed[2]; // min,max
@@ -242,6 +244,10 @@ void VertexShaderManager::Dirty()
   bProjectionChanged = true;
 
   s_materials_changed = 15;
+
+  bTexMtxInfoChanged = true;
+  bLightingConfigChanged = true;
+
   memset(s_lights_phong, 0, sizeof(s_lights_phong));
 }
 
@@ -404,8 +410,7 @@ void VertexShaderManager::SetConstants()
     // NOTE: If we ever emulate antialiasing, the sample locations set by
     // BP registers 0x01-0x04 need to be considered here.
     const float pixel_center_correction = ((g_ActiveConfig.backend_info.APIType & API_D3D9) ? 0.0f : 0.5f) - 7.0f / 12.0f;
-    const bool bUseVertexRounding =
-      g_ActiveConfig.bVertexRounding && g_ActiveConfig.iEFBScale != SCALE_1X;
+    const bool bUseVertexRounding = g_ActiveConfig.UseVertexRounding();
     float viewport_width = 2.f * xfmem.viewport.wd;
     float viewport_height = 2.f * xfmem.viewport.ht;
     if (!bUseVertexRounding)
@@ -620,6 +625,27 @@ void VertexShaderManager::SetConstants()
     }
     m_buffer.SetMultiConstant4v(C_PROJECTION, 4, correctedMtx.data);
   }
+  if (bTexMtxInfoChanged)
+  {
+    bTexMtxInfoChanged = false;
+    m_buffer.SetConstant(C_VUBERPARAMS, 1, xfmem.dualTexTrans.enabled);    
+    for (u32 i = 0; i < ArraySize(xfmem.texMtxInfo); i++)
+      m_buffer.SetConstant(C_VUBERXFMEM + i, 0, xfmem.texMtxInfo[i].hex);
+    for (u32 i = 0; i < ArraySize(xfmem.postMtxInfo); i++)
+      m_buffer.SetConstant(C_VUBERXFMEM + i, 1, xfmem.postMtxInfo[i].hex);
+  }
+
+  if (bLightingConfigChanged)
+  {
+    bLightingConfigChanged = false;
+
+    for (u32 i = 0; i < 2; i++)
+    {
+      m_buffer.SetConstant(C_VUBERXFMEM + i, 2, xfmem.color[i].hex);
+      m_buffer.SetConstant(C_VUBERXFMEM + i, 3, xfmem.alpha[i].hex);
+    }
+    m_buffer.SetConstant(C_VUBERPARAMS, 2, xfmem.numChan.numColorChans);
+  }
 }
 
 void VertexShaderManager::InvalidateXFRange(u32 start, u32 end)
@@ -727,6 +753,26 @@ void VertexShaderManager::SetTexMatrixChangedB(u32 Value)
     s_tex_matrices_changed[1] = true;
     g_main_cp_state.matrix_index_b.Hex = Value;
   }
+}
+
+void VertexShaderManager::SetVertexFormat(u32 components)
+{
+  if (components != m_buffer.GetBuffer<u32>(C_VUBERPARAMS)[0])
+  {
+    m_buffer.SetConstant(C_VUBERPARAMS, 0, components);
+  }
+}
+
+void VertexShaderManager::SetTexMatrixInfoChanged(int index)
+{
+  // TODO: Should we track this with more precision, like which indices changed?
+  // The whole vertex constants are probably going to be uploaded regardless.
+  bTexMtxInfoChanged = true;
+}
+
+void VertexShaderManager::SetLightingConfigChanged()
+{
+  bLightingConfigChanged = true;
 }
 
 void VertexShaderManager::TranslateView(float x, float y, float z)

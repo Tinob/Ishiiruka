@@ -364,12 +364,6 @@ void ObjectCache::ClearPipelineCache()
   m_compute_pipeline_objects.clear();
 }
 
-std::string ObjectCache::GetDiskCacheFileName(const char* type)
-{
-  return StringFromFormat("%sIVK-%s-%s.cache", File::GetUserPath(D_SHADERCACHE_IDX).c_str(),
-    SConfig::GetInstance().GetGameID().c_str(), type);
-}
-
 std::string ObjectCache::GetDiskUIDCacheFileName()
 {
   return StringFromFormat("%sIVK-%s-pipeline-uid.cache", File::GetUserPath(D_SHADERUIDCACHE_IDX).c_str(),
@@ -401,7 +395,7 @@ bool ObjectCache::CreatePipelineCache(bool load_from_disk)
 {
   // We have to keep the pipeline cache file name around since when we save it
   // we delete the old one, by which time the game's unique ID is already cleared.
-  m_pipeline_cache_filename = GetDiskCacheFileName("pipeline");
+  m_pipeline_cache_filename = GetDiskShaderCacheFileName(API_VULKAN, "pipeline", true, true);
 
   std::vector<u8> disk_data;
   if (load_from_disk)
@@ -600,90 +594,109 @@ void ObjectCache::LoadShaderCaches()
     StringFromFormat("%s.gs", SConfig::GetInstance().GetGameID().c_str())
   ));
   ShaderCacheReader<VertexShaderUid, VertexShaderUid::ShaderUidHasher> vs_reader(m_vs_cache.shader_map.get());
-  m_vs_cache.disk_cache.OpenAndRead(GetDiskCacheFileName("vs"), vs_reader);
+  m_vs_cache.disk_cache.OpenAndRead(GetDiskShaderCacheFileName(API_VULKAN, "vs", true, true), vs_reader);
 
   ShaderCacheReader<PixelShaderUid, PixelShaderUid::ShaderUidHasher> ps_reader(m_ps_cache.shader_map.get());
-  m_ps_cache.disk_cache.OpenAndRead(GetDiskCacheFileName("ps"), ps_reader);
+  m_ps_cache.disk_cache.OpenAndRead(GetDiskShaderCacheFileName(API_VULKAN, "ps", true, true), ps_reader);
 
   if (g_vulkan_context->SupportsGeometryShaders())
   {
     ShaderCacheReader<GeometryShaderUid, GeometryShaderUid::ShaderUidHasher> gs_reader(m_gs_cache.shader_map.get());
-    m_gs_cache.disk_cache.OpenAndRead(GetDiskCacheFileName("gs"), gs_reader);
+    m_gs_cache.disk_cache.OpenAndRead(GetDiskShaderCacheFileName(API_VULKAN, "gs", true, true), gs_reader);
   }
 
   if (g_ActiveConfig.bCompileShaderOnStartup)
   {
-    int shader_count = 0;
-    m_vs_cache.shader_map->ForEachMostUsedByCategory(gameid,
-      [&](const VertexShaderUid& uid, size_t total)
-    {
-      VertexShaderUid item = uid;
-      item.ClearHASH();
-      item.CalculateUIDHash();
-      vkShaderItem& it = m_vs_cache.shader_map->GetOrAdd(item);
-      if (!it.initialized.test_and_set())
-      {
-        Host_UpdateProgressDialog(GetStringT("Compiling Vertex shaders...").c_str(),
-          static_cast<int>(shader_count), static_cast<int>(total));
-        CompileVertexShaderForUid(item, it);
-      }
-    },
-      [](vkShaderItem& entry)
-    {
-      return !entry.compiled;
-    }
-    , true);
-    shader_count = 0;
-    m_ps_cache.shader_map->ForEachMostUsedByCategory(gameid,
-      [&](const PixelShaderUid& uid, size_t total)
-    {
-      PixelShaderUid item = uid;
-      item.ClearHASH();
-      item.CalculateUIDHash();
-      vkShaderItem& it = m_ps_cache.shader_map->GetOrAdd(item);
-      if (!it.initialized.test_and_set())
-      {
-        Host_UpdateProgressDialog(GetStringT("Compiling Pixel shaders...").c_str(),
-          static_cast<int>(shader_count), static_cast<int>(total));
-        CompilePixelShaderForUid(item, it);
-      }
-    },
-      [](vkShaderItem& entry)
-    {
-      return !entry.compiled;
-    }
-    , true);
-
-    if (g_vulkan_context->SupportsGeometryShaders())
-    {
-      shader_count = 0;
-      m_gs_cache.shader_map->ForEachMostUsedByCategory(gameid,
-        [&](const GeometryShaderUid& uid, size_t total)
-      {
-        GeometryShaderUid item = uid;
-        item.ClearHASH();
-        item.CalculateUIDHash();
-        vkShaderItem& it = m_gs_cache.shader_map->GetOrAdd(item);
-        if (!it.initialized.test_and_set())
-        {
-          Host_UpdateProgressDialog(GetStringT("Compiling Geometry shaders...").c_str(),
-            static_cast<int>(shader_count), static_cast<int>(total));
-          CompileGeometryShaderForUid(item, it);
-        }
-      },
-        [](vkShaderItem& entry)
-      {
-        return !entry.compiled;
-      }
-      , true);
-    }
-    Host_UpdateProgressDialog("", -1, -1);
+    CompileShaders();
   }
 
   SETSTAT(stats.numVertexShadersCreated, static_cast<int>(m_vs_cache.shader_map->size()));
   SETSTAT(stats.numVertexShadersAlive, static_cast<int>(m_vs_cache.shader_map->size()));
   SETSTAT(stats.numPixelShadersCreated, static_cast<int>(m_ps_cache.shader_map->size()));
   SETSTAT(stats.numPixelShadersAlive, static_cast<int>(m_ps_cache.shader_map->size()));
+}
+
+void ObjectCache::CompileShaders()
+{
+  pKey_t gameid = (pKey_t)GetMurmurHash3(reinterpret_cast<const u8*>(SConfig::GetInstance().GetGameID().data()), (u32)SConfig::GetInstance().GetGameID().size(), 0);
+  int shader_count = 0;
+  m_vs_cache.shader_map->ForEachMostUsedByCategory(gameid,
+    [&](const VertexShaderUid& uid, size_t total)
+  {
+    VertexShaderUid item = uid;
+    item.ClearHASH();
+    item.CalculateUIDHash();
+    vkShaderItem& it = m_vs_cache.shader_map->GetOrAdd(item);
+    if (!it.initialized.test_and_set())
+    {
+      Host_UpdateProgressDialog(GetStringT("Compiling Vertex shaders...").c_str(),
+        static_cast<int>(shader_count), static_cast<int>(total));
+      CompileVertexShaderForUid(item, it);
+    }
+  },
+    [](vkShaderItem& entry)
+  {
+    return !entry.compiled;
+  }
+  , true);
+  shader_count = 0;
+  m_ps_cache.shader_map->ForEachMostUsedByCategory(gameid,
+    [&](const PixelShaderUid& uid, size_t total)
+  {
+    PixelShaderUid item = uid;
+    item.ClearHASH();
+    item.CalculateUIDHash();
+    vkShaderItem& it = m_ps_cache.shader_map->GetOrAdd(item);
+    if (!it.initialized.test_and_set())
+    {
+      Host_UpdateProgressDialog(GetStringT("Compiling Pixel shaders...").c_str(),
+        static_cast<int>(shader_count), static_cast<int>(total));
+      CompilePixelShaderForUid(item, it);
+    }
+  },
+    [](vkShaderItem& entry)
+  {
+    return !entry.compiled;
+  }
+  , true);
+
+  if (g_vulkan_context->SupportsGeometryShaders())
+  {
+    shader_count = 0;
+    m_gs_cache.shader_map->ForEachMostUsedByCategory(gameid,
+      [&](const GeometryShaderUid& uid, size_t total)
+    {
+      GeometryShaderUid item = uid;
+      item.ClearHASH();
+      item.CalculateUIDHash();
+      vkShaderItem& it = m_gs_cache.shader_map->GetOrAdd(item);
+      if (!it.initialized.test_and_set())
+      {
+        Host_UpdateProgressDialog(GetStringT("Compiling Geometry shaders...").c_str(),
+          static_cast<int>(shader_count), static_cast<int>(total));
+        CompileGeometryShaderForUid(item, it);
+      }
+    },
+      [](vkShaderItem& entry)
+    {
+      return !entry.compiled;
+    }
+    , true);
+  }
+  Host_UpdateProgressDialog("", -1, -1);
+}
+
+void ObjectCache::Reload()
+{
+  SavePipelineCache();
+  ClearPipelineCache();
+  DestroyShaderCaches();
+  LoadShaderCaches();
+  if (!g_ActiveConfig.bCompileShaderOnStartup)
+  {
+    CompileShaders();
+  }
+  CreatePipelineCache(true);
 }
 
 template <typename T>
@@ -713,7 +726,7 @@ void ObjectCache::CompileVertexShaderForUid(const VertexShaderUid& uid, ObjectCa
   ShaderCompiler::SPIRVCodeVector spv;
   VkShaderModule module = VK_NULL_HANDLE;
   ShaderCode source_code;
-  GenerateVertexShaderCodeVulkan(source_code, uid.GetUidData());
+  GenerateVertexShaderCode(source_code, uid.GetUidData(), ShaderHostConfig::GetCurrent());
   if (ShaderCompiler::CompileVertexShader(&spv, source_code.GetBuffer(),
     source_code.BufferSize()))
   {
@@ -737,7 +750,7 @@ void ObjectCache::CompileGeometryShaderForUid(const GeometryShaderUid& uid, Obje
   ShaderCompiler::SPIRVCodeVector spv;
   VkShaderModule module = VK_NULL_HANDLE;
   ShaderCode source_code;
-  GenerateGeometryShaderCode(source_code, uid.GetUidData(), API_VULKAN);
+  GenerateGeometryShaderCode(source_code, uid.GetUidData(), ShaderHostConfig::GetCurrent());
   if (ShaderCompiler::CompileGeometryShader(&spv, source_code.GetBuffer(),
     source_code.BufferSize()))
   {
@@ -758,7 +771,7 @@ void ObjectCache::CompilePixelShaderForUid(const PixelShaderUid& uid, ObjectCach
   ShaderCompiler::SPIRVCodeVector spv;
   VkShaderModule module = VK_NULL_HANDLE;
   ShaderCode source_code;
-  GeneratePixelShaderCodeVulkan(source_code, uid.GetUidData());
+  GeneratePixelShaderCode(source_code, uid.GetUidData(), ShaderHostConfig::GetCurrent());
   if (ShaderCompiler::CompileFragmentShader(&spv, source_code.GetBuffer(),
     source_code.BufferSize()))
   {

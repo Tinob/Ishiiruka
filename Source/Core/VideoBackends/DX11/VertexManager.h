@@ -9,6 +9,20 @@
 namespace DX11
 {
 
+class D3DBlob;
+
+class D3DVertexFormat : public NativeVertexFormat
+{
+public:
+  D3DVertexFormat(const PortableVertexDeclaration &_vtx_decl);
+  void SetInputLayout(const D3DBlob& vs_bytecode);
+private:
+  std::array<D3D11_INPUT_ELEMENT_DESC, 17> m_elems{};
+  UINT m_num_elems = 0;
+
+  D3D::InputLayoutPtr m_layout;
+};
+
 class VertexManager : public ::VertexManagerBase
 {
 public:
@@ -21,8 +35,7 @@ public:
   void PrepareShaders(PrimitiveType primitive,
     u32 components,
     const XFMemory &xfr,
-    const BPMemory &bpm,
-    bool fromgputhread = true);
+    const BPMemory &bpm);
 protected:
   void ResetBuffer(u32 stride) override;
   u16* GetIndexBuffer() override

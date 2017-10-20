@@ -5,11 +5,12 @@
 #include <windows.h>
 #endif
 using namespace Common;
+std::mutex ThreadPool::m_workerLock;
 
 ThreadPool::ThreadPool() : m_workflag(0), m_workercount(0), m_workers(16)
 {
   m_working.store(true);
-  int workers = cpu_info.logical_cpu_count - 1;
+  int workers = cpu_info.logical_cpu_count - 2;
   workers = workers < 1 ? 1 : workers;
   for (size_t i = 0; i < workers; i++)
   {
@@ -45,22 +46,21 @@ void ThreadPool::NotifyWorkPending()
   ThreadPool::Getinstance().m_workflag.fetch_add(2);
 }
 
-static SpinLock<true> workerLock;
 void ThreadPool::RegisterWorker(IWorker* worker)
 {
-  workerLock.lock();
+  std::lock_guard<std::mutex> guard(m_workerLock);
   ThreadPool& instance = ThreadPool::Getinstance();
   size_t count = instance.m_workercount.fetch_add(1);
   instance.m_workers[count] = worker;
-  workerLock.unlock();
 }
+
 void ThreadPool::UnregisterWorker(IWorker* worker)
 {
-  workerLock.lock();
+  std::lock_guard<std::mutex> guard(m_workerLock);
   ThreadPool& instance = ThreadPool::Getinstance();
-  u32 count = instance.m_workercount.load();
-  u32 index = 0;
-  for (u32 i = 0; i < count; i++)
+  s32 count = instance.m_workercount.load();
+  s32 index = -1;
+  for (s32 i = 0; i < count; i++)
   {
     if (instance.m_workers[i] == worker)
     {
@@ -68,9 +68,11 @@ void ThreadPool::UnregisterWorker(IWorker* worker)
       break;
     }
   }
-  instance.m_workers[index] = instance.m_workers[count - 1];
-  instance.m_workercount.fetch_sub(1);
-  workerLock.unlock();
+  if (index > -1 && index < count)
+  {
+    instance.m_workers[index] = instance.m_workers[count - 1];
+    instance.m_workercount.fetch_sub(1);
+  }
 }
 
 void ThreadPool::Workloop(ThreadPool &state, size_t ID)
@@ -87,7 +89,7 @@ void ThreadPool::Workloop(ThreadPool &state, size_t ID)
         IWorker* worker = state.m_workers[i];
         if (worker)
         {
-          if (worker->NextTask())
+          if (worker->NextTask(ID))
           {
             worked = true;
             state.m_workflag.fetch_sub(1);
@@ -130,7 +132,7 @@ AsyncWorker::~AsyncWorker()
   ThreadPool::UnregisterWorker(this);
 }
 
-bool AsyncWorker::NextTask()
+bool AsyncWorker::NextTask(size_t ID)
 {
   if (m_inputsize.load() > 0)
   {

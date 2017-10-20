@@ -36,26 +36,26 @@ public:
 
 class HLSLAsyncCompiler final : Common::IWorker
 {
+  static constexpr size_t repository_size = 256;
   friend class HLSLCompiler;
   pD3DCompile PD3DCompile;
   HLSLAsyncCompiler();
-  std::atomic<s32> m_repositoryIndex;
-  std::atomic<s32> m_inprogrescounter;
+  s32 m_in_progres_counter = 0;  
   ShaderCompilerWorkUnit* WorkUnitRepository;
-  Common::ManyToManyQueue<ShaderCompilerWorkUnit*, Common::OneToOneQueue<ShaderCompilerWorkUnit*>> m_input;
-  Common::ManyToOneQueue<ShaderCompilerWorkUnit*, Common::OneToOneQueue<ShaderCompilerWorkUnit*>> m_output;
+  std::deque<ShaderCompilerWorkUnit*> m_repository;
+  Common::OneToManyQueue<ShaderCompilerWorkUnit*, Common::CircularQueue<ShaderCompilerWorkUnit*>> m_input;
+  Common::ManyToOneQueue<ShaderCompilerWorkUnit*, Common::CircularQueue<ShaderCompilerWorkUnit*>> m_output;
   HLSLAsyncCompiler(HLSLAsyncCompiler const&);
   void operator=(HLSLAsyncCompiler const&);
 public:
   static HLSLAsyncCompiler& getInstance();
   void SetCompilerFunction(pD3DCompile compilerfunc);
   virtual ~HLSLAsyncCompiler();
-  bool NextTask() override;
+  bool NextTask(size_t ID) override;
   ShaderCompilerWorkUnit* NewUnit(u32 codesize);
   void CompileShaderAsync(ShaderCompilerWorkUnit* unit);
   void ProcCompilationResults();
-  bool CompilationFinished();
-  void WaitForCompilationFinished();
+  bool CompilationFinished();  
   void WaitForFinish();
 };
 

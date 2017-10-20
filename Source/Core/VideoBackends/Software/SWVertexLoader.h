@@ -22,7 +22,7 @@ class SWVertexLoader : public VertexManagerBase
 public:
   SWVertexLoader();
   ~SWVertexLoader();
-  void PrepareShaders(PrimitiveType primitive, u32 components, const XFMemory &xfr, const BPMemory &bpm, bool ongputhread) override
+  void PrepareShaders(PrimitiveType primitive, u32 components, const XFMemory &xfr, const BPMemory &bpm) override
   {}
   std::unique_ptr<NativeVertexFormat> CreateNativeVertexFormat(const PortableVertexDeclaration& vdec) override;
 

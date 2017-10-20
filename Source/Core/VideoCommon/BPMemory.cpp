@@ -13,6 +13,19 @@
 // STATE_TO_SAVE
 BPMemory bpmem;
 
+bool BlendMode::UseLogicOp() const
+{
+  // Logicop bit has lowest priority.
+  if (subtract || blendenable || !logicopenable)
+    return false;
+
+  // Fast path for Kirby's Return to Dreamland, they use it with dstAlpha.
+  if (logicmode == BlendMode::NOOP || logicmode == BlendMode::COPY)
+    return false;
+
+  return true;
+}
+
 // Call browser: OpcodeDecoding.cpp ExecuteDisplayList > Decode() > LoadBPReg()
 void LoadBPReg(u32 value0)
 {

@@ -75,6 +75,7 @@ extern const ConfigInfo<bool> GFX_ENABLE_WIREFRAME;
 extern const ConfigInfo<bool> GFX_DISABLE_FOG;
 extern const ConfigInfo<bool> GFX_BORDERLESS_FULLSCREEN;
 extern const ConfigInfo<bool> GFX_ENABLE_VALIDATION_LAYER;
+extern const ConfigInfo<bool> GFX_ENABLE_SHADER_DEBUG;
 extern const ConfigInfo<bool> GFX_BACKEND_MULTITHREADING;
 extern const ConfigInfo<int> GFX_COMMAND_BUFFER_EXECUTE_INTERVAL;
 extern const ConfigInfo<bool> GFX_SHADER_CACHE;

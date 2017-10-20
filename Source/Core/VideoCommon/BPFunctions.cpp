@@ -110,10 +110,10 @@ To properly emulate the above points, we're doing the following:
 */
 void ClearScreen(const EFBRectangle &rc)
 {
-  bool colorEnable = (bpmem.blendmode.colorupdate != 0);
-  bool alphaEnable = (bpmem.blendmode.alphaupdate != 0);
-  bool zEnable = (bpmem.zmode.updateenable != 0);
-  auto pixel_format = bpmem.zcontrol.pixel_format;
+  bool colorEnable = (bpmem.blendmode.colorupdate.Value() != 0);
+  bool alphaEnable = (bpmem.blendmode.alphaupdate.Value() != 0);
+  bool zEnable = (bpmem.zmode.updateenable.Value() != 0);
+  auto pixel_format = bpmem.zcontrol.pixel_format.Value();
 
   // (1): Disable unused color channels
   if (pixel_format == PEControl::RGB8_Z24 ||
@@ -159,7 +159,7 @@ void OnPixelFormatChange()
     return;
 
   auto old_format = g_renderer->GetPrevPixelFormat();
-  auto new_format = bpmem.zcontrol.pixel_format;
+  auto new_format = bpmem.zcontrol.pixel_format.Value();
 
   // no need to reinterpret pixel data in these cases
   if (new_format == old_format || old_format == PEControl::INVALID_FMT)

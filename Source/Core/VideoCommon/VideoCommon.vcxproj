@@ -94,6 +94,7 @@
     <ClCompile Include="HiresTextures.cpp" />
     <ClCompile Include="HLSLCompiler.cpp" />
     <ClCompile Include="HostTexture.cpp" />
+    <ClCompile Include="ShaderGenCommon.cpp" />
     <ClCompile Include="TessellationShaderGen.cpp" />
     <ClCompile Include="TessellationShaderManager.cpp" />
     <ClCompile Include="ImageWrite.cpp" />
@@ -114,6 +115,9 @@
     <ClCompile Include="TextureConversionShaderGL.cpp" />
     <ClCompile Include="TextureScalerCommon.cpp" />
     <ClCompile Include="TextureUtil.cpp" />
+    <ClCompile Include="UberShaderCommon.cpp" />
+    <ClCompile Include="UberShaderPixel.cpp" />
+    <ClCompile Include="UberShaderVertex.cpp" />
     <ClCompile Include="VertexLoader.cpp" />
     <ClCompile Include="VertexLoaderBase.cpp" />
     <ClCompile Include="VertexLoaderCompiled.cpp" />
@@ -199,6 +203,9 @@
     <ClInclude Include="TextureDecoder.h" />
     <ClInclude Include="TextureScalerCommon.h" />
     <ClInclude Include="TextureUtil.h" />
+    <ClInclude Include="UberShaderCommon.h" />
+    <ClInclude Include="UberShaderPixel.h" />
+    <ClInclude Include="UberShaderVertex.h" />
     <ClInclude Include="VertexLoader.h" />
     <ClInclude Include="VertexLoaderBase.h" />
     <ClInclude Include="VertexLoaderCompiled.h" />

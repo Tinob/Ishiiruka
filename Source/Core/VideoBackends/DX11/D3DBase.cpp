@@ -311,55 +311,56 @@ HRESULT Create(HWND wnd)
     swap_chain_desc.BufferDesc.Width = xres;
     swap_chain_desc.BufferDesc.Height = yres;
   }
-#if defined(_DEBUG)
-  // Creating debug devices can sometimes fail if the user doesn't have the correct
-  // version of the DirectX SDK. If it does, simply fallback to a non-debug device.
-  hr = PD3D11CreateDeviceAndSwapChain(adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr,
-    D3D11_CREATE_DEVICE_SINGLETHREADED | D3D11_CREATE_DEVICE_DEBUG,
-    supported_feature_levels, NUM_SUPPORTED_FEATURE_LEVELS,
-    D3D11_SDK_VERSION, &swap_chain_desc, &swapchain, &device,
-    &featlevel, &context);
-  if (FAILED(hr))
+  if (g_Config.bEnableValidationLayer)
   {
+    // Creating debug devices can sometimes fail if the user doesn't have the correct
+    // version of the DirectX SDK. If it does, simply fallback to a non-debug device.
     hr = PD3D11CreateDeviceAndSwapChain(adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr,
       D3D11_CREATE_DEVICE_SINGLETHREADED | D3D11_CREATE_DEVICE_DEBUG,
-      &supported_feature_levels[1], NUM_SUPPORTED_FEATURE_LEVELS - 1,
+      supported_feature_levels, NUM_SUPPORTED_FEATURE_LEVELS,
       D3D11_SDK_VERSION, &swap_chain_desc, &swapchain, &device,
       &featlevel, &context);
-  }
-  if (SUCCEEDED(hr))
-  {
-    ID3D11Debug *d3dDebug = nullptr;
-    if (SUCCEEDED(device->QueryInterface(__uuidof(ID3D11Debug), (void**)&d3dDebug)))
+    if (FAILED(hr))
     {
-      ID3D11InfoQueue *d3dInfoQueue = nullptr;
-      if (SUCCEEDED(d3dDebug->QueryInterface(__uuidof(ID3D11InfoQueue), (void**)&d3dInfoQueue)))
+      hr = PD3D11CreateDeviceAndSwapChain(adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr,
+        D3D11_CREATE_DEVICE_SINGLETHREADED | D3D11_CREATE_DEVICE_DEBUG,
+        &supported_feature_levels[1], NUM_SUPPORTED_FEATURE_LEVELS - 1,
+        D3D11_SDK_VERSION, &swap_chain_desc, &swapchain, &device,
+        &featlevel, &context);
+    }
+    if (SUCCEEDED(hr))
+    {
+      ID3D11Debug *d3dDebug = nullptr;
+      if (SUCCEEDED(device->QueryInterface(__uuidof(ID3D11Debug), (void**)&d3dDebug)))
       {
-
-        d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_CORRUPTION, true);
-        d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_ERROR, true);
-        d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_WARNING, true);
-        D3D11_MESSAGE_ID hide[] =
+        ID3D11InfoQueue *d3dInfoQueue = nullptr;
+        if (SUCCEEDED(d3dDebug->QueryInterface(__uuidof(ID3D11InfoQueue), (void**)&d3dInfoQueue)))
         {
-            D3D11_MESSAGE_ID_SETPRIVATEDATA_CHANGINGPARAMS,
-            D3D11_MESSAGE_ID_DEVICE_DRAW_SAMPLER_NOT_SET
-            // Add more message IDs here as needed
-        };
 
-        D3D11_INFO_QUEUE_FILTER filter;
-        memset(&filter, 0, sizeof(filter));
-        filter.DenyList.NumIDs = _countof(hide);
-        filter.DenyList.pIDList = hide;
-        d3dInfoQueue->AddStorageFilterEntries(&filter);
+          d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_CORRUPTION, true);
+          d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_ERROR, true);
+          d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_WARNING, true);
+          D3D11_MESSAGE_ID hide[] =
+          {
+              D3D11_MESSAGE_ID_SETPRIVATEDATA_CHANGINGPARAMS,
+              D3D11_MESSAGE_ID_DEVICE_DRAW_SAMPLER_NOT_SET
+              // Add more message IDs here as needed
+          };
 
-        d3dInfoQueue->Release();
+          D3D11_INFO_QUEUE_FILTER filter;
+          memset(&filter, 0, sizeof(filter));
+          filter.DenyList.NumIDs = _countof(hide);
+          filter.DenyList.pIDList = hide;
+          d3dInfoQueue->AddStorageFilterEntries(&filter);
 
+          d3dInfoQueue->Release();
+
+        }
+        d3dDebug->Release();
       }
-      d3dDebug->Release();
     }
   }
-  else
-#endif
+  if(!g_Config.bEnableValidationLayer || FAILED(hr))
   {
     hr = PD3D11CreateDeviceAndSwapChain(adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr,
       D3D11_CREATE_DEVICE_SINGLETHREADED,

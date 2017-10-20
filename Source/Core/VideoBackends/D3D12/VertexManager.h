@@ -23,8 +23,7 @@ public:
   void PrepareShaders(PrimitiveType primitive,
     u32 components,
     const XFMemory &xfr,
-    const BPMemory &bpm,
-    bool fromgputhread = true);
+    const BPMemory &bpm);
   void SetIndexBuffer();
 
 protected:

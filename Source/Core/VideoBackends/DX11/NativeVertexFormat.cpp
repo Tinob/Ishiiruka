@@ -13,18 +13,6 @@
 namespace DX11
 {
 
-class D3DVertexFormat : public NativeVertexFormat
-{
-public:
-  D3DVertexFormat(const PortableVertexDeclaration &_vtx_decl);
-  void SetupVertexPointers() override;
-private:
-  std::array<D3D11_INPUT_ELEMENT_DESC, 16> m_elems{};
-  UINT m_num_elems = 0;
-
-  D3D::InputLayoutPtr m_layout;
-};
-
 std::unique_ptr<NativeVertexFormat> VertexManager::CreateNativeVertexFormat(const PortableVertexDeclaration &_vtx_decl)
 {
   return std::make_unique<D3DVertexFormat>(_vtx_decl);
@@ -123,15 +111,10 @@ D3DVertexFormat::D3DVertexFormat(const PortableVertexDeclaration &_vtx_decl) : m
   }
 }
 
-void D3DVertexFormat::SetupVertexPointers()
+void D3DVertexFormat::SetInputLayout(const D3DBlob& vs_bytecode)
 {
   if (!m_layout)
   {
-    // CreateInputLayout requires a shader input, but it only looks at the
-    // signature of the shader, so we don't need to recompute it if the shader
-    // changes.
-    auto& vs_bytecode = DX11::VertexShaderCache::GetActiveShaderBytecode();
-
     HRESULT hr = DX11::D3D::device->CreateInputLayout(m_elems.data(), m_num_elems, vs_bytecode.Data(), vs_bytecode.Size(), D3D::ToAddr(m_layout));
     if (FAILED(hr)) PanicAlert("Failed to create input layout, %s %d\n", __FILE__, __LINE__);
     DX11::D3D::SetDebugObjectName(m_layout.get(), "input layout used to emulate the GX pipeline");

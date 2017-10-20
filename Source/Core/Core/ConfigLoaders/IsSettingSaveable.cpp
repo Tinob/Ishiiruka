@@ -53,7 +53,8 @@ bool IsSettingSaveable(const Config::ConfigLocation& config_location)
       Config::GFX_EFB_SCALE.location, Config::GFX_TEXFMT_OVERLAY_ENABLE.location,
       Config::GFX_TEXFMT_OVERLAY_CENTER.location, Config::GFX_ENABLE_WIREFRAME.location,
       Config::GFX_DISABLE_FOG.location, Config::GFX_BORDERLESS_FULLSCREEN.location,
-      Config::GFX_ENABLE_VALIDATION_LAYER.location, Config::GFX_BACKEND_MULTITHREADING.location,
+      Config::GFX_ENABLE_VALIDATION_LAYER.location, Config::GFX_ENABLE_SHADER_DEBUG.location,
+      Config::GFX_BACKEND_MULTITHREADING.location,
       Config::GFX_COMMAND_BUFFER_EXECUTE_INTERVAL.location, Config::GFX_SHADER_CACHE.location,
 
       Config::GFX_SW_ZCOMPLOC.location, Config::GFX_SW_ZFREEZE.location,

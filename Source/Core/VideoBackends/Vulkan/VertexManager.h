@@ -27,7 +27,7 @@ public:
 
   std::unique_ptr<NativeVertexFormat>
     CreateNativeVertexFormat(const PortableVertexDeclaration& vtx_decl) override;
-  void PrepareShaders(PrimitiveType primitive, u32 components, const XFMemory &xfr, const BPMemory &bpm, bool ongputhread = true) {}
+  void PrepareShaders(PrimitiveType primitive, u32 components, const XFMemory &xfr, const BPMemory &bpm) {}
 protected:
   void PrepareDrawBuffers(u32 stride);
   void ResetBuffer(u32 stride) override;

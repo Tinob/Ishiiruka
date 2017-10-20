@@ -17,20 +17,6 @@
 namespace DX9
 {
 
-class D3DVertexFormat : public NativeVertexFormat
-{
-public:
-  D3DVertexFormat(const PortableVertexDeclaration &_vtx_decl);
-  ~D3DVertexFormat();
-  void SetupVertexPointers() override;
-  std::array<D3DVERTEXELEMENT9, 16> m_elems{};
-  int m_num_elems = 0;
-private:
-
-
-  LPDIRECT3DVERTEXDECLARATION9 d3d_decl{};
-};
-
 std::unique_ptr<NativeVertexFormat> VertexManager::CreateNativeVertexFormat(const PortableVertexDeclaration &_vtx_decl)
 {
   return std::make_unique<D3DVertexFormat>(_vtx_decl);

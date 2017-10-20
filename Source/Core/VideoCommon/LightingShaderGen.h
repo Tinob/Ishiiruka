@@ -252,3 +252,11 @@ inline void GetLightingShaderUid(LightingUidData& uid_data, const XFMemory &xfr)
     }
   }
 }
+
+static const char s_lighting_struct[] = "struct Light {\n"
+"\tfloat4 color;\n"
+"\tfloat4 cosatt;\n"
+"\tfloat4 distatt;\n"
+"\tfloat4 pos;\n"
+"\tfloat4 dir;\n"
+"};\n";

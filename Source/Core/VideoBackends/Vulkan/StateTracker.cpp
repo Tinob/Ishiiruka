@@ -21,6 +21,7 @@
 #include "VideoCommon/GeometryShaderManager.h"
 #include "VideoCommon/PixelShaderManager.h"
 #include "VideoCommon/Statistics.h"
+#include "VideoCommon/VertexLoaderManager.h"
 #include "VideoCommon/VertexShaderManager.h"
 #include "VideoCommon/VideoConfig.h"
 
@@ -163,7 +164,7 @@ bool StateTracker::PrecachePipelineUID(const SerializedPipelineUID& uid)
 
   // Need to create the vertex declaration first, rather than deferring to when a game creates a
   // vertex loader that uses this format, since we need it to create a pipeline.
-  pinfo.vertex_format = VertexFormat::GetOrCreateMatchingFormat(uid.vertex_decl);
+  pinfo.vertex_format = static_cast<Vulkan::VertexFormat*>(VertexLoaderManager::GetOrCreateMatchingFormat(uid.vertex_decl));
   pinfo.pipeline_layout = uid.ps_uid.GetUidData().bounding_box ?
     g_object_cache->GetPipelineLayout(PIPELINE_LAYOUT_BBOX) :
     g_object_cache->GetPipelineLayout(PIPELINE_LAYOUT_STANDARD);

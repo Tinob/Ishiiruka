@@ -87,7 +87,7 @@ void VertexManager::Draw(u32 stride)
       GL_TRIANGLES
   };
   primitive_mode = modes[m_current_primitive_type];
-  bool cull_changed = primitive_mode != GL_TRIANGLES && bpmem.genMode.cullmode > 0;
+  bool cull_changed = primitive_mode != GL_TRIANGLES && bpmem.genMode.cullmode.Value() > 0;
   if (cull_changed)
   {
     glDisable(GL_CULL_FACE);
@@ -108,7 +108,7 @@ void VertexManager::Draw(u32 stride)
     static_cast<Renderer*>(g_renderer.get())->SetGenerationMode();
 }
 
-void VertexManager::PrepareShaders(PrimitiveType primitive, u32 components, const XFMemory &xfr, const BPMemory &bpm, bool ongputhread)
+void VertexManager::PrepareShaders(PrimitiveType primitive, u32 components, const XFMemory &xfr, const BPMemory &bpm)
 {
   const bool useDstAlpha = bpm.dstalpha.enable && bpm.blendmode.alphaupdate &&
     bpm.zcontrol.pixel_format == PEControl::RGBA6_Z24;
@@ -173,7 +173,7 @@ void VertexManager::vFlush(bool useDstAlpha)
   //
   // This is also used when logic ops and destination alpha is enabled, since we can't enable
   // blending and logic ops concurrently.
-  const bool logic_op_enabled = bpmem.blendmode.logicopenable && bpmem.blendmode.logicmode != BlendMode::LogicOp::COPY && !bpmem.blendmode.blendenable;
+  const bool logic_op_enabled = bpmem.blendmode.logicopenable.Value() && bpmem.blendmode.logicmode.Value() != BlendMode::LogicOp::COPY && !bpmem.blendmode.blendenable;
   // run through vertex groups again to set alpha
   if (useDstAlpha && (!dualSourcePossible || logic_op_enabled))
   {
@@ -192,7 +192,7 @@ void VertexManager::vFlush(bool useDstAlpha)
     // restore color mask
     g_renderer->SetColorMask();
 
-    if (bpmem.blendmode.blendenable || bpmem.blendmode.subtract)
+    if (bpmem.blendmode.blendenable.Value() || bpmem.blendmode.subtract.Value())
       glEnable(GL_BLEND);
     if (logic_op_enabled)
       glEnable(GL_COLOR_LOGIC_OP);

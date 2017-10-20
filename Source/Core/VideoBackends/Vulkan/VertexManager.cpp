@@ -208,7 +208,7 @@ void VertexManager::vFlush(bool use_dst_alpha)
   //
   // This is also used when logic ops and destination alpha is enabled, since we can't enable
   // blending and logic ops concurrently (and the logical operation applies to all channels).
-  bool logic_op_enabled = bpmem.blendmode.logicopenable && !bpmem.blendmode.blendenable;
+  bool logic_op_enabled = bpmem.blendmode.logicopenable.Value() && !bpmem.blendmode.blendenable.Value();
   if (use_dst_alpha && (!g_vulkan_context->SupportsDualSourceBlend() || logic_op_enabled))
   {
     StateTracker::GetInstance()->CheckForShaderChanges(m_current_primitive_type, VertexLoaderManager::g_current_components, PIXEL_SHADER_RENDER_MODE::PSRM_ALPHA_PASS);

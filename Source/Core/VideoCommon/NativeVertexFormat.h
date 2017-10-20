@@ -153,7 +153,6 @@ public:
   NativeVertexFormat& operator=(const NativeVertexFormat&) = delete;
   NativeVertexFormat(NativeVertexFormat&&) = default;
   NativeVertexFormat& operator=(NativeVertexFormat&&) = default;
-  virtual void SetupVertexPointers() = 0;
 
   u32 GetVertexStride() const
   {

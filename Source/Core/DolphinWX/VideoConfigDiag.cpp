@@ -46,10 +46,10 @@ template class BoolSetting<wxCheckBox>;
 template class BoolSetting<wxRadioButton>;
 
 template <>
-SettingCheckBox::BoolSetting(wxWindow* parent, VideoConfig &vconfig, const wxString& label, const wxString& tooltip,
+SettingCheckBox::BoolSetting(wxWindow* parent, const wxString& label, const wxString& tooltip,
   const Config::ConfigInfo<bool>& setting, bool reverse, long style)
   : wxCheckBox(parent, wxID_ANY, label, wxDefaultPosition, wxDefaultSize, style),
-  m_setting(setting), m_reverse(reverse), m_vconfig(vconfig)
+  m_setting(setting), m_reverse(reverse)
 {
   SetToolTip(tooltip);
   SetValue(Config::Get(m_setting) ^ m_reverse);
@@ -59,10 +59,10 @@ SettingCheckBox::BoolSetting(wxWindow* parent, VideoConfig &vconfig, const wxStr
 }
 
 template <>
-SettingRadioButton::BoolSetting(wxWindow* parent, VideoConfig &vconfig, const wxString& label, const wxString& tooltip,
+SettingRadioButton::BoolSetting(wxWindow* parent, const wxString& label, const wxString& tooltip,
   const Config::ConfigInfo<bool>& setting, bool reverse, long style)
   : wxRadioButton(parent, wxID_ANY, label, wxDefaultPosition, wxDefaultSize, style),
-  m_setting(setting), m_reverse(reverse), m_vconfig(vconfig)
+  m_setting(setting), m_reverse(reverse)
 {
   SetToolTip(tooltip);
   SetValue(Config::Get(m_setting) ^ m_reverse);
@@ -72,20 +72,20 @@ SettingRadioButton::BoolSetting(wxWindow* parent, VideoConfig &vconfig, const wx
 }
 
 template <>
-RefBoolSetting<wxCheckBox>::RefBoolSetting(wxWindow* parent, VideoConfig& vconfig, const wxString& label,
+RefBoolSetting<wxCheckBox>::RefBoolSetting(wxWindow* parent, const wxString& label,
   const wxString& tooltip, bool& setting, bool reverse,
   long style)
   : wxCheckBox(parent, wxID_ANY, label, wxDefaultPosition, wxDefaultSize, style),
-  m_setting(setting), m_reverse(reverse), m_vconfig(vconfig)
+  m_setting(setting), m_reverse(reverse)
 {
   SetToolTip(tooltip);
   SetValue(m_setting ^ m_reverse);
   Bind(wxEVT_CHECKBOX, &RefBoolSetting<wxCheckBox>::UpdateValue, this);
 }
 
-SettingChoice::SettingChoice(wxWindow* parent, VideoConfig &vconfig, const Config::ConfigInfo<int>& setting,
+SettingChoice::SettingChoice(wxWindow* parent, const Config::ConfigInfo<int>& setting,
   const wxString& tooltip, int num, const wxString choices[], long style)
-  : wxChoice(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, num, choices), m_setting(setting), m_vconfig(vconfig)
+  : wxChoice(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, num, choices), m_setting(setting)
 {
   SetToolTip(tooltip);
   Select(Config::Get(m_setting));
@@ -95,7 +95,6 @@ SettingChoice::SettingChoice(wxWindow* parent, VideoConfig &vconfig, const Confi
 void SettingChoice::UpdateValue(wxCommandEvent& ev)
 {
   Config::SetBaseOrCurrent(m_setting, ev.GetInt());
-  m_vconfig.Refresh();
   ev.Skip();
 }
 
@@ -229,15 +228,27 @@ wxTRANSLATE("Round 2D vertices to whole pixels.  Fixes some "
   "games at higher internal resolutions.  This setting is disabled and turned off "
   "at 1x IR.\n\nIf unsure, leave this unchecked.");
 
+static wxString ubershader_desc =
+wxTRANSLATE("Disabled: Ubershaders are never used. Stuttering will occur during shader "
+  "compilation, but GPU demands are low. Recommended for low-end hardware.\n\n"
+  "Hybrid: Ubershaders will be used to prevent stuttering during shader "
+  "compilation, but traditional shaders will be used when they will not cause "
+  "stuttering. Balances performance and smoothness.\n\n"
+  "Exclusive: Ubershaders will always be used. Only recommended for high-end "
+  "systems.");
+
 VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
   : wxDialog(parent, wxID_ANY,
     wxString::Format(_("Dolphin %s Graphics Configuration"), StrToWxStr(title)),
     wxDefaultPosition, wxDefaultSize)
   , vconfig(g_Config)
 {
-  vconfig.Refresh();
+  // We don't need to load the config if the core is running, since it would have been done
+  // at startup time already.
+  if (!Core::IsRunning())
+    vconfig.Refresh();
 
-  Bind(wxEVT_UPDATE_UI, &VideoConfigDiag::OnUpdateUI, this);
+    Bind(wxEVT_UPDATE_UI, &VideoConfigDiag::OnUpdateUI, this);
 
   wxNotebook* const notebook = new wxNotebook(this, wxID_ANY);
 
@@ -425,6 +436,30 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
       const wxString af_choices[] = { wxT("1x"), wxT("2x"), wxT("4x"), wxT("8x"), wxT("16x") };
       szr_enh->Add(new wxStaticText(page_enh, wxID_ANY, _("Anisotropic Filtering:")), 1, wxALIGN_CENTER_VERTICAL, 0);
       szr_enh->Add(CreateChoice(page_enh, Config::GFX_ENHANCE_MAX_ANISOTROPY, (af_desc), 5, af_choices));
+      szr_enh->AddSpacer(0);
+    }
+
+    // ubershaders
+    if (vconfig.backend_info.bSupportsUberShaders)
+    {
+      const std::array<wxString, 3> mode_choices = { { _("Disabled"), _("Hybrid"), _("Exclusive") } };
+
+      wxChoice* const choice_mode =
+        new wxChoice(page_enh, wxID_ANY, wxDefaultPosition, wxDefaultSize,
+          static_cast<int>(mode_choices.size()), mode_choices.data());
+      RegisterControl(choice_mode, wxGetTranslation(ubershader_desc));
+      szr_enh->Add(new wxStaticText(page_enh, wxID_ANY, _("Ubershaders:")), 1, wxALIGN_CENTER_VERTICAL, 0);
+      szr_enh->Add(choice_mode, 1, wxEXPAND | wxRIGHT);
+
+      // Determine ubershader mode
+      choice_mode->Bind(wxEVT_CHOICE, &VideoConfigDiag::OnUberShaderModeChanged, this);
+      if (Config::GetBase(Config::GFX_DISABLE_SPECIALIZED_SHADERS))
+        choice_mode->SetSelection(2);
+      else if (Config::GetBase(Config::GFX_BACKGROUND_SHADER_COMPILING))
+        choice_mode->SetSelection(1);
+      else
+        choice_mode->SetSelection(0);
+
       szr_enh->AddSpacer(0);
     }
 
@@ -969,7 +1004,7 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
 void VideoConfigDiag::Event_Close(wxCommandEvent& ev)
 {
   Config::Save();
-  vconfig.Refresh();
+
   ev.Skip();
 }
 
@@ -989,7 +1024,7 @@ SettingCheckBox* VideoConfigDiag::CreateCheckBox(wxWindow* parent, const wxStrin
   bool reverse, long style)
 {
   SettingCheckBox* const cb =
-    new SettingCheckBox(parent, vconfig, label, wxString(), setting, reverse, style);
+    new SettingCheckBox(parent, label, wxString(), setting, reverse, style);
   RegisterControl(cb, description);
   return cb;
 }
@@ -999,7 +1034,7 @@ RefBoolSetting<wxCheckBox>* VideoConfigDiag::CreateCheckBoxRefBool(wxWindow* par
   const wxString& description,
   bool& setting)
 {
-  auto* const cb = new RefBoolSetting<wxCheckBox>(parent, vconfig, label, wxString(), setting, false, 0);
+  auto* const cb = new RefBoolSetting<wxCheckBox>(parent, label, wxString(), setting, false, 0);
   RegisterControl(cb, description);
   return cb;
 }
@@ -1009,7 +1044,7 @@ SettingChoice* VideoConfigDiag::CreateChoice(wxWindow* parent,
   const wxString& description, int num,
   const wxString choices[], long style)
 {
-  SettingChoice* const ch = new SettingChoice(parent, vconfig, setting, wxString(), num, choices, style);
+  SettingChoice* const ch = new SettingChoice(parent, setting, wxString(), num, choices, style);
   RegisterControl(ch, description);
   return ch;
 }
@@ -1020,7 +1055,7 @@ SettingRadioButton* VideoConfigDiag::CreateRadioButton(wxWindow* parent, const w
   bool reverse, long style)
 {
   SettingRadioButton* const rb =
-    new SettingRadioButton(parent, vconfig, label, wxString(), setting, reverse, style);
+    new SettingRadioButton(parent, label, wxString(), setting, reverse, style);
   RegisterControl(rb, description);
   return rb;
 }
@@ -1135,7 +1170,7 @@ void VideoConfigDiag::Event_Stc(wxCommandEvent &ev)
 {
   int samples[] = { 0, 512, 128 };
   Config::SetBaseOrCurrent(Config::GFX_SAFE_TEXTURE_CACHE_COLOR_SAMPLES, samples[ev.GetInt()]);
-  vconfig.Refresh();
+
   ev.Skip();
 }
 
@@ -1143,7 +1178,7 @@ void VideoConfigDiag::Event_Bbox(wxCommandEvent &ev)
 {
   int bboxmode = ev.GetInt();
   Config::SetBaseOrCurrent(Config::GFX_HACK_BBOX_MODE, bboxmode);
-  vconfig.Refresh();
+
   text_bboxmode->SetLabel((s_bbox_mode_text[bboxmode]));
   ev.Skip();
 }
@@ -1172,7 +1207,7 @@ void VideoConfigDiag::UpdatePostProcessingShadersConfig()
     }
   }
   Config::SetBaseOrCurrent(Config::GFX_ENHANCE_POST_SHADERS, shaders);
-  vconfig.Refresh();
+
   ReloadPostProcessingShaders();
 }
 
@@ -1299,14 +1334,14 @@ void VideoConfigDiag::Event_ScalingShader(wxCommandEvent& ev)
     button_config_scalingshader->Disable();
 
   ReloadPostProcessingShaders();
-  vconfig.Refresh();
+
 }
 
 void VideoConfigDiag::Event_StereoShader(wxCommandEvent& ev)
 {
   Config::SetBaseOrCurrent(Config::GFX_STEREO_SHADER, WxStrToStr(ev.GetString()));
   ReloadPostProcessingShaders();
-  vconfig.Refresh();
+
 }
 
 void VideoConfigDiag::Event_ConfigureScalingShader(wxCommandEvent &ev)
@@ -1318,62 +1353,62 @@ void VideoConfigDiag::Event_ConfigureScalingShader(wxCommandEvent &ev)
 void VideoConfigDiag::Event_StereoDepth(wxCommandEvent &ev)
 {
   Config::SetBaseOrCurrent(Config::GFX_STEREO_DEPTH, ev.GetInt());
-  vconfig.Refresh();
+
   ev.Skip();
 }
 
 void VideoConfigDiag::Event_SpecularIntensity(wxCommandEvent &ev)
 {
   Config::SetBaseOrCurrent(Config::GFX_SPECULAR_MULTIPLIER, ev.GetInt());
-  vconfig.Refresh();
+
   ev.Skip();
 }
 
 void VideoConfigDiag::Event_RimIntensity(wxCommandEvent &ev)
 {
   Config::SetBaseOrCurrent(Config::GFX_RIM_INTENSITY, ev.GetInt());
-  vconfig.Refresh();
+
   ev.Skip();
 }
 
 void VideoConfigDiag::Event_RimPower(wxCommandEvent &ev)
 {
   Config::SetBaseOrCurrent(Config::GFX_RIM_POWER, ev.GetInt());
-  vconfig.Refresh();
+
   ev.Skip();
 }
 void VideoConfigDiag::Event_RimBase(wxCommandEvent &ev)
 {
   Config::SetBaseOrCurrent(Config::GFX_RIM_BASE, ev.GetInt());
-  vconfig.Refresh();
+
   ev.Skip();
 }
 
 void VideoConfigDiag::Event_BumpStrength(wxCommandEvent &ev)
 {
   Config::SetBaseOrCurrent(Config::GFX_SIMULATE_BUMP_STRENGTH, ev.GetInt());
-  vconfig.Refresh();
+
   ev.Skip();
 }
 
 void VideoConfigDiag::Event_BumpDetailBlend(wxCommandEvent &ev)
 {
   Config::SetBaseOrCurrent(Config::GFX_SIMULATE_BUMP_DETAIL_BLEND, ev.GetInt());
-  vconfig.Refresh();
+
   ev.Skip();
 }
 
 void VideoConfigDiag::Event_BumpDetailFrequency(wxCommandEvent &ev)
 {
   Config::SetBaseOrCurrent(Config::GFX_SIMULATE_BUMP_DETAIL_FREQUENCY, ev.GetInt());
-  vconfig.Refresh();
+
   ev.Skip();
 }
 
 void VideoConfigDiag::Event_BumpThreshold(wxCommandEvent &ev)
 {
   Config::SetBaseOrCurrent(Config::GFX_SIMULATE_BUMP_THRESHOLD, ev.GetInt());
-  vconfig.Refresh();
+
   ev.Skip();
 }
 
@@ -1383,7 +1418,7 @@ void VideoConfigDiag::Event_ScalingFactor(wxCommandEvent &ev)
   int iTexScalingFactor = ev.GetInt();
   Config::SetBaseOrCurrent(Config::GFX_ENHANCE_TEXTURE_SCALING_FACTOR, iTexScalingFactor);
   label_TextureScale->SetLabel(sf_choices[iTexScalingFactor - 1]);
-  vconfig.Refresh();
+
   ev.Skip();
 }
 
@@ -1394,35 +1429,35 @@ void VideoConfigDiag::Event_StereoConvergence(wxCommandEvent &ev)
   if (90 < value && value < 110)
     conv_slider->SetValue(100);
   Config::SetBaseOrCurrent(Config::GFX_STEREO_CONVERGENCE_PERCENTAGE, conv_slider->GetValue());
-  vconfig.Refresh();
+
   ev.Skip();
 }
 
 void VideoConfigDiag::Event_TessellationDistance(wxCommandEvent &ev)
 {
   Config::SetBaseOrCurrent(Config::GFX_ENHANCE_TESSELLATION_DISTANCE, ev.GetInt());
-  vconfig.Refresh();
+
   ev.Skip();
 }
 
 void VideoConfigDiag::Event_TessellationMax(wxCommandEvent &ev)
 {
   Config::SetBaseOrCurrent(Config::GFX_ENHANCE_TESSELLATION_MAX, ev.GetInt());
-  vconfig.Refresh();
+
   ev.Skip();
 }
 
 void VideoConfigDiag::Event_TessellationRounding(wxCommandEvent &ev)
 {
   Config::SetBaseOrCurrent(Config::GFX_ENHANCE_TESSELLATION_ROUNDING_INTENSITY, ev.GetInt());
-  vconfig.Refresh();
+
   ev.Skip();
 }
 
 void VideoConfigDiag::Event_TessellationDisplacement(wxCommandEvent &ev)
 {
   Config::SetBaseOrCurrent(Config::GFX_ENHANCE_TESSELLATION_DISPLACEMENT_INTENSITY, ev.GetInt());
-  vconfig.Refresh();
+
   ev.Skip();
 }
 
@@ -1433,7 +1468,7 @@ void VideoConfigDiag::Event_StereoMode(wxCommandEvent &ev)
   choice_stereoshader->Enable((ev.GetInt() == STEREO_SHADER));
 
   ReloadPostProcessingShaders();
-  vconfig.Refresh();
+
   ev.Skip();
 }
 
@@ -1674,5 +1709,15 @@ void VideoConfigDiag::OnAAChanged(wxCommandEvent& ev)
   Config::SetBaseOrCurrent(Config::GFX_SSAA, ssaa);
   mode -= ssaa * (aa_modes.size() - 1);
   Config::SetBaseOrCurrent(Config::GFX_MSAA, (u32)aa_modes[mode]);
-  vconfig.Refresh();
+
+}
+
+void VideoConfigDiag::OnUberShaderModeChanged(wxCommandEvent& ev)
+{
+  // 0: No ubershaders
+  // 1: Hybrid ubershaders
+  // 2: Only ubershaders
+  int mode = ev.GetInt();
+  Config::SetBaseOrCurrent(Config::GFX_BACKGROUND_SHADER_COMPILING, mode == 1);
+  Config::SetBaseOrCurrent(Config::GFX_DISABLE_SPECIALIZED_SHADERS, mode == 2);
 }

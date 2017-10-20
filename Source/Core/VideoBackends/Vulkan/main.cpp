@@ -212,6 +212,7 @@ bool VideoBackend::Initialize(void* window_handle)
   g_object_cache = std::make_unique<ObjectCache>();
   g_framebuffer_manager = std::make_unique<FramebufferManager>();
   g_renderer = std::make_unique<Renderer>(std::move(swap_chain));
+  g_vertex_manager = std::make_unique<VertexManager>();
   g_renderer->Init();
   // Invoke init methods on main wrapper classes.
   // These have to be done before the others because the destructors
@@ -220,6 +221,7 @@ bool VideoBackend::Initialize(void* window_handle)
     !StateTracker::CreateInstance() || !Renderer::GetInstance()->Initialize())
   {
     PanicAlert("Failed to initialize Vulkan classes.");
+    g_vertex_manager.reset();
     g_renderer.reset();
     StateTracker::DestroyInstance();
     g_framebuffer_manager.reset();
@@ -232,7 +234,7 @@ bool VideoBackend::Initialize(void* window_handle)
   }
 
   // Create remaining wrapper instances.
-  g_vertex_manager = std::make_unique<VertexManager>();
+  
   g_texture_cache = std::make_unique<TextureCache>();
   g_perf_query = std::make_unique<PerfQuery>();
   if (!VertexManager::GetInstance()->Initialize() || !TextureCache::GetInstance()->Initialize() ||

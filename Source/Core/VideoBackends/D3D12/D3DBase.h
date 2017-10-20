@@ -94,6 +94,8 @@ bool TessellationEnabled();
 D3D_FEATURE_LEVEL GetFeatureLevel();
 bool GetLogicOpSupported();
 ID3D12RootSignature* GetRootSignature();
+ID3D12RootSignature* GetRootSignature(size_t index);
+size_t GetRootSignatureIndex();
 ID3D12RootSignature* GetBasicRootSignature();
 void SetRootSignature(bool geometryenabled, bool tesselationenabled, bool applychange = true);
 

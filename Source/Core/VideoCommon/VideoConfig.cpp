@@ -3,6 +3,7 @@
 // Refer to the license.txt file included.
 
 #include <cmath>
+#include <mutex>
 
 #include "Common/CPUDetect.h"
 #include "Common/CommonTypes.h"
@@ -18,12 +19,14 @@
 
 VideoConfig g_Config;
 VideoConfig g_ActiveConfig;
+static std::mutex config_mutex;
 static bool s_has_registered_callback = false;
 
 void UpdateActiveConfig()
 {
   if (Movie::IsPlayingInput() && Movie::IsConfigSaved())
     Movie::SetGraphicsConfig();
+  std::unique_lock<std::mutex> config_lock(config_mutex);
   g_ActiveConfig = g_Config;
 }
 void VideoConfig::ClearFormats()
@@ -56,6 +59,7 @@ VideoConfig::VideoConfig()
   backend_info.bSupportsMultithreading = false;
   backend_info.bSupportsInternalResolutionFrameDumps = false;
   bEnableValidationLayer = false;
+  bEnableShaderDebug = false;
   bBackendMultithreading = true;
   backend_info.MaxTextureSize = 4096;
 }
@@ -64,10 +68,17 @@ void VideoConfig::Refresh()
 {
   if (!s_has_registered_callback)
   {
-    Config::AddConfigChangedCallback([]() { g_Config.Refresh(); });
+    // There was a race condition between the video thread and the host thread here, if
+    // corrections need to be made by VerifyValidity(). Briefly, the config will contain
+    // invalid values. Instead, pause emulation first, which will flush the video thread,
+    // update the config and correct it, then resume emulation, after which the video
+    // thread will detect the config has changed and act accordingly.
+    Config::AddConfigChangedCallback([]()
+    {
+      Core::RunAsCPUThread([]() { g_Config.Refresh(); }); });
     s_has_registered_callback = true;
   }
-
+  std::unique_lock<std::mutex> config_lock(config_mutex);
   bVSync = Config::Get(Config::GFX_VSYNC);
   iAdapter = Config::Get(Config::GFX_ADAPTER);
 
@@ -125,6 +136,7 @@ void VideoConfig::Refresh()
   bDisableFog = Config::Get(Config::GFX_DISABLE_FOG);
   bBorderlessFullscreen = Config::Get(Config::GFX_BORDERLESS_FULLSCREEN);
   bEnableValidationLayer = Config::Get(Config::GFX_ENABLE_VALIDATION_LAYER);
+  bEnableShaderDebug = Config::Get(Config::GFX_ENABLE_SHADER_DEBUG);
   bBackendMultithreading = Config::Get(Config::GFX_BACKEND_MULTITHREADING);
   iCommandBufferExecuteInterval = Config::Get(Config::GFX_COMMAND_BUFFER_EXECUTE_INTERVAL);
 
@@ -222,6 +234,7 @@ void VideoConfig::VerifyValidity()
     iAdapter = 0;
   if (std::find(backend_info.AAModes.begin(), backend_info.AAModes.end(), iMultisamples) == backend_info.AAModes.end())
     iMultisamples = 1;
+  iMultisamples = std::max(iMultisamples, 1u);
   if (!backend_info.bSupportsPixelLighting) bEnablePixelLighting = false;
   bForcePhongShading = bForcePhongShading && bEnablePixelLighting;
   bForcedLighting = bForcedLighting && bEnablePixelLighting;

@@ -51,7 +51,7 @@ public:
   PrimitiveType GetPrimitiveType(int primitive);
   void PrepareForAdditionalData(int primitive, u32 count, u32 stride);
 
-  virtual void PrepareShaders(PrimitiveType primitive, u32 components, const XFMemory &xfr, const BPMemory &bpm, bool ongputhread) = 0;
+  virtual void PrepareShaders(PrimitiveType primitive, u32 components, const XFMemory &xfr, const BPMemory &bpm) = 0;
   void Flush()
   {
     if (m_is_flushed)

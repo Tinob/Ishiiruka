@@ -30,40 +30,36 @@ template <typename W>
 class BoolSetting : public W
 {
 public:
-  BoolSetting(wxWindow* parent, VideoConfig &vconfig, const wxString& label, const wxString& tooltip,
+  BoolSetting(wxWindow* parent, const wxString& label, const wxString& tooltip,
     const Config::ConfigInfo<bool>& setting, bool reverse = false, long style = 0);
 
   void UpdateValue(wxCommandEvent& ev)
   {
     Config::SetBaseOrCurrent(m_setting, (ev.GetInt() != 0) != m_reverse);
-    m_vconfig.Refresh();
     ev.Skip();
   }
 
 private:
   Config::ConfigInfo<bool> m_setting;
   const bool m_reverse;
-  VideoConfig& m_vconfig;
 };
 
 template <typename W>
 class RefBoolSetting : public W
 {
 public:
-  RefBoolSetting(wxWindow* parent, VideoConfig &vconfig, const wxString& label, const wxString& tooltip, bool& setting,
+  RefBoolSetting(wxWindow* parent, const wxString& label, const wxString& tooltip, bool& setting,
     bool reverse = false, long style = 0);
 
   void UpdateValue(wxCommandEvent& ev)
   {
     m_setting = (ev.GetInt() != 0) != m_reverse;
-    m_vconfig.Refresh();
     ev.Skip();
   }
 
 private:
   bool& m_setting;
   const bool m_reverse;
-  VideoConfig& m_vconfig;
 };
 
 typedef BoolSetting<wxCheckBox> SettingCheckBox;
@@ -72,31 +68,28 @@ typedef BoolSetting<wxRadioButton> SettingRadioButton;
 class IntegerSetting : public wxSpinCtrl
 {
 public:
-  IntegerSetting(wxWindow* parent, VideoConfig &vconfig, const wxString& label, const Config::ConfigInfo<int>& setting,
+  IntegerSetting(wxWindow* parent, const wxString& label, const Config::ConfigInfo<int>& setting,
     int minVal, int maxVal, long style = 0);
 
   void UpdateValue(wxCommandEvent& ev)
   {
     Config::SetBaseOrCurrent(m_setting, ev.GetInt());
-    m_vconfig.Refresh();
     ev.Skip();
   }
 
 private:
   Config::ConfigInfo<int> m_setting;
-  VideoConfig &m_vconfig;
 };
 
 class SettingChoice : public wxChoice
 {
 public:
-  SettingChoice(wxWindow* parent, VideoConfig &vconfig, const Config::ConfigInfo<int>& setting, const wxString& tooltip,
+  SettingChoice(wxWindow* parent, const Config::ConfigInfo<int>& setting, const wxString& tooltip,
     int num = 0, const wxString choices[] = nullptr, long style = 0);
   void UpdateValue(wxCommandEvent& ev);
 
 private:
   Config::ConfigInfo<int> m_setting;
-  VideoConfig &m_vconfig;
 };
 
 class VideoConfigDiag : public wxDialog
@@ -178,6 +171,8 @@ protected:
   void PopulateStereoShaders();
   void PopulateAAList();
   void OnAAChanged(wxCommandEvent& ev);
+  void OnUberShaderModeChanged(wxCommandEvent& ev);
+
   wxChoice* choice_backend;
   wxChoice* choice_adapter;
   wxChoice* choice_display_resolution;

@@ -32,7 +32,7 @@ public:
   {
     vtx_decl = _vtx_decl;
   }
-  void SetupVertexPointers() override
+  void SetupVertexPointers()
   {}
 };
 

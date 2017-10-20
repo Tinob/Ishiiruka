@@ -4,6 +4,9 @@
 
 #pragma once
 
+#include <memory>
+#include <tuple>
+
 #include "Common/GL/GLUtil.h"
 #include "Common/LinearDiskCache.h"
 
@@ -11,6 +14,7 @@
 #include "VideoCommon/ObjectUsageProfiler.h"
 #include "VideoCommon/PixelShaderGen.h"
 #include "VideoCommon/VertexShaderGen.h"
+
 
 namespace OGL
 {
@@ -31,27 +35,12 @@ public:
   }
   bool operator <(const SHADERUID& r) const
   {
-    if (puid < r.puid)
-      return true;
-
-    if (r.puid < puid)
-      return false;
-
-    if (vuid < r.vuid)
-      return true;
-
-    if (r.vuid < vuid)
-      return false;
-
-    if (guid < r.guid)
-      return true;
-
-    return false;
+    return std::tie(vuid, puid, guid) < std::tie(r.vuid, r.puid, r.guid);
   }
 
   bool operator ==(const SHADERUID& r) const
   {
-    return puid == r.puid && vuid == r.vuid && guid == r.guid;
+    return std::tie(vuid, puid, guid) == std::tie(r.vuid, r.puid, r.guid);
   }
 
   struct ShaderUidHasher
@@ -112,12 +101,14 @@ public:
   static void UploadConstants();
 
   static void Init();
-  static void Shutdown();
+  static void Shutdown(bool shadersonly = false);
   static void CreateHeader();
-
+  static void Reload();
   static u32 GetUniformBufferAlignment();
 
 private:
+  static void LoadFromDisk();
+  static void CompileShaders();
   class ProgramShaderCacheInserter : public LinearDiskCacheReader<SHADERUID, u8>
   {
   public:

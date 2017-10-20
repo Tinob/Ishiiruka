@@ -23,13 +23,12 @@ public:
     const XFMemory &xfr,
     const BPMemory &bpm,
     const PrimitiveType primitiveType,
-    const u32 components,
-    bool ongputhread);
+    const u32 components);
   static bool TestShader();
   static void InsertByteCode(
     const TessellationShaderUid &uid,
     const void* bytecode,
-    unsigned int bytecodelen, bool isdomain);
+    u32 bytecodelen, bool isdomain);
   static D3D::BufferDescriptor GetConstantBuffer();
   static ID3D11HullShader* GetActiveHullShader()
   {
@@ -67,8 +66,7 @@ private:
   static HDCache* s_hulldomain_shaders;
   static const HDCacheEntry* s_last_entry;
   static TessellationShaderUid s_last_uid;
-  static TessellationShaderUid s_external_last_uid;
-  static void CompileHDShader(const TessellationShaderUid& uid, bool ongputhread);
+  static void CompileHDShader(const TessellationShaderUid& uid, std::function<void()> oncompilationfinished);
 };
 
 }  // namespace DX11

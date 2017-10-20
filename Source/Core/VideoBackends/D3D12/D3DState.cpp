@@ -39,21 +39,33 @@ public:
       return;
 
     D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = {};
-    desc.GS = ShaderCache::GetGeometryShaderFromUid(&key.gs_uid);
-    desc.PS = ShaderCache::GetPixelShaderFromUid(&key.ps_uid);
-    desc.VS = ShaderCache::GetVertexShaderFromUid(&key.vs_uid);
-    desc.HS = ShaderCache::GetHullShaderFromUid(&key.hds_uid);
-    desc.DS = ShaderCache::GetDomainShaderFromUid(&key.hds_uid);
+    desc.GS = ShaderCache::GetGeometryShaderFromUid(key.gs_uid);
+    if (key.using_uber_pixel_shader)
+    {
+      desc.PS = ShaderCache::GetPixelUberShaderFromUid(key.pus_uid);
+    }
+    else
+    {
+      desc.PS = ShaderCache::GetPixelShaderFromUid(key.ps_uid);
+    }
+    if (key.using_uber_vertex_shader)
+    {
+      desc.VS = ShaderCache::GetVertexShaderFromUid(key.vs_uid);
+    }
+    else
+    {
+      desc.VS = ShaderCache::GetVertexUberShaderFromUid(key.vus_uid);
+    }
+    desc.HS = ShaderCache::GetHullShaderFromUid(key.hds_uid);
+    desc.DS = ShaderCache::GetDomainShaderFromUid(key.hds_uid);
     D3D::SetRootSignature(desc.GS.pShaderBytecode != nullptr, desc.HS.pShaderBytecode != nullptr, false);
-    desc.pRootSignature = D3D::GetRootSignature();
+    desc.pRootSignature = D3D::GetRootSignature(static_cast<size_t>(key.root_signature_index));
     desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM; // This state changes in PSTextureEncoder::Encode.
     desc.DSVFormat = DXGI_FORMAT_D32_FLOAT; // This state changes in PSTextureEncoder::Encode.
     desc.IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_0xFFFF;
     desc.NumRenderTargets = 1;
     desc.SampleMask = UINT_MAX;
     desc.SampleDesc = key.sample_desc;
-
-
 
     if (!desc.PS.pShaderBytecode || !desc.VS.pShaderBytecode)
     {
@@ -77,14 +89,9 @@ public:
 
     // search for a cached native vertex format
     const PortableVertexDeclaration& native_vtx_decl = key.vertex_declaration;
-    std::unique_ptr<NativeVertexFormat>& native = (*VertexLoaderManager::GetNativeVertexFormatMap())[native_vtx_decl];
+    NativeVertexFormat* native = VertexLoaderManager::GetOrCreateMatchingFormat(native_vtx_decl);
 
-    if (!native)
-    {
-      native = g_vertex_manager->CreateNativeVertexFormat(native_vtx_decl);
-    }
-
-    desc.InputLayout = static_cast<D3DVertexFormat*>(native.get())->GetActiveInputLayout();
+    desc.InputLayout = static_cast<D3DVertexFormat*>(native)->GetActiveInputLayout();
 
     desc.CachedPSO.CachedBlobSizeInBytes = value_size;
     desc.CachedPSO.pCachedBlob = value;
@@ -101,6 +108,8 @@ public:
     }
 
     SmallPsoDesc small_desc = {};
+    small_desc.using_uber_pixel_shader = key.using_uber_pixel_shader;
+    small_desc.using_uber_vertex_shader = key.using_uber_vertex_shader;
     small_desc.blend_state.hex = key.blend_state_hex;
     small_desc.depth_stencil_state.packed = key.depth_stencil_state_hex;
     small_desc.rasterizer_state.hex = key.rasterizer_state_hex;
@@ -109,7 +118,7 @@ public:
     small_desc.ps_bytecode = desc.PS;
     small_desc.hs_bytecode = desc.HS;
     small_desc.ds_bytecode = desc.DS;
-    small_desc.input_Layout = static_cast<D3DVertexFormat*>(native.get());
+    small_desc.input_Layout = static_cast<D3DVertexFormat*>(native);
     small_desc.sample_count = key.sample_desc.Count;
     gx_state_cache.m_small_pso_map[small_desc] = pso;
   }
@@ -129,18 +138,9 @@ StateCache::StateCache()
   m_enable_disk_cache = true;
 }
 
-void StateCache::Init()
+void StateCache::LoadFromDisk()
 {
-  if (!gx_state_cache.m_enable_disk_cache)
-  {
-    return;
-  }
-
-  if (!File::Exists(File::GetUserPath(D_SHADERCACHE_IDX)))
-    File::CreateDir(File::GetUserPath(D_SHADERCACHE_IDX));
-
-  std::string cache_filename = StringFromFormat("%sIdx12-%s-pso.cache", File::GetUserPath(D_SHADERCACHE_IDX).c_str(),
-    SConfig::GetInstance().GetGameID().c_str());
+  std::string cache_filename = GetDiskShaderCacheFileName(API_D3D11, "pso", true, true);
 
   PipelineStateCacheInserter inserter;
   s_pso_disk_cache.OpenAndRead(cache_filename, inserter);
@@ -163,6 +163,25 @@ void StateCache::Init()
 
     s_cache_is_corrupted = false;
   }
+}
+
+void StateCache::Reload()
+{
+  m_small_pso_map.clear();
+
+  s_pso_disk_cache.Sync();
+  s_pso_disk_cache.Close();
+  LoadFromDisk();
+}
+
+void StateCache::Init()
+{
+  if (!gx_state_cache.m_enable_disk_cache)
+  {
+    return;
+  }
+
+  LoadFromDisk();
 }
 
 void StateCache::CheckDiskCacheState(IDXGIAdapter* adapter)
@@ -433,7 +452,7 @@ HRESULT StateCache::GetPipelineStateObjectFromCache(const D3D12_GRAPHICS_PIPELIN
   return S_OK;
 }
 
-HRESULT StateCache::GetPipelineStateObjectFromCache(const SmallPsoDesc& pso_desc, ID3D12PipelineState** pso, D3D12_PRIMITIVE_TOPOLOGY_TYPE topology, const GeometryShaderUid* gs_uid, const PixelShaderUid* ps_uid, const VertexShaderUid* vs_uid, const TessellationShaderUid* hds_uid)
+HRESULT StateCache::GetPipelineStateObjectFromCache(const SmallPsoDesc& pso_desc, ID3D12PipelineState** pso, D3D12_PRIMITIVE_TOPOLOGY_TYPE topology)
 {
   auto it = m_small_pso_map.find(pso_desc);
 
@@ -474,13 +493,31 @@ HRESULT StateCache::GetPipelineStateObjectFromCache(const SmallPsoDesc& pso_desc
     {
       // This contains all of the information needed to reconstruct a PSO at startup.
       SmallPsoDiskDesc disk_desc = {};
+      disk_desc.using_uber_pixel_shader = pso_desc.using_uber_pixel_shader;
+      disk_desc.using_uber_vertex_shader = pso_desc.using_uber_vertex_shader;
+      disk_desc.root_signature_index = static_cast<u32>(D3D::GetRootSignatureIndex());
       disk_desc.blend_state_hex = pso_desc.blend_state.hex;
       disk_desc.depth_stencil_state_hex = pso_desc.depth_stencil_state.packed;
       disk_desc.rasterizer_state_hex = pso_desc.rasterizer_state.hex;
-      disk_desc.gs_uid = *gs_uid;
-      disk_desc.ps_uid = *ps_uid;
-      disk_desc.vs_uid = *vs_uid;
-      disk_desc.hds_uid = *hds_uid;
+      disk_desc.gs_uid = ShaderCache::GetActiveGeometryShaderUid();
+      if (pso_desc.using_uber_pixel_shader)
+      {
+        disk_desc.pus_uid = ShaderCache::GetActivePixelUberShaderUid();
+      }
+      else
+      {
+        disk_desc.ps_uid = ShaderCache::GetActivePixelShaderUid();
+      }
+      if (pso_desc.using_uber_vertex_shader)
+      {
+        disk_desc.vus_uid = ShaderCache::GetActiveVertexUberShaderUid();
+      }
+      else
+      {
+        disk_desc.vs_uid = ShaderCache::GetActiveVertexShaderUid();
+      }
+      
+      disk_desc.hds_uid = ShaderCache::GetActiveTessellationShaderUid();
       disk_desc.vertex_declaration = pso_desc.input_Layout->GetVertexDeclaration();
       disk_desc.topology = topology;
       disk_desc.sample_desc.Count = g_ActiveConfig.iMultisamples;

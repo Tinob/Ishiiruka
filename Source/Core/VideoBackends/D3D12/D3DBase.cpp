@@ -669,6 +669,15 @@ ID3D12RootSignature* GetRootSignature()
   return root_signatures[root_signature_index].Get();
 }
 
+ID3D12RootSignature* GetRootSignature(size_t index)
+{
+  return root_signatures[index].Get();
+}
+size_t GetRootSignatureIndex()
+{
+  return root_signature_index;
+}
+
 ID3D12RootSignature* GetBasicRootSignature()
 {
   return root_signatures[0].Get();

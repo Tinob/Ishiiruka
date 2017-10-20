@@ -126,6 +126,7 @@ Renderer::Renderer(void *&window_handle)
   m_bGenerationModeChanged = true;
   m_bDepthModeChanged = true;
   m_bLogicOpModeChanged = true;
+  m_last_host_config_bits = ShaderHostConfig::GetCurrent().bits;
 }
 
 void Renderer::Init()
@@ -732,6 +733,12 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
     BPFunctions::SetScissor();
   }
 
+  if (CheckForHostConfigChanges())
+  {
+    VertexShaderCache::Reload();
+    PixelShaderCache::Reload();
+  }
+
   // Begin new frame
   D3D::BeginFrame();
   RestoreAPIState();
@@ -954,9 +961,9 @@ void Renderer::_SetBlendMode(bool forceUpdate)
   m_bBlendModeChanged = false;
   // Our render target always uses an alpha channel, so we need to override the blend functions to assume a destination alpha of 1 if the render target isn't supposed to have an alpha channel
   // Example: D3DBLEND_DESTALPHA needs to be D3DBLEND_ONE since the result without an alpha channel is assumed to always be 1.
-  bool target_ham_alpha = bpmem.zcontrol.pixel_format == PEControl::RGBA6_Z24;
+  bool target_ham_alpha = bpmem.zcontrol.pixel_format.Value() == PEControl::RGBA6_Z24;
   //really useful for debugging shader and blending errors
-  bool use_DstAlpha = bpmem.dstalpha.enable && bpmem.blendmode.alphaupdate && target_ham_alpha;
+  bool use_DstAlpha = bpmem.dstalpha.enable.Value() && bpmem.blendmode.alphaupdate.Value() && target_ham_alpha;
   bool use_DualSource = use_DstAlpha && g_ActiveConfig.backend_info.bSupportsDualSourceBlend;
   const D3DBLEND d3dSrcFactors[8] =
   {
@@ -981,21 +988,21 @@ void Renderer::_SetBlendMode(bool forceUpdate)
       (target_ham_alpha) ? D3DBLEND_INVDESTALPHA : D3DBLEND_ZERO
   };
 
-  if (bpmem.blendmode.logicopenable && !bpmem.blendmode.blendenable && !forceUpdate)
+  if (bpmem.blendmode.logicopenable.Value() && !bpmem.blendmode.blendenable.Value() && !forceUpdate)
   {
     D3D::SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, false);
     return;
   }
 
-  bool blend_enable = bpmem.blendmode.subtract || bpmem.blendmode.blendenable;
+  bool blend_enable = bpmem.blendmode.subtract.Value() || bpmem.blendmode.blendenable.Value();
   D3D::SetRenderState(D3DRS_ALPHABLENDENABLE, blend_enable);
   D3D::SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, blend_enable && g_ActiveConfig.backend_info.bSupportsSeparateAlphaFunction);
   if (blend_enable)
   {
     D3DBLENDOP op = D3DBLENDOP_ADD;
-    u32 srcidx = bpmem.blendmode.srcfactor;
-    u32 dstidx = bpmem.blendmode.dstfactor;
-    if (bpmem.blendmode.subtract)
+    u32 srcidx = bpmem.blendmode.srcfactor.Value();
+    u32 dstidx = bpmem.blendmode.dstfactor.Value();
+    if (bpmem.blendmode.subtract.Value())
     {
       op = D3DBLENDOP_REVSUBTRACT;
       srcidx = BlendMode::ONE;
@@ -1043,7 +1050,7 @@ void Renderer::_SetGenerationMode()
       D3DCULL_CW,
       D3DCULL_CCW
   };
-  D3D::SetRenderState(D3DRS_CULLMODE, d3dCullModes[bpmem.genMode.cullmode]);
+  D3D::SetRenderState(D3DRS_CULLMODE, d3dCullModes[bpmem.genMode.cullmode.Value()]);
 }
 
 void Renderer::SetDepthMode()
@@ -1066,11 +1073,11 @@ void Renderer::_SetDepthMode()
       D3DCMP_ALWAYS
   };
 
-  D3D::SetRenderState(D3DRS_ZENABLE, bpmem.zmode.testenable);
-  if (bpmem.zmode.testenable)
+  D3D::SetRenderState(D3DRS_ZENABLE, bpmem.zmode.testenable.Value());
+  if (bpmem.zmode.testenable.Value())
   {
-    D3D::SetRenderState(D3DRS_ZWRITEENABLE, bpmem.zmode.updateenable);
-    D3D::SetRenderState(D3DRS_ZFUNC, d3dCmpFuncs[bpmem.zmode.func]);
+    D3D::SetRenderState(D3DRS_ZWRITEENABLE, bpmem.zmode.updateenable.Value());
+    D3D::SetRenderState(D3DRS_ZFUNC, d3dCmpFuncs[bpmem.zmode.func.Value()]);
   }
   else
   {
@@ -1164,15 +1171,15 @@ void Renderer::_SetLogicOpMode()
       D3DBLEND_ONE
   };
 
-  if (bpmem.blendmode.logicopenable && !bpmem.blendmode.blendenable)
+  if (bpmem.blendmode.logicopenable.Value() && !bpmem.blendmode.blendenable.Value())
   {
-    bool logicopenabled = bpmem.blendmode.logicmode != BlendMode::LogicOp::COPY;
+    bool logicopenabled = bpmem.blendmode.logicmode.Value() != BlendMode::LogicOp::COPY;
     D3D::SetRenderState(D3DRS_ALPHABLENDENABLE, logicopenabled);
     if (logicopenabled)
     {
-      D3D::SetRenderState(D3DRS_BLENDOP, d3dLogicOpop[bpmem.blendmode.logicmode]);
-      D3D::SetRenderState(D3DRS_SRCBLEND, d3dLogicOpSrcFactors[bpmem.blendmode.logicmode]);
-      D3D::SetRenderState(D3DRS_DESTBLEND, d3dLogicOpDestFactors[bpmem.blendmode.logicmode]);
+      D3D::SetRenderState(D3DRS_BLENDOP, d3dLogicOpop[bpmem.blendmode.logicmode.Value()]);
+      D3D::SetRenderState(D3DRS_SRCBLEND, d3dLogicOpSrcFactors[bpmem.blendmode.logicmode.Value()]);
+      D3D::SetRenderState(D3DRS_DESTBLEND, d3dLogicOpDestFactors[bpmem.blendmode.logicmode.Value()]);
     }
   }
   else

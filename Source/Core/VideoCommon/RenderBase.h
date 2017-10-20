@@ -154,6 +154,7 @@ protected:
   std::tuple<int, int> CalculateTargetScale(int x, int y) const;
   bool CalculateTargetSize(int multiplier = 1);
 
+  bool CheckForHostConfigChanges();
   static void CheckFifoRecording();
   static void RecordVideoMemory();
 
@@ -180,7 +181,7 @@ protected:
   bool m_xfb_written{};
 
   FPSCounter m_fps_counter;
-
+  u32 m_last_host_config_bits = 0;
   std::unique_ptr<PostProcessor> m_post_processor;
 
   static const float GX_MAX_DEPTH;
@@ -192,12 +193,12 @@ private:
   void RunFrameDumps();
   void ShutdownFrameDumping();
   PEControl::PixelFormat m_prev_efb_format = PEControl::INVALID_FMT;
-  unsigned int m_efb_scale_numeratorX = 1;
-  unsigned int m_efb_scale_numeratorY = 1;
-  unsigned int m_efb_scale_denominatorX = 1;
-  unsigned int m_efb_scale_denominatorY = 1;
-  unsigned int m_ssaa_multiplier = 1;
-
+  u32 m_efb_scale_numeratorX = 1;
+  u32 m_efb_scale_numeratorY = 1;
+  u32 m_efb_scale_denominatorX = 1;
+  u32 m_efb_scale_denominatorY = 1;
+  u32 m_ssaa_multiplier = 1;
+  
   // These will be set on the first call to SetWindowSize.
   u32 m_last_window_request_width = 0;
   u32 m_last_window_request_height = 0;

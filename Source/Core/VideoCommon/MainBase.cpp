@@ -205,7 +205,6 @@ void VideoBackendBase::InitializeShared()
   m_initialized = true;
   g_Config.Refresh();
   g_Config.UpdateProjectionHack();
-  g_Config.VerifyValidity();
   UpdateActiveConfig();
 
   CommandProcessor::Init();

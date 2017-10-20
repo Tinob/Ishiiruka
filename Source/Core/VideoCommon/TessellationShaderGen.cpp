@@ -176,7 +176,7 @@ static inline void WriteStageUID(Tessellation_shader_uid_data& uid_data, int n, 
   const TevStageCombiner::AlphaCombiner &ac = bpm.combiners[n].alphaC;
   // HACK to handle cases where the tex gen is not enabled
   if (!bHasTexCoord)
-    texcoord = bpm.genMode.numtexgens;
+    texcoord = bpm.genMode.numtexgens.Value();
   uid_data.stagehash[n].hasindstage = bHasIndStage;
   uid_data.stagehash[n].tevorders_texcoord = texcoord;
   if (bHasIndStage)
@@ -202,7 +202,7 @@ void GetTessellationShaderUID(TessellationShaderUid& out, const XFMemory& xfr, c
   bool normalpresent = (components & VB_HAS_NRM0) != 0;
   uid_data.numTexGens = numTexgen;
   uid_data.normal = normalpresent;
-  uid_data.genMode_numtevstages = bpm.genMode.numtevstages;
+  uid_data.genMode_numtevstages = bpm.genMode.numtevstages.Value();
   uid_data.genMode_numindstages = numindStages;
   uid_data.msaa = g_ActiveConfig.iMultisamples > 1;
   uid_data.ssaa = g_ActiveConfig.iMultisamples > 1 && g_ActiveConfig.bSSAA;
@@ -211,8 +211,8 @@ void GetTessellationShaderUID(TessellationShaderUid& out, const XFMemory& xfr, c
   {
     for (u32 i = 0; i < numStages; ++i)
     {
-      if (bpm.tevind[i].IsActive() && bpm.tevind[i].bt < numindStages)
-        nIndirectStagesUsed |= 1 << bpm.tevind[i].bt;
+      if (bpm.tevind[i].IsActive() && bpm.tevind[i].bt.Value() < numindStages)
+        nIndirectStagesUsed |= 1 << bpm.tevind[i].bt.Value();
     }
   }
   uid_data.nIndirectStagesUsed = nIndirectStagesUsed;
@@ -451,7 +451,7 @@ inline void GenerateTessellationShader(ShaderCode& out, const Tessellation_shade
     "};\n");
 
   out.Write("struct VS_OUTPUT {\n");
-  GenerateVSOutputMembers<ApiType>(out, true, uid_data.numTexGens);
+  GenerateVSOutputMembers(out, ApiType, true, uid_data.numTexGens);
   out.Write("};\n");
 
   if (ApiType == API_OPENGL)

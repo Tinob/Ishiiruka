@@ -2,6 +2,8 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include <utility>
+
 #include "Core/HW/Memmap.h"
 #include "VideoBackends/DX11/D3DBase.h"
 #include "VideoBackends/DX11/D3DState.h"

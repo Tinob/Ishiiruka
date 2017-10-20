@@ -242,10 +242,13 @@ void VulkanContext::PopulateBackendInfo(VideoConfig* config)
   config->backend_info.bSupportsGSInstancing = false;         // Dependent on features.
   config->backend_info.bSupportsBBox = false;                 // Dependent on features.
   config->backend_info.bSupportsSSAA = false;                 // Dependent on features.
+  config->backend_info.bSupportsFragmentStoresAndAtomics = false;     // Dependent on features.
   config->backend_info.bSupportsDepthClamp = false;           // Dependent on features.
   config->backend_info.bSupportsReversedDepthRange = false;   // No support yet due to driver bugs.
   config->backend_info.bSupportsComputeShaders = true;        // Assumed support.
   config->backend_info.bSupportsGPUTextureDecoding = true;    // Assumed support.
+  config->backend_info.bSupportsBitfield = true;              // Assumed support.
+  config->backend_info.bSupportsDynamicSamplerIndexing = true;        // Assumed support.
   config->ClearFormats();
   config->backend_info.bSupportedFormats[PC_TEX_FMT_RGBA32] = true;
   config->backend_info.bSupportsScaling = false;
@@ -255,6 +258,7 @@ void VulkanContext::PopulateBackendInfo(VideoConfig* config)
   config->backend_info.bSupportsNormalMaps = true;
   config->backend_info.bSupportsInternalResolutionFrameDumps = true;
   config->backend_info.bSupportsAsyncShaderCompilation = false;
+  config->backend_info.bSupportsUberShaders = false;
 }
 
 void VulkanContext::PopulateBackendInfoAdapters(VideoConfig* config, const GPUList& gpu_list)
@@ -275,6 +279,7 @@ void VulkanContext::PopulateBackendInfoFeatures(VideoConfig* config, VkPhysicalD
   config->backend_info.bSupportsGeometryShaders = (features.geometryShader == VK_TRUE);
   config->backend_info.bSupportsGSInstancing = (features.geometryShader == VK_TRUE);
   config->backend_info.bSupportsBBox = (features.fragmentStoresAndAtomics == VK_TRUE);
+  config->backend_info.bSupportsFragmentStoresAndAtomics = (features.fragmentStoresAndAtomics == VK_TRUE);
   config->backend_info.bSupportsSSAA = (features.sampleRateShading == VK_TRUE);
 
   // Disable geometry shader when shaderTessellationAndGeometryPointSize is not supported.

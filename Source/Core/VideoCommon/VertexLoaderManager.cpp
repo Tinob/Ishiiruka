@@ -18,6 +18,7 @@
 #include "VideoCommon/Statistics.h"
 #include "VideoCommon/VertexLoaderManager.h"
 #include "VideoCommon/VertexManagerBase.h"
+#include "VideoCommon/VertexShaderManager.h"
 #include "VideoCommon/VideoConfig.h"
 
 
@@ -33,12 +34,6 @@ static VertexLoaderMap s_vertex_loader_map;
 static NativeVertexFormatMap s_native_vertex_map;
 static NativeVertexFormat* s_current_vtx_fmt;
 u32 g_current_components;
-// TODO - change into array of pointers. Keep a map of all seen so far.
-// Used in D3D12 backend, to populate input layouts used by cached-to-disk PSOs.
-NativeVertexFormatMap* GetNativeVertexFormatMap()
-{
-  return &s_native_vertex_map;
-}
 
 NativeVertexFormat* GetCurrentVertexFormat()
 {
@@ -239,6 +234,72 @@ void MarkAllDirty()
   g_preprocess_cp_state.bases_dirty = true;
 }
 
+NativeVertexFormat* GetOrCreateMatchingFormat(const PortableVertexDeclaration& decl)
+{
+  auto iter = s_native_vertex_map.find(decl);
+  if (iter == s_native_vertex_map.end())
+  {
+    std::unique_ptr<NativeVertexFormat> fmt = g_vertex_manager->CreateNativeVertexFormat(decl);
+    auto ipair = s_native_vertex_map.emplace(decl, std::move(fmt));
+    iter = ipair.first;
+  }
+
+  return iter->second.get();
+}
+
+NativeVertexFormat* GetUberVertexFormat(const PortableVertexDeclaration& decl)
+{
+  // The padding in the structs can cause the memcmp() in the map to create duplicates.
+  // Avoid this by initializing the padding to zero.
+  PortableVertexDeclaration new_decl;
+  std::memset(&new_decl, 0, sizeof(new_decl));
+  new_decl.stride = decl.stride;
+
+  auto MakeDummyAttribute = [](AttributeFormat& attr, EVTXComponentFormat type, int components) {
+    attr.type = type;
+    attr.components = components;
+    attr.offset = 0;
+    attr.enable = true;
+  };
+  auto CopyAttribute = [](AttributeFormat& attr, const AttributeFormat& src) {
+    attr.type = src.type;
+    attr.components = src.components;
+    attr.offset = src.offset;
+    attr.enable = src.enable;
+  };
+
+  if (decl.position.enable)
+    CopyAttribute(new_decl.position, decl.position);
+  else
+    MakeDummyAttribute(new_decl.position, EVTXComponentFormat::FORMAT_FLOAT, 1);
+
+  for (size_t i = 0; i < ArraySize(new_decl.normals); i++)
+  {
+    if (decl.normals[i].enable)
+      CopyAttribute(new_decl.normals[i], decl.normals[i]);
+    else
+      MakeDummyAttribute(new_decl.normals[i], EVTXComponentFormat::FORMAT_FLOAT, 1);
+  }
+  for (size_t i = 0; i < ArraySize(new_decl.colors); i++)
+  {
+    if (decl.colors[i].enable)
+      CopyAttribute(new_decl.colors[i], decl.colors[i]);
+    else
+      MakeDummyAttribute(new_decl.colors[i], EVTXComponentFormat::FORMAT_UBYTE, 4);
+  }
+  for (size_t i = 0; i < ArraySize(new_decl.texcoords); i++)
+  {
+    if (decl.texcoords[i].enable)
+      CopyAttribute(new_decl.texcoords[i], decl.texcoords[i]);
+    else
+      MakeDummyAttribute(new_decl.texcoords[i], EVTXComponentFormat::FORMAT_FLOAT, 1);
+  }
+
+  CopyAttribute(new_decl.posmtx, decl.posmtx);
+
+  return GetOrCreateMatchingFormat(new_decl);
+}
+
 inline VertexLoaderBase *GetOrAddLoader(const TVtxDesc &VtxDesc, const VAT &VtxAttr)
 {
   VertexLoaderUID uid(VtxDesc, VtxAttr);
@@ -303,6 +364,7 @@ bool ConvertVertices(VertexLoaderParameters &parameters, u32 &readsize, u32 &wri
   }
   s_current_vtx_fmt = nativefmt;
   g_current_components = loader->m_native_components;
+  VertexShaderManager::SetVertexFormat(loader->m_native_components);
   g_vertex_manager->PrepareForAdditionalData(parameters.primitive, parameters.count, loader->m_native_stride);
   parameters.destination = g_vertex_manager->GetCurrentBufferPointer();
   s32 finalcount = loader->RunVertices(parameters);

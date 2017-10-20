@@ -201,7 +201,7 @@ struct VideoConfig final
   int iLog; // CONF_ bits
   int iSaveTargetId; // TODO: Should be dropped
 
-                     // Stereoscopy
+  // Stereoscopy
   int iStereoMode;
   int iStereoDepth;
   int iStereoConvergence;
@@ -223,6 +223,7 @@ struct VideoConfig final
   bool bDumpTevTextureFetches;
 
   bool bEnableValidationLayer;
+  bool bEnableShaderDebug;
 
   // Multithreaded submission, currently only supported with Vulkan.
   bool bBackendMultithreading;
@@ -247,7 +248,7 @@ struct VideoConfig final
 
   // Use ubershaders only, don't compile specialized shaders.
   bool bDisableSpecializedShaders;
-
+  
   // Static config per API
   // TODO: Move this out of VideoConfig
   struct
@@ -291,8 +292,10 @@ struct VideoConfig final
     bool bSupportsReversedDepthRange;
     bool bSupportsInternalResolutionFrameDumps;
     bool bSupportsAsyncShaderCompilation;
+    bool bSupportsFragmentStoresAndAtomics;  // a.k.a. OpenGL SSBOs a.k.a. Direct3D UAVs
     bool bSupportsBitfield;                // Needed by UberShaders, so must stay in VideoCommon
     bool bSupportsDynamicSamplerIndexing;  // Needed by UberShaders, so must stay in VideoCommon
+    bool bSupportsUberShaders;
   } backend_info;
 
   // Utility

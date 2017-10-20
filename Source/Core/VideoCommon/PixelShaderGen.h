@@ -4,13 +4,14 @@
 
 #pragma once
 
+#include "Common/CommonTypes.h"
 #include "VideoCommon/BPMemory.h"
 #include "VideoCommon/LightingShaderGen.h"
 #include "VideoCommon/ShaderGenCommon.h"
 #include "VideoCommon/VideoCommon.h"
 
 #define I_COLORS      "color"
-#define I_KCOLORS     "k"
+#define I_KCOLORS     "knst"
 #define I_ALPHA       "alphaRef"
 #define I_TEXDIMS     "texdim"
 #define I_ZBIAS       "czbias"
@@ -24,26 +25,37 @@
 #define I_EFBSCALE    "cefbscale"
 #define I_PPHONG      "cphong"
 
-#define C_COLORMATRIX   0                   // 0
-#define C_COLORS        0                   // 0
-#define C_KCOLORS       (C_COLORS + 4)      // 4
-#define C_ALPHA         (C_KCOLORS + 4)     // 8
-#define C_TEXDIMS       (C_ALPHA + 1)       // 9
-#define C_ZBIAS         (C_TEXDIMS + 8)     //17
-#define C_INDTEXSCALE   (C_ZBIAS + 2)       //19
-#define C_INDTEXMTX     (C_INDTEXSCALE + 2) //21
-#define C_FOGCOLOR      (C_INDTEXMTX + 6)   //27
-#define C_FOGI          (C_FOGCOLOR + 1)    //28
-#define C_FOGF          (C_FOGI + 1)        //29
-#define C_ZSLOPE        (C_FOGF + 2)        //31
-#define C_FLAGS         (C_ZSLOPE + 1)      //32
-#define C_EFBSCALE      (C_FLAGS + 1)       //33
+enum PixelShaderBufferIndex : u32
+{
+  C_COLORMATRIX = 0,
+  C_COLORS = 0,
+  C_KCOLORS = (C_COLORS + 4),
+  C_ALPHA = (C_KCOLORS + 4),
+  C_TEXDIMS = (C_ALPHA + 1),
+  C_ZBIAS = (C_TEXDIMS + 8),
+  C_INDTEXSCALE = (C_ZBIAS + 2),
+  C_INDTEXMTX = (C_INDTEXSCALE + 2),
+  C_FOGCOLOR = (C_INDTEXMTX + 6),
+  C_FOGI = (C_FOGCOLOR + 1),
+  C_FOGF = (C_FOGI + 1),
+  C_ZSLOPE = (C_FOGF + 2),
+  C_FLAGS = (C_ZSLOPE + 1),
+  C_EFBSCALE = (C_FLAGS + 1),
+  C_UBERPARAM0 = (C_EFBSCALE + 1),
+  C_UBERPARAM1 = (C_UBERPARAM0 + 1),
+  C_UBERPARAM2 = (C_UBERPARAM1 + 1),
+  C_UBERPACK1 = (C_UBERPARAM2 + 1),
+  C_UBERPACK2 = (C_UBERPACK1 + 16),
+  C_UBERKONST = (C_UBERPACK2 + 8),
+  C_PCONST_END = (C_UBERKONST + 32),
+  C_PMATERIALS = (C_EFBSCALE + 1),
+  C_PLIGHTS = (C_PMATERIALS + 4),
+  C_PPHONG = (C_PLIGHTS + 40),
+  C_PENVCONST_END = (C_PPHONG + 2)
+};
 
-#define C_PMATERIALS    (C_EFBSCALE + 1)
-#define C_PLIGHTS       (C_PMATERIALS + 4)
-#define C_PPHONG        (C_PLIGHTS + 40)
-#define C_PENVCONST_END (C_PPHONG + 2)
-#define C_PCONST_END    (C_PMATERIALS)
+
+
 // Different ways to achieve rendering with destination alpha
 enum PIXEL_SHADER_RENDER_MODE : unsigned int
 {
@@ -100,7 +112,14 @@ struct pixel_shader_uid_data
 
   void ClearUnused()
   {
+    pad0 = 0;
+    pad1 = 0;
+    pad2 = 0;
     texMtxInfo_n_projection = 0;
+    if (g_ActiveConfig.backend_info.APIType != API_D3D11)
+    {
+      uint_output = 0;
+    }
   }
 
   // TODO: Optimize field order for easy access!
@@ -110,14 +129,13 @@ struct pixel_shader_uid_data
   u32 zfreeze : 1;
   u32 pixel_lighting : 2;
   u32 pixel_normals : 1;
-  u32 stereo : 1;
-  u32 msaa : 1;
-  u32 ssaa : 1;
+  u32 pad1 : 3;
   u32 numColorChans : 2;
   u32 late_ztest : 1;
   u32 rgba6_format : 1;
   u32 dither : 1;
-  u32 pad0 : 10;
+  u32 uint_output : 1;
+  u32 pad0 : 9;
 
   u32 render_mode : 2;
   u32 Pretest : 2;
@@ -137,7 +155,7 @@ struct pixel_shader_uid_data
 
   u32 fog_RangeBaseEnabled : 1;
   u32 ztex_op : 2;
-  u32 fast_depth_calc : 1;
+  u32 pad2 : 1;
   u32 per_pixel_depth : 1;
   u32 forced_early_z : 1;
   u32 early_ztest : 1;
@@ -222,13 +240,4 @@ struct pixel_shader_uid_data
 typedef ShaderUid<pixel_shader_uid_data> PixelShaderUid;
 
 void GetPixelShaderUID(PixelShaderUid& object, PIXEL_SHADER_RENDER_MODE render_mode, u32 components, const XFMemory &xfr, const BPMemory &bpm);
-
-void GeneratePixelShaderCodeD3D9(ShaderCode& object, const pixel_shader_uid_data& uid_data);
-
-void GeneratePixelShaderCodeD3D9SM2(ShaderCode& object, const pixel_shader_uid_data& uid_data);
-
-void GeneratePixelShaderCodeD3D11(ShaderCode& object, const pixel_shader_uid_data& uid_data);
-
-void GeneratePixelShaderCodeGL(ShaderCode& object, const pixel_shader_uid_data& uid_data);
-
-void GeneratePixelShaderCodeVulkan(ShaderCode& object, const pixel_shader_uid_data& uid_data);
+void GeneratePixelShaderCode(ShaderCode& object, const pixel_shader_uid_data& uid_data, const ShaderHostConfig& hostconfig);

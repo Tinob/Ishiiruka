@@ -143,16 +143,16 @@ void VertexManager::Draw(UINT stride)
   }
 }
 
-void VertexManager::PrepareShaders(PrimitiveType primitive, u32 components, const XFMemory &xfr, const BPMemory &bpm, bool ongputhread)
+void VertexManager::PrepareShaders(PrimitiveType primitive, u32 components, const XFMemory &xfr, const BPMemory &bpm)
 {
   bool useDstAlpha = bpm.dstalpha.enable && bpm.blendmode.alphaupdate &&
     bpm.zcontrol.pixel_format == PEControl::RGBA6_Z24;
-  VertexShaderCache::PrepareShader(components, xfr, bpm, ongputhread);
-  GeometryShaderCache::PrepareShader(primitive, xfr, components, ongputhread);
-  PixelShaderCache::PrepareShader(useDstAlpha ? PSRM_DUAL_SOURCE_BLEND : PSRM_DEFAULT, components, xfr, bpm, ongputhread);
+  VertexShaderCache::PrepareShader(components, xfr, bpm);
+  GeometryShaderCache::PrepareShader(primitive, xfr, components);
+  PixelShaderCache::PrepareShader(useDstAlpha ? PSRM_DUAL_SOURCE_BLEND : PSRM_DEFAULT, components, xfr, bpm);
   if (g_ActiveConfig.backend_info.bSupportsTessellation)
   {
-    HullDomainShaderCache::PrepareShader(xfr, bpm, primitive, components, ongputhread);
+    HullDomainShaderCache::PrepareShader(xfr, bpm, primitive, components);
   }
 }
 
@@ -181,10 +181,11 @@ void VertexManager::vFlush(bool useDstAlpha)
     }
   }
   BBox::Update();
-  NativeVertexFormat* current_vertex_format = VertexLoaderManager::GetCurrentVertexFormat();
+  D3DVertexFormat* current_vertex_format = static_cast<D3DVertexFormat*>(VertexLoaderManager::GetCurrentVertexFormat());
   u32 stride = current_vertex_format->GetVertexStride();
   PrepareDrawBuffers(stride);
-  current_vertex_format->SetupVertexPointers();
+  VertexShaderCache::SetActiveShader(current_vertex_format);
+  PixelShaderCache::SetActiveShader();
   g_renderer->ApplyState(useDstAlpha);
 
   Draw(stride);

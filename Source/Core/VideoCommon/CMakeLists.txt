@@ -45,7 +45,11 @@ set(SRCS	AsyncRequests.cpp
 			PNGLoader.cpp
 			PostProcessing.cpp
 			RenderBase.cpp
+			ShaderGenCommon.cpp
 			Statistics.cpp
+			UberShaderCommon.cpp
+			UberShaderPixel.cpp
+			UberShaderVertex.cpp
 			TessellationShaderGen.cpp
 			TessellationShaderManager.cpp
 			TextureCacheBase.cpp

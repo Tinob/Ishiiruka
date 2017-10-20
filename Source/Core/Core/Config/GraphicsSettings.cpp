@@ -93,6 +93,8 @@ const ConfigInfo<bool> GFX_BORDERLESS_FULLSCREEN{{System::GFX, "Settings", "Bord
                                                  false};
 const ConfigInfo<bool> GFX_ENABLE_VALIDATION_LAYER{
     {System::GFX, "Settings", "EnableValidationLayer"}, false};
+const ConfigInfo<bool> GFX_ENABLE_SHADER_DEBUG{
+  { System::GFX, "Settings", "EnableShaderDebug" }, false };
 const ConfigInfo<bool> GFX_BACKEND_MULTITHREADING{
     {System::GFX, "Settings", "BackendMultithreading"}, true};
 const ConfigInfo<int> GFX_COMMAND_BUFFER_EXECUTE_INTERVAL{

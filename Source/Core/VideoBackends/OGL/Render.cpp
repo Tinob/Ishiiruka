@@ -324,6 +324,29 @@ static void InitDriverInfo()
     version = 100 * major + minor;
   }
   break;
+  case DriverDetails::VENDOR_IMGTEC:
+  {
+    // Example version string:
+    // "OpenGL ES 3.2 build 1.9@4850625"
+    // Ends up as "109.4850625" - "1.9" being the branch, "4850625" being the build's change ID
+    // The change ID only makes sense to compare within a branch
+    driver = DriverDetails::DRIVER_IMGTEC;
+    double gl_version;
+    int major, minor, change;
+    constexpr double change_scale = 10000000;
+    sscanf(g_ogl_config.gl_version, "OpenGL ES %lg build %d.%d@%d", &gl_version, &major, &minor,
+      &change);
+    version = 100 * major + minor;
+    if (change >= change_scale)
+    {
+      ERROR_LOG(VIDEO, "Version changeID overflow - change:%d scale:%f", change, change_scale);
+    }
+    else
+    {
+      version += static_cast<double>(change) / change_scale;
+    }
+  }
+  break;
   // We don't care about these
   default:
     break;
@@ -454,6 +477,8 @@ Renderer::Renderer()
     GLExtensions::Supports("GL_EXT_blend_func_extended");
   g_Config.backend_info.bSupportsBBox =
     GLExtensions::Supports("GL_ARB_shader_storage_buffer_object");
+  g_Config.backend_info.bSupportsFragmentStoresAndAtomics =
+    GLExtensions::Supports("GL_ARB_shader_storage_buffer_object");
   g_Config.backend_info.bSupportsGSInstancing = GLExtensions::Supports("GL_ARB_gpu_shader5");
   g_Config.backend_info.bSupportsSSAA = GLExtensions::Supports("GL_ARB_gpu_shader5") &&
     GLExtensions::Supports("GL_ARB_sample_shading");
@@ -478,6 +503,12 @@ Renderer::Renderer()
 
   // Clip distance support is useless without a method to clamp the depth range
   g_Config.backend_info.bSupportsDepthClamp = GLExtensions::Supports("GL_ARB_depth_clamp");
+
+  // Desktop OpenGL supports bitfield manulipation and dynamic sampler indexing if it supports
+  // shader5. OpenGL ES 3.1 supports it implicitly without an extension
+  g_Config.backend_info.bSupportsBitfield = GLExtensions::Supports("GL_ARB_gpu_shader5");
+  g_Config.backend_info.bSupportsDynamicSamplerIndexing =
+    GLExtensions::Supports("GL_ARB_gpu_shader5");
 
   g_ogl_config.bSupportsGLSLCache = GLExtensions::Supports("GL_ARB_get_program_binary");
   g_ogl_config.bSupportsGLPinnedMemory = GLExtensions::Supports("GL_AMD_pinned_memory");
@@ -541,10 +572,13 @@ Renderer::Renderer()
       g_Config.backend_info.bSupportsGSInstancing =
         g_Config.backend_info.bSupportsGeometryShaders && g_ogl_config.SupportedESPointSize > 0;
       g_Config.backend_info.bSupportsSSAA = g_ogl_config.bSupportsAEP;
+      g_Config.backend_info.bSupportsFragmentStoresAndAtomics = true;
       g_Config.backend_info.bSupportsBBox = true;
       g_ogl_config.bSupportsMSAA = true;
       g_ogl_config.bSupportsTextureStorage = true;
       g_ogl_config.bSupports2DTextureStorageMultisample = true;
+      g_Config.backend_info.bSupportsBitfield = true;
+      g_Config.backend_info.bSupportsDynamicSamplerIndexing = g_ogl_config.bSupportsAEP;
       if (g_ActiveConfig.iStereoMode > 0 && g_ActiveConfig.iMultisamples > 1 &&
         !g_ogl_config.bSupports3DTextureStorageMultisample)
       {
@@ -564,6 +598,7 @@ Renderer::Renderer()
       g_Config.backend_info.bSupportsGSInstancing = g_ogl_config.SupportedESPointSize > 0;
       g_Config.backend_info.bSupportsPaletteConversion = true;
       g_Config.backend_info.bSupportsSSAA = true;
+      g_Config.backend_info.bSupportsFragmentStoresAndAtomics = true;
       g_Config.backend_info.bSupportsBBox = true;
       g_ogl_config.bSupportsCopySubImage = true;
       g_ogl_config.bSupportsGLBaseVertex = true;
@@ -572,6 +607,8 @@ Renderer::Renderer()
       g_ogl_config.bSupportsTextureStorage = true;
       g_ogl_config.bSupports2DTextureStorageMultisample = true;
       g_ogl_config.bSupports3DTextureStorageMultisample = true;
+      g_Config.backend_info.bSupportsBitfield = true;
+      g_Config.backend_info.bSupportsDynamicSamplerIndexing = true;
     }
   }
   else
@@ -699,9 +736,6 @@ Renderer::Renderer()
   if (g_ogl_config.max_samples < 1 || !g_ogl_config.bSupportsMSAA)
     g_ogl_config.max_samples = 1;
 
-  g_Config.VerifyValidity();
-  UpdateActiveConfig();
-
   OSD::AddMessage(StringFromFormat("Video Info: %s, %s, %s", g_ogl_config.gl_vendor,
     g_ogl_config.gl_renderer, g_ogl_config.gl_version),
     5000);
@@ -738,6 +772,8 @@ Renderer::Renderer()
   // Because of the fixed framebuffer size we need to disable the resolution
   // options while running  
   UpdateActiveConfig();
+  // Since we modify the config here, we need to update the last host bits, it may have changed.
+  m_last_host_config_bits = ShaderHostConfig::GetCurrent().bits;
   ClearEFBCache();
 }
 
@@ -864,9 +900,9 @@ void Renderer::_SetColorMask()
   GLenum ColorMask = GL_FALSE, AlphaMask = GL_FALSE;
   if (bpmem.alpha_test.TestResult() != AlphaTest::FAIL)
   {
-    if (bpmem.blendmode.colorupdate)
+    if (bpmem.blendmode.colorupdate.Value())
       ColorMask = GL_TRUE;
-    if (bpmem.blendmode.alphaupdate && (bpmem.zcontrol.pixel_format == PEControl::RGBA6_Z24))
+    if (bpmem.blendmode.alphaupdate.Value() && (bpmem.zcontrol.pixel_format.Value() == PEControl::RGBA6_Z24))
       AlphaMask = GL_TRUE;
   }
   glColorMask(ColorMask, ColorMask, ColorMask, AlphaMask);
@@ -1000,7 +1036,7 @@ u32 Renderer::AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data)
     u32 z = s_efbCache[0][cacheRectIdx][yRect * EFB_CACHE_RECT_SIZE + xRect];
 
     // if Z is in 16 bit format you must return a 16 bit integer
-    if (bpmem.zcontrol.pixel_format == PEControl::RGB565_Z16)
+    if (bpmem.zcontrol.pixel_format.Value() == PEControl::RGB565_Z16)
       z = z >> 8;
 
     return z;
@@ -1046,15 +1082,15 @@ u32 Renderer::AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data)
     // check what to do with the alpha channel (GX_PokeAlphaRead)
     PixelEngine::UPEAlphaReadReg alpha_read_mode = PixelEngine::GetAlphaReadMode();
 
-    if (bpmem.zcontrol.pixel_format == PEControl::RGBA6_Z24)
+    if (bpmem.zcontrol.pixel_format.Value() == PEControl::RGBA6_Z24)
     {
       color = RGBA8ToRGBA6ToRGBA8(color);
     }
-    else if (bpmem.zcontrol.pixel_format == PEControl::RGB565_Z16)
+    else if (bpmem.zcontrol.pixel_format.Value() == PEControl::RGB565_Z16)
     {
       color = RGBA8ToRGB565ToRGBA8(color);
     }
-    if (bpmem.zcontrol.pixel_format != PEControl::RGBA6_Z24)
+    if (bpmem.zcontrol.pixel_format.Value() != PEControl::RGBA6_Z24)
     {
       color |= 0xFF000000;
     }
@@ -1271,15 +1307,15 @@ void Renderer::ReinterpretPixelData(unsigned int convtype)
 void Renderer::_SetBlendMode(bool forceUpdate)
 {
   m_bBlendModeChanged = false;
-  if (bpmem.blendmode.logicopenable && !bpmem.blendmode.blendenable && !forceUpdate)
+  if (bpmem.blendmode.logicopenable.Value() && !bpmem.blendmode.blendenable.Value() && !forceUpdate)
   {
     return;
   }
   // Our render target always uses an alpha channel, so we need to override the blend functions to assume a destination alpha of 1 if the render target isn't supposed to have an alpha channel
   // Example: D3DBLEND_DESTALPHA needs to be GL_ONE since the result without an alpha channel is assumed to always be 1.
-  bool target_has_alpha = bpmem.zcontrol.pixel_format == PEControl::RGBA6_Z24;
+  bool target_has_alpha = bpmem.zcontrol.pixel_format.Value() == PEControl::RGBA6_Z24;
 
-  bool useDstAlpha = bpmem.dstalpha.enable && bpmem.blendmode.alphaupdate && target_has_alpha;
+  bool useDstAlpha = bpmem.dstalpha.enable.Value() && bpmem.blendmode.alphaupdate.Value() && target_has_alpha;
   bool useDualSource = useDstAlpha && g_ActiveConfig.backend_info.bSupportsDualSourceBlend;
 
   // Only use dual-source blending when required on drivers that don't support it very well.
@@ -1317,17 +1353,17 @@ void Renderer::_SetBlendMode(bool forceUpdate)
   // 6-8 - dstRGB function
 
   u32 newval = useDualSource << 1;
-  newval |= bpmem.blendmode.subtract << 2;
+  newval |= bpmem.blendmode.subtract.Value() << 2;
 
-  if (bpmem.blendmode.subtract)
+  if (bpmem.blendmode.subtract.Value())
   {
     newval |= 0x0049;  // enable blending src 1 dst 1
   }
-  else if (bpmem.blendmode.blendenable)
+  else if (bpmem.blendmode.blendenable.Value())
   {
     newval |= 1;  // enable blending
-    newval |= bpmem.blendmode.srcfactor << 3;
-    newval |= bpmem.blendmode.dstfactor << 6;
+    newval |= bpmem.blendmode.srcfactor.Value() << 3;
+    newval |= bpmem.blendmode.dstfactor.Value() << 6;
   }
 
   u32 changes = forceUpdate ? 0xFFFFFFFF : newval ^ s_blendMode;
@@ -1577,6 +1613,10 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight,
 
   UpdateActiveConfig();
   g_texture_cache->OnConfigChanged(g_ActiveConfig);
+
+  // Invalidate shader cache when the host config changes.
+  if (CheckForHostConfigChanges())
+    ProgramShaderCache::Reload();
 
   // For testing zbuffer targets.
   // Renderer::SetZBufferRender();
@@ -1935,7 +1975,7 @@ void Renderer::_SetGenerationMode()
   {
     // TODO: GX_CULL_ALL not supported, yet!
     glEnable(GL_CULL_FACE);
-    glFrontFace(bpmem.genMode.cullmode == 2 ? GL_CCW : GL_CW);
+    glFrontFace(bpmem.genMode.cullmode.Value() == 2 ? GL_CCW : GL_CW);
   }
   else
   {
@@ -1963,11 +2003,11 @@ void Renderer::_SetDepthMode()
       GL_ALWAYS
   };
 
-  if (bpmem.zmode.testenable)
+  if (bpmem.zmode.testenable.Value())
   {
     glEnable(GL_DEPTH_TEST);
-    glDepthMask(bpmem.zmode.updateenable ? GL_TRUE : GL_FALSE);
-    glDepthFunc(glCmpFuncs[bpmem.zmode.func]);
+    glDepthMask(bpmem.zmode.updateenable.Value() ? GL_TRUE : GL_FALSE);
+    glDepthFunc(glCmpFuncs[bpmem.zmode.func.Value()]);
   }
   else
   {
@@ -1986,7 +2026,7 @@ void Renderer::SetDepthMode()
 
 void Renderer::_SetLogicOpMode()
 {
-  if (bpmem.blendmode.logicopenable && !bpmem.blendmode.blendenable)
+  if (bpmem.blendmode.logicopenable.Value() && !bpmem.blendmode.blendenable.Value())
   {
     if (GLInterface->GetMode() == GLInterfaceMode::MODE_OPENGL)
     {
@@ -2009,10 +2049,10 @@ void Renderer::_SetLogicOpMode()
           GL_NAND,
           GL_SET
       };
-      if (bpmem.blendmode.logicmode != BlendMode::LogicOp::COPY)
+      if (bpmem.blendmode.logicmode.Value() != BlendMode::LogicOp::COPY)
       {
         glEnable(GL_COLOR_LOGIC_OP);
-        glLogicOp(glLogicOpCodes[bpmem.blendmode.logicmode]);
+        glLogicOp(glLogicOpCodes[bpmem.blendmode.logicmode.Value()]);
       }
       else
       {
@@ -2095,11 +2135,11 @@ void Renderer::_SetLogicOpMode()
       };
       if (bpmem.blendmode.logicmode != BlendMode::LogicOp::COPY)
       {
-        GLenum equation = glLogicOpop[bpmem.blendmode.logicmode];
-        GLenum srcFactor = glLogicOpSrcFactors[bpmem.blendmode.logicmode];
-        GLenum dstFactor = glLogicOpDestFactors[bpmem.blendmode.logicmode];
-        GLenum srcFactorAlpha = glLogicOpSrcFactorsAlpha[bpmem.blendmode.logicmode];
-        GLenum dstFactorAlpha = glLogicOpDestFactorsAlpha[bpmem.blendmode.logicmode];
+        GLenum equation = glLogicOpop[bpmem.blendmode.logicmode.Value()];
+        GLenum srcFactor = glLogicOpSrcFactors[bpmem.blendmode.logicmode.Value()];
+        GLenum dstFactor = glLogicOpDestFactors[bpmem.blendmode.logicmode.Value()];
+        GLenum srcFactorAlpha = glLogicOpSrcFactorsAlpha[bpmem.blendmode.logicmode.Value()];
+        GLenum dstFactorAlpha = glLogicOpDestFactorsAlpha[bpmem.blendmode.logicmode.Value()];
         glEnable(GL_BLEND);
         glBlendEquationSeparate(equation, equation);
         glBlendFuncSeparate(srcFactor, dstFactor, srcFactorAlpha, dstFactorAlpha);

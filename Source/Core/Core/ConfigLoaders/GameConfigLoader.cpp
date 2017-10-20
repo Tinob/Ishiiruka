@@ -139,6 +139,7 @@ static const INIToLocationMap& GetINIToLocationMap()
       {{"Video_Stereoscopy", "StereoSwapEyes"}, {Config::GFX_STEREO_SWAP_EYES.location}},
 
       {{"Video_Hacks", "EFBAccessEnable"}, {Config::GFX_HACK_EFB_ACCESS_ENABLE.location}},
+      {{"Video_Hacks", "EFBFastAccess" },{ Config::GFX_HACK_EFB_FAST_ACCESS_ENABLE.location } },
       {{"Video_Hacks", "BBoxMode"}, {Config::GFX_HACK_BBOX_MODE.location}},
       {{"Video_Hacks", "LastStoryEFBToRam"},{ Config::GFX_HACK_LAST_HISTORY_EFBTORAM.location}},
       {{"Video_Hacks", "ForceProgressive"}, {Config::GFX_HACK_FORCE_PROGRESSIVE.location}},

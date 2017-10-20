@@ -305,6 +305,17 @@ void Renderer::SaveScreenshot(const std::string& filename, bool wait_for_complet
   }
 }
 
+bool Renderer::CheckForHostConfigChanges()
+{
+  ShaderHostConfig new_host_config = ShaderHostConfig::GetCurrent();
+  if (new_host_config.bits == m_last_host_config_bits)
+    return false;
+
+  OSD::AddMessage("Video config changed, reloading shaders.", OSD::Duration::NORMAL);
+  m_last_host_config_bits = new_host_config.bits;
+  return true;
+}
+
 
 // Create On-Screen-Messages
 void Renderer::DrawDebugText()
@@ -314,7 +325,7 @@ void Renderer::DrawDebugText()
   if (g_ActiveConfig.bShowFPS || SConfig::GetInstance().m_ShowFrameCount)
   {
     if (g_ActiveConfig.bShowFPS)
-      final_cyan += StringFromFormat("FPS: %u", m_fps_counter.GetFPS());
+      final_cyan += StringFromFormat("FPS: %.2f", m_fps_counter.GetFPS());
 
     if (g_ActiveConfig.bShowFPS && SConfig::GetInstance().m_ShowFrameCount)
       final_cyan += " - ";

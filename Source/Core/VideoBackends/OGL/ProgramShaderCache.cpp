@@ -232,10 +232,11 @@ SHADER* ProgramShaderCache::CompileShader(const SHADERUID& uid)
   ShaderCode vcode;
   ShaderCode pcode;
   ShaderCode gcode;
-  GenerateVertexShaderCodeGL(vcode, uid.vuid.GetUidData());
-  GeneratePixelShaderCodeGL(pcode, uid.puid.GetUidData());
+  const ShaderHostConfig& hostconfig = ShaderHostConfig::GetCurrent();
+  GenerateVertexShaderCode(vcode, uid.vuid.GetUidData(), hostconfig);
+  GeneratePixelShaderCode(pcode, uid.puid.GetUidData(), hostconfig);
   if (g_ActiveConfig.backend_info.bSupportsGeometryShaders && !uid.guid.GetUidData().IsPassthrough())
-    GenerateGeometryShaderCode(gcode, uid.guid.GetUidData(), API_OPENGL);
+    GenerateGeometryShaderCode(gcode, uid.guid.GetUidData(), hostconfig);
 
 #if defined(_DEBUG) || defined(DEBUGFAST)
   if (g_ActiveConfig.iLog & CONF_SAVESHADERS)
@@ -534,6 +535,24 @@ void ProgramShaderCache::Init()
 
   s_buffer = StreamBuffer::Create(GL_UNIFORM_BUFFER, s_ubo_buffer_size * 2048);
 
+  LoadFromDisk();
+
+  CreateHeader();
+
+  CurrentProgram = 0;
+  last_entry.fill(nullptr);
+  if (g_ActiveConfig.bCompileShaderOnStartup)
+  {
+    CompileShaders();
+  }
+}
+
+void ProgramShaderCache::LoadFromDisk()
+{
+  if (pshaders)
+  {
+    Shutdown(true);
+  }
   pKey_t gameid = (pKey_t)GetMurmurHash3(reinterpret_cast<const u8*>(SConfig::GetInstance().GetGameID().data()), (u32)SConfig::GetInstance().GetGameID().size(), 0);
   pshaders = PCache::Create(
     gameid,
@@ -554,56 +573,52 @@ void ProgramShaderCache::Init()
     }
     else
     {
-      if (!File::Exists(File::GetUserPath(D_SHADERCACHE_IDX)))
-        File::CreateDir(File::GetUserPath(D_SHADERCACHE_IDX));
-
-      std::string cache_filename = StringFromFormat("%sIOGL-%s-shaders.cache", File::GetUserPath(D_SHADERCACHE_IDX).c_str(),
-        SConfig::GetInstance().GetGameID().c_str());
-
+      std::string cache_filename = GetDiskShaderCacheFileName(API_OPENGL, "program", true, true);
       ProgramShaderCacheInserter inserter;
       g_program_disk_cache.OpenAndRead(cache_filename, inserter);
     }
     SETSTAT(stats.numPixelShadersAlive, pshaders->size());
   }
-
-  CreateHeader();
-
-  CurrentProgram = 0;
-  last_entry.fill(nullptr);
-  if (g_ActiveConfig.bCompileShaderOnStartup)
-  {
-    size_t shader_count = 0;
-    pshaders->ForEachMostUsedByCategory(gameid,
-      [&](const SHADERUID& it, size_t total)
-    {
-      SHADERUID item = it;
-      item.puid.ClearHASH();
-      item.puid.CalculateUIDHash();
-      const pixel_shader_uid_data& uid_data = item.puid.GetUidData();
-      shader_count++;
-      if ((!uid_data.stereo || g_ActiveConfig.backend_info.bSupportsGeometryShaders)
-        && (!uid_data.bounding_box || g_ActiveConfig.backend_info.bSupportsBBox))
-      {
-        Host_UpdateProgressDialog(GetStringT("Compiling Shaders...").c_str(),
-          static_cast<int>(shader_count), static_cast<int>(total));
-        CompileShader(item);
-      }
-    },
-      [](PCacheEntry& entry)
-    {
-      return !entry.shader.glprogid;
-    }
-    , true);
-    Host_UpdateProgressDialog("", -1, -1);
-  }
 }
 
-void ProgramShaderCache::Shutdown()
+void ProgramShaderCache::CompileShaders()
 {
+  pKey_t gameid = (pKey_t)GetMurmurHash3(reinterpret_cast<const u8*>(SConfig::GetInstance().GetGameID().data()), (u32)SConfig::GetInstance().GetGameID().size(), 0);
+  size_t shader_count = 0;
+  pshaders->ForEachMostUsedByCategory(gameid,
+    [&](const SHADERUID& it, size_t total)
+  {
+    SHADERUID item = it;
+    item.puid.ClearHASH();
+    item.puid.CalculateUIDHash();
+    item.vuid.ClearHASH();
+    item.vuid.CalculateUIDHash();
+    item.guid.ClearHASH();
+    item.guid.CalculateUIDHash();
+    item.CalculateHash();
+    const pixel_shader_uid_data& uid_data = item.puid.GetUidData();
+    shader_count++;
+    if (!uid_data.bounding_box || g_ActiveConfig.backend_info.bSupportsBBox)
+    {
+      Host_UpdateProgressDialog(GetStringT("Compiling Shaders...").c_str(),
+        static_cast<int>(shader_count), static_cast<int>(total));
+      CompileShader(item);
+    }
+  },
+    [](PCacheEntry& entry)
+  {
+    return !entry.shader.glprogid;
+  }
+  , true);
+  Host_UpdateProgressDialog("", -1, -1);
+}
+
+void ProgramShaderCache::Shutdown(bool shadersonly)
+{
+  pshaders->Persist();
   // store all shaders in cache on disk
   if (g_ogl_config.bSupportsGLSLCache)
-  {
-    pshaders->Persist();
+  { 
     pshaders->Clear(
       [&](const SHADERUID& uid, PCacheEntry& entry)
     {
@@ -634,13 +649,24 @@ void ProgramShaderCache::Shutdown()
       }
 
       g_program_disk_cache.Append(uid, &data[0], binary_size + sizeof(GLenum));
-    });
-    delete pshaders;
-    pshaders = nullptr;
+    });    
     g_program_disk_cache.Sync();
     g_program_disk_cache.Close();
   }
-  s_buffer.reset();
+  delete pshaders;
+  pshaders = nullptr;
+  if (!shadersonly)
+  {
+    s_buffer.reset();
+  }
+  
+}
+
+void ProgramShaderCache::Reload()
+{
+  Shutdown(true);
+  LoadFromDisk();
+  CompileShaders();
 }
 
 void ProgramShaderCache::CreateHeader()
@@ -765,7 +791,7 @@ void ProgramShaderCache::CreateHeader()
     "#define SAMPLER_BINDING(x)\n"
     // Input/output blocks are matched by name during program linking
     , "#define VARYING_LOCATION(x)\n"
-    , !is_glsles && g_ActiveConfig.backend_info.bSupportsBBox ? "#extension GL_ARB_shader_storage_buffer_object : enable" : ""
+    , !is_glsles && g_ActiveConfig.backend_info.bSupportsFragmentStoresAndAtomics ? "#extension GL_ARB_shader_storage_buffer_object : enable" : ""
     , !is_glsles && g_ActiveConfig.backend_info.bSupportsGSInstancing ? "#extension GL_ARB_gpu_shader5 : enable" : ""
     , SupportedESPointSize.c_str()
     , g_ogl_config.bSupportsAEP ? "#extension GL_ANDROID_extension_pack_es31a : enable" : ""
