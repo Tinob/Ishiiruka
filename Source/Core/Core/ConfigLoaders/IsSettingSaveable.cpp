@@ -85,7 +85,8 @@ bool IsSettingSaveable(const Config::ConfigLocation& config_location)
 
       // Graphics.Hacks
 
-      Config::GFX_HACK_EFB_ACCESS_ENABLE.location, Config::GFX_HACK_BBOX_MODE.location,
+      Config::GFX_HACK_EFB_ACCESS_ENABLE.location, Config::GFX_HACK_EFB_FAST_ACCESS_ENABLE.location,
+      Config::GFX_HACK_BBOX_MODE.location,
       Config::GFX_HACK_FORCE_PROGRESSIVE.location, Config::GFX_HACK_SKIP_EFB_COPY_TO_RAM.location,
       Config::GFX_HACK_COPY_EFB_ENABLED.location,
       Config::GFX_HACK_EFB_EMULATE_FORMAT_CHANGES.location,

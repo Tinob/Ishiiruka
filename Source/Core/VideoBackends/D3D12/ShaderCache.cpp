@@ -1023,12 +1023,21 @@ void ShaderCache::PrepareShaders(PIXEL_SHADER_RENDER_MODE render_mode,
 
 bool ShaderCache::TestShaders()
 {
-  s_compiler->ProcCompilationResults();
-  s_use_pixel_uber_shader = g_ActiveConfig.bDisableSpecializedShaders || s_last_pixel_shader_bytecode == nullptr || !s_last_pixel_shader_bytecode->m_compiled;
-  s_use_vertex_uber_shader = g_ActiveConfig.bDisableSpecializedShaders || s_last_vertex_shader_bytecode == nullptr || !s_last_vertex_shader_bytecode->m_compiled;
+  s_compiler->ProcCompilationResults();  
   if (g_ActiveConfig.bBackgroundShaderCompiling || g_ActiveConfig.bDisableSpecializedShaders)
   {
+    s_use_pixel_uber_shader = g_ActiveConfig.bDisableSpecializedShaders
+      || s_last_pixel_shader_bytecode == nullptr
+      || !s_last_pixel_shader_bytecode->m_compiled;
+    s_use_vertex_uber_shader = g_ActiveConfig.bDisableSpecializedShaders
+      || s_last_vertex_shader_bytecode == nullptr
+      || !s_last_vertex_shader_bytecode->m_compiled;
     return true;
+  }
+  else
+  {
+    s_use_pixel_uber_shader = false;
+    s_use_vertex_uber_shader = false;
   }
   bool shaders_available = !(s_last_geometry_shader_bytecode == nullptr
     || s_last_pixel_shader_bytecode == nullptr
