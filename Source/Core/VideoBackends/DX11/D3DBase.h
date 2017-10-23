@@ -63,6 +63,7 @@ const char* ComputeShaderVersionString();
 DXGI_FORMAT GetBaseBufferFormat();
 bool BGRATexturesSupported();
 bool BGRA565TexturesSupported();
+bool AllowTearingSupported();
 
 u32 GetMaxTextureSize(D3D_FEATURE_LEVEL feature_level);
 bool SupportPartialContantBufferUpdate();
