@@ -629,9 +629,9 @@ void ObjectCache::CompileShaders()
     vkShaderItem& it = m_vs_cache.shader_map->GetOrAdd(item);
     if (!it.initialized.test_and_set())
     {
+      CompileVertexShaderForUid(item, it);
       Host_UpdateProgressDialog(GetStringT("Compiling Vertex shaders...").c_str(),
         static_cast<int>(shader_count), static_cast<int>(total));
-      CompileVertexShaderForUid(item, it);
     }
   },
     [](vkShaderItem& entry)
@@ -649,9 +649,9 @@ void ObjectCache::CompileShaders()
     vkShaderItem& it = m_ps_cache.shader_map->GetOrAdd(item);
     if (!it.initialized.test_and_set())
     {
+      CompilePixelShaderForUid(item, it);
       Host_UpdateProgressDialog(GetStringT("Compiling Pixel shaders...").c_str(),
         static_cast<int>(shader_count), static_cast<int>(total));
-      CompilePixelShaderForUid(item, it);
     }
   },
     [](vkShaderItem& entry)
@@ -663,25 +663,20 @@ void ObjectCache::CompileShaders()
   if (g_vulkan_context->SupportsGeometryShaders())
   {
     shader_count = 0;
-    m_gs_cache.shader_map->ForEachMostUsedByCategory(gameid,
-      [&](const GeometryShaderUid& uid, size_t total)
+    EnumerateGeometryShaderUids([&](const GeometryShaderUid& uid, size_t total)
     {
       GeometryShaderUid item = uid;
       item.ClearHASH();
       item.CalculateUIDHash();
       vkShaderItem& it = m_gs_cache.shader_map->GetOrAdd(item);
+      shader_count++;
       if (!it.initialized.test_and_set())
       {
+        CompileGeometryShaderForUid(item, it);
         Host_UpdateProgressDialog(GetStringT("Compiling Geometry shaders...").c_str(),
           static_cast<int>(shader_count), static_cast<int>(total));
-        CompileGeometryShaderForUid(item, it);
       }
-    },
-      [](vkShaderItem& entry)
-    {
-      return !entry.compiled;
-    }
-    , true);
+    });
   }
   Host_UpdateProgressDialog("", -1, -1);
 }
@@ -713,11 +708,27 @@ static void DestroyShaderCache(T& cache)
 
 void ObjectCache::DestroyShaderCaches()
 {
+  m_vs_cache.shader_map->Persist([](const VertexShaderUid &uid) {
+    VertexShaderUid u = uid;
+    u.ClearHASH();
+    u.CalculateUIDHash();
+    VertexShaderUid::ShaderUidHasher hasher;
+    return hasher(uid) == hasher(u);
+  });
   DestroyShaderCache(m_vs_cache);
+  m_ps_cache.shader_map->Persist([](const PixelShaderUid &uid) {
+    PixelShaderUid u = uid;
+    u.ClearHASH();
+    u.CalculateUIDHash();
+    PixelShaderUid::ShaderUidHasher hasher;
+    return hasher(uid) == hasher(u);
+  });
   DestroyShaderCache(m_ps_cache);
 
   if (g_vulkan_context->SupportsGeometryShaders())
+  {
     DestroyShaderCache(m_gs_cache);
+  }
 }
 
 void ObjectCache::CompileVertexShaderForUid(const VertexShaderUid& uid, ObjectCache::vkShaderItem& it)
@@ -727,8 +738,8 @@ void ObjectCache::CompileVertexShaderForUid(const VertexShaderUid& uid, ObjectCa
   VkShaderModule module = VK_NULL_HANDLE;
   ShaderCode source_code;
   GenerateVertexShaderCode(source_code, uid.GetUidData(), ShaderHostConfig::GetCurrent());
-  if (ShaderCompiler::CompileVertexShader(&spv, source_code.GetBuffer(),
-    source_code.BufferSize()))
+  if (ShaderCompiler::CompileVertexShader(&spv, source_code.data(),
+    source_code.size()))
   {
     module = Util::CreateShaderModule(spv.data(), spv.size());
 
@@ -751,8 +762,8 @@ void ObjectCache::CompileGeometryShaderForUid(const GeometryShaderUid& uid, Obje
   VkShaderModule module = VK_NULL_HANDLE;
   ShaderCode source_code;
   GenerateGeometryShaderCode(source_code, uid.GetUidData(), ShaderHostConfig::GetCurrent());
-  if (ShaderCompiler::CompileGeometryShader(&spv, source_code.GetBuffer(),
-    source_code.BufferSize()))
+  if (ShaderCompiler::CompileGeometryShader(&spv, source_code.data(),
+    source_code.size()))
   {
     module = Util::CreateShaderModule(spv.data(), spv.size());
 
@@ -772,8 +783,8 @@ void ObjectCache::CompilePixelShaderForUid(const PixelShaderUid& uid, ObjectCach
   VkShaderModule module = VK_NULL_HANDLE;
   ShaderCode source_code;
   GeneratePixelShaderCode(source_code, uid.GetUidData(), ShaderHostConfig::GetCurrent());
-  if (ShaderCompiler::CompileFragmentShader(&spv, source_code.GetBuffer(),
-    source_code.BufferSize()))
+  if (ShaderCompiler::CompileFragmentShader(&spv, source_code.data(),
+    source_code.size()))
   {
     module = Util::CreateShaderModule(spv.data(), spv.size());
 

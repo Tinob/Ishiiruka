@@ -12,8 +12,6 @@
 #include "VideoCommon/VertexShaderGen.h"
 #include "VideoCommon/VideoConfig.h"
 
-static char text[GEOMETRYSHADERGEN_BUFFERSIZE];
-
 static const char* primitives_ogl[] =
 {
     "points",
@@ -98,15 +96,6 @@ inline void GenerateGeometryShader(ShaderCode& out, API_TYPE ApiType, const geom
 
   if (hostconfig.wireframe)
     vertex_out++;
-
-  char* codebuffer = nullptr;
-  codebuffer = out.GetBuffer();
-  if (codebuffer == nullptr)
-  {
-    codebuffer = text;
-    out.SetBuffer(codebuffer);
-  }
-  codebuffer[sizeof(text) - 1] = 0x7C;  // canary
 
   if (ApiType == API_OPENGL || ApiType == API_VULKAN)
   {
@@ -347,9 +336,6 @@ inline void GenerateGeometryShader(ShaderCode& out, API_TYPE ApiType, const geom
     out.Write("\t}\n");
 
   out.Write("}\n");
-
-  if (codebuffer[GEOMETRYSHADERGEN_BUFFERSIZE - 1] != 0x7C)
-    PanicAlert("GeometryShader generator - buffer too small, canary has been eaten!");
 }
 
 void GenerateGeometryShaderCode(ShaderCode& object, const geometry_shader_uid_data& uid_data, const ShaderHostConfig& hostconfig)
@@ -359,24 +345,26 @@ void GenerateGeometryShaderCode(ShaderCode& object, const geometry_shader_uid_da
 
 void EnumerateGeometryShaderUids(const std::function<void(const GeometryShaderUid&, size_t)>& callback)
 {
-  GeometryShaderUid uid;
-  std::memset(&uid, 0, sizeof(uid));
+  GeometryShaderUid uid = {};
   static constexpr std::array<u32, 3> primitive_lut = {
     { PRIMITIVE_TRIANGLES, PRIMITIVE_LINES, PRIMITIVE_POINTS } };
   const u32 max_texgens = 8;
 
   const size_t total = primitive_lut.size() * (max_texgens + 1) * 2;
+  geometry_shader_uid_data& guid = uid.GetUidData<geometry_shader_uid_data>();
   for (u32 primitive : primitive_lut)
-  {
-    geometry_shader_uid_data& guid = uid.GetUidData<geometry_shader_uid_data>();
+  { 
     guid.primitive_type = primitive;
-
     for (u32 texgens = 0; texgens <= max_texgens; texgens++)
     {
       guid.numTexGens = texgens;
       guid.pixel_lighting = false;
+      uid.ClearHASH();
+      uid.CalculateUIDHash();
       callback(uid, total);
       guid.pixel_lighting = true;
+      uid.ClearHASH();
+      uid.CalculateUIDHash();
       callback(uid, total);
     }
   }

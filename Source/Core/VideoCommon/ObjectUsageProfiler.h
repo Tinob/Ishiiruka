@@ -217,7 +217,7 @@ public:
     }
   }
 
-  void PersistToFile(const std::string& path, bool allcategories = false)
+  void PersistToFile(const std::string& path, const std::function<bool(const Tobj&)>& filterfunc = {}, bool allcategories = false)
   {
     std::ofstream out(path, std::ofstream::binary);
     if (!out.is_open())
@@ -244,6 +244,10 @@ public:
     {
       for (auto& item : m_objects)
       {
+        if (filterfunc && !filterfunc(item.first))
+        {
+          continue;
+        }
         if ((item.second.category_mask[m_category_index] & m_category_mask) != 0)
         {
           object_count++;
@@ -253,6 +257,10 @@ public:
     bwrite(out, object_count);
     for (auto& item : m_objects)
     {
+      if (filterfunc && !filterfunc(item.first))
+      {
+        continue;
+      }
       if (allcategories || m_categories.size() == 1 || (item.second.category_mask[m_category_index] & m_category_mask) != 0)
       {
         bwrite(out, item.first);
@@ -274,11 +282,11 @@ public:
     }
   }
 
-  void Persist()
+  void Persist(const std::function<bool(const Tobj&)>& filterfunc = {})
   {
     if (m_storage.length() > 0)
     {
-      PersistToFile(m_storage);
+      PersistToFile(m_storage, filterfunc);
     }
   }
 

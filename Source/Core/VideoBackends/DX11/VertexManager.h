@@ -17,7 +17,7 @@ public:
   D3DVertexFormat(const PortableVertexDeclaration &_vtx_decl);
   void SetInputLayout(const D3DBlob& vs_bytecode);
 private:
-  std::array<D3D11_INPUT_ELEMENT_DESC, 17> m_elems{};
+  std::array<D3D11_INPUT_ELEMENT_DESC, 15> m_elems{};
   UINT m_num_elems = 0;
 
   D3D::InputLayoutPtr m_layout;

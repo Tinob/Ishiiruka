@@ -16,9 +16,6 @@ class GLVertexFormat : public NativeVertexFormat
 public:
   GLVertexFormat(const PortableVertexDeclaration& vtx_decl);
   ~GLVertexFormat();
-
-  void SetupVertexPointers();
-
   GLuint VAO;
 };
 
@@ -33,10 +30,9 @@ public:
   void CreateDeviceObjects() override;
   void DestroyDeviceObjects() override;
   void PrepareShaders(PrimitiveType primitive, u32 components, const XFMemory &xfr, const BPMemory &bpm) override;
-  // NativeVertexFormat use this
-  GLuint m_vertex_buffers;
-  GLuint m_index_buffers;
-  GLuint m_last_vao;
+
+  GLuint GetVertexBufferHandle() const;
+  GLuint GetIndexBufferHandle() const;
 
 protected:
   void ResetBuffer(u32 stride) override;
@@ -45,6 +41,9 @@ private:
   void Draw(u32 stride);
   void vFlush(bool useDstAlpha) override;
   void PrepareDrawBuffers(u32 stride);
+
+  GLuint m_vertex_buffers;
+  GLuint m_index_buffers;
 
   // Alternative buffers in CPU memory for primatives we are going to discard.
   std::vector<u8, Common::aligned_allocator<u8, 16>> m_cpu_v_buffer;

@@ -122,8 +122,8 @@ void WritePixelShaderCommonHeader(ShaderCode& out, API_TYPE ApiType, u32 num_tex
 PixelUberShaderUid GetPixelUberShaderUid(u32 components, const XFMemory &xfr, const BPMemory &bpm)
 {
   PixelUberShaderUid out;
-  pixel_ubershader_uid_data& uid_data = out.GetUidData<pixel_ubershader_uid_data>();
-  memset(&uid_data, 0, sizeof(uid_data));
+  out.ClearUID();
+  pixel_ubershader_uid_data& uid_data = out.GetUidData<pixel_ubershader_uid_data>();  
   uid_data.num_texgens = xfr.numTexGen.numTexGens;
   uid_data.early_depth =
     bpm.UseEarlyDepthTest() &&
@@ -135,6 +135,7 @@ PixelUberShaderUid GetPixelUberShaderUid(u32 components, const XFMemory &xfr, co
       (bpm.zmode.testenable && bpm.genMode.zfreeze);
   uid_data.per_pixel_lighting = g_ActiveConfig.PixelLightingEnabled(xfr, components);
   uid_data.uint_output = bpm.blendmode.UseLogicOp();
+  out.CalculateUIDHash();
   return out;
 }
 
@@ -217,12 +218,12 @@ void GenPixelShader(ShaderCode& out, API_TYPE ApiType, const ShaderHostConfig& h
       {
         for (u32 i = 0; i < numTexgen; ++i)
         {
-          out.Write("%s in float3 uv%d_2;\n", optCentroid, i);
+          out.Write("%s in float3 tex%d;\n", optCentroid, i);
         }
-        out.Write("%s in float4 clipPos_2;\n", optCentroid);
+        out.Write("%s in float4 clipPos;\n", optCentroid);
         if (per_pixel_lighting)
         {
-          out.Write("%s in float4 Normal_2;\n", optCentroid);
+          out.Write("%s in float4 Normal;\n", optCentroid);
         }
       }
       else
@@ -232,14 +233,14 @@ void GenPixelShader(ShaderCode& out, API_TYPE ApiType, const ShaderHostConfig& h
         {
           for (u32 i = 0; i < 8; ++i)
           {
-            out.Write("%s in float4 uv%d_2;\n", optCentroid, i);
+            out.Write("%s in float4 tex%d;\n", optCentroid, i);
           }
         }
         else
         {
           for (u32 i = 0; i < numTexgen; ++i)
           {
-            out.Write("%s in float%d uv%d_2;\n", optCentroid, i < 4 ? 4 : 3, i);
+            out.Write("%s in float%d tex%d;\n", optCentroid, i < 4 ? 4 : 3, i);
           }
         }
       }
@@ -267,7 +268,7 @@ void GenPixelShader(ShaderCode& out, API_TYPE ApiType, const ShaderHostConfig& h
       for (u32 i = 0; i < numTexgen; i++)
       {
         out.Write("  case %uu:\n"
-                  "    return tex%u;\n",
+                  "    return tex%u.xyz;\n",
                   i, i);
       }
       out.Write("  default:\n"
@@ -281,16 +282,16 @@ void GenPixelShader(ShaderCode& out, API_TYPE ApiType, const ShaderHostConfig& h
       if (numTexgen > 2)
         out.Write("    if (index < 2u) {\n");
       if (numTexgen > 1)
-        out.Write("      return (index == 0u) ? tex0 : tex1;\n");
+        out.Write("      return (index == 0u) ? tex0.xyz : tex1.xyz;\n");
       else
-        out.Write("      return (index == 0u) ? tex0 : float3(0.0, 0.0, 0.0);\n");
+        out.Write("      return (index == 0u) ? tex0.xyz : float3(0.0, 0.0, 0.0);\n");
       if (numTexgen > 2)
       {
         out.Write("    } else {\n");  // >= 2
         if (numTexgen > 3)
-          out.Write("      return (index == 2u) ? tex2 : tex3;\n");
+          out.Write("      return (index == 2u) ? tex2.xyz : tex3.xyz;\n");
         else
-          out.Write("      return (index == 2u) ? tex2 : float3(0.0, 0.0, 0.0);\n");
+          out.Write("      return (index == 2u) ? tex2.xyz : float3(0.0, 0.0, 0.0);\n");
         out.Write("    }\n");
       }
       if (numTexgen > 4)
@@ -299,16 +300,16 @@ void GenPixelShader(ShaderCode& out, API_TYPE ApiType, const ShaderHostConfig& h
         if (numTexgen > 6)
           out.Write("    if (index < 6u) {\n");
         if (numTexgen > 5)
-          out.Write("      return (index == 4u) ? tex4 : tex5;\n");
+          out.Write("      return (index == 4u) ? tex4.xyz : tex5.xyz;\n");
         else
-          out.Write("      return (index == 4u) ? tex4 : float3(0.0, 0.0, 0.0);\n");
+          out.Write("      return (index == 4u) ? tex4.xyz : float3(0.0, 0.0, 0.0);\n");
         if (numTexgen > 6)
         {
           out.Write("    } else {\n");  // >= 6 <= 8
           if (numTexgen > 7)
-            out.Write("      return (index == 6u) ? tex6 : tex7;\n");
+            out.Write("      return (index == 6u) ? tex6.xyz : tex7.xyz;\n");
           else
-            out.Write("      return (index == 6u) ? tex6 : float3(0.0, 0.0, 0.0);\n");
+            out.Write("      return (index == 6u) ? tex6.xyz : float3(0.0, 0.0, 0.0);\n");
           out.Write("    }\n");
         }
         out.Write("  }\n");
@@ -779,7 +780,7 @@ void GenPixelShader(ShaderCode& out, API_TYPE ApiType, const ShaderHostConfig& h
     {
       out.Write("#define getTexCoord(index) selectTexCoord((index)");
       for (u32 i = 0; i < numTexgen; i++)
-        out.Write(", tex%u", i);
+        out.Write(", tex%u.xyz", i);
       out.Write(")\n\n");
     }
   }
@@ -841,59 +842,14 @@ void GenPixelShader(ShaderCode& out, API_TYPE ApiType, const ShaderHostConfig& h
     out.Write(",\n  in float2 clipDist : SV_ClipDistance0\n");
     if (stereo)
       out.Write(",\n  in uint layer : SV_RenderTargetArrayIndex\n");
-    out.Write("\n        ) {\n");
-    if (numTexgen >= 7)
-    {
-      out.Write("float4 clipPos = float4(0.0,0.0,0.0,0.0);");
-    }
+    out.Write("\n        ) {\n");    
   }
 
-  if (ApiType == API_OPENGL || ApiType == API_VULKAN)
+  if (numTexgen >= 7)
   {
-    // compute window position if needed because binding semantic WPOS is not widely supported
-    // Let's set up attributes
-    if (numTexgen < 7)
-    {
-      if (numTexgen)
-      {
-        for (u32 i = 0; i < numTexgen; ++i)
-        {
-          if (!(g_ActiveConfig.backend_info.bSupportsGeometryShaders || ApiType == API_VULKAN))
-          {
-            out.Write("float3 tex%d = uv%d_2;\n", i, i);
-          }
-        }
-      }
-      out.Write("float4 clipPos = clipPos_2;\n");
-      if (per_pixel_lighting)
-      {
-        out.Write("float4 Normal = Normal_2;\n");
-      }
-    }
-    else
-    {
-      // wpos is in w of first 4 texcoords
-      if (per_pixel_lighting)
-      {
-        for (u32 i = 0; i < 8; ++i)
-        {
-          if (!(g_ActiveConfig.backend_info.bSupportsGeometryShaders || ApiType == API_VULKAN))
-          {
-            out.Write("float4 tex%d = uv%d_2;\n", i, i);
-          }
-        }
-      }
-      else
-      {
-        for (u32 i = 0; i < numTexgen; ++i)
-        {
-          if (!(g_ActiveConfig.backend_info.bSupportsGeometryShaders || ApiType == API_VULKAN))
-          {
-            out.Write("float%d tex%d = uv%d_2;\n", i < 4 ? 4 : 3, i, i);
-          }
-        }
-      }
-    }
+    out.Write(" float4 clipPos = float4(tex0.w,tex1.w,tex2.w,tex3.w);\n");
+    if (per_pixel_lighting)
+      out.Write(" float4 Normal = float4(tex4.w,tex5.w,tex6.w,tex7.w);\n");
   }
 
   out.Write("  int3 tevcoord = int3(0, 0, 0);\n"
@@ -1168,8 +1124,8 @@ void GenPixelShader(ShaderCode& out, API_TYPE ApiType, const ShaderHostConfig& h
   out.Write(
       "      uint alpha_compare_op = alpha_shift << 1 | uint(alpha_op);\n"
       "\n"
-      "      int alpha_A;\n"
-      "      int alpha_B;\n"
+      "      int alpha_A = 0;\n"
+      "      int alpha_B = 0;\n"
       "      if (alpha_bias != 3u || alpha_compare_op > 5u) {\n"
       "        // Small optimisation here: alpha_A and alpha_B are unused by compare ops 0-5\n"
       "        alpha_A = selectAlphaInput(s, ss, %scolors_0, %scolors_1, alpha_a) & 255;\n"
@@ -1471,16 +1427,15 @@ void GenPixelShader(ShaderCode& out, API_TYPE ApiType, const ShaderHostConfig& h
 
 void EnumeratePixelUberShaderUids(const std::function<void(const PixelUberShaderUid&, size_t)>& callback)
 {
-  PixelUberShaderUid uid;
-  std::memset(&uid, 0, sizeof(uid));
+  PixelUberShaderUid uid = {};
   size_t total = (8 + 1) * 2 * 2 * 2;
   if (g_ActiveConfig.backend_info.APIType == API_D3D11)
   {
     total *= 2;
   }
+  UberShader::pixel_ubershader_uid_data& puid = uid.GetUidData<UberShader::pixel_ubershader_uid_data>();
   for (u32 texgens = 0; texgens <= 8; texgens++)
-  {
-    UberShader::pixel_ubershader_uid_data& puid = uid.GetUidData<UberShader::pixel_ubershader_uid_data>();
+  { 
     puid.num_texgens = texgens;
 
     for (u32 early_depth = 0; early_depth < 2; early_depth++)
@@ -1497,10 +1452,14 @@ void EnumeratePixelUberShaderUids(const std::function<void(const PixelUberShader
         {
           puid.per_pixel_lighting = pixel_ligthing;
           puid.uint_output = 0;
+          uid.ClearHASH();
+          uid.CalculateUIDHash();
           callback(uid, total);
           if (g_ActiveConfig.backend_info.APIType == API_D3D11)
           {
             puid.uint_output = 1;
+            uid.ClearHASH();
+            uid.CalculateUIDHash();
             callback(uid, total);
           }
         }

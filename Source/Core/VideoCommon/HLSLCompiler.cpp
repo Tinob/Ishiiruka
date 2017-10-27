@@ -89,7 +89,7 @@ bool HLSLAsyncCompiler::NextTask(size_t ID)
       unit->GenerateCodeHandler(unit);
     }
     unit->cresult = PD3DCompile(unit->code.data(),
-      unit->codesize,
+      unit->code.size(),
       nullptr,
       (const D3D_SHADER_MACRO*)unit->defines,
       nullptr,
@@ -103,7 +103,7 @@ bool HLSLAsyncCompiler::NextTask(size_t ID)
   }
   return false;
 }
-ShaderCompilerWorkUnit* HLSLAsyncCompiler::NewUnit(u32 codesize)
+ShaderCompilerWorkUnit* HLSLAsyncCompiler::NewUnit()
 {
   u32 loopcount = 0;
   while (m_in_progres_counter >= repository_size)
@@ -119,11 +119,7 @@ ShaderCompilerWorkUnit* HLSLAsyncCompiler::NewUnit(u32 codesize)
   }
   ShaderCompilerWorkUnit* result = m_repository.front();
   m_repository.pop_front();
-  if (result->code.size() < codesize)
-  {
-    result->code.resize(codesize);
-  }
-  result->codesize = codesize;
+  result->code.clear();
   return result;
 }
 void HLSLAsyncCompiler::CompileShaderAsync(ShaderCompilerWorkUnit* unit)

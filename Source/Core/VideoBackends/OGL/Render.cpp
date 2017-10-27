@@ -769,6 +769,7 @@ Renderer::Renderer()
   if (!DriverDetails::HasBug(DriverDetails::BUG_BROKEN_VSYNC))
     GLInterface->SwapInterval(s_vsync);
 
+  g_Config.backend_info.bSupportsUberShaders = g_Config.backend_info.bSupportsDualSourceBlend;
   // Because of the fixed framebuffer size we need to disable the resolution
   // options while running  
   UpdateActiveConfig();
@@ -1939,7 +1940,7 @@ void Renderer::ApplyState(bool bUseDstAlpha)
   }
 
   const VertexManager* const vm = static_cast<VertexManager*>(g_vertex_manager.get());
-  glBindBuffer(GL_ARRAY_BUFFER, vm->m_vertex_buffers);
+  glBindBuffer(GL_ARRAY_BUFFER, vm->GetVertexBufferHandle());
 }
 
 void Renderer::RestoreAPIState()
@@ -1959,11 +1960,9 @@ void Renderer::RestoreAPIState()
   m_bViewPortChanged = true;
   m_bBlendModeForce = true;
   m_bBlendModeChanged = true;
+  ProgramShaderCache::BindLastVertexFormat();
   const VertexManager* const vm = static_cast<VertexManager*>(g_vertex_manager.get());
-  glBindBuffer(GL_ARRAY_BUFFER, vm->m_vertex_buffers);
-  if (vm->m_last_vao)
-    glBindVertexArray(vm->m_last_vao);
-
+  glBindBuffer(GL_ARRAY_BUFFER, vm->GetVertexBufferHandle());
   OGLTexture::SetStage();
 }
 

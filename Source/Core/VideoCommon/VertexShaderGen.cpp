@@ -17,7 +17,6 @@
 #include "VideoCommon/VertexShaderGen.h"
 #include "VideoCommon/VideoConfig.h"
 
-static char text[VERTEXSHADERGEN_BUFFERSIZE];
 static const char *texOffsetMemberSelector[] = { "x", "y", "z", "w" };
 
 void GetVertexShaderUID(VertexShaderUid& out, u32 components, const XFMemory &xfr, const BPMemory &bpm)
@@ -83,13 +82,6 @@ void GetVertexShaderUID(VertexShaderUid& out, u32 components, const XFMemory &xf
 
 inline void GenerateVertexShader(ShaderCode& out, API_TYPE api_type, const vertex_shader_uid_data& uid_data, bool use_integer_math, const ShaderHostConfig& hostconfig)
 {
-  char * buffer = nullptr;
-  buffer = out.GetBuffer();
-  if (buffer == nullptr)
-  {
-    buffer = text;
-    out.SetBuffer(text);
-  }
   const u32 components = uid_data.components;
   bool lightingEnabled = uid_data.numColorChans > 0;
   bool needLightShader = lightingEnabled && !uid_data.pixel_lighting;
@@ -98,7 +90,6 @@ inline void GenerateVertexShader(ShaderCode& out, API_TYPE api_type, const verte
     const auto& texinfo = uid_data.texMtxInfo[i];
     needLightShader = needLightShader || texinfo.texgentype == XF_TEXGEN_COLOR_STRGBC0 || texinfo.texgentype == XF_TEXGEN_COLOR_STRGBC1;
   }
-  buffer[VERTEXSHADERGEN_BUFFERSIZE - 1] = 0x7C;  // canary
                                                                   // uniforms
   if (api_type == API_OPENGL || api_type == API_VULKAN)
     out.Write("UBO_BINDING(std140, 2) uniform VSBlock {\n", g_ActiveConfig.backend_info.bSupportsBindingLayout ? ", binding = 2" : "");
@@ -136,15 +127,15 @@ inline void GenerateVertexShader(ShaderCode& out, API_TYPE api_type, const verte
       out.Write("ATTRIBUTE_LOCATION(%d) in float3 rawnorm2;\n", SHADER_NORM2_ATTRIB);
 
     if (components & VB_HAS_COL0)
-      out.Write("ATTRIBUTE_LOCATION(%d) in float4 color0;\n", SHADER_COLOR0_ATTRIB);
+      out.Write("ATTRIBUTE_LOCATION(%d) in float4 rawcolor0;\n", SHADER_COLOR0_ATTRIB);
     if (components & VB_HAS_COL1)
-      out.Write("ATTRIBUTE_LOCATION(%d) in float4 color1;\n", SHADER_COLOR1_ATTRIB);
+      out.Write("ATTRIBUTE_LOCATION(%d) in float4 rawcolor1;\n", SHADER_COLOR1_ATTRIB);
 
     for (int i = 0; i < 8; ++i)
     {
       u32 hastexmtx = (components & (VB_HAS_TEXMTXIDX0 << i));
       if ((components & (VB_HAS_UV0 << i)) || hastexmtx)
-        out.Write("ATTRIBUTE_LOCATION(%d) in float%d tex%d;\n", SHADER_TEXTURE0_ATTRIB + i, hastexmtx ? 3 : 2, i);
+        out.Write("ATTRIBUTE_LOCATION(%d) in float%d rawtex%d;\n", SHADER_TEXTURE0_ATTRIB + i, hastexmtx ? 3 : 2, i);
     }
 
     if (hostconfig.backend_geometry_shaders || api_type == API_VULKAN)
@@ -161,10 +152,10 @@ inline void GenerateVertexShader(ShaderCode& out, API_TYPE api_type, const verte
       if (uid_data.numTexGens < 7)
       {
         for (int i = 0; i < 8; ++i)
-          out.Write("%s out float3 uv%d_2;\n", optCentroid, i);
-        out.Write("%s out float4 clipPos_2;\n", optCentroid);
+          out.Write("%s out float3 tex%d;\n", optCentroid, i);
+        out.Write("%s out float4 clipPos;\n", optCentroid);
         if (uid_data.pixel_lighting)
-          out.Write("%s out float4 Normal_2;\n", optCentroid);
+          out.Write("%s out float4 Normal;\n", optCentroid);
       }
       else
       {
@@ -172,12 +163,12 @@ inline void GenerateVertexShader(ShaderCode& out, API_TYPE api_type, const verte
         if (uid_data.pixel_lighting)
         {
           for (int i = 0; i < 8; ++i)
-            out.Write("%s out float4 uv%d_2;\n", optCentroid, i);
+            out.Write("%s out float4 tex%d;\n", optCentroid, i);
         }
         else
         {
           for (unsigned int i = 0; i < uid_data.numTexGens; ++i)
-            out.Write("%s out float%d uv%d_2;\n", optCentroid, i < 4 ? 4 : 3, i);
+            out.Write("%s out float%d tex%d;\n", optCentroid, i < 4 ? 4 : 3, i);
         }
       }
       out.Write("%s out float4 colors_0;\n", optCentroid);
@@ -198,14 +189,14 @@ inline void GenerateVertexShader(ShaderCode& out, API_TYPE api_type, const verte
     if (components & VB_HAS_NRM2)
       out.Write("  float3 rawnorm2 : NORMAL2,\n");
     if (components & VB_HAS_COL0)
-      out.Write("  float4 color0 : COLOR0,\n");
+      out.Write("  float4 rawcolor0 : COLOR0,\n");
     if (components & VB_HAS_COL1)
-      out.Write("  float4 color1 : COLOR1,\n");
+      out.Write("  float4 rawcolor1 : COLOR1,\n");
     for (int i = 0; i < 8; ++i)
     {
       u32 hastexmtx = (components & (VB_HAS_TEXMTXIDX0 << i));
       if ((components & (VB_HAS_UV0 << i)) || hastexmtx)
-        out.Write("  float%d tex%d : TEXCOORD%d,\n", hastexmtx ? 3 : 2, i, i);
+        out.Write("  float%d rawtex%d : TEXCOORD%d,\n", hastexmtx ? 3 : 2, i, i);
     }
     out.Write("  float4 blend_indices : BLENDINDICES,\n");
 
@@ -264,17 +255,17 @@ inline void GenerateVertexShader(ShaderCode& out, API_TYPE api_type, const verte
   if (!lightingEnabled)
   {
     if (components & VB_HAS_COL0)
-      out.Write("o.colors_0 = color0;\n");
+      out.Write("o.colors_0 = rawcolor0;\n");
     else
       out.Write("o.colors_0 = float4(1.0, 1.0, 1.0, 1.0);\n");
 
     if (components & VB_HAS_COL1)
-      out.Write("o.colors_1 = color1;\n");
+      out.Write("o.colors_1 = rawcolor1;\n");
     else
       out.Write("o.colors_1 = o.colors_0;\n");
   }
   if (needLightShader)
-    GenerateLightingShaderCode(out, uid_data.numColorChans, uid_data.lighting, components, I_MATERIALS, I_LIGHTS, "color", "o.colors_", use_integer_math);
+    GenerateLightingShaderCode(out, uid_data.numColorChans, uid_data.lighting, components, I_MATERIALS, I_LIGHTS, "rawcolor", "o.colors_", use_integer_math);
 
   if (uid_data.numColorChans < 2 && needLightShader)
   {
@@ -319,7 +310,7 @@ inline void GenerateVertexShader(ShaderCode& out, API_TYPE api_type, const verte
       break;
     default:
       if (components & (VB_HAS_UV0 << (texinfo.sourcerow - XF_SRCTEX0_INROW)))
-        out.Write("coord.xy = tex%d.xy;\n", texinfo.sourcerow - XF_SRCTEX0_INROW);
+        out.Write("coord.xy = rawtex%d.xy;\n", texinfo.sourcerow - XF_SRCTEX0_INROW);
       break;
     }
     // An input form other than ABC1 or AB11 doesn't exist
@@ -360,7 +351,7 @@ inline void GenerateVertexShader(ShaderCode& out, API_TYPE api_type, const verte
     {
       if (components & (VB_HAS_TEXMTXIDX0 << i))
       {
-        out.Write("int tmp = int(tex%d.z);\n", i);
+        out.Write("int tmp = int(rawtex%d.z);\n", i);
         if (((uid_data.texMtxInfo_n_projection >> i) & 1) == XF_TEXPROJ_STQ)
           out.Write("o.tex%d.xyz = float3(dot(coord, " I_TRANSFORMMATRICES"[tmp]), dot(coord, " I_TRANSFORMMATRICES"[tmp+1]), dot(coord, " I_TRANSFORMMATRICES"[tmp+2]));\n", i);
         else
@@ -411,7 +402,7 @@ inline void GenerateVertexShader(ShaderCode& out, API_TYPE api_type, const verte
   // clipPos/w needs to be done in pixel shader, not here
   if (uid_data.numTexGens < 7)
   {
-    out.Write("o.clipPos%s = float4(pos.x,pos.y,o.pos.z,o.pos.w);\n", (api_type == API_OPENGL || api_type == API_VULKAN) ? "_2" : "");
+    out.Write("o.clipPos = float4(pos.x,pos.y,o.pos.z,o.pos.w);\n");
   }
   else
   {
@@ -425,7 +416,7 @@ inline void GenerateVertexShader(ShaderCode& out, API_TYPE api_type, const verte
   {
     if (uid_data.numTexGens < 7)
     {
-      out.Write("o.Normal%s = float4(_norm0.x,_norm0.y,_norm0.z,pos.z);\n", (api_type == API_OPENGL || api_type == API_VULKAN) ? "_2" : "");
+      out.Write("o.Normal = float4(_norm0.x,_norm0.y,_norm0.z,pos.z);\n");
     }
     else
     {
@@ -439,12 +430,12 @@ inline void GenerateVertexShader(ShaderCode& out, API_TYPE api_type, const verte
     }
 
     if (components & VB_HAS_COL0)
-      out.Write("o.colors_0 = color0;\n");
+      out.Write("o.colors_0 = rawcolor0;\n");
     else
       out.Write("o.colors_0 = float4(1.0, 1.0, 1.0, 1.0);\n");
 
     if (components & VB_HAS_COL1)
-      out.Write("o.colors_1 = color1;\n");
+      out.Write("o.colors_1 = rawcolor1;\n");
     else
       out.Write("o.colors_1 = o.colors_0;\n");
   }
@@ -527,13 +518,13 @@ inline void GenerateVertexShader(ShaderCode& out, API_TYPE api_type, const verte
         for (unsigned int i = 0; i < 8; ++i)
         {
           if (i < uid_data.numTexGens)
-            out.Write(" uv%d_2.xyz =  o.tex%d;\n", i, i);
+            out.Write(" tex%d.xyz =  o.tex%d;\n", i, i);
           else
-            out.Write(" uv%d_2.xyz =  float3(0.0, 0.0, 0.0);\n", i);
+            out.Write(" tex%d.xyz =  float3(0.0, 0.0, 0.0);\n", i);
         }
-        out.Write("  clipPos_2 = o.clipPos_2;\n");
+        out.Write("  clipPos = o.clipPos;\n");
         if (uid_data.pixel_lighting)
-          out.Write("  Normal_2 = o.Normal_2;\n");
+          out.Write("  Normal = o.Normal;\n");
       }
       else
       {
@@ -541,12 +532,12 @@ inline void GenerateVertexShader(ShaderCode& out, API_TYPE api_type, const verte
         if (uid_data.pixel_lighting)
         {
           for (int i = 0; i < 8; ++i)
-            out.Write(" uv%d_2 = o.tex%d;\n", i, i);
+            out.Write(" tex%d = o.tex%d;\n", i, i);
         }
         else
         {
           for (unsigned int i = 0; i < uid_data.numTexGens; ++i)
-            out.Write("  uv%d_2%s = o.tex%d;\n", i, i < 4 ? ".xyzw" : ".xyz", i);
+            out.Write("  tex%d%s = o.tex%d;\n", i, i < 4 ? ".xyzw" : ".xyz", i);
         }
       }
       out.Write("colors_0 = o.colors_0;\n");
@@ -568,9 +559,6 @@ inline void GenerateVertexShader(ShaderCode& out, API_TYPE api_type, const verte
   {
     out.Write("return o;\n}\n");
   }
-
-  if (buffer[VERTEXSHADERGEN_BUFFERSIZE - 1] != 0x7C)
-    PanicAlert("VertexShader generator - buffer too small, canary has been eaten!");
 }
 
 void GenerateVertexShaderCode(ShaderCode& object, const vertex_shader_uid_data& uid_data, const ShaderHostConfig& hostconfig)

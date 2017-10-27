@@ -61,7 +61,8 @@ bool IsSettingSaveable(const Config::ConfigLocation& config_location)
       Config::GFX_SW_DUMP_OBJECTS.location, Config::GFX_SW_DUMP_TEV_STAGES.location,
       Config::GFX_SW_DUMP_TEV_TEX_FETCHES.location, Config::GFX_SW_DRAW_START.location,
       Config::GFX_SW_DRAW_END.location,
-
+      Config::GFX_BACKGROUND_SHADER_COMPILING.location,
+      Config::GFX_DISABLE_SPECIALIZED_SHADERS.location,
       // Graphics.Enhancements
 
       Config::GFX_ENHANCE_FORCE_FILTERING.location, Config::GFX_ENHANCE_DISABLE_FILTERING.location,

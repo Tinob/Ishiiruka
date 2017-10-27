@@ -128,7 +128,6 @@ struct vertex_shader_uid_data
   LightingUidData lighting;
 };
 #pragma pack()
-#define VERTEXSHADERGEN_BUFFERSIZE 32768
 #define VERTEXSHADERGEN_UID_VERSION 1
 typedef ShaderUid<vertex_shader_uid_data> VertexShaderUid;
 

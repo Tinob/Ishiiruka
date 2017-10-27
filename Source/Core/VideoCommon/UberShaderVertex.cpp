@@ -15,10 +15,11 @@ namespace UberShader
 VertexUberShaderUid GetVertexUberShaderUid(u32 components, const XFMemory &xfr)
 {
   VertexUberShaderUid out;
-  vertex_ubershader_uid_data& uid_data = out.GetUidData<vertex_ubershader_uid_data>();
-  memset(&uid_data, 0, sizeof(uid_data));
+  out.ClearUID();
+  vertex_ubershader_uid_data& uid_data = out.GetUidData<vertex_ubershader_uid_data>();  
   uid_data.num_texgens = xfr.numTexGen.numTexGens;
   uid_data.per_pixel_lighting = g_ActiveConfig.PixelLightingEnabled(xfr, components);
+  out.CalculateUIDHash();
   return out;
 }
 
@@ -29,8 +30,8 @@ void GenVertexShader(ShaderCode& out, API_TYPE ApiType, const ShaderHostConfig& 
 {
   const bool msaa = host_config.msaa;
   const bool ssaa = host_config.ssaa;
-  const bool per_pixel_lighting =uid_data.per_pixel_lighting;
-  const u32 numTexgen =uid_data.num_texgens;
+  const bool per_pixel_lighting = uid_data.per_pixel_lighting != 0;
+  const u32 numTexgen = uid_data.num_texgens;
 
   out.Write("// Vertex UberShader\n\n");
   out.Write("%s", s_lighting_struct);
@@ -66,7 +67,7 @@ void GenVertexShader(ShaderCode& out, API_TYPE ApiType, const ShaderHostConfig& 
     if (host_config.backend_geometry_shaders || ApiType == API_VULKAN)
     {
       out.Write("VARYING_LOCATION(0) out VertexData {\n");
-      GenerateVSOutputMembers(out, ApiType, numTexgen, per_pixel_lighting,
+      GenerateVSOutputMembers(out, ApiType, per_pixel_lighting, numTexgen,
                               GetInterpolationQualifier(ApiType, msaa, ssaa, false, true));
       out.Write("} vs;\n");
     }
@@ -77,23 +78,23 @@ void GenVertexShader(ShaderCode& out, API_TYPE ApiType, const ShaderHostConfig& 
       if (uid_data.num_texgens < 7)
       {
         for (int i = 0; i < 8; ++i)
-          out.Write("%s out float3 uv%d_2;\n", optCentroid, i);
-        out.Write("%s out float4 clipPos_2;\n", optCentroid);
-        if (uid_data.per_pixel_lighting)
-          out.Write("%s out float4 Normal_2;\n", optCentroid);
+          out.Write("%s out float3 tex%d;\n", optCentroid, i);
+        out.Write("%s out float4 clipPos;\n", optCentroid);
+        if (per_pixel_lighting)
+          out.Write("%s out float4 Normal;\n", optCentroid);
       }
       else
       {
         // wpos is in w of first 4 texcoords
-        if (uid_data.per_pixel_lighting)
+        if (per_pixel_lighting)
         {
           for (int i = 0; i < 8; ++i)
-            out.Write("%s out float4 uv%d_2;\n", optCentroid, i);
+            out.Write("%s out float4 tex%d;\n", optCentroid, i);
         }
         else
         {
           for (unsigned int i = 0; i < uid_data.num_texgens; ++i)
-            out.Write("%s out float%d uv%d_2;\n", optCentroid, i < 4 ? 4 : 3, i);
+            out.Write("%s out float%d tex%d;\n", optCentroid, i < 4 ? 4 : 3, i);
         }
       }
       out.Write("%s out float4 colors_0;\n", optCentroid);
@@ -183,7 +184,7 @@ void GenVertexShader(ShaderCode& out, API_TYPE ApiType, const ShaderHostConfig& 
   // clipPos/w needs to be done in pixel shader, not here
   if (uid_data.num_texgens < 7)
   {
-    out.Write("o.clipPos%s = float4(pos.x,pos.y,o.pos.z,o.pos.w);\n", (ApiType == API_OPENGL || ApiType == API_VULKAN) ? "_2" : "");
+    out.Write("o.clipPos = float4(pos.x,pos.y,o.pos.z,o.pos.w);\n");
   }
   else
   {
@@ -197,7 +198,7 @@ void GenVertexShader(ShaderCode& out, API_TYPE ApiType, const ShaderHostConfig& 
   {
     if (uid_data.num_texgens < 7)
     {
-      out.Write("o.Normal%s = float4(_norm0.x,_norm0.y,_norm0.z,pos.z);\n", (ApiType == API_OPENGL || ApiType == API_VULKAN) ? "_2" : "");
+      out.Write("o.Normal = float4(_norm0.x,_norm0.y,_norm0.z,pos.z);\n");
     }
     else
     {
@@ -287,26 +288,26 @@ void GenVertexShader(ShaderCode& out, API_TYPE ApiType, const ShaderHostConfig& 
         for (unsigned int i = 0; i < 8; ++i)
         {
           if (i < uid_data.num_texgens)
-            out.Write(" uv%d_2.xyz =  o.tex%d.xyz;\n", i, i);
+            out.Write(" tex%d.xyz =  o.tex%d.xyz;\n", i, i);
           else
-            out.Write(" uv%d_2.xyz =  float3(0.0, 0.0, 0.0);\n", i);
+            out.Write(" tex%d.xyz =  float3(0.0, 0.0, 0.0);\n", i);
         }
-        out.Write("  clipPos_2 = o.clipPos_2;\n");
-        if (uid_data.per_pixel_lighting)
-          out.Write("  Normal_2 = o.Normal_2;\n");
+        out.Write("  clipPos = o.clipPos;\n");
+        if (per_pixel_lighting)
+          out.Write("  Normal = o.Normal;\n");
       }
       else
       {
         // clip position is in w of first 4 texcoords
-        if (uid_data.per_pixel_lighting)
+        if (per_pixel_lighting)
         {
           for (int i = 0; i < 8; ++i)
-            out.Write(" uv%d_2 = o.tex%d;\n", i, i);
+            out.Write(" tex%d = o.tex%d;\n", i, i);
         }
         else
         {
           for (unsigned int i = 0; i < uid_data.num_texgens; ++i)
-            out.Write("  uv%d_2%s = o.tex%d;\n", i, i < 4 ? ".xyzw" : ".xyz", i);
+            out.Write("  tex%d%s = o.tex%d;\n", i, i < 4 ? ".xyzw" : ".xyz", i);
         }
       }
       out.Write("colors_0 = o.colors_0;\n");
@@ -315,8 +316,8 @@ void GenVertexShader(ShaderCode& out, API_TYPE ApiType, const ShaderHostConfig& 
 
     if (host_config.backend_depth_clamp)
     {
-      out.Write("gl_ClipDistance[0] = o.clipDist0;\n");
-      out.Write("gl_ClipDistance[1] = o.clipDist1;\n");
+      out.Write("gl_ClipDistance[0] = o.clipDist.x;\n");
+      out.Write("gl_ClipDistance[1] = o.clipDist.y;\n");
     }
 
     // Vulkan NDC space has Y pointing down (right-handed NDC space).
@@ -492,16 +493,18 @@ void GenVertexShaderTexGens(API_TYPE ApiType, u32 numTexgen, bool pixel_ligthing
 
 void EnumerateVertexUberShaderUids(const std::function<void(const VertexUberShaderUid&, size_t)>& callback)
 {
-  VertexUberShaderUid uid;
-  std::memset(&uid, 0, sizeof(uid));
-
+  VertexUberShaderUid uid = {};
+  UberShader::vertex_ubershader_uid_data& vuid = uid.GetUidData<UberShader::vertex_ubershader_uid_data>();
   for (u32 texgens = 0; texgens <= 8; texgens++)
   {
-    UberShader::vertex_ubershader_uid_data& vuid = uid.GetUidData<UberShader::vertex_ubershader_uid_data>();
     vuid.num_texgens = texgens;
     vuid.per_pixel_lighting = 0;
+    uid.ClearHASH();
+    uid.CalculateUIDHash();
     callback(uid, 18);
     vuid.per_pixel_lighting = 1;
+    uid.ClearHASH();
+    uid.CalculateUIDHash();
     callback(uid, 18);
   }
 }

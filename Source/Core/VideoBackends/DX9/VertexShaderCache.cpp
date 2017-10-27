@@ -51,6 +51,9 @@ class VertexShaderCacheInserter : public LinearDiskCacheReader<VertexShaderUid, 
 public:
   void Read(const VertexShaderUid &key, const u8 *value, u32 value_size)
   {
+    VertexShaderUid uid = key;
+    uid.ClearHASH();
+    uid.CalculateUIDHash();
     VertexShaderCache::InsertByteCode(key, value, value_size);
   }
 };
@@ -128,7 +131,13 @@ void VertexShaderCache::LoadFromDisk()
 {
   if (s_vshaders)
   {
-    s_vshaders->Persist();
+    s_vshaders->Persist([](const VertexShaderUid &uid) {
+      VertexShaderUid u = uid;
+      u.ClearHASH();
+      u.CalculateUIDHash();
+      VertexShaderUid::ShaderUidHasher hasher;
+      return hasher(uid) == hasher(u);
+    });
     s_vshaders->Clear([](auto& item)
     {
       item.Destroy();
@@ -233,14 +242,11 @@ void VertexShaderCache::CompileVShader(const VertexShaderUid& uid)
   {
     return;
   }
-  ShaderCompilerWorkUnit *wunit = s_compiler->NewUnit(VERTEXSHADERGEN_BUFFERSIZE);
+  ShaderCompilerWorkUnit *wunit = s_compiler->NewUnit();
   const ShaderHostConfig& hostconfig = ShaderHostConfig::GetCurrent();
   wunit->GenerateCodeHandler = [uid, hostconfig](ShaderCompilerWorkUnit* wunit)
   {
-    ShaderCode code;
-    code.SetBuffer(wunit->code.data());
-    GenerateVertexShaderCode(code, uid.GetUidData(), hostconfig);
-    wunit->codesize = (u32)code.BufferSize();
+    GenerateVertexShaderCode(wunit->code, uid.GetUidData(), hostconfig);
   };
   wunit->entrypoint = "main";
   wunit->flags = D3DCOMPILE_SKIP_VALIDATION | D3DCOMPILE_OPTIMIZATION_LEVEL3;

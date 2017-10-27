@@ -99,7 +99,7 @@ void WriteVertexLighting(ShaderCode& out, API_TYPE api_type, const char* world_p
             api_type == API_D3D11 ? "[loop] " : "");
   out.Write("  uint colorreg = xfmem_color(chan);\n"
             "  uint alphareg = xfmem_alpha(chan);\n"
-            "  int4 mat = " I_MATERIALS "[chan + 2u]; \n"
+            "  int4 mat = int4(" I_MATERIALS "[chan + 2u]); \n"
             "  int4 lacc = int4(255, 255, 255, 255);\n"
             "\n");
 
@@ -123,7 +123,7 @@ void WriteVertexLighting(ShaderCode& out, API_TYPE api_type, const char* world_p
   out.Write("    else\n"
             "      mat.w = 255;\n"
             "  } else {\n"
-            "    mat.w = " I_MATERIALS " [chan + 2u].w;\n"
+            "    mat.w = int(" I_MATERIALS " [chan + 2u].w);\n"
             "  }\n"
             "\n");
 
@@ -138,7 +138,7 @@ void WriteVertexLighting(ShaderCode& out, API_TYPE api_type, const char* world_p
   out.Write("      else\n"
             "        lacc.xyz = int3(255, 255, 255);\n"
             "    } else {\n"
-            "      lacc.xyz = " I_MATERIALS " [chan].xyz;\n"
+            "      lacc.xyz = int3(" I_MATERIALS " [chan].xyz);\n"
             "    }\n"
             "\n");
   out.Write("    uint light_mask = %s | (%s << 4u);\n",
@@ -168,7 +168,7 @@ void WriteVertexLighting(ShaderCode& out, API_TYPE api_type, const char* world_p
   out.Write("      else\n"
             "        lacc.w = 255;\n"
             "    } else {\n"
-            "      lacc.w = " I_MATERIALS " [chan].w;\n"
+            "      lacc.w = int(" I_MATERIALS " [chan].w);\n"
             "    }\n"
             "\n");
   out.Write("    uint light_mask = %s | (%s << 4u);\n",

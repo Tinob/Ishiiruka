@@ -9,7 +9,6 @@
 #include "VideoCommon/VertexShaderGen.h"
 #include "VideoCommon/PixelShaderGen.h"
 #include "VideoCommon/VideoConfig.h"
-static char text[TESSELLATIONSHADERGEN_BUFFERSIZE];
 
 static const char* headerUtilI = R"hlsl(
 int4 CHK_O_U8(int4 x)
@@ -388,14 +387,6 @@ inline void GenerateTessellationShader(ShaderCode& out, const Tessellation_shade
   bool normalpresent = uid_data.normal;
   bool enablenormalmaps = uid_data.pixel_normals;
   int nIndirectStagesUsed = uid_data.nIndirectStagesUsed;
-  char* codebuffer = nullptr;
-  codebuffer = out.GetBuffer();
-  if (codebuffer == nullptr)
-  {
-    codebuffer = text;
-    out.SetBuffer(codebuffer);
-  }
-  codebuffer[sizeof(text) - 1] = 0x7C;  // canary
   if (enablenormalmaps)
   {
     if (ApiType == API_OPENGL)
@@ -674,9 +665,6 @@ inline void GenerateTessellationShader(ShaderCode& out, const Tessellation_shade
     out.Write("result.pos.z = result.pos.w * " I_DEPTHPARAMS ".x - result.pos.z * " I_DEPTHPARAMS ".y;\n");
     out.Write("return result;\n}");
   }
-
-  if (codebuffer[TESSELLATIONSHADERGEN_BUFFERSIZE - 1] != 0x7C)
-    PanicAlert("GeometryShader generator - buffer too small, canary has been eaten!");
 }
 
 void GenerateTessellationShaderCode(ShaderCode& object, API_TYPE ApiType, const Tessellation_shader_uid_data& uid_data)

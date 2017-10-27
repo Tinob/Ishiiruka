@@ -14,6 +14,7 @@ struct vertex_ubershader_uid_data
 {
   u32 num_texgens : 4;
   u32 per_pixel_lighting : 1;
+  u32 unused : 27;
   u32 NumValues() const { return sizeof(vertex_ubershader_uid_data); }
   u32 StartValue() const
   {
@@ -21,7 +22,7 @@ struct vertex_ubershader_uid_data
   }
   void ClearUnused()
   {
-
+    unused = 0;
   }
 };
 #pragma pack()

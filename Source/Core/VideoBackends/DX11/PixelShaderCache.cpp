@@ -457,7 +457,10 @@ class PixelShaderCacheInserter : public LinearDiskCacheReader<PixelShaderUid, u8
 public:
   void Read(const PixelShaderUid &key, const u8 *value, u32 value_size)
   {
-    PixelShaderCache::InsertByteCode(key, value, value_size);
+    PixelShaderUid uid = key;
+    uid.ClearHASH();
+    uid.CalculateUIDHash();
+    PixelShaderCache::InsertByteCode(uid, value, value_size);
   }
 };
 
@@ -467,7 +470,10 @@ class PixelUberShaderCacheInserter : public LinearDiskCacheReader<UberShader::Pi
 public:
   void Read(const UberShader::PixelUberShaderUid &key, const u8 *value, u32 value_size)
   {
-    PixelShaderCache::InsertByteCode(key, value, value_size);
+    UberShader::PixelUberShaderUid uid = key;
+    uid.ClearHASH();
+    uid.CalculateUIDHash();
+    PixelShaderCache::InsertByteCode(uid, value, value_size);
   }
 };
 
@@ -508,10 +514,9 @@ void PixelShaderCache::Init()
   s_pixel_shaders = nullptr;
 
   LoadFromDisk();
-
+  CompileUberShaders();
   if (g_ActiveConfig.bCompileShaderOnStartup)
   {
-    CompileUberShaders();
     CompileShaders();
   }
   s_last_entry = nullptr;
@@ -524,7 +529,13 @@ void PixelShaderCache::LoadFromDisk()
 {
   if (s_pixel_shaders)
   {
-    s_pixel_shaders->Persist();
+    s_pixel_shaders->Persist([](const PixelShaderUid &uid) {
+      PixelShaderUid u = uid;
+      u.ClearHASH();
+      u.CalculateUIDHash();
+      PixelShaderUid::ShaderUidHasher hasher;
+      return hasher(uid) == hasher(u);
+    });
     s_pixel_shaders->Clear([](PSCacheEntry& item)
     {
       item.Destroy();
@@ -615,7 +626,13 @@ void PixelShaderCache::Clear()
 {
   if (s_pixel_shaders)
   {
-    s_pixel_shaders->Persist();
+    s_pixel_shaders->Persist([](const PixelShaderUid &uid) {
+      PixelShaderUid u = uid;
+      u.ClearHASH();
+      u.CalculateUIDHash();
+      PixelShaderUid::ShaderUidHasher hasher;
+      return hasher(uid) == hasher(u);
+    });
     s_pixel_shaders->Clear([](PSCacheEntry& item)
     {
       item.Destroy();
@@ -685,13 +702,10 @@ void PixelShaderCache::CompileUberShader(const UberShader::PixelUberShaderUid& u
   }
   // Need to compile a new shader
 
-  ShaderCompilerWorkUnit *wunit = s_compiler->NewUnit(PIXELSHADERGEN_BUFFERSIZE);
+  ShaderCompilerWorkUnit *wunit = s_compiler->NewUnit();
   wunit->GenerateCodeHandler = [uid, hostconfig](ShaderCompilerWorkUnit* wunit)
   {
-    ShaderCode code;
-    code.SetBuffer(wunit->code.data());
-    UberShader::GenPixelShader(code, API_D3D11, hostconfig, uid.GetUidData());
-    wunit->codesize = (u32)code.BufferSize();
+    UberShader::GenPixelShader(wunit->code, API_D3D11, hostconfig, uid.GetUidData());
   };
 
   wunit->entrypoint = "main";
@@ -750,13 +764,10 @@ void PixelShaderCache::CompilePShader(const PixelShaderUid& uid, const ShaderHos
   }
   // Need to compile a new shader
 
-  ShaderCompilerWorkUnit *wunit = s_compiler->NewUnit(PIXELSHADERGEN_BUFFERSIZE);
+  ShaderCompilerWorkUnit *wunit = s_compiler->NewUnit();
   wunit->GenerateCodeHandler = [uid, hostconfig](ShaderCompilerWorkUnit* wunit)
   {
-    ShaderCode code;
-    code.SetBuffer(wunit->code.data());
-    GeneratePixelShaderCode(code, uid.GetUidData(), hostconfig);
-    wunit->codesize = (u32)code.BufferSize();
+    GeneratePixelShaderCode(wunit->code, uid.GetUidData(), hostconfig);
   };
 
   wunit->entrypoint = "main";
@@ -852,7 +863,7 @@ bool PixelShaderCache::TestShader()
 {
   if (g_ActiveConfig.bBackgroundShaderCompiling || g_ActiveConfig.bDisableSpecializedShaders)
   {
-    return true;
+    return s_last_uber_entry && s_last_uber_entry->compiled;;
   }
   int count = 0;
   while (!s_last_entry->compiled)

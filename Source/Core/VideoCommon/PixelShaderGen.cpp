@@ -642,8 +642,6 @@ void GetPixelShaderUID(PixelShaderUid& out, PIXEL_SHADER_RENDER_MODE render_mode
   out.CalculateUIDHash();
 }
 
-static char text[PIXELSHADERGEN_BUFFERSIZE];
-
 void SampleTexture(ShaderCode& out, API_TYPE ApiType, const char *texcoords, const char *texswap, int texmap, bool stereo)
 {
   if (ApiType == API_D3D11)
@@ -825,7 +823,7 @@ inline void WriteFog(ShaderCode& out, bool use_integer_math, const pixel_shader_
 
   if (uid_data.fog_RangeBaseEnabled)
   {
-    out.Write("float x_adjust = (2.0 * (clipPos.x / " I_FOGF "[0].y)) - 1.0 - " I_FOGF "[0].x;\n");
+    out.Write("float x_adjust = (2.0 * (cPos.x / " I_FOGF "[0].y)) - 1.0 - " I_FOGF "[0].x;\n");
     out.Write("x_adjust = sqrt(x_adjust * x_adjust + " I_FOGF "[0].z * " I_FOGF "[0].z) / " I_FOGF "[0].z;\n");
     out.Write("ze *= x_adjust;\n");
   }
@@ -1505,14 +1503,6 @@ inline void WriteStage(ShaderCode& out, API_TYPE ApiType, bool use_integer_math,
 
 inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& uid_data, API_TYPE ApiType, const ShaderHostConfig& hostconfig, bool Use_integer_math = true)
 {
-  char* codebuffer = nullptr;
-  codebuffer = out.GetBuffer();
-  if (codebuffer == nullptr)
-  {
-    codebuffer = text;
-    out.SetBuffer(codebuffer);
-  }
-  codebuffer[PIXELSHADERGEN_BUFFERSIZE - 1] = 0x7C;  // canary
   PIXEL_SHADER_RENDER_MODE render_mode = (PIXEL_SHADER_RENDER_MODE)uid_data.render_mode;
   u32 numStages = uid_data.genMode_numtevstages + 1;
   u32 numTexgen = uid_data.genMode_numtexgens;
@@ -1704,7 +1694,7 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
     if (per_pixel_depth)
       out.Write("#define depth gl_FragDepth\n");
     // We need to always use output blocks for Vulkan, but geometry shaders are also optional.
-    if (g_ActiveConfig.backend_info.bSupportsGeometryShaders || ApiType == API_VULKAN)
+    if (hostconfig.backend_geometry_shaders || ApiType == API_VULKAN)
     {
       out.Write("VARYING_LOCATION(0) in VertexData {\n");
       GenerateVSOutputMembers(out, ApiType, enable_pl, uid_data.genMode_numtexgens, GetInterpolationQualifier(ApiType, hostconfig.msaa, hostconfig.ssaa, true, true));
@@ -1728,12 +1718,12 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
       {
         for (u32 i = 0; i < numTexgen; ++i)
         {
-          out.Write("%s in float3 uv%d_2;\n", optCentroid, i);
+          out.Write("%s in float3 tex%d;\n", optCentroid, i);
         }
-        out.Write("%s in float4 clipPos_2;\n", optCentroid);
+        out.Write("%s in float4 clipPos;\n", optCentroid);
         if (enable_pl)
         {
-          out.Write("%s in float4 Normal_2;\n", optCentroid);
+          out.Write("%s in float4 Normal;\n", optCentroid);
         }
       }
       else
@@ -1743,14 +1733,14 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
         {
           for (u32 i = 0; i < 8; ++i)
           {
-            out.Write("%s in float4 uv%d_2;\n", optCentroid, i);
+            out.Write("%s in float4 tex%d;\n", optCentroid, i);
           }
         }
         else
         {
           for (u32 i = 0; i < numTexgen; ++i)
           {
-            out.Write("%s in float%d uv%d_2;\n", optCentroid, i < 4 ? 4 : 3, i);
+            out.Write("%s in float%d tex%d;\n", optCentroid, i < 4 ? 4 : 3, i);
           }
         }
       }
@@ -1780,10 +1770,6 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
       out.Write("FORCE_EARLY_Z\n");
     }
     out.Write("void main()\n{\n");
-    if (numTexgen >= 7)
-    {
-      out.Write("float4 clipPos;\n");
-    }
     out.Write("\tfloat4 rawpos = gl_FragCoord;\n");
   }
   else
@@ -1857,8 +1843,7 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
       }
       if (hostconfig.stereo)
         out.Write(",\n  in uint layer : SV_RenderTargetArrayIndex\n");
-      out.Write("        ) {\n");
-      out.Write("float4 clipPos = float4(0.0,0.0,0.0,0.0);");
+      out.Write("        ) {\n");      
     }
   }
   if (render_mode == PSRM_DEPTH_ONLY)
@@ -1877,8 +1862,6 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
     }
     
     out.Write("}\n");
-    if (codebuffer[PIXELSHADERGEN_BUFFERSIZE - 1] != 0x7C)
-      PanicAlert("PixelShader generator - buffer too small, canary has been eaten!");
     return;
   }
   if (ApiType & API_D3D9)
@@ -1907,21 +1890,9 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
       {
         for (u32 i = 0; i < numTexgen; ++i)
         {
-          if (g_ActiveConfig.backend_info.bSupportsGeometryShaders || ApiType == API_VULKAN)
-          {
-            out.Write("float3 uv%d = tex%d;\n", i, i);
-          }
-          else
-          {
-            out.Write("float3 uv%d = uv%d_2;\n", i, i);
-          }
+          out.Write("float3 uv%d = tex%d;\n", i, i);
         }
-      }
-      out.Write("float4 clipPos = clipPos_2;\n");
-      if (enable_pl)
-      {
-        out.Write("float4 Normal = Normal_2;\n");
-      }
+      }      
     }
     else
     {
@@ -1930,31 +1901,24 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
       {
         for (u32 i = 0; i < 8; ++i)
         {
-          if (g_ActiveConfig.backend_info.bSupportsGeometryShaders || ApiType == API_VULKAN)
-          {
-            out.Write("float4 uv%d = tex%d;\n", i, i);
-          }
-          else
-          {
-            out.Write("float4 uv%d = uv%d_2;\n", i, i);
-          }
+          out.Write("float4 uv%d = tex%d;\n", i, i);
         }
       }
       else
       {
         for (u32 i = 0; i < numTexgen; ++i)
         {
-          if (g_ActiveConfig.backend_info.bSupportsGeometryShaders || ApiType == API_VULKAN)
-          {
-            out.Write("float%d uv%d = tex%d;\n", i < 4 ? 4 : 3, i, i);
-          }
-          else
-          {
-            out.Write("float%d uv%d = uv%d_2;\n", i < 4 ? 4 : 3, i, i);
-          }
+          out.Write("float%d uv%d = tex%d;\n", i < 4 ? 4 : 3, i, i);
         }
       }
     }
+  }
+
+  if (numTexgen >= 7)
+  {
+    out.Write("float4 clipPos = float4(uv0.w,uv1.w,uv2.w,uv3.w);");
+    if (enable_pl)
+      out.Write("float4 Normal = float4(uv4.w,uv5.w,uv6.w,uv7.w);");
   }
 
   // HACK to handle cases where the tex gen is not enabled
@@ -2013,16 +1977,9 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
 
   if (enable_pl)
   {
-    if (numTexgen < 7)
-    {
-      out.Write("float3 _norm0 = normalize(Normal.xyz);\n\n");
-      out.Write("float3 pos = float3(clipPos.x,clipPos.y,Normal.w);\n");
-    }
-    else
-    {
-      out.Write("float3 _norm0 = normalize(float3(uv4.w,uv5.w,uv6.w));\n\n");
-      out.Write("float3 pos = float3(uv0.w,uv1.w,uv7.w);\n");
-    }
+    out.Write("float3 _norm0 = normalize(Normal.xyz);\n\n");
+    out.Write("float3 pos = float3(clipPos.x,clipPos.y,Normal.w);\n");
+
     if (forcePhong)
     {
       out.Write("float4 spec = float4(0.0,0.0,0.0,0.0);\n");
@@ -2075,10 +2032,7 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
     out.Write("\tfloat4 col1 = colors_1;\n");
   }
 
-  if (numTexgen < 7)
-    out.Write("clipPos = float4(rawpos.x, rawpos.y, clipPos.z, clipPos.w);\n");
-  else
-    out.Write("clipPos = float4(rawpos.x, rawpos.y, uv2.w, uv3.w);\n");
+  out.Write("float4 cPos = float4(rawpos.x, rawpos.y, clipPos.z, clipPos.w);\n");
 
   for (u32 i = 0; i < numStages; i++)
     WriteStage(out,ApiType, Use_integer_math, uid_data, i, register_state); // build the equation for this stage
@@ -2129,7 +2083,7 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
       out.Write("wu zCoord = (" I_ZSLOPE".z + " I_ZSLOPE".x * screenpos.x + " I_ZSLOPE".y * screenpos.y) / 16777216.0;\n");
     }
   }
-  else if (!(ApiType & API_D3D9) && g_ActiveConfig.bFastDepthCalc)
+  else if (!(ApiType & API_D3D9) && hostconfig.fast_depth_calc)
   {
     if (Use_integer_math)
     {
@@ -2142,9 +2096,9 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
   {
     // the screen space depth value = far z + (clip z / clip w) * z range
     if (Use_integer_math)
-      out.Write("wu zCoord = " I_ZBIAS"[1].x + wuround((clipPos.z / clipPos.w) * float(" I_ZBIAS"[1].y));\n");
+      out.Write("wu zCoord = " I_ZBIAS"[1].x + wuround((cPos.z / cPos.w) * float(" I_ZBIAS"[1].y));\n");
     else
-      out.Write("wu zCoord = round(" I_ZBIAS "[1].x + ((clipPos.z / clipPos.w) * " I_ZBIAS "[1].y)) / 16777216.0;\n");
+      out.Write("wu zCoord = round(" I_ZBIAS "[1].x + ((cPos.z / cPos.w) * " I_ZBIAS "[1].y)) / 16777216.0;\n");
   }
   if (Use_integer_math)
   {
@@ -2269,8 +2223,6 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
       atomic_op, atomic_op, atomic_op, atomic_op);
   }
   out.Write("}\n");
-  if (codebuffer[PIXELSHADERGEN_BUFFERSIZE - 1] != 0x7C)
-    PanicAlert("PixelShader generator - buffer too small, canary has been eaten!");
 }
 
 void GeneratePixelShaderCode(ShaderCode& object, const pixel_shader_uid_data& uid_data, const ShaderHostConfig& hostconfig)

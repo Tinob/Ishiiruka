@@ -61,7 +61,10 @@ class PixelShaderCacheInserter : public LinearDiskCacheReader<PixelShaderUid, u8
 public:
   void Read(const PixelShaderUid &key, const u8 *value, u32 value_size)
   {
-    PixelShaderCache::InsertByteCode(key, value, value_size);
+    PixelShaderUid uid = key;
+    uid.ClearHASH();
+    uid.CalculateUIDHash();
+    PixelShaderCache::InsertByteCode(uid, value, value_size);
   }
 };
 
@@ -293,7 +296,13 @@ void PixelShaderCache::LoadFromDisk()
   {
     if (s_compiler)
       s_compiler->WaitForFinish();
-    s_pshaders->Persist();
+    s_pshaders->Persist([](const PixelShaderUid &uid) {
+      PixelShaderUid u = uid;
+      u.ClearHASH();
+      u.CalculateUIDHash();
+      PixelShaderUid::ShaderUidHasher hasher;
+      return hasher(uid) == hasher(u);
+    });
     s_pshaders->Clear([](auto& item)
     {
       item.Destroy();
@@ -383,7 +392,13 @@ void PixelShaderCache::Clear()
   {
     if (s_compiler)
       s_compiler->WaitForFinish();
-    s_pshaders->Persist();
+    s_pshaders->Persist([](const PixelShaderUid &uid) {
+      PixelShaderUid u = uid;
+      u.ClearHASH();
+      u.CalculateUIDHash();
+      PixelShaderUid::ShaderUidHasher hasher;
+      return hasher(uid) == hasher(u);
+    });
     s_pshaders->Clear([](auto& item)
     {
       item.Destroy();
@@ -443,13 +458,10 @@ void PixelShaderCache::CompilePShader(const PixelShaderUid& uid, PIXEL_SHADER_RE
   }
   // Need to compile a new shader
   const ShaderHostConfig& hostconfig = ShaderHostConfig::GetCurrent();
-  ShaderCompilerWorkUnit *wunit = s_compiler->NewUnit(PIXELSHADERGEN_BUFFERSIZE);
+  ShaderCompilerWorkUnit *wunit = s_compiler->NewUnit();
   wunit->GenerateCodeHandler = [uid, hostconfig](ShaderCompilerWorkUnit* wunit)
   {
-    ShaderCode code;
-    code.SetBuffer(wunit->code.data());
-    GeneratePixelShaderCode(code, uid.GetUidData(), hostconfig);
-    wunit->codesize = (u32)code.BufferSize();
+    GeneratePixelShaderCode(wunit->code, uid.GetUidData(), hostconfig);
   };
   wunit->entrypoint = "main";
   wunit->flags = D3DCOMPILE_SKIP_VALIDATION | D3DCOMPILE_OPTIMIZATION_LEVEL3;

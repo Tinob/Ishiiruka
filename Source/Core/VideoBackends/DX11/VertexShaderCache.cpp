@@ -171,10 +171,9 @@ void VertexShaderCache::Init()
 
   s_vshaders = nullptr;
   LoadFromDisk();
-
+  CompileUberShaders();
   if (g_ActiveConfig.bCompileShaderOnStartup)
   {
-    CompileUberShaders();
     CompileShaders();
   }
   s_last_entry = nullptr;
@@ -187,7 +186,13 @@ void VertexShaderCache::LoadFromDisk()
 {
   if (s_vshaders)
   {
-    s_vshaders->Persist();
+    s_vshaders->Persist([](const VertexShaderUid &uid) {
+      VertexShaderUid u = uid;
+      u.ClearHASH();
+      u.CalculateUIDHash();
+      VertexShaderUid::ShaderUidHasher hasher;
+      return hasher(uid) == hasher(u);
+    });
     s_vshaders->Clear([](VSCacheEntry& item)
     {
       item.Destroy();
@@ -330,13 +335,10 @@ void VertexShaderCache::CompileUberShader(const UberShader::VertexUberShaderUid&
   }
   // Need to compile a new shader
 
-  ShaderCompilerWorkUnit *wunit = s_compiler->NewUnit(VERTEXSHADERGEN_BUFFERSIZE);
+  ShaderCompilerWorkUnit *wunit = s_compiler->NewUnit();
   wunit->GenerateCodeHandler = [uid, hostconfig](ShaderCompilerWorkUnit* wunit)
   {
-    ShaderCode code;
-    code.SetBuffer(wunit->code.data());
-    UberShader::GenVertexShader(code, API_D3D11, hostconfig, uid.GetUidData());
-    wunit->codesize = (u32)code.BufferSize();
+    UberShader::GenVertexShader(wunit->code, API_D3D11, hostconfig, uid.GetUidData());
   };
 
   wunit->entrypoint = "main";
@@ -395,13 +397,10 @@ void VertexShaderCache::CompileVShader(const VertexShaderUid& uid, const ShaderH
     return;
   }
 
-  ShaderCompilerWorkUnit *wunit = s_compiler->NewUnit(VERTEXSHADERGEN_BUFFERSIZE);
+  ShaderCompilerWorkUnit *wunit = s_compiler->NewUnit();
   wunit->GenerateCodeHandler = [uid, hostconfig](ShaderCompilerWorkUnit* wunit)
   {
-    ShaderCode code;
-    code.SetBuffer(wunit->code.data());
-    GenerateVertexShaderCode(code, uid.GetUidData(), hostconfig);
-    wunit->codesize = (u32)code.BufferSize();
+    GenerateVertexShaderCode(wunit->code, uid.GetUidData(), hostconfig);
   };
 
   wunit->entrypoint = "main";
@@ -498,7 +497,7 @@ bool VertexShaderCache::TestShader()
 {
   if (g_ActiveConfig.bBackgroundShaderCompiling || g_ActiveConfig.bDisableSpecializedShaders)
   {
-    return true;
+    return s_last_uber_entry && s_last_uber_entry->compiled;
   }
   int count = 0;
   while (!s_last_entry->compiled)

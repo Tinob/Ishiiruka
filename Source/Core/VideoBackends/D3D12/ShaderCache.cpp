@@ -108,7 +108,10 @@ public:
   void Read(const UberShader::PixelUberShaderUid &key, const u8* value, u32 value_size)
   {
     D3DBlob* blob = new D3DBlob(value_size, value);
-    ShaderCache::InsertPUSByteCode(key, blob);
+    UberShader::PixelUberShaderUid uid = key;
+    uid.ClearHASH();
+    uid.CalculateUIDHash();
+    ShaderCache::InsertPUSByteCode(uid, blob);
   }
 };
 
@@ -131,7 +134,10 @@ public:
   void Read(const UberShader::VertexUberShaderUid &key, const u8* value, u32 value_size)
   {
     D3DBlob* blob = new D3DBlob(value_size, value);
-    ShaderCache::InsertVUSByteCode(key, blob);
+    UberShader::VertexUberShaderUid uid = key;
+    uid.ClearHASH();
+    uid.CalculateUIDHash();
+    ShaderCache::InsertVUSByteCode(uid, blob);
   }
 };
 
@@ -356,13 +362,25 @@ void ShaderCache::LoadHostBasedFromDisk()
 {
   if (vs_bytecode_cache)
   {
-    vs_bytecode_cache->Persist();
+    vs_bytecode_cache->Persist([](const VertexShaderUid& uid) {
+      VertexShaderUid u = uid;
+      u.ClearHASH();
+      u.CalculateUIDHash();
+      VertexShaderUid::ShaderUidHasher hasher;
+      return hasher(uid) == hasher(u);
+    });
     delete vs_bytecode_cache;
     vs_bytecode_cache = nullptr;
   }
   if (ps_bytecode_cache)
   {
-    ps_bytecode_cache->Persist();
+    ps_bytecode_cache->Persist([](const PixelShaderUid &uid) {
+      PixelShaderUid u = uid;
+      u.ClearHASH();
+      u.CalculateUIDHash();
+      PixelShaderUid::ShaderUidHasher hasher;
+      return hasher(uid) == hasher(u);
+    });
     delete ps_bytecode_cache;
     ps_bytecode_cache = nullptr;
   }
@@ -481,15 +499,33 @@ void ShaderCache::Shutdown()
 
   s_host_blob_list.clear();
 
-  vs_bytecode_cache->Persist();
+  vs_bytecode_cache->Persist([](const VertexShaderUid &uid) {
+    VertexShaderUid u = uid;
+    u.ClearHASH();
+    u.CalculateUIDHash();
+    VertexShaderUid::ShaderUidHasher hasher;
+    return hasher(uid) == hasher(u);
+  });
   delete vs_bytecode_cache;
   vs_bytecode_cache = nullptr;
 
-  ts_bytecode_cache->Persist();
+  ts_bytecode_cache->Persist([](const TessellationShaderUid &uid) {
+    TessellationShaderUid u = uid;
+    u.ClearHASH();
+    u.CalculateUIDHash();
+    TessellationShaderUid::ShaderUidHasher hasher;
+    return hasher(uid) == hasher(u);
+  });
   delete ts_bytecode_cache;
   ts_bytecode_cache = nullptr;
 
-  ps_bytecode_cache->Persist();
+  ps_bytecode_cache->Persist([](const PixelShaderUid &uid) {
+    PixelShaderUid u = uid;
+    u.ClearHASH();
+    u.CalculateUIDHash();
+    PixelShaderUid::ShaderUidHasher hasher;
+    return hasher(uid) == hasher(u);
+  });
   delete ps_bytecode_cache;
   ps_bytecode_cache = nullptr;
 
@@ -562,13 +598,10 @@ void ShaderCache::HandleGSUIDChange(const GeometryShaderUid &gs_uid, std::functi
   }
 
   // Need to compile a new shader
-  ShaderCompilerWorkUnit *wunit = s_compiler->NewUnit(GEOMETRYSHADERGEN_BUFFERSIZE);
+  ShaderCompilerWorkUnit *wunit = s_compiler->NewUnit();
   wunit->GenerateCodeHandler = [gs_uid](ShaderCompilerWorkUnit* wunit)
   {
-    ShaderCode code;
-    code.SetBuffer(wunit->code.data());
-    GenerateGeometryShaderCode(code, gs_uid.GetUidData(), ShaderHostConfig::GetCurrent());
-    wunit->codesize = (u32)code.BufferSize();
+    GenerateGeometryShaderCode(wunit->code, gs_uid.GetUidData(), ShaderHostConfig::GetCurrent());
   };
 
   wunit->entrypoint = "main";
@@ -583,8 +616,6 @@ void ShaderCache::HandleGSUIDChange(const GeometryShaderUid &gs_uid, std::functi
       D3DBlob* shaderBuffer = new D3DBlob(wunit->shaderbytecode);
       s_gs_disk_cache.Append(gs_uid, shaderBuffer->Data(), shaderBuffer->Size());
       PushHostByteCode(entry, shaderBuffer);
-      wunit->shaderbytecode->Release();
-      wunit->shaderbytecode = nullptr;
       SETSTAT(stats.numGeometryShadersAlive, static_cast<int>(ps_bytecode_cache->size()));
       INCSTAT(stats.numGeometryShadersCreated);
     }
@@ -617,13 +648,10 @@ void ShaderCache::HandlePSUIDChange(const PixelShaderUid &ps_uid, std::function<
     return;
   }
   // Need to compile a new shader
-  ShaderCompilerWorkUnit *wunit = s_compiler->NewUnit(PIXELSHADERGEN_BUFFERSIZE);
+  ShaderCompilerWorkUnit *wunit = s_compiler->NewUnit();
   wunit->GenerateCodeHandler = [ps_uid](ShaderCompilerWorkUnit* wunit)
   {
-    ShaderCode code;
-    code.SetBuffer(wunit->code.data());
-    GeneratePixelShaderCode(code, ps_uid.GetUidData(), ShaderHostConfig::GetCurrent());
-    wunit->codesize = (u32)code.BufferSize();
+    GeneratePixelShaderCode(wunit->code, ps_uid.GetUidData(), ShaderHostConfig::GetCurrent());
   };
 
   wunit->entrypoint = "main";
@@ -669,13 +697,10 @@ void ShaderCache::HandlePUSUIDChange(const UberShader::PixelUberShaderUid &ps_ui
     return;
   }
   // Need to compile a new shader
-  ShaderCompilerWorkUnit *wunit = s_compiler->NewUnit(PIXELSHADERGEN_BUFFERSIZE);
+  ShaderCompilerWorkUnit *wunit = s_compiler->NewUnit();
   wunit->GenerateCodeHandler = [ps_uid](ShaderCompilerWorkUnit* wunit)
   {
-    ShaderCode code;
-    code.SetBuffer(wunit->code.data());
-    UberShader::GenPixelShader(code, API_D3D11, ShaderHostConfig::GetCurrent(), ps_uid.GetUidData());
-    wunit->codesize = (u32)code.BufferSize();
+    UberShader::GenPixelShader(wunit->code, API_D3D11, ShaderHostConfig::GetCurrent(), ps_uid.GetUidData());
   };
 
   wunit->entrypoint = "main";
@@ -689,8 +714,6 @@ void ShaderCache::HandlePUSUIDChange(const UberShader::PixelUberShaderUid &ps_ui
       D3DBlob* shaderBuffer = new D3DBlob(wunit->shaderbytecode);
       s_pus_disk_cache.Append(ps_uid, shaderBuffer->Data(), shaderBuffer->Size());
       PushHostByteCode(entry, shaderBuffer);
-      wunit->shaderbytecode->Release();
-      wunit->shaderbytecode = nullptr;
     }
     else
     {
@@ -721,13 +744,10 @@ void ShaderCache::HandleVSUIDChange(const VertexShaderUid& vs_uid, std::function
     if (oncompilationfinished) oncompilationfinished();
     return;
   }
-  ShaderCompilerWorkUnit *wunit = s_compiler->NewUnit(VERTEXSHADERGEN_BUFFERSIZE);
+  ShaderCompilerWorkUnit *wunit = s_compiler->NewUnit();
   wunit->GenerateCodeHandler = [vs_uid](ShaderCompilerWorkUnit* wunit)
   {
-    ShaderCode code;
-    code.SetBuffer(wunit->code.data());
-    GenerateVertexShaderCode(code, vs_uid.GetUidData(), ShaderHostConfig::GetCurrent());
-    wunit->codesize = (u32)code.BufferSize();
+    GenerateVertexShaderCode(wunit->code, vs_uid.GetUidData(), ShaderHostConfig::GetCurrent());
   };
 
   wunit->entrypoint = "main";
@@ -741,8 +761,6 @@ void ShaderCache::HandleVSUIDChange(const VertexShaderUid& vs_uid, std::function
       D3DBlob* shaderBuffer = new D3DBlob(wunit->shaderbytecode);
       s_vs_disk_cache.Append(vs_uid, shaderBuffer->Data(), shaderBuffer->Size());
       PushHostByteCode(entry, shaderBuffer);
-      wunit->shaderbytecode->Release();
-      wunit->shaderbytecode = nullptr;
     }
     else
     {
@@ -772,13 +790,10 @@ void ShaderCache::HandleVUSUIDChange(const UberShader::VertexUberShaderUid& vs_u
     if (oncompilationfinished) oncompilationfinished();
     return;
   }
-  ShaderCompilerWorkUnit *wunit = s_compiler->NewUnit(VERTEXSHADERGEN_BUFFERSIZE);
+  ShaderCompilerWorkUnit *wunit = s_compiler->NewUnit();
   wunit->GenerateCodeHandler = [vs_uid](ShaderCompilerWorkUnit* wunit)
   {
-    ShaderCode code;
-    code.SetBuffer(wunit->code.data());
-    UberShader::GenVertexShader(code, API_D3D11, ShaderHostConfig::GetCurrent(), vs_uid.GetUidData());
-    wunit->codesize = (u32)code.BufferSize();
+    UberShader::GenVertexShader(wunit->code, API_D3D11, ShaderHostConfig::GetCurrent(), vs_uid.GetUidData());
   };
 
   wunit->entrypoint = "main";
@@ -838,18 +853,15 @@ void ShaderCache::HandleTSUIDChange(const TessellationShaderUid& ts_uid, std::fu
 
   // Need to compile a new shader
   ShaderCode code;
-  ShaderCompilerWorkUnit *wunit = s_compiler->NewUnit(TESSELLATIONSHADERGEN_BUFFERSIZE);
-  ShaderCompilerWorkUnit *wunitd = s_compiler->NewUnit(TESSELLATIONSHADERGEN_BUFFERSIZE);
-  code.SetBuffer(wunit->code.data());
-  GenerateTessellationShaderCode(code, API_D3D11, ts_uid.GetUidData());
-  memcpy(wunitd->code.data(), wunit->code.data(), code.BufferSize());
+  ShaderCompilerWorkUnit *wunit = s_compiler->NewUnit();
+  ShaderCompilerWorkUnit *wunitd = s_compiler->NewUnit();
+  GenerateTessellationShaderCode(wunit->code, API_D3D11, ts_uid.GetUidData());
+  wunitd->code.copy(wunit->code);
 
-  wunit->codesize = (u32)code.BufferSize();
   wunit->entrypoint = "HS_TFO";
   wunit->flags = D3DCOMPILE_SKIP_VALIDATION | D3DCOMPILE_SKIP_OPTIMIZATION;
   wunit->target = D3D::HullShaderVersionString();
 
-  wunitd->codesize = (u32)code.BufferSize();
   wunitd->entrypoint = "DS_TFO";
   wunitd->flags = D3DCOMPILE_SKIP_VALIDATION | D3DCOMPILE_OPTIMIZATION_LEVEL3;
   wunitd->target = D3D::DomainShaderVersionString();
@@ -862,8 +874,6 @@ void ShaderCache::HandleTSUIDChange(const TessellationShaderUid& ts_uid, std::fu
       D3DBlob* shaderBuffer = new D3DBlob(wunit->shaderbytecode);
       s_ds_disk_cache.Append(ts_uid, shaderBuffer->Data(), shaderBuffer->Size());
       PushStaticByteCode(dentry, shaderBuffer);
-      wunit->shaderbytecode->Release();
-      wunit->shaderbytecode = nullptr;
     }
     else
     {

@@ -226,8 +226,7 @@ Renderer::Renderer(void*& window_handle)
   m_target_dirty = true;
 
   D3D::BeginFrame();
-  // Since we modify the config here, we need to update the last host bits, it may have changed.
-  m_last_host_config_bits = ShaderHostConfig::GetCurrent().bits;
+  // Since we modify the config here, we need to update the last host bits, it may have changed.  
 }
 
 void Renderer::Init()
@@ -255,6 +254,7 @@ void Renderer::Init()
 
   m_vp = { 0.f, 0.f, static_cast<float>(m_target_width), static_cast<float>(m_target_height), D3D12_MIN_DEPTH, D3D12_MAX_DEPTH };
   D3D::current_command_list->RSSetViewports(1, &m_vp);
+  m_last_host_config_bits = ShaderHostConfig::GetCurrent().bits;
 }
 
 Renderer::~Renderer()

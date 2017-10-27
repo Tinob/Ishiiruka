@@ -15,6 +15,7 @@
 #include "VideoBackends/OGL/ProgramShaderCache.h"
 #include "VideoBackends/OGL/Render.h"
 #include "VideoBackends/OGL/StreamBuffer.h"
+#include "VideoBackends/OGL/VertexManager.h"
 
 #include "VideoCommon/Debugger.h"
 #include "VideoCommon/DriverDetails.h"
@@ -22,24 +23,35 @@
 #include "VideoCommon/ImageWrite.h"
 #include "VideoCommon/PixelShaderManager.h"
 #include "VideoCommon/Statistics.h"
+#include "VideoCommon/VertexLoaderManager.h"
 #include "VideoCommon/VertexShaderManager.h"
 
 namespace OGL
 {
+static constexpr u32 INVALID_VAO = std::numeric_limits<u32>::max();
+
 u32 ProgramShaderCache::s_ubo_buffer_size;
 u32 ProgramShaderCache::s_v_ubo_buffer_size;
 u32 ProgramShaderCache::s_p_ubo_buffer_size;
 u32 ProgramShaderCache::s_g_ubo_buffer_size;
 s32 ProgramShaderCache::s_ubo_align;
+u32 ProgramShaderCache::s_last_VAO = INVALID_VAO;
 
 static std::unique_ptr<StreamBuffer> s_buffer;
 static int num_failures = 0;
 
 static LinearDiskCache<SHADERUID, u8> g_program_disk_cache;
+static LinearDiskCache<UBERSHADERUID, u8> g_uber_program_disk_cache;
 static GLuint CurrentProgram = 0;
+
 ProgramShaderCache::PCache* ProgramShaderCache::pshaders;
+ProgramShaderCache::UberPCache ProgramShaderCache::pushaders;
+
 std::array<ProgramShaderCache::PCacheEntry*, PIXEL_SHADER_RENDER_MODE::PSRM_DEPTH_ONLY + 1> ProgramShaderCache::last_entry;
 std::array<SHADERUID, PIXEL_SHADER_RENDER_MODE::PSRM_DEPTH_ONLY + 1> ProgramShaderCache::last_uid;
+
+ProgramShaderCache::PCacheEntry* ProgramShaderCache::last_uber_entry;
+UBERSHADERUID ProgramShaderCache::last_uber_uid;
 
 static char s_glsl_header[2048] = "";
 
@@ -125,8 +137,8 @@ void SHADER::SetProgramBindings(bool is_compute)
 
     glBindAttribLocation(glprogid, SHADER_POSMTX_ATTRIB, "fposmtx");
 
-    glBindAttribLocation(glprogid, SHADER_COLOR0_ATTRIB, "color0");
-    glBindAttribLocation(glprogid, SHADER_COLOR1_ATTRIB, "color1");
+    glBindAttribLocation(glprogid, SHADER_COLOR0_ATTRIB, "rawcolor0");
+    glBindAttribLocation(glprogid, SHADER_COLOR1_ATTRIB, "rawcolor1");
 
     glBindAttribLocation(glprogid, SHADER_NORM0_ATTRIB, "rawnorm0");
     glBindAttribLocation(glprogid, SHADER_NORM1_ATTRIB, "rawnorm1");
@@ -135,7 +147,7 @@ void SHADER::SetProgramBindings(bool is_compute)
   for (int i = 0; i < 8; i++)
   {
     char attrib_name[8];
-    snprintf(attrib_name, 8, "tex%d", i);
+    snprintf(attrib_name, 8, "rawtex%d", i);
     glBindAttribLocation(glprogid, SHADER_TEXTURE0_ATTRIB + i, attrib_name);
   }
 }
@@ -184,7 +196,7 @@ void ProgramShaderCache::UploadConstants()
     glBindBuffer(GL_UNIFORM_BUFFER, s_buffer->m_buffer);
     if (mask & 1)
     {
-      const u32 pixel_buffer_size = C_PCONST_END * 4 * sizeof(float);
+      const u32 pixel_buffer_size = PixelShaderManager::ConstantBufferSize * sizeof(float);
       glBindBufferRange(GL_UNIFORM_BUFFER, 1, s_buffer->m_buffer,
         s_buffer->Stream(pixel_buffer_size, s_ubo_align, PixelShaderManager::GetBuffer()),
         pixel_buffer_size);
@@ -235,28 +247,11 @@ SHADER* ProgramShaderCache::CompileShader(const SHADERUID& uid)
   const ShaderHostConfig& hostconfig = ShaderHostConfig::GetCurrent();
   GenerateVertexShaderCode(vcode, uid.vuid.GetUidData(), hostconfig);
   GeneratePixelShaderCode(pcode, uid.puid.GetUidData(), hostconfig);
-  if (g_ActiveConfig.backend_info.bSupportsGeometryShaders && !uid.guid.GetUidData().IsPassthrough())
+  bool use_geometry = g_ActiveConfig.backend_info.bSupportsGeometryShaders && !uid.guid.GetUidData().IsPassthrough();
+  if (use_geometry)
     GenerateGeometryShaderCode(gcode, uid.guid.GetUidData(), hostconfig);
 
-#if defined(_DEBUG) || defined(DEBUGFAST)
-  if (g_ActiveConfig.iLog & CONF_SAVESHADERS)
-  {
-    static int counter = 0;
-    std::string filename = StringFromFormat("%svs_%04i.txt", File::GetUserPath(D_DUMP_IDX).c_str(), counter++);
-    SaveData(filename, vcode.GetBuffer());
-
-    filename = StringFromFormat("%sps_%04i.txt", File::GetUserPath(D_DUMP_IDX).c_str(), counter++);
-    SaveData(filename, pcode.GetBuffer());
-
-    if (gcode.GetBuffer() != nullptr)
-    {
-      filename = StringFromFormat("%sgs_%04i.txt", File::GetUserPath(D_DUMP_IDX).c_str(), counter++);
-      SaveData(filename, gcode.GetBuffer());
-    }
-  }
-#endif
-
-  if (!CompileShader(newentry.shader, vcode.GetBuffer(), pcode.GetBuffer(), gcode.GetBuffer()))
+  if (!CompileShader(newentry.shader, vcode.data(), pcode.data(), use_geometry ? gcode.data() : nullptr))
   {
     GFX_DEBUGGER_PAUSE_AT(NEXT_ERROR, true);
     return nullptr;
@@ -269,23 +264,85 @@ SHADER* ProgramShaderCache::CompileShader(const SHADERUID& uid)
   return &last_entry[render_mode]->shader;
 }
 
-SHADER* ProgramShaderCache::SetShader(PIXEL_SHADER_RENDER_MODE render_mode, u32 components, u32 primitive_type)
+SHADER* ProgramShaderCache::CompileUberShader(const UBERSHADERUID& uid)
 {
+  // Check if shader is already in cache
+  PCacheEntry& newentry = pushaders[uid];
+  if (newentry.shader.glprogid)
+  {
+    last_uber_entry = &newentry;
+    GFX_DEBUGGER_PAUSE_AT(NEXT_PIXEL_SHADER_CHANGE, true);
+    return &last_uber_entry->shader;
+  }
+  // Make an entry in the table
+  last_uber_entry = &newentry;
+  newentry.in_cache = 0;
+
+  ShaderCode vcode;
+  ShaderCode pcode;
+  ShaderCode gcode;
+  const ShaderHostConfig& hostconfig = ShaderHostConfig::GetCurrent();
+  UberShader::GenVertexShader(vcode, API_OPENGL, hostconfig, uid.vuid.GetUidData());
+  UberShader::GenPixelShader(pcode, API_OPENGL, hostconfig, uid.puid.GetUidData());
+  bool use_geometry = g_ActiveConfig.backend_info.bSupportsGeometryShaders && !uid.guid.GetUidData().IsPassthrough();
+  if (use_geometry)
+    GenerateGeometryShaderCode(gcode, uid.guid.GetUidData(), hostconfig);
+
+  if (!CompileShader(newentry.shader, vcode.data(), pcode.data(), use_geometry ? gcode.data() : nullptr))
+  {
+    GFX_DEBUGGER_PAUSE_AT(NEXT_ERROR, true);
+    return nullptr;
+  }
+
+  return &last_uber_entry->shader;
+}
+
+SHADER* ProgramShaderCache::SetShader(PIXEL_SHADER_RENDER_MODE render_mode, u32 components, u32 primitive_type, const GLVertexFormat* vertex_format)
+{
+  if (g_ActiveConfig.backend_info.bSupportsUberShaders && g_ActiveConfig.bDisableSpecializedShaders)
+  {
+    return SetUberShader(primitive_type, components, vertex_format);
+  }
   SHADERUID uid;
   GetShaderId(&uid, render_mode, components, primitive_type);
   uid.CalculateHash();
+  BindVertexFormat(vertex_format);
   // Check if the shader is already set
-  if (last_entry[render_mode])
+  if (last_entry[render_mode] && uid == last_uid[render_mode])
   {
-    if (uid == last_uid[render_mode])
-    {
-      GFX_DEBUGGER_PAUSE_AT(NEXT_PIXEL_SHADER_CHANGE, true);
-      return &last_entry[render_mode]->shader;
-    }
+    GFX_DEBUGGER_PAUSE_AT(NEXT_PIXEL_SHADER_CHANGE, true);
+    return &last_entry[render_mode]->shader;
   }
 
   last_uid[render_mode] = uid;
   return CompileShader(uid);
+}
+
+SHADER* ProgramShaderCache::SetUberShader(u32 primitive_type, u32 components, const GLVertexFormat* vertex_format)
+{
+  UBERSHADERUID uid = {};
+  uid.puid = UberShader::GetPixelUberShaderUid(components, xfmem, bpmem);
+  uid.puid.CalculateUIDHash();
+  uid.vuid = UberShader::GetVertexUberShaderUid(components, xfmem);
+  uid.vuid.CalculateUIDHash();
+  GetGeometryShaderUid(uid.guid, primitive_type, xfmem, components);
+  
+  uid.CalculateHash();
+  // We need to use the ubershader vertex format with all attributes enabled.
+  // Otherwise, the NV driver can generate variants for the vertex shaders.
+  const GLVertexFormat* uber_vertex_format = static_cast<const GLVertexFormat*>(
+    VertexLoaderManager::GetUberVertexFormat(vertex_format->GetVertexDeclaration()));
+
+  BindVertexFormat(uber_vertex_format);
+
+  // Check if the shader is already set
+  if (last_uber_entry && uid == last_uber_uid)
+  {
+    GFX_DEBUGGER_PAUSE_AT(NEXT_PIXEL_SHADER_CHANGE, true);
+    return &last_uber_entry->shader;
+  }
+  last_uber_uid = uid;
+  return CompileUberShader(uid);
 }
 
 bool ProgramShaderCache::CompileShader(SHADER& shader, const char* vcode, const char* pcode, const char* gcode, const char **macros, const u32 macro_count)
@@ -515,13 +572,36 @@ void ProgramShaderCache::GetShaderId(SHADERUID* uid, PIXEL_SHADER_RENDER_MODE re
   GetGeometryShaderUid(uid->guid, primitive_type, xfmem, components);
 }
 
+void ProgramShaderCache::BindVertexFormat(const GLVertexFormat* vertex_format)
+{
+  u32 new_VAO = vertex_format ? vertex_format->VAO : 0;
+  if (s_last_VAO == new_VAO)
+    return;
+
+  glBindVertexArray(new_VAO);
+  s_last_VAO = new_VAO;
+}
+
+void ProgramShaderCache::InvalidateVertexFormat()
+{
+  s_last_VAO = INVALID_VAO;
+}
+
+void ProgramShaderCache::BindLastVertexFormat()
+{
+  if (s_last_VAO != INVALID_VAO)
+    glBindVertexArray(s_last_VAO);
+  else
+    glBindVertexArray(0);
+}
+
 void ProgramShaderCache::Init()
 {
   // We have to get the UBO alignment here because
   // if we generate a buffer that isn't aligned
   // then the UBO will fail.
   glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &s_ubo_align);
-  s_p_ubo_buffer_size = static_cast<u32>(Common::AlignUpSizePow2(C_PCONST_END * 4 * sizeof(float), static_cast<u32>(s_ubo_align)));
+  s_p_ubo_buffer_size = static_cast<u32>(Common::AlignUpSizePow2(PixelShaderManager::ConstantBufferSize * sizeof(float), static_cast<u32>(s_ubo_align)));
   s_v_ubo_buffer_size = static_cast<u32>(Common::AlignUpSizePow2(VertexShaderManager::ConstantBufferSize * sizeof(float), static_cast<u32>(s_ubo_align)));
   s_g_ubo_buffer_size = static_cast<u32>(Common::AlignUpSizePow2(sizeof(GeometryShaderConstants), static_cast<u32>(s_ubo_align)));
   s_ubo_buffer_size = s_p_ubo_buffer_size
@@ -539,12 +619,20 @@ void ProgramShaderCache::Init()
 
   CreateHeader();
 
-  CurrentProgram = 0;
-  last_entry.fill(nullptr);
   if (g_ActiveConfig.bCompileShaderOnStartup)
   {
     CompileShaders();
   }
+  if (g_ActiveConfig.backend_info.bSupportsUberShaders)
+  {
+    CompileUberShaders();
+  }
+  CurrentProgram = 0;
+  last_entry.fill(nullptr);
+  last_uber_entry = nullptr;
+  last_uid = {};
+  last_uber_uid = {};
+  InvalidateVertexFormat();
 }
 
 void ProgramShaderCache::LoadFromDisk()
@@ -576,9 +664,70 @@ void ProgramShaderCache::LoadFromDisk()
       std::string cache_filename = GetDiskShaderCacheFileName(API_OPENGL, "program", true, true);
       ProgramShaderCacheInserter inserter;
       g_program_disk_cache.OpenAndRead(cache_filename, inserter);
+
+      if (g_ActiveConfig.backend_info.bSupportsUberShaders)
+      {
+        cache_filename = GetDiskShaderCacheFileName(API_OPENGL, "uprogram", false, true);
+        ProgramUberShaderCacheInserter uinserter;
+        g_uber_program_disk_cache.OpenAndRead(cache_filename, uinserter);
+      }
+
     }
     SETSTAT(stats.numPixelShadersAlive, pshaders->size());
   }
+}
+
+void ProgramShaderCache::CompileUberShaders()
+{
+  UberShader::PixelUberShaderUid puid = {};
+  UberShader::VertexUberShaderUid vuid = {};
+  GeometryShaderUid guid = {};
+
+  static constexpr std::array<u32, 3> primitive_lut = {
+    { PRIMITIVE_TRIANGLES, PRIMITIVE_LINES, PRIMITIVE_POINTS } };
+  geometry_shader_uid_data& guidd = guid.GetUidData<geometry_shader_uid_data>();
+  UberShader::pixel_ubershader_uid_data& puidd = puid.GetUidData<UberShader::pixel_ubershader_uid_data>();
+  UberShader::vertex_ubershader_uid_data& vuidd = vuid.GetUidData<UberShader::vertex_ubershader_uid_data>();
+  int shader_count = 0; 
+  for (u32 primitive : primitive_lut)
+  {
+    guidd.primitive_type = primitive;
+    for (u32 texgens = 0; texgens <= 8; texgens++)
+    {
+      vuidd.num_texgens = guidd.numTexGens = puidd.num_texgens = texgens;
+      for (u32 early_depth = 0; early_depth < 2; early_depth++)
+      {
+        puidd.early_depth = early_depth != 0;
+        for (u32 per_pixel_depth = 0; per_pixel_depth < 2; per_pixel_depth++)
+        {
+          // Don't generate shaders where we have early depth tests enabled, and write gl_FragDepth.
+          if (early_depth && per_pixel_depth)
+            continue;
+          puidd.per_pixel_depth = per_pixel_depth != 0;
+          for (u32 pixel_ligthing = 0; pixel_ligthing < 2; pixel_ligthing++)
+          {
+            puidd.per_pixel_lighting = vuidd.per_pixel_lighting = guidd.pixel_lighting = pixel_ligthing;
+            UBERSHADERUID uid;
+            uid.guid = guid;
+            uid.vuid = vuid;
+            uid.puid = puid;
+            uid.guid.ClearHASH();
+            uid.vuid.ClearHASH();
+            uid.puid.ClearHASH();
+            uid.guid.CalculateUIDHash();
+            uid.vuid.CalculateUIDHash();
+            uid.puid.CalculateUIDHash();
+            uid.CalculateHash();
+            CompileUberShader(uid);
+            shader_count++;
+            Host_UpdateProgressDialog(GetStringT("Compiling Uber Shaders...").c_str(),
+              shader_count, 256);
+          }
+        }
+      }
+    }
+  }
+  Host_UpdateProgressDialog("", -1, -1);
 }
 
 void ProgramShaderCache::CompileShaders()
@@ -615,10 +764,22 @@ void ProgramShaderCache::CompileShaders()
 
 void ProgramShaderCache::Shutdown(bool shadersonly)
 {
-  pshaders->Persist();
+  InvalidateVertexFormat();
+  pshaders->Persist([](const SHADERUID &uid) {
+    SHADERUID u = uid;
+    u.guid.ClearHASH();
+    u.vuid.ClearHASH();
+    u.puid.ClearHASH();
+    u.guid.CalculateUIDHash();
+    u.vuid.CalculateUIDHash();
+    u.puid.CalculateUIDHash();
+    u.CalculateHash();
+    SHADERUID::ShaderUidHasher hasher;
+    return hasher(uid) == hasher(u);
+  });
   // store all shaders in cache on disk
   if (g_ogl_config.bSupportsGLSLCache)
-  { 
+  {
     pshaders->Clear(
       [&](const SHADERUID& uid, PCacheEntry& entry)
     {
@@ -649,17 +810,50 @@ void ProgramShaderCache::Shutdown(bool shadersonly)
       }
 
       g_program_disk_cache.Append(uid, &data[0], binary_size + sizeof(GLenum));
-    });    
+    });
     g_program_disk_cache.Sync();
     g_program_disk_cache.Close();
+    for (auto& item : pushaders)
+    {
+      PCacheEntry& entry = item.second;
+      // Clear any prior error code
+      glGetError();
+
+      if (entry.in_cache)
+      {
+        continue;
+      }
+
+      GLint link_status = GL_FALSE, delete_status = GL_TRUE, binary_size = 0;
+      glGetProgramiv(entry.shader.glprogid, GL_LINK_STATUS, &link_status);
+      glGetProgramiv(entry.shader.glprogid, GL_DELETE_STATUS, &delete_status);
+      glGetProgramiv(entry.shader.glprogid, GL_PROGRAM_BINARY_LENGTH, &binary_size);
+      if (glGetError() != GL_NO_ERROR || link_status == GL_FALSE || delete_status == GL_TRUE || !binary_size)
+      {
+        continue;
+      }
+
+      std::vector<u8> data(binary_size + sizeof(GLenum));
+      u8* binary = &data[sizeof(GLenum)];
+      GLenum* prog_format = (GLenum*)&data[0];
+      glGetProgramBinary(entry.shader.glprogid, binary_size, nullptr, prog_format, binary);
+      if (glGetError() != GL_NO_ERROR)
+      {
+        continue;
+      }
+
+      g_uber_program_disk_cache.Append(item.first, &data[0], binary_size + sizeof(GLenum));
+    }
+    g_uber_program_disk_cache.Sync();
+    g_uber_program_disk_cache.Close();
   }
+  pushaders.clear();
   delete pshaders;
   pshaders = nullptr;
   if (!shadersonly)
   {
     s_buffer.reset();
   }
-  
 }
 
 void ProgramShaderCache::Reload()
@@ -667,6 +861,10 @@ void ProgramShaderCache::Reload()
   Shutdown(true);
   LoadFromDisk();
   CompileShaders();
+  if (g_ActiveConfig.backend_info.bSupportsUberShaders)
+  {
+    CompileUberShaders();
+  }
 }
 
 void ProgramShaderCache::CreateHeader()
@@ -824,6 +1022,31 @@ void ProgramShaderCache::ProgramShaderCacheInserter::Read(const SHADERUID& key, 
   GLint binary_size = value_size - sizeof(GLenum);
 
   PCacheEntry& entry = pshaders->GetOrAdd(key);
+  entry.in_cache = 1;
+  entry.shader.glprogid = glCreateProgram();
+  glProgramBinary(entry.shader.glprogid, *prog_format, binary, binary_size);
+
+  GLint success;
+  glGetProgramiv(entry.shader.glprogid, GL_LINK_STATUS, &success);
+
+  if (success)
+  {
+    entry.shader.SetProgramVariables();
+  }
+  else
+  {
+    glDeleteProgram(entry.shader.glprogid);
+    entry.shader.glprogid = 0;
+  }
+}
+
+void ProgramShaderCache::ProgramUberShaderCacheInserter::Read(const UBERSHADERUID& key, const u8* value, u32 value_size)
+{
+  const u8 *binary = value + sizeof(GLenum);
+  GLenum *prog_format = (GLenum*)value;
+  GLint binary_size = value_size - sizeof(GLenum);
+
+  PCacheEntry& entry = pushaders[key];
   entry.in_cache = 1;
   entry.shader.glprogid = glCreateProgram();
   glProgramBinary(entry.shader.glprogid, *prog_format, binary, binary_size);

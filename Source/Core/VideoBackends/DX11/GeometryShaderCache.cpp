@@ -69,7 +69,10 @@ class GeometryShaderCacheInserter : public LinearDiskCacheReader<GeometryShaderU
 public:
   void Read(const GeometryShaderUid &key, const u8* value, u32 value_size)
   {
-    GeometryShaderCache::InsertByteCode(key, value, value_size);
+    GeometryShaderUid uid = key;
+    uid.ClearHASH();
+    uid.CalculateUIDHash();
+    GeometryShaderCache::InsertByteCode(uid, value, value_size);
   }
 };
 
@@ -251,13 +254,10 @@ void GeometryShaderCache::CompileGShader(const GeometryShaderUid& uid, std::func
   }
 
   // Need to compile a new shader
-  ShaderCompilerWorkUnit *wunit = s_compiler->NewUnit(GEOMETRYSHADERGEN_BUFFERSIZE);
+  ShaderCompilerWorkUnit *wunit = s_compiler->NewUnit();
   wunit->GenerateCodeHandler = [uid](ShaderCompilerWorkUnit* wunit)
   {
-    ShaderCode code;
-    code.SetBuffer(wunit->code.data());
-    GenerateGeometryShaderCode(code, uid.GetUidData(), ShaderHostConfig::GetCurrent());
-    wunit->codesize = (u32)code.BufferSize();
+    GenerateGeometryShaderCode(wunit->code, uid.GetUidData(), ShaderHostConfig::GetCurrent());
   };
 
   wunit->entrypoint = "main";

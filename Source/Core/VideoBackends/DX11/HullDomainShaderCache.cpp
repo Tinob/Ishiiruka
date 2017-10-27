@@ -57,7 +57,10 @@ class HullShaderCacheInserter : public LinearDiskCacheReader<TessellationShaderU
 public:
   void Read(const TessellationShaderUid &key, const u8* value, u32 value_size)
   {
-    HullDomainShaderCache::InsertByteCode(key, value, value_size, false);
+    TessellationShaderUid uid = key;
+    uid.ClearHASH();
+    uid.CalculateUIDHash();
+    HullDomainShaderCache::InsertByteCode(uid, value, value_size, false);
   }
 };
 
@@ -66,7 +69,10 @@ class DomainShaderCacheInserter : public LinearDiskCacheReader<TessellationShade
 public:
   void Read(const TessellationShaderUid &key, const u8* value, u32 value_size)
   {
-    HullDomainShaderCache::InsertByteCode(key, value, value_size, true);
+    TessellationShaderUid uid = key;
+    uid.ClearHASH();
+    uid.CalculateUIDHash();
+    HullDomainShaderCache::InsertByteCode(uid, value, value_size, true);
   }
 };
 
@@ -139,7 +145,13 @@ void HullDomainShaderCache::Clear()
 {
   if (s_hulldomain_shaders)
   {
-    s_hulldomain_shaders->Persist();
+    s_hulldomain_shaders->Persist([](const TessellationShaderUid &uid) {
+      TessellationShaderUid u = uid;
+      u.ClearHASH();
+      u.CalculateUIDHash();
+      TessellationShaderUid::ShaderUidHasher hasher;
+      return hasher(uid) == hasher(u);
+    });
     s_hulldomain_shaders->Clear([](HDCacheEntry& item)
     {
       item.Destroy();
@@ -179,13 +191,11 @@ void HullDomainShaderCache::CompileHDShader(const TessellationShaderUid& uid, st
 
   // Need to compile a new shader
   ShaderCode code;
-  ShaderCompilerWorkUnit *wunit = s_compiler->NewUnit(TESSELLATIONSHADERGEN_BUFFERSIZE);
-  ShaderCompilerWorkUnit *wunitd = s_compiler->NewUnit(TESSELLATIONSHADERGEN_BUFFERSIZE);
-  code.SetBuffer(wunit->code.data());
-  GenerateTessellationShaderCode(code, API_D3D11, uid.GetUidData());
-  memcpy(wunitd->code.data(), wunit->code.data(), code.BufferSize());
+  ShaderCompilerWorkUnit *wunit = s_compiler->NewUnit();
+  ShaderCompilerWorkUnit *wunitd = s_compiler->NewUnit();
+  GenerateTessellationShaderCode(wunit->code, API_D3D11, uid.GetUidData());
+  wunitd->code.copy(wunit->code);
 
-  wunit->codesize = (u32)code.BufferSize();
   wunit->entrypoint = "HS_TFO";
 #if defined(_DEBUG) || defined(DEBUGFAST)
   wunit->flags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
@@ -194,7 +204,6 @@ void HullDomainShaderCache::CompileHDShader(const TessellationShaderUid& uid, st
 #endif
   wunit->target = D3D::HullShaderVersionString();
 
-  wunitd->codesize = (u32)code.BufferSize();
   wunitd->entrypoint = "DS_TFO";
 #if defined(_DEBUG) || defined(DEBUGFAST)
   wunit->flags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;

@@ -19,7 +19,6 @@ class ShaderCompilerWorkUnit
   ShaderCompilerWorkUnit(ShaderCompilerWorkUnit const&);
   void operator=(ShaderCompilerWorkUnit const&);
 public:
-  u32 codesize;
   u32 flags;
   HRESULT cresult;
   const char* entrypoint;
@@ -27,7 +26,7 @@ public:
   const void* defines;
   ID3DBlob* shaderbytecode;
   ID3DBlob* error;
-  std::vector<char> code;
+  ShaderCode code;
   std::function<void(ShaderCompilerWorkUnit*)> GenerateCodeHandler;
   std::function<void(ShaderCompilerWorkUnit*)> ResultHandler;
   void Clear();
@@ -52,7 +51,7 @@ public:
   void SetCompilerFunction(pD3DCompile compilerfunc);
   virtual ~HLSLAsyncCompiler();
   bool NextTask(size_t ID) override;
-  ShaderCompilerWorkUnit* NewUnit(u32 codesize);
+  ShaderCompilerWorkUnit* NewUnit();
   void CompileShaderAsync(ShaderCompilerWorkUnit* unit);
   void ProcCompilationResults();
   bool CompilationFinished();  

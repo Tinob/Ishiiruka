@@ -25,11 +25,17 @@ struct geometry_shader_uid_data
   }
   bool IsPassthrough() const;
 
-  void ClearUnused(){}
+  void ClearUnused()
+  {
+    unused0 = 0;
+    padding = 0;
+  }
 
+  u32 unused0 : 1;
   u32 numTexGens : 4;
   u32 pixel_lighting : 1;
   u32 primitive_type : 2;
+  u32 padding : 24;
 };
 
 #pragma pack()
@@ -38,7 +44,6 @@ struct geometry_shader_uid_data
 #define I_LINEPTPARAMS  "clinept"
 #define I_TEXOFFSET     "ctexoffset"
 
-#define GEOMETRYSHADERGEN_BUFFERSIZE 32768
 #define GEOMETRYSHADERGEN_UID_VERSION 1
 typedef ShaderUid<geometry_shader_uid_data> GeometryShaderUid;
 
