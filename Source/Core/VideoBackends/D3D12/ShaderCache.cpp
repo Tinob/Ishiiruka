@@ -303,7 +303,7 @@ void ShaderCache::CompileHostBasedShaders()
     PixelShaderUid item = it;
     item.ClearHASH();
     item.CalculateUIDHash();
-    HandlePSUIDChange(item, [total]() {
+    HandlePSUIDChange(item, true, [total]() {
       shader_count++;
       if ((shader_count & 7) == 0)
       {
@@ -326,7 +326,7 @@ void ShaderCache::CompileHostBasedShaders()
     VertexShaderUid item = it;
     item.ClearHASH();
     item.CalculateUIDHash();
-    HandleVSUIDChange(item, [total]() {
+    HandleVSUIDChange(item, true, [total]() {
       shader_count++;
       Host_UpdateProgressDialog(GetStringT("Compiling Vertex shaders...").c_str(),
         static_cast<int>(shader_count), static_cast<int>(total));
@@ -638,9 +638,13 @@ void ShaderCache::HandleGSUIDChange(const GeometryShaderUid &gs_uid, std::functi
   s_compiler->CompileShaderAsync(wunit);
 }
 
-void ShaderCache::HandlePSUIDChange(const PixelShaderUid &ps_uid, std::function<void()> oncompilationfinished = {})
+void ShaderCache::HandlePSUIDChange(const PixelShaderUid &ps_uid, bool forcecompile = false, std::function<void()> oncompilationfinished = {})
 {
   ByteCodeCacheEntry* entry = &ps_bytecode_cache->GetOrAdd(ps_uid);
+  if (g_ActiveConfig.bDisableSpecializedShaders && !forcecompile)
+  {
+    return;
+  }
   s_last_pixel_shader_bytecode = entry;
   if (entry->m_initialized.test_and_set())
   {
@@ -734,9 +738,13 @@ void ShaderCache::HandlePUSUIDChange(const UberShader::PixelUberShaderUid &ps_ui
   s_compiler->CompileShaderAsync(wunit);
 }
 
-void ShaderCache::HandleVSUIDChange(const VertexShaderUid& vs_uid, std::function<void()> oncompilationfinished = {})
+void ShaderCache::HandleVSUIDChange(const VertexShaderUid& vs_uid, bool forcecompile = false, std::function<void()> oncompilationfinished = {})
 {
   ByteCodeCacheEntry* entry = &vs_bytecode_cache->GetOrAdd(vs_uid);
+  if (g_ActiveConfig.bDisableSpecializedShaders && !forcecompile)
+  {
+    return;
+  }
   s_last_vertex_shader_bytecode = entry;
   // Compile only when we have a new instance
   if (entry->m_initialized.test_and_set())
@@ -947,10 +955,6 @@ void ShaderCache::PrepareShaders(PIXEL_SHADER_RENDER_MODE render_mode,
       D3D::command_list_mgr->SetCommandListDirtyState(COMMAND_LIST_STATE_PSO, true);
       HandlePUSUIDChange(pusid);
     }
-  }
-  if (g_ActiveConfig.bDisableSpecializedShaders)
-  {
-    return;
   }
   GeometryShaderUid gs_uid;
   GetGeometryShaderUid(gs_uid, gs_primitive_type, xfr, components);

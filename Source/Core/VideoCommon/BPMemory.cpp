@@ -117,9 +117,9 @@ void GetBPRegInfo(const u8* data, std::string* name, std::string* desc)
       "Source factor: %s\n"
       "Subtract: %s\n"
       "Logic mode: %s\n",
-      no_yes[mode.blendenable], no_yes[mode.logicopenable], no_yes[mode.dither],
-      no_yes[mode.colorupdate], no_yes[mode.alphaupdate], dstfactors[mode.dstfactor],
-      srcfactors[mode.srcfactor], no_yes[mode.subtract], logicmodes[mode.logicmode]);
+      no_yes[mode.blendenable.Value()], no_yes[mode.logicopenable.Value()], no_yes[mode.dither.Value()],
+      no_yes[mode.colorupdate.Value()], no_yes[mode.alphaupdate.Value()], dstfactors[mode.dstfactor.Value()],
+      srcfactors[mode.srcfactor.Value()], no_yes[mode.subtract.Value()], logicmodes[mode.logicmode.Value()]);
   }
   break;
 
@@ -132,7 +132,7 @@ void GetBPRegInfo(const u8* data, std::string* name, std::string* desc)
     *desc = StringFromFormat("EFB pixel format: %s\n"
       "Depth format: %s\n"
       "Early depth test: %s\n",
-      pixel_formats[config.pixel_format], zformats[config.zformat], no_yes[config.early_ztest]);
+      pixel_formats[config.pixel_format.Value()], zformats[config.zformat.Value()], no_yes[config.early_ztest.Value()]);
   }
   break;
 
@@ -185,17 +185,17 @@ void GetBPRegInfo(const u8* data, std::string* name, std::string* desc)
       "Copy to XFB: %s\n"
       "Intensity format: %s\n"
       "Automatic color conversion: %s",
-      (copy.clamp0 && copy.clamp1) ? "Top and Bottom" : (copy.clamp0) ? "Top only" : (copy.clamp1) ? "Bottom only" : "None",
-      no_yes[copy.yuv],
+      (copy.clamp0.Value() && copy.clamp1.Value()) ? "Top and Bottom" : (copy.clamp0.Value()) ? "Top only" : (copy.clamp1.Value()) ? "Bottom only" : "None",
+      no_yes[copy.yuv.Value()],
       copy.tp_realFormat(),
-      (copy.gamma == 0) ? "1.0" : (copy.gamma == 1) ? "1.7" : (copy.gamma == 2) ? "2.2" : "Invalid value 0x3?",
-      no_yes[copy.half_scale],
-      no_yes[copy.scale_invert],
-      no_yes[copy.clear],
-      (u32)copy.frame_to_field,
-      no_yes[copy.copy_to_xfb],
-      no_yes[copy.intensity_fmt],
-      no_yes[copy.auto_conv]);
+      (copy.gamma == 0) ? "1.0" : (copy.gamma.Value() == 1) ? "1.7" : (copy.gamma.Value() == 2) ? "2.2" : "Invalid value 0x3?",
+      no_yes[copy.half_scale.Value()],
+      no_yes[copy.scale_invert.Value()],
+      no_yes[copy.clear.Value()],
+      (u32)copy.frame_to_field.Value(),
+      no_yes[copy.copy_to_xfb.Value()],
+      no_yes[copy.intensity_fmt.Value()],
+      no_yes[copy.auto_conv.Value()]);
   }
   break;
 
@@ -266,8 +266,8 @@ void GetBPRegInfo(const u8* data, std::string* name, std::string* desc)
       "Clamp: %s\n"
       "Scale factor: %s\n"
       "Dest: %s\n",
-      (data[0] - BPMEM_TEV_COLOR_ENV) / 2, tevin[cc.a], tevin[cc.b], tevin[cc.c], tevin[cc.d],
-      tevbias[cc.bias], tevop[cc.op], no_yes[cc.clamp], tevscale[cc.shift], tevout[cc.dest]);
+      (data[0] - BPMEM_TEV_COLOR_ENV) / 2, tevin[cc.a.Value()], tevin[cc.b.Value()], tevin[cc.c.Value()], tevin[cc.d.Value()],
+      tevbias[cc.bias.Value()], tevop[cc.op.Value()], no_yes[cc.clamp.Value()], tevscale[cc.shift.Value()], tevout[cc.dest.Value()]);
     break;
   }
 
@@ -311,9 +311,9 @@ void GetBPRegInfo(const u8* data, std::string* name, std::string* desc)
       "Dest: %s\n"
       "Ras sel: %d\n"
       "Tex sel: %d\n",
-      (data[0] - BPMEM_TEV_ALPHA_ENV) / 2, tevin[ac.a], tevin[ac.b], tevin[ac.c], tevin[ac.d],
-      tevbias[ac.bias], tevop[ac.op], no_yes[ac.clamp], tevscale[ac.shift], tevout[ac.dest],
-      ac.rswap, ac.tswap);
+      (data[0] - BPMEM_TEV_ALPHA_ENV) / 2, tevin[ac.a.Value()], tevin[ac.b.Value()], tevin[ac.c.Value()], tevin[ac.d.Value()],
+      tevbias[ac.bias.Value()], tevop[ac.op.Value()], no_yes[ac.clamp.Value()], tevscale[ac.shift.Value()], tevout[ac.dest.Value()],
+      ac.rswap.Value(), ac.tswap.Value());
     break;
   }
 
@@ -326,7 +326,7 @@ void GetBPRegInfo(const u8* data, std::string* name, std::string* desc)
     *desc = StringFromFormat("Test 1: %s (ref: %#02x)\n"
       "Test 2: %s (ref: %#02x)\n"
       "Logic: %s\n",
-      functions[test.comp0], (int)test.ref0, functions[test.comp1], (int)test.ref1, logic[test.logic]);
+      functions[test.comp0.Value()], (int)test.ref0, functions[test.comp1.Value()], (int)test.ref1, logic[test.logic.Value()]);
     break;
   }
 

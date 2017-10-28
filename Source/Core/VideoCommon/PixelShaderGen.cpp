@@ -1866,7 +1866,7 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
   }
   if (ApiType & API_D3D9)
   {
-    out.Write("\tfloat2 ditherindex = round(rawpos.xy) % 4;\n");
+    out.Write("\tfloat2 ditherindex = round(rawpos.xy) %% 4;\n");
   }
   else
   {
@@ -1959,7 +1959,7 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
   }
   if (enablenormalmaps || forcePhong)
   {
-    out.Write("\tfloat3 emmisive_mask = float3(0.0,0.0,0.0);\n", numStages);
+    out.Write("\tfloat3 emmisive_mask = float3(0.0,0.0,0.0);\n");
     out.Write("\tfloat4 normalmap = float4(0.0,0.0,1.0,0.3);\n");
     out.Write("\tfloat height_map = 0.0, height_map_count = 0.0;\n");
     out.Write("\tfloat2 mapcoord = float2(0.0,0.0);\n");

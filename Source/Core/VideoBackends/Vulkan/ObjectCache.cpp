@@ -562,7 +562,9 @@ struct ShaderCacheReader : public LinearDiskCacheReader<Uid, u32>
     VkShaderModule module = Util::CreateShaderModule(value, value_size);
     if (module == VK_NULL_HANDLE)
       return;
-
+    Uid item = key;
+    item.ClearHASH();
+    item.CalculateUIDHash();
     ObjectCache::vkShaderItem& it = m_shader_map->GetOrAdd(key);
     it.initialized.test_and_set();
     it.compiled = true;

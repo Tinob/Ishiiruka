@@ -40,7 +40,7 @@ private:
   static void CompileShaders();
   static void CompileUberShaders();
   static void CompileUberShader(const UberShader::VertexUberShaderUid& uid, const ShaderHostConfig& hostconfig, std::function<void()> oncompilationfinished);
-  static void CompileVShader(const VertexShaderUid& uid, const ShaderHostConfig& hostconfig, std::function<void()> oncompilationfinished);
+  static void CompileVShader(const VertexShaderUid& uid, const ShaderHostConfig& hostconfig, bool forcecompile, std::function<void()> oncompilationfinished);
   struct VSCacheEntry
   {
     D3D::VertexShaderPtr shader;

@@ -231,7 +231,7 @@ void VertexShaderCache::CompileShaders()
     VertexShaderUid item = it;
     item.ClearHASH();
     item.CalculateUIDHash();
-    CompileVShader(item, hostconfig, [total]() {
+    CompileVShader(item, hostconfig, true, [total]() {
       shader_count++;
       Host_UpdateProgressDialog(GetStringT("Compiling Vertex shaders...").c_str(),
         static_cast<int>(shader_count), static_cast<int>(total));
@@ -386,9 +386,13 @@ void VertexShaderCache::CompileUberShader(const UberShader::VertexUberShaderUid&
   s_compiler->CompileShaderAsync(wunit);
 }
 
-void VertexShaderCache::CompileVShader(const VertexShaderUid& uid, const ShaderHostConfig& hostconfig, std::function<void()> oncompilationfinished = {})
+void VertexShaderCache::CompileVShader(const VertexShaderUid& uid, const ShaderHostConfig& hostconfig, bool forcecompile = false, std::function<void()> oncompilationfinished = {})
 {
   VSCacheEntry* entry = &s_vshaders->GetOrAdd(uid);
+  if (g_ActiveConfig.bDisableSpecializedShaders && !forcecompile)
+  {
+    return;
+  }
   s_last_entry = entry;
   // Compile only when we have a new instance
   if (entry->initialized.test_and_set())
@@ -458,10 +462,6 @@ void VertexShaderCache::PrepareShader(
       s_last_uber_uid = uuid;
       CompileUberShader(uuid, ShaderHostConfig::GetCurrent());
     }
-  }
-  if (g_ActiveConfig.bDisableSpecializedShaders)
-  {
-    return;
   }
   VertexShaderUid uid;
   GetVertexShaderUID(uid, components, xfr, bpm);

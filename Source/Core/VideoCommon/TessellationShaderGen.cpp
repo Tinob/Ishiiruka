@@ -270,40 +270,40 @@ inline void WriteFetchDisplacement(ShaderCode& out, int n, const Tessellation_sh
     if (tevind.mid != 0)
     {
       static const char *tevIndFmtMask[] = { "255", "31", "15", "7" };
-      out.Write("int3 indtevcrd%d = indtex%d & %s;\n", n, tevind.bt, tevIndFmtMask[tevind.fmt]);
+      out.Write("int3 indtevcrd%d = indtex%d & %s;\n", n, tevind.bt.Value(), tevIndFmtMask[tevind.fmt.Value()]);
 
       static const char *tevIndBiasField[] = { "", "x", "y", "xy", "z", "xz", "yz", "xyz" }; // indexed by bias
       static const char *tevIndBiasAdd[] = { "int(-128)", "int(1)", "int(1)", "int(1)" }; // indexed by fmt
                                                                                                                       // bias
-      if (tevind.bias == ITB_S || tevind.bias == ITB_T || tevind.bias == ITB_U)
-        out.Write("indtevcrd%d.%s += %s;\n", n, tevIndBiasField[tevind.bias], tevIndBiasAdd[tevind.fmt]);
-      else if (tevind.bias == ITB_ST || tevind.bias == ITB_SU || tevind.bias == ITB_TU)
-        out.Write("indtevcrd%d.%s += int2(%s, %s);\n", n, tevIndBiasField[tevind.bias], tevIndBiasAdd[tevind.fmt], tevIndBiasAdd[tevind.fmt]);
-      else if (tevind.bias == ITB_STU)
-        out.Write("indtevcrd%d.%s += int3(%s, %s, %s);\n", n, tevIndBiasField[tevind.bias], tevIndBiasAdd[tevind.fmt], tevIndBiasAdd[tevind.fmt], tevIndBiasAdd[tevind.fmt]);
+      if (tevind.bias.Value() == ITB_S || tevind.bias.Value() == ITB_T || tevind.bias.Value() == ITB_U)
+        out.Write("indtevcrd%d.%s += %s;\n", n, tevIndBiasField[tevind.bias.Value()], tevIndBiasAdd[tevind.fmt.Value()]);
+      else if (tevind.bias.Value() == ITB_ST || tevind.bias.Value() == ITB_SU || tevind.bias.Value() == ITB_TU)
+        out.Write("indtevcrd%d.%s += int2(%s, %s);\n", n, tevIndBiasField[tevind.bias.Value()], tevIndBiasAdd[tevind.fmt.Value()], tevIndBiasAdd[tevind.fmt.Value()]);
+      else if (tevind.bias.Value() == ITB_STU)
+        out.Write("indtevcrd%d.%s += int3(%s, %s, %s);\n", n, tevIndBiasField[tevind.bias.Value()], tevIndBiasAdd[tevind.fmt.Value()], tevIndBiasAdd[tevind.fmt.Value()], tevIndBiasAdd[tevind.fmt.Value()]);
 
       // multiply by offset matrix and scale
       if (tevind.mid <= 3)
       {
-        int mtxidx = 2 * (tevind.mid - 1);
+        int mtxidx = 2 * (tevind.mid.Value() - 1);
         out.Write("int2 indtevtrans%d = int2(idot(" I_INDTEXMTX "[%d].xyz, indtevcrd%d), idot(" I_INDTEXMTX "[%d].xyz, indtevcrd%d));\n",
           n, mtxidx, n, mtxidx + 1, n);
 
         out.Write("indtevtrans%d = BSHR(indtevtrans%d, int(3));\n", n, n);
         out.Write("indtevtrans%d = BSH(indtevtrans%d, " I_INDTEXMTX "[%d].w);\n", n, n, mtxidx);
       }
-      else if (tevind.mid <= 7 && bHasTexCoord)
+      else if (tevind.mid.Value() <= 7 && bHasTexCoord)
       { // s matrix
-        _assert_(tevind.mid >= 5);
-        int mtxidx = 2 * (tevind.mid - 5);
+        _assert_(tevind.mid.Value() >= 5);
+        int mtxidx = 2 * (tevind.mid.Value() - 5);
         out.Write("int2 indtevtrans%d = int2(uv[%d].xy * indtevcrd%d.xx);\n", n, texcoord, n);
         out.Write("indtevtrans%d = BSHR(indtevtrans%d, int(8));\n", n, n);
         out.Write("indtevtrans%d = BSH(indtevtrans%d, " I_INDTEXMTX "[%d].w);\n", n, n, mtxidx);
       }
-      else if (tevind.mid <= 11 && bHasTexCoord)
+      else if (tevind.mid.Value() <= 11 && bHasTexCoord)
       { // t matrix
-        _assert_(tevind.mid >= 9);
-        int mtxidx = 2 * (tevind.mid - 9);
+        _assert_(tevind.mid.Value() >= 9);
+        int mtxidx = 2 * (tevind.mid.Value() - 9);
         out.Write("int2 indtevtrans%d = int2(uv[%d].xy * indtevcrd%d.yy);\n", n, texcoord, n);
         out.Write("indtevtrans%d = BSHR(indtevtrans%d, int(8));\n", n, n);
         out.Write("indtevtrans%d = BSH(indtevtrans%d, " I_INDTEXMTX "[%d].w);\n", n, n, mtxidx);
@@ -327,7 +327,7 @@ inline void WriteFetchDisplacement(ShaderCode& out, int n, const Tessellation_sh
     else if (tevind.sw == ITW_0)
       out.Write("wrappedcoord.x = int(0);\n");
     else
-      out.Write("wrappedcoord.x = remainder(int(uv[%d].x), %s);\n", texcoord, tevIndWrapStart[tevind.sw]);
+      out.Write("wrappedcoord.x = remainder(int(uv[%d].x), %s);\n", texcoord, tevIndWrapStart[tevind.sw.Value()]);
 
     // wrap T
     if (tevind.tw == ITW_OFF)
@@ -335,7 +335,7 @@ inline void WriteFetchDisplacement(ShaderCode& out, int n, const Tessellation_sh
     else if (tevind.tw == ITW_0)
       out.Write("wrappedcoord.y = int(0);\n");
     else
-      out.Write("wrappedcoord.y = remainder(int(uv[%d].y), %s);\n", texcoord, tevIndWrapStart[tevind.tw]);
+      out.Write("wrappedcoord.y = remainder(int(uv[%d].y), %s);\n", texcoord, tevIndWrapStart[tevind.tw.Value()]);
 
     if (tevind.fb_addprev) // add previous tevcoord
       out.Write("tevcoord.xy += wrappedcoord + indtevtrans%d;\n", n);
@@ -563,7 +563,7 @@ inline void GenerateTessellationShader(ShaderCode& out, const Tessellation_shade
     out.Write(s_hlsl_ds_str);
 
     for (u32 i = 0; i < texcount; ++i)
-      out.Write("result.tex%d.xyz = BInterpolate(pconstans.tex%d, bCoords).xyz;\n", i, i, i, i);
+      out.Write("result.tex%d.xyz = BInterpolate(pconstans.tex%d, bCoords).xyz;\n", i, i);
 
     out.Write("float displacement = 0.0, displacementcount = 0.0, borderdistance = bCoords.x * bCoords.y * bCoords.z;\n");
     out.Write("int3 tevcoord=int3(0,0,0);\n");

@@ -92,7 +92,7 @@ inline void GenerateVertexShader(ShaderCode& out, API_TYPE api_type, const verte
   }
                                                                   // uniforms
   if (api_type == API_OPENGL || api_type == API_VULKAN)
-    out.Write("UBO_BINDING(std140, 2) uniform VSBlock {\n", g_ActiveConfig.backend_info.bSupportsBindingLayout ? ", binding = 2" : "");
+    out.Write("UBO_BINDING(std140, 2) uniform VSBlock {\n");
   else if (api_type == API_D3D11)
     out.Write("cbuffer VSBlock : register(b0) {\n");
 

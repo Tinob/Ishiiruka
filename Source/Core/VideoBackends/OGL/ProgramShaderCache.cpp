@@ -299,13 +299,13 @@ SHADER* ProgramShaderCache::CompileUberShader(const UBERSHADERUID& uid)
 
 SHADER* ProgramShaderCache::SetShader(PIXEL_SHADER_RENDER_MODE render_mode, u32 components, u32 primitive_type, const GLVertexFormat* vertex_format)
 {
-  if (g_ActiveConfig.backend_info.bSupportsUberShaders && g_ActiveConfig.bDisableSpecializedShaders)
-  {
-    return SetUberShader(primitive_type, components, vertex_format);
-  }
   SHADERUID uid;
   GetShaderId(&uid, render_mode, components, primitive_type);
-  uid.CalculateHash();
+  if (g_ActiveConfig.backend_info.bSupportsUberShaders && g_ActiveConfig.bDisableSpecializedShaders)
+  {
+    pshaders->GetOrAdd(uid);
+    return SetUberShader(primitive_type, components, vertex_format);
+  }
   BindVertexFormat(vertex_format);
   // Check if the shader is already set
   if (last_entry[render_mode] && uid == last_uid[render_mode])
@@ -570,6 +570,7 @@ void ProgramShaderCache::GetShaderId(SHADERUID* uid, PIXEL_SHADER_RENDER_MODE re
   GetPixelShaderUID(uid->puid, render_mode, components, xfmem, bpmem);
   GetVertexShaderUID(uid->vuid, components, xfmem, bpmem);
   GetGeometryShaderUid(uid->guid, primitive_type, xfmem, components);
+  uid->CalculateHash();
 }
 
 void ProgramShaderCache::BindVertexFormat(const GLVertexFormat* vertex_format)

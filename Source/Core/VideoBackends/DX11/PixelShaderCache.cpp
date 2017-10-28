@@ -572,7 +572,7 @@ void PixelShaderCache::CompileShaders()
     PixelShaderUid item = it;
     item.ClearHASH();
     item.CalculateUIDHash();
-    CompilePShader(item, hostconfig, [total]() {
+    CompilePShader(item, hostconfig, true, [total]() {
       shader_count++;
       if ((shader_count & 7) == 0)
       {
@@ -752,9 +752,13 @@ void PixelShaderCache::CompileUberShader(const UberShader::PixelUberShaderUid& u
   s_compiler->CompileShaderAsync(wunit);
 }
 
-void PixelShaderCache::CompilePShader(const PixelShaderUid& uid, const ShaderHostConfig& hostconfig, std::function<void()> oncompilationfinished = {})
+void PixelShaderCache::CompilePShader(const PixelShaderUid& uid, const ShaderHostConfig& hostconfig, bool forcecompile = false, std::function<void()> oncompilationfinished = {})
 {
   PSCacheEntry* entry = &s_pixel_shaders->GetOrAdd(uid);
+  if (g_ActiveConfig.bDisableSpecializedShaders && !forcecompile)
+  {
+    return;
+  }
   s_last_entry = entry;
   // Compile only when we have a new instance
   if (entry->initialized.test_and_set())
@@ -827,10 +831,6 @@ void PixelShaderCache::PrepareShader(PIXEL_SHADER_RENDER_MODE render_mode,
       s_last_uber_uid = uuid;
       CompileUberShader(uuid, ShaderHostConfig::GetCurrent());
     }
-  }
-  if (g_ActiveConfig.bDisableSpecializedShaders)
-  {
-    return;
   }
   PixelShaderUid uid;
   GetPixelShaderUID(uid, render_mode, components, xfr, bpm);

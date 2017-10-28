@@ -81,9 +81,9 @@ private:
 
   static void HandleGSUIDChange(const GeometryShaderUid& gs_uid, std::function<void()> oncompilationfinished);
 
-  static void HandlePSUIDChange(const PixelShaderUid& ps_uid, std::function<void()> oncompilationfinished);
+  static void HandlePSUIDChange(const PixelShaderUid& ps_uid, bool forcecompile, std::function<void()> oncompilationfinished);
 
-  static void HandleVSUIDChange(const VertexShaderUid& vs_uid, std::function<void()> oncompilationfinished);
+  static void HandleVSUIDChange(const VertexShaderUid& vs_uid, bool forcecompile, std::function<void()> oncompilationfinished);
 
   static void HandleTSUIDChange(const TessellationShaderUid& ts_uid, std::function<void()> oncompilationfinished);
 

@@ -52,7 +52,7 @@ private:
   static void CompileShaders();
   static void CompileUberShaders();
   static void CompileUberShader(const UberShader::PixelUberShaderUid& uid, const ShaderHostConfig& hostconfig, std::function<void()> oncompilationfinished);
-  static void CompilePShader(const PixelShaderUid& uid, const ShaderHostConfig& hostconfig, std::function<void()> oncompilationfinished);
+  static void CompilePShader(const PixelShaderUid& uid, const ShaderHostConfig& hostconfig, bool forcecompile, std::function<void()> oncompilationfinished);
   struct PSCacheEntry
   {
     std::string code;
