@@ -287,7 +287,6 @@ void VideoConfig::VerifyValidity()
     iTexScalingType = 10;
   }
   bHiresMaterialMaps = bHiresMaterialMaps && bHiresTextures && bEnablePixelLighting;
-  bLastStoryEFBToRam = bLastStoryEFBToRam && StringEndsWith(SConfig::GetInstance().GetGameID(), "LSEXJ");
 }
 
 bool VideoConfig::IsVSync() const
