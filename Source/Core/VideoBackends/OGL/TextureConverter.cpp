@@ -100,6 +100,10 @@ static void CreatePrograms()
     "	ocol0 = vec4(dot(c1,y_const),dot(c01,u_const),dot(c0,y_const),dot(c01, v_const)) + const3;\n"
     "}\n";
   ProgramShaderCache::CompileShader(s_rgbToYuyvProgram, VProgramRgbToYuyv, FProgramRgbToYuyv);
+  while (!s_rgbToYuyvProgram.finished)
+  {
+    Common::YieldCPU();
+  }
   s_rgbToYuyvUniform_loc = glGetUniformLocation(s_rgbToYuyvProgram.glprogid, "copy_position");
 
   /* TODO: Accuracy Improvements
@@ -135,6 +139,10 @@ static void CreatePrograms()
     "		1.0);\n"
     "}\n";
   ProgramShaderCache::CompileShader(s_yuyvToRgbProgram, VProgramYuyvToRgb, FProgramYuyvToRgb);
+  while (!s_yuyvToRgbProgram.finished)
+  {
+    Common::YieldCPU();
+  }
 }
 
 static EncodingProgram& GetOrCreateEncodingShader(const EFBCopyFormat& format)
@@ -163,7 +171,12 @@ static EncodingProgram& GetOrCreateEncodingShader(const EFBCopyFormat& format)
     "}\n";
 
   EncodingProgram program;
-  if (!ProgramShaderCache::CompileShader(program.program, VProgram, shader))
+  ProgramShaderCache::CompileShader(program.program, VProgram, shader);
+  while (!program.program.finished)
+  {
+    Common::YieldCPU();
+  }
+  if (!program.program.glprogid)
     PanicAlert("Failed to compile texture encoding shader.");
 
   program.copy_position_uniform = glGetUniformLocation(program.program.glprogid, "position");

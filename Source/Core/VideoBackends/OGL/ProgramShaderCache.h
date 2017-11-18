@@ -4,7 +4,11 @@
 
 #pragma once
 
+#include <condition_variable>
 #include <memory>
+#include <mutex>
+#include <queue>
+#include <thread>
 #include <tuple>
 #include <unordered_map>
 
@@ -93,7 +97,7 @@ public:
 
 struct SHADER
 {
-  SHADER() : glprogid(0), initialized(false)
+  SHADER() : glprogid(0), started(false), finished(false), initialized(false)
   {}
   void Destroy()
   {
@@ -102,32 +106,39 @@ struct SHADER
       glDeleteProgram(glprogid);
     }
     glprogid = 0;
+    started = false;
+    finished = false;
     initialized = false;
   }
   GLuint glprogid = 0; // OpenGL program id
+  bool started = false;
+  bool finished = false;
   bool initialized = false;
   void SetProgramVariables();
-  void SetProgramBindings(bool is_compute);
   void Bind();
 };
+void setProgramBindings(GLuint program, bool is_compute);
 
 class ProgramShaderCache
 {
 public:
 
   static GLuint GetCurrentProgram();
-  static SHADER* SetShader(PIXEL_SHADER_RENDER_MODE render_mode, u32 components, u32 primitive_type, const GLVertexFormat* vertex_format);
-  static SHADER* SetUberShader(u32 primitive_type, u32 components, const GLVertexFormat* vertex_format);
+  static void PrepareShader(
+      PIXEL_SHADER_RENDER_MODE render_mode, u32 components, u32 primitive_type);
+  static SHADER* SetShader(PIXEL_SHADER_RENDER_MODE render_mode);
+  static SHADER* SetUberShader(u32 primitive_type, u32 components);
   static void BindVertexFormat(const GLVertexFormat* vertex_format);
   static void InvalidateVertexFormat();
   static void BindLastVertexFormat();
-  static SHADER* CompileShader(const SHADERUID& uid);
+  static void CompileShader(const SHADERUID& uid, SHADER& shader);
   static SHADER* CompileUberShader(const UBERSHADERUID& uid);
   static void GetShaderId(SHADERUID *uid, PIXEL_SHADER_RENDER_MODE render_mode, u32 components, u32 primitive_type);
 
-  static bool CompileShader(SHADER &shader, const char* vcode, const char* pcode, const char* gcode = nullptr, const char **macros = nullptr, const u32 macro_count = 0);
+  static void CompileShader(
+      SHADER& shader, const char* vcode, const char* pcode, const char* gcode = nullptr);
   static bool CompileComputeShader(SHADER& shader, const std::string& code);
-  static GLuint CompileSingleShader(GLuint type, const char *code, const char **macros = nullptr, const u32 count = 0);
+  static GLuint CompileSingleShader(GLuint type, const char *code);
   static void UploadConstants();
 
   static void Init();
@@ -148,11 +159,35 @@ private:
     }
   };
 
+  struct QueueEntry
+  {
+    QueueEntry() : kill_thread(true)
+    {}
+    QueueEntry(SHADER* s, const std::string& c) : shader(s), ccode(c), compute_shader(true)
+    {}
+    QueueEntry(SHADER* s, const char* v, const char* p, const char* g)
+        : shader(s), vcode(v), pcode(p)
+    {
+      gcode = g == nullptr ? std::string() : std::string(g);
+    }
+    SHADER* shader;
+    std::string vcode;
+    std::string pcode;
+    std::string gcode;
+    std::string ccode;
+    bool compute_shader = false;
+    bool kill_thread = false;
+  };
+
   typedef ObjectUsageProfiler<SHADERUID, pKey_t, PCacheEntry, SHADERUID::ShaderUidHasher> PCache;
   typedef std::unordered_map<UBERSHADERUID, PCacheEntry, UBERSHADERUID::ShaderUidHasher> UberPCache;
 
   static void LoadFromDisk();
   static void CompileShaders();
+  static void CompileShaderWorker(
+      SHADER& shader, const char* vcode, const char* pcode, const char* gcode);
+  static void CompileComputeShaderWorker(SHADER& shader, const std::string& code);
+  static void CompileShadersAsync();
   static void CompileUberShaders();
 
   class ProgramShaderCacheInserter : public LinearDiskCacheReader<SHADERUID, u8>
@@ -181,6 +216,11 @@ private:
   static u32 s_g_ubo_buffer_size;
   static s32 s_ubo_align;
   static u32 s_last_VAO;
+
+  static std::condition_variable s_condition_var;
+  static std::mutex s_mutex;
+  static std::queue<std::unique_ptr<QueueEntry>> s_compilation_queue;
+  static std::thread s_thread;
 };
 
 }  // namespace OGL

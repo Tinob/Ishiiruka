@@ -182,7 +182,12 @@ bool OGLPostProcessingShader::RecompileShaders()
     vertex_shader_source += s_vertex_shader;
     std::string fragment_shader_source = header_shader_source + common_source;
     fragment_shader_source += PostProcessor::GetPassFragmentShaderSource(API_OPENGL, m_config, &pass_config);
-    if (!ProgramShaderCache::CompileShader(*shader->program, vertex_shader_source.c_str(), fragment_shader_source.c_str()))
+    ProgramShaderCache::CompileShader(*shader->program, vertex_shader_source.c_str(), fragment_shader_source.c_str());
+    while(!shader->program->finished)
+    {
+      Common::YieldCPU();
+    }
+    if (!shader->program->glprogid)
     {
       ReleasePassNativeResources(pass);
       ERROR_LOG(VIDEO, "Failed to compile post-processing shader %s (pass %s)", m_config->GetShaderName().c_str(), pass_config.entry_point.c_str());
@@ -209,7 +214,12 @@ bool OGLPostProcessingShader::RecompileShaders()
       vertex_shader_source += s_layered_vertex_shader;
       std::string geometry_shader_source = StringFromFormat(s_geometry_shader, m_internal_layers * 3, m_internal_layers).c_str();
 
-      if (!ProgramShaderCache::CompileShader(*shader->gs_program, vertex_shader_source.c_str(), fragment_shader_source.c_str(), geometry_shader_source.c_str()))
+      ProgramShaderCache::CompileShader(*shader->gs_program, vertex_shader_source.c_str(), fragment_shader_source.c_str(), geometry_shader_source.c_str());
+      while(!shader->gs_program->finished)
+      {
+        Common::YieldCPU();
+      }
+      if (!shader->gs_program->glprogid)
       {
         ReleasePassNativeResources(pass);
         ERROR_LOG(VIDEO, "Failed to compile GS post-processing shader %s (pass %s)", m_config->GetShaderName().c_str(), pass_config.entry_point.c_str());

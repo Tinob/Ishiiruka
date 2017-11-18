@@ -6,6 +6,7 @@
 
 #include "Common/Common.h"
 #include "Common/GL/GLUtil.h"
+#include "Common/Thread.h"
 
 #include "VideoBackends/OGL/ProgramShaderCache.h"
 #include "VideoBackends/OGL/RasterFont.h"
@@ -161,6 +162,10 @@ RasterFont::RasterFont()
 
   // generate shader
   ProgramShaderCache::CompileShader(s_shader, s_vertexShaderSrc, s_fragmentShaderSrc);
+  while(!s_shader.finished)
+  {
+    Common::YieldCPU();
+  }
   s_shader.Bind();
 
   // bound uniforms
