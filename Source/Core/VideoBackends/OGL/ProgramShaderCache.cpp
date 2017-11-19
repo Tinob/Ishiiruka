@@ -620,7 +620,7 @@ void ProgramShaderCache::Init()
 
   CreateHeader();
 
-  if (g_ActiveConfig.bCompileShaderOnStartup)
+  if (g_ActiveConfig.bCompileShaderOnStartup && !g_ActiveConfig.bDisableSpecializedShaders)
   {
     CompileShaders();
   }
@@ -861,7 +861,10 @@ void ProgramShaderCache::Reload()
 {
   Shutdown(true);
   LoadFromDisk();
-  CompileShaders();
+  if (g_ActiveConfig.backend_info.bSupportsUberShaders && !g_ActiveConfig.bDisableSpecializedShaders)
+  {
+    CompileShaders();
+  }
   if (g_ActiveConfig.CanPrecompileUberShaders())
   {
     CompileUberShaders();

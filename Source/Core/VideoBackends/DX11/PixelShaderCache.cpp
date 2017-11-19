@@ -514,7 +514,7 @@ void PixelShaderCache::Init()
   s_pixel_shaders = nullptr;
 
   LoadFromDisk();
-  if (g_ActiveConfig.bCompileShaderOnStartup)
+  if (g_ActiveConfig.bCompileShaderOnStartup && !g_ActiveConfig.bDisableSpecializedShaders)
   {
     CompileShaders();
   }
@@ -618,7 +618,7 @@ void PixelShaderCache::Reload()
   g_pus_disk_cache.Sync();
   g_pus_disk_cache.Close();
   LoadFromDisk();
-  if (g_ActiveConfig.bCompileShaderOnStartup)
+  if (g_ActiveConfig.bCompileShaderOnStartup && !g_ActiveConfig.bDisableSpecializedShaders)
   {
     CompileShaders();
   }

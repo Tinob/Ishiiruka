@@ -171,7 +171,7 @@ void VertexShaderCache::Init()
 
   s_vshaders = nullptr;
   LoadFromDisk();
-  if (g_ActiveConfig.bCompileShaderOnStartup)
+  if (g_ActiveConfig.bCompileShaderOnStartup && !g_ActiveConfig.bDisableSpecializedShaders)
   {
     CompileShaders();
   }
@@ -273,7 +273,7 @@ void VertexShaderCache::Reload()
   g_vus_disk_cache.Sync();
   g_vus_disk_cache.Close();
   LoadFromDisk();
-  if (g_ActiveConfig.bCompileShaderOnStartup)
+  if (g_ActiveConfig.bCompileShaderOnStartup && !g_ActiveConfig.bDisableSpecializedShaders)
   {
     CompileShaders();
   }

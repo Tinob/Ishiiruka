@@ -221,7 +221,7 @@ void ShaderCache::Init()
   SETSTAT(stats.numVertexShadersAlive, static_cast<int>(vs_bytecode_cache->size()));
   SETSTAT(stats.numVertexShadersCreated, 0);
 
-  if (g_ActiveConfig.bCompileShaderOnStartup)
+  if (g_ActiveConfig.bCompileShaderOnStartup && !g_ActiveConfig.bDisableSpecializedShaders)
   {
     CompileShaders();
     CompileHostBasedShaders();
@@ -463,7 +463,7 @@ void ShaderCache::Reload()
   s_vus_disk_cache.Close();
   LoadFromDisk();
   LoadHostBasedFromDisk();
-  if (g_ActiveConfig.bCompileShaderOnStartup)
+  if (g_ActiveConfig.bCompileShaderOnStartup && !g_ActiveConfig.bDisableSpecializedShaders)
   {
     CompileShaders();
     CompileHostBasedShaders();
