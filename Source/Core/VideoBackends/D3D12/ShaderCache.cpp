@@ -226,7 +226,10 @@ void ShaderCache::Init()
     CompileShaders();
     CompileHostBasedShaders();
   }
-  CompileUberShaders();
+  if (g_ActiveConfig.CanPrecompileUberShaders())
+  {
+    CompileUberShaders();
+  }
   // This class intentionally shares its shader cache files with DX11, as the shaders are (right now) identical.
   // Reduces unnecessary compilation when switching between APIs.
   s_last_domain_shader_bytecode = &s_pass_entry;
@@ -458,9 +461,17 @@ void ShaderCache::Reload()
   s_pus_disk_cache.Close();
   s_vus_disk_cache.Sync();
   s_vus_disk_cache.Close();
+  LoadFromDisk();
   LoadHostBasedFromDisk();
-  CompileUberShaders();
-  CompileHostBasedShaders();
+  if (g_ActiveConfig.bCompileShaderOnStartup)
+  {
+    CompileShaders();
+    CompileHostBasedShaders();
+  }
+  if (g_ActiveConfig.CanPrecompileUberShaders())
+  {
+    CompileUberShaders();
+  }
   s_last_domain_shader_bytecode = &s_pass_entry;
   s_last_hull_shader_bytecode = &s_pass_entry;
   s_last_geometry_shader_bytecode = &s_pass_entry;

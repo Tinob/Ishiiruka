@@ -624,7 +624,7 @@ void ProgramShaderCache::Init()
   {
     CompileShaders();
   }
-  if (g_ActiveConfig.backend_info.bSupportsUberShaders)
+  if (g_ActiveConfig.CanPrecompileUberShaders())
   {
     CompileUberShaders();
   }
@@ -862,7 +862,7 @@ void ProgramShaderCache::Reload()
   Shutdown(true);
   LoadFromDisk();
   CompileShaders();
-  if (g_ActiveConfig.backend_info.bSupportsUberShaders)
+  if (g_ActiveConfig.CanPrecompileUberShaders())
   {
     CompileUberShaders();
   }

@@ -89,6 +89,7 @@ struct VideoConfig final
   void UpdateProjectionHack();
   bool IsVSync() const;
   bool PixelLightingEnabled(const XFMemory& xfr, const u32 components) const;
+  bool CanPrecompileUberShaders() const;
 
   // General
   bool bVSync;

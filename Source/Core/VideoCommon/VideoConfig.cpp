@@ -298,3 +298,9 @@ bool VideoConfig::PixelLightingEnabled(const XFMemory& xfr, const u32 components
 {
   return (xfr.numChan.numColorChans > 0) && bEnablePixelLighting && backend_info.bSupportsPixelLighting && ((components & VB_HAS_NRM0) == VB_HAS_NRM0);
 }
+
+bool VideoConfig::CanPrecompileUberShaders() const
+{
+  // We don't want to precompile ubershaders if they're never going to be used.
+  return bBackgroundShaderCompiling || bDisableSpecializedShaders;
+}
