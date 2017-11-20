@@ -124,18 +124,17 @@ void VertexManager::PrepareShaders(PrimitiveType primitive, u32 components, cons
   bool dualSourcePossible = g_ActiveConfig.backend_info.bSupportsDualSourceBlend;
   // If host supports GL_ARB_blend_func_extended, we can do dst alpha in
   // the same pass as regular rendering.
-  GLVertexFormat* nativeVertexFmt = (GLVertexFormat*)VertexLoaderManager::GetCurrentVertexFormat();
   if (useDstAlpha && dualSourcePossible)
   {
-    ProgramShaderCache::SetShader(PSRM_DUAL_SOURCE_BLEND, VertexLoaderManager::g_current_components, m_current_primitive_type, nativeVertexFmt);
+    ProgramShaderCache::PrepareShader(PSRM_DUAL_SOURCE_BLEND, components, primitive);
   }
   else
   {
     if (useDstAlpha)
     {
-      ProgramShaderCache::SetShader(PSRM_ALPHA_PASS, VertexLoaderManager::g_current_components, m_current_primitive_type, nativeVertexFmt);
+      ProgramShaderCache::PrepareShader(PSRM_ALPHA_PASS, components, primitive);
     }
-    ProgramShaderCache::SetShader(PSRM_DEFAULT, VertexLoaderManager::g_current_components, m_current_primitive_type, nativeVertexFmt);
+    ProgramShaderCache::PrepareShader(PSRM_DEFAULT, components, primitive);
   }
 }
 
@@ -158,12 +157,31 @@ void VertexManager::vFlush(bool useDstAlpha)
   OGL::SHADER* active_shader = nullptr;
   if (useDstAlpha && dualSourcePossible)
   {
-    active_shader = ProgramShaderCache::SetShader(PSRM_DUAL_SOURCE_BLEND, VertexLoaderManager::g_current_components, m_current_primitive_type, nativeVertexFmt);
+    active_shader = ProgramShaderCache::SetShader(PSRM_DUAL_SOURCE_BLEND);
   }
   else
   {
-    active_shader = ProgramShaderCache::SetShader(PSRM_DEFAULT, VertexLoaderManager::g_current_components, m_current_primitive_type, nativeVertexFmt);
+    active_shader = ProgramShaderCache::SetShader(PSRM_DEFAULT);
   }
+  if (!active_shader)
+  {
+    g_Config.iSaveTargetId++;
+    ClearEFBCache();
+    return;
+  }
+
+  if (g_ActiveConfig.backend_info.bSupportsUberShaders && g_ActiveConfig.bDisableSpecializedShaders)
+  {
+    // We need to use the ubershader vertex format with all attributes enabled.
+    // Otherwise, the NV driver can generate variants for the vertex shaders.
+    const GLVertexFormat* uber_vertex_format =
+        static_cast<const GLVertexFormat*>(
+            VertexLoaderManager::GetUberVertexFormat(nativeVertexFmt->GetVertexDeclaration()));
+    ProgramShaderCache::BindVertexFormat(uber_vertex_format);
+  } else {
+    ProgramShaderCache::BindVertexFormat(nativeVertexFmt);
+  }
+
   PrepareDrawBuffers(stride);
   active_shader->Bind();
   g_renderer->ApplyState(false);
@@ -178,7 +196,13 @@ void VertexManager::vFlush(bool useDstAlpha)
   // run through vertex groups again to set alpha
   if (useDstAlpha && (!dualSourcePossible || logic_op_enabled))
   {
-    active_shader = ProgramShaderCache::SetShader(PSRM_ALPHA_PASS, VertexLoaderManager::g_current_components, m_current_primitive_type, nativeVertexFmt);
+    active_shader = ProgramShaderCache::SetShader(PSRM_ALPHA_PASS);
+    if (!active_shader)
+    {
+      g_Config.iSaveTargetId++;
+      ClearEFBCache();
+      return;
+    }
 
     // only update alpha
     glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
