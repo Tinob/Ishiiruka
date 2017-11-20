@@ -134,7 +134,7 @@ PixelUberShaderUid GetPixelUberShaderUid(u32 components, const XFMemory &xfr, co
       (!g_ActiveConfig.bFastDepthCalc && bpm.zmode.testenable && !uid_data.early_depth) ||
       (bpm.zmode.testenable && bpm.genMode.zfreeze);
   uid_data.per_pixel_lighting = g_ActiveConfig.PixelLightingEnabled(xfr, components);
-  uid_data.uint_output = bpm.blendmode.UseLogicOp();
+  //uid_data.uint_output = bpm.blendmode.UseLogicOp();
   out.CalculateUIDHash();
   return out;
 }
@@ -788,7 +788,7 @@ void GenPixelShader(ShaderCode& out, API_TYPE ApiType, const ShaderHostConfig& h
   if (ApiType == API_OPENGL || ApiType == API_VULKAN)
   {
     if (early_depth && host_config.backend_early_z)
-      out.Write("FORCE_EARLY_Z;\n");
+      out.Write("FORCE_EARLY_Z\n");
 
     out.Write("void main()\n{\n");
     out.Write("  float4 rawpos = gl_FragCoord;\n");
@@ -1451,17 +1451,17 @@ void EnumeratePixelUberShaderUids(const std::function<void(const PixelUberShader
         for (u32 pixel_ligthing = 0; pixel_ligthing < 2; pixel_ligthing++)
         {
           puid.per_pixel_lighting = pixel_ligthing;
-          puid.uint_output = 0;
+          //puid.uint_output = 0;
           uid.ClearHASH();
           uid.CalculateUIDHash();
           callback(uid, total);
-          if (g_ActiveConfig.backend_info.APIType == API_D3D11)
+          /*if (g_ActiveConfig.backend_info.APIType == API_D3D11)
           {
             puid.uint_output = 1;
             uid.ClearHASH();
             uid.CalculateUIDHash();
             callback(uid, total);
-          }
+          }*/
         }
       }
     }

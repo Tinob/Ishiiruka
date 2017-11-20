@@ -59,12 +59,12 @@ constexpr u8 FILE_ENTRY = 0;
 constexpr u8 DIRECTORY_ENTRY = 1;
 
 DiscContent::DiscContent(u64 offset, u64 size, const std::string& path)
-  : m_offset(offset), m_size(size), m_content_source(path)
+    : m_offset(offset), m_size(size), m_content_source(path)
 {
 }
 
 DiscContent::DiscContent(u64 offset, u64 size, const u8* data)
-  : m_offset(offset), m_size(size), m_content_source(data)
+    : m_offset(offset), m_size(size), m_content_source(data)
 {
 }
 
@@ -206,9 +206,9 @@ static bool IsDirectorySeparator(char c)
 {
   return c == '/'
 #ifdef _WIN32
-    || c == '\\'
+         || c == '\\'
 #endif
-    ;
+      ;
 }
 
 static bool PathCharactersEqual(char a, char b)
@@ -235,7 +235,7 @@ static bool PathEndsWith(const std::string& path, const std::string& suffix)
 }
 
 static bool IsValidDirectoryBlob(const std::string& dol_path, std::string* partition_root,
-  std::string* true_root = nullptr)
+                                 std::string* true_root = nullptr)
 {
   if (!PathEndsWith(dol_path, "/sys/main.dol"))
     return false;
@@ -254,7 +254,7 @@ static bool IsValidDirectoryBlob(const std::string& dol_path, std::string* parti
   if (true_root)
   {
     *true_root =
-      dol_path.substr(0, dol_path.find_last_of(dir_separator, partition_root->size() - 2) + 1);
+        dol_path.substr(0, dol_path.find_last_of(dir_separator, partition_root->size() - 2) + 1);
   }
 
   return true;
@@ -278,8 +278,8 @@ static bool IsInFilesDirectory(const std::string& path)
     const size_t slash_before_pos = files_pos - 1;
     const size_t slash_after_pos = files_pos + 5;
     if ((files_pos == 0 || IsDirectorySeparator(path[slash_before_pos])) &&
-      (slash_after_pos == path.size() || (IsDirectorySeparator(path[slash_after_pos]))) &&
-      ExistsAndIsValidDirectoryBlob(path.substr(0, files_pos) + "sys/main.dol"))
+        (slash_after_pos == path.size() || (IsDirectorySeparator(path[slash_after_pos]))) &&
+        ExistsAndIsValidDirectoryBlob(path.substr(0, files_pos) + "sys/main.dol"))
     {
       return true;
     }
@@ -297,7 +297,7 @@ static bool IsMainDolForNonGamePartition(const std::string& path)
   std::string partition_directory_name = partition_root.substr(true_root.size());
   partition_directory_name.pop_back();  // Remove trailing slash
   const std::optional<PartitionType> partition_type =
-    ParsePartitionDirectoryName(partition_directory_name);
+      ParsePartitionDirectoryName(partition_directory_name);
   if (!partition_type || *partition_type == PartitionType::Game)
     return false;  // volume_path is the game partition's /sys/main.dol
 
@@ -305,8 +305,8 @@ static bool IsMainDolForNonGamePartition(const std::string& path)
   for (const File::FSTEntry& entry : true_root_entry.children)
   {
     if (entry.isDirectory &&
-      ParsePartitionDirectoryName(entry.virtualName) == PartitionType::Game &&
-      ExistsAndIsValidDirectoryBlob(entry.physicalName + "/sys/main.dol"))
+        ParsePartitionDirectoryName(entry.virtualName) == PartitionType::Game &&
+        ExistsAndIsValidDirectoryBlob(entry.physicalName + "/sys/main.dol"))
     {
       return true;  // volume_path is the /sys/main.dol for a non-game partition
     }
@@ -330,7 +330,7 @@ std::unique_ptr<DirectoryBlobReader> DirectoryBlobReader::Create(const std::stri
 }
 
 DirectoryBlobReader::DirectoryBlobReader(const std::string& game_partition_root,
-  const std::string& true_root)
+                                         const std::string& true_root)
 {
   DirectoryBlobPartition game_partition(game_partition_root, {});
   m_is_wii = game_partition.IsWii();
@@ -361,7 +361,7 @@ DirectoryBlobReader::DirectoryBlobReader(const std::string& game_partition_root,
           if (type && *type != PartitionType::Game)
           {
             partitions.emplace_back(DirectoryBlobPartition(entry.physicalName + "/", m_is_wii),
-              *type);
+                                    *type);
           }
         }
       }
@@ -375,7 +375,7 @@ bool DirectoryBlobReader::Read(u64 offset, u64 length, u8* buffer)
 {
   // TODO: We don't handle raw access to the encrypted area of Wii discs correctly.
   return (m_is_wii ? m_nonpartition_contents : m_gamecube_pseudopartition.GetContents())
-    .Read(offset, length, buffer);
+      .Read(offset, length, buffer);
 }
 
 bool DirectoryBlobReader::SupportsReadWiiDecrypted() const
@@ -412,19 +412,19 @@ u64 DirectoryBlobReader::GetDataSize() const
 }
 
 void DirectoryBlobReader::SetNonpartitionDiscHeader(const std::vector<u8>& partition_header,
-  const std::string& game_partition_root)
+                                                    const std::string& game_partition_root)
 {
   constexpr u64 NONPARTITION_DISCHEADER_ADDRESS = 0;
   constexpr u64 NONPARTITION_DISCHEADER_SIZE = 0x100;
 
   m_disc_header_nonpartition.resize(NONPARTITION_DISCHEADER_SIZE);
   const size_t header_bin_bytes_read =
-    ReadFileToVector(game_partition_root + "disc/header.bin", &m_disc_header_nonpartition);
+      ReadFileToVector(game_partition_root + "disc/header.bin", &m_disc_header_nonpartition);
 
   // If header.bin is missing or smaller than expected, use the content of sys/boot.bin instead
   std::copy(partition_header.data() + header_bin_bytes_read,
-    partition_header.data() + m_disc_header_nonpartition.size(),
-    m_disc_header_nonpartition.data() + header_bin_bytes_read);
+            partition_header.data() + m_disc_header_nonpartition.size(),
+            m_disc_header_nonpartition.data() + header_bin_bytes_read);
 
   // 0x60 and 0x61 are the only differences between the partition and non-partition headers
   if (header_bin_bytes_read < 0x60)
@@ -456,19 +456,19 @@ void DirectoryBlobReader::SetWiiRegionData(const std::string& game_partition_roo
 void DirectoryBlobReader::SetPartitions(std::vector<PartitionWithType>&& partitions)
 {
   std::sort(partitions.begin(), partitions.end(),
-    [](const PartitionWithType& lhs, const PartitionWithType& rhs) {
-    if (lhs.type == rhs.type)
-      return lhs.partition.GetRootDirectory() < rhs.partition.GetRootDirectory();
+            [](const PartitionWithType& lhs, const PartitionWithType& rhs) {
+              if (lhs.type == rhs.type)
+                return lhs.partition.GetRootDirectory() < rhs.partition.GetRootDirectory();
 
-    // Ascending sort by partition type, except Update (1) comes before before Game (0)
-    return (lhs.type > PartitionType::Update || rhs.type > PartitionType::Update) ?
-      lhs.type < rhs.type :
-      lhs.type > rhs.type;
-  });
+              // Ascending sort by partition type, except Update (1) comes before before Game (0)
+              return (lhs.type > PartitionType::Update || rhs.type > PartitionType::Update) ?
+                         lhs.type < rhs.type :
+                         lhs.type > rhs.type;
+            });
 
   u32 subtable_1_size = 0;
   while (subtable_1_size < partitions.size() && subtable_1_size < 3 &&
-    partitions[subtable_1_size].type <= PartitionType::Channel)
+         partitions[subtable_1_size].type <= PartitionType::Channel)
   {
     ++subtable_1_size;
   }
@@ -509,7 +509,7 @@ void DirectoryBlobReader::SetPartitions(std::vector<PartitionWithType>&& partiti
     const u64 partition_data_size = partitions[i].partition.GetDataSize();
     m_partitions.emplace(partition_address, std::move(partitions[i].partition));
     const u64 unaligned_next_partition_address =
-      VolumeWii::PartitionOffsetToRawOffset(partition_data_size, Partition(partition_address));
+        VolumeWii::PartitionOffsetToRawOffset(partition_data_size, Partition(partition_address));
     partition_address = Common::AlignUp(unaligned_next_partition_address, 0x10000ull);
   }
   m_data_size = partition_address;
@@ -520,7 +520,7 @@ void DirectoryBlobReader::SetPartitions(std::vector<PartitionWithType>&& partiti
 // This function sets the header that's shortly before the start of the encrypted
 // area, not the header that's right at the beginning of the encrypted area
 void DirectoryBlobReader::SetPartitionHeader(const DirectoryBlobPartition& partition,
-  u64 partition_address)
+                                             u64 partition_address)
 {
   constexpr u32 TICKET_OFFSET = 0x0;
   constexpr u32 TICKET_SIZE = 0x2a4;
@@ -532,18 +532,18 @@ void DirectoryBlobReader::SetPartitionHeader(const DirectoryBlobPartition& parti
   const std::string& partition_root = partition.GetRootDirectory();
 
   m_nonpartition_contents.CheckSizeAndAdd(partition_address + TICKET_OFFSET, TICKET_SIZE,
-    partition_root + "ticket.bin");
+                                          partition_root + "ticket.bin");
 
   const u64 tmd_size = m_nonpartition_contents.CheckSizeAndAdd(
-    partition_address + TMD_OFFSET, MAX_TMD_SIZE, partition_root + "tmd.bin");
+      partition_address + TMD_OFFSET, MAX_TMD_SIZE, partition_root + "tmd.bin");
 
   const u64 cert_offset = Common::AlignUp(TMD_OFFSET + tmd_size, 0x20ull);
   const u64 max_cert_size = H3_OFFSET - cert_offset;
   const u64 cert_size = m_nonpartition_contents.CheckSizeAndAdd(
-    partition_address + cert_offset, max_cert_size, partition_root + "cert.bin");
+      partition_address + cert_offset, max_cert_size, partition_root + "cert.bin");
 
   m_nonpartition_contents.CheckSizeAndAdd(partition_address + H3_OFFSET, H3_SIZE,
-    partition_root + "h3.bin");
+                                          partition_root + "h3.bin");
 
   constexpr u32 PARTITION_HEADER_SIZE = 0x1c;
   constexpr u32 DATA_OFFSET = 0x20000;
@@ -562,8 +562,8 @@ void DirectoryBlobReader::SetPartitionHeader(const DirectoryBlobPartition& parti
 }
 
 DirectoryBlobPartition::DirectoryBlobPartition(const std::string& root_directory,
-  std::optional<bool> is_wii)
-  : m_root_directory(root_directory)
+                                               std::optional<bool> is_wii)
+    : m_root_directory(root_directory)
 {
   SetDiscHeaderAndDiscType(is_wii);
   SetBI2();
@@ -628,7 +628,7 @@ u64 DirectoryBlobPartition::SetApploader()
   else
   {
     const size_t apploader_size = 0x20 + Common::swap32(*(u32*)&m_apploader[0x14]) +
-      Common::swap32(*(u32*)&m_apploader[0x18]);
+                                  Common::swap32(*(u32*)&m_apploader[0x18]);
     if (apploader_size != m_apploader.size())
       ERROR_LOG(DISCIO, "%s is the wrong size... Is it really an apploader?", path.c_str());
     else
@@ -681,11 +681,11 @@ void DirectoryBlobPartition::BuildFST(u64 fst_address)
   u32 name_offset = 0;  // Offset within name table
   u32 root_offset = 0;  // Offset of root of FST
 
-                        // write root entry
+  // write root entry
   WriteEntryData(&fst_offset, DIRECTORY_ENTRY, 0, 0, total_entries, m_address_shift);
 
   WriteDirectory(rootEntry, &fst_offset, &name_offset, &current_data_address, root_offset,
-    name_table_offset);
+                 name_table_offset);
 
   // overflow check, compare the aligned name offset with the aligned name table size
   _assert_(Common::AlignUp(name_offset, 1ull << m_address_shift) == name_table_size);
@@ -701,13 +701,13 @@ void DirectoryBlobPartition::BuildFST(u64 fst_address)
 }
 
 void DirectoryBlobPartition::WriteEntryData(u32* entry_offset, u8 type, u32 name_offset,
-  u64 data_offset, u64 length, u32 address_shift)
+                                            u64 data_offset, u64 length, u32 address_shift)
 {
   m_fst_data[(*entry_offset)++] = type;
 
   m_fst_data[(*entry_offset)++] = (name_offset >> 16) & 0xff;
   m_fst_data[(*entry_offset)++] = (name_offset >> 8) & 0xff;
-  m_fst_data[(*entry_offset)++] = (name_offset) & 0xff;
+  m_fst_data[(*entry_offset)++] = (name_offset)&0xff;
 
   Write32((u32)(data_offset >> address_shift), *entry_offset, &m_fst_data);
   *entry_offset += 4;
@@ -717,7 +717,7 @@ void DirectoryBlobPartition::WriteEntryData(u32* entry_offset, u8 type, u32 name
 }
 
 void DirectoryBlobPartition::WriteEntryName(u32* name_offset, const std::string& name,
-  u64 name_table_offset)
+                                            u64 name_table_offset)
 {
   strncpy((char*)&m_fst_data[*name_offset + name_table_offset], name.c_str(), name.length() + 1);
 
@@ -725,14 +725,14 @@ void DirectoryBlobPartition::WriteEntryName(u32* name_offset, const std::string&
 }
 
 void DirectoryBlobPartition::WriteDirectory(const File::FSTEntry& parent_entry, u32* fst_offset,
-  u32* name_offset, u64* data_offset,
-  u32 parent_entry_index, u64 name_table_offset)
+                                            u32* name_offset, u64* data_offset,
+                                            u32 parent_entry_index, u64 name_table_offset)
 {
   std::vector<File::FSTEntry> sorted_entries = parent_entry.children;
 
   // Sort for determinism
   std::sort(sorted_entries.begin(), sorted_entries.end(), [](const File::FSTEntry& one,
-    const File::FSTEntry& two) {
+                                                             const File::FSTEntry& two) {
     const std::string one_upper = ASCIIToUppercase(one.virtualName);
     const std::string two_upper = ASCIIToUppercase(two.virtualName);
     return one_upper == two_upper ? one.virtualName < two.virtualName : one_upper < two_upper;
@@ -744,7 +744,7 @@ void DirectoryBlobPartition::WriteDirectory(const File::FSTEntry& parent_entry, 
     {
       u32 entry_index = *fst_offset / ENTRY_SIZE;
       WriteEntryData(fst_offset, DIRECTORY_ENTRY, *name_offset, parent_entry_index,
-        entry_index + entry.size + 1, 0);
+                     entry_index + entry.size + 1, 0);
       WriteEntryName(name_offset, entry.virtualName, name_table_offset);
 
       WriteDirectory(entry, fst_offset, name_offset, data_offset, entry_index, name_table_offset);
@@ -753,7 +753,7 @@ void DirectoryBlobPartition::WriteDirectory(const File::FSTEntry& parent_entry, 
     {
       // put entry in FST
       WriteEntryData(fst_offset, FILE_ENTRY, *name_offset, *data_offset, entry.size,
-        m_address_shift);
+                     m_address_shift);
       WriteEntryName(name_offset, entry.virtualName, name_table_offset);
 
       // write entry to virtual disc
@@ -820,7 +820,7 @@ static void ConvertUTF8NamesToSHIFTJIS(File::FSTEntry* parent_entry)
 static std::string ASCIIToUppercase(std::string str)
 {
   std::transform(str.begin(), str.end(), str.begin(),
-    [](char c) { return std::toupper(c, std::locale::classic()); });
+                 [](char c) { return std::toupper(c, std::locale::classic()); });
   return str;
 }
 

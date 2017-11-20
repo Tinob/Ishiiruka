@@ -22,6 +22,7 @@
 #include "Common/StringUtil.h"
 #include "Common/Thread.h"
 #include "Common/Timer.h"
+#include "Common/Version.h"
 
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
@@ -73,7 +74,7 @@ static Common::Event g_compressAndDumpStateSyncEvent;
 static std::thread g_save_thread;
 
 // Don't forget to increase this after doing changes on the savestate system
-static const u32 STATE_VERSION = 89;  // Last changed in PR 5890
+static const u32 STATE_VERSION = 91;  // Last changed in PR 6094
 
 // Maps savestate versions to Dolphin versions.
 // Versions after 42 don't need to be added to this list,
@@ -116,7 +117,7 @@ static bool DoStateVersion(PointerWrap& p, std::string* version_created_by)
     version = cookie - COOKIE_BASE;
   }
 
-  *version_created_by = scm_rev_str;
+  *version_created_by = Common::scm_rev_str;
   if (version > 42)
     p.Do(*version_created_by);
   else

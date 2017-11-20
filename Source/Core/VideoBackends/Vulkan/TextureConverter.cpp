@@ -193,7 +193,7 @@ void TextureConverter::ConvertTexture(TextureCacheBase::TCacheEntry* dst_entry, 
   // Bind and draw to the destination.
   UtilityShaderDraw draw(command_buffer,
     g_object_cache->GetPipelineLayout(PIPELINE_LAYOUT_TEXTURE_CONVERSION),
-    render_pass, g_object_cache->GetScreenQuadVertexShader(), VK_NULL_HANDLE,
+    render_pass, g_shader_cache->GetScreenQuadVertexShader(), VK_NULL_HANDLE,
     m_palette_conversion_shaders[palette_format]);
 
   VkRect2D region = { { 0, 0 },{ dst_tex->GetConfig().width, dst_tex->GetConfig().height } };
@@ -203,10 +203,11 @@ void TextureConverter::ConvertTexture(TextureCacheBase::TCacheEntry* dst_entry, 
   uniforms.multiplier = (src_entry->format & 0xF) == GX_TF_I4 ? 15.0f : 255.0f;
   uniforms.texel_buffer_offset = static_cast<int>(palette_offset / sizeof(u16));
   draw.SetPushConstants(&uniforms, sizeof(uniforms));
-  draw.SetPSSampler(0, src_tex->GetRawTexIdentifier()->GetView(), g_object_cache->GetPointSampler());
+  draw.SetPSSampler(0, src_tex->GetRawTexIdentifier()->GetView(),
+    g_object_cache->GetPointSampler());
   draw.SetPSTexelBuffer(m_texel_buffer_view_r16_uint);
-  draw.SetViewportAndScissor(0, 0, dst_tex->GetConfig().width, dst_tex->GetConfig().height);
-  draw.DrawWithoutVertexBuffer(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 4);
+  draw.SetViewportAndScissor(0, 0, dst_entry->GetConfig().width, dst_entry->GetConfig().height);
+  draw.DrawWithoutVertexBuffer(4);
   draw.EndRenderPass();
   dst_tex->GetRawTexIdentifier()->TransitionToLayout(command_buffer,
     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
@@ -234,7 +235,7 @@ void TextureConverter::EncodeTextureToMemory(VkImageView src_texture, u8* dest_p
 
   UtilityShaderDraw draw(g_command_buffer_mgr->GetCurrentCommandBuffer(),
     g_object_cache->GetPipelineLayout(PIPELINE_LAYOUT_PUSH_CONSTANT),
-    m_encoding_render_pass, g_object_cache->GetScreenQuadVertexShader(),
+    m_encoding_render_pass, g_shader_cache->GetScreenQuadVertexShader(),
     VK_NULL_HANDLE, shader);
 
   // Uniform - int4 of left,top,native_width,scale
@@ -256,7 +257,7 @@ void TextureConverter::EncodeTextureToMemory(VkImageView src_texture, u8* dest_p
 
   VkRect2D render_region = { { 0, 0 },{ render_width, render_height } };
   draw.BeginRenderPass(m_encoding_render_texture->GetFrameBuffer(), render_region);
-  draw.DrawWithoutVertexBuffer(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 4);
+  draw.DrawWithoutVertexBuffer(4);
   draw.EndRenderPass();
 
   // Transition the image before copying
@@ -293,7 +294,7 @@ void TextureConverter::EncodeTextureToMemoryYUYV(void* dst_ptr, u32 dst_width, u
   u32 output_width = dst_width / 2;
   UtilityShaderDraw draw(command_buffer,
     g_object_cache->GetPipelineLayout(PIPELINE_LAYOUT_STANDARD),
-    m_encoding_render_pass, g_object_cache->GetPassthroughVertexShader(),
+    m_encoding_render_pass, g_shader_cache->GetPassthroughVertexShader(),
     VK_NULL_HANDLE, m_rgb_to_yuyv_shader);
   VkRect2D region = { { 0, 0 },{ output_width, dst_height } };
   draw.BeginRenderPass(m_encoding_render_texture->GetFrameBuffer(), region);
@@ -372,14 +373,14 @@ void TextureConverter::DecodeYUYVTextureFromMemory(HostTexture* dst_entry,
   // Convert from the YUYV data now in the intermediate texture to RGBA in the destination.
   UtilityShaderDraw draw(g_command_buffer_mgr->GetCurrentCommandBuffer(),
     g_object_cache->GetPipelineLayout(PIPELINE_LAYOUT_TEXTURE_CONVERSION),
-    m_encoding_render_pass, g_object_cache->GetScreenQuadVertexShader(),
+    m_encoding_render_pass, g_shader_cache->GetScreenQuadVertexShader(),
     VK_NULL_HANDLE, m_yuyv_to_rgb_shader);
   VkRect2D region = { { 0, 0 },{ src_width, src_height } };
   draw.BeginRenderPass(dst_texture->GetFramebuffer(), region);
   draw.SetViewportAndScissor(0, 0, static_cast<int>(src_width), static_cast<int>(src_height));
   draw.SetPSTexelBuffer(m_texel_buffer_view_rgba8_unorm);
   draw.SetPushConstants(&push_constants, sizeof(push_constants));
-  draw.DrawWithoutVertexBuffer(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 4);
+  draw.DrawWithoutVertexBuffer(4);
   draw.EndRenderPass();
 }
 
@@ -404,7 +405,7 @@ bool TextureConverter::SupportsTextureDecoding(TextureFormat format, TlutFormat 
   std::string shader_source =
     TextureConversionShader::GenerateDecodingShader(format, palette_format, API_TYPE::API_VULKAN);
 
-  pipeline.compute_shader = Util::CompileAndCreateComputeShader(shader_source, true);
+  pipeline.compute_shader = Util::CompileAndCreateComputeShader(shader_source);
   if (pipeline.compute_shader == VK_NULL_HANDLE)
   {
     m_decoding_pipelines.emplace(key, pipeline);
@@ -817,7 +818,7 @@ bool TextureConverter::CompileYUYVConversionShaders()
     }
   )";
 
-  std::string header = g_object_cache->GetUtilityShaderHeader();
+  std::string header = g_shader_cache->GetUtilityShaderHeader();
   std::string source = header + RGB_TO_YUYV_SHADER_SOURCE;
   m_rgb_to_yuyv_shader = Util::CompileAndCreateFragmentShader(source);
   source = header + YUYV_TO_RGB_SHADER_SOURCE;

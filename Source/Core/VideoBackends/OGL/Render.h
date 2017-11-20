@@ -74,13 +74,11 @@ public:
   void Init() override;
   void Shutdown() override;
 
-  void SetColorMask() override;
-  void SetBlendMode(bool forceUpdate) override;
+  void SetBlendingState(const BlendingState& state) override;
   void SetScissorRect(const EFBRectangle& rc) override;
-  void SetGenerationMode() override;
-  void SetDepthMode() override;
-  void SetLogicOpMode() override;
-  void SetSamplerState(int stage, int texindex, bool custom_tex) override;
+  void SetRasterizationState(const RasterizationState& state) override;
+  void SetDepthState(const DepthState& state) override;
+  void SetSamplerState(u32 index, const SamplerState& state) override;
   void SetInterlacingMode() override;
   void SetViewport() override;
 
@@ -122,18 +120,16 @@ private:
   };
   bool m_bColorMaskChanged = true;
   bool m_bBlendModeChanged = true;
-  bool m_bBlendModeForce = true;
   bool m_bScissorRectChanged = true;
   bool m_bViewPortChanged = true;
   EFBRectangle m_ScissorRect{};
   ViewPort m_viewport{};
   bool m_bGenerationModeChanged = true;
   bool m_bDepthModeChanged = true;
-  bool m_bLogicOpModeChanged = true;
   bool m_bViewPortChangedRequested = true;
 
   void _SetColorMask();
-  void _SetBlendMode(bool forceUpdate);
+  void _SetBlendMode();
   void _SetScissorRect();
   void _SetGenerationMode();
   void _SetDepthMode();

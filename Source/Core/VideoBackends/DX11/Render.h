@@ -19,13 +19,11 @@ public:
   Renderer(void *&window_handle);
   ~Renderer();
   void Init() override;
-  void SetColorMask() override;
-  void SetBlendMode(bool forceUpdate) override;
+  void SetBlendingState(const BlendingState& state) override;
   void SetScissorRect(const EFBRectangle& rc) override;
-  void SetGenerationMode() override;
-  void SetDepthMode() override;
-  void SetLogicOpMode() override;
-  void SetSamplerState(int stage, int texindex, bool custom_tex) override;
+  void SetRasterizationState(const RasterizationState& state) override;
+  void SetDepthState(const DepthState& state) override;
+  void SetSamplerState(u32 index, const SamplerState& state) override;
   void SetInterlacingMode() override;
   void SetViewport() override;
   void SetFullscreen(bool enable_fullscreen) override;
@@ -33,9 +31,6 @@ public:
   // TODO: Fix confusing names (see ResetAPIState and RestoreAPIState)
   void ApplyState(bool bUseDstAlpha) override;
   void RestoreState() override;
-
-  void ApplyCullDisable();
-  void RestoreCull();
 
   void RenderText(const std::string& str, int left, int top, u32 color) override;
 

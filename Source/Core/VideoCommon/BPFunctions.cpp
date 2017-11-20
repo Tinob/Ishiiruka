@@ -31,7 +31,9 @@ void FlushPipeline()
 
 void SetGenerationMode()
 {
-  g_renderer->SetGenerationMode();
+  RasterizationState state = {};
+  state.Generate(bpmem, g_vertex_manager->GetCurrentPrimitiveType());
+  g_renderer->SetRasterizationState(state);
 }
 
 void SetScissor()
@@ -74,22 +76,16 @@ void SetLineWidth()
 
 void SetDepthMode()
 {
-  g_renderer->SetDepthMode();
+  DepthState state = {};
+  state.Generate(bpmem);
+  g_renderer->SetDepthState(state);
 }
 
 void SetBlendMode()
 {
-  g_renderer->SetBlendMode(false);
-}
-
-void SetLogicOpMode()
-{
-  g_renderer->SetLogicOpMode();
-}
-
-void SetColorMask()
-{
-  g_renderer->SetColorMask();
+  BlendingState state = {};
+  state.Generate(bpmem);
+  g_renderer->SetBlendingState(state);
 }
 
 /* Explanation of the magic behind ClearScreen:

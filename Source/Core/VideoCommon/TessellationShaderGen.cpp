@@ -267,7 +267,7 @@ inline void WriteFetchDisplacement(ShaderCode& out, int n, const Tessellation_sh
   {
     out.Write("// indirect op\n");
     // perform the indirect op on the incoming regular coordinates using indtex%d as the offset coords
-    if (tevind.mid != 0)
+    if (tevind.mid.Value() != 0)
     {
       static const char *tevIndFmtMask[] = { "255", "31", "15", "7" };
       out.Write("int3 indtevcrd%d = indtex%d & %s;\n", n, tevind.bt.Value(), tevIndFmtMask[tevind.fmt.Value()]);
@@ -283,7 +283,7 @@ inline void WriteFetchDisplacement(ShaderCode& out, int n, const Tessellation_sh
         out.Write("indtevcrd%d.%s += int3(%s, %s, %s);\n", n, tevIndBiasField[tevind.bias.Value()], tevIndBiasAdd[tevind.fmt.Value()], tevIndBiasAdd[tevind.fmt.Value()], tevIndBiasAdd[tevind.fmt.Value()]);
 
       // multiply by offset matrix and scale
-      if (tevind.mid <= 3)
+      if (tevind.mid.Value() <= 3)
       {
         int mtxidx = 2 * (tevind.mid.Value() - 1);
         out.Write("int2 indtevtrans%d = int2(idot(" I_INDTEXMTX "[%d].xyz, indtevcrd%d), idot(" I_INDTEXMTX "[%d].xyz, indtevcrd%d));\n",
@@ -322,17 +322,17 @@ inline void WriteFetchDisplacement(ShaderCode& out, int n, const Tessellation_sh
     // ---------
     static const char *tevIndWrapStart[] = { "int(0)", "int(256*128)", "int(128*128)", "int(64*128)", "int(32*128)", "int(16*128)", "int(1)", "int(1)" };
     // wrap S
-    if (tevind.sw == ITW_OFF)
+    if (tevind.sw.Value() == ITW_OFF)
       out.Write("wrappedcoord.x = int(uv[%d].x);\n", texcoord);
-    else if (tevind.sw == ITW_0)
+    else if (tevind.sw.Value() == ITW_0)
       out.Write("wrappedcoord.x = int(0);\n");
     else
       out.Write("wrappedcoord.x = remainder(int(uv[%d].x), %s);\n", texcoord, tevIndWrapStart[tevind.sw.Value()]);
 
     // wrap T
-    if (tevind.tw == ITW_OFF)
+    if (tevind.tw.Value() == ITW_OFF)
       out.Write("wrappedcoord.y = int(uv[%d].y);\n", texcoord);
-    else if (tevind.tw == ITW_0)
+    else if (tevind.tw.Value() == ITW_0)
       out.Write("wrappedcoord.y = int(0);\n");
     else
       out.Write("wrappedcoord.y = remainder(int(uv[%d].y), %s);\n", texcoord, tevIndWrapStart[tevind.tw.Value()]);

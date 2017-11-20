@@ -561,17 +561,17 @@ static void PushStaticByteCode(ByteCodeCacheEntry* entry, D3DBlob* shaderBuffer)
   entry->m_compiled = true;
 }
 
-void ShaderCache::SetCurrentPrimitiveTopology(u32 gs_primitive_type)
+void ShaderCache::SetCurrentPrimitiveTopology(PrimitiveType gs_primitive_type)
 {
   switch (gs_primitive_type)
   {
-  case PRIMITIVE_TRIANGLES:
+  case PrimitiveType::Triangles:
     s_current_primitive_topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
     break;
-  case PRIMITIVE_LINES:
+  case PrimitiveType::Lines:
     s_current_primitive_topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
     break;
-  case PRIMITIVE_POINTS:
+  case PrimitiveType::Points:
     s_current_primitive_topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
     break;
   default:
@@ -933,7 +933,7 @@ void ShaderCache::HandleTSUIDChange(const TessellationShaderUid& ts_uid, std::fu
 }
 
 void ShaderCache::PrepareShaders(PIXEL_SHADER_RENDER_MODE render_mode,
-  u32 gs_primitive_type,
+  PrimitiveType gs_primitive_type,
   u32 components,
   const XFMemory &xfr,
   const BPMemory &bpm)
@@ -964,7 +964,7 @@ void ShaderCache::PrepareShaders(PIXEL_SHADER_RENDER_MODE render_mode,
   GetVertexShaderUID(vs_uid, components, xfr, bpm);
   TessellationShaderUid ts_uid;
   bool tessellationenabled = false;
-  if (gs_primitive_type == PrimitiveType::PRIMITIVE_TRIANGLES
+  if (gs_primitive_type == PrimitiveType::Triangles
     && g_ActiveConfig.TessellationEnabled()
     && xfr.projection.type == GX_PERSPECTIVE
     && (g_ActiveConfig.bForcedLighting || g_ActiveConfig.PixelLightingEnabled(xfr, components)))

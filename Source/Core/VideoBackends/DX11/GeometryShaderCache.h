@@ -22,7 +22,7 @@ public:
   static void Clear();
   static void Shutdown();
   static void PrepareShader(
-    u32 primitive_type,
+    PrimitiveType primitive_type,
     const XFMemory &xfr,
     const u32 components);
   static bool TestShader();

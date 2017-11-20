@@ -45,6 +45,7 @@ set(SRCS	AsyncRequests.cpp
 			PNGLoader.cpp
 			PostProcessing.cpp
 			RenderBase.cpp
+			RenderState.cpp
 			ShaderGenCommon.cpp
 			Statistics.cpp
 			UberShaderCommon.cpp

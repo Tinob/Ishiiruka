@@ -42,6 +42,7 @@ private:
   wxMenu* CreateHelpMenu() const;
 
   void OnPopulatePerspectivesMenu(PopulatePerspectivesEvent&);
+  void OnUpdateWiiMenuTool(wxCommandEvent&);
 
   void RefreshMenuLabels() const;
   void RefreshPlayMenuLabel() const;
@@ -67,9 +68,9 @@ class MainMenuBar::PopulatePerspectivesEvent final : public wxEvent
 {
 public:
   PopulatePerspectivesEvent(int sender_id, wxEventType event_type,
-                            std::vector<std::string> perspective_names, int active_perspective)
-      : wxEvent{sender_id, event_type}, m_perspective_names{std::move(perspective_names)},
-        m_active_perspective{active_perspective}
+    std::vector<std::string> perspective_names, int active_perspective)
+    : wxEvent{ sender_id, event_type }, m_perspective_names{ std::move(perspective_names) },
+    m_active_perspective{ active_perspective }
   {
   }
 

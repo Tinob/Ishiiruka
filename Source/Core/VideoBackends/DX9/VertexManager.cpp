@@ -241,11 +241,11 @@ void VertexManager::PrepareDrawBuffers(u32 stride)
     }
     memcpy(p_vertices_base, m_pBaseBufferPointer, data_size);
     p_vertices = p_vertices_base + data_size;
-    if (m_current_primitive_type == PRIMITIVE_TRIANGLES)
+    if (m_current_primitive_type == PrimitiveType::Triangles)
     {
       memcpy(p_indices, indices, m_index_len * sizeof(u16));
     }
-    else if (m_current_primitive_type == PRIMITIVE_LINES)
+    else if (m_current_primitive_type == PrimitiveType::Lines)
     {
       for (u32 i = 0; i < (m_index_len - 1); i += 2)
       {
@@ -326,7 +326,7 @@ void VertexManager::PrepareDrawBuffers(u32 stride)
         p_indices++;
       }
     }
-    else if (m_current_primitive_type == PRIMITIVE_POINTS)
+    else if (m_current_primitive_type == PrimitiveType::Points)
     {
       for (u32 i = 0; i < m_index_len; i++)
       {
@@ -489,14 +489,14 @@ void VertexManager::vFlush(bool useDstAlpha)
   const u32 stride = current_vertex_format->GetVertexStride();
   switch (m_current_primitive_type)
   {
-  case PRIMITIVE_POINTS:
+  case PrimitiveType::Points:
     // We need point emulation so setup values to allow point to triangle translation
     // 3 extra vertices will be generated for each point
     m_total_num_verts += m_index_len * 3;
     // 6 indices for each point
     m_total_index_len *= 6;
     break;
-  case PRIMITIVE_LINES:
+  case PrimitiveType::Lines:
     // We need line emulation so transform the values to allow lines to triangle translation
     // we will generate 2 extra vertex for each line (the same amount of original indices)
     m_total_num_verts += m_index_len;
@@ -521,7 +521,7 @@ void VertexManager::vFlush(bool useDstAlpha)
     goto shader_fail;
   }
   g_renderer->ApplyState(false);
-  if (m_current_primitive_type != PRIMITIVE_TRIANGLES)
+  if (m_current_primitive_type != PrimitiveType::Triangles)
   {
     // if we use emulation setup the offsets for the vertex shaders
     SetPLRasterOffsets();
@@ -593,7 +593,7 @@ void VertexManager::vFlush(bool useDstAlpha)
     Draw(stride);
     g_renderer->RestoreState();
   }
-  if (m_current_primitive_type != PRIMITIVE_TRIANGLES)
+  if (m_current_primitive_type != PrimitiveType::Triangles)
   {
     D3D::RefreshRenderState(D3DRS_CULLMODE);
   }

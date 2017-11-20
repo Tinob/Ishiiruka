@@ -116,10 +116,7 @@ struct pixel_shader_uid_data
     pad1 = 0;
     pad2 = 0;
     texMtxInfo_n_projection = 0;
-    if (g_ActiveConfig.backend_info.APIType != API_D3D11)
-    {
-      uint_output = 0;
-    }
+    uint_output = 0;
   }
 
   // TODO: Optimize field order for easy access!

@@ -82,7 +82,7 @@ public:
   wxProgressDialog* dialog;
 };
 
-static constexpr u32 CACHE_REVISION = 3;  // Last changed in PR 5573
+static constexpr u32 CACHE_REVISION = 5;  // Last changed in PR 6102
 
 static bool sorted = false;
 
@@ -1557,7 +1557,7 @@ void GameListCtrl::OnChangeDisc(wxCommandEvent& WXUNUSED(event))
   const GameListItem* iso = GetSelectedISO();
   if (!iso || !Core::IsRunning())
     return;
-  DVDInterface::ChangeDiscAsHost(WxStrToStr(iso->GetFileName()));
+  Core::RunAsCPUThread([&iso] { DVDInterface::ChangeDisc(WxStrToStr(iso->GetFileName())); });
 }
 
 void GameListCtrl::OnSize(wxSizeEvent& event)

@@ -70,7 +70,7 @@ void Sample(s32 s, s32 t, s32 lod, bool linear, u8 texmap, u8 *sample)
 
   s32 lodFract = lod & 0xf;
 
-  if (lod > 0 && SamplerCommon::IsBpTexMode0MipmapsEnabled(tm0))
+  if (lod > 0 && SamplerCommon::AreBpTexMode0MipmapsEnabled(tm0))
   {
     // use mipmap
     baseMip = lod >> 4;

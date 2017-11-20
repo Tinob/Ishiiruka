@@ -319,11 +319,11 @@ struct TevStageCombiner
     u32 hex;
     bool UsedAsInput(u32 val) const
     {
-      return a == val || b == val || c == val || d == val;
+      return (a.Value() == val) || (b.Value() == val) || (c.Value() == val) || (d.Value() == val);
     }
     bool UsedAs8bitInput(u32 val) const
     {
-      return a == val || b == val || c == val;
+      return (a.Value() == val) || (b.Value() == val) || (c.Value() == val);
     }
   };
   union AlphaCombiner
@@ -345,11 +345,11 @@ struct TevStageCombiner
     u32 hex;
     bool UsedAsInput(u32 val) const
     {
-      return a == val || b == val || c == val || d == val;
+      return (a.Value() == val) || (b.Value() == val) || (c.Value() == val) || (d.Value() == val);
     }
     bool UsedAs8bitInput(u32 val) const
     {
-      return a == val || b == val || c == val;
+      return (a.Value() == val) || (b.Value() == val) || (c.Value() == val);
     }
   };
 
@@ -388,7 +388,7 @@ union TevStageIndirect
 
   bool IsActive() const
   {
-    return bs != ITBA_OFF || mid != 0;
+    return (bs.Value() != ITBA_OFF) || (mid.Value() != 0);
   }
 };
 
@@ -973,30 +973,30 @@ union AlphaTest
     switch (logic)
     {
     case AND:
-      if (comp0 == ALWAYS && comp1 == ALWAYS)
+      if (comp0.Value() == ALWAYS && comp1.Value() == ALWAYS)
         return PASS;
-      if (comp0 == NEVER || comp1 == NEVER)
+      if (comp0.Value() == NEVER || comp1.Value() == NEVER)
         return FAIL;
       break;
 
     case OR:
-      if (comp0 == ALWAYS || comp1 == ALWAYS)
+      if (comp0.Value() == ALWAYS || comp1.Value() == ALWAYS)
         return PASS;
-      if (comp0 == NEVER && comp1 == NEVER)
+      if (comp0.Value() == NEVER && comp1.Value() == NEVER)
         return FAIL;
       break;
 
     case XOR:
-      if ((comp0 == ALWAYS && comp1 == NEVER) || (comp0 == NEVER && comp1 == ALWAYS))
+      if ((comp0.Value() == ALWAYS && comp1.Value() == NEVER) || (comp0.Value() == NEVER && comp1.Value() == ALWAYS))
         return PASS;
-      if ((comp0 == ALWAYS && comp1 == ALWAYS) || (comp0 == NEVER && comp1 == NEVER))
+      if ((comp0.Value() == ALWAYS && comp1.Value() == ALWAYS) || (comp0.Value() == NEVER && comp1.Value() == NEVER))
         return FAIL;
       break;
 
     case XNOR:
-      if ((comp0 == ALWAYS && comp1 == NEVER) || (comp0 == NEVER && comp1 == ALWAYS))
+      if ((comp0.Value() == ALWAYS && comp1.Value() == NEVER) || (comp0.Value() == NEVER && comp1.Value() == ALWAYS))
         return FAIL;
-      if ((comp0 == ALWAYS && comp1 == ALWAYS) || (comp0 == NEVER && comp1 == NEVER))
+      if ((comp0.Value() == ALWAYS && comp1.Value() == ALWAYS) || (comp0.Value() == NEVER && comp1.Value() == NEVER))
         return PASS;
       break;
     default:
@@ -1025,7 +1025,7 @@ union UPE_Copy
 
   u32 tp_realFormat() const
   {
-    return target_pixel_format / 2 + (target_pixel_format & 1) * 8;
+    return target_pixel_format.Value() / 2 + (target_pixel_format.Value() & 1) * 8;
   }
 };
 

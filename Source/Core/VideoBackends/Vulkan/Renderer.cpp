@@ -19,7 +19,9 @@
 #include "VideoBackends/Vulkan/CommandBufferManager.h"
 #include "VideoBackends/Vulkan/FramebufferManager.h"
 #include "VideoBackends/Vulkan/ObjectCache.h"
+#include "VideoBackends/Vulkan/PostProcessing.h"
 #include "VideoBackends/Vulkan/RasterFont.h"
+#include "VideoBackends/Vulkan/ShaderCache.h"
 #include "VideoBackends/Vulkan/StagingTexture2D.h"
 #include "VideoBackends/Vulkan/StateTracker.h"
 #include "VideoBackends/Vulkan/SwapChain.h"
@@ -30,6 +32,7 @@
 #include "VideoCommon/AVIDump.h"
 #include "VideoCommon/BPFunctions.h"
 #include "VideoCommon/BPMemory.h"
+#include "VideoCommon/DriverDetails.h"
 #include "VideoCommon/OnScreenDisplay.h"
 #include "VideoCommon/PixelEngine.h"
 #include "VideoCommon/PixelShaderManager.h"
@@ -46,7 +49,7 @@ Renderer::Renderer(std::unique_ptr<SwapChain> swap_chain)
 
   // Set to something invalid, forcing all states to be re-initialized.
   for (size_t i = 0; i < m_sampler_states.size(); i++)
-    m_sampler_states[i].bits = std::numeric_limits<decltype(m_sampler_states[i].bits)>::max();
+    m_sampler_states[i].hex = RenderState::GetPointSamplerState().hex;
 
   m_backbuffer_width = m_swap_chain ? m_swap_chain->GetWidth() : MAX_XFB_WIDTH;
   m_backbuffer_height = m_swap_chain ? m_swap_chain->GetHeight() : MAX_XFB_HEIGHT;
@@ -86,8 +89,6 @@ void Renderer::Init()
 
 bool Renderer::Initialize()
 {
-
-
   BindEFBToStateTracker();
 
   if (!CreateSemaphores())
@@ -124,8 +125,16 @@ bool Renderer::Initialize()
       m_bounding_box->GetGPUBufferSize());
   }
   // Ensure all pipelines previously used by the game have been created.
-  StateTracker::GetInstance()->LoadPipelineUIDCache();
-
+  StateTracker::GetInstance()->ReloadPipelineUIDCache();
+  /*
+  // Initialize post processing.
+  m_post_processor = std::make_unique<VulkanPostProcessor>();
+  if (!m_post_processor->Initialize())
+  {
+    PanicAlert("failed to initialize post processor.");
+    return false;
+  }
+  */
   // Various initialization routines will have executed commands on the command buffer.
   // Execute what we have done before beginning the first frame.
   g_command_buffer_mgr->PrepareToSubmitCommandBuffer();
@@ -374,12 +383,23 @@ void Renderer::ClearScreen(const EFBRectangle& rc, bool color_enable, bool alpha
 
   // If we're not in a render pass (start of the frame), we can use a clear render pass
   // to discard the data, rather than loading and then clearing.
-  bool use_clear_render_pass = (color_enable && alpha_enable && z_enable);
-  if (StateTracker::GetInstance()->InRenderPass())
+  bool use_clear_attachments = (color_enable && alpha_enable) || z_enable;
+  bool use_clear_render_pass =
+    !StateTracker::GetInstance()->InRenderPass() && color_enable && alpha_enable && z_enable;
+
+  // The NVIDIA Vulkan driver causes the GPU to lock up, or throw exceptions if MSAA is enabled,
+  // a non-full clear rect is specified, and a clear loadop or vkCmdClearAttachments is used.
+  if (g_ActiveConfig.iMultisamples > 1 &&
+    DriverDetails::HasBug(DriverDetails::BUG_BROKEN_MSAA_CLEAR))
   {
-    // Prefer not to end a render pass just to do a clear.
     use_clear_render_pass = false;
+    use_clear_attachments = false;
   }
+
+  // This path cannot be used if the driver implementation doesn't guarantee pixels with no drawn
+  // geometry in "this" renderpass won't be cleared
+  if (DriverDetails::HasBug(DriverDetails::BUG_BROKEN_CLEAR_LOADOP_RENDERPASS))
+    use_clear_render_pass = false;
 
   // Fastest path: Use a render pass to clear the buffers.
   if (use_clear_render_pass)
@@ -391,6 +411,7 @@ void Renderer::ClearScreen(const EFBRectangle& rc, bool color_enable, bool alpha
 
   // Fast path: Use vkCmdClearAttachments to clear the buffers within a render path
   // We can't use this when preserving alpha but clearing color.
+  if (use_clear_attachments)
   {
     VkClearAttachment clear_attachments[2];
     uint32_t num_clear_attachments = 0;
@@ -442,32 +463,24 @@ void Renderer::ClearScreen(const EFBRectangle& rc, bool color_enable, bool alpha
   StateTracker::GetInstance()->SetPendingRebind();
 
   // Mask away the appropriate colors and use a shader
-  BlendState blend_state = Util::GetNoBlendingBlendState();
-  u32 write_mask = 0;
-  if (color_enable)
-    write_mask |= VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT;
-  if (alpha_enable)
-    write_mask |= VK_COLOR_COMPONENT_A_BIT;
-  blend_state.write_mask = write_mask;
+  BlendingState blend_state = RenderState::GetNoBlendingBlendState();
+  blend_state.colorupdate = color_enable;
+  blend_state.alphaupdate = alpha_enable;
 
-  DepthStencilState depth_state = Util::GetNoDepthTestingDepthStencilState();
-  depth_state.test_enable = z_enable ? VK_TRUE : VK_FALSE;
-  depth_state.write_enable = z_enable ? VK_TRUE : VK_FALSE;
-  depth_state.compare_op = VK_COMPARE_OP_ALWAYS;
-
-  RasterizationState rs_state = Util::GetNoCullRasterizationState();
-  rs_state.per_sample_shading = g_ActiveConfig.bSSAA ? VK_TRUE : VK_FALSE;
-  rs_state.samples = FramebufferManager::GetInstance()->GetEFBSamples();
+  DepthState depth_state = RenderState::GetNoDepthTestingDepthStencilState();
+  depth_state.testenable = z_enable;
+  depth_state.updateenable = z_enable;
+  depth_state.func = ZMode::ALWAYS;
 
   // No need to start a new render pass, but we do need to restore viewport state
   UtilityShaderDraw draw(g_command_buffer_mgr->GetCurrentCommandBuffer(),
     g_object_cache->GetPipelineLayout(PIPELINE_LAYOUT_STANDARD),
     FramebufferManager::GetInstance()->GetEFBLoadRenderPass(),
-    g_object_cache->GetPassthroughVertexShader(),
-    g_object_cache->GetPassthroughGeometryShader(), m_clear_fragment_shader);
+    g_shader_cache->GetPassthroughVertexShader(),
+    g_shader_cache->GetPassthroughGeometryShader(), m_clear_fragment_shader);
 
-  draw.SetRasterizationState(rs_state);
-  draw.SetDepthStencilState(depth_state);
+  draw.SetMultisamplingState(FramebufferManager::GetInstance()->GetEFBMultisamplingState());
+  draw.SetDepthState(depth_state);
   draw.SetBlendState(blend_state);
 
   draw.DrawColoredQuad(target_rc.left, target_rc.top, target_rc.GetWidth(), target_rc.GetHeight(),
@@ -511,6 +524,7 @@ void Renderer::SwapImpl(u32 xfb_addr, u32 fb_width, u32 fb_stride, u32 fb_height
   StateTracker::GetInstance()->EndRenderPass();
   StateTracker::GetInstance()->OnEndFrame();
 
+
   // There are a few variables which can alter the final window draw rectangle, and some of them
   // are determined by guest state. Currently, the only way to catch these is to update every frame.
   UpdateDrawRectangle();
@@ -521,8 +535,7 @@ void Renderer::SwapImpl(u32 xfb_addr, u32 fb_width, u32 fb_stride, u32 fb_height
   // If MSAA is enabled, and we're not using XFB, we need to resolve the EFB framebuffer before
   // rendering the final image to the screen, or dumping the frame. This is because we can't resolve
   // an image within a render pass, which will have already started by the time it is used.
-  if (g_ActiveConfig.iMultisamples > 1 && !g_ActiveConfig.bUseXFB)
-    ResolveEFBForSwap(scaled_efb_rect);
+  TransitionBuffersForSwap(scaled_efb_rect, xfb_sources, xfb_count);
 
   // Render the frame dump image if enabled.
   if (IsFrameDumping())
@@ -549,7 +562,7 @@ void Renderer::SwapImpl(u32 xfb_addr, u32 fb_width, u32 fb_stride, u32 fb_height
   // Draw to the screen if we have a swap chain.
   if (m_swap_chain)
   {
-    DrawScreen(scaled_efb_rect, xfb_addr, xfb_sources, xfb_count, fb_width, fb_stride, fb_height);
+    DrawScreen(scaled_efb_rect, xfb_addr, xfb_sources, xfb_count, fb_width, fb_stride, fb_height, gamma);
 
     // Submit the current command buffer, signaling rendering finished semaphore when it's done
     // Because this final command buffer is rendering to the swap chain, we need to wait for
@@ -573,6 +586,10 @@ void Renderer::SwapImpl(u32 xfb_addr, u32 fb_width, u32 fb_stride, u32 fb_height
   // Prep for the next frame (get command buffer ready) before doing anything else.
   BeginFrame();
 
+  // Restore the EFB color texture to color attachment ready for rendering the next frame.
+  FramebufferManager::GetInstance()->GetEFBColorTexture()->TransitionToLayout(
+    g_command_buffer_mgr->GetCurrentCommandBuffer(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
   // Determine what (if anything) has changed in the config.
   CheckForConfigChanges();
 
@@ -595,68 +612,115 @@ void Renderer::SwapImpl(u32 xfb_addr, u32 fb_width, u32 fb_stride, u32 fb_height
   if (CheckForHostConfigChanges())
   {
     g_command_buffer_mgr->WaitForGPUIdle();
-    g_object_cache->Reload();
+    g_shader_cache->Reload();
   }
 }
 
-void Renderer::ResolveEFBForSwap(const TargetRectangle& scaled_rect)
+void Renderer::TransitionBuffersForSwap(const TargetRectangle& scaled_rect,
+  const XFBSourceBase* const* xfb_sources, u32 xfb_count)
 {
-  // While the source rect can be out-of-range when drawing, the resolve rectangle must be within
-    // the bounds of the texture.
-  VkRect2D region = {
-  {scaled_rect.left, scaled_rect.top},
-  {static_cast<u32>(scaled_rect.GetWidth()), static_cast<u32>(scaled_rect.GetHeight())} };
-  region = Util::ClampRect2D(region, FramebufferManager::GetInstance()->GetEFBWidth(),
-    FramebufferManager::GetInstance()->GetEFBHeight());
-  FramebufferManager::GetInstance()->ResolveEFBColorTexture(region);
-}
+  VkCommandBuffer command_buffer = g_command_buffer_mgr->GetCurrentCommandBuffer();
 
-void Renderer::DrawFrame(VkRenderPass render_pass, const TargetRectangle& target_rect,
-  const TargetRectangle& scaled_efb_rect, u32 xfb_addr,
-  const XFBSourceBase* const* xfb_sources, u32 xfb_count, u32 fb_width,
-  u32 fb_stride, u32 fb_height)
-{
   if (!g_ActiveConfig.bUseXFB)
-    DrawEFB(render_pass, target_rect, scaled_efb_rect);
-  else if (!g_ActiveConfig.bUseRealXFB)
-    DrawVirtualXFB(render_pass, target_rect, xfb_addr, xfb_sources, xfb_count, fb_width, fb_stride,
-      fb_height);
-  else
-    DrawRealXFB(render_pass, target_rect, xfb_sources, xfb_count, fb_width, fb_stride, fb_height);
-}
-
-void Renderer::DrawEFB(VkRenderPass render_pass, const TargetRectangle& target_rect,
-  const TargetRectangle& scaled_efb_rect)
-{
-  Texture2D* efb_color_texture =
-    g_ActiveConfig.iMultisamples > 1 ?
-    FramebufferManager::GetInstance()->GetResolvedEFBColorTexture() :
-    FramebufferManager::GetInstance()->GetEFBColorTexture();
-
-  efb_color_texture->TransitionToLayout(g_command_buffer_mgr->GetCurrentCommandBuffer(),
-    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-  // Copy EFB -> backbuffer
-  BlitScreen(render_pass, target_rect, scaled_efb_rect, efb_color_texture, true);
-
-  // Restore the EFB color texture to color attachment ready for rendering the next frame.
-  if (efb_color_texture == FramebufferManager::GetInstance()->GetEFBColorTexture())
   {
-    FramebufferManager::GetInstance()->GetEFBColorTexture()->TransitionToLayout(
-      g_command_buffer_mgr->GetCurrentCommandBuffer(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    // Drawing EFB direct.
+    if (g_ActiveConfig.iMultisamples > 1)
+    {
+      // While the source rect can be out-of-range when drawing, the resolve rectangle must be
+      // within the bounds of the texture.
+      VkRect2D region = {
+        { scaled_rect.left, scaled_rect.top },
+        { static_cast<u32>(scaled_rect.GetWidth()), static_cast<u32>(scaled_rect.GetHeight()) } };
+      region = Util::ClampRect2D(region, FramebufferManager::GetInstance()->GetEFBWidth(),
+        FramebufferManager::GetInstance()->GetEFBHeight());
+
+      Vulkan::Texture2D* rtex = FramebufferManager::GetInstance()->ResolveEFBColorTexture(region);
+      rtex->TransitionToLayout(command_buffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    }
+    else
+    {
+      FramebufferManager::GetInstance()->GetEFBColorTexture()->TransitionToLayout(
+        command_buffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    }
+
+    return;
+  }
+
+  // Drawing XFB sources, so transition all of them.
+  // Don't need the EFB, so leave it as-is.
+  for (u32 i = 0; i < xfb_count; i++)
+  {
+    const XFBSource* xfb_source = static_cast<const XFBSource*>(xfb_sources[i]);
+    xfb_source->GetTexture()->GetRawTexIdentifier()->TransitionToLayout(
+      command_buffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
   }
 }
 
-void Renderer::DrawVirtualXFB(VkRenderPass render_pass, const TargetRectangle& target_rect,
-  u32 xfb_addr, const XFBSourceBase* const* xfb_sources, u32 xfb_count,
-  u32 fb_width, u32 fb_stride, u32 fb_height)
+void Renderer::DrawFrame(VkRenderPass render_pass, const TargetRectangle& target_rc, const TargetRectangle& scaled_source_rc, u32 xfb_addr,
+  const XFBSourceBase* const* xfb_sources, u32 xfb_count, Texture2D* dst_texture, const TargetSize& dst_size, u32 fb_width,
+  u32 fb_stride, u32 fb_height, float Gamma)
+{
+  if (g_ActiveConfig.bUseXFB)
+  {
+    if (g_ActiveConfig.bUseRealXFB)
+      DrawRealXFB(render_pass, target_rc, xfb_sources, xfb_count, fb_width, fb_stride, fb_height, dst_texture, dst_size, Gamma);
+    else
+      DrawVirtualXFB(render_pass, target_rc, xfb_addr, xfb_sources, xfb_count, dst_texture, dst_size, fb_width, fb_stride, fb_height, Gamma);
+  }
+  else
+  {
+    DrawEFB(render_pass, target_rc, scaled_source_rc, dst_texture, dst_size, Gamma);
+  }
+}
+
+void Renderer::DrawEFB(VkRenderPass render_pass, const TargetRectangle& t_rc, const TargetRectangle& scaled_src_rc,
+  Texture2D* dst_texture, const TargetSize& dst_size, float Gamma)
+{
+  Texture2D* efb_color_texture = nullptr;
+  Texture2D* efb_depth_texture = nullptr;
+  if (g_ActiveConfig.iMultisamples > 1)
+  {
+    efb_color_texture = FramebufferManager::GetInstance()->GetResolvedEFBColorTexture();
+    if (m_post_processor && m_post_processor->RequiresDepthBuffer())
+    {
+      efb_depth_texture = FramebufferManager::GetInstance()->GetResolvedEFBDepthTexture();
+    }
+  }
+  else 
+  {
+    efb_color_texture = FramebufferManager::GetInstance()->GetEFBColorTexture();
+    if (m_post_processor && m_post_processor->RequiresDepthBuffer())
+    {
+      efb_depth_texture = FramebufferManager::GetInstance()->GetEFBDepthTexture();
+    }
+  }
+  TargetRectangle scaled_source_rc(scaled_src_rc);
+  TargetSize tex_size(m_target_width, m_target_height);
+  // Post processing active?
+  if (m_post_processor && m_post_processor->ShouldTriggerOnSwap())
+  {
+    TargetRectangle src_rect(scaled_source_rc);
+    TargetSize src_size(tex_size);
+
+    uintptr_t new_blit_tex;
+    m_post_processor->PostProcess(&scaled_source_rc, &tex_size, &new_blit_tex,
+      src_rect, src_size, reinterpret_cast<uintptr_t>(efb_color_texture),
+      src_rect, src_size, reinterpret_cast<uintptr_t>(efb_depth_texture));
+    efb_color_texture = reinterpret_cast<Texture2D*>(new_blit_tex);
+
+  }
+  
+  // Copy EFB -> backbuffer
+  BlitScreen(render_pass, t_rc, scaled_source_rc, tex_size, efb_color_texture, efb_depth_texture, dst_size, dst_texture, Gamma);
+}
+
+void Renderer::DrawVirtualXFB(VkRenderPass render_pass, const TargetRectangle& target_rc, u32 xfb_addr,
+  const XFBSourceBase* const* xfb_sources, u32 xfb_count, Texture2D* dst_texture, const TargetSize& dst_size, u32 fb_width,
+  u32 fb_stride, u32 fb_height, float Gamma)
 {
   for (u32 i = 0; i < xfb_count; ++i)
   {
     const XFBSource* xfb_source = static_cast<const XFBSource*>(xfb_sources[i]);
-    xfb_source->GetTexture()->GetRawTexIdentifier()->TransitionToLayout(
-      g_command_buffer_mgr->GetCurrentCommandBuffer(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
     TargetRectangle source_rect = xfb_source->sourceRc;
     TargetRectangle draw_rect;
 
@@ -665,47 +729,62 @@ void Renderer::DrawVirtualXFB(VkRenderPass render_pass, const TargetRectangle& t
     int h_offset = (static_cast<s32>(xfb_source->srcAddr) - static_cast<s32>(xfb_addr)) /
       (static_cast<s32>(fb_stride) * 2);
     draw_rect.top =
-      target_rect.top + h_offset * target_rect.GetHeight() / static_cast<s32>(fb_height);
+      target_rc.top + h_offset * target_rc.GetHeight() / static_cast<s32>(fb_height);
     draw_rect.bottom =
-      target_rect.top +
-      (h_offset + xfb_height) * target_rect.GetHeight() / static_cast<s32>(fb_height);
-    draw_rect.left = target_rect.left +
-      (target_rect.GetWidth() -
-        xfb_width * target_rect.GetWidth() / static_cast<s32>(fb_stride)) /
+      target_rc.top +
+      (h_offset + xfb_height) * target_rc.GetHeight() / static_cast<s32>(fb_height);
+    draw_rect.left = target_rc.left +
+      (target_rc.GetWidth() -
+        xfb_width * target_rc.GetWidth() / static_cast<s32>(fb_stride)) /
       2;
-    draw_rect.right = target_rect.left +
-      (target_rect.GetWidth() +
-        xfb_width * target_rect.GetWidth() / static_cast<s32>(fb_stride)) /
+    draw_rect.right = target_rc.left +
+      (target_rc.GetWidth() +
+        xfb_width * target_rc.GetWidth() / static_cast<s32>(fb_stride)) /
       2;
 
     source_rect.right -= Renderer::EFBToScaledX(fb_stride - fb_width);
-    BlitScreen(render_pass, draw_rect, source_rect, xfb_source->GetTexture()->GetRawTexIdentifier(), true);
+    Texture2D* depthtex = nullptr;
+    if (m_post_processor && m_post_processor->RequiresDepthBuffer() && xfb_source->GetDepthTexture())
+    {
+      depthtex = xfb_source->GetDepthTexture()->GetRawTexIdentifier();
+    }
+    TargetSize blit_size(xfb_source->texWidth, xfb_source->texHeight);
+    VKTexture* dt = xfb_source->GetDepthTexture();
+    BlitScreen(render_pass, draw_rect, source_rect, blit_size, xfb_source->GetTexture()->GetRawTexIdentifier(), dt != nullptr ? dt->GetRawTexIdentifier() : nullptr, dst_size, dst_texture, Gamma);
   }
 }
 
-void Renderer::DrawRealXFB(VkRenderPass render_pass, const TargetRectangle& target_rect,
+void Renderer::DrawRealXFB(VkRenderPass render_pass,const TargetRectangle& target_rect,
   const XFBSourceBase* const* xfb_sources, u32 xfb_count, u32 fb_width,
-  u32 fb_stride, u32 fb_height)
+  u32 fb_stride, u32 fb_height, Texture2D* dst_texture, const TargetSize& dst_size, float Gamma)
 {
   for (u32 i = 0; i < xfb_count; ++i)
   {
     const XFBSource* xfb_source = static_cast<const XFBSource*>(xfb_sources[i]);
-    xfb_source->GetTexture()->GetRawTexIdentifier()->TransitionToLayout(
-      g_command_buffer_mgr->GetCurrentCommandBuffer(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
     TargetRectangle source_rect = xfb_source->sourceRc;
     TargetRectangle draw_rect = target_rect;
     source_rect.right -= fb_stride - fb_width;
-    BlitScreen(render_pass, draw_rect, source_rect, xfb_source->GetTexture()->GetRawTexIdentifier(), true);
+    TargetSize blit_size(xfb_source->texWidth, xfb_source->texHeight);
+    BlitScreen(render_pass, draw_rect, source_rect, blit_size, xfb_source->GetTexture()->GetRawTexIdentifier(), nullptr, dst_size, dst_texture, Gamma);
   }
 }
 
 void Renderer::DrawScreen(const TargetRectangle& scaled_efb_rect, u32 xfb_addr,
   const XFBSourceBase* const* xfb_sources, u32 xfb_count, u32 fb_width,
-  u32 fb_stride, u32 fb_height)
+  u32 fb_stride, u32 fb_height, float gamma)
 {
-  // Grab the next image from the swap chain in preparation for drawing the window.
-  VkResult res = m_swap_chain->AcquireNextImage(m_image_available_semaphore);
+  VkResult res;
+  if (!g_command_buffer_mgr->CheckLastPresentFail())
+  {
+    // Grab the next image from the swap chain in preparation for drawing the window.
+    res = m_swap_chain->AcquireNextImage(m_image_available_semaphore);
+  }
+  else
+  {
+    // If the last present failed, we need to recreate the swap chain.
+    res = VK_ERROR_OUT_OF_DATE_KHR;
+  }
+
   if (res == VK_SUBOPTIMAL_KHR || res == VK_ERROR_OUT_OF_DATE_KHR)
   {
     // There's an issue here. We can't resize the swap chain while the GPU is still busy with it,
@@ -715,7 +794,8 @@ void Renderer::DrawScreen(const TargetRectangle& scaled_efb_rect, u32 xfb_addr,
     // command buffer, resize the swap chain (which calls WaitForGPUIdle), and then finally call
     // PrepareToSubmitCommandBuffer to return to the state that the caller expects.
     g_command_buffer_mgr->SubmitCommandBuffer(false);
-    ResizeSwapChain();
+    m_swap_chain->ResizeSwapChain();
+    BeginFrame();
     g_command_buffer_mgr->PrepareToSubmitCommandBuffer();
     res = m_swap_chain->AcquireNextImage(m_image_available_semaphore);
   }
@@ -741,10 +821,10 @@ void Renderer::DrawScreen(const TargetRectangle& scaled_efb_rect, u32 xfb_addr,
     &clear_value };
   vkCmdBeginRenderPass(g_command_buffer_mgr->GetCurrentCommandBuffer(), &info,
     VK_SUBPASS_CONTENTS_INLINE);
-
+  const TargetSize dst_size = { static_cast<int>(backbuffer->GetWidth()), static_cast<int>(backbuffer->GetHeight()) };
   // Draw guest buffers (EFB or XFB)
   DrawFrame(m_swap_chain->GetRenderPass(), GetTargetRectangle(), scaled_efb_rect, xfb_addr,
-    xfb_sources, xfb_count, fb_width, fb_stride, fb_height);
+    xfb_sources, xfb_count, backbuffer, dst_size, fb_width, fb_stride, fb_height, gamma);
 
   // Draw OSD
   Util::SetViewportAndScissor(g_command_buffer_mgr->GetCurrentCommandBuffer(), 0, 0,
@@ -791,8 +871,10 @@ bool Renderer::DrawFrameDump(const TargetRectangle& scaled_efb_rect, u32 xfb_add
     VK_SUBPASS_CONTENTS_INLINE);
   vkCmdClearAttachments(g_command_buffer_mgr->GetCurrentCommandBuffer(), 1, &clear_attachment, 1,
     &clear_rect);
+  const TargetSize dst_size = {static_cast<int>(width), static_cast<int>(height) };
+ 
   DrawFrame(FramebufferManager::GetInstance()->GetColorCopyForReadbackRenderPass(), target_rect,
-    scaled_efb_rect, xfb_addr, xfb_sources, xfb_count, fb_width, fb_stride, fb_height);
+    scaled_efb_rect, xfb_addr, xfb_sources, xfb_count, m_frame_dump_render_texture.get(), dst_size, fb_width, fb_stride, fb_height, 1.0f);
   vkCmdEndRenderPass(g_command_buffer_mgr->GetCurrentCommandBuffer());
 
   // Prepare the readback texture for copying.
@@ -801,6 +883,8 @@ bool Renderer::DrawFrameDump(const TargetRectangle& scaled_efb_rect, u32 xfb_add
     return false;
 
   // Queue a copy to the current frame dump buffer. It will be written to the frame dump later.
+  m_frame_dump_render_texture->TransitionToLayout(g_command_buffer_mgr->GetCurrentCommandBuffer(),
+    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
   readback_texture->CopyFromImage(g_command_buffer_mgr->GetCurrentCommandBuffer(),
     m_frame_dump_render_texture->GetImage(),
     VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, width, height, 0, 0);
@@ -927,7 +1011,7 @@ void Renderer::FlushFrameDump()
   m_current_frame_dump_image = FRAME_DUMP_BUFFERED_FRAMES - 1;
 }
 
-void Renderer::BlitScreen(VkRenderPass render_pass, const TargetRectangle& dst_rect,
+void Renderer::OldBlitScreen(VkRenderPass render_pass, const TargetRectangle& dst_rect,
   const TargetRectangle& src_rect, const Texture2D* src_tex,
   bool linear_filter)
 {
@@ -938,7 +1022,7 @@ void Renderer::BlitScreen(VkRenderPass render_pass, const TargetRectangle& dst_r
   // Set up common data
   UtilityShaderDraw draw(g_command_buffer_mgr->GetCurrentCommandBuffer(),
     g_object_cache->GetPipelineLayout(PIPELINE_LAYOUT_STANDARD), render_pass,
-    g_object_cache->GetPassthroughVertexShader(), VK_NULL_HANDLE,
+    g_shader_cache->GetPassthroughVertexShader(), VK_NULL_HANDLE,
     m_blit_fragment_shader);
 
   draw.SetPSSampler(0, src_tex->GetView(), sampler);
@@ -963,6 +1047,33 @@ void Renderer::BlitScreen(VkRenderPass render_pass, const TargetRectangle& dst_r
       src_rect.left, src_rect.top, 0, src_rect.GetWidth(), src_rect.GetHeight(),
       src_tex->GetWidth(), src_tex->GetHeight());
   }
+}
+
+void Renderer::BlitScreen(VkRenderPass render_pass, const TargetRectangle& dst_rect,
+  const TargetRectangle& src_rect, TargetSize src_size, const Texture2D* src_tex, const Texture2D* src_depth_tex,
+  const TargetSize& dst_size, Texture2D* dst_texture, float Gamma)
+{
+  OldBlitScreen(render_pass, dst_rect, src_rect, src_tex, true);
+  return;
+  //Disable post proccessing still a work in progress
+  /*
+  if (g_ActiveConfig.iStereoMode == STEREO_SBS || g_ActiveConfig.iStereoMode == STEREO_TAB)
+  {
+    TargetRectangle left_rect;
+    TargetRectangle right_rect;
+    std::tie(left_rect, right_rect) = ConvertStereoRectangle(dst_rect);
+
+    m_post_processor->BlitScreen(left_rect, dst_size, reinterpret_cast<uintptr_t>(dst_texture),
+      src_rect, src_size, reinterpret_cast<uintptr_t>(src_tex), reinterpret_cast<uintptr_t>(src_depth_tex), 0, Gamma);
+    m_post_processor->BlitScreen(right_rect, dst_size, reinterpret_cast<uintptr_t>(dst_texture),
+      src_rect, src_size, reinterpret_cast<uintptr_t>(src_tex), reinterpret_cast<uintptr_t>(src_depth_tex), 1, Gamma);
+  }
+  else
+  {
+    m_post_processor->BlitScreen(dst_rect, dst_size, reinterpret_cast<uintptr_t>(dst_texture),
+      src_rect, src_size, reinterpret_cast<uintptr_t>(src_tex), reinterpret_cast<uintptr_t>(src_depth_tex), 0, Gamma);
+  }
+  */
 }
 
 bool Renderer::ResizeFrameDumpBuffer(u32 new_width, u32 new_height)
@@ -1056,10 +1167,7 @@ void Renderer::CheckForTargetResize(u32 fb_width, u32 fb_stride, u32 fb_height)
 
   // Changing the XFB source area may alter the target size.
   if (CalculateTargetSize())
-  {
-    PixelShaderManager::SetEfbScaleChanged();
     ResizeEFBTextures();
-  }
 }
 
 void Renderer::CheckForSurfaceChange()
@@ -1067,14 +1175,17 @@ void Renderer::CheckForSurfaceChange()
   if (!m_surface_needs_change.IsSet())
     return;
 
-  u32 old_width = m_swap_chain ? m_swap_chain->GetWidth() : 0;
-  u32 old_height = m_swap_chain ? m_swap_chain->GetHeight() : 0;
+  // Wait for the GPU to catch up since we're going to destroy the swap chain.
+  g_command_buffer_mgr->WaitForGPUIdle();
+
+  // Clear the present failed flag, since we don't want to resize after recreating.
+  g_command_buffer_mgr->CheckLastPresentFail();
 
   // Fast path, if the surface handle is the same, the window has just been resized.
   if (m_swap_chain && m_new_surface_handle == m_swap_chain->GetNativeHandle())
   {
     INFO_LOG(VIDEO, "Detected window resize.");
-    ResizeSwapChain();
+    m_swap_chain->RecreateSwapChain();
 
     // Notify the main thread we are done.
     m_surface_needs_change.Clear();
@@ -1083,9 +1194,6 @@ void Renderer::CheckForSurfaceChange()
   }
   else
   {
-    // Wait for the GPU to catch up since we're going to destroy the swap chain.
-    g_command_buffer_mgr->WaitForGPUIdle();
-
     // Did we previously have a swap chain?
     if (m_swap_chain)
     {
@@ -1124,23 +1232,17 @@ void Renderer::CheckForSurfaceChange()
     m_surface_changed.Set();
   }
 
-  if (m_swap_chain)
-  {
-    // Handle case where the dimensions are now different
-    if (old_width != m_swap_chain->GetWidth() || old_height != m_swap_chain->GetHeight())
-      OnSwapChainResized();
-  }
+  // Handle case where the dimensions are now different.
+  OnSwapChainResized();
 }
 
 void Renderer::CheckForConfigChanges()
 {
   // Save the video config so we can compare against to determine which settings have changed.
-  u32 old_multisamples = g_ActiveConfig.iMultisamples;
   int old_anisotropy = g_ActiveConfig.iMaxAnisotropy;
-  int old_stereo_mode = g_ActiveConfig.iStereoMode;
   int old_aspect_ratio = g_ActiveConfig.iAspectRatio;
+  int old_efb_scale = g_ActiveConfig.iEFBScale;
   bool old_force_filtering = g_ActiveConfig.bForceFiltering;
-  bool old_ssaa = g_ActiveConfig.bSSAA;
   bool old_use_xfb = g_ActiveConfig.bUseXFB;
   bool old_use_realxfb = g_ActiveConfig.bUseRealXFB;
 
@@ -1150,12 +1252,9 @@ void Renderer::CheckForConfigChanges()
   UpdateActiveConfig();
 
   // Determine which (if any) settings have changed.
-  bool msaa_changed = old_multisamples != g_ActiveConfig.iMultisamples;
-  bool ssaa_changed = old_ssaa != g_ActiveConfig.bSSAA;
   bool anisotropy_changed = old_anisotropy != g_ActiveConfig.iMaxAnisotropy;
   bool force_texture_filtering_changed = old_force_filtering != g_ActiveConfig.bForceFiltering;
-  bool stereo_changed = old_stereo_mode != g_ActiveConfig.iStereoMode;
-  bool efb_scale_changed = m_last_efb_scale != g_ActiveConfig.iEFBScale;
+  bool efb_scale_changed = old_efb_scale != g_ActiveConfig.iEFBScale;
   bool aspect_changed = old_aspect_ratio != g_ActiveConfig.iAspectRatio;
   bool use_xfb_changed = old_use_xfb != g_ActiveConfig.bUseXFB;
   bool use_realxfb_changed = old_use_realxfb != g_ActiveConfig.bUseRealXFB;
@@ -1166,30 +1265,26 @@ void Renderer::CheckForConfigChanges()
   // Handle settings that can cause the target rectangle to change.
   if (efb_scale_changed || aspect_changed || use_xfb_changed || use_realxfb_changed)
   {
-    m_last_efb_scale = g_ActiveConfig.iEFBScale;
     if (CalculateTargetSize())
       ResizeEFBTextures();
   }
 
   // MSAA samples changed, we need to recreate the EFB render pass.
   // If the stereoscopy mode changed, we need to recreate the buffers as well.
-  if (msaa_changed || stereo_changed)
+  // SSAA changed on/off, we have to recompile shaders.
+  // Changing stereoscopy from off<->on also requires shaders to be recompiled.
+  if (CheckForHostConfigChanges())
   {
     g_command_buffer_mgr->WaitForGPUIdle();
     FramebufferManager::GetInstance()->RecreateRenderPass();
     FramebufferManager::GetInstance()->ResizeEFBTextures();
     BindEFBToStateTracker();
-  }
-
-  // SSAA changed on/off, we can leave the buffers/render pass, but have to recompile shaders.
-  // Changing stereoscopy from off<->on also requires shaders to be recompiled.
-  if (msaa_changed || ssaa_changed || stereo_changed)
-  {
-    g_command_buffer_mgr->WaitForGPUIdle();
     RecompileShaders();
     FramebufferManager::GetInstance()->RecompileShaders();
-    g_object_cache->RecompileSharedShaders();
-    StateTracker::GetInstance()->LoadPipelineUIDCache();
+    g_shader_cache->Reload();
+    g_shader_cache->RecompileSharedShaders();
+    StateTracker::GetInstance()->InvalidateShaderPointers();
+    StateTracker::GetInstance()->ReloadPipelineUIDCache();
   }
 
   // For vsync, we need to change the present mode, which means recreating the swap chain.
@@ -1210,10 +1305,7 @@ void Renderer::OnSwapChainResized()
   m_backbuffer_height = m_swap_chain->GetHeight();
   UpdateDrawRectangle();
   if (CalculateTargetSize())
-  {
-    PixelShaderManager::SetEfbScaleChanged();
     ResizeEFBTextures();
-  }
 }
 
 void Renderer::BindEFBToStateTracker()
@@ -1227,13 +1319,8 @@ void Renderer::BindEFBToStateTracker()
     FramebufferManager::GetInstance()->GetEFBClearRenderPass());
   StateTracker::GetInstance()->SetFramebuffer(
     FramebufferManager::GetInstance()->GetEFBFramebuffer(), framebuffer_size);
-
-  // Update rasterization state with MSAA info
-  RasterizationState rs_state = {};
-  rs_state.bits = StateTracker::GetInstance()->GetRasterizationState().bits;
-  rs_state.samples = FramebufferManager::GetInstance()->GetEFBSamples();
-  rs_state.per_sample_shading = g_ActiveConfig.bSSAA ? VK_TRUE : VK_FALSE;
-  StateTracker::GetInstance()->SetRasterizationState(rs_state);
+  StateTracker::GetInstance()->SetMultisamplingstate(
+    FramebufferManager::GetInstance()->GetEFBMultisamplingState());
 }
 
 void Renderer::ResizeEFBTextures()
@@ -1248,19 +1335,7 @@ void Renderer::ResizeEFBTextures()
   BPFunctions::SetScissor();
 }
 
-void Renderer::ResizeSwapChain()
-{
-  // The worker thread may still be submitting a present on this swap chain.
-  g_command_buffer_mgr->WaitForGPUIdle();
-
-  // It's now safe to resize the swap chain.
-  if (!m_swap_chain->ResizeSwapChain())
-    PanicAlert("Failed to resize swap chain.");
-
-  OnSwapChainResized();
-}
-
-void Renderer::ApplyState(bool bUseDstAlpha)
+void Renderer::ApplyState(bool bUseDstAlfa)
 {
 }
 
@@ -1276,369 +1351,37 @@ void Renderer::RestoreAPIState()
   StateTracker::GetInstance()->SetPendingRebind();
 }
 
-void Renderer::SetGenerationMode()
+void Renderer::SetRasterizationState(const RasterizationState& state)
 {
-  RasterizationState new_rs_state = {};
-  new_rs_state.bits = StateTracker::GetInstance()->GetRasterizationState().bits;
-
-  switch (bpmem.genMode.cullmode.Value())
-  {
-  case GenMode::CULL_NONE:
-    new_rs_state.cull_mode = VK_CULL_MODE_NONE;
-    break;
-  case GenMode::CULL_BACK:
-    new_rs_state.cull_mode = VK_CULL_MODE_BACK_BIT;
-    break;
-  case GenMode::CULL_FRONT:
-    new_rs_state.cull_mode = VK_CULL_MODE_FRONT_BIT;
-    break;
-  case GenMode::CULL_ALL:
-    new_rs_state.cull_mode = VK_CULL_MODE_FRONT_AND_BACK;
-    break;
-  default:
-    new_rs_state.cull_mode = VK_CULL_MODE_NONE;
-    break;
-  }
-
-  StateTracker::GetInstance()->SetRasterizationState(new_rs_state);
+  StateTracker::GetInstance()->SetRasterizationState(state);
 }
 
-void Renderer::SetDepthMode()
+void Renderer::SetDepthState(const DepthState& state)
 {
-  DepthStencilState new_ds_state = {};
-  new_ds_state.test_enable = bpmem.zmode.testenable.Value() ? VK_TRUE : VK_FALSE;
-  new_ds_state.write_enable = bpmem.zmode.updateenable.Value() ? VK_TRUE : VK_FALSE;
-
-  // Inverted depth, hence these are swapped
-  switch (bpmem.zmode.func.Value())
-  {
-  case ZMode::NEVER:
-    new_ds_state.compare_op = VK_COMPARE_OP_NEVER;
-    break;
-  case ZMode::LESS:
-    new_ds_state.compare_op = VK_COMPARE_OP_GREATER;
-    break;
-  case ZMode::EQUAL:
-    new_ds_state.compare_op = VK_COMPARE_OP_EQUAL;
-    break;
-  case ZMode::LEQUAL:
-    new_ds_state.compare_op = VK_COMPARE_OP_GREATER_OR_EQUAL;
-    break;
-  case ZMode::GREATER:
-    new_ds_state.compare_op = VK_COMPARE_OP_LESS;
-    break;
-  case ZMode::NEQUAL:
-    new_ds_state.compare_op = VK_COMPARE_OP_NOT_EQUAL;
-    break;
-  case ZMode::GEQUAL:
-    new_ds_state.compare_op = VK_COMPARE_OP_LESS_OR_EQUAL;
-    break;
-  case ZMode::ALWAYS:
-    new_ds_state.compare_op = VK_COMPARE_OP_ALWAYS;
-    break;
-  default:
-    new_ds_state.compare_op = VK_COMPARE_OP_ALWAYS;
-    break;
-  }
-
-  StateTracker::GetInstance()->SetDepthStencilState(new_ds_state);
+  StateTracker::GetInstance()->SetDepthState(state);
 }
 
-void Renderer::SetColorMask()
+void Renderer::SetBlendingState(const BlendingState& state)
 {
-  u32 color_mask = 0;
-
-  if (bpmem.alpha_test.TestResult() != AlphaTest::FAIL)
-  {
-    if (bpmem.blendmode.alphaupdate.Value() && bpmem.zcontrol.pixel_format.Value() == PEControl::RGBA6_Z24)
-      color_mask |= VK_COLOR_COMPONENT_A_BIT;
-    if (bpmem.blendmode.colorupdate.Value())
-      color_mask |= VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT;
-  }
-
-  BlendState new_blend_state = {};
-  new_blend_state.bits = StateTracker::GetInstance()->GetBlendState().bits;
-  new_blend_state.write_mask = color_mask;
-
-  StateTracker::GetInstance()->SetBlendState(new_blend_state);
+  StateTracker::GetInstance()->SetBlendState(state);
 }
 
-void Renderer::SetBlendMode(bool force_update)
+void Renderer::SetSamplerState(u32 index, const SamplerState& state)
 {
-  BlendState new_blend_state = {};
-  new_blend_state.bits = StateTracker::GetInstance()->GetBlendState().bits;
-
-  // Fast path for blending disabled
-  if (!bpmem.blendmode.blendenable)
-  {
-    new_blend_state.blend_enable = VK_FALSE;
-    new_blend_state.blend_op = VK_BLEND_OP_ADD;
-    new_blend_state.src_blend = VK_BLEND_FACTOR_ONE;
-    new_blend_state.dst_blend = VK_BLEND_FACTOR_ZERO;
-    new_blend_state.alpha_blend_op = VK_BLEND_OP_ADD;
-    new_blend_state.src_alpha_blend = VK_BLEND_FACTOR_ONE;
-    new_blend_state.dst_alpha_blend = VK_BLEND_FACTOR_ZERO;
-    StateTracker::GetInstance()->SetBlendState(new_blend_state);
-    return;
-  }
-  // Fast path for subtract blending
-  else if (bpmem.blendmode.subtract)
-  {
-    new_blend_state.blend_enable = VK_TRUE;
-    new_blend_state.blend_op = VK_BLEND_OP_REVERSE_SUBTRACT;
-    new_blend_state.src_blend = VK_BLEND_FACTOR_ONE;
-    new_blend_state.dst_blend = VK_BLEND_FACTOR_ONE;
-    new_blend_state.alpha_blend_op = VK_BLEND_OP_REVERSE_SUBTRACT;
-    new_blend_state.src_alpha_blend = VK_BLEND_FACTOR_ONE;
-    new_blend_state.dst_alpha_blend = VK_BLEND_FACTOR_ONE;
-    StateTracker::GetInstance()->SetBlendState(new_blend_state);
-    return;
-  }
-
-  // Our render target always uses an alpha channel, so we need to override the blend functions to
-  // assume a destination alpha of 1 if the render target isn't supposed to have an alpha channel.
-  bool target_has_alpha = bpmem.zcontrol.pixel_format.Value() == PEControl::RGBA6_Z24;
-  bool use_dst_alpha = bpmem.dstalpha.enable.Value() && bpmem.blendmode.alphaupdate.Value() && target_has_alpha &&
-    g_vulkan_context->SupportsDualSourceBlend();
-
-  new_blend_state.blend_enable = VK_TRUE;
-  new_blend_state.blend_op = VK_BLEND_OP_ADD;
-
-  switch (bpmem.blendmode.srcfactor.Value())
-  {
-  case BlendMode::ZERO:
-    new_blend_state.src_blend = VK_BLEND_FACTOR_ZERO;
-    break;
-  case BlendMode::ONE:
-    new_blend_state.src_blend = VK_BLEND_FACTOR_ONE;
-    break;
-  case BlendMode::DSTCLR:
-    new_blend_state.src_blend = VK_BLEND_FACTOR_DST_COLOR;
-    break;
-  case BlendMode::INVDSTCLR:
-    new_blend_state.src_blend = VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
-    break;
-  case BlendMode::SRCALPHA:
-    new_blend_state.src_blend =
-      use_dst_alpha ? VK_BLEND_FACTOR_SRC1_ALPHA : VK_BLEND_FACTOR_SRC_ALPHA;
-    break;
-  case BlendMode::INVSRCALPHA:
-    new_blend_state.src_blend =
-      use_dst_alpha ? VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA : VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-    break;
-  case BlendMode::DSTALPHA:
-    new_blend_state.src_blend = target_has_alpha ? VK_BLEND_FACTOR_DST_ALPHA : VK_BLEND_FACTOR_ONE;
-    break;
-  case BlendMode::INVDSTALPHA:
-    new_blend_state.src_blend =
-      target_has_alpha ? VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA : VK_BLEND_FACTOR_ZERO;
-    break;
-  default:
-    new_blend_state.src_blend = VK_BLEND_FACTOR_ONE;
-    break;
-  }
-
-  switch (bpmem.blendmode.dstfactor.Value())
-  {
-  case BlendMode::ZERO:
-    new_blend_state.dst_blend = VK_BLEND_FACTOR_ZERO;
-    break;
-  case BlendMode::ONE:
-    new_blend_state.dst_blend = VK_BLEND_FACTOR_ONE;
-    break;
-  case BlendMode::SRCCLR:
-    new_blend_state.dst_blend = VK_BLEND_FACTOR_SRC_COLOR;
-    break;
-  case BlendMode::INVSRCCLR:
-    new_blend_state.dst_blend = VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
-    break;
-  case BlendMode::SRCALPHA:
-    new_blend_state.dst_blend =
-      use_dst_alpha ? VK_BLEND_FACTOR_SRC1_ALPHA : VK_BLEND_FACTOR_SRC_ALPHA;
-    break;
-  case BlendMode::INVSRCALPHA:
-    new_blend_state.dst_blend =
-      use_dst_alpha ? VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA : VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-    break;
-  case BlendMode::DSTALPHA:
-    new_blend_state.dst_blend = target_has_alpha ? VK_BLEND_FACTOR_DST_ALPHA : VK_BLEND_FACTOR_ONE;
-    break;
-  case BlendMode::INVDSTALPHA:
-    new_blend_state.dst_blend =
-      target_has_alpha ? VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA : VK_BLEND_FACTOR_ZERO;
-    break;
-  default:
-    new_blend_state.dst_blend = VK_BLEND_FACTOR_ONE;
-    break;
-  }
-
-  if (use_dst_alpha)
-  {
-    // Destination alpha sets 1*SRC
-    new_blend_state.alpha_blend_op = VK_BLEND_OP_ADD;
-    new_blend_state.src_alpha_blend = VK_BLEND_FACTOR_ONE;
-    new_blend_state.dst_alpha_blend = VK_BLEND_FACTOR_ZERO;
-  }
-  else
-  {
-    new_blend_state.alpha_blend_op = VK_BLEND_OP_ADD;
-    new_blend_state.src_alpha_blend = Util::GetAlphaBlendFactor(new_blend_state.src_blend);
-    new_blend_state.dst_alpha_blend = Util::GetAlphaBlendFactor(new_blend_state.dst_blend);
-  }
-
-  StateTracker::GetInstance()->SetBlendState(new_blend_state);
-}
-
-void Renderer::SetLogicOpMode()
-{
-  BlendState new_blend_state = {};
-  new_blend_state.bits = StateTracker::GetInstance()->GetBlendState().bits;
-
-  // Does our device support logic ops?
-  bool logic_op_enable = bpmem.blendmode.logicopenable.Value() && !bpmem.blendmode.blendenable.Value();
-  if (g_vulkan_context->SupportsLogicOps())
-  {
-    if (logic_op_enable)
-    {
-      static const std::array<VkLogicOp, 16> logic_ops = {
-        { VK_LOGIC_OP_CLEAR, VK_LOGIC_OP_AND, VK_LOGIC_OP_AND_REVERSE, VK_LOGIC_OP_COPY,
-        VK_LOGIC_OP_AND_INVERTED, VK_LOGIC_OP_NO_OP, VK_LOGIC_OP_XOR, VK_LOGIC_OP_OR,
-        VK_LOGIC_OP_NOR, VK_LOGIC_OP_EQUIVALENT, VK_LOGIC_OP_INVERT, VK_LOGIC_OP_OR_REVERSE,
-        VK_LOGIC_OP_COPY_INVERTED, VK_LOGIC_OP_OR_INVERTED, VK_LOGIC_OP_NAND, VK_LOGIC_OP_SET } };
-
-      new_blend_state.logic_op_enable = VK_TRUE;
-      new_blend_state.logic_op = logic_ops[bpmem.blendmode.logicmode.Value()];
-    }
-    else
-    {
-      new_blend_state.logic_op_enable = VK_FALSE;
-      new_blend_state.logic_op = VK_LOGIC_OP_CLEAR;
-    }
-
-    StateTracker::GetInstance()->SetBlendState(new_blend_state);
-  }
-  else
-  {
-    // No logic op support, approximate with blending instead.
-    // This is by no means correct, but necessary for some devices.
-    if (logic_op_enable)
-    {
-      struct LogicOpBlend
-      {
-        VkBlendFactor src_factor;
-        VkBlendOp op;
-        VkBlendFactor dst_factor;
-      };
-      static const std::array<LogicOpBlend, 16> logic_ops = {
-        { { VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD, VK_BLEND_FACTOR_ZERO },
-        { VK_BLEND_FACTOR_DST_COLOR, VK_BLEND_OP_ADD, VK_BLEND_FACTOR_ZERO },
-        { VK_BLEND_FACTOR_ONE, VK_BLEND_OP_SUBTRACT, VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR },
-        { VK_BLEND_FACTOR_ONE, VK_BLEND_OP_ADD, VK_BLEND_FACTOR_ZERO },
-        { VK_BLEND_FACTOR_DST_COLOR, VK_BLEND_OP_REVERSE_SUBTRACT, VK_BLEND_FACTOR_ONE },
-        { VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD, VK_BLEND_FACTOR_ONE },
-        { VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR, VK_BLEND_OP_MAX,
-        VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR },
-        { VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR, VK_BLEND_OP_ADD, VK_BLEND_FACTOR_ONE },
-        { VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR, VK_BLEND_OP_MAX,
-        VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR },
-        { VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR, VK_BLEND_OP_MAX, VK_BLEND_FACTOR_SRC_COLOR },
-        { VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR, VK_BLEND_OP_ADD,
-        VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR },
-        { VK_BLEND_FACTOR_ONE, VK_BLEND_OP_ADD, VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR },
-        { VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR, VK_BLEND_OP_ADD,
-        VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR },
-        { VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR, VK_BLEND_OP_ADD, VK_BLEND_FACTOR_ONE },
-        { VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR, VK_BLEND_OP_ADD,
-        VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR },
-        { VK_BLEND_FACTOR_ONE, VK_BLEND_OP_ADD, VK_BLEND_FACTOR_ONE } } };
-
-      new_blend_state.blend_enable = VK_TRUE;
-      new_blend_state.blend_op = logic_ops[bpmem.blendmode.logicmode.Value()].op;
-      new_blend_state.src_blend = logic_ops[bpmem.blendmode.logicmode.Value()].src_factor;
-      new_blend_state.dst_blend = logic_ops[bpmem.blendmode.logicmode.Value()].dst_factor;
-      new_blend_state.alpha_blend_op = new_blend_state.blend_op;
-      new_blend_state.src_alpha_blend = Util::GetAlphaBlendFactor(new_blend_state.src_blend);
-      new_blend_state.dst_alpha_blend = Util::GetAlphaBlendFactor(new_blend_state.dst_blend);
-
-      StateTracker::GetInstance()->SetBlendState(new_blend_state);
-    }
-    else
-    {
-      // This is unfortunate. Since we clobber the blend state when enabling logic ops,
-      // we have to call SetBlendMode again to restore the current blend state.
-      SetBlendMode(true);
-      return;
-    }
-  }
-}
-
-void Renderer::SetSamplerState(int stage, int texindex, bool custom_tex)
-{
-  const FourTexUnits& tex = bpmem.tex[texindex];
-  const TexMode0& tm0 = tex.texMode0[stage];
-  const TexMode1& tm1 = tex.texMode1[stage];
-  SamplerState new_state = {};
-
-  if (g_ActiveConfig.bForceFiltering)
-  {
-    new_state.min_filter = VK_FILTER_LINEAR;
-    new_state.mag_filter = VK_FILTER_LINEAR;
-    new_state.mipmap_mode = SamplerCommon::IsBpTexMode0MipmapsEnabled(tm0) ?
-      VK_SAMPLER_MIPMAP_MODE_LINEAR :
-      VK_SAMPLER_MIPMAP_MODE_NEAREST;
-  }
-  else if (g_ActiveConfig.bDisableTextureFiltering)
-  {
-    new_state.min_filter = VK_FILTER_NEAREST;
-    new_state.mag_filter = VK_FILTER_NEAREST;
-    new_state.mipmap_mode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
-  }
-  else
-  {
-    // Constants for these?
-    new_state.min_filter = (tm0.min_filter & 4) != 0 ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
-    new_state.mipmap_mode = SamplerCommon::IsBpTexMode0MipmapsEnabled(tm0) ?
-      VK_SAMPLER_MIPMAP_MODE_LINEAR :
-      VK_SAMPLER_MIPMAP_MODE_NEAREST;
-    new_state.mag_filter = tm0.mag_filter != 0 ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
-  }
-
-  // If mipmaps are disabled, clamp min/max lod
-  new_state.max_lod = SamplerCommon::IsBpTexMode0MipmapsEnabled(tm0) ? tm1.max_lod : 0;
-  new_state.min_lod = std::min(new_state.max_lod.Value(), tm1.min_lod);
-  new_state.lod_bias = SamplerCommon::IsBpTexMode0MipmapsEnabled(tm0) ? tm0.lod_bias : 0;
-
-  // Custom textures may have a greater number of mips
-  if (custom_tex)
-    new_state.max_lod = 255;
-
-  // Address modes
-  static const VkSamplerAddressMode address_modes[] = {
-    VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_SAMPLER_ADDRESS_MODE_REPEAT,
-    VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT, VK_SAMPLER_ADDRESS_MODE_REPEAT };
-  new_state.wrap_u = address_modes[tm0.wrap_s];
-  new_state.wrap_v = address_modes[tm0.wrap_t];
-
-  // Only use anisotropic filtering for textures that would be linearly filtered.
-  new_state.enable_anisotropic_filtering = SamplerCommon::IsBpTexMode0PointFilteringEnabled(tm0) ? 0 : 1;
-
   // Skip lookup if the state hasn't changed.
-  size_t bind_index = (texindex * 4) + stage;
-  if (m_sampler_states[bind_index].bits == new_state.bits)
+  if (m_sampler_states[index].hex == state.hex)
     return;
 
   // Look up new state and replace in state tracker.
-  VkSampler sampler = g_object_cache->GetSampler(new_state);
+  VkSampler sampler = g_object_cache->GetSampler(state);
   if (sampler == VK_NULL_HANDLE)
   {
     ERROR_LOG(VIDEO, "Failed to create sampler");
     sampler = g_object_cache->GetPointSampler();
   }
 
-  StateTracker::GetInstance()->SetSampler(bind_index, sampler);
-  StateTracker::GetInstance()->SetSampler(bind_index + 8, sampler);
-  m_sampler_states[bind_index].bits = new_state.bits;
-  m_sampler_states[bind_index + 8].bits = new_state.bits;
+  StateTracker::GetInstance()->SetSampler(index, sampler);
+  m_sampler_states[index].hex = state.hex;
 }
 
 void Renderer::ResetSamplerStates()
@@ -1650,7 +1393,7 @@ void Renderer::ResetSamplerStates()
   // Invalidate all sampler states, next draw will re-initialize them.
   for (size_t i = 0; i < m_sampler_states.size(); i++)
   {
-    m_sampler_states[i].bits = std::numeric_limits<decltype(m_sampler_states[i].bits)>::max();
+    m_sampler_states[i].hex = RenderState::GetPointSamplerState().hex;
     StateTracker::GetInstance()->SetSampler(i, g_object_cache->GetPointSampler());
   }
 
@@ -1683,10 +1426,8 @@ void Renderer::SetViewport()
   float width = g_renderer->EFBToScaledXf(2.0f * xfmem.viewport.wd);
   float height = g_renderer->EFBToScaledYf(-2.0f * xfmem.viewport.ht);
 
-  float range = MathUtil::Clamp<float>(xfmem.viewport.zRange, -16777215.0f, 16777215.0f);
-  float min_depth =
-    MathUtil::Clamp<float>(xfmem.viewport.farZ - range, 0.0f, 16777215.0f) / 16777216.0f;
-  float max_depth = MathUtil::Clamp<float>(xfmem.viewport.farZ, 0.0f, 16777215.0f) / 16777216.0f;
+  float min_depth = (xfmem.viewport.farZ - xfmem.viewport.zRange) / 16777216.0f;
+  float max_depth = xfmem.viewport.farZ / 16777216.0f;
 
   if (width < 0.0f)
   {
@@ -1757,20 +1498,13 @@ bool Renderer::CompileShaders()
     }
   )";
 
-  std::string header = g_object_cache->GetUtilityShaderHeader();
-  std::string source;
-
-  source = header + CLEAR_FRAGMENT_SHADER_SOURCE;
+  std::string source = g_shader_cache->GetUtilityShaderHeader() + CLEAR_FRAGMENT_SHADER_SOURCE;
   m_clear_fragment_shader = Util::CompileAndCreateFragmentShader(source);
-  source = header + BLIT_FRAGMENT_SHADER_SOURCE;
+
+  source = g_shader_cache->GetUtilityShaderHeader() + BLIT_FRAGMENT_SHADER_SOURCE;
   m_blit_fragment_shader = Util::CompileAndCreateFragmentShader(source);
 
-  if (m_clear_fragment_shader == VK_NULL_HANDLE || m_blit_fragment_shader == VK_NULL_HANDLE)
-  {
-    return false;
-  }
-
-  return true;
+  return m_clear_fragment_shader != VK_NULL_HANDLE && m_blit_fragment_shader != VK_NULL_HANDLE;
 }
 
 void Renderer::DestroyShaders()

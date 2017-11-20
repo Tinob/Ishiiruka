@@ -320,11 +320,13 @@ bool SwapChain::CreateSwapChain()
     return false;
   }
 
+  // Select the number of image layers for Quad-Buffered stereoscopy
+  uint32_t image_layers = /*g_ActiveConfig.iStereoMode == STEREO_QUADBUFFER ? 2 :*/ 1;
+
   // Store the old/current swap chain when recreating for resize
   VkSwapchainKHR old_swap_chain = m_swap_chain;
 
   // Now we can actually create the swap chain
-  // TODO: Handle case where the present queue is not the graphics queue.
   VkSwapchainCreateInfoKHR swap_chain_info = { VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
     nullptr,
     0,
@@ -333,7 +335,7 @@ bool SwapChain::CreateSwapChain()
     m_surface_format.format,
     m_surface_format.colorSpace,
     size,
-    1,
+    image_layers,
     image_usage,
     VK_SHARING_MODE_EXCLUSIVE,
     0,
@@ -343,6 +345,17 @@ bool SwapChain::CreateSwapChain()
     m_present_mode,
     VK_TRUE,
     old_swap_chain };
+  std::array<uint32_t, 2> indices = { {
+      g_vulkan_context->GetGraphicsQueueFamilyIndex(),
+      g_vulkan_context->GetPresentQueueFamilyIndex(),
+    } };
+  if (g_vulkan_context->GetGraphicsQueueFamilyIndex() !=
+    g_vulkan_context->GetPresentQueueFamilyIndex())
+  {
+    swap_chain_info.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+    swap_chain_info.queueFamilyIndexCount = 2;
+    swap_chain_info.pQueueFamilyIndices = indices.data();
+  }
 
   res =
     vkCreateSwapchainKHR(g_vulkan_context->GetDevice(), &swap_chain_info, nullptr, &m_swap_chain);
@@ -359,6 +372,7 @@ bool SwapChain::CreateSwapChain()
 
   m_width = size.width;
   m_height = size.height;
+  m_layers = image_layers;
   return true;
 }
 
@@ -389,27 +403,7 @@ bool SwapChain::SetupSwapChainImages()
     // Create texture object, which creates a view of the backbuffer
     image.texture = Texture2D::CreateFromExistingImage(
       m_width, m_height, 1, 1, m_surface_format.format, VK_SAMPLE_COUNT_1_BIT,
-      VK_IMAGE_VIEW_TYPE_2D, image.image);
-
-    VkImageView view = image.texture->GetView();
-    VkFramebufferCreateInfo framebuffer_info = { VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-      nullptr,
-      0,
-      m_render_pass,
-      1,
-      &view,
-      m_width,
-      m_height,
-      1 };
-
-    res = vkCreateFramebuffer(g_vulkan_context->GetDevice(), &framebuffer_info, nullptr,
-      &image.framebuffer);
-    if (res != VK_SUCCESS)
-    {
-      LOG_VULKAN_ERROR(res, "vkCreateFramebuffer failed: ");
-      return false;
-    }
-
+      VK_IMAGE_VIEW_TYPE_2D, image.image, m_render_pass);
     m_swap_chain_images.emplace_back(std::move(image));
   }
 
@@ -418,11 +412,6 @@ bool SwapChain::SetupSwapChainImages()
 
 void SwapChain::DestroySwapChainImages()
 {
-  for (const auto& it : m_swap_chain_images)
-  {
-    // Images themselves are cleaned up by the swap chain object
-    vkDestroyFramebuffer(g_vulkan_context->GetDevice(), it.framebuffer, nullptr);
-  }
   m_swap_chain_images.clear();
 }
 
@@ -458,14 +447,27 @@ bool SwapChain::ResizeSwapChain()
   return true;
 }
 
+bool SwapChain::RecreateSwapChain()
+{
+  DestroySwapChainImages();
+  DestroySwapChain();
+  if (!CreateSwapChain() || !SetupSwapChainImages())
+  {
+    PanicAlert("Failed to re-configure swap chain images, this is fatal (for now)");
+    return false;
+  }
+
+  return true;
+}
+
 bool SwapChain::SetVSync(bool enabled)
 {
   if (m_vsync_enabled == enabled)
     return true;
 
-  // Resizing recreates the swap chain with the new present mode.
+  // Recreate the swap chain with the new present mode.
   m_vsync_enabled = enabled;
-  return ResizeSwapChain();
+  return RecreateSwapChain();
 }
 
 bool SwapChain::RecreateSurface(void* native_handle)

@@ -30,14 +30,14 @@ bool geometry_shader_uid_data::IsPassthrough() const
 {
   const bool stereo = g_ActiveConfig.iStereoMode > 0;
   const bool wireframe = g_ActiveConfig.bWireFrame;
-  return primitive_type == PRIMITIVE_TRIANGLES && !stereo && !wireframe;
+  return primitive_type == static_cast<u32>(PrimitiveType::Triangles) && !stereo && !wireframe;
 }
 
-void GetGeometryShaderUid(GeometryShaderUid& out, u32 primitive_type, const XFMemory &xfr, const u32 components)
+void GetGeometryShaderUid(GeometryShaderUid& out, PrimitiveType primitive_type, const XFMemory &xfr, const u32 components)
 {
   out.ClearUID();
   geometry_shader_uid_data& uid_data = out.GetUidData<geometry_shader_uid_data>();
-  uid_data.primitive_type = primitive_type;
+  uid_data.primitive_type = static_cast<u32>(primitive_type);
   uid_data.numTexGens = xfr.numTexGen.numTexGens;
   bool forced_lighting_enabled = g_ActiveConfig.TessellationEnabled() && xfr.projection.type == GX_PERSPECTIVE && g_ActiveConfig.bForcedLighting;
   bool enable_pl = g_ActiveConfig.PixelLightingEnabled(xfr, components) || forced_lighting_enabled;
@@ -92,8 +92,8 @@ inline void EndPrimitive(ShaderCode& out, API_TYPE ApiType, const geometry_shade
 inline void GenerateGeometryShader(ShaderCode& out, API_TYPE ApiType, const geometry_shader_uid_data& uid_data, const ShaderHostConfig& hostconfig)
 {
   const unsigned int vertex_in = uid_data.primitive_type + 1;
-  unsigned int vertex_out = uid_data.primitive_type == PRIMITIVE_TRIANGLES ? 3 : 4;
-
+  unsigned int vertex_out = uid_data.primitive_type == static_cast<u32>(PrimitiveType::Triangles) ? 3 : 4;
+  const PrimitiveType primitive_type = static_cast<PrimitiveType>(uid_data.primitive_type);
   if (hostconfig.wireframe)
     vertex_out++;
 
@@ -172,7 +172,7 @@ inline void GenerateGeometryShader(ShaderCode& out, API_TYPE ApiType, const geom
     out.Write("\tVertexData ps;\n");
   }
 
-  if (uid_data.primitive_type == PRIMITIVE_LINES)
+  if (primitive_type == PrimitiveType::Lines)
   {
     if (ApiType == API_OPENGL || ApiType == API_VULKAN)
     {
@@ -204,7 +204,7 @@ inline void GenerateGeometryShader(ShaderCode& out, API_TYPE ApiType, const geom
       "\t\toffset = float2(0, -" I_LINEPTPARAMS".z / " I_LINEPTPARAMS".y);\n"
       "\t}\n");
   }
-  else if (uid_data.primitive_type == PRIMITIVE_POINTS)
+  else if (primitive_type == PrimitiveType::Points)
   {
     if (ApiType == API_OPENGL || ApiType == API_VULKAN)
     {
@@ -272,7 +272,7 @@ inline void GenerateGeometryShader(ShaderCode& out, API_TYPE ApiType, const geom
     out.Write("\tf.pos.x += hoffset * (f.pos.w - " I_STEREOPARAMS ".z);\n");
   }
 
-  if (uid_data.primitive_type == PRIMITIVE_LINES)
+  if (primitive_type == PrimitiveType::Lines)
   {
     out.Write("\tVS_OUTPUT l = f;\n"
       "\tVS_OUTPUT r = f;\n");
@@ -293,7 +293,7 @@ inline void GenerateGeometryShader(ShaderCode& out, API_TYPE ApiType, const geom
     EmitVertex(out, ApiType, uid_data, "l", true, hostconfig);
     EmitVertex(out, ApiType, uid_data, "r", false, hostconfig);
   }
-  else if (uid_data.primitive_type == PRIMITIVE_POINTS)
+  else if (primitive_type == PrimitiveType::Points)
   {
     out.Write("\tVS_OUTPUT ll = f;\n"
       "\tVS_OUTPUT lr = f;\n"
@@ -347,7 +347,11 @@ void EnumerateGeometryShaderUids(const std::function<void(const GeometryShaderUi
 {
   GeometryShaderUid uid = {};
   static constexpr std::array<u32, 3> primitive_lut = {
-    { PRIMITIVE_TRIANGLES, PRIMITIVE_LINES, PRIMITIVE_POINTS } };
+    {
+      static_cast<u32>(PrimitiveType::Triangles),
+      static_cast<u32>(PrimitiveType::Lines),
+      static_cast<u32>(PrimitiveType::Points)
+    } };
   const u32 max_texgens = 8;
 
   const size_t total = primitive_lut.size() * (max_texgens + 1) * 2;

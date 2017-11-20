@@ -31,6 +31,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <limits>
 #include <type_traits>
 
@@ -135,7 +136,7 @@ public:
 
   __forceinline BitField& operator=(T val)
   {
-    storage = (storage & ~GetMask()) | ((val << position) & GetMask());
+    storage = (storage & ~GetMask()) | ((static_cast<StorageType>(val) << position) & GetMask());
     return *this;
   }
 

@@ -2,6 +2,7 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include <array>
 #include <cmath>
 #include <memory>
 
@@ -18,6 +19,7 @@
 #include "VideoCommon/PerfQueryBase.h"
 #include "VideoCommon/PixelShaderManager.h"
 #include "VideoCommon/RenderBase.h"
+#include "VideoCommon/SamplerCommon.h"
 #include "VideoCommon/Statistics.h"
 #include "VideoCommon/TextureCacheBase.h"
 #include "VideoCommon/VertexManagerBase.h"
@@ -29,14 +31,14 @@
 std::unique_ptr<VertexManagerBase> g_vertex_manager;
 
 static const PrimitiveType primitive_from_gx[8] = {
-    PRIMITIVE_TRIANGLES, // GX_DRAW_QUADS
-    PRIMITIVE_TRIANGLES, // GX_DRAW_QUADS_2
-    PRIMITIVE_TRIANGLES, // GX_DRAW_TRIANGLES
-    PRIMITIVE_TRIANGLES, // GX_DRAW_TRIANGLE_STRIP
-    PRIMITIVE_TRIANGLES, // GX_DRAW_TRIANGLE_FAN
-    PRIMITIVE_LINES,     // GX_DRAW_LINES
-    PRIMITIVE_LINES,     // GX_DRAW_LINE_STRIP
-    PRIMITIVE_POINTS,    // GX_DRAW_POINTS
+  PrimitiveType::Triangles, // GX_DRAW_QUADS
+  PrimitiveType::Triangles, // GX_DRAW_QUADS_2
+  PrimitiveType::Triangles, // GX_DRAW_TRIANGLES
+  PrimitiveType::Triangles, // GX_DRAW_TRIANGLE_STRIP
+  PrimitiveType::Triangles, // GX_DRAW_TRIANGLE_FAN
+  PrimitiveType::Lines,     // GX_DRAW_LINES
+  PrimitiveType::Lines,     // GX_DRAW_LINE_STRIP
+  PrimitiveType::Points,    // GX_DRAW_POINTS
 };
 
 // Due to the BT.601 standard which the GameCube is based on being a compromise
@@ -98,6 +100,13 @@ void VertexManagerBase::PrepareForAdditionalData(int primitive, u32 count, u32 s
 
   // We can't merge different kinds of primitives, so we have to flush here
   // Check for size in buffer, if the buffer gets full, call Flush()
+  PrimitiveType new_primitive_type = primitive_from_gx[primitive];
+  if (m_current_primitive_type != new_primitive_type)
+  {
+    RasterizationState raster_state = {};
+    raster_state.Generate(bpmem, new_primitive_type);
+    g_renderer->SetRasterizationState(raster_state);
+  }
   if (count > max_index_size
     || needed_vertex_bytes > GetRemainingSize()
     || m_current_primitive_type != primitive_from_gx[primitive])
@@ -130,6 +139,68 @@ std::pair<size_t, size_t> VertexManagerBase::ResetFlushAspectRatioCount()
   m_flush_count_4_3 = 0;
   m_flush_count_anamorphic = 0;
   return val;
+}
+
+static void SetSamplerState(u32 index, bool custom_tex)
+{
+  const FourTexUnits& tex = bpmem.tex[index / 4];
+  const TexMode0& tm0 = tex.texMode0[index % 4];
+
+  SamplerState state = {};
+  state.Generate(bpmem, index);
+  bool mip_maps_enabled = SamplerCommon::AreBpTexMode0MipmapsEnabled(tm0);
+  bool acurate_filtering = mip_maps_enabled && (state.max_lod.Value() != 0 || state.lod_bias.Value() != 0);
+  // Force texture filtering config option.
+  if (g_ActiveConfig.bForceFiltering)
+  {
+    state.min_filter = SamplerState::Filter::Linear;
+    state.mag_filter = SamplerState::Filter::Linear;
+    state.mipmap_filter = SamplerCommon::AreBpTexMode0MipmapsEnabled(tm0) ?
+      SamplerState::Filter::Linear :
+      SamplerState::Filter::Point;
+  }
+  else if (g_ActiveConfig.bDisableTextureFiltering)
+  {
+    state.min_filter = SamplerState::Filter::Point;
+    state.mag_filter = SamplerState::Filter::Point;
+    state.mipmap_filter = SamplerState::Filter::Point;
+  }
+
+  // Custom textures may have a greater number of mips
+  if (custom_tex)
+    state.max_lod = 255;
+
+  // Anisotropic filtering option.
+  if (!acurate_filtering && g_ActiveConfig.iMaxAnisotropy != 0 && !SamplerCommon::IsBpTexMode0PointFilteringEnabled(tm0))
+  {
+    // https://www.opengl.org/registry/specs/EXT/texture_filter_anisotropic.txt
+    // For predictable results on all hardware/drivers, only use one of:
+    //	GL_LINEAR + GL_LINEAR (No Mipmaps [Bilinear])
+    //	GL_LINEAR + GL_LINEAR_MIPMAP_LINEAR (w/ Mipmaps [Trilinear])
+    // Letting the game set other combinations will have varying arbitrary results;
+    // possibly being interpreted as equal to bilinear/trilinear, implicitly
+    // disabling anisotropy, or changing the anisotropic algorithm employed.
+    state.min_filter = SamplerState::Filter::Linear;
+    state.mag_filter = SamplerState::Filter::Linear;
+    if (SamplerCommon::AreBpTexMode0MipmapsEnabled(tm0))
+      state.mipmap_filter = SamplerState::Filter::Linear;
+    state.anisotropic_filtering = 1;
+  }
+  else
+  {
+    state.anisotropic_filtering = 0;
+  }
+
+  if (acurate_filtering)
+  {
+    // Apply a secondary bias calculated from the IR scale to pull inwards mipmaps
+    // that have arbitrary contents, eg. are used for fog effects where the
+    // distance they kick in at is important to preserve at any resolution.
+    state.lod_bias =
+      state.lod_bias.Value() + std::log2(static_cast<float>(g_ActiveConfig.iEFBScale)) * 256.f;
+  }
+
+  g_renderer->SetSamplerState(index, state);
 }
 
 void VertexManagerBase::DoFlush()
@@ -191,8 +262,9 @@ void VertexManagerBase::DoFlush()
             material_mask |= ((int)tentry->material_map) << i;
             emissive_mask |= ((int)tentry->emissive_in_alpha) << i;
           }
+          SetSamplerState(i, tentry->is_custom_tex);
           PixelShaderManager::SetTexDims(i, tentry->native_width, tentry->native_height);
-          g_renderer->SetSamplerState(i & 3, i >> 2, tentry->is_custom_tex);
+          
         }
         else
           ERROR_LOG(VIDEO, "error loading texture");
@@ -226,7 +298,7 @@ void VertexManagerBase::DoFlush()
     }
   }
 
-  if (m_current_primitive_type == PRIMITIVE_TRIANGLES)
+  if (m_current_primitive_type == PrimitiveType::Triangles)
   {
     const PortableVertexDeclaration &vtx_dcl = current_vertex_format->GetVertexDeclaration();
     if (bpmem.genMode.zfreeze)

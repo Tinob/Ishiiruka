@@ -90,16 +90,16 @@ void WriteProfileResults(const std::string& filename)
     return;
   }
   fprintf(f.GetHandle(), "origAddr\tblkName\trunCount\tcost\ttimeCost\tpercent\ttimePercent\tOvAlli"
-    "nBlkTime(ms)\tblkCodeSize\n");
+                         "nBlkTime(ms)\tblkCodeSize\n");
   for (auto& stat : prof_stats.block_stats)
   {
     std::string name = g_symbolDB.GetDescription(stat.addr);
     double percent = 100.0 * (double)stat.cost / (double)prof_stats.cost_sum;
     double timePercent = 100.0 * (double)stat.tick_counter / (double)prof_stats.timecost_sum;
     fprintf(f.GetHandle(),
-      "%08x\t%s\t%" PRIu64 "\t%" PRIu64 "\t%" PRIu64 "\t%.2f\t%.2f\t%.2f\t%i\n", stat.addr,
-      name.c_str(), stat.run_count, stat.cost, stat.tick_counter, percent, timePercent,
-      (double)stat.tick_counter * 1000.0 / (double)prof_stats.countsPerSec, stat.block_size);
+            "%08x\t%s\t%" PRIu64 "\t%" PRIu64 "\t%" PRIu64 "\t%.2f\t%.2f\t%.2f\t%i\n", stat.addr,
+            name.c_str(), stat.run_count, stat.cost, stat.tick_counter, percent, timePercent,
+            (double)stat.tick_counter * 1000.0 / (double)prof_stats.countsPerSec, stat.block_size);
   }
 }
 
@@ -125,7 +125,7 @@ void GetProfileResults(ProfileStats* prof_stats)
     // Todo: tweak.
     if (data.runCount >= 1)
       prof_stats->block_stats.emplace_back(block.effectiveAddress, cost, timecost, data.runCount,
-        block.codeSize);
+                                           block.codeSize);
     prof_stats->cost_sum += cost;
     prof_stats->timecost_sum += timecost;
   });
@@ -156,7 +156,7 @@ int GetHostCode(u32* address, const u8** code, u32* code_size)
     if (block)
     {
       if (!(block->effectiveAddress <= *address &&
-        block->originalSize + block->effectiveAddress >= *address))
+            block->originalSize + block->effectiveAddress >= *address))
         block = nullptr;
     }
 

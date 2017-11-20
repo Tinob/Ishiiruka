@@ -10,11 +10,13 @@
 #include "Common/CommonTypes.h"
 #include "VideoBackends/Vulkan/Constants.h"
 #include "VideoBackends/Vulkan/ObjectCache.h"
+#include "VideoBackends/Vulkan/ShaderCache.h"
+#include "VideoCommon/RenderState.h"
+#include "VideoCommon/TextureConfig.h"
 
 namespace Vulkan
 {
 class CommandBufferManager;
-class ObjectCache;
 class StateTracker;
 
 namespace Util
@@ -24,7 +26,10 @@ size_t AlignBufferOffset(size_t offset, size_t alignment);
 u32 MakeRGBA8Color(float r, float g, float b, float a);
 
 bool IsDepthFormat(VkFormat format);
+bool IsCompressedFormat(VkFormat format);
 VkFormat GetLinearFormat(VkFormat format);
+VkFormat GetVkFormatForHostTextureFormat(HostTextureFormat format);
+u32 GetTexelSize(VkFormat format);
 u32 GetBlockSize(VkFormat format);
 u32 GetBlockWidth(VkFormat format);
 
@@ -33,10 +38,6 @@ VkRect2D ClampRect2D(const VkRect2D& rect, u32 width, u32 height);
 
 // Map {SRC,DST}_COLOR to {SRC,DST}_ALPHA
 VkBlendFactor GetAlphaBlendFactor(VkBlendFactor factor);
-
-RasterizationState GetNoCullRasterizationState();
-DepthStencilState GetNoDepthTestingDepthStencilState();
-BlendState GetNoBlendingBlendState();
 
 // Combines viewport and scissor updates
 void SetViewportAndScissor(VkCommandBuffer command_buffer, int x, int y, int width, int height,
@@ -57,19 +58,16 @@ void ExecuteCurrentCommandsAndRestoreState(bool execute_off_thread,
 VkShaderModule CreateShaderModule(const u32* spv, size_t spv_word_count);
 
 // Compile a vertex shader and create a shader module, discarding the intermediate SPIR-V.
-VkShaderModule CompileAndCreateVertexShader(const std::string& source_code,
-  bool prepend_header = true);
+VkShaderModule CompileAndCreateVertexShader(const std::string& source_code);
 
 // Compile a geometry shader and create a shader module, discarding the intermediate SPIR-V.
-VkShaderModule CompileAndCreateGeometryShader(const std::string& source_code,
-  bool prepend_header = true);
+VkShaderModule CompileAndCreateGeometryShader(const std::string& source_code);
 
 // Compile a fragment shader and create a shader module, discarding the intermediate SPIR-V.
-VkShaderModule CompileAndCreateFragmentShader(const std::string& source_code,
-  bool prepend_header = true);
+VkShaderModule CompileAndCreateFragmentShader(const std::string& source_code);
+
 // Compile a compute shader and create a shader module, discarding the intermediate SPIR-V.
-VkShaderModule CompileAndCreateComputeShader(const std::string& source_code,
-  bool prepend_header = true);
+VkShaderModule CompileAndCreateComputeShader(const std::string& source_code);
 }
 
 // Utility shader vertex format
@@ -126,12 +124,13 @@ class UtilityShaderDraw
 public:
   UtilityShaderDraw(VkCommandBuffer command_buffer, VkPipelineLayout pipeline_layout,
     VkRenderPass render_pass, VkShaderModule vertex_shader,
-    VkShaderModule geometry_shader, VkShaderModule pixel_shader);
+    VkShaderModule geometry_shader, VkShaderModule pixel_shader,
+    PrimitiveType primitive = PrimitiveType::TriangleStrip);
 
-  UtilityShaderVertex* ReserveVertices(VkPrimitiveTopology topology, size_t count);
+  UtilityShaderVertex* ReserveVertices(size_t count);
   void CommitVertices(size_t count);
 
-  void UploadVertices(VkPrimitiveTopology topology, UtilityShaderVertex* vertices, size_t count);
+  void UploadVertices(UtilityShaderVertex* vertices, size_t count);
 
   u8* AllocateVSUniforms(size_t size);
   void CommitVSUniforms(size_t size);
@@ -146,8 +145,9 @@ public:
   void SetPSTexelBuffer(VkBufferView view);
 
   void SetRasterizationState(const RasterizationState& state);
-  void SetDepthStencilState(const DepthStencilState& state);
-  void SetBlendState(const BlendState& state);
+  void SetMultisamplingState(const MultisamplingState& state);
+  void SetDepthState(const DepthState& state);
+  void SetBlendState(const BlendingState& state);
 
   void BeginRenderPass(VkFramebuffer framebuffer, const VkRect2D& region,
     const VkClearValue* clear_value = nullptr);
@@ -172,7 +172,7 @@ public:
 
   // Draw without a vertex buffer. Assumes viewport has been initialized separately.
   void SetViewportAndScissor(int x, int y, int width, int height);
-  void DrawWithoutVertexBuffer(VkPrimitiveTopology primitive_topology, u32 vertex_count);
+  void DrawWithoutVertexBuffer(u32 vertex_count);
 
 private:
   void BindVertexBuffer();
@@ -189,7 +189,9 @@ private:
   std::array<uint32_t, NUM_UBO_DESCRIPTOR_SET_BINDINGS> m_ubo_offsets = {};
 
   std::array<VkDescriptorImageInfo, NUM_PIXEL_SHADER_SAMPLERS> m_ps_samplers = {};
+
   VkBufferView m_ps_texel_buffer = VK_NULL_HANDLE;
+
   PipelineInfo m_pipeline_info = {};
 };
 

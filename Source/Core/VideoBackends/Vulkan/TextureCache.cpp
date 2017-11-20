@@ -268,8 +268,8 @@ void TextureCache::CopyEFBToCacheEntry(
 
   UtilityShaderDraw draw(
     command_buffer, g_object_cache->GetPipelineLayout(PIPELINE_LAYOUT_PUSH_CONSTANT),
-    m_render_pass, g_object_cache->GetPassthroughVertexShader(),
-    g_object_cache->GetPassthroughGeometryShader(),
+    m_render_pass, g_shader_cache->GetPassthroughVertexShader(),
+    g_shader_cache->GetPassthroughGeometryShader(),
     is_depth_copy ? m_efb_depth_to_tex_shader : m_efb_color_to_tex_shader);
 
   draw.SetPushConstants(colmat, (is_depth_copy ? sizeof(float) * 20 : sizeof(float) * 28));
@@ -367,7 +367,7 @@ bool TextureCache::CompileShaders()
     }
   )";
 
-  std::string header = g_object_cache->GetUtilityShaderHeader();
+  std::string header = g_shader_cache->GetUtilityShaderHeader();
   std::string source;
 
   source = header + COPY_SHADER_SOURCE;

@@ -79,7 +79,7 @@ struct JitBlock
   size_t fast_block_map_index;
 };
 
-typedef void(*CompiledCode)();
+typedef void (*CompiledCode)();
 
 // This is essentially just an std::bitset, but Visual Studia 2013's
 // implementation of std::bitset is slow.
@@ -173,13 +173,13 @@ private:
   // It is used to query all blocks which links to an address.
   std::multimap<u32, JitBlock*> links_to;  // destination_PC -> number
 
-                                           // Map indexed by the physical address of the entry point.
-                                           // This is used to query the block based on the current PC in a slow way.
+  // Map indexed by the physical address of the entry point.
+  // This is used to query the block based on the current PC in a slow way.
   std::multimap<u32, JitBlock> block_map;  // start_addr -> block
 
-                                           // Range of overlapping code indexed by a masked physical address.
-                                           // This is used for invalidation of memory regions. The range is grouped
-                                           // in macro blocks of each 0x100 bytes.
+  // Range of overlapping code indexed by a masked physical address.
+  // This is used for invalidation of memory regions. The range is grouped
+  // in macro blocks of each 0x100 bytes.
   static constexpr u32 BLOCK_RANGE_MAP_ELEMENTS = 0x100;
   std::map<u32, std::set<JitBlock*>> block_range_map;
 

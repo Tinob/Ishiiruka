@@ -281,8 +281,8 @@ static void gdb_read_command()
   if (chk_calc != chk_read)
   {
     ERROR_LOG(GDB_STUB,
-      "gdb: invalid checksum: calculated %02x and read %02x for $%s# (length: %d)",
-      chk_calc, chk_read, cmd_bfr, cmd_len);
+              "gdb: invalid checksum: calculated %02x and read %02x for $%s# (length: %d)",
+              chk_calc, chk_read, cmd_bfr, cmd_len);
     cmd_len = 0;
 
     gdb_nak();
@@ -373,7 +373,7 @@ static void gdb_handle_query()
 static void gdb_handle_set_thread()
 {
   if (memcmp(cmd_bfr, "Hg0", 3) == 0 || memcmp(cmd_bfr, "Hc-1", 4) == 0 ||
-    memcmp(cmd_bfr, "Hc0", 4) == 0 || memcmp(cmd_bfr, "Hc1", 4) == 0)
+      memcmp(cmd_bfr, "Hc0", 4) == 0 || memcmp(cmd_bfr, "Hc1", 4) == 0)
     return gdb_reply("OK");
   gdb_reply("E01");
 }
@@ -492,7 +492,7 @@ static void gdb_read_registers()
   /*
   for (i = 0; i < 32; i++)
   {
-  wbe32hex(bufptr + i*8, riPS0(i));
+    wbe32hex(bufptr + i*8, riPS0(i));
   }
   bufptr += 32 * 8;
   wbe32hex(bufptr, PC);      bufptr += 4;
@@ -809,7 +809,7 @@ WSADATA InitData;
 // exported functions
 
 static void gdb_init_generic(int domain, const sockaddr* server_addr, socklen_t server_addrlen,
-  sockaddr* client_addr, socklen_t* client_addrlen);
+                             sockaddr* client_addr, socklen_t* client_addrlen);
 
 #ifndef _WIN32
 void gdb_init_local(const char* socket)
@@ -836,7 +836,7 @@ void gdb_init(u32 port)
   socklen_t client_addrlen = sizeof(saddr_client);
 
   gdb_init_generic(PF_INET, (const sockaddr*)&saddr_server, sizeof(saddr_server),
-    (sockaddr*)&saddr_client, &client_addrlen);
+                   (sockaddr*)&saddr_client, &client_addrlen);
 
   saddr_client.sin_addr.s_addr = ntohl(saddr_client.sin_addr.s_addr);
   /*if (((saddr_client.sin_addr.s_addr >> 24) & 0xff) != 127 ||
@@ -848,7 +848,7 @@ void gdb_init(u32 port)
 }
 
 static void gdb_init_generic(int domain, const sockaddr* server_addr, socklen_t server_addrlen,
-  sockaddr* client_addr, socklen_t* client_addrlen)
+                             sockaddr* client_addr, socklen_t* client_addrlen)
 {
   int on;
 #ifdef _WIN32

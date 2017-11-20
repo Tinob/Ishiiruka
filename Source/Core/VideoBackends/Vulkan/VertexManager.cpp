@@ -24,7 +24,7 @@ namespace Vulkan
 {
 // TODO: Clean up this mess
 constexpr size_t INITIAL_VERTEX_BUFFER_SIZE = VertexManager::MAXVBUFFERSIZE * 2;
-constexpr size_t MAX_VERTEX_BUFFER_SIZE = VertexManager::MAXVBUFFERSIZE * 4;
+constexpr size_t MAX_VERTEX_BUFFER_SIZE = VertexManager::MAXVBUFFERSIZE * 16;
 constexpr size_t INITIAL_INDEX_BUFFER_SIZE = VertexManager::MAXIBUFFERSIZE * sizeof(u16) * 2;
 constexpr size_t MAX_INDEX_BUFFER_SIZE = VertexManager::MAXIBUFFERSIZE * sizeof(u16) * 16;
 
@@ -134,19 +134,16 @@ void VertexManager::vFlush(bool use_dst_alpha)
   StateTracker::GetInstance()->SetVertexFormat(vertex_format);
   switch (m_current_primitive_type)
   {
-  case PRIMITIVE_POINTS:
+  case PrimitiveType::Points:
     StateTracker::GetInstance()->SetPrimitiveTopology(VK_PRIMITIVE_TOPOLOGY_POINT_LIST);
-    StateTracker::GetInstance()->DisableBackFaceCulling();
     break;
 
-  case PRIMITIVE_LINES:
+  case PrimitiveType::Lines:
     StateTracker::GetInstance()->SetPrimitiveTopology(VK_PRIMITIVE_TOPOLOGY_LINE_LIST);
-    StateTracker::GetInstance()->DisableBackFaceCulling();
     break;
 
-  case PRIMITIVE_TRIANGLES:
+  case PrimitiveType::Triangles:
     StateTracker::GetInstance()->SetPrimitiveTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-    g_renderer->SetGenerationMode();
     break;
   }
 

@@ -343,7 +343,7 @@ void PixelShaderManager::SetConstants()
     if (s_use_integer_constants)
       m_buffer.SetConstant4<int>(C_FOGCOLOR, bpmem.fog.color.r.Value(), bpmem.fog.color.g.Value(), bpmem.fog.color.b.Value(), 0);
     else
-      m_buffer.SetConstant4<float>(C_FOGCOLOR, (float)bpmem.fog.color.r, (float)bpmem.fog.color.g, (float)bpmem.fog.color.b, 0.0f);
+      m_buffer.SetConstant4<float>(C_FOGCOLOR, (float)bpmem.fog.color.r.Value(), (float)bpmem.fog.color.g.Value(), (float)bpmem.fog.color.b.Value(), 0.0f);
     s_bFogColorChanged = false;
   }
 
@@ -476,38 +476,38 @@ void PixelShaderManager::SetConstants()
         }
       }
       s_materials_changed = 0;
-    }
-    if (g_ActiveConfig.iRimBase != s_LightsPhong[0]
-      || g_ActiveConfig.iRimPower != s_LightsPhong[1]
-      || g_ActiveConfig.iRimIntesity != s_LightsPhong[2]
-      || g_ActiveConfig.iSpecularMultiplier != s_LightsPhong[3])
-    {
-      s_LightsPhong[0] = g_ActiveConfig.iRimBase;
-      s_LightsPhong[1] = g_ActiveConfig.iRimPower;
-      s_LightsPhong[2] = g_ActiveConfig.iRimIntesity;
-      s_LightsPhong[3] = g_ActiveConfig.iSpecularMultiplier;
-      m_buffer.SetConstant4(C_PPHONG
-        , float(g_ActiveConfig.iRimBase)
-        , 1.0f + U8_NORM_COEF * g_ActiveConfig.iRimPower * 2.0f
-        , U8_NORM_COEF * g_ActiveConfig.iRimIntesity
-        , U8_NORM_COEF * g_ActiveConfig.iSpecularMultiplier);
-    }
-    if (g_ActiveConfig.iSimBumpStrength != s_LightsPhong[4]
-      || g_ActiveConfig.iSimBumpThreshold != s_LightsPhong[5]
-      || g_ActiveConfig.iSimBumpDetailBlend != s_LightsPhong[6]
-      || g_ActiveConfig.iSimBumpDetailFrequency != s_LightsPhong[7])
-    {
-      s_LightsPhong[4] = g_ActiveConfig.iSimBumpStrength;
-      s_LightsPhong[5] = g_ActiveConfig.iSimBumpThreshold;
-      s_LightsPhong[6] = g_ActiveConfig.iSimBumpDetailBlend;
-      s_LightsPhong[7] = g_ActiveConfig.iSimBumpDetailFrequency;
-      float bump_strenght = U10_NORM_COEF * g_ActiveConfig.iSimBumpStrength;
-      m_buffer.SetConstant4(C_PPHONG + 1
-        , bump_strenght * bump_strenght
-        , U8_NORM_COEF * g_ActiveConfig.iSimBumpThreshold * 16.0f
-        , U8_NORM_COEF * g_ActiveConfig.iSimBumpDetailBlend
-        , float(g_ActiveConfig.iSimBumpDetailFrequency));
-    }
+    }    
+  }
+  if (g_ActiveConfig.iRimBase != s_LightsPhong[0]
+    || g_ActiveConfig.iRimPower != s_LightsPhong[1]
+    || g_ActiveConfig.iRimIntesity != s_LightsPhong[2]
+    || g_ActiveConfig.iSpecularMultiplier != s_LightsPhong[3])
+  {
+    s_LightsPhong[0] = g_ActiveConfig.iRimBase;
+    s_LightsPhong[1] = g_ActiveConfig.iRimPower;
+    s_LightsPhong[2] = g_ActiveConfig.iRimIntesity;
+    s_LightsPhong[3] = g_ActiveConfig.iSpecularMultiplier;
+    m_buffer.SetConstant4(C_PPHONG
+      , float(g_ActiveConfig.iRimBase)
+      , 1.0f + U8_NORM_COEF * g_ActiveConfig.iRimPower * 2.0f
+      , U8_NORM_COEF * g_ActiveConfig.iRimIntesity
+      , U8_NORM_COEF * g_ActiveConfig.iSpecularMultiplier);
+  }
+  if (g_ActiveConfig.iSimBumpStrength != s_LightsPhong[4]
+    || g_ActiveConfig.iSimBumpThreshold != s_LightsPhong[5]
+    || g_ActiveConfig.iSimBumpDetailBlend != s_LightsPhong[6]
+    || g_ActiveConfig.iSimBumpDetailFrequency != s_LightsPhong[7])
+  {
+    s_LightsPhong[4] = g_ActiveConfig.iSimBumpStrength;
+    s_LightsPhong[5] = g_ActiveConfig.iSimBumpThreshold;
+    s_LightsPhong[6] = g_ActiveConfig.iSimBumpDetailBlend;
+    s_LightsPhong[7] = g_ActiveConfig.iSimBumpDetailFrequency;
+    float bump_strenght = U10_NORM_COEF * g_ActiveConfig.iSimBumpStrength;
+    m_buffer.SetConstant4(C_PPHONG + 1
+      , bump_strenght * bump_strenght
+      , U8_NORM_COEF * g_ActiveConfig.iSimBumpThreshold * 16.0f
+      , U8_NORM_COEF * g_ActiveConfig.iSimBumpDetailBlend
+      , float(g_ActiveConfig.iSimBumpDetailFrequency));
   }
   if (sbflagschanged)
   {

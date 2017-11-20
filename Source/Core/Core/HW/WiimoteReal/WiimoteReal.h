@@ -152,7 +152,7 @@ private:
   std::thread m_scan_thread;
   Common::Flag m_scan_thread_running;
   Common::Event m_scan_mode_changed_event;
-  std::atomic<WiimoteScanMode> m_scan_mode{ WiimoteScanMode::DO_NOT_SCAN };
+  std::atomic<WiimoteScanMode> m_scan_mode{WiimoteScanMode::DO_NOT_SCAN};
 };
 
 extern std::mutex g_wiimotes_mutex;

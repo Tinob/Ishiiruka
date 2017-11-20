@@ -15,7 +15,7 @@
 namespace DX12
 {
 
-extern StateCache gx_state_cache;
+extern StateCache s_gx_state_cache;
 
 namespace D3D
 {

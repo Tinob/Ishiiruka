@@ -501,7 +501,7 @@ TextureCacheBase::TCacheEntry* TextureCacheBase::Load(const u32 stage)
   const u32 texformat = tex.texImage0[id].format;
   const u32 tlutaddr = tex.texTlut[id].tmem_offset << 9;
   const u32 tlutfmt = tex.texTlut[id].tlut_format;
-  const bool use_mipmaps = SamplerCommon::IsBpTexMode0MipmapsEnabled(tex.texMode0[id]);
+  const bool use_mipmaps = SamplerCommon::AreBpTexMode0MipmapsEnabled(tex.texMode0[id]);
   u32 tex_levels = use_mipmaps ? ((tex.texMode1[id].max_lod + 0xf) / 0x10 + 1) : 1;
   const bool from_tmem = tex.texImage1[id].image_type != 0;
 

@@ -68,13 +68,13 @@ void SWVertexLoader::vFlush(bool useDstAlpha)
   u8 primitiveType = 0;
   switch (m_current_primitive_type)
   {
-  case PRIMITIVE_POINTS:
+  case PrimitiveType::Points:
     primitiveType = OpcodeDecoder::GX_DRAW_POINTS;
     break;
-  case PRIMITIVE_LINES:
+  case PrimitiveType::Lines:
     primitiveType = OpcodeDecoder::GX_DRAW_LINES;
     break;
-  case PRIMITIVE_TRIANGLES:
+  case PrimitiveType::Triangles:
     primitiveType = OpcodeDecoder::GX_DRAW_TRIANGLES;
     break;
   }

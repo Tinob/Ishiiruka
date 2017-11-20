@@ -74,6 +74,8 @@ void GameList::MakeListView()
   m_list->setCurrentIndex(QModelIndex());
   m_list->setContextMenuPolicy(Qt::CustomContextMenu);
   m_list->setWordWrap(false);
+  m_list->verticalHeader()->setDefaultSectionSize(m_list->verticalHeader()->defaultSectionSize() *
+                                                  1.25);
 
   connect(m_list, &QTableView::customContextMenuRequested, this, &GameList::ShowContextMenu);
   connect(m_list->selectionModel(), &QItemSelectionModel::selectionChanged,
@@ -82,15 +84,17 @@ void GameList::MakeListView()
           });
 
   m_list->setColumnHidden(GameListModel::COL_PLATFORM, !SConfig::GetInstance().m_showSystemColumn);
-  m_list->setColumnHidden(GameListModel::COL_ID, !SConfig::GetInstance().m_showIDColumn);
   m_list->setColumnHidden(GameListModel::COL_BANNER, !SConfig::GetInstance().m_showBannerColumn);
   m_list->setColumnHidden(GameListModel::COL_TITLE, !SConfig::GetInstance().m_showTitleColumn);
   m_list->setColumnHidden(GameListModel::COL_DESCRIPTION,
                           !SConfig::GetInstance().m_showDescriptionColumn);
   m_list->setColumnHidden(GameListModel::COL_MAKER, !SConfig::GetInstance().m_showMakerColumn);
-  m_list->setColumnHidden(GameListModel::COL_SIZE, !SConfig::GetInstance().m_showSizeColumn);
+  m_list->setColumnHidden(GameListModel::COL_ID, !SConfig::GetInstance().m_showIDColumn);
   m_list->setColumnHidden(GameListModel::COL_COUNTRY, !SConfig::GetInstance().m_showRegionColumn);
+  m_list->setColumnHidden(GameListModel::COL_SIZE, !SConfig::GetInstance().m_showSizeColumn);
   m_list->setColumnHidden(GameListModel::COL_RATING, !SConfig::GetInstance().m_showStateColumn);
+  m_list->setColumnHidden(GameListModel::COL_FILE_NAME,
+                          !SConfig::GetInstance().m_showFileNameColumn);
 
   QHeaderView* hor_header = m_list->horizontalHeader();
 
@@ -103,14 +107,15 @@ void GameList::MakeListView()
   hor_header->restoreState(QSettings().value(QStringLiteral("tableheader/state")).toByteArray());
 
   hor_header->setSectionResizeMode(GameListModel::COL_PLATFORM, QHeaderView::ResizeToContents);
-  hor_header->setSectionResizeMode(GameListModel::COL_COUNTRY, QHeaderView::ResizeToContents);
-  hor_header->setSectionResizeMode(GameListModel::COL_ID, QHeaderView::ResizeToContents);
   hor_header->setSectionResizeMode(GameListModel::COL_BANNER, QHeaderView::ResizeToContents);
   hor_header->setSectionResizeMode(GameListModel::COL_TITLE, QHeaderView::Stretch);
-  hor_header->setSectionResizeMode(GameListModel::COL_MAKER, QHeaderView::Stretch);
-  hor_header->setSectionResizeMode(GameListModel::COL_SIZE, QHeaderView::ResizeToContents);
   hor_header->setSectionResizeMode(GameListModel::COL_DESCRIPTION, QHeaderView::Stretch);
+  hor_header->setSectionResizeMode(GameListModel::COL_MAKER, QHeaderView::Stretch);
+  hor_header->setSectionResizeMode(GameListModel::COL_ID, QHeaderView::ResizeToContents);
+  hor_header->setSectionResizeMode(GameListModel::COL_COUNTRY, QHeaderView::ResizeToContents);
+  hor_header->setSectionResizeMode(GameListModel::COL_SIZE, QHeaderView::ResizeToContents);
   hor_header->setSectionResizeMode(GameListModel::COL_RATING, QHeaderView::ResizeToContents);
+  hor_header->setSectionResizeMode(GameListModel::COL_FILE_NAME, QHeaderView::ResizeToContents);
 
   m_list->verticalHeader()->hide();
   m_list->setFrameStyle(QFrame::NoFrame);
@@ -173,11 +178,8 @@ void GameList::ShowContextMenu(const QPoint&)
 
     QAction* change_disc = AddAction(menu, tr("Change &Disc"), this, &GameList::ChangeDisc);
 
-    connect(this, &GameList::EmulationStarted, change_disc,
-            [change_disc] { change_disc->setEnabled(true); });
-    connect(this, &GameList::EmulationStopped, change_disc,
-            [change_disc] { change_disc->setEnabled(false); });
-
+    connect(&Settings::Instance(), &Settings::EmulationStateChanged, change_disc,
+            [change_disc] { change_disc->setEnabled(Core::IsRunning()); });
     change_disc->setEnabled(Core::IsRunning());
 
     menu->addSeparator();
@@ -201,15 +203,13 @@ void GameList::ShowContextMenu(const QPoint&)
 
     for (QAction* a : {wad_install_action, wad_uninstall_action})
     {
-      connect(this, &GameList::EmulationStarted, a, [a] { a->setEnabled(false); });
       a->setEnabled(!Core::IsRunning());
       menu->addAction(a);
     }
 
-    connect(this, &GameList::EmulationStopped, wad_install_action,
-            [wad_install_action] { wad_install_action->setEnabled(true); });
-    connect(this, &GameList::EmulationStopped, wad_uninstall_action, [wad_uninstall_action, game] {
-      wad_uninstall_action->setEnabled(game->IsInstalled());
+    connect(&Settings::Instance(), &Settings::EmulationStateChanged, menu, [=](Core::State state) {
+      wad_install_action->setEnabled(state == Core::State::Uninitialized);
+      wad_uninstall_action->setEnabled(state == Core::State::Uninitialized && game->IsInstalled());
     });
 
     menu->addSeparator();
@@ -230,10 +230,9 @@ void GameList::ShowContextMenu(const QPoint&)
   connect(netplay_host, &QAction::triggered,
           [this, game] { emit NetPlayHost(game->GetUniqueID()); });
 
-  connect(this, &GameList::EmulationStarted, netplay_host,
-          [netplay_host] { netplay_host->setEnabled(false); });
-  connect(this, &GameList::EmulationStopped, netplay_host,
-          [netplay_host] { netplay_host->setEnabled(true); });
+  connect(&Settings::Instance(), &Settings::EmulationStateChanged, menu, [=](Core::State state) {
+    netplay_host->setEnabled(state == Core::State::Uninitialized);
+  });
   netplay_host->setEnabled(!Core::IsRunning());
 
   menu->addAction(netplay_host);
@@ -244,6 +243,9 @@ void GameList::ShowContextMenu(const QPoint&)
 void GameList::OpenProperties()
 {
   PropertiesDialog* properties = new PropertiesDialog(this, *GetSelectedGame());
+
+  connect(properties, &PropertiesDialog::OpenGeneralSettings, this, &GameList::OpenGeneralSettings);
+
   properties->show();
 }
 
@@ -422,7 +424,8 @@ void GameList::DeleteFile()
 
 void GameList::ChangeDisc()
 {
-  DVDInterface::ChangeDiscAsHost(GetSelectedGame()->GetFilePath().toStdString());
+  Core::RunAsCPUThread(
+      [this] { DVDInterface::ChangeDisc(GetSelectedGame()->GetFilePath().toStdString()); });
 }
 
 QSharedPointer<GameFile> GameList::GetSelectedGame() const
@@ -471,7 +474,7 @@ void GameList::ConsiderViewChange()
 }
 void GameList::keyReleaseEvent(QKeyEvent* event)
 {
-  if (event->key() == Qt::Key_Return)
+  if (event->key() == Qt::Key_Return && GetSelectedGame() != nullptr)
     emit GameSelected();
   else
     QStackedWidget::keyReleaseEvent(event);
@@ -488,7 +491,8 @@ void GameList::OnColumnVisibilityToggled(const QString& row, bool visible)
       {tr("Platform"), GameListModel::COL_PLATFORM},
       {tr("Size"), GameListModel::COL_SIZE},
       {tr("Title"), GameListModel::COL_TITLE},
-      {tr("State"), GameListModel::COL_RATING}};
+      {tr("State"), GameListModel::COL_RATING},
+      {tr("File Name"), GameListModel::COL_FILE_NAME}};
 
   m_list->setColumnHidden(rowname_to_col_index[row], !visible);
 }

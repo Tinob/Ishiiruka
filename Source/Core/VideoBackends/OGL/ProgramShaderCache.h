@@ -116,14 +116,14 @@ class ProgramShaderCache
 public:
 
   static GLuint GetCurrentProgram();
-  static SHADER* SetShader(PIXEL_SHADER_RENDER_MODE render_mode, u32 components, u32 primitive_type, const GLVertexFormat* vertex_format);
-  static SHADER* SetUberShader(u32 primitive_type, u32 components, const GLVertexFormat* vertex_format);
+  static SHADER* SetShader(PIXEL_SHADER_RENDER_MODE render_mode, u32 components, PrimitiveType primitive_type, const GLVertexFormat* vertex_format);
+  static SHADER* SetUberShader(PrimitiveType primitive_type, u32 components, const GLVertexFormat* vertex_format);
   static void BindVertexFormat(const GLVertexFormat* vertex_format);
   static void InvalidateVertexFormat();
   static void BindLastVertexFormat();
   static SHADER* CompileShader(const SHADERUID& uid);
   static SHADER* CompileUberShader(const UBERSHADERUID& uid);
-  static void GetShaderId(SHADERUID *uid, PIXEL_SHADER_RENDER_MODE render_mode, u32 components, u32 primitive_type);
+  static void GetShaderId(SHADERUID *uid, PIXEL_SHADER_RENDER_MODE render_mode, u32 components, PrimitiveType primitive_type);
 
   static bool CompileShader(SHADER &shader, const char* vcode, const char* pcode, const char* gcode = nullptr, const char **macros = nullptr, const u32 macro_count = 0);
   static bool CompileComputeShader(SHADER& shader, const std::string& code);

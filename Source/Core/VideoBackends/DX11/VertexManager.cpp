@@ -119,7 +119,7 @@ void VertexManager::Draw(UINT stride)
   u32 baseVertex = m_vertexDrawOffset / stride;
   u32 startIndex = m_indexDrawOffset / sizeof(u16);
 
-  if (m_current_primitive_type == PRIMITIVE_TRIANGLES)
+  if (m_current_primitive_type == PrimitiveType::Triangles)
   {
     auto pt = HullDomainShaderCache::GetActiveHullShader() != nullptr ?
       D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST :
@@ -129,18 +129,12 @@ void VertexManager::Draw(UINT stride)
   }
   else
   {
-    D3D::stateman->SetPrimitiveTopology(m_current_primitive_type == PRIMITIVE_LINES ? D3D11_PRIMITIVE_TOPOLOGY_LINELIST : D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
-    static_cast<Renderer*>(g_renderer.get())->ApplyCullDisable();
+    D3D::stateman->SetPrimitiveTopology(m_current_primitive_type == PrimitiveType::Lines ? D3D11_PRIMITIVE_TOPOLOGY_LINELIST : D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
   }
 
   D3D::stateman->Apply();
   D3D::context->DrawIndexed(indices, startIndex, baseVertex);
   INCSTAT(stats.thisFrame.numDrawCalls);
-
-  if (m_current_primitive_type != PRIMITIVE_TRIANGLES)
-  {
-    static_cast<Renderer*>(g_renderer.get())->RestoreCull();
-  }
 }
 
 void VertexManager::PrepareShaders(PrimitiveType primitive, u32 components, const XFMemory &xfr, const BPMemory &bpm)
@@ -162,7 +156,7 @@ void VertexManager::vFlush(bool useDstAlpha)
   {
     return;
   }
-  if (g_ActiveConfig.iStereoMode > 0 || m_current_primitive_type != PrimitiveType::PRIMITIVE_TRIANGLES)
+  if (g_ActiveConfig.iStereoMode > 0 || m_current_primitive_type != PrimitiveType::Triangles)
   {
     if (!GeometryShaderCache::TestShader())
     {

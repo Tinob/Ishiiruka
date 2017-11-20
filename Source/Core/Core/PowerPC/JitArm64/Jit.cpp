@@ -58,7 +58,7 @@ void JitArm64::Init()
   analyzer.SetOption(PPCAnalyst::PPCAnalyzer::OPTION_BRANCH_FOLLOW);
 
   m_enable_blr_optimization = jo.enableBlocklink && SConfig::GetInstance().bFastmem &&
-    !SConfig::GetInstance().bEnableDebugging;
+                              !SConfig::GetInstance().bEnableDebugging;
   m_cleanup_after_stackfault = false;
 
   AllocStack();
@@ -620,7 +620,7 @@ void JitArm64::DoJit(u32 em_address, PPCAnalyst::CodeBuffer* code_buf, JitBlock*
   }
 
   if (code_block.m_gqr_used.Count() == 1 &&
-    js.pairedQuantizeAddresses.find(js.blockStart) == js.pairedQuantizeAddresses.end())
+      js.pairedQuantizeAddresses.find(js.blockStart) == js.pairedQuantizeAddresses.end())
   {
     int gqr = *code_block.m_gqr_used.begin();
     if (!code_block.m_gqr_modified[gqr] && !GQR(gqr))
@@ -661,7 +661,7 @@ void JitArm64::DoJit(u32 em_address, PPCAnalyst::CodeBuffer* code_buf, JitBlock*
 
     // Gather pipe writes using a non-immediate address are discovered by profiling.
     bool gatherPipeIntCheck =
-      js.fifoWriteAddresses.find(ops[i].address) != js.fifoWriteAddresses.end();
+        js.fifoWriteAddresses.find(ops[i].address) != js.fifoWriteAddresses.end();
 
     if (jo.optimizeGatherPipe && (js.fifoBytesSinceCheck >= 32 || js.mustCheckFifo))
     {

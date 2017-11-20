@@ -122,9 +122,9 @@ static const u8 rasters[CHARACTER_COUNT][CHARACTER_HEIGHT] = {
 static const char VERTEX_SHADER_SOURCE[] = R"(
 
 layout(std140, push_constant) uniform PCBlock {
-vec2 char_size;
-vec2 offset;
-vec4 color;
+  vec2 char_size;
+  vec2 offset;
+  vec4 color;
 } PC;
 
 layout(location = 0) in vec4 ipos;
@@ -135,9 +135,9 @@ layout(location = 0) out vec2 uv0;
 
 void main()
 {
-gl_Position = vec4(ipos.xy + PC.offset, 0.0f, 1.0f);
-gl_Position.y = -gl_Position.y;
-uv0 = itex0.xy * PC.char_size;
+  gl_Position = vec4(ipos.xy + PC.offset, 0.0f, 1.0f);
+  gl_Position.y = -gl_Position.y;
+  uv0 = itex0.xy * PC.char_size;
 }
 
 )";
@@ -145,12 +145,12 @@ uv0 = itex0.xy * PC.char_size;
 static const char FRAGMENT_SHADER_SOURCE[] = R"(
 
 layout(std140, push_constant) uniform PCBlock {
-vec2 char_size;
-vec2 offset;
-vec4 color;
+  vec2 char_size;
+  vec2 offset;
+  vec4 color;
 } PC;
 
-layout(set = 1, binding = 0) uniform sampler2D samp0;
+layout(set = 1, binding = 0) uniform sampler2DArray samp0;
 
 layout(location = 0) in vec2 uv0;
 
@@ -158,7 +158,7 @@ layout(location = 0) out vec4 ocol0;
 
 void main()
 {
-ocol0 = texture(samp0, uv0) * PC.color;
+  ocol0 = texture(samp0, float3(uv0, 0.0)) * PC.color;
 }
 
 )";
@@ -209,8 +209,8 @@ bool RasterFont::CreateTexture()
   // create the actual texture object
   m_texture = Texture2D::Create(CHARACTER_WIDTH * CHARACTER_COUNT, CHARACTER_HEIGHT, 1, 1,
     VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_1_BIT,
-    VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_TILING_OPTIMAL,
-    VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_NULL_HANDLE);
+    VK_IMAGE_VIEW_TYPE_2D_ARRAY, VK_IMAGE_TILING_OPTIMAL,
+    VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
   if (!m_texture)
     return false;
 
@@ -310,10 +310,10 @@ void RasterFont::PrintMultiLineText(VkRenderPass render_pass, const std::string&
 
   UtilityShaderDraw draw(g_command_buffer_mgr->GetCurrentCommandBuffer(),
     g_object_cache->GetPipelineLayout(PIPELINE_LAYOUT_PUSH_CONSTANT),
-    render_pass, m_vertex_shader, VK_NULL_HANDLE, m_fragment_shader);
+    render_pass, m_vertex_shader, VK_NULL_HANDLE, m_fragment_shader,
+    PrimitiveType::Triangles);
 
-  UtilityShaderVertex* vertices =
-    draw.ReserveVertices(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, text.length() * 6);
+  UtilityShaderVertex* vertices = draw.ReserveVertices(text.length() * 6);
   size_t num_vertices = 0;
   if (!vertices)
     return;
@@ -400,11 +400,10 @@ void RasterFont::PrintMultiLineText(VkRenderPass render_pass, const std::string&
   draw.SetPSSampler(0, m_texture->GetView(), g_object_cache->GetLinearSampler());
 
   // Setup alpha blending
-  BlendState blend_state = Util::GetNoBlendingBlendState();
-  blend_state.blend_enable = VK_TRUE;
-  blend_state.src_blend = VK_BLEND_FACTOR_SRC_ALPHA;
-  blend_state.blend_op = VK_BLEND_OP_ADD;
-  blend_state.dst_blend = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+  BlendingState blend_state = RenderState::GetNoBlendingBlendState();
+  blend_state.blendenable = true;
+  blend_state.srcfactor = BlendMode::SRCALPHA;
+  blend_state.dstfactor = BlendMode::INVSRCALPHA;
   draw.SetBlendState(blend_state);
 
   draw.Draw();

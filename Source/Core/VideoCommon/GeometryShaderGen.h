@@ -6,6 +6,7 @@
 #include <functional>
 
 #include "VideoCommon/BPMemory.h"
+#include "VideoCommon/RenderState.h"
 #include "VideoCommon/ShaderGenCommon.h"
 #include "VideoCommon/VertexManagerBase.h"
 #include "VideoCommon/VideoCommon.h"
@@ -48,5 +49,5 @@ struct geometry_shader_uid_data
 typedef ShaderUid<geometry_shader_uid_data> GeometryShaderUid;
 
 void GenerateGeometryShaderCode(ShaderCode& object, const geometry_shader_uid_data& uid_data, const ShaderHostConfig& hostconfig);
-void GetGeometryShaderUid(GeometryShaderUid& object, u32 primitive_type, const XFMemory &xfr, const u32 components);
+void GetGeometryShaderUid(GeometryShaderUid& object, PrimitiveType primitive_type, const XFMemory &xfr, const u32 components);
 void EnumerateGeometryShaderUids(const std::function<void(const GeometryShaderUid&, size_t)>& callback);

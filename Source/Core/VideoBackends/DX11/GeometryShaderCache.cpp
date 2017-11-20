@@ -300,7 +300,7 @@ void GeometryShaderCache::CompileGShader(const GeometryShaderUid& uid, std::func
 }
 
 void GeometryShaderCache::PrepareShader(
-  u32 primitive_type,
+  PrimitiveType primitive_type,
   const XFMemory &xfr,
   const u32 components)
 {

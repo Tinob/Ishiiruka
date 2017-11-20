@@ -120,10 +120,10 @@ void VertexManager::Draw(u32 stride)
 
   switch (m_current_primitive_type)
   {
-  case PRIMITIVE_POINTS:
+  case PrimitiveType::Points:
     d3d_primitive_topology = D3D_PRIMITIVE_TOPOLOGY_POINTLIST;
     break;
-  case PRIMITIVE_LINES:
+  case PrimitiveType::Lines:
     d3d_primitive_topology = D3D_PRIMITIVE_TOPOLOGY_LINELIST;
     break;
   }

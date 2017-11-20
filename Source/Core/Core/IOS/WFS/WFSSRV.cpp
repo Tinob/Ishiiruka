@@ -59,7 +59,7 @@ IPCCommandResult WFSSRV::IOCtl(const IOCtlRequest& request)
     // Close all hanging attach/detach ioctls with an appropriate error code.
     for (auto address : m_hanging)
     {
-      IOCtlRequest hanging_request{ address };
+      IOCtlRequest hanging_request{address};
       Memory::Write_U32(0x80000000, hanging_request.buffer_out);
       Memory::Write_U32(0, hanging_request.buffer_out + 4);
       Memory::Write_U32(0, hanging_request.buffer_out + 8);
@@ -104,7 +104,7 @@ IPCCommandResult WFSSRV::IOCtl(const IOCtlRequest& request)
   case IOCTL_WFS_MKDIR:
   {
     std::string path = NormalizePath(
-      Memory::GetString(request.buffer_in + 34, Memory::Read_U16(request.buffer_in + 32)));
+        Memory::GetString(request.buffer_in + 34, Memory::Read_U16(request.buffer_in + 32)));
     std::string native_path = WFS::NativePath(path);
 
     if (File::Exists(native_path))
@@ -144,13 +144,13 @@ IPCCommandResult WFSSRV::IOCtl(const IOCtlRequest& request)
 
   case IOCTL_WFS_SET_HOMEDIR:
     m_home_directory =
-      Memory::GetString(request.buffer_in + 2, Memory::Read_U16(request.buffer_in));
+        Memory::GetString(request.buffer_in + 2, Memory::Read_U16(request.buffer_in));
     INFO_LOG(IOS_WFS, "IOCTL_WFS_SET_HOMEDIR: %s", m_home_directory.c_str());
     break;
 
   case IOCTL_WFS_CHDIR:
     m_current_directory =
-      Memory::GetString(request.buffer_in + 2, Memory::Read_U16(request.buffer_in));
+        Memory::GetString(request.buffer_in + 2, Memory::Read_U16(request.buffer_in));
     INFO_LOG(IOS_WFS, "IOCTL_WFS_CHDIR: %s", m_current_directory.c_str());
     break;
 
@@ -163,7 +163,7 @@ IPCCommandResult WFSSRV::IOCtl(const IOCtlRequest& request)
   case IOCTL_WFS_GET_ATTRIBUTES:
   {
     std::string path = NormalizePath(
-      Memory::GetString(request.buffer_in + 2, Memory::Read_U16(request.buffer_in)));
+        Memory::GetString(request.buffer_in + 2, Memory::Read_U16(request.buffer_in)));
     std::string native_path = WFS::NativePath(path);
     Memory::Memset(0, request.buffer_out, request.buffer_out_size);
     if (!File::Exists(native_path))
@@ -189,9 +189,9 @@ IPCCommandResult WFSSRV::IOCtl(const IOCtlRequest& request)
   case IOCTL_WFS_RENAME_2:
   {
     const std::string source_path =
-      Memory::GetString(request.buffer_in + 2, Memory::Read_U16(request.buffer_in));
+        Memory::GetString(request.buffer_in + 2, Memory::Read_U16(request.buffer_in));
     const std::string dest_path =
-      Memory::GetString(request.buffer_in + 512 + 2, Memory::Read_U16(request.buffer_in + 512));
+        Memory::GetString(request.buffer_in + 512 + 2, Memory::Read_U16(request.buffer_in + 512));
     return_error_code = Rename(source_path, dest_path);
     break;
   }
@@ -200,7 +200,7 @@ IPCCommandResult WFSSRV::IOCtl(const IOCtlRequest& request)
   case IOCTL_WFS_OPEN:
   {
     const char* ioctl_name =
-      request.request == IOCTL_WFS_OPEN ? "IOCTL_WFS_OPEN" : "IOCTL_WFS_CREATE_OPEN";
+        request.request == IOCTL_WFS_OPEN ? "IOCTL_WFS_OPEN" : "IOCTL_WFS_CREATE_OPEN";
     u32 mode = request.request == IOCTL_WFS_OPEN ? Memory::Read_U32(request.buffer_in) : 2;
     u16 path_len = Memory::Read_U16(request.buffer_in + 0x20);
     std::string path = Memory::GetString(request.buffer_in + 0x22, path_len);
@@ -310,7 +310,7 @@ IPCCommandResult WFSSRV::IOCtl(const IOCtlRequest& request)
     }
 
     INFO_LOG(IOS_WFS, "IOCTL_WFS_READ: read %zd bytes from FD %d (%s)", read_bytes, fd,
-      fd_obj->path.c_str());
+             fd_obj->path.c_str());
     return_error_code = static_cast<int>(read_bytes);
     break;
   }
@@ -350,7 +350,7 @@ IPCCommandResult WFSSRV::IOCtl(const IOCtlRequest& request)
     }
 
     INFO_LOG(IOS_WFS, "IOCTL_WFS_WRITE: written %d bytes from FD %d (%s)", size, fd,
-      fd_obj->path.c_str());
+             fd_obj->path.c_str());
     break;
   }
 
@@ -373,7 +373,7 @@ s32 WFSSRV::Rename(std::string source, std::string dest) const
   INFO_LOG(IOS_WFS, "IOCTL_WFS_RENAME: %s to %s", source.c_str(), dest.c_str());
 
   const bool opened = std::any_of(m_fds.begin(), m_fds.end(),
-    [&](const auto& fd) { return fd.in_use && fd.path == source; });
+                                  [&](const auto& fd) { return fd.in_use && fd.path == source; });
 
   if (opened)
     return WFS_FILE_IS_OPENED;

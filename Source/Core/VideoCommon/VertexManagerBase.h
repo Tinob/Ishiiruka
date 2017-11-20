@@ -11,18 +11,12 @@
 
 #include "VideoCommon/BPMemory.h"
 #include "VideoCommon/NativeVertexFormat.h"
+#include "VideoCommon/RenderState.h"
 #include "VideoCommon/XFMemory.h"
 
 
 class NativeVertexFormat;
 class PointerWrap;
-
-enum PrimitiveType
-{
-  PRIMITIVE_POINTS,
-  PRIMITIVE_LINES,
-  PRIMITIVE_TRIANGLES,
-};
 
 struct Slope
 {
@@ -49,6 +43,7 @@ public:
   virtual ~VertexManagerBase();
 
   PrimitiveType GetPrimitiveType(int primitive);
+  PrimitiveType GetCurrentPrimitiveType() const { return m_current_primitive_type; }
   void PrepareForAdditionalData(int primitive, u32 count, u32 stride);
 
   virtual void PrepareShaders(PrimitiveType primitive, u32 components, const XFMemory &xfr, const BPMemory &bpm) = 0;
@@ -83,7 +78,7 @@ protected:
   bool m_shader_refresh_required = true;
   bool m_zslope_refresh_required = true;
   Slope m_zslope = { 0.0f, 0.0f, float(0xFFFFFF) };
-  PrimitiveType m_current_primitive_type{};
+  PrimitiveType m_current_primitive_type = PrimitiveType::Points;
   u8 *m_pCurBufferPointer = nullptr;
   u8 *m_pBaseBufferPointer = nullptr;
   u8 *m_pEndBufferPointer = nullptr;

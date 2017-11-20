@@ -252,6 +252,7 @@ private:
   WiiSockMan& operator=(const WiiSockMan&) = delete;
   WiiSockMan(WiiSockMan&&) = delete;
   WiiSockMan& operator=(WiiSockMan&&) = delete;
+
   std::unordered_map<s32, WiiSocket> WiiSockets;
   s32 errno_last;
 };

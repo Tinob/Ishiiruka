@@ -94,13 +94,7 @@ void VertexManager::Draw(u32 stride)
       GL_LINES,
       GL_TRIANGLES
   };
-  primitive_mode = modes[m_current_primitive_type];
-  bool cull_changed = primitive_mode != GL_TRIANGLES && bpmem.genMode.cullmode.Value() > 0;
-  if (cull_changed)
-  {
-    glDisable(GL_CULL_FACE);
-  }
-
+  primitive_mode = modes[static_cast<u32>(m_current_primitive_type)];
   if (g_ogl_config.bSupportsGLBaseVertex)
   {
     glDrawRangeElementsBaseVertex(primitive_mode, 0, max_index, index_size, GL_UNSIGNED_SHORT, (u8*)nullptr + m_index_offset, (GLint)m_baseVertex);
@@ -111,9 +105,6 @@ void VertexManager::Draw(u32 stride)
   }
 
   INCSTAT(stats.thisFrame.numDrawCalls);
-
-  if (cull_changed)
-    static_cast<Renderer*>(g_renderer.get())->SetGenerationMode();
 }
 
 void VertexManager::PrepareShaders(PrimitiveType primitive, u32 components, const XFMemory &xfr, const BPMemory &bpm)
@@ -189,14 +180,7 @@ void VertexManager::vFlush(bool useDstAlpha)
 
     active_shader->Bind();
     Draw(stride);
-
-    // restore color mask
-    g_renderer->SetColorMask();
-
-    if (bpmem.blendmode.blendenable.Value() || bpmem.blendmode.subtract.Value())
-      glEnable(GL_BLEND);
-    if (logic_op_enabled)
-      glEnable(GL_COLOR_LOGIC_OP);
+    g_renderer->ResetAPIState();
   }
   g_Config.iSaveTargetId++;
 

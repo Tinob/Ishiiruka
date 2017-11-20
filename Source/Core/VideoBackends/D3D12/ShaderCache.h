@@ -26,7 +26,7 @@ public:
 
   static void PrepareShaders(
     PIXEL_SHADER_RENDER_MODE render_mode,
-    u32 gs_primitive_type,
+    PrimitiveType gs_primitive_type,
     u32 components,
     const XFMemory &xfr,
     const BPMemory &bpm);
@@ -77,7 +77,7 @@ private:
   static void CompileUberShaders();
   static void LoadFromDisk();
   static void LoadHostBasedFromDisk();
-  static void SetCurrentPrimitiveTopology(u32 gs_primitive_type);
+  static void SetCurrentPrimitiveTopology(PrimitiveType gs_primitive_type);
 
   static void HandleGSUIDChange(const GeometryShaderUid& gs_uid, std::function<void()> oncompilationfinished);
 

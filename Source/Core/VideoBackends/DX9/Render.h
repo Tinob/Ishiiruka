@@ -15,13 +15,11 @@ public:
   Renderer(void *&window_handle);
   ~Renderer();
   void Init() override;
-  void SetColorMask();
-  void SetBlendMode(bool forceUpdate);
-  void SetScissorRect(const EFBRectangle& rc);
-  void SetGenerationMode();
-  void SetDepthMode();
-  void SetLogicOpMode();
-  void SetSamplerState(int stage, int texindex, bool custom_tex);
+  void SetBlendingState(const BlendingState& state) override;
+  void SetScissorRect(const EFBRectangle& rc) override;
+  void SetRasterizationState(const RasterizationState& state) override;
+  void SetDepthState(const DepthState& state) override;
+  void SetSamplerState(u32 index, const SamplerState& state) override;
   void SetInterlacingMode();
   void SetViewport();
 
@@ -61,7 +59,6 @@ private:
   D3DVIEWPORT9 m_vp{};
   bool m_bGenerationModeChanged = true;
   bool m_bDepthModeChanged = true;
-  bool m_bLogicOpModeChanged = true;
   u32 m_blendMode = 0;
   u32 m_LastAA = 0;
   bool m_IS_AMD = false;
@@ -72,7 +69,7 @@ private:
 
   void _SetColorMask();
   void _SetViewport();
-  void _SetBlendMode(bool forceUpdate);
+  void _SetBlendMode();
   void _SetScissorRect();
   void _SetGenerationMode();
   void _SetDepthMode();

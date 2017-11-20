@@ -22,10 +22,7 @@ WaveFileWriter::WaveFileWriter()
 
 WaveFileWriter::~WaveFileWriter()
 {
-  if (m_ready)
-  {
-    Stop();
-  }
+  Stop();
 }
 
 bool WaveFileWriter::Start(const std::string& filename, unsigned int HLESampleRate)
@@ -91,7 +88,7 @@ bool WaveFileWriter::Start(const std::string& filename, unsigned int HLESampleRa
   // We are now at offset 44
   if (file.Tell() != 44)
     PanicAlert("Wrong offset: %lld", (long long)file.Tell());
-  m_ready = true;
+
   return true;
 }
 

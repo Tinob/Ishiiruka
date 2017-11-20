@@ -186,17 +186,7 @@ void BPWritten(const BPCmd& bp)
         bpmem.blendmode.dstfactor.Value(), bpmem.blendmode.srcfactor.Value(),
         bpmem.blendmode.subtract.Value(), bpmem.blendmode.logicmode.Value());
 
-      // Set LogicOp Blending Mode
-      if (bp.changes & 0xF002) // logicopenable | logicmode
-        SetLogicOpMode();
-
-      // Set Blending Mode
-      if (bp.changes & 0xFF1) // blendenable | alphaupdate | dstfactor | srcfactor | subtract
-        SetBlendMode();
-
-      // Set Color Mask
-      if (bp.changes & 0x18) // colorupdate | alphaupdate
-        SetColorMask();
+      SetBlendMode();
 
       if (bp.changes & 0x04)
         PixelShaderManager::SetBlendModeChanged();
@@ -359,7 +349,7 @@ void BPWritten(const BPCmd& bp)
     if (bp.changes)
     {
       PixelShaderManager::SetAlphaTestChanged();
-      g_renderer->SetColorMask();
+      SetBlendMode();
     }
     return;
   case BPMEM_BIAS: // BIAS
@@ -449,8 +439,7 @@ void BPWritten(const BPCmd& bp)
     OnPixelFormatChange();
     if (bp.changes & 7)
     {
-      SetBlendMode(); // dual source could be activated by changing to PIXELFMT_RGBA6_Z24
-      g_renderer->SetColorMask(); // alpha writing needs to be disabled if the new pixel format doesn't have an alpha channel
+      SetBlendMode(); // dual source could be activated by changing to PIXELFMT_RGBA6_Z24      
     }
     PixelShaderManager::SetZModeControl();
     return;
@@ -567,7 +556,7 @@ void BPWritten(const BPCmd& bp)
   case BPMEM_TEV_COLOR_RA + 6:
   {
     int num = (bp.address >> 1) & 0x3;
-    if (bpmem.tevregs[num].type_ra)
+    if (bpmem.tevregs[num].type_ra.Value())
     {
       PixelShaderManager::SetTevKonstColor(num, 0, (s32)bpmem.tevregs[num].red);
       PixelShaderManager::SetTevKonstColor(num, 3, (s32)bpmem.tevregs[num].alpha);
@@ -586,7 +575,7 @@ void BPWritten(const BPCmd& bp)
   case BPMEM_TEV_COLOR_BG + 6:
   {
     int num = (bp.address >> 1) & 0x3;
-    if (bpmem.tevregs[num].type_bg)
+    if (bpmem.tevregs[num].type_bg.Value())
     {
       PixelShaderManager::SetTevKonstColor(num, 1, (s32)bpmem.tevregs[num].green);
       PixelShaderManager::SetTevKonstColor(num, 2, (s32)bpmem.tevregs[num].blue);
@@ -702,9 +691,7 @@ void BPReload()
   SetScissor();
   SetLineWidth();
   SetDepthMode();
-  SetLogicOpMode();
   SetBlendMode();
-  SetColorMask();
   OnPixelFormatChange();
   {
     BPCmd bp = { BPMEM_FIELDMASK, 0xFFFFFF, static_cast<int>(((u32*)&bpmem)[BPMEM_FIELDMASK]) };

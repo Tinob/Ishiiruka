@@ -231,23 +231,23 @@ inline void GetLightingShaderUid(LightingUidData& uid_data, const XFMemory &xfr)
   {
     const LitChannel& color = xfr.color[j];
     const LitChannel& alpha = xfr.alpha[j];
-    uid_data.matsource |= color.matsource << j;
-    uid_data.matsource |= alpha.matsource << (j + 2);
-    uid_data.enablelighting |= color.enablelighting << j;
-    uid_data.enablelighting |= alpha.enablelighting << (j + 2);
+    uid_data.matsource |= color.matsource.Value() << j;
+    uid_data.matsource |= alpha.matsource.Value() << (j + 2);
+    uid_data.enablelighting |= color.enablelighting.Value() << j;
+    uid_data.enablelighting |= alpha.enablelighting.Value() << (j + 2);
 
     if (uid_data.enablelighting & (1 << j)) // Color lights
     {
-      uid_data.ambsource |= color.ambsource << j;
-      uid_data.attnfunc |= color.attnfunc << (2 * j);
-      uid_data.diffusefunc |= color.diffusefunc << (2 * j);
+      uid_data.ambsource |= color.ambsource.Value() << j;
+      uid_data.attnfunc |= color.attnfunc.Value() << (2 * j);
+      uid_data.diffusefunc |= color.diffusefunc.Value() << (2 * j);
       uid_data.light_mask |= color.GetFullLightMask() << (8 * j);
     }
     if (uid_data.enablelighting & (1 << (j + 2))) // Alpha lights
     {
-      uid_data.ambsource |= alpha.ambsource << (j + 2);
-      uid_data.attnfunc |= alpha.attnfunc << (2 * (j + 2));
-      uid_data.diffusefunc |= alpha.diffusefunc << (2 * (j + 2));
+      uid_data.ambsource |= alpha.ambsource.Value() << (j + 2);
+      uid_data.attnfunc |= alpha.attnfunc.Value() << (2 * (j + 2));
+      uid_data.diffusefunc |= alpha.diffusefunc.Value() << (2 * (j + 2));
       uid_data.light_mask |= alpha.GetFullLightMask() << (8 * (j + 2));
     }
   }

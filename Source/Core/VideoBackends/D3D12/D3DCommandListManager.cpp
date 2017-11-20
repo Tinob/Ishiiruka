@@ -23,8 +23,6 @@ static constexpr unsigned int COMMAND_ALLOCATORS_PER_LIST = 2;
 
 namespace DX12
 {
-extern StateCache gx_state_cache;
-
 D3DCommandListManager::D3DCommandListManager(
   D3D12_COMMAND_LIST_TYPE command_list_type,
   ID3D12Device* device,

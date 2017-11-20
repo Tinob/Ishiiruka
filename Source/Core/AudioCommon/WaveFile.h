@@ -31,7 +31,6 @@ public:
   WaveFileWriter(WaveFileWriter&&) = delete;
   WaveFileWriter& operator=(WaveFileWriter&&) = delete;
 
-
   bool Start(const std::string& filename, unsigned int HLESampleRate);
   void Stop();
 
@@ -40,7 +39,7 @@ public:
   u32 GetAudioSize() const { return audio_size; }
 private:
   static constexpr size_t BUFFER_SIZE = 32 * 1024;
-  bool m_ready = false;
+
   File::IOFile file;
   bool skip_silence = false;
   u32 audio_size = 0;

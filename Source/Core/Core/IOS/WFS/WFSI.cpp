@@ -19,14 +19,13 @@
 #include "Core/IOS/ES/ES.h"
 #include "Core/IOS/ES/Formats.h"
 #include "Core/IOS/WFS/WFSSRV.h"
-#include "DiscIO/NANDContentLoader.h"
 
 namespace
 {
 std::string TitleIdStr(u64 tid)
 {
   return StringFromFormat("%c%c%c%c", static_cast<char>(tid >> 24), static_cast<char>(tid >> 16),
-    static_cast<char>(tid >> 8), static_cast<char>(tid));
+                          static_cast<char>(tid >> 8), static_cast<char>(tid));
 }
 
 std::string GroupIdStr(u16 gid)
@@ -79,7 +78,7 @@ void ARCUnpacker::Extract(const WriteCallback& callback)
     u32 size = Common::swap32(node + 8);
     std::string basename = string_table + name_offset;
     std::string fullname =
-      current_directory.empty() ? basename : current_directory + "/" + basename;
+        current_directory.empty() ? basename : current_directory + "/" + basename;
 
     u8 flags = *node;
     if (flags == 1)
@@ -89,7 +88,7 @@ void ARCUnpacker::Extract(const WriteCallback& callback)
     else
     {
       std::vector<u8> contents(m_whole_file.data() + data_offset,
-        m_whole_file.data() + data_offset + size);
+                               m_whole_file.data() + data_offset + size);
       callback(fullname, contents);
     }
   }
@@ -134,16 +133,16 @@ IPCCommandResult WFSI::IOCtl(const IOCtlRequest& request)
     m_continue_install = Memory::Read_U32(request.buffer_in + 36);
 
     INFO_LOG(IOS_WFS, "IOCTL_WFSI_IMPORT_TITLE_INIT: patch type %d, continue install: %s",
-      m_patch_type, m_continue_install ? "true" : "false");
+             m_patch_type, m_continue_install ? "true" : "false");
 
     if (m_patch_type == PatchType::PATCH_TYPE_2)
     {
       const std::string content_dir =
-        StringFromFormat("/vol/%s/title/%s/%s/content", m_device_name.c_str(),
-          m_current_group_id_str.c_str(), m_current_title_id_str.c_str());
+          StringFromFormat("/vol/%s/title/%s/%s/content", m_device_name.c_str(),
+                           m_current_group_id_str.c_str(), m_current_title_id_str.c_str());
 
       File::Rename(WFS::NativePath(content_dir + "/default.dol"),
-        WFS::NativePath(content_dir + "/_default.dol"));
+                   WFS::NativePath(content_dir + "/_default.dol"));
     }
 
     if (!IOS::ES::IsValidTMDSize(tmd_size))
@@ -157,7 +156,7 @@ IPCCommandResult WFSI::IOCtl(const IOCtlRequest& request)
     Memory::CopyFromEmu(tmd_bytes.data(), tmd_addr, tmd_size);
     m_tmd.SetBytes(std::move(tmd_bytes));
 
-    IOS::ES::TicketReader ticket = DiscIO::FindSignedTicket(m_tmd.GetTitleId());
+    IOS::ES::TicketReader ticket = m_ios.GetES()->FindSignedTicket(m_tmd.GetTitleId());
     if (!ticket.IsValid())
     {
       return_error_code = -11028;
@@ -179,13 +178,13 @@ IPCCommandResult WFSI::IOCtl(const IOCtlRequest& request)
 
   case IOCTL_WFSI_PREPARE_PROFILE:
     m_base_extract_path = StringFromFormat("/vol/%s/tmp/", m_device_name.c_str());
-    // Fall through intended.
+  // Fall through intended.
 
   case IOCTL_WFSI_PREPARE_CONTENT:
   {
     const char* ioctl_name = request.request == IOCTL_WFSI_PREPARE_PROFILE ?
-      "IOCTL_WFSI_PREPARE_PROFILE" :
-      "IOCTL_WFSI_PREPARE_CONTENT";
+                                 "IOCTL_WFSI_PREPARE_PROFILE" :
+                                 "IOCTL_WFSI_PREPARE_CONTENT";
 
     // Initializes the IV from the index of the content in the TMD contents.
     u32 content_id = Memory::Read_U32(request.buffer_in + 8);
@@ -201,7 +200,7 @@ IPCCommandResult WFSI::IOCtl(const IOCtlRequest& request)
     m_aes_iv[0] = content_info.index >> 8;
     m_aes_iv[1] = content_info.index & 0xFF;
     INFO_LOG(IOS_WFS, "%s: Content id %08x found at index %d", ioctl_name, content_id,
-      content_info.index);
+             content_info.index);
 
     m_arc_unpacker.Reset();
     break;
@@ -211,18 +210,18 @@ IPCCommandResult WFSI::IOCtl(const IOCtlRequest& request)
   case IOCTL_WFSI_IMPORT_CONTENT:
   {
     const char* ioctl_name = request.request == IOCTL_WFSI_IMPORT_PROFILE ?
-      "IOCTL_WFSI_IMPORT_PROFILE" :
-      "IOCTL_WFSI_IMPORT_CONTENT";
+                                 "IOCTL_WFSI_IMPORT_PROFILE" :
+                                 "IOCTL_WFSI_IMPORT_CONTENT";
 
     u32 content_id = Memory::Read_U32(request.buffer_in + 0xC);
     u32 input_ptr = Memory::Read_U32(request.buffer_in + 0x10);
     u32 input_size = Memory::Read_U32(request.buffer_in + 0x14);
     INFO_LOG(IOS_WFS, "%s: %08x bytes of data at %08x from content id %d", ioctl_name, input_size,
-      input_ptr, content_id);
+             input_ptr, content_id);
 
     std::vector<u8> decrypted(input_size);
     mbedtls_aes_crypt_cbc(&m_aes_ctx, MBEDTLS_AES_DECRYPT, input_size, m_aes_iv,
-      Memory::GetPointer(input_ptr), decrypted.data());
+                          Memory::GetPointer(input_ptr), decrypted.data());
 
     m_arc_unpacker.AddBytes(decrypted);
     break;
@@ -232,8 +231,8 @@ IPCCommandResult WFSI::IOCtl(const IOCtlRequest& request)
   case IOCTL_WFSI_IMPORT_PROFILE_END:
   {
     const char* ioctl_name = request.request == IOCTL_WFSI_IMPORT_PROFILE_END ?
-      "IOCTL_WFSI_IMPORT_PROFILE_END" :
-      "IOCTL_WFSI_IMPORT_CONTENT_END";
+                                 "IOCTL_WFSI_IMPORT_PROFILE_END" :
+                                 "IOCTL_WFSI_IMPORT_CONTENT_END";
     INFO_LOG(IOS_WFS, "%s", ioctl_name);
 
     auto callback = [this](const std::string& filename, const std::vector<u8>& bytes) {
@@ -263,26 +262,26 @@ IPCCommandResult WFSI::IOCtl(const IOCtlRequest& request)
     if (m_patch_type == NOT_A_PATCH)
     {
       std::string title_install_dir = StringFromFormat("/vol/%s/_install/%s", m_device_name.c_str(),
-        m_import_title_id_str.c_str());
+                                                       m_import_title_id_str.c_str());
       std::string title_final_dir =
-        StringFromFormat("/vol/%s/title/%s/%s", m_device_name.c_str(),
-          m_import_group_id_str.c_str(), m_import_title_id_str.c_str());
+          StringFromFormat("/vol/%s/title/%s/%s", m_device_name.c_str(),
+                           m_import_group_id_str.c_str(), m_import_title_id_str.c_str());
       File::Rename(WFS::NativePath(title_install_dir), WFS::NativePath(title_final_dir));
 
       tmd_path = StringFromFormat("/vol/%s/title/%s/%s/meta/%016" PRIx64 ".tmd",
-        m_device_name.c_str(), m_import_group_id_str.c_str(),
-        m_import_title_id_str.c_str(), m_import_title_id);
+                                  m_device_name.c_str(), m_import_group_id_str.c_str(),
+                                  m_import_title_id_str.c_str(), m_import_title_id);
     }
     else
     {
       std::string patch_dir =
-        StringFromFormat("/vol/%s/title/%s/%s/_patch", m_device_name.c_str(),
-          m_current_group_id_str.c_str(), m_current_title_id_str.c_str());
+          StringFromFormat("/vol/%s/title/%s/%s/_patch", m_device_name.c_str(),
+                           m_current_group_id_str.c_str(), m_current_title_id_str.c_str());
       File::DeleteDirRecursively(WFS::NativePath(patch_dir));
 
       tmd_path = StringFromFormat("/vol/%s/title/%s/%s/meta/%016" PRIx64 ".tmd",
-        m_device_name.c_str(), m_current_group_id_str.c_str(),
-        m_current_title_id_str.c_str(), m_import_title_id);
+                                  m_device_name.c_str(), m_current_group_id_str.c_str(),
+                                  m_current_title_id_str.c_str(), m_import_title_id);
     }
 
     File::IOFile tmd_file(WFS::NativePath(tmd_path), "wb");
@@ -296,8 +295,8 @@ IPCCommandResult WFSI::IOCtl(const IOCtlRequest& request)
     if (m_patch_type != NOT_A_PATCH)
     {
       std::string current_title_dir =
-        StringFromFormat("/vol/%s/title/%s/%s", m_device_name.c_str(),
-          m_current_group_id_str.c_str(), m_current_title_id_str.c_str());
+          StringFromFormat("/vol/%s/title/%s/%s", m_device_name.c_str(),
+                           m_current_group_id_str.c_str(), m_current_title_id_str.c_str());
       std::string patch_dir = current_title_dir + "/_patch";
       File::CopyDir(WFS::NativePath(patch_dir), WFS::NativePath(current_title_dir), true);
     }
@@ -366,27 +365,27 @@ IPCCommandResult WFSI::IOCtl(const IOCtlRequest& request)
       }
 
       m_base_extract_path = StringFromFormat("%s/%s/content", install_directory.c_str(),
-        m_import_title_id_str.c_str());
+                                             m_import_title_id_str.c_str());
       File::CreateFullPath(WFS::NativePath(m_base_extract_path));
       File::CreateDir(WFS::NativePath(m_base_extract_path));
 
-      for (auto dir : { "work", "meta", "save" })
+      for (auto dir : {"work", "meta", "save"})
       {
         std::string path = StringFromFormat("%s/%s/%s", install_directory.c_str(),
-          m_import_title_id_str.c_str(), dir);
+                                            m_import_title_id_str.c_str(), dir);
         File::CreateDir(WFS::NativePath(path));
       }
 
       std::string group_path = StringFromFormat("/vol/%s/title/%s", m_device_name.c_str(),
-        m_import_group_id_str.c_str());
+                                                m_import_group_id_str.c_str());
       File::CreateFullPath(WFS::NativePath(group_path));
       File::CreateDir(WFS::NativePath(group_path));
     }
     else
     {
       m_base_extract_path =
-        StringFromFormat("/vol/%s/title/%s/%s/_patch/content", m_device_name.c_str(),
-          m_current_group_id_str.c_str(), m_current_title_id_str.c_str());
+          StringFromFormat("/vol/%s/title/%s/%s/_patch/content", m_device_name.c_str(),
+                           m_current_group_id_str.c_str(), m_current_title_id_str.c_str());
       File::CreateFullPath(WFS::NativePath(m_base_extract_path));
       File::CreateDir(WFS::NativePath(m_base_extract_path));
     }
@@ -402,7 +401,7 @@ IPCCommandResult WFSI::IOCtl(const IOCtlRequest& request)
 
     u32 tmd_size;
     return_error_code =
-      GetTmd(m_current_group_id, m_current_title_id, subtitle_id, address, &tmd_size);
+        GetTmd(m_current_group_id, m_current_title_id, subtitle_id, address, &tmd_size);
     Memory::Write_U32(tmd_size, request.buffer_out);
     break;
   }
@@ -414,7 +413,7 @@ IPCCommandResult WFSI::IOCtl(const IOCtlRequest& request)
     u16 group_id = Memory::Read_U16(request.buffer_in + 36);
     u32 title_id = Memory::Read_U32(request.buffer_in + 32);
     INFO_LOG(IOS_WFS, "IOCTL_WFSI_GET_TMD_ABSOLUTE: tid %08x, gid %04x, subtitle ID %016" PRIx64,
-      title_id, group_id, subtitle_id);
+             title_id, group_id, subtitle_id);
 
     u32 tmd_size;
     return_error_code = GetTmd(group_id, title_id, subtitle_id, address, &tmd_size);
@@ -425,7 +424,7 @@ IPCCommandResult WFSI::IOCtl(const IOCtlRequest& request)
   case IOCTL_WFSI_SET_FST_BUFFER:
   {
     INFO_LOG(IOS_WFS, "IOCTL_WFSI_SET_FST_BUFFER: address %08x, size %08x", request.buffer_in,
-      request.buffer_in_size);
+             request.buffer_in_size);
     break;
   }
 
@@ -435,8 +434,8 @@ IPCCommandResult WFSI::IOCtl(const IOCtlRequest& request)
   case IOCTL_WFSI_LOAD_DOL:
   {
     std::string path =
-      StringFromFormat("/vol/%s/title/%s/%s/content", m_device_name.c_str(),
-        m_current_group_id_str.c_str(), m_current_title_id_str.c_str());
+        StringFromFormat("/vol/%s/title/%s/%s/content", m_device_name.c_str(),
+                         m_current_group_id_str.c_str(), m_current_title_id_str.c_str());
 
     u32 dol_addr = Memory::Read_U32(request.buffer_in + 0x18);
     u32 max_dol_size = Memory::Read_U32(request.buffer_in + 0x14);
@@ -452,7 +451,7 @@ IPCCommandResult WFSI::IOCtl(const IOCtlRequest& request)
     }
 
     INFO_LOG(IOS_WFS, "IOCTL_WFSI_LOAD_DOL: loading %s at address %08x (size %d)", path.c_str(),
-      dol_addr, max_dol_size);
+             dol_addr, max_dol_size);
 
     File::IOFile fp(WFS::NativePath(path), "rb");
     if (!fp)
@@ -508,8 +507,8 @@ IPCCommandResult WFSI::IOCtl(const IOCtlRequest& request)
 u32 WFSI::GetTmd(u16 group_id, u32 title_id, u64 subtitle_id, u32 address, u32* size) const
 {
   std::string path =
-    StringFromFormat("/vol/%s/title/%s/%s/meta/%016" PRIx64 ".tmd", m_device_name.c_str(),
-      GroupIdStr(group_id).c_str(), TitleIdStr(title_id).c_str(), subtitle_id);
+      StringFromFormat("/vol/%s/title/%s/%s/meta/%016" PRIx64 ".tmd", m_device_name.c_str(),
+                       GroupIdStr(group_id).c_str(), TitleIdStr(title_id).c_str(), subtitle_id);
   File::IOFile fp(WFS::NativePath(path), "rb");
   if (!fp)
   {
@@ -527,9 +526,9 @@ u32 WFSI::GetTmd(u16 group_id, u32 title_id, u64 subtitle_id, u32 address, u32* 
 static s32 DeleteTemporaryFiles(const std::string& device_name, u64 title_id)
 {
   File::Delete(WFS::NativePath(
-    StringFromFormat("/vol/%s/tmp/%016" PRIx64 ".ini", device_name.c_str(), title_id)));
+      StringFromFormat("/vol/%s/tmp/%016" PRIx64 ".ini", device_name.c_str(), title_id)));
   File::Delete(WFS::NativePath(
-    StringFromFormat("/vol/%s/tmp/%016" PRIx64 ".ppcini", device_name.c_str(), title_id)));
+      StringFromFormat("/vol/%s/tmp/%016" PRIx64 ".ppcini", device_name.c_str(), title_id)));
   return IPC_SUCCESS;
 }
 
@@ -540,7 +539,7 @@ s32 WFSI::CancelTitleImport(bool continue_install)
   if (!continue_install)
   {
     File::DeleteDirRecursively(
-      WFS::NativePath(StringFromFormat("/vol/%s/_install", m_device_name.c_str())));
+        WFS::NativePath(StringFromFormat("/vol/%s/_install", m_device_name.c_str())));
   }
 
   DeleteTemporaryFiles(m_device_name, m_import_title_id);
@@ -555,17 +554,17 @@ s32 WFSI::CancelPatchImport(bool continue_install)
   if (!continue_install)
   {
     File::DeleteDirRecursively(WFS::NativePath(
-      StringFromFormat("/vol/%s/title/%s/%s/_patch", m_device_name.c_str(),
-        m_current_group_id_str.c_str(), m_current_title_id_str.c_str())));
+        StringFromFormat("/vol/%s/title/%s/%s/_patch", m_device_name.c_str(),
+                         m_current_group_id_str.c_str(), m_current_title_id_str.c_str())));
 
     if (m_patch_type == PatchType::PATCH_TYPE_2)
     {
       // Move back _default.dol to default.dol.
       const std::string content_dir =
-        StringFromFormat("/vol/%s/title/%s/%s/content", m_device_name.c_str(),
-          m_current_group_id_str.c_str(), m_current_title_id_str.c_str());
+          StringFromFormat("/vol/%s/title/%s/%s/content", m_device_name.c_str(),
+                           m_current_group_id_str.c_str(), m_current_title_id_str.c_str());
       File::Rename(WFS::NativePath(content_dir + "/_default.dol"),
-        WFS::NativePath(content_dir + "/default.dol"));
+                   WFS::NativePath(content_dir + "/default.dol"));
     }
   }
 

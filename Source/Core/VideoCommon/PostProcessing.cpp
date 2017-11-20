@@ -1571,7 +1571,7 @@ bool PostProcessor::ResizeCopyBuffers(const TargetSize& size, int layers)
   config.rendertarget = true;
   config.layers = layers;
   m_color_copy_texture = g_texture_cache->AllocateTexture(config);
-  config.pcformat = HostTextureFormat::PC_TEX_FMT_DEPTH_FLOAT;
+  config.pcformat = HostTextureFormat::PC_TEX_FMT_R_FLOAT;
   m_depth_copy_texture = g_texture_cache->AllocateTexture(config);
   if (m_color_copy_texture && m_depth_copy_texture)
   {
@@ -2215,11 +2215,11 @@ float4 GetBicubicSampleLocation(int idx, float2 location, out float4 scalingFact
 #define OptionEnabled(x) ((o_##x) != 0)
 )";
 
-void PostProcessor::GetUniformBufferShaderSource(API_TYPE api, const PostProcessingShaderConfiguration* config, std::string& shader_source)
+void PostProcessor::GetUniformBufferShaderSource(API_TYPE api, const PostProcessingShaderConfiguration* config, std::string& shader_source, bool includeconfig)
 {
   // Constant block
-  if (api == API_OPENGL)
-    shader_source += "layout(std140) uniform PostProcessingConstants {\n";
+  if (api == API_OPENGL || api == API_VULKAN)
+    shader_source += "UBO_BINDING(std140, 1) uniform PostProcessingConstants {\n";
   else if (api == API_D3D11)
     shader_source += "cbuffer PostProcessingConstants : register(b0) {\n";
 
@@ -2235,14 +2235,14 @@ void PostProcessor::GetUniformBufferShaderSource(API_TYPE api, const PostProcess
     "\tfloat u_native_gamma;\n"
     "\tuint u_scaling_filter;\n"
     "};\n";
-  if (config->GetOptions().size() == 0)
+  if (config == nullptr || !includeconfig || (config != nullptr && config->GetOptions().size() == 0))
   {
     return;
   }
   bool bufferpacking = false;
   // User options
-  if (api == API_OPENGL)
-    shader_source += "layout(std140) uniform ConfigurationConstants {\n";
+  if (api == API_OPENGL || api == API_VULKAN)
+    shader_source += "UBO_BINDING(std140, 2) uniform ConfigurationConstants {\n";
   else if (api == API_D3D11)
   {
     bufferpacking = true;
@@ -2322,7 +2322,7 @@ void PostProcessor::GetUniformBufferShaderSource(API_TYPE api, const PostProcess
 std::string PostProcessor::GetCommonFragmentShaderSource(API_TYPE api, const PostProcessingShaderConfiguration* config, int texture_register_start)
 {
   std::string shader_source;
-  if (api == API_OPENGL)
+  if (api == API_OPENGL || api == API_VULKAN)
   {
     shader_source += s_post_fragment_header_ogl;
   }

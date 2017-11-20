@@ -278,7 +278,7 @@ void HullDomainShaderCache::PrepareShader(
   const PrimitiveType primitiveType,
   const u32 components)
 {
-  if (!(primitiveType == PrimitiveType::PRIMITIVE_TRIANGLES
+  if (!(primitiveType == PrimitiveType::Triangles
     && g_ActiveConfig.TessellationEnabled()
     && xfr.projection.type == GX_PERSPECTIVE
     && (g_ActiveConfig.bForcedLighting || g_ActiveConfig.PixelLightingEnabled(xfr, components))))

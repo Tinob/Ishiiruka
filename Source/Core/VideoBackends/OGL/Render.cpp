@@ -54,6 +54,16 @@ namespace OGL
 {
 VideoConfig g_ogl_config;
 
+// GX pipeline state
+struct GXPipelineState
+{
+  BlendingState blend;
+  DepthState zmode;
+  RasterizationState raster;
+};
+
+static GXPipelineState s_gx_state;
+
 // Declarations and definitions
 // ----------------------------
 static std::unique_ptr<RasterFont> s_raster_font;
@@ -63,8 +73,6 @@ static int s_MSAASamples = 1;
 static u32 s_last_multisamples = 1u;
 static int s_last_stereo_mode = STEREO_OFF;
 static bool s_last_xfb_mode = false;
-
-static u32 s_blendMode;
 
 static bool s_vsync;
 
@@ -357,8 +365,6 @@ static void InitDriverInfo()
 // Init functions
 Renderer::Renderer()
 {
-  s_blendMode = 0;
-
   bool bSuccess = true;
 
   // Init extension support.
@@ -898,20 +904,8 @@ void Renderer::_SetColorMask()
 {
   m_bColorMaskChanged = false;
   // Only enable alpha channel if it's supported by the current EFB format
-  GLenum ColorMask = GL_FALSE, AlphaMask = GL_FALSE;
-  if (bpmem.alpha_test.TestResult() != AlphaTest::FAIL)
-  {
-    if (bpmem.blendmode.colorupdate.Value())
-      ColorMask = GL_TRUE;
-    if (bpmem.blendmode.alphaupdate.Value() && (bpmem.zcontrol.pixel_format.Value() == PEControl::RGBA6_Z24))
-      AlphaMask = GL_TRUE;
-  }
+  GLenum ColorMask = s_gx_state.blend.colorupdate, AlphaMask = s_gx_state.blend.alphaupdate;
   glColorMask(ColorMask, ColorMask, ColorMask, AlphaMask);
-}
-
-void Renderer::SetColorMask()
-{
-  m_bColorMaskChanged = true;
 }
 
 void ClearEFBCache()
@@ -1305,134 +1299,6 @@ void Renderer::ReinterpretPixelData(unsigned int convtype)
   }
 }
 
-void Renderer::_SetBlendMode(bool forceUpdate)
-{
-  m_bBlendModeChanged = false;
-  if (bpmem.blendmode.logicopenable.Value() && !bpmem.blendmode.blendenable.Value() && !forceUpdate)
-  {
-    return;
-  }
-  // Our render target always uses an alpha channel, so we need to override the blend functions to assume a destination alpha of 1 if the render target isn't supposed to have an alpha channel
-  // Example: D3DBLEND_DESTALPHA needs to be GL_ONE since the result without an alpha channel is assumed to always be 1.
-  bool target_has_alpha = bpmem.zcontrol.pixel_format.Value() == PEControl::RGBA6_Z24;
-
-  bool useDstAlpha = bpmem.dstalpha.enable.Value() && bpmem.blendmode.alphaupdate.Value() && target_has_alpha;
-  bool useDualSource = useDstAlpha && g_ActiveConfig.backend_info.bSupportsDualSourceBlend;
-
-  // Only use dual-source blending when required on drivers that don't support it very well.
-  if (DriverDetails::HasBug(DriverDetails::BUG_BROKEN_DUAL_SOURCE_BLENDING) && !useDstAlpha)
-    useDualSource = false;
-
-  const GLenum glSrcFactors[8] =
-  {
-      GL_ZERO,
-      GL_ONE,
-      GL_DST_COLOR,
-      GL_ONE_MINUS_DST_COLOR,
-      (useDualSource) ? GL_SRC1_ALPHA : (GLenum)GL_SRC_ALPHA,
-      (useDualSource) ? GL_ONE_MINUS_SRC1_ALPHA : (GLenum)GL_ONE_MINUS_SRC_ALPHA,
-      (target_has_alpha) ? GL_DST_ALPHA : (GLenum)GL_ONE,
-      (target_has_alpha) ? GL_ONE_MINUS_DST_ALPHA : (GLenum)GL_ZERO
-  };
-  const GLenum glDestFactors[8] =
-  {
-      GL_ZERO,
-      GL_ONE,
-      GL_SRC_COLOR,
-      GL_ONE_MINUS_SRC_COLOR,
-      (useDualSource) ? GL_SRC1_ALPHA : (GLenum)GL_SRC_ALPHA,
-      (useDualSource) ? GL_ONE_MINUS_SRC1_ALPHA : (GLenum)GL_ONE_MINUS_SRC_ALPHA,
-      (target_has_alpha) ? GL_DST_ALPHA : (GLenum)GL_ONE,
-      (target_has_alpha) ? GL_ONE_MINUS_DST_ALPHA : (GLenum)GL_ZERO
-  };
-
-  // blend mode bit mask
-  // 0 - blend enable
-  // 1 - dst alpha enabled
-  // 2 - reverse subtract enable (else add)
-  // 3-5 - srcRGB function
-  // 6-8 - dstRGB function
-
-  u32 newval = useDualSource << 1;
-  newval |= bpmem.blendmode.subtract.Value() << 2;
-
-  if (bpmem.blendmode.subtract.Value())
-  {
-    newval |= 0x0049;  // enable blending src 1 dst 1
-  }
-  else if (bpmem.blendmode.blendenable.Value())
-  {
-    newval |= 1;  // enable blending
-    newval |= bpmem.blendmode.srcfactor.Value() << 3;
-    newval |= bpmem.blendmode.dstfactor.Value() << 6;
-  }
-
-  u32 changes = forceUpdate ? 0xFFFFFFFF : newval ^ s_blendMode;
-
-  if (changes & 1)
-  {
-    // blend enable change
-    (newval & 1) ? glEnable(GL_BLEND) : glDisable(GL_BLEND);
-  }
-
-  if (changes & 4)
-  {
-    // subtract enable change
-    GLenum equation = newval & 4 ? GL_FUNC_REVERSE_SUBTRACT : GL_FUNC_ADD;
-    GLenum equationAlpha = useDualSource ? GL_FUNC_ADD : equation;
-
-    glBlendEquationSeparate(equation, equationAlpha);
-  }
-
-  if (changes & 0x1FA)
-  {
-    u32 srcidx = (newval >> 3) & 7;
-    u32 dstidx = (newval >> 6) & 7;
-    GLenum srcFactor = glSrcFactors[srcidx];
-    GLenum dstFactor = glDestFactors[dstidx];
-
-    // adjust alpha factors
-    if (useDualSource)
-    {
-      srcidx = BlendMode::ONE;
-      dstidx = BlendMode::ZERO;
-    }
-    else
-    {
-      // we can't use GL_DST_COLOR or GL_ONE_MINUS_DST_COLOR for source in alpha channel so use
-      // their alpha equivalent instead
-      if (srcidx == BlendMode::DSTCLR)
-        srcidx = BlendMode::DSTALPHA;
-      else if (srcidx == BlendMode::INVDSTCLR)
-        srcidx = BlendMode::INVDSTALPHA;
-
-      // we can't use GL_SRC_COLOR or GL_ONE_MINUS_SRC_COLOR for destination in alpha channel so use
-      // their alpha equivalent instead
-      if (dstidx == BlendMode::SRCCLR)
-        dstidx = BlendMode::SRCALPHA;
-      else if (dstidx == BlendMode::INVSRCCLR)
-        dstidx = BlendMode::INVSRCALPHA;
-    }
-    GLenum srcFactorAlpha = glSrcFactors[srcidx];
-    GLenum dstFactorAlpha = glDestFactors[dstidx];
-    // blend RGB change
-    glBlendFuncSeparate(srcFactor, dstFactor, srcFactorAlpha, dstFactorAlpha);
-  }
-  s_blendMode = newval;
-}
-
-void Renderer::SetBlendMode(bool forceUpdate)
-{
-  if (forceUpdate)
-  {
-    _SetBlendMode(forceUpdate);
-  }
-  else
-  {
-    m_bBlendModeChanged = true;
-  }
-}
-
 // This function has the final picture. We adjust the aspect ratio here.
 void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight,
   const EFBRectangle& rc, u64 ticks, float Gamma)
@@ -1611,10 +1477,11 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight,
   RestoreAPIState();
 
   g_Config.iSaveTargetId = 0;
-
+  int old_anisotropy = g_ActiveConfig.iMaxAnisotropy;
   UpdateActiveConfig();
   g_texture_cache->OnConfigChanged(g_ActiveConfig);
-
+  if (old_anisotropy != g_ActiveConfig.iMaxAnisotropy)
+    g_sampler_cache->Clear();
   // Invalidate shader cache when the host config changes.
   if (CheckForHostConfigChanges())
     ProgramShaderCache::Reload();
@@ -1918,15 +1785,9 @@ void Renderer::ApplyState(bool bUseDstAlpha)
     _SetColorMask();
   }
 
-  if (m_bLogicOpModeChanged)
-  {
-    _SetLogicOpMode();
-  }
-
   if (m_bBlendModeChanged)
   {
-    _SetBlendMode(m_bBlendModeForce);
-    m_bBlendModeForce = false;
+    _SetBlendMode();
   }
 
   if (m_bScissorRectChanged)
@@ -1956,9 +1817,7 @@ void Renderer::RestoreAPIState()
   m_bGenerationModeChanged = true;
   m_bScissorRectChanged = true;
   m_bDepthModeChanged = true;
-  m_bLogicOpModeChanged = true;
   m_bViewPortChanged = true;
-  m_bBlendModeForce = true;
   m_bBlendModeChanged = true;
   ProgramShaderCache::BindLastVertexFormat();
   const VertexManager* const vm = static_cast<VertexManager*>(g_vertex_manager.get());
@@ -1970,11 +1829,11 @@ void Renderer::_SetGenerationMode()
 {
   m_bGenerationModeChanged = false;
   // none, ccw, cw, ccw
-  if (bpmem.genMode.cullmode > 0)
+  if (s_gx_state.raster.cullmode.Value() > 0)
   {
     // TODO: GX_CULL_ALL not supported, yet!
     glEnable(GL_CULL_FACE);
-    glFrontFace(bpmem.genMode.cullmode.Value() == 2 ? GL_CCW : GL_CW);
+    glFrontFace(s_gx_state.raster.cullmode.Value() == 2 ? GL_CCW : GL_CW);
   }
   else
   {
@@ -1982,9 +1841,10 @@ void Renderer::_SetGenerationMode()
   }
 }
 
-void Renderer::SetGenerationMode()
+void Renderer::SetRasterizationState(const RasterizationState& state)
 {
-  m_bGenerationModeChanged = true;
+  m_bGenerationModeChanged = m_bGenerationModeChanged || state.hex != s_gx_state.raster.hex;
+  s_gx_state.raster.hex = state.hex;
 }
 
 void Renderer::_SetDepthMode()
@@ -2002,11 +1862,11 @@ void Renderer::_SetDepthMode()
       GL_ALWAYS
   };
 
-  if (bpmem.zmode.testenable.Value())
+  if (s_gx_state.zmode.testenable.Value())
   {
     glEnable(GL_DEPTH_TEST);
-    glDepthMask(bpmem.zmode.updateenable.Value() ? GL_TRUE : GL_FALSE);
-    glDepthFunc(glCmpFuncs[bpmem.zmode.func.Value()]);
+    glDepthMask(s_gx_state.zmode.updateenable.Value() ? GL_TRUE : GL_FALSE);
+    glDepthFunc(glCmpFuncs[s_gx_state.zmode.func.Value()]);
   }
   else
   {
@@ -2018,162 +1878,202 @@ void Renderer::_SetDepthMode()
   }
 }
 
-void Renderer::SetDepthMode()
+void Renderer::SetDepthState(const DepthState& state)
 {
-  m_bDepthModeChanged = true;
+  m_bDepthModeChanged = m_bDepthModeChanged || s_gx_state.zmode.hex != state.hex;
+  s_gx_state.zmode.hex = state.hex;
+}
+
+void Renderer::SetBlendingState(const BlendingState& state)
+{
+  m_bColorMaskChanged = m_bColorMaskChanged || state.colorupdate != s_gx_state.blend.colorupdate || state.alphaupdate != s_gx_state.blend.alphaupdate;
+  m_bBlendModeChanged = m_bBlendModeChanged || state.hex != s_gx_state.blend.hex;
+  s_gx_state.blend.hex = state.hex;
+}
+
+void Renderer::_SetBlendMode()
+{
+  m_bBlendModeChanged = false;
+  _SetLogicOpMode();
+  if (s_gx_state.blend.logicopenable && GLInterface->GetMode() != GLInterfaceMode::MODE_OPENGL)
+  {
+    return;
+  }
+  bool useDstAlpha = s_gx_state.blend.dstalpha != 0;
+  bool useDualSource = s_gx_state.blend.usedualsrc != 0;
+
+  // Only use dual-source blending when required on drivers that don't support it very well.
+  if (DriverDetails::HasBug(DriverDetails::BUG_BROKEN_DUAL_SOURCE_BLENDING) && !useDstAlpha)
+    useDualSource = false;
+
+  const GLenum glSrcFactors[8] =
+  {
+    GL_ZERO,
+    GL_ONE,
+    GL_DST_COLOR,
+    GL_ONE_MINUS_DST_COLOR,
+    (useDualSource) ? GL_SRC1_ALPHA : (GLenum)GL_SRC_ALPHA,
+    (useDualSource) ? GL_ONE_MINUS_SRC1_ALPHA : (GLenum)GL_ONE_MINUS_SRC_ALPHA,
+    GL_DST_ALPHA,
+    GL_ONE_MINUS_DST_ALPHA
+  };
+  const GLenum glDestFactors[8] =
+  {
+    GL_ZERO,
+    GL_ONE,
+    GL_SRC_COLOR,
+    GL_ONE_MINUS_SRC_COLOR,
+    (useDualSource) ? GL_SRC1_ALPHA : (GLenum)GL_SRC_ALPHA,
+    (useDualSource) ? GL_ONE_MINUS_SRC1_ALPHA : (GLenum)GL_ONE_MINUS_SRC_ALPHA,
+    GL_DST_ALPHA,
+    GL_ONE_MINUS_DST_ALPHA
+  };
+
+  if (!s_gx_state.blend.blendenable)
+  {
+    glDisable(GL_BLEND);
+  }
+  else
+  {
+    glEnable(GL_BLEND);
+  }
+  // subtract enable change
+  GLenum equation = s_gx_state.blend.subtract ? GL_FUNC_REVERSE_SUBTRACT : GL_FUNC_ADD;
+  GLenum equationAlpha = s_gx_state.blend.subtractAlpha ? GL_FUNC_REVERSE_SUBTRACT : GL_FUNC_ADD;
+
+  glBlendEquationSeparate(equation, equationAlpha);
+  glBlendFuncSeparate(glSrcFactors[s_gx_state.blend.srcfactor.Value()], glDestFactors[s_gx_state.blend.dstfactor.Value()],
+    glSrcFactors[s_gx_state.blend.srcfactoralpha.Value()], glDestFactors[s_gx_state.blend.dstfactoralpha.Value()]);
 }
 
 void Renderer::_SetLogicOpMode()
 {
-  if (bpmem.blendmode.logicopenable.Value() && !bpmem.blendmode.blendenable.Value())
+  if (GLInterface->GetMode() == GLInterfaceMode::MODE_OPENGL)
   {
-    if (GLInterface->GetMode() == GLInterfaceMode::MODE_OPENGL)
+    static const GLenum glLogicOpCodes[16] =
     {
-      const GLenum glLogicOpCodes[16] =
-      {
-          GL_CLEAR,
-          GL_AND,
-          GL_AND_REVERSE,
-          GL_COPY,
-          GL_AND_INVERTED,
-          GL_NOOP,
-          GL_XOR,
-          GL_OR,
-          GL_NOR,
-          GL_EQUIV,
-          GL_INVERT,
-          GL_OR_REVERSE,
-          GL_COPY_INVERTED,
-          GL_OR_INVERTED,
-          GL_NAND,
-          GL_SET
-      };
-      if (bpmem.blendmode.logicmode.Value() != BlendMode::LogicOp::COPY)
-      {
-        glEnable(GL_COLOR_LOGIC_OP);
-        glLogicOp(glLogicOpCodes[bpmem.blendmode.logicmode.Value()]);
-      }
-      else
-      {
-        glDisable(GL_COLOR_LOGIC_OP);
-      }
+      GL_CLEAR,
+      GL_AND,
+      GL_AND_REVERSE,
+      GL_COPY,
+      GL_AND_INVERTED,
+      GL_NOOP,
+      GL_XOR,
+      GL_OR,
+      GL_NOR,
+      GL_EQUIV,
+      GL_INVERT,
+      GL_OR_REVERSE,
+      GL_COPY_INVERTED,
+      GL_OR_INVERTED,
+      GL_NAND,
+      GL_SET
+    };
+    if (s_gx_state.blend.logicopenable)
+    {
+      glEnable(GL_COLOR_LOGIC_OP);
+      glLogicOp(glLogicOpCodes[s_gx_state.blend.logicmode.Value()]);
     }
     else
     {
-      // Logic ops aren't available in GLES3/GLES2
-
-      //		0	0x00
-      //		1	Source & destination
-      //		2	Source & ~destination
-      //		3	Source
-      //		4	~Source & destination
-      //		5	Destination
-      //		6	Source ^ destination =  Source & ~destination | ~Source & destination
-      //		7	Source | destination
-      //		8	~(Source | destination)
-      //		9	~(Source ^ destination) = ~Source & ~destination | Source & destination
-      //		10	~Destination
-      //		11	Source | ~destination
-      //		12	~Source
-      //		13	~Source | destination
-      //		14	~(Source & destination)
-      //		15	0xff
-      const GLenum glLogicOpop[16] =
-      {
-          GL_FUNC_ADD,
-          GL_FUNC_ADD,
-          GL_FUNC_REVERSE_SUBTRACT,
-          GL_FUNC_ADD,
-          GL_FUNC_REVERSE_SUBTRACT,
-          GL_FUNC_ADD,
-          GL_MAX,
-          GL_FUNC_ADD,
-          GL_MAX,
-          GL_MAX,
-          GL_FUNC_ADD,
-          GL_FUNC_ADD,
-          GL_FUNC_ADD,
-          GL_FUNC_ADD,
-          GL_FUNC_ADD,
-          GL_FUNC_ADD
-      };
-      const GLenum glLogicOpSrcFactors[16] =
-      {
-          GL_ZERO, GL_DST_COLOR, GL_ONE, GL_ONE, GL_DST_COLOR,
-          GL_ZERO, GL_ONE_MINUS_DST_COLOR, GL_ONE_MINUS_DST_COLOR,
-          GL_ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR,
-          GL_ONE_MINUS_DST_COLOR, GL_ONE, GL_ONE_MINUS_SRC_COLOR,
-          GL_ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_DST_COLOR, GL_ONE
-      };
-
-      const GLenum glLogicOpSrcFactorsAlpha[16] =
-      {
-          GL_ZERO, GL_DST_ALPHA, GL_ONE, GL_ONE, GL_DST_ALPHA,
-          GL_ZERO, GL_ONE_MINUS_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA,
-          GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR,
-          GL_ONE_MINUS_DST_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA,
-          GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE
-      };
-
-      const GLenum glLogicOpDestFactors[16] =
-      {
-          GL_ZERO, GL_ZERO, GL_ONE_MINUS_SRC_COLOR, GL_ZERO,
-          GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_COLOR, GL_ONE,
-          GL_ONE_MINUS_DST_COLOR, GL_SRC_COLOR, GL_ONE_MINUS_DST_COLOR,
-          GL_ONE_MINUS_DST_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_ONE,
-          GL_ONE_MINUS_SRC_COLOR,GL_ONE
-      };
-
-      const GLenum glLogicOpDestFactorsAlpha[16] =
-      {
-          GL_ZERO, GL_ZERO, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO,
-          GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ONE,
-          GL_ONE_MINUS_DST_ALPHA, GL_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA,
-          GL_ONE_MINUS_DST_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE,
-          GL_ONE_MINUS_SRC_ALPHA,GL_ONE
-      };
-      if (bpmem.blendmode.logicmode != BlendMode::LogicOp::COPY)
-      {
-        GLenum equation = glLogicOpop[bpmem.blendmode.logicmode.Value()];
-        GLenum srcFactor = glLogicOpSrcFactors[bpmem.blendmode.logicmode.Value()];
-        GLenum dstFactor = glLogicOpDestFactors[bpmem.blendmode.logicmode.Value()];
-        GLenum srcFactorAlpha = glLogicOpSrcFactorsAlpha[bpmem.blendmode.logicmode.Value()];
-        GLenum dstFactorAlpha = glLogicOpDestFactorsAlpha[bpmem.blendmode.logicmode.Value()];
-        glEnable(GL_BLEND);
-        glBlendEquationSeparate(equation, equation);
-        glBlendFuncSeparate(srcFactor, dstFactor, srcFactorAlpha, dstFactorAlpha);
-      }
-      else
-      {
-        glDisable(GL_BLEND);
-      }
+      glDisable(GL_COLOR_LOGIC_OP);
     }
   }
   else
   {
-    if (GLInterface->GetMode() == GLInterfaceMode::MODE_OPENGL)
+    // Logic ops aren't available in GLES3/GLES2
+
+    //		0	0x00
+    //		1	Source & destination
+    //		2	Source & ~destination
+    //		3	Source
+    //		4	~Source & destination
+    //		5	Destination
+    //		6	Source ^ destination =  Source & ~destination | ~Source & destination
+    //		7	Source | destination
+    //		8	~(Source | destination)
+    //		9	~(Source ^ destination) = ~Source & ~destination | Source & destination
+    //		10	~Destination
+    //		11	Source | ~destination
+    //		12	~Source
+    //		13	~Source | destination
+    //		14	~(Source & destination)
+    //		15	0xff
+    static const GLenum glLogicOpop[16] =
     {
-      glDisable(GL_COLOR_LOGIC_OP);
+      GL_FUNC_ADD,
+      GL_FUNC_ADD,
+      GL_FUNC_REVERSE_SUBTRACT,
+      GL_FUNC_ADD,
+      GL_FUNC_REVERSE_SUBTRACT,
+      GL_FUNC_ADD,
+      GL_MAX,
+      GL_FUNC_ADD,
+      GL_MAX,
+      GL_MAX,
+      GL_FUNC_ADD,
+      GL_FUNC_ADD,
+      GL_FUNC_ADD,
+      GL_FUNC_ADD,
+      GL_FUNC_ADD,
+      GL_FUNC_ADD
+    };
+    static const GLenum glLogicOpSrcFactors[16] =
+    {
+      GL_ZERO, GL_DST_COLOR, GL_ONE, GL_ONE, GL_DST_COLOR,
+      GL_ZERO, GL_ONE_MINUS_DST_COLOR, GL_ONE_MINUS_DST_COLOR,
+      GL_ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR,
+      GL_ONE_MINUS_DST_COLOR, GL_ONE, GL_ONE_MINUS_SRC_COLOR,
+      GL_ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_DST_COLOR, GL_ONE
+    };
+
+    static const GLenum glLogicOpSrcFactorsAlpha[16] =
+    {
+      GL_ZERO, GL_DST_ALPHA, GL_ONE, GL_ONE, GL_DST_ALPHA,
+      GL_ZERO, GL_ONE_MINUS_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA,
+      GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR,
+      GL_ONE_MINUS_DST_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA,
+      GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE
+    };
+
+    static const GLenum glLogicOpDestFactors[16] =
+    {
+      GL_ZERO, GL_ZERO, GL_ONE_MINUS_SRC_COLOR, GL_ZERO,
+      GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_COLOR, GL_ONE,
+      GL_ONE_MINUS_DST_COLOR, GL_SRC_COLOR, GL_ONE_MINUS_DST_COLOR,
+      GL_ONE_MINUS_DST_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_ONE,
+      GL_ONE_MINUS_SRC_COLOR,GL_ONE
+    };
+
+    static const GLenum glLogicOpDestFactorsAlpha[16] =
+    {
+      GL_ZERO, GL_ZERO, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO,
+      GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ONE,
+      GL_ONE_MINUS_DST_ALPHA, GL_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA,
+      GL_ONE_MINUS_DST_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE,
+      GL_ONE_MINUS_SRC_ALPHA,GL_ONE
+    };
+    if (s_gx_state.blend.logicmode.Value() != BlendMode::LogicOp::COPY)
+    {
+      GLenum equation = glLogicOpop[s_gx_state.blend.logicmode.Value()];
+      GLenum srcFactor = glLogicOpSrcFactors[s_gx_state.blend.logicmode.Value()];
+      GLenum dstFactor = glLogicOpDestFactors[s_gx_state.blend.logicmode.Value()];
+      GLenum srcFactorAlpha = glLogicOpSrcFactorsAlpha[s_gx_state.blend.logicmode.Value()];
+      GLenum dstFactorAlpha = glLogicOpDestFactorsAlpha[s_gx_state.blend.logicmode.Value()];
+      glEnable(GL_BLEND);
+      glBlendEquationSeparate(equation, equation);
+      glBlendFuncSeparate(srcFactor, dstFactor, srcFactorAlpha, dstFactorAlpha);
     }
     else
     {
-      SetBlendMode(false);
+      glDisable(GL_BLEND);
     }
   }
 }
 
-void Renderer::SetLogicOpMode()
+void Renderer::SetSamplerState(u32 index, const SamplerState& state)
 {
-  m_bLogicOpModeChanged = true;
-}
-
-void Renderer::SetSamplerState(int stage, int texindex, bool custom_tex)
-{
-  auto const& tex = bpmem.tex[texindex];
-  auto const& tm0 = tex.texMode0[stage];
-  auto const& tm1 = tex.texMode1[stage];
-
-  g_sampler_cache->SetSamplerState((texindex * 4) + stage, tm0, tm1, custom_tex);
+  g_sampler_cache->SetSamplerState(index, state);
 }
 
 void Renderer::SetInterlacingMode()

@@ -26,9 +26,9 @@ wxDEFINE_EVENT(DOLPHIN_EVT_GECKOCODE_TOGGLED, wxCommandEvent);
 
 namespace Gecko
 {
-static const char str_name[] = wxTRANSLATE("Name: ");
-static const char str_notes[] = wxTRANSLATE("Notes: ");
-static const char str_creator[] = wxTRANSLATE("Creator: ");
+static const char str_name[] = wxTRANSLATE("Name:");
+static const char str_notes[] = wxTRANSLATE("Notes:");
+static const char str_creator[] = wxTRANSLATE("Creator:");
 
 CodeConfigPanel::CodeConfigPanel(wxWindow* const parent) : wxPanel(parent)
 {
@@ -40,9 +40,9 @@ CodeConfigPanel::CodeConfigPanel(wxWindow* const parent) : wxPanel(parent)
   m_infobox.label_creator = new wxStaticText(this, wxID_ANY, wxGetTranslation(str_creator));
   m_infobox.label_notes = new wxStaticText(this, wxID_ANY, wxGetTranslation(str_notes));
   m_infobox.textctrl_notes = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition,
-                                            wxDefaultSize, wxTE_MULTILINE | wxTE_READONLY);
+    wxDefaultSize, wxTE_MULTILINE | wxTE_READONLY);
   m_infobox.listbox_codes =
-      new wxListBox(this, wxID_ANY, wxDefaultPosition, wxDLG_UNIT(this, wxSize(-1, 48)));
+    new wxListBox(this, wxID_ANY, wxDefaultPosition, wxDLG_UNIT(this, wxSize(-1, 48)));
 
   // TODO: buttons to add/edit codes
 
@@ -96,7 +96,7 @@ void CodeConfigPanel::UpdateCodeList(bool checkRunning)
 }
 
 void CodeConfigPanel::LoadCodes(const IniFile& globalIni, const IniFile& localIni,
-                                const std::string& gameid, bool checkRunning)
+  const std::string& gameid, bool checkRunning)
 {
   m_gameid = gameid;
 
@@ -138,7 +138,7 @@ void CodeConfigPanel::UpdateInfoBox(wxCommandEvent&)
     m_infobox.textctrl_notes->ScrollLines(-99);  // silly
 
     m_infobox.label_creator->SetLabel(wxGetTranslation(str_creator) +
-                                      StrToWxStr(m_gcodes[sel].creator));
+      StrToWxStr(m_gcodes[sel].creator));
 
     // add codes to info listbox
     for (const GeckoCode::Code& code : m_gcodes[sel].codes)
@@ -197,7 +197,7 @@ void CodeConfigPanel::DownloadCodes(wxCommandEvent&)
   }
 
   wxMessageBox(wxString::Format(_("Downloaded %lu codes. (added %lu)"),
-                                (unsigned long)gcodes.size(), added_count));
+    (unsigned long)gcodes.size(), added_count));
 
   // refresh the list
   UpdateCodeList();

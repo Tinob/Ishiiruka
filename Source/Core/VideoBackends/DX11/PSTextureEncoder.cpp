@@ -2,6 +2,8 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Common/CommonTypes.h"
+
 #include "Core/HW/Memmap.h"
 #include "VideoCommon/HLSLCompiler.h"
 #include "VideoCommon/VideoConfig.h"
@@ -23,10 +25,10 @@ namespace DX11
 
 struct EFBEncodeParams
 {
-  DWORD SrcLeft;
-  DWORD SrcTop;
-  DWORD DestWidth;
-  DWORD ScaleFactor;
+  s32 SrcLeft;
+  s32 SrcTop;
+  u32 DestWidth;
+  u32 ScaleFactor;
 };
 
 PSTextureEncoder::PSTextureEncoder()

@@ -11,6 +11,7 @@
 #include "Common/CommonTypes.h"
 #include "VideoBackends/Vulkan/Constants.h"
 #include "VideoBackends/Vulkan/ObjectCache.h"
+#include "VideoBackends/Vulkan/ShaderCache.h"
 #include "VideoCommon/GeometryShaderGen.h"
 #include "VideoCommon/PixelShaderGen.h"
 #include "VideoCommon/RenderBase.h"
@@ -35,11 +36,11 @@ public:
   {
     return m_pipeline_state.rasterization_state;
   }
-  const DepthStencilState& GetDepthStencilState() const
+  const DepthState& GetDeptState() const
   {
-    return m_pipeline_state.depth_stencil_state;
+    return m_pipeline_state.depth_state;
   }
-  const BlendState& GetBlendState() const { return m_pipeline_state.blend_state; }
+  const BlendingState& GetBlendState() const { return m_pipeline_state.blend_state; }
   void SetVertexBuffer(VkBuffer buffer, VkDeviceSize offset);
   void SetIndexBuffer(VkBuffer buffer, VkDeviceSize offset, VkIndexType type);
 
@@ -51,13 +52,13 @@ public:
 
   void SetPrimitiveTopology(VkPrimitiveTopology primitive_topology);
 
-  void DisableBackFaceCulling();
-
   void SetRasterizationState(const RasterizationState& state);
-  void SetDepthStencilState(const DepthStencilState& state);
-  void SetBlendState(const BlendState& state);
+  void SetMultisamplingstate(const MultisamplingState& state);
+  void SetDepthState(const DepthState& state);
+  void SetBlendState(const BlendingState& state);
 
-  bool CheckForShaderChanges(u32 gx_primitive_type, u32 components, PIXEL_SHADER_RENDER_MODE dstalpha_mode);
+  bool CheckForShaderChanges(PrimitiveType gx_primitive_type, u32 components, PIXEL_SHADER_RENDER_MODE dstalpha_mode);
+  void ClearShaders();
 
   void UpdateVertexShaderConstants();
   void UpdateGeometryShaderConstants();
@@ -115,15 +116,18 @@ public:
   bool IsWithinRenderArea(s32 x, s32 y, u32 width, u32 height) const;
 
   // Reloads the UID cache, ensuring all pipelines used by the game so far have been created.
-  void LoadPipelineUIDCache();
+  void ReloadPipelineUIDCache();
+
+  // Clears shader pointers, ensuring that now-deleted modules are not used.
+  void InvalidateShaderPointers();
 
 private:
   // Serialized version of PipelineInfo, used when loading/saving the pipeline UID cache.
   struct SerializedPipelineUID
   {
-    u64 blend_state_bits;
     u32 rasterizer_state_bits;
-    u32 depth_stencil_state_bits;
+    u32 depth_state_bits;
+    u32 blend_state_bits;
     PortableVertexDeclaration vertex_decl;
     VertexShaderUid vs_uid;
     GeometryShaderUid gs_uid;
@@ -178,13 +182,19 @@ private:
   // Also adds this pipeline configuration to the UID cache if it is not present already.
   VkPipeline GetPipelineAndCacheUID(const PipelineInfo& info);
 
+  // Are bounding box ubershaders enabled? If so, we need to ensure the SSBO is set up,
+  // since the bbox writes are determined by a uniform.
+  bool IsSSBODescriptorRequired() const;
+
   bool UpdatePipeline();
+  void UpdatePipelineLayout();
+  void UpdatePipelineVertexFormat();
   bool UpdateDescriptorSet();
 
   // Allocates storage in the uniform buffer of the specified size. If this storage cannot be
   // allocated immediately, the current command buffer will be submitted and all stage's
   // constants will be re-uploaded. false will be returned in this case, otherwise true.
-  bool ReserveConstantStorage();
+  bool ReserveConstantStorage();  
   void UploadAllConstants();
 
   // Which bindings/state has to be updated before the next draw.
@@ -201,11 +211,15 @@ private:
   VertexShaderUid m_vs_uid = {};
   GeometryShaderUid m_gs_uid = {};
   PixelShaderUid m_ps_uid = {};
+  UberShader::VertexUberShaderUid m_uber_vs_uid = {};
+  UberShader::PixelUberShaderUid m_uber_ps_uid = {};
+  bool m_using_ubershaders = false;
 
   // pipeline state
   PipelineInfo m_pipeline_state = {};
   PIXEL_SHADER_RENDER_MODE m_dstalpha_mode = PIXEL_SHADER_RENDER_MODE::PSRM_DEFAULT;
   VkPipeline m_pipeline_object = VK_NULL_HANDLE;
+  const VertexFormat* m_vertex_format = nullptr;
 
   // shader bindings
   std::array<VkDescriptorSet, NUM_DESCRIPTOR_SET_BIND_POINTS> m_descriptor_sets = {};

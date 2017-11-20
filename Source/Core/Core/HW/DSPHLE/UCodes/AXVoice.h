@@ -13,9 +13,11 @@
 #endif
 
 #include <functional>
+#include <memory>
 
 #include "Common/CommonTypes.h"
 #include "Common/MathUtil.h"
+#include "Core/DSP/DSPAccelerator.h"
 #include "Core/HW/DSP.h"
 #include "Core/HW/DSPHLE/UCodes/AX.h"
 #include "Core/HW/DSPHLE/UCodes/AXStructs.h"
@@ -145,150 +147,50 @@ void WritePB(u32 addr, const PB_TYPE& pb, u32 crc)
 #define DUMP_U32(field) WARN_LOG(DSPHLE, "    %08x (%s)", HILO_TO_32(pb.field), #field)
 void DumpPB(const PB_TYPE& pb)
 {
-  DUMP_U32(next_pb);
-  DUMP_U32(this_pb);
-  DUMP_U16(src_type);
-  DUMP_U16(coef_select);
+	DUMP_U32(next_pb);
+	DUMP_U32(this_pb);
+	DUMP_U16(src_type);
+	DUMP_U16(coef_select);
 #ifdef AX_GC
-  DUMP_U16(mixer_control);
+	DUMP_U16(mixer_control);
 #else
-  DUMP_U32(mixer_control);
+	DUMP_U32(mixer_control);
 #endif
-  DUMP_U16(running);
-  DUMP_U16(is_stream);
+	DUMP_U16(running);
+	DUMP_U16(is_stream);
 
-  // TODO: complete as needed
+	// TODO: complete as needed
 }
 #endif
 
 // Simulated accelerator state.
-static u32 acc_loop_addr, acc_end_addr;
-static u32* acc_cur_addr;
 static PB_TYPE* acc_pb;
 static bool acc_end_reached;
 
-// Sets up the simulated accelerator.
-void AcceleratorSetup(PB_TYPE* pb, u32* cur_addr)
+class HLEAccelerator final : public Accelerator
 {
-  acc_pb = pb;
-  // Masking occurs for the start and end addresses as soon as the registers are written to.
-  acc_loop_addr = HILO_TO_32(pb->audio_addr.loop_addr) & 0x3fffffff;
-  acc_end_addr = HILO_TO_32(pb->audio_addr.end_addr) & 0x3fffffff;
-  acc_cur_addr = cur_addr;
-  // It also happens for the current address, but with a different mask.
-  *acc_cur_addr &= 0xbfffffff;
-  acc_end_reached = false;
-}
-
-// Reads a sample from the simulated accelerator. Also handles looping and
-// disabling streams that reached the end (this is done by an exception raised
-// by the accelerator on real hardware).
-u16 AcceleratorGetSample()
-{
-  u16 ret;
-  u8 step_size_bytes = 0;
-
-  // See below for explanations about acc_end_reached.
-  if (acc_end_reached)
-    return 0;
-
-  switch (acc_pb->audio_addr.sample_format)
+protected:
+  void OnEndException() override
   {
-  case 0x00:  // ADPCM
-  {
-    // ADPCM decoding, not much to explain here.
-    if ((*acc_cur_addr & 15) == 0)
-    {
-      acc_pb->adpcm.pred_scale = DSP::ReadARAM((*acc_cur_addr & ~15) >> 1);
-      *acc_cur_addr += 2;
-    }
-
-    switch (acc_end_addr & 15)
-    {
-    case 0:  // Tom and Jerry
-      step_size_bytes = 1;
-      break;
-    case 1:  // Blazing Angels
-      step_size_bytes = 0;
-      break;
-    default:
-      step_size_bytes = 2;
-      break;
-    }
-
-    int scale = 1 << (acc_pb->adpcm.pred_scale & 0xF);
-    int coef_idx = (acc_pb->adpcm.pred_scale >> 4) & 0x7;
-
-    s32 coef1 = acc_pb->adpcm.coefs[coef_idx * 2 + 0];
-    s32 coef2 = acc_pb->adpcm.coefs[coef_idx * 2 + 1];
-
-    int temp = (*acc_cur_addr & 1) ? (DSP::ReadARAM(*acc_cur_addr >> 1) & 0xF) :
-      (DSP::ReadARAM(*acc_cur_addr >> 1) >> 4);
-
-    if (temp >= 8)
-      temp -= 16;
-
-    int val =
-      (scale * temp) + ((0x400 + coef1 * acc_pb->adpcm.yn1 + coef2 * acc_pb->adpcm.yn2) >> 11);
-    val = MathUtil::Clamp(val, -0x7FFF, 0x7FFF);
-
-    acc_pb->adpcm.yn2 = acc_pb->adpcm.yn1;
-    acc_pb->adpcm.yn1 = val;
-    *acc_cur_addr += 1;
-    ret = val;
-    break;
-  }
-
-  case 0x0A:  // 16-bit PCM audio
-    ret = (DSP::ReadARAM(*acc_cur_addr * 2) << 8) | DSP::ReadARAM(*acc_cur_addr * 2 + 1);
-    acc_pb->adpcm.yn2 = acc_pb->adpcm.yn1;
-    acc_pb->adpcm.yn1 = ret;
-    step_size_bytes = 2;
-    *acc_cur_addr += 1;
-    break;
-
-  case 0x19:  // 8-bit PCM audio
-    ret = DSP::ReadARAM(*acc_cur_addr) << 8;
-    acc_pb->adpcm.yn2 = acc_pb->adpcm.yn1;
-    acc_pb->adpcm.yn1 = ret;
-    step_size_bytes = 2;
-    *acc_cur_addr += 1;
-    break;
-
-  default:
-    ERROR_LOG(DSPHLE, "Unknown sample format: %d", acc_pb->audio_addr.sample_format);
-    return 0;
-  }
-
-  // Have we reached the end address?
-  //
-  // On real hardware, this would raise an interrupt that is handled by the
-  // UCode. We simulate what this interrupt does here.
-  if (*acc_cur_addr == (acc_end_addr + step_size_bytes - 1))
-  {
-    // loop back to loop_addr.
-    *acc_cur_addr = acc_loop_addr;
-
     if (acc_pb->audio_addr.looping)
     {
-      // Set the ADPCM infos to continue processing at loop_addr.
-      //
-      // For some reason, yn1 and yn2 aren't set if the voice is not of
-      // stream type. This is what the AX UCode does and I don't really
-      // know why.
-      acc_pb->adpcm.pred_scale = acc_pb->adpcm_loop_info.pred_scale;
+      // Set the ADPCM info to continue processing at loop_addr.
+      SetPredScale(acc_pb->adpcm_loop_info.pred_scale);
       if (!acc_pb->is_stream)
       {
-        acc_pb->adpcm.yn1 = acc_pb->adpcm_loop_info.yn1;
-        acc_pb->adpcm.yn2 = acc_pb->adpcm_loop_info.yn2;
+        SetYn1(acc_pb->adpcm_loop_info.yn1);
+        SetYn2(acc_pb->adpcm_loop_info.yn2);
       }
-#ifdef AX_GC
       else
       {
+        // Refresh YN1 and YN2. This indirectly causes the accelerator to resume reads.
+        SetYn1(GetYn1());
+        SetYn2(GetYn2());
+#ifdef AX_GC
         // If we're streaming, increment the loop counter.
         acc_pb->loop_counter++;
-      }
 #endif
+      }
     }
     else
     {
@@ -297,16 +199,45 @@ u16 AcceleratorGetSample()
 
 #ifdef AX_WII
       // One of the few meaningful differences between AXGC and AXWii:
-      // while AXGC handles non looping voices ending by having 0000
-      // samples at the loop address, AXWii has the 0000 samples
-      // internally in DRAM and use an internal pointer to it (loop addr
-      // does not contain 0000 samples on AXWii!).
+      // while AXGC handles non looping voices ending by relying on the
+      // accelerator to stop reads once the loop address is reached,
+      // AXWii has the 0000 samples internally in DRAM and use an internal
+      // pointer to it (loop addr does not contain 0000 samples on AXWii!).
       acc_end_reached = true;
 #endif
     }
   }
 
-  return ret;
+  u8 ReadMemory(u32 address) override { return ReadARAM(address); }
+  void WriteMemory(u32 address, u8 value) override { WriteARAM(value, address); }
+};
+
+static std::unique_ptr<Accelerator> s_accelerator = std::make_unique<HLEAccelerator>();
+
+// Sets up the simulated accelerator.
+void AcceleratorSetup(PB_TYPE* pb)
+{
+  acc_pb = pb;
+  s_accelerator->SetStartAddress(HILO_TO_32(pb->audio_addr.loop_addr));
+  s_accelerator->SetEndAddress(HILO_TO_32(pb->audio_addr.end_addr));
+  s_accelerator->SetCurrentAddress(HILO_TO_32(pb->audio_addr.cur_addr));
+  s_accelerator->SetSampleFormat(pb->audio_addr.sample_format);
+  s_accelerator->SetYn1(pb->adpcm.yn1);
+  s_accelerator->SetYn2(pb->adpcm.yn2);
+  s_accelerator->SetPredScale(pb->adpcm.pred_scale);
+  acc_end_reached = false;
+}
+
+// Reads a sample from the accelerator. Also handles looping and
+// disabling streams that reached the end (this is done by an exception raised
+// by the accelerator on real hardware).
+u16 AcceleratorGetSample()
+{
+  // See below for explanations about acc_end_reached.
+  if (acc_end_reached)
+    return 0;
+
+  return s_accelerator->Read(acc_pb->adpcm.coefs);
 }
 
 // Reads samples from the input callback, resamples them to <count> samples at
@@ -330,7 +261,7 @@ u16 AcceleratorGetSample()
 // avoids discontinuities in the audio stream, especially with very low ratios
 // which interpolate a lot of values between two "real" samples.
 u32 ResampleAudio(std::function<s16(u32)> input_callback, s16* output, u32 count, s16* last_samples,
-  u32 curr_pos, u32 ratio, int srctype, const s16* coeffs)
+                  u32 curr_pos, u32 ratio, int srctype, const s16* coeffs)
 {
   int read_samples_count = 0;
 
@@ -448,19 +379,21 @@ u32 ResampleAudio(std::function<s16(u32)> input_callback, s16* output, u32 count
 // if required.
 void GetInputSamples(PB_TYPE& pb, s16* samples, u16 count, const s16* coeffs)
 {
-  u32 cur_addr = HILO_TO_32(pb.audio_addr.cur_addr);
-  AcceleratorSetup(&pb, &cur_addr);
+  AcceleratorSetup(&pb);
 
   if (coeffs)
     coeffs += pb.coef_select * 0x200;
   u32 curr_pos =
-    ResampleAudio([](u32) { return AcceleratorGetSample(); }, samples, count, pb.src.last_samples,
-      pb.src.cur_addr_frac, HILO_TO_32(pb.src.ratio), pb.src_type, coeffs);
+      ResampleAudio([](u32) { return AcceleratorGetSample(); }, samples, count, pb.src.last_samples,
+                    pb.src.cur_addr_frac, HILO_TO_32(pb.src.ratio), pb.src_type, coeffs);
   pb.src.cur_addr_frac = (curr_pos & 0xFFFF);
 
-  // Update current position in the PB.
-  pb.audio_addr.cur_addr_hi = static_cast<u16>(cur_addr >> 16) & 0xbfff;
-  pb.audio_addr.cur_addr_lo = static_cast<u16>(cur_addr);
+  // Update current position, YN1, YN2 and pred scale in the PB.
+  pb.audio_addr.cur_addr_hi = static_cast<u16>(s_accelerator->GetCurrentAddress() >> 16);
+  pb.audio_addr.cur_addr_lo = static_cast<u16>(s_accelerator->GetCurrentAddress());
+  pb.adpcm.yn1 = s_accelerator->GetYn1();
+  pb.adpcm.yn2 = s_accelerator->GetYn2();
+  pb.adpcm.pred_scale = s_accelerator->GetPredScale();
 }
 
 // Add samples to an output buffer, with optional volume ramping.
@@ -501,7 +434,7 @@ s16 LowPassFilter(s16* samples, u32 count, s16 yn1, u16 a0, u16 b0)
 // Process 1ms of audio (for AX GC) or 3ms of audio (for AX Wii) from a PB and
 // mix it to the output buffers.
 void ProcessVoice(PB_TYPE& pb, const AXBuffers& buffers, u16 count, AXMixControl mctrl,
-  const s16* coeffs)
+                  const s16* coeffs)
 {
   // If the voice is not running, nothing to do.
   if (!pb.running)
@@ -515,7 +448,7 @@ void ProcessVoice(PB_TYPE& pb, const AXBuffers& buffers, u16 count, AXMixControl
   for (u32 i = 0; i < count; ++i)
   {
     samples[i] = MathUtil::Clamp(((s32)samples[i] * pb.vol_env.cur_volume) >> 15, -32767,
-      32767);  // -32768 ?
+                                 32767);  // -32768 ?
     pb.vol_env.cur_volume += pb.vol_env.cur_volume_delta;
   }
 
@@ -527,8 +460,8 @@ void ProcessVoice(PB_TYPE& pb, const AXBuffers& buffers, u16 count, AXMixControl
     pb.lpf.yn1 = LowPassFilter(samples, count, pb.lpf.yn1, pb.lpf.a0, pb.lpf.b0);
   }
 
-  // Mix LRS, AUXA and AUXB depending on mixer_control
-  // TODO: Handle DPL2 on AUXB.
+// Mix LRS, AUXA and AUXB depending on mixer_control
+// TODO: Handle DPL2 on AUXB.
 
 #define MIX_ON(C) (0 != (mctrl & MIX_##C))
 #define RAMP_ON(C) (0 != (mctrl & MIX_##C##_RAMP))
@@ -542,34 +475,34 @@ void ProcessVoice(PB_TYPE& pb, const AXBuffers& buffers, u16 count, AXMixControl
 
   if (MIX_ON(AUXA_L))
     MixAdd(buffers.auxA_left, samples, count, &pb.mixer.auxA_left, &pb.dpop.auxA_left,
-      RAMP_ON(AUXA_L));
+           RAMP_ON(AUXA_L));
   if (MIX_ON(AUXA_R))
     MixAdd(buffers.auxA_right, samples, count, &pb.mixer.auxA_right, &pb.dpop.auxA_right,
-      RAMP_ON(AUXA_R));
+           RAMP_ON(AUXA_R));
   if (MIX_ON(AUXA_S))
     MixAdd(buffers.auxA_surround, samples, count, &pb.mixer.auxA_surround, &pb.dpop.auxA_surround,
-      RAMP_ON(AUXA_S));
+           RAMP_ON(AUXA_S));
 
   if (MIX_ON(AUXB_L))
     MixAdd(buffers.auxB_left, samples, count, &pb.mixer.auxB_left, &pb.dpop.auxB_left,
-      RAMP_ON(AUXB_L));
+           RAMP_ON(AUXB_L));
   if (MIX_ON(AUXB_R))
     MixAdd(buffers.auxB_right, samples, count, &pb.mixer.auxB_right, &pb.dpop.auxB_right,
-      RAMP_ON(AUXB_R));
+           RAMP_ON(AUXB_R));
   if (MIX_ON(AUXB_S))
     MixAdd(buffers.auxB_surround, samples, count, &pb.mixer.auxB_surround, &pb.dpop.auxB_surround,
-      RAMP_ON(AUXB_S));
+           RAMP_ON(AUXB_S));
 
 #ifdef AX_WII
   if (MIX_ON(AUXC_L))
     MixAdd(buffers.auxC_left, samples, count, &pb.mixer.auxC_left, &pb.dpop.auxC_left,
-      RAMP_ON(AUXC_L));
+           RAMP_ON(AUXC_L));
   if (MIX_ON(AUXC_R))
     MixAdd(buffers.auxC_right, samples, count, &pb.mixer.auxC_right, &pb.dpop.auxC_right,
-      RAMP_ON(AUXC_R));
+           RAMP_ON(AUXC_R));
   if (MIX_ON(AUXC_S))
     MixAdd(buffers.auxC_surround, samples, count, &pb.mixer.auxC_surround, &pb.dpop.auxC_surround,
-      RAMP_ON(AUXC_S));
+           RAMP_ON(AUXC_S));
 #endif
 
 #undef MIX_ON
@@ -594,38 +527,38 @@ void ProcessVoice(PB_TYPE& pb, const AXBuffers& buffers, u16 count, AXMixControl
     // We use ratio 0x55555 == (5 * 65536 + 21845) / 65536 == 5.3333 which
     // is the nearest we can get to 96/18
     u32 curr_pos = ResampleAudio([&samples](u32 i) { return samples[i]; }, wm_samples, wm_count,
-      pb.remote_src.last_samples, pb.remote_src.cur_addr_frac, 0x55555,
-      SRCTYPE_POLYPHASE, coeffs);
+                                 pb.remote_src.last_samples, pb.remote_src.cur_addr_frac, 0x55555,
+                                 SRCTYPE_POLYPHASE, coeffs);
     pb.remote_src.cur_addr_frac = curr_pos & 0xFFFF;
 
-    // Mix to main[0-3] and aux[0-3]
+// Mix to main[0-3] and aux[0-3]
 #define WMCHAN_MIX_ON(n) (0 != ((pb.remote_mixer_control >> (2 * n)) & 3))
 #define WMCHAN_MIX_RAMP(n) (0 != ((pb.remote_mixer_control >> (2 * n)) & 2))
 
     if (WMCHAN_MIX_ON(0))
       MixAdd(buffers.wm_main0, wm_samples, wm_count, &pb.remote_mixer.main0, &pb.remote_dpop.main0,
-        WMCHAN_MIX_RAMP(0));
+             WMCHAN_MIX_RAMP(0));
     if (WMCHAN_MIX_ON(1))
       MixAdd(buffers.wm_aux0, wm_samples, wm_count, &pb.remote_mixer.aux0, &pb.remote_dpop.aux0,
-        WMCHAN_MIX_RAMP(1));
+             WMCHAN_MIX_RAMP(1));
     if (WMCHAN_MIX_ON(2))
       MixAdd(buffers.wm_main1, wm_samples, wm_count, &pb.remote_mixer.main1, &pb.remote_dpop.main1,
-        WMCHAN_MIX_RAMP(2));
+             WMCHAN_MIX_RAMP(2));
     if (WMCHAN_MIX_ON(3))
       MixAdd(buffers.wm_aux1, wm_samples, wm_count, &pb.remote_mixer.aux1, &pb.remote_dpop.aux1,
-        WMCHAN_MIX_RAMP(3));
+             WMCHAN_MIX_RAMP(3));
     if (WMCHAN_MIX_ON(4))
       MixAdd(buffers.wm_main2, wm_samples, wm_count, &pb.remote_mixer.main2, &pb.remote_dpop.main2,
-        WMCHAN_MIX_RAMP(4));
+             WMCHAN_MIX_RAMP(4));
     if (WMCHAN_MIX_ON(5))
       MixAdd(buffers.wm_aux2, wm_samples, wm_count, &pb.remote_mixer.aux2, &pb.remote_dpop.aux2,
-        WMCHAN_MIX_RAMP(5));
+             WMCHAN_MIX_RAMP(5));
     if (WMCHAN_MIX_ON(6))
       MixAdd(buffers.wm_main3, wm_samples, wm_count, &pb.remote_mixer.main3, &pb.remote_dpop.main3,
-        WMCHAN_MIX_RAMP(6));
+             WMCHAN_MIX_RAMP(6));
     if (WMCHAN_MIX_ON(7))
       MixAdd(buffers.wm_aux3, wm_samples, wm_count, &pb.remote_mixer.aux3, &pb.remote_dpop.aux3,
-        WMCHAN_MIX_RAMP(7));
+             WMCHAN_MIX_RAMP(7));
   }
 #undef WMCHAN_MIX_RAMP
 #undef WMCHAN_MIX_ON

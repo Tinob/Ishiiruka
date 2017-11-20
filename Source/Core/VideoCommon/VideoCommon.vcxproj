@@ -94,6 +94,7 @@
     <ClCompile Include="HiresTextures.cpp" />
     <ClCompile Include="HLSLCompiler.cpp" />
     <ClCompile Include="HostTexture.cpp" />
+    <ClCompile Include="RenderState.cpp" />
     <ClCompile Include="ShaderGenCommon.cpp" />
     <ClCompile Include="TessellationShaderGen.cpp" />
     <ClCompile Include="TessellationShaderManager.cpp" />
@@ -153,6 +154,7 @@
     <ClInclude Include="GeometryShaderManager.h" />
     <ClInclude Include="HostTexture.h" />
     <ClInclude Include="ObjectUsageProfiler.h" />
+    <ClInclude Include="RenderState.h" />
     <ClInclude Include="SamplerCommon.h" />
     <ClInclude Include="TessellationShaderGen.h" />
     <ClInclude Include="TessellationShaderManager.h" />

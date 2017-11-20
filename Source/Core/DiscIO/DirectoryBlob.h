@@ -107,10 +107,10 @@ private:
 
   // FST creation
   void WriteEntryData(u32* entry_offset, u8 type, u32 name_offset, u64 data_offset, u64 length,
-    u32 address_shift);
+                      u32 address_shift);
   void WriteEntryName(u32* name_offset, const std::string& name, u64 name_table_offset);
   void WriteDirectory(const File::FSTEntry& parent_entry, u32* fst_offset, u32* name_offset,
-    u64* data_offset, u32 parent_entry_index, u64 name_table_offset);
+                      u64* data_offset, u32 parent_entry_index, u64 name_table_offset);
 
   DiscContentContainer m_contents;
   std::vector<u8> m_disc_header;
@@ -149,7 +149,7 @@ private:
   struct PartitionWithType
   {
     PartitionWithType(DirectoryBlobPartition&& partition_, PartitionType type_)
-      : partition(std::move(partition_)), type(type_)
+        : partition(std::move(partition_)), type(type_)
     {
     }
 
@@ -158,10 +158,10 @@ private:
   };
 
   explicit DirectoryBlobReader(const std::string& game_partition_root,
-    const std::string& true_root);
+                               const std::string& true_root);
 
   void SetNonpartitionDiscHeader(const std::vector<u8>& partition_header,
-    const std::string& game_partition_root);
+                                 const std::string& game_partition_root);
   void SetWiiRegionData(const std::string& game_partition_root);
   void SetPartitions(std::vector<PartitionWithType>&& partitions);
   void SetPartitionHeader(const DirectoryBlobPartition& partition, u64 partition_address);

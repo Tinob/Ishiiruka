@@ -21,6 +21,8 @@
 #include "Common/MsgHandler.h"
 #include "Common/StringUtil.h"
 #include "Common/Timer.h"
+#include "Common/Version.h"
+
 #include "Core/ConfigManager.h"
 #include "Core/HW/EXI/EXI_DeviceIPL.h"
 #include "Core/HW/SI/SI.h"
@@ -175,8 +177,8 @@ bool NetPlayClient::Connect()
 {
   // send connect message
   sf::Packet packet;
-  packet << scm_rev_git_str;
-  packet << netplay_dolphin_ver;
+  packet << Common::scm_rev_git_str;
+  packet << Common::netplay_dolphin_ver;
   packet << m_player_name;
   Send(packet);
   enet_host_flush(m_client);
@@ -225,7 +227,7 @@ bool NetPlayClient::Connect()
     Player player;
     player.name = m_player_name;
     player.pid = m_pid;
-    player.revision = netplay_dolphin_ver;
+    player.revision = Common::netplay_dolphin_ver;
 
     // add self to player list
     m_players[m_pid] = player;

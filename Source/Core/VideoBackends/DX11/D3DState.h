@@ -11,7 +11,9 @@
 #include "Common/CommonTypes.h"
 #include "VideoBackends/DX11/D3DBase.h"
 #include "VideoBackends/DX11/D3DPtr.h"
+
 #include "VideoCommon/BPMemory.h"
+#include "VideoCommon/RenderState.h"
 
 struct ID3D11BlendState;
 struct ID3D11DepthStencilState;
@@ -20,50 +22,6 @@ struct ID3D11RasterizerState;
 namespace DX11
 {
 
-union RasterizerState
-{
-  BitField<0, 2, D3D11_CULL_MODE> cull_mode;
-
-  u32 packed;
-};
-
-union BlendState
-{
-  BitField<0, 1, u32> blend_enable;
-  BitField<1, 3, D3D11_BLEND_OP> blend_op;
-  BitField<4, 4, u32> write_mask;
-  BitField<8, 5, D3D11_BLEND> src_blend;
-  BitField<13, 5, D3D11_BLEND> dst_blend;
-  BitField<18, 1, u32> use_dst_alpha;
-  BitField<19, 1, u32> logic_op_enabled;
-  BitField<20, 4, D3D11_LOGIC_OP> logic_op;
-  u32 packed;
-};
-
-union SamplerState
-{
-  BitField<0, 3, u64> min_filter;
-  BitField<3, 1, u64> mag_filter;
-  BitField<4, 8, u64> min_lod;
-  BitField<12, 8, u64> max_lod;
-  BitField<20, 8, s64> lod_bias;
-  BitField<28, 2, u64> wrap_s;
-  BitField<30, 2, u64> wrap_t;
-  BitField<32, 5, u64> max_anisotropy;
-
-  u64 packed;
-};
-
-union DepthState
-{
-  BitField<0, 1, u32> testenable;
-  BitField<1, 4, u32> func;
-  BitField<5, 1, u32> updateenable;
-  BitField<6, 1, u32> reversed_depth;
-
-  u32 packed;
-};
-
 class StateCache
 {
 public:
@@ -71,19 +29,20 @@ public:
   // Get existing or create new render state.
   // Returned objects is owned by the cache and does not need to be released.
   ID3D11SamplerState* Get(SamplerState state);
-  ID3D11BlendState* Get(BlendState state);
-  ID3D11RasterizerState* Get(RasterizerState state);
+  ID3D11BlendState* Get(BlendingState state);
+  ID3D11RasterizerState* Get(RasterizationState state);
   ID3D11DepthStencilState* Get(DepthState state);
 
   // Release all cached states and clear hash tables.
   void Clear();
-
+  // Convert RasterState primitive type to D3D11 primitive topology.
+  static D3D11_PRIMITIVE_TOPOLOGY GetPrimitiveTopology(PrimitiveType primitive);
 private:
 
-  std::unordered_map<u32, D3D::DepthStencilStatePtr> m_depth;
-  std::unordered_map<u32, D3D::RasterizerStatePtr> m_raster;
-  std::unordered_map<u32, D3D::BlendStatePtr> m_blend;
-  std::unordered_map<u64, D3D::SamplerStatePtr> m_sampler;
+  std::unordered_map<DepthState::StorageType, D3D::DepthStencilStatePtr> m_depth;
+  std::unordered_map<RasterizationState::StorageType, D3D::RasterizerStatePtr> m_raster;
+  std::unordered_map<BlendingState::StorageType, D3D::BlendStatePtr> m_blend;
+  std::unordered_map<SamplerState::StorageType, D3D::SamplerStatePtr> m_sampler;
 };
 
 namespace D3D
@@ -112,7 +71,6 @@ class StateManager
 {
 public:
   StateManager();
-
   // call any of these to change the affected states
   void PushBlendState(const ID3D11BlendState* state);
   void PushDepthState(const ID3D11DepthStencilState* state);

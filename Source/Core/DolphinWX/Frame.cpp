@@ -42,6 +42,7 @@
 #include "Common/Logging/ConsoleListener.h"
 #include "Common/StringUtil.h"
 #include "Common/Thread.h"
+#include "Common/Version.h"
 
 #include "Core/Config/GraphicsSettings.h"
 #include "Core/ConfigManager.h"
@@ -143,7 +144,7 @@ void CRenderFrame::OnDropFiles(wxDropFilesEvent& event)
   }
   else
   {
-    DVDInterface::ChangeDiscAsHost(filepath);
+    Core::RunAsCPUThread([&filepath] { DVDInterface::ChangeDisc(filepath); });
   }
 }
 
@@ -501,7 +502,6 @@ void CFrame::BindEvents()
   Bind(DOLPHIN_EVT_RELOAD_THEME_BITMAPS, &CFrame::OnReloadThemeBitmaps, this);
   Bind(DOLPHIN_EVT_REFRESH_GAMELIST, &CFrame::OnRefreshGameList, this);
   Bind(DOLPHIN_EVT_RESCAN_GAMELIST, &CFrame::OnRescanGameList, this);
-  Bind(DOLPHIN_EVT_UPDATE_LOAD_WII_MENU_ITEM, &CFrame::OnUpdateLoadWiiMenuItem, this);
   Bind(DOLPHIN_EVT_BOOT_SOFTWARE, &CFrame::OnPlay, this);
   Bind(DOLPHIN_EVT_STOP_SOFTWARE, &CFrame::OnStop, this);
 }
@@ -530,8 +530,9 @@ void CFrame::InitializeCoreCallbacks()
   });
 
   // Warning: this gets called from the EmuThread
-  Core::SetOnStoppedCallback([this] {
-    AddPendingEvent(wxCommandEvent{wxEVT_HOST_COMMAND, IDM_STOPPED});
+  Core::SetOnStateChangedCallback([this](Core::State state) {
+    if (state == Core::State::Uninitialized)
+      AddPendingEvent(wxCommandEvent{ wxEVT_HOST_COMMAND, IDM_STOPPED });
   });
 }
 
@@ -759,7 +760,7 @@ void CFrame::UninhibitScreensaver()
 
 void CFrame::UpdateTitle(const wxString& str)
 {
-  const wxString revision_string = StrToWxStr(scm_rev_str);
+  const wxString revision_string = StrToWxStr(Common::scm_rev_str);
   if (SConfig::GetInstance().bRenderToMain && SConfig::GetInstance().m_InterfaceStatusbar)
   {
     GetStatusBar()->SetStatusText(str, 0);
@@ -960,6 +961,8 @@ static int GetMenuIDFromHotkey(unsigned int key)
     return wxID_OPEN;
   case HK_CHANGE_DISC:
     return IDM_CHANGE_DISC;
+  case HK_EJECT_DISC:
+    return IDM_EJECT_DISC;
   case HK_REFRESH_LIST:
     return wxID_REFRESH;
   case HK_PLAY_PAUSE:
@@ -1304,6 +1307,7 @@ void CFrame::ParseHotkeys()
     {
     case HK_OPEN:
     case HK_CHANGE_DISC:
+    case HK_EJECT_DISC:
     case HK_REFRESH_LIST:
     case HK_RESET:
     case HK_START_RECORDING:

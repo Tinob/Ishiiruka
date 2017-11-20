@@ -39,14 +39,14 @@ CheatSearchTab::CheatSearchTab(wxWindow* const parent) : wxPanel(parent)
   // first scan button
   m_btn_init_scan = new wxButton(this, wxID_ANY, _("New Scan"));
   m_btn_init_scan->SetToolTip(_("Perform a full index of the game's RAM at the current Data Size. "
-                                "Required before any Searching can be performed."));
+    "Required before any Searching can be performed."));
   m_btn_init_scan->Bind(wxEVT_BUTTON, &CheatSearchTab::OnNewScanClicked, this);
   m_btn_init_scan->Disable();
 
   // next scan button
   m_btn_next_scan = new wxButton(this, wxID_ANY, _("Next Scan"));
   m_btn_next_scan->SetToolTip(_("Eliminate items from the current scan results that do not match "
-                                "the current Search settings."));
+    "the current Search settings."));
   m_btn_next_scan->Bind(wxEVT_BUTTON, &CheatSearchTab::OnNextScanClicked, this);
   m_btn_next_scan->Disable();
 
@@ -58,13 +58,13 @@ CheatSearchTab::CheatSearchTab(wxWindow* const parent) : wxPanel(parent)
   m_btn_create_code->Disable();
 
   // data sizes radiobox
-  std::array<wxString, 3> data_size_names = {{_("8-bit"), _("16-bit"), _("32-bit")}};
+  std::array<wxString, 3> data_size_names = { { _("8-bit"), _("16-bit"), _("32-bit") } };
   m_data_sizes = new wxRadioBox(this, wxID_ANY, _("Data Size"), wxDefaultPosition, wxDefaultSize,
-                                static_cast<int>(data_size_names.size()), data_size_names.data());
+    static_cast<int>(data_size_names.size()), data_size_names.data());
 
   // ListView for search results
   m_lview_search_results = new wxListView(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
-                                          wxLC_REPORT | wxLC_SINGLE_SEL);
+    wxLC_REPORT | wxLC_SINGLE_SEL);
   m_lview_search_results->AppendColumn(_("Address"));
   m_lview_search_results->AppendColumn(_("Value"));
   // i18n: Float means floating point number
@@ -72,11 +72,11 @@ CheatSearchTab::CheatSearchTab(wxWindow* const parent) : wxPanel(parent)
   // i18n: Double means double-precision floating point number
   m_lview_search_results->AppendColumn(_("Value (double)"));
   m_lview_search_results->Bind(wxEVT_LIST_ITEM_ACTIVATED, &CheatSearchTab::OnListViewItemActivated,
-                               this);
+    this);
   m_lview_search_results->Bind(wxEVT_LIST_ITEM_SELECTED, &CheatSearchTab::OnListViewItemSelected,
-                               this);
+    this);
   m_lview_search_results->Bind(wxEVT_LIST_ITEM_DESELECTED, &CheatSearchTab::OnListViewItemSelected,
-                               this);
+    this);
 
   // Result count
   m_label_results_count = new wxStaticText(this, wxID_ANY, _("Count:"));
@@ -85,7 +85,7 @@ CheatSearchTab::CheatSearchTab(wxWindow* const parent) : wxPanel(parent)
 
   // results groupbox
   wxStaticBoxSizer* const sizer_cheat_search_results =
-      new wxStaticBoxSizer(wxVERTICAL, this, _("Results"));
+    new wxStaticBoxSizer(wxVERTICAL, this, _("Results"));
   sizer_cheat_search_results->AddSpacer(space5);
   sizer_cheat_search_results->Add(m_label_results_count, 0, wxLEFT | wxRIGHT, space5);
   sizer_cheat_search_results->AddSpacer(space5);
@@ -98,8 +98,8 @@ CheatSearchTab::CheatSearchTab(wxWindow* const parent) : wxPanel(parent)
   m_textctrl_value_x = new wxTextCtrl(this, wxID_ANY, "0x0");
   m_textctrl_value_x->SetMinSize(WxUtils::GetTextWidgetMinSize(m_textctrl_value_x, "0x00000000  "));
   m_textctrl_value_x->SetToolTip(
-      _("Value to match against. Can be Hex (\"0x\"), Octal (\"0\") or Decimal. "
-        "Leave blank to filter each result against its own previous value."));
+    _("Value to match against. Can be Hex (\"0x\"), Octal (\"0\") or Decimal. "
+      "Leave blank to filter each result against its own previous value."));
 
   // Filter types in the compare dropdown
   // TODO: Implement between search
@@ -114,12 +114,34 @@ CheatSearchTab::CheatSearchTab(wxWindow* const parent) : wxPanel(parent)
   m_search_type->Select(0);
 
   wxStaticBoxSizer* const sizer_cheat_search_filter =
-      new wxStaticBoxSizer(wxVERTICAL, this, _("Search (clear to use previous value)"));
+    new wxStaticBoxSizer(wxVERTICAL, this, _("Search (clear to use previous value)"));
   sizer_cheat_search_filter->AddSpacer(space5);
   sizer_cheat_search_filter->Add(m_textctrl_value_x, 0, wxEXPAND | wxLEFT | wxRIGHT, space5);
   sizer_cheat_search_filter->AddSpacer(space5);
   sizer_cheat_search_filter->Add(m_search_type, 0, wxLEFT | wxRIGHT, space5);
   sizer_cheat_search_filter->AddSpacer(space5);
+
+  // manual address textbox
+  m_textctrl_address = new wxTextCtrl(this, wxID_ANY, "0x00000000");
+  m_textctrl_address->SetMinSize(WxUtils::GetTextWidgetMinSize(m_textctrl_value_x, "0x00000000"));
+  m_textctrl_address->SetToolTip(
+    // Gecko / ActionReplay codes do not use a 0x prefix, but the cheat search UI does
+    _("An address to add manually. "
+      "The 0x prefix is optional - all addresses are always in hexadecimal."));
+
+  m_btn_add_address = new wxButton(this, wxID_ANY, _("Add"));
+  m_btn_add_address->SetToolTip(_("Add the specified address manually."));
+  m_btn_add_address->Bind(wxEVT_BUTTON, &CheatSearchTab::OnAddAddressClicked, this);
+
+  wxBoxSizer* box_address = new wxBoxSizer(wxHORIZONTAL);
+  box_address->Add(m_textctrl_address, 0, wxEXPAND);
+  box_address->Add(m_btn_add_address, 1, wxLEFT, space5);
+
+  wxStaticBoxSizer* const sizer_cheat_add_address =
+    new wxStaticBoxSizer(wxVERTICAL, this, _("Add address"));
+  sizer_cheat_add_address->AddSpacer(space5);
+  sizer_cheat_add_address->Add(box_address, 0, wxEXPAND | wxLEFT | wxRIGHT, space5);
+  sizer_cheat_add_address->AddSpacer(space5);
 
   // button sizer
   wxBoxSizer* boxButtons = new wxBoxSizer(wxHORIZONTAL);
@@ -130,6 +152,7 @@ CheatSearchTab::CheatSearchTab(wxWindow* const parent) : wxPanel(parent)
   wxBoxSizer* const sizer_right = new wxBoxSizer(wxVERTICAL);
   sizer_right->Add(m_data_sizes, 0, wxEXPAND);
   sizer_right->Add(sizer_cheat_search_filter, 0, wxEXPAND | wxTOP, space5);
+  sizer_right->Add(sizer_cheat_add_address, 0, wxEXPAND | wxTOP, space5);
   sizer_right->AddStretchSpacer(1);
   sizer_right->Add(m_label_scan_disabled, 0, wxALIGN_CENTER_HORIZONTAL | wxTOP, space5);
   sizer_right->Add(boxButtons, 0, wxEXPAND | wxTOP, space5);
@@ -207,6 +230,31 @@ void CheatSearchTab::OnNextScanClicked(wxCommandEvent&)
   UpdateCheatSearchResultsList();
 }
 
+void CheatSearchTab::OnAddAddressClicked(wxCommandEvent&)
+{
+  unsigned long parsed_address = 0;
+  wxString address = m_textctrl_address->GetValue();
+
+  if (!address.ToULong(&parsed_address, address.StartsWith("0x") ? 0 : 16))
+  {
+    WxUtils::ShowErrorDialog(_("You must enter a valid hexadecimal value."));
+    return;
+  }
+
+  if (parsed_address > Memory::RAM_SIZE - sizeof(double))
+  {
+    WxUtils::ShowErrorDialog(wxString::Format(_("Address too large (greater than RAM size).\n"
+      "Did you mean to strip the cheat opcode (0x%08X)?"),
+      parsed_address & Memory::RAM_MASK));
+    return;
+  }
+
+  CheatSearchResult result;
+  result.address = parsed_address;
+  m_search_results.push_back(result);
+  UpdateCheatSearchResultsList();
+}
+
 void CheatSearchTab::OnCreateARCodeClicked(wxCommandEvent&)
 {
   long idx = m_lview_search_results->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
@@ -242,7 +290,7 @@ void CheatSearchTab::OnTimerUpdate(wxTimerEvent&)
   // Only update the currently visible list rows.
   long first = m_lview_search_results->GetTopItem();
   long last = std::min<long>(m_lview_search_results->GetItemCount(),
-                             first + m_lview_search_results->GetCountPerPage());
+    first + m_lview_search_results->GetCountPerPage());
 
   m_lview_search_results->Freeze();
 
@@ -330,9 +378,9 @@ static ComparisonMask operator&(ComparisonMask comp1, ComparisonMask comp2)
 void CheatSearchTab::FilterCheatSearchResults(u32 value, bool prev)
 {
   static const std::array<ComparisonMask, 5> filters{
-      {ComparisonMask::EQUAL | ComparisonMask::GREATER_THAN | ComparisonMask::LESS_THAN,  // Unknown
-       ComparisonMask::GREATER_THAN | ComparisonMask::LESS_THAN,  // Not Equal
-       ComparisonMask::EQUAL, ComparisonMask::GREATER_THAN, ComparisonMask::LESS_THAN}};
+    { ComparisonMask::EQUAL | ComparisonMask::GREATER_THAN | ComparisonMask::LESS_THAN,  // Unknown
+    ComparisonMask::GREATER_THAN | ComparisonMask::LESS_THAN,  // Not Equal
+    ComparisonMask::EQUAL, ComparisonMask::GREATER_THAN, ComparisonMask::LESS_THAN } };
   ComparisonMask filter_mask = filters[m_search_type->GetSelection()];
 
   std::vector<CheatSearchResult> filtered_results;

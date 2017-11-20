@@ -169,7 +169,7 @@ bool TextureCache::Palettize(TCacheEntry* dst_entry, const TCacheEntry* base_ent
   glBindTexture(GL_TEXTURE_2D_ARRAY, base_tex->GetRawTexIdentifier());
   g_sampler_cache->BindLinearSampler(9);
 
-  FramebufferManager::SetFramebuffer(base_tex->GetFramebuffer());
+  FramebufferManager::SetFramebuffer(dst_tex->GetFramebuffer());
   glViewport(0, 0, dst_tex->GetConfig().width, dst_tex->GetConfig().height);
   s_palette_pixel_shader[s_last_TlutFormat].Bind();
 

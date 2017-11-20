@@ -297,7 +297,7 @@ SHADER* ProgramShaderCache::CompileUberShader(const UBERSHADERUID& uid)
   return &last_uber_entry->shader;
 }
 
-SHADER* ProgramShaderCache::SetShader(PIXEL_SHADER_RENDER_MODE render_mode, u32 components, u32 primitive_type, const GLVertexFormat* vertex_format)
+SHADER* ProgramShaderCache::SetShader(PIXEL_SHADER_RENDER_MODE render_mode, u32 components, PrimitiveType primitive_type, const GLVertexFormat* vertex_format)
 {
   SHADERUID uid;
   GetShaderId(&uid, render_mode, components, primitive_type);
@@ -318,7 +318,7 @@ SHADER* ProgramShaderCache::SetShader(PIXEL_SHADER_RENDER_MODE render_mode, u32 
   return CompileShader(uid);
 }
 
-SHADER* ProgramShaderCache::SetUberShader(u32 primitive_type, u32 components, const GLVertexFormat* vertex_format)
+SHADER* ProgramShaderCache::SetUberShader(PrimitiveType primitive_type, u32 components, const GLVertexFormat* vertex_format)
 {
   UBERSHADERUID uid = {};
   uid.puid = UberShader::GetPixelUberShaderUid(components, xfmem, bpmem);
@@ -565,7 +565,7 @@ GLuint ProgramShaderCache::CompileSingleShader(GLuint type, const char* code, co
   return result;
 }
 
-void ProgramShaderCache::GetShaderId(SHADERUID* uid, PIXEL_SHADER_RENDER_MODE render_mode, u32 components, u32 primitive_type)
+void ProgramShaderCache::GetShaderId(SHADERUID* uid, PIXEL_SHADER_RENDER_MODE render_mode, u32 components, PrimitiveType primitive_type)
 {
   GetPixelShaderUID(uid->puid, render_mode, components, xfmem, bpmem);
   GetVertexShaderUID(uid->vuid, components, xfmem, bpmem);
@@ -684,8 +684,12 @@ void ProgramShaderCache::CompileUberShaders()
   UberShader::VertexUberShaderUid vuid = {};
   GeometryShaderUid guid = {};
 
-  static constexpr std::array<u32, 3> primitive_lut = {
-    { PRIMITIVE_TRIANGLES, PRIMITIVE_LINES, PRIMITIVE_POINTS } };
+  static constexpr std::array<u32, 3> primitive_lut =
+  {{
+      static_cast<u32>(PrimitiveType::Triangles),
+      static_cast<u32>(PrimitiveType::Lines),
+      static_cast<u32>(PrimitiveType::Points)
+  }};
   geometry_shader_uid_data& guidd = guid.GetUidData<geometry_shader_uid_data>();
   UberShader::pixel_ubershader_uid_data& puidd = puid.GetUidData<UberShader::pixel_ubershader_uid_data>();
   UberShader::vertex_ubershader_uid_data& vuidd = vuid.GetUidData<UberShader::vertex_ubershader_uid_data>();

@@ -559,7 +559,7 @@ void D3DPostProcessor::CopyTexture(const TargetRectangle& dst_rect, uintptr_t ds
   D3DTexture2D* src_texture = reinterpret_cast<D3DTexture2D*>(src_tex);
   // If the dimensions are the same, we can copy instead of using a shader.
   bool scaling = (dst_rect.GetWidth() != src_rect.GetWidth() || dst_rect.GetHeight() != src_rect.GetHeight());
-  if (!scaling && !force_shader_copy)
+  if (!scaling && !force_shader_copy && !is_depth_texture)
   {
     D3D12_BOX srcbox = {
         static_cast<UINT>(src_rect.left),
@@ -606,7 +606,7 @@ void D3DPostProcessor::CopyTexture(const TargetRectangle& dst_rect, uintptr_t ds
     D3D12_SHADER_BYTECODE bytecode = {};
 
     D3D::DrawShadedTexQuad(src_texture, src_rect.AsRECT(), src_size.width, src_size.height,
-      StaticShaderCache::GetColorCopyPixelShader(false),
+      StaticShaderCache::GetColorCopyPixelShader(dst_texture->GetMultisampled()),
       StaticShaderCache::GetSimpleVertexShader(),
       StaticShaderCache::GetSimpleVertexShaderInputLayout(),
       (src_layer < 0) ? StaticShaderCache::GetCopyGeometryShader() : bytecode, 0,

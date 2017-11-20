@@ -307,6 +307,7 @@ struct VideoConfig final
   {
     return bUseXFB && !bUseRealXFB;
   }
+  inline bool MultisamplingEnabled() const { return iMultisamples > 1; }
   inline bool ExclusiveFullscreenEnabled() const
   {
     return backend_info.bSupportsExclusiveFullscreen && !bBorderlessFullscreen;

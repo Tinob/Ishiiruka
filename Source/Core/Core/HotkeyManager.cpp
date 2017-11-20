@@ -23,7 +23,8 @@
 const std::string hotkey_labels[] = {
     _trans("Open"),
     _trans("Change Disc"),
-    _trans("Refresh List"),
+    _trans("Eject Disc"),
+    _trans("Refresh Game List"),
     _trans("Toggle Pause"),
     _trans("Stop"),
     _trans("Reset"),
@@ -47,7 +48,7 @@ const std::string hotkey_labels[] = {
     _trans("Start Recording"),
     _trans("Play Recording"),
     _trans("Export Recording"),
-    _trans("Read-only mode"),
+    _trans("Read-Only Mode"),
 
     _trans("Step Into"),
     _trans("Step Over"),
@@ -345,8 +346,8 @@ void HotkeyManager::LoadDefaults(const ControllerInterface& ciface)
 
   auto set_key_expression = [this](int index, const std::string& expression) {
     m_keys[FindGroupByID(index)]
-        ->controls[GetIndexForGroup(FindGroupByID(index), index)]
-        ->control_ref->expression = expression;
+      ->controls[GetIndexForGroup(FindGroupByID(index), index)]
+      ->control_ref->SetExpression(expression);
   };
 
   // General hotkeys

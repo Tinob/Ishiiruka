@@ -53,7 +53,7 @@ void VideoBackend::InitBackendInfo()
           vkGetPhysicalDeviceProperties(gpu, &properties);
           VkPhysicalDeviceFeatures features;
           vkGetPhysicalDeviceFeatures(gpu, &features);
-          VulkanContext::PopulateBackendInfoFeatures(&g_Config, gpu, features);
+          VulkanContext::PopulateBackendInfoFeatures(&g_Config, gpu, properties, features);
           VulkanContext::PopulateBackendInfoMultisampleModes(&g_Config, gpu, properties);
         }
       }
@@ -175,7 +175,7 @@ bool VideoBackend::Initialize(void* window_handle)
 
   // Pass ownership over to VulkanContext, and let it take care of everything.
   g_vulkan_context = VulkanContext::Create(instance, gpu_list[selected_adapter_index], surface,
-    &g_Config, enable_debug_reports, enable_validation_layer);
+    enable_debug_reports, enable_validation_layer);
   if (!g_vulkan_context)
   {
     PanicAlert("Failed to create Vulkan device");
@@ -210,6 +210,7 @@ bool VideoBackend::Initialize(void* window_handle)
 
   // Create main wrapper instances.
   g_object_cache = std::make_unique<ObjectCache>();
+  g_shader_cache = std::make_unique<ShaderCache>();
   g_framebuffer_manager = std::make_unique<FramebufferManager>();
   g_renderer = std::make_unique<Renderer>(std::move(swap_chain));
   g_vertex_manager = std::make_unique<VertexManager>();
@@ -217,7 +218,7 @@ bool VideoBackend::Initialize(void* window_handle)
   // Invoke init methods on main wrapper classes.
   // These have to be done before the others because the destructors
   // for the remaining classes may call methods on these.
-  if (!g_object_cache->Initialize() || !FramebufferManager::GetInstance()->Initialize() ||
+  if (!g_object_cache->Initialize() || !g_shader_cache->Initialize() || !FramebufferManager::GetInstance()->Initialize() ||
     !StateTracker::CreateInstance() || !Renderer::GetInstance()->Initialize())
   {
     PanicAlert("Failed to initialize Vulkan classes.");
@@ -247,6 +248,7 @@ bool VideoBackend::Initialize(void* window_handle)
     g_renderer.reset();
     StateTracker::DestroyInstance();
     g_framebuffer_manager.reset();
+    g_shader_cache.reset();
     g_object_cache.reset();
     g_command_buffer_mgr.reset();
     g_vulkan_context.reset();
@@ -271,8 +273,18 @@ void VideoBackend::Video_Prepare()
 
 void VideoBackend::Shutdown()
 {
-  g_command_buffer_mgr->WaitForGPUIdle();
+  if (g_command_buffer_mgr)
+    g_command_buffer_mgr->WaitForGPUIdle();
 
+  g_perf_query.reset();
+  g_texture_cache.reset();
+  g_vertex_manager.reset();
+  g_framebuffer_manager.reset();
+  StateTracker::DestroyInstance();
+  g_renderer.reset();
+  if (g_shader_cache)
+    g_shader_cache->Shutdown();
+  g_shader_cache.reset();
   g_object_cache.reset();
   g_command_buffer_mgr.reset();
   g_vulkan_context.reset();
@@ -287,14 +299,7 @@ void VideoBackend::Video_Cleanup()
   g_command_buffer_mgr->WaitForGPUIdle();
 
   // Save all cached pipelines out to disk for next time.
-  g_object_cache->SavePipelineCache();
-
-  g_perf_query.reset();
-  g_texture_cache.reset();
-  g_vertex_manager.reset();
-  g_framebuffer_manager.reset();
-  StateTracker::DestroyInstance();
-  g_renderer.reset();
+  g_shader_cache->SavePipelineCache();
 
   CleanupShared();
 }

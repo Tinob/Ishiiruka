@@ -18,7 +18,8 @@
 
 struct BootParameters;
 class HotkeyScheduler;
-class LoggerWidget;
+class LogConfigWidget;
+class LogWidget;
 class MappingWindow;
 class NetPlayClient;
 class NetPlayDialog;
@@ -34,15 +35,12 @@ class MainWindow final : public QMainWindow
   Q_OBJECT
 
 public:
-  explicit MainWindow();
+  explicit MainWindow(std::unique_ptr<BootParameters> boot_parameters);
   ~MainWindow();
 
   bool eventFilter(QObject* object, QEvent* event) override;
 
 signals:
-  void EmulationStarted();
-  void EmulationPaused();
-  void EmulationStopped();
   void ReadOnlyModeChanged(bool read_only);
   void RecordingStatusChanged(bool recording);
 
@@ -93,6 +91,7 @@ private:
   void HideRenderWidget();
 
   void ShowSettingsWindow();
+  void ShowGeneralWindow();
   void ShowAudioWindow();
   void ShowControllersWindow();
   void ShowGraphicsWindow();
@@ -136,5 +135,6 @@ private:
   NetPlayDialog* m_netplay_dialog;
   NetPlaySetupDialog* m_netplay_setup_dialog;
   GraphicsWindow* m_graphics_window;
-  LoggerWidget* m_logger_widget;
+  LogWidget* m_log_widget;
+  LogConfigWidget* m_log_config_widget;
 };

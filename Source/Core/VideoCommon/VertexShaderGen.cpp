@@ -32,7 +32,7 @@ void GetVertexShaderUID(VertexShaderUid& out, u32 components, const XFMemory &xf
   for (unsigned int i = 0; i < uid_data.numTexGens; ++i)
   {
     const TexMtxInfo& texinfo = xfr.texMtxInfo[i];
-    needLightShader = needLightShader || texinfo.texgentype == XF_TEXGEN_COLOR_STRGBC0 || texinfo.texgentype == XF_TEXGEN_COLOR_STRGBC1;
+    needLightShader = needLightShader || texinfo.texgentype.Value() == XF_TEXGEN_COLOR_STRGBC0 || texinfo.texgentype.Value() == XF_TEXGEN_COLOR_STRGBC1;
   }
   uid_data.pixel_lighting = enable_pl;
   uid_data.numColorChans = xfr.numChan.numColorChans;
@@ -44,9 +44,9 @@ void GetVertexShaderUID(VertexShaderUid& out, u32 components, const XFMemory &xf
   {
     auto& texinfo = uid_data.texMtxInfo[i];
 
-    texinfo.sourcerow = xfr.texMtxInfo[i].sourcerow;
-    texinfo.inputform = xfr.texMtxInfo[i].inputform;
-    texinfo.texgentype = xfr.texMtxInfo[i].texgentype;
+    texinfo.sourcerow = xfr.texMtxInfo[i].sourcerow.Value();
+    texinfo.inputform = xfr.texMtxInfo[i].inputform.Value();
+    texinfo.texgentype = xfr.texMtxInfo[i].texgentype.Value();
     // first transformation
     switch (texinfo.texgentype)
     {
@@ -54,8 +54,8 @@ void GetVertexShaderUID(VertexShaderUid& out, u32 components, const XFMemory &xf
       if (uid_data.components & (VB_HAS_NRM1 | VB_HAS_NRM2))
       {
         // transform the light dir into tangent space
-        texinfo.embosslightshift = xfr.texMtxInfo[i].embosslightshift;
-        texinfo.embosssourceshift = xfr.texMtxInfo[i].embosssourceshift;
+        texinfo.embosslightshift = xfr.texMtxInfo[i].embosslightshift.Value();
+        texinfo.embosssourceshift = xfr.texMtxInfo[i].embosssourceshift.Value();
       }
       break;
     case XF_TEXGEN_COLOR_STRGBC0:
@@ -64,7 +64,7 @@ void GetVertexShaderUID(VertexShaderUid& out, u32 components, const XFMemory &xf
       break;
     case XF_TEXGEN_REGULAR:
     default:
-      uid_data.texMtxInfo_n_projection |= xfr.texMtxInfo[i].projection << i;
+      uid_data.texMtxInfo_n_projection |= xfr.texMtxInfo[i].projection.Value() << i;
       break;
     }
 
@@ -73,8 +73,8 @@ void GetVertexShaderUID(VertexShaderUid& out, u32 components, const XFMemory &xf
     if (uid_data.dualTexTrans_enabled && texinfo.texgentype == XF_TEXGEN_REGULAR)
     {
       auto& postInfo = uid_data.postMtxInfo[i];
-      postInfo.index = xfr.postMtxInfo[i].index;
-      postInfo.normalize = xfr.postMtxInfo[i].normalize;
+      postInfo.index = xfr.postMtxInfo[i].index.Value();
+      postInfo.normalize = xfr.postMtxInfo[i].normalize.Value();
     }
   }
   out.CalculateUIDHash();

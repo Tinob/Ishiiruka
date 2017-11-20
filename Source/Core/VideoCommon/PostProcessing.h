@@ -501,7 +501,7 @@ public:
     uintptr_t dst_texture = 0, const TargetRectangle* dst_rect = 0, const TargetSize* dst_size = 0);
 
   // Construct the options uniform buffer source for the specified config.
-  static void GetUniformBufferShaderSource(API_TYPE api, const PostProcessingShaderConfiguration* config, std::string& shader_source);
+  static void GetUniformBufferShaderSource(API_TYPE api, const PostProcessingShaderConfiguration* config, std::string& shader_source, bool includeconfig = true);
 
   // Construct a complete fragment shader (HLSL/GLSL) for the specified pass.
   static std::string GetCommonFragmentShaderSource(API_TYPE api, const PostProcessingShaderConfiguration* config, int texture_register_start = 9);

@@ -23,6 +23,32 @@ import java.util.Set;
 import java.util.TreeSet;
 
 /**
+ * A HashMap<String, SettingSection> that constructs a new SettingSection instead of returning null
+ * when getting a key not already in the map
+ */
+final class SettingsSectionMap extends HashMap<String, SettingSection>
+{
+	@Override
+	public SettingSection get(Object key)
+	{
+		if (!(key instanceof String))
+		{
+			return null;
+		}
+
+		String stringKey = (String)key;
+
+		if (!super.containsKey(stringKey))
+		{
+			SettingSection section = new SettingSection(stringKey);
+			super.put(stringKey, section);
+			return section;
+		}
+		return super.get(key);
+	}
+}
+
+/**
  * Contains static methods for interacting with .ini files in which settings are stored.
  */
 public final class SettingsFile
@@ -54,9 +80,11 @@ public final class SettingsFile
 	public static final String KEY_OVERCLOCK_PERCENT = "Overclock";
 	public static final String KEY_VIDEO_BACKEND = "GFXBackend";
 	public static final String KEY_AUDIO_STRETCH = "AudioStretch";
+	public static final String KEY_SLOT_A_DEVICE = "SlotA";
+	public static final String KEY_SLOT_B_DEVICE = "SlotB";
 
 	public static final String KEY_SHOW_FPS = "ShowFPS";
-	public static final String KEY_INTERNAL_RES = "EFBScale";
+	public static final String KEY_INTERNAL_RES = "InternalResolution";
 	public static final String KEY_FSAA = "MSAA";
 	public static final String KEY_ANISOTROPY = "MaxAnisotropy";
 	public static final String KEY_POST_SHADER = "PostProcessingShader";
@@ -256,7 +284,7 @@ public final class SettingsFile
 	 */
 	public static HashMap<String, SettingSection> readFile(final String fileName, SettingsActivityView view)
 	{
-		HashMap<String, SettingSection> sections = new HashMap<>();
+		HashMap<String, SettingSection> sections = new SettingsSectionMap();
 
 		File ini = getSettingsFile(fileName);
 

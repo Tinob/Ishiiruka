@@ -114,7 +114,7 @@ std::vector<std::string> GetSoundBackends()
   if (XAudio2_7::isValid() || XAudio2::isValid())
     backends.push_back(BACKEND_XAUDIO2);
   if (AlsaSound::isValid())
-    backends.push_back(BACKEND_ALSA);  
+    backends.push_back(BACKEND_ALSA);
   if (PulseAudio::isValid())
     backends.push_back(BACKEND_PULSEAUDIO);
   if (OpenALStream::isValid())
@@ -147,8 +147,7 @@ bool SupportsVolumeChanges(const std::string& backend)
   // FIXME: this one should ask the backend whether it supports it.
   //       but getting the backend from string etc. is probably
   //       too much just to enable/disable a stupid slider...
-  return backend == BACKEND_CUBEB || backend == BACKEND_OPENAL ||
-         backend == BACKEND_XAUDIO2;
+  return backend == BACKEND_CUBEB || backend == BACKEND_OPENAL || backend == BACKEND_XAUDIO2;
 }
 
 void UpdateSoundStream()
@@ -160,10 +159,10 @@ void UpdateSoundStream()
   }
 }
 
-void ClearAudioBuffer(bool mute)
+void SetSoundStreamRunning(bool running)
 {
   if (g_sound_stream)
-    g_sound_stream->Clear(mute);
+    g_sound_stream->SetRunning(running);
 }
 
 void SendAIBuffer(const short* samples, unsigned int num_samples)

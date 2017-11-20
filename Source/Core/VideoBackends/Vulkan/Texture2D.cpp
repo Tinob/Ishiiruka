@@ -13,12 +13,12 @@ namespace Vulkan
 {
 Texture2D::Texture2D(u32 width, u32 height, u32 levels, u32 layers, VkFormat format,
   VkSampleCountFlagBits samples, VkImageViewType view_type, VkImage image,
-  VkDeviceMemory device_memory, VkImageView view, VkFramebuffer framebuffer)
+  VkDeviceMemory device_memory, VkImageView view, VkFramebuffer framebuffer, bool clear)
   : m_width(width), m_height(height), m_levels(levels), m_layers(layers), m_format(format),
   m_samples(samples), m_view_type(view_type), m_image(image), m_device_memory(device_memory),
   m_view(view), m_framebuffer(framebuffer)
 {
-  if (framebuffer != VK_NULL_HANDLE)
+  if (framebuffer != VK_NULL_HANDLE && clear)
   {
     // Clear render targets before use to prevent reading uninitialized memory.
     VkClearColorValue clear_value = { { 0.0f, 0.0f, 0.0f, 1.0f } };
@@ -156,7 +156,7 @@ std::unique_ptr<Texture2D> Texture2D::CreateFromExistingImage(u32 width, u32 hei
   u32 layers, VkFormat format,
   VkSampleCountFlagBits samples,
   VkImageViewType view_type,
-  VkImage existing_image)
+  VkImage existing_image, VkRenderPass renderpass)
 {
   // Only need to create the image view, this is mainly for swap chains.
   VkImageViewCreateInfo view_info = {
@@ -181,9 +181,31 @@ std::unique_ptr<Texture2D> Texture2D::CreateFromExistingImage(u32 width, u32 hei
     LOG_VULKAN_ERROR(res, "vkCreateImageView failed: ");
     return nullptr;
   }
+  VkFramebuffer framebuffer = VK_NULL_HANDLE;
+  if (renderpass != VK_NULL_HANDLE)
+  {
+    VkImageView framebuffer_attachments[] = { view };
+    VkFramebufferCreateInfo framebuffer_info = {
+      VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+      nullptr,
+      0,
+      renderpass,
+      static_cast<u32>(ArraySize(framebuffer_attachments)),
+      framebuffer_attachments,
+      width,
+      height,
+      layers };
 
+    res = vkCreateFramebuffer(g_vulkan_context->GetDevice(), &framebuffer_info, nullptr,
+      &framebuffer);
+    if (res != VK_SUCCESS)
+    {
+      LOG_VULKAN_ERROR(res, "vkCreateFramebuffer failed: ");
+      return nullptr;
+    }
+  }
   return std::make_unique<Texture2D>(width, height, levels, layers, format, samples, view_type,
-    existing_image, memory, view, nullptr);
+    existing_image, memory, view, framebuffer, false);
 }
 
 void Texture2D::OverrideImageLayout(VkImageLayout new_layout)

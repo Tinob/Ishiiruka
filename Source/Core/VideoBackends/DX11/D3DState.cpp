@@ -9,8 +9,8 @@
 #include "VideoBackends/DX11/D3DBase.h"
 #include "VideoBackends/DX11/D3DState.h"
 
+#include "VideoCommon/RenderBase.h"
 #include "VideoCommon/VideoConfig.h"
-#include "VideoCommon/SamplerCommon.h"
 
 namespace DX11
 {
@@ -340,188 +340,230 @@ void StateManager::SetTextureByMask(u64 textureSlotMask, ID3D11ShaderResourceVie
 
 ID3D11SamplerState* StateCache::Get(SamplerState state)
 {
-  auto it = m_sampler.find(state.packed);
-
+  auto it = m_sampler.find(state.hex);
   if (it != m_sampler.end())
-  {
     return it->second.get();
-  }
-
-  const unsigned int d3dMipFilters[4] =
-  {
-      TexMode0::TEXF_NONE,
-      TexMode0::TEXF_POINT,
-      TexMode0::TEXF_LINEAR,
-      TexMode0::TEXF_NONE, //reserved
-  };
-  const D3D11_TEXTURE_ADDRESS_MODE d3dClamps[4] =
-  {
-      D3D11_TEXTURE_ADDRESS_CLAMP,
-      D3D11_TEXTURE_ADDRESS_WRAP,
-      D3D11_TEXTURE_ADDRESS_MIRROR,
-      D3D11_TEXTURE_ADDRESS_WRAP //reserved
-  };
 
   D3D11_SAMPLER_DESC sampdc = CD3D11_SAMPLER_DESC(CD3D11_DEFAULT());
-
-  unsigned int mip = d3dMipFilters[state.min_filter & 3];
-  // Only use anisotropic filtering if one or both of the filters are set to Linear.
-  // If both filters are set to Point then using anisotropy is equivalent
-  // to "forced filtering" which will cause visual glitches.
-  if (state.max_anisotropy > 1 && !SamplerCommon::IsBpTexMode0PointFilteringEnabled(state))
+  if (state.anisotropic_filtering)
   {
     sampdc.Filter = D3D11_FILTER_ANISOTROPIC;
-    sampdc.MaxAnisotropy = (u32)state.max_anisotropy;
+    sampdc.MaxAnisotropy = 1u << g_ActiveConfig.iMaxAnisotropy;
   }
-  else if (state.min_filter & 4) // linear min filter
+  else if (state.mipmap_filter == SamplerState::Filter::Linear)
   {
-    if (state.mag_filter) // linear mag filter
-    {
-      if (mip == TexMode0::TEXF_NONE)
-        sampdc.Filter = D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT;
-      else if (mip == TexMode0::TEXF_POINT)
-        sampdc.Filter = D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT;
-      else if (mip == TexMode0::TEXF_LINEAR)
-        sampdc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-    }
-    else // point mag filter
-    {
-      if (mip == TexMode0::TEXF_NONE)
-        sampdc.Filter = D3D11_FILTER_MIN_LINEAR_MAG_MIP_POINT;
-      else if (mip == TexMode0::TEXF_POINT)
-        sampdc.Filter = D3D11_FILTER_MIN_LINEAR_MAG_MIP_POINT;
-      else if (mip == TexMode0::TEXF_LINEAR)
-        sampdc.Filter = D3D11_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR;
-    }
+    if (state.min_filter == SamplerState::Filter::Linear)
+      sampdc.Filter = (state.mag_filter == SamplerState::Filter::Linear) ?
+      D3D11_FILTER_MIN_MAG_MIP_LINEAR :
+      D3D11_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR;
+    else
+      sampdc.Filter = (state.mag_filter == SamplerState::Filter::Linear) ?
+      D3D11_FILTER_MIN_POINT_MAG_MIP_LINEAR :
+      D3D11_FILTER_MIN_MAG_POINT_MIP_LINEAR;
   }
-  else // point min filter
+  else
   {
-    if (state.mag_filter) // linear mag filter
-    {
-      if (mip == TexMode0::TEXF_NONE)
-        sampdc.Filter = D3D11_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT;
-      else if (mip == TexMode0::TEXF_POINT)
-        sampdc.Filter = D3D11_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT;
-      else if (mip == TexMode0::TEXF_LINEAR)
-        sampdc.Filter = D3D11_FILTER_MIN_POINT_MAG_MIP_LINEAR;
-    }
-    else // point mag filter
-    {
-      if (mip == TexMode0::TEXF_NONE)
-        sampdc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
-      else if (mip == TexMode0::TEXF_POINT)
-        sampdc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
-      else if (mip == TexMode0::TEXF_LINEAR)
-        sampdc.Filter = D3D11_FILTER_MIN_MAG_POINT_MIP_LINEAR;
-    }
+    if (state.min_filter == SamplerState::Filter::Linear)
+      sampdc.Filter = (state.mag_filter == SamplerState::Filter::Linear) ?
+      D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT :
+      D3D11_FILTER_MIN_LINEAR_MAG_MIP_POINT;
+    else
+      sampdc.Filter = (state.mag_filter == SamplerState::Filter::Linear) ?
+      D3D11_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT :
+      D3D11_FILTER_MIN_MAG_MIP_POINT;
   }
 
-  sampdc.AddressU = d3dClamps[state.wrap_s];
-  sampdc.AddressV = d3dClamps[state.wrap_t];
+  static constexpr std::array<D3D11_TEXTURE_ADDRESS_MODE, 3> address_modes = {
+    { D3D11_TEXTURE_ADDRESS_CLAMP, D3D11_TEXTURE_ADDRESS_WRAP, D3D11_TEXTURE_ADDRESS_MIRROR } };
+  sampdc.AddressU = address_modes[static_cast<u32>(state.wrap_u.Value())];
+  sampdc.AddressV = address_modes[static_cast<u32>(state.wrap_v.Value())];
+  sampdc.MaxLOD = state.max_lod / 16.f;
+  sampdc.MinLOD = state.min_lod / 16.f;
+  sampdc.MipLODBias = (s32)state.lod_bias / 256.f;
 
-  sampdc.MaxLOD = SamplerCommon::IsBpTexMode0MipmapsEnabled(state) ? static_cast<float>(state.max_lod) / 16.f : 0.f;
-  sampdc.MinLOD = std::min(static_cast<float>(state.min_lod) / 16.f, sampdc.MaxLOD);
-  sampdc.MipLODBias = static_cast<s32>(state.lod_bias) / 32.0f;
 
   ID3D11SamplerState* res = nullptr;
-
   HRESULT hr = D3D::device->CreateSamplerState(&sampdc, &res);
-  if (SUCCEEDED(hr))
-    D3D::SetDebugObjectName((ID3D11DeviceChild*)res, "sampler state used to emulate the GX pipeline");
-  else
+  if (FAILED(hr))
     PanicAlert("Fail %s %d\n", __FILE__, __LINE__);
 
-  m_sampler.emplace(state.packed, std::move(D3D::SamplerStatePtr(res)));
-
+  D3D::SetDebugObjectName(res, "sampler state used to emulate the GX pipeline");
+  m_sampler.emplace(state.hex, std::move(D3D::SamplerStatePtr(res)));
   return res;
 }
 
-ID3D11BlendState* StateCache::Get(BlendState state)
-{
-  if (!state.blend_enable)
-  {
-    state.src_blend = D3D11_BLEND_ONE;
-    state.dst_blend = D3D11_BLEND_ZERO;
-    state.blend_op = D3D11_BLEND_OP_ADD;
-    state.use_dst_alpha = false;
-  }
+static constexpr std::array<D3D11_LOGIC_OP, 16> logic_ops = {
+  { D3D11_LOGIC_OP_CLEAR, D3D11_LOGIC_OP_AND, D3D11_LOGIC_OP_AND_REVERSE, D3D11_LOGIC_OP_COPY,
+  D3D11_LOGIC_OP_AND_INVERTED, D3D11_LOGIC_OP_NOOP, D3D11_LOGIC_OP_XOR, D3D11_LOGIC_OP_OR,
+  D3D11_LOGIC_OP_NOR, D3D11_LOGIC_OP_EQUIV, D3D11_LOGIC_OP_INVERT, D3D11_LOGIC_OP_OR_REVERSE,
+  D3D11_LOGIC_OP_COPY_INVERTED, D3D11_LOGIC_OP_OR_INVERTED, D3D11_LOGIC_OP_NAND,
+  D3D11_LOGIC_OP_SET } };
 
-  auto it = m_blend.find(state.packed);
+// fallbacks for devices that does not support logic blending
+static constexpr std::array<D3D11_BLEND_OP, 16> d3dLogicOps =
+{
+  D3D11_BLEND_OP_ADD,
+  D3D11_BLEND_OP_ADD,
+  D3D11_BLEND_OP_SUBTRACT,
+  D3D11_BLEND_OP_ADD,
+  D3D11_BLEND_OP_REV_SUBTRACT,
+  D3D11_BLEND_OP_ADD,
+  D3D11_BLEND_OP_MAX,
+  D3D11_BLEND_OP_ADD,
+  D3D11_BLEND_OP_MAX,
+  D3D11_BLEND_OP_MAX,
+  D3D11_BLEND_OP_ADD,
+  D3D11_BLEND_OP_ADD,
+  D3D11_BLEND_OP_ADD,
+  D3D11_BLEND_OP_ADD,
+  D3D11_BLEND_OP_ADD,
+  D3D11_BLEND_OP_ADD
+};
+static constexpr std::array<D3D11_BLEND, 16> d3dLogicOpSrcFactors =
+{
+  D3D11_BLEND_ZERO,
+  D3D11_BLEND_DEST_COLOR,
+  D3D11_BLEND_ONE,
+  D3D11_BLEND_ONE,
+  D3D11_BLEND_DEST_COLOR,
+  D3D11_BLEND_ZERO,
+  D3D11_BLEND_INV_DEST_COLOR,
+  D3D11_BLEND_INV_DEST_COLOR,
+  D3D11_BLEND_INV_SRC_COLOR,
+  D3D11_BLEND_INV_SRC_COLOR,
+  D3D11_BLEND_INV_DEST_COLOR,
+  D3D11_BLEND_ONE,
+  D3D11_BLEND_INV_SRC_COLOR,
+  D3D11_BLEND_INV_SRC_COLOR,
+  D3D11_BLEND_INV_DEST_COLOR,
+  D3D11_BLEND_ONE
+};
+static constexpr std::array<D3D11_BLEND, 16> d3dLogicOpDestFactors =
+{
+  D3D11_BLEND_ZERO,
+  D3D11_BLEND_ZERO,
+  D3D11_BLEND_INV_SRC_COLOR,
+  D3D11_BLEND_ZERO,
+  D3D11_BLEND_ONE,
+  D3D11_BLEND_ONE,
+  D3D11_BLEND_INV_SRC_COLOR,
+  D3D11_BLEND_ONE,
+  D3D11_BLEND_INV_DEST_COLOR,
+  D3D11_BLEND_SRC_COLOR,
+  D3D11_BLEND_INV_DEST_COLOR,
+  D3D11_BLEND_INV_DEST_COLOR,
+  D3D11_BLEND_INV_SRC_COLOR,
+  D3D11_BLEND_ONE,
+  D3D11_BLEND_INV_SRC_COLOR,
+  D3D11_BLEND_ONE
+};
+
+ID3D11BlendState* StateCache::Get(BlendingState state)
+{
+  auto it = m_blend.find(state.hex);
 
   if (it != m_blend.end())
     return it->second.get();
 
-  if (state.logic_op_enabled && !state.use_dst_alpha)
-  {
-    D3D11_BLEND_DESC1 blenddc = CD3D11_BLEND_DESC1(CD3D11_DEFAULT());
-    blenddc.RenderTarget[0].LogicOpEnable = true;
-    blenddc.RenderTarget[0].LogicOp = state.logic_op;
-    ID3D11BlendState1* res = nullptr;
-
-    HRESULT hr = D3D::device1->CreateBlendState1(&blenddc, &res);
-    if (SUCCEEDED(hr))
-      D3D::SetDebugObjectName((ID3D11DeviceChild*)res, "blend state used to emulate the GX pipeline");
-    else
-      PanicAlert("Failed to create blend state at %s %d\n", __FILE__, __LINE__);
-
-    m_blend.emplace(state.packed, std::move(D3D::BlendStatePtr(res)));
-
-    return res;
-  }
-
   D3D11_BLEND_DESC blenddc = CD3D11_BLEND_DESC(CD3D11_DEFAULT());
-
   blenddc.AlphaToCoverageEnable = FALSE;
   blenddc.IndependentBlendEnable = FALSE;
-  blenddc.RenderTarget[0].BlendEnable = state.blend_enable;
-  blenddc.RenderTarget[0].RenderTargetWriteMask = (u32)state.write_mask;
-  blenddc.RenderTarget[0].SrcBlend = state.src_blend;
-  blenddc.RenderTarget[0].DestBlend = state.dst_blend;
-  blenddc.RenderTarget[0].BlendOp = state.blend_op;
-  blenddc.RenderTarget[0].SrcBlendAlpha = state.src_blend;
-  blenddc.RenderTarget[0].DestBlendAlpha = state.dst_blend;
-  blenddc.RenderTarget[0].BlendOpAlpha = state.blend_op;
-
-  if (blenddc.RenderTarget[0].SrcBlend == D3D11_BLEND_SRC_COLOR)
-    blenddc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_SRC_ALPHA;
-  else if (blenddc.RenderTarget[0].SrcBlend == D3D11_BLEND_INV_SRC_COLOR)
-    blenddc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA;
-  else if (blenddc.RenderTarget[0].SrcBlend == D3D11_BLEND_DEST_COLOR)
-    blenddc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_DEST_ALPHA;
-  else if (blenddc.RenderTarget[0].SrcBlend == D3D11_BLEND_INV_DEST_COLOR)
-    blenddc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_INV_DEST_ALPHA;
-  else
-    blenddc.RenderTarget[0].SrcBlendAlpha = blenddc.RenderTarget[0].SrcBlend;
-
-  if (blenddc.RenderTarget[0].DestBlend == D3D11_BLEND_SRC_COLOR)
-    blenddc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_SRC_ALPHA;
-  else if (blenddc.RenderTarget[0].DestBlend == D3D11_BLEND_INV_SRC_COLOR)
-    blenddc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA;
-  else if (blenddc.RenderTarget[0].DestBlend == D3D11_BLEND_DEST_COLOR)
-    blenddc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_DEST_ALPHA;
-  else if (blenddc.RenderTarget[0].DestBlend == D3D11_BLEND_INV_DEST_COLOR)
-    blenddc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_INV_DEST_ALPHA;
-  else
-    blenddc.RenderTarget[0].DestBlendAlpha = blenddc.RenderTarget[0].DestBlend;
-
-  if (state.use_dst_alpha)
+  D3D11_RENDER_TARGET_BLEND_DESC& tdesc = blenddc.RenderTarget[0];
+  
+  if (state.logicopenable)
   {
-    // Colors should blend against SRC1_ALPHA
-    if (blenddc.RenderTarget[0].SrcBlend == D3D11_BLEND_SRC_ALPHA)
-      blenddc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC1_ALPHA;
-    else if (blenddc.RenderTarget[0].SrcBlend == D3D11_BLEND_INV_SRC_ALPHA)
-      blenddc.RenderTarget[0].SrcBlend = D3D11_BLEND_INV_SRC1_ALPHA;
+    if (D3D::GetLogicOpSupported())
+    {
+      D3D11_BLEND_DESC1 blenddc1 = {};
+      D3D11_RENDER_TARGET_BLEND_DESC1& tdesc1 = blenddc1.RenderTarget[0];
+      if (state.colorupdate)
+        tdesc1.RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_RED | D3D11_COLOR_WRITE_ENABLE_GREEN |
+        D3D11_COLOR_WRITE_ENABLE_BLUE;
+      else
+        tdesc1.RenderTargetWriteMask = 0;
+      if (state.alphaupdate)
+        tdesc.RenderTargetWriteMask |= D3D11_COLOR_WRITE_ENABLE_ALPHA;
 
-    // Colors should blend against SRC1_ALPHA
-    if (blenddc.RenderTarget[0].DestBlend == D3D11_BLEND_SRC_ALPHA)
-      blenddc.RenderTarget[0].DestBlend = D3D11_BLEND_SRC1_ALPHA;
-    else if (blenddc.RenderTarget[0].DestBlend == D3D11_BLEND_INV_SRC_ALPHA)
-      blenddc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC1_ALPHA;
+      static constexpr std::array<D3D11_LOGIC_OP, 16> logic_o = {
+        { D3D11_LOGIC_OP_CLEAR, D3D11_LOGIC_OP_AND, D3D11_LOGIC_OP_AND_REVERSE, D3D11_LOGIC_OP_COPY,
+        D3D11_LOGIC_OP_AND_INVERTED, D3D11_LOGIC_OP_NOOP, D3D11_LOGIC_OP_XOR, D3D11_LOGIC_OP_OR,
+        D3D11_LOGIC_OP_NOR, D3D11_LOGIC_OP_EQUIV, D3D11_LOGIC_OP_INVERT, D3D11_LOGIC_OP_OR_REVERSE,
+        D3D11_LOGIC_OP_COPY_INVERTED, D3D11_LOGIC_OP_OR_INVERTED, D3D11_LOGIC_OP_NAND,
+        D3D11_LOGIC_OP_SET } };
+      tdesc1.LogicOpEnable = TRUE;
+      tdesc1.LogicOp = logic_o[state.logicmode];
+      ID3D11BlendState1* res = nullptr;
 
-    blenddc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
-    blenddc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
-    blenddc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+      HRESULT hr = D3D::device1->CreateBlendState1(&blenddc1, &res);
+      if (SUCCEEDED(hr))
+        D3D::SetDebugObjectName((ID3D11DeviceChild*)res, "blend state used to emulate the GX pipeline");
+      else
+        PanicAlert("Failed to create blend state at %s %d\n", __FILE__, __LINE__);
+
+      m_blend.emplace(state.hex, std::move(D3D::BlendStatePtr(res)));
+      return res;
+    }
+    else
+    {
+      tdesc.BlendEnable = true;
+      tdesc.SrcBlend = d3dLogicOpSrcFactors[state.logicmode.Value()];      
+      tdesc.DestBlend = d3dLogicOpDestFactors[state.logicmode.Value()];
+      tdesc.BlendOp = d3dLogicOps[state.logicmode.Value()];
+      tdesc.BlendOpAlpha = tdesc.BlendOp;
+
+      if (tdesc.SrcBlend == D3D11_BLEND_SRC_COLOR)
+        tdesc.SrcBlendAlpha = D3D11_BLEND_SRC_ALPHA;
+      else if (tdesc.SrcBlend == D3D11_BLEND_INV_SRC_COLOR)
+        tdesc.SrcBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA;
+      else if (tdesc.SrcBlend == D3D11_BLEND_DEST_COLOR)
+        tdesc.SrcBlendAlpha = D3D11_BLEND_DEST_ALPHA;
+      else if (tdesc.SrcBlend == D3D11_BLEND_INV_DEST_COLOR)
+        tdesc.SrcBlendAlpha = D3D11_BLEND_INV_DEST_ALPHA;
+      else
+        tdesc.SrcBlendAlpha = tdesc.SrcBlend;
+
+      if (tdesc.DestBlend == D3D11_BLEND_SRC_COLOR)
+        tdesc.DestBlendAlpha = D3D11_BLEND_SRC_ALPHA;
+      else if (tdesc.DestBlend == D3D11_BLEND_INV_SRC_COLOR)
+        tdesc.DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA;
+      else if (tdesc.DestBlend == D3D11_BLEND_DEST_COLOR)
+        tdesc.DestBlendAlpha = D3D11_BLEND_DEST_ALPHA;
+      else if (tdesc.DestBlend == D3D11_BLEND_INV_DEST_COLOR)
+        tdesc.DestBlendAlpha = D3D11_BLEND_INV_DEST_ALPHA;
+      else
+        tdesc.DestBlendAlpha = tdesc.DestBlend;
+    }
   }
+  else
+  {
+    tdesc.BlendEnable = state.blendenable;
+    const bool use_dual_source = state.usedualsrc;
+    const std::array<D3D11_BLEND, 8> src_factors = {
+      { D3D11_BLEND_ZERO, D3D11_BLEND_ONE, D3D11_BLEND_DEST_COLOR, D3D11_BLEND_INV_DEST_COLOR,
+      use_dual_source ? D3D11_BLEND_SRC1_ALPHA : D3D11_BLEND_SRC_ALPHA,
+      use_dual_source ? D3D11_BLEND_INV_SRC1_ALPHA : D3D11_BLEND_INV_SRC_ALPHA,
+      D3D11_BLEND_DEST_ALPHA, D3D11_BLEND_INV_DEST_ALPHA } };
+    const std::array<D3D11_BLEND, 8> dst_factors = {
+      { D3D11_BLEND_ZERO, D3D11_BLEND_ONE, D3D11_BLEND_SRC_COLOR, D3D11_BLEND_INV_SRC_COLOR,
+      use_dual_source ? D3D11_BLEND_SRC1_ALPHA : D3D11_BLEND_SRC_ALPHA,
+      use_dual_source ? D3D11_BLEND_INV_SRC1_ALPHA : D3D11_BLEND_INV_SRC_ALPHA,
+      D3D11_BLEND_DEST_ALPHA, D3D11_BLEND_INV_DEST_ALPHA } };
+
+    tdesc.SrcBlend = src_factors[state.srcfactor];
+    tdesc.SrcBlendAlpha = src_factors[state.srcfactoralpha];
+    tdesc.DestBlend = dst_factors[state.dstfactor];
+    tdesc.DestBlendAlpha = dst_factors[state.dstfactoralpha];
+    tdesc.BlendOp = state.subtract ? D3D11_BLEND_OP_REV_SUBTRACT : D3D11_BLEND_OP_ADD;
+    tdesc.BlendOpAlpha = state.subtractAlpha ? D3D11_BLEND_OP_REV_SUBTRACT : D3D11_BLEND_OP_ADD;
+  }
+ 
+  if (state.colorupdate)
+    tdesc.RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_RED | D3D11_COLOR_WRITE_ENABLE_GREEN |
+    D3D11_COLOR_WRITE_ENABLE_BLUE;
+  else
+    tdesc.RenderTargetWriteMask = 0;
+  if (state.alphaupdate)
+    tdesc.RenderTargetWriteMask |= D3D11_COLOR_WRITE_ENABLE_ALPHA;
 
   ID3D11BlendState* res = nullptr;
 
@@ -531,21 +573,26 @@ ID3D11BlendState* StateCache::Get(BlendState state)
   else
     PanicAlert("Failed to create blend state at %s %d\n", __FILE__, __LINE__);
 
-  m_blend.emplace(state.packed, std::move(D3D::BlendStatePtr(res)));
+  m_blend.emplace(state.hex, std::move(D3D::BlendStatePtr(res)));
 
   return res;
 }
 
-ID3D11RasterizerState* StateCache::Get(RasterizerState state)
+ID3D11RasterizerState* StateCache::Get(RasterizationState state)
 {
-  auto it = m_raster.find(state.packed);
+  auto it = m_raster.find(state.hex);
 
   if (it != m_raster.end())
     return it->second.get();
 
-  D3D11_RASTERIZER_DESC rastdc = CD3D11_RASTERIZER_DESC(D3D11_FILL_SOLID,
-    state.cull_mode,
-    false, 0, 0.f, 0, false, true, false, false);
+  static constexpr std::array<D3D11_CULL_MODE, 4> cull_modes = {
+    { D3D11_CULL_NONE, D3D11_CULL_BACK, D3D11_CULL_FRONT, D3D11_CULL_BACK } };
+
+
+  D3D11_RASTERIZER_DESC rastdc = {};
+  rastdc.FillMode = D3D11_FILL_SOLID;
+  rastdc.CullMode = cull_modes[state.cullmode];
+  rastdc.ScissorEnable = TRUE;
 
   ID3D11RasterizerState* res = nullptr;
 
@@ -555,14 +602,14 @@ ID3D11RasterizerState* StateCache::Get(RasterizerState state)
   else
     PanicAlert("Failed to create rasterizer state at %s %d\n", __FILE__, __LINE__);
 
-  m_raster.emplace(state.packed, std::move(D3D::RasterizerStatePtr(res)));
+  m_raster.emplace(state.hex, std::move(D3D::RasterizerStatePtr(res)));
 
   return res;
 }
 
 ID3D11DepthStencilState* StateCache::Get(DepthState state)
 {
-  auto it = m_depth.find(state.packed);
+  auto it = m_depth.find(state.hex);
 
   if (it != m_depth.end())
     return it->second.get();
@@ -576,25 +623,25 @@ ID3D11DepthStencilState* StateCache::Get(DepthState state)
   depthdc.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
   depthdc.StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
 
-  const D3D11_COMPARISON_FUNC d3dCmpFuncs[8] =
+  static const D3D11_COMPARISON_FUNC d3dCmpFuncs[8] =
   {
-      D3D11_COMPARISON_NEVER,					D3D11_COMPARISON_GREATER, D3D11_COMPARISON_EQUAL,
-      D3D11_COMPARISON_GREATER_EQUAL, D3D11_COMPARISON_LESS,		D3D11_COMPARISON_NOT_EQUAL,
-      D3D11_COMPARISON_LESS_EQUAL,		D3D11_COMPARISON_ALWAYS
+    D3D11_COMPARISON_NEVER,					D3D11_COMPARISON_GREATER, D3D11_COMPARISON_EQUAL,
+    D3D11_COMPARISON_GREATER_EQUAL, D3D11_COMPARISON_LESS,		D3D11_COMPARISON_NOT_EQUAL,
+    D3D11_COMPARISON_LESS_EQUAL,		D3D11_COMPARISON_ALWAYS
   };
 
-  const D3D11_COMPARISON_FUNC d3dInvFuncs[9] =
+  static const D3D11_COMPARISON_FUNC d3dRevFuncs[9] =
   {
-      D3D11_COMPARISON_NEVER,		D3D11_COMPARISON_LESS_EQUAL,		D3D11_COMPARISON_EQUAL,
-      D3D11_COMPARISON_LESS,		D3D11_COMPARISON_GREATER_EQUAL, D3D11_COMPARISON_NOT_EQUAL,
-      D3D11_COMPARISON_GREATER, D3D11_COMPARISON_ALWAYS
+    D3D11_COMPARISON_NEVER,		D3D11_COMPARISON_LESS_EQUAL,		D3D11_COMPARISON_EQUAL,
+    D3D11_COMPARISON_LESS,		D3D11_COMPARISON_GREATER_EQUAL, D3D11_COMPARISON_NOT_EQUAL,
+    D3D11_COMPARISON_GREATER, D3D11_COMPARISON_ALWAYS
   };
 
   if (state.testenable)
   {
     depthdc.DepthEnable = TRUE;
     depthdc.DepthWriteMask = state.updateenable ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO;
-    depthdc.DepthFunc = state.reversed_depth ? d3dInvFuncs[state.func] : d3dCmpFuncs[state.func];
+    depthdc.DepthFunc = state.reversed_depth ? d3dRevFuncs[state.func] : d3dCmpFuncs[state.func];
   }
   else
   {
@@ -610,7 +657,7 @@ ID3D11DepthStencilState* StateCache::Get(DepthState state)
     D3D::SetDebugObjectName((ID3D11DeviceChild*)res, "depth-stencil state used to emulate the GX pipeline");
   else
     PanicAlert("Failed to create depth state at %s %d\n", __FILE__, __LINE__);
-  m_depth.emplace(state.packed, std::move(D3D::DepthStencilStatePtr(res)));
+  m_depth.emplace(state.hex, std::move(D3D::DepthStencilStatePtr(res)));
 
   return res;
 }
@@ -621,6 +668,17 @@ void StateCache::Clear()
   m_raster.clear();
   m_blend.clear();
   m_sampler.clear();
+}
+
+D3D11_PRIMITIVE_TOPOLOGY StateCache::GetPrimitiveTopology(PrimitiveType primitive)
+{
+  static constexpr std::array<D3D11_PRIMITIVE_TOPOLOGY, 3> primitives =
+  {{
+      D3D11_PRIMITIVE_TOPOLOGY_POINTLIST,
+      D3D11_PRIMITIVE_TOPOLOGY_LINELIST,
+      D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST
+  }};
+  return primitives[static_cast<u32>(primitive)];
 }
 
 }  // namespace DX11

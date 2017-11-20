@@ -200,14 +200,9 @@ GLuint OGLTexture::GetFramebuffer() const
 
 void OGLTexture::Bind(u32 stage)
 {
-  if (s_Textures[stage] != m_texId)
+  if (s_Textures[stage] != m_texId || !g_ActiveConfig.backend_info.bSupportsBindingLayout)
   {
-    if (s_ActiveTexture != stage)
-    {
-      glActiveTexture(GL_TEXTURE0 + stage);
-      s_ActiveTexture = stage;
-    }
-
+    glActiveTexture(GL_TEXTURE0 + stage);
     glBindTexture(GL_TEXTURE_2D_ARRAY, m_texId);
     s_Textures[stage] = m_texId;
   }

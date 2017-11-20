@@ -261,6 +261,7 @@
     <ClInclude Include="GL\GLExtensions\ARB_texture_compression_bptc.h" />
     <ClInclude Include="Lazy.h" />
     <ClInclude Include="UPnP.h" />
+    <ClInclude Include="Version.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CDUtils.cpp" />

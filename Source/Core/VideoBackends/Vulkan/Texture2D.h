@@ -27,7 +27,7 @@ public:
   };
   Texture2D(u32 width, u32 height, u32 levels, u32 layers, VkFormat format,
     VkSampleCountFlagBits samples, VkImageViewType view_type, VkImage image,
-    VkDeviceMemory device_memory, VkImageView view, VkFramebuffer framebuffer);
+    VkDeviceMemory device_memory, VkImageView view, VkFramebuffer framebuffer, bool clear = true);
   ~Texture2D();
 
   static std::unique_ptr<Texture2D> Create(u32 width, u32 height, u32 levels, u32 layers,
@@ -39,7 +39,7 @@ public:
     u32 layers, VkFormat format,
     VkSampleCountFlagBits samples,
     VkImageViewType view_type,
-    VkImage existing_image);
+    VkImage existing_image, VkRenderPass renderpass = VK_NULL_HANDLE);
 
   u32 GetWidth() const { return m_width; }
   u32 GetHeight() const { return m_height; }

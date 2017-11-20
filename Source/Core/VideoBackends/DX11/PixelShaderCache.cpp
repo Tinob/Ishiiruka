@@ -442,7 +442,7 @@ D3D::BufferDescriptor PixelShaderCache::GetConstantBuffer()
 {
   if (PixelShaderManager::IsDirty())
   {
-    const int sz = C_PCONST_END * 4 * sizeof(float);
+    const int sz = PixelShaderManager::ConstantBufferSize * sizeof(float);
     // TODO: divide the global variables of the generated shaders into about 5 constant buffers to speed this up
     pscbuf->AppendData((void*)PixelShaderManager::GetBuffer(), sz);
     PixelShaderManager::Clear();
@@ -481,7 +481,7 @@ void PixelShaderCache::Init()
 {
   s_compiler = &HLSLAsyncCompiler::getInstance();
   bool use_partial_buffer_update = D3D::SupportPartialContantBufferUpdate();
-  u32 cbsize = C_PCONST_END * 4 * sizeof(float) * (use_partial_buffer_update ? 1024 : 1); // is always a multiple of 16	
+  u32 cbsize = PixelShaderManager::ConstantBufferSize * sizeof(float) * (use_partial_buffer_update ? 1024 : 1); // is always a multiple of 16	
   pscbuf = new D3D::ConstantStreamBuffer(cbsize);
   ID3D11Buffer* buf = pscbuf->GetBuffer();
   CHECK(buf != nullptr, "Create pixel shader constant buffer");

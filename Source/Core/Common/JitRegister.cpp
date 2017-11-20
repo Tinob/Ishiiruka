@@ -37,10 +37,13 @@ static File::IOFile s_perf_map_file;
 
 namespace JitRegister
 {
+static bool s_is_enabled = false;
+
 void Init(const std::string& perf_dir)
 {
 #if defined USE_OPROFILE && USE_OPROFILE
   s_agent = op_open_agent();
+  s_is_enabled = true;
 #endif
 
   if (!perf_dir.empty() || getenv("PERF_BUILDID_DIR"))
@@ -51,6 +54,7 @@ void Init(const std::string& perf_dir)
     // Disable buffering in order to avoid missing some mappings
     // if the event of a crash:
     std::setvbuf(s_perf_map_file.GetHandle(), nullptr, _IONBF, 0);
+    s_is_enabled = true;
   }
 }
 
@@ -67,6 +71,13 @@ void Shutdown()
 
   if (s_perf_map_file.IsOpen())
     s_perf_map_file.Close();
+
+  s_is_enabled = false;
+}
+
+bool IsEnabled()
+{
+  return s_is_enabled;
 }
 
 void RegisterV(const void* base_address, u32 code_size, const char* format, va_list args)
@@ -83,7 +94,7 @@ void RegisterV(const void* base_address, u32 code_size, const char* format, va_l
 #endif
 
 #ifdef USE_VTUNE
-  iJIT_Method_Load jmethod = {0};
+  iJIT_Method_Load jmethod = { 0 };
   jmethod.method_id = iJIT_GetNewMethodID();
   jmethod.method_load_address = const_cast<void*>(base_address);
   jmethod.method_size = code_size;
@@ -95,7 +106,7 @@ void RegisterV(const void* base_address, u32 code_size, const char* format, va_l
   if (s_perf_map_file.IsOpen())
   {
     std::string entry =
-        StringFromFormat("%" PRIx64 " %x %s\n", (u64)base_address, code_size, symbol_name.data());
+      StringFromFormat("%" PRIx64 " %x %s\n", (u64)base_address, code_size, symbol_name.data());
     s_perf_map_file.WriteBytes(entry.data(), entry.size());
   }
 }

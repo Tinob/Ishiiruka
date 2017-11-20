@@ -28,6 +28,7 @@ struct pixel_ubershader_uid_data
 
   void ClearUnused()
   {
+    uint_output = 0;
     unused = 0;
   }
 };

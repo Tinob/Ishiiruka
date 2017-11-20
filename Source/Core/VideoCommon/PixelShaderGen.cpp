@@ -480,7 +480,7 @@ void GetPixelShaderUID(PixelShaderUid& out, PIXEL_SHADER_RENDER_MODE render_mode
       || bpm.genMode.zfreeze.Value());
   bool forced_lighting_enabled = g_ActiveConfig.TessellationEnabled() && xfr.projection.type == GX_PERSPECTIVE && g_ActiveConfig.bForcedLighting;
   bool enable_pl = g_ActiveConfig.PixelLightingEnabled(xfr, components) || forced_lighting_enabled;
-  uid_data.uint_output = bpm.blendmode.UseLogicOp() && g_ActiveConfig.backend_info.APIType == API_D3D11 ? 1 : 0;
+  //uid_data.uint_output = bpm.blendmode.UseLogicOp() && g_ActiveConfig.backend_info.APIType == API_D3D11 ? 1 : 0;
   uid_data.render_mode = render_mode;
   uid_data.per_pixel_depth = per_pixel_depth;
   uid_data.pixel_lighting = enable_pl;
@@ -504,7 +504,7 @@ void GetPixelShaderUID(PixelShaderUid& out, PIXEL_SHADER_RENDER_MODE render_mode
     {
       const LitChannel& color = xfr.color[i];
       const LitChannel& alpha = xfr.alpha[i];
-      if (color.enablelighting || alpha.enablelighting)
+      if (color.enablelighting.Value() || alpha.enablelighting.Value())
       {
         enable_diffuse_ligthing = true;
         break;
@@ -569,7 +569,7 @@ void GetPixelShaderUID(PixelShaderUid& out, PIXEL_SHADER_RENDER_MODE render_mode
     auto& stage = uid_data.stagehash[n];
     u32 texcoord = bpm.tevorders[n / 2].getTexCoord(n & 1);
     bool bHasTexCoord = texcoord < bpm.genMode.numtexgens.Value();
-    bool bHasIndStage = bpm.tevind[n].bt < bpm.genMode.numindstages.Value();
+    bool bHasIndStage = bpm.tevind[n].bt.Value() < bpm.genMode.numindstages.Value();
     // HACK to handle cases where the tex gen is not enabled
     if (!bHasTexCoord)
       texcoord = 0;
@@ -636,7 +636,7 @@ void GetPixelShaderUID(PixelShaderUid& out, PIXEL_SHADER_RENDER_MODE render_mode
   if (render_mode != PSRM_ALPHA_PASS && uid_data.fog_fsel != 0)
   {
     uid_data.fog_proj = bpm.fog.c_proj_fsel.proj.Value();
-    uid_data.fog_RangeBaseEnabled = bpm.fogRange.Base.Enabled;
+    uid_data.fog_RangeBaseEnabled = bpm.fogRange.Base.Enabled.Value();
   }
 
   out.CalculateUIDHash();
@@ -647,11 +647,6 @@ void SampleTexture(ShaderCode& out, API_TYPE ApiType, const char *texcoords, con
   if (ApiType == API_D3D11)
   {
     out.Write("wuround((Tex[%d].Sample(samp[%d], float3(%s.xy * " I_TEXDIMS"[%d].xy, %s))).%s * 255.0);\n", texmap, texmap, texcoords, texmap, stereo ? "layer" : "0.0", texswap);
-  }
-  else if (ApiType == API_VULKAN)
-  {
-    out.Write("wuround(255.0 * texture(samp%d, float3(%s.xy * " I_TEXDIMS "[%d].xy, %s))).%s;\n",
-      texmap, texcoords, texmap, stereo ? "layer" : "0.0", texswap);
   }
   else if (ApiType == API_OPENGL)
   {
@@ -668,11 +663,6 @@ void SampleTextureRAW(ShaderCode& out, API_TYPE ApiType, const char *texcoords, 
   if (ApiType == API_D3D11)
   {
     out.Write("Tex[%d].Sample(samp[%d], float3(%s.xy * " I_TEXDIMS"[%d].xy, %s)).%s;\n", 8 + texmap, texmap, texcoords, texmap, layer, texswap);
-  }
-  else if (ApiType == API_VULKAN)
-  {
-    out.Write("texture(samp%d, float3(%s.xy * " I_TEXDIMS "[%d].xy, %s)).%s;\n",
-      8 + texmap, texcoords, texmap, "0.0", texswap);
   }
   else
   {
@@ -1123,7 +1113,7 @@ inline void WriteFetchStageTexture(ShaderCode& out, API_TYPE ApiType, bool use_i
     tevind.hex = stage.tevind;
     out.Write("// indirect op\n");
     // perform the indirect op on the incoming regular coordinates using indtex%d as the offset coords
-    if (tevind.bs != ITBA_OFF)
+    if (tevind.bs.Value() != ITBA_OFF)
     {
       if (use_integer_math)
       {
@@ -1165,14 +1155,14 @@ inline void WriteFetchStageTexture(ShaderCode& out, API_TYPE ApiType, bool use_i
         };
 
         out.Write("a_bump = trunc(indtex%d.%s * %s) * %s;\n",
-          tevind.bt,
+          tevind.bt.Value(),
           tevIndAlphaSel[tevind.bs.Value()],
           tevIndAlphaScale[tevind.fmt.Value()],
           tevIndAlphaNormFactor[tevind.fmt.Value()]);
       }
     }
 
-    if (tevind.mid != 0)
+    if (tevind.mid.Value() != 0)
     {
       if (use_integer_math)
       {
@@ -1227,7 +1217,7 @@ inline void WriteFetchStageTexture(ShaderCode& out, API_TYPE ApiType, bool use_i
       if (tevind.bias.Value() == ITB_S || tevind.bias.Value() == ITB_T || tevind.bias.Value() == ITB_U)
         out.Write("indtevcrd%d.%s += %s;\n", n, tevIndBiasField[tevind.bias.Value()], tevIndBiasAdd[tevind.fmt.Value()]);
       else if (tevind.bias.Value() == ITB_ST || tevind.bias.Value() == ITB_SU || tevind.bias.Value() == ITB_TU)
-        out.Write("indtevcrd%d.%s += wu2(%s, %s);\n", n, tevIndBiasField[tevind.bias.Value()], tevIndBiasAdd[tevind.fmt], tevIndBiasAdd[tevind.fmt]);
+        out.Write("indtevcrd%d.%s += wu2(%s, %s);\n", n, tevIndBiasField[tevind.bias.Value()], tevIndBiasAdd[tevind.fmt.Value()], tevIndBiasAdd[tevind.fmt.Value()]);
       else if (tevind.bias.Value() == ITB_STU)
         out.Write("indtevcrd%d.%s += wu3(%s, %s, %s);\n", n, tevIndBiasField[tevind.bias.Value()], tevIndBiasAdd[tevind.fmt.Value()], tevIndBiasAdd[tevind.fmt.Value()], tevIndBiasAdd[tevind.fmt.Value()]);
 
@@ -1279,9 +1269,9 @@ inline void WriteFetchStageTexture(ShaderCode& out, API_TYPE ApiType, bool use_i
     // ---------
     static const char *tevIndWrapStart[] = { "wu(0)", "wu(256*128)", "wu(128*128)", "wu(64*128)", "wu(32*128)", "wu(16*128)", "wu(1)" , "wu(1)" };
     // wrap S
-    if (tevind.sw == ITW_OFF)
+    if (tevind.sw.Value() == ITW_OFF)
       out.Write("wrappedcoord.x = wu(uv%d.x);\n", texcoord);
-    else if (tevind.sw == ITW_0)
+    else if (tevind.sw.Value() == ITW_0)
       out.Write("wrappedcoord.x = wu(0);\n");
     else
       out.Write("wrappedcoord.x = remainder(wu(uv%d.x), %s);\n", texcoord, tevIndWrapStart[tevind.sw.Value()]);
@@ -1437,7 +1427,7 @@ inline void WriteStage(ShaderCode& out, API_TYPE ApiType, bool use_integer_math,
     const char* cswisle = normalize_c_rgb && normalize_c_a ? "" : (normalize_c_rgb ? ".rgb" : ".a");
     out.Write("tin_c%s = tin_c%s + BSHR(tin_c%s, 7);\n", cswisle, cswisle, cswisle);
   }
-  out.Write("tin_d = wu4(%s,%s);\n", tevCInputTable[cc.d], tevAInputTable[ac.d]);
+  out.Write("tin_d = wu4(%s,%s);\n", tevCInputTable[cc.d.Value()], tevAInputTable[ac.d.Value()]);
 
   register_state.SetOverflowControl(tevCOutputSourceMap[cc.dest.Value()], !cc.clamp.Value());
   register_state.SetOverflowControl(tevAOutputSourceMap[ac.dest.Value()], !ac.clamp.Value());
@@ -1568,17 +1558,10 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
 
   u32 samplercount = enablenormalmaps ? 16 : 8;
 
-  if (ApiType == API_OPENGL)
+  if (ApiType == API_OPENGL || ApiType == API_VULKAN)
   {
     // Declare samplers
     out.Write("SAMPLER_BINDING(0) uniform sampler2DArray samp[%d];\n", samplercount);
-  }
-  else if (ApiType == API_VULKAN)
-  {
-    for (u32 i = 0; i < samplercount; i++)
-    {
-      out.Write("SAMPLER_BINDING(%i) uniform sampler2DArray samp%i;\n", i, i);
-    }
   }
   else
   {

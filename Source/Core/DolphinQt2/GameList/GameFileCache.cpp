@@ -12,7 +12,7 @@
 #include "Core/ConfigManager.h"
 #include "DolphinQt2/Settings.h"
 
-static const int CACHE_VERSION = 1;  // Last changed in PR #5927
+static const int CACHE_VERSION = 3;  // Last changed in PR #6102
 static const int DATASTREAM_VERSION = QDataStream::Qt_5_0;
 
 GameFileCache::GameFileCache()

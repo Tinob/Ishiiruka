@@ -17,7 +17,7 @@ using namespace Arm64Gen;
 void JitArm64::sc(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-    JITDISABLE(bJITBranchOff);
+  JITDISABLE(bJITBranchOff);
 
   gpr.Flush(FlushMode::FLUSH_ALL);
   fpr.Flush(FlushMode::FLUSH_ALL);
@@ -36,7 +36,7 @@ void JitArm64::sc(UGeckoInstruction inst)
 void JitArm64::rfi(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-    JITDISABLE(bJITBranchOff);
+  JITDISABLE(bJITBranchOff);
 
   gpr.Flush(FlushMode::FLUSH_ALL);
   fpr.Flush(FlushMode::FLUSH_ALL);
@@ -44,11 +44,11 @@ void JitArm64::rfi(UGeckoInstruction inst)
   // See Interpreter rfi for details
   const u32 mask = 0x87C0FFFF;
   const u32 clearMSR13 = 0xFFFBFFFF;  // Mask used to clear the bit MSR[13]
-                                      // MSR = ((MSR & ~mask) | (SRR1 & mask)) & clearMSR13;
-                                      // R0 = MSR location
-                                      // R1 = MSR contents
-                                      // R2 = Mask
-                                      // R3 = Mask
+  // MSR = ((MSR & ~mask) | (SRR1 & mask)) & clearMSR13;
+  // R0 = MSR location
+  // R1 = MSR contents
+  // R2 = Mask
+  // R3 = Mask
   ARM64Reg WA = gpr.GetReg();
   ARM64Reg WB = gpr.GetReg();
   ARM64Reg WC = gpr.GetReg();
@@ -74,7 +74,7 @@ void JitArm64::rfi(UGeckoInstruction inst)
 void JitArm64::bx(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-    JITDISABLE(bJITBranchOff);
+  JITDISABLE(bJITBranchOff);
 
   u32 destination;
   if (inst.AA)
@@ -125,7 +125,7 @@ void JitArm64::bx(UGeckoInstruction inst)
 void JitArm64::bcx(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-    JITDISABLE(bJITBranchOff);
+  JITDISABLE(bJITBranchOff);
 
   ARM64Reg WA = gpr.GetReg();
   FixupBranch pCTRDontBranch;
@@ -146,7 +146,7 @@ void JitArm64::bcx(UGeckoInstruction inst)
   if ((inst.BO & BO_DONT_CHECK_CONDITION) == 0)  // Test a CR bit
   {
     pConditionDontBranch =
-      JumpIfCRFieldBit(inst.BI >> 2, 3 - (inst.BI & 3), !(inst.BO_2 & BO_BRANCH_IF_TRUE));
+        JumpIfCRFieldBit(inst.BI >> 2, 3 - (inst.BI & 3), !(inst.BO_2 & BO_BRANCH_IF_TRUE));
   }
 
   FixupBranch far = B();
@@ -189,7 +189,7 @@ void JitArm64::bcx(UGeckoInstruction inst)
 void JitArm64::bcctrx(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-    JITDISABLE(bJITBranchOff);
+  JITDISABLE(bJITBranchOff);
 
   // Rare condition seen in (just some versions of?) Nintendo's NES Emulator
   // BO_2 == 001zy -> b if false
@@ -198,7 +198,7 @@ void JitArm64::bcctrx(UGeckoInstruction inst)
 
   // bcctrx doesn't decrement and/or test CTR
   _assert_msg_(DYNA_REC, inst.BO_2 & BO_DONT_DECREMENT_FLAG,
-    "bcctrx with decrement and test CTR option is invalid!");
+               "bcctrx with decrement and test CTR option is invalid!");
 
   // BO_2 == 1z1zz -> b always
 
@@ -227,10 +227,10 @@ void JitArm64::bcctrx(UGeckoInstruction inst)
 void JitArm64::bclrx(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-    JITDISABLE(bJITBranchOff);
+  JITDISABLE(bJITBranchOff);
 
   bool conditional =
-    (inst.BO & BO_DONT_DECREMENT_FLAG) == 0 || (inst.BO & BO_DONT_CHECK_CONDITION) == 0;
+      (inst.BO & BO_DONT_DECREMENT_FLAG) == 0 || (inst.BO & BO_DONT_CHECK_CONDITION) == 0;
 
   ARM64Reg WA = gpr.GetReg();
   ARM64Reg WB = inst.LK ? gpr.GetReg() : INVALID_REG;
@@ -252,7 +252,7 @@ void JitArm64::bclrx(UGeckoInstruction inst)
   if ((inst.BO & BO_DONT_CHECK_CONDITION) == 0)  // Test a CR bit
   {
     pConditionDontBranch =
-      JumpIfCRFieldBit(inst.BI >> 2, 3 - (inst.BI & 3), !(inst.BO_2 & BO_BRANCH_IF_TRUE));
+        JumpIfCRFieldBit(inst.BI >> 2, 3 - (inst.BI & 3), !(inst.BO_2 & BO_BRANCH_IF_TRUE));
   }
 
   if (conditional)
