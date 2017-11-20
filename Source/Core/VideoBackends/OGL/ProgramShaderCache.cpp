@@ -337,6 +337,11 @@ SHADER* ProgramShaderCache::SetShader(PIXEL_SHADER_RENDER_MODE render_mode)
 
   if (!g_ActiveConfig.bFullAsyncShaderCompilation)
   {
+    // We should not use the value held by the future get() to determine whether or not the shader
+    // was successfully compiled. We check for the existence of glprogid on the shader instead, see
+    // below. This is because the future in last_future may not actually correspond to the current
+    // PrepareShader/SetShader pairing. However it is correct that if the future in last_future is
+    // ready, then we can proceed. See comment above in PrepareShader.
     last_future[render_mode].wait();
   }
   PCacheEntry* entry = last_entry[render_mode];
