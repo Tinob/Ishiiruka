@@ -357,10 +357,10 @@ FramebufferManager::FramebufferManager(int targetWidth, int targetHeight, int ms
       "out vec4 v_c;\n"
       "out float v_z;\n"
       "void main(void) {\n"
-      "	gl_Position = vec4(((rawpos + 0.5) / vec2(640.0, 528.0) * 2.0 - 1.0) * vec2(1.0, -1.0), 0.0, 1.0);\n"
-      "	gl_PointSize = %d.0 / 640.0;\n"
-      "	v_c = rawcolor0.bgra;\n"
-      "	v_z = float(rawcolor1 & 0xFFFFFF) / 16777216.0;\n"
+      " gl_Position = vec4(((rawpos + 0.5) / vec2(640.0, 528.0) * 2.0 - 1.0) * vec2(1.0, -1.0), 0.0, 1.0);\n"
+      " gl_PointSize = %d.0 / 640.0;\n"
+      " v_c = rawcolor0.bgra;\n"
+      " v_z = float(rawcolor1 & 0xFFFFFF) / 16777216.0;\n"
       "}\n", m_targetWidth).c_str(),
 
     StringFromFormat(
@@ -368,8 +368,8 @@ FramebufferManager::FramebufferManager(int targetWidth, int targetHeight, int ms
       "in float %s_z;\n"
       "out vec4 ocol0;\n"
       "void main(void) {\n"
-      "	ocol0 = %s_c;\n"
-      "	gl_FragDepth = %s_z;\n"
+      " ocol0 = %s_c;\n"
+      " gl_FragDepth = %s_z;\n"
       "}\n", m_EFBLayers > 1 ? "g" : "v", m_EFBLayers > 1 ? "g" : "v", m_EFBLayers > 1 ? "g" : "v", m_EFBLayers > 1 ? "g" : "v").c_str(),
 
     m_EFBLayers > 1 ? StringFromFormat(
@@ -381,20 +381,17 @@ FramebufferManager::FramebufferManager(int targetWidth, int targetHeight, int ms
       "out float g_z;\n"
       "void main()\n"
       "{\n"
-      "	for (int j = 0; j < %d; ++j) {\n"
-      "		gl_Layer = j;\n"
-      "		gl_Position = gl_in[0].gl_Position;\n"
-      "		gl_PointSize = %d.0 / 640.0;\n"
-      "		g_c = v_c[0];\n"
-      "		g_z = v_z[0];\n"
-      "		EmitVertex();\n"
-      "		EndPrimitive();\n"
-      "	}\n"
-      "}\n", m_EFBLayers, m_EFBLayers, m_targetWidth).c_str() : nullptr);
-  while(!m_EfbPokes.finished)
-  {
-    Common::YieldCPU();
-  }
+      " for (int j = 0; j < %d; ++j) {\n"
+      "   gl_Layer = j;\n"
+      "   gl_Position = gl_in[0].gl_Position;\n"
+      "   gl_PointSize = %d.0 / 640.0;\n"
+      "   g_c = v_c[0];\n"
+      "   g_z = v_z[0];\n"
+      "   EmitVertex();\n"
+      "   EndPrimitive();\n"
+      " }\n"
+      "}\n", m_EFBLayers, m_EFBLayers, m_targetWidth).c_str() : nullptr)
+    .wait();
   glGenBuffers(1, &m_EfbPokes_VBO);
   glGenVertexArrays(1, &m_EfbPokes_VAO);
   glBindBuffer(GL_ARRAY_BUFFER, m_EfbPokes_VBO);

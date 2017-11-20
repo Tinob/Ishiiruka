@@ -5,6 +5,7 @@
 #pragma once
 
 #include <condition_variable>
+#include <future>
 #include <memory>
 #include <mutex>
 #include <queue>
@@ -97,7 +98,7 @@ public:
 
 struct SHADER
 {
-  SHADER() : glprogid(0), started(false), finished(false), initialized(false)
+  SHADER() : glprogid(0), started(false), initialized(false)
   {}
   void Destroy()
   {
@@ -107,12 +108,10 @@ struct SHADER
     }
     glprogid = 0;
     started = false;
-    finished = false;
     initialized = false;
   }
   GLuint glprogid = 0; // OpenGL program id
   bool started = false;
-  bool finished = false;
   bool initialized = false;
   void SetProgramVariables();
   void Bind();
@@ -131,11 +130,11 @@ public:
   static void BindVertexFormat(const GLVertexFormat* vertex_format);
   static void InvalidateVertexFormat();
   static void BindLastVertexFormat();
-  static void CompileShader(const SHADERUID& uid, SHADER& shader);
+  static std::future<bool> CompileShader(const SHADERUID& uid, SHADER& shader);
   static SHADER* CompileUberShader(const UBERSHADERUID& uid);
   static void GetShaderId(SHADERUID *uid, PIXEL_SHADER_RENDER_MODE render_mode, u32 components, u32 primitive_type);
 
-  static void CompileShader(
+  static std::future<bool> CompileShader(
       SHADER& shader, const char* vcode, const char* pcode, const char* gcode = nullptr);
   static bool CompileComputeShader(SHADER& shader, const std::string& code);
   static GLuint CompileSingleShader(GLuint type, const char *code);
@@ -170,6 +169,7 @@ private:
     {
       gcode = g == nullptr ? std::string() : std::string(g);
     }
+    std::promise<bool> promise;
     SHADER* shader;
     std::string vcode;
     std::string pcode;
@@ -184,9 +184,9 @@ private:
 
   static void LoadFromDisk();
   static void CompileShaders();
-  static void CompileShaderWorker(
+  static bool CompileShaderWorker(
       SHADER& shader, const char* vcode, const char* pcode, const char* gcode);
-  static void CompileComputeShaderWorker(SHADER& shader, const std::string& code);
+  static bool CompileComputeShaderWorker(SHADER& shader, const std::string& code);
   static void CompileShadersAsync();
   static void CompileUberShaders();
 
@@ -206,6 +206,7 @@ private:
   static UberPCache pushaders;
   static std::array<PCacheEntry*, PIXEL_SHADER_RENDER_MODE::PSRM_DEPTH_ONLY + 1> last_entry;
   static std::array<SHADERUID, PIXEL_SHADER_RENDER_MODE::PSRM_DEPTH_ONLY + 1>  last_uid;
+  static std::array<std::future<bool>, PIXEL_SHADER_RENDER_MODE::PSRM_DEPTH_ONLY + 1> last_future;
 
   static PCacheEntry* last_uber_entry;
   static UBERSHADERUID last_uber_uid;

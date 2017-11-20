@@ -51,6 +51,8 @@ ProgramShaderCache::UberPCache ProgramShaderCache::pushaders;
 
 std::array<ProgramShaderCache::PCacheEntry*, PIXEL_SHADER_RENDER_MODE::PSRM_DEPTH_ONLY + 1> ProgramShaderCache::last_entry;
 std::array<SHADERUID, PIXEL_SHADER_RENDER_MODE::PSRM_DEPTH_ONLY + 1> ProgramShaderCache::last_uid;
+std::array<std::future<bool>, PIXEL_SHADER_RENDER_MODE::PSRM_DEPTH_ONLY + 1>
+    ProgramShaderCache::last_future;
 
 ProgramShaderCache::PCacheEntry* ProgramShaderCache::last_uber_entry;
 UBERSHADERUID ProgramShaderCache::last_uber_uid;
@@ -233,7 +235,7 @@ GLuint ProgramShaderCache::GetCurrentProgram()
   return CurrentProgram;
 }
 
-void ProgramShaderCache::CompileShader(const SHADERUID& uid, SHADER& shader)
+std::future<bool> ProgramShaderCache::CompileShader(const SHADERUID& uid, SHADER& shader)
 {
   ShaderCode vcode;
   ShaderCode pcode;
@@ -245,10 +247,9 @@ void ProgramShaderCache::CompileShader(const SHADERUID& uid, SHADER& shader)
   if (use_geometry)
     GenerateGeometryShaderCode(gcode, uid.guid.GetUidData(), hostconfig);
 
-  CompileShader(shader, vcode.data(), pcode.data(), use_geometry ? gcode.data() : nullptr);
-
   INCSTAT(stats.numPixelShadersCreated);
   SETSTAT(stats.numPixelShadersAlive, static_cast<int>(pshaders->size()));
+  return CompileShader(shader, vcode.data(), pcode.data(), use_geometry ? gcode.data() : nullptr);
 }
 
 SHADER* ProgramShaderCache::CompileUberShader(const UBERSHADERUID& uid)
@@ -275,17 +276,12 @@ SHADER* ProgramShaderCache::CompileUberShader(const UBERSHADERUID& uid)
   if (use_geometry)
     GenerateGeometryShaderCode(gcode, uid.guid.GetUidData(), hostconfig);
 
-  CompileShader(newentry.shader, vcode.data(), pcode.data(), use_geometry ? gcode.data() : nullptr);
-  while (!newentry.shader.finished)
-  {
-    Common::YieldCPU();
-  }
-  if (!newentry.shader.glprogid)
+  const char* gcode_cstr = use_geometry ? gcode.data() : nullptr;
+  if (!CompileShader(newentry.shader, vcode.data(), pcode.data(), gcode_cstr).get())
   {
     GFX_DEBUGGER_PAUSE_AT(NEXT_ERROR, true);
     return nullptr;
   }
-
   return &last_uber_entry->shader;
 }
 
@@ -320,7 +316,7 @@ void ProgramShaderCache::PrepareShader(
   // schedule shader compilation
   newentry.in_cache = false;
   newentry.shader.started = true;
-  CompileShader(uid, newentry.shader);
+  last_future[render_mode] = CompileShader(uid, newentry.shader);
 }
 
 SHADER* ProgramShaderCache::SetShader(PIXEL_SHADER_RENDER_MODE render_mode)
@@ -331,15 +327,11 @@ SHADER* ProgramShaderCache::SetShader(PIXEL_SHADER_RENDER_MODE render_mode)
     return &last_uber_entry->shader;
   }
 
-  PCacheEntry* entry = last_entry[render_mode];
-  while (!entry->shader.finished)
+  if (!g_ActiveConfig.bFullAsyncShaderCompilation)
   {
-    if (g_ActiveConfig.bFullAsyncShaderCompilation)
-    {
-      break;
-    }
-    Common::YieldCPU();
+    last_future[render_mode].wait();
   }
+  PCacheEntry* entry = last_entry[render_mode];
   if (entry->shader.glprogid)
   {
     GFX_DEBUGGER_PAUSE_AT(NEXT_PIXEL_SHADER_CHANGE, true);
@@ -370,10 +362,12 @@ SHADER* ProgramShaderCache::SetUberShader(u32 primitive_type, u32 components)
   return CompileUberShader(uid);
 }
 
-void ProgramShaderCache::CompileShader(
+std::future<bool> ProgramShaderCache::CompileShader(
     SHADER& shader, const char* vcode, const char* pcode, const char* gcode)
 {
   auto queue_entry = std::make_unique<QueueEntry>(&shader, vcode, pcode, gcode);
+  std::future<bool> future = queue_entry->promise.get_future();
+
   std::queue <int>::size_type size_before;
   {
     std::lock_guard<std::mutex> lock(s_mutex);
@@ -383,9 +377,11 @@ void ProgramShaderCache::CompileShader(
   if (size_before == 0) {
     s_condition_var.notify_all();
   }
+
+  return future;
 }
 
-void ProgramShaderCache::CompileShaderWorker(
+bool ProgramShaderCache::CompileShaderWorker(
     SHADER& shader, const char* vcode, const char* pcode, const char* gcode)
 {
   GLuint vsid = CompileSingleShader(GL_VERTEX_SHADER, vcode);
@@ -401,9 +397,7 @@ void ProgramShaderCache::CompileShaderWorker(
     glDeleteShader(vsid);
     glDeleteShader(psid);
     glDeleteShader(gsid);
-
-    shader.finished = true;
-    return;
+    return false;
   }
 
   GLuint pid = glCreateProgram();
@@ -460,17 +454,18 @@ void ProgramShaderCache::CompileShaderWorker(
 
     // Don't try to use this shader
     glDeleteProgram(pid);
-    shader.finished = true;
-    return;
+    return false;
   }
 
   shader.glprogid = pid;
-  shader.finished = true;
+  return true;
 }
 
 bool ProgramShaderCache::CompileComputeShader(SHADER& shader, const std::string& code)
 {
   auto queue_entry = std::make_unique<QueueEntry>(&shader, code);
+  std::future<bool> future = queue_entry->promise.get_future();
+
   std::queue <int>::size_type size_before;
   {
     std::lock_guard<std::mutex> lock(s_mutex);
@@ -480,14 +475,11 @@ bool ProgramShaderCache::CompileComputeShader(SHADER& shader, const std::string&
   if (size_before == 0) {
     s_condition_var.notify_all();
   }
-  while(!shader.finished)
-  {
-    Common::YieldCPU();
-  }
-  return !!shader.glprogid;
+
+  return future.get();
 }
 
-void ProgramShaderCache::CompileComputeShaderWorker(SHADER& shader, const std::string& code)
+bool ProgramShaderCache::CompileComputeShaderWorker(SHADER& shader, const std::string& code)
 {
   // We need to enable GL_ARB_compute_shader for drivers that support the extension,
   // but not GLSL 4.3. Mesa is one example.
@@ -500,10 +492,7 @@ void ProgramShaderCache::CompileComputeShaderWorker(SHADER& shader, const std::s
 
   GLuint shader_id = CompileSingleShader(GL_COMPUTE_SHADER, (header + code).c_str());
   if (!shader_id)
-  {
-    shader.finished = true;
-    return;
-  }
+    return false;
 
   GLuint pid = glCreateProgram();
   glAttachShader(pid, shader_id);
@@ -551,12 +540,11 @@ void ProgramShaderCache::CompileComputeShaderWorker(SHADER& shader, const std::s
 
     // Don't try to use this shader
     glDeleteProgram(pid);
-    shader.finished = true;
-    return;
+    return false;
   }
 
   shader.glprogid = pid;
-  shader.finished = true;
+  return true;
 }
 
 GLuint ProgramShaderCache::CompileSingleShader(GLuint type, const char* code)
@@ -689,7 +677,7 @@ void ProgramShaderCache::Init()
   }
   if (g_ActiveConfig.backend_info.bSupportsUberShaders)
   {
-    CompileUberShaders();
+    // CompileUberShaders();
   }
   CurrentProgram = 0;
   last_entry.fill(nullptr);
@@ -772,18 +760,21 @@ void ProgramShaderCache::CompileShadersAsync() {
     {
       break;
     }
+    bool success;
     if (entry->compute_shader)
     {
-      CompileComputeShaderWorker(*entry->shader, entry->ccode);
+      success = CompileComputeShaderWorker(*entry->shader, entry->ccode);
     }
     else
     {
       const char* gcode = entry->gcode.empty() ? nullptr : entry->gcode.c_str();
-      CompileShaderWorker(*entry->shader, entry->vcode.c_str(), entry->pcode.c_str(), gcode);
+      success =
+          CompileShaderWorker(*entry->shader, entry->vcode.c_str(), entry->pcode.c_str(), gcode);
     }
+    entry->promise.set_value(success);
   }
-
   shared_context->Shutdown();
+  entry->promise.set_value(true);
 }
 
 void ProgramShaderCache::CompileUberShaders()
@@ -867,11 +858,7 @@ void ProgramShaderCache::CompileShaders()
 
       newentry.in_cache = false;
       newentry.shader.started = true;
-      CompileShader(item, newentry.shader);
-      while(!newentry.shader.finished)
-      {
-        Common::YieldCPU();
-      }
+      CompileShader(item, newentry.shader).wait();
     }
   },
     [](PCacheEntry& entry)
@@ -885,7 +872,6 @@ void ProgramShaderCache::CompileShaders()
 void ProgramShaderCache::Shutdown(bool shadersonly)
 {
   auto queue_entry = std::make_unique<QueueEntry>();
-  queue_entry->kill_thread = true;
   std::queue <int>::size_type size_before;
   {
     std::lock_guard<std::mutex> lock(s_mutex);
@@ -997,7 +983,7 @@ void ProgramShaderCache::Reload()
   CompileShaders();
   if (g_ActiveConfig.backend_info.bSupportsUberShaders)
   {
-    CompileUberShaders();
+    // CompileUberShaders();
   }
 }
 

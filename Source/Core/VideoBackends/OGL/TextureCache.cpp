@@ -276,9 +276,9 @@ bool TextureCache::CompileShaders()
     "uniform vec4 copy_position;\n" // left, top, right, bottom
     "void main()\n"
     "{\n"
-    " vec2 rawpos = vec2(gl_VertexID&1, gl_VertexID&2);\n"
-    " %s_uv0 = vec3(mix(copy_position.xy, copy_position.zw, rawpos) / vec2(textureSize(samp9, 0).xy), 0.0);\n"
-    " gl_Position = vec4(rawpos*2.0-1.0, 0.0, 1.0);\n"
+    "  vec2 rawpos = vec2(gl_VertexID&1, gl_VertexID&2);\n"
+    "  %s_uv0 = vec3(mix(copy_position.xy, copy_position.zw, rawpos) / vec2(textureSize(samp9, 0).xy), 0.0);\n"
+    "  gl_Position = vec4(rawpos*2.0-1.0, 0.0, 1.0);\n"
     "}\n";
 
   const char *GProgram = g_ActiveConfig.iStereoMode > 0 ?
@@ -317,11 +317,8 @@ bool TextureCache::CompileShaders()
       s_DepthMatrixProgram,
       StringFromFormat(VProgram, prefix, prefix).c_str(),
       StringFromFormat(pDepthMatrixProg, depth_layer).c_str(),
-      GProgram);
-  while(!s_DepthMatrixProgram.finished)
-  {
-    Common::YieldCPU();
-  }
+      GProgram)
+      .wait();
   bool compiled =
       s_ColorCopyProgram.glprogid && s_ColorMatrixProgram.glprogid && s_DepthMatrixProgram.glprogid;
 
@@ -430,11 +427,8 @@ bool TextureCache::CompileShaders()
         s_palette_pixel_shader[GX_TL_RGB5A3],
         StringFromFormat(VProgram, prefix, prefix).c_str(),
         ("#define DECODE DecodePixel_RGB5A3" + palette_shader).c_str(),
-        GProgram);
-    while (!s_palette_pixel_shader[GX_TL_RGB5A3].finished)
-    {
-      Common::YieldCPU();
-    }
+        GProgram)
+        .wait();
 
     s_palette_buffer_offset_uniform[GX_TL_IA8] =
         glGetUniformLocation(s_palette_pixel_shader[GX_TL_IA8].glprogid, "texture_buffer_offset");
