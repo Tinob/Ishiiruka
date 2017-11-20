@@ -311,7 +311,15 @@ void ProgramShaderCache::PrepareShader(
   GFX_DEBUGGER_PAUSE_AT(NEXT_PIXEL_SHADER_CHANGE, true);
 
   if (newentry.shader.started)
+  {
+    // Conveniently we don't need to do anything to last_future in this case.
+    // With asynchronous shaders last_future doesn't matter.
+    // With synchronous shaders, we can't be here unless the cached shader has already finished
+    // compiling. Therefore we should set last_future to an immediately available future. However
+    // we also can't be here unless the current value of last_future is already available so we
+    // don't need to do anything.
     return;
+  }
 
   // schedule shader compilation
   newentry.in_cache = false;
@@ -684,6 +692,7 @@ void ProgramShaderCache::Init()
   last_uber_entry = nullptr;
   last_uid = {};
   last_uber_uid = {};
+  last_future = {};
   InvalidateVertexFormat();
 }
 
