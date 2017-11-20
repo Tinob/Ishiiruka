@@ -677,7 +677,7 @@ void ProgramShaderCache::Init()
   }
   if (g_ActiveConfig.backend_info.bSupportsUberShaders)
   {
-    // CompileUberShaders();
+    CompileUberShaders();
   }
   CurrentProgram = 0;
   last_entry.fill(nullptr);
@@ -983,7 +983,7 @@ void ProgramShaderCache::Reload()
   CompileShaders();
   if (g_ActiveConfig.backend_info.bSupportsUberShaders)
   {
-    // CompileUberShaders();
+    CompileUberShaders();
   }
 }
 
