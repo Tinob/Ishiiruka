@@ -318,7 +318,7 @@ bool TextureCache::CompileShaders()
       StringFromFormat(VProgram, prefix, prefix).c_str(),
       StringFromFormat(pDepthMatrixProg, depth_layer).c_str(),
       GProgram)
-      .wait();
+      .wait(); // keep these three shader compilations synchronous
   bool compiled =
       s_ColorCopyProgram.glprogid && s_ColorMatrixProgram.glprogid && s_DepthMatrixProgram.glprogid;
 
@@ -428,7 +428,7 @@ bool TextureCache::CompileShaders()
         StringFromFormat(VProgram, prefix, prefix).c_str(),
         ("#define DECODE DecodePixel_RGB5A3" + palette_shader).c_str(),
         GProgram)
-        .wait();
+        .wait(); // keep these three shader compilations synchronous
 
     s_palette_buffer_offset_uniform[GX_TL_IA8] =
         glGetUniformLocation(s_palette_pixel_shader[GX_TL_IA8].glprogid, "texture_buffer_offset");

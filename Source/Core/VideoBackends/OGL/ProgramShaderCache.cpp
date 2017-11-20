@@ -745,7 +745,7 @@ void ProgramShaderCache::CompileShadersAsync() {
   }
 
   std::unique_ptr<QueueEntry> entry;
-  while(1)
+  while(true)
   {
     {
       std::unique_lock<std::mutex> lock(s_mutex);
