@@ -121,8 +121,8 @@ bool VideoBackend::Initialize(void* window_handle)
   if (instance == VK_NULL_HANDLE)
   {
     PanicAlert("Failed to create Vulkan instance.");
-    UnloadVulkanLibrary();
     ShutdownShared();
+    UnloadVulkanLibrary();
     return false;
   }
 
@@ -131,8 +131,8 @@ bool VideoBackend::Initialize(void* window_handle)
   {
     PanicAlert("Failed to load Vulkan instance functions.");
     vkDestroyInstance(instance, nullptr);
-    UnloadVulkanLibrary();
     ShutdownShared();
+    UnloadVulkanLibrary();
     return false;
   }
 
@@ -145,8 +145,8 @@ bool VideoBackend::Initialize(void* window_handle)
     {
       PanicAlert("Failed to create Vulkan surface.");
       vkDestroyInstance(instance, nullptr);
-      UnloadVulkanLibrary();
       ShutdownShared();
+      UnloadVulkanLibrary();
       return false;
     }
   }
@@ -163,8 +163,8 @@ bool VideoBackend::Initialize(void* window_handle)
       vkDestroySurfaceKHR(instance, surface, nullptr);
 
     vkDestroyInstance(instance, nullptr);
-    UnloadVulkanLibrary();
     ShutdownShared();
+    UnloadVulkanLibrary();
     return false;
   }
   else if (selected_adapter_index >= gpu_list.size())
@@ -179,8 +179,8 @@ bool VideoBackend::Initialize(void* window_handle)
   if (!g_vulkan_context)
   {
     PanicAlert("Failed to create Vulkan device");
-    UnloadVulkanLibrary();
     ShutdownShared();
+    UnloadVulkanLibrary();
     return false;
   }
 
@@ -279,19 +279,17 @@ void VideoBackend::Shutdown()
   g_perf_query.reset();
   g_texture_cache.reset();
   g_vertex_manager.reset();
+  g_renderer.reset();
   g_framebuffer_manager.reset();
   StateTracker::DestroyInstance();
-  g_renderer.reset();
   if (g_shader_cache)
     g_shader_cache->Shutdown();
   g_shader_cache.reset();
   g_object_cache.reset();
   g_command_buffer_mgr.reset();
   g_vulkan_context.reset();
-
-  UnloadVulkanLibrary();
-
   ShutdownShared();
+  UnloadVulkanLibrary();
 }
 
 void VideoBackend::Video_Cleanup()

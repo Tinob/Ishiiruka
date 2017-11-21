@@ -27,19 +27,22 @@ public:
   };
   Texture2D(u32 width, u32 height, u32 levels, u32 layers, VkFormat format,
     VkSampleCountFlagBits samples, VkImageViewType view_type, VkImage image,
-    VkDeviceMemory device_memory, VkImageView view, VkFramebuffer framebuffer, bool clear = true);
+    VkDeviceMemory device_memory, VkImageView view, VkImageUsageFlags usage);
   ~Texture2D();
+
+  void AddFramebuffer(VkRenderPass renderpass);
+  void AddFramebuffer(VkFramebuffer renderpass);
 
   static std::unique_ptr<Texture2D> Create(u32 width, u32 height, u32 levels, u32 layers,
     VkFormat format, VkSampleCountFlagBits samples,
     VkImageViewType view_type, VkImageTiling tiling,
-    VkImageUsageFlags usage, VkRenderPass renderpass = VK_NULL_HANDLE);
+    VkImageUsageFlags usage);
 
   static std::unique_ptr<Texture2D> CreateFromExistingImage(u32 width, u32 height, u32 levels,
     u32 layers, VkFormat format,
     VkSampleCountFlagBits samples,
     VkImageViewType view_type,
-    VkImage existing_image, VkRenderPass renderpass = VK_NULL_HANDLE);
+    VkImage existing_image, VkImageUsageFlags usage);
 
   u32 GetWidth() const { return m_width; }
   u32 GetHeight() const { return m_height; }
@@ -76,5 +79,6 @@ private:
   VkImageView m_view;
   //framebuffer for drawing into.
   VkFramebuffer m_framebuffer;
+  VkImageUsageFlags m_usage;
 };
 }

@@ -29,30 +29,11 @@ namespace Vulkan
 VKTexture::VKTexture(const TextureConfig& tex_config, std::unique_ptr<Texture2D> texture)
   : HostTexture(tex_config), m_texture(std::move(texture))
 {
+  compressed = TexDecoder::IsCompressed(tex_config.pcformat);
 }
 
 std::unique_ptr<VKTexture> VKTexture::Create(const TextureConfig& tex_config)
 {
-  static const VkFormat HostTextureFormat_To_VkFormat[]
-  {
-    VK_FORMAT_R8G8B8A8_UNORM,//PC_TEX_FMT_NONE
-    VK_FORMAT_R8G8B8A8_UNORM,//PC_TEX_FMT_BGRA32
-    VK_FORMAT_R8G8B8A8_UNORM,//PC_TEX_FMT_RGBA32
-    VK_FORMAT_R8G8B8A8_UNORM,//PC_TEX_FMT_I4_AS_I8
-    VK_FORMAT_R8G8B8A8_UNORM,//PC_TEX_FMT_IA4_AS_IA8
-    VK_FORMAT_R8G8B8A8_UNORM,//PC_TEX_FMT_I8
-    VK_FORMAT_R8G8B8A8_UNORM,//PC_TEX_FMT_IA8
-    VK_FORMAT_R8G8B8A8_UNORM,//PC_TEX_FMT_RGB565
-    VK_FORMAT_BC1_RGBA_UNORM_BLOCK,//PC_TEX_FMT_DXT1
-    VK_FORMAT_BC2_UNORM_BLOCK,//PC_TEX_FMT_DXT3
-    VK_FORMAT_BC3_UNORM_BLOCK,//PC_TEX_FMT_DXT5
-    VK_FORMAT_BC7_UNORM_BLOCK,//PC_TEX_FMT_BPTC
-    VK_FORMAT_R32_SFLOAT,//PC_TEX_FMT_DEPTH_FLOAT
-    VK_FORMAT_R32_SFLOAT,//PC_TEX_FMT_R_FLOAT
-    VK_FORMAT_R16G16B16A16_SFLOAT,//PC_TEX_FMT_RGBA16_FLOAT
-    VK_FORMAT_R32G32B32A32_SFLOAT,//PC_TEX_FMT_RGBA_FLOAT
-  };
-
   // Determine image usage, we need to flag as an attachment if it can be used as a rendertarget.
   VkImageUsageFlags usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |
     VK_IMAGE_USAGE_SAMPLED_BIT;
@@ -60,19 +41,22 @@ std::unique_ptr<VKTexture> VKTexture::Create(const TextureConfig& tex_config)
     usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
   // Allocate texture object
-  VkFormat vk_format = HostTextureFormat_To_VkFormat[tex_config.pcformat];
+  VkFormat vk_format = Util::GetVkFormatForHostTextureFormat(tex_config.pcformat);
   auto texture = Texture2D::Create(tex_config.width, tex_config.height, tex_config.levels,
     tex_config.layers, vk_format, VK_SAMPLE_COUNT_1_BIT,
-    VK_IMAGE_VIEW_TYPE_2D_ARRAY, VK_IMAGE_TILING_OPTIMAL, usage, TextureCache::GetInstance()->GetRenderPass());
+    VK_IMAGE_VIEW_TYPE_2D_ARRAY, VK_IMAGE_TILING_OPTIMAL, usage);
 
   if (!texture)
   {
     return nullptr;
   }
 
-  VKTexture* tex = new VKTexture(tex_config, std::move(texture));
-  tex->compressed = TexDecoder::IsCompressed(tex_config.pcformat);
-  return std::unique_ptr<VKTexture>(tex);
+  if (tex_config.rendertarget)
+  {
+    texture->AddFramebuffer(TextureCache::GetInstance()->GetRenderPass());
+  }
+  
+  return std::unique_ptr<VKTexture>(new VKTexture(tex_config, std::move(texture)));
 }
 
 VKTexture::~VKTexture()
@@ -329,14 +313,14 @@ void VKTexture::Load(const u8* src, u32 width, u32 height, u32 expanded_width, u
       VkDeviceSize copy_pitch = std::min(source_pitch, upload_pitch);
       for (u32 row = 0; row < block_H; row++)
       {
-        memcpy(image_upload_buffer_pointer + row * upload_pitch, source_ptr + row * source_pitch,
+        std::memcpy(image_upload_buffer_pointer + row * upload_pitch, source_ptr + row * source_pitch,
           copy_pitch);
       }
     }
     else
     {
       // Can copy the whole thing in one block, the pitch matches
-      memcpy(image_upload_buffer_pointer, source_ptr, upload_size);
+      std::memcpy(image_upload_buffer_pointer, source_ptr, upload_size);
     }
 
     // Flush buffer memory if necessary

@@ -146,7 +146,6 @@ void StateTracker::AppendToPipelineUIDCache(const PipelineInfo& info)
   sinfo.vs_uid = m_vs_uid;
   sinfo.gs_uid = m_gs_uid;
   sinfo.ps_uid = m_ps_uid;
-  sinfo.primitive_topology = info.primitive_topology;
 
   u32 dummy_value = 0;
   m_uid_cache.Append(sinfo, &dummy_value, 1);
@@ -187,7 +186,6 @@ bool StateTracker::PrecachePipelineUID(const SerializedPipelineUID& uid)
   pinfo.blend_state.hex = uid.blend_state_bits;
   pinfo.rasterization_state.hex = uid.rasterizer_state_bits;
   pinfo.depth_state.hex = uid.depth_state_bits;
-  pinfo.primitive_topology = uid.primitive_topology;
 
   VkPipeline pipeline = g_shader_cache->GetPipeline(pinfo);
   if (pipeline == VK_NULL_HANDLE)
@@ -252,15 +250,6 @@ void StateTracker::SetVertexFormat(const VertexFormat* vertex_format)
 
   m_vertex_format = vertex_format;
   UpdatePipelineVertexFormat();
-}
-
-void StateTracker::SetPrimitiveTopology(VkPrimitiveTopology primitive_topology)
-{
-  if (m_pipeline_state.primitive_topology == primitive_topology)
-    return;
-
-  m_pipeline_state.primitive_topology = primitive_topology;
-  m_dirty_flags |= DIRTY_FLAG_PIPELINE;
 }
 
 void StateTracker::SetRasterizationState(const RasterizationState& state)
@@ -422,7 +411,7 @@ void StateTracker::UpdateVertexShaderConstants()
     static_cast<uint32_t>(m_uniform_stream_buffer->GetCurrentOffset());
   m_dirty_flags |= DIRTY_FLAG_DYNAMIC_OFFSETS;
   int size = VertexShaderManager::ConstantBufferSize * sizeof(float);
-  memcpy(m_uniform_stream_buffer->GetCurrentHostPointer(), VertexShaderManager::GetBuffer(),
+  std::memcpy(m_uniform_stream_buffer->GetCurrentHostPointer(), VertexShaderManager::GetBuffer(),
     size);
   ADDSTAT(stats.thisFrame.bytesUniformStreamed, size);
   m_uniform_stream_buffer->CommitMemory(size);
@@ -461,7 +450,7 @@ void StateTracker::UpdateGeometryShaderConstants()
     static_cast<uint32_t>(m_uniform_stream_buffer->GetCurrentOffset());
   m_dirty_flags |= DIRTY_FLAG_DYNAMIC_OFFSETS;
 
-  memcpy(m_uniform_stream_buffer->GetCurrentHostPointer(), &GeometryShaderManager::constants,
+  std::memcpy(m_uniform_stream_buffer->GetCurrentHostPointer(), &GeometryShaderManager::constants,
     sizeof(GeometryShaderConstants));
   ADDSTAT(stats.thisFrame.bytesUniformStreamed, sizeof(GeometryShaderConstants));
   m_uniform_stream_buffer->CommitMemory(sizeof(GeometryShaderConstants));
@@ -486,7 +475,7 @@ void StateTracker::UpdatePixelShaderConstants()
     static_cast<uint32_t>(m_uniform_stream_buffer->GetCurrentOffset());
   m_dirty_flags |= DIRTY_FLAG_DYNAMIC_OFFSETS;
   int size = PixelShaderManager::ConstantBufferSize * sizeof(float);
-  memcpy(m_uniform_stream_buffer->GetCurrentHostPointer(), PixelShaderManager::GetBuffer(),
+  std::memcpy(m_uniform_stream_buffer->GetCurrentHostPointer(), PixelShaderManager::GetBuffer(),
     size);
   ADDSTAT(stats.thisFrame.bytesUniformStreamed, size);
   m_uniform_stream_buffer->CommitMemory(size);
@@ -562,11 +551,11 @@ void StateTracker::UploadAllConstants()
     DIRTY_FLAG_GS_UBO | DIRTY_FLAG_PS_UBO;
 
   // Copy the actual data in
-  memcpy(m_uniform_stream_buffer->GetCurrentHostPointer() + pixel_constants_offset,
+  std::memcpy(m_uniform_stream_buffer->GetCurrentHostPointer() + pixel_constants_offset,
     PixelShaderManager::GetBuffer(), PixelShaderManager::ConstantBufferSize * sizeof(float));
-  memcpy(m_uniform_stream_buffer->GetCurrentHostPointer() + vertex_constants_offset,
+  std::memcpy(m_uniform_stream_buffer->GetCurrentHostPointer() + vertex_constants_offset,
     VertexShaderManager::GetBuffer(), VertexShaderManager::ConstantBufferSize * sizeof(float));
-  memcpy(m_uniform_stream_buffer->GetCurrentHostPointer() + geometry_constants_offset,
+  std::memcpy(m_uniform_stream_buffer->GetCurrentHostPointer() + geometry_constants_offset,
     &GeometryShaderManager::constants, sizeof(GeometryShaderConstants));
 
   // Finally, flush buffer memory after copying
@@ -583,7 +572,7 @@ void StateTracker::SetTexture(size_t index, VkImageView view)
   if (m_bindings.ps_samplers[index].imageView == view)
     return;
 
-  m_bindings.ps_samplers[index].imageView = view;
+  m_bindings.ps_samplers[index].imageView = view != nullptr ? view : g_object_cache->GetDummyImageView();
   m_bindings.ps_samplers[index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
   m_dirty_flags |= DIRTY_FLAG_PS_SAMPLERS;
 }
@@ -644,7 +633,7 @@ void StateTracker::UnbindTexture(VkImageView view)
   for (VkDescriptorImageInfo& it : m_bindings.ps_samplers)
   {
     if (it.imageView == view)
-      it.imageView = VK_NULL_HANDLE;
+      it.imageView = g_object_cache->GetDummyImageView();
   }
 }
 

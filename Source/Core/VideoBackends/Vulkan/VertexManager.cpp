@@ -2,6 +2,8 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include <cstring>
+
 #include "VideoBackends/Vulkan/VertexManager.h"
 #include "VideoBackends/Vulkan/BoundingBox.h"
 #include "VideoBackends/Vulkan/CommandBufferManager.h"
@@ -90,8 +92,8 @@ void VertexManager::PrepareDrawBuffers(u32 stride)
       PanicAlert("Failed to allocate space in streaming buffers for pending draw");
   }
 
-  memcpy(m_vertex_stream_buffer->GetCurrentHostPointer(), m_cpu_vertex_buffer.data(), vertex_data_size);
-  memcpy(m_index_stream_buffer->GetCurrentHostPointer(), m_cpu_index_buffer.data(), index_data_size);
+  std::memcpy(m_vertex_stream_buffer->GetCurrentHostPointer(), m_cpu_vertex_buffer.data(), vertex_data_size);
+  std::memcpy(m_index_stream_buffer->GetCurrentHostPointer(), m_cpu_index_buffer.data(), index_data_size);
 
   // Update base indices
   m_current_draw_base_vertex =
@@ -132,20 +134,6 @@ void VertexManager::vFlush(bool use_dst_alpha)
 
   // Update assembly state
   StateTracker::GetInstance()->SetVertexFormat(vertex_format);
-  switch (m_current_primitive_type)
-  {
-  case PrimitiveType::Points:
-    StateTracker::GetInstance()->SetPrimitiveTopology(VK_PRIMITIVE_TOPOLOGY_POINT_LIST);
-    break;
-
-  case PrimitiveType::Lines:
-    StateTracker::GetInstance()->SetPrimitiveTopology(VK_PRIMITIVE_TOPOLOGY_LINE_LIST);
-    break;
-
-  case PrimitiveType::Triangles:
-    StateTracker::GetInstance()->SetPrimitiveTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-    break;
-  }
 
   // Can we do single-pass dst alpha?
   PIXEL_SHADER_RENDER_MODE dstalpha_mode = PIXEL_SHADER_RENDER_MODE::PSRM_DEFAULT;

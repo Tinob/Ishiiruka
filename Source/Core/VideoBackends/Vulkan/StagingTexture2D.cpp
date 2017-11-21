@@ -38,7 +38,7 @@ void StagingTexture2D::ReadTexel(u32 x, u32 y, void* data, size_t data_size) con
   _assert_(offset >= m_map_offset && (map_offset + m_texel_size) <= (m_map_offset + m_map_size));
 
   const char* ptr = m_map_pointer + map_offset;
-  memcpy(data, ptr, data_size);
+  std::memcpy(data, ptr, data_size);
 }
 
 void StagingTexture2D::WriteTexel(u32 x, u32 y, const void* data, size_t data_size)
@@ -55,7 +55,7 @@ void StagingTexture2D::WriteTexel(u32 x, u32 y, const void* data, size_t data_si
   _assert_(offset >= m_map_offset && (map_offset + m_texel_size) <= (m_map_offset + m_map_size));
 
   char* ptr = m_map_pointer + map_offset;
-  memcpy(ptr, data, data_size);
+  std::memcpy(ptr, data, data_size);
 }
 
 void StagingTexture2D::ReadTexels(u32 x, u32 y, u32 width, u32 height, void* data,
@@ -75,7 +75,7 @@ void StagingTexture2D::ReadTexels(u32 x, u32 y, u32 width, u32 height, void* dat
   // Optimal path: same dimensions, same stride.	
   if (use_optimal_path)
   {
-    memcpy(data, src_ptr, m_row_stride * height);
+    std::memcpy(data, src_ptr, m_row_stride * height);
     return;
   }
 
@@ -83,7 +83,7 @@ void StagingTexture2D::ReadTexels(u32 x, u32 y, u32 width, u32 height, void* dat
   char* dst_ptr = reinterpret_cast<char*>(data);
   for (u32 row = 0; row < height; row++)
   {
-    memcpy(dst_ptr, src_ptr + (x * m_texel_size), copy_size);
+    std::memcpy(dst_ptr, src_ptr + (x * m_texel_size), copy_size);
     src_ptr += m_row_stride;
     dst_ptr += data_stride;
   }
@@ -106,7 +106,7 @@ void StagingTexture2D::WriteTexels(u32 x, u32 y, u32 width, u32 height, const vo
   char* dst_ptr = GetRowPointer(y);
   if (use_optimal_path)
   {
-    memcpy(dst_ptr, data, m_row_stride * height);
+    std::memcpy(dst_ptr, data, m_row_stride * height);
     return;
   }
 
@@ -114,7 +114,7 @@ void StagingTexture2D::WriteTexels(u32 x, u32 y, u32 width, u32 height, const vo
   const char* src_ptr = reinterpret_cast<const char*>(data);
   for (u32 row = 0; row < height; row++)
   {
-    memcpy(dst_ptr + (x * m_texel_size), src_ptr, copy_size);
+    std::memcpy(dst_ptr + (x * m_texel_size), src_ptr, copy_size);
     dst_ptr += m_row_stride;
     src_ptr += data_stride;
   }

@@ -181,7 +181,7 @@ void TextureConverter::ConvertTexture(TextureCacheBase::TCacheEntry* dst_entry, 
 
   // Copy in palette to texel buffer.
   u32 palette_offset = static_cast<u32>(m_texel_buffer->GetCurrentOffset());
-  memcpy(m_texel_buffer->GetCurrentHostPointer(), palette, palette_size);
+  std::memcpy(m_texel_buffer->GetCurrentHostPointer(), palette, palette_size);
   m_texel_buffer->CommitMemory(palette_size);
 
   VkCommandBuffer command_buffer = GetCommandBufferForTextureConversion(src_entry);
@@ -741,10 +741,10 @@ bool TextureConverter::CreateEncodingTexture()
     ENCODING_TEXTURE_WIDTH, ENCODING_TEXTURE_HEIGHT, 1, 1, ENCODING_TEXTURE_FORMAT,
     VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_TILING_OPTIMAL,
     VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT |
-    VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, m_encoding_render_pass);
+    VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);  
   if (!m_encoding_render_texture)
     return false;
-
+  m_encoding_render_texture->AddFramebuffer(m_encoding_render_pass);
   return true;
 }
 

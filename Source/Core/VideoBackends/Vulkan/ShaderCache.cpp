@@ -5,6 +5,7 @@
 #include "VideoBackends/Vulkan/ShaderCache.h"
 
 #include <algorithm>
+#include <cstring>
 #include <sstream>
 #include <type_traits>
 #include <xxhash.h>
@@ -242,11 +243,14 @@ VkPipeline ShaderCache::CreatePipeline(const PipelineInfo& info)
       info.vertex_format ? info.vertex_format->GetVertexInputStateInfo() : empty_vertex_input_state;
 
   // Input assembly
+  static constexpr std::array<VkPrimitiveTopology, 4> vk_primitive_topologies = {
+    { VK_PRIMITIVE_TOPOLOGY_POINT_LIST, VK_PRIMITIVE_TOPOLOGY_LINE_LIST,
+    VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP } };
   VkPipelineInputAssemblyStateCreateInfo input_assembly_state = {
-      VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,  // VkStructureType sType
+      VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
       nullptr,                  // const void*                                pNext
       0,                        // VkPipelineInputAssemblyStateCreateFlags    flags
-      info.primitive_topology,  // VkPrimitiveTopology                        topology
+      vk_primitive_topologies[static_cast<u32>(info.rasterization_state.primitive.Value())],  // VkPrimitiveTopology
       VK_FALSE                  // VkBool32                                   primitiveRestartEnable
   };
 
@@ -430,7 +434,7 @@ public:
   {
     m_data->resize(value_size);
     if (value_size > 0)
-      memcpy(m_data->data(), value, value_size);
+      std::memcpy(m_data->data(), value, value_size);
   }
 
 private:

@@ -7,7 +7,6 @@
 #include <array>
 #include <string>
 #include <unordered_map>
-#include <wrl/client.h>
 #include "Common/CommonTypes.h"
 #include "VideoBackends/Vulkan/ShaderCompiler.h"
 #include "VideoBackends/Vulkan/StreamBuffer.h"
@@ -75,7 +74,7 @@ public:
   {
     return m_layered_geometry_shader;
   }
-  const VkSampler GetSamplerHandle(UINT idx) const
+  const VkSampler GetSamplerHandle(u32 idx) const
   {
     return m_samplers[idx];
   }

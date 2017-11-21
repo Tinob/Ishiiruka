@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstring>
 
 #include "Common/Assert.h"
 #include "Common/CommonFuncs.h"
@@ -272,14 +273,14 @@ bool FramebufferManager::CreateEFBFramebuffer()
     Texture2D::Create(efb_width, efb_height, 1, efb_layers, EFB_COLOR_TEXTURE_FORMAT, efb_samples,
       VK_IMAGE_VIEW_TYPE_2D_ARRAY, VK_IMAGE_TILING_OPTIMAL,
       VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-      VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, m_efb_load_render_pass);
+      VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 
   // We need a second texture to swap with for changing pixel formats
   m_efb_convert_color_texture =
     Texture2D::Create(efb_width, efb_height, 1, efb_layers, EFB_COLOR_TEXTURE_FORMAT, efb_samples,
       VK_IMAGE_VIEW_TYPE_2D_ARRAY, VK_IMAGE_TILING_OPTIMAL,
       VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-      VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, m_efb_load_render_pass);
+      VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 
   m_efb_depth_texture = Texture2D::Create(
     efb_width, efb_height, 1, efb_layers, EFB_DEPTH_TEXTURE_FORMAT, efb_samples,
@@ -1233,7 +1234,7 @@ void FramebufferManager::DrawPokeVertices(const EFBPokeVertex* vertices, size_t 
   }
   VkBuffer vb_buffer = m_poke_vertex_stream_buffer->GetBuffer();
   VkDeviceSize vb_offset = m_poke_vertex_stream_buffer->GetCurrentOffset();
-  memcpy(m_poke_vertex_stream_buffer->GetCurrentHostPointer(), vertices, vertices_size);
+  std::memcpy(m_poke_vertex_stream_buffer->GetCurrentHostPointer(), vertices, vertices_size);
   m_poke_vertex_stream_buffer->CommitMemory(vertices_size);
 
   // Set up state.

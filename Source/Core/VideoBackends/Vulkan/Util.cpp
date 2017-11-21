@@ -4,6 +4,8 @@
 
 #include "VideoBackends/Vulkan/Util.h"
 
+#include <cstring>
+
 #include "Common/Align.h"
 #include "Common/Assert.h"
 #include "Common/CommonFuncs.h"
@@ -92,7 +94,27 @@ VkFormat GetLinearFormat(VkFormat format)
 
 VkFormat GetVkFormatForHostTextureFormat(HostTextureFormat format)
 {
-  switch (format)
+  static const VkFormat HostTextureFormat_To_VkFormat[]
+  {
+    VK_FORMAT_R8G8B8A8_UNORM,//PC_TEX_FMT_NONE
+    VK_FORMAT_R8G8B8A8_UNORM,//PC_TEX_FMT_BGRA32
+    VK_FORMAT_R8G8B8A8_UNORM,//PC_TEX_FMT_RGBA32
+    VK_FORMAT_R8G8B8A8_UNORM,//PC_TEX_FMT_I4_AS_I8
+    VK_FORMAT_R8G8B8A8_UNORM,//PC_TEX_FMT_IA4_AS_IA8
+    VK_FORMAT_R8G8B8A8_UNORM,//PC_TEX_FMT_I8
+    VK_FORMAT_R8G8B8A8_UNORM,//PC_TEX_FMT_IA8
+    VK_FORMAT_R8G8B8A8_UNORM,//PC_TEX_FMT_RGB565
+    VK_FORMAT_BC1_RGBA_UNORM_BLOCK,//PC_TEX_FMT_DXT1
+    VK_FORMAT_BC2_UNORM_BLOCK,//PC_TEX_FMT_DXT3
+    VK_FORMAT_BC3_UNORM_BLOCK,//PC_TEX_FMT_DXT5
+    VK_FORMAT_BC7_UNORM_BLOCK,//PC_TEX_FMT_BPTC
+    VK_FORMAT_R32_SFLOAT,//PC_TEX_FMT_DEPTH_FLOAT
+    VK_FORMAT_R32_SFLOAT,//PC_TEX_FMT_R_FLOAT
+    VK_FORMAT_R16G16B16A16_SFLOAT,//PC_TEX_FMT_RGBA16_FLOAT
+    VK_FORMAT_R32G32B32A32_SFLOAT,//PC_TEX_FMT_RGBA_FLOAT
+  };
+  return HostTextureFormat_To_VkFormat[format];
+  /*switch (format)
   {
   case PC_TEX_FMT_BGRA32:
     return VK_FORMAT_B8G8R8A8_SNORM;
@@ -117,7 +139,7 @@ VkFormat GetVkFormatForHostTextureFormat(HostTextureFormat format)
   case PC_TEX_FMT_RGBA32:
   default:
     return VK_FORMAT_R8G8B8A8_UNORM;
-  }
+  }*/
 }
 
 u32 GetTexelSize(VkFormat format)
@@ -366,7 +388,7 @@ void UtilityShaderDraw::CommitVertices(size_t count)
 void UtilityShaderDraw::UploadVertices(UtilityShaderVertex* vertices, size_t count)
 {
   UtilityShaderVertex* upload_vertices = ReserveVertices(count);
-  memcpy(upload_vertices, vertices, sizeof(UtilityShaderVertex) * count);
+  std::memcpy(upload_vertices, vertices, sizeof(UtilityShaderVertex) * count);
   CommitVertices(count);
 }
 

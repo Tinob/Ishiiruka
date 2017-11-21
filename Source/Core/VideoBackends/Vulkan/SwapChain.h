@@ -32,7 +32,6 @@ public:
   VkSurfaceKHR GetSurface() const { return m_surface; }
   VkSurfaceFormatKHR GetSurfaceFormat() const { return m_surface_format; }
   bool IsVSyncEnabled() const { return m_vsync_enabled; }
-  bool IsStereoEnabled() const { return m_layers == 2; }
   VkSwapchainKHR GetSwapChain() const { return m_swap_chain; }
   VkRenderPass GetRenderPass() const { return m_render_pass; }
   u32 GetWidth() const { return m_width; }
@@ -48,7 +47,7 @@ public:
   }
   VkFramebuffer GetCurrentFramebuffer() const
   {
-    return m_swap_chain_images[m_current_swap_chain_image_index].texture->GetFrameBuffer();
+    return m_swap_chain_images[m_current_swap_chain_image_index].framebuffer;
   }
 
   VkResult AcquireNextImage(VkSemaphore available_semaphore);
@@ -79,6 +78,7 @@ private:
   {
     VkImage image;
     std::unique_ptr<Texture2D> texture;
+    VkFramebuffer framebuffer;
   };
 
   void* m_native_handle;
@@ -95,7 +95,6 @@ private:
 
   u32 m_width = 0;
   u32 m_height = 0;
-  u32 m_layers = 0;
 };
 
 }  // namespace Vulkan

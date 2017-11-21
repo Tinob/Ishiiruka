@@ -16,7 +16,6 @@
 
 #include "VideoBackends/Vulkan/Constants.h"
 #include "VideoBackends/Vulkan/Texture2D.h"
-#include "VideoCommon/ObjectUsageProfiler.h"
 #include "VideoCommon/GeometryShaderGen.h"
 #include "VideoCommon/PixelShaderGen.h"
 #include "VideoCommon/VertexShaderGen.h"

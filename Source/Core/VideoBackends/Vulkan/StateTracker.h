@@ -50,8 +50,6 @@ public:
 
   void SetVertexFormat(const VertexFormat* vertex_format);
 
-  void SetPrimitiveTopology(VkPrimitiveTopology primitive_topology);
-
   void SetRasterizationState(const RasterizationState& state);
   void SetMultisamplingstate(const MultisamplingState& state);
   void SetDepthState(const DepthState& state);
@@ -132,7 +130,6 @@ private:
     VertexShaderUid vs_uid;
     GeometryShaderUid gs_uid;
     PixelShaderUid ps_uid;
-    VkPrimitiveTopology primitive_topology;
   };
 
   // Number of descriptor sets for game draws.

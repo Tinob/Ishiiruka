@@ -3,6 +3,7 @@
 // Refer to the license.txt file included.
 
 #include <string>
+#include <cstring>
 
 #include "Common/Align.h"
 #include "Common/Common.h"
@@ -214,7 +215,7 @@ void VulkanPostProcessingShader::Draw(PostProcessor* p,
       reinterpret_cast<RenderPassVulkanData*>(pass.shader)->m_fragment_shader);  
 
     void* psuniforms = draw.AllocatePSUniforms(shader_buffer_size);
-    memcpy(
+    std::memcpy(
       psuniforms,
       shader_buffer_data,
       shader_buffer_size);
@@ -294,7 +295,7 @@ void VulkanPostProcessingShader::Draw(PostProcessor* p,
       VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     parent->MapAndUpdateUniformBuffer(input_sizes, output_rect, output_size, src_rect, src_size, src_layer, gamma);
     void* vsuniforms = draw.AllocateVSUniforms(POST_PROCESSING_CONTANTS_BUFFER_SIZE);
-    memcpy(
+    std::memcpy(
       vsuniforms,
       parent->GetConstatsData(),
       POST_PROCESSING_CONTANTS_BUFFER_SIZE);
@@ -302,6 +303,10 @@ void VulkanPostProcessingShader::Draw(PostProcessor* p,
     VkRect2D region = {
       { dst_rect.left, dst_rect.top },
       { static_cast<u32>(dst_rect.GetWidth()), static_cast<u32>(dst_rect.GetHeight()) } };
+    if (dst->GetFrameBuffer() == nullptr)
+    {
+      dst->AddFramebuffer(TextureCache::GetInstance()->GetRenderPass());
+    }
     draw.BeginRenderPass(dst->GetFrameBuffer(), region);
     draw.SetPSSampler(0, src_texture->GetView(), g_object_cache->GetLinearSampler());
     draw.DrawQuad(dst_rect.left, dst_rect.top, dst_rect.GetWidth(), dst_rect.GetHeight(),
@@ -569,6 +574,10 @@ void VulkanPostProcessor::CopyTexture(const TargetRectangle& dst_rect, uintptr_t
     VkRect2D region = {
       { dst_rect.left, dst_rect.top },
       { static_cast<u32>(dst_rect.GetWidth()), static_cast<u32>(dst_rect.GetHeight()) } };
+    if (dst_texture->GetFrameBuffer() == nullptr)
+    {
+      dst_texture->AddFramebuffer(TextureCache::GetInstance()->GetRenderPass());
+    }
     draw.BeginRenderPass(dst_texture->GetFrameBuffer(), region);
     draw.SetPSSampler(0, src_texture->GetView(), g_object_cache->GetLinearSampler());
     draw.DrawQuad(dst_rect.left, dst_rect.top, dst_rect.GetWidth(), dst_rect.GetHeight(),

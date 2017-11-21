@@ -608,12 +608,6 @@ void Renderer::SwapImpl(u32 xfb_addr, u32 fb_width, u32 fb_stride, u32 fb_height
 
   // Clean up stale textures.
   TextureCache::GetInstance()->Cleanup(frameCount);
-
-  if (CheckForHostConfigChanges())
-  {
-    g_command_buffer_mgr->WaitForGPUIdle();
-    g_shader_cache->Reload();
-  }
 }
 
 void Renderer::TransitionBuffersForSwap(const TargetRectangle& scaled_rect,
@@ -660,17 +654,12 @@ void Renderer::DrawFrame(VkRenderPass render_pass, const TargetRectangle& target
   const XFBSourceBase* const* xfb_sources, u32 xfb_count, Texture2D* dst_texture, const TargetSize& dst_size, u32 fb_width,
   u32 fb_stride, u32 fb_height, float Gamma)
 {
-  if (g_ActiveConfig.bUseXFB)
-  {
-    if (g_ActiveConfig.bUseRealXFB)
+  if (!g_ActiveConfig.bUseXFB)
+    DrawEFB(render_pass, target_rc, scaled_source_rc, dst_texture, dst_size, Gamma);
+  else if (g_ActiveConfig.bUseRealXFB)
       DrawRealXFB(render_pass, target_rc, xfb_sources, xfb_count, fb_width, fb_stride, fb_height, dst_texture, dst_size, Gamma);
     else
       DrawVirtualXFB(render_pass, target_rc, xfb_addr, xfb_sources, xfb_count, dst_texture, dst_size, fb_width, fb_stride, fb_height, Gamma);
-  }
-  else
-  {
-    DrawEFB(render_pass, target_rc, scaled_source_rc, dst_texture, dst_size, Gamma);
-  }
 }
 
 void Renderer::DrawEFB(VkRenderPass render_pass, const TargetRectangle& t_rc, const TargetRectangle& scaled_src_rc,
@@ -695,7 +684,7 @@ void Renderer::DrawEFB(VkRenderPass render_pass, const TargetRectangle& t_rc, co
     }
   }
   TargetRectangle scaled_source_rc(scaled_src_rc);
-  TargetSize tex_size(m_target_width, m_target_height);
+  TargetSize tex_size(efb_color_texture->GetWidth(), efb_color_texture->GetHeight());
   // Post processing active?
   if (m_post_processor && m_post_processor->ShouldTriggerOnSwap())
   {
@@ -825,7 +814,7 @@ void Renderer::DrawScreen(const TargetRectangle& scaled_efb_rect, u32 xfb_addr,
   // Draw guest buffers (EFB or XFB)
   DrawFrame(m_swap_chain->GetRenderPass(), GetTargetRectangle(), scaled_efb_rect, xfb_addr,
     xfb_sources, xfb_count, backbuffer, dst_size, fb_width, fb_stride, fb_height, gamma);
-
+  
   // Draw OSD
   Util::SetViewportAndScissor(g_command_buffer_mgr->GetCurrentCommandBuffer(), 0, 0,
     backbuffer->GetWidth(), backbuffer->GetHeight());

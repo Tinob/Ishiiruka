@@ -648,7 +648,7 @@ void SampleTexture(ShaderCode& out, API_TYPE ApiType, const char *texcoords, con
   {
     out.Write("wuround((Tex[%d].Sample(samp[%d], float3(%s.xy * " I_TEXDIMS"[%d].xy, %s))).%s * 255.0);\n", texmap, texmap, texcoords, texmap, stereo ? "layer" : "0.0", texswap);
   }
-  else if (ApiType == API_OPENGL)
+  else if (ApiType == API_OPENGL || ApiType == API_VULKAN)
   {
     out.Write("wuround(texture(samp[%d],float3(%s.xy * " I_TEXDIMS"[%d].xy, %s)).%s * 255.0);\n", texmap, texcoords, texmap, stereo ? "layer" : "0.0", texswap);
   }

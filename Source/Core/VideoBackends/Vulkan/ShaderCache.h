@@ -20,6 +20,7 @@
 #include "VideoBackends/Vulkan/ShaderCompiler.h"
 
 #include "VideoCommon/GeometryShaderGen.h"
+#include "VideoCommon/ObjectUsageProfiler.h"
 #include "VideoCommon/PixelShaderGen.h"
 #include "VideoCommon/RenderState.h"
 #include "VideoCommon/UberShaderPixel.h"
@@ -45,7 +46,6 @@ struct PipelineInfo
   BlendingState blend_state;
   RasterizationState rasterization_state;
   DepthState depth_state;
-  VkPrimitiveTopology primitive_topology;
   MultisamplingState multisampling_state;
 
   bool operator==(const PipelineInfo& rhs) const
@@ -82,7 +82,7 @@ struct PipelineInfoHash
     h = h * 137 + (uintptr_t)key.render_pass;
     h = h * 137 + (uintptr_t)key.multisampling_state.hex;
     h = h * 137 + (uintptr_t)(((uintptr_t)key.blend_state.hex << 32) |
-      key.rasterization_state.hex | (uintptr_t(key.depth_state.hex) << 12) | (((uintptr_t)key.primitive_topology) << 24));
+      key.rasterization_state.hex | (uintptr_t(key.depth_state.hex) << 12));
     return h;
   }
 };
@@ -184,9 +184,6 @@ public:
   VkShaderModule GetPassthroughVertexShader() const { return m_passthrough_vertex_shader; }
   VkShaderModule GetScreenQuadGeometryShader() const { return m_screen_quad_geometry_shader; }
   VkShaderModule GetPassthroughGeometryShader() const { return m_passthrough_geometry_shader; }
-  
-  void WaitForBackgroundCompilesToComplete();
-  void RetrieveAsyncShaders();
 
   class vkShaderItem
   {

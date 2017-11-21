@@ -149,7 +149,7 @@ static void SetSamplerState(u32 index, bool custom_tex)
   SamplerState state = {};
   state.Generate(bpmem, index);
   bool mip_maps_enabled = SamplerCommon::AreBpTexMode0MipmapsEnabled(tm0);
-  bool acurate_filtering = mip_maps_enabled && (state.max_lod.Value() != 0 || state.lod_bias.Value() != 0);
+  bool acurate_filtering = !custom_tex && mip_maps_enabled && state.lod_bias.Value() != 0;
   // Force texture filtering config option.
   if (g_ActiveConfig.bForceFiltering)
   {

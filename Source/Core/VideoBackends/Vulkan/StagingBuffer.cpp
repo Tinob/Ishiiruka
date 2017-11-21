@@ -131,7 +131,7 @@ void StagingBuffer::Read(VkDeviceSize offset, void* data, size_t size, bool inva
   if (invalidate_caches)
     InvalidateCPUCache(offset, size);
 
-  memcpy(data, m_map_pointer + (offset - m_map_offset), size);
+  std::memcpy(data, m_map_pointer + (offset - m_map_offset), size);
 }
 
 void StagingBuffer::Write(VkDeviceSize offset, const void* data, size_t size,
@@ -140,7 +140,7 @@ void StagingBuffer::Write(VkDeviceSize offset, const void* data, size_t size,
   _assert_((offset + size) <= m_size);
   _assert_(offset >= m_map_offset && size <= (m_map_size + (offset - m_map_offset)));
 
-  memcpy(m_map_pointer + (offset - m_map_offset), data, size);
+  std::memcpy(m_map_pointer + (offset - m_map_offset), data, size);
   if (invalidate_caches)
     FlushCPUCache(offset, size);
 }

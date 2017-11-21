@@ -270,7 +270,7 @@ bool RasterFont::CreateTexture()
   }
 
   // Copy texture data into staging buffer
-  memcpy(mapped_ptr, texture_data.data(), texture_data.size() * sizeof(u32));
+  std::memcpy(mapped_ptr, texture_data.data(), texture_data.size() * sizeof(u32));
   vkUnmapMemory(g_vulkan_context->GetDevice(), temp_buffer_memory);
 
   // Copy from staging buffer to the final texture
