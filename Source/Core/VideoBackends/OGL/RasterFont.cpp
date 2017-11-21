@@ -160,7 +160,7 @@ RasterFont::RasterFont()
     GL_RGBA, GL_UNSIGNED_BYTE, texture_data.data());
 
   // generate shader
-  ProgramShaderCache::CompileShader(s_shader, s_vertexShaderSrc, s_fragmentShaderSrc);
+  ProgramShaderCache::CompileShader(s_shader, s_vertexShaderSrc, s_fragmentShaderSrc).wait();
   s_shader.Bind();
 
   // bound uniforms

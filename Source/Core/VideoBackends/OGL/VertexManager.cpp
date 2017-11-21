@@ -155,6 +155,12 @@ void VertexManager::vFlush(bool useDstAlpha)
   {
     active_shader = ProgramShaderCache::SetShader(PSRM_DEFAULT, VertexLoaderManager::g_current_components, m_current_primitive_type, nativeVertexFmt);
   }
+  if (!active_shader)
+  {
+    g_Config.iSaveTargetId++;
+    ClearEFBCache();
+    return;
+  }
   PrepareDrawBuffers(stride);
   active_shader->Bind();
   g_renderer->ApplyState(false);
@@ -170,6 +176,12 @@ void VertexManager::vFlush(bool useDstAlpha)
   if (useDstAlpha && (!dualSourcePossible || logic_op_enabled))
   {
     active_shader = ProgramShaderCache::SetShader(PSRM_ALPHA_PASS, VertexLoaderManager::g_current_components, m_current_primitive_type, nativeVertexFmt);
+    if (!active_shader)
+    {
+      g_Config.iSaveTargetId++;
+      ClearEFBCache();
+      return;
+    }
 
     // only update alpha
     glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
