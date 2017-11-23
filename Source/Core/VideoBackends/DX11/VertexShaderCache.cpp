@@ -171,10 +171,13 @@ void VertexShaderCache::Init()
 
   s_vshaders = nullptr;
   LoadFromDisk();
-  CompileUberShaders();
-  if (g_ActiveConfig.bCompileShaderOnStartup)
+  if (g_ActiveConfig.bCompileShaderOnStartup && !g_ActiveConfig.bDisableSpecializedShaders)
   {
     CompileShaders();
+  }
+  if (g_ActiveConfig.CanPrecompileUberShaders())
+  {
+    CompileUberShaders();
   }
   s_last_entry = nullptr;
   s_last_uber_entry = nullptr;
@@ -270,7 +273,14 @@ void VertexShaderCache::Reload()
   g_vus_disk_cache.Sync();
   g_vus_disk_cache.Close();
   LoadFromDisk();
-  CompileShaders();
+  if (g_ActiveConfig.bCompileShaderOnStartup && !g_ActiveConfig.bDisableSpecializedShaders)
+  {
+    CompileShaders();
+  }
+  if (g_ActiveConfig.CanPrecompileUberShaders())
+  {
+    CompileUberShaders();
+  }
   s_last_entry = nullptr;
   s_last_uid.ClearUID();
   s_last_uber_entry = nullptr;
