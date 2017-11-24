@@ -3,6 +3,8 @@
 // Refer to the license.txt file included.
 
 #include <algorithm>
+#include <cstring>
+
 #include "Common/CPUDetect.h"
 #include "Common/Intrinsics.h"
 #include "VideoCommon/TextureUtil.h"
@@ -186,13 +188,13 @@ void CopyTextureData(u8 *pDst, const u8 *pSrc, const s32 width, const s32 height
   const s32 rowsize = width * pixelsize;
   if (srcpitch == dstpitch && srcpitch == rowsize)
   {
-    memcpy(pDst, pSrc, rowsize * height);
+    std::memcpy(pDst, pSrc, rowsize * height);
   }
   else
   {
     for (int y = 0; y < height; y++)
     {
-      memcpy(pDst, pSrc, rowsize);
+      std::memcpy(pDst, pSrc, rowsize);
       pSrc += srcpitch;
       pDst += dstpitch;
     }
@@ -224,7 +226,7 @@ void CopyCompressedTextureData(u8 *pDst, const u8 *pSrc, const s32 width, const 
   s32 numRows = numBlocksHigh;
   if (rowBytes == dstpitch && rowBytes == stridebytes)
   {
-    memcpy(pDst, pSrc, rowBytes * numRows);
+    std::memcpy(pDst, pSrc, rowBytes * numRows);
   }
   else
   {
@@ -233,7 +235,7 @@ void CopyCompressedTextureData(u8 *pDst, const u8 *pSrc, const s32 width, const 
     // Copy stride line by line   
     for (s32 h = 0; h < numRows; h++)
     {
-      memcpy(pDestBits, pSrcBits, rowBytes);
+      std::memcpy(pDestBits, pSrcBits, rowBytes);
       pDestBits += dstpitch;
       pSrcBits += stridebytes;
     }
