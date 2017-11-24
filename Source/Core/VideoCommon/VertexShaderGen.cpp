@@ -270,7 +270,7 @@ inline void GenerateVertexShader(ShaderCode& out, API_TYPE api_type, const verte
   if (uid_data.numColorChans < 2 && needLightShader)
   {
     if (components & VB_HAS_COL1)
-      out.Write("o.colors_1 = color1;\n");
+      out.Write("o.colors_1 = rawcolor1;\n");
     else
       out.Write("o.colors_1 = o.colors_0;\n");
   }
