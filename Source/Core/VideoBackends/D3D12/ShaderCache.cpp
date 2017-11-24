@@ -461,16 +461,14 @@ void ShaderCache::Reload()
   s_pus_disk_cache.Close();
   s_vus_disk_cache.Sync();
   s_vus_disk_cache.Close();
-  LoadFromDisk();
   LoadHostBasedFromDisk();
-  if (g_ActiveConfig.bCompileShaderOnStartup && !g_ActiveConfig.bDisableSpecializedShaders)
-  {
-    CompileShaders();
-    CompileHostBasedShaders();
-  }
   if (g_ActiveConfig.CanPrecompileUberShaders())
   {
     CompileUberShaders();
+  }
+  if (g_ActiveConfig.bCompileShaderOnStartup && !g_ActiveConfig.bDisableSpecializedShaders)
+  {
+    CompileHostBasedShaders();
   }
   s_last_domain_shader_bytecode = &s_pass_entry;
   s_last_hull_shader_bytecode = &s_pass_entry;

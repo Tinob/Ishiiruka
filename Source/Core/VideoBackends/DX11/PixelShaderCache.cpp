@@ -514,13 +514,13 @@ void PixelShaderCache::Init()
   s_pixel_shaders = nullptr;
 
   LoadFromDisk();
-  if (g_ActiveConfig.bCompileShaderOnStartup && !g_ActiveConfig.bDisableSpecializedShaders)
-  {
-    CompileShaders();
-  }
   if (g_ActiveConfig.CanPrecompileUberShaders())
   {
     CompileUberShaders();
+  }
+  if (g_ActiveConfig.bCompileShaderOnStartup && !g_ActiveConfig.bDisableSpecializedShaders)
+  {
+    CompileShaders();
   }
   s_last_entry = nullptr;
   s_last_uber_entry = nullptr;
@@ -618,13 +618,13 @@ void PixelShaderCache::Reload()
   g_pus_disk_cache.Sync();
   g_pus_disk_cache.Close();
   LoadFromDisk();
-  if (g_ActiveConfig.bCompileShaderOnStartup && !g_ActiveConfig.bDisableSpecializedShaders)
-  {
-    CompileShaders();
-  }
   if (g_ActiveConfig.CanPrecompileUberShaders())
   {
     CompileUberShaders();
+  }
+  if (g_ActiveConfig.bCompileShaderOnStartup && !g_ActiveConfig.bDisableSpecializedShaders)
+  {
+    CompileShaders();
   }
   s_last_entry = nullptr;
   s_last_uber_entry = nullptr;

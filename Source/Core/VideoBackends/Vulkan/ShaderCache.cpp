@@ -694,8 +694,11 @@ void ShaderCache::LoadShaderCaches(bool forcecompile)
   UberShaderCacheReader<UberShader::PixelUberShaderUid, UberShader::PixelUberShaderUid::ShaderUidHasher> uber_ps_reader(m_pus_cache.shader_map);
   m_pus_cache.disk_cache.OpenAndRead(
       GetDiskShaderCacheFileName(API_TYPE::API_VULKAN, "UPS", false, true), uber_ps_reader);
-  CompileUberShaders();
-  if (g_ActiveConfig.bCompileShaderOnStartup || forcecompile)
+  if (g_ActiveConfig.CanPrecompileUberShaders())
+  {
+    CompileUberShaders();
+  }
+  if ((g_ActiveConfig.bCompileShaderOnStartup || forcecompile) && !g_ActiveConfig.bDisableSpecializedShaders)
   {
     CompileShaders();
   }

@@ -619,14 +619,13 @@ void ProgramShaderCache::Init()
   LoadFromDisk();
 
   CreateHeader();
-
-  if (g_ActiveConfig.bCompileShaderOnStartup && !g_ActiveConfig.bDisableSpecializedShaders)
-  {
-    CompileShaders();
-  }
   if (g_ActiveConfig.CanPrecompileUberShaders())
   {
     CompileUberShaders();
+  }
+  if (g_ActiveConfig.bCompileShaderOnStartup && !g_ActiveConfig.bDisableSpecializedShaders)
+  {
+    CompileShaders();
   }
   CurrentProgram = 0;
   last_entry.fill(nullptr);
@@ -865,13 +864,13 @@ void ProgramShaderCache::Reload()
 {
   Shutdown(true);
   LoadFromDisk();
-  if (g_ActiveConfig.backend_info.bSupportsUberShaders && !g_ActiveConfig.bDisableSpecializedShaders)
-  {
-    CompileShaders();
-  }
   if (g_ActiveConfig.CanPrecompileUberShaders())
   {
     CompileUberShaders();
+  }
+  if (g_ActiveConfig.backend_info.bSupportsUberShaders && !g_ActiveConfig.bDisableSpecializedShaders)
+  {
+    CompileShaders();
   }
 }
 

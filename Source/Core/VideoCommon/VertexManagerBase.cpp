@@ -262,7 +262,7 @@ void VertexManagerBase::DoFlush()
             material_mask |= ((int)tentry->material_map) << i;
             emissive_mask |= ((int)tentry->emissive_in_alpha) << i;
           }
-          SetSamplerState(i, tentry->is_custom_tex);
+          SetSamplerState(i, tentry->is_custom_tex || tentry->is_scaled);
           PixelShaderManager::SetTexDims(i, tentry->native_width, tentry->native_height);
           
         }

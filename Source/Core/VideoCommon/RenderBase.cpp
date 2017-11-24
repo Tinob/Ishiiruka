@@ -307,13 +307,18 @@ void Renderer::SaveScreenshot(const std::string& filename, bool wait_for_complet
 
 bool Renderer::CheckForHostConfigChanges()
 {
+  bool host_state_changed = false;
+  bool uber_shader_enabled = g_ActiveConfig.CanPrecompileUberShaders();
   ShaderHostConfig new_host_config = ShaderHostConfig::GetCurrent();
-  if (new_host_config.bits == m_last_host_config_bits)
-    return false;
-
-  OSD::AddMessage("Video config changed, reloading shaders.", OSD::Duration::NORMAL);
+  host_state_changed = host_state_changed || (m_last_uber_shader_enabled != uber_shader_enabled && uber_shader_enabled);
+  host_state_changed = host_state_changed || (new_host_config.bits != m_last_host_config_bits);
   m_last_host_config_bits = new_host_config.bits;
-  return true;
+  m_last_uber_shader_enabled = uber_shader_enabled;  
+  if (host_state_changed)
+  {
+    OSD::AddMessage("Video config changed, reloading shaders.", OSD::Duration::NORMAL);
+  }
+  return host_state_changed;
 }
 
 

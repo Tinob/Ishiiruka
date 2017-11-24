@@ -181,6 +181,7 @@ protected:
 
   FPSCounter m_fps_counter;
   u32 m_last_host_config_bits = 0;
+  bool m_last_uber_shader_enabled = false;
   std::unique_ptr<PostProcessor> m_post_processor;
 
   static const float GX_MAX_DEPTH;

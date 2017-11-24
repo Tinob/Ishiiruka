@@ -213,15 +213,15 @@ void VulkanPostProcessingShader::Draw(PostProcessor* p,
       parent->GetVertexShader(src_layer < 0 && m_internal_layers > 1),
       geometry_shader,
       reinterpret_cast<RenderPassVulkanData*>(pass.shader)->m_fragment_shader);  
-
-    void* psuniforms = draw.AllocatePSUniforms(shader_buffer_size);
-    std::memcpy(
-      psuniforms,
-      shader_buffer_data,
-      shader_buffer_size);
-    draw.CommitPSUniforms(shader_buffer_size);
-
-
+    if (shader_buffer_size && shader_buffer_data)
+    {
+      void* psuniforms = draw.AllocatePSUniforms(shader_buffer_size);
+      std::memcpy(
+        psuniforms,
+        shader_buffer_data,
+        shader_buffer_size);
+      draw.CommitPSUniforms(shader_buffer_size);
+    }
     // Bind inputs to pipeline
     for (size_t i = 0; i < pass.inputs.size(); i++)
     {
@@ -271,8 +271,7 @@ void VulkanPostProcessingShader::Draw(PostProcessor* p,
       if (input_texture)
       {
         input_texture->TransitionToLayout(g_command_buffer_mgr->GetCurrentCommandBuffer(),
-          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        draw.SetPSSampler(i, src_texture->GetView(), g_object_cache->GetLinearSampler());
+          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);        
       }
       draw.SetPSSampler(i, src_texture->GetView(), parent->GetSamplerHandle(input.texture_sampler - 1));
     }
