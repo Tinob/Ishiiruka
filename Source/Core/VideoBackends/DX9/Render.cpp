@@ -134,7 +134,7 @@ Renderer::Renderer(void *&window_handle)
   m_bViewPortChanged = true;
   m_bGenerationModeChanged = true;
   m_bDepthModeChanged = true;
-  m_last_host_config_bits = ShaderHostConfig::GetCurrent().bits;
+  CheckForHostConfigChanges();
   s_gx_state.zmode.testenable = false;
   s_gx_state.zmode.updateenable = false;
   s_gx_state.zmode.func = ZMode::NEVER;

@@ -606,9 +606,9 @@ void ShaderCache::SavePipelineCache()
 
 /// Cache inserter that is called back when reading from the file
 template <typename Uid, typename UidHasher>
-struct ShaderCacheReader : public LinearDiskCacheReader<Uid, u32>
+struct ShaderUsageCacheReader : public LinearDiskCacheReader<Uid, u32>
 {
-  ShaderCacheReader(ObjectUsageProfiler<Uid, pKey_t, ShaderCache::vkShaderItem, UidHasher>* shader_map) : m_shader_map(shader_map) {}
+  ShaderUsageCacheReader(ObjectUsageProfiler<Uid, pKey_t, ShaderCache::vkShaderItem, UidHasher>* shader_map) : m_shader_map(shader_map) {}
   void Read(const Uid& key, const u32* value, u32 value_size) override
   {
     // We don't insert null modules into the shader map since creation could succeed later on.
@@ -630,9 +630,9 @@ struct ShaderCacheReader : public LinearDiskCacheReader<Uid, u32>
 };
 
 template <typename Uid, typename UidHasher>
-struct UberShaderCacheReader : public LinearDiskCacheReader<Uid, u32>
+struct ShaderCacheReader : public LinearDiskCacheReader<Uid, u32>
 {
-  UberShaderCacheReader(std::unordered_map<Uid, ShaderCache::vkShaderItem, UidHasher>& shader_map) : m_shader_map(shader_map) {}
+  ShaderCacheReader(std::unordered_map<Uid, ShaderCache::vkShaderItem, UidHasher>& shader_map) : m_shader_map(shader_map) {}
   void Read(const Uid& key, const u32* value, u32 value_size) override
   {
     // We don't insert null modules into the shader map since creation could succeed later on.
@@ -669,29 +669,23 @@ void ShaderCache::LoadShaderCaches(bool forcecompile)
     "Ishiiruka.ps",
     StringFromFormat("%s.ps", SConfig::GetInstance().GetGameID().c_str())
   ));
-  m_gs_cache.shader_map.reset(GShaderCache::cache_type::Create(
-    gameid,
-    GEOMETRYSHADERGEN_UID_VERSION,
-    "Ishiiruka.gs",
-    StringFromFormat("%s.gs", SConfig::GetInstance().GetGameID().c_str())
-  ));
 
-  ShaderCacheReader<VertexShaderUid, VertexShaderUid::ShaderUidHasher> vs_reader(m_vs_cache.shader_map.get());
+  ShaderUsageCacheReader<VertexShaderUid, VertexShaderUid::ShaderUidHasher> vs_reader(m_vs_cache.shader_map.get());
   m_vs_cache.disk_cache.OpenAndRead(GetDiskShaderCacheFileName(API_VULKAN, "vs", true, true), vs_reader);
 
-  ShaderCacheReader<PixelShaderUid, PixelShaderUid::ShaderUidHasher> ps_reader(m_ps_cache.shader_map.get());
+  ShaderUsageCacheReader<PixelShaderUid, PixelShaderUid::ShaderUidHasher> ps_reader(m_ps_cache.shader_map.get());
   m_ps_cache.disk_cache.OpenAndRead(GetDiskShaderCacheFileName(API_VULKAN, "ps", true, true), ps_reader);
 
   if (g_vulkan_context->SupportsGeometryShaders())
   {
-    ShaderCacheReader<GeometryShaderUid, GeometryShaderUid::ShaderUidHasher> gs_reader(m_gs_cache.shader_map.get());
+    ShaderCacheReader<GeometryShaderUid, GeometryShaderUid::ShaderUidHasher> gs_reader(m_gs_cache.shader_map);
     m_gs_cache.disk_cache.OpenAndRead(GetDiskShaderCacheFileName(API_VULKAN, "gs", true, true), gs_reader);
   }
 
-  UberShaderCacheReader<UberShader::VertexUberShaderUid, UberShader::VertexUberShaderUid::ShaderUidHasher> uber_vs_reader(m_vus_cache.shader_map);
+  ShaderCacheReader<UberShader::VertexUberShaderUid, UberShader::VertexUberShaderUid::ShaderUidHasher> uber_vs_reader(m_vus_cache.shader_map);
   m_vus_cache.disk_cache.OpenAndRead(
       GetDiskShaderCacheFileName(API_TYPE::API_VULKAN, "UVS", false, true), uber_vs_reader);
-  UberShaderCacheReader<UberShader::PixelUberShaderUid, UberShader::PixelUberShaderUid::ShaderUidHasher> uber_ps_reader(m_pus_cache.shader_map);
+  ShaderCacheReader<UberShader::PixelUberShaderUid, UberShader::PixelUberShaderUid::ShaderUidHasher> uber_ps_reader(m_pus_cache.shader_map);
   m_pus_cache.disk_cache.OpenAndRead(
       GetDiskShaderCacheFileName(API_TYPE::API_VULKAN, "UPS", false, true), uber_ps_reader);
   if (g_ActiveConfig.CanPrecompileUberShaders())
@@ -789,7 +783,7 @@ void ShaderCache::CompileShaders()
       GeometryShaderUid item = uid;
       item.ClearHASH();
       item.CalculateUIDHash();
-      vkShaderItem& it = m_gs_cache.shader_map->GetOrAdd(item);
+      vkShaderItem& it = m_gs_cache.shader_map[item];
       shader_count++;
       if (!it.initialized.test_and_set())
       {
@@ -812,8 +806,9 @@ void ShaderCache::Reload()
 }
 
 template <typename T>
-static void DestroyShaderCache(T& cache)
+static void DestroyShaderUsageCache(T& cache)
 {
+  cache.disk_cache.Sync();
   cache.disk_cache.Close();
   cache.shader_map->ForEach([](ShaderCache::vkShaderItem& entry)
   {
@@ -824,7 +819,7 @@ static void DestroyShaderCache(T& cache)
 }
 
 template <typename T>
-static void DestroyUberShaderCache(T& cache)
+static void DestroyShaderCache(T& cache)
 {
   cache.disk_cache.Sync();
   cache.disk_cache.Close();
@@ -840,28 +835,22 @@ static void DestroyUberShaderCache(T& cache)
 
 void ShaderCache::DestroyShaderCaches()
 {
-  m_vs_cache.shader_map->Persist([](const VertexShaderUid &uid) {
-    VertexShaderUid u = uid;
-    u.ClearHASH();
-    u.CalculateUIDHash();
-    VertexShaderUid::ShaderUidHasher hasher;
-    return hasher(uid) == hasher(u);
+  m_vs_cache.shader_map->Persist([](VertexShaderUid &uid) {
+    uid.ClearHASH();
+    uid.CalculateUIDHash();
   });
-  DestroyShaderCache(m_vs_cache);
-  m_ps_cache.shader_map->Persist([](const PixelShaderUid &uid) {
-    PixelShaderUid u = uid;
-    u.ClearHASH();
-    u.CalculateUIDHash();
-    PixelShaderUid::ShaderUidHasher hasher;
-    return hasher(uid) == hasher(u);
+  DestroyShaderUsageCache(m_vs_cache);
+  m_ps_cache.shader_map->Persist([](PixelShaderUid &uid) {
+    uid.ClearHASH();
+    uid.CalculateUIDHash();
   });
-  DestroyShaderCache(m_ps_cache);
+  DestroyShaderUsageCache(m_ps_cache);
 
   if (g_vulkan_context->SupportsGeometryShaders())
     DestroyShaderCache(m_gs_cache);
 
-  DestroyUberShaderCache(m_vus_cache);
-  DestroyUberShaderCache(m_pus_cache);
+  DestroyShaderCache(m_vus_cache);
+  DestroyShaderCache(m_pus_cache);
 
   SETSTAT(stats.numPixelShadersCreated, 0);
   SETSTAT(stats.numPixelShadersAlive, 0);
@@ -1001,7 +990,7 @@ VkShaderModule ShaderCache::GetVertexShaderForUid(const VertexShaderUid& uid)
 VkShaderModule ShaderCache::GetGeometryShaderForUid(const GeometryShaderUid& uid)
 {
   _assert_(g_vulkan_context->SupportsGeometryShaders());
-  vkShaderItem& it = m_gs_cache.shader_map->GetOrAdd(uid);
+  vkShaderItem& it = m_gs_cache.shader_map[uid];
   if (it.initialized.test_and_set())
     return it.module;
 

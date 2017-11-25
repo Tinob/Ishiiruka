@@ -47,7 +47,7 @@ public:
   }
   VkFramebuffer GetCurrentFramebuffer() const
   {
-    return m_swap_chain_images[m_current_swap_chain_image_index].framebuffer;
+    return m_swap_chain_images[m_current_swap_chain_image_index].texture->GetFrameBuffer();
   }
 
   VkResult AcquireNextImage(VkSemaphore available_semaphore);
@@ -78,7 +78,6 @@ private:
   {
     VkImage image;
     std::unique_ptr<Texture2D> texture;
-    VkFramebuffer framebuffer;
   };
 
   void* m_native_handle;

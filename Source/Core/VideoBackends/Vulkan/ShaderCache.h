@@ -208,30 +208,30 @@ private:
   
 
   template <typename Uid, typename UidHasher>
-  class ShaderModuleCache
+  class ShaderUsageModuleCache
   {
   public:
     typedef ObjectUsageProfiler<Uid, pKey_t, vkShaderItem, UidHasher> cache_type;
     std::unique_ptr<cache_type> shader_map{};
     LinearDiskCache<Uid, u32> disk_cache{};
-    ShaderModuleCache() {}
+    ShaderUsageModuleCache() {}
   };
 
   template <typename Uid, typename UidHasher>
-  class UberShaderModuleCache
+  class ShaderModuleCache
   {
   public:
     typedef std::unordered_map<Uid, vkShaderItem, UidHasher> cache_type;
     cache_type shader_map{};
     LinearDiskCache<Uid, u32> disk_cache{};
-    UberShaderModuleCache() {}
+    ShaderModuleCache() {}
   };
 
-  using VShaderCache = ShaderModuleCache<VertexShaderUid, VertexShaderUid::ShaderUidHasher> ;
-  using PShaderCache = ShaderModuleCache<PixelShaderUid, PixelShaderUid::ShaderUidHasher>;
+  using VShaderCache = ShaderUsageModuleCache<VertexShaderUid, VertexShaderUid::ShaderUidHasher> ;
+  using PShaderCache = ShaderUsageModuleCache<PixelShaderUid, PixelShaderUid::ShaderUidHasher>;
   using GShaderCache = ShaderModuleCache<GeometryShaderUid, GeometryShaderUid::ShaderUidHasher>;
-  using VUShaderCache = UberShaderModuleCache<UberShader::VertexUberShaderUid, UberShader::VertexUberShaderUid::ShaderUidHasher>;
-  using PUShaderCache = UberShaderModuleCache<UberShader::PixelUberShaderUid, UberShader::PixelUberShaderUid::ShaderUidHasher>;
+  using VUShaderCache = ShaderModuleCache<UberShader::VertexUberShaderUid, UberShader::VertexUberShaderUid::ShaderUidHasher>;
+  using PUShaderCache = ShaderModuleCache<UberShader::PixelUberShaderUid, UberShader::PixelUberShaderUid::ShaderUidHasher>;
 
 
   VShaderCache m_vs_cache;

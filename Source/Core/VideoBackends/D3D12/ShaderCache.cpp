@@ -365,24 +365,18 @@ void ShaderCache::LoadHostBasedFromDisk()
 {
   if (vs_bytecode_cache)
   {
-    vs_bytecode_cache->Persist([](const VertexShaderUid& uid) {
-      VertexShaderUid u = uid;
-      u.ClearHASH();
-      u.CalculateUIDHash();
-      VertexShaderUid::ShaderUidHasher hasher;
-      return hasher(uid) == hasher(u);
+    vs_bytecode_cache->Persist([](VertexShaderUid& uid) {
+      uid.ClearHASH();
+      uid.CalculateUIDHash();
     });
     delete vs_bytecode_cache;
     vs_bytecode_cache = nullptr;
   }
   if (ps_bytecode_cache)
   {
-    ps_bytecode_cache->Persist([](const PixelShaderUid &uid) {
-      PixelShaderUid u = uid;
-      u.ClearHASH();
-      u.CalculateUIDHash();
-      PixelShaderUid::ShaderUidHasher hasher;
-      return hasher(uid) == hasher(u);
+    ps_bytecode_cache->Persist([](PixelShaderUid &uid) {
+      uid.ClearHASH();
+      uid.CalculateUIDHash();
     });
     delete ps_bytecode_cache;
     ps_bytecode_cache = nullptr;
@@ -508,32 +502,23 @@ void ShaderCache::Shutdown()
 
   s_host_blob_list.clear();
 
-  vs_bytecode_cache->Persist([](const VertexShaderUid &uid) {
-    VertexShaderUid u = uid;
-    u.ClearHASH();
-    u.CalculateUIDHash();
-    VertexShaderUid::ShaderUidHasher hasher;
-    return hasher(uid) == hasher(u);
+  vs_bytecode_cache->Persist([](VertexShaderUid &uid) {
+    uid.ClearHASH();
+    uid.CalculateUIDHash();
   });
   delete vs_bytecode_cache;
   vs_bytecode_cache = nullptr;
 
-  ts_bytecode_cache->Persist([](const TessellationShaderUid &uid) {
-    TessellationShaderUid u = uid;
-    u.ClearHASH();
-    u.CalculateUIDHash();
-    TessellationShaderUid::ShaderUidHasher hasher;
-    return hasher(uid) == hasher(u);
+  ts_bytecode_cache->Persist([](TessellationShaderUid &uid) {
+    uid.ClearHASH();
+    uid.CalculateUIDHash();
   });
   delete ts_bytecode_cache;
   ts_bytecode_cache = nullptr;
 
-  ps_bytecode_cache->Persist([](const PixelShaderUid &uid) {
-    PixelShaderUid u = uid;
-    u.ClearHASH();
-    u.CalculateUIDHash();
-    PixelShaderUid::ShaderUidHasher hasher;
-    return hasher(uid) == hasher(u);
+  ps_bytecode_cache->Persist([](PixelShaderUid &uid) {
+    uid.ClearHASH();
+    uid.CalculateUIDHash();
   });
   delete ps_bytecode_cache;
   ps_bytecode_cache = nullptr;

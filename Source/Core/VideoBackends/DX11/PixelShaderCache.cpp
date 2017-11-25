@@ -532,12 +532,9 @@ void PixelShaderCache::LoadFromDisk()
 {
   if (s_pixel_shaders)
   {
-    s_pixel_shaders->Persist([](const PixelShaderUid &uid) {
-      PixelShaderUid u = uid;
-      u.ClearHASH();
-      u.CalculateUIDHash();
-      PixelShaderUid::ShaderUidHasher hasher;
-      return hasher(uid) == hasher(u);
+    s_pixel_shaders->Persist([](PixelShaderUid &uid) {
+      uid.ClearHASH();
+      uid.CalculateUIDHash();
     });
     s_pixel_shaders->Clear([](PSCacheEntry& item)
     {
@@ -636,12 +633,9 @@ void PixelShaderCache::Clear()
 {
   if (s_pixel_shaders)
   {
-    s_pixel_shaders->Persist([](const PixelShaderUid &uid) {
-      PixelShaderUid u = uid;
-      u.ClearHASH();
-      u.CalculateUIDHash();
-      PixelShaderUid::ShaderUidHasher hasher;
-      return hasher(uid) == hasher(u);
+    s_pixel_shaders->Persist([](PixelShaderUid &uid) {
+      uid.ClearHASH();
+      uid.CalculateUIDHash();
     });
     s_pixel_shaders->Clear([](PSCacheEntry& item)
     {

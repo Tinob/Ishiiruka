@@ -780,7 +780,7 @@ Renderer::Renderer()
   // options while running  
   UpdateActiveConfig();
   // Since we modify the config here, we need to update the last host bits, it may have changed.
-  m_last_host_config_bits = ShaderHostConfig::GetCurrent().bits;
+  CheckForHostConfigChanges();
   ClearEFBCache();
 }
 

@@ -60,7 +60,7 @@ public:
       }
       else
       {
-        HASH = (std::size_t)GetHash64(reinterpret_cast<u8*>(&data) + data.StartValue(), data.NumValues(), 0);
+        HASH = (std::size_t)GetMurmurHash3(reinterpret_cast<u8*>(&data) + data.StartValue(), data.NumValues(), 0);
       }
       HASH++;
     }

@@ -769,17 +769,14 @@ void ProgramShaderCache::CompileShaders()
 void ProgramShaderCache::Shutdown(bool shadersonly)
 {
   InvalidateVertexFormat();
-  pshaders->Persist([](const SHADERUID &uid) {
-    SHADERUID u = uid;
-    u.guid.ClearHASH();
-    u.vuid.ClearHASH();
-    u.puid.ClearHASH();
-    u.guid.CalculateUIDHash();
-    u.vuid.CalculateUIDHash();
-    u.puid.CalculateUIDHash();
-    u.CalculateHash();
-    SHADERUID::ShaderUidHasher hasher;
-    return hasher(uid) == hasher(u);
+  pshaders->Persist([](SHADERUID &uid) {
+    uid.guid.ClearHASH();
+    uid.vuid.ClearHASH();
+    uid.puid.ClearHASH();
+    uid.guid.CalculateUIDHash();
+    uid.vuid.CalculateUIDHash();
+    uid.puid.CalculateUIDHash();
+    uid.CalculateHash();
   });
   // store all shaders in cache on disk
   if (g_ogl_config.bSupportsGLSLCache)

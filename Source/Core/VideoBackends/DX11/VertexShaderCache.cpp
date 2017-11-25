@@ -189,12 +189,9 @@ void VertexShaderCache::LoadFromDisk()
 {
   if (s_vshaders)
   {
-    s_vshaders->Persist([](const VertexShaderUid &uid) {
-      VertexShaderUid u = uid;
-      u.ClearHASH();
-      u.CalculateUIDHash();
-      VertexShaderUid::ShaderUidHasher hasher;
-      return hasher(uid) == hasher(u);
+    s_vshaders->Persist([](VertexShaderUid &uid) {
+      uid.ClearHASH();
+      uid.CalculateUIDHash();
     });
     s_vshaders->Clear([](VSCacheEntry& item)
     {
@@ -291,7 +288,10 @@ void VertexShaderCache::Clear()
 {
   if (s_vshaders)
   {
-    s_vshaders->Persist();
+    s_vshaders->Persist([](VertexShaderUid &uid) {
+      uid.ClearHASH();
+      uid.CalculateUIDHash();
+    });
     s_vshaders->Clear([](VSCacheEntry& item)
     {
       item.Destroy();

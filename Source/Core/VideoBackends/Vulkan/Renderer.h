@@ -163,7 +163,6 @@ private:
 
   // Texture used for screenshot/frame dumping
   std::unique_ptr<Texture2D> m_frame_dump_render_texture;
-  VkFramebuffer m_frame_dump_framebuffer = VK_NULL_HANDLE;
 
   // Readback resources for frame dumping
   static const size_t FRAME_DUMP_BUFFERED_FRAMES = 2;

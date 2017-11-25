@@ -21,7 +21,7 @@ Texture2D::Texture2D(u32 width, u32 height, u32 levels, u32 layers, VkFormat for
  
 }
 
-void Texture2D::AddFramebuffer(VkRenderPass renderpass)
+void Texture2D::AddFramebuffer(VkRenderPass renderpass, bool clear)
 {
   VkFramebuffer framebuffer = VK_NULL_HANDLE;
   if (m_usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT && renderpass != VK_NULL_HANDLE)
@@ -44,20 +44,20 @@ void Texture2D::AddFramebuffer(VkRenderPass renderpass)
     {
       LOG_VULKAN_ERROR(res, "vkCreateFramebuffer failed: ");
     }
-    AddFramebuffer(framebuffer);
+    m_renderpass = renderpass;
+    m_framebuffer = framebuffer;
+    if (clear)
+    {
+      // Clear render targets before use to prevent reading uninitialized memory.
+      VkClearColorValue clear_value = { { 0.0f, 0.0f, 0.0f, 1.0f } };
+      VkImageSubresourceRange clear_range = { VK_IMAGE_ASPECT_COLOR_BIT, 0, m_levels, 0,
+        m_layers };
+      TransitionToLayout(g_command_buffer_mgr->GetCurrentInitCommandBuffer(),
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+      vkCmdClearColorImage(g_command_buffer_mgr->GetCurrentInitCommandBuffer(), m_image,
+        m_layout, &clear_value, 1, &clear_range);
+    }
   }
-}
-void Texture2D::AddFramebuffer(VkFramebuffer framebuffer)
-{
-  m_framebuffer = framebuffer;
-  // Clear render targets before use to prevent reading uninitialized memory.
-  VkClearColorValue clear_value = { { 0.0f, 0.0f, 0.0f, 1.0f } };
-  VkImageSubresourceRange clear_range = { VK_IMAGE_ASPECT_COLOR_BIT, 0, m_levels, 0,
-    m_layers };
-  TransitionToLayout(g_command_buffer_mgr->GetCurrentInitCommandBuffer(),
-    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-  vkCmdClearColorImage(g_command_buffer_mgr->GetCurrentInitCommandBuffer(), m_image,
-    m_layout, &clear_value, 1, &clear_range);
 }
 
 Texture2D::~Texture2D()

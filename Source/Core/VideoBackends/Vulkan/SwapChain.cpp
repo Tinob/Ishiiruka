@@ -400,26 +400,7 @@ bool SwapChain::SetupSwapChainImages()
     image.texture = Texture2D::CreateFromExistingImage(
       m_width, m_height, 1, 1, m_surface_format.format, VK_SAMPLE_COUNT_1_BIT,
       VK_IMAGE_VIEW_TYPE_2D, image.image, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT);
-
-    VkImageView view = image.texture->GetView();
-    VkFramebufferCreateInfo framebuffer_info = { VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-      nullptr,
-      0,
-      m_render_pass,
-      1,
-      &view,
-      m_width,
-      m_height,
-      1 };
-
-    res = vkCreateFramebuffer(g_vulkan_context->GetDevice(), &framebuffer_info, nullptr,
-      &image.framebuffer);
-    if (res != VK_SUCCESS)
-    {
-      LOG_VULKAN_ERROR(res, "vkCreateFramebuffer failed: ");
-      return false;
-    }
-
+    image.texture->AddFramebuffer(m_render_pass, false);
     m_swap_chain_images.emplace_back(std::move(image));
   }
 
@@ -428,11 +409,6 @@ bool SwapChain::SetupSwapChainImages()
 
 void SwapChain::DestroySwapChainImages()
 {
-  for (const auto& it : m_swap_chain_images)
-  {
-    // Images themselves are cleaned up by the swap chain object
-    vkDestroyFramebuffer(g_vulkan_context->GetDevice(), it.framebuffer, nullptr);
-  }
   m_swap_chain_images.clear();
 }
 

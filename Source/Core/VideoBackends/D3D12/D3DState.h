@@ -97,7 +97,7 @@ private:
   {
     size_t operator()(const D3D12_GRAPHICS_PIPELINE_STATE_DESC& pso_desc) const
     {
-      return GetHash64(reinterpret_cast<const u8*>(&pso_desc), static_cast<u32>(sizeof(pso_desc)), 0);
+      return GetMurmurHash3(reinterpret_cast<const u8*>(&pso_desc), static_cast<u32>(sizeof(pso_desc)), 0);
     }
   };
 

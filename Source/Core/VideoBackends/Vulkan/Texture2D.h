@@ -30,8 +30,7 @@ public:
     VkDeviceMemory device_memory, VkImageView view, VkImageUsageFlags usage);
   ~Texture2D();
 
-  void AddFramebuffer(VkRenderPass renderpass);
-  void AddFramebuffer(VkFramebuffer renderpass);
+  void AddFramebuffer(VkRenderPass renderpass, bool clear = true);
 
   static std::unique_ptr<Texture2D> Create(u32 width, u32 height, u32 levels, u32 layers,
     VkFormat format, VkSampleCountFlagBits samples,
@@ -54,6 +53,7 @@ public:
   VkImageViewType GetViewType() const { return m_view_type; }
   VkImage GetImage() const { return m_image; }
   VkFramebuffer GetFrameBuffer() const { return m_framebuffer; }
+  VkRenderPass GetDefaultRenderPass() const { return m_renderpass; }
   VkDeviceMemory GetDeviceMemory() const { return m_device_memory; }
   VkImageView GetView() const { return m_view; }
   // Used when the render pass is changing the image layout, or to force it to
@@ -80,5 +80,6 @@ private:
   //framebuffer for drawing into.
   VkFramebuffer m_framebuffer;
   VkImageUsageFlags m_usage;
+  VkRenderPass m_renderpass;
 };
 }

@@ -85,6 +85,7 @@ void Renderer::Init()
   UpdateDrawRectangle();
   CalculateTargetSize();
   PixelShaderManager::SetEfbScaleChanged();
+  CheckForHostConfigChanges();
 }
 
 bool Renderer::Initialize()
@@ -657,9 +658,9 @@ void Renderer::DrawFrame(VkRenderPass render_pass, const TargetRectangle& target
   if (!g_ActiveConfig.bUseXFB)
     DrawEFB(render_pass, target_rc, scaled_source_rc, dst_texture, dst_size, Gamma);
   else if (g_ActiveConfig.bUseRealXFB)
-      DrawRealXFB(render_pass, target_rc, xfb_sources, xfb_count, fb_width, fb_stride, fb_height, dst_texture, dst_size, Gamma);
-    else
-      DrawVirtualXFB(render_pass, target_rc, xfb_addr, xfb_sources, xfb_count, dst_texture, dst_size, fb_width, fb_stride, fb_height, Gamma);
+    DrawRealXFB(render_pass, target_rc, xfb_sources, xfb_count, fb_width, fb_stride, fb_height, dst_texture, dst_size, Gamma);
+  else
+    DrawVirtualXFB(render_pass, target_rc, xfb_addr, xfb_sources, xfb_count, dst_texture, dst_size, fb_width, fb_stride, fb_height, Gamma);
 }
 
 void Renderer::DrawEFB(VkRenderPass render_pass, const TargetRectangle& t_rc, const TargetRectangle& scaled_src_rc,
@@ -675,7 +676,7 @@ void Renderer::DrawEFB(VkRenderPass render_pass, const TargetRectangle& t_rc, co
       efb_depth_texture = FramebufferManager::GetInstance()->GetResolvedEFBDepthTexture();
     }
   }
-  else 
+  else
   {
     efb_color_texture = FramebufferManager::GetInstance()->GetEFBColorTexture();
     if (m_post_processor && m_post_processor->RequiresDepthBuffer())
@@ -698,7 +699,7 @@ void Renderer::DrawEFB(VkRenderPass render_pass, const TargetRectangle& t_rc, co
     efb_color_texture = reinterpret_cast<Texture2D*>(new_blit_tex);
 
   }
-  
+
   // Copy EFB -> backbuffer
   BlitScreen(render_pass, t_rc, scaled_source_rc, tex_size, efb_color_texture, efb_depth_texture, dst_size, dst_texture, Gamma);
 }
@@ -743,7 +744,7 @@ void Renderer::DrawVirtualXFB(VkRenderPass render_pass, const TargetRectangle& t
   }
 }
 
-void Renderer::DrawRealXFB(VkRenderPass render_pass,const TargetRectangle& target_rect,
+void Renderer::DrawRealXFB(VkRenderPass render_pass, const TargetRectangle& target_rect,
   const XFBSourceBase* const* xfb_sources, u32 xfb_count, u32 fb_width,
   u32 fb_stride, u32 fb_height, Texture2D* dst_texture, const TargetSize& dst_size, float Gamma)
 {
@@ -814,7 +815,7 @@ void Renderer::DrawScreen(const TargetRectangle& scaled_efb_rect, u32 xfb_addr,
   // Draw guest buffers (EFB or XFB)
   DrawFrame(m_swap_chain->GetRenderPass(), GetTargetRectangle(), scaled_efb_rect, xfb_addr,
     xfb_sources, xfb_count, backbuffer, dst_size, fb_width, fb_stride, fb_height, gamma);
-  
+
   // Draw OSD
   Util::SetViewportAndScissor(g_command_buffer_mgr->GetCurrentCommandBuffer(), 0, 0,
     backbuffer->GetWidth(), backbuffer->GetHeight());
@@ -851,8 +852,8 @@ bool Renderer::DrawFrameDump(const TargetRectangle& scaled_efb_rect, u32 xfb_add
   VkRenderPassBeginInfo info = {
     VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
     nullptr,
-    FramebufferManager::GetInstance()->GetColorCopyForReadbackRenderPass(),
-    m_frame_dump_framebuffer,
+    m_frame_dump_render_texture->GetDefaultRenderPass(),
+    m_frame_dump_render_texture->GetFrameBuffer(),
     { { 0, 0 },{ width, height } },
     1,
     &clear_value };
@@ -860,12 +861,10 @@ bool Renderer::DrawFrameDump(const TargetRectangle& scaled_efb_rect, u32 xfb_add
     VK_SUBPASS_CONTENTS_INLINE);
   vkCmdClearAttachments(g_command_buffer_mgr->GetCurrentCommandBuffer(), 1, &clear_attachment, 1,
     &clear_rect);
-  const TargetSize dst_size = {static_cast<int>(width), static_cast<int>(height) };
- 
-  DrawFrame(FramebufferManager::GetInstance()->GetColorCopyForReadbackRenderPass(), target_rect,
+  const TargetSize dst_size = { static_cast<int>(width), static_cast<int>(height) };
+  DrawFrame(m_frame_dump_render_texture->GetDefaultRenderPass(), target_rect,
     scaled_efb_rect, xfb_addr, xfb_sources, xfb_count, m_frame_dump_render_texture.get(), dst_size, fb_width, fb_stride, fb_height, 1.0f);
   vkCmdEndRenderPass(g_command_buffer_mgr->GetCurrentCommandBuffer());
-
   // Prepare the readback texture for copying.
   StagingTexture2D* readback_texture = PrepareFrameDumpImage(width, height, ticks);
   if (!readback_texture)
@@ -1077,12 +1076,6 @@ bool Renderer::ResizeFrameDumpBuffer(u32 new_width, u32 new_height)
   // that may still be in use.
   FlushFrameDump();
 
-  if (m_frame_dump_framebuffer != VK_NULL_HANDLE)
-  {
-    vkDestroyFramebuffer(g_vulkan_context->GetDevice(), m_frame_dump_framebuffer, nullptr);
-    m_frame_dump_framebuffer = VK_NULL_HANDLE;
-  }
-
   m_frame_dump_render_texture =
     Texture2D::Create(new_width, new_height, 1, 1, EFB_COLOR_TEXTURE_FORMAT,
       VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_TILING_OPTIMAL,
@@ -1094,25 +1087,7 @@ bool Renderer::ResizeFrameDumpBuffer(u32 new_width, u32 new_height)
     m_frame_dump_render_texture.reset();
     return false;
   }
-
-  VkImageView attachment = m_frame_dump_render_texture->GetView();
-  VkFramebufferCreateInfo info = {};
-  info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-  info.renderPass = FramebufferManager::GetInstance()->GetColorCopyForReadbackRenderPass();
-  info.attachmentCount = 1;
-  info.pAttachments = &attachment;
-  info.width = new_width;
-  info.height = new_height;
-  info.layers = 1;
-
-  VkResult res =
-    vkCreateFramebuffer(g_vulkan_context->GetDevice(), &info, nullptr, &m_frame_dump_framebuffer);
-  if (res != VK_SUCCESS)
-  {
-    WARN_LOG(VIDEO, "Failed to create frame dump framebuffer");
-    m_frame_dump_render_texture.reset();
-    return false;
-  }
+  m_frame_dump_render_texture->AddFramebuffer(FramebufferManager::GetInstance()->GetColorCopyForReadbackRenderPass());
 
   // Render pass expects texture is in transfer src to start with.
   m_frame_dump_render_texture->TransitionToLayout(g_command_buffer_mgr->GetCurrentCommandBuffer(),
@@ -1123,12 +1098,6 @@ bool Renderer::ResizeFrameDumpBuffer(u32 new_width, u32 new_height)
 
 void Renderer::DestroyFrameDumpResources()
 {
-  if (m_frame_dump_framebuffer != VK_NULL_HANDLE)
-  {
-    vkDestroyFramebuffer(g_vulkan_context->GetDevice(), m_frame_dump_framebuffer, nullptr);
-    m_frame_dump_framebuffer = VK_NULL_HANDLE;
-  }
-
   m_frame_dump_render_texture.reset();
 
   for (FrameDumpImage& image : m_frame_dump_images)

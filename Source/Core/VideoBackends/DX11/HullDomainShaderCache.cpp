@@ -145,12 +145,9 @@ void HullDomainShaderCache::Clear()
 {
   if (s_hulldomain_shaders)
   {
-    s_hulldomain_shaders->Persist([](const TessellationShaderUid &uid) {
-      TessellationShaderUid u = uid;
-      u.ClearHASH();
-      u.CalculateUIDHash();
-      TessellationShaderUid::ShaderUidHasher hasher;
-      return hasher(uid) == hasher(u);
+    s_hulldomain_shaders->Persist([](TessellationShaderUid &uid) {
+      uid.ClearHASH();
+      uid.CalculateUIDHash();
     });
     s_hulldomain_shaders->Clear([](HDCacheEntry& item)
     {

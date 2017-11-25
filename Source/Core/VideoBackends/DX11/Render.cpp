@@ -275,7 +275,7 @@ Renderer::Renderer(void *&window_handle)
   m_3d_vision_texture = nullptr;
   m_frame_dump_render_texture = nullptr;
   m_frame_dump_staging_texture.reset();
-  m_last_host_config_bits = ShaderHostConfig::GetCurrent().bits;
+  CheckForHostConfigChanges();
 }
 
 void Renderer::Init()

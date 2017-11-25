@@ -155,28 +155,37 @@ bool StateTracker::PrecachePipelineUID(const SerializedPipelineUID& uid)
 {
   PipelineInfo pinfo = {};
 
+  VertexShaderUid vs_uid = uid.vs_uid;
+  vs_uid.ClearHASH();
+  vs_uid.CalculateUIDHash();
+  PixelShaderUid ps_uid = uid.ps_uid;
+  ps_uid.ClearHASH();
+  ps_uid.CalculateUIDHash();
+  GeometryShaderUid gs_uid = uid.gs_uid;
+  gs_uid.ClearHASH();
+  gs_uid.CalculateUIDHash();
   // Need to create the vertex declaration first, rather than deferring to when a game creates a
   // vertex loader that uses this format, since we need it to create a pipeline.
   pinfo.vertex_format = static_cast<Vulkan::VertexFormat*>(VertexLoaderManager::GetOrCreateMatchingFormat(uid.vertex_decl));
-  pinfo.pipeline_layout = uid.ps_uid.GetUidData().bounding_box ?
+  pinfo.pipeline_layout = ps_uid.GetUidData().bounding_box ?
     g_object_cache->GetPipelineLayout(PIPELINE_LAYOUT_BBOX) :
     g_object_cache->GetPipelineLayout(PIPELINE_LAYOUT_STANDARD);
-  pinfo.vs = g_shader_cache->GetVertexShaderForUid(uid.vs_uid);
+  pinfo.vs = g_shader_cache->GetVertexShaderForUid(vs_uid);
   if (pinfo.vs == VK_NULL_HANDLE)
   {
     WARN_LOG(VIDEO, "Failed to get vertex shader from cached UID.");
     return false;
   }
-  if (g_vulkan_context->SupportsGeometryShaders() && !uid.gs_uid.GetUidData().IsPassthrough())
+  if (g_vulkan_context->SupportsGeometryShaders() && !gs_uid.GetUidData().IsPassthrough())
   {
-    pinfo.gs = g_shader_cache->GetGeometryShaderForUid(uid.gs_uid);
+    pinfo.gs = g_shader_cache->GetGeometryShaderForUid(gs_uid);
     if (pinfo.gs == VK_NULL_HANDLE)
     {
       WARN_LOG(VIDEO, "Failed to get geometry shader from cached UID.");
       return false;
     }
   }
-  pinfo.ps = g_shader_cache->GetPixelShaderForUid(uid.ps_uid);
+  pinfo.ps = g_shader_cache->GetPixelShaderForUid(ps_uid);
   if (pinfo.ps == VK_NULL_HANDLE)
   {
     WARN_LOG(VIDEO, "Failed to get pixel shader from cached UID.");
