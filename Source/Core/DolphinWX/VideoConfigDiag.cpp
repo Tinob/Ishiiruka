@@ -237,6 +237,12 @@ wxTRANSLATE("Disabled: Ubershaders are never used. Stuttering will occur during 
   "Exclusive: Ubershaders will always be used. Only recommended for high-end "
   "systems.");
 
+static wxString filteringmode_desc =
+wxTRANSLATE("Disabled: Filtering is disabled.\n\n"
+  "Accurate: Try to respect native resolution filtering to avoid issues.\n\n"
+  "Normal: Apply filtering as configured by the game but with enchanged efb resolution as the target quality.\n\n"
+  "Forced: Apply filtering even if the game has it disabled. Can cause issues in some games.");
+
 VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
   : wxDialog(parent, wxID_ANY,
     wxString::Format(_("Dolphin %s Graphics Configuration"), StrToWxStr(title)),
@@ -463,15 +469,28 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
       szr_enh->AddSpacer(0);
     }
 
+    {
+      const std::array<wxString, 4> mode_choices = { { _("Disabled"), _("Native"), _("Normal"), _("Forced") } };
+
+      wxChoice* const choice_mode =
+        new wxChoice(page_enh, wxID_ANY, wxDefaultPosition, wxDefaultSize,
+          static_cast<int>(mode_choices.size()), mode_choices.data());
+      RegisterControl(choice_mode, wxGetTranslation(filteringmode_desc));
+      szr_enh->Add(new wxStaticText(page_enh, wxID_ANY, _("Filtering:")), 1, wxALIGN_CENTER_VERTICAL, 0);
+      szr_enh->Add(choice_mode, 1, wxEXPAND | wxRIGHT);
+
+      // Determine ubershader mode
+      choice_mode->Bind(wxEVT_CHOICE, &VideoConfigDiag::OnFilteringModeChanged, this);
+      choice_mode->SetSelection(Config::GetBase(Config::GFX_ENHANCE_FILTERING_MODE));
+      szr_enh->AddSpacer(0);
+    }
+
     // Scaled copy, PL, Bilinear filter, 3D Vision
     szr_enh->Add(CreateCheckBox(page_enh, _("Scaled EFB Copy"), (scaled_efb_copy_desc), Config::GFX_HACK_COPY_EFB_ENABLED));
     if (vconfig.backend_info.bSupportsScaling)
     {
       szr_enh->Add(CreateCheckBox(page_enh, _("Use Scaling Filter"), (Use_Scaling_filter_desc), Config::GFX_ENHANCE_USE_SCALING_FILTER));
     }
-    szr_enh->Add(CreateCheckBox(page_enh, _("Force Texture Filtering"), (force_filtering_desc), Config::GFX_ENHANCE_FORCE_FILTERING));
-    szr_enh->Add(CreateCheckBox(page_enh, _("Disable Texture Filtering"), (disable_filtering_desc), Config::GFX_ENHANCE_DISABLE_FILTERING));
-
     szr_enh->Add(CreateCheckBox(page_enh, _("Widescreen Hack"), (ws_hack_desc), Config::GFX_WIDESCREEN_HACK));
     szr_enh->Add(CreateCheckBox(page_enh, _("Disable Fog"), (disable_fog_desc), Config::GFX_DISABLE_FOG));
     szr_enh->Add(CreateCheckBox(page_enh, _("Force 24-bit Color"), (true_color_desc), Config::GFX_ENHANCE_FORCE_TRUE_COLOR));
@@ -1720,4 +1739,9 @@ void VideoConfigDiag::OnUberShaderModeChanged(wxCommandEvent& ev)
   int mode = ev.GetInt();
   Config::SetBaseOrCurrent(Config::GFX_BACKGROUND_SHADER_COMPILING, mode == 1);
   Config::SetBaseOrCurrent(Config::GFX_DISABLE_SPECIALIZED_SHADERS, mode == 2);
+}
+
+void VideoConfigDiag::OnFilteringModeChanged(wxCommandEvent& ev)
+{
+  Config::SetBaseOrCurrent(Config::GFX_ENHANCE_FILTERING_MODE, ev.GetInt());
 }

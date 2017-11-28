@@ -117,8 +117,7 @@ const ConfigInfo<int> GFX_SW_DRAW_END{{System::GFX, "Settings", "SWDrawEnd"}, 10
 
 // Graphics.Enhancements
 
-const ConfigInfo<bool> GFX_ENHANCE_FORCE_FILTERING{{System::GFX, "Enhancements", "ForceFiltering"},
-                                                   false};
+const ConfigInfo<int> GFX_ENHANCE_FILTERING_MODE{{System::GFX, "Enhancements", "FilteringMode"}, 1};
 const ConfigInfo<bool> GFX_ENHANCE_DISABLE_FILTERING{ { System::GFX, "Enhancements", "DisableFiltering" },
 false };
 const ConfigInfo<int> GFX_ENHANCE_MAX_ANISOTROPY{{System::GFX, "Enhancements", "MaxAnisotropy"}, 0};

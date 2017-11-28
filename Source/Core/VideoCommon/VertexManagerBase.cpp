@@ -149,9 +149,9 @@ static void SetSamplerState(u32 index, bool custom_tex)
   SamplerState state = {};
   state.Generate(bpmem, index);
   bool mip_maps_enabled = SamplerCommon::AreBpTexMode0MipmapsEnabled(tm0);
-  bool acurate_filtering = !custom_tex && mip_maps_enabled && state.lod_bias.Value() != 0;
+  bool acurate_filtering = !custom_tex && g_ActiveConfig.eFilteringMode == FilteringMode::Accurate && mip_maps_enabled && state.lod_bias.Value() != 0;
   // Force texture filtering config option.
-  if (g_ActiveConfig.bForceFiltering)
+  if (g_ActiveConfig.eFilteringMode == FilteringMode::Forced)
   {
     state.min_filter = SamplerState::Filter::Linear;
     state.mag_filter = SamplerState::Filter::Linear;
@@ -159,7 +159,7 @@ static void SetSamplerState(u32 index, bool custom_tex)
       SamplerState::Filter::Linear :
       SamplerState::Filter::Point;
   }
-  else if (g_ActiveConfig.bDisableTextureFiltering)
+  else if (g_ActiveConfig.eFilteringMode == FilteringMode::Disabled)
   {
     state.min_filter = SamplerState::Filter::Point;
     state.mag_filter = SamplerState::Filter::Point;

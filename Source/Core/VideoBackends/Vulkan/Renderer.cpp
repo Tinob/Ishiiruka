@@ -1200,7 +1200,7 @@ void Renderer::CheckForConfigChanges()
   int old_anisotropy = g_ActiveConfig.iMaxAnisotropy;
   int old_aspect_ratio = g_ActiveConfig.iAspectRatio;
   int old_efb_scale = g_ActiveConfig.iEFBScale;
-  bool old_force_filtering = g_ActiveConfig.bForceFiltering;
+  FilteringMode old_filtering_mode = g_ActiveConfig.eFilteringMode;
   bool old_use_xfb = g_ActiveConfig.bUseXFB;
   bool old_use_realxfb = g_ActiveConfig.bUseRealXFB;
 
@@ -1211,7 +1211,7 @@ void Renderer::CheckForConfigChanges()
 
   // Determine which (if any) settings have changed.
   bool anisotropy_changed = old_anisotropy != g_ActiveConfig.iMaxAnisotropy;
-  bool force_texture_filtering_changed = old_force_filtering != g_ActiveConfig.bForceFiltering;
+  bool filtering_changed = old_filtering_mode != g_ActiveConfig.eFilteringMode;
   bool efb_scale_changed = old_efb_scale != g_ActiveConfig.iEFBScale;
   bool aspect_changed = old_aspect_ratio != g_ActiveConfig.iAspectRatio;
   bool use_xfb_changed = old_use_xfb != g_ActiveConfig.bUseXFB;
@@ -1253,7 +1253,7 @@ void Renderer::CheckForConfigChanges()
   }
 
   // Wipe sampler cache if force texture filtering or anisotropy changes.
-  if (anisotropy_changed || force_texture_filtering_changed)
+  if (anisotropy_changed || filtering_changed)
     ResetSamplerStates();
 }
 

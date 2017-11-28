@@ -148,8 +148,10 @@ void VideoConfig::Refresh()
   drawStart = Config::Get(Config::GFX_SW_DRAW_START);
   drawEnd = Config::Get(Config::GFX_SW_DRAW_END);
 
-  bForceFiltering = Config::Get(Config::GFX_ENHANCE_FORCE_FILTERING);
-  bDisableTextureFiltering = Config::Get(Config::GFX_ENHANCE_DISABLE_FILTERING);
+  int fmode = Config::Get(Config::GFX_ENHANCE_FILTERING_MODE);
+  fmode = std::min(fmode, static_cast<int>(FilteringMode::Forced));
+  fmode = std::max(fmode, static_cast<int>(FilteringMode::Disabled));
+  eFilteringMode = static_cast<FilteringMode>(fmode);
   iMaxAnisotropy = Config::Get(Config::GFX_ENHANCE_MAX_ANISOTROPY);
   bPostProcessingEnable = Config::Get(Config::GFX_ENHANCE_POST_ENABLED);
   iPostProcessingTrigger = Config::Get(Config::GFX_ENHANCE_POST_TRIGUER);

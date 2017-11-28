@@ -105,8 +105,7 @@ static const INIToLocationMap& GetINIToLocationMap()
       {{"Video_Settings", "CommandBufferExecuteInterval"},
        {Config::GFX_COMMAND_BUFFER_EXECUTE_INTERVAL.location}},
 
-      {{"Video_Enhancements", "ForceFiltering"}, {Config::GFX_ENHANCE_FORCE_FILTERING.location}},
-      {{"Video_Enhancements", "DisableFiltering"}, {Config::GFX_ENHANCE_DISABLE_FILTERING.location}},
+      {{"Video_Enhancements", "FilteringMode"}, {Config::GFX_ENHANCE_FILTERING_MODE.location}},
       {{"Video_Enhancements", "UseScalingFilter"}, {Config::GFX_ENHANCE_USE_SCALING_FILTER.location}},
       {{"Video_Enhancements", "MaxAnisotropy"}, {Config::GFX_ENHANCE_MAX_ANISOTROPY.location}},
       {{"Video_Enhancements", "PostProcessingShaders"}, {Config::GFX_ENHANCE_POST_SHADERS.location}},

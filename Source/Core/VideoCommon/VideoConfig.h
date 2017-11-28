@@ -70,6 +70,14 @@ enum BBoxMode : s32
   BBoxGPU = 2
 };
 
+enum FilteringMode : s32
+{
+  Disabled = 0,
+  Accurate = 1,
+  Normal = 2,
+  Forced = 3,
+};
+
 struct ProjectionHackConfig final
 {
   bool m_enable;
@@ -107,8 +115,7 @@ struct VideoConfig final
   u32 iMultisamples;
   bool bSSAA;
   int iEFBScale;
-  bool bForceFiltering;
-  bool bDisableTextureFiltering;
+  FilteringMode eFilteringMode;
   int iMaxAnisotropy;
   bool bPostProcessingEnable;
   int iPostProcessingTrigger;

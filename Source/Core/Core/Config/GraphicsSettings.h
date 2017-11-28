@@ -92,8 +92,7 @@ extern const ConfigInfo<int> GFX_SW_DRAW_END;
 
 // Graphics.Enhancements
 
-extern const ConfigInfo<bool> GFX_ENHANCE_FORCE_FILTERING;
-extern const ConfigInfo<bool> GFX_ENHANCE_DISABLE_FILTERING;
+extern const ConfigInfo<int> GFX_ENHANCE_FILTERING_MODE;
 extern const ConfigInfo<int> GFX_ENHANCE_MAX_ANISOTROPY;  // NOTE - this is x in (1 << x)
 extern const ConfigInfo<bool> GFX_ENHANCE_POST_ENABLED;
 extern const ConfigInfo<int> GFX_ENHANCE_POST_TRIGUER;

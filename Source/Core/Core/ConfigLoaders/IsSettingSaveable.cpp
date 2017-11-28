@@ -65,7 +65,7 @@ bool IsSettingSaveable(const Config::ConfigLocation& config_location)
       Config::GFX_DISABLE_SPECIALIZED_SHADERS.location,
       // Graphics.Enhancements
 
-      Config::GFX_ENHANCE_FORCE_FILTERING.location, Config::GFX_ENHANCE_DISABLE_FILTERING.location,
+      Config::GFX_ENHANCE_FILTERING_MODE.location,
       Config::GFX_ENHANCE_MAX_ANISOTROPY.location, Config::GFX_ENHANCE_POST_ENABLED.location,
       Config::GFX_ENHANCE_POST_TRIGUER.location, Config::GFX_ENHANCE_POST_SHADERS.location,
       Config::GFX_ENHANCE_SCALING_SHADER.location,
