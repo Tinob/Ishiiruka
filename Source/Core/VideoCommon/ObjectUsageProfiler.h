@@ -415,7 +415,7 @@ public:
   }
 
 private:
-  static const pKey_t ValidationMask = 1980092619761005200ull;
+  const pKey_t ValidationMask = 1980092619761005200ull;
   struct ObjectMetadata
   {
     pKey_t category_count;
