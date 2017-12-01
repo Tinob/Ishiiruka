@@ -127,6 +127,7 @@ bool Renderer::Initialize()
   }
   // Ensure all pipelines previously used by the game have been created.
   StateTracker::GetInstance()->ReloadPipelineUIDCache();
+  StateTracker::GetInstance()->ReloadUberPipelineUIDCache();
   /*
   // Initialize post processing.
   m_post_processor = std::make_unique<VulkanPostProcessor>();
@@ -1243,6 +1244,7 @@ void Renderer::CheckForConfigChanges()
     g_shader_cache->RecompileSharedShaders();
     StateTracker::GetInstance()->InvalidateShaderPointers();
     StateTracker::GetInstance()->ReloadPipelineUIDCache();
+    StateTracker::GetInstance()->ReloadUberPipelineUIDCache();
   }
 
   // For vsync, we need to change the present mode, which means recreating the swap chain.

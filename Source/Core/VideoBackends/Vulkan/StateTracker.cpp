@@ -103,7 +103,8 @@ void StateTracker::InvalidateShaderPointers()
   m_vs_uid = {};
   m_gs_uid = {};
   m_ps_uid = {};
-
+  m_uber_ps_uid = {};
+  m_uber_vs_uid = {};
   // Invalidate shader pointers.
   m_pipeline_state.vs = VK_NULL_HANDLE;
   m_pipeline_state.gs = VK_NULL_HANDLE;
@@ -134,6 +135,47 @@ void StateTracker::ReloadPipelineUIDCache()
   // OpenAndRead calls Close() first, which will flush all data to disk when reloading.
   // This assertion must hold true, otherwise data corruption will result.
   m_uid_cache.OpenAndRead(filename, inserter);
+}
+
+void StateTracker::ReloadUberPipelineUIDCache()
+{
+  class PipelineInserter final : public LinearDiskCacheReader<SerializedUberPipelineUID, u32>
+  {
+  public:
+    explicit PipelineInserter(StateTracker* this_ptr_) : this_ptr(this_ptr_) {}
+    void Read(const SerializedUberPipelineUID& key, const u32* value, u32 value_size)
+    {
+      this_ptr->PrecacheUberPipelineUID(key);
+    }
+
+  private:
+    StateTracker* this_ptr;
+  };
+
+  m_uberuid_cache.Sync();
+  m_uberuid_cache.Close();
+
+  std::string filename = GetDiskShaderCacheFileName(API_VULKAN, "UBERPUID", false, false);
+  PipelineInserter inserter(this);
+
+  // OpenAndRead calls Close() first, which will flush all data to disk when reloading.
+  // This assertion must hold true, otherwise data corruption will result.
+  m_uberuid_cache.OpenAndRead(filename, inserter);
+}
+
+void StateTracker::AppendToUberPipelineUIDCache(const PipelineInfo& info)
+{
+  SerializedUberPipelineUID sinfo;
+  sinfo.blend_state_bits = info.blend_state.hex;
+  sinfo.rasterizer_state_bits = info.rasterization_state.hex;
+  sinfo.depth_state_bits = info.depth_state.hex;
+  sinfo.vertex_decl = m_pipeline_state.vertex_format->GetVertexDeclaration();
+  sinfo.vs_uid = m_uber_vs_uid;
+  sinfo.gs_uid = m_gs_uid;
+  sinfo.ps_uid = m_uber_ps_uid;
+  sinfo.bbox_enabled = m_bbox_enabled;
+  u32 dummy_value = 0;
+  m_uberuid_cache.Append(sinfo, &dummy_value, 1);
 }
 
 void StateTracker::AppendToPipelineUIDCache(const PipelineInfo& info)
@@ -186,6 +228,62 @@ bool StateTracker::PrecachePipelineUID(const SerializedPipelineUID& uid)
     }
   }
   pinfo.ps = g_shader_cache->GetPixelShaderForUid(ps_uid);
+  if (pinfo.ps == VK_NULL_HANDLE)
+  {
+    WARN_LOG(VIDEO, "Failed to get pixel shader from cached UID.");
+    return false;
+  }
+  pinfo.render_pass = m_load_render_pass;
+  pinfo.blend_state.hex = uid.blend_state_bits;
+  pinfo.rasterization_state.hex = uid.rasterizer_state_bits;
+  pinfo.depth_state.hex = uid.depth_state_bits;
+
+  VkPipeline pipeline = g_shader_cache->GetPipeline(pinfo);
+  if (pipeline == VK_NULL_HANDLE)
+  {
+    WARN_LOG(VIDEO, "Failed to get pipeline from cached UID.");
+    return false;
+  }
+
+  // We don't need to do anything with this pipeline, just make sure it exists.
+  return true;
+}
+
+bool StateTracker::PrecacheUberPipelineUID(const SerializedUberPipelineUID& uid)
+{
+  PipelineInfo pinfo = {};
+
+  UberShader::VertexUberShaderUid vs_uid = uid.vs_uid;
+  vs_uid.ClearHASH();
+  vs_uid.CalculateUIDHash();
+  UberShader::PixelUberShaderUid ps_uid = uid.ps_uid;
+  ps_uid.ClearHASH();
+  ps_uid.CalculateUIDHash();
+  GeometryShaderUid gs_uid = uid.gs_uid;
+  gs_uid.ClearHASH();
+  gs_uid.CalculateUIDHash();
+  // Need to create the vertex declaration first, rather than deferring to when a game creates a
+  // vertex loader that uses this format, since we need it to create a pipeline.
+  pinfo.vertex_format = static_cast<Vulkan::VertexFormat*>(VertexLoaderManager::GetOrCreateMatchingFormat(uid.vertex_decl));
+  pinfo.pipeline_layout = uid.bbox_enabled ?
+    g_object_cache->GetPipelineLayout(PIPELINE_LAYOUT_BBOX) :
+    g_object_cache->GetPipelineLayout(PIPELINE_LAYOUT_STANDARD);
+  pinfo.vs = g_shader_cache->GetVertexUberShaderForUid(vs_uid);
+  if (pinfo.vs == VK_NULL_HANDLE)
+  {
+    WARN_LOG(VIDEO, "Failed to get vertex shader from cached UID.");
+    return false;
+  }
+  if (g_vulkan_context->SupportsGeometryShaders() && !gs_uid.GetUidData().IsPassthrough())
+  {
+    pinfo.gs = g_shader_cache->GetGeometryShaderForUid(gs_uid);
+    if (pinfo.gs == VK_NULL_HANDLE)
+    {
+      WARN_LOG(VIDEO, "Failed to get geometry shader from cached UID.");
+      return false;
+    }
+  }
+  pinfo.ps = g_shader_cache->GetPixelUberShaderForUid(ps_uid);
   if (pinfo.ps == VK_NULL_HANDLE)
   {
     WARN_LOG(VIDEO, "Failed to get pixel shader from cached UID.");
@@ -959,7 +1057,16 @@ VkPipeline StateTracker::GetPipelineAndCacheUID(const PipelineInfo& info)
 
   // Add to the UID cache if it is a new pipeline.
   if (!result.second)
-    AppendToPipelineUIDCache(info);
+  {
+    if (m_using_ubershaders)
+    {
+      AppendToUberPipelineUIDCache(info);
+    }
+    else
+    {
+      AppendToPipelineUIDCache(info);
+    }
+  }
 
   return result.first;
 }

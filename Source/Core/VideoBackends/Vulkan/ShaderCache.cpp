@@ -367,7 +367,7 @@ std::pair<VkPipeline, bool> ShaderCache::GetPipelineWithCacheResult(const Pipeli
     return iter->second;
 
   VkPipeline pipeline = CreatePipeline(info);
-  m_pipeline_objects.emplace(info, std::make_pair(pipeline, false));
+  m_pipeline_objects.emplace(info, std::make_pair(pipeline, true));
   return{ pipeline, false };
 }
 

@@ -115,7 +115,7 @@ public:
 
   // Reloads the UID cache, ensuring all pipelines used by the game so far have been created.
   void ReloadPipelineUIDCache();
-
+  void ReloadUberPipelineUIDCache();
   // Clears shader pointers, ensuring that now-deleted modules are not used.
   void InvalidateShaderPointers();
 
@@ -130,6 +130,18 @@ private:
     VertexShaderUid vs_uid;
     GeometryShaderUid gs_uid;
     PixelShaderUid ps_uid;
+  };
+
+  struct SerializedUberPipelineUID
+  {
+    u32 rasterizer_state_bits;
+    u32 depth_state_bits;
+    u32 blend_state_bits;
+    bool bbox_enabled;
+    PortableVertexDeclaration vertex_decl;
+    UberShader::VertexUberShaderUid vs_uid;
+    GeometryShaderUid gs_uid;
+    UberShader::PixelUberShaderUid ps_uid;
   };
 
   // Number of descriptor sets for game draws.
@@ -164,10 +176,11 @@ private:
   // Appends the specified pipeline info, combined with the UIDs stored in the class.
   // The info is here so that we can store variations of a UID, e.g. blend state.
   void AppendToPipelineUIDCache(const PipelineInfo& info);
+  void AppendToUberPipelineUIDCache(const PipelineInfo& info);
 
   // Precaches a pipeline based on the UID information.
   bool PrecachePipelineUID(const SerializedPipelineUID& uid);
-
+  bool PrecacheUberPipelineUID(const SerializedUberPipelineUID& uid);
   // Check that the specified viewport is within the render area.
   // If not, ends the render pass if it is a clear render pass.
   bool IsViewportWithinRenderArea() const;
@@ -259,5 +272,6 @@ private:
   // on-demand. If all goes well, it should hit the shader and Vulkan pipeline cache, therefore
   // loading should be reasonably efficient.
   LinearDiskCache<SerializedPipelineUID, u32> m_uid_cache;
+  LinearDiskCache<SerializedUberPipelineUID, u32> m_uberuid_cache;
 };
 }
