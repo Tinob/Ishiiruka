@@ -34,12 +34,21 @@ ShaderHostConfig ShaderHostConfig::GetCurrent()
 }
 
 std::string GetDiskShaderCacheFileName(API_TYPE api_type, const char* type, bool include_gameid,
-  bool include_host_config)
+  bool include_host_config, bool uid)
 {
-  if (!File::Exists(File::GetUserPath(D_SHADERCACHE_IDX)))
-    File::CreateDir(File::GetUserPath(D_SHADERCACHE_IDX));
-
-  std::string filename = File::GetUserPath(D_SHADERCACHE_IDX);
+  std::string filename;
+  if (uid)
+  {
+    if (!File::Exists(File::GetUserPath(D_SHADERUIDCACHE_IDX)))
+      File::CreateDir(File::GetUserPath(D_SHADERUIDCACHE_IDX));
+    filename = File::GetUserPath(D_SHADERUIDCACHE_IDX);
+  }
+  else
+  {
+    if (!File::Exists(File::GetUserPath(D_SHADERCACHE_IDX)))
+      File::CreateDir(File::GetUserPath(D_SHADERCACHE_IDX));
+    filename = File::GetUserPath(D_SHADERCACHE_IDX);
+  }
   switch (api_type)
   {
   case API_TYPE::API_D3D11:

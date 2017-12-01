@@ -26,7 +26,7 @@ struct vertex_ubershader_uid_data
   }
 };
 #pragma pack()
-
+#define VERTEXUBERSHADERGEN_UID_VERSION 1
 typedef ShaderUid<vertex_ubershader_uid_data> VertexUberShaderUid;
 
 VertexUberShaderUid GetVertexUberShaderUid(u32 components, const XFMemory &xfr);

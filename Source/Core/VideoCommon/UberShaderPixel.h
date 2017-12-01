@@ -33,6 +33,7 @@ struct pixel_ubershader_uid_data
   }
 };
 #pragma pack()
+#define PIXELUBERSHADERGEN_UID_VERSION 1
 
 typedef ShaderUid<pixel_ubershader_uid_data> PixelUberShaderUid;
 

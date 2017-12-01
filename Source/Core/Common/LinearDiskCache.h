@@ -51,7 +51,7 @@ class LinearDiskCache
 {
 public:
   // return number of read entries
-  u32 OpenAndRead(const std::string& filename, LinearDiskCacheReader<K, V>& reader)
+  u32 OpenAndRead(const std::string& filename, LinearDiskCacheReader<K, V>& reader, std::string version = {})
   {
     using std::ios_base;
 
@@ -77,8 +77,14 @@ public:
     m_file.seekg(0, std::ios::beg);
     std::fstream::pos_type start_pos = m_file.tellg();
     std::streamoff file_size = end_pos - start_pos;
-
-    m_header.Init();
+    if (version.empty())
+    {
+      m_header.Init();
+    }
+    else
+    {
+      m_header.Init(version);
+    }
     if (m_file.is_open() && ValidateHeader())
     {
       // good header, read some key/value pairs
@@ -173,11 +179,16 @@ private:
 
   struct Header
   {
-    void Init()
+    void Init(std::string version)
     {
       // Null-terminator is intentionally not copied.
       std::memcpy(&id, "DCAC", sizeof(u32));
-      std::memcpy(ver, Common::scm_rev_cache_str.c_str(), std::min(Common::scm_rev_cache_str.size(), sizeof(ver)));
+      std::memcpy(ver, version.c_str(), std::min(version.size(), sizeof(ver)));
+    }
+    void Init()
+    {
+      // Null-terminator is intentionally not copied.
+      Init(Common::scm_rev_cache_str);
     }
 
     u32 id;

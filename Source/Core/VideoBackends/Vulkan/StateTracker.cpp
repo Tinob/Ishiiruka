@@ -129,12 +129,15 @@ void StateTracker::ReloadPipelineUIDCache()
   m_uid_cache.Sync();
   m_uid_cache.Close();
 
-  std::string filename = GetDiskShaderCacheFileName(API_VULKAN, "PUID", true, false);
+  std::string filename = GetDiskShaderCacheFileName(API_VULKAN, "PUID", true, false, true);
   PipelineInserter inserter(this);
 
   // OpenAndRead calls Close() first, which will flush all data to disk when reloading.
   // This assertion must hold true, otherwise data corruption will result.
-  m_uid_cache.OpenAndRead(filename, inserter);
+  m_uid_cache.OpenAndRead(filename, inserter, StringFromFormat("%i_%i_%i_%s",
+    VERTEXSHADERGEN_UID_VERSION,
+    GEOMETRYSHADERGEN_UID_VERSION,
+    PIXELSHADERGEN_UID_VERSION, PIPELINE_UID_VERSION));
 }
 
 void StateTracker::ReloadUberPipelineUIDCache()
@@ -155,12 +158,18 @@ void StateTracker::ReloadUberPipelineUIDCache()
   m_uberuid_cache.Sync();
   m_uberuid_cache.Close();
 
-  std::string filename = GetDiskShaderCacheFileName(API_VULKAN, "UBERPUID", false, false);
+  std::string filename = GetDiskShaderCacheFileName(API_VULKAN, "UBERPUID", false, false, true);
   PipelineInserter inserter(this);
 
   // OpenAndRead calls Close() first, which will flush all data to disk when reloading.
   // This assertion must hold true, otherwise data corruption will result.
-  m_uberuid_cache.OpenAndRead(filename, inserter);
+  m_uberuid_cache.OpenAndRead(
+    filename,
+    inserter,
+    StringFromFormat("%i_%i_%i_%i",
+      VERTEXUBERSHADERGEN_UID_VERSION,
+      GEOMETRYSHADERGEN_UID_VERSION,
+      PIXELUBERSHADERGEN_UID_VERSION, PIPELINE_UID_VERSION));
 }
 
 void StateTracker::AppendToUberPipelineUIDCache(const PipelineInfo& info)

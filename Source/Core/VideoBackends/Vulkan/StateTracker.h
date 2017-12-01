@@ -120,6 +120,7 @@ public:
   void InvalidateShaderPointers();
 
 private:
+#define PIPELINE_UID_VERSION  "20171201"
   // Serialized version of PipelineInfo, used when loading/saving the pipeline UID cache.
   struct SerializedPipelineUID
   {
