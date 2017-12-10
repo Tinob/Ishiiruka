@@ -537,10 +537,8 @@ void CISOProperties::LoadGameConfig()
   SetCheckboxValueFromGameini("Wii", "Widescreen", m_enable_widescreen);
   SetCheckboxValueFromGameini("Video_Stereoscopy", "StereoEFBMonoDepth", m_mono_depth);
 
-  IniFile::Section* default_video = m_gameini_default.GetOrCreateSection("Video");
-
   int iTemp;
-  if (m_gameini_default.GetIfExists("Core", "Video_Rate", &iTemp))
+  if (m_gameini_local.GetIfExists("Core", "Video_Rate", &iTemp))
   {
     iTemp = std::min(std::max(iTemp, 4), 64);
     DVideo->SetValue(iTemp);
@@ -548,7 +546,7 @@ void CISOProperties::LoadGameConfig()
     label_DVideo->SetLabel(StrToWxStr(lbl_text));
   }
   SetCheckboxValueFromGameini("Core", "HalfAudioRate", HalfAudioRate);
-
+  IniFile::Section* default_video = m_gameini_default.GetOrCreateSection("Video");
   default_video->Get("ProjectionHack", &iTemp);
   default_video->Get("PH_SZNear", &m_phack_data.PHackSZNear);
   if (m_gameini_local.GetIfExists("Video", "PH_SZNear", &iTemp))
@@ -661,7 +659,7 @@ bool CISOProperties::SaveGameConfig()
     else                                                                                           \
       m_gameini_local.DeleteKey((section), (key));                                                 \
   } while (0)
-
+  SAVE_IF_NOT_DEFAULT("Core", "Video_Rate", DVideo->GetValue(), 8);
   SAVE_IF_NOT_DEFAULT("Video", "PH_SZNear", (m_phack_data.PHackSZNear ? 1 : 0), 0);
   SAVE_IF_NOT_DEFAULT("Video", "PH_SZFar", (m_phack_data.PHackSZFar ? 1 : 0), 0);
   SAVE_IF_NOT_DEFAULT("Video", "PH_ZNear", m_phack_data.PHZNear, "");
