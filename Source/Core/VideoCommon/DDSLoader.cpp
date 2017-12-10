@@ -299,7 +299,6 @@ bool ImageLoader::ReadDDS(ImageLoaderParams& loader_params)
   if (mipmapspresent)
   {
     // calculate mipmaps size
-    loader_params.data_size += block_size;
     u32 w = ddsd.dwWidth;
     u32 h = ddsd.dwHeight;
     u32 level = 0;
