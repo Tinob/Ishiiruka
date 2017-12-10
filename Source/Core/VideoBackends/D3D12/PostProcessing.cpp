@@ -314,23 +314,24 @@ void D3DPostProcessingShader::Draw(PostProcessor* p,
     D3D::command_list_mgr->SetCommandListDirtyState(COMMAND_LIST_STATE_SAMPLERS, true);
 
     // If this is the last pass and we can skip the final copy, write directly to output texture.
+    D3DTexture2D* dst = nullptr;
     if (is_last_pass && skip_final_copy)
     {
       // The target rect may differ from the source.
       output_rect = dst_rect;
       output_size = dst_size;
-      dst_texture->TransitionToResourceState(D3D::current_command_list, D3D12_RESOURCE_STATE_RENDER_TARGET);
-      auto rtv = dst_texture->GetRTV();
-      D3D::current_command_list->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
+      dst = dst_texture;
     }
     else
     {
       output_rect = PostProcessor::ScaleTargetRectangle(API_D3D11, src_rect, pass.output_scale);
       output_size = pass.output_size;
-      reinterpret_cast<D3DTexture2D*>(pass.output_texture->GetInternalObject())->TransitionToResourceState(D3D::current_command_list, D3D12_RESOURCE_STATE_RENDER_TARGET);
-      auto rtv = reinterpret_cast<D3DTexture2D*>(pass.output_texture->GetInternalObject())->GetRTV();
-      D3D::current_command_list->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
+      dst = reinterpret_cast<D3DTexture2D*>(pass.output_texture->GetInternalObject());
     }
+
+    dst->TransitionToResourceState(D3D::current_command_list, D3D12_RESOURCE_STATE_RENDER_TARGET);
+    auto rtv = dst->GetRTV();
+    D3D::current_command_list->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
 
     // Set viewport based on target rect
     D3D::SetViewportAndScissor(output_rect.left, output_rect.top,
@@ -346,7 +347,7 @@ void D3DPostProcessingShader::Draw(PostProcessor* p,
     // Draw pass
     D3D::DrawShadedTexQuad(nullptr, src_rect.AsRECT(), src_size.width, src_size.height,
       reinterpret_cast<RenderPassDx12Data*>(pass.shader)->m_shader_bytecode, parent->GetVertexShader(), StaticShaderCache::GetSimpleVertexShaderInputLayout(),
-      geometry_shader, std::max(src_layer, 0), DXGI_FORMAT_R8G8B8A8_UNORM, false, dst_texture->GetMultisampled());
+      geometry_shader, std::max(src_layer, 0), dst->GetFormat(), false, dst->GetMultisampled());
   }
 
   // Copy the last pass output to the target if not done already
