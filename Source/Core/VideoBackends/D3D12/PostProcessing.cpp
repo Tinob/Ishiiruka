@@ -607,7 +607,7 @@ void D3DPostProcessor::CopyTexture(const TargetRectangle& dst_rect, uintptr_t ds
     D3D12_SHADER_BYTECODE bytecode = {};
 
     D3D::DrawShadedTexQuad(src_texture, src_rect.AsRECT(), src_size.width, src_size.height,
-      StaticShaderCache::GetColorCopyPixelShader(dst_texture->GetMultisampled()),
+      StaticShaderCache::GetColorCopyPixelShader(src_texture->GetMultisampled()),
       StaticShaderCache::GetSimpleVertexShader(),
       StaticShaderCache::GetSimpleVertexShaderInputLayout(),
       (src_layer < 0) ? StaticShaderCache::GetCopyGeometryShader() : bytecode, 0,

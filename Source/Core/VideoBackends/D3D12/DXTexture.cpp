@@ -205,7 +205,7 @@ void DXTexture::CopyTexture(D3DTexture2D* source, D3DTexture2D* destination,
   srcRC.bottom = srcheight;
   D3D::DrawShadedTexQuad(source, &srcRC,
     srcwidth, srcheight,
-    StaticShaderCache::GetColorCopyPixelShader(destination->GetMultisampled()),
+    StaticShaderCache::GetColorCopyPixelShader(source->GetMultisampled()),
     StaticShaderCache::GetSimpleVertexShader(),
     StaticShaderCache::GetSimpleVertexShaderInputLayout(), StaticShaderCache::GetCopyGeometryShader(), 0,
     destination->GetFormat(), false, destination->GetMultisampled());
@@ -231,7 +231,7 @@ void DXTexture::CopyRectangle(D3DTexture2D* source, D3DTexture2D* destination,
   srcRC.bottom = srcrect.bottom;
   D3D::DrawShadedTexQuad(source, &srcRC,
    srcwidth, srcheight,
-    StaticShaderCache::GetColorCopyPixelShader(destination->GetMultisampled()),
+    StaticShaderCache::GetColorCopyPixelShader(source->GetMultisampled()),
     StaticShaderCache::GetSimpleVertexShader(),
     StaticShaderCache::GetSimpleVertexShaderInputLayout(), StaticShaderCache::GetCopyGeometryShader(), 0,
     destination->GetFormat(), false, destination->GetMultisampled());
