@@ -202,8 +202,8 @@ void PS_AO_SSGI()
 			float ii_curr_sample_radius = sample_radius[i] * GetOption(fSSGISamplingRange) * 20;
 			float ao_curr_sample_radius = sample_radius[i] * GetOption(fSSGISamplingRange) * 5;
 
-			gi.a += clamp(0, ao_sample_center_depth + ao_curr_sample_radius - sample_depth, 2 * ao_curr_sample_radius);
-			gi.a -= clamp(0, ao_sample_center_depth + ao_curr_sample_radius - sample_depth - GetOption(fSSGIModelThickness), 2 * ao_curr_sample_radius);
+			gi.a += clamp(0.0, ao_sample_center_depth + ao_curr_sample_radius - sample_depth, 2 * ao_curr_sample_radius);
+			gi.a -= clamp(0.0, ao_sample_center_depth + ao_curr_sample_radius - sample_depth - GetOption(fSSGIModelThickness), 2.0 * ao_curr_sample_radius);
 
 			if ((sample_depth < ii_sample_center_depth + ii_curr_sample_radius) &&
 				(sample_depth > ii_sample_center_depth - ii_curr_sample_radius)) {

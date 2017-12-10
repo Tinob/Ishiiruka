@@ -231,7 +231,7 @@ void VulkanContext::PopulateBackendInfo(VideoConfig* config)
   config->backend_info.bSupportsClipControl = true;           // Assumed support.
   config->backend_info.bSupportsMultithreading = true;        // Assumed support.
   config->backend_info.bSupportsValidationLayer = true;       // Assumed support.
-  config->backend_info.bSupportsPostProcessing = false;       // No support yet.
+  config->backend_info.bSupportsPostProcessing = true;
   config->backend_info.bSupportsDualSourceBlend = false;      // Dependent on features.
   config->backend_info.bSupportsGeometryShaders = false;      // Dependent on features.
   config->backend_info.bSupportsGSInstancing = false;         // Dependent on features.
@@ -249,7 +249,6 @@ void VulkanContext::PopulateBackendInfo(VideoConfig* config)
   config->backend_info.bSupportsScaling = false;
   config->backend_info.bSupportsPixelLighting = true;
   config->backend_info.bNeedBlendIndices = false;
-  config->backend_info.bSupportsPostProcessing = false;
   config->backend_info.bSupportsNormalMaps = true;
   config->backend_info.bSupportsInternalResolutionFrameDumps = true;
   config->backend_info.bSupportsAsyncShaderCompilation = false;

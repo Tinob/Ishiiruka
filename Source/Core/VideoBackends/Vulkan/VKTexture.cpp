@@ -37,11 +37,16 @@ std::unique_ptr<VKTexture> VKTexture::Create(const TextureConfig& tex_config)
   // Determine image usage, we need to flag as an attachment if it can be used as a rendertarget.
   VkImageUsageFlags usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |
     VK_IMAGE_USAGE_SAMPLED_BIT;
-  if (tex_config.rendertarget)
-    usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-
   // Allocate texture object
   VkFormat vk_format = Util::GetVkFormatForHostTextureFormat(tex_config.pcformat);
+  if (tex_config.rendertarget)
+  {
+    usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    if (Util::IsCompressedFormat(vk_format))
+    {
+      vk_format = VK_FORMAT_R8G8B8A8_UNORM;
+    }
+  }
   auto texture = Texture2D::Create(tex_config.width, tex_config.height, tex_config.levels,
     tex_config.layers, vk_format, VK_SAMPLE_COUNT_1_BIT,
     VK_IMAGE_VIEW_TYPE_2D_ARRAY, VK_IMAGE_TILING_OPTIMAL, usage);
@@ -53,7 +58,7 @@ std::unique_ptr<VKTexture> VKTexture::Create(const TextureConfig& tex_config)
 
   if (tex_config.rendertarget)
   {
-    texture->AddFramebuffer(TextureCache::GetInstance()->GetRenderPass());
+    texture->AddFramebuffer(TextureCache::GetInstance()->GetRenderPass(vk_format));
   }
   
   return std::unique_ptr<VKTexture>(new VKTexture(tex_config, std::move(texture)));
@@ -193,7 +198,7 @@ void VKTexture::ScaleTextureRectangle(const MathUtil::Rectangle<int>& dst_rect,
 
   UtilityShaderDraw draw(g_command_buffer_mgr->GetCurrentCommandBuffer(),
     g_object_cache->GetPipelineLayout(PIPELINE_LAYOUT_STANDARD),
-    TextureCache::GetInstance()->GetRenderPass(),
+    TextureCache::GetInstance()->GetRenderPass(m_texture->GetFormat()),
     g_shader_cache->GetPassthroughVertexShader(),
     g_shader_cache->GetPassthroughGeometryShader(),
     TextureCache::GetInstance()->GetCopyShader());

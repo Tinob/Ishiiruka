@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <array>
 #include <memory>
 
 #include "Common/CommonTypes.h"
@@ -52,9 +53,25 @@ public:
   {
     return m_texture_converter.get();
   }
-  VkRenderPass GetRenderPass() const
+  VkRenderPass GetRenderPass(VkFormat fmt = VK_FORMAT_R8G8B8A8_UNORM) const
   {
-    return m_render_pass;
+    if (fmt == VK_FORMAT_D32_SFLOAT)
+    {
+      return m_render_pass[1];
+    }
+    else if (fmt == VK_FORMAT_R32_SFLOAT)
+    {
+      return m_render_pass[2];
+    }
+    else if (fmt == VK_FORMAT_R16G16B16A16_SFLOAT)
+    {
+      return m_render_pass[3];
+    }
+    else if (fmt == VK_FORMAT_R32G32B32A32_SFLOAT)
+    {
+      return m_render_pass[4];
+    }
+    return m_render_pass[0];
   }
   VkShaderModule GetCopyShader() const
   {
@@ -67,7 +84,7 @@ public:
 private:
   bool CreateRenderPasses();
 
-  VkRenderPass m_render_pass = VK_NULL_HANDLE;
+  std::array<VkRenderPass, 5> m_render_pass;
 
   std::unique_ptr<StreamBuffer> m_texture_upload_buffer;
 

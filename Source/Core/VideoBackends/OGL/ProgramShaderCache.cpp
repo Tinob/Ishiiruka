@@ -53,7 +53,7 @@ std::array<SHADERUID, PIXEL_SHADER_RENDER_MODE::PSRM_DEPTH_ONLY + 1> ProgramShad
 ProgramShaderCache::PCacheEntry* ProgramShaderCache::last_uber_entry;
 UBERSHADERUID ProgramShaderCache::last_uber_uid;
 
-static char s_glsl_header[2048] = "";
+static char s_glsl_header[4096] = "";
 
 static std::string GetGLSLVersionString()
 {
@@ -968,7 +968,19 @@ void ProgramShaderCache::CreateHeader()
     "#define ddy dFdy\n"
     "#define rsqrt inversesqrt\n"
 
+    "bool all(float2 val) { return (val.x != 0.0) && (val.y != 0.0); }\n"
+    "bool all(float3 val) { return (val.x != 0.0) && (val.y != 0.0) && (val.z != 0.0); }\n"
+    "bool all(float4 val) { return (val.x != 0.0) && (val.y != 0.0) && (val.z != 0.0) && (val.w != 0.0); }\n"
+    "bool all(int2 val) { return (val.x != 0) && (val.y != 0); }\n"
+    "bool all(int3 val) { return (val.x != 0) && (val.y != 0) && (val.z != 0); }\n"
+    "bool all(int4 val) { return (val.x != 0) && (val.y != 0) && (val.z != 0) && (val.w != 0); }\n"
 
+    "bool any(float2 val) { return (val.x != 0.0) || (val.y != 0.0); }\n"
+    "bool any(float3 val) { return (val.x != 0.0) || (val.y != 0.0) || (val.z != 0.0); }\n"
+    "bool any(float4 val) { return (val.x != 0.0) || (val.y != 0.0) || (val.z != 0.0) || (val.w != 0.0); }\n"
+    "bool any(int2 val) { return (val.x != 0) || (val.y != 0); }\n"
+    "bool any(int3 val) { return (val.x != 0) || (val.y != 0) || (val.z != 0); }\n"
+    "bool any(int4 val) { return (val.x != 0) || (val.y != 0) || (val.z != 0) || (val.w != 0); }\n"
 
     , GetGLSLVersionString().c_str()
     , v < GLSL_140 ? "#extension GL_ARB_uniform_buffer_object : enable" : ""

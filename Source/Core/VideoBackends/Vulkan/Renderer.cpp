@@ -128,7 +128,6 @@ bool Renderer::Initialize()
   // Ensure all pipelines previously used by the game have been created.
   StateTracker::GetInstance()->ReloadPipelineUIDCache();
   StateTracker::GetInstance()->ReloadUberPipelineUIDCache();
-  /*
   // Initialize post processing.
   m_post_processor = std::make_unique<VulkanPostProcessor>();
   if (!m_post_processor->Initialize())
@@ -136,7 +135,6 @@ bool Renderer::Initialize()
     PanicAlert("failed to initialize post processor.");
     return false;
   }
-  */
   // Various initialization routines will have executed commands on the command buffer.
   // Execute what we have done before beginning the first frame.
   g_command_buffer_mgr->PrepareToSubmitCommandBuffer();
@@ -189,7 +187,7 @@ void Renderer::RenderText(const std::string& text, int left, int top, u32 color)
   u32 backbuffer_width = m_swap_chain->GetWidth();
   u32 backbuffer_height = m_swap_chain->GetHeight();
 
-  m_raster_font->PrintMultiLineText(m_swap_chain->GetRenderPass(), text,
+  m_raster_font->PrintMultiLineText(m_swap_chain->GetRenderAppendPass(), text,
     left * 2.0f / static_cast<float>(backbuffer_width) - 1,
     1 - top * 2.0f / static_cast<float>(backbuffer_height),
     backbuffer_width, backbuffer_height, color);
@@ -521,7 +519,8 @@ void Renderer::SwapImpl(u32 xfb_addr, u32 fb_width, u32 fb_stride, u32 fb_height
     Core::Callback_VideoCopiedToXFB(false);
     return;
   }
-
+  if (!g_ActiveConfig.bUseXFB)
+    m_post_processor->OnEndFrame();
   // End the current render pass.
   StateTracker::GetInstance()->EndRenderPass();
   StateTracker::GetInstance()->OnEndFrame();
@@ -672,19 +671,22 @@ void Renderer::DrawEFB(VkRenderPass render_pass, const TargetRectangle& t_rc, co
   if (g_ActiveConfig.iMultisamples > 1)
   {
     efb_color_texture = FramebufferManager::GetInstance()->GetResolvedEFBColorTexture();
-    if (m_post_processor && m_post_processor->RequiresDepthBuffer())
-    {
-      efb_depth_texture = FramebufferManager::GetInstance()->GetResolvedEFBDepthTexture();
-    }
   }
   else
   {
     efb_color_texture = FramebufferManager::GetInstance()->GetEFBColorTexture();
-    if (m_post_processor && m_post_processor->RequiresDepthBuffer())
-    {
-      efb_depth_texture = FramebufferManager::GetInstance()->GetEFBDepthTexture();
-    }
   }
+
+  if (m_post_processor && m_post_processor->RequiresDepthBuffer())
+  {
+    VkRect2D region = {
+      { t_rc.left, t_rc.top },
+    { static_cast<u32>(t_rc.GetWidth()), static_cast<u32>(t_rc.GetHeight()) } };
+    region = Util::ClampRect2D(region, FramebufferManager::GetInstance()->GetEFBWidth(),
+      FramebufferManager::GetInstance()->GetEFBHeight());
+    efb_depth_texture = FramebufferManager::GetInstance()->ResolveEFBDepthTexture(region);
+  }
+
   TargetRectangle scaled_source_rc(scaled_src_rc);
   TargetSize tex_size(efb_color_texture->GetWidth(), efb_color_texture->GetHeight());
   // Post processing active?
@@ -798,28 +800,27 @@ void Renderer::DrawScreen(const TargetRectangle& scaled_efb_rect, u32 xfb_addr,
   // a render pass, unless the render pass declares a self-dependency.
   Texture2D* backbuffer = m_swap_chain->GetCurrentTexture();
   backbuffer->OverrideImageLayout(VK_IMAGE_LAYOUT_UNDEFINED);
+
+  const TargetSize dst_size = { static_cast<int>(backbuffer->GetWidth()), static_cast<int>(backbuffer->GetHeight()) };
+  // Draw guest buffers (EFB or XFB)
+  DrawFrame(m_swap_chain->GetRenderClearPass(), GetTargetRectangle(), scaled_efb_rect, xfb_addr,
+    xfb_sources, xfb_count, backbuffer, dst_size, fb_width, fb_stride, fb_height, gamma);
+
   backbuffer->TransitionToLayout(g_command_buffer_mgr->GetCurrentCommandBuffer(),
     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-  // Begin render pass for rendering to the swap chain.
-  VkClearValue clear_value = { { { 0.0f, 0.0f, 0.0f, 1.0f } } };
+  // Begin render pass for rendering to the swap chain.  
   VkRenderPassBeginInfo info = { VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-    nullptr,
-    m_swap_chain->GetRenderPass(),
-    m_swap_chain->GetCurrentFramebuffer(),
-    { { 0, 0 },{ backbuffer->GetWidth(), backbuffer->GetHeight() } },
-    1,
-    &clear_value };
+  nullptr,
+  m_swap_chain->GetRenderAppendPass(),
+  m_swap_chain->GetCurrentFramebuffer(),
+  { { 0, 0 },{ backbuffer->GetWidth(), backbuffer->GetHeight() } },
+  0,
+  nullptr };
   vkCmdBeginRenderPass(g_command_buffer_mgr->GetCurrentCommandBuffer(), &info,
     VK_SUBPASS_CONTENTS_INLINE);
-  const TargetSize dst_size = { static_cast<int>(backbuffer->GetWidth()), static_cast<int>(backbuffer->GetHeight()) };
-  // Draw guest buffers (EFB or XFB)
-  DrawFrame(m_swap_chain->GetRenderPass(), GetTargetRectangle(), scaled_efb_rect, xfb_addr,
-    xfb_sources, xfb_count, backbuffer, dst_size, fb_width, fb_stride, fb_height, gamma);
 
   // Draw OSD
-  Util::SetViewportAndScissor(g_command_buffer_mgr->GetCurrentCommandBuffer(), 0, 0,
-    backbuffer->GetWidth(), backbuffer->GetHeight());
   DrawDebugText();
   OSD::DoCallbacks(OSD::CallbackType::OnFrame);
   OSD::DrawMessages();
@@ -862,10 +863,11 @@ bool Renderer::DrawFrameDump(const TargetRectangle& scaled_efb_rect, u32 xfb_add
     VK_SUBPASS_CONTENTS_INLINE);
   vkCmdClearAttachments(g_command_buffer_mgr->GetCurrentCommandBuffer(), 1, &clear_attachment, 1,
     &clear_rect);
+  vkCmdEndRenderPass(g_command_buffer_mgr->GetCurrentCommandBuffer());
   const TargetSize dst_size = { static_cast<int>(width), static_cast<int>(height) };
   DrawFrame(m_frame_dump_render_texture->GetDefaultRenderPass(), target_rect,
     scaled_efb_rect, xfb_addr, xfb_sources, xfb_count, m_frame_dump_render_texture.get(), dst_size, fb_width, fb_stride, fb_height, 1.0f);
-  vkCmdEndRenderPass(g_command_buffer_mgr->GetCurrentCommandBuffer());
+
   // Prepare the readback texture for copying.
   StagingTexture2D* readback_texture = PrepareFrameDumpImage(width, height, ticks);
   if (!readback_texture)
@@ -1042,10 +1044,10 @@ void Renderer::BlitScreen(VkRenderPass render_pass, const TargetRectangle& dst_r
   const TargetRectangle& src_rect, TargetSize src_size, const Texture2D* src_tex, const Texture2D* src_depth_tex,
   const TargetSize& dst_size, Texture2D* dst_texture, float Gamma)
 {
-  OldBlitScreen(render_pass, dst_rect, src_rect, src_tex, true);
-  return;
+  //OldBlitScreen(render_pass, dst_rect, src_rect, src_tex, true);
+  //return;
   //Disable post proccessing still a work in progress
-  /*
+
   if (g_ActiveConfig.iStereoMode == STEREO_SBS || g_ActiveConfig.iStereoMode == STEREO_TAB)
   {
     TargetRectangle left_rect;
@@ -1062,7 +1064,6 @@ void Renderer::BlitScreen(VkRenderPass render_pass, const TargetRectangle& dst_r
     m_post_processor->BlitScreen(dst_rect, dst_size, reinterpret_cast<uintptr_t>(dst_texture),
       src_rect, src_size, reinterpret_cast<uintptr_t>(src_tex), reinterpret_cast<uintptr_t>(src_depth_tex), 0, Gamma);
   }
-  */
 }
 
 bool Renderer::ResizeFrameDumpBuffer(u32 new_width, u32 new_height)
@@ -1204,7 +1205,7 @@ void Renderer::CheckForConfigChanges()
   FilteringMode old_filtering_mode = g_ActiveConfig.eFilteringMode;
   bool old_use_xfb = g_ActiveConfig.bUseXFB;
   bool old_use_realxfb = g_ActiveConfig.bUseRealXFB;
-
+  int last_stereo_mode = g_ActiveConfig.iStereoMode;
   // Copy g_Config to g_ActiveConfig.
   // NOTE: This can potentially race with the UI thread, however if it does, the changes will be
   // delayed until the next time CheckForConfigChanges is called.
@@ -1217,6 +1218,11 @@ void Renderer::CheckForConfigChanges()
   bool aspect_changed = old_aspect_ratio != g_ActiveConfig.iAspectRatio;
   bool use_xfb_changed = old_use_xfb != g_ActiveConfig.bUseXFB;
   bool use_realxfb_changed = old_use_realxfb != g_ActiveConfig.bUseRealXFB;
+
+  if (last_stereo_mode != g_ActiveConfig.iStereoMode)
+  {
+    m_post_processor->SetReloadFlag();
+  }
 
   // Update texture cache settings with any changed options.
   TextureCache::GetInstance()->OnConfigChanged(g_ActiveConfig);
@@ -1257,6 +1263,10 @@ void Renderer::CheckForConfigChanges()
   // Wipe sampler cache if force texture filtering or anisotropy changes.
   if (anisotropy_changed || filtering_changed)
     ResetSamplerStates();
+
+  // if the configuration has changed, reload post processor (can fail, which will deactivate it)
+  if (m_post_processor->RequiresReload())
+    m_post_processor->ReloadShaders();
 }
 
 void Renderer::OnSwapChainResized()

@@ -84,6 +84,20 @@ static const char SHADER_HEADER[] = R"(
   // These were changed in Vulkan
   #define gl_VertexID gl_VertexIndex
   #define gl_InstanceID gl_InstanceIndex
+
+  bool all(float2 val) { return (val.x != 0.0) && (val.y != 0.0); }
+  bool all(float3 val) { return (val.x != 0.0) && (val.y != 0.0) && (val.z != 0.0); }
+  bool all(float4 val) { return (val.x != 0.0) && (val.y != 0.0) && (val.z != 0.0) && (val.w != 0.0); }
+  bool all(int2 val) { return (val.x != 0) && (val.y != 0); }
+  bool all(int3 val) { return (val.x != 0) && (val.y != 0) && (val.z != 0); }
+  bool all(int4 val) { return (val.x != 0) && (val.y != 0) && (val.z != 0) && (val.w != 0); }
+
+  bool any(float2 val) { return (val.x != 0.0) || (val.y != 0.0); }
+  bool any(float3 val) { return (val.x != 0.0) || (val.y != 0.0) || (val.z != 0.0); }
+  bool any(float4 val) { return (val.x != 0.0) || (val.y != 0.0) || (val.z != 0.0) || (val.w != 0.0); }
+  bool any(int2 val) { return (val.x != 0) || (val.y != 0); }
+  bool any(int3 val) { return (val.x != 0) || (val.y != 0) || (val.z != 0); }
+  bool any(int4 val) { return (val.x != 0) || (val.y != 0) || (val.z != 0) || (val.w != 0); }
 )";
 
 static const char COMPUTE_SHADER_HEADER[] = R"(

@@ -1866,12 +1866,12 @@ void PostProcessor::DrawStereoBuffers(const TargetRectangle& dst_rect, const Tar
 
 const std::string PostProcessor::s_post_fragment_header_ogl = R"(
 // Depth value is not inverted for GL
-#define DEPTH_VALUE(val) (val)
+#define DEPTH_VALUE(val) (%s(val))
 // Shader inputs/outputs
-SAMPLER_BINDING(9) uniform sampler2DArray pp_inputs[8];
-in float2 v_source_uv;
-in float2 v_target_uv;
-flat in float v_layer;
+SAMPLER_BINDING(%i) uniform sampler2DArray pp_inputs[8];
+%sin float2 v_source_uv;
+%sin float2 v_target_uv;
+%sflat in float v_layer;
 out float4 ocol0;
 // Input sampling wrappers. Has to be a macro because the array index must be a constant expression.
 #define SampleInput(index) (texture(pp_inputs[index], float3(v_source_uv, v_layer)))
@@ -1931,6 +1931,50 @@ float4 SampleInputBicubicLocation3(float2 location)
 		 SampleInputLocation(3, texCoord.zw) * scalingFactor.w;
 }
 
+float4 SampleInputBicubicLocation4(float2 location)
+{
+	float4 scalingFactor;
+	float4 texCoord = GetBicubicSampleLocation(4, location, scalingFactor);
+	return
+		 SampleInputLocation(4, texCoord.xy) * scalingFactor.x +
+		 SampleInputLocation(4, texCoord.zy) * scalingFactor.y +
+		 SampleInputLocation(4, texCoord.xw) * scalingFactor.z +
+		 SampleInputLocation(4, texCoord.zw) * scalingFactor.w;
+}
+
+float4 SampleInputBicubicLocation5(float2 location)
+{
+	float4 scalingFactor;
+	float4 texCoord = GetBicubicSampleLocation(5, location, scalingFactor);
+	return
+		 SampleInputLocation(5, texCoord.xy) * scalingFactor.x +
+		 SampleInputLocation(5, texCoord.zy) * scalingFactor.y +
+		 SampleInputLocation(5, texCoord.xw) * scalingFactor.z +
+		 SampleInputLocation(5, texCoord.zw) * scalingFactor.w;
+}
+
+float4 SampleInputBicubicLocation6(float2 location)
+{
+	float4 scalingFactor;
+	float4 texCoord = GetBicubicSampleLocation(6, location, scalingFactor);
+	return
+		 SampleInputLocation(6, texCoord.xy) * scalingFactor.x +
+		 SampleInputLocation(6, texCoord.zy) * scalingFactor.y +
+		 SampleInputLocation(6, texCoord.xw) * scalingFactor.z +
+		 SampleInputLocation(6, texCoord.zw) * scalingFactor.w;
+}
+
+float4 SampleInputBicubicLocation7(float2 location)
+{
+	float4 scalingFactor;
+	float4 texCoord = GetBicubicSampleLocation(7, location, scalingFactor);
+	return
+		 SampleInputLocation(7, texCoord.xy) * scalingFactor.x +
+		 SampleInputLocation(7, texCoord.zy) * scalingFactor.y +
+		 SampleInputLocation(7, texCoord.xw) * scalingFactor.z +
+		 SampleInputLocation(7, texCoord.zw) * scalingFactor.w;
+}
+
 float4 SampleInputBicubic0()
 {
 	return SampleInputBicubicLocation0(GetCoordinates());
@@ -1951,8 +1995,96 @@ float4 SampleInputBicubic3()
 	return SampleInputBicubicLocation3(GetCoordinates());
 }
 
-#define SampleInputBicubic(idx)  SampleInputBicubic##idx()
-#define SampleInputBicubicLocation(idx, location)  SampleInputBicubicLocation##idx(location)
+float4 SampleInputBicubic4()
+{
+	return SampleInputBicubicLocation4(GetCoordinates());
+}
+
+float4 SampleInputBicubic5()
+{
+	return SampleInputBicubicLocation5(GetCoordinates());
+}
+
+float4 SampleInputBicubic6()
+{
+	return SampleInputBicubicLocation6(GetCoordinates());
+}
+
+float4 SampleInputBicubic7()
+{
+	return SampleInputBicubicLocation7(GetCoordinates());
+}
+
+float4 SampleInputBicubic(int idx)
+{
+  if(idx == 0)
+  {
+    return SampleInputBicubic0();
+  }
+  else if(idx == 1)
+  {
+    return SampleInputBicubic1();
+  }
+  else if(idx == 2)
+  {
+    return SampleInputBicubic2();
+  }
+  else if(idx == 3)
+  {
+    return SampleInputBicubic3();
+  }
+  else if(idx == 4)
+  {
+    return SampleInputBicubic4();
+  }
+  else if(idx == 5)
+  {
+    return SampleInputBicubic5();
+  }
+  else if(idx == 6)
+  {
+    return SampleInputBicubic6();
+  }
+  else
+  {
+    return SampleInputBicubic7();
+  }
+}  
+float4 SampleInputBicubicLocation(int idx, float2 location)
+{
+  if(idx == 0)
+  {
+    return SampleInputBicubicLocation0(location);
+  }
+  else if(idx == 1)
+  {
+    return SampleInputBicubicLocation1(location);
+  }
+  else if(idx == 2)
+  {
+    return SampleInputBicubicLocation2(location);
+  }
+  else if(idx == 3)
+  {
+    return SampleInputBicubicLocation3(location);
+  }
+  else if(idx == 4)
+  {
+    return SampleInputBicubicLocation4(location);
+  }
+  else if(idx == 5)
+  {
+    return SampleInputBicubicLocation5(location);
+  }
+  else if(idx == 6)
+  {
+    return SampleInputBicubicLocation6(location);
+  }
+  else
+  {
+    return SampleInputBicubicLocation7(location);
+  } 
+}
 
 float4 SampleBicubicLocation(float2 location)
 {
@@ -1997,6 +2129,10 @@ float4 SampleBicubic()
 			SampleInputLocation(COLOR_BUFFER_INPUT_INDEX, texCoord.xw) * scalingFactor.z +
 			SampleInputLocation(COLOR_BUFFER_INPUT_INDEX, texCoord.zw) * scalingFactor.w;
 }
+
+// Option check macro
+#define GetOption(x) (conf_options.x)
+#define OptionEnabled(x) ((conf_options.x) != 0)
 
 )";
 
@@ -2061,6 +2197,9 @@ float4 SampleBicubic()
 	return SampleInputBicubicLocation(COLOR_BUFFER_INPUT_INDEX, GetCoordinates());
 }
 
+// Option check macro
+#define GetOption(x) (o_##x)
+#define OptionEnabled(x) ((o_##x) != 0)
 )";
 
 const std::string PostProcessor::s_post_fragment_header_common = R"(
@@ -2210,16 +2349,13 @@ float4 GetBicubicSampleLocation(int idx, float2 location, out float4 scalingFact
 }
 
 #define SetOutput(color) ocol0 = color
-// Option check macro
-#define GetOption(x) (o_##x)
-#define OptionEnabled(x) ((o_##x) != 0)
 )";
 
 void PostProcessor::GetUniformBufferShaderSource(API_TYPE api, const PostProcessingShaderConfiguration* config, std::string& shader_source, bool includeconfig)
 {
   // Constant block
   if (api == API_OPENGL || api == API_VULKAN)
-    shader_source += "UBO_BINDING(std140, 1) uniform PostProcessingConstants {\n";
+    shader_source += StringFromFormat("UBO_BINDING(std140, %i) uniform PostProcessingConstants {\n", api == API_VULKAN ? 2 : 1);
   else if (api == API_D3D11)
     shader_source += "cbuffer PostProcessingConstants : register(b0) {\n";
 
@@ -2240,11 +2376,13 @@ void PostProcessor::GetUniformBufferShaderSource(API_TYPE api, const PostProcess
     return;
   }
   bool bufferpacking = false;
+  std::string prefix = "";
   // User options
   if (api == API_OPENGL || api == API_VULKAN)
-    shader_source += "UBO_BINDING(std140, 2) uniform ConfigurationConstants {\n";
+    shader_source += StringFromFormat("UBO_BINDING(std140, %i) uniform ConfigurationConstants {\n", api == API_VULKAN ? 1 : 2);
   else if (api == API_D3D11)
   {
+    prefix = "o_";
     bufferpacking = true;
     shader_source += "cbuffer ConfigurationConstants : register(b1) {\n";
   }
@@ -2289,24 +2427,24 @@ void PostProcessor::GetUniformBufferShaderSource(API_TYPE api, const PostProcess
 
     if (it.second.m_type == POST_PROCESSING_OPTION_TYPE_BOOL)
     {
-      shader_source += StringFromFormat("\tint o_%s;\n", it.first.c_str());
+      shader_source += StringFromFormat("\tint %s%s;\n", prefix.c_str(), it.first.c_str());
     }
     else if (it.second.m_type == POST_PROCESSING_OPTION_TYPE_INTEGER)
     {
       count = static_cast<u32>(it.second.m_integer_values.size());
 
       if (count == 1)
-        shader_source += StringFromFormat("\tint o_%s;\n", it.first.c_str());
+        shader_source += StringFromFormat("\tint %s%s;\n", prefix.c_str(), it.first.c_str());
       else
-        shader_source += StringFromFormat("\tint%d o_%s;\n", count, it.first.c_str());
+        shader_source += StringFromFormat("\tint%d %s%s;\n", count, prefix.c_str(), it.first.c_str());
     }
     else if (it.second.m_type == POST_PROCESSING_OPTION_TYPE_FLOAT)
     {
       count = static_cast<u32>(it.second.m_float_values.size());
       if (count == 1)
-        shader_source += StringFromFormat("\tfloat o_%s;\n", it.first.c_str());
+        shader_source += StringFromFormat("\tfloat %s%s;\n", prefix.c_str(), it.first.c_str());
       else
-        shader_source += StringFromFormat("\tfloat%d o_%s;\n", count, it.first.c_str());
+        shader_source += StringFromFormat("\tfloat%d %s%s;\n", count, prefix.c_str(), it.first.c_str());
     }
     if (!bufferpacking)
     {
@@ -2316,7 +2454,7 @@ void PostProcessor::GetUniformBufferShaderSource(API_TYPE api, const PostProcess
   }
 
   // End constant block
-  shader_source += "};\n";
+  shader_source += StringFromFormat("}%s;\n", api == API_D3D11 ? "" : " conf_options");
 }
 
 std::string PostProcessor::GetCommonFragmentShaderSource(API_TYPE api, const PostProcessingShaderConfiguration* config, int texture_register_start)
@@ -2324,7 +2462,12 @@ std::string PostProcessor::GetCommonFragmentShaderSource(API_TYPE api, const Pos
   std::string shader_source;
   if (api == API_OPENGL || api == API_VULKAN)
   {
-    shader_source += s_post_fragment_header_ogl;
+    shader_source += StringFromFormat(s_post_fragment_header_ogl.c_str(),
+      api == API_VULKAN ? "1.0f - " : "",
+      texture_register_start,
+      api == API_VULKAN ? "layout(location = 0) " : "",
+      api == API_VULKAN ? "layout(location = 1) " : "",
+      api == API_VULKAN ? "layout(location = 2) " : "") ;
   }
   else if (api == API_D3D11)
   {
@@ -2384,7 +2527,7 @@ std::string PostProcessor::GetPassFragmentShaderSource(
   }
 
   // API-specific wrapper
-  if (api == API_OPENGL)
+  if (api != API_D3D11)
   {
     // No entry point? This pass should perform a copy.
     if (pass->entry_point.empty())
@@ -2392,7 +2535,7 @@ std::string PostProcessor::GetPassFragmentShaderSource(
     else if (pass->entry_point != "main")
       shader_source += StringFromFormat("void main() { %s(); }\n", pass->entry_point.c_str());
   }
-  else if (api == API_D3D11)
+  else
   {
     shader_source += "void passmain(in float4 in_pos : SV_Position,\n"
       "          in float2 in_srcTexCoord : TEXCOORD0,\n"

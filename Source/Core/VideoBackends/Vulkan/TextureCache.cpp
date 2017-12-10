@@ -33,13 +33,23 @@ namespace Vulkan
 {
 TextureCache::TextureCache()
 {
+  for (size_t i = 0; i < m_render_pass.size(); i++)
+  {
+    m_render_pass[i] = VK_NULL_HANDLE;
+  }
   m_scaler = std::make_unique<TextureScaler>();
 }
 
 TextureCache::~TextureCache()
 {
-  if (m_render_pass != VK_NULL_HANDLE)
-    vkDestroyRenderPass(g_vulkan_context->GetDevice(), m_render_pass, nullptr);
+  for (size_t i = 0; i < m_render_pass.size(); i++)
+  {
+    if (m_render_pass[i] != VK_NULL_HANDLE)
+    {
+      vkDestroyRenderPass(g_vulkan_context->GetDevice(), m_render_pass[i], nullptr);
+      m_render_pass[i] = VK_NULL_HANDLE;
+    }
+  }
   TextureCache::DeleteShaders();
   m_scaler.reset();
 }
@@ -86,14 +96,13 @@ bool TextureCache::Palettize(TCacheEntry* _entry, const TCacheEntry* base_entry)
 {
   TCacheEntry* entry = static_cast<TCacheEntry*>(_entry);
   const TCacheEntry* unconverted = static_cast<const TCacheEntry*>(base_entry);
-
-  m_texture_converter->ConvertTexture(entry, unconverted, m_render_pass, m_pallette, m_pallette_format, m_pallette_size);
+  VKTexture* dst_tex = static_cast<VKTexture*>(_entry->GetColor());
+  m_texture_converter->ConvertTexture(entry, unconverted, GetRenderPass(dst_tex->GetRawTexIdentifier()->GetFormat()), m_pallette, m_pallette_format, m_pallette_size);
   static_cast<VKTexture*>(base_entry->GetColor())
     ->GetRawTexIdentifier()
     ->TransitionToLayout(g_command_buffer_mgr->GetCurrentCommandBuffer(),
       VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-  static_cast<VKTexture*>(_entry->GetColor())
-    ->GetRawTexIdentifier()
+  dst_tex->GetRawTexIdentifier()
     ->TransitionToLayout(g_command_buffer_mgr->GetCurrentCommandBuffer(),
       VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
   return true;
@@ -168,7 +177,7 @@ std::unique_ptr<HostTexture> TextureCache::CreateTexture(const TextureConfig& co
 
 bool TextureCache::CreateRenderPasses()
 {
-  static constexpr VkAttachmentDescription update_attachment = {
+  VkAttachmentDescription update_attachment = {
       0,
       TEXTURECACHE_TEXTURE_FORMAT,
       VK_SAMPLE_COUNT_1_BIT,
@@ -203,7 +212,42 @@ bool TextureCache::CreateRenderPasses()
   };
 
   VkResult res = vkCreateRenderPass(g_vulkan_context->GetDevice(), &update_info, nullptr,
-    &m_render_pass);
+    &m_render_pass[0]);
+  if (res != VK_SUCCESS)
+  {
+    LOG_VULKAN_ERROR(res, "vkCreateRenderPass failed: ");
+    return false;
+  }
+  update_attachment.format = VK_FORMAT_D32_SFLOAT;
+  res = vkCreateRenderPass(g_vulkan_context->GetDevice(), &update_info, nullptr,
+    &m_render_pass[1]);
+  if (res != VK_SUCCESS)
+  {
+    LOG_VULKAN_ERROR(res, "vkCreateRenderPass failed: ");
+    return false;
+  }
+
+  update_attachment.format = VK_FORMAT_R32_SFLOAT;
+  res = vkCreateRenderPass(g_vulkan_context->GetDevice(), &update_info, nullptr,
+    &m_render_pass[2]);
+  if (res != VK_SUCCESS)
+  {
+    LOG_VULKAN_ERROR(res, "vkCreateRenderPass failed: ");
+    return false;
+  }
+
+  update_attachment.format = VK_FORMAT_R16G16B16A16_SFLOAT;
+  res = vkCreateRenderPass(g_vulkan_context->GetDevice(), &update_info, nullptr,
+    &m_render_pass[3]);
+  if (res != VK_SUCCESS)
+  {
+    LOG_VULKAN_ERROR(res, "vkCreateRenderPass failed: ");
+    return false;
+  }
+
+  update_attachment.format = VK_FORMAT_R32G32B32A32_SFLOAT;
+  res = vkCreateRenderPass(g_vulkan_context->GetDevice(), &update_info, nullptr,
+    &m_render_pass[4]);
   if (res != VK_SUCCESS)
   {
     LOG_VULKAN_ERROR(res, "vkCreateRenderPass failed: ");
@@ -268,7 +312,7 @@ void TextureCache::CopyEFBToCacheEntry(
 
   UtilityShaderDraw draw(
     command_buffer, g_object_cache->GetPipelineLayout(PIPELINE_LAYOUT_PUSH_CONSTANT),
-    m_render_pass, g_shader_cache->GetPassthroughVertexShader(),
+    GetRenderPass(texture->GetRawTexIdentifier()->GetFormat()), g_shader_cache->GetPassthroughVertexShader(),
     g_shader_cache->GetPassthroughGeometryShader(),
     is_depth_copy ? m_efb_depth_to_tex_shader : m_efb_color_to_tex_shader);
 

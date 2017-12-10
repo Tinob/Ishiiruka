@@ -254,23 +254,35 @@ bool SwapChain::CreateRenderPass()
     nullptr };
 
   VkResult res = vkCreateRenderPass(g_vulkan_context->GetDevice(), &present_render_pass_info,
-    nullptr, &m_render_pass);
+    nullptr, &m_render_clear_pass);
   if (res != VK_SUCCESS)
   {
     LOG_VULKAN_ERROR(res, "vkCreateRenderPass (present) failed: ");
     return false;
   }
-
+  present_render_pass_attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+  res = vkCreateRenderPass(g_vulkan_context->GetDevice(), &present_render_pass_info,
+    nullptr, &m_render_append_pass);
+  if (res != VK_SUCCESS)
+  {
+    LOG_VULKAN_ERROR(res, "vkCreateRenderPass (present) failed: ");
+    return false;
+  }
   return true;
 }
 
 void SwapChain::DestroyRenderPass()
 {
-  if (!m_render_pass)
-    return;
-
-  vkDestroyRenderPass(g_vulkan_context->GetDevice(), m_render_pass, nullptr);
-  m_render_pass = VK_NULL_HANDLE;
+  if (m_render_clear_pass)
+  {
+    vkDestroyRenderPass(g_vulkan_context->GetDevice(), m_render_clear_pass, nullptr);
+    m_render_clear_pass = VK_NULL_HANDLE;
+  }
+  if (m_render_append_pass)
+  {
+    vkDestroyRenderPass(g_vulkan_context->GetDevice(), m_render_append_pass, nullptr);
+    m_render_append_pass = VK_NULL_HANDLE;
+  }
 }
 
 bool SwapChain::CreateSwapChain()
@@ -400,7 +412,7 @@ bool SwapChain::SetupSwapChainImages()
     image.texture = Texture2D::CreateFromExistingImage(
       m_width, m_height, 1, 1, m_surface_format.format, VK_SAMPLE_COUNT_1_BIT,
       VK_IMAGE_VIEW_TYPE_2D, image.image, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT);
-    image.texture->AddFramebuffer(m_render_pass, false);
+    image.texture->AddFramebuffer(m_render_clear_pass, false);
     m_swap_chain_images.emplace_back(std::move(image));
   }
 

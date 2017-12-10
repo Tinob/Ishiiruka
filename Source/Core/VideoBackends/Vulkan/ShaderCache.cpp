@@ -90,12 +90,13 @@ GetVulkanRasterizationState(const RasterizationState& state)
 static VkPipelineMultisampleStateCreateInfo
 GetVulkanMultisampleState(const MultisamplingState& state)
 {
+  u32 samples = std::max(state.samples.Value(), 1u);
   return {
     VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,  // VkStructureType sType
     nullptr,  // const void*                              pNext
     0,        // VkPipelineMultisampleStateCreateFlags    flags
     static_cast<VkSampleCountFlagBits>(
-      state.samples.Value()),  // VkSampleCountFlagBits                    rasterizationSamples
+      samples),  // VkSampleCountFlagBits                    rasterizationSamples
     state.per_sample_shading,    // VkBool32                                 sampleShadingEnable
     1.0f,                        // float                                    minSampleShading
     nullptr,                     // const VkSampleMask*                      pSampleMask;

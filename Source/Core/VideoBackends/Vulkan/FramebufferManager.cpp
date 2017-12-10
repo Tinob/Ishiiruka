@@ -17,6 +17,8 @@
 
 #include "VideoBackends/Vulkan/CommandBufferManager.h"
 #include "VideoBackends/Vulkan/ObjectCache.h"
+#include "VideoBackends/Vulkan/PostProcessing.h"
+#include "VideoBackends/Vulkan/Renderer.h"
 #include "VideoBackends/Vulkan/StagingTexture2D.h"
 #include "VideoBackends/Vulkan/StateTracker.h"
 #include "VideoBackends/Vulkan/StreamBuffer.h"
@@ -1460,19 +1462,52 @@ void XFBSource::CopyEFB(float gamma)
   // Pending/batched EFB pokes should be included in the copied image.
   FramebufferManager::GetInstance()->FlushEFBPokes();
 
+  bool apply_post_proccesing = g_renderer->GetPostProcessor()->ShouldTriggerOnSwap();
+  bool depth_copy_required = g_renderer->GetPostProcessor()->XFBDepthDataRequired();
+  if (depth_copy_required && !m_depth_texture)
+  {
+    TextureConfig config = m_texture->GetConfig();
+    config.pcformat = HostTextureFormat::PC_TEX_FMT_R_FLOAT;
+    m_depth_texture = g_texture_cache->AllocateTexture(config);
+  }
+  if (apply_post_proccesing)
+  {
+    g_renderer->GetPostProcessor()->PostProcessEFBToTexture(m_texture->GetInternalObject());
+  }
+  g_renderer->GetPostProcessor()->OnEndFrame();
+  if (apply_post_proccesing && !depth_copy_required)
+  {
+    return;
+  }
+
   // Virtual XFB, copy EFB at native resolution to m_texture
   MathUtil::Rectangle<int> rect(0, 0, static_cast<int>(texWidth), static_cast<int>(texHeight));
   VkRect2D vk_rect = { { rect.left, rect.top },
   { static_cast<u32>(rect.GetWidth()), static_cast<u32>(rect.GetHeight()) } };
 
-  Texture2D* src_texture = FramebufferManager::GetInstance()->ResolveEFBColorTexture(vk_rect);
-  static_cast<VKTexture*>(m_texture.get())->CopyRectangleFromTexture(src_texture, rect, rect);
-
-  // If we sourced directly from the EFB framebuffer, restore it to a color attachment.
-  if (src_texture == FramebufferManager::GetInstance()->GetEFBColorTexture())
+  if (!apply_post_proccesing)
   {
-    src_texture->TransitionToLayout(g_command_buffer_mgr->GetCurrentCommandBuffer(),
-      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    Texture2D* src_texture = FramebufferManager::GetInstance()->ResolveEFBColorTexture(vk_rect);
+    static_cast<VKTexture*>(m_texture.get())->CopyRectangleFromTexture(src_texture, rect, rect);
+
+    // If we sourced directly from the EFB framebuffer, restore it to a color attachment.
+    if (src_texture == FramebufferManager::GetInstance()->GetEFBColorTexture())
+    {
+      src_texture->TransitionToLayout(g_command_buffer_mgr->GetCurrentCommandBuffer(),
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    }
+  }
+  if (depth_copy_required)
+  {
+    Texture2D* src_texture = FramebufferManager::GetInstance()->ResolveEFBDepthTexture(vk_rect);
+    static_cast<VKTexture*>(m_depth_texture.get())->CopyRectangleFromTexture(src_texture, rect, rect);
+
+    // If we sourced directly from the EFB framebuffer, restore it to a color attachment.
+    if (src_texture == FramebufferManager::GetInstance()->GetEFBDepthTexture())
+    {
+      src_texture->TransitionToLayout(g_command_buffer_mgr->GetCurrentCommandBuffer(),
+        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+    }
   }
 }
 

@@ -18,6 +18,7 @@
 #include "VideoBackends/Vulkan/Renderer.h"
 #include "VideoBackends/Vulkan/StateTracker.h"
 #include "VideoBackends/Vulkan/ShaderCompiler.h"
+#include "VideoBackends/Vulkan/SwapChain.h"
 #include "VideoBackends/Vulkan/Texture2D.h"
 #include "VideoBackends/Vulkan/VulkanContext.h"
 
@@ -29,41 +30,45 @@ namespace Vulkan
 {
 
 static const char* s_vertex_shader = R"(
-out vec2 v_source_uv;
-out vec2 v_target_uv;
-flat out float v_layer;
+    layout(location = 0) in vec4 ipos;
+    layout(location = 5) in vec4 icol0;
+    layout(location = 8) in vec3 itex0;
+    layout(location = 0) out vec2 v_source_uv;
+    layout(location = 1) out vec2 v_target_uv;
+    layout(location = 2) flat out float v_layer;
 void main(void)
 {
-vec2 rawpos = vec2(gl_VertexID&1, gl_VertexID&2);
-gl_Position = vec4(rawpos*2.0-1.0, 0.0, 1.0);
-v_source_uv = rawpos * u_source_rect.zw + u_source_rect.xy;
-v_target_uv = rawpos;
+gl_Position = ipos;
+v_source_uv = itex0.xy;
+v_target_uv = ipos.xy;
 v_layer = u_src_layer;
 }
 )";
 
 static const char* s_layered_vertex_shader = R"(
-out vec2 i_source_uv;
-out vec2 i_target_uv;
+    layout(location = 0) in vec4 ipos;
+    layout(location = 5) in vec4 icol0;
+    layout(location = 8) in vec3 itex0;
+    layout(location = 0) out vec2 v_source_uv;
+    layout(location = 1) out vec2 v_target_uv;
 void main(void)
 {
-vec2 rawpos = vec2(gl_VertexID&1, gl_VertexID&2);
-gl_Position = vec4(rawpos*2.0-1.0, 0.0, 1.0);
-i_source_uv = rawpos * u_source_rect.zw + u_source_rect.xy;
-i_target_uv = rawpos;
+gl_Position = ipos;
+v_source_uv = itex0.xy;
+v_target_uv = ipos.xy;
 }
 )";
 
 static const char* s_geometry_shader = R"(
 
-	layout(triangles) in;
-layout(triangle_strip, max_vertices = %d) out;
+ layout(triangles) in;
+ layout(triangle_strip, max_vertices = %d) out;
 
-in vec2 i_source_uv[3];
-in vec2 i_target_uv[3];
-out vec2 v_source_uv;
-out vec2 v_target_uv;
-flat out float v_layer;
+ layout(location = 0) in vec2 i_source_uv[3];
+ layout(location = 1) in vec2 i_target_uv[3];
+ layout(location = 0) out vec2 v_source_uv;
+ layout(location = 1) out vec2 v_target_uv;
+ flat out float v_layer;
 
 void main()
 {
@@ -191,7 +196,7 @@ void VulkanPostProcessingShader::Draw(PostProcessor* p,
   TargetSize output_size;
 
   u32 shader_buffer_size;
-  void* shader_buffer_data = m_config->UpdateConfigurationBuffer(&shader_buffer_size, true);
+  void* shader_buffer_data = m_config->UpdateConfigurationBuffer(&shader_buffer_size);
   if (!shader_buffer_data)
   {
     shader_buffer_data = m_config->GetConfigurationBuffer(&shader_buffer_size);
@@ -224,7 +229,7 @@ void VulkanPostProcessingShader::Draw(PostProcessor* p,
     }
     if (dst->GetFrameBuffer() == nullptr)
     {
-      dst->AddFramebuffer(TextureCache::GetInstance()->GetRenderPass());
+      dst->AddFramebuffer(TextureCache::GetInstance()->GetRenderPass(dst->GetFormat()));
     }
     dst->TransitionToLayout(g_command_buffer_mgr->GetCurrentCommandBuffer(),
       VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
@@ -235,10 +240,9 @@ void VulkanPostProcessingShader::Draw(PostProcessor* p,
       geometry_shader,
       reinterpret_cast<RenderPassVulkanData*>(pass.shader)->m_fragment_shader);
     VkRect2D region = {
-      { dst_rect.left, dst_rect.top },
-      { static_cast<u32>(dst_rect.GetWidth()), static_cast<u32>(dst_rect.GetHeight()) } };
+      { output_rect.left, output_rect.top },
+      { static_cast<u32>(output_rect.GetWidth()), static_cast<u32>(output_rect.GetHeight()) } };
     VkClearValue clear_value = { { { 0.0f, 0.0f, 0.0f, 1.0f } } };
-    draw.BeginRenderPass(dst->GetFrameBuffer(), region, &clear_value);
     if (shader_buffer_size && shader_buffer_data)
     {
       void* psuniforms = draw.AllocatePSUniforms(shader_buffer_size);
@@ -281,7 +285,7 @@ void VulkanPostProcessingShader::Draw(PostProcessor* p,
         }
         break;
       default:
-        HostTexture* i_texture = input.texture ? input.texture.get() : input.prev_texture;
+        HostTexture * i_texture = input.texture ? input.texture.get() : input.prev_texture;
         if (i_texture != nullptr)
         {
           input_texture = reinterpret_cast<Texture2D*>(i_texture->GetInternalObject());
@@ -299,7 +303,7 @@ void VulkanPostProcessingShader::Draw(PostProcessor* p,
         input_texture->TransitionToLayout(g_command_buffer_mgr->GetCurrentCommandBuffer(),
           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
       }
-      draw.SetPSSampler(i, src_texture->GetView(), parent->GetSamplerHandle(input.texture_sampler - 1));
+      draw.SetPSSampler(i, input_texture->GetView(), parent->GetSamplerHandle(input.texture_sampler - 1));
     }
     parent->MapAndUpdateUniformBuffer(input_sizes, output_rect, output_size, src_rect, src_size, src_layer, gamma);
     void* vsuniforms = draw.AllocateVSUniforms(POST_PROCESSING_CONTANTS_BUFFER_SIZE);
@@ -308,8 +312,8 @@ void VulkanPostProcessingShader::Draw(PostProcessor* p,
       parent->GetConstatsData(),
       POST_PROCESSING_CONTANTS_BUFFER_SIZE);
     draw.CommitVSUniforms(POST_PROCESSING_CONTANTS_BUFFER_SIZE);
-    draw.SetPSSampler(0, src_texture->GetView(), g_object_cache->GetLinearSampler());
-    draw.DrawQuad(dst_rect.left, dst_rect.top, dst_rect.GetWidth(), dst_rect.GetHeight(),
+    draw.BeginRenderPass(dst->GetFrameBuffer(), region, &clear_value);
+    draw.DrawQuad(output_rect.left, output_rect.top, output_rect.GetWidth(), output_rect.GetHeight(),
       src_rect.left, src_rect.top, 0, src_rect.GetWidth(), src_rect.GetHeight(),
       static_cast<int>(src_texture->GetWidth()),
       static_cast<int>(src_texture->GetHeight()));
@@ -432,17 +436,17 @@ bool VulkanPostProcessor::CreateCommonShaders()
   PostProcessor::GetUniformBufferShaderSource(API_VULKAN, nullptr, shader, false);
   shader += s_vertex_shader;
   m_vertex_shader = Util::CompileAndCreateVertexShader(shader);
-  result = result &&  m_vertex_shader != VK_NULL_HANDLE;
+  result = result && m_vertex_shader != VK_NULL_HANDLE;
   shader.clear();
   PostProcessor::GetUniformBufferShaderSource(API_VULKAN, nullptr, shader, false);
   shader += s_layered_vertex_shader;
   m_layered_vertex_shader = Util::CompileAndCreateVertexShader(shader);
-  result = result &&  m_layered_vertex_shader != VK_NULL_HANDLE;
+  result = result && m_layered_vertex_shader != VK_NULL_HANDLE;
   shader.clear();
   PostProcessor::GetUniformBufferShaderSource(API_VULKAN, nullptr, shader, false);
   shader += StringFromFormat(s_geometry_shader, 6, 2);
   m_layered_geometry_shader = Util::CompileAndCreateGeometryShader(shader);
-  result = result &&  m_layered_geometry_shader != VK_NULL_HANDLE;
+  result = result && m_layered_geometry_shader != VK_NULL_HANDLE;
   return result;
 }
 
@@ -458,17 +462,22 @@ std::unique_ptr<PostProcessingShader> VulkanPostProcessor::CreateShader(PostProc
 
 void VulkanPostProcessor::PostProcessEFBToTexture(uintptr_t dst_texture)
 {
+  // Can't do this within a game render pass.
+  StateTracker::GetInstance()->EndRenderPass();
+  StateTracker::GetInstance()->SetPendingRebind();
   // Apply normal post-process process, but to the EFB buffers.
   // Uses the current viewport as the "visible" region to post-process.
   TargetRectangle target_rect = { 0, 0, g_renderer->GetTargetWidth(), g_renderer->GetTargetHeight() };
   TargetSize target_size(g_renderer->GetTargetWidth(), g_renderer->GetTargetHeight());
-
+  VkRect2D region = {
+    { target_rect.left, target_rect.top },
+  { static_cast<u32>(target_rect.GetWidth()), static_cast<u32>(target_rect.GetHeight()) } };
   // Source and target textures, if MSAA is enabled, this needs to be resolved
-  Texture2D* color_texture = FramebufferManager::GetInstance()->GetResolvedEFBColorTexture();
+  Texture2D* color_texture = FramebufferManager::GetInstance()->ResolveEFBColorTexture(region);
   Texture2D* depth_texture = nullptr;
   if (m_requires_depth_buffer)
   {
-    depth_texture = FramebufferManager::GetInstance()->GetEFBDepthTexture();
+    depth_texture = FramebufferManager::GetInstance()->ResolveEFBDepthTexture(region);
   }
   // Invoke post process process
   PostProcess(nullptr, nullptr, nullptr,
@@ -480,6 +489,9 @@ void VulkanPostProcessor::PostProcessEFBToTexture(uintptr_t dst_texture)
 
 void VulkanPostProcessor::PostProcessEFB(const TargetRectangle& src_rect, const TargetSize& src_size)
 {
+  // Can't do this within a game render pass.
+  StateTracker::GetInstance()->EndRenderPass();
+  StateTracker::GetInstance()->SetPendingRebind();
   // Apply normal post-process process, but to the EFB buffers.
   // Uses the current viewport as the "visible" region to post-process.
   // In Vulkan, the viewport rectangle must fit within the render target.
@@ -489,13 +501,15 @@ void VulkanPostProcessor::PostProcessEFB(const TargetRectangle& src_rect, const 
   target_rect.top = src_rect.top >= 0 ? src_rect.top : 0;
   target_rect.right = src_rect.right <= src_size.width ? src_rect.right : src_size.width;
   target_rect.bottom = src_rect.bottom <= src_size.height ? src_rect.bottom : src_size.height;
-
+  VkRect2D region = {
+    { target_rect.left, target_rect.top },
+  { static_cast<u32>(target_rect.GetWidth()), static_cast<u32>(target_rect.GetHeight()) } };  
   // Source and target textures, if MSAA is enabled, this needs to be resolved
-  Texture2D* color_texture = FramebufferManager::GetInstance()->GetResolvedEFBColorTexture();
+  Texture2D* color_texture = FramebufferManager::GetInstance()->ResolveEFBColorTexture(region);
   Texture2D* depth_texture = nullptr;
   if (m_requires_depth_buffer)
   {
-    depth_texture = FramebufferManager::GetInstance()->GetEFBDepthTexture();
+    depth_texture = FramebufferManager::GetInstance()->ResolveEFBDepthTexture(region);
   }
 
   // Invoke post process process
@@ -567,7 +581,7 @@ void VulkanPostProcessor::CopyTexture(const TargetRectangle& dst_rect, uintptr_t
       VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     if (dst_texture->GetFrameBuffer() == nullptr)
     {
-      dst_texture->AddFramebuffer(TextureCache::GetInstance()->GetRenderPass());
+      dst_texture->AddFramebuffer(TextureCache::GetInstance()->GetRenderPass(dst_texture->GetFormat()));
     }
     UtilityShaderDraw draw(g_command_buffer_mgr->GetCurrentCommandBuffer(),
       g_object_cache->GetPipelineLayout(PIPELINE_LAYOUT_STANDARD), dst_texture->GetDefaultRenderPass(),
@@ -575,8 +589,8 @@ void VulkanPostProcessor::CopyTexture(const TargetRectangle& dst_rect, uintptr_t
       g_shader_cache->GetPassthroughGeometryShader(), TextureCache::GetInstance()->GetCopyShader());
 
     VkRect2D region = {
-      { dst_rect.left, dst_rect.top },
-      { static_cast<u32>(dst_rect.GetWidth()), static_cast<u32>(dst_rect.GetHeight()) } };
+      { 0, 0 },
+      { static_cast<u32>(dst_texture->GetWidth()), static_cast<u32>(dst_texture->GetHeight()) } };
     VkClearValue clear_value = { { { 0.0f, 0.0f, 0.0f, 1.0f } } };
     draw.BeginRenderPass(dst_texture->GetFrameBuffer(), region, &clear_value);
     draw.SetPSSampler(0, src_texture->GetView(), g_object_cache->GetLinearSampler());
