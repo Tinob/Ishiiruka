@@ -92,14 +92,14 @@ private:
       const XFBSourceBase* const* xfb_sources, u32 xfb_count);
 
   // Draw either the EFB, or specified XFB sources to the currently-bound framebuffer.
-  void DrawFrame(VkRenderPass render_pass, const TargetRectangle& target_rc, const TargetRectangle& scaled_source_rc, u32 xfb_addr,
+  void DrawFrame(const TargetRectangle& target_rc, const TargetRectangle& scaled_source_rc, u32 xfb_addr,
   const XFBSourceBase* const* xfb_sources, u32 xfb_count, Texture2D* dst_texture, const TargetSize& dst_size, u32 fb_width,
   u32 fb_stride, u32 fb_height, float Gamma);
-  void DrawEFB(VkRenderPass render_pass, const TargetRectangle& t_rc, const TargetRectangle& scaled_source_rc, Texture2D* dst_texture, const TargetSize& dst_size, float Gamma);
-  void DrawVirtualXFB(VkRenderPass render_pass, const TargetRectangle& target_rc, u32 xfb_addr,
+  void DrawEFB(const TargetRectangle& t_rc, const TargetRectangle& scaled_source_rc, Texture2D* dst_texture, const TargetSize& dst_size, float Gamma);
+  void DrawVirtualXFB(const TargetRectangle& target_rc, u32 xfb_addr,
     const XFBSourceBase* const* xfb_sources, u32 xfb_count, Texture2D* dst_texture, const TargetSize& dst_size, u32 fb_width,
     u32 fb_stride, u32 fb_height, float Gamma);
-  void DrawRealXFB(VkRenderPass render_pass, const TargetRectangle& target_rect,
+  void DrawRealXFB(const TargetRectangle& target_rect,
     const XFBSourceBase* const* xfb_sources, u32 xfb_count, u32 fb_width,
     u32 fb_stride, u32 fb_height, Texture2D* dst_texture, const TargetSize& dst_size, float Gamma);
 
@@ -133,12 +133,9 @@ private:
   void FlushFrameDump();
 
   // Copies/scales an image to the currently-bound framebuffer.
-  void BlitScreen(VkRenderPass render_pass, const TargetRectangle& dst_rect,
+  void BlitScreen(const TargetRectangle& dst_rect,
     const TargetRectangle& src_rect, TargetSize src_size, const Texture2D* src_tex, const Texture2D* src_depth_tex,
     const TargetSize& dst_size, Texture2D* dst_texture, float Gamma);
-  void OldBlitScreen(VkRenderPass render_pass, const TargetRectangle& dst_rect,
-    const TargetRectangle& src_rect, const Texture2D* src_tex,
-    bool linear_filter);
 
   bool ResizeFrameDumpBuffer(u32 new_width, u32 new_height);
   void DestroyFrameDumpResources();

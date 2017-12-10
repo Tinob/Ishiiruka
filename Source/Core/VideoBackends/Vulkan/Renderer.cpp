@@ -651,19 +651,19 @@ void Renderer::TransitionBuffersForSwap(const TargetRectangle& scaled_rect,
   }
 }
 
-void Renderer::DrawFrame(VkRenderPass render_pass, const TargetRectangle& target_rc, const TargetRectangle& scaled_source_rc, u32 xfb_addr,
+void Renderer::DrawFrame(const TargetRectangle& target_rc, const TargetRectangle& scaled_source_rc, u32 xfb_addr,
   const XFBSourceBase* const* xfb_sources, u32 xfb_count, Texture2D* dst_texture, const TargetSize& dst_size, u32 fb_width,
   u32 fb_stride, u32 fb_height, float Gamma)
 {
   if (!g_ActiveConfig.bUseXFB)
-    DrawEFB(render_pass, target_rc, scaled_source_rc, dst_texture, dst_size, Gamma);
+    DrawEFB(target_rc, scaled_source_rc, dst_texture, dst_size, Gamma);
   else if (g_ActiveConfig.bUseRealXFB)
-    DrawRealXFB(render_pass, target_rc, xfb_sources, xfb_count, fb_width, fb_stride, fb_height, dst_texture, dst_size, Gamma);
+    DrawRealXFB(target_rc, xfb_sources, xfb_count, fb_width, fb_stride, fb_height, dst_texture, dst_size, Gamma);
   else
-    DrawVirtualXFB(render_pass, target_rc, xfb_addr, xfb_sources, xfb_count, dst_texture, dst_size, fb_width, fb_stride, fb_height, Gamma);
+    DrawVirtualXFB(target_rc, xfb_addr, xfb_sources, xfb_count, dst_texture, dst_size, fb_width, fb_stride, fb_height, Gamma);
 }
 
-void Renderer::DrawEFB(VkRenderPass render_pass, const TargetRectangle& t_rc, const TargetRectangle& scaled_src_rc,
+void Renderer::DrawEFB(const TargetRectangle& t_rc, const TargetRectangle& scaled_src_rc,
   Texture2D* dst_texture, const TargetSize& dst_size, float Gamma)
 {
   Texture2D* efb_color_texture = nullptr;
@@ -704,10 +704,10 @@ void Renderer::DrawEFB(VkRenderPass render_pass, const TargetRectangle& t_rc, co
   }
 
   // Copy EFB -> backbuffer
-  BlitScreen(render_pass, t_rc, scaled_source_rc, tex_size, efb_color_texture, efb_depth_texture, dst_size, dst_texture, Gamma);
+  BlitScreen(t_rc, scaled_source_rc, tex_size, efb_color_texture, efb_depth_texture, dst_size, dst_texture, Gamma);
 }
 
-void Renderer::DrawVirtualXFB(VkRenderPass render_pass, const TargetRectangle& target_rc, u32 xfb_addr,
+void Renderer::DrawVirtualXFB(const TargetRectangle& target_rc, u32 xfb_addr,
   const XFBSourceBase* const* xfb_sources, u32 xfb_count, Texture2D* dst_texture, const TargetSize& dst_size, u32 fb_width,
   u32 fb_stride, u32 fb_height, float Gamma)
 {
@@ -743,11 +743,11 @@ void Renderer::DrawVirtualXFB(VkRenderPass render_pass, const TargetRectangle& t
     }
     TargetSize blit_size(xfb_source->texWidth, xfb_source->texHeight);
     VKTexture* dt = xfb_source->GetDepthTexture();
-    BlitScreen(render_pass, draw_rect, source_rect, blit_size, xfb_source->GetTexture()->GetRawTexIdentifier(), dt != nullptr ? dt->GetRawTexIdentifier() : nullptr, dst_size, dst_texture, Gamma);
+    BlitScreen(draw_rect, source_rect, blit_size, xfb_source->GetTexture()->GetRawTexIdentifier(), dt != nullptr ? dt->GetRawTexIdentifier() : nullptr, dst_size, dst_texture, Gamma);
   }
 }
 
-void Renderer::DrawRealXFB(VkRenderPass render_pass, const TargetRectangle& target_rect,
+void Renderer::DrawRealXFB(const TargetRectangle& target_rect,
   const XFBSourceBase* const* xfb_sources, u32 xfb_count, u32 fb_width,
   u32 fb_stride, u32 fb_height, Texture2D* dst_texture, const TargetSize& dst_size, float Gamma)
 {
@@ -758,7 +758,7 @@ void Renderer::DrawRealXFB(VkRenderPass render_pass, const TargetRectangle& targ
     TargetRectangle draw_rect = target_rect;
     source_rect.right -= fb_stride - fb_width;
     TargetSize blit_size(xfb_source->texWidth, xfb_source->texHeight);
-    BlitScreen(render_pass, draw_rect, source_rect, blit_size, xfb_source->GetTexture()->GetRawTexIdentifier(), nullptr, dst_size, dst_texture, Gamma);
+    BlitScreen(draw_rect, source_rect, blit_size, xfb_source->GetTexture()->GetRawTexIdentifier(), nullptr, dst_size, dst_texture, Gamma);
   }
 }
 
@@ -803,7 +803,7 @@ void Renderer::DrawScreen(const TargetRectangle& scaled_efb_rect, u32 xfb_addr,
 
   const TargetSize dst_size = { static_cast<int>(backbuffer->GetWidth()), static_cast<int>(backbuffer->GetHeight()) };
   // Draw guest buffers (EFB or XFB)
-  DrawFrame(m_swap_chain->GetRenderClearPass(), GetTargetRectangle(), scaled_efb_rect, xfb_addr,
+  DrawFrame(GetTargetRectangle(), scaled_efb_rect, xfb_addr,
     xfb_sources, xfb_count, backbuffer, dst_size, fb_width, fb_stride, fb_height, gamma);
 
   backbuffer->TransitionToLayout(g_command_buffer_mgr->GetCurrentCommandBuffer(),
@@ -865,7 +865,7 @@ bool Renderer::DrawFrameDump(const TargetRectangle& scaled_efb_rect, u32 xfb_add
     &clear_rect);
   vkCmdEndRenderPass(g_command_buffer_mgr->GetCurrentCommandBuffer());
   const TargetSize dst_size = { static_cast<int>(width), static_cast<int>(height) };
-  DrawFrame(m_frame_dump_render_texture->GetDefaultRenderPass(), target_rect,
+  DrawFrame(target_rect,
     scaled_efb_rect, xfb_addr, xfb_sources, xfb_count, m_frame_dump_render_texture.get(), dst_size, fb_width, fb_stride, fb_height, 1.0f);
 
   // Prepare the readback texture for copying.
@@ -1002,52 +1002,10 @@ void Renderer::FlushFrameDump()
   m_current_frame_dump_image = FRAME_DUMP_BUFFERED_FRAMES - 1;
 }
 
-void Renderer::OldBlitScreen(VkRenderPass render_pass, const TargetRectangle& dst_rect,
-  const TargetRectangle& src_rect, const Texture2D* src_tex,
-  bool linear_filter)
-{
-  // We could potentially use vkCmdBlitImage here.
-  VkSampler sampler =
-    linear_filter ? g_object_cache->GetLinearSampler() : g_object_cache->GetPointSampler();
-
-  // Set up common data
-  UtilityShaderDraw draw(g_command_buffer_mgr->GetCurrentCommandBuffer(),
-    g_object_cache->GetPipelineLayout(PIPELINE_LAYOUT_STANDARD), render_pass,
-    g_shader_cache->GetPassthroughVertexShader(), VK_NULL_HANDLE,
-    m_blit_fragment_shader);
-
-  draw.SetPSSampler(0, src_tex->GetView(), sampler);
-
-  if (g_ActiveConfig.iStereoMode == STEREO_SBS || g_ActiveConfig.iStereoMode == STEREO_TAB)
-  {
-    TargetRectangle left_rect;
-    TargetRectangle right_rect;
-    std::tie(left_rect, right_rect) = ConvertStereoRectangle(dst_rect);
-
-    draw.DrawQuad(left_rect.left, left_rect.top, left_rect.GetWidth(), left_rect.GetHeight(),
-      src_rect.left, src_rect.top, 0, src_rect.GetWidth(), src_rect.GetHeight(),
-      src_tex->GetWidth(), src_tex->GetHeight());
-
-    draw.DrawQuad(right_rect.left, right_rect.top, right_rect.GetWidth(), right_rect.GetHeight(),
-      src_rect.left, src_rect.top, 1, src_rect.GetWidth(), src_rect.GetHeight(),
-      src_tex->GetWidth(), src_tex->GetHeight());
-  }
-  else
-  {
-    draw.DrawQuad(dst_rect.left, dst_rect.top, dst_rect.GetWidth(), dst_rect.GetHeight(),
-      src_rect.left, src_rect.top, 0, src_rect.GetWidth(), src_rect.GetHeight(),
-      src_tex->GetWidth(), src_tex->GetHeight());
-  }
-}
-
-void Renderer::BlitScreen(VkRenderPass render_pass, const TargetRectangle& dst_rect,
+void Renderer::BlitScreen(const TargetRectangle& dst_rect,
   const TargetRectangle& src_rect, TargetSize src_size, const Texture2D* src_tex, const Texture2D* src_depth_tex,
   const TargetSize& dst_size, Texture2D* dst_texture, float Gamma)
 {
-  //OldBlitScreen(render_pass, dst_rect, src_rect, src_tex, true);
-  //return;
-  //Disable post proccessing still a work in progress
-
   if (g_ActiveConfig.iStereoMode == STEREO_SBS || g_ActiveConfig.iStereoMode == STEREO_TAB)
   {
     TargetRectangle left_rect;
