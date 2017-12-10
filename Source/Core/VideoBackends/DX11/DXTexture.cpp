@@ -57,9 +57,12 @@ DXGI_FORMAT GetDXGIFormatForHostFormat(HostTextureFormat format)
 
 DXTexture::DXTexture(const TextureConfig& tex_config) : HostTexture(tex_config)
 {
+  compressed = TexDecoder::IsCompressed(m_config.pcformat);
   DXGI_FORMAT format = GetDXGIFormatForHostFormat(m_config.pcformat);
   if (m_config.rendertarget)
   {
+    format = compressed ? DXGI_FORMAT_R8G8B8A8_UNORM : format;
+    compressed = false;
     int flags = ((int)D3D11_BIND_RENDER_TARGET | (int)D3D11_BIND_SHADER_RESOURCE);
     if (D3D::GetFeatureLevel() >= D3D_FEATURE_LEVEL_11_0)
     {
@@ -81,7 +84,7 @@ DXTexture::DXTexture(const TextureConfig& tex_config) : HostTexture(tex_config)
     convertrgb565 = true;
     format = bgrasupported ? DXGI_FORMAT_B8G8R8A8_UNORM : DXGI_FORMAT_R8G8B8A8_UNORM;
   }
-  compressed = TexDecoder::IsCompressed(m_config.pcformat);
+  
   usage = D3D11_USAGE_DEFAULT;
   D3D11_CPU_ACCESS_FLAG cpu_access = (D3D11_CPU_ACCESS_FLAG)0;
 

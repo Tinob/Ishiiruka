@@ -43,8 +43,9 @@ DXTexture::DXTexture(const TextureConfig& tex_config) : HostTexture(tex_config)
     DXGI_FORMAT_R16G16B16A16_FLOAT,//PC_TEX_FMT_RGBA16_FLOAT
     DXGI_FORMAT_R32G32B32A32_FLOAT,//PC_TEX_FMT_RGBA_FLOAT
   };
-  compressed = !m_config.rendertarget && TexDecoder::IsCompressed(m_config.pcformat);
+  compressed = TexDecoder::IsCompressed(m_config.pcformat);
   DXGI_FORMAT dxgi_format = m_config.rendertarget && compressed ? DXGI_FORMAT_R8G8B8A8_UNORM : HostTextureFormat_To_DXGIFORMAT[m_config.pcformat];
+  compressed = compressed && !m_config.rendertarget;
 
   if (m_config.rendertarget)
   {
@@ -204,7 +205,7 @@ void DXTexture::CopyTexture(D3DTexture2D* source, D3DTexture2D* destination,
   srcRC.bottom = srcheight;
   D3D::DrawShadedTexQuad(source, &srcRC,
     srcwidth, srcheight,
-    StaticShaderCache::GetColorCopyPixelShader(false),
+    StaticShaderCache::GetColorCopyPixelShader(destination->GetMultisampled()),
     StaticShaderCache::GetSimpleVertexShader(),
     StaticShaderCache::GetSimpleVertexShaderInputLayout(), StaticShaderCache::GetCopyGeometryShader(), 0,
     destination->GetFormat(), false, destination->GetMultisampled());

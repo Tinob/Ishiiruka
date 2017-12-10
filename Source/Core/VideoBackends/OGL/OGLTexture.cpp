@@ -134,6 +134,14 @@ void OGLTexture::SetFormat()
   default:  
     break;
   }
+  if (compressed && m_config.rendertarget)
+  {
+    gl_format = GL_RGBA;
+    gl_iformat = GL_RGBA;
+    gl_siformat = GL_RGBA8;
+    gl_type = GL_UNSIGNED_BYTE;
+    compressed = false;
+  }
 }
 
 OGLTexture::OGLTexture(const TextureConfig& tex_config) : HostTexture(tex_config)

@@ -95,15 +95,17 @@ void DXTexture::Dispose()
 
 DXTexture::DXTexture(const TextureConfig& tex_config) : HostTexture(tex_config)
 {
+  compressed = TexDecoder::IsCompressed(m_config.pcformat);
   d3d_fmt = HostTextureFormat_To_D3DFORMAT[m_config.pcformat];
   if (m_config.rendertarget)
   {
+    d3d_fmt = compressed ? D3DFMT_A8R8G8B8 : d3d_fmt;
+    compressed = false;
     D3D::dev->CreateTexture(m_config.width, m_config.height, 1, D3DUSAGE_RENDERTARGET,
       d3d_fmt, D3DPOOL_DEFAULT, &m_texture, 0);
     return;
   }
   m_texture = D3D::CreateTexture2D(m_config.width, m_config.height, d3d_fmt, m_config.levels);
-  compressed = TexDecoder::IsCompressed(m_config.pcformat);
 }
 
 DXTexture::~DXTexture()
