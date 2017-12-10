@@ -6,7 +6,6 @@
 
 #include "Common/Align.h"
 #include "Common/Common.h"
-#include "Common/GL/GLInterfaceBase.h"
 #include "Common/MathUtil.h"
 #include "Common/StringUtil.h"
 
@@ -607,15 +606,8 @@ GLuint ProgramShaderCache::CompileSingleShader(GLuint type, const char* code)
   return result;
 }
 
-void ProgramShaderCache::CompileThreadWorker()
+void ProgramShaderCache::CompileThreadWorker(std::unique_ptr<cInterfaceBase> shared_context)
 {
-  std::unique_ptr<cInterfaceBase> shared_context = GLInterface->CreateSharedContext();
-  if (!shared_context)
-  {
-    PanicAlert(
-        "Failed to create OGL context for shader compilation thread.\nDebug info (%s, %s, %s)",
-        g_ogl_config.gl_vendor, g_ogl_config.gl_renderer, g_ogl_config.gl_version);
-  }
   if (!shared_context->MakeCurrent())
   {
     PanicAlert(
@@ -713,7 +705,15 @@ void ProgramShaderCache::Init()
 
   if (g_ActiveConfig.bFullAsyncShaderCompilation)
   {
-    s_thread = std::thread(CompileThreadWorker);
+    std::unique_ptr<cInterfaceBase> shared_context = GLInterface->CreateSharedContext();
+    if (!shared_context)
+    {
+      PanicAlert(
+        "Failed to create OGL context for shader compilation thread.\nDebug info (%s, %s, %s)",
+        g_ogl_config.gl_vendor, g_ogl_config.gl_renderer, g_ogl_config.gl_version);
+    }
+
+    s_thread = std::thread(CompileThreadWorker, std::move(shared_context));
   }
   if (g_ActiveConfig.CanPrecompileUberShaders())
   {

@@ -13,6 +13,7 @@
 #include <tuple>
 #include <unordered_map>
 
+#include "Common/GL/GLInterfaceBase.h"
 #include "Common/GL/GLUtil.h"
 #include "Common/LinearDiskCache.h"
 
@@ -183,7 +184,7 @@ private:
   static bool CompileShaderWorker(
       SHADER& shader, const char* vcode, const char* pcode, const char* gcode);
   static bool CompileComputeShaderWorker(SHADER& shader, const std::string& code);
-  static void CompileThreadWorker();
+  static void CompileThreadWorker(std::unique_ptr<cInterfaceBase> shared_context);
   static void CompileUberShaders();
 
   class ProgramShaderCacheInserter : public LinearDiskCacheReader<SHADERUID, u8>
