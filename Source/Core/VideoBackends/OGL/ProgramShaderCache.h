@@ -143,6 +143,9 @@ public:
   static u32 GetUniformBufferAlignment();
 
 private:
+  static bool ShouldPrecompileUberShaders();
+  static bool UsingExclusiveUberShaders();
+  static bool UsingHybridUberShaders();
   struct PCacheEntry
   {
     SHADER shader;

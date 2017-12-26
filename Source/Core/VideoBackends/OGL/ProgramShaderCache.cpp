@@ -286,7 +286,7 @@ SHADER* ProgramShaderCache::SetShader(PIXEL_SHADER_RENDER_MODE render_mode, u32 
 {
   SHADERUID uid;
   GetShaderId(&uid, render_mode, components, primitive_type);
-  if (g_ActiveConfig.backend_info.bSupportsUberShaders && g_ActiveConfig.bDisableSpecializedShaders)
+  if (UsingExclusiveUberShaders())
   {
     pshaders->GetOrAdd(uid);
     return SetUberShader(primitive_type, components, vertex_format);
@@ -310,6 +310,10 @@ SHADER* ProgramShaderCache::SetShader(PIXEL_SHADER_RENDER_MODE render_mode, u32 
   if (entry->compile_started)
   {
     // Compilation is started but not finished
+    if (UsingHybridUberShaders())
+    {
+      return SetUberShader(primitive_type, components, vertex_format);
+    }
     return nullptr;
   }
 
@@ -317,6 +321,10 @@ SHADER* ProgramShaderCache::SetShader(PIXEL_SHADER_RENDER_MODE render_mode, u32 
   entry->in_cache = false;
   entry->compile_started = true;
   std::future<bool> future = CompileShader(uid, entry->shader);
+  if (UsingHybridUberShaders())
+  {
+    return SetUberShader(primitive_type, components, vertex_format);
+  }
   if (g_ActiveConfig.bFullAsyncShaderCompilation)
   {
     return nullptr;
@@ -354,7 +362,7 @@ SHADER* ProgramShaderCache::SetUberShader(PrimitiveType primitive_type, u32 comp
 std::future<bool> ProgramShaderCache::CompileShader(
     SHADER& shader, const char* vcode, const char* pcode, const char* gcode)
 {
-  if (g_ActiveConfig.bFullAsyncShaderCompilation)
+  if (g_ActiveConfig.bFullAsyncShaderCompilation || UsingHybridUberShaders())
   {
     auto queue_entry = std::make_unique<QueueEntry>(&shader, vcode, pcode, gcode);
     std::future<bool> future = queue_entry->promise.get_future();
@@ -458,7 +466,7 @@ bool ProgramShaderCache::CompileShaderWorker(
 
 bool ProgramShaderCache::CompileComputeShader(SHADER& shader, const std::string& code)
 {
-  if (g_ActiveConfig.bFullAsyncShaderCompilation)
+  if (g_ActiveConfig.bFullAsyncShaderCompilation || UsingHybridUberShaders())
   {
     auto queue_entry = std::make_unique<QueueEntry>(&shader, code);
     std::future<bool> future = queue_entry->promise.get_future();
@@ -709,7 +717,7 @@ void ProgramShaderCache::Init()
 
   CreateHeader();
 
-  if (g_ActiveConfig.bFullAsyncShaderCompilation)
+  if (g_ActiveConfig.bFullAsyncShaderCompilation || UsingHybridUberShaders())
   {
     std::unique_ptr<cInterfaceBase> shared_context = GLInterface->CreateSharedContext();
     if (!shared_context)
@@ -721,11 +729,11 @@ void ProgramShaderCache::Init()
 
     s_thread = std::thread(CompileThreadWorker, std::move(shared_context));
   }
-  if (g_ActiveConfig.CanPrecompileUberShaders())
+  if (ShouldPrecompileUberShaders())
   {
     CompileUberShaders();
   }
-  if (g_ActiveConfig.bCompileShaderOnStartup && !g_ActiveConfig.bDisableSpecializedShaders)
+  if (g_ActiveConfig.bCompileShaderOnStartup && !UsingExclusiveUberShaders())
   {
     CompileShaders();
   }
@@ -876,7 +884,7 @@ void ProgramShaderCache::CompileShaders()
 
 void ProgramShaderCache::Shutdown(bool shadersonly)
 {
-  if (g_ActiveConfig.bFullAsyncShaderCompilation)
+  if (g_ActiveConfig.bFullAsyncShaderCompilation || UsingHybridUberShaders())
   {
     auto queue_entry = std::make_unique<QueueEntry>();
     std::queue <int>::size_type size_before;
@@ -977,7 +985,7 @@ void ProgramShaderCache::Shutdown(bool shadersonly)
   {
     s_buffer.reset();
   }
-  if (g_ActiveConfig.bFullAsyncShaderCompilation)
+  if (g_ActiveConfig.bFullAsyncShaderCompilation || UsingHybridUberShaders())
   {
     s_thread.join();
   }
@@ -987,11 +995,11 @@ void ProgramShaderCache::Reload()
 {
   Shutdown(true);
   LoadFromDisk();
-  if (g_ActiveConfig.CanPrecompileUberShaders())
+  if (ShouldPrecompileUberShaders())
   {
     CompileUberShaders();
   }
-  if (g_ActiveConfig.backend_info.bSupportsUberShaders && !g_ActiveConfig.bDisableSpecializedShaders)
+  if (g_ActiveConfig.bCompileShaderOnStartup && !UsingExclusiveUberShaders())
   {
     CompileShaders();
   }
@@ -1155,6 +1163,21 @@ void ProgramShaderCache::CreateHeader()
 u32 ProgramShaderCache::GetUniformBufferAlignment()
 {
   return s_ubo_align;
+}
+
+bool ProgramShaderCache::ShouldPrecompileUberShaders()
+{
+  return g_ActiveConfig.backend_info.bSupportsUberShaders && g_ActiveConfig.CanPrecompileUberShaders();
+}
+
+bool ProgramShaderCache::UsingExclusiveUberShaders()
+{
+  return g_ActiveConfig.backend_info.bSupportsUberShaders && g_ActiveConfig.bDisableSpecializedShaders;
+}
+
+bool ProgramShaderCache::UsingHybridUberShaders()
+{
+  return g_ActiveConfig.backend_info.bSupportsUberShaders && g_ActiveConfig.bBackgroundShaderCompiling;
 }
 
 void ProgramShaderCache::ProgramShaderCacheInserter::Read(const SHADERUID& key, const u8* value, u32 value_size)
