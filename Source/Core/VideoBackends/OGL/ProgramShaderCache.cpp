@@ -291,31 +291,37 @@ SHADER* ProgramShaderCache::SetShader(PIXEL_SHADER_RENDER_MODE render_mode, u32 
     pshaders->GetOrAdd(uid);
     return SetUberShader(primitive_type, components, vertex_format);
   }
+
   BindVertexFormat(vertex_format);
-  // Check if the shader is already set
-  if (last_entry[render_mode] && uid == last_uid[render_mode])
-  {
-    GFX_DEBUGGER_PAUSE_AT(NEXT_PIXEL_SHADER_CHANGE, true);
-    return &last_entry[render_mode]->shader;
-  }
 
-  // Check if shader is already in cache
-  PCacheEntry& newentry = pshaders->GetOrAdd(uid);
-  last_entry[render_mode] = &newentry;
-  last_uid[render_mode] = uid;
-  if (newentry.shader.glprogid)
-    return &newentry.shader;
-  if (newentry.compile_started)
+  if (!(last_entry[render_mode] && uid == last_uid[render_mode]))
+  {
+    // Shader wasn't already set
+    last_entry[render_mode] = &pshaders->GetOrAdd(uid);
+    last_uid[render_mode] = uid;
+  }
+  PCacheEntry* entry = last_entry[render_mode];
+
+  if (entry->shader.glprogid)
+  {
+    // Compilation has finished
+    return &entry->shader;
+  }
+  if (entry->compile_started)
+  {
+    // Compilation is started but not finished
     return nullptr;
-
-  newentry.in_cache = false;
-  newentry.compile_started = true;
-  std::future<bool> future = CompileShader(uid, newentry.shader);
-  if (!g_ActiveConfig.bFullAsyncShaderCompilation)
-  {
-    return future.get() ? &newentry.shader : nullptr;
   }
-  return nullptr;
+
+  // Shader was not previously in cache, start compilation
+  entry->in_cache = false;
+  entry->compile_started = true;
+  std::future<bool> future = CompileShader(uid, entry->shader);
+  if (g_ActiveConfig.bFullAsyncShaderCompilation)
+  {
+    return nullptr;
+  }
+  return future.get() ? &entry->shader : nullptr;
 }
 
 SHADER* ProgramShaderCache::SetUberShader(PrimitiveType primitive_type, u32 components, const GLVertexFormat* vertex_format)
