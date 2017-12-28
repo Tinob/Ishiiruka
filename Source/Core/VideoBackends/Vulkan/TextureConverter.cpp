@@ -528,6 +528,8 @@ bool TextureConverter::DecodeTexture(HostTexture* dst, u32 dst_level,
   vkCmdCopyImage(command_buffer, m_decoding_texture->GetImage(),
     VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, static_cast<VKTexture*>(dst)->GetRawTexIdentifier()->GetImage(),
     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &image_copy);
+  // Texture should always be in SHADER_READ_ONLY layout prior to use.
+  static_cast<VKTexture*>(dst)->GetRawTexIdentifier()->TransitionToLayout(command_buffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
   return true;
 }
 
