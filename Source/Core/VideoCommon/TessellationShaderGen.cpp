@@ -257,7 +257,7 @@ inline void WriteFetchDisplacement(ShaderCode& out, int n, const Tessellation_sh
   const auto& stage = uid_data.stagehash[n];
   u32 texcoord = stage.tevorders_texcoord;
   bool bHasTexCoord = texcoord < uid_data.numTexGens;
-  bool bHasIndStage = stage.hasindstage;
+  bool bHasIndStage = stage.hasindstage && stage.tevorders_enable;
 
   TevStageIndirect tevind;
   tevind.hex = stage.tevind;
