@@ -1872,7 +1872,7 @@ SAMPLER_BINDING(%i) uniform sampler2DArray pp_inputs[8];
 %sin float2 v_source_uv;
 %sin float2 v_target_uv;
 %sflat in float v_layer;
-out float4 ocol0;
+%sout float4 ocol0;
 // Input sampling wrappers. Has to be a macro because the array index must be a constant expression.
 #define SampleInput(index) (texture(pp_inputs[index], float3(v_source_uv, v_layer)))
 #define SampleInputLocation(index, location) (texture(pp_inputs[index], float3(location, v_layer)))
@@ -2467,7 +2467,8 @@ std::string PostProcessor::GetCommonFragmentShaderSource(API_TYPE api, const Pos
       texture_register_start,
       api == API_VULKAN ? "layout(location = 0) " : "",
       api == API_VULKAN ? "layout(location = 1) " : "",
-      api == API_VULKAN ? "layout(location = 2) " : "") ;
+      api == API_VULKAN ? "layout(location = 2) " : "",
+      api == API_VULKAN ? "layout(location = 0) " : "");
   }
   else if (api == API_D3D11)
   {
