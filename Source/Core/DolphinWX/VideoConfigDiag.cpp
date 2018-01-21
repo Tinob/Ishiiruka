@@ -1365,7 +1365,7 @@ void VideoConfigDiag::Event_StereoShader(wxCommandEvent& ev)
 
 void VideoConfigDiag::Event_ConfigureScalingShader(wxCommandEvent &ev)
 {
-  PostProcessingConfigDiag dialog(this, SCALING_SHADER_SUBDIR, Config::Get(Config::GFX_STEREO_SHADER), (g_renderer) ? g_renderer->GetPostProcessor()->GetScalingShaderConfig() : nullptr);
+  PostProcessingConfigDiag dialog(this, SCALING_SHADER_SUBDIR, Config::Get(Config::GFX_ENHANCE_SCALING_SHADER), (g_renderer) ? g_renderer->GetPostProcessor()->GetScalingShaderConfig() : nullptr);
   dialog.ShowModal();
 }
 
