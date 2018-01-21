@@ -380,7 +380,7 @@ bool VulkanPostProcessor::Initialize()
 {
   // Lookup tables for samplers
   static const VkFilter Vulkan_filters[] = { VK_FILTER_NEAREST, VK_FILTER_LINEAR };
-  static const VkSamplerAddressMode Vulkan_address_modes[] = { VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER };
+  static const VkSamplerAddressMode Vulkan_address_modes[] = { VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER, VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT };
   // Create sampler objects to match posible configuration values
   VkSamplerCreateInfo create_info = {
     VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,    // VkStructureType         sType
@@ -402,9 +402,9 @@ bool VulkanPostProcessor::Initialize()
     VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,  // VkBorderColor           borderColor
     VK_FALSE                                  // VkBool32                unnormalizedCoordinates
   };
-  for (size_t i = 0; i < 2; i++)
+  for (size_t i = 0; i < POST_PROCESSING_INPUT_FILTER_COUNT; i++)
   {
-    for (size_t j = 0; j < 3; j++)
+    for (size_t j = 0; j < POST_PROCESSING_ADDRESS_MODE_COUNT; j++)
     {
       create_info.magFilter = Vulkan_filters[i];
       create_info.minFilter = Vulkan_filters[i];
