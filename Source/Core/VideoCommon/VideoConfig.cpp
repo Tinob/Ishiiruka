@@ -152,6 +152,12 @@ void VideoConfig::Refresh()
   fmode = std::min(fmode, static_cast<int>(FilteringMode::Forced));
   fmode = std::max(fmode, static_cast<int>(FilteringMode::Disabled));
   eFilteringMode = static_cast<FilteringMode>(fmode);
+
+  int cmode = Config::Get(Config::GFX_HACK_CULL_MODE);
+  cmode = std::min(cmode, static_cast<int>(HostCullMode::Back));
+  cmode = std::max(cmode, static_cast<int>(HostCullMode::Native));
+  eCullMode = static_cast<HostCullMode>(cmode);
+
   iMaxAnisotropy = Config::Get(Config::GFX_ENHANCE_MAX_ANISOTROPY);
   bPostProcessingEnable = Config::Get(Config::GFX_ENHANCE_POST_ENABLED);
   iPostProcessingTrigger = Config::Get(Config::GFX_ENHANCE_POST_TRIGUER);

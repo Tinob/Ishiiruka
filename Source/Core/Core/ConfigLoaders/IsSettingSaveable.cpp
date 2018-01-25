@@ -96,6 +96,7 @@ bool IsSettingSaveable(const Config::ConfigLocation& config_location)
       Config::GFX_HACK_FULL_ASYNC_SHADER_COMPILATION.location,
       Config::GFX_HACK_LAST_HISTORY_EFBTORAM.location,
       Config::GFX_HACK_FORCE_LOGICOP_BLEND.location,
+      Config::GFX_HACK_CULL_MODE.location,
 
       // Graphics.GameSpecific
 

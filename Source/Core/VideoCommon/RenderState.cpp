@@ -10,7 +10,35 @@
 
 void RasterizationState::Generate(const BPMemory& bp, PrimitiveType primitive_type)
 {
-  cullmode = bp.genMode.cullmode;
+  switch (g_ActiveConfig.eCullMode)
+  {
+  case HostCullMode::NoCull:
+    cullmode = GenMode::CullMode::CULL_NONE;
+    break;
+  case HostCullMode::NoCullExceptAll:
+    cullmode = (bp.genMode.cullmode.Value() == GenMode::CullMode::CULL_ALL) ? GenMode::CullMode::CULL_ALL : GenMode::CullMode::CULL_NONE;
+    break;
+  case HostCullMode::FrontNoBlending:
+    cullmode = (bp.blendmode.blendenable.Value()
+      || bp.blendmode.subtract.Value()
+      || bp.dstalpha.enable) ? bp.genMode.cullmode.Value() : GenMode::CullMode::CULL_FRONT;
+    break;
+  case HostCullMode::Front:
+    cullmode = GenMode::CullMode::CULL_FRONT;
+    break;
+  case HostCullMode::BackNoBlending:
+    cullmode = (bp.blendmode.blendenable.Value()
+      || bp.blendmode.subtract.Value()
+      || bp.dstalpha.enable) ? bp.genMode.cullmode.Value() : GenMode::CullMode::CULL_BACK;
+    break;
+  case HostCullMode::Back:
+    cullmode = GenMode::CullMode::CULL_BACK;
+    break;
+  default:
+    cullmode = bp.genMode.cullmode;
+    break;
+  }
+  
   primitive = primitive_type;
 
   // Back-face culling should be disabled for points/lines.

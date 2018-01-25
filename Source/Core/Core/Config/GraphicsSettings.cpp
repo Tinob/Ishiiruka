@@ -177,6 +177,7 @@ const ConfigInfo<bool> GFX_HACK_FORCE_DUAL_SOURCE{ { System::GFX, "Hacks", "Forc
 const ConfigInfo<bool> GFX_HACK_FULL_ASYNC_SHADER_COMPILATION{ { System::GFX, "Hacks", "FullAsyncShaderCompilation" }, false };
 const ConfigInfo<bool> GFX_HACK_LAST_HISTORY_EFBTORAM{ { System::GFX, "Hacks", "LastStoryEFBToRam" }, false };
 const ConfigInfo<bool> GFX_HACK_FORCE_LOGICOP_BLEND{ { System::GFX, "Hacks", "ForceLogicOpBlend" }, false };
+const ConfigInfo<int> GFX_HACK_CULL_MODE{ { System::GFX, "Hacks", "CullMode" }, 0 };
 
 // Graphics.GameSpecific
 

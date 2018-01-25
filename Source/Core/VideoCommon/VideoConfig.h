@@ -78,6 +78,17 @@ enum FilteringMode : s32
   Forced = 3,
 };
 
+enum HostCullMode : s32
+{
+  Native = 0,
+  NoCull = 1,
+  NoCullExceptAll = 2,
+  FrontNoBlending = 3,
+  Front = 4,
+  BackNoBlending = 5,
+  Back = 6,
+};
+
 struct ProjectionHackConfig final
 {
   bool m_enable;
@@ -116,6 +127,7 @@ struct VideoConfig final
   bool bSSAA;
   int iEFBScale;
   FilteringMode eFilteringMode;
+  HostCullMode eCullMode;
   int iMaxAnisotropy;
   bool bPostProcessingEnable;
   int iPostProcessingTrigger;

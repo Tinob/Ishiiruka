@@ -173,6 +173,7 @@ protected:
   void OnAAChanged(wxCommandEvent& ev);
   void OnUberShaderModeChanged(wxCommandEvent& ev);
   void OnFilteringModeChanged(wxCommandEvent& ev);
+  void OnCullModeChanged(wxCommandEvent& ev);
 
   wxChoice* choice_backend;
   wxChoice* choice_adapter;

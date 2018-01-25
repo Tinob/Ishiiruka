@@ -135,6 +135,7 @@ extern const ConfigInfo<bool> GFX_HACK_FORCE_DUAL_SOURCE;
 extern const ConfigInfo<bool> GFX_HACK_FULL_ASYNC_SHADER_COMPILATION;
 extern const ConfigInfo<bool> GFX_HACK_LAST_HISTORY_EFBTORAM;
 extern const ConfigInfo<bool> GFX_HACK_FORCE_LOGICOP_BLEND;
+extern const ConfigInfo<int> GFX_HACK_CULL_MODE;
 
 // Graphics.GameSpecific
 

@@ -147,6 +147,7 @@ static const INIToLocationMap& GetINIToLocationMap()
       {{"Video_Hacks", "EFBEmulateFormatChanges"},
        {Config::GFX_HACK_EFB_EMULATE_FORMAT_CHANGES.location}},
       {{"Video_Hacks", "VertexRounding"}, {Config::GFX_HACK_VERTEX_ROUDING.location}},
+      {{"Video_Hacks", "CullMode"}, {Config::GFX_HACK_CULL_MODE.location}},
 
       {{"Video", "ProjectionHack"}, {Config::GFX_PROJECTION_HACK.location}},
       {{"Video", "PH_SZNear"}, {Config::GFX_PROJECTION_HACK_SZNEAR.location}},

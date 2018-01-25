@@ -130,8 +130,6 @@ static wxString bump_detail_blend_desc = _("Controls the detail bumpmap strength
 static wxString bump_threshold_desc = _("Controls simulated bumpmap detail detection threshold. Big values can detect more details as bumps but can cause glitches");
 static wxString hacked_buffer_upload_desc = _("Uses unsafe operations to speed up vertex streaming in OpenGL. There are no known problems on supported GPUs, but it will cause severe stability and graphical issues otherwise.\n\nIf unsure, leave this unchecked.");
 static wxString fast_depth_calc_desc = _("Use a less accurate algorithm to calculate depth values.\nCauses issues in a few games but might give a decent speedup.\n\nIf unsure, leave this checked.");
-static wxString force_filtering_desc = _("Force texture filtering even if the emulated game explicitly disabled it.\nImproves texture quality slightly but causes glitches in some games.\n\nIf unsure, leave this unchecked.");
-static wxString disable_filtering_desc = _("Disable texture filtering even if the emulated game explicitly enable it.\n\nIf unsure, leave this unchecked.");
 static wxString Use_Scaling_filter_desc = _("Use filtering when efb scaled size is larger than the target resolution.");
 static wxString borderless_fullscreen_desc = _("Implement fullscreen mode with a borderless window spanning the whole screen instead of using exclusive mode.\nAllows for faster transitions between fullscreen and windowed mode, but increases input latency, makes movement less smooth and slightly decreases performance.\nExclusive mode is required to support Nvidia 3D Vision in the Direct3D backend.\n\nIf unsure, leave this unchecked.");
 static wxString internal_res_desc = _("Specifies the resolution used to render at. A high resolution greatly improves visual quality, but also greatly increases GPU load and can cause issues in certain games.\n\"Multiple of 640x528\" will result in a size slightly larger than \"Window Size\" but yield fewer issues. Generally speaking, the lower the internal resolution is, the better your performance will be. Auto (Window Size), 1.5x, and 2.5x may cause issues in some games.\n\nIf unsure, select Native.");
@@ -242,6 +240,15 @@ wxTRANSLATE("Disabled: Filtering is disabled.\n\n"
   "Accurate: Try to respect native resolution filtering to avoid issues.\n\n"
   "Normal: Apply filtering as configured by the game but with enchanged efb resolution as the target quality.\n\n"
   "Forced: Apply filtering even if the game has it disabled. Can cause issues in some games.");
+
+static wxString cullmode_desc =
+wxTRANSLATE("Native: Culling is applyed as configured by the game.\n\n"
+  "Disabled: Culling is disabled.\n\n"
+  "Disabled Except ALL: Disable culling exept in the case that the game completly discards geometry.\n\n"
+  "Front No Blending: Apply front face culling when the game has no blending enabled.\n\n"
+  "Front: Apply front face culling.\n\n"
+  "Back No Blending: Apply back face culling when the game has no blending enabled.\n\n"
+  "Back: Apply back face culling.");
 
 VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
   : wxDialog(parent, wxID_ANY,
@@ -479,9 +486,23 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
       szr_enh->Add(new wxStaticText(page_enh, wxID_ANY, _("Filtering:")), 1, wxALIGN_CENTER_VERTICAL, 0);
       szr_enh->Add(choice_mode, 1, wxEXPAND | wxRIGHT);
 
-      // Determine ubershader mode
       choice_mode->Bind(wxEVT_CHOICE, &VideoConfigDiag::OnFilteringModeChanged, this);
       choice_mode->SetSelection(Config::GetBase(Config::GFX_ENHANCE_FILTERING_MODE));
+      szr_enh->AddSpacer(0);
+    }
+
+    {
+      const std::array<wxString, 7> mode_choices = { { _("Native"), _("Disabled"), _("Disabled Except All") , _("Front No Blending"), _("Front"), _("Back No Blending"), _("Back") } };
+
+      wxChoice* const choice_mode =
+        new wxChoice(page_enh, wxID_ANY, wxDefaultPosition, wxDefaultSize,
+          static_cast<int>(mode_choices.size()), mode_choices.data());
+      RegisterControl(choice_mode, wxGetTranslation(cullmode_desc));
+      szr_enh->Add(new wxStaticText(page_enh, wxID_ANY, _("Culling:")), 1, wxALIGN_CENTER_VERTICAL, 0);
+      szr_enh->Add(choice_mode, 1, wxEXPAND | wxRIGHT);
+
+      choice_mode->Bind(wxEVT_CHOICE, &VideoConfigDiag::OnCullModeChanged, this);
+      choice_mode->SetSelection(Config::GetBase(Config::GFX_HACK_CULL_MODE));
       szr_enh->AddSpacer(0);
     }
 
@@ -1744,4 +1765,9 @@ void VideoConfigDiag::OnUberShaderModeChanged(wxCommandEvent& ev)
 void VideoConfigDiag::OnFilteringModeChanged(wxCommandEvent& ev)
 {
   Config::SetBaseOrCurrent(Config::GFX_ENHANCE_FILTERING_MODE, ev.GetInt());
+}
+
+void VideoConfigDiag::OnCullModeChanged(wxCommandEvent& ev)
+{
+  Config::SetBaseOrCurrent(Config::GFX_HACK_CULL_MODE, ev.GetInt());
 }
