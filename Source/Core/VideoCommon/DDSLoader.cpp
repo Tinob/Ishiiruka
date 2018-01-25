@@ -301,13 +301,13 @@ bool ImageLoader::ReadDDS(ImageLoaderParams& loader_params)
     // calculate mipmaps size
     u32 w = ddsd.dwWidth;
     u32 h = ddsd.dwHeight;
-    u32 level = 0;
+    u32 level = 1;
     while ((w > 1 || h > 1) && level < ddsd.dwMipMapCount)
     {
-      level++;
       w = std::max(w >> 1, 1u);
       h = std::max(h >> 1, 1u);
       loader_params.data_size += ((w + 3) >> 2)*((h + 3) >> 2) * block_size;
+      level++;
     }
   }
   else
@@ -357,7 +357,8 @@ bool ImageLoader::ReadDDS(ImageLoaderParams& loader_params)
   }
   loader_params.Width = ddsd.dwWidth;
   loader_params.Height = ddsd.dwHeight;
-  loader_params.nummipmaps = ddsd.dwMipMapCount;
+  // loader_params should get the number of mipmaps, not counting the first level
+  loader_params.nummipmaps = (ddsd.dwMipMapCount != 0) ? (ddsd.dwMipMapCount - 1) : 0;
   return true;
 }
 
