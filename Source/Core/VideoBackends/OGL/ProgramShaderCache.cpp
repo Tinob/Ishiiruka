@@ -884,7 +884,7 @@ void ProgramShaderCache::CompileShaders()
 
 void ProgramShaderCache::Shutdown(bool shadersonly)
 {
-  if (g_ActiveConfig.bFullAsyncShaderCompilation || UsingHybridUberShaders())
+  if (!shadersonly && (g_ActiveConfig.bFullAsyncShaderCompilation || UsingHybridUberShaders()))
   {
     auto queue_entry = std::make_unique<QueueEntry>();
     std::queue <int>::size_type size_before;
@@ -984,10 +984,10 @@ void ProgramShaderCache::Shutdown(bool shadersonly)
   if (!shadersonly)
   {
     s_buffer.reset();
-  }
-  if (g_ActiveConfig.bFullAsyncShaderCompilation || UsingHybridUberShaders())
-  {
-    s_thread.join();
+    if (g_ActiveConfig.bFullAsyncShaderCompilation || UsingHybridUberShaders())
+    {
+      s_thread.join();
+    }
   }
 }
 
