@@ -73,6 +73,7 @@ public:
     u64 base_hash = {};
     bool is_efb_copy = false;
     bool is_custom_tex = false;
+    bool has_arbitrary_mips = false;
     bool material_map = false;
     bool is_scaled = false;
     bool emissive_in_alpha = false;
@@ -110,12 +111,13 @@ public:
       memory_stride = _native_width;
     }
 
-    void SetHiresParams(bool _is_custom_tex, const std::string & _basename, bool _is_scaled, bool _emissive_in_alpha)
+    void SetHiresParams(bool _is_custom_tex, const std::string & _basename, bool _is_scaled, bool _emissive_in_alpha, bool arbitrary_mips)
     {
       is_custom_tex = _is_custom_tex;
       basename = _basename;
       is_scaled = _is_scaled;
       emissive_in_alpha = _emissive_in_alpha;
+      has_arbitrary_mips = arbitrary_mips;
     }
 
     void SetHashes(u64 _hash, u64 _base_hash)

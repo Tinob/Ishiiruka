@@ -141,7 +141,7 @@ std::pair<size_t, size_t> VertexManagerBase::ResetFlushAspectRatioCount()
   return val;
 }
 
-static void SetSamplerState(u32 index, bool custom_tex)
+static void SetSamplerState(u32 index, bool custom_tex, bool has_arbitrary_mips, float custom_tex_scale)
 {
   const FourTexUnits& tex = bpmem.tex[index / 4];
   const TexMode0& tm0 = tex.texMode0[index % 4];
@@ -149,7 +149,7 @@ static void SetSamplerState(u32 index, bool custom_tex)
   SamplerState state = {};
   state.Generate(bpmem, index);
   bool mip_maps_enabled = SamplerCommon::AreBpTexMode0MipmapsEnabled(tm0);
-  bool acurate_filtering = !custom_tex && g_ActiveConfig.eFilteringMode == FilteringMode::Accurate && mip_maps_enabled && state.lod_bias.Value() != 0;
+  bool acurate_filtering = (!custom_tex || has_arbitrary_mips) && g_ActiveConfig.eFilteringMode == FilteringMode::Accurate && mip_maps_enabled && state.lod_bias.Value() != 0;
   // Force texture filtering config option.
   if (g_ActiveConfig.eFilteringMode == FilteringMode::Forced)
   {
@@ -196,8 +196,9 @@ static void SetSamplerState(u32 index, bool custom_tex)
     // Apply a secondary bias calculated from the IR scale to pull inwards mipmaps
     // that have arbitrary contents, eg. are used for fog effects where the
     // distance they kick in at is important to preserve at any resolution.
-    state.lod_bias =
-      state.lod_bias.Value() + std::log2(static_cast<float>(g_ActiveConfig.iEFBScale)) * 256.f;
+    // Correct this with the upscaling factor of custom textures.
+    s64 lod_offset = std::log2(static_cast<float>(g_ActiveConfig.iEFBScale) / custom_tex_scale) * 256.f;
+    state.lod_bias = MathUtil::Clamp<s64>(state.lod_bias + lod_offset, -32768, 32767);
   }
 
   g_renderer->SetSamplerState(index, state);
@@ -262,7 +263,8 @@ void VertexManagerBase::DoFlush()
             material_mask |= ((int)tentry->material_map) << i;
             emissive_mask |= ((int)tentry->emissive_in_alpha) << i;
           }
-          SetSamplerState(i, tentry->is_custom_tex || tentry->is_scaled);
+          float custom_tex_scale = tentry->GetConfig().width / float(tentry->native_width);
+          SetSamplerState(i, tentry->is_custom_tex || tentry->is_scaled, tentry->has_arbitrary_mips, custom_tex_scale);
           PixelShaderManager::SetTexDims(i, tentry->native_width, tentry->native_height);
           
         }

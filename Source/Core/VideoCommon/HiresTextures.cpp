@@ -69,9 +69,10 @@ static const std::string s_maps_tags[] = {
 struct HiresTextureCacheItem
 {
   bool emissive_in_color;
+  bool has_arbitrary_mips;
   std::array<std::vector<hires_mip_level>, MapType::emissive + 1> maps;
 
-  HiresTextureCacheItem(size_t minsize) : emissive_in_color(false)
+  HiresTextureCacheItem(size_t minsize) : emissive_in_color(false), has_arbitrary_mips(false)
   {
     maps[MapType::color].resize(minsize);
   }
@@ -178,14 +179,14 @@ void HiresTexture::Update()
 
   for (const std::string& fileitem : filenames)
   {
-    std::string FileName;
+    std::string filename;
     std::string Extension;
-    SplitPath(fileitem, nullptr, &FileName, &Extension);
-    if (FileName.substr(0, code.length()) == code)
+    SplitPath(fileitem, nullptr, &filename, &Extension);
+    if (filename.substr(0, code.length()) == code)
     {
       s_check_native_format = true;
     }
-    else if (FileName.substr(0, s_format_prefix.length()) == s_format_prefix)
+    else if (filename.substr(0, s_format_prefix.length()) == s_format_prefix)
     {
       s_check_new_format = true;
     }
@@ -197,12 +198,13 @@ void HiresTexture::Update()
     size_t map_index = 0;
     size_t max_type = BuildMaterialMaps ? MapType::emissive : MapType::normal;
     bool luma_encoded = false;
+    bool arbitrary_mips = false;
     for (size_t tag = 1; tag <= max_type; tag++)
     {
-      if (StringEndsWith(FileName, s_maps_tags[tag]))
+      if (StringEndsWith(filename, s_maps_tags[tag]))
       {
         map_index = BuildMaterialMaps ? tag : MapType::material;
-        FileName = FileName.substr(0, FileName.size() - s_maps_tags[tag].size());
+        filename = filename.substr(0, filename.size() - s_maps_tags[tag].size());
         break;
       }
     }
@@ -212,23 +214,27 @@ void HiresTexture::Update()
     }
     else if (!BuildMaterialMaps && map_index == MapType::color)
     {
-      if (StringEndsWith(FileName, "_lum"))
-      {
-        FileName = FileName.substr(0, FileName.size() - 4);
-        luma_encoded = true;
-      }
-    }
+      const size_t lum_index = filename.rfind("_lum");
+      luma_encoded = lum_index != std::string::npos;
+      if (luma_encoded)
+        filename.erase(lum_index, 4);
+
+      const size_t arb_index = filename.rfind("_arb");
+      arbitrary_mips = arb_index != std::string::npos;
+      if (arbitrary_mips)
+        filename.erase(arb_index, 4);
+    }    
     const bool is_compressed = Extension.compare(ddscode) == 0 || Extension.compare(cddscode) == 0;
     hires_mip_level mip_level_detail(fileitem, Extension, is_compressed);
     u32 level = 0;
-    size_t idx = FileName.find_last_of('_');
-    std::string miplevel = FileName.substr(idx + 1, std::string::npos);
+    size_t idx = filename.find_last_of('_');
+    std::string miplevel = filename.substr(idx + 1, std::string::npos);
     if (miplevel.substr(0, miptag.length()) == miptag)
     {
       sscanf(miplevel.substr(3, std::string::npos).c_str(), "%i", &level);
-      FileName = FileName.substr(0, idx);
+      filename = filename.substr(0, idx);
     }
-    HiresTextureCache::iterator iter = s_textureMap.find(FileName);
+    HiresTextureCache::iterator iter = s_textureMap.find(filename);
     u32 min_item_size = level + 1;
     if (iter == s_textureMap.end())
     {
@@ -237,10 +243,14 @@ void HiresTexture::Update()
       {
         item.emissive_in_color = true;
       }
+      if (arbitrary_mips)
+      {
+        item.has_arbitrary_mips = true;
+      }
       item.maps[map_index].resize(min_item_size);
       std::vector<hires_mip_level> &dst = item.maps[map_index];
       dst[level] = mip_level_detail;
-      s_textureMap.emplace(FileName, item);
+      s_textureMap.emplace(filename, item);
     }
     else
     {
@@ -248,6 +258,10 @@ void HiresTexture::Update()
       if (luma_encoded)
       {
         iter->second.emissive_in_color = true;
+      }
+      if (arbitrary_mips)
+      {
+        iter->second.has_arbitrary_mips = true;
       }
       if (dst.size() < min_item_size)
       {
@@ -764,6 +778,7 @@ HiresTexture* HiresTexture::Load(const std::string& basename,
     {
       ret = new HiresTexture();
       ret->emissive_in_color = emissive_present;
+      ret->has_arbitrary_mips = current.has_arbitrary_mips;
       ret->m_format = imgInfo.resultTex;
       ret->m_width = maxwidth = imgInfo.Width;
       ret->m_height = maxheight = imgInfo.Height;

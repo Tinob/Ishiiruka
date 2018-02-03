@@ -796,7 +796,7 @@ TextureCacheBase::TCacheEntry* TextureCacheBase::Load(const u32 stage)
 
   entry->SetGeneralParameters(address, texture_size, full_format);
   entry->SetDimensions(nativeW, nativeH, tex_levels);
-  entry->SetHiresParams(!!hires_tex, basename, use_scaling, !!hires_tex && hires_tex->emissive_in_color);
+  entry->SetHiresParams(!!hires_tex, basename, use_scaling, !!hires_tex && hires_tex->emissive_in_color, !!hires_tex && hires_tex->has_arbitrary_mips);
   entry->SetHashes(full_hash, tex_hash);
   entry->is_efb_copy = false;
 
