@@ -146,12 +146,17 @@ int Renderer::EFBToScaledY(int y)
 
 float Renderer::EFBToScaledXf(float x) const
 {
-  return x * ((float)GetTargetWidth() / (float)EFB_WIDTH);
+  return x * m_efb_scale;
 }
 
 float Renderer::EFBToScaledYf(float y) const
 {
-  return y * ((float)GetTargetHeight() / (float)EFB_HEIGHT);
+  return y * m_efb_scale;
+}
+
+float Renderer::GetEFBScale() const
+{
+  return m_efb_scale;
 }
 
 std::tuple<int, int> Renderer::CalculateTargetScale(int x, int y) const
@@ -242,6 +247,7 @@ bool Renderer::CalculateTargetSize(int multiplier)
   {
     m_target_width = new_efb_width;
     m_target_height = new_efb_height;
+    m_efb_scale = float(m_target_width) / float(EFB_WIDTH);
     VertexShaderManager::SetViewportChanged();
     GeometryShaderManager::SetViewportChanged();
     PixelShaderManager::SetViewportChanged();

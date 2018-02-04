@@ -197,7 +197,7 @@ static void SetSamplerState(u32 index, bool custom_tex, bool has_arbitrary_mips,
     // that have arbitrary contents, eg. are used for fog effects where the
     // distance they kick in at is important to preserve at any resolution.
     // Correct this with the upscaling factor of custom textures.
-    s64 lod_offset = std::log2(static_cast<float>(g_ActiveConfig.iEFBScale) / custom_tex_scale) * 256.f;
+    s64 lod_offset = std::log2(g_renderer->GetEFBScale() / custom_tex_scale) * 256.f;
     state.lod_bias = MathUtil::Clamp<s64>(state.lod_bias + lod_offset, -32768, 32767);
   }
 

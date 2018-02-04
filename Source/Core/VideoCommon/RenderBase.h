@@ -121,7 +121,7 @@ public:
   // Floating point versions of the above - only use them if really necessary
   float EFBToScaledXf(float x) const;
   float EFBToScaledYf(float y) const;
-
+  float GetEFBScale() const;
   // Random utilities
   void SaveScreenshot(const std::string& filename, bool wait_for_completion);
   void DrawDebugText();
@@ -170,6 +170,7 @@ protected:
   // The framebuffer size
   int m_target_width = 0;
   int m_target_height = 0;
+  float m_efb_scale = 1.0;
 
   // TODO: Add functionality to reinit all the render targets when the window is resized.
   int m_backbuffer_width = 0;
