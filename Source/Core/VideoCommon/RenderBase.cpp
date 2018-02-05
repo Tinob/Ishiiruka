@@ -151,7 +151,7 @@ float Renderer::EFBToScaledXf(float x) const
 
 float Renderer::EFBToScaledYf(float y) const
 {
-  return y * m_efb_scale;
+  return y * ((float)GetTargetHeight() / (float)EFB_HEIGHT);
 }
 
 float Renderer::GetEFBScale() const
