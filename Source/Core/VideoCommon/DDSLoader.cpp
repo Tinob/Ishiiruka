@@ -295,25 +295,34 @@ bool ImageLoader::ReadDDS(ImageLoaderParams& loader_params)
   ddsd.dwLinearSize = ((ddsd.dwWidth + 3) >> 2)*((ddsd.dwHeight + 3) >> 2)*block_size;
   bool mipmapspresent = ddsd.dwMipMapCount > 1 && ddsd.dwFlags & DDSD_MIPMAPCOUNT;
   loader_params.data_size = ddsd.dwLinearSize;
+  size_t remaining = file.GetSize() - header_size;
   if (mipmapspresent)
   {
     // calculate mipmaps size
     u32 w = ddsd.dwWidth;
     u32 h = ddsd.dwHeight;
     u32 level = 1;
-    while ((w > 1 || h > 1) && level <= ddsd.dwMipMapCount)
+    while ((w > 1 || h > 1))
     {
       w = std::max(w >> 1, 1u);
       h = std::max(h >> 1, 1u);
-      loader_params.data_size += ((w + 3) >> 2)*((h + 3) >> 2) * block_size;
-      level++;
+      u32 required = loader_params.data_size + ((w + 3) >> 2)*((h + 3) >> 2) * block_size;
+      if (required <= remaining)
+      {
+        loader_params.data_size = required;
+        level++;
+      }
+      else
+      {
+        break;
+      }
     }
+    ddsd.dwMipMapCount = level;
   }
   else
   {
     ddsd.dwMipMapCount = 0;
-  }
-  size_t remaining = file.GetSize() - header_size;
+  }  
   if (remaining < loader_params.data_size)
   {
     loader_params.data_size = ddsd.dwLinearSize;
