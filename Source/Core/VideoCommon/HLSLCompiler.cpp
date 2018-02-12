@@ -226,7 +226,7 @@ HRESULT HLSLCompiler::LoadCompiler()
 
   // try to load D3DCompiler
   HRESULT hr = E_FAIL;
-  for (unsigned int num = 49; num >= 47; --num)
+  for (unsigned int num = 49; num >= 42; --num)
   {
     std::string compilerfile = StringFromFormat("D3DCompiler_%d.dll", num);
     hD3DCompilerDll = LoadLibraryA(compilerfile.c_str());
