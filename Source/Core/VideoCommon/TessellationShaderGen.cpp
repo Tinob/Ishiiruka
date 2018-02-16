@@ -59,6 +59,13 @@ struct HSOutput
 	float2 clipDist: TANGENT;
 };
 
+float3 CorrectNormal(float3 original, float3 fallback)
+{
+  float3 normalized = normalize(original);
+  float len = length(normalized);
+  return (!isnan(len) && len > 0.0) ? normalized : fallback;
+}
+
 [domain("tri")]
 [partitioning("fractional_even")]
 [outputtopology("triangle_cw")]
@@ -72,15 +79,15 @@ static const char* s_hlsl_constant_header_str = R"hlsl(
 
 float GetScreenSize(float3 Origin, float Diameter)
 {
-    float w = dot()hlsl" I_PROJECTION R"hlsl([3], float4( Origin, 1.0 ));
-    return abs(Diameter * )hlsl" I_PROJECTION R"hlsl([1].y / w);
+  float w = dot()hlsl" I_PROJECTION R"hlsl([3], float4( Origin, 1.0 ));
+  return abs(Diameter * )hlsl" I_PROJECTION R"hlsl([1].y / w);
 }
 
 float CalcTessFactor(float3 Origin, float Diameter)
 {
-	float distance = 1.0 - saturate(length(Origin) * )hlsl" I_TESSPARAMS R"hlsl(.x);
-	distance = distance * distance;
-	return round(max(4.0,)hlsl" I_TESSPARAMS R"hlsl(.y * GetScreenSize(Origin,Diameter) * distance));
+  float distance = 1.0 - saturate(length(Origin) * )hlsl" I_TESSPARAMS R"hlsl(.x);
+  distance = distance * distance;
+  return round(max(4.0,)hlsl" I_TESSPARAMS R"hlsl(.y * GetScreenSize(Origin,Diameter) * distance));
 }
 ConstantOutput TConstFunc(InputPatch<VS_OUTPUT, 3> patch)
 {
@@ -90,48 +97,48 @@ ConstantOutput result = (ConstantOutput)0;
 static const char* s_hlsl_ds_str = R"hlsl(
 float3 PrjToPlane(float3 planeNormal, float3 planePoint, float3 pointToProject)
 {
-return pointToProject - dot(pointToProject-planePoint, planeNormal) * planeNormal;
+  return pointToProject - dot(pointToProject-planePoint, planeNormal) * planeNormal;
 }
 
 float BInterpolate(float v0, float v1, float v2, float3 barycentric)
 {
-return barycentric.z * v0 + barycentric.x * v1 + barycentric.y * v2;
+  return barycentric.z * v0 + barycentric.x * v1 + barycentric.y * v2;
 }
 
 float2 BInterpolate(float2 v0, float2 v1, float2 v2, float3 barycentric)
 {
-return barycentric.z * v0 + barycentric.x * v1 + barycentric.y * v2;
+  return barycentric.z * v0 + barycentric.x * v1 + barycentric.y * v2;
 }
 
 float2 BInterpolate(float2 v[3], float3 barycentric)
 {
-return BInterpolate(v[0], v[1], v[2], barycentric);
+  return BInterpolate(v[0], v[1], v[2], barycentric);
 }
 
 float3 BInterpolate(float3 v0, float3 v1, float3 v2, float3 barycentric)
 {
-return barycentric.z * v0 + barycentric.x * v1 + barycentric.y * v2;
+  return barycentric.z * v0 + barycentric.x * v1 + barycentric.y * v2;
 }
 
 float3 BInterpolate(float3 v[3], float3 barycentric)
 {
-return BInterpolate(v[0], v[1], v[2], barycentric);
+  return BInterpolate(v[0], v[1], v[2], barycentric);
 }
 
 float4 BInterpolate(float4 v0, float4 v1, float4 v2, float3 barycentric)
 {
-return barycentric.z * v0 + barycentric.x * v1 + barycentric.y * v2;
+  return barycentric.z * v0 + barycentric.x * v1 + barycentric.y * v2;
 }
 
 float4 BInterpolate(float4 v[3], float3 barycentric)
 {
-return BInterpolate(v[0], v[1], v[2], barycentric);
+  return BInterpolate(v[0], v[1], v[2], barycentric);
 }
 
 [domain("tri")]
 VS_OUTPUT DS_TFO(ConstantOutput pconstans, const OutputPatch<HSOutput, 3> patch, float3 bCoords : SV_DomainLocation )
 {
-VS_OUTPUT result = (VS_OUTPUT)0;
+  VS_OUTPUT result = (VS_OUTPUT)0;
 )hlsl";
 
 
@@ -453,141 +460,141 @@ inline void GenerateTessellationShader(ShaderCode& out, const Tessellation_shade
   {
     out.Write("struct ConstantOutput\n"
       "{\n"
-      "float EFactor[3] : SV_TessFactor;\n"
-      "float InsideFactor : SV_InsideTessFactor;\n"
-      "float4 edgesize : TEXCOORD0;\n");
+      " float EFactor[3] : SV_TessFactor;\n"
+      " float InsideFactor : SV_InsideTessFactor;\n"
+      " float4 edgesize : TEXCOORD0;\n");
     u32 texcount = uid_data.numTexGens < 7 ? uid_data.numTexGens : 8;
     for (unsigned int i = 0; i < texcount; ++i)
-      out.Write("float4 tex%d[3] : TEXCOORD%d;\n", i, i * 3 + 1);
-    out.Write("float4 Normal[3]: TEXCOORD%d;\n", texcount * 3 + 1);
-
+      out.Write(" float4 tex%d[3] : TEXCOORD%d;\n", i, i * 3 + 1);
+    out.Write(" float4 Normal[3]: TEXCOORD%d;\n", texcount * 3 + 1);
     out.Write("};\n");
     out.Write(s_hlsl_hull_header_str);
     if (uid_data.numTexGens < 7)
     {
-      out.Write("result.pos = float4(patch[id].clipPos.x,patch[id].clipPos.y,patch[id].Normal.w, 1.0);\n");
+      out.Write(" result.pos = float4(patch[id].clipPos.x,patch[id].clipPos.y,patch[id].Normal.w, 1.0);\n");
     }
     else
     {
-      out.Write("result.pos = float4(patch[id].tex0.w, patch[id].tex1.w, patch[id].tex7.w, 1.0);\n");
+      out.Write(" result.pos = float4(patch[id].tex0.w, patch[id].tex1.w, patch[id].tex7.w, 1.0);\n");
     }
-    out.Write("result.colors_0 = patch[id].colors_0;\n"
-      "result.colors_1 = patch[id].colors_1;\n");
+    out.Write(" result.colors_0 = patch[id].colors_0;\n"
+      " result.colors_1 = patch[id].colors_1;\n");
     if (g_ActiveConfig.backend_info.bSupportsDepthClamp)
       out.Write("result.clipDist = patch[id].clipDist;\n");
     out.Write("return result;\n}\n");
     out.Write(s_hlsl_constant_header_str);
     out.Write(
-      "if (" I_CULLPARAMS ".y != 0) {\n"
-      "float3 spos0 = patch[0].pos.xyz / patch[0].pos.w;\n"
-      "float3 spos1 = patch[1].pos.xyz / patch[1].pos.w;\n"
-      "float3 spos2 = patch[2].pos.xyz / patch[2].pos.w;\n"
-      "float3 posmax = max(max(spos0, spos1), spos2);\n"
-      "float3 posmin = min(min(spos0, spos1), spos2);\n"
-      "if (\n"
-      "(posmin.x > 1.5 || posmax.x < -1.5 || posmin.y > 1.5 || posmax.y < -1.5 || posmin.z > 1.5 || posmax.z < -0.5)"
-      ")\n"
-      "{\n"
-      "result.EFactor[0] = 0;\n"
-      "result.EFactor[1] = 0;\n"
-      "result.EFactor[2] = 0;\n"
-      "result.InsideFactor = 0;\n"
-      "return result; // culled, so no further processing\n"
-      "}\n}\n");
-    out.Write("float4 pos[3];\n");
-    out.Write("[unroll]\n"
-      "for(int i = 0; i < 3; i++)\n{\n");
+      " if (" I_CULLPARAMS ".y != 0) {\n"
+      "   float3 spos0 = patch[0].pos.xyz / patch[0].pos.w;\n"
+      "   float3 spos1 = patch[1].pos.xyz / patch[1].pos.w;\n"
+      "   float3 spos2 = patch[2].pos.xyz / patch[2].pos.w;\n"
+      "   float3 posmax = max(max(spos0, spos1), spos2);\n"
+      "   float3 posmin = min(min(spos0, spos1), spos2);\n"
+      "   if (\n"
+      "   (posmin.x > 1.5 || posmax.x < -1.5 || posmin.y > 1.5 || posmax.y < -1.5 || posmin.z > 1.5 || posmax.z < -0.5)"
+      "   )\n"
+      "   {\n"
+      "     result.EFactor[0] = 0;\n"
+      "     result.EFactor[1] = 0;\n"
+      "     result.EFactor[2] = 0;\n"
+      "     result.InsideFactor = 0;\n"
+      "     return result; // culled, so no further processing\n"
+      "   }\n}\n"
+      "   float4 pos[3];\n"
+      "   [unroll]\n"
+      "   for(int i = 0; i < 3; i++)\n{\n"
+    );
     if (uid_data.numTexGens < 7)
     {
-      out.Write("pos[i] = float4(patch[i].clipPos.x,patch[i].clipPos.y,patch[i].Normal.w, 1.0);\n");
+      out.Write("     pos[i] = float4(patch[i].clipPos.x,patch[i].clipPos.y,patch[i].Normal.w, 1.0);\n");
     }
     else
     {
-      out.Write("pos[i] = float4(patch[i].tex0.w, patch[i].tex1.w, patch[i].tex7.w, 1.0);\n");
+      out.Write("     pos[i] = float4(patch[i].tex0.w, patch[i].tex1.w, patch[i].tex7.w, 1.0);\n");
     }
     for (u32 i = 0; i < texcount; ++i)
     {
-      out.Write("result.tex%d[i].xyz = patch[i].tex%d.xyz;\n", i, i);
-      out.Write("{\n");
-      out.Write("float2 t0 = patch[i].tex%d.xy;", i);
-      out.Write("t0 = t0 / ((patch[i].tex%d.z == 0.0) ? 2.0 : patch[i].tex%d.z);", i, i);
-      out.Write("float2 t1 = patch[(i + 1) %% 3].tex%d.xy;", i);
-      out.Write("if (patch[(i + 1) %% 3].tex%d.z != 0.0) t0 = t0 /patch[(i + 1) %% 3].tex%d.z;", i, i);
-      out.Write("result.tex%d[i].w = distance(t0, t1);\n", i);
-      out.Write("}\n");
+      out.Write("     result.tex%d[i].xyz = patch[i].tex%d.xyz;\n", i, i);
+      out.Write("     {\n");
+      out.Write("       float2 t0 = patch[i].tex%d.xy;", i);
+      out.Write("       t0 = t0 / ((patch[i].tex%d.z == 0.0) ? 2.0 : patch[i].tex%d.z);", i, i);
+      out.Write("       float2 t1 = patch[(i + 1) %% 3].tex%d.xy;", i);
+      out.Write("       if (patch[(i + 1) %% 3].tex%d.z != 0.0) t0 = t0 /patch[(i + 1) %% 3].tex%d.z;", i, i);
+      out.Write("       result.tex%d[i].w = distance(t0, t1);\n", i);
+      out.Write("     }\n");
     }
     if (normalpresent)
     {
       if (uid_data.numTexGens < 7)
       {
-        out.Write("result.Normal[i] = patch[i].Normal;\n");
+        out.Write("     result.Normal[i] = patch[i].Normal;\n");
       }
       else
       {
-        out.Write("result.Normal[i] = float4(patch[i].tex4.w, patch[i].tex5.w, patch[i].tex6.w, 1.0f);\n");
+        out.Write("     result.Normal[i] = float4(patch[i].tex4.w, patch[i].tex5.w, patch[i].tex6.w, 1.0f);\n");
       }
     }
-    out.Write("}\n");
-    out.Write("float3 edge0 = pos[1].xyz - pos[0].xyz;\n"
-      "float3 edge2 = pos[2].xyz - pos[0].xyz;\n"
-      "float3 faceNormal = normalize(cross(edge2, edge0));\n");
-    if (!normalpresent)
+    else
     {
-      out.Write("result.Normal[0] = float4(faceNormal, 1.0f);\n");
-      out.Write("result.Normal[1] = result.Normal[0];\n");
-      out.Write("result.Normal[2] = result.Normal[0];\n");
+      out.Write("     result.Normal[i] = float4(0.0,0.0,0.0,0.0);\n");
     }
     out.Write(
-      "if (" I_CULLPARAMS ".x != 0) {\n"
-      "float3 view = normalize(-pos[0].xyz);\n"
-      "float visibility = dot(view, faceNormal);\n"
-      "bool notvisible = " I_CULLPARAMS ".x < 0 ? (visibility < -0.25) : (visibility > 0.25);\n"
-      "if (notvisible) {\n"
-      "result.EFactor[0] = 0;\n"
-      "result.EFactor[1] = 0;\n"
-      "result.EFactor[2] = 0;\n"
-      "result.InsideFactor = 0;\n"
-      "return result; // culled, so no further processing\n"
-      "}\n}\n");
-    out.Write(
-      "float l0 = distance(pos[1].xyz,pos[2].xyz);\n"
-      "float l1 = distance(pos[2].xyz,pos[0].xyz);\n"
-      "float l2 = distance(pos[0].xyz,pos[1].xyz);\n"
-      "result.edgesize = float4(l0, l1, l2, 1.0);\n"
-      "result.EFactor[0] = CalcTessFactor((pos[1].xyz+pos[2].xyz) * 0.5, l0);\n"
-      "result.EFactor[1] = CalcTessFactor((pos[2].xyz+pos[0].xyz) * 0.5, l1);\n"
-      "result.EFactor[2] = CalcTessFactor((pos[0].xyz+pos[1].xyz) * 0.5, l2);\n"
-      "result.InsideFactor = (result.EFactor[0] + result.EFactor[1] + result.EFactor[2]) / 3;\n"
-      "return result;\n};\n"
+      "   }\n"
+      "   float3 edge0 = pos[1].xyz - pos[0].xyz;\n"
+      "   float3 edge2 = pos[2].xyz - pos[0].xyz;\n"
+      "   float3 faceNormal = normalize(cross(edge2, edge0));\n"
+      "   result.Normal[0] = float4(CorrectNormal(result.Normal[0].xyz, faceNormal), 0.0f);\n"
+      "   result.Normal[1] = float4(CorrectNormal(result.Normal[1].xyz, faceNormal), 0.0f);\n"
+      "   result.Normal[2] = float4(CorrectNormal(result.Normal[2].xyz, faceNormal), 0.0f);\n"
+      "   if (" I_CULLPARAMS ".x != 0) {\n"
+      "     float3 view = normalize(-pos[0].xyz);\n"
+      "     float visibility = dot(view, faceNormal);\n"
+      "     bool notvisible = " I_CULLPARAMS ".x < 0 ? (visibility < -0.25) : (visibility > 0.25);\n"
+      "     if (notvisible) {\n"
+      "       result.EFactor[0] = 0;\n"
+      "       result.EFactor[1] = 0;\n"
+      "       result.EFactor[2] = 0;\n"
+      "       result.InsideFactor = 0;\n"
+      "       return result; // culled, so no further processing\n"
+      "     }\n   }\n"
+      "   float l0 = distance(pos[1].xyz,pos[2].xyz);\n"
+      "   float l1 = distance(pos[2].xyz,pos[0].xyz);\n"
+      "   float l2 = distance(pos[0].xyz,pos[1].xyz);\n"
+      "   result.edgesize = float4(l0, l1, l2, 1.0);\n"
+      "   result.EFactor[0] = CalcTessFactor((pos[1].xyz+pos[2].xyz) * 0.5, l0);\n"
+      "   result.EFactor[1] = CalcTessFactor((pos[2].xyz+pos[0].xyz) * 0.5, l1);\n"
+      "   result.EFactor[2] = CalcTessFactor((pos[0].xyz+pos[1].xyz) * 0.5, l2);\n"
+      "   result.InsideFactor = (result.EFactor[0] + result.EFactor[1] + result.EFactor[2]) / 3;\n"
+      "   return result;\n};\n"
     );
     out.Write(s_hlsl_ds_str);
 
     for (u32 i = 0; i < texcount; ++i)
-      out.Write("result.tex%d.xyz = BInterpolate(pconstans.tex%d, bCoords).xyz;\n", i, i);
+      out.Write(" result.tex%d.xyz = BInterpolate(pconstans.tex%d, bCoords).xyz;\n", i, i);
 
-    out.Write("float displacement = 0.0, displacementcount = 0.0, borderdistance = bCoords.x * bCoords.y * bCoords.z;\n");
-    out.Write("int3 tevcoord=int3(0,0,0);\n");
-    out.Write("int2 wrappedcoord = int2(0, 0);\n");
+    out.Write(" float displacement = 0.0, displacementcount = 0.0, borderdistance = bCoords.x * bCoords.y * bCoords.z;\n");
+    out.Write(" int3 tevcoord=int3(0,0,0);\n");
+    out.Write(" int2 wrappedcoord = int2(0, 0);\n");
     if (enablenormalmaps)
     {
-      out.Write("if(" I_FLAGS ".x != 0)\n{\n");
-      out.Write("float4 uv[%d];\n", numTexgen);
-      out.Write("int2 t_coord;\n");
+      out.Write(" if(" I_FLAGS ".x != 0)\n{\n");
+      out.Write("   float4 uv[%d];\n", numTexgen);
+      out.Write("   int2 t_coord;\n");
       for (u32 i = 0; i < numTexgen; ++i)
       {
         if (((uid_data.texMtxInfo_n_projection >> i) & 1) == XF_TEXPROJ_STQ)
         {
-          out.Write("\tuv[%d].xy = result.tex%d.xy / ((result.tex%d.z == 0.0) ? 2.0 : result.tex%d.z);\n", i, i, i, i);
+          out.Write("   uv[%d].xy = result.tex%d.xy / ((result.tex%d.z == 0.0) ? 2.0 : result.tex%d.z);\n", i, i, i, i);
         }
         else
         {
-          out.Write("uv[%d].xy = result.tex%d.xy;\n", i, i);
+          out.Write("   uv[%d].xy = result.tex%d.xy;\n", i, i);
         }
-        out.Write("uv[%d].xy = trunc(uv[%d].xy * " I_TEXDIMS"[%d].zw);\n", i, i, i);
-        out.Write("uv[%d].z = dot(pconstans.edgesize.zxy, bCoords)/dot(float3(pconstans.tex%d[0].w, pconstans.tex%d[1].w, pconstans.tex%d[2].w), bCoords);\n", i, i, i, i);
-        out.Write("uv[%d].w = dot(log2(8.0*float3(pconstans.tex%d[0].w,pconstans.tex%d[1].w,pconstans.tex%d[2].w) / float3(pconstans.EFactor[2], pconstans.EFactor[0], pconstans.EFactor[1])),bCoords);\n", i, i, i, i);
-        out.Write("uv[%d].z = borderdistance * 2.0 * uv[%d].z;\n", i, i);
-        out.Write("uv[%d].w = ceil(saturate(uv[%d].w) * 8.0) * 0.125;\n", i, i);
+        out.Write("   uv[%d].xy = trunc(uv[%d].xy * " I_TEXDIMS"[%d].zw);\n", i, i, i);
+        out.Write("   uv[%d].z = dot(pconstans.edgesize.zxy, bCoords)/dot(float3(pconstans.tex%d[0].w, pconstans.tex%d[1].w, pconstans.tex%d[2].w), bCoords);\n", i, i, i, i);
+        out.Write("   uv[%d].w = dot(log2(8.0*float3(pconstans.tex%d[0].w,pconstans.tex%d[1].w,pconstans.tex%d[2].w) / float3(pconstans.EFactor[2], pconstans.EFactor[0], pconstans.EFactor[1])),bCoords);\n", i, i, i, i);
+        out.Write("   uv[%d].z = borderdistance * 2.0 * uv[%d].z;\n", i, i);
+        out.Write("   uv[%d].w = ceil(saturate(uv[%d].w) * 8.0) * 0.125;\n", i, i);
       }
       for (u32 i = 0; i < numindStages; ++i)
       {
@@ -597,13 +604,13 @@ inline void GenerateTessellationShader(ShaderCode& out, const Tessellation_shade
           u32 texmap = uid_data.GetTevindirefMap(i);
           if (texcoord < numTexgen)
           {
-            out.Write("t_coord = BSHR(int2(uv[%d].xy) , " I_INDTEXSCALE"[%d].%s);\n", texcoord, i / 2, (i & 1) ? "zw" : "xy");
+            out.Write("   t_coord = BSHR(int2(uv[%d].xy) , " I_INDTEXSCALE"[%d].%s);\n", texcoord, i / 2, (i & 1) ? "zw" : "xy");
           }
           else
           {
-            out.Write("t_coord = int2(0,0);\n");
+            out.Write("   t_coord = int2(0,0);\n");
           }
-          out.Write("int3 indtex%d = ", i);
+          out.Write("   int3 indtex%d = ", i);
           SampleTexture<ApiType>(out, "float2(t_coord)", "abg", texmap, uid_data.stereo);
         }
       }
@@ -611,59 +618,72 @@ inline void GenerateTessellationShader(ShaderCode& out, const Tessellation_shade
       {
         WriteFetchDisplacement<ApiType>(out, i, uid_data); // Fetch Texture data
       }
-      out.Write("}\n");
+      out.Write(" }\n");
     }
 
-    out.Write("float3 pos0 = patch[0].pos.xyz;\n"
-      "float3 pos1 = patch[1].pos.xyz;\n"
-      "float3 pos2 = patch[2].pos.xyz;\n"
-      "float3 position = BInterpolate(pos0, pos1, pos2, bCoords);\n");
-
     out.Write(
-      "float3 norm0 = pconstans.Normal[0].xyz;\n"
-      "float3 norm1 = pconstans.Normal[1].xyz;\n"
-      "float3 norm2 = pconstans.Normal[2].xyz;\n");
-
-    out.Write("float3 normal = normalize(BInterpolate(norm0, norm1, norm2, bCoords));\n"
-      "pos0 = PrjToPlane(norm0, pos0, position);\n"
-      "pos1 = PrjToPlane(norm1, pos1, position);\n"
-      "pos2 = PrjToPlane(norm2, pos2, position);\n"
-      "position = lerp(position, BInterpolate(pos0, pos1, pos2, bCoords),saturate(" I_TESSPARAMS ".zzz * borderdistance * 16.0));\n"
-      "position += displacement * normal * " I_TESSPARAMS ".w;\n");
-    // Transform world position to view-projection
-    out.Write("float4 pos = float4(position, 1.0);\n"
-      "result.pos = float4(dot(" I_PROJECTION "[0], pos), dot(" I_PROJECTION "[1], pos), dot(" I_PROJECTION "[2], pos), dot(" I_PROJECTION "[3], pos));\n"
-      "result.pos.xy = result.pos.xy + result.pos.w * " I_DEPTHPARAMS".zw;\n"
-      "result.colors_0 = BInterpolate(patch[0].colors_0, patch[1].colors_0, patch[2].colors_0, bCoords);\n"
-      "result.colors_1 = BInterpolate(patch[0].colors_1, patch[1].colors_1, patch[2].colors_1, bCoords);\n");
+      " float3 pos0 = patch[0].pos.xyz;\n"
+      " float3 pos1 = patch[1].pos.xyz;\n"
+      " float3 pos2 = patch[2].pos.xyz;\n"
+      " float3 position = BInterpolate(pos0, pos1, pos2, bCoords);\n"
+      " float3 norm0 = normalize(pconstans.Normal[0].xyz);\n"
+      " float3 norm1 = normalize(pconstans.Normal[1].xyz);\n"
+      " float3 norm2 = normalize(pconstans.Normal[2].xyz);\n"
+      " float3 normal = normalize(BInterpolate(norm0, norm1, norm2, bCoords));\n"
+      " pos0 = PrjToPlane(norm0, pos0, position);\n"
+      " pos1 = PrjToPlane(norm1, pos1, position);\n"
+      " pos2 = PrjToPlane(norm2, pos2, position);\n"
+      " position = lerp(position, BInterpolate(pos0, pos1, pos2, bCoords),saturate(" I_TESSPARAMS ".zzz * borderdistance * 16.0));\n"
+      " position += displacement * normal * " I_TESSPARAMS ".w;\n"
+    //Transform world position to view-projection
+      " float4 pos = float4(position, 1.0);\n"
+      " result.pos = float4(dot(" I_PROJECTION "[0], pos), dot(" I_PROJECTION "[1], pos), dot(" I_PROJECTION "[2], pos), dot(" I_PROJECTION "[3], pos));\n"
+      " result.colors_0 = BInterpolate(patch[0].colors_0, patch[1].colors_0, patch[2].colors_0, bCoords);\n"
+      " result.colors_1 = BInterpolate(patch[0].colors_1, patch[1].colors_1, patch[2].colors_1, bCoords);\n"
+    );
 
     if (g_ActiveConfig.backend_info.bSupportsDepthClamp)
-      out.Write("result.clipDist = BInterpolate(patch[0].clipDist, patch[1].clipDist, patch[2].clipDist, bCoords);\n");
+    {
+      out.Write(
+        " {\n"
+        "   float clipDepth = result.pos.z * 0.9999999;\n"
+        "   result.clipDist.x = clipDepth + result.pos.w;\n"
+        "   result.clipDist.y = -clipDepth;\n"
+        " }\n");
+    }
 
     if (uid_data.numTexGens < 7)
     {
-      out.Write("result.clipPos = float4(position.xy, result.pos.zw);\n");
-      out.Write("result.Normal = float4(normal.xyz, position.z);\n");
+      out.Write(" result.clipPos = float4(pos.xy, result.pos.zw);\n");
+      out.Write(" result.Normal = float4(normal.xyz, position.z);\n");
     }
     else
     {
       // Store clip position in the w component of first 4 texcoords
       out.Write(
-        "result.tex0.w = position.x;\n"
-        "result.tex1.w = position.y;\n"
-        "result.tex2.w = result.pos.z;\n"
-        "result.tex3.w = result.pos.w;\n");
-      out.Write("result.tex4.w = normal.x;\n"
-        "result.tex5.w = normal.y;\n"
-        "result.tex6.w = normal.z;\n");
+        " result.tex0.w = pos.x;\n"
+        " result.tex1.w = pos.y;\n"
+        " result.tex2.w = result.pos.z;\n"
+        " result.tex3.w = result.pos.w;\n"
+        " result.tex4.w = normal.x;\n"
+        " result.tex5.w = normal.y;\n"
+        " result.tex6.w = normal.z;\n");
 
       if (uid_data.numTexGens < 8)
-        out.Write("result.tex7 = position.xyzz;\n");
+        out.Write(" result.tex7 = position.xyzz;\n");
       else
-        out.Write("result.tex7.w = position.z;\n");
+        out.Write(" result.tex7.w = position.z;\n");
     }
-    out.Write("result.pos.z = result.pos.w * " I_DEPTHPARAMS ".x - result.pos.z * " I_DEPTHPARAMS ".y;\n");
-    out.Write("return result;\n}");
+    out.Write(
+      " result.pos.z = result.pos.w * " I_DEPTHPARAMS ".x - result.pos.z * " I_DEPTHPARAMS ".y;\n"
+      " result.pos.xy *= sign(" I_DEPTHPARAMS ".zw * float2(-1.0, 1.0));\n"
+      " result.pos.xy = result.pos.xy + result.pos.w * " I_DEPTHPARAMS".zw;\n"
+      " if (result.pos.w == 1.0)\n"
+      " {\n"
+      "   result.pos.xy = round(result.pos.xy * " I_VIEWPARAMS ".xy) * " I_VIEWPARAMS ".zw;\n"
+      " }\n"
+      " return result;\n}"
+    );
   }
 }
 
