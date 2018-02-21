@@ -892,12 +892,12 @@ TextureCacheBase::TCacheEntry* TextureCacheBase::Load(const u32 stage)
       if (decode_on_gpu)
       {
         u32 row_stride = bytes_per_block * (expanded_mip_width / bsw);
-        DecodeTextureOnGPU(entry->GetColor(),
+        decode_on_gpu = DecodeTextureOnGPU(entry->GetColor(),
           level, mip_src_data, mip_size, static_cast<TextureFormat>(texformat),
           mip_width, mip_height, expanded_mip_width, expanded_mip_height,
           row_stride, &texMem[tlutaddr], static_cast<TlutFormat>(tlutfmt));
       }
-      else
+      if (!decode_on_gpu)
       {
         u8* texturedata = TextureCacheBase::temp;
         u32 twidth = mip_width;
