@@ -9,6 +9,7 @@
 #include <cstdio>
 #include <future>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <vector>
 #include <wx/app.h>
@@ -57,11 +58,13 @@
 #include "Core/PowerPC/PPCSymbolDB.h"
 #include "Core/PowerPC/PowerPC.h"
 #include "Core/State.h"
+#include "Core/TitleDatabase.h"
 #include "Core/WiiUtils.h"
 
 #include "DiscIO/Enums.h"
 #include "DiscIO/NANDImporter.h"
 #include "DiscIO/VolumeWad.h"
+#include "DiscIO/WiiSaveBanner.h"
 
 #include "DolphinWX/AboutDolphin.h"
 #include "DolphinWX/Cheats/CheatsWindow.h"
@@ -299,7 +302,7 @@ void CFrame::OpenGeneralConfiguration(wxWindowID tab_id)
 // 1. Show the game list and boot the selected game.
 // 2. Default ISO
 // 3. Boot last selected game
-void CFrame::BootGame(const std::string& filename)
+void CFrame::BootGame(const std::string& filename, const std::optional<std::string>& savestate_path)
 {
   std::string bootfile = filename;
   SConfig& StartUp = SConfig::GetInstance();
@@ -329,7 +332,7 @@ void CFrame::BootGame(const std::string& filename)
   }
   if (!bootfile.empty())
   {
-    StartGame(BootParameters::GenerateFromFile(bootfile));
+    StartGame(BootParameters::GenerateFromFile(bootfile, savestate_path));
   }
 }
 
@@ -511,8 +514,9 @@ void CFrame::OnPlayRecording(wxCommandEvent& WXUNUSED(event))
     GetMenuBar()->FindItem(IDM_RECORD_READ_ONLY)->Check();
   }
 
-  if (Movie::PlayInput(WxStrToStr(path)))
-    BootGame("");
+  std::optional<std::string> savestate_path;
+  if (Movie::PlayInput(WxStrToStr(path), &savestate_path))
+    BootGame("", savestate_path);
 }
 
 void CFrame::OnStopRecording(wxCommandEvent& WXUNUSED(event))
@@ -740,7 +744,7 @@ void CFrame::StartGame(std::unique_ptr<BootParameters> boot)
   }
   else
   {
-    InhibitScreensaver();
+    EnableScreenSaver(false);
 
     // We need this specifically to support setting the focus properly when using
     // the 'render to main window' feature on Windows
@@ -925,7 +929,7 @@ void CFrame::OnStopped()
   m_is_game_loading = false;
   m_tried_graceful_shutdown = false;
   wxPostEvent(GetMenuBar(), wxCommandEvent{ DOLPHIN_EVT_UPDATE_LOAD_WII_MENU_ITEM });
-  UninhibitScreensaver();
+  EnableScreenSaver(true);
 
   m_render_frame->SetTitle(StrToWxStr(Common::scm_rev_str));
 
@@ -1302,9 +1306,10 @@ void CFrame::OnImportBootMiiBackup(wxCommandEvent& WXUNUSED(event))
   DiscIO::NANDImporter().ImportNANDBin(
     file_name, [&dialog] { dialog.Pulse(); },
     [this] {
-    return WxStrToStr(wxFileSelector(
-      _("Select the OTP/SEEPROM dump"), wxEmptyString, wxEmptyString, wxEmptyString,
-      _("BootMii OTP/SEEPROM dump (*.bin)") + "|*.bin|" + wxGetTranslation(wxALL_FILES),
+    return WxStrToStr(wxFileSelector(_("Select the keys file (OTP/SEEPROM dump)"),
+      wxEmptyString, wxEmptyString, wxEmptyString,
+      _("BootMii keys file (*.bin)") + "|*.bin|" +
+      wxGetTranslation(wxALL_FILES),
       wxFD_OPEN | wxFD_PREVIEW | wxFD_FILE_MUST_EXIST, this));
   });
   wxPostEvent(GetMenuBar(), wxCommandEvent{ DOLPHIN_EVT_UPDATE_LOAD_WII_MENU_ITEM });
@@ -1329,10 +1334,25 @@ void CFrame::OnCheckNAND(wxCommandEvent&)
     Core::TitleDatabase title_db;
     for (const u64 title_id : result.titles_to_remove)
     {
-      const std::string name = title_db.GetTitleName(title_id);
-      title_listings += !name.empty() ?
-        StringFromFormat("%s (%016" PRIx64 ")", name.c_str(), title_id) :
-        StringFromFormat("%016" PRIx64, title_id);
+      title_listings += StringFromFormat("%016" PRIx64, title_id);
+
+      const std::string database_name = title_db.GetChannelName(title_id);
+      if (!database_name.empty())
+      {
+        title_listings += " - " + database_name;
+      }
+      else
+      {
+        DiscIO::WiiSaveBanner banner(title_id);
+        if (banner.IsValid())
+        {
+          title_listings += " - " + banner.GetName();
+          const std::string description = banner.GetDescription();
+          if (!StripSpaces(description).empty())
+            title_listings += " - " + description;
+        }
+      }
+
       title_listings += "\n";
     }
 
@@ -1342,7 +1362,7 @@ void CFrame::OnCheckNAND(wxCommandEvent&)
         "By continuing, the following title(s) will be removed:\n\n"
         "%s"
         "\nLaunching these titles may also fix the issues."),
-      title_listings.c_str());
+      StrToWxStr(title_listings));
   }
 
   if (wxMessageBox(message, _("NAND Check"), wxYES_NO) != wxYES)

@@ -191,7 +191,7 @@ void VideoConfig::Refresh()
   iBBoxMode = Config::Get(Config::GFX_HACK_BBOX_MODE);
   bForceProgressive = Config::Get(Config::GFX_HACK_FORCE_PROGRESSIVE);
   bSkipEFBCopyToRam = Config::Get(Config::GFX_HACK_SKIP_EFB_COPY_TO_RAM);
-  bCopyEFBScaled = Config::Get(Config::GFX_HACK_COPY_EFB_ENABLED);
+  bCopyEFBScaled = Config::Get(Config::GFX_HACK_COPY_EFB_SCALED);
   bEFBEmulateFormatChanges = Config::Get(Config::GFX_HACK_EFB_EMULATE_FORMAT_CHANGES);
   bVertexRounding = Config::Get(Config::GFX_HACK_VERTEX_ROUDING);
 

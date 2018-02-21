@@ -10,7 +10,6 @@
 #include "Core/Core.h"
 #include "Core/CoreTiming.h"
 #include "Core/HW/DSP.h"
-#include "Core/HW/GPFifo.h"
 #include "Core/HW/MMIO.h"
 #include "Core/HW/Memmap.h"
 #include "Core/PowerPC/JitArm64/Jit.h"
@@ -128,7 +127,7 @@ void JitArm64::SafeLoadToReg(u32 dest, s32 addr, s32 offsetReg, u32 flags, s32 o
   else if (mmio_address)
   {
     MMIOLoadToReg(Memory::mmio_mapping.get(), this, regs_in_use, fprs_in_use, dest_reg,
-                  mmio_address, flags);
+      mmio_address, flags);
   }
   else
   {
@@ -230,7 +229,6 @@ void JitArm64::SafeStoreFromReg(s32 dest, u32 value, s32 regOffset, u32 flags, s
 
   if (is_immediate && jo.optimizeGatherPipe && PowerPC::IsOptimizableGatherPipeWrite(imm_addr))
   {
-    ARM64Reg WA = INVALID_REG;
     int accessSize;
     if (flags & BackPatchInfo::FLAG_SIZE_32)
       accessSize = 32;
@@ -239,30 +237,23 @@ void JitArm64::SafeStoreFromReg(s32 dest, u32 value, s32 regOffset, u32 flags, s
     else
       accessSize = 8;
 
-    if (accessSize != 8)
-      WA = gpr.GetReg();
-
-    MOVP2R(X1, &GPFifo::g_gather_pipe_ptr);
-    LDR(INDEX_UNSIGNED, X0, X1, 0);
+    LDR(INDEX_UNSIGNED, X0, PPC_REG, PPCSTATE_OFF(gather_pipe_ptr));
     if (accessSize == 32)
     {
-      REV32(WA, RS);
-      STR(INDEX_POST, WA, X0, 4);
+      REV32(W1, RS);
+      STR(INDEX_POST, W1, X0, 4);
     }
     else if (accessSize == 16)
     {
-      REV16(WA, RS);
-      STRH(INDEX_POST, WA, X0, 2);
+      REV16(W1, RS);
+      STRH(INDEX_POST, W1, X0, 2);
     }
     else
     {
       STRB(INDEX_POST, RS, X0, 1);
     }
-    STR(INDEX_UNSIGNED, X0, X1, 0);
+    STR(INDEX_UNSIGNED, X0, PPC_REG, PPCSTATE_OFF(gather_pipe_ptr));
     js.fifoBytesSinceCheck += accessSize >> 3;
-
-    if (accessSize != 8)
-      gpr.Unlock(WA);
   }
   else if (is_immediate && PowerPC::IsOptimizableRAMAddress(imm_addr))
   {
@@ -272,7 +263,7 @@ void JitArm64::SafeStoreFromReg(s32 dest, u32 value, s32 regOffset, u32 flags, s
   else if (mmio_address && !(flags & BackPatchInfo::FLAG_REVERSE))
   {
     MMIOWriteRegToAddr(Memory::mmio_mapping.get(), this, regs_in_use, fprs_in_use, RS, mmio_address,
-                       flags);
+      flags);
   }
   else
   {
@@ -288,7 +279,7 @@ void JitArm64::SafeStoreFromReg(s32 dest, u32 value, s32 regOffset, u32 flags, s
 void JitArm64::lXX(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-  JITDISABLE(bJITLoadStoreOff);
+    JITDISABLE(bJITLoadStoreOff);
   FALLBACK_IF(jo.memcheck);
 
   u32 a = inst.RA, b = inst.RB, d = inst.RD;
@@ -357,10 +348,10 @@ void JitArm64::lXX(UGeckoInstruction inst)
 
   // LWZ idle skipping
   if (inst.OPCD == 32 && CanMergeNextInstructions(2) &&
-      (inst.hex & 0xFFFF0000) == 0x800D0000 &&  // lwz r0, XXXX(r13)
-      (js.op[1].inst.hex == 0x28000000 ||
-       (SConfig::GetInstance().bWii && js.op[1].inst.hex == 0x2C000000)) &&  // cmpXwi r0,0
-      js.op[2].inst.hex == 0x4182fff8)                                       // beq -8
+    (inst.hex & 0xFFFF0000) == 0x800D0000 &&  // lwz r0, XXXX(r13)
+    (js.op[1].inst.hex == 0x28000000 ||
+    (SConfig::GetInstance().bWii && js.op[1].inst.hex == 0x2C000000)) &&  // cmpXwi r0,0
+    js.op[2].inst.hex == 0x4182fff8)                                       // beq -8
   {
     ARM64Reg WA = gpr.GetReg();
     ARM64Reg XA = EncodeRegTo64(WA);
@@ -390,7 +381,7 @@ void JitArm64::lXX(UGeckoInstruction inst)
 void JitArm64::stX(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-  JITDISABLE(bJITLoadStoreOff);
+    JITDISABLE(bJITLoadStoreOff);
   FALLBACK_IF(jo.memcheck);
 
   u32 a = inst.RA, b = inst.RB, s = inst.RS;
@@ -466,7 +457,7 @@ void JitArm64::stX(UGeckoInstruction inst)
 void JitArm64::lmw(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-  JITDISABLE(bJITLoadStoreOff);
+    JITDISABLE(bJITLoadStoreOff);
   FALLBACK_IF(!jo.fastmem || jo.memcheck);
 
   u32 a = inst.RA;
@@ -529,7 +520,7 @@ void JitArm64::lmw(UGeckoInstruction inst)
 void JitArm64::stmw(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-  JITDISABLE(bJITLoadStoreOff);
+    JITDISABLE(bJITLoadStoreOff);
   FALLBACK_IF(!jo.fastmem || jo.memcheck);
 
   u32 a = inst.RA;
@@ -561,7 +552,7 @@ void JitArm64::stmw(UGeckoInstruction inst)
 void JitArm64::dcbx(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-  JITDISABLE(bJITLoadStoreOff);
+    JITDISABLE(bJITLoadStoreOff);
 
   gpr.Lock(W30);
 
@@ -618,7 +609,7 @@ void JitArm64::dcbx(UGeckoInstruction inst)
 void JitArm64::dcbt(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-  JITDISABLE(bJITLoadStoreOff);
+    JITDISABLE(bJITLoadStoreOff);
 
   // Prefetch. Since we don't emulate the data cache, we don't need to do anything.
 
@@ -628,7 +619,7 @@ void JitArm64::dcbt(UGeckoInstruction inst)
   // need to is terrible for performance.
   // (Invalidating the jit block cache on dcbst is a heuristic.)
   if (CanMergeNextInstructions(1) && js.op[1].inst.OPCD == 31 && js.op[1].inst.SUBOP10 == 54 &&
-      js.op[1].inst.RA == inst.RA && js.op[1].inst.RB == inst.RB)
+    js.op[1].inst.RA == inst.RA && js.op[1].inst.RB == inst.RB)
   {
     js.skipInstructions = 1;
   }
@@ -637,7 +628,7 @@ void JitArm64::dcbt(UGeckoInstruction inst)
 void JitArm64::dcbz(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-  JITDISABLE(bJITLoadStoreOff);
+    JITDISABLE(bJITLoadStoreOff);
   if (SConfig::GetInstance().bDCBZOFF)
     return;
   FALLBACK_IF(jo.memcheck);
@@ -697,7 +688,7 @@ void JitArm64::dcbz(UGeckoInstruction inst)
   gprs_to_push[W0] = 0;
 
   EmitBackpatchRoutine(BackPatchInfo::FLAG_ZERO_256, true, true, W0, EncodeRegTo64(addr_reg),
-                       gprs_to_push, fprs_to_push);
+    gprs_to_push, fprs_to_push);
 
   gpr.Unlock(W0);
 }
@@ -705,7 +696,7 @@ void JitArm64::dcbz(UGeckoInstruction inst)
 void JitArm64::eieio(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-  JITDISABLE(bJITLoadStoreOff);
+    JITDISABLE(bJITLoadStoreOff);
 
   // optimizeGatherPipe generally postpones FIFO checks to the end of the JIT block,
   // which is generally safe. However postponing FIFO writes across eieio instructions

@@ -128,7 +128,7 @@ extern const ConfigInfo<bool> GFX_HACK_EFB_FAST_ACCESS_ENABLE;
 extern const ConfigInfo<int> GFX_HACK_BBOX_MODE;
 extern const ConfigInfo<bool> GFX_HACK_FORCE_PROGRESSIVE;
 extern const ConfigInfo<bool> GFX_HACK_SKIP_EFB_COPY_TO_RAM;
-extern const ConfigInfo<bool> GFX_HACK_COPY_EFB_ENABLED;
+extern const ConfigInfo<bool> GFX_HACK_COPY_EFB_SCALED;
 extern const ConfigInfo<bool> GFX_HACK_EFB_EMULATE_FORMAT_CHANGES;
 extern const ConfigInfo<bool> GFX_HACK_VERTEX_ROUDING;
 extern const ConfigInfo<bool> GFX_HACK_FORCE_DUAL_SOURCE;

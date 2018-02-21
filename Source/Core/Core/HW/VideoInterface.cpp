@@ -18,6 +18,7 @@
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
 #include "Core/CoreTiming.h"
+#include "Core/FifoPlayer/FifoPlayer.h"
 #include "Core/HW/MMIO.h"
 #include "Core/HW/ProcessorInterface.h"
 #include "Core/HW/SI/SI.h"
@@ -182,7 +183,7 @@ void Preset(bool _bNTSC)
 
   // Say component cable is plugged
   m_DTVStatus.component_plugged = Config::Get(Config::SYSCONF_PROGRESSIVE_SCAN);
-  m_DTVStatus.ntsc_j = SConfig::GetInstance().bForceNTSCJ || region == DiscIO::Region::NTSC_J;
+  m_DTVStatus.ntsc_j = region == DiscIO::Region::NTSC_J;
 
   m_FBWidth.Hex = 0;
   m_BorderHBlank.Hex = 0;
@@ -549,8 +550,9 @@ float GetAspectRatio()
 
   // 5. Calculate the final ratio and scale to 4:3
   float ratio = horizontal_active_ratio / vertical_active_ratio;
-  if (std::isnormal(
-          ratio))  // Check we have a sane ratio and haven't propagated any infs/nans/zeros
+  bool running_fifo_log = FifoPlayer::GetInstance().IsRunningWithFakeVideoInterfaceUpdates();
+  if (std::isnormal(ratio) &&      // Check we have a sane ratio without any infs/nans/zeros
+    !running_fifo_log)           // we don't know the correct ratio for fifos
     return ratio * (4.0f / 3.0f);  // Scale to 4:3
   else
     return (4.0f / 3.0f);  // VI isn't initialized correctly, just return 4:3 instead

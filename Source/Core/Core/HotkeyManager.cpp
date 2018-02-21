@@ -173,8 +173,6 @@ InputConfig* GetConfig()
 
 void GetStatus()
 {
-  s_hotkey.err = PAD_ERR_NONE;
-
   // Get input
   static_cast<HotkeyManager*>(s_config.GetController(0))->GetInput(&s_hotkey);
 }
@@ -214,7 +212,7 @@ void Initialize()
   if (s_config.ControllersNeedToBeCreated())
     s_config.CreateController<HotkeyManager>();
 
-  g_controller_interface.RegisterHotplugCallback(LoadConfig);
+  g_controller_interface.RegisterDevicesChangedCallback(LoadConfig);
 
   // load the saved controller config
   s_config.LoadConfig(true);

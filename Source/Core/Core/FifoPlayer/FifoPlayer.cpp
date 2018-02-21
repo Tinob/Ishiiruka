@@ -11,6 +11,7 @@
 #include "Common/CommonTypes.h"
 #include "Common/MsgHandler.h"
 #include "Core/ConfigManager.h"
+#include "Core/Core.h"
 #include "Core/CoreTiming.h"
 #include "Core/FifoPlayer/FifoAnalyzer.h"
 #include "Core/FifoPlayer/FifoDataFile.h"
@@ -57,6 +58,11 @@ bool FifoPlayer::Open(const std::string& filename)
     m_FileLoadedCb();
 
   return (m_File != nullptr);
+}
+
+bool FifoPlayer::IsPlaying() const
+{
+  return GetFile() != nullptr && Core::IsRunning();
 }
 
 void FifoPlayer::Close()
@@ -160,6 +166,16 @@ std::unique_ptr<CPUCoreBase> FifoPlayer::GetCPUCore()
     return nullptr;
 
   return std::make_unique<CPUCore>(this);
+}
+
+bool FifoPlayer::IsRunningWithFakeVideoInterfaceUpdates() const
+{
+  if (!m_File || m_File->GetFrameCount() == 0)
+  {
+    return false;
+  }
+
+  return m_File->ShouldGenerateFakeVIUpdates();
 }
 
 u32 FifoPlayer::GetFrameObjectCount() const

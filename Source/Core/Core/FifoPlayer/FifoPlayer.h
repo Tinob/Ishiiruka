@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
@@ -56,7 +57,7 @@ extern bool IsPlayingBackFifologWithBrokenEFBCopies;
 class FifoPlayer
 {
 public:
-  typedef void (*CallbackFunc)(void);
+  using CallbackFunc = std::function<void()>;
 
   ~FifoPlayer();
 
@@ -69,6 +70,8 @@ public:
   // Play/Pause/Stop of the FifoLog can be controlled normally via the
   // PowerPC state.
   std::unique_ptr<CPUCoreBase> GetCPUCore();
+
+  bool IsPlaying() const;
 
   FifoDataFile* GetFile() const { return m_File.get(); }
   u32 GetFrameObjectCount() const;
@@ -93,6 +96,7 @@ public:
   void SetFileLoadedCallback(CallbackFunc callback) { m_FileLoadedCb = callback; }
   void SetFrameWrittenCallback(CallbackFunc callback) { m_FrameWrittenCb = callback; }
   static FifoPlayer& GetInstance();
+  bool IsRunningWithFakeVideoInterfaceUpdates() const;
 
 private:
   class CPUCore;
@@ -103,7 +107,7 @@ private:
 
   void WriteFrame(const FifoFrameInfo& frame, const AnalyzedFrameInfo& info);
   void WriteFramePart(u32 dataStart, u32 dataEnd, u32& nextMemUpdate, const FifoFrameInfo& frame,
-                      const AnalyzedFrameInfo& info);
+    const AnalyzedFrameInfo& info);
 
   void WriteAllMemoryUpdates();
   void WriteMemory(const MemoryUpdate& memUpdate);

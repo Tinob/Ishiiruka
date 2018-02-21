@@ -67,7 +67,7 @@ NetPlayServer::~NetPlayServer()
 
 // called from ---GUI--- thread
 NetPlayServer::NetPlayServer(const u16 port, const bool forward_port,
-                             const NetTraversalConfig& traversal_config)
+  const NetTraversalConfig& traversal_config)
 {
   //--use server time
   if (enet_initialize() != 0)
@@ -81,7 +81,7 @@ NetPlayServer::NetPlayServer(const u16 port, const bool forward_port,
   if (traversal_config.use_traversal)
   {
     if (!EnsureTraversalClient(traversal_config.traversal_host, traversal_config.traversal_port,
-                               port))
+      port))
       return;
 
     g_TraversalClient->m_Client = this;
@@ -521,7 +521,7 @@ unsigned int NetPlayServer::OnData(sf::Packet& packet, Client& player)
     PadMapping map = 0;
     GCPadStatus pad;
     packet >> map >> pad.button >> pad.analogA >> pad.analogB >> pad.stickX >> pad.stickY >>
-        pad.substickX >> pad.substickY >> pad.triggerLeft >> pad.triggerRight;
+      pad.substickX >> pad.substickY >> pad.triggerLeft >> pad.triggerRight;
 
     // If the data is not from the correct player,
     // then disconnect them.
@@ -534,8 +534,8 @@ unsigned int NetPlayServer::OnData(sf::Packet& packet, Client& player)
     sf::Packet spac;
     spac << (MessageId)NP_MSG_PAD_DATA;
     spac << map << pad.button << pad.analogA << pad.analogB << pad.stickX << pad.stickY
-         << pad.substickX << pad.substickY << pad.triggerLeft << pad.triggerRight;
-
+      << pad.substickX << pad.substickY << pad.triggerLeft << pad.triggerRight
+      << pad.isConnected;
     SendToClients(spac, player.pid);
   }
   break;
@@ -646,15 +646,15 @@ unsigned int NetPlayServer::OnData(sf::Packet& packet, Client& player)
       // we have all records for this frame
 
       if (!std::all_of(timebases.begin(), timebases.end(), [&](std::pair<PlayerId, u64> pair) {
-            return pair.second == timebases[0].second;
-          }))
+        return pair.second == timebases[0].second;
+      }))
       {
         int pid_to_blame = -1;
         for (auto pair : timebases)
         {
           if (std::all_of(timebases.begin(), timebases.end(), [&](std::pair<PlayerId, u64> other) {
-                return other.first == pair.first || other.second != pair.second;
-              }))
+            return other.first == pair.first || other.second != pair.second;
+          }))
           {
             // we are the only outlier
             pid_to_blame = pair.first;
@@ -719,7 +719,7 @@ unsigned int NetPlayServer::OnData(sf::Packet& packet, Client& player)
 
   default:
     PanicAlertT("Unknown message with id:%d received from player:%d Kicking player!", mid,
-                player.pid);
+      player.pid);
     // unknown message, kick the client
     return 1;
     break;
@@ -851,7 +851,7 @@ void NetPlayServer::SendToClients(const sf::Packet& packet, const PlayerId skip_
 void NetPlayServer::Send(ENetPeer* socket, const sf::Packet& packet)
 {
   ENetPacket* epac =
-      enet_packet_create(packet.getData(), packet.getDataSize(), ENET_PACKET_FLAG_RELIABLE);
+    enet_packet_create(packet.getData(), packet.getDataSize(), ENET_PACKET_FLAG_RELIABLE);
   enet_peer_send(socket, 0, epac);
 }
 
@@ -910,8 +910,8 @@ std::vector<std::pair<std::string, std::string>> NetPlayServer::GetInterfaceList
 #if defined(_WIN32)
 
 #elif defined(ANDROID)
-// Android has no getifaddrs for some stupid reason.  If this
-// functionality ends up actually being used on Android, fix this.
+  // Android has no getifaddrs for some stupid reason.  If this
+  // functionality ends up actually being used on Android, fix this.
 #else
   ifaddrs* ifp = nullptr;
   char buf[512];

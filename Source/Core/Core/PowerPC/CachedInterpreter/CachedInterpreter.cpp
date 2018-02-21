@@ -17,17 +17,17 @@
 
 struct CachedInterpreter::Instruction
 {
-  typedef void (*CommonCallback)(UGeckoInstruction);
-  typedef bool (*ConditionalCallback)(u32 data);
+  typedef void(*CommonCallback)(UGeckoInstruction);
+  typedef bool(*ConditionalCallback)(u32 data);
 
   Instruction() : type(INSTRUCTION_ABORT) {}
   Instruction(const CommonCallback c, UGeckoInstruction i)
-      : common_callback(c), data(i.hex), type(INSTRUCTION_TYPE_COMMON)
+    : common_callback(c), data(i.hex), type(INSTRUCTION_TYPE_COMMON)
   {
   }
 
   Instruction(const ConditionalCallback c, u32 d)
-      : conditional_callback(c), data(d), type(INSTRUCTION_TYPE_CONDITIONAL)
+    : conditional_callback(c), data(d), type(INSTRUCTION_TYPE_CONDITIONAL)
   {
   }
 
@@ -147,7 +147,7 @@ static void WriteBrokenBlockNPC(UGeckoInstruction data)
 
 static bool CheckFPU(u32 data)
 {
-  UReg_MSR msr{MSR};
+  UReg_MSR msr{ MSR };
   if (!msr.FP)
   {
     PowerPC::ppcState.Exceptions |= EXCEPTION_FPU_UNAVAILABLE;
@@ -172,7 +172,7 @@ static bool CheckDSI(u32 data)
 void CachedInterpreter::Jit(u32 address)
 {
   if (m_code.size() >= CODE_SIZE / sizeof(Instruction) - 0x1000 ||
-      SConfig::GetInstance().bJITNoBlockCache)
+    SConfig::GetInstance().bJITNoBlockCache)
   {
     ClearCache();
   }
@@ -208,15 +208,15 @@ void CachedInterpreter::Jit(u32 address)
     u32 function = HLE::GetFirstFunctionIndex(ops[i].address);
     if (function != 0)
     {
-      int type = HLE::GetFunctionTypeByIndex(function);
-      if (type == HLE::HLE_HOOK_START || type == HLE::HLE_HOOK_REPLACE)
+      HLE::HookType type = HLE::GetFunctionTypeByIndex(function);
+      if (type == HLE::HookType::Start || type == HLE::HookType::Replace)
       {
-        int flags = HLE::GetFunctionFlagsByIndex(function);
+        HLE::HookFlag flags = HLE::GetFunctionFlagsByIndex(function);
         if (HLE::IsEnabled(flags))
         {
           m_code.emplace_back(WritePC, ops[i].address);
           m_code.emplace_back(Interpreter::HLEFunction, function);
-          if (type == HLE::HLE_HOOK_REPLACE)
+          if (type == HLE::HookType::Replace)
           {
             m_code.emplace_back(EndBlock, js.downcountAmount);
             m_code.emplace_back();

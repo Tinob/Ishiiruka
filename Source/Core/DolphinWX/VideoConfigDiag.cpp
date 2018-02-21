@@ -507,7 +507,7 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
     }
 
     // Scaled copy, PL, Bilinear filter, 3D Vision
-    szr_enh->Add(CreateCheckBox(page_enh, _("Scaled EFB Copy"), (scaled_efb_copy_desc), Config::GFX_HACK_COPY_EFB_ENABLED));
+    szr_enh->Add(CreateCheckBox(page_enh, _("Scaled EFB Copy"), (scaled_efb_copy_desc), Config::GFX_HACK_COPY_EFB_SCALED));
     if (vconfig.backend_info.bSupportsScaling)
     {
       szr_enh->Add(CreateCheckBox(page_enh, _("Use Scaling Filter"), (Use_Scaling_filter_desc), Config::GFX_ENHANCE_USE_SCALING_FILTER));

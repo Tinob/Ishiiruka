@@ -326,7 +326,7 @@ unsigned int NetPlayClient::OnData(sf::Packet& packet)
     PadMapping map = 0;
     GCPadStatus pad;
     packet >> map >> pad.button >> pad.analogA >> pad.analogB >> pad.stickX >> pad.stickY >>
-        pad.substickX >> pad.substickY >> pad.triggerLeft >> pad.triggerRight;
+      pad.substickX >> pad.substickY >> pad.triggerLeft >> pad.triggerRight >> pad.isConnected;
 
     // Trusting server for good map value (>=0 && <4)
     // add to pad buffer

@@ -58,7 +58,7 @@ void JitArm64::Init()
   analyzer.SetOption(PPCAnalyst::PPCAnalyzer::OPTION_BRANCH_FOLLOW);
 
   m_enable_blr_optimization = jo.enableBlocklink && SConfig::GetInstance().bFastmem &&
-                              !SConfig::GetInstance().bEnableDebugging;
+    !SConfig::GetInstance().bEnableDebugging;
   m_cleanup_after_stackfault = false;
 
   AllocStack();
@@ -231,8 +231,13 @@ void JitArm64::Cleanup()
 {
   if (jo.optimizeGatherPipe && js.fifoBytesSinceCheck > 0)
   {
-    MOVP2R(X0, &GPFifo::FastCheckGatherPipe);
+    LDP(INDEX_SIGNED, X0, X1, PPC_REG, PPCSTATE_OFF(gather_pipe_ptr));
+    SUB(X0, X0, X1);
+    CMP(X0, GPFifo::GATHER_PIPE_SIZE);
+    FixupBranch exit = B(CC_LT);
+    MOVP2R(X0, &GPFifo::UpdateGatherPipe);
     BLR(X0);
+    SetJumpTarget(exit);
   }
 }
 
@@ -620,7 +625,7 @@ void JitArm64::DoJit(u32 em_address, PPCAnalyst::CodeBuffer* code_buf, JitBlock*
   }
 
   if (code_block.m_gqr_used.Count() == 1 &&
-      js.pairedQuantizeAddresses.find(js.blockStart) == js.pairedQuantizeAddresses.end())
+    js.pairedQuantizeAddresses.find(js.blockStart) == js.pairedQuantizeAddresses.end())
   {
     int gqr = *code_block.m_gqr_used.begin();
     if (!code_block.m_gqr_modified[gqr] && !GQR(gqr))
@@ -661,7 +666,7 @@ void JitArm64::DoJit(u32 em_address, PPCAnalyst::CodeBuffer* code_buf, JitBlock*
 
     // Gather pipe writes using a non-immediate address are discovered by profiling.
     bool gatherPipeIntCheck =
-        js.fifoWriteAddresses.find(ops[i].address) != js.fifoWriteAddresses.end();
+      js.fifoWriteAddresses.find(ops[i].address) != js.fifoWriteAddresses.end();
 
     if (jo.optimizeGatherPipe && (js.fifoBytesSinceCheck >= 32 || js.mustCheckFifo))
     {

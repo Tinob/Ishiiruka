@@ -3,32 +3,32 @@
 // Refer to the license.txt file included.
 
 /* $VER: ppc_disasm.c V1.5 (27.05.2009)
- *
- * Disassembler module for the PowerPC microprocessor family
- * Copyright (c) 1998-2001,2009,2011 Frank Wille
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice,
- * this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
+*
+* Disassembler module for the PowerPC microprocessor family
+* Copyright (c) 1998-2001,2009,2011 Frank Wille
+*
+* Redistribution and use in source and binary forms, with or without
+* modification, are permitted provided that the following conditions are met:
+*
+* 1. Redistributions of source code must retain the above copyright notice,
+* this list of conditions and the following disclaimer.
+*
+* 2. Redistributions in binary form must reproduce the above copyright notice,
+* this list of conditions and the following disclaimer in the documentation
+* and/or other materials provided with the distribution.
+*
+* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+* AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+* IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+* ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+* LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+* CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+* SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+* INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+* CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+* ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+* POSSIBILITY OF SUCH DAMAGE.
+*/
 
 // Modified for use with Dolphin
 
@@ -82,36 +82,36 @@
 #define PPCGETSTRM(x) (((x)&PPCSTRM) >> PPCDSH)
 
 static const char* trap_condition[32] = {
-    nullptr, "lgt",   "llt",   nullptr, "eq",    "lge",   "lle",   nullptr,
-    "gt",    nullptr, nullptr, nullptr, "ge",    nullptr, nullptr, nullptr,
-    "lt",    nullptr, nullptr, nullptr, "le",    nullptr, nullptr, nullptr,
-    "ne",    nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
+  nullptr, "lgt",   "llt",   nullptr, "eq",    "lge",   "lle",   nullptr,
+  "gt",    nullptr, nullptr, nullptr, "ge",    nullptr, nullptr, nullptr,
+  "lt",    nullptr, nullptr, nullptr, "le",    nullptr, nullptr, nullptr,
+  "ne",    nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
 
-static const char* cmpname[4] = {"cmpw", "cmpd", "cmplw", "cmpld"};
+static const char* cmpname[4] = { "cmpw", "cmpd", "cmplw", "cmpld" };
 
-static const char* ps_cmpname[4] = {"ps_cmpu0", "ps_cmpo0", "ps_cmpu1", "ps_cmpo1"};
+static const char* ps_cmpname[4] = { "ps_cmpu0", "ps_cmpo0", "ps_cmpu1", "ps_cmpo1" };
 
-static const char* b_ext[4] = {"", "l", "a", "la"};
+static const char* b_ext[4] = { "", "l", "a", "la" };
 
-static const char* b_condition[8] = {"ge", "le", "ne", "ns", "lt", "gt", "eq", "so"};
+static const char* b_condition[8] = { "ge", "le", "ne", "ns", "lt", "gt", "eq", "so" };
 
-static const char* b_decr[16] = {"nzf", "zf", nullptr, nullptr, "nzt", "zt", nullptr, nullptr,
-                                 "nz",  "z",  nullptr, nullptr, "nz",  "z",  nullptr, nullptr};
+static const char* b_decr[16] = { "nzf", "zf", nullptr, nullptr, "nzt", "zt", nullptr, nullptr,
+"nz",  "z",  nullptr, nullptr, "nz",  "z",  nullptr, nullptr };
 
-static const char* regsel[2] = {"", "r"};
+static const char* regsel[2] = { "", "r" };
 
-static const char* oesel[2] = {"", "o"};
+static const char* oesel[2] = { "", "o" };
 
-static const char* rcsel[2] = {"", "."};
+static const char* rcsel[2] = { "", "." };
 
-static const char* ldstnames[24] = {"lwz", "lwzu", "lbz", "lbzu", "stw",  "stwu",  "stb",  "stbu",
-                                    "lhz", "lhzu", "lha", "lhau", "sth",  "sthu",  "lmw",  "stmw",
-                                    "lfs", "lfsu", "lfd", "lfdu", "stfs", "stfsu", "stfd", "stfdu"};
+static const char* ldstnames[24] = { "lwz", "lwzu", "lbz", "lbzu", "stw",  "stwu",  "stb",  "stbu",
+"lhz", "lhzu", "lha", "lhau", "sth",  "sthu",  "lmw",  "stmw",
+"lfs", "lfsu", "lfd", "lfdu", "stfs", "stfsu", "stfd", "stfdu" };
 
-static const char* regnames[32] = {"r0",  "sp",  "rtoc", "r3",  "r4",  "r5",  "r6",  "r7",
-                                   "r8",  "r9",  "r10",  "r11", "r12", "r13", "r14", "r15",
-                                   "r16", "r17", "r18",  "r19", "r20", "r21", "r22", "r23",
-                                   "r24", "r25", "r26",  "r27", "r28", "r29", "r30", "r31"};
+static const char* regnames[32] = { "r0",  "sp",  "rtoc", "r3",  "r4",  "r5",  "r6",  "r7",
+"r8",  "r9",  "r10",  "r11", "r12", "r13", "r14", "r15",
+"r16", "r17", "r18",  "r19", "r20", "r21", "r22", "r23",
+"r24", "r25", "r26",  "r27", "r28", "r29", "r30", "r31" };
 
 // Initialize static class variables.
 u32* GekkoDisassembler::m_instr = nullptr;
@@ -329,15 +329,15 @@ std::string GekkoDisassembler::imm(u32 in, int uimm, int type, bool hex)
   {
   case 0:
     return StringFromFormat("%s, %s, %d", regnames[(int)PPCGETD(in)], regnames[(int)PPCGETA(in)],
-                            i);
+      i);
 
   case 1:
     if (hex)
       return StringFromFormat("%s, %s, 0x%.4X", regnames[(int)PPCGETA(in)],
-                              regnames[(int)PPCGETD(in)], i);
+        regnames[(int)PPCGETD(in)], i);
     else
       return StringFromFormat("%s, %s, %d", regnames[(int)PPCGETA(in)], regnames[(int)PPCGETD(in)],
-                              i);
+        i);
 
   case 2:
     return StringFromFormat("%s, %d", regnames[(int)PPCGETA(in)], i);
@@ -496,7 +496,7 @@ size_t GekkoDisassembler::branch(u32 in, const char* bname, int aform, int bdisp
     else  // Branch conditional
     {
       m_opcode =
-          StringFromFormat("b%s%s%s%c", b_condition[((bo & 8) >> 1) + (bi & 3)], bname, ext, y);
+        StringFromFormat("b%s%s%s%c", b_condition[((bo & 8) >> 1) + (bi & 3)], bname, ext, y);
 
       if (bi >= 4)
       {
@@ -610,7 +610,7 @@ void GekkoDisassembler::rlw(u32 in, const char* name, int i)
 
   m_opcode = StringFromFormat("rlw%s%c", name, in & 1 ? '.' : '\0');
   m_operands = StringFromFormat("%s, %s, %s%d, %d, %d (%08x)", regnames[a], regnames[s], regsel[i],
-                                bsh, mb, me, HelperRotateMask(bsh, mb, me));
+    bsh, mb, me, HelperRotateMask(bsh, mb, me));
 }
 
 void GekkoDisassembler::ori(u32 in, const char* name)
@@ -689,7 +689,7 @@ void GekkoDisassembler::trap(u32 in, unsigned char dmode)
 
 // Standard instruction: xxxx rD,rA,rB
 void GekkoDisassembler::dab(u32 in, const char* name, int mask, int smode, int chkoe, int chkrc,
-                            unsigned char dmode)
+  unsigned char dmode)
 {
   if (chkrc >= 0 && ((in & 1) != (unsigned int)chkrc))
   {
@@ -704,14 +704,14 @@ void GekkoDisassembler::dab(u32 in, const char* name, int mask, int smode, int c
       in = swapda(in);
 
     m_opcode = StringFromFormat("%s%s%s", name, oesel[chkoe && (in & PPCOE)],
-                                rcsel[(chkrc < 0) && (in & 1)]);
+      rcsel[(chkrc < 0) && (in & 1)]);
     m_operands = rd_ra_rb(in, mask);
   }
 }
 
 // Last operand is no register: xxxx rD,rA,NB
 void GekkoDisassembler::rrn(u32 in, const char* name, int smode, int chkoe, int chkrc,
-                            unsigned char dmode)
+  unsigned char dmode)
 {
   if (chkrc >= 0 && ((in & 1) != (unsigned int)chkrc))
   {
@@ -726,7 +726,7 @@ void GekkoDisassembler::rrn(u32 in, const char* name, int smode, int chkoe, int 
       in = swapda(in);
 
     m_opcode = StringFromFormat("%s%s%s", name, oesel[chkoe && (in & PPCOE)],
-                                rcsel[(chkrc < 0) && (in & 1)]);
+      rcsel[(chkrc < 0) && (in & 1)]);
 
     m_operands = rd_ra_rb(in, 6);
     m_operands += StringFromFormat(",%d", (int)PPCGETB(in));
@@ -907,12 +907,12 @@ void GekkoDisassembler::fdabc(u32 in, const char* name, int mask, unsigned char 
 
   if (mask & 4)
     m_operands += StringFromFormat("f%d,", (int)PPCGETA(in));
-  else
+  else if ((mask & 8) == 0)
     err |= (int)PPCGETA(in);
 
   if (mask & 2)
     m_operands += StringFromFormat("f%d,", (int)PPCGETC(in));
-  else if (PPCGETC(in))
+  else if (PPCGETC(in) && (mask & 8) == 0)
     err |= (int)PPCGETC(in);
 
   if (mask & 1)
@@ -950,7 +950,7 @@ void GekkoDisassembler::fcmp(u32 in, char c)
   {
     m_opcode = StringFromFormat("fcmp%c", c);
     m_operands =
-        StringFromFormat("cr%d,f%d,f%d", (int)PPCGETCRD(in), (int)PPCGETA(in), (int)PPCGETB(in));
+      StringFromFormat("cr%d,f%d,f%d", (int)PPCGETCRD(in), (int)PPCGETA(in), (int)PPCGETB(in));
   }
 }
 
@@ -1120,7 +1120,7 @@ void GekkoDisassembler::ps(u32 inst)
 
   switch ((inst >> 1) & 0x3FF)
   {
-  // 10-bit suckers  (?)
+    // 10-bit suckers  (?)
   case 40:  // nmadd
     m_opcode = "ps_neg";
     m_operands = StringFromFormat("p%u, -p%u", FD, FB);
@@ -2193,7 +2193,7 @@ u32* GekkoDisassembler::DoDisassembly(bool big_endian)
         break;
 
       case 40:
-        fdabc(in, "neg", 10, 0);
+        fdabc(in, "neg", 9, 0);
         break;
 
       case 64:
@@ -2221,11 +2221,11 @@ u32* GekkoDisassembler::DoDisassembly(bool big_endian)
         break;
 
       case 136:
-        fdabc(in, "nabs", 10, 0);
+        fdabc(in, "nabs", 9, 0);
         break;
 
       case 264:
-        fdabc(in, "abs", 10, 0);
+        fdabc(in, "abs", 9, 0);
         break;
 
       case 583:
@@ -2240,7 +2240,7 @@ u32* GekkoDisassembler::DoDisassembly(bool big_endian)
         {
           m_opcode = StringFromFormat("mtfsf%s", rcsel[in & 1]);
           m_operands = StringFromFormat("0x%x,%u", (unsigned int)(in >> 17) & 0x01fe,
-                                        (unsigned int)PPCGETB(in));
+            (unsigned int)PPCGETB(in));
         }
         else
         {
@@ -2249,15 +2249,15 @@ u32* GekkoDisassembler::DoDisassembly(bool big_endian)
         break;
 
       case 814:
-        fdabc(in, "fctid", 10, PPCF_64);
+        fdabc(in, "fctid", 9, PPCF_64);
         break;
 
       case 815:
-        fdabc(in, "fctidz", 10, PPCF_64);
+        fdabc(in, "fctidz", 9, PPCF_64);
         break;
 
       case 846:
-        fdabc(in, "fcfid", 10, PPCF_64);
+        fdabc(in, "fcfid", 9, PPCF_64);
         break;
 
       default:
@@ -2276,7 +2276,7 @@ u32* GekkoDisassembler::DoDisassembly(bool big_endian)
 
 // simplified interface
 std::string GekkoDisassembler::Disassemble(u32 opcode, u32 current_instruction_address,
-                                           bool big_endian)
+  bool big_endian)
 {
   u32 opc = opcode;
   u32 addr = current_instruction_address;
@@ -2290,9 +2290,9 @@ std::string GekkoDisassembler::Disassemble(u32 opcode, u32 current_instruction_a
 }
 
 static const char* gprnames[] = {
-    " r0", " r1 (sp)", " r2 (rtoc)", " r3", " r4", " r5", " r6", " r7", " r8", " r9", "r10",
-    "r11", "r12",      "r13",        "r14", "r15", "r16", "r17", "r18", "r19", "r20", "r21",
-    "r22", "r23",      "r24",        "r25", "r26", "r27", "r28", "r29", "r30", "r31"};
+  " r0", " r1 (sp)", " r2 (rtoc)", " r3", " r4", " r5", " r6", " r7", " r8", " r9", "r10",
+  "r11", "r12",      "r13",        "r14", "r15", "r16", "r17", "r18", "r19", "r20", "r21",
+  "r22", "r23",      "r24",        "r25", "r26", "r27", "r28", "r29", "r30", "r31" };
 
 const char* GekkoDisassembler::GetGPRName(u32 index)
 {
@@ -2302,10 +2302,10 @@ const char* GekkoDisassembler::GetGPRName(u32 index)
   return nullptr;
 }
 
-static const char* fprnames[] = {" f0", " f1", " f2", " f3", " f4", " f5", " f6", " f7",
-                                 " f8", " f9", "f10", "f11", "f12", "f13", "f14", "f15",
-                                 "f16", "f17", "f18", "f19", "f20", "f21", "f22", "f23",
-                                 "f24", "f25", "f26", "f27", "f28", "f29", "f30", "f31"};
+static const char* fprnames[] = { " f0", " f1", " f2", " f3", " f4", " f5", " f6", " f7",
+" f8", " f9", "f10", "f11", "f12", "f13", "f14", "f15",
+"f16", "f17", "f18", "f19", "f20", "f21", "f22", "f23",
+"f24", "f25", "f26", "f27", "f28", "f29", "f30", "f31" };
 
 const char* GekkoDisassembler::GetFPRName(u32 index)
 {

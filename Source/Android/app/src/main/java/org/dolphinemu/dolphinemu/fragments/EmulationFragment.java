@@ -1,10 +1,12 @@
 package org.dolphinemu.dolphinemu.fragments;
 
 import android.content.Context;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.LocalBroadcastManager;
 import android.view.LayoutInflater;
 import android.view.Surface;
 import android.view.SurfaceHolder;
@@ -12,12 +14,20 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.Toast;
 
 import org.dolphinemu.dolphinemu.NativeLibrary;
 import org.dolphinemu.dolphinemu.R;
 import org.dolphinemu.dolphinemu.activities.EmulationActivity;
 import org.dolphinemu.dolphinemu.overlay.InputOverlay;
+import org.dolphinemu.dolphinemu.services.DirectoryInitializationService;
+import org.dolphinemu.dolphinemu.services.DirectoryInitializationService.DirectoryInitializationState;
+import org.dolphinemu.dolphinemu.utils.DirectoryStateReceiver;
 import org.dolphinemu.dolphinemu.utils.Log;
+
+import java.io.File;
+
+import rx.functions.Action1;
 
 public final class EmulationFragment extends Fragment implements SurfaceHolder.Callback
 {
@@ -28,6 +38,10 @@ public final class EmulationFragment extends Fragment implements SurfaceHolder.C
 	private InputOverlay mInputOverlay;
 
 	private EmulationState mEmulationState;
+
+	private DirectoryStateReceiver directoryStateReceiver;
+
+	private EmulationActivity activity;
 
 	public static EmulationFragment newInstance(String gamePath)
 	{
@@ -47,6 +61,7 @@ public final class EmulationFragment extends Fragment implements SurfaceHolder.C
 
 		if (context instanceof EmulationActivity)
 		{
+			activity = (EmulationActivity)context;
 			NativeLibrary.setEmulationActivity((EmulationActivity) context);
 		}
 		else
@@ -69,7 +84,7 @@ public final class EmulationFragment extends Fragment implements SurfaceHolder.C
 		mPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
 
 		String gamePath = getArguments().getString(KEY_GAMEPATH);
-		mEmulationState = new EmulationState(gamePath);
+		mEmulationState = new EmulationState(gamePath, getTemporaryStateFilePath());
 	}
 
 	/**
@@ -96,14 +111,7 @@ public final class EmulationFragment extends Fragment implements SurfaceHolder.C
 		Button doneButton = contents.findViewById(R.id.done_control_config);
 		if (doneButton != null)
 		{
-			doneButton.setOnClickListener(new View.OnClickListener()
-			{
-				@Override
-				public void onClick(View v)
-				{
-					stopConfiguringControls();
-				}
-			});
+			doneButton.setOnClickListener(v -> stopConfiguringControls());
 		}
 
 		// The new Surface created here will get passed to the native code via onSurfaceChanged.
@@ -115,12 +123,25 @@ public final class EmulationFragment extends Fragment implements SurfaceHolder.C
 	public void onResume()
 	{
 		super.onResume();
-		mEmulationState.run();
+		if (DirectoryInitializationService.areDolphinDirectoriesReady())
+		{
+			mEmulationState.run(activity.isActivityRecreated());
+		}
+		else
+		{
+			setupDolphinDirectoriesThenStartEmulation();
+		}
 	}
 
 	@Override
 	public void onPause()
 	{
+		if (directoryStateReceiver != null)
+		{
+			LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(directoryStateReceiver);
+			directoryStateReceiver = null;
+		}
+
 		mEmulationState.pause();
 		super.onPause();
 	}
@@ -130,6 +151,27 @@ public final class EmulationFragment extends Fragment implements SurfaceHolder.C
 	{
 		NativeLibrary.clearEmulationActivity();
 		super.onDetach();
+	}
+
+	private void setupDolphinDirectoriesThenStartEmulation() {
+		IntentFilter statusIntentFilter = new IntentFilter(
+				DirectoryInitializationService.BROADCAST_ACTION);
+
+		directoryStateReceiver =
+				new DirectoryStateReceiver(directoryInitializationState -> {
+					if (directoryInitializationState == DirectoryInitializationState.DOLPHIN_DIRECTORIES_INITIALIZED) {
+						mEmulationState.run(activity.isActivityRecreated());
+					} else if (directoryInitializationState == DirectoryInitializationState.EXTERNAL_STORAGE_PERMISSION_NEEDED) {
+						Toast.makeText(getContext(), R.string.write_permission_needed, Toast.LENGTH_SHORT)
+								.show();
+					}
+				});
+
+		// Registers the DirectoryStateReceiver and its intent filters
+		LocalBroadcastManager.getInstance(getActivity()).registerReceiver(
+				directoryStateReceiver,
+				statusIntentFilter);
+		DirectoryInitializationService.startService(getActivity());
 	}
 
 	public void toggleInputOverlayVisibility()
@@ -212,10 +254,13 @@ public final class EmulationFragment extends Fragment implements SurfaceHolder.C
 		private State state;
 		private Surface mSurface;
 		private boolean mRunWhenSurfaceIsValid;
+		private boolean loadPreviousTemporaryState;
+		private final String temporaryStatePath;
 
-		EmulationState(String gamePath)
+		EmulationState(String gamePath, String temporaryStatePath)
 		{
 			mGamePath = gamePath;
+			this.temporaryStatePath = temporaryStatePath;
 			// Starting state is stopped.
 			state = State.STOPPED;
 		}
@@ -243,6 +288,7 @@ public final class EmulationFragment extends Fragment implements SurfaceHolder.C
 		{
 			if (state != State.STOPPED)
 			{
+				Log.debug("[EmulationFragment] Stopping emulation.");
 				state = State.STOPPED;
 				NativeLibrary.StopEmulation();
 			}
@@ -270,8 +316,29 @@ public final class EmulationFragment extends Fragment implements SurfaceHolder.C
 			}
 		}
 
-		public synchronized void run()
+		public synchronized void run(boolean isActivityRecreated)
 		{
+			if (isActivityRecreated)
+			{
+				if (NativeLibrary.IsRunning())
+				{
+					loadPreviousTemporaryState = false;
+					state = State.PAUSED;
+					deleteFile(temporaryStatePath);
+				}
+				else
+				{
+					loadPreviousTemporaryState = true;
+				}
+			}
+			else
+			{
+				Log.debug("[EmulationFragment] activity resumed or fresh start");
+				loadPreviousTemporaryState = false;
+				// activity resumed without being killed or this is the first run
+				deleteFile(temporaryStatePath);
+			}
+
 			// If the surface is set, run now. Otherwise, wait for it to get set.
 			if (mSurface != null)
 			{
@@ -325,17 +392,20 @@ public final class EmulationFragment extends Fragment implements SurfaceHolder.C
 			mRunWhenSurfaceIsValid = false;
 			if (state == State.STOPPED)
 			{
-				Log.debug("[EmulationFragment] Starting emulation thread.");
-
-				mEmulationThread = new Thread(new Runnable()
+				mEmulationThread = new Thread(() ->
 				{
-					@Override
-					public void run()
+					NativeLibrary.SurfaceChanged(mSurface);
+					if (loadPreviousTemporaryState)
 					{
-						NativeLibrary.SurfaceChanged(mSurface);
+						Log.debug("[EmulationFragment] Starting emulation thread from previous state.");
+						NativeLibrary.Run(mGamePath, temporaryStatePath, true);
+					}
+					else
+					{
+						Log.debug("[EmulationFragment] Starting emulation thread.");
 						NativeLibrary.Run(mGamePath);
-					}},
-					"NativeEmulation");
+					}
+				}, "NativeEmulation");
 				mEmulationThread.start();
 
 			}
@@ -350,6 +420,29 @@ public final class EmulationFragment extends Fragment implements SurfaceHolder.C
 				Log.debug("[EmulationFragment] Bug, run called while already running.");
 			}
 			state = State.RUNNING;
+		}
+	}
+
+	public void saveTemporaryState()
+	{
+		NativeLibrary.SaveStateAs(getTemporaryStateFilePath(), true);
+	}
+
+	private String getTemporaryStateFilePath()
+	{
+		return getContext().getFilesDir() + File.separator + "temp.sav";
+	}
+
+	private static void deleteFile(String path)
+	{
+		try
+		{
+			File file = new File(path);
+			file.delete();
+		}
+		catch (Exception ex)
+		{
+			// fail safely
 		}
 	}
 }

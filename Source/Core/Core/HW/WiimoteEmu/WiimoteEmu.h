@@ -154,13 +154,13 @@ struct ExtensionReg
 #pragma pack(pop)
 
 void EmulateShake(AccelData* const accel_data, ControllerEmu::Buttons* const buttons_group,
-                  u8* const shake_step);
+  u8* const shake_step);
 
 void EmulateTilt(AccelData* const accel, ControllerEmu::Tilt* const tilt_group,
-                 const bool sideways = false, const bool upright = false);
+  const bool sideways = false, const bool upright = false);
 
 void EmulateSwing(AccelData* const accel, ControllerEmu::Force* const tilt_group,
-                  const bool sideways = false, const bool upright = false);
+  const bool sideways = false, const bool upright = false);
 
 enum
 {
@@ -253,7 +253,6 @@ private:
   ControllerEmu::ControlGroup* m_rumble;
   ControllerEmu::Output* m_motor;
   ControllerEmu::Extension* m_extension;
-  ControllerEmu::BooleanSetting* m_motion_plus_setting;
   ControllerEmu::ControlGroup* m_options;
   ControllerEmu::BooleanSetting* m_sideways_setting;
   ControllerEmu::BooleanSetting* m_upright_setting;
@@ -270,8 +269,6 @@ private:
 
   bool m_rumble_on;
   bool m_speaker_mute;
-  bool m_motion_plus_present;
-  bool m_motion_plus_active;
 
   bool m_reporting_auto;
   u8 m_reporting_mode;

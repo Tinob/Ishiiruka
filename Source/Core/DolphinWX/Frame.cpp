@@ -8,6 +8,7 @@
 #include <atomic>
 #include <cstddef>
 #include <fstream>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -72,6 +73,8 @@
 #include "InputCommon/ControllerInterface/ControllerInterface.h"
 #include "InputCommon/GCPadStatus.h"
 
+#include "UICommon/UICommon.h"
+
 #include "VideoCommon/OnScreenDisplay.h"
 #include "VideoCommon/PostProcessing.h"
 #include "VideoCommon/RenderBase.h"
@@ -131,8 +134,9 @@ void CRenderFrame::OnDropFiles(wxDropFilesEvent& event)
       main_frame->GetMenuBar()->FindItem(IDM_RECORD_READ_ONLY)->Check(true);
     }
 
-    if (Movie::PlayInput(filepath))
-      main_frame->BootGame("");
+    std::optional<std::string> savestate_path;
+    if (Movie::PlayInput(filepath, &savestate_path))
+      main_frame->BootGame("", savestate_path);
   }
   else if (!Core::IsRunning())
   {
@@ -151,7 +155,8 @@ void CRenderFrame::OnDropFiles(wxDropFilesEvent& event)
 bool CRenderFrame::IsValidSavestateDropped(const std::string& filepath)
 {
   const int game_id_length = 6;
-  std::ifstream file(filepath, std::ios::in | std::ios::binary);
+  std::ifstream file;
+  File::OpenFStream(file, filepath, std::ios::in | std::ios::binary);
 
   if (!file)
     return false;
@@ -700,61 +705,13 @@ WXLRESULT CFrame::MSWWindowProc(WXUINT nMsg, WXWPARAM wParam, WXLPARAM lParam)
 }
 #endif
 
-void CFrame::InhibitScreensaver()
+void CFrame::EnableScreenSaver(bool enable)
 {
-// Inhibit the screensaver. Depending on the operating system this may also
-// disable low-power states and/or screen dimming.
-
-#if defined(HAVE_X11) && HAVE_X11
-  if (SConfig::GetInstance().bDisableScreenSaver)
-  {
-    X11Utils::InhibitScreensaver(X11Utils::XDisplayFromHandle(GetHandle()),
-                                 X11Utils::XWindowFromHandle(GetHandle()), true);
-  }
-#endif
-
-#ifdef _WIN32
-  // Prevents Windows from sleeping, turning off the display, or idling
-  EXECUTION_STATE should_screen_save =
-      SConfig::GetInstance().bDisableScreenSaver ? ES_DISPLAY_REQUIRED : 0;
-  SetThreadExecutionState(ES_CONTINUOUS | should_screen_save | ES_SYSTEM_REQUIRED);
-#endif
-
-#ifdef __APPLE__
-  if (SConfig::GetInstance().bDisableScreenSaver)
-  {
-    CFStringRef reason_for_activity = CFSTR("Emulation Running");
-    if (IOPMAssertionCreateWithName(kIOPMAssertionTypePreventUserIdleDisplaySleep,
-                                    kIOPMAssertionLevelOn, reason_for_activity,
-                                    &m_power_assertion) != kIOReturnSuccess)
-    {
-      m_power_assertion = kIOPMNullAssertionID;
-    }
-  }
-#endif
-}
-
-void CFrame::UninhibitScreensaver()
-{
-#if defined(HAVE_X11) && HAVE_X11
-  if (SConfig::GetInstance().bDisableScreenSaver)
-  {
-    X11Utils::InhibitScreensaver(X11Utils::XDisplayFromHandle(GetHandle()),
-                                 X11Utils::XWindowFromHandle(GetHandle()), false);
-  }
-#endif
-
-#ifdef _WIN32
-  // Allow windows to resume normal idling behavior
-  SetThreadExecutionState(ES_CONTINUOUS);
-#endif
-
-#ifdef __APPLE__
-  if (m_power_assertion != kIOPMNullAssertionID)
-  {
-    IOPMAssertionRelease(m_power_assertion);
-    m_power_assertion = kIOPMNullAssertionID;
-  }
+#if defined(HAVE_XRANDR) && HAVE_XRANDR
+  UICommon::EnableScreenSaver(X11Utils::XDisplayFromHandle(GetHandle()),
+    X11Utils::XWindowFromHandle(GetHandle()), enable);
+#else
+  UICommon::EnableScreenSaver(enable);
 #endif
 }
 

@@ -12,7 +12,6 @@
 #include "Common/MathUtil.h"
 #include "Common/x64ABI.h"
 #include "Common/x64Emitter.h"
-#include "Core/HW/GPFifo.h"
 #include "Core/PowerPC/Gekko.h"
 #include "Core/PowerPC/Jit64Common/Jit64Base.h"
 #include "Core/PowerPC/Jit64Common/Jit64PowerPCState.h"
@@ -24,22 +23,6 @@
 #define QUANTIZED_REGS_TO_SAVE_LOAD (QUANTIZED_REGS_TO_SAVE | BitSet32{RSCRATCH2})
 
 using namespace Gen;
-
-void CommonAsmRoutines::GenFifoWrite(int size)
-{
-  const void* start = GetCodePtr();
-
-  // Assume value in RSCRATCH
-  MOV(64, R(RSCRATCH2), ImmPtr(&GPFifo::g_gather_pipe_ptr));
-  MOV(64, R(RSCRATCH2), MatR(RSCRATCH2));
-  SwapAndStore(size, MatR(RSCRATCH2), RSCRATCH);
-  MOV(64, R(RSCRATCH), ImmPtr(&GPFifo::g_gather_pipe_ptr));
-  ADD(64, R(RSCRATCH2), Imm8(size >> 3));
-  MOV(64, MatR(RSCRATCH), R(RSCRATCH2));
-  RET();
-
-  JitRegister::Register(start, GetCodePtr(), "JIT_FifoWrite_%i", size);
-}
 
 void CommonAsmRoutines::GenFrsqrte()
 {
@@ -80,9 +63,9 @@ void CommonAsmRoutines::GenFrsqrte()
   SHR(64, R(RSCRATCH), Imm8(37));
   AND(32, R(RSCRATCH), Imm32(0x7FF));
   IMUL(32, RSCRATCH,
-       MComplex(RSCRATCH2, RSCRATCH_EXTRA, SCALE_8, offsetof(MathUtil::BaseAndDec, m_dec)));
+    MComplex(RSCRATCH2, RSCRATCH_EXTRA, SCALE_8, offsetof(MathUtil::BaseAndDec, m_dec)));
   MOV(32, R(RSCRATCH_EXTRA),
-      MComplex(RSCRATCH2, RSCRATCH_EXTRA, SCALE_8, offsetof(MathUtil::BaseAndDec, m_base)));
+    MComplex(RSCRATCH2, RSCRATCH_EXTRA, SCALE_8, offsetof(MathUtil::BaseAndDec, m_base)));
   SUB(32, R(RSCRATCH_EXTRA), R(RSCRATCH));
   SHL(64, R(RSCRATCH_EXTRA), Imm8(26));
 
@@ -156,12 +139,12 @@ void CommonAsmRoutines::GenFres()
   static_assert(sizeof(MathUtil::BaseAndDec) == 8, "Unable to use SCALE_8; incorrect size");
 
   IMUL(32, RSCRATCH,
-       MComplex(RSCRATCH_EXTRA, RSCRATCH2, SCALE_8, offsetof(MathUtil::BaseAndDec, m_dec)));
+    MComplex(RSCRATCH_EXTRA, RSCRATCH2, SCALE_8, offsetof(MathUtil::BaseAndDec, m_dec)));
   ADD(32, R(RSCRATCH), Imm8(1));
   SHR(32, R(RSCRATCH), Imm8(1));
 
   MOV(32, R(RSCRATCH2),
-      MComplex(RSCRATCH_EXTRA, RSCRATCH2, SCALE_8, offsetof(MathUtil::BaseAndDec, m_base)));
+    MComplex(RSCRATCH_EXTRA, RSCRATCH2, SCALE_8, offsetof(MathUtil::BaseAndDec, m_base)));
   SUB(32, R(RSCRATCH2), R(RSCRATCH));
   SHL(64, R(RSCRATCH2), Imm8(29));
 
@@ -202,7 +185,7 @@ void CommonAsmRoutines::GenMfcr()
   XOR(32, R(dst), R(dst));
   for (int i = 0; i < 8; i++)
   {
-    static const u32 m_flagTable[8] = {0x0, 0x1, 0x8, 0x9, 0x0, 0x1, 0x8, 0x9};
+    static const u32 m_flagTable[8] = { 0x0, 0x1, 0x8, 0x9, 0x0, 0x1, 0x8, 0x9 };
     if (i != 0)
       SHL(32, R(dst), Imm8(4));
 
@@ -235,7 +218,7 @@ void CommonAsmRoutines::GenMfcr()
 }
 
 // Safe + Fast Quantizers, originally from JITIL by magumagu
-alignas(16) static const float m_65535[4] = {65535.0f, 65535.0f, 65535.0f, 65535.0f};
+alignas(16) static const float m_65535[4] = { 65535.0f, 65535.0f, 65535.0f, 65535.0f };
 alignas(16) static const float m_32767 = 32767.0f;
 alignas(16) static const float m_m32768 = -32768.0f;
 alignas(16) static const float m_255 = 255.0f;
@@ -243,7 +226,7 @@ alignas(16) static const float m_127 = 127.0f;
 alignas(16) static const float m_m128 = -128.0f;
 
 // Sizes of the various quantized store types
-constexpr std::array<u8, 8> sizes{{32, 0, 0, 0, 8, 16, 8, 16}};
+constexpr std::array<u8, 8> sizes{ { 32, 0, 0, 0, 8, 16, 8, 16 } };
 
 void CommonAsmRoutines::GenQuantizedStores()
 {
@@ -437,7 +420,7 @@ void QuantizedMemoryRoutines::GenQuantizedStore(bool single, EQuantizeType type,
   }
 
   int flags =
-      isInline ? 0 : SAFE_LOADSTORE_NO_FASTMEM | SAFE_LOADSTORE_NO_PROLOG | SAFE_LOADSTORE_DR_ON;
+    isInline ? 0 : SAFE_LOADSTORE_NO_FASTMEM | SAFE_LOADSTORE_NO_PROLOG | SAFE_LOADSTORE_DR_ON;
   if (!single)
     flags |= SAFE_LOADSTORE_NO_SWAP;
 
@@ -496,7 +479,7 @@ void QuantizedMemoryRoutines::GenQuantizedLoad(bool single, EQuantizeType type, 
   {
     BitSet32 regsToSave = QUANTIZED_REGS_TO_SAVE_LOAD;
     int flags =
-        isInline ? 0 : SAFE_LOADSTORE_NO_FASTMEM | SAFE_LOADSTORE_NO_PROLOG | SAFE_LOADSTORE_DR_ON;
+      isInline ? 0 : SAFE_LOADSTORE_NO_FASTMEM | SAFE_LOADSTORE_NO_PROLOG | SAFE_LOADSTORE_DR_ON;
     SafeLoadToReg(RSCRATCH_EXTRA, R(RSCRATCH_EXTRA), size, 0, regsToSave, extend, flags);
     if (!single && (type == QUANTIZE_U8 || type == QUANTIZE_S8))
     {
@@ -622,7 +605,7 @@ void QuantizedMemoryRoutines::GenQuantizedLoadFloat(bool single, bool isInline)
   {
     BitSet32 regsToSave = QUANTIZED_REGS_TO_SAVE;
     int flags =
-        isInline ? 0 : SAFE_LOADSTORE_NO_FASTMEM | SAFE_LOADSTORE_NO_PROLOG | SAFE_LOADSTORE_DR_ON;
+      isInline ? 0 : SAFE_LOADSTORE_NO_FASTMEM | SAFE_LOADSTORE_NO_PROLOG | SAFE_LOADSTORE_DR_ON;
     SafeLoadToReg(RSCRATCH_EXTRA, R(RSCRATCH_EXTRA), size, 0, regsToSave, extend, flags);
   }
 

@@ -712,10 +712,12 @@ else()
   include_directories(Externals/SOIL)
 endif()
 
-find_library(ICONV_LIBRARIES NAMES iconv libiconv libiconv-2 c)
-find_path(ICONV_INCLUDE_DIR NAMES iconv.h)
+if (NOT ANDROID)
+	find_library(ICONV_LIBRARIES NAMES iconv libiconv libiconv-2 c)
+	find_path(ICONV_INCLUDE_DIR NAMES iconv.h)
+endif()
 
-if (ICONV_LIBRARIES AND ICONV_INCLUDE_DIR)
+if (NOT ANDROID AND ICONV_LIBRARIES AND ICONV_INCLUDE_DIR)
   mark_as_advanced(ICONV_INCLUDE_DIR ICONV_LIBRARIES)
 else()
   message(STATUS "Using static iconv from Externals")
@@ -756,10 +758,6 @@ if(ENABLE_WX)
     add_subdirectory(Externals/wxWidgets3)
     set(wxWidgets_FOUND TRUE)
   endif()
-endif()
-
-if(${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD|NetBSD")
-  set(LIBS ${LIBS} usbhid)
 endif()
 
 ########################################

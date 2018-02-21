@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <vector>
@@ -13,12 +14,14 @@
 class FifoRecorder
 {
 public:
-  typedef void (*CallbackFunc)(void);
+  using CallbackFunc = std::function<void()>;
 
   FifoRecorder();
 
   void StartRecording(s32 numFrames, CallbackFunc finishedCb);
   void StopRecording();
+
+  bool IsRecordingDone() const;
 
   FifoDataFile* GetRecordedFile() const;
   // Called from video thread
@@ -38,7 +41,7 @@ public:
   // bpMem must point to the actual bp mem array used by the plugin because it will be read as fifo
   // data is recorded
   void SetVideoMemory(const u32* bpMem, const u32* cpMem, const u32* xfMem, const u32* xfRegs,
-                      u32 xfRegsSize, const u8* texMem);
+    u32 xfRegsSize, const u8* texMem);
 
   // Checked once per frame prior to callng EndFrame()
   bool IsRecording() const;
@@ -54,7 +57,7 @@ private:
   bool m_WasRecording = false;
   bool m_RequestedRecordingEnd = false;
   s32 m_RecordFramesRemaining = 0;
-  CallbackFunc m_FinishedCb = nullptr;
+  CallbackFunc m_FinishedCb;
   std::unique_ptr<FifoDataFile> m_File;
 
   // Accessed only from video thread

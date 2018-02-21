@@ -62,6 +62,8 @@ signals:
 
   // Tools
   void BootGameCubeIPL(DiscIO::Region region);
+  void ShowFIFOPlayer();
+  void ShowAboutDialog();
 
   // Options
   void Configure();
@@ -76,8 +78,6 @@ signals:
   void ColumnVisibilityToggled(const QString& row, bool visible);
   void GameListPlatformVisibilityToggled(const QString& row, bool visible);
   void GameListRegionVisibilityToggled(const QString& row, bool visible);
-
-  void ShowAboutDialog();
 
   // Movie
   void PlayRecording();
@@ -119,6 +119,7 @@ private:
   void OnSelectionChanged(QSharedPointer<GameFile> game_file);
   void OnRecordingStatusChanged(bool recording);
   void OnReadOnlyModeChanged(bool read_only);
+  void OnDebugModeToggled(bool enabled);
 
   // File
   QAction* m_open_action;
@@ -157,4 +158,9 @@ private:
   QAction* m_recording_start;
   QAction* m_recording_stop;
   QAction* m_recording_read_only;
+
+  // View
+  QAction* m_show_registers;
+  QAction* m_show_watch;
+  QAction* m_show_breakpoints;
 };

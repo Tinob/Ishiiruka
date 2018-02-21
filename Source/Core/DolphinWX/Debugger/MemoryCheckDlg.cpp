@@ -18,7 +18,7 @@
 #include "DolphinWX/WxUtils.h"
 
 MemoryCheckDlg::MemoryCheckDlg(wxWindow* parent)
-    : wxDialog(parent, wxID_ANY, _("Add a Memory Breakpoint"))
+  : wxDialog(parent, wxID_ANY, _("Add a Memory Breakpoint"))
 {
   Bind(wxEVT_BUTTON, &MemoryCheckDlg::OnOK, this, wxID_OK);
   Bind(wxEVT_RADIOBUTTON, &MemoryCheckDlg::OnRadioButtonClick, this);
@@ -35,26 +35,23 @@ MemoryCheckDlg::MemoryCheckDlg(wxWindow* parent)
   m_pEditStartAddress->Disable();
   m_pEditEndAddress = new wxTextCtrl(this, wxID_ANY);
   m_pEditEndAddress->Disable();
-  m_radioAddress = new wxRadioButton(this, wxID_ANY, _("With an address"), wxDefaultPosition,
-                                     wxDefaultSize, wxRB_GROUP);
-  m_radioRange = new wxRadioButton(this, wxID_ANY, _("Within a range"));
-  // i18n: This string is used for a radio button that represents the type of
-  // memory breakpoint that gets triggered when a read operation occurs.
-  // The string does not mean "read-only" in the sense that something cannot be written to.
-  m_radioRead = new wxRadioButton(this, wxID_ANY, _("Read only"), wxDefaultPosition, wxDefaultSize,
-                                  wxRB_GROUP);
-  // i18n: This string is used for a radio button that represents the type of
-  // memory breakpoint that gets triggered when a write operation occurs.
-  // The string does not mean "write-only" in the sense that something cannot be read from.
-  m_radioWrite = new wxRadioButton(this, wxID_ANY, _("Write only"));
-  // i18n: This string is used for a radio button that represents the type of
-  // memory breakpoint that gets triggered when a read operation or write operation occurs.
-  // The string is not a command to read and write something or to allow reading and writing.
-  m_radioReadWrite = new wxRadioButton(this, wxID_ANY, _("Read and write"));
-  m_radioLog =
-      new wxRadioButton(this, wxID_ANY, _("Log"), wxDefaultPosition, wxDefaultSize, wxRB_GROUP);
+  m_radioAddress = new wxRadioButton(this, wxID_ANY, _("With an Address"), wxDefaultPosition,
+    wxDefaultSize, wxRB_GROUP);
+  m_radioRange = new wxRadioButton(this, wxID_ANY, _("Within a Range"));
+  m_radioRead =
+    // i18n: This is a selectable condition when adding a breakpoint
+    new wxRadioButton(this, wxID_ANY, _("Read"), wxDefaultPosition, wxDefaultSize, wxRB_GROUP);
+  // i18n: This is a selectable condition when adding a breakpoint
+  m_radioWrite = new wxRadioButton(this, wxID_ANY, _("Write"));
+  // i18n: This is a selectable condition when adding a breakpoint
+  m_radioReadWrite = new wxRadioButton(this, wxID_ANY, _("Read or Write"));
+  // i18n: This is a selectable action when adding a breakpoint
+  m_radioLog = new wxRadioButton(this, wxID_ANY, _("Write to Log"), wxDefaultPosition,
+    wxDefaultSize, wxRB_GROUP);
+  // i18n: This is a selectable action when adding a breakpoint
   m_radioBreak = new wxRadioButton(this, wxID_ANY, _("Break"));
-  m_radioBreakLog = new wxRadioButton(this, wxID_ANY, _("Break and log"));
+  // i18n: This is a selectable action when adding a breakpoint
+  m_radioBreakLog = new wxRadioButton(this, wxID_ANY, _("Write to Log and Break"));
   m_radioBreakLog->SetValue(true);
 
   auto* sAddressBox = new wxBoxSizer(wxHORIZONTAL);
@@ -75,13 +72,13 @@ MemoryCheckDlg::MemoryCheckDlg(wxWindow* parent)
   sAddressRangeBox->Add(m_pEditEndAddress, 1, wxALIGN_CENTER_VERTICAL);
   sAddressRangeBox->AddSpacer(space5);
 
-  auto* sActions = new wxStaticBoxSizer(wxVERTICAL, this, _("Action"));
+  auto* sActions = new wxStaticBoxSizer(wxVERTICAL, this, _("Condition"));
   sActions->Add(m_radioRead, 0, wxEXPAND);
   sActions->Add(m_radioWrite, 0, wxEXPAND);
   sActions->Add(m_radioReadWrite, 0, wxEXPAND);
   m_radioWrite->SetValue(true);
 
-  auto* sFlags = new wxStaticBoxSizer(wxVERTICAL, this, _("Flags"));
+  auto* sFlags = new wxStaticBoxSizer(wxVERTICAL, this, _("Action"));
   sFlags->Add(m_radioLog);
   sFlags->Add(m_radioBreak);
   sFlags->Add(m_radioBreakLog);
@@ -156,10 +153,10 @@ void MemoryCheckDlg::OnOK(wxCommandEvent& event)
 
   u32 StartAddress = UINT32_MAX, EndAddress = 0;
   bool EndAddressOK =
-      EndAddressString.Len() && AsciiToHex(WxStrToStr(EndAddressString), EndAddress);
+    EndAddressString.Len() && AsciiToHex(WxStrToStr(EndAddressString), EndAddress);
 
   if (AsciiToHex(WxStrToStr(StartAddressString), StartAddress) && (OnRead || OnWrite) &&
-      (Log || Break))
+    (Log || Break))
   {
     TMemCheck MemCheck;
 

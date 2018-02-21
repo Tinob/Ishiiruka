@@ -35,9 +35,9 @@
 
 static bool rendererHasFocus = true;
 static bool rendererIsFullscreen = false;
-static Common::Flag s_running{true};
-static Common::Flag s_shutdown_requested{false};
-static Common::Flag s_tried_graceful_shutdown{false};
+static Common::Flag s_running{ true };
+static Common::Flag s_shutdown_requested{ false };
+static Common::Flag s_tried_graceful_shutdown{ false };
 
 static void signal_handler(int)
 {
@@ -165,9 +165,9 @@ class PlatformX11 : public Platform
     }
 
     win = XCreateSimpleWindow(dpy, DefaultRootWindow(dpy), SConfig::GetInstance().iRenderWindowXPos,
-                              SConfig::GetInstance().iRenderWindowYPos,
-                              SConfig::GetInstance().iRenderWindowWidth,
-                              SConfig::GetInstance().iRenderWindowHeight, 0, 0, BlackPixel(dpy, 0));
+      SConfig::GetInstance().iRenderWindowYPos,
+      SConfig::GetInstance().iRenderWindowWidth,
+      SConfig::GetInstance().iRenderWindowHeight, 0, 0, BlackPixel(dpy, 0));
     XSelectInput(dpy, win, StructureNotifyMask | KeyPressMask | FocusChangeMask);
     Atom wmProtocols[1];
     wmProtocols[0] = XInternAtom(dpy, "WM_DELETE_WINDOW", True);
@@ -188,7 +188,7 @@ class PlatformX11 : public Platform
       // make a blank cursor
       Pixmap Blank;
       XColor DummyColor;
-      char ZeroData[1] = {0};
+      char ZeroData[1] = { 0 };
       Blank = XCreateBitmapFromData(dpy, win, ZeroData, 1, 1);
       blankCursor = XCreatePixmapCursor(dpy, Blank, Blank, &DummyColor, &DummyColor, 0, 0);
       XFreePixmap(dpy, Blank);
@@ -219,7 +219,7 @@ class PlatformX11 : public Platform
         const auto ios = IOS::HLE::GetIOS();
         const auto stm = ios ? ios->GetDeviceByName("/dev/stm/eventhook") : nullptr;
         if (!s_tried_graceful_shutdown.IsSet() && stm &&
-            std::static_pointer_cast<IOS::HLE::Device::STMEventHook>(stm)->HasHookInstalled())
+          std::static_pointer_cast<IOS::HLE::Device::STMEventHook>(stm)->HasHookInstalled())
         {
           ProcessorInterface::PowerButton_Tap();
           s_tried_graceful_shutdown.Set();
@@ -240,6 +240,10 @@ class PlatformX11 : public Platform
         case KeyPress:
           key = XLookupKeysym((XKeyEvent*)&event, 0);
           if (key == XK_Escape)
+          {
+            s_shutdown_requested.Set();
+          }
+          else if (key == XK_F10)
           {
             if (Core::GetState() == Core::State::Running)
             {
@@ -299,7 +303,7 @@ class PlatformX11 : public Platform
         case ConfigureNotify:
         {
           if (last_window_width != event.xconfigure.width ||
-              last_window_height != event.xconfigure.height)
+            last_window_height != event.xconfigure.height)
           {
             last_window_width = event.xconfigure.width;
             last_window_height = event.xconfigure.height;
@@ -319,10 +323,10 @@ class PlatformX11 : public Platform
         Window winDummy;
         unsigned int borderDummy, depthDummy;
         XGetGeometry(dpy, win, &winDummy, &SConfig::GetInstance().iRenderWindowXPos,
-                     &SConfig::GetInstance().iRenderWindowYPos,
-                     (unsigned int*)&SConfig::GetInstance().iRenderWindowWidth,
-                     (unsigned int*)&SConfig::GetInstance().iRenderWindowHeight, &borderDummy,
-                     &depthDummy);
+          &SConfig::GetInstance().iRenderWindowYPos,
+          (unsigned int*)&SConfig::GetInstance().iRenderWindowWidth,
+          (unsigned int*)&SConfig::GetInstance().iRenderWindowHeight, &borderDummy,
+          &depthDummy);
         rendererIsFullscreen = false;
       }
       Core::HostDispatchJobs();
@@ -375,7 +379,7 @@ int main(int argc, char* argv[])
       return 1;
     }
     const u64 title_id = std::stoull(hex_string, nullptr, 16);
-    boot = std::make_unique<BootParameters>(BootParameters::NANDTitle{title_id});
+    boot = std::make_unique<BootParameters>(BootParameters::NANDTitle{ title_id });
   }
   else if (args.size())
   {

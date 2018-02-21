@@ -13,7 +13,7 @@
 #include <vector>
 #include "Common/CommonTypes.h"
 #include "Common/Event.h"
-#include "Common/FifoQueue.h"
+#include "Common/SPSCQueue.h"
 #include "Common/TraversalClient.h"
 #include "Core/NetPlayProto.h"
 #include "InputCommon/GCPadStatus.h"
@@ -67,7 +67,7 @@ public:
   void SendAsync(sf::Packet&& packet);
 
   NetPlayClient(const std::string& address, const u16 port, NetPlayUI* dialog,
-                const std::string& name, const NetTraversalConfig& traversal_config);
+    const std::string& name, const NetTraversalConfig& traversal_config);
   ~NetPlayClient();
 
   void GetPlayerList(std::string& list, std::vector<int>& pid_list);
@@ -109,10 +109,10 @@ protected:
     std::recursive_mutex async_queue_write;
   } m_crit;
 
-  Common::FifoQueue<sf::Packet, false> m_async_queue;
+  Common::SPSCQueue<sf::Packet, false> m_async_queue;
 
-  std::array<Common::FifoQueue<GCPadStatus>, 4> m_pad_buffer;
-  std::array<Common::FifoQueue<NetWiimote>, 4> m_wiimote_buffer;
+  std::array<Common::SPSCQueue<GCPadStatus>, 4> m_pad_buffer;
+  std::array<Common::SPSCQueue<NetWiimote>, 4> m_wiimote_buffer;
 
   NetPlayUI* m_dialog = nullptr;
 
@@ -121,8 +121,8 @@ protected:
   std::thread m_thread;
 
   std::string m_selected_game;
-  Common::Flag m_is_running{false};
-  Common::Flag m_do_loop{true};
+  Common::Flag m_is_running{ false };
+  Common::Flag m_do_loop{ true };
 
   unsigned int m_target_buffer_size = 20;
 

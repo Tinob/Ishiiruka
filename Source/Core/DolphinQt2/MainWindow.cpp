@@ -1,3 +1,4 @@
+
 // Copyright 2015 Dolphin Emulator Project
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
@@ -15,6 +16,7 @@
 #include <QProgressDialog>
 
 #include <future>
+#include <optional>
 
 #include "Common/Version.h"
 
@@ -45,6 +47,10 @@
 #include "DolphinQt2/Config/LogWidget.h"
 #include "DolphinQt2/Config/Mapping/MappingWindow.h"
 #include "DolphinQt2/Config/SettingsWindow.h"
+#include "DolphinQt2/Debugger/BreakpointWidget.h"
+#include "DolphinQt2/Debugger/RegisterWidget.h"
+#include "DolphinQt2/Debugger/WatchWidget.h"
+#include "DolphinQt2/FIFOPlayerWindow.h"
 #include "DolphinQt2/Host.h"
 #include "DolphinQt2/HotkeyScheduler.h"
 #include "DolphinQt2/MainWindow.h"
@@ -73,6 +79,8 @@ MainWindow::MainWindow(std::unique_ptr<BootParameters> boot_parameters) : QMainW
   setUnifiedTitleAndToolBarOnMac(true);
   setAcceptDrops(true);
 
+  InitControllers();
+
   CreateComponents();
 
   ConnectGameList();
@@ -81,7 +89,6 @@ MainWindow::MainWindow(std::unique_ptr<BootParameters> boot_parameters) : QMainW
   ConnectStack();
   ConnectMenuBar();
 
-  InitControllers();
   InitCoreCallbacks();
 
   NetPlayInit();
@@ -94,6 +101,8 @@ MainWindow::~MainWindow()
 {
   m_render_widget->deleteLater();
   ShutdownControllers();
+
+  Config::Save();
 }
 
 void MainWindow::InitControllers()
@@ -154,9 +163,23 @@ void MainWindow::CreateComponents()
   m_stack = new QStackedWidget(this);
   m_controllers_window = new ControllersWindow(this);
   m_settings_window = new SettingsWindow(this);
-  m_hotkey_window = new MappingWindow(this, 0);
+
+  m_hotkey_window = new MappingWindow(this, MappingWindow::Type::MAPPING_HOTKEYS, 0);
+
   m_log_widget = new LogWidget(this);
   m_log_config_widget = new LogConfigWidget(this);
+  m_fifo_window = new FIFOPlayerWindow(this);
+
+  connect(m_fifo_window, &FIFOPlayerWindow::LoadFIFORequested, this,
+          [this](const QString& path) { StartGame(path); });
+  m_register_widget = new RegisterWidget(this);
+  m_watch_widget = new WatchWidget(this);
+  m_breakpoint_widget = new BreakpointWidget(this);
+
+  connect(m_watch_widget, &WatchWidget::RequestMemoryBreakpoint,
+          [this](u32 addr) { m_breakpoint_widget->AddAddressMBP(addr); });
+  connect(m_register_widget, &RegisterWidget::RequestMemoryBreakpoint,
+          [this](u32 addr) { m_breakpoint_widget->AddAddressMBP(addr); });
 
 #if defined(HAVE_XRANDR) && HAVE_XRANDR
   m_graphics_window = new GraphicsWindow(
@@ -184,7 +207,7 @@ void MainWindow::ConnectMenuBar()
 
   // Emulation
   connect(m_menu_bar, &MenuBar::Pause, this, &MainWindow::Pause);
-  connect(m_menu_bar, &MenuBar::Play, this, &MainWindow::Play);
+  connect(m_menu_bar, &MenuBar::Play, this, [this]() { Play(); });
   connect(m_menu_bar, &MenuBar::Stop, this, &MainWindow::RequestStop);
   connect(m_menu_bar, &MenuBar::Reset, this, &MainWindow::Reset);
   connect(m_menu_bar, &MenuBar::Fullscreen, this, &MainWindow::FullScreen);
@@ -214,6 +237,7 @@ void MainWindow::ConnectMenuBar()
   connect(m_menu_bar, &MenuBar::PerformOnlineUpdate, this, &MainWindow::PerformOnlineUpdate);
   connect(m_menu_bar, &MenuBar::BootWiiSystemMenu, this, &MainWindow::BootWiiSystemMenu);
   connect(m_menu_bar, &MenuBar::StartNetPlay, this, &MainWindow::ShowNetPlaySetupDialog);
+  connect(m_menu_bar, &MenuBar::ShowFIFOPlayer, this, &MainWindow::ShowFIFOPlayer);
 
   // Movie
   connect(m_menu_bar, &MenuBar::PlayRecording, this, &MainWindow::OnPlayRecording);
@@ -269,7 +293,7 @@ void MainWindow::ConnectToolBar()
 {
   addToolBar(m_tool_bar);
   connect(m_tool_bar, &ToolBar::OpenPressed, this, &MainWindow::Open);
-  connect(m_tool_bar, &ToolBar::PlayPressed, this, &MainWindow::Play);
+  connect(m_tool_bar, &ToolBar::PlayPressed, this, [this]() { Play(); });
   connect(m_tool_bar, &ToolBar::PausePressed, this, &MainWindow::Pause);
   connect(m_tool_bar, &ToolBar::StopPressed, this, &MainWindow::RequestStop);
   connect(m_tool_bar, &ToolBar::FullScreenPressed, this, &MainWindow::FullScreen);
@@ -281,7 +305,7 @@ void MainWindow::ConnectToolBar()
 
 void MainWindow::ConnectGameList()
 {
-  connect(m_game_list, &GameList::GameSelected, this, &MainWindow::Play);
+  connect(m_game_list, &GameList::GameSelected, this, [this]() { Play(); });
   connect(m_game_list, &GameList::NetPlayHost, this, &MainWindow::NetPlayHost);
 
   connect(m_game_list, &GameList::OpenGeneralSettings, this, &MainWindow::ShowGeneralWindow);
@@ -304,8 +328,14 @@ void MainWindow::ConnectStack()
   setTabPosition(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea, QTabWidget::North);
   addDockWidget(Qt::RightDockWidgetArea, m_log_widget);
   addDockWidget(Qt::RightDockWidgetArea, m_log_config_widget);
+  addDockWidget(Qt::RightDockWidgetArea, m_register_widget);
+  addDockWidget(Qt::RightDockWidgetArea, m_watch_widget);
+  addDockWidget(Qt::RightDockWidgetArea, m_breakpoint_widget);
 
   tabifyDockWidget(m_log_widget, m_log_config_widget);
+  tabifyDockWidget(m_log_widget, m_register_widget);
+  tabifyDockWidget(m_log_widget, m_watch_widget);
+  tabifyDockWidget(m_log_widget, m_breakpoint_widget);
 }
 
 void MainWindow::Open()
@@ -318,7 +348,7 @@ void MainWindow::Open()
     StartGame(file);
 }
 
-void MainWindow::Play()
+void MainWindow::Play(const std::optional<std::string>& savestate_path)
 {
   // If we're in a paused game, start it up again.
   // Otherwise, play the selected game, if there is one.
@@ -328,20 +358,23 @@ void MainWindow::Play()
   if (Core::GetState() == Core::State::Paused)
   {
     Core::SetState(Core::State::Running);
+    EnableScreenSaver(false);
   }
   else
   {
-    QString selection = m_game_list->GetSelectedGame()->GetFilePath();
-    if (selection.length() > 0)
+    QSharedPointer<GameFile> selection = m_game_list->GetSelectedGame();
+    if (selection)
     {
-      StartGame(selection);
+      StartGame(selection->GetFilePath(), savestate_path);
+      EnableScreenSaver(false);
     }
     else
     {
       auto default_path = QString::fromStdString(SConfig::GetInstance().m_strDefaultISO);
       if (!default_path.isEmpty() && QFile::exists(default_path))
       {
-        StartGame(default_path);
+        StartGame(default_path, savestate_path);
+        EnableScreenSaver(false);
       }
       else
       {
@@ -354,6 +387,7 @@ void MainWindow::Play()
 void MainWindow::Pause()
 {
   Core::SetState(Core::State::Paused);
+  EnableScreenSaver(true);
 }
 
 void MainWindow::OnStopComplete()
@@ -431,6 +465,7 @@ bool MainWindow::RequestStop()
 void MainWindow::ForceStop()
 {
   BootManager::Stop();
+  EnableScreenSaver(true);
 }
 
 void MainWindow::Reset()
@@ -463,9 +498,9 @@ void MainWindow::ScreenShot()
   Core::SaveScreenShot();
 }
 
-void MainWindow::StartGame(const QString& path)
+void MainWindow::StartGame(const QString& path, const std::optional<std::string>& savestate_path)
 {
-  StartGame(BootParameters::GenerateFromFile(path.toStdString()));
+  StartGame(BootParameters::GenerateFromFile(path.toStdString(), savestate_path));
 }
 
 void MainWindow::StartGame(std::unique_ptr<BootParameters>&& parameters)
@@ -570,7 +605,6 @@ void MainWindow::ShowAboutDialog()
 
 void MainWindow::ShowHotkeyDialog()
 {
-  m_hotkey_window->ChangeMappingType(MappingWindow::Type::MAPPING_HOTKEYS);
   m_hotkey_window->show();
   m_hotkey_window->raise();
   m_hotkey_window->activateWindow();
@@ -588,6 +622,13 @@ void MainWindow::ShowNetPlaySetupDialog()
   m_netplay_setup_dialog->show();
   m_netplay_setup_dialog->raise();
   m_netplay_setup_dialog->activateWindow();
+}
+
+void MainWindow::ShowFIFOPlayer()
+{
+  m_fifo_window->show();
+  m_fifo_window->raise();
+  m_fifo_window->activateWindow();
 }
 
 void MainWindow::StateLoad()
@@ -665,7 +706,7 @@ void MainWindow::NetPlayInit()
   m_netplay_dialog = new NetPlayDialog(this);
 
   connect(m_netplay_dialog, &NetPlayDialog::Boot, this,
-          static_cast<void (MainWindow::*)(const QString&)>(&MainWindow::StartGame));
+          [this](const QString& path) { StartGame(path); });
   connect(m_netplay_dialog, &NetPlayDialog::Stop, this, &MainWindow::RequestStop);
   connect(m_netplay_dialog, &NetPlayDialog::rejected, this, &MainWindow::NetPlayQuit);
   connect(m_netplay_setup_dialog, &NetPlaySetupDialog::Join, this, &MainWindow::NetPlayJoin);
@@ -785,6 +826,18 @@ void MainWindow::NetPlayQuit()
   Settings::Instance().ResetNetPlayServer();
 }
 
+void MainWindow::EnableScreenSaver(bool enable)
+{
+#if defined(HAVE_XRANDR) && HAVE_XRANDR
+  UICommon::EnableScreenSaver(
+      static_cast<Display*>(QGuiApplication::platformNativeInterface()->nativeResourceForWindow(
+          "display", windowHandle())),
+      winId(), enable);
+#else
+  UICommon::EnableScreenSaver(enable);
+#endif
+}
+
 bool MainWindow::eventFilter(QObject* object, QEvent* event)
 {
   if (event->type() == QEvent::Close)
@@ -891,9 +944,9 @@ void MainWindow::OnImportNANDBackup()
         },
         [this] {
           return RunOnObject(this, [this] {
-            return QFileDialog::getOpenFileName(this, tr("Select the OTP/SEEPROM dump"),
+            return QFileDialog::getOpenFileName(this, tr("Select the keys file (OTP/SEEPROM dump)"),
                                                 QDir::currentPath(),
-                                                tr("BootMii OTP/SEEPROM dump (*.bin);;"
+                                                tr("BootMii keys file (*.bin);;"
                                                    "All Files (*)"))
                 .toStdString();
           });
@@ -923,11 +976,12 @@ void MainWindow::OnPlayRecording()
     emit ReadOnlyModeChanged(true);
   }
 
-  if (Movie::PlayInput(dtm_file.toStdString()))
+  std::optional<std::string> savestate_path;
+  if (Movie::PlayInput(dtm_file.toStdString(), &savestate_path))
   {
     emit RecordingStatusChanged(true);
 
-    Play();
+    Play(savestate_path);
   }
 }
 

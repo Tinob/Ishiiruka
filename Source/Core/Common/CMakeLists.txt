@@ -4,8 +4,8 @@ set(SRCS
   ColorUtil.cpp
   CommonFuncs.cpp
   Config/Config.cpp
+  Config/ConfigInfo.cpp
   Config/Layer.cpp
-  Config/Section.cpp
   Crypto/AES.cpp
   Crypto/bn.cpp
   Crypto/ec.cpp

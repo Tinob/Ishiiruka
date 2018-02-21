@@ -2,7 +2,10 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wregister"
 #include <X11/XKBlib.h>
+#pragma GCC diagnostic pop
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
@@ -80,7 +83,7 @@ void PopulateDevices(void* const hwnd)
       // Since current_master is a master pointer, its attachment must
       // be a master keyboard.
       g_controller_interface.AddDevice(std::make_shared<KeyboardMouse>(
-          (Window)hwnd, xi_opcode, current_master->deviceid, current_master->attachment));
+        (Window)hwnd, xi_opcode, current_master->deviceid, current_master->attachment));
     }
   }
 
@@ -114,7 +117,7 @@ void KeyboardMouse::SelectEventsForDevice(Window window, XIEventMask* mask, int 
   {
     current_slave = &all_slaves[i];
     if ((current_slave->use != XISlavePointer && current_slave->use != XISlaveKeyboard) ||
-        current_slave->attachment != deviceid)
+      current_slave->attachment != deviceid)
       continue;
     mask->deviceid = current_slave->deviceid;
     XISelectEvents(m_display, window, mask, 1);
@@ -124,7 +127,7 @@ void KeyboardMouse::SelectEventsForDevice(Window window, XIEventMask* mask, int 
 }
 
 KeyboardMouse::KeyboardMouse(Window window, int opcode, int pointer, int keyboard)
-    : m_window(window), xi_opcode(opcode), pointer_deviceid(pointer), keyboard_deviceid(keyboard)
+  : m_window(window), xi_opcode(opcode), pointer_deviceid(pointer), keyboard_deviceid(keyboard)
 {
   memset(&m_state, 0, sizeof(m_state));
 
@@ -200,7 +203,7 @@ void KeyboardMouse::UpdateCursor()
   XIGroupState group;
 
   XIQueryPointer(m_display, pointer_deviceid, m_window, &root, &child, &root_x, &root_y, &win_x,
-                 &win_y, &button_state, &mods, &group);
+    &win_y, &button_state, &mods, &group);
 
   free(button_state.mask);
 
@@ -305,7 +308,7 @@ std::string KeyboardMouse::GetSource() const
 }
 
 KeyboardMouse::Key::Key(Display* const display, KeyCode keycode, const char* keyboard)
-    : m_display(display), m_keyboard(keyboard), m_keycode(keycode)
+  : m_display(display), m_keyboard(keyboard), m_keycode(keycode)
 {
   int i = 0;
   KeySym keysym = 0;
@@ -333,7 +336,7 @@ ControlState KeyboardMouse::Key::GetState() const
 }
 
 KeyboardMouse::Button::Button(unsigned int index, unsigned int* buttons)
-    : m_buttons(buttons), m_index(index)
+  : m_buttons(buttons), m_index(index)
 {
   // this will be a problem if we remove the hardcoded five-button limit
   name = std::string("Click ") + (char)('1' + m_index);
@@ -345,7 +348,7 @@ ControlState KeyboardMouse::Button::GetState() const
 }
 
 KeyboardMouse::Cursor::Cursor(u8 index, bool positive, const float* cursor)
-    : m_cursor(cursor), m_index(index), m_positive(positive)
+  : m_cursor(cursor), m_index(index), m_positive(positive)
 {
   name = std::string("Cursor ") + (char)('X' + m_index) + (m_positive ? '+' : '-');
 }
@@ -356,7 +359,7 @@ ControlState KeyboardMouse::Cursor::GetState() const
 }
 
 KeyboardMouse::Axis::Axis(u8 index, bool positive, const float* axis)
-    : m_axis(axis), m_index(index), m_positive(positive)
+  : m_axis(axis), m_index(index), m_positive(positive)
 {
   name = std::string("Axis ") + (char)('X' + m_index) + (m_positive ? '+' : '-');
 }

@@ -22,7 +22,7 @@ namespace Device
 {
 static void GetVidPidFromDevicePath(const std::string& device_path, u16& vid, u16& pid)
 {
-  std::stringstream stream{device_path};
+  std::stringstream stream{ device_path };
   std::string segment;
   std::vector<std::string> list;
   while (std::getline(stream, segment, '/'))
@@ -57,10 +57,6 @@ void OH0Device::DoState(PointerWrap& p)
 
 ReturnCode OH0Device::Open(const OpenRequest& request)
 {
-  const u32 ios_major_version = m_ios.GetVersion();
-  if (ios_major_version == 57 || ios_major_version == 58 || ios_major_version == 59)
-    return IPC_ENOENT;
-
   if (m_vid == 0 && m_pid == 0)
     return IPC_ENOENT;
 

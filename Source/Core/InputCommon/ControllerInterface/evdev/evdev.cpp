@@ -72,14 +72,15 @@ static void HotplugThreadFunc()
     FD_SET(monitor_fd, &fds);
     FD_SET(s_wakeup_eventfd, &fds);
 
-    int ret = select(monitor_fd + 1, &fds, nullptr, nullptr, nullptr);
+    int ret = select(std::max(monitor_fd, s_wakeup_eventfd) + 1, &fds, nullptr, nullptr, nullptr);
     if (ret < 1 || !FD_ISSET(monitor_fd, &fds))
       continue;
 
-    udev_device* dev = udev_monitor_receive_device(monitor);
+    std::unique_ptr<udev_device, decltype(&udev_device_unref)> dev{
+      udev_monitor_receive_device(monitor), udev_device_unref };
 
-    const char* action = udev_device_get_action(dev);
-    const char* devnode = udev_device_get_devnode(dev);
+    const char* action = udev_device_get_action(dev.get());
+    const char* devnode = udev_device_get_devnode(dev.get());
     if (!devnode)
       continue;
 
@@ -92,9 +93,7 @@ static void HotplugThreadFunc()
       g_controller_interface.RemoveDevice([&name](const auto& device) {
         return device->GetSource() == "evdev" && device->GetName() == name && !device->IsValid();
       });
-      NOTICE_LOG(SERIALINTERFACE, "Removed device: %s", name.c_str());
       s_devnode_name_map.erase(devnode);
-      g_controller_interface.InvokeHotplugCallbacks();
     }
     // Only react to "device added" events for evdev devices that we can access.
     else if (strcmp(action, "add") == 0 && access(devnode, W_OK) == 0)
@@ -107,11 +106,8 @@ static void HotplugThreadFunc()
       {
         g_controller_interface.AddDevice(std::move(device));
         s_devnode_name_map.insert(std::pair<std::string, std::string>(devnode, name));
-        NOTICE_LOG(SERIALINTERFACE, "Added new device: %s", name.c_str());
-        g_controller_interface.InvokeHotplugCallbacks();
       }
     }
-    udev_device_unref(dev);
   }
   NOTICE_LOG(SERIALINTERFACE, "evdev hotplug thread stopped");
 }
@@ -140,6 +136,7 @@ static void StopHotplugThread()
   {
   }
   s_hotplug_thread.join();
+  close(s_wakeup_eventfd);
 }
 
 void Init()
@@ -225,14 +222,14 @@ evdevDevice::evdevDevice(const std::string& devnode) : m_devfile(devnode)
     if (libevdev_has_event_code(m_dev, EV_ABS, axis))
     {
       AddAnalogInputs(new Axis(num_axis, axis, false, m_dev),
-                      new Axis(num_axis, axis, true, m_dev));
+        new Axis(num_axis, axis, true, m_dev));
       num_axis++;
     }
 
   // Force feedback
   if (libevdev_has_event_code(m_dev, EV_FF, FF_PERIODIC))
   {
-    for (auto type : {FF_SINE, FF_SQUARE, FF_TRIANGLE, FF_SAW_UP, FF_SAW_DOWN})
+    for (auto type : { FF_SINE, FF_SQUARE, FF_TRIANGLE, FF_SAW_UP, FF_SAW_DOWN })
       if (libevdev_has_event_code(m_dev, EV_FF, type))
         AddOutput(new ForceFeedback(type, m_dev));
   }
@@ -310,10 +307,10 @@ ControlState evdevDevice::Button::GetState() const
 }
 
 evdevDevice::Axis::Axis(u8 index, u16 code, bool upper, libevdev* dev)
-    : m_code(code), m_index(index), m_upper(upper), m_dev(dev)
+  : m_code(code), m_index(index), m_upper(upper), m_dev(dev)
 {
   m_min = libevdev_get_abs_minimum(m_dev, m_code);
-  m_range = libevdev_get_abs_maximum(m_dev, m_code) + abs(m_min);
+  m_range = libevdev_get_abs_maximum(m_dev, m_code) - m_min;
 }
 
 std::string evdevDevice::Axis::GetName() const

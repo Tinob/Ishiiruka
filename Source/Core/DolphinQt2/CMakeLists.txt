@@ -18,6 +18,7 @@ set(CMAKE_AUTOMOC ON)
 
 set(SRCS
   AboutDialog.cpp
+  FIFOPlayerWindow.cpp
   HotkeyScheduler.cpp
   Host.cpp
   InDevelopmentWarning.cpp
@@ -50,7 +51,7 @@ set(SRCS
   Config/LogWidget.cpp
   Config/Mapping/GCKeyboardEmu.cpp
   Config/Mapping/GCPadEmu.cpp
-  Config/Mapping/GCPadWiiU.cpp
+  Config/Mapping/GCPadWiiUConfigDialog.cpp
   Config/Mapping/Hotkey3D.cpp
   Config/Mapping/HotkeyGeneral.cpp
   Config/Mapping/HotkeyGraphics.cpp
@@ -69,6 +70,11 @@ set(SRCS
   Config/Mapping/WiimoteEmuMotionControl.cpp
   Config/PropertiesDialog.cpp
   Config/SettingsWindow.cpp
+  Debugger/BreakpointWidget.cpp
+  Debugger/NewBreakpointDialog.cpp
+  Debugger/RegisterColumn.cpp
+  Debugger/RegisterWidget.cpp
+  Debugger/WatchWidget.cpp
   GameList/GameFileCache.cpp
   GameList/GameFile.cpp
   GameList/GameList.cpp

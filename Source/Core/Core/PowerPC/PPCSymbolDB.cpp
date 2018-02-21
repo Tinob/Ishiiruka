@@ -4,6 +4,7 @@
 
 #include "Core/PowerPC/PPCSymbolDB.h"
 
+#include <algorithm>
 #include <map>
 #include <string>
 #include <utility>
@@ -49,7 +50,7 @@ Symbol* PPCSymbolDB::AddFunction(u32 start_addr)
 }
 
 void PPCSymbolDB::AddKnownSymbol(u32 startAddr, u32 size, const std::string& name,
-                                 Symbol::Type type)
+  Symbol::Type type)
 {
   XFuncMap::iterator iter = functions.find(startAddr);
   if (iter != functions.end())
@@ -73,7 +74,10 @@ void PPCSymbolDB::AddKnownSymbol(u32 startAddr, u32 size, const std::string& nam
       PPCAnalyst::AnalyzeFunction(startAddr, tf, size);
       checksumToFunction[tf.hash].insert(&functions[startAddr]);
     }
-    tf.size = size;
+    else
+    {
+      tf.size = size;
+    }
     functions[startAddr] = tf;
   }
 }
@@ -219,8 +223,10 @@ bool PPCSymbolDB::LoadMap(const std::string& filename, bool bad)
   if (!f)
     return false;
 
-  // four columns are used in American Mensa Academy map files and perhaps other games
-  bool four_columns = false;
+  // Two columns are used by Super Smash Bros. Brawl Korean map file
+  // Three columns are commonly used
+  // Four columns are used in American Mensa Academy map files and perhaps other games
+  int column_count = 0;
   int good_count = 0;
   int bad_count = 0;
 
@@ -234,7 +240,7 @@ bool PPCSymbolDB::LoadMap(const std::string& filename, bool bad)
 
     if (length == 34 && strcmp(line, "  address  Size   address  offset\n") == 0)
     {
-      four_columns = true;
+      column_count = 4;
       continue;
     }
 
@@ -246,7 +252,7 @@ bool PPCSymbolDB::LoadMap(const std::string& filename, bool bad)
 
     // Support CodeWarrior and Dolphin map
     if (StringEndsWith(line, " section layout\n") || strcmp(temp, ".text") == 0 ||
-        strcmp(temp, ".init") == 0)
+      strcmp(temp, ".init") == 0)
     {
       section_name = temp;
       continue;
@@ -287,9 +293,19 @@ bool PPCSymbolDB::LoadMap(const std::string& filename, bool bad)
     if (section_name.empty())
       continue;
 
+    // Detect two columns with three columns fallback
+    if (column_count == 0)
+    {
+      const std::string stripped_line = StripSpaces(line);
+      if (std::count(stripped_line.begin(), stripped_line.end(), ' ') == 1)
+        column_count = 2;
+      else
+        column_count = 3;
+    }
+
     u32 address, vaddress, size, offset, alignment;
     char name[512], container[512];
-    if (four_columns)
+    if (column_count == 4)
     {
       // sometimes there is no alignment value, and sometimes it is because it is an entry of
       // something else
@@ -314,35 +330,47 @@ bool PPCSymbolDB::LoadMap(const std::string& filename, bool bad)
       else
       {
         sscanf(line, "%08x %08x %08x %08x %i %511s", &address, &size, &vaddress, &offset,
-               &alignment, name);
+          &alignment, name);
       }
     }
-    // some entries in the table have a function name followed by " (entry of " followed by a
-    // container name, followed by ")"
-    // instead of a space followed by a number followed by a space followed by a name
-    else if (length > 27 && line[27] != ' ' && strstr(line, "(entry of "))
+    else if (column_count == 3)
     {
-      alignment = 0;
-      sscanf(line, "%08x %08x %08x %511s", &address, &size, &vaddress, name);
-      char* s = strstr(line, "(entry of ");
-      if (s)
+      // some entries in the table have a function name followed by " (entry of " followed by a
+      // container name, followed by ")"
+      // instead of a space followed by a number followed by a space followed by a name
+      if (length > 27 && line[27] != ' ' && strstr(line, "(entry of "))
       {
-        sscanf(s + 10, "%511s", container);
-        char* s2 = (strchr(container, ')'));
-        if (s2 && container[0] != '.')
+        alignment = 0;
+        sscanf(line, "%08x %08x %08x %511s", &address, &size, &vaddress, name);
+        char* s = strstr(line, "(entry of ");
+        if (s)
         {
-          s2[0] = '\0';
-          strcat(container, "::");
-          strcat(container, name);
-          strcpy(name, container);
+          sscanf(s + 10, "%511s", container);
+          char* s2 = (strchr(container, ')'));
+          if (s2 && container[0] != '.')
+          {
+            s2[0] = '\0';
+            strcat(container, "::");
+            strcat(container, name);
+            strcpy(name, container);
+          }
         }
       }
+      else
+      {
+        sscanf(line, "%08x %08x %08x %i %511s", &address, &size, &vaddress, &alignment, name);
+      }
+    }
+    else if (column_count == 2)
+    {
+      sscanf(line, "%08x %511s", &address, name);
+      vaddress = address;
+      size = 0;
     }
     else
     {
-      sscanf(line, "%08x %08x %08x %i %511s", &address, &size, &vaddress, &alignment, name);
+      break;
     }
-
     const char* namepos = strstr(line, name);
     if (namepos != nullptr)  // would be odd if not :P
       strcpy(name, namepos);
@@ -355,7 +383,7 @@ bool PPCSymbolDB::LoadMap(const std::string& filename, bool bad)
     {
       // Can't compute the checksum if not in RAM
       bool good = !bad && PowerPC::HostIsInstructionRAMAddress(vaddress) &&
-                  PowerPC::HostIsInstructionRAMAddress(vaddress + size - 4);
+        PowerPC::HostIsInstructionRAMAddress(vaddress + size - 4);
       if (!good)
       {
         // check for BLR before function
@@ -413,7 +441,7 @@ bool PPCSymbolDB::SaveSymbolMap(const std::string& filename) const
   {
     // Write symbol address, size, virtual address, alignment, name
     fprintf(f.GetHandle(), "%08x %08x %08x %i %s\n", symbol->address, symbol->size, symbol->address,
-            0, symbol->name.c_str());
+      0, symbol->name.c_str());
   }
 
   // Write .data section
@@ -422,7 +450,7 @@ bool PPCSymbolDB::SaveSymbolMap(const std::string& filename) const
   {
     // Write symbol address, size, virtual address, alignment, name
     fprintf(f.GetHandle(), "%08x %08x %08x %i %s\n", symbol->address, symbol->size, symbol->address,
-            0, symbol->name.c_str());
+      0, symbol->name.c_str());
   }
 
   return true;
@@ -465,7 +493,7 @@ bool PPCSymbolDB::SaveCodeMap(const std::string& filename) const
     {
       const std::string disasm = debugger->Disassemble(address);
       fprintf(f.GetHandle(), "%08x %-*.*s %s\n", address, SYMBOL_NAME_LIMIT, SYMBOL_NAME_LIMIT,
-              symbol.name.c_str(), disasm.c_str());
+        symbol.name.c_str(), disasm.c_str());
     }
   }
   return true;

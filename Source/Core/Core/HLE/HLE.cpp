@@ -22,7 +22,7 @@ namespace HLE
 {
 using namespace PowerPC;
 
-typedef void (*TPatchFunction)();
+typedef void(*TPatchFunction)();
 
 static std::map<u32, u32> s_original_instructions;
 
@@ -42,41 +42,40 @@ struct SPatch
 
 // clang-format off
 static const SPatch OSPatches[] = {
-    // Placeholder, OSPatches[0] is the "non-existent function" index
-    {"FAKE_TO_SKIP_0",               HLE_Misc::UnimplementedFunction,       HLE_HOOK_REPLACE, HLE_TYPE_GENERIC},
+  // Placeholder, OSPatches[0] is the "non-existent function" index
+  { "FAKE_TO_SKIP_0",               HLE_Misc::UnimplementedFunction,       HookType::Replace, HookFlag::Generic },
 
-    {"PanicAlert",                   HLE_Misc::HLEPanicAlert,               HLE_HOOK_REPLACE, HLE_TYPE_DEBUG},
+  // Name doesn't matter, installed in CBoot::BootUp()
+{ "HBReload",                     HLE_Misc::HBReload,                    HookType::Replace, HookFlag::Generic },
 
-    // Name doesn't matter, installed in CBoot::BootUp()
-    {"HBReload",                     HLE_Misc::HBReload,                    HLE_HOOK_REPLACE, HLE_TYPE_GENERIC},
+// Debug/OS Support
+{ "OSPanic",                      HLE_OS::HLE_OSPanic,                   HookType::Replace, HookFlag::Debug },
 
-    // Debug/OS Support
-    {"OSPanic",                      HLE_OS::HLE_OSPanic,                   HLE_HOOK_REPLACE, HLE_TYPE_DEBUG},
+// This needs to be put before vprintf (because vprintf is called indirectly by this)
+{ "JUTWarningConsole_f",          HLE_OS::HLE_GeneralDebugPrint,         HookType::Start,   HookFlag::Debug },
 
-    // This needs to be put before vprintf (because vprintf is called indirectly by this)
-    {"JUTWarningConsole_f",          HLE_OS::HLE_GeneralDebugPrint,         HLE_HOOK_START,   HLE_TYPE_DEBUG},
+{ "OSReport",                     HLE_OS::HLE_GeneralDebugPrint,         HookType::Start,   HookFlag::Debug },
+{ "DEBUGPrint",                   HLE_OS::HLE_GeneralDebugPrint,         HookType::Start,   HookFlag::Debug },
+{ "WUD_DEBUGPrint",               HLE_OS::HLE_GeneralDebugPrint,         HookType::Start,   HookFlag::Debug },
+{ "vprintf",                      HLE_OS::HLE_GeneralDebugVPrint,        HookType::Start,   HookFlag::Debug },
+{ "printf",                       HLE_OS::HLE_GeneralDebugPrint,         HookType::Start,   HookFlag::Debug },
+{ "vdprintf",                     HLE_OS::HLE_LogVDPrint,                HookType::Start,   HookFlag::Debug },
+{ "dprintf",                      HLE_OS::HLE_LogDPrint,                 HookType::Start,   HookFlag::Debug },
+{ "vfprintf",                     HLE_OS::HLE_LogVFPrint,                HookType::Start,   HookFlag::Debug },
+{ "fprintf",                      HLE_OS::HLE_LogFPrint,                 HookType::Start,   HookFlag::Debug },
+{ "nlPrintf",                     HLE_OS::HLE_GeneralDebugPrint,         HookType::Start,   HookFlag::Debug },
+{ "DWC_Printf",                   HLE_OS::HLE_GeneralDebugPrint,         HookType::Start,   HookFlag::Debug },
+{ "puts",                         HLE_OS::HLE_GeneralDebugPrint,         HookType::Start,   HookFlag::Debug }, // gcc-optimized printf?
+{ "___blank",                     HLE_OS::HLE_GeneralDebugPrint,         HookType::Start,   HookFlag::Debug }, // used for early init things (normally)
+{ "__write_console",              HLE_OS::HLE_write_console,             HookType::Start,   HookFlag::Debug }, // used by sysmenu (+more?)
 
-    {"OSReport",                     HLE_OS::HLE_GeneralDebugPrint,         HLE_HOOK_START,   HLE_TYPE_DEBUG},
-    {"DEBUGPrint",                   HLE_OS::HLE_GeneralDebugPrint,         HLE_HOOK_START,   HLE_TYPE_DEBUG},
-    {"WUD_DEBUGPrint",               HLE_OS::HLE_GeneralDebugPrint,         HLE_HOOK_START,   HLE_TYPE_DEBUG},
-    {"vprintf",                      HLE_OS::HLE_GeneralDebugVPrint,        HLE_HOOK_START,   HLE_TYPE_DEBUG},
-    {"printf",                       HLE_OS::HLE_GeneralDebugPrint,         HLE_HOOK_START,   HLE_TYPE_DEBUG},
-    {"vdprintf",                     HLE_OS::HLE_LogVDPrint,                HLE_HOOK_START,   HLE_TYPE_DEBUG},
-    {"dprintf",                      HLE_OS::HLE_LogDPrint,                 HLE_HOOK_START,   HLE_TYPE_DEBUG},
-    {"vfprintf",                     HLE_OS::HLE_LogVFPrint,                HLE_HOOK_START,   HLE_TYPE_DEBUG},
-    {"fprintf",                      HLE_OS::HLE_LogFPrint,                 HLE_HOOK_START,   HLE_TYPE_DEBUG},
-    {"nlPrintf",                     HLE_OS::HLE_GeneralDebugPrint,         HLE_HOOK_START,   HLE_TYPE_DEBUG},
-    {"puts",                         HLE_OS::HLE_GeneralDebugPrint,         HLE_HOOK_START,   HLE_TYPE_DEBUG}, // gcc-optimized printf?
-    {"___blank",                     HLE_OS::HLE_GeneralDebugPrint,         HLE_HOOK_START,   HLE_TYPE_DEBUG}, // used for early init things (normally)
-    {"__write_console",              HLE_OS::HLE_write_console,             HLE_HOOK_START,   HLE_TYPE_DEBUG}, // used by sysmenu (+more?)
-
-    {"GeckoCodehandler",             HLE_Misc::GeckoCodeHandlerICacheFlush, HLE_HOOK_START,   HLE_TYPE_FIXED},
-    {"GeckoHandlerReturnTrampoline", HLE_Misc::GeckoReturnTrampoline,       HLE_HOOK_REPLACE, HLE_TYPE_FIXED},
-    {"AppLoaderReport",              HLE_OS::HLE_GeneralDebugPrint,         HLE_HOOK_REPLACE, HLE_TYPE_FIXED} // apploader needs OSReport-like function
+{ "GeckoCodehandler",             HLE_Misc::GeckoCodeHandlerICacheFlush, HookType::Start,   HookFlag::Fixed },
+{ "GeckoHandlerReturnTrampoline", HLE_Misc::GeckoReturnTrampoline,       HookType::Replace, HookFlag::Fixed },
+{ "AppLoaderReport",              HLE_OS::HLE_GeneralDebugPrint,         HookType::Replace, HookFlag::Fixed } // apploader needs OSReport-like function
 };
 
 static const SPatch OSBreakPoints[] = {
-    {"FAKE_TO_SKIP_0", HLE_Misc::UnimplementedFunction, HLE_HOOK_START, HLE_TYPE_GENERIC},
+  { "FAKE_TO_SKIP_0", HLE_Misc::UnimplementedFunction, HookType::Start, HookFlag::Generic },
 };
 // clang-format on
 
@@ -116,7 +115,7 @@ void PatchFunctions()
   // Remove all hooks that aren't fixed address hooks
   for (auto i = s_original_instructions.begin(); i != s_original_instructions.end();)
   {
-    if (OSPatches[i->second].flags != HLE_TYPE_FIXED)
+    if (OSPatches[i->second].flags != HookFlag::Fixed)
     {
       PowerPC::ppcState.iCache.Invalidate(i->first);
       i = s_original_instructions.erase(i);
@@ -130,7 +129,7 @@ void PatchFunctions()
   for (u32 i = 1; i < ArraySize(OSPatches); ++i)
   {
     // Fixed hooks don't map to symbols
-    if (OSPatches[i].flags == HLE_TYPE_FIXED)
+    if (OSPatches[i].flags == HookFlag::Fixed)
       continue;
 
     for (const auto& symbol : g_symbolDB.GetSymbolsFromName(OSPatches[i].m_szPatchName))
@@ -197,35 +196,35 @@ u32 GetFirstFunctionIndex(u32 address)
 {
   u32 index = GetFunctionIndex(address);
   auto first = std::find_if(
-      s_original_instructions.begin(), s_original_instructions.end(),
-      [=](const auto& entry) { return entry.second == index && entry.first < address; });
+    s_original_instructions.begin(), s_original_instructions.end(),
+    [=](const auto& entry) { return entry.second == index && entry.first < address; });
   return first == std::end(s_original_instructions) ? index : 0;
 }
 
-int GetFunctionTypeByIndex(u32 index)
+HookType GetFunctionTypeByIndex(u32 index)
 {
   return OSPatches[index].type;
 }
 
-int GetFunctionFlagsByIndex(u32 index)
+HookFlag GetFunctionFlagsByIndex(u32 index)
 {
   return OSPatches[index].flags;
 }
 
-bool IsEnabled(int flags)
+bool IsEnabled(HookFlag flag)
 {
-  return flags != HLE::HLE_TYPE_DEBUG || SConfig::GetInstance().bEnableDebugging ||
-         PowerPC::GetMode() == PowerPC::CoreMode::Interpreter;
+  return flag != HLE::HookFlag::Debug || SConfig::GetInstance().bEnableDebugging ||
+    PowerPC::GetMode() == PowerPC::CoreMode::Interpreter;
 }
 
 u32 UnPatch(const std::string& patch_name)
 {
   auto* patch = std::find_if(std::begin(OSPatches), std::end(OSPatches),
-                             [&](const SPatch& p) { return patch_name == p.m_szPatchName; });
+    [&](const SPatch& p) { return patch_name == p.m_szPatchName; });
   if (patch == std::end(OSPatches))
     return 0;
 
-  if (patch->flags == HLE_TYPE_FIXED)
+  if (patch->flags == HookFlag::Fixed)
   {
     u32 patch_idx = static_cast<u32>(patch - OSPatches);
     u32 addr = 0;

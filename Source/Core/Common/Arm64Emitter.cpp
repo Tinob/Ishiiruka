@@ -365,13 +365,13 @@ void ARM64XEmitter::FlushIcacheSection(u8* start, u8* end)
 // Exception generation
 static const u32 ExcEnc[][3] = {
   { 0, 0, 1 },  // SVC
-  { 0, 0, 2 },  // HVC
-  { 0, 0, 3 },  // SMC
-  { 1, 0, 0 },  // BRK
-  { 2, 0, 0 },  // HLT
-  { 5, 0, 1 },  // DCPS1
-  { 5, 0, 2 },  // DCPS2
-  { 5, 0, 3 },  // DCPS3
+{ 0, 0, 2 },  // HVC
+{ 0, 0, 3 },  // SMC
+{ 1, 0, 0 },  // BRK
+{ 2, 0, 0 },  // HLT
+{ 5, 0, 1 },  // DCPS1
+{ 5, 0, 2 },  // DCPS2
+{ 5, 0, 3 },  // DCPS3
 };
 
 // Arithmetic generation
@@ -383,19 +383,19 @@ static const u32 ArithEnc[] = {
 // Conditional Select
 static const u32 CondSelectEnc[][2] = {
   { 0, 0 },  // CSEL
-  { 0, 1 },  // CSINC
-  { 1, 0 },  // CSINV
-  { 1, 1 },  // CSNEG
+{ 0, 1 },  // CSINC
+{ 1, 0 },  // CSINV
+{ 1, 1 },  // CSNEG
 };
 
 // Data-Processing (1 source)
 static const u32 Data1SrcEnc[][2] = {
   { 0, 0 },  // RBIT
-  { 0, 1 },  // REV16
-  { 0, 2 },  // REV32
-  { 0, 3 },  // REV64
-  { 0, 4 },  // CLZ
-  { 0, 5 },  // CLS
+{ 0, 1 },  // REV16
+{ 0, 2 },  // REV32
+{ 0, 3 },  // REV64
+{ 0, 4 },  // CLZ
+{ 0, 5 },  // CLS
 };
 
 // Data-Processing (2 source)
@@ -419,61 +419,61 @@ static const u32 Data2SrcEnc[] = {
 // Data-Processing (3 source)
 static const u32 Data3SrcEnc[][2] = {
   { 0, 0 },  // MADD
-  { 0, 1 },  // MSUB
-  { 1, 0 },  // SMADDL (64Bit Only)
-  { 1, 1 },  // SMSUBL (64Bit Only)
-  { 2, 0 },  // SMULH (64Bit Only)
-  { 5, 0 },  // UMADDL (64Bit Only)
-  { 5, 1 },  // UMSUBL (64Bit Only)
-  { 6, 0 },  // UMULH (64Bit Only)
+{ 0, 1 },  // MSUB
+{ 1, 0 },  // SMADDL (64Bit Only)
+{ 1, 1 },  // SMSUBL (64Bit Only)
+{ 2, 0 },  // SMULH (64Bit Only)
+{ 5, 0 },  // UMADDL (64Bit Only)
+{ 5, 1 },  // UMSUBL (64Bit Only)
+{ 6, 0 },  // UMULH (64Bit Only)
 };
 
 // Logical (shifted register)
 static const u32 LogicalEnc[][2] = {
   { 0, 0 },  // AND
-  { 0, 1 },  // BIC
-  { 1, 0 },  // OOR
-  { 1, 1 },  // ORN
-  { 2, 0 },  // EOR
-  { 2, 1 },  // EON
-  { 3, 0 },  // ANDS
-  { 3, 1 },  // BICS
+{ 0, 1 },  // BIC
+{ 1, 0 },  // OOR
+{ 1, 1 },  // ORN
+{ 2, 0 },  // EOR
+{ 2, 1 },  // EON
+{ 3, 0 },  // ANDS
+{ 3, 1 },  // BICS
 };
 
 // Load/Store Exclusive
 static const u32 LoadStoreExcEnc[][5] = {
   { 0, 0, 0, 0, 0 },  // STXRB
-  { 0, 0, 0, 0, 1 },  // STLXRB
-  { 0, 0, 1, 0, 0 },  // LDXRB
-  { 0, 0, 1, 0, 1 },  // LDAXRB
-  { 0, 1, 0, 0, 1 },  // STLRB
-  { 0, 1, 1, 0, 1 },  // LDARB
-  { 1, 0, 0, 0, 0 },  // STXRH
-  { 1, 0, 0, 0, 1 },  // STLXRH
-  { 1, 0, 1, 0, 0 },  // LDXRH
-  { 1, 0, 1, 0, 1 },  // LDAXRH
-  { 1, 1, 0, 0, 1 },  // STLRH
-  { 1, 1, 1, 0, 1 },  // LDARH
-  { 2, 0, 0, 0, 0 },  // STXR
-  { 3, 0, 0, 0, 0 },  // (64bit) STXR
-  { 2, 0, 0, 0, 1 },  // STLXR
-  { 3, 0, 0, 0, 1 },  // (64bit) STLXR
-  { 2, 0, 0, 1, 0 },  // STXP
-  { 3, 0, 0, 1, 0 },  // (64bit) STXP
-  { 2, 0, 0, 1, 1 },  // STLXP
-  { 3, 0, 0, 1, 1 },  // (64bit) STLXP
-  { 2, 0, 1, 0, 0 },  // LDXR
-  { 3, 0, 1, 0, 0 },  // (64bit) LDXR
-  { 2, 0, 1, 0, 1 },  // LDAXR
-  { 3, 0, 1, 0, 1 },  // (64bit) LDAXR
-  { 2, 0, 1, 1, 0 },  // LDXP
-  { 3, 0, 1, 1, 0 },  // (64bit) LDXP
-  { 2, 0, 1, 1, 1 },  // LDAXP
-  { 3, 0, 1, 1, 1 },  // (64bit) LDAXP
-  { 2, 1, 0, 0, 1 },  // STLR
-  { 3, 1, 0, 0, 1 },  // (64bit) STLR
-  { 2, 1, 1, 0, 1 },  // LDAR
-  { 3, 1, 1, 0, 1 },  // (64bit) LDAR
+{ 0, 0, 0, 0, 1 },  // STLXRB
+{ 0, 0, 1, 0, 0 },  // LDXRB
+{ 0, 0, 1, 0, 1 },  // LDAXRB
+{ 0, 1, 0, 0, 1 },  // STLRB
+{ 0, 1, 1, 0, 1 },  // LDARB
+{ 1, 0, 0, 0, 0 },  // STXRH
+{ 1, 0, 0, 0, 1 },  // STLXRH
+{ 1, 0, 1, 0, 0 },  // LDXRH
+{ 1, 0, 1, 0, 1 },  // LDAXRH
+{ 1, 1, 0, 0, 1 },  // STLRH
+{ 1, 1, 1, 0, 1 },  // LDARH
+{ 2, 0, 0, 0, 0 },  // STXR
+{ 3, 0, 0, 0, 0 },  // (64bit) STXR
+{ 2, 0, 0, 0, 1 },  // STLXR
+{ 3, 0, 0, 0, 1 },  // (64bit) STLXR
+{ 2, 0, 0, 1, 0 },  // STXP
+{ 3, 0, 0, 1, 0 },  // (64bit) STXP
+{ 2, 0, 0, 1, 1 },  // STLXP
+{ 3, 0, 0, 1, 1 },  // (64bit) STLXP
+{ 2, 0, 1, 0, 0 },  // LDXR
+{ 3, 0, 1, 0, 0 },  // (64bit) LDXR
+{ 2, 0, 1, 0, 1 },  // LDAXR
+{ 3, 0, 1, 0, 1 },  // (64bit) LDAXR
+{ 2, 0, 1, 1, 0 },  // LDXP
+{ 3, 0, 1, 1, 0 },  // (64bit) LDXP
+{ 2, 0, 1, 1, 1 },  // LDAXP
+{ 3, 0, 1, 1, 1 },  // (64bit) LDAXP
+{ 2, 1, 0, 0, 1 },  // STLR
+{ 3, 1, 0, 0, 1 },  // (64bit) STLR
+{ 2, 1, 1, 0, 1 },  // LDAR
+{ 3, 1, 1, 0, 1 },  // (64bit) LDAR
 };
 
 void ARM64XEmitter::EncodeCompareBranchInst(u32 op, ARM64Reg Rt, const void* ptr)
@@ -2029,7 +2029,8 @@ void ARM64XEmitter::MOVI2R(ARM64Reg Rd, u64 imm, bool optimize)
 
   u64 aligned_pc = (u64)GetCodePtr() & ~0xFFF;
   s64 aligned_offset = (s64)imm - (s64)aligned_pc;
-  if (upload_part.Count() > 1 && std::abs(aligned_offset) < 0xFFFFFFFFLL)
+  // The offset for ADR/ADRP is an s32, so make sure it can be represented in that
+  if (upload_part.Count() > 1 && std::abs(aligned_offset) < 0x7FFFFFFFLL)
   {
     // Immediate we are loading is within 4GB of our aligned range
     // Most likely a address that we can load in one or two instructions

@@ -61,7 +61,7 @@ void Jit64AsmRoutineManager::Generate()
   ABI_CallFunction(CoreTiming::Advance);
   ABI_PopRegistersAndAdjustStack({}, 0);
   FixupBranch skipToRealDispatch =
-      J(SConfig::GetInstance().bEnableDebugging);  // skip the sync and compare first time
+    J(SConfig::GetInstance().bEnableDebugging);  // skip the sync and compare first time
   dispatcherMispredictedBLR = GetCodePtr();
   AND(32, PPCSTATE(pc), Imm32(0xFFFFFFFC));
 
@@ -222,14 +222,6 @@ void Jit64AsmRoutineManager::ResetStack(X64CodeBlock& emitter)
 
 void Jit64AsmRoutineManager::GenerateCommon()
 {
-  fifoDirectWrite8 = AlignCode4();
-  GenFifoWrite(8);
-  fifoDirectWrite16 = AlignCode4();
-  GenFifoWrite(16);
-  fifoDirectWrite32 = AlignCode4();
-  GenFifoWrite(32);
-  fifoDirectWrite64 = AlignCode4();
-  GenFifoWrite(64);
   frsqrte = AlignCode4();
   GenFrsqrte();
   fres = AlignCode4();

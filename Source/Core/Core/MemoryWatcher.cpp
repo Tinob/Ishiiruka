@@ -58,7 +58,8 @@ MemoryWatcher::~MemoryWatcher()
 
 bool MemoryWatcher::LoadAddresses(const std::string& path)
 {
-  std::ifstream locations(path);
+  std::ifstream locations;
+  File::OpenFStream(locations, path, std::ios_base::in);
   if (!locations)
     return false;
 
@@ -123,7 +124,7 @@ void MemoryWatcher::Step()
       current_value = new_value;
       std::string message = ComposeMessage(address, new_value);
       sendto(m_fd, message.c_str(), message.size() + 1, 0, reinterpret_cast<sockaddr*>(&m_addr),
-             sizeof(m_addr));
+        sizeof(m_addr));
     }
   }
 }

@@ -769,9 +769,6 @@
     <ClCompile Include="IOS\IOSC.cpp">
       <Filter>IOS</Filter>
     </ClCompile>
-    <ClCompile Include="IOS\MemoryValues.cpp">
-      <Filter>IOS</Filter>
-    </ClCompile>
     <ClCompile Include="IOS\MIOS.cpp">
       <Filter>IOS</Filter>
     </ClCompile>
@@ -888,6 +885,9 @@
     </ClCompile>
     <ClCompile Include="IOS\USB\USB_HID\HIDv5.cpp">
       <Filter>IOS\USB</Filter>
+    </ClCompile>
+    <ClCompile Include="IOS\VersionInfo.cpp">
+      <Filter>IOS</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1507,9 +1507,6 @@
     <ClInclude Include="IOS\IOSC.h">
       <Filter>IOS</Filter>
     </ClInclude>
-    <ClInclude Include="IOS\MemoryValues.h">
-      <Filter>IOS</Filter>
-    </ClInclude>
     <ClInclude Include="IOS\MIOS.h">
       <Filter>IOS</Filter>
     </ClInclude>
@@ -1557,6 +1554,9 @@
     </ClInclude>
     <ClInclude Include="IOS\USB\USB_HID\HIDv5.h">
       <Filter>IOS\USB</Filter>
+    </ClInclude>
+    <ClInclude Include="IOS\VersionInfo.h">
+      <Filter>IOS</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

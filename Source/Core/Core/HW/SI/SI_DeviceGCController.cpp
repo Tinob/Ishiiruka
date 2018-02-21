@@ -23,7 +23,7 @@ namespace SerialInterface
 {
 // --- standard GameCube controller ---
 CSIDevice_GCController::CSIDevice_GCController(SIDevices device, int device_number)
-    : ISIDevice(device, device_number)
+  : ISIDevice(device, device_number)
 {
 }
 
@@ -46,6 +46,14 @@ int CSIDevice_GCController::RunBuffer(u8* buffer, int length)
 {
   // For debug logging only
   ISIDevice::RunBuffer(buffer, length);
+
+  GCPadStatus pad_status = GetPadStatus();
+  if (!pad_status.isConnected)
+  {
+    constexpr u32 reply = SI_ERROR_NO_RESPONSE;
+    std::memcpy(buffer, &reply, sizeof(reply));
+    return 4;
+  }
 
   // Read the command
   EBufferCommands command = static_cast<EBufferCommands>(buffer[3]);
@@ -165,6 +173,13 @@ GCPadStatus CSIDevice_GCController::GetPadStatus()
 bool CSIDevice_GCController::GetData(u32& hi, u32& low)
 {
   GCPadStatus pad_status = GetPadStatus();
+
+  if (!pad_status.isConnected)
+  {
+    hi = 0x80000000;
+    return true;
+  }
+
   if (HandleButtonCombos(pad_status) == COMBO_ORIGIN)
     pad_status.button |= PAD_GET_ORIGIN;
 
@@ -210,7 +225,7 @@ bool CSIDevice_GCController::GetData(u32& hi, u32& low)
   {
     low = (u8)(pad_status.analogB);               // All 8 bits
     low |= (u32)((u8)(pad_status.analogA) << 8);  // All 8 bits
-    // triggerLeft/Right are always 0
+                                                  // triggerLeft/Right are always 0
     low |= (u32)((u8)pad_status.substickY << 16);  // All 8 bits
     low |= (u32)((u8)pad_status.substickX << 24);  // All 8 bits
   }
@@ -287,7 +302,7 @@ void CSIDevice_GCController::SendCommand(u32 command, u8 poll)
 
   switch (controller_command.command)
   {
-  // Costis sent it in some demos :)
+    // Costis sent it in some demos :)
   case 0x00:
     break;
 
