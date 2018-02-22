@@ -78,7 +78,6 @@ inline void LoadDataMap(ID3D11Texture2D* pTexture, const u8* buffer, const s32 l
 
 inline void LoadDataResource(ID3D11Texture2D* pTexture, const u8* buffer, const s32 level, s32 width, s32 height, s32 pitch, DXGI_FORMAT fmt, bool swap_rb)
 {
-  D3D11_BOX dest_region = CD3D11_BOX(0, 0, 0, width, height, 1);
   s32 pixelsize = 0;
   switch (fmt)
   {
@@ -103,10 +102,7 @@ inline void LoadDataResource(ID3D11Texture2D* pTexture, const u8* buffer, const 
   case DXGI_FORMAT_BC3_UNORM:
   case DXGI_FORMAT_BC7_UNORM:
     pitch = (pitch + 3) >> 2;
-    pixelsize = (fmt == DXGI_FORMAT_BC1_UNORM ? 8 : 16);
-    dest_region.right = width < 4 ? 4 : width;
-    dest_region.bottom = height < 4 ? 4 : height;
-    height = 0;
+    pixelsize = (fmt == DXGI_FORMAT_BC1_UNORM ? 8 : 16);    
     break;
   case DXGI_FORMAT_R16G16B16A16_FLOAT:
     pixelsize = 8;
@@ -119,7 +115,7 @@ inline void LoadDataResource(ID3D11Texture2D* pTexture, const u8* buffer, const 
   }
   if (pixelsize > 0)
   {
-    D3D::context->UpdateSubresource(pTexture, level, &dest_region, buffer, pixelsize * pitch, pixelsize * pitch * height);
+    D3D::context->UpdateSubresource(pTexture, level, nullptr, buffer, pixelsize * pitch, 0);
   }
 }
 

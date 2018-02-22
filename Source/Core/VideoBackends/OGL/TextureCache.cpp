@@ -84,8 +84,7 @@ static void DestroyTextureDecodingResources();
 
 HostTextureFormat TextureCache::GetHostTextureFormat(const s32 texformat, const TlutFormat tlutfmt, u32 width, u32 height)
 {
-  const bool compressed_supported = ((width & 3) == 0) && ((height & 3) == 0);
-  HostTextureFormat pcfmt = TexDecoder::GetHostTextureFormat(texformat, tlutfmt, compressed_supported);
+  HostTextureFormat pcfmt = TexDecoder::GetHostTextureFormat(texformat, tlutfmt, true);
   pcfmt = !g_ActiveConfig.backend_info.bSupportedFormats[pcfmt] ? PC_TEX_FMT_RGBA32 : pcfmt;
   return pcfmt;
 }
