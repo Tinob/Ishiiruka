@@ -258,15 +258,29 @@ void VertexManagerBase::DoFlush()
         const TextureCacheBase::TCacheEntry* tentry = g_texture_cache->Load(i);
         if (tentry)
         {
+          int materiallayer = 0;
+          int emissivelayer = 0;
           if (g_ActiveConfig.HiresMaterialMapsEnabled())
           {
+            if (tentry->material_map)
+            {
+              materiallayer = 1;
+            }
+            if (tentry->emissive)
+            {
+              emissivelayer = materiallayer + 1;
+            }
             material_mask |= ((int)tentry->material_map) << i;
-            emissive_mask |= ((int)tentry->emissive_in_alpha) << i;
+            emissive_mask |= ((int)tentry->emissive) << i;
           }
           float custom_tex_scale = tentry->GetConfig().width / float(tentry->native_width);
           SetSamplerState(i, tentry->is_custom_tex || tentry->is_scaled, tentry->has_arbitrary_mips, custom_tex_scale);
-          PixelShaderManager::SetTexDims(i, tentry->native_width, tentry->native_height);
-          
+          PixelShaderManager::SetTexDims(
+            i,
+            tentry->native_width,
+            tentry->native_height,
+            tentry->IsEfbCopy() ? tentry->GetConfig().layers : 0 ,
+            materiallayer, emissivelayer);
         }
         else
           ERROR_LOG(VIDEO, "error loading texture");

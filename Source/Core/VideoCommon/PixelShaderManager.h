@@ -41,7 +41,7 @@ public:
   static void SetAlpha();
   static void SetAlphaTestChanged();
   static void SetDestAlphaChanged();
-  static void SetTexDims(int texmapid, u32 width, u32 height);
+  static void SetTexDims(int texmapid, u32 width, u32 height, u32 layers, u32 normallayer, u32 emissivelayer);
   static void SetZTextureBias();
 
   static inline void SetViewportChanged()
@@ -120,6 +120,7 @@ private:
   static bool s_bIndirectDirty;
   static bool s_bDestAlphaDirty;
   static u8 s_nTexDimsChanged;
+  static u8 s_nTexLayersChanged;
   static u8 s_nIndTexScaleChanged;
   static int s_materials_changed;
   static void SetPSTextureDims(int texid);

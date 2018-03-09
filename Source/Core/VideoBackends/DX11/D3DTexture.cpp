@@ -12,10 +12,10 @@ namespace DX11
 
 namespace D3D
 {
-inline void LoadDataMap(ID3D11Texture2D* pTexture, const u8* buffer, const s32 level, s32 width, s32 height, s32 pitch, DXGI_FORMAT fmt, bool swap_rb, bool convert_rgb565)
+inline void LoadDataMap(ID3D11Texture2D* pTexture, const u8* buffer, const s32 level, s32 width, s32 height, s32 pitch, u32 layer, u32 miplevels, DXGI_FORMAT fmt, bool swap_rb, bool convert_rgb565)
 {
   D3D11_MAPPED_SUBRESOURCE map;
-  HRESULT hr = D3D::context->Map(pTexture, level, D3D11_MAP_WRITE_DISCARD, 0, &map);
+  HRESULT hr = D3D::context->Map(pTexture, D3D11CalcSubresource(level, layer, miplevels), D3D11_MAP_WRITE_DISCARD, 0, &map);
   if (FAILED(hr) || !map.pData)
   {
     PanicAlert("Failed to map texture in %s %d\n", __FILE__, __LINE__);
@@ -76,7 +76,7 @@ inline void LoadDataMap(ID3D11Texture2D* pTexture, const u8* buffer, const s32 l
   D3D::context->Unmap(pTexture, level);
 }
 
-inline void LoadDataResource(ID3D11Texture2D* pTexture, const u8* buffer, const s32 level, s32 width, s32 height, s32 pitch, DXGI_FORMAT fmt, bool swap_rb)
+inline void LoadDataResource(ID3D11Texture2D* pTexture, const u8* buffer, const s32 level, s32 width, s32 height, s32 pitch, u32 layer, u32 miplevels, DXGI_FORMAT fmt, bool swap_rb)
 {
   s32 pixelsize = 0;
   switch (fmt)
@@ -115,19 +115,19 @@ inline void LoadDataResource(ID3D11Texture2D* pTexture, const u8* buffer, const 
   }
   if (pixelsize > 0)
   {
-    D3D::context->UpdateSubresource(pTexture, level, nullptr, buffer, pixelsize * pitch, 0);
+    D3D::context->UpdateSubresource(pTexture, D3D11CalcSubresource(level, layer, miplevels), nullptr, buffer, pixelsize * pitch, 0);
   }
 }
 
-void ReplaceTexture2D(ID3D11Texture2D* pTexture, const u8* buffer, u32 width, u32 height, u32 pitch, u32 level, D3D11_USAGE usage, DXGI_FORMAT fmt, bool swap_rb, bool convert_rgb565)
+void ReplaceTexture2D(ID3D11Texture2D* pTexture, const u8* buffer, u32 width, u32 height, u32 pitch, u32 level, u32 layer, u32 miplevels, D3D11_USAGE usage, DXGI_FORMAT fmt, bool swap_rb, bool convert_rgb565)
 {
   if (usage == D3D11_USAGE_DYNAMIC || usage == D3D11_USAGE_STAGING)
   {
-    LoadDataMap(pTexture, buffer, level, width, height, pitch, fmt, swap_rb, convert_rgb565);
+    LoadDataMap(pTexture, buffer, level, width, height, pitch, layer, miplevels, fmt, swap_rb, convert_rgb565);
   }
   else
   {
-    LoadDataResource(pTexture, buffer, level, width, height, pitch, fmt, swap_rb);
+    LoadDataResource(pTexture, buffer, level, width, height, pitch, layer, miplevels, fmt, swap_rb);
   }
 }
 

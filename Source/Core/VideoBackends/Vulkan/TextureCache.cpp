@@ -96,9 +96,9 @@ bool TextureCache::Palettize(TCacheEntry* _entry, const TCacheEntry* base_entry)
 {
   TCacheEntry* entry = static_cast<TCacheEntry*>(_entry);
   const TCacheEntry* unconverted = static_cast<const TCacheEntry*>(base_entry);
-  VKTexture* dst_tex = static_cast<VKTexture*>(_entry->GetColor());
+  VKTexture* dst_tex = static_cast<VKTexture*>(_entry->texture.get());
   m_texture_converter->ConvertTexture(entry, unconverted, GetRenderPass(dst_tex->GetRawTexIdentifier()->GetFormat()), m_pallette, m_pallette_format, m_pallette_size);
-  static_cast<VKTexture*>(base_entry->GetColor())
+  static_cast<VKTexture*>(base_entry->texture.get())
     ->GetRawTexIdentifier()
     ->TransitionToLayout(g_command_buffer_mgr->GetCurrentCommandBuffer(),
       VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
@@ -270,7 +270,7 @@ void TextureCache::CopyEFBToCacheEntry(
   TextureCacheBase::TCacheEntry* entry, bool is_depth_copy, const EFBRectangle& src_rect,
   bool scale_by_half, u32 cbuf_id, const float* colmat, u32 width, u32 height)
 {
-  VKTexture* texture = static_cast<VKTexture*>(entry->GetColor());
+  VKTexture* texture = static_cast<VKTexture*>(entry->texture.get());
   // A better way of doing this would be nice.
   FramebufferManager* framebuffer_mgr =
     static_cast<FramebufferManager*>(g_framebuffer_manager.get());

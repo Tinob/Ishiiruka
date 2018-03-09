@@ -30,7 +30,7 @@ public:
   static void CopyRectangle(D3DTexture2D* source, D3DTexture2D* destination,
     const MathUtil::Rectangle<int>& srcrect, u32 srcwidth, u32 srcheight,
     const MathUtil::Rectangle<int>& dstrect, u32 dstwidth, u32 dstheight);
-  void Load(const u8* src, u32 width, u32 height, u32 expanded_width, u32 level) override;
+  void Load(const u8* src, u32 width, u32 height, u32 expanded_width, u32 level, u32 layer) override;
 
   D3DTexture2D* GetRawTexIdentifier() const;
   uintptr_t GetInternalObject() const override { return reinterpret_cast<uintptr_t>(m_texture); };

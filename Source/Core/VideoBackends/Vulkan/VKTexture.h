@@ -27,7 +27,7 @@ public:
     const MathUtil::Rectangle<int>& dstrect) override;
   void CopyRectangleFromTexture(Texture2D* source, const MathUtil::Rectangle<int>& srcrect,
     const MathUtil::Rectangle<int>& dstrect);
-  void Load(const u8* src, u32 width, u32 height, u32 expanded_width, u32 level) override;
+  void Load(const u8* src, u32 width, u32 height, u32 expanded_width, u32 level, u32 layer) override;
 
   Texture2D* GetRawTexIdentifier() const;
   VkFramebuffer GetFramebuffer() const;

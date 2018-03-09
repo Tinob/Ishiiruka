@@ -46,7 +46,7 @@ enum DESCRIPTOR_SET_BIND_POINT
 // We use four pipeline layouts:
 //   - Standard
 //       - Per-stage UBO (VS/GS/PS, VS constants accessible from PS)
-//       - 16 combined image samplers (accessible from PS)
+//       - 8 combined image samplers (accessible from PS)
 //   - BBox Enabled
 //       - Same as standard, plus a single SSBO accessible from PS
 //   - Push Constant
@@ -86,7 +86,7 @@ enum UNIFORM_BUFFER_DESCRIPTOR_SET_BINDING
 constexpr size_t MAX_VERTEX_ATTRIBUTES = 16;
 
 // Number of pixel shader texture slots
-constexpr size_t NUM_PIXEL_SHADER_SAMPLERS = 16;
+constexpr size_t NUM_PIXEL_SHADER_SAMPLERS = 8;
 
 // Total number of binding points in the pipeline layout
 constexpr size_t TOTAL_PIPELINE_BINDING_POINTS =

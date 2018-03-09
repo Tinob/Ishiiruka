@@ -45,7 +45,7 @@ void TextureCache::CopyEFBToCacheEntry(TextureCacheBase::TCacheEntry* entry, boo
   bool scale_by_half, u32 cbuf_id, const float* colmat, u32 width, u32 height)
 {
   auto config = entry->GetConfig();
-  const DXTexture* hosttexture = static_cast<const DXTexture*>(entry->GetColor());
+  const DXTexture* hosttexture = static_cast<const DXTexture*>(entry->texture.get());
   g_renderer->ResetAPIState(); // reset any game specific settings
 
   const LPDIRECT3DTEXTURE9 read_texture = is_depth_copy ?
@@ -131,7 +131,7 @@ void TextureCache::CopyEFB(u8* dst, const EFBCopyFormat& format, u32 native_widt
 
 bool TextureCache::Palettize(TCacheEntry* entry, const TCacheEntry* base_entry)
 {
-  LPDIRECT3DTEXTURE9 texture = static_cast<DXTexture*>(entry->GetColor())->GetRawTexIdentifier();
+  LPDIRECT3DTEXTURE9 texture = static_cast<DXTexture*>(entry->texture.get())->GetRawTexIdentifier();
   u32 texformat = entry->format & 0xf;
   Depalettizer::BaseType baseType = Depalettizer::Unorm8;
   if (texformat == GX_TF_C4 || texformat == GX_TF_I4)
@@ -140,7 +140,7 @@ bool TextureCache::Palettize(TCacheEntry* entry, const TCacheEntry* base_entry)
     baseType = Depalettizer::Unorm8;
   else
     return false;
-  return s_depaletizer->Depalettize(texture, static_cast<DXTexture*>(base_entry->GetColor())->GetRawTexIdentifier(), baseType);
+  return s_depaletizer->Depalettize(texture, static_cast<DXTexture*>(base_entry->texture.get())->GetRawTexIdentifier(), baseType);
 }
 
 HostTextureFormat TextureCache::GetHostTextureFormat(const s32 texformat, const TlutFormat tlutfmt, u32 width, u32 height)

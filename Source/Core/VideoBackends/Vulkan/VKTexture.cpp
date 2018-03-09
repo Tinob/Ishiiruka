@@ -238,7 +238,7 @@ void VKTexture::CopyRectangleFromTexture(Texture2D* source, const MathUtil::Rect
     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 }
 
-void VKTexture::Load(const u8* src, u32 width, u32 height, u32 expanded_width, u32 level)
+void VKTexture::Load(const u8* src, u32 width, u32 height, u32 expanded_width, u32 level, u32 layer)
 {
   // Can't copy data larger than the texture extents.
   width = std::max(1u, std::min(width, m_config.width >> level));
@@ -336,7 +336,7 @@ void VKTexture::Load(const u8* src, u32 width, u32 height, u32 expanded_width, u
       image_upload_buffer_offset,                // VkDeviceSize                bufferOffset
       0,                                         // uint32_t                    bufferRowLength
       0,                                         // uint32_t                    bufferImageHeight
-      { VK_IMAGE_ASPECT_COLOR_BIT, level, 0, 1 },  // VkImageSubresourceLayers    imageSubresource
+      { VK_IMAGE_ASPECT_COLOR_BIT, level, layer, 1 },  // VkImageSubresourceLayers    imageSubresource
       { 0, 0, 0 },                                 // VkOffset3D                  imageOffset
       { width, height, 1 }                         // VkExtent3D                  imageExtent
     };
@@ -361,7 +361,7 @@ void VKTexture::Load(const u8* src, u32 width, u32 height, u32 expanded_width, u
     staging_texture->WriteTexels(0, 0, width, height, src, source_pitch);
     staging_texture->CopyToImage(g_command_buffer_mgr->GetCurrentInitCommandBuffer(),
       m_texture->GetImage(), VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, width,
-      height, level, 0);
+      height, level, layer);
   }
   // Last mip level? We shouldn't be doing any further uploads now, so transition for rendering.
   if (level == (m_config.levels - 1))

@@ -21,7 +21,7 @@ public:
   void CopyRectangleFromTexture(const HostTexture* source,
     const MathUtil::Rectangle<int>& srcrect,
     const MathUtil::Rectangle<int>& dstrect) override;
-  void Load(const u8* src, u32 width, u32 height, u32 expanded_width, u32 level) override;
+  void Load(const u8* src, u32 width, u32 height, u32 expanded_width, u32 level, u32 layer) override;
   uintptr_t GetInternalObject() const override { return 0; };
 };
 

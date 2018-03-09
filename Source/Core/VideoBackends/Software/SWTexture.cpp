@@ -20,7 +20,7 @@ void SWTexture::CopyRectangleFromTexture(const HostTexture* source,
 {
 }
 
-void SWTexture::Load(const u8* src, u32 width, u32 height, u32 expanded_width, u32 level)
+void SWTexture::Load(const u8* src, u32 width, u32 height, u32 expanded_width, u32 level, u32 layer)
 {
 }
 

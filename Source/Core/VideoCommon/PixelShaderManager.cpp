@@ -14,6 +14,7 @@
 #include "VideoCommon/VideoCommon.h"
 #include "VideoCommon/VideoConfig.h"
 #include "VideoCommon/XFMemory.h"
+#include "VideoCommon/ConstantManager.h"
 
 
 alignas(256) float PixelShaderManager::psconstants[PixelShaderManager::ConstantBufferSize];
@@ -35,9 +36,11 @@ bool PixelShaderManager::s_bDestAlphaDirty;
 static int nLightsChanged[2]; // min,max
 static int lastRGBAfull[2][4][4];
 u8 PixelShaderManager::s_nTexDimsChanged;
+u8 PixelShaderManager::s_nTexLayersChanged;
 u8 PixelShaderManager::s_nIndTexScaleChanged;
 static u32 lastAlpha;
 static u32 lastTexDims[8]; // width | height << 16 | wrap_s << 28 | wrap_t << 30
+static uint4 lastTexLayers[8];
 static u32 lastZBias;
 int PixelShaderManager::s_materials_changed;
 static int sflags[4];
@@ -94,7 +97,7 @@ void PixelShaderManager::Dirty()
   sbflagschanged = true;
   s_EfbScaleChanged = true;
   s_bIndirectDirty = true;
-  s_bDestAlphaDirty =  true;
+  s_bDestAlphaDirty = true;
 }
 
 const float* PixelShaderManager::GetBuffer()
@@ -164,10 +167,22 @@ void PixelShaderManager::SetConstants()
     }
   }
 
+  if (s_nTexLayersChanged)
+  {
+    for (int i = 0; i < 8; ++i)
+    {
+      if ((s_nTexLayersChanged & (1 << i)))
+      {
+       m_buffer.SetConstant4<float>(C_TEXLAYERS + i, float(lastTexLayers[i][0]), float(lastTexLayers[i][1]), float(lastTexLayers[i][2]), 0.0f);
+        s_nTexLayersChanged &= ~(1 << i);
+      }
+    }
+  }
+
   if (s_bAlphaChanged)
   {
     if (s_use_integer_constants)
-      m_buffer.SetConstant4<int>(C_ALPHA, lastAlpha & 0xff, (lastAlpha >> 8) & 0xff, 0,(lastAlpha >> 16) & 0xff);
+      m_buffer.SetConstant4<int>(C_ALPHA, lastAlpha & 0xff, (lastAlpha >> 8) & 0xff, 0, (lastAlpha >> 16) & 0xff);
     else
       m_buffer.SetConstant4<float>(C_ALPHA, ((float)(lastAlpha & 0xff)), ((float)((lastAlpha >> 8) & 0xff)), 0.0f, ((float)((lastAlpha >> 16) & 0xff)));
     s_bAlphaChanged = false;
@@ -476,7 +491,7 @@ void PixelShaderManager::SetConstants()
         }
       }
       s_materials_changed = 0;
-    }    
+    }
   }
   if (g_ActiveConfig.iRimBase != s_LightsPhong[0]
     || g_ActiveConfig.iRimPower != s_LightsPhong[1]
@@ -527,8 +542,8 @@ void PixelShaderManager::SetConstants()
         // We set some extra bits so the ubershader can quickly check if these
         // features are in use.
         if (bpmem.tevind[i].IsActive())
-          m_buffer.SetConstant(C_UBERPACK1 + stage, 3, 
-          bpmem.tevindref.getTexCoord(stage) | bpmem.tevindref.getTexMap(stage) << 8 | 1 << 16);
+          m_buffer.SetConstant(C_UBERPACK1 + stage, 3,
+            bpmem.tevindref.getTexCoord(stage) | bpmem.tevindref.getTexMap(stage) << 8 | 1 << 16);
         // Note: a tevind of zero just happens to be a passthrough, so no need
         // to set an extra bit.
         m_buffer.SetConstant(C_UBERPACK1 + i, 2,
@@ -685,13 +700,28 @@ void PixelShaderManager::SetDestAlphaChanged()
   }
 }
 
-void PixelShaderManager::SetTexDims(int texmapid, u32 width, u32 height)
+void PixelShaderManager::SetTexDims(int texmapid, u32 width, u32 height, u32 layers, u32 normallayer, u32 emissivelayer)
 {
   u32 wh = width | (height << 16);
   if (lastTexDims[texmapid] != wh)
   {
     lastTexDims[texmapid] = wh;
     s_nTexDimsChanged |= 1 << texmapid;
+  }
+  if (lastTexLayers[texmapid][0] != layers)
+  {
+    lastTexLayers[texmapid][0] = layers;
+    s_nTexLayersChanged |= 1 << texmapid;
+  }
+  if (lastTexLayers[texmapid][1] != normallayer)
+  {
+    lastTexLayers[texmapid][1] = normallayer;
+    s_nTexLayersChanged |= 1 << texmapid;
+  }
+  if (lastTexLayers[texmapid][2] != emissivelayer)
+  {
+    lastTexLayers[texmapid][2] = emissivelayer;
+    s_nTexLayersChanged |= 1 << texmapid;
   }
 }
 

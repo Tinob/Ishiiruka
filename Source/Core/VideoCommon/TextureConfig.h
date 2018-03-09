@@ -23,8 +23,9 @@ struct TextureConfig
     u32 result = TextureUtil::GetTextureSizeInBytes(width, height, pcformat);
     if (levels > 1 || rendertarget)
     {
-      result += result * 2;
+      result += result * levels;
     }
+    result *= layers;
     result = std::max(result, 4096u);
     return result;
   }

@@ -170,8 +170,8 @@ void TextureConverter::ConvertTexture(TextureCacheBase::TCacheEntry* dst_entry, 
     int texel_buffer_offset;
     int pad[2];
   };
-  VKTexture* dst_tex = static_cast<VKTexture*>(dst_entry->GetColor());
-  VKTexture* src_tex = static_cast<VKTexture*>(src_entry->GetColor());
+  VKTexture* dst_tex = static_cast<VKTexture*>(dst_entry->texture.get());
+  VKTexture* src_tex = static_cast<VKTexture*>(src_entry->texture.get());
   _assert_(static_cast<size_t>(palette_format) < NUM_PALETTE_CONVERSION_SHADERS);
   _assert_(dst_tex->GetConfig().rendertarget);
 

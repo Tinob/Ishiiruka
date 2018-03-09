@@ -22,7 +22,7 @@ public:
   virtual void CopyRectangleFromTexture(const HostTexture* source,
     const MathUtil::Rectangle<int>& srcrect,
     const MathUtil::Rectangle<int>& dstrect) = 0;
-  virtual void Load(const u8* src, u32 width, u32 height, u32 expanded_width, u32 level) = 0;
+  virtual void Load(const u8* src, u32 width, u32 height, u32 expanded_width, u32 level, u32 layer) = 0;
   virtual uintptr_t GetInternalObject() const = 0;
 
   const TextureConfig& GetConfig() const

@@ -94,7 +94,7 @@ DXTexture::DXTexture(const TextureConfig& tex_config) : HostTexture(tex_config)
     cpu_access = D3D11_CPU_ACCESS_WRITE;
   }
   const D3D11_TEXTURE2D_DESC texdesc = CD3D11_TEXTURE2D_DESC(format,
-    m_config.width, m_config.height, 1, m_config.levels, D3D11_BIND_SHADER_RESOURCE, usage, cpu_access);
+    m_config.width, m_config.height, m_config.layers, m_config.levels, D3D11_BIND_SHADER_RESOURCE, usage, cpu_access);
 
   ID3D11Texture2D *pTexture;
   HRESULT hr = D3D::device->CreateTexture2D(&texdesc, NULL, &pTexture);
@@ -292,7 +292,7 @@ void DXTexture::CopyRectangleFromTexture(const HostTexture* source,
   CopyRectangle(srcentry->m_texture, m_texture, srcrect, srcentry->m_config.width, srcentry->m_config.height, dstrect, m_config.width, m_config.height);
 }
 
-void DXTexture::Load(const u8* src, u32 width, u32 height, u32 expanded_width, u32 level)
+void DXTexture::Load(const u8* src, u32 width, u32 height, u32 expanded_width, u32 level, u32 layer)
 {
   D3D::ReplaceTexture2D(
     m_texture->GetTex(),
@@ -301,6 +301,8 @@ void DXTexture::Load(const u8* src, u32 width, u32 height, u32 expanded_width, u
     height,
     expanded_width,
     level,
+    layer,
+    m_config.levels,
     usage,
     m_texture->GetFormat(),
     swap_rg,

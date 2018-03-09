@@ -14,6 +14,7 @@
 #define I_KCOLORS     "knst"
 #define I_ALPHA       "alphaRef"
 #define I_TEXDIMS     "texdim"
+#define I_TEXLAYERS   "texlayer"
 #define I_ZBIAS       "czbias"
 #define I_INDTEXSCALE "cindscale"
 #define I_INDTEXMTX   "cindmtx"
@@ -32,7 +33,8 @@ enum PixelShaderBufferIndex : u32
   C_KCOLORS = (C_COLORS + 4),
   C_ALPHA = (C_KCOLORS + 4),
   C_TEXDIMS = (C_ALPHA + 1),
-  C_ZBIAS = (C_TEXDIMS + 8),
+  C_TEXLAYERS = (C_TEXDIMS + 8),
+  C_ZBIAS = (C_TEXLAYERS + 8),
   C_INDTEXSCALE = (C_ZBIAS + 2),
   C_INDTEXMTX = (C_INDTEXSCALE + 2),
   C_FOGCOLOR = (C_INDTEXMTX + 6),

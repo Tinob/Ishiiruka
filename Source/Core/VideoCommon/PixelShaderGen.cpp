@@ -644,29 +644,32 @@ void GetPixelShaderUID(PixelShaderUid& out, PIXEL_SHADER_RENDER_MODE render_mode
 
 void SampleTexture(ShaderCode& out, API_TYPE ApiType, const char *texcoords, const char *texswap, int texmap, bool stereo)
 {
-  if (ApiType == API_D3D11)
+  out.Write("wuround(");
+  out.Write((ApiType & API_D3D9) ? "tex2D" : (ApiType == API_D3D11 ? "Tex[%d].Sample" : "texture"), texmap);
+  out.Write("(samp[%d],%s%s.xy * " I_TEXDIMS"[%d].xy", texmap, (ApiType & API_D3D9) ? "" : "float3(", texcoords, texmap);
+  if ((ApiType & API_D3D9) == 0)
   {
-    out.Write("wuround((Tex[%d].Sample(samp[%d], float3(%s.xy * " I_TEXDIMS"[%d].xy, %s))).%s * 255.0);\n", texmap, texmap, texcoords, texmap, stereo ? "layer" : "0.0", texswap);
+    if (stereo)
+    {
+      out.Write(",min(layer, " I_TEXLAYERS "[%d].x))", texmap);
+    }
+    else
+    {
+      out.Write(",0.0)");
+    }
   }
-  else if (ApiType == API_OPENGL || ApiType == API_VULKAN)
-  {
-    out.Write("wuround(texture(samp[%d],float3(%s.xy * " I_TEXDIMS"[%d].xy, %s)).%s * 255.0);\n", texmap, texcoords, texmap, stereo ? "layer" : "0.0", texswap);
-  }
-  else
-  {
-    out.Write("wuround(tex2D(samp[%d],%s.xy * " I_TEXDIMS"[%d].xy).%s * 255.0);\n", texmap, texcoords, texmap, texswap);
-  }
+  out.Write(").%s * 255.0);\n", texswap);
 }
 
 void SampleTextureRAW(ShaderCode& out, API_TYPE ApiType, const char *texcoords, const char *texswap, const char *layer, int texmap)
 {
   if (ApiType == API_D3D11)
   {
-    out.Write("Tex[%d].Sample(samp[%d], float3(%s.xy * " I_TEXDIMS"[%d].xy, %s)).%s;\n", 8 + texmap, texmap, texcoords, texmap, layer, texswap);
+    out.Write("Tex[%d].Sample(samp[%d], float3(%s.xy * " I_TEXDIMS"[%d].xy, " I_TEXLAYERS "[%d].%s)).%s;\n", texmap, texmap, texcoords, texmap, texmap, layer, texswap);
   }
   else
   {
-    out.Write("texture(samp[%d],float3(%s.xy * " I_TEXDIMS"[%d].xy, %s)).%s;\n", 8 + texmap, texcoords, texmap, layer, texswap);
+    out.Write("texture(samp[%d],float3(%s.xy * " I_TEXDIMS"[%d].xy, " I_TEXLAYERS "[%d].%s)).%s;\n", texmap, texcoords, texmap, texmap, layer, texswap);
   }
 }
 
@@ -1320,12 +1323,13 @@ inline void WriteFetchStageTexture(ShaderCode& out, API_TYPE ApiType, bool use_i
     if (LoadMaterial)
     {
       out.Write("if((" I_FLAGS ".y & %i) != 0)\n{\n", 1 << texmap);
-      out.Write("emmisive_mask += tex_ta[%i].rgb * ((tex_ta[%i].a & 128) != 0 ? 1.0 : 0.0);\n", n, n);
-      out.Write("tex_ta[%i].a = ((tex_ta[%i].a << 1) | 1);\n}\n", n, n);
+      out.Write("emmisive_mask += ");
+      SampleTextureRAW(out, ApiType, "(stagecoord)", "rgb", "z", texmap);
+      out.Write("}\n");
       out.Write("if((" I_FLAGS ".x & %i) != 0)\n{\n", 1 << texmap);
       out.Write("mapcoord = stagecoord;");
       out.Write("float4 nrmap = ");
-      SampleTextureRAW(out, ApiType, "(stagecoord)", "agbr", "0.0", texmap);
+      SampleTextureRAW(out, ApiType, "(stagecoord)", "agbr", "y", texmap);
       out.Write("nrmap.xy = nrmap.xy * (255.0/127.0) - (128.0/127.0);\n");
       // Extact z value from x and y
       out.Write("nrmap.z = sqrt(1.0 - dot(nrmap.xy, nrmap.xy));\n");
@@ -1556,12 +1560,10 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
     out.Write("#define ddy ddy_fine\n");
   }
 
-  u32 samplercount = enablenormalmaps ? 16 : 8;
-
   if (ApiType == API_OPENGL || ApiType == API_VULKAN)
   {
     // Declare samplers
-    out.Write("SAMPLER_BINDING(0) uniform sampler2DArray samp[%d];\n", samplercount);
+    out.Write("SAMPLER_BINDING(0) uniform sampler2DArray samp[8];\n");
   }
   else
   {
@@ -1579,7 +1581,7 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
     if (ApiType == API_D3D11)
     {
       out.Write("\n");
-      out.Write("Texture2DArray Tex[%d] : register(t0);\n", samplercount);
+      out.Write("Texture2DArray Tex[8] : register(t0);\n");
     }
   }
   out.Write("\n");
@@ -1593,6 +1595,7 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
   DeclareUniform(out, ApiType, C_KCOLORS, "wu4", I_KCOLORS "[4]");
   DeclareUniform(out, ApiType, C_ALPHA, "wu4", I_ALPHA);
   DeclareUniform(out, ApiType, C_TEXDIMS, "float4", I_TEXDIMS "[8]");
+  DeclareUniform(out, ApiType, C_TEXLAYERS, "float4", I_TEXLAYERS "[8]");
   DeclareUniform(out, ApiType, C_ZBIAS, "wu4", I_ZBIAS "[2]");
   DeclareUniform(out, ApiType, C_INDTEXSCALE, "wu4", I_INDTEXSCALE "[2]");
   DeclareUniform(out, ApiType, C_INDTEXMTX, "wu4", I_INDTEXMTX "[6]");
@@ -2163,7 +2166,7 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
   {
     // Add emmisive color
     out.Write("if(" I_FLAGS ".y != 0)\n{\n");
-    out.Write("prev.rgb += wu3(emmisive_mask);\n");
+    out.Write("prev.rgb += wu3(emmisive_mask * 255.0);\n");
     out.Write("}\n");
   }
   // Use dual-source color blending to perform dst alpha in a single pass

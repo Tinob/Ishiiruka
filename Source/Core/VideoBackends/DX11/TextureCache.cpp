@@ -123,9 +123,9 @@ void TextureCache::CopyEFBToCacheEntry(TextureCacheBase::TCacheEntry* entry, boo
     D3D::SetPointCopySampler();
 
   // if texture is currently in use, it needs to be temporarily unset
-  u64 texture_mask = D3D::stateman->UnsetTexture(static_cast<DXTexture*>(entry->GetColor())->GetRawTexIdentifier()->GetSRV());
+  u64 texture_mask = D3D::stateman->UnsetTexture(static_cast<DXTexture*>(entry->texture.get())->GetRawTexIdentifier()->GetSRV());
   D3D::stateman->Apply();
-  D3D::context->OMSetRenderTargets(1, &static_cast<DXTexture*>(entry->GetColor())->GetRawTexIdentifier()->GetRTV(), nullptr);
+  D3D::context->OMSetRenderTargets(1, &static_cast<DXTexture*>(entry->texture.get())->GetRawTexIdentifier()->GetRTV(), nullptr);
   // Create texture copy
   D3D::drawShadedTexQuad(
     efb_texture_srv,
@@ -138,7 +138,7 @@ void TextureCache::CopyEFBToCacheEntry(TextureCacheBase::TCacheEntry* entry, boo
   D3D::context->OMSetRenderTargets(1, &FramebufferManager::GetEFBColorTexture()->GetRTV(), FramebufferManager::GetEFBDepthTexture()->GetDSV());
 
   g_renderer->RestoreAPIState();
-  D3D::stateman->SetTextureByMask(texture_mask, static_cast<DXTexture*>(entry->GetColor())->GetRawTexIdentifier()->GetSRV());
+  D3D::stateman->SetTextureByMask(texture_mask, static_cast<DXTexture*>(entry->texture.get())->GetRawTexIdentifier()->GetSRV());
 }
 
 void TextureCache::CopyEFB(u8* dst, const EFBCopyFormat& format, u32 native_width,
@@ -151,8 +151,8 @@ void TextureCache::CopyEFB(u8* dst, const EFBCopyFormat& format, u32 native_widt
 
 bool TextureCache::Palettize(TCacheEntry* entry, const TCacheEntry* base_entry)
 {
-  DX11::D3DTexture2D* srctexture = static_cast<DXTexture*>(base_entry->GetColor())->GetRawTexIdentifier();
-  DX11::D3DTexture2D* texture = static_cast<DXTexture*>(entry->GetColor())->GetRawTexIdentifier();
+  DX11::D3DTexture2D* srctexture = static_cast<DXTexture*>(base_entry->texture.get())->GetRawTexIdentifier();
+  DX11::D3DTexture2D* texture = static_cast<DXTexture*>(entry->texture.get())->GetRawTexIdentifier();
   u32 texformat = entry->format & 0xf;
   BaseType baseType = Unorm4;
   if (texformat == GX_TF_C4 || texformat == GX_TF_I4)

@@ -56,6 +56,7 @@ void WritePixelShaderCommonHeader(ShaderCode& out, API_TYPE ApiType, u32 num_tex
     "\tint4 " I_KCOLORS "[4];\n"
     "\tint4 " I_ALPHA ";\n"
     "\tfloat4 " I_TEXDIMS "[8];\n"
+    "\tfloat4 " I_TEXLAYERS "[8];\n"
     "\tint4 " I_ZBIAS "[2];\n"
     "\tint4 " I_INDTEXSCALE "[2];\n"
     "\tint4 " I_INDTEXMTX "[6];\n"
@@ -1015,8 +1016,8 @@ void GenPixelShader(ShaderCode& out, API_TYPE ApiType, const ShaderHostConfig& h
               BitfieldExtract("ss.order", TwoTevStageOrders().texmap0).c_str());
     out.Write("\n"
               "      float2 uv = (float2(tevcoord.xy)) * " I_TEXDIMS "[sampler_num].xy;\n");
-    out.Write("      int4 co = sampleTexture(sampler_num, float3(uv, %s));\n",
-              stereo ? "float(layer)" : "0.0");
+    out.Write("      int4 co = sampleTexture(sampler_num, float3(uv, %s));\n", stereo ? "min(float(layer), " I_TEXLAYERS "[sampler_num].x)" : "0.0");
+
     out.Write("      uint swap = %s;\n",
               BitfieldExtract("ss.ac", TevStageCombiner().alphaC.tswap).c_str());
     out.Write("      s.TexColor = Swizzle(swap, co);\n");

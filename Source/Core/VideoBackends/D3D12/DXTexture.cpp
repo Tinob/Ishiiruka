@@ -51,14 +51,14 @@ DXTexture::DXTexture(const TextureConfig& tex_config) : HostTexture(tex_config)
   {
     m_texture = D3DTexture2D::Create(m_config.width, m_config.height,
       TEXTURE_BIND_FLAG_SHADER_RESOURCE | TEXTURE_BIND_FLAG_RENDER_TARGET,
-      dxgi_format, 1, m_config.layers);;
+      dxgi_format, 1, m_config.layers);
   }
   else
   {
     ComPtr<ID3D12Resource> pTexture;
 
     D3D12_RESOURCE_DESC texdesc12 = CD3DX12_RESOURCE_DESC::Tex2D(dxgi_format,
-      m_config.width, m_config.height, 1, m_config.levels);
+      m_config.width, m_config.height, m_config.layers, m_config.levels);
     CD3DX12_HEAP_PROPERTIES hprop(D3D12_HEAP_TYPE_DEFAULT);
     CheckHR(
       D3D::device->CreateCommittedResource(
@@ -275,8 +275,8 @@ void DXTexture::CopyRectangleFromTexture(const HostTexture* source,
   CopyRectangle(srcentry->m_texture, m_texture, srcrect, srcentry->m_config.width, srcentry->m_config.height, dstrect, m_config.width, m_config.height);
 }
 
-void DXTexture::Load(const u8* src, u32 width, u32 height, u32 expanded_width, u32 level)
+void DXTexture::Load(const u8* src, u32 width, u32 height, u32 expanded_width, u32 level, u32 layer)
 {
-  D3D::ReplaceTexture2D(m_texture->GetTex(), src, m_texture->GetFormat(), width, height, expanded_width, level, m_texture->GetResourceUsageState());
+  D3D::ReplaceTexture2D(m_texture->GetTex(), src, m_texture->GetFormat(), width, height, expanded_width, level, layer, m_config.levels, m_config.layers, m_texture->GetResourceUsageState());
 }
 }  // namespace DX11

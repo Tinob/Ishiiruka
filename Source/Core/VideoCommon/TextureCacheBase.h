@@ -39,27 +39,9 @@ enum TextureCacheParams
 class TextureCacheBase
 {
 public: 
-  enum TCacheEntryGroupIndex : u32
-  {
-    Color = 0,
-    Material = 1
-  };
-
   struct TCacheEntry
   {
-    std::vector<std::unique_ptr<HostTexture>> textures;
-    HostTexture* GetColor() const
-    {
-      return textures[TCacheEntryGroupIndex::Color].get();
-    }
-    HostTexture* GetMaterial() const
-    {
-      if (material_map)
-      {
-        return textures[TCacheEntryGroupIndex::Material].get();
-      }
-      return nullptr;
-    }
+    std::unique_ptr<HostTexture> texture;
     // common members    
     u32 addr = {};
     u32 size_in_bytes = {};
@@ -76,7 +58,7 @@ public:
     bool has_arbitrary_mips = false;
     bool material_map = false;
     bool is_scaled = false;
-    bool emissive_in_alpha = false;
+    bool emissive = false;
     bool may_have_overlapping_textures = true;
     bool tmem_only = false;  // indicates that this texture only exists in the tmem cache
 
@@ -91,8 +73,7 @@ public:
 
     std::string basename;
 
-    explicit TCacheEntry(std::unique_ptr<HostTexture> tex);
-    explicit TCacheEntry(std::unique_ptr<HostTexture> tex, std::unique_ptr<HostTexture> material);
+    explicit TCacheEntry(std::unique_ptr<HostTexture> tex, bool material = false, bool luma = false);
 
     ~TCacheEntry();
 
@@ -111,12 +92,12 @@ public:
       memory_stride = _native_width;
     }
 
-    void SetHiresParams(bool _is_custom_tex, const std::string & _basename, bool _is_scaled, bool _emissive_in_alpha, bool arbitrary_mips)
+    void SetHiresParams(bool _is_custom_tex, const std::string & _basename, bool _is_scaled, bool _emissive, bool arbitrary_mips)
     {
       is_custom_tex = _is_custom_tex;
       basename = _basename;
       is_scaled = _is_scaled;
-      emissive_in_alpha = _emissive_in_alpha;
+      emissive = _emissive;
       has_arbitrary_mips = arbitrary_mips;
     }
 
@@ -155,7 +136,7 @@ public:
     u32 BytesPerRow() const;
 
     u64 CalculateHash() const;
-    const TextureConfig GetConfig() const { return textures[TCacheEntryGroupIndex::Color]->GetConfig(); }
+    const TextureConfig GetConfig() const { return texture->GetConfig(); }
   };
 
   virtual ~TextureCacheBase(); // needs virtual for DX11 dtor
@@ -239,7 +220,7 @@ private:
   TCacheEntry* ApplyPaletteToEntry(TCacheEntry* entry, u32 tlutaddr, u32 tlutfmt, u32 palette_size);
   void DumpTexture(TCacheEntry* entry, std::string basename, u32 level);
 
-  TCacheEntry* AllocateCacheEntry(const TextureConfig& config, bool materialmap);
+  TCacheEntry* AllocateCacheEntry(const TextureConfig& config, bool materialmap = false, bool luma = false);
   void DisposeCacheEntry(TCacheEntry* texture);
 
   TexPool::iterator FindMatchingTextureFromPool(const TextureConfig& config);

@@ -11,7 +11,7 @@ namespace DX11
 
 namespace D3D
 {
-void ReplaceTexture2D(ID3D11Texture2D* pTexture, const u8* buffer, u32 width, u32 height, u32 pitch, u32 level, D3D11_USAGE usage, DXGI_FORMAT fmtconvert_rgb565, bool swap_rb, bool convert_rgb565);
+void ReplaceTexture2D(ID3D11Texture2D* pTexture, const u8* buffer, u32 width, u32 height, u32 pitch, u32 level, u32 layers, u32 miplevels, D3D11_USAGE usage, DXGI_FORMAT fmtconvert_rgb565, bool swap_rb, bool convert_rgb565);
 }
 
 class D3DTexture2D

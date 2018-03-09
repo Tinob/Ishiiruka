@@ -41,6 +41,8 @@ struct Tessellation_shader_uid_data
   void ClearUnused()
   {
     texMtxInfo_n_projection = 0;
+	padding = 0;
+	pad = 0;
   }
 
   u32 numTexGens : 4;
@@ -49,7 +51,7 @@ struct Tessellation_shader_uid_data
   u32 genMode_numindstages : 3;
   u32 nIndirectStagesUsed : 4;
   u32 pixel_normals : 1;
-  u32 stereo : 1;
+  u32 pad : 1;
   u32 pixel_lighting : 1;
   u32 msaa : 1;
   u32 ssaa : 1;

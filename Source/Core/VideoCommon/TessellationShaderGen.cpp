@@ -144,33 +144,25 @@ VS_OUTPUT DS_TFO(ConstantOutput pconstans, const OutputPatch<HSOutput, 3> patch,
 
 
 template<API_TYPE ApiType>
-void SampleTextureRAW(ShaderCode& out, const char *texcoords, const char *texswap, const char *layer, int texmap, int tcoord)
+void SampleTextureRAW(ShaderCode& out, const char *texcoords, const char *texswap, int texmap, int tcoord)
 {
   if (ApiType == API_D3D11)
   {
-    out.Write("Tex[%d].SampleLevel(samp[%d], float3(%s.xy * " I_TEXDIMS"[%d].xy, %s), round(log2(1.0 / " I_TEXDIMS "[%d].x)) * uv[%d].w).%s;\n", 8 + texmap, texmap, texcoords, texmap, layer, texmap, tcoord, texswap);
+    out.Write("Tex[%d].SampleLevel(samp[%d], float3(%s.xy * " I_TEXDIMS"[%d].xy, 0.0), round(log2(1.0 / " I_TEXDIMS "[%d].x)) * uv[%d].w).%s;\n", texmap, texmap, texcoords, texmap, texmap, tcoord, texswap);
   }
   else
   {
-    out.Write("texture(samp[%d],float3(%s.xy * " I_TEXDIMS"[%d].xy, %s)).%s;\n", 8 + texmap, texcoords, texmap, layer, texswap);
+    out.Write("texture(samp[%d],float3(%s.xy * " I_TEXDIMS"[%d].xy, 0.0)).%s;\n", texmap, texcoords, texmap, texswap);
   }
 }
 
 template<API_TYPE ApiType>
-void SampleTexture(ShaderCode& out, const char *texcoords, const char *texswap, int texmap, bool stereo)
+void SampleTexture(ShaderCode& out, const char *texcoords, const char *texswap, int texmap)
 {
-  if (ApiType == API_D3D11)
-  {
-    out.Write("wuround((Tex[%d].SampleLevel(samp[%d], float3(%s.xy * " I_TEXDIMS"[%d].xy, %s), 0.0)).%s * 255.0);\n", texmap, texmap, texcoords, texmap, stereo ? "layer" : "0.0", texswap);
-  }
-  else if (ApiType == API_OPENGL)
-  {
-    out.Write("wuround(texture(samp[%d],float3(%s.xy * " I_TEXDIMS"[%d].xy, %s)).%s * 255.0);\n", texmap, texcoords, texmap, stereo ? "layer" : "0.0", texswap);
-  }
-  else
-  {
-    out.Write("wuround(tex2D(samp[%d],%s.xy * " I_TEXDIMS"[%d].xy).%s * 255.0);\n", texmap, texcoords, texmap, texswap);
-  }
+  out.Write("wuround(");
+  out.Write((ApiType == API_D3D11 ? "Tex[%d].SampleLevel" : "texture"), texmap);
+  out.Write("(samp[%d],float3(%s.xy * " I_TEXDIMS"[%d].xy, 0.0", texmap, texcoords, texmap);
+  out.Write("), round(log2(1.0 / " I_TEXDIMS "[%d].x)) * uv[%d].w).%s * 255.0);\n", texmap, texmap, texswap);
 }
 
 static inline void WriteStageUID(Tessellation_shader_uid_data& uid_data, int n, const BPMemory &bpm)
@@ -222,7 +214,6 @@ void GetTessellationShaderUID(TessellationShaderUid& out, const XFMemory& xfr, c
     }
   }
   uid_data.nIndirectStagesUsed = nIndirectStagesUsed;
-  uid_data.stereo = g_ActiveConfig.iStereoMode > 0;
   bool enable_pl = g_ActiveConfig.PixelLightingEnabled(xfr, components) || g_ActiveConfig.bForcedLighting;
   uid_data.pixel_lighting = enable_pl;
   bool enablenormalmaps = g_ActiveConfig.HiresMaterialMapsEnabled();
@@ -373,7 +364,7 @@ inline void WriteFetchDisplacement(ShaderCode& out, int n, const Tessellation_sh
     out.Write("if((" I_FLAGS ".x & %i) != 0)\n{\n", 1 << texmap);
     out.Write("float2 stagecoord = float2(tevcoord.xy);\n");
     out.Write("float bump = ");
-    SampleTextureRAW<ApiType>(out, "(stagecoord)", "b", "0.0", texmap, texcoord);
+    SampleTextureRAW<ApiType>(out, "(stagecoord)", "b", texmap, texcoord);
     out.Write("bump = (bump * 255.0/127.0 - 128.0/127.0) * uv[%d].z;\n", texcoord);
     out.Write("displacement = displacement * displacementcount + bump;\n");
     // finalize Running average
@@ -399,12 +390,12 @@ inline void GenerateTessellationShader(ShaderCode& out, const Tessellation_shade
     if (ApiType == API_OPENGL)
     {
       // Declare samplers
-      out.Write("SAMPLER_BINDING(0) uniform sampler2DArray samp[16];\n");
+      out.Write("SAMPLER_BINDING(0) uniform sampler2DArray samp[8];\n");
     }
     else
     {
       out.Write("SamplerState samp[8] : register(s0);\n");
-      out.Write("Texture2DArray Tex[16] : register(t0);\n");
+      out.Write("Texture2DArray Tex[8] : register(t0);\n");
     }
     out.Write(headerUtilI);
   }
@@ -437,6 +428,7 @@ inline void GenerateTessellationShader(ShaderCode& out, const Tessellation_shade
     "\tint4 " I_KCOLORS "[4];\n"
     "\tint4 " I_ALPHA ";\n"
     "\tfloat4 " I_TEXDIMS "[8];\n"
+    "\tfloat4 " I_TEXLAYERS "[8];\n"
     "\tint4 " I_ZBIAS "[2];\n"
     "\tint4 " I_INDTEXSCALE "[2];\n"
     "\tint4 " I_INDTEXMTX "[6];\n"
@@ -611,7 +603,7 @@ inline void GenerateTessellationShader(ShaderCode& out, const Tessellation_shade
             out.Write("   t_coord = int2(0,0);\n");
           }
           out.Write("   int3 indtex%d = ", i);
-          SampleTexture<ApiType>(out, "float2(t_coord)", "abg", texmap, uid_data.stereo);
+          SampleTexture<ApiType>(out, "float2(t_coord)", "abg", texmap);
         }
       }
       for (u32 i = 0; i < numStages; ++i)

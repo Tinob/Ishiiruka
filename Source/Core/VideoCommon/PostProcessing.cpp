@@ -1046,7 +1046,7 @@ bool PostProcessingShader::CreatePasses()
         config.rendertarget = false;
 
         input.texture = std::move(g_texture_cache->AllocateTexture(config));
-        input.texture->Load(input_config.external_image_data.get(), config.width, config.height, config.width, 0);
+        input.texture->Load(input_config.external_image_data.get(), config.width, config.height, config.width, 0, 0);
         input.size = input_config.external_image_size;
       }
 

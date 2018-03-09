@@ -215,7 +215,7 @@ void DXTexture::ReplaceTexture(const u8* src, u32 width, u32 height,
   dstsurface->Release();
 }
 
-void DXTexture::Load(const u8* src, u32 width, u32 height, u32 expanded_width, u32 level)
+void DXTexture::Load(const u8* src, u32 width, u32 height, u32 expanded_width, u32 level, u32 layer)
 {
   bool swap_r_b = PC_TEX_FMT_RGBA32 == m_config.pcformat;
   ReplaceTexture(src, width, height, expanded_width, level, swap_r_b);

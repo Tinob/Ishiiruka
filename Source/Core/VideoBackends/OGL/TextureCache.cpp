@@ -98,7 +98,7 @@ void TextureCache::CopyEFBToCacheEntry(TextureCacheBase::TCacheEntry* entry, boo
   bool scaleByHalf, unsigned int cbufid, const float *colmat, u32 width, u32 height)
 {
   g_renderer->ResetAPIState(); // reset any game specific settings
-  OGLTexture* tex = static_cast<OGLTexture*>(entry->GetColor());
+  OGLTexture* tex = static_cast<OGLTexture*>(entry->texture.get());
   // Make sure to resolve anything we need to read from.
   const GLuint read_texture = is_depth_copy ?
     FramebufferManager::ResolveAndGetDepthTarget(srcRect) :
@@ -155,8 +155,8 @@ void TextureCache::CopyEFB(u8* dst, const EFBCopyFormat& format, u32 native_widt
 
 bool TextureCache::Palettize(TCacheEntry* dst_entry, const TCacheEntry* base_entry)
 {
-  OGLTexture* base_tex = static_cast<OGLTexture*>(base_entry->GetColor());
-  OGLTexture* dst_tex = static_cast<OGLTexture*>(dst_entry->GetColor());
+  OGLTexture* base_tex = static_cast<OGLTexture*>(base_entry->texture.get());
+  OGLTexture* dst_tex = static_cast<OGLTexture*>(dst_entry->texture.get());
   u32 texformat = dst_entry->format & 0xf;
   if (!g_ActiveConfig.backend_info.bSupportsPaletteConversion)
   {

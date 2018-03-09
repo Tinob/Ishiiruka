@@ -30,7 +30,7 @@ void CleanupPersistentD3DTextureResources()
   s_texture_upload_stream_buffer.reset();
 }
 
-void ReplaceTexture2D(ID3D12Resource* texture12, const u8* buffer, DXGI_FORMAT fmt, u32 width, u32 height, u32 src_pitch, u32 level, D3D12_RESOURCE_STATES current_resource_state)
+void ReplaceTexture2D(ID3D12Resource* texture12, const u8* buffer, DXGI_FORMAT fmt, u32 width, u32 height, u32 src_pitch, u32 level, u32 layer, u32 miplevels, u32 layers, D3D12_RESOURCE_STATES current_resource_state)
 {
   u32 pixelsize = 1;
   bool compresed = false;
@@ -110,14 +110,14 @@ void ReplaceTexture2D(ID3D12Resource* texture12, const u8* buffer, DXGI_FORMAT f
     dest_data = reinterpret_cast<u8*>(s_texture_upload_stream_buffer->GetCPUAddressOfCurrentAllocation());
   }
 
-  ResourceBarrier(current_command_list, texture12, current_resource_state, D3D12_RESOURCE_STATE_COPY_DEST, level);
+  ResourceBarrier(current_command_list, texture12, current_resource_state, D3D12_RESOURCE_STATE_COPY_DEST, D3D12CalcSubresource(level, layer, 0, miplevels, layers ));
 
   D3D12_PLACED_SUBRESOURCE_FOOTPRINT upload_footprint = {};
   u32 upload_rows = 0;
   u64 upload_row_size_in_bytes = 0;
   u64 upload_total_bytes = 0;
   auto tdesc = texture12->GetDesc();
-  D3D::device->GetCopyableFootprints(&tdesc, level, 1, upload_buffer_offset, &upload_footprint, &upload_rows, &upload_row_size_in_bytes, &upload_total_bytes);
+  D3D::device->GetCopyableFootprints(&tdesc, D3D12CalcSubresource(level, layer, 0, miplevels, layers), 1, upload_buffer_offset, &upload_footprint, &upload_rows, &upload_row_size_in_bytes, &upload_total_bytes);
 
   const u8* src_data = reinterpret_cast<const u8*>(buffer);
   if (src_pitch == upload_footprint.Footprint.RowPitch && src_pitch == upload_row_size_in_bytes)
@@ -135,7 +135,7 @@ void ReplaceTexture2D(ID3D12Resource* texture12, const u8* buffer, DXGI_FORMAT f
       );
     }
   }
-  CD3DX12_TEXTURE_COPY_LOCATION dst = CD3DX12_TEXTURE_COPY_LOCATION(texture12, level);
+  CD3DX12_TEXTURE_COPY_LOCATION dst = CD3DX12_TEXTURE_COPY_LOCATION(texture12, D3D12CalcSubresource(level, layer, 0, miplevels, layers));
   CD3DX12_TEXTURE_COPY_LOCATION src = CD3DX12_TEXTURE_COPY_LOCATION(upload_buffer, upload_footprint);
   D3D::current_command_list->CopyTextureRegion(&dst, 0, 0, 0, &src, nullptr);
 
@@ -155,7 +155,7 @@ void ReplaceTexture2D(ID3D12Resource* texture12, const u8* buffer, DXGI_FORMAT f
     // To grant that the texture data is in place to start rendering we have to execute the copy operation now
     D3D::command_list_mgr->ExecuteQueuedWork();
   }
-  ResourceBarrier(current_command_list, texture12, D3D12_RESOURCE_STATE_COPY_DEST, current_resource_state, level);
+  ResourceBarrier(current_command_list, texture12, D3D12_RESOURCE_STATE_COPY_DEST, current_resource_state, D3D12CalcSubresource(level, layer, 0, miplevels, layers));
 }
 
 }  // namespace
@@ -207,7 +207,7 @@ D3DTexture2D* D3DTexture2D::Create(u32 width, u32 height, u32 bind, DXGI_FORMAT 
 
   if (data)
   {
-    DX12::D3D::ReplaceTexture2D(texture.Get(), reinterpret_cast<const u8*>(data->pData), fmt, width, height, static_cast<u32>(data->RowPitch), 0, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+    DX12::D3D::ReplaceTexture2D(texture.Get(), reinterpret_cast<const u8*>(data->pData), fmt, width, height, static_cast<u32>(data->RowPitch), 0, 0, levels, slices, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
   }
   return ret;
 }

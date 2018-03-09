@@ -104,7 +104,7 @@ void TextureCache::CopyEFBToCacheEntry(TextureCacheBase::TCacheEntry* entry, boo
 
   // Make sure we don't draw with the texture set as both a source and target.
   // (This can happen because we don't unbind textures when we free them.)
-  auto destination = static_cast<DXTexture*>(entry->GetColor())->GetRawTexIdentifier();
+  auto destination = static_cast<DXTexture*>(entry->texture.get())->GetRawTexIdentifier();
   destination->TransitionToResourceState(D3D::current_command_list, D3D12_RESOURCE_STATE_RENDER_TARGET);
   auto rtv = destination->GetRTV();
   D3D::current_command_list->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
@@ -257,8 +257,8 @@ bool TextureCache::Palettize(TCacheEntry* entry, const TCacheEntry* base_entry)
   {
     return false;
   }
-  D3DTexture2D* base_texture = static_cast<DXTexture*>(base_entry->GetColor())->GetRawTexIdentifier();
-  D3DTexture2D* dst_texture = static_cast<DXTexture*>(entry->GetColor())->GetRawTexIdentifier();
+  D3DTexture2D* base_texture = static_cast<DXTexture*>(base_entry->texture.get())->GetRawTexIdentifier();
+  D3DTexture2D* dst_texture = static_cast<DXTexture*>(entry->texture.get())->GetRawTexIdentifier();
   // D3D12: Because the second SRV slot is occupied by this buffer, and an arbitrary texture occupies the first SRV slot,
   // we need to allocate temporary space out of our descriptor heap, place the palette SRV in the second slot, then copy the
   // existing texture's descriptor into the first slot.
@@ -440,13 +440,13 @@ void TextureCache::BindTextures()
   {
     DX12::D3D::current_command_list->SetGraphicsRootDescriptorTable(
       DESCRIPTOR_TABLE_PS_SRV,
-      static_cast<DXTexture*>(bound_textures[0]->GetColor())->GetRawTexIdentifier()->GetSRVGPU());
+      static_cast<DXTexture*>(bound_textures[0]->texture.get())->GetRawTexIdentifier()->GetSRVGPU());
     return;
   }
 
   // If more than one texture, allocate space for group.
   D3D12_CPU_DESCRIPTOR_HANDLE s_group_base_texture_cpu_handle;
-  const u32 num_handles = use_materials ? 16 : 8;
+  const u32 num_handles = 8;
   if (!D3D::gpu_descriptor_heap_mgr->AllocateTemporary(num_handles, &s_group_base_texture_cpu_handle, &s_group_base_texture_gpu_handle))
   {
     // Kick command buffer before attempting to allocate again. This is slow.
@@ -467,18 +467,8 @@ void TextureCache::BindTextures()
         s_group_base_texture_cpu_handle.ptr + stage * D3D::resource_descriptor_size;
 
       DX12::D3D::device->CopyDescriptorsSimple(
-        1, textureDestDescriptor, static_cast<DXTexture*>(bound_textures[stage]->GetColor())->GetRawTexIdentifier()->GetSRVCPUShadow(),
-        D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-      if (bound_textures[stage]->material_map && use_materials)
-      {
-        textureDestDescriptor.ptr = s_group_base_texture_cpu_handle.ptr + ((8 + stage) * D3D::resource_descriptor_size);
-        DX12::D3D::device->CopyDescriptorsSimple(
-          1,
-          textureDestDescriptor,
-          static_cast<DXTexture*>(bound_textures[stage]->GetMaterial())->GetRawTexIdentifier()->GetSRVCPUShadow(),
-          D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV
-        );
-      }
+        1, textureDestDescriptor, static_cast<DXTexture*>(bound_textures[stage]->texture.get())->GetRawTexIdentifier()->GetSRVCPUShadow(),
+        D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);      
     }
     else
     {
@@ -489,16 +479,6 @@ void TextureCache::BindTextures()
       DX12::D3D::device->CopyDescriptorsSimple(1, nullDestDescriptor,
         DX12::D3D::null_srv_cpu_shadow,
         D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-      if (use_materials)
-      {
-        nullDestDescriptor.ptr = s_group_base_texture_cpu_handle.ptr + ((8 + stage) * D3D::resource_descriptor_size);
-        DX12::D3D::device->CopyDescriptorsSimple(
-          1,
-          nullDestDescriptor,
-          DX12::D3D::null_srv_cpu_shadow,
-          D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV
-        );
-      }
     }
   }
 

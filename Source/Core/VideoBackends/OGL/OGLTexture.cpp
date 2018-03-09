@@ -278,7 +278,7 @@ void OGLTexture::CopyRectangleFromTexture(const HostTexture* source,
 }
 
 void OGLTexture::Load(const u8* src, u32 width, u32 height,
-  u32 expanded_width, u32 level)
+  u32 expanded_width, u32 level, u32 layer)
 {
   glActiveTexture(GL_TEXTURE9);
   glBindTexture(GL_TEXTURE_2D_ARRAY, m_texId);
@@ -302,7 +302,7 @@ void OGLTexture::Load(const u8* src, u32 width, u32 height,
     }
     if (g_ogl_config.bSupportsTextureStorage)
     {
-      glCompressedTexSubImage3D(GL_TEXTURE_2D_ARRAY, level, 0, 0, 0,
+      glCompressedTexSubImage3D(GL_TEXTURE_2D_ARRAY, level, 0, 0, layer,
         width, height, 1, gl_format, ((width + 3) >> 2) * ((height + 3) >> 2) * blocksize, src);
     }
     else
@@ -326,7 +326,7 @@ void OGLTexture::Load(const u8* src, u32 width, u32 height,
       glPixelStorei(GL_UNPACK_ROW_LENGTH, expanded_width);
     if (g_ogl_config.bSupportsTextureStorage)
     {
-      glTexSubImage3D(GL_TEXTURE_2D_ARRAY, level, 0, 0, 0, width, height, 1, gl_format,
+      glTexSubImage3D(GL_TEXTURE_2D_ARRAY, level, 0, 0, layer, width, height, 1, gl_format,
         gl_type, src);
     }
     else

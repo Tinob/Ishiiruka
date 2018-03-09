@@ -21,7 +21,7 @@ enum TEXTURE_BIND_FLAG : u32
 
 namespace D3D
 {
-void ReplaceTexture2D(ID3D12Resource* pTexture, const u8* buffer, DXGI_FORMAT fmt, u32 width, u32 height, u32 src_pitch, u32 level, D3D12_RESOURCE_STATES current_resource_state = D3D12_RESOURCE_STATE_COMMON);
+void ReplaceTexture2D(ID3D12Resource* pTexture, const u8* buffer, DXGI_FORMAT fmt, u32 width, u32 height, u32 src_pitch, u32 level, u32 layer, u32 miplevels, u32 layers, D3D12_RESOURCE_STATES current_resource_state = D3D12_RESOURCE_STATE_COMMON);
 void CleanupPersistentD3DTextureResources();
 }
 
