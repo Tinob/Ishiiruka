@@ -351,7 +351,7 @@ void SSAO()
 			float fSampleDepth = SampleDepthLocation(location);
 			float fDepthDelta = saturate(sD - fSampleDepth);
 
-			fDepthDelta *= 1-smoothstep(0,GetOption(E_MAX_DEPTH),fDepthDelta);
+			fDepthDelta *= 1.0-smoothstep(0.0,GetOption(E_MAX_DEPTH),fDepthDelta);
 
 			if (fDepthDelta > GetOption(F_MIN_DEPTH) && fDepthDelta < GetOption(E_MAX_DEPTH))
 			{
