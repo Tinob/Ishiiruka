@@ -71,7 +71,7 @@ void StagingBuffer::FlushCPUCache(VkDeviceSize offset, VkDeviceSize size)
 		return;
 
 	VkMappedMemoryRange range = { VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE, nullptr, m_memory,
-															 offset - m_map_offset, size };
+								 offset - m_map_offset, size };
 	vkFlushMappedMemoryRanges(g_vulkan_context->GetDevice(), 1, &range);
 }
 
@@ -120,7 +120,7 @@ void StagingBuffer::InvalidateCPUCache(VkDeviceSize offset, VkDeviceSize size)
 		return;
 
 	VkMappedMemoryRange range = { VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE, nullptr, m_memory,
-															 offset - m_map_offset, size };
+								 offset - m_map_offset, size };
 	vkInvalidateMappedMemoryRanges(g_vulkan_context->GetDevice(), 1, &range);
 }
 
@@ -131,7 +131,7 @@ void StagingBuffer::Read(VkDeviceSize offset, void* data, size_t size, bool inva
 	if (invalidate_caches)
 		InvalidateCPUCache(offset, size);
 
-	memcpy(data, m_map_pointer + (offset - m_map_offset), size);
+	std::memcpy(data, m_map_pointer + (offset - m_map_offset), size);
 }
 
 void StagingBuffer::Write(VkDeviceSize offset, const void* data, size_t size,
@@ -140,7 +140,7 @@ void StagingBuffer::Write(VkDeviceSize offset, const void* data, size_t size,
 	_assert_((offset + size) <= m_size);
 	_assert_(offset >= m_map_offset && size <= (m_map_size + (offset - m_map_offset)));
 
-	memcpy(m_map_pointer + (offset - m_map_offset), data, size);
+	std::memcpy(m_map_pointer + (offset - m_map_offset), data, size);
 	if (invalidate_caches)
 		FlushCPUCache(offset, size);
 }
@@ -150,14 +150,14 @@ bool StagingBuffer::AllocateBuffer(STAGING_BUFFER_TYPE type, VkDeviceSize size,
 	VkDeviceMemory* out_memory, bool* out_coherent)
 {
 	VkBufferCreateInfo buffer_create_info = {
-			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,  // VkStructureType        sType
-			nullptr,                               // const void*            pNext
-			0,                                     // VkBufferCreateFlags    flags
-			size,                                  // VkDeviceSize           size
-			usage,                                 // VkBufferUsageFlags     usage
-			VK_SHARING_MODE_EXCLUSIVE,             // VkSharingMode          sharingMode
-			0,                                     // uint32_t               queueFamilyIndexCount
-			nullptr                                // const uint32_t*        pQueueFamilyIndices
+		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,  // VkStructureType        sType
+		nullptr,                               // const void*            pNext
+		0,                                     // VkBufferCreateFlags    flags
+		size,                                  // VkDeviceSize           size
+		usage,                                 // VkBufferUsageFlags     usage
+		VK_SHARING_MODE_EXCLUSIVE,             // VkSharingMode          sharingMode
+		0,                                     // uint32_t               queueFamilyIndexCount
+		nullptr                                // const uint32_t*        pQueueFamilyIndices
 	};
 	VkResult res =
 		vkCreateBuffer(g_vulkan_context->GetDevice(), &buffer_create_info, nullptr, out_buffer);
@@ -177,10 +177,10 @@ bool StagingBuffer::AllocateBuffer(STAGING_BUFFER_TYPE type, VkDeviceSize size,
 		type_index = g_vulkan_context->GetReadbackMemoryType(requirements.memoryTypeBits, out_coherent);
 
 	VkMemoryAllocateInfo memory_allocate_info = {
-			VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,  // VkStructureType    sType
-			nullptr,                                 // const void*        pNext
-			requirements.size,                       // VkDeviceSize       allocationSize
-			type_index                               // uint32_t           memoryTypeIndex
+		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,  // VkStructureType    sType
+		nullptr,                                 // const void*        pNext
+		requirements.size,                       // VkDeviceSize       allocationSize
+		type_index                               // uint32_t           memoryTypeIndex
 	};
 	res = vkAllocateMemory(g_vulkan_context->GetDevice(), &memory_allocate_info, nullptr, out_memory);
 	if (res != VK_SUCCESS)

@@ -8,6 +8,7 @@ set(SRCS Clipper.cpp
 	   SWVertexLoader.cpp
 	   SWmain.cpp
 	   SetupUnit.cpp
+	   SWTexture.cpp
 	   Tev.cpp
 	   TextureEncoder.cpp
 	   TextureSampler.cpp

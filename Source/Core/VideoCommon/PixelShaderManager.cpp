@@ -7,14 +7,18 @@
 
 #include "Common/ChunkFile.h"
 #include "Common/CommonTypes.h"
+
 #include "VideoCommon/PixelShaderManager.h"
 #include "VideoCommon/RenderBase.h"
 #include "VideoCommon/VertexLoaderManager.h"
 #include "VideoCommon/VideoCommon.h"
 #include "VideoCommon/VideoConfig.h"
 #include "VideoCommon/XFMemory.h"
+#include "VideoCommon/ConstantManager.h"
+
 
 alignas(256) float PixelShaderManager::psconstants[PixelShaderManager::ConstantBufferSize];
+PixelShaderConstants* PixelShaderManager::Debug_view = (PixelShaderConstants*)&PixelShaderManager::psconstants[0];
 ConstatBuffer PixelShaderManager::m_buffer(PixelShaderManager::psconstants, PixelShaderManager::ConstantBufferSize);
 static int s_nColorsChanged[2]; // 0 - regular colors, 1 - k colors
 int PixelShaderManager::s_nIndTexMtxChanged;
@@ -26,13 +30,17 @@ bool PixelShaderManager::s_bFogParamChanged;
 bool PixelShaderManager::s_bFogRangeAdjustChanged;
 bool PixelShaderManager::s_bViewPortChanged;
 bool PixelShaderManager::s_EfbScaleChanged;
+bool PixelShaderManager::s_bIndirectDirty;
+bool PixelShaderManager::s_bDestAlphaDirty;
 
 static int nLightsChanged[2]; // min,max
 static int lastRGBAfull[2][4][4];
 u8 PixelShaderManager::s_nTexDimsChanged;
+u8 PixelShaderManager::s_nTexLayersChanged;
 u8 PixelShaderManager::s_nIndTexScaleChanged;
 static u32 lastAlpha;
 static u32 lastTexDims[8]; // width | height << 16 | wrap_s << 28 | wrap_t << 30
+static uint4 lastTexLayers[8];
 static u32 lastZBias;
 int PixelShaderManager::s_materials_changed;
 static int sflags[4];
@@ -55,6 +63,24 @@ void PixelShaderManager::Init(bool use_integer_constants)
 	memset(lastRGBAfull, 0, sizeof(lastRGBAfull));
 	memset(sflags, 0, sizeof(sflags));
 	memset(s_LightsPhong, 0, sizeof(s_LightsPhong));
+
+	m_buffer.SetConstant4<u32>(C_UBERKONST, 255, 255, 255, 255);
+	m_buffer.SetConstant4<u32>(C_UBERKONST + 1, 223, 223, 223, 223);
+	m_buffer.SetConstant4<u32>(C_UBERKONST + 2, 191, 191, 191, 191);
+	m_buffer.SetConstant4<u32>(C_UBERKONST + 3, 159, 159, 159, 159);
+	m_buffer.SetConstant4<u32>(C_UBERKONST + 4, 128, 128, 128, 128);
+	m_buffer.SetConstant4<u32>(C_UBERKONST + 5, 96, 96, 96, 96);
+	m_buffer.SetConstant4<u32>(C_UBERKONST + 6, 64, 64, 64, 64);
+	m_buffer.SetConstant4<u32>(C_UBERKONST + 7, 32, 32, 32, 32);
+	m_buffer.SetConstant4<u32>(C_UBERKONST + 8, 0, 0, 0, 0);
+	m_buffer.SetConstant4<u32>(C_UBERKONST + 9, 0, 0, 0, 0);
+	m_buffer.SetConstant4<u32>(C_UBERKONST + 10, 0, 0, 0, 0);
+	m_buffer.SetConstant4<u32>(C_UBERKONST + 11, 0, 0, 0, 0);
+	m_buffer.SetConstant4<u32>(C_UBERKONST + 12, 0, 0, 0, 0);
+	m_buffer.SetConstant4<u32>(C_UBERKONST + 13, 0, 0, 0, 0);
+	m_buffer.SetConstant4<u32>(C_UBERKONST + 14, 0, 0, 0, 0);
+	m_buffer.SetConstant4<u32>(C_UBERKONST + 15, 0, 0, 0, 0);
+
 	Dirty();
 }
 
@@ -70,6 +96,8 @@ void PixelShaderManager::Dirty()
 	s_materials_changed = 15;
 	sbflagschanged = true;
 	s_EfbScaleChanged = true;
+	s_bIndirectDirty = true;
+	s_bDestAlphaDirty = true;
 }
 
 const float* PixelShaderManager::GetBuffer()
@@ -106,7 +134,7 @@ void PixelShaderManager::SetConstants()
 		s_EfbScaleChanged = true;
 		s_bViewPortChanged = true;
 	}
-	
+
 	for (int i = 0; i < 2; ++i)
 	{
 		if (s_nColorsChanged[i])
@@ -139,6 +167,18 @@ void PixelShaderManager::SetConstants()
 		}
 	}
 
+	if (s_nTexLayersChanged)
+	{
+		for (int i = 0; i < 8; ++i)
+		{
+			if ((s_nTexLayersChanged & (1 << i)))
+			{
+				m_buffer.SetConstant4<float>(C_TEXLAYERS + i, float(lastTexLayers[i][0]), float(lastTexLayers[i][1]), float(lastTexLayers[i][2]), 0.0f);
+				s_nTexLayersChanged &= ~(1 << i);
+			}
+		}
+	}
+
 	if (s_bAlphaChanged)
 	{
 		if (s_use_integer_constants)
@@ -153,7 +193,7 @@ void PixelShaderManager::SetConstants()
 		if (s_use_integer_constants)
 		{
 			int *temp = m_buffer.GetBufferToUpdate<int>(C_ZBIAS, 1);
-			switch (bpmem.ztex2.type)
+			switch (bpmem.ztex2.type.Value())
 			{
 			case TEV_ZTEX_TYPE_U8:
 				// 8 bits
@@ -172,7 +212,7 @@ void PixelShaderManager::SetConstants()
 		else
 		{
 			float *ftemp = m_buffer.GetBufferToUpdate<float>(C_ZBIAS, 1);
-			switch (bpmem.ztex2.type)
+			switch (bpmem.ztex2.type.Value())
 			{
 			case TEV_ZTEX_TYPE_U8:
 				// 8 bits
@@ -316,9 +356,9 @@ void PixelShaderManager::SetConstants()
 	if (s_bFogColorChanged)
 	{
 		if (s_use_integer_constants)
-			m_buffer.SetConstant4<int>(C_FOGCOLOR, bpmem.fog.color.r, bpmem.fog.color.g, bpmem.fog.color.b, 0);
+			m_buffer.SetConstant4<int>(C_FOGCOLOR, bpmem.fog.color.r.Value(), bpmem.fog.color.g.Value(), bpmem.fog.color.b.Value(), 0);
 		else
-			m_buffer.SetConstant4<float>(C_FOGCOLOR, (float)bpmem.fog.color.r, (float)bpmem.fog.color.g, (float)bpmem.fog.color.b, 0.0f);
+			m_buffer.SetConstant4<float>(C_FOGCOLOR, (float)bpmem.fog.color.r.Value(), (float)bpmem.fog.color.g.Value(), (float)bpmem.fog.color.b.Value(), 0.0f);
 		s_bFogColorChanged = false;
 	}
 
@@ -338,21 +378,26 @@ void PixelShaderManager::SetConstants()
 				m_buffer.SetConstant4<float>(C_FOGI, 0.0f, b, 0.0f, b_shf);
 			}
 			m_buffer.SetConstant4<float>(C_FOGF + 1, bpmem.fog.a.GetA(), 0, bpmem.fog.c_proj_fsel.GetC(), 0);
+			m_buffer.SetConstant(C_UBERPARAM0, 2, bpmem.fog.c_proj_fsel.hex);
 		}
 		else
 		{
 			m_buffer.SetConstant4<float>(C_FOGF + 1, 0.0f, 1.0f, 0.0f, 1.0f);
 			m_buffer.SetConstant4<float>(C_FOGI, 0.0f, 1.0f, 0.0f, 1.0f);
+			if ((g_ActiveConfig.backend_info.APIType & API_D3D9) == 0)
+			{
+				m_buffer.SetConstant(C_UBERPARAM0, 2, 0);
+			}
 		}
 		s_bFogParamChanged = false;
 	}
 
 	if (s_bFogRangeAdjustChanged || s_bViewPortChanged)
 	{
-		if (!g_ActiveConfig.bDisableFog && bpmem.fogRange.Base.Enabled == 1)
+		if (!g_ActiveConfig.bDisableFog && bpmem.fogRange.Base.Enabled.Value() == 1)
 		{
 			//bpmem.fogRange.Base.Center : center of the viewport in x axis. observation: bpmem.fogRange.Base.Center = realcenter + 342;
-			int center = ((u32)bpmem.fogRange.Base.Center) - 342;
+			int center = ((u32)bpmem.fogRange.Base.Center.Value()) - 342;
 			// normalize center to make calculations easy
 			float ScreenSpaceCenter = center / (2.0f * xfmem.viewport.wd);
 			ScreenSpaceCenter = (ScreenSpaceCenter * 2.0f) - 1.0f;
@@ -364,17 +409,20 @@ void PixelShaderManager::SetConstants()
 			m_buffer.SetConstant4<float>(C_FOGF
 				, ScreenSpaceCenter
 				, (float)g_renderer->EFBToScaledX((int)(2.0f * xfmem.viewport.wd))
-				, bpmem.fogRange.K[4].HI / 256.0f
+				, bpmem.fogRange.K[4].HI.Value() / 256.0f
 				, 0.0f);
 		}
 		else
 		{
 			m_buffer.SetConstant4<float>(C_FOGF, 0.0f, 1.0f, 1.0f, 0.0f); // Need to update these values for older hardware that fails to divide by zero in shaders.
 		}
-
+		if (m_buffer.GetBuffer<u32>(C_UBERPARAM0)[3] != bpmem.fogRange.Base.hex && (g_ActiveConfig.backend_info.APIType & API_D3D9) == 0)
+		{
+			m_buffer.SetConstant(C_UBERPARAM0, 3, bpmem.fogRange.Base.hex);
+		}
 		s_bFogRangeAdjustChanged = false;
 	}
-	if ((g_ActiveConfig.backend_info.APIType & API_D3D9) != 0 && g_ActiveConfig.PixelLightingEnabled(xfmem, VertexLoaderManager::g_current_components))
+	if (((g_ActiveConfig.backend_info.APIType & API_D3D9)) != 0 && g_ActiveConfig.PixelLightingEnabled(xfmem, VertexLoaderManager::g_current_components))
 	{
 		if (nLightsChanged[0] >= 0)
 		{
@@ -444,42 +492,91 @@ void PixelShaderManager::SetConstants()
 			}
 			s_materials_changed = 0;
 		}
-		if (g_ActiveConfig.iRimBase != s_LightsPhong[0]
-			|| g_ActiveConfig.iRimPower != s_LightsPhong[1]
-			|| g_ActiveConfig.iRimIntesity != s_LightsPhong[2]
-			|| g_ActiveConfig.iSpecularMultiplier != s_LightsPhong[3])
-		{
-			s_LightsPhong[0] = g_ActiveConfig.iRimBase;
-			s_LightsPhong[1] = g_ActiveConfig.iRimPower;
-			s_LightsPhong[2] = g_ActiveConfig.iRimIntesity;
-			s_LightsPhong[3] = g_ActiveConfig.iSpecularMultiplier;
-			m_buffer.SetConstant4(C_PPHONG
-				, float(g_ActiveConfig.iRimBase)
-				, 1.0f + U8_NORM_COEF * g_ActiveConfig.iRimPower * 2.0f
-				, U8_NORM_COEF * g_ActiveConfig.iRimIntesity
-				, U8_NORM_COEF * g_ActiveConfig.iSpecularMultiplier);
-		}
-		if (g_ActiveConfig.iSimBumpStrength != s_LightsPhong[4]
-			|| g_ActiveConfig.iSimBumpThreshold != s_LightsPhong[5]
-			|| g_ActiveConfig.iSimBumpDetailBlend != s_LightsPhong[6]
-			|| g_ActiveConfig.iSimBumpDetailFrequency != s_LightsPhong[7])
-		{
-			s_LightsPhong[4] = g_ActiveConfig.iSimBumpStrength;
-			s_LightsPhong[5] = g_ActiveConfig.iSimBumpThreshold;
-			s_LightsPhong[6] = g_ActiveConfig.iSimBumpDetailBlend;
-			s_LightsPhong[7] = g_ActiveConfig.iSimBumpDetailFrequency;
-			float bump_strenght = U10_NORM_COEF * g_ActiveConfig.iSimBumpStrength;
-			m_buffer.SetConstant4(C_PPHONG + 1
-				, bump_strenght * bump_strenght
-				, U8_NORM_COEF * g_ActiveConfig.iSimBumpThreshold * 16.0f
-				, U8_NORM_COEF * g_ActiveConfig.iSimBumpDetailBlend
-				, float(g_ActiveConfig.iSimBumpDetailFrequency));
-		}
+	}
+	if (g_ActiveConfig.iRimBase != s_LightsPhong[0]
+		|| g_ActiveConfig.iRimPower != s_LightsPhong[1]
+		|| g_ActiveConfig.iRimIntesity != s_LightsPhong[2]
+		|| g_ActiveConfig.iSpecularMultiplier != s_LightsPhong[3])
+	{
+		s_LightsPhong[0] = g_ActiveConfig.iRimBase;
+		s_LightsPhong[1] = g_ActiveConfig.iRimPower;
+		s_LightsPhong[2] = g_ActiveConfig.iRimIntesity;
+		s_LightsPhong[3] = g_ActiveConfig.iSpecularMultiplier;
+		m_buffer.SetConstant4(C_PPHONG
+			, float(g_ActiveConfig.iRimBase)
+			, 1.0f + U8_NORM_COEF * g_ActiveConfig.iRimPower * 2.0f
+			, U8_NORM_COEF * g_ActiveConfig.iRimIntesity
+			, U8_NORM_COEF * g_ActiveConfig.iSpecularMultiplier);
+	}
+	if (g_ActiveConfig.iSimBumpStrength != s_LightsPhong[4]
+		|| g_ActiveConfig.iSimBumpThreshold != s_LightsPhong[5]
+		|| g_ActiveConfig.iSimBumpDetailBlend != s_LightsPhong[6]
+		|| g_ActiveConfig.iSimBumpDetailFrequency != s_LightsPhong[7])
+	{
+		s_LightsPhong[4] = g_ActiveConfig.iSimBumpStrength;
+		s_LightsPhong[5] = g_ActiveConfig.iSimBumpThreshold;
+		s_LightsPhong[6] = g_ActiveConfig.iSimBumpDetailBlend;
+		s_LightsPhong[7] = g_ActiveConfig.iSimBumpDetailFrequency;
+		float bump_strenght = U10_NORM_COEF * g_ActiveConfig.iSimBumpStrength;
+		m_buffer.SetConstant4(C_PPHONG + 1
+			, bump_strenght * bump_strenght
+			, U8_NORM_COEF * g_ActiveConfig.iSimBumpThreshold * 16.0f
+			, U8_NORM_COEF * g_ActiveConfig.iSimBumpDetailBlend
+			, float(g_ActiveConfig.iSimBumpDetailFrequency));
 	}
 	if (sbflagschanged)
 	{
 		sbflagschanged = false;
 		m_buffer.SetConstant4v<int>(C_FLAGS, sflags);
+	}
+	if (s_bIndirectDirty && (g_ActiveConfig.backend_info.APIType & API_D3D9) == 0)
+	{
+		for (int i = 0; i < 4; i++)
+			m_buffer.SetConstant(C_UBERPACK1 + i, 3, 0u);
+
+		for (u32 i = 0; i < (bpmem.genMode.numtevstages.Value() + 1); ++i)
+		{
+			u32 stage = bpmem.tevind[i].bt.Value();
+			if (stage < bpmem.genMode.numindstages)
+			{
+				// We set some extra bits so the ubershader can quickly check if these
+				// features are in use.
+				if (bpmem.tevind[i].IsActive())
+					m_buffer.SetConstant(C_UBERPACK1 + stage, 3,
+						bpmem.tevindref.getTexCoord(stage) | bpmem.tevindref.getTexMap(stage) << 8 | 1 << 16);
+				// Note: a tevind of zero just happens to be a passthrough, so no need
+				// to set an extra bit.
+				m_buffer.SetConstant(C_UBERPACK1 + i, 2,
+					bpmem.tevind[i].hex | 0x80000000u);
+				// TODO: This match shadergen, but videosw will
+				// always wrap.
+
+				// The ubershader uses tevind != 0 as a condition whether to calculate texcoords,
+				// even when texture is disabled, instead of the stage < bpmem.genMode.numindstages.
+				// We set an unused bit here to indicate that the stage is active, even if it
+				// is just a pass-through.        
+			}
+			else
+			{
+				m_buffer.SetConstant(C_UBERPACK1 + i, 2, 0);
+			}
+		}
+		s_bIndirectDirty = false;
+	}
+
+	if (s_bDestAlphaDirty && (g_ActiveConfig.backend_info.APIType & API_D3D9) == 0)
+	{
+		// Destination alpha is only enabled if alpha writes are enabled. Force entire uniform to zero
+		// when disabled.
+		u32 dstalpha = bpmem.blendmode.alphaupdate.Value() != 0 && bpmem.dstalpha.enable.Value() != 0 &&
+			bpmem.zcontrol.pixel_format.Value() == PEControl::RGBA6_Z24 ?
+			bpmem.dstalpha.hex :
+			0;
+
+		if (m_buffer.GetBuffer<u32>(C_UBERPARAM1)[0] != dstalpha)
+		{
+			m_buffer.SetConstant(C_UBERPARAM1, 0, dstalpha);
+		}
 	}
 }
 
@@ -512,7 +609,59 @@ void PixelShaderManager::SetTevKonstColor(int index, int component, s32 value)
 	{
 		c[component] = value;
 		s_nColorsChanged[1] |= 1 << index;
+		if ((g_ActiveConfig.backend_info.APIType & API_D3D9) != 0)
+		{
+			return;
+		}
+		// Konst for ubershaders. We build the whole array on cpu so the gpu can do a single indirect
+		// access.
+		if (component != 3)  // Alpha doesn't included in the .rgb konsts
+			m_buffer.SetConstant(C_UBERKONST + index + 12, component, value);
+
+		// .rrrr .gggg .bbbb .aaaa konsts
+		m_buffer.SetConstant4(C_UBERKONST + index + 16 + component * 4, value, value, value, value);
 	}
+}
+
+void PixelShaderManager::SetTevOrder(int index, u32 order)
+{
+	if ((g_ActiveConfig.backend_info.APIType & API_D3D9) != 0)
+	{
+		return;
+	}
+	if (m_buffer.GetBuffer<u32>(C_UBERPACK2 + index)[0] != order)
+	{
+		m_buffer.SetConstant(C_UBERPACK2 + index, 0, order);
+	}
+}
+
+void PixelShaderManager::SetTevKSel(int index, u32 ksel)
+{
+	if ((g_ActiveConfig.backend_info.APIType & API_D3D9) != 0)
+	{
+		return;
+	}
+	if (m_buffer.GetBuffer<u32>(C_UBERPACK2 + index)[1] != ksel)
+	{
+		m_buffer.SetConstant(C_UBERPACK2 + index, 1, ksel);
+	}
+}
+
+void PixelShaderManager::SetTevCombiner(int index, int alpha, u32 combiner)
+{
+	if ((g_ActiveConfig.backend_info.APIType & API_D3D9) != 0)
+	{
+		return;
+	}
+	if (m_buffer.GetBuffer<u32>(C_UBERPACK1 + index)[alpha] != combiner)
+	{
+		m_buffer.SetConstant(C_UBERPACK1 + index, alpha, combiner);
+	}
+}
+
+void PixelShaderManager::SetTevIndirectChanged()
+{
+	s_bIndirectDirty = true;
 }
 
 void PixelShaderManager::SetAlpha()
@@ -524,16 +673,34 @@ void PixelShaderManager::SetAlpha()
 	}
 }
 
-void PixelShaderManager::SetDestAlpha()
+void PixelShaderManager::SetAlphaTestChanged()
 {
-	if (bpmem.dstalpha.alpha != (lastAlpha >> 16))
+	if ((g_ActiveConfig.backend_info.APIType & API_D3D9) != 0)
 	{
-		lastAlpha = (lastAlpha & ~0xff0000) | ((bpmem.dstalpha.alpha & 0xff) << 16);
+		return;
+	}
+	// Force alphaTest Uniform to zero if it will always pass.
+	// (set an extra bit to distinguish from "never && never")
+	// TODO: we could optimize this further and check the actual constants,
+	// i.e. "a <= 0" and "a >= 255" will always pass.
+	u32 alpha_test =
+		bpmem.alpha_test.TestResult() != AlphaTest::PASS ? bpmem.alpha_test.hex | 1 << 31 : 0;
+	if (m_buffer.GetBuffer<u32>(C_UBERPARAM0)[1] != alpha_test)
+	{
+		m_buffer.SetConstant(C_UBERPARAM0, 1, alpha_test);
+	}
+}
+
+void PixelShaderManager::SetDestAlphaChanged()
+{
+	if (bpmem.dstalpha.alpha.Value() != (lastAlpha >> 16))
+	{
+		lastAlpha = (lastAlpha & ~0xff0000) | ((bpmem.dstalpha.alpha.Value() & 0xff) << 16);
 		s_bAlphaChanged = true;
 	}
 }
 
-void PixelShaderManager::SetTexDims(int texmapid, u32 width, u32 height)
+void PixelShaderManager::SetTexDims(int texmapid, u32 width, u32 height, u32 layers, u32 normallayer, u32 emissivelayer)
 {
 	u32 wh = width | (height << 16);
 	if (lastTexDims[texmapid] != wh)
@@ -541,14 +708,41 @@ void PixelShaderManager::SetTexDims(int texmapid, u32 width, u32 height)
 		lastTexDims[texmapid] = wh;
 		s_nTexDimsChanged |= 1 << texmapid;
 	}
+	if (lastTexLayers[texmapid][0] != layers)
+	{
+		lastTexLayers[texmapid][0] = layers;
+		s_nTexLayersChanged |= 1 << texmapid;
+	}
+	if (lastTexLayers[texmapid][1] != normallayer)
+	{
+		lastTexLayers[texmapid][1] = normallayer;
+		s_nTexLayersChanged |= 1 << texmapid;
+	}
+	if (lastTexLayers[texmapid][2] != emissivelayer)
+	{
+		lastTexLayers[texmapid][2] = emissivelayer;
+		s_nTexLayersChanged |= 1 << texmapid;
+	}
 }
 
 void PixelShaderManager::SetZTextureBias()
 {
-	if (lastZBias != bpmem.ztex1.bias)
+	if (lastZBias != bpmem.ztex1.bias.Value())
 	{
 		s_bZBiasChanged = true;
-		lastZBias = bpmem.ztex1.bias;
+		lastZBias = bpmem.ztex1.bias.Value();
+	}
+}
+
+void PixelShaderManager::SetZTextureOpChanged()
+{
+	if ((g_ActiveConfig.backend_info.APIType & API_D3D9) != 0)
+	{
+		return;
+	}
+	if (m_buffer.GetBuffer<u32>(C_UBERPARAM1)[1] != bpmem.ztex2.op.Value())
+	{
+		m_buffer.SetConstant(C_UBERPARAM1, 1, bpmem.ztex2.op.Value());
 	}
 }
 
@@ -594,6 +788,69 @@ void PixelShaderManager::SetFlags(int index, int mask, int value)
 	{
 		sbflagschanged = true;
 		sflags[index] = newflag;
+	}
+}
+
+void PixelShaderManager::SetGenModeChanged()
+{
+	if ((g_ActiveConfig.backend_info.APIType & API_D3D9) != 0)
+	{
+		return;
+	}
+	if (m_buffer.GetBuffer<u32>(C_UBERPARAM0)[0] != bpmem.genMode.hex)
+	{
+		m_buffer.SetConstant(C_UBERPARAM0, 0, bpmem.genMode.hex);
+	}
+	s_bIndirectDirty = true;
+}
+
+void PixelShaderManager::SetZModeControl()
+{
+	if ((g_ActiveConfig.backend_info.APIType & API_D3D9) != 0)
+	{
+		return;
+	}
+	u32 late_ztest = bpmem.UseLateDepthTest();
+	u32 rgba6_format =
+		(bpmem.zcontrol.pixel_format.Value() == PEControl::RGBA6_Z24 && !g_ActiveConfig.bForceTrueColor) ? 1 :
+		0;
+	u32 dither = rgba6_format && bpmem.blendmode.dither.Value() != 0;
+	if (m_buffer.GetBuffer<u32>(C_UBERPARAM1)[2] != late_ztest
+		|| m_buffer.GetBuffer<u32>(C_UBERPARAM1)[3] != rgba6_format
+		|| m_buffer.GetBuffer<u32>(C_UBERPARAM2)[0] != dither)
+	{
+		m_buffer.SetConstant(C_UBERPARAM1, 2, late_ztest);
+		m_buffer.SetConstant(C_UBERPARAM1, 3, rgba6_format);
+		m_buffer.SetConstant(C_UBERPARAM2, 0, dither);
+	}
+	s_bDestAlphaDirty = true;
+}
+
+void PixelShaderManager::SetBlendModeChanged()
+{
+	if ((g_ActiveConfig.backend_info.APIType & API_D3D9) != 0)
+	{
+		return;
+	}
+	u32 dither = m_buffer.GetBuffer<u32>(C_UBERPARAM1)[3] && bpmem.blendmode.dither.Value() != 0;
+	if (m_buffer.GetBuffer<u32>(C_UBERPARAM2)[0] != dither)
+	{
+		m_buffer.SetConstant(C_UBERPARAM2, 0, dither);
+	}
+	s_bDestAlphaDirty = true;
+}
+
+void PixelShaderManager::SetBoundingBoxActive(bool active)
+{
+	if ((g_ActiveConfig.backend_info.APIType & API_D3D9) != 0)
+	{
+		return;
+	}
+	const u32 enable =
+		active && g_ActiveConfig.iBBoxMode == BBoxGPU ? 1 : 0;
+	if (m_buffer.GetBuffer<u32>(C_UBERPARAM2)[1] != enable)
+	{
+		m_buffer.SetConstant(C_UBERPARAM2, 1, enable);
 	}
 }
 

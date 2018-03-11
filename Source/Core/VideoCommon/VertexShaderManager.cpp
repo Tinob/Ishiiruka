@@ -32,6 +32,8 @@ alignas(256) float g_fProjectionMatrix[16];
 bool VertexShaderManager::bProjectionChanged;
 bool VertexShaderManager::bViewportChanged;
 int VertexShaderManager::s_materials_changed;
+bool VertexShaderManager::bTexMtxInfoChanged;
+bool VertexShaderManager::bLightingConfigChanged;
 
 static bool s_tex_matrices_changed[2];
 static int s_transform_matrices_changed[2]; // min,max
@@ -64,8 +66,8 @@ struct ProjectionHack
 namespace
 {
 // Control Variables
-static ProjectionHack g_ProjHack1;
-static ProjectionHack g_ProjHack2;
+static ProjectionHack g_proj_hack_near;
+static ProjectionHack g_proj_hack_far;
 } // Namespace
 
 static float PHackValue(std::string sValue)
@@ -100,38 +102,39 @@ static float PHackValue(std::string sValue)
 	return f;
 }
 
-void UpdateProjectionHack(int iPhackvalue[], std::string sPhackvalue[])
+void UpdateProjectionHack(const ProjectionHackConfig& config)
 {
-	float fhackvalue1 = 0, fhackvalue2 = 0;
-	float fhacksign1 = 1.0, fhacksign2 = 1.0;
-	bool bProjHack3 = false;
-	const char *sTemp[2];
+	float near_value = 0, far_value = 0;
+	float near_sign = 1.0, far_sign = 1.0;
 
-	if (iPhackvalue[0] == 1)
+	if (config.m_enable)
 	{
+		const char* near_sign_str = "";
+		const char* far_sign_str = "";
+
 		NOTICE_LOG(VIDEO, "\t\t--- Orthographic Projection Hack ON ---");
 
-		fhacksign1 *= (iPhackvalue[1] == 1) ? -1.0f : fhacksign1;
-		sTemp[0] = (iPhackvalue[1] == 1) ? " * (-1)" : "";
-		fhacksign2 *= (iPhackvalue[2] == 1) ? -1.0f : fhacksign2;
-		sTemp[1] = (iPhackvalue[2] == 1) ? " * (-1)" : "";
+		if (config.m_sznear)
+		{
+			near_sign *= -1.0f;
+			near_sign_str = " * (-1)";
+		}
+		if (config.m_szfar)
+		{
+			far_sign *= -1.0f;
+			far_sign_str = " * (-1)";
+		}
 
-		fhackvalue1 = PHackValue(sPhackvalue[0]);
-		NOTICE_LOG(VIDEO, "- zNear Correction = (%f + zNear)%s", fhackvalue1, sTemp[0]);
+		near_value = PHackValue(config.m_znear);
+		NOTICE_LOG(VIDEO, "- zNear Correction = (%f + zNear)%s", near_value, near_sign_str);
 
-		fhackvalue2 = PHackValue(sPhackvalue[1]);
-		NOTICE_LOG(VIDEO, "- zFar Correction =  (%f + zFar)%s", fhackvalue2, sTemp[1]);
-
-		sTemp[0] = "DISABLED";
-		bProjHack3 = (iPhackvalue[3] == 1) ? true : bProjHack3;
-		if (bProjHack3)
-			sTemp[0] = "ENABLED";
-		NOTICE_LOG(VIDEO, "- Extra Parameter: %s", sTemp[0]);
+		far_value = PHackValue(config.m_zfar);
+		NOTICE_LOG(VIDEO, "- zFar Correction =  (%f + zFar)%s", far_value, far_sign_str);
 	}
 
 	// Set the projections hacks
-	g_ProjHack1 = ProjectionHack(fhacksign1, fhackvalue1);
-	g_ProjHack2 = ProjectionHack(fhacksign2, fhackvalue2);
+	g_proj_hack_near = ProjectionHack(near_sign, near_value);
+	g_proj_hack_far = ProjectionHack(far_sign, far_value);
 }
 
 // Viewport correction :
@@ -241,6 +244,10 @@ void VertexShaderManager::Dirty()
 	bProjectionChanged = true;
 
 	s_materials_changed = 15;
+
+	bTexMtxInfoChanged = true;
+	bLightingConfigChanged = true;
+
 	memset(s_lights_phong, 0, sizeof(s_lights_phong));
 }
 
@@ -403,8 +410,7 @@ void VertexShaderManager::SetConstants()
 		// NOTE: If we ever emulate antialiasing, the sample locations set by
 		// BP registers 0x01-0x04 need to be considered here.
 		const float pixel_center_correction = ((g_ActiveConfig.backend_info.APIType & API_D3D9) ? 0.0f : 0.5f) - 7.0f / 12.0f;
-		const bool bUseVertexRounding =
-			g_ActiveConfig.bVertexRounding && g_ActiveConfig.iEFBScale != SCALE_1X;
+		const bool bUseVertexRounding = g_ActiveConfig.UseVertexRounding();
 		float viewport_width = 2.f * xfmem.viewport.wd;
 		float viewport_height = 2.f * xfmem.viewport.ht;
 		if (!bUseVertexRounding)
@@ -542,8 +548,8 @@ void VertexShaderManager::SetConstants()
 
 			g_fProjectionMatrix[8] = 0.0f;
 			g_fProjectionMatrix[9] = 0.0f;
-			g_fProjectionMatrix[10] = (g_ProjHack1.value + rawProjection[4]) * ((g_ProjHack1.sign == 0) ? 1.0f : g_ProjHack1.sign);
-			g_fProjectionMatrix[11] = (g_ProjHack2.value + rawProjection[5]) * ((g_ProjHack2.sign == 0) ? 1.0f : g_ProjHack2.sign);
+			g_fProjectionMatrix[10] = (g_proj_hack_near.value + rawProjection[4]) * ((g_proj_hack_near.sign == 0) ? 1.0f : g_proj_hack_near.sign);
+			g_fProjectionMatrix[11] = (g_proj_hack_far.value + rawProjection[5]) * ((g_proj_hack_far.sign == 0) ? 1.0f : g_proj_hack_far.sign);
 
 			g_fProjectionMatrix[12] = 0.0f;
 			g_fProjectionMatrix[13] = 0.0f;
@@ -618,6 +624,27 @@ void VertexShaderManager::SetConstants()
 			correctedMtx.data[7] *= -1.0f;
 		}
 		m_buffer.SetMultiConstant4v(C_PROJECTION, 4, correctedMtx.data);
+	}
+	if (bTexMtxInfoChanged)
+	{
+		bTexMtxInfoChanged = false;
+		m_buffer.SetConstant(C_VUBERPARAMS, 1, xfmem.dualTexTrans.enabled);
+		for (u32 i = 0; i < ArraySize(xfmem.texMtxInfo); i++)
+			m_buffer.SetConstant(C_VUBERXFMEM + i, 0, xfmem.texMtxInfo[i].hex);
+		for (u32 i = 0; i < ArraySize(xfmem.postMtxInfo); i++)
+			m_buffer.SetConstant(C_VUBERXFMEM + i, 1, xfmem.postMtxInfo[i].hex);
+	}
+
+	if (bLightingConfigChanged)
+	{
+		bLightingConfigChanged = false;
+
+		for (u32 i = 0; i < 2; i++)
+		{
+			m_buffer.SetConstant(C_VUBERXFMEM + i, 2, xfmem.color[i].hex);
+			m_buffer.SetConstant(C_VUBERXFMEM + i, 3, xfmem.alpha[i].hex);
+		}
+		m_buffer.SetConstant(C_VUBERPARAMS, 2, xfmem.numChan.numColorChans);
 	}
 }
 
@@ -726,6 +753,26 @@ void VertexShaderManager::SetTexMatrixChangedB(u32 Value)
 		s_tex_matrices_changed[1] = true;
 		g_main_cp_state.matrix_index_b.Hex = Value;
 	}
+}
+
+void VertexShaderManager::SetVertexFormat(u32 components)
+{
+	if (components != m_buffer.GetBuffer<u32>(C_VUBERPARAMS)[0])
+	{
+		m_buffer.SetConstant(C_VUBERPARAMS, 0, components);
+	}
+}
+
+void VertexShaderManager::SetTexMatrixInfoChanged(int index)
+{
+	// TODO: Should we track this with more precision, like which indices changed?
+	// The whole vertex constants are probably going to be uploaded regardless.
+	bTexMtxInfoChanged = true;
+}
+
+void VertexShaderManager::SetLightingConfigChanged()
+{
+	bLightingConfigChanged = true;
 }
 
 void VertexShaderManager::TranslateView(float x, float y, float z)

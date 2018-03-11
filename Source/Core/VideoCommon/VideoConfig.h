@@ -15,8 +15,10 @@
 #include <vector>
 
 #include "Common/CommonTypes.h"
+#include "VideoCommon/TextureDecoder.h"
 #include "VideoCommon/VideoCommon.h"
 #include "VideoCommon/XFMemory.h"
+
 
 // Log in two categories, and save three other options in the same byte
 #define CONF_LOG          1
@@ -68,14 +70,39 @@ enum BBoxMode : s32
 	BBoxGPU = 2
 };
 
+enum FilteringMode : s32
+{
+	Disabled = 0,
+	Accurate = 1,
+	Normal = 2,
+	Forced = 3,
+};
 
+enum HostCullMode : s32
+{
+	Native = 0,
+	NoCull = 1,
+	NoCullExceptAll = 2,
+	FrontNoBlending = 3,
+	Front = 4,
+	BackNoBlending = 5,
+	Back = 6,
+};
 
-class IniFile;
+struct ProjectionHackConfig final
+{
+	bool m_enable;
+	bool m_sznear;
+	bool m_szfar;
+	std::string m_znear;
+	std::string m_zfar;
+};
 
 // NEVER inherit from this class.
 struct VideoConfig final
 {
 	VideoConfig();
+	void ClearFormats();
 	void Load(const std::string& ini_file);
 	void GameIniLoad();
 	void VerifyValidity();
@@ -83,6 +110,7 @@ struct VideoConfig final
 	void UpdateProjectionHack();
 	bool IsVSync() const;
 	bool PixelLightingEnabled(const XFMemory& xfr, const u32 components) const;
+	bool CanPrecompileUberShaders() const;
 
 	// General
 	bool bVSync;
@@ -94,15 +122,14 @@ struct VideoConfig final
 	bool bUseRealXFB;
 
 	// OpenCL/OpenMP
-	bool bEnableOpenCL;
 	bool bOMPDecoder;
 
 	// Enhancements
-	int iMultisamples;
+	u32 iMultisamples;
 	bool bSSAA;
 	int iEFBScale;
-	bool bForceFiltering;
-	bool bDisableTextureFiltering;
+	FilteringMode eFilteringMode;
+	HostCullMode eCullMode;
 	int iMaxAnisotropy;
 	bool bPostProcessingEnable;
 	int iPostProcessingTrigger;
@@ -125,7 +152,6 @@ struct VideoConfig final
 	bool bShowFPS;
 	bool bShowNetPlayPing;
 	bool bShowNetPlayMessages;
-	bool bShowInputDisplay;
 	bool bOverlayStats;
 	bool bOverlayProjStats;
 	bool bTexFmtOverlayEnable;
@@ -139,7 +165,6 @@ struct VideoConfig final
 
 	// Utility
 	bool bDumpTextures;
-	bool bDumpVertexLoaders;
 	bool bHiresTextures;
 	bool bHiresMaterialMaps;
 	bool bHiresMaterialMapsBuild;
@@ -156,7 +181,7 @@ struct VideoConfig final
 	bool bBorderlessFullscreen;
 	int iBitrateKbps;
 	bool bCompileShaderOnStartup;
-	
+
 
 	// Hacks
 	bool bEFBAccessEnable;
@@ -164,16 +189,13 @@ struct VideoConfig final
 	bool bForceProgressive;
 	bool bPerfQueriesEnable;
 	bool bFullAsyncShaderCompilation;
-	bool bPredictiveFifo;
-	bool bWaitForShaderCompilation;
 	bool bEnableGPUTextureDecoding;
 	bool bEnableComputeTextureEncoding;
 	bool bEFBEmulateFormatChanges;
 	bool bSkipEFBCopyToRam;
 	bool bCopyEFBScaled;
 	int iSafeTextureCache_ColorSamples;
-	int iPhackvalue[4];
-	std::string sPhackvalue[2];
+	ProjectionHackConfig phack;
 	float fAspectRatioHackW, fAspectRatioHackH;
 	bool bEnablePixelLighting;
 	bool bForcedLighting;
@@ -221,6 +243,7 @@ struct VideoConfig final
 	bool bDumpTevTextureFetches;
 
 	bool bEnableValidationLayer;
+	bool bEnableShaderDebug;
 
 	// Multithreaded submission, currently only supported with Vulkan.
 	bool bBackendMultithreading;
@@ -229,6 +252,23 @@ struct VideoConfig final
 	// Currently only supported with Vulkan.
 	int iCommandBufferExecuteInterval;
 
+	// The following options determine the ubershader mode:
+	//   No ubershaders:
+	//     - bBackgroundShaderCompiling = false
+	//     - bDisableSpecializedShaders = false
+	//   Hybrid/background compiling:
+	//     - bBackgroundShaderCompiling = true
+	//     - bDisableSpecializedShaders = false
+	//   Ubershaders only:
+	//     - bBackgroundShaderCompiling = false
+	//     - bDisableSpecializedShaders = true
+
+	// Enable background shader compiling, use ubershaders while waiting.
+	bool bBackgroundShaderCompiling;
+
+	// Use ubershaders only, don't compile specialized shaders.
+	bool bDisableSpecializedShaders;
+
 	// Static config per API
 	// TODO: Move this out of VideoConfig
 	struct
@@ -236,14 +276,14 @@ struct VideoConfig final
 		API_TYPE APIType;
 
 		std::vector<std::string> Adapters; // for D3D9 and D3D11
-		std::vector<int> AAModes;
+		std::vector<u32> AAModes;
 
 		// TODO: merge AdapterName and Adapters array
 		std::string AdapterName; // for OpenGL
 
 		u32 MaxTextureSize;
 
-		bool bSupportedFormats[16]; // used for D3D9 in TextureCache		
+		bool bSupportedFormats[HostTextureFormat::PC_TEX_NUM_FORMATS]; // used for D3D9 in TextureCache		
 		bool bSupportsDualSourceBlend; // only supported by D3D11 and OpenGL
 		bool bSupportsPixelLighting;
 		bool bSupportsNormalMaps;
@@ -272,6 +312,10 @@ struct VideoConfig final
 		bool bSupportsReversedDepthRange;
 		bool bSupportsInternalResolutionFrameDumps;
 		bool bSupportsAsyncShaderCompilation;
+		bool bSupportsFragmentStoresAndAtomics;  // a.k.a. OpenGL SSBOs a.k.a. Direct3D UAVs
+		bool bSupportsBitfield;                // Needed by UberShaders, so must stay in VideoCommon
+		bool bSupportsDynamicSamplerIndexing;  // Needed by UberShaders, so must stay in VideoCommon
+		bool bSupportsUberShaders;
 	} backend_info;
 
 	// Utility
@@ -283,6 +327,7 @@ struct VideoConfig final
 	{
 		return bUseXFB && !bUseRealXFB;
 	}
+	inline bool MultisamplingEnabled() const { return iMultisamples > 1; }
 	inline bool ExclusiveFullscreenEnabled() const
 	{
 		return backend_info.bSupportsExclusiveFullscreen && !bBorderlessFullscreen;
@@ -299,6 +344,7 @@ struct VideoConfig final
 	{
 		return backend_info.bSupportsGPUTextureDecoding && bEnableGPUTextureDecoding;
 	}
+	inline bool UseVertexRounding() const { return bVertexRounding && iEFBScale != SCALE_1X; }
 };
 
 extern VideoConfig g_Config;

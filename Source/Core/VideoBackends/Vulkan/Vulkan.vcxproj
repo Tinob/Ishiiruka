@@ -12,6 +12,7 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{29F29A19-F141-45AD-9679-5A2923B49DA3}</ProjectGuid>
+    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Configuration">
@@ -43,7 +44,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>$(ExternalsDir)Vulkan\include;$(ExternalsDir)glslang\glslang\Public;$(ExternalsDir)glslang\SPIRV;$(ExternalsDir)zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ExternalsDir)zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Lib />
     <Lib />
@@ -53,6 +54,8 @@
     <ClCompile Include="CommandBufferManager.cpp" />
     <ClCompile Include="FramebufferManager.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="PostProcessing.cpp" />
+    <ClCompile Include="ShaderCache.cpp" />
     <ClCompile Include="TextureConverter.cpp" />
     <ClCompile Include="PerfQuery.cpp" />
     <ClCompile Include="RasterFont.cpp" />
@@ -69,6 +72,7 @@
     <ClCompile Include="Texture2D.cpp" />
     <ClCompile Include="TextureCache.cpp" />
     <ClCompile Include="VertexManager.cpp" />
+    <ClCompile Include="VKTexture.cpp" />
     <ClCompile Include="VulkanContext.cpp" />
     <ClCompile Include="VulkanLoader.cpp" />
   </ItemGroup>
@@ -77,6 +81,8 @@
     <ClInclude Include="CommandBufferManager.h" />
     <ClInclude Include="FramebufferManager.h" />
     <ClInclude Include="Constants.h" />
+    <ClInclude Include="PostProcessing.h" />
+    <ClInclude Include="ShaderCache.h" />
     <ClInclude Include="TextureConverter.h" />
     <ClInclude Include="RasterFont.h" />
     <ClInclude Include="StagingBuffer.h" />
@@ -94,6 +100,7 @@
     <ClInclude Include="TextureCache.h" />
     <ClInclude Include="VertexManager.h" />
     <ClInclude Include="VideoBackend.h" />
+    <ClInclude Include="VKTexture.h" />
     <ClInclude Include="VulkanContext.h" />
     <ClInclude Include="VulkanLoader.h" />
   </ItemGroup>

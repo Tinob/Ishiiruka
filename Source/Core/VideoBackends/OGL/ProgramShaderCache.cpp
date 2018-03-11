@@ -15,6 +15,7 @@
 #include "VideoBackends/OGL/ProgramShaderCache.h"
 #include "VideoBackends/OGL/Render.h"
 #include "VideoBackends/OGL/StreamBuffer.h"
+#include "VideoBackends/OGL/VertexManager.h"
 
 #include "VideoCommon/Debugger.h"
 #include "VideoCommon/DriverDetails.h"
@@ -22,26 +23,42 @@
 #include "VideoCommon/ImageWrite.h"
 #include "VideoCommon/PixelShaderManager.h"
 #include "VideoCommon/Statistics.h"
+#include "VideoCommon/VertexLoaderManager.h"
 #include "VideoCommon/VertexShaderManager.h"
 
 namespace OGL
 {
+static constexpr u32 INVALID_VAO = std::numeric_limits<u32>::max();
+
 u32 ProgramShaderCache::s_ubo_buffer_size;
 u32 ProgramShaderCache::s_v_ubo_buffer_size;
 u32 ProgramShaderCache::s_p_ubo_buffer_size;
 u32 ProgramShaderCache::s_g_ubo_buffer_size;
 s32 ProgramShaderCache::s_ubo_align;
+u32 ProgramShaderCache::s_last_VAO = INVALID_VAO;
 
 static std::unique_ptr<StreamBuffer> s_buffer;
 static int num_failures = 0;
 
 static LinearDiskCache<SHADERUID, u8> g_program_disk_cache;
+static LinearDiskCache<UBERSHADERUID, u8> g_uber_program_disk_cache;
 static GLuint CurrentProgram = 0;
+
 ProgramShaderCache::PCache* ProgramShaderCache::pshaders;
+ProgramShaderCache::UberPCache ProgramShaderCache::pushaders;
+
 std::array<ProgramShaderCache::PCacheEntry*, PIXEL_SHADER_RENDER_MODE::PSRM_DEPTH_ONLY + 1> ProgramShaderCache::last_entry;
 std::array<SHADERUID, PIXEL_SHADER_RENDER_MODE::PSRM_DEPTH_ONLY + 1> ProgramShaderCache::last_uid;
 
-static char s_glsl_header[2048] = "";
+ProgramShaderCache::PCacheEntry* ProgramShaderCache::last_uber_entry;
+UBERSHADERUID ProgramShaderCache::last_uber_uid;
+
+std::condition_variable ProgramShaderCache::s_condition_var;
+std::mutex ProgramShaderCache::s_mutex;
+std::queue<std::unique_ptr<ProgramShaderCache::QueueEntry>> ProgramShaderCache::s_compilation_queue;
+std::thread ProgramShaderCache::s_thread;
+
+static char s_glsl_header[4096] = "";
 
 static std::string GetGLSLVersionString()
 {
@@ -108,7 +125,7 @@ void SHADER::SetProgramVariables()
 	}
 }
 
-void SHADER::SetProgramBindings(bool is_compute)
+void SetProgramBindings(GLuint glprogid, bool is_compute)
 {
 	if (!is_compute)
 	{
@@ -125,8 +142,8 @@ void SHADER::SetProgramBindings(bool is_compute)
 
 		glBindAttribLocation(glprogid, SHADER_POSMTX_ATTRIB, "fposmtx");
 
-		glBindAttribLocation(glprogid, SHADER_COLOR0_ATTRIB, "color0");
-		glBindAttribLocation(glprogid, SHADER_COLOR1_ATTRIB, "color1");
+		glBindAttribLocation(glprogid, SHADER_COLOR0_ATTRIB, "rawcolor0");
+		glBindAttribLocation(glprogid, SHADER_COLOR1_ATTRIB, "rawcolor1");
 
 		glBindAttribLocation(glprogid, SHADER_NORM0_ATTRIB, "rawnorm0");
 		glBindAttribLocation(glprogid, SHADER_NORM1_ATTRIB, "rawnorm1");
@@ -135,7 +152,7 @@ void SHADER::SetProgramBindings(bool is_compute)
 	for (int i = 0; i < 8; i++)
 	{
 		char attrib_name[8];
-		snprintf(attrib_name, 8, "tex%d", i);
+		snprintf(attrib_name, 8, "rawtex%d", i);
 		glBindAttribLocation(glprogid, SHADER_TEXTURE0_ATTRIB + i, attrib_name);
 	}
 }
@@ -184,7 +201,7 @@ void ProgramShaderCache::UploadConstants()
 		glBindBuffer(GL_UNIFORM_BUFFER, s_buffer->m_buffer);
 		if (mask & 1)
 		{
-			const u32 pixel_buffer_size = C_PCONST_END * 4 * sizeof(float);
+			const u32 pixel_buffer_size = PixelShaderManager::ConstantBufferSize * sizeof(float);
 			glBindBufferRange(GL_UNIFORM_BUFFER, 1, s_buffer->m_buffer,
 				s_buffer->Stream(pixel_buffer_size, s_ubo_align, PixelShaderManager::GetBuffer()),
 				pixel_buffer_size);
@@ -214,88 +231,168 @@ GLuint ProgramShaderCache::GetCurrentProgram()
 	return CurrentProgram;
 }
 
-SHADER* ProgramShaderCache::CompileShader(const SHADERUID& uid)
+std::future<bool> ProgramShaderCache::CompileShader(const SHADERUID& uid, SHADER& shader)
 {
-	PIXEL_SHADER_RENDER_MODE render_mode = (PIXEL_SHADER_RENDER_MODE)uid.puid.GetUidData().render_mode;
+	ShaderCode vcode;
+	ShaderCode pcode;
+	ShaderCode gcode;
+	const ShaderHostConfig& hostconfig = ShaderHostConfig::GetCurrent();
+	GenerateVertexShaderCode(vcode, uid.vuid.GetUidData(), hostconfig);
+	GeneratePixelShaderCode(pcode, uid.puid.GetUidData(), hostconfig);
+	bool use_geometry = g_ActiveConfig.backend_info.bSupportsGeometryShaders && !uid.guid.GetUidData().IsPassthrough();
+	if (use_geometry)
+		GenerateGeometryShaderCode(gcode, uid.guid.GetUidData(), hostconfig);
+
+	INCSTAT(stats.numPixelShadersCreated);
+	SETSTAT(stats.numPixelShadersAlive, static_cast<int>(pshaders->size()));
+
+	return CompileShader(shader, vcode.data(), pcode.data(), use_geometry ? gcode.data() : nullptr);
+}
+
+SHADER* ProgramShaderCache::CompileUberShader(const UBERSHADERUID& uid)
+{
 	// Check if shader is already in cache
-	PCacheEntry& newentry = pshaders->GetOrAdd(uid);
+	PCacheEntry& newentry = pushaders[uid];
 	if (newentry.shader.glprogid)
 	{
-		last_entry[render_mode] = &newentry;
+		last_uber_entry = &newentry;
 		GFX_DEBUGGER_PAUSE_AT(NEXT_PIXEL_SHADER_CHANGE, true);
-		return &last_entry[render_mode]->shader;
+		return &last_uber_entry->shader;
 	}
 	// Make an entry in the table
-	last_entry[render_mode] = &newentry;
+	last_uber_entry = &newentry;
 	newentry.in_cache = 0;
 
 	ShaderCode vcode;
 	ShaderCode pcode;
 	ShaderCode gcode;
-	GenerateVertexShaderCodeGL(vcode, uid.vuid.GetUidData());
-	GeneratePixelShaderCodeGL(pcode, uid.puid.GetUidData());
-	if (g_ActiveConfig.backend_info.bSupportsGeometryShaders && !uid.guid.GetUidData().IsPassthrough())
-		GenerateGeometryShaderCode(gcode, uid.guid.GetUidData(), API_OPENGL);
+	const ShaderHostConfig& hostconfig = ShaderHostConfig::GetCurrent();
+	UberShader::GenVertexShader(vcode, API_OPENGL, hostconfig, uid.vuid.GetUidData());
+	UberShader::GenPixelShader(pcode, API_OPENGL, hostconfig, uid.puid.GetUidData());
+	bool use_geometry = g_ActiveConfig.backend_info.bSupportsGeometryShaders && !uid.guid.GetUidData().IsPassthrough();
+	if (use_geometry)
+		GenerateGeometryShaderCode(gcode, uid.guid.GetUidData(), hostconfig);
 
-#if defined(_DEBUG) || defined(DEBUGFAST)
-	if (g_ActiveConfig.iLog & CONF_SAVESHADERS)
-	{
-		static int counter = 0;
-		std::string filename = StringFromFormat("%svs_%04i.txt", File::GetUserPath(D_DUMP_IDX).c_str(), counter++);
-		SaveData(filename, vcode.GetBuffer());
-
-		filename = StringFromFormat("%sps_%04i.txt", File::GetUserPath(D_DUMP_IDX).c_str(), counter++);
-		SaveData(filename, pcode.GetBuffer());
-
-		if (gcode.GetBuffer() != nullptr)
-		{
-			filename = StringFromFormat("%sgs_%04i.txt", File::GetUserPath(D_DUMP_IDX).c_str(), counter++);
-			SaveData(filename, gcode.GetBuffer());
-		}
-	}
-#endif
-
-	if (!CompileShader(newentry.shader, vcode.GetBuffer(), pcode.GetBuffer(), gcode.GetBuffer()))
+	if (!CompileShader(newentry.shader, vcode.data(), pcode.data(), use_geometry ? gcode.data() : nullptr).get())
 	{
 		GFX_DEBUGGER_PAUSE_AT(NEXT_ERROR, true);
 		return nullptr;
 	}
 
-	INCSTAT(stats.numPixelShadersCreated);
-	SETSTAT(stats.numPixelShadersAlive, static_cast<int>(pshaders->size()));
-	GFX_DEBUGGER_PAUSE_AT(NEXT_PIXEL_SHADER_CHANGE, true);
-
-	return &last_entry[render_mode]->shader;
+	return &last_uber_entry->shader;
 }
 
-SHADER* ProgramShaderCache::SetShader(PIXEL_SHADER_RENDER_MODE render_mode, u32 components, u32 primitive_type)
+SHADER* ProgramShaderCache::SetShader(PIXEL_SHADER_RENDER_MODE render_mode, u32 components, PrimitiveType primitive_type, const GLVertexFormat* vertex_format)
 {
 	SHADERUID uid;
 	GetShaderId(&uid, render_mode, components, primitive_type);
-	uid.CalculateHash();
-	// Check if the shader is already set
-	if (last_entry[render_mode])
+	if (UsingExclusiveUberShaders())
 	{
-		if (uid == last_uid[render_mode])
-		{
-			GFX_DEBUGGER_PAUSE_AT(NEXT_PIXEL_SHADER_CHANGE, true);
-			return &last_entry[render_mode]->shader;
-		}
+		pshaders->GetOrAdd(uid);
+		return SetUberShader(primitive_type, components, vertex_format);
 	}
 
-	last_uid[render_mode] = uid;
-	return CompileShader(uid);
+	BindVertexFormat(vertex_format);
+
+	if (!(last_entry[render_mode] && uid == last_uid[render_mode]))
+	{
+		// Shader wasn't already set
+		last_entry[render_mode] = &pshaders->GetOrAdd(uid);
+		last_uid[render_mode] = uid;
+	}
+	PCacheEntry* entry = last_entry[render_mode];
+
+	if (entry->shader.glprogid)
+	{
+		// Compilation has finished
+		return &entry->shader;
+	}
+	if (entry->compile_started)
+	{
+		// Compilation is started but not finished
+		if (UsingHybridUberShaders())
+		{
+			return SetUberShader(primitive_type, components, vertex_format);
+		}
+		return nullptr;
+	}
+
+	// Shader was not previously in cache, start compilation
+	entry->in_cache = false;
+	entry->compile_started = true;
+	std::future<bool> future = CompileShader(uid, entry->shader);
+	if (UsingHybridUberShaders())
+	{
+		return SetUberShader(primitive_type, components, vertex_format);
+	}
+	if (g_ActiveConfig.bFullAsyncShaderCompilation)
+	{
+		return nullptr;
+	}
+	return future.get() ? &entry->shader : nullptr;
 }
 
-bool ProgramShaderCache::CompileShader(SHADER& shader, const char* vcode, const char* pcode, const char* gcode, const char **macros, const u32 macro_count)
+SHADER* ProgramShaderCache::SetUberShader(PrimitiveType primitive_type, u32 components, const GLVertexFormat* vertex_format)
 {
-	GLuint vsid = CompileSingleShader(GL_VERTEX_SHADER, vcode, macros, macro_count);
-	GLuint psid = CompileSingleShader(GL_FRAGMENT_SHADER, pcode, macros, macro_count);
+	UBERSHADERUID uid = {};
+	uid.puid = UberShader::GetPixelUberShaderUid(components, xfmem, bpmem);
+	uid.puid.CalculateUIDHash();
+	uid.vuid = UberShader::GetVertexUberShaderUid(components, xfmem);
+	uid.vuid.CalculateUIDHash();
+	GetGeometryShaderUid(uid.guid, primitive_type, xfmem, components);
+
+	uid.CalculateHash();
+	// We need to use the ubershader vertex format with all attributes enabled.
+	// Otherwise, the NV driver can generate variants for the vertex shaders.
+	const GLVertexFormat* uber_vertex_format = static_cast<const GLVertexFormat*>(
+		VertexLoaderManager::GetUberVertexFormat(vertex_format->GetVertexDeclaration()));
+
+	BindVertexFormat(uber_vertex_format);
+
+	// Check if the shader is already set
+	if (last_uber_entry && uid == last_uber_uid)
+	{
+		GFX_DEBUGGER_PAUSE_AT(NEXT_PIXEL_SHADER_CHANGE, true);
+		return &last_uber_entry->shader;
+	}
+	last_uber_uid = uid;
+	return CompileUberShader(uid);
+}
+
+std::future<bool> ProgramShaderCache::CompileShader(
+	SHADER& shader, const char* vcode, const char* pcode, const char* gcode)
+{
+	if (g_ActiveConfig.bFullAsyncShaderCompilation || UsingHybridUberShaders())
+	{
+		auto queue_entry = std::make_unique<QueueEntry>(&shader, vcode, pcode, gcode);
+		std::future<bool> future = queue_entry->promise.get_future();
+		std::queue <int>::size_type size_before;
+		{
+			std::lock_guard<std::mutex> lock(s_mutex);
+			size_before = s_compilation_queue.size();
+			s_compilation_queue.push(std::move(queue_entry));
+		}
+		if (size_before == 0) {
+			s_condition_var.notify_all();
+		}
+		return future;
+	}
+
+	std::promise<bool> promise;
+	promise.set_value(CompileShaderWorker(shader, vcode, pcode, gcode));
+	return promise.get_future();
+}
+
+bool ProgramShaderCache::CompileShaderWorker(
+	SHADER& shader, const char* vcode, const char* pcode, const char* gcode)
+{
+	GLuint vsid = CompileSingleShader(GL_VERTEX_SHADER, vcode);
+	GLuint psid = CompileSingleShader(GL_FRAGMENT_SHADER, pcode);
 
 	// Optional geometry shader
 	GLuint gsid = 0;
 	if (gcode)
-		gsid = CompileSingleShader(GL_GEOMETRY_SHADER, gcode, macros, macro_count);
+		gsid = CompileSingleShader(GL_GEOMETRY_SHADER, gcode);
 
 	if (!vsid || !psid || (gcode && !gsid))
 	{
@@ -305,7 +402,7 @@ bool ProgramShaderCache::CompileShader(SHADER& shader, const char* vcode, const 
 		return false;
 	}
 
-	GLuint pid = shader.glprogid = glCreateProgram();
+	GLuint pid = glCreateProgram();
 
 	glAttachShader(pid, vsid);
 	glAttachShader(pid, psid);
@@ -315,7 +412,7 @@ bool ProgramShaderCache::CompileShader(SHADER& shader, const char* vcode, const 
 	if (g_ogl_config.bSupportsGLSLCache)
 		glProgramParameteri(pid, GL_PROGRAM_BINARY_RETRIEVABLE_HINT, GL_TRUE);
 
-	shader.SetProgramBindings(false);
+	SetProgramBindings(pid, false);
 
 	glLinkProgram(pid);
 
@@ -363,11 +460,31 @@ bool ProgramShaderCache::CompileShader(SHADER& shader, const char* vcode, const 
 	}
 
 	shader.SetProgramVariables();
-
+	shader.glprogid = pid;
 	return true;
 }
 
 bool ProgramShaderCache::CompileComputeShader(SHADER& shader, const std::string& code)
+{
+	if (g_ActiveConfig.bFullAsyncShaderCompilation || UsingHybridUberShaders())
+	{
+		auto queue_entry = std::make_unique<QueueEntry>(&shader, code);
+		std::future<bool> future = queue_entry->promise.get_future();
+		std::queue <int>::size_type size_before;
+		{
+			std::lock_guard<std::mutex> lock(s_mutex);
+			size_before = s_compilation_queue.size();
+			s_compilation_queue.push(std::move(queue_entry));
+		}
+		if (size_before == 0) {
+			s_condition_var.notify_all();
+		}
+		return future.get();
+	}
+	return CompileComputeShaderWorker(shader, code);
+}
+
+bool ProgramShaderCache::CompileComputeShaderWorker(SHADER& shader, const std::string& code)
 {
 	// We need to enable GL_ARB_compute_shader for drivers that support the extension,
 	// but not GLSL 4.3. Mesa is one example.
@@ -382,12 +499,12 @@ bool ProgramShaderCache::CompileComputeShader(SHADER& shader, const std::string&
 	if (!shader_id)
 		return false;
 
-	GLuint pid = shader.glprogid = glCreateProgram();
+	GLuint pid = glCreateProgram();
 	glAttachShader(pid, shader_id);
 	if (g_ogl_config.bSupportsGLSLCache)
 		glProgramParameteri(pid, GL_PROGRAM_BINARY_RETRIEVABLE_HINT, GL_TRUE);
 
-	shader.SetProgramBindings(true);
+	SetProgramBindings(pid, true);
 
 	glLinkProgram(pid);
 
@@ -431,21 +548,17 @@ bool ProgramShaderCache::CompileComputeShader(SHADER& shader, const std::string&
 		return false;
 	}
 
+	shader.glprogid = pid;
 	return true;
 }
 
-GLuint ProgramShaderCache::CompileSingleShader(GLuint type, const char* code, const char **macros,
-	const u32 count)
+GLuint ProgramShaderCache::CompileSingleShader(GLuint type, const char* code)
 {
 	GLuint result = glCreateShader(type);
-	std::vector<const char*> src(count + 2);
+	std::vector<const char*> src(2);
 	src[0] = s_glsl_header;
-	for (size_t i = 0; i < count; i++)
-	{
-		src[i + 1] = macros[i];
-	}
-	src[count + 2 - 1] = code;
-	glShaderSource(result, count + 2, src.data(), nullptr);
+	src[1] = code;
+	glShaderSource(result, 2, src.data(), nullptr);
 	glCompileShader(result);
 	GLint compileStatus;
 	glGetShaderiv(result, GL_COMPILE_STATUS, &compileStatus);
@@ -507,11 +620,77 @@ GLuint ProgramShaderCache::CompileSingleShader(GLuint type, const char* code, co
 	return result;
 }
 
-void ProgramShaderCache::GetShaderId(SHADERUID* uid, PIXEL_SHADER_RENDER_MODE render_mode, u32 components, u32 primitive_type)
+void ProgramShaderCache::CompileThreadWorker(std::unique_ptr<cInterfaceBase> shared_context)
+{
+	if (!shared_context->MakeCurrent())
+	{
+		PanicAlert(
+			"Failed to set OGL context for shader compilation thread.\nDebug info (%s, %s, %s)",
+			g_ogl_config.gl_vendor, g_ogl_config.gl_renderer, g_ogl_config.gl_version);
+	}
+
+	std::unique_ptr<QueueEntry> entry;
+	while (true)
+	{
+		{
+			std::unique_lock<std::mutex> lock(s_mutex);
+			if (s_compilation_queue.empty())
+			{
+				s_condition_var.wait(lock, [] {return !s_compilation_queue.empty(); });
+			}
+			entry = std::move(s_compilation_queue.front());
+			s_compilation_queue.pop();
+		}
+		if (entry->kill_thread)
+		{
+			break;
+		}
+		bool success;
+		if (entry->compute_shader)
+		{
+			success = CompileComputeShaderWorker(*entry->shader, entry->ccode);
+		}
+		else
+		{
+			const char* gcode = entry->gcode.empty() ? nullptr : entry->gcode.c_str();
+			success =
+				CompileShaderWorker(*entry->shader, entry->vcode.c_str(), entry->pcode.c_str(), gcode);
+		}
+		entry->promise.set_value(success);
+	}
+	shared_context->Shutdown();
+	entry->promise.set_value(true);
+}
+
+void ProgramShaderCache::GetShaderId(SHADERUID* uid, PIXEL_SHADER_RENDER_MODE render_mode, u32 components, PrimitiveType primitive_type)
 {
 	GetPixelShaderUID(uid->puid, render_mode, components, xfmem, bpmem);
 	GetVertexShaderUID(uid->vuid, components, xfmem, bpmem);
 	GetGeometryShaderUid(uid->guid, primitive_type, xfmem, components);
+	uid->CalculateHash();
+}
+
+void ProgramShaderCache::BindVertexFormat(const GLVertexFormat* vertex_format)
+{
+	u32 new_VAO = vertex_format ? vertex_format->VAO : 0;
+	if (s_last_VAO == new_VAO)
+		return;
+
+	glBindVertexArray(new_VAO);
+	s_last_VAO = new_VAO;
+}
+
+void ProgramShaderCache::InvalidateVertexFormat()
+{
+	s_last_VAO = INVALID_VAO;
+}
+
+void ProgramShaderCache::BindLastVertexFormat()
+{
+	if (s_last_VAO != INVALID_VAO)
+		glBindVertexArray(s_last_VAO);
+	else
+		glBindVertexArray(0);
 }
 
 void ProgramShaderCache::Init()
@@ -520,7 +699,7 @@ void ProgramShaderCache::Init()
 	// if we generate a buffer that isn't aligned
 	// then the UBO will fail.
 	glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &s_ubo_align);
-	s_p_ubo_buffer_size = static_cast<u32>(Common::AlignUpSizePow2(C_PCONST_END * 4 * sizeof(float), static_cast<u32>(s_ubo_align)));
+	s_p_ubo_buffer_size = static_cast<u32>(Common::AlignUpSizePow2(PixelShaderManager::ConstantBufferSize * sizeof(float), static_cast<u32>(s_ubo_align)));
 	s_v_ubo_buffer_size = static_cast<u32>(Common::AlignUpSizePow2(VertexShaderManager::ConstantBufferSize * sizeof(float), static_cast<u32>(s_ubo_align)));
 	s_g_ubo_buffer_size = static_cast<u32>(Common::AlignUpSizePow2(sizeof(GeometryShaderConstants), static_cast<u32>(s_ubo_align)));
 	s_ubo_buffer_size = s_p_ubo_buffer_size
@@ -534,6 +713,44 @@ void ProgramShaderCache::Init()
 
 	s_buffer = StreamBuffer::Create(GL_UNIFORM_BUFFER, s_ubo_buffer_size * 2048);
 
+	LoadFromDisk();
+
+	CreateHeader();
+
+	if (g_ActiveConfig.bFullAsyncShaderCompilation || UsingHybridUberShaders())
+	{
+		std::unique_ptr<cInterfaceBase> shared_context = GLInterface->CreateSharedContext();
+		if (!shared_context)
+		{
+			PanicAlert(
+				"Failed to create OGL context for shader compilation thread.\nDebug info (%s, %s, %s)",
+				g_ogl_config.gl_vendor, g_ogl_config.gl_renderer, g_ogl_config.gl_version);
+		}
+
+		s_thread = std::thread(CompileThreadWorker, std::move(shared_context));
+	}
+	if (ShouldPrecompileUberShaders())
+	{
+		CompileUberShaders();
+	}
+	if (g_ActiveConfig.bCompileShaderOnStartup && !UsingExclusiveUberShaders())
+	{
+		CompileShaders();
+	}
+	CurrentProgram = 0;
+	last_entry.fill(nullptr);
+	last_uber_entry = nullptr;
+	last_uid = {};
+	last_uber_uid = {};
+	InvalidateVertexFormat();
+}
+
+void ProgramShaderCache::LoadFromDisk()
+{
+	if (pshaders)
+	{
+		Shutdown(true);
+	}
 	pKey_t gameid = (pKey_t)GetMurmurHash3(reinterpret_cast<const u8*>(SConfig::GetInstance().GetGameID().data()), (u32)SConfig::GetInstance().GetGameID().size(), 0);
 	pshaders = PCache::Create(
 		gameid,
@@ -554,54 +771,146 @@ void ProgramShaderCache::Init()
 		}
 		else
 		{
-			if (!File::Exists(File::GetUserPath(D_SHADERCACHE_IDX)))
-				File::CreateDir(File::GetUserPath(D_SHADERCACHE_IDX));
-
-			std::string cache_filename = StringFromFormat("%sIOGL-%s-shaders.cache", File::GetUserPath(D_SHADERCACHE_IDX).c_str(),
-				SConfig::GetInstance().GetGameID().c_str());
-
+			std::string cache_filename = GetDiskShaderCacheFileName(API_OPENGL, "program", true, true);
 			ProgramShaderCacheInserter inserter;
 			g_program_disk_cache.OpenAndRead(cache_filename, inserter);
+
+			if (g_ActiveConfig.backend_info.bSupportsUberShaders)
+			{
+				cache_filename = GetDiskShaderCacheFileName(API_OPENGL, "uprogram", false, true);
+				ProgramUberShaderCacheInserter uinserter;
+				g_uber_program_disk_cache.OpenAndRead(cache_filename, uinserter);
+			}
+
 		}
 		SETSTAT(stats.numPixelShadersAlive, pshaders->size());
 	}
-
-	CreateHeader();
-
-	CurrentProgram = 0;
-	last_entry.fill(nullptr);
-	if (g_ActiveConfig.bCompileShaderOnStartup)
-	{
-		size_t shader_count = 0;
-		pshaders->ForEachMostUsedByCategory(gameid,
-			[&](const SHADERUID& it, size_t total)
-		{
-			SHADERUID item = it;
-			item.puid.ClearHASH();
-			item.puid.CalculateUIDHash();
-			const pixel_shader_uid_data& uid_data = item.puid.GetUidData();
-			shader_count++;
-			if ((!uid_data.stereo || g_ActiveConfig.backend_info.bSupportsGeometryShaders)
-				&& (!uid_data.bounding_box || g_ActiveConfig.backend_info.bSupportsBBox))
-			{
-				Host_UpdateTitle(StringFromFormat("Compiling Shaders %zu %% (%zu/%zu)", (shader_count * 100) / total, shader_count, total));
-				CompileShader(item);
-			}
-		},
-			[](PCacheEntry& entry)
-		{
-			return !entry.shader.glprogid;
-		}
-		, true);
-	}
 }
 
-void ProgramShaderCache::Shutdown()
+void ProgramShaderCache::CompileUberShaders()
 {
+	UberShader::PixelUberShaderUid puid = {};
+	UberShader::VertexUberShaderUid vuid = {};
+	GeometryShaderUid guid = {};
+
+	static constexpr std::array<u32, 3> primitive_lut =
+	{ {
+		static_cast<u32>(PrimitiveType::Triangles),
+		static_cast<u32>(PrimitiveType::Lines),
+		static_cast<u32>(PrimitiveType::Points)
+	} };
+	geometry_shader_uid_data& guidd = guid.GetUidData<geometry_shader_uid_data>();
+	UberShader::pixel_ubershader_uid_data& puidd = puid.GetUidData<UberShader::pixel_ubershader_uid_data>();
+	UberShader::vertex_ubershader_uid_data& vuidd = vuid.GetUidData<UberShader::vertex_ubershader_uid_data>();
+	int shader_count = 0;
+	for (u32 primitive : primitive_lut)
+	{
+		guidd.primitive_type = primitive;
+		for (u32 texgens = 0; texgens <= 8; texgens++)
+		{
+			vuidd.num_texgens = guidd.numTexGens = puidd.num_texgens = texgens;
+			for (u32 early_depth = 0; early_depth < 2; early_depth++)
+			{
+				puidd.early_depth = early_depth != 0;
+				for (u32 per_pixel_depth = 0; per_pixel_depth < 2; per_pixel_depth++)
+				{
+					// Don't generate shaders where we have early depth tests enabled, and write gl_FragDepth.
+					if (early_depth && per_pixel_depth)
+						continue;
+					puidd.per_pixel_depth = per_pixel_depth != 0;
+					for (u32 pixel_ligthing = 0; pixel_ligthing < 2; pixel_ligthing++)
+					{
+						puidd.per_pixel_lighting = vuidd.per_pixel_lighting = guidd.pixel_lighting = pixel_ligthing;
+						UBERSHADERUID uid;
+						uid.guid = guid;
+						uid.vuid = vuid;
+						uid.puid = puid;
+						uid.guid.ClearHASH();
+						uid.vuid.ClearHASH();
+						uid.puid.ClearHASH();
+						uid.guid.CalculateUIDHash();
+						uid.vuid.CalculateUIDHash();
+						uid.puid.CalculateUIDHash();
+						uid.CalculateHash();
+						CompileUberShader(uid);
+						shader_count++;
+						Host_UpdateProgressDialog(GetStringT("Compiling Uber Shaders...").c_str(),
+							shader_count, 256);
+					}
+				}
+			}
+		}
+	}
+	Host_UpdateProgressDialog("", -1, -1);
+}
+
+void ProgramShaderCache::CompileShaders()
+{
+	pKey_t gameid = (pKey_t)GetMurmurHash3(reinterpret_cast<const u8*>(SConfig::GetInstance().GetGameID().data()), (u32)SConfig::GetInstance().GetGameID().size(), 0);
+	size_t shader_count = 0;
+	pshaders->ForEachMostUsedByCategory(gameid,
+		[&](const SHADERUID& it, size_t total)
+	{
+		SHADERUID item = it;
+		item.puid.ClearHASH();
+		item.puid.CalculateUIDHash();
+		item.vuid.ClearHASH();
+		item.vuid.CalculateUIDHash();
+		item.guid.ClearHASH();
+		item.guid.CalculateUIDHash();
+		item.CalculateHash();
+		const pixel_shader_uid_data& uid_data = item.puid.GetUidData();
+		shader_count++;
+		if (!uid_data.bounding_box || g_ActiveConfig.backend_info.bSupportsBBox)
+		{
+			Host_UpdateProgressDialog(GetStringT("Compiling Shaders...").c_str(),
+				static_cast<int>(shader_count), static_cast<int>(total));
+
+			PCacheEntry& newentry = pshaders->GetOrAdd(item);
+			if (newentry.compile_started)
+				return;
+			newentry.in_cache = false;
+			newentry.compile_started = true;
+			CompileShader(item, newentry.shader).wait();
+		}
+	},
+		[](PCacheEntry& entry)
+	{
+		return !entry.shader.glprogid;
+	}
+	, true);
+	Host_UpdateProgressDialog("", -1, -1);
+}
+
+void ProgramShaderCache::Shutdown(bool shadersonly)
+{
+	if (!shadersonly && (g_ActiveConfig.bFullAsyncShaderCompilation || UsingHybridUberShaders()))
+	{
+		auto queue_entry = std::make_unique<QueueEntry>();
+		std::queue <int>::size_type size_before;
+		{
+			std::lock_guard<std::mutex> lock(s_mutex);
+			size_before = s_compilation_queue.size();
+			s_compilation_queue.push(std::move(queue_entry));
+		}
+		if (size_before == 0) {
+			s_condition_var.notify_all();
+		}
+	}
+
+	InvalidateVertexFormat();
+	pshaders->Persist([](SHADERUID &uid) {
+		uid.guid.ClearHASH();
+		uid.vuid.ClearHASH();
+		uid.puid.ClearHASH();
+		uid.guid.CalculateUIDHash();
+		uid.vuid.CalculateUIDHash();
+		uid.puid.CalculateUIDHash();
+		uid.CalculateHash();
+	});
 	// store all shaders in cache on disk
 	if (g_ogl_config.bSupportsGLSLCache)
 	{
-		pshaders->Persist();
 		pshaders->Clear(
 			[&](const SHADERUID& uid, PCacheEntry& entry)
 		{
@@ -633,12 +942,67 @@ void ProgramShaderCache::Shutdown()
 
 			g_program_disk_cache.Append(uid, &data[0], binary_size + sizeof(GLenum));
 		});
-		delete pshaders;
-		pshaders = nullptr;
 		g_program_disk_cache.Sync();
 		g_program_disk_cache.Close();
+		for (auto& item : pushaders)
+		{
+			PCacheEntry& entry = item.second;
+			// Clear any prior error code
+			glGetError();
+
+			if (entry.in_cache)
+			{
+				continue;
+			}
+
+			GLint link_status = GL_FALSE, delete_status = GL_TRUE, binary_size = 0;
+			glGetProgramiv(entry.shader.glprogid, GL_LINK_STATUS, &link_status);
+			glGetProgramiv(entry.shader.glprogid, GL_DELETE_STATUS, &delete_status);
+			glGetProgramiv(entry.shader.glprogid, GL_PROGRAM_BINARY_LENGTH, &binary_size);
+			if (glGetError() != GL_NO_ERROR || link_status == GL_FALSE || delete_status == GL_TRUE || !binary_size)
+			{
+				continue;
+			}
+
+			std::vector<u8> data(binary_size + sizeof(GLenum));
+			u8* binary = &data[sizeof(GLenum)];
+			GLenum* prog_format = (GLenum*)&data[0];
+			glGetProgramBinary(entry.shader.glprogid, binary_size, nullptr, prog_format, binary);
+			if (glGetError() != GL_NO_ERROR)
+			{
+				continue;
+			}
+
+			g_uber_program_disk_cache.Append(item.first, &data[0], binary_size + sizeof(GLenum));
+		}
+		g_uber_program_disk_cache.Sync();
+		g_uber_program_disk_cache.Close();
 	}
-	s_buffer.reset();
+	pushaders.clear();
+	delete pshaders;
+	pshaders = nullptr;
+	if (!shadersonly)
+	{
+		s_buffer.reset();
+		if (g_ActiveConfig.bFullAsyncShaderCompilation || UsingHybridUberShaders())
+		{
+			s_thread.join();
+		}
+	}
+}
+
+void ProgramShaderCache::Reload()
+{
+	Shutdown(true);
+	LoadFromDisk();
+	if (ShouldPrecompileUberShaders())
+	{
+		CompileUberShaders();
+	}
+	if (g_ActiveConfig.bCompileShaderOnStartup && !UsingExclusiveUberShaders())
+	{
+		CompileShaders();
+	}
 }
 
 void ProgramShaderCache::CreateHeader()
@@ -738,7 +1102,19 @@ void ProgramShaderCache::CreateHeader()
 		"#define ddy dFdy\n"
 		"#define rsqrt inversesqrt\n"
 
+		"bool all(float2 val) { return (val.x != 0.0) && (val.y != 0.0); }\n"
+		"bool all(float3 val) { return (val.x != 0.0) && (val.y != 0.0) && (val.z != 0.0); }\n"
+		"bool all(float4 val) { return (val.x != 0.0) && (val.y != 0.0) && (val.z != 0.0) && (val.w != 0.0); }\n"
+		"bool all(int2 val) { return (val.x != 0) && (val.y != 0); }\n"
+		"bool all(int3 val) { return (val.x != 0) && (val.y != 0) && (val.z != 0); }\n"
+		"bool all(int4 val) { return (val.x != 0) && (val.y != 0) && (val.z != 0) && (val.w != 0); }\n"
 
+		"bool any(float2 val) { return (val.x != 0.0) || (val.y != 0.0); }\n"
+		"bool any(float3 val) { return (val.x != 0.0) || (val.y != 0.0) || (val.z != 0.0); }\n"
+		"bool any(float4 val) { return (val.x != 0.0) || (val.y != 0.0) || (val.z != 0.0) || (val.w != 0.0); }\n"
+		"bool any(int2 val) { return (val.x != 0) || (val.y != 0); }\n"
+		"bool any(int3 val) { return (val.x != 0) || (val.y != 0) || (val.z != 0); }\n"
+		"bool any(int4 val) { return (val.x != 0) || (val.y != 0) || (val.z != 0) || (val.w != 0); }\n"
 
 		, GetGLSLVersionString().c_str()
 		, v < GLSL_140 ? "#extension GL_ARB_uniform_buffer_object : enable" : ""
@@ -756,14 +1132,14 @@ void ProgramShaderCache::CreateHeader()
 		"#define UBO_BINDING(packing, x) layout(packing, binding = x)\n"
 		"#define SAMPLER_BINDING(x) layout(binding = x)\n"
 		"#define SSBO_BINDING(x) layout(binding = x)\n" :
-		"#define ATTRIBUTE_LOCATION(x)\n"
+	"#define ATTRIBUTE_LOCATION(x)\n"
 		"#define FRAGMENT_OUTPUT_LOCATION(x)\n"
 		"#define FRAGMENT_OUTPUT_LOCATION_INDEXED(x, y)\n"
 		"#define UBO_BINDING(packing, x) layout(packing)\n"
 		"#define SAMPLER_BINDING(x)\n"
 		// Input/output blocks are matched by name during program linking
 		, "#define VARYING_LOCATION(x)\n"
-		, !is_glsles && g_ActiveConfig.backend_info.bSupportsBBox ? "#extension GL_ARB_shader_storage_buffer_object : enable" : ""
+		, !is_glsles && g_ActiveConfig.backend_info.bSupportsFragmentStoresAndAtomics ? "#extension GL_ARB_shader_storage_buffer_object : enable" : ""
 		, !is_glsles && g_ActiveConfig.backend_info.bSupportsGSInstancing ? "#extension GL_ARB_gpu_shader5 : enable" : ""
 		, SupportedESPointSize.c_str()
 		, g_ogl_config.bSupportsAEP ? "#extension GL_ANDROID_extension_pack_es31a : enable" : ""
@@ -789,6 +1165,21 @@ u32 ProgramShaderCache::GetUniformBufferAlignment()
 	return s_ubo_align;
 }
 
+bool ProgramShaderCache::ShouldPrecompileUberShaders()
+{
+	return g_ActiveConfig.backend_info.bSupportsUberShaders && g_ActiveConfig.CanPrecompileUberShaders();
+}
+
+bool ProgramShaderCache::UsingExclusiveUberShaders()
+{
+	return g_ActiveConfig.backend_info.bSupportsUberShaders && g_ActiveConfig.bDisableSpecializedShaders;
+}
+
+bool ProgramShaderCache::UsingHybridUberShaders()
+{
+	return g_ActiveConfig.backend_info.bSupportsUberShaders && g_ActiveConfig.bBackgroundShaderCompiling;
+}
+
 void ProgramShaderCache::ProgramShaderCacheInserter::Read(const SHADERUID& key, const u8* value, u32 value_size)
 {
 	const u8 *binary = value + sizeof(GLenum);
@@ -796,7 +1187,34 @@ void ProgramShaderCache::ProgramShaderCacheInserter::Read(const SHADERUID& key, 
 	GLint binary_size = value_size - sizeof(GLenum);
 
 	PCacheEntry& entry = pshaders->GetOrAdd(key);
-	entry.in_cache = 1;
+	entry.in_cache = true;
+	entry.compile_started = true;
+	entry.shader.glprogid = glCreateProgram();
+	glProgramBinary(entry.shader.glprogid, *prog_format, binary, binary_size);
+
+	GLint success;
+	glGetProgramiv(entry.shader.glprogid, GL_LINK_STATUS, &success);
+
+	if (success)
+	{
+		entry.shader.SetProgramVariables();
+	}
+	else
+	{
+		glDeleteProgram(entry.shader.glprogid);
+		entry.shader.glprogid = 0;
+	}
+}
+
+void ProgramShaderCache::ProgramUberShaderCacheInserter::Read(const UBERSHADERUID& key, const u8* value, u32 value_size)
+{
+	const u8 *binary = value + sizeof(GLenum);
+	GLenum *prog_format = (GLenum*)value;
+	GLint binary_size = value_size - sizeof(GLenum);
+
+	PCacheEntry& entry = pushaders[key];
+	entry.in_cache = true;
+	entry.compile_started = true;
 	entry.shader.glprogid = glCreateProgram();
 	glProgramBinary(entry.shader.glprogid, *prog_format, binary, binary_size);
 

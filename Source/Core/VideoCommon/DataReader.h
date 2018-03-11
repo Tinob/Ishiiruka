@@ -125,7 +125,7 @@ public:
 		Rbuffer = (u8*)src;
 	}
 protected:
-	u8* __restrict Rbuffer;
+	u8 * __restrict Rbuffer;
 	u8* end;
 };
 
@@ -157,7 +157,7 @@ public:
 		Wbuffer = destination;
 	}
 protected:
-	u8* __restrict Wbuffer;
+	u8 * __restrict Wbuffer;
 };
 
 extern DataReader g_VideoData;

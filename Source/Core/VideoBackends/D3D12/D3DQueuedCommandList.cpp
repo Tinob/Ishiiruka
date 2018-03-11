@@ -540,7 +540,7 @@ void ID3D12QueuedCommandList::ProcessQueuedItems(bool eligible_to_move_to_front_
 		m_background_thread.join();
 		m_termnated = true;
 	}
-	
+
 }
 
 ULONG ID3D12QueuedCommandList::AddRef()
@@ -571,19 +571,19 @@ HRESULT STDMETHODCALLTYPE ID3D12QueuedCommandList::QueryInterface(
 
 	if (riid == __uuidof(ID3D12GraphicsCommandList))
 	{
-		*ppvObject = reinterpret_cast<ID3D12GraphicsCommandList*>(this);
+		*ppvObject = static_cast<ID3D12GraphicsCommandList*>(this);
 	}
 	else  if (riid == __uuidof(ID3D12CommandList))
 	{
-		*ppvObject = reinterpret_cast<ID3D12CommandList*>(this);
+		*ppvObject = static_cast<ID3D12CommandList*>(this);
 	}
 	else if (riid == __uuidof(ID3D12DeviceChild))
 	{
-		*ppvObject = reinterpret_cast<ID3D12DeviceChild*>(this);
+		*ppvObject = static_cast<ID3D12DeviceChild*>(this);
 	}
 	else if (riid == __uuidof(ID3D12Object))
 	{
-		*ppvObject = reinterpret_cast<ID3D12Object*>(this);
+		*ppvObject = static_cast<ID3D12Object*>(this);
 	}
 	else
 	{

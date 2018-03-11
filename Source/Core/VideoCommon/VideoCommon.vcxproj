@@ -13,6 +13,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{3E5C4E02-1BA9-4776-BDBE-E3F91FFA34CF}</ProjectGuid>
     <RootNamespace>VideoCommon</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Configuration">
@@ -92,6 +93,9 @@
     <ClCompile Include="G_SX4E01_pvt.cpp" />
     <ClCompile Include="HiresTextures.cpp" />
     <ClCompile Include="HLSLCompiler.cpp" />
+    <ClCompile Include="HostTexture.cpp" />
+    <ClCompile Include="RenderState.cpp" />
+    <ClCompile Include="ShaderGenCommon.cpp" />
     <ClCompile Include="TessellationShaderGen.cpp" />
     <ClCompile Include="TessellationShaderManager.cpp" />
     <ClCompile Include="ImageWrite.cpp" />
@@ -99,8 +103,6 @@
     <ClCompile Include="MainBase.cpp" />
     <ClCompile Include="OnScreenDisplay.cpp" />
     <ClCompile Include="OpcodeDecoding.cpp" />
-    <ClCompile Include="OpenCL.cpp" />
-    <ClCompile Include="OpenCL\OCLTextureDecoder.cpp" />
     <ClCompile Include="PerfQueryBase.cpp" />
     <ClCompile Include="PixelEngine.cpp" />
     <ClCompile Include="PixelShaderGen.cpp" />
@@ -114,6 +116,9 @@
     <ClCompile Include="TextureConversionShaderGL.cpp" />
     <ClCompile Include="TextureScalerCommon.cpp" />
     <ClCompile Include="TextureUtil.cpp" />
+    <ClCompile Include="UberShaderCommon.cpp" />
+    <ClCompile Include="UberShaderPixel.cpp" />
+    <ClCompile Include="UberShaderVertex.cpp" />
     <ClCompile Include="VertexLoader.cpp" />
     <ClCompile Include="VertexLoaderBase.cpp" />
     <ClCompile Include="VertexLoaderCompiled.cpp" />
@@ -147,7 +152,9 @@
     <ClInclude Include="DataReader.h" />
     <ClInclude Include="GeometryShaderGen.h" />
     <ClInclude Include="GeometryShaderManager.h" />
+    <ClInclude Include="HostTexture.h" />
     <ClInclude Include="ObjectUsageProfiler.h" />
+    <ClInclude Include="RenderState.h" />
     <ClInclude Include="SamplerCommon.h" />
     <ClInclude Include="TessellationShaderGen.h" />
     <ClInclude Include="TessellationShaderManager.h" />
@@ -184,8 +191,6 @@
     <ClInclude Include="NativeVertexFormat.h" />
     <ClInclude Include="OnScreenDisplay.h" />
     <ClInclude Include="OpcodeDecoding.h" />
-    <ClInclude Include="OpenCL.h" />
-    <ClInclude Include="OpenCL\OCLTextureDecoder.h" />
     <ClInclude Include="PerfQueryBase.h" />
     <ClInclude Include="PixelEngine.h" />
     <ClInclude Include="PixelShaderGen.h" />
@@ -195,10 +200,14 @@
     <ClInclude Include="ShaderGenCommon.h" />
     <ClInclude Include="Statistics.h" />
     <ClInclude Include="TextureCacheBase.h" />
+    <ClInclude Include="TextureConfig.h" />
     <ClInclude Include="TextureConversionShader.h" />
     <ClInclude Include="TextureDecoder.h" />
     <ClInclude Include="TextureScalerCommon.h" />
     <ClInclude Include="TextureUtil.h" />
+    <ClInclude Include="UberShaderCommon.h" />
+    <ClInclude Include="UberShaderPixel.h" />
+    <ClInclude Include="UberShaderVertex.h" />
     <ClInclude Include="VertexLoader.h" />
     <ClInclude Include="VertexLoaderBase.h" />
     <ClInclude Include="VertexLoaderCompiled.h" />
@@ -230,9 +239,6 @@
     <None Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(ExternalsDir)CLRun\clrun\CLRun.vcxproj">
-      <Project>{AA862E5E-A993-497A-B6A0-0E8E94B10050}</Project>
-    </ProjectReference>
     <ProjectReference Include="$(CoreDir)Common\Common.vcxproj">
       <Project>{C87A4178-44F6-49B2-B7AA-C79AF1B8C534}</Project>
     </ProjectReference>

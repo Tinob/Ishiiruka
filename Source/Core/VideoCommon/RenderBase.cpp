@@ -23,6 +23,7 @@
 #include "Common/Event.h"
 #include "Common/FileUtil.h"
 #include "Common/Flag.h"
+#include "Common/Hash.h"
 #include "Common/Logging/Log.h"
 #include "Common/MsgHandler.h"
 #include "Common/Profiler.h"
@@ -78,6 +79,7 @@ static float AspectToWidescreen(float aspect)
 
 Renderer::Renderer()
 {
+	SetHash64Function();
 	OSDChoice = 0;
 	OSDTime = 0;
 	m_last_efb_scale = g_ActiveConfig.iEFBScale;
@@ -143,12 +145,17 @@ int Renderer::EFBToScaledY(int y)
 
 float Renderer::EFBToScaledXf(float x) const
 {
-	return x * ((float)GetTargetWidth() / (float)EFB_WIDTH);
+	return x * m_efb_scale;
 }
 
 float Renderer::EFBToScaledYf(float y) const
 {
 	return y * ((float)GetTargetHeight() / (float)EFB_HEIGHT);
+}
+
+float Renderer::GetEFBScale() const
+{
+	return m_efb_scale;
 }
 
 std::tuple<int, int> Renderer::CalculateTargetScale(int x, int y) const
@@ -239,6 +246,7 @@ bool Renderer::CalculateTargetSize(int multiplier)
 	{
 		m_target_width = new_efb_width;
 		m_target_height = new_efb_height;
+		m_efb_scale = float(m_target_width) / float(EFB_WIDTH);
 		VertexShaderManager::SetViewportChanged();
 		GeometryShaderManager::SetViewportChanged();
 		PixelShaderManager::SetViewportChanged();
@@ -302,6 +310,22 @@ void Renderer::SaveScreenshot(const std::string& filename, bool wait_for_complet
 	}
 }
 
+bool Renderer::CheckForHostConfigChanges()
+{
+	bool host_state_changed = false;
+	bool uber_shader_enabled = g_ActiveConfig.CanPrecompileUberShaders();
+	ShaderHostConfig new_host_config = ShaderHostConfig::GetCurrent();
+	host_state_changed = host_state_changed || (m_last_uber_shader_enabled != uber_shader_enabled && uber_shader_enabled);
+	host_state_changed = host_state_changed || (new_host_config.bits != m_last_host_config_bits);
+	m_last_host_config_bits = new_host_config.bits;
+	m_last_uber_shader_enabled = uber_shader_enabled;
+	if (host_state_changed)
+	{
+		OSD::AddMessage("Video config changed, reloading shaders.", OSD::Duration::NORMAL);
+	}
+	return host_state_changed;
+}
+
 
 // Create On-Screen-Messages
 void Renderer::DrawDebugText()
@@ -311,7 +335,7 @@ void Renderer::DrawDebugText()
 	if (g_ActiveConfig.bShowFPS || SConfig::GetInstance().m_ShowFrameCount)
 	{
 		if (g_ActiveConfig.bShowFPS)
-			final_cyan += StringFromFormat("FPS: %u", m_fps_counter.GetFPS());
+			final_cyan += StringFromFormat("FPS: %.2f", m_fps_counter.GetFPS());
 
 		if (g_ActiveConfig.bShowFPS && SConfig::GetInstance().m_ShowFrameCount)
 			final_cyan += " - ";
@@ -445,11 +469,10 @@ void Renderer::DrawDebugText()
 	RenderText(final_yellow, 20, 20, 0xFFFFFF00);
 }
 
-float Renderer::CalculateDrawAspectRatio(int target_width, int target_height) const
+float Renderer::CalculateDrawAspectRatio(u32 target_width, u32 target_height) const
 {
 	// The dimensions are the sizes that are used to create the EFB/backbuffer textures, so
 	// they should always be greater than zero.
-	_assert_(target_width > 0 && target_height > 0);
 	if (g_ActiveConfig.iAspectRatio == ASPECT_STRETCH)
 	{
 		// If stretch is enabled, we prefer the aspect ratio of the window.
@@ -480,7 +503,7 @@ float Renderer::CalculateDrawAspectRatio(int target_width, int target_height) co
 	return Ratio;
 }
 
-std::tuple<float, float> Renderer::ScaleToDisplayAspectRatio(const int width, const int height) const
+std::tuple<float, float> Renderer::ScaleToDisplayAspectRatio(const u32 width, const u32 height) const
 {
 	// Scale either the width or height depending the content aspect ratio.
 	// This way we preserve as much resolution as possible when scaling.
@@ -514,12 +537,12 @@ TargetRectangle Renderer::CalculateFrameDumpDrawRectangle()
 	}
 
 	// Grab the dimensions of the EFB textures, we scale either of these depending on the ratio.
-	unsigned int efb_width, efb_height;
+	u32 efb_width, efb_height;
 	g_framebuffer_manager->GetTargetSize(&efb_width, &efb_height);
 
 	// Scale either the width or height depending the content aspect ratio.
 	// This way we preserve as much resolution as possible when scaling.
-	float ratio = CalculateDrawAspectRatio(efb_width, efb_height);
+	CalculateDrawAspectRatio(efb_width, efb_height);
 	float draw_width, draw_height;
 	std::tie(draw_width, draw_height) = ScaleToDisplayAspectRatio(efb_width, efb_height);
 
@@ -658,10 +681,10 @@ void Renderer::UpdateDrawRectangle()
 	m_target_rectangle.bottom = YOffset + iHeight;
 }
 
-void Renderer::SetWindowSize(int width, int height)
+void Renderer::SetWindowSize(u32 width, u32 height)
 {
-	width = std::max(width, 16);
-	height = std::max(height, 16);
+	width = std::max(width, 16u);
+	height = std::max(height, 16u);
 
 
 	// Scale the window size by the EFB scale.
@@ -776,10 +799,8 @@ bool Renderer::IsFrameDumping()
 	if (m_screenshot_request.IsSet())
 		return true;
 
-#if defined(HAVE_LIBAV) || defined(_WIN32)
 	if (SConfig::GetInstance().m_DumpFrames)
 		return true;
-#endif
 
 	ShutdownFrameDumping();
 	return false;
@@ -858,7 +879,7 @@ void Renderer::RunFrameDumps()
 			std::lock_guard<std::mutex> lk(m_screenshot_lock);
 
 			if (TextureToPng(config.data, config.stride, m_screenshot_name, config.width, config.height,
-				false))
+				false, (g_ActiveConfig.backend_info.APIType & API_D3D9) != 0))
 				OSD::AddMessage("Screenshot saved to " + m_screenshot_name);
 
 			// Reset settings

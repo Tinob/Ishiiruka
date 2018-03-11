@@ -94,18 +94,12 @@ void VideoBackend::InitBackendInfo()
 {
 	g_Config.backend_info.APIType = API_OPENGL;
 	g_Config.backend_info.MaxTextureSize = 1024;
-#ifdef _WIN32
-	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_BGRA32] = false;
+	g_Config.ClearFormats();
 	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_RGBA32] = true;
-	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_I4_AS_I8] = false;
-	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_IA4_AS_IA8] = false;
-	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_I8] = false;
-	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_IA8] = false;
-	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_RGB565] = false;
-	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT1] = true;
-	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT3] = true;
-	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT5] = true;
-#endif
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_R_FLOAT] = true;
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DEPTH_FLOAT] = true;
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_RGBA16_FLOAT] = true;
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_RGBA_FLOAT] = true;
 	g_Config.backend_info.bSupportsScaling = false;
 	g_Config.backend_info.bSupportsExclusiveFullscreen = false;
 	g_Config.backend_info.bSupportsOversizedViewports = true;
@@ -124,7 +118,8 @@ void VideoBackend::InitBackendInfo()
 	g_Config.backend_info.bSupportsValidationLayer = false;
 	g_Config.backend_info.bSupportsReversedDepthRange = true;
 	g_Config.backend_info.bSupportsInternalResolutionFrameDumps = true;
-	g_Config.backend_info.bSupportsAsyncShaderCompilation = false;
+	g_Config.backend_info.bSupportsAsyncShaderCompilation = true;
+	g_Config.backend_info.bSupportsUberShaders = true;
 	g_Config.backend_info.Adapters.clear();
 
 	// aamodes - 1 is to stay consistent with D3D (means no AA)

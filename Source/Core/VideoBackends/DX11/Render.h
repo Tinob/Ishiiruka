@@ -19,13 +19,11 @@ public:
 	Renderer(void *&window_handle);
 	~Renderer();
 	void Init() override;
-	void SetColorMask() override;
-	void SetBlendMode(bool forceUpdate) override;
+	void SetBlendingState(const BlendingState& state) override;
 	void SetScissorRect(const EFBRectangle& rc) override;
-	void SetGenerationMode() override;
-	void SetDepthMode() override;
-	void SetLogicOpMode() override;
-	void SetSamplerState(int stage, int texindex, bool custom_tex) override;
+	void SetRasterizationState(const RasterizationState& state) override;
+	void SetDepthState(const DepthState& state) override;
+	void SetSamplerState(u32 index, const SamplerState& state) override;
 	void SetInterlacingMode() override;
 	void SetViewport() override;
 	void SetFullscreen(bool enable_fullscreen) override;
@@ -33,9 +31,6 @@ public:
 	// TODO: Fix confusing names (see ResetAPIState and RestoreAPIState)
 	void ApplyState(bool bUseDstAlpha) override;
 	void RestoreState() override;
-
-	void ApplyCullDisable();
-	void RestoreCull();
 
 	void RenderText(const std::string& str, int left, int top, u32 color) override;
 
@@ -77,8 +72,8 @@ private:
 	void PrepareFrameDumpBuffer(u32 width, u32 height);
 	void Create3DVisionTexture(u32 width, u32 height);
 	void SetupDeviceObjects();
-	
-	D3DTexture2D* m_frame_dump_render_texture = nullptr;	
+
+	D3DTexture2D* m_frame_dump_render_texture = nullptr;
 	D3D::Texture2dPtr m_frame_dump_staging_texture;
 	D3DTexture2D* m_3d_vision_texture = nullptr;
 	u32 m_frame_dump_render_texture_width = 0;

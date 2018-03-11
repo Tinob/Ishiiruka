@@ -23,8 +23,6 @@ static constexpr unsigned int COMMAND_ALLOCATORS_PER_LIST = 2;
 
 namespace DX12
 {
-extern StateCache gx_state_cache;
-
 D3DCommandListManager::D3DCommandListManager(
 	D3D12_COMMAND_LIST_TYPE command_list_type,
 	ID3D12Device* device,
@@ -150,7 +148,7 @@ void D3DCommandListManager::ExecuteQueuedWork(bool wait_for_gpu_completion, bool
 
 	if (wait_for_gpu_completion || terminate_worker_tread)
 		WaitForGPUCompletion(terminate_worker_tread);
-	
+
 	if (!terminate_worker_tread)
 	{
 		// Re-open the command list, using the current allocator.
@@ -317,7 +315,7 @@ void D3DCommandListManager::MoveToNextCommandAllocator()
 
 void D3DCommandListManager::ResetCommandList()
 {
-	if(g_ActiveConfig.bBackendMultithreading)
+	if (g_ActiveConfig.bBackendMultithreading)
 	{
 		CheckHR(m_queued_command_list->Reset(m_command_allocator_lists[m_current_command_allocator_list][m_current_command_allocator], nullptr));
 	}

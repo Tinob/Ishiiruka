@@ -54,7 +54,7 @@ private:
 			return;
 		}
 		u32 x = const_number;
-		u32 y = const_number + size - 1;		
+		u32 y = const_number + size - 1;
 		for (size_t i = 0; i < m_dirtyRegions.size(); i++)
 		{
 			std::pair<u32, u32> &currentregion = m_dirtyRegions[i];
@@ -82,11 +82,18 @@ public:
 		m_dirty(false),
 		m_dirtyregiondisabled(false)
 	{
-		
+
 	}
 	~ConstatBuffer()
 	{
 
+	}
+	template<typename T>
+	__forceinline void SetConstant(unsigned int const_number, unsigned int index, T f1)
+	{
+		u32 idx = const_number * 4 + index;
+		((T*)m_buffer)[idx] = f1;
+		AddDirtyRegion(const_number, 1);
 	}
 	template<typename T>
 	__forceinline void SetConstant4(unsigned int const_number, T f1, T f2, T f3, T f4)
@@ -138,7 +145,7 @@ public:
 		memcpy(&((T*)m_buffer)[idx], f, sizeof(T) * 4 * count);
 		AddDirtyRegion(const_number, count);
 	}
-	
+
 	template<typename T>
 	__forceinline T* GetBufferToUpdate(u32 const_number, u32 count)
 	{
@@ -146,7 +153,7 @@ public:
 		AddDirtyRegion(const_number, count);
 		return &((T*)m_buffer)[idx];
 	}
-	
+
 	template<typename T>
 	__forceinline T* GetBuffer(u32 const_number) const
 	{
@@ -167,7 +174,7 @@ public:
 			m_dirtyRegions.clear();
 		}
 	}
-	
+
 	__forceinline void EnableDirtyRegions()
 	{
 		m_dirtyregiondisabled = false;

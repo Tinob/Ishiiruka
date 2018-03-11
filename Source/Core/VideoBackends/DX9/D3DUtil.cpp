@@ -235,8 +235,8 @@ int CD3DFont::DrawTextScaled(float x, float y, float fXScale, float fYScale, flo
 	float vpWidth = 1;
 	float vpHeight = 1;
 
-	float sx = x*vpWidth - 0.5f;
-	float sy = y*vpHeight - 0.5f;
+	float sx = x * vpWidth - 0.5f;
+	float sy = y * vpHeight - 0.5f;
 
 	float fStartX = sx;
 
@@ -247,7 +247,6 @@ int CD3DFont::DrawTextScaled(float x, float y, float fXScale, float fYScale, flo
 	m_pVB->Lock(0, 0, (void**)&pVertices, D3DLOCK_DISCARD);
 
 	//First, let's measure the text
-	float tw = 0;
 	float mx = 0;
 	float maxx = 0;
 
@@ -263,11 +262,9 @@ int CD3DFont::DrawTextScaled(float x, float y, float fXScale, float fYScale, flo
 
 		float w = (tx2 - tx1)*m_dwTexWidth;
 		w *= (fXScale*vpHeight)*invLineHeight;
-		mx += w + spacing*fXScale*vpWidth;
+		mx += w + spacing * fXScale*vpWidth;
 		if (mx > maxx) maxx = mx;
 	}
-
-	float offset = -maxx / 2;
 
 	float wScale = (fXScale*vpHeight)*invLineHeight;
 	float hScale = (fYScale*vpHeight)*invLineHeight;
@@ -278,7 +275,7 @@ int CD3DFont::DrawTextScaled(float x, float y, float fXScale, float fYScale, flo
 		if (c == ('\n'))
 		{
 			sx = fStartX;
-			sy += fYScale*vpHeight;
+			sy += fYScale * vpHeight;
 		}
 		if (c < (' '))
 			continue;
@@ -316,7 +313,7 @@ int CD3DFont::DrawTextScaled(float x, float y, float fXScale, float fYScale, flo
 			m_pVB->Lock(0, 0, (void**)&pVertices, D3DLOCK_DISCARD);
 			dwNumTriangles = 0;
 		}
-		sx += w + spacing*fXScale*vpWidth;
+		sx += w + spacing * fXScale*vpWidth;
 	}
 
 	// Unlock and render the vertex buffer
@@ -382,10 +379,10 @@ void drawShadedTexQuad(IDirect3DTexture9 *texture,
 	{
 		float x, y, z, rhw, u, v, w, h, G;
 	} coords[4] = {
-{-1.0f - dw,-1.0f + dh, 0.0f,1.0f, u1, v2, dw, dh, g},
-{-1.0f - dw, 1.0f + dh, 0.0f,1.0f, u1, v1, dw, dh, g},
-{ 1.0f - dw,-1.0f + dh, 0.0f,1.0f, u2, v2, dw, dh, g},
-{ 1.0f - dw, 1.0f + dh, 0.0f,1.0f, u2, v1, dw, dh, g}
+  {-1.0f - dw,-1.0f + dh, 0.0f,1.0f, u1, v2, dw, dh, g},
+  {-1.0f - dw, 1.0f + dh, 0.0f,1.0f, u1, v1, dw, dh, g},
+  { 1.0f - dw,-1.0f + dh, 0.0f,1.0f, u2, v2, dw, dh, g},
+  { 1.0f - dw, 1.0f + dh, 0.0f,1.0f, u2, v1, dw, dh, g}
 	};
 	D3D::ChangeVertexShader(Vshader);
 	D3D::ChangePixelShader(PShader);
@@ -421,10 +418,10 @@ void drawShadedTexSubQuad(IDirect3DTexture9 *texture,
 	{
 		float x, y, z, rhw, u, v, w, h, G;
 	} coords[4] = {
-{ rDest->left - dw , rDest->top + dh, 1.0f,1.0f, u1, v2, dw, dh, g},
-{ rDest->left - dw , rDest->bottom + dh, 1.0f,1.0f, u1, v1, dw, dh, g},
-{ rDest->right - dw , rDest->top + dh, 1.0f,1.0f, u2, v2, dw, dh, g},
-{ rDest->right - dw , rDest->bottom + dh, 1.0f,1.0f, u2, v1, dw, dh, g}
+  { rDest->left - dw , rDest->top + dh, 1.0f,1.0f, u1, v2, dw, dh, g},
+  { rDest->left - dw , rDest->bottom + dh, 1.0f,1.0f, u1, v1, dw, dh, g},
+  { rDest->right - dw , rDest->top + dh, 1.0f,1.0f, u2, v2, dw, dh, g},
+  { rDest->right - dw , rDest->bottom + dh, 1.0f,1.0f, u2, v1, dw, dh, g}
 	};
 	D3D::ChangeVertexShader(Vshader);
 	D3D::ChangePixelShader(PShader);
@@ -443,10 +440,10 @@ void drawColorQuad(u32 Color, float x1, float y1, float x2, float y2)
 	{
 		float x, y, z, rhw; u32 col;
 	} coords[4] = {
-{ x1, y2, 0.f, 1.f, Color },
-{ x2, y2, 0.f, 1.f, Color },
-{ x1, y1, 0.f, 1.f, Color },
-{ x2, y1, 0.f, 1.f, Color },
+  { x1, y2, 0.f, 1.f, Color },
+  { x2, y2, 0.f, 1.f, Color },
+  { x1, y1, 0.f, 1.f, Color },
+  { x2, y1, 0.f, 1.f, Color },
 	};
 	D3D::ChangeVertexShader(VertexShaderCache::GetClearVertexShader());
 	D3D::ChangePixelShader(PixelShaderCache::GetClearProgram());

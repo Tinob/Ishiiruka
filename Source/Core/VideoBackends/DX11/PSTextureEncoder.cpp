@@ -2,6 +2,8 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include "Common/CommonTypes.h"
+
 #include "Core/HW/Memmap.h"
 #include "VideoCommon/HLSLCompiler.h"
 #include "VideoCommon/VideoConfig.h"
@@ -23,10 +25,10 @@ namespace DX11
 
 struct EFBEncodeParams
 {
-	DWORD SrcLeft;
-	DWORD SrcTop;
-	DWORD DestWidth;
-	DWORD ScaleFactor;
+	s32 SrcLeft;
+	s32 SrcTop;
+	u32 DestWidth;
+	u32 ScaleFactor;
 };
 
 PSTextureEncoder::PSTextureEncoder()
@@ -73,7 +75,8 @@ void PSTextureEncoder::Init()
 	m_ready = true;
 	// Warm up with shader cache
 	std::string cache_filename = StringFromFormat("%sdx11-ENCODER-ps.cache", File::GetUserPath(D_SHADERCACHE_IDX).c_str());
-	m_shaderCache.OpenAndRead(cache_filename, ShaderCacheInserter(*this));
+	ShaderCacheInserter inserter = ShaderCacheInserter(*this);
+	m_shaderCache.OpenAndRead(cache_filename, inserter);
 }
 
 void PSTextureEncoder::Shutdown()

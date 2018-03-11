@@ -175,12 +175,12 @@ bool PerfQuery::IsFlushed() const
 bool PerfQuery::CreateQueryPool()
 {
 	VkQueryPoolCreateInfo info = {
-		VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,  // VkStructureType                  sType
-		nullptr,                                   // const void*                      pNext
-		0,                                         // VkQueryPoolCreateFlags           flags
-		VK_QUERY_TYPE_OCCLUSION,                   // VkQueryType                      queryType
-		PERF_QUERY_BUFFER_SIZE,                    // uint32_t                         queryCount
-		0  // VkQueryPipelineStatisticFlags    pipelineStatistics;
+	  VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,  // VkStructureType                  sType
+	  nullptr,                                   // const void*                      pNext
+	  0,                                         // VkQueryPoolCreateFlags           flags
+	  VK_QUERY_TYPE_OCCLUSION,                   // VkQueryType                      queryType
+	  PERF_QUERY_BUFFER_SIZE,                    // uint32_t                         queryCount
+	  0  // VkQueryPipelineStatisticFlags    pipelineStatistics;
 	};
 
 	VkResult res = vkCreateQueryPool(g_vulkan_context->GetDevice(), &info, nullptr, &m_query_pool);

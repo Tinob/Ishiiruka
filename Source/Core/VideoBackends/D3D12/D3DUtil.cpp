@@ -246,12 +246,13 @@ int CD3DFont::Init()
 			*pDst32++ = (((bAlpha << 4) | bAlpha) << 24) | 0xFFFFFF;
 		}
 	}
-
+	CD3DX12_HEAP_PROPERTIES hprops(D3D12_HEAP_TYPE_DEFAULT);
+	auto rdesc = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, m_tex_width, m_tex_height, 1, 1);
 	CheckHR(
 		D3D::device->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+			&hprops,
 			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, m_tex_width, m_tex_height, 1, 1),
+			&rdesc,
 			D3D12_RESOURCE_STATE_COMMON,
 			nullptr,
 			IID_PPV_ARGS(&m_texture)
@@ -259,13 +260,14 @@ int CD3DFont::Init()
 	);
 
 	D3D::SetDebugObjectName12(m_texture, "texture of a CD3DFont object");
-
+	hprops = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+	rdesc = CD3DX12_RESOURCE_DESC::Buffer(Common::AlignUpSizePow2(static_cast<u32>(m_tex_width * 4), D3D12_TEXTURE_DATA_PITCH_ALIGNMENT) * m_tex_height);
 	ID3D12Resource* temporaryFontTextureUploadBuffer;
 	CheckHR(
 		D3D::device->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+			&hprops,
 			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Buffer(Common::AlignUpSizePow2(static_cast<u32>(m_tex_width * 4), D3D12_TEXTURE_DATA_PITCH_ALIGNMENT) * m_tex_height),
+			&rdesc,
 			D3D12_RESOURCE_STATE_GENERIC_READ,
 			nullptr,
 			IID_PPV_ARGS(&temporaryFontTextureUploadBuffer)
@@ -362,7 +364,7 @@ int CD3DFont::Init()
 		{ 1 /* UINT Count */, 0 /* UINT Quality */ }      // DXGI_SAMPLE_DESC SampleDesc
 	};
 
-	CheckHR(DX12::gx_state_cache.GetPipelineStateObjectFromCache(text_pso_desc, &m_pso));
+	CheckHR(DX12::s_gx_state_cache.GetPipelineStateObjectFromCache(text_pso_desc, &m_pso));
 
 	SAFE_RELEASE(psbytecode);
 	SAFE_RELEASE(vsbytecode);
@@ -654,7 +656,7 @@ void DrawShadedTexQuad(D3DTexture2D* texture,
 	}
 
 	ID3D12PipelineState* pso = nullptr;
-	CheckHR(DX12::gx_state_cache.GetPipelineStateObjectFromCache(pso_desc, &pso));
+	CheckHR(DX12::s_gx_state_cache.GetPipelineStateObjectFromCache(pso_desc, &pso));
 
 	D3D::current_command_list->SetPipelineState(pso);
 	D3D::command_list_mgr->SetCommandListDirtyState(COMMAND_LIST_STATE_PSO, true);
@@ -721,7 +723,7 @@ void DrawClearQuad(u32 Color, float z, D3D12_BLEND_DESC* blend_desc, D3D12_DEPTH
 	}
 
 	ID3D12PipelineState* pso = nullptr;
-	CheckHR(DX12::gx_state_cache.GetPipelineStateObjectFromCache(pso_desc, &pso));
+	CheckHR(DX12::s_gx_state_cache.GetPipelineStateObjectFromCache(pso_desc, &pso));
 
 	D3D::current_command_list->SetPipelineState(pso);
 	D3D::command_list_mgr->SetCommandListDirtyState(COMMAND_LIST_STATE_PSO, true);
@@ -777,7 +779,7 @@ void DrawEFBPokeQuads(EFBAccessType type,
 	}
 
 	ID3D12PipelineState* pso = nullptr;
-	CheckHR(DX12::gx_state_cache.GetPipelineStateObjectFromCache(pso_desc, &pso));
+	CheckHR(DX12::s_gx_state_cache.GetPipelineStateObjectFromCache(pso_desc, &pso));
 
 	// if drawing a large number of points at once, this will have to be split into multiple passes.
 	const size_t COL_QUAD_SIZE = sizeof(ColVertex) * 6;

@@ -17,29 +17,29 @@ namespace Vulkan
 static VkFormat VarToVkFormat(EVTXComponentFormat t, uint32_t components, bool integer = false)
 {
 	static const VkFormat float_type_lookup[][4] = {
-		{ VK_FORMAT_R8_UNORM, VK_FORMAT_R8G8_UNORM, VK_FORMAT_R8G8B8_UNORM,
-		VK_FORMAT_R8G8B8A8_UNORM },  // VAR_UNSIGNED_BYTE
-		{ VK_FORMAT_R8_SNORM, VK_FORMAT_R8G8_SNORM, VK_FORMAT_R8G8B8_SNORM,
-		VK_FORMAT_R8G8B8A8_SNORM },  // VAR_BYTE
-		{ VK_FORMAT_R16_UNORM, VK_FORMAT_R16G16_UNORM, VK_FORMAT_R16G16B16_UNORM,
-		VK_FORMAT_R16G16B16A16_UNORM },  // VAR_UNSIGNED_SHORT
-		{ VK_FORMAT_R16_SNORM, VK_FORMAT_R16G16_SNORM, VK_FORMAT_R16G16B16_SNORM,
-		VK_FORMAT_R16G16B16A16_SNORM },  // VAR_SHORT
-		{ VK_FORMAT_R32_SFLOAT, VK_FORMAT_R32G32_SFLOAT, VK_FORMAT_R32G32B32_SFLOAT,
-		VK_FORMAT_R32G32B32A32_SFLOAT }  // VAR_FLOAT
+	  { VK_FORMAT_R8_UNORM, VK_FORMAT_R8G8_UNORM, VK_FORMAT_R8G8B8_UNORM,
+	  VK_FORMAT_R8G8B8A8_UNORM },  // VAR_UNSIGNED_BYTE
+	  { VK_FORMAT_R8_SNORM, VK_FORMAT_R8G8_SNORM, VK_FORMAT_R8G8B8_SNORM,
+	  VK_FORMAT_R8G8B8A8_SNORM },  // VAR_BYTE
+	  { VK_FORMAT_R16_UNORM, VK_FORMAT_R16G16_UNORM, VK_FORMAT_R16G16B16_UNORM,
+	  VK_FORMAT_R16G16B16A16_UNORM },  // VAR_UNSIGNED_SHORT
+	  { VK_FORMAT_R16_SNORM, VK_FORMAT_R16G16_SNORM, VK_FORMAT_R16G16B16_SNORM,
+	  VK_FORMAT_R16G16B16A16_SNORM },  // VAR_SHORT
+	  { VK_FORMAT_R32_SFLOAT, VK_FORMAT_R32G32_SFLOAT, VK_FORMAT_R32G32B32_SFLOAT,
+	  VK_FORMAT_R32G32B32A32_SFLOAT }  // VAR_FLOAT
 	};
 
 	static const VkFormat integer_type_lookup[][4] = {
-		{ VK_FORMAT_R8_UINT, VK_FORMAT_R8G8_UINT, VK_FORMAT_R8G8B8_UINT,
-		VK_FORMAT_R8G8B8A8_UINT },  // VAR_UNSIGNED_BYTE
-		{ VK_FORMAT_R8_SINT, VK_FORMAT_R8G8_SINT, VK_FORMAT_R8G8B8_SINT,
-		VK_FORMAT_R8G8B8A8_SINT },  // VAR_BYTE
-		{ VK_FORMAT_R16_UINT, VK_FORMAT_R16G16_UINT, VK_FORMAT_R16G16B16_UINT,
-		VK_FORMAT_R16G16B16A16_UINT },  // VAR_UNSIGNED_SHORT
-		{ VK_FORMAT_R16_SINT, VK_FORMAT_R16G16_SINT, VK_FORMAT_R16G16B16_SINT,
-		VK_FORMAT_R16G16B16A16_SINT },  // VAR_SHORT
-		{ VK_FORMAT_R32_SFLOAT, VK_FORMAT_R32G32_SFLOAT, VK_FORMAT_R32G32B32_SFLOAT,
-		VK_FORMAT_R32G32B32A32_SFLOAT }  // VAR_FLOAT
+	  { VK_FORMAT_R8_UINT, VK_FORMAT_R8G8_UINT, VK_FORMAT_R8G8B8_UINT,
+	  VK_FORMAT_R8G8B8A8_UINT },  // VAR_UNSIGNED_BYTE
+	  { VK_FORMAT_R8_SINT, VK_FORMAT_R8G8_SINT, VK_FORMAT_R8G8B8_SINT,
+	  VK_FORMAT_R8G8B8A8_SINT },  // VAR_BYTE
+	  { VK_FORMAT_R16_UINT, VK_FORMAT_R16G16_UINT, VK_FORMAT_R16G16B16_UINT,
+	  VK_FORMAT_R16G16B16A16_UINT },  // VAR_UNSIGNED_SHORT
+	  { VK_FORMAT_R16_SINT, VK_FORMAT_R16G16_SINT, VK_FORMAT_R16G16B16_SINT,
+	  VK_FORMAT_R16G16B16A16_SINT },  // VAR_SHORT
+	  { VK_FORMAT_R32_SFLOAT, VK_FORMAT_R32G32_SFLOAT, VK_FORMAT_R32G32B32_SFLOAT,
+	  VK_FORMAT_R32G32B32A32_SFLOAT }  // VAR_FLOAT
 	};
 
 	_assert_(components > 0 && components <= 4);
@@ -51,19 +51,6 @@ VertexFormat::VertexFormat(const PortableVertexDeclaration& in_vtx_decl)
 	vtx_decl = in_vtx_decl;
 	MapAttributes();
 	SetupInputState();
-}
-
-VertexFormat* VertexFormat::GetOrCreateMatchingFormat(const PortableVertexDeclaration& decl)
-{
-	auto vertex_format_map = VertexLoaderManager::GetNativeVertexFormatMap();
-	auto iter = vertex_format_map->find(decl);
-	if (iter == vertex_format_map->end())
-	{
-		auto ipair = vertex_format_map->emplace(decl, std::make_unique<VertexFormat>(decl));
-		iter = ipair.first;
-	}
-
-	return static_cast<VertexFormat*>(iter->second.get());
 }
 
 void VertexFormat::MapAttributes()
@@ -132,10 +119,6 @@ void VertexFormat::AddAttribute(uint32_t location, uint32_t binding, VkFormat fo
 	m_attribute_descriptions[m_num_attributes].format = format;
 	m_attribute_descriptions[m_num_attributes].offset = offset;
 	m_num_attributes++;
-}
-
-void VertexFormat::SetupVertexPointers()
-{
 }
 
 }  // namespace Vulkan

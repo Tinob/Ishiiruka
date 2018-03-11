@@ -7,6 +7,8 @@
 #include <d3d12.h>
 #include "VideoBackends/D3D12/D3DUtil.h"
 
+#include "VideoCommon/HostTexture.h"
+
 namespace DX12
 {
 
@@ -19,7 +21,7 @@ enum TEXTURE_BIND_FLAG : u32
 
 namespace D3D
 {
-void ReplaceTexture2D(ID3D12Resource* pTexture, const u8* buffer, DXGI_FORMAT fmt, unsigned int width, unsigned int height, unsigned int src_pitch, unsigned int level, D3D12_RESOURCE_STATES current_resource_state = D3D12_RESOURCE_STATE_COMMON);
+void ReplaceTexture2D(ID3D12Resource* pTexture, const u8* buffer, DXGI_FORMAT fmt, u32 width, u32 height, u32 src_pitch, u32 level, u32 layer, u32 miplevels, u32 layers, D3D12_RESOURCE_STATES current_resource_state = D3D12_RESOURCE_STATE_COMMON);
 void CleanupPersistentD3DTextureResources();
 }
 
@@ -31,9 +33,23 @@ public:
 	//     either create an ID3D12Resource object, pass it to the constructor and specify what views to create
 	//     or let the texture automatically be created by D3DTexture2D::Create
 
-	D3DTexture2D(ID3D12Resource* texptr, u32 bind, DXGI_FORMAT fmt, DXGI_FORMAT srv_format = DXGI_FORMAT_UNKNOWN, DXGI_FORMAT dsv_format = DXGI_FORMAT_UNKNOWN, DXGI_FORMAT rtv_format = DXGI_FORMAT_UNKNOWN, bool multisampled = false, D3D12_RESOURCE_STATES resource_state = D3D12_RESOURCE_STATE_COMMON);
-	static D3DTexture2D* Create(unsigned int width, unsigned int height, u32 bind, DXGI_FORMAT fmt, unsigned int levels = 1, unsigned int slices = 1, D3D12_SUBRESOURCE_DATA* data = nullptr);
-	inline void TransitionToResourceState(ID3D12GraphicsCommandList* command_list, D3D12_RESOURCE_STATES state_after)
+	D3DTexture2D(
+		ID3D12Resource* texptr,
+		u32 bind,
+		DXGI_FORMAT fmt,
+		DXGI_FORMAT srv_format = DXGI_FORMAT_UNKNOWN,
+		DXGI_FORMAT dsv_format = DXGI_FORMAT_UNKNOWN,
+		DXGI_FORMAT rtv_format = DXGI_FORMAT_UNKNOWN,
+		bool multisampled = false,
+		D3D12_RESOURCE_STATES resource_state = D3D12_RESOURCE_STATE_COMMON);
+	static D3DTexture2D* Create(u32 width,
+		u32 height,
+		u32 bind,
+		DXGI_FORMAT fmt,
+		u32 levels = 1,
+		u32 slices = 1,
+		D3D12_SUBRESOURCE_DATA* data = nullptr);
+	void TransitionToResourceState(ID3D12GraphicsCommandList* command_list, D3D12_RESOURCE_STATES state_after)
 	{
 		if (m_resource_state != state_after)
 		{
@@ -46,47 +62,47 @@ public:
 	void AddRef();
 	UINT Release();
 
-	inline D3D12_RESOURCE_STATES D3DTexture2D::GetResourceUsageState() const
+	inline D3D12_RESOURCE_STATES GetResourceUsageState() const
 	{
 		return m_resource_state;
 	}
 
-	inline bool D3DTexture2D::GetMultisampled() const
+	inline bool GetMultisampled() const
 	{
 		return m_multisampled;
 	}
 
-	inline ID3D12Resource* D3DTexture2D::GetTex() const
+	inline ID3D12Resource* GetTex() const
 	{
 		return m_tex.Get();
 	}
 
-	inline D3D12_CPU_DESCRIPTOR_HANDLE D3DTexture2D::GetSRVCPU() const
+	inline D3D12_CPU_DESCRIPTOR_HANDLE GetSRVCPU() const
 	{
 		return m_srv_cpu;
 	}
 
-	inline D3D12_CPU_DESCRIPTOR_HANDLE D3DTexture2D::GetSRVCPUShadow() const
+	inline D3D12_CPU_DESCRIPTOR_HANDLE GetSRVCPUShadow() const
 	{
 		return m_srv_cpu_shadow;
 	}
 
-	inline D3D12_GPU_DESCRIPTOR_HANDLE D3DTexture2D::GetSRVGPU() const
+	inline D3D12_GPU_DESCRIPTOR_HANDLE GetSRVGPU() const
 	{
 		return m_srv_gpu;
 	}
 
-	inline D3D12_CPU_DESCRIPTOR_HANDLE D3DTexture2D::GetDSV() const
+	inline D3D12_CPU_DESCRIPTOR_HANDLE GetDSV() const
 	{
 		return m_dsv;
 	}
 
-	inline D3D12_CPU_DESCRIPTOR_HANDLE D3DTexture2D::GetRTV() const
+	inline D3D12_CPU_DESCRIPTOR_HANDLE GetRTV() const
 	{
 		return m_rtv;
 	}
 
-	inline DXGI_FORMAT D3DTexture2D::GetFormat() const
+	inline DXGI_FORMAT GetFormat() const
 	{
 		return m_format;
 	}

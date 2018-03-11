@@ -11,6 +11,12 @@
 #include "Common/MsgHandler.h"
 #include "VideoCommon/ImageWrite.h"
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable : 4611)
+#endif
+
+
 bool SaveData(const std::string& filename, const std::string& data)
 {
 	std::ofstream f;
@@ -126,3 +132,7 @@ finalise:
 
 	return success;
 }
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif

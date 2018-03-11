@@ -182,7 +182,7 @@ bool OGLPostProcessingShader::RecompileShaders()
 		vertex_shader_source += s_vertex_shader;
 		std::string fragment_shader_source = header_shader_source + common_source;
 		fragment_shader_source += PostProcessor::GetPassFragmentShaderSource(API_OPENGL, m_config, &pass_config);
-		if (!ProgramShaderCache::CompileShader(*shader->program, vertex_shader_source.c_str(), fragment_shader_source.c_str()))
+		if (!ProgramShaderCache::CompileShader(*shader->program, vertex_shader_source.c_str(), fragment_shader_source.c_str()).get())
 		{
 			ReleasePassNativeResources(pass);
 			ERROR_LOG(VIDEO, "Failed to compile post-processing shader %s (pass %s)", m_config->GetShaderName().c_str(), pass_config.entry_point.c_str());
@@ -209,7 +209,7 @@ bool OGLPostProcessingShader::RecompileShaders()
 			vertex_shader_source += s_layered_vertex_shader;
 			std::string geometry_shader_source = StringFromFormat(s_geometry_shader, m_internal_layers * 3, m_internal_layers).c_str();
 
-			if (!ProgramShaderCache::CompileShader(*shader->gs_program, vertex_shader_source.c_str(), fragment_shader_source.c_str(), geometry_shader_source.c_str()))
+			if (!ProgramShaderCache::CompileShader(*shader->gs_program, vertex_shader_source.c_str(), fragment_shader_source.c_str(), geometry_shader_source.c_str()).get())
 			{
 				ReleasePassNativeResources(pass);
 				ERROR_LOG(VIDEO, "Failed to compile GS post-processing shader %s (pass %s)", m_config->GetShaderName().c_str(), pass_config.entry_point.c_str());
@@ -251,7 +251,7 @@ void OGLPostProcessingShader::Draw(PostProcessor* p,
 	const TargetRectangle& src_rect, const TargetSize& src_size, uintptr_t src_tex,
 	uintptr_t src_depth_tex, int src_layer, float gamma)
 {
-	OGLPostProcessor* parent = reinterpret_cast<OGLPostProcessor*>(p);
+	OGLPostProcessor* parent = static_cast<OGLPostProcessor*>(p);
 	GLuint dst_texture = static_cast<GLuint>(dst_tex);
 	GLuint src_texture = static_cast<GLuint>(src_tex);
 	GLuint src_depth_texture = static_cast<GLuint>(src_depth_tex);
@@ -349,7 +349,7 @@ void OGLPostProcessingShader::Draw(PostProcessor* p,
 				}
 				break;
 			default:
-				TextureCacheBase::TCacheEntryBase* input_texture = input.texture != nullptr ? input.texture : input.prev_texture;
+				HostTexture * input_texture = input.texture ? input.texture.get() : input.prev_texture;
 				if (input_texture != nullptr)
 				{
 					glBindTexture(GL_TEXTURE_2D_ARRAY, static_cast<GLuint>(input_texture->GetInternalObject()));
@@ -381,7 +381,7 @@ void OGLPostProcessingShader::Draw(PostProcessor* p,
 	IncrementFrame();
 	if (m_prev_depth_enabled && src_depth_tex)
 	{
-		TargetRectangle dst = {0, m_prev_depth_frame_size.height, m_prev_depth_frame_size.width, 0};
+		TargetRectangle dst = { 0, m_prev_depth_frame_size.height, m_prev_depth_frame_size.width, 0 };
 		parent->CopyTexture(dst, GetPrevDepthFrame(0)->GetInternalObject(), output_rect, src_depth_tex, src_size, src_layer, true, true);
 	}
 	if (!skip_final_copy)
@@ -389,7 +389,7 @@ void OGLPostProcessingShader::Draw(PostProcessor* p,
 		RenderPassData& final_pass = m_passes[m_last_pass_index];
 		if (m_prev_frame_enabled)
 		{
-			TargetRectangle dst = {0, m_prev_frame_size.height, m_prev_frame_size.width, 0 };
+			TargetRectangle dst = { 0, m_prev_frame_size.height, m_prev_frame_size.width, 0 };
 			parent->CopyTexture(dst, GetPrevColorFrame(0)->GetInternalObject(), output_rect, final_pass.output_texture->GetInternalObject(), final_pass.output_size, src_layer, false, true);
 		}
 		parent->CopyTexture(dst_rect, dst_texture, output_rect, final_pass.output_texture->GetInternalObject(), final_pass.output_size, src_layer);
@@ -452,8 +452,8 @@ void OGLPostProcessor::PostProcessEFBToTexture(uintptr_t dst_texture)
 
 	EFBRectangle efb_rect(0, EFB_HEIGHT, EFB_WIDTH, 0);
 	TargetSize target_size(g_renderer->GetTargetWidth(), g_renderer->GetTargetHeight());
-	TargetRectangle target_rect = { 0, target_size.height, target_size.width,  0};
-	
+	TargetRectangle target_rect = { 0, target_size.height, target_size.width,  0 };
+
 
 	// Source and target textures, if MSAA is enabled, this needs to be resolved
 	GLuint efb_color_texture = FramebufferManager::GetEFBColorTexture(efb_rect);
@@ -477,7 +477,7 @@ void OGLPostProcessor::PostProcessEFB(const TargetRectangle& target_rect, const 
 	g_renderer->ResetAPIState();
 
 	EFBRectangle efb_rect(0, EFB_HEIGHT, EFB_WIDTH, 0);
-	
+
 	// Source and target textures, if MSAA is enabled, this needs to be resolved
 	GLuint efb_color_texture = FramebufferManager::GetEFBColorTexture(efb_rect);
 	GLuint efb_depth_texture = 0;

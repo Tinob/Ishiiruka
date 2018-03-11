@@ -135,7 +135,6 @@ void VertexManager::CreateDeviceObjects()
 	m_vertex_buffers = new LPDIRECT3DVERTEXBUFFER9[MAX_VBUFFER_COUNT];
 	m_index_buffers = new LPDIRECT3DINDEXBUFFER9[MAX_VBUFFER_COUNT];
 
-	bool Fail = false;
 	for (m_current_vertex_buffer = 0; m_current_vertex_buffer < MAX_VBUFFER_COUNT; m_current_vertex_buffer++)
 	{
 		m_vertex_buffers[m_current_vertex_buffer] = nullptr;
@@ -242,11 +241,11 @@ void VertexManager::PrepareDrawBuffers(u32 stride)
 		}
 		memcpy(p_vertices_base, m_pBaseBufferPointer, data_size);
 		p_vertices = p_vertices_base + data_size;
-		if (m_current_primitive_type == PRIMITIVE_TRIANGLES)
+		if (m_current_primitive_type == PrimitiveType::Triangles)
 		{
 			memcpy(p_indices, indices, m_index_len * sizeof(u16));
 		}
-		else if (m_current_primitive_type == PRIMITIVE_LINES)
+		else if (m_current_primitive_type == PrimitiveType::Lines)
 		{
 			for (u32 i = 0; i < (m_index_len - 1); i += 2)
 			{
@@ -327,7 +326,7 @@ void VertexManager::PrepareDrawBuffers(u32 stride)
 				p_indices++;
 			}
 		}
-		else if (m_current_primitive_type == PRIMITIVE_POINTS)
+		else if (m_current_primitive_type == PrimitiveType::Points)
 		{
 			for (u32 i = 0; i < m_index_len; i++)
 			{
@@ -459,23 +458,23 @@ void VertexManager::SetPLRasterOffsets()
 	line_pt_params[PLO_POS_LINE_POSITIVE_Y].y = lsizey;
 }
 
-void DX9::VertexManager::PrepareShaders(PrimitiveType primitive, u32 components, const XFMemory &xfr, const BPMemory &bpm, bool ongputhread)
+void DX9::VertexManager::PrepareShaders(PrimitiveType primitive, u32 components, const XFMemory &xfr, const BPMemory &bpm)
 {
-	const bool useDstAlpha = bpm.dstalpha.enable && bpm.blendmode.alphaupdate &&
-		bpm.zcontrol.pixel_format == PEControl::RGBA6_Z24;
+	const bool useDstAlpha = bpm.dstalpha.enable.Value() && bpm.blendmode.alphaupdate.Value() &&
+		bpm.zcontrol.pixel_format.Value() == PEControl::RGBA6_Z24;
 	const bool useDualSource = useDstAlpha && g_ActiveConfig.backend_info.bSupportsDualSourceBlend;
-	const bool forced_early_z = bpm.UseEarlyDepthTest() && bpm.zmode.updateenable && bpm.alpha_test.TestResult() == AlphaTest::UNDETERMINED && !g_ActiveConfig.bFastDepthCalc;
+	const bool forced_early_z = bpm.UseEarlyDepthTest() && bpm.zmode.updateenable.Value() && bpm.alpha_test.TestResult() == AlphaTest::UNDETERMINED && !g_ActiveConfig.bFastDepthCalc;
 	g_ActiveConfig.backend_info.bSupportsEarlyZ = !g_ActiveConfig.bFastDepthCalc;
 	PIXEL_SHADER_RENDER_MODE render_mode = forced_early_z ? PSRM_DEPTH_ONLY : (useDualSource ? PSRM_DUAL_SOURCE_BLEND : PSRM_DEFAULT);
-	VertexShaderCache::PrepareShader(components, xfr, bpm, ongputhread);
-	PixelShaderCache::PrepareShader(render_mode, components, xfr, bpm, ongputhread);
+	VertexShaderCache::PrepareShader(components, xfr, bpm);
+	PixelShaderCache::PrepareShader(render_mode, components, xfr, bpm);
 	if (forced_early_z)
 	{
-		PixelShaderCache::PrepareShader(useDualSource ? PSRM_DUAL_SOURCE_BLEND : PSRM_DEFAULT, components, xfr, bpm, ongputhread);
+		PixelShaderCache::PrepareShader(useDualSource ? PSRM_DUAL_SOURCE_BLEND : PSRM_DEFAULT, components, xfr, bpm);
 	}
 	if (useDstAlpha && !useDualSource)
 	{
-		PixelShaderCache::PrepareShader(PSRM_ALPHA_PASS, components, xfr, bpm, ongputhread);
+		PixelShaderCache::PrepareShader(PSRM_ALPHA_PASS, components, xfr, bpm);
 	}
 }
 
@@ -486,18 +485,18 @@ void VertexManager::vFlush(bool useDstAlpha)
 	m_num_verts = IndexGenerator::GetNumVerts();
 	m_total_num_verts = m_num_verts;
 	m_total_index_len = m_index_len;
-	NativeVertexFormat* current_vertex_format = VertexLoaderManager::GetCurrentVertexFormat();
+	D3DVertexFormat* current_vertex_format = static_cast<D3DVertexFormat*>(VertexLoaderManager::GetCurrentVertexFormat());
 	const u32 stride = current_vertex_format->GetVertexStride();
 	switch (m_current_primitive_type)
 	{
-	case PRIMITIVE_POINTS:
+	case PrimitiveType::Points:
 		// We need point emulation so setup values to allow point to triangle translation
 		// 3 extra vertices will be generated for each point
 		m_total_num_verts += m_index_len * 3;
 		// 6 indices for each point
 		m_total_index_len *= 6;
 		break;
-	case PRIMITIVE_LINES:
+	case PrimitiveType::Lines:
 		// We need line emulation so transform the values to allow lines to triangle translation
 		// we will generate 2 extra vertex for each line (the same amount of original indices)
 		m_total_num_verts += m_index_len;
@@ -511,7 +510,7 @@ void VertexManager::vFlush(bool useDstAlpha)
 	// set global constants
 
 	const bool useDualSource = useDstAlpha && g_ActiveConfig.backend_info.bSupportsDualSourceBlend;
-	const bool forced_early_z = bpmem.UseEarlyDepthTest() && bpmem.zmode.updateenable && bpmem.alpha_test.TestResult() == AlphaTest::UNDETERMINED && !g_ActiveConfig.bFastDepthCalc;
+	const bool forced_early_z = bpmem.UseEarlyDepthTest() && bpmem.zmode.updateenable.Value() && bpmem.alpha_test.TestResult() == AlphaTest::UNDETERMINED && !g_ActiveConfig.bFastDepthCalc;
 	PIXEL_SHADER_RENDER_MODE render_mode = forced_early_z ? PSRM_DEPTH_ONLY : (useDualSource ? PSRM_DUAL_SOURCE_BLEND : PSRM_DEFAULT);
 	if (!VertexShaderCache::TestShader())
 	{
@@ -522,7 +521,7 @@ void VertexManager::vFlush(bool useDstAlpha)
 		goto shader_fail;
 	}
 	g_renderer->ApplyState(false);
-	if (m_current_primitive_type != PRIMITIVE_TRIANGLES)
+	if (m_current_primitive_type != PrimitiveType::Triangles)
 	{
 		// if we use emulation setup the offsets for the vertex shaders
 		SetPLRasterOffsets();
@@ -536,7 +535,12 @@ void VertexManager::vFlush(bool useDstAlpha)
 		for (size_t i = 0; i < regions.size(); i++)
 		{
 			const std::pair<u32, u32> &region = regions[i];
-			DX9::D3D::dev->SetVertexShaderConstantF(region.first, &buffer[region.first * 4], region.second - region.first + 1);
+			if (region.first >= C_VUBERPARAMS)
+			{
+				break;
+			}
+			auto end = std::min(region.second, C_VUBERPARAMS - 1);
+			DX9::D3D::dev->SetVertexShaderConstantF(region.first, &buffer[region.first * 4], end - region.first + 1);
 		}
 		VertexShaderManager::Clear();
 	}
@@ -547,7 +551,12 @@ void VertexManager::vFlush(bool useDstAlpha)
 		for (size_t i = 0; i < regions.size(); i++)
 		{
 			const std::pair<u32, u32> &region = regions[i];
-			DX9::D3D::dev->SetPixelShaderConstantF(region.first, &buffer[region.first * 4], region.second - region.first + 1);
+			if (region.first >= C_PENVCONST_END)
+			{
+				break;
+			}
+			auto end = std::min(region.second, C_PENVCONST_END - 1);
+			DX9::D3D::dev->SetPixelShaderConstantF(region.first, &buffer[region.first * 4], end - region.first + 1);
 		}
 		PixelShaderManager::Clear();
 	}
@@ -584,7 +593,7 @@ void VertexManager::vFlush(bool useDstAlpha)
 		Draw(stride);
 		g_renderer->RestoreState();
 	}
-	if (m_current_primitive_type != PRIMITIVE_TRIANGLES)
+	if (m_current_primitive_type != PrimitiveType::Triangles)
 	{
 		D3D::RefreshRenderState(D3DRS_CULLMODE);
 	}

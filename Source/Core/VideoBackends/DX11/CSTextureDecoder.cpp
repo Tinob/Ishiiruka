@@ -401,7 +401,8 @@ void CSTextureDecoder::Init()
 	// Warm up with shader cache
 	char cache_filename[MAX_PATH];
 	sprintf(cache_filename, "%sdx11-CSDECODER-cs.cache", File::GetUserPath(D_SHADERCACHE_IDX).c_str());
-	m_shaderCache.OpenAndRead(cache_filename, ShaderCacheInserter(*this));
+	ShaderCacheInserter inserter(*this);
+	m_shaderCache.OpenAndRead(cache_filename, inserter);
 }
 
 void CSTextureDecoder::Shutdown()
@@ -506,7 +507,7 @@ bool CSTextureDecoder::SetStaticShader(u32 srcFmt, u32 lutFmt)
 		{ nullptr, nullptr }
 	};
 
-	D3DBlob bytecode = nullptr;
+	D3DBlob bytecode;
 	if (!D3D::CompileShader(D3D::ShaderType::Compute, DECODER_CS, bytecode, macros))
 	{
 		WARN_LOG(VIDEO, "Unable to compile compute shader");

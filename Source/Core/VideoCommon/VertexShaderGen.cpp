@@ -17,7 +17,6 @@
 #include "VideoCommon/VertexShaderGen.h"
 #include "VideoCommon/VideoConfig.h"
 
-static char text[VERTEXSHADERGEN_BUFFERSIZE];
 static const char *texOffsetMemberSelector[] = { "x", "y", "z", "w" };
 
 void GetVertexShaderUID(VertexShaderUid& out, u32 components, const XFMemory &xfr, const BPMemory &bpm)
@@ -33,16 +32,11 @@ void GetVertexShaderUID(VertexShaderUid& out, u32 components, const XFMemory &xf
 	for (unsigned int i = 0; i < uid_data.numTexGens; ++i)
 	{
 		const TexMtxInfo& texinfo = xfr.texMtxInfo[i];
-		needLightShader = needLightShader || texinfo.texgentype == XF_TEXGEN_COLOR_STRGBC0 || texinfo.texgentype == XF_TEXGEN_COLOR_STRGBC1;
+		needLightShader = needLightShader || texinfo.texgentype.Value() == XF_TEXGEN_COLOR_STRGBC0 || texinfo.texgentype.Value() == XF_TEXGEN_COLOR_STRGBC1;
 	}
 	uid_data.pixel_lighting = enable_pl;
 	uid_data.numColorChans = xfr.numChan.numColorChans;
 
-	if ((g_ActiveConfig.backend_info.APIType & API_D3D9) == 0)
-	{
-		uid_data.msaa = g_ActiveConfig.iMultisamples > 1;
-		uid_data.ssaa = g_ActiveConfig.iMultisamples > 1 && g_ActiveConfig.bSSAA;
-	}
 	if (needLightShader)
 		GetLightingShaderUid(uid_data.lighting, xfr);
 	// transform texcoords
@@ -50,9 +44,9 @@ void GetVertexShaderUID(VertexShaderUid& out, u32 components, const XFMemory &xf
 	{
 		auto& texinfo = uid_data.texMtxInfo[i];
 
-		texinfo.sourcerow = xfr.texMtxInfo[i].sourcerow;
-		texinfo.inputform = xfr.texMtxInfo[i].inputform;
-		texinfo.texgentype = xfr.texMtxInfo[i].texgentype;
+		texinfo.sourcerow = xfr.texMtxInfo[i].sourcerow.Value();
+		texinfo.inputform = xfr.texMtxInfo[i].inputform.Value();
+		texinfo.texgentype = xfr.texMtxInfo[i].texgentype.Value();
 		// first transformation
 		switch (texinfo.texgentype)
 		{
@@ -60,8 +54,8 @@ void GetVertexShaderUID(VertexShaderUid& out, u32 components, const XFMemory &xf
 			if (uid_data.components & (VB_HAS_NRM1 | VB_HAS_NRM2))
 			{
 				// transform the light dir into tangent space
-				texinfo.embosslightshift = xfr.texMtxInfo[i].embosslightshift;
-				texinfo.embosssourceshift = xfr.texMtxInfo[i].embosssourceshift;
+				texinfo.embosslightshift = xfr.texMtxInfo[i].embosslightshift.Value();
+				texinfo.embosssourceshift = xfr.texMtxInfo[i].embosssourceshift.Value();
 			}
 			break;
 		case XF_TEXGEN_COLOR_STRGBC0:
@@ -70,7 +64,7 @@ void GetVertexShaderUID(VertexShaderUid& out, u32 components, const XFMemory &xf
 			break;
 		case XF_TEXGEN_REGULAR:
 		default:
-			uid_data.texMtxInfo_n_projection |= xfr.texMtxInfo[i].projection << i;
+			uid_data.texMtxInfo_n_projection |= xfr.texMtxInfo[i].projection.Value() << i;
 			break;
 		}
 
@@ -79,23 +73,15 @@ void GetVertexShaderUID(VertexShaderUid& out, u32 components, const XFMemory &xf
 		if (uid_data.dualTexTrans_enabled && texinfo.texgentype == XF_TEXGEN_REGULAR)
 		{
 			auto& postInfo = uid_data.postMtxInfo[i];
-			postInfo.index = xfr.postMtxInfo[i].index;
-			postInfo.normalize = xfr.postMtxInfo[i].normalize;
+			postInfo.index = xfr.postMtxInfo[i].index.Value();
+			postInfo.normalize = xfr.postMtxInfo[i].normalize.Value();
 		}
 	}
 	out.CalculateUIDHash();
 }
 
-template<API_TYPE api_type>
-inline void GenerateVertexShader(ShaderCode& out, const vertex_shader_uid_data& uid_data, bool use_integer_math)
+inline void GenerateVertexShader(ShaderCode& out, API_TYPE api_type, const vertex_shader_uid_data& uid_data, bool use_integer_math, const ShaderHostConfig& hostconfig)
 {
-	char * buffer = nullptr;
-	buffer = out.GetBuffer();
-	if (buffer == nullptr)
-	{
-		buffer = text;
-		out.SetBuffer(text);
-	}
 	const u32 components = uid_data.components;
 	bool lightingEnabled = uid_data.numColorChans > 0;
 	bool needLightShader = lightingEnabled && !uid_data.pixel_lighting;
@@ -104,30 +90,29 @@ inline void GenerateVertexShader(ShaderCode& out, const vertex_shader_uid_data& 
 		const auto& texinfo = uid_data.texMtxInfo[i];
 		needLightShader = needLightShader || texinfo.texgentype == XF_TEXGEN_COLOR_STRGBC0 || texinfo.texgentype == XF_TEXGEN_COLOR_STRGBC1;
 	}
-	buffer[VERTEXSHADERGEN_BUFFERSIZE - 1] = 0x7C;  // canary
-																	// uniforms
+	// uniforms
 	if (api_type == API_OPENGL || api_type == API_VULKAN)
-		out.Write("UBO_BINDING(std140, 2) uniform VSBlock {\n", g_ActiveConfig.backend_info.bSupportsBindingLayout ? ", binding = 2" : "");
+		out.Write("UBO_BINDING(std140, 2) uniform VSBlock {\n");
 	else if (api_type == API_D3D11)
 		out.Write("cbuffer VSBlock : register(b0) {\n");
 
-	DeclareUniform<api_type>(out, C_PROJECTION, "float4", I_PROJECTION"[4]");
-	DeclareUniform<api_type>(out, C_DEPTHPARAMS, "float4", I_DEPTHPARAMS);
-	DeclareUniform<api_type>(out, C_VIEWPARAMS, "float4", I_VIEWPARAMS);
-	DeclareUniform<api_type>(out, C_MATERIALS, "float4", I_MATERIALS"[4]");
-	DeclareUniform<api_type>(out, C_LIGHTS, "float4", I_LIGHTS"[40]");
-	DeclareUniform<api_type>(out, C_PHONG, "float4", I_PHONG"[2]");
-	DeclareUniform<api_type>(out, C_TEXMATRICES, "float4", I_TEXMATRICES"[24]");
-	DeclareUniform<api_type>(out, C_TRANSFORMMATRICES, "float4", I_TRANSFORMMATRICES"[64]");
-	DeclareUniform<api_type>(out, C_NORMALMATRICES, "float4", I_NORMALMATRICES"[32]");
-	DeclareUniform<api_type>(out, C_POSTTRANSFORMMATRICES, "float4", I_POSTTRANSFORMMATRICES"[64]");
-	DeclareUniform<api_type>(out, C_PLOFFSETPARAMS, "float4", I_PLOFFSETPARAMS"[13]");
+	DeclareUniform(out, api_type, C_PROJECTION, "float4", I_PROJECTION"[4]");
+	DeclareUniform(out, api_type, C_DEPTHPARAMS, "float4", I_DEPTHPARAMS);
+	DeclareUniform(out, api_type, C_VIEWPARAMS, "float4", I_VIEWPARAMS);
+	DeclareUniform(out, api_type, C_MATERIALS, "float4", I_MATERIALS"[4]");
+	DeclareUniform(out, api_type, C_LIGHTS, "float4", I_LIGHTS"[40]");
+	DeclareUniform(out, api_type, C_PHONG, "float4", I_PHONG"[2]");
+	DeclareUniform(out, api_type, C_TEXMATRICES, "float4", I_TEXMATRICES"[24]");
+	DeclareUniform(out, api_type, C_TRANSFORMMATRICES, "float4", I_TRANSFORMMATRICES"[64]");
+	DeclareUniform(out, api_type, C_NORMALMATRICES, "float4", I_NORMALMATRICES"[32]");
+	DeclareUniform(out, api_type, C_POSTTRANSFORMMATRICES, "float4", I_POSTTRANSFORMMATRICES"[64]");
+	DeclareUniform(out, api_type, C_PLOFFSETPARAMS, "float4", I_PLOFFSETPARAMS"[13]");
 
-	if (!(api_type == API_D3D9))
+	if ((api_type & API_D3D9) == 0)
 		out.Write("};\n");
 
 	out.Write("struct VS_OUTPUT {\n");
-	GenerateVSOutputMembers<api_type>(out, uid_data.pixel_lighting, uid_data.numTexGens);
+	GenerateVSOutputMembers(out, api_type, uid_data.pixel_lighting, uid_data.numTexGens);
 	out.Write("};\n");
 
 	if (api_type == API_OPENGL || api_type == API_VULKAN)
@@ -142,35 +127,35 @@ inline void GenerateVertexShader(ShaderCode& out, const vertex_shader_uid_data& 
 			out.Write("ATTRIBUTE_LOCATION(%d) in float3 rawnorm2;\n", SHADER_NORM2_ATTRIB);
 
 		if (components & VB_HAS_COL0)
-			out.Write("ATTRIBUTE_LOCATION(%d) in float4 color0;\n", SHADER_COLOR0_ATTRIB);
+			out.Write("ATTRIBUTE_LOCATION(%d) in float4 rawcolor0;\n", SHADER_COLOR0_ATTRIB);
 		if (components & VB_HAS_COL1)
-			out.Write("ATTRIBUTE_LOCATION(%d) in float4 color1;\n", SHADER_COLOR1_ATTRIB);
+			out.Write("ATTRIBUTE_LOCATION(%d) in float4 rawcolor1;\n", SHADER_COLOR1_ATTRIB);
 
 		for (int i = 0; i < 8; ++i)
 		{
 			u32 hastexmtx = (components & (VB_HAS_TEXMTXIDX0 << i));
 			if ((components & (VB_HAS_UV0 << i)) || hastexmtx)
-				out.Write("ATTRIBUTE_LOCATION(%d) in float%d tex%d;\n", SHADER_TEXTURE0_ATTRIB + i, hastexmtx ? 3 : 2, i);
+				out.Write("ATTRIBUTE_LOCATION(%d) in float%d rawtex%d;\n", SHADER_TEXTURE0_ATTRIB + i, hastexmtx ? 3 : 2, i);
 		}
 
-		if (g_ActiveConfig.backend_info.bSupportsGeometryShaders || api_type == API_VULKAN)
+		if (hostconfig.backend_geometry_shaders || api_type == API_VULKAN)
 		{
 			out.Write("VARYING_LOCATION(0) out VertexData {\n");
-			GenerateVSOutputMembers<api_type>(out, uid_data.pixel_lighting, uid_data.numTexGens, GetInterpolationQualifier(api_type, uid_data.msaa, uid_data.ssaa, false, true));
+			GenerateVSOutputMembers(out, api_type, uid_data.pixel_lighting, uid_data.numTexGens, GetInterpolationQualifier(api_type, hostconfig.msaa, hostconfig.ssaa, false, true));
 			out.Write("} vs;\n");
 		}
 		else
 		{
-			const char* optCentroid = GetInterpolationQualifier(api_type, uid_data.msaa, uid_data.ssaa);
+			const char* optCentroid = GetInterpolationQualifier(api_type, hostconfig.msaa, hostconfig.ssaa);
 
 			// Let's set up attributes
 			if (uid_data.numTexGens < 7)
 			{
 				for (int i = 0; i < 8; ++i)
-					out.Write("%s out float3 uv%d_2;\n", optCentroid, i);
-				out.Write("%s out float4 clipPos_2;\n", optCentroid);
+					out.Write("%s out float3 tex%d;\n", optCentroid, i);
+				out.Write("%s out float4 clipPos;\n", optCentroid);
 				if (uid_data.pixel_lighting)
-					out.Write("%s out float4 Normal_2;\n", optCentroid);
+					out.Write("%s out float4 Normal;\n", optCentroid);
 			}
 			else
 			{
@@ -178,12 +163,12 @@ inline void GenerateVertexShader(ShaderCode& out, const vertex_shader_uid_data& 
 				if (uid_data.pixel_lighting)
 				{
 					for (int i = 0; i < 8; ++i)
-						out.Write("%s out float4 uv%d_2;\n", optCentroid, i);
+						out.Write("%s out float4 tex%d;\n", optCentroid, i);
 				}
 				else
 				{
 					for (unsigned int i = 0; i < uid_data.numTexGens; ++i)
-						out.Write("%s out float%d uv%d_2;\n", optCentroid, i < 4 ? 4 : 3, i);
+						out.Write("%s out float%d tex%d;\n", optCentroid, i < 4 ? 4 : 3, i);
 				}
 			}
 			out.Write("%s out float4 colors_0;\n", optCentroid);
@@ -204,14 +189,14 @@ inline void GenerateVertexShader(ShaderCode& out, const vertex_shader_uid_data& 
 		if (components & VB_HAS_NRM2)
 			out.Write("  float3 rawnorm2 : NORMAL2,\n");
 		if (components & VB_HAS_COL0)
-			out.Write("  float4 color0 : COLOR0,\n");
+			out.Write("  float4 rawcolor0 : COLOR0,\n");
 		if (components & VB_HAS_COL1)
-			out.Write("  float4 color1 : COLOR1,\n");
+			out.Write("  float4 rawcolor1 : COLOR1,\n");
 		for (int i = 0; i < 8; ++i)
 		{
 			u32 hastexmtx = (components & (VB_HAS_TEXMTXIDX0 << i));
 			if ((components & (VB_HAS_UV0 << i)) || hastexmtx)
-				out.Write("  float%d tex%d : TEXCOORD%d,\n", hastexmtx ? 3 : 2, i, i);
+				out.Write("  float%d rawtex%d : TEXCOORD%d,\n", hastexmtx ? 3 : 2, i, i);
 		}
 		out.Write("  float4 blend_indices : BLENDINDICES,\n");
 
@@ -270,22 +255,22 @@ inline void GenerateVertexShader(ShaderCode& out, const vertex_shader_uid_data& 
 	if (!lightingEnabled)
 	{
 		if (components & VB_HAS_COL0)
-			out.Write("o.colors_0 = color0;\n");
+			out.Write("o.colors_0 = rawcolor0;\n");
 		else
 			out.Write("o.colors_0 = float4(1.0, 1.0, 1.0, 1.0);\n");
 
 		if (components & VB_HAS_COL1)
-			out.Write("o.colors_1 = color1;\n");
+			out.Write("o.colors_1 = rawcolor1;\n");
 		else
 			out.Write("o.colors_1 = o.colors_0;\n");
 	}
 	if (needLightShader)
-		GenerateLightingShaderCode(out, uid_data.numColorChans, uid_data.lighting, components, I_MATERIALS, I_LIGHTS, "color", "o.colors_", use_integer_math);
+		GenerateLightingShaderCode(out, uid_data.numColorChans, uid_data.lighting, components, I_MATERIALS, I_LIGHTS, "rawcolor", "o.colors_", use_integer_math);
 
 	if (uid_data.numColorChans < 2 && needLightShader)
 	{
 		if (components & VB_HAS_COL1)
-			out.Write("o.colors_1 = color1;\n");
+			out.Write("o.colors_1 = rawcolor1;\n");
 		else
 			out.Write("o.colors_1 = o.colors_0;\n");
 	}
@@ -310,7 +295,6 @@ inline void GenerateVertexShader(ShaderCode& out, const vertex_shader_uid_data& 
 			}
 			break;
 		case XF_SRCCOLORS_INROW:
-			_dbg_assert_log_(VIDEO, texinfo.texgentype == XF_TEXGEN_COLOR_STRGBC0 || texinfo.texgentype == XF_TEXGEN_COLOR_STRGBC1, "texgentype missmatch: %u", texinfo.texgentype);
 			break;
 		case XF_SRCBINORMAL_T_INROW:
 			if (components & VB_HAS_NRM1)
@@ -325,9 +309,8 @@ inline void GenerateVertexShader(ShaderCode& out, const vertex_shader_uid_data& 
 			}
 			break;
 		default:
-			_dbg_assert_log_(VIDEO, texinfo.sourcerow <= XF_SRCTEX7_INROW, "sourcerow missmatch: %u", texinfo.sourcerow);
 			if (components & (VB_HAS_UV0 << (texinfo.sourcerow - XF_SRCTEX0_INROW)))
-				out.Write("coord.xy = tex%d.xy;\n", texinfo.sourcerow - XF_SRCTEX0_INROW);
+				out.Write("coord.xy = rawtex%d.xy;\n", texinfo.sourcerow - XF_SRCTEX0_INROW);
 			break;
 		}
 		// An input form other than ABC1 or AB11 doesn't exist
@@ -368,7 +351,7 @@ inline void GenerateVertexShader(ShaderCode& out, const vertex_shader_uid_data& 
 		{
 			if (components & (VB_HAS_TEXMTXIDX0 << i))
 			{
-				out.Write("int tmp = int(tex%d.z);\n", i);
+				out.Write("int tmp = int(rawtex%d.z);\n", i);
 				if (((uid_data.texMtxInfo_n_projection >> i) & 1) == XF_TEXPROJ_STQ)
 					out.Write("o.tex%d.xyz = float3(dot(coord, " I_TRANSFORMMATRICES"[tmp]), dot(coord, " I_TRANSFORMMATRICES"[tmp+1]), dot(coord, " I_TRANSFORMMATRICES"[tmp+2]));\n", i);
 				else
@@ -419,7 +402,7 @@ inline void GenerateVertexShader(ShaderCode& out, const vertex_shader_uid_data& 
 	// clipPos/w needs to be done in pixel shader, not here
 	if (uid_data.numTexGens < 7)
 	{
-		out.Write("o.clipPos%s = float4(pos.x,pos.y,o.pos.z,o.pos.w);\n", (api_type == API_OPENGL || api_type == API_VULKAN) ? "_2" : "");
+		out.Write("o.clipPos = float4(pos.x,pos.y,o.pos.z,o.pos.w);\n");
 	}
 	else
 	{
@@ -433,7 +416,7 @@ inline void GenerateVertexShader(ShaderCode& out, const vertex_shader_uid_data& 
 	{
 		if (uid_data.numTexGens < 7)
 		{
-			out.Write("o.Normal%s = float4(_norm0.x,_norm0.y,_norm0.z,pos.z);\n", (api_type == API_OPENGL || api_type == API_VULKAN) ? "_2" : "");
+			out.Write("o.Normal = float4(_norm0.x,_norm0.y,_norm0.z,pos.z);\n");
 		}
 		else
 		{
@@ -447,12 +430,12 @@ inline void GenerateVertexShader(ShaderCode& out, const vertex_shader_uid_data& 
 		}
 
 		if (components & VB_HAS_COL0)
-			out.Write("o.colors_0 = color0;\n");
+			out.Write("o.colors_0 = rawcolor0;\n");
 		else
 			out.Write("o.colors_0 = float4(1.0, 1.0, 1.0, 1.0);\n");
 
 		if (components & VB_HAS_COL1)
-			out.Write("o.colors_1 = color1;\n");
+			out.Write("o.colors_1 = rawcolor1;\n");
 		else
 			out.Write("o.colors_1 = o.colors_0;\n");
 	}
@@ -460,7 +443,7 @@ inline void GenerateVertexShader(ShaderCode& out, const vertex_shader_uid_data& 
 	// If we can disable the incorrect depth clipping planes using depth clamping, then we can do
 	// our own depth clipping and calculate the depth range before the perspective divide if
 	// necessary.
-	if (g_ActiveConfig.backend_info.bSupportsDepthClamp)
+	if (hostconfig.backend_depth_clamp)
 	{
 		// If we can disable the incorrect depth clipping planes using depth clamping, then we can do
 		// our own depth clipping and calculate the depth range before the perspective divide.
@@ -480,7 +463,7 @@ inline void GenerateVertexShader(ShaderCode& out, const vertex_shader_uid_data& 
 	// This methods are handled by the values of the depthparams
 	out.Write("o.pos.z = o.pos.w * " I_DEPTHPARAMS ".x - o.pos.z * " I_DEPTHPARAMS ".y;\n");
 
-	if (!g_ActiveConfig.backend_info.bSupportsClipControl)
+	if (!hostconfig.backend_clip_control)
 	{
 		// If the graphics API doesn't support a depth range of 0..1, then we need to map z to
 		// the -1..1 range. Unfortunately we have to use a substraction, which is a lossy floating-point
@@ -524,9 +507,9 @@ inline void GenerateVertexShader(ShaderCode& out, const vertex_shader_uid_data& 
 
 	if (api_type == API_OPENGL || api_type == API_VULKAN)
 	{
-		if (g_ActiveConfig.backend_info.bSupportsGeometryShaders || api_type == API_VULKAN)
+		if (hostconfig.backend_geometry_shaders || api_type == API_VULKAN)
 		{
-			AssignVSOutputMembers<api_type>(out, "vs", "o", uid_data.pixel_lighting, uid_data.numTexGens);
+			AssignVSOutputMembers(out, api_type, "vs", "o", uid_data.pixel_lighting, uid_data.numTexGens);
 		}
 		else
 		{
@@ -535,13 +518,13 @@ inline void GenerateVertexShader(ShaderCode& out, const vertex_shader_uid_data& 
 				for (unsigned int i = 0; i < 8; ++i)
 				{
 					if (i < uid_data.numTexGens)
-						out.Write(" uv%d_2.xyz =  o.tex%d;\n", i, i);
+						out.Write(" tex%d.xyz =  o.tex%d;\n", i, i);
 					else
-						out.Write(" uv%d_2.xyz =  float3(0.0, 0.0, 0.0);\n", i);
+						out.Write(" tex%d.xyz =  float3(0.0, 0.0, 0.0);\n", i);
 				}
-				out.Write("  clipPos_2 = o.clipPos_2;\n");
+				out.Write("  clipPos = o.clipPos;\n");
 				if (uid_data.pixel_lighting)
-					out.Write("  Normal_2 = o.Normal_2;\n");
+					out.Write("  Normal = o.Normal;\n");
 			}
 			else
 			{
@@ -549,18 +532,18 @@ inline void GenerateVertexShader(ShaderCode& out, const vertex_shader_uid_data& 
 				if (uid_data.pixel_lighting)
 				{
 					for (int i = 0; i < 8; ++i)
-						out.Write(" uv%d_2 = o.tex%d;\n", i, i);
+						out.Write(" tex%d = o.tex%d;\n", i, i);
 				}
 				else
 				{
 					for (unsigned int i = 0; i < uid_data.numTexGens; ++i)
-						out.Write("  uv%d_2%s = o.tex%d;\n", i, i < 4 ? ".xyzw" : ".xyz", i);
+						out.Write("  tex%d%s = o.tex%d;\n", i, i < 4 ? ".xyzw" : ".xyz", i);
 				}
 			}
 			out.Write("colors_0 = o.colors_0;\n");
 			out.Write("colors_1 = o.colors_1;\n");
 		}
-		if (g_ActiveConfig.backend_info.bSupportsDepthClamp)
+		if (hostconfig.backend_depth_clamp)
 		{
 			out.Write("gl_ClipDistance[0] = o.clipDist.x;\n");
 			out.Write("gl_ClipDistance[1] = o.clipDist.y;\n");
@@ -576,27 +559,9 @@ inline void GenerateVertexShader(ShaderCode& out, const vertex_shader_uid_data& 
 	{
 		out.Write("return o;\n}\n");
 	}
-
-	if (buffer[VERTEXSHADERGEN_BUFFERSIZE - 1] != 0x7C)
-		PanicAlert("VertexShader generator - buffer too small, canary has been eaten!");
 }
 
-void GenerateVertexShaderCodeD3D9(ShaderCode& object, const vertex_shader_uid_data& uid_data)
+void GenerateVertexShaderCode(ShaderCode& object, const vertex_shader_uid_data& uid_data, const ShaderHostConfig& hostconfig)
 {
-	GenerateVertexShader<API_D3D9>(object, uid_data, false);
-}
-
-void GenerateVertexShaderCodeD3D11(ShaderCode& object, const vertex_shader_uid_data& uid_data)
-{
-	GenerateVertexShader<API_D3D11>(object, uid_data, true);
-}
-
-void GenerateVertexShaderCodeGL(ShaderCode& object, const vertex_shader_uid_data& uid_data)
-{
-	GenerateVertexShader<API_OPENGL>(object, uid_data, true);
-}
-
-void GenerateVertexShaderCodeVulkan(ShaderCode& object, const vertex_shader_uid_data& uid_data)
-{
-	GenerateVertexShader<API_VULKAN>(object, uid_data, true);
+	GenerateVertexShader(object, g_ActiveConfig.backend_info.APIType, uid_data, false, hostconfig);
 }

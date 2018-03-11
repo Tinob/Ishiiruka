@@ -19,11 +19,12 @@ PerfQuery::PerfQuery()
 {
 	D3D12_QUERY_HEAP_DESC desc = { D3D12_QUERY_HEAP_TYPE_OCCLUSION, PERF_QUERY_BUFFER_SIZE, 0 };
 	CheckHR(D3D::device->CreateQueryHeap(&desc, IID_PPV_ARGS(m_query_heap.ReleaseAndGetAddressOf())));
-
+	CD3DX12_HEAP_PROPERTIES hprops(D3D12_HEAP_TYPE_READBACK);
+	CD3DX12_RESOURCE_DESC rdesc = CD3DX12_RESOURCE_DESC::Buffer(QUERY_READBACK_BUFFER_SIZE);
 	CheckHR(D3D::device->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK),
+		&hprops,
 		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Buffer(QUERY_READBACK_BUFFER_SIZE),
+		&rdesc,
 		D3D12_RESOURCE_STATE_COPY_DEST,
 		nullptr,
 		IID_PPV_ARGS(m_query_readback_buffer.ReleaseAndGetAddressOf())));
@@ -88,7 +89,7 @@ void PerfQuery::EndQuery()
 
 		D3D::current_command_list->EndQuery(m_query_heap.Get(), D3D12_QUERY_TYPE_OCCLUSION, static_cast<UINT>(index));
 		D3D::current_command_list->ResolveQueryData(m_query_heap.Get(), D3D12_QUERY_TYPE_OCCLUSION, static_cast<UINT>(index), 1, m_query_readback_buffer.Get(), index * sizeof(UINT64));
-		entry.fence_value = m_next_fence_value;		
+		entry.fence_value = m_next_fence_value;
 	}
 	m_query_enabled = false;
 }

@@ -77,12 +77,6 @@
     <ClCompile Include="XFStructs.cpp">
       <Filter>Register Sections</Filter>
     </ClCompile>
-    <ClCompile Include="OpenCL.cpp">
-      <Filter>Decoding\OpenCL</Filter>
-    </ClCompile>
-    <ClCompile Include="OpenCL\OCLTextureDecoder.cpp">
-      <Filter>Decoding\OpenCL</Filter>
-    </ClCompile>
     <ClCompile Include="Fifo.cpp">
       <Filter>Decoding</Filter>
     </ClCompile>
@@ -222,6 +216,24 @@
     <ClCompile Include="TessellationShaderManager.cpp">
       <Filter>Shader Managers</Filter>
     </ClCompile>
+    <ClCompile Include="HostTexture.cpp">
+      <Filter>Base</Filter>
+    </ClCompile>
+    <ClCompile Include="UberShaderCommon.cpp">
+      <Filter>Shader Generators</Filter>
+    </ClCompile>
+    <ClCompile Include="UberShaderPixel.cpp">
+      <Filter>Shader Generators</Filter>
+    </ClCompile>
+    <ClCompile Include="UberShaderVertex.cpp">
+      <Filter>Shader Generators</Filter>
+    </ClCompile>
+    <ClCompile Include="ShaderGenCommon.cpp">
+      <Filter>Shader Generators</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderState.cpp">
+      <Filter>Base</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommandProcessor.h" />
@@ -307,12 +319,6 @@
     </ClInclude>
     <ClInclude Include="XFStructs.h">
       <Filter>Register Sections</Filter>
-    </ClInclude>
-    <ClInclude Include="OpenCL.h">
-      <Filter>Decoding\OpenCL</Filter>
-    </ClInclude>
-    <ClInclude Include="OpenCL\OCLTextureDecoder.h">
-      <Filter>Decoding\OpenCL</Filter>
     </ClInclude>
     <ClInclude Include="Fifo.h">
       <Filter>Decoding</Filter>
@@ -476,6 +482,24 @@
     </ClInclude>
     <ClInclude Include="ObjectUsageProfiler.h">
       <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureConfig.h">
+      <Filter>Base</Filter>
+    </ClInclude>
+    <ClInclude Include="HostTexture.h">
+      <Filter>Base</Filter>
+    </ClInclude>
+    <ClInclude Include="UberShaderCommon.h">
+      <Filter>Shader Generators</Filter>
+    </ClInclude>
+    <ClInclude Include="UberShaderPixel.h">
+      <Filter>Shader Generators</Filter>
+    </ClInclude>
+    <ClInclude Include="UberShaderVertex.h">
+      <Filter>Shader Generators</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderState.h">
+      <Filter>Base</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

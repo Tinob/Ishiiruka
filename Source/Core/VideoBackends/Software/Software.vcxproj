@@ -12,6 +12,7 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{9E9DA440-E9AD-413C-B648-91030E792211}</ProjectGuid>
+    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Configuration">
@@ -44,6 +45,7 @@
     <ClCompile Include="SWmain.cpp" />
     <ClCompile Include="SWOGLWindow.cpp" />
     <ClCompile Include="SWRenderer.cpp" />
+    <ClCompile Include="SWTexture.cpp" />
     <ClCompile Include="SWVertexLoader.cpp" />
     <ClCompile Include="Tev.cpp" />
     <ClCompile Include="TextureEncoder.cpp" />
@@ -60,6 +62,7 @@
     <ClInclude Include="SetupUnit.h" />
     <ClInclude Include="SWOGLWindow.h" />
     <ClInclude Include="SWRenderer.h" />
+    <ClInclude Include="SWTexture.h" />
     <ClInclude Include="SWVertexLoader.h" />
     <ClInclude Include="Tev.h" />
     <ClInclude Include="TextureEncoder.h" />

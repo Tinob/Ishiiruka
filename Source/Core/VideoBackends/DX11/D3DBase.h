@@ -6,7 +6,7 @@
 
 #include <d3d11_2.h>
 #include <d3dcompiler.h>
-#include <dxgi.h>
+#include <dxgi1_5.h>
 #include <vector>
 
 #include "Common/Common.h"

@@ -155,7 +155,7 @@ struct UniquePtr
 		return p.m_ptr == nullptr;
 	}
 private:
-	T* m_ptr{};
+	T * m_ptr{};
 };
 
 // Alias to UniquePtr of most of the D3D object 

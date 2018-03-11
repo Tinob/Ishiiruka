@@ -104,7 +104,7 @@ bool CompileShader(
 		{
 			PanicAlert("Failed to compile shader: %s\nDebug info (%s):\n%s",
 				filename.c_str(),
-				profile,
+				profile.c_str(),
 				(char*)errorBuffer->GetBufferPointer());
 		}
 		*blob = nullptr;

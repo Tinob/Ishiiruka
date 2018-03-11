@@ -22,7 +22,7 @@ constexpr bool IsBpTexMode0PointFilteringEnabled(const T& tm0)
 
 // Check if the minification filter is not using mipmaps.
 template<class T>
-constexpr bool IsBpTexMode0MipmapsEnabled(const T& tm0)
+constexpr bool AreBpTexMode0MipmapsEnabled(const T& tm0)
 {
 	return (tm0.min_filter & 3) != 0;
 }

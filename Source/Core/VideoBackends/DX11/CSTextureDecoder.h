@@ -85,7 +85,7 @@ private:
 		ShaderCacheInserter(CSTextureDecoder &encoder) : m_encoder(encoder)
 		{}
 	private:
-		CSTextureDecoder& m_encoder;
+		CSTextureDecoder & m_encoder;
 	};
 	friend ShaderCacheInserter;
 

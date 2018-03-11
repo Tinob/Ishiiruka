@@ -7,6 +7,10 @@
 
 #include "ImageLoader.h"
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable : 4611)
+#endif
 
 static void PNGErrorFn(png_structp png_ptr, png_const_charp error_message)
 {
@@ -86,3 +90,7 @@ bool ImageLoader::ReadPNG(ImageLoaderParams &ImgInfo)
 	png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
 	return true;
 }
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif

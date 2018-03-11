@@ -29,6 +29,7 @@
 
 #include "VideoCommon/BPMemory.h"
 #include "VideoCommon/FPSCounter.h"
+#include "VideoCommon/RenderState.h"
 #include "VideoCommon/VideoBackendBase.h"
 #include "VideoCommon/VideoCommon.h"
 
@@ -65,19 +66,17 @@ public:
 		PP_EFB_COPY_CLOCKS
 	};
 
-	virtual void SetColorMask()	{}
-	virtual void SetBlendMode(bool forceUpdate)	{}
-	virtual void SetScissorRect(const EFBRectangle& rc)	{}
-	virtual void SetGenerationMode() {}
-	virtual void SetDepthMode()	{}
-	virtual void SetLogicOpMode() {}
-	virtual void SetSamplerState(int stage, int texindex, bool custom_tex) {}
+	virtual void SetBlendingState(const BlendingState& state) {}
+	virtual void SetScissorRect(const EFBRectangle& rc) {}
+	virtual void SetRasterizationState(const RasterizationState& state) {}
+	virtual void SetDepthState(const DepthState& state) {}
+	virtual void SetSamplerState(u32 index, const SamplerState& state) {}
 	virtual void SetInterlacingMode() {}
 	virtual void SetViewport() {}
 	virtual void SetFullscreen(bool enable_fullscreen) {}
 	virtual bool IsFullscreen() const { return false; }
 	virtual void ApplyState(bool bUseDstAlpha) {}
-	virtual void RestoreState()	{}
+	virtual void RestoreState() {}
 	virtual void ResetAPIState() {}
 	virtual void RestoreAPIState() {}
 
@@ -87,7 +86,7 @@ public:
 	// Display resolution
 	int GetBackbufferWidth() const { return m_backbuffer_width; }
 	int GetBackbufferHeight() const { return m_backbuffer_height; }
-	void SetWindowSize(int width, int height);
+	void SetWindowSize(u32 width, u32 height);
 
 	// EFB coordinate conversion functions
 
@@ -104,8 +103,8 @@ public:
 		m_window_rectangle.top = top;
 		m_window_rectangle.bottom = bottom;
 	}
-	float CalculateDrawAspectRatio(int target_width, int target_height) const;
-	std::tuple<float, float> ScaleToDisplayAspectRatio(int width, int height) const;
+	float CalculateDrawAspectRatio(u32 target_width, u32 target_height) const;
+	std::tuple<float, float> ScaleToDisplayAspectRatio(u32 width, u32 height) const;
 	TargetRectangle CalculateFrameDumpDrawRectangle();
 	void UpdateDrawRectangle();
 
@@ -122,7 +121,7 @@ public:
 	// Floating point versions of the above - only use them if really necessary
 	float EFBToScaledXf(float x) const;
 	float EFBToScaledYf(float y) const;
-
+	float GetEFBScale() const;
 	// Random utilities
 	void SaveScreenshot(const std::string& filename, bool wait_for_completion);
 	void DrawDebugText();
@@ -154,6 +153,7 @@ protected:
 	std::tuple<int, int> CalculateTargetScale(int x, int y) const;
 	bool CalculateTargetSize(int multiplier = 1);
 
+	bool CheckForHostConfigChanges();
 	static void CheckFifoRecording();
 	static void RecordVideoMemory();
 
@@ -170,6 +170,7 @@ protected:
 	// The framebuffer size
 	int m_target_width = 0;
 	int m_target_height = 0;
+	float m_efb_scale = 1.0;
 
 	// TODO: Add functionality to reinit all the render targets when the window is resized.
 	int m_backbuffer_width = 0;
@@ -180,7 +181,8 @@ protected:
 	bool m_xfb_written{};
 
 	FPSCounter m_fps_counter;
-
+	u32 m_last_host_config_bits = 0;
+	bool m_last_uber_shader_enabled = false;
 	std::unique_ptr<PostProcessor> m_post_processor;
 
 	static const float GX_MAX_DEPTH;
@@ -192,15 +194,15 @@ private:
 	void RunFrameDumps();
 	void ShutdownFrameDumping();
 	PEControl::PixelFormat m_prev_efb_format = PEControl::INVALID_FMT;
-	unsigned int m_efb_scale_numeratorX = 1;
-	unsigned int m_efb_scale_numeratorY = 1;
-	unsigned int m_efb_scale_denominatorX = 1;
-	unsigned int m_efb_scale_denominatorY = 1;
-	unsigned int m_ssaa_multiplier = 1;
+	u32 m_efb_scale_numeratorX = 1;
+	u32 m_efb_scale_numeratorY = 1;
+	u32 m_efb_scale_denominatorX = 1;
+	u32 m_efb_scale_denominatorY = 1;
+	u32 m_ssaa_multiplier = 1;
 
 	// These will be set on the first call to SetWindowSize.
-	int m_last_window_request_width = 0;
-	int m_last_window_request_height = 0;
+	u32 m_last_window_request_width = 0;
+	u32 m_last_window_request_height = 0;
 
 	// frame dumping
 	std::thread m_frame_dump_thread;

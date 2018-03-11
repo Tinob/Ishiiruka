@@ -29,7 +29,7 @@ public:
 	void DecodeToTexture(D3DTexture2D* dst_texture, const u8* src, u32 src_width, u32 src_height);
 
 private:
-	D3DTexture2D* m_yuyv_texture;
+	D3DTexture2D * m_yuyv_texture;
 
 	ID3D12Resource* m_readback_buffer;
 

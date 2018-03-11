@@ -20,6 +20,7 @@
 #include "VideoBackends/Software/SWOGLWindow.h"
 #include "VideoBackends/Software/SWRenderer.h"
 #include "VideoBackends/Software/SWVertexLoader.h"
+#include "VideoBackends/Software/SWTexture.h"
 #include "VideoBackends/Software/VideoBackend.h"
 
 #include "VideoCommon/BPStructs.h"
@@ -41,7 +42,7 @@
 namespace SW
 {
 
-class PerfQuery: public PerfQueryBase
+class PerfQuery : public PerfQueryBase
 {
 public:
 	PerfQuery()
@@ -69,13 +70,13 @@ public:
 	};
 };
 
-class TextureCache: public TextureCacheBase
+class TextureCache : public TextureCacheBase
 {
 public:
-	virtual PC_TexFormat GetNativeTextureFormat(const s32 texformat,
+	virtual HostTextureFormat GetHostTextureFormat(const s32 texformat,
 		const TlutFormat tlutfmt, u32 width, u32 height) override
 	{
-		return PC_TexFormat::PC_TEX_FMT_RGBA32;
+		return HostTextureFormat::PC_TEX_FMT_RGBA32;
 	};
 	bool CompileShaders() override
 	{
@@ -83,9 +84,13 @@ public:
 	};
 	void DeleteShaders() override
 	{};
-	bool Palettize(TCacheEntryBase* entry, const TCacheEntryBase* base_entry) override
+	bool Palettize(TCacheEntry* entry, const TCacheEntry* base_entry) override
 	{
 		return false;
+	}
+	void CopyEFBToCacheEntry(TextureCacheBase::TCacheEntry* entry, bool is_depth_copy, const EFBRectangle& src_rect,
+		bool scale_by_half, u32 cbuf_id, const float* colmat, u32 width, u32 height) override
+	{
 	}
 	void CopyEFB(u8* dst, const EFBCopyFormat& format, u32 native_width, u32 bytes_per_row,
 		u32 num_blocks_y, u32 memory_stride, bool is_depth_copy,
@@ -97,54 +102,14 @@ public:
 	{}
 
 private:
-	struct TCacheEntry: TCacheEntryBase
+
+	std::unique_ptr<HostTexture> CreateTexture(const TextureConfig& config) override
 	{
-		TCacheEntry(const TCacheEntryConfig& _config): TCacheEntryBase(_config)
-		{}
-		~TCacheEntry()
-		{}
-
-		void Load(const u8* src, u32 width, u32 height,
-			u32 expanded_width, u32 level) override
-		{}
-		bool SupportsMaterialMap() const override
-		{
-			return false;
-		}
-
-		void FromRenderTarget(bool is_depth_copy, const EFBRectangle& srcRect,
-			bool scaleByHalf, unsigned int cbufid, const float *colmat, u32 width, u32 height) override
-		{
-			EfbCopy::CopyEfb();
-		}
-
-		void CopyRectangleFromTexture(
-			const TCacheEntryBase* source,
-			const MathUtil::Rectangle<int>& srcrect,
-			const MathUtil::Rectangle<int>& dstrect) override
-		{}
-
-		void Bind(u32 stage) override
-		{}
-
-		bool Save(const std::string& filename, u32 level) override
-		{
-			return false;
-		}
-
-		uintptr_t GetInternalObject() override
-		{
-			return 0;
-		}
-	};
-
-	TCacheEntryBase* CreateTexture(const TCacheEntryConfig& config) override
-	{
-		return new TCacheEntry(config);
+		return std::make_unique<SWTexture>(config);
 	}
 };
 
-class XFBSource: public XFBSourceBase
+class XFBSource : public XFBSourceBase
 {
 	void DecodeToTexture(u32 xfbAddr, u32 fbWidth, u32 fbHeight) override
 	{}
@@ -152,7 +117,7 @@ class XFBSource: public XFBSourceBase
 	{}
 };
 
-class FramebufferManager: public FramebufferManagerBase
+class FramebufferManager : public FramebufferManagerBase
 {
 	std::unique_ptr<XFBSourceBase> CreateXFBSource(unsigned int target_width, unsigned int target_height, unsigned int layers) override
 	{
@@ -185,7 +150,7 @@ void VideoSoftware::InitBackendInfo()
 	g_Config.backend_info.bSupportsOversizedViewports = true;
 
 	// aamodes
-	g_Config.backend_info.AAModes = {1};
+	g_Config.backend_info.AAModes = { 1 };
 }
 
 bool VideoSoftware::Initialize(void *window_handle)
@@ -196,7 +161,6 @@ bool VideoSoftware::Initialize(void *window_handle)
 	g_Config.Load((File::GetUserPath(D_CONFIG_IDX) + "gfx_software.ini").c_str());
 	g_Config.GameIniLoad();
 	g_Config.UpdateProjectionHack();
-	g_Config.VerifyValidity();
 	UpdateActiveConfig();
 
 	SWOGLWindow::Init(window_handle);

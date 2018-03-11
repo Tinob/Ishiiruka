@@ -9,19 +9,18 @@
 #include <string>
 #include <type_traits>
 
-#include "Common/Common.h"
 #include "Common/CommonTypes.h"
 #include "Common/FileUtil.h"
 
 // On disk format:
-//header{
+// header{
 // u32 'DCAC';
 // u32 version;  // svn_rev
 // u16 sizeof(key_type);
 // u16 sizeof(value_type);
 //}
 
-//key_value_pair{
+// key_value_pair{
 // u32 value_size;
 // key_type   key;
 // value_type[value_size]   value;
@@ -51,7 +50,7 @@ class LinearDiskCache
 {
 public:
 	// return number of read entries
-	u32 OpenAndRead(const std::string& filename, LinearDiskCacheReader<K, V> &reader)
+	u32 OpenAndRead(const std::string& filename, LinearDiskCacheReader<K, V>& reader, std::string version = {})
 	{
 		using std::ios_base;
 
@@ -59,7 +58,8 @@ public:
 		// K must be trivially copyable. TODO: Remove #if once GCC 5.0 is a
 		// minimum requirement.
 #if defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 5
-		static_assert(std::has_trivial_copy_constructor<K>::value, "K must be a trivially copyable type");
+		static_assert(std::has_trivial_copy_constructor<K>::value,
+			"K must be a trivially copyable type");
 #else
 		static_assert(std::is_trivially_copyable<K>::value, "K must be a trivially copyable type");
 #endif
@@ -76,8 +76,14 @@ public:
 		m_file.seekg(0, std::ios::beg);
 		std::fstream::pos_type start_pos = m_file.tellg();
 		std::streamoff file_size = end_pos - start_pos;
-
-		m_header.Init();
+		if (version.empty())
+		{
+			m_header.Init();
+		}
+		else
+		{
+			m_header.Init(version);
+		}
 		if (m_file.is_open() && ValidateHeader())
 		{
 			// good header, read some key/value pairs
@@ -99,9 +105,7 @@ public:
 				value = new V[value_size];
 
 				// read key/value and pass to reader
-				if (Read(&key) &&
-					Read(value, value_size) &&
-					Read(&entry_number) &&
+				if (Read(&key) && Read(value, value_size) && Read(&entry_number) &&
 					entry_number == m_num_entries + 1)
 				{
 					reader.Read(key, value, value_size);
@@ -129,11 +133,7 @@ public:
 		return 0;
 	}
 
-	void Sync()
-	{
-		m_file.flush();
-	}
-
+	void Sync() { m_file.flush(); }
 	void Close()
 	{
 		if (m_file.is_open())
@@ -145,7 +145,8 @@ public:
 	// Appends a key-value pair to the store.
 	void Append(const K& key, const V* value, u32 value_size)
 	{
-		// TODO: Should do a check that we don't already have "key"? (I think each caller does that already.)
+		// TODO: Should do a check that we don't already have "key"? (I think each caller does that
+		// already.)
 		Write(&value_size);
 		Write(&key);
 		Write(value, value_size);
@@ -154,11 +155,7 @@ public:
 	}
 
 private:
-	void WriteHeader()
-	{
-		Write(&m_header);
-	}
-
+	void WriteHeader() { Write(&m_header); }
 	bool ValidateHeader()
 	{
 		char file_header[sizeof(Header)];
@@ -181,11 +178,16 @@ private:
 
 	struct Header
 	{
-		void Init()
+		void Init(std::string version)
 		{
 			// Null-terminator is intentionally not copied.
 			std::memcpy(&id, "DCAC", sizeof(u32));
-			std::memcpy(ver, scm_rev_cache_str.c_str(), std::min(scm_rev_cache_str.size(), sizeof(ver)));
+			std::memcpy(ver, version.c_str(), std::min(version.size(), sizeof(ver)));
+		}
+		void Init()
+		{
+			// Null-terminator is intentionally not copied.
+			Init(scm_rev_cache_str);
 		}
 
 		u32 id;

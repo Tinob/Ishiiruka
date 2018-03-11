@@ -12,6 +12,7 @@
 #include <wx/frame.h>
 #include <wx/image.h>
 #include <wx/panel.h>
+#include <wx/string.h>
 #include <wx/timer.h>
 
 #include "Common/CommonTypes.h"
@@ -41,6 +42,7 @@ class wxAuiNotebook;
 class wxAuiNotebookEvent;
 class wxListEvent;
 class wxMenuItem;
+class wxProgressDialog;
 
 class CRenderFrame : public wxFrame
 {
@@ -87,6 +89,7 @@ public:
 	NetPlaySetupFrame* g_NetPlaySetupDiag = nullptr;
 	wxCheatsWindow* g_CheatsWindow = nullptr;
 	TASInputDlg* g_TASInputDlg[8];
+	wxProgressDialog* m_progress_dialog = nullptr;
 
 	void DoPause();
 	void DoStop();

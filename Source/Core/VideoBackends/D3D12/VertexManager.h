@@ -23,8 +23,7 @@ public:
 	void PrepareShaders(PrimitiveType primitive,
 		u32 components,
 		const XFMemory &xfr,
-		const BPMemory &bpm,
-		bool fromgputhread = true);
+		const BPMemory &bpm);
 	void SetIndexBuffer();
 
 protected:
@@ -44,8 +43,8 @@ private:
 
 	bool m_stream_buffer_reallocated = true;
 
-	std::vector<u8, Common::aligned_allocator<u8, 256>> m_index_cpu_buffer;
-	std::vector<u8, Common::aligned_allocator<u16, 256>> m_vertex_cpu_buffer;
+	std::vector<u16, Common::aligned_allocator<u16, 256>> m_index_cpu_buffer;
+	std::vector<u8, Common::aligned_allocator<u8, 256>> m_vertex_cpu_buffer;
 
 };
 

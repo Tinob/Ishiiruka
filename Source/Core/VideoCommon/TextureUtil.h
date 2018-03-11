@@ -15,6 +15,6 @@ void ConvertRGBA565_RGBA(u32 *dst, const s32 dstPitch, u16 *pIn, const s32 width
 void CopyTextureData(u8 *pDst, const u8 *pSrc, const s32 width, const s32 height, const s32 srcpitch, const s32 dstpitch, const s32 pixelsize);
 void ExpandI8Data(u8 *pDst, const u8 *pSrc, const s32 width, const s32 height, const s32 srcpitch, const s32 dstpitch);
 void CopyCompressedTextureData(u8 *pDst, const u8 *pSrc, const s32 width, const s32 height, const s32 dstPitch, s32 numBytesPerBlock, const s32 dstpitch);
-s32 GetTextureSizeInBytes(u32 width, u32 height, PC_TexFormat fmt);
+s32 GetTextureSizeInBytes(u32 width, u32 height, HostTextureFormat fmt);
 u32 CalculateLevelSize(u32 level_0_size, u32 level);
 }

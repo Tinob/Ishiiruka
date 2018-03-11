@@ -41,11 +41,11 @@ VkSurfaceKHR SwapChain::CreateVulkanSurface(VkInstance instance, void* hwnd)
 {
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
 	VkWin32SurfaceCreateInfoKHR surface_create_info = {
-		VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,  // VkStructureType               sType
-		nullptr,                                          // const void*                   pNext
-		0,                                                // VkWin32SurfaceCreateFlagsKHR  flags
-		nullptr,                                          // HINSTANCE                     hinstance
-		reinterpret_cast<HWND>(hwnd)                      // HWND                          hwnd
+	  VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,  // VkStructureType               sType
+	  nullptr,                                          // const void*                   pNext
+	  0,                                                // VkWin32SurfaceCreateFlagsKHR  flags
+	  nullptr,                                          // HINSTANCE                     hinstance
+	  reinterpret_cast<HWND>(hwnd)                      // HWND                          hwnd
 	};
 
 	VkSurfaceKHR surface;
@@ -64,11 +64,11 @@ VkSurfaceKHR SwapChain::CreateVulkanSurface(VkInstance instance, void* hwnd)
 	Display* display = XOpenDisplay(nullptr);
 
 	VkXlibSurfaceCreateInfoKHR surface_create_info = {
-		VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR,  // VkStructureType               sType
-		nullptr,                                         // const void*                   pNext
-		0,                                               // VkXlibSurfaceCreateFlagsKHR   flags
-		display,                                         // Display*                      dpy
-		reinterpret_cast<Window>(hwnd)                   // Window                        window
+	  VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR,  // VkStructureType               sType
+	  nullptr,                                         // const void*                   pNext
+	  0,                                               // VkXlibSurfaceCreateFlagsKHR   flags
+	  display,                                         // Display*                      dpy
+	  reinterpret_cast<Window>(hwnd)                   // Window                        window
 	};
 
 	VkSurfaceKHR surface;
@@ -87,11 +87,11 @@ VkSurfaceKHR SwapChain::CreateVulkanSurface(VkInstance instance, void* hwnd)
 	xcb_connection_t* connection = XGetXCBConnection(display);
 
 	VkXcbSurfaceCreateInfoKHR surface_create_info = {
-		VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR,  // VkStructureType               sType
-		nullptr,                                        // const void*                   pNext
-		0,                                              // VkXcbSurfaceCreateFlagsKHR    flags
-		connection,                                     // xcb_connection_t*             connection
-		static_cast<xcb_window_t>(reinterpret_cast<uintptr_t>(hwnd))  // xcb_window_t window
+	  VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR,  // VkStructureType               sType
+	  nullptr,                                        // const void*                   pNext
+	  0,                                              // VkXcbSurfaceCreateFlagsKHR    flags
+	  connection,                                     // xcb_connection_t*             connection
+	  static_cast<xcb_window_t>(reinterpret_cast<uintptr_t>(hwnd))  // xcb_window_t window
 	};
 
 	VkSurfaceKHR surface;
@@ -106,10 +106,10 @@ VkSurfaceKHR SwapChain::CreateVulkanSurface(VkInstance instance, void* hwnd)
 
 #elif defined(VK_USE_PLATFORM_ANDROID_KHR)
 	VkAndroidSurfaceCreateInfoKHR surface_create_info = {
-		VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR,  // VkStructureType                sType
-		nullptr,                                            // const void*                    pNext
-		0,                                                  // VkAndroidSurfaceCreateFlagsKHR flags
-		reinterpret_cast<ANativeWindow*>(hwnd)              // ANativeWindow*                 window
+	  VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR,  // VkStructureType                sType
+	  nullptr,                                            // const void*                    pNext
+	  0,                                                  // VkAndroidSurfaceCreateFlagsKHR flags
+	  reinterpret_cast<ANativeWindow*>(hwnd)              // ANativeWindow*                 window
 	};
 
 	VkSurfaceKHR surface;
@@ -230,47 +230,59 @@ bool SwapChain::CreateRenderPass()
 {
 	// render pass for rendering to the swap chain
 	VkAttachmentDescription present_render_pass_attachments[] = {
-		{ 0, m_surface_format.format, VK_SAMPLE_COUNT_1_BIT, VK_ATTACHMENT_LOAD_OP_CLEAR,
-		VK_ATTACHMENT_STORE_OP_STORE, VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-		VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL } };
+	  { 0, m_surface_format.format, VK_SAMPLE_COUNT_1_BIT, VK_ATTACHMENT_LOAD_OP_CLEAR,
+	  VK_ATTACHMENT_STORE_OP_STORE, VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+	  VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+	  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL } };
 
 	VkAttachmentReference present_render_pass_color_attachment_references[] = {
-		{ 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL } };
+	  { 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL } };
 
 	VkSubpassDescription present_render_pass_subpass_descriptions[] = {
-		{ 0, VK_PIPELINE_BIND_POINT_GRAPHICS, 0, nullptr, 1,
-		present_render_pass_color_attachment_references, nullptr, nullptr, 0, nullptr } };
+	  { 0, VK_PIPELINE_BIND_POINT_GRAPHICS, 0, nullptr, 1,
+	  present_render_pass_color_attachment_references, nullptr, nullptr, 0, nullptr } };
 
 	VkRenderPassCreateInfo present_render_pass_info = {
-		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-		nullptr,
-		0,
-		static_cast<u32>(ArraySize(present_render_pass_attachments)),
-		present_render_pass_attachments,
-		static_cast<u32>(ArraySize(present_render_pass_subpass_descriptions)),
-		present_render_pass_subpass_descriptions,
-		0,
-		nullptr };
+	  VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+	  nullptr,
+	  0,
+	  static_cast<u32>(ArraySize(present_render_pass_attachments)),
+	  present_render_pass_attachments,
+	  static_cast<u32>(ArraySize(present_render_pass_subpass_descriptions)),
+	  present_render_pass_subpass_descriptions,
+	  0,
+	  nullptr };
 
 	VkResult res = vkCreateRenderPass(g_vulkan_context->GetDevice(), &present_render_pass_info,
-		nullptr, &m_render_pass);
+		nullptr, &m_render_clear_pass);
 	if (res != VK_SUCCESS)
 	{
 		LOG_VULKAN_ERROR(res, "vkCreateRenderPass (present) failed: ");
 		return false;
 	}
-
+	present_render_pass_attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+	res = vkCreateRenderPass(g_vulkan_context->GetDevice(), &present_render_pass_info,
+		nullptr, &m_render_append_pass);
+	if (res != VK_SUCCESS)
+	{
+		LOG_VULKAN_ERROR(res, "vkCreateRenderPass (present) failed: ");
+		return false;
+	}
 	return true;
 }
 
 void SwapChain::DestroyRenderPass()
 {
-	if (!m_render_pass)
-		return;
-
-	vkDestroyRenderPass(g_vulkan_context->GetDevice(), m_render_pass, nullptr);
-	m_render_pass = VK_NULL_HANDLE;
+	if (m_render_clear_pass)
+	{
+		vkDestroyRenderPass(g_vulkan_context->GetDevice(), m_render_clear_pass, nullptr);
+		m_render_clear_pass = VK_NULL_HANDLE;
+	}
+	if (m_render_append_pass)
+	{
+		vkDestroyRenderPass(g_vulkan_context->GetDevice(), m_render_append_pass, nullptr);
+		m_render_append_pass = VK_NULL_HANDLE;
+	}
 }
 
 bool SwapChain::CreateSwapChain()
@@ -324,25 +336,35 @@ bool SwapChain::CreateSwapChain()
 	VkSwapchainKHR old_swap_chain = m_swap_chain;
 
 	// Now we can actually create the swap chain
-	// TODO: Handle case where the present queue is not the graphics queue.
 	VkSwapchainCreateInfoKHR swap_chain_info = { VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-		nullptr,
-		0,
-		m_surface,
-		image_count,
-		m_surface_format.format,
-		m_surface_format.colorSpace,
-		size,
-		1,
-		image_usage,
-		VK_SHARING_MODE_EXCLUSIVE,
-		0,
-		nullptr,
-		transform,
-		VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-		m_present_mode,
-		VK_TRUE,
-		old_swap_chain };
+	  nullptr,
+	  0,
+	  m_surface,
+	  image_count,
+	  m_surface_format.format,
+	  m_surface_format.colorSpace,
+	  size,
+	  1,
+	  image_usage,
+	  VK_SHARING_MODE_EXCLUSIVE,
+	  0,
+	  nullptr,
+	  transform,
+	  VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+	  m_present_mode,
+	  VK_TRUE,
+	  old_swap_chain };
+	std::array<uint32_t, 2> indices = { {
+		g_vulkan_context->GetGraphicsQueueFamilyIndex(),
+		g_vulkan_context->GetPresentQueueFamilyIndex(),
+	  } };
+	if (g_vulkan_context->GetGraphicsQueueFamilyIndex() !=
+		g_vulkan_context->GetPresentQueueFamilyIndex())
+	{
+		swap_chain_info.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+		swap_chain_info.queueFamilyIndexCount = 2;
+		swap_chain_info.pQueueFamilyIndices = indices.data();
+	}
 
 	res =
 		vkCreateSwapchainKHR(g_vulkan_context->GetDevice(), &swap_chain_info, nullptr, &m_swap_chain);
@@ -389,27 +411,8 @@ bool SwapChain::SetupSwapChainImages()
 		// Create texture object, which creates a view of the backbuffer
 		image.texture = Texture2D::CreateFromExistingImage(
 			m_width, m_height, 1, 1, m_surface_format.format, VK_SAMPLE_COUNT_1_BIT,
-			VK_IMAGE_VIEW_TYPE_2D, image.image);
-
-		VkImageView view = image.texture->GetView();
-		VkFramebufferCreateInfo framebuffer_info = { VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-			nullptr,
-			0,
-			m_render_pass,
-			1,
-			&view,
-			m_width,
-			m_height,
-			1 };
-
-		res = vkCreateFramebuffer(g_vulkan_context->GetDevice(), &framebuffer_info, nullptr,
-			&image.framebuffer);
-		if (res != VK_SUCCESS)
-		{
-			LOG_VULKAN_ERROR(res, "vkCreateFramebuffer failed: ");
-			return false;
-		}
-
+			VK_IMAGE_VIEW_TYPE_2D, image.image, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT);
+		image.texture->AddFramebuffer(m_render_clear_pass, false);
 		m_swap_chain_images.emplace_back(std::move(image));
 	}
 
@@ -418,11 +421,6 @@ bool SwapChain::SetupSwapChainImages()
 
 void SwapChain::DestroySwapChainImages()
 {
-	for (const auto& it : m_swap_chain_images)
-	{
-		// Images themselves are cleaned up by the swap chain object
-		vkDestroyFramebuffer(g_vulkan_context->GetDevice(), it.framebuffer, nullptr);
-	}
 	m_swap_chain_images.clear();
 }
 
@@ -458,14 +456,27 @@ bool SwapChain::ResizeSwapChain()
 	return true;
 }
 
+bool SwapChain::RecreateSwapChain()
+{
+	DestroySwapChainImages();
+	DestroySwapChain();
+	if (!CreateSwapChain() || !SetupSwapChainImages())
+	{
+		PanicAlert("Failed to re-configure swap chain images, this is fatal (for now)");
+		return false;
+	}
+
+	return true;
+}
+
 bool SwapChain::SetVSync(bool enabled)
 {
 	if (m_vsync_enabled == enabled)
 		return true;
 
-	// Resizing recreates the swap chain with the new present mode.
+	// Recreate the swap chain with the new present mode.
 	m_vsync_enabled = enabled;
-	return ResizeSwapChain();
+	return RecreateSwapChain();
 }
 
 bool SwapChain::RecreateSurface(void* native_handle)

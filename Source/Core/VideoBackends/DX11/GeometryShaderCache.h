@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <functional>
+
 #include <d3d11.h>
 #include <unordered_map>
 
@@ -20,12 +22,11 @@ public:
 	static void Clear();
 	static void Shutdown();
 	static void PrepareShader(
-		u32 primitive_type,
+		PrimitiveType primitive_type,
 		const XFMemory &xfr,
-		const u32 components,
-		bool ongputhread);
+		const u32 components);
 	static bool TestShader();
-	static void InsertByteCode(const GeometryShaderUid &uid, const void* bytecode, unsigned int bytecodelen);
+	static void InsertByteCode(const GeometryShaderUid &uid, const void* bytecode, u32 bytecodelen);
 
 	static ID3D11GeometryShader* GetClearGeometryShader();
 	static ID3D11GeometryShader* GetCopyGeometryShader();
@@ -35,8 +36,10 @@ public:
 		return s_last_entry->shader.get();
 	}
 	static D3D::BufferDescriptor GetConstantBuffer();
-
+	static void Reload();
 private:
+	static void LoadFromDisk();
+	static void CompileShaders();
 	struct GSCacheEntry
 	{
 		D3D::GeometryShaderPtr shader;
@@ -47,20 +50,19 @@ private:
 		{
 			initialized.clear();
 		}
-		void Destroy()
+		~GSCacheEntry()
 		{
 			shader.reset();
 		}
 	};
 	static inline void PushByteCode(const void* bytecode, unsigned int bytecodelen, GSCacheEntry* entry);
-	typedef ObjectUsageProfiler<GeometryShaderUid, pKey_t, GSCacheEntry, GeometryShaderUid::ShaderUidHasher> GSCache;
+	typedef std::unordered_map<GeometryShaderUid, GSCacheEntry, GeometryShaderUid::ShaderUidHasher> GSCache;
 
-	static GSCache* s_geometry_shaders;
+	static GSCache s_geometry_shaders;
 	static const GSCacheEntry* s_last_entry;
 	static GeometryShaderUid s_last_uid;
-	static GeometryShaderUid s_external_last_uid;
-	static const GSCacheEntry s_pass_entry;
-	static void CompileGShader(const GeometryShaderUid& uid, bool ongputhread);
+	static GSCacheEntry s_pass_entry;
+	static void CompileGShader(const GeometryShaderUid& uid, std::function<void()> oncompilationfinished);
 };
 
 }  // namespace DX11

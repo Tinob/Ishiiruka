@@ -56,13 +56,11 @@ public:
 	void ResetAPIState() override;
 	void RestoreAPIState() override;
 
-	void SetColorMask() override;
-	void SetBlendMode(bool force_update) override;
+	void SetBlendingState(const BlendingState& state) override;
 	void SetScissorRect(const EFBRectangle& rc) override;
-	void SetGenerationMode() override;
-	void SetDepthMode() override;
-	void SetLogicOpMode() override;
-	void SetSamplerState(int stage, int texindex, bool custom_tex) override;
+	void SetRasterizationState(const RasterizationState& state) override;
+	void SetDepthState(const DepthState& state) override;
+	void SetSamplerState(u32 index, const SamplerState& state) override;
 	void SetInterlacingMode() override;
 	void SetViewport() override;
 
@@ -83,31 +81,31 @@ private:
 	void OnSwapChainResized();
 	void BindEFBToStateTracker();
 	void ResizeEFBTextures();
-	void ResizeSwapChain();
 
 	void RecompileShaders();
 	bool CompileShaders();
 	void DestroyShaders();
 
-	void ResolveEFBForSwap(const TargetRectangle& scaled_rect);
+	// Transitions EFB / XFB buffers to SHADER_READ_ONLY, ready for presenting / dumping.
+	// If MSAA is enabled, and XFB is disabled, also resolves the EFB buffer.
+	void TransitionBuffersForSwap(const TargetRectangle& scaled_rect,
+		const XFBSourceBase* const* xfb_sources, u32 xfb_count);
 
 	// Draw either the EFB, or specified XFB sources to the currently-bound framebuffer.
-	void DrawFrame(VkRenderPass render_pass, const TargetRectangle& target_rect,
-		const TargetRectangle& scaled_efb_rect, u32 xfb_addr,
+	void DrawFrame(const TargetRectangle& target_rc, const TargetRectangle& scaled_source_rc, u32 xfb_addr,
+		const XFBSourceBase* const* xfb_sources, u32 xfb_count, Texture2D* dst_texture, const TargetSize& dst_size, u32 fb_width,
+		u32 fb_stride, u32 fb_height, float Gamma);
+	void DrawEFB(const TargetRectangle& t_rc, const TargetRectangle& scaled_source_rc, Texture2D* dst_texture, const TargetSize& dst_size, float Gamma);
+	void DrawVirtualXFB(const TargetRectangle& target_rc, u32 xfb_addr,
+		const XFBSourceBase* const* xfb_sources, u32 xfb_count, Texture2D* dst_texture, const TargetSize& dst_size, u32 fb_width,
+		u32 fb_stride, u32 fb_height, float Gamma);
+	void DrawRealXFB(const TargetRectangle& target_rect,
 		const XFBSourceBase* const* xfb_sources, u32 xfb_count, u32 fb_width,
-		u32 fb_stride, u32 fb_height);
-	void DrawEFB(VkRenderPass render_pass, const TargetRectangle& target_rect,
-		const TargetRectangle& scaled_efb_rect);
-	void DrawVirtualXFB(VkRenderPass render_pass, const TargetRectangle& target_rect, u32 xfb_addr,
-		const XFBSourceBase* const* xfb_sources, u32 xfb_count, u32 fb_width,
-		u32 fb_stride, u32 fb_height);
-	void DrawRealXFB(VkRenderPass render_pass, const TargetRectangle& target_rect,
-		const XFBSourceBase* const* xfb_sources, u32 xfb_count, u32 fb_width,
-		u32 fb_stride, u32 fb_height);
+		u32 fb_stride, u32 fb_height, Texture2D* dst_texture, const TargetSize& dst_size, float Gamma);
 
 	// Draw the frame, as well as the OSD to the swap chain.
 	void DrawScreen(const TargetRectangle& scaled_efb_rect, u32 xfb_addr, const XFBSourceBase* const* xfb_sources,
-		u32 xfb_count, u32 fb_width, u32 fb_stride, u32 fb_height);
+		u32 xfb_count, u32 fb_width, u32 fb_stride, u32 fb_height, float gamma);
 
 	// Draw the frame only to the screenshot buffer.
 	bool DrawFrameDump(const TargetRectangle& scaled_efb_rect, u32 xfb_addr, const XFBSourceBase* const* xfb_sources,
@@ -135,8 +133,9 @@ private:
 	void FlushFrameDump();
 
 	// Copies/scales an image to the currently-bound framebuffer.
-	void BlitScreen(VkRenderPass render_pass, const TargetRectangle& dst_rect,
-		const TargetRectangle& src_rect, const Texture2D* src_tex, bool linear_filter);
+	void BlitScreen(const TargetRectangle& dst_rect,
+		const TargetRectangle& src_rect, TargetSize src_size, const Texture2D* src_tex, const Texture2D* src_depth_tex,
+		const TargetSize& dst_size, Texture2D* dst_texture, float Gamma);
 
 	bool ResizeFrameDumpBuffer(u32 new_width, u32 new_height);
 	void DestroyFrameDumpResources();
@@ -161,7 +160,6 @@ private:
 
 	// Texture used for screenshot/frame dumping
 	std::unique_ptr<Texture2D> m_frame_dump_render_texture;
-	VkFramebuffer m_frame_dump_framebuffer = VK_NULL_HANDLE;
 
 	// Readback resources for frame dumping
 	static const size_t FRAME_DUMP_BUFFERED_FRAMES = 2;

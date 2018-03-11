@@ -150,14 +150,14 @@ bool BoundingBox::CreateGPUBuffer()
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
 		VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	VkBufferCreateInfo info = {
-		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,  // VkStructureType        sType
-		nullptr,                               // const void*            pNext
-		0,                                     // VkBufferCreateFlags    flags
-		BUFFER_SIZE,                           // VkDeviceSize           size
-		buffer_usage,                          // VkBufferUsageFlags     usage
-		VK_SHARING_MODE_EXCLUSIVE,             // VkSharingMode          sharingMode
-		0,                                     // uint32_t               queueFamilyIndexCount
-		nullptr                                // const uint32_t*        pQueueFamilyIndices
+	  VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,  // VkStructureType        sType
+	  nullptr,                               // const void*            pNext
+	  0,                                     // VkBufferCreateFlags    flags
+	  BUFFER_SIZE,                           // VkDeviceSize           size
+	  buffer_usage,                          // VkBufferUsageFlags     usage
+	  VK_SHARING_MODE_EXCLUSIVE,             // VkSharingMode          sharingMode
+	  0,                                     // uint32_t               queueFamilyIndexCount
+	  nullptr                                // const uint32_t*        pQueueFamilyIndices
 	};
 
 	VkBuffer buffer;
@@ -174,10 +174,10 @@ bool BoundingBox::CreateGPUBuffer()
 	uint32_t memory_type_index = g_vulkan_context->GetMemoryType(memory_requirements.memoryTypeBits,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 	VkMemoryAllocateInfo memory_allocate_info = {
-		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,  // VkStructureType    sType
-		nullptr,                                 // const void*        pNext
-		memory_requirements.size,                // VkDeviceSize       allocationSize
-		memory_type_index                        // uint32_t           memoryTypeIndex
+	  VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,  // VkStructureType    sType
+	  nullptr,                                 // const void*        pNext
+	  memory_requirements.size,                // VkDeviceSize       allocationSize
+	  memory_type_index                        // uint32_t           memoryTypeIndex
 	};
 	VkDeviceMemory memory;
 	res = vkAllocateMemory(g_vulkan_context->GetDevice(), &memory_allocate_info, nullptr, &memory);

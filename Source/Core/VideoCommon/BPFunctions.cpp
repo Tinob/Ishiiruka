@@ -31,7 +31,9 @@ void FlushPipeline()
 
 void SetGenerationMode()
 {
-	g_renderer->SetGenerationMode();
+	RasterizationState state = {};
+	state.Generate(bpmem, g_vertex_manager->GetCurrentPrimitiveType());
+	g_renderer->SetRasterizationState(state);
 }
 
 void SetScissor()
@@ -74,22 +76,16 @@ void SetLineWidth()
 
 void SetDepthMode()
 {
-	g_renderer->SetDepthMode();
+	DepthState state = {};
+	state.Generate(bpmem);
+	g_renderer->SetDepthState(state);
 }
 
 void SetBlendMode()
 {
-	g_renderer->SetBlendMode(false);
-}
-
-void SetLogicOpMode()
-{
-	g_renderer->SetLogicOpMode();
-}
-
-void SetColorMask()
-{
-	g_renderer->SetColorMask();
+	BlendingState state = {};
+	state.Generate(bpmem);
+	g_renderer->SetBlendingState(state);
 }
 
 /* Explanation of the magic behind ClearScreen:
@@ -110,10 +106,10 @@ To properly emulate the above points, we're doing the following:
 */
 void ClearScreen(const EFBRectangle &rc)
 {
-	bool colorEnable = (bpmem.blendmode.colorupdate != 0);
-	bool alphaEnable = (bpmem.blendmode.alphaupdate != 0);
-	bool zEnable = (bpmem.zmode.updateenable != 0);
-	auto pixel_format = bpmem.zcontrol.pixel_format;
+	bool colorEnable = (bpmem.blendmode.colorupdate.Value() != 0);
+	bool alphaEnable = (bpmem.blendmode.alphaupdate.Value() != 0);
+	bool zEnable = (bpmem.zmode.updateenable.Value() != 0);
+	auto pixel_format = bpmem.zcontrol.pixel_format.Value();
 
 	// (1): Disable unused color channels
 	if (pixel_format == PEControl::RGB8_Z24 ||
@@ -159,7 +155,7 @@ void OnPixelFormatChange()
 		return;
 
 	auto old_format = g_renderer->GetPrevPixelFormat();
-	auto new_format = bpmem.zcontrol.pixel_format;
+	auto new_format = bpmem.zcontrol.pixel_format.Value();
 
 	// no need to reinterpret pixel data in these cases
 	if (new_format == old_format || old_format == PEControl::INVALID_FMT)

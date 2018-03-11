@@ -13,28 +13,57 @@ namespace Vulkan
 {
 Texture2D::Texture2D(u32 width, u32 height, u32 levels, u32 layers, VkFormat format,
 	VkSampleCountFlagBits samples, VkImageViewType view_type, VkImage image,
-	VkDeviceMemory device_memory, VkImageView view, VkFramebuffer framebuffer)
+	VkDeviceMemory device_memory, VkImageView view, VkImageUsageFlags usage)
 	: m_width(width), m_height(height), m_levels(levels), m_layers(layers), m_format(format),
 	m_samples(samples), m_view_type(view_type), m_image(image), m_device_memory(device_memory),
-	m_view(view), m_framebuffer(framebuffer)
+	m_view(view), m_usage(usage), m_framebuffer(nullptr)
 {
-	if (framebuffer != VK_NULL_HANDLE)
+
+}
+
+void Texture2D::AddFramebuffer(VkRenderPass renderpass, bool clear)
+{
+	VkFramebuffer framebuffer = VK_NULL_HANDLE;
+	if (m_usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT && renderpass != VK_NULL_HANDLE)
 	{
-		// Clear render targets before use to prevent reading uninitialized memory.
-		VkClearColorValue clear_value = { { 0.0f, 0.0f, 0.0f, 1.0f } };
-		VkImageSubresourceRange clear_range = { VK_IMAGE_ASPECT_COLOR_BIT, 0, levels, 0,
-			layers };
-		TransitionToLayout(g_command_buffer_mgr->GetCurrentInitCommandBuffer(),
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-		vkCmdClearColorImage(g_command_buffer_mgr->GetCurrentInitCommandBuffer(), image,
-			m_layout, &clear_value, 1, &clear_range);
+		VkImageView framebuffer_attachments[] = { m_view };
+		VkFramebufferCreateInfo framebuffer_info = {
+		  VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+		  nullptr,
+		  0,
+		  renderpass,
+		  static_cast<u32>(ArraySize(framebuffer_attachments)),
+		  framebuffer_attachments,
+		  m_width,
+		  m_height,
+		  m_layers };
+
+		VkResult res = vkCreateFramebuffer(g_vulkan_context->GetDevice(), &framebuffer_info, nullptr,
+			&framebuffer);
+		if (res != VK_SUCCESS)
+		{
+			LOG_VULKAN_ERROR(res, "vkCreateFramebuffer failed: ");
+		}
+		m_renderpass = renderpass;
+		m_framebuffer = framebuffer;
+		if (clear)
+		{
+			// Clear render targets before use to prevent reading uninitialized memory.
+			VkClearColorValue clear_value = { { 0.0f, 0.0f, 0.0f, 1.0f } };
+			VkImageSubresourceRange clear_range = { VK_IMAGE_ASPECT_COLOR_BIT, 0, m_levels, 0,
+			  m_layers };
+			TransitionToLayout(g_command_buffer_mgr->GetCurrentInitCommandBuffer(),
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+			vkCmdClearColorImage(g_command_buffer_mgr->GetCurrentInitCommandBuffer(), m_image,
+				m_layout, &clear_value, 1, &clear_range);
+		}
 	}
 }
 
 Texture2D::~Texture2D()
 {
 	g_command_buffer_mgr->DeferImageViewDestruction(m_view);
-	
+
 	if (m_framebuffer != VK_NULL_HANDLE)
 		g_command_buffer_mgr->DeferFramebufferDestruction(m_framebuffer);
 
@@ -49,23 +78,23 @@ Texture2D::~Texture2D()
 std::unique_ptr<Texture2D> Texture2D::Create(u32 width, u32 height, u32 levels, u32 layers,
 	VkFormat format, VkSampleCountFlagBits samples,
 	VkImageViewType view_type, VkImageTiling tiling,
-	VkImageUsageFlags usage, VkRenderPass renderpass)
+	VkImageUsageFlags usage)
 {
 	VkImageCreateInfo image_info = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-																	nullptr,
-																	0,
-																	VK_IMAGE_TYPE_2D,
-																	format,
-																	{width, height, 1},
-																	levels,
-																	layers,
-																	samples,
-																	tiling,
-																	usage,
-																	VK_SHARING_MODE_EXCLUSIVE,
-																	0,
-																	nullptr,
-																	VK_IMAGE_LAYOUT_UNDEFINED };
+									nullptr,
+									0,
+									VK_IMAGE_TYPE_2D,
+									format,
+									{width, height, 1},
+									levels,
+									layers,
+									samples,
+									tiling,
+									usage,
+									VK_SHARING_MODE_EXCLUSIVE,
+									0,
+									nullptr,
+									VK_IMAGE_LAYOUT_UNDEFINED };
 
 	VkImage image = VK_NULL_HANDLE;
 	VkResult res = vkCreateImage(g_vulkan_context->GetDevice(), &image_info, nullptr, &image);
@@ -80,9 +109,9 @@ std::unique_ptr<Texture2D> Texture2D::Create(u32 width, u32 height, u32 levels, 
 	vkGetImageMemoryRequirements(g_vulkan_context->GetDevice(), image, &memory_requirements);
 
 	VkMemoryAllocateInfo memory_info = {
-			VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, nullptr, memory_requirements.size,
-			g_vulkan_context->GetMemoryType(memory_requirements.memoryTypeBits,
-																			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) };
+		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, nullptr, memory_requirements.size,
+		g_vulkan_context->GetMemoryType(memory_requirements.memoryTypeBits,
+										VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) };
 
 	VkDeviceMemory device_memory;
 	res = vkAllocateMemory(g_vulkan_context->GetDevice(), &memory_info, nullptr, &device_memory);
@@ -103,17 +132,17 @@ std::unique_ptr<Texture2D> Texture2D::Create(u32 width, u32 height, u32 levels, 
 	}
 
 	VkImageViewCreateInfo view_info = {
-			VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-			nullptr,
-			0,
-			image,
-			view_type,
-			format,
-			{VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY,
-			 VK_COMPONENT_SWIZZLE_IDENTITY},
-			{Util::IsDepthFormat(format) ? static_cast<VkImageAspectFlags>(VK_IMAGE_ASPECT_DEPTH_BIT) :
-																		 static_cast<VkImageAspectFlags>(VK_IMAGE_ASPECT_COLOR_BIT),
-			 0, levels, 0, layers} };
+		VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+		nullptr,
+		0,
+		image,
+		view_type,
+		format,
+		{VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY,
+		 VK_COMPONENT_SWIZZLE_IDENTITY},
+		{Util::IsDepthFormat(format) ? static_cast<VkImageAspectFlags>(VK_IMAGE_ASPECT_DEPTH_BIT) :
+									   static_cast<VkImageAspectFlags>(VK_IMAGE_ASPECT_COLOR_BIT),
+		 0, levels, 0, layers} };
 
 	VkImageView view = VK_NULL_HANDLE;
 	res = vkCreateImageView(g_vulkan_context->GetDevice(), &view_info, nullptr, &view);
@@ -124,53 +153,29 @@ std::unique_ptr<Texture2D> Texture2D::Create(u32 width, u32 height, u32 levels, 
 		vkFreeMemory(g_vulkan_context->GetDevice(), device_memory, nullptr);
 		return nullptr;
 	}
-	VkFramebuffer framebuffer = VK_NULL_HANDLE;
-	if (usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT && renderpass != VK_NULL_HANDLE)
-	{
-		VkImageView framebuffer_attachments[] = { view };
-		VkFramebufferCreateInfo framebuffer_info = {
-			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-			nullptr,
-			0,
-			renderpass,
-			static_cast<u32>(ArraySize(framebuffer_attachments)),
-			framebuffer_attachments,
-			width,
-			height,
-			layers };
-
-		VkResult res = vkCreateFramebuffer(g_vulkan_context->GetDevice(), &framebuffer_info, nullptr,
-			&framebuffer);
-		if (res != VK_SUCCESS)
-		{
-			LOG_VULKAN_ERROR(res, "vkCreateFramebuffer failed: ");
-			return nullptr;
-		}
-	}
-
 	return std::make_unique<Texture2D>(width, height, levels, layers, format, samples, view_type,
-		image, device_memory, view, framebuffer);
+		image, device_memory, view, usage);
 }
 
 std::unique_ptr<Texture2D> Texture2D::CreateFromExistingImage(u32 width, u32 height, u32 levels,
 	u32 layers, VkFormat format,
 	VkSampleCountFlagBits samples,
 	VkImageViewType view_type,
-	VkImage existing_image)
+	VkImage existing_image, VkImageUsageFlags usage)
 {
 	// Only need to create the image view, this is mainly for swap chains.
 	VkImageViewCreateInfo view_info = {
-			VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-			nullptr,
-			0,
-			existing_image,
-			view_type,
-			format,
-			{VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY,
-			 VK_COMPONENT_SWIZZLE_IDENTITY},
-			{Util::IsDepthFormat(format) ? static_cast<VkImageAspectFlags>(VK_IMAGE_ASPECT_DEPTH_BIT) :
-																		 static_cast<VkImageAspectFlags>(VK_IMAGE_ASPECT_COLOR_BIT),
-			 0, levels, 0, layers} };
+		VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+		nullptr,
+		0,
+		existing_image,
+		view_type,
+		format,
+		{VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY,
+		 VK_COMPONENT_SWIZZLE_IDENTITY},
+		{Util::IsDepthFormat(format) ? static_cast<VkImageAspectFlags>(VK_IMAGE_ASPECT_DEPTH_BIT) :
+									   static_cast<VkImageAspectFlags>(VK_IMAGE_ASPECT_COLOR_BIT),
+		 0, levels, 0, layers} };
 
 	// Memory is managed by the owner of the image.
 	VkDeviceMemory memory = VK_NULL_HANDLE;
@@ -181,9 +186,8 @@ std::unique_ptr<Texture2D> Texture2D::CreateFromExistingImage(u32 width, u32 hei
 		LOG_VULKAN_ERROR(res, "vkCreateImageView failed: ");
 		return nullptr;
 	}
-
 	return std::make_unique<Texture2D>(width, height, levels, layers, format, samples, view_type,
-		existing_image, memory, view, nullptr);
+		existing_image, memory, view, usage);
 }
 
 void Texture2D::OverrideImageLayout(VkImageLayout new_layout)
@@ -197,18 +201,18 @@ void Texture2D::TransitionToLayout(VkCommandBuffer command_buffer, VkImageLayout
 		return;
 
 	VkImageMemoryBarrier barrier = {
-			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,  // VkStructureType            sType
-			nullptr,                                 // const void*                pNext
-			0,                                       // VkAccessFlags              srcAccessMask
-			0,                                       // VkAccessFlags              dstAccessMask
-			m_layout,                                // VkImageLayout              oldLayout
-			new_layout,                              // VkImageLayout              newLayout
-			VK_QUEUE_FAMILY_IGNORED,                 // uint32_t                   srcQueueFamilyIndex
-			VK_QUEUE_FAMILY_IGNORED,                 // uint32_t                   dstQueueFamilyIndex
-			m_image,                                 // VkImage                    image
-			{static_cast<VkImageAspectFlags>(Util::IsDepthFormat(m_format) ? VK_IMAGE_ASPECT_DEPTH_BIT :
-																																			 VK_IMAGE_ASPECT_COLOR_BIT),
-			 0, m_levels, 0, m_layers}  // VkImageSubresourceRange    subresourceRange
+	  VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,  // VkStructureType            sType
+	  nullptr,                                 // const void*                pNext
+	  0,                                       // VkAccessFlags              srcAccessMask
+	  0,                                       // VkAccessFlags              dstAccessMask
+	  m_layout,                                // VkImageLayout              oldLayout
+	  new_layout,                              // VkImageLayout              newLayout
+	  VK_QUEUE_FAMILY_IGNORED,                 // uint32_t                   srcQueueFamilyIndex
+	  VK_QUEUE_FAMILY_IGNORED,                 // uint32_t                   dstQueueFamilyIndex
+	  m_image,                                 // VkImage                    image
+	  { static_cast<VkImageAspectFlags>(Util::IsDepthFormat(m_format) ? VK_IMAGE_ASPECT_DEPTH_BIT :
+	  VK_IMAGE_ASPECT_COLOR_BIT),
+	  0, m_levels, 0, m_layers }  // VkImageSubresourceRange    subresourceRange
 	};
 
 	// srcStageMask -> Stages that must complete before the barrier
@@ -344,18 +348,18 @@ void Texture2D::TransitionToLayout(VkCommandBuffer command_buffer, ComputeImageL
 		return;
 
 	VkImageMemoryBarrier barrier = {
-		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,  // VkStructureType            sType
-		nullptr,                                 // const void*                pNext
-		0,                                       // VkAccessFlags              srcAccessMask
-		0,                                       // VkAccessFlags              dstAccessMask
-		m_layout,                                // VkImageLayout              oldLayout
-		VK_IMAGE_LAYOUT_GENERAL,                 // VkImageLayout              newLayout
-		VK_QUEUE_FAMILY_IGNORED,                 // uint32_t                   srcQueueFamilyIndex
-		VK_QUEUE_FAMILY_IGNORED,                 // uint32_t                   dstQueueFamilyIndex
-		m_image,                                 // VkImage                    image
-		{ static_cast<VkImageAspectFlags>(Util::IsDepthFormat(m_format) ? VK_IMAGE_ASPECT_DEPTH_BIT :
-		VK_IMAGE_ASPECT_COLOR_BIT),
-		0, m_levels, 0, m_layers }  // VkImageSubresourceRange    subresourceRange
+	  VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,  // VkStructureType            sType
+	  nullptr,                                 // const void*                pNext
+	  0,                                       // VkAccessFlags              srcAccessMask
+	  0,                                       // VkAccessFlags              dstAccessMask
+	  m_layout,                                // VkImageLayout              oldLayout
+	  VK_IMAGE_LAYOUT_GENERAL,                 // VkImageLayout              newLayout
+	  VK_QUEUE_FAMILY_IGNORED,                 // uint32_t                   srcQueueFamilyIndex
+	  VK_QUEUE_FAMILY_IGNORED,                 // uint32_t                   dstQueueFamilyIndex
+	  m_image,                                 // VkImage                    image
+	  { static_cast<VkImageAspectFlags>(Util::IsDepthFormat(m_format) ? VK_IMAGE_ASPECT_DEPTH_BIT :
+	  VK_IMAGE_ASPECT_COLOR_BIT),
+	  0, m_levels, 0, m_layers }  // VkImageSubresourceRange    subresourceRange
 	};
 
 	VkPipelineStageFlags srcStageMask, dstStageMask;
@@ -438,5 +442,4 @@ void Texture2D::TransitionToLayout(VkCommandBuffer command_buffer, ComputeImageL
 	vkCmdPipelineBarrier(command_buffer, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 1,
 		&barrier);
 }
-
 }  // namespace Vulkan

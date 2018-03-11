@@ -6,7 +6,6 @@
 #pragma once
 #include <limits>
 
-#include "Common/NonCopyable.h"
 #include "Common/CommonFuncs.h"
 
 #include "VideoCommon/CPMemory.h"
@@ -145,13 +144,15 @@ struct PortableVertexDeclaration
 
 // Note that this class can't just invent arbitrary vertex formats out of its input -
 // all the data loading code must always be made compatible.
-class NativeVertexFormat : NonCopyable
+class NativeVertexFormat
 {
 public:
 	virtual ~NativeVertexFormat()
 	{}
-
-	virtual void SetupVertexPointers() = 0;
+	NativeVertexFormat(const NativeVertexFormat&) = delete;
+	NativeVertexFormat& operator=(const NativeVertexFormat&) = delete;
+	NativeVertexFormat(NativeVertexFormat&&) = default;
+	NativeVertexFormat& operator=(NativeVertexFormat&&) = default;
 
 	u32 GetVertexStride() const
 	{

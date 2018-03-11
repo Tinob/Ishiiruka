@@ -18,6 +18,7 @@
 #include "VideoCommon/Statistics.h"
 #include "VideoCommon/VertexLoaderManager.h"
 #include "VideoCommon/VertexManagerBase.h"
+#include "VideoCommon/VertexShaderManager.h"
 #include "VideoCommon/VideoConfig.h"
 
 
@@ -33,12 +34,6 @@ static VertexLoaderMap s_vertex_loader_map;
 static NativeVertexFormatMap s_native_vertex_map;
 static NativeVertexFormat* s_current_vtx_fmt;
 u32 g_current_components;
-// TODO - change into array of pointers. Keep a map of all seen so far.
-// Used in D3D12 backend, to populate input layouts used by cached-to-disk PSOs.
-NativeVertexFormatMap* GetNativeVertexFormatMap()
-{
-	return &s_native_vertex_map;
-}
 
 NativeVertexFormat* GetCurrentVertexFormat()
 {
@@ -70,99 +65,6 @@ struct codeentry
 };
 }
 
-static std::string To_HexString(u32 in)
-{
-	char hexString[2 * sizeof(u32) + 8];
-	sprintf(hexString, "0x%08xu", in);
-	return std::string(hexString);
-}
-
-static void DumpLoadersCode()
-{
-	std::vector<codeentry> entries;
-	for (VertexLoaderMap::const_iterator iter = s_vertex_loader_map.begin(); iter != s_vertex_loader_map.end(); ++iter)
-	{
-		if (!iter->second->IsPrecompiled())
-		{
-			codeentry e;
-			e.conf.append(To_HexString(iter->first.GetElement(0)));
-			e.conf.append(", ");
-			e.conf.append(To_HexString(iter->first.GetElement(1)));
-			e.conf.append(", ");
-			e.conf.append(To_HexString(iter->first.GetElement(2)));
-			e.conf.append(", ");
-			e.conf.append(To_HexString(iter->first.GetElement(3)));
-			e.name = iter->second->GetName();
-			e.num_verts = iter->second->m_numLoadedVertices;
-			e.hash = std::to_string(iter->first.GetHash());
-			entries.push_back(e);
-		}
-	}
-	if (entries.size() == 0)
-	{
-		return;
-	}
-	std::string filename = StringFromFormat("%sG_%s_pvt.h", File::GetUserPath(D_DUMP_IDX).c_str(), last_game_code.c_str());
-	std::string header;
-	header.append("// Copyright 2013 Dolphin Emulator Project\n");
-	header.append("// Licensed under GPLv2+\n");
-	header.append("// Refer to the license.txt file included.\n");
-	header.append("// Added for Ishiiruka by Tino\n");
-	header.append("#pragma once\n");
-	header.append("#include <map>\n");
-	header.append("#include \"VideoCommon/NativeVertexFormat.h\"\n");
-	header.append("class G_");
-	header.append(last_game_code);
-	header.append("_pvt\n{\npublic:\n");
-	header.append("static void Initialize(std::map<u64, TCompiledLoaderFunction> &pvlmap);\n");
-	header.append("};\n");
-	std::ofstream headerfile(filename);
-	headerfile << header;
-	headerfile.close();
-	filename = StringFromFormat("%sG_%s_pvt.cpp", File::GetUserPath(D_DUMP_IDX).c_str(), last_game_code.c_str());
-	sort(entries.begin(), entries.end());
-	std::string sourcecode;
-	sourcecode.append("#include \"VideoCommon/G_");
-	sourcecode.append(last_game_code);
-	sourcecode.append("_pvt.h\"\n");
-	sourcecode.append("#include \"VideoCommon/VertexLoader_Template.h\"\n\n");
-	sourcecode.append("\n\nvoid G_");
-	sourcecode.append(last_game_code);
-	sourcecode.append("_pvt::Initialize(std::map<u64, TCompiledLoaderFunction> &pvlmap)\n{\n");
-	for (std::vector<codeentry>::const_iterator iter = entries.begin(); iter != entries.end(); ++iter)
-	{
-		sourcecode.append("\t// ");
-		sourcecode.append(iter->name);
-		sourcecode.append("\n// num_verts= ");
-		sourcecode.append(std::to_string(iter->num_verts));
-		sourcecode.append("#if _M_SSE >= 0x301\n");
-		sourcecode.append("\tif (cpu_info.bSSSE3)\n");
-		sourcecode.append("\t{\n");
-		sourcecode.append("\t\tpvlmap[");
-		sourcecode.append(iter->hash);
-		sourcecode.append("] = ");
-		sourcecode.append("TemplatedLoader");
-		sourcecode.append("<0x301, ");
-		sourcecode.append(iter->conf);
-		sourcecode.append(">;\n");
-		sourcecode.append("\t}\n\telse\n");
-		sourcecode.append("#endif\n");
-		sourcecode.append("\t{\n");
-		sourcecode.append("\t\tpvlmap[");
-		sourcecode.append(iter->hash);
-		sourcecode.append("] = ");
-		sourcecode.append("TemplatedLoader");
-		sourcecode.append("<0, ");
-		sourcecode.append(iter->conf);
-		sourcecode.append(">;\n");
-		sourcecode.append("\t}\n");
-	}
-	sourcecode.append("}\n");
-	std::ofstream out(filename);
-	out << sourcecode;
-	out.close();
-}
-
 void AppendListToString(std::string *dest)
 {
 	std::vector<entry> entries;
@@ -189,13 +91,11 @@ void Init()
 	MarkAllDirty();
 	for (VertexLoaderBase*& vertexLoader : g_main_cp_state.vertex_loaders)
 		vertexLoader = nullptr;
-	last_game_code = SConfig::GetInstance().m_strGameID;
+	last_game_code = SConfig::GetInstance().GetGameID();
 }
 
 void Shutdown()
 {
-	if (s_vertex_loader_map.size() > 0 && g_ActiveConfig.bDumpVertexLoaders)
-		DumpLoadersCode();
 	s_vertex_loader_map.clear();
 	s_native_vertex_map.clear();
 }
@@ -237,6 +137,72 @@ void MarkAllDirty()
 	g_main_cp_state.bases_dirty = true;
 	g_preprocess_cp_state.attr_dirty = 0xff;
 	g_preprocess_cp_state.bases_dirty = true;
+}
+
+NativeVertexFormat* GetOrCreateMatchingFormat(const PortableVertexDeclaration& decl)
+{
+	auto iter = s_native_vertex_map.find(decl);
+	if (iter == s_native_vertex_map.end())
+	{
+		std::unique_ptr<NativeVertexFormat> fmt = g_vertex_manager->CreateNativeVertexFormat(decl);
+		auto ipair = s_native_vertex_map.emplace(decl, std::move(fmt));
+		iter = ipair.first;
+	}
+
+	return iter->second.get();
+}
+
+NativeVertexFormat* GetUberVertexFormat(const PortableVertexDeclaration& decl)
+{
+	// The padding in the structs can cause the memcmp() in the map to create duplicates.
+	// Avoid this by initializing the padding to zero.
+	PortableVertexDeclaration new_decl;
+	std::memset(&new_decl, 0, sizeof(new_decl));
+	new_decl.stride = decl.stride;
+
+	auto MakeDummyAttribute = [](AttributeFormat& attr, EVTXComponentFormat type, int components) {
+		attr.type = type;
+		attr.components = components;
+		attr.offset = 0;
+		attr.enable = true;
+	};
+	auto CopyAttribute = [](AttributeFormat& attr, const AttributeFormat& src) {
+		attr.type = src.type;
+		attr.components = src.components;
+		attr.offset = src.offset;
+		attr.enable = src.enable;
+	};
+
+	if (decl.position.enable)
+		CopyAttribute(new_decl.position, decl.position);
+	else
+		MakeDummyAttribute(new_decl.position, EVTXComponentFormat::FORMAT_FLOAT, 1);
+
+	for (size_t i = 0; i < ArraySize(new_decl.normals); i++)
+	{
+		if (decl.normals[i].enable)
+			CopyAttribute(new_decl.normals[i], decl.normals[i]);
+		else
+			MakeDummyAttribute(new_decl.normals[i], EVTXComponentFormat::FORMAT_FLOAT, 1);
+	}
+	for (size_t i = 0; i < ArraySize(new_decl.colors); i++)
+	{
+		if (decl.colors[i].enable)
+			CopyAttribute(new_decl.colors[i], decl.colors[i]);
+		else
+			MakeDummyAttribute(new_decl.colors[i], EVTXComponentFormat::FORMAT_UBYTE, 4);
+	}
+	for (size_t i = 0; i < ArraySize(new_decl.texcoords); i++)
+	{
+		if (decl.texcoords[i].enable)
+			CopyAttribute(new_decl.texcoords[i], decl.texcoords[i]);
+		else
+			MakeDummyAttribute(new_decl.texcoords[i], EVTXComponentFormat::FORMAT_FLOAT, 1);
+	}
+
+	CopyAttribute(new_decl.posmtx, decl.posmtx);
+
+	return GetOrCreateMatchingFormat(new_decl);
 }
 
 inline VertexLoaderBase *GetOrAddLoader(const TVtxDesc &VtxDesc, const VAT &VtxAttr)
@@ -303,6 +269,7 @@ bool ConvertVertices(VertexLoaderParameters &parameters, u32 &readsize, u32 &wri
 	}
 	s_current_vtx_fmt = nativefmt;
 	g_current_components = loader->m_native_components;
+	VertexShaderManager::SetVertexFormat(loader->m_native_components);
 	g_vertex_manager->PrepareForAdditionalData(parameters.primitive, parameters.count, loader->m_native_stride);
 	parameters.destination = g_vertex_manager->GetCurrentBufferPointer();
 	s32 finalcount = loader->RunVertices(parameters);

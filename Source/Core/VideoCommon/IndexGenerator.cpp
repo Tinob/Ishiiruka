@@ -19,18 +19,18 @@ static void(*primitive_table[8])(u32);
 
 void IndexGenerator::Init()
 {
-	primitive_table[GX_DRAW_QUADS] = IndexGenerator::AddQuads;
+	primitive_table[OpcodeDecoder::GX_DRAW_QUADS] = IndexGenerator::AddQuads;
 #if defined(_DEBUG) || defined(DEBUGFAST)
-	primitive_table[GX_DRAW_QUADS_2] = IndexGenerator::AddQuads_nonstandard;
+	primitive_table[OpcodeDecoder::GX_DRAW_QUADS_2] = IndexGenerator::AddQuads_nonstandard;
 #else
-	primitive_table[GX_DRAW_QUADS_2] = IndexGenerator::AddQuads;
+	primitive_table[OpcodeDecoder::GX_DRAW_QUADS_2] = IndexGenerator::AddQuads;
 #endif
-	primitive_table[GX_DRAW_TRIANGLES] = IndexGenerator::AddList;
-	primitive_table[GX_DRAW_TRIANGLE_STRIP] = IndexGenerator::AddStrip;
-	primitive_table[GX_DRAW_TRIANGLE_FAN] = IndexGenerator::AddFan;
-	primitive_table[GX_DRAW_LINES] = &IndexGenerator::AddLineList;
-	primitive_table[GX_DRAW_LINE_STRIP] = &IndexGenerator::AddLineStrip;
-	primitive_table[GX_DRAW_POINTS] = &IndexGenerator::AddPoints;
+	primitive_table[OpcodeDecoder::GX_DRAW_TRIANGLES] = IndexGenerator::AddList;
+	primitive_table[OpcodeDecoder::GX_DRAW_TRIANGLE_STRIP] = IndexGenerator::AddStrip;
+	primitive_table[OpcodeDecoder::GX_DRAW_TRIANGLE_FAN] = IndexGenerator::AddFan;
+	primitive_table[OpcodeDecoder::GX_DRAW_LINES] = &IndexGenerator::AddLineList;
+	primitive_table[OpcodeDecoder::GX_DRAW_LINE_STRIP] = &IndexGenerator::AddLineStrip;
+	primitive_table[OpcodeDecoder::GX_DRAW_POINTS] = &IndexGenerator::AddPoints;
 }
 
 void IndexGenerator::Start(u16* Indexptr)

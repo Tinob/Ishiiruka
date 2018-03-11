@@ -19,7 +19,9 @@
 #include "VideoCommon/BoundingBox.h"
 #include "VideoCommon/CommandProcessor.h"
 #include "VideoCommon/Fifo.h"
+#include "VideoCommon/PerfQueryBase.h"
 #include "VideoCommon/PixelEngine.h"
+#include "VideoCommon/PixelShaderManager.h"
 
 namespace PixelEngine
 {
@@ -253,6 +255,7 @@ void RegisterMMIO(MMIO::Mapping* mmio, u32 base)
 			MMIO::ComplexRead<u16>([i](u32)
 		{
 			BoundingBox::active = false;
+			PixelShaderManager::SetBoundingBoxActive(false);
 			return g_video_backend->Video_GetBoundingBox(i);
 		}),
 			MMIO::InvalidWrite<u16>()
@@ -303,15 +306,15 @@ static void SetTokenFinish_OnMainThread(u64 userdata, s64 cyclesLate)
 // THIS IS EXECUTED FROM VIDEO THREAD
 static inline void RaiseEvent()
 {
-  if (s_event_raised)
-    return;
+	if (s_event_raised)
+		return;
 
-  s_event_raised = true;
+	s_event_raised = true;
 
-  CoreTiming::FromThread from = CoreTiming::FromThread::NON_CPU;
-  if (!SConfig::GetInstance().bCPUThread || Fifo::UseDeterministicGPUThread())
-    from = CoreTiming::FromThread::CPU;
-  CoreTiming::ScheduleEvent(0, et_SetTokenFinishOnMainThread, 0, from);
+	CoreTiming::FromThread from = CoreTiming::FromThread::NON_CPU;
+	if (!SConfig::GetInstance().bCPUThread || Fifo::UseDeterministicGPUThread())
+		from = CoreTiming::FromThread::CPU;
+	CoreTiming::ScheduleEvent(0, et_SetTokenFinishOnMainThread, 0, from);
 }
 
 // SetToken

@@ -10,7 +10,7 @@
 void G_GB4P51_pvt::Initialize(std::map<u64, TCompiledLoaderFunction> &pvlmap)
 {
 	// P_mtx0_3_I16_s16_Nrm_0_0_I16_s8_T0_mtx0_1_I16_s16_
-// num_verts= 139264034
+  // num_verts= 139264034
 #if _M_SSE >= 0x301
 	if (cpu_info.bSSSE3)
 	{

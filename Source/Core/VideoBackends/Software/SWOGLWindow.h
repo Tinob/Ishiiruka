@@ -40,7 +40,7 @@ private:
 	};
 	std::vector<TextData> m_text;
 
-	bool m_init{false};
+	bool m_init{ false };
 
 	u32 m_image_program, m_image_texture, m_image_vao;
 };

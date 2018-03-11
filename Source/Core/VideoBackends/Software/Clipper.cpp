@@ -233,7 +233,7 @@ static void ClipTriangle(int *indices, int* numIndices)
 static void ClipLine(int *indices)
 {
 	int mask = 0;
-	int clip_mask[2] = {0, 0};
+	int clip_mask[2] = { 0, 0 };
 
 	for (int i = 0; i < 2; ++i)
 	{
@@ -343,7 +343,7 @@ static void CopyVertex(OutputVertexData *dst, OutputVertexData *src, float dx, f
 
 void ProcessLine(OutputVertexData *lineV0, OutputVertexData *lineV1)
 {
-	int indices[4] = {0, 1, SKIP_FLAG, SKIP_FLAG};
+	int indices[4] = { 0, 1, SKIP_FLAG, SKIP_FLAG };
 
 	Vertices[0] = lineV0;
 	Vertices[1] = lineV1;
@@ -419,7 +419,7 @@ bool CullTest(OutputVertexData *v0, OutputVertexData *v1, OutputVertexData *v2, 
 	float w1 = v1->projectedPosition.w;
 	float w2 = v2->projectedPosition.w;
 
-	float normalZDir = (x0*w2 - x2*w0)*y1 + (x2*y0 - x0*y2)*w1 + (y2*w0 - y0*w2)*x1;
+	float normalZDir = (x0*w2 - x2 * w0)*y1 + (x2*y0 - x0 * y2)*w1 + (y2*w0 - y0 * w2)*x1;
 
 	backface = normalZDir <= 0.0f;
 

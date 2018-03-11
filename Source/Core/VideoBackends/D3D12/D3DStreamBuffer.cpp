@@ -98,12 +98,13 @@ void D3DStreamBuffer::AllocateBuffer(size_t size)
 		m_buffer->Unmap(0, &write_range);
 		D3D::command_list_mgr->DestroyResourceAfterCurrentCommandListExecuted(m_buffer.Detach());
 	}
-
+	CD3DX12_HEAP_PROPERTIES hprops(D3D12_HEAP_TYPE_UPLOAD);
+	auto rdesc = CD3DX12_RESOURCE_DESC::Buffer(size);
 	CheckHR(
 		D3D::device->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+			&hprops,
 			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Buffer(size),
+			&rdesc,
 			D3D12_RESOURCE_STATE_GENERIC_READ,
 			nullptr,
 			IID_PPV_ARGS(m_buffer.ReleaseAndGetAddressOf())

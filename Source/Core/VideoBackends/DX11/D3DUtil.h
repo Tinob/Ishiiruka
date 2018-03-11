@@ -75,7 +75,7 @@ public:
 		return m_max_size;
 	}
 private:
-	ID3D11Buffer* m_buf;
+	ID3D11Buffer * m_buf;
 	u32 m_offset;
 	u32 m_max_size;
 
@@ -102,7 +102,7 @@ public:
 		return D3D::BufferDescriptor(m_buf, (m_offset - m_current_size) >> 4, Common::AlignUpSizePow2(m_current_size, 256) >> 4);
 	};
 private:
-	ID3D11Buffer* m_buf = nullptr;
+	ID3D11Buffer * m_buf = nullptr;
 	u32 m_offset = 0;
 	u32 m_max_size = 0;
 	u32 m_current_size = 0;

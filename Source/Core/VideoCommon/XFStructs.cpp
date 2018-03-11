@@ -55,6 +55,7 @@ inline void XFRegWritten(int transferSize, u32 baseAddress)
 		case XFMEM_SETNUMCHAN:
 			if (xfmem.numChan.numColorChans != (newValue & 3))
 				g_vertex_manager->Flush();
+			VertexShaderManager::SetLightingConfigChanged();
 			break;
 
 		case XFMEM_SETCHAN0_AMBCOLOR: // Channel Ambient Color
@@ -89,11 +90,13 @@ inline void XFRegWritten(int transferSize, u32 baseAddress)
 		case XFMEM_SETCHAN1_ALPHA:
 			if (((u32*)&xfmem)[address - 0x1000] != (newValue & 0x7fff))
 				g_vertex_manager->Flush();
+			VertexShaderManager::SetLightingConfigChanged();
 			break;
 
 		case XFMEM_DUALTEX:
 			if (xfmem.dualTexTrans.enabled != (newValue & 1))
 				g_vertex_manager->Flush();
+			VertexShaderManager::SetTexMatrixInfoChanged(-1);
 			break;
 
 
@@ -146,7 +149,7 @@ inline void XFRegWritten(int transferSize, u32 baseAddress)
 		case XFMEM_SETTEXMTXINFO + 6:
 		case XFMEM_SETTEXMTXINFO + 7:
 			g_vertex_manager->Flush();
-
+			VertexShaderManager::SetTexMatrixInfoChanged(address - XFMEM_SETTEXMTXINFO);
 			nextAddress = XFMEM_SETTEXMTXINFO + 8;
 			break;
 
@@ -159,7 +162,7 @@ inline void XFRegWritten(int transferSize, u32 baseAddress)
 		case XFMEM_SETPOSMTXINFO + 6:
 		case XFMEM_SETPOSMTXINFO + 7:
 			g_vertex_manager->Flush();
-
+			VertexShaderManager::SetTexMatrixInfoChanged(address - XFMEM_SETPOSMTXINFO);
 			nextAddress = XFMEM_SETPOSMTXINFO + 8;
 			break;
 

@@ -31,10 +31,8 @@ namespace DX11
 HullDomainShaderCache::HDCache* HullDomainShaderCache::s_hulldomain_shaders;
 const HullDomainShaderCache::HDCacheEntry* HullDomainShaderCache::s_last_entry;
 TessellationShaderUid HullDomainShaderCache::s_last_uid;
-TessellationShaderUid HullDomainShaderCache::s_external_last_uid;
 
 static HLSLAsyncCompiler *s_compiler;
-static Common::SpinLock<true> s_hulldomain_shaders_lock;
 
 std::unique_ptr<D3D::ConstantStreamBuffer> hdscbuf;
 
@@ -59,7 +57,10 @@ class HullShaderCacheInserter : public LinearDiskCacheReader<TessellationShaderU
 public:
 	void Read(const TessellationShaderUid &key, const u8* value, u32 value_size)
 	{
-		HullDomainShaderCache::InsertByteCode(key, value, value_size, false);
+		TessellationShaderUid uid = key;
+		uid.ClearHASH();
+		uid.CalculateUIDHash();
+		HullDomainShaderCache::InsertByteCode(uid, value, value_size, false);
 	}
 };
 
@@ -68,14 +69,16 @@ class DomainShaderCacheInserter : public LinearDiskCacheReader<TessellationShade
 public:
 	void Read(const TessellationShaderUid &key, const u8* value, u32 value_size)
 	{
-		HullDomainShaderCache::InsertByteCode(key, value, value_size, true);
+		TessellationShaderUid uid = key;
+		uid.ClearHASH();
+		uid.CalculateUIDHash();
+		HullDomainShaderCache::InsertByteCode(uid, value, value_size, true);
 	}
 };
 
 void HullDomainShaderCache::Init()
 {
 	s_compiler = &HLSLAsyncCompiler::getInstance();
-	s_hulldomain_shaders_lock.unlock();
 
 	bool use_partial_buffer_update = D3D::SupportPartialContantBufferUpdate();
 	u32 gbsize = static_cast<u32>(Common::AlignUpSizePow2(sizeof(TessellationShaderConstants), 16) * (use_partial_buffer_update ? 1024 : 1)); // must be a multiple of 16
@@ -111,20 +114,20 @@ void HullDomainShaderCache::Init()
 	SETSTAT(stats.numHullShadersAlive, 0);
 	if (g_ActiveConfig.bCompileShaderOnStartup)
 	{
-		size_t shader_count = 0;
+		static size_t shader_count;
+		shader_count = 0;
 		s_hulldomain_shaders->ForEachMostUsedByCategory(gameid,
 			[&](const TessellationShaderUid& it, size_t total)
 		{
 			TessellationShaderUid item = it;
 			item.ClearHASH();
 			item.CalculateUIDHash();
-			CompileHDShader(item, true);
-			shader_count++;
-			if ((shader_count & 7) == 0)
-			{
-				Host_UpdateTitle(StringFromFormat("Compiling Tessellation Shaders %i %% (%i/%i)", (shader_count * 100) / total, shader_count, total));
-				s_compiler->WaitForFinish();
-			}
+			CompileHDShader(item, [total]() {
+				shader_count++;
+				Host_UpdateProgressDialog(GetStringT("Compiling Tessellation shaders...").c_str(),
+					static_cast<int>(shader_count), static_cast<int>(total * 2));
+			});
+
 		},
 			[](HDCacheEntry& entry)
 		{
@@ -132,6 +135,7 @@ void HullDomainShaderCache::Init()
 		}
 		, true);
 		s_compiler->WaitForFinish();
+		Host_UpdateProgressDialog("", -1, -1);
 	}
 	s_last_entry = nullptr;
 }
@@ -141,13 +145,14 @@ void HullDomainShaderCache::Clear()
 {
 	if (s_hulldomain_shaders)
 	{
-		s_hulldomain_shaders_lock.lock();
-		s_hulldomain_shaders->Persist();
+		s_hulldomain_shaders->Persist([](TessellationShaderUid &uid) {
+			uid.ClearHASH();
+			uid.CalculateUIDHash();
+		});
 		s_hulldomain_shaders->Clear([](HDCacheEntry& item)
 		{
 			item.Destroy();
 		});
-		s_hulldomain_shaders_lock.unlock();
 	}
 	s_last_entry = nullptr;
 }
@@ -170,30 +175,24 @@ void HullDomainShaderCache::Shutdown()
 	g_ds_disk_cache.Close();
 }
 
-void HullDomainShaderCache::CompileHDShader(const TessellationShaderUid& uid, bool ongputhread)
+void HullDomainShaderCache::CompileHDShader(const TessellationShaderUid& uid, std::function<void()> oncompilationfinished = {})
 {
-	s_hulldomain_shaders_lock.lock();
 	HDCacheEntry* entry = &s_hulldomain_shaders->GetOrAdd(uid);
-	s_hulldomain_shaders_lock.unlock();
-	if (ongputhread)
-	{
-		s_last_entry = entry;
-	}
+	s_last_entry = entry;
 	// Compile only when we have a new instance
 	if (entry->initialized.test_and_set())
 	{
+		if (oncompilationfinished) oncompilationfinished();
 		return;
 	}
 
 	// Need to compile a new shader
 	ShaderCode code;
-	ShaderCompilerWorkUnit *wunit = s_compiler->NewUnit(TESSELLATIONSHADERGEN_BUFFERSIZE);
-	ShaderCompilerWorkUnit *wunitd = s_compiler->NewUnit(TESSELLATIONSHADERGEN_BUFFERSIZE);
-	code.SetBuffer(wunit->code.data());
-	GenerateTessellationShaderCode(code, API_D3D11, uid.GetUidData());
-	memcpy(wunitd->code.data(), wunit->code.data(), code.BufferSize());
+	ShaderCompilerWorkUnit *wunit = s_compiler->NewUnit();
+	ShaderCompilerWorkUnit *wunitd = s_compiler->NewUnit();
+	GenerateTessellationShaderCode(wunit->code, API_D3D11, uid.GetUidData());
+	wunitd->code.copy(wunit->code);
 
-	wunit->codesize = (u32)code.BufferSize();
 	wunit->entrypoint = "HS_TFO";
 #if defined(_DEBUG) || defined(DEBUGFAST)
 	wunit->flags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
@@ -202,7 +201,6 @@ void HullDomainShaderCache::CompileHDShader(const TessellationShaderUid& uid, bo
 #endif
 	wunit->target = D3D::HullShaderVersionString();
 
-	wunitd->codesize = (u32)code.BufferSize();
 	wunitd->entrypoint = "DS_TFO";
 #if defined(_DEBUG) || defined(DEBUGFAST)
 	wunit->flags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
@@ -210,8 +208,9 @@ void HullDomainShaderCache::CompileHDShader(const TessellationShaderUid& uid, bo
 	wunitd->flags = D3DCOMPILE_SKIP_VALIDATION | D3DCOMPILE_OPTIMIZATION_LEVEL3;
 #endif
 	wunitd->target = D3D::DomainShaderVersionString();
-	wunit->ResultHandler = [uid, entry](ShaderCompilerWorkUnit* wunit)
+	wunit->ResultHandler = [uid, entry, oncompilationfinished](ShaderCompilerWorkUnit* wunit)
 	{
+		if (oncompilationfinished) oncompilationfinished();
 		if (SUCCEEDED(wunit->cresult))
 		{
 			ID3DBlob* shaderBuffer = wunit->shaderbytecode;
@@ -231,15 +230,16 @@ void HullDomainShaderCache::CompileHDShader(const TessellationShaderUid& uid, bo
 			file.close();
 
 			PanicAlert("Failed to compile Hull shader!\nThis usually happens when trying to use Dolphin with an outdated GPU or integrated GPU like the Intel GMA series.\n\nIf you're sure this is Dolphin's error anyway, post the contents of %s along with this error message at the forums.\n\nDebug info (%s):\n%s",
-				szTemp,
+				szTemp.c_str(),
 				D3D::HullShaderVersionString(),
 				(char*)wunit->error->GetBufferPointer());
 		}
 		entry->hcompiled = true;
 	};
 
-	wunitd->ResultHandler = [uid, entry](ShaderCompilerWorkUnit* wunitd)
+	wunitd->ResultHandler = [uid, entry, oncompilationfinished](ShaderCompilerWorkUnit* wunitd)
 	{
+		if (oncompilationfinished) oncompilationfinished();
 		if (SUCCEEDED(wunitd->cresult))
 		{
 			ID3DBlob* shaderBuffer = wunitd->shaderbytecode;
@@ -259,7 +259,7 @@ void HullDomainShaderCache::CompileHDShader(const TessellationShaderUid& uid, bo
 			file.close();
 
 			PanicAlert("Failed to compile Domain shader!\nThis usually happens when trying to use Dolphin with an outdated GPU or integrated GPU like the Intel GMA series.\n\nIf you're sure this is Dolphin's error anyway, post the contents of %s along with this error message at the forums.\n\nDebug info (%s):\n%s",
-				szTemp,
+				szTemp.c_str(),
 				D3D::DomainShaderVersionString(),
 				(char*)wunitd->error->GetBufferPointer());
 		}
@@ -273,49 +273,27 @@ void HullDomainShaderCache::PrepareShader(
 	const XFMemory &xfr,
 	const BPMemory &bpm,
 	const PrimitiveType primitiveType,
-	const u32 components,
-	bool ongputhread)
+	const u32 components)
 {
-	if (!(primitiveType == PrimitiveType::PRIMITIVE_TRIANGLES
+	if (!(primitiveType == PrimitiveType::Triangles
 		&& g_ActiveConfig.TessellationEnabled()
 		&& xfr.projection.type == GX_PERSPECTIVE
 		&& (g_ActiveConfig.bForcedLighting || g_ActiveConfig.PixelLightingEnabled(xfr, components))))
 	{
-		if (ongputhread)
-		{
-			s_last_entry = nullptr;
-		}
-		else
-		{
-			s_external_last_uid.ClearUID();
-		}
+		s_last_entry = nullptr;
 		return;
 	}
 	TessellationShaderUid uid;
 	GetTessellationShaderUID(uid, xfr, bpm, components);
-	if (ongputhread)
+	s_compiler->ProcCompilationResults();
+	// Check if the shader is already set
+	if (s_last_entry && uid == s_last_uid)
 	{
-		s_compiler->ProcCompilationResults();
-		// Check if the shader is already set
-		if (s_last_entry)
-		{
-			if (uid == s_last_uid)
-			{
-				return;
-			}
-		}
-		s_last_uid = uid;
-		GFX_DEBUGGER_PAUSE_AT(NEXT_PIXEL_SHADER_CHANGE, true);
+		return;
 	}
-	else
-	{
-		if (s_external_last_uid == uid)
-		{
-			return;
-		}
-		s_external_last_uid = uid;
-	}
-	CompileHDShader(uid, ongputhread);
+	s_last_uid = uid;
+	GFX_DEBUGGER_PAUSE_AT(NEXT_PIXEL_SHADER_CHANGE, true);
+	CompileHDShader(uid);
 }
 
 bool HullDomainShaderCache::TestShader()

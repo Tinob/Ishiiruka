@@ -520,7 +520,7 @@ bool PostProcessingShaderConfiguration::ParsePassBlock(const std::string& dirnam
 {
 	RenderPass pass;
 	pass.output_scale = 1.0f;
-	pass.output_format = PC_TexFormat::PC_TEX_FMT_RGBA32;
+	pass.output_format = HostTextureFormat::PC_TEX_FMT_RGBA32;
 
 	for (const auto& option : block.m_options)
 	{
@@ -540,21 +540,21 @@ bool PostProcessingShaderConfiguration::ParsePassBlock(const std::string& dirnam
 		{
 			if (value == "R32_FLOAT")
 			{
-				pass.output_format = PC_TexFormat::PC_TEX_FMT_R_FLOAT;
+				pass.output_format = HostTextureFormat::PC_TEX_FMT_R_FLOAT;
 			}
 			else if (value == "RGBA16_FLOAT")
 			{
-				pass.output_format = PC_TexFormat::PC_TEX_FMT_RGBA16_FLOAT;
+				pass.output_format = HostTextureFormat::PC_TEX_FMT_RGBA16_FLOAT;
 			}
 			else if (value == "RGBA32_FLOAT")
 			{
-				pass.output_format = PC_TexFormat::PC_TEX_FMT_RGBA_FLOAT;
+				pass.output_format = HostTextureFormat::PC_TEX_FMT_RGBA_FLOAT;
 			}
 			else
 			{
 				return false;
 			}
-				
+
 		}
 		else if (key == "OutputScaleNative")
 		{
@@ -971,31 +971,12 @@ void PostProcessingShaderConfiguration::SetOptionb(const std::string& option, bo
 
 PostProcessingShader::~PostProcessingShader()
 {
-	for (size_t i = 0; i < m_prev_frame_texture.size(); i++)
-	{
-		m_prev_frame_texture[i].color_frame;
-		m_prev_frame_texture[i].depth_frame;
-	}
-	for (RenderPassData& pass : m_passes)
-	{
-		for (InputBinding& input : pass.inputs)
-		{
-			// External textures
-			if (input.texture)
-			{
-				delete input.texture;
-			}
-		}
-		if (pass.output_texture)
-		{
-			delete pass.output_texture;
-		}
-	}
+
 }
 
-TextureCacheBase::TCacheEntryBase* PostProcessingShader::GetLastPassOutputTexture() const
+HostTexture* PostProcessingShader::GetLastPassOutputTexture() const
 {
-	return m_passes[m_last_pass_index].output_texture;
+	return m_passes[m_last_pass_index].output_texture.get();
 }
 
 bool PostProcessingShader::IsLastPassScaled() const
@@ -1058,14 +1039,14 @@ bool PostProcessingShader::CreatePasses()
 
 			if (input.type == POST_PROCESSING_INPUT_TYPE_IMAGE)
 			{
-				TextureCacheBase::TCacheEntryConfig config;
+				TextureConfig config;
 				config.width = input_config.external_image_size.width;
 				config.height = input_config.external_image_size.height;
-				config.pcformat = PC_TexFormat::PC_TEX_FMT_RGBA32;
+				config.pcformat = HostTextureFormat::PC_TEX_FMT_RGBA32;
 				config.rendertarget = false;
 
-				input.texture = g_texture_cache->AllocateTexture(config);
-				input.texture->Load(input_config.external_image_data.get(), config.width, config.height, config.width, 0);
+				input.texture = std::move(g_texture_cache->AllocateTexture(config));
+				input.texture->Load(input_config.external_image_data.get(), config.width, config.height, config.width, 0, 0);
 				input.size = input_config.external_image_size;
 			}
 
@@ -1133,7 +1114,7 @@ void PostProcessingShader::LinkPassOutputs()
 				}
 				else
 				{
-					input_binding.prev_texture = m_passes[pass_output_index].output_texture;
+					input_binding.prev_texture = m_passes[pass_output_index].output_texture.get();
 					input_binding.size = m_passes[pass_output_index].output_size;
 				}
 			}
@@ -1162,7 +1143,7 @@ bool PostProcessingShader::ResizeOutputTextures(const TargetSize& new_size)
 		g_texture_cache->DisposeTexture(m_prev_frame_texture[i].depth_frame);
 	}
 	m_prev_frame_texture.resize(std::max(frameoutput.color_count, frameoutput.depth_count));
-	TextureCacheBase::TCacheEntryConfig config;
+	TextureConfig config;
 	config.width = m_prev_frame_size.width;
 	config.height = m_prev_frame_size.height;
 
@@ -1171,14 +1152,14 @@ bool PostProcessingShader::ResizeOutputTextures(const TargetSize& new_size)
 
 	for (size_t i = 0; i < m_prev_frame_texture.size(); i++)
 	{
-		config.pcformat = PC_TexFormat::PC_TEX_FMT_RGBA32;
+		config.pcformat = HostTextureFormat::PC_TEX_FMT_RGBA32;
 		if (i < static_cast<size_t>(frameoutput.color_count))
-			m_prev_frame_texture[i].color_frame = g_texture_cache->AllocateTexture(config);
-		config.pcformat = PC_TexFormat::PC_TEX_FMT_DEPTH_FLOAT;
+			m_prev_frame_texture[i].color_frame = std::move(g_texture_cache->AllocateTexture(config));
+		config.pcformat = HostTextureFormat::PC_TEX_FMT_DEPTH_FLOAT;
 		if (i < static_cast<size_t>(frameoutput.depth_count))
-			m_prev_frame_texture[i].depth_frame = g_texture_cache->AllocateTexture(config);
+			m_prev_frame_texture[i].depth_frame = std::move(g_texture_cache->AllocateTexture(config));
 	}
-	config.pcformat = PC_TexFormat::PC_TEX_FMT_RGBA32;
+	config.pcformat = HostTextureFormat::PC_TEX_FMT_RGBA32;
 	for (size_t pass_index = 0; pass_index < m_passes.size(); pass_index++)
 	{
 		RenderPassData& pass = m_passes[pass_index];
@@ -1194,7 +1175,7 @@ bool PostProcessingShader::ResizeOutputTextures(const TargetSize& new_size)
 		config.width = pass.output_size.width;
 		config.height = pass.output_size.height;
 		// Last pass output is always RGBA32
-		config.pcformat = pass_index < m_passes.size() - 1 ? pass.output_format : PC_TexFormat::PC_TEX_FMT_RGBA32;
+		config.pcformat = pass_index < m_passes.size() - 1 ? pass.output_format : HostTextureFormat::PC_TEX_FMT_RGBA32;
 		pass.output_texture = g_texture_cache->AllocateTexture(config);
 	}
 	m_internal_size = new_size;
@@ -1209,21 +1190,6 @@ PostProcessor::PostProcessor(API_TYPE apitype) : m_APIType(apitype)
 PostProcessor::~PostProcessor()
 {
 	m_timer.Stop();
-	if (m_color_copy_texture)
-	{
-		delete m_color_copy_texture;
-		m_color_copy_texture = nullptr;
-	}
-	if (m_depth_copy_texture)
-	{
-		delete m_depth_copy_texture;
-		m_depth_copy_texture = nullptr;
-	}
-	if (m_stereo_buffer_texture)
-	{
-		delete m_stereo_buffer_texture;
-		m_stereo_buffer_texture = nullptr;
-	}
 }
 
 void PostProcessor::DisablePostProcessor()
@@ -1300,20 +1266,20 @@ void  PostProcessor::DoEFB(const TargetRectangle* src_rect)
 		// Copied fromg_renderer->SetViewport
 		int scissorXOff = bpmem.scissorOffset.x * 2;
 		int scissorYOff = bpmem.scissorOffset.y * 2;
-		float X =g_renderer->EFBToScaledXf(xfmem.viewport.xOrig - xfmem.viewport.wd - (float)scissorXOff);
+		float X = g_renderer->EFBToScaledXf(xfmem.viewport.xOrig - xfmem.viewport.wd - (float)scissorXOff);
 		float Y;
 		if (m_APIType == API_OPENGL)
 		{
-			Y =g_renderer->EFBToScaledYf((float)EFB_HEIGHT - xfmem.viewport.yOrig + xfmem.viewport.ht +
+			Y = g_renderer->EFBToScaledYf((float)EFB_HEIGHT - xfmem.viewport.yOrig + xfmem.viewport.ht +
 				(float)scissorYOff);
 		}
 		else
 		{
-			Y =g_renderer->EFBToScaledYf(xfmem.viewport.yOrig + xfmem.viewport.ht - (float)scissorYOff);
+			Y = g_renderer->EFBToScaledYf(xfmem.viewport.yOrig + xfmem.viewport.ht - (float)scissorYOff);
 		}
-		
-		float Width =g_renderer->EFBToScaledXf(2.0f * xfmem.viewport.wd);
-		float Height =g_renderer->EFBToScaledYf(-2.0f * xfmem.viewport.ht);
+
+		float Width = g_renderer->EFBToScaledXf(2.0f * xfmem.viewport.wd);
+		float Height = g_renderer->EFBToScaledYf(-2.0f * xfmem.viewport.ht);
 		if (Width < 0)
 		{
 			X += Width;
@@ -1599,14 +1565,14 @@ bool PostProcessor::ResizeCopyBuffers(const TargetSize& size, int layers)
 	m_copy_size.Set(0, 0);
 	m_copy_layers = 0;
 
-	TextureCacheBase::TCacheEntryConfig config;
+	TextureConfig config;
 	config.width = size.width;
 	config.height = size.height;
-	config.pcformat = PC_TexFormat::PC_TEX_FMT_RGBA32;
+	config.pcformat = HostTextureFormat::PC_TEX_FMT_RGBA32;
 	config.rendertarget = true;
 	config.layers = layers;
 	m_color_copy_texture = g_texture_cache->AllocateTexture(config);
-	config.pcformat = PC_TexFormat::PC_TEX_FMT_DEPTH_FLOAT;
+	config.pcformat = HostTextureFormat::PC_TEX_FMT_R_FLOAT;
 	m_depth_copy_texture = g_texture_cache->AllocateTexture(config);
 	if (m_color_copy_texture && m_depth_copy_texture)
 	{
@@ -1627,10 +1593,10 @@ bool PostProcessor::ResizeStereoBuffer(const TargetSize& size)
 		m_stereo_buffer_texture = nullptr;
 	}
 	m_stereo_buffer_size.Set(0, 0);
-	TextureCacheBase::TCacheEntryConfig config;
+	TextureConfig config;
 	config.width = size.width;
 	config.height = size.height;
-	config.pcformat = PC_TexFormat::PC_TEX_FMT_RGBA32;
+	config.pcformat = HostTextureFormat::PC_TEX_FMT_RGBA32;
 	config.rendertarget = true;
 	config.layers = 2;
 	m_stereo_buffer_texture = g_texture_cache->AllocateTexture(config);
@@ -1901,13 +1867,13 @@ void PostProcessor::DrawStereoBuffers(const TargetRectangle& dst_rect, const Tar
 
 const std::string PostProcessor::s_post_fragment_header_ogl = R"(
 // Depth value is not inverted for GL
-#define DEPTH_VALUE(val) (val)
+#define DEPTH_VALUE(val) (%s(val))
 // Shader inputs/outputs
-SAMPLER_BINDING(9) uniform sampler2DArray pp_inputs[8];
-in float2 v_source_uv;
-in float2 v_target_uv;
-flat in float v_layer;
-out float4 ocol0;
+SAMPLER_BINDING(%i) uniform sampler2DArray pp_inputs[8];
+%sin float2 v_source_uv;
+%sin float2 v_target_uv;
+%sflat in float v_layer;
+%sout float4 ocol0;
 // Input sampling wrappers. Has to be a macro because the array index must be a constant expression.
 #define SampleInput(index) (texture(pp_inputs[index], float3(v_source_uv, v_layer)))
 #define SampleInputLocation(index, location) (texture(pp_inputs[index], float3(location, v_layer)))
@@ -1966,6 +1932,50 @@ float4 SampleInputBicubicLocation3(float2 location)
 		 SampleInputLocation(3, texCoord.zw) * scalingFactor.w;
 }
 
+float4 SampleInputBicubicLocation4(float2 location)
+{
+	float4 scalingFactor;
+	float4 texCoord = GetBicubicSampleLocation(4, location, scalingFactor);
+	return
+		 SampleInputLocation(4, texCoord.xy) * scalingFactor.x +
+		 SampleInputLocation(4, texCoord.zy) * scalingFactor.y +
+		 SampleInputLocation(4, texCoord.xw) * scalingFactor.z +
+		 SampleInputLocation(4, texCoord.zw) * scalingFactor.w;
+}
+
+float4 SampleInputBicubicLocation5(float2 location)
+{
+	float4 scalingFactor;
+	float4 texCoord = GetBicubicSampleLocation(5, location, scalingFactor);
+	return
+		 SampleInputLocation(5, texCoord.xy) * scalingFactor.x +
+		 SampleInputLocation(5, texCoord.zy) * scalingFactor.y +
+		 SampleInputLocation(5, texCoord.xw) * scalingFactor.z +
+		 SampleInputLocation(5, texCoord.zw) * scalingFactor.w;
+}
+
+float4 SampleInputBicubicLocation6(float2 location)
+{
+	float4 scalingFactor;
+	float4 texCoord = GetBicubicSampleLocation(6, location, scalingFactor);
+	return
+		 SampleInputLocation(6, texCoord.xy) * scalingFactor.x +
+		 SampleInputLocation(6, texCoord.zy) * scalingFactor.y +
+		 SampleInputLocation(6, texCoord.xw) * scalingFactor.z +
+		 SampleInputLocation(6, texCoord.zw) * scalingFactor.w;
+}
+
+float4 SampleInputBicubicLocation7(float2 location)
+{
+	float4 scalingFactor;
+	float4 texCoord = GetBicubicSampleLocation(7, location, scalingFactor);
+	return
+		 SampleInputLocation(7, texCoord.xy) * scalingFactor.x +
+		 SampleInputLocation(7, texCoord.zy) * scalingFactor.y +
+		 SampleInputLocation(7, texCoord.xw) * scalingFactor.z +
+		 SampleInputLocation(7, texCoord.zw) * scalingFactor.w;
+}
+
 float4 SampleInputBicubic0()
 {
 	return SampleInputBicubicLocation0(GetCoordinates());
@@ -1986,8 +1996,96 @@ float4 SampleInputBicubic3()
 	return SampleInputBicubicLocation3(GetCoordinates());
 }
 
-#define SampleInputBicubic(idx)  SampleInputBicubic##idx()
-#define SampleInputBicubicLocation(idx, location)  SampleInputBicubicLocation##idx(location)
+float4 SampleInputBicubic4()
+{
+	return SampleInputBicubicLocation4(GetCoordinates());
+}
+
+float4 SampleInputBicubic5()
+{
+	return SampleInputBicubicLocation5(GetCoordinates());
+}
+
+float4 SampleInputBicubic6()
+{
+	return SampleInputBicubicLocation6(GetCoordinates());
+}
+
+float4 SampleInputBicubic7()
+{
+	return SampleInputBicubicLocation7(GetCoordinates());
+}
+
+float4 SampleInputBicubic(int idx)
+{
+  if(idx == 0)
+  {
+    return SampleInputBicubic0();
+  }
+  else if(idx == 1)
+  {
+    return SampleInputBicubic1();
+  }
+  else if(idx == 2)
+  {
+    return SampleInputBicubic2();
+  }
+  else if(idx == 3)
+  {
+    return SampleInputBicubic3();
+  }
+  else if(idx == 4)
+  {
+    return SampleInputBicubic4();
+  }
+  else if(idx == 5)
+  {
+    return SampleInputBicubic5();
+  }
+  else if(idx == 6)
+  {
+    return SampleInputBicubic6();
+  }
+  else
+  {
+    return SampleInputBicubic7();
+  }
+}  
+float4 SampleInputBicubicLocation(int idx, float2 location)
+{
+  if(idx == 0)
+  {
+    return SampleInputBicubicLocation0(location);
+  }
+  else if(idx == 1)
+  {
+    return SampleInputBicubicLocation1(location);
+  }
+  else if(idx == 2)
+  {
+    return SampleInputBicubicLocation2(location);
+  }
+  else if(idx == 3)
+  {
+    return SampleInputBicubicLocation3(location);
+  }
+  else if(idx == 4)
+  {
+    return SampleInputBicubicLocation4(location);
+  }
+  else if(idx == 5)
+  {
+    return SampleInputBicubicLocation5(location);
+  }
+  else if(idx == 6)
+  {
+    return SampleInputBicubicLocation6(location);
+  }
+  else
+  {
+    return SampleInputBicubicLocation7(location);
+  } 
+}
 
 float4 SampleBicubicLocation(float2 location)
 {
@@ -2032,6 +2130,10 @@ float4 SampleBicubic()
 			SampleInputLocation(COLOR_BUFFER_INPUT_INDEX, texCoord.xw) * scalingFactor.z +
 			SampleInputLocation(COLOR_BUFFER_INPUT_INDEX, texCoord.zw) * scalingFactor.w;
 }
+
+// Option check macro
+#define GetOption(x) (conf_options.x)
+#define OptionEnabled(x) ((conf_options.x) != 0)
 
 )";
 
@@ -2096,6 +2198,9 @@ float4 SampleBicubic()
 	return SampleInputBicubicLocation(COLOR_BUFFER_INPUT_INDEX, GetCoordinates());
 }
 
+// Option check macro
+#define GetOption(x) (o_##x)
+#define OptionEnabled(x) ((o_##x) != 0)
 )";
 
 const std::string PostProcessor::s_post_fragment_header_common = R"(
@@ -2245,16 +2350,13 @@ float4 GetBicubicSampleLocation(int idx, float2 location, out float4 scalingFact
 }
 
 #define SetOutput(color) ocol0 = color
-// Option check macro
-#define GetOption(x) (o_##x)
-#define OptionEnabled(x) ((o_##x) != 0)
 )";
 
-void PostProcessor::GetUniformBufferShaderSource(API_TYPE api, const PostProcessingShaderConfiguration* config, std::string& shader_source)
+void PostProcessor::GetUniformBufferShaderSource(API_TYPE api, const PostProcessingShaderConfiguration* config, std::string& shader_source, bool includeconfig)
 {
 	// Constant block
-	if (api == API_OPENGL)
-		shader_source += "layout(std140) uniform PostProcessingConstants {\n";
+	if (api == API_OPENGL || api == API_VULKAN)
+		shader_source += StringFromFormat("UBO_BINDING(std140, %i) uniform PostProcessingConstants {\n", api == API_VULKAN ? 2 : 1);
 	else if (api == API_D3D11)
 		shader_source += "cbuffer PostProcessingConstants : register(b0) {\n";
 
@@ -2270,16 +2372,18 @@ void PostProcessor::GetUniformBufferShaderSource(API_TYPE api, const PostProcess
 		"\tfloat u_native_gamma;\n"
 		"\tuint u_scaling_filter;\n"
 		"};\n";
-	if (config->GetOptions().size() == 0)
+	if (config == nullptr || !includeconfig || (config != nullptr && config->GetOptions().size() == 0))
 	{
 		return;
 	}
 	bool bufferpacking = false;
+	std::string prefix = "";
 	// User options
-	if (api == API_OPENGL)
-		shader_source += "layout(std140) uniform ConfigurationConstants {\n";
+	if (api == API_OPENGL || api == API_VULKAN)
+		shader_source += StringFromFormat("UBO_BINDING(std140, %i) uniform ConfigurationConstants {\n", api == API_VULKAN ? 1 : 2);
 	else if (api == API_D3D11)
 	{
+		prefix = "o_";
 		bufferpacking = true;
 		shader_source += "cbuffer ConfigurationConstants : register(b1) {\n";
 	}
@@ -2324,24 +2428,24 @@ void PostProcessor::GetUniformBufferShaderSource(API_TYPE api, const PostProcess
 
 		if (it.second.m_type == POST_PROCESSING_OPTION_TYPE_BOOL)
 		{
-			shader_source += StringFromFormat("\tint o_%s;\n", it.first.c_str());
+			shader_source += StringFromFormat("\tint %s%s;\n", prefix.c_str(), it.first.c_str());
 		}
 		else if (it.second.m_type == POST_PROCESSING_OPTION_TYPE_INTEGER)
 		{
 			count = static_cast<u32>(it.second.m_integer_values.size());
 
 			if (count == 1)
-				shader_source += StringFromFormat("\tint o_%s;\n", it.first.c_str());
+				shader_source += StringFromFormat("\tint %s%s;\n", prefix.c_str(), it.first.c_str());
 			else
-				shader_source += StringFromFormat("\tint%d o_%s;\n", count, it.first.c_str());
+				shader_source += StringFromFormat("\tint%d %s%s;\n", count, prefix.c_str(), it.first.c_str());
 		}
 		else if (it.second.m_type == POST_PROCESSING_OPTION_TYPE_FLOAT)
 		{
 			count = static_cast<u32>(it.second.m_float_values.size());
 			if (count == 1)
-				shader_source += StringFromFormat("\tfloat o_%s;\n", it.first.c_str());
+				shader_source += StringFromFormat("\tfloat %s%s;\n", prefix.c_str(), it.first.c_str());
 			else
-				shader_source += StringFromFormat("\tfloat%d o_%s;\n", count, it.first.c_str());
+				shader_source += StringFromFormat("\tfloat%d %s%s;\n", count, prefix.c_str(), it.first.c_str());
 		}
 		if (!bufferpacking)
 		{
@@ -2351,15 +2455,21 @@ void PostProcessor::GetUniformBufferShaderSource(API_TYPE api, const PostProcess
 	}
 
 	// End constant block
-	shader_source += "};\n";
+	shader_source += StringFromFormat("}%s;\n", api == API_D3D11 ? "" : " conf_options");
 }
 
 std::string PostProcessor::GetCommonFragmentShaderSource(API_TYPE api, const PostProcessingShaderConfiguration* config, int texture_register_start)
 {
 	std::string shader_source;
-	if (api == API_OPENGL)
+	if (api == API_OPENGL || api == API_VULKAN)
 	{
-		shader_source += s_post_fragment_header_ogl;
+		shader_source += StringFromFormat(s_post_fragment_header_ogl.c_str(),
+			api == API_VULKAN ? "1.0f - " : "",
+			texture_register_start,
+			api == API_VULKAN ? "layout(location = 0) " : "",
+			api == API_VULKAN ? "layout(location = 1) " : "",
+			api == API_VULKAN ? "layout(location = 2) " : "",
+			api == API_VULKAN ? "layout(location = 0) " : "");
 	}
 	else if (api == API_D3D11)
 	{
@@ -2385,7 +2495,7 @@ std::string PostProcessor::GetCommonFragmentShaderSource(API_TYPE api, const Pos
 			std::string type_str = (count == 1) ? "int" : StringFromFormat("int%d", count);
 			shader_source += StringFromFormat("#define %s %s(", it.first.c_str(), type_str.c_str());
 			for (int i = 0; i < count; i++)
-				shader_source += StringFromInt(it.second.m_integer_values[i]);
+				shader_source += std::to_string(it.second.m_integer_values[i]);
 			shader_source += ")\n";
 		}
 		else if (it.second.m_type == POST_PROCESSING_OPTION_TYPE_FLOAT)
@@ -2419,7 +2529,7 @@ std::string PostProcessor::GetPassFragmentShaderSource(
 	}
 
 	// API-specific wrapper
-	if (api == API_OPENGL)
+	if (api != API_D3D11)
 	{
 		// No entry point? This pass should perform a copy.
 		if (pass->entry_point.empty())
@@ -2427,7 +2537,7 @@ std::string PostProcessor::GetPassFragmentShaderSource(
 		else if (pass->entry_point != "main")
 			shader_source += StringFromFormat("void main() { %s(); }\n", pass->entry_point.c_str());
 	}
-	else if (api == API_D3D11)
+	else
 	{
 		shader_source += "void passmain(in float4 in_pos : SV_Position,\n"
 			"          in float2 in_srcTexCoord : TEXCOORD0,\n"
@@ -2505,7 +2615,7 @@ bool  PostProcessor::UpdateConstantUniformBuffer(
 	constant_idx++;
 
 	// float4 window_rect
-	const TargetRectangle& window_rect =g_renderer->GetWindowRectangle();
+	const TargetRectangle& window_rect = g_renderer->GetWindowRectangle();
 	temp.float_constant[0] = (float)window_rect.left;
 	temp.float_constant[1] = (float)window_rect.top;
 	temp.float_constant[2] = (float)window_rect.right;

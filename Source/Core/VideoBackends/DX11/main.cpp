@@ -78,19 +78,7 @@ void VideoBackend::InitBackendInfo()
 		DX11::D3D::UnloadDXGI();
 		return;
 	}
-
 	g_Config.backend_info.APIType = API_D3D11;
-	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_BGRA32] = false;
-	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_RGBA32] = true;
-	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_I4_AS_I8] = false;
-	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_IA4_AS_IA8] = false;
-	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_I8] = false;
-	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_IA8] = false;
-	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_RGB565] = false;
-	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT1] = true;
-	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT3] = true;
-	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT5] = true;
-
 	g_Config.backend_info.bSupportsScaling = false;
 	g_Config.backend_info.bSupportsExclusiveFullscreen = true;
 	g_Config.backend_info.bSupportsDualSourceBlend = true;
@@ -104,10 +92,14 @@ void VideoBackend::InitBackendInfo()
 	g_Config.backend_info.bSupportsNormalMaps = true;
 	g_Config.backend_info.bSupportsDepthClamp = true;
 	g_Config.backend_info.bSupportsMultithreading = false;
-	g_Config.backend_info.bSupportsValidationLayer = false;
+	g_Config.backend_info.bSupportsValidationLayer = true;
 	g_Config.backend_info.bSupportsReversedDepthRange = true;
 	g_Config.backend_info.bSupportsInternalResolutionFrameDumps = true;
 	g_Config.backend_info.bSupportsAsyncShaderCompilation = true;
+	g_Config.backend_info.bSupportsBitfield = false;
+	g_Config.backend_info.bSupportsDynamicSamplerIndexing = false;
+	g_Config.backend_info.bSupportsUberShaders = true;
+	g_Config.ClearFormats();
 	IDXGIFactory* factory;
 	IDXGIAdapter* ad;
 	hr = DX11::PCreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&factory);
@@ -143,6 +135,7 @@ void VideoBackend::InitBackendInfo()
 			// Requires the instance attribute (only available in shader model 5)
 			g_Config.backend_info.bSupportsGSInstancing = shader_model_5_supported;
 			g_Config.backend_info.bSupportsTessellation = shader_model_5_supported;
+			g_Config.backend_info.bSupportsFragmentStoresAndAtomics = shader_model_5_supported;
 			g_Config.backend_info.bSupportsSSAA = shader_model_5_supported;
 			g_Config.backend_info.bSupportsGPUTextureDecoding = shader_model_5_supported;
 			g_Config.backend_info.bSupportsComputeTextureEncoding = shader_model_5_supported;

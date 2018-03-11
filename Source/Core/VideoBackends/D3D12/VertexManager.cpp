@@ -120,10 +120,10 @@ void VertexManager::Draw(u32 stride)
 
 	switch (m_current_primitive_type)
 	{
-	case PRIMITIVE_POINTS:
+	case PrimitiveType::Points:
 		d3d_primitive_topology = D3D_PRIMITIVE_TOPOLOGY_POINTLIST;
 		break;
-	case PRIMITIVE_LINES:
+	case PrimitiveType::Lines:
 		d3d_primitive_topology = D3D_PRIMITIVE_TOPOLOGY_LINELIST;
 		break;
 	}
@@ -144,11 +144,11 @@ void VertexManager::Draw(u32 stride)
 	INCSTAT(stats.thisFrame.numDrawCalls);
 }
 
-void VertexManager::PrepareShaders(PrimitiveType primitive, u32 components, const XFMemory &xfr, const BPMemory &bpm, bool ongputhread)
+void VertexManager::PrepareShaders(PrimitiveType primitive, u32 components, const XFMemory &xfr, const BPMemory &bpm)
 {
 	bool use_dst_alpha = bpm.dstalpha.enable && bpm.blendmode.alphaupdate &&
 		bpm.zcontrol.pixel_format == PEControl::RGBA6_Z24;
-	ShaderCache::PrepareShaders(use_dst_alpha ? PSRM_DUAL_SOURCE_BLEND : PSRM_DEFAULT, primitive, components, xfr, bpm, ongputhread);
+	ShaderCache::PrepareShaders(use_dst_alpha ? PSRM_DUAL_SOURCE_BLEND : PSRM_DEFAULT, primitive, components, xfr, bpm);
 }
 
 void VertexManager::vFlush(bool use_dst_alpha)

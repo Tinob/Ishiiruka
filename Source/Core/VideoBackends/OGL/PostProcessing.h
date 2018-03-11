@@ -54,7 +54,7 @@ private:
 class OGLPostProcessor final : public PostProcessor
 {
 public:
-	OGLPostProcessor() : PostProcessor(API_OPENGL){}
+	OGLPostProcessor() : PostProcessor(API_OPENGL) {}
 	~OGLPostProcessor();
 
 	bool Initialize() override;

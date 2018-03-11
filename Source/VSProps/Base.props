@@ -41,6 +41,7 @@
       <AdditionalIncludeDirectories>$(ExternalsDir)d3dx12;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>$(ExternalsDir)enet\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>$(ExternalsDir)GL;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ExternalsDir)glslang\glslang\Public;$(ExternalsDir)glslang\SPIRV;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>$(ExternalsDir)libusb\libusb;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>$(ExternalsDir)libpng\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>$(ExternalsDir)LZO;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -49,11 +50,13 @@
       <AdditionalIncludeDirectories>$(ExternalsDir)portaudio\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>$(ExternalsDir)SFML\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>$(ExternalsDir)SOIL;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ExternalsDir)Vulkan\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>$(ExternalsDir)wxWidgets3;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>$(ExternalsDir)wxWidgets3\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>$(ExternalsDir)xxhash;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>$(ExternalsDir)xbrz;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>$(ExternalsDir)zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>HAVE_FFMPEG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions>USE_UPNP;__LIBUSB__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions>PSAPI_VERSION=1;_M_X86=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -86,13 +89,35 @@
       <!--Enable detailed debug info-->
       <AdditionalOptions>/Zo %(AdditionalOptions)</AdditionalOptions>
       <DebugInformationFormat>OldStyle</DebugInformationFormat>
-      <!--
-      This is for GetVersionEx being marked as depreciated - which is idiotic and there's
-      not much else we can do since many externals use it. The bad part is that there doesn't
-      seem to be a way to only ignore the specific instance we don't care about...
+       <!--
+      4996  is for GetVersionEx being marked as deprecated - which is idiotic and there's not much
+                else we can do since many externals use it. The bad part is that there doesn't
+                seem to be a way to only ignore the specific instance we don't care about...
+      4351  new behavior: elements of array 'array' will be default initialized
       -->
       <DisableSpecificWarnings>4996;4351</DisableSpecificWarnings>
-      <OpenMPSupport>true</OpenMPSupport>
+      <!-- Warnings one may want to ignore when using Level4.
+      4201  nonstandard extension used : nameless struct/union
+      4127  conditional expression is constant
+      4100  'identifier' : unreferenced formal parameter
+      4244  'conversion' conversion from 'type1' to 'type2', possible loss of data
+                Level4 warns if type1==int and there is narrowing
+      4121  'symbol' : alignment of a member was sensitive to packing
+      4324  Padding was added at the end of a structure because you specified a __declspec(align) value.
+      4714  function 'function' marked as __forceinline not inlined
+      -->
+      <DisableSpecificWarnings>4201;4127;4100;4244;4121;4324;4714;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <!-- Level4 warnings which should eventually be enabled
+      4245  'conversion' : conversion from 'type1' to 'type2', signed/unsigned mismatch
+                Currently jits use some annoying code patterns which makes this common
+      -->
+      <DisableSpecificWarnings>4245;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <!-- Enable some off-by-default warnings
+      4263  Non-virtual member function hides base class virtual function
+      4265  Class has virtual functions, but destructor is not virtual
+      4946  Reinterpret cast between related types
+      -->
+      <AdditionalOptions>/w44263 /w44265 /w44946 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <!--ClCompile Debug-->
     <ClCompile Condition="'$(Configuration)'=='Debug'">

@@ -33,7 +33,8 @@ public:
 	VkSurfaceFormatKHR GetSurfaceFormat() const { return m_surface_format; }
 	bool IsVSyncEnabled() const { return m_vsync_enabled; }
 	VkSwapchainKHR GetSwapChain() const { return m_swap_chain; }
-	VkRenderPass GetRenderPass() const { return m_render_pass; }
+	VkRenderPass GetRenderClearPass() const { return m_render_clear_pass; }
+	VkRenderPass GetRenderAppendPass() const { return m_render_append_pass; }
 	u32 GetWidth() const { return m_width; }
 	u32 GetHeight() const { return m_height; }
 	u32 GetCurrentImageIndex() const { return m_current_swap_chain_image_index; }
@@ -47,13 +48,14 @@ public:
 	}
 	VkFramebuffer GetCurrentFramebuffer() const
 	{
-		return m_swap_chain_images[m_current_swap_chain_image_index].framebuffer;
+		return m_swap_chain_images[m_current_swap_chain_image_index].texture->GetFrameBuffer();
 	}
 
 	VkResult AcquireNextImage(VkSemaphore available_semaphore);
 
 	bool RecreateSurface(void* native_handle);
 	bool ResizeSwapChain();
+	bool RecreateSwapChain();
 
 	// Change vsync enabled state. This may fail as it causes a swapchain recreation.
 	bool SetVSync(bool enabled);
@@ -77,7 +79,6 @@ private:
 	{
 		VkImage image;
 		std::unique_ptr<Texture2D> texture;
-		VkFramebuffer framebuffer;
 	};
 
 	void* m_native_handle;
@@ -90,7 +91,8 @@ private:
 	std::vector<SwapChainImage> m_swap_chain_images;
 	u32 m_current_swap_chain_image_index = 0;
 
-	VkRenderPass m_render_pass = VK_NULL_HANDLE;
+	VkRenderPass m_render_clear_pass = VK_NULL_HANDLE;
+	VkRenderPass m_render_append_pass = VK_NULL_HANDLE;
 
 	u32 m_width = 0;
 	u32 m_height = 0;

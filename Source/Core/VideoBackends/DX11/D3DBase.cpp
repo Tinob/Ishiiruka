@@ -54,10 +54,10 @@ bool bgra565_textures_supported;
 bool s_logic_op_supported = false;
 #define NUM_SUPPORTED_FEATURE_LEVELS 4
 const D3D_FEATURE_LEVEL supported_feature_levels[NUM_SUPPORTED_FEATURE_LEVELS] = {
-	D3D_FEATURE_LEVEL_11_1,
-	D3D_FEATURE_LEVEL_11_0,
-	D3D_FEATURE_LEVEL_10_1,
-	D3D_FEATURE_LEVEL_10_0
+  D3D_FEATURE_LEVEL_11_1,
+  D3D_FEATURE_LEVEL_11_0,
+  D3D_FEATURE_LEVEL_10_1,
+  D3D_FEATURE_LEVEL_10_0
 };
 
 unsigned int xres, yres;
@@ -310,55 +310,56 @@ HRESULT Create(HWND wnd)
 		swap_chain_desc.BufferDesc.Width = xres;
 		swap_chain_desc.BufferDesc.Height = yres;
 	}
-#if defined(_DEBUG)
-	// Creating debug devices can sometimes fail if the user doesn't have the correct
-	// version of the DirectX SDK. If it does, simply fallback to a non-debug device.
-	hr = PD3D11CreateDeviceAndSwapChain(adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr,
-		D3D11_CREATE_DEVICE_SINGLETHREADED | D3D11_CREATE_DEVICE_DEBUG,
-		supported_feature_levels, NUM_SUPPORTED_FEATURE_LEVELS,
-		D3D11_SDK_VERSION, &swap_chain_desc, &swapchain, &device,
-		&featlevel, &context);
-	if (FAILED(hr))
+	if (g_Config.bEnableValidationLayer)
 	{
+		// Creating debug devices can sometimes fail if the user doesn't have the correct
+		// version of the DirectX SDK. If it does, simply fallback to a non-debug device.
 		hr = PD3D11CreateDeviceAndSwapChain(adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr,
 			D3D11_CREATE_DEVICE_SINGLETHREADED | D3D11_CREATE_DEVICE_DEBUG,
-			&supported_feature_levels[1], NUM_SUPPORTED_FEATURE_LEVELS - 1,
+			supported_feature_levels, NUM_SUPPORTED_FEATURE_LEVELS,
 			D3D11_SDK_VERSION, &swap_chain_desc, &swapchain, &device,
 			&featlevel, &context);
-	}
-	if (SUCCEEDED(hr))
-	{
-		ID3D11Debug *d3dDebug = nullptr;
-		if (SUCCEEDED(device->QueryInterface(__uuidof(ID3D11Debug), (void**)&d3dDebug)))
+		if (FAILED(hr))
 		{
-			ID3D11InfoQueue *d3dInfoQueue = nullptr;
-			if (SUCCEEDED(d3dDebug->QueryInterface(__uuidof(ID3D11InfoQueue), (void**)&d3dInfoQueue)))
+			hr = PD3D11CreateDeviceAndSwapChain(adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr,
+				D3D11_CREATE_DEVICE_SINGLETHREADED | D3D11_CREATE_DEVICE_DEBUG,
+				&supported_feature_levels[1], NUM_SUPPORTED_FEATURE_LEVELS - 1,
+				D3D11_SDK_VERSION, &swap_chain_desc, &swapchain, &device,
+				&featlevel, &context);
+		}
+		if (SUCCEEDED(hr))
+		{
+			ID3D11Debug *d3dDebug = nullptr;
+			if (SUCCEEDED(device->QueryInterface(__uuidof(ID3D11Debug), (void**)&d3dDebug)))
 			{
-
-				d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_CORRUPTION, true);
-				d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_ERROR, true);
-				d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_WARNING, true);
-				D3D11_MESSAGE_ID hide[] =
+				ID3D11InfoQueue *d3dInfoQueue = nullptr;
+				if (SUCCEEDED(d3dDebug->QueryInterface(__uuidof(ID3D11InfoQueue), (void**)&d3dInfoQueue)))
 				{
-					D3D11_MESSAGE_ID_SETPRIVATEDATA_CHANGINGPARAMS,
-					D3D11_MESSAGE_ID_DEVICE_DRAW_SAMPLER_NOT_SET
-					// Add more message IDs here as needed
-				};
 
-				D3D11_INFO_QUEUE_FILTER filter;
-				memset(&filter, 0, sizeof(filter));
-				filter.DenyList.NumIDs = _countof(hide);
-				filter.DenyList.pIDList = hide;
-				d3dInfoQueue->AddStorageFilterEntries(&filter);
+					d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_CORRUPTION, true);
+					d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_ERROR, true);
+					d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_WARNING, true);
+					D3D11_MESSAGE_ID hide[] =
+					{
+					  D3D11_MESSAGE_ID_SETPRIVATEDATA_CHANGINGPARAMS,
+					  D3D11_MESSAGE_ID_DEVICE_DRAW_SAMPLER_NOT_SET
+					  // Add more message IDs here as needed
+					};
 
-				d3dInfoQueue->Release();
+					D3D11_INFO_QUEUE_FILTER filter;
+					memset(&filter, 0, sizeof(filter));
+					filter.DenyList.NumIDs = _countof(hide);
+					filter.DenyList.pIDList = hide;
+					d3dInfoQueue->AddStorageFilterEntries(&filter);
 
+					d3dInfoQueue->Release();
+
+				}
+				d3dDebug->Release();
 			}
-			d3dDebug->Release();
 		}
 	}
-	else
-#endif
+	if (!g_Config.bEnableValidationLayer || FAILED(hr))
 	{
 		hr = PD3D11CreateDeviceAndSwapChain(adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr,
 			D3D11_CREATE_DEVICE_SINGLETHREADED,
@@ -426,21 +427,44 @@ HRESULT Create(HWND wnd)
 			&& options.MapNoOverwriteOnDynamicConstantBuffer
 			&& options.ConstantBufferOffsetting
 			&& options.ConstantBufferPartialUpdate;
-		D3D11_FEATURE_DATA_FORMAT_SUPPORT2 format_support = { DXGI_FORMAT_R8G8B8A8_UNORM, 0};
+		D3D11_FEATURE_DATA_FORMAT_SUPPORT2 format_support = { DXGI_FORMAT_R8G8B8A8_UNORM, 0 };
 		hr = device1->CheckFeatureSupport(D3D11_FEATURE_FORMAT_SUPPORT2, &format_support, sizeof(format_support));
 		s_logic_op_supported = options.OutputMergerLogicOp
 			&&  SUCCEEDED(hr)
 			&& format_support.OutFormatSupport2 & D3D11_FORMAT_SUPPORT2_OUTPUT_MERGER_LOGIC_OP;
 
 	}
-	backbuf = new D3DTexture2D(buf, D3D11_BIND_RENDER_TARGET);
+	backbuf = new D3DTexture2D(buf, D3D11_BIND_RENDER_TARGET, DXGI_FORMAT_R8G8B8A8_UNORM);
 	SAFE_RELEASE(buf);
 	CHECK(backbuf != nullptr, "Create back buffer texture");
 	SetDebugObjectName(backbuf->GetTex(), "backbuffer texture");
 	SetDebugObjectName(backbuf->GetRTV(), "backbuffer render target view");
 
 	context->OMSetRenderTargets(1, &backbuf->GetRTV(), nullptr);
-
+	UINT format_support;
+	device->CheckFormatSupport(DXGI_FORMAT_B8G8R8A8_UNORM, &format_support);
+	bgra_textures_supported = (format_support & D3D11_FORMAT_SUPPORT_TEXTURE2D) != 0;
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_BGRA32] = bgra_textures_supported;
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_RGBA32] = true;
+	device->CheckFormatSupport(DXGI_FORMAT_B5G6R5_UNORM, &format_support);
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_RGB565] = (format_support & D3D11_FORMAT_SUPPORT_TEXTURE2D) != 0;
+	device->CheckFormatSupport(DXGI_FORMAT_BC1_UNORM, &format_support);
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT1] = (format_support & D3D11_FORMAT_SUPPORT_TEXTURE2D) != 0;
+	device->CheckFormatSupport(DXGI_FORMAT_BC2_UNORM, &format_support);
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT3] = (format_support & D3D11_FORMAT_SUPPORT_TEXTURE2D) != 0;
+	device->CheckFormatSupport(DXGI_FORMAT_BC3_UNORM, &format_support);
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT5] = (format_support & D3D11_FORMAT_SUPPORT_TEXTURE2D) != 0;
+	device->CheckFormatSupport(DXGI_FORMAT_BC7_UNORM, &format_support);
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_BPTC] = (format_support & D3D11_FORMAT_SUPPORT_TEXTURE2D) != 0;
+	device->CheckFormatSupport(DXGI_FORMAT_R32_FLOAT, &format_support);
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DEPTH_FLOAT] = (format_support & D3D11_FORMAT_SUPPORT_TEXTURE2D) != 0;
+	device->CheckFormatSupport(DXGI_FORMAT_R32_FLOAT, &format_support);
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DEPTH_FLOAT] = (format_support & D3D11_FORMAT_SUPPORT_TEXTURE2D) != 0;
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_R_FLOAT] = (format_support & D3D11_FORMAT_SUPPORT_TEXTURE2D) != 0;
+	device->CheckFormatSupport(DXGI_FORMAT_R16G16B16A16_FLOAT, &format_support);
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_RGBA16_FLOAT] = (format_support & D3D11_FORMAT_SUPPORT_TEXTURE2D) != 0;
+	device->CheckFormatSupport(DXGI_FORMAT_R32G32B32A32_FLOAT, &format_support);
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_RGBA_FLOAT] = (format_support & D3D11_FORMAT_SUPPORT_TEXTURE2D) != 0;
 	UpdateActiveConfig();
 	stateman = new StateManager;
 	return S_OK;
@@ -593,7 +617,7 @@ void Reset()
 		SAFE_RELEASE(swapchain);
 		return;
 	}
-	backbuf = new D3DTexture2D(buf, D3D11_BIND_RENDER_TARGET);
+	backbuf = new D3DTexture2D(buf, D3D11_BIND_RENDER_TARGET, DXGI_FORMAT_R8G8B8A8_UNORM);
 	SAFE_RELEASE(buf);
 	CHECK(backbuf != nullptr, "Create back buffer texture");
 	SetDebugObjectName(backbuf->GetTex(), "backbuffer texture");

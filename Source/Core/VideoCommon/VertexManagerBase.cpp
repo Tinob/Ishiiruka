@@ -2,6 +2,7 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include <array>
 #include <cmath>
 #include <memory>
 
@@ -18,6 +19,7 @@
 #include "VideoCommon/PerfQueryBase.h"
 #include "VideoCommon/PixelShaderManager.h"
 #include "VideoCommon/RenderBase.h"
+#include "VideoCommon/SamplerCommon.h"
 #include "VideoCommon/Statistics.h"
 #include "VideoCommon/TextureCacheBase.h"
 #include "VideoCommon/VertexManagerBase.h"
@@ -29,14 +31,14 @@
 std::unique_ptr<VertexManagerBase> g_vertex_manager;
 
 static const PrimitiveType primitive_from_gx[8] = {
-	PRIMITIVE_TRIANGLES, // GX_DRAW_QUADS
-	PRIMITIVE_TRIANGLES, // GX_DRAW_QUADS_2
-	PRIMITIVE_TRIANGLES, // GX_DRAW_TRIANGLES
-	PRIMITIVE_TRIANGLES, // GX_DRAW_TRIANGLE_STRIP
-	PRIMITIVE_TRIANGLES, // GX_DRAW_TRIANGLE_FAN
-	PRIMITIVE_LINES,     // GX_DRAW_LINES
-	PRIMITIVE_LINES,     // GX_DRAW_LINE_STRIP
-	PRIMITIVE_POINTS,    // GX_DRAW_POINTS
+  PrimitiveType::Triangles, // GX_DRAW_QUADS
+  PrimitiveType::Triangles, // GX_DRAW_QUADS_2
+  PrimitiveType::Triangles, // GX_DRAW_TRIANGLES
+  PrimitiveType::Triangles, // GX_DRAW_TRIANGLE_STRIP
+  PrimitiveType::Triangles, // GX_DRAW_TRIANGLE_FAN
+  PrimitiveType::Lines,     // GX_DRAW_LINES
+  PrimitiveType::Lines,     // GX_DRAW_LINE_STRIP
+  PrimitiveType::Points,    // GX_DRAW_POINTS
 };
 
 // Due to the BT.601 standard which the GameCube is based on being a compromise
@@ -69,21 +71,21 @@ VertexManagerBase::~VertexManagerBase() {}
 
 inline u32 GetRemainingIndices(int prim)
 {
-	GxDrawMode primitive = static_cast<GxDrawMode>(prim);
+	OpcodeDecoder::GxDrawMode primitive = static_cast<OpcodeDecoder::GxDrawMode>(prim);
 	u32 index_len = VertexManagerBase::MAXIBUFFERSIZE - IndexGenerator::GetIndexLen();
-	if (primitive == GX_DRAW_TRIANGLE_STRIP || primitive == GX_DRAW_TRIANGLE_FAN)
+	if (primitive == OpcodeDecoder::GX_DRAW_TRIANGLE_STRIP || primitive == OpcodeDecoder::GX_DRAW_TRIANGLE_FAN)
 	{
 		return index_len / 3 + 2;
 	}
-	if (primitive < GX_DRAW_TRIANGLES)
+	if (primitive < OpcodeDecoder::GX_DRAW_TRIANGLES)
 	{
 		return index_len / 6 * 4;
 	}
-	else if (primitive == GX_DRAW_LINE_STRIP)
+	else if (primitive == OpcodeDecoder::GX_DRAW_LINE_STRIP)
 	{
 		return index_len / 2 + 1;
 	}
-	else if (primitive <= GX_DRAW_POINTS)
+	else if (primitive <= OpcodeDecoder::GX_DRAW_POINTS)
 	{
 		return index_len;
 	}
@@ -98,6 +100,13 @@ void VertexManagerBase::PrepareForAdditionalData(int primitive, u32 count, u32 s
 
 	// We can't merge different kinds of primitives, so we have to flush here
 	// Check for size in buffer, if the buffer gets full, call Flush()
+	PrimitiveType new_primitive_type = primitive_from_gx[primitive];
+	if (m_current_primitive_type != new_primitive_type)
+	{
+		RasterizationState raster_state = {};
+		raster_state.Generate(bpmem, new_primitive_type);
+		g_renderer->SetRasterizationState(raster_state);
+	}
 	if (count > max_index_size
 		|| needed_vertex_bytes > GetRemainingSize()
 		|| m_current_primitive_type != primitive_from_gx[primitive])
@@ -108,7 +117,7 @@ void VertexManagerBase::PrepareForAdditionalData(int primitive, u32 count, u32 s
 		if (count > GetRemainingIndices(primitive))
 			ERROR_LOG(VIDEO, "VertexManagerBase: Buffer not large enough for all indices! "
 				"Increase MAXIBUFFERSIZE or we need primitive breaking after all.");
-		if (s_pCurBufferPointer && needed_vertex_bytes > GetRemainingSize())
+		if (needed_vertex_bytes > GetRemainingSize())
 			ERROR_LOG(VIDEO, "VertexManagerBase: Buffer not large enough for all vertices! "
 				"Increase MAXVBUFFERSIZE or we need primitive breaking after all.");
 #endif
@@ -132,12 +141,75 @@ std::pair<size_t, size_t> VertexManagerBase::ResetFlushAspectRatioCount()
 	return val;
 }
 
+static void SetSamplerState(u32 index, bool custom_tex, bool has_arbitrary_mips, float custom_tex_scale)
+{
+	const FourTexUnits& tex = bpmem.tex[index / 4];
+	const TexMode0& tm0 = tex.texMode0[index % 4];
+
+	SamplerState state = {};
+	state.Generate(bpmem, index);
+	bool mip_maps_enabled = SamplerCommon::AreBpTexMode0MipmapsEnabled(tm0);
+	bool acurate_filtering = (!custom_tex || has_arbitrary_mips) && g_ActiveConfig.eFilteringMode == FilteringMode::Accurate && mip_maps_enabled && state.lod_bias.Value() != 0;
+	// Force texture filtering config option.
+	if (g_ActiveConfig.eFilteringMode == FilteringMode::Forced)
+	{
+		state.min_filter = SamplerState::Filter::Linear;
+		state.mag_filter = SamplerState::Filter::Linear;
+		state.mipmap_filter = SamplerCommon::AreBpTexMode0MipmapsEnabled(tm0) ?
+			SamplerState::Filter::Linear :
+			SamplerState::Filter::Point;
+	}
+	else if (g_ActiveConfig.eFilteringMode == FilteringMode::Disabled)
+	{
+		state.min_filter = SamplerState::Filter::Point;
+		state.mag_filter = SamplerState::Filter::Point;
+		state.mipmap_filter = SamplerState::Filter::Point;
+	}
+
+	// Custom textures may have a greater number of mips
+	if (custom_tex)
+		state.max_lod = 255;
+
+	// Anisotropic filtering option.
+	if (!acurate_filtering && g_ActiveConfig.iMaxAnisotropy != 0 && !SamplerCommon::IsBpTexMode0PointFilteringEnabled(tm0))
+	{
+		// https://www.opengl.org/registry/specs/EXT/texture_filter_anisotropic.txt
+		// For predictable results on all hardware/drivers, only use one of:
+		//	GL_LINEAR + GL_LINEAR (No Mipmaps [Bilinear])
+		//	GL_LINEAR + GL_LINEAR_MIPMAP_LINEAR (w/ Mipmaps [Trilinear])
+		// Letting the game set other combinations will have varying arbitrary results;
+		// possibly being interpreted as equal to bilinear/trilinear, implicitly
+		// disabling anisotropy, or changing the anisotropic algorithm employed.
+		state.min_filter = SamplerState::Filter::Linear;
+		state.mag_filter = SamplerState::Filter::Linear;
+		if (SamplerCommon::AreBpTexMode0MipmapsEnabled(tm0))
+			state.mipmap_filter = SamplerState::Filter::Linear;
+		state.anisotropic_filtering = 1;
+	}
+	else
+	{
+		state.anisotropic_filtering = 0;
+	}
+
+	if (acurate_filtering)
+	{
+		// Apply a secondary bias calculated from the IR scale to pull inwards mipmaps
+		// that have arbitrary contents, eg. are used for fog effects where the
+		// distance they kick in at is important to preserve at any resolution.
+		// Correct this with the upscaling factor of custom textures.
+		s64 lod_offset = std::log2(g_renderer->GetEFBScale() / custom_tex_scale) * 256.f;
+		state.lod_bias = MathUtil::Clamp<s64>(state.lod_bias + lod_offset, -32768, 32767);
+	}
+
+	g_renderer->SetSamplerState(index, state);
+}
+
 void VertexManagerBase::DoFlush()
 {
 	// loading a state will invalidate BP, so check for it
 	NativeVertexFormat* current_vertex_format = VertexLoaderManager::GetCurrentVertexFormat();
 	g_video_backend->CheckInvalidState();
-	g_vertex_manager->PrepareShaders(m_current_primitive_type, VertexLoaderManager::g_current_components, xfmem, bpmem, true);
+	g_vertex_manager->PrepareShaders(m_current_primitive_type, VertexLoaderManager::g_current_components, xfmem, bpmem);
 #if defined(_DEBUG) || defined(DEBUGFAST)
 	PRIM_LOG("frame%d:\n texgen=%d, numchan=%d, dualtex=%d, ztex=%d, cole=%d, alpe=%d, ze=%d", g_ActiveConfig.iSaveTargetId, xfmem.numTexGen.numTexGens,
 		xfmem.numChan.numColorChans, xfmem.dualTexTrans.enabled, bpmem.ztex2.op,
@@ -177,23 +249,38 @@ void VertexManagerBase::DoFlush()
 				if (bpmem.tevind[i].IsActive() && bpmem.tevind[i].bt < bpmem.genMode.numindstages.Value())
 					usedtextures |= 1 << bpmem.tevindref.getTexMap(bpmem.tevind[i].bt);
 
-		g_texture_cache->UnbindTextures();
 		s32 material_mask = 0;
 		s32 emissive_mask = 0;
 		for (unsigned int i = 0; i < 8; i++)
 		{
 			if (usedtextures & (1 << i))
 			{
-				const TextureCacheBase::TCacheEntryBase* tentry = g_texture_cache->Load(i);
+				const TextureCacheBase::TCacheEntry* tentry = g_texture_cache->Load(i);
 				if (tentry)
 				{
+					int materiallayer = 0;
+					int emissivelayer = 0;
 					if (g_ActiveConfig.HiresMaterialMapsEnabled())
 					{
-						material_mask |= ((int)tentry->SupportsMaterialMap()) << i;
-						emissive_mask |= ((int)tentry->emissive_in_alpha) << i;
+						if (tentry->material_map)
+						{
+							materiallayer = 1;
+						}
+						if (tentry->emissive)
+						{
+							emissivelayer = materiallayer + 1;
+						}
+						material_mask |= ((int)tentry->material_map) << i;
+						emissive_mask |= ((int)tentry->emissive) << i;
 					}
-					PixelShaderManager::SetTexDims(i, tentry->native_width, tentry->native_height);
-					g_renderer->SetSamplerState(i & 3, i >> 2, tentry->is_custom_tex);
+					float custom_tex_scale = tentry->GetConfig().width / float(tentry->native_width);
+					SetSamplerState(i, tentry->is_custom_tex || tentry->is_scaled, tentry->has_arbitrary_mips, custom_tex_scale);
+					PixelShaderManager::SetTexDims(
+						i,
+						tentry->native_width,
+						tentry->native_height,
+						tentry->IsEfbCopy() ? tentry->GetConfig().layers : 0,
+						materiallayer, emissivelayer);
 				}
 				else
 					ERROR_LOG(VIDEO, "error loading texture");
@@ -227,7 +314,7 @@ void VertexManagerBase::DoFlush()
 		}
 	}
 
-	if (m_current_primitive_type == PRIMITIVE_TRIANGLES)
+	if (m_current_primitive_type == PrimitiveType::Triangles)
 	{
 		const PortableVertexDeclaration &vtx_dcl = current_vertex_format->GetVertexDeclaration();
 		if (bpmem.genMode.zfreeze)

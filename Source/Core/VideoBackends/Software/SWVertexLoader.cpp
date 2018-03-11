@@ -25,14 +25,14 @@
 #include "VideoCommon/VideoConfig.h"
 #include "VideoCommon/XFMemory.h"
 
-class NullNativeVertexFormat: public NativeVertexFormat
+class NullNativeVertexFormat : public NativeVertexFormat
 {
 public:
 	NullNativeVertexFormat(const PortableVertexDeclaration& _vtx_decl)
 	{
 		vtx_decl = _vtx_decl;
 	}
-	void SetupVertexPointers() override
+	void SetupVertexPointers()
 	{}
 };
 
@@ -68,14 +68,14 @@ void SWVertexLoader::vFlush(bool useDstAlpha)
 	u8 primitiveType = 0;
 	switch (m_current_primitive_type)
 	{
-	case PRIMITIVE_POINTS:
-		primitiveType = GX_DRAW_POINTS;
+	case PrimitiveType::Points:
+		primitiveType = OpcodeDecoder::GX_DRAW_POINTS;
 		break;
-	case PRIMITIVE_LINES:
-		primitiveType = GX_DRAW_LINES;
+	case PrimitiveType::Lines:
+		primitiveType = OpcodeDecoder::GX_DRAW_LINES;
 		break;
-	case PRIMITIVE_TRIANGLES:
-		primitiveType = GX_DRAW_TRIANGLES;
+	case PrimitiveType::Triangles:
+		primitiveType = OpcodeDecoder::GX_DRAW_TRIANGLES;
 		break;
 	}
 

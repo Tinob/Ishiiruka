@@ -27,7 +27,7 @@ namespace DX11
 {
 
 // TODO: Find sensible values for these two
-const u32 MAX_BUFFER_SIZE = 20*1024*1024;
+const u32 MAX_BUFFER_SIZE = 20 * 1024 * 1024;
 
 void VertexManager::CreateDeviceObjects()
 {
@@ -119,7 +119,7 @@ void VertexManager::Draw(UINT stride)
 	u32 baseVertex = m_vertexDrawOffset / stride;
 	u32 startIndex = m_indexDrawOffset / sizeof(u16);
 
-	if (m_current_primitive_type == PRIMITIVE_TRIANGLES)
+	if (m_current_primitive_type == PrimitiveType::Triangles)
 	{
 		auto pt = HullDomainShaderCache::GetActiveHullShader() != nullptr ?
 			D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST :
@@ -129,30 +129,24 @@ void VertexManager::Draw(UINT stride)
 	}
 	else
 	{
-		D3D::stateman->SetPrimitiveTopology(m_current_primitive_type == PRIMITIVE_LINES ? D3D11_PRIMITIVE_TOPOLOGY_LINELIST : D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
-		static_cast<Renderer*>(g_renderer.get())->ApplyCullDisable();
+		D3D::stateman->SetPrimitiveTopology(m_current_primitive_type == PrimitiveType::Lines ? D3D11_PRIMITIVE_TOPOLOGY_LINELIST : D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
 	}
 
 	D3D::stateman->Apply();
 	D3D::context->DrawIndexed(indices, startIndex, baseVertex);
 	INCSTAT(stats.thisFrame.numDrawCalls);
-
-	if (m_current_primitive_type != PRIMITIVE_TRIANGLES)
-	{
-		static_cast<Renderer*>(g_renderer.get())->RestoreCull();
-	}
 }
 
-void VertexManager::PrepareShaders(PrimitiveType primitive, u32 components, const XFMemory &xfr, const BPMemory &bpm, bool ongputhread)
+void VertexManager::PrepareShaders(PrimitiveType primitive, u32 components, const XFMemory &xfr, const BPMemory &bpm)
 {
 	bool useDstAlpha = bpm.dstalpha.enable && bpm.blendmode.alphaupdate &&
 		bpm.zcontrol.pixel_format == PEControl::RGBA6_Z24;
-	VertexShaderCache::PrepareShader(components, xfr, bpm, ongputhread);
-	GeometryShaderCache::PrepareShader(primitive, xfr, components, ongputhread);
-	PixelShaderCache::PrepareShader(useDstAlpha ? PSRM_DUAL_SOURCE_BLEND : PSRM_DEFAULT, components, xfr, bpm, ongputhread);
+	VertexShaderCache::PrepareShader(components, xfr, bpm);
+	GeometryShaderCache::PrepareShader(primitive, xfr, components);
+	PixelShaderCache::PrepareShader(useDstAlpha ? PSRM_DUAL_SOURCE_BLEND : PSRM_DEFAULT, components, xfr, bpm);
 	if (g_ActiveConfig.backend_info.bSupportsTessellation)
 	{
-		HullDomainShaderCache::PrepareShader(xfr, bpm, primitive, components, ongputhread);
+		HullDomainShaderCache::PrepareShader(xfr, bpm, primitive, components);
 	}
 }
 
@@ -162,7 +156,7 @@ void VertexManager::vFlush(bool useDstAlpha)
 	{
 		return;
 	}
-	if (g_ActiveConfig.iStereoMode > 0 || m_current_primitive_type != PrimitiveType::PRIMITIVE_TRIANGLES)
+	if (g_ActiveConfig.iStereoMode > 0 || m_current_primitive_type != PrimitiveType::Triangles)
 	{
 		if (!GeometryShaderCache::TestShader())
 		{
@@ -181,10 +175,11 @@ void VertexManager::vFlush(bool useDstAlpha)
 		}
 	}
 	BBox::Update();
-	NativeVertexFormat* current_vertex_format = VertexLoaderManager::GetCurrentVertexFormat();
+	D3DVertexFormat* current_vertex_format = static_cast<D3DVertexFormat*>(VertexLoaderManager::GetCurrentVertexFormat());
 	u32 stride = current_vertex_format->GetVertexStride();
 	PrepareDrawBuffers(stride);
-	current_vertex_format->SetupVertexPointers();
+	VertexShaderCache::SetActiveShader(current_vertex_format);
+	PixelShaderCache::SetActiveShader();
 	g_renderer->ApplyState(useDstAlpha);
 
 	Draw(stride);

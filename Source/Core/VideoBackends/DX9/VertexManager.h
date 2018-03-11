@@ -15,6 +15,20 @@
 namespace DX9
 {
 
+class D3DVertexFormat : public NativeVertexFormat
+{
+public:
+	D3DVertexFormat(const PortableVertexDeclaration &_vtx_decl);
+	~D3DVertexFormat();
+	void SetupVertexPointers();
+	std::array<D3DVERTEXELEMENT9, 16> m_elems{};
+	int m_num_elems = 0;
+private:
+
+
+	LPDIRECT3DVERTEXDECLARATION9 d3d_decl{};
+};
+
 class VertexManager : public ::VertexManagerBase
 {
 public:
@@ -28,7 +42,7 @@ public:
 	void CreateDeviceObjects();
 	void DestroyDeviceObjects();
 
-	void PrepareShaders(PrimitiveType primitive, u32 components, const XFMemory &xfr, const BPMemory &bpm, bool ongputhread = true);
+	void PrepareShaders(PrimitiveType primitive, u32 components, const XFMemory &xfr, const BPMemory &bpm);
 protected:
 	void ResetBuffer(u32 stride) override;
 	u16* GetIndexBuffer() override

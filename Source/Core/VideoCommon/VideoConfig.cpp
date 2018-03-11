@@ -3,7 +3,9 @@
 // Refer to the license.txt file included.
 
 #include <cmath>
+#include <mutex>
 
+#include "Common/CPUDetect.h"
 #include "Common/CommonTypes.h"
 #include "Common/FileUtil.h"
 #include "Common/IniFile.h"
@@ -19,28 +21,32 @@
 
 VideoConfig g_Config;
 VideoConfig g_ActiveConfig;
+static std::mutex config_mutex;
 
 void UpdateActiveConfig()
 {
 	if (Movie::IsPlayingInput() && Movie::IsConfigSaved())
 		Movie::SetGraphicsConfig();
+	std::unique_lock<std::mutex> config_lock(config_mutex);
 	g_ActiveConfig = g_Config;
+}
+void VideoConfig::ClearFormats()
+{
+	for (s32 i = 0; i < 16; i++)
+	{
+		backend_info.bSupportedFormats[i] = false;
+	}
 }
 
 VideoConfig::VideoConfig()
 {
-	bRunning = false;
-
 	// Needed for the first frame, I think
 	fAspectRatioHackW = 1;
 	fAspectRatioHackH = 1;
 
 	// disable all features by default
 	backend_info.APIType = API_NONE;
-	for (s32 i = 0; i < 16; i++)
-	{
-		backend_info.bSupportedFormats[i] = false;
-	}
+	ClearFormats();
 	backend_info.bSupportsExclusiveFullscreen = false;
 
 	// Game-specific stereoscopy settings
@@ -54,6 +60,7 @@ VideoConfig::VideoConfig()
 	backend_info.bSupportsMultithreading = false;
 	backend_info.bSupportsInternalResolutionFrameDumps = false;
 	bEnableValidationLayer = false;
+	bEnableShaderDebug = false;
 	bBackendMultithreading = true;
 	backend_info.MaxTextureSize = 4096;
 }
@@ -77,16 +84,13 @@ void VideoConfig::Load(const std::string& ini_file)
 	settings->Get("ShowFPS", &bShowFPS, false);
 	settings->Get("ShowNetPlayPing", &bShowNetPlayPing, false);
 	settings->Get("ShowNetPlayMessages", &bShowNetPlayMessages, false);
-	settings->Get("LogRenderTimeToFile", &bLogRenderTimeToFile, false);
-	settings->Get("ShowInputDisplay", &bShowInputDisplay, false);
+	settings->Get("LogRenderTimeToFile", &bLogRenderTimeToFile, false);	
 	settings->Get("OverlayStats", &bOverlayStats, false);
 	settings->Get("OverlayProjStats", &bOverlayProjStats, false);
-	settings->Get("DumpTextures", &bDumpTextures, 0);
-	settings->Get("DumpVertexLoader", &bDumpVertexLoaders, 0);
+	settings->Get("DumpTextures", &bDumpTextures, 0);	
 	settings->Get("HiresTextures", &bHiresTextures, 0);
 	settings->Get("HiresMaterialMaps", &bHiresMaterialMaps, 0);
-	settings->Get("HiresMaterialMapsBuild", &bHiresMaterialMapsBuild, false);
-	settings->Get("ConvertHiresTextures", &bConvertHiresTextures, 0);
+	settings->Get("HiresMaterialMapsBuild", &bHiresMaterialMapsBuild, false);	
 	settings->Get("CacheHiresTextures", &bCacheHiresTextures, 0);
 	settings->Get("DumpEFBTarget", &bDumpEFBTarget, 0);
 	settings->Get("DumpFramesAsImages", &bDumpFramesAsImages, 0);
@@ -119,8 +123,7 @@ void VideoConfig::Load(const std::string& ini_file)
 	settings->Get("TexFmtOverlayCenter", &bTexFmtOverlayCenter, 0);
 	settings->Get("WireFrame", &bWireFrame, 0);
 	settings->Get("DisableFog", &bDisableFog, 0);
-	settings->Get("SSAA", &bSSAA, false);
-	settings->Get("EnableOpenCL", &bEnableOpenCL, false);
+	settings->Get("SSAA", &bSSAA, false);	
 	settings->Get("BorderlessFullscreen", &bBorderlessFullscreen, true);
 
 	settings->Get("SWZComploc", &bZComploc, true);
@@ -133,35 +136,52 @@ void VideoConfig::Load(const std::string& ini_file)
 
 	settings->Get("EnableValidationLayer", &bEnableValidationLayer, false);
 	settings->Get("BackendMultithreading", &bBackendMultithreading, true);
+	settings->Get("EnableShaderDebug", &bEnableShaderDebug, false);
 	settings->Get("CommandBufferExecuteInterval", &iCommandBufferExecuteInterval, 100);
 
 	IniFile::Section* enhancements = iniFile.GetOrCreateSection("Enhancements");
-	enhancements->Get("ForceFiltering", &bForceFiltering, 0);
-	enhancements->Get("DisableFiltering", &bDisableTextureFiltering, 0);
+	int fmode = 0;
+	enhancements->Get("FilteringMode", &fmode, 0);
+	fmode = std::min(fmode, static_cast<int>(FilteringMode::Forced));
+	fmode = std::max(fmode, static_cast<int>(FilteringMode::Disabled));
+	eFilteringMode = static_cast<FilteringMode>(fmode);
+
+	int cmode = 0;
+	enhancements->Get("CullMode", &cmode, 0);
+	cmode = std::min(cmode, static_cast<int>(HostCullMode::Back));
+	cmode = std::max(cmode, static_cast<int>(HostCullMode::Native));
+	eCullMode = static_cast<HostCullMode>(cmode);
+
 	enhancements->Get("MaxAnisotropy", &iMaxAnisotropy, 3);  // NOTE - this is x in (1 << x)
 	enhancements->Get("PostProcessingEnable", &bPostProcessingEnable, false);
 	enhancements->Get("PostProcessingTrigger", &iPostProcessingTrigger, 0);
 	enhancements->Get("PostProcessingShaders", &sPostProcessingShaders, "");
 	enhancements->Get("ScalingShader", &sScalingShader, "");
+	enhancements->Get("ForceTrueColor", &bForceTrueColor, true);	
 	enhancements->Get("UseScalingFilter", &bUseScalingFilter, true);
+	
 	enhancements->Get("TextureScalingType", &iTexScalingType, 0);
 	enhancements->Get("TextureScalingFactor", &iTexScalingFactor, 2);
 	enhancements->Get("UseDePosterize", &bTexDeposterize, true);
+	
 	enhancements->Get("Tessellation", &bTessellation, 0);
 	enhancements->Get("TessellationEarlyCulling", &bTessellationEarlyCulling, 0);
 	enhancements->Get("TessellationDistance", &iTessellationDistance, 0);
 	enhancements->Get("TessellationMax", &iTessellationMax, 6);
 	enhancements->Get("TessellationRoundingIntensity", &iTessellationRoundingIntensity, 0);
 	enhancements->Get("TessellationDisplacementIntensity", &iTessellationDisplacementIntensity, 0);
-	enhancements->Get("ForceTrueColor", &bForceTrueColor, true);
+	
 
 	IniFile::Section* stereoscopy = iniFile.GetOrCreateSection("Stereoscopy");
 	stereoscopy->Get("StereoMode", &iStereoMode, 0);
 	stereoscopy->Get("StereoDepth", &iStereoDepth, 20);
-	stereoscopy->Get("StereoConvergencePercentage", &iStereoConvergencePercentage, 100);
+	stereoscopy->Get("StereoConvergencePercentage", &iStereoConvergence, 100);
+	stereoscopy->Get("StereoConvergence", &iStereoConvergencePercentage, 20);
 	stereoscopy->Get("StereoSwapEyes", &bStereoSwapEyes, false);
 	stereoscopy->Get("StereoShader", &sStereoShader, "Anaglyph/dubois");
-
+	stereoscopy->Get("StereoEFBMonoDepth", &bStereoEFBMonoDepth, false);
+	stereoscopy->Get("StereoDepthPercentage", &iStereoDepthPercentage, 100);
+	
 	IniFile::Section* hacks = iniFile.GetOrCreateSection("Hacks");
 	hacks->Get("EFBAccessEnable", &bEFBAccessEnable, true);
 	hacks->Get("EFBFastAccess", &bEFBFastAccess, false);
@@ -170,19 +190,19 @@ void VideoConfig::Load(const std::string& ini_file)
 	hacks->Get("EFBScaledCopy", &bCopyEFBScaled, true);
 	hacks->Get("EFBEmulateFormatChanges", &bEFBEmulateFormatChanges, false);
 	hacks->Get("ForceDualSourceBlend", &bForceDualSourceBlend, false);
-	hacks->Get("FullAsyncShaderCompilation", &bFullAsyncShaderCompilation, true);
-	hacks->Get("WaitForShaderCompilation", &bWaitForShaderCompilation, false);
+	hacks->Get("FullAsyncShaderCompilation", &bFullAsyncShaderCompilation, true);	
 	hacks->Get("EnableGPUTextureDecoding", &bEnableGPUTextureDecoding, false);
-	hacks->Get("EnableComputeTextureEncoding", &bEnableComputeTextureEncoding, false);
-	hacks->Get("PredictiveFifo", &bPredictiveFifo, false);
+	hacks->Get("EnableComputeTextureEncoding", &bEnableComputeTextureEncoding, false);	
 	hacks->Get("BoundingBoxMode", &iBBoxMode, (int)BBoxMode::BBoxNone);
 	hacks->Get("LastStoryEFBToRam", &bLastStoryEFBToRam, false);
 	hacks->Get("ForceLogicOpBlend", &bForceLogicOpBlend, false);
 	hacks->Get("VertexRounding", &bVertexRounding, false);
+
+	hacks->Get("BackgroundShaderCompiling", &bBackgroundShaderCompiling, false);
+	hacks->Get("DisableSpecializedShaders", &bDisableSpecializedShaders, false);
 	
 
-	// hacks which are disabled by default
-	iPhackvalue[0] = 0;
+	phack.m_enable = false;
 	bPerfQueriesEnable = false;
 
 	// Load common settings
@@ -262,23 +282,22 @@ void VideoConfig::GameIniLoad()
 		{
 			switch (iEFBScale)
 			{
-			case SCALE_AUTO:
-				iEFBScale = SCALE_AUTO_INTEGRAL;
-				break;
-			case SCALE_1_5X:
-				iEFBScale = SCALE_1X;
-				break;
-			case SCALE_2_5X:
-				iEFBScale = SCALE_2X;
-				break;
-			default:
-				break;
-			}
+		case SCALE_AUTO:
+			iEFBScale = SCALE_AUTO_INTEGRAL;
+			break;
+		case SCALE_1_5X:
+			iEFBScale = SCALE_1X;
+			break;
+		case SCALE_2_5X:
+			iEFBScale = SCALE_2X;
+			break;
+		default:
+			break;
 		}
 	}
+	}
 
-	CHECK_SETTING("Video_Settings", "DisableFog", bDisableFog);
-	CHECK_SETTING("Video_Settings", "EnableOpenCL", bEnableOpenCL);
+	CHECK_SETTING("Video_Settings", "DisableFog", bDisableFog);	
 	CHECK_SETTING("Video_Settings", "BackendMultithreading", bBackendMultithreading);
 	CHECK_SETTING("Video_Settings", "CommandBufferExecuteInterval", iCommandBufferExecuteInterval);
 
@@ -287,8 +306,6 @@ void VideoConfig::GameIniLoad()
 	iniFile.GetIfExists("Video_Stereoscopy", "StereoEFBMonoDepth", &bStereoEFBMonoDepth, false);
 	iniFile.GetIfExists("Video_Stereoscopy", "StereoDepthPercentage", &iStereoDepthPercentage, 100);
 
-	CHECK_SETTING("Video_Enhancements", "ForceFiltering", bForceFiltering);
-	CHECK_SETTING("Video_Enhancements", "DisableFiltering", bDisableTextureFiltering);
 	CHECK_SETTING("Video_Enhancements", "MaxAnisotropy", iMaxAnisotropy);  // NOTE - this is x in (1 << x)
 	CHECK_SETTING("Video_Enhancements", "UseScalingFilter", bUseScalingFilter);
 	CHECK_SETTING("Video_Enhancements", "TextureScalingType", iTexScalingType);
@@ -321,31 +338,28 @@ void VideoConfig::GameIniLoad()
 	CHECK_SETTING("Video_Hacks", "LastStoryEFBToRam", bLastStoryEFBToRam);
 	CHECK_SETTING("Video_Hacks", "VertexRounding", bVertexRounding);
 
-	CHECK_SETTING("Video", "ProjectionHack", iPhackvalue[0]);
-	CHECK_SETTING("Video", "PH_SZNear", iPhackvalue[1]);
-	CHECK_SETTING("Video", "PH_SZFar", iPhackvalue[2]);
-	CHECK_SETTING("Video", "PH_ExtraParam", iPhackvalue[3]);
-	CHECK_SETTING("Video", "PH_ZNear", sPhackvalue[0]);
-	CHECK_SETTING("Video", "PH_ZFar", sPhackvalue[1]);
+	CHECK_SETTING("Video", "ProjectionHack", phack.m_enable);
+	CHECK_SETTING("Video", "PH_SZNear", phack.m_sznear);
+	CHECK_SETTING("Video", "PH_SZFar", phack.m_szfar);	
+	CHECK_SETTING("Video", "PH_ZNear", phack.m_znear);
+	CHECK_SETTING("Video", "PH_ZFar", phack.m_szfar);
 	CHECK_SETTING("Video", "PerfQueriesEnable", bPerfQueriesEnable);
-	CHECK_SETTING("Video", "FullAsyncShaderCompilation", bFullAsyncShaderCompilation);
-	CHECK_SETTING("Video", "WaitForShaderCompilation", bWaitForShaderCompilation);
+	CHECK_SETTING("Video", "FullAsyncShaderCompilation", bFullAsyncShaderCompilation);	
 	CHECK_SETTING("Video", "EnableGPUTextureDecoding", bEnableGPUTextureDecoding);
 	CHECK_SETTING("Video", "EnableComputeTextureEncoding", bEnableComputeTextureEncoding);
-	CHECK_SETTING("Video", "PredictiveFifo", bPredictiveFifo);
+	
 	if (gfx_override_exists)
 		OSD::AddMessage("Warning: Opening the graphics configuration will reset settings and might cause issues!", 10000);
 }
 
 void VideoConfig::VerifyValidity()
 {
-	// Disable while is unstable
-	bEnableOpenCL = false;
 	// TODO: Check iMaxAnisotropy value
 	if (iAdapter < 0 || iAdapter >((int)backend_info.Adapters.size() - 1))
 		iAdapter = 0;
 	if (std::find(backend_info.AAModes.begin(), backend_info.AAModes.end(), iMultisamples) == backend_info.AAModes.end())
 		iMultisamples = 1;
+	iMultisamples = std::max(iMultisamples, 1u);
 	if (!backend_info.bSupportsPixelLighting) bEnablePixelLighting = false;
 	bForcePhongShading = bForcePhongShading && bEnablePixelLighting;
 	bForcedLighting = bForcedLighting && bEnablePixelLighting;
@@ -373,9 +387,6 @@ void VideoConfig::VerifyValidity()
 			iStereoMode = 0;
 		}
 	}
-	// Disable while reimplementing predictive fifo
-	bPredictiveFifo = false;
-	bWaitForShaderCompilation = false;
 	if (iBBoxMode > BBoxGPU || iBBoxMode < BBoxNone)
 	{
 		iBBoxMode = BBoxNone;
@@ -401,7 +412,6 @@ void VideoConfig::VerifyValidity()
 		iTexScalingType = 10;
 	}
 	bHiresMaterialMaps = bHiresMaterialMaps && bHiresTextures && bEnablePixelLighting;
-	bLastStoryEFBToRam = bLastStoryEFBToRam && StringEndsWith(SConfig::GetInstance().GetGameID(), "LSEXJ");
 }
 
 void VideoConfig::Save(const std::string& ini_file)
@@ -424,11 +434,9 @@ void VideoConfig::Save(const std::string& ini_file)
 	settings->Set("ShowNetPlayPing", bShowNetPlayPing);
 	settings->Set("ShowNetPlayMessages", bShowNetPlayMessages);
 	settings->Set("LogRenderTimeToFile", bLogRenderTimeToFile);
-	settings->Set("ShowInputDisplay", bShowInputDisplay);
 	settings->Set("OverlayStats", bOverlayStats);
 	settings->Set("OverlayProjStats", bOverlayProjStats);
-	settings->Set("DumpTextures", bDumpTextures);
-	settings->Set("DumpVertexLoader", bDumpVertexLoaders);
+	settings->Set("DumpTextures", bDumpTextures);	
 	settings->Set("HiresTextures", bHiresTextures);
 	settings->Set("HiresMaterialMaps", bHiresMaterialMaps);
 	settings->Set("HiresMaterialMapsBuild", bHiresMaterialMapsBuild);
@@ -466,8 +474,6 @@ void VideoConfig::Save(const std::string& ini_file)
 	settings->Set("TexFmtOverlayCenter", bTexFmtOverlayCenter);
 	settings->Set("Wireframe", bWireFrame);
 	settings->Set("DisableFog", bDisableFog);
-
-	settings->Set("EnableOpenCL", bEnableOpenCL);
 	settings->Set("BorderlessFullscreen", bBorderlessFullscreen);
 
 	settings->Set("SWZComploc", bZComploc);
@@ -481,10 +487,11 @@ void VideoConfig::Save(const std::string& ini_file)
 	settings->Set("EnableValidationLayer", bEnableValidationLayer);
 	settings->Set("BackendMultithreading", bBackendMultithreading);
 	settings->Set("CommandBufferExecuteInterval", iCommandBufferExecuteInterval);
+	settings->Set("EnableShaderDebug", bEnableShaderDebug);
 
 	IniFile::Section* enhancements = iniFile.GetOrCreateSection("Enhancements");
-	enhancements->Set("ForceFiltering", bForceFiltering);
-	enhancements->Set("DisableFiltering", bDisableTextureFiltering);
+	enhancements->Set("FilteringMode", static_cast<int>(eFilteringMode));
+	enhancements->Set("CullMode", static_cast<int>(eCullMode));
 	enhancements->Set("MaxAnisotropy", iMaxAnisotropy);
 	enhancements->Set("PostProcessingEnable", bPostProcessingEnable);
 	enhancements->Set("PostProcessingTrigger", iPostProcessingTrigger);
@@ -506,8 +513,11 @@ void VideoConfig::Save(const std::string& ini_file)
 	stereoscopy->Set("StereoMode", iStereoMode);
 	stereoscopy->Set("StereoDepth", iStereoDepth);
 	stereoscopy->Set("StereoConvergencePercentage", iStereoConvergencePercentage);
+	stereoscopy->Set("StereoConvergence", iStereoConvergence);
 	stereoscopy->Set("StereoSwapEyes", bStereoSwapEyes);
 	stereoscopy->Set("StereoShader", sStereoShader);
+	stereoscopy->Set("StereoEFBMonoDepth", bStereoEFBMonoDepth);
+	stereoscopy->Set("StereoDepthPercentage", iStereoDepthPercentage);
 
 	IniFile::Section* hacks = iniFile.GetOrCreateSection("Hacks");
 	hacks->Set("EFBAccessEnable", bEFBAccessEnable);
@@ -518,14 +528,15 @@ void VideoConfig::Save(const std::string& ini_file)
 	hacks->Set("EFBEmulateFormatChanges", bEFBEmulateFormatChanges);
 	hacks->Set("ForceDualSourceBlend", bForceDualSourceBlend);
 	hacks->Set("FullAsyncShaderCompilation", bFullAsyncShaderCompilation);
-	hacks->Set("WaitForShaderCompilation", bWaitForShaderCompilation);
 	hacks->Set("EnableGPUTextureDecoding", bEnableGPUTextureDecoding);
-	hacks->Set("EnableComputeTextureEncoding", bEnableComputeTextureEncoding);
-	hacks->Set("PredictiveFifo", bPredictiveFifo);
+	hacks->Set("EnableComputeTextureEncoding", bEnableComputeTextureEncoding);	
 	hacks->Set("BoundingBoxMode", iBBoxMode);
 	hacks->Set("LastStoryEFBToRam", bLastStoryEFBToRam);
 	hacks->Set("ForceLogicOpBlend", bForceLogicOpBlend);
 	hacks->Set("VertexRounding", bVertexRounding);
+
+	hacks->Set("BackgroundShaderCompiling", bBackgroundShaderCompiling);
+	hacks->Set("DisableSpecializedShaders", bDisableSpecializedShaders);
 
 
 	iniFile.Save(ini_file);
@@ -539,4 +550,10 @@ bool VideoConfig::IsVSync() const
 bool VideoConfig::PixelLightingEnabled(const XFMemory& xfr, const u32 components) const
 {
 	return (xfr.numChan.numColorChans > 0) && bEnablePixelLighting && backend_info.bSupportsPixelLighting && ((components & VB_HAS_NRM0) == VB_HAS_NRM0);
+}
+
+bool VideoConfig::CanPrecompileUberShaders() const
+{
+	// We don't want to precompile ubershaders if they're never going to be used.
+	return bBackgroundShaderCompiling || bDisableSpecializedShaders;
 }

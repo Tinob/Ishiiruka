@@ -303,56 +303,53 @@ struct TevStageCombiner
 {
 	union ColorCombiner
 	{
-		struct  //abc=8bit,d=10bit
-		{
-			u32 d : 4; // TEVSELCC_X
-			u32 c : 4; // TEVSELCC_X
-			u32 b : 4; // TEVSELCC_X
-			u32 a : 4; // TEVSELCC_X
+		// abc=8bit,d=10bit
+		BitField<0, 4, u32> d;   // TEVSELCC_X
+		BitField<4, 4, u32> c;   // TEVSELCC_X
+		BitField<8, 4, u32> b;   // TEVSELCC_X
+		BitField<12, 4, u32> a;  // TEVSELCC_X
 
-			u32 bias : 2;
-			u32 op : 1;
-			u32 clamp : 1;
+		BitField<16, 2, u32> bias;
+		BitField<18, 1, u32> op;
+		BitField<19, 1, u32> clamp;
 
-			u32 shift : 2;
-			u32 dest : 2;  //1,2,3			
-		};
+		BitField<20, 2, u32> shift;
+		BitField<22, 2, u32> dest;  // 1,2,3
+
 		u32 hex;
 		bool UsedAsInput(u32 val) const
 		{
-			return a == val || b == val || c == val || d == val;
+			return (a.Value() == val) || (b.Value() == val) || (c.Value() == val) || (d.Value() == val);
 		}
 		bool UsedAs8bitInput(u32 val) const
 		{
-			return a == val || b == val || c == val;
+			return (a.Value() == val) || (b.Value() == val) || (c.Value() == val);
 		}
 	};
 	union AlphaCombiner
 	{
-		struct
-		{
-			u32 rswap : 2;
-			u32 tswap : 2;
-			u32 d : 3; // TEVSELCA_
-			u32 c : 3; // TEVSELCA_
-			u32 b : 3; // TEVSELCA_
-			u32 a : 3; // TEVSELCA_
+		BitField<0, 2, u32> rswap;
+		BitField<2, 2, u32> tswap;
+		BitField<4, 3, u32> d;   // TEVSELCA_
+		BitField<7, 3, u32> c;   // TEVSELCA_
+		BitField<10, 3, u32> b;  // TEVSELCA_
+		BitField<13, 3, u32> a;  // TEVSELCA_
 
-			u32 bias : 2; //GXTevBias
-			u32 op : 1;
-			u32 clamp : 1;
+		BitField<16, 2, u32> bias;  // GXTevBias
+		BitField<18, 1, u32> op;
+		BitField<19, 1, u32> clamp;
 
-			u32 shift : 2;
-			u32 dest : 2;  //1,2,3			
-		};
+		BitField<20, 2, u32> shift;
+		BitField<22, 2, u32> dest;  // 1,2,3
+
 		u32 hex;
 		bool UsedAsInput(u32 val) const
 		{
-			return a == val || b == val || c == val || d == val;
+			return (a.Value() == val) || (b.Value() == val) || (c.Value() == val) || (d.Value() == val);
 		}
 		bool UsedAs8bitInput(u32 val) const
 		{
-			return a == val || b == val || c == val;
+			return (a.Value() == val) || (b.Value() == val) || (c.Value() == val);
 		}
 	};
 
@@ -372,20 +369,17 @@ struct TevStageCombiner
 union TevStageIndirect
 {
 	// if mid, sw, tw, and addprev are 0, then no indirect stage is used, mask = 0x17fe00
-	struct
-	{
-		u32 bt : 2; // indirect tex stage ID
-		u32 fmt : 2; // format: ITF_X
-		u32 bias : 3; // ITB_X
-		u32 bs : 2; // ITBA_X, indicates which coordinate will become the 'bump alpha'
-		u32 mid : 4; // matrix id to multiply offsets with
-		u32 sw : 3; // ITW_X, wrapping factor for S of regular coord
-		u32 tw : 3; // ITW_X, wrapping factor for T of regular coord
-		u32 lb_utclod : 1; // use modified or unmodified texture coordinates for LOD computation
-		u32 fb_addprev : 1; // 1 if the texture coordinate results from the previous TEV stage should be added
-		u32 pad0 : 3;
-		u32 rid : 8;
-	};
+	BitField<0, 2, u32> bt;    // Indirect tex stage ID
+	BitField<2, 2, u32> fmt;   // Format: ITF_X
+	BitField<4, 3, u32> bias;  // ITB_X
+	BitField<7, 2, u32> bs;    // ITBA_X, indicates which coordinate will become the 'bump alpha'
+	BitField<9, 4, u32> mid;   // Matrix ID to multiply offsets with
+	BitField<13, 3, u32> sw;   // ITW_X, wrapping factor for S of regular coord
+	BitField<16, 3, u32> tw;   // ITW_X, wrapping factor for T of regular coord
+	BitField<19, 1, u32> lb_utclod;   // Use modified or unmodified texture
+									  // coordinates for LOD computation
+	BitField<20, 1, u32> fb_addprev;  // 1 if the texture coordinate results from the previous TEV
+									  // stage should be added
 	struct
 	{
 		u32 hex : 21;
@@ -394,45 +388,40 @@ union TevStageIndirect
 
 	bool IsActive() const
 	{
-		return bs != ITBA_OFF || mid != 0;
+		return (bs.Value() != ITBA_OFF) || (mid.Value() != 0);
 	}
 };
 
 union TwoTevStageOrders
 {
-	struct
-	{
-		u32 texmap0 : 3; // indirect tex stage texmap
-		u32 texcoord0 : 3;
-		u32 enable0 : 1; // 1 if should read from texture
-		u32 colorchan0 : 3; // RAS1_CC_X
+	BitField<0, 3, u32> texmap0;  // Indirect tex stage texmap
+	BitField<3, 3, u32> texcoord0;
+	BitField<6, 1, u32> enable0;     // 1 if should read from texture
+	BitField<7, 3, u32> colorchan0;  // RAS1_CC_X
 
-		u32 pad0 : 2;
+	BitField<12, 3, u32> texmap1;
+	BitField<15, 3, u32> texcoord1;
+	BitField<18, 1, u32> enable1;     // 1 if should read from texture
+	BitField<19, 3, u32> colorchan1;  // RAS1_CC_X
 
-		u32 texmap1 : 3;
-		u32 texcoord1 : 3;
-		u32 enable1 : 1; // 1 if should read from texture
-		u32 colorchan1 : 3; // RAS1_CC_X
+	BitField<24, 8, u32> rid;
 
-		u32 pad1 : 2;
-		u32 rid : 8;
-	};
 	u32 hex;
-	int getTexMap(int i) const
+	u32 getTexMap(int i) const
 	{
-		return i ? texmap1 : texmap0;
+		return i ? texmap1.Value() : texmap0.Value();
 	}
-	int getTexCoord(int i) const
+	u32 getTexCoord(int i) const
 	{
-		return i ? texcoord1 : texcoord0;
+		return i ? texcoord1.Value() : texcoord0.Value();
 	}
-	int getEnable(int i) const
+	u32 getEnable(int i) const
 	{
-		return i ? enable1 : enable0;
+		return i ? enable1.Value() : enable0.Value();
 	}
-	int getColorChan(int i) const
+	u32 getColorChan(int i) const
 	{
-		return i ? colorchan1 : colorchan0;
+		return i ? colorchan1.Value() : colorchan0.Value();
 	}
 };
 
@@ -564,20 +553,14 @@ union TexTLUT
 
 union ZTex1
 {
-	struct
-	{
-		u32 bias : 24;
-	};
+	BitField<0, 24, u32> bias;
 	u32 hex;
 };
 
 union ZTex2
 {
-	struct
-	{
-		u32 type : 2; // TEV_Z_TYPE_X
-		u32 op : 2; // GXZTexOp
-	};
+	BitField<0, 2, u32> type;  // TEV_Z_TYPE_X
+	BitField<2, 2, u32> op;    // GXZTexOp
 	u32 hex;
 };
 
@@ -704,6 +687,7 @@ union BlendMode
 	BitField<12, 4, LogicOp>     logicmode;
 
 	u32 hex;
+	bool UseLogicOp() const;
 };
 
 
@@ -731,14 +715,12 @@ union FogParam0
 
 union FogParam3
 {
-	struct
-	{
-		u32 c_mant : 11;
-		u32 c_exp : 8;
-		u32 c_sign : 1;
-		u32 proj : 1; // 0 - perspective, 1 - orthographic
-		u32 fsel : 3; // 0 - off, 2 - linear, 4 - exp, 5 - exp2, 6 - backward exp, 7 - backward exp2
-	};
+	BitField<0, 11, u32> c_mant;
+	BitField<11, 8, u32> c_exp;
+	BitField<19, 1, u32> c_sign;
+	BitField<20, 1, u32> proj;  // 0 - perspective, 1 - orthographic
+	BitField<21, 3, u32> fsel;  // 0 - off, 2 - linear, 4 - exp, 5 - exp2, 6 -
+								// backward exp, 7 - backward exp2
 
 	// amount to subtract from eyespacez after range adjustment
 	float GetC() const
@@ -747,7 +729,7 @@ union FogParam3
 		{
 			u32 i; float f;
 		} dummy;
-		dummy.i = ((u32)c_sign << 31) | ((u32)c_exp << 23) | ((u32)c_mant << 12); // scale mantissa from 11 to 23 bits
+		dummy.i = ((u32)c_sign.Value() << 31) | ((u32)c_exp.Value() << 23) | ((u32)c_mant.Value() << 12); // scale mantissa from 11 to 23 bits
 		return dummy.f;
 	}
 
@@ -756,17 +738,14 @@ union FogParam3
 
 union FogRangeKElement
 {
-	struct
-	{
-		u32 HI : 12;
-		u32 LO : 12;
-		u32 regid : 8;
-	};
+	BitField<0, 12, u32> HI;
+	BitField<12, 12, u32> LO;
+	BitField<24, 8, u32> regid;
 
 	// TODO: Which scaling coefficient should we use here? This is just a guess!
 	float GetValue(int i)
 	{
-		return (i ? HI : LO) / 256.f;
+		return (i ? HI.Value() : LO.Value()) / 256.f;
 	}
 	u32 HEX;
 };
@@ -775,13 +754,9 @@ struct FogRangeParams
 {
 	union RangeBase
 	{
-		struct
-		{
-			u32 Center : 10; // viewport center + 342
-			u32 Enabled : 1;
-			u32 unused : 13;
-			u32 regid : 8;
-		};
+		BitField<0, 10, u32> Center;  // viewport center + 342
+		BitField<10, 1, u32> Enabled;
+		BitField<24, 8, u32> regid;
 		u32 hex;
 	};
 	RangeBase Base;
@@ -797,12 +772,9 @@ struct FogParams
 
 	union FogColor
 	{
-		struct
-		{
-			u32 b : 8;
-			u32 g : 8;
-			u32 r : 8;
-		};
+		BitField<0, 8, u32> b;
+		BitField<8, 8, u32> g;
+		BitField<16, 8, u32> r;
 		u32 hex;
 	};
 
@@ -832,11 +804,8 @@ union ZMode
 
 union ConstantAlpha
 {
-	struct
-	{
-		u32 alpha : 8;
-		u32 enable : 1;
-	};
+	BitField<0, 8, u32> alpha;
+	BitField<8, 1, u32> enable;
 	u32 hex;
 };
 
@@ -943,24 +912,22 @@ union TevReg
 
 union TevKSel
 {
-	struct
-	{
-		u32 swap1 : 2;
-		u32 swap2 : 2;
-		u32 kcsel0 : 5;
-		u32 kasel0 : 5;
-		u32 kcsel1 : 5;
-		u32 kasel1 : 5;
-	};
+	BitField<0, 2, u32> swap1;
+	BitField<2, 2, u32> swap2;
+	BitField<4, 5, u32> kcsel0;
+	BitField<9, 5, u32> kasel0;
+	BitField<14, 5, u32> kcsel1;
+	BitField<19, 5, u32> kasel1;
+
 	u32 hex;
 
-	int getKC(int i) const
+	u32 getKC(int i) const
 	{
-		return i ? kcsel1 : kcsel0;
+		return i ? kcsel1.Value() : kcsel0.Value();
 	}
-	int getKA(int i) const
+	u32 getKA(int i) const
 	{
-		return i ? kasel1 : kasel0;
+		return i ? kasel1.Value() : kasel0.Value();
 	}
 };
 
@@ -1006,30 +973,30 @@ union AlphaTest
 		switch (logic)
 		{
 		case AND:
-			if (comp0 == ALWAYS && comp1 == ALWAYS)
+			if (comp0.Value() == ALWAYS && comp1.Value() == ALWAYS)
 				return PASS;
-			if (comp0 == NEVER || comp1 == NEVER)
+			if (comp0.Value() == NEVER || comp1.Value() == NEVER)
 				return FAIL;
 			break;
 
 		case OR:
-			if (comp0 == ALWAYS || comp1 == ALWAYS)
+			if (comp0.Value() == ALWAYS || comp1.Value() == ALWAYS)
 				return PASS;
-			if (comp0 == NEVER && comp1 == NEVER)
+			if (comp0.Value() == NEVER && comp1.Value() == NEVER)
 				return FAIL;
 			break;
 
 		case XOR:
-			if ((comp0 == ALWAYS && comp1 == NEVER) || (comp0 == NEVER && comp1 == ALWAYS))
+			if ((comp0.Value() == ALWAYS && comp1.Value() == NEVER) || (comp0.Value() == NEVER && comp1.Value() == ALWAYS))
 				return PASS;
-			if ((comp0 == ALWAYS && comp1 == ALWAYS) || (comp0 == NEVER && comp1 == NEVER))
+			if ((comp0.Value() == ALWAYS && comp1.Value() == ALWAYS) || (comp0.Value() == NEVER && comp1.Value() == NEVER))
 				return FAIL;
 			break;
 
 		case XNOR:
-			if ((comp0 == ALWAYS && comp1 == NEVER) || (comp0 == NEVER && comp1 == ALWAYS))
+			if ((comp0.Value() == ALWAYS && comp1.Value() == NEVER) || (comp0.Value() == NEVER && comp1.Value() == ALWAYS))
 				return FAIL;
-			if ((comp0 == ALWAYS && comp1 == ALWAYS) || (comp0 == NEVER && comp1 == NEVER))
+			if ((comp0.Value() == ALWAYS && comp1.Value() == ALWAYS) || (comp0.Value() == NEVER && comp1.Value() == NEVER))
 				return PASS;
 			break;
 		default:
@@ -1058,7 +1025,7 @@ union UPE_Copy
 
 	u32 tp_realFormat() const
 	{
-		return target_pixel_format / 2 + (target_pixel_format & 1) * 8;
+		return target_pixel_format.Value() / 2 + (target_pixel_format.Value() & 1) * 8;
 	}
 };
 

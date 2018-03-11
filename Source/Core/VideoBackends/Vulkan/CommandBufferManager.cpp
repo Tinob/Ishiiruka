@@ -57,7 +57,7 @@ bool CommandBufferManager::CreateCommandBuffers()
 		resources.needs_fence_wait = false;
 
 		VkCommandPoolCreateInfo pool_info = { VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, nullptr, 0,
-			g_vulkan_context->GetGraphicsQueueFamilyIndex() };
+		  g_vulkan_context->GetGraphicsQueueFamilyIndex() };
 		res = vkCreateCommandPool(g_vulkan_context->GetDevice(), &pool_info, nullptr,
 			&resources.command_pool);
 		if (res != VK_SUCCESS)
@@ -67,8 +67,8 @@ bool CommandBufferManager::CreateCommandBuffers()
 		}
 
 		VkCommandBufferAllocateInfo buffer_info = {
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, nullptr, resources.command_pool,
-			VK_COMMAND_BUFFER_LEVEL_PRIMARY, static_cast<uint32_t>(resources.command_buffers.size()) };
+		  VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, nullptr, resources.command_pool,
+		  VK_COMMAND_BUFFER_LEVEL_PRIMARY, static_cast<uint32_t>(resources.command_buffers.size()) };
 
 		res = vkAllocateCommandBuffers(device, &buffer_info, resources.command_buffers.data());
 		if (res != VK_SUCCESS)
@@ -78,7 +78,7 @@ bool CommandBufferManager::CreateCommandBuffers()
 		}
 
 		VkFenceCreateInfo fence_info = { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, nullptr,
-			VK_FENCE_CREATE_SIGNALED_BIT };
+		  VK_FENCE_CREATE_SIGNALED_BIT };
 
 		res = vkCreateFence(device, &fence_info, nullptr, &resources.fence);
 		if (res != VK_SUCCESS)
@@ -95,11 +95,11 @@ bool CommandBufferManager::CreateCommandBuffers()
 		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 16384 } };
 
 		VkDescriptorPoolCreateInfo pool_create_info = { VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-			nullptr,
-			0,
-			100000,  // tweak this
-			static_cast<u32>(ArraySize(pool_sizes)),
-			pool_sizes };
+		  nullptr,
+		  0,
+		  100000,  // tweak this
+		  static_cast<u32>(ArraySize(pool_sizes)),
+		  pool_sizes };
 
 		res = vkCreateDescriptorPool(device, &pool_create_info, nullptr, &resources.descriptor_pool);
 		if (res != VK_SUCCESS)
@@ -154,8 +154,8 @@ void CommandBufferManager::DestroyCommandBuffers()
 VkDescriptorSet CommandBufferManager::AllocateDescriptorSet(VkDescriptorSetLayout set_layout)
 {
 	VkDescriptorSetAllocateInfo allocate_info = {
-		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr,
-		m_frame_resources[m_current_frame].descriptor_pool, 1, &set_layout };
+	  VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr,
+	  m_frame_resources[m_current_frame].descriptor_pool, 1, &set_layout };
 
 	VkDescriptorSet descriptor_set;
 	VkResult res =
@@ -278,7 +278,7 @@ void CommandBufferManager::SubmitCommandBuffer(bool submit_on_worker_thread,
 		{
 			std::lock_guard<std::mutex> guard(m_pending_submit_lock);
 			m_pending_submits.push_back({ m_current_frame, wait_semaphore, signal_semaphore,
-				present_swap_chain, present_image_index });
+			  present_swap_chain, present_image_index });
 		}
 
 		// Wake up the worker thread for a single iteration.
@@ -302,14 +302,14 @@ void CommandBufferManager::SubmitCommandBuffer(size_t index, VkSemaphore wait_se
 	// This may be executed on the worker thread, so don't modify any state of the manager class.
 	uint32_t wait_bits = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 	VkSubmitInfo submit_info = { VK_STRUCTURE_TYPE_SUBMIT_INFO,
-		nullptr,
-		0,
-		nullptr,
-		&wait_bits,
-		static_cast<u32>(resources.command_buffers.size()),
-		resources.command_buffers.data(),
-		0,
-		nullptr };
+	  nullptr,
+	  0,
+	  nullptr,
+	  &wait_bits,
+	  static_cast<u32>(resources.command_buffers.size()),
+	  resources.command_buffers.data(),
+	  0,
+	  nullptr };
 
 	// If the init command buffer did not have any commands recorded, don't submit it.
 	if (!m_frame_resources[index].init_command_buffer_used)
@@ -344,17 +344,22 @@ void CommandBufferManager::SubmitCommandBuffer(size_t index, VkSemaphore wait_se
 		// Should have a signal semaphore.
 		_assert_(signal_semaphore != VK_NULL_HANDLE);
 		VkPresentInfoKHR present_info = { VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-			nullptr,
-			1,
-			&signal_semaphore,
-			1,
-			&present_swap_chain,
-			&present_image_index,
-			nullptr };
+		  nullptr,
+		  1,
+		  &signal_semaphore,
+		  1,
+		  &present_swap_chain,
+		  &present_image_index,
+		  nullptr };
 
-		res = vkQueuePresentKHR(g_vulkan_context->GetGraphicsQueue(), &present_info);
-		if (res != VK_SUCCESS && res != VK_ERROR_OUT_OF_DATE_KHR && res != VK_SUBOPTIMAL_KHR)
-			LOG_VULKAN_ERROR(res, "vkQueuePresentKHR failed: ");
+		res = vkQueuePresentKHR(g_vulkan_context->GetPresentQueue(), &present_info);
+		if (res != VK_SUCCESS)
+		{
+			// VK_ERROR_OUT_OF_DATE_KHR is not fatal, just means we need to recreate our swap chain.
+			if (res != VK_ERROR_OUT_OF_DATE_KHR && res != VK_SUBOPTIMAL_KHR)
+				LOG_VULKAN_ERROR(res, "vkQueuePresentKHR failed: ");
+			m_present_failed_flag.Set();
+		}
 	}
 
 	// Command buffer has been queued, so permit the next one.
@@ -404,7 +409,7 @@ void CommandBufferManager::ActivateCommandBuffer()
 
 	// Enable commands to be recorded to the two buffers again.
 	VkCommandBufferBeginInfo begin_info = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, nullptr,
-		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, nullptr };
+	  VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, nullptr };
 	for (VkCommandBuffer command_buffer : resources.command_buffers)
 	{
 		res = vkBeginCommandBuffer(command_buffer, &begin_info);

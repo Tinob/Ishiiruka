@@ -8,7 +8,7 @@
 
 #include <Windows.h>
 
-#include "Common/Common.h"
+#include "Common/CommonTypes.h"
 #include "Common/Intrinsics.h"
 
 // Atomic operations are performed in a single step by the CPU. It is

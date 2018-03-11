@@ -3,7 +3,6 @@
 // Refer to the license.txt file included.
 
 #pragma once
-
 #include <d3d12.h>
 #include <d3dcompiler.h>
 #include <dxgi1_4.h>
@@ -85,6 +84,7 @@ extern std::unique_ptr<D3DDescriptorHeapManager> rtv_descriptor_heap_mgr;
 extern std::unique_ptr<D3DSamplerHeapManager> sampler_descriptor_heap_mgr;
 extern std::array<ID3D12DescriptorHeap*, 2> gpu_descriptor_heaps;
 
+extern D3D12_GPU_DESCRIPTOR_HANDLE null_srv_gpu;
 extern D3D12_CPU_DESCRIPTOR_HANDLE null_srv_cpu;
 extern D3D12_CPU_DESCRIPTOR_HANDLE null_srv_cpu_shadow;
 
@@ -94,6 +94,8 @@ bool TessellationEnabled();
 D3D_FEATURE_LEVEL GetFeatureLevel();
 bool GetLogicOpSupported();
 ID3D12RootSignature* GetRootSignature();
+ID3D12RootSignature* GetRootSignature(size_t index);
+size_t GetRootSignatureIndex();
 ID3D12RootSignature* GetBasicRootSignature();
 void SetRootSignature(bool geometryenabled, bool tesselationenabled, bool applychange = true);
 

@@ -65,7 +65,7 @@ namespace DX11
 // the encoder
 static const UINT MAX_BYTES_PER_BLOCK_ROW = (EFB_WIDTH / 4) * 64;
 // The maximum amount of data that the texture encoder can generate in one call
-static const UINT MAX_BYTES_PER_ENCODE = MAX_BYTES_PER_BLOCK_ROW*(EFB_HEIGHT / 4);
+static const UINT MAX_BYTES_PER_ENCODE = MAX_BYTES_PER_BLOCK_ROW * (EFB_HEIGHT / 4);
 
 enum BaseType
 {

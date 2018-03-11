@@ -80,7 +80,7 @@ public:
 		{
 			item.usage_count++;
 		}
-		if (m_categories.size() == 1)
+		if (m_categories.size() <= 1)
 		{
 			return item.info;
 		}
@@ -217,7 +217,7 @@ public:
 		}
 	}
 
-	void PersistToFile(const std::string& path, bool allcategories = false)
+	void PersistToFile(const std::string& path, const std::function<void(Tobj&)>& cleanfunc = {}, bool allcategories = false)
 	{
 		std::ofstream out(path, std::ofstream::binary);
 		if (!out.is_open())
@@ -235,50 +235,50 @@ public:
 				bwrite(out, item.second);
 			}
 		}
-		size_t object_count = 0;
-		if (allcategories || m_categories.size() == 1)
-		{
-			object_count = m_objects.size();
-		}
-		else
-		{
-			for (auto& item : m_objects)
-			{
-				if ((item.second.category_mask[m_category_index] & m_category_mask) != 0)
-				{
-					object_count++;
-				}
-			}
-		}
-		bwrite(out, object_count);
+		std::map<Tobj, ObjectMetadata*> ToStore;
 		for (auto& item : m_objects)
 		{
-			if (allcategories || m_categories.size() == 1 || (item.second.category_mask[m_category_index] & m_category_mask) != 0)
+			if (allcategories || m_categories.size() == 1 || ((item.second.category_mask[m_category_index] & m_category_mask) != 0))
 			{
-				bwrite(out, item.first);
-				if (allcategories)
+				Tobj itemkey = item.first;
+				if (cleanfunc)
 				{
-					bwrite(out, item.second.category_count);
+					cleanfunc(itemkey);
 				}
-				bwrite(out, item.second.usage_count);
-				if (allcategories)
+				if (ToStore.find(itemkey) == ToStore.end())
 				{
-					size_t mask_size = item.second.category_mask.size();
-					bwrite(out, mask_size);
-					if (mask_size > 0)
-					{
-						out.write(reinterpret_cast<char*>(item.second.category_mask.data()), sizeof(size_t) * mask_size);
-					}
+					ToStore.emplace(itemkey, &item.second);
 				}
 			}
 		}
+		pKey_t header = (sizeof(Tobj) << 32) | ToStore.size();
+		bwrite(out, header);
+		for (auto& item : ToStore)
+		{
+			bwrite(out, item.first);
+			if (allcategories)
+			{
+				bwrite(out, item.second->category_count);
+			}
+			bwrite(out, item.second->usage_count);
+			if (allcategories)
+			{
+				size_t mask_size = item.second->category_mask.size();
+				bwrite(out, mask_size);
+				if (mask_size > 0)
+				{
+					out.write(reinterpret_cast<char*>(item.second->category_mask.data()), sizeof(size_t) * mask_size);
+				}
+			}
+		}
+		bwrite(out, ValidationMask);
 	}
 
-	void Persist()
+	void Persist(const std::function<void(Tobj&)>& cleanfunc = {})
 	{
 		if (m_storage.length() > 0)
 		{
-			PersistToFile(m_storage);
+			PersistToFile(m_storage, cleanfunc);
 		}
 	}
 
@@ -323,10 +323,23 @@ public:
 			}
 			m_categories.emplace(std::move(key), std::move(data));
 		}
-		pKey_t object_count = 0;
-		bread(input, object_count);
+		pKey_t header = 0;
+		bread(input, header);
+		size_t object_size = size_t((header >> 32) & 0xFFFFFFFFul);
+		if (object_size && object_size != sizeof(Tobj))
+		{
+			// Corrupted file
+			return;
+		}
+		size_t object_count = header & 0xFFFFFFFFul;
 		for (size_t i = 0; i < object_count; i++)
 		{
+			if (input.eof())
+			{
+				// Corrupted file
+				m_objects.clear();
+				return;
+			}
 			Tobj key;
 			bread(input, key);
 			ObjectMetadata& data = m_objects[key];
@@ -357,6 +370,17 @@ public:
 					data.category_count++;
 					data.category_mask[category_index] |= category_mask;
 				}
+			}
+		}
+		pKey_t validation = 0;
+		bread(input, validation);
+		if (input && validation)
+		{
+			if (validation != ValidationMask)
+			{
+				// Corrupted file
+				m_objects.clear();
+				return;
 			}
 		}
 	}
@@ -391,6 +415,7 @@ public:
 	}
 
 private:
+	const pKey_t ValidationMask = 1980092619761005200ull;
 	struct ObjectMetadata
 	{
 		pKey_t category_count;

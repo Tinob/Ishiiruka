@@ -57,11 +57,14 @@ void ShaderCompilerWorkUnit::Release()
 }
 
 HLSLAsyncCompiler::HLSLAsyncCompiler() :
-	m_repositoryIndex(0),
-	m_input(256),
-	m_output(256)
+	m_input(repository_size),
+	m_output(repository_size)
 {
-	WorkUnitRepository = new ShaderCompilerWorkUnit[256];
+	WorkUnitRepository = new ShaderCompilerWorkUnit[repository_size];
+	for (size_t i = 0; i < repository_size; i++)
+	{
+		m_repository.push_back(std::move(&WorkUnitRepository[i]));
+	}
 	Common::ThreadPool::RegisterWorker(this);
 }
 
@@ -72,13 +75,13 @@ void HLSLAsyncCompiler::SetCompilerFunction(pD3DCompile compilerfunc)
 
 HLSLAsyncCompiler::~HLSLAsyncCompiler()
 {
-	delete[] WorkUnitRepository;
 	Common::ThreadPool::UnregisterWorker(this);
+	delete[] WorkUnitRepository;
 }
 
-bool HLSLAsyncCompiler::NextTask()
+bool HLSLAsyncCompiler::NextTask(size_t ID)
 {
-	ShaderCompilerWorkUnit* unit;
+	ShaderCompilerWorkUnit* unit = nullptr;
 	if (m_input.try_pop(unit))
 	{
 		if (unit->GenerateCodeHandler)
@@ -86,7 +89,7 @@ bool HLSLAsyncCompiler::NextTask()
 			unit->GenerateCodeHandler(unit);
 		}
 		unit->cresult = PD3DCompile(unit->code.data(),
-			unit->codesize,
+			unit->code.size(),
 			nullptr,
 			(const D3D_SHADER_MACRO*)unit->defines,
 			nullptr,
@@ -95,65 +98,65 @@ bool HLSLAsyncCompiler::NextTask()
 			unit->flags, 0,
 			&unit->shaderbytecode,
 			&unit->error);
-		m_output.push(unit);
+		m_output.push(std::move(unit));
 		return true;
 	}
 	return false;
 }
-ShaderCompilerWorkUnit* HLSLAsyncCompiler::NewUnit(u32 codesize)
+ShaderCompilerWorkUnit* HLSLAsyncCompiler::NewUnit()
 {
-	Common::ThreadPool::NotifyWorkPending();
-	u32 index = m_repositoryIndex.fetch_add(1);
-	ShaderCompilerWorkUnit* result = &WorkUnitRepository[index & 255];
-	result->Clear();
-	if (result->code.size() < codesize)
+	u32 loopcount = 0;
+	while (m_in_progres_counter >= repository_size)
 	{
-		result->code.resize(codesize);
+		if (m_output.empty())
+		{
+			Common::cYield(loopcount++);
+		}
+		else
+		{
+			ProcCompilationResults();
+		}
 	}
-	result->codesize = codesize;
+	ShaderCompilerWorkUnit* result = m_repository.front();
+	m_repository.pop_front();
+	result->code.clear();
 	return result;
 }
 void HLSLAsyncCompiler::CompileShaderAsync(ShaderCompilerWorkUnit* unit)
 {
-	m_input.push(unit);
+	m_in_progres_counter++;
+	m_input.push(std::move(unit));
+	Common::ThreadPool::NotifyWorkPending();
 }
+
 void HLSLAsyncCompiler::ProcCompilationResults()
 {
-	if (!m_output.Empty())
+	ShaderCompilerWorkUnit* unit = nullptr;
+	while (m_output.try_pop(unit))
 	{
-		ShaderCompilerWorkUnit* unit;
-		while (m_output.try_pop(unit))
+		if (unit->ResultHandler)
 		{
 			unit->ResultHandler(unit);
 		}
+		unit->Clear();
+		m_repository.push_back(std::move(unit));
+		m_in_progres_counter--;
 	}
 }
 bool HLSLAsyncCompiler::CompilationFinished()
 {
-	return m_input.Empty();
+	return m_in_progres_counter == 0;
 }
-void HLSLAsyncCompiler::WaitForCompilationFinished()
+
+void HLSLAsyncCompiler::WaitForFinish()
 {
 	u32 loopcount = 0;
-	while (!m_input.Empty())
+	while (m_in_progres_counter > 0)
 	{
+		ProcCompilationResults();
 		Common::cYield(loopcount++);
 	}
 }
-void HLSLAsyncCompiler::WaitForFinish()
-{
-	ShaderCompilerWorkUnit* unit;
-	WaitForCompilationFinished();
-	if (!m_output.Empty())
-	{
-		while (m_output.try_pop(unit))
-		{
-			unit->ResultHandler(unit);
-		}
-	}
-}
-
-
 
 HLSLCompiler& HLSLCompiler::getInstance()
 {

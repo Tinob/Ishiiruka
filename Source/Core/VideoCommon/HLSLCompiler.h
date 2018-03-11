@@ -4,6 +4,7 @@
 // Added for Ishiiruka By Tino
 #pragma once
 
+#include <atomic>
 #include <vector>
 #include <D3Dcompiler.h>
 #include "VideoCommon/ShaderGenCommon.h"
@@ -18,7 +19,6 @@ class ShaderCompilerWorkUnit
 	ShaderCompilerWorkUnit(ShaderCompilerWorkUnit const&);
 	void operator=(ShaderCompilerWorkUnit const&);
 public:
-	u32 codesize;
 	u32 flags;
 	HRESULT cresult;
 	const char* entrypoint;
@@ -26,7 +26,7 @@ public:
 	const void* defines;
 	ID3DBlob* shaderbytecode;
 	ID3DBlob* error;
-	std::vector<char> code;
+	ShaderCode code;
 	std::function<void(ShaderCompilerWorkUnit*)> GenerateCodeHandler;
 	std::function<void(ShaderCompilerWorkUnit*)> ResultHandler;
 	void Clear();
@@ -35,12 +35,14 @@ public:
 
 class HLSLAsyncCompiler final : Common::IWorker
 {
+	static constexpr size_t repository_size = 256;
 	friend class HLSLCompiler;
 	pD3DCompile PD3DCompile;
 	HLSLAsyncCompiler();
-	std::atomic<s32> m_repositoryIndex;
+	s32 m_in_progres_counter = 0;
 	ShaderCompilerWorkUnit* WorkUnitRepository;
-	Common::ManyToManyQueue<ShaderCompilerWorkUnit*, Common::CircularQueue<ShaderCompilerWorkUnit*>> m_input;
+	std::deque<ShaderCompilerWorkUnit*> m_repository;
+	Common::OneToManyQueue<ShaderCompilerWorkUnit*, Common::CircularQueue<ShaderCompilerWorkUnit*>> m_input;
 	Common::ManyToOneQueue<ShaderCompilerWorkUnit*, Common::CircularQueue<ShaderCompilerWorkUnit*>> m_output;
 	HLSLAsyncCompiler(HLSLAsyncCompiler const&);
 	void operator=(HLSLAsyncCompiler const&);
@@ -48,12 +50,11 @@ public:
 	static HLSLAsyncCompiler& getInstance();
 	void SetCompilerFunction(pD3DCompile compilerfunc);
 	virtual ~HLSLAsyncCompiler();
-	bool NextTask() override;
-	ShaderCompilerWorkUnit* NewUnit(u32 codesize);
+	bool NextTask(size_t ID) override;
+	ShaderCompilerWorkUnit* NewUnit();
 	void CompileShaderAsync(ShaderCompilerWorkUnit* unit);
 	void ProcCompilationResults();
 	bool CompilationFinished();
-	void WaitForCompilationFinished();
 	void WaitForFinish();
 };
 

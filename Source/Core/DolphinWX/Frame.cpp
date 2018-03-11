@@ -25,6 +25,7 @@
 #include <wx/menu.h>
 #include <wx/msgdlg.h>
 #include <wx/panel.h>
+#include <wx/progdlg.h>
 #include <wx/sizer.h>
 #include <wx/statusbr.h>
 #include <wx/textctrl.h>
@@ -724,6 +725,36 @@ void CFrame::OnHostMessage(wxCommandEvent& event)
 		OnStopped();
 		break;
 
+	case IDM_UPDATE_PROGRESS_DIALOG:
+	{
+		int current = event.GetInt();
+		int total = static_cast<int>(event.GetExtraLong());
+		if (total < 0 || current >= total)
+		{
+			if (m_progress_dialog)
+			{
+				delete m_progress_dialog;
+				m_progress_dialog = nullptr;
+			}
+		}
+		else if (total > 0 && current < total)
+		{
+			if (!m_progress_dialog)
+			{
+				m_progress_dialog = new wxProgressDialog(
+					_("Operation in progress..."), event.GetString(), total, m_RenderFrame,
+					wxPD_APP_MODAL | wxPD_ELAPSED_TIME | wxPD_SMOOTH | wxPD_REMAINING_TIME);
+				m_progress_dialog->Show();
+			}
+			else
+			{
+				if (m_progress_dialog->GetRange() != total)
+					m_progress_dialog->SetRange(total);
+				m_progress_dialog->Update(current, event.GetString());
+			}
+		}
+	}
+	break;
 	case IDM_FORCE_CONNECT_WIIMOTE1:
 	case IDM_FORCE_CONNECT_WIIMOTE2:
 	case IDM_FORCE_CONNECT_WIIMOTE3:

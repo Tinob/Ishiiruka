@@ -48,14 +48,22 @@ void VertexManager::CreateDeviceObjects()
 
 	m_indexBuffer = StreamBuffer::Create(GL_ELEMENT_ARRAY_BUFFER, MAX_IBUFFER_SIZE);
 	m_index_buffers = m_indexBuffer->m_buffer;
-
-	m_last_vao = 0;
 }
 
 void VertexManager::DestroyDeviceObjects()
 {
 	m_vertexBuffer.reset();
 	m_indexBuffer.reset();
+}
+
+GLuint VertexManager::GetVertexBufferHandle() const
+{
+	return m_vertex_buffers;
+}
+
+GLuint VertexManager::GetIndexBufferHandle() const
+{
+	return m_index_buffers;
 }
 
 void VertexManager::PrepareDrawBuffers(u32 stride)
@@ -86,13 +94,7 @@ void VertexManager::Draw(u32 stride)
 		GL_LINES,
 		GL_TRIANGLES
 	};
-	primitive_mode = modes[m_current_primitive_type];
-	bool cull_changed = primitive_mode != GL_TRIANGLES && bpmem.genMode.cullmode > 0;
-	if (cull_changed)
-	{
-		glDisable(GL_CULL_FACE);
-	}
-
+	primitive_mode = modes[static_cast<u32>(m_current_primitive_type)];
 	if (g_ogl_config.bSupportsGLBaseVertex)
 	{
 		glDrawRangeElementsBaseVertex(primitive_mode, 0, max_index, index_size, GL_UNSIGNED_SHORT, (u8*)nullptr + m_index_offset, (GLint)m_baseVertex);
@@ -103,12 +105,9 @@ void VertexManager::Draw(u32 stride)
 	}
 
 	INCSTAT(stats.thisFrame.numDrawCalls);
-
-	if (cull_changed)
-		static_cast<Renderer*>(g_renderer.get())->SetGenerationMode();
 }
 
-void VertexManager::PrepareShaders(PrimitiveType primitive, u32 components, const XFMemory &xfr, const BPMemory &bpm, bool ongputhread)
+void VertexManager::PrepareShaders(PrimitiveType primitive, u32 components, const XFMemory &xfr, const BPMemory &bpm)
 {
 	const bool useDstAlpha = bpm.dstalpha.enable && bpm.blendmode.alphaupdate &&
 		bpm.zcontrol.pixel_format == PEControl::RGBA6_Z24;
@@ -116,17 +115,18 @@ void VertexManager::PrepareShaders(PrimitiveType primitive, u32 components, cons
 	bool dualSourcePossible = g_ActiveConfig.backend_info.bSupportsDualSourceBlend;
 	// If host supports GL_ARB_blend_func_extended, we can do dst alpha in
 	// the same pass as regular rendering.
+	GLVertexFormat* nativeVertexFmt = (GLVertexFormat*)VertexLoaderManager::GetCurrentVertexFormat();
 	if (useDstAlpha && dualSourcePossible)
 	{
-		ProgramShaderCache::SetShader(PSRM_DUAL_SOURCE_BLEND, VertexLoaderManager::g_current_components, m_current_primitive_type);
+		ProgramShaderCache::SetShader(PSRM_DUAL_SOURCE_BLEND, VertexLoaderManager::g_current_components, m_current_primitive_type, nativeVertexFmt);
 	}
 	else
 	{
 		if (useDstAlpha)
 		{
-			ProgramShaderCache::SetShader(PSRM_ALPHA_PASS, VertexLoaderManager::g_current_components, m_current_primitive_type);
+			ProgramShaderCache::SetShader(PSRM_ALPHA_PASS, VertexLoaderManager::g_current_components, m_current_primitive_type, nativeVertexFmt);
 		}
-		ProgramShaderCache::SetShader(PSRM_DEFAULT, VertexLoaderManager::g_current_components, m_current_primitive_type);
+		ProgramShaderCache::SetShader(PSRM_DEFAULT, VertexLoaderManager::g_current_components, m_current_primitive_type, nativeVertexFmt);
 	}
 }
 
@@ -144,26 +144,24 @@ void VertexManager::vFlush(bool useDstAlpha)
 
 	// upload global constants
 	ProgramShaderCache::UploadConstants();
-
-	// setup the pointers
-	nativeVertexFmt->SetupVertexPointers();
-	if (m_last_vao != nativeVertexFmt->VAO)
-	{
-		glBindVertexArray(nativeVertexFmt->VAO);
-		m_last_vao = nativeVertexFmt->VAO;
-	}
-	PrepareDrawBuffers(stride);
 	// If host supports GL_ARB_blend_func_extended, we can do dst alpha in
 	// the same pass as regular rendering.
 	OGL::SHADER* active_shader = nullptr;
 	if (useDstAlpha && dualSourcePossible)
 	{
-		active_shader = ProgramShaderCache::SetShader(PSRM_DUAL_SOURCE_BLEND, VertexLoaderManager::g_current_components, m_current_primitive_type);
+		active_shader = ProgramShaderCache::SetShader(PSRM_DUAL_SOURCE_BLEND, VertexLoaderManager::g_current_components, m_current_primitive_type, nativeVertexFmt);
 	}
 	else
 	{
-		active_shader = ProgramShaderCache::SetShader(PSRM_DEFAULT, VertexLoaderManager::g_current_components, m_current_primitive_type);
+		active_shader = ProgramShaderCache::SetShader(PSRM_DEFAULT, VertexLoaderManager::g_current_components, m_current_primitive_type, nativeVertexFmt);
 	}
+	if (!active_shader)
+	{
+		g_Config.iSaveTargetId++;
+		ClearEFBCache();
+		return;
+	}
+	PrepareDrawBuffers(stride);
 	active_shader->Bind();
 	g_renderer->ApplyState(false);
 	Draw(stride);
@@ -173,11 +171,17 @@ void VertexManager::vFlush(bool useDstAlpha)
 	//
 	// This is also used when logic ops and destination alpha is enabled, since we can't enable
 	// blending and logic ops concurrently.
-	const bool logic_op_enabled = bpmem.blendmode.logicopenable && bpmem.blendmode.logicmode != BlendMode::LogicOp::COPY && !bpmem.blendmode.blendenable;
+	const bool logic_op_enabled = bpmem.blendmode.logicopenable.Value() && bpmem.blendmode.logicmode.Value() != BlendMode::LogicOp::COPY && !bpmem.blendmode.blendenable;
 	// run through vertex groups again to set alpha
 	if (useDstAlpha && (!dualSourcePossible || logic_op_enabled))
 	{
-		active_shader = ProgramShaderCache::SetShader(PSRM_ALPHA_PASS, VertexLoaderManager::g_current_components, m_current_primitive_type);
+		active_shader = ProgramShaderCache::SetShader(PSRM_ALPHA_PASS, VertexLoaderManager::g_current_components, m_current_primitive_type, nativeVertexFmt);
+		if (!active_shader)
+		{
+			g_Config.iSaveTargetId++;
+			ClearEFBCache();
+			return;
+		}
 
 		// only update alpha
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
@@ -188,14 +192,7 @@ void VertexManager::vFlush(bool useDstAlpha)
 
 		active_shader->Bind();
 		Draw(stride);
-
-		// restore color mask
-		g_renderer->SetColorMask();
-
-		if (bpmem.blendmode.blendenable || bpmem.blendmode.subtract)
-			glEnable(GL_BLEND);
-		if (logic_op_enabled)
-			glEnable(GL_COLOR_LOGIC_OP);
+		g_renderer->ResetAPIState();
 	}
 	g_Config.iSaveTargetId++;
 

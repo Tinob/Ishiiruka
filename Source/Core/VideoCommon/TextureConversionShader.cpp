@@ -47,8 +47,8 @@ void WriteSwizzler(char*& p, u32 format)
 	// Two were merged for GLSL
 	WRITE(p, "uniform float4 " I_COLORS"[2] %s;\n", WriteRegister("c", C_COLORS));
 
-	u32 blkW = TexDecoder_GetBlockWidthInTexels(format);
-	u32 blkH = TexDecoder_GetBlockHeightInTexels(format);
+	u32 blkW = TexDecoder::GetBlockWidthInTexels(format);
+	u32 blkH = TexDecoder::GetBlockHeightInTexels(format);
 	u32 samples = TextureConversionShader::GetEncodedSampleCount(format);
 
 	WRITE(p, "uniform sampler samp0 : register(s0);\n");
@@ -92,8 +92,8 @@ void Write32BitSwizzler(char*& p, u32 format)
 	// Two were merged for GLSL
 	WRITE(p, "uniform float4 " I_COLORS"[2] %s;\n", WriteRegister("c", C_COLORS));
 
-	u32 blkW = TexDecoder_GetBlockWidthInTexels(format);
-	u32 blkH = TexDecoder_GetBlockHeightInTexels(format);
+	u32 blkW = TexDecoder::GetBlockWidthInTexels(format);
+	u32 blkH = TexDecoder::GetBlockHeightInTexels(format);
 
 	// 32 bit textures (RGBA8 and Z24) are store in 2 cache line increments
 	WRITE(p, "uniform sampler samp0 : register(s0);\n");
@@ -153,7 +153,7 @@ void WriteSampleColor(char*& p, const char* colorComp, const char* dest, int xof
 		if (std::strchr(colorComp, 'a') && !EFBFormatHasAlpha(format.efb_format))
 			WRITE(p, "  %s.a = 1.0;\n", dest);
 	}
-	
+
 }
 
 void WriteColorToIntensity(char*& p, const char* src, const char* dest)
@@ -482,7 +482,7 @@ void WriteCC8Encoder(char* p, const char* comp, const EFBCopyFormat& format)
 	WriteEncoderEnd(p);
 }
 
-void WriteZ8Encoder(char* p, const char* multiplier,const EFBCopyFormat& format)
+void WriteZ8Encoder(char* p, const char* multiplier, const EFBCopyFormat& format)
 {
 	WriteSwizzler(p, GX_CTF_Z8M);
 

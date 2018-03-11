@@ -15,7 +15,7 @@
 namespace DX12
 {
 
-extern StateCache gx_state_cache;
+extern StateCache s_gx_state_cache;
 
 namespace D3D
 {
@@ -42,7 +42,7 @@ public:
 		const std::string& text);
 
 private:
-	ID3D12Resource* m_texture = nullptr;
+	ID3D12Resource * m_texture = nullptr;
 	D3D12_CPU_DESCRIPTOR_HANDLE m_texture_cpu = {};
 	D3D12_GPU_DESCRIPTOR_HANDLE m_texture_gpu = {};
 
@@ -59,7 +59,7 @@ private:
 	float m_tex_coords[128 - 32][4] = {};
 
 	const int m_tex_width;
-	const int m_tex_height;	
+	const int m_tex_height;
 	void InitalizeSRV();
 };
 

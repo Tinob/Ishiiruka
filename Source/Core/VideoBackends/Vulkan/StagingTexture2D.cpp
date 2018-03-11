@@ -22,7 +22,7 @@ StagingTexture2D::StagingTexture2D(STAGING_BUFFER_TYPE type, VkBuffer buffer, Vk
 {
 }
 
-StagingTexture2D::~StagingTexture2D(){}
+StagingTexture2D::~StagingTexture2D() {}
 
 void StagingTexture2D::ReadTexel(u32 x, u32 y, void* data, size_t data_size) const
 {
@@ -38,7 +38,7 @@ void StagingTexture2D::ReadTexel(u32 x, u32 y, void* data, size_t data_size) con
 	_assert_(offset >= m_map_offset && (map_offset + m_texel_size) <= (m_map_offset + m_map_size));
 
 	const char* ptr = m_map_pointer + map_offset;
-	memcpy(data, ptr, data_size);
+	std::memcpy(data, ptr, data_size);
 }
 
 void StagingTexture2D::WriteTexel(u32 x, u32 y, const void* data, size_t data_size)
@@ -55,7 +55,7 @@ void StagingTexture2D::WriteTexel(u32 x, u32 y, const void* data, size_t data_si
 	_assert_(offset >= m_map_offset && (map_offset + m_texel_size) <= (m_map_offset + m_map_size));
 
 	char* ptr = m_map_pointer + map_offset;
-	memcpy(ptr, data, data_size);
+	std::memcpy(ptr, data, data_size);
 }
 
 void StagingTexture2D::ReadTexels(u32 x, u32 y, u32 width, u32 height, void* data,
@@ -75,7 +75,7 @@ void StagingTexture2D::ReadTexels(u32 x, u32 y, u32 width, u32 height, void* dat
 	// Optimal path: same dimensions, same stride.	
 	if (use_optimal_path)
 	{
-		memcpy(data, src_ptr, m_row_stride * height);
+		std::memcpy(data, src_ptr, m_row_stride * height);
 		return;
 	}
 
@@ -83,7 +83,7 @@ void StagingTexture2D::ReadTexels(u32 x, u32 y, u32 width, u32 height, void* dat
 	char* dst_ptr = reinterpret_cast<char*>(data);
 	for (u32 row = 0; row < height; row++)
 	{
-		memcpy(dst_ptr, src_ptr + (x * m_texel_size), copy_size);
+		std::memcpy(dst_ptr, src_ptr + (x * m_texel_size), copy_size);
 		src_ptr += m_row_stride;
 		dst_ptr += data_stride;
 	}
@@ -106,7 +106,7 @@ void StagingTexture2D::WriteTexels(u32 x, u32 y, u32 width, u32 height, const vo
 	char* dst_ptr = GetRowPointer(y);
 	if (use_optimal_path)
 	{
-		memcpy(dst_ptr, data, m_row_stride * height);
+		std::memcpy(dst_ptr, data, m_row_stride * height);
 		return;
 	}
 
@@ -114,7 +114,7 @@ void StagingTexture2D::WriteTexels(u32 x, u32 y, u32 width, u32 height, const vo
 	const char* src_ptr = reinterpret_cast<const char*>(data);
 	for (u32 row = 0; row < height; row++)
 	{
-		memcpy(dst_ptr + (x * m_texel_size), src_ptr, copy_size);
+		std::memcpy(dst_ptr + (x * m_texel_size), src_ptr, copy_size);
 		dst_ptr += m_row_stride;
 		src_ptr += data_stride;
 	}
@@ -126,15 +126,15 @@ void StagingTexture2D::CopyFromImage(VkCommandBuffer command_buffer, VkImage ima
 {
 	u32 block_width = Util::GetBlockWidth(m_format);
 	u32 block_x = (x + block_width - 1) / block_width;
-	u32 block_y = (y + block_width - 1) / block_width;	
+	u32 block_y = (y + block_width - 1) / block_width;
 	// Issue the image->buffer copy.
 	VkBufferImageCopy image_copy = {
-			block_y * m_row_stride + block_x * m_texel_size,// VkDeviceSize             bufferOffset
-			m_width,                                        // uint32_t                 bufferRowLength
-			0,                                              // uint32_t                 bufferImageHeight
-			{src_aspect, level, layer, 1},                  // VkImageSubresourceLayers imageSubresource
-			{static_cast<s32>(x), static_cast<s32>(y), 0},  // VkOffset3D               imageOffset
-			{width, height, 1}                              // VkExtent3D               imageExtent
+		block_y * m_row_stride + block_x * m_texel_size,// VkDeviceSize             bufferOffset
+		m_width,                                        // uint32_t                 bufferRowLength
+		0,                                              // uint32_t                 bufferImageHeight
+		{src_aspect, level, layer, 1},                  // VkImageSubresourceLayers imageSubresource
+		{static_cast<s32>(x), static_cast<s32>(y), 0},  // VkOffset3D               imageOffset
+		{width, height, 1}                              // VkExtent3D               imageExtent
 	};
 	vkCmdCopyImageToBuffer(command_buffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_buffer, 1,
 		&image_copy);
@@ -164,12 +164,12 @@ void StagingTexture2D::CopyToImage(VkCommandBuffer command_buffer, VkImage image
 
 	// Issue the buffer->image copy
 	VkBufferImageCopy image_copy = {
-			block_y * m_row_stride + block_x * m_texel_size,// VkDeviceSize             bufferOffset
-			m_width,                                        // uint32_t                 bufferRowLength
-			0,                                              // uint32_t                 bufferImageHeight
-			{dst_aspect, level, layer, 1},                  // VkImageSubresourceLayers imageSubresource
-			{static_cast<s32>(x), static_cast<s32>(y), 0},  // VkOffset3D               imageOffset
-			{width, height, 1}                              // VkExtent3D               imageExtent
+		block_y * m_row_stride + block_x * m_texel_size,// VkDeviceSize             bufferOffset
+		m_width,                                        // uint32_t                 bufferRowLength
+		0,                                              // uint32_t                 bufferImageHeight
+		{dst_aspect, level, layer, 1},                  // VkImageSubresourceLayers imageSubresource
+		{static_cast<s32>(x), static_cast<s32>(y), 0},  // VkOffset3D               imageOffset
+		{width, height, 1}                              // VkExtent3D               imageExtent
 	};
 	vkCmdCopyBufferToImage(command_buffer, m_buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
 		&image_copy);
@@ -183,11 +183,11 @@ std::unique_ptr<StagingTexture2D> StagingTexture2D::Create(STAGING_BUFFER_TYPE t
 	u32 stride = Util::GetBlockSize(format) * std::max(1u, (width + block_width - 1) / block_width);
 	u32 size = stride * std::max(1u, (height + block_width - 1) / block_width);
 	VkImageUsageFlags usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-	
+
 	VkBuffer buffer;
 	VkDeviceMemory memory;
 	bool coherent;
-	
+
 	if (!AllocateBuffer(type, size, usage, &buffer, &memory, &coherent))
 		return nullptr;
 

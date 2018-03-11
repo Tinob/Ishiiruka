@@ -33,11 +33,12 @@ std::unique_ptr<XFBEncoder> g_xfb_encoder;
 XFBEncoder::XFBEncoder()
 {
 	ID3D12Resource* texture;
-
+	CD3DX12_HEAP_PROPERTIES hprop(D3D12_HEAP_TYPE_DEFAULT);
+	auto rdesc = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, XFB_TEXTURE_WIDTH, XFB_TEXTURE_HEIGHT, 1, 1, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
 	CheckHR(D3D::device->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		&hprop,
 		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, XFB_TEXTURE_WIDTH, XFB_TEXTURE_HEIGHT, 1, 1, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET),
+		&rdesc,
 		D3D12_RESOURCE_STATE_RENDER_TARGET,
 		nullptr,
 		IID_PPV_ARGS(&texture)));
@@ -46,11 +47,12 @@ XFBEncoder::XFBEncoder()
 		TEXTURE_BIND_FLAG_SHADER_RESOURCE | TEXTURE_BIND_FLAG_RENDER_TARGET,
 		DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_R8G8B8A8_UNORM);
 	SAFE_RELEASE(texture);
-
+	hprop = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK);
+	rdesc = CD3DX12_RESOURCE_DESC::Buffer(Common::AlignUpSizePow2(XFB_TEXTURE_WIDTH * sizeof(u32), D3D12_TEXTURE_DATA_PITCH_ALIGNMENT) * MAX_XFB_HEIGHT);
 	CheckHR(D3D::device->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK),
+		&hprop,
 		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Buffer(Common::AlignUpSizePow2(XFB_TEXTURE_WIDTH * sizeof(u32), D3D12_TEXTURE_DATA_PITCH_ALIGNMENT) * MAX_XFB_HEIGHT),
+		&rdesc,
 		D3D12_RESOURCE_STATE_COPY_DEST,
 		nullptr,
 		IID_PPV_ARGS(&m_readback_buffer)));
@@ -102,7 +104,8 @@ void XFBEncoder::EncodeTextureToRam(u8* dst, u32 dst_width, u32 dst_pitch, u32 d
 	// Performs downscaling through a linear filter. Probably not ideal, but it's not going to look perfect anyway.
 	CD3DX12_RECT src_texture_rect(src_rect.left, src_rect.top, src_rect.right, src_rect.bottom);
 	m_yuyv_texture->TransitionToResourceState(D3D::current_command_list, D3D12_RESOURCE_STATE_RENDER_TARGET);
-	D3D::current_command_list->OMSetRenderTargets(1, &m_yuyv_texture->GetRTV(), FALSE, nullptr);
+	auto rtv = m_yuyv_texture->GetRTV();
+	D3D::current_command_list->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
 	D3D::current_command_list->SetGraphicsRootConstantBufferView(DESCRIPTOR_TABLE_PS_CBVONE, m_encode_params_buffer->GetGPUAddressOfCurrentAllocation());
 	D3D::command_list_mgr->SetCommandListDirtyState(COMMAND_LIST_STATE_PS_CBV, true);
 	D3D::SetViewportAndScissor(0, 0, dst_texture_width, dst_height);
@@ -165,7 +168,8 @@ void XFBEncoder::DecodeToTexture(D3DTexture2D* dst_texture, const u8* src, u32 s
 	// Convert YUYV texture to RGBA texture with pixel shader.
 	CD3DX12_RECT src_texture_rect(0, 0, src_width / 2, src_height);
 	dst_texture->TransitionToResourceState(D3D::current_command_list, D3D12_RESOURCE_STATE_RENDER_TARGET);
-	D3D::current_command_list->OMSetRenderTargets(1, &dst_texture->GetRTV(), FALSE, nullptr);
+	auto rtv = dst_texture->GetRTV();
+	D3D::current_command_list->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
 	D3D::SetViewportAndScissor(0, 0, src_width, src_height);
 	D3D::DrawShadedTexQuad(
 		m_yuyv_texture, &src_texture_rect, XFB_TEXTURE_WIDTH, XFB_TEXTURE_HEIGHT,

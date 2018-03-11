@@ -62,7 +62,7 @@ enum TextureFormat : u32
 	GX_CTF_Z16L = 0xC | _GX_TF_ZTF | _GX_TF_CTF,
 };
 
-enum TlutFormat
+enum TlutFormat : u32
 {
 	GX_TL_IA8 = 0x0,
 	GX_TL_RGB565 = 0x1,
@@ -71,7 +71,7 @@ enum TlutFormat
 
 struct EFBCopyFormat
 {
-	EFBCopyFormat() : efb_format(0), copy_format(TextureFormat::GX_TF_I4){}
+	EFBCopyFormat() : efb_format(0), copy_format(TextureFormat::GX_TF_I4) {}
 	EFBCopyFormat(u32 efb_format_, TextureFormat copy_format_)
 		: efb_format(efb_format_), copy_format(copy_format_)
 	{
@@ -91,14 +91,7 @@ struct EFBCopyFormat
 	TextureFormat copy_format;
 };
 
-u32 TexDecoder_GetTexelSizeInNibbles(u32 format);
-u32 TexDecoder_GetTextureSizeInBytes(u32 width, u32 height, u32 format);
-u32 TexDecoder_GetBlockWidthInTexels(u32 format);
-u32 TexDecoder_GetBlockHeightInTexels(u32 format);
-u32 TexDecoder_GetPaletteSize(u32 fmt);
-u32 TexDecoder_GetEfbCopyBaseFormat(u32 format);
-
-enum PC_TexFormat
+enum HostTextureFormat
 {
 	PC_TEX_FMT_NONE = 0,
 	PC_TEX_FMT_BGRA32,
@@ -111,16 +104,32 @@ enum PC_TexFormat
 	PC_TEX_FMT_DXT1,
 	PC_TEX_FMT_DXT3,
 	PC_TEX_FMT_DXT5,
+	PC_TEX_FMT_BPTC,
 	PC_TEX_FMT_DEPTH_FLOAT,
 	PC_TEX_FMT_R_FLOAT,
 	PC_TEX_FMT_RGBA16_FLOAT,
-	PC_TEX_FMT_RGBA_FLOAT
+	PC_TEX_FMT_RGBA_FLOAT,
+	PC_TEX_NUM_FORMATS
 };
-PC_TexFormat TexDecoder_Decode(u8 *dst, const u8 *src, u32 width, u32 height, u32 texformat, u32 tlutaddr, TlutFormat tlutfmt, bool rgbaOnly = false, bool compressed_supported = false);
-PC_TexFormat GetPC_TexFormat(u32 texformat, TlutFormat tlutfmt, bool compressed_supported = false);
-PC_TexFormat TexDecoder_DecodeRGBA8FromTmem(u32* dst, const u8 *src_ar, const u8 *src_gb, u32 width, u32 height);
-PC_TexFormat TexDecoder_DecodeBGRA8FromTmem(u32* dst, const u8 *src_ar, const u8 *src_gb, u32 width, u32 height);
-void TexDecoder_DecodeTexel(u8 *dst, const u8 *src, u32 s, u32 t, u32 imageWidth, u32 texformat, const u16 *tlut, TlutFormat tlutfmt);
-void TexDecoder_DecodeTexelRGBA8FromTmem(u8 *dst, const u8 *src_ar, const u8* src_gb, u32 s, u32 t, u32 imageWidth);
-void TexDecoder_DecodeTexelBGRA8FromTmem(u8 *dst, const u8 *src_ar, const u8* src_gb, u32 s, u32 t, u32 imageWidth);
-void TexDecoder_SetTexFmtOverlayOptions(bool enable, bool center);
+
+namespace TexDecoder
+{
+static inline bool IsCompressed(HostTextureFormat format)
+{
+	return format >= PC_TEX_FMT_DXT1 && format <= PC_TEX_FMT_BPTC;
+}
+u32 GetTexelSizeInNibbles(u32 format);
+u32 GetTextureSizeInBytes(u32 width, u32 height, u32 format);
+u32 GetBlockWidthInTexels(u32 format);
+u32 GetBlockHeightInTexels(u32 format);
+u32 GetPaletteSize(u32 fmt);
+u32 GetEfbCopyBaseFormat(u32 format);
+HostTextureFormat Decode(u8 *dst, const u8 *src, u32 width, u32 height, u32 texformat, u32 tlutaddr, TlutFormat tlutfmt, bool rgbaOnly = false, bool compressed_supported = false);
+HostTextureFormat GetHostTextureFormat(u32 texformat, TlutFormat tlutfmt, bool compressed_supported = false);
+HostTextureFormat DecodeRGBA8FromTmem(u32* dst, const u8 *src_ar, const u8 *src_gb, u32 width, u32 height);
+HostTextureFormat DecodeBGRA8FromTmem(u32* dst, const u8 *src_ar, const u8 *src_gb, u32 width, u32 height);
+void DecodeTexel(u8 *dst, const u8 *src, u32 s, u32 t, u32 imageWidth, u32 texformat, const u16 *tlut, TlutFormat tlutfmt);
+void DecodeTexelRGBA8FromTmem(u8 *dst, const u8 *src_ar, const u8* src_gb, u32 s, u32 t, u32 imageWidth);
+void DecodeTexelBGRA8FromTmem(u8 *dst, const u8 *src_ar, const u8* src_gb, u32 s, u32 t, u32 imageWidth);
+void SetTexFmtOverlayOptions(bool enable, bool center);
+}

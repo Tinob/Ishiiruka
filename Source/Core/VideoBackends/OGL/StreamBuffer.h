@@ -61,7 +61,7 @@ protected:
 	u32 m_iterator;
 	u32 m_used_iterator;
 	u32 m_free_iterator;
-	
+
 private:
 	static constexpr int SYNC_POINTS = 8;
 	int Slot(u32 x) const

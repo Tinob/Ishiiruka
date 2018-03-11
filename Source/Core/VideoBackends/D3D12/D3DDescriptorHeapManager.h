@@ -96,7 +96,7 @@ public:
 
 	void RegisterHeapRestartCallback(void* owning_object, PFN_HEAP_RESTART_CALLBACK* callback_function);
 	void RemoveHeapRestartCallback(void* owning_object);
-	
+
 	struct SamplerStateSet
 	{
 		SamplerState desc0;
@@ -112,7 +112,7 @@ public:
 	D3D12_GPU_DESCRIPTOR_HANDLE GetHandleForSamplerGroup(SamplerState* sampler_state, unsigned int num_sampler_samples);
 
 private:
-	
+
 	std::array<ID3D12DescriptorHeap*, HEAP_COUNT> m_descriptor_heaps;
 	size_t m_descriptor_heap_index;
 	size_t m_descriptor_heap_size;

@@ -20,13 +20,11 @@ public:
 	~Renderer();
 	void Init() override;
 
-	void SetColorMask() override;
-	void SetBlendMode(bool force_Update) override;
+	void SetBlendingState(const BlendingState& state) override;
 	void SetScissorRect(const EFBRectangle& rc) override;
-	void SetGenerationMode() override;
-	void SetDepthMode() override;
-	void SetLogicOpMode() override;
-	void SetSamplerState(int stage, int tex_index, bool custom_tex) override;
+	void SetRasterizationState(const RasterizationState& state) override;
+	void SetDepthState(const DepthState& state) override;
+	void SetSamplerState(u32 index, const SamplerState& state) override;
 	void SetInterlacingMode() override;
 	void SetViewport() override;
 
@@ -71,7 +69,7 @@ private:
 		u32 fb_stride, u32 fb_height, float Gamma);
 	void DrawRealXFB(const TargetRectangle& target_rc, const XFBSourceBase* const* xfb_sources,
 		u32 xfb_count, D3DTexture2D* dst_texture, const TargetSize& dst_size, u32 fb_width, u32 fb_stride, u32 fb_height);
-	void BlitScreen(TargetRectangle dst_rect, TargetRectangle src_rect, TargetSize src_size, D3DTexture2D* src_texture, D3DTexture2D* depth_texture, 
+	void BlitScreen(TargetRectangle dst_rect, TargetRectangle src_rect, TargetSize src_size, D3DTexture2D* src_texture, D3DTexture2D* depth_texture,
 		const TargetSize& dst_size, D3DTexture2D* dst_texture, float Gamma);
 
 	void DumpFrame(const EFBRectangle& source_rc, u32 xfb_addr,
@@ -97,6 +95,8 @@ private:
 	D3D12_VIEWPORT m_vp;
 	bool m_target_dirty = true;
 	bool m_previous_use_dst_alpha = false;
+	bool m_previous_use_p_uber_shader = false;
+	bool m_previous_use_v_uber_shader = false;
 	D3DVertexFormat* m_previous_vertex_format = nullptr;
 };
 

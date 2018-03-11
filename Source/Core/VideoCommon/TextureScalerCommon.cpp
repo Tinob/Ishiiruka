@@ -78,9 +78,9 @@ void convolve3x3(u32* data, u32* out, const int kernel[3][3], int width, int hei
 	{
 		for (int xb = 0; xb < width / BLOCK_SIZE + 1; ++xb)
 		{
-			for (int y = l + yb*BLOCK_SIZE; y < l + (yb + 1)*BLOCK_SIZE && y < u; ++y)
+			for (int y = l + yb * BLOCK_SIZE; y < l + (yb + 1)*BLOCK_SIZE && y < u; ++y)
 			{
-				for (int x = xb*BLOCK_SIZE; x < (xb + 1)*BLOCK_SIZE && x < width; ++x)
+				for (int x = xb * BLOCK_SIZE; x < (xb + 1)*BLOCK_SIZE && x < width; ++x)
 				{
 					int val = 0;
 					for (int yoff = -1; yoff <= 1; ++yoff)
@@ -107,7 +107,7 @@ void deposterizeH(u32* data, u32* out, int w, int l, int u)
 	{
 		for (int x = 0; x < w; ++x)
 		{
-			int inpos = y*w + x;
+			int inpos = y * w + x;
 			u32 center = data[inpos];
 			if (x == 0 || x == w - 1)
 			{
@@ -143,7 +143,7 @@ void deposterizeV(u32* data, u32* out, int w, int h, int l, int u)
 	{
 		for (int y = l; y < u; ++y)
 		{
-			for (int x = xb*BLOCK_SIZE; x < (xb + 1)*BLOCK_SIZE && x < w; ++x)
+			for (int x = xb * BLOCK_SIZE; x < (xb + 1)*BLOCK_SIZE && x < w; ++x)
 			{
 				u32 center = data[y    * w + x];
 				if (y == 0 || y == h - 1)
@@ -183,9 +183,9 @@ void generateDistanceMask(u32* data, u32* out, int width, int height, int l, int
 	{
 		for (int xb = 0; xb < width / BLOCK_SIZE + 1; ++xb)
 		{
-			for (int y = l + yb*BLOCK_SIZE; y < l + (yb + 1)*BLOCK_SIZE && y < u; ++y)
+			for (int y = l + yb * BLOCK_SIZE; y < l + (yb + 1)*BLOCK_SIZE && y < u; ++y)
 			{
-				for (int x = xb*BLOCK_SIZE; x < (xb + 1)*BLOCK_SIZE && x < width; ++x)
+				for (int x = xb * BLOCK_SIZE; x < (xb + 1)*BLOCK_SIZE && x < width; ++x)
 				{
 					const u32 center = data[y*width + x];
 					u32 dist = 0;
@@ -223,7 +223,7 @@ void mix(u32* data, u32* source, u32* mask, u32 maskmax, int width, int l, int u
 	{
 		for (int x = 0; x < width; ++x)
 		{
-			int pos = y*width + x;
+			int pos = y * width + x;
 			u8 mixFactors[2] = { 0, static_cast<u8>((std::min(mask[pos], maskmax) * 255) / maskmax) };
 			mixFactors[0] = 255 - mixFactors[1];
 			data[pos] = MIX_PIXELS(data[pos], source[pos], mixFactors);
@@ -360,7 +360,7 @@ void initFilterWeights()
 						{
 							float dx = (x + 0.5f + (factor % 2) / 2.0f) / factor - (sx - 1.0f);
 							float dy = (y + 0.5f + (factor % 2) / 2.0f) / factor - (sy - 1.0f);
-							float dist = sqrt(dx*dx + dy*dy);
+							float dist = sqrt(dx*dx + dy * dy);
 							float weight = mitchell(dist, B[type], C[type]);
 							auxWeights[0][sx][sy] = weight;
 							sum[0] += weight;
@@ -405,8 +405,8 @@ void scaleBicubicT(u32* data, u32* out, int w, int h, int l, int u)
 	{
 		for (int cx = 0; cx <= w; ++cx)
 		{
-			int y_offset = cy*f + offset; // They begin offset by f / 2
-			int x_offset = cx*f + offset;
+			int y_offset = cy * f + offset; // They begin offset by f / 2
+			int x_offset = cx * f + offset;
 			for (int sx = 0; sx < 4; ++sx)
 			{
 				for (int sy = 0; sy < 4; ++sy)
@@ -492,8 +492,8 @@ void scaleJincT(u32* data, u32* out, int w, int h)
 		for (int cx = 0; cx <= w; ++cx)
 		{
 			int rmin = 255, gmin = 255, bmin = 255, amin = 255, rmax = 0, gmax = 0, bmax = 0, amax = 0;
-			int y_offset = cy*f + offset; // They begin offset by f / 2
-			int x_offset = cx*f + offset;
+			int y_offset = cy * f + offset; // They begin offset by f / 2
+			int x_offset = cx * f + offset;
 			for (int sx = 0; sx < 4; ++sx)
 			{
 				for (int sy = 0; sy < 4; ++sy)
@@ -530,10 +530,10 @@ void scaleJincT(u32* data, u32* out, int w, int h)
 						{
 							int weight = jincWeights[T][factor][x][y][sx][sy];
 							// clamp pixel locations
-							r += weight*rc[sx][sy];
-							g += weight*gc[sx][sy];
-							b += weight*bc[sx][sy];
-							a += weight*ac[sx][sy];
+							r += weight * rc[sx][sy];
+							g += weight * gc[sx][sy];
+							b += weight * bc[sx][sy];
+							a += weight * ac[sx][sy];
 						}
 					}
 					// generate and write result
@@ -565,8 +565,8 @@ void scaleDDTSharpT(u32* data, u32* out, int w, int h)
 	{
 		for (int cx = 0; cx <= w; ++cx)
 		{
-			int y_offset = cy*f + offset; // They begin offset by f / 2
-			int x_offset = cx*f + offset;
+			int y_offset = cy * f + offset; // They begin offset by f / 2
+			int x_offset = cx * f + offset;
 			for (int sx = 0; sx < 4; ++sx)
 			{
 				for (int sy = 0; sy < 4; ++sy)
@@ -660,8 +660,8 @@ void scaleDDTT(u32* data, u32* out, int w, int h)
 	{
 		for (int cx = 0; cx <= w; ++cx)
 		{
-			int y_offset = cy*f + offset; // They begin offset by f / 2
-			int x_offset = cx*f + offset;
+			int y_offset = cy * f + offset; // They begin offset by f / 2
+			int x_offset = cx * f + offset;
 			for (int sx = 0; sx < 2; ++sx)
 			{
 				for (int sy = 0; sy < 2; ++sy)
@@ -750,8 +750,8 @@ void scale3PointT(u32* data, u32* out, int w, int h)
 	{
 		for (int cx = 0; cx <= w; ++cx)
 		{
-			int y_offset = cy*f + offset; // They begin offset by f / 2
-			int x_offset = cx*f + offset;
+			int y_offset = cy * f + offset; // They begin offset by f / 2
+			int x_offset = cx * f + offset;
 			for (int sx = 0; sx < 2; ++sx)
 			{
 				for (int sy = 0; sy < 2; ++sy)
@@ -812,8 +812,8 @@ void scaleSmoothstepT(u32* data, u32* out, int w, int h)
 	{
 		for (int cx = 0; cx <= w; ++cx)
 		{
-			int y_offset = cy*f + offset; // They begin offset by f / 2
-			int x_offset = cx*f + offset;
+			int y_offset = cy * f + offset; // They begin offset by f / 2
+			int x_offset = cx * f + offset;
 			for (int sx = 0; sx < 2; ++sx)
 			{
 				for (int sy = 0; sy < 2; ++sy)
@@ -875,8 +875,8 @@ void scaleJincTSSE41(u32* data, u32* out, int w, int h)
 			__m128i min_sample = _mm_set1_epi32(255);
 			__m128i max_sample = _mm_set1_epi32(0);
 			__m128i color[4][4];
-			int y_offset = cy*f + offset; // They begin offset by f / 2
-			int x_offset = cx*f + offset;
+			int y_offset = cy * f + offset; // They begin offset by f / 2
+			int x_offset = cx * f + offset;
 			for (int sx = 0; sx < 4; ++sx)
 			{
 				for (int sy = 0; sy < 4; ++sy)
@@ -938,8 +938,8 @@ void scaleBicubicTSSE41(u32* data, u32* out, int w, int h, int l, int u)
 		for (int cx = 0; cx <= w; ++cx)
 		{
 			__m128i color[4][4];
-			int y_offset = cy*f + offset; // They begin offset by f / 2
-			int x_offset = cx*f + offset;
+			int y_offset = cy * f + offset; // They begin offset by f / 2
+			int x_offset = cx * f + offset;
 			for (int sx = 0; sx < 4; ++sx)
 			{
 				for (int sy = 0; sy < 4; ++sy)
@@ -989,8 +989,8 @@ void scaleSmoothstepTSSE41(u32* data, u32* out, int w, int h)
 		for (int cx = 0; cx <= w; ++cx)
 		{
 			__m128i color[2][2];
-			int y_offset = cy*f + offset; // They begin offset by f / 2
-			int x_offset = cx*f + offset;
+			int y_offset = cy * f + offset; // They begin offset by f / 2
+			int x_offset = cx * f + offset;
 			for (int sx = 0; sx < 2; ++sx)
 			{
 				for (int sy = 0; sy < 2; ++sy)
@@ -1040,8 +1040,8 @@ void scale3PointTSSE41(u32* data, u32* out, int w, int h)
 		for (int cx = 0; cx <= w; ++cx)
 		{
 			__m128i color[2][2];
-			int y_offset = cy*f + offset; // They begin offset by f / 2
-			int x_offset = cx*f + offset;
+			int y_offset = cy * f + offset; // They begin offset by f / 2
+			int x_offset = cx * f + offset;
 			for (int sx = 0; sx < 2; ++sx)
 			{
 				for (int sy = 0; sy < 2; ++sy)
@@ -1091,8 +1091,8 @@ void scaleDDTSharpTSSE41(u32* data, u32* out, int w, int h)
 		for (int cx = 0; cx <= w; ++cx)
 		{
 			__m128i color[4][4]; int gc[4][4];
-			int y_offset = cy*f + offset; // They begin offset by f / 2
-			int x_offset = cx*f + offset;
+			int y_offset = cy * f + offset; // They begin offset by f / 2
+			int x_offset = cx * f + offset;
 			for (int sx = 0; sx < 4; ++sx)
 			{
 				for (int sy = 0; sy < 4; ++sy)
@@ -1166,8 +1166,8 @@ void scaleDDTTSSE41(u32* data, u32* out, int w, int h)
 		for (int cx = 0; cx <= w; ++cx)
 		{
 			__m128i color[2][2]; int gc[2][2];
-			int y_offset = cy*f + offset; // They begin offset by f / 2
-			int x_offset = cx*f + offset;
+			int y_offset = cy * f + offset; // They begin offset by f / 2
+			int x_offset = cx * f + offset;
 			for (int sx = 0; sx < 2; ++sx)
 			{
 				for (int sy = 0; sy < 2; ++sy)
@@ -1488,23 +1488,23 @@ template<int f>
 void bilinearHt(u32* data, u32* out, int w, int l, int u)
 {
 	static_assert(f > 1 && f <= 5, "Bilinear scaling only implemented for factors 2 to 5");
-	int outw = w*f;
+	int outw = w * f;
 	for (int y = l; y < u; ++y)
 	{
 		for (int x = 0; x < w; ++x)
 		{
-			int inpos = y*w + x;
+			int inpos = y * w + x;
 			u32 left = data[inpos - (x == 0 ? 0 : 1)];
 			u32 center = data[inpos];
 			u32 right = data[inpos + (x == w - 1 ? 0 : 1)];
 			int i = 0;
 			for (; i < f / 2 + f % 2; ++i)
 			{ // first half of the new pixels + center, hope the compiler unrolls this
-				out[y*outw + x*f + i] = MIX_PIXELS(left, center, BILINEAR_FACTORS[f - 2][i]);
+				out[y*outw + x * f + i] = MIX_PIXELS(left, center, BILINEAR_FACTORS[f - 2][i]);
 			}
 			for (; i < f; ++i)
 			{ // second half of the new pixels, hope the compiler unrolls this
-				out[y*outw + x*f + i] = MIX_PIXELS(right, center, BILINEAR_FACTORS[f - 2][f - 1 - i]);
+				out[y*outw + x * f + i] = MIX_PIXELS(right, center, BILINEAR_FACTORS[f - 2][f - 1 - i]);
 			}
 		}
 	}
@@ -1526,14 +1526,14 @@ template<int f>
 void bilinearVt(u32* data, u32* out, int w, int gl, int gu, int l, int u)
 {
 	static_assert(f > 1 && f <= 5, "Bilinear scaling only implemented for 2x, 3x, 4x, and 5x");
-	int outw = w*f;
+	int outw = w * f;
 	for (int xb = 0; xb < outw / BLOCK_SIZE + 1; ++xb)
 	{
 		for (int y = l; y < u; ++y)
 		{
 			u32 uy = y - (y == gl ? 0 : 1);
 			u32 ly = y + (y == gu - 1 ? 0 : 1);
-			for (int x = xb*BLOCK_SIZE; x < (xb + 1)*BLOCK_SIZE && x < outw; ++x)
+			for (int x = xb * BLOCK_SIZE; x < (xb + 1)*BLOCK_SIZE && x < outw; ++x)
 			{
 				u32 upper = data[uy * outw + x];
 				u32 center = data[y * outw + x];

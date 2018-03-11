@@ -31,8 +31,12 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 #include <atomic>
+#include <condition_variable>
 #include <functional>
 #include <memory>
+#include <mutex>
+#include <thread>
+#include <utility>
 #include <vector>
 
 #include "Common/Thread.h"
@@ -95,13 +99,13 @@ protected:
 	const size_t pagesize = (sizeof(T) > 32) ? 8 : (256 / sizeof(T));
 	struct QueueNode
 	{
-		QueueNode(): next(nullptr), value()
+		QueueNode() : next(nullptr), value()
 		{
 
 		}
-		QueueNode(const T &val): next(nullptr), value(val)
+		QueueNode(const T &val) : next(nullptr), value(val)
 		{}
-		QueueNode(T &&val): next(nullptr), value(std::move(val))
+		QueueNode(T &&val) : next(nullptr), value(std::move(val))
 		{}
 		T value;
 		std::atomic<QueueNode*> next;
@@ -150,7 +154,7 @@ protected:
 		return current;
 	}
 public:
-	OneToOneQueue(): m_pages()
+	OneToOneQueue() : m_pages()
 	{
 		m_nodepool = nullptr;
 		AddPages(1);
@@ -158,7 +162,7 @@ public:
 		m_limit.store(m_last);
 	}
 
-	OneToOneQueue(size_t capacity): m_pages()
+	OneToOneQueue(size_t capacity) : m_pages()
 	{
 		m_nodepool = nullptr;
 		size_t numpages = capacity / pagesize;
@@ -205,7 +209,7 @@ public:
 		return success;
 	}
 
-	inline bool Empty()
+	inline bool empty()
 	{
 		QueueNode* currentlimit = m_limit.load();
 		QueueNode* current = currentlimit->next.load();
@@ -227,7 +231,7 @@ private:
 	std::vector<T> m_container;
 	std::atomic<size_t>  m_head;
 public:
-	CircularQueue(size_t capacity):
+	CircularQueue(size_t capacity) :
 		m_tail(0),
 		m_head(0),
 		m_capacity(capacity)
@@ -235,7 +239,7 @@ public:
 		m_container.resize(capacity);
 	}
 
-	CircularQueue():
+	CircularQueue() :
 		m_tail(0),
 		m_head(0),
 		m_capacity(128)
@@ -286,7 +290,7 @@ public:
 		return true;
 	}
 
-	bool Empty() const
+	bool empty() const
 	{
 		return (m_head.load() == m_tail.load());
 	}
@@ -299,16 +303,16 @@ public:
 };
 
 // One Producer - Multiple Consumers
-template <typename T, class Container = OneToOneQueue<T>, bool ContentionControl = true>
+template <typename T, class Container = OneToOneQueue<T>>
 struct OneToManyQueue
 {
 private:
-	SpinLock<ContentionControl> m_dequeueLock;
+	std::mutex m_dequeueLock;
 	Container m_inner;
 public:
-	OneToManyQueue(): m_inner(), m_dequeueLock()
+	OneToManyQueue() : m_inner(), m_dequeueLock()
 	{}
-	OneToManyQueue(size_t capacity): m_inner(capacity), m_dequeueLock()
+	OneToManyQueue(size_t capacity) : m_inner(capacity), m_dequeueLock()
 	{}
 	~OneToManyQueue()
 	{}
@@ -325,15 +329,14 @@ public:
 
 	bool try_pop(T &item)
 	{
-		m_dequeueLock.lock();
+		std::lock_guard<std::mutex> guard(m_dequeueLock);
 		bool success = m_inner.try_pop(item);
-		m_dequeueLock.unlock();
 		return success;
 	}
 
-	bool Empty()
+	bool empty()
 	{
-		return m_inner.Empty();
+		return m_inner.empty();
 	}
 };
 
@@ -342,37 +345,35 @@ template <typename T, class Container = OneToOneQueue<T>, bool ContentionControl
 struct ManyToOneQueue
 {
 private:
-	SpinLock<ContentionControl> m_equeueLock;
+	std::mutex m_equeueLock;
 	Container m_inner;
 public:
-	ManyToOneQueue(): m_inner(), m_equeueLock()
+	ManyToOneQueue() : m_inner(), m_equeueLock()
 	{}
-	ManyToOneQueue(size_t capacity): m_inner(capacity), m_equeueLock()
+	ManyToOneQueue(size_t capacity) : m_inner(capacity), m_equeueLock()
 	{}
 	~ManyToOneQueue()
 	{}
 
 	bool push(const T &item)
 	{
-		m_equeueLock.lock();
+		std::lock_guard<std::mutex> guard(m_equeueLock);
 		bool success = m_inner.push(item);
-		m_equeueLock.unlock();
 		return success;
 	}
 	bool push(T &&item)
 	{
-		m_equeueLock.lock();
+		std::lock_guard<std::mutex> guard(m_equeueLock);
 		bool success = m_inner.push(std::move(item));
-		m_equeueLock.unlock();
 		return success;
 	}
 	bool try_pop(T &item)
 	{
 		return m_inner.try_pop(item);
 	}
-	bool Empty()
+	bool empty()
 	{
-		return m_inner.Empty();
+		return m_inner.empty();
 	}
 };
 
@@ -381,18 +382,18 @@ template <typename T, class Container = OneToOneQueue<T>, bool ContentionControl
 struct ManyToManyQueue
 {
 private:
-	SpinLock<ContentionControl> m_dequeueLock;
-	SpinLock<ContentionControl> m_equeueLock;
+	std::mutex m_dequeueLock;
+	std::mutex m_equeueLock;
 	Container m_inner;
 public:
-	ManyToManyQueue():
+	ManyToManyQueue() :
 		m_inner(),
 		m_dequeueLock(),
 		m_equeueLock()
 	{
 
 	}
-	ManyToManyQueue(size_t capacity):
+	ManyToManyQueue(size_t capacity) :
 		m_inner(capacity),
 		m_dequeueLock(),
 		m_equeueLock()
@@ -403,31 +404,28 @@ public:
 
 	bool push(const T &item)
 	{
-		m_equeueLock.lock();
+		std::lock_guard<std::mutex> guard(m_equeueLock);
 		bool success = m_inner.push(item);
-		m_equeueLock.unlock();
 		return success;
 	}
 
 	bool push(T &&item)
 	{
-		m_equeueLock.lock();
+		std::lock_guard<std::mutex> guard(m_equeueLock);
 		bool success = m_inner.push(std::move(item));
-		m_equeueLock.unlock();
 		return success;
 	}
 
 	bool try_pop(T &item)
 	{
-		m_dequeueLock.lock();
+		std::lock_guard<std::mutex> guard(m_dequeueLock);
 		bool success = m_inner.try_pop(item);
-		m_dequeueLock.unlock();
 		return success;
 	}
 
-	bool Empty()
+	bool empty()
 	{
-		return m_inner.Empty();
+		return m_inner.empty();
 	}
 };
 
@@ -436,7 +434,7 @@ class IWorker
 public:
 	virtual ~IWorker()
 	{}
-	virtual bool NextTask() = 0;
+	virtual bool NextTask(size_t ID) = 0;
 };
 
 class ThreadPool
@@ -447,6 +445,7 @@ private:
 	std::atomic<s32> m_workflag;
 	std::atomic<s32> m_workercount;
 	std::atomic<bool> m_working;
+	static std::mutex m_workerLock;
 	static void Workloop(ThreadPool &state, size_t ID);
 	static ThreadPool &Getinstance();
 	ThreadPool(ThreadPool const&);
@@ -457,18 +456,21 @@ public:
 	static void NotifyWorkPending();
 	static void RegisterWorker(IWorker* worker);
 	static void UnregisterWorker(IWorker* worker);
+	static inline size_t GetThreadCount() {
+		return Getinstance().m_workerThreads.size();
+	}
 };
 
-class AsyncWorker final: IWorker
+class AsyncWorker final : IWorker
 {
 private:
 	std::atomic<s32> m_inputsize;
-	ManyToManyQueue<std::function<void()>, CircularQueue<std::function<void()>>> m_TaskQueue;
+	ManyToManyQueue<std::function<void()>, OneToOneQueue<std::function<void()>>> m_TaskQueue;
 	static AsyncWorker &Getinstance();
 	AsyncWorker();
 public:
 	virtual ~AsyncWorker();
-	bool NextTask() override;
+	bool NextTask(size_t ID) override;
 	static void ExecuteAsync(std::function<void()> &&func);
 };
 }

@@ -194,7 +194,7 @@ void D3DPostProcessingShader::Draw(PostProcessor* p,
 	const TargetRectangle& src_rect, const TargetSize& src_size, uintptr_t src_tex,
 	uintptr_t src_depth_tex, int src_layer, float gamma)
 {
-	D3DPostProcessor* parent = reinterpret_cast<D3DPostProcessor*>(p);
+	D3DPostProcessor* parent = static_cast<D3DPostProcessor*>(p);
 	D3DTexture2D* dst_texture = reinterpret_cast<D3DTexture2D*>(dst_tex);
 	D3DTexture2D* src_texture = reinterpret_cast<D3DTexture2D*>(src_tex);
 	D3DTexture2D* src_depth_texture = reinterpret_cast<D3DTexture2D*>(src_depth_tex);
@@ -232,9 +232,9 @@ void D3DPostProcessingShader::Draw(PostProcessor* p,
 		const RenderPassData& pass = m_passes[pass_index];
 		bool is_last_pass = (pass_index == m_last_pass_index);
 		if (!pass.enabled)
-			continue;		
+			continue;
 
-		D3D12_CPU_DESCRIPTOR_HANDLE sampler_cpu = { base_sampler_cpu.ptr + pass_index * POST_PROCESSING_MAX_TEXTURE_INPUTS * D3D::sampler_descriptor_size};
+		D3D12_CPU_DESCRIPTOR_HANDLE sampler_cpu = { base_sampler_cpu.ptr + pass_index * POST_PROCESSING_MAX_TEXTURE_INPUTS * D3D::sampler_descriptor_size };
 		D3D12_GPU_DESCRIPTOR_HANDLE sampler_gpu = { base_sampler_gpu.ptr + pass_index * POST_PROCESSING_MAX_TEXTURE_INPUTS * D3D::sampler_descriptor_size };
 
 		D3D12_CPU_DESCRIPTOR_HANDLE texture_cpu = { base_texture_cpu.ptr + pass_index * POST_PROCESSING_MAX_TEXTURE_INPUTS * D3D::resource_descriptor_size };
@@ -275,7 +275,7 @@ void D3DPostProcessingShader::Draw(PostProcessor* p,
 				}
 				break;
 			default:
-				TextureCacheBase::TCacheEntryBase* i_texture = input.texture != nullptr ? input.texture : input.prev_texture;
+				HostTexture * i_texture = input.texture ? input.texture.get() : input.prev_texture;
 				if (i_texture != nullptr)
 				{
 					input_texture = reinterpret_cast<D3DTexture2D*>(i_texture->GetInternalObject());
@@ -314,21 +314,24 @@ void D3DPostProcessingShader::Draw(PostProcessor* p,
 		D3D::command_list_mgr->SetCommandListDirtyState(COMMAND_LIST_STATE_SAMPLERS, true);
 
 		// If this is the last pass and we can skip the final copy, write directly to output texture.
+		D3DTexture2D* dst = nullptr;
 		if (is_last_pass && skip_final_copy)
 		{
 			// The target rect may differ from the source.
 			output_rect = dst_rect;
 			output_size = dst_size;
-			dst_texture->TransitionToResourceState(D3D::current_command_list, D3D12_RESOURCE_STATE_RENDER_TARGET);
-			D3D::current_command_list->OMSetRenderTargets(1, &dst_texture->GetRTV(), FALSE, nullptr);
+			dst = dst_texture;
 		}
 		else
 		{
 			output_rect = PostProcessor::ScaleTargetRectangle(API_D3D11, src_rect, pass.output_scale);
 			output_size = pass.output_size;
-			reinterpret_cast<D3DTexture2D*>(pass.output_texture->GetInternalObject())->TransitionToResourceState(D3D::current_command_list, D3D12_RESOURCE_STATE_RENDER_TARGET);
-			D3D::current_command_list->OMSetRenderTargets(1, &reinterpret_cast<D3DTexture2D*>(pass.output_texture->GetInternalObject())->GetRTV(), FALSE, nullptr);
+			dst = reinterpret_cast<D3DTexture2D*>(pass.output_texture->GetInternalObject());
 		}
+
+		dst->TransitionToResourceState(D3D::current_command_list, D3D12_RESOURCE_STATE_RENDER_TARGET);
+		auto rtv = dst->GetRTV();
+		D3D::current_command_list->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
 
 		// Set viewport based on target rect
 		D3D::SetViewportAndScissor(output_rect.left, output_rect.top,
@@ -344,7 +347,7 @@ void D3DPostProcessingShader::Draw(PostProcessor* p,
 		// Draw pass
 		D3D::DrawShadedTexQuad(nullptr, src_rect.AsRECT(), src_size.width, src_size.height,
 			reinterpret_cast<RenderPassDx12Data*>(pass.shader)->m_shader_bytecode, parent->GetVertexShader(), StaticShaderCache::GetSimpleVertexShaderInputLayout(),
-			geometry_shader, std::max(src_layer, 0), DXGI_FORMAT_R8G8B8A8_UNORM, false, dst_texture->GetMultisampled());
+			geometry_shader, std::max(src_layer, 0), dst->GetFormat(), false, dst->GetMultisampled());
 	}
 
 	// Copy the last pass output to the target if not done already
@@ -485,8 +488,6 @@ void D3DPostProcessor::PostProcessEFBToTexture(uintptr_t dst_texture)
 	{
 		depth_texture = FramebufferManager::GetResolvedEFBDepthTexture();
 	}
-	D3DTexture2D* real_dst_texture = reinterpret_cast<D3DTexture2D*>(dst_texture);
-
 	// Invoke post process process
 	PostProcess(nullptr, nullptr, nullptr,
 		target_rect, target_size, reinterpret_cast<uintptr_t>(color_texture),
@@ -559,7 +560,7 @@ void D3DPostProcessor::CopyTexture(const TargetRectangle& dst_rect, uintptr_t ds
 	D3DTexture2D* src_texture = reinterpret_cast<D3DTexture2D*>(src_tex);
 	// If the dimensions are the same, we can copy instead of using a shader.
 	bool scaling = (dst_rect.GetWidth() != src_rect.GetWidth() || dst_rect.GetHeight() != src_rect.GetHeight());
-	if (!scaling && !force_shader_copy)
+	if (!scaling && !force_shader_copy && !is_depth_texture)
 	{
 		D3D12_BOX srcbox = {
 			static_cast<UINT>(src_rect.left),
@@ -595,7 +596,8 @@ void D3DPostProcessor::CopyTexture(const TargetRectangle& dst_rect, uintptr_t ds
 	{
 		D3D::SetViewportAndScissor(dst_rect.left, dst_rect.top, dst_rect.GetWidth(), dst_rect.GetHeight());
 		dst_texture->TransitionToResourceState(D3D::current_command_list, D3D12_RESOURCE_STATE_RENDER_TARGET);
-		D3D::current_command_list->OMSetRenderTargets(1, &dst_texture->GetRTV(), FALSE, nullptr);
+		auto rtv = dst_texture->GetRTV();
+		D3D::current_command_list->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
 
 		if (scaling)
 			D3D::SetLinearCopySampler();
@@ -605,7 +607,7 @@ void D3DPostProcessor::CopyTexture(const TargetRectangle& dst_rect, uintptr_t ds
 		D3D12_SHADER_BYTECODE bytecode = {};
 
 		D3D::DrawShadedTexQuad(src_texture, src_rect.AsRECT(), src_size.width, src_size.height,
-			StaticShaderCache::GetColorCopyPixelShader(false),
+			StaticShaderCache::GetColorCopyPixelShader(src_texture->GetMultisampled()),
 			StaticShaderCache::GetSimpleVertexShader(),
 			StaticShaderCache::GetSimpleVertexShaderInputLayout(),
 			(src_layer < 0) ? StaticShaderCache::GetCopyGeometryShader() : bytecode, 0,

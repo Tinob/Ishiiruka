@@ -31,7 +31,7 @@ static std::array<std::unique_ptr<D3DStreamBuffer>, SHADER_STAGE_COUNT> s_shader
 
 const unsigned int shader_constant_buffer_sizes[SHADER_STAGE_COUNT] = {
 	sizeof(GeometryShaderConstants),
-	C_PCONST_END * 4 * sizeof(float),
+	sizeof(float) * PixelShaderManager::ConstantBufferSize,
 	sizeof(float) * VertexShaderManager::ConstantBufferSize,
 	sizeof(TessellationShaderConstants)
 };

@@ -49,6 +49,15 @@ namespace DX9
 {
 
 static LPDIRECT3DSURFACE9 m_screen_shoot_mem_surface = nullptr;
+// GX pipeline state
+struct GXPipelineState
+{
+	BlendingState blend;
+	DepthState zmode;
+	RasterizationState raster;
+};
+
+static GXPipelineState s_gx_state;
 
 void Renderer::SetupDeviceObjects()
 {
@@ -110,13 +119,12 @@ Renderer::Renderer(void *&window_handle)
 
 	D3D::Create(g_ActiveConfig.iAdapter, (HWND)window_handle,
 		fullScreenRes, backbuffer_mm_mode, false);
-	
+
 	// Decide framebuffer size
 	m_backbuffer_width = D3D::GetBackBufferWidth();
 	m_backbuffer_height = D3D::GetBackBufferHeight();
 
 	m_LastAA = g_ActiveConfig.iMultisamples - 1;
-	int SupersampleCoeficient = (m_LastAA % 3) + 1;
 
 	m_last_efb_scale = g_ActiveConfig.iEFBScale;
 	m_vsync = g_ActiveConfig.IsVSync();
@@ -126,7 +134,12 @@ Renderer::Renderer(void *&window_handle)
 	m_bViewPortChanged = true;
 	m_bGenerationModeChanged = true;
 	m_bDepthModeChanged = true;
-	m_bLogicOpModeChanged = true;
+	CheckForHostConfigChanges();
+	s_gx_state.zmode.testenable = false;
+	s_gx_state.zmode.updateenable = false;
+	s_gx_state.zmode.func = ZMode::NEVER;
+
+	s_gx_state.raster.cullmode = GenMode::CULL_NONE;
 }
 
 void Renderer::Init()
@@ -196,7 +209,6 @@ void Renderer::Init()
 	m_bViewPortChanged = true;
 	m_bGenerationModeChanged = true;
 	m_bDepthModeChanged = true;
-	m_bLogicOpModeChanged = true;
 }
 
 Renderer::~Renderer()
@@ -257,7 +269,7 @@ bool Renderer::CheckForResize()
 	g_renderer->SetWindowRectangle(originPoint.x, originPoint.x + client_width, originPoint.y, originPoint.y + client_height);
 
 	// Sanity check
-	bool resized = (client_width != g_renderer->GetBackbufferWidth ()
+	bool resized = (client_width != g_renderer->GetBackbufferWidth()
 		|| client_height != g_renderer->GetBackbufferHeight()
 		|| m_vsync != g_ActiveConfig.IsVSync()) &&
 		client_width >= 4 && client_height >= 4;
@@ -636,16 +648,18 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 	{
 		int source_width = GetTargetRectangle().GetWidth();
 		int source_height = GetTargetRectangle().GetHeight();
-		HRESULT hr = D3D::dev->GetRenderTargetData(D3D::GetBackBufferSurface(), m_screen_shoot_mem_surface);
-		D3DLOCKED_RECT rect;
-		if (SUCCEEDED(m_screen_shoot_mem_surface->LockRect(&rect, GetTargetRectangle().AsRECT(), D3DLOCK_NO_DIRTY_UPDATE | D3DLOCK_NOSYSLOCK | D3DLOCK_READONLY)))
+		if (SUCCEEDED(D3D::dev->GetRenderTargetData(D3D::GetBackBufferSurface(), m_screen_shoot_mem_surface)))
 		{
-			AVIDump::Frame state = AVIDump::FetchState(ticks);
-			DumpFrameData(reinterpret_cast<const u8*>(rect.pBits), source_width, source_height,
-				rect.Pitch, state, false, true);
-			FinishFrameData();
+			D3DLOCKED_RECT rect;
+			if (SUCCEEDED(m_screen_shoot_mem_surface->LockRect(&rect, GetTargetRectangle().AsRECT(), D3DLOCK_NO_DIRTY_UPDATE | D3DLOCK_NOSYSLOCK | D3DLOCK_READONLY)))
+			{
+				AVIDump::Frame state = AVIDump::FetchState(ticks);
+				DumpFrameData(reinterpret_cast<const u8*>(rect.pBits), source_width, source_height,
+					rect.Pitch, state, false, true);
+				FinishFrameData();
 
-			m_screen_shoot_mem_surface->UnlockRect();
+				m_screen_shoot_mem_surface->UnlockRect();
+			}
 		}
 	}
 
@@ -705,8 +719,6 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 
 		UpdateDrawRectangle();
 
-		int SupersampleCoeficient = (m_LastAA % 3) + 1;
-
 		m_last_efb_scale = g_ActiveConfig.iEFBScale;
 		PixelShaderManager::SetEfbScaleChanged();
 		D3D::dev->SetRenderTarget(0, D3D::GetBackBufferSurface());
@@ -731,6 +743,12 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 		D3D::dev->SetDepthStencilSurface(FramebufferManager::GetEFBDepthRTSurface());
 		D3D::dev->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(0, 0, 0), 1.0f, 0);
 		BPFunctions::SetScissor();
+	}
+
+	if (CheckForHostConfigChanges())
+	{
+		VertexShaderCache::Reload();
+		PixelShaderCache::Reload();
 	}
 
 	// Begin new frame
@@ -762,8 +780,8 @@ void Renderer::RestoreAPIState()
 	m_bGenerationModeChanged = true;
 	m_bScissorRectChanged = true;
 	m_bDepthModeChanged = true;
-	m_bLogicOpModeChanged = true;
 	m_bViewPortChanged = true;
+	m_bBlendModeChanged = true;
 }
 
 void Renderer::_SetViewport()
@@ -857,14 +875,9 @@ void Renderer::ApplyState(bool bUseDstAlpha)
 		_SetColorMask();
 	}
 
-	if (m_bLogicOpModeChanged)
-	{
-		_SetLogicOpMode();
-	}
-
 	if (m_bBlendModeChanged)
 	{
-		_SetBlendMode(false);
+		_SetBlendMode();
 	}
 
 	if (m_bScissorRectChanged)
@@ -884,7 +897,7 @@ void Renderer::ApplyState(bool bUseDstAlpha)
 		// We must disable blend because we want to write alpha value directly to the alpha channel without modifications.
 		D3D::ChangeRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_ALPHA);
 		D3D::ChangeRenderState(D3DRS_ALPHABLENDENABLE, false);
-		if (bpmem.zmode.testenable && bpmem.zmode.updateenable)
+		if (s_gx_state.zmode.testenable.Value() && s_gx_state.zmode.updateenable.Value())
 		{
 			// This is needed to draw to the correct pixels in multi-pass algorithms
 			// to avoid z-fighting and grants that you write to the same pixels
@@ -900,7 +913,7 @@ void Renderer::RestoreState()
 {
 	D3D::RefreshRenderState(D3DRS_COLORWRITEENABLE);
 	D3D::RefreshRenderState(D3DRS_ALPHABLENDENABLE);
-	if (bpmem.zmode.testenable && bpmem.zmode.updateenable)
+	if (s_gx_state.zmode.testenable.Value() && s_gx_state.zmode.updateenable.Value())
 	{
 		D3D::RefreshRenderState(D3DRS_ZWRITEENABLE);
 		D3D::RefreshRenderState(D3DRS_ZFUNC);
@@ -919,109 +932,79 @@ void Renderer::SetScissorRect(const EFBRectangle& rc)
 	m_bScissorRectChanged = true;
 }
 
-void Renderer::SetColorMask()
-{
-	m_bColorMaskChanged = true;
-}
-
 void Renderer::_SetColorMask()
 {
 	m_bColorMaskChanged = false;
 	// Only enable alpha channel if it's supported by the current EFB format
 	DWORD color_mask = 0;
-	if (bpmem.alpha_test.TestResult() != AlphaTest::FAIL)
-	{
-		if (bpmem.blendmode.alphaupdate && (bpmem.zcontrol.pixel_format == PEControl::RGBA6_Z24))
-			color_mask = D3DCOLORWRITEENABLE_ALPHA;
-		if (bpmem.blendmode.colorupdate)
-			color_mask |= D3DCOLORWRITEENABLE_RED | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_BLUE;
-	}
+	if (s_gx_state.blend.alphaupdate)
+		color_mask = D3DCOLORWRITEENABLE_ALPHA;
+	if (s_gx_state.blend.colorupdate)
+		color_mask |= D3DCOLORWRITEENABLE_RED | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_BLUE;
 	D3D::SetRenderState(D3DRS_COLORWRITEENABLE, color_mask);
 }
-void Renderer::SetBlendMode(bool forceUpdate)
+void Renderer::SetBlendingState(const BlendingState& state)
 {
-	if (forceUpdate)
-	{
-		_SetBlendMode(forceUpdate);
-	}
-	else
-	{
-		m_bBlendModeChanged = true;
-	}
+	m_bColorMaskChanged = m_bColorMaskChanged || state.colorupdate != s_gx_state.blend.colorupdate || state.alphaupdate != s_gx_state.blend.alphaupdate;
+	m_bBlendModeChanged = m_bBlendModeChanged || state.hex != s_gx_state.blend.hex;
+	s_gx_state.blend.hex = state.hex;
 }
 
-void Renderer::_SetBlendMode(bool forceUpdate)
+void Renderer::_SetBlendMode()
 {
 	m_bBlendModeChanged = false;
-	// Our render target always uses an alpha channel, so we need to override the blend functions to assume a destination alpha of 1 if the render target isn't supposed to have an alpha channel
-	// Example: D3DBLEND_DESTALPHA needs to be D3DBLEND_ONE since the result without an alpha channel is assumed to always be 1.
-	bool target_ham_alpha = bpmem.zcontrol.pixel_format == PEControl::RGBA6_Z24;
-	//really useful for debugging shader and blending errors
-	bool use_DstAlpha = bpmem.dstalpha.enable && bpmem.blendmode.alphaupdate && target_ham_alpha;
-	bool use_DualSource = use_DstAlpha && g_ActiveConfig.backend_info.bSupportsDualSourceBlend;
-	const D3DBLEND d3dSrcFactors[8] =
-	{
-		D3DBLEND_ZERO,
-		D3DBLEND_ONE,
-		D3DBLEND_DESTCOLOR,
-		D3DBLEND_INVDESTCOLOR,
-		(use_DualSource) ? D3DBLEND_SRCCOLOR2 : D3DBLEND_SRCALPHA,
-		(use_DualSource) ? D3DBLEND_INVSRCCOLOR2 : D3DBLEND_INVSRCALPHA,
-		(target_ham_alpha) ? D3DBLEND_DESTALPHA : D3DBLEND_ONE,
-		(target_ham_alpha) ? D3DBLEND_INVDESTALPHA : D3DBLEND_ZERO
-	};
-	const D3DBLEND d3dDestFactors[8] =
-	{
-		D3DBLEND_ZERO,
-		D3DBLEND_ONE,
-		D3DBLEND_SRCCOLOR,
-		D3DBLEND_INVSRCCOLOR,
-		(use_DualSource) ? D3DBLEND_SRCCOLOR2 : D3DBLEND_SRCALPHA,
-		(use_DualSource) ? D3DBLEND_INVSRCCOLOR2 : D3DBLEND_INVSRCALPHA,
-		(target_ham_alpha) ? D3DBLEND_DESTALPHA : D3DBLEND_ONE,
-		(target_ham_alpha) ? D3DBLEND_INVDESTALPHA : D3DBLEND_ZERO
-	};
 
-	if (bpmem.blendmode.logicopenable && !bpmem.blendmode.blendenable && !forceUpdate)
+	if (s_gx_state.blend.logicopenable != 0)
 	{
 		D3D::SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, false);
+		_SetLogicOpMode();
 		return;
 	}
 
-	bool blend_enable = bpmem.blendmode.subtract || bpmem.blendmode.blendenable;
+	// Our render target always uses an alpha channel, so we need to override the blend functions to assume a destination alpha of 1 if the render target isn't supposed to have an alpha channel
+	// Example: D3DBLEND_DESTALPHA needs to be D3DBLEND_ONE since the result without an alpha channel is assumed to always be 1.
+	//really useful for debugging shader and blending errors
+	bool use_DstAlpha = s_gx_state.blend.dstalpha != 0;
+	bool use_DualSource = use_DstAlpha && g_ActiveConfig.backend_info.bSupportsDualSourceBlend;
+	const D3DBLEND d3dSrcFactors[8] =
+	{
+	  D3DBLEND_ZERO,
+	  D3DBLEND_ONE,
+	  D3DBLEND_DESTCOLOR,
+	  D3DBLEND_INVDESTCOLOR,
+	  (use_DualSource) ? D3DBLEND_SRCCOLOR2 : D3DBLEND_SRCALPHA,
+	  (use_DualSource) ? D3DBLEND_INVSRCCOLOR2 : D3DBLEND_INVSRCALPHA,
+	  D3DBLEND_DESTALPHA,
+	  D3DBLEND_INVDESTALPHA
+	};
+	const D3DBLEND d3dDestFactors[8] =
+	{
+	  D3DBLEND_ZERO,
+	  D3DBLEND_ONE,
+	  D3DBLEND_SRCCOLOR,
+	  D3DBLEND_INVSRCCOLOR,
+	  (use_DualSource) ? D3DBLEND_SRCCOLOR2 : D3DBLEND_SRCALPHA,
+	  (use_DualSource) ? D3DBLEND_INVSRCCOLOR2 : D3DBLEND_INVSRCALPHA,
+	  D3DBLEND_DESTALPHA,
+	  D3DBLEND_INVDESTALPHA
+	};
+
+	bool blend_enable = s_gx_state.blend.blendenable;
 	D3D::SetRenderState(D3DRS_ALPHABLENDENABLE, blend_enable);
 	D3D::SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, blend_enable && g_ActiveConfig.backend_info.bSupportsSeparateAlphaFunction);
 	if (blend_enable)
 	{
-		D3DBLENDOP op = D3DBLENDOP_ADD;
-		u32 srcidx = bpmem.blendmode.srcfactor;
-		u32 dstidx = bpmem.blendmode.dstfactor;
-		if (bpmem.blendmode.subtract)
-		{
-			op = D3DBLENDOP_REVSUBTRACT;
-			srcidx = BlendMode::ONE;
-			dstidx = BlendMode::ONE;
-		}
+		D3DBLENDOP op = s_gx_state.blend.subtract.Value() != 0 ? D3DBLENDOP_REVSUBTRACT : D3DBLENDOP_ADD;
+		u32 srcidx = static_cast<u32>(s_gx_state.blend.srcfactor);
+		u32 dstidx = static_cast<u32>(s_gx_state.blend.dstfactor);
 		D3D::SetRenderState(D3DRS_BLENDOP, op);
 		D3D::SetRenderState(D3DRS_SRCBLEND, d3dSrcFactors[srcidx]);
 		D3D::SetRenderState(D3DRS_DESTBLEND, d3dDestFactors[dstidx]);
 		if (g_ActiveConfig.backend_info.bSupportsSeparateAlphaFunction)
 		{
-			if (use_DualSource)
-			{
-				op = D3DBLENDOP_ADD;
-				srcidx = BlendMode::ONE;
-				dstidx = BlendMode::ZERO;
-			}
-			else
-			{
-				// we can't use D3DBLEND_DESTCOLOR or D3DBLEND_INVDESTCOLOR for source in alpha channel so use their alpha equivalent instead
-				if (srcidx == BlendMode::DSTCLR) srcidx = BlendMode::DSTALPHA;
-				if (srcidx == BlendMode::INVDSTCLR) srcidx = BlendMode::INVDSTALPHA;
-				// we can't use D3DBLEND_SRCCOLOR or D3DBLEND_INVSRCCOLOR for destination in alpha channel so use their alpha equivalent instead
-				if (dstidx == BlendMode::SRCCLR) dstidx = BlendMode::SRCALPHA;
-				if (dstidx == BlendMode::INVSRCCLR) dstidx = BlendMode::INVSRCALPHA;
-			}
+			op = s_gx_state.blend.subtractAlpha.Value() != 0 ? D3DBLENDOP_REVSUBTRACT : D3DBLENDOP_ADD;
+			srcidx = static_cast<u32>(s_gx_state.blend.srcfactoralpha);
+			dstidx = static_cast<u32>(s_gx_state.blend.dstfactoralpha);
 			D3D::SetRenderState(D3DRS_BLENDOPALPHA, op);
 			D3D::SetRenderState(D3DRS_SRCBLENDALPHA, d3dSrcFactors[srcidx]);
 			D3D::SetRenderState(D3DRS_DESTBLENDALPHA, d3dDestFactors[dstidx]);
@@ -1029,9 +1012,10 @@ void Renderer::_SetBlendMode(bool forceUpdate)
 	}
 }
 
-void Renderer::SetGenerationMode()
+void Renderer::SetRasterizationState(const RasterizationState& state)
 {
-	m_bGenerationModeChanged = true;
+	m_bGenerationModeChanged = m_bGenerationModeChanged || state.hex != s_gx_state.raster.hex;
+	s_gx_state.raster.hex = state.hex;
 }
 
 void Renderer::_SetGenerationMode()
@@ -1044,12 +1028,13 @@ void Renderer::_SetGenerationMode()
 		D3DCULL_CW,
 		D3DCULL_CCW
 	};
-	D3D::SetRenderState(D3DRS_CULLMODE, d3dCullModes[bpmem.genMode.cullmode]);
+	D3D::SetRenderState(D3DRS_CULLMODE, d3dCullModes[s_gx_state.raster.cullmode.Value()]);
 }
 
-void Renderer::SetDepthMode()
+void Renderer::SetDepthState(const DepthState& state)
 {
-	m_bDepthModeChanged = true;
+	m_bDepthModeChanged = m_bDepthModeChanged || s_gx_state.zmode.hex != state.hex;
+	s_gx_state.zmode.hex = state.hex;
 }
 
 void Renderer::_SetDepthMode()
@@ -1067,11 +1052,11 @@ void Renderer::_SetDepthMode()
 		D3DCMP_ALWAYS
 	};
 
-	D3D::SetRenderState(D3DRS_ZENABLE, bpmem.zmode.testenable);
-	if (bpmem.zmode.testenable)
+	D3D::SetRenderState(D3DRS_ZENABLE, s_gx_state.zmode.testenable.Value());
+	if (s_gx_state.zmode.testenable.Value())
 	{
-		D3D::SetRenderState(D3DRS_ZWRITEENABLE, bpmem.zmode.updateenable);
-		D3D::SetRenderState(D3DRS_ZFUNC, d3dCmpFuncs[bpmem.zmode.func]);
+		D3D::SetRenderState(D3DRS_ZWRITEENABLE, s_gx_state.zmode.updateenable.Value());
+		D3D::SetRenderState(D3DRS_ZFUNC, d3dCmpFuncs[s_gx_state.zmode.func.Value()]);
 	}
 	else
 	{
@@ -1081,14 +1066,8 @@ void Renderer::_SetDepthMode()
 	}
 }
 
-void Renderer::SetLogicOpMode()
-{
-	m_bLogicOpModeChanged = true;
-}
-
 void Renderer::_SetLogicOpMode()
 {
-	m_bLogicOpModeChanged = false;
 	// D3D9 doesn't support logic blending, so this is a huge hack
 
 	//		0	0x00
@@ -1107,7 +1086,7 @@ void Renderer::_SetLogicOpMode()
 	//		13	~Source | destination
 	//		14	~(Source & destination)
 	//		15	0xff
-	const D3DBLENDOP d3dLogicOpop[16] =
+	static const D3DBLENDOP d3dLogicOpop[16] =
 	{
 		D3DBLENDOP_ADD,
 		D3DBLENDOP_ADD,
@@ -1126,7 +1105,7 @@ void Renderer::_SetLogicOpMode()
 		D3DBLENDOP_ADD,
 		D3DBLENDOP_ADD
 	};
-	const D3DBLEND d3dLogicOpSrcFactors[16] =
+	static const D3DBLEND d3dLogicOpSrcFactors[16] =
 	{
 		D3DBLEND_ZERO,
 		D3DBLEND_DESTCOLOR,
@@ -1145,7 +1124,7 @@ void Renderer::_SetLogicOpMode()
 		D3DBLEND_INVDESTCOLOR,
 		D3DBLEND_ONE
 	};
-	const D3DBLEND d3dLogicOpDestFactors[16] =
+	static const D3DBLEND d3dLogicOpDestFactors[16] =
 	{
 		D3DBLEND_ZERO,
 		D3DBLEND_ZERO,
@@ -1164,21 +1143,12 @@ void Renderer::_SetLogicOpMode()
 		D3DBLEND_INVSRCCOLOR,
 		D3DBLEND_ONE
 	};
-
-	if (bpmem.blendmode.logicopenable && !bpmem.blendmode.blendenable)
+	D3D::SetRenderState(D3DRS_ALPHABLENDENABLE, s_gx_state.blend.logicopenable.Value());
+	if (s_gx_state.blend.logicopenable.Value())
 	{
-		bool logicopenabled = bpmem.blendmode.logicmode != BlendMode::LogicOp::COPY;
-		D3D::SetRenderState(D3DRS_ALPHABLENDENABLE, logicopenabled);
-		if (logicopenabled)
-		{
-			D3D::SetRenderState(D3DRS_BLENDOP, d3dLogicOpop[bpmem.blendmode.logicmode]);
-			D3D::SetRenderState(D3DRS_SRCBLEND, d3dLogicOpSrcFactors[bpmem.blendmode.logicmode]);
-			D3D::SetRenderState(D3DRS_DESTBLEND, d3dLogicOpDestFactors[bpmem.blendmode.logicmode]);
-		}
-	}
-	else
-	{
-		_SetBlendMode(false);
+		D3D::SetRenderState(D3DRS_BLENDOP, d3dLogicOpop[s_gx_state.blend.logicmode.Value()]);
+		D3D::SetRenderState(D3DRS_SRCBLEND, d3dLogicOpSrcFactors[s_gx_state.blend.logicmode.Value()]);
+		D3D::SetRenderState(D3DRS_DESTBLEND, d3dLogicOpDestFactors[s_gx_state.blend.logicmode.Value()]);
 	}
 }
 
@@ -1187,16 +1157,14 @@ void Renderer::SetInterlacingMode()
 	// TODO
 }
 
-void Renderer::SetSamplerState(int stage, int texindex, bool custom_tex)
+void Renderer::SetSamplerState(u32 index, const SamplerState& state)
 {
-	const D3DTEXTUREFILTERTYPE d3dMipFilters[4] =
+	static const D3DTEXTUREFILTERTYPE d3dFilters[2] =
 	{
-		D3DTEXF_NONE,
 		D3DTEXF_POINT,
-		D3DTEXF_LINEAR,
-		D3DTEXF_NONE, //reserved
+		D3DTEXF_LINEAR
 	};
-	const D3DTEXTUREADDRESS d3dClamps[4] =
+	static const D3DTEXTUREADDRESS d3dClamps[4] =
 	{
 		D3DTADDRESS_CLAMP,
 		D3DTADDRESS_WRAP,
@@ -1204,44 +1172,27 @@ void Renderer::SetSamplerState(int stage, int texindex, bool custom_tex)
 		D3DTADDRESS_WRAP //reserved
 	};
 
-	const FourTexUnits &tex = bpmem.tex[texindex];
-	const TexMode0 &tm0 = tex.texMode0[stage];
-	const TexMode1 &tm1 = tex.texMode1[stage];
+	D3DTEXTUREFILTERTYPE min = d3dFilters[static_cast<u32>(state.min_filter.Value())];
+	D3DTEXTUREFILTERTYPE mag = d3dFilters[static_cast<u32>(state.mag_filter.Value())];
+	D3DTEXTUREFILTERTYPE mip = d3dFilters[static_cast<u32>(state.mipmap_filter.Value())];
 
-	D3DTEXTUREFILTERTYPE min, mag, mip;
-	if (g_ActiveConfig.bForceFiltering)
-	{
-		min = mag = mip = D3DTEXF_LINEAR;
-	}
-	else if (g_ActiveConfig.bDisableTextureFiltering)
-	{
-		min = mag = mip = D3DTEXF_NONE;
-	}
-	else
-	{
-		min = (tm0.min_filter & 4) ? D3DTEXF_LINEAR : D3DTEXF_POINT;
-		mag = tm0.mag_filter ? D3DTEXF_LINEAR : D3DTEXF_POINT;
-		mip = d3dMipFilters[tm0.min_filter & 3];
-	}
-	if (texindex)
-		stage += 4;
-
-	if (mag == D3DTEXF_LINEAR && min == D3DTEXF_LINEAR && g_ActiveConfig.iMaxAnisotropy > 1)
+	if (state.anisotropic_filtering)
 	{
 		min = D3DTEXF_ANISOTROPIC;
 		mag = D3DTEXF_ANISOTROPIC;
-		D3D::SetSamplerState(stage, D3DSAMP_MAXANISOTROPY, 1 << g_ActiveConfig.iMaxAnisotropy);
+		D3D::SetSamplerState(index, D3DSAMP_MAXANISOTROPY, 1 << g_ActiveConfig.iMaxAnisotropy);
 	}
-	D3D::SetSamplerState(stage, D3DSAMP_MINFILTER, min);
-	D3D::SetSamplerState(stage, D3DSAMP_MAGFILTER, mag);
-	D3D::SetSamplerState(stage, D3DSAMP_MIPFILTER, mip);
+	D3D::SetSamplerState(index, D3DSAMP_MINFILTER, min);
+	D3D::SetSamplerState(index, D3DSAMP_MAGFILTER, mag);
+	D3D::SetSamplerState(index, D3DSAMP_MIPFILTER, mip);
 
-	D3D::SetSamplerState(stage, D3DSAMP_ADDRESSU, d3dClamps[tm0.wrap_s]);
-	D3D::SetSamplerState(stage, D3DSAMP_ADDRESSV, d3dClamps[tm0.wrap_t]);
+	D3D::SetSamplerState(index, D3DSAMP_ADDRESSU, d3dClamps[static_cast<u32>(state.wrap_u.Value())]);
+	D3D::SetSamplerState(index, D3DSAMP_ADDRESSV, d3dClamps[static_cast<u32>(state.wrap_v.Value())]);
 
-	float lodbias = (s32)tm0.lod_bias / 32.0f;
-	D3D::SetSamplerState(stage, D3DSAMP_MIPMAPLODBIAS, *(DWORD*)&lodbias);
-	D3D::SetSamplerState(stage, D3DSAMP_MAXMIPLEVEL, tm1.min_lod >> 4);
+	float lodbias = state.lod_bias.Value() / 256.0f;
+	float maxlod = state.max_lod.Value() / 16.0f;
+	D3D::SetSamplerState(index, D3DSAMP_MIPMAPLODBIAS, *(DWORD*)&lodbias);
+	D3D::SetSamplerState(index, D3DSAMP_MAXMIPLEVEL, *(DWORD*)&maxlod);
 }
 
 }  // namespace DX9

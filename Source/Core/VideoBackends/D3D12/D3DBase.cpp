@@ -46,6 +46,7 @@ ID3D12GraphicsCommandList* current_command_list = nullptr;
 size_t root_signature_index = 0;
 std::array<ComPtr<ID3D12RootSignature>, 3> root_signatures;
 
+D3D12_GPU_DESCRIPTOR_HANDLE null_srv_gpu = {};
 D3D12_CPU_DESCRIPTOR_HANDLE null_srv_cpu = {};
 D3D12_CPU_DESCRIPTOR_HANDLE null_srv_cpu_shadow = {};
 
@@ -178,7 +179,7 @@ void UnloadD3D()
 	d3d12_serialize_root_signature = nullptr;
 }
 
-std::vector<DXGI_SAMPLE_DESC> EnumAAModes(ID3D12Device* device)
+std::vector<DXGI_SAMPLE_DESC> EnumAAModes(ID3D12Device* dev)
 {
 	std::vector<DXGI_SAMPLE_DESC> aa_modes;
 
@@ -188,7 +189,7 @@ std::vector<DXGI_SAMPLE_DESC> EnumAAModes(ID3D12Device* device)
 		multisample_quality_levels.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 		multisample_quality_levels.SampleCount = samples;
 
-		device->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &multisample_quality_levels, sizeof(multisample_quality_levels));
+		dev->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &multisample_quality_levels, sizeof(multisample_quality_levels));
 
 		DXGI_SAMPLE_DESC desc;
 		desc.Count = samples;
@@ -441,7 +442,8 @@ HRESULT Create(HWND wnd)
 	}
 
 	s_backbuf[s_current_back_buf]->TransitionToResourceState(current_command_list, D3D12_RESOURCE_STATE_RENDER_TARGET);
-	current_command_list->OMSetRenderTargets(1, &s_backbuf[s_current_back_buf]->GetRTV(), FALSE, nullptr);
+	auto rtv = s_backbuf[s_current_back_buf]->GetRTV();
+	current_command_list->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
 
 	QueryPerformanceFrequency(&s_qpc_frequency);
 
@@ -454,7 +456,19 @@ HRESULT Create(HWND wnd)
 	StateCache::CheckDiskCacheState(adapter.Get());
 	factory.Reset();
 	adapter.Reset();
-
+	g_Config.ClearFormats();
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_BGRA32] = s_feat_level > D3D_FEATURE_LEVEL_11_0;
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_RGBA32] = true;
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_RGB565] = s_feat_level > D3D_FEATURE_LEVEL_11_0;
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT1] = s_feat_level >= D3D_FEATURE_LEVEL_11_0;
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT3] = s_feat_level >= D3D_FEATURE_LEVEL_11_0;
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DXT5] = s_feat_level >= D3D_FEATURE_LEVEL_11_0;
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_BPTC] = s_feat_level > D3D_FEATURE_LEVEL_11_0;
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_DEPTH_FLOAT] = s_feat_level >= D3D_FEATURE_LEVEL_11_0;
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_R_FLOAT] = s_feat_level >= D3D_FEATURE_LEVEL_11_0;
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_RGBA16_FLOAT] = s_feat_level >= D3D_FEATURE_LEVEL_11_0;
+	g_Config.backend_info.bSupportedFormats[PC_TEX_FMT_RGBA_FLOAT] = s_feat_level >= D3D_FEATURE_LEVEL_11_0;
+	UpdateActiveConfig();
 	return S_OK;
 }
 
@@ -484,7 +498,7 @@ void CreateDescriptorHeaps()
 			PanicAlert("Failed to create descriptor heap");
 
 		// Allocate null descriptor for use when filling tables
-		gpu_descriptor_heap_mgr->Allocate(nullptr, &null_srv_cpu, &null_srv_cpu_shadow, nullptr);
+		gpu_descriptor_heap_mgr->Allocate(nullptr, &null_srv_cpu, &null_srv_cpu_shadow, &null_srv_gpu);
 		gpu_descriptor_heaps[0] = gpu_descriptor_heap_mgr->GetDescriptorHeap();
 		resource_descriptor_size = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	}
@@ -652,6 +666,15 @@ void CreateRootSignatures()
 ID3D12RootSignature* GetRootSignature()
 {
 	return root_signatures[root_signature_index].Get();
+}
+
+ID3D12RootSignature* GetRootSignature(size_t index)
+{
+	return root_signatures[index].Get();
+}
+size_t GetRootSignatureIndex()
+{
+	return root_signature_index;
 }
 
 ID3D12RootSignature* GetBasicRootSignature()

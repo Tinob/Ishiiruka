@@ -88,7 +88,7 @@ void SWOGLWindow::Prepare()
 
 void SWOGLWindow::PrintText(const std::string& text, int x, int y, u32 color)
 {
-	TextData data{text, x, y, color};
+	TextData data{ text, x, y, color };
 	m_text.emplace_back(data);
 }
 

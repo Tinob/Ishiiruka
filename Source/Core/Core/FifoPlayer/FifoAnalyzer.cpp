@@ -16,6 +16,8 @@
 #include "VideoCommon/VertexLoader_Position.h"
 #include "VideoCommon/VertexLoader_TextCoord.h"
 
+using namespace OpcodeDecoder;
+
 namespace FifoAnalyzer
 {
 bool s_DrawingObject;

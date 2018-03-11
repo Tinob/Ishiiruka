@@ -2,6 +2,8 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include <cstring>
+
 #include "VideoBackends/Vulkan/VertexManager.h"
 #include "VideoBackends/Vulkan/BoundingBox.h"
 #include "VideoBackends/Vulkan/CommandBufferManager.h"
@@ -24,7 +26,7 @@ namespace Vulkan
 {
 // TODO: Clean up this mess
 constexpr size_t INITIAL_VERTEX_BUFFER_SIZE = VertexManager::MAXVBUFFERSIZE * 2;
-constexpr size_t MAX_VERTEX_BUFFER_SIZE = VertexManager::MAXVBUFFERSIZE * 4;
+constexpr size_t MAX_VERTEX_BUFFER_SIZE = VertexManager::MAXVBUFFERSIZE * 16;
 constexpr size_t INITIAL_INDEX_BUFFER_SIZE = VertexManager::MAXIBUFFERSIZE * sizeof(u16) * 2;
 constexpr size_t MAX_INDEX_BUFFER_SIZE = VertexManager::MAXIBUFFERSIZE * sizeof(u16) * 16;
 
@@ -90,8 +92,8 @@ void VertexManager::PrepareDrawBuffers(u32 stride)
 			PanicAlert("Failed to allocate space in streaming buffers for pending draw");
 	}
 
-	memcpy(m_vertex_stream_buffer->GetCurrentHostPointer(), m_cpu_vertex_buffer.data(), vertex_data_size);
-	memcpy(m_index_stream_buffer->GetCurrentHostPointer(), m_cpu_index_buffer.data(), index_data_size);
+	std::memcpy(m_vertex_stream_buffer->GetCurrentHostPointer(), m_cpu_vertex_buffer.data(), vertex_data_size);
+	std::memcpy(m_index_stream_buffer->GetCurrentHostPointer(), m_cpu_index_buffer.data(), index_data_size);
 
 	// Update base indices
 	m_current_draw_base_vertex =
@@ -132,23 +134,6 @@ void VertexManager::vFlush(bool use_dst_alpha)
 
 	// Update assembly state
 	StateTracker::GetInstance()->SetVertexFormat(vertex_format);
-	switch (m_current_primitive_type)
-	{
-	case PRIMITIVE_POINTS:
-		StateTracker::GetInstance()->SetPrimitiveTopology(VK_PRIMITIVE_TOPOLOGY_POINT_LIST);
-		StateTracker::GetInstance()->DisableBackFaceCulling();
-		break;
-
-	case PRIMITIVE_LINES:
-		StateTracker::GetInstance()->SetPrimitiveTopology(VK_PRIMITIVE_TOPOLOGY_LINE_LIST);
-		StateTracker::GetInstance()->DisableBackFaceCulling();
-		break;
-
-	case PRIMITIVE_TRIANGLES:
-		StateTracker::GetInstance()->SetPrimitiveTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-		g_renderer->SetGenerationMode();
-		break;
-	}
 
 	// Can we do single-pass dst alpha?
 	PIXEL_SHADER_RENDER_MODE dstalpha_mode = PIXEL_SHADER_RENDER_MODE::PSRM_DEFAULT;
@@ -162,7 +147,7 @@ void VertexManager::vFlush(bool use_dst_alpha)
 	StateTracker::GetInstance()->UpdateVertexShaderConstants();
 	StateTracker::GetInstance()->UpdateGeometryShaderConstants();
 	StateTracker::GetInstance()->UpdatePixelShaderConstants();
-	
+
 	// Commit memory to device.
 	// NOTE: This must be done after constant upload, as a constant buffer overrun can cause
 	// the current command buffer to be executed, and we want the buffer space to be associated
@@ -208,7 +193,7 @@ void VertexManager::vFlush(bool use_dst_alpha)
 	//
 	// This is also used when logic ops and destination alpha is enabled, since we can't enable
 	// blending and logic ops concurrently (and the logical operation applies to all channels).
-	bool logic_op_enabled = bpmem.blendmode.logicopenable && !bpmem.blendmode.blendenable;
+	bool logic_op_enabled = bpmem.blendmode.logicopenable.Value() && !bpmem.blendmode.blendenable.Value();
 	if (use_dst_alpha && (!g_vulkan_context->SupportsDualSourceBlend() || logic_op_enabled))
 	{
 		StateTracker::GetInstance()->CheckForShaderChanges(m_current_primitive_type, VertexLoaderManager::g_current_components, PIXEL_SHADER_RENDER_MODE::PSRM_ALPHA_PASS);

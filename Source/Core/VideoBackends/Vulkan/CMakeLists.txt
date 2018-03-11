@@ -4,8 +4,10 @@ set(SRCS
 	FramebufferManager.cpp
 	ObjectCache.cpp
 	PerfQuery.cpp
+	PostProcessing.cpp
 	RasterFont.cpp
 	Renderer.cpp
+	ShaderCache.cpp
 	ShaderCompiler.cpp
 	StateTracker.cpp
 	StagingBuffer.cpp
@@ -20,6 +22,7 @@ set(SRCS
 	VertexManager.cpp
 	VulkanContext.cpp
 	VulkanLoader.cpp
+	VKTexture.cpp
 	main.cpp
 )
 

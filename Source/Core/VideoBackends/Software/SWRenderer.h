@@ -11,7 +11,7 @@
 
 #include "VideoCommon/RenderBase.h"
 
-class SWRenderer: public Renderer
+class SWRenderer : public Renderer
 {
 public:
 	~SWRenderer() override;

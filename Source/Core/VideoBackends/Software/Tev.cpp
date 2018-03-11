@@ -454,7 +454,7 @@ void Tev::Indirect(unsigned int stageNum, s32 s, s32 t)
 		return;
 	}
 
-	s32 indtevtrans[2] = {0,0};
+	s32 indtevtrans[2] = { 0,0 };
 
 	// matrix multiply - results might overflow, but we don't care since we only use the lower 24 bits of the result.
 	int indmtxid = indirect.mid & 3;
@@ -636,7 +636,7 @@ void Tev::Draw()
 #if ALLOW_TEV_DUMPS
 		if (g_ActiveConfig.bDumpTevStages)
 		{
-			u8 stage[4] = {(u8)Reg[0][RED_C], (u8)Reg[0][GRN_C], (u8)Reg[0][BLU_C], (u8)Reg[0][ALP_C]};
+			u8 stage[4] = { (u8)Reg[0][RED_C], (u8)Reg[0][GRN_C], (u8)Reg[0][BLU_C], (u8)Reg[0][ALP_C] };
 			DebugUtil::DrawTempBuffer(stage, DIRECT + stageNum);
 		}
 #endif
@@ -647,7 +647,7 @@ void Tev::Draw()
 	// regardless of the used destination register - TODO: Verify!
 	u32 color_index = bpmem.combiners[bpmem.genMode.numtevstages].colorC.dest;
 	u32 alpha_index = bpmem.combiners[bpmem.genMode.numtevstages].alphaC.dest;
-	u8 output[4] = {(u8)Reg[alpha_index][ALP_C], (u8)Reg[color_index][BLU_C], (u8)Reg[color_index][GRN_C], (u8)Reg[color_index][RED_C]};
+	u8 output[4] = { (u8)Reg[alpha_index][ALP_C], (u8)Reg[color_index][BLU_C], (u8)Reg[color_index][GRN_C], (u8)Reg[color_index][RED_C] };
 
 	// This part is only needed if we are not simply computing bbox
 	// (i. e., only needed when using the SW renderer)
@@ -723,7 +723,7 @@ void Tev::Draw()
 				// linearly interpolate the samples and multiple ze by the resulting adjustment factor
 				float factor = indexupper - floatindex;
 				float k = klower * factor + kupper * (1.f - factor);
-				float x_adjust = sqrt(offset*offset + k*k) / k;
+				float x_adjust = sqrt(offset*offset + k * k) / k;
 				ze *= x_adjust; // NOTE: This is basically dividing by a cosine (hidden behind GXInitFogAdjTable): 1/cos = c/b = sqrt(a^2+b^2)/b
 			}
 
@@ -758,7 +758,7 @@ void Tev::Draw()
 			output[GRN_C] = (output[GRN_C] * invFog + fogInt * bpmem.fog.color.g) >> 8;
 			output[BLU_C] = (output[BLU_C] * invFog + fogInt * bpmem.fog.color.b) >> 8;
 		}
-	
+
 		bool late_ztest = !bpmem.zcontrol.early_ztest || !g_ActiveConfig.bZComploc;
 		if (late_ztest && bpmem.zmode.testenable)
 		{

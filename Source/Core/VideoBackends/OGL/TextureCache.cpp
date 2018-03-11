@@ -23,6 +23,7 @@
 #include "VideoBackends/OGL/FramebufferManager.h"
 #include "VideoBackends/OGL/GPUTimer.h"
 #include "Common/GL/GLInterfaceBase.h"
+#include "VideoBackends/OGL/OGLTexture.h"
 #include "VideoBackends/OGL/ProgramShaderCache.h"
 #include "VideoBackends/OGL/Render.h"
 #include "VideoBackends/OGL/SamplerCache.h"
@@ -39,11 +40,6 @@
 #include "VideoCommon/TextureScalerCommon.h"
 #include "VideoCommon/VideoConfig.h"
 
-#define 	GL_COMPRESSED_RGB_S3TC_DXT1_EXT   0x83F0
-#define 	GL_COMPRESSED_RGBA_S3TC_DXT1_EXT   0x83F1
-#define 	GL_COMPRESSED_RGBA_S3TC_DXT3_EXT   0x83F2
-#define 	GL_COMPRESSED_RGBA_S3TC_DXT5_EXT   0x83F3
-
 namespace OGL
 {
 static SHADER s_ColorCopyProgram;
@@ -56,9 +52,6 @@ static GLuint s_ColorMatrixPositionUniform;
 static GLuint s_DepthCopyPositionUniform;
 static u32 s_ColorCbufid;
 static u32 s_DepthCbufid;
-
-static u32 s_Textures[8];
-static u32 s_ActiveTexture;
 
 static SHADER s_palette_pixel_shader[3];
 static std::unique_ptr<StreamBuffer> s_palette_stream_buffer;
@@ -89,419 +82,29 @@ s_texture_decoding_buffer_views;
 static void CreateTextureDecodingResources();
 static void DestroyTextureDecodingResources();
 
-bool SaveTexture(const std::string& filename, u32 textarget, u32 tex, int virtual_width, int virtual_height, u32 level, bool compressed)
+HostTextureFormat TextureCache::GetHostTextureFormat(const s32 texformat, const TlutFormat tlutfmt, u32 width, u32 height)
 {
-	if (GLInterface->GetMode() != GLInterfaceMode::MODE_OPENGL)
-		return false;
-	int width = std::max(virtual_width >> level, 1);
-	int height = std::max(virtual_height >> level, 1);
-	int size = compressed ? (((width + 3) >> 2) * ((height + 3) >> 2) * 16) : (width * height * 4);
-	std::vector<u8> data(size);
-	glActiveTexture(GL_TEXTURE9);
-	glBindTexture(textarget, tex);
-	bool saved = false;
-	if (compressed)
-	{
-		glGetCompressedTexImage(textarget, level, data.data());
-		saved = TextureToDDS(data.data(), width * 4, filename, width, height);
-	}
-	else
-	{
-		glGetTexImage(textarget, level, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
-		saved = TextureToPng(data.data(), width * 4, filename, width, height);
-	}
-	TextureCache::SetStage();
-	return saved;
-}
-
-TextureCache::TCacheEntry::~TCacheEntry()
-{
-	if (texture)
-	{
-		for (auto& gtex : s_Textures)
-			if (gtex == texture)
-				gtex = 0;
-		glDeleteTextures(1, &texture);
-		texture = 0;
-	}
-
-	if (nrm_texture)
-	{
-		glDeleteTextures(1, &nrm_texture);
-		nrm_texture = 0;
-	}
-
-	if (framebuffer)
-	{
-		glDeleteFramebuffers(1, &framebuffer);
-		framebuffer = 0;
-	}
-}
-
-TextureCache::TCacheEntry::TCacheEntry(const TCacheEntryConfig& _config)
-	: TCacheEntryBase(_config)
-{
-	glGenTextures(1, &texture);
-	nrm_texture = 0;
-	framebuffer = 0;
-}
-
-void TextureCache::TCacheEntry::Bind(u32 stage)
-{
-	if (nrm_texture && g_ActiveConfig.HiresMaterialMapsEnabled())
-	{
-		s_ActiveTexture = 8 + stage;
-		glActiveTexture(GL_TEXTURE8 + stage);
-		glBindTexture(GL_TEXTURE_2D_ARRAY, nrm_texture);
-	}
-	if (s_Textures[stage] != texture || !g_ActiveConfig.backend_info.bSupportsBindingLayout)
-	{
-		if (s_ActiveTexture != stage)
-		{
-			glActiveTexture(GL_TEXTURE0 + stage);
-			s_ActiveTexture = stage;
-		}
-
-		glBindTexture(GL_TEXTURE_2D_ARRAY, texture);
-		s_Textures[stage] = texture;
-	}
-}
-
-bool TextureCache::TCacheEntry::Save(const std::string& filename, u32 level)
-{
-	return SaveTexture(filename, GL_TEXTURE_2D_ARRAY, texture, config.width, config.height, level, this->compressed);
-}
-
-PC_TexFormat TextureCache::GetNativeTextureFormat(const s32 texformat, const TlutFormat tlutfmt, u32 width, u32 height)
-{
-	const bool compressed_supported = ((width & 3) == 0) && ((height & 3) == 0);
-	PC_TexFormat pcfmt = GetPC_TexFormat(texformat, tlutfmt, compressed_supported);
+	HostTextureFormat pcfmt = TexDecoder::GetHostTextureFormat(texformat, tlutfmt, true);
 	pcfmt = !g_ActiveConfig.backend_info.bSupportedFormats[pcfmt] ? PC_TEX_FMT_RGBA32 : pcfmt;
 	return pcfmt;
 }
 
-void TextureCache::TCacheEntry::SetFormat()
+std::unique_ptr<HostTexture> TextureCache::CreateTexture(const TextureConfig& config)
 {
-	compressed = false;
-	switch (config.pcformat)
-	{
-	default:
-	case PC_TEX_FMT_NONE:
-		PanicAlert("Invalid PC texture format %i", config.pcformat);
-	case PC_TEX_FMT_BGRA32:
-		gl_format = GL_BGRA;
-		gl_iformat = GL_RGBA;
-		gl_siformat = GL_RGBA8;
-		gl_type = GL_UNSIGNED_BYTE;
-		break;
-
-	case PC_TEX_FMT_RGBA32:
-		gl_format = GL_RGBA;
-		gl_iformat = GL_RGBA;
-		gl_siformat = GL_RGBA8;
-		gl_type = GL_UNSIGNED_BYTE;
-		break;
-	case PC_TEX_FMT_I4_AS_I8:
-		gl_format = GL_LUMINANCE;
-		gl_iformat = GL_INTENSITY4;
-		gl_siformat = GL_R8;
-		gl_type = GL_UNSIGNED_BYTE;
-		break;
-
-	case PC_TEX_FMT_IA4_AS_IA8:
-		gl_format = GL_LUMINANCE_ALPHA;
-		gl_iformat = GL_LUMINANCE4_ALPHA4;
-		gl_siformat = GL_RG8;
-		gl_type = GL_UNSIGNED_BYTE;
-		break;
-
-	case PC_TEX_FMT_I8:
-		gl_format = GL_LUMINANCE;
-		gl_iformat = GL_INTENSITY8;
-		gl_siformat = GL_R8;
-		gl_type = GL_UNSIGNED_BYTE;
-		break;
-
-	case PC_TEX_FMT_IA8:
-		gl_format = GL_LUMINANCE_ALPHA;
-		gl_iformat = GL_LUMINANCE8_ALPHA8;
-		gl_siformat = GL_RG8;
-		gl_type = GL_UNSIGNED_BYTE;
-		break;
-	case PC_TEX_FMT_RGB565:
-		gl_format = GL_RGB;
-		gl_iformat = GL_RGB;
-		gl_siformat = GL_RGB5;
-		gl_type = GL_UNSIGNED_SHORT_5_6_5;
-		break;
-	case PC_TEX_FMT_DXT1:
-		gl_format = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
-		gl_iformat = GL_RGB;
-		gl_siformat = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
-		gl_type = GL_UNSIGNED_BYTE;
-		compressed = true;
-		break;
-	case PC_TEX_FMT_DXT3:
-		gl_format = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
-		gl_iformat = GL_RGBA;
-		gl_siformat = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
-		gl_type = GL_UNSIGNED_BYTE;
-		compressed = true;
-		break;
-	case PC_TEX_FMT_DXT5:
-		gl_format = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
-		gl_iformat = GL_RGBA;
-		gl_siformat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
-		gl_type = GL_UNSIGNED_BYTE;
-		compressed = true;
-		break;
-	case PC_TEX_FMT_DEPTH_FLOAT:
-		gl_format = GL_DEPTH_COMPONENT32F;
-		gl_iformat = GL_DEPTH_COMPONENT;
-		gl_siformat = GL_DEPTH_COMPONENT32;
-		gl_type = GL_FLOAT;
-		compressed = false;
-		break;
-	case PC_TEX_FMT_R_FLOAT:
-		gl_format = GL_R32F;
-		gl_iformat = GL_RED;
-		gl_siformat = GL_R32F;
-		gl_type = GL_FLOAT;
-		compressed = false;
-		break;
-	case PC_TEX_FMT_RGBA16_FLOAT:
-		gl_format = GL_RGBA16F;
-		gl_iformat = GL_RGBA;
-		gl_siformat = GL_RGBA16F;
-		gl_type = GL_FLOAT;
-		compressed = false;
-		break;
-	case PC_TEX_FMT_RGBA_FLOAT:
-		gl_format = GL_RGBA32F;
-		gl_iformat = GL_RGBA;
-		gl_siformat = GL_RGBA32F;
-		gl_type = GL_FLOAT;
-		compressed = false;
-		break;
-	}
+	return std::make_unique<OGLTexture>(config);
 }
 
-TextureCache::TCacheEntryBase* TextureCache::CreateTexture(const TCacheEntryConfig& config)
-{
-	TCacheEntry* entry = new TCacheEntry(config);
-
-	glActiveTexture(GL_TEXTURE9);
-	glBindTexture(GL_TEXTURE_2D_ARRAY, entry->texture);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, config.levels - 1);
-	entry->SetFormat();
-
-	if (g_ogl_config.bSupportsTextureStorage)
-	{
-		glTexStorage3D(GL_TEXTURE_2D_ARRAY, config.levels, entry->gl_siformat, config.width, config.height,
-			config.layers);
-	}
-
-	if (config.rendertarget)
-	{
-		if (!g_ogl_config.bSupportsTextureStorage)
-		{
-			for (u32 level = 0; level < config.levels; level++)
-			{
-				glTexImage3D(GL_TEXTURE_2D_ARRAY, level, entry->gl_format,
-					std::max(config.width >> level, 1u),
-					std::max(config.height >> level, 1u),
-					config.layers, 0, entry->gl_iformat, entry->gl_type, nullptr);
-			}
-		}
-		glGenFramebuffers(1, &entry->framebuffer);
-		FramebufferManager::SetFramebuffer(entry->framebuffer);
-		FramebufferManager::FramebufferTexture(GL_FRAMEBUFFER, (entry->gl_iformat == GL_DEPTH_COMPONENT) ? GL_DEPTH_ATTACHMENT : GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_ARRAY, entry->texture, 0);
-	}
-	else
-	{
-		if (config.materialmap)
-		{
-			glGenTextures(1, &entry->nrm_texture);			
-			glBindTexture(GL_TEXTURE_2D_ARRAY, entry->nrm_texture);
-			glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, config.levels - 1);
-			if (g_ogl_config.bSupportsTextureStorage)
-			{
-				glTexStorage3D(GL_TEXTURE_2D_ARRAY, config.levels, entry->gl_siformat, config.width, config.height,
-					config.layers);
-			}
-		}
-	}
-	TextureCache::SetStage();
-	return entry;
-}
-
-void TextureCache::TCacheEntry::CopyRectangleFromTexture(
-	const TCacheEntryBase* source,
-	const MathUtil::Rectangle<int> &srcrect,
-	const MathUtil::Rectangle<int> &dstrect)
-{
-	TCacheEntry* srcentry = (TCacheEntry*)source;
-	if (srcrect.GetWidth() == dstrect.GetWidth()
-		&& srcrect.GetHeight() == dstrect.GetHeight()
-		&& g_ogl_config.bSupportsCopySubImage)
-	{
-		glCopyImageSubData(
-			srcentry->texture,
-			GL_TEXTURE_2D_ARRAY,
-			0,
-			srcrect.left,
-			srcrect.top,
-			0,
-			texture,
-			GL_TEXTURE_2D_ARRAY,
-			0,
-			dstrect.left,
-			dstrect.top,
-			0,
-			dstrect.GetWidth(),
-			dstrect.GetHeight(),
-			srcentry->config.layers);
-		return;
-	}
-	else if (!framebuffer)
-	{
-		config.rendertarget = true;
-		glGenFramebuffers(1, &framebuffer);
-		FramebufferManager::SetFramebuffer(framebuffer);
-		FramebufferManager::FramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_ARRAY, texture, 0);
-	}
-	g_renderer->ResetAPIState();
-	FramebufferManager::SetFramebuffer(framebuffer);
-	glActiveTexture(g_ActiveConfig.backend_info.bSupportsBindingLayout ? GL_TEXTURE9 : GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D_ARRAY, srcentry->texture);
-	g_sampler_cache->BindLinearSampler(g_ActiveConfig.backend_info.bSupportsBindingLayout ? 9 : 0);
-	glViewport(dstrect.left, dstrect.top, dstrect.GetWidth(), dstrect.GetHeight());
-	s_ColorCopyProgram.Bind();
-	glUniform4f(s_ColorCopyPositionUniform,
-		float(srcrect.left),
-		float(srcrect.top),
-		float(srcrect.GetWidth()),
-		float(srcrect.GetHeight()));
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-	FramebufferManager::SetFramebuffer(0);
-	g_renderer->RestoreAPIState();
-}
-
-void TextureCache::TCacheEntry::Load(const u8* src, u32 width, u32 height,
-	u32 expanded_width, u32 level)
-{
-	glActiveTexture(GL_TEXTURE9);
-	glBindTexture(GL_TEXTURE_2D_ARRAY, texture);
-
-	u32 blocksize = (config.pcformat == PC_TEX_FMT_DXT1) ? 8u : 16u;
-	switch (config.pcformat)
-	{
-	case PC_TEX_FMT_DXT1:
-	case PC_TEX_FMT_DXT3:
-	case PC_TEX_FMT_DXT5:
-	{
-		if (expanded_width != width)
-		{
-			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-			glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_WIDTH, 4);
-			glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_HEIGHT, 4);
-			glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_DEPTH, 1);
-			glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_SIZE, blocksize);
-			glPixelStorei(GL_UNPACK_ROW_LENGTH, expanded_width);
-		}
-		if (g_ogl_config.bSupportsTextureStorage)
-		{
-			glCompressedTexSubImage3D(GL_TEXTURE_2D_ARRAY, level, 0, 0, 0,
-				width, height, 1, gl_format, ((width + 3) >> 2) * ((height + 3) >> 2) * blocksize, src);
-		}
-		else
-		{
-			glCompressedTexImage3D(GL_TEXTURE_2D_ARRAY, level, gl_format,
-				width, height, 1, 0, ((width + 3) >> 2) * ((height + 3) >> 2) * blocksize, src);
-		}
-		if (expanded_width != width)
-		{
-			glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-			glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_WIDTH, 0);
-			glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_HEIGHT, 0);
-			glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_DEPTH, 0);
-			glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_SIZE, 0);
-		}
-	}
-	break;
-	default:
-	{
-		if (expanded_width != width)
-			glPixelStorei(GL_UNPACK_ROW_LENGTH, expanded_width);
-		if (g_ogl_config.bSupportsTextureStorage)
-		{
-			glTexSubImage3D(GL_TEXTURE_2D_ARRAY, level, 0, 0, 0, width, height, 1, gl_format,
-				gl_type, src);
-		}
-		else
-		{
-			glTexImage3D(GL_TEXTURE_2D_ARRAY, level, gl_iformat, width, height, 1, 0, gl_format,
-				gl_type, src);
-		}
-		if (expanded_width != width)
-			glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-	}
-	break;
-	}
-	TextureCache::SetStage();
-}
-
-void TextureCache::TCacheEntry::LoadMaterialMap(const u8* src, u32 width, u32 height, u32 level)
-{
-	glActiveTexture(GL_TEXTURE9);
-	glBindTexture(GL_TEXTURE_2D_ARRAY, nrm_texture);
-
-	u32 blocksize = (config.pcformat == PC_TEX_FMT_DXT1) ? 8u : 16u;
-	switch (config.pcformat)
-	{
-	case PC_TEX_FMT_DXT1:
-	case PC_TEX_FMT_DXT3:
-	case PC_TEX_FMT_DXT5:
-	{
-		if (g_ogl_config.bSupportsTextureStorage)
-		{
-			glCompressedTexSubImage3D(GL_TEXTURE_2D_ARRAY, level, 0, 0, 0,
-				width, height, 1, gl_format, ((width + 3) >> 2) * ((height + 3) >> 2) * blocksize, src);
-		}
-		else
-		{
-			glCompressedTexImage3D(GL_TEXTURE_2D_ARRAY, level, gl_format,
-				width, height, 1, 0, ((width + 3) >> 2) * ((height + 3) >> 2) * blocksize, src);
-		}
-	}
-	break;
-	default:
-		if (g_ogl_config.bSupportsTextureStorage)
-		{
-			glTexSubImage3D(GL_TEXTURE_2D_ARRAY, level, 0, 0, 0, width, height, 1, gl_format,
-				gl_type, src);
-		}
-		else
-		{
-			glTexImage3D(GL_TEXTURE_2D_ARRAY, level, gl_format, width, height, 1, 0, gl_iformat,
-				gl_type, src);
-		}
-		break;
-	}
-	TextureCache::SetStage();
-}
-
-void TextureCache::TCacheEntry::FromRenderTarget(bool is_depth_copy, const EFBRectangle& srcRect,
+void TextureCache::CopyEFBToCacheEntry(TextureCacheBase::TCacheEntry* entry, bool is_depth_copy, const EFBRectangle& srcRect,
 	bool scaleByHalf, unsigned int cbufid, const float *colmat, u32 width, u32 height)
 {
 	g_renderer->ResetAPIState(); // reset any game specific settings
-
+	OGLTexture* tex = static_cast<OGLTexture*>(entry->texture.get());
 	// Make sure to resolve anything we need to read from.
 	const GLuint read_texture = is_depth_copy ?
 		FramebufferManager::ResolveAndGetDepthTarget(srcRect) :
 		FramebufferManager::ResolveAndGetRenderTarget(srcRect);
 
-	FramebufferManager::SetFramebuffer(framebuffer);
+	FramebufferManager::SetFramebuffer(tex->GetFramebuffer());
 
 	OpenGL_BindAttributelessVAO();
 	TargetRectangle R = g_renderer->ConvertEFBRectangle(srcRect);
@@ -531,7 +134,7 @@ void TextureCache::TCacheEntry::FromRenderTarget(bool is_depth_copy, const EFBRe
 		uniform_location = s_ColorMatrixPositionUniform;
 	}
 
-	
+
 	glUniform4f(uniform_location, static_cast<float>(R.left), static_cast<float>(R.top),
 		static_cast<float>(R.right), static_cast<float>(R.bottom));
 
@@ -550,10 +153,11 @@ void TextureCache::CopyEFB(u8* dst, const EFBCopyFormat& format, u32 native_widt
 		memory_stride, is_depth_copy, src_rect, scale_by_half);
 }
 
-bool TextureCache::Palettize(TCacheEntryBase* src_entry, const TCacheEntryBase* base_entry)
+bool TextureCache::Palettize(TCacheEntry* dst_entry, const TCacheEntry* base_entry)
 {
-	TextureCache::TCacheEntry* entry = (TextureCache::TCacheEntry*)src_entry;
-	u32 texformat = entry->format & 0xf;
+	OGLTexture* base_tex = static_cast<OGLTexture*>(base_entry->texture.get());
+	OGLTexture* dst_tex = static_cast<OGLTexture*>(dst_entry->texture.get());
+	u32 texformat = dst_entry->format & 0xf;
 	if (!g_ActiveConfig.backend_info.bSupportsPaletteConversion)
 	{
 		return false;
@@ -561,17 +165,17 @@ bool TextureCache::Palettize(TCacheEntryBase* src_entry, const TCacheEntryBase* 
 	g_renderer->ResetAPIState();
 
 	glActiveTexture(GL_TEXTURE9);
-	glBindTexture(GL_TEXTURE_2D_ARRAY, ((TextureCache::TCacheEntry*)base_entry)->texture);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, base_tex->GetRawTexIdentifier());
 	g_sampler_cache->BindLinearSampler(9);
 
-	FramebufferManager::SetFramebuffer(entry->framebuffer);
-	glViewport(0, 0, entry->config.width, entry->config.height);
+	FramebufferManager::SetFramebuffer(dst_tex->GetFramebuffer());
+	glViewport(0, 0, dst_tex->GetConfig().width, dst_tex->GetConfig().height);
 	s_palette_pixel_shader[s_last_TlutFormat].Bind();
 
 
 	glUniform1i(s_palette_buffer_offset_uniform[s_last_TlutFormat], s_last_pallet_Buffer / 2);
 	glUniform1f(s_palette_multiplier_uniform[s_last_TlutFormat], texformat == GX_TF_C4 || texformat == GX_TF_I4 ? 15.0f : 255.0f);
-	glUniform4f(s_palette_copy_position_uniform[s_last_TlutFormat], 0.0f, 0.0f, (float)entry->config.width, (float)entry->config.height);
+	glUniform4f(s_palette_copy_position_uniform[s_last_TlutFormat], 0.0f, 0.0f, (float)dst_tex->GetConfig().width, (float)dst_tex->GetConfig().height);
 
 	glActiveTexture(GL_TEXTURE10);
 	glBindTexture(GL_TEXTURE_BUFFER, s_palette_resolv_texture);
@@ -588,9 +192,6 @@ TextureCache::TextureCache()
 {
 	CompileShaders();
 
-	s_ActiveTexture = -1;
-	for (auto& gtex : s_Textures)
-		gtex = -1;
 	if (g_ActiveConfig.backend_info.bSupportsPaletteConversion)
 	{
 		s32 buffer_size_mb = (g_ActiveConfig.backend_info.bSupportsGPUTextureDecoding ? 32 : 1);
@@ -601,7 +202,7 @@ TextureCache::TextureCache()
 		// buffer here. This buffer is also used as storage for undecoded textures when compute shader
 		// texture decoding is enabled, in which case the requested size is 32MB.
 		glGetIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE, &max_buffer_size);
-		
+
 		// Clamp the buffer size to the maximum size that the driver supports.
 		buffer_size = std::min(buffer_size, max_buffer_size);
 
@@ -611,6 +212,15 @@ TextureCache::TextureCache()
 		glTexBuffer(GL_TEXTURE_BUFFER, GL_R16UI, s_palette_stream_buffer->m_buffer);
 		CreateTextureDecodingResources();
 	}
+}
+
+SHADER TextureCache::GetColorCopyProgram() const
+{
+	return s_ColorCopyProgram;
+}
+GLuint TextureCache::GetColorCopyPositionUniform() const
+{
+	return s_ColorCopyPositionUniform;
 }
 
 bool TextureCache::CompileShaders()
@@ -693,9 +303,9 @@ bool TextureCache::CompileShaders()
 	const char* prefix = (GProgram == nullptr) ? "f" : "v";
 	const char* depth_layer = (g_ActiveConfig.bStereoEFBMonoDepth) ? "0.0" : "f_uv0.z";
 	bool compiled = true;
-	compiled = compiled && ProgramShaderCache::CompileShader(s_ColorCopyProgram, StringFromFormat(VProgram, prefix, prefix).c_str(), pColorCopyProg, GProgram);
-	compiled = compiled && ProgramShaderCache::CompileShader(s_ColorMatrixProgram, StringFromFormat(VProgram, prefix, prefix).c_str(), pColorMatrixProg, GProgram);
-	compiled = compiled && ProgramShaderCache::CompileShader(s_DepthMatrixProgram, StringFromFormat(VProgram, prefix, prefix).c_str(), StringFromFormat(pDepthMatrixProg, depth_layer).c_str(), GProgram);
+	compiled = compiled && ProgramShaderCache::CompileShader(s_ColorCopyProgram, StringFromFormat(VProgram, prefix, prefix).c_str(), pColorCopyProg, GProgram).get();
+	compiled = compiled && ProgramShaderCache::CompileShader(s_ColorMatrixProgram, StringFromFormat(VProgram, prefix, prefix).c_str(), pColorMatrixProg, GProgram).get();
+	compiled = compiled && ProgramShaderCache::CompileShader(s_DepthMatrixProgram, StringFromFormat(VProgram, prefix, prefix).c_str(), StringFromFormat(pDepthMatrixProg, depth_layer).c_str(), GProgram).get();
 
 	s_ColorMatrixUniform = glGetUniformLocation(s_ColorMatrixProgram.glprogid, "colmat");
 	s_DepthMatrixUniform = glGetUniformLocation(s_DepthMatrixProgram.glprogid, "colmat");
@@ -792,7 +402,7 @@ bool TextureCache::CompileShaders()
 			s_palette_pixel_shader[GX_TL_IA8],
 			StringFromFormat(VProgram, prefix, prefix).c_str(),
 			("#define DECODE DecodePixel_IA8" + palette_shader).c_str(),
-			GProgram);
+			GProgram).get();
 		s_palette_buffer_offset_uniform[GX_TL_IA8] = glGetUniformLocation(s_palette_pixel_shader[GX_TL_IA8].glprogid, "texture_buffer_offset");
 		s_palette_multiplier_uniform[GX_TL_IA8] = glGetUniformLocation(s_palette_pixel_shader[GX_TL_IA8].glprogid, "multiplier");
 		s_palette_copy_position_uniform[GX_TL_IA8] = glGetUniformLocation(s_palette_pixel_shader[GX_TL_IA8].glprogid, "copy_position");
@@ -801,7 +411,7 @@ bool TextureCache::CompileShaders()
 			s_palette_pixel_shader[GX_TL_RGB565],
 			StringFromFormat(VProgram, prefix, prefix).c_str(),
 			("#define DECODE DecodePixel_RGB565" + palette_shader).c_str(),
-			GProgram);
+			GProgram).get();
 		s_palette_buffer_offset_uniform[GX_TL_RGB565] = glGetUniformLocation(s_palette_pixel_shader[GX_TL_RGB565].glprogid, "texture_buffer_offset");
 		s_palette_multiplier_uniform[GX_TL_RGB565] = glGetUniformLocation(s_palette_pixel_shader[GX_TL_RGB565].glprogid, "multiplier");
 		s_palette_copy_position_uniform[GX_TL_RGB565] = glGetUniformLocation(s_palette_pixel_shader[GX_TL_RGB565].glprogid, "copy_position");
@@ -810,7 +420,7 @@ bool TextureCache::CompileShaders()
 			s_palette_pixel_shader[GX_TL_RGB5A3],
 			StringFromFormat(VProgram, prefix, prefix).c_str(),
 			("#define DECODE DecodePixel_RGB5A3" + palette_shader).c_str(),
-			GProgram);
+			GProgram).get();
 		s_palette_buffer_offset_uniform[GX_TL_RGB5A3] = glGetUniformLocation(s_palette_pixel_shader[GX_TL_RGB5A3].glprogid, "texture_buffer_offset");
 		s_palette_multiplier_uniform[GX_TL_RGB5A3] = glGetUniformLocation(s_palette_pixel_shader[GX_TL_RGB5A3].glprogid, "multiplier");
 		s_palette_copy_position_uniform[GX_TL_RGB5A3] = glGetUniformLocation(s_palette_pixel_shader[GX_TL_RGB5A3].glprogid, "copy_position");
@@ -863,16 +473,6 @@ void TextureCache::LoadLut(u32 lutFmt, void* addr, u32 size)
 		s_last_TlutFormat = (TlutFormat)lutFmt;
 		s_last_pallet_Buffer = s_palette_stream_buffer->Stream(size, addr);
 	}
-}
-
-void TextureCache::DisableStage(u32 stage)
-{}
-
-void TextureCache::SetStage()
-{
-	// -1 is the initial value as we don't know which testure should be bound
-	if (s_ActiveTexture != (u32)-1)
-		glActiveTexture(GL_TEXTURE0 + s_ActiveTexture);
 }
 
 static const std::string decoding_vertex_shader = R"(
@@ -947,12 +547,12 @@ bool TextureCache::SupportsGPUTextureDecode(TextureFormat format, TlutFormat pal
 	return true;
 }
 
-bool TextureCache::TCacheEntry::DecodeTextureOnGPU(u32 dst_level, const u8* data,
-	u32 data_size, TextureFormat _format, u32 width, u32 height,
+bool TextureCache::DecodeTextureOnGPU(HostTexture* dst, u32 dst_level, const u8* data,
+	u32 data_size, TextureFormat tformat, u32 width, u32 height,
 	u32 aligned_width, u32 aligned_height, u32 row_stride,
 	const u8* palette, TlutFormat palette_format)
 {
-	auto key = std::make_pair(static_cast<u32>(_format), static_cast<u32>(palette_format));
+	auto key = std::make_pair(static_cast<u32>(tformat), static_cast<u32>(palette_format));
 	auto iter = s_texture_decoding_program_info.find(key);
 	if (iter == s_texture_decoding_program_info.end())
 		return false;
@@ -1015,15 +615,15 @@ bool TextureCache::TCacheEntry::DecodeTextureOnGPU(u32 dst_level, const u8* data
 
 	auto dispatch_groups =
 		TextureConversionShader::GetDispatchCount(info.base_info, aligned_width, aligned_height);
-	glBindImageTexture(0, texture, dst_level, GL_TRUE, 0,
+	glBindImageTexture(0, static_cast<OGLTexture*>(dst)->GetRawTexIdentifier(), dst_level, GL_TRUE, 0,
 		GL_WRITE_ONLY, GL_RGBA8);
 	glDispatchCompute(dispatch_groups.first, dispatch_groups.second, 1);
 	glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT);
 
-	TextureCache::SetStage();
+	OGLTexture::SetStage();
 
 #ifdef TIME_TEXTURE_DECODING
-	WARN_LOG(VIDEO, "Decode texture format %u size %ux%u took %.4fms", static_cast<u32>(_format),
+	WARN_LOG(VIDEO, "Decode texture format %u size %ux%u took %.4fms", static_cast<u32>(format),
 		width, height, timer.GetTimeMilliseconds());
 #endif
 	return true;

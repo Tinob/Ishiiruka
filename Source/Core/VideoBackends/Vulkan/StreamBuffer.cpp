@@ -54,14 +54,14 @@ bool StreamBuffer::ResizeBuffer(size_t size)
 {
 	// Create the buffer descriptor
 	VkBufferCreateInfo buffer_create_info = {
-			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,  // VkStructureType        sType
-			nullptr,                               // const void*            pNext
-			0,                                     // VkBufferCreateFlags    flags
-			static_cast<VkDeviceSize>(size),       // VkDeviceSize           size
-			m_usage,                               // VkBufferUsageFlags     usage
-			VK_SHARING_MODE_EXCLUSIVE,             // VkSharingMode          sharingMode
-			0,                                     // uint32_t               queueFamilyIndexCount
-			nullptr                                // const uint32_t*        pQueueFamilyIndices
+		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,  // VkStructureType        sType
+		nullptr,                               // const void*            pNext
+		0,                                     // VkBufferCreateFlags    flags
+		static_cast<VkDeviceSize>(size),       // VkDeviceSize           size
+		m_usage,                               // VkBufferUsageFlags     usage
+		VK_SHARING_MODE_EXCLUSIVE,             // VkSharingMode          sharingMode
+		0,                                     // uint32_t               queueFamilyIndexCount
+		nullptr                                // const uint32_t*        pQueueFamilyIndices
 	};
 
 	VkBuffer buffer = VK_NULL_HANDLE;
@@ -83,10 +83,10 @@ bool StreamBuffer::ResizeBuffer(size_t size)
 
 	// Allocate memory for backing this buffer
 	VkMemoryAllocateInfo memory_allocate_info = {
-			VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,  // VkStructureType    sType
-			nullptr,                                 // const void*        pNext
-			memory_requirements.size,                // VkDeviceSize       allocationSize
-			memory_type_index                        // uint32_t           memoryTypeIndex
+		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,  // VkStructureType    sType
+		nullptr,                                 // const void*        pNext
+		memory_requirements.size,                // VkDeviceSize       allocationSize
+		memory_type_index                        // uint32_t           memoryTypeIndex
 	};
 	VkDeviceMemory memory = VK_NULL_HANDLE;
 	res = vkAllocateMemory(g_vulkan_context->GetDevice(), &memory_allocate_info, nullptr, &memory);
@@ -239,7 +239,7 @@ void StreamBuffer::CommitMemory(size_t final_num_bytes)
 	if (!m_coherent_mapping)
 	{
 		VkMappedMemoryRange range = { VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE, nullptr, m_memory,
-																 m_current_offset, final_num_bytes };
+									 m_current_offset, final_num_bytes };
 		vkFlushMappedMemoryRanges(g_vulkan_context->GetDevice(), 1, &range);
 	}
 

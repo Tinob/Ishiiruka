@@ -26,7 +26,7 @@ public:
 		u32 num_blocks_y, u32 memory_stride, bool is_depth_copy, const EFBRectangle& src_rect,
 		bool scale_by_half);
 private:
-	struct  ComboKey{
+	struct  ComboKey {
 		EFBCopyFormat format;
 		bool scaled;
 		bool operator<(const ComboKey& rhs) const
@@ -50,10 +50,10 @@ private:
 	D3D::BufferPtr m_encodeParams;
 	D3D::SamplerStatePtr m_efbSampler;
 
-	
+
 
 	std::map<ComboKey, D3D::ComputeShaderPtr> m_encoding_shaders;
-	
+
 	class ShaderCacheInserter : public LinearDiskCacheReader<ComboKey, u8>
 	{
 	public:
@@ -64,7 +64,7 @@ private:
 		ShaderCacheInserter(CSTextureEncoder &encoder) : encoder_(encoder)
 		{}
 	private:
-		CSTextureEncoder& encoder_;
+		CSTextureEncoder & encoder_;
 	};
 	friend ShaderCacheInserter;
 

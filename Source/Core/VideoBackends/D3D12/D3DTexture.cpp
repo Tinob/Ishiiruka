@@ -3,7 +3,6 @@
 // Refer to the license.txt file included.
 #include <memory>
 
-#include "Common/CommonTypes.h"
 #include "Common/MsgHandler.h"
 #include "VideoBackends/D3D12/D3DBase.h"
 #include "VideoBackends/D3D12/D3DCommandListManager.h"
@@ -31,19 +30,50 @@ void CleanupPersistentD3DTextureResources()
 	s_texture_upload_stream_buffer.reset();
 }
 
-void ReplaceTexture2D(ID3D12Resource* texture12, const u8* buffer, DXGI_FORMAT fmt, unsigned int width, unsigned int height, unsigned int src_pitch, unsigned int level, D3D12_RESOURCE_STATES current_resource_state)
+void ReplaceTexture2D(ID3D12Resource* texture12, const u8* buffer, DXGI_FORMAT fmt, u32 width, u32 height, u32 src_pitch, u32 level, u32 layer, u32 miplevels, u32 layers, D3D12_RESOURCE_STATES current_resource_state)
 {
-	if (fmt == DXGI_FORMAT_R8G8B8A8_UNORM)
+	u32 pixelsize = 1;
+	bool compresed = false;
+	switch (fmt)
 	{
-		src_pitch *= 4;
+	case DXGI_FORMAT_B8G8R8A8_UNORM:
+	case DXGI_FORMAT_R8G8B8A8_UNORM:
+	case DXGI_FORMAT_R32_FLOAT:
+		pixelsize = 4;
+		break;
+	case DXGI_FORMAT_B5G6R5_UNORM:
+		pixelsize = 2;
+		break;
+	case DXGI_FORMAT_BC1_UNORM:
+		pixelsize = 8;
+		compresed = true;
+		break;
+	case DXGI_FORMAT_BC2_UNORM:
+	case DXGI_FORMAT_BC3_UNORM:
+	case DXGI_FORMAT_BC7_UNORM:
+		pixelsize = 16;
+		compresed = true;
+		break;
+	case DXGI_FORMAT_R16G16B16A16_FLOAT:
+		pixelsize = 8;
+		break;
+	case DXGI_FORMAT_R32G32B32A32_FLOAT:
+		pixelsize = 16;
+		break;
+	default:
+		break;
+	}
+	if (!compresed)
+	{
+		src_pitch *= pixelsize;
 	}
 	else
 	{
 		src_pitch = std::max(1u, (src_pitch + 3) >> 2);
-		src_pitch *= (fmt == DXGI_FORMAT_BC1_UNORM ? 8 : 16);
+		src_pitch *= pixelsize;
 		height = std::max(1u, (height + 3) >> 2);
 	}
-	const unsigned int upload_size = Common::AlignUpSizePow2(src_pitch, D3D12_TEXTURE_DATA_PITCH_ALIGNMENT) * height;
+	const u32 upload_size = Common::AlignUpSizePow2(src_pitch, D3D12_TEXTURE_DATA_PITCH_ALIGNMENT) * height;
 
 	ID3D12Resource* upload_buffer = nullptr;
 	size_t upload_buffer_offset = 0;
@@ -52,10 +82,12 @@ void ReplaceTexture2D(ID3D12Resource* texture12, const u8* buffer, DXGI_FORMAT f
 	{
 		// If the texture is too large to fit in the upload buffer, create a temporary buffer instead.
 		// This will only be the case for large (e.g. 8192x8192) textures from custom texture packs.
+		CD3DX12_HEAP_PROPERTIES hprops(D3D12_HEAP_TYPE_UPLOAD);
+		CD3DX12_RESOURCE_DESC rdesc = CD3DX12_RESOURCE_DESC::Buffer(upload_size);
 		CheckHR(D3D::device->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+			&hprops,
 			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Buffer(upload_size),
+			&rdesc,
 			D3D12_RESOURCE_STATE_GENERIC_READ,
 			nullptr,
 			IID_PPV_ARGS(&upload_buffer)));
@@ -78,14 +110,14 @@ void ReplaceTexture2D(ID3D12Resource* texture12, const u8* buffer, DXGI_FORMAT f
 		dest_data = reinterpret_cast<u8*>(s_texture_upload_stream_buffer->GetCPUAddressOfCurrentAllocation());
 	}
 
-	ResourceBarrier(current_command_list, texture12, current_resource_state, D3D12_RESOURCE_STATE_COPY_DEST, level);
+	ResourceBarrier(current_command_list, texture12, current_resource_state, D3D12_RESOURCE_STATE_COPY_DEST, D3D12CalcSubresource(level, layer, 0, miplevels, layers));
 
 	D3D12_PLACED_SUBRESOURCE_FOOTPRINT upload_footprint = {};
 	u32 upload_rows = 0;
 	u64 upload_row_size_in_bytes = 0;
 	u64 upload_total_bytes = 0;
-
-	D3D::device->GetCopyableFootprints(&texture12->GetDesc(), level, 1, upload_buffer_offset, &upload_footprint, &upload_rows, &upload_row_size_in_bytes, &upload_total_bytes);
+	auto tdesc = texture12->GetDesc();
+	D3D::device->GetCopyableFootprints(&tdesc, D3D12CalcSubresource(level, layer, 0, miplevels, layers), 1, upload_buffer_offset, &upload_footprint, &upload_rows, &upload_row_size_in_bytes, &upload_total_bytes);
 
 	const u8* src_data = reinterpret_cast<const u8*>(buffer);
 	if (src_pitch == upload_footprint.Footprint.RowPitch && src_pitch == upload_row_size_in_bytes)
@@ -103,8 +135,9 @@ void ReplaceTexture2D(ID3D12Resource* texture12, const u8* buffer, DXGI_FORMAT f
 			);
 		}
 	}
-	
-	D3D::current_command_list->CopyTextureRegion(&CD3DX12_TEXTURE_COPY_LOCATION(texture12, level), 0, 0, 0, &CD3DX12_TEXTURE_COPY_LOCATION(upload_buffer, upload_footprint), nullptr);
+	CD3DX12_TEXTURE_COPY_LOCATION dst = CD3DX12_TEXTURE_COPY_LOCATION(texture12, D3D12CalcSubresource(level, layer, 0, miplevels, layers));
+	CD3DX12_TEXTURE_COPY_LOCATION src = CD3DX12_TEXTURE_COPY_LOCATION(upload_buffer, upload_footprint);
+	D3D::current_command_list->CopyTextureRegion(&dst, 0, 0, 0, &src, nullptr);
 
 	// Release temporary buffer after commands complete.
 	// We block here because otherwise if there was a large number of texture uploads, we may run out of memory.
@@ -122,12 +155,12 @@ void ReplaceTexture2D(ID3D12Resource* texture12, const u8* buffer, DXGI_FORMAT f
 		// To grant that the texture data is in place to start rendering we have to execute the copy operation now
 		D3D::command_list_mgr->ExecuteQueuedWork();
 	}
-	ResourceBarrier(current_command_list, texture12, D3D12_RESOURCE_STATE_COPY_DEST, current_resource_state, level);
+	ResourceBarrier(current_command_list, texture12, D3D12_RESOURCE_STATE_COPY_DEST, current_resource_state, D3D12CalcSubresource(level, layer, 0, miplevels, layers));
 }
 
 }  // namespace
 
-D3DTexture2D* D3DTexture2D::Create(unsigned int width, unsigned int height, u32 bind, DXGI_FORMAT fmt, unsigned int levels, unsigned int slices, D3D12_SUBRESOURCE_DATA* data)
+D3DTexture2D* D3DTexture2D::Create(u32 width, u32 height, u32 bind, DXGI_FORMAT fmt, u32 levels, u32 slices, D3D12_SUBRESOURCE_DATA* data)
 {
 	ComPtr<ID3D12Resource> texture;
 
@@ -157,12 +190,12 @@ D3DTexture2D* D3DTexture2D::Create(unsigned int width, unsigned int height, u32 
 		optimized_clear_value.DepthStencil.Depth = 0.0f;
 		optimized_clear_value.DepthStencil.Stencil = 0;
 	}
-
+	CD3DX12_HEAP_PROPERTIES hprop(D3D12_HEAP_TYPE_DEFAULT);
 	CheckHR(
 		D3D::device->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+			&hprop,
 			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC(texdesc),
+			&texdesc,
 			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
 			&optimized_clear_value,
 			IID_PPV_ARGS(texture.GetAddressOf())
@@ -174,7 +207,7 @@ D3DTexture2D* D3DTexture2D::Create(unsigned int width, unsigned int height, u32 
 
 	if (data)
 	{
-		DX12::D3D::ReplaceTexture2D(texture.Get(), reinterpret_cast<const u8*>(data->pData), fmt, width, height, static_cast<unsigned int>(data->RowPitch), 0, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+		DX12::D3D::ReplaceTexture2D(texture.Get(), reinterpret_cast<const u8*>(data->pData), fmt, width, height, static_cast<u32>(data->RowPitch), 0, 0, levels, slices, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 	}
 	return ret;
 }
@@ -217,7 +250,7 @@ void D3DTexture2D::InitalizeSRV()
 
 	srv_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
-	D3D::gpu_descriptor_heap_mgr->Allocate(&m_srv_index, &m_srv_cpu, & m_srv_cpu_shadow, &m_srv_gpu);
+	D3D::gpu_descriptor_heap_mgr->Allocate(&m_srv_index, &m_srv_cpu, &m_srv_cpu_shadow, &m_srv_gpu);
 
 	D3D::device->CreateShaderResourceView(m_tex.Get(), &srv_desc, m_srv_cpu);
 	D3D::device->CreateShaderResourceView(m_tex.Get(), &srv_desc, m_srv_cpu_shadow);

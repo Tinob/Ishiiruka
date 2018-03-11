@@ -13,6 +13,7 @@
 #include "Core/HW/Memmap.h"
 
 #include "VideoBackends/OGL/FramebufferManager.h"
+#include "VideoBackends/OGL/OGLTexture.h"
 #include "VideoBackends/OGL/ProgramShaderCache.h"
 #include "VideoBackends/OGL/Render.h"
 #include "VideoBackends/OGL/SamplerCache.h"
@@ -98,7 +99,7 @@ static void CreatePrograms()
 		"	vec4 const3 = vec4(0.0625,0.5,0.0625,0.5);\n"
 		"	ocol0 = vec4(dot(c1,y_const),dot(c01,u_const),dot(c0,y_const),dot(c01, v_const)) + const3;\n"
 		"}\n";
-	ProgramShaderCache::CompileShader(s_rgbToYuyvProgram, VProgramRgbToYuyv, FProgramRgbToYuyv);
+	ProgramShaderCache::CompileShader(s_rgbToYuyvProgram, VProgramRgbToYuyv, FProgramRgbToYuyv).wait();
 	s_rgbToYuyvUniform_loc = glGetUniformLocation(s_rgbToYuyvProgram.glprogid, "copy_position");
 
 	/* TODO: Accuracy Improvements
@@ -133,7 +134,7 @@ static void CreatePrograms()
 		"		yComp + (2.018 * uComp),\n"
 		"		1.0);\n"
 		"}\n";
-	ProgramShaderCache::CompileShader(s_yuyvToRgbProgram, VProgramYuyvToRgb, FProgramYuyvToRgb);
+	ProgramShaderCache::CompileShader(s_yuyvToRgbProgram, VProgramYuyvToRgb, FProgramYuyvToRgb).wait();
 }
 
 static EncodingProgram& GetOrCreateEncodingShader(const EFBCopyFormat& format)
@@ -162,7 +163,7 @@ static EncodingProgram& GetOrCreateEncodingShader(const EFBCopyFormat& format)
 		"}\n";
 
 	EncodingProgram program;
-	if (!ProgramShaderCache::CompileShader(program.program, VProgram, shader))
+	if (!ProgramShaderCache::CompileShader(program.program, VProgram, shader).get())
 		PanicAlert("Failed to compile texture encoding shader.");
 
 	program.copy_position_uniform = glGetUniformLocation(program.program.glprogid, "position");
@@ -190,7 +191,7 @@ void Init()
 
 	glGenBuffers(1, &s_PBO);
 	glBindBuffer(GL_PIXEL_PACK_BUFFER, s_PBO);
-	glBufferData(GL_PIXEL_PACK_BUFFER, 1024*1024*4, nullptr, GL_STREAM_READ);
+	glBufferData(GL_PIXEL_PACK_BUFFER, 1024 * 1024 * 4, nullptr, GL_STREAM_READ);
 	glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 	CreatePrograms();
 }
@@ -305,7 +306,7 @@ void EncodeToRamYUYV(GLuint srcTexture, const TargetRectangle& sourceRc, u8* des
 	// Otherwise we get jaggies when a game uses yscaling (most PAL games)
 	EncodeToRamUsingShader(srcTexture, destAddr, dstWidth * 2, dstHeight, dstStride, true);
 	FramebufferManager::SetFramebuffer(0);
-	TextureCache::DisableStage(0);
+	OGLTexture::DisableStage(0);
 	g_renderer->RestoreAPIState();
 }
 

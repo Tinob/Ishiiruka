@@ -107,19 +107,23 @@ bool CompileShader(
 	const D3D_SHADER_MACRO* pDefines,
 	const char* pEntry, bool throwerror)
 {
-#if defined(_DEBUG) || defined(DEBUGFAST)
-	UINT flags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION | D3D10_SHADER_ENABLE_BACKWARDS_COMPATIBILITY;
-#else
 	UINT flags = D3DCOMPILE_SKIP_VALIDATION;
-	if (type != DX11::D3D::ShaderType::Hull)
+
+	if (g_ActiveConfig.bEnableShaderDebug)
 	{
-		flags |= D3D10_SHADER_ENABLE_BACKWARDS_COMPATIBILITY | D3DCOMPILE_OPTIMIZATION_LEVEL3;
+		flags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION | D3D10_SHADER_ENABLE_BACKWARDS_COMPATIBILITY;
 	}
 	else
 	{
-		flags |= D3DCOMPILE_SKIP_OPTIMIZATION;
+		if (type != DX11::D3D::ShaderType::Hull)
+		{
+			flags |= D3D10_SHADER_ENABLE_BACKWARDS_COMPATIBILITY | D3DCOMPILE_OPTIMIZATION_LEVEL3;
+		}
+		else
+		{
+			flags |= D3DCOMPILE_SKIP_OPTIMIZATION;
+		}
 	}
-#endif
 
 	char const *profile = nullptr;
 	char const *sufix = nullptr;

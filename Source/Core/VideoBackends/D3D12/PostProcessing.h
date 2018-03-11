@@ -47,7 +47,7 @@ private:
 class D3DPostProcessor final : public PostProcessor
 {
 public:
-	D3DPostProcessor() : PostProcessor(API_D3D11){};
+	D3DPostProcessor() : PostProcessor(API_D3D11) {};
 	~D3DPostProcessor();
 
 	bool Initialize() override;

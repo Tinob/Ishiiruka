@@ -74,13 +74,11 @@ public:
 	void Init() override;
 	void Shutdown() override;
 
-	void SetColorMask() override;
-	void SetBlendMode(bool forceUpdate) override;
+	void SetBlendingState(const BlendingState& state) override;
 	void SetScissorRect(const EFBRectangle& rc) override;
-	void SetGenerationMode() override;
-	void SetDepthMode() override;
-	void SetLogicOpMode() override;
-	void SetSamplerState(int stage, int texindex, bool custom_tex) override;
+	void SetRasterizationState(const RasterizationState& state) override;
+	void SetDepthState(const DepthState& state) override;
+	void SetSamplerState(u32 index, const SamplerState& state) override;
 	void SetInterlacingMode() override;
 	void SetViewport() override;
 
@@ -122,18 +120,16 @@ private:
 	};
 	bool m_bColorMaskChanged = true;
 	bool m_bBlendModeChanged = true;
-	bool m_bBlendModeForce = true;
 	bool m_bScissorRectChanged = true;
 	bool m_bViewPortChanged = true;
 	EFBRectangle m_ScissorRect{};
 	ViewPort m_viewport{};
 	bool m_bGenerationModeChanged = true;
 	bool m_bDepthModeChanged = true;
-	bool m_bLogicOpModeChanged = true;
 	bool m_bViewPortChangedRequested = true;
 
 	void _SetColorMask();
-	void _SetBlendMode(bool forceUpdate);
+	void _SetBlendMode();
 	void _SetScissorRect();
 	void _SetGenerationMode();
 	void _SetDepthMode();
@@ -150,7 +146,7 @@ private:
 		u32 fb_stride, u32 fb_height, float Gamma);
 	void DrawRealXFB(const TargetRectangle& target_rc, const XFBSourceBase* const* xfb_sources,
 		u32 xfb_count, GLuint dst_texture, const TargetSize& dst_size, u32 fb_width, u32 fb_stride, u32 fb_height);
-	void BlitScreen(const TargetRectangle& dst_rect, const TargetRectangle& src_rect, const  TargetSize& src_size, GLuint src_texture, 
+	void BlitScreen(const TargetRectangle& dst_rect, const TargetRectangle& src_rect, const  TargetSize& src_size, GLuint src_texture,
 		GLuint src_depth_texture, const TargetSize& dst_size, GLuint dst_texture, float gamma);
 
 	void FlushFrameDump();

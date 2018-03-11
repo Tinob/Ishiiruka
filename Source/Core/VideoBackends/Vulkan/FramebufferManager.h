@@ -5,11 +5,14 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 
 #include "Common/CommonTypes.h"
 #include "VideoBackends/Vulkan/Constants.h"
 #include "VideoBackends/Vulkan/TextureCache.h"
+#include "VideoBackends/Vulkan/VKTexture.h"
 #include "VideoCommon/FramebufferManagerBase.h"
+#include "VideoCommon/RenderState.h"
 
 namespace Vulkan
 {
@@ -18,6 +21,7 @@ class StateTracker;
 class StreamBuffer;
 class Texture2D;
 class VertexFormat;
+class VKTexture;
 class XFBSource;
 
 class FramebufferManager : public FramebufferManagerBase
@@ -32,14 +36,15 @@ public:
 
 	VkRenderPass GetEFBLoadRenderPass() const { return m_efb_load_render_pass; }
 	VkRenderPass GetEFBClearRenderPass() const { return m_efb_clear_render_pass; }
-	u32 GetEFBWidth() const { return m_efb_width; }
-	u32 GetEFBHeight() const { return m_efb_height; }
-	u32 GetEFBLayers() const { return m_efb_layers; }
-	VkSampleCountFlagBits GetEFBSamples() const { return m_efb_samples; }
 	Texture2D* GetEFBColorTexture() const { return m_efb_color_texture.get(); }
 	Texture2D* GetEFBDepthTexture() const { return m_efb_depth_texture.get(); }
 	VkFramebuffer GetEFBFramebuffer() const { return m_efb_framebuffer; }
-	void GetTargetSize(unsigned int* width, unsigned int* height) override;
+	u32 GetEFBWidth() const;
+	u32 GetEFBHeight() const;
+	u32 GetEFBLayers() const;
+	VkSampleCountFlagBits GetEFBSamples() const;
+	MultisamplingState GetEFBMultisamplingState() const;
+	void GetTargetSize(u32 *width, u32 *height);
 
 	std::unique_ptr<XFBSourceBase> CreateXFBSource(unsigned int target_width,
 		unsigned int target_height,
@@ -69,6 +74,7 @@ public:
 	// Returns the texture that the EFB color texture is resolved to when multisampling is enabled.
 	// Ensure ResolveEFBColorTexture is called before this method.
 	Texture2D* GetResolvedEFBColorTexture() const { return m_efb_resolve_color_texture.get(); }
+	Texture2D* GetResolvedEFBDepthTexture() const { return m_efb_resolve_depth_texture.get(); }
 	// Reads a framebuffer value back from the GPU. This may block if the cache is not current.
 	u32 PeekEFBColor(u32 x, u32 y);
 	float PeekEFBDepth(u32 x, u32 y);
@@ -122,11 +128,6 @@ private:
 	VkRenderPass m_efb_clear_render_pass = VK_NULL_HANDLE;
 	VkRenderPass m_depth_resolve_render_pass = VK_NULL_HANDLE;
 
-	u32 m_efb_width = 0;
-	u32 m_efb_height = 0;
-	u32 m_efb_layers = 1;
-	VkSampleCountFlagBits m_efb_samples = VK_SAMPLE_COUNT_1_BIT;
-
 	std::unique_ptr<Texture2D> m_efb_color_texture;
 	std::unique_ptr<Texture2D> m_efb_convert_color_texture;
 	std::unique_ptr<Texture2D> m_efb_depth_texture;
@@ -158,7 +159,7 @@ private:
 	std::unique_ptr<StreamBuffer> m_poke_vertex_stream_buffer;
 	std::vector<EFBPokeVertex> m_color_poke_vertices;
 	std::vector<EFBPokeVertex> m_depth_poke_vertices;
-	VkPrimitiveTopology m_poke_primitive_topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	PrimitiveType m_poke_primitive = PrimitiveType::TriangleStrip;
 
 	VkRenderPass m_copy_color_render_pass = VK_NULL_HANDLE;
 	VkRenderPass m_copy_depth_render_pass = VK_NULL_HANDLE;
@@ -175,10 +176,11 @@ private:
 class XFBSource final : public XFBSourceBase
 {
 public:
-	explicit XFBSource(std::unique_ptr<TextureCache::TCacheEntry> texture);
+	explicit XFBSource(std::unique_ptr<HostTexture> texture);
 	~XFBSource();
 
-	TextureCache::TCacheEntry* GetTexture() const { return m_texture.get(); }
+	VKTexture* GetTexture() const { return static_cast<VKTexture*>(m_texture.get()); }
+	VKTexture* GetDepthTexture() const { return static_cast<VKTexture*>(m_depth_texture.get()); }
 	// Guest -> GPU EFB Textures
 	void DecodeToTexture(u32 xfb_addr, u32 fb_width, u32 fb_height) override;
 
@@ -186,7 +188,8 @@ public:
 	void CopyEFB(float gamma) override;
 
 private:
-	std::unique_ptr<TextureCache::TCacheEntry> m_texture;
+	std::unique_ptr<HostTexture> m_texture;
+	std::unique_ptr<HostTexture> m_depth_texture;
 };
 
 }  // namespace Vulkan

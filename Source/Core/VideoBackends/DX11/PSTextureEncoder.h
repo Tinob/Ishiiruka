@@ -24,7 +24,7 @@ public:
 		bool is_depth_copy, const EFBRectangle& src_rect, bool scale_by_half);
 
 private:
-	ID3D11PixelShader* GetEncodingPixelShader(const EFBCopyFormat& format);
+	ID3D11PixelShader * GetEncodingPixelShader(const EFBCopyFormat& format);
 	ID3D11PixelShader* InsertShader(const EFBCopyFormat &key, u8 const *data, u32 sz);
 	bool m_ready;
 
@@ -45,7 +45,7 @@ private:
 		ShaderCacheInserter(PSTextureEncoder &encoder) : encoder_(encoder)
 		{}
 	private:
-		PSTextureEncoder& encoder_;
+		PSTextureEncoder & encoder_;
 	};
 	friend ShaderCacheInserter;
 

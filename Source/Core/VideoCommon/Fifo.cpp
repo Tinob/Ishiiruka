@@ -463,7 +463,7 @@ static int RunGpuOnCpu(int ticks)
 			ReadDataFromFifo(fifo.CPReadPointer);
 			u32 cycles = 0;
 			g_VideoData.SetReadPosition(s_video_buffer_read_ptr, s_video_buffer_write_ptr);
-				s_video_buffer_read_ptr = OpcodeDecoder::Run(g_VideoData, &cycles);
+			s_video_buffer_read_ptr = OpcodeDecoder::Run(g_VideoData, &cycles);
 			available_ticks -= cycles;
 		}
 

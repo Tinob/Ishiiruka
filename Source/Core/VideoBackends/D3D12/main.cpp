@@ -115,6 +115,10 @@ void VideoBackend::InitBackendInfo()
 	g_Config.backend_info.bSupportsReversedDepthRange = true;
 	g_Config.backend_info.bSupportsInternalResolutionFrameDumps = true;
 	g_Config.backend_info.bSupportsAsyncShaderCompilation = true;
+	g_Config.backend_info.bSupportsFragmentStoresAndAtomics = true;
+	g_Config.backend_info.bSupportsBitfield = false;
+	g_Config.backend_info.bSupportsDynamicSamplerIndexing = false;
+	g_Config.backend_info.bSupportsUberShaders = true;
 	IDXGIFactory* factory;
 	IDXGIAdapter* ad;
 	hr = create_dxgi_factory(__uuidof(IDXGIFactory), (void**)&factory);
@@ -165,7 +169,7 @@ bool VideoBackend::Initialize(void *window_handle)
 {
 	if (window_handle == nullptr)
 		return false;
-	
+
 	InitBackendInfo();
 	InitializeShared();
 
@@ -209,7 +213,7 @@ void VideoBackend::Shutdown()
 	g_vertex_manager.reset();
 	g_texture_cache.reset();
 	g_renderer.reset();
-	
+
 	D3D::WaitForOutstandingRenderingToComplete(true);
 
 	D3D::Close();

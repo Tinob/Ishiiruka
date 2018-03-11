@@ -222,6 +222,30 @@ wxTRANSLATE("Round 2D vertices to whole pixels.  Fixes some "
 	"games at higher internal resolutions.  This setting is disabled and turned off "
 	"at 1x IR.\n\nIf unsure, leave this unchecked.");
 
+static wxString ubershader_desc =
+wxTRANSLATE("Disabled: Ubershaders are never used. Stuttering will occur during shader "
+	"compilation, but GPU demands are low. Recommended for low-end hardware.\n\n"
+	"Hybrid: Ubershaders will be used to prevent stuttering during shader "
+	"compilation, but traditional shaders will be used when they will not cause "
+	"stuttering. Balances performance and smoothness.\n\n"
+	"Exclusive: Ubershaders will always be used. Only recommended for high-end "
+	"systems.");
+
+static wxString filteringmode_desc =
+wxTRANSLATE("Disabled: Filtering is disabled.\n\n"
+	"Accurate: Try to respect native resolution filtering to avoid issues.\n\n"
+	"Normal: Apply filtering as configured by the game but with enchanged efb resolution as the target quality.\n\n"
+	"Forced: Apply filtering even if the game has it disabled. Can cause issues in some games.");
+
+static wxString cullmode_desc =
+wxTRANSLATE("Native: Culling is applyed as configured by the game.\n\n"
+	"Disabled: Culling is disabled.\n\n"
+	"Disabled Except ALL: Disable culling exept in the case that the game completly discards geometry.\n\n"
+	"Front No Blending: Apply front face culling when the game has no blending enabled.\n\n"
+	"Front: Apply front face culling.\n\n"
+	"Back No Blending: Apply back face culling when the game has no blending enabled.\n\n"
+	"Back: Apply back face culling.");
+
 // Search for available resolutions - TODO: Move to Common?
 static  wxArrayString GetListOfResolutions()
 {
@@ -289,8 +313,10 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
 		wxDefaultPosition, wxDefaultSize)
 	, vconfig(g_Config)
 {
-	//if (File::Exists(File::GetUserPath(D_CONFIG_IDX) + "GFX.ini"))
-	vconfig.Load(File::GetUserPath(D_CONFIG_IDX) + "GFX.ini");
+	// We don't need to load the config if the core is running, since it would have been done
+	// at startup time already.
+	if (!Core::IsRunning())
+		vconfig.Load(File::GetUserPath(D_CONFIG_IDX) + "GFX.ini");
 
 	Bind(wxEVT_UPDATE_UI, &VideoConfigDiag::OnUpdateUI, this);
 
@@ -473,15 +499,66 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
 			szr_enh->AddSpacer(0);
 		}
 
+		// ubershaders
+		if (vconfig.backend_info.bSupportsUberShaders)
+		{
+			const std::array<wxString, 3> mode_choices = { { _("Disabled"), _("Hybrid"), _("Exclusive") } };
+
+			wxChoice* const choice_mode =
+				new wxChoice(page_enh, wxID_ANY, wxDefaultPosition, wxDefaultSize,
+					static_cast<int>(mode_choices.size()), mode_choices.data());
+			RegisterControl(choice_mode, wxGetTranslation(ubershader_desc));
+			szr_enh->Add(new wxStaticText(page_enh, wxID_ANY, _("Ubershaders:")), 1, wxALIGN_CENTER_VERTICAL, 0);
+			szr_enh->Add(choice_mode, 1, wxEXPAND | wxRIGHT);
+
+			// Determine ubershader mode
+			choice_mode->Bind(wxEVT_CHOICE, &VideoConfigDiag::OnUberShaderModeChanged, this);
+			if (vconfig.bDisableSpecializedShaders)
+				choice_mode->SetSelection(2);
+			else if (vconfig.bBackgroundShaderCompiling)
+				choice_mode->SetSelection(1);
+			else
+				choice_mode->SetSelection(0);
+
+			szr_enh->AddSpacer(0);
+		}
+
+		{
+			const std::array<wxString, 4> mode_choices = { { _("Disabled"), _("Native"), _("Normal"), _("Forced") } };
+
+			wxChoice* const choice_mode =
+				new wxChoice(page_enh, wxID_ANY, wxDefaultPosition, wxDefaultSize,
+					static_cast<int>(mode_choices.size()), mode_choices.data());
+			RegisterControl(choice_mode, wxGetTranslation(filteringmode_desc));
+			szr_enh->Add(new wxStaticText(page_enh, wxID_ANY, _("Filtering:")), 1, wxALIGN_CENTER_VERTICAL, 0);
+			szr_enh->Add(choice_mode, 1, wxEXPAND | wxRIGHT);
+
+			choice_mode->Bind(wxEVT_CHOICE, &VideoConfigDiag::OnFilteringModeChanged, this);
+			choice_mode->SetSelection(vconfig.eFilteringMode);
+			szr_enh->AddSpacer(0);
+		}
+
+		{
+			const std::array<wxString, 7> mode_choices = { { _("Native"), _("Disabled"), _("Disabled Except All") , _("Front No Blending"), _("Front"), _("Back No Blending"), _("Back") } };
+
+			wxChoice* const choice_mode =
+				new wxChoice(page_enh, wxID_ANY, wxDefaultPosition, wxDefaultSize,
+					static_cast<int>(mode_choices.size()), mode_choices.data());
+			RegisterControl(choice_mode, wxGetTranslation(cullmode_desc));
+			szr_enh->Add(new wxStaticText(page_enh, wxID_ANY, _("Culling:")), 1, wxALIGN_CENTER_VERTICAL, 0);
+			szr_enh->Add(choice_mode, 1, wxEXPAND | wxRIGHT);
+
+			choice_mode->Bind(wxEVT_CHOICE, &VideoConfigDiag::OnCullModeChanged, this);
+			choice_mode->SetSelection(vconfig.eCullMode);
+			szr_enh->AddSpacer(0);
+		}
+
 		// Scaled copy, PL, Bilinear filter, 3D Vision
 		szr_enh->Add(CreateCheckBox(page_enh, _("Scaled EFB Copy"), (scaled_efb_copy_desc), vconfig.bCopyEFBScaled));
 		if (vconfig.backend_info.bSupportsScaling)
 		{
 			szr_enh->Add(CreateCheckBox(page_enh, _("Use Scaling Filter"), (Use_Scaling_filter_desc), vconfig.bUseScalingFilter));
 		}
-		szr_enh->Add(CreateCheckBox(page_enh, _("Force Texture Filtering"), (force_filtering_desc), vconfig.bForceFiltering));
-		szr_enh->Add(CreateCheckBox(page_enh, _("Disable Texture Filtering"), (disable_filtering_desc), vconfig.bDisableTextureFiltering));
-
 		szr_enh->Add(CreateCheckBox(page_enh, _("Widescreen Hack"), (ws_hack_desc), vconfig.bWidescreenHack));
 		szr_enh->Add(CreateCheckBox(page_enh, _("Disable Fog"), (disable_fog_desc), vconfig.bDisableFog));
 		szr_enh->Add(CreateCheckBox(page_enh, _("Force 24-bit Color"), (true_color_desc), vconfig.bForceTrueColor));
@@ -883,16 +960,13 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
 		// - other hacks
 		{
 			wxGridSizer* const szr_other = new wxGridSizer(2, 5, 5);
-			// Disable while i fix opencl
-			//szr_other->Add(CreateCheckBox(page_hacks, _("OpenCL Texture Decoder"), (opencl_desc), vconfig.bEnableOpenCL));	
+			// Disable while i fix opencl			
 			szr_other->Add(CreateCheckBox(page_hacks, _("Fast Depth Calculation"), (fast_depth_calc_desc), vconfig.bFastDepthCalc));
 			vertex_rounding_checkbox =
 				CreateCheckBox(page_hacks, _("Vertex Rounding"), wxGetTranslation(vertex_rounding_desc),
 					vconfig.bVertexRounding);
 			szr_other->Add(vertex_rounding_checkbox);
 			szr_other->Add(Forced_LogicOp = CreateCheckBox(page_hacks, _("Force Logic Blending"), (forcedLogivOp_desc), vconfig.bForceLogicOpBlend));
-			//szr_other->Add(Predictive_FIFO = CreateCheckBox(page_hacks, _("Predictive FIFO"), (predictiveFifo_desc), vconfig.bPredictiveFifo));
-			//szr_other->Add(Wait_For_Shaders = CreateCheckBox(page_hacks, _("Wait for Shader Compilation"), (waitforshadercompilation_desc), vconfig.bWaitForShaderCompilation));
 			szr_other->Add(Async_Shader_compilation = CreateCheckBox(page_hacks, _("Full Async Shader Compilation"), (fullAsyncShaderCompilation_desc), vconfig.bFullAsyncShaderCompilation));
 			szr_other->Add(GPU_Texture_decoding = CreateCheckBox(page_hacks, _("GPU Texture Decoding"), (compute_texture_decoding_desc), vconfig.bEnableGPUTextureDecoding));
 			szr_other->Add(Compute_Shader_encoding = CreateCheckBox(page_hacks, _("Compute Texture Encoding"), (Compute_texture_encoding_desc), vconfig.bEnableComputeTextureEncoding));
@@ -938,7 +1012,6 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
 			wxGridSizer* const szr_utility = new wxGridSizer(2, 5, 5);
 
 			szr_utility->Add(CreateCheckBox(page_advanced, _("Dump Textures"), (dump_textures_desc), vconfig.bDumpTextures));
-			szr_utility->Add(CreateCheckBox(page_advanced, _("Dump Vertex Loaders"), (dump_VertexTranslators_desc), vconfig.bDumpVertexLoaders));
 			szr_utility->Add(CreateCheckBox(page_advanced, _("Load Custom Textures"), (load_hires_textures_desc), vconfig.bHiresTextures));
 			cache_hires_textures = CreateCheckBox(page_advanced, _("Prefetch Custom Textures"), cache_hires_textures_desc, vconfig.bCacheHiresTextures);
 			hires_texturemaps = CreateCheckBox(page_advanced, _("Load Custom Material Maps"), load_hires_material_maps_desc, vconfig.bHiresMaterialMaps);
@@ -967,7 +1040,6 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
 		{
 			wxGridSizer* const szr_misc = new wxGridSizer(2, 5, 5);
 
-			szr_misc->Add(CreateCheckBox(page_advanced, _("Show Input Display"), (show_input_display_desc), vconfig.bShowInputDisplay));
 			szr_misc->Add(CreateCheckBox(page_advanced, _("Crop"), (crop_desc), vconfig.bCrop));
 
 			// Progressive Scan
@@ -1638,9 +1710,9 @@ void VideoConfigDiag::PopulateStereoShaders()
 
 void VideoConfigDiag::PopulateAAList()
 {
-	const std::vector<int>& aa_modes = vconfig.backend_info.AAModes;
+	const auto& aa_modes = vconfig.backend_info.AAModes;
 	const bool supports_ssaa = vconfig.backend_info.bSupportsSSAA;
-	for (int mode : aa_modes)
+	for (auto mode : aa_modes)
 	{
 		if (mode == 1)
 		{
@@ -1661,7 +1733,7 @@ void VideoConfigDiag::PopulateAAList()
 
 	if (supports_ssaa)
 	{
-		for (int mode : aa_modes)
+		for (auto mode : aa_modes)
 		{
 			if (mode != 1)
 				choice_aamode->AppendString(std::to_string(mode) + "x SSAA");
@@ -1685,8 +1757,28 @@ void VideoConfigDiag::OnAAChanged(wxCommandEvent& ev)
 {
 	int mode = ev.GetInt();
 	ev.Skip();
-	const std::vector<int>& aa_modes = vconfig.backend_info.AAModes;
+	const std::vector<u32>& aa_modes = vconfig.backend_info.AAModes;
 	vconfig.bSSAA = mode >= aa_modes.size();
 	mode -= vconfig.bSSAA * (aa_modes.size() - 1);
 	vconfig.iMultisamples = aa_modes[mode];
+}
+
+void VideoConfigDiag::OnUberShaderModeChanged(wxCommandEvent& ev)
+{
+	// 0: No ubershaders
+	// 1: Hybrid ubershaders
+	// 2: Only ubershaders
+	int mode = ev.GetInt();
+	vconfig.bBackgroundShaderCompiling = mode == 1;
+	vconfig.bDisableSpecializedShaders = mode == 2;
+}
+
+void VideoConfigDiag::OnFilteringModeChanged(wxCommandEvent& ev)
+{
+	vconfig.eFilteringMode = static_cast<FilteringMode>(ev.GetInt());
+}
+
+void VideoConfigDiag::OnCullModeChanged(wxCommandEvent& ev)
+{
+	vconfig.eCullMode = static_cast<HostCullMode>(ev.GetInt());
 }
