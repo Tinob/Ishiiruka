@@ -65,99 +65,6 @@ struct codeentry
 };
 }
 
-static std::string To_HexString(u32 in)
-{
-  char hexString[2 * sizeof(u32) + 8];
-  sprintf(hexString, "0x%08xu", in);
-  return std::string(hexString);
-}
-
-static void DumpLoadersCode()
-{
-  std::vector<codeentry> entries;
-  for (VertexLoaderMap::const_iterator iter = s_vertex_loader_map.begin(); iter != s_vertex_loader_map.end(); ++iter)
-  {
-    if (!iter->second->IsPrecompiled())
-    {
-      codeentry e;
-      e.conf.append(To_HexString(iter->first.GetElement(0)));
-      e.conf.append(", ");
-      e.conf.append(To_HexString(iter->first.GetElement(1)));
-      e.conf.append(", ");
-      e.conf.append(To_HexString(iter->first.GetElement(2)));
-      e.conf.append(", ");
-      e.conf.append(To_HexString(iter->first.GetElement(3)));
-      e.name = iter->second->GetName();
-      e.num_verts = iter->second->m_numLoadedVertices;
-      e.hash = std::to_string(iter->first.GetHash());
-      entries.push_back(e);
-    }
-  }
-  if (entries.size() == 0)
-  {
-    return;
-  }
-  std::string filename = StringFromFormat("%sG_%s_pvt.h", File::GetUserPath(D_DUMP_IDX).c_str(), last_game_code.c_str());
-  std::string header;
-  header.append("// Copyright 2013 Dolphin Emulator Project\n");
-  header.append("// Licensed under GPLv2+\n");
-  header.append("// Refer to the license.txt file included.\n");
-  header.append("// Added for Ishiiruka by Tino\n");
-  header.append("#pragma once\n");
-  header.append("#include <map>\n");
-  header.append("#include \"VideoCommon/NativeVertexFormat.h\"\n");
-  header.append("class G_");
-  header.append(last_game_code);
-  header.append("_pvt\n{\npublic:\n");
-  header.append("static void Initialize(std::map<u64, TCompiledLoaderFunction> &pvlmap);\n");
-  header.append("};\n");
-  std::ofstream headerfile(filename);
-  headerfile << header;
-  headerfile.close();
-  filename = StringFromFormat("%sG_%s_pvt.cpp", File::GetUserPath(D_DUMP_IDX).c_str(), last_game_code.c_str());
-  sort(entries.begin(), entries.end());
-  std::string sourcecode;
-  sourcecode.append("#include \"VideoCommon/G_");
-  sourcecode.append(last_game_code);
-  sourcecode.append("_pvt.h\"\n");
-  sourcecode.append("#include \"VideoCommon/VertexLoader_Template.h\"\n\n");
-  sourcecode.append("\n\nvoid G_");
-  sourcecode.append(last_game_code);
-  sourcecode.append("_pvt::Initialize(std::map<u64, TCompiledLoaderFunction> &pvlmap)\n{\n");
-  for (std::vector<codeentry>::const_iterator iter = entries.begin(); iter != entries.end(); ++iter)
-  {
-    sourcecode.append("\t// ");
-    sourcecode.append(iter->name);
-    sourcecode.append("\n// num_verts= ");
-    sourcecode.append(std::to_string(iter->num_verts));
-    sourcecode.append("#if _M_SSE >= 0x301\n");
-    sourcecode.append("\tif (cpu_info.bSSSE3)\n");
-    sourcecode.append("\t{\n");
-    sourcecode.append("\t\tpvlmap[");
-    sourcecode.append(iter->hash);
-    sourcecode.append("] = ");
-    sourcecode.append("TemplatedLoader");
-    sourcecode.append("<0x301, ");
-    sourcecode.append(iter->conf);
-    sourcecode.append(">;\n");
-    sourcecode.append("\t}\n\telse\n");
-    sourcecode.append("#endif\n");
-    sourcecode.append("\t{\n");
-    sourcecode.append("\t\tpvlmap[");
-    sourcecode.append(iter->hash);
-    sourcecode.append("] = ");
-    sourcecode.append("TemplatedLoader");
-    sourcecode.append("<0, ");
-    sourcecode.append(iter->conf);
-    sourcecode.append(">;\n");
-    sourcecode.append("\t}\n");
-  }
-  sourcecode.append("}\n");
-  std::ofstream out(filename);
-  out << sourcecode;
-  out.close();
-}
-
 void AppendListToString(std::string *dest)
 {
   std::vector<entry> entries;
@@ -189,8 +96,6 @@ void Init()
 
 void Shutdown()
 {
-  if (s_vertex_loader_map.size() > 0 && g_ActiveConfig.bDumpVertexLoaders)
-    DumpLoadersCode();
   s_vertex_loader_map.clear();
   s_native_vertex_map.clear();
 }

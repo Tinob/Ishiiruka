@@ -97,8 +97,7 @@ void VideoConfig::Refresh()
   bDumpTextures = Config::Get(Config::GFX_DUMP_TEXTURES);
   bHiresTextures = Config::Get(Config::GFX_HIRES_TEXTURES);
   bHiresMaterialMaps = Config::Get(Config::GFX_HIRES_MATERIAL_MAPS);
-  bHiresMaterialMapsBuild = Config::Get(Config::GFX_HIRES_MATERIAL_MAPS_BUILD);
-  bConvertHiresTextures = Config::Get(Config::GFX_CONVERT_HIRES_TEXTURES);
+  bHiresMaterialMapsBuild = Config::Get(Config::GFX_HIRES_MATERIAL_MAPS_BUILD);  
   bCacheHiresTextures = Config::Get(Config::GFX_CACHE_HIRES_TEXTURES);
   bDumpEFBTarget = Config::Get(Config::GFX_DUMP_EFB_TARGET);
   bDumpFramesAsImages = Config::Get(Config::GFX_DUMP_FRAMES_AS_IMAGES);

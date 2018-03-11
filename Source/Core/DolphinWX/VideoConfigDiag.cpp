@@ -922,8 +922,6 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
           Config::GFX_HACK_VERTEX_ROUDING);
       szr_other->Add(vertex_rounding_checkbox);
       szr_other->Add(Forced_LogicOp = CreateCheckBox(page_hacks, _("Force Logic Blending"), (forcedLogivOp_desc), Config::GFX_HACK_FORCE_LOGICOP_BLEND));
-      //szr_other->Add(Predictive_FIFO = CreateCheckBox(page_hacks, _("Predictive FIFO"), (predictiveFifo_desc), vconfig.bPredictiveFifo));
-      //szr_other->Add(Wait_For_Shaders = CreateCheckBox(page_hacks, _("Wait for Shader Compilation"), (waitforshadercompilation_desc), vconfig.bWaitForShaderCompilation));
       szr_other->Add(Async_Shader_compilation = CreateCheckBox(page_hacks, _("Full Async Shader Compilation"), (fullAsyncShaderCompilation_desc), Config::GFX_HACK_FULL_ASYNC_SHADER_COMPILATION));
       szr_other->Add(GPU_Texture_decoding = CreateCheckBox(page_hacks, _("GPU Texture Decoding"), (compute_texture_decoding_desc), Config::GFX_ENABLE_GPU_TEXTURE_DECODING));
       szr_other->Add(Compute_Shader_encoding = CreateCheckBox(page_hacks, _("Compute Texture Encoding"), (Compute_texture_encoding_desc), Config::GFX_ENABLE_COMPUTE_TEXTURE_ENCODING));

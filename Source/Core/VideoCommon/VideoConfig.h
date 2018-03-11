@@ -163,12 +163,10 @@ struct VideoConfig final
   bool bDisableFog;
 
   // Utility
-  bool bDumpTextures;
-  bool bDumpVertexLoaders;
+  bool bDumpTextures;  
   bool bHiresTextures;
   bool bHiresMaterialMaps;
   bool bHiresMaterialMapsBuild;
-  bool bConvertHiresTextures;
   bool bCacheHiresTextures;
   bool bDumpEFBTarget;
   bool bDumpFramesAsImages;

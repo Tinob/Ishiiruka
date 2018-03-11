@@ -41,8 +41,6 @@ const ConfigInfo<bool> GFX_DUMP_TEXTURES{{System::GFX, "Settings", "DumpTextures
 const ConfigInfo<bool> GFX_HIRES_TEXTURES{{System::GFX, "Settings", "HiresTextures"}, false};
 const ConfigInfo<bool> GFX_HIRES_MATERIAL_MAPS{ { System::GFX, "Settings", "HiresMaterialMaps" }, false };
 const ConfigInfo<bool> GFX_HIRES_MATERIAL_MAPS_BUILD{ { System::GFX, "Settings", "HiresMaterialMapsBuild" }, false };
-const ConfigInfo<bool> GFX_CONVERT_HIRES_TEXTURES{{System::GFX, "Settings", "ConvertHiresTextures"},
-                                                  false};
 const ConfigInfo<bool> GFX_CACHE_HIRES_TEXTURES{{System::GFX, "Settings", "CacheHiresTextures"},
                                                 false};
 const ConfigInfo<bool> GFX_DUMP_EFB_TARGET{{System::GFX, "Settings", "DumpEFBTarget"}, false};
