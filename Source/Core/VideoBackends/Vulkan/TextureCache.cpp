@@ -159,7 +159,8 @@ void TextureCache::CopyEFB(u8* dst, const EFBCopyFormat& format, u32 native_widt
 
 HostTextureFormat TextureCache::GetHostTextureFormat(const s32 texformat, const TlutFormat tlutfmt, u32 width, u32 height)
 {
-	HostTextureFormat pcfmt = TexDecoder::GetHostTextureFormat(texformat, tlutfmt, true);
+	const bool compressed_supported = ((width & 3) == 0) && ((height & 3) == 0);
+	HostTextureFormat pcfmt = TexDecoder::GetHostTextureFormat(texformat, tlutfmt, compressed_supported);
 	pcfmt = !g_ActiveConfig.backend_info.bSupportedFormats[pcfmt] ? PC_TEX_FMT_RGBA32 : pcfmt;
 	return pcfmt;
 }
