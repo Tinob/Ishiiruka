@@ -345,7 +345,7 @@ void Interpreter::dcbi(UGeckoInstruction _inst)
 	// detects this and
 	// enables the DMA to complete instantly before the invalid data is written. Resident Evil 2 & 3
 	// trigger this.
-	if (SConfig::GetInstance().bInstantDMAHack)
+	if (SConfig::GetInstance().bInstantDMAHackEnabled)
 	{
 		DSP::FlushInstantDMA(address);
 	}

@@ -396,7 +396,8 @@ bool BootCore(const std::string& _rFilename)
 	{
 		SConfig::GetInstance().SaveSettingsToSysconf();
 	}
-
+	auto gameid = StartUp.GetGameID();
+	StartUp.bInstantDMAHackEnabled = StartUp.bInstantDMAHack && (StringStartsWith(gameid, "GHA") || StringStartsWith(gameid, "GLE"));
 	// Run the game
 	// Init the core
 	if (!Core::Init())

@@ -530,7 +530,7 @@ static void Do_ARAM_DMA()
 	int ticksToTransfer = (g_arDMA.Cnt.count / 32) * 246;
 
 	// This is a huge hack that appears to be here only to fix Resident Evil 2/3
-	if (instant_dma && SConfig::GetInstance().bInstantDMAHack)
+	if (instant_dma && SConfig::GetInstance().bInstantDMAHackEnabled)
 		ticksToTransfer = std::min(ticksToTransfer, 100);
 
 	CoreTiming::ScheduleEvent(ticksToTransfer, et_CompleteARAM);

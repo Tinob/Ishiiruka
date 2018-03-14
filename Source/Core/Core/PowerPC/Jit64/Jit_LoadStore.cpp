@@ -344,7 +344,7 @@ void Jit64::dcbx(UGeckoInstruction inst)
 	SetJumpTarget(c);
 
 	// dcbi
-	if (inst.SUBOP10 == 470 && SConfig::GetInstance().bInstantDMAHack)
+	if (inst.SUBOP10 == 470 && SConfig::GetInstance().bInstantDMAHackEnabled)
 	{
 		// Flush DSP DMA if DMAState bit is set
 		TEST(16, M(&DSP::g_dspState), Imm16(1 << 9));

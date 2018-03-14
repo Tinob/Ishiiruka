@@ -104,6 +104,7 @@ struct SConfig : NonCopyable
 	bool bTimeStretching = false;
 	bool bRSHACK = false;
 	bool bInstantDMAHack = false;
+	bool bInstantDMAHackEnabled = false;
 	int iLatency = 14;
 
 	bool bRunCompareServer = false;
