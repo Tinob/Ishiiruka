@@ -62,7 +62,8 @@ HostTextureFormat TextureCache::GetHostTextureFormat(const s32 texformat, const 
   {
     return PC_TEX_FMT_RGBA32;
   }
-  HostTextureFormat pcfmt = TexDecoder::GetHostTextureFormat(texformat, tlutfmt, true);
+  const bool compressed_supported = ((width & 3) == 0) && ((height & 3) == 0);
+  HostTextureFormat pcfmt = TexDecoder::GetHostTextureFormat(texformat, tlutfmt, compressed_supported);
   pcfmt = !g_ActiveConfig.backend_info.bSupportedFormats[pcfmt] ? PC_TEX_FMT_RGBA32 : pcfmt;
   return pcfmt;
 }
