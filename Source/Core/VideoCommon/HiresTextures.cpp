@@ -185,9 +185,9 @@ void HiresTexture::Update()
       continue;
     }
     size_t map_index = 0;
-    size_t max_type = BuildMaterialMaps ? MapType::specular : MapType::emissive;
+    size_t max_type = BuildMaterialMaps ? MapType::specular : MapType::normal;
     bool arbitrary_mips = false;
-    for (size_t tag = 1; tag <= max_type; tag++)
+    for (size_t tag = 1; tag <= MapType::specular; tag++)
     {
       if (StringEndsWith(filename, s_maps_tags[tag]))
       {
@@ -195,6 +195,10 @@ void HiresTexture::Update()
         filename = filename.substr(0, filename.size() - s_maps_tags[tag].size());
         break;
       }
+    }
+    if (map_index > max_type)
+    {
+      continue;
     }
     if (BuildMaterialMaps && map_index == MapType::material)
     {
@@ -600,7 +604,9 @@ HiresTexture* HiresTexture::Load(const std::string& basename,std::function<u8*(s
   bool last_level_is_dds = false;
   bool allocated_data = false;
   bool mipmapsize_included = false;
-  size_t material_mat_index = g_ActiveConfig.bHiresMaterialMapsBuild ? MapType::normal : MapType::material;
+  size_t material_mat_index =
+    current.maps[MapType::color].size() == current.maps[MapType::normal].size()
+    && current.maps[MapType::normal].size() != current.maps[MapType::material].size() ? MapType::normal : MapType::material;
   size_t emissive_index = MapType::emissive;
   bool nrm_posible = current.maps[MapType::color].size() == current.maps[material_mat_index].size() && g_ActiveConfig.HiresMaterialMapsEnabled();
   bool emissive_posible = current.maps[MapType::color].size() == current.maps[emissive_index].size() && g_ActiveConfig.HiresMaterialMapsEnabled();
