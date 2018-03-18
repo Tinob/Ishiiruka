@@ -670,9 +670,9 @@ inline void GenerateTessellationShader(ShaderCode& out, const Tessellation_shade
 			" result.pos.z = result.pos.w * " I_DEPTHPARAMS ".x - result.pos.z * " I_DEPTHPARAMS ".y;\n"
 			" result.pos.xy *= sign(" I_DEPTHPARAMS ".zw * float2(-1.0, 1.0));\n"
 			" result.pos.xy = result.pos.xy + result.pos.w * " I_DEPTHPARAMS".zw;\n"
-			" if (result.pos.w == 1.0)\n"
+			" if (result.pos.w == 1.0 && " I_VIEWPARAMS ".x > 0.0)\n"
 			" {\n"
-			"   result.pos.xy = round(result.pos.xy * " I_VIEWPARAMS ".xy) * " I_VIEWPARAMS ".zw;\n"
+			"   result.pos.xy = round((result.pos.xy + float2(1.0, 1.0)) * " I_VIEWPARAMS ".xy) * " I_VIEWPARAMS ".zw - float2(1.0,1.0);\n"
 			" }\n"
 			" return result;\n}"
 		);

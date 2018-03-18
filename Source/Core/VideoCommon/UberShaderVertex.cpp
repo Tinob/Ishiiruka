@@ -270,9 +270,9 @@ void GenVertexShader(ShaderCode& out, API_TYPE ApiType, const ShaderHostConfig& 
 	// we need to correct this by converting our
 	// clip-space position into the Wii's screen-space
 	// acquire the right pixel and then convert it back
-	out.Write("if (o.pos.w == 1.0)\n");
+	out.Write("if (o.pos.w == 1.0 && " I_VIEWPARAMS ".x > 0.0)\n");
 	out.Write("{\n");
-	out.Write("\to.pos.xy = round(o.pos.xy * " I_VIEWPARAMS ".xy) * " I_VIEWPARAMS ".zw;\n");
+	out.Write("\to.pos.xy = round((o.pos.xy + float2(1.0, 1.0)) * " I_VIEWPARAMS ".xy) * " I_VIEWPARAMS ".zw - float2(1.0,1.0);\n");
 	out.Write("}\n");
 
 	if (ApiType == API_OPENGL || ApiType == API_VULKAN)

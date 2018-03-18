@@ -465,7 +465,7 @@ void VertexShaderManager::SetConstants()
 			pixel_center_correction * pixel_size_x,
 			pixel_center_correction * pixel_size_y);
 		m_buffer.SetConstant4(C_VIEWPARAMS,
-			viewport_width * 0.5f,
+			bUseVertexRounding ? viewport_width * 0.5f : -1.0f,
 			viewport_height * 0.5f,
 			pixel_size_x,
 			pixel_size_y);
