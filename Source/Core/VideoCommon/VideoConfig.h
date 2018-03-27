@@ -204,7 +204,7 @@ struct VideoConfig final
   int iSpecularMultiplier;
   bool bLastStoryEFBToRam;
   bool bForceLogicOpBlend;
-
+  bool bForcedDithering;
   bool bSimBumpEnabled;
   int iSimBumpDetailBlend;
   int iSimBumpDetailFrequency;

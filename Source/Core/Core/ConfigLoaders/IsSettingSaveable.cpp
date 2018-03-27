@@ -42,7 +42,7 @@ bool IsSettingSaveable(const Config::ConfigLocation& config_location)
       Config::GFX_DUMP_CODEC.location, Config::GFX_DUMP_PATH.location,
       Config::GFX_BITRATE_KBPS.location, Config::GFX_INTERNAL_RESOLUTION_FRAME_DUMPS.location,
       Config::GFX_ENABLE_GPU_TEXTURE_DECODING.location, Config::GFX_ENABLE_COMPUTE_TEXTURE_ENCODING.location,
-      Config::GFX_ENABLE_PIXEL_LIGHTING.location, Config::GFX_FORCED_LIGHTING.location,
+      Config::GFX_ENABLE_PIXEL_LIGHTING.location, Config::GFX_FORCED_LIGHTING.location, Config::GFX_FORCED_DITHERING.location,
       Config::GFX_FORCE_PHONG_SHADING.location, Config::GFX_RIM_POWER.location,
       Config::GFX_RIM_INTENSITY.location, Config::GFX_RIM_BASE.location,
       Config::GFX_SPECULAR_MULTIPLIER.location,

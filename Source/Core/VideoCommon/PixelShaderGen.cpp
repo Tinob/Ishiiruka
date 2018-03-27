@@ -495,8 +495,8 @@ void GetPixelShaderUID(PixelShaderUid& out, PIXEL_SHADER_RENDER_MODE render_mode
   if (!g_ActiveConfig.bForceTrueColor)
   {
     uid_data.rgba6_format = bpm.zcontrol.pixel_format.Value() != PEControl::RGB8_Z24;
-    uid_data.dither = bpm.blendmode.dither.Value();
   }
+  uid_data.dither = (uid_data.rgba6_format && bpm.blendmode.dither.Value()) || g_ActiveConfig.bForcedDithering;
   bool enable_diffuse_ligthing = false;
   if (enable_pl)
   {
@@ -561,6 +561,7 @@ void GetPixelShaderUID(PixelShaderUid& out, PIXEL_SHADER_RENDER_MODE render_mode
     // Only col0 and col1 are needed so discard the remaining components
     uid_data.components = (components >> VB_COL_SHIFT) & 3;
     uid_data.numColorChans = xfr.numChan.numColorChans;
+    GetLightingShaderUid(uid_data.lighting, xfr);
     GetLightingShaderUid(uid_data.lighting, xfr);
   }
 
@@ -1637,18 +1638,15 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
       out.Write("};\n");
     }
   }
-  if (uid_data.dither && uid_data.rgba6_format)
+  if (uid_data.dither)
   {
-    out.Write("wu GetDitherValue(wu2 ditherindex)\n{\n");
-    if (ApiType & API_D3D9)
-    {
-      out.Write("\tfloat bayer[16] = {-7.0,1.0,-5.0,3.0,5.0,-3.0,7.0,-1.0,-4.0,4.0,-6.0,2.0,8.0,0.0,6.0,-2.0};\n");
-    }
+    out.Write("wu3 GetDitherValue(wu2 ditherindex)\n{\n");
+    if (uid_data.rgba6_format)
+      out.Write("\twu4 bayer[4] = {wu4(-8,0,-6,2),wu4(4,-4,6,-2),wu4(-5,3,-7,1),wu4(7,-1,5,-3)};\n");
     else
-    {
-      out.Write("\tint bayer[16] = {-7,1,-5,3,5,-3,7,-1,-4,4,-6,2,8,0,6,-2};\n");
-    }
-    out.Write("\treturn bayer[ditherindex.y * 4 + ditherindex.x];\n}\n");
+      out.Write("\tint4 bayer[4] = {wu4(-2,0,1,-1),wu4(-1,1,-2,0),wu4(1,3,-1,-2),wu4(0,-1,2,1)};\n");
+    out.Write("\treturn bayer[ditherindex.y][ditherindex.x];\n");
+    out.Write("}\n");
   }
   if (ApiType == API_OPENGL || ApiType == API_VULKAN)
   {
@@ -1850,13 +1848,16 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
     out.Write("}\n");
     return;
   }
-  if (ApiType & API_D3D9)
+  if (uid_data.dither)
   {
-    out.Write("\tfloat2 ditherindex = round(rawpos.xy) %% 4;\n");
-  }
-  else
-  {
-    out.Write("\tint2 ditherindex = int2(rawpos.xy) & 3;\n");
+	  if (ApiType & API_D3D9)
+	  {
+		  out.Write("\tfloat2 ditherindex = round(rawpos.xy) %% 4;\n");
+	  }
+	  else
+	  {
+		  out.Write("\tint2 ditherindex = int2(rawpos.xy) & 3;\n");
+	  }
   }
   out.Write("wu4 c0 = " I_COLORS "[1], c1 = " I_COLORS "[2], c2 = " I_COLORS "[3], prev = " I_COLORS "[0];\n"
     "wu4 tex_ta[%i], tex_t = wu4(0,0,0,0), ras_t = wu4(0,0,0,0), konst_t = wu4(0,0,0,0);\n"
@@ -2142,16 +2143,6 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
     WriteFog(out, Use_integer_math, uid_data);
   }
 
-  if (uid_data.dither && uid_data.rgba6_format)
-  {
-    out.Write("\tprev.rgb = prev.rgb + GetDitherValue(ditherindex);\n");
-  }
-
-  if (uid_data.rgba6_format)
-  {
-    out.Write("\tprev = CAST_TO_U6(clamp(prev, 0, 255));\n");
-  }
-
   if (forcePhong)
   {
     out.Write(
@@ -2169,6 +2160,17 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
     out.Write("prev.rgb += wu3(emmisive_mask * 255.0);\n");
     out.Write("}\n");
   }
+
+  if (uid_data.dither)
+  {
+    out.Write("\tprev.rgb += GetDitherValue(ditherindex);\n");
+  }
+
+  if (uid_data.rgba6_format)
+  {
+    out.Write("\tprev = CAST_TO_U6(clamp(prev, 0, 255));\n");
+  }
+
   // Use dual-source color blending to perform dst alpha in a single pass
   if (render_mode == PSRM_DUAL_SOURCE_BLEND)
   {

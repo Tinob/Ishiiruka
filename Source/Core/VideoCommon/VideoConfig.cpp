@@ -123,7 +123,7 @@ void VideoConfig::Refresh()
   iSimBumpDetailFrequency = Config::Get(Config::GFX_SIMULATE_BUMP_DETAIL_FREQUENCY);
   iSimBumpThreshold = Config::Get(Config::GFX_SIMULATE_BUMP_THRESHOLD);
   iSimBumpDetailBlend = Config::Get(Config::GFX_SIMULATE_BUMP_DETAIL_BLEND);
-
+  bForcedDithering = Config::Get(Config::GFX_FORCED_DITHERING);
 
   bFastDepthCalc = Config::Get(Config::GFX_FAST_DEPTH_CALC);
   iMultisamples = Config::Get(Config::GFX_MSAA);

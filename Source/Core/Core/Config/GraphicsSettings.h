@@ -51,6 +51,7 @@ extern const ConfigInfo<bool> GFX_ENABLE_GPU_TEXTURE_DECODING;
 extern const ConfigInfo<bool> GFX_ENABLE_COMPUTE_TEXTURE_ENCODING;
 extern const ConfigInfo<bool> GFX_ENABLE_PIXEL_LIGHTING;
 extern const ConfigInfo<bool> GFX_FORCED_LIGHTING;
+extern const ConfigInfo<bool> GFX_FORCED_DITHERING;
 
 extern const ConfigInfo<bool> GFX_FORCE_PHONG_SHADING;
 extern const ConfigInfo<int> GFX_RIM_POWER;

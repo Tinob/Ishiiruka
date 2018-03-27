@@ -62,6 +62,8 @@ const ConfigInfo<bool> GFX_ENABLE_PIXEL_LIGHTING{{System::GFX, "Settings", "Enab
                                                  false};
 const ConfigInfo<bool> GFX_FORCED_LIGHTING{ { System::GFX, "Settings", "ForcedLighting" },
 false };
+const ConfigInfo<bool> GFX_FORCED_DITHERING{ { System::GFX, "Settings", "ForcedDithering" },
+false };
 const ConfigInfo<bool> GFX_FORCE_PHONG_SHADING{ { System::GFX, "Settings", "ForcePhongShading" },
                                                  false };
 const ConfigInfo<int> GFX_RIM_POWER{ { System::GFX, "Settings", "RimPower" }, 80 };
