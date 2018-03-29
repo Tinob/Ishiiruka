@@ -340,28 +340,39 @@ protected:
   {
     PostProcessingInputType type{};
     u32 texture_unit{};
-    TargetSize size{};
+    TargetSize external_size{};
     u32 frame_index{};
-    std::unique_ptr<HostTexture> texture{};	// only set for external images
-    HostTexture* prev_texture{};
+    std::unique_ptr<HostTexture> external_texture{};	// only set for external images
+    s32 prev_texture{};
     uintptr_t texture_sampler{};
   };
 
   virtual void ReleaseBindingSampler(uintptr_t sampler) = 0;
   virtual uintptr_t CreateBindingSampler(const PostProcessingShaderConfiguration::RenderPass::Input& input_config) = 0;
 
-  struct RenderPassData final
+  class RenderPassData final
   {
-    uintptr_t shader{};
-
-    std::vector<InputBinding> inputs;
-
+  private:
     std::unique_ptr<HostTexture> output_texture{};
+    TextureConfig config{};
+    size_t use_count{};
+    size_t ref_count{};
+  public:
+    uintptr_t shader{};
+    std::vector<InputBinding> inputs;
     TargetSize output_size{};
     float output_scale{};
     HostTextureFormat output_format = HostTextureFormat::PC_TEX_FMT_RGBA32;
-
     bool enabled{};
+    void SetConfig(const TextureConfig& conf)
+    {
+      config = conf;
+    }
+    void AddOutput();
+    HostTexture* GetOutput() const { return output_texture.get(); }
+    void ClenaupOutput();
+    void ReleaseOutput();
+    void AddReference() { use_count++; }
   };
 
   virtual void ReleasePassNativeResources(RenderPassData& pass) = 0;

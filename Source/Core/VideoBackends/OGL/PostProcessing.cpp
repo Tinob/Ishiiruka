@@ -278,6 +278,13 @@ void OGLPostProcessingShader::Draw(PostProcessor* p,
     bool is_last_pass = (pass_index == m_last_pass_index);
     if (!pass.enabled)
       continue;
+
+    if (!(is_last_pass && skip_final_copy))
+    {
+      // Force output build
+      m_passes[pass_index].AddOutput();
+    }
+
     // If this is the last pass and we can skip the final copy, write directly to output texture.
     GLuint output_texture;
     if (is_last_pass && skip_final_copy)
@@ -290,7 +297,7 @@ void OGLPostProcessingShader::Draw(PostProcessor* p,
     {
       output_rect = PostProcessor::ScaleTargetRectangle(API_OPENGL, src_rect, pass.output_scale);
       output_size = pass.output_size;
-      output_texture = static_cast<GLuint>(pass.output_texture->GetInternalObject());
+      output_texture = static_cast<GLuint>(pass.GetOutput()->GetInternalObject());
     }
 
     // Setup framebuffer
@@ -315,7 +322,7 @@ void OGLPostProcessingShader::Draw(PostProcessor* p,
       shader->gs_program->Bind();
     else
       shader->program->Bind();
-
+    std::vector<s32> InputsToRelease;
     for (size_t i = 0; i < pass.inputs.size(); i++)
     {
       const InputBinding& input = pass.inputs[i];
@@ -349,11 +356,16 @@ void OGLPostProcessingShader::Draw(PostProcessor* p,
         }
         break;
       default:
-        HostTexture* input_texture = input.texture ? input.texture.get() : input.prev_texture;
-        if (input_texture != nullptr)
+        if (input.external_texture)
         {
-          glBindTexture(GL_TEXTURE_2D_ARRAY, static_cast<GLuint>(input_texture->GetInternalObject()));
-          input_sizes[i] = input.size;
+          glBindTexture(GL_TEXTURE_2D_ARRAY, static_cast<GLuint>(input.external_texture->GetInternalObject()));
+          input_sizes[i] = input.external_size;
+        }
+        else if (input.prev_texture >= 0)
+        {
+          InputsToRelease.push_back(input.prev_texture);
+          glBindTexture(GL_TEXTURE_2D_ARRAY, static_cast<GLuint>(m_passes[input.prev_texture].GetOutput()->GetInternalObject()));
+          input_sizes[i] = m_passes[input.prev_texture].output_size;
         }
         else
         {
@@ -368,6 +380,10 @@ void OGLPostProcessingShader::Draw(PostProcessor* p,
     parent->MapAndUpdateUniformBuffer(input_sizes, output_rect, output_size, src_rect, src_size, src_layer, gamma);
     glViewport(output_rect.left, output_rect.bottom, output_rect.GetWidth(), output_rect.GetHeight());
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    for (auto passidx : InputsToRelease)
+    {
+      m_passes[passidx].ClenaupOutput();
+    }
   }
 
   // Unbind input textures after rendering, so that they can safely be used as outputs again.
@@ -390,9 +406,13 @@ void OGLPostProcessingShader::Draw(PostProcessor* p,
     if (m_prev_frame_enabled)
     {
       TargetRectangle dst = { 0, m_prev_frame_size.height, m_prev_frame_size.width, 0 };
-      parent->CopyTexture(dst, GetPrevColorFrame(0)->GetInternalObject(), output_rect, final_pass.output_texture->GetInternalObject(), final_pass.output_size, src_layer, false, true);
+      parent->CopyTexture(dst, GetPrevColorFrame(0)->GetInternalObject(), output_rect, final_pass.GetOutput()->GetInternalObject(), final_pass.output_size, src_layer, false, true);
     }
-    parent->CopyTexture(dst_rect, dst_texture, output_rect, final_pass.output_texture->GetInternalObject(), final_pass.output_size, src_layer);
+    parent->CopyTexture(dst_rect, dst_texture, output_rect, final_pass.GetOutput()->GetInternalObject(), final_pass.output_size, src_layer);
+    if (!IsLastPassScaled())
+    {
+      final_pass.ClenaupOutput();
+    }
   }
 }
 

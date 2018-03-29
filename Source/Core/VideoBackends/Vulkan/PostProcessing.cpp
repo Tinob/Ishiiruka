@@ -208,6 +208,13 @@ void VulkanPostProcessingShader::Draw(PostProcessor* p,
     bool is_last_pass = (pass_index == m_last_pass_index);
     if (!pass.enabled)
       continue;
+
+    if (!(is_last_pass && skip_final_copy))
+    {
+      // Force output build
+      m_passes[pass_index].AddOutput();
+    }
+
     // Select geometry shader based on layers
     VkShaderModule geometry_shader = VK_NULL_HANDLE;
     if (src_layer < 0 && m_internal_layers > 1)
@@ -225,7 +232,7 @@ void VulkanPostProcessingShader::Draw(PostProcessor* p,
     {
       output_rect = PostProcessor::ScaleTargetRectangle(API_VULKAN, src_rect, pass.output_scale);
       output_size = pass.output_size;
-      dst = reinterpret_cast<Texture2D*>(pass.output_texture->GetInternalObject());
+      dst = reinterpret_cast<Texture2D*>(pass.GetOutput()->GetInternalObject());
     }
     if (dst->GetFrameBuffer() == nullptr)
     {
@@ -252,6 +259,7 @@ void VulkanPostProcessingShader::Draw(PostProcessor* p,
         shader_buffer_size);
       draw.CommitPSUniforms(shader_buffer_size);
     }
+    std::vector<s32> InputsToRelease;
     // Bind inputs to pipeline
     for (size_t i = 0; i < pass.inputs.size(); i++)
     {
@@ -285,11 +293,15 @@ void VulkanPostProcessingShader::Draw(PostProcessor* p,
         }
         break;
       default:
-        HostTexture * i_texture = input.texture ? input.texture.get() : input.prev_texture;
-        if (i_texture != nullptr)
+        if (input.external_texture)
         {
-          input_texture = reinterpret_cast<Texture2D*>(i_texture->GetInternalObject());
-          input_sizes[i] = input.size;
+          input_texture = reinterpret_cast<Texture2D*>(input.external_texture->GetInternalObject());
+          input_sizes[i] = input.external_size;
+        }
+        else if (input.prev_texture >= 0)
+        {
+          input_texture = reinterpret_cast<Texture2D*>(m_passes[input.prev_texture].GetOutput()->GetInternalObject());
+          input_sizes[i] = m_passes[input.prev_texture].output_size;
         }
         else
         {
@@ -304,6 +316,10 @@ void VulkanPostProcessingShader::Draw(PostProcessor* p,
           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
       }
       draw.SetPSSampler(i, input_texture->GetView(), parent->GetSamplerHandle(input.texture_sampler - 1));
+      for (auto passidx : InputsToRelease)
+      {
+        m_passes[passidx].ClenaupOutput();
+      }
     }
     parent->MapAndUpdateUniformBuffer(input_sizes, output_rect, output_size, src_rect, src_size, src_layer, gamma);
     void* vsuniforms = draw.AllocateVSUniforms(POST_PROCESSING_CONTANTS_BUFFER_SIZE);
@@ -341,9 +357,13 @@ void VulkanPostProcessingShader::Draw(PostProcessor* p,
       dst.right = m_prev_frame_size.width;
       dst.top = 0;
       dst.bottom = m_prev_frame_size.height;
-      parent->CopyTexture(dst, GetPrevColorFrame(0)->GetInternalObject(), output_rect, final_pass.output_texture->GetInternalObject(), final_pass.output_size, src_layer, false, true);
+      parent->CopyTexture(dst, GetPrevColorFrame(0)->GetInternalObject(), output_rect, final_pass.GetOutput()->GetInternalObject(), final_pass.output_size, src_layer, false, true);
     }
-    parent->CopyTexture(dst_rect, dst_tex, output_rect, final_pass.output_texture->GetInternalObject(), final_pass.output_size, src_layer);
+    parent->CopyTexture(dst_rect, dst_tex, output_rect, final_pass.GetOutput()->GetInternalObject(), final_pass.output_size, src_layer);
+    if (!IsLastPassScaled())
+    {
+      final_pass.ClenaupOutput();
+    }
   }
 }
 

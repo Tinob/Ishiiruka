@@ -233,6 +233,12 @@ void D3DPostProcessingShader::Draw(PostProcessor* p,
     if (!pass.enabled)
       continue;
 
+    if (!(is_last_pass && skip_final_copy))
+    {
+      // Force output build
+      m_passes[pass_index].AddOutput();
+    }
+
     // If this is the last pass and we can skip the final copy, write directly to output texture.
     if (is_last_pass && skip_final_copy)
     {
@@ -245,9 +251,9 @@ void D3DPostProcessingShader::Draw(PostProcessor* p,
     {
       output_rect = PostProcessor::ScaleTargetRectangle(API_D3D11, src_rect, pass.output_scale);
       output_size = pass.output_size;
-      D3D::context->OMSetRenderTargets(1, &reinterpret_cast<D3DTexture2D*>(pass.output_texture->GetInternalObject())->GetRTV(), nullptr);
+      D3D::context->OMSetRenderTargets(1, &reinterpret_cast<D3DTexture2D*>(pass.GetOutput()->GetInternalObject())->GetRTV(), nullptr);
     }
-
+    std::vector<s32> InputsToRelease;
     // Bind inputs to pipeline
     for (size_t i = 0; i < pass.inputs.size(); i++)
     {
@@ -280,11 +286,16 @@ void D3DPostProcessingShader::Draw(PostProcessor* p,
         }
         break;
       default:
-        HostTexture* input_texture = input.texture ? input.texture.get() : input.prev_texture;
-        if (input_texture != nullptr)
+        if (input.external_texture)
         {
-          input_srv = reinterpret_cast<D3DTexture2D*>(input_texture->GetInternalObject())->GetSRV();
-          input_sizes[i] = input.size;
+          input_srv = reinterpret_cast<D3DTexture2D*>(input.external_texture->GetInternalObject())->GetSRV();
+          input_sizes[i] = input.external_size;
+        }
+        else if (input.prev_texture >= 0)
+        {
+          InputsToRelease.push_back(input.prev_texture);
+          input_srv = reinterpret_cast<D3DTexture2D*>(m_passes[input.prev_texture].GetOutput()->GetInternalObject())->GetSRV();
+          input_sizes[i] = m_passes[input.prev_texture].output_size;
         }
         else
         {
@@ -314,6 +325,10 @@ void D3DPostProcessingShader::Draw(PostProcessor* p,
     D3D::drawShadedTexQuad(nullptr, src_rect.AsRECT(), src_size.width, src_size.height,
       reinterpret_cast<ID3D11PixelShader*>(pass.shader), parent->GetVertexShader(), VertexShaderCache::GetSimpleInputLayout(),
       geometry_shader, 1.0f, std::max(src_layer, 0));
+    for (auto passidx : InputsToRelease)
+    {
+      m_passes[passidx].ClenaupOutput();
+    }
   }
 
   // Unbind input textures after rendering, so that they can safely be used as outputs again.
@@ -342,9 +357,13 @@ void D3DPostProcessingShader::Draw(PostProcessor* p,
       dst.right = m_prev_frame_size.width;
       dst.top = 0;
       dst.bottom = m_prev_frame_size.height;
-      parent->CopyTexture(dst, GetPrevColorFrame(0)->GetInternalObject(), output_rect, final_pass.output_texture->GetInternalObject(), final_pass.output_size, src_layer, false, true);
+      parent->CopyTexture(dst, GetPrevColorFrame(0)->GetInternalObject(), output_rect, final_pass.GetOutput()->GetInternalObject(), final_pass.output_size, src_layer, false, true);
     }
-    parent->CopyTexture(dst_rect, dst_tex, output_rect, final_pass.output_texture->GetInternalObject(), final_pass.output_size, src_layer);
+    parent->CopyTexture(dst_rect, dst_tex, output_rect, final_pass.GetOutput()->GetInternalObject(), final_pass.output_size, src_layer);
+    if (!IsLastPassScaled())
+    {
+      final_pass.ClenaupOutput();
+    }
   }
 }
 

@@ -234,12 +234,18 @@ void D3DPostProcessingShader::Draw(PostProcessor* p,
     if (!pass.enabled)
       continue;
 
+    if (!(is_last_pass && skip_final_copy))
+    {
+      // Force output build
+      m_passes[pass_index].AddOutput();
+    }
+
     D3D12_CPU_DESCRIPTOR_HANDLE sampler_cpu = { base_sampler_cpu.ptr + pass_index * POST_PROCESSING_MAX_TEXTURE_INPUTS * D3D::sampler_descriptor_size };
     D3D12_GPU_DESCRIPTOR_HANDLE sampler_gpu = { base_sampler_gpu.ptr + pass_index * POST_PROCESSING_MAX_TEXTURE_INPUTS * D3D::sampler_descriptor_size };
 
     D3D12_CPU_DESCRIPTOR_HANDLE texture_cpu = { base_texture_cpu.ptr + pass_index * POST_PROCESSING_MAX_TEXTURE_INPUTS * D3D::resource_descriptor_size };
     D3D12_GPU_DESCRIPTOR_HANDLE texture_gpu = { base_texture_gpu.ptr + pass_index * POST_PROCESSING_MAX_TEXTURE_INPUTS * D3D::resource_descriptor_size };
-
+    std::vector<s32> InputsToRelease;
     // Bind inputs to pipeline
     for (size_t i = 0; i < pass.inputs.size(); i++)
     {
@@ -275,11 +281,16 @@ void D3DPostProcessingShader::Draw(PostProcessor* p,
         }
         break;
       default:
-        HostTexture* i_texture = input.texture ? input.texture.get() : input.prev_texture;
-        if (i_texture != nullptr)
+        if (input.external_texture)
         {
-          input_texture = reinterpret_cast<D3DTexture2D*>(i_texture->GetInternalObject());
-          input_sizes[i] = input.size;
+          input_texture = reinterpret_cast<D3DTexture2D*>(input.external_texture->GetInternalObject());
+          input_sizes[i] = input.external_size;
+        }
+        else if (input.prev_texture >= 0)
+        {
+          InputsToRelease.push_back(input.prev_texture);
+          input_texture = reinterpret_cast<D3DTexture2D*>(m_passes[input.prev_texture].GetOutput()->GetInternalObject());
+          input_sizes[i] = m_passes[input.prev_texture].output_size;
         }
         else
         {
@@ -326,7 +337,7 @@ void D3DPostProcessingShader::Draw(PostProcessor* p,
     {
       output_rect = PostProcessor::ScaleTargetRectangle(API_D3D11, src_rect, pass.output_scale);
       output_size = pass.output_size;
-      dst = reinterpret_cast<D3DTexture2D*>(pass.output_texture->GetInternalObject());
+      dst = reinterpret_cast<D3DTexture2D*>(pass.GetOutput()->GetInternalObject());
     }
 
     dst->TransitionToResourceState(D3D::current_command_list, D3D12_RESOURCE_STATE_RENDER_TARGET);
@@ -348,6 +359,10 @@ void D3DPostProcessingShader::Draw(PostProcessor* p,
     D3D::DrawShadedTexQuad(nullptr, src_rect.AsRECT(), src_size.width, src_size.height,
       reinterpret_cast<RenderPassDx12Data*>(pass.shader)->m_shader_bytecode, parent->GetVertexShader(), StaticShaderCache::GetSimpleVertexShaderInputLayout(),
       geometry_shader, std::max(src_layer, 0), dst->GetFormat(), false, dst->GetMultisampled());
+    for (auto passidx : InputsToRelease)
+    {
+      m_passes[passidx].ClenaupOutput();
+    }
   }
 
   // Copy the last pass output to the target if not done already
@@ -371,9 +386,13 @@ void D3DPostProcessingShader::Draw(PostProcessor* p,
       dst.right = m_prev_frame_size.width;
       dst.top = 0;
       dst.bottom = m_prev_frame_size.height;
-      parent->CopyTexture(dst, GetPrevColorFrame(0)->GetInternalObject(), output_rect, final_pass.output_texture->GetInternalObject(), final_pass.output_size, src_layer, false, true);
+      parent->CopyTexture(dst, GetPrevColorFrame(0)->GetInternalObject(), output_rect, final_pass.GetOutput()->GetInternalObject(), final_pass.output_size, src_layer, false, true);
     }
-    parent->CopyTexture(dst_rect, dst_tex, output_rect, final_pass.output_texture->GetInternalObject(), final_pass.output_size, src_layer);
+    parent->CopyTexture(dst_rect, dst_tex, output_rect, final_pass.GetOutput()->GetInternalObject(), final_pass.output_size, src_layer);
+    if (!IsLastPassScaled())
+    {
+      final_pass.ClenaupOutput();
+    }
   }
 }
 

@@ -976,7 +976,7 @@ PostProcessingShader::~PostProcessingShader()
 
 HostTexture* PostProcessingShader::GetLastPassOutputTexture() const
 {
-  return m_passes[m_last_pass_index].output_texture.get();
+  return m_passes[m_last_pass_index].GetOutput();
 }
 
 bool PostProcessingShader::IsLastPassScaled() const
@@ -1024,7 +1024,7 @@ bool PostProcessingShader::CreatePasses()
   for (const auto& pass_config : m_config->GetPasses())
   {
     RenderPassData pass;
-    pass.output_texture = nullptr;
+    pass.ReleaseOutput();
     pass.output_scale = pass_config.output_scale;
     pass.enabled = true;
     pass.inputs.reserve(pass_config.inputs.size());
@@ -1034,7 +1034,7 @@ bool PostProcessingShader::CreatePasses()
       InputBinding input;
       input.type = input_config.type;
       input.texture_unit = input_config.texture_unit;
-      input.texture = nullptr;
+      input.external_texture.reset();
       input.texture_sampler = 0;
 
       if (input.type == POST_PROCESSING_INPUT_TYPE_IMAGE)
@@ -1045,9 +1045,9 @@ bool PostProcessingShader::CreatePasses()
         config.pcformat = HostTextureFormat::PC_TEX_FMT_RGBA32;
         config.rendertarget = false;
 
-        input.texture = std::move(g_texture_cache->AllocateTexture(config));
-        input.texture->Load(input_config.external_image_data.get(), config.width, config.height, config.width, 0, 0);
-        input.size = input_config.external_image_size;
+        input.external_texture = std::move(g_texture_cache->AllocateTexture(config));
+        input.external_texture->Load(input_config.external_image_data.get(), config.width, config.height, config.width, 0, 0);
+        input.external_size = input_config.external_image_size;
       }
 
       // If set to previous pass, but we are the first pass, use the color buffer instead.
@@ -1107,15 +1107,14 @@ void PostProcessingShader::LinkPassOutputs()
           }
           pass_output_index--;
         }
+        input_binding.prev_texture = pass_output_index;
         if (pass_output_index < 0)
-        {
-          input_binding.prev_texture = nullptr;
+        { 
           m_last_pass_uses_color_buffer = true;
         }
         else
         {
-          input_binding.prev_texture = m_passes[pass_output_index].output_texture.get();
-          input_binding.size = m_passes[pass_output_index].output_size;
+          m_passes[pass_output_index].AddReference();
         }
       }
       break;
@@ -1127,6 +1126,11 @@ void PostProcessingShader::LinkPassOutputs()
         break;
       }
     }
+  }
+  if (!IsLastPassScaled())
+  {
+    // If is not scaled we whant to keep this texture for output
+    m_passes[m_last_pass_index].AddOutput();
   }
 }
 
@@ -1165,21 +1169,42 @@ bool PostProcessingShader::ResizeOutputTextures(const TargetSize& new_size)
     RenderPassData& pass = m_passes[pass_index];
     const PostProcessingShaderConfiguration::RenderPass& pass_config = m_config->GetPass(pass_index);
     pass.output_size = PostProcessor::ScaleTargetSize(new_size, pass_config.output_scale);
-
-    if (pass.output_texture != nullptr)
-    {
-      g_texture_cache->DisposeTexture(pass.output_texture);
-      pass.output_texture = nullptr;
-    }
-
+    pass.ReleaseOutput();
     config.width = pass.output_size.width;
     config.height = pass.output_size.height;
     // Last pass output is always RGBA32
     config.pcformat = pass_index < m_passes.size() - 1 ? pass.output_format : HostTextureFormat::PC_TEX_FMT_RGBA32;
-    pass.output_texture = g_texture_cache->AllocateTexture(config);
+    pass.SetConfig(config);
   }
   m_internal_size = new_size;
   return true;
+}
+
+void PostProcessingShader::RenderPassData::AddOutput()
+{
+  if (enabled && !output_texture)
+  {
+    output_texture = g_texture_cache->AllocateTexture(config);
+    ref_count = use_count;
+  }
+}
+
+void PostProcessingShader::RenderPassData::ClenaupOutput()
+{
+  ref_count--;
+  if (output_texture && ref_count <= 0)
+  {
+    ReleaseOutput();
+  }
+}
+
+void PostProcessingShader::RenderPassData::ReleaseOutput()
+{
+  if (output_texture)
+  {
+    g_texture_cache->DisposeTexture(output_texture);
+    output_texture = nullptr;
+  }
 }
 
 PostProcessor::PostProcessor(API_TYPE apitype) : m_APIType(apitype)
