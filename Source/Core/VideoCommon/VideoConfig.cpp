@@ -115,6 +115,8 @@ void VideoConfig::Load(const std::string& ini_file)
 	settings->Get("SimBumpDetailFrequency", &iSimBumpDetailFrequency, 128);
 	settings->Get("SimBumpThreshold", &iSimBumpThreshold, 16);
 	settings->Get("SimBumpDetailBlend", &iSimBumpDetailBlend, 16);
+  
+  settings->Get("ForcedDithering", &bForcedDithering, false);
 
 	settings->Get("FastDepthCalc", &bFastDepthCalc, true);
 	settings->Get("MSAA", &iMultisamples, 1);
@@ -465,6 +467,7 @@ void VideoConfig::Save(const std::string& ini_file)
 	settings->Set("SimBumpDetailFrequency", iSimBumpDetailFrequency);
 	settings->Set("SimBumpThreshold", iSimBumpThreshold);
 	settings->Set("SimBumpDetailBlend", iSimBumpDetailBlend);
+  settings->Set("ForcedDithering", bForcedDithering);
 
 	settings->Set("FastDepthCalc", bFastDepthCalc);
 	settings->Set("MSAA", iMultisamples);

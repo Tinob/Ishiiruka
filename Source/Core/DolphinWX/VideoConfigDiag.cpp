@@ -141,6 +141,8 @@ static wxString disable_fog_desc = _("Makes distant objects more visible by remo
 static wxString true_color_desc = _("Forces the game to render the RGB color channels in 24-bit, thereby increasing "
 	"quality by reducing color banding.\nIt improves performance and causes "
 	"few graphical issues.\n\n\nIf unsure, leave this checked.");
+static wxString dithering_desc = _("Forces the game to render using dithering to reduce color banding, "
+  "can cause small graphical issues.\n\n\nIf unsure, leave this unchecked.");
 static wxString disable_dstalpha_desc = _("Disables emulation of a hardware feature called destination alpha, which is used in many games for various graphical effects.\n\nIf unsure, leave this unchecked.");
 static wxString show_fps_desc =
 wxTRANSLATE("Show the number of frames rendered per second as a measure of "
@@ -562,6 +564,7 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
 		szr_enh->Add(CreateCheckBox(page_enh, _("Widescreen Hack"), (ws_hack_desc), vconfig.bWidescreenHack));
 		szr_enh->Add(CreateCheckBox(page_enh, _("Disable Fog"), (disable_fog_desc), vconfig.bDisableFog));
 		szr_enh->Add(CreateCheckBox(page_enh, _("Force 24-bit Color"), (true_color_desc), vconfig.bForceTrueColor));
+    szr_enh->Add(CreateCheckBox(page_enh, _("Force Dithering"), (dithering_desc), vconfig.bForcedDithering));
 		szr_enh->Add(pixel_lighting = CreateCheckBox(page_enh, _("Per-Pixel Lighting"), (pixel_lighting_desc), vconfig.bEnablePixelLighting));
 		szr_enh->Add(phong_lighting = CreateCheckBox(page_enh, _("Phong Lighting"), (phong_lighting_desc), vconfig.bForcePhongShading));
 		szr_enh->Add(sim_bump = CreateCheckBox(page_enh, _("Auto Bumps"), (bump_desc), vconfig.bSimBumpEnabled));

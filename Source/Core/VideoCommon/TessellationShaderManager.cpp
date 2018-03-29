@@ -53,7 +53,9 @@ void TessellationShaderManager::SetConstants()
 			constants.tessparams[3] = displacement;
 			dirty = true;
 		}
-		int cull = bpmem.genMode.cullmode > 0 ? (bpmem.genMode.cullmode == 2 ? 1 : -1) : 0;
+    RasterizationState state = {};
+    state.Generate(bpmem, PrimitiveType::Triangles);
+    int cull = state.cullmode.Value() > 0 ? (state.cullmode.Value() == GenMode::CullMode::CULL_FRONT ? 1 : -1) : 0;
 		int earlycull = g_ActiveConfig.bTessellationEarlyCulling ? 1 : 0;
 		if (constants.cullparams[0] != cull || constants.cullparams[1] != earlycull)
 		{
