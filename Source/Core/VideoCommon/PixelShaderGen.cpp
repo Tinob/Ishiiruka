@@ -496,7 +496,7 @@ void GetPixelShaderUID(PixelShaderUid& out, PIXEL_SHADER_RENDER_MODE render_mode
   {
     uid_data.rgba6_format = bpm.zcontrol.pixel_format.Value() != PEControl::RGB8_Z24;
   }
-  uid_data.dither = (uid_data.rgba6_format && bpm.blendmode.dither.Value()) || g_ActiveConfig.bForcedDithering;
+  uid_data.dither = (uid_data.rgba6_format || g_ActiveConfig.bForcedDithering) && bpm.blendmode.dither.Value();
   bool enable_diffuse_ligthing = false;
   if (enable_pl)
   {
