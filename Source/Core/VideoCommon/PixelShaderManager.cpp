@@ -814,7 +814,9 @@ void PixelShaderManager::SetZModeControl()
   u32 rgba6_format =
     (bpmem.zcontrol.pixel_format.Value() == PEControl::RGBA6_Z24 && !g_ActiveConfig.bForceTrueColor) ? 1 :
     0;
-  u32 dither = (rgba6_format || g_ActiveConfig.bForcedDithering) && bpmem.blendmode.dither.Value() != 0;
+  u32 dither = (rgba6_format || g_ActiveConfig.bForcedDithering) 
+    && bpmem.blendmode.dither.Value() > 0
+    && (bpmem.blendmode.logicopenable.Value() == 0 || bpmem.blendmode.blendenable.Value() > 0 || bpmem.blendmode.subtract);
   if (m_buffer.GetBuffer<u32>(C_UBERPARAM1)[2] != late_ztest
     || m_buffer.GetBuffer<u32>(C_UBERPARAM1)[3] != rgba6_format
     || m_buffer.GetBuffer<u32>(C_UBERPARAM2)[0] != dither)
@@ -835,7 +837,9 @@ void PixelShaderManager::SetBlendModeChanged()
   u32 rgba6_format =
     (bpmem.zcontrol.pixel_format.Value() == PEControl::RGBA6_Z24 && !g_ActiveConfig.bForceTrueColor) ? 1 :
     0;
-  u32 dither = (rgba6_format || g_ActiveConfig.bForcedDithering) && bpmem.blendmode.dither.Value() != 0;
+  u32 dither = (rgba6_format || g_ActiveConfig.bForcedDithering)
+    && bpmem.blendmode.dither.Value() > 0
+    && (bpmem.blendmode.logicopenable.Value() == 0 || bpmem.blendmode.blendenable.Value() > 0 || bpmem.blendmode.subtract);
   if (m_buffer.GetBuffer<u32>(C_UBERPARAM2)[0] != dither)
   {
     m_buffer.SetConstant(C_UBERPARAM2, 0, dither);

@@ -496,7 +496,9 @@ void GetPixelShaderUID(PixelShaderUid& out, PIXEL_SHADER_RENDER_MODE render_mode
   {
     uid_data.rgba6_format = bpm.zcontrol.pixel_format.Value() != PEControl::RGB8_Z24;
   }
-  uid_data.dither = (uid_data.rgba6_format || g_ActiveConfig.bForcedDithering) && bpm.blendmode.dither.Value();
+  uid_data.dither = (uid_data.rgba6_format || g_ActiveConfig.bForcedDithering) 
+    && bpm.blendmode.dither.Value() > 0 
+    && (bpm.blendmode.logicopenable.Value() == 0 || bpm.blendmode.blendenable.Value() > 0 || bpm.blendmode.subtract);
   bool enable_diffuse_ligthing = false;
   if (enable_pl)
   {
@@ -1640,7 +1642,7 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
   }
   if (uid_data.dither)
   {
-    out.Write("wu3 GetDitherValue(wu2 ditherindex)\n{\n");
+    out.Write("wu GetDitherValue(wu2 ditherindex)\n{\n");
     if (uid_data.rgba6_format)
       out.Write("\twu4 bayer[4] = {wu4(-8,0,-6,2),wu4(4,-4,6,-2),wu4(-5,3,-7,1),wu4(7,-1,5,-3)};\n");
     else
