@@ -37,6 +37,7 @@
     <ClInclude Include="Config\Config.h" />
     <ClInclude Include="Config\Enums.h" />
     <ClInclude Include="Config\Layer.h" />
+    <ClInclude Include="Config\Section.h" />
     <ClInclude Include="CPUDetect.h" />
     <ClInclude Include="DebugInterface.h" />
     <ClInclude Include="ENetUtil.h" />
@@ -57,9 +58,11 @@
     <ClInclude Include="Network.h" />
     <ClInclude Include="PcapFile.h" />
     <ClInclude Include="Profiler.h" />
+    <ClInclude Include="QoSSession.h" />
     <ClInclude Include="ScopeGuard.h" />
     <ClInclude Include="SDCardUtil.h" />
     <ClInclude Include="SettingsHandler.h" />
+    <ClInclude Include="SPSCQueue.h" />
     <ClInclude Include="StringUtil.h" />
     <ClInclude Include="Swap.h" />
     <ClInclude Include="SymbolDB.h" />
@@ -67,6 +70,8 @@
     <ClInclude Include="Thread.h" />
     <ClInclude Include="ThreadPool.h" />
     <ClInclude Include="Timer.h" />
+    <ClInclude Include="Version.h" />
+    <ClInclude Include="WorkQueueThread.h" />
     <ClInclude Include="x64ABI.h" />
     <ClInclude Include="x64Emitter.h" />
     <ClInclude Include="x64Reg.h" />
@@ -93,6 +98,7 @@
     <ClInclude Include="JitRegister.h" />
     <ClInclude Include="TraversalClient.h" />
     <ClInclude Include="TraversalProto.h" />
+    <ClInclude Include="UPnP.h" />
     <ClInclude Include="GL\GLUtil.h">
       <Filter>GL</Filter>
     </ClInclude>
@@ -238,9 +244,6 @@
     <ClInclude Include="Analytics.h" />
     <ClInclude Include="Semaphore.h" />
     <ClInclude Include="ConstantBuffer.h" />
-    <ClInclude Include="Align.h" />
-    <ClInclude Include="BitHelpers.h" />
-    <ClInclude Include="BitUtils.h" />
     <ClInclude Include="MD5.h" />
     <ClInclude Include="GL\GLExtensions\ARB_texture_storage.h">
       <Filter>GL\GLExtensions</Filter>
@@ -255,13 +258,11 @@
       <Filter>GL\GLExtensions</Filter>
     </ClInclude>
     <ClInclude Include="File.h" />
-    <ClInclude Include="LdrWatcher.h" />
-    <ClInclude Include="GL\GLExtensions\ARB_texture_compression_bptc.h" />
     <ClInclude Include="Lazy.h" />
-    <ClInclude Include="UPnP.h" />
-    <ClInclude Include="Version.h" />
-    <ClInclude Include="Config\ConfigInfo.h" />
-    <ClInclude Include="SPSCQueue.h" />
+    <ClInclude Include="LdrWatcher.h" />
+    <ClInclude Include="GL\GLExtensions\ARB_texture_compression_bptc.h">
+      <Filter>GL\GLExtensions</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CDUtils.cpp" />
@@ -269,6 +270,7 @@
     <ClCompile Include="CommonFuncs.cpp" />
     <ClCompile Include="Config\Config.cpp" />
     <ClCompile Include="Config\Layer.cpp" />
+    <ClCompile Include="Config\Section.cpp" />
     <ClCompile Include="ENetUtil.cpp" />
     <ClCompile Include="FileSearch.cpp" />
     <ClCompile Include="FileUtil.cpp" />
@@ -283,6 +285,7 @@
     <ClCompile Include="Network.cpp" />
     <ClCompile Include="PcapFile.cpp" />
     <ClCompile Include="Profiler.cpp" />
+    <ClCompile Include="QoSSession.h" />
     <ClCompile Include="SDCardUtil.cpp" />
     <ClCompile Include="SettingsHandler.cpp" />
     <ClCompile Include="StringUtil.cpp" />
@@ -311,6 +314,7 @@
     <ClCompile Include="GekkoDisassembler.cpp" />
     <ClCompile Include="JitRegister.cpp" />
     <ClCompile Include="TraversalClient.cpp" />
+    <ClCompile Include="UPnP.cpp" />
     <ClCompile Include="Logging\ConsoleListenerWin.cpp">
       <Filter>Logging</Filter>
     </ClCompile>
@@ -331,8 +335,6 @@
     <ClCompile Include="File.cpp" />
     <ClCompile Include="LdrWatcher.cpp" />
     <ClCompile Include="CompatPatches.cpp" />
-    <ClCompile Include="UPnP.cpp" />
-    <ClCompile Include="Config\ConfigInfo.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />

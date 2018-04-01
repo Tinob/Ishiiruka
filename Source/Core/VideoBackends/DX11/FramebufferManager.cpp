@@ -330,7 +330,7 @@ void FramebufferManager::SetEFBCachedDepth(u32 x, u32 y, float value)
 
 void FramebufferManager::PopulateEFBColorCache()
 {
-  _dbg_assert_(!m_efb.color_cache_buf_map.pData, "cache is invalid");
+  DEBUG_ASSERT_MSG(VIDEO, !m_efb.color_cache_buf_map.pData, "cache is invalid");
 
   // for non-1xIR or multisampled cases, we need to copy to an intermediate texture first
   ID3D11Texture2D* src_texture;
@@ -368,7 +368,7 @@ void FramebufferManager::PopulateEFBColorCache()
 
 void FramebufferManager::PopulateEFBDepthCache()
 {
-  _dbg_assert_(!m_efb.depth_cache_buf_map.pData, "cache is invalid");
+  DEBUG_ASSERT_MSG(VIDEO, !m_efb.depth_cache_buf_map.pData, "cache is invalid");
 
   // for non-1xIR or multisampled cases, we need to copy to an intermediate texture first
   ID3D11Texture2D* src_texture;

@@ -11,7 +11,7 @@
 #include <string>
 
 #include "Core/DSP/DSPCommon.h"
-#include "Core/DSP/Jit/DSPEmitter.h"
+#include "Core/DSP/Jit/x64/DSPEmitter.h"
 
 namespace DSP
 {
@@ -43,18 +43,18 @@ enum partype_t
   P_ACCL = P_REG | 0x1c00,   // used for low part of accum
   P_REG1C = P_REG | 0x1c10,  // gcdsptool calls this P_ACCLM
   P_ACCM = P_REG | 0x1e00,   // used for mid part of accum
-  // The following are not in gcdsptool
-  P_ACCM_D = P_REG | 0x1e80,
-  P_ACC = P_REG | 0x2000,  // used for full accum.
-  P_ACC_D = P_REG | 0x2080,
-  P_AX = P_REG | 0x2200,
-  P_REGS_MASK = 0x03f80,  // gcdsptool's value = 0x01f80
-  P_REF = P_REG | 0x4000,
-  P_PRG = P_REF | P_REG,
+                             // The following are not in gcdsptool
+                             P_ACCM_D = P_REG | 0x1e80,
+                             P_ACC = P_REG | 0x2000,  // used for full accum.
+                             P_ACC_D = P_REG | 0x2080,
+                             P_AX = P_REG | 0x2200,
+                             P_REGS_MASK = 0x03f80,  // gcdsptool's value = 0x01f80
+                             P_REF = P_REG | 0x4000,
+                             P_PRG = P_REF | P_REG,
 
-  // The following seem like junk:
-  // P_REG10     = P_REG | 0x1000,
-  // P_AX_D      = P_REG | 0x2280,
+                             // The following seem like junk:
+                             // P_REG10     = P_REG | 0x1000,
+                             // P_AX_D      = P_REG | 0x2280,
 };
 
 struct param2_t
@@ -68,8 +68,8 @@ struct param2_t
 
 struct DSPOPCTemplate
 {
-  using InterpreterFunction = void (*)(UDSPInstruction);
-  using JITFunction = void (DSP::JIT::x86::DSPEmitter::*)(UDSPInstruction);
+  using InterpreterFunction = void(*)(UDSPInstruction);
+  using JITFunction = void (JIT::x64::DSPEmitter::*)(UDSPInstruction);
 
   const char* name;
   u16 opcode;
@@ -87,8 +87,6 @@ struct DSPOPCTemplate
   bool reads_pc;
   bool updates_sr;
 };
-
-typedef DSPOPCTemplate opc_t;
 
 // Opcodes
 extern const DSPOPCTemplate cw;

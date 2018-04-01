@@ -280,30 +280,17 @@ if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
   # Drop unreachable code and data.
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-dead_strip,-dead_strip_dylibs")
 
-  find_library(APPKIT_LIBRARY AppKit)
+ find_library(APPKIT_LIBRARY AppKit)
   find_library(APPSERV_LIBRARY ApplicationServices)
-  find_library(AU_LIBRARY AudioUnit)
   find_library(CARBON_LIBRARY Carbon)
   find_library(COCOA_LIBRARY Cocoa)
-  find_library(COREAUDIO_LIBRARY CoreAudio)
-  find_library(COREFUND_LIBRARY CoreFoundation)
+  find_library(COREFOUNDATION_LIBRARY CoreFoundation)
   find_library(CORESERV_LIBRARY CoreServices)
+  find_library(FORCEFEEDBACK_LIBRARY ForceFeedback)
   find_library(FOUNDATION_LIBRARY Foundation)
   find_library(IOB_LIBRARY IOBluetooth)
   find_library(IOK_LIBRARY IOKit)
-  find_library(FORCEFEEDBACK ForceFeedback)
   find_library(OPENGL_LIBRARY OpenGL)
-
-  # Link against OS X system frameworks.
-  list(APPEND LIBS
-    ${APPKIT_LIBRARY}
-    ${AU_LIBRARY}
-    ${COREAUDIO_LIBRARY}
-    ${COREFUND_LIBRARY}
-    ${CORESERV_LIBRARY}
-    ${IOK_LIBRARY}
-    ${FORCEFEEDBACK}
-  )
 endif()
 
 if(ENABLE_LTO)
@@ -758,6 +745,14 @@ if(ENABLE_WX)
     add_subdirectory(Externals/wxWidgets3)
     set(wxWidgets_FOUND TRUE)
   endif()
+endif()
+
+find_package(Libsystemd)
+if(SYSTEMD_FOUND)
+  message(STATUS "libsystemd found, enabling traversal server watchdog support")
+  add_definitions(-DHAVE_LIBSYSTEMD)
+else()
+  message(STATUS "libsystemd not found, disabling traversal server watchdog support")
 endif()
 
 ########################################

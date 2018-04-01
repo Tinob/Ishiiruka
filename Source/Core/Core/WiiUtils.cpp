@@ -160,6 +160,28 @@ bool InstallWAD(const std::string& wad_path)
   return InstallWAD(ios, DiscIO::WiiWAD{ wad_path }, InstallType::Permanent);
 }
 
+bool UninstallTitle(u64 title_id)
+{
+  IOS::HLE::Kernel ios;
+  return ios.GetES()->DeleteTitleContent(title_id) == IOS::HLE::IPC_SUCCESS;
+}
+
+bool IsTitleInstalled(u64 title_id)
+{
+  const std::string content_dir =
+    Common::GetTitleContentPath(title_id, Common::FromWhichRoot::FROM_CONFIGURED_ROOT);
+
+  if (!File::IsDirectory(content_dir))
+    return false;
+
+  // Since this isn't IOS and we only need a simple way to figure out if a title is installed,
+  // we make the (reasonable) assumption that having more than just the TMD in the content
+  // directory means that the title is installed.
+  const auto entries = File::ScanDirectoryTree(content_dir, false);
+  return std::any_of(entries.children.begin(), entries.children.end(),
+    [](const auto& file) { return file.virtualName != "title.tmd"; });
+}
+
 // Common functionality for system updaters.
 class SystemUpdater
 {
@@ -186,12 +208,11 @@ std::string SystemUpdater::GetDeviceRegion()
   if (tmd.IsValid())
   {
     const DiscIO::Region region = tmd.GetRegion();
-    static const std::map<DiscIO::Region, std::string> regions = {
-      { DiscIO::Region::NTSC_J, "JPN" },
-      { DiscIO::Region::NTSC_U, "USA" },
-      { DiscIO::Region::PAL, "EUR" },
-      { DiscIO::Region::NTSC_K, "KOR" },
-      { DiscIO::Region::UNKNOWN_REGION, "EUR" } };
+    static const std::map<DiscIO::Region, std::string> regions = { { DiscIO::Region::NTSC_J, "JPN" },
+    { DiscIO::Region::NTSC_U, "USA" },
+    { DiscIO::Region::PAL, "EUR" },
+    { DiscIO::Region::NTSC_K, "KOR" },
+    { DiscIO::Region::Unknown, "EUR" } };
     return regions.at(region);
   }
   return "";
@@ -318,16 +339,16 @@ OnlineSystemUpdater::Response OnlineSystemUpdater::GetSystemTitles()
   // Construct the request by loading the template first, then updating some fields.
   pugi::xml_document doc;
   pugi::xml_parse_result result = doc.load_string(GET_SYSTEM_TITLES_REQUEST_PAYLOAD);
-  _assert_(result);
+  ASSERT(result);
 
   // Nintendo does not really care about the device ID or verify that we *are* that device,
   // as long as it is a valid Wii device ID.
   const std::string device_id = GetDeviceId();
-  _assert_(doc.select_node("//DeviceId").node().text().set(device_id.c_str()));
+  ASSERT(doc.select_node("//DeviceId").node().text().set(device_id.c_str()));
 
   // Write the correct device region.
   const std::string region = m_requested_region.empty() ? GetDeviceRegion() : m_requested_region;
-  _assert_(doc.select_node("//RegionId").node().text().set(region.c_str()));
+  ASSERT(doc.select_node("//RegionId").node().text().set(region.c_str()));
 
   std::ostringstream stream;
   doc.save(stream);
@@ -338,11 +359,11 @@ OnlineSystemUpdater::Response OnlineSystemUpdater::GetSystemTitles()
   // This is fine, because IOS has signature checks.
   const Common::HttpRequest::Response response =
     m_http.Post("http://nus.shop.wii.com/nus/services/NetUpdateSOAP", request,
-    {
-      { "SOAPAction", "urn:nus.wsapi.broadon.com/GetSystemUpdate" },
+      {
+        { "SOAPAction", "urn:nus.wsapi.broadon.com/GetSystemUpdate" },
       { "User-Agent", "wii libnup/1.0" },
       { "Content-Type", "text/xml; charset=utf-8" },
-    });
+      });
 
   if (!response)
     return {};

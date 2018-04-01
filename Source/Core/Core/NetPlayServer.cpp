@@ -14,7 +14,6 @@
 #include <unordered_set>
 #include <vector>
 
-#include "Common/Common.h"
 #include "Common/ENetUtil.h"
 #include "Common/FileUtil.h"
 #include "Common/Logging/Log.h"
@@ -22,10 +21,12 @@
 #include "Common/StringUtil.h"
 #include "Common/UPnP.h"
 #include "Common/Version.h"
+#include "Core/Config/NetplaySettings.h"
 #include "Core/ConfigManager.h"
 #include "Core/HW/Sram.h"
 #include "Core/NetPlayClient.h"  //for NetPlayUI
 #include "InputCommon/GCPadStatus.h"
+
 #if !defined(_WIN32)
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -274,6 +275,7 @@ unsigned int NetPlayServer::OnConnect(ENetPeer* socket)
   Client player;
   player.pid = pid;
   player.socket = socket;
+
   rpac >> player.revision;
   rpac >> player.name;
 
@@ -344,10 +346,13 @@ unsigned int NetPlayServer::OnConnect(ENetPeer* socket)
     Send(player.socket, spac);
   }
 
+  if (Config::Get(Config::NETPLAY_ENABLE_QOS))
+    player.qos_session = Common::QoSSession(player.socket);
+
   // add client to the player list
   {
     std::lock_guard<std::recursive_mutex> lkp(m_crit.players);
-    m_players.emplace(*(PlayerId*)player.socket->data, player);
+    m_players.emplace(*(PlayerId*)player.socket->data, std::move(player));
     UpdatePadMapping();  // sync pad mappings with everyone
     UpdateWiimoteMapping();
   }
@@ -521,7 +526,7 @@ unsigned int NetPlayServer::OnData(sf::Packet& packet, Client& player)
     PadMapping map = 0;
     GCPadStatus pad;
     packet >> map >> pad.button >> pad.analogA >> pad.analogB >> pad.stickX >> pad.stickY >>
-      pad.substickX >> pad.substickY >> pad.triggerLeft >> pad.triggerRight;
+      pad.substickX >> pad.substickY >> pad.triggerLeft >> pad.triggerRight >> pad.isConnected;
 
     // If the data is not from the correct player,
     // then disconnect them.
@@ -536,6 +541,7 @@ unsigned int NetPlayServer::OnData(sf::Packet& packet, Client& player)
     spac << map << pad.button << pad.analogA << pad.analogB << pad.stickX << pad.stickY
       << pad.substickX << pad.substickY << pad.triggerLeft << pad.triggerRight
       << pad.isConnected;
+
     SendToClients(spac, player.pid);
   }
   break;

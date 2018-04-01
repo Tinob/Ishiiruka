@@ -36,7 +36,7 @@ StateTracker* StateTracker::GetInstance()
 
 bool StateTracker::CreateInstance()
 {
-  _assert_(!s_state_tracker);
+  ASSERT(!s_state_tracker);
   s_state_tracker = std::make_unique<StateTracker>();
   if (!s_state_tracker->Initialize())
   {
@@ -338,7 +338,7 @@ void StateTracker::SetIndexBuffer(VkBuffer buffer, VkDeviceSize offset, VkIndexT
 void StateTracker::SetRenderPass(VkRenderPass load_render_pass, VkRenderPass clear_render_pass)
 {
   // Should not be changed within a render pass.
-  _assert_(!InRenderPass());
+  ASSERT(!InRenderPass());
 
   // The clear and load render passes are compatible, so we don't need to change our pipeline.
   if (m_pipeline_state.render_pass != load_render_pass)
@@ -354,7 +354,7 @@ void StateTracker::SetRenderPass(VkRenderPass load_render_pass, VkRenderPass cle
 void StateTracker::SetFramebuffer(VkFramebuffer framebuffer, const VkRect2D& render_area)
 {
   // Should not be changed within a render pass.
-  _assert_(!InRenderPass());
+  ASSERT(!InRenderPass());
   m_framebuffer = framebuffer;
   m_framebuffer_size = render_area;
 }
@@ -812,7 +812,7 @@ void StateTracker::EndRenderPass()
 
 void StateTracker::BeginClearRenderPass(const VkRect2D& area, const VkClearValue clear_values[2])
 {
-  _assert_(!InRenderPass());
+  ASSERT(!InRenderPass());
 
   m_current_render_pass = m_clear_render_pass;
   m_framebuffer_render_area = area;

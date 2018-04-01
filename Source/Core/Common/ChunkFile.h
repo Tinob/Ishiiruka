@@ -175,7 +175,7 @@ public:
   }
 
   template <typename T, std::size_t N>
-  void DoArray(T(&arr)[N])
+  void DoArray(T (&arr)[N])
   {
     DoArray(arr, static_cast<u32>(N));
   }
@@ -248,8 +248,8 @@ public:
     if (mode == PointerWrap::MODE_READ && cookie != arbitraryNumber)
     {
       PanicAlertT("Error: After \"%s\", found %d (0x%X) instead of save marker %d (0x%X). Aborting "
-        "savestate load...",
-        prevName.c_str(), cookie, cookie, arbitraryNumber, arbitraryNumber);
+                  "savestate load...",
+                  prevName.c_str(), cookie, cookie, arbitraryNumber, arbitraryNumber);
       mode = PointerWrap::MODE_MEASURE;
     }
   }
@@ -288,9 +288,9 @@ private:
       break;
 
     case MODE_VERIFY:
-      _dbg_assert_msg_(COMMON, !memcmp(data, *ptr, size),
-        "Savestate verification failure: buf %p != %p (size %u).\n", data, *ptr,
-        size);
+      DEBUG_ASSERT_MSG(COMMON, !memcmp(data, *ptr, size),
+                       "Savestate verification failure: buf %p != %p (size %u).\n", data, *ptr,
+                       size);
       break;
     }
 

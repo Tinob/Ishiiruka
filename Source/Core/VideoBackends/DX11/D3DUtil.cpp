@@ -39,7 +39,7 @@ UtilVertexBuffer::~UtilVertexBuffer()
 // returns vertex offset to the new data
 int UtilVertexBuffer::AppendData(void* data, u32 size, u32 vertex_size)
 {
-  _dbg_assert_(VIDEO, size < m_max_size);
+  DEBUG_ASSERT(size < m_max_size);
 
   D3D11_MAPPED_SUBRESOURCE map;
   u32 aligned_offset = Common::AlignUp(m_offset, vertex_size); // align offset to vertex_size bytes
@@ -65,7 +65,7 @@ int UtilVertexBuffer::AppendData(void* data, u32 size, u32 vertex_size)
 
 int UtilVertexBuffer::BeginAppendData(void** write_ptr, u32 size, u32 vertex_size)
 {
-  _dbg_assert_(VIDEO, size < m_max_size);
+  DEBUG_ASSERT(size < m_max_size);
 
   D3D11_MAPPED_SUBRESOURCE map;
   u32 aligned_offset = Common::AlignUp(m_offset, vertex_size); // align offset to vertex_size bytes

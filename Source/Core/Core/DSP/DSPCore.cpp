@@ -21,7 +21,7 @@
 #include "Core/DSP/DSPHost.h"
 #include "Core/DSP/Interpreter/DSPIntUtil.h"
 #include "Core/DSP/Interpreter/DSPInterpreter.h"
-#include "Core/DSP/Jit/DSPEmitter.h"
+#include "Core/DSP/Jit/x64/DSPEmitter.h"
 #include "Core/HW/DSP.h"
 
 namespace DSP
@@ -30,7 +30,7 @@ SDSP g_dsp;
 DSPBreakpoints g_dsp_breakpoints;
 static State core_state = State::Stopped;
 bool g_init_hax = false;
-std::unique_ptr<JIT::x86::DSPEmitter> g_dsp_jit;
+std::unique_ptr<JIT::x64::DSPEmitter> g_dsp_jit;
 std::unique_ptr<DSPCaptureLogger> g_dsp_cap;
 static Common::Event step_event;
 
@@ -43,26 +43,26 @@ static bool VerifyRoms()
     u32 hash_drom;  // dsp_coef.bin
   };
 
-  static const std::array<DspRomHashes, 6> known_roms = {{
+  static const std::array<DspRomHashes, 6> known_roms = { {
       // Official Nintendo ROM
-      {0x66f334fe, 0xf3b93527},
+    { 0x66f334fe, 0xf3b93527 },
 
-      // LM1234 replacement ROM (Zelda UCode only)
-      {0x9c8f593c, 0x10000001},
+    // LM1234 replacement ROM (Zelda UCode only)
+  { 0x9c8f593c, 0x10000001 },
 
-      // delroth's improvement on LM1234 replacement ROM (Zelda and AX only,
-      // IPL/Card/GBA still broken)
-      {0xd9907f71, 0xb019c2fb},
+  // delroth's improvement on LM1234 replacement ROM (Zelda and AX only,
+  // IPL/Card/GBA still broken)
+  { 0xd9907f71, 0xb019c2fb },
 
-      // above with improved resampling coefficients
-      {0xd9907f71, 0xdb6880c1},
+  // above with improved resampling coefficients
+  { 0xd9907f71, 0xdb6880c1 },
 
-      // above with support for GBA ucode
-      {0x3aa4a793, 0xa4a575f5},
+  // above with support for GBA ucode
+  { 0x3aa4a793, 0xa4a575f5 },
 
-      // above with fix to skip bootucode_ax when running from ROM entrypoint
-      {0x128ea7a2, 0xa4a575f5},
-  }};
+  // above with fix to skip bootucode_ax when running from ROM entrypoint
+  { 0x128ea7a2, 0xa4a575f5 },
+    } };
 
   u32 hash_irom = HashAdler32((u8*)g_dsp.irom, DSP_IROM_BYTE_SIZE);
   u32 hash_drom = HashAdler32((u8*)g_dsp.coef, DSP_COEF_BYTE_SIZE);
@@ -78,8 +78,8 @@ static bool VerifyRoms()
   if (rom_idx < 0)
   {
     if (AskYesNoT("Your DSP ROMs have incorrect hashes.\n"
-                  "Would you like to stop now to fix the problem?\n"
-                  "If you select \"No\", audio might be garbled."))
+      "Would you like to stop now to fix the problem?\n"
+      "If you select \"No\", audio might be garbled."))
       return false;
   }
 
@@ -171,7 +171,7 @@ bool DSPCore_Init(const DSPInitOptions& opts)
 
   // Initialize JIT, if necessary
   if (opts.core_type == DSPInitOptions::CORE_JIT)
-    g_dsp_jit = std::make_unique<JIT::x86::DSPEmitter>();
+    g_dsp_jit = std::make_unique<JIT::x64::DSPEmitter>();
 
   g_dsp_cap.reset(opts.capture_logger);
 
@@ -274,7 +274,7 @@ int DSPCore_RunCycles(int cycles)
     switch (core_state)
     {
     case State::Running:
-// Seems to slow things down
+      // Seems to slow things down
 #if defined(_DEBUG) || defined(DEBUGFAST)
       cycles = Interpreter::RunCyclesDebug(cycles);
 #else
@@ -373,7 +373,7 @@ u16 DSPCore_ReadRegister(size_t reg)
   case DSP_REG_ACM1:
     return g_dsp.r.ac[reg - DSP_REG_ACM0].m;
   default:
-    _assert_msg_(DSP_CORE, 0, "cannot happen");
+    ASSERT_MSG(DSP_CORE, 0, "cannot happen");
     return 0;
   }
 }

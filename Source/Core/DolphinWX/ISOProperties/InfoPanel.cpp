@@ -5,6 +5,7 @@
 #include "DolphinWX/ISOProperties/InfoPanel.h"
 
 #include <algorithm>
+#include <cinttypes>
 #include <iterator>
 #include <optional>
 #include <string>
@@ -31,9 +32,9 @@
 #include "Core/IOS/ES/Formats.h"
 #include "DiscIO/Enums.h"
 #include "DiscIO/Volume.h"
-#include "DolphinWX/ISOFile.h"
 #include "DolphinWX/ISOProperties/ISOProperties.h"
 #include "DolphinWX/WxUtils.h"
+#include "UICommon/GameFile.h"
 
 namespace
 {
@@ -51,37 +52,37 @@ wxArrayString GetLanguageChoiceStrings(const std::vector<DiscIO::Language>& lang
   {
     switch (language)
     {
-    case DiscIO::Language::LANGUAGE_JAPANESE:
+    case DiscIO::Language::Japanese:
       available_languages.Add(_("Japanese"));
       break;
-    case DiscIO::Language::LANGUAGE_ENGLISH:
+    case DiscIO::Language::English:
       available_languages.Add(_("English"));
       break;
-    case DiscIO::Language::LANGUAGE_GERMAN:
+    case DiscIO::Language::German:
       available_languages.Add(_("German"));
       break;
-    case DiscIO::Language::LANGUAGE_FRENCH:
+    case DiscIO::Language::French:
       available_languages.Add(_("French"));
       break;
-    case DiscIO::Language::LANGUAGE_SPANISH:
+    case DiscIO::Language::Spanish:
       available_languages.Add(_("Spanish"));
       break;
-    case DiscIO::Language::LANGUAGE_ITALIAN:
+    case DiscIO::Language::Italian:
       available_languages.Add(_("Italian"));
       break;
-    case DiscIO::Language::LANGUAGE_DUTCH:
+    case DiscIO::Language::Dutch:
       available_languages.Add(_("Dutch"));
       break;
-    case DiscIO::Language::LANGUAGE_SIMPLIFIED_CHINESE:
+    case DiscIO::Language::SimplifiedChinese:
       available_languages.Add(_("Simplified Chinese"));
       break;
-    case DiscIO::Language::LANGUAGE_TRADITIONAL_CHINESE:
+    case DiscIO::Language::TraditionalChinese:
       available_languages.Add(_("Traditional Chinese"));
       break;
-    case DiscIO::Language::LANGUAGE_KOREAN:
+    case DiscIO::Language::Korean:
       available_languages.Add(_("Korean"));
       break;
-    case DiscIO::Language::LANGUAGE_UNKNOWN:
+    case DiscIO::Language::Unknown:
     default:
       available_languages.Add(_("Unknown"));
       break;
@@ -95,44 +96,44 @@ wxString GetCountryName(DiscIO::Country country)
 {
   switch (country)
   {
-  case DiscIO::Country::COUNTRY_AUSTRALIA:
+  case DiscIO::Country::Australia:
     return _("Australia");
-  case DiscIO::Country::COUNTRY_EUROPE:
+  case DiscIO::Country::Europe:
     return _("Europe");
-  case DiscIO::Country::COUNTRY_FRANCE:
+  case DiscIO::Country::France:
     return _("France");
-  case DiscIO::Country::COUNTRY_ITALY:
+  case DiscIO::Country::Italy:
     return _("Italy");
-  case DiscIO::Country::COUNTRY_GERMANY:
+  case DiscIO::Country::Germany:
     return _("Germany");
-  case DiscIO::Country::COUNTRY_NETHERLANDS:
+  case DiscIO::Country::Netherlands:
     return _("Netherlands");
-  case DiscIO::Country::COUNTRY_RUSSIA:
+  case DiscIO::Country::Russia:
     return _("Russia");
-  case DiscIO::Country::COUNTRY_SPAIN:
+  case DiscIO::Country::Spain:
     return _("Spain");
-  case DiscIO::Country::COUNTRY_USA:
+  case DiscIO::Country::USA:
     return _("USA");
-  case DiscIO::Country::COUNTRY_JAPAN:
+  case DiscIO::Country::Japan:
     return _("Japan");
-  case DiscIO::Country::COUNTRY_KOREA:
+  case DiscIO::Country::Korea:
     return _("Korea");
-  case DiscIO::Country::COUNTRY_TAIWAN:
+  case DiscIO::Country::Taiwan:
     return _("Taiwan");
-  case DiscIO::Country::COUNTRY_WORLD:
+  case DiscIO::Country::World:
     return _("World");
-  case DiscIO::Country::COUNTRY_UNKNOWN:
+  case DiscIO::Country::Unknown:
   default:
     return _("Unknown");
   }
 }
 
 int FindPreferredLanguageIndex(DiscIO::Language preferred_language,
-                               const std::vector<DiscIO::Language>& languages)
+  const std::vector<DiscIO::Language>& languages)
 {
   const auto iter =
-      std::find_if(languages.begin(), languages.end(),
-                   [preferred_language](auto language) { return language == preferred_language; });
+    std::find_if(languages.begin(), languages.end(),
+      [preferred_language](auto language) { return language == preferred_language; });
 
   if (iter == languages.end())
     return 0;
@@ -141,9 +142,9 @@ int FindPreferredLanguageIndex(DiscIO::Language preferred_language,
 }
 }  // Anonymous namespace
 
-InfoPanel::InfoPanel(wxWindow* parent, wxWindowID id, const GameListItem& item,
-                     const std::unique_ptr<DiscIO::Volume>& opened_iso)
-    : wxPanel{parent, id}, m_game_list_item{item}, m_opened_iso{opened_iso}
+InfoPanel::InfoPanel(wxWindow* parent, wxWindowID id, const UICommon::GameFile& item,
+  const std::unique_ptr<DiscIO::Volume>& opened_iso)
+  : wxPanel{ parent, id }, m_game_list_item{ item }, m_opened_iso{ opened_iso }
 {
   CreateGUI();
   BindEvents();
@@ -190,7 +191,11 @@ void InfoPanel::LoadISODetails()
   {
     const IOS::ES::TMDReader tmd = m_opened_iso->GetTMD(m_opened_iso->GetGamePartition());
     if (tmd.IsValid())
+    {
       m_ios_version->SetValue(StringFromFormat("IOS%u", static_cast<u32>(tmd.GetIOSId())));
+      m_game_id->SetValue(StrToWxStr(StringFromFormat(
+        "%s (%016" PRIx64 ")", m_opened_iso->GetGameID().c_str(), tmd.GetTitleId())));
+    }
   }
 }
 
@@ -204,8 +209,8 @@ void InfoPanel::LoadBannerDetails()
 
 void InfoPanel::LoadBannerImage()
 {
-  const auto& banner_image = m_game_list_item.GetBannerImage();
-  const auto banner_min_size = m_banner->GetMinSize();
+  const wxImage banner_image = WxUtils::ToWxImage(m_game_list_item.GetBannerImage());
+  const wxSize banner_min_size = m_banner->GetMinSize();
 
   if (banner_image.IsOk())
   {
@@ -220,14 +225,14 @@ void InfoPanel::LoadBannerImage()
 
 wxStaticBoxSizer* InfoPanel::CreateISODetailsSizer()
 {
-  std::vector<std::pair<wxString, wxTextCtrl*&>> controls = {{
-      {_("Internal Name:"), m_internal_name},
-      {_("Game ID:"), m_game_id},
-      {_("Country:"), m_country},
-      {_("Maker ID:"), m_maker_id},
-      {_("Revision:"), m_revision},
-      {_("Apploader Date:"), m_date},
-  }};
+  std::vector<std::pair<wxString, wxTextCtrl*&>> controls = { {
+    { _("Internal Name:"), m_internal_name },
+  { _("Game ID:"), m_game_id },
+  { _("Country:"), m_country },
+  { _("Maker ID:"), m_maker_id },
+  { _("Revision:"), m_revision },
+  { _("Apploader Date:"), m_date },
+    } };
   if (m_opened_iso->GetTMD(m_opened_iso->GetGamePartition()).IsValid())
     controls.emplace_back(_("IOS Version:"), m_ios_version);
 
@@ -239,14 +244,14 @@ wxStaticBoxSizer* InfoPanel::CreateISODetailsSizer()
     auto* const text = new wxStaticText(this, wxID_ANY, control.first);
     iso_details->Add(text, wxGBPosition(row, 0), wxGBSpan(1, 1), wxALIGN_CENTER_VERTICAL);
     control.second = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize,
-                                    wxTE_READONLY);
+      wxTE_READONLY);
     iso_details->Add(control.second, wxGBPosition(row, 1), wxGBSpan(1, 2), wxEXPAND);
     ++row;
   }
 
   auto* const md5_sum_text = new wxStaticText(this, wxID_ANY, _("MD5 Checksum:"));
   m_md5_sum = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize,
-                             wxTE_READONLY);
+    wxTE_READONLY);
   m_md5_sum_compute = new wxButton(this, wxID_ANY, _("Compute"));
 
   iso_details->Add(md5_sum_text, wxGBPosition(row, 0), wxGBSpan(1, 1), wxALIGN_CENTER_VERTICAL);
@@ -269,16 +274,16 @@ wxStaticBoxSizer* InfoPanel::CreateBannerDetailsSizer()
 {
   auto* const name_text = new wxStaticText(this, wxID_ANY, _("Name:"));
   m_name = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize,
-                          wxTE_READONLY);
+    wxTE_READONLY);
   auto* const maker_text = new wxStaticText(this, wxID_ANY, _("Maker:"));
   m_maker = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize,
-                           wxTE_READONLY);
+    wxTE_READONLY);
   auto* const comment_text = new wxStaticText(this, wxID_ANY, _("Description:"));
   m_comment = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize,
-                             wxTE_MULTILINE | wxTE_READONLY);
+    wxTE_MULTILINE | wxTE_READONLY);
   auto* const banner_text = new wxStaticText(this, wxID_ANY, _("Banner:"));
   m_banner =
-      new wxStaticBitmap(this, wxID_ANY, wxNullBitmap, wxDefaultPosition, FromDIP(wxSize(96, 32)));
+    new wxStaticBitmap(this, wxID_ANY, wxNullBitmap, wxDefaultPosition, FromDIP(wxSize(96, 32)));
 
   auto* const languages_text = new wxStaticText(this, wxID_ANY, _("Show Language:"));
   m_languages = CreateCommentLanguageChoice();
@@ -288,7 +293,7 @@ wxStaticBoxSizer* InfoPanel::CreateBannerDetailsSizer()
   banner_details->Add(languages_text, wxGBPosition(0, 0), wxGBSpan(1, 1), wxALIGN_CENTER_VERTICAL);
   // Comboboxes cannot be safely stretched vertically on Windows.
   banner_details->Add(WxUtils::GiveMinSize(m_languages, wxDefaultSize), wxGBPosition(0, 1),
-                      wxGBSpan(1, 1), wxEXPAND);
+    wxGBSpan(1, 1), wxEXPAND);
   banner_details->Add(name_text, wxGBPosition(1, 0), wxGBSpan(1, 1), wxALIGN_CENTER_VERTICAL);
   banner_details->Add(m_name, wxGBPosition(1, 1), wxGBSpan(1, 1), wxEXPAND);
   banner_details->Add(maker_text, wxGBPosition(2, 0), wxGBSpan(1, 1), wxALIGN_CENTER_VERTICAL);
@@ -328,11 +333,11 @@ wxChoice* InfoPanel::CreateCommentLanguageChoice()
 void InfoPanel::OnComputeMD5(wxCommandEvent& WXUNUSED(event))
 {
   wxProgressDialog progress_dialog(_("Computing MD5 checksum"), _("Working..."), 100, this,
-                                   wxPD_APP_MODAL | wxPD_AUTO_HIDE | wxPD_CAN_ABORT |
-                                       wxPD_ELAPSED_TIME | wxPD_ESTIMATED_TIME |
-                                       wxPD_REMAINING_TIME | wxPD_SMOOTH);
+    wxPD_APP_MODAL | wxPD_AUTO_HIDE | wxPD_CAN_ABORT |
+    wxPD_ELAPSED_TIME | wxPD_ESTIMATED_TIME |
+    wxPD_REMAINING_TIME | wxPD_SMOOTH);
 
-  const auto result = MD5::MD5Sum(m_game_list_item.GetFileName(), [&progress_dialog](int progress) {
+  const auto result = MD5::MD5Sum(m_game_list_item.GetFilePath(), [&progress_dialog](int progress) {
     return progress_dialog.Update(progress);
   });
 
@@ -357,12 +362,12 @@ void InfoPanel::OnRightClickBanner(wxMouseEvent& WXUNUSED(event))
 void InfoPanel::OnSaveBannerImage(wxCommandEvent& WXUNUSED(event))
 {
   wxFileDialog dialog(this, _("Save as..."), wxGetHomeDir(),
-                      wxString::Format("%s.png", m_game_id->GetValue()), wxALL_FILES_PATTERN,
-                      wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+    wxString::Format("%s.png", m_game_id->GetValue()), wxALL_FILES_PATTERN,
+    wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
 
   if (dialog.ShowModal() == wxID_OK)
   {
-    m_game_list_item.GetBannerImage().SaveFile(dialog.GetPath());
+    WxUtils::ToWxImage(m_game_list_item.GetBannerImage()).SaveFile(dialog.GetPath());
   }
 
   Raise();
@@ -370,16 +375,16 @@ void InfoPanel::OnSaveBannerImage(wxCommandEvent& WXUNUSED(event))
 
 void InfoPanel::ChangeBannerDetails(DiscIO::Language language)
 {
-  const auto name = StrToWxStr(m_game_list_item.GetName(language));
+  const auto name = StrToWxStr(m_game_list_item.GetLongName(language));
   const auto comment = StrToWxStr(m_game_list_item.GetDescription(language));
-  const auto maker = StrToWxStr(m_game_list_item.GetCompany());
+  const auto maker = StrToWxStr(m_game_list_item.GetLongMaker(language));
 
   m_name->SetValue(name);
   m_comment->SetValue(comment);
   m_maker->SetValue(maker);
 
   std::string path, filename, extension;
-  SplitPath(m_game_list_item.GetFileName(), &path, &filename, &extension);
+  SplitPath(m_game_list_item.GetFilePath(), &path, &filename, &extension);
 
   // Real disk drives don't have filenames on Windows
   if (filename.empty() && extension.empty())
@@ -387,14 +392,14 @@ void InfoPanel::ChangeBannerDetails(DiscIO::Language language)
 
   const auto game_id = m_game_list_item.GetGameID();
   const auto new_title = wxString::Format("%s%s: %s - %s", StrToWxStr(filename),
-                                          StrToWxStr(extension), StrToWxStr(game_id), name);
+    StrToWxStr(extension), StrToWxStr(game_id), name);
 
   EmitTitleChangeEvent(new_title);
 }
 
 void InfoPanel::EmitTitleChangeEvent(const wxString& new_title)
 {
-  wxCommandEvent event{DOLPHIN_EVT_CHANGE_ISO_PROPERTIES_TITLE, GetId()};
+  wxCommandEvent event {DOLPHIN_EVT_CHANGE_ISO_PROPERTIES_TITLE, GetId()};
   event.SetEventObject(this);
   event.SetString(new_title);
   AddPendingEvent(event);

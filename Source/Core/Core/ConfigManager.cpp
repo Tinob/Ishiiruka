@@ -23,6 +23,7 @@
 #include "Common/MsgHandler.h"
 #include "Common/NandPaths.h"
 #include "Common/StringUtil.h"
+#include "Common/scmrev.h"
 
 #include "Core/Analytics.h"
 #include "Core/Boot/Boot.h"
@@ -90,6 +91,7 @@ void SConfig::SaveSettings()
   SaveNetworkSettings(ini);
   SaveBluetoothPassthroughSettings(ini);
   SaveUSBPassthroughSettings(ini);
+  SaveAutoUpdateSettings(ini);
 
   ini.Save(File::GetUserPath(F_DOLPHINCONFIG_IDX));
 
@@ -170,7 +172,6 @@ void SConfig::SaveInterfaceSettings(IniFile& ini)
   interface->Set("ExtendedFPSInfo", m_InterfaceExtendedFPSInfo);
   interface->Set("ShowActiveTitle", m_show_active_title);
   interface->Set("UseBuiltinTitleDatabase", m_use_builtin_title_database);
-  interface->Set("ShowDevelopmentWarning", m_show_development_warning);
   interface->Set("ThemeName", theme_name);
   interface->Set("PauseOnFocusLost", m_PauseOnFocusLost);
   interface->Set("DisableTooltips", m_DisableTooltips);
@@ -180,7 +181,7 @@ void SConfig::SaveDisplaySettings(IniFile& ini)
 {
   IniFile::Section* display = ini.GetOrCreateSection("Display");
 
-  display->Set("FullscreenResolution", strFullscreenResolution);
+  display->Set("FullscreenDisplayRes", strFullscreenResolution);
   display->Set("Fullscreen", bFullscreen);
   display->Set("RenderToMain", bRenderToMain);
   display->Set("RenderWindowXPos", iRenderWindowXPos);
@@ -190,7 +191,6 @@ void SConfig::SaveDisplaySettings(IniFile& ini)
   display->Set("RenderWindowAutoSize", bRenderWindowAutoSize);
   display->Set("KeepWindowOnTop", bKeepWindowOnTop);
   display->Set("DisableScreenSaver", bDisableScreenSaver);
-  display->Set("ForceNTSCJ", bForceNTSCJ);
 }
 
 void SConfig::SaveGameListSettings(IniFile& ini)
@@ -371,6 +371,14 @@ void SConfig::SaveUSBPassthroughSettings(IniFile& ini)
   section->Set("Devices", devices_string);
 }
 
+void SConfig::SaveAutoUpdateSettings(IniFile& ini)
+{
+  IniFile::Section* section = ini.GetOrCreateSection("AutoUpdate");
+
+  section->Set("TrackForTesting", m_auto_update_track);
+  section->Set("HashOverride", m_auto_update_hash_override);
+}
+
 void SConfig::LoadSettings()
 {
   Config::Load();
@@ -392,6 +400,7 @@ void SConfig::LoadSettings()
   LoadAnalyticsSettings(ini);
   LoadBluetoothPassthroughSettings(ini);
   LoadUSBPassthroughSettings(ini);
+  LoadAutoUpdateSettings(ini);
 }
 
 void SConfig::LoadGeneralSettings(IniFile& ini)
@@ -450,7 +459,6 @@ void SConfig::LoadInterfaceSettings(IniFile& ini)
   interface->Get("ExtendedFPSInfo", &m_InterfaceExtendedFPSInfo, false);
   interface->Get("ShowActiveTitle", &m_show_active_title, true);
   interface->Get("UseBuiltinTitleDatabase", &m_use_builtin_title_database, true);
-  interface->Get("ShowDevelopmentWarning", &m_show_development_warning, true);
   interface->Get("ThemeName", &theme_name, DEFAULT_THEME_DIR);
   interface->Get("PauseOnFocusLost", &m_PauseOnFocusLost, false);
   interface->Get("DisableTooltips", &m_DisableTooltips, false);
@@ -461,7 +469,7 @@ void SConfig::LoadDisplaySettings(IniFile& ini)
   IniFile::Section* display = ini.GetOrCreateSection("Display");
 
   display->Get("Fullscreen", &bFullscreen, false);
-  display->Get("FullscreenResolution", &strFullscreenResolution, "Auto");
+  display->Get("FullscreenDisplayRes", &strFullscreenResolution, "Auto");
   display->Get("RenderToMain", &bRenderToMain, false);
   display->Get("RenderWindowXPos", &iRenderWindowXPos, -1);
   display->Get("RenderWindowYPos", &iRenderWindowYPos, -1);
@@ -470,7 +478,6 @@ void SConfig::LoadDisplaySettings(IniFile& ini)
   display->Get("RenderWindowAutoSize", &bRenderWindowAutoSize, false);
   display->Get("KeepWindowOnTop", &bKeepWindowOnTop, false);
   display->Get("DisableScreenSaver", &bDisableScreenSaver, true);
-  display->Get("ForceNTSCJ", &bForceNTSCJ, false);
 }
 
 void SConfig::LoadGameListSettings(IniFile& ini)
@@ -549,7 +556,7 @@ void SConfig::LoadCoreSettings(IniFile& ini)
   for (int i = 0; i < SerialInterface::MAX_SI_CHANNELS; ++i)
   {
     core->Get(StringFromFormat("SIDevice%i", i), (u32*)&m_SIDevice[i],
-              (i == 0) ? SerialInterface::SIDEVICE_GC_CONTROLLER : SerialInterface::SIDEVICE_NONE);
+      (i == 0) ? SerialInterface::SIDEVICE_GC_CONTROLLER : SerialInterface::SIDEVICE_NONE);
     core->Get(StringFromFormat("AdapterRumble%i", i), &m_AdapterRumble[i], true);
     core->Get(StringFromFormat("SimulateKonga%i", i), &m_AdapterKonga[i], false);
   }
@@ -559,7 +566,7 @@ void SConfig::LoadCoreSettings(IniFile& ini)
   core->Get("WiimoteEnableSpeaker", &m_WiimoteEnableSpeaker, false);
   core->Get("RunCompareServer", &bRunCompareServer, false);
   core->Get("RunCompareClient", &bRunCompareClient, false);
-  core->Get("MMU", &bMMU, false);
+  core->Get("MMU", &bMMU, bMMU);
   core->Get("BBDumpPort", &iBBDumpPort, -1);
   core->Get("SyncGPU", &bSyncGPU, false);
   core->Get("SyncGpuMaxDistance", &iSyncGpuMaxDistance, 200000);
@@ -673,17 +680,26 @@ void SConfig::LoadUSBPassthroughSettings(IniFile& ini)
   }
 }
 
+void SConfig::LoadAutoUpdateSettings(IniFile& ini)
+{
+  IniFile::Section* section = ini.GetOrCreateSection("AutoUpdate");
+
+  // TODO: Rename and default to SCM_UPDATE_TRACK_STR when ready for general consumption.
+  section->Get("TrackForTesting", &m_auto_update_track, "");
+  section->Get("HashOverride", &m_auto_update_hash_override, "");
+}
+
 void SConfig::ResetRunningGameMetadata()
 {
   SetRunningGameMetadata("00000000", 0, 0, Core::TitleDatabase::TitleType::Other);
 }
 
 void SConfig::SetRunningGameMetadata(const DiscIO::Volume& volume,
-                                     const DiscIO::Partition& partition)
+  const DiscIO::Partition& partition)
 {
   SetRunningGameMetadata(volume.GetGameID(partition), volume.GetTitleID(partition).value_or(0),
-                         volume.GetRevision(partition).value_or(0),
-                         Core::TitleDatabase::TitleType::Other);
+    volume.GetRevision(partition).value_or(0),
+    Core::TitleDatabase::TitleType::Other);
 }
 
 void SConfig::SetRunningGameMetadata(const IOS::ES::TMDReader& tmd)
@@ -698,12 +714,12 @@ void SConfig::SetRunningGameMetadata(const IOS::ES::TMDReader& tmd)
   {
     // If not launching a disc game, just read everything from the TMD.
     SetRunningGameMetadata(tmd.GetGameID(), tmd_title_id, tmd.GetTitleVersion(),
-                           Core::TitleDatabase::TitleType::Channel);
+      Core::TitleDatabase::TitleType::Channel);
   }
 }
 
 void SConfig::SetRunningGameMetadata(const std::string& game_id, u64 title_id, u16 revision,
-                                     Core::TitleDatabase::TitleType type)
+  Core::TitleDatabase::TitleType type)
 {
   const bool was_changed = m_game_id != game_id || m_title_id != title_id || m_revision != revision;
   m_game_id = game_id;
@@ -717,7 +733,7 @@ void SConfig::SetRunningGameMetadata(const std::string& game_id, u64 title_id, u
   else if (title_id != 0)
   {
     m_debugger_game_id =
-        StringFromFormat("%08X_%08X", static_cast<u32>(title_id >> 32), static_cast<u32>(title_id));
+      StringFromFormat("%08X_%08X", static_cast<u32>(title_id >> 32), static_cast<u32>(title_id));
   }
   else
   {
@@ -774,7 +790,11 @@ void SConfig::LoadDefaults()
   bFastmem = true;
   bFPRF = false;
   bAccurateNaNs = false;
+#ifdef _M_X86_64
+  bMMU = true;
+#else
   bMMU = false;
+#endif
   bDCBZOFF = false;
   bLowDCBZHack = false;
   iBBDumpPort = -1;
@@ -845,7 +865,7 @@ const char* SConfig::GetDirectoryForRegion(DiscIO::Region region)
     return EUR_DIR;
 
   case DiscIO::Region::NTSC_K:
-    _assert_msg_(BOOT, false, "NTSC-K is not a valid GameCube region");
+    ASSERT_MSG(BOOT, false, "NTSC-K is not a valid GameCube region");
     return nullptr;
 
   default:
@@ -856,7 +876,7 @@ const char* SConfig::GetDirectoryForRegion(DiscIO::Region region)
 std::string SConfig::GetBootROMPath(const std::string& region_directory) const
 {
   const std::string path =
-      File::GetUserPath(D_GCUSER_IDX) + DIR_SEP + region_directory + DIR_SEP GC_IPL;
+    File::GetUserPath(D_GCUSER_IDX) + DIR_SEP + region_directory + DIR_SEP GC_IPL;
   if (!File::Exists(path))
     return File::GetSysDirectory() + GC_SYS_DIR + DIR_SEP + region_directory + DIR_SEP GC_IPL;
   return path;
@@ -868,7 +888,7 @@ struct SetGameMetadata
   bool operator()(const BootParameters::Disc& disc) const
   {
     config->SetRunningGameMetadata(*disc.volume, disc.volume->GetGamePartition());
-    config->bWii = disc.volume->GetVolumeType() == DiscIO::Platform::WII_DISC;
+    config->bWii = disc.volume->GetVolumeType() == DiscIO::Platform::WiiDisc;
     config->m_disc_booted_from_game_list = true;
     *region = disc.volume->GetRegion();
     return true;
@@ -881,7 +901,7 @@ struct SetGameMetadata
 
     config->bWii = executable.reader->IsWii();
 
-    *region = DiscIO::Region::UNKNOWN_REGION;
+    *region = DiscIO::Region::Unknown;
 
     // Strip the .elf/.dol file extension and directories before the name
     SplitPath(executable.path, nullptr, &config->m_debugger_game_id, nullptr);
@@ -942,7 +962,7 @@ struct SetGameMetadata
   }
 
 private:
-  SConfig* config;
+  SConfig * config;
   DiscIO::Region* region;
 };
 
@@ -954,7 +974,7 @@ bool SConfig::SetPathsAndGameMetadata(const BootParameters& boot)
     return false;
 
   // Fall back to the system menu region, if possible.
-  if (m_region == DiscIO::Region::UNKNOWN_REGION)
+  if (m_region == DiscIO::Region::Unknown)
   {
     IOS::HLE::Kernel ios;
     const IOS::ES::TMDReader system_menu_tmd = ios.GetES()->FindInstalledTMD(Titles::SYSTEM_MENU);
@@ -963,7 +983,7 @@ bool SConfig::SetPathsAndGameMetadata(const BootParameters& boot)
   }
 
   // Fall back to PAL.
-  if (m_region == DiscIO::Region::UNKNOWN_REGION)
+  if (m_region == DiscIO::Region::Unknown)
     m_region = DiscIO::Region::PAL;
 
   // Set up paths
@@ -977,7 +997,7 @@ bool SConfig::SetPathsAndGameMetadata(const BootParameters& boot)
 }
 
 void SConfig::CheckMemcardPath(std::string& memcardPath, const std::string& gameRegion,
-                               bool isSlotA)
+  bool isSlotA)
 {
   std::string ext("." + gameRegion + ".raw");
   if (memcardPath.empty())
@@ -1003,11 +1023,11 @@ void SConfig::CheckMemcardPath(std::string& memcardPath, const std::string& game
         std::string oldFilename = filename;
         filename.replace(filename.size() - 4, 4, ext);
         if (PanicYesNoT("Memory Card filename in Slot %c is incorrect\n"
-                        "Region not specified\n\n"
-                        "Slot %c path was changed to\n"
-                        "%s\n"
-                        "Would you like to copy the old file to this new location?\n",
-                        isSlotA ? 'A' : 'B', isSlotA ? 'A' : 'B', filename.c_str()))
+          "Region not specified\n\n"
+          "Slot %c path was changed to\n"
+          "%s\n"
+          "Would you like to copy the old file to this new location?\n",
+          isSlotA ? 'A' : 'B', isSlotA ? 'A' : 'B', filename.c_str()))
         {
           if (!File::Copy(oldFilename, filename))
             PanicAlertT("Copy failed");
@@ -1034,9 +1054,8 @@ DiscIO::Language SConfig::GetCurrentLanguage(bool wii) const
   DiscIO::Language language = static_cast<DiscIO::Language>(language_value);
 
   // Get rid of invalid values (probably doesn't matter, but might as well do it)
-  if (language > DiscIO::Language::LANGUAGE_UNKNOWN ||
-      language < DiscIO::Language::LANGUAGE_JAPANESE)
-    language = DiscIO::Language::LANGUAGE_UNKNOWN;
+  if (language > DiscIO::Language::Unknown || language < DiscIO::Language::Japanese)
+    language = DiscIO::Language::Unknown;
   return language;
 }
 

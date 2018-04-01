@@ -173,7 +173,11 @@ std::string StringFromFormatV(const char* format, va_list args)
   locale_t previousLocale = uselocale(GetCLocale());
 #endif
   if (vasprintf(&buf, format, args) < 0)
+  {
     ERROR_LOG(COMMON, "Unable to allocate memory for string");
+    buf = nullptr;
+  }
+
 #if !defined(ANDROID) && !defined(__HAIKU__) && !defined(__OpenBSD__)
   uselocale(previousLocale);
 #endif
@@ -477,7 +481,7 @@ std::string UTF16BEToUTF8(const char16_t* str, size_t max_size)
 {
   const char16_t* str_end = std::find(str, str + max_size, '\0');
   std::wstring result(static_cast<size_t>(str_end - str), '\0');
-  std::transform(str, str_end, result.begin(), static_cast<u16(&)(u16)>(Common::swap16));
+  std::transform(str, str_end, result.begin(), static_cast<u16 (&)(u16)>(Common::swap16));
   return UTF16ToUTF8(result);
 }
 

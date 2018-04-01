@@ -35,7 +35,7 @@ USBHost::USBHost(Kernel& ios, const std::string& device_name) : Device(ios, devi
 {
 #ifdef __LIBUSB__
   const int ret = libusb_init(&m_libusb_context);
-  _dbg_assert_msg_(IOS_USB, ret == 0, "Failed to init libusb for USB passthrough.");
+  DEBUG_ASSERT_MSG(IOS_USB, ret == 0, "Failed to init libusb for USB passthrough.");
 #endif
 }
 
@@ -47,7 +47,7 @@ USBHost::~USBHost()
 #endif
 }
 
-ReturnCode USBHost::Open(const OpenRequest& request)
+IPCCommandResult USBHost::Open(const OpenRequest& request)
 {
   // Force a device scan to complete, because some games (including Your Shape) only care
   // about the initial device list (in the first GETDEVICECHANGE reply).
@@ -55,7 +55,7 @@ ReturnCode USBHost::Open(const OpenRequest& request)
   {
   }
   StartThreads();
-  return IPC_SUCCESS;
+  return GetDefaultReply(IPC_SUCCESS);
 }
 
 void USBHost::UpdateWantDeterminism(const bool new_want_determinism)

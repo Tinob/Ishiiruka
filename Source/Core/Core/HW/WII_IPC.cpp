@@ -151,34 +151,38 @@ void RegisterMMIO(MMIO::Mapping* mmio, u32 base)
   mmio->Register(base | IPC_PPCMSG, MMIO::InvalidRead<u32>(), MMIO::DirectWrite<u32>(&ppc_msg));
 
   mmio->Register(base | IPC_PPCCTRL, MMIO::ComplexRead<u32>([](u32) { return ctrl.ppc(); }),
-                 MMIO::ComplexWrite<u32>([](u32, u32 val) {
-                   ctrl.ppc(val);
-                   if (ctrl.X1)
-                     HLE::GetIOS()->EnqueueIPCRequest(ppc_msg);
-                   HLE::GetIOS()->UpdateIPC();
-                   CoreTiming::ScheduleEvent(0, updateInterrupts, 0);
-                 }));
+    MMIO::ComplexWrite<u32>([](u32, u32 val) {
+    ctrl.ppc(val);
+    // The IPC interrupt is triggered when IY1/IY2 is set and
+    // Y1/Y2 is written to -- even when this results in clearing the bit.
+    if ((val >> 2 & 1 && ctrl.IY1) || (val >> 1 & 1 && ctrl.IY2))
+      ppc_irq_flags |= INT_CAUSE_IPC_BROADWAY;
+    if (ctrl.X1)
+      HLE::GetIOS()->EnqueueIPCRequest(ppc_msg);
+    HLE::GetIOS()->UpdateIPC();
+    CoreTiming::ScheduleEvent(0, updateInterrupts, 0);
+  }));
 
   mmio->Register(base | IPC_ARMMSG, MMIO::DirectRead<u32>(&arm_msg), MMIO::InvalidWrite<u32>());
 
   mmio->Register(base | PPC_IRQFLAG, MMIO::InvalidRead<u32>(),
-                 MMIO::ComplexWrite<u32>([](u32, u32 val) {
-                   ppc_irq_flags &= ~val;
-                   HLE::GetIOS()->UpdateIPC();
-                   CoreTiming::ScheduleEvent(0, updateInterrupts, 0);
-                 }));
+    MMIO::ComplexWrite<u32>([](u32, u32 val) {
+    ppc_irq_flags &= ~val;
+    HLE::GetIOS()->UpdateIPC();
+    CoreTiming::ScheduleEvent(0, updateInterrupts, 0);
+  }));
 
   mmio->Register(base | PPC_IRQMASK, MMIO::InvalidRead<u32>(),
-                 MMIO::ComplexWrite<u32>([](u32, u32 val) {
-                   ppc_irq_masks = val;
-                   if (ppc_irq_masks & INT_CAUSE_IPC_BROADWAY)  // wtf?
-                     Reset();
-                   HLE::GetIOS()->UpdateIPC();
-                   CoreTiming::ScheduleEvent(0, updateInterrupts, 0);
-                 }));
+    MMIO::ComplexWrite<u32>([](u32, u32 val) {
+    ppc_irq_masks = val;
+    if (ppc_irq_masks & INT_CAUSE_IPC_BROADWAY)  // wtf?
+      Reset();
+    HLE::GetIOS()->UpdateIPC();
+    CoreTiming::ScheduleEvent(0, updateInterrupts, 0);
+  }));
 
   mmio->Register(base | GPIOB_OUT, MMIO::Constant<u32>(0),
-                 MMIO::DirectWrite<u32>(&sensorbar_power));
+    MMIO::DirectWrite<u32>(&sensorbar_power));
 
   // Register some stubbed/unknown MMIOs required to make Wii games work.
   mmio->Register(base | PPCSPEED, MMIO::InvalidRead<u32>(), MMIO::Nop<u32>());
@@ -204,16 +208,22 @@ static void UpdateInterrupts(u64 userdata, s64 cyclesLate)
 
   // Generate interrupt on PI if any of the devices behind starlet have an interrupt and mask is set
   ProcessorInterface::SetInterrupt(ProcessorInterface::INT_CAUSE_WII_IPC,
-                                   !!(ppc_irq_flags & ppc_irq_masks));
+    !!(ppc_irq_flags & ppc_irq_masks));
+}
+
+void ClearX1()
+{
+  ctrl.X1 = 0;
 }
 
 void GenerateAck(u32 _Address)
 {
-  arm_msg = _Address;  // dunno if it's really set here, but HLE needs to stay in context
   ctrl.Y2 = 1;
   DEBUG_LOG(WII_IPC, "GenerateAck: %08x | %08x [R:%i A:%i E:%i]", ppc_msg, _Address, ctrl.Y1,
-            ctrl.Y2, ctrl.X1);
-  CoreTiming::ScheduleEvent(1000, updateInterrupts, 0);
+    ctrl.Y2, ctrl.X1);
+  // Based on a hardware test, the IPC interrupt takes approximately 100 TB ticks to fire
+  // after Y2 is seen in the control register.
+  CoreTiming::ScheduleEvent(100 * SystemTimers::TIMER_RATIO, updateInterrupts);
 }
 
 void GenerateReply(u32 _Address)
@@ -221,8 +231,10 @@ void GenerateReply(u32 _Address)
   arm_msg = _Address;
   ctrl.Y1 = 1;
   DEBUG_LOG(WII_IPC, "GenerateReply: %08x | %08x [R:%i A:%i E:%i]", ppc_msg, _Address, ctrl.Y1,
-            ctrl.Y2, ctrl.X1);
-  UpdateInterrupts();
+    ctrl.Y2, ctrl.X1);
+  // Based on a hardware test, the IPC interrupt takes approximately 100 TB ticks to fire
+  // after Y1 is seen in the control register.
+  CoreTiming::ScheduleEvent(100 * SystemTimers::TIMER_RATIO, updateInterrupts);
 }
 
 bool IsReady()

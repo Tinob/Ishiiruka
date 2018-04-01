@@ -53,8 +53,8 @@
 #include "DolphinWX/WxUtils.h"
 
 CCodeWindow::CCodeWindow(CFrame* parent, wxWindowID id, const wxPoint& position, const wxSize& size,
-                         long style, const wxString& name)
-    : wxPanel(parent, id, position, size, style, name), Parent(parent)
+  long style, const wxString& name)
+  : wxPanel(parent, id, position, size, style, name), Parent(parent)
 {
   DebugInterface* di = &PowerPC::debug_interface;
 
@@ -73,7 +73,7 @@ CCodeWindow::CCodeWindow(CFrame* parent, wxWindowID id, const wxPoint& position,
   callers->Bind(wxEVT_LISTBOX, &CCodeWindow::OnCallersListChange, this);
 
   m_aui_toolbar = new DolphinAuiToolBar(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
-                                        wxAUI_TB_HORIZONTAL | wxAUI_TB_PLAIN_BACKGROUND);
+    wxAUI_TB_HORIZONTAL | wxAUI_TB_PLAIN_BACKGROUND);
 
   wxSearchCtrl* const address_searchctrl = new wxSearchCtrl(m_aui_toolbar, IDM_ADDRBOX);
   address_searchctrl->Bind(wxEVT_TEXT, &CCodeWindow::OnAddrBoxChange, this);
@@ -91,29 +91,29 @@ CCodeWindow::CCodeWindow(CFrame* parent, wxWindowID id, const wxPoint& position,
   m_aui_manager.SetFlags(wxAUI_MGR_DEFAULT | wxAUI_MGR_LIVE_RESIZE);
   m_aui_manager.AddPane(m_aui_toolbar, wxAuiPaneInfo().ToolbarPane().Top().Floatable(false));
   m_aui_manager.AddPane(callstack, wxAuiPaneInfo()
-                                       .MinSize(FromDIP(wxSize(150, 100)))
-                                       .Left()
-                                       .CloseButton(false)
-                                       .Floatable(false)
-                                       .Caption(_("Callstack")));
+    .MinSize(FromDIP(wxSize(150, 100)))
+    .Left()
+    .CloseButton(false)
+    .Floatable(false)
+    .Caption(_("Callstack")));
   m_aui_manager.AddPane(symbols, wxAuiPaneInfo()
-                                     .MinSize(FromDIP(wxSize(150, 100)))
-                                     .Left()
-                                     .CloseButton(false)
-                                     .Floatable(false)
-                                     .Caption(_("Symbols")));
+    .MinSize(FromDIP(wxSize(150, 100)))
+    .Left()
+    .CloseButton(false)
+    .Floatable(false)
+    .Caption(_("Symbols")));
   m_aui_manager.AddPane(calls, wxAuiPaneInfo()
-                                   .MinSize(FromDIP(wxSize(150, 100)))
-                                   .Left()
-                                   .CloseButton(false)
-                                   .Floatable(false)
-                                   .Caption(_("Function calls")));
+    .MinSize(FromDIP(wxSize(150, 100)))
+    .Left()
+    .CloseButton(false)
+    .Floatable(false)
+    .Caption(_("Function calls")));
   m_aui_manager.AddPane(callers, wxAuiPaneInfo()
-                                     .MinSize(FromDIP(wxSize(150, 100)))
-                                     .Left()
-                                     .CloseButton(false)
-                                     .Floatable(false)
-                                     .Caption(_("Function callers")));
+    .MinSize(FromDIP(wxSize(150, 100)))
+    .Left()
+    .CloseButton(false)
+    .Floatable(false)
+    .Caption(_("Function callers")));
   m_aui_manager.AddPane(codeview, wxAuiPaneInfo().CenterPane().CloseButton(false).Floatable(false));
   m_aui_manager.Update();
 
@@ -346,7 +346,7 @@ static bool WillInstructionReturn(UGeckoInstruction inst)
   if (inst.hex == 0x4C000064u)
     return true;
   bool counter = (inst.BO_2 >> 2 & 1) != 0 || (CTR != 0) != ((inst.BO_2 >> 1 & 1) != 0);
-  bool condition = inst.BO_2 >> 4 != 0 || GetCRBit(inst.BI_2) == (inst.BO_2 >> 3 & 1);
+  bool condition = inst.BO_2 >> 4 != 0 || PowerPC::GetCRBit(inst.BI_2) == (inst.BO_2 >> 3 & 1);
   bool isBclr = inst.OPCD_7 == 0b010011 && (inst.hex >> 1 & 0b10000) != 0;
   return isBclr && counter && condition && !inst.LK_3;
 }
@@ -384,7 +384,7 @@ void CCodeWindow::StepOut()
         {
           PowerPC::SingleStep();
         } while (PC != next_pc && clock::now() < timeout &&
-                 !PowerPC::breakpoints.IsAddressBreakPoint(PC));
+          !PowerPC::breakpoints.IsAddressBreakPoint(PC));
       }
       else
       {
@@ -437,7 +437,7 @@ void CCodeWindow::UpdateLists()
     if (caller_symbol)
     {
       int idx = callers->Append(StrToWxStr(
-          StringFromFormat("< %s (%08x)", caller_symbol->name.c_str(), caller_addr).c_str()));
+        StringFromFormat("< %s (%08x)", caller_symbol->name.c_str(), caller_addr).c_str()));
       callers->SetClientData(idx, (void*)(u64)caller_addr);
     }
   }
@@ -450,7 +450,7 @@ void CCodeWindow::UpdateLists()
     if (call_symbol)
     {
       int idx = calls->Append(StrToWxStr(
-          StringFromFormat("> %s (%08x)", call_symbol->name.c_str(), call_addr).c_str()));
+        StringFromFormat("> %s (%08x)", call_symbol->name.c_str(), call_addr).c_str()));
       calls->SetClientData(idx, (void*)(u64)call_addr);
     }
   }
@@ -480,7 +480,7 @@ void CCodeWindow::UpdateCallstack()
 // CPU Mode and JIT Menu
 void CCodeWindow::OnCPUMode(wxCommandEvent& event)
 {
-  Core::RunAsCPUThread([&event] {
+  Core::RunAsCPUThread([&event]{
     switch (event.GetId())
     {
     case IDM_INTERPRETER:
@@ -521,9 +521,9 @@ void CCodeWindow::OnCPUMode(wxCommandEvent& event)
       break;
     }
 
-    // Clear the JIT cache to enable these changes
-    JitInterface::ClearCache();
-  });
+  // Clear the JIT cache to enable these changes
+  JitInterface::ClearCache();
+    });
 }
 
 void CCodeWindow::OnJitMenu(wxCommandEvent& event)

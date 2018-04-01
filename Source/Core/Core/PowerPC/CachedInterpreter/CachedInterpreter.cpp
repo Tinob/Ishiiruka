@@ -17,32 +17,35 @@
 
 struct CachedInterpreter::Instruction
 {
-  typedef void(*CommonCallback)(UGeckoInstruction);
-  typedef bool(*ConditionalCallback)(u32 data);
+  using CommonCallback = void (*)(UGeckoInstruction);
+  using ConditionalCallback = bool (*)(u32);
 
-  Instruction() : type(INSTRUCTION_ABORT) {}
+  Instruction() {}
   Instruction(const CommonCallback c, UGeckoInstruction i)
-    : common_callback(c), data(i.hex), type(INSTRUCTION_TYPE_COMMON)
+      : common_callback(c), data(i.hex), type(Type::Common)
   {
   }
 
   Instruction(const ConditionalCallback c, u32 d)
-    : conditional_callback(c), data(d), type(INSTRUCTION_TYPE_CONDITIONAL)
+      : conditional_callback(c), data(d), type(Type::Conditional)
   {
   }
+
+  enum class Type
+  {
+    Abort,
+    Common,
+    Conditional,
+  };
 
   union
   {
     const CommonCallback common_callback;
     const ConditionalCallback conditional_callback;
   };
-  u32 data;
-  enum
-  {
-    INSTRUCTION_ABORT,
-    INSTRUCTION_TYPE_COMMON,
-    INSTRUCTION_TYPE_CONDITIONAL,
-  } type;
+
+  u32 data = 0;
+  Type type = Type::Abort;
 };
 
 CachedInterpreter::CachedInterpreter() : code_buffer(32000)
@@ -86,15 +89,15 @@ void CachedInterpreter::ExecuteOneBlock()
 
   const Instruction* code = reinterpret_cast<const Instruction*>(normal_entry);
 
-  for (; code->type != Instruction::INSTRUCTION_ABORT; ++code)
+  for (; code->type != Instruction::Type::Abort; ++code)
   {
     switch (code->type)
     {
-    case Instruction::INSTRUCTION_TYPE_COMMON:
+    case Instruction::Type::Common:
       code->common_callback(UGeckoInstruction(code->data));
       break;
 
-    case Instruction::INSTRUCTION_TYPE_CONDITIONAL:
+    case Instruction::Type::Conditional:
       if (code->conditional_callback(code->data))
         return;
       break;
@@ -147,7 +150,7 @@ static void WriteBrokenBlockNPC(UGeckoInstruction data)
 
 static bool CheckFPU(u32 data)
 {
-  UReg_MSR msr{ MSR };
+  UReg_MSR msr{MSR};
   if (!msr.FP)
   {
     PowerPC::ppcState.Exceptions |= EXCEPTION_FPU_UNAVAILABLE;
@@ -172,7 +175,7 @@ static bool CheckDSI(u32 data)
 void CachedInterpreter::Jit(u32 address)
 {
   if (m_code.size() >= CODE_SIZE / sizeof(Instruction) - 0x1000 ||
-    SConfig::GetInstance().bJITNoBlockCache)
+      SConfig::GetInstance().bJITNoBlockCache)
   {
     ClearCache();
   }
@@ -241,7 +244,7 @@ void CachedInterpreter::Jit(u32 address)
 
       if (endblock || memcheck)
         m_code.emplace_back(WritePC, ops[i].address);
-      m_code.emplace_back(GetInterpreterOp(ops[i].inst), ops[i].inst);
+      m_code.emplace_back(PPCTables::GetInterpreterOp(ops[i].inst), ops[i].inst);
       if (memcheck)
         m_code.emplace_back(CheckDSI, js.downcountAmount);
       if (endblock)

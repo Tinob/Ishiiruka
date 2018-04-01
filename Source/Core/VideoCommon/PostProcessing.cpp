@@ -1686,7 +1686,7 @@ void PostProcessor::BlitScreen(const TargetRectangle& dst_rect, const TargetSize
   int src_layer, float gamma)
 {
   const bool triguer_after_blit = ShouldTriggerAfterBlit();
-  _dbg_assert_msg_(VIDEO, src_layer >= 0, "BlitToFramebuffer should always be called with a single source layer");
+  DEBUG_ASSERT_MSG(VIDEO, src_layer >= 0, "BlitToFramebuffer should always be called with a single source layer");
 
   ReconfigureScalingShader(src_size);
   ReconfigureStereoShader(dst_size);

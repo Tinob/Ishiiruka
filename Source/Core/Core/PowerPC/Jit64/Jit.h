@@ -59,7 +59,7 @@ public:
   void ClearCache() override;
 
   const CommonAsmRoutines* GetAsmRoutines() override { return &asm_routines; }
-  const char* GetName() override { return "JIT64"; }
+  const char* GetName() const override { return "JIT64"; }
   // Run!
   void Run() override;
   void SingleStep() override;
@@ -243,7 +243,7 @@ private:
   // The default code buffer. We keep it around to not have to alloc/dealloc a
   // large chunk of memory for each recompiled block.
   PPCAnalyst::CodeBuffer code_buffer;
-  Jit64AsmRoutineManager asm_routines;
+  Jit64AsmRoutineManager asm_routines{*this};
 
   bool m_enable_blr_optimization;
   bool m_cleanup_after_stackfault;

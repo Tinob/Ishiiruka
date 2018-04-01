@@ -12,7 +12,6 @@
 
 #include <QHeaderView>
 #include <QMenu>
-#include <QSettings>
 #include <QTableWidget>
 #include <QVBoxLayout>
 
@@ -21,7 +20,7 @@ RegisterWidget::RegisterWidget(QWidget* parent) : QDockWidget(parent)
   setWindowTitle(tr("Registers"));
   setAllowedAreas(Qt::AllDockWidgetAreas);
 
-  QSettings settings;
+  auto& settings = Settings::GetQSettings();
 
   restoreGeometry(settings.value(QStringLiteral("registerwidget/geometry")).toByteArray());
   setFloating(settings.value(QStringLiteral("registerwidget/floating")).toBool());
@@ -54,7 +53,7 @@ RegisterWidget::RegisterWidget(QWidget* parent) : QDockWidget(parent)
 
 RegisterWidget::~RegisterWidget()
 {
-  QSettings settings;
+  auto& settings = Settings::GetQSettings();
 
   settings.setValue(QStringLiteral("registerwidget/geometry"), saveGeometry());
   settings.setValue(QStringLiteral("registerwidget/floating"), isFloating());
@@ -130,7 +129,9 @@ void RegisterWidget::ShowContextMenu()
       auto* view_hex = menu->addAction(tr("Hexadecimal"));
       auto* view_int = menu->addAction(tr("Signed Integer"));
       auto* view_uint = menu->addAction(tr("Unsigned Integer"));
+      // i18n: A floating point number
       auto* view_float = menu->addAction(tr("Float"));
+      // i18n: A double precision floating point number
       auto* view_double = menu->addAction(tr("Double"));
 
       for (auto* action : {view_hex, view_int, view_uint, view_float, view_double})
@@ -281,12 +282,12 @@ void RegisterWidget::PopulateTable()
               [](u64 value) { PowerPC::ppcState.spr[SPR_CTR] = value; });
 
   // CR
-  AddRegister(20, 5, RegisterType::cr, "CR", [] { return GetCR(); },
-              [](u64 value) { SetCR(value); });
+  AddRegister(20, 5, RegisterType::cr, "CR", [] { return PowerPC::GetCR(); },
+              [](u64 value) { PowerPC::SetCR(value); });
 
   // XER
-  AddRegister(21, 5, RegisterType::xer, "XER", [] { return GetXER().Hex; },
-              [](u64 value) { SetXER(UReg_XER(value)); });
+  AddRegister(21, 5, RegisterType::xer, "XER", [] { return PowerPC::GetXER().Hex; },
+              [](u64 value) { PowerPC::SetXER(UReg_XER(value)); });
 
   // FPSCR
   AddRegister(22, 5, RegisterType::fpscr, "FPSCR", [] { return PowerPC::ppcState.fpscr; },

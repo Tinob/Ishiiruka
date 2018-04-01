@@ -16,7 +16,8 @@ RegisterColumn::RegisterColumn(RegisterType type, std::function<u64()> get,
   RefreshValue();
   Update();
 
-  setFlags(set == nullptr ? flags() ^ Qt::ItemIsEditable : flags());
+  setFlags(m_set_register == nullptr ? flags() ^ Qt::ItemIsEditable :
+                                       Qt::ItemIsEditable | Qt::ItemIsEnabled);
   setData(DATA_TYPE, static_cast<quint32>(type));
 }
 
@@ -83,14 +84,9 @@ void RegisterColumn::SetValue()
   }
 
   if (!valid)
-  {
-    QMessageBox::critical(nullptr, QObject::tr("Invalid input"),
-                          QObject::tr("Bad input for field"));
-  }
+    QMessageBox::critical(nullptr, QObject::tr("Error"), QObject::tr("Invalid input provided"));
   else
-  {
     m_set_register(value);
-  }
 
   RefreshValue();
 }

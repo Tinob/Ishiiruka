@@ -245,6 +245,19 @@ bool Init(std::unique_ptr<BootParameters> boot)
   return true;
 }
 
+static void ResetRumble()
+{
+#if defined(__LIBUSB__)
+  GCAdapter::ResetRumble();
+#endif
+#if defined(CIFACE_USE_XINPUT) || defined(CIFACE_USE_DINPUT)
+  if (!Pad::IsInitialized())
+    return;
+  for (int i = 0; i < 4; ++i)
+    Pad::ResetRumble(i);
+#endif
+}
+
 // Called from GUI thread
 void Stop()  // - Hammertime!
 {
@@ -275,9 +288,7 @@ void Stop()  // - Hammertime!
 
     g_video_backend->Video_ExitLoop();
   }
-#if defined(__LIBUSB__)
-  GCAdapter::ResetRumble();
-#endif
+  ResetRumble();
 
 #ifdef USE_MEMORYWATCHER
   MemoryWatcher::Shutdown();
@@ -668,9 +679,7 @@ void SetState(State state)
     //   stopped (including the CPU).
     CPU::EnableStepping(true);  // Break
     Wiimote::Pause();
-#if defined(__LIBUSB__)
-    GCAdapter::ResetRumble();
-#endif
+    ResetRumble();
     break;
   case State::Running:
     CPU::EnableStepping(false);
@@ -788,9 +797,7 @@ static bool PauseAndLock(bool do_lock, bool unpause_on_unlock)
   // (s_efbAccessRequested).
   Fifo::PauseAndLock(do_lock, false);
 
-#if defined(__LIBUSB__)
-  GCAdapter::ResetRumble();
-#endif
+  ResetRumble();
 
   // CPU is unlocked last because CPU::PauseAndLock contains the synchronization
   // mechanism that prevents CPU::Break from racing.

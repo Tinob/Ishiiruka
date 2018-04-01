@@ -22,15 +22,15 @@ class CommandLineConfigLayerLoader final : public Config::ConfigLayerLoader
 {
 public:
   CommandLineConfigLayerLoader(const std::list<std::string>& args, const std::string& video_backend,
-    const std::string& audio_backend)
-    : ConfigLayerLoader(Config::LayerType::CommandLine)
+                               const std::string& audio_backend)
+      : ConfigLayerLoader(Config::LayerType::CommandLine)
   {
     if (video_backend.size())
       m_values.emplace_back(std::make_tuple(Config::MAIN_GFX_BACKEND.location, video_backend));
 
     if (audio_backend.size())
       m_values.emplace_back(
-        std::make_tuple(Config::MAIN_DSP_HLE.location, StringFromBool(audio_backend == "HLE")));
+          std::make_tuple(Config::MAIN_DSP_HLE.location, StringFromBool(audio_backend == "HLE")));
 
     // Arguments are in the format of <System>.<Section>.<Key>=Value
     for (const auto& arg : args)
@@ -45,7 +45,7 @@ public:
       if (system)
       {
         m_values.emplace_back(
-          std::make_tuple(Config::ConfigLocation{ *system, section, key }, value));
+            std::make_tuple(Config::ConfigLocation{*system, section, key}, value));
       }
     }
   }
@@ -75,26 +75,26 @@ std::unique_ptr<optparse::OptionParser> CreateParser(ParserOptions options)
   parser->add_option("-u", "--user").action("store").help("User folder path");
   parser->add_option("-m", "--movie").action("store").help("Play a movie file");
   parser->add_option("-e", "--exec")
-    .action("store")
-    .metavar("<file>")
-    .type("string")
-    .help("Load the specified file");
+      .action("store")
+      .metavar("<file>")
+      .type("string")
+      .help("Load the specified file");
   parser->add_option("-n", "--nand_title")
-    .action("store")
-    .metavar("<16-character ASCII title ID>")
-    .type("string")
-    .help("Launch a NAND title");
+      .action("store")
+      .metavar("<16-character ASCII title ID>")
+      .type("string")
+      .help("Launch a NAND title");
   parser->add_option("-C", "--config")
-    .action("append")
-    .metavar("<System>.<Section>.<Key>=<Value>")
-    .type("string")
-    .help("Set a configuration option");
+      .action("append")
+      .metavar("<System>.<Section>.<Key>=<Value>")
+      .type("string")
+      .help("Set a configuration option");
 
   if (options == ParserOptions::IncludeGUIOptions)
   {
     parser->add_option("-d", "--debugger")
-      .action("store_true")
-      .help("Show the debugger pane and additional View menu options");
+        .action("store_true")
+        .help("Show the debugger pane and additional View menu options");
     parser->add_option("-l", "--logger").action("store_true").help("Open the logger");
     parser->add_option("-b", "--batch").action("store_true").help("Exit Dolphin with emulation");
     parser->add_option("-c", "--confirm").action("store_true").help("Set Confirm on Stop");
@@ -104,8 +104,8 @@ std::unique_ptr<optparse::OptionParser> CreateParser(ParserOptions options)
   parser->set_defaults("audio_emulation", "");
   parser->add_option("-v", "--video_backend").action("store").help("Specify a video backend");
   parser->add_option("-a", "--audio_emulation")
-    .choices({ "HLE", "LLE" })
-    .help("Choose audio emulation from [%choices]");
+      .choices({"HLE", "LLE"})
+      .help("Choose audio emulation from [%choices]");
 
   return parser;
 }
@@ -116,8 +116,8 @@ static void AddConfigLayer(const optparse::Values& options)
   {
     const std::list<std::string>& config_args = options.all("config");
     Config::AddLayer(std::make_unique<CommandLineConfigLayerLoader>(
-      config_args, static_cast<const char*>(options.get("video_backend")),
-      static_cast<const char*>(options.get("audio_emulation"))));
+        config_args, static_cast<const char*>(options.get("video_backend")),
+        static_cast<const char*>(options.get("audio_emulation"))));
   }
 }
 
@@ -129,7 +129,7 @@ optparse::Values& ParseArguments(optparse::OptionParser* parser, int argc, char*
 }
 
 optparse::Values& ParseArguments(optparse::OptionParser* parser,
-  const std::vector<std::string>& arguments)
+                                 const std::vector<std::string>& arguments)
 {
   optparse::Values& options = parser->parse_args(arguments);
   AddConfigLayer(options);

@@ -169,7 +169,6 @@
     <ClCompile Include="ConfigManager.cpp" />
     <ClCompile Include="Core.cpp" />
     <ClCompile Include="CoreTiming.cpp" />
-    <ClCompile Include="ec_wii.cpp" />
     <ClCompile Include="HotkeyManager.cpp" />
     <ClCompile Include="MemTools.cpp" />
     <ClCompile Include="Movie.cpp" />
@@ -236,36 +235,6 @@
     </ClCompile>
     <ClCompile Include="DSP\Interpreter\DSPIntMultiplier.cpp">
       <Filter>DSPCore\Interpreter</Filter>
-    </ClCompile>
-    <ClCompile Include="DSP\Jit\DSPEmitter.cpp">
-      <Filter>DSPCore\Jit</Filter>
-    </ClCompile>
-    <ClCompile Include="DSP\Jit\DSPJitArithmetic.cpp">
-      <Filter>DSPCore\Jit</Filter>
-    </ClCompile>
-    <ClCompile Include="DSP\Jit\DSPJitBranch.cpp">
-      <Filter>DSPCore\Jit</Filter>
-    </ClCompile>
-    <ClCompile Include="DSP\Jit\DSPJitCCUtil.cpp">
-      <Filter>DSPCore\Jit</Filter>
-    </ClCompile>
-    <ClCompile Include="DSP\Jit\DSPJitExtOps.cpp">
-      <Filter>DSPCore\Jit</Filter>
-    </ClCompile>
-    <ClCompile Include="DSP\Jit\DSPJitLoadStore.cpp">
-      <Filter>DSPCore\Jit</Filter>
-    </ClCompile>
-    <ClCompile Include="DSP\Jit\DSPJitMisc.cpp">
-      <Filter>DSPCore\Jit</Filter>
-    </ClCompile>
-    <ClCompile Include="DSP\Jit\DSPJitMultiplier.cpp">
-      <Filter>DSPCore\Jit</Filter>
-    </ClCompile>
-    <ClCompile Include="DSP\Jit\DSPJitRegCache.cpp">
-      <Filter>DSPCore\Jit</Filter>
-    </ClCompile>
-    <ClCompile Include="DSP\Jit\DSPJitUtil.cpp">
-      <Filter>DSPCore\Jit</Filter>
     </ClCompile>
     <ClCompile Include="FifoPlayer\FifoAnalyzer.cpp">
       <Filter>FifoPlayer</Filter>
@@ -889,13 +858,42 @@
     <ClCompile Include="IOS\VersionInfo.cpp">
       <Filter>IOS</Filter>
     </ClCompile>
+    <ClCompile Include="DSP\Jit\x64\DSPEmitter.cpp">
+      <Filter>DSPCore\Jit</Filter>
+    </ClCompile>
+    <ClCompile Include="DSP\Jit\x64\DSPJitArithmetic.cpp">
+      <Filter>DSPCore\Jit</Filter>
+    </ClCompile>
+    <ClCompile Include="DSP\Jit\x64\DSPJitBranch.cpp">
+      <Filter>DSPCore\Jit</Filter>
+    </ClCompile>
+    <ClCompile Include="DSP\Jit\x64\DSPJitCCUtil.cpp">
+      <Filter>DSPCore\Jit</Filter>
+    </ClCompile>
+    <ClCompile Include="DSP\Jit\x64\DSPJitExtOps.cpp">
+      <Filter>DSPCore\Jit</Filter>
+    </ClCompile>
+    <ClCompile Include="DSP\Jit\x64\DSPJitLoadStore.cpp">
+      <Filter>DSPCore\Jit</Filter>
+    </ClCompile>
+    <ClCompile Include="DSP\Jit\x64\DSPJitMisc.cpp">
+      <Filter>DSPCore\Jit</Filter>
+    </ClCompile>
+    <ClCompile Include="DSP\Jit\x64\DSPJitMultiplier.cpp">
+      <Filter>DSPCore\Jit</Filter>
+    </ClCompile>
+    <ClCompile Include="DSP\Jit\x64\DSPJitRegCache.cpp">
+      <Filter>DSPCore\Jit</Filter>
+    </ClCompile>
+    <ClCompile Include="DSP\Jit\x64\DSPJitUtil.cpp">
+      <Filter>DSPCore\Jit</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BootManager.h" />
     <ClInclude Include="ConfigManager.h" />
     <ClInclude Include="Core.h" />
     <ClInclude Include="CoreTiming.h" />
-    <ClInclude Include="ec_wii.h" />
     <ClInclude Include="Host.h" />
     <ClInclude Include="HotkeyManager.h" />
     <ClInclude Include="MemTools.h" />
@@ -952,12 +950,6 @@
     </ClInclude>
     <ClInclude Include="DSP\Interpreter\DSPIntUtil.h">
       <Filter>DSPCore\Interpreter</Filter>
-    </ClInclude>
-    <ClInclude Include="DSP\Jit\DSPEmitter.h">
-      <Filter>DSPCore\Jit</Filter>
-    </ClInclude>
-    <ClInclude Include="DSP\Jit\DSPJitRegCache.h">
-      <Filter>DSPCore\Jit</Filter>
     </ClInclude>
     <ClInclude Include="FifoPlayer\FifoAnalyzer.h">
       <Filter>FifoPlayer</Filter>
@@ -1557,6 +1549,12 @@
     </ClInclude>
     <ClInclude Include="IOS\VersionInfo.h">
       <Filter>IOS</Filter>
+    </ClInclude>
+    <ClInclude Include="DSP\Jit\x64\DSPEmitter.h">
+      <Filter>DSPCore\Jit</Filter>
+    </ClInclude>
+    <ClInclude Include="DSP\Jit\x64\DSPJitRegCache.h">
+      <Filter>DSPCore\Jit</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

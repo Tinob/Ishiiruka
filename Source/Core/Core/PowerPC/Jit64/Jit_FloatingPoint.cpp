@@ -19,17 +19,17 @@
 
 using namespace Gen;
 
-alignas(16) static const u64 psSignBits[2] = { 0x8000000000000000ULL, 0x0000000000000000ULL };
-alignas(16) static const u64 psSignBits2[2] = { 0x8000000000000000ULL, 0x8000000000000000ULL };
-alignas(16) static const u64 psAbsMask[2] = { 0x7FFFFFFFFFFFFFFFULL, 0xFFFFFFFFFFFFFFFFULL };
-alignas(16) static const u64 psAbsMask2[2] = { 0x7FFFFFFFFFFFFFFFULL, 0x7FFFFFFFFFFFFFFFULL };
-alignas(16) static const u64 psGeneratedQNaN[2] = { 0x7FF8000000000000ULL, 0x7FF8000000000000ULL };
-alignas(16) static const double half_qnan_and_s32_max[2] = { 0x7FFFFFFF, -0x80000 };
+alignas(16) static const u64 psSignBits[2] = {0x8000000000000000ULL, 0x0000000000000000ULL};
+alignas(16) static const u64 psSignBits2[2] = {0x8000000000000000ULL, 0x8000000000000000ULL};
+alignas(16) static const u64 psAbsMask[2] = {0x7FFFFFFFFFFFFFFFULL, 0xFFFFFFFFFFFFFFFFULL};
+alignas(16) static const u64 psAbsMask2[2] = {0x7FFFFFFFFFFFFFFFULL, 0x7FFFFFFFFFFFFFFFULL};
+alignas(16) static const u64 psGeneratedQNaN[2] = {0x7FF8000000000000ULL, 0x7FF8000000000000ULL};
+alignas(16) static const double half_qnan_and_s32_max[2] = {0x7FFFFFFF, -0x80000};
 
 X64Reg Jit64::fp_tri_op(int d, int a, int b, bool reversible, bool single,
-  void (XEmitter::*avxOp)(X64Reg, X64Reg, const OpArg&),
-  void (XEmitter::*sseOp)(X64Reg, const OpArg&), bool packed,
-  bool preserve_inputs, bool roundRHS)
+                        void (XEmitter::*avxOp)(X64Reg, X64Reg, const OpArg&),
+                        void (XEmitter::*sseOp)(X64Reg, const OpArg&), bool packed,
+                        bool preserve_inputs, bool roundRHS)
 {
   fpr.Lock(d, a, b);
   fpr.BindToRegister(d, d == a || d == b || !single);
@@ -83,7 +83,7 @@ void Jit64::HandleNaNs(UGeckoInstruction inst, X64Reg xmm_out, X64Reg xmm, X64Re
     return;
   }
 
-  _assert_(xmm != clobber);
+  ASSERT(xmm != clobber);
 
   std::vector<u32> inputs;
   u32 a = inst.FA, b = inst.FB, c = inst.FC;
@@ -126,7 +126,7 @@ void Jit64::HandleNaNs(UGeckoInstruction inst, X64Reg xmm_out, X64Reg xmm, X64Re
       FixupBranch handle_nan = J_CC(CC_NZ, true);
       SwitchToFarCode();
       SetJumpTarget(handle_nan);
-      _assert_msg_(DYNA_REC, clobber == XMM0, "BLENDVPD implicitly uses XMM0");
+      ASSERT_MSG(DYNA_REC, clobber == XMM0, "BLENDVPD implicitly uses XMM0");
       BLENDVPD(xmm, MConst(psGeneratedQNaN));
       for (u32 x : inputs)
       {
@@ -176,7 +176,7 @@ void Jit64::HandleNaNs(UGeckoInstruction inst, X64Reg xmm_out, X64Reg xmm, X64Re
 void Jit64::fp_arith(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-    JITDISABLE(bJITFloatingPointOff);
+  JITDISABLE(bJITFloatingPointOff);
   FALLBACK_IF(inst.Rc);
 
   int a = inst.FA;
@@ -190,7 +190,7 @@ void Jit64::fp_arith(UGeckoInstruction inst)
   // at the end by
   // using packed arithmetic instead.
   bool packed = inst.OPCD == 4 ||
-    (inst.OPCD == 59 && js.op->fprIsDuplicated[a] && js.op->fprIsDuplicated[arg2]);
+                (inst.OPCD == 59 && js.op->fprIsDuplicated[a] && js.op->fprIsDuplicated[arg2]);
   // Packed divides are slower than scalar divides on basically all x86, so this optimization isn't
   // worth it in that case.
   // Atoms (and a few really old CPUs) are also slower on packed operations than scalar ones.
@@ -205,23 +205,23 @@ void Jit64::fp_arith(UGeckoInstruction inst)
   {
   case 18:
     dest = fp_tri_op(d, a, b, false, single, packed ? &XEmitter::VDIVPD : &XEmitter::VDIVSD,
-      packed ? &XEmitter::DIVPD : &XEmitter::DIVSD, packed, preserve_inputs);
+                     packed ? &XEmitter::DIVPD : &XEmitter::DIVSD, packed, preserve_inputs);
     break;
   case 20:
     dest = fp_tri_op(d, a, b, false, single, packed ? &XEmitter::VSUBPD : &XEmitter::VSUBSD,
-      packed ? &XEmitter::SUBPD : &XEmitter::SUBSD, packed, preserve_inputs);
+                     packed ? &XEmitter::SUBPD : &XEmitter::SUBSD, packed, preserve_inputs);
     break;
   case 21:
     dest = fp_tri_op(d, a, b, true, single, packed ? &XEmitter::VADDPD : &XEmitter::VADDSD,
-      packed ? &XEmitter::ADDPD : &XEmitter::ADDSD, packed, preserve_inputs);
+                     packed ? &XEmitter::ADDPD : &XEmitter::ADDSD, packed, preserve_inputs);
     break;
   case 25:
     dest = fp_tri_op(d, a, c, true, single, packed ? &XEmitter::VMULPD : &XEmitter::VMULSD,
-      packed ? &XEmitter::MULPD : &XEmitter::MULSD, packed, preserve_inputs,
-      round_input);
+                     packed ? &XEmitter::MULPD : &XEmitter::MULSD, packed, preserve_inputs,
+                     round_input);
     break;
   default:
-    _assert_msg_(DYNA_REC, 0, "fp_arith WTF!!!");
+    ASSERT_MSG(DYNA_REC, 0, "fp_arith WTF!!!");
   }
   HandleNaNs(inst, fpr.RX(d), dest);
   if (single)
@@ -233,7 +233,7 @@ void Jit64::fp_arith(UGeckoInstruction inst)
 void Jit64::fmaddXX(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-    JITDISABLE(bJITFloatingPointOff);
+  JITDISABLE(bJITFloatingPointOff);
   FALLBACK_IF(inst.Rc);
 
   int a = inst.FA;
@@ -243,7 +243,7 @@ void Jit64::fmaddXX(UGeckoInstruction inst)
   bool single = inst.OPCD == 4 || inst.OPCD == 59;
   bool round_input = single && !js.op->fprIsSingle[c];
   bool packed = inst.OPCD == 4 || (!cpu_info.bAtom && single && js.op->fprIsDuplicated[a] &&
-    js.op->fprIsDuplicated[b] && js.op->fprIsDuplicated[c]);
+                                   js.op->fprIsDuplicated[b] && js.op->fprIsDuplicated[c]);
 
   fpr.Lock(a, b, c, d);
 
@@ -297,10 +297,10 @@ void Jit64::fmaddXX(UGeckoInstruction inst)
       else
         VFMADD132SD(XMM1, fpr.RX(b), fpr.R(a));
       break;
-      // PowerPC and x86 define NMADD/NMSUB differently
-      // x86: D = -A*C (+/-) B
-      // PPC: D = -(A*C (+/-) B)
-      // so we have to swap them; the ADD/SUB here isn't a typo.
+    // PowerPC and x86 define NMADD/NMSUB differently
+    // x86: D = -A*C (+/-) B
+    // PPC: D = -(A*C (+/-) B)
+    // so we have to swap them; the ADD/SUB here isn't a typo.
     case 30:  // nmsub
       if (packed)
         VFNMADD132PD(XMM1, fpr.RX(b), fpr.R(a));
@@ -370,7 +370,7 @@ void Jit64::fmaddXX(UGeckoInstruction inst)
 void Jit64::fsign(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-    JITDISABLE(bJITFloatingPointOff);
+  JITDISABLE(bJITFloatingPointOff);
   FALLBACK_IF(inst.Rc);
 
   int d = inst.FD;
@@ -385,15 +385,15 @@ void Jit64::fsign(UGeckoInstruction inst)
   {
   case 40:  // neg
     avx_op(&XEmitter::VXORPD, &XEmitter::XORPD, fpr.RX(d), src,
-      MConst(packed ? psSignBits2 : psSignBits), packed);
+           MConst(packed ? psSignBits2 : psSignBits), packed);
     break;
   case 136:  // nabs
     avx_op(&XEmitter::VORPD, &XEmitter::ORPD, fpr.RX(d), src,
-      MConst(packed ? psSignBits2 : psSignBits), packed);
+           MConst(packed ? psSignBits2 : psSignBits), packed);
     break;
   case 264:  // abs
     avx_op(&XEmitter::VANDPD, &XEmitter::ANDPD, fpr.RX(d), src,
-      MConst(packed ? psAbsMask2 : psAbsMask), packed);
+           MConst(packed ? psAbsMask2 : psAbsMask), packed);
     break;
   default:
     PanicAlert("fsign bleh");
@@ -405,7 +405,7 @@ void Jit64::fsign(UGeckoInstruction inst)
 void Jit64::fselx(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-    JITDISABLE(bJITFloatingPointOff);
+  JITDISABLE(bJITFloatingPointOff);
   FALLBACK_IF(inst.Rc);
 
   int d = inst.FD;
@@ -449,7 +449,7 @@ void Jit64::fselx(UGeckoInstruction inst)
 void Jit64::fmrx(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-    JITDISABLE(bJITFloatingPointOff);
+  JITDISABLE(bJITFloatingPointOff);
   FALLBACK_IF(inst.Rc);
 
   int d = inst.FD;
@@ -487,14 +487,14 @@ void Jit64::FloatCompare(UGeckoInstruction inst, bool upper)
   int a = inst.FA;
   int b = inst.FB;
   u32 crf = inst.CRFD;
-  int output[4] = { CR_SO, CR_EQ, CR_GT, CR_LT };
+  int output[4] = {PowerPC::CR_SO, PowerPC::CR_EQ, PowerPC::CR_GT, PowerPC::CR_LT};
 
   // Merge neighboring fcmp and cror (the primary use of cror).
   UGeckoInstruction next = js.op[1].inst;
   if (analyzer.HasOption(PPCAnalyst::PPCAnalyzer::OPTION_CROR_MERGE) &&
-    CanMergeNextInstructions(1) && next.OPCD == 19 && next.SUBOP10 == 449 &&
-    static_cast<u32>(next.CRBA >> 2) == crf && static_cast<u32>(next.CRBB >> 2) == crf &&
-    static_cast<u32>(next.CRBD >> 2) == crf)
+      CanMergeNextInstructions(1) && next.OPCD == 19 && next.SUBOP10 == 449 &&
+      static_cast<u32>(next.CRBA >> 2) == crf && static_cast<u32>(next.CRBB >> 2) == crf &&
+      static_cast<u32>(next.CRBD >> 2) == crf)
   {
     js.skipInstructions = 1;
     js.downcountAmount++;
@@ -541,31 +541,31 @@ void Jit64::FloatCompare(UGeckoInstruction inst, bool upper)
     pGreater = J_CC(CC_B);
   }
 
-  MOV(64, R(RSCRATCH), Imm64(PPCCRToInternal(output[CR_EQ_BIT])));
+  MOV(64, R(RSCRATCH), Imm64(PowerPC::PPCCRToInternal(output[PowerPC::CR_EQ_BIT])));
   if (fprf)
-    OR(32, PPCSTATE(fpscr), Imm32(CR_EQ << FPRF_SHIFT));
+    OR(32, PPCSTATE(fpscr), Imm32(PowerPC::CR_EQ << FPRF_SHIFT));
 
   continue1 = J();
 
   SetJumpTarget(pNaN);
-  MOV(64, R(RSCRATCH), Imm64(PPCCRToInternal(output[CR_SO_BIT])));
+  MOV(64, R(RSCRATCH), Imm64(PowerPC::PPCCRToInternal(output[PowerPC::CR_SO_BIT])));
   if (fprf)
-    OR(32, PPCSTATE(fpscr), Imm32(CR_SO << FPRF_SHIFT));
+    OR(32, PPCSTATE(fpscr), Imm32(PowerPC::CR_SO << FPRF_SHIFT));
 
   if (a != b)
   {
     continue2 = J();
 
     SetJumpTarget(pGreater);
-    MOV(64, R(RSCRATCH), Imm64(PPCCRToInternal(output[CR_GT_BIT])));
+    MOV(64, R(RSCRATCH), Imm64(PowerPC::PPCCRToInternal(output[PowerPC::CR_GT_BIT])));
     if (fprf)
-      OR(32, PPCSTATE(fpscr), Imm32(CR_GT << FPRF_SHIFT));
+      OR(32, PPCSTATE(fpscr), Imm32(PowerPC::CR_GT << FPRF_SHIFT));
     continue3 = J();
 
     SetJumpTarget(pLesser);
-    MOV(64, R(RSCRATCH), Imm64(PPCCRToInternal(output[CR_LT_BIT])));
+    MOV(64, R(RSCRATCH), Imm64(PowerPC::PPCCRToInternal(output[PowerPC::CR_LT_BIT])));
     if (fprf)
-      OR(32, PPCSTATE(fpscr), Imm32(CR_LT << FPRF_SHIFT));
+      OR(32, PPCSTATE(fpscr), Imm32(PowerPC::CR_LT << FPRF_SHIFT));
   }
 
   SetJumpTarget(continue1);
@@ -582,7 +582,7 @@ void Jit64::FloatCompare(UGeckoInstruction inst, bool upper)
 void Jit64::fcmpX(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-    JITDISABLE(bJITFloatingPointOff);
+  JITDISABLE(bJITFloatingPointOff);
 
   FloatCompare(inst);
 }
@@ -590,7 +590,7 @@ void Jit64::fcmpX(UGeckoInstruction inst)
 void Jit64::fctiwx(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-    JITDISABLE(bJITFloatingPointOff);
+  JITDISABLE(bJITFloatingPointOff);
   FALLBACK_IF(inst.Rc);
 
   int d = inst.RD;
@@ -613,12 +613,12 @@ void Jit64::fctiwx(UGeckoInstruction inst)
   MINSD(XMM0, fpr.R(b));
   switch (inst.SUBOP10)
   {
-    // fctiwx
+  // fctiwx
   case 14:
     CVTPD2DQ(XMM0, R(XMM0));
     break;
 
-    // fctiwzx
+  // fctiwzx
   case 15:
     CVTTPD2DQ(XMM0, R(XMM0));
     break;
@@ -631,7 +631,7 @@ void Jit64::fctiwx(UGeckoInstruction inst)
 void Jit64::frspx(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-    JITDISABLE(bJITFloatingPointOff);
+  JITDISABLE(bJITFloatingPointOff);
   FALLBACK_IF(inst.Rc);
   int b = inst.FB;
   int d = inst.FD;
@@ -648,7 +648,7 @@ void Jit64::frspx(UGeckoInstruction inst)
 void Jit64::frsqrtex(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-    JITDISABLE(bJITFloatingPointOff);
+  JITDISABLE(bJITFloatingPointOff);
   FALLBACK_IF(inst.Rc);
   int b = inst.FB;
   int d = inst.FD;
@@ -667,7 +667,7 @@ void Jit64::frsqrtex(UGeckoInstruction inst)
 void Jit64::fresx(UGeckoInstruction inst)
 {
   INSTRUCTION_START
-    JITDISABLE(bJITFloatingPointOff);
+  JITDISABLE(bJITFloatingPointOff);
   FALLBACK_IF(inst.Rc);
   int b = inst.FB;
   int d = inst.FD;

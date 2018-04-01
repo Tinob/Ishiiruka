@@ -20,7 +20,7 @@ class Accelerator;
 
 namespace JIT
 {
-namespace x86
+namespace x64
 {
 class DSPEmitter;
 }
@@ -191,7 +191,7 @@ enum : u16
   SR_TOP2BITS = 0x0020,  // If the upper (ac?.m/ax?.h) 2 bits are equal
   SR_LOGIC_ZERO = 0x0040,
   SR_OVERFLOW_STICKY =
-      0x0080,  // Set at the same time as 0x2 (under same conditions) - but not cleared the same
+  0x0080,  // Set at the same time as 0x2 (under same conditions) - but not cleared the same
   SR_100 = 0x0100,         // Unknown
   SR_INT_ENABLE = 0x0200,  // Not 100% sure but duddie says so. This should replace the hack, if so.
   SR_400 = 0x0400,         // Unknown
@@ -203,7 +203,7 @@ enum : u16
   SR_MUL_UNSIGNED = 0x8000,    // 0 = normal. 1 = unsigned  (CLR15, SET15) If set, treats ax?.l as
                                // unsigned (MULX family only).
 
-  // This should be the bits affected by CMP. Does not include logic zero.
+                               // This should be the bits affected by CMP. Does not include logic zero.
   SR_CMP_MASK = 0x3f
 };
 
@@ -317,7 +317,7 @@ struct SDSP
 extern SDSP g_dsp;
 extern DSPBreakpoints g_dsp_breakpoints;
 extern bool g_init_hax;
-extern std::unique_ptr<JIT::x86::DSPEmitter> g_dsp_jit;
+extern std::unique_ptr<JIT::x64::DSPEmitter> g_dsp_jit;
 extern std::unique_ptr<DSPCaptureLogger> g_dsp_cap;
 
 struct DSPInitOptions

@@ -37,8 +37,8 @@ enum class EntryType
 };
 Q_DECLARE_METATYPE(EntryType);
 
-FilesystemWidget::FilesystemWidget(const GameFile& game)
-    : m_game(game), m_volume(DiscIO::CreateVolumeFromFilename(game.GetFilePath().toStdString()))
+FilesystemWidget::FilesystemWidget(const UICommon::GameFile& game)
+    : m_game(game), m_volume(DiscIO::CreateVolumeFromFilename(game.GetFilePath()))
 {
   CreateWidgets();
   ConnectWidgets();
@@ -148,10 +148,12 @@ void FilesystemWidget::ShowContextMenu(const QPoint&)
 
   QMenu* menu = new QMenu(this);
 
-  DiscIO::Partition partition = GetPartitionFromID(item->data(ENTRY_PARTITION).toInt());
-  QString path = item->data(ENTRY_NAME).toString();
-
   EntryType type = item->data(ENTRY_TYPE).value<EntryType>();
+
+  DiscIO::Partition partition = type == EntryType::Disc ?
+                                    DiscIO::PARTITION_NONE :
+                                    GetPartitionFromID(item->data(ENTRY_PARTITION).toInt());
+  QString path = item->data(ENTRY_NAME).toString();
 
   if ((type == EntryType::Disc && m_volume->GetPartitions().empty()) ||
       type == EntryType::Partition)
@@ -236,7 +238,7 @@ void FilesystemWidget::ExtractSystemData(const DiscIO::Partition& partition, con
     QMessageBox::critical(nullptr, tr("Error"), tr("Failed to extract system data."));
 }
 
-void FilesystemWidget::ExtractDirectory(const DiscIO::Partition& partition, const QString path,
+void FilesystemWidget::ExtractDirectory(const DiscIO::Partition& partition, const QString& path,
                                         const QString& out)
 {
   const DiscIO::FileSystem* filesystem = m_volume->GetFileSystem(partition);

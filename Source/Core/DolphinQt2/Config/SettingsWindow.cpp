@@ -3,6 +3,7 @@
 // Refer to the license.txt file included.
 
 #include <QDialogButtonBox>
+#include <QPushButton>
 #include <QVBoxLayout>
 
 #include "DolphinQt2/Config/SettingsWindow.h"
@@ -12,9 +13,13 @@
 #include "DolphinQt2/Settings.h"
 #include "DolphinQt2/Settings/AdvancedPane.h"
 #include "DolphinQt2/Settings/AudioPane.h"
+#include "DolphinQt2/Settings/GameCubePane.h"
 #include "DolphinQt2/Settings/GeneralPane.h"
 #include "DolphinQt2/Settings/InterfacePane.h"
 #include "DolphinQt2/Settings/PathPane.h"
+#include "DolphinQt2/Settings/WiiPane.h"
+
+#include "Core/Core.h"
 
 static int AddTab(ListTabWidget* tab_widget, const QString& label, QWidget* widget,
                   const char* icon_name)
@@ -42,13 +47,24 @@ SettingsWindow::SettingsWindow(QWidget* parent) : QDialog(parent)
   m_general_pane_index = AddTab(m_tabs, tr("General"), new GeneralPane(), "config");
   AddTab(m_tabs, tr("Interface"), new InterfacePane(), "browse");
   m_audio_pane_index = AddTab(m_tabs, tr("Audio"), new AudioPane(), "play");
+  AddTab(m_tabs, tr("GameCube"), new GameCubePane(), "gcpad");
   AddTab(m_tabs, tr("Paths"), new PathPane(), "browse");
+
+  auto* wii_pane = new WiiPane;
+  AddTab(m_tabs, tr("Wii"), wii_pane, "wiimote");
+
+  connect(&Settings::Instance(), &Settings::EmulationStateChanged, [wii_pane](Core::State state) {
+    wii_pane->OnEmulationStateChanged(state != Core::State::Uninitialized);
+  });
+
   AddTab(m_tabs, tr("Advanced"), new AdvancedPane(), "config");
 
   // Dialog box buttons
-  QDialogButtonBox* ok_box = new QDialogButtonBox(QDialogButtonBox::Ok);
-  connect(ok_box, &QDialogButtonBox::accepted, this, &SettingsWindow::accept);
-  layout->addWidget(ok_box);
+  QDialogButtonBox* close_box = new QDialogButtonBox(QDialogButtonBox::Close);
+
+  connect(close_box, &QDialogButtonBox::rejected, this, &QDialog::reject);
+
+  layout->addWidget(close_box);
 
   setLayout(layout);
 }

@@ -30,8 +30,10 @@
 
 #include "Core/Boot/Boot.h"
 #include "Core/BootManager.h"
+#include "Core/ConfigLoaders/GameConfigLoader.h"
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
+#include "Core/HW/DVD/DVDInterface.h"
 #include "Core/HW/Wiimote.h"
 #include "Core/HW/WiimoteReal/WiimoteReal.h"
 #include "Core/Host.h"
@@ -251,13 +253,13 @@ static int GetPlatform(std::string filename)
   {
     switch (pVolume->GetVolumeType())
     {
-    case DiscIO::Platform::GAMECUBE_DISC:
+    case DiscIO::Platform::GameCubeDisc:
       __android_log_print(ANDROID_LOG_INFO, DOLPHIN_TAG, "Volume is a GameCube disc.");
       return 0;
-    case DiscIO::Platform::WII_DISC:
+    case DiscIO::Platform::WiiDisc:
       __android_log_print(ANDROID_LOG_INFO, DOLPHIN_TAG, "Volume is a Wii disc.");
       return 1;
-    case DiscIO::Platform::WII_WAD:
+    case DiscIO::Platform::WiiWAD:
       __android_log_print(ANDROID_LOG_INFO, DOLPHIN_TAG, "Volume is a Wii WAD.");
       return 2;
     }
@@ -280,7 +282,7 @@ static std::string GetTitle(std::string filename)
       titles = pVolume->GetShortNames();
 
     /*
-    bool is_wii_title = pVolume->GetVolumeType() != DiscIO::Platform::GAMECUBE_DISC;
+    const bool is_wii_title = DiscIO::IsWii(pVolume->GetVolumeType());
     DiscIO::Language language = SConfig::GetInstance().GetCurrentLanguage(is_wii_title);
 
     auto it = titles.find(language);
@@ -290,8 +292,8 @@ static std::string GetTitle(std::string filename)
     auto end = titles.end();
 
     // English tends to be a good fallback when the requested language isn't available
-    // if (language != DiscIO::Language::LANGUAGE_ENGLISH) {
-    auto it = titles.find(DiscIO::Language::LANGUAGE_ENGLISH);
+    // if (language != DiscIO::Language::English) {
+    auto it = titles.find(DiscIO::Language::English);
     if (it != end)
       return it->second;
     //}
@@ -321,7 +323,7 @@ static std::string GetDescription(std::string filename)
     std::map<DiscIO::Language, std::string> descriptions = volume->GetDescriptions();
 
     /*
-    bool is_wii_title = pVolume->GetVolumeType() != DiscIO::Platform::GAMECUBE_DISC;
+    const bool is_wii_title = DiscIO::IsWii(pVolume->GetVolumeType());
     DiscIO::Language language = SConfig::GetInstance().GetCurrentLanguage(is_wii_title);
 
     auto it = descriptions.find(language);
@@ -331,8 +333,8 @@ static std::string GetDescription(std::string filename)
     auto end = descriptions.end();
 
     // English tends to be a good fallback when the requested language isn't available
-    // if (language != DiscIO::Language::LANGUAGE_ENGLISH) {
-    auto it = descriptions.find(DiscIO::Language::LANGUAGE_ENGLISH);
+    // if (language != DiscIO::Language::English) {
+    auto it = descriptions.find(DiscIO::Language::English);
     if (it != end)
       return it->second;
     //}
@@ -520,6 +522,10 @@ JNIEXPORT jboolean JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_IsRunnin
   return Core::IsRunning();
 }
 
+JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_ChangeDisc(JNIEnv* env,
+                                                                               jobject obj,
+                                                                               jstring jFile);
+
 JNIEXPORT jboolean JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_onGamePadEvent(
     JNIEnv* env, jobject obj, jstring jDevice, jint Button, jint Action)
 {
@@ -633,6 +639,57 @@ JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_eglBindAPI(J
                                                                                jint api)
 {
   eglBindAPI(api);
+}
+
+JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_InitGameIni(JNIEnv* env,
+                                                                                jobject obj,
+                                                                                jstring jGameID)
+{
+  // Initialize an empty INI file
+  IniFile ini;
+  std::string gameid = GetJString(env, jGameID);
+
+  __android_log_print(ANDROID_LOG_DEBUG, "InitGameIni", "Initializing base game config file");
+  ini.Save(File::GetUserPath(D_GAMESETTINGS_IDX) + gameid + ".ini");
+}
+
+JNIEXPORT jstring JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_GetUserSetting(
+    JNIEnv* env, jobject obj, jstring jGameID, jstring jSection, jstring jKey)
+{
+  IniFile ini;
+  std::string gameid = GetJString(env, jGameID);
+  std::string section = GetJString(env, jSection);
+  std::string key = GetJString(env, jKey);
+
+  ini = SConfig::GetInstance().LoadGameIni(gameid, 0);
+  std::string value;
+
+  ini.GetOrCreateSection(section)->Get(key, &value, "-1");
+
+  return env->NewStringUTF(value.c_str());
+}
+
+JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_SetUserSetting(
+    JNIEnv* env, jobject obj, jstring jGameID, jstring jSection, jstring jKey, jstring jValue)
+{
+  IniFile ini;
+  std::string gameid = GetJString(env, jGameID);
+  std::string section = GetJString(env, jSection);
+  std::string key = GetJString(env, jKey);
+  std::string val = GetJString(env, jValue);
+
+  ini.Load(File::GetUserPath(D_GAMESETTINGS_IDX) + gameid + ".ini");
+
+  if (val != "-1")
+  {
+    ini.GetOrCreateSection(section)->Set(key, val);
+  }
+  else
+  {
+    ini.GetOrCreateSection(section)->Delete(key);
+  }
+
+  ini.Save(File::GetUserPath(D_GAMESETTINGS_IDX) + gameid + ".ini");
 }
 
 JNIEXPORT jstring JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_GetConfig(
@@ -867,6 +924,15 @@ Java_org_dolphinemu_dolphinemu_NativeLibrary_Run__Ljava_lang_String_2Ljava_lang_
     JNIEnv* env, jobject obj, jstring jFile, jstring jSavestate, jboolean jDeleteSavestate)
 {
   Run(GetJString(env, jFile), GetJString(env, jSavestate), jDeleteSavestate);
+}
+
+JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_ChangeDisc(JNIEnv* env,
+                                                                               jobject obj,
+                                                                               jstring jFile)
+{
+  const std::string path = GetJString(env, jFile);
+  __android_log_print(ANDROID_LOG_INFO, DOLPHIN_TAG, "Change Disc: %s", path.c_str());
+  Core::RunAsCPUThread([&path] { DVDInterface::ChangeDisc(path); });
 }
 
 #ifdef __cplusplus

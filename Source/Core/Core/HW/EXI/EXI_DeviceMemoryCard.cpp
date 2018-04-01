@@ -104,7 +104,7 @@ void CEXIMemoryCard::Shutdown()
 
 CEXIMemoryCard::CEXIMemoryCard(const int index, bool gciFolder) : card_index(index)
 {
-  _assert_msg_(EXPANSIONINTERFACE, static_cast<std::size_t>(index) < s_et_cmd_done.size(),
+  ASSERT_MSG(EXPANSIONINTERFACE, static_cast<std::size_t>(index) < s_et_cmd_done.size(),
                "Trying to create invalid memory card index %d.", index);
 
   // NOTE: When loading a save state, DMA completion callbacks (s_et_transfer_complete) and such

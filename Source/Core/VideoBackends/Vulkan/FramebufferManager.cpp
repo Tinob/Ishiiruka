@@ -501,7 +501,7 @@ Texture2D* FramebufferManager::ResolveEFBColorTexture(const VkRect2D& region)
 
   // It's not valid to resolve out-of-bounds coordinates.
   // Ensuring the region is within the image is the caller's responsibility.
-  _assert_(region.offset.x >= 0 && region.offset.y >= 0 &&
+  ASSERT(region.offset.x >= 0 && region.offset.y >= 0 &&
     (static_cast<u32>(region.offset.x) + region.extent.width) <= GetEFBWidth() &&
     (static_cast<u32>(region.offset.y) + region.extent.height) <= GetEFBHeight());
 
@@ -1416,7 +1416,7 @@ void FramebufferManager::CopyToRealXFB(u32 xfb_addr, u32 fb_stride, u32 fb_heigh
 
   // GPU EFB textures -> Guest memory
   u8* xfb_ptr = Memory::GetPointer(xfb_addr);
-  _assert_(xfb_ptr);
+  ASSERT(xfb_ptr);
 
   // source_rc is in native coordinates, so scale it to the internal resolution.
   TargetRectangle scaled_rc = g_renderer->ConvertEFBRectangle(source_rc);
@@ -1452,7 +1452,7 @@ void XFBSource::DecodeToTexture(u32 xfb_addr, u32 fb_width, u32 fb_height)
 {
   // Guest memory -> GPU EFB Textures
   const u8* src_ptr = Memory::GetPointer(xfb_addr);
-  _assert_(src_ptr);
+  ASSERT(src_ptr);
   TextureCache::GetInstance()->GetTextureConverter()->DecodeYUYVTextureFromMemory(
     m_texture.get(), src_ptr, fb_width, fb_width * 2, fb_height);
 }

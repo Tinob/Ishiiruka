@@ -172,8 +172,8 @@ void TextureConverter::ConvertTexture(TextureCacheBase::TCacheEntry* dst_entry, 
   };
   VKTexture* dst_tex = static_cast<VKTexture*>(dst_entry->texture.get());
   VKTexture* src_tex = static_cast<VKTexture*>(src_entry->texture.get());
-  _assert_(static_cast<size_t>(palette_format) < NUM_PALETTE_CONVERSION_SHADERS);
-  _assert_(dst_tex->GetConfig().rendertarget);
+  ASSERT(static_cast<size_t>(palette_format) < NUM_PALETTE_CONVERSION_SHADERS);
+  ASSERT(dst_tex->GetConfig().rendertarget);
 
   // We want to align to 2 bytes (R16) or the device's texel buffer alignment, whichever is greater.
   if (!ReserveTexelBufferStorage(palette_size, sizeof(u16)))

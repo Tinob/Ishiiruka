@@ -83,7 +83,7 @@ bool Compare(const std::vector<u16>& code1, const std::vector<u16>& code2)
       pc = i;
       disassembler.DisassembleOpcode(&code2[0], &pc, line2);
       printf("!! %04x : %04x vs %04x - %s  vs  %s\n", i, code1[i], code2[i], line1.c_str(),
-             line2.c_str());
+        line2.c_str());
     }
   }
   if (code2.size() != code1.size())
@@ -102,48 +102,51 @@ bool Compare(const std::vector<u16>& code1, const std::vector<u16>& code2)
   return code1.size() == code2.size() && code1.size() == count_equal;
 }
 
-void CodeToBinaryStringBE(const std::vector<u16>& code, std::string& str)
+std::string CodeToBinaryStringBE(const std::vector<u16>& code)
 {
-  str.resize(code.size() * 2);
+  std::string str(code.size() * 2, '\0');
+
   for (size_t i = 0; i < code.size(); i++)
   {
     str[i * 2 + 0] = code[i] >> 8;
     str[i * 2 + 1] = code[i] & 0xff;
   }
+
+  return str;
 }
 
-void BinaryStringBEToCode(const std::string& str, std::vector<u16>& code)
+std::vector<u16> BinaryStringBEToCode(const std::string& str)
 {
-  code.resize(str.size() / 2);
+  std::vector<u16> code(str.size() / 2);
+
   for (size_t i = 0; i < code.size(); i++)
   {
     code[i] = ((u16)(u8)str[i * 2 + 0] << 8) | ((u16)(u8)str[i * 2 + 1]);
   }
+
+  return code;
 }
 
-bool LoadBinary(const std::string& filename, std::vector<u16>& code)
+std::optional<std::vector<u16>> LoadBinary(const std::string& filename)
 {
   std::string buffer;
   if (!File::ReadFileToString(filename, buffer))
-    return false;
+    return std::nullopt;
 
-  BinaryStringBEToCode(buffer, code);
-  return true;
+  return std::make_optional(BinaryStringBEToCode(buffer));
 }
 
 bool SaveBinary(const std::vector<u16>& code, const std::string& filename)
 {
-  std::string buffer;
-  CodeToBinaryStringBE(code, buffer);
-  if (!File::WriteStringToFile(buffer, filename))
-    return false;
-  return true;
+  const std::string buffer = CodeToBinaryStringBE(code);
+
+  return File::WriteStringToFile(buffer, filename);
 }
 
 bool DumpDSPCode(const u8* code_be, int size_in_bytes, u32 crc)
 {
   const std::string root_name =
-      File::GetUserPath(D_DUMPDSP_IDX) + StringFromFormat("DSP_UC_%08X", crc);
+    File::GetUserPath(D_DUMPDSP_IDX) + StringFromFormat("DSP_UC_%08X", crc);
   const std::string binary_file = root_name + ".bin";
   const std::string text_file = root_name + ".txt";
 

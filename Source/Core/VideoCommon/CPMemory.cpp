@@ -64,19 +64,19 @@ void LoadCPReg(u32 sub_cmd, u32 value)
     break;
 
   case 0x70:
-    _assert_((sub_cmd & 0x0F) < 8);
+    ASSERT((sub_cmd & 0x0F) < 8);
     state->vtx_attr[sub_cmd & 7].g0.Hex = value;
     state->attr_dirty |= 1 << (sub_cmd & 7);
     break;
 
   case 0x80:
-    _assert_((sub_cmd & 0x0F) < 8);
+    ASSERT((sub_cmd & 0x0F) < 8);
     state->vtx_attr[sub_cmd & 7].g1.Hex = value;
     state->attr_dirty |= 1 << (sub_cmd & 7);
     break;
 
   case 0x90:
-    _assert_((sub_cmd & 0x0F) < 8);
+    ASSERT((sub_cmd & 0x0F) < 8);
     state->vtx_attr[sub_cmd & 7].g2.Hex = value;
     state->attr_dirty |= 1 << (sub_cmd & 7);
     break;

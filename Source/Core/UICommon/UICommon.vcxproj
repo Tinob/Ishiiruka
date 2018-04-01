@@ -42,8 +42,12 @@
     <ProjectReference Include="$(CoreDir)Core\Core.vcxproj">
       <Project>{E54CF649-140E-4255-81A5-30A673C1FB36}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\..\Externals\picojson\picojson.vcxproj">
+      <Project>{2c0d058e-de35-4471-ad99-e68a2caf9e18}</Project>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AutoUpdate.cpp" />
     <ClCompile Include="CommandLineParse.cpp" />
     <ClCompile Include="UICommon.cpp" />
     <ClCompile Include="Disassembler.cpp" />
@@ -51,12 +55,17 @@
       <DisableSpecificWarnings>4200;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <ClCompile Include="VideoUtils.cpp" />
+    <ClCompile Include="GameFile.cpp" />
+    <ClCompile Include="GameFileCache.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AutoUpdate.h" />
     <ClInclude Include="CommandLineParse.h" />
     <ClInclude Include="UICommon.h" />
     <ClInclude Include="Disassembler.h" />
     <ClInclude Include="USBUtils.h" />
+    <ClInclude Include="GameFile.h" />
+    <ClInclude Include="GameFileCache.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(ExternalsDir)cpp-optparse\cpp-optparse.vcxproj">

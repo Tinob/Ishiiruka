@@ -62,6 +62,7 @@ void EnhancementsWidget::CreateWidgets()
   m_aa_combo = new QComboBox();
   m_af_combo = new GraphicsChoice({tr("1x"), tr("2x"), tr("4x"), tr("8x"), tr("16x")},
                                   Config::GFX_ENHANCE_MAX_ANISOTROPY);
+
   m_pp_effect = new QComboBox();
   m_configure_pp_effect = new QPushButton(tr("Configure"));
   m_scaled_efb_copy = new GraphicsBool(tr("Scaled EFB Copy"), Config::GFX_HACK_COPY_EFB_SCALED);
@@ -80,16 +81,17 @@ void EnhancementsWidget::CreateWidgets()
   enhancements_layout->addWidget(m_aa_combo, 1, 1, 1, -1);
   enhancements_layout->addWidget(new QLabel(tr("Anisotropic Filtering:")), 2, 0);
   enhancements_layout->addWidget(m_af_combo, 2, 1, 1, -1);
-  enhancements_layout->addWidget(new QLabel(tr("Post-Processing Effect:")), 3, 0);
-  enhancements_layout->addWidget(m_pp_effect, 3, 1);
-  enhancements_layout->addWidget(m_configure_pp_effect, 3, 2);
 
-  enhancements_layout->addWidget(m_scaled_efb_copy, 4, 0);
-  enhancements_layout->addWidget(m_per_pixel_lighting, 4, 1);
-  enhancements_layout->addWidget(m_force_texture_filtering, 5, 0);
-  enhancements_layout->addWidget(m_widescreen_hack, 5, 1);
-  enhancements_layout->addWidget(m_disable_fog, 6, 0);
-  enhancements_layout->addWidget(m_force_24bit_color, 6, 1);
+  enhancements_layout->addWidget(new QLabel(tr("Post-Processing Effect:")), 4, 0);
+  enhancements_layout->addWidget(m_pp_effect, 4, 1);
+  enhancements_layout->addWidget(m_configure_pp_effect, 4, 2);
+
+  enhancements_layout->addWidget(m_scaled_efb_copy, 5, 0);
+  enhancements_layout->addWidget(m_per_pixel_lighting, 5, 1);
+  enhancements_layout->addWidget(m_force_texture_filtering, 6, 0);
+  enhancements_layout->addWidget(m_widescreen_hack, 6, 1);
+  enhancements_layout->addWidget(m_disable_fog, 7, 0);
+  enhancements_layout->addWidget(m_force_24bit_color, 7, 1);
 
   // Stereoscopy
   auto* stereoscopy_box = new QGroupBox(tr("Stereoscopy"));

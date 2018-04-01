@@ -111,7 +111,6 @@
     <ClCompile Include="Input\GuitarInputConfigDiag.cpp" />
     <ClCompile Include="Input\DrumsInputConfigDiag.cpp" />
     <ClCompile Include="Input\TurntableInputConfigDiag.cpp" />
-    <ClCompile Include="ISOFile.cpp" />
     <ClCompile Include="LogConfigWindow.cpp" />
     <ClCompile Include="LogWindow.cpp" />
     <ClCompile Include="Main.cpp" />
@@ -194,7 +193,6 @@
     <ClInclude Include="Input\GuitarInputConfigDiag.h" />
     <ClInclude Include="Input\DrumsInputConfigDiag.h" />
     <ClInclude Include="Input\TurntableInputConfigDiag.h" />
-    <ClInclude Include="ISOFile.h" />
     <ClInclude Include="LogConfigWindow.h" />
     <ClInclude Include="LogWindow.h" />
     <ClInclude Include="Main.h" />
@@ -280,6 +278,9 @@
     </ProjectReference>
     <ProjectReference Include="..\VideoCommon\VideoCommon.vcxproj">
       <Project>{3e5c4e02-1ba9-4776-bdbe-e3f91ffa34cf}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Updater\Updater.vcxproj">
+      <Project>{e4becbab-9c6e-41ab-bb56-f9d70ab6be03}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

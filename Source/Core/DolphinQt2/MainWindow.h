@@ -11,15 +11,23 @@
 
 #include <memory>
 #include <optional>
+#include <string>
 
 #include "DolphinQt2/GameList/GameList.h"
 #include "DolphinQt2/MenuBar.h"
 #include "DolphinQt2/RenderWidget.h"
 #include "DolphinQt2/ToolBar.h"
 
+class QProgressDialog;
+
 class BreakpointWidget;
 struct BootParameters;
+class CodeWidget;
+class ControllersWindow;
+class DragEnterEvent;
 class FIFOPlayerWindow;
+class GCTASInputWindow;
+class GraphicsWindow;
 class HotkeyScheduler;
 class LogConfigWidget;
 class LogWidget;
@@ -28,12 +36,11 @@ class NetPlayClient;
 class NetPlayDialog;
 class NetPlayServer;
 class NetPlaySetupDialog;
-class SettingsWindow;
-class ControllersWindow;
-class DragEnterEvent;
-class GraphicsWindow;
 class RegisterWidget;
+class SearchBar;
+class SettingsWindow;
 class WatchWidget;
+class WiiTASInputWindow;
 
 class MainWindow final : public QMainWindow
 {
@@ -53,6 +60,7 @@ private:
   void Open();
   void Play(const std::optional<std::string>& savestate_path = {});
   void Pause();
+  void TogglePause();
 
   // May ask for confirmation. Returns whether or not it actually stopped.
   bool RequestStop();
@@ -79,6 +87,7 @@ private:
   void CreateComponents();
 
   void ConnectGameList();
+  void ConnectHost();
   void ConnectHotkeys();
   void ConnectMenuBar();
   void ConnectRenderWidget();
@@ -91,9 +100,10 @@ private:
   void InitCoreCallbacks();
 
   void StartGame(const QString& path, const std::optional<std::string>& savestate_path = {});
+  void StartGame(const std::string& path, const std::optional<std::string>& savestate_path = {});
   void StartGame(std::unique_ptr<BootParameters>&& parameters);
   void ShowRenderWidget();
-  void HideRenderWidget();
+  void HideRenderWidget(bool reinit = true);
 
   void ShowSettingsWindow();
   void ShowGeneralWindow();
@@ -104,6 +114,7 @@ private:
   void ShowHotkeyDialog();
   void ShowNetPlaySetupDialog();
   void ShowFIFOPlayer();
+  void ShowMemcardManager();
 
   void NetPlayInit();
   bool NetPlayJoin();
@@ -112,11 +123,20 @@ private:
 
   void OnBootGameCubeIPL(DiscIO::Region region);
   void OnImportNANDBackup();
+  void OnConnectWiiRemote(int id);
+
+  void OnUpdateProgressDialog(QString label, int progress, int total);
 
   void OnPlayRecording();
   void OnStartRecording();
   void OnStopRecording();
   void OnExportRecording();
+  void ShowTASInput();
+
+  void ChangeDisc();
+  void EjectDisc();
+
+  QString PromptFileName();
 
   void EnableScreenSaver(bool enable);
 
@@ -125,9 +145,11 @@ private:
   void dropEvent(QDropEvent* event) override;
   QSize sizeHint() const override;
 
+  QProgressDialog* m_progress_dialog = nullptr;
   QStackedWidget* m_stack;
   ToolBar* m_tool_bar;
   MenuBar* m_menu_bar;
+  SearchBar* m_search_bar;
   GameList* m_game_list;
   RenderWidget* m_render_widget;
   bool m_rendering_to_main;
@@ -143,8 +165,13 @@ private:
   NetPlayDialog* m_netplay_dialog;
   NetPlaySetupDialog* m_netplay_setup_dialog;
   GraphicsWindow* m_graphics_window;
+  static constexpr int num_gc_controllers = 4;
+  std::array<GCTASInputWindow*, num_gc_controllers> m_gc_tas_input_windows{};
+  static constexpr int num_wii_controllers = 4;
+  std::array<WiiTASInputWindow*, num_wii_controllers> m_wii_tas_input_windows{};
 
   BreakpointWidget* m_breakpoint_widget;
+  CodeWidget* m_code_widget;
   LogWidget* m_log_widget;
   LogConfigWidget* m_log_config_widget;
   FIFOPlayerWindow* m_fifo_window;

@@ -11,6 +11,7 @@ import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.content.res.AssetManager;
 import android.view.Surface;
 import android.widget.Toast;
 
@@ -231,6 +232,12 @@ public final class NativeLibrary
 	 */
 	public static native void onGamePadMoveEvent(String Device, int Axis, float Value);
 
+	public static native String GetUserSetting(String gameID, String Section, String Key);
+
+	public static native void SetUserSetting(String gameID, String Section, String Key, String Value);
+
+	public static native void InitGameIni(String gameID);
+
 	/**
 	 * Gets a value from a key in the given ini-based config file.
 	 *
@@ -349,6 +356,8 @@ public final class NativeLibrary
 	 * Begins emulation from the specified savestate.
 	 */
 	public static native void Run(String path, String savestatePath, boolean deleteSavestate);
+
+	public static native void ChangeDisc(String path);
 
 	// Surface Handling
 	public static native void SurfaceChanged(Surface surf);

@@ -40,7 +40,7 @@ void DSP::Host::UpdateDebugger()
 }
 
 static void CodeToHeader(const std::vector<u16>& code, std::string filename, const char* name,
-                         std::string& header)
+  std::string& header)
 {
   std::vector<u16> code_padded = code;
   // Pad with nops to 32byte boundary
@@ -52,7 +52,7 @@ static void CodeToHeader(const std::vector<u16>& code, std::string filename, con
   std::string filename_without_extension;
   SplitPath(filename, nullptr, &filename_without_extension, nullptr);
   header.append(StringFromFormat("const char* UCODE_NAMES[NUM_UCODES] = {\"%s\"};\n\n",
-                                 filename_without_extension.c_str()));
+    filename_without_extension.c_str()));
   header.append("const unsigned short dsp_code[NUM_UCODES][0x1000] = {\n");
 
   header.append("\t{\n\t\t");
@@ -68,7 +68,7 @@ static void CodeToHeader(const std::vector<u16>& code, std::string filename, con
 }
 
 static void CodesToHeader(const std::vector<u16>* codes, const std::vector<std::string>* filenames,
-                          u32 num_codes, const char* name, std::string& header)
+  u32 num_codes, const char* name, std::string& header)
 {
   std::vector<std::vector<u16>> codes_padded;
   u32 reserveSize = 0;
@@ -128,7 +128,7 @@ int main(int argc, const char* argv[])
   if (argc == 1 || (argc == 2 && (!strcmp(argv[1], "--help") || (!strcmp(argv[1], "-?")))))
   {
     printf("USAGE: DSPTool [-?] [--help] [-f] [-d] [-m] [-p <FILE>] [-o <FILE>] [-h <FILE>] <DSP "
-           "ASSEMBLER FILE>\n");
+      "ASSEMBLER FILE>\n");
     printf("-? / --help: Prints this message\n");
     printf("-d: Disassemble\n");
     printf("-m: Input file contains a list of files (Header assembly only)\n");
@@ -140,7 +140,7 @@ int main(int argc, const char* argv[])
     printf("-ps <DUMP FILE>: Print results of DSPSpy register dump (disable SR output)\n");
     printf("-pm <DUMP FILE>: Print results of DSPSpy register dump (convert PROD values)\n");
     printf("-psm <DUMP FILE>: Print results of DSPSpy register dump (convert PROD values/disable "
-           "SR output)\n");
+      "SR output)\n");
 
     return 0;
   }
@@ -150,7 +150,7 @@ int main(int argc, const char* argv[])
   std::string output_name;
 
   bool disassemble = false, compare = false, multiple = false, outputSize = false, force = false,
-       print_results = false, print_results_prodhack = false, print_results_srhack = false;
+    print_results = false, print_results_prodhack = false, print_results_srhack = false;
   for (int i = 1; i < argc; i++)
   {
     if (!strcmp(argv[i], "-d"))
@@ -204,7 +204,7 @@ int main(int argc, const char* argv[])
   if (multiple && (compare || disassemble || !output_name.empty() || input_name.empty()))
   {
     printf("ERROR: Multiple files can only be used with assembly "
-           "and must compile a header file.\n");
+      "and must compile a header file.\n");
     return 1;
   }
 
@@ -212,24 +212,25 @@ int main(int argc, const char* argv[])
   {
     // Two binary inputs, let's diff.
     std::string binary_code;
-    std::vector<u16> code1, code2;
+
     File::ReadFileToString(input_name, binary_code);
-    DSP::BinaryStringBEToCode(binary_code, code1);
+    const std::vector<u16> code1 = DSP::BinaryStringBEToCode(binary_code);
+
     File::ReadFileToString(output_name, binary_code);
-    DSP::BinaryStringBEToCode(binary_code, code2);
+    const std::vector<u16> code2 = DSP::BinaryStringBEToCode(binary_code);
+
     DSP::Compare(code1, code2);
     return 0;
   }
 
   if (print_results)
   {
-    std::string dumpfile, results;
-    std::vector<u16> reg_vector;
+    std::string dumpfile;
 
     File::ReadFileToString(input_name, dumpfile);
-    DSP::BinaryStringBEToCode(dumpfile, reg_vector);
+    const std::vector<u16> reg_vector = DSP::BinaryStringBEToCode(dumpfile);
 
-    results.append("Start:\n");
+    std::string results("Start:\n");
     for (int initial_reg = 0; initial_reg < 32; initial_reg++)
     {
       results.append(StringFromFormat("%02x %04x ", initial_reg, reg_vector.at(initial_reg)));
@@ -260,18 +261,18 @@ int main(int argc, const char* argv[])
           {
           case 0x15:  // DSP_REG_PRODM
             last_reg =
-                reg_vector.at((step * 32 - 32) + reg) + reg_vector.at((step * 32 - 32) + reg + 2);
+              reg_vector.at((step * 32 - 32) + reg) + reg_vector.at((step * 32 - 32) + reg + 2);
             current_reg = reg_vector.at(step * 32 + reg) + reg_vector.at(step * 32 + reg + 2);
             break;
           case 0x16:  // DSP_REG_PRODH
             htemp = ((reg_vector.at(step * 32 + reg - 1) + reg_vector.at(step * 32 + reg + 1)) &
-                     ~0xffff) >>
-                    16;
+              ~0xffff) >>
+              16;
             current_reg = (u8)(reg_vector.at(step * 32 + reg) + htemp);
             htemp = ((reg_vector.at(step * 32 - 32 + reg - 1) +
-                      reg_vector.at(step * 32 - 32 + reg + 1)) &
-                     ~0xffff) >>
-                    16;
+              reg_vector.at(step * 32 - 32 + reg + 1)) &
+              ~0xffff) >>
+              16;
             last_reg = (u8)(reg_vector.at(step * 32 - 32 + reg) + htemp);
             break;
           case 0x17:  // DSP_REG_PRODM2
@@ -289,7 +290,7 @@ int main(int argc, const char* argv[])
         if (last_reg != current_reg)
         {
           results.append(StringFromFormat("%02x %-7s: %04x %04x\n", reg, DSP::pdregname(reg),
-                                          last_reg, current_reg));
+            last_reg, current_reg));
           changed = true;
         }
       }
@@ -314,9 +315,8 @@ int main(int argc, const char* argv[])
       return 1;
     }
     std::string binary_code;
-    std::vector<u16> code;
     File::ReadFileToString(input_name, binary_code);
-    DSP::BinaryStringBEToCode(binary_code, code);
+    const std::vector<u16> code = DSP::BinaryStringBEToCode(binary_code);
     std::string text;
     DSP::Disassemble(code, true, text);
     if (!output_name.empty())
@@ -408,8 +408,7 @@ int main(int argc, const char* argv[])
 
         if (!output_name.empty())
         {
-          std::string binary_code;
-          DSP::CodeToBinaryStringBE(code, binary_code);
+          const std::string binary_code = DSP::CodeToBinaryStringBE(code);
           File::WriteStringToFile(binary_code, output_name);
         }
         if (!output_header_name.empty())

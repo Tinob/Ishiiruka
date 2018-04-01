@@ -158,7 +158,7 @@ void VertexLoader::CompileVertexTranslator()
       case FORMAT_16B_4444:	m_VertexSize += 2; WriteCall(Color_ReadDirect_16b_4444); break;
       case FORMAT_24B_6666:	m_VertexSize += 3; WriteCall(Color_ReadDirect_24b_6666); break;
       case FORMAT_32B_8888:	m_VertexSize += 4; WriteCall(Color_ReadDirect_32b_8888); break;
-      default: _assert_(0); break;
+      default: ASSERT(0); break;
       }
       break;
     case INDEX8:
@@ -171,7 +171,7 @@ void VertexLoader::CompileVertexTranslator()
       case FORMAT_16B_4444:	WriteCall(Color_ReadIndex8_16b_4444); break;
       case FORMAT_24B_6666:	WriteCall(Color_ReadIndex8_24b_6666); break;
       case FORMAT_32B_8888:	WriteCall(Color_ReadIndex8_32b_8888); break;
-      default: _assert_(0); break;
+      default: ASSERT(0); break;
       }
       break;
     case INDEX16:
@@ -184,7 +184,7 @@ void VertexLoader::CompileVertexTranslator()
       case FORMAT_16B_4444:	WriteCall(Color_ReadIndex16_16b_4444); break;
       case FORMAT_24B_6666:	WriteCall(Color_ReadIndex16_24b_6666); break;
       case FORMAT_32B_8888:	WriteCall(Color_ReadIndex16_32b_8888); break;
-      default: _assert_(0); break;
+      default: ASSERT(0); break;
       }
       break;
     }
@@ -207,9 +207,9 @@ void VertexLoader::CompileVertexTranslator()
 
     if (tc[i] != NOT_PRESENT)
     {
-      _assert_msg_(VIDEO, DIRECT <= tc[i] && tc[i] <= INDEX16, "Invalid texture coordinates!\n(tc[i] = %zu)", tc[i]);
-      _assert_msg_(VIDEO, FORMAT_UBYTE <= format && format <= FORMAT_FLOAT, "Invalid texture coordinates format!\n(format = %d)", format);
-      _assert_msg_(VIDEO, 0 <= elements && elements <= 1, "Invalid number of texture coordinates elements!\n(elements = %d)", elements);
+      ASSERT_MSG(VIDEO, DIRECT <= tc[i] && tc[i] <= INDEX16, "Invalid texture coordinates!\n(tc[i] = %zu)", tc[i]);
+      ASSERT_MSG(VIDEO, FORMAT_UBYTE <= format && format <= FORMAT_FLOAT, "Invalid texture coordinates format!\n(format = %d)", format);
+      ASSERT_MSG(VIDEO, 0 <= elements && elements <= 1, "Invalid number of texture coordinates elements!\n(elements = %d)", elements);
 
       m_native_components |= VB_HAS_UV0 << i;
       WriteCall(VertexLoader_TextCoord::GetFunction((u32)tc[i], format, elements));

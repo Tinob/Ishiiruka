@@ -214,7 +214,7 @@ static void ReadVertexAttribute(T* dst, DataReader src, const AttributeFormat& f
         break;
       }
 
-      _assert_msg_(VIDEO, format.type != FORMAT_FLOAT, "only non-float values are allowed to be streamed as integer");
+      ASSERT_MSG(VIDEO, format.type != FORMAT_FLOAT, "only non-float values are allowed to be streamed as integer");
     }
     for (; i < components; i++)
     {

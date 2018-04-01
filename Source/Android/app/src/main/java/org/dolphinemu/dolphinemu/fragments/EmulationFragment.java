@@ -158,11 +158,20 @@ public final class EmulationFragment extends Fragment implements SurfaceHolder.C
 				DirectoryInitializationService.BROADCAST_ACTION);
 
 		directoryStateReceiver =
-				new DirectoryStateReceiver(directoryInitializationState -> {
-					if (directoryInitializationState == DirectoryInitializationState.DOLPHIN_DIRECTORIES_INITIALIZED) {
+				new DirectoryStateReceiver(directoryInitializationState ->
+				{
+					if (directoryInitializationState == DirectoryInitializationState.DOLPHIN_DIRECTORIES_INITIALIZED)
+					{
 						mEmulationState.run(activity.isActivityRecreated());
-					} else if (directoryInitializationState == DirectoryInitializationState.EXTERNAL_STORAGE_PERMISSION_NEEDED) {
+					}
+					else if (directoryInitializationState == DirectoryInitializationState.EXTERNAL_STORAGE_PERMISSION_NEEDED)
+					{
 						Toast.makeText(getContext(), R.string.write_permission_needed, Toast.LENGTH_SHORT)
+								.show();
+					}
+					else if (directoryInitializationState == DirectoryInitializationState.CANT_FIND_EXTERNAL_STORAGE)
+					{
+						Toast.makeText(getContext(), R.string.external_storage_not_mounted, Toast.LENGTH_SHORT)
 								.show();
 					}
 				});
@@ -306,7 +315,6 @@ public final class EmulationFragment extends Fragment implements SurfaceHolder.C
 				Log.debug("[EmulationFragment] Pausing emulation.");
 
 				// Release the surface before pausing, since emulation has to be running for that.
-				mSurface = null;
 				NativeLibrary.SurfaceDestroyed();
 				NativeLibrary.PauseEmulation();
 			}
@@ -412,8 +420,8 @@ public final class EmulationFragment extends Fragment implements SurfaceHolder.C
 			else if (state == State.PAUSED)
 			{
 				Log.debug("[EmulationFragment] Resuming emulation.");
-				NativeLibrary.UnPauseEmulation();
 				NativeLibrary.SurfaceChanged(mSurface);
+				NativeLibrary.UnPauseEmulation();
 			}
 			else
 			{

@@ -27,7 +27,6 @@
 #include "Core/IOS/ES/Formats.h"
 #include "Core/IOS/IOSC.h"
 #include "Core/IOS/VersionInfo.h"
-#include "Core/ec_wii.h"
 
 namespace IOS
 {
@@ -47,17 +46,17 @@ struct DirectoryToCreate
   OpenMode other_perm;
 };
 
-constexpr std::array<DirectoryToCreate, 9> s_directories_to_create = { {
-  { "/sys", 0, OpenMode::IOS_OPEN_RW, OpenMode::IOS_OPEN_RW, OpenMode::IOS_OPEN_NONE },
-{ "/ticket", 0, OpenMode::IOS_OPEN_RW, OpenMode::IOS_OPEN_RW, OpenMode::IOS_OPEN_NONE },
-{ "/title", 0, OpenMode::IOS_OPEN_RW, OpenMode::IOS_OPEN_RW, OpenMode::IOS_OPEN_READ },
-{ "/shared1", 0, OpenMode::IOS_OPEN_RW, OpenMode::IOS_OPEN_RW, OpenMode::IOS_OPEN_NONE },
-{ "/shared2", 0, OpenMode::IOS_OPEN_RW, OpenMode::IOS_OPEN_RW, OpenMode::IOS_OPEN_RW },
-{ "/tmp", 0, OpenMode::IOS_OPEN_RW, OpenMode::IOS_OPEN_RW, OpenMode::IOS_OPEN_RW },
-{ "/import", 0, OpenMode::IOS_OPEN_RW, OpenMode::IOS_OPEN_RW, OpenMode::IOS_OPEN_NONE },
-{ "/meta", 0, OpenMode::IOS_OPEN_RW, OpenMode::IOS_OPEN_RW, OpenMode::IOS_OPEN_RW },
-{ "/wfs", 0, OpenMode::IOS_OPEN_RW, OpenMode::IOS_OPEN_NONE, OpenMode::IOS_OPEN_NONE },
-  } };
+constexpr std::array<DirectoryToCreate, 9> s_directories_to_create = {{
+    {"/sys", 0, OpenMode::IOS_OPEN_RW, OpenMode::IOS_OPEN_RW, OpenMode::IOS_OPEN_NONE},
+    {"/ticket", 0, OpenMode::IOS_OPEN_RW, OpenMode::IOS_OPEN_RW, OpenMode::IOS_OPEN_NONE},
+    {"/title", 0, OpenMode::IOS_OPEN_RW, OpenMode::IOS_OPEN_RW, OpenMode::IOS_OPEN_READ},
+    {"/shared1", 0, OpenMode::IOS_OPEN_RW, OpenMode::IOS_OPEN_RW, OpenMode::IOS_OPEN_NONE},
+    {"/shared2", 0, OpenMode::IOS_OPEN_RW, OpenMode::IOS_OPEN_RW, OpenMode::IOS_OPEN_RW},
+    {"/tmp", 0, OpenMode::IOS_OPEN_RW, OpenMode::IOS_OPEN_RW, OpenMode::IOS_OPEN_RW},
+    {"/import", 0, OpenMode::IOS_OPEN_RW, OpenMode::IOS_OPEN_RW, OpenMode::IOS_OPEN_NONE},
+    {"/meta", 0, OpenMode::IOS_OPEN_RW, OpenMode::IOS_OPEN_RW, OpenMode::IOS_OPEN_RW},
+    {"/wfs", 0, OpenMode::IOS_OPEN_RW, OpenMode::IOS_OPEN_NONE, OpenMode::IOS_OPEN_NONE},
+}};
 
 ES::ES(Kernel& ios, const std::string& device_name) : Device(ios, device_name)
 {
@@ -156,13 +155,13 @@ IPCCommandResult ES::GetTitleId(const IOCtlVRequest& request)
 
   Memory::Write_U64(title_id, request.io_vectors[0].address);
   INFO_LOG(IOS_ES, "IOCTL_ES_GETTITLEID: %08x/%08x", static_cast<u32>(title_id >> 32),
-    static_cast<u32>(title_id));
+           static_cast<u32>(title_id));
   return GetDefaultReply(IPC_SUCCESS);
 }
 
 static bool UpdateUIDAndGID(Kernel& kernel, const IOS::ES::TMDReader& tmd)
 {
-  IOS::ES::UIDSys uid_sys{ Common::FromWhichRoot::FROM_SESSION_ROOT };
+  IOS::ES::UIDSys uid_sys{Common::FromWhichRoot::FROM_SESSION_ROOT};
   const u64 title_id = tmd.GetTitleId();
   const u32 uid = uid_sys.GetOrInsertUIDForTitle(title_id);
   if (!uid)
@@ -177,7 +176,7 @@ static bool UpdateUIDAndGID(Kernel& kernel, const IOS::ES::TMDReader& tmd)
 
 static ReturnCode CheckIsAllowedToSetUID(const u32 caller_uid)
 {
-  IOS::ES::UIDSys uid_map{ Common::FromWhichRoot::FROM_SESSION_ROOT };
+  IOS::ES::UIDSys uid_map{Common::FromWhichRoot::FROM_SESSION_ROOT};
   const u32 system_menu_uid = uid_map.GetOrInsertUIDForTitle(Titles::SYSTEM_MENU);
   if (!system_menu_uid)
     return ES_SHORT_READ;
@@ -218,14 +217,12 @@ bool ES::LaunchTitle(u64 title_id, bool skip_reload)
 
   NOTICE_LOG(IOS_ES, "Launching title %016" PRIx64 "...", title_id);
 
-  u32 device_id;
-  if (title_id == Titles::SHOP &&
-    (GetDeviceId(&device_id) != IPC_SUCCESS || device_id == DEFAULT_WII_DEVICE_ID))
+  if (title_id == Titles::SHOP && m_ios.GetIOSC().IsUsingDefaultId())
   {
     ERROR_LOG(IOS_ES, "Refusing to launch the shop channel with default device credentials");
     CriticalAlertT("You cannot use the Wii Shop Channel without using your own device credentials."
-      "\nPlease refer to the NAND usage guide for setup instructions: "
-      "https://dolphin-emu.org/docs/guides/nand-usage-guide/");
+                   "\nPlease refer to the NAND usage guide for setup instructions: "
+                   "https://dolphin-emu.org/docs/guides/nand-usage-guide/");
 
     // Send the user back to the system menu instead of returning an error, which would
     // likely make the system menu crash. Doing this is okay as anyone who has the shop
@@ -264,11 +261,11 @@ bool ES::LaunchIOS(u64 ios_title_id)
     const IOS::ES::TicketReader ticket = FindSignedTicket(ios_title_id);
     IOS::ES::Content content;
     if (!tmd.IsValid() || !ticket.IsValid() || !tmd.GetContent(tmd.GetBootIndex(), &content) ||
-      !m_ios.BootIOS(ios_title_id, GetContentPath(ios_title_id, content)))
+        !m_ios.BootIOS(ios_title_id, GetContentPath(ios_title_id, content)))
     {
       PanicAlertT("Could not launch IOS %016" PRIx64 " because it is missing from the NAND.\n"
-        "The emulated software will likely hang now.",
-        ios_title_id);
+                  "The emulated software will likely hang now.",
+                  ios_title_id);
       return false;
     }
     return true;
@@ -287,13 +284,13 @@ bool ES::LaunchPPCTitle(u64 title_id, bool skip_reload)
     if (title_id == Titles::SYSTEM_MENU)
     {
       PanicAlertT("Could not launch the Wii Menu because it is missing from the NAND.\n"
-        "The emulated software will likely hang now.");
+                  "The emulated software will likely hang now.");
     }
     else
     {
       PanicAlertT("Could not launch title %016" PRIx64 " because it is missing from the NAND.\n"
-        "The emulated software will likely hang now.",
-        title_id);
+                  "The emulated software will likely hang now.",
+                  title_id);
     }
     return false;
   }
@@ -363,20 +360,20 @@ void ES::DoState(PointerWrap& p)
 ES::ContextArray::iterator ES::FindActiveContext(s32 fd)
 {
   return std::find_if(m_contexts.begin(), m_contexts.end(),
-    [fd](const auto& context) { return context.ipc_fd == fd && context.active; });
+                      [fd](const auto& context) { return context.ipc_fd == fd && context.active; });
 }
 
 ES::ContextArray::iterator ES::FindInactiveContext()
 {
   return std::find_if(m_contexts.begin(), m_contexts.end(),
-    [](const auto& context) { return !context.active; });
+                      [](const auto& context) { return !context.active; });
 }
 
-ReturnCode ES::Open(const OpenRequest& request)
+IPCCommandResult ES::Open(const OpenRequest& request)
 {
   auto context = FindInactiveContext();
   if (context == m_contexts.end())
-    return ES_FD_EXHAUSTED;
+    return GetDefaultReply(ES_FD_EXHAUSTED);
 
   context->active = true;
   context->uid = request.uid;
@@ -385,18 +382,18 @@ ReturnCode ES::Open(const OpenRequest& request)
   return Device::Open(request);
 }
 
-ReturnCode ES::Close(u32 fd)
+IPCCommandResult ES::Close(u32 fd)
 {
   auto context = FindActiveContext(fd);
   if (context == m_contexts.end())
-    return ES_EINVAL;
+    return GetDefaultReply(ES_EINVAL);
 
   context->active = false;
   context->ipc_fd = -1;
 
   INFO_LOG(IOS_ES, "ES: Close");
   m_is_active = false;
-  return IPC_SUCCESS;
+  return GetDefaultReply(IPC_SUCCESS);
 }
 
 IPCCommandResult ES::IOCtlV(const IOCtlVRequest& request)
@@ -551,7 +548,7 @@ IPCCommandResult ES::IOCtlV(const IOCtlVRequest& request)
   case IOCTL_ES_UNKNOWN_41:
   case IOCTL_ES_UNKNOWN_42:
     PanicAlert("IOS-ES: Unimplemented ioctlv 0x%x (%zu in vectors, %zu io vectors)",
-      request.request, request.in_vectors.size(), request.io_vectors.size());
+               request.request, request.in_vectors.size(), request.io_vectors.size());
     request.DumpUnknown(GetDeviceName(), LogTypes::IOS_ES, LogTypes::LERROR);
     return GetDefaultReply(IPC_EINVAL);
 
@@ -585,7 +582,7 @@ IPCCommandResult ES::Launch(const IOCtlVRequest& request)
   u16 access = Memory::Read_U16(request.in_vectors[1].address + 24);
 
   INFO_LOG(IOS_ES, "IOCTL_ES_LAUNCH %016" PRIx64 " %08x %016" PRIx64 " %08x %016" PRIx64 " %04x",
-    TitleID, view, ticketid, devicetype, titleid, access);
+           TitleID, view, ticketid, devicetype, titleid, access);
 
   // Prevent loading installed IOSes that are not emulated.
   if (!IOS::HLE::IsEmulated(TitleID))
@@ -667,7 +664,7 @@ s32 ES::DIVerify(const IOS::ES::TMDReader& tmd, const IOS::ES::TicketReader& tic
 constexpr u32 FIRST_PPC_UID = 0x1000;
 
 ReturnCode ES::CheckStreamKeyPermissions(const u32 uid, const u8* ticket_view,
-  const IOS::ES::TMDReader& tmd) const
+                                         const IOS::ES::TMDReader& tmd) const
 {
   const u32 title_flags = tmd.GetTitleFlags();
   // Only allow using this function with some titles (WFS titles).
@@ -675,7 +672,7 @@ ReturnCode ES::CheckStreamKeyPermissions(const u32 uid, const u8* ticket_view,
   // title type is what IOS checks, we don't know much about the constants used here.
   constexpr u32 WFS_AND_0x4_FLAG = IOS::ES::TITLE_TYPE_0x4 | IOS::ES::TITLE_TYPE_WFS_MAYBE;
   if ((!(title_flags & IOS::ES::TITLE_TYPE_0x4) && ~(title_flags >> 5) & 1) ||
-    (title_flags & WFS_AND_0x4_FLAG) == WFS_AND_0x4_FLAG)
+      (title_flags & WFS_AND_0x4_FLAG) == WFS_AND_0x4_FLAG)
   {
     return ES_EINVAL;
   }
@@ -697,11 +694,11 @@ ReturnCode ES::CheckStreamKeyPermissions(const u32 uid, const u8* ticket_view,
 
   // More permission checks.
   const u32 permitted_title_mask =
-    Common::swap32(ticket_view + offsetof(IOS::ES::TicketView, permitted_title_mask));
+      Common::swap32(ticket_view + offsetof(IOS::ES::TicketView, permitted_title_mask));
   const u32 permitted_title_id =
-    Common::swap32(ticket_view + offsetof(IOS::ES::TicketView, permitted_title_id));
+      Common::swap32(ticket_view + offsetof(IOS::ES::TicketView, permitted_title_id));
   if ((uid == PID_UNKNOWN && (~permitted_title_mask & 0x13) != permitted_title_id) ||
-    !IsActiveTitlePermittedByTicket(ticket_view))
+      !IsActiveTitlePermittedByTicket(ticket_view))
   {
     return ES_EACCES;
   }
@@ -710,7 +707,7 @@ ReturnCode ES::CheckStreamKeyPermissions(const u32 uid, const u8* ticket_view,
 }
 
 ReturnCode ES::SetUpStreamKey(const u32 uid, const u8* ticket_view, const IOS::ES::TMDReader& tmd,
-  u32* handle)
+                              u32* handle)
 {
   ReturnCode ret = CheckStreamKeyPermissions(uid, ticket_view, tmd);
   if (ret != IPC_SUCCESS)
@@ -738,7 +735,7 @@ ReturnCode ES::SetUpStreamKey(const u32 uid, const u8* ticket_view, const IOS::E
   if (ret != IPC_SUCCESS)
     return ret;
   ret = VerifyContainer(VerifyContainerType::Ticket, VerifyMode::UpdateCertStore, installed_ticket,
-    cert_store);
+                        cert_store);
   if (ret != IPC_SUCCESS)
     return ret;
 
@@ -746,7 +743,7 @@ ReturnCode ES::SetUpStreamKey(const u32 uid, const u8* ticket_view, const IOS::E
   std::array<u8, 16> iv{};
   std::memcpy(iv.data(), &title_id, sizeof(title_id));
   ret = m_ios.GetIOSC().CreateObject(handle, IOSC::ObjectType::TYPE_SECRET_KEY,
-    IOSC::ObjectSubType::SUBTYPE_AES128, PID_ES);
+                                     IOSC::ObjectSubType::SUBTYPE_AES128, PID_ES);
   if (ret != IPC_SUCCESS)
     return ret;
 
@@ -761,30 +758,30 @@ ReturnCode ES::SetUpStreamKey(const u32 uid, const u8* ticket_view, const IOS::E
 
   auto common_key_handle = index == 0 ? IOSC::HANDLE_COMMON_KEY : IOSC::HANDLE_NEW_COMMON_KEY;
   return m_ios.GetIOSC().ImportSecretKey(*handle, common_key_handle, iv.data(),
-    &ticket_bytes[offsetof(IOS::ES::Ticket, title_key)],
-    PID_ES);
+                                         &ticket_bytes[offsetof(IOS::ES::Ticket, title_key)],
+                                         PID_ES);
 }
 
 IPCCommandResult ES::SetUpStreamKey(const Context& context, const IOCtlVRequest& request)
 {
   if (!request.HasNumberOfValidVectors(2, 1) ||
-    request.in_vectors[0].size != sizeof(IOS::ES::TicketView) ||
-    !IOS::ES::IsValidTMDSize(request.in_vectors[1].size) ||
-    request.io_vectors[0].size != sizeof(u32))
+      request.in_vectors[0].size != sizeof(IOS::ES::TicketView) ||
+      !IOS::ES::IsValidTMDSize(request.in_vectors[1].size) ||
+      request.io_vectors[0].size != sizeof(u32))
   {
     return GetDefaultReply(ES_EINVAL);
   }
 
   std::vector<u8> tmd_bytes(request.in_vectors[1].size);
   Memory::CopyFromEmu(tmd_bytes.data(), request.in_vectors[1].address, tmd_bytes.size());
-  const IOS::ES::TMDReader tmd{ std::move(tmd_bytes) };
+  const IOS::ES::TMDReader tmd{std::move(tmd_bytes)};
 
   if (!tmd.IsValid())
     return GetDefaultReply(ES_EINVAL);
 
   u32 handle;
   const ReturnCode ret =
-    SetUpStreamKey(context.uid, Memory::GetPointer(request.in_vectors[0].address), tmd, &handle);
+      SetUpStreamKey(context.uid, Memory::GetPointer(request.in_vectors[0].address), tmd, &handle);
   Memory::Write_U32(handle, request.io_vectors[0].address);
   return GetDefaultReply(ret);
 }
@@ -805,9 +802,9 @@ bool ES::IsActiveTitlePermittedByTicket(const u8* ticket_view) const
 
   const u32 title_identifier = static_cast<u32>(m_title_context.tmd.GetTitleId());
   const u32 permitted_title_mask =
-    Common::swap32(ticket_view + offsetof(IOS::ES::TicketView, permitted_title_mask));
+      Common::swap32(ticket_view + offsetof(IOS::ES::TicketView, permitted_title_mask));
   const u32 permitted_title_id =
-    Common::swap32(ticket_view + offsetof(IOS::ES::TicketView, permitted_title_id));
+      Common::swap32(ticket_view + offsetof(IOS::ES::TicketView, permitted_title_id));
   return title_identifier && (title_identifier & ~permitted_title_mask) == permitted_title_id;
 }
 
@@ -832,7 +829,7 @@ ReturnCode ES::ReadCertStore(std::vector<u8>* buffer) const
     return IPC_SUCCESS;
 
   const std::string store_path = Common::RootUserPath(Common::FROM_SESSION_ROOT) + "/sys/cert.sys";
-  File::IOFile store_file{ store_path, "rb" };
+  File::IOFile store_file{store_path, "rb"};
   if (!store_file)
     return FS_ENOENT;
 
@@ -857,15 +854,15 @@ ReturnCode ES::WriteNewCertToStore(const IOS::ES::CertReader& cert)
 
   // Otherwise, write the new cert at the end of the store.
   const std::string store_path = Common::RootUserPath(Common::FROM_SESSION_ROOT) + "/sys/cert.sys";
-  File::IOFile store_file{ store_path, "ab" };
+  File::IOFile store_file{store_path, "ab"};
   if (!store_file || !store_file.WriteBytes(cert.GetBytes().data(), cert.GetBytes().size()))
     return ES_EIO;
   return IPC_SUCCESS;
 }
 
 ReturnCode ES::VerifyContainer(VerifyContainerType type, VerifyMode mode,
-  const IOS::ES::SignedBlobReader& signed_blob,
-  const std::vector<u8>& cert_chain, u32 iosc_handle)
+                               const IOS::ES::SignedBlobReader& signed_blob,
+                               const std::vector<u8>& cert_chain, u32 iosc_handle)
 {
   if (!SConfig::GetInstance().m_enable_signature_checks)
     return IPC_SUCCESS;
@@ -903,28 +900,28 @@ ReturnCode ES::VerifyContainer(VerifyContainerType type, VerifyMode mode,
   ReturnCode ret = iosc.CreateObject(&handle, IOSC::TYPE_PUBLIC_KEY, IOSC::SUBTYPE_RSA2048, PID_ES);
   if (ret != IPC_SUCCESS)
     return ret;
-  Common::ScopeGuard ca_guard{ [&] { iosc.DeleteObject(handle, PID_ES); } };
+  Common::ScopeGuard ca_guard{[&] { iosc.DeleteObject(handle, PID_ES); }};
   ret = iosc.ImportCertificate(ca_cert.GetBytes().data(), IOSC::HANDLE_ROOT_KEY, handle, PID_ES);
   if (ret != IPC_SUCCESS)
     return ret;
 
   IOSC::Handle issuer_handle;
   const IOSC::ObjectSubType subtype =
-    type == VerifyContainerType::Device ? IOSC::SUBTYPE_ECC233 : IOSC::SUBTYPE_RSA2048;
+      type == VerifyContainerType::Device ? IOSC::SUBTYPE_ECC233 : IOSC::SUBTYPE_RSA2048;
   ret = iosc.CreateObject(&issuer_handle, IOSC::TYPE_PUBLIC_KEY, subtype, PID_ES);
   if (ret != IPC_SUCCESS)
     return ret;
-  Common::ScopeGuard issuer_guard{ [&] { iosc.DeleteObject(issuer_handle, PID_ES); } };
+  Common::ScopeGuard issuer_guard{[&] { iosc.DeleteObject(issuer_handle, PID_ES); }};
   ret = iosc.ImportCertificate(issuer_cert.GetBytes().data(), handle, issuer_handle, PID_ES);
   if (ret != IPC_SUCCESS)
     return ret;
 
   // Calculate the SHA1 of the signed blob.
   const size_t skip = type == VerifyContainerType::Device ? offsetof(SignatureECC, issuer) :
-    offsetof(SignatureRSA2048, issuer);
+                                                            offsetof(SignatureRSA2048, issuer);
   std::array<u8, 20> sha1;
   mbedtls_sha1(signed_blob.GetBytes().data() + skip, signed_blob.GetBytes().size() - skip,
-    sha1.data());
+               sha1.data());
 
   // Verify the signature.
   const std::vector<u8> signature = signed_blob.GetSignatureData();

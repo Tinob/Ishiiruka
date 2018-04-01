@@ -273,7 +273,7 @@ void FramebufferManager::SetEFBCachedDepth(u32 x, u32 y, u32 value)
 
 void FramebufferManager::PopulateEFBColorCache()
 {
-  _dbg_assert_(!s_efb.color_lock_rect.pBits, "cache is invalid");
+  DEBUG_ASSERT_MSG(VIDEO, !s_efb.color_lock_rect.pBits, "cache is invalid");
 
   // We can't directly StretchRect to System buf because is not supported by all implementations
   // this is the only safe path that works in most cases
@@ -287,8 +287,6 @@ void FramebufferManager::PopulateEFBColorCache()
 
 void FramebufferManager::PopulateEFBDepthCache()
 {
-  _dbg_assert_(!s_efb.dept_lock_rect.pBits, "cache is invalid");
-
   g_renderer->ResetAPIState(); // Reset any game specific settings
   D3D::dev->SetDepthStencilSurface(NULL);
   D3D::dev->SetRenderTarget(0, s_efb.depth_cache_surf);

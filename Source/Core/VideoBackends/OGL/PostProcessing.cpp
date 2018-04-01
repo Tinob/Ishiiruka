@@ -256,7 +256,7 @@ void OGLPostProcessingShader::Draw(PostProcessor* p,
   GLuint src_texture = static_cast<GLuint>(src_tex);
   GLuint src_depth_texture = static_cast<GLuint>(src_depth_tex);
 
-  _dbg_assert_(VIDEO, m_ready && m_internal_size == src_size);
+  DEBUG_ASSERT(m_ready && m_internal_size == src_size);
   OpenGL_BindAttributelessVAO();
 
   // Determine whether we can skip the final copy by writing directly to the output texture, if the last pass is not scaled.

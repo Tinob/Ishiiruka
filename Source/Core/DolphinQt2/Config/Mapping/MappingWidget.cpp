@@ -11,6 +11,7 @@
 #include "DolphinQt2/Config/Mapping/IOWindow.h"
 #include "DolphinQt2/Config/Mapping/MappingBool.h"
 #include "DolphinQt2/Config/Mapping/MappingButton.h"
+#include "DolphinQt2/Config/Mapping/MappingIndicator.h"
 #include "DolphinQt2/Config/Mapping/MappingNumeric.h"
 #include "DolphinQt2/Config/Mapping/MappingWindow.h"
 #include "InputCommon/ControlReference/ControlReference.h"
@@ -47,9 +48,14 @@ QGroupBox* MappingWidget::CreateGroupBox(const QString& name, ControllerEmu::Con
 
   group_box->setLayout(form_layout);
 
+  bool need_indicator = group->type == ControllerEmu::GroupType::Cursor ||
+                        group->type == ControllerEmu::GroupType::Stick ||
+                        group->type == ControllerEmu::GroupType::Tilt ||
+                        group->type == ControllerEmu::GroupType::MixedTriggers;
+
   for (auto& control : group->controls)
   {
-    auto* button = new MappingButton(this, control->control_ref.get());
+    auto* button = new MappingButton(this, control->control_ref.get(), !need_indicator);
 
     button->setMinimumWidth(100);
     button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
@@ -74,7 +80,6 @@ QGroupBox* MappingWidget::CreateGroupBox(const QString& name, ControllerEmu::Con
   for (auto& numeric : group->numeric_settings)
   {
     auto* spinbox = new MappingNumeric(this, numeric.get());
-    spinbox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     form_layout->addRow(QString::fromStdString(numeric->m_name), spinbox);
     m_numerics.push_back(spinbox);
   }
@@ -82,10 +87,12 @@ QGroupBox* MappingWidget::CreateGroupBox(const QString& name, ControllerEmu::Con
   for (auto& boolean : group->boolean_settings)
   {
     auto* checkbox = new MappingBool(this, boolean.get());
-    checkbox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     form_layout->addRow(checkbox);
     m_bools.push_back(checkbox);
   }
+
+  if (need_indicator)
+    form_layout->addRow(new MappingIndicator(group));
 
   return group_box;
 }

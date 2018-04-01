@@ -1,21 +1,30 @@
-set(SRCS
+add_library(uicommon
+  AutoUpdate.cpp
   CommandLineParse.cpp
   Disassembler.cpp
+  GameFile.cpp
+  GameFileCache.cpp
   UICommon.cpp
   USBUtils.cpp
   VideoUtils.cpp
 )
 
+target_link_libraries(uicommon
+PUBLIC
+  common
+  cpp-optparse
+
+PRIVATE
+  $<$<BOOL:APPLE>:${IOK_LIBRARY}>
+)
+
 if(USE_X11)
-  set(SRCS ${SRCS} X11Utils.cpp)
+  target_sources(uicommon PRIVATE X11Utils.cpp)
 endif()
 
-set(LIBS common cpp-optparse)
 if(LIBUSB_FOUND)
-  set(LIBS ${LIBS} ${LIBUSB_LIBRARIES})
+  target_link_libraries(uicommon PRIVATE ${LIBUSB_LIBRARIES})
 endif()
-
-add_dolphin_library(uicommon "${SRCS}" "${LIBS}")
 
 if(ENABLE_LLVM)
   find_package(LLVM CONFIG QUIET)

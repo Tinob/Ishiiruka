@@ -19,8 +19,10 @@
 #include "Common/StringUtil.h"
 #include "Core/Core.h"
 #include "DolphinQt2/Config/Mapping/GCKeyboardEmu.h"
+#include "DolphinQt2/Config/Mapping/GCMicrophone.h"
 #include "DolphinQt2/Config/Mapping/GCPadEmu.h"
 #include "DolphinQt2/Config/Mapping/Hotkey3D.h"
+#include "DolphinQt2/Config/Mapping/HotkeyDebugging.h"
 #include "DolphinQt2/Config/Mapping/HotkeyGeneral.h"
 #include "DolphinQt2/Config/Mapping/HotkeyGraphics.h"
 #include "DolphinQt2/Config/Mapping/HotkeyStates.h"
@@ -29,6 +31,7 @@
 #include "DolphinQt2/Config/Mapping/WiimoteEmuExtension.h"
 #include "DolphinQt2/Config/Mapping/WiimoteEmuGeneral.h"
 #include "DolphinQt2/Config/Mapping/WiimoteEmuMotionControl.h"
+#include "DolphinQt2/QtUtils/WrapInScrollArea.h"
 #include "DolphinQt2/Settings.h"
 #include "InputCommon/ControllerEmu/ControllerEmu.h"
 #include "InputCommon/ControllerInterface/ControllerInterface.h"
@@ -106,7 +109,7 @@ void MappingWindow::CreateMainLayout()
   m_main_layout = new QVBoxLayout();
   m_config_layout = new QHBoxLayout();
   m_tab_widget = new QTabWidget();
-  m_button_box = new QDialogButtonBox(QDialogButtonBox::Ok);
+  m_button_box = new QDialogButtonBox(QDialogButtonBox::Close);
 
   m_config_layout->addWidget(m_devices_box);
   m_config_layout->addWidget(m_reset_box);
@@ -121,6 +124,7 @@ void MappingWindow::CreateMainLayout()
 
 void MappingWindow::ConnectWidgets()
 {
+  connect(m_button_box, &QDialogButtonBox::rejected, this, &QDialog::reject);
   connect(m_devices_refresh, &QPushButton::clicked, this, &MappingWindow::RefreshDevices);
   connect(m_devices_combo, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
           this, &MappingWindow::OnDeviceChanged);
@@ -129,7 +133,6 @@ void MappingWindow::ConnectWidgets()
   connect(m_profiles_save, &QPushButton::clicked, this, &MappingWindow::OnSaveProfilePressed);
   connect(m_profiles_load, &QPushButton::clicked, this, &MappingWindow::OnLoadProfilePressed);
   connect(m_profiles_delete, &QPushButton::clicked, this, &MappingWindow::OnDeleteProfilePressed);
-  connect(m_button_box, &QDialogButtonBox::accepted, this, &MappingWindow::accept);
 }
 
 void MappingWindow::OnDeleteProfilePressed()
@@ -223,7 +226,8 @@ void MappingWindow::RefreshDevices()
 
     const auto default_device = m_controller->GetDefaultDevice().ToString();
 
-    m_devices_combo->addItem(QString::fromStdString(default_device));
+    if (!default_device.empty())
+      m_devices_combo->addItem(QString::fromStdString(default_device));
 
     for (const auto& name : g_controller_interface.GetAllDeviceStrings())
     {
@@ -254,6 +258,12 @@ void MappingWindow::SetMappingType(MappingWindow::Type type)
     setWindowTitle(tr("GameCube Controller at Port %1").arg(GetPort() + 1));
     AddWidget(tr("GameCube Controller"), widget);
     break;
+  case Type::MAPPING_GC_MICROPHONE:
+    widget = new GCMicrophone(this);
+    setWindowTitle(tr("GameCube Microphone Slot %1")
+                       .arg(GetPort() == 0 ? QStringLiteral("A") : QStringLiteral("B")));
+    AddWidget(tr("Microphone"), widget);
+    break;
   case Type::MAPPING_WIIMOTE_EMU:
   case Type::MAPPING_WIIMOTE_HYBRID:
   {
@@ -270,6 +280,7 @@ void MappingWindow::SetMappingType(MappingWindow::Type type)
     widget = new HotkeyGeneral(this);
     AddWidget(tr("General"), widget);
     AddWidget(tr("TAS Tools"), new HotkeyTAS(this));
+    AddWidget(tr("Debugging"), new HotkeyDebugging(this));
     AddWidget(tr("Wii and Wii Remote"), new HotkeyWii(this));
     AddWidget(tr("Graphics"), new HotkeyGraphics(this));
     AddWidget(tr("3D"), new Hotkey3D(this));
@@ -302,7 +313,7 @@ void MappingWindow::SetMappingType(MappingWindow::Type type)
 
 void MappingWindow::AddWidget(const QString& name, QWidget* widget)
 {
-  m_tab_widget->addTab(widget, name);
+  m_tab_widget->addTab(GetWrappedWidget(widget, this, 150, 150), name);
 }
 
 int MappingWindow::GetPort() const

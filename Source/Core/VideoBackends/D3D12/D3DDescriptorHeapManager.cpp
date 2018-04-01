@@ -27,7 +27,7 @@ D3DDescriptorHeapManager::D3DDescriptorHeapManager(ID3D12DescriptorHeap* descrip
   // Uses temporary slots?
   if (temporary_slots > 0)
   {
-    _assert_(temporary_slots <= num_descriptors);
+    ASSERT(temporary_slots <= num_descriptors);
     // Set up fence tracking callback.
     m_fence = D3D::command_list_mgr->RegisterQueueFenceCallback(this, &D3DDescriptorHeapManager::QueueFenceCallback);
   }
@@ -67,7 +67,7 @@ bool D3DDescriptorHeapManager::Allocate(size_t* out_index,
 
 void D3DDescriptorHeapManager::Free(size_t index)
 {
-  _assert_(index < m_num_descriptors && index >= m_temporary_slots);
+  ASSERT(index < m_num_descriptors && index >= m_temporary_slots);
   m_slots.ReleaseSlot(static_cast<int>(index - m_temporary_slots));
 }
 

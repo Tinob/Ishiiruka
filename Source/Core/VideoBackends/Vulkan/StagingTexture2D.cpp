@@ -26,7 +26,7 @@ StagingTexture2D::~StagingTexture2D() {}
 
 void StagingTexture2D::ReadTexel(u32 x, u32 y, void* data, size_t data_size) const
 {
-  _assert_(data_size >= m_texel_size);
+  ASSERT(data_size >= m_texel_size);
   u32 block_width = Util::GetBlockWidth(m_format);
   if (block_width > 1)
   {
@@ -35,7 +35,7 @@ void StagingTexture2D::ReadTexel(u32 x, u32 y, void* data, size_t data_size) con
   }
   VkDeviceSize offset = y * m_row_stride + x * m_texel_size;
   VkDeviceSize map_offset = offset - m_map_offset;
-  _assert_(offset >= m_map_offset && (map_offset + m_texel_size) <= (m_map_offset + m_map_size));
+  ASSERT(offset >= m_map_offset && (map_offset + m_texel_size) <= (m_map_offset + m_map_size));
 
   const char* ptr = m_map_pointer + map_offset;
   std::memcpy(data, ptr, data_size);
@@ -43,7 +43,7 @@ void StagingTexture2D::ReadTexel(u32 x, u32 y, void* data, size_t data_size) con
 
 void StagingTexture2D::WriteTexel(u32 x, u32 y, const void* data, size_t data_size)
 {
-  _assert_(data_size >= m_texel_size);
+  ASSERT(data_size >= m_texel_size);
   u32 block_width = Util::GetBlockWidth(m_format);
   if (block_width > 1)
   {
@@ -52,7 +52,7 @@ void StagingTexture2D::WriteTexel(u32 x, u32 y, const void* data, size_t data_si
   }
   VkDeviceSize offset = y * m_row_stride + x * m_texel_size;
   VkDeviceSize map_offset = offset - m_map_offset;
-  _assert_(offset >= m_map_offset && (map_offset + m_texel_size) <= (m_map_offset + m_map_size));
+  ASSERT(offset >= m_map_offset && (map_offset + m_texel_size) <= (m_map_offset + m_map_size));
 
   char* ptr = m_map_pointer + map_offset;
   std::memcpy(ptr, data, data_size);
@@ -61,7 +61,7 @@ void StagingTexture2D::WriteTexel(u32 x, u32 y, const void* data, size_t data_si
 void StagingTexture2D::ReadTexels(u32 x, u32 y, u32 width, u32 height, void* data,
   u32 data_stride) const
 {
-  _assert_((x + width) <= m_width && (y + height) <= m_height);
+  ASSERT((x + width) <= m_width && (y + height) <= m_height);
   bool use_optimal_path = x == 0 && width == m_width && m_row_stride == data_stride;
   u32 block_width = Util::GetBlockWidth(m_format);
   if (block_width > 1)
@@ -93,7 +93,7 @@ void StagingTexture2D::WriteTexels(u32 x, u32 y, u32 width, u32 height, const vo
   u32 data_stride)
 {
   // Optimal path: same dimensions, same stride.
-  _assert_((x + width) <= m_width && (y + height) <= m_height);
+  ASSERT((x + width) <= m_width && (y + height) <= m_height);
   bool use_optimal_path = x == 0 && width == m_width && m_row_stride == data_stride;
   u32 block_width = Util::GetBlockWidth(m_format);
   if (block_width > 1)

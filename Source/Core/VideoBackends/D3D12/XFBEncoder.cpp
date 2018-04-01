@@ -74,7 +74,7 @@ void XFBEncoder::EncodeTextureToRam(u8* dst, u32 dst_width, u32 dst_pitch, u32 d
   // src_rect is in native coordinates
   // dst_pitch is in words
   u32 dst_texture_width = dst_width / 2;
-  _assert_msg_(VIDEO, dst_width <= MAX_XFB_WIDTH && dst_height <= MAX_XFB_HEIGHT, "XFB destination does not exceed maximum size");
+  ASSERT_MSG(VIDEO, dst_width <= MAX_XFB_WIDTH && dst_height <= MAX_XFB_HEIGHT, "XFB destination does not exceed maximum size");
 
   // Encode parameters constant buffer used by shader
   struct EncodeParameters
@@ -145,7 +145,7 @@ void XFBEncoder::EncodeTextureToRam(u8* dst, u32 dst_width, u32 dst_pitch, u32 d
 
 void XFBEncoder::DecodeToTexture(D3DTexture2D* dst_texture, const u8* src, u32 src_width, u32 src_height)
 {
-  _assert_msg_(VIDEO, src_width <= MAX_XFB_WIDTH && src_height <= MAX_XFB_HEIGHT, "XFB source does not exceed maximum size");
+  ASSERT_MSG(VIDEO, src_width <= MAX_XFB_WIDTH && src_height <= MAX_XFB_HEIGHT, "XFB source does not exceed maximum size");
 
   // Copy to XFB upload buffer. Each row has to be done separately due to pitch differences.
   u32 buffer_pitch = static_cast<u32>(Common::AlignUpSizePow2(src_width / 2 * sizeof(u32), D3D12_TEXTURE_DATA_PITCH_ALIGNMENT));

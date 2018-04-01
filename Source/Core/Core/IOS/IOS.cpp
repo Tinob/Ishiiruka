@@ -106,8 +106,8 @@ enum class MemorySetupType
 static bool SetupMemory(u64 ios_title_id, MemorySetupType setup_type)
 {
   auto target_imv = std::find_if(
-    GetMemoryValues().begin(), GetMemoryValues().end(),
-    [&](const MemoryValues& imv) { return imv.ios_number == (ios_title_id & 0xffff); });
+      GetMemoryValues().begin(), GetMemoryValues().end(),
+      [&](const MemoryValues& imv) { return imv.ios_number == (ios_title_id & 0xffff); });
 
   if (target_imv == GetMemoryValues().end())
   {
@@ -180,7 +180,7 @@ Kernel::Kernel()
 {
   // Until the Wii root and NAND path stuff is entirely managed by IOS and made non-static,
   // using more than one IOS instance at a time is not supported.
-  _assert_(GetIOS() == nullptr);
+  ASSERT(GetIOS() == nullptr);
   Core::InitializeWiiRoot(false);
   m_is_responsible_for_nand_root = true;
   AddCoreDevices();
@@ -278,7 +278,7 @@ u16 Kernel::GetGidForPPC() const
 // Unlike 0x42, IOS will set up some constants in memory before booting the PPC.
 bool Kernel::BootstrapPPC(const std::string& boot_content_path)
 {
-  const DolReader dol{ boot_content_path };
+  const DolReader dol{boot_content_path};
 
   if (!dol.IsValid())
     return false;
@@ -336,7 +336,7 @@ bool Kernel::BootIOS(const u64 ios_title_id, const std::string& boot_content_pat
     // Load the ARM binary to memory (if possible).
     // Because we do not actually emulate the Starlet, only load the sections that are in MEM1.
 
-    File::IOFile file{ boot_content_path, "rb" };
+    File::IOFile file{boot_content_path, "rb"};
     // TODO: should return IPC_ERROR_MAX.
     if (file.GetSize() > 0xB00000)
       return false;
@@ -345,11 +345,11 @@ bool Kernel::BootIOS(const u64 ios_title_id, const std::string& boot_content_pat
     if (!file.ReadBytes(data.data(), data.size()))
       return false;
 
-    ARMBinary binary{ std::move(data) };
+    ARMBinary binary{std::move(data)};
     if (!binary.IsValid())
       return false;
 
-    ElfReader elf{ binary.GetElf() };
+    ElfReader elf{binary.GetElf()};
     if (!elf.LoadIntoMemory(true))
       return false;
   }
@@ -362,7 +362,7 @@ bool Kernel::BootIOS(const u64 ios_title_id, const std::string& boot_content_pat
 
 void Kernel::AddDevice(std::unique_ptr<Device::Device> device)
 {
-  _assert_(device->GetDeviceType() == Device::Device::DeviceType::Static);
+  ASSERT(device->GetDeviceType() == Device::Device::DeviceType::Static);
   m_device_map[device->GetDeviceName()] = std::move(device);
 }
 
@@ -468,20 +468,20 @@ std::shared_ptr<Device::Device> EmulationKernel::GetDeviceByName(const std::stri
 }
 
 // Returns the FD for the newly opened device (on success) or an error code.
-s32 Kernel::OpenDevice(OpenRequest& request)
+IPCCommandResult Kernel::OpenDevice(OpenRequest& request)
 {
   const s32 new_fd = GetFreeDeviceID();
   INFO_LOG(IOS, "Opening %s (mode %d, fd %d)", request.path.c_str(), request.flags, new_fd);
   if (new_fd < 0 || new_fd >= IPC_MAX_FDS)
   {
     ERROR_LOG(IOS, "Couldn't get a free fd, too many open files");
-    return FS_EFDEXHAUSTED;
+    return IPCCommandResult{IPC_EMAX, true, 5000 * SystemTimers::TIMER_RATIO};
   }
   request.fd = new_fd;
 
   std::shared_ptr<Device::Device> device;
   if (request.path.find("/dev/usb/oh0/") == 0 && !GetDeviceByName(request.path) &&
-    !HasFeature(GetVersion(), Feature::NewUSB))
+      !HasFeature(GetVersion(), Feature::NewUSB))
   {
     device = std::make_shared<Device::OH0Device>(*this, request.path);
   }
@@ -497,28 +497,32 @@ s32 Kernel::OpenDevice(OpenRequest& request)
   if (!device)
   {
     ERROR_LOG(IOS, "Unknown device: %s", request.path.c_str());
-    return IPC_ENOENT;
+    return {IPC_ENOENT, true, 3700 * SystemTimers::TIMER_RATIO};
   }
 
-  const ReturnCode code = device->Open(request);
-  if (code < IPC_SUCCESS)
-    return code;
-  m_fdmap[new_fd] = device;
-  return new_fd;
+  IPCCommandResult result = device->Open(request);
+  if (result.return_value >= IPC_SUCCESS)
+  {
+    m_fdmap[new_fd] = device;
+    result.return_value = new_fd;
+  }
+  return result;
 }
 
 IPCCommandResult Kernel::HandleIPCCommand(const Request& request)
 {
+  if (request.command < IPC_CMD_OPEN || request.command > IPC_CMD_IOCTLV)
+    return IPCCommandResult{IPC_EINVAL, true, 978 * SystemTimers::TIMER_RATIO};
+
   if (request.command == IPC_CMD_OPEN)
   {
-    OpenRequest open_request{ request.address };
-    const s32 new_fd = OpenDevice(open_request);
-    return Device::Device::GetDefaultReply(new_fd);
+    OpenRequest open_request{request.address};
+    return OpenDevice(open_request);
   }
 
   const auto device = (request.fd < IPC_MAX_FDS) ? m_fdmap[request.fd] : nullptr;
   if (!device)
-    return Device::Device::GetDefaultReply(IPC_EINVAL);
+    return IPCCommandResult{IPC_EINVAL, true, 550 * SystemTimers::TIMER_RATIO};
 
   IPCCommandResult ret;
   u64 wall_time_before = Common::Timer::GetTimeUs();
@@ -527,26 +531,26 @@ IPCCommandResult Kernel::HandleIPCCommand(const Request& request)
   {
   case IPC_CMD_CLOSE:
     m_fdmap[request.fd].reset();
-    ret = Device::Device::GetDefaultReply(device->Close(request.fd));
+    ret = device->Close(request.fd);
     break;
   case IPC_CMD_READ:
-    ret = device->Read(ReadWriteRequest{ request.address });
+    ret = device->Read(ReadWriteRequest{request.address});
     break;
   case IPC_CMD_WRITE:
-    ret = device->Write(ReadWriteRequest{ request.address });
+    ret = device->Write(ReadWriteRequest{request.address});
     break;
   case IPC_CMD_SEEK:
-    ret = device->Seek(SeekRequest{ request.address });
+    ret = device->Seek(SeekRequest{request.address});
     break;
   case IPC_CMD_IOCTL:
-    ret = device->IOCtl(IOCtlRequest{ request.address });
+    ret = device->IOCtl(IOCtlRequest{request.address});
     break;
   case IPC_CMD_IOCTLV:
-    ret = device->IOCtlV(IOCtlVRequest{ request.address });
+    ret = device->IOCtlV(IOCtlVRequest{request.address});
     break;
   default:
-    _assert_msg_(IOS, false, "Unexpected command: %x", request.command);
-    ret = Device::Device::GetDefaultReply(IPC_EINVAL);
+    ASSERT_MSG(IOS, false, "Unexpected command: %x", request.command);
+    ret = IPCCommandResult{IPC_EINVAL, true, 978 * SystemTimers::TIMER_RATIO};
     break;
   }
 
@@ -555,7 +559,7 @@ IPCCommandResult Kernel::HandleIPCCommand(const Request& request)
   if (wall_time_after - wall_time_before > BLOCKING_IPC_COMMAND_THRESHOLD_US)
   {
     WARN_LOG(IOS, "Previous request to device %s blocked emulation for %" PRIu64 " microseconds.",
-      device->GetDeviceName().c_str(), wall_time_after - wall_time_before);
+             device->GetDeviceName().c_str(), wall_time_after - wall_time_before);
   }
 
   return ret;
@@ -563,7 +567,7 @@ IPCCommandResult Kernel::HandleIPCCommand(const Request& request)
 
 void Kernel::ExecuteIPCCommand(const u32 address)
 {
-  Request request{ address };
+  Request request{address};
   IPCCommandResult result = HandleIPCCommand(request);
 
   if (!result.send_reply)
@@ -581,12 +585,16 @@ void Kernel::ExecuteIPCCommand(const u32 address)
 // Happens AS SOON AS IPC gets a new pointer!
 void Kernel::EnqueueIPCRequest(u32 address)
 {
-  CoreTiming::ScheduleEvent(1000, s_event_enqueue, address | ENQUEUE_REQUEST_FLAG);
+  // Based on hardware tests, IOS takes between 5µs and 10µs to acknowledge an IPC request.
+  // Console 1: 456 TB ticks before ACK
+  // Console 2: 658 TB ticks before ACK
+  CoreTiming::ScheduleEvent(500 * SystemTimers::TIMER_RATIO, s_event_enqueue,
+                            address | ENQUEUE_REQUEST_FLAG);
 }
 
 // Called to send a reply to an IOS syscall
 void Kernel::EnqueueIPCReply(const Request& request, const s32 return_value, int cycles_in_future,
-  CoreTiming::FromThread from)
+                             CoreTiming::FromThread from)
 {
   Memory::Write_U32(static_cast<u32>(return_value), request.address + 4);
   // IOS writes back the command that was responded to in the FD field.
@@ -599,7 +607,7 @@ void Kernel::EnqueueIPCReply(const Request& request, const s32 return_value, int
 void Kernel::EnqueueIPCAcknowledgement(u32 address, int cycles_in_future)
 {
   CoreTiming::ScheduleEvent(cycles_in_future, s_event_enqueue,
-    address | ENQUEUE_ACKNOWLEDGEMENT_FLAG);
+                            address | ENQUEUE_ACKNOWLEDGEMENT_FLAG);
 }
 
 void Kernel::HandleIPCEvent(u64 userdata)
@@ -614,8 +622,6 @@ void Kernel::HandleIPCEvent(u64 userdata)
   UpdateIPC();
 }
 
-// This is called every IPC_HLE_PERIOD from SystemTimers.cpp
-// Takes care of routing ipc <-> ipc HLE
 void Kernel::UpdateIPC()
 {
   if (!IsReady())
@@ -623,6 +629,7 @@ void Kernel::UpdateIPC()
 
   if (m_request_queue.size())
   {
+    ClearX1();
     GenerateAck(m_request_queue.front());
     u32 command = m_request_queue.front();
     m_request_queue.pop_front();

@@ -4,20 +4,23 @@
 
 #pragma once
 
+#include <string>
+
 #include <QWidget>
 
-#include "DolphinQt2/GameList/GameFile.h"
+#include "UICommon/GameFile.h"
 
 class QComboBox;
 class QGroupBox;
-class QTextEdit;
 class QLineEdit;
+class QPixmap;
+class QTextEdit;
 
 class InfoWidget final : public QWidget
 {
   Q_OBJECT
 public:
-  explicit InfoWidget(const GameFile& game);
+  explicit InfoWidget(const UICommon::GameFile& game);
 
 private:
   void ComputeChecksum();
@@ -26,18 +29,16 @@ private:
 
   QGroupBox* CreateBannerDetails();
   QGroupBox* CreateISODetails();
-  QLineEdit* CreateValueDisplay() { return CreateValueDisplay(QStringLiteral("")); };
   QLineEdit* CreateValueDisplay(const QString& value);
+  QLineEdit* CreateValueDisplay(const std::string& value = "");
   QWidget* CreateChecksumComputer();
   void CreateLanguageSelector();
-  QWidget* CreateBannerGraphic();
+  QWidget* CreateBannerGraphic(const QPixmap& image);
 
-  GameFile m_game;
+  UICommon::GameFile m_game;
   QLineEdit* m_checksum_result;
   QComboBox* m_language_selector;
-  QLineEdit* m_long_name;
-  QLineEdit* m_short_name;
-  QLineEdit* m_short_maker;
-  QLineEdit* m_long_maker;
+  QLineEdit* m_name;
+  QLineEdit* m_maker;
   QTextEdit* m_description;
 };

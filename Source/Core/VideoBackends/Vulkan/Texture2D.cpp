@@ -343,7 +343,7 @@ void Texture2D::TransitionToLayout(VkCommandBuffer command_buffer, VkImageLayout
 
 void Texture2D::TransitionToLayout(VkCommandBuffer command_buffer, ComputeImageLayout new_layout)
 {
-  _assert_(new_layout != ComputeImageLayout::Undefined);
+  ASSERT(new_layout != ComputeImageLayout::Undefined);
   if (m_compute_layout == new_layout)
     return;
 

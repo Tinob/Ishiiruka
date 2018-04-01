@@ -43,7 +43,6 @@
     <ClInclude Include="Atomic_GCC.h" />
     <ClInclude Include="Atomic_Win32.h" />
     <ClInclude Include="BitField.h" />
-    <ClInclude Include="BitHelpers.h" />
     <ClInclude Include="BitSet.h" />
     <ClInclude Include="BitUtils.h" />
     <ClInclude Include="BlockingLoop.h" />
@@ -57,14 +56,13 @@
     <ClInclude Include="CommonTypes.h" />
     <ClInclude Include="ConstantBuffer.h" />
     <ClInclude Include="Config\Config.h" />
+    <ClInclude Include="Config\ConfigInfo.h" />
     <ClInclude Include="Config\Enums.h" />
     <ClInclude Include="Config\Layer.h" />
-    <ClInclude Include="Config\ConfigInfo.h" />
     <ClInclude Include="CPUDetect.h" />
     <ClInclude Include="DebugInterface.h" />
     <ClInclude Include="ENetUtil.h" />
     <ClInclude Include="Event.h" />
-    <ClInclude Include="SPSCQueue.h" />
     <ClInclude Include="File.h" />
     <ClInclude Include="FileSearch.h" />
     <ClInclude Include="FileUtil.h" />
@@ -140,10 +138,12 @@
     <ClInclude Include="Network.h" />
     <ClInclude Include="PcapFile.h" />
     <ClInclude Include="Profiler.h" />
+    <ClInclude Include="QoSSession.h" />
     <ClInclude Include="ScopeGuard.h" />
     <ClInclude Include="SDCardUtil.h" />
     <ClInclude Include="Semaphore.h" />
     <ClInclude Include="SettingsHandler.h" />
+    <ClInclude Include="SPSCQueue.h" />
     <ClInclude Include="StringUtil.h" />
     <ClInclude Include="Swap.h" />
     <ClInclude Include="SymbolDB.h" />
@@ -155,6 +155,7 @@
     <ClInclude Include="TraversalProto.h" />
     <ClInclude Include="UPnP.h" />
     <ClInclude Include="Version.h" />
+    <ClInclude Include="WorkQueueThread.h" />
     <ClInclude Include="x64ABI.h" />
     <ClInclude Include="x64Emitter.h" />
     <ClInclude Include="x64Reg.h" />
@@ -172,8 +173,8 @@
     <ClCompile Include="CommonFuncs.cpp" />
     <ClCompile Include="CompatPatches.cpp" />
     <ClCompile Include="Config\Config.cpp" />
-    <ClCompile Include="Config\Layer.cpp" />
     <ClCompile Include="Config\ConfigInfo.cpp" />
+    <ClCompile Include="Config\Layer.cpp" />
     <ClCompile Include="ENetUtil.cpp" />
     <ClCompile Include="File.cpp" />
     <ClCompile Include="FileSearch.cpp" />
@@ -198,6 +199,7 @@
     <ClCompile Include="Network.cpp" />
     <ClCompile Include="PcapFile.cpp" />
     <ClCompile Include="Profiler.cpp" />
+    <ClCompile Include="QoSSession.cpp" />
     <ClCompile Include="SDCardUtil.cpp" />
     <ClCompile Include="SettingsHandler.cpp" />
     <ClCompile Include="StringUtil.cpp" />

@@ -80,7 +80,7 @@ IOCtlVRequest::IOCtlVRequest(const u32 address_) : Request(address_)
 
 const IOCtlVRequest::IOVector* IOCtlVRequest::GetVector(size_t index) const
 {
-  _assert_(index < (in_vectors.size() + io_vectors.size()));
+  ASSERT(index < (in_vectors.size() + io_vectors.size()));
   if (index < in_vectors.size())
     return &in_vectors[index];
   return &io_vectors[index - in_vectors.size()];
@@ -93,42 +93,42 @@ bool IOCtlVRequest::HasNumberOfValidVectors(const size_t in_count, const size_t 
 
   auto IsValidVector = [](const auto& vector) { return vector.size == 0 || vector.address != 0; };
   return std::all_of(in_vectors.begin(), in_vectors.end(), IsValidVector) &&
-    std::all_of(io_vectors.begin(), io_vectors.end(), IsValidVector);
+         std::all_of(io_vectors.begin(), io_vectors.end(), IsValidVector);
 }
 
 void IOCtlRequest::Log(const std::string& device_name, LogTypes::LOG_TYPE type,
-  LogTypes::LOG_LEVELS verbosity) const
+                       LogTypes::LOG_LEVELS verbosity) const
 {
   GENERIC_LOG(type, verbosity, "%s (fd %u) - IOCtl 0x%x (in_size=0x%x, out_size=0x%x)",
-    device_name.c_str(), fd, request, buffer_in_size, buffer_out_size);
+              device_name.c_str(), fd, request, buffer_in_size, buffer_out_size);
 }
 
 void IOCtlRequest::Dump(const std::string& description, LogTypes::LOG_TYPE type,
-  LogTypes::LOG_LEVELS level) const
+                        LogTypes::LOG_LEVELS level) const
 {
   Log("===== " + description, type, level);
   GENERIC_LOG(type, level, "In buffer\n%s",
-    HexDump(Memory::GetPointer(buffer_in), buffer_in_size).c_str());
+              HexDump(Memory::GetPointer(buffer_in), buffer_in_size).c_str());
   GENERIC_LOG(type, level, "Out buffer\n%s",
-    HexDump(Memory::GetPointer(buffer_out), buffer_out_size).c_str());
+              HexDump(Memory::GetPointer(buffer_out), buffer_out_size).c_str());
 }
 
 void IOCtlRequest::DumpUnknown(const std::string& description, LogTypes::LOG_TYPE type,
-  LogTypes::LOG_LEVELS level) const
+                               LogTypes::LOG_LEVELS level) const
 {
   Dump("Unknown IOCtl - " + description, type, level);
 }
 
 void IOCtlVRequest::Dump(const std::string& description, LogTypes::LOG_TYPE type,
-  LogTypes::LOG_LEVELS level) const
+                         LogTypes::LOG_LEVELS level) const
 {
   GENERIC_LOG(type, level, "===== %s (fd %u) - IOCtlV 0x%x (%zu in, %zu io)", description.c_str(),
-    fd, request, in_vectors.size(), io_vectors.size());
+              fd, request, in_vectors.size(), io_vectors.size());
 
   size_t i = 0;
   for (const auto& vector : in_vectors)
     GENERIC_LOG(type, level, "in[%zu] (size=0x%x):\n%s", i++, vector.size,
-      HexDump(Memory::GetPointer(vector.address), vector.size).c_str());
+                HexDump(Memory::GetPointer(vector.address), vector.size).c_str());
 
   i = 0;
   for (const auto& vector : io_vectors)
@@ -136,7 +136,7 @@ void IOCtlVRequest::Dump(const std::string& description, LogTypes::LOG_TYPE type
 }
 
 void IOCtlVRequest::DumpUnknown(const std::string& description, LogTypes::LOG_TYPE type,
-  LogTypes::LOG_LEVELS level) const
+                                LogTypes::LOG_LEVELS level) const
 {
   Dump("Unknown IOCtlV - " + description, type, level);
 }
@@ -144,7 +144,7 @@ void IOCtlVRequest::DumpUnknown(const std::string& description, LogTypes::LOG_TY
 namespace Device
 {
 Device::Device(Kernel& ios, const std::string& device_name, const DeviceType type)
-  : m_ios(ios), m_name(device_name), m_device_type(type)
+    : m_ios(ios), m_name(device_name), m_device_type(type)
 {
 }
 
@@ -161,40 +161,48 @@ void Device::DoStateShared(PointerWrap& p)
   p.Do(m_is_active);
 }
 
-ReturnCode Device::Open(const OpenRequest& request)
+IPCCommandResult Device::Open(const OpenRequest& request)
 {
   m_is_active = true;
-  return IPC_SUCCESS;
+  return GetDefaultReply(IPC_SUCCESS);
 }
 
-ReturnCode Device::Close(u32 fd)
+IPCCommandResult Device::Close(u32 fd)
 {
   m_is_active = false;
-  return IPC_SUCCESS;
+  return GetDefaultReply(IPC_SUCCESS);
 }
 
 IPCCommandResult Device::Unsupported(const Request& request)
 {
-  static std::map<IPCCommandType, std::string> names = { { { IPC_CMD_READ, "Read" },
-  { IPC_CMD_WRITE, "Write" },
-  { IPC_CMD_SEEK, "Seek" },
-  { IPC_CMD_IOCTL, "IOCtl" },
-  { IPC_CMD_IOCTLV, "IOCtlV" } } };
+  static std::map<IPCCommandType, std::string> names = {{{IPC_CMD_READ, "Read"},
+                                                         {IPC_CMD_WRITE, "Write"},
+                                                         {IPC_CMD_SEEK, "Seek"},
+                                                         {IPC_CMD_IOCTL, "IOCtl"},
+                                                         {IPC_CMD_IOCTLV, "IOCtlV"}}};
   WARN_LOG(IOS, "%s does not support %s()", m_name.c_str(), names[request.command].c_str());
   return GetDefaultReply(IPC_EINVAL);
 }
 
-// Returns an IPCCommandResult for a reply that takes 25 us (based on ES::GetTicketViews)
+// Returns an IPCCommandResult for a reply with an average reply time for devices
+// Please avoid using this function if more accurate timings are known.
 IPCCommandResult Device::GetDefaultReply(const s32 return_value)
 {
-  return { return_value, true, SystemTimers::GetTicksPerSecond() / 40000 };
+  // Based on a hardware test, a device takes at least ~2700 ticks to reply to an IPC request.
+  // Depending on how much work a command performs, this can take much longer (10000+)
+  // especially if the NAND filesystem is accessed.
+  //
+  // Because we currently don't emulate timing very accurately, we should not return
+  // the minimum possible reply time (~960 ticks from the kernel or ~2700 from devices)
+  // but an average time, otherwise we are going to be much too fast in most cases.
+  return {return_value, true, 4000 * SystemTimers::TIMER_RATIO};
 }
 
 // Returns an IPCCommandResult with no reply. Useful for async commands that will generate a reply
 // later. This takes no return value because it won't be used.
 IPCCommandResult Device::GetNoReply()
 {
-  return { IPC_SUCCESS, false, 0 };
+  return {IPC_SUCCESS, false, 0};
 }
 }  // namespace Device
 }  // namespace HLE

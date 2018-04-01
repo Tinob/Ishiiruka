@@ -88,20 +88,19 @@ static void Trace(UGeckoInstruction& inst)
   for (int i = 0; i < 32; i++)
   {
     fregs += StringFromFormat("f%02d: %08" PRIx64 " %08" PRIx64 " ", i, PowerPC::ppcState.ps[i][0],
-      PowerPC::ppcState.ps[i][1]);
+                              PowerPC::ppcState.ps[i][1]);
   }
 
   std::string ppc_inst = GekkoDisassembler::Disassemble(inst.hex, PC);
   DEBUG_LOG(POWERPC, "INTER PC: %08x SRR0: %08x SRR1: %08x CRval: %016lx FPSCR: %08x MSR: %08x LR: "
-    "%08x %s %08x %s",
-    PC, SRR0, SRR1, (unsigned long)PowerPC::ppcState.cr_val[0], PowerPC::ppcState.fpscr,
-    PowerPC::ppcState.msr, PowerPC::ppcState.spr[8], regs.c_str(), inst.hex,
-    ppc_inst.c_str());
+                     "%08x %s %08x %s",
+            PC, SRR0, SRR1, (unsigned long)PowerPC::ppcState.cr_val[0], PowerPC::ppcState.fpscr,
+            PowerPC::ppcState.msr, PowerPC::ppcState.spr[8], regs.c_str(), inst.hex,
+            ppc_inst.c_str());
 }
 
 int Interpreter::SingleStepInner()
 {
-  static UGeckoInstruction instCode;
   u32 function = HLE::GetFirstFunctionIndex(PC);
   if (function != 0)
   {
@@ -138,7 +137,7 @@ int Interpreter::SingleStepInner()
 #endif
 
     NPC = PC + sizeof(UGeckoInstruction);
-    instCode.hex = PowerPC::Read_Opcode(PC);
+    m_prev_inst.hex = PowerPC::Read_Opcode(PC);
 
     // Uncomment to trace the interpreter
     // if ((PC & 0xffffff)>=0x0ab54c && (PC & 0xffffff)<=0x0ab624)
@@ -148,15 +147,15 @@ int Interpreter::SingleStepInner()
 
     if (startTrace)
     {
-      Trace(instCode);
+      Trace(m_prev_inst);
     }
 
-    if (instCode.hex != 0)
+    if (m_prev_inst.hex != 0)
     {
-      UReg_MSR& msr = (UReg_MSR&)MSR;
+      const UReg_MSR msr{MSR};
       if (msr.FP)  // If FPU is enabled, just execute
       {
-        m_op_table[instCode.OPCD](instCode);
+        m_op_table[m_prev_inst.OPCD](m_prev_inst);
         if (PowerPC::ppcState.Exceptions & EXCEPTION_DSI)
         {
           PowerPC::CheckExceptions();
@@ -166,9 +165,9 @@ int Interpreter::SingleStepInner()
       else
       {
         // check if we have to generate a FPU unavailable exception
-        if (!PPCTables::UsesFPU(instCode))
+        if (!PPCTables::UsesFPU(m_prev_inst))
         {
-          m_op_table[instCode.OPCD](instCode);
+          m_op_table[m_prev_inst.OPCD](m_prev_inst);
           if (PowerPC::ppcState.Exceptions & EXCEPTION_DSI)
           {
             PowerPC::CheckExceptions();
@@ -193,7 +192,7 @@ int Interpreter::SingleStepInner()
   last_pc = PC;
   PC = NPC;
 
-  GekkoOPInfo* opinfo = GetOpInfo(instCode);
+  const GekkoOPInfo* opinfo = PPCTables::GetOpInfo(m_prev_inst);
   return opinfo->numCycles;
 }
 
@@ -315,14 +314,14 @@ void Interpreter::unknown_instruction(UGeckoInstruction inst)
   NOTICE_LOG(POWERPC, "Last PC = %08x : %s", last_pc, disasm.c_str());
   Dolphin_Debugger::PrintCallstack();
   NOTICE_LOG(POWERPC,
-    "\nIntCPU: Unknown instruction %08x at PC = %08x  last_PC = %08x  LR = %08x\n",
-    inst.hex, PC, last_pc, LR);
+             "\nIntCPU: Unknown instruction %08x at PC = %08x  last_PC = %08x  LR = %08x\n",
+             inst.hex, PC, last_pc, LR);
   for (int i = 0; i < 32; i += 4)
     NOTICE_LOG(POWERPC, "r%d: 0x%08x r%d: 0x%08x r%d:0x%08x r%d: 0x%08x", i, rGPR[i], i + 1,
-      rGPR[i + 1], i + 2, rGPR[i + 2], i + 3, rGPR[i + 3]);
-  _assert_msg_(POWERPC, 0,
-    "\nIntCPU: Unknown instruction %08x at PC = %08x  last_PC = %08x  LR = %08x\n",
-    inst.hex, PC, last_pc, LR);
+               rGPR[i + 1], i + 2, rGPR[i + 2], i + 3, rGPR[i + 3]);
+  ASSERT_MSG(POWERPC, 0,
+             "\nIntCPU: Unknown instruction %08x at PC = %08x  last_PC = %08x  LR = %08x\n",
+             inst.hex, PC, last_pc, LR);
 }
 
 void Interpreter::ClearCache()
@@ -330,7 +329,7 @@ void Interpreter::ClearCache()
   // Do nothing.
 }
 
-const char* Interpreter::GetName()
+const char* Interpreter::GetName() const
 {
 #ifdef _ARCH_64
   return "Interpreter64";

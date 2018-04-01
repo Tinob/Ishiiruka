@@ -38,15 +38,15 @@ IPCCommandResult USB_HIDv5::IOCtl(const IOCtlRequest& request)
     return Shutdown(request);
   case USB::IOCTL_USBV5_GETDEVPARAMS:
     return HandleDeviceIOCtl(request,
-      [&](USBV5Device& device) { return GetDeviceInfo(device, request); });
+                             [&](USBV5Device& device) { return GetDeviceInfo(device, request); });
   case USB::IOCTL_USBV5_ATTACHFINISH:
     return GetDefaultReply(IPC_SUCCESS);
   case USB::IOCTL_USBV5_SUSPEND_RESUME:
     return HandleDeviceIOCtl(request,
-      [&](USBV5Device& device) { return SuspendResume(device, request); });
+                             [&](USBV5Device& device) { return SuspendResume(device, request); });
   case USB::IOCTL_USBV5_CANCELENDPOINT:
     return HandleDeviceIOCtl(request,
-      [&](USBV5Device& device) { return CancelEndpoint(device, request); });
+                             [&](USBV5Device& device) { return CancelEndpoint(device, request); });
   default:
     request.DumpUnknown(GetDeviceName(), LogTypes::IOS_USB, LogTypes::LERROR);
     return GetDefaultReply(IPC_SUCCESS);
@@ -58,7 +58,7 @@ IPCCommandResult USB_HIDv5::IOCtlV(const IOCtlVRequest& request)
   request.DumpUnknown(GetDeviceName(), LogTypes::IOS_USB);
   switch (request.request)
   {
-    // TODO: HIDv5 seems to be able to queue transfers depending on the transfer length (unlike VEN).
+  // TODO: HIDv5 seems to be able to queue transfers depending on the transfer length (unlike VEN).
   case USB::IOCTLV_USBV5_CTRLMSG:
   case USB::IOCTLV_USBV5_INTRMSG:
   {
@@ -66,14 +66,14 @@ IPCCommandResult USB_HIDv5::IOCtlV(const IOCtlVRequest& request)
     if (request.in_vectors.size() + request.io_vectors.size() != 2)
       return GetDefaultReply(IPC_EINVAL);
 
-    std::lock_guard<std::mutex> lock{ m_usbv5_devices_mutex };
+    std::lock_guard<std::mutex> lock{m_usbv5_devices_mutex};
     USBV5Device* device = GetUSBV5Device(request.in_vectors[0].address);
     if (!device)
       return GetDefaultReply(IPC_EINVAL);
     auto host_device = GetDeviceById(device->host_id);
     host_device->Attach(device->interface_number);
     return HandleTransfer(host_device, request.request,
-      [&, this]() { return SubmitTransfer(*device, *host_device, request); });
+                          [&, this]() { return SubmitTransfer(*device, *host_device, request); });
   }
   default:
     return GetDefaultReply(IPC_EINVAL);
@@ -81,7 +81,7 @@ IPCCommandResult USB_HIDv5::IOCtlV(const IOCtlVRequest& request)
 }
 
 s32 USB_HIDv5::SubmitTransfer(USBV5Device& device, USB::Device& host_device,
-  const IOCtlVRequest& ioctlv)
+                              const IOCtlVRequest& ioctlv)
 {
   switch (ioctlv.request)
   {
@@ -154,10 +154,10 @@ IPCCommandResult USB_HIDv5::GetDeviceInfo(USBV5Device& device, const IOCtlReques
 
   std::vector<USB::InterfaceDescriptor> interfaces = host_device->GetInterfaces(0);
   auto it = std::find_if(interfaces.begin(), interfaces.end(),
-    [&](const USB::InterfaceDescriptor& interface) {
-    return interface.bInterfaceNumber == device.interface_number &&
-      interface.bAlternateSetting == alt_setting;
-  });
+                         [&](const USB::InterfaceDescriptor& interface) {
+                           return interface.bInterfaceNumber == device.interface_number &&
+                                  interface.bAlternateSetting == alt_setting;
+                         });
   if (it == interfaces.end())
     return GetDefaultReply(IPC_EINVAL);
   it->Swap();

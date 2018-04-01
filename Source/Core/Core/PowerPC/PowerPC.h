@@ -46,7 +46,7 @@ struct TLBEntry
 {
   static constexpr u32 INVALID_TAG = 0xffffffff;
 
-  u32 tag[TLB_WAYS] = { INVALID_TAG, INVALID_TAG };
+  u32 tag[TLB_WAYS] = {INVALID_TAG, INVALID_TAG};
   u32 paddr[TLB_WAYS] = {};
   u32 pte[TLB_WAYS] = {};
   u8 recent = 0;
@@ -78,7 +78,7 @@ struct PowerPCState
   u32 msr;    // machine specific register
   u32 fpscr;  // floating point flags/status bits
 
-              // Exception management.
+  // Exception management.
   u32 Exceptions;
 
   // Downcount for determining when we need to do timing
@@ -89,8 +89,8 @@ struct PowerPCState
   // XER, reformatted into byte fields for easier access.
   u8 xer_ca;
   u8 xer_so_ov;  // format: (SO << 1) | OV
-                 // The Broadway CPU implements bits 16-23 of the XER register... even though it doesn't support
-                 // lscbx
+  // The Broadway CPU implements bits 16-23 of the XER register... even though it doesn't support
+  // lscbx
   u16 xer_stringctrl;
 
   // gather pipe pointer for JIT access
@@ -113,8 +113,8 @@ struct PowerPCState
 
   u32 sr[16];  // Segment registers.
 
-               // special purpose registers - controls quantizers, DMA, and lots of other misc extensions.
-               // also for power management, but we don't care about that.
+  // special purpose registers - controls quantizers, DMA, and lots of other misc extensions.
+  // also for power management, but we don't care about that.
   u32 spr[1024];
 
   // Storage for the stack pointer of the BLR optimization.
@@ -130,7 +130,7 @@ struct PowerPCState
 
 #if _M_X86_64
 static_assert(offsetof(PowerPC::PowerPCState, above_fits_in_first_0x100) <= 0x100,
-  "top of PowerPCState too big");
+              "top of PowerPCState too big");
 #endif
 
 extern PowerPCState ppcState;
@@ -275,7 +275,7 @@ void DMA_LCToMemory(u32 memAddr, u32 cacheAddr, u32 numBlocks);
 void DMA_MemoryToLC(u32 cacheAddr, u32 memAddr, u32 numBlocks);
 void ClearCacheLine(u32 address);  // Zeroes 32 bytes; address should be 32-byte-aligned
 
-                                   // TLB functions
+// TLB functions
 void SDRUpdated();
 void InvalidateTLBEntry(u32 address);
 void DBATUpdated();
@@ -312,7 +312,6 @@ inline bool TranslateBatAddess(const BatTable& bat_table, u32* address)
   *address = (bat_result & BAT_RESULT_MASK) | (*address & (BAT_PAGE_SIZE - 1));
   return true;
 }
-}  // namespace
 
 enum CRBits
 {
@@ -331,10 +330,10 @@ enum CRBits
 inline u64 PPCCRToInternal(u8 value)
 {
   u64 cr_val = 0x100000000;
-  cr_val |= (u64)!!(value & CR_SO) << 61;
-  cr_val |= (u64)!(value & CR_EQ);
-  cr_val |= (u64)!(value & CR_GT) << 63;
-  cr_val |= (u64)!!(value & CR_LT) << 62;
+  cr_val |= (u64) !!(value & CR_SO) << 61;
+  cr_val |= (u64) !(value & CR_EQ);
+  cr_val |= (u64) !(value & CR_GT) << 63;
+  cr_val |= (u64) !!(value & CR_LT) << 62;
 
   return cr_val;
 }
@@ -417,14 +416,27 @@ inline void SetXER(UReg_XER new_xer)
   PowerPC::ppcState.xer_so_ov = (new_xer.SO << 1) + new_xer.OV;
 }
 
-inline int GetXER_SO()
+inline u32 GetXER_SO()
 {
   return PowerPC::ppcState.xer_so_ov >> 1;
 }
 
-inline void SetXER_SO(int value)
+inline void SetXER_SO(bool value)
 {
-  PowerPC::ppcState.xer_so_ov |= value << 1;
+  PowerPC::ppcState.xer_so_ov |= static_cast<u32>(value) << 1;
+}
+
+inline u32 GetXER_OV()
+{
+  return PowerPC::ppcState.xer_so_ov & 1;
+}
+
+inline void SetXER_OV(bool value)
+{
+  PowerPC::ppcState.xer_so_ov = (PowerPC::ppcState.xer_so_ov & 0xFE) | static_cast<u32>(value);
+  SetXER_SO(value);
 }
 
 void UpdateFPRF(double dvalue);
+
+}  // namespace PowerPC

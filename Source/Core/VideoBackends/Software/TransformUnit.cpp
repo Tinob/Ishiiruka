@@ -122,7 +122,7 @@ static void TransformTexCoordRegular(const TexMtxInfo &texinfo, int coordNum, bo
     src = &srcVertex->normal[2];
     break;
   default:
-    _assert_(texinfo.sourcerow >= XF_SRCTEX0_INROW && texinfo.sourcerow <= XF_SRCTEX7_INROW);
+    ASSERT(texinfo.sourcerow >= XF_SRCTEX0_INROW && texinfo.sourcerow <= XF_SRCTEX7_INROW);
     src = (Vec3*)srcVertex->texCoords[texinfo.sourcerow - XF_SRCTEX0_INROW];
     break;
   }
@@ -139,7 +139,7 @@ static void TransformTexCoordRegular(const TexMtxInfo &texinfo, int coordNum, bo
   }
   else // texinfo.projection == XF_TEXPROJ_STQ
   {
-    _assert_(!specialCase);
+    ASSERT(!specialCase);
 
     if (texinfo.inputform == XF_TEXINPUT_AB11)
       MultiplyVec2Mat34(*src, mat, *dst);
@@ -268,7 +268,7 @@ static void LightColor(const Vec3 &pos, const Vec3 &normal, u8 lightNum, LitChan
     difAttn = std::max(0.0f, difAttn);
     AddScaledIntegerColor(light->color, attn * difAttn, lightCol);
     break;
-  default: _assert_(0);
+  default: ASSERT(0);
   }
 }
 
@@ -292,7 +292,7 @@ static void LightAlpha(const Vec3 &pos, const Vec3 &normal, u8 lightNum, const L
     difAttn = std::max(0.0f, difAttn);
     lightCol += light->color[0] * attn * difAttn;
     break;
-  default: _assert_(0);
+  default: ASSERT(0);
   }
 }
 
@@ -408,15 +408,15 @@ void TransformTexCoord(const InputVertexData *src, OutputVertexData *dst, bool s
     }
     break;
     case XF_TEXGEN_COLOR_STRGBC0:
-      _assert_(texinfo.sourcerow == XF_SRCCOLORS_INROW);
-      _assert_(texinfo.inputform == XF_TEXINPUT_AB11);
+      ASSERT(texinfo.sourcerow == XF_SRCCOLORS_INROW);
+      ASSERT(texinfo.inputform == XF_TEXINPUT_AB11);
       dst->texCoords[coordNum].x = (float)dst->color[0][0] / 255.0f;
       dst->texCoords[coordNum].y = (float)dst->color[0][1] / 255.0f;
       dst->texCoords[coordNum].z = 1.0f;
       break;
     case XF_TEXGEN_COLOR_STRGBC1:
-      _assert_(texinfo.sourcerow == XF_SRCCOLORS_INROW);
-      _assert_(texinfo.inputform == XF_TEXINPUT_AB11);
+      ASSERT(texinfo.sourcerow == XF_SRCCOLORS_INROW);
+      ASSERT(texinfo.inputform == XF_TEXINPUT_AB11);
       dst->texCoords[coordNum].x = (float)dst->color[1][0] / 255.0f;
       dst->texCoords[coordNum].y = (float)dst->color[1][1] / 255.0f;
       dst->texCoords[coordNum].z = 1.0f;

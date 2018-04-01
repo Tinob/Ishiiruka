@@ -215,7 +215,7 @@ void D3DPostProcessingShader::Draw(PostProcessor* p,
   D3DTexture2D* src_texture = reinterpret_cast<D3DTexture2D*>(src_tex);
   D3DTexture2D* src_depth_texture = reinterpret_cast<D3DTexture2D*>(src_depth_tex);
 
-  _dbg_assert_(VIDEO, m_ready && m_internal_size == src_size);
+  DEBUG_ASSERT(m_ready && m_internal_size == src_size);
 
   // Determine whether we can skip the final copy by writing directly to the output texture, if the last pass is not scaled.
   bool skip_final_copy = !IsLastPassScaled() && (dst_texture != src_texture || !m_last_pass_uses_color_buffer) && !m_prev_frame_enabled;

@@ -109,7 +109,7 @@ bool Jitx86Base::BackPatch(u32 emAddress, SContext* ctx)
       *ptr = Common::swap64(static_cast<u64>(*ptr));
       break;
     default:
-      _dbg_assert_(DYNA_REC, 0);
+      DEBUG_ASSERT(0);
       break;
     }
   }
@@ -128,13 +128,13 @@ bool Jitx86Base::BackPatch(u32 emAddress, SContext* ctx)
 }
 
 void LogGeneratedX86(size_t size, const PPCAnalyst::CodeBuffer* code_buffer, const u8* normalEntry,
-  const JitBlock* b)
+                     const JitBlock* b)
 {
   for (size_t i = 0; i < size; i++)
   {
     const PPCAnalyst::CodeOp& op = code_buffer->codebuffer[i];
     std::string temp = StringFromFormat(
-      "%08x %s", op.address, GekkoDisassembler::Disassemble(op.inst.hex, op.address).c_str());
+        "%08x %s", op.address, GekkoDisassembler::Disassemble(op.inst.hex, op.address).c_str());
     DEBUG_LOG(DYNA_REC, "IR_X86 PPC: %s\n", temp.c_str());
   }
 

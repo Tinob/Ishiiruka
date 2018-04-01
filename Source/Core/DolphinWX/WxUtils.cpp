@@ -28,6 +28,8 @@
 
 #include "DolphinWX/WxUtils.h"
 
+#include "UICommon/GameFile.h"
+
 #ifdef _WIN32
 #include <Windows.h>
 #endif
@@ -77,12 +79,12 @@ wxBitmap CreateDisabledButtonBitmap(const wxBitmap& original)
 }
 
 void AddToolbarButton(wxToolBar* toolbar, int toolID, const wxString& label, const wxBitmap& bitmap,
-                      const wxString& shortHelp)
+  const wxString& shortHelp)
 {
   // Must explicitly set the disabled button bitmap because wxWidgets
   // incorrectly desaturates it instead of lightening it.
   toolbar->AddTool(toolID, label, bitmap, WxUtils::CreateDisabledButtonBitmap(bitmap),
-                   wxITEM_NORMAL, shortHelp);
+    wxITEM_NORMAL, shortHelp);
 }
 
 wxIconBundle GetDolphinIconBundle()
@@ -101,7 +103,7 @@ wxIconBundle GetDolphinIconBundle()
   {
     // Extract resource from embedded DolphinWX.rc
     HANDLE win32_icon =
-        LoadImageW(dolphin, L"\"DOLPHIN\"", IMAGE_ICON, size, size, LR_CREATEDIBSECTION);
+      LoadImageW(dolphin, L"\"DOLPHIN\"", IMAGE_ICON, size, size, LR_CREATEDIBSECTION);
     if (win32_icon && win32_icon != INVALID_HANDLE_VALUE)
     {
       wxIcon icon;
@@ -112,10 +114,10 @@ wxIconBundle GetDolphinIconBundle()
 
 #else
 
-  for (const char* fname : {"Dolphin.png", "dolphin_logo.png", "dolphin_logo@2x.png"})
+  for (const char* fname : { "Dolphin.png", "dolphin_logo.png", "dolphin_logo@2x.png" })
   {
-    wxImage image{StrToWxStr(File::GetSysDirectory() + RESOURCES_DIR DIR_SEP + fname),
-                  wxBITMAP_TYPE_PNG};
+    wxImage image{ StrToWxStr(File::GetSysDirectory() + RESOURCES_DIR DIR_SEP + fname),
+      wxBITMAP_TYPE_PNG };
     if (image.IsOk())
     {
       wxIcon icon;
@@ -138,7 +140,7 @@ wxRect GetVirtualScreenGeometry()
 }
 
 void SetWindowSizeAndFitToScreen(wxTopLevelWindow* tlw, wxPoint pos, wxSize size,
-                                 wxSize default_size)
+  wxSize default_size)
 {
   if (tlw->IsMaximized())
     return;
@@ -148,7 +150,7 @@ void SetWindowSizeAndFitToScreen(wxTopLevelWindow* tlw, wxPoint pos, wxSize size
   //   valid position on the monitor to the left of the primary. (This does not apply to
   //   sizes obviously)
   wxRect screen_geometry;
-  wxRect window_geometry{pos, size};
+  wxRect window_geometry{ pos, size };
 
   if (wxDisplay::GetCount() > 1)
     screen_geometry = GetVirtualScreenGeometry();
@@ -164,14 +166,14 @@ void SetWindowSizeAndFitToScreen(wxTopLevelWindow* tlw, wxPoint pos, wxSize size
   // If the position we're given doesn't make sense then go with the current position.
   // (Assuming the window was created with wxDefaultPosition then this should be reasonable)
   if (pos.x - screen_geometry.GetLeft() < -1000 || pos.y - screen_geometry.GetTop() < -1000 ||
-      pos.x - screen_geometry.GetRight() > 1000 || pos.y - screen_geometry.GetBottom() > 1000)
+    pos.x - screen_geometry.GetRight() > 1000 || pos.y - screen_geometry.GetBottom() > 1000)
   {
     window_geometry.SetPosition(tlw->GetPosition());
   }
 
   // If the window is bigger than all monitors combined, or negative (uninitialized) then reset it.
   if (window_geometry.IsEmpty() || window_geometry.GetWidth() > screen_geometry.GetWidth() ||
-      window_geometry.GetHeight() > screen_geometry.GetHeight())
+    window_geometry.GetHeight() > screen_geometry.GetHeight())
   {
     window_geometry.SetSize(default_size);
   }
@@ -186,14 +188,14 @@ void SetWindowSizeAndFitToScreen(wxTopLevelWindow* tlw, wxPoint pos, wxSize size
   {
     // SPECIAL CASE: If the window is entirely outside the visible area of the desktop then we
     //   put it back on the primary (zero) monitor.
-    wxRect monitor_intersection{window_geometry};
+    wxRect monitor_intersection{ window_geometry };
     int the_monitor = 0;
     if (!monitor_intersection.Intersect(screen_geometry).IsEmpty())
     {
-      std::array<int, 4> monitors{{wxDisplay::GetFromPoint(monitor_intersection.GetTopLeft()),
-                                   wxDisplay::GetFromPoint(monitor_intersection.GetTopRight()),
-                                   wxDisplay::GetFromPoint(monitor_intersection.GetBottomLeft()),
-                                   wxDisplay::GetFromPoint(monitor_intersection.GetBottomRight())}};
+      std::array<int, 4> monitors{ { wxDisplay::GetFromPoint(monitor_intersection.GetTopLeft()),
+        wxDisplay::GetFromPoint(monitor_intersection.GetTopRight()),
+        wxDisplay::GetFromPoint(monitor_intersection.GetBottomLeft()),
+        wxDisplay::GetFromPoint(monitor_intersection.GetBottomRight()) } };
       the_monitor = wxNOT_FOUND;
       bool intersected = false;
       for (int one_monitor : monitors)
@@ -218,9 +220,9 @@ void SetWindowSizeAndFitToScreen(wxTopLevelWindow* tlw, wxPoint pos, wxSize size
     {
       // We'll only use the client area of this monitor if the window will actually fit.
       // (It may not fit if the window is spilling off the edge so it isn't entirely visible)
-      wxRect client_area{wxDisplay(the_monitor).GetClientArea()};
+      wxRect client_area{ wxDisplay(the_monitor).GetClientArea() };
       if (client_area.GetWidth() >= window_geometry.GetWidth() &&
-          client_area.GetHeight() >= window_geometry.GetHeight())
+        client_area.GetHeight() >= window_geometry.GetHeight())
       {
         screen_geometry = client_area;
       }
@@ -251,7 +253,7 @@ wxSizer* GiveMinSize(wxWindow* window, const wxSize& min_size)
   int flags = wxEXPAND;
   // On Windows comboboxes will misrender when stretched vertically.
   if (wxDynamicCast(window, wxChoice) || wxDynamicCast(window, wxComboBox) ||
-      wxDynamicCast(window, wxComboCtrl))
+    wxDynamicCast(window, wxComboCtrl))
     flags = wxALIGN_CENTER_VERTICAL;
   sizer->Add(window, 1, flags);
   sizer->SetMinSize(min_size);
@@ -285,9 +287,30 @@ wxSize GetTextWidgetMinSize(const wxSpinCtrl* spinner)
   return size;
 }
 
+wxImage ToWxImage(const UICommon::GameBanner& banner)
+{
+  return ToWxImage(banner.buffer, banner.width, banner.height);
+}
+
+wxImage ToWxImage(const std::vector<u32>& buffer, int width, int height)
+{
+  wxImage image(width, height, false);
+  if (buffer.empty())
+    return image;
+
+  unsigned char* data = image.GetData();
+  for (int i = 0; i < width * height; i++)
+  {
+    data[i * 3 + 0] = (buffer[i] & 0xFF0000) >> 16;
+    data[i * 3 + 1] = (buffer[i] & 0x00FF00) >> 8;
+    data[i * 3 + 2] = (buffer[i] & 0x0000FF) >> 0;
+  }
+  return image;
+}
+
 static wxImage LoadScaledImage(const std::string& file_path, const wxWindow* context,
-                               const wxSize& output_size, const wxRect& usable_rect, LSIFlags flags,
-                               const wxColour& fill_color)
+  const wxSize& output_size, const wxRect& usable_rect, LSIFlags flags,
+  const wxColour& fill_color)
 {
   std::string fpath, fname, fext;
   SplitPath(file_path, &fpath, &fname, &fext);
@@ -331,7 +354,7 @@ static wxImage LoadScaledImage(const std::string& file_path, const wxWindow* con
     };
     const bool prefer_smaller = !(flags & LSI_SCALE_DOWN);
     const double scale_factor_quarter =
-        prefer_smaller ? std::floor(scale_factor * 4) / 4 : std::ceil(scale_factor * 4) / 4;
+      prefer_smaller ? std::floor(scale_factor * 4) / 4 : std::ceil(scale_factor * 4) / 4;
     // Search for bigger sizes first (preferred)
     if (!prefer_smaller)
     {
@@ -368,54 +391,54 @@ static wxImage LoadScaledImage(const std::string& file_path, const wxWindow* con
   }
 
   return ScaleImage(image, selected_image_scale, window_scale_factor, output_size, usable_rect,
-                    flags, fill_color);
+    flags, fill_color);
 }
 
 wxBitmap LoadScaledBitmap(const std::string& file_path, const wxWindow* context,
-                          const wxSize& output_size, const wxRect& usable_rect, LSIFlags flags,
-                          const wxColour& fill_color)
+  const wxSize& output_size, const wxRect& usable_rect, LSIFlags flags,
+  const wxColour& fill_color)
 {
   return wxBitmap(LoadScaledImage(file_path, context, output_size, usable_rect, flags, fill_color),
-                  wxBITMAP_SCREEN_DEPTH, context->GetContentScaleFactor());
+    wxBITMAP_SCREEN_DEPTH, context->GetContentScaleFactor());
 }
 
 wxBitmap LoadScaledResourceBitmap(const std::string& name, const wxWindow* context,
-                                  const wxSize& output_size, const wxRect& usable_rect,
-                                  LSIFlags flags, const wxColour& fill_color)
+  const wxSize& output_size, const wxRect& usable_rect,
+  LSIFlags flags, const wxColour& fill_color)
 {
   std::string path = File::GetSysDirectory() + RESOURCES_DIR DIR_SEP + name + ".png";
   return LoadScaledBitmap(path, context, output_size, usable_rect, flags, fill_color);
 }
 
 wxBitmap LoadScaledThemeBitmap(const std::string& name, const wxWindow* context,
-                               const wxSize& output_size, const wxRect& usable_rect, LSIFlags flags,
-                               const wxColour& fill_color)
+  const wxSize& output_size, const wxRect& usable_rect, LSIFlags flags,
+  const wxColour& fill_color)
 {
   std::string path = File::GetThemeDir(SConfig::GetInstance().theme_name) + name + ".png";
   return LoadScaledBitmap(path, context, output_size, usable_rect, flags, fill_color);
 }
 
 wxBitmap ScaleImageToBitmap(const wxImage& image, const wxWindow* context,
-                            const wxSize& output_size, const wxRect& usable_rect, LSIFlags flags,
-                            const wxColour& fill_color)
+  const wxSize& output_size, const wxRect& usable_rect, LSIFlags flags,
+  const wxColour& fill_color)
 {
   double scale_factor = context->GetContentScaleFactor();
   return wxBitmap(ScaleImage(image, 1.0, scale_factor, output_size, usable_rect, flags, fill_color),
-                  wxBITMAP_SCREEN_DEPTH, scale_factor);
+    wxBITMAP_SCREEN_DEPTH, scale_factor);
 }
 
 wxBitmap ScaleImageToBitmap(const wxImage& image, const wxWindow* context, double source_scale,
-                            LSIFlags flags, const wxColour& fill_color)
+  LSIFlags flags, const wxColour& fill_color)
 {
   double scale_factor = context->GetContentScaleFactor();
   return wxBitmap(ScaleImage(image, source_scale, scale_factor, wxDefaultSize, wxDefaultSize, flags,
-                             fill_color),
-                  wxBITMAP_SCREEN_DEPTH, scale_factor);
+    fill_color),
+    wxBITMAP_SCREEN_DEPTH, scale_factor);
 }
 
 wxImage ScaleImage(wxImage image, double source_scale_factor, double content_scale_factor,
-                   wxSize output_size, wxRect usable_rect, LSIFlags flags,
-                   const wxColour& fill_color)
+  wxSize output_size, wxRect usable_rect, LSIFlags flags,
+  const wxColour& fill_color)
 {
   if (!image.IsOk())
   {
@@ -434,10 +457,10 @@ wxImage ScaleImage(wxImage image, double source_scale_factor, double content_sca
   wxSize img_size = image.GetSize();
   if (output_size.GetWidth() < 1)
     output_size.SetWidth(
-        static_cast<int>(img_size.GetWidth() * (content_scale_factor / source_scale_factor)));
+      static_cast<int>(img_size.GetWidth() * (content_scale_factor / source_scale_factor)));
   if (output_size.GetHeight() < 1)
     output_size.SetHeight(
-        static_cast<int>(img_size.GetHeight() * (content_scale_factor / source_scale_factor)));
+      static_cast<int>(img_size.GetHeight() * (content_scale_factor / source_scale_factor)));
 
   // Fix the usable rect. If it's empty then the whole canvas is usable.
   if (usable_rect.IsEmpty())
@@ -462,25 +485,25 @@ wxImage ScaleImage(wxImage image, double source_scale_factor, double content_sca
     {
       // Stretch scale without preserving the aspect ratio.
       bool scale_width = (img_size.GetWidth() > usable_rect.GetWidth() && flags & LSI_SCALE_DOWN) ||
-                         (img_size.GetWidth() < usable_rect.GetWidth() && flags & LSI_SCALE_UP);
+        (img_size.GetWidth() < usable_rect.GetWidth() && flags & LSI_SCALE_UP);
       bool scale_height =
-          (img_size.GetHeight() > usable_rect.GetHeight() && flags & LSI_SCALE_DOWN) ||
-          (img_size.GetHeight() < usable_rect.GetHeight() && flags & LSI_SCALE_UP);
+        (img_size.GetHeight() > usable_rect.GetHeight() && flags & LSI_SCALE_DOWN) ||
+        (img_size.GetHeight() < usable_rect.GetHeight() && flags & LSI_SCALE_UP);
       if (scale_width || scale_height)
       {
         // NOTE: Using BICUBIC instead of HIGH because it's the same internally
         //   except that downscaling uses a box filter with awful obvious aliasing
         //   for non-integral scale factors.
         image.Rescale(scale_width ? usable_rect.GetWidth() : img_size.GetWidth(),
-                      scale_height ? usable_rect.GetHeight() : img_size.GetHeight(),
-                      wxIMAGE_QUALITY_BICUBIC);
+          scale_height ? usable_rect.GetHeight() : img_size.GetHeight(),
+          wxIMAGE_QUALITY_BICUBIC);
       }
     }
     else
     {
       // Scale while preserving the aspect ratio.
       double scale = std::min(static_cast<double>(usable_rect.GetWidth()) / img_size.GetWidth(),
-                              static_cast<double>(usable_rect.GetHeight()) / img_size.GetHeight());
+        static_cast<double>(usable_rect.GetHeight()) / img_size.GetHeight());
       int target_width = static_cast<int>(img_size.GetWidth() * scale);
       int target_height = static_cast<int>(img_size.GetHeight() * scale);
       // Bilinear produces sharper images when upscaling, bicubic tends to smear/blur sharp edges.

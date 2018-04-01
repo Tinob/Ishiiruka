@@ -30,8 +30,8 @@ public:
 
   void DoState(PointerWrap& p) override;
 
-  ReturnCode Open(const OpenRequest& request) override;
-  ReturnCode Close(u32 fd) override;
+  IPCCommandResult Open(const OpenRequest& request) override;
+  IPCCommandResult Close(u32 fd) override;
   IPCCommandResult IOCtl(const IOCtlRequest& request) override;
   IPCCommandResult IOCtlV(const IOCtlVRequest& request) override;
 
@@ -140,7 +140,7 @@ private:
   IPCCommandResult SendCommand(const IOCtlVRequest& request);
 
   s32 ExecuteCommand(const Request& request, u32 BufferIn, u32 BufferInSize, u32 BufferIn2,
-    u32 BufferInSize2, u32 _BufferOut, u32 BufferOutSize);
+                     u32 BufferInSize2, u32 _BufferOut, u32 BufferOutSize);
   void OpenInternal();
   void InitStatus();
 

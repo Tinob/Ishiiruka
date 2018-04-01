@@ -52,26 +52,26 @@ void cInterfaceEGL::DetectMode()
 
   EGLint num_configs;
   bool supportsGL = false, supportsGLES2 = false, supportsGLES3 = false;
-  std::array<int, 3> renderable_types{ {
+  std::array<int, 3> renderable_types{{
       EGL_OPENGL_BIT, (1 << 6), /* EGL_OPENGL_ES3_BIT_KHR */
       EGL_OPENGL_ES2_BIT,
-    } };
+  }};
 
   for (auto renderable_type : renderable_types)
   {
     // attributes for a visual in RGBA format with at least
     // 8 bits per color
-    int attribs[] = { EGL_RED_SIZE,
-      8,
-      EGL_GREEN_SIZE,
-      8,
-      EGL_BLUE_SIZE,
-      8,
-      EGL_RENDERABLE_TYPE,
-      renderable_type,
-      EGL_SURFACE_TYPE,
-      m_has_handle ? EGL_WINDOW_BIT : 0,
-      EGL_NONE };
+    int attribs[] = {EGL_RED_SIZE,
+                     8,
+                     EGL_GREEN_SIZE,
+                     8,
+                     EGL_BLUE_SIZE,
+                     8,
+                     EGL_RENDERABLE_TYPE,
+                     renderable_type,
+                     EGL_SURFACE_TYPE,
+                     m_has_handle ? EGL_WINDOW_BIT : 0,
+                     EGL_NONE};
 
     // Get how many configs there are
     if (!eglChooseConfig(egl_dpy, attribs, nullptr, 0, &num_configs))
@@ -180,32 +180,32 @@ bool cInterfaceEGL::Create(void* window_handle, bool stereo, bool core)
 
   // attributes for a visual in RGBA format with at least
   // 8 bits per color
-  int attribs[] = { EGL_RENDERABLE_TYPE,
-    EGL_OPENGL_ES2_BIT,
-    EGL_RED_SIZE,
-    8,
-    EGL_GREEN_SIZE,
-    8,
-    EGL_BLUE_SIZE,
-    8,
-    EGL_SURFACE_TYPE,
-    m_has_handle ? EGL_WINDOW_BIT : 0,
-    EGL_NONE };
+  int attribs[] = {EGL_RENDERABLE_TYPE,
+                   EGL_OPENGL_ES2_BIT,
+                   EGL_RED_SIZE,
+                   8,
+                   EGL_GREEN_SIZE,
+                   8,
+                   EGL_BLUE_SIZE,
+                   8,
+                   EGL_SURFACE_TYPE,
+                   m_has_handle ? EGL_WINDOW_BIT : 0,
+                   EGL_NONE};
 
   std::vector<EGLint> ctx_attribs;
   switch (s_opengl_mode)
   {
   case GLInterfaceMode::MODE_OPENGL:
     attribs[1] = EGL_OPENGL_BIT;
-    ctx_attribs = { EGL_NONE };
+    ctx_attribs = {EGL_NONE};
     break;
   case GLInterfaceMode::MODE_OPENGLES2:
     attribs[1] = EGL_OPENGL_ES2_BIT;
-    ctx_attribs = { EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE };
+    ctx_attribs = {EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE};
     break;
   case GLInterfaceMode::MODE_OPENGLES3:
     attribs[1] = (1 << 6); /* EGL_OPENGL_ES3_BIT_KHR */
-    ctx_attribs = { EGL_CONTEXT_CLIENT_VERSION, 3, EGL_NONE };
+    ctx_attribs = {EGL_CONTEXT_CLIENT_VERSION, 3, EGL_NONE};
     break;
   default:
     ERROR_LOG(VIDEO, "Unknown opengl mode set");
@@ -236,21 +236,21 @@ bool cInterfaceEGL::Create(void* window_handle, bool stereo, bool core)
 
   if (supports_core_profile && core && s_opengl_mode == GLInterfaceMode::MODE_OPENGL)
   {
-    std::array<std::pair<int, int>, 7> versions_to_try = { {
-      { 4, 5 },{ 4, 4 },{ 4, 3 },{ 4, 2 },{ 4, 1 },{ 4, 0 },{ 3, 3 },
-      } };
+    std::array<std::pair<int, int>, 7> versions_to_try = {{
+        {4, 5}, {4, 4}, {4, 3}, {4, 2}, {4, 1}, {4, 0}, {3, 3},
+    }};
 
     for (const auto& version : versions_to_try)
     {
-      std::vector<EGLint> core_attribs = { EGL_CONTEXT_MAJOR_VERSION_KHR,
-        version.first,
-        EGL_CONTEXT_MINOR_VERSION_KHR,
-        version.second,
-        EGL_CONTEXT_OPENGL_PROFILE_MASK_KHR,
-        EGL_CONTEXT_OPENGL_CORE_PROFILE_BIT_KHR,
-        EGL_CONTEXT_FLAGS_KHR,
-        EGL_CONTEXT_OPENGL_FORWARD_COMPATIBLE_BIT_KHR,
-        EGL_NONE };
+      std::vector<EGLint> core_attribs = {EGL_CONTEXT_MAJOR_VERSION_KHR,
+                                          version.first,
+                                          EGL_CONTEXT_MINOR_VERSION_KHR,
+                                          version.second,
+                                          EGL_CONTEXT_OPENGL_PROFILE_MASK_KHR,
+                                          EGL_CONTEXT_OPENGL_CORE_PROFILE_BIT_KHR,
+                                          EGL_CONTEXT_FLAGS_KHR,
+                                          EGL_CONTEXT_OPENGL_FORWARD_COMPATIBLE_BIT_KHR,
+                                          EGL_NONE};
 
       egl_ctx = eglCreateContext(egl_dpy, m_config, EGL_NO_CONTEXT, &core_attribs[0]);
       if (egl_ctx)
@@ -307,7 +307,7 @@ bool cInterfaceEGL::Create(cInterfaceBase* main_context)
     eglBindAPI(EGL_OPENGL_ES_API);
 
   egl_ctx =
-    eglCreateContext(egl_dpy, m_config, egl_context->egl_ctx, egl_context->m_attribs.data());
+      eglCreateContext(egl_dpy, m_config, egl_context->egl_ctx, egl_context->m_attribs.data());
   if (!egl_ctx)
   {
     INFO_LOG(VIDEO, "Error: eglCreateContext failed 0x%04x", eglGetError());
@@ -337,7 +337,7 @@ bool cInterfaceEGL::CreateWindowSurface()
   else if (!m_supports_surfaceless)
   {
     EGLint attrib_list[] = {
-      EGL_NONE,
+        EGL_NONE,
     };
     egl_surf = eglCreatePbufferSurface(egl_dpy, m_config, attrib_list);
     if (!egl_surf)

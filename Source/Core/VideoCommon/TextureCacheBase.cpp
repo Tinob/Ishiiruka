@@ -1572,7 +1572,7 @@ void TextureCacheBase::TCacheEntry::SetEfbCopy(u32 stride)
   is_efb_copy = true;
   memory_stride = stride;
 
-  _assert_msg_(VIDEO, memory_stride >= BytesPerRow(), "Memory stride is too small");
+  ASSERT_MSG(VIDEO, memory_stride >= BytesPerRow(), "Memory stride is too small");
 
   size_in_bytes = memory_stride * NumBlocksY();
 }

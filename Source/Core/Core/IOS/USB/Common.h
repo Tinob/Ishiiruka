@@ -105,7 +105,7 @@ struct TransferCommand
   u32 data_address = 0;
 
   TransferCommand(Kernel& ios, const Request& ios_request_, u32 data_address_)
-    : ios_request(ios_request_), data_address(data_address_), m_ios(ios)
+      : ios_request(ios_request_), data_address(data_address_), m_ios(ios)
   {
   }
   virtual ~TransferCommand() = default;
@@ -116,7 +116,7 @@ struct TransferCommand
   void FillBuffer(const u8* src, size_t size) const;
 
 private:
-  Kernel & m_ios;
+  Kernel& m_ios;
 };
 
 struct CtrlMessage : TransferCommand

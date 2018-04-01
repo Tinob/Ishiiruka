@@ -83,13 +83,13 @@ void VKTexture::Bind(u32 stage)
 {
   // Texture should always be in SHADER_READ_ONLY layout prior to use.
   // This is so we don't need to transition during render passes.
-  _assert_(m_texture->GetLayout() == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+  ASSERT(m_texture->GetLayout() == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
   StateTracker::GetInstance()->SetTexture(stage, m_texture->GetView());
 }
 
 bool VKTexture::Save(const std::string& filename, u32 level)
 {
-  _assert_(level < m_config.levels);
+  ASSERT(level < m_config.levels);
 
   // We can't dump compressed textures currently (it would mean drawing them to a RGBA8
   // framebuffer, and saving that). TextureCache does not call Save for custom textures
@@ -145,11 +145,11 @@ void VKTexture::CopyTextureRectangle(const MathUtil::Rectangle<int>& dst_rect,
   Texture2D* src_texture,
   const MathUtil::Rectangle<int>& src_rect)
 {
-  _assert_msg_(VIDEO, static_cast<u32>(src_rect.GetWidth()) <= src_texture->GetWidth() &&
+  ASSERT_MSG(VIDEO, static_cast<u32>(src_rect.GetWidth()) <= src_texture->GetWidth() &&
     static_cast<u32>(src_rect.GetHeight()) <= src_texture->GetHeight(),
     "Source rect is too large for CopyRectangleFromTexture");
 
-  _assert_msg_(VIDEO, static_cast<u32>(dst_rect.GetWidth()) <= m_config.width &&
+  ASSERT_MSG(VIDEO, static_cast<u32>(dst_rect.GetWidth()) <= m_config.width &&
     static_cast<u32>(dst_rect.GetHeight()) <= m_config.height,
     "Dest rect is too large for CopyRectangleFromTexture");
 
@@ -186,7 +186,7 @@ void VKTexture::ScaleTextureRectangle(const MathUtil::Rectangle<int>& dst_rect,
   StateTracker::GetInstance()->SetPendingRebind();
 
   // Can't render to a non-rendertarget (no framebuffer).
-  _assert_msg_(VIDEO, m_config.rendertarget,
+  ASSERT_MSG(VIDEO, m_config.rendertarget,
     "Destination texture for partial copy is not a rendertarget");
 
   // Render pass expects dst_texture to be in COLOR_ATTACHMENT_OPTIMAL state.

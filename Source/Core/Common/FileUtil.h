@@ -161,7 +161,7 @@ std::string GetCurrentDir();
 
 // Create directory and copy contents (optionally overwrites existing files)
 void CopyDir(const std::string& source_path, const std::string& dest_path,
-  bool destructive = false);
+             bool destructive = false);
 
 // Set the current directory to given directory
 bool SetCurrentDir(const std::string& directory);
@@ -194,7 +194,8 @@ void SetSysDirectory(const std::string& path);
 std::string GetBundleDirectory();
 #endif
 
-std::string& GetExeDirectory();
+std::string GetExePath();
+std::string GetExeDirectory();
 
 bool WriteStringToFile(const std::string& str, const std::string& filename);
 bool ReadFileToString(const std::string& filename, std::string& str);

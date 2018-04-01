@@ -16,13 +16,18 @@
 #include "Common/ChunkFile.h"
 #include "Common/Event.h"
 #include "Common/Flag.h"
-#include "DolphinWX/ISOFile.h"
+#include "UICommon/GameFileCache.h"
+
+namespace UICommon
+{
+class GameFile;
+}
 
 class wxEmuStateTip : public wxTipWindow
 {
 public:
   wxEmuStateTip(wxWindow* parent, const wxString& text, wxEmuStateTip** windowPtr)
-      : wxTipWindow(parent, text, 70, (wxTipWindow**)windowPtr)
+    : wxTipWindow(parent, text, 70, (wxTipWindow**)windowPtr)
   {
     Bind(wxEVT_KEY_DOWN, &wxEmuStateTip::OnKeyDown, this);
   }
@@ -42,12 +47,12 @@ class GameListCtrl : public wxListCtrl
 {
 public:
   GameListCtrl(bool disable_scanning, wxWindow* parent, const wxWindowID id, const wxPoint& pos,
-               const wxSize& size, long style);
+    const wxSize& size, long style);
   ~GameListCtrl();
 
   void BrowseForDirectory();
-  const GameListItem* GetISO(size_t index) const;
-  const GameListItem* GetSelectedISO() const;
+  const UICommon::GameFile* GetISO(size_t index) const;
+  const UICommon::GameFile* GetSelectedISO() const;
 
   static bool IsHidingItems();
 
@@ -80,9 +85,7 @@ private:
   void SetColors();
   void RefreshList();
   void RescanList();
-  void DoState(PointerWrap* p, u32 size = 0);
-  bool SyncCacheFile(bool write);
-  std::vector<const GameListItem*> GetAllSelectedISOs() const;
+  std::vector<const UICommon::GameFile*> GetAllSelectedISOs() const;
 
   // events
   void OnRefreshGameList(wxCommandEvent& event);
@@ -124,9 +127,9 @@ private:
     std::vector<int> emu_state;
   } m_image_indexes;
 
-  // Actual backing GameListItems are maintained in a background thread and cached to file
-  std::vector<std::shared_ptr<GameListItem>> m_cached_files;
-  // Locks the list, not the contents
+  // Actual backing GameFiles are maintained in a background thread and cached to file
+  UICommon::GameFileCache m_cache;
+  // Locks the cache object, not the shared_ptr<GameFile>s obtained from it
   std::mutex m_cache_mutex;
   Core::TitleDatabase m_title_database;
   std::mutex m_title_database_mutex;
@@ -134,7 +137,7 @@ private:
   Common::Event m_scan_trigger;
   Common::Flag m_scan_exiting;
   // UI thread's view into the cache
-  std::vector<std::shared_ptr<GameListItem>> m_shown_files;
+  std::vector<std::shared_ptr<const UICommon::GameFile>> m_shown_files;
 
   int m_last_column;
   int m_last_sort;

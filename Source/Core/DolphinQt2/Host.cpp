@@ -6,10 +6,15 @@
 
 #include <QAbstractEventDispatcher>
 #include <QApplication>
+#include <QProgressDialog>
 
 #include "Common/Common.h"
 #include "Core/ConfigManager.h"
+#include "Core/Core.h"
+#include "Core/Debugger/PPCDebugInterface.h"
 #include "Core/Host.h"
+#include "Core/PowerPC/PowerPC.h"
+#include "DolphinQt2/Settings.h"
 #include "VideoCommon/RenderBase.h"
 
 Host::Host() = default;
@@ -50,10 +55,10 @@ void Host::SetRenderFullscreen(bool fullscreen)
   m_render_fullscreen = fullscreen;
 }
 
-void Host::UpdateSurface()
+void Host::ResizeSurface(int new_width, int new_height)
 {
   if (g_renderer)
-    g_renderer->ChangeSurface(GetRenderHandle());
+    g_renderer->ResizeSurface(new_width, new_height);
 }
 
 void Host_Message(int id)
@@ -89,12 +94,19 @@ bool Host_RendererIsFullscreen()
 {
   return Host::GetInstance()->GetRenderFullscreen();
 }
+
 void Host_YieldToUI()
 {
   qApp->processEvents(QEventLoop::ExcludeUserInputEvents);
 }
+
+void Host_UpdateDisasmDialog()
+{
+}
+
 void Host_UpdateProgressDialog(const char* caption, int position, int total)
 {
+  emit Host::GetInstance()->UpdateProgressDialog(QString::fromUtf8(caption), position, total);
 }
 
 // We ignore these, and their purpose should be questioned individually.
@@ -103,17 +115,17 @@ void Host_UpdateProgressDialog(const char* caption, int position, int total)
 void Host_UpdateMainFrame()
 {
 }
+
 void Host_RequestRenderWindowSize(int w, int h)
 {
+  emit Host::GetInstance()->RequestRenderSize(w, h);
 }
+
 bool Host_UINeedsControllerState()
 {
-  return false;
+  return Settings::Instance().IsControllerStateNeeded();
 }
 void Host_NotifyMapLoaded()
-{
-}
-void Host_UpdateDisasmDialog()
 {
 }
 void Host_ShowVideoConfig(void* parent, const std::string& backend_name)

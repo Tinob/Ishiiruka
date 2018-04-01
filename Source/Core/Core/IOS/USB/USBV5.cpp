@@ -21,7 +21,7 @@ namespace HLE
 namespace USB
 {
 V5CtrlMessage::V5CtrlMessage(Kernel& ios, const IOCtlVRequest& ioctlv)
-  : CtrlMessage(ios, ioctlv, ioctlv.GetVector(1)->address)
+    : CtrlMessage(ios, ioctlv, ioctlv.GetVector(1)->address)
 {
   request_type = Memory::Read_U8(ioctlv.in_vectors[0].address + 8);
   request = Memory::Read_U8(ioctlv.in_vectors[0].address + 9);
@@ -31,21 +31,21 @@ V5CtrlMessage::V5CtrlMessage(Kernel& ios, const IOCtlVRequest& ioctlv)
 }
 
 V5BulkMessage::V5BulkMessage(Kernel& ios, const IOCtlVRequest& ioctlv)
-  : BulkMessage(ios, ioctlv, ioctlv.GetVector(1)->address)
+    : BulkMessage(ios, ioctlv, ioctlv.GetVector(1)->address)
 {
   length = static_cast<u16>(ioctlv.GetVector(1)->size);
   endpoint = Memory::Read_U8(ioctlv.in_vectors[0].address + 18);
 }
 
 V5IntrMessage::V5IntrMessage(Kernel& ios, const IOCtlVRequest& ioctlv)
-  : IntrMessage(ios, ioctlv, ioctlv.GetVector(1)->address)
+    : IntrMessage(ios, ioctlv, ioctlv.GetVector(1)->address)
 {
   length = static_cast<u16>(ioctlv.GetVector(1)->size);
   endpoint = Memory::Read_U8(ioctlv.in_vectors[0].address + 14);
 }
 
 V5IsoMessage::V5IsoMessage(Kernel& ios, const IOCtlVRequest& ioctlv)
-  : IsoMessage(ios, ioctlv, ioctlv.GetVector(2)->address)
+    : IsoMessage(ios, ioctlv, ioctlv.GetVector(2)->address)
 {
   num_packets = Memory::Read_U8(ioctlv.in_vectors[0].address + 16);
   endpoint = Memory::Read_U8(ioctlv.in_vectors[0].address + 17);
@@ -119,7 +119,7 @@ IPCCommandResult USBV5ResourceManager::GetDeviceChange(const IOCtlRequest& reque
   if (request.buffer_out_size != 0x180 || m_devicechange_hook_request)
     return GetDefaultReply(IPC_EINVAL);
 
-  std::lock_guard<std::mutex> lk{ m_devicechange_hook_address_mutex };
+  std::lock_guard<std::mutex> lk{m_devicechange_hook_address_mutex};
   m_devicechange_hook_request = std::make_unique<IOCtlRequest>(request.address);
   // On the first call, the reply is sent immediately (instead of on device insertion/removal)
   if (m_devicechange_first_call)
@@ -131,7 +131,7 @@ IPCCommandResult USBV5ResourceManager::GetDeviceChange(const IOCtlRequest& reque
 }
 
 IPCCommandResult USBV5ResourceManager::SetAlternateSetting(USBV5Device& device,
-  const IOCtlRequest& request)
+                                                           const IOCtlRequest& request)
 {
   const auto host_device = GetDeviceById(device.host_id);
   if (!host_device->Attach(device.interface_number))
@@ -146,12 +146,12 @@ IPCCommandResult USBV5ResourceManager::SetAlternateSetting(USBV5Device& device,
 IPCCommandResult USBV5ResourceManager::Shutdown(const IOCtlRequest& request)
 {
   if (request.buffer_in != 0 || request.buffer_in_size != 0 || request.buffer_out != 0 ||
-    request.buffer_out_size != 0)
+      request.buffer_out_size != 0)
   {
     return GetDefaultReply(IPC_EINVAL);
   }
 
-  std::lock_guard<std::mutex> lk{ m_devicechange_hook_address_mutex };
+  std::lock_guard<std::mutex> lk{m_devicechange_hook_address_mutex};
   if (m_devicechange_hook_request)
   {
     m_ios.EnqueueIPCReply(*m_devicechange_hook_request, IPC_SUCCESS);
@@ -161,7 +161,7 @@ IPCCommandResult USBV5ResourceManager::Shutdown(const IOCtlRequest& request)
 }
 
 IPCCommandResult USBV5ResourceManager::SuspendResume(USBV5Device& device,
-  const IOCtlRequest& request)
+                                                     const IOCtlRequest& request)
 {
   const auto host_device = GetDeviceById(device.host_id);
   const s32 resumed = Memory::Read_U32(request.buffer_in + 8);
@@ -169,17 +169,17 @@ IPCCommandResult USBV5ResourceManager::SuspendResume(USBV5Device& device,
   // Note: this is unimplemented because there's no easy way to do this in a
   // platform-independant way (libusb does not support power management).
   INFO_LOG(IOS_USB, "[%04x:%04x %d] Received %s command", host_device->GetVid(),
-    host_device->GetPid(), device.interface_number, resumed == 0 ? "suspend" : "resume");
+           host_device->GetPid(), device.interface_number, resumed == 0 ? "suspend" : "resume");
   return GetDefaultReply(IPC_SUCCESS);
 }
 
 IPCCommandResult USBV5ResourceManager::HandleDeviceIOCtl(const IOCtlRequest& request,
-  Handler handler)
+                                                         Handler handler)
 {
   if (request.buffer_in == 0 || request.buffer_in_size != 0x20)
     return GetDefaultReply(IPC_EINVAL);
 
-  std::lock_guard<std::mutex> lock{ m_usbv5_devices_mutex };
+  std::lock_guard<std::mutex> lock{m_usbv5_devices_mutex};
   USBV5Device* device = GetUSBV5Device(request.buffer_in);
   if (!device)
     return GetDefaultReply(IPC_EINVAL);
@@ -187,9 +187,9 @@ IPCCommandResult USBV5ResourceManager::HandleDeviceIOCtl(const IOCtlRequest& req
 }
 
 void USBV5ResourceManager::OnDeviceChange(const ChangeEvent event,
-  std::shared_ptr<USB::Device> device)
+                                          std::shared_ptr<USB::Device> device)
 {
-  std::lock_guard<std::mutex> lock{ m_usbv5_devices_mutex };
+  std::lock_guard<std::mutex> lock{m_usbv5_devices_mutex};
   const u64 host_device_id = device->GetId();
   if (event == ChangeEvent::Inserted)
   {
@@ -199,7 +199,7 @@ void USBV5ResourceManager::OnDeviceChange(const ChangeEvent event,
         continue;
 
       auto it = std::find_if(m_usbv5_devices.rbegin(), m_usbv5_devices.rend(),
-        [](const USBV5Device& entry) { return !entry.in_use; });
+                             [](const USBV5Device& entry) { return !entry.in_use; });
       if (it == m_usbv5_devices.rend())
         return;
 
@@ -221,7 +221,7 @@ void USBV5ResourceManager::OnDeviceChange(const ChangeEvent event,
 
 void USBV5ResourceManager::OnDeviceChangeEnd()
 {
-  std::lock_guard<std::mutex> lk{ m_devicechange_hook_address_mutex };
+  std::lock_guard<std::mutex> lk{m_devicechange_hook_address_mutex};
   TriggerDeviceChangeReply();
   ++m_current_device_number;
 }
@@ -232,7 +232,7 @@ void USBV5ResourceManager::TriggerDeviceChangeReply()
   if (!m_devicechange_hook_request)
     return;
 
-  std::lock_guard<std::mutex> lock{ m_usbv5_devices_mutex };
+  std::lock_guard<std::mutex> lock{m_usbv5_devices_mutex};
   u8 num_devices = 0;
   for (auto it = m_usbv5_devices.crbegin(); it != m_usbv5_devices.crend(); ++it)
   {
@@ -265,7 +265,7 @@ void USBV5ResourceManager::TriggerDeviceChangeReply()
     entry.num_altsettings = device->GetNumberOfAltSettings(entry.interface_number);
 
     Memory::CopyToEmu(m_devicechange_hook_request->buffer_out + sizeof(entry) * num_devices, &entry,
-      sizeof(entry));
+                      sizeof(entry));
     ++num_devices;
   }
 

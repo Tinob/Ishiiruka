@@ -5,20 +5,120 @@
 #include <map>
 #include <string>
 
+#include "Common/Assert.h"
+#include "Common/Common.h"
 #include "Common/CommonTypes.h"
 #include "Common/Logging/Log.h"
+#include "Common/MsgHandler.h"
 #include "DiscIO/Enums.h"
 
 namespace DiscIO
 {
+std::string GetName(Country country, bool translate)
+{
+  std::string name;
+
+  switch (country)
+  {
+  case Country::Europe:
+    name = _trans("Europe");
+    break;
+  case Country::Japan:
+    name = _trans("Japan");
+    break;
+  case Country::USA:
+    name = _trans("USA");
+    break;
+  case Country::Australia:
+    name = _trans("Australia");
+    break;
+  case Country::France:
+    name = _trans("France");
+    break;
+  case Country::Germany:
+    name = _trans("Germany");
+    break;
+  case Country::Italy:
+    name = _trans("Italy");
+    break;
+  case Country::Korea:
+    name = _trans("Korea");
+    break;
+  case Country::Netherlands:
+    name = _trans("Netherlands");
+    break;
+  case Country::Russia:
+    name = _trans("Russia");
+    break;
+  case Country::Spain:
+    name = _trans("Spain");
+    break;
+  case Country::Taiwan:
+    name = _trans("Taiwan");
+    break;
+  case Country::World:
+    name = _trans("World");
+    break;
+  default:
+    name = _trans("Unknown");
+    break;
+  }
+
+  return translate ? GetStringT(name.c_str()) : name;
+}
+
+std::string GetName(Language language, bool translate)
+{
+  std::string name;
+
+  switch (language)
+  {
+  case Language::Japanese:
+    name = _trans("Japanese");
+    break;
+  case Language::English:
+    name = _trans("English");
+    break;
+  case Language::German:
+    name = _trans("German");
+    break;
+  case Language::French:
+    name = _trans("French");
+    break;
+  case Language::Spanish:
+    name = _trans("Spanish");
+    break;
+  case Language::Italian:
+    name = _trans("Italian");
+    break;
+  case Language::Dutch:
+    name = _trans("Dutch");
+    break;
+  case Language::SimplifiedChinese:
+    name = _trans("Simplified Chinese");
+    break;
+  case Language::TraditionalChinese:
+    name = _trans("Traditional Chinese");
+    break;
+  case Language::Korean:
+    name = _trans("Korean");
+    break;
+  default:
+    name = _trans("Unknown");
+    break;
+  }
+
+  return translate ? GetStringT(name.c_str()) : name;
+}
+
 bool IsDisc(Platform volume_type)
 {
-  return volume_type == Platform::GAMECUBE_DISC || volume_type == Platform::WII_DISC;
+  return volume_type == Platform::GameCubeDisc || volume_type == Platform::WiiDisc;
 }
 
 bool IsWii(Platform volume_type)
 {
-  return volume_type == Platform::WII_DISC || volume_type == Platform::WII_WAD;
+  return volume_type == Platform::WiiDisc || volume_type == Platform::WiiWAD;
 }
 
 bool IsNTSC(Region region)
@@ -26,22 +126,22 @@ bool IsNTSC(Region region)
   return region == Region::NTSC_J || region == Region::NTSC_U || region == Region::NTSC_K;
 }
 
-// Increment CACHE_REVISION (GameListCtrl.cpp) if the code below is modified
+// Increment CACHE_REVISION (GameFileCache.cpp) if the code below is modified
 
 Country TypicalCountryForRegion(Region region)
 {
   switch (region)
   {
   case Region::NTSC_J:
-    return Country::COUNTRY_JAPAN;
+    return Country::Japan;
   case Region::NTSC_U:
-    return Country::COUNTRY_USA;
+    return Country::USA;
   case Region::PAL:
-    return Country::COUNTRY_EUROPE;
+    return Country::Europe;
   case Region::NTSC_K:
-    return Country::COUNTRY_KOREA;
+    return Country::Korea;
   default:
-    return Country::COUNTRY_UNKNOWN;
+    return Country::Unknown;
   }
 }
 
@@ -85,7 +185,7 @@ Region RegionSwitchWii(u8 country_code)
     return Region::NTSC_K;
 
   default:
-    return Region::UNKNOWN_REGION;
+    return Region::Unknown;
   }
 }
 
@@ -95,66 +195,66 @@ Country CountrySwitch(u8 country_code)
   {
   // Worldwide
   case 'A':
-    return Country::COUNTRY_WORLD;
+    return Country::World;
 
   // PAL
   case 'D':
-    return Country::COUNTRY_GERMANY;
+    return Country::Germany;
 
   case 'X':  // Used by a couple PAL games
   case 'Y':  // German, French
   case 'L':  // Japanese import to PAL regions
   case 'M':  // Japanese import to PAL regions
   case 'P':
-    return Country::COUNTRY_EUROPE;
+    return Country::Europe;
 
   case 'U':
-    return Country::COUNTRY_AUSTRALIA;
+    return Country::Australia;
 
   case 'F':
-    return Country::COUNTRY_FRANCE;
+    return Country::France;
 
   case 'I':
-    return Country::COUNTRY_ITALY;
+    return Country::Italy;
 
   case 'H':
-    return Country::COUNTRY_NETHERLANDS;
+    return Country::Netherlands;
 
   case 'R':
-    return Country::COUNTRY_RUSSIA;
+    return Country::Russia;
 
   case 'S':
-    return Country::COUNTRY_SPAIN;
+    return Country::Spain;
 
   // NTSC
   case 'E':
   case 'N':  // Japanese import to USA and other NTSC regions
   case 'Z':  // Prince of Persia - The Forgotten Sands (Wii)
   case 'B':  // Ufouria: The Saga (Virtual Console)
-    return Country::COUNTRY_USA;
+    return Country::USA;
 
   case 'J':
-    return Country::COUNTRY_JAPAN;
+    return Country::Japan;
 
   case 'K':
   case 'Q':  // Korea with Japanese language
   case 'T':  // Korea with English language
-    return Country::COUNTRY_KOREA;
+    return Country::Korea;
 
   case 'W':
-    return Country::COUNTRY_TAIWAN;
+    return Country::Taiwan;
 
   default:
     if (country_code > 'A')  // Silently ignore IOS wads
       WARN_LOG(DISCIO, "Unknown Country Code! %c", country_code);
-    return Country::COUNTRY_UNKNOWN;
+    return Country::Unknown;
   }
 }
 
 Region GetSysMenuRegion(u16 title_version)
 {
   if (title_version == 33)
-    return Region::UNKNOWN_REGION;  // 1.0 uses 33 as the version number in all regions
+    return Region::Unknown;  // 1.0 uses 33 as the version number in all regions
 
   switch (title_version & 0xf)
   {
@@ -167,7 +267,7 @@ Region GetSysMenuRegion(u16 title_version)
   case 6:
     return Region::NTSC_K;
   default:
-    return Region::UNKNOWN_REGION;
+    return Region::Unknown;
   }
 }
 
@@ -192,7 +292,7 @@ std::string GetSysMenuVersionString(u16 title_version)
   case Region::NTSC_K:
     region_letter = "K";
     break;
-  case Region::UNKNOWN_REGION:
+  case Region::Unknown:
     WARN_LOG(DISCIO, "Unknown region for Wii Menu version %u", title_version);
     break;
   }
@@ -230,7 +330,7 @@ std::string GetSysMenuVersionString(u16 title_version)
   }
 }
 
-std::string GetCompanyFromID(const std::string& company_id)
+const std::string& GetCompanyFromID(const std::string& company_id)
 {
   static const std::map<std::string, std::string> companies = {
       {"01", "Nintendo"},
@@ -517,10 +617,11 @@ std::string GetCompanyFromID(const std::string& company_id)
       {"ZW", "Judo Baby"},
       {"ZX", "TopWare Interactive"}};
 
+  static const std::string EMPTY_STRING;
   auto iterator = companies.find(company_id);
   if (iterator != companies.end())
     return iterator->second;
   else
-    return "";
+    return EMPTY_STRING;
 }
 }

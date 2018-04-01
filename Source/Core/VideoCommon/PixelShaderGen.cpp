@@ -1247,7 +1247,7 @@ inline void WriteFetchStageTexture(ShaderCode& out, API_TYPE ApiType, bool use_i
       }
       else if (tevind.mid.Value() <= 7 && bHasTexCoord)
       { // s matrix
-        _assert_(tevind.mid.Value() >= 5);
+        ASSERT(tevind.mid.Value() >= 5);
         int mtxidx = 2 * (tevind.mid.Value() - 5);
         out.Write("wu2 indtevtrans%d = wu2(uv%d.xy * indtevcrd%d.xx);\n", n, texcoord, n);
         out.Write("indtevtrans%d = BSHR(indtevtrans%d, wu(8));\n", n, n);
@@ -1255,7 +1255,7 @@ inline void WriteFetchStageTexture(ShaderCode& out, API_TYPE ApiType, bool use_i
       }
       else if (tevind.mid.Value() <= 11 && bHasTexCoord)
       { // t matrix
-        _assert_(tevind.mid.Value() >= 9);
+        ASSERT(tevind.mid.Value() >= 9);
         int mtxidx = 2 * (tevind.mid.Value() - 9);
         out.Write("wu2 indtevtrans%d = wu2(uv%d.xy * indtevcrd%d.yy);\n", n, texcoord, n);
         out.Write("indtevtrans%d = BSHR(indtevtrans%d, wu(8));\n", n, n);

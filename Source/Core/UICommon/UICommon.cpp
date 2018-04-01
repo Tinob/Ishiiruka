@@ -2,16 +2,20 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
+#include <cmath>
 #include <memory>
 #ifdef _WIN32
 #include <shlobj.h>  // for SHGetFolderPath
 #endif
 
+#include "Common/Common.h"
 #include "Common/CommonPaths.h"
 #include "Common/Config/Config.h"
 #include "Common/FileUtil.h"
 #include "Common/Logging/LogManager.h"
+#include "Common/MathUtil.h"
 #include "Common/MsgHandler.h"
+#include "Common/StringUtil.h"
 
 #include "Core/ConfigLoaders/BaseConfigLoader.h"
 #include "Core/ConfigManager.h"
@@ -158,6 +162,7 @@ void SetUserDirectory(const std::string& custom_path)
   // Make sure it ends in DIR_SEP.
   if (*user_path.rbegin() != DIR_SEP_CHR)
     user_path += DIR_SEP;
+
 #else
   if (File::Exists(ROOT_DIR DIR_SEP USERDATA_DIR))
   {
@@ -165,6 +170,7 @@ void SetUserDirectory(const std::string& custom_path)
   }
   else
   {
+    const char* env_path = getenv("DOLPHIN_EMU_USERPATH");
     const char* home = getenv("HOME");
     if (!home)
       home = getenv("PWD");
@@ -173,14 +179,23 @@ void SetUserDirectory(const std::string& custom_path)
     std::string home_path = std::string(home) + DIR_SEP;
 
 #if defined(__APPLE__) || defined(ANDROID)
-    user_path = home_path + DOLPHIN_DATA_DIR DIR_SEP;
+    if (env_path)
+    {
+      user_path = env_path;
+    }
+    else
+    {
+      user_path = home_path + DOLPHIN_DATA_DIR DIR_SEP;
+    }
 #else
-    // We are on a non-Apple and non-Android POSIX system, there are 3 cases:
+    // We are on a non-Apple and non-Android POSIX system, there are 4 cases:
     // 1. GetExeDirectory()/portable.txt exists
-    //    -> Use GetExeDirectory/User
-    // 2. ~/.dolphin-emu directory exists
+    //    -> Use GetExeDirectory()/User
+    // 2. $DOLPHIN_EMU_USERPATH is set
+    //    -> Use $DOLPHIN_EMU_USERPATH
+    // 3. ~/.dolphin-emu directory exists
     //    -> Use ~/.dolphin-emu
-    // 3. Default
+    // 4. Default
     //    -> Use XDG basedir, see
     //    http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
     user_path = home_path + "." DOLPHIN_DATA_DIR DIR_SEP;
@@ -188,6 +203,10 @@ void SetUserDirectory(const std::string& custom_path)
     if (File::Exists(exe_path + DIR_SEP "portable.txt"))
     {
       user_path = exe_path + DIR_SEP "User" DIR_SEP;
+    }
+    else if (env_path)
+    {
+      user_path = env_path;
     }
     else if (!File::Exists(user_path))
     {
@@ -264,8 +283,8 @@ void EnableScreenSaver(Display* display, Window win, bool enable)
 void EnableScreenSaver(bool enable)
 #endif
 {
-  // Inhibit the screensaver. Depending on the operating system this may also
-  // disable low-power states and/or screen dimming.
+// Inhibit the screensaver. Depending on the operating system this may also
+// disable low-power states and/or screen dimming.
 
 #if defined(HAVE_X11) && HAVE_X11
   if (SConfig::GetInstance().bDisableScreenSaver)
@@ -283,7 +302,7 @@ void EnableScreenSaver(bool enable)
   else
   {
     EXECUTION_STATE should_screen_save =
-      SConfig::GetInstance().bDisableScreenSaver ? ES_DISPLAY_REQUIRED : 0;
+        SConfig::GetInstance().bDisableScreenSaver ? ES_DISPLAY_REQUIRED : 0;
     SetThreadExecutionState(ES_CONTINUOUS | should_screen_save | ES_SYSTEM_REQUIRED);
   }
 #endif
@@ -305,14 +324,31 @@ void EnableScreenSaver(bool enable)
     {
       CFStringRef reason_for_activity = CFSTR("Emulation Running");
       if (IOPMAssertionCreateWithName(kIOPMAssertionTypePreventUserIdleDisplaySleep,
-        kIOPMAssertionLevelOn, reason_for_activity,
-        &s_power_assertion) != kIOReturnSuccess)
+                                      kIOPMAssertionLevelOn, reason_for_activity,
+                                      &s_power_assertion) != kIOReturnSuccess)
       {
         s_power_assertion = kIOPMNullAssertionID;
       }
     }
   }
 #endif
+}
+
+std::string FormatSize(u64 bytes)
+{
+  // i18n: The symbol for the unit "bytes"
+  const char* const unit_symbols[] = {_trans("B"),   _trans("KiB"), _trans("MiB"), _trans("GiB"),
+                                      _trans("TiB"), _trans("PiB"), _trans("EiB")};
+
+  // Find largest power of 2 less than size.
+  // div 10 to get largest named unit less than size
+  // 10 == log2(1024) (number of B in a KiB, KiB in a MiB, etc)
+  // Max value is 63 / 10 = 6
+  const int unit = IntLog2(std::max<u64>(bytes, 1)) / 10;
+
+  // Don't need exact values, only 5 most significant digits
+  const double unit_size = std::pow(2, unit * 10);
+  return StringFromFormat("%.2f %s", bytes / unit_size, GetStringT(unit_symbols[unit]).c_str());
 }
 
 }  // namespace UICommon

@@ -38,18 +38,18 @@ IPCCommandResult USB_VEN::IOCtl(const IOCtlRequest& request)
     return Shutdown(request);
   case USB::IOCTL_USBV5_GETDEVPARAMS:
     return HandleDeviceIOCtl(request,
-      [&](USBV5Device& device) { return GetDeviceInfo(device, request); });
+                             [&](USBV5Device& device) { return GetDeviceInfo(device, request); });
   case USB::IOCTL_USBV5_ATTACHFINISH:
     return GetDefaultReply(IPC_SUCCESS);
   case USB::IOCTL_USBV5_SETALTERNATE:
     return HandleDeviceIOCtl(
-      request, [&](USBV5Device& device) { return SetAlternateSetting(device, request); });
+        request, [&](USBV5Device& device) { return SetAlternateSetting(device, request); });
   case USB::IOCTL_USBV5_SUSPEND_RESUME:
     return HandleDeviceIOCtl(request,
-      [&](USBV5Device& device) { return SuspendResume(device, request); });
+                             [&](USBV5Device& device) { return SuspendResume(device, request); });
   case USB::IOCTL_USBV5_CANCELENDPOINT:
     return HandleDeviceIOCtl(request,
-      [&](USBV5Device& device) { return CancelEndpoint(device, request); });
+                             [&](USBV5Device& device) { return CancelEndpoint(device, request); });
   default:
     request.DumpUnknown(GetDeviceName(), LogTypes::IOS_USB, LogTypes::LERROR);
     return GetDefaultReply(IPC_SUCCESS);
@@ -59,10 +59,10 @@ IPCCommandResult USB_VEN::IOCtl(const IOCtlRequest& request)
 IPCCommandResult USB_VEN::IOCtlV(const IOCtlVRequest& request)
 {
   static const std::map<u32, u32> s_num_vectors = {
-    { USB::IOCTLV_USBV5_CTRLMSG, 2 },
-  { USB::IOCTLV_USBV5_INTRMSG, 2 },
-  { USB::IOCTLV_USBV5_BULKMSG, 2 },
-  { USB::IOCTLV_USBV5_ISOMSG, 4 },
+      {USB::IOCTLV_USBV5_CTRLMSG, 2},
+      {USB::IOCTLV_USBV5_INTRMSG, 2},
+      {USB::IOCTLV_USBV5_BULKMSG, 2},
+      {USB::IOCTLV_USBV5_ISOMSG, 4},
   };
 
   switch (request.request)
@@ -75,14 +75,14 @@ IPCCommandResult USB_VEN::IOCtlV(const IOCtlVRequest& request)
     if (request.in_vectors.size() + request.io_vectors.size() != s_num_vectors.at(request.request))
       return GetDefaultReply(IPC_EINVAL);
 
-    std::lock_guard<std::mutex> lock{ m_usbv5_devices_mutex };
+    std::lock_guard<std::mutex> lock{m_usbv5_devices_mutex};
     USBV5Device* device = GetUSBV5Device(request.in_vectors[0].address);
     if (!device)
       return GetDefaultReply(IPC_EINVAL);
     auto host_device = GetDeviceById(device->host_id);
     host_device->Attach(device->interface_number);
     return HandleTransfer(host_device, request.request,
-      [&, this]() { return SubmitTransfer(*host_device, request); });
+                          [&, this]() { return SubmitTransfer(*host_device, request); });
   }
   default:
     return GetDefaultReply(IPC_EINVAL);
@@ -136,10 +136,10 @@ IPCCommandResult USB_VEN::GetDeviceInfo(USBV5Device& device, const IOCtlRequest&
 
   std::vector<USB::InterfaceDescriptor> interfaces = host_device->GetInterfaces(0);
   auto it = std::find_if(interfaces.begin(), interfaces.end(),
-    [&](const USB::InterfaceDescriptor& interface) {
-    return interface.bInterfaceNumber == device.interface_number &&
-      interface.bAlternateSetting == alt_setting;
-  });
+                         [&](const USB::InterfaceDescriptor& interface) {
+                           return interface.bInterfaceNumber == device.interface_number &&
+                                  interface.bAlternateSetting == alt_setting;
+                         });
   if (it == interfaces.end())
     return GetDefaultReply(IPC_EINVAL);
   it->Swap();
@@ -150,7 +150,7 @@ IPCCommandResult USB_VEN::GetDeviceInfo(USBV5Device& device, const IOCtlRequest&
   {
     endpoints[i].Swap();
     Memory::CopyToEmu(request.buffer_out + 64 + 8 * static_cast<u8>(i), &endpoints[i],
-      sizeof(endpoints[i]));
+                      sizeof(endpoints[i]));
   }
 
   return GetDefaultReply(IPC_SUCCESS);

@@ -156,7 +156,7 @@ void DXTexture::CopyRectangleFromTexture(const HostTexture* source,
     m_texture->GetSurfaceLevel(0, &srcsurf);
     text->GetSurfaceLevel(0, &dstsurf);
     HRESULT hr = D3D::dev->StretchRect(srcsurf, nullptr, dstsurf, nullptr, D3DTEXF_LINEAR);
-    _assert_msg_(VIDEO, SUCCEEDED(hr), "Failed updating texture");
+    ASSERT_MSG(VIDEO, SUCCEEDED(hr), "Failed updating texture");
     srcsurf->Release();
     m_texture->Release();
     m_texture = text;
@@ -170,7 +170,7 @@ void DXTexture::CopyRectangleFromTexture(const HostTexture* source,
   if (srcsurf != nullptr && dstsurf != nullptr)
   {
     HRESULT hr = D3D::dev->StretchRect(srcsurf, (RECT*)&srcrect, dstsurf, (RECT*)&dstrect, D3DTEXF_POINT);
-    _assert_msg_(VIDEO, SUCCEEDED(hr), "Failed updating texture");
+    ASSERT_MSG(VIDEO, SUCCEEDED(hr), "Failed updating texture");
   }
   if (srcsurf != nullptr)
   {

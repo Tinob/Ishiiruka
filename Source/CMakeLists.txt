@@ -33,7 +33,7 @@ endif()
 # but some dependencies require them (LLVM, libav).
 add_definitions(-D__STDC_LIMIT_MACROS)
 add_definitions(-D__STDC_CONSTANT_MACROS)
-
+# DEPRECATED: When introducing new libraries, do it explicitly.
 macro(add_dolphin_library lib srcs libs)
   add_library(${lib} STATIC ${srcs})
   target_link_libraries(${lib} PUBLIC ${libs})

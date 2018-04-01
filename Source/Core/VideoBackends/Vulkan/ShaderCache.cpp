@@ -990,7 +990,7 @@ VkShaderModule ShaderCache::GetVertexShaderForUid(const VertexShaderUid& uid)
 
 VkShaderModule ShaderCache::GetGeometryShaderForUid(const GeometryShaderUid& uid)
 {
-  _assert_(g_vulkan_context->SupportsGeometryShaders());
+  ASSERT(g_vulkan_context->SupportsGeometryShaders());
   vkShaderItem& it = m_gs_cache.shader_map[uid];
   if (it.initialized.test_and_set())
     return it.module;

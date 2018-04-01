@@ -36,10 +36,10 @@ namespace Device
 static bool ShouldReturnFakeViewsForIOSes(u64 title_id, const TitleContext& context)
 {
   const bool ios =
-    IsTitleType(title_id, IOS::ES::TitleType::System) && title_id != Titles::SYSTEM_MENU;
+      IsTitleType(title_id, IOS::ES::TitleType::System) && title_id != Titles::SYSTEM_MENU;
   const bool disc_title = context.active && IOS::ES::IsDiscTitle(context.tmd.GetTitleId());
   return Core::WantsDeterminism() ||
-    (ios && SConfig::GetInstance().m_disc_booted_from_game_list && disc_title);
+         (ios && SConfig::GetInstance().m_disc_booted_from_game_list && disc_title);
 }
 
 IPCCommandResult ES::GetTicketViewCount(const IOCtlVRequest& request)
@@ -64,7 +64,7 @@ IPCCommandResult ES::GetTicketViewCount(const IOCtlVRequest& request)
   }
 
   INFO_LOG(IOS_ES, "IOCTL_ES_GETVIEWCNT for titleID: %016" PRIx64 " (View Count = %u)", TitleID,
-    view_count);
+           view_count);
 
   Memory::Write_U32(view_count, request.io_vectors[0].address);
   return GetDefaultReply(IPC_SUCCESS);
@@ -91,7 +91,7 @@ IPCCommandResult ES::GetTicketViews(const IOCtlVRequest& request)
     {
       const std::vector<u8> ticket_view = ticket.GetRawTicketView(view);
       Memory::CopyToEmu(request.io_vectors[0].address + view * sizeof(IOS::ES::TicketView),
-        ticket_view.data(), ticket_view.size());
+                        ticket_view.data(), ticket_view.size());
     }
   }
   else if (ShouldReturnFakeViewsForIOSes(TitleID, m_title_context))
@@ -101,7 +101,7 @@ IPCCommandResult ES::GetTicketViews(const IOCtlVRequest& request)
   }
 
   INFO_LOG(IOS_ES, "IOCTL_ES_GETVIEWS for titleID: %016" PRIx64 " (MaxViews = %i)", TitleID,
-    maxViews);
+           maxViews);
 
   return GetDefaultReply(IPC_SUCCESS);
 }
@@ -127,14 +127,14 @@ ReturnCode ES::GetV0TicketFromView(const u8* ticket_view, u8* ticket) const
   // Check for permission to export the ticket.
   const u32 title_identifier = static_cast<u32>(m_title_context.tmd.GetTitleId());
   const u32 permitted_title_mask =
-    Common::swap32(ticket_bytes.data() + offsetof(IOS::ES::Ticket, permitted_title_mask));
+      Common::swap32(ticket_bytes.data() + offsetof(IOS::ES::Ticket, permitted_title_mask));
   const u32 permitted_title_id =
-    Common::swap32(ticket_bytes.data() + offsetof(IOS::ES::Ticket, permitted_title_id));
+      Common::swap32(ticket_bytes.data() + offsetof(IOS::ES::Ticket, permitted_title_id));
   const u8 title_export_allowed = ticket_bytes[offsetof(IOS::ES::Ticket, title_export_allowed)];
 
   // This is the check present in IOS. The 5 does not correspond to any known constant, sadly.
   if (!title_identifier || (title_identifier & ~permitted_title_mask) != permitted_title_id ||
-    (title_export_allowed & 0xF) != 5)
+      (title_export_allowed & 0xF) != 5)
   {
     return ES_EACCES;
   }
@@ -167,26 +167,26 @@ ReturnCode ES::GetTicketFromView(const u8* ticket_view, u8* ticket, u32* ticket_
 IPCCommandResult ES::GetV0TicketFromView(const IOCtlVRequest& request)
 {
   if (!request.HasNumberOfValidVectors(1, 1) ||
-    request.in_vectors[0].size != sizeof(IOS::ES::TicketView) ||
-    request.io_vectors[0].size != sizeof(IOS::ES::Ticket))
+      request.in_vectors[0].size != sizeof(IOS::ES::TicketView) ||
+      request.io_vectors[0].size != sizeof(IOS::ES::Ticket))
   {
     return GetDefaultReply(ES_EINVAL);
   }
   return GetDefaultReply(GetV0TicketFromView(Memory::GetPointer(request.in_vectors[0].address),
-    Memory::GetPointer(request.io_vectors[0].address)));
+                                             Memory::GetPointer(request.io_vectors[0].address)));
 }
 
 IPCCommandResult ES::GetTicketSizeFromView(const IOCtlVRequest& request)
 {
   u32 ticket_size = 0;
   if (!request.HasNumberOfValidVectors(1, 1) ||
-    request.in_vectors[0].size != sizeof(IOS::ES::TicketView) ||
-    request.io_vectors[0].size != sizeof(ticket_size))
+      request.in_vectors[0].size != sizeof(IOS::ES::TicketView) ||
+      request.io_vectors[0].size != sizeof(ticket_size))
   {
     return GetDefaultReply(ES_EINVAL);
   }
   const ReturnCode ret =
-    GetTicketFromView(Memory::GetPointer(request.in_vectors[0].address), nullptr, &ticket_size);
+      GetTicketFromView(Memory::GetPointer(request.in_vectors[0].address), nullptr, &ticket_size);
   Memory::Write_U32(ticket_size, request.io_vectors[0].address);
   return GetDefaultReply(ret);
 }
@@ -194,8 +194,8 @@ IPCCommandResult ES::GetTicketSizeFromView(const IOCtlVRequest& request)
 IPCCommandResult ES::GetTicketFromView(const IOCtlVRequest& request)
 {
   if (!request.HasNumberOfValidVectors(2, 1) ||
-    request.in_vectors[0].size != sizeof(IOS::ES::TicketView) ||
-    request.in_vectors[1].size != sizeof(u32))
+      request.in_vectors[0].size != sizeof(IOS::ES::TicketView) ||
+      request.in_vectors[1].size != sizeof(u32))
   {
     return GetDefaultReply(ES_EINVAL);
   }
@@ -205,8 +205,8 @@ IPCCommandResult ES::GetTicketFromView(const IOCtlVRequest& request)
     return GetDefaultReply(ES_EINVAL);
 
   return GetDefaultReply(GetTicketFromView(Memory::GetPointer(request.in_vectors[0].address),
-    Memory::GetPointer(request.io_vectors[0].address),
-    &ticket_size));
+                                           Memory::GetPointer(request.io_vectors[0].address),
+                                           &ticket_size));
 }
 
 IPCCommandResult ES::GetTMDViewSize(const IOCtlVRequest& request)
@@ -231,9 +231,9 @@ IPCCommandResult ES::GetTMDViewSize(const IOCtlVRequest& request)
 IPCCommandResult ES::GetTMDViews(const IOCtlVRequest& request)
 {
   if (!request.HasNumberOfValidVectors(2, 1) ||
-    request.in_vectors[0].size != sizeof(IOS::ES::TMDHeader::title_id) ||
-    request.in_vectors[1].size != sizeof(u32) ||
-    Memory::Read_U32(request.in_vectors[1].address) != request.io_vectors[0].size)
+      request.in_vectors[0].size != sizeof(IOS::ES::TMDHeader::title_id) ||
+      request.in_vectors[1].size != sizeof(u32) ||
+      Memory::Read_U32(request.in_vectors[1].address) != request.io_vectors[0].size)
   {
     return GetDefaultReply(ES_EINVAL);
   }
@@ -273,7 +273,7 @@ IPCCommandResult ES::DIGetTMDViewSize(const IOCtlVRequest& request)
   {
     std::vector<u8> tmd_bytes(request.in_vectors[0].size);
     Memory::CopyFromEmu(tmd_bytes.data(), request.in_vectors[0].address, tmd_bytes.size());
-    const IOS::ES::TMDReader tmd{ std::move(tmd_bytes) };
+    const IOS::ES::TMDReader tmd{std::move(tmd_bytes)};
 
     // Yes, this returns -1017, not ES_INVALID_TMD.
     // IOS simply checks whether the TMD has all required content entries.
@@ -306,7 +306,7 @@ IPCCommandResult ES::DIGetTMDView(const IOCtlVRequest& request)
 
   // Check whether the TMD view size is consistent.
   if (request.in_vectors[1].size != sizeof(u32) ||
-    Memory::Read_U32(request.in_vectors[1].address) != request.io_vectors[0].size)
+      Memory::Read_U32(request.in_vectors[1].address) != request.io_vectors[0].size)
   {
     return GetDefaultReply(ES_EINVAL);
   }
@@ -318,7 +318,7 @@ IPCCommandResult ES::DIGetTMDView(const IOCtlVRequest& request)
   {
     std::vector<u8> tmd_bytes(request.in_vectors[0].size);
     Memory::CopyFromEmu(tmd_bytes.data(), request.in_vectors[0].address, tmd_bytes.size());
-    const IOS::ES::TMDReader tmd{ std::move(tmd_bytes) };
+    const IOS::ES::TMDReader tmd{std::move(tmd_bytes)};
 
     if (!tmd.IsValid())
       return GetDefaultReply(ES_EINVAL);
@@ -344,7 +344,7 @@ IPCCommandResult ES::DIGetTMDView(const IOCtlVRequest& request)
 IPCCommandResult ES::DIGetTicketView(const IOCtlVRequest& request)
 {
   if (!request.HasNumberOfValidVectors(1, 1) ||
-    request.io_vectors[0].size != sizeof(IOS::ES::TicketView))
+      request.io_vectors[0].size != sizeof(IOS::ES::TicketView))
   {
     return GetDefaultReply(ES_EINVAL);
   }
@@ -370,7 +370,7 @@ IPCCommandResult ES::DIGetTicketView(const IOCtlVRequest& request)
   {
     std::vector<u8> ticket_bytes(request.in_vectors[0].size);
     Memory::CopyFromEmu(ticket_bytes.data(), request.in_vectors[0].address, ticket_bytes.size());
-    const IOS::ES::TicketReader ticket{ std::move(ticket_bytes) };
+    const IOS::ES::TicketReader ticket{std::move(ticket_bytes)};
 
     view = ticket.GetRawTicketView(0);
   }
@@ -388,7 +388,7 @@ IPCCommandResult ES::DIGetTMDSize(const IOCtlVRequest& request)
     return GetDefaultReply(ES_EINVAL);
 
   Memory::Write_U32(static_cast<u32>(m_title_context.tmd.GetBytes().size()),
-    request.io_vectors[0].address);
+                    request.io_vectors[0].address);
   return GetDefaultReply(IPC_SUCCESS);
 }
 

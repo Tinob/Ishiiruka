@@ -884,7 +884,7 @@ bool Renderer::DrawFrameDump(const TargetRectangle& scaled_efb_rect, u32 xfb_add
 
 void Renderer::StartFrameDumping()
 {
-  _assert_(!m_frame_dumping_active);
+  ASSERT(!m_frame_dumping_active);
 
   // Register fence callback so that we know when frames are ready to be written to the dump.
   // This is done by clearing the fence pointer, so WriteFrameDumpFrame doesn't have to wait.
@@ -901,7 +901,7 @@ void Renderer::StartFrameDumping()
 
 void Renderer::EndFrameDumping()
 {
-  _assert_(m_frame_dumping_active);
+  ASSERT(m_frame_dumping_active);
 
   // Write any pending frames to the frame dump.
   FlushFrameDump();
@@ -925,14 +925,14 @@ void Renderer::OnFrameDumpImageReady(VkFence fence)
 void Renderer::WriteFrameDumpImage(size_t index)
 {
   FrameDumpImage& frame = m_frame_dump_images[index];
-  _assert_(frame.pending);
+  ASSERT(frame.pending);
 
   // Check fence has been signaled.
   // The callback here should set fence to null.
   if (frame.fence != VK_NULL_HANDLE)
   {
     g_command_buffer_mgr->WaitForFence(frame.fence);
-    _assert_(frame.fence == VK_NULL_HANDLE);
+    ASSERT(frame.fence == VK_NULL_HANDLE);
   }
 
   // Copy the now-populated image data to the output file.

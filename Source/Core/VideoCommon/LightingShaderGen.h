@@ -103,7 +103,7 @@ inline void GenerateLightShader(ShaderCode& object,
         LIGHT_COL_PARAMS(lightsName, index, swizzle));
     }
     break;
-  default: _assert_(0);
+  default: ASSERT(0);
   }
   object.Write("\n");
 }
