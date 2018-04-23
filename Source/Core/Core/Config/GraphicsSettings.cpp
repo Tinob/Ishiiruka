@@ -129,10 +129,10 @@ const ConfigInfo<std::string> GFX_ENHANCE_POST_SHADERS{
 const ConfigInfo<std::string> GFX_ENHANCE_SCALING_SHADER{
   { System::GFX, "Enhancements", "ScalingShader" }, "" };
 
-const ConfigInfo<bool> GFX_ENHANCE_FORCE_TRUE_COLOR{{System::GFX, "Enhancements", "ForceTrueColor"},
-                                                    true};
-const ConfigInfo<bool> GFX_ENHANCE_USE_SCALING_FILTER{ { System::GFX, "Enhancements", "UseScalingFilter" },
-true };
+const ConfigInfo<bool> GFX_ENHANCE_FORCE_TRUE_COLOR{{System::GFX, "Enhancements", "ForceTrueColor"}, true};
+const ConfigInfo<bool> GFX_ENHANCE_USE_SCALING_FILTER{ { System::GFX, "Enhancements", "UseScalingFilter" },true };
+
+const ConfigInfo<bool> GFX_ENHANCE_HP_FRAME_BUFFER{ { System::GFX, "Enhancements", "HPFrameBuffer" }, false };
 
 const ConfigInfo<int> GFX_ENHANCE_TEXTURE_SCALING_TYPE{ { System::GFX, "Enhancements", "TextureScalingType" }, 0 };
 const ConfigInfo<int> GFX_ENHANCE_TEXTURE_SCALING_FACTOR{ { System::GFX, "Enhancements", "TextureScalingFactor" }, 2 };

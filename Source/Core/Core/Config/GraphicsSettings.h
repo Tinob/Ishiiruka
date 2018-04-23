@@ -99,6 +99,7 @@ extern const ConfigInfo<int> GFX_ENHANCE_POST_TRIGUER;
 extern const ConfigInfo<std::string> GFX_ENHANCE_POST_SHADERS;
 extern const ConfigInfo<std::string> GFX_ENHANCE_SCALING_SHADER;
 extern const ConfigInfo<bool> GFX_ENHANCE_FORCE_TRUE_COLOR;
+extern const ConfigInfo<bool> GFX_ENHANCE_HP_FRAME_BUFFER;
 extern const ConfigInfo<bool> GFX_ENHANCE_USE_SCALING_FILTER;
 extern const ConfigInfo<int> GFX_ENHANCE_TEXTURE_SCALING_TYPE;
 extern const ConfigInfo<int> GFX_ENHANCE_TEXTURE_SCALING_FACTOR;

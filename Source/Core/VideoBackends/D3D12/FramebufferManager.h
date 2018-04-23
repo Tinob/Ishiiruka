@@ -64,7 +64,7 @@ struct XFBSource final : public XFBSourceBase
 class FramebufferManager final : public FramebufferManagerBase
 {
 public:
-  FramebufferManager(u32 target_width, u32 target_height);
+  FramebufferManager(u32 target_width, u32 target_height, DXGI_FORMAT format);
   ~FramebufferManager();
 
   static D3DTexture2D*& GetEFBColorTexture();
@@ -97,7 +97,7 @@ public:
 private:
   std::unique_ptr<XFBSourceBase> CreateXFBSource(unsigned int target_width, unsigned int target_height, unsigned int layers) override;
   void GetTargetSize(unsigned int* width, unsigned int* height) override;
-  static void InitializeEFBCache(const D3D12_CLEAR_VALUE& color_clear_value, const D3D12_CLEAR_VALUE& depth_clear_value);
+  static void InitializeEFBCache();
   void CopyToRealXFB(u32 xfbAddr, u32 fbStride, u32 fbHeight, const EFBRectangle& sourceRc, float gamma) override;
 
 
@@ -126,6 +126,7 @@ private:
   static constexpr size_t EFB_CACHE_PITCH = Common::AlignUpSizePow2(EFB_WIDTH * sizeof(int), D3D12_TEXTURE_DATA_PITCH_ALIGNMENT);
   static unsigned int m_target_width;
   static unsigned int m_target_height;
+  static DXGI_FORMAT m_format;
 };
 
 }  // namespace DX12

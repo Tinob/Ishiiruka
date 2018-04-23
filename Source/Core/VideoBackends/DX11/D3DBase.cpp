@@ -295,8 +295,7 @@ HRESULT Create(HWND wnd)
   DXGI_OUTPUT_DESC out_desc;
   memset(&out_desc, 0, sizeof(out_desc));
   output->GetDesc(&out_desc);
-
-  DXGI_MODE_DESC mode_desc;
+ DXGI_MODE_DESC mode_desc;
   memset(&mode_desc, 0, sizeof(mode_desc));
   mode_desc.Width = out_desc.DesktopCoordinates.right - out_desc.DesktopCoordinates.left;
   mode_desc.Height = out_desc.DesktopCoordinates.bottom - out_desc.DesktopCoordinates.top;

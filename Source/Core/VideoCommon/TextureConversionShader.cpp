@@ -130,8 +130,8 @@ void Write32BitSwizzler(char*& p, u32 format)
 
 void WriteSampleColor(char*& p, const char* colorComp, const char* dest, int xoffset, const EFBCopyFormat& format, bool depth = false)
 {
-  WRITE(p, "  %s = tex2D(samp0, sampleUv + float2(%d.0f * (" I_COLORS "[0].x / " I_COLORS "[0].z), 0.0f)).%s;\n",
-    dest, xoffset, colorComp);
+  WRITE(p, "  %s = %stex2D(samp0, sampleUv + float2(%d.0f * (" I_COLORS "[0].x / " I_COLORS "[0].z), 0.0f)).%s%s;\n",
+    dest, depth ? "" : "clamp(", xoffset, colorComp, depth ? "" : ", 0.0, 1.0)");
   if (!depth)
   {
     // Truncate 8-bits to 5/6-bits per channel.

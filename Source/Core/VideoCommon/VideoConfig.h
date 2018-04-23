@@ -145,7 +145,7 @@ struct VideoConfig final
   int iTessellationRoundingIntensity;
   int iTessellationDisplacementIntensity;
   bool bForceTrueColor;
-
+  bool bHPFrameBuffer;
   // Information
   bool bShowFPS;
   bool bShowNetPlayPing;
@@ -314,6 +314,7 @@ struct VideoConfig final
     bool bSupportsBitfield;                // Needed by UberShaders, so must stay in VideoCommon
     bool bSupportsDynamicSamplerIndexing;  // Needed by UberShaders, so must stay in VideoCommon
     bool bSupportsUberShaders;
+    bool bSupportsHighPrecisionFrameBuffer;
   } backend_info;
 
   // Utility
@@ -341,6 +342,10 @@ struct VideoConfig final
   inline bool UseGPUTextureDecoding() const
   {
     return backend_info.bSupportsGPUTextureDecoding && bEnableGPUTextureDecoding;
+  }
+  inline bool UseHPFrameBuffer()
+  {
+    return backend_info.bSupportsHighPrecisionFrameBuffer && bHPFrameBuffer;
   }
   inline bool UseVertexRounding() const { return bVertexRounding && iEFBScale != SCALE_1X; }
 };

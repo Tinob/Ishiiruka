@@ -221,7 +221,7 @@ void main(
 	in float4 uv2 : TEXCOORD2,
 	in float4 uv3 : TEXCOORD3)
 {	
-	int4 src6 = round(Tex0.Sample(samp0,uv0) * 63.f);
+	int4 src6 = round(clamp(Tex0.Sample(samp0,uv0), 0.0, 1.0) * 63.f);
 	int4 dst8;
 	dst8.r = (src6.r << 2) | (src6.g >> 4);
 	dst8.g = ((src6.g & 0xF) << 4) | (src6.b >> 2);
@@ -248,7 +248,7 @@ void main(
 	for(int i = 0; i < samples; ++i)
 		texcol += Tex0.Load(int3(uv0.x*(width), uv0.y*(height), uv0.z), i);
 	texcol /= samples;
-	int4 src6 = round(texcol * 63.f);
+	int4 src6 = round(clamp(texcol, 0.0, 1.0) * 63.f);
 	int4 dst8;
 	dst8.r = (src6.r << 2) | (src6.g >> 4);
 	dst8.g = ((src6.g & 0xF) << 4) | (src6.b >> 2);
@@ -269,7 +269,7 @@ void main(
 	in float4 uv2 : TEXCOORD2,
 	in float4 uv3 : TEXCOORD3)
 {
-	int4 src8 = round(Tex0.Sample(samp0,uv0) * 255.f);
+	int4 src8 = round(clamp(Tex0.Sample(samp0,uv0), 0.0, 1.0) * 255.f);
 	int4 dst6;
 	dst6.r = src8.r >> 2;
 	dst6.g = ((src8.r & 0x3) << 4) | (src8.g >> 4);
@@ -296,7 +296,7 @@ void main(
 	for(int i = 0; i < samples; ++i)
 		texcol += Tex0.Load(int3(uv0.x*(width), uv0.y*(height), uv0.z), i);
 	texcol /= samples;
-	int4 src8 = round(texcol * 255.f);
+	int4 src8 = round(clamp(texcol, 0.0, 1.0) * 255.f);
 	int4 dst6;
 	dst6.r = src8.r >> 2;
 	dst6.g = ((src8.r & 0x3) << 4) | (src8.g >> 4);

@@ -36,21 +36,26 @@ static void WriteSwizzler(char*& p, u32 format, API_TYPE ApiType)
   else
     WRITE(p, "uniform int4 position;\n");
 
+  WRITE(p, "float4 RGBA8ToRGBA8(float4 src)\n");
+  WRITE(p, "{\n");
+  WRITE(p, "  return clamp(src, 0.0,1.0);\n");
+  WRITE(p, "}\n");
+
   // Alpha channel in the copy is set to 1 the EFB format does not have an alpha channel.
   WRITE(p, "float4 RGBA8ToRGB8(float4 src)\n");
   WRITE(p, "{\n");
-  WRITE(p, "  return float4(src.xyz, 1.0);\n");
+  WRITE(p, "  return float4(clamp(src.xyz,0.0,1.0), 1.0);\n");
   WRITE(p, "}\n");
 
   WRITE(p, "float4 RGBA8ToRGBA6(float4 src)\n");
   WRITE(p, "{\n");
-  WRITE(p, "  int4 val = int4(src * 255.0) >> 2;\n");
+  WRITE(p, "  int4 val = int4(clamp(src,0.0,1.0) * 255.0) >> 2;\n");
   WRITE(p, "  return float4(val) / 63.0;\n");
   WRITE(p, "}\n");
 
   WRITE(p, "float4 RGBA8ToRGB565(float4 src)\n");
   WRITE(p, "{\n");
-  WRITE(p, "  int4 val = int4(src * 255.0);\n");
+  WRITE(p, "  int4 val = int4(clamp(src,0.0,1.0) * 255.0);\n");
   WRITE(p, "  val = int4(val.r >> 3, val.g >> 2, val.b >> 3, 1);\n");
   WRITE(p, "  return float4(val) / float4(31.0, 63.0, 31.0, 1.0);\n");
   WRITE(p, "}\n");
@@ -145,7 +150,7 @@ static void WriteSampleColor(char*& p, const char* colorComp, const char* dest, 
       WRITE(p, "RGBA8ToRGB565(");
       break;
     default:
-      WRITE(p, "(");
+      WRITE(p, "RGBA8ToRGBA8(");
       break;
     }
   }

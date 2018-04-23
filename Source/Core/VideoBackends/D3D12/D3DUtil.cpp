@@ -365,7 +365,6 @@ int CD3DFont::Init()
   };
 
   CheckHR(DX12::s_gx_state_cache.GetPipelineStateObjectFromCache(text_pso_desc, &m_pso));
-
   SAFE_RELEASE(psbytecode);
   SAFE_RELEASE(vsbytecode);
 
@@ -664,7 +663,7 @@ void DrawShadedTexQuad(D3DTexture2D* texture,
   D3D::current_command_list->DrawInstanced(4, 1, static_cast<UINT>(stq_offset), 0);
 }
 
-void DrawClearQuad(u32 Color, float z, D3D12_BLEND_DESC* blend_desc, D3D12_DEPTH_STENCIL_DESC* depth_stencil_desc, bool rt_multisampled)
+void DrawClearQuad(u32 Color, float z, D3D12_BLEND_DESC* blend_desc, D3D12_DEPTH_STENCIL_DESC* depth_stencil_desc, bool rt_multisampled, DXGI_FORMAT rt_format)
 {
   D3D::SetRootSignature(g_ActiveConfig.iStereoMode > 0, false);
   ColVertex coords[4] = {
@@ -712,7 +711,7 @@ void DrawClearQuad(u32 Color, float z, D3D12_BLEND_DESC* blend_desc, D3D12_DEPTH
       D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_0xFFFF,        // D3D12_INDEX_BUFFER_PROPERTIES IndexBufferProperties
       D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,           // D3D12_PRIMITIVE_TOPOLOGY_TYPE PrimitiveTopologyType
       1,                                                // UINT NumRenderTargets
-      { DXGI_FORMAT_R8G8B8A8_UNORM },                   // DXGI_FORMAT RTVFormats[8]
+      { rt_format },                   // DXGI_FORMAT RTVFormats[8]
       DXGI_FORMAT_D32_FLOAT,                    // DXGI_FORMAT DSVFormat
       { 1 /* UINT Count */, 0 /* UINT Quality */ }      // DXGI_SAMPLE_DESC SampleDesc
   };
@@ -743,7 +742,7 @@ void DrawEFBPokeQuads(EFBAccessType type,
   D3D12_DEPTH_STENCIL_DESC* depth_stencil_desc,
   D3D12_CPU_DESCRIPTOR_HANDLE* render_target,
   D3D12_CPU_DESCRIPTOR_HANDLE* depth_buffer,
-  bool rt_multisampled)
+  bool rt_multisampled, DXGI_FORMAT rt_format)
 {
   D3D::SetRootSignature(g_ActiveConfig.iStereoMode > 0, false);
   // The viewport and RT/DB are passed in so we can reconstruct the state if we need to execute in the middle of building the vertex buffer.
@@ -768,7 +767,7 @@ void DrawEFBPokeQuads(EFBAccessType type,
       D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_0xFFFF,        // D3D12_INDEX_BUFFER_PROPERTIES IndexBufferProperties
       D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,           // D3D12_PRIMITIVE_TOPOLOGY_TYPE PrimitiveTopologyType
       1,                                                // UINT NumRenderTargets
-      { DXGI_FORMAT_R8G8B8A8_UNORM },                   // DXGI_FORMAT RTVFormats[8]
+      { rt_format },                   // DXGI_FORMAT RTVFormats[8]
       DXGI_FORMAT_D32_FLOAT,                    // DXGI_FORMAT DSVFormat
       { 1 /* UINT Count */, 0 /* UINT Quality */ }      // DXGI_SAMPLE_DESC SampleDesc
   };

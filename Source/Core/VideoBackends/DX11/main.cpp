@@ -99,6 +99,7 @@ void VideoBackend::InitBackendInfo()
   g_Config.backend_info.bSupportsBitfield = false;
   g_Config.backend_info.bSupportsDynamicSamplerIndexing = false;
   g_Config.backend_info.bSupportsUberShaders = true;
+  g_Config.backend_info.bSupportsHighPrecisionFrameBuffer = true;
   g_Config.ClearFormats();
   IDXGIFactory* factory;
   IDXGIAdapter* ad;

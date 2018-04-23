@@ -73,7 +73,7 @@ struct XFBSource : public XFBSourceBase
 class FramebufferManager : public FramebufferManagerBase
 {
 public:
-  FramebufferManager(u32 target_width, u32 target_height);
+  FramebufferManager(u32 target_width, u32 target_height, DXGI_FORMAT format);
   ~FramebufferManager();
 
   static D3DTexture2D* &GetEFBColorTexture();
@@ -129,6 +129,7 @@ private:
 
   static u32 m_target_width;
   static u32 m_target_height;
+  static DXGI_FORMAT m_format;
 };
 
 }  // namespace DX11

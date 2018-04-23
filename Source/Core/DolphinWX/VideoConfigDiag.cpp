@@ -146,7 +146,10 @@ static wxString true_color_desc = _("Forces the game to render the RGB color cha
   "quality by reducing color banding.\nIt improves performance and causes "
   "few graphical issues.\n\n\nIf unsure, leave this checked.");
 static wxString dithering_desc = _("Forces the game to render using dithering to reduce color banding, "
-	"can cause small graphical issues.\n\n\nIf unsure, leave this unchecked.");
+  "can cause small graphical issues.\n\n\nIf unsure, leave this unchecked.");
+static wxString hp_frame_buffer_desc = _("Forces the game to render using high precision color textures to increase graphic quality while using post procesing shaders, "
+  "can cause small graphical issues.\n\n\nIf unsure, leave this unchecked.");
+static wxString hdr_output_desc = _("it hardware supports it use HDR display capabilities.");
 static wxString disable_dstalpha_desc = _("Disables emulation of a hardware feature called destination alpha, which is used in many games for various graphical effects.\n\nIf unsure, leave this unchecked.");
 static wxString show_fps_desc =
 wxTRANSLATE("Show the number of frames rendered per second as a measure of "
@@ -263,7 +266,7 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
   if (!Core::IsRunning())
     vconfig.Refresh();
 
-    Bind(wxEVT_UPDATE_UI, &VideoConfigDiag::OnUpdateUI, this);
+  Bind(wxEVT_UPDATE_UI, &VideoConfigDiag::OnUpdateUI, this);
 
   wxNotebook* const notebook = new wxNotebook(this, wxID_ANY);
 
@@ -517,10 +520,11 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title)
     szr_enh->Add(CreateCheckBox(page_enh, _("Widescreen Hack"), (ws_hack_desc), Config::GFX_WIDESCREEN_HACK));
     szr_enh->Add(CreateCheckBox(page_enh, _("Disable Fog"), (disable_fog_desc), Config::GFX_DISABLE_FOG));
     szr_enh->Add(CreateCheckBox(page_enh, _("Force 24-bit Color"), (true_color_desc), Config::GFX_ENHANCE_FORCE_TRUE_COLOR));
-	szr_enh->Add(CreateCheckBox(page_enh, _("Force Dithering"), (dithering_desc), Config::GFX_FORCED_DITHERING));
+    szr_enh->Add(CreateCheckBox(page_enh, _("Force Dithering"), (dithering_desc), Config::GFX_FORCED_DITHERING));
     szr_enh->Add(pixel_lighting = CreateCheckBox(page_enh, _("Per-Pixel Lighting"), (pixel_lighting_desc), Config::GFX_ENABLE_PIXEL_LIGHTING));
     szr_enh->Add(phong_lighting = CreateCheckBox(page_enh, _("Phong Lighting"), (phong_lighting_desc), Config::GFX_FORCE_PHONG_SHADING));
     szr_enh->Add(sim_bump = CreateCheckBox(page_enh, _("Auto Bumps"), (bump_desc), Config::GFX_SIMULATE_BUMP_MAPPING));
+    szr_enh->Add(hp_frame_buffer = CreateCheckBox(page_enh, _("High Precision Frame Buffer"), (hp_frame_buffer_desc), Config::GFX_ENHANCE_HP_FRAME_BUFFER));
     wxStaticBoxSizer* const group_enh = new wxStaticBoxSizer(wxVERTICAL, page_enh, _("Enhancements"));
     group_enh->Add(szr_enh, 1, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 5);
     szr_enh_main->Add(group_enh, 0, wxEXPAND | wxALL, 5);
@@ -1530,8 +1534,11 @@ void VideoConfigDiag::OnUpdateUI(wxUpdateUIEvent& ev)
   // pixel lighting
   pixel_lighting->Enable(vconfig.backend_info.bSupportsPixelLighting);
   phong_lighting->Enable(vconfig.backend_info.bSupportsPixelLighting && vconfig.bEnablePixelLighting);
+  hp_frame_buffer->Enable(phongEnabled);
   sim_bump->Enable(phongEnabled);
   group_phong->Show(phongEnabled);
+  hp_frame_buffer->Show(vconfig.backend_info.bSupportsHighPrecisionFrameBuffer);
+
 #if defined WIN32
   // Borderless Fullscreen
   borderless_fullscreen->Enable((vconfig.backend_info.APIType & API_D3D9) == 0);

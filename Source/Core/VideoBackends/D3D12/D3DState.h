@@ -36,6 +36,7 @@ struct SmallPsoDesc
   RasterizationState rasterizer_state;
   DepthState depth_stencil_state;
   int sample_count;
+  DXGI_FORMAT rtformat;
 };
 
 // The Bitfield members in BlendState, RasterizerState, and ZMode cause the..
@@ -59,6 +60,7 @@ struct SmallPsoDiskDesc
   VertexShaderUid vs_uid;
   GeometryShaderUid gs_uid;
   TessellationShaderUid hds_uid;
+  DXGI_FORMAT rtformat;
 };
 
 class StateCache
@@ -151,6 +153,7 @@ private:
         | (((uintptr_t)pso_desc.sample_count) << 48))
         | ((uintptr_t)pso_desc.using_uber_vertex_shader) << 56
         | ((uintptr_t)pso_desc.using_uber_pixel_shader) << 57;
+      h = h * 137 + (uintptr_t)pso_desc.rtformat;
       return h;
     }
   };
@@ -160,9 +163,9 @@ private:
     bool operator()(const SmallPsoDesc& lhs, const SmallPsoDesc& rhs) const
     {
       return std::tie(lhs.ps_bytecode.pShaderBytecode, lhs.vs_bytecode.pShaderBytecode, lhs.gs_bytecode.pShaderBytecode, lhs.hs_bytecode.pShaderBytecode, lhs.ds_bytecode.pShaderBytecode,
-        lhs.input_Layout, lhs.blend_state.hex, lhs.depth_stencil_state.hex, lhs.rasterizer_state.hex, lhs.sample_count, lhs.using_uber_pixel_shader, lhs.using_uber_vertex_shader) ==
+        lhs.input_Layout, lhs.blend_state.hex, lhs.depth_stencil_state.hex, lhs.rasterizer_state.hex, lhs.sample_count, lhs.using_uber_pixel_shader, lhs.using_uber_vertex_shader, lhs.rtformat) ==
         std::tie(rhs.ps_bytecode.pShaderBytecode, rhs.vs_bytecode.pShaderBytecode, rhs.gs_bytecode.pShaderBytecode, rhs.hs_bytecode.pShaderBytecode, rhs.ds_bytecode.pShaderBytecode,
-          rhs.input_Layout, rhs.blend_state.hex, rhs.depth_stencil_state.hex, rhs.rasterizer_state.hex, rhs.sample_count, lhs.using_uber_pixel_shader, lhs.using_uber_vertex_shader);
+          rhs.input_Layout, rhs.blend_state.hex, rhs.depth_stencil_state.hex, rhs.rasterizer_state.hex, rhs.sample_count, rhs.using_uber_pixel_shader, rhs.using_uber_vertex_shader, rhs.rtformat);
     }
   };
 

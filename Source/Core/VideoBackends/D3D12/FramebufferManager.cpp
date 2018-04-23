@@ -19,6 +19,7 @@ namespace DX12
 FramebufferManager::Efb FramebufferManager::m_efb;
 unsigned int FramebufferManager::m_target_width;
 unsigned int FramebufferManager::m_target_height;
+DXGI_FORMAT FramebufferManager::m_format;
 
 D3DTexture2D*& FramebufferManager::GetEFBColorTexture()
 {
@@ -49,7 +50,7 @@ D3DTexture2D*& FramebufferManager::GetResolvedEFBColorTexture()
 
     for (int i = 0; i < m_efb.slices; i++)
     {
-      D3D::current_command_list->ResolveSubresource(m_efb.resolved_color_tex->GetTex(), D3D12CalcSubresource(0, i, 0, 1, m_efb.slices), m_efb.color_tex->GetTex(), D3D12CalcSubresource(0, i, 0, 1, m_efb.slices), DXGI_FORMAT_R8G8B8A8_UNORM);
+      D3D::current_command_list->ResolveSubresource(m_efb.resolved_color_tex->GetTex(), D3D12CalcSubresource(0, i, 0, 1, m_efb.slices), m_efb.color_tex->GetTex(), D3D12CalcSubresource(0, i, 0, 1, m_efb.slices), m_format);
     }
     return m_efb.resolved_color_tex;
   }
@@ -73,13 +74,19 @@ D3DTexture2D*& FramebufferManager::GetResolvedEFBDepthTexture()
   }
 }
 
-void FramebufferManager::InitializeEFBCache(const D3D12_CLEAR_VALUE& color_clear_value, const D3D12_CLEAR_VALUE& depth_clear_value)
+void FramebufferManager::InitializeEFBCache()
 {
   ComPtr<ID3D12Resource> buff;
   D3D12_RESOURCE_DESC tex_desc;
   CD3DX12_HEAP_PROPERTIES hprop_def(D3D12_HEAP_TYPE_DEFAULT);
   CD3DX12_HEAP_PROPERTIES hprop_rb(D3D12_HEAP_TYPE_READBACK);
 
+  D3D12_CLEAR_VALUE color_clear_value = { DXGI_FORMAT_R8G8B8A8_UNORM ,{ 0.0f, 0.0f, 0.0f, 1.0f } };
+  D3D12_CLEAR_VALUE depth_clear_value = CD3DX12_CLEAR_VALUE(DXGI_FORMAT_R32_FLOAT, 0.0f, 0);
+  depth_clear_value.Color[0] = 0;
+  depth_clear_value.Color[1] = 0;
+  depth_clear_value.Color[2] = 0;
+  depth_clear_value.Color[3] = 0;
   // Render buffer for AccessEFB (color data)
   tex_desc = CD3DX12_RESOURCE_DESC::Tex2D(color_clear_value.Format, EFB_WIDTH, EFB_HEIGHT, 1, 1, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
   HRESULT hr = D3D::device->CreateCommittedResource(&hprop_def, D3D12_HEAP_FLAG_NONE, &tex_desc, D3D12_RESOURCE_STATE_COMMON, &color_clear_value, IID_PPV_ARGS(buff.ReleaseAndGetAddressOf()));
@@ -107,18 +114,18 @@ void FramebufferManager::InitializeEFBCache(const D3D12_CLEAR_VALUE& color_clear
 
 }
 
-FramebufferManager::FramebufferManager(u32 target_width, u32 target_height)
+FramebufferManager::FramebufferManager(u32 target_width, u32 target_height, DXGI_FORMAT format)
 {
   m_target_width = std::max(target_width, 16u);
   m_target_height = std::max(target_height, 16u);
-
+  m_format = format;
   DXGI_SAMPLE_DESC sample_desc;
   sample_desc.Count = g_ActiveConfig.iMultisamples;
   sample_desc.Quality = 0;
 
   ComPtr<ID3D12Resource> buff;
   D3D12_RESOURCE_DESC text_desc;
-  D3D12_CLEAR_VALUE clear_valueRTV = { DXGI_FORMAT_R8G8B8A8_UNORM,{ 0.0f, 0.0f, 0.0f, 1.0f } };
+  D3D12_CLEAR_VALUE clear_valueRTV = { m_format ,{ 0.0f, 0.0f, 0.0f, 1.0f } };
   D3D12_CLEAR_VALUE clear_valueDSV = CD3DX12_CLEAR_VALUE(DXGI_FORMAT_D32_FLOAT, 0.0f, 0);
   clear_valueDSV.Color[0] = 0;
   clear_valueDSV.Color[1] = 0;
@@ -171,7 +178,7 @@ FramebufferManager::FramebufferManager(u32 target_width, u32 target_height)
     m_efb.resolved_color_tex = nullptr;
     m_efb.resolved_depth_tex = nullptr;
   }
-  InitializeEFBCache(clear_valueRTV, clear_valueDSV);
+  InitializeEFBCache();
 }
 
 FramebufferManager::~FramebufferManager()
@@ -205,7 +212,7 @@ std::unique_ptr<XFBSourceBase> FramebufferManager::CreateXFBSource(unsigned int 
 {
   return std::make_unique<XFBSource>(D3DTexture2D::Create(target_width, target_height,
     TEXTURE_BIND_FLAG_SHADER_RESOURCE | TEXTURE_BIND_FLAG_RENDER_TARGET,
-    DXGI_FORMAT_R8G8B8A8_UNORM, 1, layers), layers);
+    m_format, 1, layers), layers);
 }
 
 void FramebufferManager::GetTargetSize(unsigned int* width, unsigned int* height)
@@ -303,7 +310,7 @@ void XFBSource::CopyEFB(float gamma)
             m_tex->GetTex(),
             resource_idx,
             FramebufferManager::GetEFBColorTexture()->GetTex(),
-            resource_idx, DXGI_FORMAT_R8G8B8A8_UNORM);
+            resource_idx, FramebufferManager::GetEFBColorTexture()->GetFormat());
         }
       }
       if (depth_copy_required)
@@ -396,7 +403,7 @@ void FramebufferManager::PopulateEFBColorCache()
   D3D::command_list_mgr->CPUAccessNotify();
   // for non-1xIR or multisampled cases, we need to copy to an intermediate texture first
   DX12::D3DTexture2D* src_texture;
-  if (g_ActiveConfig.iEFBScale != SCALE_1X || g_ActiveConfig.iMultisamples > 1)
+  if (g_ActiveConfig.iEFBScale != SCALE_1X || g_ActiveConfig.iMultisamples > 1 || m_efb.color_tex->GetFormat() != m_efb.color_cache_tex->GetFormat())
   {
     D3D12_RECT src_rect = { 0, 0, static_cast<LONG>(m_target_width), static_cast<LONG>(m_target_height) };
     D3D::SetViewportAndScissor(0, 0, EFB_WIDTH, EFB_HEIGHT);
@@ -430,7 +437,7 @@ void FramebufferManager::PopulateEFBColorCache()
   dst_location.pResource = m_efb.color_cache_buf.Get();
   dst_location.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
   dst_location.PlacedFootprint.Offset = 0;
-  dst_location.PlacedFootprint.Footprint.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+  dst_location.PlacedFootprint.Footprint.Format = src_texture->GetFormat();
   dst_location.PlacedFootprint.Footprint.Width = EFB_WIDTH;
   dst_location.PlacedFootprint.Footprint.Height = EFB_HEIGHT;
   dst_location.PlacedFootprint.Footprint.Depth = 1;

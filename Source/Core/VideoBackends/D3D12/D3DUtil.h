@@ -132,7 +132,7 @@ void DrawShadedTexQuad(D3DTexture2D* texture,
   D3D12_DEPTH_STENCIL_DESC* depth_stencil_desc_override = nullptr
 );
 
-void DrawClearQuad(u32 Color, float z, D3D12_BLEND_DESC* blend_desc, D3D12_DEPTH_STENCIL_DESC* depth_stencil_desc, bool rt_multisampled);
+void DrawClearQuad(u32 Color, float z, D3D12_BLEND_DESC* blend_desc, D3D12_DEPTH_STENCIL_DESC* depth_stencil_desc, bool rt_multisampled, DXGI_FORMAT rt_format);
 void DrawEFBPokeQuads(EFBAccessType type,
   const EfbPokeData* points,
   size_t num_points,
@@ -140,7 +140,7 @@ void DrawEFBPokeQuads(EFBAccessType type,
   D3D12_DEPTH_STENCIL_DESC* depth_stencil_desc,
   D3D12_CPU_DESCRIPTOR_HANDLE* render_target,
   D3D12_CPU_DESCRIPTOR_HANDLE* depth_buffer,
-  bool rt_multisampled);
+  bool rt_multisampled, DXGI_FORMAT rt_format);
 }
 
 }

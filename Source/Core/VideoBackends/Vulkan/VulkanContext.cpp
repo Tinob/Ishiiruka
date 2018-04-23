@@ -253,6 +253,7 @@ void VulkanContext::PopulateBackendInfo(VideoConfig* config)
   config->backend_info.bSupportsInternalResolutionFrameDumps = true;
   config->backend_info.bSupportsAsyncShaderCompilation = false;
   config->backend_info.bSupportsUberShaders = true;
+  config->backend_info.bSupportsHighPrecisionFrameBuffer = false;
 }
 
 void VulkanContext::PopulateBackendInfoAdapters(VideoConfig* config, const GPUList& gpu_list)

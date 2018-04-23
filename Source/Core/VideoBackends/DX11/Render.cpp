@@ -83,8 +83,8 @@ static StateCache s_gx_state_cache;
 void Renderer::SetupDeviceObjects()
 {
   s_television.Init();
-
-  g_framebuffer_manager = std::make_unique<FramebufferManager>(m_target_width, m_target_height);
+  DXGI_FORMAT efb_format = g_ActiveConfig.UseHPFrameBuffer() ? DXGI_FORMAT_R16G16B16A16_FLOAT : DXGI_FORMAT_R8G8B8A8_UNORM;
+  g_framebuffer_manager = std::make_unique<FramebufferManager>(m_target_width, m_target_height, efb_format);
   HRESULT hr;
 
   D3D11_DEPTH_STENCIL_DESC ddesc;
@@ -260,7 +260,7 @@ Renderer::Renderer(void *&window_handle)
   m_last_efb_scale = g_ActiveConfig.iEFBScale;
   m_last_stereo_mode = g_ActiveConfig.iStereoMode;
   m_last_xfb_mode = g_ActiveConfig.bUseRealXFB;
-
+  m_last_hp_frame_buffer = g_ActiveConfig.UseHPFrameBuffer();
 
   // Setup GX pipeline state
   for (auto& sampler : s_gx_state.samplers)
@@ -548,14 +548,12 @@ void Renderer::ClearScreen(const EFBRectangle& rc, bool colorEnable, bool alphaE
 
   // Color is passed in bgra mode so we need to convert it to rgba
   u32 rgbaColor = (color & 0xFF00FF00) | ((color >> 16) & 0xFF) | ((color << 16) & 0xFF0000);
-  if (xfmem.viewport.zRange < 0)
+  float depthvalue = (z & 0xFFFFFFu) / 16777216.0f;
+  if (xfmem.viewport.zRange >= 0)
   {
-    D3D::drawClearQuad(rgbaColor, (z & 0xFFFFFF) / 16777216.0f);
+    depthvalue = 1.0f - depthvalue;
   }
-  else
-  {
-    D3D::drawClearQuad(rgbaColor, 1.0f - ((z & 0xFFFFFF) / 16777216.0f));
-  }
+  D3D::drawClearQuad(rgbaColor, depthvalue);
 
   D3D::stateman->PopDepthState();
   D3D::stateman->PopBlendState();
@@ -667,14 +665,15 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 
   // Flip/present backbuffer to frontbuffer here
   D3D::Present();
-
+  bool hpchanged = m_last_hp_frame_buffer != g_ActiveConfig.UseHPFrameBuffer();
   // Resize the back buffers NOW to avoid flickering
   if (CalculateTargetSize()
     || xfbchanged
     || windowResized
     || m_last_efb_scale != g_ActiveConfig.iEFBScale
     || m_last_multisamples != g_ActiveConfig.iMultisamples
-    || m_last_stereo_mode != g_ActiveConfig.iStereoMode)
+    || m_last_stereo_mode != g_ActiveConfig.iStereoMode
+    || hpchanged)
   {
 
     m_last_xfb_mode = g_ActiveConfig.bUseRealXFB;
@@ -692,12 +691,13 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
     UpdateDrawRectangle();
 
     m_last_efb_scale = g_ActiveConfig.iEFBScale;
-
+    m_last_hp_frame_buffer = g_ActiveConfig.UseHPFrameBuffer();
     PixelShaderManager::SetEfbScaleChanged();
     D3D::context->OMSetRenderTargets(1, &D3D::GetBackBuffer()->GetRTV(), nullptr);
 
     g_framebuffer_manager.reset();
-    g_framebuffer_manager = std::make_unique<FramebufferManager>(m_target_width, m_target_height);
+    DXGI_FORMAT efb_format = m_last_hp_frame_buffer ? DXGI_FORMAT_R16G16B16A16_FLOAT : DXGI_FORMAT_R8G8B8A8_UNORM;
+    g_framebuffer_manager = std::make_unique<FramebufferManager>(m_target_width, m_target_height, efb_format);
     float clear_col[4] = { 0.f, 0.f, 0.f, 1.f };
     D3D::context->ClearRenderTargetView(FramebufferManager::GetEFBColorTexture()->GetRTV(), clear_col);
     D3D::context->ClearDepthStencilView(FramebufferManager::GetEFBDepthTexture()->GetDSV(), D3D11_CLEAR_DEPTH, 1.f, 0);
@@ -718,7 +718,7 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
   D3D::context->OMSetRenderTargets(1, &FramebufferManager::GetEFBColorTexture()->GetRTV(), FramebufferManager::GetEFBDepthTexture()->GetDSV());
   Renderer::RestoreAPIState();
   // if the configuration has changed, reload post processor (can fail, which will deactivate it)
-  if (m_post_processor->RequiresReload())
+  if (m_post_processor->RequiresReload() || hpchanged)
     m_post_processor->ReloadShaders();
 }
 
@@ -744,7 +744,7 @@ void Renderer::ApplyState(bool bUseDstAlpha)
   s_gx_state.zmode.reversed_depth = xfmem.viewport.zRange < 0;
   D3D::stateman->PushBlendState(s_gx_state_cache.Get(s_gx_state.blend));
   D3D::stateman->PushDepthState(s_gx_state_cache.Get(s_gx_state.zmode));
-  D3D::stateman->PushRasterizerState(s_gx_state_cache.Get(s_gx_state.raster));  
+  D3D::stateman->PushRasterizerState(s_gx_state_cache.Get(s_gx_state.raster));
   for (u32 stage = 0; stage < static_cast<u32>(s_gx_state.samplers.size()); stage++)
     D3D::stateman->SetSampler(stage, s_gx_state_cache.Get(s_gx_state.samplers[stage]));
 
@@ -771,7 +771,7 @@ void Renderer::ApplyState(bool bUseDstAlpha)
 
   D3D::stateman->SetGeometryShader(geometry_shader);
   D3D::stateman->SetHullShader(hull_shader);
-  D3D::stateman->SetDomainShader(HullDomainShaderCache::GetActiveDomainShader());  
+  D3D::stateman->SetDomainShader(HullDomainShaderCache::GetActiveDomainShader());
 
   FramebufferManager::InvalidateEFBCache();
 }

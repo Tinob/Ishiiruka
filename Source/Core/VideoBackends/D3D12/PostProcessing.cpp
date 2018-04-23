@@ -579,7 +579,7 @@ void D3DPostProcessor::CopyTexture(const TargetRectangle& dst_rect, uintptr_t ds
   D3DTexture2D* src_texture = reinterpret_cast<D3DTexture2D*>(src_tex);
   // If the dimensions are the same, we can copy instead of using a shader.
   bool scaling = (dst_rect.GetWidth() != src_rect.GetWidth() || dst_rect.GetHeight() != src_rect.GetHeight());
-  if (!scaling && !force_shader_copy && !is_depth_texture)
+  if (!scaling && !force_shader_copy && !is_depth_texture && dst_texture->GetFormat() == src_texture->GetFormat())
   {
     D3D12_BOX srcbox = {
         static_cast<UINT>(src_rect.left),

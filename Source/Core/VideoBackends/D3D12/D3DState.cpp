@@ -60,7 +60,7 @@ public:
     desc.DS = ShaderCache::GetDomainShaderFromUid(key.hds_uid);
     D3D::SetRootSignature(desc.GS.pShaderBytecode != nullptr, desc.HS.pShaderBytecode != nullptr, false);
     desc.pRootSignature = D3D::GetRootSignature(static_cast<size_t>(key.root_signature_index));
-    desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM; // This state changes in PSTextureEncoder::Encode.
+    desc.RTVFormats[0] = key.rtformat; // This state changes in PSTextureEncoder::Encode.
     desc.DSVFormat = DXGI_FORMAT_D32_FLOAT; // This state changes in PSTextureEncoder::Encode.
     desc.IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_0xFFFF;
     desc.NumRenderTargets = 1;
@@ -120,6 +120,7 @@ public:
     small_desc.ds_bytecode = desc.DS;
     small_desc.input_Layout = static_cast<D3DVertexFormat*>(native);
     small_desc.sample_count = key.sample_desc.Count;
+    small_desc.rtformat = key.rtformat;
     s_gx_state_cache.m_small_pso_map[small_desc] = pso;
   }
 };
@@ -506,7 +507,7 @@ HRESULT StateCache::GetPipelineStateObjectFromCache(const SmallPsoDesc& pso_desc
     m_current_pso_desc.VS = pso_desc.vs_bytecode;
     m_current_pso_desc.HS = pso_desc.hs_bytecode;
     m_current_pso_desc.DS = pso_desc.ds_bytecode;
-
+    m_current_pso_desc.RTVFormats[0] = pso_desc.rtformat;
     m_current_pso_desc.pRootSignature = D3D::GetRootSignature();
 
     m_current_pso_desc.BlendState = GetDesc(pso_desc.blend_state);
@@ -560,6 +561,7 @@ HRESULT StateCache::GetPipelineStateObjectFromCache(const SmallPsoDesc& pso_desc
       disk_desc.vertex_declaration = pso_desc.input_Layout->GetVertexDeclaration();
       disk_desc.topology = topology;
       disk_desc.sample_desc.Count = g_ActiveConfig.iMultisamples;
+      disk_desc.rtformat = pso_desc.rtformat;
       // This shouldn't fail.. but if it does, don't cache to disk.
       ComPtr<ID3DBlob> psoBlob;
       hr = new_pso->GetCachedBlob(psoBlob.ReleaseAndGetAddressOf());

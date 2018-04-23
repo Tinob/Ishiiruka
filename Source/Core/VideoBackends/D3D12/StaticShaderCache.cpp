@@ -18,7 +18,6 @@ static D3DBlob* s_color_copy_program_blob[2] = {};
 static D3DBlob* s_depth_matrix_program_blob[2] = {};
 static D3DBlob* s_depth_copy_program_blob[2] = {};
 static D3DBlob* s_clear_program_blob = {};
-static D3DBlob* s_anaglyph_program_blob = {};
 static D3DBlob* s_xfb_encode_shader_blob = {};
 static D3DBlob* s_xfb_decode_shader_blob = {};
 static D3DBlob* s_rgba6_to_rgb8_program_blob[2] = {};
@@ -87,30 +86,6 @@ static constexpr const char s_depth_copy_program_hlsl[] = {
     "}\n"
 };
 
-// Anaglyph Red-Cyan shader based on Dubois algorithm
-// Constants taken from the paper:
-// "Conversion of a Stereo Pair to Anaglyph with
-// the Least-Squares Projection Method"
-// Eric Dubois, March 2009
-static constexpr const char s_anaglyph_program_hlsl[] = {
-    "sampler samp0 : register(s0);\n"
-    "Texture2DArray Tex0 : register(t0);\n"
-    "void main(\n"
-    "out float4 ocol0 : SV_Target,\n"
-    "in float4 pos : SV_Position,\n"
-    "in float3 uv0 : TEXCOORD0){\n"
-    "float4 c0 = Tex0.Sample(samp0, float3(uv0.xy, 0.0));\n"
-    "float4 c1 = Tex0.Sample(samp0, float3(uv0.xy, 1.0));\n"
-    "float3x3 l = float3x3( 0.437, 0.449, 0.164,\n"
-    "                      -0.062,-0.062,-0.024,\n"
-    "                      -0.048,-0.050,-0.017);\n"
-    "float3x3 r = float3x3(-0.011,-0.032,-0.007,\n"
-    "                       0.377, 0.761, 0.009,\n"
-    "                      -0.026,-0.093, 1.234);\n"
-    "ocol0 = float4(mul(l, c0.rgb) + mul(r, c1.rgb), c0.a);\n"
-    "}\n"
-};
-
 // TODO: Improve sampling algorithm!
 static constexpr const char s_color_copy_program_msaa_hlsl[] = {
     "#define SAMPLES %d\n"
@@ -172,7 +147,7 @@ static constexpr const char s_color_matrix_program_msaa_hlsl[] = {
     "Tex0.GetDimensions(width, height, slices, samples);\n"
     "float4 texcol = 0;\n"
     "for(int i = 0; i < SAMPLES; ++i)\n"
-    "	texcol += Tex0.Load(int3(uv0.x*(width), uv0.y*(height), uv0.z), i);\n"
+  "	texcol += Tex0.Load(int3(uv0.x*(width), uv0.y*(height), uv0.z), i);\n"
     "texcol /= SAMPLES;\n"
     "texcol = floor(texcol * cColMatrix[5])*cColMatrix[6];\n"
     "ocol0 = float4(dot(texcol,cColMatrix[0]),dot(texcol,cColMatrix[1]),dot(texcol,cColMatrix[2]),dot(texcol,cColMatrix[3])) + cColMatrix[4];\n"
@@ -249,7 +224,7 @@ static constexpr const char s_reint_rgba6_to_rgb8_program_hlsl[] = {
     "	in float4 pos : SV_Position,\n"
     "	in float3 uv0 : TEXCOORD0)\n"
     "{\n"
-    "	int4 src6 = round(Tex0.Sample(samp0,uv0) * 63.f);\n"
+  "	int4 src6 = round(clamp(Tex0.Sample(samp0,uv0), 0.0, 1.0) * 63.f);\n"
     "	int4 dst8;\n"
     "	dst8.r = (src6.r << 2) | (src6.g >> 4);\n"
     "	dst8.g = ((src6.g & 0xF) << 4) | (src6.b >> 2);\n"
@@ -272,7 +247,7 @@ static constexpr const char s_reint_rgba6_to_rgb8_program_msaa_hlsl[] = {
     "	Tex0.GetDimensions(width, height, slices, samples);\n"
     "	float4 texcol = 0;\n"
     "	for (int i = 0; i < SAMPLES; ++i)\n"
-    "		texcol += Tex0.Load(int3(uv0.x*(width), uv0.y*(height), uv0.z), i);\n"
+  "		texcol += clamp(Tex0.Load(int3(uv0.x*(width), uv0.y*(height), uv0.z), i), 0.0, 1.0);\n"
     "	texcol /= SAMPLES;\n"
     "	int4 src6 = round(texcol * 63.f);\n"
     "	int4 dst8;\n"
@@ -292,7 +267,7 @@ static constexpr const char s_reint_rgb8_to_rgba6_program_hlsl[] = {
     "	in float4 pos : SV_Position,\n"
     "	in float3 uv0 : TEXCOORD0)\n"
     "{\n"
-    "	int4 src8 = round(Tex0.Sample(samp0,uv0) * 255.f);\n"
+  "	int4 src8 = round(clamp(Tex0.Sample(samp0,uv0), 0.0, 1.0) * 255.f);\n"
     "	int4 dst6;\n"
     "	dst6.r = src8.r >> 2;\n"
     "	dst6.g = ((src8.r & 0x3) << 4) | (src8.g >> 4);\n"
@@ -315,7 +290,7 @@ static constexpr const char s_reint_rgb8_to_rgba6_program_msaa_hlsl[] = {
     "	Tex0.GetDimensions(width, height, slices, samples);\n"
     "	float4 texcol = 0;\n"
     "	for (int i = 0; i < SAMPLES; ++i)\n"
-    "		texcol += Tex0.Load(int3(uv0.x*(width), uv0.y*(height), uv0.z), i);\n"
+  "		texcol += clamp(Tex0.Load(int3(uv0.x*(width), uv0.y*(height), uv0.z), i), 0.0, 1.0);\n"
     "	texcol /= SAMPLES;\n"
     "	int4 src8 = round(texcol * 255.f);\n"
     "	int4 dst6;\n"
@@ -668,15 +643,6 @@ D3D12_SHADER_BYTECODE StaticShaderCache::GetClearPixelShader()
   return shader;
 }
 
-D3D12_SHADER_BYTECODE StaticShaderCache::GetAnaglyphPixelShader()
-{
-  D3D12_SHADER_BYTECODE shader = {};
-  shader.BytecodeLength = s_anaglyph_program_blob->Size();
-  shader.pShaderBytecode = s_anaglyph_program_blob->Data();
-
-  return shader;
-}
-
 D3D12_SHADER_BYTECODE StaticShaderCache::GetSimpleVertexShader()
 {
   D3D12_SHADER_BYTECODE shader = {};
@@ -755,7 +721,6 @@ void StaticShaderCache::Init()
 {
   // Compile static pixel shaders
   D3D::CompilePixelShader(s_clear_program_hlsl, &s_clear_program_blob);
-  D3D::CompilePixelShader(s_anaglyph_program_hlsl, &s_anaglyph_program_blob);
   D3D::CompilePixelShader(s_color_copy_program_hlsl, &s_color_copy_program_blob[0]);
   D3D::CompilePixelShader(s_depth_copy_program_hlsl, &s_depth_copy_program_blob[0]);
   D3D::CompilePixelShader(s_color_matrix_program_hlsl, &s_color_matrix_program_blob[0]);
@@ -789,7 +754,6 @@ void StaticShaderCache::Shutdown()
   SAFE_RELEASE(s_xfb_decode_shader_blob);
   SAFE_RELEASE(s_xfb_encode_shader_blob);
   SAFE_RELEASE(s_clear_program_blob);
-  SAFE_RELEASE(s_anaglyph_program_blob);
 
   for (unsigned int i = 0; i < 2; ++i)
   {

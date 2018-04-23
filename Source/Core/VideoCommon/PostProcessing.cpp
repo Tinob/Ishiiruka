@@ -520,7 +520,7 @@ bool PostProcessingShaderConfiguration::ParsePassBlock(const std::string& dirnam
 {
   RenderPass pass;
   pass.output_scale = 1.0f;
-  pass.output_format = HostTextureFormat::PC_TEX_FMT_RGBA32;
+  pass.output_format = g_ActiveConfig.UseHPFrameBuffer() ? HostTextureFormat::PC_TEX_FMT_RGBA16_FLOAT : HostTextureFormat::PC_TEX_FMT_RGBA32;
 
   for (const auto& option : block.m_options)
   {

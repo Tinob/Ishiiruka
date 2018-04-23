@@ -507,7 +507,7 @@ void D3DPostProcessor::CopyTexture(const TargetRectangle& dst_rect, uintptr_t ds
 
   // If the dimensions are the same, we can copy instead of using a shader.
   bool scaling = (dst_rect.GetWidth() != src_rect.GetWidth() || dst_rect.GetHeight() != src_rect.GetHeight());
-  if (!scaling && !force_shader_copy && !is_depth_texture)
+  if (!scaling && !force_shader_copy && !is_depth_texture && dst_texture->GetFormat() == src_texture->GetFormat())
   {
     CD3D11_BOX copy_box(src_rect.left, src_rect.top, 0, src_rect.right, src_rect.bottom, 1);
     if (src_layer < 0)

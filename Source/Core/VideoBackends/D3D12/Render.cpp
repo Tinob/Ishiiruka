@@ -101,7 +101,8 @@ StateCache s_gx_state_cache;
 
 void Renderer::SetupDeviceObjects()
 {
-  g_framebuffer_manager = std::make_unique<FramebufferManager>(m_target_width, m_target_height);
+  DXGI_FORMAT efb_format = g_ActiveConfig.UseHPFrameBuffer() ? DXGI_FORMAT_R16G16B16A16_FLOAT : DXGI_FORMAT_R8G8B8A8_UNORM;
+  g_framebuffer_manager = std::make_unique<FramebufferManager>(m_target_width, m_target_height, efb_format);
 
   D3D12_DEPTH_STENCIL_DESC depth_desc;
   depth_desc.DepthEnable = FALSE;
@@ -201,7 +202,7 @@ Renderer::Renderer(void*& window_handle)
   m_last_efb_scale = g_ActiveConfig.iEFBScale;
   m_last_stereo_mode = g_ActiveConfig.iStereoMode;
   m_last_xfb_mode = g_ActiveConfig.bUseRealXFB;
-
+  m_last_hp_frame_buffer = g_ActiveConfig.UseHPFrameBuffer();
 
   // Setup GX pipeline state
   for (auto& sampler : s_gx_state.samplers)
@@ -407,7 +408,8 @@ void Renderer::PokeEFB(EFBAccessType type, const EfbPokeData* points, size_t num
       &g_reset_depth_desc,
       &rtv,
       nullptr,
-      FramebufferManager::GetEFBColorTexture()->GetMultisampled()
+      FramebufferManager::GetEFBColorTexture()->GetMultisampled(),
+      FramebufferManager::GetEFBColorTexture()->GetFormat()
     );
   }
   else // if (type == POKE_Z)
@@ -423,7 +425,8 @@ void Renderer::PokeEFB(EFBAccessType type, const EfbPokeData* points, size_t num
       &s_clear_depth_descs[CLEAR_DEPTH_DESC_DEPTH_ENABLED_WRITES_ENABLED],
       &rtv,
       &dsv,
-      FramebufferManager::GetEFBColorTexture()->GetMultisampled()
+      FramebufferManager::GetEFBColorTexture()->GetMultisampled(),
+      FramebufferManager::GetEFBColorTexture()->GetFormat()
     );
   }
   RestoreAPIState();
@@ -528,16 +531,12 @@ void Renderer::ClearScreen(const EFBRectangle& rc, bool color_enable, bool alpha
 
   // Color is passed in bgra mode so we need to convert it to rgba
   u32 rgba_color = (color & 0xFF00FF00) | ((color >> 16) & 0xFF) | ((color << 16) & 0xFF0000);
-  if (xfmem.viewport.zRange < 0)
+  float depthvalue = (z & 0xFFFFFFu) / 16777216.0f;
+  if (xfmem.viewport.zRange >= 0)
   {
-    D3D::DrawClearQuad(rgba_color, (z & 0xFFFFFFu) / 16777216.0f, blend_desc, depth_stencil_desc, FramebufferManager::GetEFBColorTexture()->GetMultisampled());
+    depthvalue = 1.0f - depthvalue;
   }
-  else
-  {
-    D3D::DrawClearQuad(rgba_color, 1.0f - (z & 0xFFFFFFu) / 16777216.0f, blend_desc, depth_stencil_desc, FramebufferManager::GetEFBColorTexture()->GetMultisampled());
-  }
-
-
+  D3D::DrawClearQuad(rgba_color, depthvalue, blend_desc, depth_stencil_desc, FramebufferManager::GetEFBColorTexture()->GetMultisampled(), FramebufferManager::GetEFBColorTexture()->GetFormat());
   // Restores proper viewport/scissor settings.
   RestoreAPIState();
   FramebufferManager::InvalidateEFBCache();
@@ -580,7 +579,7 @@ void Renderer::ReinterpretPixelData(unsigned int convtype)
     StaticShaderCache::GetSimpleVertexShaderInputLayout(),
     StaticShaderCache::GetCopyGeometryShader(),
     0,
-    DXGI_FORMAT_R8G8B8A8_UNORM,
+    FramebufferManager::GetEFBColorTexture()->GetFormat(),
     false,
     FramebufferManager::GetEFBColorTempTexture()->GetMultisampled()
   );
@@ -664,14 +663,15 @@ void Renderer::SwapImpl(u32 xfb_addr, u32 fb_width, u32 fb_stride, u32 fb_height
 
   // Flip/present backbuffer to frontbuffer here
   D3D::Present();
-
+  bool hpchanged = m_last_hp_frame_buffer != g_ActiveConfig.UseHPFrameBuffer();
   // Resize the back buffers NOW to avoid flickering
   if (CalculateTargetSize() ||
     xfb_changed ||
     window_resized ||
     m_last_efb_scale != g_ActiveConfig.iEFBScale ||
     m_last_multisamples != g_ActiveConfig.iMultisamples ||
-    m_last_stereo_mode != g_ActiveConfig.iStereoMode)
+    m_last_stereo_mode != g_ActiveConfig.iStereoMode ||
+    hpchanged)
   {
     m_last_xfb_mode = g_ActiveConfig.bUseRealXFB;
     // Block on any changes until the GPU catches up, so we can free resources safely.
@@ -694,7 +694,7 @@ void Renderer::SwapImpl(u32 xfb_addr, u32 fb_width, u32 fb_stride, u32 fb_height
     UpdateDrawRectangle();
 
     m_last_efb_scale = g_ActiveConfig.iEFBScale;
-
+    m_last_hp_frame_buffer = g_ActiveConfig.UseHPFrameBuffer();
     PixelShaderManager::SetEfbScaleChanged();
 
     D3D::GetBackBuffer()->TransitionToResourceState(D3D::current_command_list, D3D12_RESOURCE_STATE_RENDER_TARGET);
@@ -702,7 +702,8 @@ void Renderer::SwapImpl(u32 xfb_addr, u32 fb_width, u32 fb_stride, u32 fb_height
     D3D::current_command_list->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
 
     g_framebuffer_manager.reset();
-    g_framebuffer_manager = std::make_unique<FramebufferManager>(m_target_width, m_target_height);
+    DXGI_FORMAT efb_format = m_last_hp_frame_buffer ? DXGI_FORMAT_R16G16B16A16_FLOAT : DXGI_FORMAT_R8G8B8A8_UNORM;
+    g_framebuffer_manager = std::make_unique<FramebufferManager>(m_target_width, m_target_height, efb_format);
     FramebufferManager::GetEFBColorTexture()->TransitionToResourceState(D3D::current_command_list, D3D12_RESOURCE_STATE_RENDER_TARGET);
     D3D::current_command_list->ClearRenderTargetView(FramebufferManager::GetEFBColorTexture()->GetRTV(), clear_color, 0, nullptr);
 
@@ -724,7 +725,7 @@ void Renderer::SwapImpl(u32 xfb_addr, u32 fb_width, u32 fb_stride, u32 fb_height
   D3D::BeginFrame();
 
   // if the configuration has changed, reload post processor (can fail, which will deactivate it)
-  if (m_post_processor->RequiresReload())
+  if (m_post_processor->RequiresReload() || hpchanged)
   {
     D3D::command_list_mgr->ExecuteQueuedWork(true);
     m_post_processor->ReloadShaders();
@@ -982,7 +983,8 @@ void Renderer::ApplyState(bool use_dst_alpha)
         s_gx_state.blend,                             // BlendState BlendState;
         modifiableRastState,                        // RasterizerState RasterizerState;
         s_gx_state.zmode,                             // ZMode DepthStencilState;
-        static_cast<int>(g_ActiveConfig.iMultisamples)
+        static_cast<int>(g_ActiveConfig.iMultisamples),
+        FramebufferManager::GetEFBColorTexture()->GetFormat()
     };
 
     ID3D12PipelineState* pso = nullptr;

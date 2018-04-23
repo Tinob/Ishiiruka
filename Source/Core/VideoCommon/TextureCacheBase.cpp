@@ -1390,7 +1390,7 @@ void TextureCacheBase::CopyRenderTargetToTexture(u32 dstAddr, u32 dstFormat, u32
     // create the texture
     TextureConfig config;
     config.rendertarget = true;
-    config.pcformat = PC_TEX_FMT_RGBA32;
+    config.pcformat = g_ActiveConfig.UseHPFrameBuffer() ? PC_TEX_FMT_RGBA16_FLOAT : PC_TEX_FMT_RGBA32;
     config.width = scaled_tex_w;
     config.height = scaled_tex_h;
     config.layers = FramebufferManagerBase::GetEFBLayers();

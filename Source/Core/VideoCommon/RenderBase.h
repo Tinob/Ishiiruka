@@ -176,6 +176,7 @@ protected:
   int m_backbuffer_width = 0;
   int m_backbuffer_height = 0;
   int m_last_efb_scale;
+  bool m_last_hp_frame_buffer;
   TargetRectangle m_target_rectangle{};
   TargetRectangle m_window_rectangle{};
   bool m_xfb_written{};

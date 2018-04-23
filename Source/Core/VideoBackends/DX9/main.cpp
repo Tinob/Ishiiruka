@@ -106,6 +106,7 @@ void VideoBackend::InitBackendInfo()
   g_Config.backend_info.bSupportsFragmentStoresAndAtomics = false;
   g_Config.backend_info.bSupportsBitfield = false;
   g_Config.backend_info.bSupportsUberShaders = false;
+  g_Config.backend_info.bSupportsHighPrecisionFrameBuffer = false;
   g_Config.ClearFormats();
   // adapters
   g_Config.backend_info.Adapters.clear();

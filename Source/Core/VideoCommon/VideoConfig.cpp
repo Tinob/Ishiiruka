@@ -163,6 +163,7 @@ void VideoConfig::Refresh()
   sPostProcessingShaders = Config::Get(Config::GFX_ENHANCE_POST_SHADERS);
   sScalingShader = Config::Get(Config::GFX_ENHANCE_SCALING_SHADER);
   bForceTrueColor = Config::Get(Config::GFX_ENHANCE_FORCE_TRUE_COLOR);
+  bHPFrameBuffer = Config::Get(Config::GFX_ENHANCE_HP_FRAME_BUFFER);
   bUseScalingFilter = Config::Get(Config::GFX_ENHANCE_USE_SCALING_FILTER);
 
   iTexScalingType = Config::Get(Config::GFX_ENHANCE_TEXTURE_SCALING_TYPE);
@@ -244,6 +245,7 @@ void VideoConfig::VerifyValidity()
   iMultisamples = std::max(iMultisamples, 1u);
   if (!backend_info.bSupportsPixelLighting) bEnablePixelLighting = false;
   bForcePhongShading = bForcePhongShading && bEnablePixelLighting;
+  bHPFrameBuffer = bHPFrameBuffer && bForcePhongShading;
   bForcedLighting = bForcedLighting && bEnablePixelLighting;
   iRimPower = std::min(std::max(iRimPower, 0), 255);
   iRimIntesity = std::min(std::max(iRimIntesity, 0), 255);
