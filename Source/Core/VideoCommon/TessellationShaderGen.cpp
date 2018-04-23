@@ -216,7 +216,7 @@ void GetTessellationShaderUID(TessellationShaderUid& out, const XFMemory& xfr, c
   uid_data.nIndirectStagesUsed = nIndirectStagesUsed;
   bool enable_pl = g_ActiveConfig.PixelLightingEnabled(xfr, components) || g_ActiveConfig.bForcedLighting;
   uid_data.pixel_lighting = enable_pl;
-  bool enablenormalmaps = g_ActiveConfig.HiresMaterialMapsEnabled();
+  bool enablenormalmaps = g_ActiveConfig.HiresMaterialMapsEnabled() && numTexgen > 0;
   if (enablenormalmaps)
   {
     enablenormalmaps = false;
@@ -567,7 +567,7 @@ inline void GenerateTessellationShader(ShaderCode& out, const Tessellation_shade
     out.Write(" float displacement = 0.0, displacementcount = 0.0, borderdistance = bCoords.x * bCoords.y * bCoords.z;\n");
     out.Write(" int3 tevcoord=int3(0,0,0);\n");
     out.Write(" int2 wrappedcoord = int2(0, 0);\n");
-    if (enablenormalmaps)
+    if (enablenormalmaps && numTexgen > 0)
     {
       out.Write(" if(" I_FLAGS ".x != 0)\n{\n");
       out.Write("   float4 uv[%d];\n", numTexgen);
