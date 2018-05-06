@@ -1358,7 +1358,7 @@ inline void WriteFetchStageTexture(ShaderCode& out, API_TYPE ApiType, bool use_i
         "mapcoord = stagecoord;\n"
         "mapsize = " I_TEXDIMS"[%d].xy;\n"
         "}\n"
-        "float color_bump = max(tex_ta[%i].r,max(tex_ta[%i].g,tex_ta[%i].b)) * (1.0 / 255.0);\n"
+        "float color_bump = dot(float3(tex_ta[%i].rgb), float3(1.0, 1.0, 1.0)) * (1.0 / (255.0 * 3.0));\n"
         "color_bump = color_bump * 2.0 - 1.0;\n"
         "height_map = height_map * height_map_count + color_bump;\n"
         "height_map_count+=1.0;\n"
