@@ -240,19 +240,26 @@ void D3DPostProcessingShader::Draw(PostProcessor* p,
     }
 
     // If this is the last pass and we can skip the final copy, write directly to output texture.
+    ID3D11RenderTargetView* rtv = nullptr;
+    ID3D11ShaderResourceView* rsrv = nullptr;
     if (is_last_pass && skip_final_copy)
     {
       // The target rect may differ from the source.
       output_rect = dst_rect;
       output_size = dst_size;
-      D3D::context->OMSetRenderTargets(1, &dst_texture->GetRTV(), nullptr);
+      rtv = dst_texture->GetRTV();
+      rsrv = dst_texture->GetSRV();
     }
     else
     {
       output_rect = PostProcessor::ScaleTargetRectangle(API_D3D11, src_rect, pass.output_scale);
       output_size = pass.output_size;
-      D3D::context->OMSetRenderTargets(1, &reinterpret_cast<D3DTexture2D*>(pass.GetOutput()->GetInternalObject())->GetRTV(), nullptr);
+      rtv = reinterpret_cast<D3DTexture2D*>(pass.GetOutput()->GetInternalObject())->GetRTV();
+      rsrv = reinterpret_cast<D3DTexture2D*>(pass.GetOutput()->GetInternalObject())->GetSRV();
     }
+    D3D::stateman->UnsetTexture(rsrv);
+    D3D::stateman->Apply();
+    D3D::context->OMSetRenderTargets(1, &rtv, nullptr);
     std::vector<s32> InputsToRelease;
     // Bind inputs to pipeline
     for (size_t i = 0; i < pass.inputs.size(); i++)
