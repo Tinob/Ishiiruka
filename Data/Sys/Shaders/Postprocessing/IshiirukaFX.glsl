@@ -588,7 +588,7 @@ DependentOption = D_BLOOM
 GUIName = Scattering Intensity
 OptionName = I_SINTENSITY
 MinValue = 0.0
-MaxValue = 1.0
+MaxValue = 4.0
 StepAmount = 0.01
 DefaultValue = 0.1
 DependentOption = D_BLOOM
@@ -2014,7 +2014,7 @@ void BloomMerger()
 		float depth = SampleDepth();
 		float linearcomponent = (GetOption(G_SEND) - depth) / (GetOption(G_SEND) - GetOption(F_SSTART));
 		depth = depth * GetOption(E_SDENSITY);
-		lumColor.rgb = lerp(basecolor, lumColor.rgb, saturate(GetOption(I_SINTENSITY) + lumColor.a));
+		lumColor.rgb = lerp(basecolor, lumColor.rgb, saturate(GetOption(I_SINTENSITY) * lumColor.a));
 		basecolor = lerp(lumColor.rgb, basecolor, clamp(linearcomponent / exp(depth * depth), 0.0, 1.0));
 	}
 	float4 mergedcolor = float4(basecolor + blur.rgb, 1.0);
