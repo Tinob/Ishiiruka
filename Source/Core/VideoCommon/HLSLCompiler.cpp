@@ -106,7 +106,7 @@ bool HLSLAsyncCompiler::NextTask(size_t ID)
 ShaderCompilerWorkUnit* HLSLAsyncCompiler::NewUnit()
 {
   u32 loopcount = 0;
-  while (m_in_progres_counter >= repository_size)
+  while (m_in_progres_counter >= (repository_size -1))
   {
     if (m_output.empty())
     {
