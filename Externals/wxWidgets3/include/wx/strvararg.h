@@ -10,13 +10,13 @@
 #ifndef _WX_STRVARARG_H_
 #define _WX_STRVARARG_H_
 
-#include "wx/platform.h"
+#include "platform.h"
 
-#include "wx/cpp.h"
-#include "wx/chartype.h"
-#include "wx/strconv.h"
-#include "wx/buffer.h"
-#include "wx/unichar.h"
+#include "cpp.h"
+#include "chartype.h"
+#include "strconv.h"
+#include "buffer.h"
+#include "unichar.h"
 
 #if defined(HAVE_TYPE_TRAITS)
     #include <type_traits>
