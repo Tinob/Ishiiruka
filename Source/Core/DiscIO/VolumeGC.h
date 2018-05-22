@@ -28,7 +28,7 @@ enum class Platform;
 class VolumeGC : public Volume
 {
 public:
-  VolumeGC(std::unique_ptr<BlobReader>&& reader);
+  VolumeGC(std::unique_ptr<BlobReader> reader);
   ~VolumeGC();
   bool Read(u64 _Offset, u64 _Length, u8* _pBuffer,
             const Partition& partition = PARTITION_NONE) const override;

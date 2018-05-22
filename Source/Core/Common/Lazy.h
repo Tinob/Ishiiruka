@@ -39,7 +39,7 @@ private:
   T* ComputeValue() const
   {
     if (!std::holds_alternative<T>(m_value))
-      m_value = std::get<std::function<T()>>(m_value)();
+      m_value = std::move(std::get<std::function<T()>>(m_value)());
     return &std::get<T>(m_value);
   }
 

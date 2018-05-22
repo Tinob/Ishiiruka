@@ -28,7 +28,7 @@
 
 namespace DiscIO
 {
-VolumeGC::VolumeGC(std::unique_ptr<BlobReader>&& reader) : m_pReader(std::move(reader))
+VolumeGC::VolumeGC(std::unique_ptr<BlobReader> reader) : m_pReader(std::move(reader))
 {
   ASSERT(m_pReader);
 
