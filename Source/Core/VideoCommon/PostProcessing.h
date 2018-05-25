@@ -373,6 +373,7 @@ protected:
     void ClenaupOutput();
     void ReleaseOutput();
     void AddReference() { use_count++; }
+    void ClearReference() { use_count = 0; }
   };
 
   virtual void ReleasePassNativeResources(RenderPassData& pass) = 0;

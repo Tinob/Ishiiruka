@@ -2,7 +2,6 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
-
 #include <cmath>
 #include <string>
 
@@ -26,7 +25,6 @@
 #include "VideoCommon/VideoConfig.h"
 #include "VideoCommon/XFMemory.h"
 
-
 static const char s_default_shader[] = "void main() { SetOutput(ApplyGCGamma(Sample())); }\n";
 struct LangDescriptor
 {
@@ -36,44 +34,23 @@ struct LangDescriptor
 
 #define LANGUAGE_ID_COUNT 29
 
-static const LangDescriptor language_ids[LANGUAGE_ID_COUNT] =
-{
-    { "", "" },
-    { "ms", ".MAL" },
-    { "ca", ".CAT" },
-    { "cs", ".CZE" },
-    { "da", ".DAN" },
-    { "de", ".GER" },
-    { "en", ".ENG" },
-    { "es", ".SPA" },
-    { "fr", ".FRE" },
-    { "hr", ".CRO" },
-    { "it", ".ITA" },
-    { "hu", ".HUN" },
-    { "nl", ".DUT" },
-    { "nb", ".NOR" },
-    { "pl", ".POL" },
-    { "pt", ".POR" },
-    { "pt_BR", ".BRA" },
-    { "ro", ".ROM" },
-    { "sr", ".SER" },
-    { "sv", ".SWE" },
-    { "tr", ".TUR" },
+static const LangDescriptor language_ids[LANGUAGE_ID_COUNT] = {
+    {"", ""},       {"ms", ".MAL"},    {"ca", ".CAT"},   {"cs", ".CZE"}, {"da", ".DAN"},
+    {"de", ".GER"}, {"en", ".ENG"},    {"es", ".SPA"},   {"fr", ".FRE"}, {"hr", ".CRO"},
+    {"it", ".ITA"}, {"hu", ".HUN"},    {"nl", ".DUT"},   {"nb", ".NOR"}, {"pl", ".POL"},
+    {"pt", ".POR"}, {"pt_BR", ".BRA"}, {"ro", ".ROM"},   {"sr", ".SER"}, {"sv", ".SWE"},
+    {"tr", ".TUR"},
 
-    { "el", ".GRE" },
-    { "ru", ".RUS" },
-    { "ar", ".ARA" },
-    { "fa", ".FAR" },
-    { "ko", ".KOR" },
-    { "ja", ".JAP" },
-    { "zh_CN", ".CHS" },
-    { "zh_TW", ".CHT" }
-};
+    {"el", ".GRE"}, {"ru", ".RUS"},    {"ar", ".ARA"},   {"fa", ".FAR"}, {"ko", ".KOR"},
+    {"ja", ".JAP"}, {"zh_CN", ".CHS"}, {"zh_TW", ".CHT"}};
 
-std::vector<std::string> PostProcessingShaderConfiguration::GetAvailableShaderNames(const std::string& sub_dir)
+std::vector<std::string>
+PostProcessingShaderConfiguration::GetAvailableShaderNames(const std::string& sub_dir)
 {
-  const std::vector<std::string> search_dirs = { File::GetUserPath(D_SHADERS_IDX) + sub_dir, File::GetSysDirectory() + SHADERS_DIR DIR_SEP + sub_dir };
-  const std::vector<std::string> search_extensions = { ".glsl" };
+  const std::vector<std::string> search_dirs = {File::GetUserPath(D_SHADERS_IDX) + sub_dir,
+                                                File::GetSysDirectory() + SHADERS_DIR DIR_SEP +
+                                                    sub_dir};
+  const std::vector<std::string> search_extensions = {".glsl"};
   std::vector<std::string> result;
   std::vector<std::string> paths;
 
@@ -98,14 +75,17 @@ std::vector<std::string> PostProcessingShaderConfiguration::GetAvailableShaderNa
     if (pos != std::string::npos && (pos != dirname.length() - 1))
     {
       std::string shader_dirname = dirname.substr(pos + 1);
-      std::vector<std::string> sub_paths = Common::DoFileSearch({ dirname }, search_extensions, false);
+      std::vector<std::string> sub_paths =
+          Common::DoFileSearch({dirname}, search_extensions, false);
       for (const std::string& sub_path : sub_paths)
       {
         std::string filename;
         if (SplitPath(sub_path, nullptr, &filename, nullptr))
         {
           // Remove /main for main shader
-          std::string name = (!strcasecmp(filename.c_str(), "main")) ? (shader_dirname) : (shader_dirname + DIR_SEP + filename);
+          std::string name = (!strcasecmp(filename.c_str(), "main")) ?
+                                 (shader_dirname) :
+                                 (shader_dirname + DIR_SEP + filename);
           if (std::find(result.begin(), result.end(), filename) == result.end())
             result.push_back(name);
         }
@@ -118,7 +98,8 @@ std::vector<std::string> PostProcessingShaderConfiguration::GetAvailableShaderNa
   return result;
 }
 
-bool PostProcessingShaderConfiguration::LoadShader(const std::string& sub_dir, const std::string& name)
+bool PostProcessingShaderConfiguration::LoadShader(const std::string& sub_dir,
+                                                   const std::string& name)
 {
   // clear all state
   m_shader_name = name;
@@ -199,7 +180,8 @@ bool PostProcessingShaderConfiguration::LoadShader(const std::string& sub_dir, c
     else
     {
       // Sys/Shaders/sub_dir/<shader_name>/<sub_shader_name>.glsl
-      dirname = File::GetSysDirectory() + SHADERS_DIR DIR_SEP + sub_dir + DIR_SEP + shader_name + DIR_SEP;
+      dirname =
+          File::GetSysDirectory() + SHADERS_DIR DIR_SEP + sub_dir + DIR_SEP + shader_name + DIR_SEP;
       filename = dirname + sub_shader_name + ".glsl";
       if (File::Exists(filename))
       {
@@ -225,7 +207,8 @@ bool PostProcessingShaderConfiguration::LoadShader(const std::string& sub_dir, c
   return true;
 }
 
-bool PostProcessingShaderConfiguration::ParseShader(const std::string& dirname, const std::string& path)
+bool PostProcessingShaderConfiguration::ParseShader(const std::string& dirname,
+                                                    const std::string& path)
 {
   // Read to a single string we can work with
   std::string code;
@@ -243,11 +226,13 @@ bool PostProcessingShaderConfiguration::ParseShader(const std::string& dirname, 
   {
     // Remove the configuration area from the source string, leaving only the GLSL code.
     m_shader_source = code;
-    m_shader_source.erase(configuration_start, (configuration_end - configuration_start + config_end_delimiter.length()));
+    m_shader_source.erase(configuration_start, (configuration_end - configuration_start +
+                                                config_end_delimiter.length()));
 
     // Extract configuration string, and parse options/passes
-    configuration_string = code.substr(configuration_start + config_start_delimiter.size(),
-      configuration_end - configuration_start - config_start_delimiter.size());
+    configuration_string =
+        code.substr(configuration_start + config_start_delimiter.size(),
+                    configuration_end - configuration_start - config_start_delimiter.size());
   }
   else
   {
@@ -258,7 +243,8 @@ bool PostProcessingShaderConfiguration::ParseShader(const std::string& dirname, 
   return ParseConfiguration(dirname, configuration_string);
 }
 
-bool PostProcessingShaderConfiguration::ParseConfiguration(const std::string& dirname, const std::string& configuration_string)
+bool PostProcessingShaderConfiguration::ParseConfiguration(const std::string& dirname,
+                                                           const std::string& configuration_string)
 {
   std::vector<ConfigBlock> config_blocks = ReadConfigSections(configuration_string);
   if (!ParseConfigSections(dirname, config_blocks))
@@ -271,7 +257,8 @@ bool PostProcessingShaderConfiguration::ParseConfiguration(const std::string& di
   return true;
 }
 
-std::vector<PostProcessingShaderConfiguration::ConfigBlock> PostProcessingShaderConfiguration::ReadConfigSections(const std::string& configuration_string)
+std::vector<PostProcessingShaderConfiguration::ConfigBlock>
+PostProcessingShaderConfiguration::ReadConfigSections(const std::string& configuration_string)
 {
   std::istringstream in(configuration_string);
 
@@ -322,7 +309,8 @@ std::vector<PostProcessingShaderConfiguration::ConfigBlock> PostProcessingShader
   return config_blocks;
 }
 
-bool PostProcessingShaderConfiguration::ParseConfigSections(const std::string& dirname, const std::vector<ConfigBlock>& config_blocks)
+bool PostProcessingShaderConfiguration::ParseConfigSections(
+    const std::string& dirname, const std::vector<ConfigBlock>& config_blocks)
 {
   for (const ConfigBlock& option : config_blocks)
   {
@@ -388,7 +376,8 @@ bool PostProcessingShaderConfiguration::ParseFrameBlock(const ConfigBlock& block
   return true;
 }
 
-bool PostProcessingShaderConfiguration::ParseOptionBlock(const std::string& dirname, const ConfigBlock& block)
+bool PostProcessingShaderConfiguration::ParseOptionBlock(const std::string& dirname,
+                                                         const ConfigBlock& block)
 {
   // Initialize to default values, in case the configuration section is incomplete.
   ConfigurationOption option;
@@ -412,7 +401,8 @@ bool PostProcessingShaderConfiguration::ParseOptionBlock(const std::string& dirn
   else
   {
     // not fatal, provided for forwards compatibility
-    WARN_LOG(VIDEO, "Unknown section name in post-processing shader config: '%s'", block.m_type.c_str());
+    WARN_LOG(VIDEO, "Unknown section name in post-processing shader config: '%s'",
+             block.m_type.c_str());
     return true;
   }
 
@@ -462,10 +452,8 @@ bool PostProcessingShaderConfiguration::ParseOptionBlock(const std::string& dirn
     {
       TryParse(string_option.second, &option.m_compile_time_constant);
     }
-    else if (string_option.first == "MinValue" ||
-      string_option.first == "MaxValue" ||
-      string_option.first == "DefaultValue" ||
-      string_option.first == "StepAmount")
+    else if (string_option.first == "MinValue" || string_option.first == "MaxValue" ||
+             string_option.first == "DefaultValue" || string_option.first == "StepAmount")
     {
       std::vector<s32>* output_integer = nullptr;
       std::vector<float>* output_float = nullptr;
@@ -516,11 +504,14 @@ bool PostProcessingShaderConfiguration::ParseOptionBlock(const std::string& dirn
   return true;
 }
 
-bool PostProcessingShaderConfiguration::ParsePassBlock(const std::string& dirname, const ConfigBlock& block)
+bool PostProcessingShaderConfiguration::ParsePassBlock(const std::string& dirname,
+                                                       const ConfigBlock& block)
 {
   RenderPass pass;
   pass.output_scale = 1.0f;
-  pass.output_format = g_ActiveConfig.UseHPFrameBuffer() ? HostTextureFormat::PC_TEX_FMT_RGBA16_FLOAT : HostTextureFormat::PC_TEX_FMT_RGBA32;
+  pass.output_format = g_ActiveConfig.UseHPFrameBuffer() ?
+                           HostTextureFormat::PC_TEX_FMT_RGBA16_FLOAT :
+                           HostTextureFormat::PC_TEX_FMT_RGBA32;
 
   for (const auto& option : block.m_options)
   {
@@ -554,7 +545,6 @@ bool PostProcessingShaderConfiguration::ParsePassBlock(const std::string& dirnam
       {
         return false;
       }
-
     }
     else if (key == "OutputScaleNative")
     {
@@ -582,7 +572,8 @@ bool PostProcessingShaderConfiguration::ParsePassBlock(const std::string& dirnam
       u32 texture_unit = key[5] - '0';
       if (texture_unit > POST_PROCESSING_MAX_TEXTURE_INPUTS)
       {
-        ERROR_LOG(VIDEO, "Post processing configuration error: Out-of-range texture unit: %u", texture_unit);
+        ERROR_LOG(VIDEO, "Post processing configuration error: Out-of-range texture unit: %u",
+                  texture_unit);
         return false;
       }
 
@@ -633,9 +624,12 @@ bool PostProcessingShaderConfiguration::ParsePassBlock(const std::string& dirnam
         else if (value.compare(0, 4, "Pass") == 0)
         {
           input->type = POST_PROCESSING_INPUT_TYPE_PASS_OUTPUT;
-          if (!TryParse(value.substr(4), &input->pass_output_index) || input->pass_output_index >= m_render_passes.size())
+          if (!TryParse(value.substr(4), &input->pass_output_index) ||
+              input->pass_output_index >= m_render_passes.size())
           {
-            ERROR_LOG(VIDEO, "Post processing configuration error: Out-of-range render pass reference: %u", input->pass_output_index);
+            ERROR_LOG(VIDEO,
+                      "Post processing configuration error: Out-of-range render pass reference: %u",
+                      input->pass_output_index);
             return false;
           }
         }
@@ -644,24 +638,31 @@ bool PostProcessingShaderConfiguration::ParsePassBlock(const std::string& dirnam
           input->type = POST_PROCESSING_INPUT_TYPE_PASS_FRAME_OUTPUT;
           if (!TryParse(value.substr(5), &input->pass_output_index))
           {
-            ERROR_LOG(VIDEO, "Post processing configuration error: Out-of-range frame reference: %u", input->pass_output_index);
+            ERROR_LOG(VIDEO,
+                      "Post processing configuration error: Out-of-range frame reference: %u",
+                      input->pass_output_index);
             return false;
           }
-          m_frame_output.color_count = std::max(m_frame_output.color_count, static_cast<int>(input->pass_output_index) + 2);
+          m_frame_output.color_count =
+              std::max(m_frame_output.color_count, static_cast<int>(input->pass_output_index) + 2);
         }
         else if (value.compare(0, 5, "DepthFrame") == 0)
         {
           input->type = POST_PROCESSING_INPUT_TYPE_PASS_DEPTH_FRAME_OUTPUT;
           if (!TryParse(value.substr(5), &input->pass_output_index))
           {
-            ERROR_LOG(VIDEO, "Post processing configuration error: Out-of-range frame reference: %u", input->pass_output_index);
+            ERROR_LOG(VIDEO,
+                      "Post processing configuration error: Out-of-range frame reference: %u",
+                      input->pass_output_index);
             return false;
           }
-          m_frame_output.depth_count = std::max(m_frame_output.depth_count, static_cast<int>(input->pass_output_index) + 2);
+          m_frame_output.depth_count =
+              std::max(m_frame_output.depth_count, static_cast<int>(input->pass_output_index) + 2);
         }
         else
         {
-          ERROR_LOG(VIDEO, "Post processing configuration error: Invalid input type: %s", value.c_str());
+          ERROR_LOG(VIDEO, "Post processing configuration error: Invalid input type: %s",
+                    value.c_str());
           return false;
         }
       }
@@ -677,7 +678,8 @@ bool PostProcessingShaderConfiguration::ParsePassBlock(const std::string& dirnam
         }
         else
         {
-          ERROR_LOG(VIDEO, "Post processing configuration error: Invalid input filter: %s", value.c_str());
+          ERROR_LOG(VIDEO, "Post processing configuration error: Invalid input filter: %s",
+                    value.c_str());
           return false;
         }
       }
@@ -701,7 +703,8 @@ bool PostProcessingShaderConfiguration::ParsePassBlock(const std::string& dirnam
         }
         else
         {
-          ERROR_LOG(VIDEO, "Post processing configuration error: Invalid input mode: %s", value.c_str());
+          ERROR_LOG(VIDEO, "Post processing configuration error: Invalid input mode: %s",
+                    value.c_str());
           return false;
         }
       }
@@ -711,7 +714,9 @@ bool PostProcessingShaderConfiguration::ParsePassBlock(const std::string& dirnam
         std::string path = dirname + value;
         if (!File::Exists(path) || !LoadExternalImage(path, input))
         {
-          ERROR_LOG(VIDEO, "Post processing configuration error: Unable to load external image at '%s'", value.c_str());
+          ERROR_LOG(VIDEO,
+                    "Post processing configuration error: Unable to load external image at '%s'",
+                    value.c_str());
           return false;
         }
       }
@@ -730,7 +735,8 @@ bool PostProcessingShaderConfiguration::ParsePassBlock(const std::string& dirnam
   return true;
 }
 
-bool PostProcessingShaderConfiguration::LoadExternalImage(const std::string& path, RenderPass::Input* input)
+bool PostProcessingShaderConfiguration::LoadExternalImage(const std::string& path,
+                                                          RenderPass::Input* input)
 {
   File::IOFile file(path, "rb");
   std::vector<u8> buffer(file.GetSize());
@@ -740,7 +746,8 @@ bool PostProcessingShaderConfiguration::LoadExternalImage(const std::string& pat
   int image_width;
   int image_height;
   int image_channels;
-  u8* decoded = SOIL_load_image_from_memory(buffer.data(), (int)buffer.size(), &image_width, &image_height, &image_channels, SOIL_LOAD_RGBA);
+  u8* decoded = SOIL_load_image_from_memory(buffer.data(), (int)buffer.size(), &image_width,
+                                            &image_height, &image_channels, SOIL_LOAD_RGBA);
   if (decoded == nullptr)
     return false;
 
@@ -756,17 +763,20 @@ bool PostProcessingShaderConfiguration::LoadExternalImage(const std::string& pat
 
 bool PostProcessingShaderConfiguration::ValidatePassInputs(const RenderPass& pass)
 {
-  return std::all_of(pass.inputs.begin(), pass.inputs.end(), [&pass](const RenderPass::Input& input)
-  {
-    // Check for image inputs without valid data
-    if (input.type == POST_PROCESSING_INPUT_TYPE_IMAGE && !input.external_image_data)
-    {
-      ERROR_LOG(VIDEO, "Post processing configuration error: Pass '%s' input %u is missing image source.", pass.entry_point.c_str(), input.texture_unit);
-      return false;
-    }
+  return std::all_of(
+      pass.inputs.begin(), pass.inputs.end(), [&pass](const RenderPass::Input& input) {
+        // Check for image inputs without valid data
+        if (input.type == POST_PROCESSING_INPUT_TYPE_IMAGE && !input.external_image_data)
+        {
+          ERROR_LOG(
+              VIDEO,
+              "Post processing configuration error: Pass '%s' input %u is missing image source.",
+              pass.entry_point.c_str(), input.texture_unit);
+          return false;
+        }
 
-    return true;
-  });
+        return true;
+      });
 }
 
 void PostProcessingShaderConfiguration::CreateDefaultPass()
@@ -785,7 +795,8 @@ void PostProcessingShaderConfiguration::CreateDefaultPass()
   m_render_passes.push_back(std::move(pass));
 }
 
-void PostProcessingShaderConfiguration::LoadOptionsConfigurationFromSection(IniFile::Section* section)
+void PostProcessingShaderConfiguration::LoadOptionsConfigurationFromSection(
+    IniFile::Section* section)
 {
   for (auto& it : m_options)
   {
@@ -845,7 +856,7 @@ void PostProcessingShaderConfiguration::LoadOptionsConfiguration()
     PresetPath += m_shader_name + ".ini";
     if (File::Exists(PresetPath))
     {
-      //Override with specific game settings
+      // Override with specific game settings
       ini.Load(PresetPath);
       IniFile::Section* gameini_section = ini.GetOrCreateSection("options");
       LoadOptionsConfigurationFromSection(gameini_section);
@@ -901,7 +912,8 @@ void PostProcessingShaderConfiguration::SaveOptionsConfiguration()
     {
       std::string value = "";
       for (size_t i = 0; i < current.m_integer_values.size(); ++i)
-        value += StringFromFormat("%d%s", current.m_integer_values[i], i == (current.m_integer_values.size() - 1) ? "" : ", ");
+        value += StringFromFormat("%d%s", current.m_integer_values[i],
+                                  i == (current.m_integer_values.size() - 1) ? "" : ", ");
       section->Set(current.m_option_name, value);
     }
     break;
@@ -924,7 +936,8 @@ void PostProcessingShaderConfiguration::SaveOptionsConfiguration()
   ini.Save(file_path);
 }
 
-void PostProcessingShaderConfiguration::SetOptionf(const std::string& option, int index, float value)
+void PostProcessingShaderConfiguration::SetOptionf(const std::string& option, int index,
+                                                   float value)
 {
   auto it = m_options.find(option);
 
@@ -969,10 +982,7 @@ void PostProcessingShaderConfiguration::SetOptionb(const std::string& option, bo
     m_compile_time_constants_dirty = true;
 }
 
-PostProcessingShader::~PostProcessingShader()
-{
- 
-}
+PostProcessingShader::~PostProcessingShader() {}
 
 HostTexture* PostProcessingShader::GetLastPassOutputTexture() const
 {
@@ -1029,7 +1039,8 @@ bool PostProcessingShader::CreatePasses()
     pass.enabled = true;
     pass.inputs.reserve(pass_config.inputs.size());
 
-    for (const PostProcessingShaderConfiguration::RenderPass::Input& input_config : pass_config.inputs)
+    for (const PostProcessingShaderConfiguration::RenderPass::Input& input_config :
+         pass_config.inputs)
     {
       InputBinding input;
       input.type = input_config.type;
@@ -1046,7 +1057,8 @@ bool PostProcessingShader::CreatePasses()
         config.rendertarget = false;
 
         input.external_texture = std::move(g_texture_cache->AllocateTexture(config));
-        input.external_texture->Load(input_config.external_image_data.get(), config.width, config.height, config.width, 0, 0);
+        input.external_texture->Load(input_config.external_image_data.get(), config.width,
+                                     config.height, config.width, 0, 0);
         input.external_size = input_config.external_image_size;
       }
 
@@ -1058,7 +1070,8 @@ bool PostProcessingShader::CreatePasses()
 
       if (!input.texture_sampler)
       {
-        ERROR_LOG(VIDEO, "Failed to create post-processing sampler for shader %s (pass %s)", m_config->GetShaderName().c_str(), pass_config.entry_point.c_str());
+        ERROR_LOG(VIDEO, "Failed to create post-processing sampler for shader %s (pass %s)",
+                  m_config->GetShaderName().c_str(), pass_config.entry_point.c_str());
         return false;
       }
 
@@ -1073,11 +1086,16 @@ void PostProcessingShader::LinkPassOutputs()
 {
   m_last_pass_index = 0;
   m_last_pass_uses_color_buffer = false;
-
+  // Clear all reference count to regenerate wth the new configuration
+  for (size_t pass_index = 0; pass_index < m_passes.size(); pass_index++)
+  {
+    m_passes[pass_index].ClearReference();
+  }
   // Update dependant options (enable/disable passes)
   for (size_t pass_index = 0; pass_index < m_passes.size(); pass_index++)
   {
-    const PostProcessingShaderConfiguration::RenderPass& pass_config = m_config->GetPass(pass_index);
+    const PostProcessingShaderConfiguration::RenderPass& pass_config =
+        m_config->GetPass(pass_index);
     RenderPassData& pass = m_passes[pass_index];
     pass.enabled = pass_config.CheckEnabled();
     if (!pass.enabled)
@@ -1096,9 +1114,10 @@ void PostProcessingShader::LinkPassOutputs()
       case POST_PROCESSING_INPUT_TYPE_PASS_OUTPUT:
       case POST_PROCESSING_INPUT_TYPE_PREVIOUS_PASS_OUTPUT:
       {
-        s32 pass_output_index = (input_binding.type == POST_PROCESSING_INPUT_TYPE_PASS_OUTPUT) ?
-          static_cast<s32>(pass_config.inputs[input_index].pass_output_index)
-          : static_cast<s32>(previous_pass_index);
+        s32 pass_output_index =
+            (input_binding.type == POST_PROCESSING_INPUT_TYPE_PASS_OUTPUT) ?
+                static_cast<s32>(pass_config.inputs[input_index].pass_output_index) :
+                static_cast<s32>(previous_pass_index);
         while (pass_output_index >= 0)
         {
           if (m_passes[pass_output_index].enabled)
@@ -1109,7 +1128,7 @@ void PostProcessingShader::LinkPassOutputs()
         }
         input_binding.prev_texture = pass_output_index;
         if (pass_output_index < 0)
-        { 
+        {
           m_last_pass_uses_color_buffer = true;
         }
         else
@@ -1167,13 +1186,15 @@ bool PostProcessingShader::ResizeOutputTextures(const TargetSize& new_size)
   for (size_t pass_index = 0; pass_index < m_passes.size(); pass_index++)
   {
     RenderPassData& pass = m_passes[pass_index];
-    const PostProcessingShaderConfiguration::RenderPass& pass_config = m_config->GetPass(pass_index);
+    const PostProcessingShaderConfiguration::RenderPass& pass_config =
+        m_config->GetPass(pass_index);
     pass.output_size = PostProcessor::ScaleTargetSize(new_size, pass_config.output_scale);
     pass.ReleaseOutput();
     config.width = pass.output_size.width;
     config.height = pass.output_size.height;
     // Last pass output is always RGBA32
-    config.pcformat = pass_index < m_passes.size() - 1 ? pass.output_format : HostTextureFormat::PC_TEX_FMT_RGBA32;
+    config.pcformat = pass_index < m_passes.size() - 1 ? pass.output_format :
+                                                         HostTextureFormat::PC_TEX_FMT_RGBA32;
     pass.SetConfig(config);
   }
   m_internal_size = new_size;
@@ -1214,7 +1235,7 @@ PostProcessor::PostProcessor(API_TYPE apitype) : m_APIType(apitype)
 
 PostProcessor::~PostProcessor()
 {
-  m_timer.Stop();  
+  m_timer.Stop();
 }
 
 void PostProcessor::DisablePostProcessor()
@@ -1251,33 +1272,31 @@ void PostProcessor::ReloadShaders()
 bool PostProcessor::ShouldTriggerOnSwap() const
 {
   return g_ActiveConfig.bPostProcessingEnable &&
-    g_ActiveConfig.iPostProcessingTrigger == POST_PROCESSING_TRIGGER_ON_SWAP &&
-    m_active;
+         g_ActiveConfig.iPostProcessingTrigger == POST_PROCESSING_TRIGGER_ON_SWAP && m_active;
 }
 
 bool PostProcessor::ShouldTriggerAfterBlit() const
 {
   return g_ActiveConfig.bPostProcessingEnable &&
-    g_ActiveConfig.iPostProcessingTrigger == POST_PROCESSING_TRIGGER_AFTER_BLIT &&
-    m_active;
+         g_ActiveConfig.iPostProcessingTrigger == POST_PROCESSING_TRIGGER_AFTER_BLIT && m_active;
 }
 
 bool PostProcessor::XFBDepthDataRequired() const
 {
-  return (m_scaling_config && m_scaling_config->RequiresDepthBuffer())
-    || (g_ActiveConfig.bPostProcessingEnable &&
-      m_active &&
-      (g_ActiveConfig.iPostProcessingTrigger == POST_PROCESSING_TRIGGER_AFTER_BLIT ||
-      (g_ActiveConfig.iPostProcessingTrigger == POST_PROCESSING_TRIGGER_ON_SWAP && !g_ActiveConfig.bUseXFB)));
+  return (m_scaling_config && m_scaling_config->RequiresDepthBuffer()) ||
+         (g_ActiveConfig.bPostProcessingEnable && m_active &&
+          (g_ActiveConfig.iPostProcessingTrigger == POST_PROCESSING_TRIGGER_AFTER_BLIT ||
+           (g_ActiveConfig.iPostProcessingTrigger == POST_PROCESSING_TRIGGER_ON_SWAP &&
+            !g_ActiveConfig.bUseXFB)));
 }
 
-void  PostProcessor::DoEFB(const TargetRectangle* src_rect)
+void PostProcessor::DoEFB(const TargetRectangle* src_rect)
 {
   TargetSize target_size(g_renderer->GetTargetWidth(), g_renderer->GetTargetHeight());
   TargetRectangle target_rect;
   if (src_rect)
   {
-    target_rect = { src_rect->left, src_rect->top, src_rect->right, src_rect->bottom };
+    target_rect = {src_rect->left, src_rect->top, src_rect->right, src_rect->bottom};
     if (m_APIType == API_OPENGL)
     {
       // hack to avoid vieport erro in pp shaders, it works well on amd but fails in everything else
@@ -1291,12 +1310,13 @@ void  PostProcessor::DoEFB(const TargetRectangle* src_rect)
     // Copied fromg_renderer->SetViewport
     int scissorXOff = bpmem.scissorOffset.x * 2;
     int scissorYOff = bpmem.scissorOffset.y * 2;
-    float X = g_renderer->EFBToScaledXf(xfmem.viewport.xOrig - xfmem.viewport.wd - (float)scissorXOff);
+    float X =
+        g_renderer->EFBToScaledXf(xfmem.viewport.xOrig - xfmem.viewport.wd - (float)scissorXOff);
     float Y;
     if (m_APIType == API_OPENGL)
     {
       Y = g_renderer->EFBToScaledYf((float)EFB_HEIGHT - xfmem.viewport.yOrig + xfmem.viewport.ht +
-        (float)scissorYOff);
+                                    (float)scissorYOff);
     }
     else
     {
@@ -1315,8 +1335,8 @@ void  PostProcessor::DoEFB(const TargetRectangle* src_rect)
       Y += Height;
       Height *= -1;
     }
-    target_rect = { static_cast<int>(X), static_cast<int>(Y),
-        static_cast<int>(X + Width), static_cast<int>(Y + Height) };
+    target_rect = {static_cast<int>(X), static_cast<int>(Y), static_cast<int>(X + Width),
+                   static_cast<int>(Y + Height)};
     if (m_APIType == API_OPENGL)
     {
       std::swap(target_rect.top, target_rect.bottom);
@@ -1328,8 +1348,8 @@ void  PostProcessor::DoEFB(const TargetRectangle* src_rect)
 void PostProcessor::OnProjectionLoaded(u32 type)
 {
   if (!m_active || !g_ActiveConfig.bPostProcessingEnable ||
-    (g_ActiveConfig.iPostProcessingTrigger != POST_PROCESSING_TRIGGER_ON_PROJECTION &&
-    (g_ActiveConfig.iPostProcessingTrigger != POST_PROCESSING_TRIGGER_ON_EFB_COPY)))
+      (g_ActiveConfig.iPostProcessingTrigger != POST_PROCESSING_TRIGGER_ON_PROJECTION &&
+       (g_ActiveConfig.iPostProcessingTrigger != POST_PROCESSING_TRIGGER_ON_EFB_COPY)))
   {
     return;
   }
@@ -1344,7 +1364,7 @@ void PostProcessor::OnProjectionLoaded(u32 type)
   {
     // Fire off postprocessing on the current efb if a perspective scene has been drawn.
     if (g_ActiveConfig.iPostProcessingTrigger == POST_PROCESSING_TRIGGER_ON_PROJECTION &&
-      m_projection_state == PROJECTION_STATE_PERSPECTIVE)
+        m_projection_state == PROJECTION_STATE_PERSPECTIVE)
     {
       m_projection_state = PROJECTION_STATE_FINAL;
       DoEFB(nullptr);
@@ -1355,14 +1375,14 @@ void PostProcessor::OnProjectionLoaded(u32 type)
 void PostProcessor::OnEFBCopy(const TargetRectangle* src_rect)
 {
   if (!m_active || !g_ActiveConfig.bPostProcessingEnable ||
-    g_ActiveConfig.iPostProcessingTrigger != POST_PROCESSING_TRIGGER_ON_EFB_COPY)
+      g_ActiveConfig.iPostProcessingTrigger != POST_PROCESSING_TRIGGER_ON_EFB_COPY)
   {
     return;
   }
 
   // Fire off postprocessing on the current efb if a perspective scene has been drawn.
-  if (m_projection_state == PROJECTION_STATE_PERSPECTIVE
-    && (src_rect == nullptr || (src_rect->GetWidth() > ((g_renderer->GetTargetWidth() * 2) / 3))))
+  if (m_projection_state == PROJECTION_STATE_PERSPECTIVE &&
+      (src_rect == nullptr || (src_rect->GetWidth() > ((g_renderer->GetTargetWidth() * 2) / 3))))
   {
     DoEFB(src_rect);
     m_projection_state = PROJECTION_STATE_FINAL;
@@ -1372,20 +1392,22 @@ void PostProcessor::OnEFBCopy(const TargetRectangle* src_rect)
 void PostProcessor::OnEndFrame()
 {
   if (!m_active || !g_ActiveConfig.bPostProcessingEnable ||
-    (g_ActiveConfig.iPostProcessingTrigger != POST_PROCESSING_TRIGGER_ON_PROJECTION &&
-    (g_ActiveConfig.iPostProcessingTrigger != POST_PROCESSING_TRIGGER_ON_EFB_COPY)))
+      (g_ActiveConfig.iPostProcessingTrigger != POST_PROCESSING_TRIGGER_ON_PROJECTION &&
+       (g_ActiveConfig.iPostProcessingTrigger != POST_PROCESSING_TRIGGER_ON_EFB_COPY)))
   {
     return;
   }
 
-  // If we didn't switch to orthographic after perspective, post-process now (e.g. if no HUD was drawn)
+  // If we didn't switch to orthographic after perspective, post-process now (e.g. if no HUD was
+  // drawn)
   if (m_projection_state == PROJECTION_STATE_PERSPECTIVE)
     DoEFB(nullptr);
 
   m_projection_state = PROJECTION_STATE_INITIAL;
 }
 
-PostProcessingShaderConfiguration* PostProcessor::GetPostShaderConfig(const std::string& shader_name)
+PostProcessingShaderConfiguration*
+PostProcessor::GetPostShaderConfig(const std::string& shader_name)
 {
   const auto& it = m_shader_configs.find(shader_name);
   if (it == m_shader_configs.end())
@@ -1416,11 +1438,15 @@ void PostProcessor::ReloadPostProcessingShaderConfigs()
       continue;
 
     // Load this shader.
-    std::unique_ptr<PostProcessingShaderConfiguration> shader_config = std::make_unique<PostProcessingShaderConfiguration>();
+    std::unique_ptr<PostProcessingShaderConfiguration> shader_config =
+        std::make_unique<PostProcessingShaderConfiguration>();
     if (!shader_config->LoadShader(POSTPROCESSING_SHADER_SUBDIR, shader_name))
     {
-      ERROR_LOG(VIDEO, "Failed to load postprocessing shader ('%s'). This shader will be ignored.", shader_name.c_str());
-      OSD::AddMessage(StringFromFormat("Failed to load postprocessing shader ('%s'). This shader will be ignored.", shader_name.c_str()));
+      ERROR_LOG(VIDEO, "Failed to load postprocessing shader ('%s'). This shader will be ignored.",
+                shader_name.c_str());
+      OSD::AddMessage(StringFromFormat(
+          "Failed to load postprocessing shader ('%s'). This shader will be ignored.",
+          shader_name.c_str()));
       continue;
     }
 
@@ -1435,8 +1461,11 @@ void PostProcessor::ReloadScalingShaderConfig()
   m_scaling_config = std::make_unique<PostProcessingShaderConfiguration>();
   if (!m_scaling_config->LoadShader(SCALING_SHADER_SUBDIR, g_ActiveConfig.sScalingShader))
   {
-    ERROR_LOG(VIDEO, "Failed to load scaling shader ('%s'). Falling back to copy shader.", g_ActiveConfig.sScalingShader.c_str());
-    OSD::AddMessage(StringFromFormat("Failed to load scaling shader ('%s'). Falling back to copy shader.", g_ActiveConfig.sScalingShader.c_str()));
+    ERROR_LOG(VIDEO, "Failed to load scaling shader ('%s'). Falling back to copy shader.",
+              g_ActiveConfig.sScalingShader.c_str());
+    OSD::AddMessage(
+        StringFromFormat("Failed to load scaling shader ('%s'). Falling back to copy shader.",
+                         g_ActiveConfig.sScalingShader.c_str()));
     m_scaling_config.reset();
   }
 }
@@ -1449,8 +1478,11 @@ void PostProcessor::ReloadStereoShaderConfig()
     m_stereo_config = std::make_unique<PostProcessingShaderConfiguration>();
     if (!m_stereo_config->LoadShader(STEREO_SHADER_SUBDIR, g_ActiveConfig.sStereoShader))
     {
-      ERROR_LOG(VIDEO, "Failed to load scaling shader ('%s'). Falling back to blit.", g_ActiveConfig.sStereoShader.c_str());
-      OSD::AddMessage(StringFromFormat("Failed to load scaling shader ('%s'). Falling back to blit.", g_ActiveConfig.sStereoShader.c_str()));
+      ERROR_LOG(VIDEO, "Failed to load scaling shader ('%s'). Falling back to blit.",
+                g_ActiveConfig.sStereoShader.c_str());
+      OSD::AddMessage(
+          StringFromFormat("Failed to load scaling shader ('%s'). Falling back to blit.",
+                           g_ActiveConfig.sStereoShader.c_str()));
       m_stereo_config.reset();
     }
   }
@@ -1468,7 +1500,6 @@ TargetSize PostProcessor::ScaleTargetSize(const TargetSize& orig_size, float sca
     int native_height = orig_size.height * EFB_HEIGHT / g_renderer->GetTargetHeight();
     size.width = std::max(static_cast<int>(std::round(((float)native_width * native_scale))), 1);
     size.height = std::max(static_cast<int>(std::round(((float)native_height * native_scale))), 1);
-
   }
   else
   {
@@ -1479,7 +1510,8 @@ TargetSize PostProcessor::ScaleTargetSize(const TargetSize& orig_size, float sca
   return size;
 }
 
-TargetRectangle PostProcessor::ScaleTargetRectangle(API_TYPE api, const TargetRectangle& src, float scale)
+TargetRectangle PostProcessor::ScaleTargetRectangle(API_TYPE api, const TargetRectangle& src,
+                                                    float scale)
 {
   TargetRectangle dst;
 
@@ -1525,8 +1557,12 @@ void PostProcessor::CreatePostProcessingShaders()
     std::unique_ptr<PostProcessingShader> shader = CreateShader(it->second.get());
     if (!shader)
     {
-      ERROR_LOG(VIDEO, "Failed to initialize postprocessing shader ('%s'). This shader will be ignored.", shader_name.c_str());
-      OSD::AddMessage(StringFromFormat("Failed to initialize postprocessing shader ('%s'). This shader will be ignored.", shader_name.c_str()));
+      ERROR_LOG(VIDEO,
+                "Failed to initialize postprocessing shader ('%s'). This shader will be ignored.",
+                shader_name.c_str());
+      OSD::AddMessage(StringFromFormat(
+          "Failed to initialize postprocessing shader ('%s'). This shader will be ignored.",
+          shader_name.c_str()));
       continue;
     }
 
@@ -1537,8 +1573,10 @@ void PostProcessor::CreatePostProcessingShaders()
   m_active = !m_post_processing_shaders.empty();
   if (m_active)
   {
-    DEBUG_LOG(VIDEO, "Postprocessing is enabled with %u shaders in sequence.", (u32)m_post_processing_shaders.size());
-    OSD::AddMessage(StringFromFormat("Postprocessing is enabled with %u shaders in sequence.", (u32)m_post_processing_shaders.size()));
+    DEBUG_LOG(VIDEO, "Postprocessing is enabled with %u shaders in sequence.",
+              (u32)m_post_processing_shaders.size());
+    OSD::AddMessage(StringFromFormat("Postprocessing is enabled with %u shaders in sequence.",
+                                     (u32)m_post_processing_shaders.size()));
   }
 }
 
@@ -1550,8 +1588,11 @@ void PostProcessor::CreateScalingShader()
   m_scaling_shader = CreateShader(m_scaling_config.get());
   if (!m_scaling_shader)
   {
-    ERROR_LOG(VIDEO, "Failed to initialize scaling shader ('%s'). Falling back to copy shader.", m_scaling_config->GetShaderName().c_str());
-    OSD::AddMessage(StringFromFormat("Failed to initialize scaling shader ('%s'). Falling back to copy shader.", m_scaling_config->GetShaderName().c_str()));
+    ERROR_LOG(VIDEO, "Failed to initialize scaling shader ('%s'). Falling back to copy shader.",
+              m_scaling_config->GetShaderName().c_str());
+    OSD::AddMessage(
+        StringFromFormat("Failed to initialize scaling shader ('%s'). Falling back to copy shader.",
+                         m_scaling_config->GetShaderName().c_str()));
     m_scaling_shader.reset();
   }
 }
@@ -1564,8 +1605,11 @@ void PostProcessor::CreateStereoShader()
   m_stereo_shader = CreateShader(m_stereo_config.get());
   if (!m_stereo_shader)
   {
-    ERROR_LOG(VIDEO, "Failed to initialize stereoscopy shader ('%s'). Falling back to blit.", m_scaling_config->GetShaderName().c_str());
-    OSD::AddMessage(StringFromFormat("Failed to initialize stereoscopy shader ('%s'). Falling back to blit.", m_scaling_config->GetShaderName().c_str()));
+    ERROR_LOG(VIDEO, "Failed to initialize stereoscopy shader ('%s'). Falling back to blit.",
+              m_scaling_config->GetShaderName().c_str());
+    OSD::AddMessage(
+        StringFromFormat("Failed to initialize stereoscopy shader ('%s'). Falling back to blit.",
+                         m_scaling_config->GetShaderName().c_str()));
     m_stereo_shader.reset();
   }
 }
@@ -1650,8 +1694,7 @@ bool PostProcessor::ReconfigureScalingShader(const TargetSize& size)
 {
   if (m_scaling_shader)
   {
-    if (!m_scaling_shader->IsReady() ||
-      !m_scaling_shader->Reconfigure(size))
+    if (!m_scaling_shader->IsReady() || !m_scaling_shader->Reconfigure(size))
     {
       m_scaling_shader.reset();
       return false;
@@ -1667,9 +1710,8 @@ bool PostProcessor::ReconfigureStereoShader(const TargetSize& size)
 {
   if (m_stereo_shader)
   {
-    if (!m_stereo_shader->IsReady() ||
-      !m_stereo_shader->Reconfigure(size) ||
-      !ResizeStereoBuffer(size))
+    if (!m_stereo_shader->IsReady() || !m_stereo_shader->Reconfigure(size) ||
+        !ResizeStereoBuffer(size))
     {
       m_stereo_shader.reset();
       return false;
@@ -1681,12 +1723,14 @@ bool PostProcessor::ReconfigureStereoShader(const TargetSize& size)
   return true;
 }
 
-void PostProcessor::BlitScreen(const TargetRectangle& dst_rect, const TargetSize& dst_size, uintptr_t dst_texture,
-  const TargetRectangle& src_rect, const TargetSize& src_size, uintptr_t src_texture, uintptr_t src_depth_texture,
-  int src_layer, float gamma)
+void PostProcessor::BlitScreen(const TargetRectangle& dst_rect, const TargetSize& dst_size,
+                               uintptr_t dst_texture, const TargetRectangle& src_rect,
+                               const TargetSize& src_size, uintptr_t src_texture,
+                               uintptr_t src_depth_texture, int src_layer, float gamma)
 {
   const bool triguer_after_blit = ShouldTriggerAfterBlit();
-  DEBUG_ASSERT_MSG(VIDEO, src_layer >= 0, "BlitToFramebuffer should always be called with a single source layer");
+  DEBUG_ASSERT_MSG(VIDEO, src_layer >= 0,
+                   "BlitToFramebuffer should always be called with a single source layer");
 
   ReconfigureScalingShader(src_size);
   ReconfigureStereoShader(dst_size);
@@ -1694,7 +1738,7 @@ void PostProcessor::BlitScreen(const TargetRectangle& dst_rect, const TargetSize
   {
     TargetSize buffer_size(dst_rect.GetWidth(), dst_rect.GetHeight());
     if (!ResizeCopyBuffers(buffer_size, FramebufferManagerBase::GetEFBLayers()) ||
-      !ReconfigurePostProcessingShaders(buffer_size))
+        !ReconfigurePostProcessingShaders(buffer_size))
     {
       ERROR_LOG(VIDEO, "Failed to update post-processor state. Disabling post processor.");
       DisablePostProcessor();
@@ -1702,9 +1746,11 @@ void PostProcessor::BlitScreen(const TargetRectangle& dst_rect, const TargetSize
     }
   }
 
-  // Use stereo shader if enabled, otherwise invoke scaling shader, if that is invalid, fall back to blit.
+  // Use stereo shader if enabled, otherwise invoke scaling shader, if that is invalid, fall back to
+  // blit.
   if (m_stereo_shader)
-    DrawStereoBuffers(dst_rect, dst_size, dst_texture, src_rect, src_size, src_texture, src_depth_texture, gamma);
+    DrawStereoBuffers(dst_rect, dst_size, dst_texture, src_rect, src_size, src_texture,
+                      src_depth_texture, gamma);
   else if (triguer_after_blit)
   {
     TargetSize buffer_size(dst_rect.GetWidth(), dst_rect.GetHeight());
@@ -1719,24 +1765,33 @@ void PostProcessor::BlitScreen(const TargetRectangle& dst_rect, const TargetSize
     }
     if (m_scaling_shader)
     {
-      m_scaling_shader->Draw(this, buffer_rect, buffer_size, m_color_copy_texture->GetInternalObject(), src_rect, src_size, src_texture, src_depth_texture, src_layer, gamma);
+      m_scaling_shader->Draw(this, buffer_rect, buffer_size,
+                             m_color_copy_texture->GetInternalObject(), src_rect, src_size,
+                             src_texture, src_depth_texture, src_layer, gamma);
     }
     else
     {
-      CopyTexture(buffer_rect, m_color_copy_texture->GetInternalObject(), src_rect, src_texture, src_size, -1);
+      CopyTexture(buffer_rect, m_color_copy_texture->GetInternalObject(), src_rect, src_texture,
+                  src_size, -1);
     }
-    PostProcess(nullptr, nullptr, nullptr, buffer_rect, buffer_size, m_color_copy_texture->GetInternalObject(), src_rect, src_size, src_depth_texture, dst_texture, &dst_rect, &dst_size);
+    PostProcess(nullptr, nullptr, nullptr, buffer_rect, buffer_size,
+                m_color_copy_texture->GetInternalObject(), src_rect, src_size, src_depth_texture,
+                dst_texture, &dst_rect, &dst_size);
   }
   else if (m_scaling_shader)
-    m_scaling_shader->Draw(this, dst_rect, dst_size, dst_texture, src_rect, src_size, src_texture, src_depth_texture, src_layer, gamma);
+    m_scaling_shader->Draw(this, dst_rect, dst_size, dst_texture, src_rect, src_size, src_texture,
+                           src_depth_texture, src_layer, gamma);
   else
     CopyTexture(dst_rect, dst_texture, src_rect, src_texture, src_size, src_layer);
 }
 
-void PostProcessor::PostProcess(TargetRectangle* output_rect, TargetSize* output_size, uintptr_t* output_texture,
-  const TargetRectangle& src_rect, const TargetSize& src_size, uintptr_t src_texture,
-  const TargetRectangle& src_depth_rect, const TargetSize& src_depth_size, uintptr_t src_depth_texture,
-  uintptr_t dst_texture, const TargetRectangle* dst_rect, const TargetSize* dst_size)
+void PostProcessor::PostProcess(TargetRectangle* output_rect, TargetSize* output_size,
+                                uintptr_t* output_texture, const TargetRectangle& src_rect,
+                                const TargetSize& src_size, uintptr_t src_texture,
+                                const TargetRectangle& src_depth_rect,
+                                const TargetSize& src_depth_size, uintptr_t src_depth_texture,
+                                uintptr_t dst_texture, const TargetRectangle* dst_rect,
+                                const TargetSize* dst_size)
 {
   if (!m_active)
     return;
@@ -1744,7 +1799,7 @@ void PostProcessor::PostProcess(TargetRectangle* output_rect, TargetSize* output
   // Setup copy buffers first, and update compile-time constants.
   TargetSize buffer_size(src_rect.GetWidth(), src_rect.GetHeight());
   if (!ResizeCopyBuffers(buffer_size, FramebufferManagerBase::GetEFBLayers()) ||
-    !ReconfigurePostProcessingShaders(buffer_size))
+      !ReconfigurePostProcessingShaders(buffer_size))
   {
     ERROR_LOG(VIDEO, "Failed to update post-processor state. Disabling post processor.");
 
@@ -1775,7 +1830,8 @@ void PostProcessor::PostProcess(TargetRectangle* output_rect, TargetSize* output
   // Only copy if the size is different
   if (src_size != buffer_size || real_dst_texture == src_texture)
   {
-    CopyTexture(buffer_rect, m_color_copy_texture->GetInternalObject(), src_rect, src_texture, src_size, -1);
+    CopyTexture(buffer_rect, m_color_copy_texture->GetInternalObject(), src_rect, src_texture,
+                src_size, -1);
   }
   else
   {
@@ -1783,7 +1839,8 @@ void PostProcessor::PostProcess(TargetRectangle* output_rect, TargetSize* output
   }
   if (src_depth_texture != 0 && src_depth_size != buffer_size)
   {
-    CopyTexture(buffer_rect, m_depth_copy_texture->GetInternalObject(), src_depth_rect, src_depth_texture, src_depth_size, -1, true, true);
+    CopyTexture(buffer_rect, m_depth_copy_texture->GetInternalObject(), src_depth_rect,
+                src_depth_texture, src_depth_size, -1, true, true);
   }
   else
   {
@@ -1796,8 +1853,11 @@ void PostProcessor::PostProcess(TargetRectangle* output_rect, TargetSize* output
     PostProcessingShader* shader = m_post_processing_shaders[shader_index].get();
 
     // To save a copy, we use the output of one shader as the input to the next.
-    // This works except when the last pass is scaled, as the next shader expects a full-size input, so re-use the copy buffer for this case.
-    uintptr_t output_color_texture = (shader->IsLastPassScaled()) ? m_color_copy_texture->GetInternalObject() : shader->GetLastPassOutputTexture()->GetInternalObject();
+    // This works except when the last pass is scaled, as the next shader expects a full-size input,
+    // so re-use the copy buffer for this case.
+    uintptr_t output_color_texture = (shader->IsLastPassScaled()) ?
+                                         m_color_copy_texture->GetInternalObject() :
+                                         shader->GetLastPassOutputTexture()->GetInternalObject();
 
     // Last shader in the sequence? If so, write to the output texture.
     if (shader_index == (m_post_processing_shaders.size() - 1))
@@ -1806,7 +1866,8 @@ void PostProcessor::PostProcess(TargetRectangle* output_rect, TargetSize* output
       if (output_texture && !dst_texture)
       {
         // Use the same texture as if it was a previous pass, and return it.
-        shader->Draw(this, buffer_rect, buffer_size, output_color_texture, buffer_rect, buffer_size, input_color_texture, input_depth_texture, -1, 1.0f);
+        shader->Draw(this, buffer_rect, buffer_size, output_color_texture, buffer_rect, buffer_size,
+                     input_color_texture, input_depth_texture, -1, 1.0f);
         *output_rect = buffer_rect;
         *output_size = buffer_size;
         *output_texture = output_color_texture;
@@ -1814,7 +1875,9 @@ void PostProcessor::PostProcess(TargetRectangle* output_rect, TargetSize* output
       else
       {
         // Write to The output texturre directly.
-        shader->Draw(this, dst_rect != nullptr ? *dst_rect : src_rect, dst_size != nullptr ? *dst_size : src_size, real_dst_texture, buffer_rect, buffer_size, input_color_texture, input_depth_texture, -1, 1.0f);
+        shader->Draw(this, dst_rect != nullptr ? *dst_rect : src_rect,
+                     dst_size != nullptr ? *dst_size : src_size, real_dst_texture, buffer_rect,
+                     buffer_size, input_color_texture, input_depth_texture, -1, 1.0f);
         if (output_texture)
         {
           *output_rect = buffer_rect;
@@ -1825,17 +1888,22 @@ void PostProcessor::PostProcess(TargetRectangle* output_rect, TargetSize* output
     }
     else
     {
-      shader->Draw(this, buffer_rect, buffer_size, output_color_texture, buffer_rect, buffer_size, input_color_texture, input_depth_texture, -1, 1.0f);
+      shader->Draw(this, buffer_rect, buffer_size, output_color_texture, buffer_rect, buffer_size,
+                   input_color_texture, input_depth_texture, -1, 1.0f);
       input_color_texture = output_color_texture;
     }
   }
 }
 
-void PostProcessor::DrawStereoBuffers(const TargetRectangle& dst_rect, const TargetSize& dst_size, uintptr_t dst_texture,
-  const TargetRectangle& src_rect, const TargetSize& src_size, uintptr_t src_texture, uintptr_t src_depth_texture, float gamma)
+void PostProcessor::DrawStereoBuffers(const TargetRectangle& dst_rect, const TargetSize& dst_size,
+                                      uintptr_t dst_texture, const TargetRectangle& src_rect,
+                                      const TargetSize& src_size, uintptr_t src_texture,
+                                      uintptr_t src_depth_texture, float gamma)
 {
   const bool triguer_after_blit = ShouldTriggerAfterBlit();
-  uintptr_t stereo_buffer = (m_scaling_shader || triguer_after_blit) ? m_stereo_buffer_texture->GetInternalObject() : src_texture;
+  uintptr_t stereo_buffer = (m_scaling_shader || triguer_after_blit) ?
+                                m_stereo_buffer_texture->GetInternalObject() :
+                                src_texture;
   TargetRectangle stereo_buffer_rect(src_rect);
   TargetSize stereo_buffer_size(src_size);
 
@@ -1864,13 +1932,18 @@ void PostProcessor::DrawStereoBuffers(const TargetRectangle& dst_rect, const Tar
     }
     if (m_scaling_shader)
     {
-      m_scaling_shader->Draw(this, buffer_rect, buffer_size, m_color_copy_texture->GetInternalObject(), src_rect, src_size, src_texture, src_depth_texture, -1, gamma);
+      m_scaling_shader->Draw(this, buffer_rect, buffer_size,
+                             m_color_copy_texture->GetInternalObject(), src_rect, src_size,
+                             src_texture, src_depth_texture, -1, gamma);
     }
     else
     {
-      CopyTexture(buffer_rect, m_color_copy_texture->GetInternalObject(), src_rect, src_texture, src_size, -1);
+      CopyTexture(buffer_rect, m_color_copy_texture->GetInternalObject(), src_rect, src_texture,
+                  src_size, -1);
     }
-    PostProcess(nullptr, nullptr, nullptr, buffer_rect, buffer_size, m_color_copy_texture->GetInternalObject(), src_rect, src_size, src_depth_texture, stereo_buffer, &stereo_buffer_rect, &stereo_buffer_size);
+    PostProcess(nullptr, nullptr, nullptr, buffer_rect, buffer_size,
+                m_color_copy_texture->GetInternalObject(), src_rect, src_size, src_depth_texture,
+                stereo_buffer, &stereo_buffer_rect, &stereo_buffer_size);
   }
   else if (m_scaling_shader)
   {
@@ -1884,9 +1957,11 @@ void PostProcessor::DrawStereoBuffers(const TargetRectangle& dst_rect, const Tar
       stereo_buffer_rect.bottom = dst_size.height;
     }
     stereo_buffer_size = dst_size;
-    m_scaling_shader->Draw(this, stereo_buffer_rect, stereo_buffer_size, stereo_buffer, src_rect, src_size, src_texture, src_depth_texture, -1, gamma);
+    m_scaling_shader->Draw(this, stereo_buffer_rect, stereo_buffer_size, stereo_buffer, src_rect,
+                           src_size, src_texture, src_depth_texture, -1, gamma);
   }
-  m_stereo_shader->Draw(this, dst_rect, dst_size, dst_texture, stereo_buffer_rect, stereo_buffer_size, stereo_buffer, 0, 0, 1.0f);
+  m_stereo_shader->Draw(this, dst_rect, dst_size, dst_texture, stereo_buffer_rect,
+                        stereo_buffer_size, stereo_buffer, 0, 0, 1.0f);
 }
 
 const std::string PostProcessor::s_post_fragment_header_ogl = R"(
@@ -2376,27 +2451,31 @@ float4 GetBicubicSampleLocation(int idx, float2 location, out float4 scalingFact
 #define SetOutput(color) ocol0 = color
 )";
 
-void PostProcessor::GetUniformBufferShaderSource(API_TYPE api, const PostProcessingShaderConfiguration* config, std::string& shader_source, bool includeconfig)
+void PostProcessor::GetUniformBufferShaderSource(API_TYPE api,
+                                                 const PostProcessingShaderConfiguration* config,
+                                                 std::string& shader_source, bool includeconfig)
 {
   // Constant block
   if (api == API_OPENGL || api == API_VULKAN)
-    shader_source += StringFromFormat("UBO_BINDING(std140, %i) uniform PostProcessingConstants {\n", api == API_VULKAN ? 2 : 1);
+    shader_source += StringFromFormat("UBO_BINDING(std140, %i) uniform PostProcessingConstants {\n",
+                                      api == API_VULKAN ? 2 : 1);
   else if (api == API_D3D11)
     shader_source += "cbuffer PostProcessingConstants : register(b0) {\n";
 
   // Common constants
   shader_source += "\tfloat4 u_input_resolutions[8];\n"
-    "\tfloat4 u_target_resolution;\n"
-    "\tfloat4 u_source_rect;\n"
-    "\tfloat4 u_target_rect;\n"
-    "\tfloat4 u_viewport_rect;\n"
-    "\tfloat4 u_window_rect;\n"
-    "\tfloat u_time;\n"
-    "\tfloat u_src_layer;\n"
-    "\tfloat u_native_gamma;\n"
-    "\tuint u_scaling_filter;\n"
-    "};\n";
-  if (config == nullptr || !includeconfig || (config != nullptr && config->GetOptions().size() == 0))
+                   "\tfloat4 u_target_resolution;\n"
+                   "\tfloat4 u_source_rect;\n"
+                   "\tfloat4 u_target_rect;\n"
+                   "\tfloat4 u_viewport_rect;\n"
+                   "\tfloat4 u_window_rect;\n"
+                   "\tfloat u_time;\n"
+                   "\tfloat u_src_layer;\n"
+                   "\tfloat u_native_gamma;\n"
+                   "\tuint u_scaling_filter;\n"
+                   "};\n";
+  if (config == nullptr || !includeconfig ||
+      (config != nullptr && config->GetOptions().size() == 0))
   {
     return;
   }
@@ -2404,14 +2483,14 @@ void PostProcessor::GetUniformBufferShaderSource(API_TYPE api, const PostProcess
   std::string prefix = "";
   // User options
   if (api == API_OPENGL || api == API_VULKAN)
-    shader_source += StringFromFormat("UBO_BINDING(std140, %i) uniform ConfigurationConstants {\n", api == API_VULKAN ? 1 : 2);
+    shader_source += StringFromFormat("UBO_BINDING(std140, %i) uniform ConfigurationConstants {\n",
+                                      api == API_VULKAN ? 1 : 2);
   else if (api == API_D3D11)
   {
     prefix = "o_";
     bufferpacking = true;
     shader_source += "cbuffer ConfigurationConstants : register(b1) {\n";
   }
-
 
   u32 unused_counter = 2;
   u32 size = 0;
@@ -2461,7 +2540,8 @@ void PostProcessor::GetUniformBufferShaderSource(API_TYPE api, const PostProcess
       if (count == 1)
         shader_source += StringFromFormat("\tint %s%s;\n", prefix.c_str(), it.first.c_str());
       else
-        shader_source += StringFromFormat("\tint%d %s%s;\n", count, prefix.c_str(), it.first.c_str());
+        shader_source +=
+            StringFromFormat("\tint%d %s%s;\n", count, prefix.c_str(), it.first.c_str());
     }
     else if (it.second.m_type == POST_PROCESSING_OPTION_TYPE_FLOAT)
     {
@@ -2469,7 +2549,8 @@ void PostProcessor::GetUniformBufferShaderSource(API_TYPE api, const PostProcess
       if (count == 1)
         shader_source += StringFromFormat("\tfloat %s%s;\n", prefix.c_str(), it.first.c_str());
       else
-        shader_source += StringFromFormat("\tfloat%d %s%s;\n", count, prefix.c_str(), it.first.c_str());
+        shader_source +=
+            StringFromFormat("\tfloat%d %s%s;\n", count, prefix.c_str(), it.first.c_str());
     }
     if (!bufferpacking)
     {
@@ -2482,22 +2563,23 @@ void PostProcessor::GetUniformBufferShaderSource(API_TYPE api, const PostProcess
   shader_source += StringFromFormat("}%s;\n", api == API_D3D11 ? "" : " conf_options");
 }
 
-std::string PostProcessor::GetCommonFragmentShaderSource(API_TYPE api, const PostProcessingShaderConfiguration* config, int texture_register_start)
+std::string PostProcessor::GetCommonFragmentShaderSource(
+    API_TYPE api, const PostProcessingShaderConfiguration* config, int texture_register_start)
 {
   std::string shader_source;
   if (api == API_OPENGL || api == API_VULKAN)
   {
-    shader_source += StringFromFormat(s_post_fragment_header_ogl.c_str(),
-      api == API_VULKAN ? "1.0f - " : "",
-      texture_register_start,
-      api == API_VULKAN ? "layout(location = 0) " : "",
-      api == API_VULKAN ? "layout(location = 1) " : "",
-      api == API_VULKAN ? "layout(location = 2) " : "",
-      api == API_VULKAN ? "layout(location = 0) " : "");
+    shader_source +=
+        StringFromFormat(s_post_fragment_header_ogl.c_str(), api == API_VULKAN ? "1.0f - " : "",
+                         texture_register_start, api == API_VULKAN ? "layout(location = 0) " : "",
+                         api == API_VULKAN ? "layout(location = 1) " : "",
+                         api == API_VULKAN ? "layout(location = 2) " : "",
+                         api == API_VULKAN ? "layout(location = 0) " : "");
   }
   else if (api == API_D3D11)
   {
-    shader_source += StringFromFormat(s_post_fragment_header_d3d.c_str(), texture_register_start, texture_register_start);
+    shader_source += StringFromFormat(s_post_fragment_header_d3d.c_str(), texture_register_start,
+                                      texture_register_start);
   }
 
   // Add uniform buffer
@@ -2511,7 +2593,8 @@ std::string PostProcessor::GetCommonFragmentShaderSource(API_TYPE api, const Pos
 
     if (it.second.m_type == POST_PROCESSING_OPTION_TYPE_BOOL)
     {
-      shader_source += StringFromFormat("#define %s (%d)\n", it.first.c_str(), (int)it.second.m_bool_value);
+      shader_source +=
+          StringFromFormat("#define %s (%d)\n", it.first.c_str(), (int)it.second.m_bool_value);
     }
     else if (it.second.m_type == POST_PROCESSING_OPTION_TYPE_INTEGER)
     {
@@ -2539,9 +2622,8 @@ std::string PostProcessor::GetCommonFragmentShaderSource(API_TYPE api, const Pos
 }
 
 std::string PostProcessor::GetPassFragmentShaderSource(
-  API_TYPE api,
-  const PostProcessingShaderConfiguration* config,
-  const PostProcessingShaderConfiguration::RenderPass* pass)
+    API_TYPE api, const PostProcessingShaderConfiguration* config,
+    const PostProcessingShaderConfiguration::RenderPass* pass)
 {
   std::string shader_source;
 
@@ -2564,21 +2646,22 @@ std::string PostProcessor::GetPassFragmentShaderSource(
   else
   {
     shader_source += "void passmain(in float4 in_pos : SV_Position,\n"
-      "          in float2 in_srcTexCoord : TEXCOORD0,\n"
-      "          in float2 in_dstTexCoord : TEXCOORD1,\n"
-      "          in float in_layer : TEXCOORD2,\n"
-      "          out float4 out_col0 : SV_Target)\n"
-      "{\n"
-      "\tv_fragcoord = u_viewport_rect.xy + in_pos.xy;\n"
-      "\tv_source_uv = in_srcTexCoord;\n"
-      "\tv_target_uv = in_dstTexCoord;\n"
-      "\tv_layer = in_layer;\n";
+                     "          in float2 in_srcTexCoord : TEXCOORD0,\n"
+                     "          in float2 in_dstTexCoord : TEXCOORD1,\n"
+                     "          in float in_layer : TEXCOORD2,\n"
+                     "          out float4 out_col0 : SV_Target)\n"
+                     "{\n"
+                     "\tv_fragcoord = u_viewport_rect.xy + in_pos.xy;\n"
+                     "\tv_source_uv = in_srcTexCoord;\n"
+                     "\tv_target_uv = in_dstTexCoord;\n"
+                     "\tv_layer = in_layer;\n";
 
     // No entry point? This pass should perform a copy.
     if (pass->entry_point.empty())
       shader_source += "\tocol0 = SampleInput(0);\n";
     else
-      shader_source += StringFromFormat("\t%s();\n", (pass->entry_point != "main") ? pass->entry_point.c_str() : "main");
+      shader_source += StringFromFormat(
+          "\t%s();\n", (pass->entry_point != "main") ? pass->entry_point.c_str() : "main");
 
     shader_source += "\tout_col0 = ocol0;\n";
     shader_source += "}\n";
@@ -2587,11 +2670,12 @@ std::string PostProcessor::GetPassFragmentShaderSource(
   return shader_source;
 }
 
-bool  PostProcessor::UpdateConstantUniformBuffer(
-  const InputTextureSizeArray& input_sizes,
-  const TargetRectangle& dst_rect, const TargetSize& dst_size,
-  const TargetRectangle& src_rect, const TargetSize& src_size,
-  int src_layer, float gamma)
+bool PostProcessor::UpdateConstantUniformBuffer(const InputTextureSizeArray& input_sizes,
+                                                const TargetRectangle& dst_rect,
+                                                const TargetSize& dst_size,
+                                                const TargetRectangle& src_rect,
+                                                const TargetSize& src_size, int src_layer,
+                                                float gamma)
 {
   // Check if the size has changed, due to options.
   Constant temp;
@@ -2616,7 +2700,8 @@ bool  PostProcessor::UpdateConstantUniformBuffer(
 
   // float4 src_rect
   temp.float_constant[0] = (float)src_rect.left / (float)src_size.width;
-  temp.float_constant[1] = (float)((m_APIType == API_OPENGL) ? src_rect.bottom : src_rect.top) / (float)src_size.height;
+  temp.float_constant[1] =
+      (float)((m_APIType == API_OPENGL) ? src_rect.bottom : src_rect.top) / (float)src_size.height;
   temp.float_constant[2] = (float)src_rect.GetWidth() / (float)src_size.width;
   temp.float_constant[3] = (float)src_rect.GetHeight() / (float)src_size.height;
   m_new_constants[constant_idx] = temp;
@@ -2624,7 +2709,8 @@ bool  PostProcessor::UpdateConstantUniformBuffer(
 
   // float4 target_rect
   temp.float_constant[0] = (float)dst_rect.left / (float)dst_size.width;
-  temp.float_constant[1] = (float)((m_APIType == API_OPENGL) ? dst_rect.bottom : dst_rect.top) / (float)dst_size.height;
+  temp.float_constant[1] =
+      (float)((m_APIType == API_OPENGL) ? dst_rect.bottom : dst_rect.top) / (float)dst_size.height;
   temp.float_constant[2] = (float)dst_rect.GetWidth() / (float)dst_size.width;
   temp.float_constant[3] = (float)dst_rect.GetHeight() / (float)dst_size.height;
   m_new_constants[constant_idx] = temp;
@@ -2651,12 +2737,17 @@ bool  PostProcessor::UpdateConstantUniformBuffer(
   temp.float_constant[0] = float(double(m_timer.GetTimeDifference()) / 1000.0);
   temp.float_constant[1] = float(std::max(src_layer, 0));
   temp.float_constant[2] = gamma;
-  temp.int_constant[3] = (src_rect.GetWidth() > dst_rect.GetWidth() && dst_rect.GetHeight() > dst_rect.GetHeight() && g_ActiveConfig.bUseScalingFilter) ? 1u : 0;
+  temp.int_constant[3] =
+      (src_rect.GetWidth() > dst_rect.GetWidth() && dst_rect.GetHeight() > dst_rect.GetHeight() &&
+       g_ActiveConfig.bUseScalingFilter) ?
+          1u :
+          0;
   m_new_constants[constant_idx] = temp;
   constant_idx++;
 
   // Any changes?
-  if (!memcmp(m_current_constants.data(), m_new_constants.data(), POST_PROCESSING_CONTANTS_BUFFER_SIZE))
+  if (!memcmp(m_current_constants.data(), m_new_constants.data(),
+              POST_PROCESSING_CONTANTS_BUFFER_SIZE))
     return false;
 
   // Swap buffer pointers, to avoid copying data again
@@ -2670,7 +2761,8 @@ void* PostProcessingShaderConfiguration::GetConfigurationBuffer(u32* buffer_size
   return m_constants.data();
 }
 
-void* PostProcessingShaderConfiguration::UpdateConfigurationBuffer(u32* buffer_size, bool packbuffer)
+void* PostProcessingShaderConfiguration::UpdateConfigurationBuffer(u32* buffer_size,
+                                                                   bool packbuffer)
 {
   size_t active_constant_count = m_options.size();
   if (!m_configuration_buffer_dirty || !active_constant_count)
@@ -2684,7 +2776,8 @@ void* PostProcessingShaderConfiguration::UpdateConfigurationBuffer(u32* buffer_s
 
   size_t constant_idx = 0;
   size_t element_idx = 0;
-  // Set from options. This is an ordered map so it will always match the order in the shader code generated.
+  // Set from options. This is an ordered map so it will always match the order in the shader code
+  // generated.
   for (const auto& it : m_options)
   {
     // Skip compile-time constants, since they're set in the program source.
@@ -2710,7 +2803,6 @@ void* PostProcessingShaderConfiguration::UpdateConfigurationBuffer(u32* buffer_s
         constant_idx++;
       }
     }
-
 
     switch (it.second.m_type)
     {
