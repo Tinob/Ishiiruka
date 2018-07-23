@@ -45,7 +45,7 @@ GUIName = SSAO
 OptionName = A_SSAO_ENABLED
 DefaultValue = false
 ResolveAtCompilation = True
-GUIDescription = Enables Screen Space Ambient Occlusion.
+GUIDescription = Enables Screen Space Ambient Occlusion. Creates shadow on visuals.
 GUIDescription.SPA = Habilita la Oclusión Ambiental.
 
 [OptionBool]
@@ -200,6 +200,7 @@ DependentOption = A_SSGI_ENABLED
 GUIName = MATSO DOF
 OptionName = MATSODOF
 DefaultValue = false
+GUIDescription = Obscures visuals to give appearance of depth.
 
 [OptionBool]
 GUIName = Use depth range focus
@@ -508,6 +509,7 @@ DependentOption = F_FOG
 GUIName = Bloom
 OptionName = D_BLOOM
 DefaultValue = true
+GUIDescription = Increases "bloom" effect. Tends to increase brightness which can be corrected under saturation.
 
 [OptionBool]
 GUIName = Bloom Only
@@ -543,7 +545,7 @@ DefaultValue = 0.27
 DependentOption = D_BLOOM
 
 [OptionBool]
-GUIName = Ligth Scattering
+GUIName = Light Scattering
 OptionName = D_SCATTERRING
 DefaultValue = False
 DependentOption = D_BLOOM
@@ -653,6 +655,7 @@ GUIDescription = R, G and B components of anamorphic flare. Flare is always same
 GUIName = Barrel Distortion
 OptionName = E_BARREL
 DefaultValue = false
+GUIDescription = Bends output video. Used to emulate the effect of CRT monitors on modern hardware.
 
 [OptionRangeFloat]
 GUIName = Lens Center Offset
