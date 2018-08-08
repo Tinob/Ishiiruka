@@ -4,6 +4,7 @@
 // Added for Ishiiruka by Tino
 #pragma once
 #include "Common/CPUDetect.h"
+#include "Common/Intrinsics.h"
 #include "VideoCommon/VertexLoader_ColorFuncs.h"
 #include "VideoCommon/VertexLoader_NormalFuncs.h"
 #include "VideoCommon/VertexLoader_PositionFuncs.h"
