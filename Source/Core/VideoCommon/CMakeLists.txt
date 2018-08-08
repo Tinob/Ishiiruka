@@ -78,10 +78,8 @@ set(LIBS core png xbrz)
 
 if(_M_X86)
 	set(SRCS ${SRCS} x64TextureDecoder.cpp VertexLoaderX64.cpp)
-elseif(_M_ARM_64)
-	set(SRCS ${SRCS} VertexLoaderARM64.cpp TextureDecoder_Generic.cpp)
 else()
-	set(SRCS ${SRCS} TextureDecoder_Generic.cpp)
+	set(SRCS ${SRCS} GenericTextureDecoder.cpp)
 endif()
 
 add_dolphin_library(videocommon "${SRCS}" "${LIBS}")

@@ -1034,7 +1034,7 @@ void scaleSmoothstepTSSE41(u32* data, u32* out, int w, int h)
 template<int f>
 void scale3PointTSSE41(u32* data, u32* out, int w, int h)
 {
-  int outw = w * f, outh = h * f, factor = f - 2, offset = -(f >> 1);
+  int outw = w * f, outh = h * f, offset = -(f >> 1);
   for (int cy = 0; cy <= h; ++cy)
   {
     for (int cx = 0; cx <= w; ++cx)
@@ -1085,7 +1085,7 @@ void scale3PointTSSE41(u32* data, u32* out, int w, int h)
 template<int f>
 void scaleDDTSharpTSSE41(u32* data, u32* out, int w, int h)
 {
-  int outw = w * f, outh = h * f, factor = f - 2, offset = -(f >> 1);
+  int outw = w * f, outh = h * f, offset = -(f >> 1);
   for (int cy = 0; cy <= h; ++cy)
   {
     for (int cx = 0; cx <= w; ++cx)
@@ -1160,7 +1160,7 @@ void scaleDDTSharpTSSE41(u32* data, u32* out, int w, int h)
 template<int f>
 void scaleDDTTSSE41(u32* data, u32* out, int w, int h)
 {
-  int outw = w * f, outh = h * f, factor = f - 2, offset = -(f >> 1);
+  int outw = w * f, outh = h * f, offset = -(f >> 1);
   for (int cy = 0; cy <= h; ++cy)
   {
     for (int cx = 0; cx <= w; ++cx)
