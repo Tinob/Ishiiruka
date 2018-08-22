@@ -115,6 +115,8 @@ const ConfigInfo<bool> GFX_SW_DUMP_TEV_TEX_FETCHES{{System::GFX, "Settings", "SW
 const ConfigInfo<int> GFX_SW_DRAW_START{{System::GFX, "Settings", "SWDrawStart"}, 0};
 const ConfigInfo<int> GFX_SW_DRAW_END{{System::GFX, "Settings", "SWDrawEnd"}, 100000};
 
+const ConfigInfo<bool> GFX_PREFER_GLES{{System::GFX, "Settings", "PreferGLES"}, false};
+
 // Graphics.Enhancements
 
 const ConfigInfo<int> GFX_ENHANCE_FILTERING_MODE{{System::GFX, "Enhancements", "FilteringMode"}, 1};
