@@ -572,7 +572,7 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
       sourceRc.right = (float)xfbSource->sourceRc.right;
       sourceRc.top = (float)xfbSource->sourceRc.top;
       sourceRc.bottom = (float)xfbSource->sourceRc.bottom;
-      if (g_ActiveConfig.bUseRealXFB)
+      if (xfbSource->real)
       {
         drawRc.top = 1;
         drawRc.bottom = -1;

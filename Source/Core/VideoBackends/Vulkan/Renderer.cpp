@@ -657,7 +657,7 @@ void Renderer::DrawFrame(const TargetRectangle& target_rc, const TargetRectangle
 {
   if (!g_ActiveConfig.bUseXFB)
     DrawEFB(target_rc, scaled_source_rc, dst_texture, dst_size, Gamma);
-  else if (g_ActiveConfig.bUseRealXFB)
+  else if (xfb_count == 0 || (xfb_count > 0 && xfb_sources[0]->real))
     DrawRealXFB(target_rc, xfb_sources, xfb_count, fb_width, fb_stride, fb_height, dst_texture, dst_size, Gamma);
   else
     DrawVirtualXFB(target_rc, xfb_addr, xfb_sources, xfb_count, dst_texture, dst_size, fb_width, fb_stride, fb_height, Gamma);
