@@ -260,22 +260,17 @@ float4 CHK_O_U8(float4 x)
 float2 BSH(float2 x, float n)
 {
 	float z = exp2(-n);
-	if (z < 1.0)
-	{
-		float y = (1.0 / z);
-		if (x.x < 0.0)
-			x.x = 1.0 + x.x - y;
-		if (x.y < 0.0)
-			x.y = 1.0 + x.y - y;
-	}
+	float y = 1.0 - (1.0 / z);
+	x = x + (float2(1.0, 1.0)-step(x, 0.0)) * (float2(1.0, 1.0)-step(z, 1.0)) * y;
 	return trunc(x * z);
 }
 // remainder implementation with the restriction that "y" must be always greater than 0
 float remainder(float x, float y)
 {
-	y = (x < 0.0) ? (-y) : y;
+	y = (step(x,0.0) * 2.0 - 1.0) * y;
 	return frac(x/y)*y;
 }
+
 // rounding + casting to integer at once in a single function
 wu  wuround(float  x) { return wu(round(x)); }
 wu2 wuround(float2 x) { return wu2(round(x)); }
