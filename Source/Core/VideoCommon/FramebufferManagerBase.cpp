@@ -6,6 +6,9 @@
 #include <array>
 #include <memory>
 #include <utility>
+
+#include "Core/HW/Memmap.h"
+
 #include "VideoCommon/FramebufferManagerBase.h"
 #include "VideoCommon/RenderBase.h"
 #include "VideoCommon/VideoConfig.h"
@@ -39,11 +42,22 @@ const XFBSourceBase* const* FramebufferManagerBase::GetXFBSource(u32 xfbAddr, u3
 {
   if (!g_ActiveConfig.bUseXFB)
     return nullptr;
-
-  if (g_ActiveConfig.bUseRealXFB)
-    return GetRealXFBSource(xfbAddr, fbWidth, fbHeight, xfbCountP);
-  else
-    return GetVirtualXFBSource(xfbAddr, fbWidth, fbHeight, xfbCountP);
+  const XFBSourceBase* const* source = GetVirtualXFBSource(xfbAddr, fbWidth, fbHeight, xfbCountP);
+  if (g_ActiveConfig.bUseRealXFB && source != nullptr)
+  {
+    bool modified = false;
+    for (size_t i = 0; i < *xfbCountP && !modified; i++)
+    {
+      size_t srcHash = GetHash64(Memory::GetPointer(xfbAddr), source[i]->srcHeight * source[i]->srcStride,
+                                 g_ActiveConfig.iSafeTextureCache_ColorSamples);
+      modified = modified || srcHash != source[i]->hash;
+    }
+    if (modified)
+    {
+      return GetRealXFBSource(xfbAddr, fbWidth, fbHeight, xfbCountP);
+    }
+  }
+  return source;
 }
 
 const XFBSourceBase* const* FramebufferManagerBase::GetRealXFBSource(u32 xfbAddr, u32 fbWidth, u32 fbHeight, u32* xfbCountP)
@@ -72,7 +86,7 @@ const XFBSourceBase* const* FramebufferManagerBase::GetRealXFBSource(u32 xfbAddr
   m_realXFBSource->sourceRc.top = 0;
   m_realXFBSource->sourceRc.right = fbWidth;
   m_realXFBSource->sourceRc.bottom = fbHeight;
-
+  m_realXFBSource->real = true;
   // Decode YUYV data from GameCube RAM
   m_realXFBSource->DecodeToTexture(xfbAddr, fbWidth, fbHeight);
 
@@ -113,22 +127,17 @@ const XFBSourceBase* const* FramebufferManagerBase::GetVirtualXFBSource(u32 xfbA
 
 void FramebufferManagerBase::CopyToXFB(u32 xfbAddr, u32 fbStride, u32 fbHeight, const EFBRectangle& sourceRc, float Gamma)
 {
+  if (!g_framebuffer_manager)
+    return;
   if (g_ActiveConfig.bUseRealXFB)
   {
-    if (g_framebuffer_manager)
-      g_framebuffer_manager->CopyToRealXFB(xfbAddr, fbStride, fbHeight, sourceRc, Gamma);
+    g_framebuffer_manager->CopyToRealXFB(xfbAddr, fbStride, fbHeight, sourceRc, Gamma);    
   }
-  else
-  {
-    CopyToVirtualXFB(xfbAddr, fbStride, fbHeight, sourceRc, Gamma);
-  }
+  CopyToVirtualXFB(xfbAddr, fbStride, fbHeight, sourceRc, Gamma);
 }
 
 void FramebufferManagerBase::CopyToVirtualXFB(u32 xfbAddr, u32 fbStride, u32 fbHeight, const EFBRectangle& sourceRc, float Gamma)
 {
-  if (!g_framebuffer_manager)
-    return;
-
   VirtualXFBListType::iterator vxfb = FindVirtualXFB(xfbAddr, sourceRc.GetWidth(), fbHeight);
 
   if (m_virtualXFBList.end() == vxfb)
@@ -171,7 +180,17 @@ void FramebufferManagerBase::CopyToVirtualXFB(u32 xfbAddr, u32 fbStride, u32 fbH
   vxfb->xfbSource->srcAddr = vxfb->xfbAddr = xfbAddr;
   vxfb->xfbSource->srcWidth = vxfb->xfbWidth = sourceRc.GetWidth();
   vxfb->xfbSource->srcHeight = vxfb->xfbHeight = fbHeight;
-
+  vxfb->xfbSource->srcStride = fbStride;
+  vxfb->xfbSource->real = false;
+  if (g_ActiveConfig.bUseRealXFB)
+  {
+    vxfb->xfbSource->hash = GetHash64(Memory::GetPointer(xfbAddr), fbHeight * fbStride,
+              g_ActiveConfig.iSafeTextureCache_ColorSamples);
+  }
+  else
+  {
+    vxfb->xfbSource->hash = 0;
+  }
   vxfb->xfbSource->sourceRc = g_renderer->ConvertEFBRectangle(sourceRc);
 
   // keep stale XFB data from being used
