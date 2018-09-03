@@ -20,8 +20,8 @@
 
 namespace OGL
 {
-
-std::unique_ptr<NativeVertexFormat> VertexManager::CreateNativeVertexFormat(const PortableVertexDeclaration &_vtx_decl)
+std::unique_ptr<NativeVertexFormat>
+VertexManager::CreateNativeVertexFormat(const PortableVertexDeclaration& _vtx_decl)
 {
   return std::make_unique<GLVertexFormat>(_vtx_decl);
 }
@@ -33,28 +33,38 @@ GLVertexFormat::~GLVertexFormat()
 
 static inline GLuint VarToGL(EVTXComponentFormat t)
 {
-  static const GLuint lookup[5] = {
-      GL_UNSIGNED_BYTE, GL_BYTE, GL_UNSIGNED_SHORT, GL_SHORT, GL_FLOAT
-  };
+  static const GLuint lookup[5] = {GL_UNSIGNED_BYTE, GL_BYTE, GL_UNSIGNED_SHORT, GL_SHORT,
+                                   GL_FLOAT};
   return lookup[t];
 }
 
-static void SetPointer(u32 attrib, u32 stride, const AttributeFormat &format)
+static void SetPointer(u32 attrib, u32 stride, const AttributeFormat& format)
 {
   if (!format.enable)
     return;
 
   glEnableVertexAttribArray(attrib);
-  glVertexAttribPointer(attrib, format.components, VarToGL(format.type), true, stride, (u8*)nullptr + format.offset);
+  glVertexAttribPointer(attrib, format.components, VarToGL(format.type), true, stride,
+                        (u8*)nullptr + format.offset);
 }
 
-GLVertexFormat::GLVertexFormat(const PortableVertexDeclaration &_vtx_decl)
+GLVertexFormat::GLVertexFormat(const PortableVertexDeclaration& _vtx_decl)
 {
   vtx_decl = _vtx_decl;
 
   // We will not allow vertex components causing uneven strides.
   if (vtx_decl.stride & 3)
     PanicAlert("Uneven vertex stride: %i", vtx_decl.stride);
+  
+}
+
+void GLVertexFormat::SetFormat()
+{
+  if (initialized)
+  {
+    return;
+  }
+  initialized = true;
   VertexManager* const vm = static_cast<VertexManager*>(g_vertex_manager.get());
 
   glGenVertexArrays(1, &VAO);
@@ -76,11 +86,13 @@ GLVertexFormat::GLVertexFormat(const PortableVertexDeclaration &_vtx_decl)
   for (int i = 0; i < 8; i++)
     SetPointer(SHADER_TEXTURE0_ATTRIB + i, vtx_decl.stride, vtx_decl.texcoords[i]);
 
+  
   if (vtx_decl.posmtx.enable)
   {
     glEnableVertexAttribArray(SHADER_POSMTX_ATTRIB);
-    glVertexAttribIPointer(SHADER_POSMTX_ATTRIB, 4, GL_UNSIGNED_BYTE, vtx_decl.stride, (u8*)NULL + vtx_decl.posmtx.offset);
+    glVertexAttribIPointer(SHADER_POSMTX_ATTRIB, 4, GL_UNSIGNED_BYTE, vtx_decl.stride,
+                           (u8*)NULL + vtx_decl.posmtx.offset);
   }
 }
 
-}
+}  // namespace OGL

@@ -137,6 +137,7 @@ u16* VertexManager::GetIndexBuffer()
 void VertexManager::vFlush(bool useDstAlpha)
 {
   GLVertexFormat* nativeVertexFmt = (GLVertexFormat*)VertexLoaderManager::GetCurrentVertexFormat();
+  nativeVertexFmt->SetFormat();
   u32 stride = nativeVertexFmt->GetVertexStride();
   BBox::Update();
   // Makes sure we can actually do Dual source blending
