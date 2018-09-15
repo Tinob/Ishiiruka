@@ -644,6 +644,7 @@ void Renderer::SwapImpl(u32 xfb_addr, u32 fb_width, u32 fb_stride, u32 fb_height
 
   // Enable configuration changes
   UpdateActiveConfig();
+  m_post_processor->UpdateConfiguration();
   g_texture_cache->OnConfigChanged(g_ActiveConfig);
 
   SetWindowSize(fb_stride, fb_height);

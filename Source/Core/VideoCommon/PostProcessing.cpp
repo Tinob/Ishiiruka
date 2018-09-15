@@ -3,6 +3,7 @@
 // Refer to the license.txt file included.
 
 #include <cmath>
+#include <mutex>
 #include <string>
 
 #include <SOIL/SOIL.h>
@@ -26,6 +27,8 @@
 #include "VideoCommon/XFMemory.h"
 
 static const char s_default_shader[] = "void main() { SetOutput(ApplyGCGamma(Sample())); }\n";
+static std::mutex config_mutex;
+
 struct LangDescriptor
 {
   const char* Lang;
@@ -104,7 +107,7 @@ bool PostProcessingShaderConfiguration::LoadShader(const std::string& sub_dir,
   // clear all state
   m_shader_name = name;
   m_shader_source.clear();
-  m_options.clear();
+  m_loaded_options.clear();
   m_render_passes.clear();
   m_any_options_dirty = false;
   m_compile_time_constants_dirty = false;
@@ -500,7 +503,8 @@ bool PostProcessingShaderConfiguration::ParseOptionBlock(const std::string& dirn
   option.m_default_bool_value = option.m_bool_value;
   option.m_default_float_values = option.m_float_values;
   option.m_default_integer_values = option.m_integer_values;
-  m_options[option.m_option_name] = option;
+  std::unique_lock<std::mutex> config_lock(config_mutex);
+  m_loaded_options[option.m_option_name] = option;
   return true;
 }
 
@@ -557,8 +561,8 @@ bool PostProcessingShaderConfiguration::ParsePassBlock(const std::string& dirnam
     }
     else if (key == "DependantOption" || key == "DependentOption")
     {
-      ConfigMap::const_iterator it = m_options.find(value);
-      if (it != m_options.cend())
+      ConfigMap::const_iterator it = m_loaded_options.find(value);
+      if (it != m_loaded_options.cend())
       {
         if (it->second.m_type == POST_PROCESSING_OPTION_TYPE_BOOL)
         {
@@ -798,7 +802,8 @@ void PostProcessingShaderConfiguration::CreateDefaultPass()
 void PostProcessingShaderConfiguration::LoadOptionsConfigurationFromSection(
     IniFile::Section* section)
 {
-  for (auto& it : m_options)
+  std::unique_lock<std::mutex> config_lock(config_mutex);
+  for (auto& it : m_loaded_options)
   {
     auto& current = it.second;
     switch (current.m_type)
@@ -863,10 +868,13 @@ void PostProcessingShaderConfiguration::LoadOptionsConfiguration()
     }
   }
   m_configuration_buffer_dirty = true;
+  m_pending_config_sync.store(true);
+  SyncConfiguration();
 }
 
 void PostProcessingShaderConfiguration::SaveOptionsConfiguration()
 {
+  std::unique_lock<std::mutex> config_lock(config_mutex);
   std::string file_path;
   IniFile ini;
   IniFile::Section* section = nullptr;
@@ -898,7 +906,7 @@ void PostProcessingShaderConfiguration::SaveOptionsConfiguration()
     section = ini.GetOrCreateSection("options");
   }
 
-  for (auto& it : m_options)
+  for (auto& it : m_loaded_options)
   {
     auto& current = it.second;
     switch (current.m_type)
@@ -936,50 +944,67 @@ void PostProcessingShaderConfiguration::SaveOptionsConfiguration()
   ini.Save(file_path);
 }
 
+void PostProcessingShaderConfiguration::SyncConfiguration()
+{
+  bool changed = false;
+  if (m_pending_config_sync.load())
+  {
+    std::unique_lock<std::mutex> config_lock(config_mutex);
+    m_running_options = m_loaded_options;
+    for (auto& it : m_loaded_options)
+    {
+      it.second.m_dirty = false;
+    }
+    changed = true;
+    m_pending_config_sync.store(false);
+  }
+  if (changed)
+  {
+    for (auto& it : m_running_options)
+    {
+      bool dirty = it.second.m_dirty;
+      m_any_options_dirty = m_any_options_dirty || dirty;
+      m_compile_time_constants_dirty =
+          m_compile_time_constants_dirty || (dirty && it.second.m_compile_time_constant);
+    }
+  }
+}
+
 void PostProcessingShaderConfiguration::SetOptionf(const std::string& option, int index,
                                                    float value)
 {
-  auto it = m_options.find(option);
+  auto it = m_loaded_options.find(option);
 
   if (it->second.m_float_values[index] == value)
     return;
-
+  std::unique_lock<std::mutex> config_lock(config_mutex);
   it->second.m_float_values[index] = value;
   it->second.m_dirty = true;
-  m_any_options_dirty = true;
-
-  if (it->second.m_compile_time_constant)
-    m_compile_time_constants_dirty = true;
+  m_pending_config_sync.store(true);
 }
 
 void PostProcessingShaderConfiguration::SetOptioni(const std::string& option, int index, s32 value)
 {
-  auto it = m_options.find(option);
+  auto it = m_loaded_options.find(option);
 
   if (it->second.m_integer_values[index] == value)
     return;
-
+  std::unique_lock<std::mutex> config_lock(config_mutex);
   it->second.m_integer_values[index] = value;
   it->second.m_dirty = true;
-  m_any_options_dirty = true;
-
-  if (it->second.m_compile_time_constant)
-    m_compile_time_constants_dirty = true;
+  m_pending_config_sync.store(true);
 }
 
 void PostProcessingShaderConfiguration::SetOptionb(const std::string& option, bool value)
 {
-  auto it = m_options.find(option);
+  auto it = m_loaded_options.find(option);
 
   if (it->second.m_bool_value == value)
     return;
-
+  std::unique_lock<std::mutex> config_lock(config_mutex);
   it->second.m_bool_value = value;
   it->second.m_dirty = true;
-  m_any_options_dirty = true;
-
-  if (it->second.m_compile_time_constant)
-    m_compile_time_constants_dirty = true;
+  m_pending_config_sync.store(true);
 }
 
 PostProcessingShader::~PostProcessingShader() {}
@@ -1404,6 +1429,22 @@ void PostProcessor::OnEndFrame()
     DoEFB(nullptr);
 
   m_projection_state = PROJECTION_STATE_INITIAL;
+}
+
+void PostProcessor::UpdateConfiguration()
+{
+  if (m_stereo_config)
+  {
+    m_stereo_config->SyncConfiguration();
+  }
+  if (m_scaling_config)
+  {
+    m_scaling_config->SyncConfiguration();
+  }
+  for (auto& it : m_shader_configs)
+  {
+    it.second->SyncConfiguration();
+  }
 }
 
 PostProcessingShaderConfiguration*
@@ -2764,7 +2805,7 @@ void* PostProcessingShaderConfiguration::GetConfigurationBuffer(u32* buffer_size
 void* PostProcessingShaderConfiguration::UpdateConfigurationBuffer(u32* buffer_size,
                                                                    bool packbuffer)
 {
-  size_t active_constant_count = m_options.size();
+  size_t active_constant_count = m_running_options.size();
   if (!m_configuration_buffer_dirty || !active_constant_count)
   {
     return nullptr;
@@ -2778,7 +2819,7 @@ void* PostProcessingShaderConfiguration::UpdateConfigurationBuffer(u32* buffer_s
   size_t element_idx = 0;
   // Set from options. This is an ordered map so it will always match the order in the shader code
   // generated.
-  for (const auto& it : m_options)
+  for (const auto& it : m_running_options)
   {
     // Skip compile-time constants, since they're set in the program source.
     if (it.second.m_compile_time_constant)

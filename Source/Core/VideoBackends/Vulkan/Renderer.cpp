@@ -1168,7 +1168,7 @@ void Renderer::CheckForConfigChanges()
   // NOTE: This can potentially race with the UI thread, however if it does, the changes will be
   // delayed until the next time CheckForConfigChanges is called.
   UpdateActiveConfig();
-
+  m_post_processor->UpdateConfiguration();
   // Determine which (if any) settings have changed.
   bool anisotropy_changed = old_anisotropy != g_ActiveConfig.iMaxAnisotropy;
   bool filtering_changed = old_filtering_mode != g_ActiveConfig.eFilteringMode;

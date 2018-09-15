@@ -1479,6 +1479,7 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight,
   g_Config.iSaveTargetId = 0;
   int old_anisotropy = g_ActiveConfig.iMaxAnisotropy;
   UpdateActiveConfig();
+  m_post_processor->UpdateConfiguration();
   g_texture_cache->OnConfigChanged(g_ActiveConfig);
   if (old_anisotropy != g_ActiveConfig.iMaxAnisotropy)
     g_sampler_cache->Clear();

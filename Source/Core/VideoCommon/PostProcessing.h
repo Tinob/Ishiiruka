@@ -5,6 +5,7 @@
 #pragma once
 
 #include <array>
+#include <atomic>
 #include <map>
 #include <memory>
 #include <string>
@@ -221,7 +222,7 @@ public:
       m_configuration_buffer_dirty = m_any_options_dirty;
       m_any_options_dirty = false;
       m_compile_time_constants_dirty = false;
-      for (auto& it : m_options)
+      for (auto& it : m_running_options)
         it.second.m_dirty = false;
     }
   }
@@ -232,15 +233,12 @@ public:
 
   bool HasOptions() const
   {
-    return !m_options.empty();
+    return !m_running_options.empty();
   }
-  ConfigMap& GetOptions()
-  {
-    return m_options;
-  }
+
   const ConfigMap& GetOptions() const
   {
-    return m_options;
+    return m_running_options;
   }
 
   const FrameOutput& GetFrameOutput() const
@@ -250,7 +248,7 @@ public:
 
   const ConfigurationOption& GetOption(const std::string& option)
   {
-    return m_options[option];
+    return m_running_options[option];
   }
 
   const RenderPassList& GetPasses() const
@@ -272,8 +270,9 @@ public:
 
   void* UpdateConfigurationBuffer(u32* buffer_size, bool packbuffer = false);
   void* GetConfigurationBuffer(u32* buffer_size);
+  void SyncConfiguration();
 
-private:
+ private:
   struct ConfigBlock final
   {
     std::string m_type;
@@ -287,7 +286,9 @@ private:
   bool m_requires_depth_buffer = false;
   std::string m_shader_name;
   std::string m_shader_source;
-  ConfigMap m_options;
+  ConfigMap m_running_options;
+  ConfigMap m_loaded_options;
+  std::atomic<bool> m_pending_config_sync;
   RenderPassList m_render_passes;
   FrameOutput  m_frame_output;
   std::vector<Constant> m_constants;
@@ -484,7 +485,7 @@ public:
   {
     return m_reload_flag.TestAndClear();
   }
-
+  void UpdateConfiguration();
   void OnProjectionLoaded(u32 type);
   void OnEFBCopy(const TargetRectangle* src_rect);
   void OnEndFrame();
