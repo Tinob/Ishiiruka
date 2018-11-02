@@ -646,6 +646,7 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 
   // Enable configuration changes
   UpdateActiveConfig();
+  m_post_processor->UpdateConfiguration();
   g_texture_cache->OnConfigChanged(g_ActiveConfig);
 
   SetWindowSize(fbStride, fbHeight);
@@ -852,7 +853,7 @@ void Renderer::DrawFrame(const TargetRectangle& target_rc, const EFBRectangle& s
 {
   if (g_ActiveConfig.bUseXFB)
   {
-    if (g_ActiveConfig.bUseRealXFB)
+    if (xfb_count == 0 || (xfb_count > 0 && xfb_sources[0]->real))
       DrawRealXFB(target_rc, xfb_addr, dst_texture, dst_size, fb_width, fb_stride, fb_height);
     else
       DrawVirtualXFB(target_rc, xfb_addr, xfb_sources, xfb_count, dst_texture, dst_size, fb_width, fb_stride, fb_height, Gamma);

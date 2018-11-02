@@ -16,7 +16,9 @@ class GLVertexFormat : public NativeVertexFormat
 public:
   GLVertexFormat(const PortableVertexDeclaration& vtx_decl);
   ~GLVertexFormat();
-  GLuint VAO;
+  void SetFormat();
+  GLuint VAO = 0;
+  bool initialized = 0;
 };
 
 // Handles the OpenGL details of drawing lots of vertices quickly.

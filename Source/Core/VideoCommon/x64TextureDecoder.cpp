@@ -1433,21 +1433,6 @@ inline void decodeDXTBlockRGBA(u32 *dst, const DXT1Block *src, u32 pitch)
   }
 }
 
-#if 0   // TODO - currently does not handle transparency correctly and causes problems when texture dimensions are not multiples of 8
-static void copyDXTBlock(u8* dst, const u8* src)
-{
-  ((u16*)dst)[0] = Common::swap16(((u16*)src)[0]);
-  ((u16*)dst)[1] = Common::swap16(((u16*)src)[1]);
-  u32 pixels = ((u32*)src)[1];
-  // A bit of trickiness here: the row are in the same order
-  // between the two formats, but the ordering within the rows
-  // is reversed.
-  pixels = ((pixels >> 4) & 0x0F0F0F0F) | ((pixels << 4) & 0xF0F0F0F0);
-  pixels = ((pixels >> 2) & 0x33333333) | ((pixels << 2) & 0xCCCCCCCC);
-  ((u32*)dst)[1] = pixels;
-}
-#endif
-
 inline void DXT1ToDXT3Block(DXT3Block* dst, const DXT1Block* src)
 {
   DXT3Block result;
