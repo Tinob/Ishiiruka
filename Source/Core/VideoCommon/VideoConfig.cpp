@@ -99,6 +99,7 @@ void VideoConfig::Refresh()
   bHiresMaterialMaps = Config::Get(Config::GFX_HIRES_MATERIAL_MAPS);
   bHiresMaterialMapsBuild = Config::Get(Config::GFX_HIRES_MATERIAL_MAPS_BUILD);  
   bCacheHiresTextures = Config::Get(Config::GFX_CACHE_HIRES_TEXTURES);
+  bWaitForCacheHiresTextures = Config::Get(Config::GFX_WAIT_CACHE_HIRES_TEXTURES);
   bDumpEFBTarget = Config::Get(Config::GFX_DUMP_EFB_TARGET);
   bDumpFramesAsImages = Config::Get(Config::GFX_DUMP_FRAMES_AS_IMAGES);
   bFreeLook = Config::Get(Config::GFX_FREE_LOOK);
