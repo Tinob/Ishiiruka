@@ -210,6 +210,7 @@ protected:
 
   SettingCheckBox* hires_texturemaps;
   SettingCheckBox* cache_hires_textures;
+  SettingCheckBox* wait_cache_hires_textures;
   SettingCheckBox* shaderprecompile;
 
   wxButton* button_config_scalingshader;
