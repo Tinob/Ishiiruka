@@ -293,7 +293,10 @@ static wxString load_hires_material_maps_desc =
 static wxString cache_hires_textures_desc =
     _("Cache custom textures to system RAM on startup.\nThis can require exponentially more RAM "
       "but fixes possible stuttering.\n\nIf unsure, leave this unchecked.");
-static wxString wait_cache_hires_textures_desc = _("Wait until texture prefetching is finished"
+static wxString wait_cache_hires_textures_desc =
+  _("Wait until texture prefetching is finished. Significantly increases initial load time, "
+    "but improves stability and reduces stuttering in-game. Most useful with textures on "
+    "networked drive. "
                                                    "\n\nIf unsure, leave this unchecked.");
 static wxString dump_efb_desc =
     _("Dump the contents of EFB copies to User/Dump/Textures/\n\nIf unsure, leave this unchecked.");
