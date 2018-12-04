@@ -37,6 +37,7 @@ extern const ConfigInfo<bool> GFX_HIRES_TEXTURES;
 extern const ConfigInfo<bool> GFX_HIRES_MATERIAL_MAPS;
 extern const ConfigInfo<bool> GFX_HIRES_MATERIAL_MAPS_BUILD;
 extern const ConfigInfo<bool> GFX_CACHE_HIRES_TEXTURES;
+extern const ConfigInfo<bool> GFX_WAIT_CACHE_HIRES_TEXTURES;
 extern const ConfigInfo<bool> GFX_DUMP_EFB_TARGET;
 extern const ConfigInfo<bool> GFX_DUMP_FRAMES_AS_IMAGES;
 extern const ConfigInfo<bool> GFX_FREE_LOOK;
