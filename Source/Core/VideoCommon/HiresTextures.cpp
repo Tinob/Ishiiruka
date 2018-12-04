@@ -85,7 +85,7 @@ static std::mutex s_textureCacheMutex;
 static Common::Flag s_textureCacheAbortLoading;
 
 static std::atomic<size_t> size_sum;
-static size_t max_mem = MemPhysical() / 10 * 7;
+static size_t max_mem = 0;
 static std::thread s_prefetcher;
 
 static const std::string s_format_prefix = "tex1_";
