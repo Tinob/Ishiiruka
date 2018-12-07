@@ -293,10 +293,8 @@ static wxString load_hires_material_maps_desc =
 static wxString cache_hires_textures_desc =
     _("Cache custom textures to system RAM on startup.\nThis can require exponentially more RAM "
       "but fixes possible stuttering.\n\nIf unsure, leave this unchecked.");
-static wxString cache_hires_textures_gpu_desc =
-    _("Cache custom textures to GPU RAM after loading.\nThis can require exponentially more RAM "
-      "but fixes stuttering the second time the texture is required.\n\nIf unsure, leave this "
-      "unchecked.");
+static wxString wait_cache_hires_textures_desc = _("Wait until texture prefetching is finished"
+                                                   "\n\nIf unsure, leave this unchecked.");
 static wxString dump_efb_desc =
     _("Dump the contents of EFB copies to User/Dump/Textures/\n\nIf unsure, leave this unchecked.");
 static wxString internal_resolution_frame_dumping_desc = _(
@@ -1315,10 +1313,14 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string& title)
       cache_hires_textures =
           CreateCheckBox(page_advanced, _("Prefetch Custom Textures"), cache_hires_textures_desc,
                          Config::GFX_CACHE_HIRES_TEXTURES);
+      wait_cache_hires_textures =
+          CreateCheckBox(page_advanced, _("Wait for Prefetch"), wait_cache_hires_textures_desc,
+                         Config::GFX_WAIT_CACHE_HIRES_TEXTURES);
       hires_texturemaps =
           CreateCheckBox(page_advanced, _("Load Custom Material Maps"),
                          load_hires_material_maps_desc, Config::GFX_HIRES_MATERIAL_MAPS);
       szr_utility->Add(cache_hires_textures);
+      szr_utility->Add(wait_cache_hires_textures);
       if (vconfig.backend_info.bSupportsInternalResolutionFrameDumps)
       {
         szr_utility->Add(CreateCheckBox(page_advanced, _("Full Resolution Frame Dumps"),
@@ -1921,6 +1923,7 @@ void VideoConfigDiag::OnUpdateUI(wxUpdateUIEvent& ev)
 
   // custom textures
   cache_hires_textures->Enable(vconfig.bHiresTextures);
+  wait_cache_hires_textures->Enable(vconfig.bHiresTextures);
   hires_texturemaps->Enable(vconfig.bHiresTextures && vconfig.bEnablePixelLighting);
   hires_texturemaps->Show(vconfig.backend_info.bSupportsNormalMaps);
 

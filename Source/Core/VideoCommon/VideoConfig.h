@@ -168,6 +168,7 @@ struct VideoConfig final
   bool bHiresMaterialMaps;
   bool bHiresMaterialMapsBuild;
   bool bCacheHiresTextures;
+  bool bWaitForCacheHiresTextures;
   bool bDumpEFBTarget;
   bool bDumpFramesAsImages;
   bool bUseFFV1;

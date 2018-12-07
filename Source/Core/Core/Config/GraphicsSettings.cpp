@@ -43,6 +43,8 @@ const ConfigInfo<bool> GFX_HIRES_MATERIAL_MAPS{ { System::GFX, "Settings", "Hire
 const ConfigInfo<bool> GFX_HIRES_MATERIAL_MAPS_BUILD{ { System::GFX, "Settings", "HiresMaterialMapsBuild" }, false };
 const ConfigInfo<bool> GFX_CACHE_HIRES_TEXTURES{{System::GFX, "Settings", "CacheHiresTextures"},
                                                 false};
+const ConfigInfo<bool> GFX_WAIT_CACHE_HIRES_TEXTURES{{System::GFX, "Settings", "WaitForCachedHiresTextures"},
+                                                false};
 const ConfigInfo<bool> GFX_DUMP_EFB_TARGET{{System::GFX, "Settings", "DumpEFBTarget"}, false};
 const ConfigInfo<bool> GFX_DUMP_FRAMES_AS_IMAGES{{System::GFX, "Settings", "DumpFramesAsImages"},
                                                  false};
