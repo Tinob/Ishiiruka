@@ -321,13 +321,13 @@ wu4 wuround(float4 x) { return wu4(round(x)); }
 )hlsl";
 
 static const char* headerLightUtil = R"hlsl(
-float3x3 cotangent_frame( float3 N, float3 p, float2 uv )
+float3x3 cotangent_frame( float3 N, float3 p, float2 uv, bool negate )
 {
     // get edge vectors of the pixel triangle
     float3 dp1 = ddx( p );
     float3 dp2 = ddy( p );
     float2 duv1 = ddx( uv );
-    float2 duv2 = ddy( uv );
+    float2 duv2 = (negate ? -1.0 : 1.0) *ddy( uv );
  
     // solve the linear system
     float3 dp2perp = cross( dp2, N );
@@ -340,11 +340,11 @@ float3x3 cotangent_frame( float3 N, float3 p, float2 uv )
 	return float3x3( T * invmax, B * invmax, N );
 }
 
-float3 perturb_normal( float3 N, float3 P, float2 texcoord , float3 map)
+float3 perturb_normal( float3 N, float3 P, float2 texcoord , float3 map, bool negate)
 {
 	// assume N, the interpolated vertex normal and 
 	// P, Position	
-	float3x3 TBN = cotangent_frame( N, P, texcoord );
+	float3x3 TBN = cotangent_frame( N, P, texcoord, negate);
 	return normalize( mul(map, TBN) );
 }
 )hlsl";
@@ -1983,7 +1983,7 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
     if (enablenormalmaps)
     {
       out.Write("if(" I_FLAGS ".x != 0)\n{\n");
-      out.Write("_norm0 = perturb_normal(_norm0, pos, mapcoord, normalmap.xyz);\n");
+      out.Write("_norm0 = perturb_normal(_norm0, pos, mapcoord, normalmap.xyz, %s);\n", ApiType == API_OPENGL ? "false" : "true");
       out.Write("}\n");
       if (enablesimbumps)
       {
