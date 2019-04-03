@@ -50,6 +50,7 @@ const ConfigInfo<bool> GFX_DUMP_FRAMES_AS_IMAGES{{System::GFX, "Settings", "Dump
                                                  false};
 const ConfigInfo<bool> GFX_FREE_LOOK{{System::GFX, "Settings", "FreeLook"}, false};
 const ConfigInfo<bool> GFX_COMPILE_SHADERS_ON_STARTUP{ { System::GFX, "Settings", "CompileShaderOnStartup" }, true };
+const ConfigInfo<bool> GFX_USE_BLACK_FRAME_INSERTION{ {System::GFX, "Settings", "UseBlackFrameInsertion"}, false};
 const ConfigInfo<bool> GFX_USE_FFV1{{System::GFX, "Settings", "UseFFV1"}, false};
 const ConfigInfo<std::string> GFX_DUMP_FORMAT{{System::GFX, "Settings", "DumpFormat"}, "avi"};
 const ConfigInfo<std::string> GFX_DUMP_CODEC{{System::GFX, "Settings", "DumpCodec"}, ""};

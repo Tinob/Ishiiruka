@@ -723,6 +723,20 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
     m_post_processor->ReloadShaders();
 }
 
+void Renderer::InsertBlackFrame()
+{
+  ResetAPIState();
+  D3D::context->OMSetRenderTargets(1, &D3D::GetBackBuffer()->GetRTV(), nullptr);
+  float ClearColor[4] = {0.f, 0.f, 0.f, 1.f};
+  D3D::context->ClearRenderTargetView(D3D::GetBackBuffer()->GetRTV(), ClearColor);
+  D3D::EndFrame();
+  D3D::Present();
+  D3D::BeginFrame();
+  D3D::context->OMSetRenderTargets(1, &FramebufferManager::GetEFBColorTexture()->GetRTV(),
+                                   FramebufferManager::GetEFBDepthTexture()->GetDSV());
+  Renderer::RestoreAPIState();
+}
+
 // ALWAYS call RestoreAPIState for each ResetAPIState call you're doing
 void Renderer::ResetAPIState()
 {

@@ -33,6 +33,7 @@ bool IsSettingSaveable(const Config::ConfigLocation& config_location)
       Config::GFX_CROP.location,
       Config::GFX_USE_XFB.location,
       Config::GFX_USE_REAL_XFB.location,
+      Config::GFX_USE_BLACK_FRAME_INSERTION.location,
       Config::GFX_SAFE_TEXTURE_CACHE_COLOR_SAMPLES.location,
       Config::GFX_SHOW_FPS.location,
       Config::GFX_SHOW_NETPLAY_PING.location,

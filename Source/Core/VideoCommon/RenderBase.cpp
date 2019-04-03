@@ -785,7 +785,11 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, const 
 
   frameCount++;
   GFX_DEBUGGER_PAUSE_AT(NEXT_FRAME, true);
-
+  if (g_ActiveConfig.bBlackFrameInsertion)
+  {
+    InsertBlackFrame();
+    frameCount++;
+  }
   // Begin new frame
   // Set default viewport and scissor, for the clear to work correctly
   // New frame

@@ -140,6 +140,8 @@ static wxString ws_hack_desc =
 static wxString vsync_desc =
     _("Wait for vertical blanks in order to reduce tearing.\nDecreases performance if emulation "
       "speed is below 100%.\n\nIf unsure, leave this unchecked.");
+static wxString bfi_desc =
+    _("Insert black frames to reduce motion blur in 120hz monitors");
 static wxString af_desc =
     _("Enable anisotropic filtering.\nEnhances visual quality of textures that are at oblique "
       "viewing angles.\nMight cause issues in a small number of games.\n\nIf unsure, select 1x.");
@@ -550,6 +552,8 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string& title)
         {
           szr_display->Add(
               CreateCheckBox(page_general, _("V-Sync"), (vsync_desc), Config::GFX_VSYNC));
+          szr_display->Add(
+              CreateCheckBox(page_general, _("Black Frame insetion"), (bfi_desc), Config::GFX_USE_BLACK_FRAME_INSERTION));
           szr_display->Add(CreateCheckBoxRefBool(page_general, _("Use Fullscreen"),
                                                  (use_fullscreen_desc),
                                                  SConfig::GetInstance().bFullscreen));
@@ -1260,6 +1264,9 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string& title)
       szr_other->Add(GPU_Texture_decoding = CreateCheckBox(
                          page_hacks, _("GPU Texture Decoding"), (compute_texture_decoding_desc),
                          Config::GFX_ENABLE_GPU_TEXTURE_DECODING));
+      szr_other->Add(Compute_Shader_encoding = CreateCheckBox(
+                         page_hacks, _("Compute Texture Encoding"), (Compute_texture_encoding_desc),
+                         Config::GFX_ENABLE_COMPUTE_TEXTURE_ENCODING));
       szr_other->Add(Compute_Shader_encoding = CreateCheckBox(
                          page_hacks, _("Compute Texture Encoding"), (Compute_texture_encoding_desc),
                          Config::GFX_ENABLE_COMPUTE_TEXTURE_ENCODING));

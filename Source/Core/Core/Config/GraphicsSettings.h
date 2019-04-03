@@ -42,6 +42,7 @@ extern const ConfigInfo<bool> GFX_DUMP_EFB_TARGET;
 extern const ConfigInfo<bool> GFX_DUMP_FRAMES_AS_IMAGES;
 extern const ConfigInfo<bool> GFX_FREE_LOOK;
 extern const ConfigInfo<bool> GFX_COMPILE_SHADERS_ON_STARTUP;
+extern const ConfigInfo<bool> GFX_USE_BLACK_FRAME_INSERTION;
 extern const ConfigInfo<bool> GFX_USE_FFV1;
 extern const ConfigInfo<std::string> GFX_DUMP_FORMAT;
 extern const ConfigInfo<std::string> GFX_DUMP_CODEC;

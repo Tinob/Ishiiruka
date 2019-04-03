@@ -2,20 +2,20 @@
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
-#include <list>
-#include <d3dx9.h>
 #include <cinttypes>
+#include <d3dx9.h>
+#include <list>
 #include <memory>
 
-#include "Common/StringUtil.h"
-#include "Common/Common.h"
 #include "Common/Atomic.h"
+#include "Common/Common.h"
 #include "Common/FileUtil.h"
+#include "Common/StringUtil.h"
 #include "Common/Thread.h"
 #include "Common/Timer.h"
 
-#include "Core/Core.h"
 #include "Core/ConfigManager.h"
+#include "Core/Core.h"
 #include "Core/Host.h"
 #include "Core/Movie.h"
 
@@ -24,17 +24,17 @@
 #include "VideoBackends/DX9/PerfQuery.h"
 #include "VideoBackends/DX9/PixelShaderCache.h"
 #include "VideoBackends/DX9/Render.h"
-#include "VideoBackends/DX9/VertexManager.h"
-#include "VideoBackends/DX9/VertexShaderCache.h"
 #include "VideoBackends/DX9/TextureCache.h"
 #include "VideoBackends/DX9/TextureConverter.h"
+#include "VideoBackends/DX9/VertexManager.h"
+#include "VideoBackends/DX9/VertexShaderCache.h"
 
 #include "VideoCommon/AVIDump.h"
-#include "VideoCommon/Debugger.h"
-#include "VideoCommon/Fifo.h"
-#include "VideoCommon/FPSCounter.h"
 #include "VideoCommon/BPFunctions.h"
 #include "VideoCommon/BPStructs.h"
+#include "VideoCommon/Debugger.h"
+#include "VideoCommon/FPSCounter.h"
+#include "VideoCommon/Fifo.h"
 #include "VideoCommon/OnScreenDisplay.h"
 #include "VideoCommon/OpcodeDecoding.h"
 #include "VideoCommon/PixelEngine.h"
@@ -47,7 +47,6 @@
 
 namespace DX9
 {
-
 static LPDIRECT3DSURFACE9 m_screen_shoot_mem_surface = nullptr;
 // GX pipeline state
 struct GXPipelineState
@@ -97,7 +96,7 @@ void Renderer::TeardownDeviceObjects()
 }
 
 // Init functions
-Renderer::Renderer(void *&window_handle)
+Renderer::Renderer(void*& window_handle)
 {
   int fullScreenRes, w_temp, h_temp;
   // Multisample Anti-aliasing hasn't been implemented yet use supersamling instead
@@ -108,17 +107,19 @@ Renderer::Renderer(void *&window_handle)
   w_temp = client.right - client.left;
   h_temp = client.bottom - client.top;
 
-  for (fullScreenRes = 0; fullScreenRes < (int)D3D::GetAdapter(g_ActiveConfig.iAdapter).resolutions.size(); fullScreenRes++)
+  for (fullScreenRes = 0;
+       fullScreenRes < (int)D3D::GetAdapter(g_ActiveConfig.iAdapter).resolutions.size();
+       fullScreenRes++)
   {
     if ((D3D::GetAdapter(g_ActiveConfig.iAdapter).resolutions[fullScreenRes].xres == w_temp) &&
-      (D3D::GetAdapter(g_ActiveConfig.iAdapter).resolutions[fullScreenRes].yres == h_temp))
+        (D3D::GetAdapter(g_ActiveConfig.iAdapter).resolutions[fullScreenRes].yres == h_temp))
       break;
   }
   if (fullScreenRes == D3D::GetAdapter(g_ActiveConfig.iAdapter).resolutions.size())
     fullScreenRes = 0;
 
-  D3D::Create(g_ActiveConfig.iAdapter, (HWND)window_handle,
-    fullScreenRes, backbuffer_mm_mode, false);
+  D3D::Create(g_ActiveConfig.iAdapter, (HWND)window_handle, fullScreenRes, backbuffer_mm_mode,
+              false);
 
   // Decide framebuffer size
   m_backbuffer_width = D3D::GetBackBufferWidth();
@@ -188,20 +189,24 @@ void Renderer::Init()
   vp.Height = m_target_height;
   D3D::dev->SetViewport(&vp);
   D3D::dev->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(0, 0, 0), 1.0f, 0);
-  D3D::dev->CreateOffscreenPlainSurface(m_backbuffer_width, m_backbuffer_height, D3DFMT_X8R8G8B8, D3DPOOL_SYSTEMMEM, &m_screen_shoot_mem_surface, NULL);
+  D3D::dev->CreateOffscreenPlainSurface(m_backbuffer_width, m_backbuffer_height, D3DFMT_X8R8G8B8,
+                                        D3DPOOL_SYSTEMMEM, &m_screen_shoot_mem_surface, NULL);
   D3D::BeginFrame();
   // Initial state setup
   D3D::SetRenderState(D3DRS_SCISSORTESTENABLE, TRUE);
-  D3D::SetRenderState(D3DRS_FILLMODE, g_ActiveConfig.bWireFrame ? D3DFILL_WIREFRAME : D3DFILL_SOLID);
+  D3D::SetRenderState(D3DRS_FILLMODE,
+                      g_ActiveConfig.bWireFrame ? D3DFILL_WIREFRAME : D3DFILL_SOLID);
   D3D::SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
   D3D::SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
   D3D::SetRenderState(D3DRS_ZENABLE, FALSE);
   D3D::SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
   D3D::SetRenderState(D3DRS_ZFUNC, D3DCMP_ALWAYS);
-  D3D::SetRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_ALPHA | D3DCOLORWRITEENABLE_RED | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_BLUE);
+  D3D::SetRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_ALPHA | D3DCOLORWRITEENABLE_RED |
+                                                  D3DCOLORWRITEENABLE_GREEN |
+                                                  D3DCOLORWRITEENABLE_BLUE);
   D3D::SetRenderState(D3DRS_POINTSCALEENABLE, FALSE);
   m_fMax_Point_Size = D3D::GetCaps().MaxPointSize;
-  // Handle VSync on/off 
+  // Handle VSync on/off
   m_vsync = g_ActiveConfig.IsVSync();
   m_bColorMaskChanged = true;
   m_bBlendModeChanged = true;
@@ -219,11 +224,13 @@ Renderer::~Renderer()
   D3D::Close();
 }
 
-void Renderer::RenderText(const std::string &text, int left, int top, u32 color)
+void Renderer::RenderText(const std::string& text, int left, int top, u32 color)
 {
   TargetRectangle trc = GetTargetRectangle();
-  D3D::font.DrawTextScaled((float)(trc.left + left + 1), (float)(trc.top + top + 1), 20, 20, 0.0f, color & 0xFF000000, text.c_str());
-  D3D::font.DrawTextScaled((float)(trc.left + left), (float)(trc.top + top), 20, 20, 0.0f, color, text.c_str());
+  D3D::font.DrawTextScaled((float)(trc.left + left + 1), (float)(trc.top + top + 1), 20, 20, 0.0f,
+                           color & 0xFF000000, text.c_str());
+  D3D::font.DrawTextScaled((float)(trc.left + left), (float)(trc.top + top), 20, 20, 0.0f, color,
+                           text.c_str());
 }
 
 TargetRectangle Renderer::ConvertEFBRectangle(const EFBRectangle& rc)
@@ -236,7 +243,7 @@ TargetRectangle Renderer::ConvertEFBRectangle(const EFBRectangle& rc)
   return result;
 }
 
-}
+}  // namespace DX9
 
 void formatBufferDump(const u8* in, u8* out, int w, int h, int p)
 {
@@ -254,7 +261,6 @@ void formatBufferDump(const u8* in, u8* out, int w, int h, int p)
 
 namespace DX9
 {
-
 // With D3D, we have to resize the backbuffer if the window changed
 // size.
 bool Renderer::CheckForResize()
@@ -264,15 +270,16 @@ bool Renderer::CheckForResize()
   int client_width = rcWindow.right - rcWindow.left;
   int client_height = rcWindow.bottom - rcWindow.top;
 
-  POINT originPoint = { 0, 0 };
+  POINT originPoint = {0, 0};
   ClientToScreen(D3D::hWnd, &originPoint);
-  g_renderer->SetWindowRectangle(originPoint.x, originPoint.x + client_width, originPoint.y, originPoint.y + client_height);
+  g_renderer->SetWindowRectangle(originPoint.x, originPoint.x + client_width, originPoint.y,
+                                 originPoint.y + client_height);
 
   // Sanity check
-  bool resized = (client_width != g_renderer->GetBackbufferWidth()
-    || client_height != g_renderer->GetBackbufferHeight()
-    || m_vsync != g_ActiveConfig.IsVSync()) &&
-    client_width >= 4 && client_height >= 4;
+  bool resized =
+      (client_width != g_renderer->GetBackbufferWidth() ||
+       client_height != g_renderer->GetBackbufferHeight() || m_vsync != g_ActiveConfig.IsVSync()) &&
+      client_width >= 4 && client_height >= 4;
   return resized;
 }
 
@@ -328,9 +335,12 @@ u32 Renderer::AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data)
       ret |= 0xFF000000;
     }
 
-    if (alpha_read_mode.ReadMode == 2) return ret; // GX_READ_NONE
-    else if (alpha_read_mode.ReadMode == 1) return (ret | 0xFF000000); // GX_READ_FF
-    else return (ret & 0x00FFFFFF); // GX_READ_00
+    if (alpha_read_mode.ReadMode == 2)
+      return ret;  // GX_READ_NONE
+    else if (alpha_read_mode.ReadMode == 1)
+      return (ret | 0xFF000000);  // GX_READ_FF
+    else
+      return (ret & 0x00FFFFFF);  // GX_READ_00
   }
   return poke_data;
 }
@@ -344,7 +354,6 @@ void Renderer::PokeEFB(EFBAccessType type, const EfbPokeData* points, size_t num
   vp.Width = GetTargetWidth();
   vp.Height = GetTargetHeight();
 
-
   if (xfmem.viewport.zRange < 0.0f)
   {
     vp.MinZ = 1.0f - GX_MAX_DEPTH;
@@ -352,8 +361,10 @@ void Renderer::PokeEFB(EFBAccessType type, const EfbPokeData* points, size_t num
   }
   else
   {
-    float nearz = xfmem.viewport.farZ - MathUtil::Clamp<float>(xfmem.viewport.zRange, 0.0f, 16777215.0f);
-    // Some games set invalids values for z min and z max so fix them to the max an min alowed and let the shaders do this work
+    float nearz =
+        xfmem.viewport.farZ - MathUtil::Clamp<float>(xfmem.viewport.zRange, 0.0f, 16777215.0f);
+    // Some games set invalids values for z min and z max so fix them to the max an min alowed and
+    // let the shaders do this work
     vp.MaxZ = 1.0f - (MathUtil::Clamp<float>(nearz, 0.0f, 16777215.0f) / 16777216.0f);
     vp.MinZ = 1.0f - (MathUtil::Clamp<float>(xfmem.viewport.farZ, 0.0f, 16777215.0f) / 16777216.0f);
   }
@@ -374,12 +385,14 @@ void Renderer::PokeEFB(EFBAccessType type, const EfbPokeData* points, size_t num
     D3D::ChangeRenderState(D3DRS_ZWRITEENABLE, false);
     D3D::ChangeRenderState(D3DRS_ZFUNC, D3DCMP_ALWAYS);
   }
-  D3D::DrawEFBPokeQuads(type, points, num_points, PixelShaderCache::GetClearProgram(), VertexShaderCache::GetClearVertexShader());
+  D3D::DrawEFBPokeQuads(type, points, num_points, PixelShaderCache::GetClearProgram(),
+                        VertexShaderCache::GetClearVertexShader());
 
   RestoreAPIState();
 }
 
-void Renderer::ClearScreen(const EFBRectangle& rc, bool colorEnable, bool alphaEnable, bool zEnable, u32 color, u32 z)
+void Renderer::ClearScreen(const EFBRectangle& rc, bool colorEnable, bool alphaEnable, bool zEnable,
+                           u32 color, u32 z)
 {
   // Reset rendering pipeline while keeping color masks and depth buffer settings
   ResetAPIState();
@@ -408,7 +421,9 @@ void Renderer::ClearScreen(const EFBRectangle& rc, bool colorEnable, bool alphaE
   vp.MinZ = 1.0f - GX_MAX_DEPTH;
   vp.MaxZ = 1.0;
   D3D::dev->SetViewport(&vp);
-  D3D::drawClearQuad(color, (0xFFFFFF - (z & 0xFFFFFF)) / 16777216.0f, PixelShaderCache::GetClearProgram(), VertexShaderCache::GetClearVertexShader());
+  D3D::drawClearQuad(color, (0xFFFFFF - (z & 0xFFFFFF)) / 16777216.0f,
+                     PixelShaderCache::GetClearProgram(),
+                     VertexShaderCache::GetClearVertexShader());
   RestoreAPIState();
 
   FramebufferManager::InvalidateEFBCache();
@@ -420,11 +435,14 @@ void Renderer::ReinterpretPixelData(unsigned int convtype)
   SetRect(&source, 0, 0, GetTargetWidth(), GetTargetHeight());
 
   LPDIRECT3DPIXELSHADER9 pixel_shader;
-  if (convtype == 0) pixel_shader = PixelShaderCache::ReinterpRGB8ToRGBA6();
-  else if (convtype == 2) pixel_shader = PixelShaderCache::ReinterpRGBA6ToRGB8();
+  if (convtype == 0)
+    pixel_shader = PixelShaderCache::ReinterpRGB8ToRGBA6();
+  else if (convtype == 2)
+    pixel_shader = PixelShaderCache::ReinterpRGBA6ToRGB8();
   else
   {
-    ERROR_LOG(VIDEO, "Trying to reinterpret pixel data with unsupported conversion type %d", convtype);
+    ERROR_LOG(VIDEO, "Trying to reinterpret pixel data with unsupported conversion type %d",
+              convtype);
     return;
   }
 
@@ -440,10 +458,9 @@ void Renderer::ReinterpretPixelData(unsigned int convtype)
   vp.MaxZ = 1.0;
   D3D::dev->SetViewport(&vp);
   D3D::ChangeSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
-  D3D::drawShadedTexQuad(FramebufferManager::GetEFBColorTexture(), &source,
-    GetTargetWidth(), GetTargetHeight(),
-    GetTargetWidth(), GetTargetHeight(),
-    pixel_shader, VertexShaderCache::GetSimpleVertexShader(0));
+  D3D::drawShadedTexQuad(FramebufferManager::GetEFBColorTexture(), &source, GetTargetWidth(),
+                         GetTargetHeight(), GetTargetWidth(), GetTargetHeight(), pixel_shader,
+                         VertexShaderCache::GetSimpleVertexShader(0));
   FramebufferManager::SwapReinterpretTexture();
   D3D::RefreshSamplerState(0, D3DSAMP_MINFILTER);
   RestoreAPIState();
@@ -451,7 +468,8 @@ void Renderer::ReinterpretPixelData(unsigned int convtype)
 }
 
 // This function has the final picture. We adjust the aspect ratio here.
-void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, const EFBRectangle& rc, u64 ticks, float Gamma)
+void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight,
+                        const EFBRectangle& rc, u64 ticks, float Gamma)
 {
   if ((!m_xfb_written && !g_ActiveConfig.RealXFBEnabled()) || !fbWidth || !fbHeight)
   {
@@ -460,7 +478,8 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
   }
 
   u32 xfbCount = 0;
-  const XFBSourceBase* const* xfbSourceList = FramebufferManager::GetXFBSource(xfbAddr, fbStride, fbHeight, &xfbCount);
+  const XFBSourceBase* const* xfbSourceList =
+      FramebufferManager::GetXFBSource(xfbAddr, fbStride, fbHeight, &xfbCount);
   if ((!xfbSourceList || xfbCount == 0) && g_ActiveConfig.bUseXFB && !g_ActiveConfig.bUseRealXFB)
   {
     Core::Callback_VideoCopiedToXFB(false);
@@ -506,7 +525,8 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
     {
       if (g_ActiveConfig.iStereoMode == STEREO_SHADER)
       {
-        D3D::SetRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_BLUE | D3DCOLORWRITEENABLE_GREEN);
+        D3D::SetRenderState(D3DRS_COLORWRITEENABLE,
+                            D3DCOLORWRITEENABLE_BLUE | D3DCOLORWRITEENABLE_GREEN);
       }
       else if (g_ActiveConfig.iStereoMode == STEREO_TAB)
       {
@@ -519,7 +539,7 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
         Width = Width / 2;
       }
       VertexShaderManager::TranslateView(-0.001f * g_ActiveConfig.iStereoDepth, 0.0f);
-      VertexShaderManager::RotateView(-0.0001f *g_ActiveConfig.iStereoConvergence, 0.0f);
+      VertexShaderManager::RotateView(-0.0001f * g_ActiveConfig.iStereoConvergence, 0.0f);
     }
     else
     {
@@ -537,7 +557,7 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
         X = X / 2;
         Width = Width / 2;
       }
-      VertexShaderManager::TranslateView(0.001f *g_ActiveConfig.iStereoDepth, 0.0f);
+      VertexShaderManager::TranslateView(0.001f * g_ActiveConfig.iStereoDepth, 0.0f);
       VertexShaderManager::RotateView(0.0001f * g_ActiveConfig.iStereoConvergence, 0.0f);
     }
     m_b3D_RightFrame = !m_b3D_RightFrame;
@@ -594,12 +614,12 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 
         // The following code disables auto stretch.  Kept for reference.
         // scale draw area for a 1 to 1 pixel mapping with the draw target
-        //float vScale = (float)fbHeight / (float)GetTargetRectangle().GetHeight();
-        //float hScale = (float)fbWidth / (float)GetTargetRectangle().GetWidth();
-        //drawRc.top *= vScale;
-        //drawRc.bottom *= vScale;
-        //drawRc.left *= hScale;
-        //drawRc.right *= hScale;
+        // float vScale = (float)fbHeight / (float)GetTargetRectangle().GetHeight();
+        // float hScale = (float)fbWidth / (float)GetTargetRectangle().GetWidth();
+        // drawRc.top *= vScale;
+        // drawRc.bottom *= vScale;
+        // drawRc.left *= hScale;
+        // drawRc.right *= hScale;
         sourceRc.right -= Renderer::EFBToScaledX(fbStride - fbWidth);
       }
 
@@ -615,19 +635,18 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
     {
       multisamplemode = std::max(std::min((targetRc.GetWidth() / Width) - 1, 2), 0);
     }
-    D3D::drawShadedTexQuad(read_texture, targetRc.AsRECT(),
-      Renderer::GetTargetWidth(), Renderer::GetTargetHeight(),
-      Width, Height,
-      PixelShaderCache::GetColorCopyProgram(multisamplemode),
-      VertexShaderCache::GetSimpleVertexShader(multisamplemode), Gamma);
-
+    D3D::drawShadedTexQuad(read_texture, targetRc.AsRECT(), Renderer::GetTargetWidth(),
+                           Renderer::GetTargetHeight(), Width, Height,
+                           PixelShaderCache::GetColorCopyProgram(multisamplemode),
+                           VertexShaderCache::GetSimpleVertexShader(multisamplemode), Gamma);
   }
   D3D::RefreshSamplerState(0, D3DSAMP_MINFILTER);
   D3D::RefreshSamplerState(0, D3DSAMP_MAGFILTER);
 
   if (g_ActiveConfig.iStereoMode == STEREO_SHADER)
   {
-    DWORD color_mask = D3DCOLORWRITEENABLE_ALPHA | D3DCOLORWRITEENABLE_RED | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_BLUE;
+    DWORD color_mask = D3DCOLORWRITEENABLE_ALPHA | D3DCOLORWRITEENABLE_RED |
+                       D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_BLUE;
     D3D::SetRenderState(D3DRS_COLORWRITEENABLE, color_mask);
   }
   X = Tr.left;
@@ -648,14 +667,17 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
   {
     int source_width = GetTargetRectangle().GetWidth();
     int source_height = GetTargetRectangle().GetHeight();
-    if (SUCCEEDED(D3D::dev->GetRenderTargetData(D3D::GetBackBufferSurface(), m_screen_shoot_mem_surface)))
+    if (SUCCEEDED(
+            D3D::dev->GetRenderTargetData(D3D::GetBackBufferSurface(), m_screen_shoot_mem_surface)))
     {
       D3DLOCKED_RECT rect;
-      if (SUCCEEDED(m_screen_shoot_mem_surface->LockRect(&rect, GetTargetRectangle().AsRECT(), D3DLOCK_NO_DIRTY_UPDATE | D3DLOCK_NOSYSLOCK | D3DLOCK_READONLY)))
+      if (SUCCEEDED(m_screen_shoot_mem_surface->LockRect(&rect, GetTargetRectangle().AsRECT(),
+                                                         D3DLOCK_NO_DIRTY_UPDATE |
+                                                             D3DLOCK_NOSYSLOCK | D3DLOCK_READONLY)))
       {
         AVIDump::Frame state = AVIDump::FetchState(ticks);
         DumpFrameData(reinterpret_cast<const u8*>(rect.pBits), source_width, source_height,
-          rect.Pitch, state, false, true);
+                      rect.Pitch, state, false, true);
         FinishFrameData();
 
         m_screen_shoot_mem_surface->UnlockRect();
@@ -692,13 +714,14 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
     m_backbuffer_height = D3D::GetBackBufferHeight();
     if (m_screen_shoot_mem_surface)
       m_screen_shoot_mem_surface->Release();
-    D3D::dev->CreateOffscreenPlainSurface(m_backbuffer_width, m_backbuffer_height,
-      D3DFMT_X8R8G8B8, D3DPOOL_SYSTEMMEM, &m_screen_shoot_mem_surface, NULL);
+    D3D::dev->CreateOffscreenPlainSurface(m_backbuffer_width, m_backbuffer_height, D3DFMT_X8R8G8B8,
+                                          D3DPOOL_SYSTEMMEM, &m_screen_shoot_mem_surface, NULL);
   }
 
   bool xfbchanged = false;
 
-  if (FramebufferManagerBase::LastXfbWidth() != fbStride || FramebufferManagerBase::LastXfbHeight() != fbHeight)
+  if (FramebufferManagerBase::LastXfbWidth() != fbStride ||
+      FramebufferManagerBase::LastXfbHeight() != fbHeight)
   {
     xfbchanged = true;
     unsigned int w = (fbStride < 1 || fbStride > MAX_XFB_WIDTH) ? MAX_XFB_WIDTH : fbStride;
@@ -709,11 +732,8 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 
   u32 newAA = g_ActiveConfig.iMultisamples - 1;
 
-  if (CalculateTargetSize((newAA % 3) + 1)
-    || xfbchanged
-    || windowResized
-    || m_last_efb_scale != g_ActiveConfig.iEFBScale
-    || m_LastAA != newAA)
+  if (CalculateTargetSize((newAA % 3) + 1) || xfbchanged || windowResized ||
+      m_last_efb_scale != g_ActiveConfig.iEFBScale || m_LastAA != newAA)
   {
     m_LastAA = newAA;
 
@@ -731,7 +751,6 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
         // device objects lost, so recreate all of them
         SetupDeviceObjects();
       }
-
     }
     else
     {
@@ -759,6 +778,19 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
   D3D::dev->SetDepthStencilSurface(FramebufferManager::GetEFBDepthRTSurface());
 }
 
+void Renderer::InsertBlackFrame() {
+  ResetAPIState();
+  D3D::dev->SetDepthStencilSurface(NULL);
+  D3D::dev->SetRenderTarget(0, D3D::GetBackBufferSurface());
+  D3D::dev->Clear(0, NULL, D3DCLEAR_TARGET, 0x0, 0, 0);
+  D3D::EndFrame();
+  D3D::Present();
+  D3D::BeginFrame();
+  RestoreAPIState();
+  D3D::dev->SetRenderTarget(0, FramebufferManager::GetEFBColorRTSurface());
+  D3D::dev->SetDepthStencilSurface(FramebufferManager::GetEFBDepthRTSurface());
+}
+
 // ALWAYS call RestoreAPIState for each ResetAPIState call you're doing
 void Renderer::ResetAPIState()
 {
@@ -768,13 +800,16 @@ void Renderer::ResetAPIState()
   D3D::SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
   D3D::SetRenderState(D3DRS_ZENABLE, FALSE);
   D3D::SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
-  D3D::SetRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_ALPHA | D3DCOLORWRITEENABLE_RED | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_BLUE);
+  D3D::SetRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_ALPHA | D3DCOLORWRITEENABLE_RED |
+                                                  D3DCOLORWRITEENABLE_GREEN |
+                                                  D3DCOLORWRITEENABLE_BLUE);
 }
 
 void Renderer::RestoreAPIState()
 {
   // Gets us back into a more game-like state.
-  D3D::SetRenderState(D3DRS_FILLMODE, g_ActiveConfig.bWireFrame ? D3DFILL_WIREFRAME : D3DFILL_SOLID);
+  D3D::SetRenderState(D3DRS_FILLMODE,
+                      g_ActiveConfig.bWireFrame ? D3DFILL_WIREFRAME : D3DFILL_SOLID);
   D3D::SetRenderState(D3DRS_SCISSORTESTENABLE, true);
   m_bColorMaskChanged = true;
   m_bGenerationModeChanged = true;
@@ -838,10 +873,13 @@ void Renderer::_SetViewport()
     }
     else
     {
-      float nearz = xfmem.viewport.farZ - MathUtil::Clamp<float>(xfmem.viewport.zRange, 0.0f, 16777215.0f);
-      // Some games set invalids values for z min and z max so fix them to the max an min alowed and let the shaders do this work
+      float nearz =
+          xfmem.viewport.farZ - MathUtil::Clamp<float>(xfmem.viewport.zRange, 0.0f, 16777215.0f);
+      // Some games set invalids values for z min and z max so fix them to the max an min alowed and
+      // let the shaders do this work
       m_vp.MaxZ = 1.0f - (MathUtil::Clamp<float>(nearz, 0.0f, 16777215.0f) / 16777216.0f);
-      m_vp.MinZ = 1.0f - (MathUtil::Clamp<float>(xfmem.viewport.farZ, 0.0f, 16777215.0f) / 16777216.0f);
+      m_vp.MinZ =
+          1.0f - (MathUtil::Clamp<float>(xfmem.viewport.farZ, 0.0f, 16777215.0f) / 16777216.0f);
     }
   }
   if (m_bViewPortChanged)
@@ -893,8 +931,9 @@ void Renderer::ApplyState(bool bUseDstAlpha)
   if (bUseDstAlpha)
   {
     // If we get here we are sure that we are using dst alpha pass. (bpmem.dstalpha.enable)
-    // Alpha write is enabled. (because bpmem.blendmode.alphaupdate && bpmem.zcontrol.pixel_format == PEControl::RGBA6_Z24)
-    // We must disable blend because we want to write alpha value directly to the alpha channel without modifications.
+    // Alpha write is enabled. (because bpmem.blendmode.alphaupdate && bpmem.zcontrol.pixel_format
+    // == PEControl::RGBA6_Z24) We must disable blend because we want to write alpha value directly
+    // to the alpha channel without modifications.
     D3D::ChangeRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_ALPHA);
     D3D::ChangeRenderState(D3DRS_ALPHABLENDENABLE, false);
     if (s_gx_state.zmode.testenable.Value() && s_gx_state.zmode.updateenable.Value())
@@ -930,7 +969,7 @@ void Renderer::SetScissorRect(const EFBRectangle& rc)
 {
   m_ScissorRect = rc;
   m_bScissorRectChanged = true;
-}  
+}
 
 void Renderer::_SetColorMask()
 {
@@ -945,7 +984,8 @@ void Renderer::_SetColorMask()
 }
 void Renderer::SetBlendingState(const BlendingState& state)
 {
-  m_bColorMaskChanged = m_bColorMaskChanged || state.colorupdate != s_gx_state.blend.colorupdate || state.alphaupdate != s_gx_state.blend.alphaupdate;
+  m_bColorMaskChanged = m_bColorMaskChanged || state.colorupdate != s_gx_state.blend.colorupdate ||
+                        state.alphaupdate != s_gx_state.blend.alphaupdate;
   m_bBlendModeChanged = m_bBlendModeChanged || state.hex != s_gx_state.blend.hex;
   s_gx_state.blend.hex = state.hex;
 }
@@ -961,40 +1001,40 @@ void Renderer::_SetBlendMode()
     return;
   }
 
-  // Our render target always uses an alpha channel, so we need to override the blend functions to assume a destination alpha of 1 if the render target isn't supposed to have an alpha channel
-  // Example: D3DBLEND_DESTALPHA needs to be D3DBLEND_ONE since the result without an alpha channel is assumed to always be 1.
-  //really useful for debugging shader and blending errors
+  // Our render target always uses an alpha channel, so we need to override the blend functions to
+  // assume a destination alpha of 1 if the render target isn't supposed to have an alpha channel
+  // Example: D3DBLEND_DESTALPHA needs to be D3DBLEND_ONE since the result without an alpha channel
+  // is assumed to always be 1.
+  // really useful for debugging shader and blending errors
   bool use_DstAlpha = s_gx_state.blend.dstalpha != 0;
   bool use_DualSource = use_DstAlpha && g_ActiveConfig.backend_info.bSupportsDualSourceBlend;
-  const D3DBLEND d3dSrcFactors[8] =
-  {
-    D3DBLEND_ZERO,
-    D3DBLEND_ONE,
-    D3DBLEND_DESTCOLOR,
-    D3DBLEND_INVDESTCOLOR,
-    (use_DualSource) ? D3DBLEND_SRCCOLOR2 : D3DBLEND_SRCALPHA,
-    (use_DualSource) ? D3DBLEND_INVSRCCOLOR2 : D3DBLEND_INVSRCALPHA,
-    D3DBLEND_DESTALPHA,
-    D3DBLEND_INVDESTALPHA
-  };
-  const D3DBLEND d3dDestFactors[8] =
-  {
-    D3DBLEND_ZERO,
-    D3DBLEND_ONE,
-    D3DBLEND_SRCCOLOR,
-    D3DBLEND_INVSRCCOLOR,
-    (use_DualSource) ? D3DBLEND_SRCCOLOR2 : D3DBLEND_SRCALPHA,
-    (use_DualSource) ? D3DBLEND_INVSRCCOLOR2 : D3DBLEND_INVSRCALPHA,
-    D3DBLEND_DESTALPHA,
-    D3DBLEND_INVDESTALPHA
-  };
+  const D3DBLEND d3dSrcFactors[8] = {D3DBLEND_ZERO,
+                                     D3DBLEND_ONE,
+                                     D3DBLEND_DESTCOLOR,
+                                     D3DBLEND_INVDESTCOLOR,
+                                     (use_DualSource) ? D3DBLEND_SRCCOLOR2 : D3DBLEND_SRCALPHA,
+                                     (use_DualSource) ? D3DBLEND_INVSRCCOLOR2 :
+                                                        D3DBLEND_INVSRCALPHA,
+                                     D3DBLEND_DESTALPHA,
+                                     D3DBLEND_INVDESTALPHA};
+  const D3DBLEND d3dDestFactors[8] = {D3DBLEND_ZERO,
+                                      D3DBLEND_ONE,
+                                      D3DBLEND_SRCCOLOR,
+                                      D3DBLEND_INVSRCCOLOR,
+                                      (use_DualSource) ? D3DBLEND_SRCCOLOR2 : D3DBLEND_SRCALPHA,
+                                      (use_DualSource) ? D3DBLEND_INVSRCCOLOR2 :
+                                                         D3DBLEND_INVSRCALPHA,
+                                      D3DBLEND_DESTALPHA,
+                                      D3DBLEND_INVDESTALPHA};
 
   bool blend_enable = s_gx_state.blend.blendenable;
   D3D::SetRenderState(D3DRS_ALPHABLENDENABLE, blend_enable);
-  D3D::SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, blend_enable && g_ActiveConfig.backend_info.bSupportsSeparateAlphaFunction);
+  D3D::SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE,
+                      blend_enable && g_ActiveConfig.backend_info.bSupportsSeparateAlphaFunction);
   if (blend_enable)
   {
-    D3DBLENDOP op = s_gx_state.blend.subtract.Value() != 0 ? D3DBLENDOP_REVSUBTRACT : D3DBLENDOP_ADD;
+    D3DBLENDOP op =
+        s_gx_state.blend.subtract.Value() != 0 ? D3DBLENDOP_REVSUBTRACT : D3DBLENDOP_ADD;
     u32 srcidx = static_cast<u32>(s_gx_state.blend.srcfactor);
     u32 dstidx = static_cast<u32>(s_gx_state.blend.dstfactor);
     D3D::SetRenderState(D3DRS_BLENDOP, op);
@@ -1021,13 +1061,7 @@ void Renderer::SetRasterizationState(const RasterizationState& state)
 void Renderer::_SetGenerationMode()
 {
   m_bGenerationModeChanged = false;
-  static const D3DCULL d3dCullModes[4] =
-  {
-      D3DCULL_NONE,
-      D3DCULL_CCW,
-      D3DCULL_CW,
-      D3DCULL_CCW
-  };
+  static const D3DCULL d3dCullModes[4] = {D3DCULL_NONE, D3DCULL_CCW, D3DCULL_CW, D3DCULL_CCW};
   D3D::SetRenderState(D3DRS_CULLMODE, d3dCullModes[s_gx_state.raster.cullmode.Value()]);
 }
 
@@ -1040,17 +1074,9 @@ void Renderer::SetDepthState(const DepthState& state)
 void Renderer::_SetDepthMode()
 {
   m_bDepthModeChanged = false;
-  static const D3DCMPFUNC d3dCmpFuncs[8] =
-  {
-      D3DCMP_NEVER,
-      D3DCMP_GREATER,
-      D3DCMP_EQUAL,
-      D3DCMP_GREATEREQUAL,
-      D3DCMP_LESS,
-      D3DCMP_NOTEQUAL,
-      D3DCMP_LESSEQUAL,
-      D3DCMP_ALWAYS
-  };
+  static const D3DCMPFUNC d3dCmpFuncs[8] = {D3DCMP_NEVER,        D3DCMP_GREATER, D3DCMP_EQUAL,
+                                            D3DCMP_GREATEREQUAL, D3DCMP_LESS,    D3DCMP_NOTEQUAL,
+                                            D3DCMP_LESSEQUAL,    D3DCMP_ALWAYS};
 
   D3D::SetRenderState(D3DRS_ZENABLE, s_gx_state.zmode.testenable.Value());
   if (s_gx_state.zmode.testenable.Value())
@@ -1060,7 +1086,7 @@ void Renderer::_SetDepthMode()
   }
   else
   {
-    // if the test is disabled write is disabled too		
+    // if the test is disabled write is disabled too
     D3D::SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
     D3D::SetRenderState(D3DRS_ZFUNC, D3DCMP_ALWAYS);
   }
@@ -1086,65 +1112,23 @@ void Renderer::_SetLogicOpMode()
   //		13	~Source | destination
   //		14	~(Source & destination)
   //		15	0xff
-  static const D3DBLENDOP d3dLogicOpop[16] =
-  {
-      D3DBLENDOP_ADD,
-      D3DBLENDOP_ADD,
-      D3DBLENDOP_SUBTRACT,
-      D3DBLENDOP_ADD,
-      D3DBLENDOP_REVSUBTRACT,
-      D3DBLENDOP_ADD,
-      D3DBLENDOP_MAX,
-      D3DBLENDOP_ADD,
-      D3DBLENDOP_MAX,
-      D3DBLENDOP_MAX,
-      D3DBLENDOP_ADD,
-      D3DBLENDOP_ADD,
-      D3DBLENDOP_ADD,
-      D3DBLENDOP_ADD,
-      D3DBLENDOP_ADD,
-      D3DBLENDOP_ADD
-  };
-  static const D3DBLEND d3dLogicOpSrcFactors[16] =
-  {
-      D3DBLEND_ZERO,
-      D3DBLEND_DESTCOLOR,
-      D3DBLEND_ONE,
-      D3DBLEND_ONE,
-      D3DBLEND_DESTCOLOR,
-      D3DBLEND_ZERO,
-      D3DBLEND_INVDESTCOLOR,
-      D3DBLEND_INVDESTCOLOR,
-      D3DBLEND_INVSRCCOLOR,
-      D3DBLEND_INVSRCCOLOR,
-      D3DBLEND_INVDESTCOLOR,
-      D3DBLEND_ONE,
-      D3DBLEND_INVSRCCOLOR,
-      D3DBLEND_INVSRCCOLOR,
-      D3DBLEND_INVDESTCOLOR,
-      D3DBLEND_ONE
-  };
-  static const D3DBLEND d3dLogicOpDestFactors[16] =
-  {
-      D3DBLEND_ZERO,
-      D3DBLEND_ZERO,
-      D3DBLEND_INVSRCCOLOR,
-      D3DBLEND_ZERO,
-      D3DBLEND_ONE,
-      D3DBLEND_ONE,
-      D3DBLEND_INVSRCCOLOR,
-      D3DBLEND_ONE,
-      D3DBLEND_INVDESTCOLOR,
-      D3DBLEND_SRCCOLOR,
-      D3DBLEND_INVDESTCOLOR,
-      D3DBLEND_INVDESTCOLOR,
-      D3DBLEND_INVSRCCOLOR,
-      D3DBLEND_ONE,
-      D3DBLEND_INVSRCCOLOR,
-      D3DBLEND_ONE
-  };
+  static const D3DBLENDOP d3dLogicOpop[16] = {
+      D3DBLENDOP_ADD,         D3DBLENDOP_ADD, D3DBLENDOP_SUBTRACT, D3DBLENDOP_ADD,
+      D3DBLENDOP_REVSUBTRACT, D3DBLENDOP_ADD, D3DBLENDOP_MAX,      D3DBLENDOP_ADD,
+      D3DBLENDOP_MAX,         D3DBLENDOP_MAX, D3DBLENDOP_ADD,      D3DBLENDOP_ADD,
+      D3DBLENDOP_ADD,         D3DBLENDOP_ADD, D3DBLENDOP_ADD,      D3DBLENDOP_ADD};
+  static const D3DBLEND d3dLogicOpSrcFactors[16] = {
+      D3DBLEND_ZERO,        D3DBLEND_DESTCOLOR,   D3DBLEND_ONE,          D3DBLEND_ONE,
+      D3DBLEND_DESTCOLOR,   D3DBLEND_ZERO,        D3DBLEND_INVDESTCOLOR, D3DBLEND_INVDESTCOLOR,
+      D3DBLEND_INVSRCCOLOR, D3DBLEND_INVSRCCOLOR, D3DBLEND_INVDESTCOLOR, D3DBLEND_ONE,
+      D3DBLEND_INVSRCCOLOR, D3DBLEND_INVSRCCOLOR, D3DBLEND_INVDESTCOLOR, D3DBLEND_ONE};
+  static const D3DBLEND d3dLogicOpDestFactors[16] = {
+      D3DBLEND_ZERO,         D3DBLEND_ZERO,     D3DBLEND_INVSRCCOLOR,  D3DBLEND_ZERO,
+      D3DBLEND_ONE,          D3DBLEND_ONE,      D3DBLEND_INVSRCCOLOR,  D3DBLEND_ONE,
+      D3DBLEND_INVDESTCOLOR, D3DBLEND_SRCCOLOR, D3DBLEND_INVDESTCOLOR, D3DBLEND_INVDESTCOLOR,
+      D3DBLEND_INVSRCCOLOR,  D3DBLEND_ONE,      D3DBLEND_INVSRCCOLOR,  D3DBLEND_ONE};
   D3D::SetRenderState(D3DRS_ALPHABLENDENABLE, s_gx_state.blend.logicopenable.Value());
-  if( s_gx_state.blend.logicopenable.Value())
+  if (s_gx_state.blend.logicopenable.Value())
   {
     D3D::SetRenderState(D3DRS_BLENDOP, d3dLogicOpop[s_gx_state.blend.logicmode.Value()]);
     D3D::SetRenderState(D3DRS_SRCBLEND, d3dLogicOpSrcFactors[s_gx_state.blend.logicmode.Value()]);
@@ -1159,18 +1143,11 @@ void Renderer::SetInterlacingMode()
 
 void Renderer::SetSamplerState(u32 index, const SamplerState& state)
 {
-  static const D3DTEXTUREFILTERTYPE d3dFilters[2] =
-  {
-      D3DTEXF_POINT,
-      D3DTEXF_LINEAR
+  static const D3DTEXTUREFILTERTYPE d3dFilters[2] = {D3DTEXF_POINT, D3DTEXF_LINEAR};
+  static const D3DTEXTUREADDRESS d3dClamps[4] = {
+      D3DTADDRESS_CLAMP, D3DTADDRESS_WRAP, D3DTADDRESS_MIRROR,
+      D3DTADDRESS_WRAP  // reserved
   };
-  static const D3DTEXTUREADDRESS d3dClamps[4] =
-  {
-      D3DTADDRESS_CLAMP,
-      D3DTADDRESS_WRAP,
-      D3DTADDRESS_MIRROR,
-      D3DTADDRESS_WRAP //reserved
-  };  
 
   D3DTEXTUREFILTERTYPE min = d3dFilters[static_cast<u32>(state.min_filter.Value())];
   D3DTEXTUREFILTERTYPE mag = d3dFilters[static_cast<u32>(state.mag_filter.Value())];

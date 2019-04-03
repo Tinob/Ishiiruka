@@ -44,10 +44,10 @@ public:
   TargetRectangle ConvertEFBRectangle(const EFBRectangle& rc) override;
 
   void SwapImpl(u32 xfb_addr, u32 fb_width, u32 fb_stride, u32 fb_height, const EFBRectangle& rc,
-    u64 ticks, float gamma) override;
-
+                u64 ticks, float gamma) override;
+  void InsertBlackFrame() override {};
   void ClearScreen(const EFBRectangle& rc, bool color_enable, bool alpha_enable, bool z_enable,
-    u32 color, u32 z) override;
+                   u32 color, u32 z) override;
 
   void ReinterpretPixelData(unsigned int convtype) override;
 
@@ -89,27 +89,32 @@ private:
   // Transitions EFB / XFB buffers to SHADER_READ_ONLY, ready for presenting / dumping.
   // If MSAA is enabled, and XFB is disabled, also resolves the EFB buffer.
   void TransitionBuffersForSwap(const TargetRectangle& scaled_rect,
-      const XFBSourceBase* const* xfb_sources, u32 xfb_count);
+                                const XFBSourceBase* const* xfb_sources, u32 xfb_count);
 
   // Draw either the EFB, or specified XFB sources to the currently-bound framebuffer.
-  void DrawFrame(const TargetRectangle& target_rc, const TargetRectangle& scaled_source_rc, u32 xfb_addr,
-  const XFBSourceBase* const* xfb_sources, u32 xfb_count, Texture2D* dst_texture, const TargetSize& dst_size, u32 fb_width,
-  u32 fb_stride, u32 fb_height, float Gamma);
-  void DrawEFB(const TargetRectangle& t_rc, const TargetRectangle& scaled_source_rc, Texture2D* dst_texture, const TargetSize& dst_size, float Gamma);
+  void DrawFrame(const TargetRectangle& target_rc, const TargetRectangle& scaled_source_rc,
+                 u32 xfb_addr, const XFBSourceBase* const* xfb_sources, u32 xfb_count,
+                 Texture2D* dst_texture, const TargetSize& dst_size, u32 fb_width, u32 fb_stride,
+                 u32 fb_height, float Gamma);
+  void DrawEFB(const TargetRectangle& t_rc, const TargetRectangle& scaled_source_rc,
+               Texture2D* dst_texture, const TargetSize& dst_size, float Gamma);
   void DrawVirtualXFB(const TargetRectangle& target_rc, u32 xfb_addr,
-    const XFBSourceBase* const* xfb_sources, u32 xfb_count, Texture2D* dst_texture, const TargetSize& dst_size, u32 fb_width,
-    u32 fb_stride, u32 fb_height, float Gamma);
-  void DrawRealXFB(const TargetRectangle& target_rect,
-    const XFBSourceBase* const* xfb_sources, u32 xfb_count, u32 fb_width,
-    u32 fb_stride, u32 fb_height, Texture2D* dst_texture, const TargetSize& dst_size, float Gamma);
+                      const XFBSourceBase* const* xfb_sources, u32 xfb_count,
+                      Texture2D* dst_texture, const TargetSize& dst_size, u32 fb_width,
+                      u32 fb_stride, u32 fb_height, float Gamma);
+  void DrawRealXFB(const TargetRectangle& target_rect, const XFBSourceBase* const* xfb_sources,
+                   u32 xfb_count, u32 fb_width, u32 fb_stride, u32 fb_height,
+                   Texture2D* dst_texture, const TargetSize& dst_size, float Gamma);
 
   // Draw the frame, as well as the OSD to the swap chain.
-  void DrawScreen(const TargetRectangle& scaled_efb_rect, u32 xfb_addr, const XFBSourceBase* const* xfb_sources,
-    u32 xfb_count, u32 fb_width, u32 fb_stride, u32 fb_height, float gamma);
+  void DrawScreen(const TargetRectangle& scaled_efb_rect, u32 xfb_addr,
+                  const XFBSourceBase* const* xfb_sources, u32 xfb_count, u32 fb_width,
+                  u32 fb_stride, u32 fb_height, float gamma);
 
   // Draw the frame only to the screenshot buffer.
-  bool DrawFrameDump(const TargetRectangle& scaled_efb_rect, u32 xfb_addr, const XFBSourceBase* const* xfb_sources,
-    u32 xfb_count, u32 fb_width, u32 fb_stride, u32 fb_height, u64 ticks);
+  bool DrawFrameDump(const TargetRectangle& scaled_efb_rect, u32 xfb_addr,
+                     const XFBSourceBase* const* xfb_sources, u32 xfb_count, u32 fb_width,
+                     u32 fb_stride, u32 fb_height, u64 ticks);
 
   // Sets up renderer state to permit framedumping.
   // Ideally we would have EndFrameDumping be a virtual method of Renderer, but due to various
@@ -133,9 +138,9 @@ private:
   void FlushFrameDump();
 
   // Copies/scales an image to the currently-bound framebuffer.
-  void BlitScreen(const TargetRectangle& dst_rect,
-    const TargetRectangle& src_rect, TargetSize src_size, const Texture2D* src_tex, const Texture2D* src_depth_tex,
-    const TargetSize& dst_size, Texture2D* dst_texture, float Gamma);
+  void BlitScreen(const TargetRectangle& dst_rect, const TargetRectangle& src_rect,
+                  TargetSize src_size, const Texture2D* src_tex, const Texture2D* src_depth_tex,
+                  const TargetSize& dst_size, Texture2D* dst_texture, float Gamma);
 
   bool ResizeFrameDumpBuffer(u32 new_width, u32 new_height);
   void DestroyFrameDumpResources();
@@ -174,4 +179,4 @@ private:
   size_t m_current_frame_dump_image = FRAME_DUMP_BUFFERED_FRAMES - 1;
   bool m_frame_dumping_active = false;
 };
-}
+}  // namespace Vulkan

@@ -87,6 +87,7 @@ void VideoConfig::Refresh()
   bCrop = Config::Get(Config::GFX_CROP);
   bUseXFB = Config::Get(Config::GFX_USE_XFB);
   bUseRealXFB = Config::Get(Config::GFX_USE_REAL_XFB);
+  bBlackFrameInsertion = Config::Get(Config::GFX_USE_BLACK_FRAME_INSERTION);  
   iSafeTextureCache_ColorSamples = Config::Get(Config::GFX_SAFE_TEXTURE_CACHE_COLOR_SAMPLES);
   bShowFPS = Config::Get(Config::GFX_SHOW_FPS);
   bShowNetPlayPing = Config::Get(Config::GFX_SHOW_NETPLAY_PING);

@@ -733,6 +733,18 @@ void Renderer::SwapImpl(u32 xfb_addr, u32 fb_width, u32 fb_stride, u32 fb_height
   }
 }
 
+void Renderer::InsertBlackFrame()
+{
+  auto rtv = D3D::GetBackBuffer()->GetRTV();
+  D3D::current_command_list->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
+  float clear_color[4] = {0.f, 0.f, 0.f, 1.f};
+  D3D::current_command_list->ClearRenderTargetView(rtv, clear_color, 0, nullptr);
+  D3D::EndFrame();
+  D3D::Present();
+  RestoreAPIState();
+  D3D::BeginFrame();
+}
+
 void Renderer::DrawFrame(const TargetRectangle& target_rc, const EFBRectangle& source_rc, u32 xfb_addr,
   const XFBSourceBase* const* xfb_sources, u32 xfb_count, D3DTexture2D* dst_texture, const TargetSize& dst_size, u32 fb_width,
   u32 fb_stride, u32 fb_height, float Gamma)
