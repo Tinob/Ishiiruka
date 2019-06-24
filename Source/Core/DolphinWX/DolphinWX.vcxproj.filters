@@ -154,9 +154,6 @@
     <ClCompile Include="VideoConfigDiag.cpp">
       <Filter>GUI\Video</Filter>
     </ClCompile>
-    <ClCompile Include="ISOFile.cpp">
-      <Filter>Misc</Filter>
-    </ClCompile>
     <ClCompile Include="AboutDolphin.cpp">
       <Filter>GUI</Filter>
     </ClCompile>
@@ -380,9 +377,6 @@
     </ClInclude>
     <ClInclude Include="VideoConfigDiag.h">
       <Filter>GUI\Video</Filter>
-    </ClInclude>
-    <ClInclude Include="ISOFile.h">
-      <Filter>Misc</Filter>
     </ClInclude>
     <ClInclude Include="resource.h">
       <Filter>Resources</Filter>
