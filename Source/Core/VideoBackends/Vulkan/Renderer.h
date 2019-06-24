@@ -45,7 +45,7 @@ public:
 
   void SwapImpl(u32 xfb_addr, u32 fb_width, u32 fb_stride, u32 fb_height, const EFBRectangle& rc,
                 u64 ticks, float gamma) override;
-  void InsertBlackFrame() override {};
+  void InsertBlackFrame() override;
   void ClearScreen(const EFBRectangle& rc, bool color_enable, bool alpha_enable, bool z_enable,
                    u32 color, u32 z) override;
 
@@ -81,6 +81,7 @@ private:
   void OnSwapChainResized();
   void BindEFBToStateTracker();
   void ResizeEFBTextures();
+  void ResizeSwapChain();
 
   void RecompileShaders();
   bool CompileShaders();
