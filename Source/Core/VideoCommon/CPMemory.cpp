@@ -5,6 +5,7 @@
 #include "Common/Common.h"
 #include "VideoCommon/CPMemory.h"
 #include "VideoCommon/VertexShaderManager.h"
+#include "VideoCommon/CommandProcessor.h"
 
 // CP state
 u8 *cached_arraybases[16];
@@ -83,7 +84,7 @@ void LoadCPReg(u32 sub_cmd, u32 value)
 
     // Pointers to vertex arrays in GC RAM
   case 0xA0:
-    state->array_bases[sub_cmd & 0xF] = value;
+    state->array_bases[sub_cmd & 0xF] = value & CommandProcessor::GetPhysicalAddressMask();
     state->bases_dirty = true;
     break;
 

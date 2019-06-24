@@ -158,4 +158,5 @@ void SetCpClearRegister();
 void SetCpControlRegister();
 void SetCpStatusRegister();
 void ProcessFifoEvents();
+u32 GetPhysicalAddressMask();
 } // namespace CommandProcessor
