@@ -70,7 +70,6 @@
     <ClInclude Include="ThreadPool.h" />
     <ClInclude Include="Timer.h" />
     <ClInclude Include="Version.h" />
-    <ClInclude Include="WorkQueueThread.h" />
     <ClInclude Include="x64ABI.h" />
     <ClInclude Include="x64Emitter.h" />
     <ClInclude Include="x64Reg.h" />
