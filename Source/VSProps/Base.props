@@ -93,6 +93,8 @@
       <AdditionalOptions>/Zc:inline /Zc:throwingNew /volatile:iso %(AdditionalOptions)</AdditionalOptions>
       <!--Enable detailed debug info-->
       <AdditionalOptions>/Zo %(AdditionalOptions)</AdditionalOptions>
+      <!--Set compatibility to avoid warnings in QT-->
+      <AdditionalOptions>/Wv:18 %(AdditionalOptions)</AdditionalOptions>
       <!--Treat sources as utf-8-->
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <DebugInformationFormat>OldStyle</DebugInformationFormat>
