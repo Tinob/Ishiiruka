@@ -1267,9 +1267,6 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string& title)
       szr_other->Add(Compute_Shader_encoding = CreateCheckBox(
                          page_hacks, _("Compute Texture Encoding"), (Compute_texture_encoding_desc),
                          Config::GFX_ENABLE_COMPUTE_TEXTURE_ENCODING));
-      szr_other->Add(Compute_Shader_encoding = CreateCheckBox(
-                         page_hacks, _("Compute Texture Encoding"), (Compute_texture_encoding_desc),
-                         Config::GFX_ENABLE_COMPUTE_TEXTURE_ENCODING));
 
       wxStaticBoxSizer* const group_other =
           new wxStaticBoxSizer(wxVERTICAL, page_hacks, _("Other"));
