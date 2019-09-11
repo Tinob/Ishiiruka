@@ -93,7 +93,7 @@ void MainToolBar::InitializeThemeBitmaps()
                          {TOOLBAR_FULLSCREEN, CreateBitmap("fullscreen")},
                          {TOOLBAR_CONFIGMAIN, CreateBitmap("config")},
                          {TOOLBAR_CONFIGGFX, CreateBitmap("graphics")},
-                         {TOOLBAR_CONTROLLER, CreateBitmap("classic")}});
+                         {TOOLBAR_CONTROLLER, CreateBitmap("gcpad")}});
 }
 
 void MainToolBar::InitializeDebuggerBitmaps()
