@@ -69,7 +69,6 @@ void DoCallbacks(CallbackType type);
 namespace Chat
 {
   extern bool toggled;
-  extern bool keep_open;
   extern std::string current_msg;
 
   void Update();

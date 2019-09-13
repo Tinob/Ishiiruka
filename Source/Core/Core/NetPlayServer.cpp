@@ -926,6 +926,7 @@ bool NetPlayServer::StartGame()
   spac << m_settings.m_OCFactor;
   spac << m_settings.m_EXIDevice[0];
   spac << m_settings.m_EXIDevice[1];
+  spac << m_settings.m_BrawlMusicOff;
   spac << (u32)g_netplay_initial_rtc;
   spac << (u32)(g_netplay_initial_rtc >> 32);
 

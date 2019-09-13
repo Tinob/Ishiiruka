@@ -113,6 +113,8 @@ struct SConfig
   bool bEnableMemcardSdWriting = true;
   bool bCopyWiiSaveNetplay = true;
 
+  bool bBrawlMusicOff = false;
+
   bool bDPL2Decoder = false;
   int iLatency = 20;
   bool m_audio_stretch = false;

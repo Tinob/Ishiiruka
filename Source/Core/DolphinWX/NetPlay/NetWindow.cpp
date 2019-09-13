@@ -264,17 +264,25 @@ wxSizer* NetPlayDialog::CreateBottomGUI(wxWindow* parent)
     minimum_padbuf_spin->Bind(wxEVT_SPINCTRL, &NetPlayDialog::OnAdjustMinimumBuffer, this);
     minimum_padbuf_spin->SetMinSize(WxUtils::GetTextWidgetMinSize(minimum_padbuf_spin));
 
-    m_memcard_write = new wxCheckBox(parent, wxID_ANY, _("Enable memory cards/SD"));
+    m_memcard_write = new wxCheckBox(parent, wxID_ANY, _("Write save/SD data"));
 
-    m_copy_wii_save = new wxCheckBox(parent, wxID_ANY, _("Load Wii Save"));
+    m_music_off_chkbox = new wxCheckBox(parent, wxID_ANY, "Client Side Music Off");
 
     bottom_szr->Add(m_start_btn, 0, wxALIGN_CENTER_VERTICAL);
     bottom_szr->Add(minimum_buffer_lbl, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
     bottom_szr->Add(minimum_padbuf_spin, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
     bottom_szr->Add(buffer_lbl, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
     bottom_szr->Add(m_player_padbuf_spin, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
+
     bottom_szr->Add(m_memcard_write, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
-    bottom_szr->Add(m_copy_wii_save, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
+    bottom_szr->Add(m_music_off_chkbox, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
+    /*
+    wxBoxSizer* const chkbox_sizer = new wxBoxSizer(wxVERTICAL);
+    chkbox_sizer->Add(m_memcard_write, 0, wxLEFT, space5);
+    chkbox_sizer->Add(m_music_off_chkbox, 0, wxLEFT, space5);
+    
+    bottom_szr->Add(chkbox_sizer, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
+    */
     bottom_szr->AddSpacer(space5);
   }
   else
@@ -290,7 +298,7 @@ wxSizer* NetPlayDialog::CreateBottomGUI(wxWindow* parent)
 
   bottom_szr->Add(m_record_chkbox, 0, wxALIGN_CENTER_VERTICAL);
   bottom_szr->AddStretchSpacer();
-  bottom_szr->Add(quit_btn);
+  bottom_szr->Add(quit_btn, 0, wxALIGN_CENTER_VERTICAL);
   return bottom_szr;
 }
 
@@ -330,9 +338,16 @@ void NetPlayDialog::OnChat(wxCommandEvent&)
       OSD::AddMessage(
         "[" + netplay_client->local_player->name + netplay_client->FindPlayerPadName(netplay_client->local_player) + "]: " + text,
         OSD::Duration::NORMAL,
-        OSD::Color::YELLOW);
+        OSD::Color::GREEN);
     }
   }
+}
+
+bool NetPlayDialog::IsNTSCBrawl()
+{
+  //m_selected_game.find("RSBE01")
+  //return m_selected_game.find("00000000") != std::string::npos;
+  return true;
 }
 
 void NetPlayDialog::GetNetSettings(NetSettings& settings)
@@ -348,11 +363,13 @@ void NetPlayDialog::GetNetSettings(NetSettings& settings)
   settings.m_DSPHLE = instance.bDSPHLE;
   settings.m_DSPEnableJIT = instance.m_DSPEnableJIT;
   settings.m_WriteToMemcard = m_memcard_write->GetValue();
-  settings.m_CopyWiiSave = m_copy_wii_save->GetValue();
+  //settings.m_CopyWiiSave = m_copy_wii_save->GetValue();
   settings.m_OCEnable = instance.m_OCEnable;
   settings.m_OCFactor = instance.m_OCFactor;
   settings.m_EXIDevice[0] = m_memcard_write->GetValue() ? instance.m_EXIDevice[0] : ExpansionInterface::EXIDEVICE_NONE;
   settings.m_EXIDevice[1] = m_memcard_write->GetValue() ? instance.m_EXIDevice[1] : ExpansionInterface::EXIDEVICE_NONE;
+  //settings.m_BrawlMusicOff = IsNTSCBrawl() ? m_music_off_chkbox->GetValue() : false;
+  settings.m_BrawlMusicOff = m_music_off_chkbox->GetValue();
 }
 
 std::string NetPlayDialog::FindGame(const std::string& target_game)
@@ -436,9 +453,11 @@ void NetPlayDialog::OnMsgStartGame()
   {
     m_start_btn->Disable();
     m_memcard_write->Disable();
-    m_copy_wii_save->Disable();
+    //m_copy_wii_save->Disable();
     m_game_btn->Disable();
     m_player_config_btn->Disable();
+
+    m_music_off_chkbox->Disable();
   }
 
   m_record_chkbox->Disable();
@@ -452,10 +471,13 @@ void NetPlayDialog::OnMsgStopGame()
   {
     m_start_btn->Enable();
     m_memcard_write->Enable();
-    m_copy_wii_save->Enable();
+    //m_copy_wii_save->Enable();
     m_game_btn->Enable();
     m_player_config_btn->Enable();
+
+    m_music_off_chkbox->Enable();
   }
+
   m_record_chkbox->Enable();
 }
 
@@ -674,7 +696,7 @@ void NetPlayDialog::OnThread(wxThreadEvent& event)
     if (g_ActiveConfig.bShowNetPlayMessages)
     {
       OSD::AddMessage(
-        (s.from_self ? "[" + netplay_client->local_player->name + netplay_client->FindPlayerPadName(netplay_client->local_player) + "]: " + s.msg : s.msg), OSD::Duration::NORMAL, s.from_self ? OSD::Color::YELLOW : OSD::Color::GREEN);
+        (s.from_self ? "[" + netplay_client->local_player->name + netplay_client->FindPlayerPadName(netplay_client->local_player) + "]: " + s.msg : s.msg), OSD::Duration::NORMAL, s.from_self ? OSD::Color::GREEN : OSD::Color::YELLOW);
     }
   }
 }

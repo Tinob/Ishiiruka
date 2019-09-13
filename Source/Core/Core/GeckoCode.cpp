@@ -16,7 +16,10 @@
 
 #include "Core/ConfigManager.h"
 #include "Core/HW/Memmap.h"
+#include "Core/NetPlayProto.h"
 #include "Core/PowerPC/PowerPC.h"
+
+#include <iostream>
 
 namespace Gecko
 {

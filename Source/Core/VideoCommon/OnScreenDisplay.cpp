@@ -43,7 +43,6 @@ namespace OSD
   namespace Chat
   {
     bool toggled = false;
-    bool keep_open = false;
     std::string current_msg;
 
     static bool last_toggled = false;
@@ -55,24 +54,12 @@ namespace OSD
         if (!last_toggled && toggled)
           current_msg = "";
 
-        if (last_toggled && !toggled)
+        if (last_toggled && !toggled && current_msg != "")
         {
           trim(current_msg);
 
-          if (current_msg != "")
-          {
-            netplay_client->SendChatMessage(current_msg);
-            netplay_client->dialog->AppendChat(current_msg, true);
-            current_msg = "";
-          }
-          else
-            keep_open = false;
-        }
-
-        if (last_toggled && !toggled && keep_open)
-        {
-          keep_open = false;
-          toggled = true;
+          netplay_client->SendChatMessage(current_msg);
+          netplay_client->dialog->AppendChat(current_msg, true);
         }
       }
 

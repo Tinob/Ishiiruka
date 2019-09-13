@@ -141,11 +141,13 @@ private:
   void OnChoice(wxCommandEvent& event);
   void UpdateHostLabel();
 
+  bool IsNTSCBrawl();
+
   wxListBox* m_player_lbox;
   wxTextCtrl* m_chat_text;
   wxTextCtrl* m_chat_msg_text;
   wxCheckBox* m_memcard_write;
-  wxCheckBox* m_copy_wii_save;
+  wxCheckBox* m_music_off_chkbox;
   wxCheckBox* m_record_chkbox;
 
   wxSpinCtrl* m_player_padbuf_spin;
