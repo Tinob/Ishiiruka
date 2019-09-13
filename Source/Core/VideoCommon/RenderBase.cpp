@@ -556,6 +556,10 @@ float Renderer::CalculateDrawAspectRatio(u32 target_width, u32 target_height) co
   {
     Ratio /= (73.0f / 60.0f);
   }
+  else if (g_ActiveConfig.iAspectRatio == ASPECT_69_40)
+  {
+    Ratio /= (69.0f / 40.0f);
+  }
   else if (g_ActiveConfig.iAspectRatio == ASPECT_16_9)
   {
     Ratio /= (16.0f / 9.0f);
