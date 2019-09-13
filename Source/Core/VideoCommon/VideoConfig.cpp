@@ -92,6 +92,8 @@ void VideoConfig::Refresh()
   bShowFPS = Config::Get(Config::GFX_SHOW_FPS);
   bShowNetPlayPing = Config::Get(Config::GFX_SHOW_NETPLAY_PING);
   bShowNetPlayMessages = Config::Get(Config::GFX_SHOW_NETPLAY_MESSAGES);
+  bShowOSDClock = Config::Get(Config::GFX_SHOW_OSD_CLOCK);
+  bShowFrameTimes = Config::Get(Config::GFX_SHOW_FRAME_TIMES);
   bLogRenderTimeToFile = Config::Get(Config::GFX_LOG_RENDER_TIME_TO_FILE);
   bOverlayStats = Config::Get(Config::GFX_OVERLAY_STATS);
   bOverlayProjStats = Config::Get(Config::GFX_OVERLAY_PROJ_STATS);

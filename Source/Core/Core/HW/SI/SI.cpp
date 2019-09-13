@@ -19,13 +19,19 @@
 #include "Core/HW/SystemTimers.h"
 #include "Core/Movie.h"
 #include "Core/NetPlayProto.h"
+#include "Core/NetPlayClient.h"
+
+#include <iostream>
 
 #include "InputCommon/ControllerInterface/ControllerInterface.h"
+#include "InputCommon/GCAdapter.h"
+#include "InputCommon/GCPadStatus.h"
 
 namespace SerialInterface
 {
 static CoreTiming::EventType* s_change_device_event;
 static CoreTiming::EventType* s_tranfer_pending_event;
+static CoreTiming::EventType* et_send_netplay_inputs;
 
 static void RunSIBuffer(u64 user_data, s64 cycles_late);
 static void UpdateInterrupts();
@@ -215,6 +221,8 @@ static USIStatusReg s_status_reg;
 static USIEXIClockCount s_exi_clock_count;
 static std::array<u8, 128> s_si_buffer;
 
+std::chrono::time_point<std::chrono::high_resolution_clock> last_si_read;
+
 void DoState(PointerWrap& p)
 {
   for (int i = 0; i < MAX_SI_CHANNELS; i++)
@@ -253,6 +261,7 @@ void DoState(PointerWrap& p)
 
 static void ChangeDeviceCallback(u64 user_data, s64 cycles_late);
 static void RunSIBuffer(u64 user_data, s64 cycles_late);
+static void SendNetplayInputs(u64 userdata, s64 cyclesLate);
 
 void Init()
 {
@@ -300,6 +309,7 @@ void Init()
 
   s_change_device_event = CoreTiming::RegisterEvent("ChangeSIDevice", ChangeDeviceCallback);
   s_tranfer_pending_event = CoreTiming::RegisterEvent("SITransferPending", RunSIBuffer);
+  et_send_netplay_inputs = CoreTiming::RegisterEvent("SendNetplayInputs", SendNetplayInputs);
 }
 
 void Shutdown()
@@ -331,22 +341,61 @@ void RegisterMMIO(MMIO::Mapping* mmio, u32 base)
     int rdst_bit = 8 * (3 - i) + 5;
 
     mmio->Register(base | (SI_CHANNEL_0_OUT + 0xC * i),
-                   MMIO::DirectRead<u32>(&s_channel[i].out.hex),
-                   MMIO::DirectWrite<u32>(&s_channel[i].out.hex));
+      MMIO::DirectRead<u32>(&s_channel[i].out.hex),
+      MMIO::DirectWrite<u32>(&s_channel[i].out.hex));
     mmio->Register(base | (SI_CHANNEL_0_IN_HI + 0xC * i),
-                   MMIO::ComplexRead<u32>([i, rdst_bit](u32) {
-                     s_status_reg.hex &= ~(1 << rdst_bit);
-                     UpdateInterrupts();
-                     return s_channel[i].in_hi.hex;
-                   }),
-                   MMIO::DirectWrite<u32>(&s_channel[i].in_hi.hex));
+      MMIO::ComplexRead<u32>([i, rdst_bit](u32) {
+
+      if (SConfig::GetInstance().iPollingMethod == POLLING_ONSIREAD)
+      {
+        // If this port has a controller of any sort
+        for (int c = 0; c < MAX_SI_CHANNELS; c++)
+        {
+          // If this port has a controller of any sort
+          if (s_channel[c].device->GetDeviceType() != SIDEVICE_NONE)
+          {
+            if (i == c)
+            {
+              static u64 last_tick = 0;
+              u64 tick = CoreTiming::GetTicks();
+
+              if (last_tick > tick)
+                last_tick = 0;
+
+              u64 diff = tick - last_tick;
+              last_tick = tick;
+
+            // double msec = (diff / (double)SystemTimers::GetTicksPerSecond()) * 1000.0;
+
+              if (NetPlay::IsNetPlayRunning() && netplay_client && (netplay_client->BufferSizeForPort(c) % NetPlayClient::buffer_accuracy) != 0)
+                // Schedule an event to poll and send inputs earlier in the next frame
+                CoreTiming::ScheduleEvent(diff - (diff / NetPlayClient::buffer_accuracy) * (netplay_client->BufferSizeForPort(c) % NetPlayClient::buffer_accuracy), et_send_netplay_inputs);
+
+              last_si_read = std::chrono::high_resolution_clock::now();
+            }
+
+            // Stop if we are not the first plugged in controller
+            break;
+          }
+        }
+
+        // the HI register is read before the LO register (at least by Melee)
+        s_channel[i].device->GetData(s_channel[i].in_hi.hex, s_channel[i].in_lo.hex);
+      }
+
+      s_status_reg.hex &= ~(1 << rdst_bit);
+      UpdateInterrupts();
+      
+      return s_channel[i].in_hi.hex;
+    }),
+      MMIO::DirectWrite<u32>(&s_channel[i].in_hi.hex));
     mmio->Register(base | (SI_CHANNEL_0_IN_LO + 0xC * i),
-                   MMIO::ComplexRead<u32>([i, rdst_bit](u32) {
-                     s_status_reg.hex &= ~(1 << rdst_bit);
-                     UpdateInterrupts();
-                     return s_channel[i].in_lo.hex;
-                   }),
-                   MMIO::DirectWrite<u32>(&s_channel[i].in_lo.hex));
+      MMIO::ComplexRead<u32>([i, rdst_bit](u32) {
+      s_status_reg.hex &= ~(1 << rdst_bit);
+      UpdateInterrupts();
+      return s_channel[i].in_lo.hex;
+    }),
+      MMIO::DirectWrite<u32>(&s_channel[i].in_lo.hex));
   }
 
   mmio->Register(base | SI_POLL, MMIO::DirectRead<u32>(&s_poll.hex),
@@ -566,21 +615,32 @@ void ChangeDeviceDeterministic(SIDevices device, int channel)
 
 void UpdateDevices()
 {
-  // Update inputs at the rate of SI
-  // Typically 120hz but is variable
+  // Update inputs at 240 hz
   g_controller_interface.UpdateInput();
 
-  // Update channels and set the status bit if there's new data
-  s_status_reg.RDST0 =
-      !!s_channel[0].device->GetData(s_channel[0].in_hi.hex, s_channel[0].in_lo.hex);
-  s_status_reg.RDST1 =
-      !!s_channel[1].device->GetData(s_channel[1].in_hi.hex, s_channel[1].in_lo.hex);
-  s_status_reg.RDST2 =
-      !!s_channel[2].device->GetData(s_channel[2].in_hi.hex, s_channel[2].in_lo.hex);
-  s_status_reg.RDST3 =
-      !!s_channel[3].device->GetData(s_channel[3].in_hi.hex, s_channel[3].in_lo.hex);
+  if (SConfig::GetInstance().iPollingMethod == POLLING_ONSIREAD)
+  {
+    // We need to always update the GC adapter, so that it can know what ports are plugged in
+    if (!NetPlay::IsNetPlayRunning())
+    {
+      for (int i = 0; i < 4; i++)
+        GCAdapter::Input(i);
+    }
 
-  UpdateInterrupts();
+    // Pretend that there's always new data
+    s_status_reg.RDST0 = s_status_reg.RDST1 = s_status_reg.RDST2 = s_status_reg.RDST3 = true;
+  }
+  else
+  {
+    s_status_reg.RDST0 =
+      !!s_channel[0].device->GetData(s_channel[0].in_hi.hex, s_channel[0].in_lo.hex);
+    s_status_reg.RDST1 =
+      !!s_channel[1].device->GetData(s_channel[1].in_hi.hex, s_channel[1].in_lo.hex);
+    s_status_reg.RDST2 =
+      !!s_channel[2].device->GetData(s_channel[2].in_hi.hex, s_channel[2].in_lo.hex);
+    s_status_reg.RDST3 =
+      !!s_channel[3].device->GetData(s_channel[3].in_hi.hex, s_channel[3].in_lo.hex);
+  }
 }
 
 SIDevices GetDeviceType(int channel)
@@ -627,9 +687,18 @@ static void RunSIBuffer(u64 user_data, s64 cycles_late)
   }
 }
 
+static void SendNetplayInputs(u64 userdata, s64 cyclesLate)
+{
+  if (netplay_client)
+  {
+    for (int i = 0; i < 4; i++)
+      netplay_client->SendNetPad(i);
+  }
+}
+
 u32 GetPollXLines()
 {
-  return s_poll.X;
+  return SConfig::GetInstance().iPollingMethod == POLLING_ONSIREAD ? (492 / 4) * (SConfig::GetInstance().iVideoRate >> 3) : s_poll.X;
 }
 
 }  // end of namespace SerialInterface

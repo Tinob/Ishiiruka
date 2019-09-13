@@ -24,17 +24,17 @@ const std::string scm_rev_str = "Ishiiruka-Dolphin"
 #ifdef __INTEL_COMPILER
 " " BUILD_TYPE_STR " " SCM_DESC_STR "-ICC";
 #else
-" " BUILD_TYPE_STR " " SCM_DESC_STR;
+" " BUILD_TYPE_STR "Bird Build 1.0";
 #endif
 
 const std::string scm_rev_git_str = SCM_REV_STR;
 const std::string scm_rev_cache_str = "201909022212";
-const std::string scm_desc_str = SCM_DESC_STR;
+const std::string scm_desc_str = "Bird Build 1.0";
 const std::string scm_branch_str = SCM_BRANCH_STR;
 const std::string scm_distributor_str = SCM_DISTRIBUTOR_STR;
 
 #ifdef _WIN32
-const std::string netplay_dolphin_ver = SCM_DESC_STR " Win";
+const std::string netplay_dolphin_ver = "Bird Build 1.0" " Win";
 #elif __APPLE__
 const std::string netplay_dolphin_ver = SCM_DESC_STR " Mac";
 #else

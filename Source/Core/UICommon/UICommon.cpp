@@ -40,6 +40,8 @@
 
 #include "VideoCommon/VideoBackendBase.h"
 
+#include <iostream>
+
 namespace UICommon
 {
 void Init()

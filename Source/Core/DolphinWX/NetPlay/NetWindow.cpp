@@ -244,28 +244,43 @@ wxSizer* NetPlayDialog::CreateBottomGUI(wxWindow* parent)
   const int space5 = FromDIP(5);
 
   wxBoxSizer* const bottom_szr = new wxBoxSizer(wxHORIZONTAL);
+
+  wxStaticText* buffer_lbl = new wxStaticText(parent, wxID_ANY, _("Buffer:"));
+  m_player_padbuf_spin =
+    new wxSpinCtrl(parent, wxID_ANY, std::to_string(INITIAL_PAD_BUFFER_SIZE), wxDefaultPosition,
+      wxDefaultSize, wxSP_ARROW_KEYS, 0, 200, INITIAL_PAD_BUFFER_SIZE);
+  m_player_padbuf_spin->Bind(wxEVT_SPINCTRL, &NetPlayDialog::OnAdjustPlayerBuffer, this);
+  m_player_padbuf_spin->SetMinSize(WxUtils::GetTextWidgetMinSize(m_player_padbuf_spin));
+
   if (m_is_hosting)
   {
     m_start_btn = new wxButton(parent, wxID_ANY, _("Start"));
     m_start_btn->Bind(wxEVT_BUTTON, &NetPlayDialog::OnStart, this);
 
-    wxStaticText* buffer_lbl = new wxStaticText(parent, wxID_ANY, _("Buffer:"));
-    wxSpinCtrl* const padbuf_spin =
+    wxStaticText* minimum_buffer_lbl = new wxStaticText(parent, wxID_ANY, _("Minimum Buffer:"));
+    wxSpinCtrl* const minimum_padbuf_spin =
       new wxSpinCtrl(parent, wxID_ANY, std::to_string(INITIAL_PAD_BUFFER_SIZE), wxDefaultPosition,
         wxDefaultSize, wxSP_ARROW_KEYS, 0, 200, INITIAL_PAD_BUFFER_SIZE);
-    padbuf_spin->Bind(wxEVT_SPINCTRL, &NetPlayDialog::OnAdjustBuffer, this);
-    padbuf_spin->SetMinSize(WxUtils::GetTextWidgetMinSize(padbuf_spin));
+    minimum_padbuf_spin->Bind(wxEVT_SPINCTRL, &NetPlayDialog::OnAdjustMinimumBuffer, this);
+    minimum_padbuf_spin->SetMinSize(WxUtils::GetTextWidgetMinSize(minimum_padbuf_spin));
 
-    m_memcard_write = new wxCheckBox(parent, wxID_ANY, _("Write save/SD data"));
+    m_memcard_write = new wxCheckBox(parent, wxID_ANY, _("Enable memory cards/SD"));
 
     m_copy_wii_save = new wxCheckBox(parent, wxID_ANY, _("Load Wii Save"));
 
     bottom_szr->Add(m_start_btn, 0, wxALIGN_CENTER_VERTICAL);
+    bottom_szr->Add(minimum_buffer_lbl, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
+    bottom_szr->Add(minimum_padbuf_spin, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
     bottom_szr->Add(buffer_lbl, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
-    bottom_szr->Add(padbuf_spin, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
+    bottom_szr->Add(m_player_padbuf_spin, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
     bottom_szr->Add(m_memcard_write, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
     bottom_szr->Add(m_copy_wii_save, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
     bottom_szr->AddSpacer(space5);
+  }
+  else
+  {
+    bottom_szr->Add(buffer_lbl, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
+    bottom_szr->Add(m_player_padbuf_spin, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
   }
 
   m_record_chkbox = new wxCheckBox(parent, wxID_ANY, _("Record inputs"));
@@ -307,7 +322,16 @@ void NetPlayDialog::OnChat(wxCommandEvent&)
   {
     netplay_client->SendChatMessage(text);
     m_chat_msg_text->Clear();
-    AddChatMessage(ChatMessageType::UserOut, text);
+
+    AddChatMessage(ChatMessageType::UserOut, "[" + netplay_client->local_player->name + netplay_client->FindPlayerPadName(netplay_client->local_player) + "]: " + text);
+
+    if (g_ActiveConfig.bShowNetPlayMessages)
+    {
+      OSD::AddMessage(
+        "[" + netplay_client->local_player->name + netplay_client->FindPlayerPadName(netplay_client->local_player) + "]: " + text,
+        OSD::Duration::NORMAL,
+        OSD::Color::YELLOW);
+    }
   }
 }
 
@@ -327,8 +351,8 @@ void NetPlayDialog::GetNetSettings(NetSettings& settings)
   settings.m_CopyWiiSave = m_copy_wii_save->GetValue();
   settings.m_OCEnable = instance.m_OCEnable;
   settings.m_OCFactor = instance.m_OCFactor;
-  settings.m_EXIDevice[0] = instance.m_EXIDevice[0];
-  settings.m_EXIDevice[1] = instance.m_EXIDevice[1];
+  settings.m_EXIDevice[0] = m_memcard_write->GetValue() ? instance.m_EXIDevice[0] : ExpansionInterface::EXIDEVICE_NONE;
+  settings.m_EXIDevice[1] = m_memcard_write->GetValue() ? instance.m_EXIDevice[1] : ExpansionInterface::EXIDEVICE_NONE;
 }
 
 std::string NetPlayDialog::FindGame(const std::string& target_game)
@@ -388,9 +412,11 @@ void NetPlayDialog::Update()
   GetEventHandler()->AddPendingEvent(evt);
 }
 
-void NetPlayDialog::AppendChat(const std::string& msg)
+void NetPlayDialog::AppendChat(const std::string& msg, bool from_self)
 {
-  m_chat_msgs.Push(msg);
+  ChatMsgIncoming m = { msg, from_self };
+
+  m_chat_msgs.Push(m);
   // silly
   Update();
 }
@@ -433,16 +459,29 @@ void NetPlayDialog::OnMsgStopGame()
   m_record_chkbox->Enable();
 }
 
-void NetPlayDialog::OnAdjustBuffer(wxCommandEvent& event)
+void NetPlayDialog::OnAdjustMinimumBuffer(wxCommandEvent& event)
 {
   const int val = ((wxSpinCtrl*)event.GetEventObject())->GetValue();
-  netplay_server->AdjustPadBufferSize(val);
+  netplay_server->AdjustMinimumPadBufferSize(val);
 }
 
-void NetPlayDialog::OnPadBufferChanged(u32 buffer)
+void NetPlayDialog::OnAdjustPlayerBuffer(wxCommandEvent& event)
 {
-  m_pad_buffer = buffer;
-  wxThreadEvent evt(wxEVT_THREAD, NP_GUI_EVT_PAD_BUFFER_CHANGE);
+  const int val = ((wxSpinCtrl*)event.GetEventObject())->GetValue();
+  netplay_client->SetLocalPlayerBuffer(val);
+}
+
+void NetPlayDialog::OnMinimumPadBufferChanged(u32 buffer)
+{
+  m_minimum_pad_buffer = buffer;
+  wxThreadEvent evt(wxEVT_THREAD, NP_GUI_EVT_MINIMUM_PAD_BUFFER_CHANGE);
+  GetEventHandler()->AddPendingEvent(evt);
+}
+
+void NetPlayDialog::OnPlayerPadBufferChanged(u32 buffer)
+{
+  m_player_pad_buffer = buffer;
+  wxThreadEvent evt(wxEVT_THREAD, NP_GUI_EVT_PLAYER_PAD_BUFFER_CHANGE);
   GetEventHandler()->AddPendingEvent(evt);
 }
 
@@ -580,9 +619,9 @@ void NetPlayDialog::OnThread(wxThreadEvent& event)
     m_MD5_dialog->SetResult(payload.first, payload.second);
   }
   break;
-  case NP_GUI_EVT_PAD_BUFFER_CHANGE:
+  case NP_GUI_EVT_MINIMUM_PAD_BUFFER_CHANGE:
   {
-    std::string msg = StringFromFormat("Buffer size: %d", m_pad_buffer);
+    std::string msg = StringFromFormat("Minimum allowed buffer: %d", m_minimum_pad_buffer);
 
     if (g_ActiveConfig.bShowNetPlayMessages)
     {
@@ -590,6 +629,12 @@ void NetPlayDialog::OnThread(wxThreadEvent& event)
     }
 
     AddChatMessage(ChatMessageType::Info, msg);
+  }
+  break;
+  case NP_GUI_EVT_PLAYER_PAD_BUFFER_CHANGE:
+  {
+    if (m_player_padbuf_spin->GetValue() != m_player_pad_buffer)
+      m_player_padbuf_spin->SetValue(m_player_pad_buffer);
   }
   break;
   case NP_GUI_EVT_DESYNC:
@@ -621,13 +666,15 @@ void NetPlayDialog::OnThread(wxThreadEvent& event)
   // chat messages
   while (m_chat_msgs.Size())
   {
-    std::string s;
+    ChatMsgIncoming s;
     m_chat_msgs.Pop(s);
-    AddChatMessage(ChatMessageType::UserIn, s);
+
+    AddChatMessage(s.from_self ? ChatMessageType::UserOut : ChatMessageType::UserIn, s.from_self ? "[" + netplay_client->local_player->name + netplay_client->FindPlayerPadName(netplay_client->local_player) + "]: " + s.msg : s.msg);
 
     if (g_ActiveConfig.bShowNetPlayMessages)
     {
-      OSD::AddMessage(s, OSD::Duration::NORMAL, OSD::Color::GREEN);
+      OSD::AddMessage(
+        (s.from_self ? "[" + netplay_client->local_player->name + netplay_client->FindPlayerPadName(netplay_client->local_player) + "]: " + s.msg : s.msg), OSD::Duration::NORMAL, s.from_self ? OSD::Color::YELLOW : OSD::Color::GREEN);
     }
   }
 }

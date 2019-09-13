@@ -11,12 +11,17 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <iostream>
 #include "Common/CommonTypes.h"
 #include "Common/Event.h"
 #include "Common/SPSCQueue.h"
 #include "Common/TraversalClient.h"
 #include "Core/NetPlayProto.h"
 #include "InputCommon/GCPadStatus.h"
+
+#ifdef _WIN32
+#include <qos2.h>
+#endif
 
 class NetPlayUI
 {
@@ -26,12 +31,13 @@ public:
   virtual void StopGame() = 0;
 
   virtual void Update() = 0;
-  virtual void AppendChat(const std::string& msg) = 0;
+  virtual void AppendChat(const std::string& msg, bool from_self) = 0;
 
   virtual void OnMsgChangeGame(const std::string& filename) = 0;
   virtual void OnMsgStartGame() = 0;
   virtual void OnMsgStopGame() = 0;
-  virtual void OnPadBufferChanged(u32 buffer) = 0;
+  virtual void OnMinimumPadBufferChanged(u32 buffer) = 0;
+  virtual void OnPlayerPadBufferChanged(u32 buffer) = 0;
   virtual void OnDesync(u32 frame, const std::string& player) = 0;
   virtual void OnConnectionLost() = 0;
   virtual void OnTraversalError(TraversalClient::FailureReason error) = 0;
@@ -57,17 +63,21 @@ public:
   std::string name;
   std::string revision;
   u32 ping;
+  float frame_time = 0;
   PlayerGameStatus game_status;
+  u32 buffer = 0;
 };
+
 
 class NetPlayClient : public TraversalClientClient
 {
 public:
   void ThreadFunc();
-  void SendAsync(sf::Packet&& packet);
+  void SendAsync(std::unique_ptr<sf::Packet> packet);
 
   NetPlayClient(const std::string& address, const u16 port, NetPlayUI* dialog,
-    const std::string& name, const NetTraversalConfig& traversal_config);
+    const std::string& name, bool traversal, const std::string& centralServer,
+    u16 centralPort);
   ~NetPlayClient();
 
   void GetPlayerList(std::string& list, std::vector<int>& pid_list);
@@ -81,9 +91,12 @@ public:
   bool ChangeGame(const std::string& game);
   void SendChatMessage(const std::string& msg);
 
+  void ReportFrameTimeToServer(float frame_time);
+
   // Send and receive pads values
   bool WiimoteUpdate(int _number, u8* data, const u8 size, u8 reporting_mode);
   bool GetNetPads(int pad_nb, GCPadStatus* pad_status);
+  void SendNetPad(int pad_nb);
 
   void OnTraversalStateChanged() override;
   void OnConnectReady(ENetAddress addr) override;
@@ -92,12 +105,39 @@ public:
   bool IsFirstInGamePad(int ingame_pad) const;
   int NumLocalPads() const;
 
-  int InGamePadToLocalPad(int ingame_pad) const;
-  int LocalPadToInGamePad(int localPad) const;
+  int InGamePadToLocalPad(int ingame_pad);
+  int LocalPadToInGamePad(int localPad);
 
   static void SendTimeBase();
   bool DoAllPlayersHaveGame();
 
+  void SetLocalPlayerBuffer(u32 buffer);
+
+  // the number of ticks in-between frames
+  constexpr static int buffer_accuracy = 4;
+
+  inline u32 BufferSizeForPort(int pad) const
+  {
+    if (m_pad_map[pad] <= 0)
+      return 0;
+
+    return std::max(m_minimum_buffer_size, m_players.at(m_pad_map.at(pad)).buffer);
+  }
+
+  // used for chat, not the best place for it
+  inline std::string FindPlayerPadName(const Player* player) const
+  {
+    for (int i = 0; i < 4; i++)
+    {
+      if (m_pad_map[i] == player->pid)
+        return " (port " + std::to_string(i + 1) + ")";
+    }
+
+    return "";
+  }
+
+  NetPlayUI* dialog = nullptr;
+  Player* local_player = nullptr;
 protected:
   void ClearBuffers();
 
@@ -109,12 +149,10 @@ protected:
     std::recursive_mutex async_queue_write;
   } m_crit;
 
-  Common::SPSCQueue<sf::Packet, false> m_async_queue;
+  Common::SPSCQueue<std::unique_ptr<sf::Packet>, false> m_async_queue;
 
   std::array<Common::SPSCQueue<GCPadStatus>, 4> m_pad_buffer;
   std::array<Common::SPSCQueue<NetWiimote>, 4> m_wiimote_buffer;
-
-  NetPlayUI* m_dialog = nullptr;
 
   ENetHost* m_client = nullptr;
   ENetPeer* m_server = nullptr;
@@ -124,9 +162,7 @@ protected:
   Common::Flag m_is_running{ false };
   Common::Flag m_do_loop{ true };
 
-  unsigned int m_target_buffer_size = 20;
-
-  Player* m_local_player = nullptr;
+  unsigned int m_minimum_buffer_size = 6;
 
   u32 m_current_game = 0;
 
@@ -155,7 +191,7 @@ private:
   void SendPadState(int in_game_pad, const GCPadStatus& np);
   void SendWiimoteState(int in_game_pad, const NetWiimote& nw);
   unsigned int OnData(sf::Packet& packet);
-  void Send(const sf::Packet& packet);
+  void Send(sf::Packet& packet);
   void Disconnect();
   bool Connect();
   void ComputeMD5(const std::string& file_identifier);
@@ -168,6 +204,7 @@ private:
   PlayerId m_pid = 0;
   std::map<PlayerId, Player> m_players;
   std::string m_host_spec;
+
   std::string m_player_name;
   bool m_connecting = false;
   TraversalClient* m_traversal_client = nullptr;
@@ -176,8 +213,15 @@ private:
   Common::Event m_gc_pad_event;
   Common::Event m_wii_pad_event;
 
+#ifdef _WIN32
+  HANDLE m_qos_handle;
+  QOS_FLOWID m_qos_flow_id;
+#endif
+
   u32 m_timebase_frame = 0;
 };
 
 void NetPlay_Enable(NetPlayClient* const np);
 void NetPlay_Disable();
+
+extern NetPlayClient* netplay_client;

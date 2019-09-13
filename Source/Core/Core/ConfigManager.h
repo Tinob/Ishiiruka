@@ -51,6 +51,12 @@ enum GPUDeterminismMode
 
 struct BootParameters;
 
+enum PollingMethod
+{
+  POLLING_CONSOLE = 0,
+  POLLING_ONSIREAD = 1
+};
+
 struct SConfig
 {
   // Wii Devices
@@ -102,6 +108,8 @@ struct SConfig
   bool bSyncGPUOnSkipIdleHack = true;
   bool bHLE_BS2 = true;
   bool bEnableCheats = false;
+  bool bNTSC = false;
+  bool bQoSEnabled = true;
   bool bEnableMemcardSdWriting = true;
   bool bCopyWiiSaveNetplay = true;
 
@@ -120,6 +128,8 @@ struct SConfig
   bool bFastDiscSpeed = false;
   int iVideoRate = 8;
   bool bHalfAudioRate = false;
+
+  PollingMethod iPollingMethod = POLLING_CONSOLE;
 
   bool bSyncGPU = false;
   int iSyncGpuMaxDistance;

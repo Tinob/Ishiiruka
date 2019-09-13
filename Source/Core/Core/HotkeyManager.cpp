@@ -26,9 +26,11 @@ const std::string hotkey_labels[] = {
     _trans("Eject Disc"),
     _trans("Refresh Game List"),
     _trans("Toggle Pause"),
-    _trans("Stop"),
+    _trans("Stop/Hide OSD chat"),
     _trans("Reset"),
     _trans("Toggle Fullscreen"),
+    _trans("Toggle OSD chat"),
+    _trans("Send OSD chat message"),
     _trans("Take Screenshot"),
     _trans("Exit"),
 
@@ -396,4 +398,12 @@ void HotkeyManager::LoadDefaults(const ControllerInterface& ciface)
   }
   set_key_expression(HK_UNDO_LOAD_STATE, NON + " & `F12`");
   set_key_expression(HK_UNDO_SAVE_STATE, SHIFT + " & `F12`");
+
+  set_key_expression(HK_SHOW_OSD_CHAT, "T");
+
+#ifdef _WIN32
+  set_key_expression(HK_SEND_CHAT_MSG, "RETURN");
+#else
+  set_key_expression(HK_SEND_CHAT_MSG, "Return");
+#endif
 }

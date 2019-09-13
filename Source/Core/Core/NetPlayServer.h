@@ -18,6 +18,11 @@
 #include "Common/Timer.h"
 #include "Common/TraversalClient.h"
 #include "Core/NetPlayProto.h"
+#include "Core/NetPlayClient.h"
+
+#ifdef _WIN32
+#include <qos2.h>
+#endif
 
 enum class PlayerGameStatus;
 
@@ -48,7 +53,7 @@ public:
   PadMappingArray GetWiimoteMapping() const;
   void SetWiimoteMapping(const PadMappingArray& mappings);
 
-  void AdjustPadBufferSize(unsigned int size);
+  void AdjustMinimumPadBufferSize(unsigned int size);
 
   void KickPlayer(PlayerId player);
 
@@ -71,7 +76,15 @@ private:
 
     ENetPeer* socket;
     u32 ping;
+    float frame_time = 0;
     u32 current_game;
+
+    unsigned int buffer = 0;
+
+#ifdef _WIN32
+    HANDLE qos_handle;
+    QOS_FLOWID qos_flow_id;
+#endif
 
     Common::QoSSession qos_session;
 
@@ -99,7 +112,7 @@ private:
   u32 m_ping_key = 0;
   bool m_update_pings = false;
   u32 m_current_game = 0;
-  unsigned int m_target_buffer_size = 0;
+  unsigned int m_minimum_buffer_size = 0;
   PadMappingArray m_pad_map;
   PadMappingArray m_wiimote_map;
 
@@ -123,4 +136,5 @@ private:
   ENetHost* m_server = nullptr;
   TraversalClient* m_traversal_client = nullptr;
   NetPlayUI* m_dialog = nullptr;
+
 };

@@ -29,6 +29,8 @@ extern const ConfigInfo<int> GFX_SAFE_TEXTURE_CACHE_COLOR_SAMPLES;
 extern const ConfigInfo<bool> GFX_SHOW_FPS;
 extern const ConfigInfo<bool> GFX_SHOW_NETPLAY_PING;
 extern const ConfigInfo<bool> GFX_SHOW_NETPLAY_MESSAGES;
+extern const ConfigInfo<bool> GFX_SHOW_OSD_CLOCK;
+extern const ConfigInfo<bool> GFX_SHOW_FRAME_TIMES;
 extern const ConfigInfo<bool> GFX_LOG_RENDER_TIME_TO_FILE;
 extern const ConfigInfo<bool> GFX_OVERLAY_STATS;
 extern const ConfigInfo<bool> GFX_OVERLAY_PROJ_STATS;

@@ -46,6 +46,7 @@ static std::thread s_adapter_output_thread;
 static Common::Flag s_adapter_thread_running;
 
 static Common::Event s_rumble_data_available;
+static unsigned char s_latest_rumble_data[5];
 
 static std::mutex s_init_mutex;
 static std::thread s_adapter_detect_thread;
@@ -75,7 +76,7 @@ static void Read()
   while (s_adapter_thread_running.IsSet())
   {
     libusb_interrupt_transfer(s_handle, s_endpoint_in, s_controller_payload_swap,
-                              sizeof(s_controller_payload_swap), &payload_size, 16);
+      sizeof(s_controller_payload_swap), &payload_size, 16);
 
     {
       std::lock_guard<std::mutex> lk(s_mutex);
@@ -90,18 +91,13 @@ static void Read()
 static void Write()
 {
   int size = 0;
-
-  while (true)
+  while (s_adapter_thread_running.IsSet())
   {
-    s_rumble_data_available.Wait();
-
-    if (!s_adapter_thread_running.IsSet())
-      return;
-
-    u8 payload[5] = {0x11, s_controller_rumble[0], s_controller_rumble[1], s_controller_rumble[2],
-                     s_controller_rumble[3]};
-    libusb_interrupt_transfer(s_handle, s_endpoint_out, payload, sizeof(payload), &size, 16);
+    if (s_rumble_data_available.WaitFor(std::chrono::milliseconds(100)))
+      libusb_interrupt_transfer(s_handle, s_endpoint_out, s_latest_rumble_data, sizeof(s_latest_rumble_data), &size, 16);
   }
+
+  s_rumble_data_available.Reset();
 }
 
 #if defined(LIBUSB_API_VERSION) && LIBUSB_API_VERSION >= 0x01000102
@@ -521,13 +517,11 @@ static void ResetRumbleLockNeeded()
 
   std::fill(std::begin(s_controller_rumble), std::end(s_controller_rumble), 0);
 
-  unsigned char rumble[5] = {0x11, s_controller_rumble[0], s_controller_rumble[1],
-                             s_controller_rumble[2], s_controller_rumble[3]};
+  s_latest_rumble_data[0] = 0x11;
+  for (int i = 0; i < 4; i++)
+    s_latest_rumble_data[i + 1] = s_controller_rumble[i];
 
-  int size = 0;
-  libusb_interrupt_transfer(s_handle, s_endpoint_out, rumble, sizeof(rumble), &size, 16);
-
-  INFO_LOG(SERIALINTERFACE, "Rumble state reset");
+  s_rumble_data_available.Set();
 }
 
 void Output(int chan, u8 rumble_command)

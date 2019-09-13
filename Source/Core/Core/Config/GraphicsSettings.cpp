@@ -33,6 +33,8 @@ const ConfigInfo<bool> GFX_SHOW_FPS{{System::GFX, "Settings", "ShowFPS"}, false}
 const ConfigInfo<bool> GFX_SHOW_NETPLAY_PING{{System::GFX, "Settings", "ShowNetPlayPing"}, false};
 const ConfigInfo<bool> GFX_SHOW_NETPLAY_MESSAGES{{System::GFX, "Settings", "ShowNetPlayMessages"},
                                                  false};
+const ConfigInfo<bool> GFX_SHOW_OSD_CLOCK{ {System::GFX, "Settings", "ShowOSDClock"}, false };
+const ConfigInfo<bool> GFX_SHOW_FRAME_TIMES{ {System::GFX, "Settings", "ShowFrameTimes"}, false };
 const ConfigInfo<bool> GFX_LOG_RENDER_TIME_TO_FILE{{System::GFX, "Settings", "LogRenderTimeToFile"},
                                                    false};
 const ConfigInfo<bool> GFX_OVERLAY_STATS{{System::GFX, "Settings", "OverlayStats"}, false};

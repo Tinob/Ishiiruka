@@ -35,6 +35,7 @@ class wxSizer;
 class wxStaticText;
 class wxString;
 class wxTextCtrl;
+class wxSpinCtrl;
 
 enum
 {
@@ -44,7 +45,8 @@ enum
   NP_GUI_EVT_DISPLAY_MD5_DIALOG,
   NP_GUI_EVT_MD5_PROGRESS,
   NP_GUI_EVT_MD5_RESULT,
-  NP_GUI_EVT_PAD_BUFFER_CHANGE,
+  NP_GUI_EVT_MINIMUM_PAD_BUFFER_CHANGE,
+  NP_GUI_EVT_PLAYER_PAD_BUFFER_CHANGE,
   NP_GUI_EVT_DESYNC,
   NP_GUI_EVT_CONNECTION_LOST,
   NP_GUI_EVT_TRAVERSAL_CONNECTION_ERROR,
@@ -89,7 +91,7 @@ public:
   void StopGame() override;
 
   void Update() override;
-  void AppendChat(const std::string& msg) override;
+  void AppendChat(const std::string& msg, bool from_self) override;
 
   void ShowMD5Dialog(const std::string& file_identifier) override;
   void SetMD5Progress(int pid, int progress) override;
@@ -99,7 +101,8 @@ public:
   void OnMsgChangeGame(const std::string& filename) override;
   void OnMsgStartGame() override;
   void OnMsgStopGame() override;
-  void OnPadBufferChanged(u32 buffer) override;
+  void OnMinimumPadBufferChanged(u32 buffer) override;
+  void OnPlayerPadBufferChanged(u32 buffer) override;
   void OnDesync(u32 frame, const std::string& player) override;
   void OnConnectionLost() override;
   void OnTraversalError(TraversalClient::FailureReason error) override;
@@ -124,7 +127,8 @@ private:
   void OnThread(wxThreadEvent& event);
   void OnChangeGame(wxCommandEvent& event);
   void OnMD5ComputeRequested(wxCommandEvent& event);
-  void OnAdjustBuffer(wxCommandEvent& event);
+  void OnAdjustMinimumBuffer(wxCommandEvent& event);
+  void OnAdjustPlayerBuffer(wxCommandEvent& event);
   void OnAssignPads(wxCommandEvent& event);
   void OnKick(wxCommandEvent& event);
   void OnPlayerSelect(wxCommandEvent& event);
@@ -144,6 +148,8 @@ private:
   wxCheckBox* m_copy_wii_save;
   wxCheckBox* m_record_chkbox;
 
+  wxSpinCtrl* m_player_padbuf_spin;
+
   std::string m_selected_game;
   wxButton* m_player_config_btn;
   wxButton* m_game_btn;
@@ -156,12 +162,21 @@ private:
   MD5Dialog* m_MD5_dialog = nullptr;
   bool m_host_copy_btn_is_retry;
   bool m_is_hosting;
-  u32 m_pad_buffer;
+  u32 m_minimum_pad_buffer;
+  u32 m_player_pad_buffer;
   u32 m_desync_frame;
   std::string m_desync_player;
 
   std::vector<int> m_playerids;
-  Common::SPSCQueue<std::string> m_chat_msgs;
+  
+
+  struct ChatMsgIncoming
+  {
+    std::string msg;
+    bool from_self;
+  };
+
+  Common::SPSCQueue<ChatMsgIncoming> m_chat_msgs;
 
   const GameListCtrl* const m_game_list;
 

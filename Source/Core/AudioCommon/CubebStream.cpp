@@ -20,10 +20,7 @@ long CubebStream::DataCallback(cubeb_stream* stream, void* user_data, const void
 {
   auto* self = static_cast<CubebStream*>(user_data);
 
-  if (self->m_stereo)
-    self->m_mixer->Mix(static_cast<short*>(output_buffer), num_frames);
-  else
-    self->m_mixer->MixSurround(static_cast<float*>(output_buffer), num_frames);
+  self->m_mixer->Mix(static_cast<short*>(output_buffer), num_frames);
 
   return num_frames;
 }
@@ -38,22 +35,11 @@ bool CubebStream::Init()
   if (!m_ctx)
     return false;
 
-  m_stereo = !SConfig::GetInstance().bDPL2Decoder;
-
   cubeb_stream_params params;
   params.rate = m_mixer->GetSampleRate();
-  if (m_stereo)
-  {
-    params.channels = 2;
-    params.format = CUBEB_SAMPLE_S16NE;
-    params.layout = CUBEB_LAYOUT_STEREO;
-  }
-  else
-  {
-    params.channels = 6;
-    params.format = CUBEB_SAMPLE_FLOAT32NE;
-    params.layout = CUBEB_LAYOUT_3F2_LFE;
-  }
+  params.channels = 2;
+  params.format = CUBEB_SAMPLE_S16NE;
+  params.layout = CUBEB_LAYOUT_STEREO;
 
   u32 minimum_latency = 0;
   if (cubeb_get_min_latency(m_ctx.get(), &params, &minimum_latency) != CUBEB_OK)

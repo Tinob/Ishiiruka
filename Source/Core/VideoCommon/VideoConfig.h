@@ -33,8 +33,10 @@ enum AspectMode
   ASPECT_ANALOG = 2,
   ASPECT_STRETCH = 3,
   ASPECT_4_3 = 4,
-  ASPECT_16_9 = 5,
-  ASPECT_16_10 = 6,
+  ASPECT_73_60 = 5,
+  ASPECT_16_9 = 6,
+  ASPECT_16_10 = 7,
+  ASPECT_INTEGER = 8
 };
 
 enum EFBScale
@@ -150,6 +152,8 @@ struct VideoConfig final
   bool bShowFPS;
   bool bShowNetPlayPing;
   bool bShowNetPlayMessages;
+  bool bShowOSDClock;
+  bool bShowFrameTimes;
   bool bShowInputDisplay;
   bool bOverlayStats;
   bool bOverlayProjStats;

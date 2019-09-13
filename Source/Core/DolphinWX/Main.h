@@ -40,6 +40,8 @@ private:
   void OnActivate(wxActivateEvent& ev);
   void OnIdle(wxIdleEvent&);
 
+  int FilterEvent(wxEvent& event) override;
+
   void ParseCommandLine();
 
   bool m_batch_mode = false;

@@ -244,6 +244,12 @@ static wxString show_fps_desc =
 static wxString show_netplay_ping_desc =
     wxTRANSLATE("Show the players' maximum Ping while playing on "
                 "NetPlay.\n\nIf unsure, leave this unchecked.");
+static wxString show_osd_clock_desc =
+wxTRANSLATE("Show the current time on the on-screen display.\n\nIf "
+  "unsure, leave this unchecked.");
+static wxString show_frame_times_desc =
+wxTRANSLATE("Show frame times on the on-screen display in addition to FPS,\nThis option only works when polling method is set to \"On SI Read\".\n\nIf "
+  "unsure, leave this unchecked.");
 static wxString log_render_time_to_file_desc =
     wxTRANSLATE("Log the render time of every frame to User/Logs/render_time.txt. Use this "
                 "feature when you want to measure the performance of Dolphin.\n\nIf "
@@ -538,7 +544,7 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string& title)
         {
           const wxString ar_choices[] = {
               _("Auto"),      _("Force Analog 16:9"), _("Force Analog 4:3"), _("Stretch to Window"),
-              _("Force 4:3"), _("Force 16:9"),        _("Force 16:10")};
+              _("Force 4:3"), _("Force 73:60 (Melee)"), _("Force 16:9"),        _("Force 16:10"), _("Integer scaling") };
 
           szr_display->Add(new wxStaticText(page_general, wxID_ANY, _("Aspect Ratio:")), 1,
                            wxALIGN_CENTER_VERTICAL, 0);
@@ -569,6 +575,12 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string& title)
         szr_other->Add(CreateCheckBox(page_general, _("Show NetPlay Ping"),
                                       wxGetTranslation(show_netplay_ping_desc),
                                       Config::GFX_SHOW_NETPLAY_PING));
+        szr_other->Add(CreateCheckBox(page_general, _("Show OSD Clock"),
+          wxGetTranslation(show_osd_clock_desc),
+          Config::GFX_SHOW_OSD_CLOCK));
+        szr_other->Add(CreateCheckBox(page_general, _("Show frame times on FPS display"),
+          wxGetTranslation(show_frame_times_desc),
+          Config::GFX_SHOW_FRAME_TIMES));
         szr_other->Add(CreateCheckBoxRefBool(page_general, _("Auto Adjust Window Size"),
                                              (auto_window_size_desc),
                                              SConfig::GetInstance().bRenderWindowAutoSize));

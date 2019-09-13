@@ -8,6 +8,8 @@
 #include <optional>
 #include <string>
 #include <utility>
+#include <locale>
+
 #include <wx/app.h>
 #include <wx/buffer.h>
 #include <wx/cmdline.h>
@@ -57,9 +59,15 @@
 #include "UICommon/UICommon.h"
 
 #include "VideoCommon/VideoBackendBase.h"
+#include "VideoCommon/OnScreenDisplay.h"
 
 #if defined HAVE_X11 && HAVE_X11
 #include <X11/Xlib.h>
+#endif
+
+#ifdef __APPLE__
+#include <CoreFoundation/CoreFoundation.h>
+#include <dlfcn.h>
 #endif
 
 #ifdef _WIN32
@@ -101,6 +109,38 @@ bool DolphinApp::Initialize(int& c, wxChar** v)
 void DolphinApp::OnInitCmdLine(wxCmdLineParser& parser)
 {
   parser.SetCmdLine("");
+}
+
+int DolphinApp::FilterEvent(wxEvent& event)
+{
+  wxKeyEvent& kev = reinterpret_cast<wxKeyEvent&>(event);
+
+  if (main_frame && main_frame->RendererHasFocus())
+  {
+    if (event.GetEventType() == wxEVT_CHAR)
+    {
+      if (kev.GetKeyCode() == WXK_BACK)
+      {
+        if (OSD::Chat::current_msg.size() > 0)
+          OSD::Chat::current_msg.pop_back();
+      }
+      else
+      {
+        std::string result = wxString(kev.GetUnicodeKey()).ToStdString();
+        std::string filtered;
+
+        for (char c : result)
+        {
+          if (std::isalnum(c, std::locale::classic()) || std::ispunct(c, std::locale::classic()) || c == ' ')
+            filtered += c;
+        }
+
+        OSD::Chat::current_msg += filtered;
+      }
+    }
+  }
+
+  return -1;
 }
 
 bool DolphinApp::OnCmdLineParsed(wxCmdLineParser& parser)
@@ -164,6 +204,57 @@ bool DolphinApp::OnInit()
 
   // Silent PNG warnings from some homebrew banners: "iCCP: known incorrect sRGB profile"
   wxImage::SetDefaultLoadFlags(wxImage::GetDefaultLoadFlags() & ~wxImage::Load_Verbose);
+
+#ifdef __APPLE__
+  typedef Boolean(*SecTranslocateIsTranslocatedURL)(CFURLRef path, bool* isTranslocated, CFErrorRef * error);
+  typedef CFURLRef(*SecTranslocateCreateOriginalPathForURL)(CFURLRef translocatedPath, CFErrorRef * error);
+
+  void* security_framework = dlopen("/System/Library/Frameworks/Security.framework/Security", RTLD_NOW);
+
+  if (security_framework)
+  {
+    SecTranslocateIsTranslocatedURL SecTranslocateIsTranslocatedURL_func =
+      (SecTranslocateIsTranslocatedURL)dlsym(security_framework, "SecTranslocateIsTranslocatedURL");
+    SecTranslocateCreateOriginalPathForURL SecTranslocateCreateOriginalPathForURL_func =
+      (SecTranslocateCreateOriginalPathForURL)dlsym(security_framework, "SecTranslocateCreateOriginalPathForURL");
+
+    if (SecTranslocateIsTranslocatedURL_func && SecTranslocateCreateOriginalPathForURL_func)
+    {
+      CFStringRef path = CFStringCreateWithCString(NULL, File::GetBundleDirectory().c_str(), kCFStringEncodingUTF8);
+      CFURLRef url = CFURLCreateWithFileSystemPath(NULL, path, kCFURLPOSIXPathStyle, 0);
+      CFURLRef translocated_original = SecTranslocateCreateOriginalPathForURL_func(url, nullptr);
+
+      bool is_translocated = false;
+      SecTranslocateIsTranslocatedURL_func(url, &is_translocated, nullptr);
+
+      if (is_translocated)
+      {
+        // https://stackoverflow.com/questions/28860033/convert-from-cfurlref-or-cfstringref-to-stdstring
+        CFIndex bufferSize = CFStringGetLength(CFURLGetString(translocated_original)) + 1; // The +1 is for having space for the string to be NUL terminated
+        char buffer[bufferSize];
+
+        // CFStringGetCString is documented to return a false if the buffer is too small
+        // (which shouldn't happen in this example) or if the conversion generally fails
+        if (CFStringGetCString(CFURLGetString(translocated_original), buffer, bufferSize, kCFStringEncodingUTF8))
+        {
+          std::string cppString(buffer);
+          cppString.erase(0, std::string("file://").size());
+
+          if (system(("xattr -r -d com.apple.quarantine \"" + cppString + "\"").c_str()) == EXIT_SUCCESS)
+          {
+            system(("\"" + cppString + "/Contents/MacOS/Dolphin\" &disown").c_str());
+            exit(EXIT_SUCCESS);
+          }
+        }
+
+        wxMessageBox("Translocation from the application bundle couldn't be removed.\nSome things might not work correctly.\nAsk in #support or check the subreddit for further help.", "An error occured", wxOK | wxCENTRE | wxICON_WARNING);
+        }
+      }
+    }
+
+    dlclose(security_framework);
+  }
+#endif
 
   // We have to copy the size and position out of SConfig now because CFrame's OnMove
   // handler will corrupt them during window creation (various APIs like SetMenuBar cause
@@ -347,16 +438,11 @@ void DolphinApp::InitLanguageSupport()
 
     if (!m_locale->IsOk())
     {
-      wxMessageBox(_("Error loading selected language. Falling back to system default."),
-                   _("Error"));
       m_locale.reset(new wxLocale(wxLANGUAGE_DEFAULT));
     }
   }
   else
   {
-    wxMessageBox(
-        _("The selected language is not supported by your system. Falling back to system default."),
-        _("Error"));
     m_locale.reset(new wxLocale(wxLANGUAGE_DEFAULT));
   }
 }
@@ -399,7 +485,7 @@ bool wxMsgAlert(const char* caption, const char* text, bool yes_no, MsgType /*st
     NetPlayDialog*& npd = NetPlayDialog::GetInstance();
     if (npd != nullptr && npd->IsShown())
     {
-      npd->AppendChat("/!\\ " + std::string{text});
+      npd->AppendChat("/!\\ " + std::string{ text }, false);
       return true;
     }
     return wxYES == wxMessageBox(StrToWxStr(text), StrToWxStr(caption),

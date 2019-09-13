@@ -51,6 +51,7 @@
 #include "DiscIO/Enums.h"
 
 #include "VideoCommon/VideoBackendBase.h"
+#include "VideoCommon/OnScreenDisplay.h"
 
 namespace BootManager
 {
@@ -89,6 +90,7 @@ private:
   bool bHLE_BS2;
   int iVideoRate;
   bool bHalfAudioRate;
+  PollingMethod iPollingMethod;
   int iSelectedLanguage;
   int iCPUCore;
   int Volume;
@@ -128,6 +130,7 @@ void ConfigCache::SaveConfig(const SConfig& config)
   m_strGPUDeterminismMode = config.m_strGPUDeterminismMode;
   iVideoRate = config.iVideoRate;
   bHalfAudioRate = config.bHalfAudioRate;
+  iPollingMethod = config.iPollingMethod;
   m_OCFactor = config.m_OCFactor;
   m_OCEnable = config.m_OCEnable;
 
@@ -166,6 +169,7 @@ void ConfigCache::RestoreConfig(SConfig* config)
   config->iCPUCore = iCPUCore;
   config->iVideoRate = iVideoRate;
   config->bHalfAudioRate = bHalfAudioRate;
+  config->iPollingMethod = iPollingMethod;
   // Only change these back if they were actually set by game ini, since they can be changed while a
   // game is running.
   if (bSetVolume)
@@ -258,6 +262,12 @@ bool BootCore(std::unique_ptr<BootParameters> boot)
     core_section->Get("LowDCBZHack", &StartUp.bLowDCBZHack, StartUp.bLowDCBZHack);
     core_section->Get("Video_Rate", &StartUp.iVideoRate, StartUp.iVideoRate);
     core_section->Get("HalfAudioRate", &StartUp.bHalfAudioRate, StartUp.bHalfAudioRate);
+
+    std::string polling_method = StartUp.iPollingMethod == POLLING_ONSIREAD ? "OnSIRead" : "Console";
+    core_section->Get("PollingMethod", &polling_method, polling_method);
+
+    StartUp.iPollingMethod = polling_method == "OnSIRead" ? POLLING_ONSIREAD : POLLING_CONSOLE;
+
     core_section->Get("SyncGPU", &StartUp.bSyncGPU, StartUp.bSyncGPU);
     core_section->Get("FastDiscSpeed", &StartUp.bFastDiscSpeed, StartUp.bFastDiscSpeed);
     core_section->Get("DSPHLE", &StartUp.bDSPHLE, StartUp.bDSPHLE);
@@ -365,6 +375,8 @@ bool BootCore(std::unique_ptr<BootParameters> boot)
   {
     g_SRAM_netplay_initialized = false;
   }
+
+  OSD::Chat::toggled = false;
 
   const bool ntsc = DiscIO::IsNTSC(StartUp.m_region);
 

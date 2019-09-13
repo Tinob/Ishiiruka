@@ -107,7 +107,7 @@ NetPlayServer::NetPlayServer(const u16 port, const bool forward_port,
     is_connected = true;
     m_do_loop = true;
     m_thread = std::thread(&NetPlayServer::ThreadFunc, this);
-    m_target_buffer_size = 6;
+    m_minimum_buffer_size = 6;
 
 #ifdef USE_UPNP
     if (forward_port)
@@ -122,7 +122,7 @@ void NetPlayServer::ThreadFunc()
   while (m_do_loop)
   {
     // update pings every so many seconds
-    if ((m_ping_timer.GetTimeElapsed() > 1000) || m_update_pings)
+    if ((m_ping_timer.GetTimeElapsed() > 250) || m_update_pings)
     {
       m_ping_key = Common::Timer::GetTimeMs();
 
@@ -222,10 +222,18 @@ void NetPlayServer::ThreadFunc()
       }
     }
   }
-
+  
   // close listening socket and client sockets
   for (auto& player_entry : m_players)
   {
+#ifdef _WIN32
+    if (player_entry.second.qos_handle != 0)
+    {
+      if (player_entry.second.qos_flow_id != 0)
+        QOSRemoveSocketFromFlow(player_entry.second.qos_handle, player_entry.second.socket->host->socket, player_entry.second.qos_flow_id, 0);
+      QOSCloseHandle(player_entry.second.qos_handle);
+    }
+#endif
     delete (PlayerId*)player_entry.second.socket->data;
     player_entry.second.socket->data = nullptr;
     enet_peer_disconnect(player_entry.second.socket, 0);
@@ -275,7 +283,7 @@ unsigned int NetPlayServer::OnConnect(ENetPeer* socket)
   Client player;
   player.pid = pid;
   player.socket = socket;
-
+  player.buffer = m_minimum_buffer_size;
   rpac >> player.revision;
   rpac >> player.name;
 
@@ -313,8 +321,8 @@ unsigned int NetPlayServer::OnConnect(ENetPeer* socket)
 
   // send the pad buffer value
   spac.clear();
-  spac << (MessageId)NP_MSG_PAD_BUFFER;
-  spac << (u32)m_target_buffer_size;
+  spac << (MessageId)NP_MSG_PAD_BUFFER_MINIMUM;
+  spac << (u32)m_minimum_buffer_size;
   Send(player.socket, spac);
 
   // sync GC SRAM with new client
@@ -344,6 +352,11 @@ unsigned int NetPlayServer::OnConnect(ENetPeer* socket)
     spac << static_cast<MessageId>(NP_MSG_GAME_STATUS);
     spac << p.second.pid << static_cast<u32>(p.second.game_status);
     Send(player.socket, spac);
+
+    spac.clear();
+    spac << static_cast<MessageId>(NP_MSG_PAD_BUFFER_PLAYER);
+    spac << p.second.pid << p.second.buffer;
+    Send(player.socket, spac);
   }
 
   if (Config::Get(Config::NETPLAY_ENABLE_QOS))
@@ -356,6 +369,57 @@ unsigned int NetPlayServer::OnConnect(ENetPeer* socket)
     UpdatePadMapping();  // sync pad mappings with everyone
     UpdateWiimoteMapping();
   }
+
+#ifdef _WIN32
+  QOS_VERSION ver = { 1, 0 };
+
+  player.qos_handle = 0;
+  player.qos_flow_id = 0;
+
+
+  struct sockaddr_in sin = { 0 };
+
+  sin.sin_family = AF_INET;
+  sin.sin_port = ENET_HOST_TO_NET_16(player.socket->host->address.port);
+  sin.sin_addr.s_addr = player.socket->host->address.host;
+
+  if (SConfig::GetInstance().bQoSEnabled && QOSCreateHandle(&ver, &player.qos_handle))
+  {
+    QOSAddSocketToFlow(player.qos_handle, player.socket->host->socket, reinterpret_cast<PSOCKADDR>(&sin),
+      // why voice? well... it is the voice of fox.. and falco.. and all the other characters in melee
+      // they want to be waveshined without any lag
+      // QOSTrafficTypeVoice,
+      // actually control is higher but they are actually the same?
+      // this is 0x38
+      QOSTrafficTypeControl,
+      QOS_NON_ADAPTIVE_FLOW,
+      &player.qos_flow_id);
+
+    DWORD dscp = 0x2e;
+
+    // this will fail if we're not admin
+    // sets DSCP to the same as linux (0x2e)
+    QOSSetFlow(player.qos_handle,
+      player.qos_flow_id,
+      QOSSetOutgoingDSCPValue,
+      sizeof(DWORD),
+      &dscp,
+      0,
+      nullptr);
+  }
+#else
+  if (SConfig::GetInstance().bQoSEnabled)
+  {
+    // highest priority
+    int priority = 7;
+    setsockopt(player.socket->host->socket, SOL_SOCKET, SO_PRIORITY, &priority, sizeof(priority));
+
+    // https://www.tucny.com/Home/dscp-tos
+    // ef is better than cs7
+    int tos_val = 0xb8;
+    setsockopt(player.socket->host->socket, IPPROTO_IP, IP_TOS, &tos_val, sizeof(tos_val));
+  }
+#endif
 
   return 0;
 }
@@ -468,16 +532,16 @@ void NetPlayServer::UpdateWiimoteMapping()
 }
 
 // called from ---GUI--- thread and ---NETPLAY--- thread
-void NetPlayServer::AdjustPadBufferSize(unsigned int size)
+void NetPlayServer::AdjustMinimumPadBufferSize(unsigned int size)
 {
   std::lock_guard<std::recursive_mutex> lkg(m_crit.game);
 
-  m_target_buffer_size = size;
+  m_minimum_buffer_size = size;
 
   // tell clients to change buffer size
   sf::Packet spac;
-  spac << static_cast<MessageId>(NP_MSG_PAD_BUFFER);
-  spac << static_cast<u32>(m_target_buffer_size);
+  spac << static_cast<MessageId>(NP_MSG_PAD_BUFFER_MINIMUM);
+  spac << static_cast<u32>(m_minimum_buffer_size);
 
   SendAsyncToClients(std::move(spac));
 }
@@ -512,6 +576,37 @@ unsigned int NetPlayServer::OnData(sf::Packet& packet, Client& player)
     spac << (MessageId)NP_MSG_CHAT_MESSAGE;
     spac << player.pid;
     spac << msg;
+
+    SendToClients(spac, player.pid);
+  }
+  break;
+
+  case NP_MSG_REPORT_FRAME_TIME:
+  {
+    float frame_time;
+    packet >> frame_time;
+
+    // send msg to other clients
+    sf::Packet spac;
+    spac << (MessageId)NP_MSG_REPORT_FRAME_TIME;
+    spac << player.pid;
+    spac << frame_time;
+
+    SendToClients(spac, player.pid);
+  }
+  break;
+
+  case NP_MSG_PAD_BUFFER_PLAYER:
+  {
+    u32 buffer;
+    packet >> buffer;
+
+    player.buffer = buffer;
+
+    sf::Packet spac;
+    spac << (MessageId)NP_MSG_PAD_BUFFER_PLAYER;
+    spac << player.pid;
+    spac << buffer;
 
     SendToClients(spac, player.pid);
   }
@@ -806,7 +901,7 @@ bool NetPlayServer::StartGame()
   m_current_game = Common::Timer::GetTimeMs();
 
   // no change, just update with clients
-  AdjustPadBufferSize(m_target_buffer_size);
+  AdjustMinimumPadBufferSize(m_minimum_buffer_size);
 
   if (SConfig::GetInstance().bEnableCustomRTC)
     g_netplay_initial_rtc = SConfig::GetInstance().m_customRTCValue;
@@ -827,7 +922,6 @@ bool NetPlayServer::StartGame()
   spac << m_settings.m_DSPEnableJIT;
   spac << m_settings.m_DSPHLE;
   spac << m_settings.m_WriteToMemcard;
-  spac << m_settings.m_CopyWiiSave;
   spac << m_settings.m_OCEnable;
   spac << m_settings.m_OCFactor;
   spac << m_settings.m_EXIDevice[0];
