@@ -36,15 +36,20 @@ static std::map<u32, int> speedHacks;
 static bool IsEnabledMusicCode(const Patch& patch)
 {
   if (SConfig::GetInstance().bBrawlMusicOff && patch.name == "[P+] Music Off")
+  {
     return true;
-  //PowerPC::HostWrite_U8((u8)00000000, 0x90E60F34);
+  }
+  else
+  {
+    return false;
+  }
 }
-/*
+
 static bool IsDisabledMusicCode(const Patch& patch)
 {
   return false;
 }
-*/
+
 void LoadPatchSection(const std::string& section, std::vector<Patch>& patches, IniFile& globalIni,
                       IniFile& localIni)
 {
@@ -175,7 +180,7 @@ static void ApplyPatches(const std::vector<Patch>& patches)
 {
   for (const Patch& patch : patches)
   {
-    if (patch.active || IsEnabledMusicCode(patch))
+    if (patch.active && !IsDisabledMusicCode(patch) || IsEnabledMusicCode(patch))
     {
       for (const PatchEntry& entry : patch.entries)
       {
