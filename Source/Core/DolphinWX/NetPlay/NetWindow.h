@@ -142,6 +142,7 @@ private:
   void UpdateHostLabel();
 
   bool IsNTSCBrawl();
+  bool IsPMELF();
 
   wxListBox* m_player_lbox;
   wxTextCtrl* m_chat_text;

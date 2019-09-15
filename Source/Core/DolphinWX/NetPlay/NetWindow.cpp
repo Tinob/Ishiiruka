@@ -266,23 +266,24 @@ wxSizer* NetPlayDialog::CreateBottomGUI(wxWindow* parent)
 
     m_memcard_write = new wxCheckBox(parent, wxID_ANY, _("Write save/SD data"));
 
-    m_music_off_chkbox = new wxCheckBox(parent, wxID_ANY, "Client Side Music Off");
-
     bottom_szr->Add(m_start_btn, 0, wxALIGN_CENTER_VERTICAL);
     bottom_szr->Add(minimum_buffer_lbl, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
     bottom_szr->Add(minimum_padbuf_spin, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
     bottom_szr->Add(buffer_lbl, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
     bottom_szr->Add(m_player_padbuf_spin, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
 
-    bottom_szr->Add(m_memcard_write, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
-    bottom_szr->Add(m_music_off_chkbox, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
-    /*
-    wxBoxSizer* const chkbox_sizer = new wxBoxSizer(wxVERTICAL);
-    chkbox_sizer->Add(m_memcard_write, 0, wxLEFT, space5);
-    chkbox_sizer->Add(m_music_off_chkbox, 0, wxLEFT, space5);
+    if (IsNTSCBrawl() == true)
+    {
+      m_music_off_chkbox = new wxCheckBox(parent, wxID_ANY, "Client Side Music Off");
+      bottom_szr->Add(m_music_off_chkbox, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
+    }
+    else
+    {
     
-    bottom_szr->Add(chkbox_sizer, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
-    */
+    }
+
+    bottom_szr->Add(m_memcard_write, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
+
     bottom_szr->AddSpacer(space5);
   }
   else
@@ -343,11 +344,22 @@ void NetPlayDialog::OnChat(wxCommandEvent&)
   }
 }
 
+bool NetPlayDialog::IsPMELF()
+{
+  if (m_selected_game.ends_with(".elf"))
+    return true;
+
+  else
+    return false;
+}
+
 bool NetPlayDialog::IsNTSCBrawl()
 {
-  //m_selected_game.find("RSBE01")
-  //return m_selected_game.find("00000000") != std::string::npos;
-  return true;
+  if (IsPMELF() == true)
+    return true;
+
+  else
+    return false;
 }
 
 void NetPlayDialog::GetNetSettings(NetSettings& settings)
