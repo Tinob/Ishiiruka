@@ -113,6 +113,7 @@ public:
   static void FillWithGameNames(wxListBox* game_lbox, const GameListCtrl& game_list);
 
   bool IsRecording() override;
+  bool IsMusicOff() override;
 
 private:
   void CreateGUI();

@@ -252,6 +252,17 @@ wxSizer* NetPlayDialog::CreateBottomGUI(wxWindow* parent)
   m_player_padbuf_spin->Bind(wxEVT_SPINCTRL, &NetPlayDialog::OnAdjustPlayerBuffer, this);
   m_player_padbuf_spin->SetMinSize(WxUtils::GetTextWidgetMinSize(m_player_padbuf_spin));
 
+  /*
+  if (IsNTSCBrawl() == true)
+  {
+    m_music_off_chkbox = new wxCheckBox(parent, wxID_ANY, "Client Side Music Off");
+    bottom_szr->Add(m_music_off_chkbox, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
+  }
+  else
+  {
+
+  }*/
+
   if (m_is_hosting)
   {
     m_start_btn = new wxButton(parent, wxID_ANY, _("Start"));
@@ -272,16 +283,6 @@ wxSizer* NetPlayDialog::CreateBottomGUI(wxWindow* parent)
     bottom_szr->Add(buffer_lbl, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
     bottom_szr->Add(m_player_padbuf_spin, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
 
-    if (IsNTSCBrawl() == true)
-    {
-      m_music_off_chkbox = new wxCheckBox(parent, wxID_ANY, "Client Side Music Off");
-      bottom_szr->Add(m_music_off_chkbox, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
-    }
-    else
-    {
-    
-    }
-
     bottom_szr->Add(m_memcard_write, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
 
     bottom_szr->AddSpacer(space5);
@@ -293,9 +294,13 @@ wxSizer* NetPlayDialog::CreateBottomGUI(wxWindow* parent)
   }
 
   m_record_chkbox = new wxCheckBox(parent, wxID_ANY, _("Record inputs"));
+  m_music_off_chkbox = new wxCheckBox(parent, wxID_ANY, "Client Side Music Off");
 
   wxButton* quit_btn = new wxButton(parent, wxID_ANY, _("Quit Netplay"));
   quit_btn->Bind(wxEVT_BUTTON, &NetPlayDialog::OnQuit, this);
+
+  
+  bottom_szr->Add(m_music_off_chkbox, 0, wxALIGN_CENTER_VERTICAL);
 
   bottom_szr->Add(m_record_chkbox, 0, wxALIGN_CENTER_VERTICAL);
   bottom_szr->AddStretchSpacer();
@@ -381,7 +386,7 @@ void NetPlayDialog::GetNetSettings(NetSettings& settings)
   settings.m_EXIDevice[0] = m_memcard_write->GetValue() ? instance.m_EXIDevice[0] : ExpansionInterface::EXIDEVICE_NONE;
   settings.m_EXIDevice[1] = m_memcard_write->GetValue() ? instance.m_EXIDevice[1] : ExpansionInterface::EXIDEVICE_NONE;
   //settings.m_BrawlMusicOff = IsNTSCBrawl() ? m_music_off_chkbox->GetValue() : false;
-  settings.m_BrawlMusicOff = m_music_off_chkbox->GetValue();
+  //settings.m_BrawlMusicOff = m_music_off_chkbox->GetValue();
 }
 
 std::string NetPlayDialog::FindGame(const std::string& target_game)
@@ -469,9 +474,9 @@ void NetPlayDialog::OnMsgStartGame()
     m_game_btn->Disable();
     m_player_config_btn->Disable();
 
-    m_music_off_chkbox->Disable();
   }
 
+  m_music_off_chkbox->Disable();
   m_record_chkbox->Disable();
 }
 
@@ -487,9 +492,9 @@ void NetPlayDialog::OnMsgStopGame()
     m_game_btn->Enable();
     m_player_config_btn->Enable();
 
-    m_music_off_chkbox->Enable();
   }
 
+  m_music_off_chkbox->Enable();
   m_record_chkbox->Enable();
 }
 
@@ -817,6 +822,11 @@ void NetPlayDialog::OnPlayerSelect(wxCommandEvent&)
 bool NetPlayDialog::IsRecording()
 {
   return m_record_chkbox->GetValue();
+}
+
+bool NetPlayDialog::IsMusicOff()
+{
+  return m_music_off_chkbox->GetValue();
 }
 
 void NetPlayDialog::OnCopyIP(wxCommandEvent&)

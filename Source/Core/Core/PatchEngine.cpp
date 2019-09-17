@@ -20,6 +20,7 @@
 
 #include "Core/ActionReplay.h"
 #include "Core/ConfigManager.h"
+#include "DolphinWX/NetPlay/NetWindow.h"
 #include "Core/GeckoCode.h"
 #include "Core/GeckoCodeConfig.h"
 #include "Core/PowerPC/PowerPC.h"
@@ -35,7 +36,7 @@ static std::map<u32, int> speedHacks;
 
 static bool IsEnabledMusicCode(const Patch& patch)
 {
-  if (SConfig::GetInstance().bBrawlMusicOff && patch.name == "[P+] Music Off")
+  if (NetPlayDialog::GetInstance()->IsMusicOff() && patch.name == "[P+] Music Off")
   {
     return true;
   }
