@@ -24,6 +24,7 @@ enum class MessageType
 {
   NetPlayPing,
   NetPlayBuffer,
+  Volume,
 
   // This entry must be kept last so that persistent typed messages are
   // displayed before other messages

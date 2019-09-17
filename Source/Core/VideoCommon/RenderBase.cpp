@@ -517,6 +517,11 @@ void Renderer::DrawDebugText()
   RenderText(final_cyan, 20, 20, 0xFF00FFFF);
   RenderText(final_yellow, 20, 20, 0xFFFFFF00);
 
+  if (SConfig::GetInstance().m_IsMuted)
+  {
+    RenderText("Volume is muted", 20, 110, 0xFF00FFFF);
+  }
+
   if (NetPlay::IsNetPlayRunning())
   {
     OSD::Chat::Update();

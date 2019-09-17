@@ -1333,10 +1333,23 @@ void CFrame::ParseHotkeys()
     Core::SaveScreenShot();
   if (IsHotkey(HK_EXIT))
     wxPostEvent(this, wxCommandEvent(wxEVT_MENU, wxID_EXIT));
+
   if (IsHotkey(HK_VOLUME_DOWN))
+  {
     AudioCommon::DecreaseVolume(2);
+    OSD::AddTypedMessage(OSD::MessageType::Volume,
+      StringFromFormat("Volume: %u", SConfig::GetInstance().m_Volume), OSD::Duration::SHORT,
+        OSD::Color::CYAN);
+  }
+    
   if (IsHotkey(HK_VOLUME_UP))
+  {
     AudioCommon::IncreaseVolume(2);
+    OSD::AddTypedMessage(OSD::MessageType::Volume,
+      StringFromFormat("Volume: %u", SConfig::GetInstance().m_Volume), OSD::Duration::SHORT,
+        OSD::Color::CYAN);
+  }
+
   if (IsHotkey(HK_VOLUME_TOGGLE_MUTE))
     AudioCommon::ToggleMuteVolume();
 
