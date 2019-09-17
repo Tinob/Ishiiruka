@@ -401,6 +401,16 @@ void HotkeyManager::LoadDefaults(const ControllerInterface& ciface)
 
   set_key_expression(HK_SHOW_OSD_CHAT, "T");
 
+  set_key_expression(HK_VOLUME_TOGGLE_MUTE, "M");
+
+#ifdef _WIN32
+  set_key_expression(HK_VOLUME_DOWN, "DOWN ARROW");
+  set_key_expression(HK_VOLUME_UP, "UP ARROW");
+#else
+  set_key_expression(HK_VOLUME_DOWN, "Down Arrow");
+  set_key_expression(HK_VOLUME_UP, "Up Arrow");
+#endif
+
 #ifdef _WIN32
   set_key_expression(HK_SEND_CHAT_MSG, "RETURN");
 #else

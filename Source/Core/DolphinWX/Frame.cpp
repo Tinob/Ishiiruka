@@ -1334,9 +1334,9 @@ void CFrame::ParseHotkeys()
   if (IsHotkey(HK_EXIT))
     wxPostEvent(this, wxCommandEvent(wxEVT_MENU, wxID_EXIT));
   if (IsHotkey(HK_VOLUME_DOWN))
-    AudioCommon::DecreaseVolume(3);
+    AudioCommon::DecreaseVolume(2);
   if (IsHotkey(HK_VOLUME_UP))
-    AudioCommon::IncreaseVolume(3);
+    AudioCommon::IncreaseVolume(2);
   if (IsHotkey(HK_VOLUME_TOGGLE_MUTE))
     AudioCommon::ToggleMuteVolume();
 
