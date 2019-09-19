@@ -879,18 +879,63 @@ void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, const 
       m_aspect_wide = flush_count_anamorphic > 0.75 * flush_total;
   }
 
-  // TODO: merge more generic parts into VideoCommon
-  SwapImpl(xfbAddr, fbWidth, fbStride, fbHeight, rc, ticks, Gamma);
+  static bool skip_next = false;
+
+  if (skip_next)
+    InsertBlackFrame();
+  else
+    // TODO: merge more generic parts into VideoCommon
+    SwapImpl(xfbAddr, fbWidth, fbStride, fbHeight, rc, ticks, Gamma);
+
+  skip_next = false;
 
   if (m_xfb_written || (g_ActiveConfig.bUseXFB && g_ActiveConfig.bUseRealXFB))
     m_fps_counter.Update();
 
   frameCount++;
   GFX_DEBUGGER_PAUSE_AT(NEXT_FRAME, true);
-  if (g_ActiveConfig.bBlackFrameInsertion)
+  if (g_ActiveConfig.iBlackFrameInsertion != VideoConfig::BFI_OFF)
   {
-    InsertBlackFrame();
-    frameCount++;
+    bool condition = true;
+    int count = 1;
+    int fps = 120;
+
+    if (g_ActiveConfig.iBlackFrameInsertion == VideoConfig::BFI_ON_1_4)
+    {
+      condition = frameCount % 2 == 0;
+      fps = 240;
+    }
+    if (g_ActiveConfig.iBlackFrameInsertion == VideoConfig::BFI_ON_1_8)
+    {
+      condition = frameCount % 4 == 0;
+      fps = 480;
+    }
+    if (g_ActiveConfig.iBlackFrameInsertion == VideoConfig::BFI_ON_2_3)
+    {
+      count++;
+      fps = 180;
+    }
+
+    int oldFrameCount = frameCount;
+
+    while (count-- > 0) {
+      InsertBlackFrame();
+      frameCount++;
+    }
+
+    if (g_ActiveConfig.iBlackFrameInsertionBIR != VideoConfig::BFIR_OFF)
+    {
+      int frames =
+        g_ActiveConfig.iBlackFrameInsertionBIR == VideoConfig::BFIR_15 ? 15 :
+        g_ActiveConfig.iBlackFrameInsertionBIR == VideoConfig::BFIR_30 ? 30 :
+        g_ActiveConfig.iBlackFrameInsertionBIR == VideoConfig::BFIR_60 ? 60 :
+        g_ActiveConfig.iBlackFrameInsertionBIR == VideoConfig::BFIR_120 ? 120 : 0;
+
+      frames *= fps;
+
+      if (oldFrameCount % frames == frames - 1 || frameCount % frames == frames - 1)
+        skip_next = true;
+    }
   }
   // Begin new frame
   // Set default viewport and scissor, for the clear to work correctly

@@ -171,6 +171,7 @@ protected:
   void PopulateStereoShaders();
   void PopulateAAList();
   void OnAAChanged(wxCommandEvent& ev);
+  void OnBFIRChanged(wxCommandEvent& ev);
   void OnUberShaderModeChanged(wxCommandEvent& ev);
   void OnFilteringModeChanged(wxCommandEvent& ev);
   void OnCullModeChanged(wxCommandEvent& ev);
@@ -235,6 +236,9 @@ protected:
   wxSlider* bump_threshold_slider;
   wxSlider* bump_blend_slider;
   wxSlider* bump_frequency_slider;
+
+  wxChoice* choice_bfi;
+  wxChoice* choice_bfir;
 
   SettingCheckBox* validation_layer;
   SettingCheckBox* backend_multithreading;

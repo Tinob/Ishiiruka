@@ -120,7 +120,27 @@ struct VideoConfig final
   bool bCrop;   // Aspect ratio controls.
   bool bUseXFB;
   bool bUseRealXFB;
-  bool bBlackFrameInsertion;
+
+  enum BlackFrameInsertionMode {
+    BFI_OFF,
+    BFI_ON_1_2,
+    BFI_ON_2_3,
+    BFI_ON_1_4,
+    BFI_ON_1_8
+  };
+
+  int iBlackFrameInsertion = BFI_OFF;
+
+  enum BlackFrameInsertionBIRMode {
+    BFIR_OFF,
+    BFIR_15,
+    BFIR_30,
+    BFIR_60,
+    BFIR_120
+  };
+
+  int iBlackFrameInsertionBIR = BFIR_30;
+
   // OpenCL/OpenMP
   bool bEnableOpenCL;
   bool bOMPDecoder;

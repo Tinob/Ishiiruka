@@ -17,6 +17,7 @@
 #include <wx/sizer.h>
 #include <wx/slider.h>
 #include <wx/stattext.h>
+#include <wx/msgdlg.h>
 
 #include "Common/Assert.h"
 #include "Common/CommonPaths.h"
@@ -141,7 +142,9 @@ static wxString vsync_desc =
     _("Wait for vertical blanks in order to reduce tearing.\nDecreases performance if emulation "
       "speed is below 100%.\n\nIf unsure, leave this unchecked.");
 static wxString bfi_desc =
-    _("Insert black frames to reduce motion blur in 120hz monitors");
+_("Inserts a black frame between every game frame.\nIf you're on a 120 hz monitor, this will improve motion blur.\nOnly works with vertical sync or an external frame limiter enabled.\n\nIf unsure, leave this unchecked.");
+static wxString bfir_desc =
+_("Inserts an extra black frame every n seconds.\nThis will cause a small artifact but reduce the chance of BFI burn-in.\n\nWARNING: Disable this at your own risk!\n\nIf unsure, leave this at 30 seconds.");
 static wxString af_desc =
     _("Enable anisotropic filtering.\nEnhances visual quality of textures that are at oblique "
       "viewing angles.\nMight cause issues in a small number of games.\n\nIf unsure, select 1x.");
@@ -558,11 +561,25 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string& title)
         {
           szr_display->Add(
               CreateCheckBox(page_general, _("V-Sync"), (vsync_desc), Config::GFX_VSYNC));
-          szr_display->Add(
-              CreateCheckBox(page_general, _("Black Frame insetion"), (bfi_desc), Config::GFX_USE_BLACK_FRAME_INSERTION));
+
           szr_display->Add(CreateCheckBoxRefBool(page_general, _("Use Fullscreen"),
                                                  (use_fullscreen_desc),
                                                  SConfig::GetInstance().bFullscreen));
+
+          const wxString bfi_choices[] = { _("Off"), _("1/2 (for 120 hz)"), _("2/3 (for 180 hz)"), _("1/4 (for 240 hz)"), _("1/8 (for 480 hz)") };
+
+          szr_display->Add(new wxStaticText(page_general, wxID_ANY, _("Black Frame Insertion:")), 1, wxALIGN_CENTER_VERTICAL, 0);
+          choice_bfi = CreateChoice(page_general, Config::GFX_USE_BLACK_FRAME_INSERTION, (bfi_desc),
+            sizeof(bfi_choices) / sizeof(*bfi_choices), bfi_choices);
+          szr_display->Add(choice_bfi, 1, 0, 0);
+
+          const wxString bfir_choices[] = { _("Off"), _("Every 15 seconds"), _("Every 30 seconds"), _("Every minute"), _("Every other minute") };
+
+          szr_display->Add(new wxStaticText(page_general, wxID_ANY, _("BFI Burn-in reduction:")), 1, wxALIGN_CENTER_VERTICAL, 0);
+          choice_bfir = CreateChoice(page_general, Config::GFX_USE_BLACK_FRAME_BIR, (bfir_desc),
+            sizeof(bfir_choices) / sizeof(*bfir_choices), bfir_choices);
+          szr_display->Add(choice_bfir, 1, 0, 0);
+          choice_bfir->Bind(wxEVT_CHOICE, &VideoConfigDiag::OnBFIRChanged, this);
         }
       }
 
@@ -2152,6 +2169,23 @@ void VideoConfigDiag::OnAAChanged(wxCommandEvent& ev)
   Config::SetBaseOrCurrent(Config::GFX_SSAA, ssaa);
   mode -= ssaa * (aa_modes.size() - 1);
   Config::SetBaseOrCurrent(Config::GFX_MSAA, (u32)aa_modes[mode]);
+}
+
+void VideoConfigDiag::OnBFIRChanged(wxCommandEvent& ev)
+{
+  vconfig.iBlackFrameInsertionBIR = ev.GetInt();
+
+  if (ev.GetInt() == VideoConfig::BFIR_OFF) {
+    wxMessageDialog m_bfidiag(
+      this,
+      _("Are you sure you want to turn off burn-in reduction COMPLETELY?\nThis is NOT recommended.\n\nSee https://forums.blurbusters.com/viewtopic.php?f=7&t=3815#p30402 for more"),
+      _("Please confirm..."),
+      wxYES_NO | wxICON_EXCLAMATION);
+
+    int ret = m_bfidiag.ShowModal();
+    if (ret != wxID_YES)
+      choice_bfir->SetSelection(VideoConfig::BFIR_30);
+  }
 }
 
 void VideoConfigDiag::OnUberShaderModeChanged(wxCommandEvent& ev)
