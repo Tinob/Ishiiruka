@@ -36,9 +36,9 @@ const std::string scm_distributor_str = SCM_DISTRIBUTOR_STR;
 #ifdef _WIN32
 const std::string netplay_dolphin_ver = "Bird Build 1.0" " Win";
 #elif __APPLE__
-const std::string netplay_dolphin_ver = SCM_DESC_STR " Mac";
+const std::string netplay_dolphin_ver = "Bird Build 1.0" " Mac";
 #else
-const std::string netplay_dolphin_ver = SCM_DESC_STR " Lin";
+const std::string netplay_dolphin_ver = "Bird Build 1.0" " Lin";
 #endif
 
 
