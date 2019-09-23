@@ -579,7 +579,7 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string& title)
           choice_bfir = CreateChoice(page_general, Config::GFX_USE_BLACK_FRAME_BIR, (bfir_desc),
             sizeof(bfir_choices) / sizeof(*bfir_choices), bfir_choices);
           szr_display->Add(choice_bfir, 1, 0, 0);
-          choice_bfir->Bind(wxEVT_CHOICE, &VideoConfigDiag::OnBFIRChanged, this);
+          //choice_bfir->Bind(wxEVT_CHOICE, &VideoConfigDiag::OnBFIRChanged, this);
         }
       }
 
