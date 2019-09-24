@@ -510,6 +510,16 @@ void NetPlayDialog::OnAdjustPlayerBuffer(wxCommandEvent& event)
   netplay_client->SetLocalPlayerBuffer(val);
 }
 
+void NetPlayDialog::OnPlayerConnect(const std::string& player)
+{
+  AddChatMessage(ChatMessageType::Info, (player + " has joined"));
+}
+
+void NetPlayDialog::OnPlayerDisconnect(const std::string& player)
+{
+  AddChatMessage(ChatMessageType::Info, (player + " has left"));
+}
+
 void NetPlayDialog::OnMinimumPadBufferChanged(u32 buffer)
 {
   m_minimum_pad_buffer = buffer;

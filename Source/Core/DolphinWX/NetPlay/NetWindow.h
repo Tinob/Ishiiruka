@@ -101,6 +101,8 @@ public:
   void OnMsgChangeGame(const std::string& filename) override;
   void OnMsgStartGame() override;
   void OnMsgStopGame() override;
+  void OnPlayerConnect(const std::string& player) override;
+  void OnPlayerDisconnect(const std::string& player) override;
   void OnMinimumPadBufferChanged(u32 buffer) override;
   void OnPlayerPadBufferChanged(u32 buffer) override;
   void OnDesync(u32 frame, const std::string& player) override;

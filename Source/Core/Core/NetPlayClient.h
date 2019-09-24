@@ -36,6 +36,8 @@ public:
   virtual void OnMsgChangeGame(const std::string& filename) = 0;
   virtual void OnMsgStartGame() = 0;
   virtual void OnMsgStopGame() = 0;
+  virtual void OnPlayerConnect(const std::string& player) = 0;
+  virtual void OnPlayerDisconnect(const std::string& player) = 0;
   virtual void OnMinimumPadBufferChanged(u32 buffer) = 0;
   virtual void OnPlayerPadBufferChanged(u32 buffer) = 0;
   virtual void OnDesync(u32 frame, const std::string& player) = 0;
