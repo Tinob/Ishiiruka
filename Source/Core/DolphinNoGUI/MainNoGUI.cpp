@@ -28,6 +28,9 @@
 #include "Core/State.h"
 
 #include "UICommon/CommandLineParse.h"
+#ifdef USE_DISCORD_PRESENCE
+#include "UICommon/DiscordPresence.h"
+#endif
 #include "UICommon/UICommon.h"
 
 #include "VideoCommon/RenderBase.h"
@@ -430,6 +433,10 @@ int main(int argc, char* argv[])
     return 1;
   }
 
+#ifdef USE_DISCORD_PRESENCE
+  Discord::UpdateDiscordPresence();
+#endif
+  
   while (!Core::IsRunning() && s_running.IsSet())
   {
     Core::HostDispatchJobs();

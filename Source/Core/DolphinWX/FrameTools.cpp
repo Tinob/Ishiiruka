@@ -91,6 +91,7 @@
 
 #include "InputCommon/ControllerInterface/ControllerInterface.h"
 
+#include "UICommon/DiscordPresence.h"
 #include "UICommon/GameFile.h"
 #include "UICommon/UICommon.h"
 
@@ -745,6 +746,9 @@ void CFrame::StartGame(std::unique_ptr<BootParameters> boot)
   else
   {
     EnableScreenSaver(false);
+#ifdef USE_DISCORD_PRESENCE
+    Discord::UpdateDiscordPresence();
+#endif
 
     // We need this specifically to support setting the focus properly when using
     // the 'render to main window' feature on Windows
@@ -930,6 +934,9 @@ void CFrame::OnStopped()
   m_tried_graceful_shutdown = false;
   wxPostEvent(GetMenuBar(), wxCommandEvent{ DOLPHIN_EVT_UPDATE_LOAD_WII_MENU_ITEM });
   EnableScreenSaver(true);
+#ifdef USE_DISCORD_PRESENCE
+  Discord::UpdateDiscordPresence();
+#endif
 
   m_render_frame->SetTitle(StrToWxStr(Common::scm_rev_str));
 
