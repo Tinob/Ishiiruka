@@ -52,6 +52,11 @@ int CSIDevice_GCAdapter::RunBuffer(u8* buffer, int length)
     // into this port on the hardware gc adapter, exposing it to the game.
     if (!GCAdapter::DeviceConnected(m_device_number))
     {
+      GCPadStatus status = { 0 };
+      status.stickX = status.stickY =
+        status.substickX = status.substickY =
+        /* these are all the same */ GCPadStatus::MAIN_STICK_CENTER_X;
+
       TSIDevices device = SI_NONE;
       memcpy(buffer, &device, sizeof(device));
       return 4;
