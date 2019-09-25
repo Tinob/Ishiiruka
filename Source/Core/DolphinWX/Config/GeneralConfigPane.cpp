@@ -190,8 +190,8 @@ void GeneralConfigPane::BindEvents()
   m_cheats_checkbox->Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreNotRunning);
 
 #ifdef USE_DISCORD_PRESENCE
-  m_discord_presence_checkbox->Bind(wxEVT_CHECKBOX,
-    &GeneralConfigPane::OnDiscordPresenceCheckBoxChanged, this);
+  m_discord_presence_checkbox->Bind(wxEVT_CHECKBOX, &GeneralConfigPane::OnDiscordPresenceCheckBoxChanged, this);
+  m_discord_presence_checkbox->Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreNotRunning);
 #endif
 
 #if defined(USE_ANALYTICS) && USE_ANALYTICS
