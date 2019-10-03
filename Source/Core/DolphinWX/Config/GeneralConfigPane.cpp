@@ -55,6 +55,7 @@ void GeneralConfigPane::InitializeGUI()
 
   m_dual_core_checkbox = new wxCheckBox(this, wxID_ANY, _("Enable Dual Core (speedup)"));
   m_cheats_checkbox = new wxCheckBox(this, wxID_ANY, _("Enable Cheats"));
+  m_save_checkbox = new wxCheckBox(this, wxID_ANY, _("Enable Saving to Memory Card/SD"));
 #if defined(USE_ANALYTICS) && USE_ANALYTICS
   m_analytics_checkbox = new wxCheckBox(this, wxID_ANY, _("Enable Usage Statistics Reporting"));
 #ifdef __APPLE__
@@ -73,7 +74,8 @@ void GeneralConfigPane::InitializeGUI()
   m_dual_core_checkbox->SetToolTip(
       _("Splits the CPU and GPU threads so they can be run on separate cores.\nProvides major "
         "speed improvements on most modern PCs, but can cause occasional crashes/glitches."));
-  m_cheats_checkbox->SetToolTip(_("Enables the use of Action Replay and Gecko cheats."));  
+  m_cheats_checkbox->SetToolTip(_("Enables the use of Action Replay and Gecko cheats."));
+  m_save_checkbox->SetToolTip(_("Enables saving to memory cards and SD cards when playing offline. Enabling this may corrupt your SD card and cause netplay desyncs."));
 #if defined(USE_ANALYTICS) && USE_ANALYTICS
   m_analytics_checkbox->SetToolTip(
       _("Enables the collection and sharing of usage statistics data with the Dolphin development "
@@ -105,6 +107,8 @@ void GeneralConfigPane::InitializeGUI()
   basic_settings_sizer->Add(m_dual_core_checkbox, 0, wxLEFT | wxRIGHT, space5);
   basic_settings_sizer->AddSpacer(space5);
   basic_settings_sizer->Add(m_cheats_checkbox, 0, wxLEFT | wxRIGHT, space5);
+  basic_settings_sizer->AddSpacer(space5);
+  basic_settings_sizer->Add(m_save_checkbox, 0, wxLEFT | wxRIGHT, space5);
   basic_settings_sizer->AddSpacer(space5);
   basic_settings_sizer->Add(throttler_sizer);
 
@@ -144,6 +148,7 @@ void GeneralConfigPane::LoadGUIValues()
 
   m_dual_core_checkbox->SetValue(startup_params.bCPUThread);
   m_cheats_checkbox->SetValue(startup_params.bEnableCheats);
+  m_save_checkbox->SetValue(startup_params.bEnableMemcardSdWriting);
 
 #if defined(USE_ANALYTICS) && USE_ANALYTICS
   m_analytics_checkbox->SetValue(startup_params.m_analytics_enabled);
@@ -169,6 +174,9 @@ void GeneralConfigPane::BindEvents()
   m_cheats_checkbox->Bind(wxEVT_CHECKBOX, &GeneralConfigPane::OnCheatCheckBoxChanged, this);
   m_cheats_checkbox->Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreNotRunning);
 
+  m_save_checkbox->Bind(wxEVT_CHECKBOX, &GeneralConfigPane::OnSaveCheckBoxChanged, this);
+  m_save_checkbox->Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreNotRunning);
+
 #if defined(USE_ANALYTICS) && USE_ANALYTICS
   m_analytics_checkbox->Bind(wxEVT_CHECKBOX, &GeneralConfigPane::OnAnalyticsCheckBoxChanged, this);
 
@@ -192,6 +200,11 @@ void GeneralConfigPane::OnDualCoreCheckBoxChanged(wxCommandEvent& event)
 void GeneralConfigPane::OnCheatCheckBoxChanged(wxCommandEvent& event)
 {
   SConfig::GetInstance().bEnableCheats = m_cheats_checkbox->IsChecked();
+}
+
+void GeneralConfigPane::OnSaveCheckBoxChanged(wxCommandEvent& event)
+{
+  SConfig::GetInstance().bEnableMemcardSdWriting = m_save_checkbox->IsChecked();
 }
 
 void GeneralConfigPane::OnThrottlerChoiceChanged(wxCommandEvent& event)
