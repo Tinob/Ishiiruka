@@ -10,6 +10,7 @@
 
 #ifdef _MSC_VER
 #include <Windows.h>
+#define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING
 #include <experimental/filesystem>
 namespace fs = std::experimental::filesystem;
 #define HAS_STD_FILESYSTEM
