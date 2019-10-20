@@ -67,7 +67,12 @@ protected:
   // struct to compare input against
   // Set on connection to perfect neutral values
   // (standard pad only) Set on button combo to current input state
-  SOrigin m_origin = {};
+  //SOrigin m_origin = {};
+
+  // Set on connection and (standard pad only) on button combo
+  SOrigin m_origin;
+
+  bool m_calibrated = false;
 
   // PADAnalogMode
   // Dunno if we need to do this, game/lib should set it?
@@ -113,6 +118,7 @@ public:
   static void Rumble(int pad_num, ControlState strength);
 
 protected:
+  void Calibrate();
   void HandleMoviePadStatus(GCPadStatus* pad_status);
 };
 
