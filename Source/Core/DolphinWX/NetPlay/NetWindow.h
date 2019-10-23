@@ -67,6 +67,10 @@ enum class ChatMessageType
   UserIn,
   // Outcoming user chat messages
   UserOut,
+  // User joined NetPlay session
+  UserJoin,
+  // User left NetPlay session
+  UserLeave,
 };
 
 // IDs are UI-dependent here
