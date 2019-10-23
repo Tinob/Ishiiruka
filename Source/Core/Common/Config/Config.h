@@ -83,7 +83,7 @@ void SetBase(const ConfigInfo<T>& info, const T& value)
 }
 
 template <typename T>
-void SetCurrent(const ConfigInfo<T>& info, const T& value)
+void SetCurrent(const ConfigInfo<T>& info, const std::common_type_t<T>& value)
 {
   Set<T>(LayerType::CurrentRun, info, value);
 }
