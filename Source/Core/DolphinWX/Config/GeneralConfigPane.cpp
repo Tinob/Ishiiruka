@@ -20,10 +20,14 @@
 
 #include "Common/Common.h"
 #include "Core/Analytics.h"
+#include "Core/Config/UISettings.h"
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
 #include "Core/PowerPC/PowerPC.h"
 #include "DolphinWX/WxEventUtils.h"
+#ifdef USE_DISCORD_PRESENCE
+#include "UICommon/DiscordPresence.h"
+#endif
 
 static const std::map<PowerPC::CPUCore, std::string> CPU_CORE_NAMES = {
     {PowerPC::CORE_INTERPRETER, _trans("Interpreter (slowest)")},
@@ -56,6 +60,11 @@ void GeneralConfigPane::InitializeGUI()
   m_dual_core_checkbox = new wxCheckBox(this, wxID_ANY, _("Enable Dual Core (speedup)"));
   m_cheats_checkbox = new wxCheckBox(this, wxID_ANY, _("Enable Cheats"));
   m_save_checkbox = new wxCheckBox(this, wxID_ANY, _("Enable Saving to Memory Card/SD"));
+
+#ifdef USE_DISCORD_PRESENCE
+  m_discord_presence_checkbox = new wxCheckBox(this, wxID_ANY, _("Show Current Game on Discord"));
+#endif
+  
 #if defined(USE_ANALYTICS) && USE_ANALYTICS
   m_analytics_checkbox = new wxCheckBox(this, wxID_ANY, _("Enable Usage Statistics Reporting"));
 #ifdef __APPLE__
@@ -76,6 +85,13 @@ void GeneralConfigPane::InitializeGUI()
         "speed improvements on most modern PCs, but can cause occasional crashes/glitches."));
   m_cheats_checkbox->SetToolTip(_("Enables the use of Action Replay and Gecko cheats."));
   m_save_checkbox->SetToolTip(_("Enables saving to memory cards and SD cards when playing offline. Enabling this may corrupt your SD card and cause netplay desyncs."));
+
+#ifdef USE_DISCORD_PRESENCE
+  m_discord_presence_checkbox->SetToolTip(
+    _("Allow other people on Discord to see the current activity in Dolphin. Activities such as "
+      "the game being played, and for how long"));
+#endif
+
 #if defined(USE_ANALYTICS) && USE_ANALYTICS
   m_analytics_checkbox->SetToolTip(
       _("Enables the collection and sharing of usage statistics data with the Dolphin development "
@@ -110,6 +126,12 @@ void GeneralConfigPane::InitializeGUI()
   basic_settings_sizer->AddSpacer(space5);
   basic_settings_sizer->Add(m_save_checkbox, 0, wxLEFT | wxRIGHT, space5);
   basic_settings_sizer->AddSpacer(space5);
+
+#ifdef USE_DISCORD_PRESENCE
+  basic_settings_sizer->Add(m_discord_presence_checkbox, 0, wxLEFT | wxRIGHT, space5);
+  basic_settings_sizer->AddSpacer(space5);
+#endif
+  
   basic_settings_sizer->Add(throttler_sizer);
 
 #if defined(USE_ANALYTICS) && USE_ANALYTICS
@@ -150,6 +172,10 @@ void GeneralConfigPane::LoadGUIValues()
   m_cheats_checkbox->SetValue(startup_params.bEnableCheats);
   m_save_checkbox->SetValue(startup_params.bEnableMemcardSdWriting);
 
+#ifdef USE_DISCORD_PRESENCE
+  m_discord_presence_checkbox->SetValue(Config::Get(Config::MAIN_USE_DISCORD_PRESENCE));
+#endif
+
 #if defined(USE_ANALYTICS) && USE_ANALYTICS
   m_analytics_checkbox->SetValue(startup_params.m_analytics_enabled);
 #endif
@@ -176,6 +202,11 @@ void GeneralConfigPane::BindEvents()
 
   m_save_checkbox->Bind(wxEVT_CHECKBOX, &GeneralConfigPane::OnSaveCheckBoxChanged, this);
   m_save_checkbox->Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreNotRunning);
+  
+#ifdef USE_DISCORD_PRESENCE
+  m_discord_presence_checkbox->Bind(wxEVT_CHECKBOX, &GeneralConfigPane::OnDiscordPresenceCheckBoxChanged, this);
+  m_discord_presence_checkbox->Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreNotRunning);
+#endif
 
 #if defined(USE_ANALYTICS) && USE_ANALYTICS
   m_analytics_checkbox->Bind(wxEVT_CHECKBOX, &GeneralConfigPane::OnAnalyticsCheckBoxChanged, this);
@@ -206,6 +237,13 @@ void GeneralConfigPane::OnSaveCheckBoxChanged(wxCommandEvent& event)
 {
   SConfig::GetInstance().bEnableMemcardSdWriting = m_save_checkbox->IsChecked();
 }
+
+#ifdef USE_DISCORD_PRESENCE
+void GeneralConfigPane::OnDiscordPresenceCheckBoxChanged(wxCommandEvent& event)
+{
+  Discord::SetDiscordPresenceEnabled(m_discord_presence_checkbox->IsChecked());
+}
+#endif
 
 void GeneralConfigPane::OnThrottlerChoiceChanged(wxCommandEvent& event)
 {

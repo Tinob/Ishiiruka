@@ -9,6 +9,7 @@
 
 #include "Common/Config/Config.h"
 #include "Core/Config/GraphicsSettings.h"
+#include "Core/Config/UISettings.h"
 
 namespace ConfigLoaders
 {
@@ -155,6 +156,9 @@ bool IsSettingSaveable(const Config::ConfigLocation& config_location)
       Config::GFX_PROJECTION_HACK_ZFAR.location,
       Config::GFX_PERF_QUERIES_ENABLE.location,
 
+      // UI.General
+
+      Config::MAIN_USE_DISCORD_PRESENCE.location,
   };
 
   return std::find(s_setting_saveable.begin(), s_setting_saveable.end(), config_location) !=

@@ -183,4 +183,8 @@ else()
   install(TARGETS ishiiruka RUNTIME DESTINATION ${bindir})
 endif()
 
+if(USE_DISCORD_PRESENCE)
+  target_compile_definitions(dolphin-emu-wx PRIVATE -DUSE_DISCORD_PRESENCE)
+endif()
+
 set(CPACK_PACKAGE_EXECUTABLES ${CPACK_PACKAGE_EXECUTABLES} ishiiruka)
