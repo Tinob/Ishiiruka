@@ -252,17 +252,6 @@ wxSizer* NetPlayDialog::CreateBottomGUI(wxWindow* parent)
   m_player_padbuf_spin->Bind(wxEVT_SPINCTRL, &NetPlayDialog::OnAdjustPlayerBuffer, this);
   m_player_padbuf_spin->SetMinSize(WxUtils::GetTextWidgetMinSize(m_player_padbuf_spin));
 
-  /*
-  if (IsNTSCBrawl() == true)
-  {
-    m_music_off_chkbox = new wxCheckBox(parent, wxID_ANY, "Client Side Music Off");
-    bottom_szr->Add(m_music_off_chkbox, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
-  }
-  else
-  {
-
-  }*/
-
   if (m_is_hosting)
   {
     m_start_btn = new wxButton(parent, wxID_ANY, _("Start"));
@@ -283,6 +272,16 @@ wxSizer* NetPlayDialog::CreateBottomGUI(wxWindow* parent)
     bottom_szr->Add(buffer_lbl, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
     bottom_szr->Add(m_player_padbuf_spin, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
 
+    if (IsPMELF() == true)
+    {
+      m_music_off_chkbox = new wxCheckBox(parent, wxID_ANY, "Client Side Music Off");
+      bottom_szr->Add(m_music_off_chkbox, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
+    }
+    else
+    {
+
+    }
+
     bottom_szr->Add(m_memcard_write, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
 
     bottom_szr->AddSpacer(space5);
@@ -294,13 +293,15 @@ wxSizer* NetPlayDialog::CreateBottomGUI(wxWindow* parent)
   }
 
   m_record_chkbox = new wxCheckBox(parent, wxID_ANY, _("Record inputs"));
-  m_music_off_chkbox = new wxCheckBox(parent, wxID_ANY, "Client Side Music Off");
 
   wxButton* quit_btn = new wxButton(parent, wxID_ANY, _("Quit Netplay"));
   quit_btn->Bind(wxEVT_BUTTON, &NetPlayDialog::OnQuit, this);
 
-  
-  bottom_szr->Add(m_music_off_chkbox, 0, wxALIGN_CENTER_VERTICAL);
+  if (!m_is_hosting)
+  {
+    m_music_off_chkbox = new wxCheckBox(parent, wxID_ANY, "Client Side Music Off");
+    bottom_szr->Add(m_music_off_chkbox, 0, wxALIGN_CENTER_VERTICAL);
+  }
 
   bottom_szr->Add(m_record_chkbox, 0, wxALIGN_CENTER_VERTICAL);
   bottom_szr->AddStretchSpacer();
@@ -352,15 +353,6 @@ void NetPlayDialog::OnChat(wxCommandEvent&)
 bool NetPlayDialog::IsPMELF()
 {
   if (m_selected_game.ends_with(".elf"))
-    return true;
-
-  else
-    return false;
-}
-
-bool NetPlayDialog::IsNTSCBrawl()
-{
-  if (IsPMELF() == true)
     return true;
 
   else
