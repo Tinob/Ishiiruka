@@ -28,6 +28,8 @@ public:
   explicit Impl(std::chrono::milliseconds timeout_ms, ProgressCallback callback);
 
   bool IsValid() const;
+  void SetCookies(const std::string& cookies);
+  void FollowRedirects(long max);
   Response Fetch(const std::string& url, Method method, const Headers& headers, const u8* payload,
                  size_t size);
 
@@ -54,6 +56,16 @@ HttpRequest::~HttpRequest() = default;
 bool HttpRequest::IsValid() const
 {
   return m_impl->IsValid();
+}
+
+void HttpRequest::SetCookies(const std::string& cookies)
+{
+  m_impl->SetCookies(cookies);
+}
+
+void HttpRequest::FollowRedirects(long max)
+{
+  m_impl->FollowRedirects(max);
 }
 
 HttpRequest::Response HttpRequest::Get(const std::string& url, const Headers& headers)
@@ -118,6 +130,17 @@ HttpRequest::Impl::Impl(std::chrono::milliseconds timeout_ms, ProgressCallback c
 bool HttpRequest::Impl::IsValid() const
 {
   return m_curl != nullptr;
+}
+
+void HttpRequest::Impl::SetCookies(const std::string& cookies)
+{
+  curl_easy_setopt(m_curl.get(), CURLOPT_COOKIE, cookies.c_str());
+}
+
+void HttpRequest::Impl::FollowRedirects(long max)
+{
+  curl_easy_setopt(m_curl.get(), CURLOPT_FOLLOWLOCATION, 1);
+  curl_easy_setopt(m_curl.get(), CURLOPT_MAXREDIRS, max);
 }
 
 static size_t CurlWriteCallback(char* data, size_t size, size_t nmemb, void* userdata)
