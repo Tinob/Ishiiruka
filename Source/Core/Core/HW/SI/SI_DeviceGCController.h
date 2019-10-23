@@ -65,6 +65,10 @@ protected:
   };
 
   // struct to compare input against
+  // Set on connection to perfect neutral values
+  // (standard pad only) Set on button combo to current input state
+  //SOrigin m_origin = {};
+
   // Set on connection and (standard pad only) on button combo
   SOrigin m_origin;
 

@@ -36,7 +36,7 @@ static std::map<u32, int> speedHacks;
 
 static bool IsEnabledMusicCode(const Patch& patch)
 {
-  if (NetPlayDialog::GetInstance()->IsMusicOff() && patch.name == "[P+] Music Off")
+  if (NetPlay::IsNetPlayRunning() && NetPlayDialog::GetInstance()->IsMusicOff() && patch.name == "[P+] Music Off")
   {
     return true;
   }
