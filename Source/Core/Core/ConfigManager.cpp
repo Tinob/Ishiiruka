@@ -46,6 +46,7 @@
 #include "DiscIO/Enums.h"
 #include "DiscIO/Volume.h"
 #include "DiscIO/WiiWad.h"
+#include <UICommon\DiscordPresence.h>
 
 SConfig* SConfig::m_Instance;
 
@@ -769,6 +770,7 @@ void SConfig::SetRunningGameMetadata(const std::string& game_id, u64 title_id, u
     PatchEngine::Reload();
     HiresTexture::Update();
     DolphinAnalytics::Instance()->ReportGameStart();
+    Discord::UpdateDiscordPresence();
   }
 }
 

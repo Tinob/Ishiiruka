@@ -235,26 +235,11 @@ namespace Discord
     {
       discord_presence.largeImageKey = game_artwork.c_str();
       discord_presence.largeImageText = title.c_str();
-      discord_presence.smallImageKey = "dolphin_logo";
-      discord_presence.smallImageText = "Dolphin is an emulator for the GameCube and the Wii.";
+      //discord_presence.smallImageKey = "dolphin_logo";
+      //discord_presence.smallImageText = "Dolphin is an emulator for the GameCube and the Wii.";
     }
 
-    if (!title.empty())
-    {
-      discord_presence.details = title.c_str();
-    }
-    else if (title.empty() && NetPlay::IsNetPlayRunning())
-    {
-      std::string game_artwork = ArtworkForGameId("RSB");
-      discord_presence.details = "Project+";
-      discord_presence.largeImageKey = game_artwork.c_str();
-    }
-    else
-    {
-      discord_presence.details = "Not in-game";
-    }
-
-    //discord_presence.details = title.empty() ? "Not in-game" : title.c_str();
+    discord_presence.details = title.empty() ? "Not in-game" : title.c_str();
     discord_presence.startTimestamp = std::time(nullptr);
 
     if (party_size > 0)
