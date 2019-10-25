@@ -42,6 +42,7 @@
 #include "Core/Core.h"
 #include "Core/HW/Wiimote.h"
 #include "Core/Host.h"
+#include "Core/NetPlayProto.h"
 #include "Core/Movie.h"
 
 #include "DolphinWX/Debugger/CodeWindow.h"
@@ -54,6 +55,8 @@
 #include "DolphinWX/UINeedsControllerState.h"
 #include "DolphinWX/VideoConfigDiag.h"
 #include "DolphinWX/WxUtils.h"
+
+#include "UICommon/DiscordPresence.h"
 
 #include "UICommon/CommandLineParse.h"
 #include "UICommon/UICommon.h"
@@ -623,4 +626,12 @@ void Host_UpdateProgressDialog(const char* caption, int position, int total)
   event.SetInt(position);
   event.SetExtraLong(total);
   main_frame->GetEventHandler()->AddPendingEvent(event);
+}
+
+void Host_TitleChanged()
+{
+#ifdef USE_DISCORD_PRESENCE
+  // TODO: Not sure if the NetPlay check is needed.
+  Discord::UpdateDiscordPresence();
+#endif
 }

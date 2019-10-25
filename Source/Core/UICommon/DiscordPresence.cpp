@@ -158,6 +158,8 @@ namespace Discord
           "GZ2",  // GZ2E01: The Legend of Zelda: Twilight Princess (GC)
           "RZD",  // RZDE01: The Legend of Zelda: Twilight Princess (Wii)
           "GHQ",  // GHQE7D: The Simpsons: Hit & Run
+          "GZW",  // GZWE01: Wario Ware Inc. Mega Party Game$!
+          "ROD",  // RODE01: WarioWare: Smooth Moves
           "RSP",  // RSPE01: Wii Sports
           "RZT",  // RZTE01: Wii Sports Resort
           "SX4",  // SX4E01: Xenoblade Chronicles
@@ -191,7 +193,8 @@ namespace Discord
     handlers.joinRequest = HandleDiscordJoinRequest;
     handlers.joinGame = HandleDiscordJoin;
     // The number is the client ID for Dolphin, it's used for images and the application name
-    Discord_Initialize("455712169795780630", &handlers, 1, nullptr);
+    //Discord_Initialize("455712169795780630", &handlers, 1, nullptr);
+    Discord_Initialize("622143930900807680", &handlers, 1, nullptr);
     UpdateDiscordPresence();
 #endif
   }
@@ -235,8 +238,8 @@ namespace Discord
     {
       discord_presence.largeImageKey = game_artwork.c_str();
       discord_presence.largeImageText = title.c_str();
-      //discord_presence.smallImageKey = "dolphin_logo";
-      //discord_presence.smallImageText = "Dolphin is an emulator for the GameCube and the Wii.";
+      discord_presence.smallImageKey = "dolphin_logo";
+      discord_presence.smallImageText = "Dolphin is an emulator for the GameCube and the Wii.";
     }
 
     discord_presence.details = title.empty() ? "Not in-game" : title.c_str();
@@ -310,8 +313,8 @@ namespace Discord
     if (Config::Get(Config::MAIN_USE_DISCORD_PRESENCE) == enabled)
       return;
 
-    if (Config::Get(Config::MAIN_USE_DISCORD_PRESENCE))
-      Discord::Shutdown();
+    //if (Config::Get(Config::MAIN_USE_DISCORD_PRESENCE))
+      //Discord::Shutdown();
 
     Config::SetBase(Config::MAIN_USE_DISCORD_PRESENCE, enabled);
 
