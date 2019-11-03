@@ -2409,7 +2409,7 @@ void rnd_advance()
 uint RandomSeeduint(float2 seed)
 {
 	float noise = RandomSeedfloat(seed);
-	return uint(noise * 0xFFFFFF);
+	return uint(noise * float(0xFFFFFF));
 }
 
 void Randomize()
@@ -2420,7 +2420,7 @@ void Randomize()
 uint Rndint()
 {
 	rnd_advance();
-	return uint(global_rnd_state * 0xFFFFFF);
+	return uint(global_rnd_state * float(0xFFFFFF));
 }
 
 float Rndfloat()

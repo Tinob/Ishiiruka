@@ -749,7 +749,10 @@ uniform uint u_palette_offset;
 
 SAMPLER_BINDING(9) uniform usamplerBuffer s_input_buffer;
 SAMPLER_BINDING(10) uniform usamplerBuffer s_palette_buffer;
-
+#ifndef GL_FRAGMENT_PRECISION_HIGH
+#define highp mediump
+#endif
+precision highp image2DArray;
 layout(rgba8, binding = 0) uniform writeonly image2DArray output_image;
 
 #endif
