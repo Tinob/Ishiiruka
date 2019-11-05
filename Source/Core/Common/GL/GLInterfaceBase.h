@@ -31,7 +31,7 @@ protected:
 public:
   virtual ~cInterfaceBase() {}
   virtual void Swap() {}
-  virtual void SetMode(GLInterfaceMode mode) { s_opengl_mode = GLInterfaceMode::MODE_OPENGL; }
+  virtual void SetMode(GLInterfaceMode mode) { s_opengl_mode = mode; }
   virtual GLInterfaceMode GetMode() { return s_opengl_mode; }
   virtual void* GetFuncAddress(const std::string& name) { return nullptr; }
   virtual bool Create(void* window_handle, bool stereo = false, bool core = true) { return true; }
