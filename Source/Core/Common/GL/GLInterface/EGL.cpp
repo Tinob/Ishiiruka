@@ -46,9 +46,9 @@ void* cInterfaceEGL::GetFuncAddress(const std::string& name)
 
 void cInterfaceEGL::DetectMode()
 {
-  if (s_opengl_mode != GLInterfaceMode::MODE_DETECT)
-    return;
   bool preferGLES = Config::Get(Config::GFX_PREFER_GLES);
+  if (s_opengl_mode != GLInterfaceMode::MODE_DETECT && !preferGLES)
+    return;
 
   EGLint num_configs;
   bool supportsGL = false, supportsGLES2 = false, supportsGLES3 = false;
