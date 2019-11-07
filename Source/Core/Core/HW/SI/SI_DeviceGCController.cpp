@@ -32,10 +32,8 @@ void CSIDevice_GCController::Calibrate()
   GCPadStatus pad_origin = GetPadStatus();
   memset(&m_origin, 0, sizeof(SOrigin));
   m_origin.button = pad_origin.button;
-  //m_origin.origin_stick_x = pad_origin.stickX;
-  //m_origin.origin_stick_y = pad_origin.stickY;
-  m_origin.origin_stick_x = GCPadStatus::MAIN_STICK_CENTER_X;
-  m_origin.origin_stick_y = GCPadStatus::MAIN_STICK_CENTER_Y;
+  m_origin.origin_stick_x = pad_origin.stickX;
+  m_origin.origin_stick_y = pad_origin.stickY;
   m_origin.substick_x = pad_origin.substickX;
   m_origin.substick_y = pad_origin.substickY;
   m_origin.trigger_left = pad_origin.triggerLeft;
