@@ -148,7 +148,6 @@ private:
   void OnChoice(wxCommandEvent& event);
   void UpdateHostLabel();
 
-  bool IsNTSCBrawl();
   bool IsPMELF();
 
   wxListBox* m_player_lbox;

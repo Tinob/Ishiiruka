@@ -297,9 +297,10 @@ wxSizer* NetPlayDialog::CreateBottomGUI(wxWindow* parent)
   wxButton* quit_btn = new wxButton(parent, wxID_ANY, _("Quit Netplay"));
   quit_btn->Bind(wxEVT_BUTTON, &NetPlayDialog::OnQuit, this);
 
+  bottom_szr->AddSpacer(space5);
+
   if (!m_is_hosting)
   {
-    bottom_szr->AddSpacer(space5);
     m_music_off_chkbox = new wxCheckBox(parent, wxID_ANY, "Client Side Music Off");
     bottom_szr->Add(m_music_off_chkbox, 0, wxALIGN_CENTER_VERTICAL);
   }

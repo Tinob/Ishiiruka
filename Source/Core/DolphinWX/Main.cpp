@@ -337,6 +337,10 @@ void DolphinApp::MacOpenFile(const wxString& fileName)
 
 void DolphinApp::AfterInit()
 {
+#ifdef USE_DISCORD_PRESENCE
+  Discord::Init();
+#endif
+
 #if defined(USE_ANALYTICS) && USE_ANALYTICS
   if (!SConfig::GetInstance().m_analytics_permission_asked)
   {
