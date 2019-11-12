@@ -353,6 +353,8 @@ bool ImageLoader::ReadDDS(ImageLoaderParams& loader_params)
   if (FourCC == FOURCC_DXT1 || dxt10_format == 71)
   {
     loader_params.resultTex = HostTextureFormat::PC_TEX_FMT_DXT1;
+    loader_params.Width = ((ddsd.dwWidth + 3) >> 2) << 2;
+    loader_params.Height = ((ddsd.dwHeight + 3) >> 2) << 2;
   }
   else if (FourCC == FOURCC_DXT3 || dxt10_format == 74)
   {
@@ -365,9 +367,7 @@ bool ImageLoader::ReadDDS(ImageLoaderParams& loader_params)
   else
   {
     loader_params.resultTex = HostTextureFormat::PC_TEX_FMT_BPTC;
-  }
-  loader_params.Width = ((ddsd.dwWidth + 3) >> 2) << 2;
-  loader_params.Height = ((ddsd.dwHeight + 3) >> 2) << 2;
+  }  
   // loader_params should get the number of mipmaps, not counting the first level
   loader_params.nummipmaps = (ddsd.dwMipMapCount != 0) ? (ddsd.dwMipMapCount - 1) : 0;
   return true;
