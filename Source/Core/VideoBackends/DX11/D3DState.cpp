@@ -347,8 +347,11 @@ ID3D11SamplerState* StateCache::Get(SamplerState state)
   D3D11_SAMPLER_DESC sampdc = CD3D11_SAMPLER_DESC(CD3D11_DEFAULT());
   if (state.anisotropic_filtering)
   {
-    sampdc.Filter = D3D11_FILTER_ANISOTROPIC;
     sampdc.MaxAnisotropy = 1u << g_ActiveConfig.iMaxAnisotropy;
+  }
+  if (state.anisotropic_filtering && state.mipmap_filter == SamplerState::Filter::Linear)
+  {
+    sampdc.Filter = D3D11_FILTER_ANISOTROPIC;
   }
   else if (state.mipmap_filter == SamplerState::Filter::Linear)
   {
