@@ -130,6 +130,7 @@ struct SConfig
   bool bOverrideGCLanguage = false;
 
   bool bWii = false;
+  bool bDSPREHACK = false;
   bool m_is_mios = false;
 
   // Interface settings

@@ -40,6 +40,7 @@ void AudioConfigPane::InitializeGUI()
     new wxRadioBox(this, wxID_ANY, _("DSP Emulation Engine"), wxDefaultPosition, wxDefaultSize,
       m_dsp_engine_strings, 0, wxRA_SPECIFY_ROWS);
   m_dpl2_decoder_checkbox = new wxCheckBox(this, wxID_ANY, _("Dolby Pro Logic II Decoder"));
+  m_DSP_REHack_checkbox = new wxCheckBox(this, wxID_ANY, _("DSP Hack for RE"));
   m_volume_slider = new DolphinSlider(this, wxID_ANY, 0, 0, 100, wxDefaultPosition, wxDefaultSize,
     wxSL_VERTICAL | wxSL_INVERSE);
   m_volume_text = new wxStaticText(this, wxID_ANY, "");
@@ -80,7 +81,7 @@ void AudioConfigPane::InitializeGUI()
   backend_grid_sizer->Add(m_audio_backend_choice, wxGBPosition(0, 1), wxDefaultSpan,
     wxALIGN_CENTER_VERTICAL);
   backend_grid_sizer->Add(m_dpl2_decoder_checkbox, wxGBPosition(1, 0), wxGBSpan(1, 2),
-    wxALIGN_CENTER_VERTICAL);
+    wxALIGN_CENTER_VERTICAL);  
   if (m_latency_control_supported)
   {
     backend_grid_sizer->Add(m_audio_latency_label, wxGBPosition(2, 0), wxDefaultSpan,
@@ -119,6 +120,17 @@ void AudioConfigPane::InitializeGUI()
   stretching_box_sizer->Add(stretching_grid_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, space5);
   stretching_box_sizer->AddSpacer(space5);
 
+
+  wxGridBagSizer* const Hack_grid_sizer = new wxGridBagSizer(space5, space5);
+  Hack_grid_sizer->Add(m_DSP_REHack_checkbox, wxGBPosition(0, 0), wxGBSpan(1, 2),
+                             wxALIGN_CENTER_VERTICAL);
+
+  wxStaticBoxSizer* const hack_box_sizer =
+      new wxStaticBoxSizer(wxVERTICAL, this, _("Audio Hacks"));
+  hack_box_sizer->AddSpacer(space5);
+  hack_box_sizer->Add(Hack_grid_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, space5);
+  hack_box_sizer->AddSpacer(space5);
+
   wxBoxSizer* const main_sizer = new wxBoxSizer(wxVERTICAL);
   main_sizer->AddSpacer(space5);
   main_sizer->Add(dsp_audio_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, space5);
@@ -126,6 +138,8 @@ void AudioConfigPane::InitializeGUI()
   main_sizer->Add(backend_static_box_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, space5);
   main_sizer->AddSpacer(space5);
   main_sizer->Add(stretching_box_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, space5);
+  main_sizer->AddSpacer(space5);
+  main_sizer->Add(hack_box_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, space5);
   main_sizer->AddSpacer(space5);
 
   SetSizerAndFit(main_sizer);
@@ -146,6 +160,7 @@ void AudioConfigPane::LoadGUIValues()
   m_volume_slider->SetValue(SConfig::GetInstance().m_Volume);
   m_volume_text->SetLabel(wxString::Format("%d %%", SConfig::GetInstance().m_Volume));
   m_dpl2_decoder_checkbox->SetValue(startup_params.bDPL2Decoder);
+  m_DSP_REHack_checkbox->SetValue(startup_params.bDSPREHACK);
   if (m_latency_control_supported)
   {
     m_audio_latency_spinctrl->SetValue(startup_params.iLatency);
@@ -183,6 +198,12 @@ void AudioConfigPane::BindEvents()
     this);
   m_dpl2_decoder_checkbox->Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreNotRunning);
 
+  m_DSP_REHack_checkbox->Bind(wxEVT_CHECKBOX, &AudioConfigPane::OnDSKREHackCheckBoxChanged,
+                                this);
+  m_DSP_REHack_checkbox->Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreNotRunning);
+
+  
+
   m_volume_slider->Bind(wxEVT_SLIDER, &AudioConfigPane::OnVolumeSliderChanged, this);
 
   m_audio_backend_choice->Bind(wxEVT_CHOICE, &AudioConfigPane::OnAudioBackendChanged, this);
@@ -206,6 +227,11 @@ void AudioConfigPane::OnDSPEngineRadioBoxChanged(wxCommandEvent& event)
 void AudioConfigPane::OnDPL2DecoderCheckBoxChanged(wxCommandEvent&)
 {
   SConfig::GetInstance().bDPL2Decoder = m_dpl2_decoder_checkbox->IsChecked();
+}
+
+void AudioConfigPane::OnDSKREHackCheckBoxChanged(wxCommandEvent&)
+{
+  SConfig::GetInstance().bDSPREHACK = m_DSP_REHack_checkbox->IsChecked();
 }
 
 void AudioConfigPane::OnVolumeSliderChanged(wxCommandEvent& event)
