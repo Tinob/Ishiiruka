@@ -1155,8 +1155,9 @@ void Renderer::SetSamplerState(u32 index, const SamplerState& state)
 
   if (state.anisotropic_filtering)
   {
-    min = D3DTEXF_ANISOTROPIC;
-    mag = D3DTEXF_ANISOTROPIC;
+    min = min != D3DTEXF_POINT ? D3DTEXF_ANISOTROPIC : D3DTEXF_POINT;
+    mag = mag != D3DTEXF_POINT ? D3DTEXF_ANISOTROPIC : D3DTEXF_POINT;
+    mip = mip != D3DTEXF_POINT ? D3DTEXF_ANISOTROPIC : D3DTEXF_POINT;
     D3D::SetSamplerState(index, D3DSAMP_MAXANISOTROPY, 1 << g_ActiveConfig.iMaxAnisotropy);
   }
   D3D::SetSamplerState(index, D3DSAMP_MINFILTER, min);

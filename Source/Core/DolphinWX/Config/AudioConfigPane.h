@@ -31,6 +31,7 @@ private:
 
   void OnDSPEngineRadioBoxChanged(wxCommandEvent&);
   void OnDPL2DecoderCheckBoxChanged(wxCommandEvent&);
+  void OnDSKREHackCheckBoxChanged(wxCommandEvent&);
   void OnVolumeSliderChanged(wxCommandEvent&);
   void OnAudioBackendChanged(wxCommandEvent&);
   void OnLatencySpinCtrlChanged(wxCommandEvent&);
@@ -41,6 +42,7 @@ private:
   wxArrayString m_audio_backend_strings;
 
   wxRadioBox* m_dsp_engine_radiobox;
+  wxCheckBox* m_DSP_REHack_checkbox;
   wxCheckBox* m_dpl2_decoder_checkbox;
   DolphinSlider* m_volume_slider;
   wxStaticText* m_volume_text;

@@ -180,10 +180,13 @@ static void SetSamplerState(u32 index, bool custom_tex, bool has_arbitrary_mips,
     // Letting the game set other combinations will have varying arbitrary results;
     // possibly being interpreted as equal to bilinear/trilinear, implicitly
     // disabling anisotropy, or changing the anisotropic algorithm employed.
-    state.min_filter = SamplerState::Filter::Linear;
-    state.mag_filter = SamplerState::Filter::Linear;
-    if (SamplerCommon::AreBpTexMode0MipmapsEnabled(tm0))
-      state.mipmap_filter = SamplerState::Filter::Linear;
+    if (g_ActiveConfig.eFilteringMode != FilteringMode::Disabled)
+    {
+      state.min_filter = SamplerState::Filter::Linear;
+      state.mag_filter = SamplerState::Filter::Linear;
+      if (SamplerCommon::AreBpTexMode0MipmapsEnabled(tm0))
+        state.mipmap_filter = SamplerState::Filter::Linear;
+    }
     state.anisotropic_filtering = 1;
   }
   else

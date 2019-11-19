@@ -1638,7 +1638,11 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
   if (uid_data.dither)
   {
     out.Write("wu GetDitherValue(wu2 ditherindex)\n{\n");
-    out.Write("\twu4 bayer[4] = wu4[4](wu4(-2,0,1,-1),wu4(-1,1,-2,0),wu4(1,3,-1,-2),wu4(0,-1,2,1));\n");
+    out.Write("\twu4 bayer[4];\n");
+    out.Write("\tbayer[0] = wu4(-2,0,1,-1);\n");
+    out.Write("\tbayer[1] = wu4(-1,1,-2,0);\n");
+    out.Write("\tbayer[2] = wu4(1,3,-1,-2);\n");
+    out.Write("\tbayer[3] = wu4(0,-1,2,1);\n");
     out.Write("\twu result = bayer[ditherindex.y][ditherindex.x];\n");
     if (uid_data.rgba6_format)
     {

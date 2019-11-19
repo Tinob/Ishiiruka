@@ -205,8 +205,11 @@ D3D12_SAMPLER_DESC StateCache::GetDesc(SamplerState state)
   sampdc.MaxAnisotropy = 1;
   if (state.anisotropic_filtering)
   {
-    sampdc.Filter = D3D12_FILTER_ANISOTROPIC;
     sampdc.MaxAnisotropy = 1u << g_ActiveConfig.iMaxAnisotropy;
+  }
+  if (state.anisotropic_filtering && state.mipmap_filter == SamplerState::Filter::Linear)
+  {
+    sampdc.Filter = D3D12_FILTER_ANISOTROPIC;
   }
   else if (state.mipmap_filter == SamplerState::Filter::Linear)
   {
