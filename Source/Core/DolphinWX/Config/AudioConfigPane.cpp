@@ -119,10 +119,10 @@ void AudioConfigPane::InitializeGUI()
 
   wxGridBagSizer* const Hack_grid_sizer = new wxGridBagSizer(space5, space5);
   Hack_grid_sizer->Add(m_DSP_REHack_checkbox, wxGBPosition(0, 0), wxGBSpan(1, 2),
-    wxALIGN_CENTER_VERTICAL);
+                             wxALIGN_CENTER_VERTICAL);
 
   wxStaticBoxSizer* const hack_box_sizer =
-    new wxStaticBoxSizer(wxVERTICAL, this, _("Audio Hacks"));
+      new wxStaticBoxSizer(wxVERTICAL, this, _("Audio Hacks"));
   hack_box_sizer->AddSpacer(space5);
   hack_box_sizer->Add(Hack_grid_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, space5);
   hack_box_sizer->AddSpacer(space5);
@@ -192,7 +192,7 @@ void AudioConfigPane::BindEvents()
   m_dpl2_decoder_checkbox->Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreNotRunning);
 
   m_DSP_REHack_checkbox->Bind(wxEVT_CHECKBOX, &AudioConfigPane::OnDSKREHackCheckBoxChanged,
-    this);
+                                this);
   m_DSP_REHack_checkbox->Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreNotRunning);
 
 

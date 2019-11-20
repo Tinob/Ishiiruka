@@ -349,7 +349,8 @@ bool ImageLoader::ReadDDS(ImageLoaderParams& loader_params)
     // Unable to read file
     return false;
   }
-
+  loader_params.Width = ddsd.dwWidth;
+  loader_params.Height = ddsd.dwHeight;
   if (FourCC == FOURCC_DXT1 || dxt10_format == 71)
   {
     loader_params.resultTex = HostTextureFormat::PC_TEX_FMT_DXT1;
