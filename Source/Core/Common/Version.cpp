@@ -8,6 +8,7 @@
 
 namespace Common
 {
+#define VERSION_STR "FPM v1.0 BETA"
 #ifdef _DEBUG
 #define BUILD_TYPE_STR "Debug "
 #elif defined DEBUGFAST
@@ -22,23 +23,23 @@ const std::string scm_rev_str = "Ishiiruka-Dolphin"
 #endif
 
 #ifdef __INTEL_COMPILER
-" " BUILD_TYPE_STR " " SCM_DESC_STR "-ICC";
+" " BUILD_TYPE_STR " " VERSION_STR "-ICC";
 #else
-" " BUILD_TYPE_STR "Bird Build 1.0";
+" " BUILD_TYPE_STR " " VERSION_STR;
 #endif
 
 const std::string scm_rev_git_str = SCM_REV_STR;
 const std::string scm_rev_cache_str = "201911022212";
-const std::string scm_desc_str = "Bird Build 1.0";
+const std::string scm_desc_str = VERSION_STR;
 const std::string scm_branch_str = SCM_BRANCH_STR;
 const std::string scm_distributor_str = SCM_DISTRIBUTOR_STR;
 
 #ifdef _WIN32
-const std::string netplay_dolphin_ver = "Bird Build 1.0" " Win";
+const std::string netplay_dolphin_ver = VERSION_STR " Win";
 #elif __APPLE__
-const std::string netplay_dolphin_ver = "Bird Build 1.0" " Mac";
+const std::string netplay_dolphin_ver = VERSION_STR " Mac";
 #else
-const std::string netplay_dolphin_ver = "Bird Build 1.0" " Lin";
+const std::string netplay_dolphin_ver = VERSION_STR " Lin";
 #endif
 
 
