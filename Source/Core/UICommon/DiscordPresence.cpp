@@ -20,7 +20,7 @@
 #include <string>
 
 #endif
-#include <Core\NetPlayProto.h>
+#include <Core/NetPlayProto.h>
 
 namespace Discord
 {

@@ -351,14 +351,13 @@ void NetPlayDialog::OnChat(wxCommandEvent&)
     }
   }
 }
-
+ std::string suffix("elf");
 bool NetPlayDialog::IsPMELF()
 {
-  if (m_selected_game.ends_with(".elf"))
-    return true;
-
+  if (m_selected_game.size() >= suffix.size() && m_selected_game.compare(m_selected_game.size() - suffix.size(), suffix.size(), suffix) == 0)
+    {return true;}
   else
-    return false;
+    {return false;}
 }
 
 void NetPlayDialog::GetNetSettings(NetSettings& settings)

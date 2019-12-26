@@ -246,7 +246,7 @@ bool ApplyFramePatches()
     return false;
   }
 
-  ApplyPatches(onFrame);
+  // ApplyPatches(onFrame);
 
   // Run the Gecko code handler
   Gecko::RunCodeHandler();
