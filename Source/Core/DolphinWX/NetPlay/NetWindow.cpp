@@ -354,7 +354,7 @@ void NetPlayDialog::OnChat(wxCommandEvent&)
  std::string suffix("elf");
 bool NetPlayDialog::IsPMELF()
 {
-  if (m_selected_game.size() >= suffix.size() && m_selected_game.compare(m_selected_game.size() - suffix.size(), suffix.size(), suffix) == 0)
+  if (!m_selected_game.compare(m_selected_game.length() - 4, 4, ".elf"))
     {return true;}
   else
     {return false;}
