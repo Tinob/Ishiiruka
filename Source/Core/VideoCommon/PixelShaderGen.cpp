@@ -1999,7 +1999,7 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
     if (enablesimbumps)
     {
       out.Write(
-        "if(" I_PPHONG "[1].x > 0.0 && height_map_count > 0)\n"
+        "if(" I_PPHONG "[1].x > 0.0 && height_map_count > 0.0)\n"
         "{\n"
         "height_map = lerp(height_map * " I_PPHONG "[1].y, snoise(mapcoord * mapsize * " I_PPHONG "[1].w), " I_PPHONG "[1].z) * " I_PPHONG "[1].x;\n"
         "_norm0 = CalculateSurfaceNormal(pos, _norm0, height_map);"
@@ -2150,7 +2150,7 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
   {
     out.Write(
       // Rim Component
-      "prev.rgb += wu3(clamp(prev.rgb * 2.0 + " I_PPHONG "[0].xxx, 127.0,255.0)*spec.w*" I_PPHONG "[0].z * normalmap.w);\n"
+      "prev.rgb += wu3(clamp(float3(prev.rgb) * 2.0 + " I_PPHONG "[0].xxx, 127.0,255.0)*spec.w*" I_PPHONG "[0].z * normalmap.w);\n"
       // Specular component
       "prev.rgb += wu3(spec.rgb * normalmap.w * " I_PPHONG "[0].w);\n"
     );

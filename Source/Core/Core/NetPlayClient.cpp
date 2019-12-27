@@ -730,9 +730,9 @@ void NetPlayClient::ThreadFunc()
 #else
   if (SConfig::GetInstance().bQoSEnabled)
   {
+#ifdef __linux__
     // highest priority
     int priority = 7;
-#ifdef __linux__
     setsockopt(m_server->host->socket, SOL_SOCKET, SO_PRIORITY, &priority, sizeof(priority));
 #endif
 
