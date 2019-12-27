@@ -1101,7 +1101,21 @@ void ProgramShaderCache::CreateHeader()
     "#define ddx dFdx\n"
     "#define ddy dFdy\n"
     "#define rsqrt inversesqrt\n"
-    "%s\n"
+
+    "bool all(float2 val) { return (val.x != 0.0) && (val.y != 0.0); }\n"
+    "bool all(float3 val) { return (val.x != 0.0) && (val.y != 0.0) && (val.z != 0.0); }\n"
+    "bool all(float4 val) { return (val.x != 0.0) && (val.y != 0.0) && (val.z != 0.0) && (val.w != 0.0); }\n"
+    "bool all(int2 val) { return (val.x != 0) && (val.y != 0); }\n"
+    "bool all(int3 val) { return (val.x != 0) && (val.y != 0) && (val.z != 0); }\n"
+    "bool all(int4 val) { return (val.x != 0) && (val.y != 0) && (val.z != 0) && (val.w != 0); }\n"
+
+    "bool any(float2 val) { return (val.x != 0.0) || (val.y != 0.0); }\n"
+    "bool any(float3 val) { return (val.x != 0.0) || (val.y != 0.0) || (val.z != 0.0); }\n"
+    "bool any(float4 val) { return (val.x != 0.0) || (val.y != 0.0) || (val.z != 0.0) || (val.w != 0.0); }\n"
+    "bool any(int2 val) { return (val.x != 0) || (val.y != 0); }\n"
+    "bool any(int3 val) { return (val.x != 0) || (val.y != 0) || (val.z != 0); }\n"
+    "bool any(int4 val) { return (val.x != 0) || (val.y != 0) || (val.z != 0) || (val.w != 0); }\n"
+
     , GetGLSLVersionString().c_str()
     , v < GLSL_140 ? "#extension GL_ARB_uniform_buffer_object : enable" : ""
     , earlyz_string.c_str()
@@ -1142,26 +1156,7 @@ void ProgramShaderCache::CreateHeader()
     , is_glsles ? "precision highp sampler2DArray;" : ""
     , (is_glsles && g_ActiveConfig.backend_info.bSupportsPaletteConversion) ? "precision highp usamplerBuffer;" : ""
     , v > GLSLES_300 ? "precision highp sampler2DMS;" : ""
-    , v >= GLSLES_310 ? "precision highp image2DArray;" : "",
-      is_glsles ?
-          "" :
-          "bool all(float2 val) { return (val.x != 0.0) && (val.y != 0.0); }\n"
-          "bool all(float3 val) { return (val.x != 0.0) && (val.y != 0.0) && (val.z != 0.0); }\n"
-          "bool all(float4 val) { return (val.x != 0.0) && (val.y != 0.0) && (val.z != 0.0) && "
-          "(val.w != 0.0); }\n"
-          "bool all(int2 val) { return (val.x != 0) && (val.y != 0); }\n"
-          "bool all(int3 val) { return (val.x != 0) && (val.y != 0) && (val.z != 0); }\n"
-          "bool all(int4 val) { return (val.x != 0) && (val.y != 0) && (val.z != 0) && (val.w != "
-          "0); }\n"
-
-          "bool any(float2 val) { return (val.x != 0.0) || (val.y != 0.0); }\n"
-          "bool any(float3 val) { return (val.x != 0.0) || (val.y != 0.0) || (val.z != 0.0); }\n"
-          "bool any(float4 val) { return (val.x != 0.0) || (val.y != 0.0) || (val.z != 0.0) || "
-          "(val.w != 0.0); }\n"
-          "bool any(int2 val) { return (val.x != 0) || (val.y != 0); }\n"
-          "bool any(int3 val) { return (val.x != 0) || (val.y != 0) || (val.z != 0); }\n"
-          "bool any(int4 val) { return (val.x != 0) || (val.y != 0) || (val.z != 0) || (val.w != "
-          "0); }\n"
+    , v >= GLSLES_310 ? "precision highp image2DArray;" : ""
     );
 }
 

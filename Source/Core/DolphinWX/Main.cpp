@@ -257,7 +257,6 @@ bool DolphinApp::OnInit()
     }
 
     dlclose(security_framework);
-  }
 #endif
 
   // We have to copy the size and position out of SConfig now because CFrame's OnMove

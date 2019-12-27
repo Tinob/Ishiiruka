@@ -44,7 +44,6 @@ Make AA apply instantly during gameplay if possible
 #include "Common/GL/GLUtil.h"
 
 #include "Core/ConfigManager.h"
-#include "Core/Config/GraphicsSettings.h"
 #include "Core/Host.h"
 
 #include "VideoBackends/OGL/BoundingBox.h"
@@ -137,8 +136,7 @@ bool VideoBackend::Initialize(void* window_handle)
   InitBackendInfo();
 
   InitInterface();
-  GLInterface->SetMode(Config::Get(Config::GFX_PREFER_GLES) ? GLInterfaceMode::MODE_OPENGLES3 :
-                                                              GLInterfaceMode::MODE_DETECT);
+  GLInterface->SetMode(GLInterfaceMode::MODE_DETECT);
   if (!GLInterface->Create(window_handle))
     return false;
 
