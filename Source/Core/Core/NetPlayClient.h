@@ -141,6 +141,8 @@ public:
 
   NetPlayUI* dialog = nullptr;
   Player* local_player = nullptr;
+
+  u32 personal_min_buffer = 0;
 protected:
   void ClearBuffers();
 

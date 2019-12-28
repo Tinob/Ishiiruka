@@ -403,8 +403,7 @@ unsigned int NetPlayClient::OnData(sf::Packet& packet)
     m_minimum_buffer_size = size;
     dialog->OnMinimumPadBufferChanged(size);
 
-    if (local_player->buffer < m_minimum_buffer_size)
-      SetLocalPlayerBuffer(m_minimum_buffer_size);
+    SetLocalPlayerBuffer(std::max(m_minimum_buffer_size, personal_min_buffer));
   }
   break;
 
