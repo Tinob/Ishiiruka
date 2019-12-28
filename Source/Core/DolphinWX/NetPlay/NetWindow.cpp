@@ -500,6 +500,12 @@ void NetPlayDialog::OnAdjustMinimumBuffer(wxCommandEvent& event)
 void NetPlayDialog::OnAdjustPlayerBuffer(wxCommandEvent& event)
 {
   const int val = ((wxSpinCtrl*)event.GetEventObject())->GetValue();
+  if(val > m_minimum_pad_buffer) {
+    netplay_client->personal_min_buffer = val;
+  }
+  else {
+    netplay_client->personal_min_buffer = 0;
+  }
   netplay_client->SetLocalPlayerBuffer(val);
 }
 
