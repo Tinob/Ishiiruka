@@ -83,6 +83,7 @@ Useful for development as root access is not required.
 3. `cmake .. -DLINUX_LOCAL_DEV=true`
 4. `make`
 5. `ln -s ../../Data/Sys Binaries/`
+6. `ln -s ../../Data/User Binaries/`
 
 ### Linux Portable Build Steps:
 
@@ -93,7 +94,7 @@ Or useful for having multiple distinct Dolphin setups for testing/development/TA
 2. `cd Build`
 3. `cmake .. -DLINUX_LOCAL_DEV=true`
 4. `make`
-5. `cp -r ../Data/Sys/ Binaries/`
+5. `cp -r ../Data/Sys/ ../Data/User/ Binaries/`
 6. `touch Binaries/portable.txt`
 
 ## Building for Android
@@ -105,7 +106,7 @@ If using Android Studio, import the Gradle project located in `./Source/Android`
 
 Android apps are compiled using a build system called Gradle. Dolphin's native component,
 however, is compiled using CMake. The Gradle script will attempt to run a CMake build
-automatically while building the Java code.
+    automatically while building the Java code.
 
 ## Uninstalling
 
