@@ -794,15 +794,15 @@ add_subdirectory(Source)
 # Install shared data files
 #
 if(NOT CMAKE_SYSTEM_NAME MATCHES "Darwin|Windows")
-  install(DIRECTORY Data/Sys/ DESTINATION ${datadir}/sys PATTERN)
+  #[[install(DIRECTORY Data/Sys/ DESTINATION ${datadir}/sys PATTERN)]]
+  install(DIRECTORY Data/Sys/ DESTINATION ${bindir}/Sys PATTERN)
+  install(DIRECTORY Data/User/ DESTINATION ${datadir}/user PATTERN)
 endif()
 if(NOT CMAKE_SYSTEM_NAME MATCHES "Linux|FreeBSD|OpenBSD|Darwin")
   install(FILES Data/license.txt DESTINATION ${datadir})
 endif()
 if(CMAKE_SYSTEM_NAME MATCHES "Linux|FreeBSD|OpenBSD")
   # Install the application icon and menu item
-  install(FILES Data/ishiiruka.svg
-          DESTINATION ${CMAKE_INSTALL_PREFIX}/share/icons/hicolor/scalable/apps)
   install(FILES Data/ishiiruka.png
           DESTINATION ${CMAKE_INSTALL_PREFIX}/share/icons/hicolor/48x48/apps)
   install(FILES Data/ishiiruka.desktop
