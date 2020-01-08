@@ -68,5 +68,5 @@ CubebStream::~CubebStream()
 
 void CubebStream::SetVolume(int volume)
 {
-  cubeb_stream_set_volume(m_stream, volume / 100.0f);
+  cubeb_stream_set_volume(m_stream, volume / 200.0f);
 }
