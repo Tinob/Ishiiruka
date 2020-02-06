@@ -509,16 +509,6 @@ void NetPlayDialog::OnAdjustPlayerBuffer(wxCommandEvent& event)
   netplay_client->SetLocalPlayerBuffer(val);
 }
 
-void NetPlayDialog::OnPlayerConnect(const std::string& player)
-{
-  AddChatMessage(ChatMessageType::UserJoin, player);
-}
-
-void NetPlayDialog::OnPlayerDisconnect(const std::string& player)
-{
-  AddChatMessage(ChatMessageType::UserLeave, player);
-}
-
 void NetPlayDialog::OnMinimumPadBufferChanged(u32 buffer)
 {
   m_minimum_pad_buffer = buffer;
@@ -953,16 +943,6 @@ void NetPlayDialog::AddChatMessage(ChatMessageType type, const std::string& msg)
   case ChatMessageType::UserOut:
     colour = wxColour(100, 100, 100);  // grey
     printed_msg = "◀ " + msg;
-    break;
-
-  case ChatMessageType::UserJoin:
-    colour = wxColour(0, 150, 0);  // green
-    printed_msg = "→ " + msg + " has joined";
-    break;
-
-  case ChatMessageType::UserLeave:
-    colour = wxColour(150, 0, 0);  // red
-    printed_msg = "← " + msg + " has left";
     break;
   }
 

@@ -67,10 +67,6 @@ enum class ChatMessageType
   UserIn,
   // Outcoming user chat messages
   UserOut,
-  // User joined NetPlay session
-  UserJoin,
-  // User left NetPlay session
-  UserLeave,
 };
 
 // IDs are UI-dependent here
@@ -105,8 +101,6 @@ public:
   void OnMsgChangeGame(const std::string& filename) override;
   void OnMsgStartGame() override;
   void OnMsgStopGame() override;
-  void OnPlayerConnect(const std::string& player) override;
-  void OnPlayerDisconnect(const std::string& player) override;
   void OnMinimumPadBufferChanged(u32 buffer) override;
   void OnPlayerPadBufferChanged(u32 buffer) override;
   void OnDesync(u32 frame, const std::string& player) override;

@@ -286,8 +286,6 @@ unsigned int NetPlayClient::OnData(sf::Packet& packet)
       m_players[player.pid] = player;
     }
 
-    dialog->OnPlayerConnect(player.name);
-
     dialog->Update();
   }
   break;
@@ -296,8 +294,6 @@ unsigned int NetPlayClient::OnData(sf::Packet& packet)
   {
     PlayerId pid;
     packet >> pid;
-
-    dialog->OnPlayerDisconnect(m_players.find(pid)->second.name);
 
     {
       std::lock_guard<std::recursive_mutex> lkp(m_crit.players);
