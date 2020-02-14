@@ -18,6 +18,7 @@
 #include "Common/TraversalClient.h"
 #include "Core/NetPlayProto.h"
 #include "InputCommon/GCPadStatus.h"
+#include "Core/Config/NetplaySettings.h"
 
 #ifdef _WIN32
 #include <qos2.h>
@@ -165,7 +166,7 @@ protected:
   Common::Flag m_is_running{ false };
   Common::Flag m_do_loop{ true };
 
-  unsigned int m_minimum_buffer_size = 4;
+  unsigned int m_minimum_buffer_size = Config::Get(Config::NETPLAY_BUFFER_SIZE);
 
   u32 m_current_game = 0;
 

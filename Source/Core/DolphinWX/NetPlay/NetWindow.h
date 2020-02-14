@@ -52,11 +52,6 @@ enum
   NP_GUI_EVT_TRAVERSAL_CONNECTION_ERROR,
 };
 
-enum
-{
-  INITIAL_PAD_BUFFER_SIZE = 4
-};
-
 enum class ChatMessageType
 {
   // Info messages logged to chat

@@ -107,7 +107,7 @@ NetPlayServer::NetPlayServer(const u16 port, const bool forward_port,
     is_connected = true;
     m_do_loop = true;
     m_thread = std::thread(&NetPlayServer::ThreadFunc, this);
-    m_minimum_buffer_size = 4;
+    m_minimum_buffer_size = Config::Get(Config::NETPLAY_BUFFER_SIZE);
 
 #ifdef USE_UPNP
     if (forward_port)

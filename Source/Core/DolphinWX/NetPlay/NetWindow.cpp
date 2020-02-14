@@ -44,6 +44,7 @@
 #include "Core/NetPlayClient.h"
 #include "Core/NetPlayProto.h"
 #include "Core/NetPlayServer.h"
+#include "Core/Config/NetplaySettings.h"
 
 #include "DolphinWX/Frame.h"
 #include "DolphinWX/GameListCtrl.h"
@@ -247,8 +248,8 @@ wxSizer* NetPlayDialog::CreateBottomGUI(wxWindow* parent)
 
   wxStaticText* buffer_lbl = new wxStaticText(parent, wxID_ANY, _("Buffer:"));
   m_player_padbuf_spin =
-    new wxSpinCtrl(parent, wxID_ANY, std::to_string(INITIAL_PAD_BUFFER_SIZE), wxDefaultPosition,
-      wxDefaultSize, wxSP_ARROW_KEYS, 0, 200, INITIAL_PAD_BUFFER_SIZE);
+    new wxSpinCtrl(parent, wxID_ANY, std::to_string(Config::Get(Config::NETPLAY_BUFFER_SIZE)), wxDefaultPosition,
+      wxDefaultSize, wxSP_ARROW_KEYS, 0, 200, Config::Get(Config::NETPLAY_BUFFER_SIZE));
   m_player_padbuf_spin->Bind(wxEVT_SPINCTRL, &NetPlayDialog::OnAdjustPlayerBuffer, this);
   m_player_padbuf_spin->SetMinSize(WxUtils::GetTextWidgetMinSize(m_player_padbuf_spin));
 
@@ -261,8 +262,8 @@ wxSizer* NetPlayDialog::CreateBottomGUI(wxWindow* parent)
 
     wxStaticText* minimum_buffer_lbl = new wxStaticText(parent, wxID_ANY, _("Minimum Buffer:"));
     wxSpinCtrl* const minimum_padbuf_spin =
-      new wxSpinCtrl(parent, wxID_ANY, std::to_string(INITIAL_PAD_BUFFER_SIZE), wxDefaultPosition,
-        wxDefaultSize, wxSP_ARROW_KEYS, 0, 200, INITIAL_PAD_BUFFER_SIZE);
+      new wxSpinCtrl(parent, wxID_ANY, std::to_string(Config::Get(Config::NETPLAY_BUFFER_SIZE)), wxDefaultPosition,
+        wxDefaultSize, wxSP_ARROW_KEYS, 0, 200, Config::Get(Config::NETPLAY_BUFFER_SIZE));
     minimum_padbuf_spin->Bind(wxEVT_SPINCTRL, &NetPlayDialog::OnAdjustMinimumBuffer, this);
     minimum_padbuf_spin->SetMinSize(WxUtils::GetTextWidgetMinSize(minimum_padbuf_spin));
 
