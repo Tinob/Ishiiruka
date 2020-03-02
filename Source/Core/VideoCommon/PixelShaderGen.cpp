@@ -1512,7 +1512,7 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
   {
     out.Write(headerLightUtil);
   }
-  if (enablesimbumps)
+  if (enablesimbumps || uid_data.dither)
   {
     out.Write(headerBumpUtil);
   }
@@ -1638,16 +1638,7 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
   if (uid_data.dither)
   {
     out.Write("wu GetDitherValue(wu2 ditherindex)\n{\n");
-    out.Write("\twu4 bayer[4];\n");
-    out.Write("\tbayer[0] = wu4(-2,0,1,-1);\n");
-    out.Write("\tbayer[1] = wu4(-1,1,-2,0);\n");
-    out.Write("\tbayer[2] = wu4(1,3,-1,-2);\n");
-    out.Write("\tbayer[3] = wu4(0,-1,2,1);\n");
-    out.Write("\twu result = bayer[ditherindex.y][ditherindex.x];\n");
-    if (uid_data.rgba6_format)
-    {
-      out.Write("\tresult *= 3;\n");
-    }
+    out.Write("\twu result = round(2*snoise(0.2*float2(ditherindex.x, ditherindex.y)));\n");
     out.Write("\treturn result;\n}\n");
   }
   if (ApiType == API_OPENGL || ApiType == API_VULKAN)
@@ -1917,11 +1908,11 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
   {
     if (ApiType & API_D3D9)
     {
-      out.Write("\tfloat2 ditherindex = round(rawpos.xy) %% 4;\n");
+      out.Write("\tfloat2 ditherindex = round(rawpos.xy);\n");
     }
     else
     {
-      out.Write("\tint2 ditherindex = int2(rawpos.xy) & 3;\n");
+      out.Write("\tint2 ditherindex = int2(rawpos.xy);\n");
     }
   }
 
@@ -2164,14 +2155,14 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
     out.Write("}\n");
   }
 
-  if (uid_data.dither)
-  {
-    out.Write("\tprev.rgb += GetDitherValue(ditherindex);\n");
-  }
-
   if (uid_data.rgba6_format)
   {
     out.Write("\tprev = CAST_TO_U6(clamp(prev, 0, 255));\n");
+  }
+
+  if (uid_data.dither)
+  {
+    out.Write("\tprev.rgb += GetDitherValue(ditherindex);\n");
   }
 
   // Use dual-source color blending to perform dst alpha in a single pass
