@@ -18,6 +18,7 @@
 #include "Common/TraversalClient.h"
 #include "Core/NetPlayProto.h"
 #include "InputCommon/GCPadStatus.h"
+#include "Core/Config/NetplaySettings.h"
 
 #ifdef _WIN32
 #include <qos2.h>
@@ -36,8 +37,6 @@ public:
   virtual void OnMsgChangeGame(const std::string& filename) = 0;
   virtual void OnMsgStartGame() = 0;
   virtual void OnMsgStopGame() = 0;
-  virtual void OnPlayerConnect(const std::string& player) = 0;
-  virtual void OnPlayerDisconnect(const std::string& player) = 0;
   virtual void OnMinimumPadBufferChanged(u32 buffer) = 0;
   virtual void OnPlayerPadBufferChanged(u32 buffer) = 0;
   virtual void OnDesync(u32 frame, const std::string& player) = 0;
@@ -141,6 +140,8 @@ public:
 
   NetPlayUI* dialog = nullptr;
   Player* local_player = nullptr;
+
+  u32 personal_min_buffer = 0;
 protected:
   void ClearBuffers();
 
@@ -165,7 +166,7 @@ protected:
   Common::Flag m_is_running{ false };
   Common::Flag m_do_loop{ true };
 
-  unsigned int m_minimum_buffer_size = 6;
+  unsigned int m_minimum_buffer_size = Config::Get(Config::NETPLAY_BUFFER_SIZE);
 
   u32 m_current_game = 0;
 

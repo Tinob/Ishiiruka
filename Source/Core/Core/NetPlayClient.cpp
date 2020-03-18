@@ -1,4 +1,4 @@
-// Copyright 2010 Dolphin Emulator Project
+﻿// Copyright 2010 Dolphin Emulator Project
 // Licensed under GPLv2+
 // Refer to the license.txt file included.
 
@@ -286,8 +286,6 @@ unsigned int NetPlayClient::OnData(sf::Packet& packet)
       m_players[player.pid] = player;
     }
 
-    dialog->OnPlayerConnect(player.name);
-
     dialog->Update();
   }
   break;
@@ -296,8 +294,6 @@ unsigned int NetPlayClient::OnData(sf::Packet& packet)
   {
     PlayerId pid;
     packet >> pid;
-
-    dialog->OnPlayerDisconnect(m_players.find(pid)->second.name);
 
     {
       std::lock_guard<std::recursive_mutex> lkp(m_crit.players);
@@ -403,8 +399,7 @@ unsigned int NetPlayClient::OnData(sf::Packet& packet)
     m_minimum_buffer_size = size;
     dialog->OnMinimumPadBufferChanged(size);
 
-    if (local_player->buffer < m_minimum_buffer_size)
-      SetLocalPlayerBuffer(m_minimum_buffer_size);
+    SetLocalPlayerBuffer(std::max(m_minimum_buffer_size, personal_min_buffer));
   }
   break;
 
@@ -730,9 +725,11 @@ void NetPlayClient::ThreadFunc()
 #else
   if (SConfig::GetInstance().bQoSEnabled)
   {
+#ifdef __linux__
     // highest priority
     int priority = 7;
     setsockopt(m_server->host->socket, SOL_SOCKET, SO_PRIORITY, &priority, sizeof(priority));
+#endif
 
     // https://www.tucny.com/Home/dscp-tos
     // ef is better than cs7

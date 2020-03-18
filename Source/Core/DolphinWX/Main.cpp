@@ -57,6 +57,7 @@
 #include "DolphinWX/WxUtils.h"
 
 #include "UICommon/DiscordPresence.h"
+#include "Core/Config/UISettings.h"
 
 #include "UICommon/CommandLineParse.h"
 #include "UICommon/UICommon.h"
@@ -256,7 +257,6 @@ bool DolphinApp::OnInit()
     }
 
     dlclose(security_framework);
-  }
 #endif
 
   // We have to copy the size and position out of SConfig now because CFrame's OnMove
@@ -338,7 +338,10 @@ void DolphinApp::MacOpenFile(const wxString& fileName)
 void DolphinApp::AfterInit()
 {
 #ifdef USE_DISCORD_PRESENCE
-  Discord::Init();
+  if (Config::Get(Config::MAIN_USE_DISCORD_PRESENCE))
+  {
+    Discord::Init();
+  }
 #endif
 
 #if defined(USE_ANALYTICS) && USE_ANALYTICS

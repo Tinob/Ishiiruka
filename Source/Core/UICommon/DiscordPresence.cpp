@@ -20,7 +20,7 @@
 #include <string>
 
 #endif
-#include <Core\NetPlayProto.h>
+#include <Core/NetPlayProto.h>
 
 namespace Discord
 {
@@ -193,7 +193,6 @@ namespace Discord
     handlers.joinRequest = HandleDiscordJoinRequest;
     handlers.joinGame = HandleDiscordJoin;
     // The number is the client ID for Dolphin, it's used for images and the application name
-    //Discord_Initialize("455712169795780630", &handlers, 1, nullptr);
     Discord_Initialize("622143930900807680", &handlers, 1, nullptr);
     UpdateDiscordPresence();
 #endif

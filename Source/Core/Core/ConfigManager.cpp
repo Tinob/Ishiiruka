@@ -46,8 +46,8 @@
 #include "DiscIO/Enums.h"
 #include "DiscIO/Volume.h"
 #include "DiscIO/WiiWad.h"
-#include <UICommon\DiscordPresence.h>
-#include <Core\Host.h>
+#include <UICommon/DiscordPresence.h>
+#include <Core/Host.h>
 
 SConfig* SConfig::m_Instance;
 

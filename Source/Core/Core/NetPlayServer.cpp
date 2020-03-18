@@ -107,7 +107,7 @@ NetPlayServer::NetPlayServer(const u16 port, const bool forward_port,
     is_connected = true;
     m_do_loop = true;
     m_thread = std::thread(&NetPlayServer::ThreadFunc, this);
-    m_minimum_buffer_size = 6;
+    m_minimum_buffer_size = Config::Get(Config::NETPLAY_BUFFER_SIZE);
 
 #ifdef USE_UPNP
     if (forward_port)
@@ -410,9 +410,11 @@ unsigned int NetPlayServer::OnConnect(ENetPeer* socket)
 #else
   if (SConfig::GetInstance().bQoSEnabled)
   {
+#ifdef __linux__
     // highest priority
     int priority = 7;
     setsockopt(player.socket->host->socket, SOL_SOCKET, SO_PRIORITY, &priority, sizeof(priority));
+#endif
 
     // https://www.tucny.com/Home/dscp-tos
     // ef is better than cs7

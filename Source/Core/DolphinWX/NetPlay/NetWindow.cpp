@@ -44,6 +44,7 @@
 #include "Core/NetPlayClient.h"
 #include "Core/NetPlayProto.h"
 #include "Core/NetPlayServer.h"
+#include "Core/Config/NetplaySettings.h"
 
 #include "DolphinWX/Frame.h"
 #include "DolphinWX/GameListCtrl.h"
@@ -247,10 +248,12 @@ wxSizer* NetPlayDialog::CreateBottomGUI(wxWindow* parent)
 
   wxStaticText* buffer_lbl = new wxStaticText(parent, wxID_ANY, _("Buffer:"));
   m_player_padbuf_spin =
-    new wxSpinCtrl(parent, wxID_ANY, std::to_string(INITIAL_PAD_BUFFER_SIZE), wxDefaultPosition,
-      wxDefaultSize, wxSP_ARROW_KEYS, 0, 200, INITIAL_PAD_BUFFER_SIZE);
+    new wxSpinCtrl(parent, wxID_ANY, std::to_string(Config::Get(Config::NETPLAY_BUFFER_SIZE)), wxDefaultPosition,
+      wxDefaultSize, wxSP_ARROW_KEYS, 0, 200, Config::Get(Config::NETPLAY_BUFFER_SIZE));
   m_player_padbuf_spin->Bind(wxEVT_SPINCTRL, &NetPlayDialog::OnAdjustPlayerBuffer, this);
   m_player_padbuf_spin->SetMinSize(WxUtils::GetTextWidgetMinSize(m_player_padbuf_spin));
+
+  m_music_off_chkbox = new wxCheckBox(parent, wxID_ANY, "Client Side Music Off");
 
   if (m_is_hosting)
   {
@@ -259,8 +262,8 @@ wxSizer* NetPlayDialog::CreateBottomGUI(wxWindow* parent)
 
     wxStaticText* minimum_buffer_lbl = new wxStaticText(parent, wxID_ANY, _("Minimum Buffer:"));
     wxSpinCtrl* const minimum_padbuf_spin =
-      new wxSpinCtrl(parent, wxID_ANY, std::to_string(INITIAL_PAD_BUFFER_SIZE), wxDefaultPosition,
-        wxDefaultSize, wxSP_ARROW_KEYS, 0, 200, INITIAL_PAD_BUFFER_SIZE);
+      new wxSpinCtrl(parent, wxID_ANY, std::to_string(Config::Get(Config::NETPLAY_BUFFER_SIZE)), wxDefaultPosition,
+        wxDefaultSize, wxSP_ARROW_KEYS, 0, 200, Config::Get(Config::NETPLAY_BUFFER_SIZE));
     minimum_padbuf_spin->Bind(wxEVT_SPINCTRL, &NetPlayDialog::OnAdjustMinimumBuffer, this);
     minimum_padbuf_spin->SetMinSize(WxUtils::GetTextWidgetMinSize(minimum_padbuf_spin));
 
@@ -272,14 +275,13 @@ wxSizer* NetPlayDialog::CreateBottomGUI(wxWindow* parent)
     bottom_szr->Add(buffer_lbl, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
     bottom_szr->Add(m_player_padbuf_spin, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
 
-    if (IsPMELF() == true)
+    if (IsPMELF() == false)
     {
-      m_music_off_chkbox = new wxCheckBox(parent, wxID_ANY, "Client Side Music Off");
-      bottom_szr->Add(m_music_off_chkbox, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
+      m_music_off_chkbox->Hide();
     }
     else
     {
-
+      bottom_szr->Add(m_music_off_chkbox, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
     }
 
     bottom_szr->Add(m_memcard_write, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
@@ -301,7 +303,6 @@ wxSizer* NetPlayDialog::CreateBottomGUI(wxWindow* parent)
 
   if (!m_is_hosting)
   {
-    m_music_off_chkbox = new wxCheckBox(parent, wxID_ANY, "Client Side Music Off");
     bottom_szr->Add(m_music_off_chkbox, 0, wxALIGN_CENTER_VERTICAL);
   }
 
@@ -354,11 +355,10 @@ void NetPlayDialog::OnChat(wxCommandEvent&)
 
 bool NetPlayDialog::IsPMELF()
 {
-  if (m_selected_game.ends_with(".elf"))
-    return true;
-
+  if (!m_selected_game.compare(m_selected_game.length() - 4, 4, ".elf"))
+    {return true;}
   else
-    return false;
+    {return false;}
 }
 
 void NetPlayDialog::GetNetSettings(NetSettings& settings)
@@ -501,17 +501,13 @@ void NetPlayDialog::OnAdjustMinimumBuffer(wxCommandEvent& event)
 void NetPlayDialog::OnAdjustPlayerBuffer(wxCommandEvent& event)
 {
   const int val = ((wxSpinCtrl*)event.GetEventObject())->GetValue();
+  if(val > m_minimum_pad_buffer) {
+    netplay_client->personal_min_buffer = val;
+  }
+  else {
+    netplay_client->personal_min_buffer = 0;
+  }
   netplay_client->SetLocalPlayerBuffer(val);
-}
-
-void NetPlayDialog::OnPlayerConnect(const std::string& player)
-{
-  AddChatMessage(ChatMessageType::UserJoin, "― " + player + " has joined ―");
-}
-
-void NetPlayDialog::OnPlayerDisconnect(const std::string& player)
-{
-  AddChatMessage(ChatMessageType::UserLeave, "― " + player + " has left ―");
 }
 
 void NetPlayDialog::OnMinimumPadBufferChanged(u32 buffer)

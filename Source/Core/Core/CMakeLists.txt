@@ -288,6 +288,7 @@ PUBLIC
   sfml-system
   videoogl
   videosoftware
+  wxWidgets::wxWidgets
   z
 )
 
