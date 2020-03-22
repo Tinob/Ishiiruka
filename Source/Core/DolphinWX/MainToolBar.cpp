@@ -42,6 +42,8 @@ void MainToolBar::BindMainButtonEvents()
   Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreRunningOrPaused, IDM_STOP);
   Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreRunningOrPaused, IDM_TOGGLE_FULLSCREEN);
   Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreRunningOrPaused, IDM_SCREENSHOT);
+  Bind(wxEVT_UPDATE_UI, &WxEventUtils::OnEnableIfCoreNotRunning, IDM_NETPLAY);
+
 }
 
 void MainToolBar::BindDebuggerButtonEvents()
@@ -90,6 +92,7 @@ void MainToolBar::InitializeThemeBitmaps()
                          {TOOLBAR_STOP, CreateBitmap("stop")},
                          {TOOLBAR_PAUSE, CreateBitmap("pause")},
                          {TOOLBAR_SCREENSHOT, CreateBitmap("screenshot")},
+                         {TOOLBAR_NETPLAY, CreateBitmap("netplay")},
                          {TOOLBAR_FULLSCREEN, CreateBitmap("fullscreen")},
                          {TOOLBAR_CONFIGMAIN, CreateBitmap("config")},
                          {TOOLBAR_CONFIGGFX, CreateBitmap("graphics")},
@@ -122,12 +125,13 @@ wxBitmap MainToolBar::CreateDebuggerBitmap(const std::string& name) const
 
 void MainToolBar::ApplyThemeBitmaps()
 {
-  constexpr std::array<std::pair<int, ToolBarBitmapID>, 8> bitmap_entries{
+  constexpr std::array<std::pair<int, ToolBarBitmapID>, 9> bitmap_entries{
       {{wxID_OPEN, TOOLBAR_FILEOPEN},
        {wxID_REFRESH, TOOLBAR_REFRESH},
        {IDM_STOP, TOOLBAR_STOP},
        {IDM_TOGGLE_FULLSCREEN, TOOLBAR_FULLSCREEN},
        {IDM_SCREENSHOT, TOOLBAR_SCREENSHOT},
+       {IDM_NETPLAY, TOOLBAR_NETPLAY},
        {wxID_PREFERENCES, TOOLBAR_CONFIGMAIN},
        {IDM_CONFIG_GFX_BACKEND, TOOLBAR_CONFIGGFX},
        {IDM_CONFIG_CONTROLLERS, TOOLBAR_CONTROLLER}}};
@@ -181,6 +185,7 @@ void MainToolBar::AddMainToolBarButtons()
   AddToolBarButton(IDM_STOP, TOOLBAR_STOP, _("Stop"), _("Stop"));
   AddToolBarButton(IDM_TOGGLE_FULLSCREEN, TOOLBAR_FULLSCREEN, _("FullScr"), _("Toggle fullscreen"));
   AddToolBarButton(IDM_SCREENSHOT, TOOLBAR_SCREENSHOT, _("ScrShot"), _("Take screenshot"));
+  AddToolBarButton(IDM_NETPLAY, TOOLBAR_NETPLAY, _("Netplay"), _("Start netplay"));
   AddSeparator();
   AddToolBarButton(wxID_PREFERENCES, TOOLBAR_CONFIGMAIN, _("Config"), _("Configure..."));
   AddToolBarButton(IDM_CONFIG_GFX_BACKEND, TOOLBAR_CONFIGGFX, _("Graphics"),
