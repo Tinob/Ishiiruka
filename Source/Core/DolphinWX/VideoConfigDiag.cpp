@@ -218,7 +218,7 @@ static wxString skip_efb_copy_to_ram_desc =
 static wxString stc_desc =
     _("The safer you adjust this, the less likely the emulator will be missing any texture updates "
       "from RAM.\n\nIf unsure, use the rightmost value.");
-static wxString bbox_desc = _("Selects wish implementation is used to emulate Bounding Box. By "
+static wxString bbox_desc = _("Selects which implementation is used to emulate Bounding Box. By "
                               "Default GPU will be used if supported.");
 static wxString wireframe_desc =
     _("Render the scene as a wireframe.\n\nIf unsure, leave this unchecked.");
