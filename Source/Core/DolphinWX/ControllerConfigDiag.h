@@ -51,6 +51,7 @@ private:
   void OnEnableSpeaker(wxCommandEvent& event);
 
   void OnBackgroundInputChanged(wxCommandEvent& event);
+  void OnWriteInputsToFileChanged(wxCommandEvent& event);
 
   std::map<wxWindowID, unsigned int> m_gc_port_from_choice_id;
   std::map<wxWindowID, unsigned int> m_gc_port_from_config_id;
@@ -78,4 +79,5 @@ private:
   wxCheckBox* m_enable_speaker_data;
 
   wxCheckBox* m_background_input_checkbox;
+  wxCheckBox* m_write_inputs_to_file_checkbox;
 };

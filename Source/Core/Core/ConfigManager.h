@@ -320,6 +320,7 @@ struct SConfig
 
   // Input settings
   bool m_BackgroundInput;
+  bool m_WriteInputsToFile;
   bool m_AdapterRumble[4];
   bool m_AdapterKonga[4];
 

@@ -228,6 +228,11 @@ void ControllerConfigDiag::OnBackgroundInputChanged(wxCommandEvent& event)
   SConfig::GetInstance().m_BackgroundInput = event.IsChecked();
 }
 
+void ControllerConfigDiag::OnWriteInputsToFileChanged(wxCommandEvent& event)
+{
+  SConfig::GetInstance().m_WriteInputsToFile = event.IsChecked();
+}
+
 wxSizer* ControllerConfigDiag::CreateAdvancedSettingsSizer()
 {
   const int space5 = FromDIP(5);
@@ -237,8 +242,15 @@ wxSizer* ControllerConfigDiag::CreateAdvancedSettingsSizer()
   m_background_input_checkbox->Bind(wxEVT_CHECKBOX, &ControllerConfigDiag::OnBackgroundInputChanged,
     this);
 
+  m_write_inputs_to_file_checkbox = new wxCheckBox(this, wxID_ANY, _("Write Gamecube Controller Inputs To File"));
+  m_write_inputs_to_file_checkbox->SetValue(SConfig::GetInstance().m_WriteInputsToFile);
+  m_write_inputs_to_file_checkbox->Bind(wxEVT_CHECKBOX, &ControllerConfigDiag::OnWriteInputsToFileChanged, this);
+
+
   auto* const box = new wxStaticBoxSizer(wxVERTICAL, this, _("Advanced Settings"));
   box->Add(m_background_input_checkbox, 0, wxEXPAND | wxLEFT | wxRIGHT, space5);
+  box->AddSpacer(space5);
+  box->Add(m_write_inputs_to_file_checkbox, 0, wxEXPAND | wxLEFT | wxRIGHT, space5);
   return box;
 }
 
